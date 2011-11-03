@@ -30,7 +30,6 @@
 #include "sparc_nodes_attr.h"
 #include "be.h"
 
-typedef struct sparc_transform_env_t  sparc_transform_env_t;
 typedef struct sparc_isa_t            sparc_isa_t;
 typedef struct calling_convention_t   calling_convention_t;
 
@@ -45,18 +44,6 @@ struct sparc_isa_t {
 	arch_env_t  base;      /**< must be derived from arch_env_t */
 	pmap       *constants;
 	int         fpu_arch;  /**< FPU architecture */
-};
-
-/**
- * this is a struct to minimize the number of parameters
- * for transformation walker
- */
-struct sparc_transform_env_t {
-	dbg_info *dbg;      /**< The node debug info */
-	ir_graph *irg;      /**< The irg, the node should be created in */
-	ir_node  *block;    /**< The block, the node should belong to */
-	ir_node  *irn;      /**< The irn, to be transformed */
-	ir_mode  *mode;     /**< The mode of the irn */
 };
 
 extern const arch_irn_ops_t sparc_irn_ops;
@@ -74,13 +61,15 @@ extern const arch_irn_ops_t sparc_irn_ops;
  *            param 0-5 in this spaces and then handle va_next by simply
  *            incrementing the stack pointer
  */
-#define SPARC_IMMEDIATE_MIN -4096
-#define SPARC_IMMEDIATE_MAX  4095
-#define SPARC_MIN_STACKSIZE 92
-#define SPARC_AGGREGATE_RETURN_OFFSET 64
-#define SPARC_PARAMS_SPILL_OFFSET     68
-#define SPARC_N_PARAM_REGS            6
-#define SPARC_STACK_ALIGNMENT         8
+#define SPARC_IMMEDIATE_MIN           -4096
+#define SPARC_IMMEDIATE_MAX            4095
+#define SPARC_MIN_STACKSIZE              92
+#define SPARC_AGGREGATE_RETURN_OFFSET    64
+#define SPARC_PARAMS_SPILL_OFFSET        68
+#define SPARC_SAVE_AREA_SIZE             64
+#define SPARC_N_PARAM_REGS                6
+#define SPARC_STACK_ALIGNMENT             8
+#define SPARC_REGISTER_SIZE               4
 
 static inline bool sparc_is_value_imm_encodeable(int32_t value)
 {

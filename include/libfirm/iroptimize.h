@@ -175,13 +175,6 @@ FIRM_API void optimize_funccalls(void);
  * Creates an ir_prog pass for optimize_funccalls().
  *
  * @param name       the name of this pass or NULL
- * @param force_run  if non-zero, an optimization run is started even
- *                   if no const function graph was detected.
- *                   Else calls are only optimized if at least one
- *                   const function graph was detected.
- * @param callback   a callback function to check whether a
- *                   given entity is a allocation call
- *
  * @return  the newly created ir_prog pass
  */
 FIRM_API ir_prog_pass_t *optimize_funccalls_pass(const char *name);
@@ -1102,6 +1095,29 @@ FIRM_API void vf_construct(ir_graph *irg);
  * @param irg    The vfirm graph to convert.
  */
 FIRM_API void vf_destruct(ir_graph *irg);
+
+typedef ir_entity *(*compilerlib_entity_creator_t)(ident *id, ir_type *mt);
+/**
+ * Set the compilerlib entity creation callback that is used to create
+ * compilerlib function entities.
+ *
+ * @param cb  the new compilerlib entity creation callback
+ */
+FIRM_API void set_compilerlib_entity_creator(compilerlib_entity_creator_t c);
+
+/**
+ * Get the compilerlib entity creation callback.
+ */
+FIRM_API compilerlib_entity_creator_t get_compilerlib_entity_creator(void);
+
+/**
+ * Construct the entity for a given function using the current compilerlib
+ * entity creation callback.
+ *
+ * @param id  the identifier of the compilerlib function
+ * @param mt  the method type of the compilerlib function
+ */
+FIRM_API ir_entity *create_compilerlib_entity(ident *id, ir_type *mt);
 
 #include "end.h"
 

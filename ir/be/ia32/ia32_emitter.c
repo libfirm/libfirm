@@ -62,14 +62,14 @@
 #include "dbginfo.h"
 #include "lc_opts.h"
 
-#include "../besched.h"
-#include "../benode.h"
-#include "../beabi.h"
-#include "../be_dbgout.h"
-#include "../beemitter.h"
-#include "../begnuas.h"
-#include "../beirg.h"
-#include "../be_dbgout.h"
+#include "besched.h"
+#include "benode.h"
+#include "beabi.h"
+#include "be_dbgout.h"
+#include "beemitter.h"
+#include "begnuas.h"
+#include "beirg.h"
+#include "be_dbgout.h"
 
 #include "ia32_emitter.h"
 #include "ia32_common_transform.h"
@@ -1066,11 +1066,11 @@ static void emit_ia32_CMovcc(const ir_node *node)
  */
 static void emit_ia32_SwitchJmp(const ir_node *node)
 {
-	ir_entity *jump_table = get_ia32_am_sc(node);
-	long       default_pn = get_ia32_default_pn(node);
+	ir_entity             *jump_table = get_ia32_am_sc(node);
+	const ir_switch_table *table      = get_ia32_switch_table(node);
 
 	ia32_emitf(node, "\tjmp %*AM\n");
-	emit_jump_table(node, default_pn, jump_table, get_cfop_target_block);
+	be_emit_jump_table(node, table, jump_table, get_cfop_target_block);
 }
 
 /**
@@ -1364,11 +1364,7 @@ static void Copy_emitter(const ir_node *node, const ir_node *op)
 	if (arch_register_get_class(in) == &ia32_reg_classes[CLASS_ia32_vfp])
 		return;
 
-	if (get_irn_mode(node) == mode_E) {
-		ia32_emitf(node, "\tmovsd %R, %R\n", in, out);
-	} else {
-		ia32_emitf(node, "\tmovl %R, %R\n", in, out);
-	}
+	ia32_emitf(node, "\tmovl %R, %R\n", in, out);
 }
 
 static void emit_be_Copy(const ir_node *node)
@@ -1890,7 +1886,6 @@ void ia32_gen_routine(ir_graph *irg)
 
 	get_unique_label(pic_base_label, sizeof(pic_base_label), "PIC_BASE");
 
-	be_dbg_method_begin(entity);
 	be_gas_emit_function_prolog(entity, ia32_cg_config.function_alignment);
 
 	/* we use links to point to target blocks */
@@ -1913,9 +1908,6 @@ void ia32_gen_routine(ir_graph *irg)
 	}
 
 	be_gas_emit_function_epilog(entity);
-	be_dbg_method_end();
-	be_emit_char('\n');
-	be_emit_write_line();
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
@@ -2345,13 +2337,9 @@ static void bemit_copy(const ir_node *copy)
 	if (arch_register_get_class(in) == &ia32_reg_classes[CLASS_ia32_vfp])
 		return;
 
-	if (get_irn_mode(copy) == mode_E) {
-		panic("NIY");
-	} else {
-		assert(arch_register_get_class(in) == &ia32_reg_classes[CLASS_ia32_gp]);
-		bemit8(0x8B);
-		bemit_modrr(in, out);
-	}
+	assert(arch_register_get_class(in) == &ia32_reg_classes[CLASS_ia32_gp]);
+	bemit8(0x8B);
+	bemit_modrr(in, out);
 }
 
 static void bemit_perm(const ir_node *node)
@@ -3232,13 +3220,13 @@ static void bemit_ia32_jcc(const ir_node *node)
 
 static void bemit_switchjmp(const ir_node *node)
 {
-	ir_entity *jump_table = get_ia32_am_sc(node);
-	long       default_pn = get_ia32_default_pn(node);
+	ir_entity             *jump_table = get_ia32_am_sc(node);
+	const ir_switch_table *table      = get_ia32_switch_table(node);
 
 	bemit8(0xFF); // jmp *tbl.label(,%in,4)
 	bemit_mod_am(0x05, node);
 
-	emit_jump_table(node, default_pn, jump_table, get_cfop_target_block);
+	be_emit_jump_table(node, table, jump_table, get_cfop_target_block);
 }
 
 /**
@@ -3853,9 +3841,6 @@ void ia32_gen_binary_routine(ir_graph *irg)
 	}
 
 	be_gas_emit_function_epilog(entity);
-	be_dbg_method_end();
-	be_emit_char('\n');
-	be_emit_write_line();
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 }

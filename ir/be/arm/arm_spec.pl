@@ -10,7 +10,7 @@ $arch = "arm";
 #
 $mode_gp    = "mode_Iu";
 $mode_flags = "mode_Bu";
-$mode_fp    = "mode_E";
+$mode_fp    = "mode_F";
 
 # NOTE: Last entry of each class is the largest Firm-Mode a register can hold
 %reg_classes = (
@@ -415,11 +415,10 @@ SwitchJmp => {
 	op_flags  => [ "labeled", "cfopcode", "forking" ],
 	state     => "pinned",
 	mode      => "mode_T",
-	attr      => "int n_projs, long def_proj_num",
-	init_attr => "\tset_arm_SwitchJmp_n_projs(res, n_projs);\n".
-	             "\tset_arm_SwitchJmp_default_proj_num(res, def_proj_num);\n".
-	             "\tinfo->out_infos = NULL;",
+	attr      => "const ir_switch_table *table",
+	init_attr => "init_arm_SwitchJmp_attributes(res, table);",
 	reg_req   => { in => [ "gp" ], out => [ "none" ] },
+	out_arity => "variable",
 	attr_type => "arm_SwitchJmp_attr_t",
 },
 

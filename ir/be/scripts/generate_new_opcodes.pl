@@ -655,19 +655,25 @@ EOF
 	}
 
 	# set default values for state and flags if not given
-	$n{"state"}    = "floats" if (! exists($n{"state"}));
-	$n{"op_flags"} = ["none"] if (! exists($n{"op_flags"}));
+	$n{"state"}     = "floats" if (! exists($n{"state"}));
+	$n{"op_flags"}  = ["none"] if (! exists($n{"op_flags"}));
+	$n{"dump_func"} = "${arch}_dump_node" if (!exists($n{"dump_func"}));
+	my $dump_func = $n{"dump_func"};
 
 	push(@obst_new_irop, "\n\tmemset(&ops, 0, sizeof(ops));\n");
 	push(@obst_new_irop, "\tops.be_ops        = be_ops;\n");
-	push(@obst_new_irop, "\tops.dump_node     = $arch\_dump_node;\n");
+	push(@obst_new_irop, "\tops.dump_node     = ${dump_func};\n");
 
 	if (defined($cmp_attr_func)) {
 		push(@obst_new_irop, "\tops.node_cmp_attr = ${cmp_attr_func};\n");
 	}
 	my $copy_attr_func = $copy_attr{$attr_type};
 	if (!defined($copy_attr_func)) {
-		$copy_attr_func = $default_copy_attr;
+		if ($attr_type eq "") {
+			$copy_attr_func = "NULL";
+		} else {
+			$copy_attr_func = $default_copy_attr;
+		}
 	}
 	if (defined($copy_attr_func)) {
 		push(@obst_new_irop, "\tops.copy_attr = ${copy_attr_func};\n");

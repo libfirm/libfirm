@@ -205,12 +205,12 @@ ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
 
 int (is_ir_node)(const void *thing)
 {
-	return _is_ir_node(thing);
+	return is_ir_node_(thing);
 }
 
 int (get_irn_arity)(const ir_node *node)
 {
-	return _get_irn_arity(node);
+	return get_irn_arity_(node);
 }
 
 /* Returns the array with ins. This array is shifted with respect to the
@@ -253,13 +253,12 @@ void set_irn_in(ir_node *node, int arity, ir_node **in)
 	memcpy((*pOld_in) + 1, in, sizeof(ir_node *) * arity);
 
 	/* update irg flags */
-	set_irg_outs_inconsistent(irg);
-	set_irg_loopinfo_inconsistent(irg);
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS | IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
 }
 
 ir_node *(get_irn_n)(const ir_node *node, int n)
 {
-	return _get_irn_n(node, n);
+	return get_irn_n_(node, n);
 }
 
 void set_irn_n(ir_node *node, int n, ir_node *in)
@@ -279,8 +278,7 @@ void set_irn_n(ir_node *node, int n, ir_node *in)
 	node->in[n + 1] = in;
 
 	/* update irg flags */
-	set_irg_outs_inconsistent(irg);
-	set_irg_loopinfo_inconsistent(irg);
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS | IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
 }
 
 int add_irn_n(ir_node *node, ir_node *in)
@@ -310,17 +308,17 @@ void del_Sync_n(ir_node *n, int i)
 
 int (get_irn_deps)(const ir_node *node)
 {
-	return _get_irn_deps(node);
+	return get_irn_deps_(node);
 }
 
 ir_node *(get_irn_dep)(const ir_node *node, int pos)
 {
-	return _get_irn_dep(node, pos);
+	return get_irn_dep_(node, pos);
 }
 
 void (set_irn_dep)(ir_node *node, int pos, ir_node *dep)
 {
-	_set_irn_dep(node, pos, dep);
+	set_irn_dep_(node, pos, dep);
 }
 
 int add_irn_dep(ir_node *node, ir_node *dep)
@@ -369,28 +367,28 @@ void add_irn_deps(ir_node *tgt, ir_node *src)
 
 ir_mode *(get_irn_mode)(const ir_node *node)
 {
-	return _get_irn_mode(node);
+	return get_irn_mode_(node);
 }
 
 void (set_irn_mode)(ir_node *node, ir_mode *mode)
 {
-	_set_irn_mode(node, mode);
+	set_irn_mode_(node, mode);
 }
 
 ir_op *(get_irn_op)(const ir_node *node)
 {
-	return _get_irn_op(node);
+	return get_irn_op_(node);
 }
 
 /* should be private to the library: */
 void (set_irn_op)(ir_node *node, ir_op *op)
 {
-	_set_irn_op(node, op);
+	set_irn_op_(node, op);
 }
 
 unsigned (get_irn_opcode)(const ir_node *node)
 {
-	return _get_irn_opcode(node);
+	return get_irn_opcode_(node);
 }
 
 const char *get_irn_opname(const ir_node *node)
@@ -408,47 +406,47 @@ ident *get_irn_opident(const ir_node *node)
 
 ir_visited_t (get_irn_visited)(const ir_node *node)
 {
-	return _get_irn_visited(node);
+	return get_irn_visited_(node);
 }
 
 void (set_irn_visited)(ir_node *node, ir_visited_t visited)
 {
-	_set_irn_visited(node, visited);
+	set_irn_visited_(node, visited);
 }
 
 void (mark_irn_visited)(ir_node *node)
 {
-	_mark_irn_visited(node);
+	mark_irn_visited_(node);
 }
 
 int (irn_visited)(const ir_node *node)
 {
-	return _irn_visited(node);
+	return irn_visited_(node);
 }
 
 int (irn_visited_else_mark)(ir_node *node)
 {
-	return _irn_visited_else_mark(node);
+	return irn_visited_else_mark_(node);
 }
 
 void (set_irn_link)(ir_node *node, void *link)
 {
-	_set_irn_link(node, link);
+	set_irn_link_(node, link);
 }
 
 void *(get_irn_link)(const ir_node *node)
 {
-	return _get_irn_link(node);
+	return get_irn_link_(node);
 }
 
 op_pin_state (get_irn_pinned)(const ir_node *node)
 {
-	return _get_irn_pinned(node);
+	return get_irn_pinned_(node);
 }
 
 op_pin_state (is_irn_pinned_in_irg) (const ir_node *node)
 {
-	return _is_irn_pinned_in_irg(node);
+	return is_irn_pinned_in_irg_(node);
 }
 
 void set_irn_pinned(ir_node *node, op_pin_state state)
@@ -473,19 +471,19 @@ long get_irn_node_nr(const ir_node *node)
 void *(get_irn_generic_attr)(ir_node *node)
 {
 	assert(is_ir_node(node));
-	return _get_irn_generic_attr(node);
+	return get_irn_generic_attr_(node);
 }
 
 const void *(get_irn_generic_attr_const)(const ir_node *node)
 {
 	assert(is_ir_node(node));
-	return _get_irn_generic_attr_const(node);
+	return get_irn_generic_attr_const_(node);
 }
 
 unsigned (get_irn_idx)(const ir_node *node)
 {
 	assert(is_ir_node(node));
-	return _get_irn_idx(node);
+	return get_irn_idx_(node);
 }
 
 int get_irn_pred_pos(ir_node *node, ir_node *arg)
@@ -502,7 +500,7 @@ int get_irn_pred_pos(ir_node *node, ir_node *arg)
 
 ir_node *(get_nodes_block)(const ir_node *node)
 {
-	return _get_nodes_block(node);
+	return get_nodes_block_(node);
 }
 
 void set_nodes_block(ir_node *node, ir_node *block)
@@ -532,12 +530,12 @@ ir_node **get_Block_cfgpred_arr(ir_node *node)
 
 int (get_Block_n_cfgpreds)(const ir_node *node)
 {
-	return _get_Block_n_cfgpreds(node);
+	return get_Block_n_cfgpreds_(node);
 }
 
 ir_node *(get_Block_cfgpred)(const ir_node *node, int pos)
 {
-	return _get_Block_cfgpred(node, pos);
+	return get_Block_cfgpred_(node, pos);
 }
 
 void set_Block_cfgpred(ir_node *node, int pos, ir_node *pred)
@@ -559,7 +557,7 @@ int get_Block_cfgpred_pos(const ir_node *block, const ir_node *pred)
 
 ir_node *(get_Block_cfgpred_block)(const ir_node *node, int pos)
 {
-	return _get_Block_cfgpred_block(node, pos);
+	return get_Block_cfgpred_block_(node, pos);
 }
 
 int get_Block_matured(const ir_node *node)
@@ -576,22 +574,22 @@ void set_Block_matured(ir_node *node, int matured)
 
 ir_visited_t (get_Block_block_visited)(const ir_node *node)
 {
-	return _get_Block_block_visited(node);
+	return get_Block_block_visited_(node);
 }
 
 void (set_Block_block_visited)(ir_node *node, ir_visited_t visit)
 {
-	_set_Block_block_visited(node, visit);
+	set_Block_block_visited_(node, visit);
 }
 
 void (mark_Block_block_visited)(ir_node *node)
 {
-	_mark_Block_block_visited(node);
+	mark_Block_block_visited_(node);
 }
 
 int (Block_block_visited)(const ir_node *node)
 {
-	return _Block_block_visited(node);
+	return Block_block_visited_(node);
 }
 
 ir_extblk *get_Block_extbb(const ir_node *block)
@@ -613,7 +611,7 @@ void set_Block_extbb(ir_node *block, ir_extblk *extblk)
 /* returns the graph of a Block. */
 ir_graph *(get_Block_irg)(const ir_node *block)
 {
-	return _get_Block_irg(block);
+	return get_Block_irg_(block);
 }
 
 ir_entity *create_Block_entity(ir_node *block)
@@ -659,29 +657,29 @@ int has_Block_entity(const ir_node *block)
 
 ir_node *(get_Block_phis)(const ir_node *block)
 {
-	return _get_Block_phis(block);
+	return get_Block_phis_(block);
 }
 
 void (set_Block_phis)(ir_node *block, ir_node *phi)
 {
-	_set_Block_phis(block, phi);
+	set_Block_phis_(block, phi);
 }
 
 void (add_Block_phi)(ir_node *block, ir_node *phi)
 {
-	_add_Block_phi(block, phi);
+	add_Block_phi_(block, phi);
 }
 
 /* Get the Block mark (single bit). */
 unsigned (get_Block_mark)(const ir_node *block)
 {
-	return _get_Block_mark(block);
+	return get_Block_mark_(block);
 }
 
 /* Set the Block mark (single bit). */
 void (set_Block_mark)(ir_node *block, unsigned mark)
 {
-	_set_Block_mark(block, mark);
+	set_Block_mark_(block, mark);
 }
 
 int get_End_n_keepalives(const ir_node *end)
@@ -727,7 +725,7 @@ void set_End_keepalives(ir_node *end, int n, ir_node *in[])
 	}
 
 	/* update irg flags */
-	set_irg_outs_inconsistent(irg);
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS);
 }
 
 /* Set new keep-alives from old keep-alives, skipping irn */
@@ -765,7 +763,7 @@ found:
 	ARR_RESIZE(ir_node *, end->in, (n - 1) + 1 + END_KEEPALIVE_OFFSET);
 
 	/* update irg flags */
-	set_irg_outs_inconsistent(irg);
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS);
 }
 
 /* remove Bads, NoMems and doublets from the keep-alive set */
@@ -808,7 +806,7 @@ void remove_End_Bads_and_doublets(ir_node *end)
 	pset_new_destroy(&keeps);
 
 	if (changed) {
-		set_irg_outs_inconsistent(irg);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS);
 	}
 }
 
@@ -852,17 +850,17 @@ void set_Return_res(ir_node *node, int pos, ir_node *res)
 
 int (is_Const_null)(const ir_node *node)
 {
-	return _is_Const_null(node);
+	return is_Const_null_(node);
 }
 
 int (is_Const_one)(const ir_node *node)
 {
-	return _is_Const_one(node);
+	return is_Const_one_(node);
 }
 
 int (is_Const_all_one)(const ir_node *node)
 {
-	return _is_Const_all_one(node);
+	return is_Const_all_one_(node);
 }
 
 
@@ -1119,7 +1117,7 @@ int is_Cast_downcast(ir_node *node)
 
 int (is_unop)(const ir_node *node)
 {
-	return _is_unop(node);
+	return is_unop_(node);
 }
 
 ir_node *get_unop_op(const ir_node *node)
@@ -1141,7 +1139,7 @@ void set_unop_op(ir_node *node, ir_node *op)
 
 int (is_binop)(const ir_node *node)
 {
-	return _is_binop(node);
+	return is_binop_(node);
 }
 
 ir_node *get_binop_left(const ir_node *node)
@@ -1203,12 +1201,12 @@ void set_Phi_pred(ir_node *node, int pos, ir_node *pred)
 
 ir_node *(get_Phi_next)(const ir_node *phi)
 {
-	return _get_Phi_next(phi);
+	return get_Phi_next_(phi);
 }
 
 void (set_Phi_next)(ir_node *phi, ir_node *next)
 {
-	_set_Phi_next(phi, next);
+	set_Phi_next_(phi, next);
 }
 
 int is_memop(const ir_node *node)
@@ -1286,7 +1284,7 @@ void add_Sync_pred(ir_node *node, ir_node *pred)
 
 int (is_arg_Proj)(const ir_node *node)
 {
-	return _is_arg_Proj(node);
+	return is_arg_Proj_(node);
 }
 
 int is_x_except_Proj(const ir_node *node)
@@ -1370,7 +1368,7 @@ int get_ASM_n_clobbers(const ir_node *node)
 /* returns the graph of a node */
 ir_graph *(get_irn_irg)(const ir_node *node)
 {
-	return _get_irn_irg(node);
+	return get_irn_irg_(node);
 }
 
 
@@ -1509,13 +1507,13 @@ ir_node *skip_Id(ir_node *node)
 
 int (is_strictConv)(const ir_node *node)
 {
-	return _is_strictConv(node);
+	return is_strictConv_(node);
 }
 
 /* Returns true if node is a SymConst node with kind symconst_addr_ent. */
 int (is_SymConst_addr_ent)(const ir_node *node)
 {
-	return _is_SymConst_addr_ent(node);
+	return is_SymConst_addr_ent_(node);
 }
 
 /* Returns true if the operation manipulates control flow. */
@@ -1549,31 +1547,31 @@ ir_node *get_fragile_op_mem(ir_node *node)
 /* Returns true if the operation is a forking control flow operation. */
 int (is_irn_forking)(const ir_node *node)
 {
-	return _is_irn_forking(node);
+	return is_irn_forking_(node);
 }
 
 void (copy_node_attr)(ir_graph *irg, const ir_node *old_node, ir_node *new_node)
 {
-	_copy_node_attr(irg, old_node, new_node);
+	copy_node_attr_(irg, old_node, new_node);
 }
 
 /* Return the type attribute of a node n (SymConst, Call, Alloc, Free,
    Cast) or NULL.*/
 ir_type *(get_irn_type_attr)(ir_node *node)
 {
-	return _get_irn_type_attr(node);
+	return get_irn_type_attr_(node);
 }
 
 /* Return the entity attribute of a node n (SymConst, Sel) or NULL. */
 ir_entity *(get_irn_entity_attr)(ir_node *node)
 {
-	return _get_irn_entity_attr(node);
+	return get_irn_entity_attr_(node);
 }
 
 /* Returns non-zero for constant-like nodes. */
 int (is_irn_constlike)(const ir_node *node)
 {
-	return _is_irn_constlike(node);
+	return is_irn_constlike_(node);
 }
 
 /*
@@ -1582,7 +1580,7 @@ int (is_irn_constlike)(const ir_node *node)
  */
 int (is_irn_keep)(const ir_node *node)
 {
-	return _is_irn_keep(node);
+	return is_irn_keep_(node);
 }
 
 /*
@@ -1590,31 +1588,31 @@ int (is_irn_keep)(const ir_node *node)
  */
 int (is_irn_start_block_placed)(const ir_node *node)
 {
-	return _is_irn_start_block_placed(node);
+	return is_irn_start_block_placed_(node);
 }
 
 /* Returns non-zero for nodes that are machine operations. */
 int (is_irn_machine_op)(const ir_node *node)
 {
-	return _is_irn_machine_op(node);
+	return is_irn_machine_op_(node);
 }
 
 /* Returns non-zero for nodes that are machine operands. */
 int (is_irn_machine_operand)(const ir_node *node)
 {
-	return _is_irn_machine_operand(node);
+	return is_irn_machine_operand_(node);
 }
 
 /* Returns non-zero for nodes that have the n'th user machine flag set. */
 int (is_irn_machine_user)(const ir_node *node, unsigned n)
 {
-	return _is_irn_machine_user(node, n);
+	return is_irn_machine_user_(node, n);
 }
 
 /* Returns non-zero for nodes that are CSE neutral to its users. */
 int (is_irn_cse_neutral)(const ir_node *node)
 {
-	return _is_irn_cse_neutral(node);
+	return is_irn_cse_neutral_(node);
 }
 
 /* Gets the string representation of the jump prediction .*/
@@ -1698,7 +1696,7 @@ ir_op_ops *firm_set_default_get_entity_attr(unsigned code, ir_op_ops *ops)
 /* Sets the debug information of a node. */
 void (set_irn_dbg_info)(ir_node *n, dbg_info *db)
 {
-	_set_irn_dbg_info(n, db);
+	set_irn_dbg_info_(n, db);
 }
 
 /**
@@ -1708,19 +1706,59 @@ void (set_irn_dbg_info)(ir_node *n, dbg_info *db)
  */
 dbg_info *(get_irn_dbg_info)(const ir_node *n)
 {
-	return _get_irn_dbg_info(n);
+	return get_irn_dbg_info_(n);
 }
 
-/* checks whether a node represents a global address */
-int is_Global(const ir_node *node)
+ir_switch_table *ir_new_switch_table(ir_graph *irg, size_t n_entries)
 {
-	return is_SymConst_addr_ent(node);
+	struct obstack *obst = get_irg_obstack(irg);
+	ir_switch_table *res = OALLOCFZ(obst, ir_switch_table, entries, n_entries);
+	res->n_entries = n_entries;
+	return res;
 }
 
-/* returns the entity of a global address */
-ir_entity *get_Global_entity(const ir_node *node)
+void ir_switch_table_set(ir_switch_table *table, size_t n,
+                         ir_tarval *min, ir_tarval *max, long pn)
 {
-	return get_SymConst_entity(node);
+	ir_switch_table_entry *entry = ir_switch_table_get_entry(table, n);
+	entry->min = min;
+	entry->max = max;
+	entry->pn  = pn;
+}
+
+size_t (ir_switch_table_get_n_entries)(const ir_switch_table *table)
+{
+	return ir_switch_table_get_n_entries_(table);
+}
+
+ir_tarval *ir_switch_table_get_max(const ir_switch_table *table, size_t e)
+{
+	return ir_switch_table_get_entry_const(table, e)->max;
+}
+
+ir_tarval *ir_switch_table_get_min(const ir_switch_table *table, size_t e)
+{
+	return ir_switch_table_get_entry_const(table, e)->min;
+}
+
+long ir_switch_table_get_pn(const ir_switch_table *table, size_t e)
+{
+	return ir_switch_table_get_entry_const(table, e)->pn;
+}
+
+ir_switch_table *ir_switch_table_duplicate(ir_graph *irg,
+                                           const ir_switch_table *table)
+{
+	size_t n_entries = ir_switch_table_get_n_entries(table);
+	size_t e;
+	ir_switch_table *res = ir_new_switch_table(irg, n_entries);
+	for (e = 0; e < n_entries; ++e) {
+		const ir_switch_table_entry *entry
+			= ir_switch_table_get_entry_const(table, e);
+		ir_switch_table_entry *new_entry = ir_switch_table_get_entry(res, e);
+		*new_entry = *entry;
+	}
+	return res;
 }
 
 /*
@@ -1749,7 +1787,7 @@ unsigned firm_default_hash(const ir_node *node)
 	h = 9*h + HASH_PTR(get_irn_op(node));
 
 	return h;
-}  /* firm_default_hash */
+}
 
 /* include generated code */
 #include "gen_irnode.c.inl"

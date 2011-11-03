@@ -9,7 +9,7 @@ $arch = "TEMPLATE";
 # Modes
 #
 $mode_gp  = "mode_Iu"; # mode used by general purpose registers
-$mode_fp  = "mode_E";  # mode used by floatingpoint registers
+$mode_fp  = "mode_F";  # mode used by floatingpoint registers
 
 # The node description is done as a perl hash initializer with the
 # following structure:

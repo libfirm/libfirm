@@ -27,8 +27,8 @@
 #define FIRM_BE_IA32_IA32_NODES_ATTR_H
 
 #include "firm_types.h"
-#include "../bearch.h"
-#include "../bemachine.h"
+#include "bearch.h"
+#include "bemachine.h"
 #include "irnode_t.h"
 
 /** ia32 condition codes (the numbers correspond to the real encoding order) */
@@ -235,9 +235,9 @@ struct ia32_condcode_attr_t {
  */
 typedef struct ia32_switch_attr_t ia32_switch_attr_t;
 struct ia32_switch_attr_t {
-	ia32_attr_t  attr;        /**< generic attribute */
-	long         default_pn;
-	ir_entity   *jump_table;
+	ia32_attr_t            attr;        /**< generic attribute */
+	const ir_switch_table *table;
+	ir_entity             *jump_table;
 };
 
 /**

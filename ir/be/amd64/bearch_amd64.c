@@ -36,18 +36,18 @@
 #include "debug.h"
 
 #include "be.h"
-#include "../bearch.h"
-#include "../benode.h"
-#include "../belower.h"
-#include "../besched.h"
-#include "../beabi.h"
-#include "../bemodule.h"
-#include "../begnuas.h"
-#include "../belistsched.h"
-#include "../beflags.h"
-#include "../bespillslots.h"
-#include "../bespillutil.h"
-#include "../bestack.h"
+#include "bearch.h"
+#include "benode.h"
+#include "belower.h"
+#include "besched.h"
+#include "beabi.h"
+#include "bemodule.h"
+#include "begnuas.h"
+#include "belistsched.h"
+#include "beflags.h"
+#include "bespillslots.h"
+#include "bespillutil.h"
+#include "bestack.h"
 
 #include "bearch_amd64_t.h"
 
@@ -306,15 +306,16 @@ static amd64_isa_t amd64_isa_template = {
 /**
  * Initializes the backend ISA
  */
-static arch_env_t *amd64_init(FILE *outfile)
+static arch_env_t *amd64_init(const be_main_env_t *env)
 {
 	amd64_isa_t *isa = XMALLOC(amd64_isa_t);
 	*isa = amd64_isa_template;
 
-	be_emit_init(outfile);
-
 	amd64_register_init();
 	amd64_create_opcodes(&amd64_irn_ops);
+
+	be_emit_init(env->file_handle);
+	be_gas_begin_compilation_unit(env);
 
 	return &isa->base;
 }
@@ -329,7 +330,7 @@ static void amd64_done(void *self)
 	amd64_isa_t *isa = (amd64_isa_t*)self;
 
 	/* emit now all global declarations */
-	be_gas_emit_decls(isa->base.main_env);
+	be_gas_end_compilation_unit(isa->base.main_env);
 
 	be_emit_exit();
 	free(self);
@@ -481,7 +482,7 @@ static void amd64_lower_for_target(void)
 		 * CopyBs into memcpy calls, because we cannot handle CopyB nodes
 		 * during code generation yet.
 		 * TODO:  Adapt this once custom CopyB handling is implemented. */
-		lower_CopyB(irg, 64, 65);
+		lower_CopyB(irg, 64, 65, true);
 	}
 }
 

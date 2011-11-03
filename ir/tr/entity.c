@@ -32,7 +32,7 @@
 #include "xmalloc.h"
 #include "entity_t.h"
 #include "array.h"
-#include "irtools.h"
+#include "util.h"
 #include "irhooks.h"
 #include "irprintf.h"
 

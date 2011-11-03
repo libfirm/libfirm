@@ -67,10 +67,10 @@ static void call_mapper(ir_node *node, void *env)
 		ir_entity *ent;
 
 		symconst = get_Call_ptr(node);
-		if (! is_Global(symconst))
+		if (! is_SymConst_addr_ent(symconst))
 			return;
 
-		ent = get_Global_entity(symconst);
+		ent = get_SymConst_entity(symconst);
 		p   = pmap_find(wenv->c_map, ent);
 
 		if (p) {
@@ -142,11 +142,8 @@ size_t lower_intrinsics(i_record *list, size_t length, int part_block_used)
 			set_irg_callee_info_state(irg, irg_callee_info_inconsistent);
 
 			/* Exception control flow might have changed / new block might have added. */
-			set_irg_doms_inconsistent(irg);
-			set_irg_extblk_inconsistent(irg);
-
-			/* Calls might be removed/added. */
-			set_trouts_inconsistent();
+			clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
+			                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
 
 			/* verify here */
 			irg_verify(irg, VERIFY_NORMAL);
@@ -278,7 +275,7 @@ int i_mapper_bswap(ir_node *call, void *ctx)
 
 	irn = new_rd_Builtin(dbg, block, get_irg_no_mem(current_ir_graph), 1, &op, ir_bk_bswap, tp);
 	set_irn_pinned(irn, op_pin_state_floats);
-	irn = new_r_Proj(irn, get_irn_mode(op), pn_Builtin_1_result);
+	irn = new_r_Proj(irn, get_irn_mode(op), pn_Builtin_max+1);
 	replace_call(irn, call, mem, NULL, NULL);
 	return 1;
 }  /* i_mapper_bswap */
@@ -608,8 +605,8 @@ int i_mapper_tanh(ir_node *call, void *ctx)
  */
 static ir_entity *get_const_entity(ir_node *ptr)
 {
-	if (is_Global(ptr)) {
-		ir_entity *ent = get_Global_entity(ptr);
+	if (is_SymConst_addr_ent(ptr)) {
+		ir_entity *ent = get_SymConst_entity(ptr);
 
 		if (get_entity_linkage(ent) & IR_LINKAGE_CONSTANT) {
 			/* a constant entity */

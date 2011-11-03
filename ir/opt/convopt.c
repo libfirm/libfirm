@@ -54,8 +54,9 @@
 #include "irpass_t.h"
 #include "tv.h"
 #include "vrp.h"
+#include "opt_manage.h"
 
-DEBUG_ONLY(static firm_dbg_module_t *dbg);
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 static inline int imin(int a, int b) { return a < b ? a : b; }
 
@@ -298,37 +299,37 @@ static void conv_opt_walker(ir_node *node, void *data)
 
 	transformed = conv_transform(pred, mode);
 	if (node != transformed) {
-		vrp_attr *vrp;
-
 		exchange(node, transformed);
-		vrp = vrp_get_info(transformed);
-		if (vrp && vrp->valid) {
-			vrp->range_type = VRP_VARYING;
-			vrp->bits_set = tarval_convert_to(vrp->bits_set, mode);
-			vrp->bits_not_set = tarval_convert_to(vrp->bits_not_set, mode);
-		}
-
 		*changed = true;
 	}
 }
 
-int conv_opt(ir_graph *irg)
+static ir_graph_state_t do_deconv(ir_graph *irg)
 {
 	bool changed;
-	bool invalidate = false;
 	FIRM_DBG_REGISTER(dbg, "firm.opt.conv");
 
 	DB((dbg, LEVEL_1, "===> Performing conversion optimization on %+F\n", irg));
 
-	edges_assure(irg);
 	do {
 		changed = false;
 		irg_walk_graph(irg, NULL, conv_opt_walker, &changed);
 		local_optimize_graph(irg);
-		invalidate |= changed;
 	} while (changed);
 
-	return invalidate;
+	return 0;
+}
+
+static optdesc_t opt_deconv = {
+	"deconv",
+	IR_GRAPH_STATE_CONSISTENT_OUT_EDGES,
+	do_deconv,
+};
+
+int conv_opt(ir_graph *irg)
+{
+	perform_irg_optimization(irg, &opt_deconv);
+	return 1;
 }
 
 /* Creates an ir_graph pass for conv_opt. */

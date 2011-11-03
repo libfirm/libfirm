@@ -506,7 +506,6 @@ ir_node *new_rd_immBlock(dbg_info *dbgi, ir_graph *irg)
 	res->attr.block.in_cg       = NULL;
 	res->attr.block.cg_backedge = NULL;
 	res->attr.block.extblk      = NULL;
-	res->attr.block.region      = NULL;
 	res->attr.block.entity      = NULL;
 
 	set_Block_block_visited(res, 0);
@@ -779,6 +778,7 @@ ir_node *new_r_Anchor(ir_graph *irg)
 {
 	ir_node *in[anchor_last];
 	ir_node *res;
+	size_t   i;
 	memset(in, 0, sizeof(in));
 	res = new_ir_node(NULL, irg, NULL, op_Anchor, mode_ANY, anchor_last, in);
 	res->attr.anchor.irg.irg = irg;
@@ -786,6 +786,11 @@ ir_node *new_r_Anchor(ir_graph *irg)
 	/* hack to get get_irn_irg working: set block to ourself and allow
 	 * get_Block_irg for anchor */
 	res->in[0] = res;
+
+	/* we can't have NULL inputs so reference ourselfes for now */
+	for (i = 0; i < (size_t)anchor_last; ++i) {
+		set_irn_n(res, i, res);
+	}
 
 	return res;
 }

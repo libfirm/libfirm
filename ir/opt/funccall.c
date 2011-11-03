@@ -89,8 +89,8 @@ static void collect_const_and_pure_calls(ir_node *node, void *env)
 		/* set the link to NULL for all non-const/pure calls */
 		set_irn_link(call, NULL);
 		ptr = get_Call_ptr(call);
-		if (is_Global(ptr)) {
-			ent = get_Global_entity(ptr);
+		if (is_SymConst_addr_ent(ptr)) {
+			ent = get_SymConst_entity(ptr);
 
 			prop = get_entity_additional_properties(ent);
 			if ((prop & (mtp_property_const|mtp_property_pure)) == 0)
@@ -238,12 +238,10 @@ static void fix_const_call_lists(ir_graph *irg, env_t *ctx)
 		}
 	}
 
-	/* changes were done ... */
-	set_irg_loopinfo_state(irg, loopinfo_cf_inconsistent);
-
 	if (exc_changed) {
 		/* ... including exception edges */
-		set_irg_doms_inconsistent(irg);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
+		                   | IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
 	}
 }  /* fix_const_call_list */
 
@@ -264,8 +262,8 @@ static void collect_nothrow_calls(ir_node *node, void *env)
 		/* set the link to NULL for all non-const/pure calls */
 		set_irn_link(call, NULL);
 		ptr = get_Call_ptr(call);
-		if (is_Global(ptr)) {
-			ent = get_Global_entity(ptr);
+		if (is_SymConst_addr_ent(ptr)) {
+			ent = get_SymConst_entity(ptr);
 
 			prop = get_entity_additional_properties(ent);
 			if ((prop & mtp_property_nothrow) == 0)
@@ -373,11 +371,10 @@ static void fix_nothrow_call_list(ir_graph *irg, ir_node *call_list, ir_node *pr
 	}
 
 	/* changes were done ... */
-	set_irg_loopinfo_state(irg, loopinfo_cf_inconsistent);
-
 	if (exc_changed) {
 		/* ... including exception edges */
-		set_irg_doms_inconsistent(irg);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
+		                   | IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
 	}
 }  /* fix_nothrow_call_list */
 
@@ -728,8 +725,8 @@ static int is_stored(const ir_node *n)
 			break;
 		case iro_Call:
 			ptr = get_Call_ptr(succ);
-			if (is_Global(ptr)) {
-				ir_entity *ent = get_Global_entity(ptr);
+			if (is_SymConst_addr_ent(ptr)) {
+				ir_entity *ent = get_SymConst_entity(ptr);
 				size_t    i;
 
 				/* we know the called entity */
@@ -841,9 +838,9 @@ static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, int top)
 					} else if (is_Call(res)) {
 						ir_node *ptr = get_Call_ptr(res);
 
-						if (is_Global(ptr)) {
+						if (is_SymConst_addr_ent(ptr)) {
 							/* a direct call */
-							ir_entity *ent    = get_Global_entity(ptr);
+							ir_entity *ent    = get_SymConst_entity(ptr);
 							ir_graph  *callee = get_entity_irg(ent);
 
 							if (callee == irg) {
@@ -897,9 +894,9 @@ static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, int top)
 			if (is_Call(pred)) {
 				ir_node *ptr = get_Call_ptr(pred);
 
-				if (is_Global(ptr)) {
+				if (is_SymConst_addr_ent(ptr)) {
 					/* a direct call */
-					ir_entity *ent    = get_Global_entity(ptr);
+					ir_entity *ent    = get_SymConst_entity(ptr);
 					ir_graph  *callee = get_entity_irg(ent);
 
 					if (callee == irg) {
@@ -985,7 +982,7 @@ static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, int top)
 static void check_for_possible_endless_loops(ir_graph *irg)
 {
 	ir_loop *root_loop;
-	assure_cf_loop(irg);
+	assure_loopinfo(irg);
 
 	root_loop = get_irg_loop(irg);
 	if (root_loop->flags & loop_outer_loop)

@@ -48,9 +48,10 @@
  *                            that it is still considered 'small'.
  * @param min_large_size      The minimum number of bytes for a CopyB node so
  *                            that it is regarded as 'large'.
+ * @param allow_misalignments Backend can handle misaligned loads and stores.
  */
 FIRM_API void lower_CopyB(ir_graph *irg, unsigned max_small_size,
-                          unsigned min_large_size);
+                          unsigned min_large_size, int allow_misalignments);
 
 /**
  * Lowers all Switches (Cond nodes with non-boolean mode) depending on spare_size.
@@ -112,48 +113,6 @@ FIRM_API void lower_const_code(void);
  * @return  the newly created ir_prog pass
  */
 FIRM_API ir_prog_pass_t *lower_const_code_pass(const char *name);
-
-/**
- * Function which creates a "set" instraction. A "set" instruction takes a
- * condition value (a value with mode_b) as input and produces a value in a
- * general purpose integer mode.
- * Most architectures have special intrinsics for this. But if all else fails
- * you can just produces the an if-like construct.
- */
-typedef ir_node* (*create_set_func)(ir_node *cond);
-
-/**
- * implementation of create_set_func which produces a Mux node with 0/1 input
- */
-FIRM_API ir_node *ir_create_mux_set(ir_node *cond, ir_mode *dest_mode);
-
-/**
- * implementation of create_set_func which produces a cond with control
- * flow
- */
-FIRM_API ir_node *ir_create_cond_set(ir_node *cond, ir_mode *dest_mode);
-
-typedef struct lower_mode_b_config_t {
-	/* mode that is used to transport 0/1 values */
-	ir_mode *lowered_mode;
-	/* callback for creating set-like instructions */
-	create_set_func create_set;
-	/* whether direct Cond(Cmp) should also be lowered */
-	int lower_direct_cmp;
-} lower_mode_b_config_t;
-
-/**
- * Lowers mode_b operations to integer arithmetic. After the lowering the only
- * operations with mode_b are the Projs of Cmps; the only nodes with mode_b
- * inputs are Cond and Psi nodes.
- *
- * Example: Psi(a < 0, 1, 0) => a >> 31
- *
- * @param irg      the firm graph to lower
- * @param config   configuration for mode_b lowerer
- */
-FIRM_API void ir_lower_mode_b(ir_graph *irg,
-                              const lower_mode_b_config_t *config);
 
 /**
  * Used as callback, whenever a lowerable mux is found. The return value

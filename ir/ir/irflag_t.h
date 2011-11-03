@@ -66,7 +66,7 @@ void firm_init_flags(void);
 
 /* generate the getter functions for external access */
 #define E_FLAG(name, value, def)                    \
-static inline int _get_opt_##name(void) {           \
+static inline int get_opt_##name##_(void) {         \
   return libFIRM_opt & irf_##name;                  \
 }
 
@@ -92,7 +92,7 @@ static inline void set_##name##_running(int flag) {\
 #undef E_FLAG
 #undef R_FLAG
 
-static inline int _get_optimize(void)
+static inline int get_optimize_(void)
 {
 	return get_opt_optimize();
 }
@@ -102,9 +102,9 @@ static inline firm_verification_t get_node_verification_mode(void)
 	return opt_do_node_verification;
 }
 
-#define get_optimize()                           _get_optimize()
-#define get_opt_cse()                            _get_opt_cse()
-#define get_opt_dyn_meth_dispatch()              _get_opt_dyn_meth_dispatch()
-#define get_opt_suppress_downcast_optimization() _get_opt_suppress_downcast_optimization()
+#define get_optimize()                           get_optimize_()
+#define get_opt_cse()                            get_opt_cse_()
+#define get_opt_dyn_meth_dispatch()              get_opt_dyn_meth_dispatch_()
+#define get_opt_suppress_downcast_optimization() get_opt_suppress_downcast_optimization_()
 
 #endif

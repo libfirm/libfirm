@@ -28,11 +28,10 @@
 #include "debug.h"
 #include "amd64_nodes_attr.h"
 #include "be.h"
-#include "../beemitter.h"
+#include "beemitter.h"
 #include "set.h"
 
 typedef struct amd64_isa_t            amd64_isa_t;
-typedef struct amd64_transform_env_t  amd64_transform_env_t;
 
 typedef struct amd64_irg_data_t {
 	ir_graph    *irg;            /**< current irg */
@@ -43,18 +42,6 @@ typedef struct amd64_irg_data_t {
 
 struct amd64_isa_t {
 	arch_env_t  base;      /**< must be derived from arch_isa */
-};
-
-/**
- * this is a struct to minimize the number of parameters
- * for transformation walker
- */
-struct amd64_transform_env_t {
-	dbg_info *dbg;      /**< The node debug info */
-	ir_graph *irg;      /**< The irg, the node should be created in */
-	ir_node  *block;    /**< The block, the node should belong to */
-	ir_node  *irn;      /**< The irn, to be transformed */
-	ir_mode  *mode;     /**< The mode of the irn */
 };
 
 static inline amd64_irg_data_t *amd64_get_irg_data(const ir_graph *irg)

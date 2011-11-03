@@ -609,7 +609,9 @@ static ir_node *find_tail(ir_node *n)
 						res_index = largest_dfn_pred (m);
 					break;
 				}
-				if (m == n) { break; }  /* It's not an unreachable loop, either. */
+				/* It's not an unreachable loop, either. */
+				if (m == n)
+					break;
 			}
 			//assert(0 && "no head found on stack");
 		}
@@ -776,7 +778,7 @@ int construct_backedges(ir_graph *irg)
 	assert(head_rem == current_loop);
 	mature_loops(current_loop, irg->obst);
 	set_irg_loop(irg, current_loop);
-	set_irg_loopinfo_state(irg, loopinfo_consistent);
+	set_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
 	assert(get_irg_loop(irg)->kind == k_ir_loop);
 	current_ir_graph = rem;
 	return max_loop_depth;
@@ -820,7 +822,7 @@ void free_loop_information(ir_graph *irg)
 	*/
 	irg_walk_graph(irg, loop_reset_node, NULL, NULL);
 	set_irg_loop(irg, NULL);
-	set_irg_loopinfo_state(current_ir_graph, loopinfo_none);
+	clear_irg_state(current_ir_graph, IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
 	/* We cannot free the loop nodes, they are on the obstack. */
 }
 

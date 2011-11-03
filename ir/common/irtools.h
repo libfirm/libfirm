@@ -27,39 +27,13 @@
 #define FIRM_COMMON_IRTOOLS_H
 
 #include "firm_types.h"
-
 #include "lc_opts.h"
-lc_opt_entry_t *firm_opt_get_root(void);
-
 #include "pset.h"
 
-#undef MIN
-#undef MAX
-#define MAX(x, y) ((x) > (y) ? (x) : (y))
-#define MIN(x, y) ((x) < (y) ? (x) : (y))
-
-/* calculate the address of the one past last element of an array whose size is
- * known statically */
-#define ENDOF(x) ((x) + sizeof(x) / sizeof(*(x)))
-
 /**
- * Three valued compare as demanded by e.g. qsort(3)
- * @param c A number.
- * @param d Another number.
- * @return 0 if c == d, -1 if c < d, 1 if c > d.
+ * Return root commandlineoptions for libfirm library
  */
-#define QSORT_CMP(c, d) (((c) > (d)) - ((c) < (d)))
-
-
-/**
- * convert an integer into pointer
- */
-#define INT_TO_PTR(v)   ((void *)((char *)0 + (v)))
-
-/**
- * convert a pointer into an integer
- */
-#define PTR_TO_INT(v)   (((char *)(v) - (char *)0))
+lc_opt_entry_t *firm_opt_get_root(void);
 
 /**
  * Dump a pset containing Firm objects.

@@ -91,26 +91,6 @@ void set_arm_CondJmp_relation(ir_node *node, ir_relation relation);
 ir_node *new_r_arm_StoreStackMInc(ir_graph *irg, ir_node *block, ir_node *mem, ir_node *sp,
 							      int n_regs, ir_node **regs, ir_mode *mode);
 
-/**
- * Returns the number of projs of a SwitchJmp.
- */
-int get_arm_SwitchJmp_n_projs(const ir_node *node);
-
-/**
- * Sets the number of projs of a SwitchJmp.
- */
-void set_arm_SwitchJmp_n_projs(ir_node *node, int n_projs);
-
-/**
- * Returns the default_proj_num.
- */
-long get_arm_SwitchJmp_default_proj_num(const ir_node *node);
-
-/**
- * Sets the default_proj_num.
- */
-void set_arm_SwitchJmp_default_proj_num(ir_node *node, long default_proj_num);
-
 /* Include the generated headers */
 #include "gen_arm_new_nodes.h"
 

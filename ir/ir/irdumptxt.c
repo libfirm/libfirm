@@ -33,18 +33,17 @@
 
 #include "irdump_t.h"
 #include "irgraph_t.h"
+#include "irnode_t.h"
 
 #include "irprog_t.h"
 #include "entity_t.h"
 #include "trouts.h"
 #include "irgwalk.h"
 #include "tv_t.h"
-#include "vrp.h"
 #include "irprintf.h"
 #include "error.h"
 
 #include "irdom.h"
-#include "field_temperature.h"
 
 static ir_dump_verbosity_t  verbosity = dump_verbosity_max;
 
@@ -63,7 +62,6 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 {
 	char     comma;
 	ir_graph *irg;
-	vrp_attr *vrp_info;
 
 	dump_node_opcode(F, n);
 	fprintf(F, " %ld\n", get_irn_node_nr(n));
@@ -104,8 +102,29 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 
 	fprintf(F, "  Private Attributes:\n");
 
-	if (is_Proj(n))
-		fprintf(F, "  proj nr: %ld\n", get_Proj_proj(n));
+	if (is_Proj(n)) {
+		ir_node *pred = get_Proj_pred(n);
+		long     pn   = get_Proj_proj(n);
+		fprintf(F, "  proj nr: %ld\n", pn);
+		if (is_Switch(pred)) {
+			const ir_switch_table *table = get_Switch_table(pred);
+			size_t n_entries = ir_switch_table_get_n_entries(table);
+			size_t i;
+			for (i = 0; i < n_entries; ++i) {
+				const ir_switch_table_entry *entry
+					= ir_switch_table_get_entry_const(table, i);
+				if (entry->pn == pn && entry->min != NULL && entry->max != NULL) {
+					ir_tarval *min = entry->min;
+					ir_tarval *max = entry->max;
+					if (min != max) {
+						ir_fprintf(F, "  switch case %+F .. %+F\n", min, max);
+					} else {
+						ir_fprintf(F, "  switch case %+F\n", min);
+					}
+				}
+			}
+		}
+	}
 
 	if (is_fragile_op(n)) {
 		fprintf(F, "  pinned state: %s\n", get_op_pin_state_name(get_irn_pinned(n)));
@@ -123,7 +142,7 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 	}
 
 	/* Loop node.   Someone else please tell me what's wrong ... */
-	if (get_irg_loopinfo_state(irg) & loopinfo_valid) {
+	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO)) {
 		ir_loop *loop = get_irn_loop(n);
 		if (loop != NULL) {
 			fprintf(F, "  in loop %ld with depth %u\n",
@@ -138,20 +157,16 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 			fprintf(F, "  Label: %lu\n", get_entity_label(get_Block_entity(n)));
 		fprintf(F, "  block visited: %lu\n", get_Block_block_visited(n));
 		fprintf(F, "  block marked: %u\n", get_Block_mark(n));
-		if (get_irg_dom_state(get_irn_irg(n)) == dom_consistent) {
+		if (is_irg_state(get_irn_irg(n), IR_GRAPH_STATE_CONSISTENT_DOMINANCE)) {
 			fprintf(F, "  dom depth %d\n", get_Block_dom_depth(n));
 			fprintf(F, "  domtree pre num %u\n", get_Block_dom_tree_pre_num(n));
 			fprintf(F, "  max subtree pre num %u\n", get_Block_dom_max_subtree_pre_num(n));
 		}
-		if (get_irg_postdom_state(get_irn_irg(n)) == dom_consistent) {
+		if (is_irg_state(get_irn_irg(n), IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE)) {
 			fprintf(F, "  pdom depth %d\n", get_Block_postdom_depth(n));
 			fprintf(F, "  pdomtree pre num %u\n", get_Block_pdom_tree_pre_num(n));
 			fprintf(F, "  max pdomsubtree pre num %u\n", get_Block_pdom_max_subtree_pre_num(n));
 		}
-
-		fprintf(F, "  Execution frequency statistics:\n");
-		if (get_irg_exec_freq_state(get_irn_irg(n)) != exec_freq_none)
-			fprintf(F, "    procedure local evaluation:   %8.2lf\n", get_irn_exec_freq(n));
 
 		/* not dumped: graph_arr */
 		/* not dumped: mature    */
@@ -164,7 +179,6 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 			ir_fprintf(F, "    param %d type: %+F\n", i, get_method_param_type(tp, i));
 	} break;
 	case iro_Cond: {
-		fprintf(F, "  default ProjNr: %ld\n", get_Cond_default_proj(n));
 		if (get_Cond_jmp_pred(n) != COND_JMP_PRED_NONE) {
 			fprintf(F, "  jump prediction: %s\n",
 			        get_cond_jmp_predicate_name(get_Cond_jmp_pred(n)));
@@ -312,11 +326,6 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 		break;
 	}
 
-	vrp_info = vrp_get_info(n);
-	if (vrp_info) {
-		dump_vrp_info(F, n);
-	}
-
 	if (get_irg_typeinfo_state(get_irn_irg(n)) == ir_typeinfo_consistent  ||
 		get_irg_typeinfo_state(get_irn_irg(n)) == ir_typeinfo_inconsistent  )
 		if (get_irn_typeinfo_type(n) != firm_none_type)
@@ -328,60 +337,38 @@ void dump_graph_as_text(FILE *out, ir_graph *irg)
 	fprintf(out, "graph %s\n", get_irg_dump_name(irg));
 }
 
-/** dumps something like:
- *
- *  "prefix"  "Name" (x): node1, ... node7,\n
- *  "prefix"    node8, ... node15,\n
- *  "prefix"    node16, node17\n
- */
-static void dump_node_list(FILE *F, firm_kind *k, const char *prefix,
-                           size_t (*get_entity_n_nodes)(firm_kind *ent),
-                           ir_node *(*get_entity_node)(firm_kind *ent, size_t pos),
-                           const char *name)
-{
-	size_t i, n_nodes = get_entity_n_nodes(k);
-	const char *comma = "";
-
-	ir_fprintf(F, "%s  %s (%zu):", prefix, name, n_nodes);
-	for (i = 0; i < n_nodes; ++i) {
-		if (i > 7 && !(i & 7)) { /* line break every eight node. */
-			fprintf(F, ",\n%s   ", prefix);
-			comma = "";
-		}
-		fprintf(F, "%s ", comma);
-		dump_node_label(F, get_entity_node(k, i));
-		comma = ",";
-	}
-	fprintf(F, "\n");
-}
-
-/** dumps something like:
- *
- *  "prefix"  "Name" (x): node1, ... node7,\n
- *  "prefix"    node8, ... node15,\n
- *  "prefix"    node16, node17\n
- */
-static void dump_type_list(FILE *F, ir_type *tp, const char *prefix,
-                           size_t (*get_n_types)(const ir_type *tp),
-                           ir_type *(*get_type)(const ir_type *tp, size_t pos),
-                           const char *name)
-{
-	size_t i, n_nodes = get_n_types(tp);
-	const char *comma = "";
-
-	ir_fprintf(F, "%s  %s (%zu):", prefix, name, n_nodes);
-	for (i = 0; i < n_nodes; ++i) {
-		if (i > 7 && !(i & 7)) { /* line break every eight node. */
-			fprintf(F, ",\n%s   ", prefix);
-			comma = "";
-		}
-		ir_fprintf(F, "%s %+F", comma, get_type(tp, i));
-		comma = ",";
-	}
-	fprintf(F, "\n");
-}
-
 static int need_nl = 1;
+
+static bool is_init_string(ir_initializer_t const* const init, ir_type *const type)
+{
+	ir_type *const element_type = get_array_element_type(type);
+	ir_mode *      mode;
+	size_t         n;
+	size_t         i;
+
+	if (!is_Primitive_type(element_type))
+		return false;
+
+	mode = get_type_mode(element_type);
+	if (!mode_is_int(mode) || get_mode_size_bits(mode) != 8)
+		return false;
+
+	n = get_initializer_compound_n_entries(init);
+	for (i = 0; i != n; ++i) {
+		ir_initializer_t const* const val = get_initializer_compound_value(init, i);
+		ir_tarval*              const tv  = get_initializer_tarval_value(val);
+		long                          v;
+
+		if (!tarval_is_constant(tv))
+			return false;
+
+		v = get_tarval_long(tv);
+		if (v != 0 && (v < 0x07 || 0x0D < v) && v != 0x1B && (v < 0x20 || 0x80 <= v) && (v < 0xA0 || 0x100 <= v))
+			return false;
+	}
+
+	return true;
+}
 
 /**
  * Dump initializers.
@@ -411,18 +398,46 @@ static void dump_ir_initializers_to_file(FILE *F, const char *prefix,
 		break;
 	case IR_INITIALIZER_COMPOUND:
 		if (is_Array_type(type)) {
-			size_t i, n = get_initializer_compound_n_entries(initializer);
-			ir_type *element_type = get_array_element_type(type);
-			for (i = 0; i < n; ++i) {
-				ir_initializer_t *sub_initializer
-					= get_initializer_compound_value(initializer, i);
+			size_t const n = get_initializer_compound_n_entries(initializer);
+			size_t       i;
 
-				if (need_nl) {
-					fprintf(F, "\n%s    ", prefix);
-					need_nl = 0;
+			if (is_init_string(initializer, type)) {
+				fprintf(F, "\t[0...%u] = '", (unsigned)n - 1);
+				for (i = 0; i != n; ++i) {
+					ir_initializer_t const* const val = get_initializer_compound_value(initializer, i);
+					ir_tarval*              const tv  = get_initializer_tarval_value(val);
+					long                    const v   = get_tarval_long(tv);
+
+					switch (v) {
+						case 0x00: fprintf(F, "\\\\000");  break;
+						case 0x07: fprintf(F, "\\\\a");    break;
+						case 0x08: fprintf(F, "\\\\b");    break;
+						case 0x09: fprintf(F, "\\\\t");    break;
+						case 0x0A: fprintf(F, "\\\\n");    break;
+						case 0x0B: fprintf(F, "\\\\v");    break;
+						case 0x0C: fprintf(F, "\\\\f");    break;
+						case 0x0D: fprintf(F, "\\\\r");    break;
+						case 0x1B: fprintf(F, "\\\\033");  break;
+						case 0x22: fprintf(F, "\\\\\\\""); break;
+						case 0x5C: fprintf(F, "\\\\\\\\"); break;
+						default:   fprintf(F, "%c", (unsigned char)v); break;
+					}
 				}
-				fprintf(F, "[%d]", (int) i);
-				dump_ir_initializers_to_file(F, prefix, sub_initializer, element_type);
+				fprintf(F, "'");
+			} else {
+				ir_type *const element_type = get_array_element_type(type);
+
+				for (i = 0; i < n; ++i) {
+					ir_initializer_t *sub_initializer
+						= get_initializer_compound_value(initializer, i);
+
+					if (need_nl) {
+						fprintf(F, "\n%s    ", prefix);
+						need_nl = 0;
+					}
+					fprintf(F, "[%d]", (int) i);
+					dump_ir_initializers_to_file(F, prefix, sub_initializer, element_type);
+				}
 			}
 		} else {
 			size_t i, n;
@@ -635,14 +650,6 @@ static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, const char *pref
 			}
 		}
 		fputc('\n', F);
-	}
-
-	if (get_trouts_state()) {
-		fprintf(F, "%s  Entity outs:\n", prefix);
-		dump_node_list(F, (firm_kind *)ent, prefix, (size_t(*)(firm_kind *))get_entity_n_accesses,
-			(ir_node *(*)(firm_kind *, size_t))get_entity_access, "Accesses");
-		dump_node_list(F, (firm_kind *)ent, prefix, (size_t(*)(firm_kind *))get_entity_n_references,
-			(ir_node *(*)(firm_kind *, size_t))get_entity_reference, "References");
 	}
 }
 
@@ -875,15 +882,6 @@ void dump_type_to_file(FILE *F, ir_type *tp)
 	fprintf(F, "  alignment:  %2u Bytes,\n", get_type_alignment_bytes(tp));
 	if (is_atomic_type(tp) || is_Method_type(tp))
 		fprintf(F, "  mode:       %s,\n",  get_mode_name(get_type_mode(tp)));
-
-	if (get_trouts_state()) {
-		fprintf(F, "\n  Type outs:\n");
-		dump_node_list(F, (firm_kind *)tp, "  ", (size_t(*)(firm_kind *))get_type_n_allocs,
-			(ir_node *(*)(firm_kind *, size_t))get_type_alloc, "Allocations");
-		dump_node_list(F, (firm_kind *)tp, "  ", (size_t(*)(firm_kind *))get_type_n_casts,
-			(ir_node *(*)(firm_kind *, size_t))get_type_cast, "Casts");
-		dump_type_list(F, tp, "  ", get_type_n_pointertypes_to, get_type_pointertype_to, "PointerTpsTo");
-	}
 
 	fprintf(F, "\n\n");
 }

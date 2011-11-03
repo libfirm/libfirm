@@ -33,9 +33,9 @@
 #include "bitset.h"
 #include "heights.h"
 
-#include "../betranshlp.h"
-#include "../beirg.h"
-#include "../beabi.h"
+#include "betranshlp.h"
+#include "beirg.h"
+#include "beabi.h"
 
 #include "ia32_architecture.h"
 #include "ia32_common_transform.h"
@@ -64,30 +64,19 @@ static int check_immediate_constraint(long val, char immediate_constraint_type)
 	}
 }
 
-/**
- * Get a primitive type for a mode with alignment 16.
- */
-static ir_type *ia32_get_prim_type(pmap *types, ir_mode *mode)
+ir_type *ia32_get_prim_type(const ir_mode *mode)
 {
-	ir_type *res = (ir_type*)pmap_get(types, mode);
-	if (res != NULL)
-		return res;
-
-	res = new_type_primitive(mode);
-	if (get_mode_size_bits(mode) >= 80) {
-		set_type_alignment_bytes(res, 16);
+	if (mode == ia32_mode_E) {
+		return ia32_type_E;
+	} else {
+		return get_type_for_mode(mode);
 	}
-	pmap_insert(types, mode, res);
-	return res;
 }
 
-ir_entity *ia32_create_float_const_entity(ir_node *cnst)
+ir_entity *ia32_create_float_const_entity(ia32_isa_t *isa, ir_tarval *tv,
+                                          ident *name)
 {
-	ir_graph         *irg      = get_irn_irg(cnst);
-	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
-	ia32_isa_t       *isa      = (ia32_isa_t*) arch_env;
-	ir_tarval        *tv       = get_Const_tarval(cnst);
-	ir_entity        *res      = (ir_entity*)pmap_get(isa->tv_ent, tv);
+	ir_entity        *res = (ir_entity*)pmap_get(isa->tv_ent, tv);
 	ir_initializer_t *initializer;
 	ir_mode          *mode;
 	ir_type          *tp;
@@ -112,8 +101,11 @@ ir_entity *ia32_create_float_const_entity(ir_node *cnst)
 		}
 	}
 
-	tp  = ia32_get_prim_type(isa->types, mode);
-	res = new_entity(get_glob_type(), id_unique("C%u"), tp);
+	if (name == NULL)
+		name = id_unique("C%u");
+
+	tp  = ia32_get_prim_type(mode);
+	res = new_entity(get_glob_type(), name, tp);
 	set_entity_ld_ident(res, get_entity_ident(res));
 	set_entity_visibility(res, ir_visibility_private);
 	add_entity_linkage(res, IR_LINKAGE_CONSTANT);
@@ -972,7 +964,7 @@ ir_node *ia32_try_create_Immediate(ir_node *node, char immediate_constraint_type
 			return NULL;
 		}
 
-		symconst_ent = get_Global_entity(symconst);
+		symconst_ent = get_SymConst_entity(symconst);
 	}
 	if (cnst == NULL && symconst == NULL)
 		return NULL;

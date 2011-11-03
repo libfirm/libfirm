@@ -205,6 +205,7 @@ FIRM_API void pset_break(pset *pset);
  * Iterates oven an pset.
  *
  * @param pset   the pset
+ * @param type   type of iterator variable
  * @param entry  the iterator
  */
 #define foreach_pset(pset, type, entry) for (entry = (type)pset_first(pset); entry; entry = (type)pset_next(pset))

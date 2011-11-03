@@ -84,6 +84,7 @@
 #include "irpass.h"
 #include "tv_t.h"
 #include "irtools.h"
+#include "opt_manage.h"
 
 #include "irprintf.h"
 #include "irdump.h"
@@ -218,7 +219,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 DEBUG_ONLY(static const char *what_reason;)
 
 /** Next partition number. */
-DEBUG_ONLY(static unsigned part_nr = 0);
+DEBUG_ONLY(static unsigned part_nr = 0;)
 
 /** The tarval returned by Unknown nodes: set to either tarval_bad OR tarval_top. */
 static ir_tarval *tarval_UNKNOWN;
@@ -826,9 +827,10 @@ static void add_to_cprop(node_t *y, environment_t *env)
 	if (y->on_cprop == 0) {
 		partition_t *Y = y->part;
 		ir_node *irn   = y->node;
+		ir_node *skipped = skip_Proj(irn);
 
 		/* place Conds and all its Projs on the cprop_X list */
-		if (is_Cond(skip_Proj(irn)))
+		if (is_Cond(skipped) || is_Switch(skipped))
 			list_add_tail(&y->cprop_list, &Y->cprop_X);
 		else
 			list_add_tail(&y->cprop_list, &Y->cprop);
@@ -2337,90 +2339,105 @@ static void compute_Proj_Cond(node_t *node, ir_node *cond)
 	if (node->type.tv == tarval_reachable)
 		return;
 
-	if (get_irn_mode(sel) == mode_b) {
-		/* an IF */
-		if (pnc == pn_Cond_true) {
-			if (selector->type.tv == tarval_b_false) {
-				node->type.tv = tarval_unreachable;
-			} else if (selector->type.tv == tarval_b_true) {
-				node->type.tv = tarval_reachable;
-			} else if (selector->type.tv == tarval_bottom) {
-				node->type.tv = tarval_reachable;
-			} else {
-				assert(selector->type.tv == tarval_top);
-				if (tarval_UNKNOWN == tarval_top) {
-					/* any condition based on Top is "!=" */
-					node->type.tv = tarval_unreachable;
-				} else {
-					node->type.tv = tarval_unreachable;
-				}
-			}
+	if (pnc == pn_Cond_true) {
+		if (selector->type.tv == tarval_b_false) {
+			node->type.tv = tarval_unreachable;
+		} else if (selector->type.tv == tarval_b_true) {
+			node->type.tv = tarval_reachable;
+		} else if (selector->type.tv == tarval_bottom) {
+			node->type.tv = tarval_reachable;
 		} else {
-			assert(pnc == pn_Cond_false);
-
-			if (selector->type.tv == tarval_b_false) {
-				node->type.tv = tarval_reachable;
-			} else if (selector->type.tv == tarval_b_true) {
+			assert(selector->type.tv == tarval_top);
+			if (tarval_UNKNOWN == tarval_top) {
+				/* any condition based on Top is "!=" */
 				node->type.tv = tarval_unreachable;
-			} else if (selector->type.tv == tarval_bottom) {
-				node->type.tv = tarval_reachable;
 			} else {
-				assert(selector->type.tv == tarval_top);
-				if (tarval_UNKNOWN == tarval_top) {
-					/* any condition based on Top is "!=" */
-					node->type.tv = tarval_reachable;
-				} else {
-					node->type.tv = tarval_unreachable;
-				}
+				node->type.tv = tarval_unreachable;
 			}
 		}
 	} else {
-		/* an SWITCH */
-		if (selector->type.tv == tarval_bottom) {
+		assert(pnc == pn_Cond_false);
+
+		if (selector->type.tv == tarval_b_false) {
 			node->type.tv = tarval_reachable;
-		} else if (selector->type.tv == tarval_top) {
-			if (tarval_UNKNOWN == tarval_top &&
-			    pnc == get_Cond_default_proj(cond)) {
-				/* a switch based of Top is always "default" */
+		} else if (selector->type.tv == tarval_b_true) {
+			node->type.tv = tarval_unreachable;
+		} else if (selector->type.tv == tarval_bottom) {
+			node->type.tv = tarval_reachable;
+		} else {
+			assert(selector->type.tv == tarval_top);
+			if (tarval_UNKNOWN == tarval_top) {
+				/* any condition based on Top is "!=" */
 				node->type.tv = tarval_reachable;
 			} else {
 				node->type.tv = tarval_unreachable;
-			}
-		} else {
-			long value = get_tarval_long(selector->type.tv);
-			if (pnc == get_Cond_default_proj(cond)) {
-				/* default switch, have to check ALL other cases */
-				int i;
-
-				for (i = get_irn_n_outs(cond) - 1; i >= 0; --i) {
-					ir_node *succ = get_irn_out(cond, i);
-
-					if (succ == proj)
-						continue;
-					if (value == get_Proj_proj(succ)) {
-						/* we found a match, will NOT take the default case */
-						node->type.tv = tarval_unreachable;
-						return;
-					}
-				}
-				/* all cases checked, no match, will take default case */
-				node->type.tv = tarval_reachable;
-			} else {
-				/* normal case */
-				node->type.tv = value == pnc ? tarval_reachable : tarval_unreachable;
 			}
 		}
 	}
 }  /* compute_Proj_Cond */
 
+static void compute_Proj_Switch(node_t *node, ir_node *switchn)
+{
+	ir_node *proj     = node->node;
+	long     pnc      = get_Proj_proj(proj);
+	ir_node *sel      = get_Switch_selector(switchn);
+	node_t  *selector = get_irn_node(sel);
+
+	/* see long comment in compute_Proj_Cond */
+	if (node->type.tv == tarval_reachable)
+		return;
+
+	if (selector->type.tv == tarval_bottom) {
+		node->type.tv = tarval_reachable;
+	} else if (selector->type.tv == tarval_top) {
+		if (tarval_UNKNOWN == tarval_top && pnc == pn_Switch_default) {
+			/* a switch based of Top is always "default" */
+			node->type.tv = tarval_reachable;
+		} else {
+			node->type.tv = tarval_unreachable;
+		}
+	} else {
+		long                   value = get_tarval_long(selector->type.tv);
+		const ir_switch_table *table = get_Switch_table(switchn);
+		size_t                 n_entries = ir_switch_table_get_n_entries(table);
+		size_t                 e;
+
+		for (e = 0; e < n_entries; ++e) {
+			const ir_switch_table_entry *entry
+				= ir_switch_table_get_entry_const(table, e);
+			ir_tarval *min = entry->min;
+			ir_tarval *max = entry->max;
+			if (min == max) {
+				if (selector->type.tv == min) {
+					node->type.tv = entry->pn == pnc
+						? tarval_reachable : tarval_unreachable;
+					return;
+				}
+			} else {
+				long minval = get_tarval_long(min);
+				long maxval = get_tarval_long(max);
+				if (minval <= value && value <= maxval) {
+					node->type.tv = entry->pn == pnc
+						? tarval_reachable : tarval_unreachable;
+					return;
+				}
+			}
+		}
+
+		/* no entry matched: default */
+		node->type.tv
+			= pnc == pn_Switch_default ? tarval_reachable : tarval_unreachable;
+	}
+}
+
 /**
- * (Re-)compute the type for a Proj-Node.
- *
- * @param node  the node
- */
+* (Re-)compute the type for a Proj-Node.
+*
+* @param node  the node
+*/
 static void compute_Proj(node_t *node)
 {
-	ir_node *proj = node->node;
+ir_node *proj = node->node;
 	ir_mode *mode = get_irn_mode(proj);
 	node_t  *block = get_irn_node(get_nodes_block(skip_Proj(proj)));
 	ir_node *pred  = get_Proj_pred(proj);
@@ -2430,7 +2447,7 @@ static void compute_Proj(node_t *node)
 		node->type.tv = tarval_top;
 		return;
 	}
-	if (get_irn_node(pred)->type.tv == tarval_top && !is_Cond(pred)) {
+	if (get_irn_node(pred)->type.tv == tarval_top && !is_Cond(pred) && !is_Switch(pred)) {
 		/* if the predecessor is Top, its Proj follow */
 		node->type.tv = tarval_top;
 		return;
@@ -2450,6 +2467,9 @@ static void compute_Proj(node_t *node)
 			return;
 		case iro_Cond:
 			compute_Proj_Cond(node, pred);
+			return;
+		case iro_Switch:
+			compute_Proj_Switch(node, pred);
 			return;
 		default:
 			break;
@@ -3303,7 +3323,7 @@ static void apply_result(ir_node *irn, void *ctx)
 				/* leave or Jmp */
 				ir_node *cond = get_Proj_pred(irn);
 
-				if (is_Cond(cond)) {
+				if (is_Cond(cond) || is_Switch(cond)) {
 					if (only_one_reachable_proj(cond)) {
 						ir_node *jmp = new_r_Jmp(block->node);
 						set_irn_node(jmp, node);
@@ -3313,14 +3333,16 @@ static void apply_result(ir_node *irn, void *ctx)
 						exchange(irn, jmp);
 						env->modified = 1;
 					} else {
-						node_t    *sel = get_irn_node(get_Cond_selector(cond));
-						ir_tarval *tv  = sel->type.tv;
+						if (is_Switch(cond)) {
+							node_t    *sel = get_irn_node(get_Switch_selector(cond));
+							ir_tarval *tv  = sel->type.tv;
 
-						if (is_tarval(tv) && tarval_is_constant(tv)) {
-							/* The selector is a constant, but more
-							 * than one output is active: An unoptimized
-							 * case found. */
-							env->unopt_cf = 1;
+							if (is_tarval(tv) && tarval_is_constant(tv)) {
+								/* The selector is a constant, but more
+								 * than one output is active: An unoptimized
+								 * case found. */
+								env->unopt_cf = 1;
+							}
 						}
 					}
 				}
@@ -3491,7 +3513,7 @@ static void add_memory_keeps(ir_node **kept_memory, size_t len)
 	ir_nodeset_destroy(&set);
 }  /* add_memory_keeps */
 
-void combo(ir_graph *irg)
+static ir_graph_state_t do_combo(ir_graph *irg)
 {
 	environment_t env;
 	ir_node       *initial_bl;
@@ -3524,14 +3546,11 @@ void combo(ir_graph *irg)
 	env.commutative    = 1;
 	env.opt_unknown    = 1;
 
-	assure_irg_outs(irg);
-	assure_cf_loop(irg);
-
 	/* we have our own value_of function */
 	set_value_of_func(get_node_tarval);
 
 	set_compute_functions();
-	DEBUG_ONLY(part_nr = 0);
+	DEBUG_ONLY(part_nr = 0;)
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 
@@ -3546,7 +3565,7 @@ void combo(ir_graph *irg)
 	irg_walk_graph(irg, create_initial_partitions, init_block_phis, &env);
 
 	/* set the hook: from now, every node has a partition and a type */
-	DEBUG_ONLY(set_dump_node_vcgattr_hook(dump_partition_hook));
+	DEBUG_ONLY(set_dump_node_vcgattr_hook(dump_partition_hook);)
 
 	/* all nodes on the initial partition have type Top */
 	env.initial->type_is_T_or_C = 1;
@@ -3591,17 +3610,10 @@ void combo(ir_graph *irg)
 		DB((dbg, LEVEL_1, "Unoptimized Control Flow left"));
 	}
 
-	if (env.modified) {
-		/* control flow might changed */
-		set_irg_extblk_inconsistent(irg);
-		set_irg_doms_inconsistent(irg);
-		set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
-	}
-
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 
 	/* remove the partition hook */
-	DEBUG_ONLY(set_dump_node_vcgattr_hook(NULL));
+	DEBUG_ONLY(set_dump_node_vcgattr_hook(NULL);)
 
 	DEL_ARR_F(env.kept_memory);
 	del_set(env.opcode2id_map);
@@ -3610,7 +3622,20 @@ void combo(ir_graph *irg)
 	/* restore value_of() default behavior */
 	set_value_of_func(NULL);
 	current_ir_graph = rem;
+
+	return 0; // cannot guarantee anything
 }  /* combo */
+
+static optdesc_t opt_combo = {
+	"combo",
+	IR_GRAPH_STATE_NO_BADS | IR_GRAPH_STATE_CONSISTENT_OUTS | IR_GRAPH_STATE_CONSISTENT_LOOPINFO,
+	do_combo,
+};
+
+void combo(ir_graph *irg)
+{
+	perform_irg_optimization(irg, &opt_combo);
+}
 
 /* Creates an ir_graph pass for combo. */
 ir_graph_pass_t *combo_pass(const char *name)

@@ -105,7 +105,6 @@ FIRM_API int get_edge_src_pos(const ir_edge_t *edge);
 
 /**
  * Get the edge object of an outgoing edge at a node.
- * @param  irg  The graph, the node is in.
  * @param  irn  The node at which the edge originates.
  * @param  pos  The position of the edge.
  * @param  kind The kind of the edge.

@@ -56,7 +56,7 @@
 #include "tpop_t.h"
 #include "tv_t.h"
 #include "irhooks.h"
-#include "irtools.h"
+#include "util.h"
 #include "entity_t.h"
 #include "error.h"
 #include "dbginfo.h"
@@ -2061,6 +2061,7 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment,
 	tp = new_type_array(1, a_byte);
 	set_array_bounds_int(tp, 0, 0, size);
 	set_type_alignment_bytes(tp, alignment);
+	set_type_size_bytes(tp, size);
 
 	frame_size = get_type_size_bytes(frame_type);
 	if (at_start) {

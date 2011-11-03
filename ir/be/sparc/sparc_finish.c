@@ -48,12 +48,12 @@
 #include "ircons.h"
 #include "irgwalk.h"
 
-#include "../bepeephole.h"
-#include "../benode.h"
-#include "../besched.h"
-#include "../bespillslots.h"
-#include "../bestack.h"
-#include "../beirgmod.h"
+#include "bepeephole.h"
+#include "benode.h"
+#include "besched.h"
+#include "bespillslots.h"
+#include "bestack.h"
+#include "beirgmod.h"
 
 static void kill_unused_stacknodes(ir_node *node)
 {
@@ -417,6 +417,140 @@ static void peephole_sparc_FrameAddr(ir_node *node)
 	(void) node;
 }
 
+/* output must not be local, or out reg. Since the destination of the restore
+ * is the rotated register-file where only the old in-registers are still
+ * visible (as out-registers) */
+static bool is_restorezeroopt_reg(const arch_register_t *reg)
+{
+	unsigned index = reg->global_index;
+	return (index >= REG_G0 && index <= REG_G7)
+	    || (index >= REG_I0 && index <= REG_I7);
+}
+
+static void replace_with_restore_reg(ir_node *node, ir_node *replaced,
+									 ir_node *op0, ir_node *op1)
+{
+	dbg_info *dbgi     = get_irn_dbg_info(node);
+	ir_node  *fp       = get_irn_n(node, n_sparc_RestoreZero_frame_pointer);
+	ir_node  *block    = get_nodes_block(node);
+	ir_mode  *mode     = get_irn_mode(node);
+	ir_node  *new_node = new_bd_sparc_Restore_reg(dbgi, block, fp, op0, op1);
+	ir_node  *stack    = new_r_Proj(new_node, mode, pn_sparc_Restore_stack);
+	ir_node  *res      = new_r_Proj(new_node, mode, pn_sparc_Restore_res);
+	const arch_register_t *reg = arch_get_irn_register(replaced);
+	const arch_register_t *sp  = &sparc_registers[REG_SP];
+	arch_set_irn_register_out(new_node, pn_sparc_Restore_stack, sp);
+	arch_set_irn_register_out(new_node, pn_sparc_Restore_res, reg);
+
+	sched_add_before(node, new_node);
+	be_peephole_exchange(node, stack);
+	be_peephole_exchange(replaced, res);
+}
+
+static void replace_with_restore_imm(ir_node *node, ir_node *replaced,
+									 ir_node *op, ir_entity *imm_entity,
+									 int32_t immediate)
+{
+	dbg_info *dbgi     = get_irn_dbg_info(node);
+	ir_node  *fp       = get_irn_n(node, n_sparc_RestoreZero_frame_pointer);
+	ir_node  *block    = get_nodes_block(node);
+	ir_mode  *mode     = get_irn_mode(node);
+	ir_node  *new_node
+		= new_bd_sparc_Restore_imm(dbgi, block, fp, op, imm_entity, immediate);
+	ir_node  *stack    = new_r_Proj(new_node, mode, pn_sparc_Restore_stack);
+	ir_node  *res      = new_r_Proj(new_node, mode, pn_sparc_Restore_res);
+	const arch_register_t *reg = arch_get_irn_register(replaced);
+	const arch_register_t *sp  = &sparc_registers[REG_SP];
+	arch_set_irn_register_out(new_node, pn_sparc_Restore_stack, sp);
+	arch_set_irn_register_out(new_node, pn_sparc_Restore_res, reg);
+
+	sched_add_before(node, new_node);
+	be_peephole_exchange(node, stack);
+	be_peephole_exchange(replaced, res);
+}
+
+static void peephole_sparc_RestoreZero(ir_node *node)
+{
+	/* restore gives us a free "add" instruction, let's try to use that to fold
+	 * an instruction in. We can do the following:
+	 *
+	 * - Copy values                  (g0 + reg)
+	 * - Produce constants            (g0 + immediate)
+	 * - Perform an add               (reg + reg)
+	 * - Perform a sub with immediate (reg + (-immediate))
+	 *
+	 * Note: In an ideal world, this would not be a peephole optimization but
+	 * already performed during code selection. Since about all foldable ops are
+	 * arguments of the return node. However we have a hard time doing this
+	 * since we construct epilogue code only after register allocation
+	 * (and therefore after code selection).
+	 */
+	int n_tries = 10; /* limit our search */
+	ir_node *schedpoint = node;
+
+	while (sched_has_prev(schedpoint)) {
+		const arch_register_t *reg;
+		schedpoint = sched_prev(schedpoint);
+
+		if (--n_tries == 0)
+			break;
+
+		if (arch_get_irn_n_outs(schedpoint) == 0)
+			continue;
+
+		if (!mode_is_data(get_irn_mode(schedpoint)))
+			return;
+
+		reg = arch_get_irn_register(schedpoint);
+		if (!is_restorezeroopt_reg(reg))
+			continue;
+
+		if (be_is_Copy(schedpoint) && be_can_move_before(schedpoint, node)) {
+			ir_node *op = get_irn_n(schedpoint, n_be_Copy_op);
+			replace_with_restore_imm(node, schedpoint, op, NULL, 0);
+		} else if (is_sparc_Or(schedpoint) &&
+		           arch_get_irn_flags(schedpoint) & ((arch_irn_flags_t)sparc_arch_irn_flag_immediate_form) &&
+		           arch_get_irn_register_in(schedpoint, 0) == &sparc_registers[REG_G0] &&
+		           be_can_move_before(schedpoint, node)) {
+			/* it's a constant */
+			const sparc_attr_t *attr      = get_sparc_attr_const(schedpoint);
+			ir_entity          *entity    = attr->immediate_value_entity;
+			int32_t             immediate = attr->immediate_value;
+			ir_node            *g0        = get_irn_n(schedpoint, 0);
+			replace_with_restore_imm(node, schedpoint, g0, entity, immediate);
+		} else if (is_sparc_Add(schedpoint) &&
+		           be_can_move_before(schedpoint, node)) {
+			if (arch_get_irn_flags(schedpoint) & ((arch_irn_flags_t)sparc_arch_irn_flag_immediate_form)) {
+				ir_node            *op     = get_irn_n(schedpoint, 0);
+				const sparc_attr_t *attr   = get_sparc_attr_const(schedpoint);
+				ir_entity          *entity = attr->immediate_value_entity;
+				int32_t             imm    = attr->immediate_value;
+				replace_with_restore_imm(node, schedpoint, op, entity, imm);
+			} else {
+				ir_node *op0 = get_irn_n(schedpoint, 0);
+				ir_node *op1 = get_irn_n(schedpoint, 1);
+				replace_with_restore_reg(node, schedpoint, op0, op1);
+			}
+		} else if (is_sparc_Sub(schedpoint) &&
+		           arch_get_irn_flags(schedpoint) & ((arch_irn_flags_t)sparc_arch_irn_flag_immediate_form) &&
+		           arch_get_irn_register_in(schedpoint, 0) == &sparc_registers[REG_G0] &&
+		           be_can_move_before(schedpoint, node)) {
+			/* it's a constant */
+			const sparc_attr_t *attr   = get_sparc_attr_const(schedpoint);
+			ir_entity          *entity = attr->immediate_value_entity;
+			int32_t             imm    = attr->immediate_value;
+			if (entity == NULL && sparc_is_value_imm_encodeable(-imm)) {
+				ir_node *g0 = get_irn_n(schedpoint, 0);
+				replace_with_restore_imm(node, schedpoint, g0, NULL, -imm);
+			} else {
+				continue;
+			}
+		}
+		/* when we're here then we performed a folding and are done */
+		return;
+	}
+}
+
 static void finish_sparc_Return(ir_node *node)
 {
 	ir_node *schedpoint = node;
@@ -512,6 +646,8 @@ void sparc_finish(ir_graph *irg)
 	clear_irp_opcodes_generic_func();
 	register_peephole_optimisation(op_be_IncSP,        peephole_be_IncSP);
 	register_peephole_optimisation(op_sparc_FrameAddr, peephole_sparc_FrameAddr);
+	register_peephole_optimisation(op_sparc_RestoreZero,
+	                               peephole_sparc_RestoreZero);
 	be_peephole_opt(irg);
 
 	/* perform legalizations (mostly fix nodes with too big immediates) */

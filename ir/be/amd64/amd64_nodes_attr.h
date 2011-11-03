@@ -25,7 +25,7 @@
 #ifndef FIRM_BE_amd64_amd64_NODES_ATTR_H
 #define FIRM_BE_amd64_amd64_NODES_ATTR_H
 
-#include "../bearch.h"
+#include "bearch.h"
 
 typedef struct amd64_attr_t            amd64_attr_t;
 typedef struct amd64_SymConst_attr_t   amd64_SymConst_attr_t;

@@ -36,7 +36,7 @@
 #include "error.h"
 #include "debug.h"
 
-DEBUG_ONLY(static firm_dbg_module_t *dbg);
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 static void visit_entity(ir_entity *entity);
 

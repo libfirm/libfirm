@@ -40,13 +40,13 @@
 #include "irprintf.h"
 #include "xmalloc.h"
 
-#include "../bearch.h"
+#include "bearch.h"
 
 #include "arm_nodes_attr.h"
 #include "arm_new_nodes.h"
 #include "arm_optimize.h"
 
-#include "../beabi.h"
+#include "beabi.h"
 #include "bearch_arm_t.h"
 
 const char *arm_get_fpa_imm_name(long imm_value)
@@ -324,30 +324,6 @@ void set_arm_CondJmp_relation(ir_node *node, ir_relation relation)
 	attr->relation = relation;
 }
 
-int get_arm_SwitchJmp_n_projs(const ir_node *node)
-{
-	const arm_SwitchJmp_attr_t *attr = get_arm_SwitchJmp_attr_const(node);
-	return attr->n_projs;
-}
-
-void set_arm_SwitchJmp_n_projs(ir_node *node, int n_projs)
-{
-	arm_SwitchJmp_attr_t *attr = get_arm_SwitchJmp_attr(node);
-	attr->n_projs = n_projs;
-}
-
-long get_arm_SwitchJmp_default_proj_num(const ir_node *node)
-{
-	const arm_SwitchJmp_attr_t *attr = get_arm_SwitchJmp_attr_const(node);
-	return attr->default_proj_num;
-}
-
-void set_arm_SwitchJmp_default_proj_num(ir_node *node, long default_proj_num)
-{
-	arm_SwitchJmp_attr_t *attr = get_arm_SwitchJmp_attr(node);
-	attr->default_proj_num = default_proj_num;
-}
-
 /* Set the ARM machine node attributes to default values. */
 static void init_arm_attributes(ir_node *node, arch_irn_flags_t flags,
                          const arch_register_req_t ** in_reqs,
@@ -418,6 +394,20 @@ static void init_arm_CopyB_attributes(ir_node *res, unsigned size)
 {
 	arm_CopyB_attr_t *attr = get_arm_CopyB_attr(res);
 	attr->size = size;
+}
+
+static void init_arm_SwitchJmp_attributes(ir_node *res,
+                                          const ir_switch_table *table)
+{
+	unsigned n_outs = arch_get_irn_n_outs(res);
+	unsigned o;
+
+	arm_SwitchJmp_attr_t *attr = get_arm_SwitchJmp_attr(res);
+	attr->table = table;
+
+	for (o = 0; o < n_outs; ++o) {
+		arch_set_irn_register_req_out(res, o, arch_no_register_req);
+	}
 }
 
 static int cmp_attr_arm(const ir_node *a, const ir_node *b)

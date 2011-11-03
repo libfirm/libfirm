@@ -73,8 +73,8 @@ static float_classify_t classify_float_value(ir_tarval *tv)
 		return STAT_FC_0;
 	else if (tv == get_mode_one(mode))
 		return STAT_FC_1;
-	else if (tarval_is_finite(tv) && tarval_ieee754_zero_mantissa(tv)) {
-		int exp = tarval_ieee754_get_exponent(tv);
+	else if (tarval_is_finite(tv) && tarval_zero_mantissa(tv)) {
+		int exp = tarval_get_exponent(tv);
 
 		if (! tarval_is_negative(tv)) {
 			if (exp == 1)

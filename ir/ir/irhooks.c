@@ -25,6 +25,8 @@
  */
 #include "config.h"
 
+#include <assert.h>
+
 #include "irhooks.h"
 
 /* the hooks */
@@ -36,6 +38,9 @@ void register_hook(hook_type_t hook, hook_entry_t *entry)
   /* check if a hook function is specified. It's a union, so no matter which one */
   if (! entry->hook._hook_turn_into_id)
     return;
+
+  /* hook should not be registered yet */
+  assert(entry->next == NULL && hooks[hook] != entry);
 
   entry->next = hooks[hook];
   hooks[hook] = entry;

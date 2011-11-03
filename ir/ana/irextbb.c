@@ -266,7 +266,7 @@ void compute_extbb(ir_graph *irg)
 		extbb->visited = 0;
 	}
 
-	irg->extblk_state = ir_extblk_info_valid;
+	set_irg_state(irg, IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
 }
 
 /* free all extended block info. */
@@ -277,7 +277,7 @@ void free_extbb(ir_graph *irg)
 		xfree(irg->extbb_obst);
 		irg->extbb_obst = NULL;
 	}
-	irg->extblk_state = ir_extblk_info_none;
+	clear_irg_state(irg, IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
 }
 
 /* Return the extended block of a node. */

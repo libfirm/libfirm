@@ -40,7 +40,7 @@
 #include <arpa/inet.h>
 #endif
 
-#include "irtools.h"
+#include "util.h"
 #include "debug.h"
 
 #include "lpp_comm.h"
@@ -55,6 +55,7 @@ struct _lpp_comm_t {
 	char *r_buf;
 };
 
+#ifdef DEBUG_libfirm
 static inline firm_dbg_module_t *get_dbg_module(void)
 {
 	static firm_dbg_module_t *dbg = NULL;
@@ -64,8 +65,8 @@ static inline firm_dbg_module_t *get_dbg_module(void)
 
 	return dbg;
 }
-
 #define dbg get_dbg_module()
+#endif
 
 /**
  * Try to read some bytes but block until a certain amount is read.

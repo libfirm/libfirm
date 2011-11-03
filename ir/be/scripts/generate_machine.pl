@@ -113,7 +113,7 @@ print OUT<<EOF;
 #ifndef FIRM_BE_${tmp}_GEN_${tmp}_MACHINE_H
 #define FIRM_BE_${tmp}_GEN_${tmp}_MACHINE_H
 
-#include "../bemachine.h"
+#include "bemachine.h"
 
 /**
  * Returns the $arch machine description.

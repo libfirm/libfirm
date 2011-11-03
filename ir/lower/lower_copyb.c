@@ -86,6 +86,8 @@ static unsigned max_small_size; /**< The maximum size of a CopyB node
 static unsigned min_large_size; /**< The minimum size of a CopyB node
                                      so that it is regarded as 'large'. */
 static unsigned native_mode_bytes; /**< The size of the native mode in bytes. */
+static int allow_misalignments; /**< Whether backend can handle misaligned
+                                     loads and stores. */
 
 typedef struct walk_env {
 	struct obstack   obst;           /**< the obstack where data is allocated
@@ -112,27 +114,17 @@ static ir_mode *get_ir_mode(unsigned mode_bytes)
 static void lower_small_copyb_node(ir_node *irn)
 {
 	ir_graph *irg        = get_irn_irg(irn);
-	unsigned  mode_bytes = native_mode_bytes;
-	unsigned  size;
-	unsigned  offset;
+	ir_node  *block      = get_nodes_block(irn);
+	ir_type  *tp         = get_CopyB_type(irn);
+	ir_node  *addr_src   = get_CopyB_src(irn);
+	ir_node  *addr_dst   = get_CopyB_dst(irn);
+	ir_node  *mem        = get_CopyB_mem(irn);
+	ir_mode  *addr_mode  = get_irn_mode(addr_src);
+	unsigned  mode_bytes = allow_misalignments ? native_mode_bytes : tp->align;
+	unsigned  size       = get_type_size_bytes(tp);
+	unsigned  offset     = 0;
 	ir_mode  *mode;
-	ir_mode  *addr_mode;
-	ir_node  *mem;
-	ir_node  *addr_src;
-	ir_node  *addr_dst;
-	ir_node  *block;
-	ir_type  *tp;
 
-	addr_src  = get_CopyB_src(irn);
-	addr_dst  = get_CopyB_dst(irn);
-	mem       = get_CopyB_mem(irn);
-	addr_mode = get_irn_mode(addr_src);
-	block     = get_nodes_block(irn);
-
-	tp   = get_CopyB_type(irn);
-	size = get_type_size_bytes(tp);
-
-	offset     = 0;
 	while (offset < size) {
 		mode = get_ir_mode(mode_bytes);
 		for (; offset + mode_bytes <= size; offset += mode_bytes) {
@@ -170,10 +162,10 @@ static void lower_small_copyb_node(ir_node *irn)
 	set_Tuple_pred(irn, pn_CopyB_X_except,  new_r_Bad(irg, mode_X));
 }
 
-static ir_type *get_memcpy_methodtype()
+static ir_type *get_memcpy_methodtype(void)
 {
-	ir_type              *tp           = new_type_method(3, 1);
-	ir_mode              *size_t_mode  = get_ir_mode(native_mode_bytes);
+	ir_type *tp          = new_type_method(3, 1);
+	ir_mode *size_t_mode = get_ir_mode(native_mode_bytes);
 
 	set_method_param_type(tp, 0, get_type_for_mode(mode_P));
 	set_method_param_type(tp, 1, get_type_for_mode(mode_P));
@@ -187,12 +179,10 @@ static ir_node *get_memcpy_symconst(ir_graph *irg)
 {
 	ident     *id  = new_id_from_str("memcpy");
 	ir_type   *mt  = get_memcpy_methodtype();
-	ir_entity *ent = new_entity(get_glob_type(), id, mt);
+	ir_entity *ent = create_compilerlib_entity(id, mt);
 	symconst_symbol sym;
 
-	set_entity_ld_ident(ent, get_entity_ident(ent));
 	sym.entity_p = ent;
-
 	return new_r_SymConst(irg, mode_P_code, sym, symconst_addr_ent);
 }
 
@@ -282,7 +272,8 @@ static void find_copyb_nodes(ir_node *irn, void *ctx)
 	list_add_tail(&entry->list, &env->list);
 }
 
-void lower_CopyB(ir_graph *irg, unsigned max_small_sz, unsigned min_large_sz)
+void lower_CopyB(ir_graph *irg, unsigned max_small_sz, unsigned min_large_sz,
+                 int allow_misaligns)
 {
 	const backend_params *bparams = be_get_backend_param();
 	walk_env_t            env;
@@ -290,9 +281,10 @@ void lower_CopyB(ir_graph *irg, unsigned max_small_sz, unsigned min_large_sz)
 
 	assert(max_small_sz < min_large_sz && "CopyB size ranges must not overlap");
 
-	max_small_size    = max_small_sz;
-	min_large_size    = min_large_sz;
-	native_mode_bytes = bparams->machine_size / 8;
+	max_small_size      = max_small_sz;
+	min_large_size      = min_large_sz;
+	native_mode_bytes   = bparams->machine_size / 8;
+	allow_misalignments = allow_misaligns;
 
 	obstack_init(&env.obst);
 	INIT_LIST_HEAD(&env.list);

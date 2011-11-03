@@ -34,8 +34,8 @@
 #include "debug.h"
 #include "error.h"
 
-#include "../benode.h"
-#include "../betranshlp.h"
+#include "benode.h"
+#include "betranshlp.h"
 #include "bearch_TEMPLATE_t.h"
 
 #include "TEMPLATE_nodes_attr.h"

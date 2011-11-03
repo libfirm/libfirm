@@ -34,7 +34,7 @@
 #include "irgwalk.h"
 #include "irprintf.h"
 #include "iredges_t.h"
-#include "irtools.h"
+#include "util.h"
 
 #include "belive_t.h"
 #include "bechordal_t.h"

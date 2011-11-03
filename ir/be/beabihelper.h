@@ -114,6 +114,11 @@ ir_node *be_epilog_create_return(beabi_helper_env_t *env, dbg_info *dbgi,
 void be_add_missing_keeps(ir_graph *irg);
 
 /**
+ * Make sure all outputs of a node are used, add keeps otherwise
+ */
+void be_add_missing_keeps_node(ir_node *node);
+
+/**
  * In the normal firm representation some nodes like pure calls, builtins
  * have no memory inputs+outputs. However in the backend these sometimes have to
  * access the stack to work and therefore suddenly need to be enqueued into the

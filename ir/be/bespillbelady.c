@@ -39,6 +39,8 @@
 #include "ircons_t.h"
 #include "irprintf.h"
 #include "irnodeset.h"
+#include "irtools.h"
+#include "util.h"
 
 #include "beutil.h"
 #include "bearch.h"
@@ -948,10 +950,7 @@ static void be_spill_belady(ir_graph *irg, const arch_register_class_t *rcls)
 	be_liveness_assure_sets(be_assure_liveness(irg));
 
 	stat_ev_tim_push();
-	/* construct control flow loop tree */
-	if (! (get_irg_loopinfo_state(irg) & loopinfo_cf_consistent)) {
-		construct_cf_backedges(irg);
-	}
+	assure_loopinfo(irg);
 	stat_ev_tim_pop("belady_time_backedges");
 
 	stat_ev_tim_push();

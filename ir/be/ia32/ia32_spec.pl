@@ -4,6 +4,13 @@
 
 $arch = "ia32";
 
+$mode_xmm           = "mode_D";
+$mode_mmx           = "mode_D";
+$mode_fp87          = "ia32_mode_E";
+$mode_gp            = "mode_Iu";
+$mode_flags         = "mode_Iu";
+$mode_fpcw          = "ia32_mode_fpcw";
+
 # register types:
 $normal      =  0; # no special type
 $ignore      =  1; # ignore (do not assign this register)
@@ -22,7 +29,7 @@ $state       =  8; # register represents a state
 		{ name => "ebp" },
 		{ name => "esp", type => $ignore },
 		{ name => "gp_NOREG", type => $ignore | $arbitrary | $virtual }, # we need a dummy register for NoReg nodes
-		{ mode => "mode_Iu" }
+		{ mode => $mode_gp }
 	],
 	mmx => [
 		{ name => "mm0", type => $ignore },
@@ -33,7 +40,7 @@ $state       =  8; # register represents a state
 		{ name => "mm5", type => $ignore },
 		{ name => "mm6", type => $ignore },
 		{ name => "mm7", type => $ignore },
-		{ mode => "mode_E", flags => "manual_ra" }
+		{ mode => $mode_mmx, flags => "manual_ra" }
 	],
 	xmm => [
 		{ name => "xmm0" },
@@ -45,7 +52,7 @@ $state       =  8; # register represents a state
 		{ name => "xmm6" },
 		{ name => "xmm7" },
 		{ name => "xmm_NOREG", type => $ignore | $virtual },     # we need a dummy register for NoReg nodes
-		{ mode => "mode_E" }
+		{ mode => $mode_xmm }
 	],
 	vfp => [
 		{ name => "vf0" },
@@ -57,7 +64,7 @@ $state       =  8; # register represents a state
 		{ name => "vf6" },
 		{ name => "vf7" },
 		{ name => "vfp_NOREG", type => $ignore | $arbitrary | $virtual }, # we need a dummy register for NoReg nodes
-		{ mode => "mode_E" }
+		{ mode => $mode_fp87 }
 	],
 	st => [
 		{ name => "st0", realname => "st",    type => $ignore },
@@ -68,11 +75,11 @@ $state       =  8; # register represents a state
 		{ name => "st5", realname => "st(5)", type => $ignore },
 		{ name => "st6", realname => "st(6)", type => $ignore },
 		{ name => "st7", realname => "st(7)", type => $ignore },
-		{ mode => "mode_E", flags => "manual_ra" }
+		{ mode => $mode_fp87, flags => "manual_ra" }
 	],
 	fp_cw => [	# the floating point control word
 		{ name => "fpcw", type => $ignore | $state },
-		{ mode => "ia32_mode_fpcw", flags => "manual_ra|state" }
+		{ mode => $mode_fpcw, flags => "manual_ra|state" }
 	],
 	flags => [
 		{ name => "eflags", type => 0 },
@@ -178,7 +185,7 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 		"\tinit_ia32_condcode_attributes(res, condition_code);",
 	ia32_switch_attr_t =>
 		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, exec_units, n_res);\n".
-		"\tinit_ia32_switch_attributes(res, default_pn);",
+		"\tinit_ia32_switch_attributes(res, switch_table);",
 	ia32_copyb_attr_t =>
 		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, exec_units, n_res);\n".
 		"\tinit_ia32_copyb_attributes(res, size);",
@@ -198,8 +205,8 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 	ia32_attr_t            => "ia32_compare_nodes_attr",
 	ia32_call_attr_t       => "ia32_compare_call_attr",
 	ia32_condcode_attr_t   => "ia32_compare_condcode_attr",
-	ia32_switch_attr_t     => "ia32_compare_switch_attr",
 	ia32_copyb_attr_t      => "ia32_compare_copyb_attr",
+	ia32_switch_attr_t     => "ia32_compare_nodes_attr",
 	ia32_immediate_attr_t  => "ia32_compare_immediate_attr",
 	ia32_x87_attr_t        => "ia32_compare_x87_attr",
 	ia32_climbframe_attr_t => "ia32_compare_climbframe_attr",
@@ -208,10 +215,6 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 %operands = (
 );
 
-$mode_xmm           = "mode_E";
-$mode_gp            = "mode_Iu";
-$mode_flags         = "mode_Iu";
-$mode_fpcw          = "ia32_mode_fpcw";
 $status_flags       = [ "CF", "PF", "AF", "ZF", "SF", "OF" ];
 $status_flags_wo_cf = [       "PF", "AF", "ZF", "SF", "OF" ];
 $fpcw_flags         = [ "FP_IM", "FP_DM", "FP_ZM", "FP_OM", "FP_UM", "FP_PM",
@@ -309,14 +312,15 @@ Adc => {
 },
 
 l_Add => {
-	op_flags  => [ "constlike" ],
-	reg_req   => { in => [ "none", "none" ], out => [ "none" ] },
 	ins       => [ "left", "right" ],
+	attr_type => "",
+	dump_func => "NULL",
 },
 
 l_Adc => {
-	reg_req   => { in => [ "none", "none", "none" ], out => [ "none" ] },
 	ins       => [ "left", "right", "eflags" ],
+	attr_type => "",
+	dump_func => "NULL",
 },
 
 Mul => {
@@ -335,14 +339,10 @@ Mul => {
 },
 
 l_Mul => {
-	# we should not rematrialize this node. It produces 2 results and has
-	# very strict constraints
-	op_flags  => [ "constlike" ],
-	cmp_attr  => "return 1;",
-	reg_req   => { in => [ "none", "none" ],
-	               out => [ "none", "none", "none", "none" ] },
 	ins       => [ "left", "right" ],
 	outs      => [ "res_low", "flags", "M", "res_high" ],
+	attr_type => "",
+	dump_func => "NULL",
 },
 
 IMul => {
@@ -376,12 +376,10 @@ IMul1OP => {
 },
 
 l_IMul => {
-	op_flags  => [ "constlike" ],
-	cmp_attr  => "return 1;",
-	reg_req   => { in => [ "none", "none" ],
-	               out => [ "none", "none", "none", "none" ] },
 	ins       => [ "left", "right" ],
 	outs      => [ "res_low", "flags", "M", "res_high" ],
+	attr_type => "",
+	dump_func => "NULL",
 },
 
 And => {
@@ -579,13 +577,15 @@ Sbb0 => {
 },
 
 l_Sub => {
-	reg_req   => { in => [ "none", "none" ], out => [ "none" ] },
 	ins       => [ "minuend", "subtrahend" ],
+	attr_type => "",
+	dump_func => "NULL",
 },
 
 l_Sbb => {
-	reg_req   => { in => [ "none", "none", "none" ], out => [ "none" ] },
 	ins       => [ "minuend", "subtrahend", "eflags" ],
+	attr_type => "",
+	dump_func => "NULL",
 },
 
 IDiv => {
@@ -1044,12 +1044,11 @@ SwitchJmp => {
 	op_flags  => [ "labeled", "cfopcode", "forking" ],
 	reg_req   => { in => [ "gp", "gp" ] },
 	ins       => [ "base", "index" ],
-	mode      => "mode_T",
+	out_arity => "variable",
 	attr_type => "ia32_switch_attr_t",
-	attr      => "long default_pn",
+	attr      => "const ir_switch_table *switch_table",
 	latency   => 2,
 	units     => [ "BRANCH" ],
-	init_attr => "info->out_infos = NULL;", # XXX ugly hack for out requirements
 },
 
 Jmp => {
@@ -1122,7 +1121,7 @@ NoReg_VFP => {
 	reg_req   => { out => [ "vfp_NOREG:I" ] },
 	units     => [],
 	emit      => "",
-	mode      => "mode_E",
+	mode      => $mode_fp87,
 	latency   => 0,
 	attr_type => "ia32_x87_attr_t",
 },
@@ -1135,7 +1134,7 @@ NoReg_XMM => {
 	units     => [],
 	emit      => "",
 	latency   => 0,
-	mode      => "mode_E"
+	mode      => $mode_xmm,
 },
 
 ChangeCW => {
@@ -1919,18 +1918,16 @@ CvtSI2SD => {
 
 
 l_LLtoFloat => {
-	op_flags => [ "labeled" ],
-	cmp_attr => "return 1;",
 	ins      => [ "val_high", "val_low" ],
-	reg_req  => { in => [ "none", "none" ], out => [ "none" ] }
+	attr_type => "",
+	dump_func => "NULL",
 },
 
 l_FloattoLL => {
-	op_flags => [ "labeled" ],
-	cmp_attr => "return 1;",
 	ins      => [ "val" ],
 	outs     => [ "res_high", "res_low" ],
-	reg_req  => { in => [ "none" ], out => [ "none", "none" ] }
+	attr_type => "",
+	dump_func => "NULL",
 },
 
 CopyB => {
@@ -2047,7 +2044,7 @@ vfadd => {
 	am        => "source,binary",
 	latency   => 4,
 	units     => [ "VFP" ],
-	mode      => "mode_E",
+	mode      => $mode_fp87,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -2061,7 +2058,7 @@ vfmul => {
 	am        => "source,binary",
 	latency   => 4,
 	units     => [ "VFP" ],
-	mode      => "mode_E",
+	mode      => $mode_fp87,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -2075,7 +2072,7 @@ vfsub => {
 	am        => "source,binary",
 	latency   => 4,
 	units     => [ "VFP" ],
-	mode      => "mode_E",
+	mode      => $mode_fp87,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -2096,7 +2093,7 @@ vfprem => {
 	ins       => [ "left", "right", "fpcw" ],
 	latency   => 20,
 	units     => [ "VFP" ],
-	mode      => "mode_E",
+	mode      => $mode_fp87,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -2106,7 +2103,7 @@ vfabs => {
 	ins       => [ "value" ],
 	latency   => 2,
 	units     => [ "VFP" ],
-	mode      => "mode_E",
+	mode      => $mode_fp87,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -2116,7 +2113,7 @@ vfchs => {
 	ins       => [ "value" ],
 	latency   => 2,
 	units     => [ "VFP" ],
-	mode      => "mode_E",
+	mode      => $mode_fp87,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -2192,7 +2189,7 @@ vfldz => {
 	outs      => [ "res" ],
 	latency   => 4,
 	units     => [ "VFP" ],
-	mode      => "mode_E",
+	mode      => $mode_fp87,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -2202,7 +2199,7 @@ vfld1 => {
 	outs      => [ "res" ],
 	latency   => 4,
 	units     => [ "VFP" ],
-	mode      => "mode_E",
+	mode      => $mode_fp87,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -2212,7 +2209,7 @@ vfldpi => {
 	outs      => [ "res" ],
 	latency   => 4,
 	units     => [ "VFP" ],
-	mode      => "mode_E",
+	mode      => $mode_fp87,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -2222,7 +2219,7 @@ vfldln2 => {
 	outs      => [ "res" ],
 	latency   => 4,
 	units     => [ "VFP" ],
-	mode      => "mode_E",
+	mode      => $mode_fp87,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -2232,7 +2229,7 @@ vfldlg2 => {
 	outs      => [ "res" ],
 	latency   => 4,
 	units     => [ "VFP" ],
-	mode      => "mode_E",
+	mode      => $mode_fp87,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -2242,7 +2239,7 @@ vfldl2t => {
 	outs      => [ "res" ],
 	latency   => 4,
 	units     => [ "VFP" ],
-	mode      => "mode_E",
+	mode      => $mode_fp87,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -2252,7 +2249,7 @@ vfldl2e => {
 	outs      => [ "res" ],
 	latency   => 4,
 	units     => [ "VFP" ],
-	mode      => "mode_E",
+	mode      => $mode_fp87,
 	attr_type => "ia32_x87_attr_t",
 },
 

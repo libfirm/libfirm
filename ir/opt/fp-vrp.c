@@ -44,6 +44,7 @@
 #include "tv.h"
 #include "irpass.h"
 #include "irmemory.h"
+#include "opt_manage.h"
 
 /* TODO:
  * - Implement cleared/set bit calculation for Add, Sub, Minus, Mul, Div, Mod, Shl, Shr, Shrs, Rotl
@@ -196,37 +197,24 @@ unreachable_X:
 				} else if (is_Cond(pred)) {
 					ir_node*   const selector = get_Cond_selector(pred);
 					bitinfo*   const b        = get_bitinfo(selector);
-					if (is_undefined(b)) {
+					if (is_undefined(b))
 						goto unreachable_X;
-					} else if (get_irn_mode(selector) == mode_b) {
-						if (b->z == b->o) {
-							if ((b->z == t) == get_Proj_proj(irn)) {
-								z = o = t;
-							} else {
-								z = o = f;
-							}
+					if (b->z == b->o) {
+						if ((b->z == t) == get_Proj_proj(irn)) {
+							z = o = t;
 						} else {
-							goto result_unknown_X;
+							z = o = f;
 						}
 					} else {
-						long const val = get_Proj_proj(irn);
-						if (val != get_Cond_default_proj(pred)) {
-							ir_tarval* const tv = new_tarval_from_long(val, get_irn_mode(selector));
-							if (!tarval_is_null(tarval_andnot(tv, b->z)) ||
-									!tarval_is_null(tarval_andnot(b->o, tv))) {
-								// At least one bit differs.
-								z = o = f;
-#if 0 // TODO must handle default Proj
-							} else if (b->z == b->o && b->z == tv) {
-								z = o = t;
-#endif
-							} else {
-								goto result_unknown_X;
-							}
-						} else {
-							goto cannot_analyse_X;
-						}
+						goto result_unknown_X;
 					}
+				} else if (is_Switch(pred)) {
+					ir_node* const selector = get_Switch_selector(pred);
+					bitinfo* const b        = get_bitinfo(selector);
+					if (is_undefined(b))
+						goto unreachable_X;
+					/* TODO */
+					goto cannot_analyse_X;
 				} else {
 					goto cannot_analyse_X;
 				}
@@ -744,6 +732,28 @@ exchange_only:
 			break;
 		}
 
+		case iro_Eor: {
+			ir_node*       const l  = get_Eor_left(irn);
+			ir_node*       const r  = get_Eor_right(irn);
+			bitinfo const* const bl = get_bitinfo(l);
+			bitinfo const* const br = get_bitinfo(r);
+			/* if each bit is guaranteed to be zero on either the left or right
+			 * then an Add will have the same effect as the Eor. Change it for
+			 * normalisation */
+			if (tarval_is_null(tarval_and(bl->z, br->z))) {
+				dbg_info      *dbgi     = get_irn_dbg_info(irn);
+				ir_node       *block    = get_nodes_block(irn);
+				ir_mode       *mode     = get_irn_mode(irn);
+				ir_node       *new_node = new_rd_Add(dbgi, block, l, r, mode);
+				bitinfo const *bi       = get_bitinfo(irn);
+				DB((dbg, LEVEL_2, "%+F(%+F, %+F) normalised to Add\n", irn, l, r));
+				set_bitinfo(new_node, bi->z, bi->o);
+				exchange(irn, new_node);
+				env->modified = 1;
+			}
+			break;
+		}
+
 		case iro_Or: {
 			ir_node*       const l  = get_Or_left(irn);
 			ir_node*       const r  = get_Or_right(irn);
@@ -762,6 +772,22 @@ exchange_only:
 					env->modified = 1;
 				}
 			}
+
+			/* if each bit is guaranteed to be zero on either the left or right
+			 * then an Add will have the same effect as the Or. Change it for
+			 * normalisation */
+			if (tarval_is_null(tarval_and(bl->z, br->z))) {
+				dbg_info      *dbgi     = get_irn_dbg_info(irn);
+				ir_node       *block    = get_nodes_block(irn);
+				ir_mode       *mode     = get_irn_mode(irn);
+				ir_node       *new_node = new_rd_Add(dbgi, block, l, r, mode);
+				bitinfo const *bi       = get_bitinfo(irn);
+				DB((dbg, LEVEL_2, "%+F(%+F, %+F) normalised to Add\n", irn, l, r));
+				set_bitinfo(new_node, bi->z, bi->o);
+				exchange(irn, new_node);
+				env->modified = 1;
+			}
+
 			break;
 		}
 	}
@@ -812,21 +838,15 @@ static void build_phi_lists(ir_node *irn, void *env)
 		add_Block_phi(get_nodes_block(irn), irn);
 }
 
-void fixpoint_vrp(ir_graph* const irg)
+static ir_graph_state_t do_fixpoint_vrp(ir_graph* const irg)
 {
 	environment_t env;
+	ir_graph_state_t res = 0;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.fp-vrp");
 	DB((dbg, LEVEL_1, "===> Performing constant propagation on %+F\n", irg));
 
 	obstack_init(&obst);
-
-	/* HACK: to avoid finding dead code */
-	edges_deactivate(irg);
-	edges_activate(irg);
-
-	edges_assure(irg);
-	assure_doms(irg);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 
@@ -860,16 +880,26 @@ void fixpoint_vrp(ir_graph* const irg)
 	env.modified = 0;
 	irg_walk_graph(irg, NULL, apply_result, &env);
 
-	if (env.modified) {
-		/* control flow might changed */
-		set_irg_extblk_inconsistent(irg);
-		set_irg_doms_inconsistent(irg);
-		set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
+	if (! env.modified) {
+		res |= IR_GRAPH_STATE_CONSISTENT_DOMINANCE | IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE;
 	}
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 
 	obstack_free(&obst, NULL);
+
+	return res;
+}
+
+static optdesc_t opt_fpvrp = {
+	"fp-vrp",
+	IR_GRAPH_STATE_NO_BADS | IR_GRAPH_STATE_NO_UNREACHABLE_CODE | IR_GRAPH_STATE_CONSISTENT_DOMINANCE | IR_GRAPH_STATE_CONSISTENT_OUT_EDGES,
+	do_fixpoint_vrp,
+};
+
+void fixpoint_vrp(ir_graph* const irg)
+{
+	perform_irg_optimization(irg, &opt_fpvrp);
 }
 
 ir_graph_pass_t *fixpoint_vrp_irg_pass(const char *name)

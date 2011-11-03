@@ -38,7 +38,7 @@
 #include "ircons_t.h"
 #include "irgmod.h"
 #include "irnodeset.h"
-#include "irnodemap.h"
+#include "irnodehashmap.h"
 #include "adt/cpset.h"
 
 #include "bearch.h"
@@ -67,7 +67,7 @@ typedef struct minibelady_env_t {
 	create_reload_func     create_reload;
 	create_spill_func      create_spill;
 	spill_info_t          *spills;
-	ir_nodemap_t           spill_infos;
+	ir_nodehashmap_t       spill_infos;
 
 	be_uses_t             *uses;           /**< env for the next-use magic */
 } minibelady_env_t;
@@ -100,7 +100,7 @@ static inline spill_info_t *create_spill_info(minibelady_env_t *env, ir_node *st
 	spill_info->value = state;
 	spill_info->reloads = NEW_ARR_F(ir_node*, 0);
 
-	ir_nodemap_insert(&env->spill_infos, state, spill_info);
+	ir_nodehashmap_insert(&env->spill_infos, state, spill_info);
 	//ir_fprintf(stderr, "Insert %+F -> %p\n", state, spill_info);
 
 	spill_info->next = env->spills;
@@ -112,7 +112,7 @@ static inline spill_info_t *create_spill_info(minibelady_env_t *env, ir_node *st
 static inline spill_info_t *get_spill_info(minibelady_env_t *env, const ir_node *node)
 {
 	spill_info_t *spill_info
-		= (spill_info_t*) ir_nodemap_get(&env->spill_infos, node);
+		= (spill_info_t*) ir_nodehashmap_get(&env->spill_infos, node);
 	//ir_fprintf(stderr, "Get %+F -> %p\n", node, spill_info);
 	return spill_info;
 }
@@ -529,10 +529,7 @@ void be_assure_state(ir_graph *irg, const arch_register_t *reg, void *func_env,
 	be_lv_t *lv = be_assure_liveness(irg);
 
 	be_liveness_assure_sets(lv);
-	/* construct control flow loop tree */
-	if (! (get_irg_loopinfo_state(irg) & loopinfo_cf_consistent)) {
-		construct_cf_backedges(irg);
-	}
+	assure_loopinfo(irg);
 
 	obstack_init(&env.obst);
 	env.reg           = reg;
@@ -542,7 +539,7 @@ void be_assure_state(ir_graph *irg, const arch_register_t *reg, void *func_env,
 	env.lv            = be_get_irg_liveness(irg);
 	env.uses          = be_begin_uses(irg, env.lv);
 	env.spills        = NULL;
-	ir_nodemap_init(&env.spill_infos);
+	ir_nodehashmap_init(&env.spill_infos);
 
 	assure_doms(irg);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED | IR_RESOURCE_IRN_LINK);
@@ -597,7 +594,7 @@ void be_assure_state(ir_graph *irg, const arch_register_t *reg, void *func_env,
 	/* some nodes might be dead now. */
 	be_remove_dead_nodes_from_schedule(irg);
 
-	ir_nodemap_destroy(&env.spill_infos);
+	ir_nodehashmap_destroy(&env.spill_infos);
 	be_end_uses(env.uses);
 	obstack_free(&env.obst, NULL);
 }

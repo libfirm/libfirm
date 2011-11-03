@@ -42,11 +42,11 @@
 #include "error.h"
 #include "util.h"
 
-#include "../benode.h"
-#include "../beirg.h"
-#include "../beutil.h"
-#include "../betranshlp.h"
-#include "../beabihelper.h"
+#include "benode.h"
+#include "beirg.h"
+#include "beutil.h"
+#include "betranshlp.h"
+#include "beabihelper.h"
 #include "bearch_sparc_t.h"
 
 #include "sparc_nodes_attr.h"
@@ -998,6 +998,24 @@ static ir_node *gen_helper_bitop(ir_node *node,
 		                             flags,
 		                             new_not_reg, new_not_imm);
 	}
+	if (is_Const(op2) && get_irn_n_edges(op2) == 1) {
+		ir_tarval *tv    = get_Const_tarval(op2);
+		long       value = get_tarval_long(tv);
+		if (!sparc_is_value_imm_encodeable(value)) {
+			long notvalue = ~value;
+			if ((notvalue & 0x3ff) == 0) {
+				ir_node  *block     = get_nodes_block(node);
+				ir_node  *new_block = be_transform_node(block);
+				dbg_info *dbgi      = get_irn_dbg_info(node);
+				ir_node  *new_op2
+					= new_bd_sparc_SetHi(NULL, new_block, NULL, notvalue);
+				ir_node  *new_op1   = be_transform_node(op1);
+				ir_node  *result
+					= new_not_reg(dbgi, new_block, new_op1, new_op2);
+				return result;
+			}
+		}
+	}
 	return gen_helper_binop_args(node, op1, op2,
 								 flags | MATCH_COMMUTATIVE,
 								 new_reg, new_imm);
@@ -1153,28 +1171,23 @@ static ir_node *gen_Const(ir_node *node)
 	}
 }
 
-static ir_mode *get_cmp_mode(ir_node *b_value)
+static ir_node *gen_Switch(ir_node *node)
 {
-	ir_node *op;
+	dbg_info              *dbgi         = get_irn_dbg_info(node);
+	ir_node               *block        = get_nodes_block(node);
+	ir_node               *new_block    = be_transform_node(block);
+	ir_graph              *irg          = get_irn_irg(block);
+	ir_node               *selector     = get_Switch_selector(node);
+	ir_node               *new_selector = be_transform_node(selector);
+	const ir_switch_table *table        = get_Switch_table(node);
+	unsigned               n_outs       = get_Switch_n_outs(node);
+	ir_entity             *entity;
+	ir_node               *table_address;
+	ir_node               *idx;
+	ir_node               *load;
+	ir_node               *address;
 
-	if (!is_Cmp(b_value))
-		panic("can't determine cond signednes (no cmp)");
-	op = get_Cmp_left(b_value);
-	return get_irn_mode(op);
-}
-
-static ir_node *gen_SwitchJmp(ir_node *node)
-{
-	dbg_info        *dbgi         = get_irn_dbg_info(node);
-	ir_node         *block        = be_transform_node(get_nodes_block(node));
-	ir_node         *selector     = get_Cond_selector(node);
-	ir_node         *new_selector = be_transform_node(selector);
-	long             default_pn   = get_Cond_default_proj(node);
-	ir_entity       *entity;
-	ir_node         *table_address;
-	ir_node         *idx;
-	ir_node         *load;
-	ir_node         *address;
+	table = ir_switch_table_duplicate(irg, table);
 
 	/* switch with smaller mode not implemented yet */
 	assert(get_mode_size_bits(get_irn_mode(selector)) == 32);
@@ -1184,65 +1197,40 @@ static ir_node *gen_SwitchJmp(ir_node *node)
 	add_entity_linkage(entity, IR_LINKAGE_CONSTANT);
 
 	/* construct base address */
-	table_address = make_address(dbgi, block, entity, 0);
+	table_address = make_address(dbgi, new_block, entity, 0);
 	/* scale index */
-	idx = new_bd_sparc_Sll_imm(dbgi, block, new_selector, NULL, 2);
+	idx = new_bd_sparc_Sll_imm(dbgi, new_block, new_selector, NULL, 2);
 	/* load from jumptable */
-	load = new_bd_sparc_Ld_reg(dbgi, block, table_address, idx,
+	load = new_bd_sparc_Ld_reg(dbgi, new_block, table_address, idx,
 	                           get_irg_no_mem(current_ir_graph),
 	                           mode_gp);
 	address = new_r_Proj(load, mode_gp, pn_sparc_Ld_res);
 
-	return new_bd_sparc_SwitchJmp(dbgi, block, address, default_pn, entity);
+	return new_bd_sparc_SwitchJmp(dbgi, new_block, address, n_outs, table, entity);
 }
 
 static ir_node *gen_Cond(ir_node *node)
 {
 	ir_node    *selector = get_Cond_selector(node);
-	ir_mode    *mode     = get_irn_mode(selector);
+	ir_node    *cmp_left;
+	ir_mode    *cmp_mode;
 	ir_node    *block;
 	ir_node    *flag_node;
-	bool        is_unsigned;
 	ir_relation relation;
 	dbg_info   *dbgi;
 
-	/* switch/case jumps */
-	if (mode != mode_b) {
-		return gen_SwitchJmp(node);
-	}
-
-	block = be_transform_node(get_nodes_block(node));
-	dbgi  = get_irn_dbg_info(node);
-
-	/* regular if/else jumps */
-	if (is_Cmp(selector)) {
-		ir_mode *cmp_mode;
-
-		cmp_mode    = get_cmp_mode(selector);
-		flag_node   = be_transform_node(selector);
-		relation    = get_Cmp_relation(selector);
-		is_unsigned = !mode_is_signed(cmp_mode);
-		if (mode_is_float(cmp_mode)) {
-			assert(!is_unsigned);
-			return new_bd_sparc_fbfcc(dbgi, block, flag_node, relation);
-		} else {
-			return new_bd_sparc_Bicc(dbgi, block, flag_node, relation, is_unsigned);
-		}
+	/* note: after lower_mode_b we are guaranteed to have a Cmp input */
+	block       = be_transform_node(get_nodes_block(node));
+	dbgi        = get_irn_dbg_info(node);
+	cmp_left    = get_Cmp_left(selector);
+	cmp_mode    = get_irn_mode(cmp_left);
+	flag_node   = be_transform_node(selector);
+	relation    = get_Cmp_relation(selector);
+	if (mode_is_float(cmp_mode)) {
+		return new_bd_sparc_fbfcc(dbgi, block, flag_node, relation);
 	} else {
-		/* in this case, the selector must already deliver a mode_b value.
-		 * this happens, for example, when the Cond is connected to a Conv
-		 * which converts its argument to mode_b. */
-		ir_node  *new_op;
-		ir_graph *irg;
-		assert(mode == mode_b);
-
-		block     = be_transform_node(get_nodes_block(node));
-		irg       = get_irn_irg(block);
-		dbgi      = get_irn_dbg_info(node);
-		new_op    = be_transform_node(selector);
-		/* follow the SPARC architecture manual and use orcc for tst */
-		flag_node = new_bd_sparc_OrCCZero_reg(dbgi, block, new_op, get_g0(irg));
-		return new_bd_sparc_Bicc(dbgi, block, flag_node, ir_relation_less_greater, true);
+		bool is_unsigned = !mode_is_signed(cmp_mode);
+		return new_bd_sparc_Bicc(dbgi, block, flag_node, relation, is_unsigned);
 	}
 }
 
@@ -1298,6 +1286,18 @@ static ir_node *gen_Cmp(ir_node *node)
 			                        new_bd_sparc_XNorCCZero_reg,
 			                        new_bd_sparc_XNorCCZero_imm,
 			                        MATCH_NONE);
+		} else if (is_Add(op1)) {
+			return gen_helper_binop(op1, MATCH_COMMUTATIVE,
+			                        new_bd_sparc_AddCCZero_reg,
+			                        new_bd_sparc_AddCCZero_imm);
+		} else if (is_Sub(op1)) {
+			return gen_helper_binop(op1, MATCH_NONE,
+			                        new_bd_sparc_SubCCZero_reg,
+			                        new_bd_sparc_SubCCZero_imm);
+		} else if (is_Mul(op1)) {
+			return gen_helper_binop(op1, MATCH_COMMUTATIVE,
+			                        new_bd_sparc_MulCCZero_reg,
+			                        new_bd_sparc_MulCCZero_imm);
 		}
 	}
 
@@ -2425,6 +2425,7 @@ static ir_node *gen_Proj(ir_node *node)
 		return gen_Proj_Call(node);
 	case iro_Cmp:
 		return gen_Proj_Cmp(node);
+	case iro_Switch:
 	case iro_Cond:
 		return be_duplicate_node(node);
 	case iro_Div:
@@ -2497,6 +2498,7 @@ static void sparc_register_transformers(void)
 	be_set_transform_function(op_Start,        gen_Start);
 	be_set_transform_function(op_Store,        gen_Store);
 	be_set_transform_function(op_Sub,          gen_Sub);
+	be_set_transform_function(op_Switch,       gen_Switch);
 	be_set_transform_function(op_SymConst,     gen_SymConst);
 	be_set_transform_function(op_Unknown,      gen_Unknown);
 
@@ -2519,11 +2521,12 @@ void sparc_transform_graph(ir_graph *irg)
 
 	node_to_stack = pmap_create();
 
-	mode_gp    = mode_Iu;
-	mode_fp    = mode_F;
+	mode_gp    = sparc_reg_classes[CLASS_sparc_gp].mode;
+	mode_fp    = sparc_reg_classes[CLASS_sparc_fp].mode;
 	mode_fp2   = mode_D;
-	mode_flags = mode_Bu;
 	//mode_fp4 = ?
+	mode_flags = sparc_reg_classes[CLASS_sparc_flags_class].mode;
+	assert(sparc_reg_classes[CLASS_sparc_fpflags_class].mode == mode_flags);
 
 	start_mem  = NULL;
 	start_g0   = NULL;
@@ -2559,6 +2562,8 @@ void sparc_transform_graph(ir_graph *irg)
 
 	/* do code placement, to optimize the position of constants */
 	place_code(irg);
+	/* backend expects outedges to be always on */
+	edges_assure(irg);
 }
 
 void sparc_init_transform(void)

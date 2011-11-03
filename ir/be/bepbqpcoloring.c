@@ -36,6 +36,7 @@
 #include "iredges_t.h"
 #include "irprintf.h"
 #include "irgwalk.h"
+#include "irtools.h"
 #include "time.h"
 
 /* libfirm/ir/adt includes */

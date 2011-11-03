@@ -27,6 +27,7 @@
 
 #include <limits.h>
 
+#include "bitfiddle.h"
 #include "xmalloc.h"
 #include "tv.h"
 #include "iredges.h"
@@ -42,13 +43,14 @@
 #include "dbginfo.h"
 #include "heights.h"
 
-#include "../besched.h"
-#include "../beblocksched.h"
-#include "../beirg.h"
-#include "../begnuas.h"
-#include "../be_dbgout.h"
-#include "../benode.h"
-#include "../bestack.h"
+#include "besched.h"
+#include "beblocksched.h"
+#include "beirg.h"
+#include "begnuas.h"
+#include "be_dbgout.h"
+#include "benode.h"
+#include "bestack.h"
+#include "bepeephole.h"
 
 #include "sparc_emitter.h"
 #include "gen_sparc_emitter.h"
@@ -63,6 +65,14 @@ static const ir_node *delay_slot_filler; /**< this node has been choosen to fill
                                               the next delay slot */
 
 static void sparc_emit_node(const ir_node *node);
+static bool emitting_delay_slot;
+
+void sparc_emit_indent(void)
+{
+	be_emit_char('\t');
+	if (emitting_delay_slot)
+		be_emit_char(' ');
+}
 
 void sparc_emit_immediate(const ir_node *node)
 {
@@ -165,6 +175,27 @@ void sparc_emit_offset(const ir_node *node, int offset_node_pos)
 	}
 }
 
+void sparc_emit_source_reg_and_offset(const ir_node *node, int regpos,
+                                      int offpos)
+{
+	const arch_register_t *reg = arch_get_irn_register_in(node, regpos);
+	const sparc_load_store_attr_t *attr;
+
+#ifdef DEBUG_libfirm
+	if (reg == &sparc_registers[REG_SP]) {
+		attr = get_sparc_load_store_attr_const(node);
+		if (!attr->is_reg_reg
+		    && attr->base.immediate_value < SPARC_SAVE_AREA_SIZE) {
+
+			ir_fprintf(stderr, "warning: emitting stack pointer relative load/store with offset < %d\n", SPARC_SAVE_AREA_SIZE);
+		}
+	}
+#endif
+
+	sparc_emit_source_register(node, regpos);
+	sparc_emit_offset(node, offpos);
+}
+
 void sparc_emit_float_load_store_mode(const ir_node *node)
 {
 	const sparc_load_store_attr_t *attr = get_sparc_load_store_attr_const(node);
@@ -178,7 +209,7 @@ void sparc_emit_float_load_store_mode(const ir_node *node)
 	case 64:  be_emit_char('d'); return;
 	case 128: be_emit_char('q'); return;
 	}
-	panic("invalid flaot load/store mode %+F", mode);
+	panic("invalid float load/store mode %+F", mode);
 }
 
 /**
@@ -273,8 +304,18 @@ static void sparc_emit_cfop_target(const ir_node *node)
 	be_gas_emit_block_name(block);
 }
 
+/**
+ * returns true if a sparc_call calls a register and not an immediate
+ */
+static bool is_sparc_reg_call(const ir_node *node)
+{
+	const sparc_attr_t *attr = get_sparc_attr_const(node);
+	return attr->immediate_value_entity == NULL;
+}
+
 static int get_sparc_Call_dest_addr_pos(const ir_node *node)
 {
+	assert(is_sparc_reg_call(node));
 	return get_irn_arity(node)-1;
 }
 
@@ -306,13 +347,11 @@ static bool is_no_instruction(const ir_node *node)
 
 static bool has_delay_slot(const ir_node *node)
 {
-	if (is_sparc_Ba(node) && ba_is_fallthrough(node))
-		return false;
+	if (is_sparc_Ba(node)) {
+		return !ba_is_fallthrough(node);
+	}
 
-	return is_sparc_Bicc(node) || is_sparc_fbfcc(node) || is_sparc_Ba(node)
-		|| is_sparc_SwitchJmp(node) || is_sparc_Call(node)
-		|| is_sparc_SDiv(node) || is_sparc_UDiv(node)
-		|| is_sparc_Return(node);
+	return arch_get_irn_flags(node) & sparc_arch_irn_flag_has_delay_slot;
 }
 
 /** returns true if the emitter for this sparc node can produce more than one
@@ -335,51 +374,83 @@ static bool emits_multiple_instructions(const ir_node *node)
 		|| be_is_MemPerm(node) || be_is_Perm(node);
 }
 
+static bool uses_reg(const ir_node *node, const arch_register_t *reg)
+{
+	int arity = get_irn_arity(node);
+	int i;
+
+	for (i = 0; i < arity; ++i) {
+		const arch_register_t *in_reg = arch_get_irn_register_in(node, i);
+		if (reg == in_reg)
+			return true;
+	}
+	return false;
+}
+
+static bool writes_reg(const ir_node *node, const arch_register_t *reg)
+{
+	unsigned n_outs = arch_get_irn_n_outs(node);
+	unsigned o;
+	for (o = 0; o < n_outs; ++o) {
+		const arch_register_t *out_reg = arch_get_irn_register_out(node, o);
+		if (out_reg == reg)
+			return true;
+	}
+	return false;
+}
+
+static bool can_move_into_delayslot(const ir_node *node, const ir_node *to)
+{
+	if (!be_can_move_before(node, to))
+		return false;
+
+	if (is_sparc_Call(to)) {
+		ir_node *check;
+		/** all deps are used after the delay slot so, we're fine */
+		if (!is_sparc_reg_call(to))
+			return true;
+
+		check = get_irn_n(to, get_sparc_Call_dest_addr_pos(to));
+		if (skip_Proj(check) == node)
+			return false;
+
+		/* the Call also destroys the value of %o7, but since this is
+		 * currently marked as ignore register in the backend, it
+		 * should never be used by the instruction in the delay slot. */
+		if (uses_reg(node, &sparc_registers[REG_O7]))
+			return false;
+		return true;
+	} else if (is_sparc_Return(to)) {
+		/* return uses the value of %o7, all other values are not
+		 * immediately used */
+		if (writes_reg(node, &sparc_registers[REG_O7]))
+			return false;
+		return true;
+	} else {
+		/* the node must not use our computed values */
+		int arity = get_irn_arity(to);
+		int i;
+		for (i = 0; i < arity; ++i) {
+			ir_node *in = get_irn_n(to, i);
+			if (skip_Proj(in) == node)
+				return false;
+		}
+		return true;
+	}
+}
+
 /**
  * search for an instruction that can fill the delay slot of @p node
  */
 static const ir_node *pick_delay_slot_for(const ir_node *node)
 {
-	const ir_node *check      = node;
 	const ir_node *schedpoint = node;
 	unsigned       tries      = 0;
 	/* currently we don't track which registers are still alive, so we can't
 	 * pick any other instructions other than the one directly preceding */
-	static const unsigned PICK_DELAY_SLOT_MAX_DISTANCE = 1;
+	static const unsigned PICK_DELAY_SLOT_MAX_DISTANCE = 10;
 
 	assert(has_delay_slot(node));
-
-	if (is_sparc_Call(node)) {
-		const sparc_attr_t *attr   = get_sparc_attr_const(node);
-		ir_entity          *entity = attr->immediate_value_entity;
-		if (entity != NULL) {
-			check = NULL; /* pick any instruction, dependencies on Call
-			                 don't matter */
-		} else {
-			/* we only need to check the value for the call destination */
-			check = get_irn_n(node, get_sparc_Call_dest_addr_pos(node));
-		}
-
-		/* the Call also destroys the value of %o7, but since this is currently
-		 * marked as ignore register in the backend, it should never be used by
-		 * the instruction in the delay slot. */
-	} else if (is_sparc_Return(node)) {
-		/* we only have to check the jump destination value */
-		int arity = get_irn_arity(node);
-		int i;
-
-		check = NULL;
-		for (i = 0; i < arity; ++i) {
-			ir_node               *in  = get_irn_n(node, i);
-			const arch_register_t *reg = arch_get_irn_register(in);
-			if (reg == &sparc_registers[REG_O7]) {
-				check = skip_Proj(in);
-				break;
-			}
-		}
-	} else {
-		check = node;
-	}
 
 	while (sched_has_prev(schedpoint)) {
 		schedpoint = sched_prev(schedpoint);
@@ -397,15 +468,7 @@ static const ir_node *pick_delay_slot_for(const ir_node *node)
 		if (emits_multiple_instructions(schedpoint))
 			continue;
 
-		/* if check and schedpoint are not in the same block, give up. */
-		if (check != NULL
-				&& get_nodes_block(check) != get_nodes_block(schedpoint))
-			break;
-
-		/* allowed for delayslot: any instruction which is not necessary to
-		 * compute an input to the branch. */
-		if (check != NULL
-				&& heights_reachable_in_block(heights, check, schedpoint))
+		if (!can_move_into_delayslot(schedpoint, node))
 			continue;
 
 		/* found something */
@@ -426,11 +489,12 @@ static void emit_be_IncSP(const ir_node *irn)
 		return;
 
 	/* SPARC stack grows downwards */
+	sparc_emit_indent();
 	if (offset < 0) {
-		be_emit_cstring("\tsub ");
+		be_emit_cstring("sub ");
 		offset = -offset;
 	} else {
-		be_emit_cstring("\tadd ");
+		be_emit_cstring("add ");
 	}
 
 	sparc_emit_source_register(irn, 0);
@@ -445,7 +509,7 @@ static void emit_be_IncSP(const ir_node *irn)
  */
 static void emit_sparc_Mulh(const ir_node *irn)
 {
-	be_emit_cstring("\t");
+	sparc_emit_indent();
 	if (is_sparc_UMulh(irn)) {
 		be_emit_char('u');
 	} else {
@@ -463,20 +527,24 @@ static void emit_sparc_Mulh(const ir_node *irn)
 
 	// our result is in the y register now
 	// we just copy it to the assigned target reg
-	be_emit_cstring("\tmov %y, ");
+	sparc_emit_indent();
+	be_emit_cstring("mov %y, ");
 	sparc_emit_dest_register(irn, 0);
 	be_emit_finish_line_gas(irn);
 }
 
 static void fill_delay_slot(void)
 {
+	emitting_delay_slot = true;
 	if (delay_slot_filler != NULL) {
 		sparc_emit_node(delay_slot_filler);
 		delay_slot_filler = NULL;
 	} else {
-		be_emit_cstring("\tnop\n");
+		sparc_emit_indent();
+		be_emit_cstring("nop\n");
 		be_emit_write_line();
 	}
+	emitting_delay_slot = false;
 }
 
 static void emit_sparc_Div(const ir_node *node, bool is_signed)
@@ -485,7 +553,8 @@ static void emit_sparc_Div(const ir_node *node, bool is_signed)
 	unsigned wry_delay_count = 3;
 	unsigned i;
 
-	be_emit_cstring("\twr ");
+	sparc_emit_indent();
+	be_emit_cstring("wr ");
 	sparc_emit_source_register(node, 0);
 	be_emit_cstring(", 0, %y");
 	be_emit_finish_line_gas(node);
@@ -494,7 +563,8 @@ static void emit_sparc_Div(const ir_node *node, bool is_signed)
 		fill_delay_slot();
 	}
 
-	be_emit_irprintf("\t%s ", is_signed ? "sdiv" : "udiv");
+	sparc_emit_indent();
+	be_emit_irprintf("%s ", is_signed ? "sdiv" : "udiv");
 	sparc_emit_source_register(node, 1);
 	be_emit_cstring(", ");
 	sparc_emit_reg_or_imm(node, 2);
@@ -513,41 +583,37 @@ static void emit_sparc_UDiv(const ir_node *node)
 	emit_sparc_Div(node, false);
 }
 
-/**
- * Emits code for Call node
- */
 static void emit_sparc_Call(const ir_node *node)
 {
-	const sparc_attr_t *attr   = get_sparc_attr_const(node);
-	ir_entity          *entity = attr->immediate_value_entity;
-
-	be_emit_cstring("\tcall ");
-	if (entity != NULL) {
+	sparc_emit_indent();
+	be_emit_cstring("call ");
+	if (is_sparc_reg_call(node)) {
+		int dest_addr = get_sparc_Call_dest_addr_pos(node);
+		sparc_emit_source_register(node, dest_addr);
+	} else {
+		const sparc_attr_t *attr   = get_sparc_attr_const(node);
+		ir_entity          *entity = attr->immediate_value_entity;
 	    be_gas_emit_entity(entity);
 	    if (attr->immediate_value != 0) {
 			be_emit_irprintf("%+d", attr->immediate_value);
 		}
 		be_emit_cstring(", 0");
-	} else {
-		int dest_addr = get_sparc_Call_dest_addr_pos(node);
-		sparc_emit_source_register(node, dest_addr);
 	}
 	be_emit_finish_line_gas(node);
 
 	fill_delay_slot();
 
 	if (arch_get_irn_flags(node) & sparc_arch_irn_flag_aggregate_return) {
-		be_emit_cstring("\tunimp 8\n");
+		sparc_emit_indent();
+		be_emit_cstring("unimp 8\n");
 		be_emit_write_line();
 	}
 }
 
-/**
- * Emit code for Perm node
- */
 static void emit_be_Perm(const ir_node *irn)
 {
-	be_emit_cstring("\txor ");
+	sparc_emit_indent();
+	be_emit_cstring("xor ");
 	sparc_emit_source_register(irn, 1);
 	be_emit_cstring(", ");
 	sparc_emit_source_register(irn, 0);
@@ -555,7 +621,8 @@ static void emit_be_Perm(const ir_node *irn)
 	sparc_emit_source_register(irn, 0);
 	be_emit_finish_line_gas(NULL);
 
-	be_emit_cstring("\txor ");
+	sparc_emit_indent();
+	be_emit_cstring("xor ");
 	sparc_emit_source_register(irn, 1);
 	be_emit_cstring(", ");
 	sparc_emit_source_register(irn, 0);
@@ -563,7 +630,8 @@ static void emit_be_Perm(const ir_node *irn)
 	sparc_emit_source_register(irn, 1);
 	be_emit_finish_line_gas(NULL);
 
-	be_emit_cstring("\txor ");
+	sparc_emit_indent();
+	be_emit_cstring("xor ");
 	sparc_emit_source_register(irn, 1);
 	be_emit_cstring(", ");
 	sparc_emit_source_register(irn, 0);
@@ -572,60 +640,258 @@ static void emit_be_Perm(const ir_node *irn)
 	be_emit_finish_line_gas(irn);
 }
 
-static void emit_be_MemPerm(const ir_node *node)
+/* The stack pointer must always be SPARC_STACK_ALIGNMENT bytes aligned, so get
+ * the next bigger integer that's evenly divisible by it. */
+static unsigned get_aligned_sp_change(const unsigned num_regs)
+{
+	const unsigned bytes = num_regs * SPARC_REGISTER_SIZE;
+	return round_up2(bytes, SPARC_STACK_ALIGNMENT);
+}
+
+/* Spill register l0 or both l0 and l1, depending on n_spilled and n_to_spill.*/
+static void memperm_emit_spill_registers(const ir_node *node, int n_spilled,
+                                         int n_to_spill)
+{
+	assert(n_spilled < n_to_spill);
+
+	if (n_spilled == 0) {
+		/* We always reserve stack space for two registers because during copy
+		 * processing we don't know yet if we also need to handle a cycle which
+		 * needs two registers.  More complicated code in emit_MemPerm would
+		 * prevent wasting SPARC_REGISTER_SIZE bytes of stack space but
+		 * it is not worth the worse readability of emit_MemPerm. */
+
+		/* Keep stack pointer aligned. */
+		unsigned sp_change = get_aligned_sp_change(2);
+		sparc_emit_indent();
+		be_emit_irprintf("sub %%sp, %u, %%sp", sp_change);
+		be_emit_finish_line_gas(node);
+
+		/* Spill register l0. */
+		sparc_emit_indent();
+		be_emit_irprintf("st %%l0, [%%sp%+d]", SPARC_MIN_STACKSIZE);
+		be_emit_finish_line_gas(node);
+	}
+
+	if (n_to_spill == 2) {
+		/* Spill register l1. */
+		sparc_emit_indent();
+		be_emit_irprintf("st %%l1, [%%sp%+d]", SPARC_MIN_STACKSIZE + SPARC_REGISTER_SIZE);
+		be_emit_finish_line_gas(node);
+	}
+}
+
+/* Restore register l0 or both l0 and l1, depending on n_spilled. */
+static void memperm_emit_restore_registers(const ir_node *node, int n_spilled)
+{
+	unsigned sp_change;
+
+	if (n_spilled == 2) {
+		/* Restore register l1. */
+		sparc_emit_indent();
+		be_emit_irprintf("ld [%%sp%+d], %%l1", SPARC_MIN_STACKSIZE + SPARC_REGISTER_SIZE);
+		be_emit_finish_line_gas(node);
+	}
+
+	/* Restore register l0. */
+	sparc_emit_indent();
+	be_emit_irprintf("ld [%%sp%+d], %%l0", SPARC_MIN_STACKSIZE);
+	be_emit_finish_line_gas(node);
+
+	/* Restore stack pointer. */
+	sp_change = get_aligned_sp_change(2);
+	sparc_emit_indent();
+	be_emit_irprintf("add %%sp, %u, %%sp", sp_change);
+	be_emit_finish_line_gas(node);
+}
+
+/* Emit code to copy in_ent to out_ent.  Only uses l0. */
+static void memperm_emit_copy(const ir_node *node, ir_entity *in_ent,
+                              ir_entity *out_ent)
+{
+	ir_graph          *irg     = get_irn_irg(node);
+	be_stack_layout_t *layout  = be_get_irg_stack_layout(irg);
+	int                off_in  = be_get_stack_entity_offset(layout, in_ent, 0);
+	int                off_out = be_get_stack_entity_offset(layout, out_ent, 0);
+
+	/* Load from input entity. */
+	sparc_emit_indent();
+	be_emit_irprintf("ld [%%fp%+d], %%l0", off_in);
+	be_emit_finish_line_gas(node);
+
+	/* Store to output entity. */
+	sparc_emit_indent();
+	be_emit_irprintf("st %%l0, [%%fp%+d]", off_out);
+	be_emit_finish_line_gas(node);
+}
+
+/* Emit code to swap ent1 and ent2.  Uses l0 and l1. */
+static void memperm_emit_swap(const ir_node *node, ir_entity *ent1,
+                              ir_entity *ent2)
+{
+	ir_graph          *irg     = get_irn_irg(node);
+	be_stack_layout_t *layout  = be_get_irg_stack_layout(irg);
+	int                off1    = be_get_stack_entity_offset(layout, ent1, 0);
+	int                off2    = be_get_stack_entity_offset(layout, ent2, 0);
+
+	/* Load from first input entity. */
+	sparc_emit_indent();
+	be_emit_irprintf("ld [%%fp%+d], %%l0", off1);
+	be_emit_finish_line_gas(node);
+
+	/* Load from second input entity. */
+	sparc_emit_indent();
+	be_emit_irprintf("ld [%%fp%+d], %%l1", off2);
+	be_emit_finish_line_gas(node);
+
+	/* Store first value to second output entity. */
+	sparc_emit_indent();
+	be_emit_irprintf("st %%l0, [%%fp%+d]", off2);
+	be_emit_finish_line_gas(node);
+
+	/* Store second value to first output entity. */
+	sparc_emit_indent();
+	be_emit_irprintf("st %%l1, [%%fp%+d]", off1);
+	be_emit_finish_line_gas(node);
+}
+
+/* Find the index of ent in ents or return -1 if not found. */
+static int get_index(ir_entity **ents, int n, ir_entity *ent)
 {
 	int i;
-	int memperm_arity;
-	int sp_change = 0;
+
+	for (i = 0; i < n; ++i)
+		if (ents[i] == ent)
+			return i;
+
+	return -1;
+}
+
+/*
+ * Emit code for a MemPerm node.
+ *
+ * Analyze MemPerm for copy chains and cyclic swaps and resolve them using
+ * loads and stores.
+ * This function is conceptually very similar to permute_values in
+ * beprefalloc.c.
+ */
+static void emit_be_MemPerm(const ir_node *node)
+{
+	int         memperm_arity = be_get_MemPerm_entity_arity(node);
+	/* Upper limit for the number of participating entities is twice the
+	 * arity, e.g., for a simple copying MemPerm node with one input/output. */
+	int         max_size      = 2 * memperm_arity;
+	ir_entity **entities      = ALLOCANZ(ir_entity *, max_size);
+	/* sourceof contains the input entity for each entity.  If an entity is
+	 * never used as an output, its entry in sourceof is a fix point. */
+	int        *sourceof      = ALLOCANZ(int,         max_size);
+	/* n_users counts how many output entities use this entity as their input.*/
+	int        *n_users       = ALLOCANZ(int,         max_size);
+	/* n_spilled records the number of spilled registers, either 1 or 2. */
+	int         n_spilled     = 0;
+	int         i, n, oidx;
+
+	/* This implementation currently only works with frame pointers. */
 	ir_graph          *irg    = get_irn_irg(node);
 	be_stack_layout_t *layout = be_get_irg_stack_layout(irg);
+	assert(!layout->sp_relative && "MemPerms currently do not work without frame pointers");
 
-	/* this implementation only works with frame pointers currently */
-	assert(layout->sp_relative == false);
-
-	/* TODO: this implementation is slower than necessary.
-	   The longterm goal is however to avoid the memperm node completely */
-
-	memperm_arity = be_get_MemPerm_entity_arity(node);
-	// we use our local registers - so this is limited to 8 inputs !
-	if (memperm_arity > 8)
-		panic("memperm with more than 8 inputs not supported yet");
-
-	be_emit_irprintf("\tsub %%sp, %d, %%sp", memperm_arity*4);
-	be_emit_finish_line_gas(node);
-
-	for (i = 0; i < memperm_arity; ++i) {
-		ir_entity *entity = be_get_MemPerm_in_entity(node, i);
-		int        offset = be_get_stack_entity_offset(layout, entity, 0);
-
-		/* spill register */
-		be_emit_irprintf("\tst %%l%d, [%%sp%+d]", i, sp_change + SPARC_MIN_STACKSIZE);
-		be_emit_finish_line_gas(node);
-
-		/* load from entity */
-		be_emit_irprintf("\tld [%%fp%+d], %%l%d", offset, i);
-		be_emit_finish_line_gas(node);
-		sp_change += 4;
+	for (i = 0; i < max_size; ++i) {
+		sourceof[i] = i;
 	}
 
-	for (i = memperm_arity-1; i >= 0; --i) {
-		ir_entity *entity = be_get_MemPerm_out_entity(node, i);
-		int        offset = be_get_stack_entity_offset(layout, entity, 0);
+	for (i = n = 0; i < memperm_arity; ++i) {
+		ir_entity *out  = be_get_MemPerm_out_entity(node, i);
+		ir_entity *in   = be_get_MemPerm_in_entity(node, i);
+		int              oidx; /* Out index */
+		int              iidx; /* In index */
 
-		sp_change -= 4;
+		/* Insert into entities to be able to operate on unique indices. */
+		if (get_index(entities, n, out) == -1)
+			entities[n++] = out;
+		if (get_index(entities, n, in) == -1)
+			entities[n++] = in;
 
-		/* store to new entity */
-		be_emit_irprintf("\tst %%l%d, [%%fp%+d]", i, offset);
-		be_emit_finish_line_gas(node);
-		/* restore register */
-		be_emit_irprintf("\tld [%%sp%+d], %%l%d", sp_change + SPARC_MIN_STACKSIZE, i);
-		be_emit_finish_line_gas(node);
+		oidx = get_index(entities, n, out);
+		iidx = get_index(entities, n, in);
+
+		sourceof[oidx] = iidx; /* Remember the source. */
+		++n_users[iidx]; /* Increment number of users of this entity. */
 	}
 
-	be_emit_irprintf("\tadd %%sp, %d, %%sp", memperm_arity*4);
-	be_emit_finish_line_gas(node);
+	/* First do all the copies. */
+	for (oidx = 0; oidx < n; /* empty */) {
+		int iidx = sourceof[oidx];
 
-	assert(sp_change == 0);
+		/* Nothing to do for fix points.
+		 * Also, if entities[oidx] is used as an input by another copy, we
+		 * can't overwrite entities[oidx] yet.*/
+		if (iidx == oidx || n_users[oidx] > 0) {
+			++oidx;
+			continue;
+		}
+
+		/* We found the end of a 'chain', so do the copy. */
+		if (n_spilled == 0) {
+			memperm_emit_spill_registers(node, n_spilled, /*n_to_spill=*/1);
+			n_spilled = 1;
+		}
+		memperm_emit_copy(node, entities[iidx], entities[oidx]);
+
+		/* Mark as done. */
+		sourceof[oidx] = oidx;
+
+		assert(n_users[iidx] > 0);
+		/* Decrementing the number of users might enable us to do another
+		 * copy. */
+		--n_users[iidx];
+
+		if (iidx < oidx && n_users[iidx] == 0) {
+			oidx = iidx;
+		} else {
+			++oidx;
+		}
+	}
+
+	/* The rest are cycles. */
+	for (oidx = 0; oidx < n; /* empty */) {
+		int iidx = sourceof[oidx];
+		int tidx;
+
+		/* Nothing to do for fix points. */
+		if (iidx == oidx) {
+			++oidx;
+			continue;
+		}
+
+		assert(n_users[iidx] == 1);
+
+		/* Swap the two values to resolve the cycle. */
+		if (n_spilled < 2) {
+			memperm_emit_spill_registers(node, n_spilled, /*n_to_spill=*/2);
+			n_spilled = 2;
+		}
+		memperm_emit_swap(node, entities[iidx], entities[oidx]);
+
+		tidx = sourceof[iidx];
+		/* Mark as done. */
+		sourceof[iidx] = iidx;
+
+		/* The source of oidx is now the old source of iidx, because we swapped
+		 * the two entities. */
+		sourceof[oidx] = tidx;
+	}
+
+#ifdef DEBUG_libfirm
+	/* Only fix points should remain. */
+	for (i = 0; i < max_size; ++i) {
+		assert(sourceof[i] == i);
+	}
+#endif
+
+	assert(n_spilled > 0 && "Useless MemPerm node");
+
+	memperm_emit_restore_registers(node, n_spilled);
 }
 
 static void emit_sparc_Return(const ir_node *node)
@@ -643,7 +909,8 @@ static void emit_sparc_Return(const ir_node *node)
 			 || is_sparc_RestoreZero(delay_slot_filler))) {
 		destreg = "%i7";
 	}
-	be_emit_cstring("\tjmp ");
+	sparc_emit_indent();
+	be_emit_cstring("jmp ");
 	be_emit_string(destreg);
 	if (get_method_calling_convention(type) & cc_compound_ret) {
 		be_emit_cstring("+12");
@@ -654,19 +921,46 @@ static void emit_sparc_Return(const ir_node *node)
 	fill_delay_slot();
 }
 
+static const arch_register_t *map_i_to_o_reg(const arch_register_t *reg)
+{
+	unsigned idx = reg->global_index;
+	if (idx < REG_I0 || idx > REG_I7)
+		return reg;
+	idx += REG_O0 - REG_I0;
+	assert(REG_O0 <= idx && idx <= REG_O7);
+	return &sparc_registers[idx];
+}
+
+static void emit_sparc_Restore(const ir_node *node)
+{
+	const arch_register_t *destreg
+		= arch_get_irn_register_out(node, pn_sparc_Restore_res);
+	sparc_emit_indent();
+	be_emit_cstring("restore ");
+	sparc_emit_source_register(node, 1);
+	be_emit_cstring(", ");
+	sparc_emit_reg_or_imm(node, 2);
+	be_emit_cstring(", ");
+	destreg = map_i_to_o_reg(destreg);
+	be_emit_char('%');
+	be_emit_string(arch_register_get_name(destreg));
+	be_emit_finish_line_gas(node);
+}
+
 static void emit_sparc_FrameAddr(const ir_node *node)
 {
 	const sparc_attr_t *attr   = get_sparc_attr_const(node);
 	int32_t             offset = attr->immediate_value;
 
+	sparc_emit_indent();
 	if (offset < 0) {
-		be_emit_cstring("\tadd ");
+		be_emit_cstring("add ");
 		sparc_emit_source_register(node, 0);
 		be_emit_cstring(", ");
 		assert(sparc_is_value_imm_encodeable(offset));
 		be_emit_irprintf("%ld", offset);
 	} else {
-		be_emit_cstring("\tsub ");
+		be_emit_cstring("sub ");
 		sparc_emit_source_register(node, 0);
 		be_emit_cstring(", ");
 		assert(sparc_is_value_imm_encodeable(-offset));
@@ -769,7 +1063,7 @@ static void emit_sparc_branch(const ir_node *node, get_cc_func get_cc)
 	}
 
 	/* emit the true proj */
-	be_emit_cstring("\t");
+	sparc_emit_indent();
 	be_emit_string(get_cc(relation));
 	be_emit_char(' ');
 	sparc_emit_cfop_target(proj_true);
@@ -777,13 +1071,14 @@ static void emit_sparc_branch(const ir_node *node, get_cc_func get_cc)
 
 	fill_delay_slot();
 
+	sparc_emit_indent();
 	if (get_irn_link(proj_false) == next_block) {
-		be_emit_cstring("\t/* fallthrough to ");
+		be_emit_cstring("/* fallthrough to ");
 		sparc_emit_cfop_target(proj_false);
 		be_emit_cstring(" */");
 		be_emit_finish_line_gas(proj_false);
 	} else {
-		be_emit_cstring("\tba ");
+		be_emit_cstring("ba ");
 		sparc_emit_cfop_target(proj_false);
 		be_emit_finish_line_gas(proj_false);
 		fill_delay_slot();
@@ -810,43 +1105,46 @@ static void emit_sparc_fbfcc(const ir_node *node)
 		panic("TODO: fbfcc flags come from other block");
 	}
 	if (skip_Proj(flags) == prev) {
-		be_emit_cstring("\tnop\n");
+		sparc_emit_indent();
+		be_emit_cstring("nop\n");
 	}
 	emit_sparc_branch(node, get_fcc);
 }
 
 static void emit_sparc_Ba(const ir_node *node)
 {
+	sparc_emit_indent();
 	if (ba_is_fallthrough(node)) {
-		be_emit_cstring("\t/* fallthrough to ");
+		be_emit_cstring("/* fallthrough to ");
 		sparc_emit_cfop_target(node);
 		be_emit_cstring(" */");
+		be_emit_finish_line_gas(node);
 	} else {
-		be_emit_cstring("\tba ");
+		be_emit_cstring("ba ");
 		sparc_emit_cfop_target(node);
 		be_emit_finish_line_gas(node);
 		fill_delay_slot();
 	}
-	be_emit_finish_line_gas(node);
 }
 
 static void emit_sparc_SwitchJmp(const ir_node *node)
 {
 	const sparc_switch_jmp_attr_t *attr = get_sparc_switch_jmp_attr_const(node);
 
-	be_emit_cstring("\tjmp ");
+	sparc_emit_indent();
+	be_emit_cstring("jmp ");
 	sparc_emit_source_register(node, 0);
 	be_emit_finish_line_gas(node);
 	fill_delay_slot();
 
-	emit_jump_table(node, attr->default_proj_num, attr->jump_table,
-	                get_jump_target);
+	be_emit_jump_table(node, attr->table, attr->table_entity, get_jump_target);
 }
 
 static void emit_fmov(const ir_node *node, const arch_register_t *src_reg,
                       const arch_register_t *dst_reg)
 {
-	be_emit_cstring("\tfmovs %");
+	sparc_emit_indent();
+	be_emit_cstring("fmovs %");
 	be_emit_string(arch_register_get_name(src_reg));
 	be_emit_cstring(", %");
 	be_emit_string(arch_register_get_name(dst_reg));
@@ -882,7 +1180,8 @@ static void emit_be_Copy(const ir_node *node)
 			emit_fmov(node, src_reg, dst_reg);
 		}
 	} else if (mode_is_data(mode)) {
-		be_emit_cstring("\tmov ");
+		sparc_emit_indent();
+		be_emit_cstring("mov ");
 		sparc_emit_source_register(node, 0);
 		be_emit_cstring(", ");
 		sparc_emit_dest_register(node, 0);
@@ -928,6 +1227,7 @@ static void sparc_register_emitters(void)
 	set_emitter(op_sparc_FrameAddr, emit_sparc_FrameAddr);
 	set_emitter(op_sparc_SMulh,     emit_sparc_Mulh);
 	set_emitter(op_sparc_UMulh,     emit_sparc_Mulh);
+	set_emitter(op_sparc_Restore,   emit_sparc_Restore);
 	set_emitter(op_sparc_Return,    emit_sparc_Return);
 	set_emitter(op_sparc_SDiv,      emit_sparc_SDiv);
 	set_emitter(op_sparc_SwitchJmp, emit_sparc_SwitchJmp);
@@ -967,20 +1267,43 @@ static ir_node *find_next_delay_slot(ir_node *from)
 	return schedpoint;
 }
 
+static bool block_needs_label(const ir_node *block, const ir_node *sched_prev)
+{
+	int n_cfgpreds;
+
+	if (has_Block_entity(block))
+		return true;
+
+	n_cfgpreds = get_Block_n_cfgpreds(block);
+	if (n_cfgpreds == 0) {
+		return false;
+	} else if (n_cfgpreds > 1) {
+		return true;
+	} else {
+		ir_node *cfgpred       = get_Block_cfgpred(block, 0);
+		ir_node *cfgpred_block = get_nodes_block(cfgpred);
+		if (is_Proj(cfgpred) && is_sparc_SwitchJmp(get_Proj_pred(cfgpred)))
+			return true;
+		return sched_prev != cfgpred_block || get_irn_link(cfgpred) != block;
+	}
+}
+
 /**
  * Walks over the nodes in a block connected by scheduling edges
  * and emits code for each node.
  */
-static void sparc_emit_block(ir_node *block)
+static void sparc_emit_block(ir_node *block, ir_node *prev)
 {
 	ir_node *node;
 	ir_node *next_delay_slot;
 
 	assert(is_Block(block));
 
-	be_gas_emit_block_name(block);
-	be_emit_cstring(":\n");
-	be_emit_write_line();
+	if (block_needs_label(block, prev)) {
+		be_gas_emit_block_name(block);
+		be_emit_cstring(":\n");
+		be_emit_write_line();
+	}
 
 	next_delay_slot = find_next_delay_slot(sched_first(block));
 	if (next_delay_slot != NULL)
@@ -1007,9 +1330,8 @@ static void sparc_emit_block(ir_node *block)
  */
 static void sparc_emit_func_prolog(ir_graph *irg)
 {
-	ir_entity *ent = get_irg_entity(irg);
-	be_gas_emit_function_prolog(ent, 4);
-	be_emit_write_line();
+	ir_entity *entity = get_irg_entity(irg);
+	be_gas_emit_function_prolog(entity, 4);
 }
 
 /**
@@ -1017,14 +1339,8 @@ static void sparc_emit_func_prolog(ir_graph *irg)
  */
 static void sparc_emit_func_epilog(ir_graph *irg)
 {
-	ir_entity *ent = get_irg_entity(irg);
-	const char *irg_name = get_entity_ld_name(ent);
-	be_emit_write_line();
-	be_emit_irprintf("\t.size  %s, .-%s\n", irg_name, irg_name);
-	be_emit_cstring("# -- End ");
-	be_emit_string(irg_name);
-	be_emit_cstring("\n");
-	be_emit_write_line();
+	ir_entity *entity = get_irg_entity(irg);
+	be_gas_emit_function_epilog(entity);
 }
 
 static void sparc_gen_labels(ir_node *block, void *env)
@@ -1041,16 +1357,14 @@ static void sparc_gen_labels(ir_node *block, void *env)
 
 void sparc_emit_routine(ir_graph *irg)
 {
-	ir_entity  *entity = get_irg_entity(irg);
-	ir_node   **block_schedule;
-	size_t      i;
-	size_t      n;
+	ir_node **block_schedule;
+	size_t    i;
+	size_t    n;
 
 	heights = heights_new(irg);
 
 	/* register all emitter functions */
 	sparc_register_emitters();
-	be_dbg_method_begin(entity);
 
 	/* create the block schedule. For now, we don't need it earlier. */
 	block_schedule = be_create_block_schedule(irg);
@@ -1068,9 +1382,10 @@ void sparc_emit_routine(ir_graph *irg)
 
 	for (i = 0; i < n; ++i) {
 		ir_node *block = block_schedule[i];
+		ir_node *prev  = i>=1 ? block_schedule[i-1] : NULL;
 		if (block == get_irg_end_block(irg))
 			continue;
-		sparc_emit_block(block);
+		sparc_emit_block(block, prev);
 	}
 
 	/* emit function epilog */

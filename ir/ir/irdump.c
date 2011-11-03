@@ -66,6 +66,19 @@
 #include "pset.h"
 #include "util.h"
 
+typedef struct pns_lookup {
+	long       nr;      /**< the proj number */
+	const char *name;   /**< the name of the Proj */
+} pns_lookup_t;
+
+typedef struct proj_lookup {
+	unsigned           code;      /**< the opcode of the Proj predecessor */
+	unsigned           num_data;  /**< number of data entries */
+	const pns_lookup_t *data;     /**< the data */
+} proj_lookup_t;
+
+#include "gen_irdump.c.inl"
+
 /** Dump only irgs with names that start with this prefix. */
 static ident *dump_file_filter_id = NULL;
 
@@ -679,17 +692,6 @@ void dump_node_opcode(FILE *F, ir_node *n)
 		}
 		break;
 
-	case iro_Proj: {
-		ir_node *pred = get_Proj_pred(n);
-
-		if (get_irn_opcode(pred) == iro_Cond
-			&& get_Proj_proj(n) == get_Cond_default_proj(pred)
-			&& get_irn_mode(get_Cond_selector(pred)) != mode_b)
-			fprintf(F, "defProj");
-		else
-			goto default_case;
-	} break;
-
 	case iro_Load:
 		if (get_Load_unaligned(n) == align_non_aligned)
 			fprintf(F, "ua");
@@ -727,7 +729,6 @@ void dump_node_opcode(FILE *F, ir_node *n)
 		break;
 
 	default:
-default_case:
 		fprintf(F, "%s", get_irn_opname(n));
 	}
 }
@@ -789,149 +790,6 @@ static int dump_node_typeinfo(FILE *F, ir_node *n)
 	}
 	return bad;
 }
-
-typedef struct pns_lookup {
-	long       nr;      /**< the proj number */
-	const char *name;   /**< the name of the Proj */
-} pns_lookup_t;
-
-typedef struct proj_lookup {
-	unsigned           code;      /**< the opcode of the Proj predecessor */
-	unsigned           num_data;  /**< number of data entries */
-	const pns_lookup_t *data;     /**< the data */
-} proj_lookup_t;
-
-/** the lookup table for Proj(Start) names */
-static const pns_lookup_t start_lut[] = {
-#define X(a)    { pn_Start_##a, #a }
-	X(X_initial_exec),
-	X(M),
-	X(P_frame_base),
-	X(T_args),
-#undef X
-};
-
-/** the lookup table for Proj(Cond) names */
-static const pns_lookup_t cond_lut[] = {
-#define X(a)    { pn_Cond_##a, #a }
-	X(false),
-	X(true)
-#undef X
-};
-
-/** the lookup table for Proj(Call) names */
-static const pns_lookup_t call_lut[] = {
-#define X(a)    { pn_Call_##a, #a }
-	X(M),
-	X(X_regular),
-	X(X_except),
-	X(T_result),
-#undef X
-};
-
-/** the lookup table for Proj(Div) names */
-static const pns_lookup_t div_lut[] = {
-#define X(a)    { pn_Div_##a, #a }
-	X(M),
-	X(X_regular),
-	X(X_except),
-	X(res)
-#undef X
-};
-
-/** the lookup table for Proj(Mod) names */
-static const pns_lookup_t mod_lut[] = {
-#define X(a)    { pn_Mod_##a, #a }
-	X(M),
-	X(X_regular),
-	X(X_except),
-	X(res)
-#undef X
-};
-
-/** the lookup table for Proj(Load) names */
-static const pns_lookup_t load_lut[] = {
-#define X(a)    { pn_Load_##a, #a }
-	X(M),
-	X(X_regular),
-	X(X_except),
-	X(res)
-#undef X
-};
-
-/** the lookup table for Proj(Store) names */
-static const pns_lookup_t store_lut[] = {
-#define X(a)    { pn_Store_##a, #a }
-	X(M),
-	X(X_regular),
-	X(X_except)
-#undef X
-};
-
-/** the lookup table for Proj(Alloc) names */
-static const pns_lookup_t alloc_lut[] = {
-#define X(a)    { pn_Alloc_##a, #a }
-	X(M),
-	X(X_regular),
-	X(X_except),
-	X(res)
-#undef X
-};
-
-/** the lookup table for Proj(CopyB) names */
-static const pns_lookup_t copyb_lut[] = {
-#define X(a)    { pn_CopyB_##a, #a }
-	X(M),
-	X(X_regular),
-	X(X_except),
-#undef X
-};
-
-/** the lookup table for Proj(InstOf) names */
-static const pns_lookup_t instof_lut[] = {
-#define X(a)    { pn_InstOf_##a, #a }
-	X(M),
-	X(X_regular),
-	X(X_except),
-	X(res),
-#undef X
-};
-
-/** the lookup table for Proj(Raise) names */
-static const pns_lookup_t raise_lut[] = {
-#define X(a)    { pn_Raise_##a, #a }
-	X(M),
-	X(X),
-#undef X
-};
-
-/** the lookup table for Proj(Bound) names */
-static const pns_lookup_t bound_lut[] = {
-#define X(a)    { pn_Bound_##a, #a }
-	X(M),
-	X(X_regular),
-	X(X_except),
-	X(res),
-#undef X
-};
-
-/** the Proj lookup table */
-static const proj_lookup_t proj_lut[] = {
-#define E(a)  ARRAY_SIZE(a), a
-	{ iro_Start,   E(start_lut) },
-	{ iro_Cond,    E(cond_lut) },
-	{ iro_Call,    E(call_lut) },
-	{ iro_Div,     E(div_lut) },
-	{ iro_Mod,     E(mod_lut) },
-	{ iro_Load,    E(load_lut) },
-	{ iro_Store,   E(store_lut) },
-	{ iro_Alloc,   E(alloc_lut) },
-	{ iro_CopyB,   E(copyb_lut) },
-	{ iro_InstOf,  E(instof_lut) },
-	{ iro_Raise,   E(raise_lut) },
-	{ iro_Bound,   E(bound_lut) }
-#undef E
-};
 
 /**
  * Dump additional node attributes of some nodes to a file F.
@@ -1009,11 +867,8 @@ static void dump_node_nodeattr(FILE *F, ir_node *n)
 
 	default:
 		break;
-	} /* end switch */
+	}
 }
-
-#include <math.h>
-#include "execution_frequency.h"
 
 static void dump_node_ana_vals(FILE *F, ir_node *n)
 {
@@ -1036,23 +891,6 @@ void dump_node_label(FILE *F, ir_node *n)
 	if (flags & ir_dump_flag_idx_label) {
 		fprintf(F, ":%u", get_irn_idx(n));
 	}
-}
-
-void dump_vrp_info(FILE *F, ir_node *n)
-{
-	vrp_attr *vrp = vrp_get_info(n);
-	if (n == NULL) {
-		return;
-	}
-
-	fprintf(F, "range_type: %d\n", (int) vrp->range_type);
-	if (vrp->range_type == VRP_RANGE || vrp->range_type ==
-			VRP_ANTIRANGE) {
-		ir_fprintf(F, "range_bottom: %F\n",vrp->range_bottom);
-		ir_fprintf(F, "range_top: %F\n", vrp->range_top);
-	}
-	ir_fprintf(F, "bits_set: %T\n", vrp->bits_set);
-	ir_fprintf(F, "bits_not_set: %T\n", vrp->bits_not_set);
 }
 
 /**
@@ -1131,7 +969,7 @@ static void dump_node_vcgattr(FILE *F, ir_node *node, ir_node *local, int bad)
 
 void *dump_add_node_info_callback(dump_node_info_cb_t *cb, void *data)
 {
-	hook_entry_t *info = XMALLOC(hook_entry_t);
+	hook_entry_t *info = XMALLOCZ(hook_entry_t);
 
 	info->hook._hook_node_info = cb;
 	info->context              = data;
@@ -1629,7 +1467,8 @@ static void dump_block_graph(FILE *F, ir_graph *irg)
 			dump_ir_edges(node, F);
 	}
 
-	if ((flags & ir_dump_flag_loops) && (get_irg_loopinfo_state(irg) & loopinfo_valid))
+	if ((flags & ir_dump_flag_loops)
+	     && is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO))
 		dump_loop_nodes_into_graph(F, irg);
 
 	current_ir_graph = rem;
@@ -1643,6 +1482,42 @@ static void dump_graph_info(FILE *F, ir_graph *irg)
 {
 	fprintf(F, "info1: \"");
 	dump_entity_to_file(F, get_irg_entity(irg));
+	fprintf(F, "\n");
+
+	/* dump graph state */
+	fprintf(F, "state:");
+	if (is_irg_state(irg, IR_GRAPH_STATE_ARCH_DEP))
+		fprintf(F, " arch_dep");
+	if (is_irg_state(irg, IR_GRAPH_STATE_MODEB_LOWERED))
+		fprintf(F, " modeb_lowered");
+	if (is_irg_state(irg, IR_GRAPH_STATE_NORMALISATION2))
+		fprintf(F, " normalisation2");
+	if (is_irg_state(irg, IR_GRAPH_STATE_IMPLICIT_BITFIELD_MASKING))
+		fprintf(F, " implicit_bitfield_masking");
+	if (is_irg_state(irg, IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE))
+		fprintf(F, " optimize_unreachable_code");
+	if (is_irg_state(irg, IR_GRAPH_STATE_NO_CRITICAL_EDGES))
+		fprintf(F, " no_critical_edges");
+	if (is_irg_state(irg, IR_GRAPH_STATE_NO_BADS))
+		fprintf(F, " no_bads");
+	if (is_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE))
+		fprintf(F, " no_unreachable_code");
+	if (is_irg_state(irg, IR_GRAPH_STATE_ONE_RETURN))
+		fprintf(F, " one_return");
+	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE))
+		fprintf(F, " consistent_dominance");
+	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE))
+		fprintf(F, " consistent_postdominance");
+	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUT_EDGES))
+		fprintf(F, " consistent_out_edges");
+	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS))
+		fprintf(F, " consistent_outs");
+	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO))
+		fprintf(F, " consistent_loopinfo");
+	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE))
+		fprintf(F, " consistent_entity_usage");
+	if (is_irg_state(irg, IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS))
+		fprintf(F, " valid_exended_blocks");
 	fprintf(F, "\"\n");
 }
 
@@ -1747,7 +1622,7 @@ static void print_typespecific_info(FILE *F, ir_type *tp)
 		break;
 	default:
 		break;
-	} /* switch type */
+	}
 }
 #endif
 
@@ -1774,7 +1649,7 @@ static void print_typespecific_vcgattr(FILE *F, ir_type *tp)
 		break;
 	default:
 		break;
-	} /* switch type */
+	}
 }
 
 void dump_type_node(FILE *F, ir_type *tp)
@@ -1957,12 +1832,12 @@ static void dump_type_info(type_or_ent tore, void *env)
 			break;
 		default:
 			break;
-		} /* switch type */
+		}
 		break; /* case k_type */
 	}
 	default:
 		printf(" *** irdump,  dump_type_info(l.%i), faulty type.\n", __LINE__);
-	} /* switch kind_or_entity */
+	}
 }
 
 /** For dumping class hierarchies.
@@ -2007,12 +1882,12 @@ static void dump_class_hierarchy_node(type_or_ent tore, void *ctx)
 			}
 			break;
 		default: break;
-		} /* switch type */
+		}
 		break; /* case k_type */
 	}
 	default:
 		printf(" *** irdump,  dump_class_hierarchy_node(l.%i), faulty type.\n", __LINE__);
-	} /* switch kind_or_entity */
+	}
 }
 
 /*******************************************************************/
@@ -2250,7 +2125,7 @@ static void dump_extblock_graph(FILE *F, ir_graph *irg)
 	}
 
 	if ((flags & ir_dump_flag_loops)
-			&& (get_irg_loopinfo_state(irg) & loopinfo_valid))
+			&& (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO)))
 		dump_loop_nodes_into_graph(F, irg);
 
 	current_ir_graph = rem;
@@ -2262,7 +2137,7 @@ static void dump_blocks_extbb_grouped(FILE *F, ir_graph *irg)
 	size_t    i;
 	ir_entity *ent = get_irg_entity(irg);
 
-	if (get_irg_extblk_state(irg) != ir_extblk_info_valid)
+	if (!is_irg_state(irg, IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS))
 		compute_extbb(irg);
 
 	construct_extblock_lists(irg);
@@ -2342,7 +2217,7 @@ void dump_ir_graph_file(FILE *out, ir_graph *irg)
 
 	/* dump the out edges in a separate walk */
 	if ((flags & ir_dump_flag_out_edges)
-			&& (get_irg_outs_state(irg) != outs_none)) {
+			&& (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS))) {
 		irg_out_walk(get_irg_start(irg), dump_out_edge, NULL, out);
 	}
 
@@ -2397,7 +2272,7 @@ static void dump_block_to_cfg(ir_node *block, void *env)
 
 		/* Dump dominator/postdominator edge */
 		if (ir_get_dump_flags() & ir_dump_flag_dominance) {
-			if (get_irg_dom_state(current_ir_graph) == dom_consistent && get_Block_idom(block)) {
+			if (is_irg_state(get_irn_irg(block), IR_GRAPH_STATE_CONSISTENT_DOMINANCE) && get_Block_idom(block)) {
 				ir_node *pred = get_Block_idom(block);
 				fprintf(F, "edge: { sourcename: \"");
 				PRINT_NODEID(block);
@@ -2405,7 +2280,7 @@ static void dump_block_to_cfg(ir_node *block, void *env)
 				PRINT_NODEID(pred);
 				fprintf(F, "\" " DOMINATOR_EDGE_ATTR "}\n");
 			}
-			if (get_irg_postdom_state(current_ir_graph) == dom_consistent && get_Block_ipostdom(block)) {
+			if (is_irg_state(get_irn_irg(block), IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE) && get_Block_ipostdom(block)) {
 				ir_node *pred = get_Block_ipostdom(block);
 				fprintf(F, "edge: { sourcename: \"");
 				PRINT_NODEID(block);

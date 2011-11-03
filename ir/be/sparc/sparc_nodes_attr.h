@@ -26,7 +26,7 @@
 #ifndef FIRM_BE_SPARC_SPARC_NODES_ATTR_H
 #define FIRM_BE_SPARC_SPARC_NODES_ATTR_H
 
-#include "../bearch.h"
+#include "bearch.h"
 #include <stdint.h>
 
 typedef struct sparc_attr_t  sparc_attr_t;
@@ -47,6 +47,7 @@ enum sparc_arch_irn_flags_t {
 	sparc_arch_irn_flag_needs_64bit_spillslot = arch_irn_flags_backend << 2,
 	sparc_arch_irn_flag_immediate_form        = arch_irn_flags_backend << 3,
 	sparc_arch_irn_flag_aggregate_return      = arch_irn_flags_backend << 4,
+	sparc_arch_irn_flag_has_delay_slot        = arch_irn_flags_backend << 5,
 };
 
 /**
@@ -91,9 +92,9 @@ struct sparc_jmp_cond_attr_t {
  */
 typedef struct sparc_switch_jmp_attr_t sparc_switch_jmp_attr_t;
 struct sparc_switch_jmp_attr_t {
-	sparc_attr_t  base;    /**< generic attribute */
-	long          default_proj_num;
-	ir_entity    *jump_table;
+	sparc_attr_t           base;
+	const ir_switch_table *table;
+	ir_entity             *table_entity;
 };
 
 #endif

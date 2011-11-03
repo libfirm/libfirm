@@ -37,17 +37,6 @@
 #include "firm_common.h"
 #include "begin.h"
 
-/* ------------------------------------------------------------------- */
-/*
- * Backedge information.
- *
- * Predecessors of Block and Phi nodes can have  backedges.
- * If loop information is computed, this information is computed, too.
- * The backedge information can only be used if the graph is not in
- * phase phase_building.
- */
-/* ------------------------------------------------------------------- */
-
 /** Returns non-zero if the predecessor pos is a backedge. */
 FIRM_API int is_backedge(const ir_node *n, int pos);
 /** Marks edge pos as a backedge. */
@@ -72,7 +61,7 @@ FIRM_API int is_ir_loop(const void *thing);
 /** Set the outermost loop in ir graph as basic access to loop tree. */
 FIRM_API void set_irg_loop(ir_graph *irg, ir_loop *l);
 
-/* Returns the root loop info (if exists) for an irg. */
+/** Returns the root loop info (if exists) for an irg. */
 FIRM_API ir_loop *get_irg_loop(const ir_graph *irg);
 
 /** Returns the loop n is contained in.  NULL if node is in no loop. */
@@ -83,7 +72,6 @@ FIRM_API ir_loop *get_loop_outer_loop(const ir_loop *loop);
 /** Returns nesting depth of this loop */
 FIRM_API unsigned get_loop_depth(const ir_loop *loop);
 
-/* Sons are the inner loops contained in this loop. */
 /** Returns the number of inner loops */
 FIRM_API size_t get_loop_n_sons(const ir_loop *loop);
 
@@ -119,10 +107,6 @@ FIRM_API long get_loop_loop_nr(const ir_loop *loop);
 /** A field to connect additional information to a loop. */
 FIRM_API void set_loop_link(ir_loop *loop, void *link);
 FIRM_API void *get_loop_link(const ir_loop *loop);
-
-/* ------------------------------------------------------------------- */
-/* Constructing and destructing the loop/backedge information.         */
-/* ------------------------------------------------------------------- */
 
 /** Constructs backedge information and loop tree for a graph.
  *
@@ -169,7 +153,7 @@ FIRM_API int construct_cf_backedges(ir_graph *irg);
  *
  * @param irg  the graph
  */
-FIRM_API void assure_cf_loop(ir_graph *irg);
+FIRM_API void assure_loopinfo(ir_graph *irg);
 
 /**
  * Removes all loop information.
@@ -177,11 +161,6 @@ FIRM_API void assure_cf_loop(ir_graph *irg);
  */
 FIRM_API void free_loop_information(ir_graph *irg);
 FIRM_API void free_all_loop_information (void);
-
-
-/* ------------------------------------------------------------------- */
-/* Simple analyses based on the loop information                       */
-/* ------------------------------------------------------------------- */
 
 /** Test whether a value is loop invariant.
  *

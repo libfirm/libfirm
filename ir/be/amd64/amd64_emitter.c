@@ -36,10 +36,10 @@
 #include "irargs_t.h"
 #include "irprog.h"
 
-#include "../besched.h"
-#include "../begnuas.h"
-#include "../beblocksched.h"
-#include "../be_dbgout.h"
+#include "besched.h"
+#include "begnuas.h"
+#include "beblocksched.h"
+#include "be_dbgout.h"
 
 #include "amd64_emitter.h"
 #include "gen_amd64_emitter.h"
@@ -49,7 +49,7 @@
 
 #define SNPRINTF_BUF_LEN 128
 
-#include "../benode.h"
+#include "benode.h"
 
 /*************************************************************
  *             _       _    __   _          _
@@ -581,7 +581,6 @@ void amd64_gen_routine(ir_graph *irg)
 
 	blk_sched = be_create_block_schedule(irg);
 
-	be_dbg_method_begin(entity);
 	be_gas_emit_function_prolog(entity, 4);
 
 	irg_block_walk_graph(irg, amd64_gen_labels, NULL, NULL);
@@ -601,7 +600,4 @@ void amd64_gen_routine(ir_graph *irg)
 	}
 
 	be_gas_emit_function_epilog(entity);
-	be_dbg_method_end();
-	be_emit_char('\n');
-	be_emit_write_line();
 }

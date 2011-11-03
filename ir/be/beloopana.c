@@ -29,7 +29,7 @@
 #include "set.h"
 #include "pset.h"
 #include "irnode.h"
-#include "irtools.h"
+#include "util.h"
 #include "irloop_t.h"
 #include "error.h"
 #include "debug.h"
@@ -40,7 +40,7 @@
 #include "beloopana.h"
 #include "bemodule.h"
 
-DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL);
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 #define HASH_LOOP_INFO(info) (HASH_PTR((info)->loop) ^ HASH_PTR((info)->cls))
 
@@ -166,10 +166,7 @@ be_loopana_t *be_new_loop_pressure_cls(ir_graph *irg,
 	DBG((dbg, LEVEL_1, " Computing register pressure for class %s:\n", cls->name));
 	DBG((dbg, LEVEL_1, "=====================================================\n", cls->name));
 
-	/* construct control flow loop tree */
-	if (! (get_irg_loopinfo_state(irg) & loopinfo_cf_consistent)) {
-		construct_cf_backedges(irg);
-	}
+	assure_loopinfo(irg);
 
 	be_compute_loop_pressure(loop_ana, get_irg_loop(irg), cls);
 
@@ -192,10 +189,7 @@ be_loopana_t *be_new_loop_pressure(ir_graph *irg,
 	loop_ana->data = new_set(cmp_loop_info, 16);
 	loop_ana->irg  = irg;
 
-	/* construct control flow loop tree */
-	if (! (get_irg_loopinfo_state(irg) & loopinfo_cf_consistent)) {
-		construct_cf_backedges(irg);
-	}
+	assure_loopinfo(irg);
 
 	if (cls != NULL) {
 		be_compute_loop_pressure(loop_ana, irg_loop, cls);

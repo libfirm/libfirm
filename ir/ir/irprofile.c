@@ -150,8 +150,6 @@ static void add_constructor(ir_entity *method)
     ir_type   *ptr_type     = new_type_pointer(method_type);
 
     ir_type   *constructors = get_segment_type(IR_SEGMENT_CONSTRUCTORS);
-	/* Mach-O does not like labels in the constructor segment, but with ELF
-	 * the linker dies horribly if there is no label. */
 	ident     *ide = id_unique("constructor_ptr.%u");
     ir_entity *ptr = new_entity(constructors, ide, ptr_type);
     ir_graph  *irg = get_const_code_irg();

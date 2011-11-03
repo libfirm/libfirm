@@ -52,23 +52,19 @@ static int count_non_bads(ir_node *node)
  * Block-walker, remove Bad block predecessors and shorten Phis.
  * Phi links must be uptodate.
  */
-static void block_remove_bads(ir_node *block, void *env)
+static void block_remove_bads(ir_node *block)
 {
-	int *changed = (int *)env;
-	int i, j;
-	ir_node **new_in, *new_block, *phi;
+	ir_graph  *irg     = get_irn_irg(block);
+	const int  max     = get_irn_arity(block);
+	const int  new_max = count_non_bads(block);
+	ir_node  **new_in  = ALLOCAN(ir_node*, new_max);
+	int        i;
+	int        j;
+	ir_node   *new_block;
+	ir_node   *phi;
+	ir_node   *next;
 	ir_entity *block_entity;
-	const int max = get_irn_arity(block);
-	const int new_max = count_non_bads(block);
 	assert(max >= new_max);
-
-	if (is_Bad(block) || max == new_max)
-		return;
-
-	new_in = ALLOCAN(ir_node*, new_max);
-	*changed = 1;
-
-	assert(get_Block_dom_depth(block) >= 0);
 
 	/* 1. Create a new block without Bad inputs */
 	for (i = j = 0; i < max; ++i) {
@@ -81,44 +77,52 @@ static void block_remove_bads(ir_node *block, void *env)
 
 	/* If the end block is unreachable, it might have zero predecessors. */
 	if (new_max == 0) {
-		ir_node *end_block = get_irg_end_block(get_irn_irg(block));
+		ir_node *end_block = get_irg_end_block(irg);
 		if (block == end_block) {
 			set_irn_in(block, new_max, new_in);
 			return;
 		}
 	}
 
-	new_block = new_r_Block(get_irn_irg(block), new_max, new_in);
+	new_block = new_r_Block(irg, new_max, new_in);
 	block_entity = get_Block_entity(block);
 	if (block_entity)
 		set_Block_entity(new_block, block_entity);
 
 	/* 2. Remove inputs on Phis, where the block input is Bad. */
-	phi = get_Block_phis(block);
-	if (phi != NULL) {
-		do {
-			ir_node *next = get_Phi_next(phi);
-			if (get_irn_arity(phi) != new_max) {
-				ir_node *new_phi;
+	for (phi = get_Block_phis(block); phi != NULL; phi = next) {
+		ir_node *new_phi;
 
-				for (i = j = 0; i < max; ++i) {
-					ir_node *block_pred = get_irn_n(block, i);
+		next = get_Phi_next(phi);
+		assert(get_irn_arity(phi) == max);
 
-					if (!is_Bad(block_pred)) {
-						ir_node *pred = get_irn_n(phi, i);
-						new_in[j++] = pred;
-					}
-				}
-				assert(j == new_max);
+		for (i = j = 0; i < max; ++i) {
+			ir_node *block_pred = get_irn_n(block, i);
 
-				new_phi = new_r_Phi(new_block, new_max, new_in, get_irn_mode(phi));
-				exchange(phi, new_phi);
+			if (!is_Bad(block_pred)) {
+				ir_node *pred = get_irn_n(phi, i);
+				new_in[j++] = pred;
 			}
-			phi = next;
-		} while (phi != NULL);
+		}
+		assert(j == new_max);
+
+		new_phi = new_r_Phi(new_block, new_max, new_in, get_irn_mode(phi));
+		exchange(phi, new_phi);
 	}
 
 	exchange(block, new_block);
+}
+
+static void collect(ir_node *node, void *env)
+{
+	firm_collect_block_phis(node, NULL);
+	if (is_Block(node)) {
+		ir_node ***blocks_to_process = (ir_node***)env;
+		int        arity    = get_irn_arity(node);
+		int        non_bads = count_non_bads(node);
+		if (arity != non_bads)
+			ARR_APP1(ir_node*, *blocks_to_process, node);
+	}
 }
 
 /* Remove Bad nodes from Phi and Block inputs.
@@ -129,17 +133,26 @@ static void block_remove_bads(ir_node *block, void *env)
  */
 int remove_bads(ir_graph *irg)
 {
-	int changed = 0;
+	size_t i;
+	size_t n_to_process;
+	ir_node **blocks_to_process = NEW_ARR_F(ir_node*, 0);
+
 	/* build phi list per block */
-	irg_walk_graph(irg, firm_clear_block_phis, firm_collect_block_phis, NULL);
+	irg_walk_graph(irg, firm_clear_block_phis, collect, &blocks_to_process);
 
-	/* actually remove Bads */
-	irg_block_walk_graph(irg, NULL, block_remove_bads, (void *)&changed);
+	n_to_process = ARR_LEN(blocks_to_process);
+	for (i = 0; i < n_to_process; ++i) {
+		ir_node *block = blocks_to_process[i];
+		block_remove_bads(block);
+	}
+	DEL_ARR_F(blocks_to_process);
 
-	if (changed) {
+	if (n_to_process > 0) {
 		edges_deactivate(irg);
-		set_irg_outs_inconsistent(irg);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
+		return 1;
 	}
 
-	return changed;
+	return 0;
 }

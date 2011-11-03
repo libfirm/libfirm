@@ -29,7 +29,7 @@
 
 #include <stdbool.h>
 #include "irtypes.h"
-#include "../beirg.h"
+#include "beirg.h"
 
 /**
  * The address mode data: Used to construct (memory) address modes.

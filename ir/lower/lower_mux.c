@@ -137,8 +137,8 @@ void lower_mux(ir_graph *irg, lower_mux_callback *cb_func)
 		/* Cleanup, verify the graph. */
 		ir_free_resources(irg, resources);
 
-		set_irg_doms_inconsistent(irg);
-		set_irg_extblk_inconsistent(irg);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
+		                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
 	}
 	DEL_ARR_F(env.muxes);
 }

@@ -54,8 +54,11 @@ void firm_clear_node_and_phi_links(ir_node *n, void *env)
 void firm_clear_block_phis(ir_node *node, void *env)
 {
 	(void) env;
-	if (is_Block(node))
+	if (is_Block(node)) {
 		set_Block_phis(node, NULL);
+	} else if (is_Phi(node)) {
+		set_Phi_next(node, NULL);
+	}
 }
 
 void firm_collect_block_phis(ir_node *node, void *env)

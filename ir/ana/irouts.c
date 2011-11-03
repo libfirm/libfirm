@@ -34,7 +34,7 @@
 #include "irgraph_t.h"
 #include "irprog_t.h"
 #include "irgwalk.h"
-#include "irtools.h"
+#include "util.h"
 #include "irprintf.h"
 #include "error.h"
 
@@ -231,8 +231,9 @@ void irg_out_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
                   void *env)
 {
 	assert(node);
-	if (get_irg_outs_state(current_ir_graph) != outs_none) {
-		inc_irg_visited (current_ir_graph);
+	ir_graph *irg = get_irn_irg(node);
+	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS)) {
+		inc_irg_visited (irg);
 		irg_out_walk_2(node, pre, post, env);
 	}
 }
@@ -450,8 +451,7 @@ void compute_irg_outs(ir_graph *irg)
 	/* Update graph state */
 	assert(get_irg_phase_state(current_ir_graph) != phase_building);
 
-	if (current_ir_graph->outs_state != outs_none)
-		free_irg_outs(current_ir_graph);
+	free_irg_outs(current_ir_graph);
 
 	/* This first iteration counts the overall number of out edges and the
 	   number of out edges for each node. */
@@ -470,13 +470,13 @@ void compute_irg_outs(ir_graph *irg)
 	/* Check how much memory we have used */
 	assert (end == (irg->outs + n_out_edges));
 
-	current_ir_graph->outs_state = outs_consistent;
+	set_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS);
 	current_ir_graph = rem;
 }
 
 void assure_irg_outs(ir_graph *irg)
 {
-	if (get_irg_outs_state(irg) != outs_consistent)
+	if (! is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS))
 		compute_irg_outs(irg);
 }
 
@@ -497,7 +497,6 @@ void free_irp_outs(void)
 void free_irg_outs(ir_graph *irg)
 {
 	/*   current_ir_graph->outs_state = outs_none; */
-	irg->outs_state = outs_none;
 
 	if (irg->outs) {
 #ifdef DEBUG_libfirm

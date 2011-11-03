@@ -43,9 +43,9 @@
 #include "debug.h"
 #include "error.h"
 
-#include "../belive_t.h"
-#include "../besched.h"
-#include "../benode.h"
+#include "belive_t.h"
+#include "besched.h"
+#include "benode.h"
 #include "bearch_ia32_t.h"
 #include "ia32_new_nodes.h"
 #include "gen_ia32_new_nodes.h"
@@ -154,7 +154,7 @@ struct x87_simulator {
 static int x87_get_depth(const x87_state *state)
 {
 	return state->depth;
-}  /* x87_get_depth */
+}
 
 /**
  * Return the virtual register index at st(pos).
@@ -168,7 +168,7 @@ static int x87_get_st_reg(const x87_state *state, int pos)
 {
 	assert(pos < state->depth);
 	return state->st[MASK_TOS(state->tos + pos)].reg_idx;
-}  /* x87_get_st_reg */
+}
 
 #ifdef DEBUG_libfirm
 /**
@@ -183,7 +183,7 @@ static ir_node *x87_get_st_node(const x87_state *state, int pos)
 {
 	assert(pos < state->depth);
 	return state->st[MASK_TOS(state->tos + pos)].node;
-}  /* x87_get_st_node */
+}
 
 /**
  * Dump the stack for debugging.
@@ -199,7 +199,7 @@ static void x87_dump_stack(const x87_state *state)
 		    x87_get_st_node(state, i)));
 	}
 	DB((dbg, LEVEL_2, "<-- TOS\n"));
-}  /* x87_dump_stack */
+}
 #endif /* DEBUG_libfirm */
 
 /**
@@ -217,8 +217,8 @@ static void x87_set_st(x87_state *state, int reg_idx, ir_node *node, int pos)
 	state->st[MASK_TOS(state->tos + pos)].node    = node;
 
 	DB((dbg, LEVEL_2, "After SET_REG: "));
-	DEBUG_ONLY(x87_dump_stack(state));
-}  /* x87_set_st */
+	DEBUG_ONLY(x87_dump_stack(state);)
+}
 
 /**
  * Set the tos virtual register.
@@ -230,7 +230,7 @@ static void x87_set_st(x87_state *state, int reg_idx, ir_node *node, int pos)
 static void x87_set_tos(x87_state *state, int reg_idx, ir_node *node)
 {
 	x87_set_st(state, reg_idx, node, 0);
-}  /* x87_set_tos */
+}
 
 /**
  * Swap st(0) with st(pos).
@@ -248,8 +248,8 @@ static void x87_fxch(x87_state *state, int pos)
 	state->st[MASK_TOS(state->tos)] = entry;
 
 	DB((dbg, LEVEL_2, "After FXCH: "));
-	DEBUG_ONLY(x87_dump_stack(state));
-}  /* x87_fxch */
+	DEBUG_ONLY(x87_dump_stack(state);)
+}
 
 /**
  * Convert a virtual register to the stack index.
@@ -268,7 +268,7 @@ static int x87_on_stack(const x87_state *state, int reg_idx)
 		if (state->st[MASK_TOS(tos + i)].reg_idx == reg_idx)
 			return i;
 	return -1;
-}  /* x87_on_stack */
+}
 
 /**
  * Push a virtual Register onto the stack, double pushed allowed.
@@ -286,8 +286,8 @@ static void x87_push_dbl(x87_state *state, int reg_idx, ir_node *node)
 	state->st[state->tos].reg_idx = reg_idx;
 	state->st[state->tos].node    = node;
 
-	DB((dbg, LEVEL_2, "After PUSH: ")); DEBUG_ONLY(x87_dump_stack(state));
-}  /* x87_push_dbl */
+	DB((dbg, LEVEL_2, "After PUSH: ")); DEBUG_ONLY(x87_dump_stack(state);)
+}
 
 /**
  * Push a virtual Register onto the stack, double pushes are NOT allowed.
@@ -302,7 +302,7 @@ static void x87_push(x87_state *state, int reg_idx, ir_node *node)
 	assert(x87_on_stack(state, reg_idx) == -1 && "double push");
 
 	x87_push_dbl(state, reg_idx, node);
-}  /* x87_push */
+}
 
 /**
  * Pop a virtual Register from the stack.
@@ -316,8 +316,8 @@ static void x87_pop(x87_state *state)
 	--state->depth;
 	state->tos = MASK_TOS(state->tos + 1);
 
-	DB((dbg, LEVEL_2, "After POP: ")); DEBUG_ONLY(x87_dump_stack(state));
-}  /* x87_pop */
+	DB((dbg, LEVEL_2, "After POP: ")); DEBUG_ONLY(x87_dump_stack(state);)
+}
 
 /**
  * Empty the fpu stack
@@ -352,7 +352,7 @@ static blk_state *x87_get_bl_state(x87_simulator *sim, ir_node *block)
 	}
 
 	return PTR_TO_BLKSTATE(entry->value);
-}  /* x87_get_bl_state */
+}
 
 /**
  * Creates a new x87 state.
@@ -367,7 +367,7 @@ static x87_state *x87_alloc_state(x87_simulator *sim)
 
 	res->sim = sim;
 	return res;
-}  /* x87_alloc_state */
+}
 
 /**
  * Clone a x87 state.
@@ -383,7 +383,7 @@ static x87_state *x87_clone_state(x87_simulator *sim, const x87_state *src)
 
 	*res = *src;
 	return res;
-}  /* x87_clone_state */
+}
 
 /**
  * Patch a virtual instruction into a x87 one and return
@@ -416,7 +416,7 @@ static ir_node *x87_patch_insn(ir_node *n, ir_op *op)
 	} else if (mode_is_float(mode))
 		set_irn_mode(n, ia32_reg_classes[CLASS_ia32_st].mode);
 	return res;
-}  /* x87_patch_insn */
+}
 
 /**
  * Returns the first Proj of a mode_T node having a given mode.
@@ -438,7 +438,7 @@ static ir_node *get_irn_Proj_for_mode(ir_node *n, ir_mode *m)
 	}
 
 	return NULL;
-}  /* get_irn_Proj_for_mode */
+}
 
 /**
  * Wrap the arch_* function here so we can check for errors.
@@ -449,7 +449,7 @@ static inline const arch_register_t *x87_get_irn_register(const ir_node *irn)
 
 	assert(res->reg_class == &ia32_reg_classes[CLASS_ia32_vfp]);
 	return res;
-}  /* x87_get_irn_register */
+}
 
 static inline const arch_register_t *x87_irn_get_register(const ir_node *irn,
                                                           int pos)
@@ -458,7 +458,7 @@ static inline const arch_register_t *x87_irn_get_register(const ir_node *irn,
 
 	assert(res->reg_class == &ia32_reg_classes[CLASS_ia32_vfp]);
 	return res;
-}  /* x87_irn_get_register */
+}
 
 static inline const arch_register_t *get_st_reg(int index)
 {
@@ -493,7 +493,7 @@ static ir_node *x87_fxch_shuffle(x87_state *state, int pos, ir_node *block)
 
 	x87_fxch(state, pos);
 	return fxch;
-}  /* x87_fxch_shuffle */
+}
 
 /**
  * Calculate the necessary permutations to reach dst_state.
@@ -583,9 +583,9 @@ static x87_state *x87_shuffle(x87_simulator *sim, ir_node *block,
 
 	/* Hmm: permutation needed */
 	DB((dbg, LEVEL_2, "\n%+F needs permutation: from\n", block));
-	DEBUG_ONLY(x87_dump_stack(state));
+	DEBUG_ONLY(x87_dump_stack(state);)
 	DB((dbg, LEVEL_2, "                  to\n"));
-	DEBUG_ONLY(x87_dump_stack(dst_state));
+	DEBUG_ONLY(x87_dump_stack(dst_state);)
 
 
 #ifdef DEBUG_libfirm
@@ -634,7 +634,7 @@ static x87_state *x87_shuffle(x87_simulator *sim, ir_node *block,
 		}
 	}
 	return state;
-}  /* x87_shuffle */
+}
 
 /**
  * Create a fxch node before another node.
@@ -663,7 +663,7 @@ static ir_node *x87_create_fxch(x87_state *state, ir_node *n, int pos)
 	sched_add_before(n, fxch);
 	DB((dbg, LEVEL_1, "<<< %s %s, %s\n", get_irn_opname(fxch), attr->x87[0]->name, attr->x87[2]->name));
 	return fxch;
-}  /* x87_create_fxch */
+}
 
 /**
  * Create a fpush before node n.
@@ -690,7 +690,7 @@ static void x87_create_fpush(x87_state *state, ir_node *n, int pos, int op_idx)
 	sched_add_before(n, fpush);
 
 	DB((dbg, LEVEL_1, "<<< %s %s, %s\n", get_irn_opname(fpush), attr->x87[0]->name, attr->x87[2]->name));
-}  /* x87_create_fpush */
+}
 
 /**
  * Create a fpop before node n.
@@ -723,7 +723,7 @@ static ir_node *x87_create_fpop(x87_state *state, ir_node *n, int num)
 		DB((dbg, LEVEL_1, "<<< %s %s\n", get_irn_opname(fpop), attr->x87[0]->name));
 	} while (--num > 0);
 	return fpop;
-}  /* x87_create_fpop */
+}
 
 /* --------------------------------- liveness ------------------------------------------ */
 
@@ -769,7 +769,7 @@ static vfp_liveness vfp_liveness_transfer(ir_node *irn, vfp_liveness live)
 		}
 	}
 	return live;
-}  /* vfp_liveness_transfer */
+}
 
 /**
  * Put all live virtual registers at the end of a block into a bitset.
@@ -798,7 +798,7 @@ static vfp_liveness vfp_liveness_end_of_block(x87_simulator *sim, const ir_node 
 	}
 
 	return live;
-}  /* vfp_liveness_end_of_block */
+}
 
 /** get the register mask from an arch_register */
 #define REGMASK(reg)    (1 << (arch_register_get_index(reg)))
@@ -818,7 +818,7 @@ static unsigned vfp_live_args_after(x87_simulator *sim, const ir_node *pos, unsi
 
 	assert(idx < sim->n_idx);
 	return sim->live[idx] & ~kill;
-}  /* vfp_live_args_after */
+}
 
 /**
  * Calculate the liveness for a whole block and cache it.
@@ -846,7 +846,7 @@ static void update_liveness(x87_simulator *sim, ir_node *block)
 	}
 	idx = get_irn_idx(block);
 	sim->live[idx] = live;
-}  /* update_liveness */
+}
 
 /**
  * Returns true if a register is live in a set.
@@ -873,7 +873,7 @@ static void vfp_dump_live(vfp_liveness live)
 		}
 	}
 	DB((dbg, LEVEL_2, "\n"));
-}  /* vfp_dump_live */
+}
 #endif /* DEBUG_libfirm */
 
 /* --------------------------------- simulators ---------------------------------------- */
@@ -910,9 +910,9 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl)
 	DB((dbg, LEVEL_1, ">>> %+F %s, %s -> %s\n", n,
 		arch_register_get_name(op1_reg), arch_register_get_name(op2_reg),
 		arch_register_get_name(out)));
-	DEBUG_ONLY(vfp_dump_live(live));
+	DEBUG_ONLY(vfp_dump_live(live);)
 	DB((dbg, LEVEL_1, "Stack before: "));
-	DEBUG_ONLY(x87_dump_stack(state));
+	DEBUG_ONLY(x87_dump_stack(state);)
 
 	op1_idx = x87_on_stack(state, reg_index_1);
 	assert(op1_idx >= 0);
@@ -1050,7 +1050,7 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl)
 	}
 
 	return NO_NODE_ADDED;
-}  /* sim_binop */
+}
 
 /**
  * Simulate a virtual Unop.
@@ -1071,7 +1071,7 @@ static int sim_unop(x87_state *state, ir_node *n, ir_op *op)
 	unsigned live = vfp_live_args_after(sim, n, REGMASK(out));
 
 	DB((dbg, LEVEL_1, ">>> %+F -> %s\n", n, out->name));
-	DEBUG_ONLY(vfp_dump_live(live));
+	DEBUG_ONLY(vfp_dump_live(live);)
 
 	op1_idx = x87_on_stack(state, arch_register_get_index(op1));
 
@@ -1095,7 +1095,7 @@ static int sim_unop(x87_state *state, ir_node *n, ir_op *op)
 	DB((dbg, LEVEL_1, "<<< %s -> %s\n", get_irn_opname(n), out->name));
 
 	return NO_NODE_ADDED;
-}  /* sim_unop */
+}
 
 /**
  * Simulate a virtual Load instruction.
@@ -1119,7 +1119,7 @@ static int sim_load(x87_state *state, ir_node *n, ir_op *op, int res_pos)
 	DB((dbg, LEVEL_1, "<<< %s -> %s\n", get_irn_opname(n), arch_register_get_name(out)));
 
 	return NO_NODE_ADDED;
-}  /* sim_load */
+}
 
 /**
  * Rewire all users of @p old_val to @new_val iff they are scheduled after @p store.
@@ -1148,7 +1148,7 @@ static void collect_and_rewire_users(ir_node *store, ir_node *old_val, ir_node *
 			}
 		}
 	}
-}  /* collect_and_rewire_users */
+}
 
 /**
  * Simulate a virtual Store.
@@ -1257,7 +1257,7 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p)
 	DB((dbg, LEVEL_1, "<<< %s %s ->\n", get_irn_opname(n), arch_register_get_name(op2)));
 
 	return insn;
-}  /* sim_store */
+}
 
 #define _GEN_BINOP(op, rev) \
 static int sim_##op(x87_state *state, ir_node *n) { \
@@ -1337,7 +1337,7 @@ static int sim_fisttp(x87_state *state, ir_node *n)
 	DB((dbg, LEVEL_1, "<<< %s %s ->\n", get_irn_opname(n), arch_register_get_name(op2)));
 
 	return NO_NODE_ADDED;
-}  /* sim_fisttp */
+}
 
 /**
  * Simulate a virtual FtstFnstsw.
@@ -1358,9 +1358,9 @@ static int sim_FtstFnstsw(x87_state *state, ir_node *n)
 	unsigned               live        = vfp_live_args_after(sim, n, 0);
 
 	DB((dbg, LEVEL_1, ">>> %+F %s\n", n, arch_register_get_name(reg1)));
-	DEBUG_ONLY(vfp_dump_live(live));
+	DEBUG_ONLY(vfp_dump_live(live);)
 	DB((dbg, LEVEL_1, "Stack before: "));
-	DEBUG_ONLY(x87_dump_stack(state));
+	DEBUG_ONLY(x87_dump_stack(state);)
 	assert(op1_idx >= 0);
 
 	if (op1_idx != 0) {
@@ -1380,7 +1380,7 @@ static int sim_FtstFnstsw(x87_state *state, ir_node *n)
 		x87_create_fpop(state, sched_next(n), 1);
 
 	return NO_NODE_ADDED;
-}  /* sim_FtstFnstsw */
+}
 
 /**
  * Simulate a Fucom
@@ -1410,9 +1410,9 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 
 	DB((dbg, LEVEL_1, ">>> %+F %s, %s\n", n,
 		arch_register_get_name(op1), arch_register_get_name(op2)));
-	DEBUG_ONLY(vfp_dump_live(live));
+	DEBUG_ONLY(vfp_dump_live(live);)
 	DB((dbg, LEVEL_1, "Stack before: "));
-	DEBUG_ONLY(x87_dump_stack(state));
+	DEBUG_ONLY(x87_dump_stack(state);)
 
 	op1_idx = x87_on_stack(state, reg_index_1);
 	assert(op1_idx >= 0);
@@ -1619,7 +1619,7 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 	}
 
 	return NO_NODE_ADDED;
-}  /* sim_Fucom */
+}
 
 /**
  * Simulate a Keep.
@@ -1656,10 +1656,10 @@ static int sim_Keep(x87_state *state, ir_node *node)
 	}
 
 	DB((dbg, LEVEL_1, "Stack after: "));
-	DEBUG_ONLY(x87_dump_stack(state));
+	DEBUG_ONLY(x87_dump_stack(state);)
 
 	return NO_NODE_ADDED;
-}  /* sim_Keep */
+}
 
 /**
  * Keep the given node alive by adding a be_Keep.
@@ -1747,7 +1747,7 @@ static ir_node *create_Copy(x87_state *state, ir_node *n)
 	arch_set_irn_register(res, out);
 
 	return res;
-}  /* create_Copy */
+}
 
 /**
  * Simulate a be_Copy.
@@ -1778,7 +1778,7 @@ static int sim_Copy(x87_state *state, ir_node *n)
 
 	DB((dbg, LEVEL_1, ">>> %+F %s -> %s\n", n,
 		arch_register_get_name(op1), arch_register_get_name(out)));
-	DEBUG_ONLY(vfp_dump_live(live));
+	DEBUG_ONLY(vfp_dump_live(live);)
 
 	op1_idx = x87_on_stack(state, arch_register_get_index(op1));
 
@@ -1850,7 +1850,7 @@ static int sim_Copy(x87_state *state, ir_node *n)
 		}
 	}
 	return NO_NODE_ADDED;
-}  /* sim_Copy */
+}
 
 /**
  * Returns the vf0 result Proj of a Call.
@@ -1871,7 +1871,7 @@ static ir_node *get_call_result_proj(ir_node *call)
 	}
 
 	return NULL;
-}  /* get_call_result_proj */
+}
 
 /**
  * Simulate a ia32_Call.
@@ -1916,10 +1916,10 @@ static int sim_Call(x87_state *state, ir_node *n)
 
 end_call:
 	DB((dbg, LEVEL_1, "Stack after: "));
-	DEBUG_ONLY(x87_dump_stack(state));
+	DEBUG_ONLY(x87_dump_stack(state);)
 
 	return NO_NODE_ADDED;
-}  /* sim_Call */
+}
 
 /**
  * Simulate a be_Return.
@@ -1948,7 +1948,7 @@ static int sim_Return(x87_state *state, ir_node *n)
 		x87_pop(state);
 
 	return NO_NODE_ADDED;
-}  /* sim_Return */
+}
 
 typedef struct perm_data_t {
 	const arch_register_t *in;
@@ -2004,7 +2004,7 @@ static int sim_Perm(x87_state *state, ir_node *irn)
 	DB((dbg, LEVEL_1, "<<< %+F\n", irn));
 
 	return NO_NODE_ADDED;
-}  /* sim_Perm */
+}
 
 /**
  * Kill any dead registers at block start by popping them from the stack.
@@ -2038,8 +2038,8 @@ static x87_state *x87_kill_deads(x87_simulator *sim, ir_node *block, x87_state *
 		state = x87_clone_state(sim, state);
 
 		DB((dbg, LEVEL_1, "Killing deads:\n"));
-		DEBUG_ONLY(vfp_dump_live(live));
-		DEBUG_ONLY(x87_dump_stack(state));
+		DEBUG_ONLY(vfp_dump_live(live);)
+		DEBUG_ONLY(x87_dump_stack(state);)
 
 		if (kill_mask != 0 && live == 0) {
 			/* special case: kill all registers */
@@ -2091,7 +2091,7 @@ static x87_state *x87_kill_deads(x87_simulator *sim, ir_node *block, x87_state *
 		keep_alive(keep);
 	}
 	return state;
-}  /* x87_kill_deads */
+}
 
 /**
  * Run a simulation and fix all virtual instructions for a block.
@@ -2114,7 +2114,7 @@ static void x87_simulate_block(x87_simulator *sim, ir_node *block)
 
 	DB((dbg, LEVEL_1, "Simulate %+F\n", block));
 	DB((dbg, LEVEL_2, "State at Block begin:\n "));
-	DEBUG_ONLY(x87_dump_stack(state));
+	DEBUG_ONLY(x87_dump_stack(state);)
 
 	/* at block begin, kill all dead registers */
 	state = x87_kill_deads(sim, block, state);
@@ -2151,7 +2151,7 @@ static void x87_simulate_block(x87_simulator *sim, ir_node *block)
 
 	start_block = get_irg_start_block(get_irn_irg(block));
 
-	DB((dbg, LEVEL_2, "State at Block end:\n ")); DEBUG_ONLY(x87_dump_stack(state));
+	DB((dbg, LEVEL_2, "State at Block end:\n ")); DEBUG_ONLY(x87_dump_stack(state);)
 
 	/* check if the state must be shuffled */
 	foreach_block_succ(block, edge) {
@@ -2165,7 +2165,7 @@ static void x87_simulate_block(x87_simulator *sim, ir_node *block)
 
 		if (succ_state->begin == NULL) {
 			DB((dbg, LEVEL_2, "Set begin state for succ %+F:\n", succ));
-			DEBUG_ONLY(x87_dump_stack(state));
+			DEBUG_ONLY(x87_dump_stack(state);)
 			succ_state->begin = state;
 
 			waitq_put(sim->worklist, succ);
@@ -2181,7 +2181,7 @@ static void x87_simulate_block(x87_simulator *sim, ir_node *block)
 		}
 	}
 	bl_state->end = state;
-}  /* x87_simulate_block */
+}
 
 /**
  * Register a simulator function.
@@ -2193,7 +2193,7 @@ static void register_sim(ir_op *op, sim_func func)
 {
 	assert(op->ops.generic == NULL);
 	op->ops.generic = (op_func) func;
-}  /* register_sim */
+}
 
 /**
  * Create a new x87 simulator.
@@ -2236,7 +2236,7 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg)
 	register_sim(op_be_Return,         sim_Return);
 	register_sim(op_be_Perm,           sim_Perm);
 	register_sim(op_be_Keep,           sim_Keep);
-}  /* x87_init_simulator */
+}
 
 /**
  * Destroy a x87 simulator.
@@ -2248,7 +2248,7 @@ static void x87_destroy_simulator(x87_simulator *sim)
 	pmap_destroy(sim->blk_states);
 	obstack_free(&sim->obst, NULL);
 	DB((dbg, LEVEL_1, "x87 Simulator stopped\n\n"));
-}  /* x87_destroy_simulator */
+}
 
 /**
  * Pre-block walker: calculate the liveness information for the block
@@ -2258,7 +2258,7 @@ static void update_liveness_walker(ir_node *block, void *data)
 {
 	x87_simulator *sim = (x87_simulator*)data;
 	update_liveness(sim, block);
-}  /* update_liveness_walker */
+}
 
 /*
  * Run a simulation and fix all virtual instructions for a graph.
@@ -2307,10 +2307,10 @@ void ia32_x87_simulate_graph(ir_graph *irg)
 	/* kill it */
 	del_waitq(sim.worklist);
 	x87_destroy_simulator(&sim);
-}  /* ia32_x87_simulate_graph */
+}
 
 /* Initializes the x87 simulator. */
 void ia32_init_x87(void)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.be.ia32.x87");
-}  /* ia32_init_x87 */
+}

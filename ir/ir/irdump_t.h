@@ -157,8 +157,6 @@ void dump_node_opcode(FILE *out, ir_node *n);
 
 void dump_node_label(FILE *out, ir_node *n);
 
-void dump_vrp_info(FILE *out, ir_node *n);
-
 /** Writes vcg representation with title "PRINT_TYPEID(tp)" to file F. */
 void dump_type_node(FILE *out, ir_type *tp);
 

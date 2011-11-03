@@ -37,21 +37,6 @@
 #include "firm_types.h"
 #include "begin.h"
 
-/* Methoden sind "frei", wenn ihr Funktionszeiger (potentiell)
- * "explizit" bekannt ist, d.h.:
- *
- * - die Methode ist von aussen sichtbar (external_visible).
- *
- * - ihr Funktionszeiger ist "frei", d.h. der Funktionszeiger wurde
- *   nicht ausschliesslich an den entsprechenden Eingang eines
- *   Call-Knotens weitergegeben, sondern z.B. in den Speicher
- *   geschrieben, als Parameter uebergeben, ...
- *
- * Die main-Methode ist immer in der Menge enthalten.
- *
- * Die Links an den "ir_node"s werden geloescht.
- */
-
 /** Analyses a rough estimation of the possible call graph.
  *
  *  Determines for each Call node the set of possibly called methods.
@@ -72,23 +57,26 @@
  *  and Craig Chambers.
  *
  *  Performs some optimizations possible by the analysed information:
- *    - Replace SymConst-name nodes by SymConst-entity nodes if possible.
- *    - Replace (Sel-method(Alloc)) by SymConst-entity.
- *    - Replaces Sel-method by SymConst-entity if the method is never overwritten.
+ *  - Replace SymConst-name nodes by SymConst-entity nodes if possible.
+ *  - Replace (Sel-method(Alloc)) by SymConst-entity.
+ *  - Replaces Sel-method by SymConst-entity if the method is never overwritten.
  */
 FIRM_API size_t cgana(ir_entity ***free_methods);
 
-/** Free callee information.
+/**
+ * Free callee information.
  *
- *  Sets callee_info_state of the graph passed to none.  Sets callee field
- *  in all call nodes to NULL.  Else it happens that the field contains
- *  pointers to other than firm arrays.
+ * Sets callee_info_state of the graph passed to none.  Sets callee field
+ * in all call nodes to NULL.  Else it happens that the field contains
+ * pointers to other than firm arrays.
  */
 FIRM_API void free_callee_info(ir_graph *irg);
 FIRM_API void free_irp_callee_info(void);
 
-/* Optimize the address expressions passed to call nodes.
- * Performs only the optimizations done by cgana. */
+/**
+ * Optimize the address expressions passed to call nodes.
+ * Performs only the optimizations done by cgana.
+ */
 FIRM_API void opt_call_addrs(void);
 
 #include "end.h"

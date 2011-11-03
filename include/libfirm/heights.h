@@ -56,13 +56,6 @@ FIRM_API int heights_reachable_in_block(ir_heights_t *h, const ir_node *n,
                                         const ir_node *m);
 
 /**
- * Recompute the height information.
- * This can be used to recompute the height information if the graph has changed since the last computation.
- * @param h The heights object.
- */
-FIRM_API void heights_recompute(ir_heights_t *h);
-
-/**
  * Recompute the height information for a certain block.
  * This can be used to recompute the height information of a block.
  * @param h     The heights object.

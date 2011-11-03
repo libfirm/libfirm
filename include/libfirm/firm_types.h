@@ -47,14 +47,12 @@ typedef struct ir_graph             ir_graph,            *ir_graph_ptr;
 typedef struct ir_prog              ir_prog,             *ir_prog_ptr;
 typedef struct ir_loop              ir_loop,             *ir_loop_ptr;
 typedef struct ir_region            ir_region,           *ir_region_ptr;
-typedef struct ir_reg_tree          ir_reg_tree,         *ir_reg_tree_ptr;
 typedef struct ir_entity            ir_entity,           *ir_entity_ptr;
 typedef struct ir_extblk            ir_extblk,           *ir_extblk_ptr;
 typedef struct ir_exec_freq         ir_exec_freq,        *ir_exec_freq_ptr;
 typedef struct ir_cdep              ir_cdep,             *ir_cdep_ptr;
 typedef struct sn_entry             *seqno_t;
 typedef struct arch_irn_ops_t       arch_irn_ops_t;
-typedef struct type_identify_if_t   type_identify_if_t;
 typedef struct ir_graph_pass_t      ir_graph_pass_t;
 typedef struct ir_prog_pass_t       ir_prog_pass_t;
 
@@ -66,8 +64,12 @@ typedef union  ir_initializer_t     ir_initializer_t,    *ir_initializer_ptr;
 typedef void irg_walk_func(ir_node *, void *);
 typedef void irg_reg_walk_func(ir_region *, void *);
 
-/* settings */
-typedef struct ir_settings_arch_dep_t ir_settings_arch_dep_t;
+/**
+ * A switch table mapping integer numbers to proj-numbers of a Switch-node.
+ * Entries map a continuous range of integer numbers to a proj-number.
+ * There must never be two different entries matching the same integer number.
+ */
+typedef struct ir_switch_table  ir_switch_table;
 
 /* Needed for MSVC to suppress warnings because it doest NOT handle const right. */
 typedef const ir_node *ir_node_cnst_ptr;
@@ -130,7 +132,7 @@ typedef enum ir_relation {
 	ir_relation_less_greater       = ir_relation_less|ir_relation_greater,  /** less or greater ('not equal' for integer numbers) */
 	ir_relation_less_equal_greater = ir_relation_equal|ir_relation_less|ir_relation_greater, /**< less equal or greater ('not unordered') */
 	ir_relation_unordered_equal    = ir_relation_unordered|ir_relation_equal, /**< unordered or equal */
-	ir_relation_unordered_less     = ir_relation_unordered|ir_relation_less,  /**< unorderedor less */
+	ir_relation_unordered_less     = ir_relation_unordered|ir_relation_less,  /**< unordered or less */
 	ir_relation_unordered_less_equal = ir_relation_unordered|ir_relation_less|ir_relation_equal, /**< unordered, less or equal */
 	ir_relation_unordered_greater    = ir_relation_unordered|ir_relation_greater, /**< unordered or greater */
 	ir_relation_unordered_greater_equal = ir_relation_unordered|ir_relation_greater|ir_relation_equal, /**< unordered, greater or equal */

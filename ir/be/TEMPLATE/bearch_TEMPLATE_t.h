@@ -28,7 +28,7 @@
 #include "debug.h"
 #include "TEMPLATE_nodes_attr.h"
 #include "be.h"
-#include "../beemitter.h"
+#include "beemitter.h"
 #include "set.h"
 
 typedef struct TEMPLATE_isa_t {

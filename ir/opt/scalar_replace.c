@@ -43,10 +43,11 @@
 #include "irgmod.h"
 #include "irnode_t.h"
 #include "irpass.h"
-#include "irtools.h"
+#include "util.h"
 #include "xmalloc.h"
 #include "debug.h"
 #include "error.h"
+#include "opt_manage.h"
 
 static unsigned get_vnum(const ir_node *node)
 {
@@ -173,7 +174,6 @@ static bool check_load_store_mode(ir_mode *mode, ir_mode *ent_mode)
 	if (ent_mode != mode) {
 		if (ent_mode == NULL ||
 		    get_mode_size_bits(ent_mode) != get_mode_size_bits(mode) ||
-		    get_mode_sort(ent_mode) != get_mode_sort(mode) ||
 		    get_mode_arithmetic(ent_mode) != irma_twos_complement ||
 		    get_mode_arithmetic(mode) != irma_twos_complement)
 			return false;
@@ -678,7 +678,7 @@ static void do_scalar_replacements(ir_graph *irg, pset *sels, unsigned nvals,
  *
  * @param irg  The current ir graph.
  */
-int scalar_replacement_opt(ir_graph *irg)
+static ir_graph_state_t do_scalar_replacement(ir_graph *irg)
 {
 	unsigned  nvals;
 	int       i;
@@ -688,10 +688,6 @@ int scalar_replacement_opt(ir_graph *irg)
 	set       *set_ent;
 	pset      *sels;
 	ir_type   *ent_type, *frame_tp;
-	int       res = 0;
-
-	/* Call algorithm that computes the out edges */
-	assure_irg_outs(irg);
 
 	/* we use the link field to store the VNUM */
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
@@ -760,7 +756,6 @@ int scalar_replacement_opt(ir_graph *irg)
 			 * neither changed control flow, cf-backedges should be still
 			 * consistent.
 			 */
-			res = 1;
 		}
 		del_pset(sels);
 		del_set(set_ent);
@@ -770,7 +765,19 @@ int scalar_replacement_opt(ir_graph *irg)
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	irp_free_resources(irp, IRP_RESOURCE_ENTITY_LINK);
 
-	return res;
+	return 0;
+}
+
+static optdesc_t opt_scalar_rep = {
+	"scalar-replace",
+	IR_GRAPH_STATE_NO_UNREACHABLE_CODE | IR_GRAPH_STATE_CONSISTENT_OUTS,
+	do_scalar_replacement,
+};
+
+int scalar_replacement_opt(ir_graph *irg)
+{
+	perform_irg_optimization(irg, &opt_scalar_rep);
+	return 1;
 }
 
 ir_graph_pass_t *scalar_replacement_opt_pass(const char *name)

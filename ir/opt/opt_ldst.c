@@ -38,7 +38,7 @@
 #include "irgopt.h"
 #include "iropt.h"
 #include "iroptimize.h"
-#include "irnodemap.h"
+#include "irnodehashmap.h"
 #include "raw_bitset.h"
 #include "debug.h"
 #include "error.h"
@@ -115,8 +115,8 @@ struct block_t {
  * Metadata for this pass.
  */
 typedef struct ldst_env_t {
-	struct obstack  obst;              /**< obstack for temporary data */
-	ir_nodemap_t    adr_map;           /**< Map addresses to */
+	struct obstack   obst;             /**< obstack for temporary data */
+	ir_nodehashmap_t adr_map;          /**< Map addresses to */
 	block_t         *forward;          /**< Inverse post-order list of all blocks Start->End */
 	block_t         *backward;         /**< Inverse post-order list of all blocks End->Start */
 	ir_node         *start_bl;         /**< start block of the current graph */
@@ -312,14 +312,14 @@ restart:
 		goto restart;
 	}
 
-	entry = (address_entry*)ir_nodemap_get(&env.adr_map, adr);
+	entry = (address_entry*)ir_nodehashmap_get(&env.adr_map, adr);
 
 	if (entry == NULL) {
 		/* new address */
 		entry = OALLOC(&env.obst, address_entry);
 
 		entry->id = env.curr_adr_id++;
-		ir_nodemap_insert(&env.adr_map, adr, entry);
+		ir_nodehashmap_insert(&env.adr_map, adr, entry);
 
 		DB((dbg, LEVEL_3, "ADDRESS %+F has ID %u\n", adr, entry->id));
 #ifdef DEBUG_libfirm
@@ -525,8 +525,8 @@ static unsigned get_Call_memory_properties(ir_node *call)
 		/* try the called entity */
 		ir_node *ptr = get_Call_ptr(call);
 
-		if (is_Global(ptr)) {
-			ir_entity *ent = get_Global_entity(ptr);
+		if (is_SymConst_addr_ent(ptr)) {
+			ir_entity *ent = get_SymConst_entity(ptr);
 
 			prop = get_entity_additional_properties(ent);
 		}
@@ -2350,7 +2350,7 @@ int opt_ldst(ir_graph *irg)
 	}
 
 	obstack_init(&env.obst);
-	ir_nodemap_init(&env.adr_map);
+	ir_nodehashmap_init(&env.adr_map);
 
 	env.forward       = NULL;
 	env.backward      = NULL;
@@ -2460,12 +2460,12 @@ int opt_ldst(ir_graph *irg)
 		/* not only invalidate but free them. We might allocate new out arrays
 		   on our obstack which will be deleted yet. */
 		free_irg_outs(irg);
-		set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE);
 	}
 end:
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_BLOCK_MARK);
-	ir_nodemap_destroy(&env.adr_map);
+	ir_nodehashmap_destroy(&env.adr_map);
 	obstack_free(&env.obst, NULL);
 
 #ifdef DEBUG_libfirm

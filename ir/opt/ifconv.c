@@ -40,6 +40,7 @@
 #include "array_t.h"
 #include "irpass_t.h"
 #include "be.h"
+#include "opt_manage.h"
 
 #include "irdump.h"
 #include "debug.h"
@@ -52,7 +53,7 @@ typedef struct walker_env {
 	bool                   changed; /**< Set if the graph was changed. */
 } walker_env;
 
-DEBUG_ONLY(static firm_dbg_module_t *dbg);
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 /**
  * Returns non-zero if a Block can be emptied.
@@ -464,7 +465,7 @@ static void collect_phis(ir_node *node, void *env)
 	}
 }
 
-void opt_if_conv(ir_graph *irg)
+static ir_graph_state_t do_ifconv(ir_graph *irg)
 {
 	walker_env            env;
 	const backend_params *be_params = be_get_backend_param();
@@ -476,11 +477,6 @@ void opt_if_conv(ir_graph *irg)
 	FIRM_DBG_REGISTER(dbg, "firm.opt.ifconv");
 
 	DB((dbg, LEVEL_1, "Running if-conversion on %+F\n", irg));
-
-	env.changed |= remove_bads(irg);
-
-	normalize_one_return(irg);
-	remove_critical_cf_edges(irg);
 
 	compute_cdep(irg);
 
@@ -494,13 +490,22 @@ void opt_if_conv(ir_graph *irg)
 
 	if (env.changed) {
 		local_optimize_graph(irg);
-
-		/* graph has changed, invalidate analysis info */
-		set_irg_extblk_inconsistent(irg);
-		set_irg_doms_inconsistent(irg);
 	}
 
 	free_cdep(irg);
+
+	return IR_GRAPH_STATE_NO_CRITICAL_EDGES | IR_GRAPH_STATE_ONE_RETURN;
+}
+
+static optdesc_t opt_ifconv = {
+	"if-conversion",
+	IR_GRAPH_STATE_NO_CRITICAL_EDGES | IR_GRAPH_STATE_NO_UNREACHABLE_CODE | IR_GRAPH_STATE_NO_BADS | IR_GRAPH_STATE_ONE_RETURN,
+	do_ifconv,
+};
+
+void opt_if_conv(ir_graph *irg)
+{
+	perform_irg_optimization(irg, &opt_ifconv);
 }
 
 ir_graph_pass_t *opt_if_conv_pass(const char *name)

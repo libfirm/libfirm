@@ -17,14 +17,11 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-
-
 /**
  * Flexible printf().
  * @author Sebastian Hack
  * @date 3.1.2005
  */
-
 #ifndef _LIBCORE_LC_PRINTF_H
 #define _LIBCORE_LC_PRINTF_H
 
@@ -35,7 +32,6 @@
 
 #include <obstack.h>
 
-#include "lc_config.h"
 #include "lc_appendable.h"
 
 typedef struct lc_arg_occ_t {
@@ -111,10 +107,10 @@ int lc_evsnprintf(const lc_arg_env_t *env, char *buf, size_t len, const char *fm
 int lc_evfprintf(const lc_arg_env_t *env, FILE *f, const char *fmt, va_list args);
 int lc_evoprintf(const lc_arg_env_t *env, struct obstack *obst, const char *fmt, va_list args);
 
-int lc_printf(const char *fmt, ...) LC_PRINTF(1);
-int lc_snprintf(char *buf, size_t len, const char *fmt, ...) LC_PRINTF(3);
-int lc_fprintf(FILE *f, const char *fmt, ...) LC_PRINTF(2);
-int lc_oprintf(struct obstack *obst, const char *fmt, ...) LC_PRINTF(2);
+int lc_printf(const char *fmt, ...);
+int lc_snprintf(char *buf, size_t len, const char *fmt, ...);
+int lc_fprintf(FILE *f, const char *fmt, ...);
+int lc_oprintf(struct obstack *obst, const char *fmt, ...);
 
 int lc_vprintf(const char *fmt, va_list args);
 int lc_vsnprintf(char *buf, size_t len, const char *fmt, va_list args);

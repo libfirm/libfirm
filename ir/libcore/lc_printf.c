@@ -35,8 +35,8 @@
 
 #include "xmalloc.h"
 #include "lc_printf.h"
-#include "lc_defines.h"
 #include "hashptr.h"
+#include "util.h"
 #include "set.h"
 
 /* printf implementation */
@@ -104,11 +104,11 @@ int lc_arg_register(lc_arg_env_t *env, const char *name, char letter, const lc_a
 	arg.letter = letter;
 	arg.handler = handler;
 
-	if (isupper(letter)) {
+	if (isupper((unsigned char)letter)) {
 		map = env->upper;
 		base = 'A';
 	}
-	else if (islower(letter)) {
+	else if (islower((unsigned char)letter)) {
 		map = env->lower;
 		base = 'a';
 	}
@@ -136,7 +136,7 @@ int lc_arg_append(lc_appendable_t *app, const lc_arg_occ_t *occ, const char *str
 	if (!occ->flag_minus && occ->flag_zero)
 		pad = '0';
 
-	return lc_appendable_snwadd(app, str, len, LC_MAX(0, occ->width), occ->flag_minus, pad);
+	return lc_appendable_snwadd(app, str, len, MAX(0, occ->width), occ->flag_minus, pad);
 }
 
 
@@ -172,7 +172,7 @@ static char *make_fmt(char *buf, size_t len, const lc_arg_occ_t *occ)
 
 	assert(occ->modifier && "modifier must not be NULL");
 	strncpy(mod, occ->modifier, sizeof(mod) - 1);
-	mod[LC_MIN(sizeof(mod) - 1, occ->modifier_length)] = '\0';
+	mod[MIN(sizeof(mod) - 1, occ->modifier_length)] = '\0';
 
 #ifdef _MSC_VER
 	/* work-around for buggy mscrt not supporting z, j,  and t modifier */
@@ -297,7 +297,7 @@ static int std_emit(lc_appendable_t *app, const lc_arg_occ_t *occ, const lc_arg_
 
 		default:
 			{
-				int len = LC_MAX(128, occ->width + 1);
+				int len = MAX(128, occ->width + 1);
 				char *buf = XMALLOCN(char, len);
 				res = dispatch_snprintf(buf, len, fmt, occ->lc_arg_type, val);
 				res = lc_appendable_snadd(app, buf, res);
@@ -405,7 +405,7 @@ int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
 
 			/* Negative or lacking precision after a '.' is treated as
 			 * precision 0. */
-			occ.precision = LC_MAX(0, precision);
+			occ.precision = MAX(0, precision);
 		}
 
 		/*
@@ -462,12 +462,12 @@ int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
 					const char *mod = s;
 
 					/* Read, as long there are letters */
-					while (isalpha(ch) && !arg) {
+					while (isalpha((unsigned char)ch) && !arg) {
 						int base = 'a';
 						lc_arg_t * const *map = env->lower;
 
 						/* If uppercase, select the uppercase map from the environment */
-						if (isupper(ch)) {
+						if (isupper((unsigned char)ch)) {
 							base = 'A';
 							map = env->upper;
 						}

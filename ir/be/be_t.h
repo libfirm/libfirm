@@ -75,6 +75,7 @@ struct be_options_t {
 
 struct be_main_env_t {
 	arch_env_t   *arch_env;
+	FILE         *file_handle;
 	be_options_t *options;              /**< backend options */
 	const char   *cup_name;             /**< name of the compilation unit */
 	pmap         *ent_trampoline_map;   /**< A map containing PIC trampolines for methods. */

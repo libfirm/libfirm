@@ -140,7 +140,7 @@ static int firm_emit(lc_appendable_t *app,
 	case k_entity: {
 		ir_entity *entity = (ir_entity*)X;
 		snprintf(buf, sizeof(buf), "%s%s", A("ent"),
-			isupper(occ->conversion) ? get_entity_ld_name_ex(entity): get_entity_name(entity));
+			isupper((unsigned char)occ->conversion) ? get_entity_ld_name_ex(entity): get_entity_name(entity));
 		snprintf(add, sizeof(add), "[%ld]", get_entity_nr(entity));
 		break;
 	}

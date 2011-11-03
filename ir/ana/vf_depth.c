@@ -27,7 +27,7 @@
 #include "config.h"
 
 #include "vf_depth.h"
-#include "irphase_t.h"
+#include "irnodemap.h"
 #include "plist.h"
 #include "obstack.h"
 #include "irtools.h"
@@ -42,8 +42,8 @@ typedef struct vl_node {
 } vl_node;
 
 struct vl_info {
-	obstack   obst;
-	ir_phase *phase;
+	obstack    obst;
+	ir_nodemap map;
 };
 
 int vl_node_get_depth(vl_info *vli, ir_node *irn)
@@ -79,10 +79,9 @@ void vl_exchange(vl_info *vli, ir_node *ir_old, ir_node *ir_new)
 	exchange(ir_old, ir_new);
 }
 
-static void *vl_init_node(ir_phase *phase, const ir_node *irn)
+static void *vl_init_node(vl_info *info, const ir_node *irn)
 {
-	vl_info *vli = phase_get_private(phase);
-	vl_node *vln = OALLOCZ(&vli->obst, vl_node);
+	vl_node *vln = OALLOCZ(&info->obst, vl_node);
 	vln->depth = -1;
 	(void)irn;
 	return vln;

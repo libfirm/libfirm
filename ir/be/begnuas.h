@@ -41,7 +41,11 @@ typedef enum {
 	GAS_SECTION_CSTRING,         /**< section for constant strings */
 	GAS_SECTION_PIC_TRAMPOLINES, /**< trampolines for pic codes */
 	GAS_SECTION_PIC_SYMBOLS,     /**< contains resolved pic symbols */
-	GAS_SECTION_LAST = GAS_SECTION_PIC_SYMBOLS,
+	GAS_SECTION_DEBUG_INFO,      /**< dwarf debug info */
+	GAS_SECTION_DEBUG_ABBREV,    /**< dwarf debug abbrev */
+	GAS_SECTION_DEBUG_LINE,      /**< dwarf debug line */
+	GAS_SECTION_DEBUG_PUBNAMES,  /**< dwarf pub names */
+	GAS_SECTION_LAST = GAS_SECTION_DEBUG_PUBNAMES,
 	GAS_SECTION_TYPE_MASK    = 0xFF,
 
 	GAS_SECTION_FLAG_TLS     = 1 << 8,  /**< thread local flag */
@@ -73,12 +77,6 @@ extern elf_variant_t        be_gas_elf_variant;
 extern char                 be_gas_elf_type_char;
 
 /**
- * Generate all entities.
- * @param main_env          the main backend environment
- */
-void be_gas_emit_decls(const be_main_env_t *main_env);
-
-/**
  * Switch the current output section to the given out.
  *
  * @param section  the new output section
@@ -108,6 +106,20 @@ void be_gas_emit_entity(const ir_entity *entity);
 void be_gas_emit_block_name(const ir_node *block);
 
 /**
+ * Starts emitting a compilation unit. This emits:
+ *  - global assembler snippets
+ *  - debug info
+ */
+void be_gas_begin_compilation_unit(const be_main_env_t *env);
+
+/**
+ * ends a compilation unit. This emits:
+ *  - global declarations/variables
+ *  - debug info
+ */
+void be_gas_end_compilation_unit(const be_main_env_t *env);
+
+/**
  * Return the label prefix for labeled instructions.
  */
 const char *be_gas_insn_label_prefix(void);
@@ -117,7 +129,8 @@ typedef ir_node* (*get_cfop_target_func)(const ir_node *cfop);
 /**
  * Emits a jump table for switch operations
  */
-void emit_jump_table(const ir_node *node, long default_pn, ir_entity *table,
-                     get_cfop_target_func get_cfop_target);
+void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
+                        ir_entity *entity,
+                        get_cfop_target_func get_cfop_target);
 
 #endif

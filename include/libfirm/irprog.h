@@ -259,9 +259,6 @@ FIRM_API ir_graph *get_const_code_irg(void);
 FIRM_API irg_phase_state get_irp_phase_state(void);
 FIRM_API void            set_irp_phase_state(irg_phase_state s);
 
-FIRM_API irg_outs_state get_irp_ip_outs_state(void);
-FIRM_API void           set_irp_ip_outs_inconsistent(void);
-
 /**
  * Creates an ir_prog pass for set_irp_phase_state().
  *
@@ -290,6 +287,12 @@ FIRM_API size_t get_irp_n_asms(void);
 
 /** Return the global asm include at position pos. */
 FIRM_API ident *get_irp_asm(size_t pos);
+
+/** Return whether optimization dump vcg graphs */
+FIRM_API int get_irp_optimization_dumps(void);
+
+/** Enable vcg dumping of optimization */
+FIRM_API void enable_irp_optimization_dumps(void);
 
 #include "end.h"
 

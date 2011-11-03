@@ -61,7 +61,7 @@
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
 
-DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL);
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 /**
  * Scheduling environment for the whole graph.

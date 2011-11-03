@@ -37,7 +37,6 @@
 #include "irnode_t.h"
 
 #include "cgana.h"
-#include "execution_frequency.h"
 
 #include "array.h"
 #include "pmap.h"
@@ -196,35 +195,6 @@ size_t get_irg_callee_loop_depth(const ir_graph *irg, size_t pos)
 {
 	assert(pos < get_irg_n_callees(irg));
 	return irg->callees ? irg->callees[pos]->max_depth : 0;
-}
-
-static double get_irg_callee_execution_frequency(const ir_graph *irg, size_t pos)
-{
-	ir_node **arr = irg->callees[pos]->call_list;
-	size_t i, n_Calls = ARR_LEN(arr);
-	double freq = 0.0;
-
-	for (i = 0; i < n_Calls; ++i) {
-		freq += get_irn_exec_freq(arr[i]);
-	}
-	return freq;
-}
-
-static double get_irg_callee_method_execution_frequency(const ir_graph *irg,
-                                                        size_t pos)
-{
-	double call_freq = get_irg_callee_execution_frequency(irg, pos);
-	double meth_freq = get_irg_method_execution_frequency(irg);
-	return call_freq * meth_freq;
-}
-
-static double get_irg_caller_method_execution_frequency(const ir_graph *irg,
-                                                        size_t pos)
-{
-	ir_graph *caller     = get_irg_caller(irg, pos);
-	size_t    pos_callee = reverse_pos(irg, pos);
-
-	return get_irg_callee_method_execution_frequency(caller, pos_callee);
 }
 
 
@@ -824,7 +794,9 @@ static ir_graph *find_tail(const ir_graph *n)
 						found = largest_dfn_pred(m, &res_index);
 					break;
 				}
-				if (m == n) { break; }  /* It's not an unreachable loop, either. */
+				/* It's not an unreachable loop, either. */
+				if (m == n)
+					break;
 			}
 			//assert(0 && "no head found on stack");
 		}
@@ -934,217 +906,6 @@ static void reset_isbe(void)
 }
 
 /* ----------------------------------------------------------------------------------- */
-/* Another algorithm to compute recursion nesting depth                                */
-/* Walk the callgraph.  For each crossed edge increase the loop depth by the edge      */
-/* weight. Assign graphs the maximal depth.                                            */
-/* ----------------------------------------------------------------------------------- */
-
-static void compute_loop_depth(ir_graph *irg, void *env)
-{
-	size_t current_nesting = *(size_t *) env;
-	size_t old_nesting = irg->callgraph_loop_depth;
-	ir_visited_t old_visited = get_cg_irg_visited(irg);
-
-	if (cg_irg_visited(irg)) return;
-
-	mark_cg_irg_visited(irg);
-
-	if (old_nesting < current_nesting)
-		irg->callgraph_loop_depth = current_nesting;
-
-	if (current_nesting > irp->max_callgraph_loop_depth)
-		irp->max_callgraph_loop_depth = current_nesting;
-
-	if ((old_visited +1 < get_cg_irg_visited(irg)) ||   /* not yet visited */
-		(old_nesting < current_nesting)) {        /* propagate larger nesting */
-			size_t i, n_callees;
-
-			/* Don't walk the graph, but a tree that is an unfolded graph. */
-			n_callees = get_irg_n_callees(irg);
-			for (i = 0; i < n_callees; ++i) {
-				ir_graph *m = get_irg_callee(irg, i);
-				*(size_t *)env += get_irg_callee_loop_depth(irg, i);
-				compute_loop_depth(m, env);
-				*(size_t *)env -= get_irg_callee_loop_depth(irg, i);
-			}
-	}
-
-	set_cg_irg_visited(irg, master_cg_visited-1);
-}
-
-/* ------------------------------------------------------------------------------------ */
-/* Another algorithm to compute recursion nesting depth                                 */
-/* Walk the callgraph.  For each crossed loop increase the nesting depth by one.        */
-/* Assign graphs the maximal nesting depth.   Don't increase if passing loops more than */
-/* once.                                                                               */
-/* ------------------------------------------------------------------------------------ */
-
-
-/* For callees, we want to remember the Call nodes, too. */
-typedef struct ana_entry2 {
-	ir_loop **loop_stack;   /**< a stack of ir_loop entries */
-	size_t    tos;          /**< the top of stack entry */
-	size_t    recursion_nesting;
-} ana_entry2;
-
-/**
- * push a loop entry on the stack
- */
-static void push2(ana_entry2 *e, ir_loop *g)
-{
-	if (ARR_LEN(e->loop_stack) == e->tos) {
-		ARR_APP1(ir_loop *, e->loop_stack, g);
-	} else {
-		e->loop_stack[e->tos] = g;
-	}
-	++e->tos;
-}
-
-/**
- * returns the top of stack and pop it
- */
-static ir_loop *pop2(ana_entry2 *e)
-{
-	return e->loop_stack[--e->tos];
-}
-
-/**
- * check if a loop g in on the stack. Did not check the TOS.
- */
-static int in_stack(ana_entry2 *e, ir_loop *g)
-{
-	size_t i;
-	for (i = e->tos; i != 0;) {
-		if (e->loop_stack[--i] == g) return 1;
-	}
-	return 0;
-}
-
-static void compute_rec_depth(ir_graph *irg, void *env)
-{
-	ana_entry2 *e = (ana_entry2 *)env;
-	ir_loop *l = irg->l;
-	size_t depth, old_depth = irg->callgraph_recursion_depth;
-	int pushed = 0;
-
-	if (cg_irg_visited(irg))
-		return;
-	mark_cg_irg_visited(irg);
-
-	/* -- compute and set the new nesting value -- */
-	if ((l != irp->outermost_cg_loop) && !in_stack(e, l)) {
-		push2(e, l);
-		++e->recursion_nesting;
-		pushed = 1;
-	}
-	depth = e->recursion_nesting;
-
-	if (old_depth < depth)
-		irg->callgraph_recursion_depth = depth;
-
-	if (depth > irp->max_callgraph_recursion_depth)
-		irp->max_callgraph_recursion_depth = depth;
-
-	/* -- spread the nesting value -- */
-	if (depth == 0 || old_depth < depth) {
-		size_t i, n_callees;
-
-		/* Don't walk the graph, but a tree that is an unfolded graph.
-		   Therefore we unset the visited flag at the end. */
-		n_callees = get_irg_n_callees(irg);
-		for (i = 0; i < n_callees; ++i) {
-			ir_graph *m = get_irg_callee(irg, i);
-			compute_rec_depth(m, env);
-		}
-	}
-
-	/* -- clean up -- */
-	if (pushed) {
-		pop2(e);
-		--e->recursion_nesting;
-	}
-	set_cg_irg_visited(irg, master_cg_visited-1);
-}
-
-
-/* ----------------------------------------------------------------------------------- */
-/* Another algorithm to compute the execution frequency of methods ignoring recursions. */
-/* Walk the callgraph.  Ignore backedges.  Use sum of execution frequencies of Call     */
-/* nodes to evaluate a callgraph edge.                                                 */
-/* ----------------------------------------------------------------------------------- */
-
-/* Returns the method execution frequency of a graph. */
-double get_irg_method_execution_frequency(const ir_graph *irg)
-{
-	return irg->method_execution_frequency;
-}
-
-/**
- * Increase the method execution frequency to freq if its current value is
- * smaller then this.
- */
-static void set_irg_method_execution_frequency(ir_graph *irg, double freq)
-{
-	irg->method_execution_frequency = freq;
-
-	if (irp->max_method_execution_frequency < freq)
-		irp->max_method_execution_frequency = freq;
-}
-
-static void compute_method_execution_frequency(ir_graph *irg, void *env)
-{
-	size_t i, n_callers;
-	double freq;
-	int    found_edge;
-	size_t n_callees;
-	(void) env;
-
-	if (cg_irg_visited(irg))
-		return;
-
-	/* We need the values of all predecessors (except backedges).
-	   So they must be marked.  Else we will reach the node through
-	   one of the unmarked ones. */
-	n_callers = get_irg_n_callers(irg);
-	for (i = 0; i < n_callers; ++i) {
-		ir_graph *m = get_irg_caller(irg, i);
-		if (is_irg_caller_backedge(irg, i))
-			continue;
-		if (!cg_irg_visited(m)) {
-			return;
-		}
-	}
-	mark_cg_irg_visited(irg);
-
-	/* Compute the new frequency. */
-	freq = 0;
-	found_edge = 0;
-	for (i = 0; i < n_callers; ++i) {
-		if (! is_irg_caller_backedge(irg, i)) {
-			double edge_freq = get_irg_caller_method_execution_frequency(irg, i);
-			assert(edge_freq >= 0);
-			freq += edge_freq;
-			found_edge = 1;
-		}
-	}
-
-	if (!found_edge) {
-		/* A starting point: method only called from outside,
-		or only backedges as predecessors. */
-		freq = 1;
-	}
-
-	set_irg_method_execution_frequency(irg, freq);
-
-	/* recur */
-	n_callees = get_irg_n_callees(irg);
-	for (i = 0; i < n_callees; ++i) {
-		compute_method_execution_frequency(get_irg_callee(irg, i), NULL);
-	}
-}
-
-
-/* ----------------------------------------------------------------------------------- */
 /* The recursion stuff driver.                                                         */
 /* ----------------------------------------------------------------------------------- */
 
@@ -1201,80 +962,6 @@ void find_callgraph_recursions(void)
 	irp->callgraph_state = irp_callgraph_and_calltree_consistent;
 }
 
-/* Compute interprocedural performance estimates. */
-void compute_performance_estimates(void)
-{
-	size_t i, n_irgs = get_irp_n_irgs();
-	size_t current_nesting;
-	ana_entry2 e;
-
-	assert(get_irp_exec_freq_state() != exec_freq_none && "execution frequency not calculated");
-
-	/* -- compute the loop depth  -- */
-	current_nesting = 0;
-	irp->max_callgraph_loop_depth = 0;
-	master_cg_visited += 2;
-	compute_loop_depth(get_irp_main_irg(), &current_nesting);
-	for (i = 0; i < n_irgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
-		if ((get_cg_irg_visited(irg) < master_cg_visited-1) &&
-			get_irg_n_callers(irg) == 0) {
-				compute_loop_depth(irg, &current_nesting);
-		}
-	}
-	for (i = 0; i < n_irgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
-		if (get_cg_irg_visited(irg) < master_cg_visited-1) {
-			compute_loop_depth(irg, &current_nesting);
-		}
-	}
-
-
-	/* -- compute the recursion depth -- */
-	e.loop_stack        = NEW_ARR_F(ir_loop *, 0);
-	e.tos               = 0;
-	e.recursion_nesting = 0;
-
-	irp->max_callgraph_recursion_depth = 0;
-
-	master_cg_visited += 2;
-	compute_rec_depth(get_irp_main_irg(), &e);
-	for (i = 0; i < n_irgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
-		if ((get_cg_irg_visited(irg) < master_cg_visited-1) &&
-			get_irg_n_callers(irg) == 0) {
-				compute_rec_depth(irg, &e);
-		}
-	}
-	for (i = 0; i < n_irgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
-		if (get_cg_irg_visited(irg) < master_cg_visited-1) {
-			compute_rec_depth(irg, &e);
-		}
-	}
-
-	DEL_ARR_F(e.loop_stack);
-
-	/* -- compute the execution frequency -- */
-	irp->max_method_execution_frequency = 0;
-	master_cg_visited += 2;
-	assert(get_irg_n_callers(get_irp_main_irg()) == 0);
-	compute_method_execution_frequency(get_irp_main_irg(), NULL);
-	for (i = 0; i < n_irgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
-		if ((get_cg_irg_visited(irg) < master_cg_visited-1) &&
-			get_irg_n_callers(irg) == 0) {
-				compute_method_execution_frequency(irg, NULL);
-		}
-	}
-	for (i = 0; i < n_irgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
-		if (get_cg_irg_visited(irg) < master_cg_visited-1) {
-			compute_method_execution_frequency(irg, NULL);
-		}
-	}
-}
-
 /* Returns the maximal loop depth of all paths from an external visible method to
    this irg. */
 size_t get_irg_loop_depth(const ir_graph *irg)
@@ -1308,8 +995,6 @@ void analyse_loop_nesting_depth(void)
 	}
 
 	find_callgraph_recursions();
-
-	compute_performance_estimates();
 
 	set_irp_loop_nesting_depth_state(loop_nesting_depth_consistent);
 }

@@ -44,20 +44,20 @@
 #include "array_t.h"
 #include "irtools.h"
 
-#include "../bearch.h"
-#include "../benode.h"
-#include "../belower.h"
-#include "../besched.h"
+#include "bearch.h"
+#include "benode.h"
+#include "belower.h"
+#include "besched.h"
 #include "be.h"
-#include "../bemachine.h"
-#include "../bemodule.h"
-#include "../beirg.h"
-#include "../bespillslots.h"
-#include "../bespillutil.h"
-#include "../begnuas.h"
-#include "../belistsched.h"
-#include "../beflags.h"
-#include "../bestack.h"
+#include "bemachine.h"
+#include "bemodule.h"
+#include "beirg.h"
+#include "bespillslots.h"
+#include "bespillutil.h"
+#include "begnuas.h"
+#include "belistsched.h"
+#include "beflags.h"
+#include "bestack.h"
 
 #include "bearch_arm_t.h"
 
@@ -439,19 +439,20 @@ static arm_isa_t arm_isa_template = {
 /**
  * Initializes the backend ISA and opens the output file.
  */
-static arch_env_t *arm_init(FILE *file_handle)
+static arch_env_t *arm_init(const be_main_env_t *env)
 {
 	arm_isa_t *isa = XMALLOC(arm_isa_t);
 	*isa = arm_isa_template;
 
 	arm_register_init();
 
-	be_emit_init(file_handle);
-
 	arm_create_opcodes(&arm_irn_ops);
 	arm_handle_intrinsics();
 
 	be_gas_emit_types = false;
+
+	be_emit_init(env->file_handle);
+	be_gas_begin_compilation_unit(env);
 
 	return &isa->base;
 }
@@ -465,7 +466,7 @@ static void arm_done(void *self)
 {
 	arm_isa_t *isa = (arm_isa_t*)self;
 
-	be_gas_emit_decls(isa->base.main_env);
+	be_gas_end_compilation_unit(isa->base.main_env);
 
 	be_emit_exit();
 	free(self);
@@ -540,7 +541,7 @@ static void arm_lower_for_target(void)
 
 	for (i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
-		lower_switch(irg, 4, 256, true);
+		lower_switch(irg, 4, 256, false);
 	}
 
 	for (i = 0; i < n_irgs; ++i) {
@@ -548,7 +549,7 @@ static void arm_lower_for_target(void)
 		/* Turn all small CopyBs into loads/stores and all bigger CopyBs into
 		 * memcpy calls.
 		 * TODO:  These constants need arm-specific tuning. */
-		lower_CopyB(irg, 31, 32);
+		lower_CopyB(irg, 31, 32, false);
 	}
 }
 

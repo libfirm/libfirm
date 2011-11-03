@@ -47,7 +47,7 @@
 #include "irnode.h"
 #include "strcalc.h"
 #include "fltcalc.h"
-#include "irtools.h"
+#include "util.h"
 #include "xmalloc.h"
 #include "firm_common.h"
 #include "error.h"
@@ -99,18 +99,6 @@ static tarval_int_overflow_mode_t int_overflow_mode = TV_OVERFLOW_WRAP;
 
 /** if this is set non-zero, the constant folding for floating point is OFF */
 static int no_float = 0;
-
-/** IEEE-754r half precision */
-static const ieee_descriptor_t half_desc     = {  5,  10, 0, NORMAL };
-/** IEEE-754 single precision */
-static const ieee_descriptor_t single_desc   = {  8,  23, 0, NORMAL };
-/** IEEE-754 double precision */
-static const ieee_descriptor_t double_desc   = { 11,  52, 0, NORMAL };
-/** Intel x87 extended precision */
-static const ieee_descriptor_t extended_desc = { 15,  63, 1, NORMAL };
-
-/** IEEE-754r quad precision */
-static const ieee_descriptor_t quad_desc     = { 15, 112, 0, NORMAL };
 
 /****************************************************************************
  *   private functions
@@ -304,22 +292,9 @@ ir_tarval *tarval_unreachable = &reserved_tv[5];
 /**
  * get the float descriptor for given mode.
  */
-static const ieee_descriptor_t *get_descriptor(const ir_mode *mode)
+static const float_descriptor_t *get_descriptor(const ir_mode *mode)
 {
-	switch (get_mode_size_bits(mode)) {
-	case 16:  return &half_desc;
-	case 32:  return &single_desc;
-	case 64:  return &double_desc;
-	case 80:
-	case 96:
-	case 128: return &extended_desc; /* FIXME: HACK for x86 where we have
-										sizeof(long double)==16 with 10 byte
-										real payload */
-	/* case 128: return &quad_desc; */
-	default:
-		(void) quad_desc;
-		panic("Unsupported mode in get_descriptor()");
-	}
+	return &mode->float_desc;
 }
 
 ir_tarval *new_integer_tarval_from_str(const char *str, size_t len, char sign,
@@ -393,18 +368,13 @@ static ir_tarval *new_tarval_from_str_int(const char *str, size_t len,
  */
 ir_tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 {
-	const ieee_descriptor_t *desc;
+	const float_descriptor_t *desc;
 
 	assert(str);
 	assert(len);
 	assert(mode);
 
 	switch (get_mode_sort(mode)) {
-	case irms_control_flow:
-	case irms_memory:
-	case irms_auxiliary:
-		panic("Unsupported tarval creation with mode %F", mode);
-
 	case irms_internal_boolean:
 		/* match [tT][rR][uU][eE]|[fF][aA][lL][sS][eE] */
 		if (!strcasecmp(str, "true"))
@@ -426,8 +396,9 @@ ir_tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 		/* FALLTHROUGH */
 	case irms_int_number:
 		return new_tarval_from_str_int(str, len, mode);
+	default:
+		panic("Unsupported tarval creation with mode %F", mode);
 	}
-	panic("Unsupported tarval creation with mode %F", mode);
 }
 
 /*
@@ -483,7 +454,7 @@ long get_tarval_long(ir_tarval* tv)
 
 ir_tarval *new_tarval_from_long_double(long double d, ir_mode *mode)
 {
-	const ieee_descriptor_t *desc;
+	const float_descriptor_t *desc;
 
 	assert(mode && (get_mode_sort(mode) == irms_float_number));
 	desc = get_descriptor(mode);
@@ -569,20 +540,9 @@ ir_tarval *(get_tarval_unreachable)(void)
 
 ir_tarval *get_tarval_max(ir_mode *mode)
 {
-	const ieee_descriptor_t *desc;
-
-	assert(mode);
-	if (get_mode_n_vector_elems(mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
+	const float_descriptor_t *desc;
 
 	switch (get_mode_sort(mode)) {
-	case irms_control_flow:
-	case irms_memory:
-	case irms_auxiliary:
-		panic("mode %F does not support maximum value", mode);
-
 	case irms_internal_boolean:
 		return tarval_b_true;
 
@@ -595,26 +555,16 @@ ir_tarval *get_tarval_max(ir_mode *mode)
 	case irms_int_number:
 		sc_max_from_bits(get_mode_size_bits(mode), mode_is_signed(mode), NULL);
 		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
+	default:
+		panic("mode %F does not support maximum value", mode);
 	}
-	return tarval_bad;
 }
 
 ir_tarval *get_tarval_min(ir_mode *mode)
 {
-	const ieee_descriptor_t *desc;
-
-	assert(mode);
-	if (get_mode_n_vector_elems(mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
+	const float_descriptor_t *desc;
 
 	switch (get_mode_sort(mode)) {
-	case irms_control_flow:
-	case irms_memory:
-	case irms_auxiliary:
-		panic("mode %F does not support minimum value", mode);
-
 	case irms_internal_boolean:
 		return tarval_b_false;
 
@@ -627,8 +577,9 @@ ir_tarval *get_tarval_min(ir_mode *mode)
 	case irms_int_number:
 		sc_min_from_bits(get_mode_size_bits(mode), mode_is_signed(mode), NULL);
 		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
+	default:
+		panic("mode %F does not support minimum value", mode);
 	}
-	return tarval_bad;
 }
 
 /** The bit pattern for the pointer NULL */
@@ -636,19 +587,7 @@ static long _null_value = 0;
 
 ir_tarval *get_tarval_null(ir_mode *mode)
 {
-	assert(mode);
-
-	if (get_mode_n_vector_elems(mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
-
 	switch (get_mode_sort(mode)) {
-	case irms_control_flow:
-	case irms_memory:
-	case irms_auxiliary:
-		panic("mode %F does not support null value", mode);
-
 	case irms_float_number:
 		return new_tarval_from_double(0.0, mode);
 
@@ -658,23 +597,14 @@ ir_tarval *get_tarval_null(ir_mode *mode)
 
 	case irms_reference:
 		return new_tarval_from_long(_null_value, mode);
+	default:
+		panic("mode %F does not support null value", mode);
 	}
-	return tarval_bad;
 }
 
 ir_tarval *get_tarval_one(ir_mode *mode)
 {
-	assert(mode);
-
-	if (get_mode_n_vector_elems(mode) > 1)
-		panic("vector arithmetic not implemented yet");
-
 	switch (get_mode_sort(mode)) {
-	case irms_control_flow:
-	case irms_memory:
-	case irms_auxiliary:
-		panic("mode %F does not support one value", mode);
-
 	case irms_internal_boolean:
 		return tarval_b_true;
 
@@ -684,33 +614,25 @@ ir_tarval *get_tarval_one(ir_mode *mode)
 	case irms_reference:
 	case irms_int_number:
 		return new_tarval_from_long(1l, mode);
+	default:
+		panic("mode %F does not support one value", mode);
 	}
-	return tarval_bad;
 }
 
 ir_tarval *get_tarval_all_one(ir_mode *mode)
 {
-	assert(mode);
-
-	if (get_mode_n_vector_elems(mode) > 1)
-		panic("vector arithmetic not implemented yet");
-
 	switch (get_mode_sort(mode)) {
-	case irms_control_flow:
-	case irms_memory:
-	case irms_auxiliary:
-		panic("mode %F does not support all-one value", mode);
-
 	case irms_int_number:
 	case irms_internal_boolean:
 	case irms_reference:
 		return tarval_not(get_mode_null(mode));
 
-
 	case irms_float_number:
 		return new_tarval_from_double(1.0, mode);
+
+	default:
+		panic("mode %F does not support all-one value", mode);
 	}
-	return tarval_bad;
 }
 
 int tarval_is_constant(ir_tarval *tv)
@@ -724,18 +646,7 @@ int tarval_is_constant(ir_tarval *tv)
 
 ir_tarval *get_tarval_minus_one(ir_mode *mode)
 {
-	assert(mode);
-
-	if (get_mode_n_vector_elems(mode) > 1)
-		panic("vector arithmetic not implemented yet");
-
 	switch (get_mode_sort(mode)) {
-	case irms_control_flow:
-	case irms_memory:
-	case irms_auxiliary:
-	case irms_internal_boolean:
-		panic("mode %F does not support minus one value", mode);
-
 	case irms_reference:
 		return tarval_bad;
 
@@ -744,17 +655,15 @@ ir_tarval *get_tarval_minus_one(ir_mode *mode)
 
 	case irms_int_number:
 		return new_tarval_from_long(-1l, mode);
+
+	default:
+		panic("mode %F does not support minus one value", mode);
 	}
-	return tarval_bad;
 }
 
 ir_tarval *get_tarval_nan(ir_mode *mode)
 {
-	const ieee_descriptor_t *desc;
-
-	assert(mode);
-	if (get_mode_n_vector_elems(mode) > 1)
-		panic("vector arithmetic not implemented yet");
+	const float_descriptor_t *desc;
 
 	if (get_mode_sort(mode) == irms_float_number) {
 		desc = get_descriptor(mode);
@@ -766,12 +675,8 @@ ir_tarval *get_tarval_nan(ir_mode *mode)
 
 ir_tarval *get_tarval_plus_inf(ir_mode *mode)
 {
-	assert(mode);
-	if (get_mode_n_vector_elems(mode) > 1)
-		panic("vector arithmetic not implemented yet");
-
 	if (get_mode_sort(mode) == irms_float_number) {
-		const ieee_descriptor_t *desc = get_descriptor(mode);
+		const float_descriptor_t *desc = get_descriptor(mode);
 		fc_get_plusinf(desc, NULL);
 		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 	} else
@@ -780,13 +685,8 @@ ir_tarval *get_tarval_plus_inf(ir_mode *mode)
 
 ir_tarval *get_tarval_minus_inf(ir_mode *mode)
 {
-	assert(mode);
-
-	if (get_mode_n_vector_elems(mode) > 1)
-		panic("vector arithmetic not implemented yet");
-
 	if (get_mode_sort(mode) == irms_float_number) {
-		const ieee_descriptor_t *desc = get_descriptor(mode);
+		const float_descriptor_t *desc = get_descriptor(mode);
 		fc_get_minusinf(desc, NULL);
 		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 	} else
@@ -802,9 +702,6 @@ ir_tarval *get_tarval_minus_inf(ir_mode *mode)
  */
 int tarval_is_negative(ir_tarval *a)
 {
-	if (get_mode_n_vector_elems(a->mode) > 1)
-		panic("vector arithmetic not implemented yet");
-
 	switch (get_mode_sort(a->mode)) {
 	case irms_int_number:
 		if (!mode_is_signed(a->mode)) return 0;
@@ -873,20 +770,8 @@ ir_relation tarval_cmp(ir_tarval *a, ir_tarval *b)
 	if (a->mode != b->mode)
 		return ir_relation_false;
 
-	if (get_mode_n_vector_elems(a->mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		panic("cmp not implemented for vector modes");
-	}
-
 	/* Here the two tarvals are unequal and of the same mode */
 	switch (get_mode_sort(a->mode)) {
-	case irms_control_flow:
-	case irms_memory:
-	case irms_auxiliary:
-		if (a == b)
-			return ir_relation_equal;
-		return ir_relation_false;
-
 	case irms_float_number:
 		/*
 		 * BEWARE: we cannot compare a == b here, because
@@ -909,8 +794,10 @@ ir_relation tarval_cmp(ir_tarval *a, ir_tarval *b)
 		if (a == b)
 			return ir_relation_equal;
 		return a == tarval_b_true ? ir_relation_greater : ir_relation_less;
+
+	default:
+		panic("can't compare values of mode %F", a->mode);
 	}
-	return ir_relation_false;
 }
 
 /*
@@ -920,7 +807,7 @@ ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *dst_mode)
 {
 	char                    *buffer;
 	fp_value                *res = NULL;
-	const ieee_descriptor_t *desc;
+	const float_descriptor_t *desc;
 	int                      len;
 
 	carry_flag = -1;
@@ -931,18 +818,8 @@ ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *dst_mode)
 	if (src->mode == dst_mode)
 		return src;
 
-	if (get_mode_n_vector_elems(src->mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
-
 	switch (get_mode_sort(src->mode)) {
-	case irms_control_flow:
-	case irms_memory:
-	case irms_auxiliary:
-		break;
-
-		/* cast float to something */
+	/* cast float to something */
 	case irms_float_number:
 		switch (get_mode_sort(dst_mode)) {
 		case irms_float_number:
@@ -1018,6 +895,8 @@ ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *dst_mode)
 			return get_tarval_overflow(buffer, src->length, dst_mode);
 		}
 		break;
+	default:
+		return tarval_bad;
 	}
 
 	return tarval_bad;
@@ -1066,11 +945,6 @@ ir_tarval *tarval_neg(ir_tarval *a)
 
 	/* note: negation is allowed even for unsigned modes. */
 
-	if (get_mode_n_vector_elems(a->mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
-
 	switch (get_mode_sort(a->mode)) {
 	case irms_int_number:
 		buffer = (char*) alloca(sc_get_buffer_length());
@@ -1098,11 +972,6 @@ ir_tarval *tarval_add(ir_tarval *a, ir_tarval *b)
 	char *buffer;
 
 	carry_flag = -1;
-
-	if (get_mode_n_vector_elems(a->mode) > 1 || get_mode_n_vector_elems(b->mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
 
 	if (mode_is_reference(a->mode) && a->mode != b->mode) {
 		b = tarval_convert_to(b, a->mode);
@@ -1141,11 +1010,6 @@ ir_tarval *tarval_sub(ir_tarval *a, ir_tarval *b, ir_mode *dst_mode)
 	char    *buffer;
 
 	carry_flag = -1;
-
-	if (get_mode_n_vector_elems(a->mode) > 1 || get_mode_n_vector_elems(b->mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
 
 	if (dst_mode != NULL) {
 		if (a->mode != dst_mode)
@@ -1187,11 +1051,6 @@ ir_tarval *tarval_mul(ir_tarval *a, ir_tarval *b)
 
 	carry_flag = -1;
 
-	if (get_mode_n_vector_elems(a->mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
-
 	switch (get_mode_sort(a->mode)) {
 	case irms_int_number:
 		/* modes of a,b are equal */
@@ -1222,11 +1081,6 @@ ir_tarval *tarval_div(ir_tarval *a, ir_tarval *b)
 
 	carry_flag = -1;
 
-	if (get_mode_n_vector_elems(mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
-
 	if (mode_is_int(mode)) {
 		/* x/0 error */
 		if (b == get_mode_null(mode))
@@ -1252,11 +1106,6 @@ ir_tarval *tarval_mod(ir_tarval *a, ir_tarval *b)
 
 	carry_flag = -1;
 
-	if (get_mode_n_vector_elems(a->mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
-
 	/* x/0 error */
 	if (b == get_mode_null(b->mode)) return tarval_bad;
 	/* modes of a,b are equal */
@@ -1278,12 +1127,6 @@ ir_tarval *tarval_divmod(ir_tarval *a, ir_tarval *b, ir_tarval **mod)
 
 	carry_flag = -1;
 
-	if (get_mode_n_vector_elems(a->mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
-
-
 	/* x/0 error */
 	if (b == get_mode_null(b->mode)) return tarval_bad;
 	/* modes of a,b are equal */
@@ -1301,11 +1144,6 @@ ir_tarval *tarval_abs(ir_tarval *a)
 
 	carry_flag = -1;
 	assert(mode_is_num(a->mode));
-
-	if (get_mode_n_vector_elems(a->mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
 
 	switch (get_mode_sort(a->mode)) {
 	case irms_int_number:
@@ -1434,11 +1272,6 @@ ir_tarval *tarval_shl(ir_tarval *a, ir_tarval *b)
 
 	carry_flag = -1;
 
-	if (get_mode_n_vector_elems(a->mode) > 1 || get_mode_n_vector_elems(a->mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
-
 	if (get_mode_modulo_shift(a->mode) != 0) {
 		temp_val = (char*) alloca(sc_get_buffer_length());
 
@@ -1461,11 +1294,6 @@ ir_tarval *tarval_shr(ir_tarval *a, ir_tarval *b)
 	assert(mode_is_int(a->mode) && mode_is_int(b->mode));
 
 	carry_flag = -1;
-
-	if (get_mode_n_vector_elems(a->mode) > 1 || get_mode_n_vector_elems(a->mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
 
 	if (get_mode_modulo_shift(a->mode) != 0) {
 		temp_val = (char*) alloca(sc_get_buffer_length());
@@ -1490,11 +1318,6 @@ ir_tarval *tarval_shrs(ir_tarval *a, ir_tarval *b)
 
 	carry_flag = -1;
 
-	if (get_mode_n_vector_elems(a->mode) > 1 || get_mode_n_vector_elems(a->mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
-
 	if (get_mode_modulo_shift(a->mode) != 0) {
 		temp_val = (char*) alloca(sc_get_buffer_length());
 
@@ -1517,11 +1340,6 @@ ir_tarval *tarval_rotl(ir_tarval *a, ir_tarval *b)
 	assert(mode_is_int(a->mode) && mode_is_int(b->mode));
 
 	carry_flag = -1;
-
-	if (get_mode_n_vector_elems(a->mode) > 1 || get_mode_n_vector_elems(a->mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
 
 	if (get_mode_modulo_shift(a->mode) != 0) {
 		temp_val = (char*) alloca(sc_get_buffer_length());
@@ -1615,21 +1433,9 @@ int tarval_snprintf(char *buf, size_t len, ir_tarval *tv)
 			return snprintf(buf, len, "%s%s%s", prefix, (tv == tarval_b_true) ? "true" : "false", suffix);
 		}
 
-	case irms_control_flow:
-	case irms_memory:
-	case irms_auxiliary:
-		if (tv == tarval_bad)
-			return snprintf(buf, len, "<TV_BAD>");
-		if (tv == tarval_undefined)
-			return snprintf(buf, len, "<TV_UNDEF>");
-		if (tv == tarval_unreachable)
-			return snprintf(buf, len, "<TV_UNREACHABLE>");
-		if (tv == tarval_reachable)
-			return snprintf(buf, len, "<TV_REACHABLE>");
+	default:
 		return snprintf(buf, len, "<TV_??""?>");
 	}
-
-	return 0;
 }
 
 /**
@@ -1783,16 +1589,18 @@ int get_tarval_lowest_bit(ir_tarval *tv)
  * Returns non-zero if the mantissa of a floating point IEEE-754
  * tarval is zero (i.e. 1.0Exxx)
  */
-int tarval_ieee754_zero_mantissa(ir_tarval *tv)
+int tarval_zero_mantissa(ir_tarval *tv)
 {
-	assert(get_mode_arithmetic(tv->mode) == irma_ieee754);
+	assert(get_mode_arithmetic(tv->mode) == irma_ieee754
+	       || get_mode_arithmetic(tv->mode) == irma_x86_extended_float);
 	return fc_zero_mantissa((const fp_value*) tv->value);
 }
 
 /* Returns the exponent of a floating point IEEE-754 tarval. */
-int tarval_ieee754_get_exponent(ir_tarval *tv)
+int tarval_get_exponent(ir_tarval *tv)
 {
-	assert(get_mode_arithmetic(tv->mode) == irma_ieee754);
+	assert(get_mode_arithmetic(tv->mode) == irma_ieee754
+	       || get_mode_arithmetic(tv->mode) == irma_x86_extended_float);
 	return fc_get_exponent((const fp_value*) tv->value);
 }
 
@@ -1802,32 +1610,14 @@ int tarval_ieee754_get_exponent(ir_tarval *tv)
  */
 int tarval_ieee754_can_conv_lossless(ir_tarval *tv, ir_mode *mode)
 {
-	const ieee_descriptor_t *desc = get_descriptor(mode);
+	const float_descriptor_t *desc = get_descriptor(mode);
 	return fc_can_lossless_conv_to((const fp_value*) tv->value, desc);
-}
-
-/* Set the immediate precision for IEEE-754 results. */
-unsigned tarval_ieee754_set_immediate_precision(unsigned bits)
-{
-	return fc_set_immediate_precision(bits);
 }
 
 /* Returns non-zero if the result of the last IEEE-754 operation was exact. */
 unsigned tarval_ieee754_get_exact(void)
 {
 	return fc_is_exact();
-}
-
-/* Return the size of the mantissa in bits (including possible
-   implicit bits) for the given mode. */
-unsigned tarval_ieee754_get_mantissa_size(const ir_mode *mode)
-{
-	const ieee_descriptor_t *desc;
-
-	assert(get_mode_arithmetic(mode) == irma_ieee754);
-	desc = get_descriptor(mode);
-
-	return desc->mantissa_size + desc->explicit_one;
 }
 
 /* check if its the a floating point NaN */

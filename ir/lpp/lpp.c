@@ -32,6 +32,7 @@
 #include "hashptr.h"
 #include "debug.h"
 #include "set.h"
+#include "debug.h"
 
 #include "sp_matrix.h"
 #include "mps.h"
@@ -42,7 +43,7 @@
 
 #define HASH_NAME_T(n) HASH_STR((n)->name, strlen((n)->name))
 
-static firm_dbg_module_t *dbg = NULL;
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static inline char *obst_xstrdup(struct obstack *obst, const char *str)
 {
@@ -79,7 +80,7 @@ lpp_t *lpp_new_userdef(const char *name, lpp_opt_t opt_type,
 	lpp_t *lpp;
 	int   idx;
 
-	dbg = firm_dbg_register("lpp");
+	DEBUG_ONLY(dbg = firm_dbg_register("lpp");)
 	lpp = XMALLOCZ(lpp_t);
 	obstack_init(&lpp->obst);
 

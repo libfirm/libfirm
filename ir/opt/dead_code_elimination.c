@@ -34,7 +34,6 @@
 #include "iroptimize.h"
 #include "irnode_t.h"
 #include "irgraph_t.h"
-#include "irphase_t.h"
 #include "iredges_t.h"
 #include "irhooks.h"
 #include "irtools.h"
@@ -45,9 +44,6 @@
 #include "iropt_t.h"
 #include "irpass.h"
 #include "pmap.h"
-
-/** a pointer to the new phases */
-static ir_phase *new_phases[PHASE_LAST + 1];
 
 /**
  * Reroute the inputs of a node from nodes in the old graph to copied nodes in
@@ -61,24 +57,12 @@ static void rewire_inputs(ir_node *node, void *env)
 
 static void copy_node_dce(ir_node *node, void *env)
 {
-	ir_phase_id i;
-	ir_node    *new_node = exact_copy(node);
-	ir_graph   *irg      = get_irn_irg(new_node);
+	ir_node  *new_node = exact_copy(node);
+	ir_graph *irg      = get_irn_irg(new_node);
 	(void) env;
 
 	/* preserve the node numbers for easier debugging */
 	new_node->node_nr = node->node_nr;
-
-	/* copy phase information for this node */
-	for (i = PHASE_FIRST; i <= PHASE_LAST; ++i) {
-		ir_phase *phase = irg_get_phase(irg, i);
-		if (phase == NULL)
-			continue;
-		if (!phase_get_irn_data(phase, node))
-			continue;
-		phase_set_irn_data(new_phases[i], new_node,
-		                   phase_get_irn_data(phase, node));
-	}
 
 	set_irn_link(node, new_node);
 	hook_dead_node_elim_subst(irg, node, new_node);
@@ -92,21 +76,7 @@ static void copy_node_dce(ir_node *node, void *env)
  */
 static void copy_graph_env(ir_graph *irg)
 {
-	ir_node    *new_anchor;
-	ir_phase_id i;
-
-	/* init the new_phases array */
-	/* TODO: this is wrong, it should only allocate a new data_ptr inside
-	 * the phase! */
-	for (i = PHASE_FIRST; i <= PHASE_LAST; ++i) {
-		ir_phase *old_ph = irg_get_phase(irg, i);
-		if (old_ph == NULL) {
-			new_phases[i] = NULL;
-		} else {
-			new_phases[i] = new_phase(irg, old_ph->data_init);
-			new_phases[i]->priv = old_ph->priv;
-		}
-	}
+	ir_node *new_anchor;
 
 	/* copy nodes */
 	irg_walk_anchors(irg, copy_node_dce, rewire_inputs, NULL);
@@ -115,19 +85,6 @@ static void copy_graph_env(ir_graph *irg)
 	new_anchor = (ir_node*)get_irn_link(irg->anchor);
 	assert(new_anchor != NULL);
 	irg->anchor = new_anchor;
-
-	/* copy the new phases into the irg */
-	for (i = PHASE_FIRST; i <= PHASE_LAST; ++i) {
-		ir_phase *old_ph = irg_get_phase(irg, i);
-		if (old_ph == NULL)
-			continue;
-
-		/* Matze: commented out for now: This is a memory leak, but for a real
-		 * fix we must not create new phases here, but reuse the old phases
-		 * and just create a new data array */
-		/* phase_free(old_ph); */
-		irg->phases[i] = new_phases[i];
-	}
 }
 
 /**
@@ -155,7 +112,8 @@ void dead_node_elimination(ir_graph *irg)
 	free_irg_outs(irg);
 	free_trouts();
 	free_loop_information(irg);
-	set_irg_doms_inconsistent(irg);
+	free_vrp_data(irg);
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 
 	/* A quiet place, where the old obstack can rest in peace,
 	   until it will be cremated. */

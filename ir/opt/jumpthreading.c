@@ -46,10 +46,11 @@
 #include "iropt_dbg.h"
 #include "irpass.h"
 #include "vrp.h"
+#include "opt_manage.h"
 
 #undef AVOID_PHIB
 
-DEBUG_ONLY(static firm_dbg_module_t *dbg);
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 /**
  * Add the new predecessor x to node node, which is either a Block or a Phi
@@ -294,7 +295,7 @@ static void copy_and_fix(const jumpthreading_env_t *env, ir_node *block,
 		}
 		/* ignore control flow */
 		mode = get_irn_mode(node);
-		if (mode == mode_X || is_Cond(node))
+		if (mode == mode_X || is_Cond(node) || is_Switch(node))
 			continue;
 #ifdef AVOID_PHIB
 		/* we may not copy mode_b nodes, because this could produce Phi with
@@ -347,7 +348,7 @@ static void copy_and_fix(const jumpthreading_env_t *env, ir_node *block,
 		ir_mode *mode;
 
 		mode = get_irn_mode(node);
-		if (mode == mode_X || is_Cond(node))
+		if (mode == mode_X || is_Cond(node) || is_Switch(node))
 			continue;
 #ifdef AVOID_PHIB
 		if (mode == mode_b)
@@ -654,15 +655,12 @@ static void thread_jumps(ir_node* block, void* data)
 	assert(get_irn_mode(projx) == mode_X);
 
 	cond = get_Proj_pred(projx);
+	/* TODO handle switch Conds */
 	if (!is_Cond(cond))
 		return;
 
-	selector = get_Cond_selector(cond);
-	/* TODO handle switch Conds */
-	if (get_irn_mode(selector) != mode_b)
-		return;
-
 	/* handle cases that can be immediately evaluated */
+	selector = get_Cond_selector(cond);
 	selector_evaluated = -1;
 	if (is_Cmp(selector)) {
 		ir_node *left  = get_Cmp_left(selector);
@@ -753,21 +751,15 @@ static void thread_jumps(ir_node* block, void* data)
 	*changed = 1;
 }
 
-void opt_jumpthreading(ir_graph* irg)
+static ir_graph_state_t do_jumpthread(ir_graph* irg)
 {
 	int changed, rerun;
+	ir_graph_state_t res = 0;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.jumpthreading");
 
 	DB((dbg, LEVEL_1, "===> Performing jumpthreading on %+F\n", irg));
 
-	remove_critical_cf_edges(irg);
-
-	/* ugly: jump threading might get confused by garbage nodes
-	 * of mode_X in copy_and_fix_node(), so remove all garbage edges. */
-	edges_deactivate(irg);
-
-	edges_assure(irg);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_IRN_VISITED);
 
 	changed = 0;
@@ -779,12 +771,22 @@ void opt_jumpthreading(ir_graph* irg)
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_IRN_VISITED);
 
-	if (changed) {
-		/* control flow changed, some blocks may become dead */
-		set_irg_doms_inconsistent(irg);
-		set_irg_extblk_inconsistent(irg);
-		set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
+	if (!changed) {
+		res |= IR_GRAPH_STATE_CONSISTENT_DOMINANCE | IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE;
 	}
+
+	return res;
+}
+
+static optdesc_t opt_jumpthread = {
+	"jumpthreading",
+	IR_GRAPH_STATE_NO_UNREACHABLE_CODE | IR_GRAPH_STATE_CONSISTENT_OUT_EDGES | IR_GRAPH_STATE_NO_CRITICAL_EDGES,
+	do_jumpthread,
+};
+
+void opt_jumpthreading(ir_graph* irg)
+{
+	perform_irg_optimization(irg, &opt_jumpthread);
 }
 
 /* Creates an ir_graph pass for opt_jumpthreading. */

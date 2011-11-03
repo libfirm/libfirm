@@ -33,12 +33,12 @@
 #define DISABLE_STATEV
 
 #include <assert.h>
-#include "irtools.h"
 #include "irprintf.h"
 #include "irdom.h"
 #include "set.h"
 #include "statev.h"
 #include "dfs_t.h"
+#include "util.h"
 
 static int cmp_edge(const void *a, const void *b, size_t sz)
 {

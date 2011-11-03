@@ -52,6 +52,7 @@
 #include "execfreq.h"
 #include "irdump_t.h"
 #include "irtools.h"
+#include "util.h"
 #include "debug.h"
 #include "beirgmod.h"
 #include "bemodule.h"
@@ -498,10 +499,7 @@ static ir_node **create_block_schedule_greedy(ir_graph *irg, ir_exec_freq *execf
 	env.worklist   = NULL;
 	env.blockcount = 0;
 
-	/* make sure loopinfo is up-to-date */
-	if (! (get_irg_loopinfo_state(irg) & loopinfo_cf_consistent)) {
-		construct_cf_backedges(irg);
-	}
+	assure_loopinfo(irg);
 
 	// collect edge execution frequencies
 	irg_block_walk_graph(irg, collect_egde_frequency, NULL, &env);

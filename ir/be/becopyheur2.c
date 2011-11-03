@@ -40,11 +40,12 @@
 #include "debug.h"
 #include "bitfiddle.h"
 
-#include "irphase_t.h"
 #include "irgraph_t.h"
 #include "irnode_t.h"
 #include "irprintf.h"
+#include "util.h"
 #include "irtools.h"
+#include "irnodemap.h"
 
 #include "bemodule.h"
 #include "beabi.h"
@@ -107,7 +108,8 @@ typedef struct {
 } col_cost_pair_t;
 
 typedef struct {
-	ir_phase     ph;
+	ir_nodemap     map;
+	struct obstack obst;
 	copy_opt_t *co;
 	bitset_t   *allocatable_regs;
 	co2_irn_t  *touched;
@@ -175,30 +177,42 @@ typedef struct {
 
 #define FRONT_BASE(ci,col)  ((ci)->fronts + col * (ci)->mst_n_childs)
 
-#define get_co2_irn(co2, irn)         ((co2_irn_t *)       phase_get_or_set_irn_data(&co2->ph, irn))
-#define get_co2_cloud_irn(co2, irn)   ((co2_cloud_irn_t *) phase_get_or_set_irn_data(&co2->ph, irn))
-
-static void *co2_irn_init(ir_phase *ph, const ir_node *irn)
+static co2_irn_t *get_co2_irn(co2_t *env, const ir_node *node)
 {
-	co2_t *env         = (co2_t *) ph;
-	affinity_node_t *a = get_affinity_info(env->co, irn);
-	size_t size        = a ? sizeof(co2_cloud_irn_t) : sizeof(co2_irn_t);
-	co2_irn_t *ci      = (co2_irn_t*)phase_alloc(ph, size);
+	co2_irn_t *ci = ir_nodemap_get(&env->map, node);
+	if (ci == NULL) {
+		ci = OALLOCZ(&env->obst, co2_irn_t);
 
-	memset(ci, 0, size);
-	INIT_LIST_HEAD(&ci->changed_list);
-	ci->touched_next = env->touched;
-	ci->orig_col     = get_irn_col(irn);
-	env->touched     = ci;
-	ci->irn          = irn;
-	ci->aff          = a;
+		INIT_LIST_HEAD(&ci->changed_list);
+		ci->touched_next = env->touched;
+		ci->orig_col     = get_irn_col(node);
+		env->touched     = ci;
+		ci->irn          = node;
+		ci->aff          = NULL;
 
-	if (a) {
-		co2_cloud_irn_t *cci = (co2_cloud_irn_t *) ci;
-		INIT_LIST_HEAD(&cci->cloud_list);
-		cci->mst_parent   = cci;
+		ir_nodemap_insert(&env->map, node, ci);
 	}
+	return ci;
+}
 
+static co2_cloud_irn_t *get_co2_cloud_irn(co2_t *env, const ir_node *node)
+{
+	co2_cloud_irn_t *ci = ir_nodemap_get(&env->map, node);
+	if (ci == NULL) {
+		ci = OALLOCZ(&env->obst, co2_cloud_irn_t);
+
+		INIT_LIST_HEAD(&ci->inh.changed_list);
+		ci->inh.touched_next = env->touched;
+		ci->inh.orig_col     = get_irn_col(node);
+		env->touched         = &ci->inh;
+		ci->inh.irn          = node;
+		ci->inh.aff          = get_affinity_info(env->co, node);
+
+		INIT_LIST_HEAD(&ci->cloud_list);
+		ci->mst_parent = ci;
+
+		ir_nodemap_insert(&env->map, node, ci);
+	}
 	return ci;
 }
 
@@ -249,7 +263,7 @@ static inline bitset_t *get_adm(co2_t *env, co2_irn_t *ci)
 {
 	if (ci->adm_cache == NULL) {
 		const arch_register_req_t *req;
-		ci->adm_cache = bitset_obstack_alloc(phase_obst(&env->ph), env->n_regs);
+		ci->adm_cache = bitset_obstack_alloc(&env->obst, env->n_regs);
 		req = arch_get_irn_register_req(ci->irn);
 
 		if (arch_register_req_is(req, limited)) {
@@ -810,7 +824,7 @@ static void populate_cloud(co2_t *env, co2_cloud_t *cloud, affinity_node_t *a, i
 
 static co2_cloud_t *new_cloud(co2_t *env, affinity_node_t *a)
 {
-	co2_cloud_t *cloud = (co2_cloud_t*)phase_alloc(&env->ph, sizeof(cloud[0]));
+	co2_cloud_t *cloud = OALLOC(&env->obst, co2_cloud_t);
 	co2_cloud_irn_t *ci;
 	int i;
 
@@ -826,7 +840,7 @@ static co2_cloud_t *new_cloud(co2_t *env, affinity_node_t *a)
 	cloud->freedom = (cloud->n_memb * env->n_regs) / cloud->freedom;
 
 	/* Also allocate space for the node sequence and compute that sequence. */
-	cloud->seq = (co2_cloud_irn_t**)phase_alloc(&env->ph, cloud->n_memb * sizeof(cloud->seq[0]));
+	cloud->seq = OALLOCN(&env->obst, co2_cloud_irn_t*, cloud->n_memb);
 
 	i = 0;
 	list_for_each_entry(co2_cloud_irn_t, ci, &cloud->members_head, cloud_list) {
@@ -958,7 +972,7 @@ static void process_cloud(co2_cloud_t *cloud)
 
 	DBG((env->dbg, LEVEL_3, "mst:\n"));
 	for (i = 0; i < cloud->n_memb; ++i) {
-		DEBUG_ONLY(co2_cloud_irn_t *ci = cloud->seq[i]);
+		DEBUG_ONLY(co2_cloud_irn_t *ci = cloud->seq[i];)
 		DBG((env->dbg, LEVEL_3, "\t%+F -> %+F\n", ci->inh.irn, ci->mst_parent->inh.irn));
 	}
 
@@ -1222,7 +1236,8 @@ int co_solve_heuristic_new(copy_opt_t *co)
 	co2_t env;
 	FILE  *f;
 
-	phase_init(&env.ph, co->cenv->irg, co2_irn_init);
+	ir_nodemap_init(&env.map, co->irg);
+	obstack_init(&env.obst);
 	env.touched     = NULL;
 	env.visited     = 0;
 	env.co          = co;
@@ -1253,7 +1268,8 @@ int co_solve_heuristic_new(copy_opt_t *co)
 	}
 
 	writeback_colors(&env);
-	phase_deinit(&env.ph);
+	obstack_free(&env.obst, NULL);
+	ir_nodemap_destroy(&env.map);
 	return 0;
 }
 

@@ -211,7 +211,7 @@ ir_node *be_transform_node(ir_node *node)
 	if (new_node != NULL)
 		return new_node;
 
-	DEBUG_ONLY(be_set_transformed_node(node, NULL));
+	DEBUG_ONLY(be_set_transformed_node(node, NULL);)
 
 	op = get_irn_op(node);
 	if (op->ops.generic == NULL) {
@@ -399,10 +399,7 @@ void be_transform_graph(ir_graph *irg, arch_pretrans_nodes *func)
 	irg->obst = new_obst;
 	irg->last_node_idx = 0;
 
-	/* invalidate phase info as (at least vrp info) is used inside the
-	 * equivalent/compute_value functions and might replace our newly
-	 * created nodes with middleend nodes */
-	irg_invalidate_phases(irg);
+	free_vrp_data(irg);
 
 	/* create new value table for CSE */
 	new_identities(irg);
@@ -422,7 +419,7 @@ void be_transform_graph(ir_graph *irg, arch_pretrans_nodes *func)
 	free_irg_outs(irg);
 	free_trouts();
 	free_loop_information(irg);
-	set_irg_doms_inconsistent(irg);
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 
 	be_liveness_invalidate(be_get_irg_liveness(irg));
 	/* Hack for now, something is buggy with invalidate liveness... */

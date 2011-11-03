@@ -34,8 +34,8 @@
 #include "pdeq.h"
 
 #include "be.h"
-#include "../bemachine.h"
-#include "../beemitter.h"
+#include "bemachine.h"
+#include "beemitter.h"
 #include "gen_ia32_regalloc_if.h"
 
 #ifdef NDEBUG
@@ -64,11 +64,10 @@ typedef struct ia32_irg_data_t {
  * IA32 ISA object
  */
 struct ia32_isa_t {
-	arch_env_t             base;            /**< must be derived from arch_env_t */
-	pmap                  *types;           /**< A map of modes to primitivetypes */
-	pmap                  *tv_ent;          /**< A map of entities that store const tarvals */
-	const be_machine_t    *cpu;             /**< the abstract machine */
-	int                    fpu_arch;        /**< FPU architecture */
+	arch_env_t             base;     /**< must be derived from arch_env_t */
+	pmap                  *tv_ent;   /**< A map of entities that store const tarvals */
+	const be_machine_t    *cpu;      /**< the abstract machine */
+	int                    fpu_arch; /**< FPU architecture */
 };
 
 /**
@@ -101,6 +100,9 @@ extern transformer_t be_transformer;
 
 /** The mode for the floating point control word. */
 extern ir_mode *ia32_mode_fpcw;
+/** extended floatingpoint mode */
+extern ir_mode *ia32_mode_E;
+extern ir_type *ia32_type_E;
 
 static inline ia32_irg_data_t *ia32_get_irg_data(const ir_graph *irg)
 {

@@ -25,16 +25,25 @@ RANLIB ?= ranlib
 DLLEXT ?= .so
 
 # Variants
-CFLAGS_debug      = -O0 -g3 -DDEBUG_libfirm
-CFLAGS_profile    = -O3 -pg -DNDEBUG -fno-inline
+CFLAGS_all        = -fPIC
+CFLAGS_debug      = $(CFLAGS_all) -O0 -g3 -DDEBUG_libfirm
+CFLAGS_profile    = $(CFLAGS_all) -O3 -pg -DNDEBUG -fno-inline
 LINKFLAGS_profile = -pg
-CFLAGS_optimize   = -O3 -DNDEBUG
+CFLAGS_optimize   = $(CFLAGS_all) -O3 -DNDEBUG
 
 # General flags
 CFLAGS    += $(CFLAGS_$(variant))
 CFLAGS    += -Wall -W -Wextra -Wstrict-prototypes -Wmissing-prototypes -Wwrite-strings
 LINKFLAGS += $(LINKFLAGS_$(variant))
 VPATH = $(srcdir)
+
+REVISION ?= $(shell git describe --abbrev=40 --always --dirty --match '')
+
+# Update revision.h if necessary
+UNUSED := $(shell \
+	REV="\#define libfirm_VERSION_REVISION \"$(REVISION)\""; \
+	echo "$$REV" | cmp -s - firm_revision.h 2> /dev/null || echo "$$REV" > firm_revision.h \
+)
 
 .PHONY: all
 all: firm
@@ -86,6 +95,7 @@ firm: $(libfirm_dll)
 backends = amd64 arm ia32 sparc TEMPLATE
 
 EMITTER_GENERATOR = $(srcdir)ir/be/scripts/generate_emitter.pl
+EMITTER_GENERATOR2 = $(srcdir)ir/be/scripts/generate_emitter_new.pl
 REGALLOC_IF_GENERATOR = $(srcdir)ir/be/scripts/generate_regalloc_if.pl
 OPCODES_GENERATOR = $(srcdir)ir/be/scripts/generate_new_opcodes.pl
 MACHINE_GENERATOR = $(srcdir)ir/be/scripts/generate_machine.pl
@@ -97,7 +107,7 @@ $(1)_GEN_HEADERS =
 
 $(1)_SPEC = ir/be/$(1)/$(1)_spec.pl
 
-$$(srcdir)ir/be/$(1)/gen_$(1)_emitter.h $$(srcdir)ir/be/$(1)/gen_$(1)_emitter.c: $$($(1)_SPEC) $$(EMITTER_GENERATOR)
+$$(srcdir)ir/be/$(1)/gen_$(1)_emitter.h $$(srcdir)ir/be/$(1)/gen_$(1)_emitter.c: $$($(1)_SPEC) $$(EMITTER_GENERATOR) $(EMITTER_GENERATOR2)
 	@echo GEN $$@
 	$(Q)$$(EMITTER_GENERATOR) $$($(1)_SPEC) $$(srcdir)ir/be/$(1)
 $(1)_SOURCES += ir/be/$(1)/gen_$(1)_emitter.c

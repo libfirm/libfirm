@@ -47,6 +47,7 @@
 #include "irdump.h"
 #include "irverify.h"
 #include "iredges.h"
+#include "opt_manage.h"
 
 #include "array_t.h"
 
@@ -56,7 +57,8 @@
 #include "irflag_t.h"
 #include "firmstat.h"
 #include "irpass.h"
-#include "irphase_t.h"
+#include "irnodehashmap.h"
+#include "irtools.h"
 
 #include "iropt_dbg.h"
 
@@ -73,13 +75,13 @@ static void set_Block_removable(ir_node *block, bool removable)
 }
 
 /** check if a block has the removable property set. */
-static bool is_Block_removable(ir_node *block)
+static bool is_Block_removable(const ir_node *block)
 {
 	return get_Block_mark(block);
 }
 
 /** checks if a given Cond node is a switch Cond. */
-static bool is_switch_Cond(ir_node *cond)
+static bool is_switch_Cond(const ir_node *cond)
 {
 	ir_node *sel = get_Cond_selector(cond);
 	return get_irn_mode(sel) != mode_b;
@@ -90,8 +92,12 @@ static void clear_link_and_mark_blocks_removable(ir_node *node, void *ctx)
 {
 	(void) ctx;
 	set_irn_link(node, NULL);
-	if (is_Block(node))
+	if (is_Block(node)) {
 		set_Block_removable(node, true);
+		set_Block_phis(node, NULL);
+	} else if (is_Phi(node)) {
+		set_Phi_next(node, NULL);
+	}
 }
 
 /**
@@ -103,13 +109,11 @@ static void clear_link_and_mark_blocks_removable(ir_node *node, void *ctx)
  */
 static void collect_nodes(ir_node *n, void *ctx)
 {
-	ir_node ***switch_conds = (ir_node***)ctx;
-
+	(void) ctx;
 	if (is_Phi(n)) {
 		/* Collect Phi nodes to compact ins along with block's ins. */
 		ir_node *block = get_nodes_block(n);
-		set_irn_link(n, get_irn_link(block));
-		set_irn_link(block, n);
+		add_Block_phi(block, n);
 	} else if (is_Block(n)) {
 		if (has_Block_entity(n)) {
 			/* block with a jump label attached cannot be removed. */
@@ -121,8 +125,6 @@ static void collect_nodes(ir_node *n, void *ctx)
 	} else {
 		/* Check for non-empty block. */
 		ir_node *block = get_nodes_block(n);
-		if (is_Bad(block))
-			return;
 
 		set_Block_removable(block, false);
 
@@ -131,15 +133,12 @@ static void collect_nodes(ir_node *n, void *ctx)
 			ir_node *pred = get_Proj_pred(n);
 			set_irn_link(n, get_irn_link(pred));
 			set_irn_link(pred, n);
-		} else if (is_Cond(n) && is_switch_Cond(n)) {
-			/* found a switch-Cond, collect */
-			ARR_APP1(ir_node*, *switch_conds, n);
 		}
 	}
 }
 
 /** Returns true if pred is predecessor of block b. */
-static bool is_pred_of(ir_node *pred, ir_node *b)
+static bool is_pred_of(const ir_node *pred, const ir_node *b)
 {
 	int i;
 
@@ -178,7 +177,7 @@ static bool is_pred_of(ir_node *pred, ir_node *b)
  *  To perform the test for pos, we must regard predecessors before pos
  *  as already removed.
  **/
-static unsigned test_whether_dispensable(ir_node *b, int pos)
+static unsigned test_whether_dispensable(const ir_node *b, int pos)
 {
 	ir_node *pred  = get_Block_cfgpred(b, pos);
 	ir_node *predb = get_nodes_block(pred);
@@ -193,7 +192,7 @@ static unsigned test_whether_dispensable(ir_node *b, int pos)
 		goto non_dispensable;
 
 	/* Seems to be empty. At least we detected this in collect_nodes. */
-	if (get_irn_link(b) != NULL) {
+	if (get_Block_phis(b) != NULL) {
 		int n_cfgpreds = get_Block_n_cfgpreds(b);
 		int i;
 		/* there are Phi nodes */
@@ -286,7 +285,8 @@ non_dispensable:
 static void optimize_blocks(ir_node *b, void *ctx)
 {
 	int i, j, k, n, max_preds, n_preds, p_preds = -1;
-	ir_node *pred, *phi, *next;
+	ir_node *phi;
+	ir_node *next;
 	ir_node **in;
 	merge_env *env = (merge_env*)ctx;
 
@@ -304,21 +304,27 @@ static void optimize_blocks(ir_node *b, void *ctx)
 	in = XMALLOCN(ir_node*, max_preds);
 
 	/*- Fix the Phi nodes of the current block -*/
-	for (phi = (ir_node*)get_irn_link(b); phi != NULL; phi = (ir_node*)next) {
-		assert(is_Phi(phi));
-		next = (ir_node*)get_irn_link(phi);
+	for (phi = get_Block_phis(b); phi != NULL; phi = next) {
+		next = get_Phi_next(phi);
 
 		/* Find the new predecessors for the Phi */
 		p_preds = 0;
 		for (i = 0, n = get_Block_n_cfgpreds(b); i < n; ++i) {
 			ir_graph *irg = get_irn_irg(b);
-			pred = get_Block_cfgpred_block(b, i);
+			ir_node *predx = get_Block_cfgpred(b, i);
+			ir_node *pred;
 
-			if (is_Bad(pred)) {
-				/* case Phi 1: maintain Bads, as somebody else is responsible to remove them */
+			/* case Phi 1: maintain Bads, as somebody else is responsible to
+			 * remove them */
+			if (is_Bad(predx)) {
 				in[p_preds++] = new_r_Bad(irg, get_irn_mode(phi));
-			} else if (is_Block_removable(pred) && !Block_block_visited(pred)) {
-				/* case Phi 2: It's an empty block and not yet visited. */
+				continue;
+			}
+
+			pred = get_nodes_block(predx);
+
+			/* case Phi 2: It's an empty block and not yet visited. */
+			if (is_Block_removable(pred) && !Block_block_visited(pred)) {
 				ir_node *phi_pred = get_Phi_pred(phi, i);
 
 				for (j = 0, k = get_Block_n_cfgpreds(pred); j < k; j++) {
@@ -347,10 +353,11 @@ static void optimize_blocks(ir_node *b, void *ctx)
 		assert(p_preds == max_preds);
 
 		/* Fix the node */
-		if (p_preds == 1)
+		if (p_preds == 1) {
 			exchange(phi, in[0]);
-		else
+		} else {
 			set_irn_in(phi, p_preds, in);
+		}
 		env->changed = true;
 	}
 
@@ -367,37 +374,43 @@ static void optimize_blocks(ir_node *b, void *ctx)
 			ir_node *next_phi;
 
 			/* we found a predecessor block at position k that will be removed */
-			for (phi = (ir_node*)get_irn_link(predb); phi; phi = next_phi) {
+			for (phi = get_Block_phis(predb); phi != NULL; phi = next_phi) {
 				int q_preds = 0;
-				next_phi = (ir_node*)get_irn_link(phi);
-
-				assert(is_Phi(phi));
+				next_phi = get_Phi_next(phi);
 
 				if (get_Block_idom(b) != predb) {
-					/* predb is not the dominator. There can't be uses of pred's Phi nodes, kill them .*/
+					/* predb is not the dominator. There can't be uses of
+					 * pred's Phi nodes, kill them .*/
 					ir_graph *irg  = get_irn_irg(b);
 					ir_mode  *mode = get_irn_mode(phi);
 					exchange(phi, new_r_Bad(irg, mode));
 				} else {
-					/* predb is the direct dominator of b. There might be uses of the Phi nodes from
-					   predb in further block, so move this phi from the predecessor into the block b */
+					/* predb is the direct dominator of b. There might be uses
+					 * of the Phi nodes from predb in further block, so move
+					 * this phi from the predecessor into the block b */
 					set_nodes_block(phi, b);
-					set_irn_link(phi, get_irn_link(b));
-					set_irn_link(b, phi);
+					set_Phi_next(phi, get_Block_phis(b));
+					set_Block_phis(b, phi);
 					env->phis_moved = true;
 
 					/* first, copy all 0..k-1 predecessors */
 					for (i = 0; i < k; i++) {
-						pred = get_Block_cfgpred_block(b, i);
+						ir_node *predx = get_Block_cfgpred(b, i);
+						ir_node *pred_block;
 
-						if (is_Bad(pred)) {
+						if (is_Bad(predx)) {
 							ir_graph *irg  = get_irn_irg(b);
 							ir_mode  *mode = get_irn_mode(phi);
 							in[q_preds++] = new_r_Bad(irg, mode);
-						} else if (is_Block_removable(pred) && !Block_block_visited(pred)) {
+							continue;
+						}
+						pred_block = get_nodes_block(predx);
+						if (is_Block_removable(pred_block)
+						           && !Block_block_visited(pred_block)) {
+							int n_cfgpreds = get_Block_n_cfgpreds(pred_block);
 							/* It's an empty block and not yet visited. */
-							for (j = 0; j < get_Block_n_cfgpreds(pred); j++) {
-								if (! is_Bad(get_Block_cfgpred(pred, j))) {
+							for (j = 0; j < n_cfgpreds; j++) {
+								if (!is_Bad(get_Block_cfgpred(pred_block, j))) {
 									in[q_preds++] = phi;
 								} else {
 									ir_graph *irg  = get_irn_irg(b);
@@ -492,79 +505,8 @@ static void optimize_blocks(ir_node *b, void *ctx)
 	env->changed = true;
 
 	/* see if phi-fix was correct */
-	assert(get_irn_link(b) == NULL || p_preds == -1 || (n_preds == p_preds));
+	assert(get_Block_phis(b) == NULL || p_preds == -1 || (n_preds == p_preds));
 	xfree(in);
-}
-
-/**
- * Optimize table-switch Conds.
- *
- * @param cond the switch-Cond
- * @return true if the switch-Cond was optimized
- */
-static bool handle_switch_cond(ir_node *cond)
-{
-	ir_node *sel   = get_Cond_selector(cond);
-	ir_node *proj1 = (ir_node*)get_irn_link(cond);
-	ir_node *proj2 = (ir_node*)get_irn_link(proj1);
-	ir_node *blk   = get_nodes_block(cond);
-
-	/* exactly 1 Proj on the Cond node: must be the defaultProj */
-	if (proj2 == NULL) {
-		ir_node *jmp = new_r_Jmp(blk);
-		assert(get_Cond_default_proj(cond) == get_Proj_proj(proj1));
-		/* convert it into a Jmp */
-		exchange(proj1, jmp);
-		return true;
-	}
-
-	/* handle Cond nodes with constant argument. In this case the localopt rules
-	 * should have killed all obviously impossible cases.
-	 * So the only case left to handle here is 1 defaultProj + 1 case
-	 * (this one case should be the one taken) */
-	if (get_irn_link(proj2) == NULL) {
-		ir_tarval *tv = value_of(sel);
-
-		if (tv != tarval_bad) {
-			/* we have a constant switch */
-			long      num     = get_tarval_long(tv);
-			long      def_num = get_Cond_default_proj(cond);
-			ir_graph *irg     = get_irn_irg(cond);
-			ir_node  *bad     = new_r_Bad(irg, mode_X);
-
-			if (def_num == get_Proj_proj(proj1)) {
-				/* first one is the defProj */
-				if (num == get_Proj_proj(proj2)) {
-					ir_node *jmp = new_r_Jmp(blk);
-					exchange(proj2, jmp);
-					exchange(proj1, bad);
-					return true;
-				}
-			} else if (def_num == get_Proj_proj(proj2)) {
-				/* second one is the defProj */
-				if (num == get_Proj_proj(proj1)) {
-					ir_node *jmp = new_r_Jmp(blk);
-					exchange(proj1, jmp);
-					exchange(proj2, bad);
-					return true;
-				}
-			} else {
-				/* neither: strange, Cond was not optimized so far */
-				if (num == get_Proj_proj(proj1)) {
-					ir_node *jmp = new_r_Jmp(blk);
-					exchange(proj1, jmp);
-					exchange(proj2, bad);
-					return true;
-				} else if (num == get_Proj_proj(proj2)) {
-					ir_node *jmp = new_r_Jmp(blk);
-					exchange(proj2, jmp);
-					exchange(proj1, bad);
-					return true;
-				}
-			}
-		}
-	}
-	return false;
 }
 
 /**
@@ -609,52 +551,53 @@ typedef enum block_flags_t {
 	BF_IS_UNKNOWN_JUMP_TARGET = 1 << 2,
 } block_flags_t;
 
-static bool get_phase_flag(ir_phase *block_info, ir_node *block, int flag)
+static bool get_block_flag(const ir_nodehashmap_t *infos, const ir_node *block,
+                           int flag)
 {
-	return PTR_TO_INT(phase_get_irn_data(block_info, block)) & flag;
+	return PTR_TO_INT(ir_nodehashmap_get(infos, block)) & flag;
 }
 
-static void set_phase_flag(ir_phase *block_info, ir_node *block,
+static void set_block_flag(ir_nodehashmap_t *infos, ir_node *block,
                            block_flags_t flag)
 {
-	int data = PTR_TO_INT(phase_get_irn_data(block_info, block));
+	int data = PTR_TO_INT(ir_nodehashmap_get(infos, block));
 	data |= flag;
-	phase_set_irn_data(block_info, block, INT_TO_PTR(data));
+	ir_nodehashmap_insert(infos, block, INT_TO_PTR(data));
 }
 
-static void clear_phase_flag(ir_phase *block_info, ir_node *block)
+static void clear_block_flag(ir_nodehashmap_t *infos, const ir_node *block)
 {
-	phase_set_irn_data(block_info, block, NULL);
+	ir_nodehashmap_remove(infos, block);
 }
 
-static bool has_operations(ir_phase *block_info, ir_node *block)
+static bool has_operations(ir_nodehashmap_t *infos, const ir_node *block)
 {
-	return get_phase_flag(block_info, block, BF_HAS_OPERATIONS);
+	return get_block_flag(infos, block, BF_HAS_OPERATIONS);
 }
 
-static void set_has_operations(ir_phase *block_info, ir_node *block)
+static void set_has_operations(ir_nodehashmap_t *infos, ir_node *block)
 {
-	set_phase_flag(block_info, block, BF_HAS_OPERATIONS);
+	set_block_flag(infos, block, BF_HAS_OPERATIONS);
 }
 
-static bool has_phis(ir_phase *block_info, ir_node *block)
+static bool has_phis(ir_nodehashmap_t *infos, const ir_node *block)
 {
-	return get_phase_flag(block_info, block, BF_HAS_PHIS);
+	return get_block_flag(infos, block, BF_HAS_PHIS);
 }
 
-static void set_has_phis(ir_phase *block_info, ir_node *block)
+static void set_has_phis(ir_nodehashmap_t *infos, ir_node *block)
 {
-	set_phase_flag(block_info, block, BF_HAS_PHIS);
+	set_block_flag(infos, block, BF_HAS_PHIS);
 }
 
-static bool is_unknown_jump_target(ir_phase *block_info, ir_node *block)
+static bool is_unknown_jump_target(ir_nodehashmap_t *infos, const ir_node *block)
 {
-	return get_phase_flag(block_info, block, BF_IS_UNKNOWN_JUMP_TARGET);
+	return get_block_flag(infos, block, BF_IS_UNKNOWN_JUMP_TARGET);
 }
 
-static void set_is_unknown_jump_target(ir_phase *block_info, ir_node *block)
+static void set_is_unknown_jump_target(ir_nodehashmap_t *infos, ir_node *block)
 {
-	set_phase_flag(block_info, block, BF_IS_UNKNOWN_JUMP_TARGET);
+	set_block_flag(infos, block, BF_IS_UNKNOWN_JUMP_TARGET);
 }
 
 /**
@@ -662,42 +605,41 @@ static void set_is_unknown_jump_target(ir_phase *block_info, ir_node *block)
  */
 static void compute_block_info(ir_node *n, void *x)
 {
-	ir_phase *block_info = (ir_phase *)x;
+	ir_nodehashmap_t *infos = (ir_nodehashmap_t*)x;
 
 	if (is_Block(n)) {
 		int i, max = get_Block_n_cfgpreds(n);
 		for (i=0; i<max; i++) {
 			ir_node *pred = get_Block_cfgpred(n,i);
 			if (is_unknown_jump(pred)) {
-				set_is_unknown_jump_target(block_info, n);
+				set_is_unknown_jump_target(infos, n);
 			}
 		}
 	} else if (is_Phi(n)) {
 		ir_node *block = get_nodes_block(n);
-		set_has_phis(block_info, block);
+		set_has_phis(infos, block);
 	} else if (is_Jmp(n) || is_Cond(n) || is_Proj(n)) {
 		/* ignore */
 	} else {
 		ir_node *block = get_nodes_block(n);
-		set_has_operations(block_info, block);
+		set_has_operations(infos, block);
 	}
 }
 
 static void clear_block_info(ir_node *block, void *x)
 {
-	ir_phase *block_info = (ir_phase *)x;
-	clear_phase_flag(block_info, block);
+	ir_nodehashmap_t *infos = (ir_nodehashmap_t*)x;
+	clear_block_flag(infos, block);
 }
 
 typedef struct skip_env {
-	bool changed;
-	ir_phase *phase;
+	bool             changed;
+	ir_nodehashmap_t block_infos;
 } skip_env;
 
 /**
  * Post-Block-walker: Optimize useless if's (boolean Cond nodes
- * with same true/false target)
- * away.
+ * with same true/false target) away.
  */
 static void optimize_ifs(ir_node *block, void *x)
 {
@@ -705,7 +647,7 @@ static void optimize_ifs(ir_node *block, void *x)
 	int i, j;
 	int n_preds = get_Block_n_cfgpreds(block);
 
-	if (has_phis(env->phase, block))
+	if (has_phis(&env->block_infos, block))
 		return;
 
 	/* optimize Cond predecessors (might produce Bad predecessors) */
@@ -736,16 +678,17 @@ static void remove_empty_blocks(ir_node *block, void *x)
 		jmp_block = get_nodes_block(jmp);
 		if (jmp_block == block)
 			continue; /* this infinite loop cannot be optimized any further */
-		if (is_unknown_jump_target(env->phase, jmp_block))
+		if (is_unknown_jump_target(&env->block_infos, jmp_block))
 			continue; /* unknown jump target must not be optimized */
-		if (has_operations(env->phase,jmp_block))
+		if (has_operations(&env->block_infos,jmp_block))
 			continue; /* this block contains operations and cannot be skipped */
-		if (has_phis(env->phase,jmp_block))
+		if (has_phis(&env->block_infos,jmp_block))
 			continue; /* this block contains Phis and is not skipped */
 		if (Block_block_visited(jmp_block)) {
 			continue;
 			/* otherwise we could break the walker,
-			 * if block was reached via KeepAlive edge -> jmp_block -> A ---> block,
+			 * if block was reached via
+			 *     KeepAlive edge -> jmp_block -> A ---> block,
 			 * because the walker cannot handle Id nodes.
 			 *
 			 *   A      B
@@ -780,8 +723,9 @@ static void remove_empty_blocks(ir_node *block, void *x)
 			pred_block = get_nodes_block(pred);
 			exchange(jmp_block, pred_block);
 			env->changed = true;
-		} else if (! has_phis(env->phase, block)) {
-			/* all predecessors can skip the jmp block, so block gets some new predecessors
+		} else if (! has_phis(&env->block_infos, block)) {
+			/* all predecessors can skip the jmp block, so block gets some new
+			 * predecessors
 			 *
 			 *  A     B                 A  B
 			 *   \   /                  |  |
@@ -789,10 +733,10 @@ static void remove_empty_blocks(ir_node *block, void *x)
 			 *      \    /          \ | | /
 			 *      block            block
 			 */
-			ir_node **ins = NULL;
+			ir_node **ins = ALLOCAN(ir_node*, n_preds+n_jpreds);
 			int j;
-			NEW_ARR_A(ir_node *, ins, n_preds+n_jpreds);
-			/* first copy the old predecessors, because the outer loop (i) still walks over them */
+			/* first copy the old predecessors, because the outer loop (i)
+			 * still walks over them */
 			for (j = 0; j < n_preds; ++j) {
 				ins[j] = get_Block_cfgpred(block, j);
 			}
@@ -823,11 +767,13 @@ static void remove_empty_blocks(ir_node *block, void *x)
  */
 static void cfgopt_ignoring_phis(ir_graph *irg)
 {
-	ir_phase *block_info = new_phase(irg, NULL);
-	skip_env env = { true, block_info };
+	skip_env env;
+
+	env.changed = true;
+	ir_nodehashmap_init(&env.block_infos);
 
 	while (env.changed) {
-		irg_walk_graph(irg, compute_block_info, NULL, block_info);
+		irg_walk_graph(irg, compute_block_info, NULL, &env.block_infos);
 		env.changed = false;
 
 		/* Remove blocks, which only consist of a Jmp */
@@ -837,9 +783,9 @@ static void cfgopt_ignoring_phis(ir_graph *irg)
 		irg_block_walk_graph(irg, NULL, optimize_ifs, &env);
 
 		if (env.changed) {
-			set_irg_doms_inconsistent(irg);
+			clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 			/* clear block info, because it must be recomputed */
-			irg_block_walk_graph(irg, clear_block_info, NULL, block_info);
+			irg_block_walk_graph(irg, clear_block_info, NULL, &env.block_infos);
 			/* Removing blocks and Conds might enable more optimizations */
 			continue;
 		} else {
@@ -847,11 +793,11 @@ static void cfgopt_ignoring_phis(ir_graph *irg)
 		}
 	}
 
-	phase_free(block_info);
+	ir_nodehashmap_destroy(&env.block_infos);
 }
 
 /* Optimizations of the control flow that also require changes of Phi nodes.  */
-void optimize_cf(ir_graph *irg)
+static ir_graph_state_t do_cfopt(ir_graph *irg)
 {
 	int i, j, n;
 	ir_node **in = NULL;
@@ -874,12 +820,11 @@ void optimize_cf(ir_graph *irg)
 	cfgopt_ignoring_phis(irg);
 
 	/* we use the mark flag to mark removable blocks */
-	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_IRN_LINK);
+	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_IRN_LINK
+	                     | IR_RESOURCE_PHI_LIST);
 
 	/* The switch Cond optimization might expose unreachable code, so we loop */
 	for (;;) {
-		int length;
-		ir_node **switch_conds = NULL;
 		bool changed = false;
 
 		assure_doms(irg);
@@ -890,23 +835,14 @@ void optimize_cf(ir_graph *irg)
 		 * Finally it marks all blocks that do not contain useful
 		 * computations, i.e., these blocks might be removed.
 		 */
-		switch_conds = NEW_ARR_F(ir_node*, 0);
-		irg_walk(end, clear_link_and_mark_blocks_removable, collect_nodes, &switch_conds);
-
-		/* handle all collected switch-Conds */
-		length = ARR_LEN(switch_conds);
-		for (i = 0; i < length; ++i) {
-			ir_node *cond = switch_conds[i];
-			changed |= handle_switch_cond(cond);
-		}
-		DEL_ARR_F(switch_conds);
+		irg_walk(end, clear_link_and_mark_blocks_removable, collect_nodes, NULL);
 
 		if (!changed)
 			break;
 
-		set_irg_doms_inconsistent(irg);
-		set_irg_extblk_inconsistent(irg);
-		set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
+		                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS
+		                   | IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE);
 	}
 
 	/* assert due to collect_nodes:
@@ -928,7 +864,8 @@ void optimize_cf(ir_graph *irg)
 	}
 	remove_End_Bads_and_doublets(end);
 
-	ir_free_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_IRN_LINK);
+	ir_free_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_IRN_LINK
+	                  | IR_RESOURCE_PHI_LIST);
 
 	if (env.phis_moved) {
 		/* Bad: when we moved Phi's, we might produce dead Phi nodes
@@ -966,12 +903,18 @@ void optimize_cf(ir_graph *irg)
 		}
 	}
 
-	if (env.changed) {
-		/* Handle graph state if was changed. */
-		set_irg_doms_inconsistent(irg);
-		set_irg_extblk_inconsistent(irg);
-		set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
-	}
+	return 0;
+}
+
+static optdesc_t opt_cf = {
+	"control-flow",
+	IR_GRAPH_STATE_NO_UNREACHABLE_CODE,
+	do_cfopt,
+};
+
+void optimize_cf(ir_graph *irg)
+{
+	perform_irg_optimization(irg, &opt_cf);
 }
 
 /* Creates an ir_graph pass for optimize_cf. */

@@ -35,6 +35,7 @@
 #include "ircons_t.h"
 #include "irgmod.h"
 #include "irgwalk.h"
+#include "irtools.h"
 #include "tv_t.h"
 #include "dbginfo_t.h"
 #include "iropt_dbg.h"
@@ -45,11 +46,12 @@
 #include "irpass.h"
 #include "opt_polymorphy.h"
 #include "irmemory.h"
-#include "irphase_t.h"
+#include "irnodehashmap.h"
 #include "irgopt.h"
 #include "set.h"
 #include "be.h"
 #include "debug.h"
+#include "opt_manage.h"
 
 /** The debug handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
@@ -780,8 +782,8 @@ static unsigned is_Call_pure(ir_node *call)
 		/* try the called entity */
 		ir_node *ptr = get_Call_ptr(call);
 
-		if (is_Global(ptr)) {
-			ir_entity *ent = get_Global_entity(ptr);
+		if (is_SymConst_addr_ent(ptr)) {
+			ir_entity *ent = get_SymConst_entity(ptr);
 
 			prop = get_entity_additional_properties(ent);
 		}
@@ -1712,13 +1714,14 @@ typedef struct node_entry {
 
 /** A loop entry. */
 typedef struct loop_env {
-	ir_phase ph;           /**< the phase object */
-	ir_node  **stack;      /**< the node stack */
-	size_t   tos;          /**< tos index */
-	unsigned nextDFSnum;   /**< the current DFS number */
-	unsigned POnum;        /**< current post order number */
+	ir_nodehashmap_t map;
+	struct obstack   obst;
+	ir_node          **stack;      /**< the node stack */
+	size_t           tos;          /**< tos index */
+	unsigned         nextDFSnum;   /**< the current DFS number */
+	unsigned         POnum;        /**< current post order number */
 
-	unsigned changes;      /**< a bitmask of graph changes */
+	unsigned         changes;      /**< a bitmask of graph changes */
 } loop_env;
 
 /**
@@ -1726,13 +1729,12 @@ typedef struct loop_env {
 */
 static node_entry *get_irn_ne(ir_node *irn, loop_env *env)
 {
-	ir_phase   *ph = &env->ph;
-	node_entry *e  = (node_entry*)phase_get_irn_data(&env->ph, irn);
+	node_entry *e = (node_entry*)ir_nodehashmap_get(&env->map, irn);
 
-	if (! e) {
-		e = (node_entry*)phase_alloc(ph, sizeof(*e));
+	if (e == NULL) {
+		e = OALLOC(&env->obst, node_entry);
 		memset(e, 0, sizeof(*e));
-		phase_set_irn_data(ph, irn, e);
+		ir_nodehashmap_insert(&env->map, irn, e);
 	}
 	return e;
 }  /* get_irn_ne */
@@ -1855,7 +1857,7 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 
 			if (pe->pscc != ne->pscc) {
 				/* not in the same SCC, is region const */
-				phi_entry *pe = (phi_entry*)phase_alloc(&env->ph, sizeof(*pe));
+				phi_entry *pe = OALLOC(&env->obst, phi_entry);
 
 				pe->phi  = phi;
 				pe->pos  = j;
@@ -1885,7 +1887,7 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 				continue;
 
 			/* for now, we can only move Load(Global) */
-			if (! is_Global(ptr))
+			if (! is_SymConst_addr_ent(ptr))
 				continue;
 			load_mode = get_Load_mode(load);
 			for (other = pscc->head; other != NULL; other = next_other) {
@@ -1932,7 +1934,7 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 						DB((dbg, LEVEL_1, "  Created %+F in %+F\n", irn, pred));
 					}
 					pe->load = irn;
-					ninfo = get_ldst_info(irn, phase_obst(&env->ph));
+					ninfo = get_ldst_info(irn, &env->obst);
 
 					ninfo->projs[pn_Load_M] = mem = new_r_Proj(irn, mode_M, pn_Load_M);
 					if (res == NULL) {
@@ -2172,7 +2174,7 @@ static void dfs(ir_node *irn, loop_env *env)
 	}
 
 	if (node->low == node->DFSnum) {
-		scc *pscc = (scc*)phase_alloc(&env->ph, sizeof(*pscc));
+		scc *pscc = OALLOC(&env->obst, scc);
 		ir_node *x;
 
 		pscc->head = NULL;
@@ -2246,13 +2248,15 @@ static int optimize_loops(ir_graph *irg)
 	env.nextDFSnum    = 0;
 	env.POnum         = 0;
 	env.changes       = 0;
-	phase_init(&env.ph, irg, phase_irn_init_default);
+	ir_nodehashmap_init(&env.map);
+	obstack_init(&env.obst);
 
 	/* calculate the SCC's and drive loop optimization. */
 	do_dfs(irg, &env);
 
 	DEL_ARR_F(env.stack);
-	phase_deinit(&env.ph);
+	obstack_free(&env.obst, NULL);
+	ir_nodehashmap_destroy(&env.map);
 
 	return env.changes;
 }  /* optimize_loops */
@@ -2260,9 +2264,10 @@ static int optimize_loops(ir_graph *irg)
 /*
  * do the load store optimization
  */
-int optimize_load_store(ir_graph *irg)
+static ir_graph_state_t do_loadstore_opt(ir_graph *irg)
 {
 	walk_env_t env;
+	ir_graph_state_t res = 0;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.ldstopt");
 
@@ -2270,16 +2275,7 @@ int optimize_load_store(ir_graph *irg)
 	assert(get_irg_pinned(irg) != op_pin_state_floats &&
 		"LoadStore optimization needs pinned graph");
 
-	/* we need landing pads */
-	remove_critical_cf_edges(irg);
-
-	edges_assure(irg);
-
-	/* for Phi optimization post-dominators are needed ... */
-	assure_postdoms(irg);
-
 	if (get_opt_alias_analysis()) {
-		assure_irg_entity_usage_computed(irg);
 		assure_irp_globals_entity_usage_computed();
 	}
 
@@ -2299,17 +2295,27 @@ int optimize_load_store(ir_graph *irg)
 
 	/* Handle graph state */
 	if (env.changes) {
-		set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
 		edges_deactivate(irg);
 	}
 
-	if (env.changes & CF_CHANGED) {
-		/* is this really needed: Yes, control flow changed, block might
-		have Bad() predecessors. */
-		set_irg_doms_inconsistent(irg);
+	if (!(env.changes & CF_CHANGED)) {
+		res |= IR_GRAPH_STATE_CONSISTENT_DOMINANCE | IR_GRAPH_STATE_NO_BADS;
 	}
-	return env.changes != 0;
-}  /* optimize_load_store */
+
+	return res;
+}
+
+static optdesc_t opt_loadstore = {
+	"load-store",
+	IR_GRAPH_STATE_NO_UNREACHABLE_CODE | IR_GRAPH_STATE_CONSISTENT_OUT_EDGES | IR_GRAPH_STATE_NO_CRITICAL_EDGES | IR_GRAPH_STATE_CONSISTENT_DOMINANCE | IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE,
+	do_loadstore_opt,
+};
+
+int optimize_load_store(ir_graph *irg)
+{
+	perform_irg_optimization(irg, &opt_loadstore);
+	return 1;
+}
 
 ir_graph_pass_t *optimize_load_store_pass(const char *name)
 {

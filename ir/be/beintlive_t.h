@@ -13,7 +13,6 @@
 #define _BELIVECHK_T_H
 
 #include "irgraph_t.h"
-#include "irphase_t.h"
 #include "iredges_t.h"
 
 #include "statev.h"

@@ -63,7 +63,7 @@
 #include "irtools.h"
 #include "iropt_dbg.h"
 #include "irpass_t.h"
-#include "irphase_t.h"
+#include "irnodemap.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
@@ -347,10 +347,11 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 	assert(get_irg_phase_state(irg) != phase_building);
 	assert(get_irg_pinned(irg) == op_pin_state_pinned);
 	assert(get_irg_pinned(called_graph) == op_pin_state_pinned);
-	set_irg_extblk_inconsistent(irg);
-	set_irg_doms_inconsistent(irg);
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
+	                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS
+	                   | IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE);
 	set_irg_callee_info_state(irg, irg_callee_info_inconsistent);
-	set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE);
 	edges_deactivate(irg);
 
 	/* here we know we WILL inline, so inform the statistics */
@@ -660,8 +661,8 @@ static ir_graph *get_call_called_irg(ir_node *call)
 	ir_node *addr;
 
 	addr = get_Call_ptr(call);
-	if (is_Global(addr)) {
-		ir_entity *ent = get_Global_entity(addr);
+	if (is_SymConst_addr_ent(addr)) {
+		ir_entity *ent = get_SymConst_entity(addr);
 		/* we don't know which function gets finally bound to a weak symbol */
 		if (get_entity_linkage(ent) & IR_LINKAGE_WEAK)
 			return NULL;
@@ -846,8 +847,8 @@ static void collect_calls2(ir_node *call, void *ctx)
 	if (env->ignore_runtime) {
 		ir_node *symc = get_Call_ptr(call);
 
-		if (is_Global(symc)) {
-			ir_entity *ent = get_Global_entity(symc);
+		if (is_SymConst_addr_ent(symc)) {
+			ir_entity *ent = get_SymConst_entity(symc);
 
 			if (get_entity_additional_properties(ent) & mtp_property_runtime)
 				return;
@@ -989,7 +990,7 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 		assert(get_irg_phase_state(irg) != phase_building);
 		free_callee_info(irg);
 
-		assure_cf_loop(irg);
+		assure_loopinfo(irg);
 		wenv.x = (inline_irg_env*)get_irg_link(irg);
 		irg_walk_graph(irg, NULL, collect_calls2, &wenv);
 	}
@@ -1116,7 +1117,7 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 					callee_env = alloc_inline_irg_env();
 					set_irg_link(copy, callee_env);
 
-					assure_cf_loop(copy);
+					assure_loopinfo(copy);
 					wenv.x              = callee_env;
 					wenv.ignore_callers = 1;
 					irg_walk_graph(copy, NULL, collect_calls2, &wenv);
@@ -1652,7 +1653,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 			callee_env = alloc_inline_irg_env();
 			set_irg_link(copy, callee_env);
 
-			assure_cf_loop(copy);
+			assure_loopinfo(copy);
 			memset(&wenv, 0, sizeof(wenv));
 			wenv.x              = callee_env;
 			wenv.ignore_callers = 1;
@@ -1764,7 +1765,7 @@ void inline_functions(unsigned maxsize, int inline_threshold,
 		free_callee_info(irg);
 
 		wenv.x = (inline_irg_env*)get_irg_link(irg);
-		assure_cf_loop(irg);
+		assure_loopinfo(irg);
 		irg_walk_graph(irg, NULL, collect_calls2, &wenv);
 	}
 

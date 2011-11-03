@@ -40,11 +40,11 @@
 #include "irdump.h"
 #include "error.h"
 
-#include "../be_t.h"
-#include "../beabi.h"
-#include "../benode.h"
-#include "../besched.h"
-#include "../bepeephole.h"
+#include "be_t.h"
+#include "beabi.h"
+#include "benode.h"
+#include "besched.h"
+#include "bepeephole.h"
 
 #include "ia32_new_nodes.h"
 #include "ia32_optimize.h"
@@ -849,7 +849,7 @@ static const arch_register_t *get_free_gp_reg(ir_graph *irg)
 		if (!rbitset_is_set(birg->allocatable_regs, reg->global_index))
 			continue;
 
-		if (be_peephole_get_value(CLASS_ia32_gp, i) == NULL)
+		if (be_peephole_get_value(reg->global_index) == NULL)
 			return reg;
 	}
 
@@ -976,7 +976,7 @@ static void peephole_ia32_Const(ir_node *node)
 	if (ia32_cg_config.use_mov_0)
 		return;
 	/* xor destroys the flags, so no-one must be using them */
-	if (be_peephole_get_value(CLASS_ia32_flags, REG_FLAGS_EFLAGS) != NULL)
+	if (be_peephole_get_value(REG_EFLAGS) != NULL)
 		return;
 
 	reg = arch_get_irn_register(node);
@@ -1066,7 +1066,7 @@ static void peephole_ia32_Lea(ir_node *node)
 	assert(is_ia32_Lea(node));
 
 	/* we can only do this if it is allowed to clobber the flags */
-	if (be_peephole_get_value(CLASS_ia32_flags, REG_FLAGS_EFLAGS) != NULL)
+	if (be_peephole_get_value(REG_EFLAGS) != NULL)
 		return;
 
 	base  = get_irn_n(node, n_ia32_Lea_base);

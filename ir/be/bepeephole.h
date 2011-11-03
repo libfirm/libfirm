@@ -29,20 +29,17 @@
 #include "beirg.h"
 #include "bearch.h"
 
-extern ir_node ***register_values;
+extern ir_node **register_values;
 
-static inline ir_node *be_peephole_get_value(unsigned regclass_idx,
-                                             unsigned register_idx)
+static inline ir_node *be_peephole_get_value(unsigned register_idx)
 {
-	return register_values[regclass_idx][register_idx];
+	return register_values[register_idx];
 }
 
 static inline ir_node *be_peephole_get_reg_value(const arch_register_t *reg)
 {
-	unsigned regclass_idx = arch_register_class_index(arch_register_get_class(reg));
-	unsigned register_idx = arch_register_get_index(reg);
-
-	return be_peephole_get_value(regclass_idx, register_idx);
+	unsigned register_idx = reg->global_index;
+	return be_peephole_get_value(register_idx);
 }
 
 /**
@@ -53,7 +50,10 @@ typedef void (*peephole_opt_func) (ir_node *node);
 /**
  * Notify the peephole phase about a newly added node, so it can update its
  * internal state.  This is not needed for the new node, when
- * be_peephole_exchange() is used. */
+ * be_peephole_exchange() is used.
+ * Note: Contrary to normal exchange you mustn't remove the node from the
+ * schedule either before exchange. Exchange will do that for you.
+ */
 void be_peephole_new_node(ir_node *nw);
 
 /**
@@ -72,6 +72,16 @@ void be_peephole_exchange(ir_node *old, ir_node *nw);
 ir_node *be_peephole_IncSP_IncSP(ir_node *node);
 
 bool be_has_only_one_user(ir_node *node);
+
+/**
+ * In a scheduled program with registers assigned,
+ * checks wether @p node can be moved before @p before without changing program
+ * semantics.
+ *
+ * Note: It is allowed to use this function without being in a peephole
+ * optimization phase.
+ */
+bool be_can_move_before(const ir_node *node, const ir_node *before);
 
 /**
  * Do peephole optimisations. It traverses the schedule of all blocks in

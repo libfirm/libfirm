@@ -27,8 +27,8 @@
 #ifndef FIRM_BE_IA32_IA32_X87_H
 #define FIRM_BE_IA32_IA32_X87_H
 
-#include "../bearch.h"
-#include "../beirg.h"
+#include "bearch.h"
+#include "beirg.h"
 
 /**
  * Run a simulation and fix all virtual instructions for a graph.

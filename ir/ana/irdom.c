@@ -384,7 +384,7 @@ void dom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
 	/* The root of the dominator tree should be the Start block. */
 	ir_node *root = get_irg_start_block(irg);
 
-	assert(irg->dom_state == dom_consistent
+	assert(is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE)
 			&& "The dominators of the irg must be consistent");
 	assert(root && "The start block of the graph is NULL?");
 	assert(get_dom_info(root)->idom == NULL
@@ -396,10 +396,10 @@ void dom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
 void postdom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
 		irg_walk_func *post, void *env)
 {
-	/* The root of the dominator tree should be the End block. */
+	/* The root of the post dominator tree should be the End block. */
 	ir_node *root = get_irg_end_block(irg);
 
-	assert(irg->pdom_state == dom_consistent
+	assert(is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE)
 			&& "The dominators of the irg must be consistent");
 	assert(root && "The end block of the graph is NULL?");
 	assert(get_pdom_info(root)->idom == NULL
@@ -640,9 +640,7 @@ static void count_and_init_blocks_dom(ir_node *bl, void *env)
 	set_Block_dom_depth(bl, -1);
 }
 
-/* Computes the dominator trees.  Sets a flag in irg to "dom_consistent".
-   If the control flow of the graph is changed this flag must be set to
-   "dom_inconsistent".  */
+/* Computes the dominator trees. */
 void compute_doms(ir_graph *irg)
 {
 	ir_graph *rem = current_ir_graph;
@@ -653,7 +651,6 @@ void compute_doms(ir_graph *irg)
 
 	/* Update graph state */
 	assert(get_irg_phase_state(irg) != phase_building);
-	irg->dom_state = dom_consistent;
 
 	/* Count the number of blocks in the graph. */
 	n_blocks = 0;
@@ -766,15 +763,16 @@ void compute_doms(ir_graph *irg)
 	/* Do a walk over the tree and assign the tree pre orders. */
 	{
 		unsigned tree_pre_order = 0;
-		dom_tree_walk_irg(irg, assign_tree_dom_pre_order,
+		dom_tree_walk(get_irg_start_block(irg), assign_tree_dom_pre_order,
 		                  assign_tree_dom_pre_order_max, &tree_pre_order);
 	}
 	current_ir_graph = rem;
+	set_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 }
 
 void assure_doms(ir_graph *irg)
 {
-	if (get_irg_dom_state(irg) != dom_consistent)
+	if (! is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE))
 		compute_doms(irg);
 }
 
@@ -782,15 +780,13 @@ void free_dom(ir_graph *irg)
 {
 	/* Update graph state */
 	assert(get_irg_phase_state(irg) != phase_building);
-	irg->dom_state = dom_none;
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 
 	/* With the implementation right now there is nothing to free,
 	   but better call it anyways... */
 }
 
-/* Computes the post dominator trees.  Sets a flag in irg to "dom_consistent".
-   If the control flow of the graph is changed this flag must be set to
-   "dom_inconsistent".  */
+/* Computes the post dominator trees. */
 void compute_postdoms(ir_graph *irg)
 {
 	ir_graph *rem = current_ir_graph;
@@ -801,7 +797,6 @@ void compute_postdoms(ir_graph *irg)
 
 	/* Update graph state */
 	assert(get_irg_phase_state(irg) != phase_building);
-	irg->pdom_state = dom_consistent;
 
 	/* Count the number of blocks in the graph. */
 	n_blocks = 0;
@@ -881,15 +876,16 @@ void compute_postdoms(ir_graph *irg)
 	/* Do a walk over the tree and assign the tree pre orders. */
 	{
 		unsigned tree_pre_order = 0;
-		postdom_tree_walk_irg(irg, assign_tree_postdom_pre_order,
+		postdom_tree_walk(get_irg_end_block(irg), assign_tree_postdom_pre_order,
 			assign_tree_postdom_pre_order_max, &tree_pre_order);
 	}
 	current_ir_graph = rem;
+	set_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE);
 }
 
 void assure_postdoms(ir_graph *irg)
 {
-	if (get_irg_postdom_state(irg) != dom_consistent)
+	if (! is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE))
 		compute_postdoms(irg);
 }
 
@@ -897,7 +893,7 @@ void free_postdom(ir_graph *irg)
 {
 	/* Update graph state */
 	assert(get_irg_phase_state(irg) != phase_building);
-	irg->pdom_state = dom_none;
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE);
 
 	/* With the implementation right now there is nothing to free,
 	   but better call it anyways... */

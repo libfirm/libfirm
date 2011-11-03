@@ -46,8 +46,9 @@
 #include "irhooks.h"
 #include "ircons_t.h"
 #include "irpass.h"
+#include "opt_manage.h"
 
-DEBUG_ONLY(static firm_dbg_module_t *dbg);
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 /**
  * the environment for collecting data
@@ -152,11 +153,8 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 	assert(env->n_tail_calls > 0);
 
 	/* we add new blocks and change the control flow */
-	set_irg_doms_inconsistent(irg);
-	set_irg_extblk_inconsistent(irg);
-
-	/* calls are removed */
-	set_trouts_inconsistent();
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
+	                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
 
 	/* we must build some new nodes WITHOUT CSE */
 	set_optimize(0);
@@ -265,10 +263,9 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 	}
 
 	/* tail recursion was done, all info is invalid */
-	set_irg_doms_inconsistent(irg);
-	set_irg_extblk_inconsistent(irg);
-	set_irg_loopinfo_state(irg, loopinfo_cf_inconsistent);
-	set_trouts_inconsistent();
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
+	                   | IR_GRAPH_STATE_CONSISTENT_LOOPINFO
+	                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
 	set_irg_callee_info_state(irg, irg_callee_info_inconsistent);
 
 	set_optimize(rem);
@@ -565,7 +562,7 @@ static tail_rec_variants find_variant(ir_node *irn, ir_node *call)
 /*
  * convert simple tail-calls into loops
  */
-int opt_tail_rec_irg(ir_graph *irg)
+static ir_graph_state_t do_tailrec(ir_graph *irg)
 {
 	tr_env            env;
 	ir_node           *end_block;
@@ -576,8 +573,6 @@ int opt_tail_rec_irg(ir_graph *irg)
 	ir_graph          *rem;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.tailrec");
-
-	assure_irg_outs(irg);
 
 	if (! check_lifetime_of_locals(irg))
 		return 0;
@@ -598,12 +593,6 @@ int opt_tail_rec_irg(ir_graph *irg)
 		for (i = 0; i < n_ress; ++i)
 			env.variants[i] = TR_DIRECT;
 	}
-
-	/*
-	 * This tail recursion optimization works best
-	 * if the Returns are normalized.
-	 */
-	normalize_n_returns(irg);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
@@ -632,10 +621,10 @@ int opt_tail_rec_irg(ir_graph *irg)
 		/* check if it's a recursive call */
 		call_ptr = get_Call_ptr(call);
 
-		if (! is_Global(call_ptr))
+		if (! is_SymConst_addr_ent(call_ptr))
 			continue;
 
-		ent = get_Global_entity(call_ptr);
+		ent = get_SymConst_entity(call_ptr);
 		if (!ent || get_entity_irg(ent) != irg)
 			continue;
 
@@ -666,7 +655,7 @@ int opt_tail_rec_irg(ir_graph *irg)
 				break;
 			}
 			if (var == TR_DIRECT)
-				var = env.variants[j];
+			var = env.variants[j];
 			else if (env.variants[j] == TR_DIRECT)
 				env.variants[j] = var;
 			if (env.variants[j] != var) {
@@ -701,7 +690,23 @@ int opt_tail_rec_irg(ir_graph *irg)
 	}
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	current_ir_graph = rem;
-	return n_tail_calls;
+	return 0;
+}
+
+
+/*
+ * This tail recursion optimization works best
+ * if the Returns are normalized.
+ */
+static optdesc_t opt_tailrec = {
+	"tail-recursion",
+	IR_GRAPH_STATE_MANY_RETURNS | IR_GRAPH_STATE_NO_BADS | IR_GRAPH_STATE_CONSISTENT_OUTS,
+	do_tailrec,
+};
+
+int opt_tail_rec_irg(ir_graph *irg) {
+	perform_irg_optimization(irg, &opt_tailrec);
+	return 1; /* conservatively report changes */
 }
 
 ir_graph_pass_t *opt_tail_rec_irg_pass(const char *name)

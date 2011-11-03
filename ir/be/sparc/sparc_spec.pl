@@ -8,7 +8,7 @@ $mode_flags   = "mode_Bu";
 $mode_fpflags = "mode_Bu";
 $mode_fp      = "mode_F";
 $mode_fp2     = "mode_D";
-$mode_fp4     = "mode_E"; # not correct, we need to register a new mode
+$mode_fp4     = "mode_Q";
 
 # available SPARC registers: 8 globals, 24 window regs (8 ins, 8 outs, 8 locals)
 %reg_classes = (
@@ -104,9 +104,11 @@ $mode_fp4     = "mode_E"; # not correct, we need to register a new mode
 # emit source reg or imm dep. on node's arity
 	RI  => "${arch}_emit_reg_or_imm(node, -1);",
 	R1I => "${arch}_emit_reg_or_imm(node, 1);",
+	R2I => "${arch}_emit_reg_or_imm(node, 2);",
 	S0  => "${arch}_emit_source_register(node, 0);",
 	S1  => "${arch}_emit_source_register(node, 1);",
 	D0  => "${arch}_emit_dest_register(node, 0);",
+	D1  => "${arch}_emit_dest_register(node, 1);",
 	HIM => "${arch}_emit_high_immediate(node);",
 	LM  => "${arch}_emit_load_mode(node);",
 	SM  => "${arch}_emit_store_mode(node);",
@@ -116,18 +118,20 @@ $mode_fp4     = "mode_E"; # not correct, we need to register a new mode
 	FCONVD => "${arch}_emit_fp_conv_destination(node);",
 	O1     => "${arch}_emit_offset(node, 1);",
 	O2     => "${arch}_emit_offset(node, 2);",
+	S0O1   => "${arch}_emit_source_reg_and_offset(node, 0, 1);",
+	S1O2   => "${arch}_emit_source_reg_and_offset(node, 1, 2);",
 );
+$indent_line_func = "sparc_emit_indent()";
 
 $default_attr_type = "sparc_attr_t";
 $default_copy_attr = "sparc_copy_attr";
-
 
 %init_attr = (
 	sparc_attr_t             => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, exec_units, n_res);",
 	sparc_load_store_attr_t  => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, exec_units, n_res);",
 	sparc_jmp_cond_attr_t    => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, exec_units, n_res);",
 	sparc_switch_jmp_attr_t  => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, exec_units, n_res);\n".
-	                            "\tinit_sparc_switch_jmp_attributes(res, default_pn, jump_table);\n",
+	                            "\tinit_sparc_switch_jmp_attributes(res, table, jump_table);\n",
 	sparc_fp_attr_t          => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, exec_units, n_res);\n".
 	                            "\tinit_sparc_fp_attributes(res, fp_mode);\n",
 	sparc_fp_conv_attr_t     => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, exec_units, n_res);".
@@ -136,16 +140,17 @@ $default_copy_attr = "sparc_copy_attr";
 
 %compare_attr = (
 	sparc_attr_t            => "cmp_attr_sparc",
-	sparc_load_store_attr_t => "cmp_attr_sparc_load_store",
-	sparc_jmp_cond_attr_t   => "cmp_attr_sparc_jmp_cond",
-	sparc_switch_jmp_attr_t	=> "cmp_attr_sparc_switch_jmp",
 	sparc_fp_attr_t         => "cmp_attr_sparc_fp",
 	sparc_fp_conv_attr_t    => "cmp_attr_sparc_fp_conv",
+	sparc_jmp_cond_attr_t   => "cmp_attr_sparc_jmp_cond",
+	sparc_load_store_attr_t => "cmp_attr_sparc_load_store",
+	sparc_switch_jmp_attr_t => "cmp_attr_sparc",
 );
 
 %custom_irn_flags = (
 	modifies_flags    => "(arch_irn_flags_t)sparc_arch_irn_flag_modifies_flags",
 	modifies_fp_flags => "(arch_irn_flags_t)sparc_arch_irn_flag_modifies_fp_flags",
+	has_delay_slot    => "(arch_irn_flags_t)sparc_arch_irn_flag_has_delay_slot",
 );
 
 my %cmp_operand_constructors = (
@@ -265,10 +270,17 @@ Add => {
 },
 
 AddCC => {
-	irn_flags    => [ "rematerializable" ],
+	irn_flags    => [ "rematerializable", "modifies_flags" ],
 	emit         => '. addcc %S0, %R1I, %D0',
 	outs         => [ "res", "flags" ],
 	constructors => \%binopcc_operand_constructors,
+},
+
+AddCCZero => {
+	irn_flags    => [ "rematerializable", "modifies_flags" ],
+	emit         => '. addcc %S0, %R1I, %%g0',
+	mode         => $mode_flags,
+	constructors => \%binopcczero_operand_constructors,
 },
 
 AddX => {
@@ -284,11 +296,13 @@ AddCC_t => {
 	ins       => [ "left", "right" ],
 	outs      => [ "res", "flags" ],
 	attr_type => "",
+	dump_func => "NULL",
 },
 
 AddX_t => {
 	ins       => [ "left", "right", "flags_input" ],
 	attr_type => "",
+	dump_func => "NULL",
 },
 
 Sub => {
@@ -299,10 +313,17 @@ Sub => {
 },
 
 SubCC => {
-	irn_flags    => [ "rematerializable" ],
+	irn_flags    => [ "rematerializable", "modifies_flags" ],
 	emit         => '. subcc %S0, %R1I, %D0',
 	outs         => [ "res", "flags" ],
 	constructors => \%binopcc_operand_constructors,
+},
+
+SubCCZero => {
+	irn_flags    => [ "rematerializable", "modifies_flags" ],
+	emit         => '. subcc %S0, %R1I, %%g0',
+	mode         => $mode_flags,
+	constructors => \%binopcczero_operand_constructors,
 },
 
 SubX => {
@@ -316,11 +337,13 @@ SubCC_t => {
 	ins       => [ "left", "right" ],
 	outs      => [ "res", "flags" ],
 	attr_type => "",
+	dump_func => "NULL",
 },
 
 SubX_t => {
 	ins       => [ "left", "right", "flags_input" ],
 	attr_type => "",
+	dump_func => "NULL",
 },
 
 # Load / Store
@@ -344,7 +367,7 @@ Ld => {
 	ins       => [ "ptr", "mem" ],
 	outs      => [ "res", "M" ],
 	attr_type => "sparc_load_store_attr_t",
-	emit      => '. ld%LM [%S0%O1], %D0'
+	emit      => '. ld%LM [%S0O1], %D0'
 },
 
 SetHi => {
@@ -378,7 +401,7 @@ St => {
 	ins       => [ "val", "ptr", "mem" ],
 	outs      => [ "M" ],
 	attr_type => "sparc_load_store_attr_t",
-	emit      => '. st%SM %S0, [%S1%O2]'
+	emit      => '. st%SM %S0, [%S1O2]'
 },
 
 Save => {
@@ -401,22 +424,19 @@ Save => {
 },
 
 Restore => {
-	emit => '. restore %S0, %R1I, %D0',
-	outs => [ "stack" ],
-	ins  => [ "stack" ],
+	outs => [ "stack", "res" ],
 	constructors => {
 		imm => {
 			attr       => "ir_entity *immediate_entity, int32_t immediate_value",
 			custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
-			reg_req    => { in => [ "sp" ], out => [ "sp:I|S" ] },
-			ins        => [ "stack" ],
+			reg_req    => { in => [ "frame_pointer", "gp" ], out => [ "sp:I|S", "gp" ] },
+			ins        => [ "frame_pointer", "left" ],
 		},
 		reg => {
-			reg_req    => { in => [ "sp", "gp" ], out => [ "sp:I|S" ] },
-			ins        => [ "stack", "increment" ],
+			reg_req    => { in => [ "frame_pointer", "gp", "gp" ], out => [ "sp:I|S", "gp" ] },
+			ins        => [ "frame_pointer", "left", "right" ],
 		}
 	},
-	mode => $mode_gp,
 },
 
 RestoreZero => {
@@ -456,6 +476,7 @@ FrameAddr => {
 
 Bicc => {
 	op_flags  => [ "labeled", "cfopcode", "forking" ],
+	irn_flags => [ "has_delay_slot" ],
 	state     => "pinned",
 	mode      => "mode_T",
 	attr_type => "sparc_jmp_cond_attr_t",
@@ -468,6 +489,7 @@ Bicc => {
 
 fbfcc => {
 	op_flags  => [ "labeled", "cfopcode", "forking" ],
+	irn_flags => [ "has_delay_slot" ],
 	state     => "pinned",
 	mode      => "mode_T",
 	attr_type => "sparc_jmp_cond_attr_t",
@@ -479,6 +501,8 @@ fbfcc => {
 },
 
 Ba => {
+	# Note: has_delay_slot depends on wether it is a fallthrough or not, so we
+	# have special code for this in sparc_emitter
 	state     => "pinned",
 	op_flags  => [ "cfopcode" ],
 	irn_flags => [ "simple_jump" ],
@@ -492,11 +516,12 @@ Start => {
 	ins       => [],
 },
 
-# This is a JumpLink instruction, but with the addition that you can add custom
+# This is a Jump instruction, but with the addition that you can add custom
 # register constraints to model your calling conventions
 Return => {
 	state     => "pinned",
 	op_flags  => [ "cfopcode" ],
+	irn_flags => [ "has_delay_slot" ],
 	arity     => "variable",
 	mode      => "mode_X",
 	constructors => {
@@ -513,8 +538,10 @@ Return => {
 	},
 },
 
+# This is a JumpLink instruction, but with the addition that you can add custom
+# register constraints to model your calling conventions
 Call => {
-	irn_flags => [ "modifies_flags", "modifies_fp_flags" ],
+	irn_flags => [ "modifies_flags", "modifies_fp_flags", "has_delay_slot" ],
 	state     => "exc_pinned",
 	arity     => "variable",
 	out_arity => "variable",
@@ -544,12 +571,13 @@ Cmp => {  # aka SubccZero
 
 SwitchJmp => {
 	op_flags     => [ "labeled", "cfopcode", "forking" ],
+	irn_flags    => [ "has_delay_slot" ],
 	state        => "pinned",
 	mode         => "mode_T",
 	reg_req      => { in => [ "gp" ], out => [ ] },
+	out_arity    => "variable",
 	attr_type    => "sparc_switch_jmp_attr_t",
-	attr         => "long default_pn, ir_entity *jump_table",
-	init_attr => "info->out_infos = NULL;", # XXX ugly hack for out requirements
+	attr         => "const ir_switch_table *table, ir_entity *jump_table",
 },
 
 Sll => {
@@ -664,6 +692,13 @@ Mul => {
 	constructors => \%binop_operand_constructors,
 },
 
+MulCCZero => {
+	irn_flags    => [ "rematerializable", "modifies_flags" ],
+	emit         => '. smulcc %S0, %R1I, %%g0',
+	mode         => $mode_flags,
+	constructors => \%binopcczero_operand_constructors,
+},
+
 SMulh => {
 	irn_flags    => [ "rematerializable" ],
 	outs         => [ "low", "high" ],
@@ -677,7 +712,7 @@ UMulh => {
 },
 
 SDiv => {
-	irn_flags    => [ "rematerializable" ],
+	irn_flags    => [ "rematerializable", "has_delay_slot" ],
 	state        => "exc_pinned",
 	ins          => [ "dividend_high", "dividend_low", "divisor" ],
 	outs         => [ "res", "M" ],
@@ -685,7 +720,7 @@ SDiv => {
 },
 
 UDiv => {
-	irn_flags    => [ "rematerializable" ],
+	irn_flags    => [ "rematerializable", "has_delay_slot" ],
 	state        => "exc_pinned",
 	ins          => [ "dividend_high", "dividend_low", "divisor" ],
 	outs         => [ "res", "M" ],

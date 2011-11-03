@@ -68,6 +68,7 @@ void be_init_ra(void);
 void be_init_spillbelady(void);
 void be_init_ssaconstr(void);
 void be_init_stabs(void);
+void be_init_dwarf(void);
 void be_init_pref_alloc(void);
 void be_init_irgmod(void);
 void be_init_loopana(void);
@@ -128,6 +129,7 @@ void be_init_modules(void)
 	be_init_pref_alloc();
 	be_init_state();
 	be_init_stabs();
+	be_init_dwarf();
 
 	be_init_arch_ia32();
 	be_init_arch_arm();
