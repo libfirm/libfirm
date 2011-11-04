@@ -2461,6 +2461,55 @@ static bool complement_values(const ir_node *a, const ir_node *b)
 	return false;
 }
 
+typedef ir_tarval *(tv_fold_binop_func)(ir_tarval *a, ir_tarval *b);
+
+/**
+ * for associative operations fold:
+ *   op(op(x, c0), c1) to op(x, op(c0, c1)) with constants folded.
+ * This is a "light" version of the reassociation phase
+ */
+static ir_node *fold_constant_associativity(ir_node *node,
+                                            tv_fold_binop_func fold)
+{
+	ir_graph  *irg;
+	ir_op     *op;
+	ir_node   *left;
+	ir_node   *right = get_binop_right(node);
+	ir_node   *left_right;
+	ir_node   *left_left;
+	ir_tarval *c0;
+	ir_tarval *c1;
+	ir_tarval *new_c;
+	ir_node   *new_const;
+	ir_node   *new_node;
+	if (!is_Const(right))
+		return node;
+
+	op   = get_irn_op(node);
+	left = get_binop_left(node);
+	if (get_irn_op(left) != op)
+		return node;
+
+	left_right = get_binop_right(left);
+	if (!is_Const(left_right))
+		return node;
+
+	left_left = get_binop_left(left);
+	c0        = get_Const_tarval(left_right);
+	c1        = get_Const_tarval(right);
+	irg       = get_irn_irg(node);
+	if (get_tarval_mode(c0) != get_tarval_mode(c1))
+		return node;
+	new_c     = fold(c0, c1);
+	if (new_c == tarval_bad)
+		return node;
+	new_const = new_r_Const(irg, new_c);
+	new_node  = exact_copy(node);
+	set_binop_left(new_node, left_left);
+	set_binop_right(new_node, new_const);
+	return new_node;
+}
+
 /**
  * Transform an Or.
  */
@@ -2471,6 +2520,10 @@ static ir_node *transform_node_Or_(ir_node *n)
 	ir_node *b    = get_binop_right(n);
 	ir_node *c;
 	ir_mode *mode;
+
+	n = fold_constant_associativity(n, tarval_or);
+	if (n != oldn)
+		return n;
 
 	if (is_Not(a) && is_Not(b)) {
 		/* ~a | ~b = ~(a&b) */
@@ -2576,6 +2629,10 @@ static ir_node *transform_node_Eor_(ir_node *n)
 	ir_mode *mode = get_irn_mode(n);
 	ir_node *c;
 
+	n = fold_constant_associativity(n, tarval_eor);
+	if (n != oldn)
+		return n;
+
 	/* we can combine the relations of two compares with the same operands */
 	if (is_Cmp(a) && is_Cmp(b)) {
 		ir_node *a_left  = get_Cmp_left(a);
@@ -2643,8 +2700,6 @@ static ir_node *transform_node_Eor(ir_node *n)
 	return transform_node_Eor_(n);
 }
 
-
-
 /**
  * Do the AddSub optimization, then Transform
  *   Constant folding on Phi
@@ -2661,6 +2716,10 @@ static ir_node *transform_node_Add(ir_node *n)
 	ir_node *b;
 	ir_node *c;
 	ir_node *oldn = n;
+
+	n = fold_constant_associativity(n, tarval_add);
+	if (n != oldn)
+		return n;
 
 	n = transform_node_AddSub(n);
 	if (n != oldn)
@@ -3149,7 +3208,8 @@ static ir_node *transform_node_Mul(ir_node *n)
 	ir_node *a = get_Mul_left(n);
 	ir_node *b = get_Mul_right(n);
 
-	if (is_Bad(a) || is_Bad(b))
+	n = fold_constant_associativity(n, tarval_mul);
+	if (n != oldn)
 		return n;
 
 	if (mode != get_irn_mode(a))
@@ -3645,6 +3705,10 @@ static ir_node *transform_node_And(ir_node *n)
 	ir_node *a = get_And_left(n);
 	ir_node *b = get_And_right(n);
 	ir_mode *mode;
+
+	n = fold_constant_associativity(n, tarval_and);
+	if (n != oldn)
+		return n;
 
 	if (is_Cmp(a) && is_Cmp(b)) {
 		ir_node    *a_left     = get_Cmp_left(a);
