@@ -1437,7 +1437,7 @@ static int verify_node_Conv(const ir_node *n)
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Conv_op(n));
 
-	ASSERT_AND_RET_DBG(mode_is_datab(op1mode) && mode_is_data(mymode),
+	ASSERT_AND_RET_DBG(mode_is_data(op1mode) && mode_is_data(mymode),
 		"Conv node", 0,
 		show_unop_failure(n, "/* Conv: BB x datab --> data */");
 	);

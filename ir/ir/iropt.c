@@ -6124,28 +6124,6 @@ static ir_node *transform_node_Mux(ir_node *n)
 				}
 			}
 		}
-
-		/* more normalization: Mux(sel, 0, 1) is simply a conv from the mode_b
-		 * value to integer. */
-		if (is_Const(t) && is_Const(f) && mode_is_int(mode)) {
-			ir_tarval *a = get_Const_tarval(t);
-			ir_tarval *b = get_Const_tarval(f);
-
-			if (tarval_is_one(a) && tarval_is_null(b)) {
-				ir_node *block = get_nodes_block(n);
-				ir_node *conv  = new_r_Conv(block, sel, mode);
-				n = conv;
-				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_CONV);
-				return n;
-			} else if (tarval_is_null(a) && tarval_is_one(b)) {
-				ir_node *block = get_nodes_block(n);
-				ir_node *not_  = new_r_Not(block, sel, mode_b);
-				ir_node *conv  = new_r_Conv(block, not_, mode);
-				n = conv;
-				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_CONV);
-				return n;
-			}
-		}
 	}
 
 	if (is_Cmp(sel) && mode_is_int(mode) && is_cmp_equality_zero(sel)) {

@@ -237,7 +237,7 @@ static bool needs_mode_b_input(const ir_node *node, int input)
 
 /**
  * Collects "roots" of a mode_b calculation. These are nodes which require a
- * mode_b input (Cond, Mux, Conv(xxx_b))
+ * mode_b input (Cond, Mux)
  */
 static void collect_needs_lowering(ir_node *node, void *env)
 {
@@ -245,7 +245,7 @@ static void collect_needs_lowering(ir_node *node, void *env)
 	int i;
 	(void) env;
 
-	/* if the node produces mode_b then it is a not a root (but should be
+	/* if the node produces mode_b then it is not a root (but should be
 	 * something our lower_node function can handle) */
 	if (get_irn_mode(node) == mode_b) {
 		assert(is_And(node) || is_Or(node) || is_Eor(node) || is_Phi(node)
