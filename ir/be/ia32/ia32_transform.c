@@ -488,15 +488,20 @@ ir_entity *ia32_gen_fp_known_const(ia32_known_const_t kct)
  * input here, for unary operations use NULL).
  */
 static int ia32_use_source_address_mode(ir_node *block, ir_node *node,
-                                        ir_node *other, ir_node *other2, match_flags_t flags)
+                                        ir_node *other, ir_node *other2,
+                                        match_flags_t flags)
 {
 	ir_node *load;
+	ir_mode *mode;
 	long     pn;
 
 	/* float constants are always available */
 	if (is_Const(node)) {
-		ir_mode *mode = get_irn_mode(node);
+		mode = get_irn_mode(node);
 		if (mode_is_float(mode)) {
+			ir_tarval *tv = get_Const_tarval(node);
+			if (!tarval_ieee754_can_conv_lossless(tv, mode_D))
+				return 0;
 			if (ia32_cg_config.use_sse2) {
 				if (is_simple_sse_Const(node))
 					return 0;
@@ -508,6 +513,7 @@ static int ia32_use_source_address_mode(ir_node *block, ir_node *node,
 				return 0;
 			return 1;
 		}
+		return 0;
 	}
 
 	if (!is_Proj(node))
@@ -517,6 +523,10 @@ static int ia32_use_source_address_mode(ir_node *block, ir_node *node,
 	if (!is_Load(load) || pn != pn_Load_res)
 		return 0;
 	if (get_nodes_block(load) != block)
+		return 0;
+	mode = get_irn_mode(node);
+	/* we can't fold mode_E AM */
+	if (mode == ia32_mode_E)
 		return 0;
 	/* we only use address mode if we're the only user of the load */
 	if (get_irn_n_edges(node) != (flags & match_two_users ? 2 : 1))
@@ -983,6 +993,31 @@ static ir_node *get_fpcw(void)
 	return initial_fpcw;
 }
 
+static ir_node *skip_float_upconv(ir_node *node)
+{
+	ir_mode *mode = get_irn_mode(node);
+	assert(mode_is_float(mode));
+
+	while (is_Conv(node)) {
+		ir_node *pred      = get_Conv_op(node);
+		ir_mode *pred_mode = get_irn_mode(pred);
+
+		/**
+		 * suboptimal, but without this check the address mode matcher
+		 * can incorrectly think that something has only 1 user
+		 */
+		if (get_irn_n_edges(node) > 1)
+			break;
+
+		if (!mode_is_float(pred_mode)
+			|| get_mode_size_bits(pred_mode) > get_mode_size_bits(mode))
+			break;
+		node = pred;
+		mode = pred_mode;
+	}
+	return node;
+}
+
 /**
  * Construct a standard binary operation, set AM and immediate if required.
  *
@@ -994,27 +1029,19 @@ static ir_node *get_fpcw(void)
 static ir_node *gen_binop_x87_float(ir_node *node, ir_node *op1, ir_node *op2,
                                     construct_binop_float_func *func)
 {
-	ir_mode             *mode = get_irn_mode(node);
 	dbg_info            *dbgi;
-	ir_node             *block, *new_block, *new_node;
+	ir_node             *block;
+	ir_node             *new_block;
+	ir_node             *new_node;
 	ia32_address_mode_t  am;
 	ia32_address_t      *addr = &am.addr;
 	ia32_x87_attr_t     *attr;
 	/* All operations are considered commutative, because there are reverse
 	 * variants */
-	match_flags_t        flags = match_commutative;
+	match_flags_t        flags = match_commutative | match_am;
 
-	/* happens for div nodes... */
-	if (mode == mode_T) {
-		if (is_Div(node))
-			mode = get_Div_resmode(node);
-		else
-			panic("can't determine mode");
-	}
-
-	/* cannot use address mode with long double on x87 */
-	if (get_mode_size_bits(mode) <= 64)
-		flags |= match_am;
+	op1 = skip_float_upconv(op1);
+	op2 = skip_float_upconv(op2);
 
 	block = get_nodes_block(node);
 	match_arguments(&am, block, op1, op2, NULL, flags);
