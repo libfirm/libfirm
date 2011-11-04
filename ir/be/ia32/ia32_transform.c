@@ -1993,7 +1993,8 @@ static ir_node *gen_bt(ir_node *cmp, ir_node *x, ir_node *n)
 }
 
 static ia32_condition_code_t relation_to_condition_code(ir_relation relation,
-                                                        ir_mode *mode)
+                                                        ir_mode *mode,
+                                                        bool overflow_possible)
 {
 	if (mode_is_float(mode)) {
 		switch (relation) {
@@ -2026,13 +2027,15 @@ static ia32_condition_code_t relation_to_condition_code(ir_relation relation,
 		case ir_relation_unordered_equal:
 		case ir_relation_equal:                return ia32_cc_equal;
 		case ir_relation_unordered_less:
-		case ir_relation_less:                 return ia32_cc_less;
+		case ir_relation_less:
+			return overflow_possible ? ia32_cc_less : ia32_cc_sign;
 		case ir_relation_unordered_less_equal:
 		case ir_relation_less_equal:           return ia32_cc_less_equal;
 		case ir_relation_unordered_greater:
 		case ir_relation_greater:              return ia32_cc_greater;
 		case ir_relation_unordered_greater_equal:
-		case ir_relation_greater_equal:        return ia32_cc_greater_equal;
+		case ir_relation_greater_equal:
+			return overflow_possible ? ia32_cc_greater_equal : ia32_cc_not_sign;
 		case ir_relation_unordered_less_greater:
 		case ir_relation_less_greater:         return ia32_cc_not_equal;
 		case ir_relation_less_equal_greater:
@@ -2068,21 +2071,23 @@ static ia32_condition_code_t relation_to_condition_code(ir_relation relation,
 	}
 }
 
-static ir_node *get_flags_node_cmp(ir_node *cmp, ia32_condition_code_t *cc_out)
+static ir_node *get_flags_node(ir_node *cmp, ia32_condition_code_t *cc_out)
 {
 	/* must have a Cmp as input */
 	ir_relation relation = get_Cmp_relation(cmp);
-	ir_relation possible;
 	ir_node    *l        = get_Cmp_left(cmp);
 	ir_node    *r        = get_Cmp_right(cmp);
 	ir_mode    *mode     = get_irn_mode(l);
+	bool        overflow_possible;
+	ir_relation possible;
 	ir_node    *flags;
 
 	/* check for bit-test */
-	if (ia32_cg_config.use_bt && (relation == ir_relation_equal
-		        || (mode_is_signed(mode) && relation == ir_relation_less_greater)
-		        || (!mode_is_signed(mode) && ((relation & ir_relation_greater_equal) == ir_relation_greater)))
-		    && is_And(l)) {
+	if (ia32_cg_config.use_bt
+	    && (relation == ir_relation_equal
+	        || (mode_is_signed(mode) && relation == ir_relation_less_greater)
+	        || (!mode_is_signed(mode) && ((relation & ir_relation_greater_equal) == ir_relation_greater)))
+	    && is_And(l)) {
 		ir_node *la = get_And_left(l);
 		ir_node *ra = get_And_right(l);
 		if (is_Shl(ra)) {
@@ -2095,7 +2100,7 @@ static ir_node *get_flags_node_cmp(ir_node *cmp, ia32_condition_code_t *cc_out)
 			if (is_Const_1(c) && is_Const_0(r)) {
 				/* (1 << n) & ra) */
 				ir_node *n = get_Shl_right(la);
-				flags    = gen_bt(cmp, ra, n);
+				flags = gen_bt(cmp, ra, n);
 				/* the bit is copied into the CF flag */
 				if (relation & ir_relation_equal)
 					*cc_out = ia32_cc_above_equal; /* test for CF=0 */
@@ -2112,25 +2117,17 @@ static ir_node *get_flags_node_cmp(ir_node *cmp, ia32_condition_code_t *cc_out)
 	 * a predecessor node). So add the < bit */
 	possible = ir_get_possible_cmp_relations(l, r);
 	if (((relation & ir_relation_less) && !(possible & ir_relation_greater))
-	  || ((relation & ir_relation_greater) && !(possible & ir_relation_less)))
+	    || ((relation & ir_relation_greater) && !(possible & ir_relation_less)))
 		relation |= ir_relation_less_greater;
 
+	overflow_possible = true;
+	if (is_Const(r) && is_Const_null(r))
+		overflow_possible = false;
+
 	/* just do a normal transformation of the Cmp */
-	*cc_out = relation_to_condition_code(relation, mode);
+	*cc_out = relation_to_condition_code(relation, mode, overflow_possible);
 	flags   = be_transform_node(cmp);
 	return flags;
-}
-
-/**
- * Transform a node returning a "flag" result.
- *
- * @param node    the node to transform
- * @param cc_out  the compare mode to use
- */
-static ir_node *get_flags_node(ir_node *node, ia32_condition_code_t *cc_out)
-{
-	assert(is_Cmp(node));
-	return get_flags_node_cmp(node, cc_out);
 }
 
 /**
@@ -3038,9 +3035,9 @@ static ir_node *gen_Cmp(ir_node *node)
 		assert(get_irn_mode(and_left) == cmp_mode);
 
 		match_arguments(&am, block, and_left, and_right, NULL,
-										match_commutative |
-										match_am | match_8bit_am | match_16bit_am |
-										match_am_and_immediates | match_immediate);
+		                match_commutative |
+		                match_am | match_8bit_am | match_16bit_am |
+		                match_am_and_immediates | match_immediate);
 
 		/* use 32bit compare mode if possible since the opcode is smaller */
 		if (upper_bits_clean(am.new_op1, cmp_mode) &&
@@ -3050,10 +3047,13 @@ static ir_node *gen_Cmp(ir_node *node)
 
 		if (get_mode_size_bits(cmp_mode) == 8) {
 			new_node = new_bd_ia32_Test8Bit(dbgi, new_block, addr->base,
-					addr->index, addr->mem, am.new_op1, am.new_op2, am.ins_permuted);
+			                                addr->index, addr->mem,
+			                                am.new_op1, am.new_op2,
+			                                am.ins_permuted);
 		} else {
-			new_node = new_bd_ia32_Test(dbgi, new_block, addr->base, addr->index,
-					addr->mem, am.new_op1, am.new_op2, am.ins_permuted);
+			new_node = new_bd_ia32_Test(dbgi, new_block, addr->base,
+			                            addr->index, addr->mem, am.new_op1,
+			                            am.new_op2, am.ins_permuted);
 		}
 	} else {
 		/* Cmp(left, right) */
@@ -3073,7 +3073,8 @@ static ir_node *gen_Cmp(ir_node *node)
 			                               am.new_op2, am.ins_permuted);
 		} else {
 			new_node = new_bd_ia32_Cmp(dbgi, new_block, addr->base, addr->index,
-					addr->mem, am.new_op1, am.new_op2, am.ins_permuted);
+			                           addr->mem, am.new_op1, am.new_op2,
+			                           am.ins_permuted);
 		}
 	}
 	set_am_attributes(new_node, &am);
