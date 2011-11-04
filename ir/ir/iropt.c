@@ -4200,6 +4200,26 @@ static bool is_single_bit(const ir_node *node)
 }
 
 /**
+ * checks if node just flips a bit in another node and returns that other node
+ * if so. @p tv should be a value having just 1 bit set
+ */
+static ir_node *flips_bit(const ir_node *node, ir_tarval *tv)
+{
+	if (is_Not(node))
+		return get_Not_op(node);
+	if (is_Eor(node)) {
+		ir_node *right = get_Eor_right(node);
+		if (is_Const(right)) {
+			ir_tarval *right_tv = get_Const_tarval(right);
+			ir_mode   *mode     = get_irn_mode(node);
+			if (tarval_and(right_tv, tv) != get_mode_null(mode))
+				return get_Eor_left(node);
+		}
+	}
+	return NULL;
+}
+
+/**
  * Normalizes and optimizes Cmp nodes.
  */
 static ir_node *transform_node_Cmp(ir_node *n)
@@ -4446,25 +4466,53 @@ static ir_node *transform_node_Cmp(ir_node *n)
 		}
 	}
 
-	/* Cmp(And(1bit, val), 1bit) "bit-testing" can be replaced
-	 * by the simpler Cmp(And(1bit), val), 0) negated pnc */
-	if (mode_is_int(mode) && is_And(left)
-	    && (relation == ir_relation_equal
+	if (mode_is_int(mode) && is_And(left)) {
+		/* a complicated Cmp(And(1bit, val), 1bit) "bit-testing" can be replaced
+		 * by the simpler Cmp(And(1bit, val), 0) negated pnc */
+		if (relation == ir_relation_equal
 	        || (mode_is_signed(mode) && relation == ir_relation_less_greater)
-	        || (!mode_is_signed(mode) && (relation & ir_relation_less_equal) == ir_relation_less))) {
-		ir_node *and0 = get_And_left(left);
-		ir_node *and1 = get_And_right(left);
-		if (and1 == right) {
-			ir_node *tmp = and0;
-			and0 = and1;
-			and1 = tmp;
+	        || (!mode_is_signed(mode) && (relation & ir_relation_less_equal) == ir_relation_less)) {
+			ir_node *and0 = get_And_left(left);
+			ir_node *and1 = get_And_right(left);
+			if (and1 == right) {
+				ir_node *tmp = and0;
+				and0 = and1;
+				and1 = tmp;
+			}
+			if (and0 == right && is_single_bit(and0)) {
+				ir_graph *irg = get_irn_irg(n);
+				relation =
+					relation == ir_relation_equal ? ir_relation_less_greater
+					                              : ir_relation_equal;
+				right = create_zero_const(irg, mode);
+				changed |= 1;
+				goto is_bittest;
+			}
 		}
-		if (and0 == right && is_single_bit(and0)) {
-			ir_graph *irg = get_irn_irg(n);
-			relation =
-				relation == ir_relation_equal ? ir_relation_less_greater : ir_relation_equal;
-			right = create_zero_const(irg, mode);
-			changed |= 1;
+
+		if (is_Const(right) && is_Const_null(right) &&
+		    (relation == ir_relation_equal
+		    || (relation == ir_relation_less_greater)
+		    || (!mode_is_signed(mode) && relation == ir_relation_greater))) {
+is_bittest: {
+			/* instead of flipping the bit before the bit-test operation negate
+			 * pnc */
+			ir_node *and0 = get_And_left(left);
+			ir_node *and1 = get_And_right(left);
+			if (is_Const(and1)) {
+				ir_tarval *tv = get_Const_tarval(and1);
+				if (tarval_is_single_bit(tv)) {
+					ir_node *flipped = flips_bit(and0, tv);
+					if (flipped != NULL) {
+						dbg_info *dbgi  = get_irn_dbg_info(left);
+						ir_node  *block = get_nodes_block(left);
+						relation = get_negated_relation(relation);
+						left = new_rd_And(dbgi, block, flipped, and1, mode);
+						changed |= 1;
+					}
+				}
+			}
+			}
 		}
 	}
 
