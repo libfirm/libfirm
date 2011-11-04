@@ -1275,23 +1275,30 @@ static void register_peephole_optimisation(ir_op *op, peephole_opt_func func)
 /* Perform peephole-optimizations. */
 void ia32_peephole_optimization(ir_graph *irg)
 {
-	/* register peephole optimisations */
+	/* we currently do it in 2 passes because:
+	 *    Lea -> Add could be usefull as flag producer for Test later
+	 */
+
+	/* pass 1 */
+	clear_irp_opcodes_generic_func();
+	register_peephole_optimisation(op_ia32_Cmp,      peephole_ia32_Cmp);
+	register_peephole_optimisation(op_ia32_Cmp8Bit,  peephole_ia32_Cmp);
+	register_peephole_optimisation(op_ia32_Lea,      peephole_ia32_Lea);
+	if (ia32_cg_config.use_short_sex_eax)
+		register_peephole_optimisation(op_ia32_Conv_I2I, peephole_ia32_Conv_I2I);
+	if (ia32_cg_config.use_pxor)
+		register_peephole_optimisation(op_ia32_xZero, peephole_ia32_xZero);
+	if (! ia32_cg_config.use_imul_mem_imm32)
+		register_peephole_optimisation(op_ia32_IMul, peephole_ia32_Imul_split);
+	be_peephole_opt(irg);
+
+	/* pass 2 */
 	clear_irp_opcodes_generic_func();
 	register_peephole_optimisation(op_ia32_Const,    peephole_ia32_Const);
 	register_peephole_optimisation(op_be_IncSP,      peephole_be_IncSP);
-	register_peephole_optimisation(op_ia32_Lea,      peephole_ia32_Lea);
-	register_peephole_optimisation(op_ia32_Cmp,      peephole_ia32_Cmp);
-	register_peephole_optimisation(op_ia32_Cmp8Bit,  peephole_ia32_Cmp);
 	register_peephole_optimisation(op_ia32_Test,     peephole_ia32_Test);
 	register_peephole_optimisation(op_ia32_Test8Bit, peephole_ia32_Test);
 	register_peephole_optimisation(op_be_Return,     peephole_ia32_Return);
-	if (! ia32_cg_config.use_imul_mem_imm32)
-		register_peephole_optimisation(op_ia32_IMul, peephole_ia32_Imul_split);
-	if (ia32_cg_config.use_pxor)
-		register_peephole_optimisation(op_ia32_xZero, peephole_ia32_xZero);
-	if (ia32_cg_config.use_short_sex_eax)
-		register_peephole_optimisation(op_ia32_Conv_I2I, peephole_ia32_Conv_I2I);
-
 	be_peephole_opt(irg);
 }
 
