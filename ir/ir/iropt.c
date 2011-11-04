@@ -4655,6 +4655,43 @@ is_bittest: {
 	if (tv != tarval_bad) {
 		ir_mode *mode = get_irn_mode(right);
 
+		/* cmp(mux(x, cf, ct), c2) can be eliminated:
+		 *   cmp(ct,c2) | cmp(cf,c2) | result
+		 *   -----------|------------|--------
+		 *   true       | true       | True
+		 *   false      | false      | False
+		 *   true       | false      | x
+		 *   false      | true       | not(x)
+		 */
+		if (is_Mux(left)) {
+			ir_node *mux_true  = get_Mux_true(left);
+			ir_node *mux_false = get_Mux_false(left);
+			if (is_Const(mux_true) && is_Const(mux_false)) {
+				/* we can fold true/false constant separately */
+				ir_tarval *tv_true  = get_Const_tarval(mux_true);
+				ir_tarval *tv_false = get_Const_tarval(mux_false);
+				ir_relation r_true  = tarval_cmp(tv_true, tv);
+				ir_relation r_false = tarval_cmp(tv_false, tv);
+				if (r_true != ir_relation_false
+				    || r_false != ir_relation_false) {
+					bool rel_true  = (r_true & relation)  != 0;
+					bool rel_false = (r_false & relation) != 0;
+					ir_node *cond = get_Mux_sel(left);
+					if (rel_true == rel_false) {
+						relation = rel_true ? ir_relation_true
+						                    : ir_relation_false;
+					} else if (rel_true) {
+						return cond;
+					} else {
+						dbg_info *dbgi  = get_irn_dbg_info(n);
+						ir_node  *block = get_nodes_block(n);
+						ir_node  *notn  =  new_rd_Not(dbgi, block, cond, mode_b);
+						return notn;
+					}
+				}
+			}
+		}
+
 		/* TODO extend to arbitrary constants */
 		if (is_Conv(left) && tarval_is_null(tv)) {
 			ir_node *op      = get_Conv_op(left);
