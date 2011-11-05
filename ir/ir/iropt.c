@@ -4685,7 +4685,7 @@ is_bittest: {
 					} else {
 						dbg_info *dbgi  = get_irn_dbg_info(n);
 						ir_node  *block = get_nodes_block(n);
-						ir_node  *notn  =  new_rd_Not(dbgi, block, cond, mode_b);
+						ir_node  *notn  = new_rd_Not(dbgi, block, cond, mode_b);
 						return notn;
 					}
 				}
@@ -5891,6 +5891,89 @@ bool ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
 }
 
 /**
+ * Optimize a Mux(c, 0, 1) node (sometimes called a "set" instruction)
+ */
+static ir_node *transform_Mux_set(ir_node *n)
+{
+	ir_node    *cond = get_Mux_sel(n);
+	ir_mode    *dest_mode;
+	ir_mode    *mode;
+	ir_node    *left;
+	ir_node    *right;
+	ir_relation relation;
+	bool        need_not;
+	dbg_info   *dbgi;
+	ir_node    *block;
+	ir_graph   *irg;
+	ir_node    *a;
+	ir_node    *b;
+	unsigned    bits;
+	ir_tarval  *tv;
+	ir_node    *shift_cnt;
+	ir_node    *res;
+
+	if (!is_Cmp(cond))
+		return n;
+	left = get_Cmp_left(cond);
+	mode = get_irn_mode(left);
+	if (!mode_is_int(mode) && !mode_is_reference(mode))
+		return n;
+	dest_mode = get_irn_mode(n);
+	right     = get_Cmp_right(cond);
+	relation  = get_Cmp_relation(cond) & ~ir_relation_unordered;
+	if (get_mode_size_bits(mode) >= get_mode_size_bits(dest_mode)
+	    && (!mode_is_signed(mode) || !is_Const(right) || !is_Const_null(right)))
+	    return n;
+
+	need_not = false;
+	switch (relation) {
+	case ir_relation_less:
+		/* a < b  ->  (a - b) >> 31 */
+		a = left;
+		b = right;
+		break;
+	case ir_relation_less_equal:
+		/* a <= b  -> ~(a - b) >> 31 */
+		a        = right;
+		b        = left;
+		need_not = true;
+		break;
+	case ir_relation_greater:
+		/* a > b   -> (b - a) >> 31 */
+		a = right;
+		b = left;
+		break;
+	case ir_relation_greater_equal:
+		/* a >= b   -> ~(a - b) >> 31 */
+		a        = left;
+		b        = right;
+		need_not = true;
+		break;
+	default:
+		return n;
+	}
+
+	dbgi      = get_irn_dbg_info(n);
+	block     = get_nodes_block(n);
+	irg       = get_irn_irg(block);
+	bits      = get_mode_size_bits(dest_mode);
+	tv        = new_tarval_from_long(bits-1, mode_Iu);
+	shift_cnt = new_rd_Const(dbgi, irg, tv);
+
+	if (mode != dest_mode) {
+		a = new_rd_Conv(dbgi, block, a, dest_mode);
+		b = new_rd_Conv(dbgi, block, b, dest_mode);
+	}
+
+	res = new_rd_Sub(dbgi, block, a, b, dest_mode);
+	if (need_not) {
+		res = new_rd_Not(dbgi, block, res, dest_mode);
+	}
+	res = new_rd_Shr(dbgi, block, res, shift_cnt, dest_mode);
+	return res;
+}
+
+/**
  * Optimize a Mux into some simpler cases.
  */
 static ir_node *transform_node_Mux(ir_node *n)
@@ -5939,6 +6022,12 @@ static ir_node *transform_node_Mux(ir_node *n)
 		sel = new_rd_Cmp(seldbgi, block, get_Cmp_left(sel),
 				get_Cmp_right(sel), relation);
 		n = new_rd_Mux(get_irn_dbg_info(n), get_nodes_block(n), sel, f, t, mode);
+	}
+
+	if (is_Const(f) && is_Const_null(f) && is_Const(t) && is_Const_one(t)) {
+		n = transform_Mux_set(n);
+		if (n != oldn)
+			return n;
 	}
 
 	/* the following optimisations create new mode_b nodes, so only do them
