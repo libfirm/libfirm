@@ -5278,9 +5278,6 @@ static ir_node *transform_node_Phi(ir_node *phi)
 	return phi;
 }
 
-/* forward */
-static ir_node *transform_node(ir_node *n);
-
 /**
  * Optimize (a >> c1) >> c2), works for Shr, Shrs, Shl, Rotl.
  *
@@ -5369,7 +5366,7 @@ static ir_node *transform_node_shift(ir_node *n)
 
 	DBG_OPT_ALGSIM0(n, irn, FS_OPT_REASSOC_SHIFT);
 
-	return transform_node(irn);
+	return irn;
 }
 
 /**
@@ -5922,7 +5919,8 @@ static ir_node *transform_Mux_set(ir_node *n)
 	right     = get_Cmp_right(cond);
 	relation  = get_Cmp_relation(cond) & ~ir_relation_unordered;
 	if (get_mode_size_bits(mode) >= get_mode_size_bits(dest_mode)
-	    && (!mode_is_signed(mode) || !is_Const(right) || !is_Const_null(right)))
+	    && !(mode_is_signed(mode) && is_Const(right) && is_Const_null(right)
+	         && relation != ir_relation_greater))
 	    return n;
 
 	need_not = false;
@@ -6369,30 +6367,6 @@ static ir_node *transform_node_Call(ir_node *call)
 }
 
 /**
- * Tries several [inplace] [optimizing] transformations and returns an
- * equivalent node.  The difference to equivalent_node() is that these
- * transformations _do_ generate new nodes, and thus the old node must
- * not be freed even if the equivalent node isn't the old one.
- */
-static ir_node *transform_node(ir_node *n)
-{
-	ir_node *oldn;
-
-	/*
-	 * Transform_node is the only "optimizing transformation" that might
-	 * return a node with a different opcode. We iterate HERE until fixpoint
-	 * to get the final result.
-	 */
-	do {
-		oldn = n;
-		if (n->op->ops.transform_node != NULL)
-			n = n->op->ops.transform_node(n);
-	} while (oldn != n);
-
-	return n;
-}
-
-/**
  * Sets the default transform node operation for an ir_op_ops.
  *
  * @param code   the opcode for the default operation
@@ -6458,6 +6432,62 @@ static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops
 #undef CASE
 }
 
+/**
+ * Tries several [inplace] [optimizing] transformations and returns an
+ * equivalent node.  The difference to equivalent_node() is that these
+ * transformations _do_ generate new nodes, and thus the old node must
+ * not be freed even if the equivalent node isn't the old one.
+ */
+static ir_node *transform_node(ir_node *n)
+{
+	ir_node *old_n;
+	unsigned iro;
+restart:
+	old_n = n;
+	iro   = get_irn_opcode_(n);
+	/* constant expression evaluation / constant folding */
+	if (get_opt_constant_folding()) {
+		/* neither constants nor Tuple values can be evaluated */
+		if (iro != iro_Const && get_irn_mode(n) != mode_T) {
+			/* try to evaluate */
+			ir_tarval *tv = computed_value(n);
+			if (tv != tarval_bad) {
+				/* evaluation was successful -- replace the node. */
+				ir_graph *irg = get_irn_irg(n);
+
+				n = new_r_Const(irg, tv);
+
+				DBG_OPT_CSTEVAL(old_n, n);
+				return n;
+			}
+		}
+	}
+
+	/* remove unnecessary nodes */
+	if (get_opt_constant_folding() ||
+		(iro == iro_Phi)  ||   /* always optimize these nodes. */
+		(iro == iro_Id)   ||   /* ... */
+		(iro == iro_Proj) ||   /* ... */
+		(iro == iro_Block)) {  /* Flags tested local. */
+		n = equivalent_node(n);
+		if (n != old_n)
+			goto restart;
+	}
+
+	/* Some more constant expression evaluation. */
+	if (get_opt_algebraic_simplification() ||
+		(iro == iro_Cond) ||
+		(iro == iro_Proj)) {    /* Flags tested local. */
+		if (n->op->ops.transform_node != NULL) {
+			n = n->op->ops.transform_node(n);
+			if (n != old_n) {
+				goto restart;
+			}
+		}
+	}
+
+	return n;
+}
 
 /* **************** Common Subexpression Elimination **************** */
 
@@ -7023,12 +7053,13 @@ ir_node *optimize_node(ir_node *n)
 	   free the node. */
 	iro = get_irn_opcode(n);
 	if (get_opt_algebraic_simplification() ||
-	    (iro == iro_Cond) ||
-	    (iro == iro_Proj))     /* Flags tested local. */
+		(iro == iro_Cond) ||
+		(iro == iro_Proj)) {    /* Flags tested local. */
 		n = transform_node(n);
+	}
 
 	/* Now we have a legal, useful node. Enter it in hash table for CSE */
-	if (get_opt_cse() && (get_irn_opcode(n) != iro_Block)) {
+	if (get_opt_cse()) {
 		ir_node *o = n;
 		n = identify_remember(o);
 		if (o != n)
@@ -7046,67 +7077,40 @@ ir_node *optimize_node(ir_node *n)
  */
 ir_node *optimize_in_place_2(ir_node *n)
 {
-	ir_tarval *tv;
-	ir_node   *oldn = n;
-	unsigned   iro  = get_irn_opcode(n);
-
 	if (!get_opt_optimize() && !is_Phi(n)) return n;
 
-	if (iro == iro_Deleted)
+	if (is_Deleted(n))
 		return n;
-
-	/* constant expression evaluation / constant folding */
-	if (get_opt_constant_folding()) {
-		/* neither constants nor Tuple values can be evaluated */
-		if (iro != iro_Const && get_irn_mode(n) != mode_T) {
-			/* try to evaluate */
-			tv = computed_value(n);
-			if (tv != tarval_bad) {
-				/* evaluation was successful -- replace the node. */
-				ir_graph *irg = get_irn_irg(n);
-
-				n = new_r_Const(irg, tv);
-
-				DBG_OPT_CSTEVAL(oldn, n);
-				return n;
-			}
-		}
-	}
-
-	/* remove unnecessary nodes */
-	if (get_opt_constant_folding() ||
-	    (iro == iro_Phi)  ||   /* always optimize these nodes. */
-	    (iro == iro_Id)   ||   /* ... */
-	    (iro == iro_Proj) ||   /* ... */
-	    (iro == iro_Block)  )  /* Flags tested local. */
-		n = equivalent_node(n);
 
 	/** common subexpression elimination **/
 	/* Checks whether n is already available. */
-	/* The block input is used to distinguish different subexpressions.  Right
-	   now all nodes are op_pin_state_pinned to blocks, i.e., the cse only finds common
-	   subexpressions within a block. */
+	/* The block input is used to distinguish different subexpressions.
+	 * Right now all nodes are op_pin_state_pinned to blocks, i.e., the cse
+	 * only finds common subexpressions within a block. */
 	if (get_opt_cse()) {
 		ir_node *o = n;
-		n = identify_remember(o);
-		if (o != n)
+		n = identify_remember(n);
+		if (n != o) {
 			DBG_OPT_CSE(o, n);
+			/* we have another existing node now, we do not optimize it here */
+			return n;
+		}
 	}
 
-	/* Some more constant expression evaluation. */
-	iro = get_irn_opcode(n);
-	if (get_opt_constant_folding() ||
-		(iro == iro_Cond) ||
-		(iro == iro_Proj))     /* Flags tested local. */
-		n = transform_node(n);
+	n = transform_node(n);
 
 	/* Now we can verify the node, as it has no dead inputs any more. */
 	irn_verify(n);
 
 	/* Now we have a legal, useful node. Enter it in hash table for cse.
-	   Blocks should be unique anyways.  (Except the successor of start:
-	   is cse with the start block!) */
-	if (get_opt_cse() && (get_irn_opcode(n) != iro_Block)) {
+	 * Blocks should be unique anyways.  (Except the successor of start:
+	 * is cse with the start block!)
+	 *
+	 * Note: This is only necessary because some of the optimisations
+	 * operate in-place (set_XXX_bla, turn_into_tuple, ...) which is considered
+	 * bad practice and should be fixed sometime.
+	 */
+	if (get_opt_cse()) {
 		ir_node *o = n;
 		n = identify_remember(o);
 		if (o != n)
