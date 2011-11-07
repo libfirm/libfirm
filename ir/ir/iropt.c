@@ -6019,7 +6019,7 @@ static ir_node *transform_node_Mux(ir_node *n)
 		relation = get_negated_relation(relation);
 		sel = new_rd_Cmp(seldbgi, block, get_Cmp_left(sel),
 				get_Cmp_right(sel), relation);
-		n = new_rd_Mux(get_irn_dbg_info(n), get_nodes_block(n), sel, f, t, mode);
+		return new_rd_Mux(get_irn_dbg_info(n), get_nodes_block(n), sel, f, t, mode);
 	}
 
 	if (is_Const(f) && is_Const_null(f) && is_Const(t) && is_Const_one(t)) {
@@ -6039,23 +6039,15 @@ static ir_node *transform_node_Mux(ir_node *n)
 			ir_node*  f1    = get_Mux_false(t);
 			if (f == f1) {
 				/* Mux(cond0, Mux(cond1, x, y), y) => Mux(cond0 && cond1, x, y) */
-				ir_node* and_    = new_r_And(block, c0, c1, mode_b);
-				ir_node* new_mux = new_r_Mux(block, and_, f1, t1, mode);
-				n   = new_mux;
-				sel = and_;
-				f   = f1;
-				t   = t1;
-				DBG_OPT_ALGSIM0(oldn, t, FS_OPT_MUX_COMBINE);
+				ir_node* and_ = new_r_And(block, c0, c1, mode_b);
+				DBG_OPT_ALGSIM0(oldn, t1, FS_OPT_MUX_COMBINE);
+				return new_r_Mux(block, and_, f1, t1, mode);
 			} else if (f == t1) {
 				/* Mux(cond0, Mux(cond1, x, y), x) */
 				ir_node* not_c1  = new_r_Not(block, c1, mode_b);
 				ir_node* and_    = new_r_And(block, c0, not_c1, mode_b);
-				ir_node* new_mux = new_r_Mux(block, and_, t1, f1, mode);
-				n   = new_mux;
-				sel = and_;
-				f   = t1;
-				t   = f1;
-				DBG_OPT_ALGSIM0(oldn, t, FS_OPT_MUX_COMBINE);
+				DBG_OPT_ALGSIM0(oldn, f1, FS_OPT_MUX_COMBINE);
+				return new_r_Mux(block, and_, t1, f1, mode);
 			}
 		} else if (is_Mux(f)) {
 			ir_node*  block = get_nodes_block(n);
@@ -6065,23 +6057,15 @@ static ir_node *transform_node_Mux(ir_node *n)
 			ir_node*  f1    = get_Mux_false(f);
 			if (t == t1) {
 				/* Mux(cond0, x, Mux(cond1, x, y)) -> typical if (cond0 || cond1) x else y */
-				ir_node* or_     = new_r_Or(block, c0, c1, mode_b);
-				ir_node* new_mux = new_r_Mux(block, or_, f1, t1, mode);
-				n   = new_mux;
-				sel = or_;
-				f   = f1;
-				t   = t1;
-				DBG_OPT_ALGSIM0(oldn, f, FS_OPT_MUX_COMBINE);
+				ir_node* or_ = new_r_Or(block, c0, c1, mode_b);
+				DBG_OPT_ALGSIM0(oldn, f1, FS_OPT_MUX_COMBINE);
+				return new_r_Mux(block, or_, f1, t1, mode);
 			} else if (t == f1) {
 				/* Mux(cond0, x, Mux(cond1, y, x)) */
 				ir_node* not_c1  = new_r_Not(block, c1, mode_b);
 				ir_node* or_     = new_r_Or(block, c0, not_c1, mode_b);
-				ir_node* new_mux = new_r_Mux(block, or_, t1, f1, mode);
-				n   = new_mux;
-				sel = or_;
-				f   = t1;
-				t   = f1;
-				DBG_OPT_ALGSIM0(oldn, f, FS_OPT_MUX_COMBINE);
+				DBG_OPT_ALGSIM0(oldn, t1, FS_OPT_MUX_COMBINE);
+				return new_r_Mux(block, or_, t1, f1, mode);
 			}
 		}
 
