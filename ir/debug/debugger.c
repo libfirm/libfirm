@@ -1218,6 +1218,7 @@ void firm_debug(const char *cmd)
 			strncpy(fname, lexer.s, len);
 			fname[len] = '\0';
 			set_dbg_outfile(name, fname);
+			break;
 
 		case tok_irgname:
 			token = get_token();
@@ -1227,6 +1228,7 @@ void firm_debug(const char *cmd)
 			strncpy(name, lexer.s, len);
 			name[len] = '\0';
 			irg_name(name);
+			break;
 
 		case tok_irgldname:
 			token = get_token();
