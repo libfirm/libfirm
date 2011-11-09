@@ -5916,6 +5916,8 @@ static ir_node *transform_Mux_set(ir_node *n)
 	if (!mode_is_int(mode) && !mode_is_reference(mode))
 		return n;
 	dest_mode = get_irn_mode(n);
+	if (!mode_is_int(dest_mode) && !mode_is_reference(dest_mode))
+		return n;
 	right     = get_Cmp_right(cond);
 	relation  = get_Cmp_relation(cond) & ~ir_relation_unordered;
 	if (get_mode_size_bits(mode) >= get_mode_size_bits(dest_mode)
