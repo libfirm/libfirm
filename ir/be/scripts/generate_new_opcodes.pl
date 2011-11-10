@@ -676,7 +676,7 @@ EOF
 		"none", "labeled", "commutative", "cfopcode", "unknown_jump", "fragile",
 		"forking", "highlevel", "constlike", "always_opt", "keep",
 		"start_block", "uses_memory", "dump_noblock", "dump_noinput",
-		"machine", "machine_op", "cse_neutral"
+		"cse_neutral"
 	);
 	my $is_fragile = 0;
 	foreach my $flag (@{$n{"op_flags"}}) {
@@ -697,7 +697,7 @@ EOF
 
 	$n_opcodes++;
 	$temp  = "\top_$op = new_ir_op(cur_opcode + iro_$op, \"$op\", op_pin_state_".$n{"state"}.", $op_flags";
-	$temp .= "|irop_flag_machine, ".translate_arity($arity).", 0, ${attr_size}, &ops);\n";
+	$temp .= ", ".translate_arity($arity).", 0, ${attr_size}, &ops);\n";
 	push(@obst_new_irop, $temp);
 	if ($is_fragile) {
 		push(@obst_new_irop, "\tir_op_set_fragile_indices(op_${op}, n_${op}_mem, pn_${op}_X_regular, pn_${op}_X_except);\n");

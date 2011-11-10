@@ -36,40 +36,6 @@
 #include "raw_bitset.h"
 
 /**
- * Add machine operands to the instruction uses.
- *
- * @param env      the insn construction environment
- * @param insn     the be_insn that is build
- * @param mach_op  the machine operand for which uses are added
- */
-static void add_machine_operands(const be_insn_env_t *env, be_insn_t *insn, ir_node *mach_op)
-{
-	struct obstack *obst = env->obst;
-	int i, n;
-
-	for (i = 0, n = get_irn_arity(mach_op); i < n; ++i) {
-		ir_node *op = get_irn_n(mach_op, i);
-
-		if (is_irn_machine_operand(op)) {
-			add_machine_operands(env, insn, op);
-		} else if (arch_irn_consider_in_reg_alloc(env->cls, op)) {
-			be_operand_t o;
-
-			/* found a register use, create an operand */
-			o.req     = arch_get_irn_register_req_in(mach_op, i);
-			o.carrier = op;
-			o.irn     = insn->irn;
-			o.pos     = i;
-			o.partner = NULL;
-			o.has_constraints = arch_register_req_is(o.req, limited);
-			obstack_grow(obst, &o, sizeof(o));
-			insn->n_ops++;
-			insn->in_constraints |= o.has_constraints;
-		}
-	}
-}
-
-/**
  * Create a be_insn_t for an IR node.
  *
  * @param env      the insn construction environment
@@ -140,9 +106,7 @@ be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 	for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
 		ir_node *op = get_irn_n(irn, i);
 
-		if (is_irn_machine_operand(op)) {
-			add_machine_operands(env, insn, op);
-		} else if (arch_irn_consider_in_reg_alloc(env->cls, op)) {
+		if (arch_irn_consider_in_reg_alloc(env->cls, op)) {
 			/* found a register use, create an operand */
 			o.req     = arch_get_irn_register_req_in(irn, i);
 			o.carrier = op;

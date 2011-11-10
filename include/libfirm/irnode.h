@@ -634,21 +634,6 @@ FIRM_API int is_irn_keep(const ir_node *node);
 FIRM_API int is_irn_start_block_placed(const ir_node *node);
 
 /**
- * Returns non-zero for nodes that are machine operations.
- */
-FIRM_API int is_irn_machine_op(const ir_node *node);
-
-/**
- * Returns non-zero for nodes that are machine operands.
- */
-FIRM_API int is_irn_machine_operand(const ir_node *node);
-
-/**
- * Returns non-zero for nodes that have the n'th user machine flag set.
- */
-FIRM_API int is_irn_machine_user(const ir_node *node, unsigned n);
-
-/**
  * Returns non-zero for nodes that are CSE neutral to its users.
  */
 FIRM_API int is_irn_cse_neutral(const ir_node *node);
