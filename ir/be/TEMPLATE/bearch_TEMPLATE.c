@@ -264,15 +264,6 @@ static void TEMPLATE_get_call_abi(const void *self, ir_type *method_type,
 	}
 }
 
-/**
- * Returns the necessary byte alignment for storing a register of given class.
- */
-static int TEMPLATE_get_reg_class_alignment(const arch_register_class_t *cls)
-{
-	ir_mode *mode = arch_register_class_mode(cls);
-	return get_mode_size_bytes(mode);
-}
-
 static void TEMPLATE_lower_for_target(void)
 {
 	lower_builtins(0, NULL);
@@ -314,14 +305,6 @@ static const backend_params *TEMPLATE_get_backend_params(void)
 		4      /* alignment of stack parameter: typically 4 (32bit) or 8 (64bit) */
 	};
 	return &p;
-}
-
-static ir_graph **TEMPLATE_get_backend_irg_list(const void *self,
-                                                ir_graph ***irgs)
-{
-	(void) self;
-	(void) irgs;
-	return NULL;
 }
 
 static asm_constraint_flags_t TEMPLATE_parse_asm_constraint(const char **c)
@@ -386,9 +369,7 @@ const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_done,
 	NULL,                /* handle intrinsics */
 	TEMPLATE_get_call_abi,
-	TEMPLATE_get_reg_class_alignment,
     TEMPLATE_get_backend_params,
-	TEMPLATE_get_backend_irg_list,
 	NULL,                    /* mark remat */
 	TEMPLATE_parse_asm_constraint,
 	TEMPLATE_is_valid_clobber,

@@ -497,7 +497,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	be_main_env_t env;
 	char          prof_filename[256];
 	be_irg_t      *birgs;
-	ir_graph      **irg_list, **backend_irg_list;
 	arch_env_t    *arch_env;
 
 	be_timing = (be_options.timing == BE_TIME_ON);
@@ -512,24 +511,18 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 	arch_env = env.arch_env;
 
-	/* backend may provide an ordered list of irgs where code should be
-	 * generated for */
-	irg_list         = NEW_ARR_F(ir_graph *, 0);
-	backend_irg_list = arch_env_get_backend_irg_list(arch_env, &irg_list);
-
 	/* we might need 1 birg more for instrumentation constructor */
-	num_birgs = backend_irg_list ? ARR_LEN(backend_irg_list) : get_irp_n_irgs();
+	num_birgs = get_irp_n_irgs();
 	birgs     = ALLOCAN(be_irg_t, num_birgs + 1);
 
 	be_info_init();
 
 	/* First: initialize all birgs */
 	for (i = 0; i < num_birgs; ++i) {
-		ir_graph *irg = backend_irg_list ? backend_irg_list[i] : get_irp_irg(i);
+		ir_graph *irg = get_irp_irg(i);
 		initialize_birg(&birgs[i], irg, &env);
 	}
 	arch_env_handle_intrinsics(arch_env);
-	DEL_ARR_F(irg_list);
 
 	/*
 		Get the filename for the profiling data.

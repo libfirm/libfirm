@@ -387,15 +387,6 @@ static void sparc_done(void *self)
 	free(isa);
 }
 
-/**
- * Returns the necessary byte alignment for storing a register of given class.
- */
-static int sparc_get_reg_class_alignment(const arch_register_class_t *cls)
-{
-	ir_mode *mode = arch_register_class_mode(cls);
-	return get_mode_size_bytes(mode);
-}
-
 static void sparc_lower_for_target(void)
 {
 	size_t i, n_irgs = get_irp_n_irgs();
@@ -487,14 +478,6 @@ static const backend_params *sparc_get_backend_params(void)
 	return &p;
 }
 
-static ir_graph **sparc_get_backend_irg_list(const void *self,
-                                             ir_graph ***irgs)
-{
-	(void) self;
-	(void) irgs;
-	return NULL;
-}
-
 static asm_constraint_flags_t sparc_parse_asm_constraint(const char **c)
 {
 	(void) c;
@@ -571,9 +554,7 @@ const arch_isa_if_t sparc_isa_if = {
 	sparc_done,
 	NULL,                /* handle intrinsics */
 	NULL,
-	sparc_get_reg_class_alignment,
 	sparc_get_backend_params,
-	sparc_get_backend_irg_list,
 	NULL,                    /* mark remat */
 	sparc_parse_asm_constraint,
 	sparc_is_valid_clobber,

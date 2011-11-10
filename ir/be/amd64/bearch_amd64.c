@@ -444,15 +444,6 @@ static void amd64_get_call_abi(const void *self, ir_type *method_type,
 	}
 }
 
-/**
- * Returns the necessary byte alignment for storing a register of given class.
- */
-static int amd64_get_reg_class_alignment(const arch_register_class_t *cls)
-{
-	ir_mode *mode = arch_register_class_mode(cls);
-	return get_mode_size_bytes(mode);
-}
-
 static void amd64_lower_for_target(void)
 {
 	size_t i, n_irgs = get_irp_n_irgs();
@@ -502,14 +493,6 @@ static const backend_params *amd64_get_backend_params(void) {
 		8      /* alignment of stack parameter: typically 4 (32bit) or 8 (64bit) */
 	};
 	return &p;
-}
-
-static ir_graph **amd64_get_backend_irg_list(const void *self,
-                                                ir_graph ***irgs)
-{
-	(void) self;
-	(void) irgs;
-	return NULL;
 }
 
 static asm_constraint_flags_t amd64_parse_asm_constraint(const char **c)
@@ -569,9 +552,7 @@ const arch_isa_if_t amd64_isa_if = {
 	amd64_done,
 	NULL,                /* handle intrinsics */
 	amd64_get_call_abi,
-	amd64_get_reg_class_alignment,
     amd64_get_backend_params,
-	amd64_get_backend_irg_list,
 	NULL,                    /* mark remat */
 	amd64_parse_asm_constraint,
 	amd64_is_valid_clobber,

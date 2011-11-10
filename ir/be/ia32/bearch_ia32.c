@@ -1755,29 +1755,6 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type,
 	}
 }
 
-/**
- * Returns the necessary byte alignment for storing a register of given class.
- */
-static int ia32_get_reg_class_alignment(const arch_register_class_t *cls)
-{
-	ir_mode *mode = arch_register_class_mode(cls);
-	int bytes     = get_mode_size_bytes(mode);
-
-	if (mode_is_float(mode) && bytes > 8)
-		return 16;
-	return bytes;
-}
-
-/**
- * Return irp irgs in the desired order.
- */
-static ir_graph **ia32_get_irg_list(const void *self, ir_graph ***irg_list)
-{
-	(void) self;
-	(void) irg_list;
-	return NULL;
-}
-
 static void ia32_mark_remat(ir_node *node)
 {
 	if (is_ia32_irn(node)) {
@@ -2224,9 +2201,7 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_done,
 	ia32_handle_intrinsics,
 	ia32_get_call_abi,
-	ia32_get_reg_class_alignment,
 	ia32_get_libfirm_params,
-	ia32_get_irg_list,
 	ia32_mark_remat,
 	ia32_parse_asm_constraint,
 	ia32_is_valid_clobber,

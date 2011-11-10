@@ -472,26 +472,6 @@ static void arm_done(void *self)
 }
 
 /**
- * Returns the necessary byte alignment for storing a register of given class.
- */
-static int arm_get_reg_class_alignment(const arch_register_class_t *cls)
-{
-	(void) cls;
-	/* ARM is a 32 bit CPU, no need for other alignment */
-	return 4;
-}
-
-/**
- * Return irp irgs in the desired order.
- */
-static ir_graph **arm_get_irg_list(const void *self, ir_graph ***irg_list)
-{
-	(void) self;
-	(void) irg_list;
-	return NULL;
-}
-
-/**
  * Allows or disallows the creation of Psi nodes for the given Phi nodes.
  * @return 1 if allowed, 0 otherwise
  */
@@ -600,9 +580,7 @@ const arch_isa_if_t arm_isa_if = {
 	arm_done,
 	NULL,  /* handle_intrinsics */
 	NULL,
-	arm_get_reg_class_alignment,
 	arm_get_libfirm_params,
-	arm_get_irg_list,
 	NULL,               /* mark remat */
 	arm_parse_asm_constraint,
 	arm_is_valid_clobber,

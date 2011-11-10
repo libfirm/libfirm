@@ -495,30 +495,10 @@ struct arch_isa_if_t {
 	                     be_abi_call_t *abi);
 
 	/**
-	 * Get the necessary alignment for storing a register of given class.
-	 * @param self  The isa object.
-	 * @param cls   The register class.
-	 * @return      The alignment in bytes.
-	 */
-	int (*get_reg_class_alignment)(const arch_register_class_t *cls);
-
-	/**
 	 * A "static" function, returns the frontend settings
 	 * needed for this backend.
 	 */
 	const backend_params *(*get_params)(void);
-
-	/**
-	 * Return an ordered list of irgs where code should be generated for.
-	 * If NULL is returned, all irg will be taken into account and they will be
-	 * generated in an arbitrary order.
-	 * @param self   The isa object.
-	 * @param irgs   A flexible array ARR_F of length 0 where the backend can
-	 *               append the desired irgs.
-	 * @return A flexible array ARR_F containing all desired irgs in the
-	 *         desired order.
-	 */
-	ir_graph **(*get_backend_irg_list)(const void *self, ir_graph ***irgs);
 
 	/**
 	 * mark node as rematerialized
@@ -610,11 +590,9 @@ struct arch_isa_if_t {
 #define arch_env_handle_intrinsics(env)                \
 	do { if((env)->impl->handle_intrinsics != NULL) (env)->impl->handle_intrinsics(); } while(0)
 #define arch_env_get_call_abi(env,tp,abi)              ((env)->impl->get_call_abi((env), (tp), (abi)))
-#define arch_env_get_reg_class_alignment(env,cls)      ((env)->impl->get_reg_class_alignment((cls)))
 #define arch_env_get_params(env)                       ((env)->impl->get_params())
 #define arch_env_get_allowed_execution_units(env,irn)  ((env)->impl->get_allowed_execution_units((irn)))
 #define arch_env_get_machine(env)                      ((env)->impl->get_machine(env))
-#define arch_env_get_backend_irg_list(env,irgs)        ((env)->impl->get_backend_irg_list((env), (irgs)))
 #define arch_env_parse_asm_constraint(env,c)           ((env)->impl->parse_asm_constraint((c))
 #define arch_env_is_valid_clobber(env,clobber)         ((env)->impl->is_valid_clobber((clobber))
 #define arch_env_mark_remat(env,node) \
