@@ -264,12 +264,6 @@ unsigned get_ia32_copyb_size(const ir_node *node);
  */
 unsigned get_ia32_latency(const ir_node *node);
 
-
-/**
- * Get the list of available execution units.
- */
-const be_execution_unit_t ***get_ia32_exec_units(const ir_node *node);
-
 /**
  * Get the exception label attribute.
  */

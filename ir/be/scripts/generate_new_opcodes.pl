@@ -69,7 +69,7 @@ if(!defined($default_attr_type)) {
 }
 if(!defined(%init_attr)) {
 	%init_attr = (
-		"$default_attr_type" => "\tinit_${arch}_attributes(res, irn_flags_, in_reqs, exec_units, n_res);",
+		"$default_attr_type" => "\tinit_${arch}_attributes(res, irn_flags_, in_reqs, n_res);",
 	);
 }
 if(!defined($default_cmp_attr)) {
@@ -313,15 +313,6 @@ EOF
 EOF
 	}
 
-	# set up static variables for cpu execution unit assigments
-	if (exists($n->{"units"})) {
-		$temp .= gen_execunit_list_initializer($n->{"units"});
-	} else {
-		$temp .= <<EOF;
-	static const be_execution_unit_t ***exec_units = NULL;
-EOF
-	}
-
 	undef my $in_req_var;
 	undef my $out_req_var;
 
@@ -432,7 +423,7 @@ EOF
 	}
 
 	# lookup init function
-	my $attr_init_code = "(void)in;(void)exec_units;(void)irn_flags_;(void)in_reqs;(void)n_res;";
+	my $attr_init_code = "(void)in;(void)irn_flags_;(void)in_reqs;(void)n_res;";
 	if ($attr_type ne "") {
 		$attr_init_code = $init_attr{$attr_type};
 		if(!defined($attr_init_code)) {
@@ -923,74 +914,6 @@ sub translate_arity {
 	} else {
 		die "Fatal error: Unknown arity $arity";
 	}
-}
-
-###
-# Return the list of pointers for the given execution units.
-###
-sub gen_execunit_list_initializer {
-	my $units   = shift;
-	my $uc_arch = uc($arch);
-	my $ret     = "";
-	my $ret2    = "";
-	my %init;
-
-	foreach my $unit (@{ $units }) {
-		if ($unit eq "DUMMY") {
-			push(@{ $init{"DUMMY"} }, "\t\t&be_machine_execution_units_DUMMY[0]");
-		}
-		elsif (exists($cpu{"$unit"})) {
-			# operation can be executed on all units of this type
-			# -> add them all
-			my $tp_name = "$arch\_execution_units_$unit";
-			my $idx     = 0;
-			foreach (@{ $cpu{"$unit"} }) {
-				next if ($idx++ == 0);  # skip first element (it's not a unit)
-				my $unit_name = "$uc_arch\_EXECUNIT_TP_$unit\_$_";
-				push(@{ $init{"$unit"} }, "\t\t&".$tp_name."[".$unit_name."]");
-			}
-		}
-		else {
-			# operation can be executed only a certain unit
-			# -> find corresponding unit type
-			my $found = 0;
-TP_SEARCH:	foreach my $cur_type (keys(%cpu)) {
-				foreach my $cur_unit (@{ $cpu{"$cur_type"} }) {
-					if ($unit eq $cur_unit) {
-						my $tp_name   = "$arch\_execution_units_$cur_type";
-						my $unit_name = "$uc_arch\_EXECUNIT_TP_$cur_type\_$unit";
-						push(@{ $init{"$unit"} }, "\t\t&".$tp_name."[".$unit_name."]");
-						$found = 1;
-						last TP_SEARCH;
-					}
-				}
-			}
-
-			if (! $found) {
-				print STDERR "Invalid execution unit $unit specified!\n";
-			}
-		}
-	}
-
-	# prepare the 2-dim array init
-	foreach my $key (keys(%init)) {
-		$ret .= "\tstatic const be_execution_unit_t *allowed_units_".$key."[] =\n";
-		$ret .= "\t{\n";
-		foreach (@{ $init{"$key"} }) {
-			$ret .= "$_,\n";
-		}
-		$ret .= "\t\tNULL\n";
-		$ret .= "\t};\n";
-		$ret2 .= "\t\tallowed_units_$key,\n";
-	}
-	$ret2 .= "\t\tNULL\n";
-
-	$ret .= "\tstatic const be_execution_unit_t **exec_units[] =\n";
-	$ret .= "\t{\n";
-	$ret .= $ret2;
-	$ret .= "\t};\n";
-
-	return $ret;
 }
 
 sub mangle_requirements {

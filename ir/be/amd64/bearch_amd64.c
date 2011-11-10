@@ -393,16 +393,13 @@ static const arch_register_t *amd64_get_RegParam_reg(int n)
  * @param method_type The type of the method (procedure) in question.
  * @param abi         The abi object to be modified
  */
-static void amd64_get_call_abi(const void *self, ir_type *method_type,
-                           be_abi_call_t *abi)
+static void amd64_get_call_abi(ir_type *method_type, be_abi_call_t *abi)
 {
 	ir_type  *tp;
 	ir_mode  *mode;
 	int       i, n = get_method_n_params(method_type);
 	be_abi_call_flags_t call_flags;
 	int no_reg = 0;
-
-	(void) self;
 
 	/* set abi flags for calls */
 	call_flags.bits.store_args_sequential = 0;

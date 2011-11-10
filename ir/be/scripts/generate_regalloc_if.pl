@@ -310,7 +310,6 @@ print OUT<<EOF;
 #include "config.h"
 
 #include "gen_${arch}_regalloc_if.h"
-#include "gen_${arch}_machine.h"
 #include "bearch_${arch}_t.h"
 #include "irmode.h"
 
@@ -335,33 +334,3 @@ ${reginit}
 }
 EOF
 close(OUT);
-
-###
-# Gets the variable name for the execution unit assigned to this register.
-###
-sub get_execunit_variable_name {
-	my $unit    = shift;
-	my $name    = "NULL";
-	my $uc_arch = uc($arch);
-
-	if ($unit) {
-		my $found = 0;
-SRCH:	foreach my $cur_type (keys(%cpu)) {
-			foreach my $cur_unit (@{ $cpu{"$cur_type"} }) {
-				if ($unit eq $cur_unit) {
-					my $tp_name   = "$arch\_execution_units_$cur_type";
-					my $unit_name = "$uc_arch\_EXECUNIT_TP_$cur_type\_$unit";
-					$name  = "&".$tp_name."[".$unit_name."]";
-					$found = 1;
-					last SRCH;
-				}
-			}
-		}
-
-		if (! $found) {
-			print STDERR "Invalid execution unit $unit specified!\n";
-		}
-	}
-
-	return $name;
-}

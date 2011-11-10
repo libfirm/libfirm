@@ -326,14 +326,12 @@ void set_arm_CondJmp_relation(ir_node *node, ir_relation relation)
 /* Set the ARM machine node attributes to default values. */
 static void init_arm_attributes(ir_node *node, arch_irn_flags_t flags,
                          const arch_register_req_t ** in_reqs,
-                         const be_execution_unit_t ***execution_units,
 						 int n_res)
 {
 	ir_graph       *irg  = get_irn_irg(node);
 	struct obstack *obst = get_irg_obstack(irg);
 	arm_attr_t     *attr = get_arm_attr(node);
 	backend_info_t *info;
-	(void) execution_units;
 
 	arch_set_irn_flags(node, flags);
 	arch_set_irn_register_reqs_in(node, in_reqs);

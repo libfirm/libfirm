@@ -98,7 +98,6 @@ EMITTER_GENERATOR = $(srcdir)ir/be/scripts/generate_emitter.pl
 EMITTER_GENERATOR2 = $(srcdir)ir/be/scripts/generate_emitter_new.pl
 REGALLOC_IF_GENERATOR = $(srcdir)ir/be/scripts/generate_regalloc_if.pl
 OPCODES_GENERATOR = $(srcdir)ir/be/scripts/generate_new_opcodes.pl
-MACHINE_GENERATOR = $(srcdir)ir/be/scripts/generate_machine.pl
 
 define backend_template
 $(1)_SOURCES = $$(wildcard ir/be/$(1)/*.c)
@@ -118,12 +117,6 @@ $$(srcdir)ir/be/$(1)/gen_$(1)_regalloc_if.h $$(srcdir)ir/be/$(1)/gen_$(1)_regall
 	$(Q)$$(REGALLOC_IF_GENERATOR) $$($(1)_SPEC) $$(srcdir)ir/be/$(1)
 $(1)_SOURCES += ir/be/$(1)/gen_$(1)_regalloc_if.c
 $(1)_GEN_HEADERS += ir/be/$(1)/gen_$(1)_regalloc_if.h
-
-$$(srcdir)ir/be/$(1)/gen_$(1)_machine.h $$(srcdir)ir/be/$(1)/gen_$(1)_machine.c: $$($(1)_SPEC) $$(MACHINE_GENERATOR)
-	@echo GEN $$@
-	$(Q)$$(MACHINE_GENERATOR) $$($(1)_SPEC) $$(srcdir)ir/be/$(1)
-$(1)_SOURCES += ir/be/$(1)/gen_$(1)_machine.c
-$(1)_GEN_HEADERS += ir/be/$(1)/gen_$(1)_machine.h
 
 $$(srcdir)ir/be/$(1)/gen_$(1)_new_nodes.h $$(srcdir)ir/be/$(1)/gen_$(1)_new_nodes.c.inl: $$($(1)_SPEC) $$(OPCODES_GENERATOR)
 	@echo GEN $$@

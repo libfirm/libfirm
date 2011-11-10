@@ -487,12 +487,10 @@ struct arch_isa_if_t {
 
 	/**
 	 * Get the ABI restrictions for procedure calls.
-	 * @param self        The this pointer.
 	 * @param call_type   The call type of the method (procedure) in question.
 	 * @param p           The array of parameter locations to be filled.
 	 */
-	void (*get_call_abi)(const void *self, ir_type *call_type,
-	                     be_abi_call_t *abi);
+	void (*get_call_abi)(ir_type *call_type, be_abi_call_t *abi);
 
 	/**
 	 * A "static" function, returns the frontend settings
@@ -589,10 +587,8 @@ struct arch_isa_if_t {
 #define arch_env_done(env)                             ((env)->impl->done(env))
 #define arch_env_handle_intrinsics(env)                \
 	do { if((env)->impl->handle_intrinsics != NULL) (env)->impl->handle_intrinsics(); } while(0)
-#define arch_env_get_call_abi(env,tp,abi)              ((env)->impl->get_call_abi((env), (tp), (abi)))
+#define arch_env_get_call_abi(env,tp,abi)              ((env)->impl->get_call_abi((tp), (abi)))
 #define arch_env_get_params(env)                       ((env)->impl->get_params())
-#define arch_env_get_allowed_execution_units(env,irn)  ((env)->impl->get_allowed_execution_units((irn)))
-#define arch_env_get_machine(env)                      ((env)->impl->get_machine(env))
 #define arch_env_parse_asm_constraint(env,c)           ((env)->impl->parse_asm_constraint((c))
 #define arch_env_is_valid_clobber(env,clobber)         ((env)->impl->is_valid_clobber((clobber))
 #define arch_env_mark_remat(env,node) \

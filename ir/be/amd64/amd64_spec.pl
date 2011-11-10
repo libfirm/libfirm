@@ -143,12 +143,12 @@ $default_copy_attr = "amd64_copy_attr";
 
 %init_attr = (
 	amd64_attr_t           =>
-		 "\tinit_amd64_attributes(res, irn_flags_, in_reqs, exec_units, n_res);",
+		 "\tinit_amd64_attributes(res, irn_flags_, in_reqs, n_res);",
 	amd64_SymConst_attr_t =>
-		"\tinit_amd64_attributes(res, irn_flags_, in_reqs, exec_units, n_res);"
+		"\tinit_amd64_attributes(res, irn_flags_, in_reqs, n_res);"
 		. "\tinit_amd64_SymConst_attributes(res, entity);",
 	amd64_condcode_attr_t =>
-		"\tinit_amd64_attributes(res, irn_flags_, in_reqs, exec_units, n_res);"
+		"\tinit_amd64_attributes(res, irn_flags_, in_reqs, n_res);"
 		. "\tinit_amd64_condcode_attributes(res, pnc);",
 );
 

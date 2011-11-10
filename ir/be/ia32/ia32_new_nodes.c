@@ -53,7 +53,6 @@
 #include "ia32_nodes_attr.h"
 #include "ia32_new_nodes.h"
 #include "gen_ia32_regalloc_if.h"
-#include "gen_ia32_machine.h"
 
 /**
  * Dumper interface for dumping ia32 nodes in vcg.
@@ -701,15 +700,6 @@ unsigned get_ia32_copyb_size(const ir_node *node)
 }
 
 /**
- * Get the list of available execution units.
- */
-const be_execution_unit_t ***get_ia32_exec_units(const ir_node *node)
-{
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->exec_units;
-}
-
-/**
  * Get the exception label attribute.
  */
 unsigned get_ia32_exc_label(const ir_node *node)
@@ -818,7 +808,6 @@ void ia32_swap_left_right(ir_node *node)
  */
 static void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
                                  const arch_register_req_t **in_reqs,
-                                 const be_execution_unit_t ***execution_units,
                                  int n_res)
 {
 	ir_graph        *irg  = get_irn_irg(node);
@@ -829,7 +818,6 @@ static void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
 	arch_set_irn_flags(node, flags);
 	arch_set_irn_register_reqs_in(node, in_reqs);
 
-	attr->exec_units  = execution_units;
 #ifndef NDEBUG
 	attr->attr_type  |= IA32_ATTR_ia32_attr_t;
 #endif

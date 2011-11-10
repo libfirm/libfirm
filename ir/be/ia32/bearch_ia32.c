@@ -65,7 +65,6 @@
 #include "beirgmod.h"
 #include "be_dbgout.h"
 #include "beblocksched.h"
-#include "bemachine.h"
 #include "bespillutil.h"
 #include "bespillslots.h"
 #include "bemodule.h"
@@ -81,7 +80,6 @@
 
 #include "ia32_new_nodes.h"
 #include "gen_ia32_regalloc_if.h"
-#include "gen_ia32_machine.h"
 #include "ia32_common_transform.h"
 #include "ia32_transform.h"
 #include "ia32_emitter.h"
@@ -1468,7 +1466,6 @@ static ia32_isa_t ia32_isa_template = {
 		false,                   /* no custom abi handling */
 	},
 	NULL,                    /* tv_ents */
-	NULL,                    /* abstract machine */
 	IA32_FPU_ARCH_X87,       /* FPU architecture */
 };
 
@@ -1538,7 +1535,6 @@ static arch_env_t *ia32_init(const be_main_env_t *env)
 	ia32_create_opcodes(&ia32_irn_ops);
 
 	isa->tv_ent         = pmap_create();
-	isa->cpu            = ia32_init_machine_description();
 
 	/* enter the ISA object into the intrinsic environment */
 	intrinsic_env.isa = isa;
@@ -1649,19 +1645,13 @@ static const arch_register_t *ia32_get_RegParam_reg(unsigned cc, unsigned nr,
 
 /**
  * Get the ABI restrictions for procedure calls.
- * @param self        The this pointer.
- * @param method_type The type of the method (procedure) in question.
- * @param abi         The abi object to be modified
  */
-static void ia32_get_call_abi(const void *self, ir_type *method_type,
-                              be_abi_call_t *abi)
+static void ia32_get_call_abi(ir_type *method_type, be_abi_call_t *abi)
 {
 	unsigned  cc;
 	int       n, i, regnum;
 	int                 pop_amount = 0;
 	be_abi_call_flags_t call_flags = be_abi_call_get_flags(abi);
-
-	(void) self;
 
 	/* set abi flags for calls */
 	call_flags.bits.store_args_sequential = 0;
