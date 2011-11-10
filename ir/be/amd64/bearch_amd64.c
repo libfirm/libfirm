@@ -295,16 +295,16 @@ static amd64_isa_t amd64_isa_template = {
 	},
 };
 
-/**
- * Initializes the backend ISA
- */
-static arch_env_t *amd64_init(const be_main_env_t *env)
+static void amd64_init(void)
+{
+	amd64_register_init();
+	amd64_create_opcodes(&amd64_irn_ops);
+}
+
+static arch_env_t *amd64_begin_codegeneration(const be_main_env_t *env)
 {
 	amd64_isa_t *isa = XMALLOC(amd64_isa_t);
 	*isa = amd64_isa_template;
-
-	amd64_register_init();
-	amd64_create_opcodes(&amd64_irn_ops);
 
 	be_emit_init(env->file_handle);
 	be_gas_begin_compilation_unit(env);
@@ -312,12 +312,10 @@ static arch_env_t *amd64_init(const be_main_env_t *env)
 	return &isa->base;
 }
 
-
-
 /**
  * Closes the output file and frees the ISA structure.
  */
-static void amd64_done(void *self)
+static void amd64_end_codegeneration(void *self)
 {
 	amd64_isa_t *isa = (amd64_isa_t*)self;
 
@@ -538,25 +536,27 @@ static int amd64_register_saved_by(const arch_register_t *reg, int callee)
 
 const arch_isa_if_t amd64_isa_if = {
 	amd64_init,
-	amd64_lower_for_target,
-	amd64_done,
-	NULL,                /* handle intrinsics */
-	amd64_get_call_abi,
     amd64_get_backend_params,
-	NULL,                    /* mark remat */
+	amd64_lower_for_target,
 	amd64_parse_asm_constraint,
 	amd64_is_valid_clobber,
 
+	amd64_begin_codegeneration,
+	amd64_end_codegeneration,
 	amd64_init_graph,
+	amd64_get_call_abi,
+	NULL,              /* mark remat */
 	NULL,              /* get_pic_base */
+	be_new_spill,
+	be_new_reload,
+	amd64_register_saved_by,
+
+	NULL,              /* handle intrinsics */
 	NULL,              /* before_abi */
 	amd64_prepare_graph,
 	amd64_before_ra,
 	amd64_finish_irg,
 	amd64_gen_routine,
-	amd64_register_saved_by,
-	be_new_spill,
-	be_new_reload
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_amd64)

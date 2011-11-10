@@ -340,10 +340,14 @@ static void sparc_handle_intrinsics(void)
 	lower_intrinsics(records, n_records, /*part_block_used=*/ true);
 }
 
-/**
- * Initializes the backend ISA
- */
-static arch_env_t *sparc_init(const be_main_env_t *env)
+static void sparc_init(void)
+{
+	sparc_register_init();
+	sparc_create_opcodes(&sparc_irn_ops);
+	sparc_cconv_init();
+}
+
+static arch_env_t *sparc_begin_codegeneration(const be_main_env_t *env)
 {
 	sparc_isa_t *isa = XMALLOC(sparc_isa_t);
 	*isa = sparc_isa_template;
@@ -352,11 +356,6 @@ static arch_env_t *sparc_init(const be_main_env_t *env)
 	be_gas_elf_type_char      = '#';
 	be_gas_object_file_format = OBJECT_FILE_FORMAT_ELF;
 	be_gas_elf_variant        = ELF_VARIANT_SPARC;
-
-	sparc_register_init();
-	sparc_create_opcodes(&sparc_irn_ops);
-	sparc_handle_intrinsics();
-	sparc_cconv_init();
 
 	be_emit_init(env->file_handle);
 	be_gas_begin_compilation_unit(env);
@@ -367,7 +366,7 @@ static arch_env_t *sparc_init(const be_main_env_t *env)
 /**
  * Closes the output file and frees the ISA structure.
  */
-static void sparc_done(void *self)
+static void sparc_end_codegeneration(void *self)
 {
 	sparc_isa_t *isa = (sparc_isa_t*)self;
 
@@ -542,25 +541,27 @@ static ir_node *sparc_new_reload(ir_node *value, ir_node *spill,
 
 const arch_isa_if_t sparc_isa_if = {
 	sparc_init,
-	sparc_lower_for_target,
-	sparc_done,
-	NULL,                /* handle intrinsics */
-	NULL,
 	sparc_get_backend_params,
-	NULL,                    /* mark remat */
+	sparc_lower_for_target,
 	sparc_parse_asm_constraint,
 	sparc_is_valid_clobber,
 
+	sparc_begin_codegeneration,
+	sparc_end_codegeneration,
 	sparc_init_graph,
-	NULL, /* get_pic_base */
-	NULL, /* before_abi */
+	NULL,                /* get call abi */
+	NULL,                /* mark remat */
+	NULL,                /* get_pic_base */
+	sparc_new_spill,
+	sparc_new_reload,
+	NULL,                /* register_saved_by */
+
+	sparc_handle_intrinsics,
+	NULL,                /* before_abi */
 	sparc_prepare_graph,
 	sparc_before_ra,
 	sparc_finish,
 	sparc_emit_routine,
-	NULL, /* register_saved_by */
-	sparc_new_spill,
-	sparc_new_reload
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_sparc)

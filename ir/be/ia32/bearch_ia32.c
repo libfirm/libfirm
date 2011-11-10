@@ -1398,10 +1398,6 @@ static void ia32_init_graph(ir_graph *irg)
 	be_birg_from_irg(irg)->isa_link = irg_data;
 }
 
-
-/**
- * Set output modes for GCC
- */
 static const tarval_mode_info mo_integer = {
 	TVO_HEX,
 	"0x",
@@ -1424,31 +1420,6 @@ static void set_tarval_output_modes(void)
 }
 
 extern const arch_isa_if_t ia32_isa_if;
-
-/**
- * The template that generates a new ISA object.
- * Note that this template can be changed by command line
- * arguments.
- */
-static ia32_isa_t ia32_isa_template = {
-	{
-		&ia32_isa_if,            /* isa interface implementation */
-		N_IA32_REGISTERS,
-		ia32_registers,
-		N_IA32_CLASSES,
-		ia32_reg_classes,
-		&ia32_registers[REG_ESP],  /* stack pointer register */
-		&ia32_registers[REG_EBP],  /* base pointer register */
-		&ia32_reg_classes[CLASS_ia32_gp],  /* static link pointer register class */
-		2,                       /* power of two stack alignment, 2^2 == 4 */
-		NULL,                    /* main environment */
-		7,                       /* costs for a spill instruction */
-		5,                       /* costs for a reload instruction */
-		false,                   /* no custom abi handling */
-	},
-	NULL,                    /* tv_ents */
-	IA32_FPU_ARCH_X87,       /* FPU architecture */
-};
 
 static void init_asm_constraints(void)
 {
@@ -1498,24 +1469,336 @@ static void init_asm_constraints(void)
 }
 
 /**
- * Initializes the backend ISA.
+ * Check if Mux(sel, mux_true, mux_false) would represent a Max or Min operation
  */
-static arch_env_t *ia32_init(const be_main_env_t *env)
+static bool mux_is_float_min_max(ir_node *sel, ir_node *mux_true,
+                                 ir_node *mux_false)
 {
-	ia32_isa_t *isa = XMALLOC(ia32_isa_t);
+	ir_node    *cmp_l;
+	ir_node    *cmp_r;
+	ir_relation relation;
 
-	set_tarval_output_modes();
+	if (!is_Cmp(sel))
+		return false;
 
-	*isa = ia32_isa_template;
+	cmp_l = get_Cmp_left(sel);
+	cmp_r = get_Cmp_right(sel);
+	if (!mode_is_float(get_irn_mode(cmp_l)))
+		return false;
 
-	if (ia32_mode_fpcw == NULL) {
-		ia32_mode_fpcw = new_int_mode("Fpcw", irma_twos_complement, 16, 0, 0);
+	/* check for min/max. They're defined as (C-Semantik):
+	 *  min(a, b) = a < b ? a : b
+	 *  or min(a, b) = a <= b ? a : b
+	 *  max(a, b) = a > b ? a : b
+	 *  or max(a, b) = a >= b ? a : b
+	 * (Note we only handle float min/max here)
+	 */
+	relation = get_Cmp_relation(sel);
+	switch (relation) {
+	case ir_relation_greater_equal:
+	case ir_relation_greater:
+		/* this is a max */
+		if (cmp_l == mux_true && cmp_r == mux_false)
+			return true;
+		break;
+	case ir_relation_less_equal:
+	case ir_relation_less:
+		/* this is a min */
+		if (cmp_l == mux_true && cmp_r == mux_false)
+			return true;
+		break;
+	case ir_relation_unordered_greater_equal:
+	case ir_relation_unordered_greater:
+		/* this is a min */
+		if (cmp_l == mux_false && cmp_r == mux_true)
+			return true;
+		break;
+	case ir_relation_unordered_less_equal:
+	case ir_relation_unordered_less:
+		/* this is a max */
+		if (cmp_l == mux_false && cmp_r == mux_true)
+			return true;
+		break;
+
+	default:
+		break;
 	}
 
+	return false;
+}
+
+static bool mux_is_set(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
+{
+	ir_mode *mode = get_irn_mode(mux_true);
+	(void) sel;
+
+	if (!mode_is_int(mode) && !mode_is_reference(mode)
+			&& mode != mode_b)
+		return false;
+
+	if (is_Const(mux_true) && is_Const(mux_false)) {
+		/* we can create a set plus up two 3 instructions for any combination
+		 * of constants */
+		return true;
+	}
+
+	return false;
+}
+
+static bool mux_is_float_const_const(ir_node *sel, ir_node *mux_true,
+                                     ir_node *mux_false)
+{
+	(void) sel;
+
+	if (!mode_is_float(get_irn_mode(mux_true)))
+		return false;
+
+	return is_Const(mux_true) && is_Const(mux_false);
+}
+
+static bool mux_is_doz(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
+{
+	ir_node    *cmp_left;
+	ir_node    *cmp_right;
+	ir_node    *sub_left;
+	ir_node    *sub_right;
+	ir_mode    *mode;
+	ir_relation relation;
+
+	if (!is_Cmp(sel))
+		return false;
+
+	mode = get_irn_mode(mux_true);
+	if (mode_is_signed(mode) || mode_is_float(mode))
+		return false;
+
+	relation  = get_Cmp_relation(sel);
+	cmp_left  = get_Cmp_left(sel);
+	cmp_right = get_Cmp_right(sel);
+
+	/* "move" zero constant to false input */
+	if (is_Const(mux_true) && is_Const_null(mux_true)) {
+		ir_node *tmp = mux_false;
+		mux_false = mux_true;
+		mux_true  = tmp;
+		relation = get_negated_relation(relation);
+	}
+	if (!is_Const(mux_false) || !is_Const_null(mux_false))
+		return false;
+	if (!is_Sub(mux_true))
+		return false;
+	sub_left  = get_Sub_left(mux_true);
+	sub_right = get_Sub_right(mux_true);
+
+	/* Mux(a >=u b, 0, a-b) */
+	if ((relation & ir_relation_greater)
+			&& sub_left == cmp_left && sub_right == cmp_right)
+		return true;
+	/* Mux(a <=u b, 0, b-a) */
+	if ((relation & ir_relation_less)
+			&& sub_left == cmp_right && sub_right == cmp_left)
+		return true;
+
+	return false;
+}
+
+static int ia32_is_mux_allowed(ir_node *sel, ir_node *mux_false,
+                               ir_node *mux_true)
+{
+	ir_mode *mode;
+
+	/* middleend can handle some things */
+	if (ir_is_optimizable_mux(sel, mux_false, mux_true))
+		return true;
+	/* we can handle Set for all modes and compares */
+	if (mux_is_set(sel, mux_true, mux_false))
+		return true;
+	/* SSE has own min/max operations */
+	if (ia32_cg_config.use_sse2
+			&& mux_is_float_min_max(sel, mux_true, mux_false))
+		return true;
+	/* we can handle Mux(?, Const[f], Const[f]) */
+	if (mux_is_float_const_const(sel, mux_true, mux_false)) {
+#ifdef FIRM_GRGEN_BE
+		/* well, some code selectors can't handle it */
+		if (be_transformer != TRANSFORMER_PBQP
+				|| be_transformer != TRANSFORMER_RAND)
+			return true;
+#else
+		return true;
+#endif
+	}
+
+	/* no support for 64bit inputs to cmov */
+	mode = get_irn_mode(mux_true);
+	if (get_mode_size_bits(mode) > 32)
+		return false;
+	/* we can handle Abs for all modes and compares (except 64bit) */
+	if (ir_mux_is_abs(sel, mux_false, mux_true) != 0)
+		return true;
+	/* we can't handle MuxF yet */
+	if (mode_is_float(mode))
+		return false;
+
+	if (mux_is_doz(sel, mux_true, mux_false))
+		return true;
+
+	/* Check Cmp before the node */
+	if (is_Cmp(sel)) {
+		ir_mode *cmp_mode = get_irn_mode(get_Cmp_left(sel));
+
+		/* we can't handle 64bit compares */
+		if (get_mode_size_bits(cmp_mode) > 32)
+			return false;
+
+		/* we can't handle float compares */
+		if (mode_is_float(cmp_mode))
+			return false;
+	}
+
+	/* did we disable cmov generation? */
+	if (!ia32_cg_config.use_cmov)
+		return false;
+
+	/* we can use a cmov */
+	return true;
+}
+
+/**
+ * Create the trampoline code.
+ */
+static ir_node *ia32_create_trampoline_fkt(ir_node *block, ir_node *mem, ir_node *trampoline, ir_node *env, ir_node *callee)
+{
+	ir_graph *const irg  = get_irn_irg(block);
+	ir_node  *      p    = trampoline;
+	ir_mode  *const mode = get_irn_mode(p);
+	ir_node  *const one  = new_r_Const(irg, get_mode_one(mode_Iu));
+	ir_node  *const four = new_r_Const_long(irg, mode_Iu, 4);
+	ir_node  *      st;
+
+	/* mov  ecx,<env> */
+	st  = new_r_Store(block, mem, p, new_r_Const_long(irg, mode_Bu, 0xb9), cons_none);
+	mem = new_r_Proj(st, mode_M, pn_Store_M);
+	p   = new_r_Add(block, p, one, mode);
+	st  = new_r_Store(block, mem, p, env, cons_none);
+	mem = new_r_Proj(st, mode_M, pn_Store_M);
+	p   = new_r_Add(block, p, four, mode);
+	/* jmp  <callee> */
+	st  = new_r_Store(block, mem, p, new_r_Const_long(irg, mode_Bu, 0xe9), cons_none);
+	mem = new_r_Proj(st, mode_M, pn_Store_M);
+	p   = new_r_Add(block, p, one, mode);
+	st  = new_r_Store(block, mem, p, callee, cons_none);
+	mem = new_r_Proj(st, mode_M, pn_Store_M);
+	p   = new_r_Add(block, p, four, mode);
+
+	return mem;
+}
+
+static const ir_settings_arch_dep_t ia32_arch_dep = {
+	1,                   /* also use subs */
+	4,                   /* maximum shifts */
+	63,                  /* maximum shift amount */
+	ia32_evaluate_insn,  /* evaluate the instruction sequence */
+
+	1,  /* allow Mulhs */
+	1,  /* allow Mulus */
+	32, /* Mulh allowed up to 32 bit */
+};
+static backend_params ia32_backend_params = {
+	1,     /* support inline assembly */
+	1,     /* support Rotl nodes */
+	0,     /* little endian */
+	1,     /* modulo shift efficient */
+	0,     /* non-modulo shift not efficient */
+	&ia32_arch_dep, /* will be set later */
+	ia32_is_mux_allowed,
+	32,    /* machine_size */
+	NULL,  /* float arithmetic mode, will be set below */
+	NULL,  /* long long type */
+	NULL,  /* unsigned long long type */
+	NULL,  /* long double type */
+	12,    /* size of trampoline code */
+	4,     /* alignment of trampoline code */
+	ia32_create_trampoline_fkt,
+	4      /* alignment of stack parameter */
+};
+
+/**
+ * Initializes the backend ISA.
+ */
+static void ia32_init(void)
+{
+	ir_mode    *mode_long_long;
+	ir_mode    *mode_unsigned_long_long;
+	ir_type    *type_long_long;
+	ir_type    *type_unsigned_long_long;
+
+	ia32_setup_cg_config();
+
+	init_asm_constraints();
+
+	set_tarval_output_modes();
 	ia32_register_init();
 	ia32_create_opcodes(&ia32_irn_ops);
 
-	isa->tv_ent         = pmap_create();
+	ia32_mode_fpcw = new_int_mode("Fpcw", irma_twos_complement, 16, 0, 0);
+
+	/* note mantissa is 64bit but with explicitely encoded 1 so the really
+	 * usable part as counted by firm is only 63 bits */
+	ia32_mode_E = new_float_mode("E", irma_x86_extended_float, 15, 63);
+	ia32_type_E = new_type_primitive(ia32_mode_E);
+	set_type_size_bytes(ia32_type_E, 12);
+	set_type_alignment_bytes(ia32_type_E, 16);
+
+	mode_long_long = new_int_mode("long long", irma_twos_complement, 64, 1, 64);
+	type_long_long = new_type_primitive(mode_long_long);
+	mode_unsigned_long_long
+		= new_int_mode("unsigned long long", irma_twos_complement, 64, 0, 64);
+	type_unsigned_long_long = new_type_primitive(mode_unsigned_long_long);
+
+	ia32_backend_params.type_long_long          = type_long_long;
+	ia32_backend_params.type_unsigned_long_long = type_unsigned_long_long;
+
+	if (ia32_cg_config.use_sse2 || ia32_cg_config.use_softfloat) {
+		ia32_backend_params.mode_float_arithmetic = NULL;
+		ia32_backend_params.type_long_double = NULL;
+	} else {
+		ia32_backend_params.mode_float_arithmetic = ia32_mode_E;
+		ia32_backend_params.type_long_double      = ia32_type_E;
+	}
+}
+
+/**
+ * The template that generates a new ISA object.
+ * Note that this template can be changed by command line
+ * arguments.
+ */
+static ia32_isa_t ia32_isa_template = {
+	{
+		&ia32_isa_if,            /* isa interface implementation */
+		N_IA32_REGISTERS,
+		ia32_registers,
+		N_IA32_CLASSES,
+		ia32_reg_classes,
+		&ia32_registers[REG_ESP],  /* stack pointer register */
+		&ia32_registers[REG_EBP],  /* base pointer register */
+		&ia32_reg_classes[CLASS_ia32_gp],  /* static link pointer register class */
+		2,                       /* power of two stack alignment, 2^2 == 4 */
+		NULL,                    /* main environment */
+		7,                       /* costs for a spill instruction */
+		5,                       /* costs for a reload instruction */
+		false,                   /* no custom abi handling */
+	},
+	NULL,                    /* tv_ents */
+	IA32_FPU_ARCH_X87,       /* FPU architecture */
+};
+
+static arch_env_t *ia32_begin_codegeneration(const be_main_env_t *env)
+{
+	ia32_isa_t *isa = XMALLOC(ia32_isa_t);
+
+	*isa        = ia32_isa_template;
+	isa->tv_ent = pmap_create();
 
 	/* enter the ISA object into the intrinsic environment */
 	intrinsic_env.isa = isa;
@@ -1529,7 +1812,7 @@ static arch_env_t *ia32_init(const be_main_env_t *env)
 /**
  * Closes the output file and frees the ISA structure.
  */
-static void ia32_done(void *self)
+static void ia32_end_codegeneration(void *self)
 {
 	ia32_isa_t *isa = (ia32_isa_t*)self;
 
@@ -1733,202 +2016,6 @@ static void ia32_mark_remat(ir_node *node)
 	}
 }
 
-/**
- * Check if Mux(sel, mux_true, mux_false) would represent a Max or Min operation
- */
-static bool mux_is_float_min_max(ir_node *sel, ir_node *mux_true,
-                                 ir_node *mux_false)
-{
-	ir_node    *cmp_l;
-	ir_node    *cmp_r;
-	ir_relation relation;
-
-	if (!is_Cmp(sel))
-		return false;
-
-	cmp_l = get_Cmp_left(sel);
-	cmp_r = get_Cmp_right(sel);
-	if (!mode_is_float(get_irn_mode(cmp_l)))
-		return false;
-
-	/* check for min/max. They're defined as (C-Semantik):
-	 *  min(a, b) = a < b ? a : b
-	 *  or min(a, b) = a <= b ? a : b
-	 *  max(a, b) = a > b ? a : b
-	 *  or max(a, b) = a >= b ? a : b
-	 * (Note we only handle float min/max here)
-	 */
-	relation = get_Cmp_relation(sel);
-	switch (relation) {
-	case ir_relation_greater_equal:
-	case ir_relation_greater:
-		/* this is a max */
-		if (cmp_l == mux_true && cmp_r == mux_false)
-			return true;
-		break;
-	case ir_relation_less_equal:
-	case ir_relation_less:
-		/* this is a min */
-		if (cmp_l == mux_true && cmp_r == mux_false)
-			return true;
-		break;
-	case ir_relation_unordered_greater_equal:
-	case ir_relation_unordered_greater:
-		/* this is a min */
-		if (cmp_l == mux_false && cmp_r == mux_true)
-			return true;
-		break;
-	case ir_relation_unordered_less_equal:
-	case ir_relation_unordered_less:
-		/* this is a max */
-		if (cmp_l == mux_false && cmp_r == mux_true)
-			return true;
-		break;
-
-	default:
-		break;
-	}
-
-	return false;
-}
-
-static bool mux_is_set(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
-{
-	ir_mode *mode = get_irn_mode(mux_true);
-	(void) sel;
-
-	if (!mode_is_int(mode) && !mode_is_reference(mode)
-			&& mode != mode_b)
-		return false;
-
-	if (is_Const(mux_true) && is_Const(mux_false)) {
-		/* we can create a set plus up two 3 instructions for any combination
-		 * of constants */
-		return true;
-	}
-
-	return false;
-}
-
-static bool mux_is_float_const_const(ir_node *sel, ir_node *mux_true,
-                                     ir_node *mux_false)
-{
-	(void) sel;
-
-	if (!mode_is_float(get_irn_mode(mux_true)))
-		return false;
-
-	return is_Const(mux_true) && is_Const(mux_false);
-}
-
-static bool mux_is_doz(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
-{
-	ir_node    *cmp_left;
-	ir_node    *cmp_right;
-	ir_node    *sub_left;
-	ir_node    *sub_right;
-	ir_mode    *mode;
-	ir_relation relation;
-
-	if (!is_Cmp(sel))
-		return false;
-
-	mode = get_irn_mode(mux_true);
-	if (mode_is_signed(mode) || mode_is_float(mode))
-		return false;
-
-	relation  = get_Cmp_relation(sel);
-	cmp_left  = get_Cmp_left(sel);
-	cmp_right = get_Cmp_right(sel);
-
-	/* "move" zero constant to false input */
-	if (is_Const(mux_true) && is_Const_null(mux_true)) {
-		ir_node *tmp = mux_false;
-		mux_false = mux_true;
-		mux_true  = tmp;
-		relation = get_negated_relation(relation);
-	}
-	if (!is_Const(mux_false) || !is_Const_null(mux_false))
-		return false;
-	if (!is_Sub(mux_true))
-		return false;
-	sub_left  = get_Sub_left(mux_true);
-	sub_right = get_Sub_right(mux_true);
-
-	/* Mux(a >=u b, 0, a-b) */
-	if ((relation & ir_relation_greater)
-			&& sub_left == cmp_left && sub_right == cmp_right)
-		return true;
-	/* Mux(a <=u b, 0, b-a) */
-	if ((relation & ir_relation_less)
-			&& sub_left == cmp_right && sub_right == cmp_left)
-		return true;
-
-	return false;
-}
-
-static int ia32_is_mux_allowed(ir_node *sel, ir_node *mux_false,
-                               ir_node *mux_true)
-{
-	ir_mode *mode;
-
-	/* middleend can handle some things */
-	if (ir_is_optimizable_mux(sel, mux_false, mux_true))
-		return true;
-	/* we can handle Set for all modes and compares */
-	if (mux_is_set(sel, mux_true, mux_false))
-		return true;
-	/* SSE has own min/max operations */
-	if (ia32_cg_config.use_sse2
-			&& mux_is_float_min_max(sel, mux_true, mux_false))
-		return true;
-	/* we can handle Mux(?, Const[f], Const[f]) */
-	if (mux_is_float_const_const(sel, mux_true, mux_false)) {
-#ifdef FIRM_GRGEN_BE
-		/* well, some code selectors can't handle it */
-		if (be_transformer != TRANSFORMER_PBQP
-				|| be_transformer != TRANSFORMER_RAND)
-			return true;
-#else
-		return true;
-#endif
-	}
-
-	/* no support for 64bit inputs to cmov */
-	mode = get_irn_mode(mux_true);
-	if (get_mode_size_bits(mode) > 32)
-		return false;
-	/* we can handle Abs for all modes and compares (except 64bit) */
-	if (ir_mux_is_abs(sel, mux_false, mux_true) != 0)
-		return true;
-	/* we can't handle MuxF yet */
-	if (mode_is_float(mode))
-		return false;
-
-	if (mux_is_doz(sel, mux_true, mux_false))
-		return true;
-
-	/* Check Cmp before the node */
-	if (is_Cmp(sel)) {
-		ir_mode *cmp_mode = get_irn_mode(get_Cmp_left(sel));
-
-		/* we can't handle 64bit compares */
-		if (get_mode_size_bits(cmp_mode) > 32)
-			return false;
-
-		/* we can't handle float compares */
-		if (mode_is_float(cmp_mode))
-			return false;
-	}
-
-	/* did we disable cmov generation? */
-	if (!ia32_cg_config.use_cmov)
-		return false;
-
-	/* we can use a cmov */
-	return true;
-}
-
 static asm_constraint_flags_t ia32_parse_asm_constraint(const char **c)
 {
 	(void) c;
@@ -1992,103 +2079,11 @@ static void ia32_lower_for_target(void)
 }
 
 /**
- * Create the trampoline code.
- */
-static ir_node *ia32_create_trampoline_fkt(ir_node *block, ir_node *mem, ir_node *trampoline, ir_node *env, ir_node *callee)
-{
-	ir_graph *const irg  = get_irn_irg(block);
-	ir_node  *      p    = trampoline;
-	ir_mode  *const mode = get_irn_mode(p);
-	ir_node  *const one  = new_r_Const(irg, get_mode_one(mode_Iu));
-	ir_node  *const four = new_r_Const_long(irg, mode_Iu, 4);
-	ir_node  *      st;
-
-	/* mov  ecx,<env> */
-	st  = new_r_Store(block, mem, p, new_r_Const_long(irg, mode_Bu, 0xb9), cons_none);
-	mem = new_r_Proj(st, mode_M, pn_Store_M);
-	p   = new_r_Add(block, p, one, mode);
-	st  = new_r_Store(block, mem, p, env, cons_none);
-	mem = new_r_Proj(st, mode_M, pn_Store_M);
-	p   = new_r_Add(block, p, four, mode);
-	/* jmp  <callee> */
-	st  = new_r_Store(block, mem, p, new_r_Const_long(irg, mode_Bu, 0xe9), cons_none);
-	mem = new_r_Proj(st, mode_M, pn_Store_M);
-	p   = new_r_Add(block, p, one, mode);
-	st  = new_r_Store(block, mem, p, callee, cons_none);
-	mem = new_r_Proj(st, mode_M, pn_Store_M);
-	p   = new_r_Add(block, p, four, mode);
-
-	return mem;
-}
-
-/**
  * Returns the libFirm configuration parameter for this backend.
  */
 static const backend_params *ia32_get_libfirm_params(void)
 {
-	static const ir_settings_arch_dep_t ad = {
-		1,                   /* also use subs */
-		4,                   /* maximum shifts */
-		63,                  /* maximum shift amount */
-		ia32_evaluate_insn,  /* evaluate the instruction sequence */
-
-		1,  /* allow Mulhs */
-		1,  /* allow Mulus */
-		32, /* Mulh allowed up to 32 bit */
-	};
-	static backend_params p = {
-		1,     /* support inline assembly */
-		1,     /* support Rotl nodes */
-		0,     /* little endian */
-		1,     /* modulo shift efficient */
-		0,     /* non-modulo shift not efficient */
-		&ad,   /* will be set later */
-		ia32_is_mux_allowed,
-		32,    /* machine_size */
-		NULL,  /* float arithmetic mode, will be set below */
-		NULL,  /* long long type */
-		NULL,  /* unsigned long long type */
-		NULL,  /* long double type */
-		12,    /* size of trampoline code */
-		4,     /* alignment of trampoline code */
-		ia32_create_trampoline_fkt,
-		4      /* alignment of stack parameter */
-	};
-
-	if (ia32_mode_E == NULL) {
-		/* note mantissa is 64bit but with explicitely encoded 1 so the really
-		 * usable part as counted by firm is only 63 bits */
-		ia32_mode_E = new_float_mode("E", irma_x86_extended_float, 15, 63);
-		ia32_type_E = new_type_primitive(ia32_mode_E);
-		set_type_size_bytes(ia32_type_E, 12);
-		set_type_alignment_bytes(ia32_type_E, 16);
-	}
-
-	ir_mode *mode_long_long
-		= new_int_mode("long long", irma_twos_complement, 64, 1, 64);
-	ir_type *type_long_long = new_type_primitive(mode_long_long);
-	ir_mode *mode_unsigned_long_long
-		= new_int_mode("unsigned long long", irma_twos_complement, 64, 0, 64);
-	ir_type *type_unsigned_long_long
-		= new_type_primitive(mode_unsigned_long_long);
-
-	ia32_setup_cg_config();
-
-	/* doesn't really belong here, but this is the earliest place the backend
-	 * is called... */
-	init_asm_constraints();
-
-	p.type_long_long          = type_long_long;
-	p.type_unsigned_long_long = type_unsigned_long_long;
-
-	if (ia32_cg_config.use_sse2 || ia32_cg_config.use_softfloat) {
-		p.mode_float_arithmetic = NULL;
-		p.type_long_double = NULL;
-	} else {
-		p.mode_float_arithmetic = ia32_mode_E;
-		p.type_long_double      = ia32_type_E;
-	}
-	return &p;
+	return &ia32_backend_params;
 }
 
 /**
@@ -2168,25 +2163,27 @@ static const lc_opt_table_entry_t ia32_options[] = {
 
 const arch_isa_if_t ia32_isa_if = {
 	ia32_init,
-	ia32_lower_for_target,
-	ia32_done,
-	ia32_handle_intrinsics,
-	ia32_get_call_abi,
 	ia32_get_libfirm_params,
-	ia32_mark_remat,
+	ia32_lower_for_target,
 	ia32_parse_asm_constraint,
 	ia32_is_valid_clobber,
 
+	ia32_begin_codegeneration,
+	ia32_end_codegeneration,
 	ia32_init_graph,
+	ia32_get_call_abi,
+	ia32_mark_remat,
 	ia32_get_pic_base,   /* return node used as base in pic code addresses */
+	be_new_spill,
+	be_new_reload,
+	ia32_register_saved_by,
+
+	ia32_handle_intrinsics,
 	ia32_before_abi,     /* before abi introduce hook */
 	ia32_prepare_graph,
 	ia32_before_ra,      /* before register allocation hook */
 	ia32_finish,         /* called before codegen */
 	ia32_emit,           /* emit && done */
-	ia32_register_saved_by,
-	be_new_spill,
-	be_new_reload
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_ia32)

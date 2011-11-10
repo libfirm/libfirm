@@ -212,13 +212,10 @@ static inline unsigned arch_get_irn_n_outs(const ir_node *node)
 }
 
 /**
- * Initialize the architecture environment struct.
- * @param isa           The isa which shall be put into the environment.
- * @param file_handle   The file handle
- * @return The environment.
+ * Start codegeneration
  */
-extern arch_env_t *arch_env_init(const arch_isa_if_t *isa,
-                                 be_main_env_t *main_env);
+arch_env_t *arch_env_begin_codegeneration(const arch_isa_if_t *isa,
+                                          be_main_env_t *main_env);
 
 /**
  * Register an instruction set architecture
@@ -435,46 +432,21 @@ struct arch_irn_ops_t {
  */
 struct arch_isa_if_t {
 	/**
-	 * Initialize the isa interface.
-	 * @param file_handle  the file handle to write the output to
-	 * @return a new isa instance
+	 * Initializes the isa interface. This is necessary before calling any
+	 * other functions from this interface.
 	 */
-	arch_env_t *(*init)(const be_main_env_t *env);
+	void (*init)(void);
+
+	/**
+	 * Returns the frontend settings needed for this backend.
+	 */
+	const backend_params *(*get_params)(void);
 
 	/**
 	 * lowers current program for target. See the documentation for
 	 * be_lower_for_target() for details.
 	 */
 	void (*lower_for_target)(void);
-
-	/**
-	 * Free the isa instance.
-	 */
-	void (*done)(void *self);
-
-	/**
-	 * Called directly after initialization. Backend should handle all
-	 * intrinsics here.
-	 */
-	void (*handle_intrinsics)(void);
-
-	/**
-	 * Get the ABI restrictions for procedure calls.
-	 * @param call_type   The call type of the method (procedure) in question.
-	 * @param p           The array of parameter locations to be filled.
-	 */
-	void (*get_call_abi)(ir_type *call_type, be_abi_call_t *abi);
-
-	/**
-	 * A "static" function, returns the frontend settings
-	 * needed for this backend.
-	 */
-	const backend_params *(*get_params)(void);
-
-	/**
-	 * mark node as rematerialized
-	 */
-	void (*mark_remat)(ir_node *node);
 
 	/**
 	 * parse an assembler constraint part and set flags according to its nature
@@ -490,16 +462,71 @@ struct arch_isa_if_t {
 	int (*is_valid_clobber)(const char *clobber);
 
 	/**
-	 * Initialize the code generator.
+	 * Start codegeneration
+	 * @return a new isa instance
+	 */
+	arch_env_t *(*begin_codegeneration)(const be_main_env_t *env);
+
+	/**
+	 * Free the isa instance.
+	 */
+	void (*end_codegeneration)(void *self);
+
+	/**
+	 * Initialize the code generator for a graph
 	 * @param irg  A graph
-	 * @return     A newly created code generator.
 	 */
 	void (*init_graph)(ir_graph *irg);
+
+	/**
+	 * Get the ABI restrictions for procedure calls.
+	 * @param call_type   The call type of the method (procedure) in question.
+	 * @param p           The array of parameter locations to be filled.
+	 */
+	void (*get_call_abi)(ir_type *call_type, be_abi_call_t *abi);
+
+	/**
+	 * mark node as rematerialized
+	 */
+	void (*mark_remat)(ir_node *node);
 
 	/**
 	 * return node used as base in pic code addresses
 	 */
 	ir_node* (*get_pic_base)(ir_graph *irg);
+
+	/**
+	 * Create a spill instruction. We assume that spill instructions
+	 * do not need any additional registers and do not affect cpu-flags in any
+	 * way.
+	 * Construct a sequence of instructions after @p after (the resulting nodes
+	 * are already scheduled).
+	 * Returns a mode_M value which is used as input for a reload instruction.
+	 */
+	ir_node *(*new_spill)(ir_node *value, ir_node *after);
+
+	/**
+	 * Create a reload instruction. We assume that reload instructions do not
+	 * need any additional registers and do not affect cpu-flags in any way.
+	 * Constructs a sequence of instruction before @p before (the resulting
+	 * nodes are already scheduled). A rewiring of users is not performed in
+	 * this function.
+	 * Returns a value representing the restored value.
+	 */
+	ir_node *(*new_reload)(ir_node *value, ir_node *spilled_value,
+	                       ir_node *before);
+
+	/**
+	 * Checks if the given register is callee/caller saved.
+	 * @deprecated, only necessary if backend still uses beabi functions
+	 */
+	int (*register_saved_by)(const arch_register_t *reg, int callee);
+
+	/**
+	 * Called directly after initialization. Backend should handle all
+	 * intrinsics here.
+	 */
+	void (*handle_intrinsics)(void);
 
 	/**
 	 * Called before abi introduce.
@@ -525,39 +552,11 @@ struct arch_isa_if_t {
 	/**
 	 * Called after everything happened. This call should emit the final
 	 * assembly code but avoid changing the irg.
-	 * The code generator must also be de-allocated here.
 	 */
 	void (*emit)(ir_graph *irg);
-
-	/**
-	 * Checks if the given register is callee/caller saved.
-	 * @deprecated, only necessary if backend still uses beabi functions
-	 */
-	int (*register_saved_by)(const arch_register_t *reg, int callee);
-
-	/**
-	 * Create a spill instruction. We assume that spill instructions
-	 * do not need any additional registers and do not affect cpu-flags in any
-	 * way.
-	 * Construct a sequence of instructions after @p after (the resulting nodes
-	 * are already scheduled).
-	 * Returns a mode_M value which is used as input for a reload instruction.
-	 */
-	ir_node *(*new_spill)(ir_node *value, ir_node *after);
-
-	/**
-	 * Create a reload instruction. We assume that reload instructions do not
-	 * need any additional registers and do not affect cpu-flags in any way.
-	 * Constructs a sequence of instruction before @p before (the resulting
-	 * nodes are already scheduled). A rewiring of users is not performed in
-	 * this function.
-	 * Returns a value representing the restored value.
-	 */
-	ir_node *(*new_reload)(ir_node *value, ir_node *spilled_value,
-	                       ir_node *before);
 };
 
-#define arch_env_done(env)                             ((env)->impl->done(env))
+#define arch_env_end_codegeneration(env)               ((env)->impl->end_codegeneration(env))
 #define arch_env_handle_intrinsics(env)                \
 	do { if((env)->impl->handle_intrinsics != NULL) (env)->impl->handle_intrinsics(); } while(0)
 #define arch_env_get_call_abi(env,tp,abi)              ((env)->impl->get_call_abi((tp), (abi)))

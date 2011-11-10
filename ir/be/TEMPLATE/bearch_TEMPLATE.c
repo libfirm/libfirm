@@ -148,16 +148,16 @@ static TEMPLATE_isa_t TEMPLATE_isa_template = {
 	},
 };
 
-/**
- * Initializes the backend ISA
- */
-static arch_env_t *TEMPLATE_init(const be_main_env_t *env)
+static void TEMPLATE_init(void)
+{
+	TEMPLATE_register_init();
+	TEMPLATE_create_opcodes(&TEMPLATE_irn_ops);
+}
+
+static arch_env_t *TEMPLATE_begin_codegeneration(const be_main_env_t *env)
 {
 	TEMPLATE_isa_t *isa = XMALLOC(TEMPLATE_isa_t);
 	*isa = TEMPLATE_isa_template;
-
-	TEMPLATE_register_init();
-	TEMPLATE_create_opcodes(&TEMPLATE_irn_ops);
 
 	be_emit_init(env->file_handle);
 	be_gas_begin_compilation_unit(env);
@@ -168,7 +168,7 @@ static arch_env_t *TEMPLATE_init(const be_main_env_t *env)
 /**
  * Closes the output file and frees the ISA structure.
  */
-static void TEMPLATE_done(void *self)
+static void TEMPLATE_end_codegeneration(void *self)
 {
 	TEMPLATE_isa_t *isa = (TEMPLATE_isa_t*)self;
 
@@ -356,25 +356,27 @@ static int TEMPLATE_register_saved_by(const arch_register_t *reg, int callee)
 
 const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_init,
-	TEMPLATE_lower_for_target,
-	TEMPLATE_done,
-	NULL,                /* handle intrinsics */
-	TEMPLATE_get_call_abi,
     TEMPLATE_get_backend_params,
-	NULL,                    /* mark remat */
+	TEMPLATE_lower_for_target,
 	TEMPLATE_parse_asm_constraint,
 	TEMPLATE_is_valid_clobber,
 
+	TEMPLATE_begin_codegeneration,
+	TEMPLATE_end_codegeneration,
 	TEMPLATE_init_graph,
-	NULL,   /* get_pic_base */
-	NULL,   /* before_abi */
+	TEMPLATE_get_call_abi,
+	NULL, /* mark remat */
+	NULL, /* get_pic_base */
+	be_new_spill,
+	be_new_reload,
+	TEMPLATE_register_saved_by,
+
+	NULL, /* handle intrinsics */
+	NULL, /* before_abi */
 	TEMPLATE_prepare_graph,
 	TEMPLATE_before_ra,
 	TEMPLATE_finish_irg,
 	TEMPLATE_emit_routine,
-	TEMPLATE_register_saved_by,
-	be_new_spill,
-	be_new_reload,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_TEMPLATE)

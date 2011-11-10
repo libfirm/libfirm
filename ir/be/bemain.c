@@ -140,10 +140,17 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_LAST
 };
 
-static be_module_list_entry_t *isa_ifs = NULL;
-
+static be_module_list_entry_t *isa_ifs         = NULL;
+static bool                    isa_initialized = false;
 
 asm_constraint_flags_t asm_constraint_flags[256];
+
+static void initialize_isa(void)
+{
+	if (isa_initialized)
+		return;
+	isa_if->init();
+}
 
 void be_init_default_asm_constraint_flags(void)
 {
@@ -212,6 +219,8 @@ asm_constraint_flags_t be_parse_asm_constraints(const char *constraint)
 	const char             *c;
 	asm_constraint_flags_t  tflags;
 
+	initialize_isa();
+
 	for (c = constraint; *c != '\0'; ++c) {
 		switch (*c) {
 		case '#':
@@ -261,6 +270,8 @@ asm_constraint_flags_t be_parse_asm_constraints(const char *constraint)
 
 int be_is_valid_clobber(const char *clobber)
 {
+	initialize_isa();
+
 	/* memory is a valid clobber. (the frontend has to detect this case too,
 	 * because it has to add memory edges to the asm) */
 	if (strcmp(clobber, "memory") == 0)
@@ -335,6 +346,7 @@ void firm_be_finish(void)
 /* Returns the backend parameter */
 const backend_params *be_get_backend_param(void)
 {
+	initialize_isa();
 	return isa_if->get_params();
 }
 
@@ -361,7 +373,7 @@ static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle,
 	set_class_final(env->pic_trampolines_type, 1);
 
 	memset(asm_constraint_flags, 0, sizeof(asm_constraint_flags));
-	env->arch_env = arch_env_init(isa_if, env);
+	env->arch_env = arch_env_begin_codegeneration(isa_if, env);
 
 	return env;
 }
@@ -472,6 +484,11 @@ void be_lower_for_target(void)
 {
 	size_t i;
 
+	initialize_isa();
+
+	/* shouldn't lower program twice */
+	assert(get_irp_phase_state() != phase_low);
+
 	isa_if->lower_for_target();
 	/* set the phase to low */
 	for (i = get_irp_n_irgs(); i > 0;) {
@@ -500,6 +517,10 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	arch_env_t    *arch_env;
 
 	be_timing = (be_options.timing == BE_TIME_ON);
+
+	/* perform target lowering if it didn't happen yet */
+	if (get_irp_phase_state() != phase_low)
+		be_lower_for_target();
 
 	if (be_timing) {
 		for (i = 0; i < T_LAST+1; ++i) {
@@ -773,7 +794,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		stat_ev_ctx_pop("bemain_irg");
 	}
 
-	arch_env_done(arch_env);
+	arch_env_end_codegeneration(arch_env);
 
 	ir_profile_free();
 	be_done_env(&env);

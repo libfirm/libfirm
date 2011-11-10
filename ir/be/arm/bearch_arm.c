@@ -426,18 +426,17 @@ static arm_isa_t arm_isa_template = {
 	ARM_FPU_ARCH_FPE,      /* FPU architecture */
 };
 
-/**
- * Initializes the backend ISA and opens the output file.
- */
-static arch_env_t *arm_init(const be_main_env_t *env)
+static void arm_init(void)
 {
-	arm_isa_t *isa = XMALLOC(arm_isa_t);
-	*isa = arm_isa_template;
-
 	arm_register_init();
 
 	arm_create_opcodes(&arm_irn_ops);
-	arm_handle_intrinsics();
+}
+
+static arch_env_t *arm_begin_codegeneration(const be_main_env_t *env)
+{
+	arm_isa_t *isa = XMALLOC(arm_isa_t);
+	*isa = arm_isa_template;
 
 	be_gas_emit_types = false;
 
@@ -447,12 +446,10 @@ static arch_env_t *arm_init(const be_main_env_t *env)
 	return &isa->base;
 }
 
-
-
 /**
  * Closes the output file and frees the ISA structure.
  */
-static void arm_done(void *self)
+static void arm_end_codegeneration(void *self)
 {
 	arm_isa_t *isa = (arm_isa_t*)self;
 
@@ -567,25 +564,27 @@ static const lc_opt_table_entry_t arm_options[] = {
 
 const arch_isa_if_t arm_isa_if = {
 	arm_init,
-	arm_lower_for_target,
-	arm_done,
-	NULL,  /* handle_intrinsics */
-	NULL,
 	arm_get_libfirm_params,
-	NULL,               /* mark remat */
+	arm_lower_for_target,
 	arm_parse_asm_constraint,
 	arm_is_valid_clobber,
 
+	arm_begin_codegeneration,
+	arm_end_codegeneration,
 	arm_init_graph,
+	NULL,  /* get call abi */
+	NULL,  /* mark remat */
 	NULL,  /* get_pic_base */
+	be_new_spill,
+	be_new_reload,
+	NULL,  /* register_saved_by */
+
+	arm_handle_intrinsics, /* handle_intrinsics */
 	NULL,  /* before_abi */
 	arm_prepare_graph,
 	arm_before_ra,
 	arm_finish_irg,
 	arm_gen_routine,
-	NULL, /* register_saved_by */
-	be_new_spill,
-	be_new_reload,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_arm)
