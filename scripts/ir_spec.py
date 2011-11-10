@@ -316,11 +316,7 @@ class Cmp(Binop):
 	attr_struct = "cmp_attr"
 
 class Cond(Op):
-	"""Conditionally change control flow.
-	Input:  A value of mode_b
-	Output: A tuple of two control flows. The first is taken if the input is
-	        false, the second if it is true.
-	"""
+	"""Conditionally change control flow."""
 	ins      = [
 		("selector",  "condition parameter"),
 	]
@@ -632,6 +628,7 @@ class Mod(Op):
 	"""returns the remainder of its operands from an implied division.
 
 	Examples:
+
 	* mod(5,3)   produces 2
 	* mod(5,-3)  produces 2
 	* mod(-5,3)  produces -2
@@ -878,21 +875,21 @@ class Sub(Binop):
 class SymConst(Op):
 	"""A symbolic constant.
 
-	 - symconst_type_tag   The symbolic constant represents a type tag.  The
-	                       type the tag stands for is given explicitly.
-	 - symconst_type_size  The symbolic constant represents the size of a type.
-	                       The type of which the constant represents the size
-	                       is given explicitly.
-	 - symconst_type_align The symbolic constant represents the alignment of a
-	                       type.  The type of which the constant represents the
-	                       size is given explicitly.
-	 - symconst_addr_ent   The symbolic constant represents the address of an
-	                       entity (variable or method).  The variable is given
-	                       explicitly by a firm entity.
-	 - symconst_ofs_ent    The symbolic constant represents the offset of an
-	                       entity in its owner type.
-	 - symconst_enum_const The symbolic constant is a enumeration constant of
-	                       an enumeration type."""
+	 - *symconst_type_tag*  The symbolic constant represents a type tag.  The
+	                        type the tag stands for is given explicitly.
+	 - *symconst_type_size* The symbolic constant represents the size of a type.
+	                        The type of which the constant represents the size
+	                        is given explicitly.
+	 - *symconst_type_align* The symbolic constant represents the alignment of a
+	                        type.  The type of which the constant represents the
+	                        size is given explicitly.
+	 - *symconst_addr_ent*  The symbolic constant represents the address of an
+	                        entity (variable or method).  The variable is given
+	                        explicitly by a firm entity.
+	 - *symconst_ofs_ent*   The symbolic constant represents the offset of an
+	                        entity in its owner type.
+	 - *symconst_enum_const* The symbolic constant is a enumeration constant of
+	                        an enumeration type."""
 	mode       = "mode_P"
 	flags      = [ "constlike", "start_block" ]
 	knownBlock = True
