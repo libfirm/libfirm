@@ -163,19 +163,10 @@ static void node_stat_walker(ir_node *irn, void *data)
 		} else {
 			(*stats)[BE_STAT_PHIS]++;
 		}
-	} else if (!is_Proj(irn)) {
-		arch_irn_class_t classify = arch_irn_classify(irn);
-
-		if (classify & arch_irn_class_spill)
-			(*stats)[BE_STAT_SPILLS]++;
-		if (classify & arch_irn_class_reload)
-			(*stats)[BE_STAT_RELOADS]++;
-		if (classify & arch_irn_class_remat)
-			(*stats)[BE_STAT_REMATS]++;
-		if (classify & arch_irn_class_copy)
-			(*stats)[BE_STAT_COPIES]++;
-		if (classify & arch_irn_class_perm)
-			(*stats)[BE_STAT_PERMS]++;
+	} else if (be_is_Perm(irn)) {
+		(*stats)[BE_STAT_PERMS]++;
+	} else if (be_is_Copy(irn)) {
+		(*stats)[BE_STAT_COPIES]++;
 	}
 }
 
@@ -205,9 +196,6 @@ static const char *get_stat_name(enum be_stat_tag_t tag)
 	case BE_STAT_MEM_PHIS: return "mem_phis";
 	case BE_STAT_COPIES:   return "copies";
 	case BE_STAT_PERMS:    return "perms";
-	case BE_STAT_SPILLS:   return "spills";
-	case BE_STAT_RELOADS:  return "reloads";
-	case BE_STAT_REMATS:   return "remats";
 	default:               panic("unknown stat tag found");
 	}
 }

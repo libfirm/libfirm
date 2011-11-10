@@ -57,12 +57,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static arch_irn_class_t amd64_classify(const ir_node *irn)
-{
-	(void) irn;
-	return arch_irn_class_none;
-}
-
 static ir_entity *amd64_get_frame_entity(const ir_node *node)
 {
 	if (is_amd64_FrameAddr(node)) {
@@ -113,7 +107,6 @@ static int amd64_get_sp_bias(const ir_node *irn)
 /* fill register allocator interface */
 
 static const arch_irn_ops_t amd64_irn_ops = {
-	amd64_classify,
 	amd64_get_frame_entity,
 	amd64_set_frame_offset,
 	amd64_get_sp_bias,

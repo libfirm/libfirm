@@ -38,9 +38,6 @@ typedef enum be_stat_tag_t {
 	BE_STAT_MEM_PHIS,             /**< memory-phi count */
 	BE_STAT_COPIES,               /**< copies */
 	BE_STAT_PERMS,                /**< perms */
-	BE_STAT_SPILLS,               /**< spills (also folded spills) */
-	BE_STAT_RELOADS,              /**< reloads (also folded reloads) */
-	BE_STAT_REMATS,               /**< rematerialized nodes */
 	BE_STAT_COUNT
 } be_stat_tag_t;
 ENUM_COUNTABLE(be_stat_tag_t)

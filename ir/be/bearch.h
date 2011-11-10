@@ -110,19 +110,6 @@ void arch_dump_register_req(FILE *F, const arch_register_req_t *req,
 void arch_dump_register_reqs(FILE *F, const ir_node *node);
 void arch_dump_reqs_and_registers(FILE *F, const ir_node *node);
 
-/**
- * Node classification. Used for statistics and for detecting reload nodes.
- */
-typedef enum arch_irn_class_t {
-	arch_irn_class_none   = 0,
-	arch_irn_class_spill  = 1 << 0,
-	arch_irn_class_reload = 1 << 1,
-	arch_irn_class_remat  = 1 << 2,
-	arch_irn_class_copy   = 1 << 3,
-	arch_irn_class_perm   = 1 << 4
-} arch_irn_class_t;
-ENUM_BITSET(arch_irn_class_t)
-
 void arch_set_frame_offset(ir_node *irn, int bias);
 
 ir_entity *arch_get_frame_entity(const ir_node *irn);
@@ -223,13 +210,6 @@ static inline unsigned arch_get_irn_n_outs(const ir_node *node)
 
 	return (unsigned)ARR_LEN(info->out_infos);
 }
-
-/**
- * Classify a node.
- * @param irn The node.
- * @return A classification of the node.
- */
-arch_irn_class_t arch_irn_classify(const ir_node *irn);
 
 /**
  * Initialize the architecture environment struct.
@@ -375,13 +355,6 @@ struct arch_inverse_t {
 };
 
 struct arch_irn_ops_t {
-
-	/**
-	 * Classify the node.
-	 * @param irn The node.
-	 * @return A classification.
-	 */
-	arch_irn_class_t (*classify)(const ir_node *irn);
 
 	/**
 	 * Get the entity on the stack frame this node depends on.

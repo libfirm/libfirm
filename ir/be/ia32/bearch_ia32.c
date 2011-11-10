@@ -191,24 +191,6 @@ static ir_node *ia32_get_admissible_noreg(ir_node *irn, int pos)
 	}
 }
 
-static arch_irn_class_t ia32_classify(const ir_node *irn)
-{
-	arch_irn_class_t classification = arch_irn_class_none;
-
-	assert(is_ia32_irn(irn));
-
-	if (is_ia32_is_reload(irn))
-		classification |= arch_irn_class_reload;
-
-	if (is_ia32_is_spill(irn))
-		classification |= arch_irn_class_spill;
-
-	if (is_ia32_is_remat(irn))
-		classification |= arch_irn_class_remat;
-
-	return classification;
-}
-
 /**
  * The IA32 ABI callback object.
  */
@@ -633,7 +615,6 @@ static const be_abi_callbacks_t ia32_abi_callbacks = {
 
 /* register allocator interface */
 static const arch_irn_ops_t ia32_irn_ops = {
-	ia32_classify,
 	ia32_get_frame_entity,
 	ia32_set_frame_offset,
 	ia32_get_sp_bias,

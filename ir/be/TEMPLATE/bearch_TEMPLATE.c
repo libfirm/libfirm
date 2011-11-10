@@ -55,12 +55,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static arch_irn_class_t TEMPLATE_classify(const ir_node *irn)
-{
-	(void) irn;
-	return arch_irn_class_none;
-}
-
 static ir_entity *TEMPLATE_get_frame_entity(const ir_node *node)
 {
 	(void) node;
@@ -88,7 +82,6 @@ static int TEMPLATE_get_sp_bias(const ir_node *irn)
 /* fill register allocator interface */
 
 static const arch_irn_ops_t TEMPLATE_irn_ops = {
-	TEMPLATE_classify,
 	TEMPLATE_get_frame_entity,
 	TEMPLATE_set_frame_offset,
 	TEMPLATE_get_sp_bias,

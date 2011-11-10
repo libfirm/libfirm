@@ -66,13 +66,6 @@
 #include "arm_emitter.h"
 #include "arm_map_regs.h"
 
-static arch_irn_class_t arm_classify(const ir_node *irn)
-{
-	(void) irn;
-	/* TODO: we should mark reload/spill instructions and classify them here */
-	return arch_irn_class_none;
-}
-
 static ir_entity *arm_get_frame_entity(const ir_node *irn)
 {
 	const arm_attr_t *attr = get_arm_attr_const(irn);
@@ -118,7 +111,6 @@ static int arm_get_sp_bias(const ir_node *irn)
 /* fill register allocator interface */
 
 static const arch_irn_ops_t arm_irn_ops = {
-	arm_classify,
 	arm_get_frame_entity,
 	arm_set_stack_bias,
 	arm_get_sp_bias,

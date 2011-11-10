@@ -212,12 +212,6 @@ const arch_register_req_t *arch_get_irn_register_req(const ir_node *node)
 	return out->req;
 }
 
-arch_irn_class_t arch_irn_classify(const ir_node *node)
-{
-	const arch_irn_ops_t *ops = get_irn_ops(node);
-	return ops->classify(node);
-}
-
 arch_irn_flags_t arch_get_irn_flags(const ir_node *node)
 {
 	backend_info_t *info;

@@ -73,12 +73,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static arch_irn_class_t sparc_classify(const ir_node *node)
-{
-	(void) node;
-	return arch_irn_class_none;
-}
-
 static ir_entity *sparc_get_frame_entity(const ir_node *node)
 {
 	if (is_sparc_FrameAddr(node)) {
@@ -128,7 +122,6 @@ static int sparc_get_sp_bias(const ir_node *node)
 /* fill register allocator interface */
 
 const arch_irn_ops_t sparc_irn_ops = {
-	sparc_classify,
 	sparc_get_frame_entity,
 	sparc_set_frame_offset,
 	sparc_get_sp_bias,
