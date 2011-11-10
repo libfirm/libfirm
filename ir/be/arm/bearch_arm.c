@@ -472,20 +472,6 @@ static void arm_done(void *self)
 }
 
 /**
- * Get the register class which shall be used to store a value of a given mode.
- * @param self The this pointer.
- * @param mode The mode in question.
- * @return A register class which can hold values of the given mode.
- */
-static const arch_register_class_t *arm_get_reg_class_for_mode(const ir_mode *mode)
-{
-	if (mode_is_float(mode))
-		return &arm_reg_classes[CLASS_arm_fpa];
-	else
-		return &arm_reg_classes[CLASS_arm_gp];
-}
-
-/**
  * Returns the necessary byte alignment for storing a register of given class.
  */
 static int arm_get_reg_class_alignment(const arch_register_class_t *cls)
@@ -613,7 +599,6 @@ const arch_isa_if_t arm_isa_if = {
 	arm_lower_for_target,
 	arm_done,
 	NULL,  /* handle_intrinsics */
-	arm_get_reg_class_for_mode,
 	NULL,
 	arm_get_reg_class_alignment,
 	arm_get_libfirm_params,

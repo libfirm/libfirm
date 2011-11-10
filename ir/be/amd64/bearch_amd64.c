@@ -335,21 +335,6 @@ static void amd64_done(void *self)
 	free(self);
 }
 
-
-/**
- * Get the register class which shall be used to store a value of a given mode.
- * @param self The this pointer.
- * @param mode The mode in question.
- * @return A register class which can hold values of the given mode.
- */
-static const arch_register_class_t *amd64_get_reg_class_for_mode(const ir_mode *mode)
-{
-	assert(!mode_is_float(mode));
-	return &amd64_reg_classes[CLASS_amd64_gp];
-}
-
-
-
 typedef struct {
 	be_abi_call_flags_bits_t flags;
 	ir_graph *irg;
@@ -583,7 +568,6 @@ const arch_isa_if_t amd64_isa_if = {
 	amd64_lower_for_target,
 	amd64_done,
 	NULL,                /* handle intrinsics */
-	amd64_get_reg_class_for_mode,
 	amd64_get_call_abi,
 	amd64_get_reg_class_alignment,
     amd64_get_backend_params,

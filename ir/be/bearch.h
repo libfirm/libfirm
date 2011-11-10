@@ -486,15 +486,6 @@ struct arch_isa_if_t {
 	void (*handle_intrinsics)(void);
 
 	/**
-	 * Get the register class which shall be used to store a value of a given
-	 * mode.
-	 * @param self The this pointer.
-	 * @param mode The mode in question.
-	 * @return A register class which can hold values of the given mode.
-	 */
-	const arch_register_class_t *(*get_reg_class_for_mode)(const ir_mode *mode);
-
-	/**
 	 * Get the ABI restrictions for procedure calls.
 	 * @param self        The this pointer.
 	 * @param call_type   The call type of the method (procedure) in question.
@@ -618,7 +609,6 @@ struct arch_isa_if_t {
 #define arch_env_done(env)                             ((env)->impl->done(env))
 #define arch_env_handle_intrinsics(env)                \
 	do { if((env)->impl->handle_intrinsics != NULL) (env)->impl->handle_intrinsics(); } while(0)
-#define arch_env_get_reg_class_for_mode(env,mode)      ((env)->impl->get_reg_class_for_mode((mode)))
 #define arch_env_get_call_abi(env,tp,abi)              ((env)->impl->get_call_abi((env), (tp), (abi)))
 #define arch_env_get_reg_class_alignment(env,cls)      ((env)->impl->get_reg_class_alignment((cls)))
 #define arch_env_get_params(env)                       ((env)->impl->get_params())

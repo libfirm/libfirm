@@ -187,20 +187,6 @@ static void TEMPLATE_done(void *self)
 }
 
 /**
- * Get the register class which shall be used to store a value of a given mode.
- * @param self The this pointer.
- * @param mode The mode in question.
- * @return A register class which can hold values of the given mode.
- */
-static const arch_register_class_t *TEMPLATE_get_reg_class_for_mode(const ir_mode *mode)
-{
-	if (mode_is_float(mode))
-		return &TEMPLATE_reg_classes[CLASS_TEMPLATE_fp];
-	else
-		return &TEMPLATE_reg_classes[CLASS_TEMPLATE_gp];
-}
-
-/**
  * Get the between type for that call.
  * @param self The callback object.
  * @return The between type of for that call.
@@ -399,7 +385,6 @@ const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_lower_for_target,
 	TEMPLATE_done,
 	NULL,                /* handle intrinsics */
-	TEMPLATE_get_reg_class_for_mode,
 	TEMPLATE_get_call_abi,
 	TEMPLATE_get_reg_class_alignment,
     TEMPLATE_get_backend_params,

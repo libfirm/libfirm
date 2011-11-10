@@ -387,21 +387,6 @@ static void sparc_done(void *self)
 	free(isa);
 }
 
-
-/**
- * Get the register class which shall be used to store a value of a given mode.
- * @param self The this pointer.
- * @param mode The mode in question.
- * @return A register class which can hold values of the given mode.
- */
-static const arch_register_class_t *sparc_get_reg_class_for_mode(const ir_mode *mode)
-{
-	if (mode_is_float(mode))
-		return &sparc_reg_classes[CLASS_sparc_fp];
-	else
-		return &sparc_reg_classes[CLASS_sparc_gp];
-}
-
 /**
  * Returns the necessary byte alignment for storing a register of given class.
  */
@@ -585,7 +570,6 @@ const arch_isa_if_t sparc_isa_if = {
 	sparc_lower_for_target,
 	sparc_done,
 	NULL,                /* handle intrinsics */
-	sparc_get_reg_class_for_mode,
 	NULL,
 	sparc_get_reg_class_alignment,
 	sparc_get_backend_params,
