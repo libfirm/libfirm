@@ -21,7 +21,6 @@
  * @file
  * @brief   Statistics for Firm. Pattern history.
  * @author  Michael Beck
- * @version $Id$
  */
 #ifndef FIRM_STAT_PATTERN_H
 #define FIRM_STAT_PATTERN_H

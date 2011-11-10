@@ -22,7 +22,6 @@
  * @brief   Lower double word operations, i.e. 64bit -> 32bit, 32bit -> 16bit etc.
  * @date    8.10.2004
  * @author  Michael Beck
- * @version $Id$
  */
 #include "config.h"
 

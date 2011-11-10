@@ -22,7 +22,6 @@
  * @brief       Compute register pressure in loops.
  * @author      Christian Wuerdig
  * @date        20.02.2007
- * @version     $Id$
  */
 #ifndef FIRM_BE_BELOOPANA_H
 #define FIRM_BE_BELOOPANA_H

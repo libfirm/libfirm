@@ -21,7 +21,6 @@
  * @file
  * @brief       Backend ABI implementation.
  * @author      Sebastian Hack, Michael Beck
- * @version     $Id$
  */
 #include "config.h"
 

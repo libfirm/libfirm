@@ -22,7 +22,6 @@
  * @brief       Representation and computation of the callgraph.
  * @author      Goetz Lindenmaier
  * @date        21.7.2004
- * @version     $Id$
  * @brief
  *  This file contains the representation of the callgraph.
  *  The nodes of the call graph are ir_graphs.  The edges between

@@ -21,7 +21,6 @@
  * @file
  * @author    Michael Beck
  * @brief     A linked nodemap.
- * @version   $Id$
  */
 #ifndef _FIRM_IRLINKEDNODEMAP_H_
 #define _FIRM_IRLINKEDNODEMAP_H_

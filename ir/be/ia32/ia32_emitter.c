@@ -21,7 +21,6 @@
  * @file
  * @brief       This file implements the ia32 node emitter.
  * @author      Christian Wuerdig, Matthias Braun
- * @version     $Id$
  *
  * Summary table for x86 floatingpoint compares:
  * (remember effect of unordered on x86: ZF=1, PF=1, CF=1)

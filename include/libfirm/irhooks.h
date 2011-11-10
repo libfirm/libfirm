@@ -21,7 +21,6 @@
  * @file
  * @brief   Generic hooks for various libFirm functions.
  * @author  Michael Beck
- * @version $Id$
  */
 #ifndef FIRM_IR_IRHOOKS_H
 #define FIRM_IR_IRHOOKS_H

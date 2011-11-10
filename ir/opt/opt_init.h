@@ -21,7 +21,6 @@
  * @file
  * @author  Matthias Braun
  * @brief   Init functions for various optimisations
- * @version $Id$
  */
 #ifndef FIRM_OPT_INIT_H
 #define FIRM_OPT_INIT_H

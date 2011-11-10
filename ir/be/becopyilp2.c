@@ -22,7 +22,6 @@
  * @brief       ILP based copy minimization.
  * @author      Daniel Grund
  * @date        28.02.2006
- * @version     $Id$
  *
  * ILP formalization using G=(V, E, Q):
  *  - 2 class of variables: coloring vars x_ic   and   equal color vars y_ij

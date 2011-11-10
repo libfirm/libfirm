@@ -21,7 +21,6 @@
  * @file
  * @brief       Handling of ia32 specific firm opcodes.
  * @author      Christian Wuerdig
- * @version     $Id$
  *
  * This file implements the creation of the architecture specific firm opcodes
  * and the corresponding node constructors for the ia32 assembler irg.

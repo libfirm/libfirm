@@ -21,7 +21,6 @@
  * @file
  * @brief    Check irnodes for correctness.
  * @author   Christian Schaefer, Goetz Lindenmaier, Till Riedel, Michael Beck
- * @version  $Id$
  */
 #include "config.h"
 

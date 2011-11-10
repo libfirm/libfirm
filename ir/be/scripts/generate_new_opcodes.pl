@@ -23,7 +23,6 @@
 # their coresponding node constructors for all operations in a given spec
 # so they can be used as normal firm nodes.
 # Creation: 2005/10/19
-# $Id$
 
 use strict;
 use Data::Dumper;

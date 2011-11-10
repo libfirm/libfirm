@@ -21,7 +21,6 @@
  * @file
  * @brief   Statistics for Firm. DAG's in graphs.
  * @author  Michael Beck
- * @version $Id$
  */
 #ifndef FIRM_STAT_DAGS_H
 #define FIRM_STAT_DAGS_H

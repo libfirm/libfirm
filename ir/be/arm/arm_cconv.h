@@ -21,7 +21,6 @@
  * @file
  * @brief   support functions for calling conventions
  * @author  Matthias Braun
- * @version $Id$
  */
 #ifndef FIRM_BE_ARM_ARM_CCONV_H
 #define FIRM_BE_ARM_ARM_CCONV_H

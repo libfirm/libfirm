@@ -22,7 +22,6 @@
  * @brief      optimized version of set for sets containing only pointers
  *             (deprecated)
  * @author     Markus Armbruster
- * @version    $Id$
  * @note       This code has been deprecated. Use pset_new or cpset for new
  *             code.
  */

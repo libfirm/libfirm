@@ -21,7 +21,6 @@
  * @file
  * @brief   lowering of Calls of intrinsic functions
  * @author  Michael Beck
- * @version $Id$
  */
 #include "config.h"
 

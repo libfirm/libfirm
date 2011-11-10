@@ -21,7 +21,6 @@
  * @file
  * @brief   Combining congruent blocks
  * @author  Michael Beck
- * @version $Id$
  *
  * This phase find congruent blocks.
  * Two block are congruent, if they contains only equal calculations.

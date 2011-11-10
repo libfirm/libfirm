@@ -20,7 +20,6 @@
 /**
  * @file
  * @brief       Array --- dynamic & flexible arrays.
- * @version     $Id: array.c 17964 2008-03-05 09:48:51Z matze $
  */
 #ifndef FIRM_ADT_ARRAY_T_H
 #define FIRM_ADT_ARRAY_T_H

@@ -22,7 +22,6 @@
  * @brief   Heuristic PBQP solver for SSA-based register allocation.
  * @date    18.09.2009
  * @author  Thomas Bersch
- * @version $Id$
  */
 #include "config.h"
 

@@ -1,5 +1,3 @@
-# Creation: 2005/10/19
-# $Id$
 # This is the specification for the ia32 assembler Firm-operations
 
 $arch = "ia32";

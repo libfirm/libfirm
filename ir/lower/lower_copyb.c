@@ -21,7 +21,6 @@
  * @file
  * @brief   Lower small CopyB nodes into a series of Load/Store nodes
  * @author  Michael Beck, Matthias Braun, Manuel Mohr
- * @version $Id$
  */
 #include "config.h"
 

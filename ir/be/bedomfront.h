@@ -22,7 +22,6 @@
  * @brief       Algorithms for computing dominance frontiers
  * @author      Sebastian Hack, Daniel Grund
  * @date:       04.05.2005
- * @version     $Id$
  */
 #ifndef FIRM_BE_BEDOMFRONT_H
 #define FIRM_BE_BEDOMFRONT_H

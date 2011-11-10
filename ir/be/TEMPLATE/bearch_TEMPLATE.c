@@ -20,7 +20,6 @@
 /**
  * @file
  * @brief    The main TEMPLATE backend driver file.
- * @version  $Id$
  */
 #include "config.h"
 

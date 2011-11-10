@@ -21,7 +21,6 @@
  * @file
  * @brief   Write vcg representation of firm to file.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Hubert Schmidt
- * @version $Id$
  * @brief
  *  Dump routines for the ir graph and all type information.
  *

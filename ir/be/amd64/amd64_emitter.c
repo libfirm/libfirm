@@ -20,7 +20,6 @@
 /**
  * @file
  * @brief   emit assembler for a backend graph
- * @version $Id: amd64_emitter.c 26746 2009-11-27 08:53:15Z matze $
  */
 #include "config.h"
 

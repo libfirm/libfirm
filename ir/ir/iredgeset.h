@@ -22,7 +22,6 @@
  * @author    Matthias Braun
  * @date      12.01.2008
  * @brief     An edgeset.
- * @version   $Id$
  */
 #ifndef _FIRM_IREDGESET_H_
 #define _FIRM_IREDGESET_H_

@@ -21,7 +21,6 @@
  * @file
  * @brief   Import/export textual representation of firm.
  * @author  Moritz Kroll
- * @version $Id$
  *
  * Note: The file format is not considered stable yet. So expect
  * incompatibilities between file formats of different libfirm versions.

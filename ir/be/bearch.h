@@ -21,7 +21,6 @@
  * @file
  * @brief       Processor architecture specification.
  * @author      Sebastian Hack
- * @version     $Id$
  */
 #ifndef FIRM_BE_BEARCH_H
 #define FIRM_BE_BEARCH_H

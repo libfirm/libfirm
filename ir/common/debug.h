@@ -22,7 +22,6 @@
  * @brief   Debug facility.
  * @author  Michael Beck, Sebastian Hack
  * @date    15.12.2004
- * @version $Id$
  */
 #ifndef FIRM_COMMON_DEBUG_H
 #define FIRM_COMMON_DEBUG_H

@@ -22,7 +22,6 @@
  * @brief       Copy node statistics.
  * @author      Daniel Grund
  * @date        11.04.2005
- * @version     $Id$
  */
 #ifndef FIRM_BE_BECOPYSTAT_H
 #define FIRM_BE_BECOPYSTAT_H

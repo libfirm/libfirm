@@ -23,7 +23,6 @@
  * @author  Matthias Braun, inspiration from densehash from google sparsehash
  *          package
  * @date    17.03.2007
- * @version $Id$
  *
  *
  * You have to specialize this file by defining:

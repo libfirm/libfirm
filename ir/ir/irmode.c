@@ -21,7 +21,6 @@
  * @file
  * @brief    Data modes of operations.
  * @author   Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Mathias Heil
- * @version  $Id$
  */
 #include "config.h"
 

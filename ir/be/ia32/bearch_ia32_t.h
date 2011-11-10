@@ -21,7 +21,6 @@
  * @file
  * @brief       This is the main ia32 firm backend driver.
  * @author      Christian Wuerdig
- * @version     $Id$
  */
 #ifndef FIRM_BE_IA32_BEARCH_IA32_T_H
 #define FIRM_BE_IA32_BEARCH_IA32_T_H

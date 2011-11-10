@@ -21,7 +21,6 @@
  * @file
  * @brief   Write textual representation of firm to file.
  * @author  Moritz Kroll
- * @version $Id$
  */
 #include "config.h"
 

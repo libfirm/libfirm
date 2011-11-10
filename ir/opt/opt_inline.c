@@ -21,7 +21,6 @@
  * @file
  * @brief    Dead node elimination and Procedure Inlining.
  * @author   Michael Beck, Goetz Lindenmaier
- * @version  $Id$
  */
 #include "config.h"
 

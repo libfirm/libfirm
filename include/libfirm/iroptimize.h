@@ -20,7 +20,6 @@
 /**
  * @file
  * @brief   Available Optimisations of libFirm.
- * @version $Id$
  */
 #ifndef FIRM_IROPTIMIZE_H
 #define FIRM_IROPTIMIZE_H

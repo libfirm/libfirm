@@ -21,7 +21,6 @@
  * @file
  * @brief       This file contains macros to update ia32 firm statistics.
  * @author      Christian Wuerdig
- * @version     $Id$
  */
 #ifndef FIRM_BE_IA32_IA32_DBG_STAT_H
 #define FIRM_BE_IA32_IA32_DBG_STAT_H

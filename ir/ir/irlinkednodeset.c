@@ -21,7 +21,6 @@
  * @file
  * @author    Michael Beck
  * @brief     A linked nodeset.
- * @version   $Id$
  */
 #include "config.h"
 

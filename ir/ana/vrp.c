@@ -21,7 +21,6 @@
  * @file
  * @brief   analyze graph to provide value range information
  * @author  Jonas Fietz
- * @version $Id$
  */
 #include "config.h"
 

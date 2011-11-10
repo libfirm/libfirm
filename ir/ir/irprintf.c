@@ -22,7 +22,6 @@
  * @brief   A little printf helper unterstanding firm types
  * @author  Sebastian Hack
  * @date    29.11.2004
- * @version $Id$
  */
 #include "config.h"
 

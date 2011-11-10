@@ -23,7 +23,6 @@
  * @date      30.03.2007
  * @brief     A nodeset. This should be preferred over a simple pset, because it
               tries to guarantee deterministic behavior.
- * @version   $Id$
  */
 #include "config.h"
 

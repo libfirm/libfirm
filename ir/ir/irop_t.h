@@ -21,7 +21,6 @@
  * @file
  * @brief    Representation of opcode of intermediate operation -- private header.
  * @author   Christian Schaefer, Goetz Lindenmaier, Michael Beck
- * @version  $Id$
  */
 #ifndef FIRM_IR_IROP_T_H
 #define FIRM_IR_IROP_T_H

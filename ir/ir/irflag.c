@@ -21,7 +21,6 @@
  * @file
  * @brief   Flags to control optimizations.
  * @author  Michael Beck, Sebastian Hack
- * @version $Id$
  */
 #include "config.h"
 

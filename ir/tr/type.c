@@ -21,7 +21,6 @@
  * @file    type.c
  * @brief   Representation of types.
  * @author  Goetz Lindenmaier, Michael Beck
- * @version $Id$
  * @brief
  *
  *  Implementation of the datastructure to hold

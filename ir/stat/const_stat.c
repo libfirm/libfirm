@@ -21,7 +21,6 @@
  * @file
  * @brief   Statistic functions for constant counting.
  * @author  Michael Beck
- * @version $Id$
  */
 #include "config.h"
 

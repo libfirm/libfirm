@@ -22,7 +22,6 @@
  * @brief       Random node selector.
  * @author      Matthias Braun
  * @date        29.08.2006
- * @version     $Id$
  */
 #include "config.h"
 

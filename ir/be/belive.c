@@ -22,7 +22,6 @@
  * @brief       Interblock liveness analysis.
  * @author      Sebastian Hack
  * @date        06.12.2004
- * @version     $Id$
  */
 #include "config.h"
 

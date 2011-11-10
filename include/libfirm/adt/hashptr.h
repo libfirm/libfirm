@@ -21,7 +21,6 @@
  * @file
  * @brief       Hash function for pointers
  * @author      Michael Beck, Sebastian Hack
- * @version     $Id$
  */
 #ifndef FIRM_ADT_HASHPTR_H
 #define FIRM_ADT_HASHPTR_H

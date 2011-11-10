@@ -22,7 +22,6 @@
  * @brief   convenience layer over raw_bitsets (stores number of bits
  *          with the bitfield)
  * @author  Matthias Braun
- * @version $Id$
  */
 #ifndef FIRM_ADT_BITSET_H
 #define FIRM_ADT_BITSET_H

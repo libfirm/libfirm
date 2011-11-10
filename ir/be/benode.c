@@ -22,7 +22,6 @@
  * @brief       Backend node support for generic backend nodes.
  * @author      Sebastian Hack
  * @date        17.05.2005
- * @version     $Id$
  *
  * Backend node support for generic backend nodes.
  * This file provides Perm, Copy, Spill and Reload nodes.

@@ -22,7 +22,6 @@
 # This script generates C code which creates ands sets up functions and
 # data structures for the register allocator.
 # Creation: 2005/11/14
-# $Id$
 
 use strict;
 use Data::Dumper;

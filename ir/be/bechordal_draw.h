@@ -22,7 +22,6 @@
  * @brief       Paint chordal graphs.
  * @author      Sebastian Hack
  * @date        12.05.2005
- * @version     $Id$
  */
 #ifndef FIRM_BE_BECHORDAL_DRAW_H
 #define FIRM_BE_BECHORDAL_DRAW_H

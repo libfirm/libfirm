@@ -21,7 +21,6 @@
  * @file
  * @brief   Function prototypes for the assembler ir node constructors.
  * @author  Oliver Richter, Tobias Gneist
- * @version $Id$
  */
 #ifndef FIRM_BE_ARM_ARM_NEW_NODES_H
 #define FIRM_BE_ARM_ARM_NEW_NODES_H

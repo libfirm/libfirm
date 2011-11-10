@@ -21,7 +21,6 @@
  * @file
  * @brief       This is the main ia32 firm backend driver.
  * @author      Christian Wuerdig
- * @version     $Id$
  */
 #include "config.h"
 

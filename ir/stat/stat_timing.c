@@ -21,7 +21,6 @@
  * @file
  * @brief   OS abstraction from time measurement
  * @author  Sebastian Hack, Michael Beck, Matthias Braun
- * @version $Id$
  */
 #include "config.h"
 

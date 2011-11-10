@@ -23,7 +23,6 @@
  *              register constraints.
  * @author      Christian Wuerdig
  * @date        14.12.2005
- * @version     $Id$
  */
 #include "config.h"
 

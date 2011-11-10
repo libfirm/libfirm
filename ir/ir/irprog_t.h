@@ -22,7 +22,6 @@
  * @brief    Entry point to the representation of a whole program 0-- private header.
  * @author   Goetz Lindenmaier
  * @date     2000
- * @version  $Id$
  */
 #ifndef FIRM_IR_IRPROG_T_H
 #define FIRM_IR_IRPROG_T_H

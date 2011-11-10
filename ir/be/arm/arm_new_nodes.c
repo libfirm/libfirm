@@ -23,7 +23,6 @@
  *         opcodes and the corresponding node constructors for the arm
  *         assembler irg.
  * @author Oliver Richter, Tobias Gneist
- * @version $Id$
  */
 #include "config.h"
 

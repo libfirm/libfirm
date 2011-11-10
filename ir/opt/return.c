@@ -21,7 +21,6 @@
  * @file
  * @brief   Normalize returns.
  * @author  Michael Beck
- * @version $Id$
  */
 #include "config.h"
 

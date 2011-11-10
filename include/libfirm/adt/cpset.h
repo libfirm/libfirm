@@ -22,7 +22,6 @@
  * @date    16.03.2007
  * @brief   a set of pointers with a custom compare function
  * @author  Matthias Braun
- * @version $Id$
  */
 #ifndef FIRM_ADT_CPSET_H
 #define FIRM_ADT_CPSET_H

@@ -22,7 +22,6 @@
  * @date    16.03.2007
  * @brief   Generic hashset functions
  * @author  Matthias Braun
- * @version $Id$
  *
  * You have to specialize this header by defining HashSet, HashSetIterator and
  * ValueType

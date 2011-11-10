@@ -22,7 +22,6 @@
  * @brief    Compute heights of nodes inside basic blocks
  * @author   Sebastian Hack
  * @date     19.04.2006
- * @version  $Id$
  */
 #include "config.h"
 

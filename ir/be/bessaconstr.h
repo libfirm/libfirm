@@ -22,7 +22,6 @@
  * @brief       SSA construction for a set of nodes
  * @author      Sebastian Hack, Daniel Grund, Matthias Braun, Christian Wuerdig
  * @date        30.03.2007
- * @version     $Id$
  *
  * The problem: Given a value and a set of "copies" that are known to
  * represent the same abstract value, rewire all usages of the original value

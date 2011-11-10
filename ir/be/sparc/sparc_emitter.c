@@ -21,7 +21,6 @@
  * @file
  * @brief   emit assembler for a backend graph
  * @author  Hannes Rapp, Matthias Braun
- * @version $Id$
  */
 #include "config.h"
 

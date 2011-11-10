@@ -21,7 +21,6 @@
  * @file
  * @brief   implementation of pset_new
  * @author  Matthias Braun
- * @version $Id$
  */
 #include "config.h"
 

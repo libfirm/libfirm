@@ -23,7 +23,6 @@
  *              algorithm optimized for the 1-register case.
  * @author      Matthias Braun
  * @date        26.03.2007
- * @version     $Id$
  */
 #include "config.h"
 

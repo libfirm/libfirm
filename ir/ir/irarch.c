@@ -22,7 +22,6 @@
  * @brief   Machine dependent Firm optimizations.
  * @date    28.9.2004
  * @author  Sebastian Hack, Michael Beck
- * @version $Id$
  *
  * Implements "Strength Reduction of Multiplications by Integer Constants"
  * by Youfeng Wu.

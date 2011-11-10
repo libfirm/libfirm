@@ -21,7 +21,6 @@
  * @file
  * @brief   Representation of an intermediate operation -- private header.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
- * @version $Id$
  */
 #ifndef FIRM_IR_IRNODE_T_H
 #define FIRM_IR_IRNODE_T_H

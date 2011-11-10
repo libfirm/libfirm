@@ -21,7 +21,6 @@
  * @file
  * @brief   declarations for ARM node attributes
  * @author  Oliver Richter, Tobias Gneist, Michael Beck
- * @version $Id$
  */
 #ifndef FIRM_BE_ARM_ARM_NODES_ATTR_H
 #define FIRM_BE_ARM_ARM_NODES_ATTR_H

@@ -21,7 +21,6 @@
  * @file
  * @brief    declarations for emit functions
  * @author   Hannes Rapp, Matthias Braun
- * @version  $Id$
  */
 #ifndef FIRM_BE_SPARC_EMITTER_H
 #define FIRM_BE_SPARC_EMITTER_H

@@ -22,7 +22,6 @@
  * @brief       More experiments on coalescing.
  * @author      Sebastian Hack
  * @date        14.04.2006
- * @version     $Id$
  */
 #include "config.h"
 

@@ -22,7 +22,6 @@
  * @brief     Various irnode constructors.  Automatic construction
  *            of SSA representation. Private Header
  * @author    Martin Trapp, Christian Schaefer, Michael Beck
- * @version   $Id$
  */
 #ifndef FIRM_IR_IRCONS_T_H
 #define FIRM_IR_IRCONS_T_H

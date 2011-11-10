@@ -22,7 +22,6 @@
  * @brief       Interface for binary machine code output.
  * @author      Matthias Braun
  * @date        12.03.2007
- * @version     $Id$
  */
 #ifndef FIRM_BE_BEEMITTER_BINARY_H
 #define FIRM_BE_BEEMITTER_BINARY_H

@@ -21,7 +21,6 @@
  * @file
  * @brief   Representation of an intermediate operation.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
- * @version $Id$
  */
 #include "config.h"
 

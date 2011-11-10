@@ -21,7 +21,6 @@
  * @file
  * @brief   boolean condition/control flow optimizations
  * @author  Matthias Braun, Christoph Mallon, Michael Beck
- * @version $Id: cfopt.c 22579 2008-10-07 14:54:04Z beck $
  */
 #include "config.h"
 

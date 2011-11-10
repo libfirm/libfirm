@@ -21,7 +21,6 @@
  * @file
  * @brief    Support for ir graph modification.
  * @author   Martin Trapp, Christian Schaefer, Goetz Lindenmaier
- * @version  $Id$
  */
 #ifndef FIRM_IR_IRGMOD_H
 #define FIRM_IR_IRGMOD_H

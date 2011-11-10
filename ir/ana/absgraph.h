@@ -21,7 +21,6 @@
  * @file    absgraph.h
  * @author  Sebastian Hack
  * @date    20.04.2007
- * @version $Id$
  * @brief
  *
  * An abstract graph "interface". Currently

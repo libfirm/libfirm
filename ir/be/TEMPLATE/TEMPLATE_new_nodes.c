@@ -22,7 +22,6 @@
  * @brief   This file implements the creation of the achitecture specific firm
  *          opcodes and the coresponding node constructors for the TEMPLATE
  *          assembler irg.
- * @version $Id$
  */
 #include "config.h"
 

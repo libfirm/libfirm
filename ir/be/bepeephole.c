@@ -21,7 +21,6 @@
  * @file
  * @brief       Peephole optimisation framework keeps track of which registers contain which values
  * @author      Matthias Braun
- * @version     $Id$
  */
 #include "config.h"
 

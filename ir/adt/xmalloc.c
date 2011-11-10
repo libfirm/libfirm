@@ -21,7 +21,6 @@
  * @file
  * @brief       implementation of xmalloc & friends
  * @author      Markus Armbruster
- * @version     $Id$
  */
 
 /* @@@ ToDo: replace this file with the one from liberty.

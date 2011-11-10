@@ -21,7 +21,6 @@
  * @file
  * @brief       modifies schedule so flags dependencies are respected.
  * @author      Matthias Braun, Christoph Mallon
- * @version     $Id: besched.h 14693 2007-06-21 15:35:49Z beck $
  */
 #ifndef FIRM_BE_BEFLAGS_H
 #define FIRM_BE_BEFLAGS_H

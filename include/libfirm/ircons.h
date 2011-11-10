@@ -23,7 +23,6 @@
  *          representation.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Boris Boesler,
  *          Michael Beck
- * @version $Id$
  */
 
 /**

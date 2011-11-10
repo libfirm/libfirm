@@ -21,7 +21,6 @@
  * @file
  * @brief    Data type for unique names.
  * @author   Goetz Lindenmaier
- * @version  $Id$
  * @brief
  *  Declarations for identifiers in the firm library
  */

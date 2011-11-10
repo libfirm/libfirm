@@ -22,7 +22,6 @@
  * @date    17.03.2007
  * @brief   hashset containing pointers
  * @author  Matthias Braun
- * @version $Id$
  *
  * @note This has been named pset_new_new for now until all code has been
  *       changed to use this instead of the old deprecated pset_new functions!

@@ -21,7 +21,6 @@
  * @file
  * @brief   Handles fpu rounding modes
  * @author  Matthias Braun
- * @version $Id$
  *
  * The problem we deal with here is that the x86 ABI says the user can control
  * the fpu rounding mode, which means that when we do some operations like float

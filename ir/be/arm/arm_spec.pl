@@ -1,7 +1,5 @@
-# Creation: 2006/02/13
 # Arm Architecure Specification
 # Author: Matthias Braun, Michael Beck, Oliver Richter, Tobias Gneist
-# $Id$
 
 $arch = "arm";
 

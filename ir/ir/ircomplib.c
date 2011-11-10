@@ -22,7 +22,6 @@
  * @brief   Compilerlib entity creation related functions.
  * @date    2011-09-22
  * @author  Manuel Mohr
- * @version $Id$
  */
 #include "config.h"
 

@@ -21,7 +21,6 @@
  * @file
  * @brief   OS abstraction from time measurement
  * @author  Sebastian Hack, Michael Beck, Matthias Braun
- * @version $Id$
  */
 #ifndef FIRM_STAT_TIMING_H
 #define FIRM_STAT_TIMING_H

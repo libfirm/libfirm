@@ -22,7 +22,6 @@
  * @brief   HTML dumper for PBQP.
  * @date    03.10.2008
  * @author  Sebastian Buchwald
- * @version $Id$
  */
 #include "config.h"
 

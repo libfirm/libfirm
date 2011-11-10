@@ -22,7 +22,6 @@
  * @brief       Internal headers for liveness analysis.
  * @author      Sebastian Hack
  * @date        06.12.2004
- * @version     $Id$
  */
 #ifndef FIRM_BE_BELIVE_T_H
 #define FIRM_BE_BELIVE_T_H

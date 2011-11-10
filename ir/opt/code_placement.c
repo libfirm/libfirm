@@ -23,7 +23,6 @@
  *           often.
  * @author   Christian Schaefer, Goetz Lindenmaier, Sebastian Felis,
  *           Michael Beck
- * @version  $Id$
  *
  * The idea here is to push nodes as deep into the dominance tree as their
  * dependencies allow. After pushing them back up out of as many loops as

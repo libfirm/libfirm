@@ -21,7 +21,6 @@
  * @file
  * @brief       Define the famous infame FOURCC macro.
  * @date        02.01.2004
- * @version     $Id$
  */
 #ifndef FIRM_ADT_FOURCC_H
 #define FIRM_ADT_FOURCC_H

@@ -22,7 +22,6 @@
  * @brief       Internal header for copy optimization problem.
  * @author      Daniel Grund
  * @date        12.04.2005
- * @version     $Id$
  */
 #ifndef FIRM_BE_BECOPYOPT_T_H
 #define FIRM_BE_BECOPYOPT_T_H

@@ -23,7 +23,6 @@
  * @date      30.03.2007
  * @brief     A nodeset. This should be prefered over a simple pset, because it
  *            tries to guarantee deterministic behavior. (and is faster)
- * @version   $Id$
  * @note      Actually the bits to make the behaviour deterministic are not
  *            implemented yet...
  */

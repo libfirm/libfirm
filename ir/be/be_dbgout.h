@@ -22,7 +22,6 @@
  * @brief   Debug output support.
  * @author  Michael Beck
  * @date    11.9.2006
- * @version $Id$
  */
 #ifndef FIRM_BE_BE_DBGOUT_H
 #define FIRM_BE_BE_DBGOUT_H

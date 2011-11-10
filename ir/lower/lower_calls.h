@@ -21,7 +21,6 @@
  * @file
  * @brief   Lowering of calls with compound arguments
  * @author  Michael Beck
- * @version $Id$
  */
 #ifndef FIRM_LOWER_CALLS_H
 #define FIRM_LOWER_CALLS_H

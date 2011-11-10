@@ -21,7 +21,6 @@
  * @file
  * @brief   Representation of opcode of intermediate operation.
  * @author  Christian Schaefer, Goetz Lindenmaier, Michael Beck
- * @version $Id$
  * @brief
  *  Operators of firm nodes.
  *

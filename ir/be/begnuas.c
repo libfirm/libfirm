@@ -22,7 +22,6 @@
  * @brief       Dumps global variables and constants as gas assembler.
  * @author      Christian Wuerdig, Matthias Braun
  * @date        04.11.2005
- * @version     $Id$
  */
 #include "config.h"
 

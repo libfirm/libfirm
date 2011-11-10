@@ -21,7 +21,6 @@
  * @file    dfs_t.h
  * @author  Sebastian Hack
  * @date    21.04.2007
- * @version $Id$
  * @brief
  *
  * depth first search internal stuff.

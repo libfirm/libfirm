@@ -21,7 +21,6 @@
  * @file
  * @brief       Generic backend types and interfaces.
  * @author      Sebastian Hack
- * @version     $Id$
  */
 #ifndef FIRM_BE_MAIN_H
 #define FIRM_BE_MAIN_H

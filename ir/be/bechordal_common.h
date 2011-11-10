@@ -22,7 +22,6 @@
  * @brief       Common functions for chordal register allocation.
  * @author      Sebastian Hack
  * @date        08.12.2004
- * @version     $Id: bechordal.c 26750 2009-11-27 09:37:43Z bersch $
  */
 
 #ifndef BECHORDAL_COMMON_H_

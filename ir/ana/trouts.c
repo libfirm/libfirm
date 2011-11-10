@@ -22,7 +22,6 @@
  * @brief    Reverse edges that reference types/entities.
  * @author   Goetz Lindenmaier
  * @date     29.10.2004
- * @version  $Id$
  */
 #include "config.h"
 

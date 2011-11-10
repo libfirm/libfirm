@@ -22,7 +22,6 @@
  * @brief   PBQP edge data types.
  * @date    02.10.2008
  * @author  Sebastian Buchwald
- * @version $Id$
  */
 #ifndef KAPS_PBQP_EDGE_T_H
 #define KAPS_PBQP_EDGE_T_H

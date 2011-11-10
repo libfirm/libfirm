@@ -21,7 +21,6 @@
  * @file
  * @brief   declarations for arm emitter
  * @author  Oliver Richter, Tobias Gneis
- * @version $Id$
  */
 #ifndef FIRM_BE_ARM_ARM_EMITTER_H
 #define FIRM_BE_ARM_ARM_EMITTER_H

@@ -22,7 +22,6 @@
  * @brief       Main Backend driver.
  * @author      Sebastian Hack
  * @date        25.11.2004
- * @version     $Id$
  */
 #include "config.h"
 

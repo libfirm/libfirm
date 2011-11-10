@@ -21,7 +21,6 @@
  * @file
  * @brief   Functions for traversing ir graphs
  * @author  Boris Boesler, Goetz Lindenmaier, Michael Beck
- * @version $Id$
  * @brief
  *  traverse an ir graph
  *  - execute the pre function before recursion

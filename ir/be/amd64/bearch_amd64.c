@@ -20,7 +20,6 @@
 /**
  * @file
  * @brief    The main amd64 backend driver file.
- * @version  $Id: bearch_amd64.c 26909 2010-01-05 15:56:54Z matze $
  */
 #include "config.h"
 

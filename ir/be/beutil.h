@@ -21,7 +21,6 @@
  * @file
  * @brief       Contains some useful function for the backend.
  * @author      Sebastian Hack
- * @version     $Id$
  */
 #ifndef FIRM_BE_BEUTIL_H
 #define FIRM_BE_BEUTIL_H

@@ -21,7 +21,6 @@
  * @file
  * @brief    Flags to control optimizations, inline implementation.
  * @author   Michael Beck, Sebastian Hack
- * @version  $Id$
  */
 #ifndef FIRM_IR_IRFLAG_T_H
 #define FIRM_IR_IRFLAG_T_H

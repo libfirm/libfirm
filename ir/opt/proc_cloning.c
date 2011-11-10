@@ -21,7 +21,6 @@
  * @file
  * @brief   Procedure cloning.
  * @author  Beyhan Veliev, Michael Beck
- * @version $Id$
  * @brief
  *
  * The purpose is first to find and analyze functions, that are called

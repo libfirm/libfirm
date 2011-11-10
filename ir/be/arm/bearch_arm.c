@@ -21,7 +21,6 @@
  * @file
  * @brief   The main arm backend driver file.
  * @author  Matthias Braun, Oliver Richter, Tobias Gneist
- * @version $Id$
  */
 #include "config.h"
 

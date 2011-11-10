@@ -20,7 +20,6 @@
 /**
  * @file
  * @brief   attributes attached to all TEMPLATE nodes
- * @version $Id$
  */
 #ifndef FIRM_BE_TEMPLATE_TEMPLATE_NODES_ATTR_H
 #define FIRM_BE_TEMPLATE_TEMPLATE_NODES_ATTR_H

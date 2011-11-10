@@ -22,7 +22,6 @@
  * @brief       Interface for interference graphs.
  * @author      Sebastian Hack
  * @date        18.11.2005
- * @version     $Id$
  */
 #include "config.h"
 

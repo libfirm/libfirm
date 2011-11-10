@@ -22,7 +22,6 @@
  * @brief       Performs SSA-Destruction.
  * @author      Daniel Grund
  * @date        25.05.2005
- * @version     $Id$
  */
 #ifndef FIRM_BE_BESSADESTR_H
 #define FIRM_BE_BESSADESTR_H

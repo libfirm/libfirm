@@ -21,7 +21,6 @@
  * @file
  * @brief   Internal backend global data structures.
  * @author  Sebastian Hack
- * @version $Id$
  */
 #ifndef FIRM_BE_BE_T_H
 #define FIRM_BE_BE_T_H

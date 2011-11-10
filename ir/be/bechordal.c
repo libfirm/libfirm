@@ -22,7 +22,6 @@
  * @brief       Chordal register allocation.
  * @author      Sebastian Hack
  * @date        08.12.2004
- * @version     $Id$
  */
 #include "config.h"
 

@@ -21,7 +21,6 @@
  * @file
  * @brief   iropt --- optimizations intertwined with IR construction.
  * @author  Christian Schaefer, Goetz Lindenmaier, Michael Beck
- * @version $Id$
  */
 #include "config.h"
 

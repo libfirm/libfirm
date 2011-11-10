@@ -21,7 +21,6 @@
  * @file
  * @brief       Should be included in all public firm headers at the beginning
  * @author      Matthias Braun
- * @version     $Id$
  */
 #ifndef FIRM_BEGIN_H
 #define FIRM_BEGIN_H

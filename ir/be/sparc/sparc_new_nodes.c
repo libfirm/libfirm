@@ -23,7 +23,6 @@
  *          opcodes and the coresponding node constructors for the sparc
  *          assembler irg.
  * @author  Hannes Rapp, Matthias Braun
- * @version $Id$
  */
 #include "config.h"
 

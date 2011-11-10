@@ -22,7 +22,6 @@
  * @brief    Construction of Confirm nodes
  * @author   Michael Beck
  * @date     6.2005
- * @version  $Id$
  */
 #include "config.h"
 

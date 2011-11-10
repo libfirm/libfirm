@@ -21,7 +21,6 @@
  * @file
  * @brief     Error handling for libFirm
  * @author    Michael Beck
- * @version   $Id$
  */
 #include "config.h"
 

@@ -22,7 +22,6 @@
  * @brief       Helper functions for handling ABI constraints in the code
  *              selection phase.
  * @author      Matthias Braun
- * @version     $Id$
  */
 #ifndef FIRM_BE_BEABI_HELPER_H
 #define FIRM_BE_BEABI_HELPER_H

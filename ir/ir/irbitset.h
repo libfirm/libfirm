@@ -22,7 +22,6 @@
  * @brief   Some convenience macros for node bitmaps.
  * @author  Sebastian Hack
  * @date    10.05.2006
- * @version $Id$
  */
 #ifndef FIRM_IR_IRBITSET_H
 #define FIRM_IR_IRBITSET_H

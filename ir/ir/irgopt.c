@@ -22,7 +22,6 @@
  * @brief    Optimizations for a whole ir graph, i.e., a procedure.
  * @author   Christian Schaefer, Goetz Lindenmaier, Sebastian Felis,
  *           Michael Beck
- * @version  $Id$
  */
 #include "config.h"
 

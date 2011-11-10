@@ -21,7 +21,6 @@
  * @file
  * @brief    common firm declarations
  * @author   Martin Trapp, Christian Schaefer, Goetz Lindenmaier
- * @version  $Id$
  */
 #ifndef FIRM_COMMON_FIRM_COMMON_H
 #define FIRM_COMMON_FIRM_COMMON_H

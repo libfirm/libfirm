@@ -21,7 +21,6 @@
  * @file
  * @brief   Analyse the graph with value range propagation
  * @author  Jonas Fietz
- * @version $Id$
  *
  */
 #ifndef VRP_H

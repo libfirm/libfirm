@@ -22,7 +22,6 @@
  * @brief   This file implements the creation of the achitecture specific firm
  *          opcodes and the coresponding node constructors for the amd64
  *          assembler irg.
- * @version $Id: amd64_new_nodes.c 26673 2009-10-01 16:43:13Z matze $
  */
 #include "config.h"
 

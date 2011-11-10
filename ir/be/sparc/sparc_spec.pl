@@ -1,5 +1,4 @@
 # Creation: 2006/02/13
-# $Id$
 
 $arch = "sparc";
 

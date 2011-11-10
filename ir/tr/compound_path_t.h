@@ -19,7 +19,6 @@
 
 /*
  * @file
- * @version $Id$
  */
 #ifndef FIRM_TR_COMPOUND_PATH_T_H
 #define FIRM_TR_COMPOUND_PATH_T_H

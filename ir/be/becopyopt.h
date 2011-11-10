@@ -22,7 +22,6 @@
  * @brief       Copy minimization driver.
  * @author      Daniel Grund
  * @date        11.04.2005
- * @version     $Id$
  *
  * Main file for the optimization reducing the copies needed for:
  * - Phi coalescing

@@ -21,7 +21,6 @@
  * @file
  * @brief    Traverse an ir graph
  * @author   Boris Boesler, Goetz Lindenmaier
- * @version  $Id$
  * @brief
  *  Traverse an ir graph:
  *  - execute the pre function before recursion

@@ -21,7 +21,6 @@
  * @file
  * @brief   parallelizing Load/Store optimisation
  * @author  Christoph Mallon
- * @version $Id: $
  */
 #include "config.h"
 

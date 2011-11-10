@@ -21,7 +21,6 @@
  * @file
  * @brief       Forward declarations of backend types
  * @author      Matthias Braun
- * @version     $Id: besched.h 25982 2009-05-15 22:09:38Z matze $
  */
 #ifndef FIRM_BE_TYPES_H
 #define FIRM_BE_TYPES_H

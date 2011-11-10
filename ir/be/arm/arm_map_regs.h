@@ -21,7 +21,6 @@
  * @file
  * @brief  declarations for ARM register allocation
  * @author Oliver Richter, Tobias Gneist, Michael Beck
- * @version $Id$
  */
 #ifndef FIRM_BE_ARM_ARM_MAP_REGS_H
 #define FIRM_BE_ARM_ARM_MAP_REGS_H

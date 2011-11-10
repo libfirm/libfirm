@@ -21,7 +21,6 @@
  * @file
  * @brief       Provides several statistic functions for the backend.
  * @author      Christian Wuerdig, Matthias Braun
- * @version     $Id$
  */
 #ifndef FIRM_BE_BESTAT_H
 #define FIRM_BE_BESTAT_H

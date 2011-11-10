@@ -22,7 +22,6 @@
  * @brief       Base routines for register allocation.
  * @author      Sebastian Hack
  * @date        22.11.2004
- * @version     $Id$
  */
 #include "config.h"
 

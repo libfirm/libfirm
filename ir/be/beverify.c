@@ -22,7 +22,6 @@
  * @brief       Various verify routines that check a scheduled graph for correctness.
  * @author      Matthias Braun
  * @date        05.05.2006
- * @version     $Id$
  */
 #include "config.h"
 

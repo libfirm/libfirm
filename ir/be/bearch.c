@@ -21,7 +21,6 @@
  * @file
  * @brief       Processor architecture specification.
  * @author      Sebastian Hack
- * @version     $Id$
  */
 #include "config.h"
 

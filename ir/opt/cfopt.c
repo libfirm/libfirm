@@ -21,7 +21,6 @@
  * @file
  * @brief   Control flow optimizations.
  * @author  Goetz Lindenmaier, Michael Beck, Sebastian Hack
- * @version $Id$
  *
  * Removes Bad control flow predecessors and empty blocks.  A block is empty
  * if it contains only a Jmp node. Blocks can only be removed if they are not

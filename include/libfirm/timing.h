@@ -20,7 +20,6 @@
 /**
  * @file
  * @brief    platform neutral timing utilities
- * @version  $Id: tv.h 17143 2008-01-02 20:56:33Z beck $
  */
 #ifndef FIRM_TIMING_H
 #define FIRM_TIMING_H

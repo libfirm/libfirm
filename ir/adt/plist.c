@@ -26,7 +26,6 @@
  *        elements.
  * @author  Kimon Hoffmann
  * @date    14.07.2005
- * @version $Id$
  */
 #include <stdlib.h>
 

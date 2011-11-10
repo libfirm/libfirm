@@ -22,7 +22,6 @@
  * @brief    Entry point to the representation of a whole program.
  * @author   Goetz Lindenmaier, Michael Beck
  * @date     2000
- * @version  $Id$
  */
 #include "config.h"
 

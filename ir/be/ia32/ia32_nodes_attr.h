@@ -21,7 +21,6 @@
  * @file
  * @brief       Type definitions for ia32 node attributes.
  * @author      Christian Wuerdig
- * @version     $Id$
  */
 #ifndef FIRM_BE_IA32_IA32_NODES_ATTR_H
 #define FIRM_BE_IA32_IA32_NODES_ATTR_H

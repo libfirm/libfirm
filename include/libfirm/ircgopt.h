@@ -22,7 +22,6 @@
  * @brief   Removal of unreachable methods.
  * @author  Hubert Schmid
  * @date    09.06.2002
- * @version $Id$
  * @brief
  *  Removal of unreachable methods. The set of unreachable methods is computed
  *  by the callgraph.

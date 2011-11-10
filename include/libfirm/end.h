@@ -21,7 +21,6 @@
  * @file
  * @brief       Should be included in all public firm headers at the end
  * @author      Matthias Braun
- * @version     $Id$
  */
 
 /* close extern "C" block from begin.h,

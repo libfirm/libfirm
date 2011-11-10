@@ -21,7 +21,6 @@
  * @file
  * @brief       Implements several optimizations for IA32.
  * @author      Matthias Braun, Christian Wuerdig
- * @version     $Id$
  */
 #include "config.h"
 

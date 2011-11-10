@@ -21,7 +21,6 @@
  * @file
  * @brief       This file implements the IR transformation from firm into ia32-Firm.
  * @author      Christian Wuerdig, Matthias Braun
- * @version     $Id$
  */
 #ifndef FIRM_BE_IA32_IA32_TRANSFORM_H
 #define FIRM_BE_IA32_IA32_TRANSFORM_H

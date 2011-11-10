@@ -22,7 +22,6 @@
  * @brief     Access function for backedges.
  * @author    Goetz Lindenmaier
  * @date      7.2002
- * @version   $Id$
  */
 #include "config.h"
 

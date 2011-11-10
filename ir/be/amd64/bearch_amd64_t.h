@@ -20,7 +20,6 @@
 /**
  * @file
  * @brief   declarations for TEMPALTE backend -- private header
- * @version $Id: bearch_amd64_t.h 26542 2009-09-18 09:18:32Z matze $
  */
 #ifndef FIRM_BE_amd64_BEARCH_amd64_T_H
 #define FIRM_BE_amd64_BEARCH_amd64_T_H

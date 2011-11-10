@@ -22,7 +22,6 @@
  * @brief       PBQP based register allocation.
  * @author      Thomas Bersch
  * @date        27.11.2009
- * @version     $Id: bechordal.c 26750 2009-11-27 09:37:43Z bersch $
  */
 #ifndef BEPBQPALLOC_H_
 #define BEPBQPALLOC_H_

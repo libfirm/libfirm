@@ -22,7 +22,6 @@
  * @brief       Simple copy minimization heuristics.
  * @author      Christian Wuerdig
  * @date        27.04.2007
- * @version     $Id$
  *
  * This is the C implementation of the mst algorithm
  * originally written in Java by Sebastian Hack.
