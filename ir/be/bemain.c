@@ -280,7 +280,7 @@ void be_register_isa_if(const char *name, const arch_isa_if_t *isa)
 	be_add_module_to_list(&isa_ifs, name, (void*) isa);
 }
 
-void be_opt_register(void)
+static void be_opt_register(void)
 {
 	lc_opt_entry_t *be_grp;
 	static int run_once = 0;

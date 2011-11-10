@@ -126,11 +126,6 @@ typedef struct backend_params {
 } backend_params;
 
 /**
- * Register the Firm backend command line options.
- */
-FIRM_API void be_opt_register(void);
-
-/**
  * Parse one backend argument.
  */
 FIRM_API int be_parse_arg(const char *arg);
