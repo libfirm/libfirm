@@ -49,6 +49,7 @@
 #include "irgmod.h"
 #include "ircons.h"
 #include "irgwalk.h"
+#include "heights.h"
 
 #include "bepeephole.h"
 #include "benode.h"
@@ -57,6 +58,8 @@
 #include "bestack.h"
 #include "beirgmod.h"
 #include "belower.h"
+
+static ir_heights_t *heights;
 
 static void kill_unused_stacknodes(ir_node *node)
 {
@@ -508,13 +511,13 @@ static void peephole_sparc_RestoreZero(ir_node *node)
 		if (!is_restorezeroopt_reg(reg))
 			continue;
 
-		if (be_is_Copy(schedpoint) && be_can_move_before(schedpoint, node)) {
+		if (be_is_Copy(schedpoint) && be_can_move_before(heights, schedpoint, node)) {
 			ir_node *op = get_irn_n(schedpoint, n_be_Copy_op);
 			replace_with_restore_imm(node, schedpoint, op, NULL, 0);
 		} else if (is_sparc_Or(schedpoint) &&
 		           arch_get_irn_flags(schedpoint) & ((arch_irn_flags_t)sparc_arch_irn_flag_immediate_form) &&
 		           arch_get_irn_register_in(schedpoint, 0) == &sparc_registers[REG_G0] &&
-		           be_can_move_before(schedpoint, node)) {
+		           be_can_move_before(heights, schedpoint, node)) {
 			/* it's a constant */
 			const sparc_attr_t *attr      = get_sparc_attr_const(schedpoint);
 			ir_entity          *entity    = attr->immediate_value_entity;
@@ -522,7 +525,7 @@ static void peephole_sparc_RestoreZero(ir_node *node)
 			ir_node            *g0        = get_irn_n(schedpoint, 0);
 			replace_with_restore_imm(node, schedpoint, g0, entity, immediate);
 		} else if (is_sparc_Add(schedpoint) &&
-		           be_can_move_before(schedpoint, node)) {
+		           be_can_move_before(heights, schedpoint, node)) {
 			if (arch_get_irn_flags(schedpoint) & ((arch_irn_flags_t)sparc_arch_irn_flag_immediate_form)) {
 				ir_node            *op     = get_irn_n(schedpoint, 0);
 				const sparc_attr_t *attr   = get_sparc_attr_const(schedpoint);
@@ -537,7 +540,7 @@ static void peephole_sparc_RestoreZero(ir_node *node)
 		} else if (is_sparc_Sub(schedpoint) &&
 		           arch_get_irn_flags(schedpoint) & ((arch_irn_flags_t)sparc_arch_irn_flag_immediate_form) &&
 		           arch_get_irn_register_in(schedpoint, 0) == &sparc_registers[REG_G0] &&
-		           be_can_move_before(schedpoint, node)) {
+		           be_can_move_before(heights, schedpoint, node)) {
 			/* it's a constant */
 			const sparc_attr_t *attr   = get_sparc_attr_const(schedpoint);
 			ir_entity          *entity = attr->immediate_value_entity;
@@ -650,6 +653,8 @@ void sparc_finish(ir_graph *irg)
 	be_abi_fix_stack_nodes(irg);
 	sparc_fix_stack_bias(irg);
 
+	heights = heights_new(irg);
+
 	/* perform peephole optimizations */
 	clear_irp_opcodes_generic_func();
 	register_peephole_optimisation(op_be_IncSP,        peephole_be_IncSP);
@@ -669,6 +674,8 @@ void sparc_finish(ir_graph *irg)
 	register_peephole_optimisation(op_sparc_St,        finish_sparc_St);
 	register_peephole_optimisation(op_sparc_Stf,       finish_sparc_Stf);
 	be_peephole_opt(irg);
+
+	heights_free(heights);
 
 	be_remove_dead_nodes_from_schedule(irg);
 }

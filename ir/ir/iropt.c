@@ -2461,6 +2461,55 @@ static bool complement_values(const ir_node *a, const ir_node *b)
 	return false;
 }
 
+typedef ir_tarval *(tv_fold_binop_func)(ir_tarval *a, ir_tarval *b);
+
+/**
+ * for associative operations fold:
+ *   op(op(x, c0), c1) to op(x, op(c0, c1)) with constants folded.
+ * This is a "light" version of the reassociation phase
+ */
+static ir_node *fold_constant_associativity(ir_node *node,
+                                            tv_fold_binop_func fold)
+{
+	ir_graph  *irg;
+	ir_op     *op;
+	ir_node   *left;
+	ir_node   *right = get_binop_right(node);
+	ir_node   *left_right;
+	ir_node   *left_left;
+	ir_tarval *c0;
+	ir_tarval *c1;
+	ir_tarval *new_c;
+	ir_node   *new_const;
+	ir_node   *new_node;
+	if (!is_Const(right))
+		return node;
+
+	op   = get_irn_op(node);
+	left = get_binop_left(node);
+	if (get_irn_op(left) != op)
+		return node;
+
+	left_right = get_binop_right(left);
+	if (!is_Const(left_right))
+		return node;
+
+	left_left = get_binop_left(left);
+	c0        = get_Const_tarval(left_right);
+	c1        = get_Const_tarval(right);
+	irg       = get_irn_irg(node);
+	if (get_tarval_mode(c0) != get_tarval_mode(c1))
+		return node;
+	new_c     = fold(c0, c1);
+	if (new_c == tarval_bad)
+		return node;
+	new_const = new_r_Const(irg, new_c);
+	new_node  = exact_copy(node);
+	set_binop_left(new_node, left_left);
+	set_binop_right(new_node, new_const);
+	return new_node;
+}
+
 /**
  * Transform an Or.
  */
@@ -2471,6 +2520,10 @@ static ir_node *transform_node_Or_(ir_node *n)
 	ir_node *b    = get_binop_right(n);
 	ir_node *c;
 	ir_mode *mode;
+
+	n = fold_constant_associativity(n, tarval_or);
+	if (n != oldn)
+		return n;
 
 	if (is_Not(a) && is_Not(b)) {
 		/* ~a | ~b = ~(a&b) */
@@ -2576,6 +2629,10 @@ static ir_node *transform_node_Eor_(ir_node *n)
 	ir_mode *mode = get_irn_mode(n);
 	ir_node *c;
 
+	n = fold_constant_associativity(n, tarval_eor);
+	if (n != oldn)
+		return n;
+
 	/* we can combine the relations of two compares with the same operands */
 	if (is_Cmp(a) && is_Cmp(b)) {
 		ir_node *a_left  = get_Cmp_left(a);
@@ -2643,8 +2700,6 @@ static ir_node *transform_node_Eor(ir_node *n)
 	return transform_node_Eor_(n);
 }
 
-
-
 /**
  * Do the AddSub optimization, then Transform
  *   Constant folding on Phi
@@ -2662,6 +2717,10 @@ static ir_node *transform_node_Add(ir_node *n)
 	ir_node *c;
 	ir_node *oldn = n;
 
+	n = fold_constant_associativity(n, tarval_add);
+	if (n != oldn)
+		return n;
+
 	n = transform_node_AddSub(n);
 	if (n != oldn)
 		return n;
@@ -2677,6 +2736,21 @@ static ir_node *transform_node_Add(ir_node *n)
 			/* an Add(a, NULL) is a hidden Conv */
 			dbg_info *dbg = get_irn_dbg_info(n);
 			return new_rd_Conv(dbg, get_nodes_block(n), a, mode);
+		}
+	}
+
+	if (is_Const(b) && get_mode_arithmetic(mode) == irma_twos_complement) {
+		ir_tarval *tv  = get_Const_tarval(b);
+		ir_tarval *min = get_mode_min(mode);
+		/* if all bits are set, then this has the same effect as a Not.
+		 * Note that the following == gives false for different modes which
+		 * is exactly what we want */
+		if (tv == min) {
+			dbg_info *dbgi  = get_irn_dbg_info(n);
+			ir_graph *irg   = get_irn_irg(n);
+			ir_node  *block = get_nodes_block(n);
+			ir_node  *cnst  = new_r_Const(irg, min);
+			return new_rd_Eor(dbgi, block, a, cnst, mode);
 		}
 	}
 
@@ -3149,7 +3223,8 @@ static ir_node *transform_node_Mul(ir_node *n)
 	ir_node *a = get_Mul_left(n);
 	ir_node *b = get_Mul_right(n);
 
-	if (is_Bad(a) || is_Bad(b))
+	n = fold_constant_associativity(n, tarval_mul);
+	if (n != oldn)
 		return n;
 
 	if (mode != get_irn_mode(a))
@@ -3645,6 +3720,10 @@ static ir_node *transform_node_And(ir_node *n)
 	ir_node *a = get_And_left(n);
 	ir_node *b = get_And_right(n);
 	ir_mode *mode;
+
+	n = fold_constant_associativity(n, tarval_and);
+	if (n != oldn)
+		return n;
 
 	if (is_Cmp(a) && is_Cmp(b)) {
 		ir_node    *a_left     = get_Cmp_left(a);
@@ -4200,6 +4279,26 @@ static bool is_single_bit(const ir_node *node)
 }
 
 /**
+ * checks if node just flips a bit in another node and returns that other node
+ * if so. @p tv should be a value having just 1 bit set
+ */
+static ir_node *flips_bit(const ir_node *node, ir_tarval *tv)
+{
+	if (is_Not(node))
+		return get_Not_op(node);
+	if (is_Eor(node)) {
+		ir_node *right = get_Eor_right(node);
+		if (is_Const(right)) {
+			ir_tarval *right_tv = get_Const_tarval(right);
+			ir_mode   *mode     = get_irn_mode(node);
+			if (tarval_and(right_tv, tv) != get_mode_null(mode))
+				return get_Eor_left(node);
+		}
+	}
+	return NULL;
+}
+
+/**
  * Normalizes and optimizes Cmp nodes.
  */
 static ir_node *transform_node_Cmp(ir_node *n)
@@ -4446,25 +4545,53 @@ static ir_node *transform_node_Cmp(ir_node *n)
 		}
 	}
 
-	/* Cmp(And(1bit, val), 1bit) "bit-testing" can be replaced
-	 * by the simpler Cmp(And(1bit), val), 0) negated pnc */
-	if (mode_is_int(mode) && is_And(left)
-	    && (relation == ir_relation_equal
+	if (mode_is_int(mode) && is_And(left)) {
+		/* a complicated Cmp(And(1bit, val), 1bit) "bit-testing" can be replaced
+		 * by the simpler Cmp(And(1bit, val), 0) negated pnc */
+		if (relation == ir_relation_equal
 	        || (mode_is_signed(mode) && relation == ir_relation_less_greater)
-	        || (!mode_is_signed(mode) && (relation & ir_relation_less_equal) == ir_relation_less))) {
-		ir_node *and0 = get_And_left(left);
-		ir_node *and1 = get_And_right(left);
-		if (and1 == right) {
-			ir_node *tmp = and0;
-			and0 = and1;
-			and1 = tmp;
+	        || (!mode_is_signed(mode) && (relation & ir_relation_less_equal) == ir_relation_less)) {
+			ir_node *and0 = get_And_left(left);
+			ir_node *and1 = get_And_right(left);
+			if (and1 == right) {
+				ir_node *tmp = and0;
+				and0 = and1;
+				and1 = tmp;
+			}
+			if (and0 == right && is_single_bit(and0)) {
+				ir_graph *irg = get_irn_irg(n);
+				relation =
+					relation == ir_relation_equal ? ir_relation_less_greater
+					                              : ir_relation_equal;
+				right = create_zero_const(irg, mode);
+				changed |= 1;
+				goto is_bittest;
+			}
 		}
-		if (and0 == right && is_single_bit(and0)) {
-			ir_graph *irg = get_irn_irg(n);
-			relation =
-				relation == ir_relation_equal ? ir_relation_less_greater : ir_relation_equal;
-			right = create_zero_const(irg, mode);
-			changed |= 1;
+
+		if (is_Const(right) && is_Const_null(right) &&
+		    (relation == ir_relation_equal
+		    || (relation == ir_relation_less_greater)
+		    || (!mode_is_signed(mode) && relation == ir_relation_greater))) {
+is_bittest: {
+			/* instead of flipping the bit before the bit-test operation negate
+			 * pnc */
+			ir_node *and0 = get_And_left(left);
+			ir_node *and1 = get_And_right(left);
+			if (is_Const(and1)) {
+				ir_tarval *tv = get_Const_tarval(and1);
+				if (tarval_is_single_bit(tv)) {
+					ir_node *flipped = flips_bit(and0, tv);
+					if (flipped != NULL) {
+						dbg_info *dbgi  = get_irn_dbg_info(left);
+						ir_node  *block = get_nodes_block(left);
+						relation = get_negated_relation(relation);
+						left = new_rd_And(dbgi, block, flipped, and1, mode);
+						changed |= 1;
+					}
+				}
+			}
+			}
 		}
 	}
 
@@ -4527,6 +4654,43 @@ static ir_node *transform_node_Cmp(ir_node *n)
 	tv = value_of(right);
 	if (tv != tarval_bad) {
 		ir_mode *mode = get_irn_mode(right);
+
+		/* cmp(mux(x, cf, ct), c2) can be eliminated:
+		 *   cmp(ct,c2) | cmp(cf,c2) | result
+		 *   -----------|------------|--------
+		 *   true       | true       | True
+		 *   false      | false      | False
+		 *   true       | false      | x
+		 *   false      | true       | not(x)
+		 */
+		if (is_Mux(left)) {
+			ir_node *mux_true  = get_Mux_true(left);
+			ir_node *mux_false = get_Mux_false(left);
+			if (is_Const(mux_true) && is_Const(mux_false)) {
+				/* we can fold true/false constant separately */
+				ir_tarval *tv_true  = get_Const_tarval(mux_true);
+				ir_tarval *tv_false = get_Const_tarval(mux_false);
+				ir_relation r_true  = tarval_cmp(tv_true, tv);
+				ir_relation r_false = tarval_cmp(tv_false, tv);
+				if (r_true != ir_relation_false
+				    || r_false != ir_relation_false) {
+					bool rel_true  = (r_true & relation)  != 0;
+					bool rel_false = (r_false & relation) != 0;
+					ir_node *cond = get_Mux_sel(left);
+					if (rel_true == rel_false) {
+						relation = rel_true ? ir_relation_true
+						                    : ir_relation_false;
+					} else if (rel_true) {
+						return cond;
+					} else {
+						dbg_info *dbgi  = get_irn_dbg_info(n);
+						ir_node  *block = get_nodes_block(n);
+						ir_node  *notn  = new_rd_Not(dbgi, block, cond, mode_b);
+						return notn;
+					}
+				}
+			}
+		}
 
 		/* TODO extend to arbitrary constants */
 		if (is_Conv(left) && tarval_is_null(tv)) {
@@ -5114,9 +5278,6 @@ static ir_node *transform_node_Phi(ir_node *phi)
 	return phi;
 }
 
-/* forward */
-static ir_node *transform_node(ir_node *n);
-
 /**
  * Optimize (a >> c1) >> c2), works for Shr, Shrs, Shl, Rotl.
  *
@@ -5205,7 +5366,7 @@ static ir_node *transform_node_shift(ir_node *n)
 
 	DBG_OPT_ALGSIM0(n, irn, FS_OPT_REASSOC_SHIFT);
 
-	return transform_node(irn);
+	return irn;
 }
 
 /**
@@ -5727,6 +5888,92 @@ bool ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
 }
 
 /**
+ * Optimize a Mux(c, 0, 1) node (sometimes called a "set" instruction)
+ */
+static ir_node *transform_Mux_set(ir_node *n)
+{
+	ir_node    *cond = get_Mux_sel(n);
+	ir_mode    *dest_mode;
+	ir_mode    *mode;
+	ir_node    *left;
+	ir_node    *right;
+	ir_relation relation;
+	bool        need_not;
+	dbg_info   *dbgi;
+	ir_node    *block;
+	ir_graph   *irg;
+	ir_node    *a;
+	ir_node    *b;
+	unsigned    bits;
+	ir_tarval  *tv;
+	ir_node    *shift_cnt;
+	ir_node    *res;
+
+	if (!is_Cmp(cond))
+		return n;
+	left = get_Cmp_left(cond);
+	mode = get_irn_mode(left);
+	if (!mode_is_int(mode) && !mode_is_reference(mode))
+		return n;
+	dest_mode = get_irn_mode(n);
+	if (!mode_is_int(dest_mode) && !mode_is_reference(dest_mode))
+		return n;
+	right     = get_Cmp_right(cond);
+	relation  = get_Cmp_relation(cond) & ~ir_relation_unordered;
+	if (get_mode_size_bits(mode) >= get_mode_size_bits(dest_mode)
+	    && !(mode_is_signed(mode) && is_Const(right) && is_Const_null(right)
+	         && relation != ir_relation_greater))
+	    return n;
+
+	need_not = false;
+	switch (relation) {
+	case ir_relation_less:
+		/* a < b  ->  (a - b) >> 31 */
+		a = left;
+		b = right;
+		break;
+	case ir_relation_less_equal:
+		/* a <= b  -> ~(a - b) >> 31 */
+		a        = right;
+		b        = left;
+		need_not = true;
+		break;
+	case ir_relation_greater:
+		/* a > b   -> (b - a) >> 31 */
+		a = right;
+		b = left;
+		break;
+	case ir_relation_greater_equal:
+		/* a >= b   -> ~(a - b) >> 31 */
+		a        = left;
+		b        = right;
+		need_not = true;
+		break;
+	default:
+		return n;
+	}
+
+	dbgi      = get_irn_dbg_info(n);
+	block     = get_nodes_block(n);
+	irg       = get_irn_irg(block);
+	bits      = get_mode_size_bits(dest_mode);
+	tv        = new_tarval_from_long(bits-1, mode_Iu);
+	shift_cnt = new_rd_Const(dbgi, irg, tv);
+
+	if (mode != dest_mode) {
+		a = new_rd_Conv(dbgi, block, a, dest_mode);
+		b = new_rd_Conv(dbgi, block, b, dest_mode);
+	}
+
+	res = new_rd_Sub(dbgi, block, a, b, dest_mode);
+	if (need_not) {
+		res = new_rd_Not(dbgi, block, res, dest_mode);
+	}
+	res = new_rd_Shr(dbgi, block, res, shift_cnt, dest_mode);
+	return res;
+}
+
+/**
  * Optimize a Mux into some simpler cases.
  */
 static ir_node *transform_node_Mux(ir_node *n)
@@ -5774,7 +6021,13 @@ static ir_node *transform_node_Mux(ir_node *n)
 		relation = get_negated_relation(relation);
 		sel = new_rd_Cmp(seldbgi, block, get_Cmp_left(sel),
 				get_Cmp_right(sel), relation);
-		n = new_rd_Mux(get_irn_dbg_info(n), get_nodes_block(n), sel, f, t, mode);
+		return new_rd_Mux(get_irn_dbg_info(n), get_nodes_block(n), sel, f, t, mode);
+	}
+
+	if (is_Const(f) && is_Const_null(f) && is_Const(t) && is_Const_one(t)) {
+		n = transform_Mux_set(n);
+		if (n != oldn)
+			return n;
 	}
 
 	/* the following optimisations create new mode_b nodes, so only do them
@@ -5788,23 +6041,15 @@ static ir_node *transform_node_Mux(ir_node *n)
 			ir_node*  f1    = get_Mux_false(t);
 			if (f == f1) {
 				/* Mux(cond0, Mux(cond1, x, y), y) => Mux(cond0 && cond1, x, y) */
-				ir_node* and_    = new_r_And(block, c0, c1, mode_b);
-				ir_node* new_mux = new_r_Mux(block, and_, f1, t1, mode);
-				n   = new_mux;
-				sel = and_;
-				f   = f1;
-				t   = t1;
-				DBG_OPT_ALGSIM0(oldn, t, FS_OPT_MUX_COMBINE);
+				ir_node* and_ = new_r_And(block, c0, c1, mode_b);
+				DBG_OPT_ALGSIM0(oldn, t1, FS_OPT_MUX_COMBINE);
+				return new_r_Mux(block, and_, f1, t1, mode);
 			} else if (f == t1) {
 				/* Mux(cond0, Mux(cond1, x, y), x) */
 				ir_node* not_c1  = new_r_Not(block, c1, mode_b);
 				ir_node* and_    = new_r_And(block, c0, not_c1, mode_b);
-				ir_node* new_mux = new_r_Mux(block, and_, t1, f1, mode);
-				n   = new_mux;
-				sel = and_;
-				f   = t1;
-				t   = f1;
-				DBG_OPT_ALGSIM0(oldn, t, FS_OPT_MUX_COMBINE);
+				DBG_OPT_ALGSIM0(oldn, f1, FS_OPT_MUX_COMBINE);
+				return new_r_Mux(block, and_, t1, f1, mode);
 			}
 		} else if (is_Mux(f)) {
 			ir_node*  block = get_nodes_block(n);
@@ -5814,23 +6059,15 @@ static ir_node *transform_node_Mux(ir_node *n)
 			ir_node*  f1    = get_Mux_false(f);
 			if (t == t1) {
 				/* Mux(cond0, x, Mux(cond1, x, y)) -> typical if (cond0 || cond1) x else y */
-				ir_node* or_     = new_r_Or(block, c0, c1, mode_b);
-				ir_node* new_mux = new_r_Mux(block, or_, f1, t1, mode);
-				n   = new_mux;
-				sel = or_;
-				f   = f1;
-				t   = t1;
-				DBG_OPT_ALGSIM0(oldn, f, FS_OPT_MUX_COMBINE);
+				ir_node* or_ = new_r_Or(block, c0, c1, mode_b);
+				DBG_OPT_ALGSIM0(oldn, f1, FS_OPT_MUX_COMBINE);
+				return new_r_Mux(block, or_, f1, t1, mode);
 			} else if (t == f1) {
 				/* Mux(cond0, x, Mux(cond1, y, x)) */
 				ir_node* not_c1  = new_r_Not(block, c1, mode_b);
 				ir_node* or_     = new_r_Or(block, c0, not_c1, mode_b);
-				ir_node* new_mux = new_r_Mux(block, or_, t1, f1, mode);
-				n   = new_mux;
-				sel = or_;
-				f   = t1;
-				t   = f1;
-				DBG_OPT_ALGSIM0(oldn, f, FS_OPT_MUX_COMBINE);
+				DBG_OPT_ALGSIM0(oldn, t1, FS_OPT_MUX_COMBINE);
+				return new_r_Mux(block, or_, t1, f1, mode);
 			}
 		}
 
@@ -5869,28 +6106,6 @@ static ir_node *transform_node_Mux(ir_node *n)
 					DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_AND_BOOL);
 					return n;
 				}
-			}
-		}
-
-		/* more normalization: Mux(sel, 0, 1) is simply a conv from the mode_b
-		 * value to integer. */
-		if (is_Const(t) && is_Const(f) && mode_is_int(mode)) {
-			ir_tarval *a = get_Const_tarval(t);
-			ir_tarval *b = get_Const_tarval(f);
-
-			if (tarval_is_one(a) && tarval_is_null(b)) {
-				ir_node *block = get_nodes_block(n);
-				ir_node *conv  = new_r_Conv(block, sel, mode);
-				n = conv;
-				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_CONV);
-				return n;
-			} else if (tarval_is_null(a) && tarval_is_one(b)) {
-				ir_node *block = get_nodes_block(n);
-				ir_node *not_  = new_r_Not(block, sel, mode_b);
-				ir_node *conv  = new_r_Conv(block, not_, mode);
-				n = conv;
-				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_CONV);
-				return n;
 			}
 		}
 	}
@@ -6138,30 +6353,6 @@ static ir_node *transform_node_Call(ir_node *call)
 }
 
 /**
- * Tries several [inplace] [optimizing] transformations and returns an
- * equivalent node.  The difference to equivalent_node() is that these
- * transformations _do_ generate new nodes, and thus the old node must
- * not be freed even if the equivalent node isn't the old one.
- */
-static ir_node *transform_node(ir_node *n)
-{
-	ir_node *oldn;
-
-	/*
-	 * Transform_node is the only "optimizing transformation" that might
-	 * return a node with a different opcode. We iterate HERE until fixpoint
-	 * to get the final result.
-	 */
-	do {
-		oldn = n;
-		if (n->op->ops.transform_node != NULL)
-			n = n->op->ops.transform_node(n);
-	} while (oldn != n);
-
-	return n;
-}
-
-/**
  * Sets the default transform node operation for an ir_op_ops.
  *
  * @param code   the opcode for the default operation
@@ -6227,6 +6418,62 @@ static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops
 #undef CASE
 }
 
+/**
+ * Tries several [inplace] [optimizing] transformations and returns an
+ * equivalent node.  The difference to equivalent_node() is that these
+ * transformations _do_ generate new nodes, and thus the old node must
+ * not be freed even if the equivalent node isn't the old one.
+ */
+static ir_node *transform_node(ir_node *n)
+{
+	ir_node *old_n;
+	unsigned iro;
+restart:
+	old_n = n;
+	iro   = get_irn_opcode_(n);
+	/* constant expression evaluation / constant folding */
+	if (get_opt_constant_folding()) {
+		/* neither constants nor Tuple values can be evaluated */
+		if (iro != iro_Const && get_irn_mode(n) != mode_T) {
+			/* try to evaluate */
+			ir_tarval *tv = computed_value(n);
+			if (tv != tarval_bad) {
+				/* evaluation was successful -- replace the node. */
+				ir_graph *irg = get_irn_irg(n);
+
+				n = new_r_Const(irg, tv);
+
+				DBG_OPT_CSTEVAL(old_n, n);
+				return n;
+			}
+		}
+	}
+
+	/* remove unnecessary nodes */
+	if (get_opt_constant_folding() ||
+		(iro == iro_Phi)  ||   /* always optimize these nodes. */
+		(iro == iro_Id)   ||   /* ... */
+		(iro == iro_Proj) ||   /* ... */
+		(iro == iro_Block)) {  /* Flags tested local. */
+		n = equivalent_node(n);
+		if (n != old_n)
+			goto restart;
+	}
+
+	/* Some more constant expression evaluation. */
+	if (get_opt_algebraic_simplification() ||
+		(iro == iro_Cond) ||
+		(iro == iro_Proj)) {    /* Flags tested local. */
+		if (n->op->ops.transform_node != NULL) {
+			n = n->op->ops.transform_node(n);
+			if (n != old_n) {
+				goto restart;
+			}
+		}
+	}
+
+	return n;
+}
 
 /* **************** Common Subexpression Elimination **************** */
 
@@ -6792,12 +7039,13 @@ ir_node *optimize_node(ir_node *n)
 	   free the node. */
 	iro = get_irn_opcode(n);
 	if (get_opt_algebraic_simplification() ||
-	    (iro == iro_Cond) ||
-	    (iro == iro_Proj))     /* Flags tested local. */
+		(iro == iro_Cond) ||
+		(iro == iro_Proj)) {    /* Flags tested local. */
 		n = transform_node(n);
+	}
 
 	/* Now we have a legal, useful node. Enter it in hash table for CSE */
-	if (get_opt_cse() && (get_irn_opcode(n) != iro_Block)) {
+	if (get_opt_cse()) {
 		ir_node *o = n;
 		n = identify_remember(o);
 		if (o != n)
@@ -6815,67 +7063,40 @@ ir_node *optimize_node(ir_node *n)
  */
 ir_node *optimize_in_place_2(ir_node *n)
 {
-	ir_tarval *tv;
-	ir_node   *oldn = n;
-	unsigned   iro  = get_irn_opcode(n);
-
 	if (!get_opt_optimize() && !is_Phi(n)) return n;
 
-	if (iro == iro_Deleted)
+	if (is_Deleted(n))
 		return n;
-
-	/* constant expression evaluation / constant folding */
-	if (get_opt_constant_folding()) {
-		/* neither constants nor Tuple values can be evaluated */
-		if (iro != iro_Const && get_irn_mode(n) != mode_T) {
-			/* try to evaluate */
-			tv = computed_value(n);
-			if (tv != tarval_bad) {
-				/* evaluation was successful -- replace the node. */
-				ir_graph *irg = get_irn_irg(n);
-
-				n = new_r_Const(irg, tv);
-
-				DBG_OPT_CSTEVAL(oldn, n);
-				return n;
-			}
-		}
-	}
-
-	/* remove unnecessary nodes */
-	if (get_opt_constant_folding() ||
-	    (iro == iro_Phi)  ||   /* always optimize these nodes. */
-	    (iro == iro_Id)   ||   /* ... */
-	    (iro == iro_Proj) ||   /* ... */
-	    (iro == iro_Block)  )  /* Flags tested local. */
-		n = equivalent_node(n);
 
 	/** common subexpression elimination **/
 	/* Checks whether n is already available. */
-	/* The block input is used to distinguish different subexpressions.  Right
-	   now all nodes are op_pin_state_pinned to blocks, i.e., the cse only finds common
-	   subexpressions within a block. */
+	/* The block input is used to distinguish different subexpressions.
+	 * Right now all nodes are op_pin_state_pinned to blocks, i.e., the cse
+	 * only finds common subexpressions within a block. */
 	if (get_opt_cse()) {
 		ir_node *o = n;
-		n = identify_remember(o);
-		if (o != n)
+		n = identify_remember(n);
+		if (n != o) {
 			DBG_OPT_CSE(o, n);
+			/* we have another existing node now, we do not optimize it here */
+			return n;
+		}
 	}
 
-	/* Some more constant expression evaluation. */
-	iro = get_irn_opcode(n);
-	if (get_opt_constant_folding() ||
-		(iro == iro_Cond) ||
-		(iro == iro_Proj))     /* Flags tested local. */
-		n = transform_node(n);
+	n = transform_node(n);
 
 	/* Now we can verify the node, as it has no dead inputs any more. */
 	irn_verify(n);
 
 	/* Now we have a legal, useful node. Enter it in hash table for cse.
-	   Blocks should be unique anyways.  (Except the successor of start:
-	   is cse with the start block!) */
-	if (get_opt_cse() && (get_irn_opcode(n) != iro_Block)) {
+	 * Blocks should be unique anyways.  (Except the successor of start:
+	 * is cse with the start block!)
+	 *
+	 * Note: This is only necessary because some of the optimisations
+	 * operate in-place (set_XXX_bla, turn_into_tuple, ...) which is considered
+	 * bad practice and should be fixed sometime.
+	 */
+	if (get_opt_cse()) {
 		ir_node *o = n;
 		n = identify_remember(o);
 		if (o != n)

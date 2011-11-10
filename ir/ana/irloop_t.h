@@ -63,8 +63,6 @@ typedef enum loop_flags {
 struct ir_loop {
 	firm_kind       kind;             /**< A type tag, set to k_ir_loop. */
 	unsigned        depth;            /**< Nesting depth */
-	size_t          n_sons;           /**< Number of ir_nodes in array "children" */
-	size_t          n_nodes;          /**< Number of loop_nodes in array "children" */
 	unsigned        flags;            /**< a set of loop_flags_t */
 	struct ir_loop *outer_loop;       /**< The outer loop */
 	loop_element   *children;         /**< Mixed flexible array: Contains sons and loop_nodes */
@@ -135,12 +133,6 @@ static inline unsigned _get_loop_depth(const ir_loop *loop)
 	return loop->depth;
 }
 
-static inline size_t _get_loop_n_sons(const ir_loop *loop)
-{
-	assert(_is_ir_loop(loop));
-	return loop->n_sons;
-}
-
 /* Uses temporary information to get the loop */
 static inline ir_loop *_get_irn_loop(const ir_node *n)
 {
@@ -152,7 +144,6 @@ static inline ir_loop *_get_irn_loop(const ir_node *n)
 #define get_irg_loop(irg)         _get_irg_loop(irg)
 #define get_loop_outer_loop(loop) _get_loop_outer_loop(loop)
 #define get_loop_depth(loop)      _get_loop_depth(loop)
-#define get_loop_n_sons(loop)     _get_loop_n_sons(loop)
 #define get_irn_loop(n)           _get_irn_loop(n)
 
 #endif

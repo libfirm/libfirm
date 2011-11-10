@@ -195,65 +195,9 @@ static ir_node *lower_node(ir_node *node)
 		break;
 	}
 
-	case iro_Cmp: {
-		ir_node    *left     = get_Cmp_left(node);
-		ir_node    *right    = get_Cmp_right(node);
-		ir_mode    *cmp_mode = get_irn_mode(left);
-		ir_relation relation = get_Cmp_relation(node);
-
-		if ((mode_is_int(cmp_mode) || mode_is_reference(cmp_mode)) &&
-			(get_mode_size_bits(cmp_mode) < get_mode_size_bits(mode) ||
-			(mode_is_signed(cmp_mode) && is_Const(right) && is_Const_null(right) && relation != ir_relation_greater))) {
-			int         need_not = 0;
-			ir_node    *a        = NULL;
-			ir_node    *b        = NULL;
-			int         bits;
-			ir_tarval  *tv;
-			ir_node    *shift_cnt;
-
-			if (relation == ir_relation_less) {
-				/* a < b  ->  (a - b) >> 31 */
-				a = left;
-				b = right;
-			} else if (relation == ir_relation_less_equal) {
-				/* a <= b  -> ~(a - b) >> 31 */
-				a        = right;
-				b        = left;
-				need_not = 1;
-			} else if (relation == ir_relation_greater) {
-				/* a > b   -> (b - a) >> 31 */
-				a = right;
-				b = left;
-			} else if (relation == ir_relation_greater_equal) {
-				/* a >= b   -> ~(a - b) >> 31 */
-				a        = left;
-				b        = right;
-				need_not = 1;
-			} else {
-				goto synth_zero_one;
-			}
-
-			bits      = get_mode_size_bits(mode);
-			tv        = new_tarval_from_long(bits-1, mode_Iu);
-			shift_cnt = new_rd_Const(dbgi, irg, tv);
-
-			if (cmp_mode != mode) {
-				a = new_rd_Conv(dbgi, block, a, mode);
-				b = new_rd_Conv(dbgi, block, b, mode);
-			}
-
-			res = new_rd_Sub(dbgi, block, a, b, mode);
-			if (need_not) {
-				res = new_rd_Not(dbgi, block, res, mode);
-			}
-			res = new_rd_Shr(dbgi, block, res, shift_cnt, mode);
-		} else {
-			/* synthesize the 0/1 value */
-synth_zero_one:
-			res = create_cond_set(node, mode);
-		}
+	case iro_Cmp:
+		res = create_cond_set(node, mode);
 		break;
-	}
 
 	case iro_Const: {
 		ir_tarval *tv = get_Const_tarval(node);
@@ -293,7 +237,7 @@ static bool needs_mode_b_input(const ir_node *node, int input)
 
 /**
  * Collects "roots" of a mode_b calculation. These are nodes which require a
- * mode_b input (Cond, Mux, Conv(xxx_b))
+ * mode_b input (Cond, Mux)
  */
 static void collect_needs_lowering(ir_node *node, void *env)
 {
@@ -301,7 +245,7 @@ static void collect_needs_lowering(ir_node *node, void *env)
 	int i;
 	(void) env;
 
-	/* if the node produces mode_b then it is a not a root (but should be
+	/* if the node produces mode_b then it is not a root (but should be
 	 * something our lower_node function can handle) */
 	if (get_irn_mode(node) == mode_b) {
 		assert(is_And(node) || is_Or(node) || is_Eor(node) || is_Phi(node)

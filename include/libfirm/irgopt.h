@@ -56,6 +56,11 @@ FIRM_API void local_optimize_graph(ir_graph *irg);
  *
  * @return non-zero if the optimization could be applied, 0 else
  */
+FIRM_API void local_opts(ir_graph *irg);
+
+/** Same functionality as local_opts above, but without framework wrapper
+ * @deprecated
+ */
 FIRM_API int optimize_graph_df(ir_graph *irg);
 
 /**

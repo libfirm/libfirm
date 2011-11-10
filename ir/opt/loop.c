@@ -2596,8 +2596,8 @@ static void init_analyze(ir_graph *irg, ir_loop *loop)
 	/* Reset loop info */
 	memset(&loop_info, 0, sizeof(loop_info_t));
 
-	DB((dbg, LEVEL_1, "    >>>> current loop includes node %N <<<\n",
-	        get_loop_node(loop, 0)));
+	DB((dbg, LEVEL_1, "    >>>> current loop %ld <<<\n",
+	    get_loop_loop_nr(loop)));
 
 	/* Collect loop informations: head, node counts. */
 	irg_walk_graph(irg, get_loop_info, NULL, NULL);
@@ -2629,23 +2629,27 @@ static void init_analyze(ir_graph *irg, ir_loop *loop)
 		default:
 			panic("Loop optimization not implemented.");
 	}
-	DB((dbg, LEVEL_1, "       <<<< end of loop with node %N >>>>\n",
-	        get_loop_node(loop, 0)));
+	DB((dbg, LEVEL_1, "       <<<< end of loop with node %ld >>>>\n",
+	    get_loop_loop_nr(loop)));
 }
 
 /* Find innermost loops and add them to loops. */
 static void find_innermost_loop(ir_loop *loop)
 {
-	/* descend into sons */
-	size_t sons = get_loop_n_sons(loop);
+	bool   had_sons   = false;
+	size_t n_elements = get_loop_n_elements(loop);
+	size_t e;
 
-	if (sons == 0) {
-		ARR_APP1(ir_loop *, loops, loop);
-	} else {
-		size_t s;
-		for (s = 0; s < sons; ++s) {
-			find_innermost_loop(get_loop_son(loop, s));
+	for (e = 0; e < n_elements; ++e) {
+		loop_element element = get_loop_element(loop, e);
+		if (*element.kind == k_ir_loop) {
+			find_innermost_loop(element.son);
+			had_sons = true;
 		}
+	}
+
+	if (!had_sons) {
+		ARR_APP1(ir_loop*, loops, loop);
 	}
 }
 
@@ -2672,8 +2676,8 @@ static void set_loop_params(void)
 void loop_optimization(ir_graph *irg)
 {
 	ir_loop *loop;
-	size_t  sons, nr;
-	size_t  i;
+	size_t   i;
+	size_t   n_elements;
 
 	set_loop_params();
 
@@ -2687,12 +2691,15 @@ void loop_optimization(ir_graph *irg)
 	collect_phiprojs(irg);
 
 	loop = get_irg_loop(irg);
-	sons = get_loop_n_sons(loop);
 
 	loops = NEW_ARR_F(ir_loop *, 0);
 	/* List all inner loops */
-	for (nr = 0; nr < sons; ++nr) {
-		find_innermost_loop(get_loop_son(loop, nr));
+	n_elements = get_loop_n_elements(loop);
+	for (i = 0; i < n_elements; ++i) {
+		loop_element element = get_loop_element(loop, i);
+		if (*element.kind != k_ir_loop)
+			continue;
+		find_innermost_loop(element.son);
 	}
 
 	/* Set all links to NULL */

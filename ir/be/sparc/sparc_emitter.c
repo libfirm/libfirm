@@ -402,7 +402,7 @@ static bool writes_reg(const ir_node *node, const arch_register_t *reg)
 
 static bool can_move_into_delayslot(const ir_node *node, const ir_node *to)
 {
-	if (!be_can_move_before(node, to))
+	if (!be_can_move_before(heights, node, to))
 		return false;
 
 	if (is_sparc_Call(to)) {

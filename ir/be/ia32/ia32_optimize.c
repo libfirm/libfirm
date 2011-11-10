@@ -69,17 +69,19 @@ static void copy_mark(const ir_node *old, ir_node *newn)
 
 typedef enum produces_flag_t {
 	produces_no_flag,
-	produces_flag_zero,
-	produces_flag_carry
+	produces_zero_sign,
+	produces_zero_in_carry
 } produces_flag_t;
 
 /**
- * Return which usable flag the given node produces
+ * Return which usable flag the given node produces about the result.
+ * That is zero (ZF) and sign(SF).
+ * We do not check for carry (CF) or overflow (OF).
  *
  * @param node  the node to check
  * @param pn    the projection number of the used result
  */
-static produces_flag_t produces_test_flag(ir_node *node, int pn)
+static produces_flag_t check_produces_zero_sign(ir_node *node, int pn)
 {
 	ir_node                     *count;
 	const ia32_immediate_attr_t *imm_attr;
@@ -127,14 +129,13 @@ check_shift_amount:
 
 		case iro_ia32_Mul:
 			return pn == pn_ia32_Mul_res_high ?
-				produces_flag_carry : produces_no_flag;
+				produces_zero_in_carry : produces_no_flag;
 
 		default:
 			return produces_no_flag;
 	}
 
-	return pn == pn_ia32_res ?
-		produces_flag_zero : produces_no_flag;
+	return pn == pn_ia32_res ? produces_zero_sign : produces_no_flag;
 }
 
 /**
@@ -223,6 +224,7 @@ static void peephole_ia32_Test(ir_node *node)
 		ir_mode         *op_mode;
 		ir_node         *schedpoint;
 		const ir_edge_t *edge;
+		produces_flag_t  produced;
 
 		if (get_nodes_block(left) != block)
 			return;
@@ -245,36 +247,22 @@ static void peephole_ia32_Test(ir_node *node)
 				panic("couldn't find left");
 		}
 
-		/* make sure only Lg/Eq tests are used */
+		produced = check_produces_zero_sign(op, pn);
+		if (produced == produces_no_flag)
+			return;
+
+		/* make sure users only look at the sign/zero flag */
 		foreach_out_edge(node, edge) {
 			ir_node              *user = get_edge_src_irn(edge);
 			ia32_condition_code_t cc  = get_ia32_condcode(user);
 
-			if (cc != ia32_cc_equal && cc != ia32_cc_not_equal) {
-				return;
+			if (cc == ia32_cc_equal || cc == ia32_cc_not_equal)
+				continue;
+			if (produced == produces_zero_sign
+				&& (cc == ia32_cc_sign || cc == ia32_cc_not_sign)) {
+				continue;
 			}
-		}
-
-		switch (produces_test_flag(op, pn)) {
-			case produces_flag_zero:
-				break;
-
-			case produces_flag_carry:
-				foreach_out_edge(node, edge) {
-					ir_node              *user = get_edge_src_irn(edge);
-					ia32_condition_code_t cc   = get_ia32_condcode(user);
-
-					switch (cc) {
-					case ia32_cc_equal:     cc = ia32_cc_above_equal; break; /* CF = 0 */
-					case ia32_cc_not_equal: cc = ia32_cc_below;       break; /* CF = 1 */
-					default: panic("unexpected pn");
-					}
-					set_ia32_condcode(user, cc);
-				}
-				break;
-
-			default:
-				return;
+			return;
 		}
 
 		op_mode = get_ia32_ls_mode(op);
@@ -284,6 +272,21 @@ static void peephole_ia32_Test(ir_node *node)
 		/* Make sure we operate on the same bit size */
 		if (get_mode_size_bits(op_mode) != get_mode_size_bits(get_ia32_ls_mode(node)))
 			return;
+
+		if (produced == produces_zero_in_carry) {
+			/* patch users to look at the carry instead of the zero flag */
+			foreach_out_edge(node, edge) {
+				ir_node              *user = get_edge_src_irn(edge);
+				ia32_condition_code_t cc   = get_ia32_condcode(user);
+
+				switch (cc) {
+				case ia32_cc_equal:     cc = ia32_cc_above_equal; break;
+				case ia32_cc_not_equal: cc = ia32_cc_below;       break;
+				default: panic("unexpected pn");
+				}
+				set_ia32_condcode(user, cc);
+			}
+		}
 
 		if (get_irn_mode(op) != mode_T) {
 			set_irn_mode(op, mode_T);
@@ -1272,23 +1275,30 @@ static void register_peephole_optimisation(ir_op *op, peephole_opt_func func)
 /* Perform peephole-optimizations. */
 void ia32_peephole_optimization(ir_graph *irg)
 {
-	/* register peephole optimisations */
+	/* we currently do it in 2 passes because:
+	 *    Lea -> Add could be usefull as flag producer for Test later
+	 */
+
+	/* pass 1 */
+	clear_irp_opcodes_generic_func();
+	register_peephole_optimisation(op_ia32_Cmp,      peephole_ia32_Cmp);
+	register_peephole_optimisation(op_ia32_Cmp8Bit,  peephole_ia32_Cmp);
+	register_peephole_optimisation(op_ia32_Lea,      peephole_ia32_Lea);
+	if (ia32_cg_config.use_short_sex_eax)
+		register_peephole_optimisation(op_ia32_Conv_I2I, peephole_ia32_Conv_I2I);
+	if (ia32_cg_config.use_pxor)
+		register_peephole_optimisation(op_ia32_xZero, peephole_ia32_xZero);
+	if (! ia32_cg_config.use_imul_mem_imm32)
+		register_peephole_optimisation(op_ia32_IMul, peephole_ia32_Imul_split);
+	be_peephole_opt(irg);
+
+	/* pass 2 */
 	clear_irp_opcodes_generic_func();
 	register_peephole_optimisation(op_ia32_Const,    peephole_ia32_Const);
 	register_peephole_optimisation(op_be_IncSP,      peephole_be_IncSP);
-	register_peephole_optimisation(op_ia32_Lea,      peephole_ia32_Lea);
-	register_peephole_optimisation(op_ia32_Cmp,      peephole_ia32_Cmp);
-	register_peephole_optimisation(op_ia32_Cmp8Bit,  peephole_ia32_Cmp);
 	register_peephole_optimisation(op_ia32_Test,     peephole_ia32_Test);
 	register_peephole_optimisation(op_ia32_Test8Bit, peephole_ia32_Test);
 	register_peephole_optimisation(op_be_Return,     peephole_ia32_Return);
-	if (! ia32_cg_config.use_imul_mem_imm32)
-		register_peephole_optimisation(op_ia32_IMul, peephole_ia32_Imul_split);
-	if (ia32_cg_config.use_pxor)
-		register_peephole_optimisation(op_ia32_xZero, peephole_ia32_xZero);
-	if (ia32_cg_config.use_short_sex_eax)
-		register_peephole_optimisation(op_ia32_Conv_I2I, peephole_ia32_Conv_I2I);
-
 	be_peephole_opt(irg);
 }
 

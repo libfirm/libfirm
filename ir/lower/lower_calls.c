@@ -557,10 +557,15 @@ static void add_hidden_param(ir_graph *irg, size_t n_com, ir_node **ins,
 			ins[idx] = get_CopyB_dst(p);
 
 			/* get rid of the CopyB */
-			turn_into_tuple(p, pn_CopyB_max+1);
-			set_Tuple_pred(p, pn_CopyB_M,         mem);
-			set_Tuple_pred(p, pn_CopyB_X_regular, new_r_Jmp(block));
-			set_Tuple_pred(p, pn_CopyB_X_except,  new_r_Bad(irg, mode_X));
+			if (ir_throws_exception(p)) {
+				turn_into_tuple(p, pn_CopyB_max+1);
+				set_Tuple_pred(p, pn_CopyB_M,         mem);
+				set_Tuple_pred(p, pn_CopyB_X_regular, new_r_Jmp(block));
+				set_Tuple_pred(p, pn_CopyB_X_except,  new_r_Bad(irg, mode_X));
+			} else {
+				turn_into_tuple(p, pn_CopyB_M+1);
+				set_Tuple_pred(p, pn_CopyB_M, mem);
+			}
 			++n_args;
 		}
 	}
