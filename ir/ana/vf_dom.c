@@ -27,7 +27,7 @@
 #include "config.h"
 
 #include "vf_dom.h"
-#include "irphase_t.h"
+#include "irnodemap.h"
 #include "plist.h"
 #include "iredges.h"
 #include "obstack.h"
@@ -47,10 +47,10 @@ typedef struct vd_node {
 
 /* VFirm dominance tree. */
 struct vd_info {
-	obstack   obst;
-	vd_node  *root;
-	ir_phase *phase;
-	ir_node  *block;
+	obstack     obst;
+	vd_node    *root;
+	ir_nodemap *nodemap;
+	ir_node    *block;
 };
 
 static void vd_set_parent(vd_node *parent, vd_node *child)
@@ -74,6 +74,17 @@ static int vd_skip_node(vd_info *vdi, ir_node *irn)
 	return vdi->block && (get_nodes_block(irn) != vdi->block);
 }
 
+static vd_node *vd_init_node(vd_info *info, const ir_node *irn)
+{
+	vd_node *vdn  = OALLOCZ(&info->obst, vd_node);
+
+	vdn->children = plist_obstack_new(&info->obst);
+
+	ir_nodemap_insert(info->nodemap, irn, vdn);
+
+	return vdn;
+}
+
 /* Calculate post-order indices. */
 static int vd_compute_indices_post(vd_info *vdi, ir_node *irn, int counter)
 {
@@ -89,7 +100,10 @@ static int vd_compute_indices_post(vd_info *vdi, ir_node *irn, int counter)
 	}
 
 	/* Postorder indices. */
-	vdn = phase_get_or_set_irn_data(vdi->phase, irn);
+	vdn = ir_nodemap_get(vdi->nodemap, irn);
+	if (vdn == NULL) {
+		vdn = vd_init_node(vdi, irn);
+	}
 	vdn->irn   = irn;
 	vdn->index = counter++;
 	return counter;
@@ -130,7 +144,7 @@ static int vd_compute(vd_info *vdi, ir_node *irn)
 	if (irn != vdi->root->irn) {
 		const ir_edge_t *edge;
 		vd_node *vd_idom = NULL;
-		vd_node *vdn = phase_get_irn_data(vdi->phase, irn);
+		vd_node *vdn     = ir_nodemap_get(vdi->nodemap, irn);
 		assert(vdn);
 
 		/* Find new_idom. */
@@ -139,7 +153,7 @@ static int vd_compute(vd_info *vdi, ir_node *irn)
 			vd_node *vd_src;
 			if (vd_skip_node(vdi, ir_src)) continue;
 
-			vd_src = phase_get_irn_data(vdi->phase, ir_src);
+			vd_src = ir_nodemap_get(vdi->nodemap, ir_src);
 			if (!vd_src) continue;
 
 			if (vd_src->defined) {
@@ -156,7 +170,7 @@ static int vd_compute(vd_info *vdi, ir_node *irn)
 			vd_node *vd_src;
 			if (vd_skip_node(vdi, ir_src)) continue;
 
-			vd_src = phase_get_irn_data(vdi->phase, ir_src);
+			vd_src = ir_nodemap_get(vdi->nodemap, ir_src);
 			if (!vd_src) continue;
 
 			if ((vd_src != vd_idom) && vd_src->defined) {
@@ -180,16 +194,6 @@ static int vd_compute(vd_info *vdi, ir_node *irn)
 	return changed;
 }
 
-static void *vd_init_node(ir_phase *phase, const ir_node *irn)
-{
-	vd_info *info = phase_get_private(phase);
-	vd_node *vdn  = OALLOCZ(&info->obst, vd_node);
-
-	(void)irn;
-	vdn->children = plist_obstack_new(&info->obst);
-	return vdn;
-}
-
 vd_info *vd_init(ir_graph *irg)
 {
 	ir_node *end = get_irg_end_block(irg);
@@ -208,13 +212,15 @@ vd_info *vd_init_root(ir_node *root, int keep_block)
 
 	/* Prepare data structures for computation. */
 	obstack_init(&vdi->obst);
-	vdi->phase = new_phase(irg, vd_init_node);
-	phase_set_private(vdi->phase, vdi);
+	ir_nodemap_init(vdi->nodemap, irg);
 
 	edges = edges_assure(irg);
 
 	/* Setup the root node. */
-	vdi->root = phase_get_or_set_irn_data(vdi->phase, root);
+	vdi->root = ir_nodemap_get(vdi->nodemap, root);
+	if (vdi->root == NULL) {
+		vdi->root = vd_init_node(vdi, root);
+	}
 	vdi->root->irn     = root;
 	vdi->root->defined = 1;
 	vdi->block         = keep_block ? get_nodes_block(root) : NULL;
@@ -246,7 +252,7 @@ vd_info *vd_init_root(ir_node *root, int keep_block)
 
 void vd_free(vd_info *vdi)
 {
-	phase_free(vdi->phase);
+	ir_nodemap_destroy(vdi->nodemap);
 	obstack_free(&vdi->obst, NULL);
 	xfree(vdi);
 }
@@ -254,8 +260,8 @@ void vd_free(vd_info *vdi)
 int vd_node_dominates(vd_info *vdi, ir_node *lhs, ir_node *rhs)
 {
 	/* Check for (non-strict) dominance. */
-	vd_node *lhs_node = phase_get_irn_data(vdi->phase, lhs);
-	vd_node *rhs_node = phase_get_irn_data(vdi->phase, rhs);
+	vd_node *lhs_node = ir_nodemap_get(vdi->nodemap, lhs);
+	vd_node *rhs_node = ir_nodemap_get(vdi->nodemap, rhs);
 
 	return (rhs_node->index >= lhs_node->index) &&
 	       (rhs_node->index <= lhs_node->max_index);
@@ -263,21 +269,21 @@ int vd_node_dominates(vd_info *vdi, ir_node *lhs, ir_node *rhs)
 
 ir_node *vd_node_get_parent(vd_info *vdi, ir_node *irn)
 {
-	vd_node *vdn = phase_get_irn_data(vdi->phase, irn);
+	vd_node *vdn = ir_nodemap_get(vdi->nodemap, irn);
 	assert(vdn && "No dominance information for the given node.");
 	return vdn->parent ? vdn->parent->irn : NULL;
 }
 
 int vd_node_get_child_count(vd_info *vdi, ir_node *irn)
 {
-	vd_node *vdn = phase_get_irn_data(vdi->phase, irn);
+	vd_node *vdn = ir_nodemap_get(vdi->nodemap, irn);
 	assert(vdn && "No dominance information for the given node.");
 	return plist_count(vdn->children);
 }
 
 void vd_node_child_it_init(vd_info *vdi, vd_node_child_it *it, ir_node *irn)
 {
-	vd_node *vdn = phase_get_irn_data(vdi->phase, irn);
+	vd_node *vdn = ir_nodemap_get(vdi->nodemap, irn);
 	assert(vdn && "No dominance information for the given node.");
 	*it = plist_first(vdn->children);
 }
@@ -294,11 +300,6 @@ ir_node *vd_node_child_it_next(vd_node_child_it *it)
 ir_node *vd_get_root(vd_info *vdi)
 {
 	return vdi->root->irn;
-}
-
-ir_graph *vd_get_irg(vd_info *vdi)
-{
-	return phase_get_irg(vdi->phase);
 }
 
 static void vd_dump_node(vd_node *vdn, FILE *f, int indent)

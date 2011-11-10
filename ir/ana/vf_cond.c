@@ -32,7 +32,7 @@
 #include "plist.h"
 #include "obst.h"
 #include "pmap_new.h"
-#include "irphase_t.h"
+#include "irnodemap.h"
 #include "ircons.h"
 #include "irgmod.h"
 #include "irgwalk.h"
@@ -63,12 +63,12 @@ typedef struct vc_node {
 
 /* Gating Condition info. */
 struct vc_info {
-	obstack   obst;
-	vd_info  *vdi;
-	vf_info  *vfi;
-	vc_node  *root;
-	ir_phase *phase;
-	ir_node  *block;
+	obstack     obst;
+	vd_info    *vdi;
+	vf_info    *vfi;
+	vc_node    *root;
+	ir_nodemap *nodemap;
+	ir_node    *block;
 };
 
 static int vc_skip_node(vc_info *vci, ir_node *irn)
@@ -184,7 +184,7 @@ static void vc_compute_cross_conds(vc_info *vci, vc_node *vc_parent,
 			int i;
 
 			/* If it is, first calculate all the remaining conds in ir_dst. */
-			vc_node *vc_dst = phase_get_irn_data(vci->phase, ir_dst);
+			vc_node *vc_dst = ir_nodemap_get_fast(vci->nodemap, ir_dst);
 			vc_compute_cross_conds(vci, vc_parent, vc_dst);
 			assert(vc_dst->cross_conds); /* Normal and cross conds known. */
 
@@ -215,6 +215,22 @@ static void vc_compute_cross_conds(vc_info *vci, vc_node *vc_parent,
 	}
 }
 
+static vc_node *vc_init_node(vc_info *vci, const ir_node *irn)
+{
+	vc_node *vcn = OALLOC(&vci->obst, vc_node);
+
+	/* Initialize the condition maps. It's not obstacked, but we only allocate
+	 * them once, so allocation speed isn't that much of an issue. */
+
+	pmap_new_init(&vcn->conds);
+	vcn->cross_conds = NULL;
+	vcn->irn         = (ir_node*)irn;
+
+	ir_nodemap_insert(vci->nodemap, irn, vcn);
+
+	return vcn;
+}
+
 static void vc_compute_conds(vc_info *vci, ir_node *irn)
 {
 	vd_node_child_it it_path;
@@ -235,7 +251,10 @@ static void vc_compute_conds(vc_info *vci, ir_node *irn)
 	ir_node *ir_dst, *ir_app;
 
 	if (vc_skip_node(vci, irn)) return;
-	vc_src = phase_get_or_set_irn_data(vci->phase, irn);
+	vc_src = ir_nodemap_get(vci->nodemap, irn);
+	if (vc_src == NULL) {
+		vc_src = vc_init_node(vci, irn);
+	}
 
 	assert(!is_Eta(irn));
 
@@ -248,7 +267,10 @@ static void vc_compute_conds(vc_info *vci, ir_node *irn)
 	foreach_vd_node_child(vci->vdi, ir_src, ir_dst, it_path) {
 		if (vc_skip_node(vci, ir_dst)) continue;
 
-		vc_dst = phase_get_or_set_irn_data(vci->phase, ir_dst);
+		vc_dst = ir_nodemap_get(vci->nodemap, ir_dst);
+		if (vc_dst == NULL) {
+			vc_dst = vc_init_node(vci, ir_dst);
+		}
 		vc_compute_cross_conds(vci, vc_src, vc_dst);
 	}
 
@@ -298,7 +320,10 @@ static void vc_compute_conds(vc_info *vci, ir_node *irn)
 		 * ir_dst, to obtain conditions other target nodes. Do not process the
 		 * paths that lead to nodes dominated by ir_dst. We don't need to add
 		 * further information (aka the ir_dst condition) to them. */
-		vc_dst = phase_get_irn_data(vci->phase, ir_dst);
+		vc_dst = ir_nodemap_get(vci->nodemap, ir_dst);
+		if (vc_dst == NULL) {
+			vc_dst = vc_init_node(vci, ir_dst);
+		}
 		assert(vc_dst);
 
 		foreach_pmap_2(&vc_dst->conds, vc_dst->cross_conds, en_cont, j, it_cont) {
@@ -335,7 +360,10 @@ static void vc_compute_conds(vc_info *vci, ir_node *irn)
 	foreach_vd_node_child(vci->vdi, ir_src, ir_dst, it_path) {
 		if (vc_skip_node(vci, ir_dst)) continue;
 
-		vc_dst = phase_get_irn_data(vci->phase, ir_dst);
+		vc_dst = ir_nodemap_get(vci->nodemap, ir_dst);
+		if (vc_dst == NULL) {
+			vc_dst = vc_init_node(vci, ir_dst);
+		}
 
 		pmap_new_destroy(vc_dst->cross_conds);
 		xfree(vc_dst->cross_conds);
@@ -360,7 +388,7 @@ int vc_node_get_rel_cond(vc_info *vci, ir_node *irn, vc_rel_cond *rel_cond)
 	rel_cond->idom = vd_node_get_parent(vci->vdi, irn);
 	if (!rel_cond->idom) return 0;
 
-	vcn = phase_get_irn_data(vci->phase, rel_cond->idom);
+	vcn = ir_nodemap_get(vci->nodemap, rel_cond->idom);
 	if (!vcn) return 0;
 
 	/* Try to look up the nodes condition in the parent. */
@@ -369,22 +397,6 @@ int vc_node_get_rel_cond(vc_info *vci, ir_node *irn, vc_rel_cond *rel_cond)
 
 	rel_cond->cond = *cond;
 	return 1;
-}
-
-static void *vc_init_node(ir_phase *phase, const ir_node *irn)
-{
-	vc_info *vci = phase_get_private(phase);
-	vc_node *vcn = OALLOC(&vci->obst, vc_node);
-
-	/* Initialize the condition maps. It's not obstacked, but we only allocate
-	 * them once, so allocation speed isn't that much of an issue. */
-
-	pmap_new_init(&vcn->conds);
-	vcn->cross_conds = NULL;
-	vcn->irn         = (ir_node*)irn;
-
-	(void)irn;
-	return vcn;
 }
 
 vc_info *vc_init_root(ir_node *root, int keep_block)
@@ -403,12 +415,11 @@ vc_info *vc_init_root(ir_node *root, int keep_block)
 	printf("+------------------------------------------------+\n");
 #endif
 
-	vci->phase = new_phase(irg, vc_init_node);
-	phase_set_private(vci->phase, vci);
+	ir_nodemap_init(vci->nodemap, irg);
 
 	/* Walk through the tree to compute directions. */
 	vc_compute_conds(vci, root);
-	vci->root = phase_get_irn_data(vci->phase, root);
+	vci->root = ir_nodemap_get(vci->nodemap, root);
 	assert(vci->root);
 
 #if VF_DEBUG_CONDITIONS
@@ -420,11 +431,11 @@ vc_info *vc_init_root(ir_node *root, int keep_block)
 
 void vc_free(vc_info *vci)
 {
-	ir_node *irn;
+	size_t pn;
 
 	/* Free all the maps in the nodes. */
-	foreach_phase_irn(vci->phase, irn) {
-		vc_node *vcn = phase_get_irn_data(vci->phase, irn);
+	for (pn = 0; pn < ARR_LEN(vci->nodemap->data); ++pn) {
+		vc_node *vcn = vci->nodemap->data[pn];
 		assert(vcn);
 
 		pmap_new_destroy(&vcn->conds);
@@ -434,7 +445,7 @@ void vc_free(vc_info *vci)
 	vf_free(vci->vfi);
 	vd_free(vci->vdi);
 
-	phase_free(vci->phase);
+	ir_nodemap_destroy(vci->nodemap);
 	obstack_free(&vci->obst, NULL);
 	xfree(vci);
 }
@@ -444,7 +455,7 @@ static void vc_dump_node(vc_info *vci, ir_node *irn, FILE *f, int indent)
 	vd_node_child_it it;
 
 	ir_node *ir_child;
-	vc_node *vcn = phase_get_irn_data(vci->phase, irn);
+	vc_node *vcn = ir_nodemap_get(vci->nodemap, irn);
 	if (!vcn) return;
 
 	foreach_vd_node_child(vci->vdi, vcn->irn, ir_child, it)
@@ -476,11 +487,6 @@ void vc_dump(vc_info *vci, FILE *f)
 	);
 
 	vc_dump_node(vci, vci->root->irn, f, 1);
-}
-
-ir_graph *vc_get_irg(vc_info *vci)
-{
-	return phase_get_irg(vci->phase);
 }
 
 ir_node *vc_get_root(vc_info *vci)

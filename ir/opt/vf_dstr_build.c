@@ -31,7 +31,7 @@
 #include "irnode_t.h"
 #include "irgmod.h"
 #include "irdump.h"
-#include "irphase_t.h"
+#include "irnodemap.h"
 #include "vf_depth.h"
 #include "vf_dstr_build.h"
 #include "vf_dstr_arrange.h"
@@ -56,7 +56,7 @@ typedef struct vb_info {
 	pmap_new_t  merges;
 	ir_node    *old_block; /* The block that hosts the VFirm graph. */
 	plist_t    *todo;      /* Remaining loop subgraphs to process. */
-	ir_phase   *phase;
+	ir_nodemap *nodemap;
 } vb_info;
 
 typedef struct vb_node {
@@ -199,9 +199,21 @@ static int vb_node_move_to_region_block(vb_info *vbi, va_info *vai,
 	return 0;
 }
 
+static vb_node *vb_init_node(vb_info *vbi, const ir_node *irn)
+{
+	vb_node *vbn = OALLOCZ(&vbi->obst, vb_node);
+
+	ir_nodemap_insert(vbi->nodemap, irn, vbn);
+
+	return vbn;
+}
+
 static void vb_enqueue_loop(vb_info *vbi, ir_node *first_loop)
 {
-	vb_node *vbn = phase_get_or_set_irn_data(vbi->phase, first_loop);
+	vb_node *vbn = ir_nodemap_get(vbi->nodemap, first_loop);
+	if (vbn == NULL) {
+		vbn = vb_init_node(vbi, first_loop);
+	}
 
 	/* If the loop is already on the todo list, do nothing. */
 	if (!vbn->on_todo) {
@@ -216,7 +228,10 @@ static void vb_enqueue_loop(vb_info *vbi, ir_node *first_loop)
 		foreach_va_loop_loop(first_loop, loop, it) {
 			if (loop == first_loop) continue;
 
-			vbn = phase_get_or_set_irn_data(vbi->phase, loop);
+			vbn = ir_nodemap_get(vbi->nodemap, loop);
+			if (vbn == NULL) {
+				vbn = vb_init_node(vbi, loop);
+			}
 			vbn->on_todo = 1;
 		}
 	}
@@ -390,13 +405,16 @@ static void vb_get_body_roots(vb_info *vbi, ir_node *loop, plist_t *thetas,
 
 static void vb_set_link(vb_info *vbi, ir_node *irn, ir_node *link)
 {
-	vb_node *vbn = phase_get_or_set_irn_data(vbi->phase, irn);
+	vb_node *vbn = ir_nodemap_get(vbi->nodemap, irn);
+	if (vbn == NULL) {
+		vbn = vb_init_node(vbi, irn);
+	}
 	vbn->link = link;
 }
 
 static ir_node *vb_get_link(vb_info *vbi, ir_node *irn)
 {
-	vb_node *vbn = phase_get_irn_data(vbi->phase, irn);
+	vb_node *vbn = ir_nodemap_get(vbi->nodemap, irn);
 	return !vbn ? NULL : vbn->link;
 }
 
@@ -789,7 +807,10 @@ static void vb_build_loop(vb_info *vbi, ir_node *first_loop)
 /* Clone the given node if needed (the clone or original irn is returned). */
 static ir_node *vb_clone_dep(vb_info *vbi, ir_node *ir_dep, ir_node *loop)
 {
-	vb_node *vb_dep = phase_get_or_set_irn_data(vbi->phase, ir_dep);
+	vb_node *vb_dep = ir_nodemap_get(vbi->nodemap, ir_dep);
+	if (vb_dep == NULL) {
+		vb_dep = vb_init_node(vbi, ir_dep);
+	}
 
 	if (vb_dep->loop == NULL) {
 		/* Let the loop take ownership of the unowned node. */
@@ -879,13 +900,6 @@ static void vb_clone_loop(vb_info *vbi, ir_node *first_loop)
 	}
 }
 
-static void *vb_init_node(ir_phase *phase, const ir_node *irn)
-{
-	vb_info *vbi = phase_get_private(phase);
-	(void)irn;
-	return OALLOCZ(&vbi->obst, vb_node);
-}
-
 static void vb_ungate_walk(ir_node *irn, void *ctx)
 {
 	vb_info *vbi = ctx;
@@ -912,7 +926,7 @@ static void vb_ungate_walk(ir_node *irn, void *ctx)
 
 static void vb_ungate(vb_info *vbi)
 {
-	ir_graph *irg = phase_get_irg(vbi->phase);
+	ir_graph *irg = vl_get_irg(vbi->vli);
 	irg_walk_graph(irg, NULL, vb_ungate_walk, vbi);
 }
 
@@ -943,9 +957,8 @@ void vb_build(ir_graph *irg)
 	pmap_new_init(&vbi.merges);
 	pmap_new_init(&vbi.blocks);
 
-	vbi.todo  = plist_obstack_new(&vbi.obst);
-	vbi.phase = new_phase(irg, vb_init_node);
-	phase_set_private(vbi.phase, &vbi);
+	vbi.todo = plist_obstack_new(&vbi.obst);
+	ir_nodemap_init(vbi.nodemap, irg);
 
 	/* Detach all loops in the graph. */
 	vb_detach_all_etas(&vbi, ret);
@@ -991,7 +1004,7 @@ void vb_build(ir_graph *irg)
 	vb_ungate(&vbi);
 	dump_ir_graph(irg, "ungated");
 
-	phase_free(vbi.phase);
+	ir_nodemap_destroy(vbi.nodemap);
 	plist_free(vbi.todo);
 	vl_free(vbi.vli);
 

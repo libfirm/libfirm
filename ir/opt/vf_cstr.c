@@ -40,7 +40,7 @@
 #include "bitset.h"
 #include "pmap.h"
 #include "obstack.h"
-#include "irphase_t.h"
+#include "irnodemap.h"
 
 typedef struct obstack obstack;
 
@@ -164,19 +164,18 @@ typedef struct bg_node {
 } bg_node;
 
 typedef struct bg_info {
-	ir_phase     *phase;
+	ir_nodemap   *nodemap;
 	ir_node      *cons_block;
 	int           num_values;
 	select_value *values;
 	obstack       obst;
 } bg_info;
 
-static void *bg_init_node(ir_phase *phase, const ir_node *irn)
+static bg_node *bg_init_node(bg_info *bgi, const ir_node *irn)
 {
-	bg_info *bgi = phase_get_private(phase);
 	bg_node *bgn = OALLOCZ(&bgi->obst, bg_node);
 
-	(void)irn;
+	ir_nodemap_insert(bgi->nodemap, irn, bgn);
 
 	return bgn;
 }
@@ -184,10 +183,10 @@ static void *bg_init_node(ir_phase *phase, const ir_node *irn)
 static void init_closure(bg_info *bgi, ir_node *block, ir_node *end)
 {
 	int i;
-	bg_node *bgn = phase_get_irn_data(bgi->phase, block);
+	bg_node *bgn = ir_nodemap_get(bgi->nodemap, block);
 	if (bgn) return; /* Already visited. */
 
-	bgn = phase_get_or_set_irn_data(bgi->phase, block);
+	bgn = bg_init_node(bgi, block);
 	if (block == end) return;
 
 	/* Recurse. */
@@ -204,7 +203,7 @@ static ir_node *build_gammas_walk(bg_info *bgi, ir_node *block)
 	const ir_edge_t *edge;
 
 	/* Get the node data or cancel for nodes outside of the marked region. */
-	bg_node *bgn = phase_get_irn_data(bgi->phase, block);
+	bg_node *bgn = ir_nodemap_get(bgi->nodemap, block);
 	if (!bgn) return NULL;
 
 	/* Backedge detection. Don't recurse here. */
@@ -287,7 +286,6 @@ static ir_node *build_gammas(ir_node *start_block, ir_node *cons_block,
 {
 	int       i, j;
 	ir_graph *irg;
-	ir_phase *phase;
 	bg_info   info;
 	ir_node  *result;
 
@@ -300,12 +298,10 @@ static ir_node *build_gammas(ir_node *start_block, ir_node *cons_block,
 	info.values     = values;
 	obstack_init(&info.obst);
 
-	/* Create the phase. */
+	/* Create the nodemap. */
 	irg = get_irn_irg(cons_block);
 
-	phase = new_phase(irg, bg_init_node);
-	phase_set_private(phase, &info);
-	info.phase = phase;
+	ir_nodemap_init(info.nodemap, irg);
 
 	for (i = 0; i < num_values; i++) {
 		assert(values[i].num_edges > 0);
@@ -318,7 +314,7 @@ static ir_node *build_gammas(ir_node *start_block, ir_node *cons_block,
 			init_closure(&info, edge->src, start_block);
 
 			/* Also remember this edge at the source block. */
-			bgn = phase_get_irn_data(phase, edge->src);
+			bgn = ir_nodemap_get(info.nodemap, edge->src);
 			assert(bgn);
 
 			assert(bgn->num_values < 2);
@@ -332,7 +328,7 @@ static ir_node *build_gammas(ir_node *start_block, ir_node *cons_block,
 	result = build_gammas_walk(&info, start_block);
 
 	/* Cleanup. */
-	phase_free(phase);
+	ir_nodemap_destroy(info.nodemap);
 	obstack_free(&info.obst, NULL);
 
 	return result;

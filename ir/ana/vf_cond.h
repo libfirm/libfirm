@@ -64,9 +64,6 @@ vc_info *vc_init_root(ir_node *root, int keep_block);
 /** Free the gating conditions for the given tree. */
 void vc_free(vc_info *vci);
 
-/** Get the associated graph. */
-ir_graph *vc_get_irg(vc_info *vci);
-
 /** Get the computation root node. */
 ir_node *vc_get_root(vc_info *vci);
 

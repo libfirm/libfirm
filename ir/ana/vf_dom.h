@@ -56,9 +56,6 @@ vd_info *vd_init_root(ir_node *root, int keep_block);
 /** Free the dominance information for the given tree. */
 void vd_free(vd_info *vdi);
 
-/** Get the associated graph. */
-ir_graph *vd_get_irg(vd_info *vdi);
-
 /** Get the computation root node. */
 ir_node *vd_get_root(vd_info *vdi);
 
