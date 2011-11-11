@@ -3,7 +3,7 @@ import sys
 import re
 import docutils.core
 import docutils.writers.html4css1
-from subprocess import Popen, PIPE
+from datetime import datetime
 from jinja2 import Environment, Template
 from jinja2.filters import do_dictsort
 from spec_util import is_dynamic_pinned, verify_node, isAbstract, setdefault
@@ -76,7 +76,7 @@ docu_template = env.from_string(
 					{% endfor %}
 					</dl>
 					{% endif %}
-					{% if node.attributes %}
+					{% if node.attrs %}
 					<h5>Attributes</h5>
 					<dl>
 					{% for attr in node.attrs %}
@@ -104,6 +104,9 @@ docu_template = env.from_string(
 			</div>
 		</div>
 		</div>
+		<div class="footer">
+			Generated {{time}}
+		</div>
 	</body>
 </html>
 ''')
@@ -125,6 +128,7 @@ def prepare_nodes():
 
 def main(argv):
 	real_nodes = prepare_nodes()
-	sys.stdout.write(docu_template.render(nodes = real_nodes))
+	time = datetime.now().replace(microsecond=0).isoformat(' ')
+	sys.stdout.write(docu_template.render(nodes = real_nodes, time=time))
 
 main(sys.argv)

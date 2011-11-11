@@ -70,6 +70,18 @@ div.sidebar input {
 	font-size: 1em;
 }
 
+div.footer {
+	width: 940px;
+	margin: 20px auto 30px auto;
+	font-size: 14px;
+	color: #888;
+	text-align: right;
+}
+
+div.footer a {
+	color: #888;
+}
+
 a {
 	color: #aa0000;
 	text-decoration: underline;
