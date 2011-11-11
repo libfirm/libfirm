@@ -42,6 +42,7 @@
 #include "debug.h"
 #include "error.h"
 #include "irflag.h"
+#include "opt_manage.h"
 
 /**
  * Walker environment.
@@ -441,7 +442,7 @@ static void insert_Confirm_in_block(ir_node *block, void *data)
 	if (is_Switch(cond)) {
 		long proj_nr = get_Proj_proj(proj);
 		handle_case(block, cond, proj_nr, env);
-	} else if (is_Const(cond)) {
+	} else if (is_Cond(cond)) {
 		ir_node *selector = get_Cond_selector(cond);
 		ir_relation rel;
 
@@ -565,25 +566,13 @@ static void insert_Confirm(ir_node *node, void *data)
 /*
  * Construct Confirm nodes
  */
-void construct_confirms(ir_graph *irg)
+static ir_graph_state_t do_construct_confirms(ir_graph *irg)
 {
 	env_t env;
-	int edges_active = edges_activated(irg);
-
 	FIRM_DBG_REGISTER(dbg, "firm.ana.confirm");
-
-	remove_critical_cf_edges(irg);
-
-	/* we need dominance info */
-	assure_doms(irg);
 
 	assert(get_irg_pinned(irg) == op_pin_state_pinned &&
 	       "Nodes must be placed to insert Confirms");
-
-	if (! edges_active) {
-		/* We need edges */
-		edges_activate(irg);
-	}
 
 	env.num_confirms = 0;
 	env.num_consts   = 0;
@@ -602,10 +591,20 @@ void construct_confirms(ir_graph *irg)
 	DB((dbg, LEVEL_1, "# Const replacements: %u\n", env.num_consts));
 	DB((dbg, LEVEL_1, "# node equalities   : %u\n", env.num_eq));
 	DB((dbg, LEVEL_1, "# non-null Confirms : %u\n", env.num_non_null));
+	return 0;
+}
 
-	/* deactivate edges if they where off */
-	if (! edges_active)
-		edges_deactivate(irg);
+static optdesc_t opt_confirms = {
+	"confirms",
+	IR_GRAPH_STATE_CONSISTENT_OUT_EDGES
+	| IR_GRAPH_STATE_CONSISTENT_DOMINANCE
+	| IR_GRAPH_STATE_NO_CRITICAL_EDGES,
+	do_construct_confirms
+};
+
+void construct_confirms(ir_graph *irg)
+{
+	perform_irg_optimization(irg, &opt_confirms);
 }
 
 /* Construct a pass. */
