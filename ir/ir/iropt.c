@@ -587,6 +587,15 @@ ir_relation ir_get_possible_cmp_relations(const ir_node *left,
 	/* Alloc nodes never return null (but throw an exception) */
 	if (is_Alloc(left) && tarval_is_null(tv_r))
 		possible &= ~ir_relation_equal;
+	/* stuff known through confirm nodes */
+	if (is_Confirm(left) && get_Confirm_bound(left) == right) {
+		possible &= get_Confirm_relation(left);
+	}
+	if (is_Confirm(right) && get_Confirm_bound(right) == left) {
+		ir_relation relation = get_Confirm_relation(right);
+		relation = get_inversed_relation(relation);
+		possible &= relation;
+	}
 
 	return possible;
 }
