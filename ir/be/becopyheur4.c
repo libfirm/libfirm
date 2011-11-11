@@ -43,14 +43,11 @@
 #include "xmalloc.h"
 #include "pdeq.h"
 #include "irprintf.h"
-#include "irbitset.h"
 #include "util.h"
 #include "irtools.h"
 #include "error.h"
 #include "list.h"
 #include "statev.h"
-
-#include "irbitset.h"
 
 #include "bearch.h"
 #include "beifg.h"
@@ -772,13 +769,13 @@ static __attribute__((unused)) void chunk_order_nodes(co_mst_env_t *env, aff_chu
 	}
 
 	if (max_node) {
-		bitset_t *visited = bitset_irg_malloc(env->co->irg);
+		bitset_t *visited = bitset_malloc(get_irg_last_idx(env->co->irg));
 
 		for (i = ARR_LEN(chunk->n); i != 0;)
-			bitset_add_irn(visited, chunk->n[--i]);
+			bitset_set(visited, get_irn_idx(chunk->n[--i]));
 
 		pqueue_put(grow, (void *) max_node, max_weight);
-		bitset_remv_irn(visited, max_node);
+		bitset_clear(visited, get_irn_idx(max_node));
 		i = 0;
 		while (!pqueue_empty(grow)) {
 			ir_node *irn = (ir_node*)pqueue_pop_front(grow);
@@ -797,9 +794,9 @@ static __attribute__((unused)) void chunk_order_nodes(co_mst_env_t *env, aff_chu
 			co_gs_foreach_neighb(an, neigh) {
 				co_mst_irn_t *node = get_co_mst_irn(env, neigh->irn);
 
-				if (bitset_contains_irn(visited, node->irn)) {
+				if (bitset_is_set(visited, get_irn_idx(node->irn))) {
 					pqueue_put(grow, (void *) neigh->irn, neigh->costs);
-					bitset_remv_irn(visited, node->irn);
+					bitset_clear(visited, get_irn_idx(node->irn));
 				}
 			}
 		}
@@ -877,7 +874,7 @@ static void expand_chunk_from(co_mst_env_t *env, co_mst_irn_t *node, bitset_t *v
  */
 static aff_chunk_t *fragment_chunk(co_mst_env_t *env, int col, aff_chunk_t *c, waitq *tmp)
 {
-	bitset_t    *visited = bitset_irg_malloc(env->co->irg);
+	bitset_t    *visited = bitset_malloc(get_irg_last_idx(env->co->irg));
 	int         idx, len;
 	aff_chunk_t *best = NULL;
 
@@ -1397,7 +1394,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 	}
 
 	/* fragment the remaining chunk */
-	visited = bitset_irg_malloc(env->co->irg);
+	visited = bitset_malloc(get_irg_last_idx(env->co->irg));
 	for (idx = 0, len = ARR_LEN(best_chunk->n); idx < len; ++idx)
 		bitset_set(visited, get_irn_idx(best_chunk->n[idx]));
 

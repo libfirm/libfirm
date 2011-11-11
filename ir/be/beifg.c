@@ -36,7 +36,6 @@
 #include "irnode_t.h"
 #include "irprintf.h"
 #include "irtools.h"
-#include "irbitset.h"
 #include "beifg.h"
 #include "error.h"
 #include "xmalloc.h"
@@ -374,13 +373,13 @@ static void int_comp_rec(be_ifg_t *ifg, ir_node *n, bitset_t *seen)
 	ir_node *m;
 
 	be_ifg_foreach_neighbour(ifg, &neigh_it, n, m) {
-		if (bitset_contains_irn(seen, m))
+		if (bitset_is_set(seen, get_irn_idx(m)))
 			continue;
 
 		if (arch_get_irn_register_req(m)->type & arch_register_req_type_ignore)
 			continue;
 
-		bitset_add_irn(seen, m);
+		bitset_set(seen, get_irn_idx(m));
 		int_comp_rec(ifg, m, seen);
 	}
 
@@ -390,19 +389,19 @@ static int int_component_stat(ir_graph *irg, be_ifg_t *ifg)
 {
 	int      n_comp    = 0;
 	nodes_iter_t nodes_it;
-	bitset_t *seen     = bitset_irg_malloc(irg);
+	bitset_t *seen     = bitset_malloc(get_irg_last_idx(irg));
 
 	ir_node *n;
 
 	be_ifg_foreach_node(ifg, &nodes_it, n) {
-		if (bitset_contains_irn(seen, n))
+		if (bitset_is_set(seen, get_irn_idx(n)))
 			continue;
 
 		if (arch_get_irn_register_req(n)->type & arch_register_req_type_ignore)
 			continue;
 
 		++n_comp;
-		bitset_add_irn(seen, n);
+		bitset_set(seen, get_irn_idx(n));
 		int_comp_rec(ifg, n, seen);
 	}
 
@@ -414,7 +413,7 @@ void be_ifg_stat(ir_graph *irg, be_ifg_t *ifg, be_ifg_stat_t *stat)
 {
 	nodes_iter_t      nodes_it;
 	neighbours_iter_t neigh_it;
-	bitset_t         *nodes    = bitset_irg_malloc(irg);
+	bitset_t         *nodes    = bitset_malloc(get_irg_last_idx(irg));
 	ir_node          *n, *m;
 
 	memset(stat, 0, sizeof(stat[0]));
@@ -422,8 +421,8 @@ void be_ifg_stat(ir_graph *irg, be_ifg_t *ifg, be_ifg_stat_t *stat)
 	be_ifg_foreach_node(ifg, &nodes_it, n) {
 		stat->n_nodes += 1;
 		be_ifg_foreach_neighbour(ifg, &neigh_it, n, m) {
-			bitset_add_irn(nodes, n);
-			stat->n_edges += !bitset_contains_irn(nodes, m);
+			bitset_set(nodes, get_irn_idx(n));
+			stat->n_edges += !bitset_is_set(nodes, get_irn_idx(m));
 		}
 	}
 

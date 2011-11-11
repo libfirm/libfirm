@@ -34,7 +34,6 @@
 #include "irgmod.h"
 #include "irgwalk.h"
 #include "heights.h"
-#include "irbitset.h"
 #include "irprintf.h"
 #include "irdump.h"
 #include "error.h"

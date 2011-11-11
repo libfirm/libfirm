@@ -38,7 +38,6 @@
 #include "irflag.h"
 #include "irgmod.h"
 #include "irgopt.h"
-#include "irbitset.h"
 #include "irgopt.h"
 #include "irdump.h"
 #include "pdeq.h"

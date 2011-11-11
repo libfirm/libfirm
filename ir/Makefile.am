@@ -321,7 +321,6 @@ EXTRA_DIST = \
 	ident/ident_t.h \
 	ir/instrument.h \
 	ir/irargs_t.h \
-	ir/irbitset.h \
 	ir/ircons_t.h \
 	ir/irdump_t.h \
 	ir/iredges_t.h \

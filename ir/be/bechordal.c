@@ -43,7 +43,6 @@
 #include "irdump.h"
 #include "irdom.h"
 #include "irtools.h"
-#include "irbitset.h"
 #include "debug.h"
 #include "iredges.h"
 

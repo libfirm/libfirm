@@ -46,7 +46,6 @@
 #include "irdump.h"
 #include "irdom.h"
 #include "ircons.h"
-#include "irbitset.h"
 #include "irnode.h"
 #include "ircons.h"
 #include "irtools.h"
