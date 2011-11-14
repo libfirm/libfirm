@@ -21,7 +21,6 @@
  * @file
  * @brief    iropt --- optimizations intertwined with IR construction -- private header.
  * @author   Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
- * @version  $Id$
  */
 #ifndef FIRM_IR_IROPT_T_H
 #define FIRM_IR_IROPT_T_H

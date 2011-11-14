@@ -21,7 +21,6 @@
  * @file
  * @brief      Union-Find datastructure
  * @author     Matthias Braun
- * @version    $Id$
  * @brief
  *  Union-Find datastructure
  *

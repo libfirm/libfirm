@@ -21,7 +21,6 @@
  * @file
  * @author    Michael Beck
  * @brief     A value set, containing expression for values.
- * @version   $Id$
  */
 #ifndef _FIRM_VALUESET_H_
 #define _FIRM_VALUESET_H_

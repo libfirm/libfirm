@@ -22,7 +22,6 @@
  * @brief   Machine dependent Firm optimizations.
  * @date    28.9.2004
  * @author  Sebastian Hack, Michael Beck
- * @version $Id$
  *
  * Implements "Strength Reduction of Multiplications by Integer Constants"
  * by Youfeng Wu.
@@ -572,13 +571,13 @@ ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn)
 	ir_tarval *tv;
 	const ir_settings_arch_dep_t *params = be_get_backend_param()->dep_param;
 
-
 	/* If the architecture dependent optimizations were not initialized
 	   or this optimization was not enabled. */
 	if (params == NULL || (opts & arch_dep_mul_to_shift) == 0)
-		return irn;
+		return res;
 
-	if (!is_Mul(irn) || !mode_is_int(mode))
+	assert(is_Mul(irn));
+	if (!mode_is_int(mode))
 		return res;
 
 	/* we should never do the reverse transformations again
@@ -599,6 +598,11 @@ ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn)
 		tv = get_Const_tarval(right);
 		operand = left;
 	}
+
+	/* multiplications with 0 are a special case which we leave for
+	 * equivalent_node_Mul because the code here can't handle them */
+	if (tv == get_mode_null(mode))
+		return res;
 
 	if (tv != NULL) {
 		res = do_decomposition(irn, operand, tv);

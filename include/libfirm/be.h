@@ -21,7 +21,6 @@
  * @file
  * @brief       Generic backend types and interfaces.
  * @author      Sebastian Hack
- * @version     $Id$
  */
 #ifndef FIRM_BE_MAIN_H
 #define FIRM_BE_MAIN_H
@@ -125,11 +124,6 @@ typedef struct backend_params {
 	/** Alignment of stack parameters */
 	unsigned stack_param_align;
 } backend_params;
-
-/**
- * Register the Firm backend command line options.
- */
-FIRM_API void be_opt_register(void);
 
 /**
  * Parse one backend argument.

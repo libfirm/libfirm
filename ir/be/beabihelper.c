@@ -22,7 +22,6 @@
  * @brief       Helper functions for handling ABI constraints in the code
  *              selection phase.
  * @author      Matthias Braun
- * @version     $Id$
  */
 #include "config.h"
 

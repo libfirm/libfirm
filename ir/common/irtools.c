@@ -21,7 +21,6 @@
  * @file
  * @brief     Some often needed tool-functions
  * @author    Michael Beck
- * @version   $Id$
  */
 #include "config.h"
 

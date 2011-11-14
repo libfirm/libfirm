@@ -22,7 +22,6 @@
  * @brief      Intraprozedural analyses to estimate the call graph.
  * @author     Hubert Schmid
  * @date       09.06.2002
- * @version    $Id$
  * @brief
  *  Interprocedural analysis to estimate the calling relation.
  *

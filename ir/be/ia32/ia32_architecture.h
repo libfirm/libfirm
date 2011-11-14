@@ -21,7 +21,6 @@
  * @file
  * @brief       ia32 architecture variants
  * @author      Michael Beck, Matthias Braun
- * @version     $Id: bearch_ia32_t.h 16363 2007-10-25 23:27:07Z beck $
  */
 #ifndef FIRM_BE_IA32_ARCHITECTURE_H
 #define FIRM_BE_IA32_ARCHITECTURE_H

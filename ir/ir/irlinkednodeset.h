@@ -21,7 +21,6 @@
  * @file
  * @author    Michael Beck
  * @brief     A linked nodeset.
- * @version   $Id$
  */
 #ifndef _FIRM_IRLINKEDNODESET_H_
 #define _FIRM_IRLINKEDNODESET_H_

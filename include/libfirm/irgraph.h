@@ -21,7 +21,6 @@
  * @file
  * @brief    Entry point to the representation of procedure code.
  * @author   Martin Trapp, Christian Schaefer, Goetz Lindenmaier
- * @version  $Id$
  */
 #ifndef FIRM_IR_IRGRAPH_H
 #define FIRM_IR_IRGRAPH_H

@@ -22,7 +22,6 @@
  * @brief   Data modes of operations -- private header.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Mathias Heil,
  *          Michael Beck
- * @version $Id$
  */
 #ifndef FIRM_IR_IRMODE_T_H
 #define FIRM_IR_IRMODE_T_H

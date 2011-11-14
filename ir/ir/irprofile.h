@@ -22,7 +22,6 @@
  * @brief       Code instrumentation and execution count profiling.
  * @author      Adam M. Szalkowski
  * @date        06.04.2006
- * @version     $Id$
  */
 #ifndef FIRM_BE_BEPROFILE_H
 #define FIRM_BE_BEPROFILE_H

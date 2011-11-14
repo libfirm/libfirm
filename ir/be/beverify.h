@@ -22,7 +22,6 @@
  * @brief       Various verify routines that check a scheduled graph for correctness.
  * @author      Matthias Braun
  * @date        05.05.2006
- * @version     $Id$
  */
 #ifndef FIRM_BE_BEVERIFY_H
 #define FIRM_BE_BEVERIFY_H

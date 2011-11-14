@@ -21,7 +21,6 @@
  * @file
  * @brief   Control flow optimizations.
  * @author  Goetz Lindenmaier, Michael Beck, Sebastian Hack
- * @version $Id$
  *
  * Removes Bad control flow predecessors and empty blocks.  A block is empty
  * if it contains only a Jmp node. Blocks can only be removed if they are not
@@ -669,7 +668,7 @@ static void remove_empty_blocks(ir_node *block, void *x)
 	int n_preds = get_Block_n_cfgpreds(block);
 
 	for (i = 0; i < n_preds; ++i) {
-		ir_node *jmp, *jmp_block, *pred, *pred_block;
+		ir_node *jmp, *jmp_block;
 		int n_jpreds = 0;
 
 		jmp = get_Block_cfgpred(block, i);
@@ -680,8 +679,6 @@ static void remove_empty_blocks(ir_node *block, void *x)
 			continue; /* this infinite loop cannot be optimized any further */
 		if (is_unknown_jump_target(&env->block_infos, jmp_block))
 			continue; /* unknown jump target must not be optimized */
-		if (has_operations(&env->block_infos,jmp_block))
-			continue; /* this block contains operations and cannot be skipped */
 		if (has_phis(&env->block_infos,jmp_block))
 			continue; /* this block contains Phis and is not skipped */
 		if (Block_block_visited(jmp_block)) {
@@ -708,6 +705,15 @@ static void remove_empty_blocks(ir_node *block, void *x)
 		 * if block has no Phis.
 		 */
 		if (n_jpreds == 1) {
+			ir_node *pred        = get_Block_cfgpred(jmp_block, 0);
+			ir_node *pred_block  = get_nodes_block(pred);
+			if (has_operations(&env->block_infos,jmp_block)) {
+				if (get_irg_start_block(get_irn_irg(pred_block)) == pred_block)
+					continue; /* must not merge operations into start block */
+				if (!is_Jmp(pred))
+					continue; /* must not create partially dead code, especially when it is mode_M */
+			}
+
 			/* skip jmp block by rerouting its predecessor to block
 			 *
 			 *     A              A
@@ -716,14 +722,14 @@ static void remove_empty_blocks(ir_node *block, void *x)
 			 *     |              |
 			 *   block          block
 			 */
-			pred = get_Block_cfgpred(jmp_block, 0);
 			exchange(jmp, pred);
 
 			/* cleanup: jmp_block might have a Keep edge! */
-			pred_block = get_nodes_block(pred);
 			exchange(jmp_block, pred_block);
 			env->changed = true;
-		} else if (! has_phis(&env->block_infos, block)) {
+		} else if ( !has_phis(&env->block_infos, block) &&
+		            !has_operations(&env->block_infos,jmp_block))
+		{
 			/* all predecessors can skip the jmp block, so block gets some new
 			 * predecessors
 			 *
@@ -742,7 +748,7 @@ static void remove_empty_blocks(ir_node *block, void *x)
 			}
 			/* now append the new predecessors */
 			for (j = 0; j < n_jpreds; ++j) {
-				pred = get_Block_cfgpred(jmp_block, j);
+				ir_node *pred = get_Block_cfgpred(jmp_block, j);
 				ins[n_preds+j] = pred;
 			}
 			set_irn_in(block, n_preds+n_jpreds, ins);

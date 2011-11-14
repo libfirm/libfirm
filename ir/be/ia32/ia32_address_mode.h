@@ -22,7 +22,6 @@
  * @brief       This file contains functions for matching firm graphs for
  *              nodes that can be used as address mode for x86 instructions
  * @author      Matthias Braun
- * @version     $Id$
  */
 #ifndef IA32_ADDRESS_MODE_H
 #define IA32_ADDRESS_MODE_H

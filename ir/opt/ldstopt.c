@@ -21,7 +21,6 @@
  * @file
  * @brief   Load/Store optimizations.
  * @author  Michael Beck
- * @version $Id$
  */
 #include "config.h"
 

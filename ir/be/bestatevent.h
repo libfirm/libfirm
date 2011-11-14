@@ -22,7 +22,6 @@
  * @brief       Statistic events.
  * @author      Sebastian Hack
  * @date        03.09.2006
- * @version     $Id$
  */
 #ifndef FIRM_BE_BESTATEVENT_H
 #define FIRM_BE_BESTATEVENT_H

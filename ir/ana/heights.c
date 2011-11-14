@@ -22,7 +22,6 @@
  * @brief    Compute heights of nodes inside basic blocks
  * @author   Sebastian Hack
  * @date     19.04.2006
- * @version  $Id$
  */
 #include "config.h"
 
@@ -100,12 +99,12 @@ static bool search(ir_heights_t *h, const ir_node *curr, const ir_node *tgt)
 		return false;
 
 	/* Check, if we have already been here. Coming more often won't help :-) */
-	h_curr = get_height_data(h, curr);
+	h_curr = maybe_get_height_data(h, curr);
 	if (h_curr->visited >= h->visited)
 		return false;
 
 	/* If we are too deep into the DAG we won't find the target either. */
-	h_tgt = get_height_data(h, tgt);
+	h_tgt = maybe_get_height_data(h, tgt);
 	if (h_curr->height > h_tgt->height)
 		return false;
 
@@ -130,8 +129,8 @@ int heights_reachable_in_block(ir_heights_t *h, const ir_node *n,
                                const ir_node *m)
 {
 	int res          = 0;
-	irn_height_t *hn = get_height_data(h, n);
-	irn_height_t *hm = get_height_data(h, m);
+	irn_height_t *hn = maybe_get_height_data(h, n);
+	irn_height_t *hm = maybe_get_height_data(h, m);
 
 	assert(get_nodes_block(n) == get_nodes_block(m));
 	assert(hn != NULL && hm != NULL);

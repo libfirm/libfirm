@@ -21,7 +21,6 @@
  * @file
  * @brief   arm emitter
  * @author  Oliver Richter, Tobias Gneist, Michael Beck
- * @version $Id$
  */
 #include "config.h"
 

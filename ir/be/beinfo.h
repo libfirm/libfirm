@@ -21,7 +21,6 @@
  * @file
  * @brief       additional backend node infos
  * @author      Matthias Braun
- * @version     $Id$
  */
 #ifndef FIRM_BE_BEINFO_H
 #define FIRM_BE_BEINFO_H

@@ -22,7 +22,6 @@
  * @brief   PBQP matrix data types.
  * @date    02.10.2008
  * @author  Sebastian Buchwald
- * @version $Id$
  */
 #ifndef KAPS_MATRIX_T_H
 #define KAPS_MATRIX_T_H

@@ -22,7 +22,6 @@
  * @brief    Reverse edges that reference types/entities.
  * @author   Goetz Lindenmaier
  * @date     29.10.2004
- * @version  $Id$
  * @brief
  *  Trouts list all uses of types and entities.
  *  Each type gets a list of all Alloc nodes allocating it.

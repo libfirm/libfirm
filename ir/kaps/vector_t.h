@@ -22,7 +22,6 @@
  * @brief   PBQP vector data types.
  * @date    02.10.2008
  * @author  Sebastian Buchwald
- * @version $Id$
  */
 #include "config.h"
 #ifndef KAPS_VECTOR_T_H

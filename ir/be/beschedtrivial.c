@@ -22,7 +22,6 @@
  * @brief       Trivial node selector.
  * @author      Sebastian Hack
  * @date        29.08.2006
- * @version     $Id$
  */
 #include "config.h"
 

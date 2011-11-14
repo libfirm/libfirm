@@ -22,7 +22,6 @@
  * @brief       Primitive list scheduling with different node selectors.
  * @author      Sebastian Hack
  * @date        20.10.2004
- * @version     $Id$
  */
 #include "config.h"
 

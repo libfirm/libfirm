@@ -22,7 +22,6 @@
  * @brief    Entry point to the representation of a whole program.
  * @author   Goetz Lindenmaier, Michael Beck
  * @date     2000
- * @version  $Id$
  */
 #include "config.h"
 
@@ -491,6 +490,18 @@ ident *get_irp_asm(size_t pos)
 {
 	assert(pos < get_irp_n_asms());
 	return irp->global_asms[pos];
+}
+
+/** Return whether optimization dump vcg graphs */
+int (get_irp_optimization_dumps)(void)
+{
+	return get_irp_optimization_dumps_();
+}
+
+/** Enable vcg dumping of optimization */
+void (enable_irp_optimization_dumps)(void)
+{
+	enable_irp_optimization_dumps_();
 }
 
 #ifndef NDEBUG

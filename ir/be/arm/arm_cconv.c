@@ -21,7 +21,6 @@
  * @file
  * @brief   calling convention helpers
  * @author  Matthias Braun
- * @version $Id$
  */
 #include "config.h"
 

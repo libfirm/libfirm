@@ -21,7 +21,6 @@
  * @file
  * @brief       Array --- dynamic & flexible arrays.
  * @author      Markus Armbruster
- * @version     $Id$
  */
 
 #include "config.h"

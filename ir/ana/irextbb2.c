@@ -22,7 +22,6 @@
  * @brief     Alternative extended basic block computation
  * @author    Matthias Braun
  * @date      5.2005
- * @version   $Id$
  * @brief
  *  Alternative algorithm for computing extended basic blocks (using out edges
  *  and execution frequencies)

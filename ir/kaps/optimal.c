@@ -22,7 +22,6 @@
  * @brief   Optimal reductions and helper functions.
  * @date    28.12.2009
  * @author  Sebastian Buchwald
- * @version $Id$
  */
 #include "config.h"
 

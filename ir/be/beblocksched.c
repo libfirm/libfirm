@@ -22,7 +22,6 @@
  * @brief       Block-scheduling strategies.
  * @author      Matthias Braun, Christoph Mallon
  * @date        27.09.2006
- * @version     $Id$
  *
  * The goals of the greedy (and ILP) algorithm here works by assuming that
  * we want to change as many jumps to fallthroughs as possible (executed jumps

@@ -22,7 +22,6 @@
  * @brief   Buckets for nodes and edges.
  * @date    30.11.2008
  * @author  Sebastian Buchwald
- * @version $Id$
  */
 #include "config.h"
 

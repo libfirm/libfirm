@@ -22,7 +22,6 @@
  * @brief       Simplified hashnap for pointer->pointer relations
  * @author      Hubert Schmid
  * @date        09.06.2002
- * @version     $Id$
  */
 #ifndef FIRM_ADT_PMAP_H
 #define FIRM_ADT_PMAP_H

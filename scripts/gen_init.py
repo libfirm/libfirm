@@ -4,8 +4,6 @@
 # initialization function
 #
 # author: Michael Beck
-#
-# $Id$
 
 import sys
 import os

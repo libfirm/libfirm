@@ -22,7 +22,6 @@
  * @brief       Option handling for spiller.
  * @author      Matthias Braun
  * @date        12.10.2006
- * @version     $Id$
  */
 #ifndef FIRM_BE_BESPILL_H
 #define FIRM_BE_BESPILL_H

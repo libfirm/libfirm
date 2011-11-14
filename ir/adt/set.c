@@ -21,7 +21,6 @@
  * @file
  * @brief       implementation of set
  * @author      Markus Armbruster
- * @version     $Id$
  */
 
 /*  This code is derived from:

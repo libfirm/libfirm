@@ -17,21 +17,11 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/opt/escape_ana.c
- * Purpose:     escape analysis and optimization
- * Author:      Michael Beck
- * Modified by:
- * Created:     03.11.2005
- * CVS-ID:      $Id$
- * Copyright:   (c) 1999-2005 Universität Karlsruhe
- */
-
 /**
- * @file escape_ana.c
- *
- * A fast and simple Escape analysis.
+ * @file
+ * @author Michael Beck
+ * @date   03.11.2005
+ * @brief  A fast and simple Escape analysis.
  */
 #include "config.h"
 

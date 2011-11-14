@@ -21,7 +21,6 @@
  * @file
  * @brief   Optimization wrapper for specifying requirements
  * @author  Andreas Zwinkau
- * @version $Id$
  */
 #ifndef FIRM_OPT_MANAGE_H
 #define FIRM_OPT_MANAGE_H

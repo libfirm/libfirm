@@ -22,7 +22,6 @@
  * @brief       This file implements the IR transformation from firm into
  *              ia32-Firm.
  * @author      Christian Wuerdig, Matthias Braun
- * @version     $Id$
  */
 #include "config.h"
 
@@ -488,15 +487,20 @@ ir_entity *ia32_gen_fp_known_const(ia32_known_const_t kct)
  * input here, for unary operations use NULL).
  */
 static int ia32_use_source_address_mode(ir_node *block, ir_node *node,
-                                        ir_node *other, ir_node *other2, match_flags_t flags)
+                                        ir_node *other, ir_node *other2,
+                                        match_flags_t flags)
 {
 	ir_node *load;
+	ir_mode *mode;
 	long     pn;
 
 	/* float constants are always available */
 	if (is_Const(node)) {
-		ir_mode *mode = get_irn_mode(node);
+		mode = get_irn_mode(node);
 		if (mode_is_float(mode)) {
+			ir_tarval *tv = get_Const_tarval(node);
+			if (!tarval_ieee754_can_conv_lossless(tv, mode_D))
+				return 0;
 			if (ia32_cg_config.use_sse2) {
 				if (is_simple_sse_Const(node))
 					return 0;
@@ -508,6 +512,7 @@ static int ia32_use_source_address_mode(ir_node *block, ir_node *node,
 				return 0;
 			return 1;
 		}
+		return 0;
 	}
 
 	if (!is_Proj(node))
@@ -517,6 +522,10 @@ static int ia32_use_source_address_mode(ir_node *block, ir_node *node,
 	if (!is_Load(load) || pn != pn_Load_res)
 		return 0;
 	if (get_nodes_block(load) != block)
+		return 0;
+	mode = get_irn_mode(node);
+	/* we can't fold mode_E AM */
+	if (mode == ia32_mode_E)
 		return 0;
 	/* we only use address mode if we're the only user of the load */
 	if (get_irn_n_edges(node) != (flags & match_two_users ? 2 : 1))
@@ -983,6 +992,31 @@ static ir_node *get_fpcw(void)
 	return initial_fpcw;
 }
 
+static ir_node *skip_float_upconv(ir_node *node)
+{
+	ir_mode *mode = get_irn_mode(node);
+	assert(mode_is_float(mode));
+
+	while (is_Conv(node)) {
+		ir_node *pred      = get_Conv_op(node);
+		ir_mode *pred_mode = get_irn_mode(pred);
+
+		/**
+		 * suboptimal, but without this check the address mode matcher
+		 * can incorrectly think that something has only 1 user
+		 */
+		if (get_irn_n_edges(node) > 1)
+			break;
+
+		if (!mode_is_float(pred_mode)
+			|| get_mode_size_bits(pred_mode) > get_mode_size_bits(mode))
+			break;
+		node = pred;
+		mode = pred_mode;
+	}
+	return node;
+}
+
 /**
  * Construct a standard binary operation, set AM and immediate if required.
  *
@@ -994,27 +1028,19 @@ static ir_node *get_fpcw(void)
 static ir_node *gen_binop_x87_float(ir_node *node, ir_node *op1, ir_node *op2,
                                     construct_binop_float_func *func)
 {
-	ir_mode             *mode = get_irn_mode(node);
 	dbg_info            *dbgi;
-	ir_node             *block, *new_block, *new_node;
+	ir_node             *block;
+	ir_node             *new_block;
+	ir_node             *new_node;
 	ia32_address_mode_t  am;
 	ia32_address_t      *addr = &am.addr;
 	ia32_x87_attr_t     *attr;
 	/* All operations are considered commutative, because there are reverse
 	 * variants */
-	match_flags_t        flags = match_commutative;
+	match_flags_t        flags = match_commutative | match_am;
 
-	/* happens for div nodes... */
-	if (mode == mode_T) {
-		if (is_Div(node))
-			mode = get_Div_resmode(node);
-		else
-			panic("can't determine mode");
-	}
-
-	/* cannot use address mode with long double on x87 */
-	if (get_mode_size_bits(mode) <= 64)
-		flags |= match_am;
+	op1 = skip_float_upconv(op1);
+	op2 = skip_float_upconv(op2);
 
 	block = get_nodes_block(node);
 	match_arguments(&am, block, op1, op2, NULL, flags);
@@ -1966,7 +1992,8 @@ static ir_node *gen_bt(ir_node *cmp, ir_node *x, ir_node *n)
 }
 
 static ia32_condition_code_t relation_to_condition_code(ir_relation relation,
-                                                        ir_mode *mode)
+                                                        ir_mode *mode,
+                                                        bool overflow_possible)
 {
 	if (mode_is_float(mode)) {
 		switch (relation) {
@@ -1999,13 +2026,15 @@ static ia32_condition_code_t relation_to_condition_code(ir_relation relation,
 		case ir_relation_unordered_equal:
 		case ir_relation_equal:                return ia32_cc_equal;
 		case ir_relation_unordered_less:
-		case ir_relation_less:                 return ia32_cc_less;
+		case ir_relation_less:
+			return overflow_possible ? ia32_cc_less : ia32_cc_sign;
 		case ir_relation_unordered_less_equal:
 		case ir_relation_less_equal:           return ia32_cc_less_equal;
 		case ir_relation_unordered_greater:
 		case ir_relation_greater:              return ia32_cc_greater;
 		case ir_relation_unordered_greater_equal:
-		case ir_relation_greater_equal:        return ia32_cc_greater_equal;
+		case ir_relation_greater_equal:
+			return overflow_possible ? ia32_cc_greater_equal : ia32_cc_not_sign;
 		case ir_relation_unordered_less_greater:
 		case ir_relation_less_greater:         return ia32_cc_not_equal;
 		case ir_relation_less_equal_greater:
@@ -2041,21 +2070,23 @@ static ia32_condition_code_t relation_to_condition_code(ir_relation relation,
 	}
 }
 
-static ir_node *get_flags_node_cmp(ir_node *cmp, ia32_condition_code_t *cc_out)
+static ir_node *get_flags_node(ir_node *cmp, ia32_condition_code_t *cc_out)
 {
 	/* must have a Cmp as input */
 	ir_relation relation = get_Cmp_relation(cmp);
-	ir_relation possible;
 	ir_node    *l        = get_Cmp_left(cmp);
 	ir_node    *r        = get_Cmp_right(cmp);
 	ir_mode    *mode     = get_irn_mode(l);
+	bool        overflow_possible;
+	ir_relation possible;
 	ir_node    *flags;
 
 	/* check for bit-test */
-	if (ia32_cg_config.use_bt && (relation == ir_relation_equal
-		        || (mode_is_signed(mode) && relation == ir_relation_less_greater)
-		        || (!mode_is_signed(mode) && ((relation & ir_relation_greater_equal) == ir_relation_greater)))
-		    && is_And(l)) {
+	if (ia32_cg_config.use_bt
+	    && (relation == ir_relation_equal
+	        || (mode_is_signed(mode) && relation == ir_relation_less_greater)
+	        || (!mode_is_signed(mode) && ((relation & ir_relation_greater_equal) == ir_relation_greater)))
+	    && is_And(l)) {
 		ir_node *la = get_And_left(l);
 		ir_node *ra = get_And_right(l);
 		if (is_Shl(ra)) {
@@ -2068,7 +2099,7 @@ static ir_node *get_flags_node_cmp(ir_node *cmp, ia32_condition_code_t *cc_out)
 			if (is_Const_1(c) && is_Const_0(r)) {
 				/* (1 << n) & ra) */
 				ir_node *n = get_Shl_right(la);
-				flags    = gen_bt(cmp, ra, n);
+				flags = gen_bt(cmp, ra, n);
 				/* the bit is copied into the CF flag */
 				if (relation & ir_relation_equal)
 					*cc_out = ia32_cc_above_equal; /* test for CF=0 */
@@ -2085,25 +2116,17 @@ static ir_node *get_flags_node_cmp(ir_node *cmp, ia32_condition_code_t *cc_out)
 	 * a predecessor node). So add the < bit */
 	possible = ir_get_possible_cmp_relations(l, r);
 	if (((relation & ir_relation_less) && !(possible & ir_relation_greater))
-	  || ((relation & ir_relation_greater) && !(possible & ir_relation_less)))
+	    || ((relation & ir_relation_greater) && !(possible & ir_relation_less)))
 		relation |= ir_relation_less_greater;
 
+	overflow_possible = true;
+	if (is_Const(r) && is_Const_null(r))
+		overflow_possible = false;
+
 	/* just do a normal transformation of the Cmp */
-	*cc_out = relation_to_condition_code(relation, mode);
+	*cc_out = relation_to_condition_code(relation, mode, overflow_possible);
 	flags   = be_transform_node(cmp);
 	return flags;
-}
-
-/**
- * Transform a node returning a "flag" result.
- *
- * @param node    the node to transform
- * @param cc_out  the compare mode to use
- */
-static ir_node *get_flags_node(ir_node *node, ia32_condition_code_t *cc_out)
-{
-	assert(is_Cmp(node));
-	return get_flags_node_cmp(node, cc_out);
 }
 
 /**
@@ -3011,9 +3034,9 @@ static ir_node *gen_Cmp(ir_node *node)
 		assert(get_irn_mode(and_left) == cmp_mode);
 
 		match_arguments(&am, block, and_left, and_right, NULL,
-										match_commutative |
-										match_am | match_8bit_am | match_16bit_am |
-										match_am_and_immediates | match_immediate);
+		                match_commutative |
+		                match_am | match_8bit_am | match_16bit_am |
+		                match_am_and_immediates | match_immediate);
 
 		/* use 32bit compare mode if possible since the opcode is smaller */
 		if (upper_bits_clean(am.new_op1, cmp_mode) &&
@@ -3023,10 +3046,13 @@ static ir_node *gen_Cmp(ir_node *node)
 
 		if (get_mode_size_bits(cmp_mode) == 8) {
 			new_node = new_bd_ia32_Test8Bit(dbgi, new_block, addr->base,
-					addr->index, addr->mem, am.new_op1, am.new_op2, am.ins_permuted);
+			                                addr->index, addr->mem,
+			                                am.new_op1, am.new_op2,
+			                                am.ins_permuted);
 		} else {
-			new_node = new_bd_ia32_Test(dbgi, new_block, addr->base, addr->index,
-					addr->mem, am.new_op1, am.new_op2, am.ins_permuted);
+			new_node = new_bd_ia32_Test(dbgi, new_block, addr->base,
+			                            addr->index, addr->mem, am.new_op1,
+			                            am.new_op2, am.ins_permuted);
 		}
 	} else {
 		/* Cmp(left, right) */
@@ -3046,7 +3072,8 @@ static ir_node *gen_Cmp(ir_node *node)
 			                               am.new_op2, am.ins_permuted);
 		} else {
 			new_node = new_bd_ia32_Cmp(dbgi, new_block, addr->base, addr->index,
-					addr->mem, am.new_op1, am.new_op2, am.ins_permuted);
+			                           addr->mem, am.new_op1, am.new_op2,
+			                           am.ins_permuted);
 		}
 	}
 	set_am_attributes(new_node, &am);
@@ -3149,9 +3176,11 @@ static ir_node *create_doz(ir_node *psi, ir_node *a, ir_node *b)
 
 	dbgi = get_irn_dbg_info(psi);
 	sbb  = new_bd_ia32_Sbb0(dbgi, block, eflags);
+	set_ia32_ls_mode(sbb, mode_Iu);
 	notn = new_bd_ia32_Not(dbgi, block, sbb);
 
 	new_node = new_bd_ia32_And(dbgi, block, noreg_GP, noreg_GP, nomem, new_node, notn);
+	set_ia32_ls_mode(new_node, mode_Iu);
 	set_ia32_commutative(new_node);
 	return new_node;
 }
@@ -5060,6 +5089,7 @@ static ir_node *gen_ffs(ir_node *node)
 
 	/* or */
 	orn = new_bd_ia32_Or(dbgi, block, noreg_GP, noreg_GP, nomem, bsf, neg);
+	set_ia32_ls_mode(orn, mode_Iu);
 	set_ia32_commutative(orn);
 
 	/* add 1 */
@@ -5115,6 +5145,7 @@ static ir_node *gen_parity(ir_node *node)
 	ir_node *xor2 = new_bd_ia32_XorHighLow(dbgi, new_block, xor);
 	ir_node *flags;
 
+	set_ia32_ls_mode(xor, mode_Iu);
 	set_ia32_commutative(xor);
 
 	set_irn_mode(xor2, mode_T);

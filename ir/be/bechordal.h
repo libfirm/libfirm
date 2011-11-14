@@ -22,7 +22,6 @@
  * @brief       Chordal register allocation.
  * @author      Sebastian Hack
  * @date        14.12.2004
- * @version     $Id$
  */
 #ifndef FIRM_BE_BECHORDAL_H
 #define FIRM_BE_BECHORDAL_H

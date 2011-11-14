@@ -22,7 +22,6 @@
  * @brief       Common stuff used by all ILP formulations.
  * @author      Daniel Grund
  * @date        28.02.2006
- * @version     $Id$
  */
 #ifndef FIRM_BE_BECOPYILP_T_H
 #define FIRM_BE_BECOPYILP_T_H

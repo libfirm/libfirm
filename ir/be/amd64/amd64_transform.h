@@ -20,7 +20,6 @@
 /**
  * @file
  * @brief   declaration for the transform function (code selection)
- * @version $Id: amd64_transform.h 26542 2009-09-18 09:18:32Z matze $
  */
 #ifndef FIRM_BE_amd64_amd64_TRANSFORM_H
 #define FIRM_BE_amd64_amd64_TRANSFORM_H

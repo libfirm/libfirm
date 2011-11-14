@@ -22,7 +22,6 @@
  * @brief       implementation of the spill/reload placement abstraction layer
  * @author      Daniel Grund, Sebastian Hack, Matthias Braun
  * @date        29.09.2005
- * @version     $Id$
  */
 #include "config.h"
 

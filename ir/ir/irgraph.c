@@ -21,7 +21,6 @@
  * @file
  * @brief    Entry point to the representation of procedure code.
  * @author   Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
- * @version  $Id$
  */
 #include "config.h"
 

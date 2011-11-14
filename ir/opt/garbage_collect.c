@@ -21,7 +21,6 @@
  * @file
  * @brief    Removal of unreachable methods.
  * @author   Matthias Braun
- * @version  $Id$
  */
 #include "config.h"
 

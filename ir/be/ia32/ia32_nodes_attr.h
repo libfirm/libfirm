@@ -21,14 +21,12 @@
  * @file
  * @brief       Type definitions for ia32 node attributes.
  * @author      Christian Wuerdig
- * @version     $Id$
  */
 #ifndef FIRM_BE_IA32_IA32_NODES_ATTR_H
 #define FIRM_BE_IA32_IA32_NODES_ATTR_H
 
 #include "firm_types.h"
 #include "bearch.h"
-#include "bemachine.h"
 #include "irnode_t.h"
 
 /** ia32 condition codes (the numbers correspond to the real encoding order) */
@@ -200,8 +198,6 @@ struct ia32_attr_t {
 	                               value that is manipulated by this node. */
 
 	ir_entity *frame_ent; /**< the frame entity attached to this node */
-
-	const be_execution_unit_t ***exec_units; /**< list of units this operation can be executed on */
 
 	ir_label_t        exc_label;       /**< the exception label iff this instruction can throw an exception */
 

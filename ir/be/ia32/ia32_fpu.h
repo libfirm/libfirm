@@ -21,7 +21,6 @@
  * @file
  * @brief   Handles fpu rounding modes
  * @author  Matthias Braun
- * @version $Id$
  */
 #ifndef FIRM_BE_IA32_IA32_FPU_H
 #define FIRM_BE_IA32_IA32_FPU_H

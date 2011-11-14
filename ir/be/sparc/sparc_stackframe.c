@@ -21,7 +21,6 @@
  * @file
  * @brief   Manage addressing into the stackframe
  * @author  Matthias Braun
- * @version $Id$
  */
 #include "config.h"
 

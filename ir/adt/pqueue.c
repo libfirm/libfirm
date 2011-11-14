@@ -21,7 +21,6 @@
  * @file
  * @author  Christian Wuerdig, Matthias Braun
  * @brief   Priority Queue implementation based on the heap datastructure
- * @version $Id$
  */
 #include "config.h"
 

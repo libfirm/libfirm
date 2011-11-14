@@ -21,7 +21,6 @@
  * @file
  * @brief   iropt --- optimizations of an ir node.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
- * @version $Id$
  */
 #ifndef FIRM_IR_IROPT_H
 #define FIRM_IR_IROPT_H

@@ -21,7 +21,6 @@
  * @file
  * @brief     Provied obstack_chunk_alloc and obstack_chunk_free for obstack.h
  * @author    Martin Trapp, Christian Schaefer
- * @version   $Id$
  */
 #ifndef FIRM_ADT_OBST_H
 #define FIRM_ADT_OBST_H

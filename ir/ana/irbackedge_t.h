@@ -22,7 +22,6 @@
  * @brief     Access function for backedges -- private header.
  * @author    Goetz Lindenmaier
  * @date      7.2002
- * @version   $Id$
  */
 #ifndef FIRM_ANA_IRBACKEDGE_T_H
 #define FIRM_ANA_IRBACKEDGE_T_H

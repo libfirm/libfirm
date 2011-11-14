@@ -23,7 +23,6 @@
  * @author      Sebastian Hack, Daniel Grund, Matthias Braun, Christian Wuerdig,
  *              Sebastian Buchwald
  * @date        04.05.2005
- * @version     $Id$
  *
  * The problem: Given a value and a set of "copies" that are known to
  * represent the same abstract value, rewire all usages of the original value

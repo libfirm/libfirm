@@ -21,7 +21,6 @@
  * @file
  * @brief   Definition of the Firm IR base types, concentrated here
  * @author  Michael Beck
- * @version $Id$
  */
 #ifndef FIRM_IR_IRDEFS_H
 #define FIRM_IR_IRDEFS_H

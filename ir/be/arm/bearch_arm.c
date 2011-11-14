@@ -21,7 +21,6 @@
  * @file
  * @brief   The main arm backend driver file.
  * @author  Matthias Braun, Oliver Richter, Tobias Gneist
- * @version $Id$
  */
 #include "config.h"
 
@@ -49,7 +48,6 @@
 #include "belower.h"
 #include "besched.h"
 #include "be.h"
-#include "bemachine.h"
 #include "bemodule.h"
 #include "beirg.h"
 #include "bespillslots.h"
@@ -67,13 +65,6 @@
 #include "arm_optimize.h"
 #include "arm_emitter.h"
 #include "arm_map_regs.h"
-
-static arch_irn_class_t arm_classify(const ir_node *irn)
-{
-	(void) irn;
-	/* TODO: we should mark reload/spill instructions and classify them here */
-	return arch_irn_class_none;
-}
 
 static ir_entity *arm_get_frame_entity(const ir_node *irn)
 {
@@ -120,7 +111,6 @@ static int arm_get_sp_bias(const ir_node *irn)
 /* fill register allocator interface */
 
 static const arch_irn_ops_t arm_irn_ops = {
-	arm_classify,
 	arm_get_frame_entity,
 	arm_set_stack_bias,
 	arm_get_sp_bias,
@@ -436,18 +426,17 @@ static arm_isa_t arm_isa_template = {
 	ARM_FPU_ARCH_FPE,      /* FPU architecture */
 };
 
-/**
- * Initializes the backend ISA and opens the output file.
- */
-static arch_env_t *arm_init(const be_main_env_t *env)
+static void arm_init(void)
 {
-	arm_isa_t *isa = XMALLOC(arm_isa_t);
-	*isa = arm_isa_template;
-
 	arm_register_init();
 
 	arm_create_opcodes(&arm_irn_ops);
-	arm_handle_intrinsics();
+}
+
+static arch_env_t *arm_begin_codegeneration(const be_main_env_t *env)
+{
+	arm_isa_t *isa = XMALLOC(arm_isa_t);
+	*isa = arm_isa_template;
 
 	be_gas_emit_types = false;
 
@@ -457,12 +446,10 @@ static arch_env_t *arm_init(const be_main_env_t *env)
 	return &isa->base;
 }
 
-
-
 /**
  * Closes the output file and frees the ISA structure.
  */
-static void arm_done(void *self)
+static void arm_end_codegeneration(void *self)
 {
 	arm_isa_t *isa = (arm_isa_t*)self;
 
@@ -470,40 +457,6 @@ static void arm_done(void *self)
 
 	be_emit_exit();
 	free(self);
-}
-
-/**
- * Get the register class which shall be used to store a value of a given mode.
- * @param self The this pointer.
- * @param mode The mode in question.
- * @return A register class which can hold values of the given mode.
- */
-static const arch_register_class_t *arm_get_reg_class_for_mode(const ir_mode *mode)
-{
-	if (mode_is_float(mode))
-		return &arm_reg_classes[CLASS_arm_fpa];
-	else
-		return &arm_reg_classes[CLASS_arm_gp];
-}
-
-/**
- * Returns the necessary byte alignment for storing a register of given class.
- */
-static int arm_get_reg_class_alignment(const arch_register_class_t *cls)
-{
-	(void) cls;
-	/* ARM is a 32 bit CPU, no need for other alignment */
-	return 4;
-}
-
-/**
- * Return irp irgs in the desired order.
- */
-static ir_graph **arm_get_irg_list(const void *self, ir_graph ***irg_list)
-{
-	(void) self;
-	(void) irg_list;
-	return NULL;
 }
 
 /**
@@ -611,28 +564,27 @@ static const lc_opt_table_entry_t arm_options[] = {
 
 const arch_isa_if_t arm_isa_if = {
 	arm_init,
-	arm_lower_for_target,
-	arm_done,
-	NULL,  /* handle_intrinsics */
-	arm_get_reg_class_for_mode,
-	NULL,
-	arm_get_reg_class_alignment,
 	arm_get_libfirm_params,
-	arm_get_irg_list,
-	NULL,               /* mark remat */
+	arm_lower_for_target,
 	arm_parse_asm_constraint,
 	arm_is_valid_clobber,
 
+	arm_begin_codegeneration,
+	arm_end_codegeneration,
 	arm_init_graph,
+	NULL,  /* get call abi */
+	NULL,  /* mark remat */
 	NULL,  /* get_pic_base */
+	be_new_spill,
+	be_new_reload,
+	NULL,  /* register_saved_by */
+
+	arm_handle_intrinsics, /* handle_intrinsics */
 	NULL,  /* before_abi */
 	arm_prepare_graph,
 	arm_before_ra,
 	arm_finish_irg,
 	arm_gen_routine,
-	NULL, /* register_saved_by */
-	be_new_spill,
-	be_new_reload,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_arm)

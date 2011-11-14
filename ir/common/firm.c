@@ -21,7 +21,6 @@
  * @file
  * @brief     Central firm functionality.
  * @author    Martin Trapp, Christian Schaefer, Goetz Lindenmaier
- * @version   $Id$
  */
 #include "config.h"
 

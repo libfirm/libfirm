@@ -20,7 +20,6 @@
 /**
  * @file
  * @brief   code selection (transform FIRM into TEMPLATE FIRM)
- * @version $Id$
  */
 #include "config.h"
 

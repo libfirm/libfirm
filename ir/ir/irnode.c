@@ -21,7 +21,6 @@
  * @file
  * @brief   Representation of an intermediate operation.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
- * @version $Id$
  */
 #include "config.h"
 
@@ -1589,24 +1588,6 @@ int (is_irn_keep)(const ir_node *node)
 int (is_irn_start_block_placed)(const ir_node *node)
 {
 	return is_irn_start_block_placed_(node);
-}
-
-/* Returns non-zero for nodes that are machine operations. */
-int (is_irn_machine_op)(const ir_node *node)
-{
-	return is_irn_machine_op_(node);
-}
-
-/* Returns non-zero for nodes that are machine operands. */
-int (is_irn_machine_operand)(const ir_node *node)
-{
-	return is_irn_machine_operand_(node);
-}
-
-/* Returns non-zero for nodes that have the n'th user machine flag set. */
-int (is_irn_machine_user)(const ir_node *node, unsigned n)
-{
-	return is_irn_machine_user_(node, n);
 }
 
 /* Returns non-zero for nodes that are CSE neutral to its users. */

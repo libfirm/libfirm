@@ -22,7 +22,6 @@
  * @brief       Interface for machine code output
  * @author      Matthias Braun
  * @date        12.03.2007
- * @version     $Id$
  */
 #include "config.h"
 

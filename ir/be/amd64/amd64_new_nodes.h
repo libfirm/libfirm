@@ -20,7 +20,6 @@
 /**
  * @file
  * @brief   Function prototypes for the assembler ir node constructors.
- * @version $Id: amd64_new_nodes.h 26549 2009-09-18 17:48:23Z matze $
  */
 #ifndef FIRM_BE_TEMPALTE_amd64_NEW_NODES_H
 #define FIRM_BE_amd64_amd64_NEW_NODES_H

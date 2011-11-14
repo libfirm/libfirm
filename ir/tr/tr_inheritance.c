@@ -21,7 +21,6 @@
  * @file    tr_inheritance.c
  * @brief   Utility routines for inheritance representation
  * @author  Goetz Lindenmaier
- * @version $Id$
  */
 #include "config.h"
 

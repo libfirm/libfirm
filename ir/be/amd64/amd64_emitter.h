@@ -20,7 +20,6 @@
 /**
  * @file
  * @brief    declarations for emit functions
- * @version  $Id: amd64_emitter.h 26317 2009-08-05 10:53:46Z matze $
  */
 #ifndef FIRM_BE_amd64_amd64_EMITTER_H
 #define FIRM_BE_amd64_amd64_EMITTER_H

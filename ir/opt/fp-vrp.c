@@ -21,7 +21,6 @@
  * @file
  * @brief   Data-flow driven minimal fixpoint value range propagation
  * @author  Christoph Mallon
- * @version $Id$
  */
 #include "config.h"
 

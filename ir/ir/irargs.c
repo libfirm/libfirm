@@ -21,7 +21,6 @@
  * @file
  * @brief    Support for libcore IR object output.
  * @author   Sebastian Hack
- * @version  $Id$
  */
 #include "config.h"
 

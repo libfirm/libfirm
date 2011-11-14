@@ -22,7 +22,6 @@
  * @brief   Perform optimizations of the type representation.
  * @date    20.4.2005
  * @author  Goetz Lindenmaier
- * @version $Id$
  */
 #include "config.h"
 

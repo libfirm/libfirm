@@ -21,7 +21,6 @@
  * @file
  * @brief     Some often needed tool-functions
  * @author    Michael Beck
- * @version   $Id$
  */
 #ifndef FIRM_COMMON_IRTOOLS_H
 #define FIRM_COMMON_IRTOOLS_H
@@ -70,7 +69,7 @@ void firm_collect_block_phis(ir_node *node, void *env);
 
 /**
  * Creates an exact copy of a node with same inputs and attributes in the
- * same block.
+ * same block. The copied node will not be optimized (so no CSE is performed).
  *
  * @param node   the node to copy
  */

@@ -22,7 +22,6 @@
  * @brief       Spill module selection; Preparation steps
  * @author      Matthias Braun
  * @date        29.09.2005
- * @version     $Id$
  */
 #include "config.h"
 

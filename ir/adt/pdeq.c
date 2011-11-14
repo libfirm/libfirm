@@ -22,7 +22,6 @@
  * @brief       double ended queue of generic pointers.
  * @author      Christian von Roques
  * @date        1999 by getting from fiasco
- * @version     $Id$
  */
 #include "config.h"
 

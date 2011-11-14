@@ -22,7 +22,6 @@
  * @brief   Operator Strength Reduction.
  * @date    12.5.2006
  * @author  Michael Beck
- * @version $Id$
  * @brief
  *  Implementation of the Operator Strength Reduction algorithm
  *  by Keith D. Cooper, L. Taylor Simpson, Christopher A. Vick.
@@ -1156,6 +1155,12 @@ static ir_node *applyOneEdge(ir_node *iv, ir_node *rc, LFTR_edge *e, iv_env *env
 			panic("Unsupported opcode");
 		}
 
+		if (tv == tarval_bad || tv_init == tarval_bad) {
+			tarval_set_integer_overflow_mode(ovmode);
+			DB((dbg, LEVEL_4, " = OVERFLOW"));
+			return NULL;
+		}
+
 		if (pscc->code == iro_Add) {
 			tv_end = tarval_add(tv, tv_incr);
 		} else {
@@ -1165,7 +1170,7 @@ static ir_node *applyOneEdge(ir_node *iv, ir_node *rc, LFTR_edge *e, iv_env *env
 
 		tarval_set_integer_overflow_mode(ovmode);
 
-		if (tv == tarval_bad || tv_init == tarval_bad || tv_end == tarval_bad) {
+		if (tv_end == tarval_bad) {
 			DB((dbg, LEVEL_4, " = OVERFLOW"));
 			return NULL;
 		}

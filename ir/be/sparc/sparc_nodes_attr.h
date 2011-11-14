@@ -21,7 +21,6 @@
  * @file
  * @brief   attributes attached to all sparc nodes
  * @author  Hannes Rapp, Matthias Braun
- * @version $Id$
  */
 #ifndef FIRM_BE_SPARC_SPARC_NODES_ATTR_H
 #define FIRM_BE_SPARC_SPARC_NODES_ATTR_H

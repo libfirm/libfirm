@@ -22,7 +22,6 @@
  * @brief       Compute register pressure in loops.
  * @author      Christian Wuerdig
  * @date        19.02.2007
- * @version     $Id$
  */
 #include "config.h"
 

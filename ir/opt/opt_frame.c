@@ -22,7 +22,6 @@
  * @brief   Optimize the frame type.
  * @date    15.03.2006
  * @author  Michael Beck
- * @version $Id$
  * @brief
  *   Optimize the frame type by removing unused type members.
  */

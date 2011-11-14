@@ -21,7 +21,6 @@
  * @file
  * @brief      read/write analyze of graph argument, which have mode reference.
  * @author     Beyhan Veliev
- * @version    $Id$
  */
 #include "config.h"
 

@@ -21,7 +21,6 @@
  * @file    typewalk.c
  * @brief   Functionality to modify the type graph.
  * @author  Goetz Lindenmaier
- * @version $Id$
  * @brief
  *
  * Traverse the type information.  The walker walks the whole ir graph

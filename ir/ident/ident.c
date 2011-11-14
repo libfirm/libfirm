@@ -21,7 +21,6 @@
  * @file
  * @brief     Hash table to store names.
  * @author    Goetz Lindenmaier
- * @version   $Id$
  */
 #include "config.h"
 

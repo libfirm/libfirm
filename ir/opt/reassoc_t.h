@@ -17,22 +17,10 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/opt/reassoc_t.h
- * Purpose:     Reassociation
- * Author:      Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2004 Universität Karlsruhe
- */
-
 /**
- * @file reassoc_t.h
- *
- * Reassociation optimization.
- *
+ * @file
  * @author Michael Beck
+ * @brief  Reassociation optimization.
  */
 #ifndef REASSOC_T_H
 #define REASSOC_T_H

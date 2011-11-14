@@ -21,7 +21,6 @@
  * @file
  * @brief   Cliff Click's Combined Analysis/Optimization
  * @author  Michael Beck
- * @version $Id$
  *
  * This is a slightly enhanced version of Cliff Clicks combo algorithm
  * - support for commutative nodes is added, Add(a,b) and Add(b,a) ARE congruent

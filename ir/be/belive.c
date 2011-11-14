@@ -22,7 +22,6 @@
  * @brief       Interblock liveness analysis.
  * @author      Sebastian Hack
  * @date        06.12.2004
- * @version     $Id$
  */
 #include "config.h"
 
@@ -32,7 +31,6 @@
 #include "iredges_t.h"
 #include "irgwalk.h"
 #include "irprintf_t.h"
-#include "irbitset.h"
 #include "irdump_t.h"
 #include "irnodeset.h"
 
@@ -357,8 +355,8 @@ static void live_end_at_block(ir_node *block, int is_true_out)
 		mark_live_out(lv, block, def);
 
 	visited = re.visited;
-	if (!bitset_contains_irn(visited, block)) {
-		bitset_add_irn(visited, block);
+	if (!bitset_is_set(visited, get_irn_idx(block))) {
+		bitset_set(visited, get_irn_idx(block));
 
 		/*
 		 * If this block is not the definition block, we have to go up

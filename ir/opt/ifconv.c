@@ -21,7 +21,6 @@
  * @file    ir/opt/ifconv.c
  * @brief   If conversion
  * @author  Christoph Mallon
- * @version $Id$
  */
 #include "config.h"
 

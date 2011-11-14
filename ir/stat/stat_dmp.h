@@ -21,7 +21,6 @@
  * @file
  * @brief   Statistics for Firm. Dumping.
  * @author  Michael Beck
- * @version $Id$
  */
 #ifndef FIRM_STAT_STAT_DMP_H
 #define FIRM_STAT_STAT_DMP_H

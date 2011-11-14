@@ -22,7 +22,6 @@
  * @brief   Entry point to the representation of a whole program.
  * @author  Goetz Lindenmaier
  * @date    2000
- * @version $Id$
  * @brief
  *  Intermediate Representation (IR) of a program.
  *

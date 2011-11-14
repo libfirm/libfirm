@@ -22,7 +22,6 @@
  * @brief    Construct and access dominator tree -- private datastructures.
  * @author   Goetz Lindenmaier
  * @date     2.2002
- * @version  $Id$
  */
 #ifndef FIRM_ANA_IRDOM_T_H
 #define FIRM_ANA_IRDOM_T_H

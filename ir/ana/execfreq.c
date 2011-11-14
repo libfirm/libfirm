@@ -22,7 +22,6 @@
  * @brief       Compute an estimate of basic block executions.
  * @author      Adam M. Szalkowski
  * @date        28.05.2006
- * @version     $Id$
  */
 #include "config.h"
 

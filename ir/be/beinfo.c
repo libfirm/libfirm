@@ -20,7 +20,6 @@
 /**
  * @file
  * @author      Matthias Braun
- * @version     $Id$
  */
 #include "config.h"
 

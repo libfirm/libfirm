@@ -22,7 +22,6 @@
  * @brief       Beladys spillalgorithm.
  * @author      Daniel Grund, Matthias Braun
  * @date        20.09.2005
- * @version     $Id$
  */
 #include "config.h"
 

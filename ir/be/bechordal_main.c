@@ -22,7 +22,6 @@
  * @brief       Driver for the chordal register allocator.
  * @author      Sebastian Hack
  * @date        29.11.2005
- * @version     $Id$
  */
 #include "config.h"
 
@@ -47,7 +46,6 @@
 #include "irdump.h"
 #include "irdom.h"
 #include "ircons.h"
-#include "irbitset.h"
 #include "irnode.h"
 #include "ircons.h"
 #include "irtools.h"

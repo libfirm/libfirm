@@ -21,7 +21,6 @@
  * @file
  * @brief   Lowering of high level constructs.
  * @author  Michael Beck
- * @version $Id$
  */
 #ifndef FIRM_LOWERING_H
 #define FIRM_LOWERING_H

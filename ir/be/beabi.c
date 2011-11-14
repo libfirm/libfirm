@@ -21,7 +21,6 @@
  * @file
  * @brief       Backend ABI implementation.
  * @author      Sebastian Hack, Michael Beck
- * @version     $Id$
  */
 #include "config.h"
 
@@ -37,7 +36,6 @@
 #include "irgwalk.h"
 #include "irprintf_t.h"
 #include "irgopt.h"
-#include "irbitset.h"
 #include "iropt_t.h"
 #include "irtools.h"
 #include "heights.h"

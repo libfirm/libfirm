@@ -27,7 +27,6 @@
 /**
  * @file
  * @brief   Solving the Minimum Assignment Problem using the Hungarian Method.
- * @version $Id$
  */
 #include "config.h"
 

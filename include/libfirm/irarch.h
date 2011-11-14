@@ -22,7 +22,6 @@
  * @brief  Some machine dependent optimizations.
  * @date   1.10.2004
  * @author Sebastian Hack
- * @version $Id$
  */
 #ifndef FIRM_IR_IRARCH_H
 #define FIRM_IR_IRARCH_H

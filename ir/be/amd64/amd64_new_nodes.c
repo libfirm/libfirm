@@ -22,7 +22,6 @@
  * @brief   This file implements the creation of the achitecture specific firm
  *          opcodes and the coresponding node constructors for the amd64
  *          assembler irg.
- * @version $Id: amd64_new_nodes.c 26673 2009-10-01 16:43:13Z matze $
  */
 #include "config.h"
 
@@ -119,7 +118,6 @@ amd64_SymConst_attr_t *get_amd64_SymConst_attr(ir_node *node)
  */
 static void init_amd64_attributes(ir_node *node, arch_irn_flags_t flags,
                               const arch_register_req_t **in_reqs,
-                              const be_execution_unit_t ***execution_units,
                               int n_res)
 {
 	ir_graph        *irg  = get_irn_irg(node);
@@ -127,7 +125,6 @@ static void init_amd64_attributes(ir_node *node, arch_irn_flags_t flags,
 	amd64_attr_t *attr    = get_amd64_attr(node);
 
 	backend_info_t  *info;
-	(void) execution_units;
 
 	arch_set_irn_flags(node, flags);
 	arch_set_irn_register_reqs_in(node, in_reqs);

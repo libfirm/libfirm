@@ -21,7 +21,6 @@
  * @file
  * @brief   Representation of types -- private header.
  * @author  Goetz Lindenmaier, Michael Beck
- * @version $Id$
  * @see     type.h tpop_t.h tpop.h
  */
 #ifndef FIRM_TR_TYPE_T_H

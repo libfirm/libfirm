@@ -23,7 +23,6 @@
  *           values -- private header.
  * @date     2003
  * @author   Mathias Heil
- * @version  $Id$
  */
 #ifndef FIRM_TV_TV_T_H
 #define FIRM_TV_TV_T_H

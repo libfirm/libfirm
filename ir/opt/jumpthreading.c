@@ -22,7 +22,6 @@
  * @brief   Path-Sensitive Jump Threading
  * @date    10. Sep. 2006
  * @author  Christoph Mallon, Matthias Braun
- * @version $Id$
  */
 #include "config.h"
 

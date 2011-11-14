@@ -21,7 +21,6 @@
  * @file
  * @author    Michael Beck
  * @brief     A value set, containing expression for values.
- * @version   $Id$
  */
 #include "config.h"
 

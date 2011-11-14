@@ -22,7 +22,6 @@
  * @brief       be transform helper extracted from the ia32 backend.
  * @author      Matthias Braun, Michael Beck
  * @date        14.06.2007
- * @version     $Id$
  */
 #ifndef FIRM_BE_BETRANSHLP_H
 #define FIRM_BE_BETRANSHLP_H

@@ -21,7 +21,6 @@
  * @file
  * @brief   Optimizations regarding Confirm nodes.
  * @author  Michael Beck
- * @version $Id$
  */
 #include "config.h"
 

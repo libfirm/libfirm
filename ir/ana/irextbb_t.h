@@ -22,7 +22,6 @@
  * @brief   Extended basis block support -- private header
  * @author  Michael Beck
  * @date    5.2005
- * @version $Id$
  */
 #ifndef FIRM_ANA_IREXTBB_T_H
 #define FIRM_ANA_IREXTBB_T_H

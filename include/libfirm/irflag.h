@@ -21,7 +21,6 @@
  * @file
  * @brief   Flags to control optimizations.
  * @author  Christian Schaefer, Goetz Lindenmaier, Michael Beck
- * @version $Id$
  * @brief
  * Flags to customize the behavior of libfirm.
  *

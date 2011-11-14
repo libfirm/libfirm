@@ -22,7 +22,6 @@
  * @brief   Everlasting outs -- private header.
  * @author  Sebastian Hack, Andreas Schoesser
  * @date    15.01.2005
- * @version $Id$
  */
 #ifndef FIRM_IR_EDGES_T_H
 #define FIRM_IR_EDGES_T_H

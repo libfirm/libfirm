@@ -22,7 +22,6 @@
  * @brief   Write vcg representation of firm to file.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Hubert Schmidt,
  *          Matthias Braun
- * @version $Id$
  */
 #include "config.h"
 
@@ -1912,14 +1911,12 @@ static void dump_out_edge(ir_node *n, void *env)
 	}
 }
 
-static void dump_loop_label(FILE *F, ir_loop *loop)
+static void dump_loop_label(FILE *F, const ir_loop *loop)
 {
-	fprintf(F, "loop %u, %lu sons, %lu nodes",
-	        get_loop_depth(loop), (unsigned long) get_loop_n_sons(loop),
-	        (unsigned long) get_loop_n_nodes(loop));
+	fprintf(F, "loop %u", get_loop_depth(loop));
 }
 
-static void dump_loop_info(FILE *F, ir_loop *loop)
+static void dump_loop_info(FILE *F, const ir_loop *loop)
 {
 	fprintf(F, " info1: \"");
 	fprintf(F, " loop nr: %ld", get_loop_loop_nr(loop));
@@ -1929,7 +1926,7 @@ static void dump_loop_info(FILE *F, ir_loop *loop)
 	fprintf(F, "\"");
 }
 
-static void dump_loop_node(FILE *F, ir_loop *loop)
+static void dump_loop_node(FILE *F, const ir_loop *loop)
 {
 	fprintf(F, "node: {title: \"");
 	PRINT_LOOPID(loop);
@@ -1940,44 +1937,52 @@ static void dump_loop_node(FILE *F, ir_loop *loop)
 	fprintf(F, "}\n");
 }
 
-static void dump_loop_node_edge(FILE *F, ir_loop *loop, size_t i)
+static void dump_loop_node_edge(FILE *F, const ir_loop *loop, size_t i)
 {
 	assert(loop);
 	fprintf(F, "edge: {sourcename: \"");
 	PRINT_LOOPID(loop);
 	fprintf(F, "\" targetname: \"");
-	PRINT_NODEID(get_loop_node(loop, i));
+	PRINT_NODEID(get_loop_element(loop, i).node);
 	fprintf(F, "\" color: green");
 	fprintf(F, "}\n");
 }
 
-static void dump_loop_son_edge(FILE *F, ir_loop *loop, size_t i)
+static void dump_loop_son_edge(FILE *F, const ir_loop *loop, size_t i)
 {
 	assert(loop);
 	fprintf(F, "edge: {sourcename: \"");
 	PRINT_LOOPID(loop);
 	fprintf(F, "\" targetname: \"");
-	PRINT_LOOPID(get_loop_son(loop, i));
-	ir_fprintf(F, "\" color: darkgreen label: \"%zu\"}\n",
-	        get_loop_element_pos(loop, get_loop_son(loop, i)));
+	PRINT_LOOPID(get_loop_element(loop, i).son);
+	ir_fprintf(F, "\" color: darkgreen label: \"%zu\"}\n", i);
 }
 
-static void dump_loops(FILE *F, ir_loop *loop)
+static void dump_loops(FILE *F, const ir_loop *loop)
 {
 	size_t i;
+	size_t n_elements = get_loop_n_elements(loop);
 	/* dump this loop node */
 	dump_loop_node(F, loop);
 
 	/* dump edges to nodes in loop -- only if it is a real loop */
 	if (get_loop_depth(loop) != 0) {
-		for (i = get_loop_n_nodes(loop); i > 0;) {
+		for (i = n_elements; i > 0;) {
+			loop_element element;
 			--i;
+			element = get_loop_element(loop, i);
+			if (*element.kind != k_ir_node)
+				continue;
 			dump_loop_node_edge(F, loop, i);
 		}
 	}
-	for (i = get_loop_n_sons(loop); i > 0;) {
-		 --i;
-		dump_loops(F, get_loop_son(loop, i));
+	for (i = n_elements; i > 0;) {
+		loop_element element;
+		--i;
+		element = get_loop_element(loop, i);
+		if (*element.kind != k_ir_loop)
+			continue;
+		dump_loops(F, element.son);
 		dump_loop_son_edge(F, loop, i);
 	}
 }

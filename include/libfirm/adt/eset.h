@@ -23,7 +23,6 @@
  *              instead)
  * @author      Hubert Schmid
  * @date        09.06.2002
- * @version     $Id$
  * @deprecated
  */
 #ifndef FIRM_ADT_ESET_H

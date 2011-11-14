@@ -22,7 +22,6 @@
  * @brief   Stabs support.
  * @author  Michael Beck
  * @date    11.9.2006
- * @version $Id$
  */
 #include "config.h"
 

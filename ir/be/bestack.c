@@ -20,7 +20,6 @@
 /**
  * @file
  * @author      Sebastian Hack, Matthias Braun
- * @version     $Id$
  *
  * Handling of the stack frame. It is composed of three types:
  * 1) The type of the arguments which are pushed on the stack.

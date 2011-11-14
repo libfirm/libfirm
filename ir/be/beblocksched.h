@@ -22,7 +22,6 @@
  * @brief       Block schedule calculation.
  * @author      Matthias Braun, Christoph Mallon
  * @date        27.09.2006
- * @version     $Id$
  */
 #ifndef FIRM_BE_BEBLOCKSCHED_H
 #define FIRM_BE_BEBLOCKSCHED_H

@@ -22,7 +22,6 @@
  * @brief       Chordal register allocation.
  * @author      Sebastian Hack
  * @date        08.12.2004
- * @version     $Id$
  */
 #include "config.h"
 
@@ -44,7 +43,6 @@
 #include "irdump.h"
 #include "irdom.h"
 #include "irtools.h"
-#include "irbitset.h"
 #include "debug.h"
 #include "iredges.h"
 

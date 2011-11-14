@@ -22,7 +22,6 @@
  * @brief   raw bitsets (low-level bitset operations)
  * @date    15.10.2004
  * @author  Matthias Braun
- * @version $Id$
  *
  *     Raw bitsets are constructed from unsigned int arrays. Additional
  *     information like the size of the bitset or the used memory are not

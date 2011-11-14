@@ -22,7 +22,6 @@
  * @brief   Node/edge bucket data types.
  * @date    30.11.2008
  * @author  Sebastian Buchwald
- * @version $Id$
  */
 #ifndef KAPS_BUCKET_T_H
 #define KAPS_BUCKET_T_H

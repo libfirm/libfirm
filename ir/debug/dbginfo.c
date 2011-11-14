@@ -22,7 +22,6 @@
  * @brief    Implements the Firm interface to debug information.
  * @author   Goetz Lindenmaier, Michael Beck
  * @date     2001
- * @version  $Id$
  */
 #include "config.h"
 

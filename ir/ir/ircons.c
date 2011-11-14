@@ -23,7 +23,6 @@
  *          representation.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Boris Boesler
  *          Michael Beck, Matthias Braun
- * @version $Id$
  */
 #include "config.h"
 

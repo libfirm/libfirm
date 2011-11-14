@@ -21,7 +21,6 @@
  * @file
  * @brief   Optimizations for a whole ir graph, i.e., a procedure.
  * @author  Christian Schaefer, Goetz Lindenmaier, Sebastian Felis
- * @version $Id$
  */
 #ifndef FIRM_IR_IRGOPT_H
 #define FIRM_IR_IRGOPT_H
@@ -55,6 +54,11 @@ FIRM_API void local_optimize_graph(ir_graph *irg);
  * @param irg  The graph to be optimized.
  *
  * @return non-zero if the optimization could be applied, 0 else
+ */
+FIRM_API void local_opts(ir_graph *irg);
+
+/** Same functionality as local_opts above, but without framework wrapper
+ * @deprecated
  */
 FIRM_API int optimize_graph_df(ir_graph *irg);
 

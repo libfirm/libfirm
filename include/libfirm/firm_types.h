@@ -21,7 +21,6 @@
  * @file
  * @brief      Definition of opaque firm types
  * @author     Michael Beck
- * @version    $Id$
  */
 #ifndef FIRM_COMMON_FIRM_TYPES_H
 #define FIRM_COMMON_FIRM_TYPES_H

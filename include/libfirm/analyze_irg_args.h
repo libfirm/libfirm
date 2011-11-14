@@ -21,7 +21,6 @@
  * @file
  * @brief     read/write analyze of graph argument, which have mode reference
  * @author    Beyhan Veliev
- * @version   $Id$
  */
 #ifndef FIRM_ANA_ANALYZE_IRG_ARGS_H
 #define FIRM_ANA_ANALYZE_IRG_ARGS_H

@@ -22,7 +22,6 @@
  * @brief       This file implements the x87 support and virtual to stack
  *              register translation for the ia32 backend.
  * @author      Michael Beck
- * @version     $Id$
  */
 #include "config.h"
 

@@ -21,7 +21,6 @@
  * @file
  * @brief       hashset: datastructure containing objects accessible by their key
  * @author      Markus Armbruster
- * @version     $Id$
  */
 #ifndef FIRM_ADT_SET_H
 #define FIRM_ADT_SET_H

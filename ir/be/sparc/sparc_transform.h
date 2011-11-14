@@ -21,7 +21,6 @@
  * @file
  * @brief   declaration for the transform function (code selection)
  * @author  Hannes Rapp, Matthias Braun
- * @version $Id$
  */
 #ifndef FIRM_BE_SPARC_SPARC_TRANSFORM_H
 #define FIRM_BE_SPARC_SPARC_TRANSFORM_H

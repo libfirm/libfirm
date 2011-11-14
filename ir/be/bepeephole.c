@@ -21,7 +21,6 @@
  * @file
  * @brief       Peephole optimisation framework keeps track of which registers contain which values
  * @author      Matthias Braun
- * @version     $Id$
  */
 #include "config.h"
 
@@ -33,6 +32,7 @@
 #include "irprintf.h"
 #include "ircons.h"
 #include "irgmod.h"
+#include "heights.h"
 #include "error.h"
 
 #include "beirg.h"
@@ -248,22 +248,19 @@ bool be_has_only_one_user(ir_node *node)
 	return n_users == 1;
 }
 
-bool be_can_move_before(const ir_node *node, const ir_node *before)
+bool be_can_move_before(ir_heights_t *heights, const ir_node *node,
+                        const ir_node *before)
 {
 	int      node_arity = get_irn_arity(node);
 	ir_node *schedpoint = sched_next(node);
 
 	while (schedpoint != before) {
 		int      i;
-		int      arity  = get_irn_arity(schedpoint);
 		unsigned n_outs = arch_get_irn_n_outs(schedpoint);
 
 		/* the node must not use our computed values */
-		for (i = 0; i < arity; ++i) {
-			ir_node *in = get_irn_n(schedpoint, i);
-			if (skip_Proj(in) == node)
-				return false;
-		}
+		if (heights_reachable_in_block(heights, schedpoint, node))
+			return false;
 
 		/* the node must not overwrite registers of our inputs */
 		for (i = 0; i < node_arity; ++i) {

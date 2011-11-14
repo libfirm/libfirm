@@ -22,7 +22,6 @@
  * @brief    Loop datastructure and access functions.
  * @author   Goetz Lindenmaier
  * @date     7.2002
- * @version  $Id$
  * @brief
  *  Computes backedges in the control and data flow.
  *
@@ -72,32 +71,12 @@ FIRM_API ir_loop *get_loop_outer_loop(const ir_loop *loop);
 /** Returns nesting depth of this loop */
 FIRM_API unsigned get_loop_depth(const ir_loop *loop);
 
-/** Returns the number of inner loops */
-FIRM_API size_t get_loop_n_sons(const ir_loop *loop);
-
-/** Returns the pos`th son loop (inner loop) of a loop.
-Returns NULL if there is not a pos`th loop_node. */
-FIRM_API ir_loop *get_loop_son(ir_loop *loop, size_t pos);
-
-/** Returns the number of nodes contained in loop.  */
-FIRM_API size_t get_loop_n_nodes(const ir_loop *loop);
-
-/** Returns the pos`th ir_node of a loop.
-Returns NULL if there is not a pos`th ir_node. */
-FIRM_API ir_node *get_loop_node(const ir_loop *loop, size_t pos);
-
 /** Returns the number of elements contained in loop.  */
 FIRM_API size_t get_loop_n_elements(const ir_loop *loop);
 
 /** Returns a loop element.  A loop element can be interpreted as a
 kind pointer, an ir_node* or an ir_loop*. */
 FIRM_API loop_element get_loop_element(const ir_loop *loop, size_t pos);
-
-#define INVALID_LOOP_POS ((size_t)-1)
-
-/** Returns the element number of the loop son in loop.
-*  Returns INVALID_LOOP_POS if not found. O(|elements|). */
-FIRM_API size_t get_loop_element_pos(const ir_loop *loop, void *le);
 
 /** Returns a unique node number for the loop node to make output
 readable. If libfirm_debug is not set it returns the loop cast to

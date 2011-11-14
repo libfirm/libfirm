@@ -22,7 +22,6 @@
  * @brief   Data modes of operations.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Mathias Heil,
  *          Michael Beck
- * @version $Id$
  * @brief
  *  This module specifies the modes that type the firm nodes.  It defines
  *  a datasturcture that describes a mode and implements constructors and

@@ -22,7 +22,6 @@
  * @brief     Construct and access dominator / post dominator tree.
  * @author    Goetz Lindenmaier, Michael Beck, Rubino Geiss
  * @date      2.2002
- * @version   $Id$
  */
 #include "config.h"
 

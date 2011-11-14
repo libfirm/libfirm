@@ -23,7 +23,6 @@
  *           values.
  * @date     2003
  * @author   Mathias Heil
- * @version  $Id$
  * @brief
  *
  * Values are stored in a format depending upon chosen arithmetic
@@ -1186,6 +1185,7 @@ ir_tarval *tarval_and(ir_tarval *a, ir_tarval *b)
 	case irms_internal_boolean:
 		return (a == tarval_b_false) ? a : b;
 
+	case irms_reference:
 	case irms_int_number:
 		sc_and(a->value, b->value, NULL);
 		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
@@ -1206,6 +1206,7 @@ ir_tarval *tarval_andnot(ir_tarval *a, ir_tarval *b)
 	case irms_internal_boolean:
 		return a == tarval_b_true && b == tarval_b_false ? tarval_b_true : tarval_b_false;
 
+	case irms_reference:
 	case irms_int_number:
 		sc_andnot(a->value, b->value, NULL);
 		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
@@ -1229,6 +1230,7 @@ ir_tarval *tarval_or(ir_tarval *a, ir_tarval *b)
 	case irms_internal_boolean:
 		return (a == tarval_b_true) ? a : b;
 
+	case irms_reference:
 	case irms_int_number:
 		sc_or(a->value, b->value, NULL);
 		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
@@ -1252,6 +1254,7 @@ ir_tarval *tarval_eor(ir_tarval *a, ir_tarval *b)
 	case irms_internal_boolean:
 		return (a == b)? tarval_b_false : tarval_b_true;
 
+	case irms_reference:
 	case irms_int_number:
 		sc_xor(a->value, b->value, NULL);
 		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);

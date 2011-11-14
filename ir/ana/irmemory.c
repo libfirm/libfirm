@@ -22,7 +22,6 @@
  * @brief    Memory disambiguator
  * @author   Michael Beck
  * @date     27.12.2006
- * @version  $Id$
  */
 #include "config.h"
 

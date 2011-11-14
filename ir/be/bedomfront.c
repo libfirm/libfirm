@@ -22,7 +22,6 @@
  * @brief       Algorithms for computing dominance frontiers.
  * @author      Sebastian Hack, Daniel Grund
  * @date        04.05.2005
- * @version     $Id$
  */
 #include "config.h"
 

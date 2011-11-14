@@ -20,7 +20,6 @@
 /**
  * @brief   Use the strong normal form theorem (though it does not hold)
  * @author  Christoph Mallon
- * @version $Id$
  */
 #include "config.h"
 

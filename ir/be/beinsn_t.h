@@ -21,7 +21,6 @@
  * @file
  * @brief       A data structure to treat nodes and node-proj collections uniformly.
  * @author      Sebastian Hack
- * @version     $Id$
  */
 #ifndef FIRM_BE_BEINSN_T_H
 #define FIRM_BE_BEINSN_T_H

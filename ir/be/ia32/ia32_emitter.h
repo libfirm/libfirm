@@ -21,7 +21,6 @@
  * @file
  * @brief       This file implements the ia32 node emitter.
  * @author      Christian Wuerdig, Matthias Braun
- * @version     $Id$
  */
 #ifndef FIRM_BE_IA32_IA32_EMITTER_H
 #define FIRM_BE_IA32_IA32_EMITTER_H

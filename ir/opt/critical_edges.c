@@ -22,7 +22,6 @@
  * @brief    Remove critical edges.
  * @author   Christian Schaefer, Goetz Lindenmaier, Sebastian Felis,
  *           Michael Beck
- * @version  $Id$
  */
 #include "config.h"
 

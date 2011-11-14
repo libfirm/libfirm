@@ -22,7 +22,6 @@
  * @brief   Write text representation of firm to file.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Hubert Schmidt,
  *          Matthias Braun
- * @version $Id$
  */
 #include "config.h"
 

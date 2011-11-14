@@ -21,7 +21,6 @@
  * @file
  * @brief   Specialized implementation for perfect bipartite matching.
  * @author  Sebastian Hack
- * @version $Id$
  */
 #include "config.h"
 

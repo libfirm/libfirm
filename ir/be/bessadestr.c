@@ -22,7 +22,6 @@
  * @brief       Performs SSA-Destruction.
  * @author      Daniel Grund
  * @date        25.05.2005
- * @version     $Id$
  */
 #include "config.h"
 

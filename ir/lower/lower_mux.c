@@ -21,7 +21,6 @@
  * @file
  * @brief   Replaces Mux nodes with control-flow
  * @author  Olaf Liebe
- * @version $Id$
  */
 #include "config.h"
 

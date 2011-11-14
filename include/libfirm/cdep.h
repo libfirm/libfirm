@@ -21,7 +21,6 @@
  * @file
  * @brief   control dependence analysis
  * @author  Christoph Mallon
- * @version $Id$
  */
 #ifndef FIRM_ANA_CDEP_H
 #define FIRM_ANA_CDEP_H

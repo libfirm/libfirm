@@ -22,7 +22,6 @@
  * @brief       Methods to compute when a value will be used again.
  * @author      Sebastian Hack, Matthias Braun
  * @date        27.06.2005
- * @version     $Id$
  */
 #ifndef FIRM_BE_BEUSES_H
 #define FIRM_BE_BEUSES_H

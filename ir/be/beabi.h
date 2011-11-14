@@ -21,7 +21,6 @@
  * @file
  * @brief       Backend ABI implementation.
  * @author      Sebastian Hack
- * @version     $Id$
  */
 #ifndef FIRM_BE_BEABI_H
 #define FIRM_BE_BEABI_H

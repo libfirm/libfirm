@@ -22,7 +22,6 @@
  * @brief   This file implements the creation of the achitecture specific firm
  *          opcodes and the coresponding node constructors for the TEMPLATE
  *          assembler irg.
- * @version $Id$
  */
 #include "config.h"
 
@@ -99,13 +98,11 @@ TEMPLATE_attr_t *get_TEMPLATE_attr(ir_node *node)
  */
 static void init_TEMPLATE_attributes(ir_node *node, arch_irn_flags_t flags,
                                      const arch_register_req_t **in_reqs,
-                                     const be_execution_unit_t ***execution_units,
                                      int n_res)
 {
 	ir_graph        *irg  = get_irn_irg(node);
 	struct obstack  *obst = get_irg_obstack(irg);
 	backend_info_t  *info;
-	(void) execution_units;
 
 	arch_set_irn_flags(node, flags);
 	arch_set_irn_register_reqs_in(node, in_reqs);

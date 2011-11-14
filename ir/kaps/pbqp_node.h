@@ -22,7 +22,6 @@
  * @brief   PBQP nodes.
  * @date    02.10.2008
  * @author  Sebastian Buchwald
- * @version $Id$
  */
 #ifndef KAPS_PBQP_NODE_H
 #define KAPS_PBQP_NODE_H

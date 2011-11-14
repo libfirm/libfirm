@@ -22,7 +22,6 @@
  * @brief   Instrumentation of graphs.
  * @date    14.4.2008
  * @author  Michael Beck
- * @version $Id$
  */
 #include "config.h"
 

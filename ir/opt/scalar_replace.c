@@ -21,7 +21,6 @@
  * @file
  * @brief   Scalar replacement of compounds.
  * @author  Beyhan Veliev, Michael Beck
- * @version $Id$
  */
 #include "config.h"
 

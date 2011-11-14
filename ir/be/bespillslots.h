@@ -22,7 +22,6 @@
  * @brief       Spillslot coalescer.
  * @author      Matthias Braun
  * @date        27.07.2006
- * @version     $Id$
  */
 #ifndef FIRM_BE_BESPILLSLOTS_H
 #define FIRM_BE_BESPILLSLOTS_H

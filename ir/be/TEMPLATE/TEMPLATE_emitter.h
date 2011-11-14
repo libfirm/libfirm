@@ -20,7 +20,6 @@
 /**
  * @file
  * @brief    declarations for emit functions
- * @version  $Id$
  */
 #ifndef FIRM_BE_TEMPLATE_TEMPLATE_EMITTER_H
 #define FIRM_BE_TEMPLATE_TEMPLATE_EMITTER_H

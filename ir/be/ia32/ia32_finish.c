@@ -21,7 +21,6 @@
  * @file
  * @brief   This file implements functions to finalize the irg for emit.
  * @author  Christian Wuerdig
- * @version $Id$
  */
 #include "config.h"
 

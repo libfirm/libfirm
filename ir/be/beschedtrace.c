@@ -22,7 +22,6 @@
  * @brief       Implements a trace scheduler as presented in Muchnik[TM].
  * @author      Michael Beck
  * @date        28.08.2006
- * @version     $Id$
  */
 #include "config.h"
 

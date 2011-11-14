@@ -21,7 +21,6 @@
  * @file
  * @brief    New checker of irnodes for correctness.
  * @author   Michael Beck
- * @version  $Id$
  */
 #ifndef FIRM_IR_IRVERIFY_T_H
 #define FIRM_IR_IRVERIFY_T_H

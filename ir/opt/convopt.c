@@ -21,7 +21,6 @@
  * @file
  * @brief   conv node optimisation
  * @author  Matthias Braun, Christoph Mallon
- * @version $Id$
  *
  * Try to minimize the number of conv nodes by changing modes of operations.
  * The typical example is the following structure:

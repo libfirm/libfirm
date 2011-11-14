@@ -21,7 +21,6 @@
  * @file
  * @brief       Forward declarations of backend types
  * @author      Matthias Braun
- * @version     $Id: besched.h 25982 2009-05-15 22:09:38Z matze $
  */
 #ifndef FIRM_BE_TYPES_H
 #define FIRM_BE_TYPES_H
@@ -66,10 +65,6 @@ typedef struct be_abi_irg_t             be_abi_irg_t;
 typedef struct be_stack_layout_t        be_stack_layout_t;
 
 typedef struct be_dom_front_info_t      be_dom_front_info_t;
-
-typedef struct be_execution_unit_type_t be_execution_unit_type_t;
-typedef struct be_execution_unit_t      be_execution_unit_t;
-typedef struct be_machine_t             be_machine_t;
 
 typedef struct backend_info_t           backend_info_t;
 typedef struct sched_info_t             sched_info_t;
