@@ -715,7 +715,7 @@ static void va_region_hint(va_info *vai, va_region *region, va_edge edge)
 	                          vc_get_root(vai->vci);
 	if (va_skip_node(vai, irn)) return;
 
-	/* Visit the node and add the the region for this request. */
+	/* Visit the node and add the region for this request. */
 	van   = ir_nodemap_get(vai->nodemap, irn);
 	if (van == NULL) {
 		van = va_init_node(vai, irn);
