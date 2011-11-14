@@ -80,8 +80,8 @@ void vf_destruct(ir_graph *irg)
 
 	if (!had_edges) edges_deactivate(irg);
 
-	set_irg_outs_inconsistent(irg);
-	set_irg_doms_inconsistent(irg);
-	set_irg_extblk_inconsistent(irg);
-	set_irg_loopinfo_inconsistent(irg);
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS
+	                   | IR_GRAPH_STATE_CONSISTENT_DOMINANCE
+	                   | IR_GRAPH_STATE_CONSISTENT_LOOPINFO
+	                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
 }

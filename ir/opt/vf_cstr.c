@@ -694,7 +694,7 @@ static void insert_etas(ir_graph* irg)
 	pmap *break_conds;
 	assert(irg);
 
-	assure_cf_loop(irg);
+	assure_loopinfo(irg);
 	break_conds = pmap_create();
 
 	irg_walk_graph(irg, NULL, insert_etas_walk, break_conds);
@@ -904,7 +904,7 @@ void vf_construct(ir_graph *irg)
 
 	/* We need to walk the CFG in reverse order and access dominators. */
 	assure_doms(irg);
-	assure_cf_loop(irg);
+	assure_loopinfo(irg);
 
 	set_irg_phase_state(irg, phase_building);
 
@@ -930,10 +930,10 @@ void vf_construct(ir_graph *irg)
 	set_irg_phase_state(irg, phase_high);
 
 	/* Most data is probably inconsistent now. */
-	set_irg_outs_inconsistent(irg);
-	set_irg_doms_inconsistent(irg);
-	set_irg_extblk_inconsistent(irg);
-	set_irg_loopinfo_inconsistent(irg);
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS
+	                   | IR_GRAPH_STATE_CONSISTENT_DOMINANCE
+	                   | IR_GRAPH_STATE_CONSISTENT_LOOPINFO
+	                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
 
 	if (!had_edges) edges_deactivate(irg);
 }
