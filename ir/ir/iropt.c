@@ -6541,7 +6541,7 @@ static int node_cmp_attr_Call(const ir_node *a, const ir_node *b)
 {
 	const call_attr *pa = &a->attr.call;
 	const call_attr *pb = &b->attr.call;
-	if (pa->type != pb->type || pa->tail_call != pb->tail_call)
+	if (pa->type != pb->type)
 		return 1;
 	return node_cmp_exception(a, b);
 }

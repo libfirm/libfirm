@@ -267,12 +267,6 @@ class Call(Op):
 			name    = "type",
 			comment = "type of the call (usually type of the called procedure)",
 		),
-		dict(
-			type = "unsigned",
-			name = "tail_call",
-			# the tail call attribute can only be set by analysis
-			init = "0",
-		)
 	]
 	attr_struct = "call_attr"
 	pinned      = "memory"

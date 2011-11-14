@@ -203,8 +203,6 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 	} break;
 	case iro_Call: {
 		ir_type *tp = get_Call_type(n);
-		if (get_Call_tail_call(n))
-			fprintf(F, "  tail call\n");
 		ir_fprintf(F, "  calling method of type %+F\n", tp);
 		if (get_unknown_type() != tp) {
 			size_t i;
