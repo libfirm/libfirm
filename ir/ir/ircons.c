@@ -775,11 +775,11 @@ ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
 
 ir_node *new_r_Anchor(ir_graph *irg)
 {
-	ir_node *in[anchor_last];
+	ir_node *in[anchor_last+1];
 	ir_node *res;
 	size_t   i;
 	memset(in, 0, sizeof(in));
-	res = new_ir_node(NULL, irg, NULL, op_Anchor, mode_ANY, anchor_last, in);
+	res = new_ir_node(NULL, irg, NULL, op_Anchor, mode_ANY, anchor_last+1, in);
 	res->attr.anchor.irg.irg = irg;
 
 	/* hack to get get_irn_irg working: set block to ourself and allow
@@ -787,7 +787,7 @@ ir_node *new_r_Anchor(ir_graph *irg)
 	res->in[0] = res;
 
 	/* we can't have NULL inputs so reference ourselfes for now */
-	for (i = 0; i < (size_t)anchor_last; ++i) {
+	for (i = 0; i <= (size_t)anchor_last; ++i) {
 		set_irn_n(res, i, res);
 	}
 
