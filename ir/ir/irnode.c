@@ -1642,7 +1642,7 @@ static ir_type *get_Null_type(const ir_node *n)
 }
 
 /* Sets the get_type operation for an ir_op_ops. */
-ir_op_ops *firm_set_default_get_type_attr(unsigned code, ir_op_ops *ops)
+void firm_set_default_get_type_attr(unsigned code, ir_op_ops *ops)
 {
 	switch (code) {
 	case iro_SymConst: ops->get_type_attr = get_SymConst_attr_type; break;
@@ -1656,7 +1656,6 @@ ir_op_ops *firm_set_default_get_type_attr(unsigned code, ir_op_ops *ops)
 			ops->get_type_attr = get_Null_type;
 		break;
 	}
-	return ops;
 }
 
 /** the get_entity_attr operation must be always implemented */
@@ -1667,7 +1666,7 @@ static ir_entity *get_Null_ent(const ir_node *n)
 }
 
 /* Sets the get_type operation for an ir_op_ops. */
-ir_op_ops *firm_set_default_get_entity_attr(unsigned code, ir_op_ops *ops)
+void firm_set_default_get_entity_attr(unsigned code, ir_op_ops *ops)
 {
 	switch (code) {
 	case iro_SymConst: ops->get_entity_attr = get_SymConst_attr_entity; break;
@@ -1678,7 +1677,6 @@ ir_op_ops *firm_set_default_get_entity_attr(unsigned code, ir_op_ops *ops)
 			ops->get_entity_attr = get_Null_ent;
 		break;
 	}
-	return ops;
 }
 
 /* Sets the debug information of a node. */

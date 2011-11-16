@@ -728,16 +728,7 @@ ir_tarval *computed_value(const ir_node *n)
 	return tarval_bad;
 }
 
-/**
- * Set the default computed_value evaluator in an ir_op_ops.
- *
- * @param code   the opcode for the default operation
- * @param ops    the operations initialized
- *
- * @return
- *    The operations.
- */
-static ir_op_ops *firm_set_default_computed_value(ir_opcode code, ir_op_ops *ops)
+void firm_set_default_computed_value(ir_opcode code, ir_op_ops *ops)
 {
 #define CASE(a)                                        \
 	case iro_##a:                                      \
@@ -776,8 +767,6 @@ static ir_op_ops *firm_set_default_computed_value(ir_opcode code, ir_op_ops *ops
 		/* leave NULL */
 		break;
 	}
-
-	return ops;
 #undef CASE_PROJ
 #undef CASE
 }
@@ -1616,16 +1605,7 @@ ir_node *equivalent_node(ir_node *n)
 	return n;
 }
 
-/**
- * Sets the default equivalent node operation for an ir_op_ops.
- *
- * @param code   the opcode for the default operation
- * @param ops    the operations initialized
- *
- * @return
- *    The operations.
- */
-static ir_op_ops *firm_set_default_equivalent_node(ir_opcode code, ir_op_ops *ops)
+void firm_set_default_equivalent_node(ir_opcode code, ir_op_ops *ops)
 {
 #define CASE(a)                                      \
 	case iro_##a:                                    \
@@ -1663,8 +1643,6 @@ static ir_op_ops *firm_set_default_equivalent_node(ir_opcode code, ir_op_ops *op
 		/* leave NULL */
 		break;
 	}
-
-	return ops;
 #undef CASE
 #undef CASE_PROJ
 }
@@ -6360,16 +6338,7 @@ static ir_node *transform_node_Call(ir_node *call)
 	return res;
 }
 
-/**
- * Sets the default transform node operation for an ir_op_ops.
- *
- * @param code   the opcode for the default operation
- * @param ops    the operations initialized
- *
- * @return
- *    The operations.
- */
-static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops)
+void firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops)
 {
 #define CASE(a)                                         \
 	case iro_##a:                                       \
@@ -6419,8 +6388,6 @@ static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops
 	default:
 		break;
 	}
-
-	return ops;
 #undef CASE_PROJ_EX
 #undef CASE_PROJ
 #undef CASE
@@ -6730,16 +6697,7 @@ static int node_cmp_attr_InstOf(const ir_node *a, const ir_node *b)
 	return node_cmp_exception(a, b);
 }
 
-/**
- * Set the default node attribute compare operation for an ir_op_ops.
- *
- * @param code   the opcode for the default operation
- * @param ops    the operations initialized
- *
- * @return
- *    The operations.
- */
-static ir_op_ops *firm_set_default_node_cmp_attr(ir_opcode code, ir_op_ops *ops)
+void firm_set_default_node_cmp_attr(ir_opcode code, ir_op_ops *ops)
 {
 #define CASE(a)                              \
 	case iro_##a:                              \
@@ -6773,8 +6731,6 @@ static ir_op_ops *firm_set_default_node_cmp_attr(ir_opcode code, ir_op_ops *ops)
 		/* leave NULL */
 		break;
 	}
-
-	return ops;
 #undef CASE
 }
 
@@ -7158,16 +7114,7 @@ static unsigned hash_SymConst(const ir_node *node)
 	return h;
 }
 
-/**
- * Set the default hash operation in an ir_op_ops.
- *
- * @param code   the opcode for the default operation
- * @param ops    the operations initialized
- *
- * @return
- *    The operations.
- */
-static ir_op_ops *firm_set_default_hash(unsigned code, ir_op_ops *ops)
+void firm_set_default_hash(unsigned code, ir_op_ops *ops)
 {
 #define CASE(a)                                    \
 	case iro_##a:                                  \
@@ -7176,7 +7123,7 @@ static ir_op_ops *firm_set_default_hash(unsigned code, ir_op_ops *ops)
 
 	/* hash function already set */
 	if (ops->hash != NULL)
-		return ops;
+		return;
 
 	switch (code) {
 	CASE(Const);
@@ -7185,23 +7132,5 @@ static ir_op_ops *firm_set_default_hash(unsigned code, ir_op_ops *ops)
 		/* use input/mode default hash if no function was given */
 		ops->hash = firm_default_hash;
 	}
-
-	return ops;
 #undef CASE
-}
-
-/*
- * Sets the default operation for an ir_ops.
- */
-ir_op_ops *firm_set_default_operations(unsigned code, ir_op_ops *ops)
-{
-	ops = firm_set_default_hash(code, ops);
-	ops = firm_set_default_computed_value(code, ops);
-	ops = firm_set_default_equivalent_node(code, ops);
-	ops = firm_set_default_transform_node(code, ops);
-	ops = firm_set_default_node_cmp_attr(code, ops);
-	ops = firm_set_default_get_type_attr(code, ops);
-	ops = firm_set_default_get_entity_attr(code, ops);
-
-	return ops;
 }
