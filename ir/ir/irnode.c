@@ -1645,11 +1645,14 @@ static ir_type *get_Null_type(const ir_node *n)
 void firm_set_default_get_type_attr(unsigned code, ir_op_ops *ops)
 {
 	switch (code) {
+	case iro_Alloc:    ops->get_type_attr = get_Alloc_type;         break;
+	case iro_Builtin:  ops->get_type_attr = get_Builtin_type;       break;
+	case iro_Call:     ops->get_type_attr = get_Call_type;          break;
+	case iro_Cast:     ops->get_type_attr = get_Cast_type;          break;
+	case iro_CopyB:    ops->get_type_attr = get_CopyB_type;         break;
+	case iro_Free:     ops->get_type_attr = get_Free_type;          break;
+	case iro_InstOf:   ops->get_type_attr = get_InstOf_type;        break;
 	case iro_SymConst: ops->get_type_attr = get_SymConst_attr_type; break;
-	case iro_Call:     ops->get_type_attr = get_Call_type; break;
-	case iro_Alloc:    ops->get_type_attr = get_Alloc_type; break;
-	case iro_Free:     ops->get_type_attr = get_Free_type; break;
-	case iro_Cast:     ops->get_type_attr = get_Cast_type; break;
 	default:
 		/* not allowed to be NULL */
 		if (! ops->get_type_attr)
