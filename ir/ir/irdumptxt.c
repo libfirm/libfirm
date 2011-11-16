@@ -152,7 +152,7 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 	/* Source types */
 	switch (get_irn_opcode(n)) {
 	case iro_Block: {
-		if (has_Block_entity(n))
+		if (get_Block_entity(n) != NULL)
 			fprintf(F, "  Label: %lu\n", get_entity_label(get_Block_entity(n)));
 		fprintf(F, "  block visited: %lu\n", get_Block_block_visited(n));
 		fprintf(F, "  block marked: %u\n", get_Block_mark(n));

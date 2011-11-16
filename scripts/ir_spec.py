@@ -175,6 +175,14 @@ class Block(Op):
 	arity            = "variable"
 	flags            = [ "labeled" ]
 	attr_struct      = "block_attr"
+	attrs            = [
+		dict(
+			name    = "entity",
+			type    = "ir_entity*",
+			comment = "entity representing this block",
+			init    = "NULL",
+		),
+	]
 	customSerializer = True
 
 	init = '''

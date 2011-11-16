@@ -306,14 +306,8 @@ FIRM_API ir_extblk *get_Block_extbb(const ir_node *block);
 FIRM_API void set_Block_extbb(ir_node *block, ir_extblk *extblk);
 /** Returns the ir_graph this Block belongs to. */
 FIRM_API ir_graph *get_Block_irg(const ir_node *block);
-/** Returns non-zero if the block has an entity assigned */
-FIRM_API int has_Block_entity(const ir_node *block);
-/** Returns the entity for a Block */
-FIRM_API ir_entity *get_Block_entity(const ir_node *block);
 /** Returns the entity for a Block (creating it if necessary) */
 FIRM_API ir_entity *create_Block_entity(ir_node *block);
-/** Set a new entity for a block */
-FIRM_API void set_Block_entity(ir_node *block, ir_entity *entity);
 /** Gets the head of the Phi list for this block. */
 FIRM_API ir_node *get_Block_phis(const ir_node *block);
 /** Sets the head of the Phi list for this block. */

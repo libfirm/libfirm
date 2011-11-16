@@ -118,7 +118,7 @@ static int block_needs_label(const ir_node *block)
 	int need_label = 1;
 	int  n_cfgpreds = get_Block_n_cfgpreds(block);
 
-	if (has_Block_entity(block))
+	if (get_Block_entity(block) != NULL)
 		return 1;
 
 	if (n_cfgpreds == 0) {

@@ -643,24 +643,6 @@ ir_entity *create_Block_entity(ir_node *block)
 	return entity;
 }
 
-ir_entity *get_Block_entity(const ir_node *block)
-{
-	assert(is_Block(block));
-	return block->attr.block.entity;
-}
-
-void set_Block_entity(ir_node *block, ir_entity *entity)
-{
-	assert(is_Block(block));
-	assert(get_entity_type(entity) == get_code_type());
-	block->attr.block.entity = entity;
-}
-
-int has_Block_entity(const ir_node *block)
-{
-	return block->attr.block.entity != NULL;
-}
-
 ir_node *(get_Block_phis)(const ir_node *block)
 {
 	return get_Block_phis_(block);
@@ -1674,6 +1656,7 @@ void firm_set_default_get_entity_attr(unsigned code, ir_op_ops *ops)
 	switch (code) {
 	case iro_SymConst: ops->get_entity_attr = get_SymConst_attr_entity; break;
 	case iro_Sel:      ops->get_entity_attr = get_Sel_entity; break;
+	case iro_Block:    ops->get_entity_attr = get_Block_entity; break;
 	default:
 		/* not allowed to be NULL */
 		if (! ops->get_entity_attr)
