@@ -627,15 +627,10 @@ ir_entity *create_Block_entity(ir_node *block)
 
 	entity = block->attr.block.entity;
 	if (entity == NULL) {
-		ir_label_t  nr;
-		ir_type   *glob;
-
-		glob = get_glob_type();
-		entity = new_entity(glob, id_unique("block_%u"), get_code_type());
+		ir_label_t nr = get_irp_next_label_nr();
+		entity = new_label_entity(nr);
 		set_entity_visibility(entity, ir_visibility_local);
 		set_entity_linkage(entity, IR_LINKAGE_CONSTANT);
-		nr = get_irp_next_label_nr();
-		set_entity_label(entity, nr);
 		set_entity_compiler_generated(entity, 1);
 
 		block->attr.block.entity = entity;

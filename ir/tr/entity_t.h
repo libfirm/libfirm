@@ -111,6 +111,13 @@ typedef struct parameter_ent_attr {
 	                            lowering...) */
 } parameter_ent_attr;
 
+typedef enum ir_entity_kind {
+	IR_ENTITY_NORMAL,
+	IR_ENTITY_METHOD,
+	IR_ENTITY_COMPOUND_MEMBER,
+	IR_ENTITY_PARAMETER,
+	IR_ENTITY_LABEL,
+} ir_entity_kind;
 
 /**
  * An abstract data type to represent program entities.
@@ -124,6 +131,7 @@ struct ir_entity {
 	ir_type *type;           /**< The type of this entity */
 	ir_type *owner;          /**< The compound type (e.g. class type) this
 							      entity belongs to. */
+	unsigned entity_kind:3;  /**< entity kind */
 	unsigned linkage:10;     /**< Specifies linkage type */
 	unsigned volatility:1;   /**< Specifies volatility of entities content.*/
 	unsigned aligned:1;      /**< Specifies alignment of entities content. */
@@ -139,7 +147,6 @@ struct ir_entity {
 	                         /**< If the entity is a bit field, this is the
 	                              offset of the start of the bit field
 	                              within the byte specified by offset. */
-	unsigned is_parameter:1; /**< 1 if this represents a function parameter */
 	int offset;              /**< Offset in bytes for this entity. Fixed
 	                              when layout of owner is determined. */
 	unsigned alignment;      /**< entity alignment in bytes */
@@ -176,6 +183,17 @@ struct ir_entity {
 void ir_init_entity(void);
 /** Cleanup entity module */
 void ir_finish_entity(void);
+
+/**
+ * Creates an entity corresponding to the start address of a basic block
+ * (the basic block is marked with a label id).
+ */
+ir_entity *new_label_entity(ir_label_t label);
+
+/**
+ * Like new_label_entity() but with debug information.
+ */
+ir_entity *new_d_label_entity(ir_label_t label, dbg_info *dbgi);
 
 /* ----------------------- inline functions ------------------------ */
 static inline int _is_entity(const void *thing)
@@ -231,12 +249,6 @@ static inline ir_type *_get_entity_type(const ir_entity *ent)
 {
 	assert(ent && ent->kind == k_entity);
 	return ent->type;
-}
-
-static inline void _set_entity_type(ir_entity *ent, ir_type *type)
-{
-	assert(ent && ent->kind == k_entity);
-	ent->type = type;
 }
 
 static inline ir_linkage _get_entity_linkage(const ir_entity *ent)
@@ -381,12 +393,12 @@ static inline int _entity_not_visited(const ir_entity *ent)
 
 static inline int _is_parameter_entity(const ir_entity *entity)
 {
-	return entity->is_parameter;
+	return entity->entity_kind == IR_ENTITY_PARAMETER;
 }
 
 static inline size_t _get_entity_parameter_number(const ir_entity *entity)
 {
-	assert(entity->is_parameter);
+	assert(entity->entity_kind == IR_ENTITY_PARAMETER);
 	return entity->attr.parameter.number;
 }
 
@@ -415,7 +427,6 @@ static inline void _set_entity_dbg_info(ir_entity *ent, dbg_info *db)
 #define set_entity_ld_ident(ent, ld_ident)       _set_entity_ld_ident(ent, ld_ident)
 #define get_entity_ld_name(ent)                  _get_entity_ld_name(ent)
 #define get_entity_type(ent)                     _get_entity_type(ent)
-#define set_entity_type(ent, type)               _set_entity_type(ent, type)
 #define get_entity_linkage(ent)                  _get_entity_linkage(ent)
 #define get_entity_volatility(ent)               _get_entity_volatility(ent)
 #define set_entity_volatility(ent, vol)          _set_entity_volatility(ent, vol)

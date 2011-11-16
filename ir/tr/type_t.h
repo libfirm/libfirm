@@ -134,10 +134,11 @@ enum type_flags {
 	tf_layout_fixed     = 1U << 1, /**< Set if the layout of a type is fixed */
 
 	tf_frame_type       = 1U << 2, /**< Set if this is a frame type. */
-	tf_global_type      = 1U << 3, /**< Set only for the global type */
-	tf_tls_type         = 1U << 4, /**< Set only for the tls type */
-	tf_constructors     = 1U << 5, /**< Set only for the constructors segment type */
-	tf_destructors      = 1U << 6, /**< Set only for the destructors segment type */
+	tf_segment          = 1U << 3, /**< type represents a linker segment */
+	tf_global_type      = 1U << 4, /**< Set only for the global type */
+	tf_tls_type         = 1U << 5, /**< Set only for the tls type */
+	tf_constructors     = 1U << 6, /**< Set only for the constructors segment type */
+	tf_destructors      = 1U << 7, /**< Set only for the destructors segment type */
 };
 ENUM_BITSET(type_flags)
 

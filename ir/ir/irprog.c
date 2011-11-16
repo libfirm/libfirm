@@ -92,10 +92,10 @@ static ir_prog *complete_ir_prog(ir_prog *irp, const char *module_name)
 		= new_type_class(IDENT("Destructors"));
 
 	/* Set these flags for debugging. */
-	irp->segment_types[IR_SEGMENT_GLOBAL]->flags       |= tf_global_type;
-	irp->segment_types[IR_SEGMENT_THREAD_LOCAL]->flags |= tf_tls_type;
-	irp->segment_types[IR_SEGMENT_CONSTRUCTORS]->flags |= tf_constructors;
-	irp->segment_types[IR_SEGMENT_DESTRUCTORS]->flags  |= tf_destructors;
+	irp->segment_types[IR_SEGMENT_GLOBAL]->flags       |= tf_segment|tf_global_type;
+	irp->segment_types[IR_SEGMENT_THREAD_LOCAL]->flags |= tf_segment|tf_tls_type;
+	irp->segment_types[IR_SEGMENT_CONSTRUCTORS]->flags |= tf_segment|tf_constructors;
+	irp->segment_types[IR_SEGMENT_DESTRUCTORS]->flags  |= tf_segment|tf_destructors;
 
 	/* The global type is a class, but we cannot derive from it, so set
 	   the final property to assist optimizations that checks for it. */

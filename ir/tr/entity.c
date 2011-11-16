@@ -59,8 +59,8 @@ ir_entity *get_unknown_entity(void) { return unknown_entity; }
 /* ENTITY                                                          */
 /*-----------------------------------------------------------------*/
 
-static ir_entity *intern_new_entity(ir_type *owner, ident *name, ir_type *type,
-                                    dbg_info *dbgi)
+static ir_entity *intern_new_entity(ir_type *owner, ir_entity_kind kind,
+                                    ident *name, ir_type *type, dbg_info *dbgi)
 {
 	ir_entity *res;
 
@@ -72,6 +72,7 @@ static ir_entity *intern_new_entity(ir_type *owner, ident *name, ir_type *type,
 	res->type    = type;
 	res->owner   = owner;
 
+	res->entity_kind          = kind;
 	res->volatility           = volatility_non_volatile;
 	res->aligned              = align_is_aligned;
 	res->usage                = ir_usage_unknown;
@@ -99,12 +100,13 @@ static ir_entity *intern_new_entity(ir_type *owner, ident *name, ir_type *type,
 ir_entity *new_d_entity(ir_type *owner, ident *name, ir_type *type,
                         dbg_info *db)
 {
-	ir_entity *res = intern_new_entity(owner, name, type, db);
+	ir_entity *res;
 
 	if (is_Method_type(type)) {
 		ir_graph *irg = get_const_code_irg();
 		symconst_symbol sym;
 		ir_mode *mode = is_Method_type(type) ? mode_P_code : mode_P_data;
+		res = intern_new_entity(owner, IR_ENTITY_METHOD, name, type, db);
 		sym.entity_p            = res;
 		set_atomic_ent_value(res, new_r_SymConst(irg, mode, sym, symconst_addr_ent));
 		res->linkage            = IR_LINKAGE_CONSTANT;
@@ -113,11 +115,13 @@ ir_entity *new_d_entity(ir_type *owner, ident *name, ir_type *type,
 		res->attr.mtd_attr.param_access       = NULL;
 		res->attr.mtd_attr.param_weight       = NULL;
 		res->attr.mtd_attr.irg                = NULL;
-	} else if (is_compound_type(type)) {
+	} else if (owner != NULL
+	           && (is_compound_type(owner) && !(owner->flags & tf_segment))) {
+		res = intern_new_entity(owner, IR_ENTITY_COMPOUND_MEMBER, name, type, db);
 		res->attr.cmpd_attr.values    = NULL;
 		res->attr.cmpd_attr.val_paths = NULL;
-	} else if (is_code_type(type)) {
-		res->attr.code_attr.label = (ir_label_t) -1;
+	} else {
+		res = intern_new_entity(owner, IR_ENTITY_NORMAL, name, type, db);
 	}
 
 	hook_new_entity(res);
@@ -139,9 +143,9 @@ static ident *make_parameter_entity_name(size_t pos)
 ir_entity *new_d_parameter_entity(ir_type *owner, size_t pos, ir_type *type,
                                   dbg_info *dbgi)
 {
-	ident     *name            = make_parameter_entity_name(pos);
-	ir_entity *res             = intern_new_entity(owner, name, type, dbgi);
-	res->is_parameter          = true;
+	ident     *name = make_parameter_entity_name(pos);
+	ir_entity *res
+		= intern_new_entity(owner, IR_ENTITY_PARAMETER, name, type, dbgi);
 	res->attr.parameter.number = pos;
 	hook_new_entity(res);
 	return res;
@@ -150,6 +154,23 @@ ir_entity *new_d_parameter_entity(ir_type *owner, size_t pos, ir_type *type,
 ir_entity *new_parameter_entity(ir_type *owner, size_t pos, ir_type *type)
 {
 	return new_d_parameter_entity(owner, pos, type, NULL);
+}
+
+ir_entity *new_d_label_entity(ir_label_t label, dbg_info *dbgi)
+{
+	ident *name = id_unique("label_%u");
+	ir_type *global_type = get_glob_type();
+	ir_entity *res
+		= intern_new_entity(global_type, IR_ENTITY_LABEL, name, firm_code_type,
+		                    dbgi);
+	res->attr.code_attr.label = label;
+	hook_new_entity(res);
+	return res;
+}
+
+ir_entity *new_label_entity(ir_label_t label)
+{
+	return new_d_label_entity(label, NULL);
 }
 
 /**
@@ -175,9 +196,9 @@ static void free_entity_attrs(ir_entity *ent)
 		 * multiple times */
 		ent->attr.cmpd_attr.val_paths = NULL;
 	}
-	if (is_compound_entity(ent)) {
+	if (ent->entity_kind == IR_ENTITY_COMPOUND_MEMBER) {
 		ent->attr.cmpd_attr.values = NULL;
-	} else if (is_method_entity(ent)) {
+	} else if (ent->entity_kind == IR_ENTITY_METHOD) {
 		if (ent->attr.mtd_attr.param_access) {
 			DEL_ARR_F(ent->attr.mtd_attr.param_access);
 			ent->attr.mtd_attr.param_access = NULL;
@@ -338,9 +359,22 @@ ir_type *(get_entity_type)(const ir_entity *ent)
 	return _get_entity_type(ent);
 }
 
-void (set_entity_type)(ir_entity *ent, ir_type *type)
+void set_entity_type(ir_entity *ent, ir_type *type)
 {
-	_set_entity_type(ent, type);
+	switch (ent->entity_kind) {
+	case IR_ENTITY_METHOD:
+		assert(is_Method_type(type));
+		break;
+	case IR_ENTITY_NORMAL:
+		assert(!is_Method_type(type));
+		break;
+	case IR_ENTITY_LABEL:
+		assert(type == firm_code_type);
+		break;
+	case IR_ENTITY_COMPOUND_MEMBER:
+		break;
+	}
+	ent->type = type;
 }
 
 ir_volatility (get_entity_volatility)(const ir_entity *ent)
@@ -399,11 +433,13 @@ const char *get_align_name(ir_align a)
 
 void set_entity_label(ir_entity *ent, ir_label_t label)
 {
+	assert(ent->entity_kind == IR_ENTITY_LABEL);
 	ent->attr.code_attr.label = label;
 }
 
 ir_label_t get_entity_label(const ir_entity *ent)
 {
+	assert(ent->entity_kind == IR_ENTITY_LABEL);
 	return ent->attr.code_attr.label;
 }
 
