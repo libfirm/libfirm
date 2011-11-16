@@ -1736,7 +1736,6 @@ static void ia32_init(void)
 
 	init_asm_constraints();
 
-	set_tarval_output_modes();
 	ia32_register_init();
 	ia32_create_opcodes(&ia32_irn_ops);
 
@@ -1795,6 +1794,8 @@ static ia32_isa_t ia32_isa_template = {
 static arch_env_t *ia32_begin_codegeneration(const be_main_env_t *env)
 {
 	ia32_isa_t *isa = XMALLOC(ia32_isa_t);
+
+	set_tarval_output_modes();
 
 	*isa        = ia32_isa_template;
 	isa->tv_ent = pmap_create();
