@@ -164,7 +164,7 @@ class Deleted(Op):
 	flags            = [ ]
 	pinned           = "yes"
 	noconstructor    = True
-	customSerializer = True
+	customSerializer = True # this has no serializer
 
 class Block(Op):
 	"""A basic block"""
@@ -498,7 +498,6 @@ class End(Op):
 	knownBlock       = True
 	block            = "get_irg_end_block(irg)"
 	singleton        = True
-	customSerializer = True
 
 class Eor(Binop):
 	"""returns the result of a bitwise exclusive or operation of its operands"""
@@ -603,12 +602,14 @@ class Load(Op):
 			name      = "volatility",
 			comment   = "volatile loads are a visible side-effect and may not be optimized",
 			init      = "flags & cons_volatile ? volatility_is_volatile : volatility_non_volatile",
+			to_flags  = "%s == volatility_is_volatile ? cons_volatile : 0"
 		),
 		dict(
 			type      = "ir_align",
 			name      = "unaligned",
 			comment   = "pointers to unaligned loads don't need to respect the load-mode/type alignments",
 			init      = "flags & cons_unaligned ? align_non_aligned : align_is_aligned",
+			to_flags  = "%s == align_non_aligned ? cons_unaligned : 0"
 		),
 	]
 	attr_struct = "load_attr"
@@ -715,6 +716,7 @@ class Phi(Op):
 	   As we can't distinguish these easily we keep all of them alive. */
 	if (is_Phi(res) && mode == mode_M)
 		add_End_keepalive(get_irg_end(irg), res);'''
+	customSerializer = True
 
 class Pin(Op):
 	"""Pin the value of the node node in the current block. No users of the Pin
@@ -738,7 +740,6 @@ class Proj(Op):
 	knownGraph       = True
 	block            = "get_nodes_block(irn_pred)"
 	graph            = "get_irn_irg(irn_pred)"
-	customSerializer = True
 	attrs      = [
 		dict(
 			type    = "long",
@@ -828,7 +829,6 @@ class Start(Op):
 	flags            = [ "cfopcode" ]
 	singleton        = True
 	knownBlock       = True
-	customSerializer = True
 	block            = "get_irg_start_block(irg)"
 
 class Store(Op):
@@ -854,12 +854,14 @@ class Store(Op):
 			name      = "volatility",
 			comment   = "volatile stores are a visible side-effect and may not be optimized",
 			init      = "flags & cons_volatile ? volatility_is_volatile : volatility_non_volatile",
+			to_flags  = "%s == volatility_is_volatile ? cons_volatile : 0"
 		),
 		dict(
 			type      = "ir_align",
 			name      = "unaligned",
 			comment   = "pointers to unaligned stores don't need to respect the load-mode/type alignments",
 			init      = "flags & cons_unaligned ? align_non_aligned : align_is_aligned",
+			to_flags  = "%s == align_non_aligned ? cons_unaligned : 0"
 		),
 	]
 	constructor_args = [

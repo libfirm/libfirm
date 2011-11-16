@@ -17,18 +17,13 @@ def warning(msg):
 def format_args(arglist):
 	return "\n".join(arglist)
 
-def format_ifnset(string, node, key):
-	if hasattr(node, key):
-		return ""
-	return string
-
 def format_block(node):
 	if hasattr(node, "knownBlock"):
 		if hasattr(node, "knownGraph"):
 			return ""
-		return "irg"
+		return "env->irg"
 	else:
-		return "preds[0]"
+		return "block"
 
 def format_arguments(string):
 	args = re.split('\s*\n\s*', string)
@@ -38,152 +33,245 @@ def format_arguments(string):
 		args = args[:-1]
 	return ", ".join(args)
 
+def filter_isnot(list, flag):
+	return filter(lambda x: not hasattr(x, flag), list)
+
+def filter_notset(list, flag):
+	return filter(lambda x: not getattr(x,flag), list)
+
+def filter_hasnot(list, flag):
+	return filter(lambda x: flag not in x, list)
+
 env = Environment()
 env.filters['args']      = format_args
-env.filters['ifnset']    = format_ifnset
 env.filters['block']     = format_block
 env.filters['arguments'] = format_arguments
+env.filters['isnot']     = filter_isnot
+env.filters['notset']    = filter_notset
+env.filters['hasnot']    = filter_hasnot
 
 def get_io_type(type, attrname, node):
 	if type == "ir_tarval*":
-		importcmd = "ir_tarval *%s = read_tv(env);" % attrname
-		exportcmd = "write_tarval(env, %(val)s);";
+		importcmd = "read_tarval(env)"
+		exportcmd = "write_tarval(env, %(val)s);"
 	elif type == "ir_mode*":
-		importcmd = "ir_mode *%s = read_mode(env);" % attrname
-		exportcmd = "write_mode(env, %(val)s);"
+		importcmd = "read_mode_ref(env)"
+		exportcmd = "write_mode_ref(env, %(val)s);"
 	elif type == "ir_entity*":
-		importcmd = "ir_entity *%s = read_entity(env);" % attrname
+		importcmd = "read_entity_ref(env)"
 		exportcmd = "write_entity_ref(env, %(val)s);"
 	elif type == "ir_type*":
-		importcmd = "ir_type *%s = read_type(env);" % attrname
+		importcmd = "read_type_ref(env)"
 		exportcmd = "write_type_ref(env, %(val)s);"
-	elif type == "long" and node.name == "Proj":
-		importcmd = "long %s = read_long(env);" % attrname
+	elif type == "long":
+		importcmd = "read_long(env)"
 		exportcmd = "write_long(env, %(val)s);"
-	elif type == "ir_relation" or type == "ir_where_alloc":
-		importcmd = "%s %s = (%s) read_long(env);" % (type, attrname, type)
-		exportcmd = "write_long(env, (long) %(val)s);"
+	elif type == "ir_relation":
+		importcmd = "read_relation(env)"
+		exportcmd = "write_relation(env, %(val)s);"
+	elif type == "ir_where_alloc":
+		importcmd = "read_where_alloc(env)"
+		exportcmd = "write_where_alloc(env, %(val)s);"
 	elif type == "ir_align":
-		importcmd = "ir_align %s = read_align(env);" % attrname
+		importcmd = "read_align(env)"
 		exportcmd = "write_align(env, %(val)s);"
 	elif type == "ir_volatility":
-		importcmd = "ir_volatility %s = read_volatility(env);" % attrname
+		importcmd = "read_volatility(env)"
 		exportcmd = "write_volatility(env, %(val)s);"
 	elif type == "ir_cons_flags":
-		importcmd = "ir_cons_flags %s = cons_none;" % attrname
+		importcmd = "cons_none"
 		exportcmd = "" # can't really export cons_flags
 	elif type == "op_pin_state":
-		importcmd = "op_pin_state %s = read_pin_state(env);" % attrname
-		exportcmd = "write_pin_state(env, irn);"
+		importcmd = "read_pin_state(env)"
+		exportcmd = "write_pin_state(env, node);"
 	elif type == "ir_builtin_kind":
-		importcmd = "ir_builtin_kind %s = read_builtin_kind(env);" % attrname
-		exportcmd = "write_builtin_kind(env, irn);"
+		importcmd = "read_builtin_kind(env)"
+		exportcmd = "write_builtin_kind(env, node);"
 	elif type == "cond_kind":
-		importcmd = "cond_kind %s = read_cond_kind(env);" % attrname
-		exportcmd = "write_cond_kind(env, irn);"
+		importcmd = "read_cond_kind(env)"
+		exportcmd = "write_cond_kind(env, node);"
 	elif type == "cond_jmp_predicate":
-		importcmd = "cond_jmp_predicate %s = read_cond_jmp_predicate(env);" % attrname
-		exportcmd = "write_cond_jmp_predicate(env, irn);"
+		importcmd = "read_cond_jmp_predicate(env)"
+		exportcmd = "write_cond_jmp_predicate(env, node);"
 	elif type == "int":
-		importcmd = "int %s = read_int(env);" % attrname
+		importcmd = "read_int(env)"
 		exportcmd = "write_int(env, %(val)s);"
 	elif type == "unsigned":
-		importcmd = "unsigned %s = read_unsigned(env);" % attrname
+		importcmd = "read_unsigned(env)"
 		exportcmd = "write_unsigned(env, %(val)s);"
 	elif type == "long":
-		importcmd = "long %s = read_long(env);" % attrname
+		importcmd = "read_long(env)"
 		exportcmd = "write_long(env, %(val)s);"
+	elif type == "ir_switch_table*":
+		importcmd = "read_switch_table(env)"
+		exportcmd = "write_switch_table(env, %(val)s);"
 	else:
 		warning("cannot generate import/export for node %s: unsupported attribute type: %s" % (node.name, type))
-		importcmd = """// BAD: %s %s
-			%s %s = (%s) 0;""" % (type, attrname, type, attrname, type)
+		importcmd = "/* BAD: %s %s */ (%s)0" % (type, attrname, type)
 		exportcmd = "// BAD: %s" % type
 	return (importcmd, exportcmd)
 
 def prepare_attr(node, attr):
 	(importcmd,exportcmd) = get_io_type(attr["type"], attr["name"], node)
 	attr["importcmd"] = importcmd
-	attr["exportcmd"] = exportcmd % {"val": "get_%s_%s(irn)" % (node.name, attr["name"])}
+	attr["exportcmd"] = exportcmd % {"val": "get_%s_%s(node)" % (node.name, attr["name"])}
 
 
 def preprocess_node(node):
-	# dynamic pin state means, we have to im/export that
-	if is_dynamic_pinned(node):
-		newattr = dict(
-			name = "state",
-			type = "op_pin_state"
-		)
-		if hasattr(node, "pinned_init"):
-			newattr["init"] = node.pinned_init
-		node.attrs.append(newattr)
-
 	verify_node(node)
+
+	if node.customSerializer:
+		return
 
 	# construct node arguments
 	arguments = [ ]
-	initargs = [ ]
-	i = 1
+	extraattrs = [ ]
 	for input in node.ins:
-		arguments.append("preds[%i]" % i)
-		i += 1
+		arguments.append("in_%s" % input[0])
 
 	if node.arity == "variable" or node.arity == "dynamic":
-		arguments.append("numpreds - %i" % i)
-		arguments.append("preds + %i" % i)
+		arguments.append("n_preds")
+		arguments.append("preds")
 
 	if not hasattr(node, "mode"):
 		arguments.append("mode")
 
 	for attr in node.attrs:
 		prepare_attr(node, attr)
-		if "init" in attr:
-			if attr["type"] == "op_pin_state":
-				initfunc = "set_irn_pinned"
-			else:
-				initfunc = "set_" + node.name + "_" + attr["name"]
-			initargs.append((attr["name"], initfunc))
+		if "to_flags" in attr:
+			node.constructorFlags = True
+			attr['to_flags'] = attr['to_flags'] % (attr["name"])
+		elif "init" in attr:
+			extraattrs.append(attr)
 		else:
 			arguments.append(attr["name"])
 
 	for arg in node.constructor_args:
-		prepare_attr(node, arg)
-		arguments.append(arg["name"])
+		if arg['type'] != "ir_cons_flags" and arg['name'] != "flags":
+			error("only ir_cons_flags constructor arg supported in irio")
+			continue
+		node.constructorFlags = True
+		arguments.append("flags")
 
-	node.arguments = arguments
-	node.initargs = initargs
+	node.arguments  = arguments
+	node.extraattrs = extraattrs
+	node.dynamic_pinned = is_dynamic_pinned(node)
 
-export_attrs_template = env.from_string('''
-	case iro_{{node.name}}:
-		{{"write_mode(env, get_irn_mode(irn));"|ifnset(node,"mode")}}
-		{% for attr in node.attrs %}{{attr.exportcmd}}
-		{% endfor %}
-		{% for attr in node.constructor_args %}{{attr.exportcmd}}
-		{% endfor %}break;''')
-
-import_attrs_template = env.from_string('''
-	case iro_{{node.name}}:	{
-		{{"ir_mode *mode = read_mode(env);"|ifnset(node,"mode")}}
-		{% for attr in node.attrs %}
-		{{attr.importcmd}}
-		{% endfor -%}
-		{% for attr in node.constructor_args %}
-		{{attr.importcmd}}
-		{% endfor -%}
-		newnode = new_r_{{node.name}}(
-{%- filter arguments %}
+io_template = env.from_string('''/* Warning: automatically generated code */
+{%- for node in nodes|notset('customSerializer') %}
+static ir_node *read_{{node.name}}(read_env_t *env)
+{
+	{%- if not node.knownBlock %}
+	ir_node *block = read_node_ref(env);
+	{%- endif %}
+	{%- for input in node.ins %}
+	ir_node *in_{{input[0]}} = read_node_ref(env);
+	{%- endfor %}
+	{%- if not hasattr(node, "mode") %}
+	ir_mode *mode = read_mode_ref(env);
+	{%- endif %}
+	{%- for attr in node.attrs %}
+	{{attr.type}} {{attr.name}} = {{attr.importcmd}};
+	{%- endfor %}
+	{%- if node.dynamic_pinned %}
+	op_pin_state pin_state = read_pin_state(env);
+	{%- endif %}
+	{%- if "fragile" in node.flags %}
+	bool throws = read_throws(env);
+	{%- endif %}
+	{%- if node.arity == "dynamic" or node.arity == "variable" %}
+	int       n_preds = read_preds(env);
+	ir_node **preds   = obstack_finish(&env->preds_obst);
+	{%- endif %}
+	{%- if node.constructorFlags %}
+	ir_cons_flags flags = cons_none;
+	{%- endif %}
+	ir_node *res;
+	{%- if node.constructorFlags %}
+		{%- for attr in node.attrs %}
+			{%- if "to_flags" in attr %}
+	flags |= {{attr.to_flags}};
+			{%- endif %}
+		{%- endfor %}
+		{%- if node.dynamic_pinned %}
+	flags |= pin_state == op_pin_state_floats ? cons_floats : 0;
+		{%- endif %}
+		{%- if "fragile" in node.flags %}
+	flags |= throws ? cons_throws_exception : 0;
+		{%- endif %}
+	{%- endif %}
+	res = new_r_{{node.name}}(
+		{%- filter arguments %}
 {{node|block}}
 {{node.arguments|args}}
+		{%- if node.dynamic_pinned and not hasattr(node, "pinned_init") %}
+pin_state
+		{%- endif %}
 {% endfilter %});
-		{% for (initarg, initfunc) in node.initargs %}
-		{{initfunc}}(newnode, {{initarg}});
-		{% endfor -%}
-		break;
-	}
+
+	{%- if node.arity == "dynamic" or node.arity == "variable" %}
+	obstack_free(&env->preds_obst, preds);
+	{%- endif %}
+	{%- for attr in node.extraattrs %}
+	set_{{node.name}}_{{attr.name}}(res, {{attr.name}});
+	{%- endfor %}
+	{%- if not node.constructorFlags %}
+		{%- if node.dynamic_pinned and hasattr(node, "pinned_init") %}
+	set_irn_pinned(res, pin_state);
+		{%- endif %}
+		{%- if "fragile" in node.flags and hasattr(node, "throws_init") %}
+	ir_set_throws_exception(res, throws);
+		{%- endif %}
+	{%- endif %}
+	return res;
+}
+{% endfor %}
+
+{%- for node in nodes|notset('customSerializer') %}
+static void write_{{node.name}}(write_env_t *env, const ir_node *node)
+{
+	write_symbol(env, "{{node.name}}");
+	write_node_nr(env, node);
+	{%- if not node.knownBlock %}
+	write_node_ref(env, get_nodes_block(node));
+	{%- endif %}
+	{%- for input in node.ins %}
+	write_node_ref(env, get_{{node.name}}_{{input[0]}}(node));
+	{%- endfor %}
+	{%- if not hasattr(node, "mode") %}
+	write_mode_ref(env, get_irn_mode(node));
+	{%- endif %}
+	{%- for attr in node.attrs %}
+	{{attr.exportcmd}}
+	{%- endfor %}
+	{%- if node.dynamic_pinned %}
+	write_pin_state(env, get_irn_pinned(node));
+	{%- endif %}
+	{%- if "fragile" in node.flags %}
+	write_throws(env, ir_throws_exception(node));
+	{%- endif %}
+	{%- if node.arity == "dynamic" or node.arity == "variable" %}
+	write_pred_refs(env, node, {% if node.ins %}n_{{node.name}}_max+1{% else %}0{%endif%});
+	{%- endif %}
+}
+{% endfor %}
+
+static void register_generated_node_readers(void)
+{
+	{%- for node in nodes|notset('customSerializer') %}
+	register_node_reader(new_id_from_str("{{node.name}}"), read_{{node.name}});
+	{%- endfor %}
+}
+
+static void register_generated_node_writers(void)
+{
+	{%- for node in nodes|notset('customSerializer') %}
+	register_node_writer(op_{{node.name}}, write_{{node.name}});
+	{%- endfor %}
+}
 ''')
 
 def main(argv):
-	"""the main function"""
-
 	if len(argv) < 3:
 		print "usage: %s specname(ignored) destdirectory" % argv[0]
 		sys.exit(1)
@@ -194,32 +282,11 @@ def main(argv):
 	for node in ir_spec.nodes:
 		if isAbstract(node):
 			continue
+		preprocess_node(node)
 		real_nodes.append(node)
 
-	file = open(gendir + "/gen_irio_export.inl", "w");
-	file.write("/* Warning: automatically generated code */")
-	for node in real_nodes:
-		if node.customSerializer:
-			continue
-
-		preprocess_node(node)
-		file.write(export_attrs_template.render(vars()))
-	file.write("\n")
-	file.close()
-
-	file = open(gendir + "/gen_irio_import.inl", "w");
-	file.write("/* Warning: automatically generated code */")
-	for node in real_nodes:
-		if node.customSerializer:
-			continue
-		file.write(import_attrs_template.render(vars()))
-	file.write("\n")
-	file.close()
-
-	file = open(gendir + "/gen_irio_lex.inl", "w");
-	file.write("/* Warning: automatically generated code */")
-	for node in real_nodes:
-		file.write("\tINSERT(tt_iro, \"%s\", iro_%s);\n" % (node.name, node.name));
+	file = open(gendir + "/gen_irio.inl", "w");
+	file.write(io_template.render(nodes = real_nodes, hasattr=hasattr))
 	file.close()
 
 main(sys.argv)

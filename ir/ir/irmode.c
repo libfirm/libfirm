@@ -46,20 +46,6 @@ static struct obstack modes;
 /** The list of all currently existing modes. */
 static ir_mode **mode_list;
 
-const char *get_mode_arithmetic_name(ir_mode_arithmetic ari)
-{
-#define X(a)    case a: return #a
-	switch (ari) {
-		X(irma_uninitialized);
-		X(irma_none);
-		X(irma_twos_complement);
-		X(irma_ieee754);
-		X(irma_x86_extended_float);
-		default: return "<unknown>";
-	}
-#undef X
-}
-
 static bool modes_are_equal(const ir_mode *m, const ir_mode *n)
 {
 	return m->sort         == n->sort &&
