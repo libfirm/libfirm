@@ -185,13 +185,6 @@ FIRM_API ir_type *get_glob_type(void);
  */
 FIRM_API ir_type *get_tls_type(void);
 
-/** Adds type to the list of types in irp. */
-FIRM_API void add_irp_type(ir_type *typ);
-
-/** Removes type from the list of types, deallocates it and
-    shrinks the list by one. */
-FIRM_API void remove_irp_type(ir_type *typ);
-
 /**
  * Returns the number of all types in the irp.
  * @deprecated

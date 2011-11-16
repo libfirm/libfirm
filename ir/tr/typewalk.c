@@ -273,26 +273,6 @@ void type_walk(type_walk_func *pre, type_walk_func *post, void *env)
 	irp_free_resources(irp, IRP_RESOURCE_TYPE_VISITED);
 }
 
-void type_walk_prog(type_walk_func *pre, type_walk_func *post, void *env)
-{
-	size_t i, n_irgs = get_irp_n_irgs();
-	type_or_ent cont;
-
-	type_walk(pre, post, env);
-
-	for (i = 0; i < n_irgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
-		cont.typ = get_irg_frame_type(irg);
-		do_type_walk(cont, pre, post, env);
-	}
-
-	for (i = IR_SEGMENT_FIRST; i <= IR_SEGMENT_LAST; ++i) {
-		cont.typ = get_segment_type((ir_segment_t) i);
-		if (cont.typ)
-			do_type_walk(cont, pre, post, env);
-	}
-}
-
 void type_walk_irg(ir_graph *irg,
                    type_walk_func *pre,
                    type_walk_func *post,

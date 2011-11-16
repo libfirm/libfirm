@@ -79,8 +79,6 @@ static ir_prog *new_incomplete_ir_prog(void)
  */
 static ir_prog *complete_ir_prog(ir_prog *irp, const char *module_name)
 {
-	ir_segment_t s;
-
 #define IDENT(x)  new_id_from_chars(x, sizeof(x) - 1)
 
 	irp->name = new_id_from_str(module_name);
@@ -92,11 +90,6 @@ static ir_prog *complete_ir_prog(ir_prog *irp, const char *module_name)
 		= new_type_class(IDENT("Constructors"));
 	irp->segment_types[IR_SEGMENT_DESTRUCTORS]
 		= new_type_class(IDENT("Destructors"));
-	/* Remove these types from type list.  Must be treated differently than
-	   other types. */
-	for (s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
-		remove_irp_type(irp->segment_types[s]);
-	}
 
 	/* Set these flags for debugging. */
 	irp->segment_types[IR_SEGMENT_GLOBAL]->flags       |= tf_global_type;
@@ -186,8 +179,6 @@ void set_segment_type(ir_segment_t segment, ir_type *new_type)
 {
 	assert(segment <= IR_SEGMENT_LAST);
 	irp->segment_types[segment] = new_type;
-	/* segment types are not in the type list... */
-	remove_irp_type(new_type);
 }
 
 ir_type *(get_glob_type)(void)
