@@ -231,6 +231,13 @@ void set_irn_in(ir_node *node, int arity, ir_node **in)
 
 	pOld_in = &node->in;
 
+#ifndef NDEBUG
+	assert(node != NULL && node->kind == k_ir_node);
+	assert(arity >= 0);
+	for (i = 0; i < arity; ++i) {
+		assert(in[i] != NULL && in[0]->kind == k_ir_node);
+	}
+#endif
 
 	for (i = 0; i < arity; i++) {
 		if (i < (int)ARR_LEN(*pOld_in)-1)
