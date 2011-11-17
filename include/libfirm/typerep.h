@@ -1583,16 +1583,14 @@ FIRM_API size_t get_method_n_params(const ir_type *method);
 /** Returns the type of the parameter at position pos of a method. */
 FIRM_API ir_type *get_method_param_type(const ir_type *method, size_t pos);
 /** Sets the type of the parameter at position pos of a method.
-    Also changes the type in the pass-by-value representation by just
-    changing the type of the corresponding entity if the representation is constructed. */
+ * Note: does not change the corresponding parameter entities (if there are any)
+ */
 FIRM_API void set_method_param_type(ir_type *method, size_t pos, ir_type *tp);
 /** Returns the number of results of a method type. */
 FIRM_API size_t get_method_n_ress(const ir_type *method);
 /** Returns the return type of a method type at position pos. */
 FIRM_API ir_type *get_method_res_type(const ir_type *method, size_t pos);
-/** Sets the type of the result at position pos of a method.
-    Also changes the type in the pass-by-value representation by just
-    changing the type of the corresponding entity if the representation is constructed. */
+/** Sets the type of the result at position pos of a method. */
 FIRM_API void set_method_res_type(ir_type *method, size_t pos, ir_type *tp);
 
 /**
@@ -1906,7 +1904,7 @@ FIRM_API int is_Enumeration_type(const ir_type *enumeration);
  * @page pointer_type   Representation of a pointer type
  *
  * Pointer types:
- * - points_to:      The type of the entity this pointer points to.
+ * - points_to:      The type this pointer points to.
  */
 
 /** Creates a new type pointer. */
