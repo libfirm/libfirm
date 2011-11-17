@@ -1256,8 +1256,9 @@ FIRM_API ir_node *new_rd_defaultProj(dbg_info *db, ir_node *arg, long max_proj);
  */
 FIRM_API ir_node *new_rd_ASM(dbg_info *db, ir_node *block,
                             int arity, ir_node *in[], ir_asm_constraint *inputs,
-                            int n_outs, ir_asm_constraint *outputs,
-                            int n_clobber, ident *clobber[], ident *asm_text);
+                            size_t n_outs, ir_asm_constraint *outputs,
+                            size_t n_clobber, ident *clobber[],
+                            ident *asm_text);
 
 /*-------------------------------------------------------------------------*/
 /* The raw interface without debug support                                 */
@@ -1374,8 +1375,9 @@ FIRM_API ir_node *new_r_defaultProj(ir_node *arg, long max_proj);
  */
 FIRM_API ir_node *new_r_ASM(ir_node *block,
                             int arity, ir_node *in[], ir_asm_constraint *inputs,
-                            int n_outs, ir_asm_constraint *outputs,
-                            int n_clobber, ident *clobber[], ident *asm_text);
+                            size_t n_outs, ir_asm_constraint *outputs,
+                            size_t n_clobber, ident *clobber[],
+                            ident *asm_text);
 
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface                                          */
@@ -1504,8 +1506,9 @@ FIRM_API ir_node *new_d_defaultProj(dbg_info *db, ir_node *arg, long max_proj);
  */
 FIRM_API ir_node *new_d_ASM(dbg_info *db, int arity, ir_node *in[],
                             ir_asm_constraint *inputs,
-                            int n_outs, ir_asm_constraint *outputs,
-                            int n_clobber, ident *clobber[], ident *asm_text);
+                            size_t n_outs, ir_asm_constraint *outputs,
+                            size_t n_clobber, ident *clobber[],
+                            ident *asm_text);
 
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface without debug support                    */
@@ -1617,8 +1620,8 @@ FIRM_API ir_node *new_defaultProj(ir_node *arg, long max_proj);
  * @param *asm_text   The assembler text.
  */
 FIRM_API ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
-                          int n_outs, ir_asm_constraint *outputs,
-                          int n_clobber, ident *clobber[], ident *asm_text);
+                          size_t n_outs, ir_asm_constraint *outputs,
+                          size_t n_clobber, ident *clobber[], ident *asm_text);
 
 /*---------------------------------------------------------------------*/
 /* The comfortable interface.                                          */

@@ -1330,19 +1330,19 @@ void set_Tuple_pred(ir_node *node, int pos, ir_node *pred)
 	set_irn_n(node, pos, pred);
 }
 
-int get_ASM_n_input_constraints(const ir_node *node)
+size_t get_ASM_n_input_constraints(const ir_node *node)
 {
 	assert(is_ASM(node));
 	return ARR_LEN(node->attr.assem.input_constraints);
 }
 
-int get_ASM_n_output_constraints(const ir_node *node)
+size_t get_ASM_n_output_constraints(const ir_node *node)
 {
 	assert(is_ASM(node));
 	return ARR_LEN(node->attr.assem.output_constraints);
 }
 
-int get_ASM_n_clobbers(const ir_node *node)
+size_t get_ASM_n_clobbers(const ir_node *node)
 {
 	assert(is_ASM(node));
 	return ARR_LEN(node->attr.assem.clobbers);

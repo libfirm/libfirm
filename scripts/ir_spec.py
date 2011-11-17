@@ -100,7 +100,7 @@ class ASM(Op):
 		),
 		dict(
 			name    = "n_output_constraints",
-			type    = "int",
+			type    = "size_t",
 			noprop  = True,
 			comment = "number of output constraints",
 		),
@@ -111,7 +111,7 @@ class ASM(Op):
 		),
 		dict(
 			name    = "n_clobbers",
-			type    = "int",
+			type    = "size_t",
 			noprop  = True,
 			comment = "number of clobbered registers/memory",
 		),

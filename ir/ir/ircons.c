@@ -67,8 +67,8 @@ ir_node *new_rd_defaultProj(dbg_info *db, ir_node *arg, long max_proj)
 }
 
 ir_node *new_rd_ASM(dbg_info *db, ir_node *block, int arity, ir_node *in[],
-                    ir_asm_constraint *inputs, int n_outs,
-	                ir_asm_constraint *outputs, int n_clobber,
+                    ir_asm_constraint *inputs, size_t n_outs,
+	                ir_asm_constraint *outputs, size_t n_clobber,
 	                ident *clobber[], ident *text)
 {
 	ir_graph *irg = get_irn_irg(block);
@@ -165,8 +165,8 @@ ir_node *new_r_defaultProj(ir_node *arg, long max_proj)
 }
 ir_node *new_r_ASM(ir_node *block,
                    int arity, ir_node *in[], ir_asm_constraint *inputs,
-                   int n_outs, ir_asm_constraint *outputs,
-                   int n_clobber, ident *clobber[], ident *text)
+                   size_t n_outs, ir_asm_constraint *outputs,
+                   size_t n_clobber, ident *clobber[], ident *text)
 {
 	return new_rd_ASM(NULL, block, arity, in, inputs, n_outs, outputs, n_clobber, clobber, text);
 }
@@ -413,8 +413,8 @@ ir_node *new_d_SymConst(dbg_info *db, ir_mode *mode, symconst_symbol value,
 
 ir_node *new_d_ASM(dbg_info *db, int arity, ir_node *in[],
                    ir_asm_constraint *inputs,
-                   int n_outs, ir_asm_constraint *outputs, int n_clobber,
-                   ident *clobber[], ident *text)
+                   size_t n_outs, ir_asm_constraint *outputs,
+                   size_t n_clobber, ident *clobber[], ident *text)
 {
 	assert(get_irg_phase_state(current_ir_graph) == phase_building);
 	return new_rd_ASM(db, current_ir_graph->current_block, arity, in, inputs,
@@ -767,8 +767,8 @@ ir_node *new_defaultProj(ir_node *arg, long max_proj)
 	return new_d_defaultProj(NULL, arg, max_proj);
 }
 ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
-                 int n_outs, ir_asm_constraint *outputs,
-                 int n_clobber, ident *clobber[], ident *text)
+                 size_t n_outs, ir_asm_constraint *outputs,
+                 size_t n_clobber, ident *clobber[], ident *text)
 {
 	return new_d_ASM(NULL, arity, in, inputs, n_outs, outputs, n_clobber, clobber, text);
 }

@@ -6634,7 +6634,8 @@ static int node_cmp_attr_Builtin(const ir_node *a, const ir_node *b)
 /** Compares the attributes of two ASM nodes. */
 static int node_cmp_attr_ASM(const ir_node *a, const ir_node *b)
 {
-	int i, n;
+	size_t n;
+	size_t i;
 	const ir_asm_constraint *ca;
 	const ir_asm_constraint *cb;
 	ident **cla, **clb;

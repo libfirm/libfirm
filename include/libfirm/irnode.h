@@ -549,11 +549,11 @@ FIRM_API ir_node  *get_Tuple_pred(const ir_node *node, int pos);
 FIRM_API void      set_Tuple_pred(ir_node *node, int pos, ir_node *pred);
 
 /** Return the number of input constraints for an ASM node. */
-FIRM_API int get_ASM_n_input_constraints(const ir_node *node);
+FIRM_API size_t get_ASM_n_input_constraints(const ir_node *node);
 /** Return the number of output constraints for an ASM node.  */
-FIRM_API int get_ASM_n_output_constraints(const ir_node *node);
+FIRM_API size_t get_ASM_n_output_constraints(const ir_node *node);
 /** Return the number of clobbered registers for an ASM node.  */
-FIRM_API int get_ASM_n_clobbers(const ir_node *node);
+FIRM_API size_t get_ASM_n_clobbers(const ir_node *node);
 
 /** Returns operand of node if node is a Proj. */
 FIRM_API ir_node *skip_Proj(ir_node *node);

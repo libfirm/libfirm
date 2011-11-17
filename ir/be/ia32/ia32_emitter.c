@@ -1201,7 +1201,7 @@ static const char* emit_asm_operand(const ir_node *node, const char *s)
 			panic("Invalid asm op modifier");
 		}
 	} else {
-		emit_register(reg, asm_reg->mode);
+		emit_register(reg, asm_reg->memory ? mode_Iu : asm_reg->mode);
 	}
 
 	if (asm_reg->memory) {
