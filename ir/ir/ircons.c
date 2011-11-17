@@ -124,13 +124,6 @@ ir_node *new_rd_SymConst_ofs_ent(dbg_info *db, ir_graph *irg, ir_mode *mode, ir_
 	return new_rd_SymConst(db, irg, mode, sym, symconst_ofs_ent);
 }
 
-ir_node *new_rd_SymConst_type_tag(dbg_info *db, ir_graph *irg, ir_mode *mode, ir_type *symbol)
-{
-	symconst_symbol sym;
-	sym.type_p = symbol;
-	return new_rd_SymConst(db, irg, mode, sym, symconst_type_tag);
-}
-
 ir_node *new_rd_SymConst_size(dbg_info *db, ir_graph *irg, ir_mode *mode, ir_type *symbol)
 {
 	symconst_symbol sym;

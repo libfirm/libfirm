@@ -212,9 +212,6 @@ static void lower_symconst(ir_node *symc)
 	ir_graph      *irg;
 
 	switch (get_SymConst_kind(symc)) {
-	case symconst_type_tag:
-		assert(!"SymConst kind symconst_type_tag not implemented");
-		break;
 	case symconst_type_size:
 		/* rewrite the SymConst node by a Const node */
 		irg  = get_irn_irg(symc);

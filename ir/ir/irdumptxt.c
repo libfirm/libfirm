@@ -247,11 +247,6 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 			fprintf(F, "  entity: ");
 			dump_entity_to_file(F, get_SymConst_entity(n));
 			break;
-		case symconst_type_tag:
-			fprintf(F, "  kind: type_tag\n");
-			fprintf(F, "  type: ");
-			dump_type_to_file(F, get_SymConst_type(n));
-			break;
 		case symconst_type_size:
 			fprintf(F, "  kind: size\n");
 			fprintf(F, "  type: ");

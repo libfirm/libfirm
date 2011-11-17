@@ -380,7 +380,7 @@ FIRM_API symconst_kind get_SymConst_kind(const ir_node *node);
 /** Set the kind of the SymConst. */
 FIRM_API void          set_SymConst_kind(ir_node *node, symconst_kind num);
 
-/** Only to access SymConst of kind type_tag or size.  Else assertion: */
+/** Only to access SymConst of kind type_size.  Else assertion: */
 FIRM_API ir_type  *get_SymConst_type(const ir_node *node);
 FIRM_API void     set_SymConst_type(ir_node *node, ir_type *tp);
 

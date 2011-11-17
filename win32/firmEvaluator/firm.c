@@ -519,12 +519,6 @@ static HRESULT format_node(DEBUGHELPER *pHelper, int nBase, const void *addr, ch
   case iro_SymConst:
     _tcsncat(pResult, "<", max);
     switch (n.attr.symc.kind) {
-    case symconst_type_tag:
-      _tcsncat(pResult, "TAG:", max);
-      if (format_type(pHelper, nBase, n.attr.symc.sym.type_p, name, sizeof(name), 0) != S_OK)
-        return E_FAIL;
-      _tcsncat(pResult, name, max);
-      break;
     case symconst_type_size:
       _tcsncat(pResult, "SIZE:", max);
       if (format_type(pHelper, nBase, n.attr.symc.sym.type_p, name, sizeof(name), 0) != S_OK)

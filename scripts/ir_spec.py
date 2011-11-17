@@ -879,8 +879,6 @@ class Sub(Binop):
 class SymConst(Op):
 	"""A symbolic constant.
 
-	 - *symconst_type_tag*  The symbolic constant represents a type tag.  The
-	                        type the tag stands for is given explicitly.
 	 - *symconst_type_size* The symbolic constant represents the size of a type.
 	                        The type of which the constant represents the size
 	                        is given explicitly.
