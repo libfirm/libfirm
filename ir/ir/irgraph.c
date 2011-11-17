@@ -310,7 +310,6 @@ ir_graph *new_const_code_irg(void)
 	set_Block_block_visited(body_block, -1);
 	set_Block_block_visited(start_block, -1);
 	set_irn_visited(start_block, -1);
-	set_irn_visited(no_mem, -1);
 
 	return res;
 }
