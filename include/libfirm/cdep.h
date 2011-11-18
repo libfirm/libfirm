@@ -34,6 +34,12 @@ FIRM_API void compute_cdep(ir_graph *irg);
 /** Free the control dependence info. */
 FIRM_API void free_cdep(ir_graph *irg);
 
+/** Return control dependent block */
+FIRM_API ir_node *get_cdep_node(const ir_cdep *cdep);
+
+/** Get next entry in a list of cdeps */
+FIRM_API ir_cdep *get_cdep_next(const ir_cdep *cdep);
+
 /** Compute the reverse control dependence graph for a graph. Note that this
  *  requires the normal control dependence graph to be computed first. */
 FIRM_API void compute_rev_cdep(ir_graph *irg);
