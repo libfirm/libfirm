@@ -435,15 +435,13 @@ void free_ir_graph(ir_graph *irg)
 
 	hook_free_graph(irg);
 	free_irg_outs(irg);
-	if (irg->frame_type)
-		free_type(irg->frame_type);
 	del_identities(irg);
 	if (irg->ent) {
 		set_entity_irg(irg->ent, NULL);  /* not set in const code irg */
 	}
 
 	free_End(get_irg_end(irg));
-	obstack_free(irg->obst,NULL);
+	obstack_free(irg->obst, NULL);
 	free(irg->obst);
 	if (irg->loc_descriptions)
 		free(irg->loc_descriptions);

@@ -135,10 +135,18 @@ ir_prog *new_ir_prog(const char *name)
    list and entities in global type must be freed by hand before. */
 void free_ir_prog(void)
 {
-	ir_segment_t s;
-	for (s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
-		free_type(irp->segment_types[s]);
-	}
+	size_t i;
+	/* must iterate backwards here */
+	for (i = get_irp_n_irgs(); i > 0;)
+		free_ir_graph(get_irp_irg(--i));
+
+	free_type_entities(get_glob_type());
+	/* must iterate backwards here */
+	for (i = get_irp_n_types(); i > 0;)
+		free_type_entities(get_irp_type(--i));
+
+	for (i = get_irp_n_types(); i > 0;)
+		free_type(get_irp_type(--i));
 
 	free_ir_graph(irp->const_code_irg);
 	DEL_ARR_F(irp->graphs);
