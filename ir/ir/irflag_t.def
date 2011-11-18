@@ -57,9 +57,6 @@ E_FLAG(suppress_downcast_optimization     , 7, OFF)
 /** Load and Store have only Null exceptions. */
 I_FLAG(ldst_only_null_ptr_exceptions      , 8, ON)
 
-/** Sel-based Null-pointer check elimination. */
-I_FLAG(sel_based_null_check_elim          , 9, OFF)
-
 /** Automatically create Sync node during construction. */
 I_FLAG(auto_create_sync                   , 10, OFF)
 

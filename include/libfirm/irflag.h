@@ -119,24 +119,6 @@ FIRM_API int get_opt_suppress_downcast_optimization(void);
 FIRM_API void set_opt_ldst_only_null_ptr_exceptions(int value);
 
 /**
- * Enable/Disable Selection based Null pointer check elimination.
- *
- * In languages, where all addresses are always Sel nodes, Null
- * pointers can only occur as input to Sel nodes.
- * If Null pointers are the only source for exceptions in Load and
- * Store nodes (as typical in high level languages), we can eliminate
- * exception edges from Load and Store when can prove that the Sel
- * nodes representing the Load/Store address have non-null inputs.
- * Enabling this flag enables this elimination.
- *
- * Enabling this flag is meaningless if ldst_non_null_exceptions is
- * enabled.
- *
- * This flag should be set for Java style languages.
- */
-FIRM_API void set_opt_sel_based_null_check_elim(int value);
-
-/**
  * Enable/Disable Global Null Pointer Test Elimination.
  *
  * In languages where it is illegal to dereference NULL pointer, doing

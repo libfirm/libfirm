@@ -782,7 +782,10 @@ class Rotl(Binop):
 
 class Sel(Op):
 	"""Computes the address of a entity of a compound type given the base
-	address of an instance of the compound type."""
+	address of an instance of the compound type.
+
+	Optimisations assume that a Sel node can only produce a NULL pointer if the
+	ptr input was NULL."""
 	ins    = [
 		("mem", "memory dependency"),
 		("ptr", "pointer to object to select from"),
