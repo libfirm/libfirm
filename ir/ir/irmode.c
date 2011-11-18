@@ -46,20 +46,6 @@ static struct obstack modes;
 /** The list of all currently existing modes. */
 static ir_mode **mode_list;
 
-const char *get_mode_arithmetic_name(ir_mode_arithmetic ari)
-{
-#define X(a)    case a: return #a
-	switch (ari) {
-		X(irma_uninitialized);
-		X(irma_none);
-		X(irma_twos_complement);
-		X(irma_ieee754);
-		X(irma_x86_extended_float);
-		default: return "<unknown>";
-	}
-#undef X
-}
-
 static bool modes_are_equal(const ir_mode *m, const ir_mode *n)
 {
 	return m->sort         == n->sort &&
@@ -290,7 +276,7 @@ ir_mode *new_float_mode(const char *name, ir_mode_arithmetic arithmetic,
 	if (mantissa_size >= 256)
 		panic("Mantissa >= 256 bits not supported");
 
-	result = alloc_mode(name, irms_float_number, irma_ieee754, bit_size, 1, 0);
+	result = alloc_mode(name, irms_float_number, irma_x86_extended_float, bit_size, 1, 0);
 	result->float_desc.exponent_size = exponent_size;
 	result->float_desc.mantissa_size = mantissa_size;
 	result->float_desc.explicit_one  = explicit_one;

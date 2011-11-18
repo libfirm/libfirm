@@ -43,7 +43,6 @@
 #include "irhooks.h"
 #include "irarch.h"
 #include "hashptr.h"
-#include "opt_polymorphy.h"
 #include "irtools.h"
 #include "irhooks.h"
 #include "array_t.h"
@@ -728,16 +727,7 @@ ir_tarval *computed_value(const ir_node *n)
 	return tarval_bad;
 }
 
-/**
- * Set the default computed_value evaluator in an ir_op_ops.
- *
- * @param code   the opcode for the default operation
- * @param ops    the operations initialized
- *
- * @return
- *    The operations.
- */
-static ir_op_ops *firm_set_default_computed_value(ir_opcode code, ir_op_ops *ops)
+void firm_set_default_computed_value(ir_opcode code, ir_op_ops *ops)
 {
 #define CASE(a)                                        \
 	case iro_##a:                                      \
@@ -776,8 +766,6 @@ static ir_op_ops *firm_set_default_computed_value(ir_opcode code, ir_op_ops *ops
 		/* leave NULL */
 		break;
 	}
-
-	return ops;
 #undef CASE_PROJ
 #undef CASE
 }
@@ -1616,16 +1604,7 @@ ir_node *equivalent_node(ir_node *n)
 	return n;
 }
 
-/**
- * Sets the default equivalent node operation for an ir_op_ops.
- *
- * @param code   the opcode for the default operation
- * @param ops    the operations initialized
- *
- * @return
- *    The operations.
- */
-static ir_op_ops *firm_set_default_equivalent_node(ir_opcode code, ir_op_ops *ops)
+void firm_set_default_equivalent_node(ir_opcode code, ir_op_ops *ops)
 {
 #define CASE(a)                                      \
 	case iro_##a:                                    \
@@ -1663,8 +1642,6 @@ static ir_op_ops *firm_set_default_equivalent_node(ir_opcode code, ir_op_ops *op
 		/* leave NULL */
 		break;
 	}
-
-	return ops;
 #undef CASE
 #undef CASE_PROJ
 }
@@ -4088,27 +4065,25 @@ static ir_node *transform_node_Minus(ir_node *n)
  */
 static ir_node *transform_node_Proj_Load(ir_node *proj)
 {
-	if (get_opt_ldst_only_null_ptr_exceptions()) {
-		if (get_irn_mode(proj) == mode_X) {
-			ir_node *load = get_Proj_pred(proj);
+	if (get_irn_mode(proj) == mode_X) {
+		ir_node *load = get_Proj_pred(proj);
 
-			/* get the Load address */
-			const ir_node *addr = get_Load_ptr(load);
-			const ir_node *confirm;
+		/* get the Load address */
+		const ir_node *addr = get_Load_ptr(load);
+		const ir_node *confirm;
 
-			if (value_not_null(addr, &confirm)) {
-				if (confirm == NULL) {
-					/* this node may float if it did not depend on a Confirm */
-					set_irn_pinned(load, op_pin_state_floats);
-				}
-				if (get_Proj_proj(proj) == pn_Load_X_except) {
-					ir_graph *irg = get_irn_irg(proj);
-					DBG_OPT_EXC_REM(proj);
-					return new_r_Bad(irg, mode_X);
-				} else {
-					ir_node *blk = get_nodes_block(load);
-					return new_r_Jmp(blk);
-				}
+		if (value_not_null(addr, &confirm)) {
+			if (confirm == NULL) {
+				/* this node may float if it did not depend on a Confirm */
+				set_irn_pinned(load, op_pin_state_floats);
+			}
+			if (get_Proj_proj(proj) == pn_Load_X_except) {
+				ir_graph *irg = get_irn_irg(proj);
+				DBG_OPT_EXC_REM(proj);
+				return new_r_Bad(irg, mode_X);
+			} else {
+				ir_node *blk = get_nodes_block(load);
+				return new_r_Jmp(blk);
 			}
 		}
 	}
@@ -4120,27 +4095,25 @@ static ir_node *transform_node_Proj_Load(ir_node *proj)
  */
 static ir_node *transform_node_Proj_Store(ir_node *proj)
 {
-	if (get_opt_ldst_only_null_ptr_exceptions()) {
-		if (get_irn_mode(proj) == mode_X) {
-			ir_node *store = get_Proj_pred(proj);
+	if (get_irn_mode(proj) == mode_X) {
+		ir_node *store = get_Proj_pred(proj);
 
-			/* get the load/store address */
-			const ir_node *addr = get_Store_ptr(store);
-			const ir_node *confirm;
+		/* get the load/store address */
+		const ir_node *addr = get_Store_ptr(store);
+		const ir_node *confirm;
 
-			if (value_not_null(addr, &confirm)) {
-				if (confirm == NULL) {
-					/* this node may float if it did not depend on a Confirm */
-					set_irn_pinned(store, op_pin_state_floats);
-				}
-				if (get_Proj_proj(proj) == pn_Store_X_except) {
-					ir_graph *irg = get_irn_irg(proj);
-					DBG_OPT_EXC_REM(proj);
-					return new_r_Bad(irg, mode_X);
-				} else {
-					ir_node *blk = get_nodes_block(store);
-					return new_r_Jmp(blk);
-				}
+		if (value_not_null(addr, &confirm)) {
+			if (confirm == NULL) {
+				/* this node may float if it did not depend on a Confirm */
+				set_irn_pinned(store, op_pin_state_floats);
+			}
+			if (get_Proj_proj(proj) == pn_Store_X_except) {
+				ir_graph *irg = get_irn_irg(proj);
+				DBG_OPT_EXC_REM(proj);
+				return new_r_Bad(irg, mode_X);
+			} else {
+				ir_node *blk = get_nodes_block(store);
+				return new_r_Jmp(blk);
 			}
 		}
 	}
@@ -6360,16 +6333,7 @@ static ir_node *transform_node_Call(ir_node *call)
 	return res;
 }
 
-/**
- * Sets the default transform node operation for an ir_op_ops.
- *
- * @param code   the opcode for the default operation
- * @param ops    the operations initialized
- *
- * @return
- *    The operations.
- */
-static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops)
+void firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops)
 {
 #define CASE(a)                                         \
 	case iro_##a:                                       \
@@ -6403,7 +6367,6 @@ static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops
 	CASE(Phi);
 	CASE(Proj);
 	CASE(Rotl);
-	CASE(Sel);
 	CASE(Shl);
 	CASE(Shr);
 	CASE(Shrs);
@@ -6419,8 +6382,6 @@ static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops
 	default:
 		break;
 	}
-
-	return ops;
 #undef CASE_PROJ_EX
 #undef CASE_PROJ
 #undef CASE
@@ -6541,7 +6502,7 @@ static int node_cmp_attr_Call(const ir_node *a, const ir_node *b)
 {
 	const call_attr *pa = &a->attr.call;
 	const call_attr *pb = &b->attr.call;
-	if (pa->type != pb->type || pa->tail_call != pb->tail_call)
+	if (pa->type != pb->type)
 		return 1;
 	return node_cmp_exception(a, b);
 }
@@ -6667,7 +6628,8 @@ static int node_cmp_attr_Builtin(const ir_node *a, const ir_node *b)
 /** Compares the attributes of two ASM nodes. */
 static int node_cmp_attr_ASM(const ir_node *a, const ir_node *b)
 {
-	int i, n;
+	size_t n;
+	size_t i;
 	const ir_asm_constraint *ca;
 	const ir_asm_constraint *cb;
 	ident **cla, **clb;
@@ -6740,16 +6702,7 @@ static int node_cmp_attr_InstOf(const ir_node *a, const ir_node *b)
 	return node_cmp_exception(a, b);
 }
 
-/**
- * Set the default node attribute compare operation for an ir_op_ops.
- *
- * @param code   the opcode for the default operation
- * @param ops    the operations initialized
- *
- * @return
- *    The operations.
- */
-static ir_op_ops *firm_set_default_node_cmp_attr(ir_opcode code, ir_op_ops *ops)
+void firm_set_default_node_cmp_attr(ir_opcode code, ir_op_ops *ops)
 {
 #define CASE(a)                              \
 	case iro_##a:                              \
@@ -6785,8 +6738,6 @@ static ir_op_ops *firm_set_default_node_cmp_attr(ir_opcode code, ir_op_ops *ops)
 		/* leave NULL */
 		break;
 	}
-
-	return ops;
 #undef CASE
 }
 
@@ -7170,16 +7121,7 @@ static unsigned hash_SymConst(const ir_node *node)
 	return h;
 }
 
-/**
- * Set the default hash operation in an ir_op_ops.
- *
- * @param code   the opcode for the default operation
- * @param ops    the operations initialized
- *
- * @return
- *    The operations.
- */
-static ir_op_ops *firm_set_default_hash(unsigned code, ir_op_ops *ops)
+void firm_set_default_hash(unsigned code, ir_op_ops *ops)
 {
 #define CASE(a)                                    \
 	case iro_##a:                                  \
@@ -7188,7 +7130,7 @@ static ir_op_ops *firm_set_default_hash(unsigned code, ir_op_ops *ops)
 
 	/* hash function already set */
 	if (ops->hash != NULL)
-		return ops;
+		return;
 
 	switch (code) {
 	CASE(Const);
@@ -7197,23 +7139,5 @@ static ir_op_ops *firm_set_default_hash(unsigned code, ir_op_ops *ops)
 		/* use input/mode default hash if no function was given */
 		ops->hash = firm_default_hash;
 	}
-
-	return ops;
 #undef CASE
-}
-
-/*
- * Sets the default operation for an ir_ops.
- */
-ir_op_ops *firm_set_default_operations(unsigned code, ir_op_ops *ops)
-{
-	ops = firm_set_default_hash(code, ops);
-	ops = firm_set_default_computed_value(code, ops);
-	ops = firm_set_default_equivalent_node(code, ops);
-	ops = firm_set_default_transform_node(code, ops);
-	ops = firm_set_default_node_cmp_attr(code, ops);
-	ops = firm_set_default_get_type_attr(code, ops);
-	ops = firm_set_default_get_entity_attr(code, ops);
-
-	return ops;
 }

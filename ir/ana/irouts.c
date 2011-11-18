@@ -348,7 +348,7 @@ static int count_outs(ir_graph *irg)
 
 	/* Now handle anchored nodes. We need the out count of those
 	   even if they are not visible. */
-	for (i = anchor_last - 1; i >= 0; --i) {
+	for (i = anchor_last; i >= anchor_first; --i) {
 		n = get_irg_anchor(irg, i);
 		if (!irn_visited_else_mark(n)) {
 			n->out = (ir_def_use_edge*) INT_TO_PTR(1);
@@ -423,7 +423,7 @@ static ir_def_use_edge *set_out_edges(ir_graph *irg, ir_def_use_edge *free)
 	free = _set_out_edges(get_irg_end(irg), free);
 
 	/* handle anchored nodes */
-	for (i = anchor_last - 1; i >= 0; --i) {
+	for (i = anchor_last; i >= anchor_first; --i) {
 		n = get_irg_anchor(irg, i);
 		if (!irn_visited_else_mark(n)) {
 			size_t n_outs = PTR_TO_INT(n->out);

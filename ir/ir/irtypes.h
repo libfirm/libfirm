@@ -259,7 +259,6 @@ typedef struct call_attr {
 	except_attr exc;               /**< the exception attribute. MUST be the first one. */
 	ir_type     *type;             /**< type of called procedure */
 	ir_entity   **callee_arr;      /**< result of callee analysis */
-	unsigned    tail_call:1;       /**< if set, can be a tail call */
 } call_attr;
 
 /** Builtin attributes. */
@@ -504,8 +503,10 @@ typedef irg_edge_info_t irg_edges_info_t[EDGE_KIND_LAST];
 /**
  * Index constants for nodes that can be accessed through the graph anchor node.
  */
-enum irg_anchors {
-	anchor_end_block = 0,    /**< block the end node will belong to, same as Anchors block */
+typedef enum irg_anchors {
+	anchor_first,
+	anchor_end_block = anchor_first, /**< block the end node will belong to,
+	                                      same as Anchors block */
 	anchor_start_block,      /**< block the start node will belong to */
 	anchor_end,              /**< end node of this ir_graph */
 	anchor_start,            /**< start node of this ir_graph */
@@ -514,8 +515,9 @@ enum irg_anchors {
 	anchor_initial_mem,      /**< initial memory of this graph */
 	anchor_args,             /**< methods arguments */
 	anchor_no_mem,           /**< NoMem node of this ir_graph, the one and only in this graph */
-	anchor_last
-};
+	anchor_last = anchor_no_mem
+} irg_anchors;
+ENUM_COUNTABLE(irg_anchors)
 
 /** A callgraph entry for callees. */
 typedef struct cg_callee_entry {

@@ -118,7 +118,7 @@ static int block_needs_label(const ir_node *block)
 	int need_label = 1;
 	int  n_cfgpreds = get_Block_n_cfgpreds(block);
 
-	if (has_Block_entity(block))
+	if (get_Block_entity(block) != NULL)
 		return 1;
 
 	if (n_cfgpreds == 0) {
@@ -1201,7 +1201,7 @@ static const char* emit_asm_operand(const ir_node *node, const char *s)
 			panic("Invalid asm op modifier");
 		}
 	} else {
-		emit_register(reg, asm_reg->mode);
+		emit_register(reg, asm_reg->memory ? mode_Iu : asm_reg->mode);
 	}
 
 	if (asm_reg->memory) {

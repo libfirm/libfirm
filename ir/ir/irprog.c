@@ -79,8 +79,6 @@ static ir_prog *new_incomplete_ir_prog(void)
  */
 static ir_prog *complete_ir_prog(ir_prog *irp, const char *module_name)
 {
-	ir_segment_t s;
-
 #define IDENT(x)  new_id_from_chars(x, sizeof(x) - 1)
 
 	irp->name = new_id_from_str(module_name);
@@ -92,17 +90,12 @@ static ir_prog *complete_ir_prog(ir_prog *irp, const char *module_name)
 		= new_type_class(IDENT("Constructors"));
 	irp->segment_types[IR_SEGMENT_DESTRUCTORS]
 		= new_type_class(IDENT("Destructors"));
-	/* Remove these types from type list.  Must be treated differently than
-	   other types. */
-	for (s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
-		remove_irp_type(irp->segment_types[s]);
-	}
 
 	/* Set these flags for debugging. */
-	irp->segment_types[IR_SEGMENT_GLOBAL]->flags       |= tf_global_type;
-	irp->segment_types[IR_SEGMENT_THREAD_LOCAL]->flags |= tf_tls_type;
-	irp->segment_types[IR_SEGMENT_CONSTRUCTORS]->flags |= tf_constructors;
-	irp->segment_types[IR_SEGMENT_DESTRUCTORS]->flags  |= tf_destructors;
+	irp->segment_types[IR_SEGMENT_GLOBAL]->flags       |= tf_segment|tf_global_type;
+	irp->segment_types[IR_SEGMENT_THREAD_LOCAL]->flags |= tf_segment|tf_tls_type;
+	irp->segment_types[IR_SEGMENT_CONSTRUCTORS]->flags |= tf_segment|tf_constructors;
+	irp->segment_types[IR_SEGMENT_DESTRUCTORS]->flags  |= tf_segment|tf_destructors;
 
 	/* The global type is a class, but we cannot derive from it, so set
 	   the final property to assist optimizations that checks for it. */
@@ -142,10 +135,18 @@ ir_prog *new_ir_prog(const char *name)
    list and entities in global type must be freed by hand before. */
 void free_ir_prog(void)
 {
-	ir_segment_t s;
-	for (s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
-		free_type(irp->segment_types[s]);
-	}
+	size_t i;
+	/* must iterate backwards here */
+	for (i = get_irp_n_irgs(); i > 0;)
+		free_ir_graph(get_irp_irg(--i));
+
+	free_type_entities(get_glob_type());
+	/* must iterate backwards here */
+	for (i = get_irp_n_types(); i > 0;)
+		free_type_entities(get_irp_type(--i));
+
+	for (i = get_irp_n_types(); i > 0;)
+		free_type(get_irp_type(--i));
 
 	free_ir_graph(irp->const_code_irg);
 	DEL_ARR_F(irp->graphs);
@@ -186,8 +187,6 @@ void set_segment_type(ir_segment_t segment, ir_type *new_type)
 {
 	assert(segment <= IR_SEGMENT_LAST);
 	irp->segment_types[segment] = new_type;
-	/* segment types are not in the type list... */
-	remove_irp_type(new_type);
 }
 
 ir_type *(get_glob_type)(void)

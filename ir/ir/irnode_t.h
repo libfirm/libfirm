@@ -55,7 +55,7 @@ extern unsigned firm_add_node_size;
  * @return
  *    The operations.
  */
-ir_op_ops *firm_set_default_get_type_attr(unsigned code, ir_op_ops *ops);
+void firm_set_default_get_type_attr(unsigned code, ir_op_ops *ops);
 
 /**
  * Sets the get_entity_attr operation for an ir_op_ops.
@@ -66,7 +66,7 @@ ir_op_ops *firm_set_default_get_type_attr(unsigned code, ir_op_ops *ops);
  * @return
  *    The operations.
  */
-ir_op_ops *firm_set_default_get_entity_attr(unsigned code, ir_op_ops *ops);
+void firm_set_default_get_entity_attr(unsigned code, ir_op_ops *ops);
 
 /**
  * Returns an array with the predecessors of the Block. Depending on

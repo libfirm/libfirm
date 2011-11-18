@@ -67,8 +67,8 @@ ir_node *new_rd_defaultProj(dbg_info *db, ir_node *arg, long max_proj)
 }
 
 ir_node *new_rd_ASM(dbg_info *db, ir_node *block, int arity, ir_node *in[],
-                    ir_asm_constraint *inputs, int n_outs,
-	                ir_asm_constraint *outputs, int n_clobber,
+                    ir_asm_constraint *inputs, size_t n_outs,
+	                ir_asm_constraint *outputs, size_t n_clobber,
 	                ident *clobber[], ident *text)
 {
 	ir_graph *irg = get_irn_irg(block);
@@ -124,13 +124,6 @@ ir_node *new_rd_SymConst_ofs_ent(dbg_info *db, ir_graph *irg, ir_mode *mode, ir_
 	return new_rd_SymConst(db, irg, mode, sym, symconst_ofs_ent);
 }
 
-ir_node *new_rd_SymConst_type_tag(dbg_info *db, ir_graph *irg, ir_mode *mode, ir_type *symbol)
-{
-	symconst_symbol sym;
-	sym.type_p = symbol;
-	return new_rd_SymConst(db, irg, mode, sym, symconst_type_tag);
-}
-
 ir_node *new_rd_SymConst_size(dbg_info *db, ir_graph *irg, ir_mode *mode, ir_type *symbol)
 {
 	symconst_symbol sym;
@@ -165,8 +158,8 @@ ir_node *new_r_defaultProj(ir_node *arg, long max_proj)
 }
 ir_node *new_r_ASM(ir_node *block,
                    int arity, ir_node *in[], ir_asm_constraint *inputs,
-                   int n_outs, ir_asm_constraint *outputs,
-                   int n_clobber, ident *clobber[], ident *text)
+                   size_t n_outs, ir_asm_constraint *outputs,
+                   size_t n_clobber, ident *clobber[], ident *text)
 {
 	return new_rd_ASM(NULL, block, arity, in, inputs, n_outs, outputs, n_clobber, clobber, text);
 }
@@ -413,8 +406,8 @@ ir_node *new_d_SymConst(dbg_info *db, ir_mode *mode, symconst_symbol value,
 
 ir_node *new_d_ASM(dbg_info *db, int arity, ir_node *in[],
                    ir_asm_constraint *inputs,
-                   int n_outs, ir_asm_constraint *outputs, int n_clobber,
-                   ident *clobber[], ident *text)
+                   size_t n_outs, ir_asm_constraint *outputs,
+                   size_t n_clobber, ident *clobber[], ident *text)
 {
 	assert(get_irg_phase_state(current_ir_graph) == phase_building);
 	return new_rd_ASM(db, current_ir_graph->current_block, arity, in, inputs,
@@ -767,19 +760,19 @@ ir_node *new_defaultProj(ir_node *arg, long max_proj)
 	return new_d_defaultProj(NULL, arg, max_proj);
 }
 ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
-                 int n_outs, ir_asm_constraint *outputs,
-                 int n_clobber, ident *clobber[], ident *text)
+                 size_t n_outs, ir_asm_constraint *outputs,
+                 size_t n_clobber, ident *clobber[], ident *text)
 {
 	return new_d_ASM(NULL, arity, in, inputs, n_outs, outputs, n_clobber, clobber, text);
 }
 
 ir_node *new_r_Anchor(ir_graph *irg)
 {
-	ir_node *in[anchor_last];
+	ir_node *in[anchor_last+1];
 	ir_node *res;
 	size_t   i;
 	memset(in, 0, sizeof(in));
-	res = new_ir_node(NULL, irg, NULL, op_Anchor, mode_ANY, anchor_last, in);
+	res = new_ir_node(NULL, irg, NULL, op_Anchor, mode_ANY, anchor_last+1, in);
 	res->attr.anchor.irg.irg = irg;
 
 	/* hack to get get_irn_irg working: set block to ourself and allow
@@ -787,7 +780,7 @@ ir_node *new_r_Anchor(ir_graph *irg)
 	res->in[0] = res;
 
 	/* we can't have NULL inputs so reference ourselfes for now */
-	for (i = 0; i < (size_t)anchor_last; ++i) {
+	for (i = 0; i <= (size_t)anchor_last; ++i) {
 		set_irn_n(res, i, res);
 	}
 

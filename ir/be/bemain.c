@@ -368,8 +368,6 @@ static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle,
 	env->pic_symbols_type     = new_type_struct(NEW_ID("$PIC_SYMBOLS_TYPE"));
 	env->cup_name             = compilation_unit_name;
 
-	remove_irp_type(env->pic_trampolines_type);
-	remove_irp_type(env->pic_symbols_type);
 	set_class_final(env->pic_trampolines_type, 1);
 
 	memset(asm_constraint_flags, 0, sizeof(asm_constraint_flags));

@@ -43,7 +43,6 @@
 #include "irhooks.h"
 #include "iredges.h"
 #include "irpass.h"
-#include "opt_polymorphy.h"
 #include "irmemory.h"
 #include "irnodehashmap.h"
 #include "irgopt.h"
@@ -1142,61 +1141,56 @@ static unsigned optimize_load(ir_node *load)
 		return res | DF_CHANGED;
 	}
 
-	/* Load from a constant polymorphic field, where we can resolve
-	   polymorphism. */
-	value = transform_polymorph_Load(load);
-	if (value == load) {
-		value = NULL;
-		/* check if we can determine the entity that will be loaded */
-		ent = find_constant_entity(ptr);
-		if (ent != NULL
-				&& get_entity_visibility(ent) != ir_visibility_external) {
-			/* a static allocation that is not external: there should be NO
-			 * exception when loading even if we cannot replace the load itself.
-			 */
+	value = NULL;
+	/* check if we can determine the entity that will be loaded */
+	ent = find_constant_entity(ptr);
+	if (ent != NULL
+			&& get_entity_visibility(ent) != ir_visibility_external) {
+		/* a static allocation that is not external: there should be NO
+		 * exception when loading even if we cannot replace the load itself.
+		 */
 
-			/* no exception, clear the info field as it might be checked later again */
-			if (info->projs[pn_Load_X_except]) {
-				ir_graph *irg = get_irn_irg(load);
-				exchange(info->projs[pn_Load_X_except], new_r_Bad(irg, mode_X));
-				info->projs[pn_Load_X_except] = NULL;
-				res |= CF_CHANGED;
-			}
-			if (info->projs[pn_Load_X_regular]) {
-				exchange(info->projs[pn_Load_X_regular], new_r_Jmp(get_nodes_block(load)));
-				info->projs[pn_Load_X_regular] = NULL;
-				res |= CF_CHANGED;
-			}
+		/* no exception, clear the info field as it might be checked later again */
+		if (info->projs[pn_Load_X_except]) {
+			ir_graph *irg = get_irn_irg(load);
+			exchange(info->projs[pn_Load_X_except], new_r_Bad(irg, mode_X));
+			info->projs[pn_Load_X_except] = NULL;
+			res |= CF_CHANGED;
+		}
+		if (info->projs[pn_Load_X_regular]) {
+			exchange(info->projs[pn_Load_X_regular], new_r_Jmp(get_nodes_block(load)));
+			info->projs[pn_Load_X_regular] = NULL;
+			res |= CF_CHANGED;
+		}
 
-			if (get_entity_linkage(ent) & IR_LINKAGE_CONSTANT) {
-				if (has_entity_initializer(ent)) {
-					/* new style initializer */
-					value = find_compound_ent_value(ptr);
-				} else if (entity_has_compound_ent_values(ent)) {
-					/* old style initializer */
-					compound_graph_path *path = get_accessed_path(ptr);
+		if (get_entity_linkage(ent) & IR_LINKAGE_CONSTANT) {
+			if (has_entity_initializer(ent)) {
+				/* new style initializer */
+				value = find_compound_ent_value(ptr);
+			} else if (entity_has_compound_ent_values(ent)) {
+				/* old style initializer */
+				compound_graph_path *path = get_accessed_path(ptr);
 
-					if (path != NULL) {
-						assert(is_proper_compound_graph_path(path, get_compound_graph_path_length(path)-1));
+				if (path != NULL) {
+					assert(is_proper_compound_graph_path(path, get_compound_graph_path_length(path)-1));
 
-						value = get_compound_ent_value_by_path(ent, path);
-						DB((dbg, LEVEL_1, "  Constant access at %F%F resulted in %+F\n", ent, path, value));
-						free_compound_graph_path(path);
-					}
+					value = get_compound_ent_value_by_path(ent, path);
+					DB((dbg, LEVEL_1, "  Constant access at %F%F resulted in %+F\n", ent, path, value));
+					free_compound_graph_path(path);
 				}
-				if (value != NULL) {
-					ir_graph *irg = get_irn_irg(load);
-					value = can_replace_load_by_const(load, value);
-					if (value != NULL && is_Sel(ptr) &&
-							!is_irg_state(irg, IR_GRAPH_STATE_IMPLICIT_BITFIELD_MASKING)) {
-						/* frontend has inserted masking operations after bitfield accesses,
-						 * so we might have to shift the const. */
-						unsigned char bit_offset = get_entity_offset_bits_remainder(get_Sel_entity(ptr));
-						ir_tarval *tv_old = get_Const_tarval(value);
-						ir_tarval *tv_offset = new_tarval_from_long(bit_offset, mode_Bu);
-						ir_tarval *tv_new = tarval_shl(tv_old, tv_offset);
-						value = new_r_Const(irg, tv_new);
-					}
+			}
+			if (value != NULL) {
+				ir_graph *irg = get_irn_irg(load);
+				value = can_replace_load_by_const(load, value);
+				if (value != NULL && is_Sel(ptr) &&
+						!is_irg_state(irg, IR_GRAPH_STATE_IMPLICIT_BITFIELD_MASKING)) {
+					/* frontend has inserted masking operations after bitfield accesses,
+					 * so we might have to shift the const. */
+					unsigned char bit_offset = get_entity_offset_bits_remainder(get_Sel_entity(ptr));
+					ir_tarval *tv_old = get_Const_tarval(value);
+					ir_tarval *tv_offset = new_tarval_from_long(bit_offset, mode_Bu);
+					ir_tarval *tv_new = tarval_shl(tv_old, tv_offset);
+					value = new_r_Const(irg, tv_new);
 				}
 			}
 		}
