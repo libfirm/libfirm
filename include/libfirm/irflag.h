@@ -106,19 +106,6 @@ FIRM_API void set_opt_suppress_downcast_optimization(int value);
 FIRM_API int get_opt_suppress_downcast_optimization(void);
 
 /**
- * Enable/Disable Null exception in Load and Store nodes only.
- *
- * If enabled, only Null pointer exception can occur at Load and
- * store nodes. If it can be proved that the address input of these
- * nodes is non-null, the exception edge can safely be removed.
- * If disabled, other exceptions (like unaligned access, read-only memory,
- * etc.) can occur.
- *
- * This flag is enabled by default.
- */
-FIRM_API void set_opt_ldst_only_null_ptr_exceptions(int value);
-
-/**
  * Enable/Disable Global Null Pointer Test Elimination.
  *
  * In languages where it is illegal to dereference NULL pointer, doing

@@ -4065,27 +4065,25 @@ static ir_node *transform_node_Minus(ir_node *n)
  */
 static ir_node *transform_node_Proj_Load(ir_node *proj)
 {
-	if (get_opt_ldst_only_null_ptr_exceptions()) {
-		if (get_irn_mode(proj) == mode_X) {
-			ir_node *load = get_Proj_pred(proj);
+	if (get_irn_mode(proj) == mode_X) {
+		ir_node *load = get_Proj_pred(proj);
 
-			/* get the Load address */
-			const ir_node *addr = get_Load_ptr(load);
-			const ir_node *confirm;
+		/* get the Load address */
+		const ir_node *addr = get_Load_ptr(load);
+		const ir_node *confirm;
 
-			if (value_not_null(addr, &confirm)) {
-				if (confirm == NULL) {
-					/* this node may float if it did not depend on a Confirm */
-					set_irn_pinned(load, op_pin_state_floats);
-				}
-				if (get_Proj_proj(proj) == pn_Load_X_except) {
-					ir_graph *irg = get_irn_irg(proj);
-					DBG_OPT_EXC_REM(proj);
-					return new_r_Bad(irg, mode_X);
-				} else {
-					ir_node *blk = get_nodes_block(load);
-					return new_r_Jmp(blk);
-				}
+		if (value_not_null(addr, &confirm)) {
+			if (confirm == NULL) {
+				/* this node may float if it did not depend on a Confirm */
+				set_irn_pinned(load, op_pin_state_floats);
+			}
+			if (get_Proj_proj(proj) == pn_Load_X_except) {
+				ir_graph *irg = get_irn_irg(proj);
+				DBG_OPT_EXC_REM(proj);
+				return new_r_Bad(irg, mode_X);
+			} else {
+				ir_node *blk = get_nodes_block(load);
+				return new_r_Jmp(blk);
 			}
 		}
 	}
@@ -4097,27 +4095,25 @@ static ir_node *transform_node_Proj_Load(ir_node *proj)
  */
 static ir_node *transform_node_Proj_Store(ir_node *proj)
 {
-	if (get_opt_ldst_only_null_ptr_exceptions()) {
-		if (get_irn_mode(proj) == mode_X) {
-			ir_node *store = get_Proj_pred(proj);
+	if (get_irn_mode(proj) == mode_X) {
+		ir_node *store = get_Proj_pred(proj);
 
-			/* get the load/store address */
-			const ir_node *addr = get_Store_ptr(store);
-			const ir_node *confirm;
+		/* get the load/store address */
+		const ir_node *addr = get_Store_ptr(store);
+		const ir_node *confirm;
 
-			if (value_not_null(addr, &confirm)) {
-				if (confirm == NULL) {
-					/* this node may float if it did not depend on a Confirm */
-					set_irn_pinned(store, op_pin_state_floats);
-				}
-				if (get_Proj_proj(proj) == pn_Store_X_except) {
-					ir_graph *irg = get_irn_irg(proj);
-					DBG_OPT_EXC_REM(proj);
-					return new_r_Bad(irg, mode_X);
-				} else {
-					ir_node *blk = get_nodes_block(store);
-					return new_r_Jmp(blk);
-				}
+		if (value_not_null(addr, &confirm)) {
+			if (confirm == NULL) {
+				/* this node may float if it did not depend on a Confirm */
+				set_irn_pinned(store, op_pin_state_floats);
+			}
+			if (get_Proj_proj(proj) == pn_Store_X_except) {
+				ir_graph *irg = get_irn_irg(proj);
+				DBG_OPT_EXC_REM(proj);
+				return new_r_Bad(irg, mode_X);
+			} else {
+				ir_node *blk = get_nodes_block(store);
+				return new_r_Jmp(blk);
 			}
 		}
 	}

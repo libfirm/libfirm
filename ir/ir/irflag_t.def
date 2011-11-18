@@ -54,9 +54,6 @@ I_FLAG(global_null_ptr_elimination        , 5, ON)
 /** Optimize cast nodes. */
 E_FLAG(suppress_downcast_optimization     , 7, OFF)
 
-/** Load and Store have only Null exceptions. */
-I_FLAG(ldst_only_null_ptr_exceptions      , 8, ON)
-
 /** Automatically create Sync node during construction. */
 I_FLAG(auto_create_sync                   , 10, OFF)
 
