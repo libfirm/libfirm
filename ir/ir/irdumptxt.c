@@ -344,8 +344,12 @@ static bool is_init_string(ir_initializer_t const* const init, ir_type *const ty
 	n = get_initializer_compound_n_entries(init);
 	for (i = 0; i != n; ++i) {
 		ir_initializer_t const* const val = get_initializer_compound_value(init, i);
-		ir_tarval*              const tv  = get_initializer_tarval_value(val);
+		ir_tarval*                    tv;
 		long                          v;
+
+		if (get_initializer_kind(val) != IR_INITIALIZER_TARVAL)
+			return false;
+		tv = get_initializer_tarval_value(val);
 
 		if (!tarval_is_constant(tv))
 			return false;
