@@ -31,8 +31,8 @@
 
 #define INVL ((void*)-1)
 
-pmap_new_entry_t _pmap_null = { NULL, NULL };
-pmap_new_entry_t _pmap_del  = { INVL, INVL };
+static pmap_new_entry_t _pmap_null = { NULL, NULL };
+static pmap_new_entry_t _pmap_del  = { INVL, INVL };
 
 #define DO_REHASH
 #define SCALAR_RETURN
