@@ -67,7 +67,8 @@ struct vc_info {
 	vd_info    *vdi;
 	vf_info    *vfi;
 	vc_node    *root;
-	ir_nodemap *nodemap;
+	ir_graph   *irg;
+	ir_nodemap  nodemap;
 	ir_node    *block;
 };
 
@@ -184,7 +185,7 @@ static void vc_compute_cross_conds(vc_info *vci, vc_node *vc_parent,
 			int i;
 
 			/* If it is, first calculate all the remaining conds in ir_dst. */
-			vc_node *vc_dst = ir_nodemap_get_fast(vci->nodemap, ir_dst);
+			vc_node *vc_dst = ir_nodemap_get_fast(&vci->nodemap, ir_dst);
 			vc_compute_cross_conds(vci, vc_parent, vc_dst);
 			assert(vc_dst->cross_conds); /* Normal and cross conds known. */
 
@@ -226,7 +227,7 @@ static vc_node *vc_init_node(vc_info *vci, const ir_node *irn)
 	vcn->cross_conds = NULL;
 	vcn->irn         = (ir_node*)irn;
 
-	ir_nodemap_insert(vci->nodemap, irn, vcn);
+	ir_nodemap_insert(&vci->nodemap, irn, vcn);
 
 	return vcn;
 }
@@ -251,7 +252,7 @@ static void vc_compute_conds(vc_info *vci, ir_node *irn)
 	ir_node *ir_dst, *ir_app;
 
 	if (vc_skip_node(vci, irn)) return;
-	vc_src = ir_nodemap_get(vci->nodemap, irn);
+	vc_src = ir_nodemap_get(&vci->nodemap, irn);
 	if (vc_src == NULL) {
 		vc_src = vc_init_node(vci, irn);
 	}
@@ -267,7 +268,7 @@ static void vc_compute_conds(vc_info *vci, ir_node *irn)
 	foreach_vd_node_child(vci->vdi, ir_src, ir_dst, it_path) {
 		if (vc_skip_node(vci, ir_dst)) continue;
 
-		vc_dst = ir_nodemap_get(vci->nodemap, ir_dst);
+		vc_dst = ir_nodemap_get(&vci->nodemap, ir_dst);
 		if (vc_dst == NULL) {
 			vc_dst = vc_init_node(vci, ir_dst);
 		}
@@ -320,7 +321,7 @@ static void vc_compute_conds(vc_info *vci, ir_node *irn)
 		 * ir_dst, to obtain conditions other target nodes. Do not process the
 		 * paths that lead to nodes dominated by ir_dst. We don't need to add
 		 * further information (aka the ir_dst condition) to them. */
-		vc_dst = ir_nodemap_get(vci->nodemap, ir_dst);
+		vc_dst = ir_nodemap_get(&vci->nodemap, ir_dst);
 		if (vc_dst == NULL) {
 			vc_dst = vc_init_node(vci, ir_dst);
 		}
@@ -360,7 +361,7 @@ static void vc_compute_conds(vc_info *vci, ir_node *irn)
 	foreach_vd_node_child(vci->vdi, ir_src, ir_dst, it_path) {
 		if (vc_skip_node(vci, ir_dst)) continue;
 
-		vc_dst = ir_nodemap_get(vci->nodemap, ir_dst);
+		vc_dst = ir_nodemap_get(&vci->nodemap, ir_dst);
 		if (vc_dst == NULL) {
 			vc_dst = vc_init_node(vci, ir_dst);
 		}
@@ -388,7 +389,7 @@ int vc_node_get_rel_cond(vc_info *vci, ir_node *irn, vc_rel_cond *rel_cond)
 	rel_cond->idom = vd_node_get_parent(vci->vdi, irn);
 	if (!rel_cond->idom) return 0;
 
-	vcn = ir_nodemap_get(vci->nodemap, rel_cond->idom);
+	vcn = ir_nodemap_get(&vci->nodemap, rel_cond->idom);
 	if (!vcn) return 0;
 
 	/* Try to look up the nodes condition in the parent. */
@@ -405,6 +406,7 @@ vc_info *vc_init_root(ir_node *root, int keep_block)
 	ir_graph *irg = get_irn_irg(root);
 
 	obstack_init(&vci->obst);
+	vci->irg   = irg;
 	vci->vdi   = vd_init_root(root, keep_block);
 	vci->vfi   = vf_init();
 	vci->block = keep_block ? get_nodes_block(root) : NULL;
@@ -415,11 +417,11 @@ vc_info *vc_init_root(ir_node *root, int keep_block)
 	printf("+------------------------------------------------+\n");
 #endif
 
-	ir_nodemap_init(vci->nodemap, irg);
+	ir_nodemap_init(&vci->nodemap, irg);
 
 	/* Walk through the tree to compute directions. */
 	vc_compute_conds(vci, root);
-	vci->root = ir_nodemap_get(vci->nodemap, root);
+	vci->root = ir_nodemap_get(&vci->nodemap, root);
 	assert(vci->root);
 
 #if VF_DEBUG_CONDITIONS
@@ -434,9 +436,10 @@ void vc_free(vc_info *vci)
 	size_t pn;
 
 	/* Free all the maps in the nodes. */
-	for (pn = 0; pn < ARR_LEN(vci->nodemap->data); ++pn) {
-		vc_node *vcn = vci->nodemap->data[pn];
-		assert(vcn);
+	for (pn = 0; pn < get_irg_last_idx(vci->irg); ++pn) {
+		vc_node *vcn = ir_nodemap_get_idx(&vci->nodemap, pn);
+		if (vcn == NULL)
+			continue;
 
 		pmap_new_destroy(&vcn->conds);
 		assert(!vcn->cross_conds);
@@ -445,7 +448,7 @@ void vc_free(vc_info *vci)
 	vf_free(vci->vfi);
 	vd_free(vci->vdi);
 
-	ir_nodemap_destroy(vci->nodemap);
+	ir_nodemap_destroy(&vci->nodemap);
 	obstack_free(&vci->obst, NULL);
 	xfree(vci);
 }
@@ -455,7 +458,7 @@ static void vc_dump_node(vc_info *vci, ir_node *irn, FILE *f, int indent)
 	vd_node_child_it it;
 
 	ir_node *ir_child;
-	vc_node *vcn = ir_nodemap_get(vci->nodemap, irn);
+	vc_node *vcn = ir_nodemap_get(&vci->nodemap, irn);
 	if (!vcn) return;
 
 	foreach_vd_node_child(vci->vdi, vcn->irn, ir_child, it)

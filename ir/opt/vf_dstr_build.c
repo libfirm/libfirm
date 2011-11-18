@@ -23,6 +23,7 @@
  * @author  Olaf Liebe
  * @version $Id: $
  */
+#include "config.h"
 
 #include "firm_types.h"
 #include "ircons.h"
@@ -56,7 +57,7 @@ typedef struct vb_info {
 	pmap_new_t  merges;
 	ir_node    *old_block; /* The block that hosts the VFirm graph. */
 	plist_t    *todo;      /* Remaining loop subgraphs to process. */
-	ir_nodemap *nodemap;
+	ir_nodemap  nodemap;
 } vb_info;
 
 typedef struct vb_node {
@@ -203,14 +204,14 @@ static vb_node *vb_init_node(vb_info *vbi, const ir_node *irn)
 {
 	vb_node *vbn = OALLOCZ(&vbi->obst, vb_node);
 
-	ir_nodemap_insert(vbi->nodemap, irn, vbn);
+	ir_nodemap_insert(&vbi->nodemap, irn, vbn);
 
 	return vbn;
 }
 
 static void vb_enqueue_loop(vb_info *vbi, ir_node *first_loop)
 {
-	vb_node *vbn = ir_nodemap_get(vbi->nodemap, first_loop);
+	vb_node *vbn = ir_nodemap_get(&vbi->nodemap, first_loop);
 	if (vbn == NULL) {
 		vbn = vb_init_node(vbi, first_loop);
 	}
@@ -228,7 +229,7 @@ static void vb_enqueue_loop(vb_info *vbi, ir_node *first_loop)
 		foreach_va_loop_loop(first_loop, loop, it) {
 			if (loop == first_loop) continue;
 
-			vbn = ir_nodemap_get(vbi->nodemap, loop);
+			vbn = ir_nodemap_get(&vbi->nodemap, loop);
 			if (vbn == NULL) {
 				vbn = vb_init_node(vbi, loop);
 			}
@@ -405,7 +406,7 @@ static void vb_get_body_roots(vb_info *vbi, ir_node *loop, plist_t *thetas,
 
 static void vb_set_link(vb_info *vbi, ir_node *irn, ir_node *link)
 {
-	vb_node *vbn = ir_nodemap_get(vbi->nodemap, irn);
+	vb_node *vbn = ir_nodemap_get(&vbi->nodemap, irn);
 	if (vbn == NULL) {
 		vbn = vb_init_node(vbi, irn);
 	}
@@ -414,7 +415,7 @@ static void vb_set_link(vb_info *vbi, ir_node *irn, ir_node *link)
 
 static ir_node *vb_get_link(vb_info *vbi, ir_node *irn)
 {
-	vb_node *vbn = ir_nodemap_get(vbi->nodemap, irn);
+	vb_node *vbn = ir_nodemap_get(&vbi->nodemap, irn);
 	return !vbn ? NULL : vbn->link;
 }
 
@@ -807,7 +808,7 @@ static void vb_build_loop(vb_info *vbi, ir_node *first_loop)
 /* Clone the given node if needed (the clone or original irn is returned). */
 static ir_node *vb_clone_dep(vb_info *vbi, ir_node *ir_dep, ir_node *loop)
 {
-	vb_node *vb_dep = ir_nodemap_get(vbi->nodemap, ir_dep);
+	vb_node *vb_dep = ir_nodemap_get(&vbi->nodemap, ir_dep);
 	if (vb_dep == NULL) {
 		vb_dep = vb_init_node(vbi, ir_dep);
 	}
@@ -958,7 +959,7 @@ void vb_build(ir_graph *irg)
 	pmap_new_init(&vbi.blocks);
 
 	vbi.todo = plist_obstack_new(&vbi.obst);
-	ir_nodemap_init(vbi.nodemap, irg);
+	ir_nodemap_init(&vbi.nodemap, irg);
 
 	/* Detach all loops in the graph. */
 	vb_detach_all_etas(&vbi, ret);
@@ -994,6 +995,8 @@ void vb_build(ir_graph *irg)
 
 #if VB_DEBUG_BUILD
 		printf("Finished processing loops of depth %d.\n", depth);
+#else
+		(void)depth;
 #endif
 	}
 
@@ -1004,7 +1007,7 @@ void vb_build(ir_graph *irg)
 	vb_ungate(&vbi);
 	dump_ir_graph(irg, "ungated");
 
-	ir_nodemap_destroy(vbi.nodemap);
+	ir_nodemap_destroy(&vbi.nodemap);
 	plist_free(vbi.todo);
 	vl_free(vbi.vli);
 

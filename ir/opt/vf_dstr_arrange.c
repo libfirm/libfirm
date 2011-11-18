@@ -88,14 +88,14 @@ struct va_node {
 };
 
 struct va_info {
-	obstack      obst;
-	ir_nodemap  *nodemap;
-	vc_info     *vci;
-	va_region   *root;
-	int          counter;
-	int          copy_count;
-	ir_node     *block;
-	vl_info     *vli;
+	obstack     obst;
+	ir_nodemap  nodemap;
+	vc_info    *vci;
+	va_region  *root;
+	int         counter;
+	int         copy_count;
+	ir_node    *block;
+	vl_info    *vli;
 };
 
 static int va_skip_node(va_info *vai, ir_node *irn)
@@ -290,7 +290,7 @@ static va_node *va_init_node(va_info *vai, const ir_node *irn)
 	van->marker        = 0;
 	van->last_hint     = NULL;
 
-	ir_nodemap_insert(vai->nodemap, irn, van);
+	ir_nodemap_insert(&vai->nodemap, irn, van);
 
 	return van;
 }
@@ -301,7 +301,7 @@ static va_node *va_init_node(va_info *vai, const ir_node *irn)
 static void va_set_markers_walk(va_info *vai, ir_node *irn)
 {
 	int      i;
-	va_node *van = ir_nodemap_get(vai->nodemap, irn);
+	va_node *van = ir_nodemap_get(&vai->nodemap, irn);
 	if (van == NULL) {
 		van = va_init_node(vai, irn);
 	}
@@ -420,7 +420,7 @@ static void va_place_phis(va_info *vai, va_region *old_region,
 			mode
 		);
 
-		van = nodemap_get_or_set_irn_data(vai->nodemap, result);
+		van = nodemap_get_or_set_irn_data(&vai->nodemap, result);
 		van->region = new_region;
 		van->branch_region = branch_region;
 	}
@@ -572,7 +572,7 @@ static void va_node_inc_dep_markers(va_info *vai, ir_node *irn)
 		va_node *va_dep;
 
 		if (va_skip_node(vai, ir_dep)) continue;
-		va_dep = ir_nodemap_get(vai->nodemap, ir_dep);
+		va_dep = ir_nodemap_get(&vai->nodemap, ir_dep);
 		if (va_dep == NULL) {
 			va_dep = va_init_node(vai, ir_dep);
 		}
@@ -666,7 +666,7 @@ static void va_region_place_multiple(va_info *vai, va_node *van)
 			va_copy = van;
 		} else {
 			ir_copy = vl_exact_copy(vai->vli, van->irn);
-			va_copy = ir_nodemap_get(vai->nodemap, ir_copy);
+			va_copy = ir_nodemap_get(&vai->nodemap, ir_copy);
 			if (va_copy == NULL) {
 				va_copy = va_init_node(vai, ir_copy);
 			}
@@ -716,7 +716,7 @@ static void va_region_hint(va_info *vai, va_region *region, va_edge edge)
 	if (va_skip_node(vai, irn)) return;
 
 	/* Visit the node and add the region for this request. */
-	van   = ir_nodemap_get(vai->nodemap, irn);
+	van   = ir_nodemap_get(&vai->nodemap, irn);
 	if (van == NULL) {
 		van = va_init_node(vai, irn);
 	}
@@ -779,7 +779,7 @@ va_info *va_init_root(vl_info *vli, ir_node *root, int keep_block)
 	obstack_init(&vai->obst);
 	vai->vci = vc_init_root(root, keep_block);
 
-	ir_nodemap_init(vai->nodemap, irg);
+	ir_nodemap_init(&vai->nodemap, irg);
 
 	vai->vli        = vli;
 	vai->counter    = 0;
@@ -825,7 +825,7 @@ void va_free(va_info *vai)
 	va_free_region(vai->root);
 	vc_free(vai->vci);
 
-	ir_nodemap_destroy(vai->nodemap);
+	ir_nodemap_destroy(&vai->nodemap);
 	obstack_free(&vai->obst, NULL);
 	xfree(vai);
 }
@@ -841,7 +841,7 @@ static void va_dump_collect(va_info *vai, ir_node *irn, va_region *region,
 	if (irn_visited(irn)) return;
 	mark_irn_visited(irn);
 
-	van = ir_nodemap_get(vai->nodemap, irn);
+	van = ir_nodemap_get(&vai->nodemap, irn);
 	if (van && (van->region == region)) {
 		plist_insert_back(list, irn);
 	}
@@ -944,7 +944,7 @@ void va_dump(va_info *vai, FILE *f)
 
 va_region *va_node_get_region(va_info *vai, ir_node *irn)
 {
-	va_node *van = ir_nodemap_get(vai->nodemap, irn);
+	va_node *van = ir_nodemap_get(&vai->nodemap, irn);
 	return van ? van->region : NULL;
 }
 
@@ -1025,7 +1025,7 @@ ir_graph *va_get_irg(va_info *vai)
 
 va_region *va_gamma_get_branch_region(va_info *vai, ir_node *gamma)
 {
-	va_node *van = ir_nodemap_get(vai->nodemap, gamma);
+	va_node *van = ir_nodemap_get(&vai->nodemap, gamma);
 	if (!van) return NULL;
 	return van->branch_region;
 }

@@ -45,12 +45,12 @@ typedef struct vl_node {
 struct vl_info {
 	obstack     obst;
 	ir_graph   *irg;
-	ir_nodemap *nodemap;
+	ir_nodemap  nodemap;
 };
 
 int vl_node_get_depth(vl_info *vli, ir_node *irn)
 {
-	vl_node *vln = ir_nodemap_get(vli->nodemap, irn);
+	vl_node *vln = ir_nodemap_get(&vli->nodemap, irn);
 	assert(vln && "No depth information for the given node.");
 	assert(vln->depth >= 0);
 	return vln->depth;
@@ -61,19 +61,19 @@ static vl_node *vl_init_node(vl_info *info, const ir_node *irn)
 	vl_node *vln = OALLOCZ(&info->obst, vl_node);
 	vln->depth = -1;
 
-	ir_nodemap_insert(info->nodemap, irn, vln);
+	ir_nodemap_insert(&info->nodemap, irn, vln);
 
 	return vln;
 }
 
 void vl_node_copy_depth(vl_info *vli, ir_node *src, ir_node *dst)
 {
-	vl_node *vl_src = ir_nodemap_get(vli->nodemap, src);
+	vl_node *vl_src = ir_nodemap_get(&vli->nodemap, src);
 	vl_node *vl_dst;
 
 	if (!vl_src || (vl_src->depth < 0)) return;
 
-	vl_dst = ir_nodemap_get(vli->nodemap, dst);
+	vl_dst = ir_nodemap_get(&vli->nodemap, dst);
 	if (vl_dst == NULL) {
 		vl_dst = vl_init_node(vli, dst);
 	}
@@ -111,7 +111,7 @@ static void vl_compute_depth(vl_info *vli, ir_node *irn, plist_t *todo)
 		plist_insert_back(todo, get_Theta_next(irn));
 
 		/* Use the known theta depth. */
-		vln = ir_nodemap_get(vli->nodemap, irn);
+		vln = ir_nodemap_get(&vli->nodemap, irn);
 		if (vln == NULL) {
 			vln = vl_init_node(vli, irn);
 		}
@@ -124,7 +124,7 @@ static void vl_compute_depth(vl_info *vli, ir_node *irn, plist_t *todo)
 		}
 
 		/* Use this when no deps are present (can't be in a loop). */
-		vln = ir_nodemap_get(vli->nodemap, irn);
+		vln = ir_nodemap_get(&vli->nodemap, irn);
 		if (vln == NULL) {
 			vln = vl_init_node(vli, irn);
 		}
@@ -133,7 +133,7 @@ static void vl_compute_depth(vl_info *vli, ir_node *irn, plist_t *todo)
 		/* Calculate minimal and maximal depth of the deps. */
 		for (i = 0; i < get_irn_arity(irn); i++) {
 			ir_node *ir_dep = get_irn_n(irn, i);
-			vl_node *vl_dep = ir_nodemap_get(vli->nodemap, ir_dep);
+			vl_node *vl_dep = ir_nodemap_get(&vli->nodemap, ir_dep);
 			assert(vl_dep);
 
 			/* Just take the nodes depth on the first try. */
@@ -157,7 +157,7 @@ vl_info *vl_init(ir_graph *irg)
 	assert(is_Return(ret) && "Invalid PEG graph.");
 
 	obstack_init(&vli->obst);
-	ir_nodemap_init(vli->nodemap, irg);
+	ir_nodemap_init(&vli->nodemap, irg);
 	vli->irg = irg;
 
 	/* Do the depth analysis by processing acyclic fragments of the graph.
@@ -186,7 +186,7 @@ vl_info *vl_init(ir_graph *irg)
 
 void vl_free(vl_info *vli)
 {
-	ir_nodemap_destroy(vli->nodemap);
+	ir_nodemap_destroy(&vli->nodemap);
 	obstack_free(&vli->obst, NULL);
 	xfree(vli);
 }
@@ -210,7 +210,7 @@ static void vl_dump_walk(vl_info *vli, ir_node *irn, FILE* f)
 		vl_dump_walk(vli, ir_dep, f);
 	}
 
-	vln = ir_nodemap_get_fast(vli->nodemap, irn);
+	vln = ir_nodemap_get_fast(&vli->nodemap, irn);
 	fprintf(f, "%3ld: %d\n", get_irn_node_nr(irn), vln->depth);
 }
 

@@ -124,4 +124,16 @@ static inline void *ir_nodemap_get_fast(const ir_nodemap *nodemap,
 	return nodemap->data[idx];
 }
 
+/**
+ * Get mapping for a node based on the node idx. Returns NULL if nothing is
+ * mapped.
+ */
+static inline void *ir_nodemap_get_idx(const ir_nodemap *nodemap,
+                                       size_t idx)
+{
+	if (idx >= ARR_LEN(nodemap->data))
+		return NULL;
+	return nodemap->data[idx];
+}
+
 #endif
