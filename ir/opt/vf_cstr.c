@@ -33,6 +33,7 @@
 #include "ircons.h"
 #include "irgmod.h"
 #include "irgwalk.h"
+#include "irgopt.h"
 #include "lowering.h"
 #include "array_t.h"
 #include "cdep.h"
@@ -481,11 +482,11 @@ static void replace_phis_walk(ir_node *block, void *ctx)
  */
 static void replace_phis(ir_graph *irg)
 {
-	ir_resources_t resources =
-		IR_RESOURCE_IRN_LINK |
-		IR_RESOURCE_PHI_LIST;
+	ir_resources_t resources = IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST;
 
 	assert(irg);
+
+	edges_assure(irg);
 
 	/* Create lists of phi nodes in each block. */
 	ir_reserve_resources(irg, resources);
@@ -884,9 +885,6 @@ static ir_node *transform_node_gamma(ir_node *gamma)
  */
 void vf_construct(ir_graph *irg)
 {
-	/* Use automatic out edges. Makes things easier later. */
-	int had_edges = edges_assure(irg);
-
 	/* Register local optimizations. */
 	op_Gamma->ops.equivalent_node = equivalent_node_gamma;
 	op_Gamma->ops.transform_node  = transform_node_gamma;
@@ -903,8 +901,13 @@ void vf_construct(ir_graph *irg)
 	dump_ir_graph(irg, "return");
 
 	/* We need to walk the CFG in reverse order and access dominators. */
+	remove_unreachable_code(irg);
+	optimize_cf(irg);
+	remove_bads(irg);
 	assure_doms(irg);
 	assure_loopinfo(irg);
+
+	dump_ir_graph(irg, "cleanup");
 
 	set_irg_phase_state(irg, phase_building);
 
@@ -934,6 +937,4 @@ void vf_construct(ir_graph *irg)
 	                   | IR_GRAPH_STATE_CONSISTENT_DOMINANCE
 	                   | IR_GRAPH_STATE_CONSISTENT_LOOPINFO
 	                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
-
-	if (!had_edges) edges_deactivate(irg);
 }
