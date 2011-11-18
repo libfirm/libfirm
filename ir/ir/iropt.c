@@ -43,7 +43,6 @@
 #include "irhooks.h"
 #include "irarch.h"
 #include "hashptr.h"
-#include "opt_polymorphy.h"
 #include "irtools.h"
 #include "irhooks.h"
 #include "array_t.h"
@@ -6372,7 +6371,6 @@ void firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops)
 	CASE(Phi);
 	CASE(Proj);
 	CASE(Rotl);
-	CASE(Sel);
 	CASE(Shl);
 	CASE(Shr);
 	CASE(Shrs);

@@ -96,15 +96,6 @@ FIRM_API int get_opt_cse(void);
  */
 FIRM_API void set_opt_global_cse(int value);
 
-/** Enable/Disable optimization of dynamic method dispatch.
- *
- * This flag enables/disables the optimization of dynamic method dispatch.
- * If the flag is turned on Sel nodes can be replaced by Const nodes representing
- * the address of a function.
- */
-FIRM_API void set_opt_dyn_meth_dispatch(int value);
-FIRM_API int get_opt_dyn_meth_dispatch(void);
-
 /** Restricts the behavior of cast optimization.
  *
  *  If set, downcast are not optimized if they might be

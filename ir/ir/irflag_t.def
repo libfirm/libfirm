@@ -51,9 +51,6 @@ I_FLAG(algebraic_simplification           , 4, ON)
 /** Use Global Null Pointer Test elimination. */
 I_FLAG(global_null_ptr_elimination        , 5, ON)
 
-/** Remove dynamic method dispatch. */
-E_FLAG(dyn_meth_dispatch                  , 6, ON)
-
 /** Optimize cast nodes. */
 E_FLAG(suppress_downcast_optimization     , 7, OFF)
 
