@@ -21,7 +21,6 @@
  * @file
  * @brief   Methods to manipulate names.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
- * @version $Id$
  */
 #include "config.h"
 

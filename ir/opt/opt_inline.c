@@ -21,7 +21,6 @@
  * @file
  * @brief    Dead node elimination and Procedure Inlining.
  * @author   Michael Beck, Goetz Lindenmaier
- * @version  $Id$
  */
 #include "config.h"
 
@@ -146,7 +145,13 @@ static void find_addr(ir_node *node, void *env)
 {
 	bool *allow_inline = (bool*)env;
 
-	if (is_Sel(node)) {
+	if (is_Block(node) && get_Block_entity(node)) {
+		/**
+		 * Currently we can't handle blocks whose address was taken correctly
+		 * when inlining
+		 */
+		*allow_inline = false;
+	} else if (is_Sel(node)) {
 		ir_graph *irg = current_ir_graph;
 		if (get_Sel_ptr(node) == get_irg_frame(irg)) {
 			/* access to frame */

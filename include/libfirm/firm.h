@@ -21,7 +21,6 @@
  * @file
  * @brief     Central firm header.
  * @author    Martin Trapp, Christian Schaefer, Goetz Lindenmaier
- * @version   $Id$
  * @brief
  *  Central FIRM header.
  *

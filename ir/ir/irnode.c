@@ -21,7 +21,6 @@
  * @file
  * @brief   Representation of an intermediate operation.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
- * @version $Id$
  */
 #include "config.h"
 
@@ -232,6 +231,13 @@ void set_irn_in(ir_node *node, int arity, ir_node **in)
 
 	pOld_in = &node->in;
 
+#ifndef NDEBUG
+	assert(node != NULL && node->kind == k_ir_node);
+	assert(arity >= 0);
+	for (i = 0; i < arity; ++i) {
+		assert(in[i] != NULL && in[0]->kind == k_ir_node);
+	}
+#endif
 
 	for (i = 0; i < arity; i++) {
 		if (i < (int)ARR_LEN(*pOld_in)-1)
@@ -621,38 +627,15 @@ ir_entity *create_Block_entity(ir_node *block)
 
 	entity = block->attr.block.entity;
 	if (entity == NULL) {
-		ir_label_t  nr;
-		ir_type   *glob;
-
-		glob = get_glob_type();
-		entity = new_entity(glob, id_unique("block_%u"), get_code_type());
+		ir_label_t nr = get_irp_next_label_nr();
+		entity = new_label_entity(nr);
 		set_entity_visibility(entity, ir_visibility_local);
 		set_entity_linkage(entity, IR_LINKAGE_CONSTANT);
-		nr = get_irp_next_label_nr();
-		set_entity_label(entity, nr);
 		set_entity_compiler_generated(entity, 1);
 
 		block->attr.block.entity = entity;
 	}
 	return entity;
-}
-
-ir_entity *get_Block_entity(const ir_node *block)
-{
-	assert(is_Block(block));
-	return block->attr.block.entity;
-}
-
-void set_Block_entity(ir_node *block, ir_entity *entity)
-{
-	assert(is_Block(block));
-	assert(get_entity_type(entity) == get_code_type());
-	block->attr.block.entity = entity;
-}
-
-int has_Block_entity(const ir_node *block)
-{
-	return block->attr.block.entity != NULL;
 }
 
 ir_node *(get_Block_phis)(const ir_node *block)
@@ -1347,19 +1330,19 @@ void set_Tuple_pred(ir_node *node, int pos, ir_node *pred)
 	set_irn_n(node, pos, pred);
 }
 
-int get_ASM_n_input_constraints(const ir_node *node)
+size_t get_ASM_n_input_constraints(const ir_node *node)
 {
 	assert(is_ASM(node));
 	return ARR_LEN(node->attr.assem.input_constraints);
 }
 
-int get_ASM_n_output_constraints(const ir_node *node)
+size_t get_ASM_n_output_constraints(const ir_node *node)
 {
 	assert(is_ASM(node));
 	return ARR_LEN(node->attr.assem.output_constraints);
 }
 
-int get_ASM_n_clobbers(const ir_node *node)
+size_t get_ASM_n_clobbers(const ir_node *node)
 {
 	assert(is_ASM(node));
 	return ARR_LEN(node->attr.assem.clobbers);
@@ -1591,24 +1574,6 @@ int (is_irn_start_block_placed)(const ir_node *node)
 	return is_irn_start_block_placed_(node);
 }
 
-/* Returns non-zero for nodes that are machine operations. */
-int (is_irn_machine_op)(const ir_node *node)
-{
-	return is_irn_machine_op_(node);
-}
-
-/* Returns non-zero for nodes that are machine operands. */
-int (is_irn_machine_operand)(const ir_node *node)
-{
-	return is_irn_machine_operand_(node);
-}
-
-/* Returns non-zero for nodes that have the n'th user machine flag set. */
-int (is_irn_machine_user)(const ir_node *node, unsigned n)
-{
-	return is_irn_machine_user_(node, n);
-}
-
 /* Returns non-zero for nodes that are CSE neutral to its users. */
 int (is_irn_cse_neutral)(const ir_node *node)
 {
@@ -1654,21 +1619,23 @@ static ir_type *get_Null_type(const ir_node *n)
 }
 
 /* Sets the get_type operation for an ir_op_ops. */
-ir_op_ops *firm_set_default_get_type_attr(unsigned code, ir_op_ops *ops)
+void firm_set_default_get_type_attr(unsigned code, ir_op_ops *ops)
 {
 	switch (code) {
+	case iro_Alloc:    ops->get_type_attr = get_Alloc_type;         break;
+	case iro_Builtin:  ops->get_type_attr = get_Builtin_type;       break;
+	case iro_Call:     ops->get_type_attr = get_Call_type;          break;
+	case iro_Cast:     ops->get_type_attr = get_Cast_type;          break;
+	case iro_CopyB:    ops->get_type_attr = get_CopyB_type;         break;
+	case iro_Free:     ops->get_type_attr = get_Free_type;          break;
+	case iro_InstOf:   ops->get_type_attr = get_InstOf_type;        break;
 	case iro_SymConst: ops->get_type_attr = get_SymConst_attr_type; break;
-	case iro_Call:     ops->get_type_attr = get_Call_type; break;
-	case iro_Alloc:    ops->get_type_attr = get_Alloc_type; break;
-	case iro_Free:     ops->get_type_attr = get_Free_type; break;
-	case iro_Cast:     ops->get_type_attr = get_Cast_type; break;
 	default:
 		/* not allowed to be NULL */
 		if (! ops->get_type_attr)
 			ops->get_type_attr = get_Null_type;
 		break;
 	}
-	return ops;
 }
 
 /** the get_entity_attr operation must be always implemented */
@@ -1679,18 +1646,18 @@ static ir_entity *get_Null_ent(const ir_node *n)
 }
 
 /* Sets the get_type operation for an ir_op_ops. */
-ir_op_ops *firm_set_default_get_entity_attr(unsigned code, ir_op_ops *ops)
+void firm_set_default_get_entity_attr(unsigned code, ir_op_ops *ops)
 {
 	switch (code) {
 	case iro_SymConst: ops->get_entity_attr = get_SymConst_attr_entity; break;
 	case iro_Sel:      ops->get_entity_attr = get_Sel_entity; break;
+	case iro_Block:    ops->get_entity_attr = get_Block_entity; break;
 	default:
 		/* not allowed to be NULL */
 		if (! ops->get_entity_attr)
 			ops->get_entity_attr = get_Null_ent;
 		break;
 	}
-	return ops;
 }
 
 /* Sets the debug information of a node. */

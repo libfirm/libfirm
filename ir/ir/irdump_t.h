@@ -20,7 +20,6 @@
 /**
  * @file
  * @brief   Private header for irdump
- * @version $Id$
  */
 #ifndef FIRM_IR_IRDUMPT_T_H
 #define FIRM_IR_IRDUMPT_T_H

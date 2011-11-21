@@ -22,7 +22,6 @@
  * @brief       Internal data structures for the chordal register allocator.
  * @author      Sebastian Hack
  * @date        25.01.2005
- * @version     $Id$
  */
 #ifndef FIRM_BE_BECHORDAL_T_H
 #define FIRM_BE_BECHORDAL_T_H

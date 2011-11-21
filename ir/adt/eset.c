@@ -22,7 +22,6 @@
  * @brief       A pointer hash-set (WARNING: deprecated!)
  * @author      Hubert Schmid
  * @date        09.06.2002
- * @version     $Id$
  */
 #include "config.h"
 

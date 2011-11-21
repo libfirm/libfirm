@@ -21,7 +21,6 @@
  * @file
  * @brief   Representation of an intermediate operation.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
- * @version $Id$
  */
 #ifndef FIRM_IR_IRNODE_H
 #define FIRM_IR_IRNODE_H
@@ -307,14 +306,8 @@ FIRM_API ir_extblk *get_Block_extbb(const ir_node *block);
 FIRM_API void set_Block_extbb(ir_node *block, ir_extblk *extblk);
 /** Returns the ir_graph this Block belongs to. */
 FIRM_API ir_graph *get_Block_irg(const ir_node *block);
-/** Returns non-zero if the block has an entity assigned */
-FIRM_API int has_Block_entity(const ir_node *block);
-/** Returns the entity for a Block */
-FIRM_API ir_entity *get_Block_entity(const ir_node *block);
 /** Returns the entity for a Block (creating it if necessary) */
 FIRM_API ir_entity *create_Block_entity(ir_node *block);
-/** Set a new entity for a block */
-FIRM_API void set_Block_entity(ir_node *block, ir_entity *entity);
 /** Gets the head of the Phi list for this block. */
 FIRM_API ir_node *get_Block_phis(const ir_node *block);
 /** Sets the head of the Phi list for this block. */
@@ -387,7 +380,7 @@ FIRM_API symconst_kind get_SymConst_kind(const ir_node *node);
 /** Set the kind of the SymConst. */
 FIRM_API void          set_SymConst_kind(ir_node *node, symconst_kind num);
 
-/** Only to access SymConst of kind type_tag or size.  Else assertion: */
+/** Only to access SymConst of kind type_size.  Else assertion: */
 FIRM_API ir_type  *get_SymConst_type(const ir_node *node);
 FIRM_API void     set_SymConst_type(ir_node *node, ir_type *tp);
 
@@ -556,11 +549,11 @@ FIRM_API ir_node  *get_Tuple_pred(const ir_node *node, int pos);
 FIRM_API void      set_Tuple_pred(ir_node *node, int pos, ir_node *pred);
 
 /** Return the number of input constraints for an ASM node. */
-FIRM_API int get_ASM_n_input_constraints(const ir_node *node);
+FIRM_API size_t get_ASM_n_input_constraints(const ir_node *node);
 /** Return the number of output constraints for an ASM node.  */
-FIRM_API int get_ASM_n_output_constraints(const ir_node *node);
+FIRM_API size_t get_ASM_n_output_constraints(const ir_node *node);
 /** Return the number of clobbered registers for an ASM node.  */
-FIRM_API int get_ASM_n_clobbers(const ir_node *node);
+FIRM_API size_t get_ASM_n_clobbers(const ir_node *node);
 
 /** Returns operand of node if node is a Proj. */
 FIRM_API ir_node *skip_Proj(ir_node *node);
@@ -633,21 +626,6 @@ FIRM_API int is_irn_keep(const ir_node *node);
  * Returns non-zero for nodes that are always placed in the start block.
  */
 FIRM_API int is_irn_start_block_placed(const ir_node *node);
-
-/**
- * Returns non-zero for nodes that are machine operations.
- */
-FIRM_API int is_irn_machine_op(const ir_node *node);
-
-/**
- * Returns non-zero for nodes that are machine operands.
- */
-FIRM_API int is_irn_machine_operand(const ir_node *node);
-
-/**
- * Returns non-zero for nodes that have the n'th user machine flag set.
- */
-FIRM_API int is_irn_machine_user(const ir_node *node, unsigned n);
 
 /**
  * Returns non-zero for nodes that are CSE neutral to its users.

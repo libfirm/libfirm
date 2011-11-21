@@ -22,7 +22,6 @@
  * @brief     Data structure to hold type information for nodes.
  * @author    Goetz Lindenmaier
  * @date      28.8.2003
- * @version   $Id$
  * @brief
  *  Data structure to hold type information for nodes.
  *

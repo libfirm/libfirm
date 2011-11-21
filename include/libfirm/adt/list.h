@@ -1,7 +1,6 @@
 /**
  * @file
  * @brief   Doubly linked lists.
- * @version $Id$
  *
  * Simple doubly linked list implementation.
  *

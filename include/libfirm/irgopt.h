@@ -21,7 +21,6 @@
  * @file
  * @brief   Optimizations for a whole ir graph, i.e., a procedure.
  * @author  Christian Schaefer, Goetz Lindenmaier, Sebastian Felis
- * @version $Id$
  */
 #ifndef FIRM_IR_IRGOPT_H
 #define FIRM_IR_IRGOPT_H

@@ -22,7 +22,6 @@
  * @brief       Various verify routines that check a scheduled graph for correctness.
  * @author      Matthias Braun
  * @date        05.05.2006
- * @version     $Id$
  */
 #include "config.h"
 
@@ -493,7 +492,7 @@ static void collect_spills_walker(ir_node *node, void *data)
 {
 	be_verify_spillslots_env_t *env = (be_verify_spillslots_env_t*)data;
 
-	if (arch_irn_classify(node) & arch_irn_class_reload) {
+	if (be_is_Reload(node)) {
 		ir_node *spill = get_memory_edge(node);
 		ir_entity *ent;
 
@@ -556,7 +555,7 @@ static void check_lonely_spills(ir_node *node, void *data)
 		}
 
 		if (spill == NULL) {
-			ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) not connected to a reaload\n",
+			ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) not connected to a reload\n",
 			           node, get_nodes_block(node), get_irg_dump_name(env->irg));
 		}
 	}

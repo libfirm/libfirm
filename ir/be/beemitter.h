@@ -22,7 +22,6 @@
  * @brief       Interface for assembler output.
  * @author      Matthias Braun
  * @date        12.03.2007
- * @version     $Id$
  *
  * This is a framework for emitting data (usually the final assembly code)
  */

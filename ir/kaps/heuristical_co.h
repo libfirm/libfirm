@@ -22,7 +22,6 @@
  * @brief   Heuristic PBQP solver for SSA-based register allocation.
  * @date    18.09.2009
  * @author  Thomas Bersch
- * @version $Id$
  */
 #ifndef KAPS_HEURISTICAL_H
 #define KAPS_HEURISTICAL_H

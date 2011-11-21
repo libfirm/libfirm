@@ -22,7 +22,6 @@
  * @brief   Check types and entities for correctness.
  * @date    29.1.2003
  * @author  Michael Beck, Goetz Lindenmaier
- * @version $Id$
  */
 #include "config.h"
 

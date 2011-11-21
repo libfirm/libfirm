@@ -22,7 +22,6 @@
  * @brief   Heuristic PBQP solver.
  * @date    02.10.2008
  * @author  Sebastian Buchwald
- * @version $Id$
  */
 #ifndef KAPS_HEURISTICAL_CO_H
 #define KAPS_HEURISTICAL_CO_H

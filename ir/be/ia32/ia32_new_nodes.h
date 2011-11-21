@@ -21,7 +21,6 @@
  * @file
  * @brief       Handling of ia32 specific firm opcodes.
  * @author      Christian Wuerdig
- * @version     $Id$
  *
  * This file implements the creation of the achitecture specific firm opcodes
  * and the coresponding node constructors for the ia32 assembler irg.
@@ -264,12 +263,6 @@ unsigned get_ia32_copyb_size(const ir_node *node);
  * Gets the instruction latency.
  */
 unsigned get_ia32_latency(const ir_node *node);
-
-
-/**
- * Get the list of available execution units.
- */
-const be_execution_unit_t ***get_ia32_exec_units(const ir_node *node);
 
 /**
  * Get the exception label attribute.

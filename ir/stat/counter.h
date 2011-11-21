@@ -21,7 +21,6 @@
  * @file
  * @brief   Statistics for Firm. Counter implementation.
  * @author  Michael Beck
- * @version $Id$
  */
 #ifndef FIRM_STAT_COUNTER_H
 #define FIRM_STAT_COUNTER_H

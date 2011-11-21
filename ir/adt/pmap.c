@@ -22,7 +22,6 @@
  * @brief       simplified hashmap for pointer -> pointer mappings
  * @author      Hubert Schmid
  * @date        09.06.2002
- * @version     $Id$
  */
 #include "config.h"
 

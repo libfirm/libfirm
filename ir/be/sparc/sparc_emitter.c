@@ -21,7 +21,6 @@
  * @file
  * @brief   emit assembler for a backend graph
  * @author  Hannes Rapp, Matthias Braun
- * @version $Id$
  */
 #include "config.h"
 
@@ -1526,7 +1525,7 @@ static bool block_needs_label(const ir_node *block, const ir_node *sched_prev)
 {
 	int n_cfgpreds;
 
-	if (has_Block_entity(block))
+	if (get_Block_entity(block) != NULL)
 		return true;
 
 	n_cfgpreds = get_Block_n_cfgpreds(block);

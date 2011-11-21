@@ -22,7 +22,6 @@
  * @brief       Common functions for creating listscheduling algorithms
  * @author      Sebastian Hack
  * @date        20.10.2004
- * @version     $Id$
  */
 #ifndef FIRM_BE_BELISTSCHED_H
 #define FIRM_BE_BELISTSCHED_H

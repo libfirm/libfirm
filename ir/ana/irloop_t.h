@@ -22,7 +22,6 @@
  * @brief    Loop datastructure and access functions -- private stuff.
  * @author   Goetz Lindenmaier
  * @date     7.2002
- * @version  $Id$
  */
 #ifndef FIRM_ANA_IRLOOP_T_H
 #define FIRM_ANA_IRLOOP_T_H

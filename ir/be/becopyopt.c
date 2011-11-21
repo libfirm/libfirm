@@ -22,7 +22,6 @@
  * @brief       Copy minimization driver.
  * @author      Daniel Grund
  * @date        12.04.2005
- * @version     $Id$
  *
  * Main file for the optimization reducing the copies needed for:
  * - Phi coalescing
@@ -42,7 +41,6 @@
 #include "irprog.h"
 #include "irloop_t.h"
 #include "iredges_t.h"
-#include "irbitset.h"
 #include "irprintf_t.h"
 #include "irtools.h"
 #include "util.h"
@@ -704,7 +702,7 @@ int co_get_lower_bound(const copy_opt_t *co)
 
 void co_complete_stats(const copy_opt_t *co, co_complete_stats_t *stat)
 {
-	bitset_t *seen = bitset_irg_malloc(co->irg);
+	bitset_t *seen = bitset_malloc(get_irg_last_idx(co->irg));
 	affinity_node_t *an;
 
 	memset(stat, 0, sizeof(stat[0]));
@@ -713,9 +711,9 @@ void co_complete_stats(const copy_opt_t *co, co_complete_stats_t *stat)
 	co_gs_foreach_aff_node(co, an) {
 		neighb_t *neigh;
 		stat->aff_nodes += 1;
-		bitset_add_irn(seen, an->irn);
+		bitset_set(seen, get_irn_idx(an->irn));
 		co_gs_foreach_neighb(an, neigh) {
-			if (!bitset_contains_irn(seen, neigh->irn)) {
+			if (!bitset_is_set(seen, get_irn_idx(neigh->irn))) {
 				stat->aff_edges += 1;
 				stat->max_costs += neigh->costs;
 

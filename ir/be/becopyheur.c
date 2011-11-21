@@ -22,7 +22,6 @@
  * @brief       First simple copy minimization heuristics.
  * @author      Daniel Grund
  * @date        12.04.2005
- * @version     $Id$
  *
  * Heuristic for minimizing copies using a queue which holds 'qnodes' not yet
  * examined. A qnode has a 'target color', nodes out of the opt unit and

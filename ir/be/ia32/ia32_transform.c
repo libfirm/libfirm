@@ -22,7 +22,6 @@
  * @brief       This file implements the IR transformation from firm into
  *              ia32-Firm.
  * @author      Christian Wuerdig, Matthias Braun
- * @version     $Id$
  */
 #include "config.h"
 
@@ -3177,9 +3176,11 @@ static ir_node *create_doz(ir_node *psi, ir_node *a, ir_node *b)
 
 	dbgi = get_irn_dbg_info(psi);
 	sbb  = new_bd_ia32_Sbb0(dbgi, block, eflags);
+	set_ia32_ls_mode(sbb, mode_Iu);
 	notn = new_bd_ia32_Not(dbgi, block, sbb);
 
 	new_node = new_bd_ia32_And(dbgi, block, noreg_GP, noreg_GP, nomem, new_node, notn);
+	set_ia32_ls_mode(new_node, mode_Iu);
 	set_ia32_commutative(new_node);
 	return new_node;
 }
@@ -5088,6 +5089,7 @@ static ir_node *gen_ffs(ir_node *node)
 
 	/* or */
 	orn = new_bd_ia32_Or(dbgi, block, noreg_GP, noreg_GP, nomem, bsf, neg);
+	set_ia32_ls_mode(orn, mode_Iu);
 	set_ia32_commutative(orn);
 
 	/* add 1 */
@@ -5143,6 +5145,7 @@ static ir_node *gen_parity(ir_node *node)
 	ir_node *xor2 = new_bd_ia32_XorHighLow(dbgi, new_block, xor);
 	ir_node *flags;
 
+	set_ia32_ls_mode(xor, mode_Iu);
 	set_ia32_commutative(xor);
 
 	set_irn_mode(xor2, mode_T);

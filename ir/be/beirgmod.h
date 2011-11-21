@@ -22,7 +22,6 @@
  * @brief       Backend IRG modification routines.
  * @author      Sebastian Hack, Daniel Grund, Matthias Braun, Christian Wuerdig
  * @date        04.05.2005
- * @version     $Id$
  *
  * This file contains the following IRG modifications for be routines:
  * - insertion of Perm nodes

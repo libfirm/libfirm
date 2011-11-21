@@ -21,7 +21,6 @@
  * @file
  * @brief       Implements several optimizations for IA32.
  * @author      Christian Wuerdig
- * @version     $Id$
  */
 #ifndef FIRM_BE_IA32_IA32_OPTIMIZE_H
 #define FIRM_BE_IA32_IA32_OPTIMIZE_H

@@ -22,7 +22,6 @@
  * @brief   PBQP edges.
  * @date    02.10.2008
  * @author  Sebastian Buchwald
- * @version $Id$
  */
 #include "config.h"
 

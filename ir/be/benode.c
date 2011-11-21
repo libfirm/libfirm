@@ -22,7 +22,6 @@
  * @brief       Backend node support for generic backend nodes.
  * @author      Sebastian Hack
  * @date        17.05.2005
- * @version     $Id$
  *
  * Backend node support for generic backend nodes.
  * This file provides Perm, Copy, Spill and Reload nodes.
@@ -954,17 +953,6 @@ int be_get_IncSP_align(const ir_node *irn)
 	return a->align;
 }
 
-static arch_irn_class_t be_node_classify(const ir_node *irn)
-{
-	switch (get_irn_opcode(irn)) {
-		case beo_Spill:  return arch_irn_class_spill;
-		case beo_Reload: return arch_irn_class_reload;
-		case beo_Perm:   return arch_irn_class_perm;
-		case beo_Copy:   return arch_irn_class_copy;
-		default:         return arch_irn_class_none;
-	}
-}
-
 static ir_entity *be_node_get_frame_entity(const ir_node *irn)
 {
 	return be_get_frame_entity(irn);
@@ -1005,7 +993,6 @@ static int be_node_get_sp_bias(const ir_node *irn)
 
 /* for be nodes */
 static const arch_irn_ops_t be_node_irn_ops = {
-	be_node_classify,
 	be_node_get_frame_entity,
 	be_node_set_frame_offset,
 	be_node_get_sp_bias,
@@ -1072,12 +1059,6 @@ int be_find_return_reg_input(ir_node *ret, const arch_register_t *reg)
 	panic("Tried querying undefined register '%s' at Return", reg->name);
 }
 
-static arch_irn_class_t dummy_classify(const ir_node *node)
-{
-	(void) node;
-	return arch_irn_class_none;
-}
-
 static ir_entity* dummy_get_frame_entity(const ir_node *node)
 {
 	(void) node;
@@ -1099,7 +1080,6 @@ static int dummy_get_sp_bias(const ir_node *node)
 
 /* for "middleend" nodes */
 static const arch_irn_ops_t dummy_be_irn_ops = {
-	dummy_classify,
 	dummy_get_frame_entity,
 	dummy_set_frame_offset,
 	dummy_get_sp_bias,
@@ -1179,7 +1159,6 @@ void be_dump_phi_reg_reqs(FILE *F, ir_node *node, dump_reason_t reason)
 }
 
 static const arch_irn_ops_t phi_irn_ops = {
-	dummy_classify,
 	dummy_get_frame_entity,
 	dummy_set_frame_offset,
 	dummy_get_sp_bias,

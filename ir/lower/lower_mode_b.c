@@ -21,7 +21,6 @@
  * @file
  * @brief       lower mode_b operations to something the backend can handle
  * @author      Matthias Braun, Christoph Mallon
- * @version     $Id$
  */
 #include "config.h"
 

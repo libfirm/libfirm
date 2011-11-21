@@ -22,7 +22,6 @@
  * @brief       Preference Guided Register Assignment
  * @author      Matthias Braun
  * @date        14.2.2009
- * @version     $Id$
  *
  * The idea is to allocate registers in 2 passes:
  * 1. A first pass to determine "preferred" registers for live-ranges. This

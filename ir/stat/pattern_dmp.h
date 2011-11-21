@@ -21,7 +21,6 @@
  * @file
  * @brief   Statistics for Firm. Dumping patterns.
  * @author  Michael Beck
- * @version $Id$
  */
 #ifndef FIRM_STAT_PATTERN_DMP_H
 #define FIRM_STAT_PATTERN_DMP_H

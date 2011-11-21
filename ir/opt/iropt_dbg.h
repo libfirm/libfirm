@@ -21,7 +21,6 @@
  * @file
  * @brief   Debug macros used in iropt.
  * @author  Goetz Lindenmaier, Michael Beck
- * @version $Id$
  */
 #ifndef FIRM_IR_IROPT_DBG_H
 #define FIRM_IR_IROPT_DBG_H

@@ -22,7 +22,6 @@
  * @brief    Extended basis block support.
  * @author   Michael Beck
  * @date     5.2005
- * @version  $Id$
  */
 #include "config.h"
 

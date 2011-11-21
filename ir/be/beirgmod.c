@@ -22,7 +22,6 @@
  * @brief       Backend IRG modification routines.
  * @author      Sebastian Hack, Daniel Grund, Matthias Braun, Christian Wuerdig
  * @date        04.05.2005
- * @version     $Id$
  *
  * This file contains the following IRG modifications for be routines:
  * - insertion of Perm nodes
@@ -181,7 +180,8 @@ static void remove_empty_block(ir_node *block)
 
 		assert(succ_block == NULL);
 		succ_block = get_edge_src_irn(edge);
-		if (has_Block_entity(succ_block) && has_Block_entity(block)) {
+		if (get_Block_entity(succ_block) != NULL
+		    && get_Block_entity(block) != NULL) {
 			/*
 			 * Currently we can add only one label for a block.
 			 * Therefore we cannot combine them if  both block already have one.
@@ -192,7 +192,7 @@ static void remove_empty_block(ir_node *block)
 		set_irn_n(succ_block, pos, pred);
 	}
 
-	if (has_Block_entity(block)) {
+	if (get_Block_entity(block) != NULL) {
 		/* move the label to the successor block */
 		ir_entity *entity = get_Block_entity(block);
 		set_Block_entity(succ_block, entity);

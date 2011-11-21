@@ -22,7 +22,6 @@
  * @brief   Tail-recursion call optimization.
  * @date    08.06.2004
  * @author  Michael Beck
- * @version $Id$
  */
 #include "config.h"
 

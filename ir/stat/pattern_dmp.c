@@ -21,7 +21,6 @@
  * @file
  * @brief   Statistics for Firm. Dumping patterns.
  * @author  Michael Beck
- * @version $Id$
  */
 #include "config.h"
 

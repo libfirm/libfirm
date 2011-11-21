@@ -22,7 +22,6 @@
  * @brief       Spillslot coalescer.
  * @author      Matthias Braun
  * @date        26.07.2006
- * @version     $Id$
  */
 #include "config.h"
 

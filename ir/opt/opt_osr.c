@@ -22,7 +22,6 @@
  * @brief   Operator Strength Reduction.
  * @date    12.5.2006
  * @author  Michael Beck
- * @version $Id$
  * @brief
  *  Implementation of the Operator Strength Reduction algorithm
  *  by Keith D. Cooper, L. Taylor Simpson, Christopher A. Vick.

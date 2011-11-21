@@ -20,7 +20,6 @@
 /**
  * @file
  * @brief    The main TEMPLATE backend driver file.
- * @version  $Id$
  */
 #include "config.h"
 
@@ -56,12 +55,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static arch_irn_class_t TEMPLATE_classify(const ir_node *irn)
-{
-	(void) irn;
-	return arch_irn_class_none;
-}
-
 static ir_entity *TEMPLATE_get_frame_entity(const ir_node *node)
 {
 	(void) node;
@@ -89,7 +82,6 @@ static int TEMPLATE_get_sp_bias(const ir_node *irn)
 /* fill register allocator interface */
 
 static const arch_irn_ops_t TEMPLATE_irn_ops = {
-	TEMPLATE_classify,
 	TEMPLATE_get_frame_entity,
 	TEMPLATE_set_frame_offset,
 	TEMPLATE_get_sp_bias,
@@ -156,16 +148,16 @@ static TEMPLATE_isa_t TEMPLATE_isa_template = {
 	},
 };
 
-/**
- * Initializes the backend ISA
- */
-static arch_env_t *TEMPLATE_init(const be_main_env_t *env)
+static void TEMPLATE_init(void)
+{
+	TEMPLATE_register_init();
+	TEMPLATE_create_opcodes(&TEMPLATE_irn_ops);
+}
+
+static arch_env_t *TEMPLATE_begin_codegeneration(const be_main_env_t *env)
 {
 	TEMPLATE_isa_t *isa = XMALLOC(TEMPLATE_isa_t);
 	*isa = TEMPLATE_isa_template;
-
-	TEMPLATE_register_init();
-	TEMPLATE_create_opcodes(&TEMPLATE_irn_ops);
 
 	be_emit_init(env->file_handle);
 	be_gas_begin_compilation_unit(env);
@@ -176,7 +168,7 @@ static arch_env_t *TEMPLATE_init(const be_main_env_t *env)
 /**
  * Closes the output file and frees the ISA structure.
  */
-static void TEMPLATE_done(void *self)
+static void TEMPLATE_end_codegeneration(void *self)
 {
 	TEMPLATE_isa_t *isa = (TEMPLATE_isa_t*)self;
 
@@ -185,20 +177,6 @@ static void TEMPLATE_done(void *self)
 
 	be_emit_exit();
 	free(self);
-}
-
-/**
- * Get the register class which shall be used to store a value of a given mode.
- * @param self The this pointer.
- * @param mode The mode in question.
- * @return A register class which can hold values of the given mode.
- */
-static const arch_register_class_t *TEMPLATE_get_reg_class_for_mode(const ir_mode *mode)
-{
-	if (mode_is_float(mode))
-		return &TEMPLATE_reg_classes[CLASS_TEMPLATE_fp];
-	else
-		return &TEMPLATE_reg_classes[CLASS_TEMPLATE_gp];
 }
 
 /**
@@ -239,14 +217,12 @@ static const be_abi_callbacks_t TEMPLATE_abi_callbacks = {
  * @param method_type The type of the method (procedure) in question.
  * @param abi         The abi object to be modified
  */
-static void TEMPLATE_get_call_abi(const void *self, ir_type *method_type,
-                                  be_abi_call_t *abi)
+static void TEMPLATE_get_call_abi(ir_type *method_type, be_abi_call_t *abi)
 {
 	ir_type  *tp;
 	ir_mode  *mode;
 	int       i, n = get_method_n_params(method_type);
 	be_abi_call_flags_t call_flags;
-	(void) self;
 
 	/* set abi flags for calls */
 	call_flags.bits.store_args_sequential = 1;
@@ -277,15 +253,6 @@ static void TEMPLATE_get_call_abi(const void *self, ir_type *method_type,
 		be_abi_call_res_reg(abi, 0,
 			mode_is_float(mode) ? &TEMPLATE_registers[REG_F0] : &TEMPLATE_registers[REG_R0], ABI_CONTEXT_BOTH);
 	}
-}
-
-/**
- * Returns the necessary byte alignment for storing a register of given class.
- */
-static int TEMPLATE_get_reg_class_alignment(const arch_register_class_t *cls)
-{
-	ir_mode *mode = arch_register_class_mode(cls);
-	return get_mode_size_bytes(mode);
 }
 
 static void TEMPLATE_lower_for_target(void)
@@ -329,14 +296,6 @@ static const backend_params *TEMPLATE_get_backend_params(void)
 		4      /* alignment of stack parameter: typically 4 (32bit) or 8 (64bit) */
 	};
 	return &p;
-}
-
-static ir_graph **TEMPLATE_get_backend_irg_list(const void *self,
-                                                ir_graph ***irgs)
-{
-	(void) self;
-	(void) irgs;
-	return NULL;
 }
 
 static asm_constraint_flags_t TEMPLATE_parse_asm_constraint(const char **c)
@@ -397,28 +356,27 @@ static int TEMPLATE_register_saved_by(const arch_register_t *reg, int callee)
 
 const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_init,
-	TEMPLATE_lower_for_target,
-	TEMPLATE_done,
-	NULL,                /* handle intrinsics */
-	TEMPLATE_get_reg_class_for_mode,
-	TEMPLATE_get_call_abi,
-	TEMPLATE_get_reg_class_alignment,
     TEMPLATE_get_backend_params,
-	TEMPLATE_get_backend_irg_list,
-	NULL,                    /* mark remat */
+	TEMPLATE_lower_for_target,
 	TEMPLATE_parse_asm_constraint,
 	TEMPLATE_is_valid_clobber,
 
+	TEMPLATE_begin_codegeneration,
+	TEMPLATE_end_codegeneration,
 	TEMPLATE_init_graph,
-	NULL,   /* get_pic_base */
-	NULL,   /* before_abi */
+	TEMPLATE_get_call_abi,
+	NULL, /* mark remat */
+	NULL, /* get_pic_base */
+	be_new_spill,
+	be_new_reload,
+	TEMPLATE_register_saved_by,
+
+	NULL, /* handle intrinsics */
+	NULL, /* before_abi */
 	TEMPLATE_prepare_graph,
 	TEMPLATE_before_ra,
 	TEMPLATE_finish_irg,
 	TEMPLATE_emit_routine,
-	TEMPLATE_register_saved_by,
-	be_new_spill,
-	be_new_reload,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_TEMPLATE)

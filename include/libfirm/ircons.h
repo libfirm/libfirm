@@ -23,7 +23,6 @@
  *          representation.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Boris Boesler,
  *          Michael Beck
- * @version $Id$
  */
 
 /**
@@ -522,7 +521,6 @@
  *    -----------------------------------------------------------------------------------------
  *
  *    There are several symbolic constants:
- *     symconst_type_tag   The symbolic constant represents a type tag.
  *     symconst_type_size  The symbolic constant represents the size of a type.
  *     symconst_type_align The symbolic constant represents the alignment of a type.
  *     symconst_addr_ent   The symbolic constant represents the address of an entity.
@@ -544,12 +542,11 @@
  *
  *    Attributes:
  *      attr.i.num       The symconst_addr_ent, i.e. one of
- *                        -symconst_type_tag
  *                        -symconst_type_size
  *                        -symconst_type_align
  *                        -symconst_addr_ent
  *
- *    If the attr.i.num is symconst_type_tag, symconst_type_size or symconst_type_align,
+ *    If the attr.i.num is symconst_type_size or symconst_type_align,
  *    the node contains an attribute:
  *
  *      attr.i.*type,    a pointer to a type_class.
@@ -1113,8 +1110,6 @@ FIRM_API ir_node *new_rd_Const_long(dbg_info *db, ir_graph *irg,
  *
  *  This is the constructor for a symbolic constant.
  *    There are several kinds of symbolic constants:
- *    - symconst_type_tag   The symbolic constant represents a type tag.  The
- *                          type the tag stands for is given explicitly.
  *    - symconst_type_size  The symbolic constant represents the size of a type.
  *                          The type of which the constant represents the size
  *                          is given explicitly.
@@ -1164,15 +1159,6 @@ FIRM_API ir_node *new_rd_SymConst_addr_ent(dbg_info *db, ir_graph *irg,
  */
 FIRM_API ir_node *new_rd_SymConst_ofs_ent(dbg_info *db, ir_graph *irg,
                                           ir_mode *mode, ir_entity *symbol);
-
-/** Constructor for a SymConst type_tag node.
- *
- * Same as new_rd_SymConst, except that the constructor is tailored for
- * symconst_type_tag.
- * Adds the SymConst to the start block of irg.
- */
-FIRM_API ir_node *new_rd_SymConst_type_tag(dbg_info *db, ir_graph *irg,
-                                           ir_mode *mode, ir_type *symbol);
 
 /** Constructor for a SymConst size node.
  *
@@ -1257,8 +1243,9 @@ FIRM_API ir_node *new_rd_defaultProj(dbg_info *db, ir_node *arg, long max_proj);
  */
 FIRM_API ir_node *new_rd_ASM(dbg_info *db, ir_node *block,
                             int arity, ir_node *in[], ir_asm_constraint *inputs,
-                            int n_outs, ir_asm_constraint *outputs,
-                            int n_clobber, ident *clobber[], ident *asm_text);
+                            size_t n_outs, ir_asm_constraint *outputs,
+                            size_t n_clobber, ident *clobber[],
+                            ident *asm_text);
 
 /*-------------------------------------------------------------------------*/
 /* The raw interface without debug support                                 */
@@ -1282,8 +1269,6 @@ FIRM_API ir_node *new_r_Const_long(ir_graph *irg, ir_mode *mode, long value);
  *
  *  This is the constructor for a symbolic constant.
  *    There are several kinds of symbolic constants:
- *    - symconst_type_tag   The symbolic constant represents a type tag.  The
- *                          type the tag stands for is given explicitly.
  *    - symconst_type_size  The symbolic constant represents the size of a type.
  *                          The type of which the constant represents the size
  *                          is given explicitly.
@@ -1375,8 +1360,9 @@ FIRM_API ir_node *new_r_defaultProj(ir_node *arg, long max_proj);
  */
 FIRM_API ir_node *new_r_ASM(ir_node *block,
                             int arity, ir_node *in[], ir_asm_constraint *inputs,
-                            int n_outs, ir_asm_constraint *outputs,
-                            int n_clobber, ident *clobber[], ident *asm_text);
+                            size_t n_outs, ir_asm_constraint *outputs,
+                            size_t n_clobber, ident *clobber[],
+                            ident *asm_text);
 
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface                                          */
@@ -1407,8 +1393,6 @@ FIRM_API ir_node *new_d_Const_long(dbg_info *db, ir_mode *mode, long value);
  *
  *  This is the constructor for a symbolic constant.
  *    There are several kinds of symbolic constants:
- *    - symconst_type_tag   The symbolic constant represents a type tag.  The
- *                          type the tag stands for is given explicitly.
  *    - symconst_type_size  The symbolic constant represents the size of a type.
  *                          The type of which the constant represents the size
  *                          is given explicitly.
@@ -1505,8 +1489,9 @@ FIRM_API ir_node *new_d_defaultProj(dbg_info *db, ir_node *arg, long max_proj);
  */
 FIRM_API ir_node *new_d_ASM(dbg_info *db, int arity, ir_node *in[],
                             ir_asm_constraint *inputs,
-                            int n_outs, ir_asm_constraint *outputs,
-                            int n_clobber, ident *clobber[], ident *asm_text);
+                            size_t n_outs, ir_asm_constraint *outputs,
+                            size_t n_clobber, ident *clobber[],
+                            ident *asm_text);
 
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface without debug support                    */
@@ -1529,8 +1514,6 @@ FIRM_API ir_node *new_Const_long(ir_mode *mode, long value);
  *
  *  This is the constructor for a symbolic constant.
  *    There are several kinds of symbolic constants:
- *    - symconst_type_tag   The symbolic constant represents a type tag.  The
- *                          type the tag stands for is given explicitly.
  *    - symconst_type_size  The symbolic constant represents the size of a type.
  *                          The type of which the constant represents the size
  *                          is given explicitly.
@@ -1618,8 +1601,8 @@ FIRM_API ir_node *new_defaultProj(ir_node *arg, long max_proj);
  * @param *asm_text   The assembler text.
  */
 FIRM_API ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
-                          int n_outs, ir_asm_constraint *outputs,
-                          int n_clobber, ident *clobber[], ident *asm_text);
+                          size_t n_outs, ir_asm_constraint *outputs,
+                          size_t n_clobber, ident *clobber[], ident *asm_text);
 
 /*---------------------------------------------------------------------*/
 /* The comfortable interface.                                          */

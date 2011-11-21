@@ -20,7 +20,6 @@
 /**
  * @file
  * @brief   irargs private declarations
- * @version $Id$
  */
 #ifndef FIRM_IR_IRARGS_H
 #define FIRM_IR_IRARGS_H

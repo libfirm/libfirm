@@ -21,7 +21,6 @@
  * @file
  * @brief       This is the main ia32 firm backend driver.
  * @author      Christian Wuerdig
- * @version     $Id$
  */
 #ifndef FIRM_BE_IA32_BEARCH_IA32_T_H
 #define FIRM_BE_IA32_BEARCH_IA32_T_H
@@ -34,7 +33,6 @@
 #include "pdeq.h"
 
 #include "be.h"
-#include "bemachine.h"
 #include "beemitter.h"
 #include "gen_ia32_regalloc_if.h"
 
@@ -66,7 +64,6 @@ typedef struct ia32_irg_data_t {
 struct ia32_isa_t {
 	arch_env_t             base;     /**< must be derived from arch_env_t */
 	pmap                  *tv_ent;   /**< A map of entities that store const tarvals */
-	const be_machine_t    *cpu;      /**< the abstract machine */
 	int                    fpu_arch; /**< FPU architecture */
 };
 

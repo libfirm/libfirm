@@ -21,7 +21,6 @@
  * @file
  * @brief    Dead node elimination
  * @author   Michael Beck, Goetz Lindenmaier
- * @version  $Id: opt_inline.c 27265 2010-03-07 15:13:00Z matze $
  *
  * Strictly speaking dead node elimination is unnecessary in firm - everthying
  * which is not used can't be found by any walker.

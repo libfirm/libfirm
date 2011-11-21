@@ -22,7 +22,6 @@
  * @brief   Write text representation of firm to file.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Hubert Schmidt,
  *          Matthias Braun
- * @version $Id$
  */
 #include "config.h"
 
@@ -151,7 +150,7 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 	/* Source types */
 	switch (get_irn_opcode(n)) {
 	case iro_Block: {
-		if (has_Block_entity(n))
+		if (get_Block_entity(n) != NULL)
 			fprintf(F, "  Label: %lu\n", get_entity_label(get_Block_entity(n)));
 		fprintf(F, "  block visited: %lu\n", get_Block_block_visited(n));
 		fprintf(F, "  block marked: %u\n", get_Block_mark(n));
@@ -202,8 +201,6 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 	} break;
 	case iro_Call: {
 		ir_type *tp = get_Call_type(n);
-		if (get_Call_tail_call(n))
-			fprintf(F, "  tail call\n");
 		ir_fprintf(F, "  calling method of type %+F\n", tp);
 		if (get_unknown_type() != tp) {
 			size_t i;
@@ -247,11 +244,6 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 			fprintf(F, "  kind:   offset\n");
 			fprintf(F, "  entity: ");
 			dump_entity_to_file(F, get_SymConst_entity(n));
-			break;
-		case symconst_type_tag:
-			fprintf(F, "  kind: type_tag\n");
-			fprintf(F, "  type: ");
-			dump_type_to_file(F, get_SymConst_type(n));
 			break;
 		case symconst_type_size:
 			fprintf(F, "  kind: size\n");
@@ -350,8 +342,12 @@ static bool is_init_string(ir_initializer_t const* const init, ir_type *const ty
 	n = get_initializer_compound_n_entries(init);
 	for (i = 0; i != n; ++i) {
 		ir_initializer_t const* const val = get_initializer_compound_value(init, i);
-		ir_tarval*              const tv  = get_initializer_tarval_value(val);
+		ir_tarval*                    tv;
 		long                          v;
+
+		if (get_initializer_kind(val) != IR_INITIALIZER_TARVAL)
+			return false;
+		tv = get_initializer_tarval_value(val);
 
 		if (!tarval_is_constant(tv))
 			return false;

@@ -21,7 +21,6 @@
  * @file
  * @brief       Contains some useful function for the backend.
  * @author      Sebastian Hack
- * @version     $Id$
  */
 #include "config.h"
 

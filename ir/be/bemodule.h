@@ -22,7 +22,6 @@
  * @brief       Backend module interface.
  * @author      Matthias Braun
  * @date        11.12.2006
- * @version     $Id$
  */
 #ifndef FIRM_BE_BEMODULE_H
 #define FIRM_BE_BEMODULE_H

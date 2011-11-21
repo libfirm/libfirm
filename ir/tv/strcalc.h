@@ -22,7 +22,6 @@
  * @brief    Provides basic mathematical operations on values represented as strings.
  * @date     2003
  * @author   Mathias Heil
- * @version  $Id$
  * @brief
  *
  * The module uses a string to represent values, and provides operations

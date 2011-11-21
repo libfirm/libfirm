@@ -21,7 +21,6 @@
  * @file
  * @brief   Normalize returns.
  * @author  Michael Beck
- * @version $Id$
  */
 #include "config.h"
 
@@ -188,7 +187,7 @@ static bool can_move_ret(ir_node *ret)
 	/* check, that predecessors are Jmps */
 	n = get_Block_n_cfgpreds(retbl);
 	/* we cannot move above a labeled block, as this might kill the block */
-	if (n <= 1 || has_Block_entity(retbl))
+	if (n <= 1 || get_Block_entity(retbl) != NULL)
 		return false;
 	for (i = 0; i < n; ++i) {
 		ir_node *pred = get_Block_cfgpred(retbl, i);

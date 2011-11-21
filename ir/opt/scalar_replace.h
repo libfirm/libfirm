@@ -21,7 +21,6 @@
  * @file
  * @brief   Scalar replacement of compounds.
  * @author  Beyhan Veliev, Michael Beck
- * @version $Id$
  */
 #ifndef FIRM_OPT_SCALAR_REPLACE_H
 #define FIRM_OPT_SCALAR_REPLACE_H

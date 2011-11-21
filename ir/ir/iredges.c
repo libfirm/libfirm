@@ -22,7 +22,6 @@
  * @brief   Always available outs.
  * @author  Sebastian Hack, Michael Beck, Andreas Schoesser
  * @date    14.1.2005
- * @version $Id$
  * @brief
  *   This are out-edges (also called def-use edges) that are dynamically
  *   updated as the graph changes.
@@ -646,9 +645,9 @@ void edges_activate_kind(ir_graph *irg, ir_edge_kind_t kind)
 		visit_all_identities(irg, visitor, &visit);
 		irg_walk_anchors(irg, NULL, build_edges_walker, &w);
 	} else {
-		irg_walk_anchors(irg, init_lh_walker, build_edges_walker, &w);
 		visit.visit = init_lh_walker;
 		visit_all_identities(irg, visitor, &visit);
+		irg_walk_anchors(irg, init_lh_walker, build_edges_walker, &w);
 	}
 }
 

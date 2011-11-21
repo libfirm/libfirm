@@ -22,7 +22,6 @@
  * @brief       Backend irg - a ir_graph with additional analysis information.
  * @author      Matthias Braun
  * @date        05.05.2006
- * @version     $Id$
  */
 #ifndef FIRM_BE_BEIRG_H
 #define FIRM_BE_BEIRG_H

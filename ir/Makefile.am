@@ -98,7 +98,6 @@ libfirm_la_SOURCES = \
 	be/belive.c \
 	be/beloopana.c \
 	be/belower.c \
-	be/bemachine.c \
 	be/bemain.c \
 	be/bemodule.c \
 	be/benode.c \
@@ -294,7 +293,6 @@ EXTRA_DIST = \
 	be/belive_t.h \
 	be/beloopana.h \
 	be/belower.h \
-	be/bemachine.h \
 	be/bemodule.h \
 	be/bemodule_t.h \
 	be/benode.h \
@@ -323,7 +321,6 @@ EXTRA_DIST = \
 	ident/ident_t.h \
 	ir/instrument.h \
 	ir/irargs_t.h \
-	ir/irbitset.h \
 	ir/ircons_t.h \
 	ir/irdump_t.h \
 	ir/iredges_t.h \
@@ -404,7 +401,6 @@ EXTRA_DIST = \
 	ir/gen_irio_lex.inl \
 	be/scripts/generate_emitter_new.pl \
 	be/scripts/generate_emitter.pl \
-	be/scripts/generate_machine.pl \
 	be/scripts/generate_new_opcodes.pl \
 	be/scripts/generate_regalloc_if.pl
 
@@ -426,8 +422,6 @@ ia32_sources = \
 ia32_built_sources = \
 	be/ia32/gen_ia32_emitter.c \
 	be/ia32/gen_ia32_emitter.h \
-	be/ia32/gen_ia32_machine.c \
-	be/ia32/gen_ia32_machine.h \
 	be/ia32/gen_ia32_new_nodes.c.inl \
 	be/ia32/gen_ia32_new_nodes.h \
 	be/ia32/gen_ia32_regalloc_if.c \
@@ -460,10 +454,6 @@ $(srcdir)/be/ia32/gen_ia32_emitter.c $(srcdir)/be/ia32/gen_ia32_emitter.h: \
 		be/ia32/ia32_spec.pl be/scripts/generate_emitter.pl
 	$(PERL) $(srcdir)/be/scripts/generate_emitter.pl $(srcdir)/be/ia32/ia32_spec.pl $(srcdir)/be/ia32
 
-$(srcdir)/be/ia32/gen_ia32_machine.c $(srcdir)/be/ia32/gen_ia32_machine.h: \
-		be/ia32/ia32_spec.pl be/scripts/generate_machine.pl
-	$(PERL) $(srcdir)/be/scripts/generate_machine.pl $(srcdir)/be/ia32/ia32_spec.pl $(srcdir)/be/ia32
-
 $(srcdir)/be/ia32/gen_ia32_regalloc_if.c $(srcdir)/be/ia32/gen_ia32_regalloc_if.h: \
 		be/ia32/ia32_spec.pl be/scripts/generate_regalloc_if.pl
 	$(PERL) $(srcdir)/be/scripts/generate_regalloc_if.pl $(srcdir)/be/ia32/ia32_spec.pl $(srcdir)/be/ia32
@@ -481,8 +471,6 @@ arm_sources = \
 arm_built_sources = \
 	be/arm/gen_arm_emitter.c \
 	be/arm/gen_arm_emitter.h \
-	be/arm/gen_arm_machine.c \
-	be/arm/gen_arm_machine.h \
 	be/arm/gen_arm_new_nodes.c.inl \
 	be/arm/gen_arm_new_nodes.h \
 	be/arm/gen_arm_regalloc_if.c \
@@ -511,12 +499,8 @@ $(srcdir)/be/arm/gen_arm_emitter.c $(srcdir)/be/arm/gen_arm_emitter.h: \
 		be/arm/arm_spec.pl be/scripts/generate_emitter.pl
 	$(PERL) $(srcdir)/be/scripts/generate_emitter.pl $(srcdir)/be/arm/arm_spec.pl $(srcdir)/be/arm
 
-$(srcdir)/be/arm/gen_arm_machine.c $(srcdir)/be/arm/gen_arm_machine.h: \
-		be/arm/arm_spec.pl be/scripts/generate_machine.pl
-	$(PERL) $(srcdir)/be/scripts/generate_machine.pl $(srcdir)/be/arm/arm_spec.pl $(srcdir)/be/arm
-
 $(srcdir)/be/arm/gen_arm_regalloc_if.c $(srcdir)/be/arm/gen_arm_regalloc_if.h: \
-		be/arm/arm_spec.pl be/scripts/generate_machine.pl
+		be/arm/arm_spec.pl be/scripts/generate_regalloc_if.pl
 	$(PERL) $(srcdir)/be/scripts/generate_regalloc_if.pl $(srcdir)/be/arm/arm_spec.pl $(srcdir)/be/arm
 
 # sparc backend
@@ -531,8 +515,6 @@ sparc_sources = \
 sparc_built_sources = \
 	be/sparc/gen_sparc_emitter.c \
 	be/sparc/gen_sparc_emitter.h \
-	be/sparc/gen_sparc_machine.c \
-	be/sparc/gen_sparc_machine.h \
 	be/sparc/gen_sparc_new_nodes.c.inl \
 	be/sparc/gen_sparc_new_nodes.h \
 	be/sparc/gen_sparc_regalloc_if.c \
@@ -558,12 +540,8 @@ $(srcdir)/be/sparc/gen_sparc_emitter.c $(srcdir)/be/sparc/gen_sparc_emitter.h: \
 		be/sparc/sparc_spec.pl be/scripts/generate_emitter.pl
 	$(PERL) $(srcdir)/be/scripts/generate_emitter.pl $(srcdir)/be/sparc/sparc_spec.pl $(srcdir)/be/sparc
 
-$(srcdir)/be/sparc/gen_sparc_machine.c $(srcdir)/be/sparc/gen_sparc_machine.h: \
-		be/sparc/sparc_spec.pl be/scripts/generate_machine.pl
-	$(PERL) $(srcdir)/be/scripts/generate_machine.pl $(srcdir)/be/sparc/sparc_spec.pl $(srcdir)/be/sparc
-
 $(srcdir)/be/sparc/gen_sparc_regalloc_if.c $(srcdir)/be/sparc/gen_sparc_regalloc_if.h: \
-		be/sparc/sparc_spec.pl be/scripts/generate_machine.pl
+		be/sparc/sparc_spec.pl be/scripts/generate_regalloc_if.pl
 	$(PERL) $(srcdir)/be/scripts/generate_regalloc_if.pl $(srcdir)/be/sparc/sparc_spec.pl $(srcdir)/be/sparc
 
 # amd64 backend
@@ -576,8 +554,6 @@ amd64_sources = \
 amd64_built_sources = \
 	be/amd64/gen_amd64_emitter.c \
 	be/amd64/gen_amd64_emitter.h \
-	be/amd64/gen_amd64_machine.c \
-	be/amd64/gen_amd64_machine.h \
 	be/amd64/gen_amd64_new_nodes.c.inl \
 	be/amd64/gen_amd64_new_nodes.h \
 	be/amd64/gen_amd64_regalloc_if.c \
@@ -602,12 +578,8 @@ $(srcdir)/be/amd64/gen_amd64_emitter.c $(srcdir)/be/amd64/gen_amd64_emitter.h: \
 		be/amd64/amd64_spec.pl be/scripts/generate_emitter.pl
 	$(PERL) $(srcdir)/be/scripts/generate_emitter.pl $(srcdir)/be/amd64/amd64_spec.pl $(srcdir)/be/amd64
 
-$(srcdir)/be/amd64/gen_amd64_machine.c $(srcdir)/be/amd64/gen_amd64_machine.h: \
-		be/amd64/amd64_spec.pl be/scripts/generate_machine.pl
-	$(PERL) $(srcdir)/be/scripts/generate_machine.pl $(srcdir)/be/amd64/amd64_spec.pl $(srcdir)/be/amd64
-
 $(srcdir)/be/amd64/gen_amd64_regalloc_if.c $(srcdir)/be/amd64/gen_amd64_regalloc_if.h: \
-		be/amd64/amd64_spec.pl be/scripts/generate_machine.pl
+		be/amd64/amd64_spec.pl be/scripts/generate_regalloc_if.pl
 	$(PERL) $(srcdir)/be/scripts/generate_regalloc_if.pl $(srcdir)/be/amd64/amd64_spec.pl $(srcdir)/be/amd64
 
 
@@ -621,8 +593,6 @@ TEMPLATE_sources = \
 TEMPLATE_built_sources = \
 	be/TEMPLATE/gen_TEMPLATE_emitter.c \
 	be/TEMPLATE/gen_TEMPLATE_emitter.h \
-	be/TEMPLATE/gen_TEMPLATE_machine.c \
-	be/TEMPLATE/gen_TEMPLATE_machine.h \
 	be/TEMPLATE/gen_TEMPLATE_new_nodes.c.inl \
 	be/TEMPLATE/gen_TEMPLATE_new_nodes.h \
 	be/TEMPLATE/gen_TEMPLATE_regalloc_if.c \
@@ -647,10 +617,6 @@ $(srcdir)/be/TEMPLATE/gen_TEMPLATE_emitter.c $(srcdir)/be/TEMPLATE/gen_TEMPLATE_
 		be/TEMPLATE/TEMPLATE_spec.pl be/scripts/generate_emitter.pl
 	$(PERL) $(srcdir)/be/scripts/generate_emitter.pl $(srcdir)/be/TEMPLATE/TEMPLATE_spec.pl $(srcdir)/be/TEMPLATE
 
-$(srcdir)/be/TEMPLATE/gen_TEMPLATE_machine.c $(srcdir)/be/TEMPLATE/gen_TEMPLATE_machine.h: \
-		be/TEMPLATE/TEMPLATE_spec.pl be/scripts/generate_machine.pl
-	$(PERL) $(srcdir)/be/scripts/generate_machine.pl $(srcdir)/be/TEMPLATE/TEMPLATE_spec.pl $(srcdir)/be/TEMPLATE
-
 $(srcdir)/be/TEMPLATE/gen_TEMPLATE_regalloc_if.c $(srcdir)/be/TEMPLATE/gen_TEMPLATE_regalloc_if.h: \
-		be/TEMPLATE/TEMPLATE_spec.pl be/scripts/generate_machine.pl
+		be/TEMPLATE/TEMPLATE_spec.pl be/scripts/generate_regalloc_if.pl
 	$(PERL) $(srcdir)/be/scripts/generate_regalloc_if.pl $(srcdir)/be/TEMPLATE/TEMPLATE_spec.pl $(srcdir)/be/TEMPLATE

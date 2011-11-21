@@ -22,7 +22,6 @@
  * @brief       Copy node statistics.
  * @author      Daniel Grund
  * @date        19.04.2005
- * @version     $Id$
  */
 #include "config.h"
 

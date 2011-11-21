@@ -21,7 +21,6 @@
  * @file
  * @brief       double ended queue of generic pointers.
  * @author      Christian von Roques
- * @version     $Id$
  */
 #ifndef FIRM_ADT_PDEQ_H
 #define FIRM_ADT_PDEQ_H

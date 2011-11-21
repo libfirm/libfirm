@@ -22,7 +22,6 @@
  * @brief    Compute and access out edges (also called def-use edges).
  * @author   Goetz Lindenmaier, Michael Beck
  * @date     1.2002
- * @version  $Id$
  */
 #ifndef FIRM_ANA_IROUTS_H
 #define FIRM_ANA_IROUTS_H

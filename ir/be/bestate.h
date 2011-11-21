@@ -23,7 +23,6 @@
  *              algorithm optimized for the 1-register case.
  * @author      Matthias Braun
  * @date        26.03.2007
- * @version     $Id$
  */
 #ifndef FIRM_BE_BESTATE_H
 #define FIRM_BE_BESTATE_H

@@ -22,7 +22,6 @@
  * @brief   Partitioned Boolean Quadratic Problem (PBQP) solver.
  * @date    02.10.2008
  * @author  Sebastian Buchwald
- * @version $Id$
  */
 #ifndef KAPS_KAPS_H
 #define KAPS_KAPS_H

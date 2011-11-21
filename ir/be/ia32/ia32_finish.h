@@ -21,7 +21,6 @@
  * @file
  * @brief   This file implements functions to finalize the irg for emit.
  * @author  Christian Wuerdig
- * @version $Id$
  */
 #ifndef FIRM_BE_IA32_IA32_FINISH_H
 #define FIRM_BE_IA32_IA32_FINISH_H

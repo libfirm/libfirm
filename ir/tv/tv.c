@@ -23,7 +23,6 @@
  *           values.
  * @date     2003
  * @author   Mathias Heil
- * @version  $Id$
  * @brief
  *
  * Values are stored in a format depending upon chosen arithmetic
@@ -1485,6 +1484,7 @@ unsigned char get_tarval_sub_bits(ir_tarval *tv, unsigned byte_ofs)
 	case irma_twos_complement:
 		return sc_sub_bits(tv->value, get_mode_size_bits(tv->mode), byte_ofs);
 	case irma_ieee754:
+	case irma_x86_extended_float:
 		return fc_sub_bits((const fp_value*) tv->value, get_mode_size_bits(tv->mode), byte_ofs);
 	default:
 		panic("get_tarval_sub_bits(): arithmetic mode not supported");

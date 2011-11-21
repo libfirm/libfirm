@@ -1,7 +1,6 @@
 dnl configure.ac file for libfirm, author Matthias Braun <matze@braunis.de>
 dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ([2.60])
-AC_REVISION([$Id$])
 
 dnl Firm Versions
 dnl * Increment major/minor/micro version as you see fit. These 3 numbers

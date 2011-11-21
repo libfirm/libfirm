@@ -21,7 +21,6 @@
  * @file
  * @brief   Cliff Click's Combined Analysis/Optimization
  * @author  Michael Beck
- * @version $Id$
  *
  * This is a slightly enhanced version of Cliff Clicks combo algorithm
  * - support for commutative nodes is added, Add(a,b) and Add(b,a) ARE congruent
@@ -1930,7 +1929,7 @@ static void compute_Block(node_t *node)
 	int     i;
 	ir_node *block = node->node;
 
-	if (block == get_irg_start_block(current_ir_graph) || has_Block_entity(block)) {
+	if (block == get_irg_start_block(current_ir_graph) || get_Block_entity(block) != NULL) {
 		/* start block and labelled blocks are always reachable */
 		node->type.tv = tarval_reachable;
 		return;
@@ -2991,7 +2990,7 @@ static int only_one_reachable_proj(ir_node *n)
  */
 static int can_exchange(ir_node *pred, ir_node *block)
 {
-	if (is_Start(pred) || has_Block_entity(block))
+	if (is_Start(pred) || get_Block_entity(block) != NULL)
 		return 0;
 	else if (is_Jmp(pred))
 		return 1;

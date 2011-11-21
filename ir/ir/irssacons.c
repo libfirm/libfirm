@@ -21,7 +21,6 @@
  * @file
  * @brief   restarting SSA construction for values.
  * @author  Michael Beck
- * @version $Id$
  */
 #include "config.h"
 

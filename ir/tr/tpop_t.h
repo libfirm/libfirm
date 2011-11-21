@@ -21,7 +21,6 @@
  * @file
  * @brief   Opcode of types -- private header.
  * @author  Goetz Lindenmaier, Michael Beck
- * @version $Id$
  */
 #ifndef FIRM_TR_TPOP_T_H
 #define FIRM_TR_TPOP_T_H

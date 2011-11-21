@@ -22,7 +22,6 @@
  * @brief     Construct and access dominator tree.
  * @author    Goetz Lindenmaier
  * @date      2.2002
- * @version   $Id$
  * @brief
  *   This file contains routines to construct and access dominator information.
  *

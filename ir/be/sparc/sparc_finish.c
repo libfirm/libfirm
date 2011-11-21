@@ -21,7 +21,6 @@
  * @file
  * @brief    Peephole optimization and legalization of a sparc function
  * @author   Matthias Braun
- * @version  $Id$
  *
  * A note on sparc stackpointer (sp) behaviour:
  * The ABI expects SPARC_MIN_STACKSIZE bytes to be available at the

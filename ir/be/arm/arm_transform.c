@@ -21,7 +21,6 @@
  * @file
  * @brief   The codegenerator (transform FIRM into arm FIRM)
  * @author  Matthias Braun, Oliver Richter, Tobias Gneist, Michael Beck
- * @version $Id$
  */
 #include "config.h"
 

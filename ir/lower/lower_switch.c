@@ -21,7 +21,6 @@
  * @file
  * @brief   Lowering of Switches if necessary or advantageous.
  * @author  Moritz Kroll
- * @version $Id$
  */
 #include "config.h"
 

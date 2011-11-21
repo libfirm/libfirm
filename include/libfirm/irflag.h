@@ -21,7 +21,6 @@
  * @file
  * @brief   Flags to control optimizations.
  * @author  Christian Schaefer, Goetz Lindenmaier, Michael Beck
- * @version $Id$
  * @brief
  * Flags to customize the behavior of libfirm.
  *
@@ -97,15 +96,6 @@ FIRM_API int get_opt_cse(void);
  */
 FIRM_API void set_opt_global_cse(int value);
 
-/** Enable/Disable optimization of dynamic method dispatch.
- *
- * This flag enables/disables the optimization of dynamic method dispatch.
- * If the flag is turned on Sel nodes can be replaced by Const nodes representing
- * the address of a function.
- */
-FIRM_API void set_opt_dyn_meth_dispatch(int value);
-FIRM_API int get_opt_dyn_meth_dispatch(void);
-
 /** Restricts the behavior of cast optimization.
  *
  *  If set, downcast are not optimized if they might be
@@ -114,37 +104,6 @@ FIRM_API int get_opt_dyn_meth_dispatch(void);
  */
 FIRM_API void set_opt_suppress_downcast_optimization(int value);
 FIRM_API int get_opt_suppress_downcast_optimization(void);
-
-/**
- * Enable/Disable Null exception in Load and Store nodes only.
- *
- * If enabled, only Null pointer exception can occur at Load and
- * store nodes. If it can be proved that the address input of these
- * nodes is non-null, the exception edge can safely be removed.
- * If disabled, other exceptions (like unaligned access, read-only memory,
- * etc.) can occur.
- *
- * This flag is enabled by default.
- */
-FIRM_API void set_opt_ldst_only_null_ptr_exceptions(int value);
-
-/**
- * Enable/Disable Selection based Null pointer check elimination.
- *
- * In languages, where all addresses are always Sel nodes, Null
- * pointers can only occur as input to Sel nodes.
- * If Null pointers are the only source for exceptions in Load and
- * Store nodes (as typical in high level languages), we can eliminate
- * exception edges from Load and Store when can prove that the Sel
- * nodes representing the Load/Store address have non-null inputs.
- * Enabling this flag enables this elimination.
- *
- * Enabling this flag is meaningless if ldst_non_null_exceptions is
- * enabled.
- *
- * This flag should be set for Java style languages.
- */
-FIRM_API void set_opt_sel_based_null_check_elim(int value);
 
 /**
  * Enable/Disable Global Null Pointer Test Elimination.

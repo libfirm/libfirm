@@ -21,7 +21,6 @@
  * @file
  * @brief       Processor architecture specification.
  * @author      Sebastian Hack
- * @version     $Id$
  */
 #ifndef FIRM_BE_BEARCH_H
 #define FIRM_BE_BEARCH_H
@@ -110,19 +109,6 @@ void arch_dump_register_req(FILE *F, const arch_register_req_t *req,
 
 void arch_dump_register_reqs(FILE *F, const ir_node *node);
 void arch_dump_reqs_and_registers(FILE *F, const ir_node *node);
-
-/**
- * Node classification. Used for statistics and for detecting reload nodes.
- */
-typedef enum arch_irn_class_t {
-	arch_irn_class_none   = 0,
-	arch_irn_class_spill  = 1 << 0,
-	arch_irn_class_reload = 1 << 1,
-	arch_irn_class_remat  = 1 << 2,
-	arch_irn_class_copy   = 1 << 3,
-	arch_irn_class_perm   = 1 << 4
-} arch_irn_class_t;
-ENUM_BITSET(arch_irn_class_t)
 
 void arch_set_frame_offset(ir_node *irn, int bias);
 
@@ -226,20 +212,10 @@ static inline unsigned arch_get_irn_n_outs(const ir_node *node)
 }
 
 /**
- * Classify a node.
- * @param irn The node.
- * @return A classification of the node.
+ * Start codegeneration
  */
-arch_irn_class_t arch_irn_classify(const ir_node *irn);
-
-/**
- * Initialize the architecture environment struct.
- * @param isa           The isa which shall be put into the environment.
- * @param file_handle   The file handle
- * @return The environment.
- */
-extern arch_env_t *arch_env_init(const arch_isa_if_t *isa,
-                                 be_main_env_t *main_env);
+arch_env_t *arch_env_begin_codegeneration(const arch_isa_if_t *isa,
+                                          be_main_env_t *main_env);
 
 /**
  * Register an instruction set architecture
@@ -378,13 +354,6 @@ struct arch_inverse_t {
 struct arch_irn_ops_t {
 
 	/**
-	 * Classify the node.
-	 * @param irn The node.
-	 * @return A classification.
-	 */
-	arch_irn_class_t (*classify)(const ir_node *irn);
-
-	/**
 	 * Get the entity on the stack frame this node depends on.
 	 * @param irn  The node in question.
 	 * @return The entity on the stack frame or NULL, if the node does not have
@@ -463,77 +432,21 @@ struct arch_irn_ops_t {
  */
 struct arch_isa_if_t {
 	/**
-	 * Initialize the isa interface.
-	 * @param file_handle  the file handle to write the output to
-	 * @return a new isa instance
+	 * Initializes the isa interface. This is necessary before calling any
+	 * other functions from this interface.
 	 */
-	arch_env_t *(*init)(const be_main_env_t *env);
+	void (*init)(void);
+
+	/**
+	 * Returns the frontend settings needed for this backend.
+	 */
+	const backend_params *(*get_params)(void);
 
 	/**
 	 * lowers current program for target. See the documentation for
 	 * be_lower_for_target() for details.
 	 */
 	void (*lower_for_target)(void);
-
-	/**
-	 * Free the isa instance.
-	 */
-	void (*done)(void *self);
-
-	/**
-	 * Called directly after initialization. Backend should handle all
-	 * intrinsics here.
-	 */
-	void (*handle_intrinsics)(void);
-
-	/**
-	 * Get the register class which shall be used to store a value of a given
-	 * mode.
-	 * @param self The this pointer.
-	 * @param mode The mode in question.
-	 * @return A register class which can hold values of the given mode.
-	 */
-	const arch_register_class_t *(*get_reg_class_for_mode)(const ir_mode *mode);
-
-	/**
-	 * Get the ABI restrictions for procedure calls.
-	 * @param self        The this pointer.
-	 * @param call_type   The call type of the method (procedure) in question.
-	 * @param p           The array of parameter locations to be filled.
-	 */
-	void (*get_call_abi)(const void *self, ir_type *call_type,
-	                     be_abi_call_t *abi);
-
-	/**
-	 * Get the necessary alignment for storing a register of given class.
-	 * @param self  The isa object.
-	 * @param cls   The register class.
-	 * @return      The alignment in bytes.
-	 */
-	int (*get_reg_class_alignment)(const arch_register_class_t *cls);
-
-	/**
-	 * A "static" function, returns the frontend settings
-	 * needed for this backend.
-	 */
-	const backend_params *(*get_params)(void);
-
-	/**
-	 * Return an ordered list of irgs where code should be generated for.
-	 * If NULL is returned, all irg will be taken into account and they will be
-	 * generated in an arbitrary order.
-	 * @param self   The isa object.
-	 * @param irgs   A flexible array ARR_F of length 0 where the backend can
-	 *               append the desired irgs.
-	 * @return A flexible array ARR_F containing all desired irgs in the
-	 *         desired order.
-	 */
-	ir_graph **(*get_backend_irg_list)(const void *self, ir_graph ***irgs);
-
-	/**
-	 * mark node as rematerialized
-	 */
-	void (*mark_remat)(ir_node *node);
 
 	/**
 	 * parse an assembler constraint part and set flags according to its nature
@@ -549,16 +462,71 @@ struct arch_isa_if_t {
 	int (*is_valid_clobber)(const char *clobber);
 
 	/**
-	 * Initialize the code generator.
+	 * Start codegeneration
+	 * @return a new isa instance
+	 */
+	arch_env_t *(*begin_codegeneration)(const be_main_env_t *env);
+
+	/**
+	 * Free the isa instance.
+	 */
+	void (*end_codegeneration)(void *self);
+
+	/**
+	 * Initialize the code generator for a graph
 	 * @param irg  A graph
-	 * @return     A newly created code generator.
 	 */
 	void (*init_graph)(ir_graph *irg);
+
+	/**
+	 * Get the ABI restrictions for procedure calls.
+	 * @param call_type   The call type of the method (procedure) in question.
+	 * @param p           The array of parameter locations to be filled.
+	 */
+	void (*get_call_abi)(ir_type *call_type, be_abi_call_t *abi);
+
+	/**
+	 * mark node as rematerialized
+	 */
+	void (*mark_remat)(ir_node *node);
 
 	/**
 	 * return node used as base in pic code addresses
 	 */
 	ir_node* (*get_pic_base)(ir_graph *irg);
+
+	/**
+	 * Create a spill instruction. We assume that spill instructions
+	 * do not need any additional registers and do not affect cpu-flags in any
+	 * way.
+	 * Construct a sequence of instructions after @p after (the resulting nodes
+	 * are already scheduled).
+	 * Returns a mode_M value which is used as input for a reload instruction.
+	 */
+	ir_node *(*new_spill)(ir_node *value, ir_node *after);
+
+	/**
+	 * Create a reload instruction. We assume that reload instructions do not
+	 * need any additional registers and do not affect cpu-flags in any way.
+	 * Constructs a sequence of instruction before @p before (the resulting
+	 * nodes are already scheduled). A rewiring of users is not performed in
+	 * this function.
+	 * Returns a value representing the restored value.
+	 */
+	ir_node *(*new_reload)(ir_node *value, ir_node *spilled_value,
+	                       ir_node *before);
+
+	/**
+	 * Checks if the given register is callee/caller saved.
+	 * @deprecated, only necessary if backend still uses beabi functions
+	 */
+	int (*register_saved_by)(const arch_register_t *reg, int callee);
+
+	/**
+	 * Called directly after initialization. Backend should handle all
+	 * intrinsics here.
+	 */
+	void (*handle_intrinsics)(void);
 
 	/**
 	 * Called before abi introduce.
@@ -584,48 +552,15 @@ struct arch_isa_if_t {
 	/**
 	 * Called after everything happened. This call should emit the final
 	 * assembly code but avoid changing the irg.
-	 * The code generator must also be de-allocated here.
 	 */
 	void (*emit)(ir_graph *irg);
-
-	/**
-	 * Checks if the given register is callee/caller saved.
-	 * @deprecated, only necessary if backend still uses beabi functions
-	 */
-	int (*register_saved_by)(const arch_register_t *reg, int callee);
-
-	/**
-	 * Create a spill instruction. We assume that spill instructions
-	 * do not need any additional registers and do not affect cpu-flags in any
-	 * way.
-	 * Construct a sequence of instructions after @p after (the resulting nodes
-	 * are already scheduled).
-	 * Returns a mode_M value which is used as input for a reload instruction.
-	 */
-	ir_node *(*new_spill)(ir_node *value, ir_node *after);
-
-	/**
-	 * Create a reload instruction. We assume that reload instructions do not
-	 * need any additional registers and do not affect cpu-flags in any way.
-	 * Constructs a sequence of instruction before @p before (the resulting
-	 * nodes are already scheduled). A rewiring of users is not performed in
-	 * this function.
-	 * Returns a value representing the restored value.
-	 */
-	ir_node *(*new_reload)(ir_node *value, ir_node *spilled_value,
-	                       ir_node *before);
 };
 
-#define arch_env_done(env)                             ((env)->impl->done(env))
+#define arch_env_end_codegeneration(env)               ((env)->impl->end_codegeneration(env))
 #define arch_env_handle_intrinsics(env)                \
 	do { if((env)->impl->handle_intrinsics != NULL) (env)->impl->handle_intrinsics(); } while(0)
-#define arch_env_get_reg_class_for_mode(env,mode)      ((env)->impl->get_reg_class_for_mode((mode)))
-#define arch_env_get_call_abi(env,tp,abi)              ((env)->impl->get_call_abi((env), (tp), (abi)))
-#define arch_env_get_reg_class_alignment(env,cls)      ((env)->impl->get_reg_class_alignment((cls)))
+#define arch_env_get_call_abi(env,tp,abi)              ((env)->impl->get_call_abi((tp), (abi)))
 #define arch_env_get_params(env)                       ((env)->impl->get_params())
-#define arch_env_get_allowed_execution_units(env,irn)  ((env)->impl->get_allowed_execution_units((irn)))
-#define arch_env_get_machine(env)                      ((env)->impl->get_machine(env))
-#define arch_env_get_backend_irg_list(env,irgs)        ((env)->impl->get_backend_irg_list((env), (irgs)))
 #define arch_env_parse_asm_constraint(env,c)           ((env)->impl->parse_asm_constraint((c))
 #define arch_env_is_valid_clobber(env,clobber)         ((env)->impl->is_valid_clobber((clobber))
 #define arch_env_mark_remat(env,node) \

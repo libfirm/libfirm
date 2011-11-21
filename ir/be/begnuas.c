@@ -22,7 +22,6 @@
  * @brief       Dumps global variables and constants as gas assembler.
  * @author      Christian Wuerdig, Matthias Braun
  * @date        04.11.2005
- * @version     $Id$
  */
 #include "config.h"
 
@@ -1562,7 +1561,7 @@ void be_gas_emit_entity(const ir_entity *entity)
 
 void be_gas_emit_block_name(const ir_node *block)
 {
-	if (has_Block_entity(block)) {
+	if (get_Block_entity(block) != NULL) {
 		ir_entity *entity = get_Block_entity(block);
 		be_gas_emit_entity(entity);
 	} else {

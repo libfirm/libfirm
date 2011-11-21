@@ -22,7 +22,6 @@
  * @brief   Write vcg representation of firm to file.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Hubert Schmidt,
  *          Matthias Braun
- * @version $Id$
  */
 #include "config.h"
 
@@ -675,9 +674,6 @@ void dump_node_opcode(FILE *F, ir_node *n)
 			break;
 		case symconst_ofs_ent:
 			fprintf(F, "SymC %s offset", get_entity_name(get_SymConst_entity(n)));
-			break;
-		case symconst_type_tag:
-			ir_fprintf(F, "SymC %+F tag", get_SymConst_type(n));
 			break;
 		case symconst_type_size:
 			ir_fprintf(F, "SymC %+F size", get_SymConst_type(n));

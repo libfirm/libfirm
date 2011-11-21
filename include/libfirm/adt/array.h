@@ -21,7 +21,6 @@
  * @file
  * @brief     Dynamic and flexible arrays for C.
  * @author    Markus Armbruster, Michael Beck, Matthias Braun, Sebastian Hack
- * @version   $Id$
  */
 #ifndef FIRM_ADT_ARRAY_H
 #define FIRM_ADT_ARRAY_H

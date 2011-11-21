@@ -21,7 +21,6 @@
  * @file    type.c
  * @brief   Representation of types.
  * @author  Goetz Lindenmaier, Michael Beck
- * @version $Id$
  * @brief
  *
  *  Implementation of the datastructure to hold
@@ -87,16 +86,13 @@ void ir_init_type(void)
 	firm_none_type = new_type(tpop_none, mode_BAD, NULL);
 	set_type_size_bytes(firm_none_type, 0);
 	set_type_state (firm_none_type, layout_fixed);
-	remove_irp_type(firm_none_type);
 
 	firm_code_type = new_type(tpop_code, mode_ANY, NULL);
 	set_type_state(firm_code_type, layout_fixed);
-	remove_irp_type(firm_code_type);
 
 	firm_unknown_type = new_type(tpop_unknown, mode_ANY, NULL);
 	set_type_size_bytes(firm_unknown_type, 0);
 	set_type_state (firm_unknown_type, layout_fixed);
-	remove_irp_type(firm_unknown_type);
 }
 
 void ir_finish_type(void)
@@ -1960,9 +1956,6 @@ ir_type *new_type_frame(void)
 	ir_type *res = new_type_class(new_id_from_str("<frame_type>"));
 
 	res->flags |= tf_frame_type;
-
-	/* Remove type from type list.  Must be treated differently than other types. */
-	remove_irp_type(res);
 
 	/* It is not possible to derive from the frame type. Set the final flag. */
 	set_class_final(res, 1);

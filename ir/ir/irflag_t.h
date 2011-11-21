@@ -21,7 +21,6 @@
  * @file
  * @brief    Flags to control optimizations, inline implementation.
  * @author   Michael Beck, Sebastian Hack
- * @version  $Id$
  */
 #ifndef FIRM_IR_IRFLAG_T_H
 #define FIRM_IR_IRFLAG_T_H
@@ -104,7 +103,6 @@ static inline firm_verification_t get_node_verification_mode(void)
 
 #define get_optimize()                           get_optimize_()
 #define get_opt_cse()                            get_opt_cse_()
-#define get_opt_dyn_meth_dispatch()              get_opt_dyn_meth_dispatch_()
 #define get_opt_suppress_downcast_optimization() get_opt_suppress_downcast_optimization_()
 
 #endif

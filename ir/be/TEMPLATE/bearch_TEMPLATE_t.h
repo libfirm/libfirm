@@ -20,7 +20,6 @@
 /**
  * @file
  * @brief   declarations for TEMPALTE backend -- private header
- * @version $Id$
  */
 #ifndef FIRM_BE_TEMPLATE_BEARCH_TEMPLATE_T_H
 #define FIRM_BE_TEMPLATE_BEARCH_TEMPLATE_T_H

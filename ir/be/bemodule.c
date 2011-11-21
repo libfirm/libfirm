@@ -22,7 +22,6 @@
  * @brief       Backend module interface.
  * @author      Matthias Braun
  * @date        29.09.2005
- * @version     $Id$
  */
 #include "config.h"
 

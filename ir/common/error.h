@@ -21,7 +21,6 @@
  * @file
  * @brief    Error handling for libFirm
  * @author   Michael Beck
- * @version  $Id$
  */
 #ifndef FIRM_COMMON_ERROR_H
 #define FIRM_COMMON_ERROR_H

@@ -21,7 +21,6 @@
  * @file
  * @brief   Representation of opcode of intermediate operation.
  * @author  Christian Schaefer, Goetz Lindenmaier, Michael Beck
- * @version $Id$
  */
 #include "config.h"
 
@@ -134,7 +133,7 @@ static void switch_copy_attr(ir_graph *irg, const ir_node *old_node,
  * @return
  *    The operations.
  */
-static ir_op_ops *firm_set_default_copy_attr(unsigned code, ir_op_ops *ops)
+static void firm_set_default_copy_attr(unsigned code, ir_op_ops *ops)
 {
 	switch (code) {
 	case iro_Call:   ops->copy_attr = call_copy_attr;   break;
@@ -146,7 +145,23 @@ static ir_op_ops *firm_set_default_copy_attr(unsigned code, ir_op_ops *ops)
 		if (ops->copy_attr == NULL)
 			ops->copy_attr = default_copy_attr;
 	}
-	return ops;
+}
+
+/*
+ * Sets the default operation for an ir_ops.
+ */
+static void set_default_operations(unsigned code, ir_op_ops *ops)
+{
+	firm_set_default_hash(code, ops);
+	firm_set_default_computed_value(code, ops);
+	firm_set_default_equivalent_node(code, ops);
+	firm_set_default_transform_node(code, ops);
+	firm_set_default_node_cmp_attr(code, ops);
+	firm_set_default_get_type_attr(code, ops);
+	firm_set_default_get_entity_attr(code, ops);
+	firm_set_default_copy_attr(code, ops);
+	firm_set_default_verifier(code, ops);
+	firm_set_default_reassoc(code, ops);
 }
 
 /* Creates a new ir operation. */
@@ -170,10 +185,7 @@ ir_op *new_ir_op(unsigned code, const char *name, op_pin_state p,
 	else /* no given ops, set all operations to NULL */
 		memset(&res->ops, 0, sizeof(res->ops));
 
-	firm_set_default_operations(code, &res->ops);
-	firm_set_default_copy_attr(code, &res->ops);
-	firm_set_default_verifier(code, &res->ops);
-	firm_set_default_reassoc(code, &res->ops);
+	set_default_operations(code, &res->ops);
 
 	add_irp_opcode(res);
 

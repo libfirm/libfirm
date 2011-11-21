@@ -22,7 +22,6 @@
  * @brief    Loop datastructure and access functions.
  * @author   Goetz Lindenmaier
  * @date     7.2002
- * @version  $Id$
  * @brief
  *  Computes backedges in the control and data flow.
  *

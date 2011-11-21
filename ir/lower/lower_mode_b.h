@@ -21,7 +21,6 @@
  * @file
  * @brief       lower mode_b operations to something the backend can handle
  * @author      Matthias Braun, Christoph Mallon
- * @version     $Id$
  *
  * Most machines can't really manipulate mode_b values (which are usually
  * modeled as cpu flags). So you often have to convert them into machine words

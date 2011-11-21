@@ -23,7 +23,6 @@
  *          Useful for formatted and unified dumping of collections of objects.
  * @author  Sebastian Hack
  * @date    29.11.2004
- * @version $Id$
  */
 #ifndef FIRM_ADT_ITERATOR_H
 #define FIRM_ADT_ITERATOR_H

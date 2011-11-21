@@ -22,7 +22,6 @@
  * @brief   Dataflow driven Load/Store optimizations, uses some ideas from
  *          VanDrunen's LEPRE
  * @author  Michael Beck
- * @version $Id$
  */
 #include "config.h"
 

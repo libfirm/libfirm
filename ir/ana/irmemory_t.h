@@ -22,7 +22,6 @@
  * @brief    Memory disambiguator
  * @author   Michael Beck
  * @date     27.12.2006
- * @version  $Id: irmemory.c 22135 2008-09-20 05:32:02Z beck $
  */
 #ifndef FIRM_ANA_IRMEMORY_T_H
 #define FIRM_ANA_IRMEMORY_T_H

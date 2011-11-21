@@ -22,7 +22,6 @@
  * @brief   Public header for the automatically updating outs.
  * @author  Sebastian Hack
  * @date    3.2.2005
- * @version $Id$
  */
 #ifndef FIRM_IR_IREDGES_H
 #define FIRM_IR_IREDGES_H

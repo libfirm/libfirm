@@ -22,7 +22,6 @@
  * @brief   Calculate finalization of classes and entities by
  *          inspecting the class hierarchy.
  * @author  Michael Beck
- * @version $Id$
  */
 #include "config.h"
 

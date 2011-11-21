@@ -22,7 +22,6 @@
  * @brief       Backend irg - a ir_graph with additional analysis information.
  * @author      Matthias Braun
  * @date        13.12.2006
- * @version     $Id$
  */
 #include "config.h"
 

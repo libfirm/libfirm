@@ -22,7 +22,6 @@
  * @brief      Implements the Firm interface to debug information -- private header.
  * @author     Goetz Lindenmaier
  * @date       2001
- * @version    $Id$
  * @brief
  *  dbginfo: This is a empty implementation of the Firm interface to
  *  debugging support.  It only guarantees that the Firm library compiles

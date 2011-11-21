@@ -20,7 +20,6 @@
 /**
  * @file
  * @brief   code selection (transform FIRM into amd64 FIRM)
- * @version $Id: amd64_transform.c 26673 2009-10-01 16:43:13Z matze $
  */
 #include "config.h"
 

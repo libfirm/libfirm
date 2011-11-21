@@ -22,7 +22,6 @@
  * @brief   Entry point to the representation of a whole program.
  * @author  Goetz Lindenmaier
  * @date    2000
- * @version $Id$
  * @brief
  *  Intermediate Representation (IR) of a program.
  *
@@ -185,13 +184,6 @@ FIRM_API ir_type *get_glob_type(void);
  * This is a convenience function for get_segment_type(IR_SEGMENT_THREAD_LOCAL)
  */
 FIRM_API ir_type *get_tls_type(void);
-
-/** Adds type to the list of types in irp. */
-FIRM_API void add_irp_type(ir_type *typ);
-
-/** Removes type from the list of types, deallocates it and
-    shrinks the list by one. */
-FIRM_API void remove_irp_type(ir_type *typ);
 
 /**
  * Returns the number of all types in the irp.

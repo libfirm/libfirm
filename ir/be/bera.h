@@ -22,7 +22,6 @@
  * @brief       Base routines for register allocation.
  * @author      Sebastian Hack
  * @date        13.01.2005
- * @version     $Id$
  */
 #ifndef FIRM_BE_BERA_H
 #define FIRM_BE_BERA_H

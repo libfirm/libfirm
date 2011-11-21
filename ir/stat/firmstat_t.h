@@ -21,7 +21,6 @@
  * @file
  * @brief   Statistics for Firm. Internal data structures.
  * @author  Michael Beck
- * @version $Id$
  */
 #ifndef FIRM_STAT_FIRMSTAT_T_H
 #define FIRM_STAT_FIRMSTAT_T_H

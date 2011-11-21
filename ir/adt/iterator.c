@@ -21,7 +21,6 @@
  * @file
  * @brief   iterators
  * @author  Sebastian Hack
- * @version $Id$
  */
 #include "config.h"
 

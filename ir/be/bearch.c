@@ -21,7 +21,6 @@
  * @file
  * @brief       Processor architecture specification.
  * @author      Sebastian Hack
- * @version     $Id$
  */
 #include "config.h"
 
@@ -56,9 +55,10 @@ static reg_out_info_t dummy_info = {
 };
 
 /* Initialize the architecture environment struct. */
-arch_env_t *arch_env_init(const arch_isa_if_t *isa_if, be_main_env_t *main_env)
+arch_env_t *arch_env_begin_codegeneration(const arch_isa_if_t *isa_if,
+                                          be_main_env_t *main_env)
 {
-	arch_env_t *arch_env = isa_if->init(main_env);
+	arch_env_t *arch_env = isa_if->begin_codegeneration(main_env);
 	arch_env->main_env   = main_env;
 	return arch_env;
 }
@@ -211,12 +211,6 @@ const arch_register_req_t *arch_get_irn_register_req(const ir_node *node)
 {
 	reg_out_info_t *out = get_out_info(node);
 	return out->req;
-}
-
-arch_irn_class_t arch_irn_classify(const ir_node *node)
-{
-	const arch_irn_ops_t *ops = get_irn_ops(node);
-	return ops->classify(node);
 }
 
 arch_irn_flags_t arch_get_irn_flags(const ir_node *node)

@@ -21,7 +21,6 @@
  * @file
  * @brief      Definition of opaque firm types
  * @author     Michael Beck
- * @version    $Id$
  */
 #ifndef FIRM_COMMON_FIRM_TYPES_H
 #define FIRM_COMMON_FIRM_TYPES_H
@@ -221,8 +220,6 @@ ENUM_BITSET(mtp_additional_properties)
  * SymConst.  The content of the attribute symconst_symbol depends on this tag.
  * Use the proper access routine after testing this flag. */
 typedef enum symconst_kind {
-	symconst_type_tag,    /**< The SymConst is a type tag for the given type.
-	                           symconst_symbol is type *. */
 	symconst_type_size,   /**< The SymConst is the size of the given type.
 	                           symconst_symbol is type *. */
 	symconst_type_align,  /**< The SymConst is the alignment of the given type.

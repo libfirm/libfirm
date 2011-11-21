@@ -21,7 +21,6 @@
  * @file
  * @brief   declarations for transform functions (code selection)
  * @author  Oliver Richter, Tobias Gneist
- * @version $Id$
  */
 #ifndef FIRM_BE_ARM_ARM_TRANSFORM_H
 #define FIRM_BE_ARM_ARM_TRANSFORM_H

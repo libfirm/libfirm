@@ -22,7 +22,6 @@
  * @brief   HTML dumper for PBQP.
  * @date    03.10.2008
  * @author  Sebastian Buchwald
- * @version $Id$
  */
 #ifndef KAPS_HTML_DUMPER_H
 #define KAPS_HTML_DUMPER_H

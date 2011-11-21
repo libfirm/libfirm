@@ -22,7 +22,6 @@
  * @brief       Representation and computation of the callgraph.
  * @author      Goetz Lindenmaier
  * @date        21.7.2004
- * @version     $Id$
  */
 #include "config.h"
 

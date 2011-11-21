@@ -20,7 +20,6 @@
 /**
  * @file
  * @brief    The main amd64 backend driver file.
- * @version  $Id: bearch_amd64.c 26909 2010-01-05 15:56:54Z matze $
  */
 #include "config.h"
 
@@ -57,12 +56,6 @@
 #include "amd64_emitter.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
-
-static arch_irn_class_t amd64_classify(const ir_node *irn)
-{
-	(void) irn;
-	return arch_irn_class_none;
-}
 
 static ir_entity *amd64_get_frame_entity(const ir_node *node)
 {
@@ -114,7 +107,6 @@ static int amd64_get_sp_bias(const ir_node *irn)
 /* fill register allocator interface */
 
 static const arch_irn_ops_t amd64_irn_ops = {
-	amd64_classify,
 	amd64_get_frame_entity,
 	amd64_set_frame_offset,
 	amd64_get_sp_bias,
@@ -305,16 +297,16 @@ static amd64_isa_t amd64_isa_template = {
 	},
 };
 
-/**
- * Initializes the backend ISA
- */
-static arch_env_t *amd64_init(const be_main_env_t *env)
+static void amd64_init(void)
+{
+	amd64_register_init();
+	amd64_create_opcodes(&amd64_irn_ops);
+}
+
+static arch_env_t *amd64_begin_codegeneration(const be_main_env_t *env)
 {
 	amd64_isa_t *isa = XMALLOC(amd64_isa_t);
 	*isa = amd64_isa_template;
-
-	amd64_register_init();
-	amd64_create_opcodes(&amd64_irn_ops);
 
 	be_emit_init(env->file_handle);
 	be_gas_begin_compilation_unit(env);
@@ -322,12 +314,10 @@ static arch_env_t *amd64_init(const be_main_env_t *env)
 	return &isa->base;
 }
 
-
-
 /**
  * Closes the output file and frees the ISA structure.
  */
-static void amd64_done(void *self)
+static void amd64_end_codegeneration(void *self)
 {
 	amd64_isa_t *isa = (amd64_isa_t*)self;
 
@@ -337,21 +327,6 @@ static void amd64_done(void *self)
 	be_emit_exit();
 	free(self);
 }
-
-
-/**
- * Get the register class which shall be used to store a value of a given mode.
- * @param self The this pointer.
- * @param mode The mode in question.
- * @return A register class which can hold values of the given mode.
- */
-static const arch_register_class_t *amd64_get_reg_class_for_mode(const ir_mode *mode)
-{
-	assert(!mode_is_float(mode));
-	return &amd64_reg_classes[CLASS_amd64_gp];
-}
-
-
 
 typedef struct {
 	be_abi_call_flags_bits_t flags;
@@ -411,16 +386,13 @@ static const arch_register_t *amd64_get_RegParam_reg(int n)
  * @param method_type The type of the method (procedure) in question.
  * @param abi         The abi object to be modified
  */
-static void amd64_get_call_abi(const void *self, ir_type *method_type,
-                           be_abi_call_t *abi)
+static void amd64_get_call_abi(ir_type *method_type, be_abi_call_t *abi)
 {
 	ir_type  *tp;
 	ir_mode  *mode;
 	int       i, n = get_method_n_params(method_type);
 	be_abi_call_flags_t call_flags;
 	int no_reg = 0;
-
-	(void) self;
 
 	/* set abi flags for calls */
 	call_flags.bits.store_args_sequential = 0;
@@ -460,15 +432,6 @@ static void amd64_get_call_abi(const void *self, ir_type *method_type,
 		be_abi_call_res_reg(abi, 0,
 			&amd64_registers[REG_RAX], ABI_CONTEXT_BOTH);
 	}
-}
-
-/**
- * Returns the necessary byte alignment for storing a register of given class.
- */
-static int amd64_get_reg_class_alignment(const arch_register_class_t *cls)
-{
-	ir_mode *mode = arch_register_class_mode(cls);
-	return get_mode_size_bytes(mode);
 }
 
 static void amd64_lower_for_target(void)
@@ -520,14 +483,6 @@ static const backend_params *amd64_get_backend_params(void) {
 		8      /* alignment of stack parameter: typically 4 (32bit) or 8 (64bit) */
 	};
 	return &p;
-}
-
-static ir_graph **amd64_get_backend_irg_list(const void *self,
-                                                ir_graph ***irgs)
-{
-	(void) self;
-	(void) irgs;
-	return NULL;
 }
 
 static asm_constraint_flags_t amd64_parse_asm_constraint(const char **c)
@@ -583,28 +538,27 @@ static int amd64_register_saved_by(const arch_register_t *reg, int callee)
 
 const arch_isa_if_t amd64_isa_if = {
 	amd64_init,
-	amd64_lower_for_target,
-	amd64_done,
-	NULL,                /* handle intrinsics */
-	amd64_get_reg_class_for_mode,
-	amd64_get_call_abi,
-	amd64_get_reg_class_alignment,
     amd64_get_backend_params,
-	amd64_get_backend_irg_list,
-	NULL,                    /* mark remat */
+	amd64_lower_for_target,
 	amd64_parse_asm_constraint,
 	amd64_is_valid_clobber,
 
+	amd64_begin_codegeneration,
+	amd64_end_codegeneration,
 	amd64_init_graph,
+	amd64_get_call_abi,
+	NULL,              /* mark remat */
 	NULL,              /* get_pic_base */
+	be_new_spill,
+	be_new_reload,
+	amd64_register_saved_by,
+
+	NULL,              /* handle intrinsics */
 	NULL,              /* before_abi */
 	amd64_prepare_graph,
 	amd64_before_ra,
 	amd64_finish_irg,
 	amd64_gen_routine,
-	amd64_register_saved_by,
-	be_new_spill,
-	be_new_reload
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_amd64)

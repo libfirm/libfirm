@@ -21,7 +21,6 @@
  * @file    irlivechk.h
  * @author  Sebastian Hack
  * @date    22.04.2007
- * @version $Id$
  * @brief
  *
  * Live in/end checks whose only precomputation concerns the structure of the CFG.

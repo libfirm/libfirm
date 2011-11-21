@@ -21,7 +21,6 @@
  * @file
  * @brief    Hash table to store names -- private header.
  * @author   Goetz Lindenmaier
- * @version  $Id$
  */
 #ifndef FIRM_IDENT_IDENT_T_H
 #define FIRM_IDENT_IDENT_T_H

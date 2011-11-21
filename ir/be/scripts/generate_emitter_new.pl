@@ -22,8 +22,6 @@
 # This script generates C code which emits assembler code for the
 # assembler ir nodes. It takes a "emit" key from the node specification
 # and substitutes lines starting with . with a corresponding fprintf().
-# Creation: 2005/11/07
-# $Id$
 
 use strict;
 use Data::Dumper;

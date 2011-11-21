@@ -21,7 +21,6 @@
  * @file
  * @brief   Statistics for Firm. DAG's in graphs.
  * @author  Michael Beck
- * @version $Id$
  */
 #include "config.h"
 

@@ -22,7 +22,6 @@
  * @brief   Global Value Numbering Partial Redundancy Elimination
  *          (VanDrunen Hosking 2004)
  * @author  Michael Beck
- * @version $Id$
  * @brief
  */
 #include "config.h"

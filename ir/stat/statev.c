@@ -22,7 +22,6 @@
  * @brief       Statistic events.
  * @author      Sebastian Hack
  * @date        17.06.2007
- * @version     $Id$
  */
 #include "config.h"
 

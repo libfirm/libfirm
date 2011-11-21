@@ -20,7 +20,6 @@
 /**
  * @file
  * @brief   Instrumentation of graphs.
- * @version $Id: $
  */
 #ifndef FIRM_IR_INSTRUMENT_H
 #define FIRM_IR_INSTRUMENT_H

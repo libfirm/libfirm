@@ -22,7 +22,6 @@
  * @author   Christian Helmer
  * @brief    loop inversion and loop unrolling
  *
- * @version  $Id$
  */
 #include "config.h"
 

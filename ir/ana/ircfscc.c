@@ -24,7 +24,6 @@
  *            [Trapp:99], Chapter 5.2.1.2.
  * @author    Goetz Lindenmaier
  * @date      7.2002
- * @version   $Id$
  */
 #include "config.h"
 

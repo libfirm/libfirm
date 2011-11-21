@@ -21,7 +21,6 @@
  * @file
  * @brief   Optimizations regarding Confirm nodes.
  * @author  Michael Beck
- * @version $Id$
  */
 #include "config.h"
 
@@ -168,9 +167,7 @@ FIRM_API int value_not_zero(const ir_node *n, ir_node_cnst_ptr *confirm)
 /*
  * Check, if the value of a node cannot represent a NULL pointer.
  *
- * - Casts are skipped
- * - If sel_based_null_check_elim is enabled, all
- *   Sel nodes can be skipped.
+ * - Casts are skipped, Sels are skipped
  * - A SymConst(entity) is NEVER a NULL pointer
  * - Confirms are evaluated
  */
@@ -186,11 +183,9 @@ FIRM_API int value_not_null(const ir_node *n, ir_node_cnst_ptr *confirm)
 		return 1;
 
 	assert(mode_is_reference(get_irn_mode(n)));
-	if (get_opt_sel_based_null_check_elim()) {
-		/* skip all Sel nodes and Cast's */
-		while (is_Sel(n)) {
-			n = skip_Cast(get_Sel_ptr(n));
-		}
+	/* skip all Sel nodes and Cast's */
+	while (is_Sel(n)) {
+		n = skip_Cast(get_Sel_ptr(n));
 	}
 	while (1) {
 		if (is_Cast(n)) { n = get_Cast_op(n); continue; }

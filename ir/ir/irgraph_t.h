@@ -21,7 +21,6 @@
  * @file
  * @brief    Entry point to the representation of procedure code -- internal header.
  * @author   Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
- * @version  $Id$
  */
 #ifndef FIRM_IR_IRGRAPH_T_H
 #define FIRM_IR_IRGRAPH_T_H

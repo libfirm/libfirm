@@ -21,7 +21,6 @@
  * @file
  * @brief       peephole optimisation framework
  * @author      Matthias Braun
- * @version     $Id$
  */
 #ifndef BEPEEPHOLE_H
 #define BEPEEPHOLE_H

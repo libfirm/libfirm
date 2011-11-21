@@ -22,7 +22,6 @@
  * @brief       Code instrumentation and execution count profiling.
  * @author      Adam M. Szalkowski, Steven Schaefer
  * @date        06.04.2006, 11.11.2010
- * @version     $Id$
  */
 #include "config.h"
 

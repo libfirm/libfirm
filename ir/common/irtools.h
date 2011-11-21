@@ -21,7 +21,6 @@
  * @file
  * @brief     Some often needed tool-functions
  * @author    Michael Beck
- * @version   $Id$
  */
 #ifndef FIRM_COMMON_IRTOOLS_H
 #define FIRM_COMMON_IRTOOLS_H

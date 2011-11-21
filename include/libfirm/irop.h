@@ -21,7 +21,6 @@
  * @file
  * @brief   Representation of opcode of intermediate operation.
  * @author  Christian Schaefer, Goetz Lindenmaier, Michael Beck
- * @version $Id$
  * @brief
  *  Operators of firm nodes.
  *
@@ -74,14 +73,11 @@ typedef enum {
 	irop_flag_uses_memory  = 1U << 10, /**< This operation has a memory input and may change the memory state. */
 	irop_flag_dump_noblock = 1U << 11, /**< node should be dumped outside any blocks */
 	irop_flag_dump_noinput = 1U << 12, /**< node is a placeholder for "no input" */
-	irop_flag_machine      = 1U << 13, /**< This operation is a machine operation. */
-	irop_flag_machine_op   = 1U << 14, /**< This operation is a machine operand. */
-	irop_flag_cse_neutral  = 1U << 15, /**< This operation is CSE neutral to its users. */
+	irop_flag_cse_neutral  = 1U << 13, /**< This operation is CSE neutral to its users. */
 	/** This operation jumps to an unknown destination. The CFG is a
 	 * conservative aproximation in this case. You cannot change the destination
 	 * of an unknown_jump */
-	irop_flag_unknown_jump = 1U << 16,
-	irop_flag_user         = 1U << 17, /**< This flag and all higher ones are free for machine user. */
+	irop_flag_unknown_jump = 1U << 14,
 } irop_flags;
 
 /** Returns the ident for the opcode name */

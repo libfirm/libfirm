@@ -20,7 +20,6 @@
 /**
  * @file
  * @brief   emit assembler for a backend graph
- * @version $Id$
  */
 #include "config.h"
 

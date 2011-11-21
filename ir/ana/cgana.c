@@ -22,7 +22,6 @@
  * @brief      Intraprozedural analyses to estimate the call graph.
  * @author     Hubert Schmid
  * @date       09.06.2002
- * @version    $Id$
  * @brief
  *  Interprocedural analysis to estimate the calling relation.
  *
@@ -186,6 +185,7 @@ static void sel_methods_walker(ir_node *node, void *env)
 			 */
 			assert(get_entity_irg(ent) == NULL);
 		}
+#if 0
 		else if (get_opt_closed_world() && get_opt_dyn_meth_dispatch() &&
 			(ARR_LEN(arr) == 1 && arr[0] != NULL)) {
 			ir_node *new_node;
@@ -200,6 +200,7 @@ static void sel_methods_walker(ir_node *node, void *env)
 			DBG_OPT_POLY(node, new_node);
 			exchange(node, new_node);
 		}
+#endif
 	}
 }
 

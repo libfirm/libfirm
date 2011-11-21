@@ -1,8 +1,4 @@
-# Creation: 2006/02/13
-# $Id$
-
 # the cpu architecture (ia32, ia64, mips, sparc, ppc, ...)
-
 $arch = "TEMPLATE";
 
 #

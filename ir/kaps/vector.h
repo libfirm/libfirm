@@ -22,7 +22,6 @@
  * @brief   PBQP vector.
  * @date    02.10.2008
  * @author  Sebastian Buchwald
- * @version $Id$
  */
 #ifndef KAPS_VECTOR_H
 #define KAPS_VECTOR_H

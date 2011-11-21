@@ -20,7 +20,6 @@
 /**
  * @file
  * @brief   attributes attached to all amd64 nodes
- * @version $Id: amd64_nodes_attr.h 26317 2009-08-05 10:53:46Z matze $
  */
 #ifndef FIRM_BE_amd64_amd64_NODES_ATTR_H
 #define FIRM_BE_amd64_amd64_NODES_ATTR_H

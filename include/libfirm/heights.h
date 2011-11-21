@@ -22,7 +22,6 @@
  * @brief   Compute heights of nodes inside basic blocks
  * @author  Sebastian Hack
  * @date    19.04.2006
- * @version $Id$
  *
  * The height is a measure for the longest datadependencies path from a node to
  * the end of a basic block. This is usefull for scheduling heuristics and can

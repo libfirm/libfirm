@@ -21,7 +21,6 @@
  * @file
  * @brief   Control flow optimizations.
  * @author  Goetz Lindenmaier, Michael Beck, Sebastian Hack
- * @version $Id$
  *
  * Removes Bad control flow predecessors and empty blocks.  A block is empty
  * if it contains only a Jmp node. Blocks can only be removed if they are not
@@ -115,7 +114,7 @@ static void collect_nodes(ir_node *n, void *ctx)
 		ir_node *block = get_nodes_block(n);
 		add_Block_phi(block, n);
 	} else if (is_Block(n)) {
-		if (has_Block_entity(n)) {
+		if (get_Block_entity(n) != NULL) {
 			/* block with a jump label attached cannot be removed. */
 			set_Block_removable(n, false);
 		}

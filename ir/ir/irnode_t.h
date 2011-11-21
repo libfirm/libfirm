@@ -21,7 +21,6 @@
  * @file
  * @brief   Representation of an intermediate operation -- private header.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
- * @version $Id$
  */
 #ifndef FIRM_IR_IRNODE_T_H
 #define FIRM_IR_IRNODE_T_H
@@ -56,7 +55,7 @@ extern unsigned firm_add_node_size;
  * @return
  *    The operations.
  */
-ir_op_ops *firm_set_default_get_type_attr(unsigned code, ir_op_ops *ops);
+void firm_set_default_get_type_attr(unsigned code, ir_op_ops *ops);
 
 /**
  * Sets the get_entity_attr operation for an ir_op_ops.
@@ -67,7 +66,7 @@ ir_op_ops *firm_set_default_get_type_attr(unsigned code, ir_op_ops *ops);
  * @return
  *    The operations.
  */
-ir_op_ops *firm_set_default_get_entity_attr(unsigned code, ir_op_ops *ops);
+void firm_set_default_get_entity_attr(unsigned code, ir_op_ops *ops);
 
 /**
  * Returns an array with the predecessors of the Block. Depending on
@@ -482,21 +481,6 @@ static inline int is_irn_start_block_placed_(const ir_node *node)
 	return is_op_start_block_placed(get_irn_op_(node));
 }
 
-static inline int is_irn_machine_op_(const ir_node *node)
-{
-	return is_op_machine(get_irn_op_(node));
-}
-
-static inline int is_irn_machine_operand_(const ir_node *node)
-{
-	return is_op_machine_operand(get_irn_op_(node));
-}
-
-static inline int is_irn_machine_user_(const ir_node *node, unsigned n)
-{
-	return is_op_machine_user(get_irn_op_(node), n);
-}
-
 static inline int is_irn_cse_neutral_(const ir_node *node)
 {
 	return is_op_cse_neutral(get_irn_op_(node));
@@ -673,9 +657,6 @@ void init_irnode(void);
 #define is_irn_always_opt(node)               is_irn_always_opt_(node)
 #define is_irn_keep(node)                     is_irn_keep_(node)
 #define is_irn_start_block_placed(node)       is_irn_start_block_placed_(node)
-#define is_irn_machine_op(node)               is_irn_machine_op_(node)
-#define is_irn_machine_operand(node)          is_irn_machine_operand_(node)
-#define is_irn_machine_user(node, n)          is_irn_machine_user_(node, n)
 #define is_irn_cse_neutral(node)              is_irn_cse_neutral_(node)
 #define get_Cond_jmp_pred(node)               get_Cond_jmp_pred_(node)
 #define set_Cond_jmp_pred(node, pred)         set_Cond_jmp_pred_(node, pred)

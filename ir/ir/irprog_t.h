@@ -22,7 +22,6 @@
  * @brief    Entry point to the representation of a whole program 0-- private header.
  * @author   Goetz Lindenmaier
  * @date     2000
- * @version  $Id$
  */
 #ifndef FIRM_IR_IRPROG_T_H
 #define FIRM_IR_IRPROG_T_H
@@ -160,6 +159,13 @@ void init_irprog_1(void);
 
 /** Completes ir_prog. */
 void init_irprog_2(void);
+
+/** Adds type to the list of types in irp. */
+FIRM_API void add_irp_type(ir_type *typ);
+
+/** Removes type from the list of types, deallocates it and
+    shrinks the list by one. */
+FIRM_API void remove_irp_type(ir_type *typ);
 
 /* Inline functions. */
 #define get_irp_n_irgs()                 get_irp_n_irgs_()

@@ -22,7 +22,6 @@
  * @brief       Naive spilling algorithm
  * @author      Matthias Braun
  * @date        20.09.2005
- * @version     $Id: bespillbelady.c 13913 2007-05-18 12:48:56Z matze $
  * @brief
  *   This implements a naive spilling algorithm. It is designed to produce
  *   similar effects to the spill decisions produced by traditional graph

@@ -22,7 +22,6 @@
  * @brief   Brute force PBQP solver.
  * @date    02.12.2008
  * @author  Sebastian Buchwald
- * @version $Id$
  */
 #include "config.h"
 

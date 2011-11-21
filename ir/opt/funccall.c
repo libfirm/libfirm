@@ -21,7 +21,6 @@
  * @file
  * @brief   Optimization of function calls.
  * @author  Michael Beck
- * @version $Id$
  */
 #include "config.h"
 

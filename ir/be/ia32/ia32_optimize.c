@@ -21,7 +21,6 @@
  * @file
  * @brief       Implements several optimizations for IA32.
  * @author      Matthias Braun, Christian Wuerdig
- * @version     $Id$
  */
 #include "config.h"
 
@@ -35,7 +34,6 @@
 #include "irgmod.h"
 #include "irgwalk.h"
 #include "heights.h"
-#include "irbitset.h"
 #include "irprintf.h"
 #include "irdump.h"
 #include "error.h"

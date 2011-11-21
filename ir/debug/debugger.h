@@ -22,7 +22,6 @@
  * @brief     Helper function for integrated debug support
  * @author    Michael Beck
  * @date      2005
- * @version   $Id$
  */
 #ifndef FIRM_DEBUG_DEBUGGER_H
 #define FIRM_DEBUG_DEBUGGER_H

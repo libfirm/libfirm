@@ -21,7 +21,6 @@
  * @file
  * @brief       Scheduling utilities for nodes in Blocks and Blocks.
  * @author      Sebastian Hack
- * @version     $Id$
  */
 #include "config.h"
 

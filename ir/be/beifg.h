@@ -22,7 +22,6 @@
  * @brief       Interface for interference graphs.
  * @author      Sebastian Hack
  * @date        18.11.2005
- * @version     $Id$
  */
 #ifndef FIRM_BE_BEIFG_H
 #define FIRM_BE_BEIFG_H

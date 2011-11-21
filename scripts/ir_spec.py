@@ -100,7 +100,7 @@ class ASM(Op):
 		),
 		dict(
 			name    = "n_output_constraints",
-			type    = "int",
+			type    = "size_t",
 			noprop  = True,
 			comment = "number of output constraints",
 		),
@@ -111,7 +111,7 @@ class ASM(Op):
 		),
 		dict(
 			name    = "n_clobbers",
-			type    = "int",
+			type    = "size_t",
 			noprop  = True,
 			comment = "number of clobbered registers/memory",
 		),
@@ -164,7 +164,7 @@ class Deleted(Op):
 	flags            = [ ]
 	pinned           = "yes"
 	noconstructor    = True
-	customSerializer = True
+	customSerializer = True # this has no serializer
 
 class Block(Op):
 	"""A basic block"""
@@ -175,6 +175,14 @@ class Block(Op):
 	arity            = "variable"
 	flags            = [ "labeled" ]
 	attr_struct      = "block_attr"
+	attrs            = [
+		dict(
+			name    = "entity",
+			type    = "ir_entity*",
+			comment = "entity representing this block",
+			init    = "NULL",
+		),
+	]
 	customSerializer = True
 
 	init = '''
@@ -267,12 +275,6 @@ class Call(Op):
 			name    = "type",
 			comment = "type of the call (usually type of the called procedure)",
 		),
-		dict(
-			type = "unsigned",
-			name = "tail_call",
-			# the tail call attribute can only be set by analysis
-			init = "0",
-		)
 	]
 	attr_struct = "call_attr"
 	pinned      = "memory"
@@ -316,11 +318,7 @@ class Cmp(Binop):
 	attr_struct = "cmp_attr"
 
 class Cond(Op):
-	"""Conditionally change control flow.
-	Input:  A value of mode_b
-	Output: A tuple of two control flows. The first is taken if the input is
-	        false, the second if it is true.
-	"""
+	"""Conditionally change control flow."""
 	ins      = [
 		("selector",  "condition parameter"),
 	]
@@ -500,7 +498,6 @@ class End(Op):
 	knownBlock       = True
 	block            = "get_irg_end_block(irg)"
 	singleton        = True
-	customSerializer = True
 
 class Eor(Binop):
 	"""returns the result of a bitwise exclusive or operation of its operands"""
@@ -605,12 +602,14 @@ class Load(Op):
 			name      = "volatility",
 			comment   = "volatile loads are a visible side-effect and may not be optimized",
 			init      = "flags & cons_volatile ? volatility_is_volatile : volatility_non_volatile",
+			to_flags  = "%s == volatility_is_volatile ? cons_volatile : 0"
 		),
 		dict(
 			type      = "ir_align",
 			name      = "unaligned",
 			comment   = "pointers to unaligned loads don't need to respect the load-mode/type alignments",
 			init      = "flags & cons_unaligned ? align_non_aligned : align_is_aligned",
+			to_flags  = "%s == align_non_aligned ? cons_unaligned : 0"
 		),
 	]
 	attr_struct = "load_attr"
@@ -632,6 +631,7 @@ class Mod(Op):
 	"""returns the remainder of its operands from an implied division.
 
 	Examples:
+
 	* mod(5,3)   produces 2
 	* mod(5,-3)  produces 2
 	* mod(-5,3)  produces -2
@@ -716,6 +716,7 @@ class Phi(Op):
 	   As we can't distinguish these easily we keep all of them alive. */
 	if (is_Phi(res) && mode == mode_M)
 		add_End_keepalive(get_irg_end(irg), res);'''
+	customSerializer = True
 
 class Pin(Op):
 	"""Pin the value of the node node in the current block. No users of the Pin
@@ -739,7 +740,6 @@ class Proj(Op):
 	knownGraph       = True
 	block            = "get_nodes_block(irn_pred)"
 	graph            = "get_irn_irg(irn_pred)"
-	customSerializer = True
 	attrs      = [
 		dict(
 			type    = "long",
@@ -782,7 +782,10 @@ class Rotl(Binop):
 
 class Sel(Op):
 	"""Computes the address of a entity of a compound type given the base
-	address of an instance of the compound type."""
+	address of an instance of the compound type.
+
+	Optimisations assume that a Sel node can only produce a NULL pointer if the
+	ptr input was NULL."""
 	ins    = [
 		("mem", "memory dependency"),
 		("ptr", "pointer to object to select from"),
@@ -829,7 +832,6 @@ class Start(Op):
 	flags            = [ "cfopcode" ]
 	singleton        = True
 	knownBlock       = True
-	customSerializer = True
 	block            = "get_irg_start_block(irg)"
 
 class Store(Op):
@@ -855,12 +857,14 @@ class Store(Op):
 			name      = "volatility",
 			comment   = "volatile stores are a visible side-effect and may not be optimized",
 			init      = "flags & cons_volatile ? volatility_is_volatile : volatility_non_volatile",
+			to_flags  = "%s == volatility_is_volatile ? cons_volatile : 0"
 		),
 		dict(
 			type      = "ir_align",
 			name      = "unaligned",
 			comment   = "pointers to unaligned stores don't need to respect the load-mode/type alignments",
 			init      = "flags & cons_unaligned ? align_non_aligned : align_is_aligned",
+			to_flags  = "%s == align_non_aligned ? cons_unaligned : 0"
 		),
 	]
 	constructor_args = [
@@ -878,21 +882,19 @@ class Sub(Binop):
 class SymConst(Op):
 	"""A symbolic constant.
 
-	 - symconst_type_tag   The symbolic constant represents a type tag.  The
-	                       type the tag stands for is given explicitly.
-	 - symconst_type_size  The symbolic constant represents the size of a type.
-	                       The type of which the constant represents the size
-	                       is given explicitly.
-	 - symconst_type_align The symbolic constant represents the alignment of a
-	                       type.  The type of which the constant represents the
-	                       size is given explicitly.
-	 - symconst_addr_ent   The symbolic constant represents the address of an
-	                       entity (variable or method).  The variable is given
-	                       explicitly by a firm entity.
-	 - symconst_ofs_ent    The symbolic constant represents the offset of an
-	                       entity in its owner type.
-	 - symconst_enum_const The symbolic constant is a enumeration constant of
-	                       an enumeration type."""
+	 - *symconst_type_size* The symbolic constant represents the size of a type.
+	                        The type of which the constant represents the size
+	                        is given explicitly.
+	 - *symconst_type_align* The symbolic constant represents the alignment of a
+	                        type.  The type of which the constant represents the
+	                        size is given explicitly.
+	 - *symconst_addr_ent*  The symbolic constant represents the address of an
+	                        entity (variable or method).  The variable is given
+	                        explicitly by a firm entity.
+	 - *symconst_ofs_ent*   The symbolic constant represents the offset of an
+	                        entity in its owner type.
+	 - *symconst_enum_const* The symbolic constant is a enumeration constant of
+	                        an enumeration type."""
 	mode       = "mode_P"
 	flags      = [ "constlike", "start_block" ]
 	knownBlock = True

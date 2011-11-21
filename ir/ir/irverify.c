@@ -21,7 +21,6 @@
  * @file
  * @brief    Check irnodes for correctness.
  * @author   Christian Schaefer, Goetz Lindenmaier, Till Riedel, Michael Beck
- * @version  $Id$
  */
 #include "config.h"
 
@@ -880,12 +879,15 @@ static int verify_node_Cond(const ir_node *n)
 static int verify_switch_table(const ir_node *n)
 {
 	const ir_switch_table *table     = get_Switch_table(n);
-	size_t                 n_entries = ir_switch_table_get_n_entries(table);
 	unsigned               n_outs    = get_Switch_n_outs(n);
 	ir_node               *selector  = get_Switch_selector(n);
 	ir_mode               *mode      = get_irn_mode(selector);
+	size_t                 n_entries;
 	size_t                 e;
 
+	ASSERT_AND_RET(table != NULL, "switch table is NULL", 0);
+
+	n_entries = ir_switch_table_get_n_entries(table);
 	for (e = 0; e < n_entries; ++e) {
 		const ir_switch_table_entry *entry
 			= ir_switch_table_get_entry_const(table, e);

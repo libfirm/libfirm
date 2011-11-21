@@ -21,7 +21,6 @@
  * @file    dfs.h
  * @author  Sebastian Hack
  * @date    20.04.2007
- * @version $Id$
  * @brief
  *
  * Primitive depth-first search on the CFG.

@@ -21,7 +21,6 @@
  * @file
  * @brief    iropt --- optimizations intertwined with IR construction -- private header.
  * @author   Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
- * @version  $Id$
  */
 #ifndef FIRM_IR_IROPT_T_H
 #define FIRM_IR_IROPT_T_H
@@ -125,17 +124,6 @@ static inline ir_tarval *value_of(const ir_node *n)
  */
 bool ir_zero_when_converted(const ir_node *node, ir_mode *dest_mode);
 
-/**
- * Sets the default operations for an ir_op_ops.
- *
- * @param code   the opcode for the default operation
- * @param ops    the operations initialized
- *
- * @return
- *    The operations.
- */
-ir_op_ops *firm_set_default_operations(unsigned code, ir_op_ops *ops);
-
 int ir_mux_is_abs(const ir_node *sel, const ir_node *mux_false,
                   const ir_node *mux_true);
 
@@ -149,5 +137,46 @@ ir_node *ir_get_abs_op(const ir_node *sel, ir_node *mux_false,
  */
 bool ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
                            const ir_node *mux_true);
+
+/**
+ * Set the default hash operation in an ir_op_ops.
+ *
+ * @param code   the opcode for the default operation
+ * @param ops    the operations initialized
+ */
+void firm_set_default_hash(unsigned code, ir_op_ops *ops);
+
+/**
+ * Set the default computed_value evaluator in an ir_op_ops.
+ *
+ * @param code   the opcode for the default operation
+ * @param ops    the operations initialized
+ */
+void firm_set_default_computed_value(ir_opcode code, ir_op_ops *ops);
+
+/**
+ * Sets the default equivalent node operation for an ir_op_ops.
+ *
+ * @param code   the opcode for the default operation
+ * @param ops    the operations initialized
+ */
+void firm_set_default_equivalent_node(ir_opcode code, ir_op_ops *ops);
+
+/**
+ * Sets the default transform node operation for an ir_op_ops.
+ *
+ * @param code   the opcode for the default operation
+ * @param ops    the operations initialized
+ */
+void firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops);
+
+/**
+ * Set the default node attribute compare operation for an ir_op_ops.
+ *
+ * @param code   the opcode for the default operation
+ * @param ops    the operations initialized
+ */
+void firm_set_default_node_cmp_attr(ir_opcode code, ir_op_ops *ops);
+
 
 #endif

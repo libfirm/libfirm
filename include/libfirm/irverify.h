@@ -21,7 +21,6 @@
  * @file
  * @brief    Check irnodes for correctness.
  * @author   Christian Schaefer, Goetz Lindenmaier, Till Riedel
- * @version  $Id$
  */
 #ifndef FIRM_IR_IRVERIFY_H
 #define FIRM_IR_IRVERIFY_H

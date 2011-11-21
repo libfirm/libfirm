@@ -22,7 +22,6 @@
  * @brief   PBQP data types.
  * @date    02.10.2008
  * @author  Sebastian Buchwald
- * @version $Id$
  */
 #ifndef KAPS_PBQP_T_H
 #define KAPS_PBQP_T_H

@@ -22,7 +22,6 @@
  * @brief    tarval floating point calculations
  * @date     2003
  * @author   Mathias Heil
- * @version  $Id$
  */
 #include "config.h"
 

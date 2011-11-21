@@ -21,7 +21,6 @@
  * @file
  * @brief   Reassociation
  * @author  Michael Beck
- * @version $Id$
  */
 #include "config.h"
 

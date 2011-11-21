@@ -22,7 +22,6 @@
  * @brief   Data modes of operations.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Mathias Heil,
  *          Michael Beck
- * @version $Id$
  * @brief
  *  This module specifies the modes that type the firm nodes.  It defines
  *  a datasturcture that describes a mode and implements constructors and
@@ -54,11 +53,8 @@ typedef enum ir_mode_arithmetic {
 	                               to ieee754 floating point standard.  Only
 	                               legal for modes of sort float_number. */
 	irma_x86_extended_float,  /**< x86 extended floatingpoint values */
-	irma_max
+	irma_last = irma_x86_extended_float,
 } ir_mode_arithmetic;
-
-/** Returns the name of the arithmetic type. */
-FIRM_API const char *get_mode_arithmetic_name(ir_mode_arithmetic ari);
 
 /**
  * Creates a new mode.

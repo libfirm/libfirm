@@ -21,7 +21,6 @@
  * @file
  * @brief   Register mapping for firm nodes. Stolen from bearch_firm :)
  * @author  Oliver Richter, Tobias Gneist
- * @version $Id$
  */
 #include "config.h"
 

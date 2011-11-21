@@ -21,7 +21,6 @@
  * @file
  * @brief       never failing wrappers for malloc() & friends.
  * @author      Markus Armbruster
- * @version     $Id$
  * @note        The functions here never fail because they simply abort your
  *              program in case of an error.
  */

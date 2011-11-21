@@ -22,7 +22,6 @@
  * @brief       Helper functions for handling offsets into stack frames/
  *              activation records.
  * @author      Matthias Braun
- * @version     $Id$
  */
 #ifndef FIRM_BE_BESTACK_H
 #define FIRM_BE_BESTACK_H

@@ -28,7 +28,6 @@
 /**
  * @file
  * @brief   Solving the Minimum Assignment Problem using the Hungarian Method.
- * @version $Id$
  */
 #ifndef FIRM_ADT_HUNGARIAN_H
 #define FIRM_ADT_HUNGARIAN_H

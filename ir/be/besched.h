@@ -22,7 +22,6 @@
  * @brief       data structures for scheduling nodes in basic blocks.
  *              (This file does not contain the scheduling algorithms)
  * @author      Sebastian Hack, Matthias Braun
- * @version     $Id$
  */
 #ifndef FIRM_BE_BESCHED_H
 #define FIRM_BE_BESCHED_H
