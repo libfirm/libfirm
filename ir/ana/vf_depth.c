@@ -36,30 +36,27 @@
 
 #define VLD_DEBUG_DEPTHS 0
 
-typedef struct obstack obstack;
-
 typedef struct vl_node {
-	int depth;
+	unsigned depth;
 } vl_node;
 
 struct vl_info {
-	obstack     obst;
-	ir_graph   *irg;
-	ir_nodemap  nodemap;
+	struct obstack obst;
+	ir_graph      *irg;
+	ir_nodemap     nodemap;
 };
 
-int vl_node_get_depth(vl_info *vli, ir_node *irn)
+unsigned vl_node_get_depth(vl_info *vli, ir_node *irn)
 {
 	vl_node *vln = ir_nodemap_get(&vli->nodemap, irn);
 	assert(vln && "No depth information for the given node.");
-	assert(vln->depth >= 0);
 	return vln->depth;
 }
 
 static vl_node *vl_init_node(vl_info *info, const ir_node *irn)
 {
 	vl_node *vln = OALLOCZ(&info->obst, vl_node);
-	vln->depth = -1;
+	vln->depth   = (unsigned)-1;
 
 	ir_nodemap_insert(&info->nodemap, irn, vln);
 
@@ -71,13 +68,13 @@ void vl_node_copy_depth(vl_info *vli, ir_node *src, ir_node *dst)
 	vl_node *vl_src = ir_nodemap_get(&vli->nodemap, src);
 	vl_node *vl_dst;
 
-	if (!vl_src || (vl_src->depth < 0)) return;
+	if (!vl_src || (vl_src->depth == (unsigned)-1)) return;
 
 	vl_dst = ir_nodemap_get(&vli->nodemap, dst);
 	if (vl_dst == NULL) {
 		vl_dst = vl_init_node(vli, dst);
 	}
-	assert(vl_dst->depth < 0);
+	assert(vl_dst->depth == (unsigned)-1);
 	vl_dst->depth = vl_src->depth;
 }
 
@@ -142,8 +139,8 @@ static void vl_compute_depth(vl_info *vli, ir_node *irn, pdeq *todo)
 
 		/* Leave nodes on eta. */
 		if (is_Eta(irn)) {
+			assert(vln->depth > 0);
 			vln->depth--;
-			assert(vln->depth >= 0);
 		}
 	}
 }
@@ -210,7 +207,7 @@ static void vl_dump_walk(vl_info *vli, ir_node *irn, FILE* f)
 	}
 
 	vln = ir_nodemap_get_fast(&vli->nodemap, irn);
-	fprintf(f, "%3ld: %d\n", get_irn_node_nr(irn), vln->depth);
+	fprintf(f, "%3ld: %u\n", get_irn_node_nr(irn), vln->depth);
 }
 
 void vl_dump(vl_info *vli, FILE* f)

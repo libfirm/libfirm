@@ -276,12 +276,11 @@ static void vb_place_nodes(vb_info *vbi, va_info *vai, ir_node *irn)
 }
 
 /* Scan the loop and collect information on the non-NULL arrays. */
-static void vb_scan_area_walk(vb_info *vbi, ir_node *irn, int loop_depth,
+static void vb_scan_area_walk(vb_info *vbi, ir_node *irn, unsigned loop_depth,
                               plist_t *thetas, plist_t *etas, plist_t *invars)
 {
-	int i, depth;
-
-	depth = vl_node_get_depth(vbi->vli, irn);
+	unsigned depth = vl_node_get_depth(vbi->vli, irn);
+	int i;
 
 	/* Invariant nodes cause a stop. */
 	if (depth < loop_depth) {
@@ -323,7 +322,7 @@ static void vb_scan_area_walk(vb_info *vbi, ir_node *irn, int loop_depth,
 static void vb_scan_area(vb_info *vbi, ir_node *root, int reset,
                          plist_t *thetas, plist_t *etas, plist_t *invars)
 {
-	int depth = vl_node_get_depth(vbi->vli, root);
+	unsigned depth = vl_node_get_depth(vbi->vli, root);
 	if (reset) inc_irg_visited(get_irn_irg(root));
 	vb_scan_area_walk(vbi, root, depth, thetas, etas, invars);
 }
@@ -338,7 +337,7 @@ static void vb_scan_loop(vb_info *vbi, ir_node *loop, plist_t *thetas,
 
 	ir_node  *loop_cur, *eta;
 	ir_graph *irg   = get_irn_irg(loop);
-	int       depth = vl_node_get_depth(vbi->vli, loop) + 1;
+	unsigned  depth = vl_node_get_depth(vbi->vli, loop) + 1;
 
 	inc_irg_visited(irg);
 
@@ -350,7 +349,7 @@ static void vb_scan_loop(vb_info *vbi, ir_node *loop, plist_t *thetas,
 }
 
 /* Insert nested and unvisited nodes into the list and visit them. */
-static void vb_insert_visit_nested(vb_info *vbi, int depth, ir_node *irn,
+static void vb_insert_visit_nested(vb_info *vbi, unsigned depth, ir_node *irn,
                                    plist_t *list)
 {
 	if (irn_visited(irn)) return;
@@ -368,7 +367,7 @@ static void vb_get_header_roots(vb_info *vbi, ir_node *loop, plist_t *thetas,
 
 	ir_node  *eta, *loop_cur;
 	ir_graph *irg   = get_irn_irg(loop);
-	int       depth = vl_node_get_depth(vbi->vli, loop) + 1;
+	unsigned  depth = vl_node_get_depth(vbi->vli, loop) + 1;
 
 	inc_irg_visited(irg);
 
@@ -391,7 +390,7 @@ static void vb_get_body_roots(vb_info *vbi, ir_node *loop, plist_t *thetas,
 	plist_element_t *it;
 
 	ir_graph *irg   = get_irn_irg(loop);
-	int       depth = vl_node_get_depth(vbi->vli, loop) + 1;
+	unsigned  depth = vl_node_get_depth(vbi->vli, loop) + 1;
 
 	inc_irg_visited(irg);
 	assert(thetas);
@@ -939,7 +938,7 @@ void vb_build(ir_graph *irg)
 {
 	ir_node *ins[1], *block, *end, *ret;
 	vb_info  vbi;
-	int      depth;
+	unsigned depth;
 
 	/* Construct the first block to use. */
 	ins[0] = get_irg_initial_exec(irg);
@@ -994,7 +993,7 @@ void vb_build(ir_graph *irg)
 		}
 
 #if VB_DEBUG_BUILD
-		printf("Finished processing loops of depth %d.\n", depth);
+		printf("Finished processing loops of depth %u.\n", depth);
 #else
 		(void)depth;
 #endif

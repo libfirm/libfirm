@@ -974,8 +974,8 @@ class Theta(Op):
 	pinned = "no"
 	attrs  = [
 		dict(
-			type = "int",
-			name = "depth",
+			type    = "unsigned",
+			name    = "depth",
 			comment = "nesting depth of the node"
 		)
 	]

@@ -42,7 +42,7 @@ void vl_free(vl_info *vli);
 ir_graph *vl_get_irg(vl_info *vli);
 
 /** Get the loop depth of the given node. */
-int vl_node_get_depth(vl_info *vli, ir_node *irn);
+unsigned vl_node_get_depth(vl_info *vli, ir_node *irn);
 
 /** Copies the loop depth (if available) from src to dst. */
 void vl_node_copy_depth(vl_info *vli, ir_node *src, ir_node *dst);
