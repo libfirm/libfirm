@@ -21,9 +21,10 @@
  * @file
  * @brief   Building Firm graphs from VFirm with arrange information.
  * @author  Olaf Liebe
- * @version $Id: $
  */
 #include "config.h"
+
+#include <stdbool.h>
 
 #include "firm_types.h"
 #include "ircons.h"
@@ -61,7 +62,7 @@ typedef struct vb_info {
 } vb_info;
 
 typedef struct vb_node {
-	char     on_todo;    /* Is the node on the todo list? */
+	bool     on_todo;    /* Is the node on the todo list? */
 	ir_node *loop_copy;  /* The copy that belongs to the last seen loop. */
 	ir_node *loop;       /* The loop that was last seen. */
 	ir_node *link;       /* Links loops with etas and weaks with targets. */
@@ -223,7 +224,7 @@ static void vb_enqueue_loop(vb_info *vbi, ir_node *first_loop)
 
 		/* Insert the node to the list and mark it. */
 		plist_insert_back(vbi->todo, first_loop);
-		vbn->on_todo = 1;
+		vbn->on_todo = true;
 
 		/* Mark all fused loops as being on the todo list, too. */
 		foreach_va_loop_loop(first_loop, loop, it) {
@@ -233,7 +234,7 @@ static void vb_enqueue_loop(vb_info *vbi, ir_node *first_loop)
 			if (vbn == NULL) {
 				vbn = vb_init_node(vbi, loop);
 			}
-			vbn->on_todo = 1;
+			vbn->on_todo = true;
 		}
 	}
 }
