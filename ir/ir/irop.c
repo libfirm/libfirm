@@ -30,6 +30,7 @@
 #include "irnode_t.h"
 #include "irhooks.h"
 #include "irbackedge_t.h"
+#include "irnodehashmap.h"
 
 #include "iropt_t.h"
 #include "irverify_t.h"
@@ -124,6 +125,49 @@ static void switch_copy_attr(ir_graph *irg, const ir_node *old_node,
 	new_node->attr.switcha.n_outs = old_node->attr.switcha.n_outs;
 }
 
+static ir_node *duplicate_loop_node(ir_node *node, ir_nodehashmap_t *hashmap)
+{
+	ir_node *new = ir_nodehashmap_get(hashmap, node);
+	if (new == NULL) {
+		int arity = get_irn_arity(node);
+		int i;
+		new = vl_exact_copy(node);
+		ir_nodehashmap_insert(hashmap, node, new);
+
+		for (i = 0; i < arity; ++i) {
+			ir_node *pred     = get_irn_n(node, i);
+			ir_node *new_pred = duplicate_loop_node(pred, hashmap);
+			set_irn_n(new, i, new_pred);
+		}
+	}
+	return new;
+}
+
+static void loop_copy_attr(ir_graph *irg, const ir_node *old_node,
+                           ir_node *new_node)
+{
+	(void)irg;
+	ir_nodehashmap_t hashmap;
+	ir_node         *new_eta;
+	int              arity = get_irn_arity(old_node);
+	int              i;
+
+	/* initialize next-pointer of new loop (don't copy the old one) */
+	set_Loop_next(new_node, new_node);
+
+	ir_nodehashmap_init(&hashmap);
+
+	for (i = 0; i < arity; ++i) {
+		ir_node *in = get_irn_n(old_node, i);
+		ir_nodehashmap_insert(&hashmap, in, in);
+	}
+
+	new_eta = duplicate_loop_node(get_Loop_eta(old_node), &hashmap);
+	set_Loop_eta(new_node, new_eta);
+
+	ir_nodehashmap_destroy(&hashmap);
+}
+
 /**
  * Sets the default copy_attr operation for an ir_ops
  *
@@ -141,6 +185,7 @@ static void firm_set_default_copy_attr(unsigned code, ir_op_ops *ops)
 	case iro_Phi:    ops->copy_attr = phi_copy_attr;    break;
 	case iro_ASM:    ops->copy_attr = ASM_copy_attr;    break;
 	case iro_Switch: ops->copy_attr = switch_copy_attr; break;
+	case iro_Loop:   ops->copy_attr = loop_copy_attr;   break;
 	default:
 		if (ops->copy_attr == NULL)
 			ops->copy_attr = default_copy_attr;
