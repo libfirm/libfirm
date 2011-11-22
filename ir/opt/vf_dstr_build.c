@@ -59,6 +59,7 @@ typedef struct vb_info {
 	ir_node    *old_block; /* The block that hosts the VFirm graph. */
 	plist_t    *todo;      /* Remaining loop subgraphs to process. */
 	ir_nodemap  nodemap;
+	ir_node   **etas;
 } vb_info;
 
 typedef struct vb_node {
@@ -278,14 +279,15 @@ static void vb_place_nodes(vb_info *vbi, va_info *vai, ir_node *irn)
 
 /* Scan the loop and collect information on the non-NULL arrays. */
 static void vb_scan_area_walk(vb_info *vbi, ir_node *irn, unsigned loop_depth,
-                              plist_t *thetas, plist_t *etas, plist_t *invars)
+                              plist_t *thetas, plist_t *etas, ir_node ***invars)
 {
 	unsigned depth = vl_node_get_depth(vbi->vli, irn);
 	int i;
 
 	/* Invariant nodes cause a stop. */
 	if (depth < loop_depth) {
-		if (invars) plist_insert_back(invars, irn);
+		if (invars)
+			ARR_APP1(ir_node*, *invars, irn);
 		return;
 	}
 
@@ -321,7 +323,7 @@ static void vb_scan_area_walk(vb_info *vbi, ir_node *irn, unsigned loop_depth,
  * to begin a new scan, don't set reset, if further nodes shall be added to the
  * current scan. */
 static void vb_scan_area(vb_info *vbi, ir_node *root, int reset,
-                         plist_t *thetas, plist_t *etas, plist_t *invars)
+                         plist_t *thetas, plist_t *etas, ir_node ***invars)
 {
 	unsigned depth = vl_node_get_depth(vbi->vli, root);
 	if (reset) inc_irg_visited(get_irn_irg(root));
@@ -332,7 +334,7 @@ static void vb_scan_area(vb_info *vbi, ir_node *root, int reset,
  * list of fused loops. There are a lot of nodes that can be selected, but we
  * usually only need a part of them and most often clear space after that. */
 static void vb_scan_loop(vb_info *vbi, ir_node *loop, plist_t *thetas,
-                         plist_t *etas, plist_t *invars)
+                         plist_t *etas, ir_node ***invars)
 {
 	va_loop_loop_it it;
 
@@ -422,43 +424,36 @@ static ir_node *vb_get_link(vb_info *vbi, ir_node *irn)
 /* Detach all the etas in the given list. This is quite expensive, but we
  * should only do it once for any eta node in the graph and then again for
  * the copie we create out of it. */
-static void vb_detach_etas(vb_info *vbi, plist_t *etas)
+static void vb_detach_etas(vb_info *vbi)
 {
-	plist_element_t *it, *it_invar;
+	size_t n_etas = ARR_LEN(vbi->etas);
+	size_t i;
 
-	foreach_plist(etas, it) {
-		ir_node   *eta = plist_element_get_value(it);
-		plist_t   *invars;
-		ir_node  **ins, *block, *loop;
-		ir_mode   *mode;
-		int        count, offset;
+	for (i = 0; i < n_etas; ++i) {
+		ir_node  *eta    = vbi->etas[i];
+		ir_node **invars = NEW_ARR_F(ir_node*, 0);
+		ir_node  *block;
+		ir_node  *loop;
+		ir_mode  *mode;
+		size_t    count;
 
 		/* Collect the invariant nodes for the given eta. */
-		invars = plist_obstack_new(&vbi->temp_obst);
-		vb_scan_area(vbi, get_Eta_cond(eta),  1, NULL, NULL, invars);
-		vb_scan_area(vbi, get_Eta_value(eta), 0, NULL, NULL, invars);
+		vb_scan_area(vbi, get_Eta_cond(eta),  1, NULL, NULL, &invars);
+		vb_scan_area(vbi, get_Eta_value(eta), 0, NULL, NULL, &invars);
 
 		/* Create a loop node to detach the eta. */
-		count = plist_count(invars);
-		ins   = OALLOCN(&vbi->temp_obst, ir_node*, count);
+		count = ARR_LEN(invars);
 		block = get_nodes_block(eta);
 		mode  = get_irn_mode(eta);
 
-		offset = 0;
-		foreach_plist(invars, it_invar) {
-			ir_node *invar = plist_element_get_value(it_invar);
-			ins[offset++] = invar;
-		}
-
-		loop = new_r_Loop(block, count, ins, mode, eta, NULL);
+		loop = new_r_Loop(block, count, invars, mode, eta, NULL);
 		set_Loop_next(loop, loop);
 		vl_node_copy_depth(vbi->vli, eta, loop);
 
 		/* Reroute edges to the new loop. */
 		edges_reroute(eta, loop);
 
-		plist_free(invars);
-		obstack_free(&vbi->temp_obst, invars);
+		DEL_ARR_F(invars);
 
 		/* Link the nodes. */
 		vb_set_link(vbi, eta, loop);
@@ -512,34 +507,24 @@ static void vb_detach_theta_nexts(vb_info *vbi, plist_t *thetas)
 	}
 }
 
-static void vb_collect_all_etas(ir_node *irn, plist_t *etas)
+static void collect_etas(ir_node *irn, void *data)
 {
-	int i;
-
-	if (irn_visited(irn)) return;
-	mark_irn_visited(irn);
-
+	vb_info *vbi = (vb_info*)data;
 	if (is_Eta(irn)) {
-		plist_insert_back(etas, irn);
-	}
-
-	for (i = 0; i < get_irn_arity(irn); i++) {
-		ir_node *ir_dep = get_irn_n(irn, i);
-		vb_collect_all_etas(ir_dep, etas);
+		ARR_APP1(ir_node*, vbi->etas, irn);
 	}
 }
 
 static void vb_detach_all_etas(vb_info *vbi, ir_node *root)
 {
+	ir_graph *irg = get_irn_irg(root);
 	/* Can't use the obstack, vb_detach_etas allocates there (the link). */
-	plist_t *etas = plist_obstack_new(&vbi->temp_obst);
+	vbi->etas = NEW_ARR_F(ir_node*, 0);
 
-	inc_irg_visited(get_irn_irg(root));
-	vb_collect_all_etas(root, etas);
-	vb_detach_etas(vbi, etas);
+	irg_walk_graph(irg, collect_etas, NULL, vbi);
+	vb_detach_etas(vbi);
 
-	plist_free(etas);
-	obstack_free(&vbi->temp_obst, etas);
+	DEL_ARR_F(vbi->etas);
 }
 
 /* For all theta nodes in the list, which have a weakened theta, attach the
