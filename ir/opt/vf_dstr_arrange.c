@@ -95,7 +95,6 @@ struct va_info {
 	int         counter;
 	int         copy_count;
 	ir_node    *block;
-	vl_info    *vli;
 };
 
 static int va_skip_node(va_info *vai, ir_node *irn)
@@ -595,6 +594,9 @@ static void va_region_place_single(va_info *vai, va_node *van,
 
 	if (is_Loop(irn)) {
 		va_region_add_loop(vai, region, irn);
+		/* Loops force a region change, so that the loop blocks can later be
+		 * inserted between the blocks of both regions. */
+		region = va_region_ensure_pred(vai, region);
 	}
 
 	/* If the node is a gamma node, the request region may change. */
@@ -632,15 +634,10 @@ static void va_region_place_single(va_info *vai, va_node *van,
 		va_region_hint(vai, rg_false, va_edge_make(irn, 1));
 	} else {
 		int i;
-
-		/* Loops force a region change, so that the loop blocks can later be
-		 * inserted between the blocks of both regions. */
-		if (is_Loop(irn)) {
-			region = va_region_ensure_pred(vai, region);
-		}
+		int arity = get_irn_arity(irn);
 
 		/* For usual nodes just pull deps to the current region. */
-		for (i = 0; i < get_irn_arity(irn); i++) {
+		for (i = 0; i < arity; i++) {
 			va_region_hint(vai, region, va_edge_make(irn, i));
 		}
 	}
@@ -665,7 +662,7 @@ static void va_region_place_multiple(va_info *vai, va_node *van)
 		if (it == plist_first(van->hints)) {
 			va_copy = van;
 		} else {
-			ir_copy = vl_exact_copy(vai->vli, van->irn);
+			ir_copy = vl_exact_copy(van->irn);
 			va_copy = ir_nodemap_get(&vai->nodemap, ir_copy);
 			if (va_copy == NULL) {
 				va_copy = va_init_node(vai, ir_copy);
@@ -771,7 +768,7 @@ static void va_region_hint(va_info *vai, va_region *region, va_edge edge)
 	van->last_hint = NULL;
 }
 
-va_info *va_init_root(vl_info *vli, ir_node *root, int keep_block)
+va_info *va_init_root(ir_node *root, int keep_block)
 {
 	va_info  *vai = XMALLOC(va_info);
 	ir_graph *irg = get_irn_irg(root);
@@ -781,7 +778,6 @@ va_info *va_init_root(vl_info *vli, ir_node *root, int keep_block)
 
 	ir_nodemap_init(&vai->nodemap, irg);
 
-	vai->vli        = vli;
 	vai->counter    = 0;
 	vai->copy_count = 0;
 	vai->root       = va_region_new_root(vai);

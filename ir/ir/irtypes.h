@@ -45,6 +45,9 @@
 #include "list.h"
 #include "obst.h"
 #include "vrp.h"
+#include "vf_depth.h"
+
+typedef struct vl_info vl_info;
 
 struct ir_nodemap {
 	void **data;  /**< maps node indices to void* */
@@ -599,6 +602,7 @@ struct ir_graph {
 	unsigned estimated_node_count;     /**< estimated number of nodes in this graph,
 	                                        updated after every walk */
 	irg_edges_info_t edge_info;        /**< edge info for automatic outs */
+	vl_info  *vli;                     /**< vfirm loop depth analysis info */
 	ir_node **idx_irn_map;             /**< Array mapping node indexes to nodes. */
 
 	size_t index;                      /**< a unique number for each graph */

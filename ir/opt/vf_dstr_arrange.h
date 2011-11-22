@@ -48,7 +48,7 @@ typedef struct va_region_child_it {
  * restricted to the root nodes block. The loop depth info can be provided and
  * will be used, to keep depth information up-to-date.
  */
-va_info *va_init_root(vl_info *vli, ir_node *root, int keep_block);
+va_info *va_init_root(ir_node *root, int keep_block);
 
 /** Free the arrangement information. */
 void va_free(va_info *vai);

@@ -51,7 +51,7 @@
 typedef struct obstack obstack;
 
 typedef struct vb_info {
-	vl_info    *vli;
+	ir_graph   *irg;
 	obstack     obst;      /* For long-time allocations. */
 	obstack     temp_obst; /* For temporary allocations inside functions. */
 	pmap_new_t  blocks;
@@ -281,7 +281,7 @@ static void vb_place_nodes(vb_info *vbi, va_info *vai, ir_node *irn)
 static void vb_scan_area_walk(vb_info *vbi, ir_node *irn, unsigned loop_depth,
                               plist_t *thetas, plist_t *etas, ir_node ***invars)
 {
-	unsigned depth = vl_node_get_depth(vbi->vli, irn);
+	unsigned depth = vl_node_get_depth(irn);
 	int i;
 
 	/* Invariant nodes cause a stop. */
@@ -325,7 +325,7 @@ static void vb_scan_area_walk(vb_info *vbi, ir_node *irn, unsigned loop_depth,
 static void vb_scan_area(vb_info *vbi, ir_node *root, int reset,
                          plist_t *thetas, plist_t *etas, ir_node ***invars)
 {
-	unsigned depth = vl_node_get_depth(vbi->vli, root);
+	unsigned depth = vl_node_get_depth(root);
 	if (reset) inc_irg_visited(get_irn_irg(root));
 	vb_scan_area_walk(vbi, root, depth, thetas, etas, invars);
 }
@@ -340,7 +340,7 @@ static void vb_scan_loop(vb_info *vbi, ir_node *loop, plist_t *thetas,
 
 	ir_node  *loop_cur, *eta;
 	ir_graph *irg   = get_irn_irg(loop);
-	unsigned  depth = vl_node_get_depth(vbi->vli, loop) + 1;
+	unsigned  depth = vl_node_get_depth(loop) + 1;
 
 	inc_irg_visited(irg);
 
@@ -355,8 +355,9 @@ static void vb_scan_loop(vb_info *vbi, ir_node *loop, plist_t *thetas,
 static void vb_insert_visit_nested(vb_info *vbi, unsigned depth, ir_node *irn,
                                    plist_t *list)
 {
+	(void)vbi;
 	if (irn_visited(irn)) return;
-	if (vl_node_get_depth(vbi->vli, irn) < depth) return;
+	if (vl_node_get_depth(irn) < depth) return;
 
 	plist_insert_back(list, irn);
 	mark_irn_visited(irn);
@@ -370,7 +371,7 @@ static void vb_get_header_roots(vb_info *vbi, ir_node *loop, plist_t *thetas,
 
 	ir_node  *eta, *loop_cur;
 	ir_graph *irg   = get_irn_irg(loop);
-	unsigned  depth = vl_node_get_depth(vbi->vli, loop) + 1;
+	unsigned  depth = vl_node_get_depth(loop) + 1;
 
 	inc_irg_visited(irg);
 
@@ -393,7 +394,7 @@ static void vb_get_body_roots(vb_info *vbi, ir_node *loop, plist_t *thetas,
 	plist_element_t *it;
 
 	ir_graph *irg   = get_irn_irg(loop);
-	unsigned  depth = vl_node_get_depth(vbi->vli, loop) + 1;
+	unsigned  depth = vl_node_get_depth(loop) + 1;
 
 	inc_irg_visited(irg);
 	assert(thetas);
@@ -448,7 +449,7 @@ static void vb_detach_etas(vb_info *vbi)
 
 		loop = new_r_Loop(block, count, invars, mode, eta, NULL);
 		set_Loop_next(loop, loop);
-		vl_node_copy_depth(vbi->vli, eta, loop);
+		vl_node_copy_depth(eta, loop);
 
 		/* Reroute edges to the new loop. */
 		edges_reroute(eta, loop);
@@ -556,7 +557,7 @@ static ir_node *vb_build_base(vb_info *vbi, ir_node *root, ir_node *pred)
 
 	/* Arrange the VFirm graph below root in loop-less regions. */
 	assert(get_nodes_block(root) == vbi->old_block);
-	vai = va_init_root(vbi->vli, root, 1);
+	vai = va_init_root(root, 1);
 
 	/* Build the block structure for the partial graph and process nodes. */
 	last = vb_build_lane(vbi, vai, va_get_root_region(vai), pred);
@@ -723,7 +724,7 @@ static void vb_build_loop(vb_info *vbi, ir_node *first_loop)
 	 * Start by initiating arrangment and selecting the proper regions.
 	 */
 
-	vai = va_init_root(vbi->vli, root, 1);
+	vai = va_init_root(root, 1);
 
 	/* Find the regions of the loop header and body. */
 	root_region = va_get_root_region(vai);
@@ -817,7 +818,7 @@ static ir_node *vb_clone_dep(vb_info *vbi, ir_node *ir_dep, ir_node *loop)
 
 	} else if (vb_dep->loop != loop) {
 		/* The node belongs to another loop. Clone it. */
-		ir_node *clone = vl_exact_copy(vbi->vli, ir_dep);
+		ir_node *clone = vl_exact_copy(ir_dep);
 
 #if VB_DEBUG_BUILD
 		printf("Cloning node %ld (now %ld) for loop %ld.\n",
@@ -888,8 +889,7 @@ static void vb_clone_loop(vb_info *vbi, ir_node *first_loop)
 
 static void vb_ungate_walk(ir_node *irn, void *ctx)
 {
-	vb_info *vbi = ctx;
-
+	(void)ctx;
 	if (is_Gamma(irn) || is_Theta(irn)) {
 		ir_node *ins[2], *phi;
 		ir_mode *mode  = get_irn_mode(irn);
@@ -906,14 +906,13 @@ static void vb_ungate_walk(ir_node *irn, void *ctx)
 		}
 
 		phi = new_r_Phi(block, 2, ins, mode);
-		vl_exchange(vbi->vli, irn, phi);
+		vl_exchange(irn, phi);
 	}
 }
 
 static void vb_ungate(vb_info *vbi)
 {
-	ir_graph *irg = vl_get_irg(vbi->vli);
-	irg_walk_graph(irg, NULL, vb_ungate_walk, vbi);
+	irg_walk_graph(vbi->irg, NULL, vb_ungate_walk, vbi);
 }
 
 /* TODO: 1. Clone keeps loop depth.
@@ -935,8 +934,9 @@ void vb_build(ir_graph *irg)
 	ret = get_Block_cfgpred(end, 0);
 	assert(is_Return(ret) && "Invalid VFirm graph.");
 
-	vbi.vli = vl_init(irg);
+	vbi.irg = irg;
 	vbi.old_block = get_nodes_block(ret);
+	vl_init(irg);
 
 	obstack_init(&vbi.obst);
 	obstack_init(&vbi.temp_obst);
@@ -994,7 +994,7 @@ void vb_build(ir_graph *irg)
 
 	ir_nodemap_destroy(&vbi.nodemap);
 	plist_free(vbi.todo);
-	vl_free(vbi.vli);
+	vl_free(irg);
 
 	obstack_free(&vbi.temp_obst, NULL);
 	obstack_free(&vbi.obst, NULL);

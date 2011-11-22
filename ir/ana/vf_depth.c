@@ -36,19 +36,20 @@
 
 #define VLD_DEBUG_DEPTHS 0
 
-typedef struct vl_node {
-	unsigned depth;
-} vl_node;
-
 struct vl_info {
 	struct obstack obst;
 	ir_graph      *irg;
 	ir_nodemap     nodemap;
 };
 
-unsigned vl_node_get_depth(vl_info *vli, ir_node *irn)
+typedef struct vl_node {
+	unsigned depth;
+} vl_node;
+
+unsigned vl_node_get_depth(const ir_node *irn)
 {
-	vl_node *vln = ir_nodemap_get(&vli->nodemap, irn);
+	ir_graph *irg = get_irn_irg(irn);
+	vl_node  *vln = ir_nodemap_get(&irg->vli->nodemap, irn);
 	assert(vln && "No depth information for the given node.");
 	return vln->depth;
 }
@@ -63,8 +64,11 @@ static vl_node *vl_init_node(vl_info *info, const ir_node *irn)
 	return vln;
 }
 
-void vl_node_copy_depth(vl_info *vli, ir_node *src, ir_node *dst)
+void vl_node_copy_depth(ir_node *src, ir_node *dst)
 {
+	ir_graph *irg = get_irn_irg(src);
+	vl_info  *vli = irg->vli;
+
 	vl_node *vl_src = ir_nodemap_get(&vli->nodemap, src);
 	vl_node *vl_dst;
 
@@ -78,16 +82,20 @@ void vl_node_copy_depth(vl_info *vli, ir_node *src, ir_node *dst)
 	vl_dst->depth = vl_src->depth;
 }
 
-ir_node *vl_exact_copy(vl_info *vli, ir_node *irn)
+ir_node *vl_exact_copy(ir_node *irn)
 {
+	ir_graph *irg = get_irn_irg(irn);
+	vl_info  *vli = irg->vli;
 	ir_node *copy = exact_copy(irn);
-	if (vli) vl_node_copy_depth(vli, irn, copy);
+	if (vli) vl_node_copy_depth(irn, copy);
 	return copy;
 }
 
-void vl_exchange(vl_info *vli, ir_node *ir_old, ir_node *ir_new)
+void vl_exchange(ir_node *ir_old, ir_node *ir_new)
 {
-	if (vli) vl_node_copy_depth(vli, ir_old, ir_new);
+	ir_graph *irg = get_irn_irg(ir_old);
+	vl_info  *vli = irg->vli;
+	if (vli) vl_node_copy_depth(ir_old, ir_new);
 	exchange(ir_old, ir_new);
 }
 
@@ -145,7 +153,7 @@ static void vl_compute_depth(vl_info *vli, ir_node *irn, pdeq *todo)
 	}
 }
 
-vl_info *vl_init(ir_graph *irg)
+void vl_init(ir_graph *irg)
 {
 	pdeq *todo;
 	ir_node *end = get_irg_end_block(irg);
@@ -177,19 +185,16 @@ vl_info *vl_init(ir_graph *irg)
 	vl_dump(vli, stdout);
 #endif
 
-	return vli;
+	irg->vli = vli;
 }
 
-void vl_free(vl_info *vli)
+void vl_free(ir_graph *irg)
 {
+	vl_info *vli = irg->vli;
 	ir_nodemap_destroy(&vli->nodemap);
 	obstack_free(&vli->obst, NULL);
 	xfree(vli);
-}
-
-ir_graph *vl_get_irg(vl_info *vli)
-{
-	return vli->irg;
+	irg->vli = NULL;
 }
 
 static void vl_dump_walk(vl_info *vli, ir_node *irn, FILE* f)
@@ -210,9 +215,9 @@ static void vl_dump_walk(vl_info *vli, ir_node *irn, FILE* f)
 	fprintf(f, "%3ld: %u\n", get_irn_node_nr(irn), vln->depth);
 }
 
-void vl_dump(vl_info *vli, FILE* f)
+void vl_dump(ir_graph *irg, FILE* f)
 {
-	ir_graph *irg = vli->irg;
+	vl_info  *vli = irg->vli;
 	ir_node  *end = get_irg_end_block(irg);
 	ir_node  *ret = get_Block_cfgpred(end, 0);
 	assert(ret);

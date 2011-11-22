@@ -30,30 +30,25 @@
 #include <stdio.h>
 #include "firm_types.h"
 
-typedef struct vl_info vl_info;
-
 /** Compute the loop depth information for the given irg. */
-vl_info *vl_init(ir_graph *irg);
+void vl_init(ir_graph *irg);
 
 /** Free the loop depth information for the given tree. */
-void vl_free(vl_info *vli);
-
-/** Get the associated graph. */
-ir_graph *vl_get_irg(vl_info *vli);
+void vl_free(ir_graph *irg);
 
 /** Get the loop depth of the given node. */
-unsigned vl_node_get_depth(vl_info *vli, ir_node *irn);
+unsigned vl_node_get_depth(const ir_node *irn);
 
 /** Copies the loop depth (if available) from src to dst. */
-void vl_node_copy_depth(vl_info *vli, ir_node *src, ir_node *dst);
+void vl_node_copy_depth(ir_node *src, ir_node *dst);
 
 /** Helper for exact_copy that also transfers the depth info. */
-ir_node *vl_exact_copy(vl_info *vli, ir_node *irn);
+ir_node *vl_exact_copy(ir_node *irn);
 
 /** Helper for exchange that also transfers the depth info. */
-void vl_exchange(vl_info *vli, ir_node *ir_old, ir_node *ir_new);
+void vl_exchange(ir_node *ir_old, ir_node *ir_new);
 
 /** Dumps loop depth analysis debug information to the specified file. */
-void vl_dump(vl_info *vli, FILE* f);
+void vl_dump(ir_graph *irg, FILE* f);
 
 #endif
