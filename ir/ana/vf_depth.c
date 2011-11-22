@@ -28,7 +28,7 @@
 
 #include "vf_depth.h"
 #include "irnodemap.h"
-#include "plist.h"
+#include "pdeq.h"
 #include "obstack.h"
 #include "irtools.h"
 #include "irgmod.h"
@@ -94,7 +94,7 @@ void vl_exchange(vl_info *vli, ir_node *ir_old, ir_node *ir_new)
 	exchange(ir_old, ir_new);
 }
 
-static void vl_compute_depth(vl_info *vli, ir_node *irn, plist_t *todo)
+static void vl_compute_depth(vl_info *vli, ir_node *irn, pdeq *todo)
 {
 	int i;
 	vl_node *vln;
@@ -108,7 +108,7 @@ static void vl_compute_depth(vl_info *vli, ir_node *irn, plist_t *todo)
 		 * later processing, so that post-order processing can finish first.
 		 * The depth of the theta itself is known after all. */
 		vl_compute_depth(vli, get_Theta_init(irn), todo);
-		plist_insert_back(todo, get_Theta_next(irn));
+		pdeq_putr(todo, get_Theta_next(irn));
 
 		/* Use the known theta depth. */
 		vln = ir_nodemap_get(&vli->nodemap, irn);
@@ -150,7 +150,7 @@ static void vl_compute_depth(vl_info *vli, ir_node *irn, plist_t *todo)
 
 vl_info *vl_init(ir_graph *irg)
 {
-	plist_t *todo;
+	pdeq *todo;
 	ir_node *end = get_irg_end_block(irg);
 	ir_node *ret = get_Block_cfgpred(end, 0);
 	vl_info *vli = XMALLOC(vl_info);
@@ -164,13 +164,12 @@ vl_info *vl_init(ir_graph *irg)
 	 * On every theta node, analysis stops and the fragment on the thetas
 	 * next dependency is added to the queue for later processing. */
 
-	todo = plist_obstack_new(&vli->obst);
-	plist_insert_back(todo, ret);
+	todo = new_pdeq();
+	pdeq_putr(todo, ret);
 	inc_irg_visited(irg); /* Only reset once. */
 
-	while (plist_count(todo) > 0) {
-		ir_node *next = plist_first(todo)->data;
-		plist_erase(todo, plist_first(todo));
+	while (!pdeq_empty(todo)) {
+		ir_node *next = pdeq_getl(todo);
 		vl_compute_depth(vli, next, todo);
 	}
 
