@@ -206,6 +206,10 @@ EOF
 
 		$regdef  .= "\tREG_${ucname},\n";
 		$regdef2 .= "\tREG_${classuc}_${ucname} = $idx,\n";
+		my $dwarf_number = 0;
+		if (defined($_->{dwarf})) {
+			$dwarf_number = $_->{dwarf};
+		}
 
 		$regtypes_def .= <<EOF;
 	{
@@ -214,7 +218,8 @@ EOF
 		REG_${classuc}_${ucname},
 		REG_${ucname},
 		${type},
-		&${arch}_single_reg_req_${old_classname}_${name}
+		&${arch}_single_reg_req_${old_classname}_${name},
+		${dwarf_number}
 	},
 EOF
 

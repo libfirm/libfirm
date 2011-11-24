@@ -18,37 +18,37 @@ $state       =  8; # register represents a state
 # NOTE: Last entry of each class is the largest Firm-Mode a register can hold
 %reg_classes = (
 	gp => [
-		{ name => "edx" },
-		{ name => "ecx" },
-		{ name => "eax" },
-		{ name => "ebx" },
-		{ name => "esi" },
-		{ name => "edi" },
-		{ name => "ebp" },
-		{ name => "esp", type => $ignore },
+		{ name => "edx", dwarf => 2 },
+		{ name => "ecx", dwarf => 1 },
+		{ name => "eax", dwarf => 0 },
+		{ name => "ebx", dwarf => 3 },
+		{ name => "esi", dwarf => 6 },
+		{ name => "edi", dwarf => 7 },
+		{ name => "ebp", dwarf => 5 },
+		{ name => "esp", dwarf => 4, type => $ignore },
 		{ name => "gp_NOREG", type => $ignore | $arbitrary | $virtual }, # we need a dummy register for NoReg nodes
 		{ mode => $mode_gp }
 	],
 	mmx => [
-		{ name => "mm0", type => $ignore },
-		{ name => "mm1", type => $ignore },
-		{ name => "mm2", type => $ignore },
-		{ name => "mm3", type => $ignore },
-		{ name => "mm4", type => $ignore },
-		{ name => "mm5", type => $ignore },
-		{ name => "mm6", type => $ignore },
-		{ name => "mm7", type => $ignore },
+		{ name => "mm0", dwarf => 29, type => $ignore },
+		{ name => "mm1", dwarf => 30, type => $ignore },
+		{ name => "mm2", dwarf => 31, type => $ignore },
+		{ name => "mm3", dwarf => 32, type => $ignore },
+		{ name => "mm4", dwarf => 33, type => $ignore },
+		{ name => "mm5", dwarf => 34, type => $ignore },
+		{ name => "mm6", dwarf => 35, type => $ignore },
+		{ name => "mm7", dwarf => 36, type => $ignore },
 		{ mode => $mode_mmx, flags => "manual_ra" }
 	],
 	xmm => [
-		{ name => "xmm0" },
-		{ name => "xmm1" },
-		{ name => "xmm2" },
-		{ name => "xmm3" },
-		{ name => "xmm4" },
-		{ name => "xmm5" },
-		{ name => "xmm6" },
-		{ name => "xmm7" },
+		{ name => "xmm0", dwarf => 21 },
+		{ name => "xmm1", dwarf => 22 },
+		{ name => "xmm2", dwarf => 23 },
+		{ name => "xmm3", dwarf => 24 },
+		{ name => "xmm4", dwarf => 25 },
+		{ name => "xmm5", dwarf => 26 },
+		{ name => "xmm6", dwarf => 27 },
+		{ name => "xmm7", dwarf => 28 },
 		{ name => "xmm_NOREG", type => $ignore | $virtual },     # we need a dummy register for NoReg nodes
 		{ mode => $mode_xmm }
 	],
@@ -65,22 +65,22 @@ $state       =  8; # register represents a state
 		{ mode => $mode_fp87 }
 	],
 	st => [
-		{ name => "st0", realname => "st",    type => $ignore },
-		{ name => "st1", realname => "st(1)", type => $ignore },
-		{ name => "st2", realname => "st(2)", type => $ignore },
-		{ name => "st3", realname => "st(3)", type => $ignore },
-		{ name => "st4", realname => "st(4)", type => $ignore },
-		{ name => "st5", realname => "st(5)", type => $ignore },
-		{ name => "st6", realname => "st(6)", type => $ignore },
-		{ name => "st7", realname => "st(7)", type => $ignore },
+		{ name => "st0", realname => "st",    dwarf => 11, type => $ignore },
+		{ name => "st1", realname => "st(1)", dwarf => 12, type => $ignore },
+		{ name => "st2", realname => "st(2)", dwarf => 13, type => $ignore },
+		{ name => "st3", realname => "st(3)", dwarf => 14, type => $ignore },
+		{ name => "st4", realname => "st(4)", dwarf => 15, type => $ignore },
+		{ name => "st5", realname => "st(5)", dwarf => 16, type => $ignore },
+		{ name => "st6", realname => "st(6)", dwarf => 17, type => $ignore },
+		{ name => "st7", realname => "st(7)", dwarf => 18, type => $ignore },
 		{ mode => $mode_fp87, flags => "manual_ra" }
 	],
 	fp_cw => [	# the floating point control word
-		{ name => "fpcw", type => $ignore | $state },
+		{ name => "fpcw", dwarf => 37, type => $ignore | $state },
 		{ mode => $mode_fpcw, flags => "manual_ra|state" }
 	],
 	flags => [
-		{ name => "eflags", type => 0 },
+		{ name => "eflags", dwarf => 9, type => 0 },
 		{ mode => "mode_Iu", flags => "manual_ra" }
 	],
 ); # %reg_classes

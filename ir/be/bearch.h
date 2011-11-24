@@ -230,11 +230,13 @@ struct arch_register_t {
 	const arch_register_class_t *reg_class;    /**< The class of the register */
 	unsigned short               index;        /**< The index of the register in
 	                                                the class. */
-	unsigned short               global_index; /** The global index this register
-											       in the architecture. */
+	unsigned short               global_index; /**< The global index this
+												    register in the architecture. */
 	arch_register_type_t         type;         /**< The type of the register. */
 	/** register constraint allowing just this register */
 	const arch_register_req_t   *single_req;
+	/** register number in dwarf debugging format */
+	unsigned short               dwarf_number;
 };
 
 static inline const arch_register_class_t *arch_register_get_class(
