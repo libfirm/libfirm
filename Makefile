@@ -151,10 +151,7 @@ $(IR_SPEC_GENERATED_FILES): $(IR_SPEC_GENERATOR) $(IR_SPEC) scripts/spec_util.py
 	$(Q)$(IR_SPEC_GENERATOR) $(IR_SPEC) ir/ir
 
 IR_IO_GENERATOR := scripts/gen_ir_io.py
-IR_IO_GENERATED_FILES := \
-	ir/ir/gen_irio_import.inl \
-	ir/ir/gen_irio_export.inl \
-	ir/ir/gen_irio_lex.inl
+IR_IO_GENERATED_FILES := ir/ir/gen_irio.inl
 
 $(IR_IO_GENERATED_FILES): $(IR_IO_GENERATOR) $(IR_SPEC) scripts/spec_util.py
 	@echo GEN $@
