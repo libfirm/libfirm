@@ -602,6 +602,24 @@ static void split_chain_into_copies(ir_node *irn, const perm_move_t *move, reg_p
 	}
 }
 
+static void create_stat_events(ir_node *perm)
+{
+	bool needs_restore = false;
+	ir_node *succ;
+
+	if (!be_is_Perm(perm))
+		return;
+
+	succ = sched_next(perm);
+	if (succ == NULL)
+		return;
+
+	needs_restore = be_is_Copy(succ);
+
+	DBG((dbg_icore, LEVEL_1, "perm = %+F needs_restore = %d\n", perm, needs_restore));
+	stat_ev_int("needs_restore", needs_restore);
+}
+
 /**
  * Lowers a perm node.  Resolves cycles and creates a bunch of
  * copy and swap operations to permute registers.
@@ -633,6 +651,9 @@ static void lower_perm_node(ir_node *irn)
 	/* Build the list of register pairs (in, out) */
 	build_register_pair_list(pairs, &n_pairs, irn);
 	DBG((dbg_icore, LEVEL_1, "%+F has %d unresolved constraints\n", irn, n_pairs));
+
+	if (n_pairs > 0)
+		create_stat_events(irn);
 
 	/* Collect all cycles and chains */
 	while (get_n_unchecked_pairs(pairs, n_pairs) > 0) {
@@ -709,7 +730,7 @@ void icore_lower_nodes_after_ra(ir_graph *irg)
 	/* we will need interference */
 	be_liveness_assure_chk(be_get_irg_liveness(irg));
 
-	/* dump_ir_graph(irg, "before_icore_lowering"); */
+//	dump_ir_graph(irg, "before_icore_lowering");
 	irg_walk_graph(irg, NULL, lower_nodes_after_ra_walker, NULL);
-	/* dump_ir_graph(irg, "after_icore_lowering"); */
+//	dump_ir_graph(irg, "after_icore_lowering");
 }
