@@ -1247,7 +1247,7 @@ static void sparc_emit_node(const ir_node *node)
 
 	if (op->ops.generic) {
 		emit_func func = (emit_func) op->ops.generic;
-		be_dbg_set_dbg_info(get_irn_dbg_info(node));
+		be_dbg_location(get_irn_dbg_info(node));
 		(*func) (node);
 	} else {
 		panic("No emit handler for node %+F (graph %+F)\n", node,

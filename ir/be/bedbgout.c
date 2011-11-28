@@ -73,10 +73,10 @@ void be_dbg_variable(const ir_entity *ent)
 		handle->ops->variable(handle, ent);
 }
 
-void be_dbg_set_dbg_info(dbg_info *dbgi)
+void be_dbg_location(dbg_info *dbgi)
 {
-	if (handle->ops->set_dbg_info)
-		handle->ops->set_dbg_info(handle, dbgi);
+	if (handle->ops->location)
+		handle->ops->location(handle, dbgi);
 }
 
 static be_module_list_entry_t       *dbgout_modules         = NULL;

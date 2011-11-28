@@ -69,7 +69,6 @@
 #include "beemitter.h"
 #include "begnuas.h"
 #include "beirg.h"
-#include "be_dbgout.h"
 
 #include "ia32_emitter.h"
 #include "ia32_common_transform.h"
@@ -1654,7 +1653,7 @@ static void ia32_emit_node(ir_node *node)
 	if (op->ops.generic) {
 		emit_func_ptr func = (emit_func_ptr) op->ops.generic;
 
-		be_dbg_set_dbg_info(get_irn_dbg_info(node));
+		be_dbg_location(get_irn_dbg_info(node));
 
 		(*func) (node);
 	} else {
@@ -1814,7 +1813,7 @@ static void ia32_gen_block(ir_node *block)
 	ia32_emit_block_header(block);
 
 	/* emit the contents of the block */
-	be_dbg_set_dbg_info(get_irn_dbg_info(block));
+	be_dbg_location(get_irn_dbg_info(block));
 	sched_foreach(block, node) {
 		ia32_emit_node(node);
 	}

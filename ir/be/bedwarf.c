@@ -280,7 +280,7 @@ static void emit_pubnames(dwarf_t *env)
 	emit_label("pubnames_end");
 }
 
-static void dwarf_set_dbg_info(dbg_handle *h, dbg_info *dbgi)
+static void dwarf_location(dbg_handle *h, dbg_info *dbgi)
 {
 	dwarf_t  *const env = (dwarf_t*)h;
 	src_loc_t const loc = ir_retrieve_dbg_info(dbgi);
@@ -814,7 +814,7 @@ static const debug_ops dwarf_ops = {
 	dwarf_method_end,
 	dwarf_types,
 	dwarf_variable,
-	dwarf_set_dbg_info
+	dwarf_location,
 };
 
 /* Opens a dwarf handler */

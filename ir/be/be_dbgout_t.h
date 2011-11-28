@@ -59,7 +59,7 @@ typedef struct debug_ops {
 	void (*variable)(dbg_handle *h, const ir_entity *ent);
 
 	/** notify debug info about position change */
-	void (*set_dbg_info)(dbg_handle *h, dbg_info *dbgi);
+	void (*location)(dbg_handle *h, dbg_info *dbgi);
 } debug_ops;
 
 /** The base class of all debug implementations. */

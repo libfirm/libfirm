@@ -659,7 +659,7 @@ static void stabs_unit_end(dbg_handle *handle)
 	}
 }
 
-static void stabs_set_dbg_info(dbg_handle *h, dbg_info *dbgi)
+static void stabs_location(dbg_handle *h, dbg_info *dbgi)
 {
 	stabs_handle *const handle = (stabs_handle*) h;
 	src_loc_t     const loc    = ir_retrieve_dbg_info(dbgi);
@@ -867,7 +867,7 @@ static const debug_ops stabs_ops = {
 	stabs_method_end,
 	stabs_types,
 	stabs_variable,
-	stabs_set_dbg_info
+	stabs_location,
 };
 
 /* Opens a stabs handler */

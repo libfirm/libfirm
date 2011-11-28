@@ -52,6 +52,6 @@ void be_dbg_types(void);
 /** dump a variable in the global type */
 void be_dbg_variable(const ir_entity *ent);
 
-void be_dbg_set_dbg_info(dbg_info *dbgi);
+void be_dbg_location(dbg_info *dbgi);
 
 #endif
