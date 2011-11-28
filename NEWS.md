@@ -1,4 +1,4 @@
-libFirm 1.19.0 (1011-03-15)
+libFirm 1.19.0 (2011-03-15)
 ---------------------------
 
 * Includes "SSA-Based Register Allocation with PBQP"
@@ -7,7 +7,7 @@ libFirm 1.19.0 (1011-03-15)
 * Code cleanup and refactoring
 * Bugfixes
 
-libFirm 1.18.1 (1010-05-05)
+libFirm 1.18.1 (2010-05-05)
 ---------------------------
 
 * Fix bug where stackframe was not always setup for -fno-omit-frame-pointer
