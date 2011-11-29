@@ -37,10 +37,12 @@
 #include "irargs_t.h"
 #include "irprog.h"
 #include "irargs_t.h"
+#include "irtools.h"
 #include "error.h"
 #include "raw_bitset.h"
 #include "dbginfo.h"
 #include "heights.h"
+#include "lc_opts.h"
 
 #include "besched.h"
 #include "beblocksched.h"
@@ -66,6 +68,7 @@ static const ir_node *delay_slot_filler; /**< this node has been choosen to fill
 
 static void sparc_emit_node(const ir_node *node);
 static bool emitting_delay_slot;
+static int raw_permis = 0;
 
 void sparc_emit_indent(void)
 {
@@ -655,20 +658,21 @@ static unsigned permi5(unsigned *regs)
 static void emit_permi(const ir_node *irn, unsigned *regs)
 {
 	sparc_emit_indent();
-#if 1
-	be_emit_irprintf("permi %u", permi5(regs));
-	be_emit_finish_line_gas(irn);
-#else
-	unsigned reg0 = regs[0];
-    unsigned opc  = 0;
-	unsigned rd   = 0x10 | (reg0 >> 2);
-	unsigned xop  = 0;
-	unsigned imm  = ((reg0 & 3) << 20) | (regs[1] << 15) | (regs[2] << 10) | (regs[3] << 5) | regs[4];
-	unsigned insn = (opc << 30) | (rd << 25) | (xop << 22) | imm;
 
-	be_emit_irprintf(".long %u", insn);
-	be_emit_finish_line_gas(irn);
-#endif
+	if (!raw_permis) {
+		be_emit_irprintf("permi %u", permi5(regs));
+		be_emit_finish_line_gas(irn);
+	} else {
+		unsigned reg0 = regs[0];
+		unsigned opc  = 0;
+		unsigned rd   = 0x10 | (reg0 >> 2);
+		unsigned xop  = 0;
+		unsigned imm  = ((reg0 & 3) << 20) | (regs[1] << 15) | (regs[2] << 10) | (regs[3] << 5) | regs[4];
+		unsigned insn = (opc << 30) | (rd << 25) | (xop << 22) | imm;
+
+		be_emit_irprintf(".long %u", insn);
+		be_emit_finish_line_gas(irn);
+	}
 }
 
 static void emit_icore_Permi(const ir_node *irn)
@@ -1648,7 +1652,20 @@ void sparc_emit_routine(ir_graph *irg)
 	heights_free(heights);
 }
 
+static const lc_opt_table_entry_t sparc_emitter_options[] = {
+	LC_OPT_ENT_BOOL("raw_permis", "emit raw bytes for permi instruction", &raw_permis),
+	LC_OPT_LAST
+};
+
 void sparc_init_emitter(void)
 {
+	lc_opt_entry_t *be_grp;
+	lc_opt_entry_t *sparc_grp;
+
+	be_grp    = lc_opt_get_grp(firm_opt_get_root(), "be");
+	sparc_grp = lc_opt_get_grp(be_grp, "sparc");
+
+	lc_opt_add_table(sparc_grp, sparc_emitter_options);
+
 	FIRM_DBG_REGISTER(dbg, "firm.be.sparc.emit");
 }
