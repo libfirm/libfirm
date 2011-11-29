@@ -1142,32 +1142,38 @@ static ir_node *gen_float_const(dbg_info *dbgi, ir_node *block, ir_tarval *tv)
 	return proj;
 }
 
+static ir_node *create_int_const(ir_node *block, int32_t value)
+{
+	if (value == 0) {
+		ir_graph *irg = get_irn_irg(block);
+		return get_g0(irg);
+	} else if (sparc_is_value_imm_encodeable(value)) {
+		ir_graph *irg = get_irn_irg(block);
+		return new_bd_sparc_Or_imm(NULL, block, get_g0(irg), NULL, value);
+	} else {
+		ir_node *hi = new_bd_sparc_SetHi(NULL, block, NULL, value);
+		if ((value & 0x3ff) != 0) {
+			return new_bd_sparc_Or_imm(NULL, block, hi, NULL, value & 0x3ff);
+		} else {
+			return hi;
+		}
+	}
+}
+
 static ir_node *gen_Const(ir_node *node)
 {
 	ir_node   *block = be_transform_node(get_nodes_block(node));
 	ir_mode   *mode  = get_irn_mode(node);
 	dbg_info  *dbgi  = get_irn_dbg_info(node);
 	ir_tarval *tv    = get_Const_tarval(node);
-	long       value;
+	int32_t    val;
 
 	if (mode_is_float(mode)) {
 		return gen_float_const(dbgi, block, tv);
 	}
-
-	value = get_tarval_long(tv);
-	if (value == 0) {
-		return get_g0(get_irn_irg(node));
-	} else if (sparc_is_value_imm_encodeable(value)) {
-		ir_graph *irg = get_irn_irg(node);
-		return new_bd_sparc_Or_imm(dbgi, block, get_g0(irg), NULL, value);
-	} else {
-		ir_node *hi = new_bd_sparc_SetHi(dbgi, block, NULL, value);
-		if ((value & 0x3ff) != 0) {
-			return new_bd_sparc_Or_imm(dbgi, block, hi, NULL, value & 0x3ff);
-		} else {
-			return hi;
-		}
-	}
+	val = (int32_t)get_tarval_long(tv);
+	assert((long)val == get_tarval_long(tv));
+	return create_int_const(block, val);
 }
 
 static ir_node *gen_Switch(ir_node *node)
@@ -1747,33 +1753,53 @@ static ir_node *bitcast_int_to_float(dbg_info *dbgi, ir_node *block,
 }
 
 static void bitcast_float_to_int(dbg_info *dbgi, ir_node *block,
-                                 ir_node *node, ir_mode *float_mode,
+                                 ir_node *value, ir_mode *float_mode,
                                  ir_node **result)
 {
-	ir_graph *irg   = current_ir_graph;
-	ir_node  *stack = get_irg_frame(irg);
-	ir_node  *nomem = get_irg_no_mem(irg);
-	ir_node  *stf   = create_stf(dbgi, block, node, stack, nomem, float_mode,
-	                             NULL, 0, true);
-	int       bits  = get_mode_size_bits(float_mode);
-	ir_node  *ld;
-	set_irn_pinned(stf, op_pin_state_floats);
-
-	ld = new_bd_sparc_Ld_imm(dbgi, block, stack, stf, mode_gp, NULL, 0, true);
-	set_irn_pinned(ld, op_pin_state_floats);
-	result[0] = new_r_Proj(ld, mode_gp, pn_sparc_Ld_res);
-
-	if (bits == 64) {
-		ir_node *ld2 = new_bd_sparc_Ld_imm(dbgi, block, stack, stf, mode_gp,
-		                                   NULL, 4, true);
-		set_irn_pinned(ld, op_pin_state_floats);
-		result[1] = new_r_Proj(ld2, mode_gp, pn_sparc_Ld_res);
-
-		arch_add_irn_flags(ld, (arch_irn_flags_t)sparc_arch_irn_flag_needs_64bit_spillslot);
-		arch_add_irn_flags(ld2, (arch_irn_flags_t)sparc_arch_irn_flag_needs_64bit_spillslot);
+	int bits = get_mode_size_bits(float_mode);
+	if (is_Const(value)) {
+		ir_tarval *tv = get_Const_tarval(value);
+		int32_t val = get_tarval_sub_bits(tv, 0)         |
+		              (get_tarval_sub_bits(tv, 1) << 8)  |
+		              (get_tarval_sub_bits(tv, 2) << 16) |
+		              (get_tarval_sub_bits(tv, 3) << 24);
+		result[0] = create_int_const(block, val);
+		if (bits == 64) {
+			int32_t val = get_tarval_sub_bits(tv, 4)         |
+						  (get_tarval_sub_bits(tv, 5) << 8)  |
+						  (get_tarval_sub_bits(tv, 6) << 16) |
+						  (get_tarval_sub_bits(tv, 7) << 24);
+			result[1] = create_int_const(block, val);
+		} else {
+			assert(bits == 32);
+			result[1] = NULL;
+		}
 	} else {
-		assert(bits == 32);
-		result[1] = NULL;
+		ir_graph *irg   = current_ir_graph;
+		ir_node  *stack = get_irg_frame(irg);
+		ir_node  *nomem = get_irg_no_mem(irg);
+		ir_node  *new_value = be_transform_node(value);
+		ir_node  *stf   = create_stf(dbgi, block, new_value, stack, nomem,
+		                             float_mode, NULL, 0, true);
+		ir_node  *ld;
+		set_irn_pinned(stf, op_pin_state_floats);
+
+		ld = new_bd_sparc_Ld_imm(dbgi, block, stack, stf, mode_gp, NULL, 0, true);
+		set_irn_pinned(ld, op_pin_state_floats);
+		result[0] = new_r_Proj(ld, mode_gp, pn_sparc_Ld_res);
+
+		if (bits == 64) {
+			ir_node *ld2 = new_bd_sparc_Ld_imm(dbgi, block, stack, stf, mode_gp,
+											   NULL, 4, true);
+			set_irn_pinned(ld, op_pin_state_floats);
+			result[1] = new_r_Proj(ld2, mode_gp, pn_sparc_Ld_res);
+
+			arch_add_irn_flags(ld, (arch_irn_flags_t)sparc_arch_irn_flag_needs_64bit_spillslot);
+			arch_add_irn_flags(ld2, (arch_irn_flags_t)sparc_arch_irn_flag_needs_64bit_spillslot);
+		} else {
+			assert(bits == 32);
+			result[1] = NULL;
+		}
 	}
 }
 
@@ -1838,10 +1864,10 @@ static ir_node *gen_Call(ir_node *node)
 	/* parameters */
 	for (p = 0; p < n_params; ++p) {
 		ir_node                  *value      = get_Call_param(node, p);
-		ir_node                  *new_value  = be_transform_node(value);
 		const reg_or_stackslot_t *param      = &cconv->parameters[p];
 		ir_type                  *param_type = get_method_param_type(type, p);
 		ir_mode                  *mode       = get_type_mode(param_type);
+		ir_node                  *partial_value;
 		ir_node                  *new_values[2];
 		ir_node                  *str;
 		int                       offset;
@@ -1849,8 +1875,9 @@ static ir_node *gen_Call(ir_node *node)
 		if (mode_is_float(mode) && param->reg0 != NULL) {
 			unsigned size_bits = get_mode_size_bits(mode);
 			assert(size_bits <= 64);
-			bitcast_float_to_int(dbgi, new_block, new_value, mode, new_values);
+			bitcast_float_to_int(dbgi, new_block, value, mode, new_values);
 		} else {
+			ir_node *new_value = be_transform_node(value);
 			new_values[0] = new_value;
 			new_values[1] = NULL;
 		}
@@ -1873,8 +1900,10 @@ static ir_node *gen_Call(ir_node *node)
 
 		/* we need a store if we're here */
 		if (new_values[1] != NULL) {
-			new_value = new_values[1];
-			mode      = mode_gp;
+			partial_value = new_values[1];
+			mode          = mode_gp;
+		} else {
+			partial_value = new_values[0];
 		}
 
 		/* we need to skip over our save area when constructing the call
@@ -1882,10 +1911,10 @@ static ir_node *gen_Call(ir_node *node)
 		offset = param->offset + SPARC_MIN_STACKSIZE;
 
 		if (mode_is_float(mode)) {
-			str = create_stf(dbgi, new_block, new_value, incsp, new_mem,
+			str = create_stf(dbgi, new_block, partial_value, incsp, new_mem,
 			                 mode, NULL, offset, true);
 		} else {
-			str = new_bd_sparc_St_imm(dbgi, new_block, new_value, incsp,
+			str = new_bd_sparc_St_imm(dbgi, new_block, partial_value, incsp,
 			                          new_mem, mode, NULL, offset, true);
 		}
 		set_irn_pinned(str, op_pin_state_floats);
