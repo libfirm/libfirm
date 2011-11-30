@@ -380,6 +380,69 @@ end:
 	return res;
 }
 
+static unsigned check_alignment_constraints(ir_node *node)
+{
+	const arch_register_req_t *req = arch_get_irn_register_req(node);
+	return /* req->type == arch_register_req_type_aligned
+		|| */ req->width > 1;
+}
+
+
+static ir_node *handle_split(be_chordal_alloc_env_t *alloc_env,
+                             ir_node *irn)
+{
+	ir_node *perm = NULL;
+	be_chordal_env_t *env  = alloc_env->chordal_env;
+	void *base             = obstack_base(env->obst);
+	be_insn_t *insn        = chordal_scan_insn(env, irn);
+	ir_node *res           = insn->next_insn;
+
+	/*
+	 * Perms are inserted later before constrained instruction.
+     * So, this function does not split here.
+	 */
+	if (!insn->has_constraints) {
+		ir_node *value;
+		unsigned has_alignment_constraints = 0;
+		const arch_register_class_t *cls = env->cls;
+
+		be_foreach_definition (irn, cls, value,
+							   has_alignment_constraints
+							   |= check_alignment_constraints(value);
+			);
+
+		if (has_alignment_constraints) {
+			/*
+			 * Make the Perm, recompute liveness and re-scan the insn since the
+			 * in operands are now the Projs of the Perm.
+			 */
+			perm = insert_Perm_after(env->irg, env->cls, sched_prev(insn->irn));
+			if(perm != NULL) {
+				DBG((dbg, LEVEL_2, "\tsplit before %+F with node %+F\n", irn, perm));
+			}
+		}
+	}
+
+	obstack_free(env->obst, base);
+	return res;
+}
+
+/**
+ * Add split points before operations that have pairing constraints.
+ * handle_split() inserts Perm nodes which perm
+ * over all values live at the constrained node right in front
+ * of the constrained node.
+ */
+static void split(ir_node *bl, void *data)
+{
+	be_chordal_alloc_env_t *env    = (be_chordal_alloc_env_t*)data;
+	ir_node                *irn;
+
+	for (irn = sched_first(bl); !sched_is_end(irn);) {
+		irn = handle_split(env, irn);
+	}
+}
+
 /**
  * Handle constraint nodes in each basic block.
  * handle_constraints() inserts Perm nodes which perm
@@ -515,6 +578,18 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 	env.tmp_colors    = bitset_alloca(colors_n);
 	env.in_colors     = bitset_alloca(colors_n);
 	env.pre_colored   = pset_new_ptr_default();
+
+	be_timer_push(T_SPLIT);
+
+	/* Add split points before operations that have pairing constraints */
+	dom_tree_walk_irg(irg, split, NULL, &env);
+
+	if (chordal_env->opts->dump_flags & BE_CH_DUMP_SPLIT) {
+		snprintf(buf, sizeof(buf), "%s-split", chordal_env->cls->name);
+		dump_ir_graph(chordal_env->irg, buf);
+	}
+
+	be_timer_pop(T_SPLIT);
 
 	be_timer_push(T_CONSTR);
 
