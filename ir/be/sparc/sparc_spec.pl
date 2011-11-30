@@ -730,13 +730,19 @@ UDiv => {
 },
 
 Permi => {
-	irn_flags  => [ "rematerializable" ],
+	irn_flags => [ "rematerializable" ],
 	arity     => "variable",
 	out_arity => "variable",
 },
 
 Permi23 => {
-	irn_flags  => [ "rematerializable" ],
+	irn_flags => [ "rematerializable" ],
+	arity     => "variable",
+	out_arity => "variable",
+},
+
+PseudoCycle => {
+	irn_flags => [ "rematerializable" ],
 	arity     => "variable",
 	out_arity => "variable",
 },

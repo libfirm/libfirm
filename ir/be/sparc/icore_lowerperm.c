@@ -40,6 +40,7 @@
 #include "beirg.h"
 
 #include "gen_sparc_new_nodes.h"
+#include "gen_sparc_regalloc_if.h"
 
 #include "execfreq.h"
 #include "statev.h"
@@ -297,7 +298,7 @@ static void set_Permi_reg_reqs(ir_node *irn, const arch_register_t *reg)
 	int i;
 	const int arity = get_irn_arity(irn);
 
-	assert(is_sparc_Permi(irn) || is_sparc_Permi23(irn));
+	assert(is_sparc_Permi(irn) || is_sparc_Permi23(irn) || is_sparc_PseudoCycle(irn));
 	/* Get register requirement.  Assumes all input/registers belong to the
 	 * same register class and have the same requirements. */
 	class = arch_register_get_class(reg);
@@ -602,6 +603,51 @@ static void split_chain_into_copies(ir_node *irn, const perm_move_t *move, reg_p
 	}
 }
 
+static void create_pseudo_cycle(ir_node *irn, const perm_move_t *move, reg_pair_t *const pairs, int n_pairs)
+{
+	int       chain_size = move->n_elems;
+	ir_node **args       = ALLOCAN(ir_node*, chain_size);
+	ir_node **ress       = ALLOCAN(ir_node*, chain_size);
+	ir_node  *block      = get_nodes_block(irn);
+	ir_node  *pseudo;
+	int       i;
+
+	for (i = 0; i < chain_size - 1; ++i) {
+		args[i] = get_node_for_in_register(pairs, n_pairs, move->elems[i]);
+		ress[i] = get_node_for_out_register(pairs, n_pairs, move->elems[i + 1]);
+	}
+
+	pseudo = new_bd_sparc_PseudoCycle(NULL, block, chain_size - 1, args, chain_size - 1);
+	set_Permi_reg_reqs(pseudo, pairs[0].in_reg);
+	DBG((dbg_icore, LEVEL_1, "%+F created pseudo cycle node %+F with size %d\n",
+							 irn, pseudo, chain_size));
+
+	for (i = 0; i < chain_size - 1; ++i) {
+		const arch_register_t *reg  = move->elems[i + 1];
+		ir_node               *proj = ress[i];
+
+		set_Proj_pred(proj, pseudo);
+		set_Proj_proj(proj, i);
+		DBG((dbg_icore, LEVEL_1, "   setting register for output %d to %s\n", i, reg->name));
+		arch_set_irn_register_out(pseudo, i, reg);
+	}
+
+	sched_add_after(skip_Proj(sched_point), pseudo);
+	sched_point = pseudo;
+}
+
+static void handle_chain(ir_node *irn, const perm_move_t *move, reg_pair_t *const pairs, int n_pairs)
+{
+	assert(move->type == PERM_CHAIN);
+
+	if (move->n_elems <= MAX_PERMI_SIZE
+	    && move->elems[0] != &sparc_registers[REG_G0]) {
+		create_pseudo_cycle(irn, move, pairs, n_pairs);
+	} else {
+		split_chain_into_copies(irn, move, pairs, n_pairs);
+	}
+}
+
 static void create_stat_events(ir_node *perm)
 {
 	bool needs_restore = false;
@@ -675,7 +721,7 @@ static void lower_perm_node(ir_node *irn)
 		DB((dbg_icore, LEVEL_1, "\n"));
 
 		if (move.type == PERM_CHAIN) {
-			split_chain_into_copies(irn, &move, pairs, n_pairs);
+			handle_chain(irn, &move, pairs, n_pairs);
 		} else { /* move.type == PERM_CYCLE */
 			if (move.n_elems == 2) {
 				cycles2[n_cycles2++] = move; /* Might be combinable, save for later. */

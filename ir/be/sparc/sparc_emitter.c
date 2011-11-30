@@ -619,7 +619,7 @@ static void verify_permi(unsigned *regs)
 
 	/* Generic checks */
 	for (i = 0; i < 5; ++i) {
-		assert(regs[i] <= 31 && "Invalid regno in permi");
+		assert((regs[i] >= 1 && regs[i] <= 31) && "Invalid regno in permi");
 	}
 
 	if (regs[0] <= regs[1]) {
@@ -850,6 +850,104 @@ static void emit_icore_Permi23(const ir_node *irn)
 		be_emit_irprintf("%s->", in_regs[i]->name);
 	}
 	be_emit_irprintf("%s */", in_regs[2]->name);
+	be_emit_finish_line_gas(NULL);
+
+	emit_permi(irn, regns);
+}
+
+static void emit_icore_PseudoCycle(const ir_node *irn)
+{
+	const int MAX_CYCLE_SIZE = 5;
+	const arch_register_t *in_regs[MAX_CYCLE_SIZE - 1];
+	const arch_register_t *out_regs[MAX_CYCLE_SIZE - 1];
+	unsigned regns[MAX_CYCLE_SIZE];
+	int i;
+	const int arity = get_irn_arity(irn);
+	const int chain_size = arity + 1;
+
+	assert(chain_size >= 2 && chain_size <= MAX_CYCLE_SIZE);
+
+	for (i = 0; i < arity; ++i) {
+		in_regs[i]  = arch_get_irn_register_in(irn, i);
+		out_regs[i] = arch_get_irn_register_out(irn, i);
+	}
+
+	/*
+	 * Sanity check:
+	 *
+	 * A PseudoCycle node with input registers
+	 *   r0, r1, r2, r3
+	 * must have the following form:
+	 *
+	 *   r0   r1   r2   r3
+	 *   |    |    |    |
+	 * ,------------------.
+	 * |    PseudoCycle   |
+	 * `------------------'
+	 *   |    |    |    |
+	 *   r1   r2   r3   rX
+	 *
+	 * Therefore, the output register of successor node i must be
+	 * equal to the input register of predecessor node i + 1.
+	 * The first input register and the last output register must
+	 * not be identical (otherwise it would be a real cycle).
+	 */
+#ifndef NDEBUG
+	for (i = 0; i < arity - 1; ++i) {
+		assert(out_regs[i] == in_regs[i + 1] && "PseudoCycle node does not have required form");
+	}
+	assert(in_regs[0] != out_regs[arity - 1] && "PseudoCycle is actually a real cycle");
+#endif
+
+	/*
+	 * The current hardware implementation of the permi instruction
+	 * describes a 'left rotation', i.e.
+	 *   permi r0, r1, r2, r3, r4
+	 * encodes
+	 *   r0->r4->r3->r2->r1->r0.
+	 * Therefore, we reverse the order of the register numbers for
+	 * actual code generation.
+	 */
+	regns[0] = out_regs[arity - 1]->index;
+	for (i = 1; i < chain_size; ++i) {
+		regns[i] = (unsigned) in_regs[arity - i]->index;
+	}
+
+	/*
+	 * We have to take care that we generate the correct order for registers
+	 * here.
+	 *   permi r0, r4, r3, r2, r1   encodes   r0->r1->r2->r3->r4->r0
+	 * but
+	 *   permi r4, r3, r2, r1, r0   encodes   r0->r1->r0  r2->r3->r4->r2
+	 */
+	while (regns[0] > regns[1]) {
+		/* Rotate until regns[0] <= regns[1] holds. */
+		unsigned regn0 = regns[0];
+		for (i = 0; i < chain_size - 1; ++i)
+			regns[i] = regns[i + 1];
+		regns[chain_size - 1] = regn0;
+	}
+
+	/*
+	 * The permi instruction always operates on five registers.  However,
+	 * it is allowed to supply the same register number multiple times.
+	 * Therefore, e.g., a swap operation on r0 and r1 can be expressed with:
+	 *   permi r0, r1, r1, r1, r1
+	 *
+	 * Hence, we fill the unused elements in regns (if there are any) with
+	 * the last register number we inserted.
+	 */
+	for (i = chain_size; i < MAX_CYCLE_SIZE; ++i) {
+		regns[i] = regns[chain_size - 1];
+	}
+
+	/* Print some information about the meaning of the following permi. */
+	be_emit_irprintf("\t/* PseudoCycle with chain: ");
+	be_emit_irprintf("%s", in_regs[0]->name);
+	for (i = 0; i < arity; ++i) {
+		be_emit_irprintf("->%s", out_regs[i]->name);
+	}
+	be_emit_irprintf("*/");
 	be_emit_finish_line_gas(NULL);
 
 	emit_permi(irn, regns);
@@ -1490,6 +1588,7 @@ static void sparc_register_emitters(void)
 	set_emitter(op_sparc_UDiv,      emit_sparc_UDiv);
 	set_emitter(op_sparc_Permi,     emit_icore_Permi);
 	set_emitter(op_sparc_Permi23,   emit_icore_Permi23);
+	set_emitter(op_sparc_PseudoCycle, emit_icore_PseudoCycle);
 
 	/* no need to emit anything for the following nodes */
 	set_emitter(op_be_Keep,     emit_nothing);
