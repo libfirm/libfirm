@@ -512,8 +512,11 @@ static void ilp2_apply(ilp_env_t *ienv)
 		lpp_sol_state_t  state = lpp_get_solution(ienv->lp, sol, lenv->first_x_var, lenv->last_x_var);
 
 		if (state != lpp_optimal) {
-			printf("WARNING %s: Solution state is not 'optimal': %d\n", ienv->co->name, (int)state);
-			assert(state >= lpp_feasible && "The solution should at least be feasible!");
+			printf("WARNING %s: Solution state is not 'optimal': %d\n",
+			       ienv->co->name, (int)state);
+			if (state < lpp_feasible) {
+				panic("Copy coalescing solution not feasible!");
+			}
 		}
 
 		for (i=0; i<count; ++i) {
@@ -545,17 +548,13 @@ static void ilp2_apply(ilp_env_t *ienv)
 #endif
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyilp2)
-void be_init_copyilp2(void)
-{
-	static co_algo_info copyheur = {
-		co_solve_ilp2, 1
-	};
-
-	be_register_copyopt("ilp", &copyheur);
-}
-
-int co_solve_ilp2(copy_opt_t *co)
+/**
+ * Solves the problem using mixed integer programming
+ * @returns 1 iff solution state was optimal
+ * Uses the OU and the GRAPH data structure
+ * Dependency of the OU structure can be removed
+ */
+static int co_solve_ilp2(copy_opt_t *co)
 {
 	lpp_sol_state_t sol_state;
 	ilp_env_t *ienv;
@@ -582,4 +581,14 @@ int co_solve_ilp2(copy_opt_t *co)
 	free_ilp_env(ienv);
 
 	return sol_state == lpp_optimal;
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyilp2)
+void be_init_copyilp2(void)
+{
+	static co_algo_info copyheur = {
+		co_solve_ilp2, 1
+	};
+
+	be_register_copyopt("ilp", &copyheur);
 }

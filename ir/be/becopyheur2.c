@@ -1229,7 +1229,7 @@ static void process(co2_t *env)
 	xfree(clouds);
 }
 
-int co_solve_heuristic_new(copy_opt_t *co)
+static int co_solve_heuristic_new(copy_opt_t *co)
 {
 	char  buf[256];
 	co2_t env;

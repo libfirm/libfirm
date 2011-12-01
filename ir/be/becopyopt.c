@@ -86,6 +86,16 @@ static const lc_opt_enum_mask_items_t dump_items[] = {
 	{ NULL,      0 }
 };
 
+/**
+ * Flags for dumping the IFG.
+ */
+enum {
+	CO_IFG_DUMP_COLORS = 1 << 0, /**< Dump the graph colored. */
+	CO_IFG_DUMP_LABELS = 1 << 1, /**< Dump node/edge labels. */
+	CO_IFG_DUMP_SHAPE  = 1 << 2, /**< Give constrained nodes special shapes. */
+	CO_IFG_DUMP_CONSTR = 1 << 3, /**< Dump the node constraints in the label. */
+};
+
 static const lc_opt_enum_mask_items_t style_items[] = {
 	{ "color",   CO_IFG_DUMP_COLORS },
 	{ "labels",  CO_IFG_DUMP_LABELS },
@@ -1100,12 +1110,6 @@ void co_dump_ifg_dot(const copy_opt_t *co, FILE *f, unsigned flags)
 	cod.co    = co;
 	cod.flags = flags;
 	be_ifg_dump_dot(co->cenv->ifg, co->irg, f, &ifg_dot_cb, &cod);
-}
-
-
-void co_solve_park_moon(copy_opt_t *opt)
-{
-	(void) opt;
 }
 
 /*

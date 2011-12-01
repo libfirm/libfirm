@@ -32,33 +32,11 @@
 #define FIRM_BE_BECOPYOPT_H
 
 #include <stdio.h>
+#include <stdbool.h>
 
 #include "firm_types.h"
 #include "bechordal.h"
 #include "beutil.h"
-
-/**
- * Flags for dumping the IFG.
- */
-enum {
-	CO_IFG_DUMP_COLORS = 1, /**< Dump the graph colored. */
-	CO_IFG_DUMP_LABELS = 2, /**< Dump node/edge labels. */
-	CO_IFG_DUMP_SHAPE  = 4, /**< Give constrained nodes special shapes. */
-	CO_IFG_DUMP_CONSTR = 8  /**< Dump the node constraints in the label. */
-};
-
-/**
- * Algorithms.
- */
-enum {
-	CO_ALGO_NONE,
-	CO_ALGO_HEUR,
-	CO_ALGO_HEUR2,
-	CO_ALGO_HEUR4,
-	CO_ALGO_ILP,
-	CO_ALGO_PBQP,
-	CO_ALGO_LAST
-};
 
 typedef struct copy_opt_t copy_opt_t;
 
@@ -66,9 +44,8 @@ typedef int(*cost_fct_t)(const copy_opt_t *, ir_node *, ir_node *, int);
 
 typedef struct {
 	int (*copyopt)(copy_opt_t *co); /**< function ptr to run copyopt */
-	int        can_improve_existing;
+	bool can_improve_existing;
 } co_algo_info;
-
 
 /**
  * Register a new copy optimization algorithm.
@@ -81,9 +58,6 @@ void be_register_copyopt(const char *name, co_algo_info *copyopt);
 
 /** The driver for copy minimization. */
 void co_driver(be_chordal_env_t *cenv);
-
-/** A coalescing algorithm. */
-typedef int (co_algo_t)(copy_opt_t *);
 
 /**
  * Generate the problem. Collect all information and optimizable nodes.
@@ -158,18 +132,6 @@ void co_free_ou_structure(copy_opt_t *co);
 int co_solve_heuristic(copy_opt_t *co);
 
 /**
- * Apply Park/Moon coalescing to the graph.
- * @param co The copy optimization data structure.
- */
-void co_solve_park_moon(copy_opt_t *co);
-
-/**
- * Solves the copy minimization problem using another heuristic approach.
- * Uses the OU and the GRAPH data structure.
- */
-int co_solve_heuristic_new(copy_opt_t *co);
-
-/**
  * Returns the maximal costs possible, i.e. the costs if all
  * pairs would be assigned different registers.
  * Uses the OU data structure
@@ -232,14 +194,6 @@ void co_build_graph_structure(copy_opt_t *co);
  * Does NOT free the whole copyopt structure
  */
 void co_free_graph_structure(copy_opt_t *co);
-
-/**
- * Solves the problem using mixed integer programming
- * @returns 1 iff solution state was optimal
- * Uses the OU and the GRAPH data structure
- * Dependency of the OU structure can be removed
- */
-int co_solve_ilp2(copy_opt_t *co);
 
 /**
  * Checks if a node is optimizable, viz has something to do with coalescing.
