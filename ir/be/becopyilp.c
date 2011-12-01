@@ -165,27 +165,37 @@ void sr_remove(size_red_t *sr)
 void sr_reinsert(size_red_t *sr)
 {
 	coloring_suffix_t *cs;
+	ir_graph *irg        = sr->co->irg;
 	be_ifg_t *ifg        = sr->co->cenv->ifg;
-	bitset_t *used_cols  = bitset_alloca(arch_register_class_n_regs(sr->co->cls));
+	unsigned  n_regs     = arch_register_class_n_regs(sr->co->cls);
+	unsigned *possible_cols;
+	unsigned *allocatable_cols;
+
+	rbitset_alloca(allocatable_cols, n_regs);
+	be_set_allocatable_regs(irg, sr->co->cls, allocatable_cols);
+
+	rbitset_alloca(possible_cols, n_regs);
 	neighbours_iter_t iter;
 
 	/* color the removed nodes in right order */
 	for (cs = sr->col_suff; cs; cs = cs->next) {
-		int free_col;
-		ir_node *other, *irn;
+		unsigned free_col;
+		ir_node *other;
+		ir_node *irn = cs->irn;
+
+		rbitset_copy(possible_cols, allocatable_cols, n_regs);
 
 		/* get free color by inspecting all neighbors */
-		irn = cs->irn;
-		bitset_clear_all(used_cols);
-
 		be_ifg_foreach_neighbour(ifg, &iter, irn, other) {
-			if (!sr_is_removed(sr, other)) /* only inspect nodes which are in graph right now */
-				bitset_set(used_cols, get_irn_col(other));
+			/* only inspect nodes which are in graph right now */
+			if (sr_is_removed(sr, other))
+				continue;
+			rbitset_clear(possible_cols, get_irn_col(other));
 		}
 
 		/* now all bits not set are possible colors */
-		free_col = bitset_next_clear(used_cols, 0);
-		assert(free_col != -1 && "No free color found. This can not be.");
+		free_col = (unsigned)rbitset_next(possible_cols, 0, true);
+		assert(!rbitset_is_empty(possible_cols, n_regs) && "No free color found. This can not be.");
 		set_irn_col(sr->co, irn, free_col);
 		pset_remove_ptr(sr->all_removed, irn); /* irn is back in graph again */
 	}
