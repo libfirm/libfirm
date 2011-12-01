@@ -59,7 +59,6 @@
 #define DEBUG_LVL 1
 
 typedef struct local_env_t {
-	double time_limit;
 	int first_x_var, last_x_var;
 	int n_colors;
 	bitset_t *normal_colors;
@@ -488,7 +487,6 @@ static void build_path_cstr(ilp_env_t *ienv)
 
 static void ilp2_build(ilp_env_t *ienv)
 {
-	local_env_t *lenv = ienv->env;
 	int lower_bound;
 
 	ienv->lp = lpp_new(ienv->co->name, lpp_minimize);
@@ -500,7 +498,6 @@ static void ilp2_build(ilp_env_t *ienv)
 
 	lower_bound = co_get_lower_bound(ienv->co) - co_get_inevit_copy_costs(ienv->co);
 	lpp_set_bound(ienv->lp, lower_bound);
-	lpp_set_time_limit(ienv->lp, lenv->time_limit);
 }
 
 static void ilp2_apply(ilp_env_t *ienv)
@@ -567,7 +564,6 @@ int co_solve_ilp2(copy_opt_t *co)
 	ASSERT_OU_AVAIL(co); //See build_clique_st
 	ASSERT_GS_AVAIL(co);
 
-	my.time_limit  = 0;
 	my.first_x_var = -1;
 	my.last_x_var  = -1;
 	my.nr_2_irn    = pmap_create();
