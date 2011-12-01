@@ -419,7 +419,10 @@ static void va_place_phis(va_info *vai, va_region *old_region,
 			mode
 		);
 
-		van = nodemap_get_or_set_irn_data(&vai->nodemap, result);
+		van = ir_nodemap_get(&vai->nodemap, result);
+		if (van == NULL) {
+			van = va_init_node(vai, result);
+		}
 		van->region = new_region;
 		van->branch_region = branch_region;
 	}
