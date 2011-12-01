@@ -74,6 +74,11 @@ static gurobi_t *new_gurobi(lpp_t *lpp)
 #if 0
 	error = GRBsetlogfile(grb->env, lpp->log);
 	check_gurobi_error(grb, error);
+#else
+	if (lpp->log != stdout && lpp->log != stderr) {
+		error = GRBsetintparam(grb->env, GRB_INT_PAR_OUTPUTFLAG, 0);
+		check_gurobi_error(grb, error);
+	}
 #endif
 
 	return grb;
@@ -193,22 +198,15 @@ static void gurobi_solve(gurobi_t *grb)
 		check_gurobi_error(grb, error);
 	}
 
-	/*
-	 * If we have enough time, we instruct cplex to imply some
-	 * of its higher order magic to pursue the best solution
-	 */
-	if(lpp->emphasis) {
-		/* not implemented */
-	}
-
+#if 0
 	/*
 	 * If a bound of the objective function is supplied,
 	 * set it accordingly, dependign on minimization or maximization.
 	 */
 	if(lpp->set_bound) {
-		//panic("bound not implemented yet");
 		fprintf(stderr, "Warning: gurobi bound not implemented yet\n");
 	}
+#endif
 
 	/* solve */
 	error = GRBoptimize(grb->model);
