@@ -27,8 +27,10 @@
 #include "bedump.h"
 
 #include "irdump_t.h"
+#include "irgwalk.h"
 #include "beifg.h"
 #include "becopyopt_t.h"
+#include "belive_t.h"
 
 static void dump_ifg_nodes(FILE *F, const be_ifg_t *ifg)
 {
@@ -131,4 +133,61 @@ void be_dump_ifg_co(FILE *F, const copy_opt_t *co, bool dump_costs,
 	dump_affinity_edges(F, co, dump_costs, dump_colors);
 
 	fprintf(F, "}\n");
+}
+
+static const char *lv_flags_to_str(unsigned flags)
+{
+	static const char *states[] = {
+		"---",
+		"i--",
+		"-e-",
+		"ie-",
+		"--o",
+		"i-o",
+		"-eo",
+		"ieo"
+	};
+
+	return states[flags & 7];
+}
+
+void be_dump_liveness_block(void *context, FILE *F, const ir_node *bl)
+{
+	if (is_Block(bl)) {
+		be_lv_t *lv = (be_lv_t*)context;
+		be_lv_info_t *info = (be_lv_info_t*)ir_nodehashmap_get(&lv->map, bl);
+
+		fprintf(F, "liveness:\n");
+		if (info != NULL) {
+			unsigned n = info[0].head.n_members;
+			unsigned i;
+
+			for (i = 0; i < n; ++i) {
+				be_lv_info_node_t *n = &info[i+1].node;
+				ir_fprintf(F, "%s %+F\n", lv_flags_to_str(n->flags), get_idx_irn(lv->irg, n->idx));
+			}
+		}
+	}
+}
+
+typedef struct lv_walker_t {
+	be_lv_t *lv;
+	void *data;
+} lv_walker_t;
+
+static void lv_dump_block_walker(ir_node *irn, void *data)
+{
+	lv_walker_t *w = (lv_walker_t*)data;
+	if (!is_Block(irn))
+		return;
+	be_dump_liveness_block(w->lv, (FILE*)w->data, irn);
+}
+
+void be_liveness_dump(FILE *F, const be_lv_t *lv)
+{
+	lv_walker_t w;
+
+	w.lv   = (be_lv_t *) lv;
+	w.data = F;
+	irg_block_walk_graph(lv->irg, lv_dump_block_walker, NULL, &w);
 }

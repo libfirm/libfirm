@@ -884,3 +884,121 @@ bool be_verify_register_allocation(ir_graph *new_irg)
 
 	return !problem_found;
 }
+
+/*--------------------------------------------------------------------------- */
+
+/**
+ * Walker: checks that every predecessors of a node dominates the node.
+ */
+static void dom_check(ir_node *irn, void *data)
+{
+	bool *problem_found = (bool*)data;
+
+	if (!is_Block(irn) && irn != get_irg_end(get_irn_irg(irn))) {
+		int i, n;
+		ir_node *bl = get_nodes_block(irn);
+
+		for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
+			ir_node *op     = get_irn_n(irn, i);
+			ir_node *def_bl = get_nodes_block(op);
+			ir_node *use_bl = bl;
+
+			if (is_Phi(irn))
+				use_bl = get_Block_cfgpred_block(bl, i);
+
+			if (get_irn_opcode(use_bl) != iro_Bad
+			     && get_irn_opcode(def_bl) != iro_Bad
+			     && !block_dominates(def_bl, use_bl)) {
+				ir_fprintf(stderr, "Verify warning: %+F in %+F must dominate %+F for user %+F (%s)\n", op, def_bl, use_bl, irn, get_irg_dump_name(get_irn_irg(op)));
+				*problem_found = true;
+			}
+		}
+	}
+}
+
+/* Check, if the SSA dominance property is fulfilled. */
+bool be_check_dominance(ir_graph *irg)
+{
+	bool problem_found = false;
+
+	assure_doms(irg);
+	irg_walk_graph(irg, dom_check, NULL, &problem_found);
+
+	return !problem_found;
+}
+
+/*--------------------------------------------------------------------------- */
+
+typedef struct lv_walker_t {
+	be_lv_t *lv;
+	void *data;
+} lv_walker_t;
+
+static const char *lv_flags_to_str(unsigned flags)
+{
+	static const char *states[] = {
+		"---",
+		"i--",
+		"-e-",
+		"ie-",
+		"--o",
+		"i-o",
+		"-eo",
+		"ieo"
+	};
+
+	return states[flags & 7];
+}
+
+static void lv_check_walker(ir_node *bl, void *data)
+{
+	lv_walker_t *w = (lv_walker_t*)data;
+	be_lv_t *lv    = w->lv;
+	be_lv_t *fresh = (be_lv_t*)w->data;
+
+	be_lv_info_t *curr = (be_lv_info_t*)ir_nodehashmap_get(&fresh->map, bl);
+	be_lv_info_t *fr   = (be_lv_info_t*)ir_nodehashmap_get(&fresh->map, bl);
+
+	if (!fr && curr && curr[0].head.n_members > 0) {
+		unsigned i;
+
+		ir_fprintf(stderr, "%+F liveness should be empty but current liveness contains:\n", bl);
+		for (i = 0; i < curr[0].head.n_members; ++i) {
+			ir_fprintf(stderr, "\t%+F\n", get_idx_irn(lv->irg, curr[1 + i].node.idx));
+		}
+	}
+
+	else if (curr) {
+		unsigned n_curr  = curr[0].head.n_members;
+		unsigned n_fresh = fr[0].head.n_members;
+
+		unsigned i;
+
+		if (n_curr != n_fresh) {
+			ir_fprintf(stderr, "%+F: liveness set sizes differ. curr %d, correct %d\n", bl, n_curr, n_fresh);
+
+			ir_fprintf(stderr, "current:\n");
+			for (i = 0; i < n_curr; ++i) {
+				be_lv_info_node_t *n = &curr[1 + i].node;
+				ir_fprintf(stderr, "%+F %u %+F %s\n", bl, i, get_idx_irn(lv->irg, n->idx), lv_flags_to_str(n->flags));
+			}
+
+			ir_fprintf(stderr, "correct:\n");
+			for (i = 0; i < n_fresh; ++i) {
+				be_lv_info_node_t *n = &fr[1 + i].node;
+				ir_fprintf(stderr, "%+F %u %+F %s\n", bl, i, get_idx_irn(lv->irg, n->idx), lv_flags_to_str(n->flags));
+			}
+		}
+	}
+}
+
+void be_liveness_check(be_lv_t *lv)
+{
+	lv_walker_t w;
+	be_lv_t *fresh = be_liveness(lv->irg);
+
+	w.lv   = lv;
+	w.data = fresh;
+	irg_block_walk_graph(lv->irg, lv_check_walker, NULL, &w);
+	be_liveness_free(fresh);
+}

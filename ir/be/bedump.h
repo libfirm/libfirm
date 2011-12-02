@@ -42,4 +42,16 @@ void be_dump_ifg(FILE *F, ir_graph *irg, const be_ifg_t *ifg);
 void be_dump_ifg_co(FILE *F, const copy_opt_t *co,
                     bool dump_costs, bool dump_colors);
 
+/**
+ * Dump the liveness information for a graph.
+ * @param f The output.
+ * @param irg The graph.
+ */
+void be_liveness_dump(FILE *F, const be_lv_t *lv);
+
+/**
+ * node_info hook that dumps liveness for blocks
+ */
+void be_dump_liveness_block(void *context, FILE *F, const ir_node *block);
+
 #endif
