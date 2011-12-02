@@ -20,7 +20,7 @@ Q ?= @
 
 CC ?= cc
 LINK ?= $(CC)
-AR ?= ar ru
+AR ?= ar
 DLLEXT ?= .so
 
 # Variants
