@@ -1115,12 +1115,7 @@ void dump_node(FILE *F, const ir_node *n)
 	fputs(" label: \"", F);
 	bad = ! irn_verify_irg_dump(n, current_ir_graph, &p);
 	dump_node_label(F, n);
-	//dump_node_ana_info(F, n);
 	fputs("\" ", F);
-
-	if (get_op_flags(get_irn_op(n)) & irop_flag_dump_noinput) {
-		//fputs(" node_class:23", F);
-	}
 
 	dump_node_info(F, n);
 	print_node_error(F, p);
@@ -1548,52 +1543,6 @@ static void dump_node2type_edges(ir_node *n, void *env)
 	}
 }
 
-#if 0
-static int print_type_info(FILE *F, ir_type *tp)
-{
-	int bad = 0;
-
-	if (get_type_state(tp) == layout_undefined) {
-		fprintf(F, "state: layout_undefined\n");
-	} else {
-		fprintf(F, "state: layout_fixed,\n");
-	}
-	if (get_type_mode(tp))
-		fprintf(F, "mode: %s,\n", get_mode_name_ex(get_type_mode(tp), &bad));
-	fprintf(F, "size: %db,\n", get_type_size_bits(tp));
-
-	return bad;
-}
-
-static void print_typespecific_info(FILE *F, ir_type *tp)
-{
-	switch (get_type_tpop_code(tp)) {
-	case tpo_class:
-		fprintf(F, "peculiarity: %s\n", get_peculiarity_string(get_class_peculiarity(tp)));
-		break;
-	case tpo_struct:
-		break;
-	case tpo_method:
-		fprintf(F, "variadicity: %s\n", get_variadicity_name(get_method_variadicity(tp)));
-		fprintf(F, "params: %d\n", get_method_n_params(tp));
-		fprintf(F, "results: %d\n", get_method_n_ress(tp));
-		break;
-	case tpo_union:
-		break;
-	case tpo_array:
-		break;
-	case tpo_enumeration:
-		break;
-	case tpo_pointer:
-		break;
-	case tpo_primitive:
-		break;
-	default:
-		break;
-	}
-}
-#endif
-
 static void print_typespecific_vcgattr(FILE *F, ir_type *tp)
 {
 	switch (get_type_tpop_code(tp)) {
@@ -1889,7 +1838,7 @@ static void dump_loop_info(FILE *F, const ir_loop *loop)
 {
 	fprintf(F, " info1: \"");
 	fprintf(F, " loop nr: %ld", get_loop_loop_nr(loop));
-#ifdef DEBUG_libfirm   /* GL @@@ debug analyses */
+#ifdef DEBUG_libfirm
 	fprintf(F, "\n The loop was analyzed %ld times.", (long int) PTR_TO_INT(get_loop_link(loop)));
 #endif
 	fprintf(F, "\"");
