@@ -35,6 +35,7 @@
 #include <stdbool.h>
 
 #include "firm_types.h"
+#include "be_types.h"
 #include "bechordal.h"
 #include "beutil.h"
 
@@ -135,29 +136,6 @@ int co_get_copy_costs(const copy_opt_t *co);
  * Uses the OU data structure
  */
 int co_get_lower_bound(const copy_opt_t *co);
-
-/**
- * Dump the interference graph according to the Appel/George coalescing contest file format.
- * See: http://www.cs.princeton.edu/~appel/coalesce/format.html
- * @note Requires graph structure.
- * @param co The copy opt object.
- * @param f  A file to dump to.
- */
-void co_dump_appel_graph(const copy_opt_t *co, FILE *f);
-
-/**
- * Dumps the IFG of the program splitting after each instruction in the Appel format.
- * @param co The copy opt object.
- * @param f  The file to dump to.
- */
-void co_dump_appel_graph_cliques(const copy_opt_t *co, FILE *f);
-/**
- * Dump the interference graph with the affinity edges and the coloring.
- * @param co    The copy opt structure.
- * @param f     The file to dump to.
- * @param flags The dump flags (see enum above).
- */
-void co_dump_ifg_dot(const copy_opt_t *co, FILE *f, unsigned flags);
 
 /**
  * Constructs another internal representation of the affinity edges

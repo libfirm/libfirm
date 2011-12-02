@@ -1034,146 +1034,6 @@ static void writeback_colors(co2_t *env)
 	}
 }
 
-
-/*
-  ___ _____ ____   ____   ___ _____   ____                        _
- |_ _|  ___/ ___| |  _ \ / _ \_   _| |  _ \ _   _ _ __ ___  _ __ (_)_ __   __ _
-  | || |_ | |  _  | | | | | | || |   | | | | | | | '_ ` _ \| '_ \| | '_ \ / _` |
-  | ||  _|| |_| | | |_| | |_| || |   | |_| | |_| | | | | | | |_) | | | | | (_| |
- |___|_|   \____| |____/ \___/ |_|   |____/ \__,_|_| |_| |_| .__/|_|_| |_|\__, |
-                                                           |_|            |___/
-*/
-
-static const char *get_dot_color_name(size_t col)
-{
-	static const char *const names[] = {
-		"blue",
-		"red",
-		"green",
-		"yellow",
-		"cyan",
-		"magenta",
-		"orange",
-		"chocolate",
-		"beige",
-		"navy",
-		"darkgreen",
-		"darkred",
-		"lightPink",
-		"chartreuse",
-		"lightskyblue",
-		"linen",
-		"pink",
-		"lightslateblue",
-		"mintcream",
-		"red",
-		"darkolivegreen",
-		"mediumblue",
-		"mistyrose",
-		"salmon",
-		"darkseagreen",
-		"mediumslateblue"
-		"moccasin",
-		"tomato",
-		"forestgreen",
-		"darkturquoise",
-		"palevioletred"
-	};
-
-	return col < (sizeof(names)/sizeof(names[0])) ? names[col] : "white";
-}
-
-static const char *get_dot_shape_name(co2_irn_t *ci)
-{
-	const arch_register_req_t *req = arch_get_irn_register_req(ci->irn);
-
-	if (arch_register_req_is(req, limited))
-		return "diamond";
-
-	if (ci->fixed)
-		return "rectangle";
-
-	if (ci->tmp_fixed)
-		return "hexagon";
-
-	return "ellipse";
-}
-
-static void ifg_dump_graph_attr(FILE *f, void *self)
-{
-	(void) self;
-	fprintf(f, "overlay=false");
-}
-
-static int ifg_is_dump_node(void *self, ir_node *irn)
-{
-	const arch_register_req_t *req = arch_get_irn_register_req(irn);
-	(void)self;
-	return !(req->type & arch_register_req_type_ignore);
-}
-
-static void ifg_dump_node_attr(FILE *f, void *self, ir_node *irn)
-{
-	co2_t *env    = (co2_t*)self;
-	co2_irn_t *ci = get_co2_irn(env, irn);
-	int peri      = 1;
-
-	char buf[128] = "";
-
-	if (ci->aff) {
-		co2_cloud_irn_t *cci = (co2_cloud_irn_t*) ci;
-		if (cci->cloud && cci->cloud->mst_root == cci)
-			peri = 2;
-
-		if (cci->cloud && cci->cloud->mst_root)
-			ir_snprintf(buf, sizeof(buf), "%+F", cci->cloud->mst_root->inh.irn);
-	}
-
-	ir_fprintf(f, "label=\"%+F%s\" style=filled peripheries=%d color=%s shape=%s", irn, buf, peri,
-		get_dot_color_name(get_col(env, irn)), get_dot_shape_name(ci));
-}
-
-static void ifg_dump_at_end(FILE *file, void *self)
-{
-	co2_t *env = (co2_t*)self;
-	affinity_node_t *a;
-
-	co_gs_foreach_aff_node(env->co, a) {
-		co2_cloud_irn_t *ai = get_co2_cloud_irn(env, a->irn);
-		int idx = get_irn_idx(a->irn);
-		neighb_t *n;
-
-		if (ai->mst_parent != ai)
-			fprintf(file, "\tn%d -- n%u [style=dotted color=blue arrowhead=normal];\n", idx, get_irn_idx(ai->mst_parent->inh.irn));
-
-		co_gs_foreach_neighb(a, n) {
-			int nidx = get_irn_idx(n->irn);
-			co2_cloud_irn_t *ci = get_co2_cloud_irn(env, n->irn);
-
-			if (idx < nidx) {
-				const char *color = get_col(env, a->irn) == get_col(env, n->irn) ? "black" : "red";
-				const char *arr = "arrowhead=dot arrowtail=dot";
-
-				if (ci->mst_parent == ai)
-					arr = "arrowtail=normal";
-				else if (ai->mst_parent == ci)
-					arr = "arrowhead=normal";
-
-				fprintf(file, "\tn%d -- n%d [label=\"%d\" %s style=dashed color=%s weight=0.01];\n", idx, nidx, n->costs, arr, color);
-			}
-		}
-	}
-}
-
-static be_ifg_dump_dot_cb_t ifg_dot_cb = {
-	ifg_is_dump_node,
-	ifg_dump_graph_attr,
-	ifg_dump_node_attr,
-	NULL,
-	NULL,
-	ifg_dump_at_end
-};
-
 static void process(co2_t *env)
 {
 	affinity_node_t *a;
@@ -1209,19 +1069,6 @@ static void process(co2_t *env)
 
 		all_costs   += clouds[i]->costs;
 		final_costs += cloud_costs(clouds[i]);
-
-		/* Dump the IFG if the user demanded it. */
-		if (dump_flags & DUMP_CLOUD) {
-			char buf[256];
-			FILE *f;
-
-			ir_snprintf(buf, sizeof(buf), "ifg_%F_%s_cloud_%d.dot", env->co->irg, env->co->cls->name, i);
-			f = fopen(buf, "wt");
-			if (f != NULL) {
-				be_ifg_dump_dot(env->co->cenv->ifg, env->co->irg, f, &ifg_dot_cb, env);
-				fclose(f);
-			}
-		}
 	}
 
 	DB((env->dbg, LEVEL_1, "all costs: %d, init costs: %d, final costs: %d\n", all_costs, init_costs, final_costs));
@@ -1231,9 +1078,7 @@ static void process(co2_t *env)
 
 static int co_solve_heuristic_new(copy_opt_t *co)
 {
-	char  buf[256];
 	co2_t env;
-	FILE  *f;
 
 	ir_nodemap_init(&env.map, co->irg);
 	obstack_init(&env.obst);
@@ -1246,25 +1091,7 @@ static int co_solve_heuristic_new(copy_opt_t *co)
 	FIRM_DBG_REGISTER(env.dbg, "firm.be.co2");
 	INIT_LIST_HEAD(&env.cloud_head);
 
-	if (dump_flags & DUMP_BEFORE) {
-		ir_snprintf(buf, sizeof(buf), "ifg_%F_%s_before.dot", co->irg, co->cls->name);
-		f = fopen(buf, "wt");
-		if (f != NULL) {
-			be_ifg_dump_dot(co->cenv->ifg, co->irg, f, &ifg_dot_cb, &env);
-			fclose(f);
-		}
-	}
-
 	process(&env);
-
-	if (dump_flags & DUMP_AFTER) {
-		ir_snprintf(buf, sizeof(buf), "ifg_%F_%s_after.dot", co->irg, co->cls->name);
-		f = fopen(buf, "wt");
-		if (f != NULL) {
-			be_ifg_dump_dot(co->cenv->ifg, co->irg, f, &ifg_dot_cb, &env);
-			fclose(f);
-		}
-	}
 
 	writeback_colors(&env);
 	obstack_free(&env.obst, NULL);

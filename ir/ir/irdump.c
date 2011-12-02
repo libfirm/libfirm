@@ -1981,6 +1981,14 @@ void dump_vcg_header_colors(FILE *F)
 	}
 }
 
+void dump_vcg_infonames(FILE *F)
+{
+	fputs(
+		"infoname 1: \"Attribute\"\n"
+		"infoname 2: \"Verification errors\"\n"
+		"infoname 3: \"Debug info\"\n", F);
+}
+
 /**
  * dumps the VCG header
  */
@@ -2021,12 +2029,9 @@ void dump_vcg_header(FILE *F, const char *name, const char *layout, const char *
 		"classname 19: \"Postdominators\"\n"
 		"classname 20: \"Keep Alive\"\n"
 		"classname 21: \"Out Edges\"\n"
-		"classname 22: \"Macro Block Edges\"\n"
-		//"classname 23: \"NoInput Nodes\"\n"
-		"infoname 1: \"Attribute\"\n"
-		"infoname 2: \"Verification errors\"\n"
-		"infoname 3: \"Debug info\"\n",
+		"classname 22: \"Macro Block Edges\"\n",
 		name, label, layout, orientation);
+	dump_vcg_infonames(F);
 	dump_vcg_header_colors(F);
 	fprintf(F, "\n");
 }
