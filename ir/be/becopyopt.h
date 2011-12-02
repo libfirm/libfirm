@@ -38,9 +38,7 @@
 #include "bechordal.h"
 #include "beutil.h"
 
-typedef struct copy_opt_t copy_opt_t;
-
-typedef int(*cost_fct_t)(const copy_opt_t *, ir_node *, ir_node *, int);
+typedef int(*cost_fct_t)(const ir_node *node, int input);
 
 typedef struct {
 	int (*copyopt)(copy_opt_t *co); /**< function ptr to run copyopt */
@@ -68,29 +66,6 @@ copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, cost_fct_t get_costs);
  * Free the space used...
  */
 void free_copy_opt(copy_opt_t *co);
-
-/**
- * Computes the costs of a copy according to loop depth
- * @param co   The copy opt object.
- * @param pos  the argument position of arg in the root arguments
- * @return     Must be >= 0 in all cases.
- */
-int co_get_costs_loop_depth(const copy_opt_t *co, ir_node *root, ir_node* arg, int pos);
-
-/**
- * Computes the costs of a copy according to execution frequency
- * @param co   The copy opt object.
- * @param pos  the argument position of arg in the root arguments
- * @return Must be >= 0 in all cases.
- */
-int co_get_costs_exec_freq(const copy_opt_t *co, ir_node *root, ir_node* arg, int pos);
-
-/**
- * All costs equal 1. Using this will reduce the _number_ of copies.
- * @param co   The copy opt object.
- * @return Must be >= 0 in all cases.
- */
-int co_get_costs_all_one(const copy_opt_t *co, ir_node *root, ir_node* arg, int pos);
 
 /**
  * Statistics over a copy optimization module.

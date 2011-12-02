@@ -196,7 +196,7 @@ void sr_reinsert(size_red_t *sr)
 		/* now all bits not set are possible colors */
 		free_col = (unsigned)rbitset_next(possible_cols, 0, true);
 		assert(!rbitset_is_empty(possible_cols, n_regs) && "No free color found. This can not be.");
-		set_irn_col(sr->co, irn, free_col);
+		set_irn_col(sr->co->cls, irn, free_col);
 		pset_remove_ptr(sr->all_removed, irn); /* irn is back in graph again */
 	}
 }

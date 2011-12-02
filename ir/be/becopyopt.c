@@ -72,6 +72,20 @@
 #define COST_FUNC_LOOP     2
 #define COST_FUNC_ALL_ONE  3
 
+/**
+ * Flags for dumping the IFG.
+ */
+enum {
+	CO_IFG_DUMP_COLORS = 1 << 0, /**< Dump the graph colored. */
+	CO_IFG_DUMP_LABELS = 1 << 1, /**< Dump node/edge labels. */
+	CO_IFG_DUMP_SHAPE  = 1 << 2, /**< Give constrained nodes special shapes. */
+	CO_IFG_DUMP_CONSTR = 1 << 3, /**< Dump the node constraints in the label. */
+};
+
+static int co_get_costs_loop_depth(const ir_node *root, int pos);
+static int co_get_costs_exec_freq(const ir_node *root, int pos);
+static int co_get_costs_all_one(const ir_node *root, int pos);
+
 static unsigned   dump_flags  = 0;
 static unsigned   style_flags = 0;
 static int        do_stats    = 0;
@@ -106,7 +120,6 @@ static const lc_opt_enum_mask_items_t style_items[] = {
 };
 
 typedef int (*opt_funcptr)(void);
-
 static const lc_opt_enum_func_ptr_items_t cost_func_items[] = {
 	{ "freq",   (opt_funcptr) co_get_costs_exec_freq },
 	{ "loop",   (opt_funcptr) co_get_costs_loop_depth },
@@ -251,47 +264,56 @@ static int co_is_optimizable_root(ir_node *irn)
 	return 0;
 }
 
-int co_get_costs_loop_depth(const copy_opt_t *co, ir_node *root, ir_node* arg, int pos)
+/**
+ * Computes the costs of a copy according to loop depth
+ * @param pos  the argument position of arg in the root arguments
+ * @return     Must be >= 0 in all cases.
+ */
+static int co_get_costs_loop_depth(const ir_node *root, int pos)
 {
-	int cost = 0;
+	ir_node *block = get_nodes_block(root);
 	ir_loop *loop;
-	ir_node *root_block = get_nodes_block(root);
-	(void) co;
-	(void) arg;
+	int      cost;
 
 	if (is_Phi(root)) {
-		/* for phis the copies are placed in the corresponding pred-block */
-		loop = get_irn_loop(get_Block_cfgpred_block(root_block, pos));
-	} else {
-		/* a perm places the copy in the same block as it resides */
-		loop = get_irn_loop(root_block);
+		block = get_Block_cfgpred_block(block, pos);
 	}
+	loop = get_irn_loop(block);
 	if (loop) {
 		int d = get_loop_depth(loop);
 		cost = d*d;
+	} else {
+		cost = 0;
 	}
 	return 1+cost;
 }
 
-int co_get_costs_exec_freq(const copy_opt_t *co, ir_node *root, ir_node* arg, int pos)
+/**
+ * Computes the costs of a copy according to execution frequency
+ * @param pos  the argument position of arg in the root arguments
+ * @return Must be >= 0 in all cases.
+ */
+static int co_get_costs_exec_freq(const ir_node *root, int pos)
 {
-	int res;
-	ir_node *root_bl = get_nodes_block(root);
-	ir_node *copy_bl = is_Phi(root) ? get_Block_cfgpred_block(root_bl, pos) : root_bl;
-	ir_exec_freq *exec_freq = be_get_irg_exec_freq(co->cenv->irg);
-	(void) arg;
-	res = get_block_execfreq_ulong(exec_freq, copy_bl);
+	ir_graph     *irg       = get_irn_irg(root);
+	ir_node      *root_bl   = get_nodes_block(root);
+	ir_node      *copy_bl
+		= is_Phi(root) ? get_Block_cfgpred_block(root_bl, pos) : root_bl;
+	ir_exec_freq *exec_freq = be_get_irg_exec_freq(irg);
+	int           res       = get_block_execfreq_ulong(exec_freq, copy_bl);
 
 	/* don't allow values smaller than one. */
 	return res < 1 ? 1 : res;
 }
 
-
-int co_get_costs_all_one(const copy_opt_t *co, ir_node *root, ir_node *arg, int pos)
+/**
+ * All costs equal 1. Using this will reduce the _number_ of copies.
+ * @param co   The copy opt object.
+ * @return Must be >= 0 in all cases.
+ */
+static int co_get_costs_all_one(const ir_node *root, int pos)
 {
-	(void) co;
 	(void) root;
-	(void) arg;
 	(void) pos;
 	return 1;
 }
@@ -435,7 +457,7 @@ static void co_collect_units(ir_node *irn, void *env)
 			if (arg == irn)
 				continue;
 			if (nodes_interfere(co->cenv, irn, arg)) {
-				unit->inevitable_costs += co->get_costs(co, irn, arg, i);
+				unit->inevitable_costs += co->get_costs(irn, i);
 				continue;
 			}
 
@@ -457,11 +479,11 @@ static void co_collect_units(ir_node *irn, void *env)
 			if (!arg_pos) { /* a new argument */
 				/* insert node, set costs */
 				unit->nodes[unit->node_count] = arg;
-				unit->costs[unit->node_count] = co->get_costs(co, irn, arg, i);
+				unit->costs[unit->node_count] = co->get_costs(irn, i);
 				unit->node_count++;
 			} else { /* arg has occurred before in same phi */
 				/* increase costs for existing arg */
-				unit->costs[arg_pos] += co->get_costs(co, irn, arg, i);
+				unit->costs[arg_pos] += co->get_costs(irn, i);
 			}
 		}
 		unit->nodes = XREALLOC(unit->nodes, ir_node*, unit->node_count);
@@ -474,7 +496,7 @@ static void co_collect_units(ir_node *irn, void *env)
 		unit->node_count = 2;
 		unit->nodes[0] = irn;
 		unit->nodes[1] = get_Perm_src(irn);
-		unit->costs[1] = co->get_costs(co, irn, unit->nodes[1], -1);
+		unit->costs[1] = co->get_costs(irn, -1);
 	} else {
 		/* Src == Tgt of a 2-addr-code instruction */
 		if (is_2addr_code(req)) {
@@ -507,7 +529,7 @@ static void co_collect_units(ir_node *irn, void *env)
 						if (!arch_irn_is_ignore(o) &&
 								!nodes_interfere(co->cenv, irn, o)) {
 							unit->nodes[k] = o;
-							unit->costs[k] = co->get_costs(co, irn, o, -1);
+							unit->costs[k] = co->get_costs(irn, -1);
 							++k;
 						}
 					}
@@ -819,11 +841,11 @@ static void build_graph_walker(ir_node *irn, void *env)
 	if (is_Reg_Phi(irn)) { /* Phis */
 		for (pos=0, max=get_irn_arity(irn); pos<max; ++pos) {
 			ir_node *arg = get_irn_n(irn, pos);
-			add_edges(co, irn, arg, co->get_costs(co, irn, arg, pos));
+			add_edges(co, irn, arg, co->get_costs(irn, pos));
 		}
 	} else if (is_Perm_Proj(irn)) { /* Perms */
 		ir_node *arg = get_Perm_src(irn);
-		add_edges(co, irn, arg, co->get_costs(co, irn, arg, 0));
+		add_edges(co, irn, arg, co->get_costs(irn, -1));
 	} else { /* 2-address code */
 		if (is_2addr_code(req)) {
 			const unsigned other = req->other_same;
@@ -833,7 +855,7 @@ static void build_graph_walker(ir_node *irn, void *env)
 				if (other & (1U << i)) {
 					ir_node *other = get_irn_n(skip_Proj(irn), i);
 					if (!arch_irn_is_ignore(other))
-						add_edges(co, irn, other, co->get_costs(co, irn, other, 0));
+						add_edges(co, irn, other, co->get_costs(irn, -1));
 				}
 			}
 		}
