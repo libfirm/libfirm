@@ -21,7 +21,6 @@ Q ?= @
 CC ?= cc
 LINK ?= $(CC)
 AR ?= ar ru
-RANLIB ?= ranlib
 DLLEXT ?= .so
 
 # Variants
@@ -166,8 +165,6 @@ libfirm_DEPS    = $(libfirm_OBJECTS:%.o=%.d)
 $(libfirm_a): $(libfirm_OBJECTS)
 	@echo AR $@
 	$(Q)$(AR) ru $@ $^
-	@echo RANLIB $@
-	$(Q)$(RANLIB) $@
 
 $(libfirm_dll): $(libfirm_OBJECTS)
 	@echo LINK $@
