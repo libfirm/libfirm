@@ -456,10 +456,7 @@ static va_node_state va_node_visit(va_info *vai, va_node *van,
 	if (van->marker <= 0) state = va_node_state_analyzed;
 	else state = va_node_state_partial;
 
-	/* Shortcut for accesses from the same region (nothing to add). */
-	if (van->last_hint && (req_region == van->last_hint->region)) {
-		found_hint = van->last_hint;
-	} else {
+	{
 		/* Determine the parent of the request region that is suitable and add
 		 * it to the list of regions for the node, if not already present. */
 		new_region = va_region_upscan(vai, req_region, van->irn);
@@ -468,6 +465,13 @@ static va_node_state va_node_visit(va_info *vai, va_node *van,
 		/* If we did go up, we have to use the predecessor region now. */
 		if (new_region != req_region) {
 			new_region = va_region_ensure_pred(vai, new_region);
+		}
+
+		/* Theta nodes belong to the earliest region. */
+		if (is_Theta(van->irn)) {
+			while (new_region->pred != NULL) {
+				new_region = new_region->pred;
+			}
 		}
 
 		/* Try to rule out, if we have to add a new region hint. */
