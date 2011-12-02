@@ -49,7 +49,7 @@
  * @param n        the node to dump
  * @param reason   indicates which kind of information should be dumped
  */
-static void TEMPLATE_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
+static void TEMPLATE_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 {
 	ir_mode *mode = NULL;
 

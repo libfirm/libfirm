@@ -80,7 +80,7 @@ static bool has_fp_conv_attr(const ir_node *node)
  * @param n        the node to dump
  * @param reason   indicates which kind of information should be dumped
  */
-static void sparc_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
+static void sparc_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 {
 	const sparc_attr_t *sparc_attr;
 

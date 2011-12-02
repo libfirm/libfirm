@@ -61,7 +61,7 @@
  * @param reason   indicates which kind of information should be dumped
  * @return 0 on success or != 0 on failure
  */
-static void ia32_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
+static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 {
 	ir_mode *mode = NULL;
 
@@ -184,7 +184,7 @@ static void ia32_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 
 			/* dump pn code */
 			if (is_ia32_CMovcc(n) || is_ia32_Setcc(n) || is_ia32_Jcc(n)) {
-				ia32_attr_t *attr = get_ia32_attr(n);
+				const ia32_attr_t *attr = get_ia32_attr_const(n);
 				fprintf(F, "condition_code = 0x%X\n", (unsigned)get_ia32_condcode(n));
 				fprintf(F, "ins_permuted = %u\n", (unsigned)attr->data.ins_permuted);
 			}

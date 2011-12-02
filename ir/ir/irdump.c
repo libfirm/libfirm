@@ -229,7 +229,7 @@ static void named_color(int num, const char *name)
 /** Initializes the used colors. */
 static void init_colors(void)
 {
-	static int initialized = 0;
+	static bool initialized = 0;
 	if (initialized)
 		return;
 
@@ -267,7 +267,7 @@ static void print_vcg_color(FILE *out, ird_color_t color)
  *
  * Projs should be dumped near their predecessor, so they get "nearedge".
  */
-static void print_node_edge_kind(FILE *out, ir_node *node)
+static void print_node_edge_kind(FILE *out, const ir_node *node)
 {
 	if (is_Proj(node)) {
 		fprintf(out, "nearedge: ");
@@ -655,7 +655,7 @@ static list_tuple *construct_extblock_lists(ir_graph *irg)
 	return lists;
 }
 
-void dump_node_opcode(FILE *F, ir_node *n)
+void dump_node_opcode(FILE *F, const ir_node *n)
 {
 	const ir_op_ops *ops = get_op_ops(get_irn_op(n));
 
@@ -732,7 +732,7 @@ void dump_node_opcode(FILE *F, ir_node *n)
  * Dump the mode of a node n to a file F.
  * Ignore modes that are "always known".
  */
-static void dump_node_mode(FILE *F, ir_node *n)
+static void dump_node_mode(FILE *F, const ir_node *n)
 {
 	const ir_op_ops *ops = get_op_ops(get_irn_op(n));
 	unsigned         iro;
@@ -768,7 +768,7 @@ static void dump_node_mode(FILE *F, ir_node *n)
 /**
  * Dump the type of a node n to a file F if it's known.
  */
-static int dump_node_typeinfo(FILE *F, ir_node *n)
+static int dump_node_typeinfo(FILE *F, const ir_node *n)
 {
 	int bad = 0;
 
@@ -789,7 +789,7 @@ static int dump_node_typeinfo(FILE *F, ir_node *n)
 /**
  * Dump additional node attributes of some nodes to a file F.
  */
-static void dump_node_nodeattr(FILE *F, ir_node *n)
+static void dump_node_nodeattr(FILE *F, const ir_node *n)
 {
 	ir_node *pred;
 	unsigned code;
@@ -862,14 +862,7 @@ static void dump_node_nodeattr(FILE *F, ir_node *n)
 	}
 }
 
-static void dump_node_ana_vals(FILE *F, ir_node *n)
-{
-	(void) F;
-	(void) n;
-	return;
-}
-
-void dump_node_label(FILE *F, ir_node *n)
+void dump_node_label(FILE *F, const ir_node *n)
 {
 	dump_node_opcode(F, n);
 	fputs(" ", F);
@@ -889,10 +882,10 @@ void dump_node_label(FILE *F, ir_node *n)
  * Dumps the attributes of a node n into the file F.
  * Currently this is only the color of a node.
  */
-static void dump_node_vcgattr(FILE *F, ir_node *node, ir_node *local, int bad)
+static void dump_node_vcgattr(FILE *F, const ir_node *node, const ir_node *local, bool bad)
 {
 	ir_mode *mode;
-	ir_node *n;
+	const ir_node *n;
 
 	if (bad) {
 		print_vcg_color(F, ird_color_error);
@@ -980,7 +973,7 @@ void dump_remove_node_info_callback(void *handle)
 /**
  * Dump the node information of a node n to a file F.
  */
-static void dump_node_info(FILE *F, ir_node *n)
+static void dump_node_info(FILE *F, const ir_node *n)
 {
 	const ir_op_ops *ops = get_op_ops(get_irn_op(n));
 
@@ -1004,7 +997,7 @@ static int is_constlike_node(const ir_node *node)
 
 /** outputs the predecessors of n, that are constants, local.  I.e.,
    generates a copy of the constant predecessors for each node called with. */
-static void dump_const_node_local(FILE *F, ir_node *n)
+static void dump_const_node_local(FILE *F, const ir_node *n)
 {
 	int i;
 	if (!get_opt_dump_const_local()) return;
@@ -1035,7 +1028,7 @@ static void dump_const_node_local(FILE *F, ir_node *n)
 }
 
 /** If the block of an edge is a const_like node, dump it local with an edge */
-static void dump_const_block_local(FILE *F, ir_node *n)
+static void dump_const_block_local(FILE *F, const ir_node *n)
 {
 	ir_node *blk;
 
@@ -1106,7 +1099,7 @@ static void print_type_dbg_info(FILE *F, type_dbg_info *dbg)
 /**
  * Dump a node
  */
-static void dump_node(FILE *F, ir_node *n)
+void dump_node(FILE *F, const ir_node *n)
 {
 	int bad = 0;
 	const char *p;
@@ -1122,7 +1115,6 @@ static void dump_node(FILE *F, ir_node *n)
 	fputs(" label: \"", F);
 	bad = ! irn_verify_irg_dump(n, current_ir_graph, &p);
 	dump_node_label(F, n);
-	dump_node_ana_vals(F, n);
 	//dump_node_ana_info(F, n);
 	fputs("\" ", F);
 
@@ -1137,12 +1129,10 @@ static void dump_node(FILE *F, ir_node *n)
 	fputs("}\n", F);
 	dump_const_node_local(F, n);
 
-	if (dump_node_edge_hook)
-		dump_node_edge_hook(F, n);
 }
 
 /** dump the edge to the block this node belongs to */
-static void dump_ir_block_edge(FILE *F, ir_node *n)
+static void dump_ir_block_edge(FILE *F, const ir_node *n)
 {
 	if (get_opt_dump_const_local() && is_constlike_node(n)) return;
 	if (!is_Block(n)) {
@@ -1172,7 +1162,7 @@ static void dump_ir_block_edge(FILE *F, ir_node *n)
 	}
 }
 
-static void print_data_edge_vcgattr(FILE *F, ir_node *from, int to)
+static void print_data_edge_vcgattr(FILE *F, const ir_node *from, int to)
 {
 	/*
 	 * do not use get_nodes_block() here, will fail
@@ -1184,7 +1174,7 @@ static void print_data_edge_vcgattr(FILE *F, ir_node *from, int to)
 		fprintf(F, INTER_DATA_EDGE_ATTR);
 }
 
-static void print_mem_edge_vcgattr(FILE *F, ir_node *from, int to)
+static void print_mem_edge_vcgattr(FILE *F, const ir_node *from, int to)
 {
 	/*
 	 * do not use get_nodes_block() here, will fail
@@ -1197,7 +1187,7 @@ static void print_mem_edge_vcgattr(FILE *F, ir_node *from, int to)
 }
 
 /** Print the vcg attributes for the edge from node "from" to its "to"th input */
-static void print_edge_vcgattr(FILE *F, ir_node *from, int to)
+static void print_edge_vcgattr(FILE *F, const ir_node *from, int to)
 {
 	assert(from);
 
@@ -1240,9 +1230,12 @@ static void print_edge_vcgattr(FILE *F, ir_node *from, int to)
 }
 
 /** dump edges to our inputs */
-static void dump_ir_data_edges(FILE *F, ir_node *n)
+static void dump_ir_data_edges(FILE *F, const ir_node *n)
 {
 	int i, num;
+
+	if (dump_node_edge_hook)
+		dump_node_edge_hook(F, n);
 
 	if (!(flags & ir_dump_flag_keepalive_edges) && is_End(n)) {
 		/* the End node has only keep-alive edges */
@@ -1323,9 +1316,8 @@ static void dump_ir_edges(ir_node *node, void *env)
 
 
 /** Dumps a node and its edges but not the block edge  */
-static void dump_node_wo_blockedge(ir_node *n, void *env)
+static void dump_node_wo_blockedge(FILE *F, const ir_node *n)
 {
-	FILE *F = (FILE*)env;
 	dump_node(F, n);
 	dump_ir_data_edges(F, n);
 }
@@ -1334,7 +1326,7 @@ static void dump_node_wo_blockedge(ir_node *n, void *env)
 static void dump_node_with_edges(ir_node *n, void *env)
 {
 	FILE *F = (FILE*)env;
-	dump_node_wo_blockedge(n, env);
+	dump_node_wo_blockedge(F, n);
 	if (!node_floats(n))
 		dump_ir_block_edge(F, n);
 }
@@ -1342,8 +1334,9 @@ static void dump_node_with_edges(ir_node *n, void *env)
 /** Dumps a const-like node. */
 static void dump_const_node(ir_node *n, void *env)
 {
+	FILE *F = (FILE*)env;
 	if (is_Block(n)) return;
-	dump_node_wo_blockedge(n, env);
+	dump_node_wo_blockedge(F, n);
 }
 
 /***********************************************************************/
@@ -1373,7 +1366,7 @@ static void dump_const_expression(FILE *F, ir_node *value)
  *  Expects to find nodes belonging to the block as list in its
  *  link field.
  *  Dumps the edges of all nodes including itself. */
-static void dump_whole_block(FILE *F, ir_node *block)
+static void dump_whole_block(FILE *F, const ir_node *block)
 {
 	ir_node *node;
 	ird_color_t color = ird_color_block_background;
@@ -1977,17 +1970,24 @@ static void dump_loop_nodes_into_graph(FILE *F, ir_graph *irg)
 	}
 }
 
+void dump_vcg_header_colors(FILE *F)
+{
+	int i;
+	init_colors();
+	for (i = 0; i < ird_color_count; ++i) {
+		if (color_rgb[i] != NULL) {
+			fprintf(F, "colorentry %s: %s\n", color_names[i], color_rgb[i]);
+		}
+	}
+}
 
 /**
  * dumps the VCG header
  */
 void dump_vcg_header(FILE *F, const char *name, const char *layout, const char *orientation)
 {
-	int   i;
 	const char *label
 		= (flags & ir_dump_flag_disable_edge_labels) ? "no" : "yes";
-
-	init_colors();
 
 	if (! layout)     layout = "Compilergraph";
 	if (!orientation) orientation = "bottom_to_top";
@@ -2027,12 +2027,7 @@ void dump_vcg_header(FILE *F, const char *name, const char *layout, const char *
 		"infoname 2: \"Verification errors\"\n"
 		"infoname 3: \"Debug info\"\n",
 		name, label, layout, orientation);
-
-	for (i = 0; i < ird_color_count; ++i) {
-		if (color_rgb[i] != NULL) {
-			fprintf(F, "colorentry %s: %s\n", color_names[i], color_rgb[i]);
-		}
-	}
+	dump_vcg_header_colors(F);
 	fprintf(F, "\n");
 }
 

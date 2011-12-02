@@ -99,7 +99,7 @@ static bool has_farith_attr(const ir_node *node)
  * @param n        the node to dump
  * @param reason   indicates which kind of information should be dumped
  */
-static void arm_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
+static void arm_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 {
 	switch (reason) {
 	case dump_node_opcode_txt:

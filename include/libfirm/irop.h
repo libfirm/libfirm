@@ -230,7 +230,7 @@ typedef enum {
  * Writes several informations requested by reason to
  * an output file
  */
-typedef void (*dump_node_func)(FILE *out, ir_node *self, dump_reason_t reason);
+typedef void (*dump_node_func)(FILE *out, const ir_node *self, dump_reason_t reason);
 
 /**
  * io_op Operations.
