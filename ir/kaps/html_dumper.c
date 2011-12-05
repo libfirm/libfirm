@@ -86,7 +86,7 @@ static void dump_matrix(FILE *f, pbqp_matrix_t *mat)
 	fprintf(f, "\t\\end{pmatrix}\n");
 }
 
-void dump_edge(FILE *file, pbqp_edge_t *edge)
+void pbqp_dump_edge(FILE *file, pbqp_edge_t *edge)
 {
 	fputs("<tex>\n", file);
 	fprintf(file, "\t\\overline\n{C}_{%u,%u}=\n",
@@ -113,14 +113,14 @@ static void dump_edge_costs(pbqp_t *pbqp)
 			pbqp_edge_t *edge      = src_node->edges[edge_index];
 			unsigned     tgt_index = edge->tgt->index;
 			if (src_index < tgt_index) {
-				dump_edge(pbqp->dump_file, edge);
+				pbqp_dump_edge(pbqp->dump_file, edge);
 			}
 		}
 	}
 	fputs("</p>", pbqp->dump_file);
 }
 
-void dump_node(FILE *file, pbqp_node_t *node)
+void pbqp_dump_node(FILE *file, pbqp_node_t *node)
 {
 	if (node) {
 		fprintf(file, "\tc<sub>%u</sub> = ", node->index);
@@ -136,12 +136,12 @@ static void dump_node_costs(pbqp_t *pbqp)
 	/* dump node costs */
 	fputs("<p>", pbqp->dump_file);
 	for (index = 0; index < pbqp->num_nodes; ++index) {
-		dump_node(pbqp->dump_file, get_node(pbqp, index));
+		pbqp_dump_node(pbqp->dump_file, get_node(pbqp, index));
 	}
 	fputs("</p>", pbqp->dump_file);
 }
 
-void dump_section(FILE *f, int level, const char *txt)
+void pbqp_dump_section(FILE *f, int level, const char *txt)
 {
 	fprintf(f, "<h%d>%s</h%d>\n", level, txt, level);
 }
@@ -188,18 +188,18 @@ void pbqp_dump_graph(pbqp_t *pbqp)
 
 void pbqp_dump_input(pbqp_t *pbqp)
 {
-	dump_section(pbqp->dump_file, 1, "1. PBQP Problem");
-	dump_section(pbqp->dump_file, 2, "1.1 Topology");
+	pbqp_dump_section(pbqp->dump_file, 1, "1. PBQP Problem");
+	pbqp_dump_section(pbqp->dump_file, 2, "1.1 Topology");
 	pbqp_dump_graph(pbqp);
-	dump_section(pbqp->dump_file, 2, "1.2 Cost Vectors");
+	pbqp_dump_section(pbqp->dump_file, 2, "1.2 Cost Vectors");
 	dump_node_costs(pbqp);
-	dump_section(pbqp->dump_file, 2, "1.3 Cost Matrices");
+	pbqp_dump_section(pbqp->dump_file, 2, "1.3 Cost Matrices");
 	dump_edge_costs(pbqp);
 }
 
-void dump_simplifyedge(pbqp_t *pbqp, pbqp_edge_t *edge)
+void pbqp_dump_simplifyedge(pbqp_t *pbqp, pbqp_edge_t *edge)
 {
-	dump_node(pbqp->dump_file, edge->src);
-	dump_edge(pbqp->dump_file, edge);
-	dump_node(pbqp->dump_file, edge->tgt);
+	pbqp_dump_node(pbqp->dump_file, edge->src);
+	pbqp_dump_edge(pbqp->dump_file, edge);
+	pbqp_dump_node(pbqp->dump_file, edge->tgt);
 }

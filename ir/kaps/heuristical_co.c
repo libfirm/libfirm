@@ -85,7 +85,7 @@ static void apply_RN_co(pbqp_t *pbqp)
 	if (pbqp->dump_file) {
 		char     txt[100];
 		sprintf(txt, "RN-Reduction of Node n%d", node->index);
-		dump_section(pbqp->dump_file, 2, txt);
+		pbqp_dump_section(pbqp->dump_file, 2, txt);
 		pbqp_dump_graph(pbqp);
 	}
 #endif
