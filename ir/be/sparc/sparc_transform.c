@@ -2166,7 +2166,6 @@ static ir_node *gen_Phi(ir_node *node)
 		mode = mode_gp;
 		req  = sparc_reg_classes[CLASS_sparc_gp].class_req;
 	} else if (mode_is_float(mode)) {
-		mode = mode;
 		req  = get_float_req(mode);
 	} else {
 		req = arch_no_register_req;
