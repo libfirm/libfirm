@@ -510,8 +510,9 @@ static unsigned int *
 parse_profile(const char *filename, unsigned int num_blocks)
 {
 	unsigned int *result = NULL;
-	char buf[8];
-	size_t ret;
+	char          buf[8];
+	size_t        ret;
+	unsigned int  i;
 
 	FILE *f = fopen(filename, "rb");
 	if (!f) {
@@ -527,9 +528,22 @@ parse_profile(const char *filename, unsigned int num_blocks)
 	}
 
 	result = XMALLOCN(unsigned int, num_blocks);
-	if (fread(result, sizeof(unsigned int) * num_blocks, 1, f) < 1) {
+
+	/* The profiling output format is defined to be a sequence of integer
+	 * values stored little endian format. */
+	for (i = 0; i < num_blocks; ++i) {
+		char bytes[4];
+
+		if ((ret = fread(bytes, 4, 1, f)) < 1)
+			break;
+
+		result[i] = (bytes[0] <<  0) | (bytes[1] <<  8)
+		          | (bytes[2] << 16) | (bytes[3] << 24);
+	}
+
+	if (ret < 1) {
 		DBG((dbg, LEVEL_4, "Failed to read counters... (size: %u)\n",
-		    sizeof(unsigned int) * num_blocks));
+			sizeof(unsigned int) * num_blocks));
 		xfree(result);
 		result = NULL;
 	}

@@ -19,17 +19,39 @@ typedef struct _profile_counter_t {
 
 static profile_counter_t *counters = NULL;
 
+/**
+ * Write counter values to profiling output file.
+ * We define our output format to be a sequence of 32-bit unsigned integer
+ * values stored in little endian format.
+ */
+void write_little_endian(unsigned *counter, unsigned len, FILE *f)
+{
+	unsigned i;
+
+	for (i = 0; i < len; ++i) {
+		unsigned v = counter[i];
+		char     bytes[4];
+
+		bytes[0] = ((v >>  0) & 0xff);
+		bytes[1] = ((v >>  8) & 0xff);
+		bytes[2] = ((v >> 16) & 0xff);
+		bytes[3] = ((v >> 24) & 0xff);
+
+		fwrite(bytes, 4, 1, f);
+	}
+}
+
 static void write_profiles(void)
 {
 	profile_counter_t *counter = counters;
-	while(counter != NULL) {
+	while (counter != NULL) {
 		profile_counter_t *next = counter->next;
 		FILE *f = fopen(counter->filename, "wb");
 		if (f == NULL) {
 			perror("Warning: couldn't open file for writing profiling data");
 		} else {
 			fputs("firmprof", f);
-			fwrite(counter->counters, counter->len * sizeof(unsigned), 1, f);
+			write_little_endian(counter->counters, counter->len, f);
 			fclose(f);
 		}
 		free(counter);
