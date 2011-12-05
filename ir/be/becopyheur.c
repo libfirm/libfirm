@@ -626,7 +626,7 @@ static void ou_optimize(unit_t *ou)
 			/* NO_COLOR is possible, if we had an undo */
 			if (ns->new_color != NO_COLOR) {
 				DBG((dbg, LEVEL_1, "\t    color(%+F) := %d\n", ns->irn, ns->new_color));
-				set_irn_col(ou->co, ns->irn, ns->new_color);
+				set_irn_col(ou->co->cls, ns->irn, ns->new_color);
 			}
 		}
 	}

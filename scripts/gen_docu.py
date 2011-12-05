@@ -127,8 +127,14 @@ def prepare_nodes():
 	return real_nodes
 
 def main(argv):
+	output = sys.stdout
+	if len(argv) > 1:
+		output = open(argv[1], "w")
+
 	real_nodes = prepare_nodes()
 	time = datetime.now().replace(microsecond=0).isoformat(' ')
-	sys.stdout.write(docu_template.render(nodes = real_nodes, time=time))
+	output.write(docu_template.render(nodes = real_nodes, time=time))
+	if output != sys.stdout:
+		output.close()
 
 main(sys.argv)

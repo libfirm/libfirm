@@ -34,9 +34,9 @@
 #include "becopyopt.h"
 #include "beirg.h"
 
-typedef struct be_ifg_t {
+struct be_ifg_t {
 	const be_chordal_env_t *env;
-} be_ifg_t;
+};
 
 typedef struct nodes_iter_t {
 	const be_chordal_env_t *env;
@@ -100,25 +100,5 @@ typedef struct {
 void be_ifg_stat(ir_graph *irg, be_ifg_t *ifg, be_ifg_stat_t *stat);
 
 be_ifg_t *be_create_ifg(const be_chordal_env_t *env);
-
-/*
-     ____                        _
-    |  _ \ _   _ _ __ ___  _ __ (_)_ __   __ _
-    | | | | | | | '_ ` _ \| '_ \| | '_ \ / _` |
-    | |_| | |_| | | | | | | |_) | | | | | (_| |
-    |____/ \__,_|_| |_| |_| .__/|_|_| |_|\__, |
-                          |_|            |___/
-*/
-
-typedef struct be_ifg_dump_dot_cb_t {
-	int  (*is_dump_node)(void *self, ir_node *irn);
-	void (*graph_attr)(FILE *f, void *self);
-	void (*node_attr)(FILE *f, void *self, ir_node *irn);
-	void (*edge_attr)(FILE *f, void *self, ir_node *from, ir_node *to);
-	void (*at_begin)(FILE *file, void *self);
-	void (*at_end)(FILE *file, void *self);
-} be_ifg_dump_dot_cb_t;
-
-void be_ifg_dump_dot(be_ifg_t *ifg, ir_graph *irg, FILE *file, const be_ifg_dump_dot_cb_t *cb, void *self);
 
 #endif

@@ -235,9 +235,6 @@ FIRM_API void dump_globals_as_text(FILE *out);
  */
 FIRM_API void dump_loop(FILE *out, ir_loop *loop);
 
-/** Write the irnode and all its attributes to the file passed. */
-FIRM_API void dump_irnode_to_file(FILE *out, ir_node *node);
-
 /** Write the graph and all its attributes to the file passed.
  *  Does not write the nodes. */
 FIRM_API void dump_graph_as_text(FILE *out, ir_graph *graph);
@@ -359,16 +356,20 @@ FIRM_API ir_dump_flags_t ir_get_dump_flags(void);
  * If this function returns zero, the default attributes are added, else
  * removed.
  */
-typedef int (*dump_node_vcgattr_func)(FILE *out, ir_node *node, ir_node *local);
+typedef int (*dump_node_vcgattr_func)(FILE *out, const ir_node *node, const ir_node *local);
 
 /**
  * This hook is called to dump the vcg attributes of an edge to a file.
  * If this function returns zero, the default attributes are added, else
  * removed.
  */
-typedef int (*dump_edge_vcgattr_func)(FILE *out, ir_node *node, int to);
+typedef int (*dump_edge_vcgattr_func)(FILE *out, const ir_node *node, int to);
 
-typedef void (*dump_node_edge_func)(FILE *out, ir_node *node);
+/**
+ * This hook allows dumping of additional edges (it is called outside a node: {}
+ * environment)
+ */
+typedef void (*dump_node_edge_func)(FILE *out, const ir_node *node);
 
 /** Set the node_vcgattr hook. */
 FIRM_API void set_dump_node_vcgattr_hook(dump_node_vcgattr_func hook);

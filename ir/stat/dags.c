@@ -70,7 +70,7 @@ struct dag_entry_t {
 /**
  * return an DAG entry for the node n
  */
-static dag_entry_t *get_irn_dag_entry(ir_node *n)
+static dag_entry_t *get_irn_dag_entry(const ir_node *n)
 {
 	dag_entry_t *p = (dag_entry_t*)get_irn_link(n);
 
@@ -80,7 +80,8 @@ static dag_entry_t *get_irn_dag_entry(ir_node *n)
 			do {
 				p = p->link;
 			} while (p->link != NULL);
-			set_irn_link(n, p);
+			/* hacky cast to ir_node* */
+			set_irn_link((ir_node*)n, p);
 		}
 	}  /* if */
 	return p;
@@ -315,7 +316,7 @@ static unsigned mark_options;
 /**
  * a vcg attribute hook
  */
-static int stat_dag_mark_hook(FILE *F, ir_node *n, ir_node *l)
+static int stat_dag_mark_hook(FILE *F, const ir_node *n, const ir_node *l)
 {
 	static const char *colors[] = { "purple", "pink", "lightblue", "orange", "khaki", "orchid", "lilac", "turquoise" };
 	dag_entry_t *entry;

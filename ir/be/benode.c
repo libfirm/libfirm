@@ -1133,7 +1133,7 @@ void be_set_phi_reg_req(ir_node *node, const arch_register_req_t *req)
 	assert(mode_is_datab(get_irn_mode(node)));
 }
 
-void be_dump_phi_reg_reqs(FILE *F, ir_node *node, dump_reason_t reason)
+void be_dump_phi_reg_reqs(FILE *F, const ir_node *node, dump_reason_t reason)
 {
 	switch (reason) {
 	case dump_node_opcode_txt:
@@ -1173,7 +1173,7 @@ static const arch_irn_ops_t phi_irn_ops = {
 /**
  * ir_op-Operation: dump a be node to file
  */
-static void dump_node(FILE *f, ir_node *irn, dump_reason_t reason)
+static void dump_node(FILE *f, const ir_node *irn, dump_reason_t reason)
 {
 	assert(is_be_node(irn));
 

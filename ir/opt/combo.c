@@ -454,9 +454,9 @@ static void dump_split_list(const partition_t *list)
 /**
  * Dump partition and type for a node.
  */
-static int dump_partition_hook(FILE *F, ir_node *n, ir_node *local)
+static int dump_partition_hook(FILE *F, const ir_node *n, const ir_node *local)
 {
-	ir_node *irn = local != NULL ? local : n;
+	const ir_node *irn = local != NULL ? local : n;
 	node_t *node = get_irn_node(irn);
 
 	ir_fprintf(F, "info2 : \"partition %u type %+F\"\n", node->part->nr, node->type);

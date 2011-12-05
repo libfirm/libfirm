@@ -20,8 +20,7 @@ Q ?= @
 
 CC ?= cc
 LINK ?= $(CC)
-AR ?= ar ru
-RANLIB ?= ranlib
+AR ?= ar
 DLLEXT ?= .so
 
 # Variants
@@ -151,10 +150,7 @@ $(IR_SPEC_GENERATED_FILES): $(IR_SPEC_GENERATOR) $(IR_SPEC) scripts/spec_util.py
 	$(Q)$(IR_SPEC_GENERATOR) $(IR_SPEC) ir/ir
 
 IR_IO_GENERATOR := scripts/gen_ir_io.py
-IR_IO_GENERATED_FILES := \
-	ir/ir/gen_irio_import.inl \
-	ir/ir/gen_irio_export.inl \
-	ir/ir/gen_irio_lex.inl
+IR_IO_GENERATED_FILES := ir/ir/gen_irio.inl
 
 $(IR_IO_GENERATED_FILES): $(IR_IO_GENERATOR) $(IR_SPEC) scripts/spec_util.py
 	@echo GEN $@
@@ -168,9 +164,7 @@ libfirm_DEPS    = $(libfirm_OBJECTS:%.o=%.d)
 
 $(libfirm_a): $(libfirm_OBJECTS)
 	@echo AR $@
-	$(Q)$(AR) ru $@ $^
-	@echo RANLIB $@
-	$(Q)$(RANLIB) $@
+	$(Q)$(AR) -cru $@ $^
 
 $(libfirm_dll): $(libfirm_OBJECTS)
 	@echo LINK $@

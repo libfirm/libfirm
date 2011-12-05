@@ -72,6 +72,12 @@ static void print_living_values(FILE *F, const ir_nodeset_t *live_nodes)
 	ir_fprintf(F, "\n");
 }
 
+static const char *get_irg_name(ir_graph *irg)
+{
+	ir_entity *entity = get_irg_entity(irg);
+	return get_entity_ld_name(entity);
+}
+
 /**
  * Check if number of live nodes never exceeds the number of available registers.
  */
@@ -92,7 +98,7 @@ static void verify_liveness_walker(ir_node *block, void *data)
 	pressure = ir_nodeset_size(&live_nodes);
 	if (pressure > env->registers_available) {
 		ir_fprintf(stderr, "Verify Warning: Register pressure too high at end of block %+F(%s) (%d/%d):\n",
-			block, get_irg_dump_name(env->irg), pressure, env->registers_available);
+			block, get_irg_name(env->irg), pressure, env->registers_available);
 		print_living_values(stderr, &live_nodes);
 		env->problem_found = 1;
 	}
@@ -108,7 +114,7 @@ static void verify_liveness_walker(ir_node *block, void *data)
 
 		if (pressure > env->registers_available) {
 			ir_fprintf(stderr, "Verify Warning: Register pressure too high before node %+F in %+F(%s) (%d/%d):\n",
-				irn, block, get_irg_dump_name(env->irg), pressure, env->registers_available);
+				irn, block, get_irg_name(env->irg), pressure, env->registers_available);
 			print_living_values(stderr, &live_nodes);
 			env->problem_found = 1;
 			assert(0);
@@ -197,7 +203,7 @@ static void verify_schedule_walker(ir_node *block, void *data)
 		if (is_Phi(node)) {
 			if (non_phi_found != NULL) {
 				ir_fprintf(stderr, "Verify Warning: Phi node %+F scheduled after non-Phi nodes (for example %+F) in block %+F (%s)\n",
-					node, non_phi_found, block, get_irg_dump_name(env->irg));
+					node, non_phi_found, block, get_irg_name(env->irg));
 				env->problem_found = 1;
 			}
 		} else {
@@ -209,7 +215,7 @@ static void verify_schedule_walker(ir_node *block, void *data)
 			/* check, that only one CF operation is scheduled */
 			if (cfchange_found != NULL) {
 				ir_fprintf(stderr, "Verify Warning: Additional control flow changing node %+F scheduled after %+F in block %+F (%s)\n",
-					node, block, cfchange_found, get_irg_dump_name(env->irg));
+					node, block, cfchange_found, get_irg_name(env->irg));
 				env->problem_found = 1;
 			} else {
 				cfchange_found = node;
@@ -218,7 +224,7 @@ static void verify_schedule_walker(ir_node *block, void *data)
 			/* proj and keepany aren't real instructions... */
 			if (!is_Proj(node) && !be_is_Keep(node)) {
 				ir_fprintf(stderr, "Verify Warning: Node %+F scheduled after control flow changing node in block %+F (%s)\n",
-				           node, block, get_irg_dump_name(env->irg));
+				           node, block, get_irg_name(env->irg));
 				env->problem_found = 1;
 			}
 		}
@@ -236,7 +242,7 @@ static void verify_schedule_walker(ir_node *block, void *data)
 
 				if (sched_get_time_step(arg) >= nodetime) {
 					ir_fprintf(stderr, "Verify Warning: Value %+F used by %+F before it was defined in block %+F (%s)\n",
-					           arg, node, block, get_irg_dump_name(env->irg));
+					           arg, node, block, get_irg_name(env->irg));
 					env->problem_found = 1;
 				}
 			}
@@ -245,7 +251,7 @@ static void verify_schedule_walker(ir_node *block, void *data)
 		/* Check that no dead nodes are scheduled */
 		if (get_irn_n_edges(node) == 0) {
 			ir_fprintf(stderr, "Verify warning: Node %+F is dead but scheduled in block %+F (%s)\n",
-			           node, block, get_irg_dump_name(env->irg));
+			           node, block, get_irg_name(env->irg));
 			env->problem_found = 1;
 		}
 
@@ -274,7 +280,7 @@ static void verify_schedule_walker(ir_node *block, void *data)
 			}
 			if (!found) {
 				ir_fprintf(stderr, "%+F not scheduled after its pred node in block %+F (%s)\n",
-				           node, block, get_irg_dump_name(env->irg));
+				           node, block, get_irg_name(env->irg));
 				env->problem_found = 1;
 			}
 		}
@@ -289,7 +295,7 @@ static void check_schedule(ir_node *node, void *data)
 
 	if (should_be != scheduled) {
 		ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should%s be scheduled\n",
-			node, get_nodes_block(node), get_irg_dump_name(env->irg), should_be ? "" : " not");
+			node, get_nodes_block(node), get_irg_name(env->irg), should_be ? "" : " not");
 		env->problem_found = 1;
 	}
 }
@@ -386,7 +392,7 @@ static void be_check_entity(be_verify_spillslots_env_t *env, ir_node *node, ir_e
 {
 	if (ent == NULL) {
 		ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have an entity assigned\n",
-		           node, get_nodes_block(node), get_irg_dump_name(env->irg));
+		           node, get_nodes_block(node), get_irg_name(env->irg));
 	}
 }
 
@@ -398,7 +404,7 @@ static void collect_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_nod
 
 	if (spillent != ent) {
 		ir_fprintf(stderr, "Verify warning: Spill %+F has different entity than reload %+F in block %+F(%s)\n",
-			node, reload, get_nodes_block(node), get_irg_dump_name(env->irg));
+			node, reload, get_nodes_block(node), get_irg_name(env->irg));
 		env->problem_found = 1;
 	}
 }
@@ -421,7 +427,7 @@ static void collect_memperm(be_verify_spillslots_env_t *env, ir_node *node, ir_n
 	be_check_entity(env, memperm, spillent);
 	if (spillent != ent) {
 		ir_fprintf(stderr, "Verify warning: MemPerm %+F has different entity than reload %+F in block %+F(%s)\n",
-			node, reload, get_nodes_block(node), get_irg_dump_name(env->irg));
+			node, reload, get_nodes_block(node), get_irg_name(env->irg));
 		env->problem_found = 1;
 	}
 
@@ -478,7 +484,7 @@ static void collect(be_verify_spillslots_env_t *env, ir_node *node, ir_node *rel
 		/* Disabled for now, spills might get transformed by the backend */
 #if 0
 		ir_fprintf(stderr, "Verify warning: No spill, memperm or memphi attached to node %+F found from node %+F in block %+F(%s)\n",
-			node, reload, get_nodes_block(node), get_irg_dump_name(env->irg));
+			node, reload, get_nodes_block(node), get_irg_name(env->irg));
 		env->problem_found = 1;
 #endif
 	}
@@ -498,7 +504,7 @@ static void collect_spills_walker(ir_node *node, void *data)
 
 		if (spill == NULL) {
 			ir_fprintf(stderr, "Verify warning: No spill attached to reload %+F in block %+F(%s)\n",
-			           node, get_nodes_block(node), get_irg_dump_name(env->irg));
+			           node, get_nodes_block(node), get_irg_name(env->irg));
 			env->problem_found = 1;
 			return;
 		}
@@ -534,8 +540,8 @@ static void check_spillslot_interference(be_verify_spillslots_env_t *env)
 
 			if (my_values_interfere(sp1->spill, sp2->spill)) {
 				ir_fprintf(stderr, "Verify warning: Spillslots for %+F in block %+F(%s) and %+F in block %+F(%s) interfere\n",
-					sp1->spill, get_nodes_block(sp1->spill), get_irg_dump_name(env->irg),
-					sp2->spill, get_nodes_block(sp2->spill), get_irg_dump_name(env->irg));
+					sp1->spill, get_nodes_block(sp1->spill), get_irg_name(env->irg),
+					sp2->spill, get_nodes_block(sp2->spill), get_irg_name(env->irg));
 				env->problem_found = 1;
 				my_values_interfere(sp1->spill, sp2->spill);
 			}
@@ -556,7 +562,7 @@ static void check_lonely_spills(ir_node *node, void *data)
 
 		if (spill == NULL) {
 			ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) not connected to a reload\n",
-			           node, get_nodes_block(node), get_irg_dump_name(env->irg));
+			           node, get_nodes_block(node), get_irg_name(env->irg));
 		}
 	}
 }
@@ -670,11 +676,11 @@ static void check_output_constraints(const ir_node *node)
 	const arch_register_t     *reg = arch_get_irn_register(node);
 	if (reg == NULL) {
 		ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have a register assigned\n",
-				node, get_nodes_block(node), get_irg_dump_name(irg));
+				node, get_nodes_block(node), get_irg_name(irg));
 		problem_found = true;
 	} else if (!arch_reg_is_allocatable(req, reg)) {
 		ir_fprintf(stderr, "Verify warning: Register %s assigned as output of %+F not allowed (register constraint) in block %+F(%s)\n",
-				reg->name, node, get_nodes_block(node), get_irg_dump_name(irg));
+				reg->name, node, get_nodes_block(node), get_irg_name(irg));
 		problem_found = true;
 	}
 }
@@ -693,7 +699,7 @@ static void check_input_constraints(ir_node *node)
 
 		if (is_Bad(pred)) {
 			ir_fprintf(stderr, "Verify warning: %+F in block %+F(%s) has Bad as input %d\n",
-				node, get_nodes_block(node), get_irg_dump_name(irg), i);
+				node, get_nodes_block(node), get_irg_name(irg), i);
 			problem_found = 1;
 			continue;
 		}
@@ -702,7 +708,7 @@ static void check_input_constraints(ir_node *node)
 
 		if (req->width > pred_req->width) {
 			ir_fprintf(stderr, "Verify warning: %+F in block %+F(%s) register width of value at input %d too small\n",
-			           node, get_nodes_block(node), get_irg_dump_name(irg), i);
+			           node, get_nodes_block(node), get_irg_name(irg), i);
 			problem_found = 1;
 		}
 
@@ -710,19 +716,19 @@ static void check_input_constraints(ir_node *node)
 		if (req->type & arch_register_req_type_aligned) {
 			if (reg->index % req->width != 0) {
 				ir_fprintf(stderr, "Verify warning: %+F in block %+F(%s) register allignment not fulfilled\n",
-				           node, get_nodes_block(node), get_irg_dump_name(irg), i);
+				           node, get_nodes_block(node), get_irg_name(irg), i);
 				problem_found = 1;
 			}
 		}
 
 		if (reg == NULL) {
 			ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have a register assigned (%+F input constraint)\n",
-			           pred, get_nodes_block(pred), get_irg_dump_name(irg), node);
+			           pred, get_nodes_block(pred), get_irg_name(irg), node);
 			problem_found = 1;
 			continue;
 		} else if (!arch_reg_is_allocatable(req, reg)) {
 			ir_fprintf(stderr, "Verify warning: Register %s as input %d of %+F not allowed (register constraint) in block %+F(%s)\n",
-			           reg->name, i, node, get_nodes_block(node), get_irg_dump_name(irg));
+			           reg->name, i, node, get_nodes_block(node), get_irg_name(irg));
 			problem_found = 1;
 		}
 	}
@@ -742,7 +748,7 @@ static void check_input_constraints(ir_node *node)
 				const char *reg_name  = reg != NULL ? reg->name : "(null)";
 				ir_fprintf(stderr, "Verify warning: Input %d of %+F in block %+F(%s) uses register %s instead of %s\n",
 				           i, node, get_nodes_block(node),
-				           get_irg_dump_name(irg), pred_name, reg_name);
+				           get_irg_name(irg), pred_name, reg_name);
 				problem_found = 1;
 			}
 		}
@@ -767,7 +773,7 @@ static void value_used(const ir_node *block, const ir_node *node)
 		if (reg_node != NULL && reg_node != node) {
 			const arch_register_t *realreg = &arch_env->registers[idx+i];
 			ir_fprintf(stderr, "Verify warning: Register %s assigned more than once in block %+F(%s) (nodes %+F %+F)\n",
-					   realreg->name, block, get_irg_dump_name(irg),
+					   realreg->name, block, get_irg_name(irg),
 					   node, reg_node);
 			problem_found = true;
 		}
@@ -800,7 +806,7 @@ static void value_def(const ir_node *node)
 			const arch_register_t *realreg = &arch_env->registers[idx+i];
 			ir_fprintf(stderr, "Verify warning: Node %+F not registered as value for Register %s (but %+F) in block %+F(%s)\n",
 			           node, realreg->name, reg_node, get_nodes_block(node),
-			           get_irg_dump_name(irg));
+			           get_irg_name(irg));
 			problem_found = true;
 		}
 		registers[idx+i] = NULL;
@@ -865,7 +871,7 @@ static void verify_block_register_allocation(ir_node *block, void *data)
 			continue;
 
 		ir_fprintf(stderr, "Verify warning: Node %+F not live-in and no def found in block %+F(%s)\n",
-				registers[i], block, get_irg_dump_name(irg));
+				registers[i], block, get_irg_name(irg));
 		problem_found = true;
 	}
 }
@@ -883,4 +889,122 @@ bool be_verify_register_allocation(ir_graph *new_irg)
 	be_liveness_free(lv);
 
 	return !problem_found;
+}
+
+/*--------------------------------------------------------------------------- */
+
+/**
+ * Walker: checks that every predecessors of a node dominates the node.
+ */
+static void dom_check(ir_node *irn, void *data)
+{
+	bool *problem_found = (bool*)data;
+
+	if (!is_Block(irn) && irn != get_irg_end(get_irn_irg(irn))) {
+		int i, n;
+		ir_node *bl = get_nodes_block(irn);
+
+		for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
+			ir_node *op     = get_irn_n(irn, i);
+			ir_node *def_bl = get_nodes_block(op);
+			ir_node *use_bl = bl;
+
+			if (is_Phi(irn))
+				use_bl = get_Block_cfgpred_block(bl, i);
+
+			if (get_irn_opcode(use_bl) != iro_Bad
+			     && get_irn_opcode(def_bl) != iro_Bad
+			     && !block_dominates(def_bl, use_bl)) {
+				ir_fprintf(stderr, "Verify warning: %+F in %+F must dominate %+F for user %+F (%s)\n", op, def_bl, use_bl, irn, get_irg_name(get_irn_irg(op)));
+				*problem_found = true;
+			}
+		}
+	}
+}
+
+/* Check, if the SSA dominance property is fulfilled. */
+bool be_check_dominance(ir_graph *irg)
+{
+	bool problem_found = false;
+
+	assure_doms(irg);
+	irg_walk_graph(irg, dom_check, NULL, &problem_found);
+
+	return !problem_found;
+}
+
+/*--------------------------------------------------------------------------- */
+
+typedef struct lv_walker_t {
+	be_lv_t *lv;
+	void *data;
+} lv_walker_t;
+
+static const char *lv_flags_to_str(unsigned flags)
+{
+	static const char *states[] = {
+		"---",
+		"i--",
+		"-e-",
+		"ie-",
+		"--o",
+		"i-o",
+		"-eo",
+		"ieo"
+	};
+
+	return states[flags & 7];
+}
+
+static void lv_check_walker(ir_node *bl, void *data)
+{
+	lv_walker_t *w = (lv_walker_t*)data;
+	be_lv_t *lv    = w->lv;
+	be_lv_t *fresh = (be_lv_t*)w->data;
+
+	be_lv_info_t *curr = (be_lv_info_t*)ir_nodehashmap_get(&fresh->map, bl);
+	be_lv_info_t *fr   = (be_lv_info_t*)ir_nodehashmap_get(&fresh->map, bl);
+
+	if (!fr && curr && curr[0].head.n_members > 0) {
+		unsigned i;
+
+		ir_fprintf(stderr, "%+F liveness should be empty but current liveness contains:\n", bl);
+		for (i = 0; i < curr[0].head.n_members; ++i) {
+			ir_fprintf(stderr, "\t%+F\n", get_idx_irn(lv->irg, curr[1 + i].node.idx));
+		}
+	}
+
+	else if (curr) {
+		unsigned n_curr  = curr[0].head.n_members;
+		unsigned n_fresh = fr[0].head.n_members;
+
+		unsigned i;
+
+		if (n_curr != n_fresh) {
+			ir_fprintf(stderr, "%+F: liveness set sizes differ. curr %d, correct %d\n", bl, n_curr, n_fresh);
+
+			ir_fprintf(stderr, "current:\n");
+			for (i = 0; i < n_curr; ++i) {
+				be_lv_info_node_t *n = &curr[1 + i].node;
+				ir_fprintf(stderr, "%+F %u %+F %s\n", bl, i, get_idx_irn(lv->irg, n->idx), lv_flags_to_str(n->flags));
+			}
+
+			ir_fprintf(stderr, "correct:\n");
+			for (i = 0; i < n_fresh; ++i) {
+				be_lv_info_node_t *n = &fr[1 + i].node;
+				ir_fprintf(stderr, "%+F %u %+F %s\n", bl, i, get_idx_irn(lv->irg, n->idx), lv_flags_to_str(n->flags));
+			}
+		}
+	}
+}
+
+void be_liveness_check(be_lv_t *lv)
+{
+	lv_walker_t w;
+	be_lv_t *fresh = be_liveness(lv->irg);
+
+	w.lv   = lv;
+	w.data = fresh;
+	irg_block_walk_graph(lv->irg, lv_check_walker, NULL, &w);
+	be_liveness_free(fresh);
 }

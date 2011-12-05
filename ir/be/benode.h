@@ -445,7 +445,7 @@ void be_node_set_reg_class_out(ir_node *irn, int pos,
  */
 void be_set_phi_reg_req(ir_node *phi, const arch_register_req_t *req);
 
-void be_dump_phi_reg_reqs(FILE *out, ir_node *node, dump_reason_t reason);
+void be_dump_phi_reg_reqs(FILE *out, const ir_node *node, dump_reason_t reason);
 
 /**
  * Creates a new phi with associated backend informations

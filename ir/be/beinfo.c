@@ -147,7 +147,7 @@ void be_info_init(void)
 /**
  * Edge hook to dump the schedule edges.
  */
-static void sched_edge_hook(FILE *F, ir_node *irn)
+static void sched_edge_hook(FILE *F, const ir_node *irn)
 {
 	if (is_Proj(irn))
 		return;
