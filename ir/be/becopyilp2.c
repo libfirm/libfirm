@@ -59,10 +59,9 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 typedef struct local_env_t {
-	int       first_x_var;
-	int       last_x_var;
-	unsigned  n_colors;
-	unsigned *normal_colors;
+	int             first_x_var;
+	int             last_x_var;
+	const unsigned *allocatable_colors;
 } local_env_t;
 
 static void make_color_var_name(char *buf, size_t buf_size,
@@ -74,13 +73,14 @@ static void make_color_var_name(char *buf, size_t buf_size,
 
 static void build_coloring_cstr(ilp_env_t *ienv)
 {
-	local_env_t *lenv   = ienv->env;
-	be_ifg_t    *ifg    = ienv->co->cenv->ifg;
-	unsigned     n_regs = arch_register_class_n_regs(ienv->co->cls);
-	nodes_iter_t iter;
-	unsigned    *colors;
-	ir_node     *irn;
-	char         buf[32];
+	local_env_t    *lenv   = ienv->env;
+	be_ifg_t       *ifg    = ienv->co->cenv->ifg;
+	unsigned        n_regs = arch_register_class_n_regs(ienv->co->cls);
+	const unsigned *allocatable_colors = lenv->allocatable_colors;
+	nodes_iter_t    iter;
+	unsigned       *colors;
+	ir_node        *irn;
+	char            buf[32];
 
 	rbitset_alloca(colors, n_regs);
 
@@ -99,7 +99,7 @@ static void build_coloring_cstr(ilp_env_t *ienv)
 		if (arch_register_req_is(req, limited)) {
 			rbitset_copy(colors, req->limited, n_regs);
 		} else {
-			rbitset_copy(colors, lenv->normal_colors, n_regs);
+			rbitset_copy(colors, allocatable_colors, n_regs);
 		}
 
 		/* add the coloring constraint */
@@ -144,11 +144,12 @@ static void build_coloring_cstr(ilp_env_t *ienv)
 
 static void build_interference_cstr(ilp_env_t *ienv)
 {
-	lpp_t         *lpp      = ienv->lp;
-	local_env_t   *lenv     = ienv->env;
-	be_ifg_t      *ifg      = ienv->co->cenv->ifg;
-	unsigned       n_colors = lenv->n_colors;
-	ir_node      **clique   = ALLOCAN(ir_node*, n_colors);
+	lpp_t          *lpp      = ienv->lp;
+	local_env_t    *lenv     = ienv->env;
+	be_ifg_t       *ifg      = ienv->co->cenv->ifg;
+	unsigned        n_colors = arch_register_class_n_regs(ienv->co->cls);
+	ir_node       **clique   = ALLOCAN(ir_node*, n_colors);
+	const unsigned *allocatable_colors = lenv->allocatable_colors;
 	cliques_iter_t iter;
 	int            size;
 	unsigned       col;
@@ -168,7 +169,11 @@ static void build_interference_cstr(ilp_env_t *ienv)
 
 		/* for all colors */
 		for (col=0; col<n_colors; ++col) {
-			int cst_idx = lpp_add_cst(lpp, NULL, lpp_less_equal, 1.0);
+			int cst_idx;
+			if (!rbitset_is_set(allocatable_colors, col))
+				continue;
+
+			cst_idx = lpp_add_cst(lpp, NULL, lpp_less_equal, 1.0);
 
 			/* for each member of this clique */
 			for (i=0; i<size; ++i) {
@@ -207,9 +212,8 @@ static void make_affinity_var_name(char *buf, size_t buf_size,
  */
 static void build_affinity_cstr(ilp_env_t *ienv)
 {
-	local_env_t *lenv     = ienv->env;
-	unsigned     n_colors = lenv->n_colors;
-	unit_t      *curr;
+	unsigned  n_colors = arch_register_class_n_regs(ienv->co->cls);
+	unit_t   *curr;
 
 	/* for all optimization units */
 	list_for_each_entry(unit_t, curr, &ienv->co->units, units) {
@@ -503,10 +507,10 @@ end:
 }
 
 /**
- *  Search a path of affinity edges, whose ends are connected
- *  by an interference edge and there are no other interference
- *  edges in between.
- *  Then at least one of these affinity edges must break.
+ * Search a path of affinity edges, whose ends are connected
+ * by an interference edge and there are no other interference
+ * edges in between.
+ * Then at least one of these affinity edges must break.
  */
 static void build_path_cstr(ilp_env_t *ienv)
 {
@@ -594,6 +598,7 @@ static void ilp2_apply(ilp_env_t *ienv)
  */
 static int co_solve_ilp2(copy_opt_t *co)
 {
+	unsigned       *allocatable_colors;
 	unsigned        n_regs = arch_register_class_n_regs(co->cls);
 	lpp_sol_state_t sol_state;
 	ilp_env_t      *ienv;
@@ -606,9 +611,9 @@ static int co_solve_ilp2(copy_opt_t *co)
 	my.last_x_var  = -1;
 	FIRM_DBG_REGISTER(dbg, "firm.be.coilp2");
 
-	rbitset_alloca(my.normal_colors, n_regs);
-	be_set_allocatable_regs(co->irg, co->cls, my.normal_colors);
-	my.n_colors = rbitset_popcount(my.normal_colors, n_regs);
+	rbitset_alloca(allocatable_colors, n_regs);
+	be_set_allocatable_regs(co->irg, co->cls, allocatable_colors);
+	my.allocatable_colors = allocatable_colors;
 
 	ienv = new_ilp_env(co, ilp2_build, ilp2_apply, &my);
 
