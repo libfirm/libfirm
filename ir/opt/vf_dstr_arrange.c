@@ -456,85 +456,83 @@ static va_node_state va_node_visit(va_info *vai, va_node *van,
 	if (van->marker <= 0) state = va_node_state_analyzed;
 	else state = va_node_state_partial;
 
-	{
-		/* Determine the parent of the request region that is suitable and add
-		 * it to the list of regions for the node, if not already present. */
-		new_region = va_region_upscan(vai, req_region, van->irn);
-		assert(new_region); /* Something is wrong if we get no cond here. */
+	/* Determine the parent of the request region that is suitable and add
+	 * it to the list of regions for the node, if not already present. */
+	new_region = va_region_upscan(vai, req_region, van->irn);
+	assert(new_region); /* Something is wrong if we get no cond here. */
 
-		/* If we did go up, we have to use the predecessor region now. */
-		if (new_region != req_region) {
-			new_region = va_region_ensure_pred(vai, new_region);
+	/* If we did go up, we have to use the predecessor region now. */
+	if (new_region != req_region) {
+		new_region = va_region_ensure_pred(vai, new_region);
+	}
+
+	/* Theta nodes belong to the earliest region. */
+	if (is_Theta(van->irn)) {
+		while (new_region->pred != NULL) {
+			new_region = new_region->pred;
 		}
+	}
 
-		/* Theta nodes belong to the earliest region. */
-		if (is_Theta(van->irn)) {
-			while (new_region->pred != NULL) {
-				new_region = new_region->pred;
-			}
-		}
+	/* Try to rule out, if we have to add a new region hint. */
+	foreach_plist_lazy(van->hints, it) {
+		va_hint *hint = plist_element_get_value(it);
 
-		/* Try to rule out, if we have to add a new region hint. */
-		foreach_plist_lazy(van->hints, it) {
-			va_hint *hint = plist_element_get_value(it);
-
-			/**
-			 * Always place the node in the newest region with the given cond.
-			 * Allow use edges to leave the regions nesting level. This avoids
-			 * duplication but may require additional phi nodes. Sample:
-			 *
-			 * if (a) { c += b; }
-			 * c++;
-			 * if (a) { c += b; }
-			 *
-			 * The node b is only evaluated if a is true. However we are unable
-			 * to combine the two branches here. Smart re-use can only evaluate
-			 * b once, but a phi node is required after the first branch to
-			 * select a value for the addition.
-			 *
-			 * If smart re-use is disabled, a use edge is not allowed to leave
-			 * and enter a region. So an edge from the second addition to the
-			 * first and only b is not allowed. This should avoid additional
-			 * phi nodes.
-			 */
+		/**
+		 * Always place the node in the newest region with the given cond.
+		 * Allow use edges to leave the regions nesting level. This avoids
+		 * duplication but may require additional phi nodes. Sample:
+		 *
+		 * if (a) { c += b; }
+		 * c++;
+		 * if (a) { c += b; }
+		 *
+		 * The node b is only evaluated if a is true. However we are unable
+		 * to combine the two branches here. Smart re-use can only evaluate
+		 * b once, but a phi node is required after the first branch to
+		 * select a value for the addition.
+		 *
+		 * If smart re-use is disabled, a use edge is not allowed to leave
+		 * and enter a region. So an edge from the second addition to the
+		 * first and only b is not allowed. This should avoid additional
+		 * phi nodes.
+		 */
 
 #if VA_SMART_RE_USE
-			if (vf_cond_equals(hint->region->cond, new_region->cond)) {
+		if (vf_cond_equals(hint->region->cond, new_region->cond)) {
 #else
-			/* The base index will stay the same for all regions in one branch. */
-			if (hint->region->base == new_region->base) {
+		/* The base index will stay the same for all regions in one branch. */
+		if (hint->region->base == new_region->base) {
 #endif
-				/* Use the newer region for the hint. */
+			/* Use the newer region for the hint. */
 
-				/* FIXME: shouldn't this be placed after the loop, so that it
-				 * also runs when searching is cut short? */
+			/* FIXME: shouldn't this be placed after the loop, so that it
+			 * also runs when searching is cut short? */
 
-				if (new_region->index > hint->region->index) {
+			if (new_region->index > hint->region->index) {
 #if VA_SMART_RE_USE
-					va_place_phis(vai, hint->region, new_region, van->irn, hint->edges);
+				va_place_phis(vai, hint->region, new_region, van->irn, hint->edges);
 #endif
-					hint->region = new_region;
+				hint->region = new_region;
 #if VA_SMART_RE_USE
-				} else {
-					va_place_phis(vai, new_region, hint->region, van->irn, hint->edges);
+			} else {
+				va_place_phis(vai, new_region, hint->region, van->irn, hint->edges);
 #endif
-				}
-
-				found_hint = hint;
-				break;
 			}
-		}
 
-		/* Create a new hint? */
-		if (!found_hint) {
-			found_hint = OALLOC(&vai->obst, va_hint);
-			found_hint->region = new_region;
-			found_hint->edges  = NULL;
-			found_hint->copy   = NULL;
-
-			/* Nodes clones will never need this list. */
-			va_plist_lazy_insert(vai, &van->hints, found_hint);
+			found_hint = hint;
+			break;
 		}
+	}
+
+	/* Create a new hint? */
+	if (!found_hint) {
+		found_hint = OALLOC(&vai->obst, va_hint);
+		found_hint->region = new_region;
+		found_hint->edges  = NULL;
+		found_hint->copy   = NULL;
+
+		/* Nodes clones will never need this list. */
+		va_plist_lazy_insert(vai, &van->hints, found_hint);
 	}
 
 	assert(found_hint);
