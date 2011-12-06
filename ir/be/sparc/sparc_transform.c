@@ -2134,16 +2134,12 @@ static const arch_register_req_t float4_req = {
 
 static const arch_register_req_t *get_float_req(ir_mode *mode)
 {
-	unsigned bits = get_mode_size_bits(mode);
-
 	assert(mode_is_float(mode));
-	if (bits == 32) {
-		return &float1_req;
-	} else if (bits == 64) {
-		return &float2_req;
-	} else {
-		assert(bits == 128);
-		return &float4_req;
+	switch (get_mode_size_bits(mode)) {
+		case  32: return &float1_req;
+		case  64: return &float2_req;
+		case 128: return &float4_req;
+		default:  panic("invalid float mode");
 	}
 }
 
