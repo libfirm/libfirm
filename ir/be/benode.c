@@ -624,7 +624,7 @@ ir_node *be_new_IncSP(const arch_register_t *sp, ir_node *bl,
 
 	in[0]     = old_sp;
 	irn       = new_ir_node(NULL, irg, bl, op_be_IncSP, sp->reg_class->mode,
-	                        sizeof(in) / sizeof(in[0]), in);
+	                        ARRAY_SIZE(in), in);
 	init_node_attr(irn, 1, 1);
 	a                     = (be_incsp_attr_t*)get_irn_generic_attr(irn);
 	a->offset             = offset;

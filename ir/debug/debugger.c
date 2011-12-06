@@ -52,6 +52,7 @@
 #include "iredges_t.h"
 #include "debug.h"
 #include "error.h"
+#include "util.h"
 
 #ifdef _WIN32
 /* Break into the debugger. The Win32 way. */
@@ -968,7 +969,7 @@ static char next_char(void)
 static unsigned get_token(void)
 {
 	char c;
-	int i;
+	size_t i;
 
 	/* skip white space */
 	do {
@@ -992,7 +993,7 @@ static unsigned get_token(void)
 			++tok_start;
 			--len;
 		}
-		for (i = sizeof(reserved)/sizeof(reserved[0]) - 1; i >= 0; --i) {
+		for (i = ARRAY_SIZE(reserved); i-- != 0;) {
 			if (strncasecmp(tok_start, reserved[i], len) == 0 && reserved[i][len] == '\0')
 				return 256 + i;
 		}

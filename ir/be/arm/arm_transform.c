@@ -35,6 +35,7 @@
 #include "iropt_t.h"
 #include "debug.h"
 #include "error.h"
+#include "util.h"
 
 #include "benode.h"
 #include "beirg.h"
@@ -1731,7 +1732,7 @@ static ir_node *gen_Start(ir_node *node)
 			be_prolog_add_reg(abihelper, param->reg1, arch_register_req_type_none);
 	}
 	/* announce that we need the values of the callee save regs */
-	for (i = 0; i < (sizeof(callee_saves)/sizeof(callee_saves[0])); ++i) {
+	for (i = 0; i != ARRAY_SIZE(callee_saves); ++i) {
 		be_prolog_add_reg(abihelper, callee_saves[i], arch_register_req_type_none);
 	}
 
@@ -1771,11 +1772,11 @@ static ir_node *gen_Return(ir_node *node)
 	dbg_info  *dbgi           = get_irn_dbg_info(node);
 	ir_node   *mem            = get_Return_mem(node);
 	ir_node   *new_mem        = be_transform_node(mem);
-	int        n_callee_saves = sizeof(callee_saves)/sizeof(callee_saves[0]);
+	size_t     n_callee_saves = ARRAY_SIZE(callee_saves);
 	ir_node   *sp_proj        = get_stack_pointer_for(node);
-	int        n_res          = get_Return_n_ress(node);
+	size_t     n_res          = get_Return_n_ress(node);
 	ir_node   *bereturn;
-	int        i;
+	size_t     i;
 
 	be_epilog_begin(abihelper);
 	be_epilog_set_memory(abihelper, new_mem);
@@ -1820,25 +1821,24 @@ static ir_node *gen_Call(ir_node *node)
 	ir_type              *type         = get_Call_type(node);
 	calling_convention_t *cconv        = arm_decide_calling_convention(NULL, type);
 	size_t                n_params     = get_Call_n_params(node);
-	size_t                n_param_regs = cconv->n_reg_params;
+	size_t const          n_param_regs = cconv->n_reg_params;
 	/* max inputs: memory, callee, register arguments */
-	int                   max_inputs   = 2 + n_param_regs;
+	size_t const          max_inputs   = 2 + n_param_regs;
 	ir_node             **in           = ALLOCAN(ir_node*, max_inputs);
 	ir_node             **sync_ins     = ALLOCAN(ir_node*, max_inputs);
 	struct obstack       *obst         = be_get_be_obst(irg);
 	const arch_register_req_t **in_req
 		= OALLOCNZ(obst, const arch_register_req_t*, max_inputs);
-	int                   in_arity     = 0;
-	int                   sync_arity   = 0;
-	int                   n_caller_saves
-		= sizeof(caller_saves)/sizeof(caller_saves[0]);
-	ir_entity            *entity       = NULL;
-	ir_node              *incsp        = NULL;
+	size_t                in_arity       = 0;
+	size_t                sync_arity     = 0;
+	size_t const          n_caller_saves = ARRAY_SIZE(caller_saves);
+	ir_entity            *entity         = NULL;
+	ir_node              *incsp          = NULL;
 	int                   mem_pos;
 	ir_node              *res;
 	size_t                p;
-	int                   o;
-	int                   out_arity;
+	size_t                o;
+	size_t                out_arity;
 
 	assert(n_params == get_method_n_params(type));
 

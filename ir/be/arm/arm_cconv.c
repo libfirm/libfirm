@@ -64,17 +64,14 @@ calling_convention_t *arm_decide_calling_convention(const ir_graph *irg,
 	unsigned              n_param_regs_used = 0;
 	reg_or_stackslot_t   *params;
 	reg_or_stackslot_t   *results;
-	int                   n_param_regs
-		= sizeof(param_regs)/sizeof(param_regs[0]);
-	int                   n_result_regs
-		= sizeof(result_regs)/sizeof(result_regs[0]);
-	int                   n_float_result_regs
-		= sizeof(float_result_regs)/sizeof(float_result_regs[0]);
-	int                   n_params;
-	int                   n_results;
-	int                   i;
-	int                   regnum;
-	int                   float_regnum;
+	size_t const          n_param_regs        = ARRAY_SIZE(param_regs);
+	size_t const          n_result_regs       = ARRAY_SIZE(result_regs);
+	size_t const          n_float_result_regs = ARRAY_SIZE(float_result_regs);
+	size_t                n_params;
+	size_t                n_results;
+	size_t                i;
+	size_t                regnum;
+	size_t                float_regnum;
 	calling_convention_t *cconv;
 
 	/* determine how parameters are passed */

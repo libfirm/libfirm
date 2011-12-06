@@ -323,7 +323,7 @@ static graph_entry_t *graph_get_entry(ir_graph *irg, hmap_graph_entry_t *hmap)
 	elem->block_hash = NULL;
 	elem->extbb_hash = NULL;
 
-	for (i = 0; i < sizeof(elem->opt_hash)/sizeof(elem->opt_hash[0]); ++i)
+	for (i = 0; i != ARRAY_SIZE(elem->opt_hash); ++i)
 		elem->opt_hash[i] = new_pset(opt_cmp, 4);
 
 	return (graph_entry_t*)pset_insert(hmap, elem, HASH_PTR(irg));
