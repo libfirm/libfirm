@@ -532,9 +532,9 @@ parse_profile(const char *filename, unsigned int num_blocks)
 	/* The profiling output format is defined to be a sequence of integer
 	 * values stored little endian format. */
 	for (i = 0; i < num_blocks; ++i) {
-		char bytes[4];
+		unsigned char bytes[4];
 
-		if ((ret = fread(bytes, 4, 1, f)) < 1)
+		if ((ret = fread(bytes, 1, 4, f)) < 1)
 			break;
 
 		result[i] = (bytes[0] <<  0) | (bytes[1] <<  8)
