@@ -156,11 +156,11 @@ static void sched_edge_hook(FILE *F, const ir_node *irn)
 
 	if (sched_is_scheduled(irn) && sched_has_prev(irn)) {
 		ir_node *prev = sched_prev(irn);
-		fprintf(F, "edge:{sourcename:\"");
-		PRINT_NODEID(irn);
-		fprintf(F, "\" targetname:\"");
-		PRINT_NODEID(prev);
-		fprintf(F, "\" color:magenta}\n");
+		fprintf(F, "edge:{sourcename: ");
+		print_nodeid(F, irn);
+		fprintf(F, " targetname: ");
+		print_nodeid(F, prev);
+		fprintf(F, " color:magenta}\n");
 	}
 }
 

@@ -1245,6 +1245,13 @@ static void solve_lpp(ir_nodeset_t *live_nodes, ir_node *node,
 	lpp_free(lpp);
 }
 
+static bool is_aligned(unsigned num, unsigned alignment)
+{
+	unsigned mask = alignment-1;
+	assert(is_po2(alignment));
+	return (num&mask) == 0;
+}
+
 /**
  * Enforce constraints at a node by live range splits.
  *
@@ -1264,7 +1271,8 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 	/* construct a list of register occupied by live-through values */
 	unsigned *live_through_regs = NULL;
 
-	/* see if any use constraints are not met */
+	/* see if any use constraints are not met and whether double-width
+	 * values are involved */
 	bool double_width = false;
 	bool good = true;
 	for (i = 0; i < arity; ++i) {
@@ -1281,16 +1289,22 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 		req = arch_get_irn_register_req_in(node, i);
 		if (req->width > 1)
 			double_width = true;
+		reg       = arch_get_irn_register(op);
+		reg_index = arch_register_get_index(reg);
+		if (req->type & arch_register_req_type_aligned) {
+			if (!is_aligned(reg_index, req->width)) {
+				good = false;
+				continue;
+			}
+		}
 		if (!(req->type & arch_register_req_type_limited))
 			continue;
 
 		limited   = req->limited;
-		reg       = arch_get_irn_register(op);
-		reg_index = arch_register_get_index(reg);
 		if (!rbitset_is_set(limited, reg_index)) {
 			/* found an assignment outside the limited set */
 			good = false;
-			break;
+			continue;
 		}
 	}
 

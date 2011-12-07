@@ -56,11 +56,11 @@ static void dump_ifg_edges(FILE *F, const be_ifg_t *ifg)
 			if (get_irn_node_nr(node) >= get_irn_node_nr(neighbour))
 				continue;
 
-			fprintf(F, "edge: {sourcename: \"");
-			PRINT_NODEID(node);
-			fprintf(F, "\" targetname: \"");
-			PRINT_NODEID(neighbour);
-			fprintf(F, "\" arrowstyle:none class:1}\n");
+			fprintf(F, "edge: {sourcename: ");
+			print_nodeid(F, node);
+			fprintf(F, " targetname: ");
+			print_nodeid(F, neighbour);
+			fprintf(F, " arrowstyle:none class:1}\n");
 		}
 	}
 }
@@ -93,11 +93,11 @@ static void dump_affinity_edges(FILE *F, const copy_opt_t *co,
 			if (get_irn_node_nr(a->irn) >= get_irn_node_nr(n->irn))
 				continue;
 
-			fprintf(F, "edge: {sourcename: \"");
-			PRINT_NODEID(a->irn);
-			fprintf(F, "\" targetname: \"");
-			PRINT_NODEID(n->irn);
-			fprintf(F, "\" arrowstyle:none");
+			fprintf(F, "edge: {sourcename: ");
+			print_nodeid(F, a->irn);
+			fprintf(F, " targetname: ");
+			print_nodeid(F, n->irn);
+			fprintf(F, " arrowstyle:none");
 
 			if (dump_costs)
 				fprintf(F, " label:\"%d\"", n->costs);
