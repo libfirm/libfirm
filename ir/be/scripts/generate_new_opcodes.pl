@@ -67,7 +67,7 @@ my $target_h = $target_dir."/gen_".$arch."_new_nodes.h";
 if(!defined($default_attr_type)) {
 	$default_attr_type = "${arch}_attr_t";
 }
-if(!defined(%init_attr)) {
+if(! %init_attr) {
 	%init_attr = (
 		"$default_attr_type" => "\tinit_${arch}_attributes(res, irn_flags_, in_reqs, n_res);",
 	);
@@ -75,7 +75,7 @@ if(!defined(%init_attr)) {
 if(!defined($default_cmp_attr)) {
 	$default_cmp_attr = "${arch}_compare_attr";
 }
-if(!defined(%compare_attr)) {
+if(! %compare_attr) {
 	%compare_attr = (
 		"${default_attr_type}" => "${default_cmp_attr}",
 	);
@@ -409,7 +409,7 @@ EOF
 			"simple_jump"      => "arch_irn_flags_simple_jump",
 			"not_scheduled"    => "arch_irn_flags_not_scheduled",
 		);
-		if (defined(%custom_irn_flags)) {
+		if (%custom_irn_flags) {
 			%known_irn_flags = (%known_irn_flags, %custom_irn_flags);
 		}
 		foreach my $flag (@{$n->{"irn_flags"}}) {
