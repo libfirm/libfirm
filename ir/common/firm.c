@@ -24,7 +24,9 @@
  */
 #include "config.h"
 
-#include "firm_revision.h"
+#ifdef HAVE_FIRM_REVISION_H
+# include "firm_revision.h"
+#endif
 
 #include <string.h>
 #include <stdio.h>

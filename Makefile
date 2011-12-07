@@ -24,7 +24,7 @@ AR ?= ar
 DLLEXT ?= .so
 
 # Variants
-CFLAGS_all        = -fPIC
+CFLAGS_all        = -fPIC -DHAVE_FIRM_REVISION_H
 CFLAGS_debug      = $(CFLAGS_all) -O0 -g3 -DDEBUG_libfirm
 CFLAGS_profile    = $(CFLAGS_all) -O3 -pg -DNDEBUG -fno-inline
 LINKFLAGS_profile = -pg
