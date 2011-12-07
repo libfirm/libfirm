@@ -29,15 +29,15 @@ void write_little_endian(unsigned *counter, unsigned len, FILE *f)
 	unsigned i;
 
 	for (i = 0; i < len; ++i) {
-		unsigned v = counter[i];
-		char     bytes[4];
+		unsigned      v = counter[i];
+		unsigned char bytes[4];
 
 		bytes[0] = ((v >>  0) & 0xff);
 		bytes[1] = ((v >>  8) & 0xff);
 		bytes[2] = ((v >> 16) & 0xff);
 		bytes[3] = ((v >> 24) & 0xff);
 
-		fwrite(bytes, 4, 1, f);
+		fwrite(bytes, 1, 4, f);
 	}
 }
 
