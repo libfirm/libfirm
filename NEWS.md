@@ -1,4 +1,16 @@
+libFirm 1.20.0 (2011-12-07)
+---------------------------
 
+* Further improvemens to sparc backend (SPEC2000 works with softfloat)
+* Tuning of x86 backend
+* Software floatingpoint lowerer
+* Fixed firm profiling
+* New pass management allowing to specify pre-/postconditions for passes
+* Remove dependency on liblpp, add support for gurobi ILP solver
+* Experimental dwarf debugging support
+* Code cleanups, refactoring
+* Restructured API documentation
+* Bugfixes (we did alot of csmith testing)
 
 libFirm 1.19.1 (2011-05-17)
 ---------------------------
