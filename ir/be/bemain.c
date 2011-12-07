@@ -557,7 +557,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 			        prof_filename);
 		}
 	}
-	if (be_options.opt_profile_generate) {
+	if (num_birgs > 0 && be_options.opt_profile_generate) {
 		ir_graph *prof_init_irg
 			= ir_profile_instrument(prof_filename);
 		initialize_birg(&birgs[num_birgs], prof_init_irg, &env);
