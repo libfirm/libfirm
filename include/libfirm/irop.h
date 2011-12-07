@@ -278,11 +278,16 @@ FIRM_API ir_op *new_ir_op(unsigned code, const char *name, op_pin_state p,
                           size_t attr_size, const ir_op_ops *ops);
 
 /**
+ * set memory input of operation using memory
+ */
+FIRM_API void ir_op_set_memory_index(ir_op *op, int memory_index);
+
+/**
  * Set proj-number for X_regular and X_except projs of fragile nodes.
  * Note: should only be used immediately after new_ir_op
  */
-FIRM_API void ir_op_set_fragile_indices(ir_op *op, int fragile_mem_index,
-                                        int pn_x_regular, int pn_x_except);
+FIRM_API void ir_op_set_fragile_indices(ir_op *op, int pn_x_regular,
+                                        int pn_x_except);
 
 /** Returns the ir_op_ops of an ir_op. */
 FIRM_API const ir_op_ops *get_op_ops(const ir_op *op);

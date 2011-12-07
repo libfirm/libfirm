@@ -1332,7 +1332,8 @@ void be_init_op(void)
 	op_be_Keep      = new_ir_op(beo_Keep,      "be_Keep",      op_pin_state_exc_pinned, irop_flag_keep,                          oparity_dynamic,  0, sizeof(be_node_attr_t),    &be_node_op_ops);
 	op_be_CopyKeep  = new_ir_op(beo_CopyKeep,  "be_CopyKeep",  op_pin_state_exc_pinned, irop_flag_keep,                          oparity_variable, 0, sizeof(be_node_attr_t),    &be_node_op_ops);
 	op_be_Call      = new_ir_op(beo_Call,      "be_Call",      op_pin_state_exc_pinned, irop_flag_fragile|irop_flag_uses_memory, oparity_variable, 0, sizeof(be_call_attr_t),    &be_node_op_ops);
-	ir_op_set_fragile_indices(op_be_Call, n_be_Call_mem, pn_be_Call_X_regular, pn_be_Call_X_except);
+	ir_op_set_memory_index(op_be_Call, n_be_Call_mem);
+	ir_op_set_fragile_indices(op_be_Call, pn_be_Call_X_regular, pn_be_Call_X_except);
 	op_be_Return    = new_ir_op(beo_Return,    "be_Return",    op_pin_state_exc_pinned, irop_flag_cfopcode,                      oparity_dynamic,  0, sizeof(be_return_attr_t),  &be_node_op_ops);
 	op_be_AddSP     = new_ir_op(beo_AddSP,     "be_AddSP",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);
 	op_be_SubSP     = new_ir_op(beo_SubSP,     "be_SubSP",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);

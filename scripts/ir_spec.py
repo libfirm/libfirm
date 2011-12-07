@@ -92,6 +92,9 @@ class ASM(Op):
 	attr_struct      = "asm_attr"
 	attrs_name       = "assem"
 	customSerializer = True
+	ins   = [
+		("mem",    "memory dependency"),
+	]
 	attrs = [
 		dict(
 			name    = "input_constraints",

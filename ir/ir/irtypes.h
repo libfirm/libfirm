@@ -60,7 +60,7 @@ struct ir_op {
 	op_arity opar;            /**< The arity of operator. */
 	int op_index;             /**< The index of the first data operand, 0 for
 	                               most cases, 1 for Div etc. */
-	int fragile_mem_index;    /**< index of memory input for fragile nodes */
+	int memory_index;         /**< index of memory input for memory nodes */
 	int pn_x_regular;         /**< for fragile ops the position of the
 	                               X_regular output */
 	int pn_x_except;          /**< for fragile ops the position of the

@@ -603,8 +603,10 @@ static void chain_accesses(ir_node *n, void *env)
 	} else if (is_SymConst_addr_ent(n)) {
 		add_entity_reference(get_SymConst_entity(n), n);
 		return;
-	} else if (is_memop(n)) {
-		addr = get_memop_ptr(n);
+	} else if (is_Store(n)) {
+		addr = get_Store_ptr(n);
+	} else if (is_Load(n)) {
+		addr = get_Load_ptr(n);
 	} else if (is_Call(n)) {
 		addr = get_Call_ptr(n);
 		if (! is_Sel(addr)) return;  /* Sels before Calls mean a Load / polymorphic Call. */

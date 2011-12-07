@@ -700,7 +700,8 @@ EOF
 	$temp .= ", ".translate_arity($arity).", 0, ${attr_size}, &ops);\n";
 	push(@obst_new_irop, $temp);
 	if ($is_fragile) {
-		push(@obst_new_irop, "\tir_op_set_fragile_indices(op_${op}, n_${op}_mem, pn_${op}_X_regular, pn_${op}_X_except);\n");
+		push(@obst_new_irop, "\tir_op_set_memory_index(op_${op}, n_${op}_mem);\n");
+		push(@obst_new_irop, "\tir_op_set_fragile_indices(op_${op}, pn_${op}_X_regular, pn_${op}_X_except);\n");
 	}
 	push(@obst_new_irop, "\tset_op_tag(op_$op, $arch\_op_tag);\n");
 	if(defined($default_op_attr_type)) {

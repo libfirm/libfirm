@@ -519,16 +519,15 @@ FIRM_API ir_node  *get_Phi_next(const ir_node *phi);
  */
 FIRM_API void      set_Phi_next(ir_node *phi, ir_node *next);
 
-/** Return true if parameter is a memory operation.
+/** Return true if @p node is a memory operation.
  *
  *  A memory operation is an operation that changes the
  *  memory.  I.e., a Load or a Store operation.
+ *  memops have a memory input and output
  */
 FIRM_API int      is_memop(const ir_node *node);
 FIRM_API ir_node *get_memop_mem(const ir_node *node);
 FIRM_API void     set_memop_mem(ir_node *node, ir_node *mem);
-FIRM_API ir_node *get_memop_ptr(const ir_node *node);
-FIRM_API void     set_memop_ptr(ir_node *node, ir_node *ptr);
 
 FIRM_API ir_node **get_Sync_preds_arr(ir_node *node);
 FIRM_API int       get_Sync_n_preds(const ir_node *node);
@@ -584,8 +583,6 @@ FIRM_API int is_unknown_jump(const ir_node *node);
  * Bad. Raise is not fragile, but a unconditional jump.
  */
 FIRM_API int is_fragile_op(const ir_node *node);
-/** Returns the memory operand of fragile operations. */
-FIRM_API ir_node *get_fragile_op_mem(ir_node *node);
 
 /** Returns true if the operation is a forking control flow
  *  operation: Cond. */

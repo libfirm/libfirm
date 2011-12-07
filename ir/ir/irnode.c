@@ -1194,38 +1194,22 @@ void (set_Phi_next)(ir_node *phi, ir_node *next)
 
 int is_memop(const ir_node *node)
 {
-	unsigned code = get_irn_opcode(node);
-	return (code == iro_Load || code == iro_Store);
+	return is_op_uses_memory(get_irn_op(node));
 }
 
 ir_node *get_memop_mem(const ir_node *node)
 {
+	const ir_op *op = get_irn_op(node);
 	assert(is_memop(node));
-	assert(n_Load_mem == 0 && n_Store_mem == 0);
-	return get_irn_n(node, 0);
+	return get_irn_n(node, op->memory_index);
 }
 
 void set_memop_mem(ir_node *node, ir_node *mem)
 {
+	const ir_op *op = get_irn_op(node);
 	assert(is_memop(node));
-	assert(n_Load_mem == 0 && n_Store_mem == 0);
-	set_irn_n(node, 0, mem);
+	set_irn_n(node, op->memory_index, mem);
 }
-
-ir_node *get_memop_ptr(const ir_node *node)
-{
-	assert(is_memop(node));
-	assert(n_Load_mem == 1 && n_Store_mem == 1);
-	return get_irn_n(node, 1);
-}
-
-void set_memop_ptr(ir_node *node, ir_node *ptr)
-{
-	assert(is_memop(node));
-	assert(n_Load_mem == 1 && n_Store_mem == 1);
-	set_irn_n(node, 1, ptr);
-}
-
 
 ir_node **get_Sync_preds_arr(ir_node *node)
 {
@@ -1518,13 +1502,6 @@ int is_unknown_jump(const ir_node *node)
 int is_fragile_op(const ir_node *node)
 {
 	return is_op_fragile(get_irn_op(node));
-}
-
-/* Returns the memory operand of fragile operations. */
-ir_node *get_fragile_op_mem(ir_node *node)
-{
-	assert(node && is_fragile_op(node));
-	return get_irn_n(node, node->op->fragile_mem_index);
 }
 
 /* Returns true if the operation is a forking control flow operation. */

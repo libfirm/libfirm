@@ -2142,7 +2142,7 @@ static void dfs(ir_node *irn, loop_env *env)
 				node->low = MIN(o->DFSnum, node->low);
 		}
 	} else if (is_fragile_op(irn)) {
-		ir_node *pred = get_fragile_op_mem(irn);
+		ir_node *pred = get_memop_mem(irn);
 		node_entry *o = get_irn_ne(pred, env);
 
 		if (!irn_visited(pred)) {
@@ -2209,7 +2209,7 @@ static void do_dfs(ir_graph *irg, loop_env *env)
 		} else if (is_Raise(pred)) {
 			dfs(get_Raise_mem(pred), env);
 		} else if (is_fragile_op(pred)) {
-			dfs(get_fragile_op_mem(pred), env);
+			dfs(get_memop_mem(pred), env);
 		} else if (is_Bad(pred)) {
 			/* ignore non-optimized block predecessor */
 		} else {

@@ -201,10 +201,15 @@ void free_ir_op(ir_op *code)
 	free(code);
 }
 
-void ir_op_set_fragile_indices(ir_op *op, int fragile_mem_index,
-                               int pn_x_regular, int pn_x_except)
+void ir_op_set_memory_index(ir_op *op, int memory_index)
 {
-	op->fragile_mem_index = fragile_mem_index;
+	assert(op->flags & irop_flag_uses_memory);
+	op->memory_index = memory_index;
+}
+
+void ir_op_set_fragile_indices(ir_op *op, int pn_x_regular, int pn_x_except)
+{
+	assert(op->flags & irop_flag_fragile);
 	op->pn_x_regular = pn_x_regular;
 	op->pn_x_except = pn_x_except;
 }
