@@ -527,41 +527,43 @@ static void walk_type(type_or_ent tore, void *ctx)
 	case tpo_class:
 		if (tp == get_glob_type()) {
 			SET_TYPE_READY(tp);
-			break;
+			return;
 		}
 		/* fall through */
 	case tpo_struct:
 	case tpo_union:
 		gen_struct_union_type(env, tp);
-		break;
+		return;
 
 	case tpo_enumeration:
 		gen_enum_type(env->h, tp);
-		break;
+		return;
 
 	case tpo_primitive:
 		gen_primitive_type(env->h, tp);
-		break;
+		return;
 
 	case tpo_method:
 		gen_method_type(env, tp);
-		break;
+		return;
 
 	case tpo_array:
 		gen_array_type(env, tp);
-		break;
+		return;
 
 	case tpo_pointer:
 		gen_pointer_type(env, tp);
-		break;
+		return;
 
+	case tpo_code:
+	case tpo_none:
 	case tpo_unknown:
+	case tpo_uninitialized:
 		/* the unknown type: ignore */
 		SET_TYPE_READY(tp);
-		break;
-	default:
-		assert(! "Unknown tpop code");
+		return;
 	}
+	panic("Unknown tpop code");
 }
 
 /**
