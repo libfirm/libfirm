@@ -692,9 +692,7 @@ class NoMem(Op):
 	singleton     = True
 
 class Not(Unop):
-	"""returns the logical complement of a value. Works for integer values too.
-	If the input is false/zero then true/one is returned, otherwise false/zero
-	is returned."""
+	"""returns the bitwise complement of a value. Works for boolean values, too."""
 	flags = []
 
 class Or(Binop):
