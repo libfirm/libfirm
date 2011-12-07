@@ -2031,7 +2031,6 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment,
 	ir_type *tp;
 	ident *name;
 	char buf[32];
-	unsigned frame_align;
 	int offset, frame_size;
 	static unsigned area_cnt = 0;
 	static ir_type *a_byte = NULL;
@@ -2047,10 +2046,6 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment,
 	snprintf(buf, sizeof(buf), "area%u", area_cnt++);
 	name = new_id_from_str(buf);
 
-	/* align the size */
-	frame_align = get_type_alignment_bytes(frame_type);
-	size = (size + frame_align - 1) & ~(frame_align - 1);
-
 	tp = new_type_array(1, a_byte);
 	set_array_bounds_int(tp, 0, 0, size);
 	set_type_alignment_bytes(tp, alignment);
@@ -2059,15 +2054,17 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment,
 	frame_size = get_type_size_bytes(frame_type);
 	if (at_start) {
 		size_t i, n;
+		unsigned frame_align = get_type_alignment_bytes(frame_type);
+		unsigned delta = (size + frame_align - 1) & ~(frame_align - 1);
 		/* fix all offsets so far */
 		for (i = 0, n = get_class_n_members(frame_type); i < n; ++i) {
 			ir_entity *ent = get_class_member(frame_type, i);
 
-			set_entity_offset(ent, get_entity_offset(ent) + size);
+			set_entity_offset(ent, get_entity_offset(ent) + delta);
 		}
 		/* calculate offset and new type size */
 		offset = 0;
-		frame_size += size;
+		frame_size += delta;
 
 		/* increase size to match alignment... */
 		if (alignment > frame_align) {
