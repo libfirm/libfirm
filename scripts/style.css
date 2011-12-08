@@ -82,6 +82,12 @@ div.footer a {
 	color: #888;
 }
 
+div.section hr {
+	margin-top: 30px;
+	text-align: center;
+	width: 95%;
+}
+
 a {
 	color: #aa0000;
 	text-decoration: underline;

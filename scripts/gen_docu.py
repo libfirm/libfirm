@@ -84,8 +84,12 @@ docu_template = env.from_string(
 					{% endfor %}
 					{% endif %}
 					</dl>
+					{% set comma = joiner(", ") %}
 					<h5>Flags</h5>
-					{% for flag in node.flags %} {{flag}} {% endfor %}
+					{% for flag in node.flags -%}
+						{{comma()}}{{flag}}
+					{%- endfor %}
+					<hr/>
 				</div>
 				{% endfor %}
 			</div></div>
