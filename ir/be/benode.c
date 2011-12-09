@@ -358,8 +358,19 @@ ir_node *be_new_Perm(const arch_register_class_t *cls, ir_node *block,
 	attr                = (be_node_attr_t*) get_irn_generic_attr(irn);
 	attr->exc.pin_state = op_pin_state_pinned;
 	for (i = 0; i < n; ++i) {
-		be_node_set_reg_class_in(irn, i, cls);
-		be_node_set_reg_class_out(irn, i, cls);
+		const ir_node             *input = in[i];
+		const arch_register_req_t *req   = arch_get_irn_register_req(input);
+		if (req->width == 1) {
+			be_set_constr_in(irn, i, cls->class_req);
+			be_set_constr_out(irn, i, cls->class_req);
+		} else {
+			arch_register_req_t *new_req = allocate_reg_req(irn);
+			new_req->cls   = cls;
+			new_req->type  = (req->type & arch_register_req_type_aligned);
+			new_req->width = req->width;
+			be_set_constr_in(irn, i, new_req);
+			be_set_constr_out(irn, i, new_req);
+		}
 	}
 
 	return irn;
