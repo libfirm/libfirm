@@ -64,6 +64,17 @@ typedef struct local_env_t {
 	const unsigned *allocatable_colors;
 } local_env_t;
 
+static unsigned check_alignment_constraints(ir_node *node)
+{
+	const arch_register_req_t *req = arch_get_irn_register_req(node);
+	// For larger than 1 variables, support only aligned constraints
+	assert(((!(req->type & arch_register_req_type_aligned)
+			 && req->width == 1)
+			|| (req->type & arch_register_req_type_aligned))
+		   && "Unaligned large (width > 1) variables not supported");
+	return (req->type & arch_register_req_type_aligned) && req->width > 1;
+}
+
 static void make_color_var_name(char *buf, size_t buf_size,
                                 const ir_node *node, unsigned color)
 {
@@ -89,9 +100,12 @@ static void build_coloring_cstr(ilp_env_t *ienv)
 		unsigned                   col;
 		int                        cst_idx;
 		unsigned                   curr_node_color;
+		unsigned                   has_alignment_cstr;
 
 		if (sr_is_removed(ienv->sr, irn))
 			continue;
+
+		has_alignment_cstr = check_alignment_constraints(irn);
 
 		req = arch_get_irn_register_req(irn);
 
@@ -109,7 +123,8 @@ static void build_coloring_cstr(ilp_env_t *ienv)
 		for (col = 0; col < n_regs; ++col) {
 			int    var_idx;
 			double val;
-			if (!rbitset_is_set(colors, col))
+			if (!rbitset_is_set(colors, col)
+				|| (has_alignment_cstr && ((col % req->width) != 0)))
 				continue;
 
 			make_color_var_name(buf, sizeof(buf), irn, col);
@@ -128,9 +143,20 @@ static void build_coloring_cstr(ilp_env_t *ienv)
 		for (col = 0; col < n_regs; ++col) {
 			int cst_idx;
 			int var_idx;
-			if (rbitset_is_set(colors, col))
+			if (rbitset_is_set(colors, col)
+				// for aligned variable, we set the unaligned part to 0
+				&& (!has_alignment_cstr || ((col % req->width) == 0)))
 				continue;
 
+			// If it is possible to have only a part of a large variable that
+			// cannot be used, we should invalidate the whole piece.
+			// Since we do not think this can happen, we did implemented the
+			// support for that.
+			assert((!has_alignment_cstr
+					|| rbitset_is_set(colors, col)
+					|| !rbitset_is_set(colors, col - (col % req->width)))
+				   && "Register constraints that invalidate just a part of "
+				   "a large variable is not yet supported");
 			make_color_var_name(buf, sizeof(buf), irn, col);
 			cst_idx = lpp_add_cst(ienv->lp, NULL, lpp_equal, 0.0);
 			var_idx = lpp_add_var(ienv->lp, buf, lpp_binary, 0.0);
@@ -180,11 +206,21 @@ static void build_interference_cstr(ilp_env_t *ienv)
 				ir_node *irn = clique[i];
 				char     buf[32];
 				int      var_idx;
+				unsigned aligment_offset = 0;
 
 				if (sr_is_removed(ienv->sr, irn))
 					continue;
 
-				make_color_var_name(buf, sizeof(buf), irn, col);
+				// Use the first part of the large registers for all
+				// interference, since it is the only colorable one.
+				if (check_alignment_constraints(irn)) {
+					const arch_register_req_t *req
+						= arch_get_irn_register_req(irn);
+					aligment_offset = col % req->width;
+				}
+
+				make_color_var_name(buf, sizeof(buf), irn,
+									col - aligment_offset);
 				var_idx = lpp_get_var_idx(lpp, buf);
 				lpp_set_factor_fast(lpp, cst_idx, var_idx, 1);
 			}
