@@ -804,7 +804,9 @@ FIRM_API ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
 
 /** @} */
 
-/** @defgroup ir_cons Graph Construction Support
+/**
+ * @ingroup ir_graph
+ * @defgroup ir_cons Construction Support
  * @{
  */
 

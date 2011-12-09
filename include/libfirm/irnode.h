@@ -36,7 +36,7 @@
 
 /**
  * @ingroup ir_graph
- * @defgroup ir_node Graph Nodes
+ * @defgroup ir_node Nodes
  *
  * ir_node - a datatype representing a Firm node
  *

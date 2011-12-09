@@ -43,10 +43,6 @@
  * Independent of compiler flag it removes Tuples from cf edges,
  * Bad predecessors from Blocks and Phis, and unnecessary predecessors of End.
  * Destroys backedge information.
- *
- * @bug Chokes on Id nodes if called in a certain order with other
- *      optimizations.  Call local_optimize_graph() before to remove
- *      Ids.
  */
 FIRM_API void optimize_cf(ir_graph *irg);
 
