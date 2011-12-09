@@ -29,7 +29,11 @@
 #include "firm_types.h"
 #include "begin.h"
 
-struct ir_exec_freq;
+/**
+ * @ingroup irana
+ * @defgroup execfreq Basic Block Execution Frequency
+ * @{
+ */
 
 /**
  * Create execfreq structure (to be used with set_execfreq)
@@ -53,6 +57,8 @@ FIRM_API double get_block_execfreq(const ir_exec_freq *ef,
 
 FIRM_API unsigned long get_block_execfreq_ulong(const ir_exec_freq *ef,
                                                 const ir_node *block);
+
+/** @} */
 
 #include "end.h"
 

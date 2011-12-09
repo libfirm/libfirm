@@ -31,26 +31,43 @@ typedef unsigned long ir_visited_t;
 typedef unsigned long ir_exc_region_t;
 typedef unsigned long ir_label_t;
 
+/** @ingroup dbg_info */
 typedef struct dbg_info             dbg_info,            *dbg_info_ptr;
+/** @ingroup dbg_info */
 typedef struct type_dbg_info        type_dbg_info,       *type_dbg_info_ptr;
+/** @ingroup ir_ident */
 typedef struct ident                ident,               *ir_ident_ptr;
+/** @ingroup ir_node */
 typedef struct ir_node              ir_node,             *ir_node_ptr;
+/** @ingroup ir_op */
 typedef struct ir_op                ir_op,               *ir_op_ptr;
+/** @ingroup ir_mode */
 typedef struct ir_mode              ir_mode,             *ir_mode_ptr;
+/** @ingroup iredges */
 typedef struct ir_edge_t            ir_edge_t,           *ir_edge_ptr;
+/** @ingroup ir_heights */
 typedef struct ir_heights_t         ir_heights_t;
+/** @ingroup ir_tarval */
 typedef struct ir_tarval            ir_tarval,           *ir_tarval_ptr;
 typedef struct ir_enum_const        ir_enum_const,       *ir_enum_const_ptr;
+/** @ingroup ir_type */
 typedef struct ir_type              ir_type,             *ir_type_ptr;
+/** @ingroup ir_graph */
 typedef struct ir_graph             ir_graph,            *ir_graph_ptr;
+/** @ingroup ir_prog */
 typedef struct ir_prog              ir_prog,             *ir_prog_ptr;
+/** @ingroup ir_loop */
 typedef struct ir_loop              ir_loop,             *ir_loop_ptr;
 typedef struct ir_region            ir_region,           *ir_region_ptr;
+/** @ingroup ir_entity */
 typedef struct ir_entity            ir_entity,           *ir_entity_ptr;
 typedef struct ir_extblk            ir_extblk,           *ir_extblk_ptr;
+/** @ingroup execfreq */
 typedef struct ir_exec_freq         ir_exec_freq,        *ir_exec_freq_ptr;
+/** @ingroup ir_cdep */
 typedef struct ir_cdep              ir_cdep,             *ir_cdep_ptr;
 typedef struct sn_entry             *seqno_t;
+/** @ingroup ir_op */
 typedef struct arch_irn_ops_t       arch_irn_ops_t;
 typedef struct ir_graph_pass_t      ir_graph_pass_t;
 typedef struct ir_prog_pass_t       ir_prog_pass_t;
@@ -58,6 +75,7 @@ typedef struct ir_prog_pass_t       ir_prog_pass_t;
 typedef struct ir_graph_pass_manager_t      ir_graph_pass_manager_t;
 typedef struct ir_prog_pass_manager_t       ir_prog_pass_manager_t;
 
+/** @ingroup ir_initializer */
 typedef union  ir_initializer_t     ir_initializer_t,    *ir_initializer_ptr;
 
 typedef void irg_walk_func(ir_node *, void *);
@@ -236,6 +254,7 @@ typedef enum symconst_kind {
 /** SymConst attribute.
  *
  *  This union contains the symbolic information represented by the node.
+ *  @ingroup SymConst
  */
 typedef union symconst_symbol {
 	ir_type       *type_p;    /**< The type of a SymConst. */
@@ -243,20 +262,26 @@ typedef union symconst_symbol {
 	ir_enum_const *enum_p;    /**< The enumeration constant of a SymConst. */
 } symconst_symbol;
 
-/** The allocation place. */
+/** The allocation place.
+ * @ingroup Alloc
+ */
 typedef enum ir_where_alloc {
 	stack_alloc,          /**< Alloc allocates the object on the stack. */
 	heap_alloc            /**< Alloc allocates the object on the heap. */
 } ir_where_alloc;
 
-/** A input/output constraint attribute. */
+/** A input/output constraint attribute.
+ * @ingroup ASM
+ */
 typedef struct ir_asm_constraint {
 	unsigned       pos;           /**< The inputs/output position for this constraint. */
 	ident          *constraint;   /**< The constraint for this input/output. */
 	ir_mode        *mode;         /**< The mode of the constraint. */
 } ir_asm_constraint;
 
-/** Supported libFirm builtins. */
+/** Supported libFirm builtins.
+ * @ingroup Builtin
+ */
 typedef enum ir_builtin_kind {
 	ir_bk_trap,                   /**< GCC __builtin_trap(): insert trap */
 	ir_bk_debugbreak,             /**< MS __debugbreak(): insert debug break */

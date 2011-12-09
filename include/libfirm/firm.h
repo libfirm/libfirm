@@ -21,8 +21,10 @@
  * @file
  * @brief     Central firm header.
  * @author    Martin Trapp, Christian Schaefer, Goetz Lindenmaier
- * @brief
- *  Central FIRM header.
+ * @brief     Central FIRM header.
+ */
+
+/** @mainpage
  *
  *  FIRM is a full graph based intermediate representation in SSA Form
  *  with a novel concept to model side effects.  It allows fast, aggressive
@@ -52,8 +54,8 @@
  *
  *   Further this library supplies functionality to build and optimize FIRM graphs
  *   and further functionality needed in a compiler.  Finally there is more
- *   generic functionality to support implementations using firm.  (Code generation,
- *   further optimizations).
+ *   generic functionality to support implementations using firm.
+ *   (Code generation, further optimizations).
  */
 #ifndef FIRM_COMMON_FIRM_H
 #define FIRM_COMMON_FIRM_H

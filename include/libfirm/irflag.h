@@ -21,7 +21,16 @@
  * @file
  * @brief   Flags to control optimizations.
  * @author  Christian Schaefer, Goetz Lindenmaier, Michael Beck
- * @brief
+ */
+#ifndef FIRM_IR_IRFLAG_H
+#define FIRM_IR_IRFLAG_H
+
+#include "firm_types.h"
+#include "begin.h"
+
+/**
+ * @ingroup iroptimize
+ * @defgroup Optimization Flags
  * Flags to customize the behavior of libfirm.
  *
  * There are the following groups of flags:
@@ -35,14 +44,8 @@
  * 3. Verbosity flags.
  *    a) Flags to steer the level of the information.
  *    b) Flags to steer in which phase information should be dumped.
- * 4. Verification flag
- *    This one controls the behavior of node and type verifications
+ *@{
  */
-#ifndef FIRM_IR_IRFLAG_H
-#define FIRM_IR_IRFLAG_H
-
-#include "firm_types.h"
-#include "begin.h"
 
 /**
  * A container type to load/restore all optimizations
@@ -156,6 +159,14 @@ FIRM_API void restore_optimization_state(const optimization_state_t *state);
  */
 FIRM_API void all_optimizations_off(void);
 
+/** @} */
+
+/** @ingroup irverify
+ * @defgroup Flags
+ * Enable/Disable automatic correctness tests
+ * @{
+ */
+
 /**
  * Possible verification modes.
  */
@@ -174,6 +185,8 @@ typedef enum firm_verification_t {
  * implementations.
  */
 FIRM_API void do_node_verification(firm_verification_t mode);
+
+/** @} */
 
 #include "end.h"
 

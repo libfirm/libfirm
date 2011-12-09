@@ -21,12 +21,7 @@
  * @file
  * @brief   Representation of opcode of intermediate operation.
  * @author  Christian Schaefer, Goetz Lindenmaier, Michael Beck
- * @brief
- *  Operators of firm nodes.
- *
- *  This module specifies the opcodes possible for ir nodes.  Their
- *  definition is close to the operations specified in UKA Tech-Report
- *  1999-14
+ * @brief   Operators of firm nodes.
  */
 #ifndef FIRM_IR_IROP_H
 #define FIRM_IR_IROP_H
@@ -36,6 +31,17 @@
 #include "ident.h"
 #include "begin.h"
 #include "opcodes.h"
+
+/**
+ * @ingroup ir_node
+ * @defgroup ir_op  Node Opcodes
+ *
+ * This module specifies the opcodes possible for ir nodes.  Their
+ * definition is close to the operations specified in UKA Tech-Report
+ * 1999-14
+ *
+ * @{
+ */
 
 /** The allowed arities. */
 typedef enum {
@@ -291,6 +297,8 @@ FIRM_API void ir_op_set_fragile_indices(ir_op *op, int pn_x_regular,
 
 /** Returns the ir_op_ops of an ir_op. */
 FIRM_API const ir_op_ops *get_op_ops(const ir_op *op);
+
+/** @} */
 
 #include "end.h"
 

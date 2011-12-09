@@ -23,27 +23,7 @@
  *           values.
  * @date     2003
  * @author   Mathias Heil
- * @brief
- *   Tarvals represent target machine values.  They are typed by modes.
- *   Tarvals only represent values of mode_sort:
- *    - int_number,
- *    - float_number,
- *    - boolean,
- *    - reference,
- *    - character
- *
- *   In case of references the module accepts an entity to represent the
- *   value.
- *   Furthermore, computations and conversions of these values can
- *   be performed.
- *
- * HISTORY
- *    The original tv module originated in the fiasco compiler written ...
- *    This is the new version, described in the tech report 1999-14 by ...
- *
- * @sa
- *    Techreport 1999-14
- *    irmode.h for the modes definitions
+ * @brief    target machine values.
  */
 #ifndef FIRM_TV_TV_H
 #define FIRM_TV_TV_H
@@ -52,6 +32,26 @@
 #include "firm_types.h"
 
 #include "begin.h"
+
+/** @defgroup ir_tarval  Target Machine Values
+ *
+ * Tarvals only represent values of mode_sort:
+ *    - int_number,
+ *    - float_number,
+ *    - boolean,
+ *    - reference,
+ *    - character
+ *
+ *   In case of references the module accepts an entity to represent the
+ *   value. Furthermore, computations and conversions of these values can
+ *   be performed.
+ *
+ * @sa
+ *    Techreport 1999-14
+ *    irmode.h for the modes definitions
+ *
+ * @{
+ */
 
 /**
  * Constructor function for new tarvals.
@@ -826,6 +826,8 @@ FIRM_API int tarval_is_finite(ir_tarval *tv);
  *       true if the thing is a tarval, else false
  */
 FIRM_API int is_tarval(const void *thing);
+
+/** @} */
 
 #include "end.h"
 

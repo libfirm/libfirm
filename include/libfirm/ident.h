@@ -21,8 +21,7 @@
  * @file
  * @brief    Data type for unique names.
  * @author   Goetz Lindenmaier
- * @brief
- *  Declarations for identifiers in the firm library
+ * @brief    Declarations for identifiers in the firm library
  */
 #ifndef FIRM_IDENT_H
 #define FIRM_IDENT_H
@@ -30,6 +29,11 @@
 #include <stddef.h>
 #include "firm_types.h"
 #include "begin.h"
+
+/**
+ * @defgroup ir_ident  Identifiers
+ * @{
+ */
 
 /**
  *  Store a string and create an ident.
@@ -130,6 +134,8 @@ FIRM_API ident *id_mangle3(const char *prefix, ident *middle,
 
 /** returns a mangled name for a Win32 function using its calling convention */
 FIRM_API ident *id_decorate_win32_c_fkt(const ir_entity *ent, ident *id);
+
+/** @} */
 
 #include "end.h"
 

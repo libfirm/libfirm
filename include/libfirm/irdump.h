@@ -21,18 +21,8 @@
  * @file
  * @brief   Write vcg representation of firm to file.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Hubert Schmidt
- * @brief
- *  Dump routines for the ir graph and all type information.
+ * @brief   Dump routines for the ir graph and all type information.
  *
- *  The dump format of most functions is vcg.  This is a text based graph
- *  representation. Some use the original format,
- *  but most generate an extended format that is only read by some special
- *  versions of xvcg or by the comercialized version now calles aiSee.
- *  A test version of aiSee is available at
- *   http://www.absint.de/aisee/download/index.htm.
- *
- *  We have developed an own advanced viewer called ycomp:
- *    http://www.info.uni-karlsruhe.de/software/ycomp/
  */
 #ifndef FIRM_IR_IRDUMP_H
 #define FIRM_IR_IRDUMP_H
@@ -42,8 +32,24 @@
 #include "firm_types.h"
 #include "begin.h"
 
-/** @defgroup convenience_dumper   Convenience interface for dumpers */
-/*@{*/
+/** @defgroup ir_dump Visualisation
+ *
+ * Dumps information so it can be visualised. The dump format of most functions
+ * is vcg.  This is a text based graph representation. Some use the original
+ * format, but most generate an extended format that is only read by some
+ * special versions of xvcg or by the commercialized version now calles aiSee.
+ *
+ * A test version of aiSee is available at
+ *   http://www.absint.de/aisee/download/index.htm.
+ *
+ * We have developed an own advanced viewer called ycomp:
+ *   http://www.info.uni-karlsruhe.de/software/ycomp/
+ *@{
+ */
+
+/** @defgroup convenience Convenience Interface
+ * @{
+ */
 
 /**
  * Convenience interface for dumping a graph as vcg file.
@@ -133,15 +139,6 @@ FIRM_API ir_prog_pass_t *dump_all_ir_graph_pass(const char *name,
                                                 const char *suffix);
 
 /*@}*/
-
-/**
- * @defgroup dumper     Dump information to file
- * This is the low-level interface for dumping information as text files
- * and xvcg graphs.
- * Normally you should use the convenience interface @ref convenience_dumper
- * instead of the functions in this group.
- */
-/*@{*/
 
 /**
  * Dumps all Firm nodes of a single graph for a single procedure in

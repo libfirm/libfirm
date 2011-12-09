@@ -28,7 +28,9 @@
 
 #include "begin.h"
 
-/** Supported Edge kinds. */
+/** Supported Edge kinds.
+ * @ingroup iredges
+ */
 typedef enum ir_edge_kind_t {
 	EDGE_KIND_FIRST,
 	EDGE_KIND_NORMAL = EDGE_KIND_FIRST,  /**< Normal data flow edges. */

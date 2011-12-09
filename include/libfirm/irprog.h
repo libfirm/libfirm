@@ -25,8 +25,19 @@
  * @brief
  *  Intermediate Representation (IR) of a program.
  *
- *  This file defines a construct that keeps all information about a
- *  program:
+ */
+#ifndef FIRM_IR_IRPROG_H
+#define FIRM_IR_IRPROG_H
+
+#include <stddef.h>
+#include "firm_types.h"
+#include "irgraph.h"
+#include "begin.h"
+
+/**
+ * @defgroup ir_prog Program
+ *
+ *  ir_prog keeps information about a program:
  *   - A reference point to the method to be executed on program start.
  *   - A list of all procedures.
  *   - A list of all types.
@@ -36,14 +47,9 @@
  *     all classes in a class hierarchy (as, e.g., "object" in java).
  *   - A degenerated graph that contains constant expressions.
  *   - the output file name
+ *
+ * @{
  */
-#ifndef FIRM_IR_IRPROG_H
-#define FIRM_IR_IRPROG_H
-
-#include <stddef.h>
-#include "firm_types.h"
-#include "irgraph.h"
-#include "begin.h"
 
 typedef enum ir_segment_t {
 	IR_SEGMENT_FIRST,
@@ -285,6 +291,8 @@ FIRM_API int get_irp_optimization_dumps(void);
 
 /** Enable vcg dumping of optimization */
 FIRM_API void enable_irp_optimization_dumps(void);
+
+/** @} */
 
 #include "end.h"
 

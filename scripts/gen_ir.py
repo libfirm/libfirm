@@ -3,7 +3,7 @@ import sys
 import re
 from jinja2 import Environment, Template
 from jinja2.filters import do_dictsort
-from spec_util import is_dynamic_pinned, verify_node, isAbstract, setdefault
+from spec_util import is_dynamic_pinned, verify_node, isAbstract, setdefault, trim_docstring
 from ir_spec import nodes
 
 def format_parameterlist(parameterlist):
@@ -217,6 +217,7 @@ def prepare_attr(attr):
 
 def preprocess_node(node):
 	verify_node(node)
+	node.doc = trim_docstring(node.__doc__)
 
 	setdefault(node, "attrs_name", node.name.lower())
 	setdefault(node, "block", "block")
@@ -516,6 +517,13 @@ nodeops_h_template = env.from_string(
  */
 
 {% for node in nodes -%}
+
+/**
+ * @defgroup {{node.name}} {{node.name}} node
+ *
+ * {{node.doc}}
+ * @{
+ */
 {% if node.ins %}
 /**
  * Input numbers for {{node.name}} node
@@ -539,9 +547,6 @@ typedef enum {
 	pn_{{node.name}}_max = pn_{{node.name}}_{{node.outs[-1][0]}}
 } pn_{{node.name}};
 {% endif %}
-{%- endfor %}
-
-{% for node in nodes %}
 {%- if not node.noconstructor %}
 /**
  * Construct {{node.name|a_an}} node.
@@ -591,14 +596,9 @@ FIRM_API ir_node *new_{{node.name}}(
 		{{node|nodeparameters}}
 	{% endfilter %});
 {%- endif %}
-{% endfor %}
-
-{% for node in nodes %}
 /** Return true if the node is a {{node.name}} node. */
 FIRM_API int is_{{node.name}}(const ir_node *node);
-{%- endfor %}
 
-{% for node in nodes %}
 {% for input in node.ins -%}
 FIRM_API ir_node *get_{{node.name}}_{{input[0]}}(const ir_node *node);
 FIRM_API void set_{{node.name}}_{{input[0]}}(ir_node *node, ir_node *{{input[0]|escape_keywords}});
@@ -607,6 +607,8 @@ FIRM_API void set_{{node.name}}_{{input[0]}}(ir_node *node, ir_node *{{input[0]|
 FIRM_API {{attr.type}} get_{{node.name}}_{{attr.name}}(const ir_node *node);
 FIRM_API void set_{{node.name}}_{{attr.name}}(ir_node *node, {{attr.type}} {{attr.name}});
 {% endfor -%}
+/** @} */
+
 {% endfor -%}
 
 /** @} */
@@ -622,7 +624,9 @@ opcodes_h_template = env.from_string(
 #ifndef FIRM_IR_OPCODES_H
 #define FIRM_IR_OPCODES_H
 
-/** The opcodes of the libFirm predefined operations. */
+/** The opcodes of the libFirm predefined operations.
+ * @ingroup ir_op
+ */
 typedef enum ir_opcode {
 {%- for node in nodes %}
 	iro_{{node.name}},
@@ -652,10 +656,12 @@ typedef enum ir_opcode {
 } ir_opcode;
 
 {% for node in nodes %}
+/** @ingroup {{node.name}} */
 FIRM_API ir_op *op_{{node.name}};
 {%- endfor %}
 
 {% for node in nodes %}
+/** @ingroup {{node.name}} */
 FIRM_API ir_op *get_op_{{node.name}}(void);
 {%- endfor %}
 

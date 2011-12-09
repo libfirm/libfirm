@@ -31,6 +31,12 @@
 #include "begin.h"
 
 /**
+ * @ingroup irana
+ * @defgroup iredges Dynamic Reverse Edges
+ * @{
+ */
+
+/**
  * Get the first edge pointing to some node.
  * @note There is no order on out edges. First in this context only
  * means, that you get some starting point into the list of edges.
@@ -267,6 +273,8 @@ FIRM_API void irg_walk_edges(ir_node *start, irg_walk_func *pre,
  */
 FIRM_API void edges_reset_private_data(ir_graph *irg, int offset,
                                        unsigned size);
+
+/** @} */
 
 #include "end.h"
 

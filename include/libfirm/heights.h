@@ -22,16 +22,23 @@
  * @brief   Compute heights of nodes inside basic blocks
  * @author  Sebastian Hack
  * @date    19.04.2006
- *
- * The height is a measure for the longest datadependencies path from a node to
- * the end of a basic block. This is usefull for scheduling heuristics and can
- * also be used to speedup reachability queries.
  */
 #ifndef FIRM_ANA_HEIGHTS_H
 #define FIRM_ANA_HEIGHTS_H
 
 #include "firm_types.h"
 #include "begin.h"
+
+/**
+ * @ingroup irana
+ * @defgroup ir_heights  Node Heights
+ *
+ * The height is a measure for the longest datadependencies path from a node to
+ * the end of a basic block. This is usefull for scheduling heuristics and can
+ * also be used to speedup reachability queries.
+ *
+ * @{
+ */
 
 /**
  * Get the height of a node inside a basic block.
@@ -75,6 +82,8 @@ FIRM_API ir_heights_t *heights_new(ir_graph *irg);
  * @param h The heights object.
  */
 FIRM_API void heights_free(ir_heights_t *h);
+
+/** @} */
 
 #include "end.h"
 

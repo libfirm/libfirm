@@ -21,13 +21,19 @@
  * @file
  * @brief   Analyse the graph with value range propagation
  * @author  Jonas Fietz
- *
  */
 #ifndef VRP_H
 #define VRP_H
 
 #include "firm_types.h"
 #include "begin.h"
+
+/**
+ * @ingroup irana
+ * @defgroup vrp  Value Information
+ * Information about SSA-values (ranges, known bits, ...)
+ * @{
+ */
 
 enum range_types {
 	VRP_UNDEFINED, /**< No information could be derived so far */
@@ -78,6 +84,8 @@ FIRM_API ir_relation vrp_cmp(const ir_node *left, const ir_node *right);
  * @return a pointer to the vrp data or NULL if there is none
  */
 FIRM_API vrp_attr *vrp_get_info(const ir_node *n);
+
+/** @} */
 
 #include "end.h"
 

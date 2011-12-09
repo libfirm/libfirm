@@ -29,6 +29,14 @@
 #include "firm_types.h"
 #include "begin.h"
 
+/**
+ * @ingroup irana
+ * @defgroup irout Reverse Edges
+ * Out-Edges are the reverse of the edges in a firm graph (also called def-use
+ * edges)
+ * @{
+ */
+
 /** returns the number of successors of the node: */
 FIRM_API int get_irn_n_outs(const ir_node *node);
 
@@ -98,6 +106,8 @@ FIRM_API void assure_irg_outs(ir_graph *irg);
 
 FIRM_API void free_irg_outs(ir_graph *irg);
 FIRM_API void free_irp_outs(void);
+
+/** @} */
 
 #include "end.h"
 

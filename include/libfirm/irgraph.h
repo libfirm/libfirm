@@ -31,7 +31,7 @@
 #include "begin.h"
 
 /**
- * @page ir_graph   The struct ir_graph
+ * @defgroup ir_graph  Procedure Graph
  *
  * This struct contains all information about a procedure.
  * It's allocated directly to memory.
@@ -105,6 +105,8 @@
  * - visited         A int used as flag to traverse the ir_graph.
  *
  * - block_visited    A int used as a flag to traverse block nodes in the graph.
+ *
+ * @{
  */
 
 /** Global variable holding the current ir graph.
@@ -522,6 +524,8 @@ FIRM_API void set_irg_fp_model(ir_graph *irg, unsigned model);
  * registration failed.
  */
 FIRM_API size_t register_additional_graph_data(size_t size);
+
+/** @} */
 
 #include "end.h"
 

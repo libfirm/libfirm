@@ -22,14 +22,6 @@
  * @brief     Implements the Firm interface to debug information.
  * @author    Goetz Lindenmaier, Michael Beck
  * @date      2001
- * @brief
- *  Firm requires a debugging module fulfilling this interface, else no
- *  debugging information is passed to the backend.
- *  The interface requires a datatype representing the debugging
- *  information.  Firm supports administrating a reference to the debug
- *  information in every Firm node.  Further Firm optimizations call
- *  routines to propagate debug information from old nodes to new nodes
- *  if the optimization replaces the old ones by the new ones.
  */
 #ifndef FIRM_DEBUG_DBGINFO_H
 #define FIRM_DEBUG_DBGINFO_H
@@ -40,8 +32,14 @@
 #include "begin.h"
 
 /**
- * @defgroup debug    The Firm interface to debugging support.
- *
+ * @defgroup dbg_info    Source References
+ *  Firm requires a debugging module fulfilling this interface, else no
+ *  debugging information is passed to the backend.
+ *  The interface requires a datatype representing the debugging
+ *  information.  Firm supports administrating a reference to the debug
+ *  information in every Firm node.  Further Firm optimizations call
+ *  routines to propagate debug information from old nodes to new nodes
+ *  if the optimization replaces the old ones by the new ones.
  * @{
  */
 
@@ -146,8 +144,6 @@ typedef void merge_sets_func(ir_node **new_node_array, int new_num_entries, ir_n
 FIRM_API void dbg_init(merge_pair_func *dbg_info_merge_pair,
                        merge_sets_func *dbg_info_merge_sets);
 
-/** @} */
-
 /**
  * The type of the debug info retriever function.
  *  When given a dbg_info returns the name (usually the filename) of the
@@ -186,6 +182,8 @@ FIRM_API const char *ir_retrieve_dbg_info(const dbg_info *dbg, unsigned *line);
  */
 FIRM_API void ir_retrieve_type_dbg_info(char *buffer, size_t buffer_size,
                                         const type_dbg_info *tdbgi);
+
+/** @} */
 
 #include "end.h"
 

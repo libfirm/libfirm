@@ -36,6 +36,11 @@
 #include "firm_common.h"
 #include "begin.h"
 
+/** @ingroup irana
+ * @defgroup ir_loop Loops
+ * @{
+ */
+
 /** Returns non-zero if the predecessor pos is a backedge. */
 FIRM_API int is_backedge(const ir_node *n, int pos);
 /** Marks edge pos as a backedge. */
@@ -149,6 +154,8 @@ FIRM_API void free_all_loop_information (void);
  * Returns non-zero, if the node n is not changed in the loop block
  * belongs to or in inner loops of this block. */
 FIRM_API int is_loop_invariant(const ir_node *n, const ir_node *block);
+
+/** @} */
 
 #include "end.h"
 

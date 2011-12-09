@@ -29,6 +29,11 @@
 #include "begin.h"
 
 /**
+ * @defgroup iroptimize  Transformations and Optimisations
+ * @{
+ */
+
+/**
  * Control flow optimization.
  *
  * Removes empty blocks doing if simplifications and loop simplifications.
@@ -1103,6 +1108,8 @@ FIRM_API compilerlib_entity_creator_t get_compilerlib_entity_creator(void);
  * @param mt  the method type of the compilerlib function
  */
 FIRM_API ir_entity *create_compilerlib_entity(ident *id, ir_type *mt);
+
+/** @} */
 
 #include "end.h"
 

@@ -36,6 +36,10 @@
 #include "firm_types.h"
 #include "begin.h"
 
+/** @addtogroup callgraph
+ * @{
+ */
+
 /** Analyses a rough estimation of the possible call graph.
  *
  *  Determines for each Call node the set of possibly called methods.
@@ -77,6 +81,8 @@ FIRM_API void free_irp_callee_info(void);
  * Performs only the optimizations done by cgana.
  */
 FIRM_API void opt_call_addrs(void);
+
+/** @} */
 
 #include "end.h"
 

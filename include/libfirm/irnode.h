@@ -35,10 +35,8 @@
 #include "nodeops.h"
 
 /**
- * @defgroup ir_node Declarations of an ir node.
- *
- * The type definition of ir_node is also in irgraph.h to resolve
- *  recursion between irnode.h and irgraph.h
+ * @ingroup ir_graph
+ * @defgroup ir_node Graph Nodes
  *
  * ir_node - a datatype representing a Firm node
  *
@@ -228,6 +226,11 @@ FIRM_API ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block,
                               int arity, ir_node *const *in);
 
 /**
+ * @addtogroup Block
+ * @{
+ */
+
+/**
  * Return the block the node belongs to.  This is only
  * possible for pinned nodes or if the graph is in pinned state.
  * Otherwise the block may be incorrect.  This condition is
@@ -242,12 +245,6 @@ FIRM_API ir_node *get_nodes_block(const ir_node *node);
 
 /** Sets the Block of a node. */
 FIRM_API void set_nodes_block(ir_node *node, ir_node *block);
-
-/** Test whether arbitrary node is frame pointer.
- *
- * Test whether arbitrary node is frame pointer, i.e. Proj(pn_Start_P_frame_base)
- * from Start.  If so returns frame type, else Null. */
-FIRM_API ir_type *is_frame_pointer(const ir_node *n);
 
 /** Return the number of control flow predecessors of a block. */
 FIRM_API int get_Block_n_cfgpreds(const ir_node *block);
@@ -319,6 +316,18 @@ FIRM_API unsigned get_Block_mark(const ir_node *block);
 /** Set the Block mark (single bit). */
 FIRM_API void set_Block_mark(ir_node *block, unsigned mark);
 
+/** @} */
+
+/** Test whether arbitrary node is frame pointer.
+ *
+ * Test whether arbitrary node is frame pointer, i.e. Proj(pn_Start_P_frame_base)
+ * from Start.  If so returns frame type, else Null. */
+FIRM_API ir_type *is_frame_pointer(const ir_node *n);
+
+/** @addtogroup End
+ * @{
+ */
+
 /** Return the number of Keep alive node. */
 FIRM_API int get_End_n_keepalives(const ir_node *end);
 /** Return the Keep alive node a position pos. */
@@ -346,10 +355,22 @@ FIRM_API void remove_End_Bads_and_doublets(ir_node *end);
    free_End() frees these data structures. */
 FIRM_API void free_End(ir_node *end);
 
+/** @} */
+
+/** @addtogroup Return
+ * @{
+ */
+
 FIRM_API ir_node **get_Return_res_arr(ir_node *node);
 FIRM_API size_t    get_Return_n_ress(const ir_node *node);
 FIRM_API ir_node  *get_Return_res(const ir_node *node, int pos);
 FIRM_API void      set_Return_res(ir_node *node, int pos, ir_node *res);
+
+/** @} */
+
+/** @addtogroup Const
+ * @{
+ */
 
 /** Return non-zero if the given Const node represents the 0 constant. */
 FIRM_API int is_Const_null(const ir_node *node);
@@ -360,10 +381,22 @@ FIRM_API int is_Const_one(const ir_node *node);
 /** Return non-zero if the given Const node represents the constant with all bits set. */
 FIRM_API int is_Const_all_one(const ir_node *node);
 
-/** Returns true if a node is a Conv node with strict attribute set. */
+/** @} */
+
+/**
+ * @ingroup Conv
+ * Returns true if a node is a Conv node with strict attribute set.
+ */
 FIRM_API int is_strictConv(const ir_node *node);
 
-/** Returns true if node is a SymConst node with kind symconst_addr_ent. */
+/**
+ * @addtogroup SymConst
+ * @{
+ */
+
+/**
+ * Returns true if node is a SymConst node with kind symconst_addr_ent.
+ */
 FIRM_API int is_SymConst_addr_ent(const ir_node *node);
 
 /** Returns non-zero if s symconst kind has a type attribute */
@@ -396,10 +429,22 @@ FIRM_API union symconst_symbol get_SymConst_symbol(const ir_node *node);
 FIRM_API void                  set_SymConst_symbol(ir_node *node,
                                                    union symconst_symbol sym);
 
+/** @} */
+
+/** @addtogroup Sel
+ * @{
+ */
+
 FIRM_API ir_node   **get_Sel_index_arr(ir_node *node);
 FIRM_API int        get_Sel_n_indexs(const ir_node *node);
 FIRM_API ir_node   *get_Sel_index(const ir_node *node, int pos);
 FIRM_API void       set_Sel_index(ir_node *node, int pos, ir_node *index);
+
+/** @} */
+
+/** @addtogroup Call
+ * @{
+ */
 
 FIRM_API ir_node **get_Call_param_arr(ir_node *node);
 /** Gets the number of parameters of a call. */
@@ -436,6 +481,12 @@ FIRM_API ir_entity *get_Call_callee(const ir_node *node, size_t pos);
 FIRM_API void set_Call_callee_arr(ir_node *node, size_t n, ir_entity **arr);
 FIRM_API void remove_Call_callee_arr(ir_node *node);
 
+/** @} */
+
+/** @addtogroup Builtin
+ * @{
+ */
+
 FIRM_API ir_node         **get_Builtin_param_arr(ir_node *node);
 /** Gets the number of parameters of a Builtin. */
 FIRM_API int             get_Builtin_n_params(const ir_node *node);
@@ -443,6 +494,9 @@ FIRM_API int             get_Builtin_n_params(const ir_node *node);
 FIRM_API ir_node         *get_Builtin_param(const ir_node *node, int pos);
 /** Sets the Builtin parameter at position pos. */
 FIRM_API void            set_Builtin_param(ir_node *node, int pos, ir_node *param);
+
+/** @} */
+
 /** Returns a human readable string for the ir_builtin_kind. */
 FIRM_API const char *get_builtin_kind_name(ir_builtin_kind kind);
 
@@ -485,6 +539,11 @@ FIRM_API ir_relation get_negated_relation(ir_relation relation);
 /** Calculates the inversed (R^-1) relation, i.e., "<" --> ">" */
 FIRM_API ir_relation get_inversed_relation(ir_relation relation);
 
+/**
+ * @addtogroup Cast
+ * @{
+ */
+
 /** Checks for upcast.
  *
  * Returns true if the Cast node casts a class type to a super type.
@@ -503,6 +562,13 @@ FIRM_API int is_Cast_upcast(ir_node *node);
  */
 FIRM_API int is_Cast_downcast(ir_node *node);
 
+/** @} */
+
+/**
+ * @addtogroup Phi
+ * @{
+ */
+
 /** Returns true if irg in phase phase_building and the Phi has zero
    predecessors. It's a Phi0 then. */
 FIRM_API int       is_Phi0(const ir_node *n);
@@ -518,6 +584,8 @@ FIRM_API ir_node  *get_Phi_next(const ir_node *phi);
  * Sets the next link of a block Phi list.
  */
 FIRM_API void      set_Phi_next(ir_node *phi, ir_node *next);
+
+/** @} */
 
 /** Return true if @p node is a memory operation.
  *
@@ -542,10 +610,20 @@ FIRM_API void      add_Sync_pred(ir_node *node, ir_node *pred);
  */
 FIRM_API int is_arg_Proj(const ir_node *node);
 
+/** @addtogroup Tuple
+ * @{
+ */
+
 FIRM_API ir_node **get_Tuple_preds_arr(ir_node *node);
 FIRM_API int       get_Tuple_n_preds(const ir_node *node);
 FIRM_API ir_node  *get_Tuple_pred(const ir_node *node, int pos);
 FIRM_API void      set_Tuple_pred(ir_node *node, int pos, ir_node *pred);
+
+/** @} */
+
+/** @addtogroup ASM
+ * @{
+ */
 
 /** Return the number of input constraints for an ASM node. */
 FIRM_API size_t get_ASM_n_input_constraints(const ir_node *node);
@@ -553,6 +631,8 @@ FIRM_API size_t get_ASM_n_input_constraints(const ir_node *node);
 FIRM_API size_t get_ASM_n_output_constraints(const ir_node *node);
 /** Return the number of clobbered registers for an ASM node.  */
 FIRM_API size_t get_ASM_n_clobbers(const ir_node *node);
+
+/** @} */
 
 /** Returns operand of node if node is a Proj. */
 FIRM_API ir_node *skip_Proj(ir_node *node);

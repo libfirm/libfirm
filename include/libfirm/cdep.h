@@ -28,6 +28,11 @@
 #include "firm_types.h"
 #include "begin.h"
 
+/** @ingroup irana
+ * @defgroup ir_cdep Control Dependence
+ * @{
+ */
+
 /** Compute the control dependence graph for a graph. */
 FIRM_API void compute_cdep(ir_graph *irg);
 
@@ -72,6 +77,8 @@ FIRM_API ir_node *get_unique_cdep(const ir_node *block);
  * @param block   the block to check
  */
 FIRM_API int has_multiple_cdep(const ir_node *block);
+
+/** @} */
 
 #include "end.h"
 

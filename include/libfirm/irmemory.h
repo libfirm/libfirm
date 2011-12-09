@@ -29,6 +29,15 @@
 #include "firm_types.h"
 #include "begin.h"
 
+/** @ingroup irana
+ * @defgroup ir_memory  Memory Disambiguator
+ *
+ * A memory disambiguator checks wether 2 given SSA values representing
+ * addresses alias.
+ *
+ * @{
+ */
+
 /** The alias relation of two memory addresses. */
 typedef enum ir_alias_relation {
 	ir_no_alias,       /**< No alias. */
@@ -243,6 +252,8 @@ FIRM_API void mark_private_methods(void);
  * @return  the newly created ir_prog pass
  */
 FIRM_API ir_prog_pass_t *mark_private_methods_pass(const char *name);
+
+/** @} */
 
 #include "end.h"
 

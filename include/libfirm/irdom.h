@@ -22,8 +22,19 @@
  * @brief     Construct and access dominator tree.
  * @author    Goetz Lindenmaier
  * @date      2.2002
- * @brief
- *   This file contains routines to construct and access dominator information.
+ * @brief     This file contains routines to construct and access dominator information.
+ */
+#ifndef FIRM_ANA_IRDOM_H
+#define FIRM_ANA_IRDOM_H
+
+#include "firm_types.h"
+#include "begin.h"
+
+/** @defgroup irana Analyses */
+
+/**
+ * @ingroup irana
+ * @defgroup irdom Dominance Information
  *
  *   The dominator information is stored in three fields of block nodes:
  *     - idom: a reference to the block that is the immediate dominator of
@@ -34,12 +45,9 @@
  *
  * We generally presume (like Tarjan) that endless loops do not exist. The
  * implementation assumes a control dependency from End to loop header.
+ *
+ * @{
  */
-#ifndef FIRM_ANA_IRDOM_H
-#define FIRM_ANA_IRDOM_H
-
-#include "firm_types.h"
-#include "begin.h"
 
 /** Accessing the dominator data structure.
  *
@@ -291,6 +299,8 @@ FIRM_API void free_dom(ir_graph *irg);
  * Sets the flag in irg to "dom_none".
  */
 FIRM_API void free_postdom(ir_graph *irg);
+
+/** @} */
 
 #include "end.h"
 

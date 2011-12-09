@@ -22,7 +22,15 @@
  * @brief   Data modes of operations.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Mathias Heil,
  *          Michael Beck
- * @brief
+ */
+#ifndef FIRM_IR_IRMODE_H
+#define FIRM_IR_IRMODE_H
+
+#include "firm_types.h"
+#include "begin.h"
+
+/**
+ * @defgroup ir_mode Value Modes
  *  This module specifies the modes that type the firm nodes.  It defines
  *  a datasturcture that describes a mode and implements constructors and
  *  access routines to this datastructure. Further it defines a set of
@@ -30,12 +38,8 @@
  *
  *  SEE ALSO:
  *    UKA tech report 1999-44 for more information about modes.
+ * @{
  */
-#ifndef FIRM_IR_IRMODE_H
-#define FIRM_IR_IRMODE_H
-
-#include "firm_types.h"
-#include "begin.h"
 
 /**
  * These values represent the different arithmetic operations possible with a
@@ -423,6 +427,8 @@ FIRM_API int is_reinterpret_cast(const ir_mode *src, const ir_mode *dst);
  * Returns the primitive type matching the given mode
  */
 FIRM_API ir_type *get_type_for_mode(const ir_mode *mode);
+
+/** @} */
 
 #include "end.h"
 

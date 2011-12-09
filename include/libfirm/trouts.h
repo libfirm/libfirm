@@ -22,12 +22,6 @@
  * @brief    Reverse edges that reference types/entities.
  * @author   Goetz Lindenmaier
  * @date     29.10.2004
- * @brief
- *  Trouts list all uses of types and entities.
- *  Each type gets a list of all Alloc nodes allocating it.
- *  Each entity gets two lists:
- *    - one containing all accesses (Load, (Call), Store),
- *    - and one containing all uses to get a reference (Sel, SymConst).
  */
 #ifndef FIRM_ANA_TROUTS_H
 #define FIRM_ANA_TROUTS_H
@@ -36,6 +30,17 @@
 #include "irgraph.h"
 
 #include "begin.h"
+
+/**
+ * @ingroup ir_type
+ * @defgroup trouts Reverse Type Edges
+ * Trouts list all uses of types and entities.
+ * Each type gets a list of all Alloc nodes allocating it.
+ * Each entity gets two lists:
+ *   - one containing all accesses (Load, (Call), Store),
+ *   - and one containing all uses to get a reference (Sel, SymConst).
+ * @{
+ */
 
 /** Number of Load/Store nodes that possibly access this entity. */
 FIRM_API size_t get_entity_n_accesses(const ir_entity *ent);
@@ -98,6 +103,8 @@ FIRM_API void compute_trouts(void);
 
 /** Free trout data. */
 FIRM_API void free_trouts(void);
+
+/** @} */
 
 #include "end.h"
 

@@ -31,6 +31,13 @@
 #include "iroptimize.h"
 #include "begin.h"
 
+/**
+ * @defgroup be  Code Generation
+ *
+ * Code Generation (backend) produces machine-code.
+ * @{
+ */
+
 typedef enum {
 	ASM_CONSTRAINT_FLAG_NONE                  = 0,
 	ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER     = 1u << 0,
@@ -170,6 +177,8 @@ FIRM_API asm_constraint_flags_t be_parse_asm_constraints(const char *constraints
  * tests whether a string is a valid clobber in an ASM instruction
  */
 FIRM_API int be_is_valid_clobber(const char *clobber);
+
+/** @} */
 
 #include "end.h"
 

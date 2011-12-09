@@ -32,6 +32,16 @@
 #include "begin.h"
 
 /**
+ * @defgroup ir_lowering  Lowering
+ *
+ * Lowering is the process of transforming a highlevel representation
+ * (a representation closer to the sourcecode) into a lower-level representation
+ * (something closer to the target machine).
+ *
+ * @{
+ */
+
+/**
  * Lower small CopyB nodes to Load/Store nodes, preserve medium-sized CopyB
  * nodes and replace large CopyBs by a call to memcpy, depending on the given
  * parameters.
@@ -482,6 +492,8 @@ typedef struct runtime_rt {
   @endcode
  */
 FIRM_API int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt);
+
+/** @} */
 
 #include "end.h"
 

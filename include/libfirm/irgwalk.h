@@ -21,19 +21,22 @@
  * @file
  * @brief    Traverse an ir graph
  * @author   Boris Boesler, Goetz Lindenmaier
- * @brief
- *  Traverse an ir graph:
- *  - execute the pre function before recursion
- *  - execute the post function after recursion
- *
- *  Uses current_ir_graph (from irgraph.h)!!! Set it to the proper
- *  graph before starting the walker.
  */
 #ifndef FIRM_IR_IRGWALK_H
 #define FIRM_IR_IRGWALK_H
 
 #include "firm_types.h"
 #include "begin.h"
+
+/**
+ * @ingroup ir_graph
+ * @defgroup irgwalk Traversing
+ *
+ *  Traverse graphs:
+ *  - execute the pre function before recursion
+ *  - execute the post function after recursion
+ * @{
+ */
 
 /**
  * Walks over the ir graph.
@@ -250,6 +253,8 @@ FIRM_API void irg_walk_anchors(ir_graph *irg, irg_walk_func *pre,
  */
 unsigned irg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
                     void *env);
+
+/** @} */
 
 #include "end.h"
 
