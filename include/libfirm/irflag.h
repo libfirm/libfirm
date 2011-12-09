@@ -162,7 +162,7 @@ FIRM_API void all_optimizations_off(void);
 /** @} */
 
 /** @ingroup irverify
- * @defgroup Flags
+ * @defgroup irverify_flags Flags
  * Enable/Disable automatic correctness tests
  * @{
  */

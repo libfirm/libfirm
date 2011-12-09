@@ -26,7 +26,7 @@ def format_doxygrouplink(string, link=None):
 	if len(anchorfile) == 0:
 		return string
 	global linkbase
-	return "<a href=\"%s/%s\">%s</a>" % (linkbase, anchorfile[0], string)
+	return "<a href=\"%s%s\">%s</a>" % (linkbase, anchorfile[0], string)
 
 def format_doxylink(string, link=None):
 	global tags
@@ -43,7 +43,7 @@ def format_doxylink(string, link=None):
 	if len(anchorfile) == 0 or len(anchor) == 0:
 		return string
 	global linkbase
-	return "<a href=\"%s/%s#%s\">%s</a>" % (linkbase, anchorfile[0], anchor[0], string)
+	return "<a href=\"%s%s#%s\">%s</a>" % (linkbase, anchorfile[0], anchor[0], string)
 
 def format_docutils(string):
 	writer = docutils.writers.html4css1.Writer()
@@ -153,6 +153,8 @@ def main(argv):
 		tagfile = open(argv[-3], "r")
 		global linkbase
 		linkbase = argv[-2]
+		if linkbase != "":
+			linkbase += "/"
 		try:
 			from lxml import etree
 			tags = etree.parse(tagfile)

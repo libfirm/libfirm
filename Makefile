@@ -19,6 +19,7 @@ builddir     ?= $(top_builddir)/$(variant)
 Q ?= @
 
 CC ?= cc
+DOXYGEN ?= doxygen
 LINK ?= $(CC)
 AR ?= ar
 DLLEXT ?= .so
@@ -176,9 +177,23 @@ $(builddir)/%.o: %.c $(IR_SPEC_GENERATED_FILES) config.h
 	@echo CC $@
 	$(Q)$(CC) $(CFLAGS) $(CPPFLAGS) $(libfirm_CPPFLAGS) -MMD -c -o $@ $<
 
+firm-doc/libfirm.tag: $(IR_SPEC_GENERATED_FILES) Doxyfile $(wildcard include/libfirm/*.h) $(wildcard include/libfirm/adt/*.h)
+	@echo Doxygen
+	$(Q)$(DOXYGEN)
+
+DOCU_GENERATOR := scripts/gen_docu.py
+firm-doc/html/nodes.html: firm-doc/libfirm.tag $(DOCU_GENERATOR) $(IR_SPEC) scripts/spec_util.py scripts/style.css
+	@echo gen_docu.py
+	$(Q)$(DOCU_GENERATOR) firm-doc/libfirm.tag "" $@
+	$(Q)cp scripts/style.css firm-doc/html
+
+.PHONY: documentation
+documentation: firm-doc/libfirm.tag firm-doc/html/nodes.html
+
 .PHONY: clean
 clean:
 	@echo CLEAN
 	$(Q)rm -f $(libfirm_OBJECTS)
 	$(Q)rm -f $(libfirm_TARGET)
 	$(Q)rm -f $(shell find ir/ -name "gen_*.[ch]")
+	$(Q)rm -rf firm-docu

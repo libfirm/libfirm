@@ -64,10 +64,9 @@ typedef enum ir_mode_arithmetic {
  * Creates a new mode.
  *
  * @param name          the name of the mode to be created
- * @param sort          the ir_mode_sort of the mode to be created
+ * @param arithmetic    arithmetic operations possible with a mode
  * @param bit_size      number of bits this mode allocate
  * @param sign          non-zero if this is a signed mode
- * @param arithmetic    arithmetic operations possible with a mode
  * @param modulo_shift  Is ignored for modes other than integer.
  *
  * This function constructs a new mode given by the parameters.

@@ -1093,7 +1093,7 @@ typedef ir_entity *(*compilerlib_entity_creator_t)(ident *id, ir_type *mt);
  *
  * @param cb  the new compilerlib entity creation callback
  */
-FIRM_API void set_compilerlib_entity_creator(compilerlib_entity_creator_t c);
+FIRM_API void set_compilerlib_entity_creator(compilerlib_entity_creator_t cb);
 
 /**
  * Get the compilerlib entity creation callback.
