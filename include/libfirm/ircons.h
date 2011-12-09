@@ -1218,16 +1218,6 @@ FIRM_API ir_node *new_rd_DivRL(dbg_info *db, ir_node *block, ir_node *memop,
 FIRM_API ir_node *new_rd_strictConv(dbg_info *db, ir_node *block,
                                     ir_node *op, ir_mode *mode);
 
-/** Constructor for a defaultProj node.
- *
- * Represents the default control flow of a Switch-Cond node.
- *
- * @param *db       A pointer for debug information.
- * @param arg       A node producing a tuple.
- * @param max_proj  The end position of the value in the tuple.
- */
-FIRM_API ir_node *new_rd_defaultProj(dbg_info *db, ir_node *arg, long max_proj);
-
 /** Constructor for an ASM pseudo node.
  *
  * @param *db         A pointer for debug information.
@@ -1336,15 +1326,6 @@ FIRM_API ir_node *new_r_DivRL(ir_node *block, ir_node *memop,
  * @param *mode  The mode of this the operand muss be converted .
  */
 FIRM_API ir_node *new_r_strictConv(ir_node *block, ir_node *op, ir_mode *mode);
-
-/** Constructor for a defaultProj node.
- *
- * Represents the default control flow of a Switch-Cond node.
- *
- * @param arg       A node producing a tuple.
- * @param max_proj  The end  position of the value in the tuple.
- */
-FIRM_API ir_node *new_r_defaultProj(ir_node *arg, long max_proj);
 
 /** Constructor for an ASM pseudo node.
  *
@@ -1464,17 +1445,6 @@ FIRM_API ir_node *new_d_DivRL(dbg_info *db, ir_node *memop,
  */
 FIRM_API ir_node *new_d_strictConv(dbg_info *db, ir_node *op, ir_mode *mode);
 
-/** Constructor for a defaultProj node.
- *
- * Represents the default control flow of a Switch-Cond node.
- * Adds the node to the block in current_ir_block.
- *
- * @param *db       A pointer for debug information.
- * @param arg       A node producing a tuple.
- * @param max_proj  The end  position of the value in the tuple.
- */
-FIRM_API ir_node *new_d_defaultProj(dbg_info *db, ir_node *arg, long max_proj);
-
 /** Constructor for an ASM pseudo node.
  *
  * @param *db         A pointer for debug information.
@@ -1578,16 +1548,6 @@ FIRM_API ir_node *new_DivRL(ir_node *memop, ir_node *op1, ir_node *op2,
  * @param   *mode        The mode of this the operand muss be converted.
  */
 FIRM_API ir_node *new_strictConv(ir_node *op, ir_mode *mode);
-
-/** Constructor for a defaultProj node.
- *
- * Represents the default control flow of a Switch-Cond node.
- * Adds the node to the block in current_ir_block.
- *
- * @param arg       A node producing a tuple.
- * @param max_proj  The end  position of the value in the tuple.
- */
-FIRM_API ir_node *new_defaultProj(ir_node *arg, long max_proj);
 
 /** Constructor for an ASM pseudo node.
  *

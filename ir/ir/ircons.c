@@ -56,16 +56,6 @@ ir_node *new_rd_Const_long(dbg_info *db, ir_graph *irg, ir_mode *mode,
 	return new_rd_Const(db, irg, new_tarval_from_long(value, mode));
 }
 
-ir_node *new_rd_defaultProj(dbg_info *db, ir_node *arg, long max_proj)
-{
-	ir_node *res;
-
-	assert(is_Cond(arg));
-	arg->attr.cond.default_proj = max_proj;
-	res = new_rd_Proj(db, arg, mode_X, max_proj);
-	return res;
-}
-
 ir_node *new_rd_ASM(dbg_info *db, ir_node *block, int arity, ir_node *in[],
                     ir_asm_constraint *inputs, size_t n_outs,
 	                ir_asm_constraint *outputs, size_t n_clobber,
@@ -151,10 +141,6 @@ ir_node *new_r_simpleSel(ir_node *block, ir_node *store, ir_node *objptr,
                          ir_entity *ent)
 {
 	return new_rd_Sel(NULL, block, store, objptr, 0, NULL, ent);
-}
-ir_node *new_r_defaultProj(ir_node *arg, long max_proj)
-{
-	return new_rd_defaultProj(NULL, arg, max_proj);
 }
 ir_node *new_r_ASM(ir_node *block,
                    int arity, ir_node *in[], ir_asm_constraint *inputs,
@@ -376,17 +362,6 @@ ir_node *new_d_Const_long(dbg_info *db, ir_mode *mode, long value)
 {
 	assert(get_irg_phase_state(current_ir_graph) == phase_building);
 	return new_rd_Const_long(db, current_ir_graph, mode, value);
-}
-
-ir_node *new_d_defaultProj(dbg_info *db, ir_node *arg, long max_proj)
-{
-	ir_node *res;
-	assert(is_Cond(arg) || is_Bad(arg));
-	assert(get_irg_phase_state(current_ir_graph) == phase_building);
-	if (is_Cond(arg))
-		arg->attr.cond.default_proj = max_proj;
-	res = new_d_Proj(db, arg, mode_X, max_proj);
-	return res;
 }
 
 ir_node *new_d_simpleSel(dbg_info *db, ir_node *store, ir_node *objptr,
@@ -754,10 +729,6 @@ ir_node *new_SymConst(ir_mode *mode, symconst_symbol value, symconst_kind kind)
 ir_node *new_simpleSel(ir_node *store, ir_node *objptr, ir_entity *ent)
 {
 	return new_d_simpleSel(NULL, store, objptr, ent);
-}
-ir_node *new_defaultProj(ir_node *arg, long max_proj)
-{
-	return new_d_defaultProj(NULL, arg, max_proj);
 }
 ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
                  size_t n_outs, ir_asm_constraint *outputs,
