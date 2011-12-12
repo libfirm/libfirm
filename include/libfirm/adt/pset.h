@@ -31,7 +31,6 @@
 #include <stddef.h>
 
 #include "hashptr.h"
-#include "iterator.h"
 
 #include "../begin.h"
 

@@ -29,8 +29,6 @@
 #include <stddef.h>
 
 #include "obst.h"
-#include "fourcc.h"
-#include "xmalloc.h"
 
 #include "../begin.h"
 

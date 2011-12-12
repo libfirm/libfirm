@@ -28,6 +28,7 @@
 #include "irtools.h"
 #include "irhooks.h"
 #include "util.h"
+#include "fourcc.h"
 
 /**
  * names of the optimizations

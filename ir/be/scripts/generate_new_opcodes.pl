@@ -727,6 +727,7 @@ open(OUT, ">$target_c") || die("Fatal error: Could not open $target_c, reason: $
 
 print OUT "#include \"gen_$arch\_regalloc_if.h\"\n";
 print OUT "#include \"irverify_t.h\"\n";
+print OUT "#include \"fourcc.h\"\n";
 print OUT "\n";
 print OUT @obst_cmp_attr;
 print OUT "\n";
