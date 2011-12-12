@@ -237,23 +237,6 @@ void pset_stats (pset *pset);
 # define pset_stats(s) ((void)0)
 #endif
 
-#ifdef DEBUG
-/**
- * Describe a pset.
- *
- * Writes a description of a set to stdout. The description includes:
- * - a header telling how many elements (nkey) and segments (nseg) are in use
- * - for every collision chain the number of element with its hash values
- *
- * @param pset  the pset
- */
-void pset_describe (pset *pset);
-#endif
-
-/* @@@ NYI */
-#define PSET_VRFY(pset) (void)0
-
-
 /* Private */
 
 typedef enum { _pset_find, _pset_insert, _pset_hinsert } _pset_action;

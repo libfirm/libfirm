@@ -106,9 +106,6 @@ struct SET {
 	size_t naccess, ncollision, ndups;
 	size_t max_chain_len;
 #endif
-#ifdef DEBUG
-	const char *tag;          /**< an optionally tag for distinguishing sets */
-#endif
 };
 
 
@@ -141,41 +138,6 @@ static inline void stat_chain_len(SET *table, size_t chain_len)
 # define stat_dup(table) ((void)0)
 
 #endif /* !STATS */
-
-#ifdef DEBUG
-
-const char *MANGLEP(tag);
-
-
-void MANGLEP(describe) (SET *table)
-{
-	size_t i, j, collide;
-	Element *ptr;
-	Segment *seg;
-
-	lc_printf("p=%zu maxp=%zu nkey=%zu nseg=%zu\n",
-			table->p, table->maxp, table->nkey, table->nseg);
-	for (i = 0;  i < table->nseg;  i++) {
-		seg = table->dir[i];
-		for (j = 0;  j < SEGMENT_SIZE;  j++) {
-			collide = 0;
-			ptr = seg[j];
-			while (ptr) {
-				if (collide) lc_printf("<%3zu>", collide);
-				else printf ("table");
-				lc_printf("[%zd][%3zd]: %u %p\n", i, j, ptr->entry.hash, (void *)ptr->entry.dptr);
-				ptr = ptr->chain;
-				++collide;
-			}
-		}
-	}
-#ifdef STATS
-	MANGLEP(stats)(table);
-#endif
-}
-
-#endif /* !DEBUG */
-
 
 SET *(PMANGLE(new)) (MANGLEP(cmp_fun) cmp, size_t nslots)
 {
@@ -210,18 +172,12 @@ SET *(PMANGLE(new)) (MANGLEP(cmp_fun) cmp, size_t nslots)
 	table->naccess = table->ncollision = table->ndups = 0;
 	table->max_chain_len = 0;
 #endif
-#ifdef DEBUG
-	table->tag = MANGLEP(tag);
-#endif
 	return table;
 }
 
 
 void PMANGLE(del) (SET *table)
 {
-#ifdef DEBUG
-	MANGLEP(tag) = table->tag;
-#endif
 	obstack_free (&table->obst, NULL);
 	xfree (table);
 }
@@ -393,9 +349,6 @@ void * MANGLE(_,_search) (SET *table,
 
 	assert (table);
 	assert (key);
-#ifdef DEBUG
-	MANGLEP(tag) = table->tag;
-#endif
 	stat_access (table);
 
 	/* Find collision chain */

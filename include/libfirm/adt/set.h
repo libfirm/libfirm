@@ -215,20 +215,6 @@ void set_stats (set *set);
 # define set_stats(s) ((void)0)
 #endif
 
-#ifdef DEBUG
-/**
- * Describe a set.
- *
- * Writes a description of a set to stdout. The description includes:
- * - a header telling how many elements (nkey) and segments (nseg) are in use
- * - for every collision chain the number of element with its hash values
- *
- * @param set  the set
- */
-FIRM_API void set_describe(set *set);
-#endif
-
-
 /* Private */
 
 typedef enum { _set_find, _set_insert, _set_hinsert, _set_hinsert0 } _set_action;

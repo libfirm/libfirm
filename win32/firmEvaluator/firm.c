@@ -802,9 +802,6 @@ struct pset {
   int naccess, ncollision, ndups;
   int max_chain_len;
 #endif
-#ifdef DEBUG
-  const char *tag;         /**< an optionally tag for distinguishing sets */
-#endif
 };
 
 typedef struct set_element {
@@ -826,9 +823,6 @@ struct set {
 #ifdef STATS
   int naccess, ncollision, ndups;
   int max_chain_len;
-#endif
-#ifdef DEBUG
-  const char *tag;         /**< an optionally tag for distinguishing sets */
 #endif
 };
 
