@@ -24,7 +24,7 @@
  */
 #include <assert.h>
 #include <stdlib.h>
-#include "irdom.h"
+#include "irdom_t.h"
 #include "irgraph.h"
 #include "irgwalk.h"
 #include "irnode.h"

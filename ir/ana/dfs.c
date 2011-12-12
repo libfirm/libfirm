@@ -33,7 +33,7 @@
 
 #include <assert.h>
 #include "irprintf.h"
-#include "irdom.h"
+#include "irdom_t.h"
 #include "set.h"
 #include "statev.h"
 #include "dfs_t.h"
