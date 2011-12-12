@@ -1044,7 +1044,7 @@ FIRM_API ir_graph_pass_t *fixpoint_vrp_irg_pass(const char *name);
  * @param confirm  if n is confirmed to be != 0, returns
  *                 the the Confirm-node, else NULL
  */
-FIRM_API int value_not_zero(const ir_node *n, ir_node_cnst_ptr *confirm);
+FIRM_API int value_not_zero(const ir_node *n, const ir_node **confirm);
 
 /**
  * Check, if the value of a node cannot represent a NULL pointer.
@@ -1059,7 +1059,7 @@ FIRM_API int value_not_zero(const ir_node *n, ir_node_cnst_ptr *confirm);
  * @param confirm  if n is confirmed to be != NULL, returns
  *                 the the Confirm-node, else NULL
  */
-FIRM_API int value_not_null(const ir_node *n, ir_node_cnst_ptr *confirm);
+FIRM_API int value_not_null(const ir_node *n, const ir_node **confirm);
 
 /**
  * Check, if the value of a node can be confirmed >= 0 or <= 0,

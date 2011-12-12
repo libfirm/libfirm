@@ -32,39 +32,39 @@ typedef unsigned long ir_exc_region_t;
 typedef unsigned long ir_label_t;
 
 /** @ingroup dbg_info */
-typedef struct dbg_info             dbg_info,            *dbg_info_ptr;
+typedef struct dbg_info             dbg_info;
 /** @ingroup dbg_info */
-typedef struct type_dbg_info        type_dbg_info,       *type_dbg_info_ptr;
+typedef struct type_dbg_info        type_dbg_info;
 /** @ingroup ir_ident */
-typedef struct ident                ident,               *ir_ident_ptr;
+typedef struct ident                ident;
 /** @ingroup ir_node */
-typedef struct ir_node              ir_node,             *ir_node_ptr;
+typedef struct ir_node              ir_node;
 /** @ingroup ir_op */
-typedef struct ir_op                ir_op,               *ir_op_ptr;
+typedef struct ir_op                ir_op;
 /** @ingroup ir_mode */
-typedef struct ir_mode              ir_mode,             *ir_mode_ptr;
+typedef struct ir_mode              ir_mode;
 /** @ingroup iredges */
-typedef struct ir_edge_t            ir_edge_t,           *ir_edge_ptr;
+typedef struct ir_edge_t            ir_edge_t;
 /** @ingroup ir_heights */
 typedef struct ir_heights_t         ir_heights_t;
 /** @ingroup ir_tarval */
-typedef struct ir_tarval            ir_tarval,           *ir_tarval_ptr;
-typedef struct ir_enum_const        ir_enum_const,       *ir_enum_const_ptr;
+typedef struct ir_tarval            ir_tarval;
+typedef struct ir_enum_const        ir_enum_const;
 /** @ingroup ir_type */
-typedef struct ir_type              ir_type,             *ir_type_ptr;
+typedef struct ir_type              ir_type;
 /** @ingroup ir_graph */
-typedef struct ir_graph             ir_graph,            *ir_graph_ptr;
+typedef struct ir_graph             ir_graph;
 /** @ingroup ir_prog */
-typedef struct ir_prog              ir_prog,             *ir_prog_ptr;
+typedef struct ir_prog              ir_prog;
 /** @ingroup ir_loop */
-typedef struct ir_loop              ir_loop,             *ir_loop_ptr;
+typedef struct ir_loop              ir_loop;
 /** @ingroup ir_entity */
-typedef struct ir_entity            ir_entity,           *ir_entity_ptr;
-typedef struct ir_extblk            ir_extblk,           *ir_extblk_ptr;
+typedef struct ir_entity            ir_entity;
+typedef struct ir_extblk            ir_extblk;
 /** @ingroup execfreq */
-typedef struct ir_exec_freq         ir_exec_freq,        *ir_exec_freq_ptr;
+typedef struct ir_exec_freq         ir_exec_freq;
 /** @ingroup ir_cdep */
-typedef struct ir_cdep              ir_cdep,             *ir_cdep_ptr;
+typedef struct ir_cdep              ir_cdep;
 /** @ingroup ir_op */
 typedef struct arch_irn_ops_t       arch_irn_ops_t;
 typedef struct ir_graph_pass_t      ir_graph_pass_t;
@@ -74,7 +74,7 @@ typedef struct ir_graph_pass_manager_t      ir_graph_pass_manager_t;
 typedef struct ir_prog_pass_manager_t       ir_prog_pass_manager_t;
 
 /** @ingroup ir_initializer */
-typedef union  ir_initializer_t     ir_initializer_t,    *ir_initializer_ptr;
+typedef union  ir_initializer_t     ir_initializer_t;
 
 typedef void irg_walk_func(ir_node *, void *);
 
@@ -84,11 +84,6 @@ typedef void irg_walk_func(ir_node *, void *);
  * There must never be two different entries matching the same integer number.
  */
 typedef struct ir_switch_table  ir_switch_table;
-
-/* Needed for MSVC to suppress warnings because it doest NOT handle const right. */
-typedef const ir_node *ir_node_cnst_ptr;
-
-/* states */
 
 /**
  * This function is called, whenever a local variable is used before definition
