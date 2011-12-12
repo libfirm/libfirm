@@ -128,13 +128,6 @@ void *ir_lnk_nodemap_get(const ir_lnk_nodemap_t *nodemap, const ir_node *node)
 	return entry->data;
 }
 
-/**
- * Initializes a nodemap iterator. Sets the iterator before the first element in
- * the linked nodemap.
- *
- * @param iterator   Pointer to already allocated iterator memory
- * @param nodemap       Pointer to the nodemap
- */
 void ir_lnk_nodemap_iterator_init(ir_lnk_nodemap_iterator_t *iterator,
                                   const ir_lnk_nodemap_t *nodemap)
 {
@@ -142,15 +135,6 @@ void ir_lnk_nodemap_iterator_init(ir_lnk_nodemap_iterator_t *iterator,
 	iterator->nodemap = nodemap;
 }
 
-/**
- * Advances the iterator and returns the current element or NULL if all elements
- * in the linked nodemap have been processed.
- * @attention It is not allowed to use ir_lnk_nodemap_insert or ir_lnk_nodemap_remove while
- *            iterating over a nodemap.
- *
- * @param iterator  Pointer to the nodemap iterator.
- * @returns         Next element in the nodemap or NULL
- */
 ir_node *ir_lnk_nodemap_iterator_next(ir_lnk_nodemap_iterator_t *iterator)
 {
 	ir_node *res;
@@ -163,12 +147,6 @@ ir_node *ir_lnk_nodemap_iterator_next(ir_lnk_nodemap_iterator_t *iterator)
 	return res;
 }
 
-/**
- * Removes the element the iterator currently points to.
- *
- * @param nodemap   Pointer to the linked nodemap
- * @param iterator  Pointer to the nodemap iterator.
- */
 void ir_lnk_nodemap_remove_iterator(ir_lnk_nodemap_t *nodemap,
                                     ir_lnk_nodemap_iterator_t *iterator)
 {

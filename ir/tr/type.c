@@ -111,7 +111,6 @@ void ir_finish_type(void)
 	}
 }
 
-/** the global type visited flag */
 ir_visited_t firm_type_visited;
 
 void (set_master_type_visited)(ir_visited_t val)
@@ -238,7 +237,6 @@ void set_type_mode(ir_type *tp, ir_mode *mode)
 		assert(0 && "setting a mode is NOT allowed for this type");
 }
 
-/* Outputs a unique number for this node */
 long get_type_nr(const ir_type *tp)
 {
 	assert(tp);
@@ -427,7 +425,6 @@ int (is_type)(const void *thing)
 	return _is_type(thing);
 }
 
-/* Checks whether two types are structural equal.*/
 int equal_type(ir_type *typ1, ir_type *typ2)
 {
 	ir_entity **m;
@@ -1481,7 +1478,6 @@ void free_array_attrs(ir_type *array)
 	free(array->attr.aa.order);
 }
 
-/* manipulate private fields of array ir_type */
 size_t get_array_n_dimensions(const ir_type *array)
 {
 	assert(array->type_op == type_array);

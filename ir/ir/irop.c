@@ -42,10 +42,6 @@ void be_init_op(void);
 /** the available next opcode */
 static unsigned next_iro = iro_MaxOpcode;
 
-/*
- * Copies all attributes stored in the old node to the new node.
- * Assumes both have the same opcode and sufficient size.
- */
 void default_copy_attr(ir_graph *irg, const ir_node *old_node,
                        ir_node *new_node)
 {
@@ -164,7 +160,6 @@ static void set_default_operations(unsigned code, ir_op_ops *ops)
 	firm_set_default_reassoc(code, ops);
 }
 
-/* Creates a new ir operation. */
 ir_op *new_ir_op(unsigned code, const char *name, op_pin_state p,
                  unsigned flags, op_arity opar, int op_index, size_t attr_size,
                  const ir_op_ops *ops)
@@ -214,7 +209,6 @@ void ir_op_set_fragile_indices(ir_op *op, int pn_x_regular, int pn_x_except)
 	op->pn_x_except = pn_x_except;
 }
 
-/* Returns the string for the opcode. */
 const char *get_op_name (const ir_op *op)
 {
 	return get_id_str(op->name);
@@ -248,21 +242,17 @@ op_pin_state (get_op_pinned)(const ir_op *op)
 	return get_op_pinned_(op);
 }
 
-/* Sets op_pin_state_pinned in the opcode.  Setting it to floating has no effect
-   for Phi, Block and control flow nodes. */
 void set_op_pinned(ir_op *op, op_pin_state pinned)
 {
 	if (op == op_Block || op == op_Phi || is_op_cfopcode(op)) return;
 	op->pin_state = pinned;
 }
 
-/* retrieve the next free opcode */
 unsigned get_next_ir_opcode(void)
 {
 	return next_iro++;
 }
 
-/* Returns the next free n IR opcode number, allows to register a bunch of user ops */
 unsigned get_next_ir_opcodes(unsigned num)
 {
 	unsigned base = next_iro;
@@ -270,19 +260,16 @@ unsigned get_next_ir_opcodes(unsigned num)
 	return base;
 }
 
-/* Returns the generic function pointer from an ir operation. */
 op_func (get_generic_function_ptr)(const ir_op *op)
 {
 	return get_generic_function_ptr_(op);
 }
 
-/* Store a generic function pointer into an ir operation. */
 void (set_generic_function_ptr)(ir_op *op, op_func func)
 {
 	set_generic_function_ptr_(op, func);
 }
 
-/* Returns the ir_op_ops of an ir_op. */
 const ir_op_ops *(get_op_ops)(const ir_op *op)
 {
 	return get_op_ops_(op);

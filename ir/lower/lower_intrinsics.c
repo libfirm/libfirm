@@ -43,6 +43,7 @@
 #include "iropt_dbg.h"
 #include "error.h"
 #include "be.h"
+#include "util.h"
 
 /** Walker environment. */
 typedef struct walker_env {
@@ -91,7 +92,6 @@ static void call_mapper(ir_node *node, void *env)
 	}
 }
 
-/* Go through all graphs and map calls to intrinsic functions. */
 size_t lower_intrinsics(i_record *list, size_t length, int part_block_used)
 {
 	size_t         i, n;
@@ -234,7 +234,6 @@ static void replace_call(ir_node *irn, ir_node *call, ir_node *mem,
 	set_Tuple_pred(call, pn_Call_T_result, rest);
 }
 
-/* A mapper for the integer abs. */
 int i_mapper_abs(ir_node *call, void *ctx)
 {
 	ir_node  *mem      = get_Call_mem(call);
@@ -261,7 +260,6 @@ int i_mapper_abs(ir_node *call, void *ctx)
 	return 1;
 }
 
-/* A mapper for the integer bswap. */
 int i_mapper_bswap(ir_node *call, void *ctx)
 {
 	ir_node *mem   = get_Call_mem(call);
@@ -279,7 +277,6 @@ int i_mapper_bswap(ir_node *call, void *ctx)
 	return 1;
 }
 
-/* A mapper for the alloca() function. */
 int i_mapper_alloca(ir_node *call, void *ctx)
 {
 	ir_node *mem   = get_Call_mem(call);
@@ -315,7 +312,6 @@ int i_mapper_alloca(ir_node *call, void *ctx)
 	return 1;
 }
 
-/* A mapper for the floating point sqrt. */
 int i_mapper_sqrt(ir_node *call, void *ctx)
 {
 	ir_node   *mem;
@@ -338,7 +334,6 @@ int i_mapper_sqrt(ir_node *call, void *ctx)
 	return 1;
 }
 
-/* A mapper for the floating point cbrt. */
 int i_mapper_cbrt(ir_node *call, void *ctx)
 {
 	ir_node   *mem;
@@ -361,7 +356,6 @@ int i_mapper_cbrt(ir_node *call, void *ctx)
 	return 1;
 }
 
-/* A mapper for the floating point pow. */
 int i_mapper_pow(ir_node *call, void *ctx)
 {
 	ir_node  *left    = get_Call_param(call, 0);
@@ -418,7 +412,6 @@ int i_mapper_pow(ir_node *call, void *ctx)
 	return 1;
 }
 
-/* A mapper for the floating point exp. */
 int i_mapper_exp(ir_node *call, void *ctx)
 {
 	ir_node *val  = get_Call_param(call, 0);
@@ -526,70 +519,60 @@ static int i_mapper_symmetric_zero_to_one(ir_node *call, void *ctx, int reason)
 	return changed;
 }
 
-/* A mapper for the floating point log. */
 int i_mapper_log(ir_node *call, void *ctx)
 {
 	/* log(1.0) = 0.0 */
 	return i_mapper_one_to_zero(call, ctx, FS_OPT_RTS_LOG);
 }
 
-/* A mapper for the floating point sin. */
 int i_mapper_sin(ir_node *call, void *ctx)
 {
 	/* sin(0.0) = 0.0 */
 	return i_mapper_zero_to_zero(call, ctx, FS_OPT_RTS_SIN);
 }
 
-/* A mapper for the floating point cos. */
 int i_mapper_cos(ir_node *call, void *ctx)
 {
 	/* cos(0.0) = 1.0, cos(-x) = x */
 	return i_mapper_symmetric_zero_to_one(call, ctx, FS_OPT_RTS_COS);
 }
 
-/* A mapper for the floating point tan. */
 int i_mapper_tan(ir_node *call, void *ctx)
 {
 	/* tan(0.0) = 0.0 */
 	return i_mapper_zero_to_zero(call, ctx, FS_OPT_RTS_TAN);
 }
 
-/* A mapper for the floating point asin. */
 int i_mapper_asin(ir_node *call, void *ctx)
 {
 	/* asin(0.0) = 0.0 */
 	return i_mapper_zero_to_zero(call, ctx, FS_OPT_RTS_ASIN);
 }
 
-/* A mapper for the floating point acos. */
 int i_mapper_acos(ir_node *call, void *ctx)
 {
 	/* acos(1.0) = 0.0 */
 	return i_mapper_one_to_zero(call, ctx, FS_OPT_RTS_ACOS);
 }
 
-/* A mapper for the floating point atan. */
 int i_mapper_atan(ir_node *call, void *ctx)
 {
 	/* atan(0.0) = 0.0 */
 	return i_mapper_zero_to_zero(call, ctx, FS_OPT_RTS_ATAN);
 }
 
-/* A mapper for the floating point sinh. */
 int i_mapper_sinh(ir_node *call, void *ctx)
 {
 	/* sinh(0.0) = 0.0 */
 	return i_mapper_zero_to_zero(call, ctx, FS_OPT_RTS_SINH);
 }
 
-/* A mapper for the floating point cosh. */
 int i_mapper_cosh(ir_node *call, void *ctx)
 {
 	/* cosh(0.0) = 1.0, cosh(-x) = x */
 	return i_mapper_symmetric_zero_to_one(call, ctx, FS_OPT_RTS_COSH);
 }
 
-/* A mapper for the floating point tanh. */
 int i_mapper_tanh(ir_node *call, void *ctx)
 {
 	/* tanh(0.0) = 0.0 */
@@ -699,7 +682,6 @@ static ir_node *eval_strlen(ir_graph *irg, ir_entity *ent, ir_type *res_tp)
 	return NULL;
 }
 
-/* A mapper for strlen */
 int i_mapper_strlen(ir_node *call, void *ctx)
 {
 	ir_node *s     = get_Call_param(call, 0);
@@ -866,7 +848,6 @@ static int is_empty_string(ir_entity *ent)
 	return initializer_val_is_null(init0);
 }
 
-/* A mapper for strcmp */
 int i_mapper_strcmp(ir_node *call, void *ctx)
 {
 	ir_node   *left    = get_Call_param(call, 0);
@@ -963,7 +944,6 @@ replace_by_call:
 	return 0;
 }
 
-/* A mapper for strncmp */
 int i_mapper_strncmp(ir_node *call, void *ctx)
 {
 	ir_node *left  = get_Call_param(call, 0);
@@ -991,7 +971,6 @@ int i_mapper_strncmp(ir_node *call, void *ctx)
 	return 0;
 }
 
-/* A mapper for strcpy */
 int i_mapper_strcpy(ir_node *call, void *ctx)
 {
 	ir_node *dst = get_Call_param(call, 0);
@@ -1010,7 +989,6 @@ int i_mapper_strcpy(ir_node *call, void *ctx)
 	return 0;
 }
 
-/* A mapper for memcpy */
 int i_mapper_memcpy(ir_node *call, void *ctx)
 {
 	ir_node *dst = get_Call_param(call, 0);
@@ -1030,7 +1008,6 @@ int i_mapper_memcpy(ir_node *call, void *ctx)
 	return 0;
 }
 
-/* A mapper for mempcpy */
 int i_mapper_mempcpy(ir_node *call, void *ctx)
 {
 	ir_node *dst = get_Call_param(call, 0);
@@ -1054,7 +1031,6 @@ int i_mapper_mempcpy(ir_node *call, void *ctx)
 	return 0;
 }
 
-/* A mapper for memmove */
 int i_mapper_memmove(ir_node *call, void *ctx)
 {
 	ir_node *dst = get_Call_param(call, 0);
@@ -1074,7 +1050,6 @@ int i_mapper_memmove(ir_node *call, void *ctx)
 	return 0;
 }
 
-/* A mapper for memset */
 int i_mapper_memset(ir_node *call, void *ctx)
 {
 	ir_node *len = get_Call_param(call, 2);
@@ -1092,7 +1067,6 @@ int i_mapper_memset(ir_node *call, void *ctx)
 	return 0;
 }
 
-/* A mapper for memcmp */
 int i_mapper_memcmp(ir_node *call, void *ctx)
 {
 	ir_node *left  = get_Call_param(call, 0);
@@ -1133,9 +1107,6 @@ static ir_mode *get_irn_res_mode(ir_node *node)
 	}
 }
 
-#define LMAX(a, b) ((a) > (b) ? (a) : (b))
-
-/* A mapper for mapping unsupported instructions to runtime calls. */
 int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt)
 {
 	int i, j, arity, first, n_param, n_res;
@@ -1190,11 +1161,11 @@ int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt)
 
 	/* step 0: calculate the number of needed Proj's */
 	n_proj = 0;
-	n_proj = LMAX(n_proj, rt->mem_proj_nr + 1);
-	n_proj = LMAX(n_proj, rt->res_proj_nr + 1);
+	n_proj = MAX(n_proj, rt->mem_proj_nr + 1);
+	n_proj = MAX(n_proj, rt->res_proj_nr + 1);
 	if (throws_exception) {
-		n_proj = LMAX(n_proj, rt->regular_proj_nr + 1);
-		n_proj = LMAX(n_proj, rt->exc_proj_nr + 1);
+		n_proj = MAX(n_proj, rt->regular_proj_nr + 1);
+		n_proj = MAX(n_proj, rt->exc_proj_nr + 1);
 	}
 
 	if (n_proj > 0) {

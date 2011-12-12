@@ -116,13 +116,6 @@ static void set_mode_values(ir_mode* mode)
 	}
 }
 
-/* * *
- * globals defined in irmode.h
- * * */
-
-/* --- Predefined modes --- */
-
-/* FIRM internal modes: */
 ir_mode *mode_T;
 ir_mode *mode_X;
 ir_mode *mode_M;
@@ -130,32 +123,26 @@ ir_mode *mode_BB;
 ir_mode *mode_ANY;
 ir_mode *mode_BAD;
 
-/* predefined numerical modes: */
 ir_mode *mode_F;
 ir_mode *mode_D;
 ir_mode *mode_Q;
 
-ir_mode *mode_Bs;   /* integral values, signed and unsigned */
-ir_mode *mode_Bu;   /* 8 bit */
-ir_mode *mode_Hs;   /* 16 bit */
+ir_mode *mode_Bs;
+ir_mode *mode_Bu;
+ir_mode *mode_Hs;
 ir_mode *mode_Hu;
-ir_mode *mode_Is;   /* 32 bit */
+ir_mode *mode_Is;
 ir_mode *mode_Iu;
-ir_mode *mode_Ls;   /* 64 bit */
+ir_mode *mode_Ls;
 ir_mode *mode_Lu;
-ir_mode *mode_LLs;  /* 128 bit */
+ir_mode *mode_LLs;
 ir_mode *mode_LLu;
 
 ir_mode *mode_b;
 ir_mode *mode_P;
 
-/* machine specific modes */
-ir_mode *mode_P_code;   /**< machine specific pointer mode for code addresses */
-ir_mode *mode_P_data;   /**< machine specific pointer mode for data addresses */
-
-/* * *
- * functions defined in irmode.h
- * * */
+ir_mode *mode_P_code;
+ir_mode *mode_P_data;
 
 ir_mode *get_modeT(void) { return mode_T; }
 ir_mode *get_modeF(void) { return mode_F; }
@@ -283,7 +270,6 @@ ir_mode *new_float_mode(const char *name, ir_mode_arithmetic arithmetic,
 	return register_mode(result);
 }
 
-/* Functions for the direct access to all attributes of an ir_mode */
 ident *(get_mode_ident)(const ir_mode *mode)
 {
 	return get_mode_ident_(mode);
@@ -315,10 +301,6 @@ ir_mode_arithmetic (get_mode_arithmetic)(const ir_mode *mode)
 }
 
 
-/* Attribute modulo shift specifies for modes of kind irms_int_number
- *  whether shift applies modulo to value of bits to shift.  Asserts
- *  if mode is not irms_int_number.
- */
 unsigned int (get_mode_modulo_shift)(const ir_mode *mode)
 {
 	return get_mode_modulo_shift_(mode);
@@ -452,7 +434,6 @@ unsigned (get_mode_exponent_size)(const ir_mode *mode)
 	return get_mode_exponent_size_(mode);
 }
 
-/* Returns true if sm can be converted to lm without loss. */
 int smaller_mode(const ir_mode *sm, const ir_mode *lm)
 {
 	int sm_bits, lm_bits;
@@ -524,8 +505,6 @@ int smaller_mode(const ir_mode *sm, const ir_mode *lm)
 	return 0;
 }
 
-/* Returns true if a value of mode sm can be converted into mode lm
-   and backwards without loss. */
 int values_in_mode(const ir_mode *sm, const ir_mode *lm)
 {
 	ir_mode_arithmetic arith;
@@ -552,14 +531,12 @@ int values_in_mode(const ir_mode *sm, const ir_mode *lm)
 	}
 }
 
-/* Return the signed integer equivalent mode for an reference mode. */
 ir_mode *get_reference_mode_signed_eq(ir_mode *mode)
 {
 	assert(mode_is_reference(mode));
 	return mode->eq_signed;
 }
 
-/* Sets the signed integer equivalent mode for an reference mode. */
 void set_reference_mode_signed_eq(ir_mode *ref_mode, ir_mode *int_mode)
 {
 	assert(mode_is_reference(ref_mode));
@@ -567,14 +544,12 @@ void set_reference_mode_signed_eq(ir_mode *ref_mode, ir_mode *int_mode)
 	ref_mode->eq_signed = int_mode;
 }
 
-/* Return the unsigned integer equivalent mode for an reference mode. */
 ir_mode *get_reference_mode_unsigned_eq(ir_mode *mode)
 {
 	assert(mode_is_reference(mode));
 	return mode->eq_unsigned;
 }
 
-/* Sets the unsigned integer equivalent mode for an reference mode. */
 void set_reference_mode_unsigned_eq(ir_mode *ref_mode, ir_mode *int_mode)
 {
 	assert(mode_is_reference(ref_mode));
@@ -588,7 +563,6 @@ static ir_mode *new_internal_mode(const char *name, ir_mode_sort sort)
 	return register_mode(mode);
 }
 
-/* initialization, build the default modes */
 void init_mode(void)
 {
 	obstack_init(&modes);
@@ -627,7 +601,6 @@ void init_mode(void)
 	mode_P_data = mode_P;
 }
 
-/* find a signed mode for an unsigned integer mode */
 ir_mode *find_unsigned_mode(const ir_mode *mode)
 {
 	ir_mode n = *mode;
@@ -641,7 +614,6 @@ ir_mode *find_unsigned_mode(const ir_mode *mode)
 	return find_mode(&n);
 }
 
-/* find an unsigned mode for a signed integer mode */
 ir_mode *find_signed_mode(const ir_mode *mode)
 {
 	ir_mode n = *mode;
@@ -651,7 +623,6 @@ ir_mode *find_signed_mode(const ir_mode *mode)
 	return find_mode(&n);
 }
 
-/* finds a integer mode with 2*n bits for an integer mode with n bits. */
 ir_mode *find_double_bits_int_mode(const ir_mode *mode)
 {
 	ir_mode n = *mode;
@@ -662,10 +633,6 @@ ir_mode *find_double_bits_int_mode(const ir_mode *mode)
 	return find_mode(&n);
 }
 
-/*
- * Returns non-zero if the given mode honors signed zero's, i.e.,
- * a +0 and a -0 exists and handled differently.
- */
 int mode_honor_signed_zeros(const ir_mode *mode)
 {
 	/* for floating point, we know that IEEE 754 has +0 and -0,
@@ -676,11 +643,6 @@ int mode_honor_signed_zeros(const ir_mode *mode)
 		mode->arithmetic != irma_ieee754;
 }
 
-/*
- * Returns non-zero if the given mode might overflow on unary Minus.
- *
- * This does NOT happen on IEEE 754.
- */
 int mode_overflow_on_unary_Minus(const ir_mode *mode)
 {
 	if (mode->sort == irms_float_number)
@@ -688,24 +650,12 @@ int mode_overflow_on_unary_Minus(const ir_mode *mode)
 	return 1;
 }
 
-/*
- * Returns non-zero if the mode has a reversed wrap-around
- * logic, especially (a + x) - x == a.
- *
- * This is normally true for integer modes, not for floating
- * point modes.
- */
 int mode_wrap_around(const ir_mode *mode)
 {
 	/* FIXME: better would be an extra mode property */
 	return mode_is_int(mode);
 }
 
-/*
- * Returns non-zero if the cast from mode src to mode dst is a
- * reinterpret cast (ie. only the bit pattern is reinterpreted,
- * no conversion is done)
- */
 int is_reinterpret_cast(const ir_mode *src, const ir_mode *dst)
 {
 	ir_mode_arithmetic ma;

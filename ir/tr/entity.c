@@ -244,10 +244,6 @@ static ir_entity *deep_entity_copy(ir_entity *old)
 	return newe;
 }
 
-/*
- * Copies the entity if the new_owner is different from the
- * owner of the old entity,  else returns the old entity.
- */
 ir_entity *copy_entity_own(ir_entity *old, ir_type *new_owner)
 {
 	ir_entity *newe;
@@ -293,7 +289,6 @@ void free_entity(ir_entity *ent)
 	xfree(ent);
 }
 
-/* Outputs a unique number for this node */
 long get_entity_nr(const ir_entity *ent)
 {
 	assert(ent && ent->kind == k_entity);
@@ -387,7 +382,6 @@ void (set_entity_volatility)(ir_entity *ent, ir_volatility vol)
 	_set_entity_volatility(ent, vol);
 }
 
-/* Return the name of the volatility. */
 const char *get_volatility_name(ir_volatility var)
 {
 #define X(a)    case a: return #a
@@ -419,7 +413,6 @@ void (set_entity_alignment)(ir_entity *ent, unsigned alignment)
 	_set_entity_alignment(ent, alignment);
 }
 
-/* Return the name of the alignment. */
 const char *get_align_name(ir_align a)
 {
 #define X(a)    case a: return #a
@@ -482,13 +475,11 @@ void remove_entity_linkage(ir_entity *entity, ir_linkage linkage)
 	entity->linkage &= ~linkage;
 }
 
-/* Checks if an entity is compiler generated */
 int (is_entity_compiler_generated)(const ir_entity *ent)
 {
 	return _is_entity_compiler_generated(ent);
 }
 
-/* Sets/resets the compiler generated flag */
 void (set_entity_compiler_generated)(ir_entity *ent, int flag)
 {
 	_set_entity_compiler_generated(ent, flag);
@@ -504,7 +495,6 @@ void (set_entity_usage)(ir_entity *ent, ir_entity_usage flags)
 	_set_entity_usage(ent, flags);
 }
 
-/* Set has no effect for existent entities of type method. */
 ir_node *get_atomic_ent_value(ir_entity *entity)
 {
 	ir_initializer_t *initializer = get_entity_initializer(entity);
@@ -545,8 +535,6 @@ void set_atomic_ent_value(ir_entity *entity, ir_node *val)
 	entity->initializer = initializer;
 }
 
-/* Returns true if the the node is representable as code on
- *  const_code_irg. */
 int is_irn_const_expression(ir_node *n)
 {
 	/* we are in danger iff an exception will arise. TODO: be more precisely,
@@ -569,10 +557,6 @@ int is_irn_const_expression(ir_node *n)
 	return 0;
 }
 
-/*
- * Copies a firm subgraph that complies to the restrictions for
- * constant expressions to block.
- */
 ir_node *copy_const_value(dbg_info *dbg, ir_node *n, ir_node *block)
 {
 	ir_graph *irg = get_irn_irg(block);
@@ -637,7 +621,6 @@ ir_node *copy_const_value(dbg_info *dbg, ir_node *n, ir_node *block)
 	return nn;
 }
 
-/** Return the name of the initializer kind. */
 const char *get_initializer_kind_name(ir_initializer_kind_t ini)
 {
 #define X(a)    case a: return #a
@@ -1063,8 +1046,6 @@ void add_entity_additional_properties(ir_entity *ent, mtp_additional_properties 
 	}
 }
 
-/* Returns the class type that this type info entity represents or NULL
-   if ent is no type info entity. */
 ir_type *(get_entity_repr_class)(const ir_entity *ent)
 {
 	return _get_entity_repr_class(ent);

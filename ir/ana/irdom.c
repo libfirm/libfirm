@@ -42,10 +42,6 @@
 #define get_dom_info(bl)  (&(bl)->attr.block.dom)
 #define get_pdom_info(bl) (&(bl)->attr.block.pdom)
 
-/*--------------------------------------------------------------------*/
-/** Accessing the dominator and post dominator data structures       **/
-/*--------------------------------------------------------------------*/
-
 ir_node *get_Block_idom(const ir_node *bl)
 {
 	assert(is_Block(bl));
@@ -183,7 +179,6 @@ unsigned get_Block_pdom_max_subtree_pre_num(const ir_node *bl)
 	return get_pdom_info(bl)->max_subtree_pre_num;
 }
 
-/* Check, if a block dominates another block. */
 int block_dominates(const ir_node *a, const ir_node *b)
 {
 	const ir_dom_info *ai, *bi;
@@ -198,13 +193,11 @@ int block_dominates(const ir_node *a, const ir_node *b)
 	return 0;
 }
 
-/* Check, if a block strictly dominates another block. */
 int block_strictly_dominates(const ir_node *a, const ir_node *b)
 {
 	return (a != b) && block_dominates(a, b);
 }
 
-/* Returns the smallest common dominator block of two nodes. */
 ir_node *node_smallest_common_dominator(ir_node *a, ir_node *b)
 {
 	ir_node *bl_a   = is_Block(a) ? a : get_nodes_block(a);
@@ -232,7 +225,6 @@ ir_node *node_smallest_common_dominator(ir_node *a, ir_node *b)
 	return dom_bl;
 }
 
-/* Returns the smallest common dominator block of all users of a node. */
 ir_node *node_users_smallest_common_dominator(ir_node *irn, int handle_phi)
 {
 	int n, j, i = 0, success;
@@ -289,7 +281,6 @@ ir_node *node_users_smallest_common_dominator(ir_node *irn, int handle_phi)
 	return dom_bl;
 }
 
-
 /* Get the first node in the list of nodes dominated by a given block. */
 ir_node *get_Block_dominated_first(const ir_node *bl)
 {
@@ -297,15 +288,12 @@ ir_node *get_Block_dominated_first(const ir_node *bl)
 	return get_dom_info(bl)->first;
 }
 
-/* Get the next node in a list of nodes which are dominated by some
- * other node. */
 ir_node *get_Block_dominated_next(const ir_node *bl)
 {
 	assert(is_Block(bl));
 	return get_dom_info(bl)->next;
 }
 
-/* Check, if a block post dominates another block. */
 int block_postdominates(const ir_node *a, const ir_node *b)
 {
 	const ir_dom_info *ai, *bi;
@@ -320,29 +308,23 @@ int block_postdominates(const ir_node *a, const ir_node *b)
 	return 0;
 }
 
-/* Check, if a block strictly dominates another block. */
 int block_strictly_postdominates(const ir_node *a, const ir_node *b)
 {
 	return (a != b) && block_postdominates(a, b);
 }
 
-
-/* Get the first node in the list of nodes post dominated by a given block. */
 ir_node *get_Block_postdominated_first(const ir_node *bl)
 {
 	assert(is_Block(bl));
 	return get_pdom_info(bl)->first;
 }
 
-/* Get the next node in a list of nodes which are post dominated by some
- * other node. */
 ir_node *get_Block_postdominated_next(const ir_node *bl)
 {
 	assert(is_Block(bl));
 	return get_pdom_info(bl)->next;
 }
 
-/* Visit all nodes in the dominator subtree of a given node. */
 void dom_tree_walk(ir_node *bl, irg_walk_func *pre,
 		irg_walk_func *post, void *env)
 {
@@ -359,7 +341,6 @@ void dom_tree_walk(ir_node *bl, irg_walk_func *pre,
 		post(bl, env);
 }
 
-/* Visit all nodes in the post dominator subtree of a given node. */
 void postdom_tree_walk(ir_node *bl, irg_walk_func *pre,
 		irg_walk_func *post, void *env)
 {
@@ -376,7 +357,6 @@ void postdom_tree_walk(ir_node *bl, irg_walk_func *pre,
 		post(bl, env);
 }
 
-/* Walk over the dominator tree of an irg starting at the root. */
 void dom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
 		irg_walk_func *post, void *env)
 {
@@ -391,7 +371,6 @@ void dom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
 	dom_tree_walk(root, pre, post, env);
 }
 
-/* Walk over the post dominator tree of an irg starting at the root. */
 void postdom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
 		irg_walk_func *post, void *env)
 {
@@ -458,10 +437,6 @@ static void assign_tree_postdom_pre_order_max(ir_node *bl, void *data)
 	bi->max_subtree_pre_num = children > 0 ? max : bi->tree_pre_num;
 	assert(bi->max_subtree_pre_num >= bi->tree_pre_num);
 }
-
-/*--------------------------------------------------------------------*/
-/*  Building and Removing the dominator data structure                */
-/*--------------------------------------------------------------------*/
 
 /**
  * count the number of blocks and clears the post dominance info
@@ -639,7 +614,6 @@ static void count_and_init_blocks_dom(ir_node *bl, void *env)
 	set_Block_dom_depth(bl, -1);
 }
 
-/* Computes the dominator trees. */
 void compute_doms(ir_graph *irg)
 {
 	ir_graph *rem = current_ir_graph;
@@ -785,7 +759,6 @@ void free_dom(ir_graph *irg)
 	   but better call it anyways... */
 }
 
-/* Computes the post dominator trees. */
 void compute_postdoms(ir_graph *irg)
 {
 	ir_graph *rem = current_ir_graph;

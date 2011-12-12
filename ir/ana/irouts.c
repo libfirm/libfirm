@@ -37,12 +37,6 @@
 #include "irprintf.h"
 #include "error.h"
 
-#ifdef DEBUG_libfirm
-/* Note:  ir_node.out_valid and ir_graph.n_outs are only present when DEBUG_libfirm is defined */
-/* Accesses to out_valid and n_outs are fenced out to avoid breakage
-   when compiling with neither DEBUG_libfirm or NDEBUG defined */
-#endif /* defined DEBUG_libfirm */
-
 /*--------------------------------------------------------------------*/
 /** Accessing the out datastructures                                 **/
 /*--------------------------------------------------------------------*/
@@ -62,7 +56,6 @@ int get_irn_outs_computed(const ir_node *node)
 	return node->out != NULL;
 }
 
-/* returns the number of successors of the node: */
 int get_irn_n_outs(const ir_node *node)
 {
 	assert(node && node->kind == k_ir_node);
@@ -73,7 +66,6 @@ int get_irn_n_outs(const ir_node *node)
 	return node->out[0].pos;
 }
 
-/* Access successor n */
 ir_node *get_irn_out(const ir_node *def, int pos)
 {
 	assert(pos >= 0 && pos < get_irn_n_outs(def));
@@ -83,7 +75,6 @@ ir_node *get_irn_out(const ir_node *def, int pos)
 	return def->out[pos+1].use;
 }
 
-/* Access successor n */
 ir_node *get_irn_out_ex(const ir_node *def, int pos, int *in_pos)
 {
 	assert(pos >= 0 && pos < get_irn_n_outs(def));
@@ -105,7 +96,6 @@ void set_irn_out(ir_node *def, int pos, ir_node *use, int in_pos)
 	def->out[pos+1].pos = in_pos;
 }
 
-/* Return the number of control flow successors, ignore keep-alives. */
 int get_Block_n_cfg_outs(const ir_node *bl)
 {
 	int i, n_cfg_outs = 0;
@@ -121,7 +111,6 @@ int get_Block_n_cfg_outs(const ir_node *bl)
 	return n_cfg_outs;
 }
 
-/* Return the number of control flow successors, honor keep-alives. */
 int get_Block_n_cfg_outs_ka(const ir_node *bl)
 {
 	int i, n_cfg_outs = 0;
@@ -147,7 +136,6 @@ int get_Block_n_cfg_outs_ka(const ir_node *bl)
 	return n_cfg_outs;
 }
 
-/* Access predecessor n, ignore keep-alives. */
 ir_node *get_Block_cfg_out(const ir_node *bl, int pos)
 {
 	int i;
@@ -168,7 +156,6 @@ ir_node *get_Block_cfg_out(const ir_node *bl, int pos)
 	return NULL;
 }
 
-/* Access predecessor n, honor keep-alives. */
 ir_node *get_Block_cfg_out_ka(const ir_node *bl, int pos)
 {
 	int i, n_outs;
@@ -260,8 +247,6 @@ static void irg_out_block_walk2(ir_node *bl, irg_walk_func *pre,
 	}
 }
 
-/* Walks only over Block nodes in the graph.  Has its own visited
-   flag, so that it can be interleaved with the other walker.         */
 void irg_out_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
                         void *env)
 {
@@ -438,7 +423,6 @@ static ir_def_use_edge *set_out_edges(ir_graph *irg, ir_def_use_edge *free)
 	return free;
 }
 
-/* compute the outs for a given graph */
 void compute_irg_outs(ir_graph *irg)
 {
 	ir_graph        *rem = current_ir_graph;

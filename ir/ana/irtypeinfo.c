@@ -45,27 +45,11 @@
 #include "irnode_t.h"
 #include "pmap.h"
 
-/* ------------ The map. ---------------------------------------------- */
-
-
 static pmap *type_node_map = NULL;
 
 
-/* ------------ Auxiliary type. --------------------------------------- */
-
-/*  This auxiliary type expresses that a field is uninitialized.  The
- *  variable is set by init_irtypeinfo.  The type is freed by
- *  free_irtypeinfo.
- */
 ir_type *initial_type = NULL;
 
-/* ------------ Initializing this module. ----------------------------- */
-
-/*  Initializes the type information module.
- *  Generates a type "initial_type" and sets the type of all nodes to this type.
- *  Calling set/get_irn_type is invalid before calling init. Requires memory
- *  in the order of MIN(<calls to set_irn_type>, #irnodes).
- */
 void init_irtypeinfo(void)
 {
 	size_t i, n;
@@ -101,8 +85,6 @@ void free_irtypeinfo(void)
 }
 
 
-/* ------------ Irgraph state handling. ------------------------------- */
-
 void set_irg_typeinfo_state(ir_graph *irg, ir_typeinfo_state s)
 {
 	assert(is_ir_graph(irg));
@@ -120,12 +102,6 @@ ir_typeinfo_state get_irg_typeinfo_state(const ir_graph *irg)
 }
 
 
-/* Returns accumulated type information state information.
- *
- * Returns ir_typeinfo_consistent if the type information of all irgs is
- * consistent.  Returns ir_typeinfo_inconsistent if at least one irg has inconsistent
- * or no type information.  Returns ir_typeinfo_none if no irg contains type information.
- */
 ir_typeinfo_state get_irp_typeinfo_state(void)
 {
 	return irp->typeinfo_state;
@@ -134,7 +110,6 @@ void set_irp_typeinfo_state(ir_typeinfo_state s)
 {
 	irp->typeinfo_state = s;
 }
-/* If typeinfo is consistent, sets it to inconsistent. */
 void set_irp_typeinfo_inconsistent(void)
 {
 	if (irp->typeinfo_state == ir_typeinfo_consistent)
@@ -142,12 +117,6 @@ void set_irp_typeinfo_inconsistent(void)
 }
 
 
-/* ------------ Irnode type information. ------------------------------ */
-
-/* These routines only work properly if the ir_graph is in state
- * ir_typeinfo_consistent or ir_typeinfo_inconsistent.  They
- * assume current_ir_graph set properly.
- */
 ir_type *get_irn_typeinfo_type(const ir_node *n)
 {
 	ir_type *res = initial_type;

@@ -797,10 +797,6 @@ static void sel_methods_dispose(void)
 	entities = NULL;
 }
 
-/*--------------------------------------------------------------------------*/
-/* Freeing the callee arrays.                                               */
-/*--------------------------------------------------------------------------*/
-
 static void destruct_walker(ir_node * node, void * env)
 {
 	(void) env;
@@ -808,10 +804,6 @@ static void destruct_walker(ir_node * node, void * env)
 		remove_Call_callee_arr(node);
 	}
 }
-
-/*--------------------------------------------------------------------------*/
-/* Main drivers.                                                            */
-/*--------------------------------------------------------------------------*/
 
 size_t cgana(ir_entity ***free_methods)
 {
@@ -838,22 +830,22 @@ void free_irp_callee_info(void)
 	}
 }
 
-/* Optimize the address expressions passed to call nodes.
- *
- * This optimization performs the following transformations for
- * all ir graphs:
- * - All SymConst operations that refer to intern methods are replaced
- *   by Const operations referring to the corresponding entity.
- * - Sel nodes, that select entities that are not overwritten are
- *   replaced by Const nodes referring to the selected entity.
- * - Sel nodes, for which no method exists at all are replaced by Bad
- *   nodes.
- * - Sel nodes with a pointer input that is an Alloc node are replaced
- *   by Const nodes referring to the entity that implements the method in
- *   the type given by the Alloc node.
- */
 void opt_call_addrs(void)
 {
+	/* Optimize the address expressions passed to call nodes.
+	 *
+	 * This optimization performs the following transformations for
+	 * all ir graphs:
+	 * - All SymConst operations that refer to intern methods are replaced
+	 *   by Const operations referring to the corresponding entity.
+	 * - Sel nodes, that select entities that are not overwritten are
+	 *   replaced by Const nodes referring to the selected entity.
+	 * - Sel nodes, for which no method exists at all are replaced by Bad
+	 *   nodes.
+	 * - Sel nodes with a pointer input that is an Alloc node are replaced
+	 *   by Const nodes referring to the entity that implements the method in
+	 *   the type given by the Alloc node.
+	 */
 	sel_methods_init();
 	sel_methods_dispose();
 }

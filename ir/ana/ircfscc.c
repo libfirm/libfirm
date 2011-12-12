@@ -615,7 +615,6 @@ static void cfscc(ir_node *n)
 	}
 }
 
-/* Constructs control flow backedge information for irg. */
 int construct_cf_backedges(ir_graph *irg)
 {
 	ir_graph *rem = current_ir_graph;

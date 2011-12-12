@@ -253,12 +253,6 @@ static void analyze_ent_args(ir_entity *ent)
 #endif
 }
 
-/**
- * Analyze how pointer arguments of a given
- * ir graph are accessed.
- *
- * @param irg   The ir graph to analyze.
- */
 void analyze_irg_args(ir_graph *irg)
 {
 	ir_entity *ent;
@@ -274,10 +268,6 @@ void analyze_irg_args(ir_graph *irg)
 		analyze_ent_args(ent);
 }
 
-/*
- * Compute for a method with pointer parameter(s)
- * if they will be read or written.
- */
 ptr_access_kind get_method_param_access(ir_entity *ent, size_t pos)
 {
 #ifndef NDEBUG
@@ -459,19 +449,6 @@ static void analyze_method_params_weight(ir_entity *ent)
 	}
 }
 
-/*
- * Returns for a method the 'weight' that every parameter
- * has on optimization possibility. Higher values allows
- * higher optimization with procedure cloning.
- *
- * The values are calculation on demand only.
- *
- * @param ent  the entity to analyze
- * @param pos  the argument number
- *
- * @return the parameter weight or null_weight if pos is greater
- * than the number of arguments.
- */
 unsigned get_method_param_weight(ir_entity *ent, size_t pos)
 {
 	if (ent->attr.mtd_attr.param_weight) {
@@ -489,12 +466,6 @@ unsigned get_method_param_weight(ir_entity *ent, size_t pos)
 		return null_weight;
 }
 
-/**
- * Analyze argument's weight of a given
- * ir graph.
- *
- * @param irg The ir graph to analyze.
- */
 void analyze_irg_args_weight(ir_graph *irg)
 {
 	ir_entity *entity = get_irg_entity(irg);

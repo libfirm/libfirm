@@ -174,9 +174,6 @@ static void pick_successor(ir_node *block, ir_extblk *extblk, env_t *env)
 	}
 }
 
-/*
- * Compute the extended basic blocks for a graph
- */
 void compute_extbb_execfreqs(ir_graph *irg, ir_exec_freq *execfreqs)
 {
 	env_t     env;

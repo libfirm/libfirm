@@ -51,7 +51,6 @@
 #include "bitfiddle.h"
 #include "be.h"
 
-/* Make types visible to allow most efficient access */
 #include "entity_t.h"
 
 static bool is_Or_Eor_Add(const ir_node *node)
@@ -83,7 +82,6 @@ static ir_tarval *default_value_of(const ir_node *n)
 
 value_of_func value_of_ptr = default_value_of;
 
-/* * Set a new value_of function. */
 void set_value_of_func(value_of_func func)
 {
 	if (func != NULL)
@@ -6729,10 +6727,6 @@ void firm_set_default_node_cmp_attr(ir_opcode code, ir_op_ops *ops)
 #undef CASE
 }
 
-/*
- * Compare function for two nodes in the value table. Gets two
- * nodes as parameters.  Returns 0 if the nodes are a Common Sub Expression.
- */
 int identities_cmp(const void *elt, const void *key)
 {
 	ir_node *a = (ir_node *)elt;
@@ -6797,16 +6791,10 @@ int identities_cmp(const void *elt, const void *key)
 	return 0;
 }
 
-/*
- * Calculate a hash value of a node.
- *
- * @param node  The IR-node
- */
 unsigned ir_node_hash(const ir_node *node)
 {
 	return node->op->ops.hash(node);
 }
-
 
 void new_identities(ir_graph *irg)
 {
@@ -6821,8 +6809,6 @@ void del_identities(ir_graph *irg)
 		del_pset(irg->value_table);
 }
 
-/* Normalize a node by putting constants (and operands with larger
- * node index) on the right (operator side). */
 void ir_normalize_node(ir_node *n)
 {
 	if (is_op_commutative(get_irn_op(n))) {
@@ -6841,16 +6827,6 @@ void ir_normalize_node(ir_node *n)
 	}
 }
 
-/*
- * Return the canonical node computing the same value as n.
- * Looks up the node in a hash table, enters it in the table
- * if it isn't there yet.
- *
- * @param n            the node to look up
- *
- * @return a node that computes the same value as n or n if no such
- *         node could be found
- */
 ir_node *identify_remember(ir_node *n)
 {
 	ir_graph *irg         = get_irn_irg(n);
@@ -6891,7 +6867,6 @@ static inline ir_node *identify_cons(ir_node *n)
 	return n;
 }
 
-/* Add a node to the identities value table. */
 void add_identities(ir_node *node)
 {
 	if (!get_opt_cse())
@@ -6902,7 +6877,6 @@ void add_identities(ir_node *node)
 	identify_remember(node);
 }
 
-/* Visit each node in the value table of a graph. */
 void visit_all_identities(ir_graph *irg, irg_walk_func visit, void *env)
 {
 	ir_node  *node;
@@ -6915,13 +6889,6 @@ void visit_all_identities(ir_graph *irg, irg_walk_func visit, void *env)
 	current_ir_graph = rem;
 }
 
-/**
- * These optimizations deallocate nodes from the obstack.
- * It can only be called if it is guaranteed that no other nodes
- * reference this one, i.e., right after construction of a node.
- *
- * @param n   The node to optimize
- */
 ir_node *optimize_node(ir_node *n)
 {
 	ir_node   *oldn = n;
@@ -7014,12 +6981,6 @@ ir_node *optimize_node(ir_node *n)
 	return n;
 }
 
-
-/**
- * These optimizations never deallocate nodes (in place).  This can cause dead
- * nodes lying on the obstack.  Remove these by a dead node elimination,
- * i.e., a copying garbage collection.
- */
 ir_node *optimize_in_place_2(ir_node *n)
 {
 	if (!get_opt_optimize() && !is_Phi(n)) return n;
@@ -7065,9 +7026,6 @@ ir_node *optimize_in_place_2(ir_node *n)
 	return n;
 }
 
-/**
- * Wrapper for external use, set proper status bits after optimization.
- */
 ir_node *optimize_in_place(ir_node *n)
 {
 	ir_graph *irg = get_irn_irg(n);

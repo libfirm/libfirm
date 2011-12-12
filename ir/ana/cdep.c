@@ -52,7 +52,6 @@ ir_cdep *(get_cdep_next)(const ir_cdep *cdep)
 	return _get_cdep_next(cdep);
 }
 
-/* Return a list of all control dependences of a block. */
 ir_cdep *find_cdep(const ir_node *block)
 {
 	assert(is_Block(block));

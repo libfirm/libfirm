@@ -51,13 +51,10 @@ optimization_state_t libFIRM_opt =
 #undef I_FLAG
 #undef R_FLAG
 
-/** The bitset of currently running phases. */
 optimization_state_t libFIRM_running = 0;
 
-/* verbose is always off on default */
 optimization_state_t libFIRM_verb = 0;
 
-/* silence warnings */
 void set_opt_optimize(int value);
 
 /* an external flag can be set and get from outside */
@@ -86,7 +83,6 @@ void set_opt_##name(int flag) {           \
 #undef E_FLAG
 #undef R_FLAG
 
-/* for compatibility reasons */
 void set_optimize(int value)
 {
 	set_opt_optimize(value);
@@ -97,26 +93,22 @@ int (get_optimize)(void)
 	return get_opt_optimize();
 }
 
-/* Save the current optimization state. */
 void save_optimization_state(optimization_state_t *state)
 {
 	*state = libFIRM_opt;
 }
 
-/* Restore the current optimization state. */
 void restore_optimization_state(const optimization_state_t *state)
 {
 	libFIRM_opt = *state;
 }
 
-/* Switches ALL optimizations off */
 void all_optimizations_off(void)
 {
 	libFIRM_opt = 0;
 }
 
 #ifdef _DEBUG
-/* only for debugging */
 void firm_show_flags(FILE *f)
 {
 	if (! f)

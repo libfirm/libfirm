@@ -56,7 +56,6 @@ ir_dump_verbosity_t ir_get_dump_verbosity(void)
 	return verbosity;
 }
 
-/* Write the irnode and all its attributes to the file passed. */
 void dump_irnode_to_file(FILE *F, const ir_node *n)
 {
 	char     comma;

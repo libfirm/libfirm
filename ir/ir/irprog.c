@@ -39,7 +39,6 @@
 /** The initial name of the irp program. */
 #define INITAL_PROG_NAME "no_name_set"
 
-/* A variable from where everything in the ir can be accessed. */
 ir_prog *irp;
 ir_prog *get_irp(void) { return irp; }
 void set_irp(ir_prog *new_irp)
@@ -112,27 +111,21 @@ static ir_prog *complete_ir_prog(ir_prog *irp, const char *module_name)
 #undef IDENT
 }
 
-/* initializes ir_prog. Constructs only the basic lists. */
 void init_irprog_1(void)
 {
 	irp = new_incomplete_ir_prog();
 }
 
-/* Completes ir_prog. */
 void init_irprog_2(void)
 {
 	(void)complete_ir_prog(irp, INITAL_PROG_NAME);
 }
 
-/* Create a new ir prog. Automatically called by init_firm through
-   init_irprog. */
 ir_prog *new_ir_prog(const char *name)
 {
 	return complete_ir_prog(new_incomplete_ir_prog(), name);
 }
 
-/* frees all memory used by irp.  Types in type list, irgs in irg
-   list and entities in global type must be freed by hand before. */
 void free_ir_prog(void)
 {
 	size_t i;
@@ -162,10 +155,6 @@ void free_ir_prog(void)
 	irp->kind           = k_BAD;
 }
 
-/*- Functions to access the fields of ir_prog -*/
-
-
-/* Access the main routine of the compiled program. */
 ir_graph *get_irp_main_irg(void)
 {
 	assert(irp);
@@ -199,7 +188,6 @@ ir_type *(get_tls_type)(void)
 	return get_tls_type_();
 }
 
-/* Adds irg to the list of ir graphs in irp. */
 void add_irp_irg(ir_graph *irg)
 {
 	assert(irg != NULL);
@@ -207,7 +195,6 @@ void add_irp_irg(ir_graph *irg)
 	ARR_APP1(ir_graph *, irp->graphs, irg);
 }
 
-/* Removes irg from the list or irgs, shrinks the list by one. */
 void remove_irp_irg_from_list(ir_graph *irg)
 {
 	size_t i, l;
@@ -225,7 +212,6 @@ void remove_irp_irg_from_list(ir_graph *irg)
 	}
 }
 
-/* Removes irg from the list or irgs, shrinks the list by one. */
 void remove_irp_irg(ir_graph *irg)
 {
 	free_ir_graph(irg);
@@ -254,7 +240,6 @@ void set_irp_irg(size_t pos, ir_graph *irg)
 	irp->graphs[pos] = irg;
 }
 
-/* Adds type to the list of types in irp. */
 void add_irp_type(ir_type *typ)
 {
 	assert(typ != NULL);
@@ -262,7 +247,6 @@ void add_irp_type(ir_type *typ)
 	ARR_APP1(ir_type *, irp->types, typ);
 }
 
-/* Remove type from the list of types in irp. */
 void remove_irp_type(ir_type *typ)
 {
 	size_t i, l;
@@ -297,19 +281,16 @@ void set_irp_type(size_t pos, ir_type *typ)
 	irp->types[pos] = typ;
 }
 
-/* Returns the number of all modes in the irp. */
 size_t (get_irp_n_modes)(void)
 {
 	return get_irp_n_modes_();
 }
 
-/* Returns the mode at position pos in the irp. */
 ir_mode *(get_irp_mode)(size_t pos)
 {
 	return get_irp_mode_(pos);
 }
 
-/* Adds mode to the list of modes in irp. */
 void add_irp_mode(ir_mode *mode)
 {
 	assert(mode != NULL);
@@ -317,7 +298,6 @@ void add_irp_mode(ir_mode *mode)
 	ARR_APP1(ir_mode *, irp->modes, mode);
 }
 
-/* Adds opcode to the list of opcodes in irp. */
 void add_irp_opcode(ir_op *opcode)
 {
 	size_t len;
@@ -335,26 +315,22 @@ void add_irp_opcode(ir_op *opcode)
 	irp->opcodes[code] = opcode;
 }
 
-/* Removes opcode from the list of opcodes and shrinks the list by one. */
 void remove_irp_opcode(ir_op *opcode)
 {
 	assert(opcode->code < ARR_LEN(irp->opcodes));
 	irp->opcodes[opcode->code] = NULL;
 }
 
-/* Returns the number of all opcodes in the irp. */
 size_t (get_irp_n_opcodes)(void)
 {
 	return get_irp_n_opcodes_();
 }
 
-/* Returns the opcode at position pos in the irp. */
 ir_op *(get_irp_opcode)(size_t pos)
 {
 	return get_irp_opcode_(pos);
 }
 
-/* Sets the generic function pointer of all opcodes to NULL */
 void clear_irp_opcodes_generic_func(void)
 {
 	size_t i, n;
@@ -365,7 +341,6 @@ void clear_irp_opcodes_generic_func(void)
 	}
 }
 
-/*- File name / executable name or the like -*/
 void set_irp_prog_name(ident *name)
 {
 	irp->name = name;
@@ -460,44 +435,32 @@ void set_irp_callee_info_state(irg_callee_info_state s)
 	irp->callee_info_state = s;
 }
 
-/* Returns a new, unique exception region number. */
-ir_exc_region_t (get_irp_next_region_nr)(void)
-{
-	return get_irp_next_region_nr_();
-}
-
-/* Returns a new, unique label number. */
 ir_label_t (get_irp_next_label_nr)(void)
 {
 	return get_irp_next_label_nr_();
 }
 
-/* Add a new global asm include */
 void add_irp_asm(ident *asm_string)
 {
 	ARR_APP1(ident *, irp->global_asms, asm_string);
 }
 
-/* Return the number of global asm includes. */
 size_t get_irp_n_asms(void)
 {
 	return ARR_LEN(irp->global_asms);
 }
 
-/* Return the global asm include at position pos. */
 ident *get_irp_asm(size_t pos)
 {
 	assert(pos < get_irp_n_asms());
 	return irp->global_asms[pos];
 }
 
-/** Return whether optimization dump vcg graphs */
 int (get_irp_optimization_dumps)(void)
 {
 	return get_irp_optimization_dumps_();
 }
 
-/** Enable vcg dumping of optimization */
 void (enable_irp_optimization_dumps)(void)
 {
 	enable_irp_optimization_dumps_();

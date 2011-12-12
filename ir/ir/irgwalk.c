@@ -130,11 +130,6 @@ static unsigned irg_walk_2_both(ir_node *node, irg_walk_func *pre,
 	return cnt;
 }
 
-/**
- * Intraprozedural graph walker.
- *
- * @return number of visited nodes
- */
 unsigned irg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
                     void *env)
 {
@@ -170,9 +165,6 @@ void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
 	current_ir_graph = rem;
 }
 
-/*
- * walk over a graph
- */
 void irg_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env)
 {
 	ir_graph * rem = current_ir_graph;
@@ -184,9 +176,6 @@ void irg_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void
 	current_ir_graph = rem;
 }
 
-/* Executes irg_walk(end, pre, post, env) for all irgraphs in irprog.
-   Sets current_ir_graph properly for each walk.  Conserves current
-   current_ir_graph. */
 void all_irg_walk(irg_walk_func *pre, irg_walk_func *post, void *env)
 {
 	size_t i, n;
@@ -197,8 +186,6 @@ void all_irg_walk(irg_walk_func *pre, irg_walk_func *post, void *env)
 		irg_walk_graph(irg, pre, post, env);
 	}
 }
-
-/***************************************************************************/
 
 /**
  * specialized version of irg_walk_in_or_dep_2, called if only pre callback exists
@@ -303,9 +290,6 @@ static unsigned irg_walk_in_or_dep_2(ir_node *node, irg_walk_func *pre, irg_walk
 	else             return irg_walk_in_or_dep_2_both(node, pre, post, env);
 }
 
-/*
- * Generic graph walker. Follows dependency edges as well.
- */
 void irg_walk_in_or_dep(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
 {
 	assert(is_ir_node(node));
@@ -316,9 +300,6 @@ void irg_walk_in_or_dep(ir_node *node, irg_walk_func *pre, irg_walk_func *post, 
 	ir_free_resources(current_ir_graph, IR_RESOURCE_IRN_VISITED);
 }
 
-/*
- * Walk over a graph. Follow all edges (including dependencies)
- */
 void irg_walk_in_or_dep_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env)
 {
 	ir_graph * rem = current_ir_graph;
@@ -329,8 +310,6 @@ void irg_walk_in_or_dep_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *
 	irg->estimated_node_count = nodes_touched;
 	current_ir_graph = rem;
 }
-
-/***************************************************************************/
 
 /* Walks back from n until it finds a real cf op. */
 static ir_node *get_cf_op(ir_node *n)
@@ -371,9 +350,6 @@ static void irg_block_walk_2(ir_node *node, irg_walk_func *pre,
 		post(node, env);
 }
 
-
-/* walks only over Block nodes in the graph.  Has its own visited
-   flag, so that it can be interleaved with the other walker.         */
 void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
                     void *env)
 {
@@ -401,9 +377,6 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
 	ir_free_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 }
 
-/*
- * walk over a graph block wise
- */
 void irg_block_walk_graph(ir_graph *irg, irg_walk_func *pre,
                           irg_walk_func *post, void *env)
 {
@@ -413,9 +386,6 @@ void irg_block_walk_graph(ir_graph *irg, irg_walk_func *pre,
 	current_ir_graph = rem;
 }
 
-/*
- * Additionally walk over all anchors. Do NOT increase the visit flag.
- */
 void irg_walk_anchors(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env)
 {
 	ir_graph * rem = current_ir_graph;
@@ -428,8 +398,6 @@ void irg_walk_anchors(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, vo
 
 	current_ir_graph = rem;
 }
-
-/********************************************************************/
 
 typedef struct walk_env {
 	irg_walk_func *pre;
@@ -477,7 +445,6 @@ static void walk_entity(ir_entity *ent, void *env)
 	}
 }
 
-/* Walks over all code in const_code_irg. */
 void walk_const_code(irg_walk_func *pre, irg_walk_func *post, void *env)
 {
 	walk_env my_env;

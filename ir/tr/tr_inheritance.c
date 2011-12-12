@@ -93,10 +93,6 @@ static void copy_entities_from_superclass(ir_type *clss, void *env)
 	}
 }
 
-/* Resolve implicit inheritance.
- *
- *  Resolves the implicit inheritance supplied by firm.
- */
 void resolve_inheritance(mangle_inherited_name_func *mfunc)
 {
 	if (!mfunc)
@@ -341,11 +337,6 @@ static void compute_up_closure(ir_type *tp)
 	}
 }
 
-/** Compute the transitive closure of the subclass/superclass and
- *  overwrites/overwrittenby relation.
- *
- *  This function walks over the ir (O(#types+#entities)) to compute the
- *  transitive closure.    */
 void compute_inh_transitive_closure(void)
 {
 	size_t i, n_types = get_irp_n_types();
@@ -404,7 +395,6 @@ void compute_inh_transitive_closure(void)
 	irp_free_resources(irp, IRP_RESOURCE_TYPE_VISITED);
 }
 
-/** Free memory occupied by the transitive closure information. */
 void free_inh_transitive_closure(void)
 {
 	if (tr_inh_trans_set) {
@@ -471,7 +461,6 @@ ir_entity *get_entity_trans_overwrittenby_next(const ir_entity *ent)
 /* - overwrites ---------------------------------------------------------- */
 
 
-/** Iterate over all transitive overwritten entities. */
 ir_entity *get_entity_trans_overwrites_first(const ir_entity *ent)
 {
 	assert_valid_state();
@@ -505,7 +494,6 @@ static int check_is_SubClass_of(ir_type *low, ir_type *high)
 	return 0;
 }
 
-/* Returns true if low is subclass of high. */
 int is_SubClass_of(ir_type *low, ir_type *high)
 {
 	assert(is_Class_type(low) && is_Class_type(high));
@@ -519,13 +507,6 @@ int is_SubClass_of(ir_type *low, ir_type *high)
 	return check_is_SubClass_of(low, high);
 }
 
-
-/* Subclass check for pointers to classes.
- *
- *  Dereferences at both types the same amount of pointer types (as
- *  many as possible).  If the remaining types are both class types
- *  and subclasses, returns true, else false.  Can also be called with
- *  two class types.  */
 int is_SubClass_ptr_of(ir_type *low, ir_type *high)
 {
 	while (is_Pointer_type(low) && is_Pointer_type(high)) {
@@ -589,12 +570,6 @@ static ir_entity *do_resolve_ent_polymorphy(ir_type *dynamic_class, ir_entity *s
 	return static_ent;
 }
 
-/* Resolve polymorphy in the inheritance relation.
- *
- * Returns the dynamically referenced entity if the static entity and the
- * dynamic type are given.
- * Search downwards in overwritten tree.
- */
 ir_entity *resolve_ent_polymorphy(ir_type *dynamic_class, ir_entity *static_ent)
 {
 	ir_entity *res;
@@ -707,7 +682,6 @@ static void verify_irn_class_cast_state(ir_node *n, void *env)
 		ccs->worst_situation = this_state;
 }
 
-/** Verify that the graph meets requirements of state set. */
 void verify_irg_class_cast_state(ir_graph *irg)
 {
 	ccs_env env;

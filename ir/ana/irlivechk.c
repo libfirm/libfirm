@@ -299,15 +299,6 @@ void lv_chk_free(lv_chk_t *lv)
 	xfree(lv);
 }
 
-/**
- * Check a nodes liveness situation of a block.
- * This routine considers both cases, the live in and end/out case.
- *
- * @param lv   The liveness check environment.
- * @param bl   The block under investigation.
- * @param var  The node to check for.
- * @return     A bitmask of lv_chk_state_XXX fields.
- */
 unsigned lv_chk_bl_xxx(lv_chk_t *lv, const ir_node *bl, const ir_node *var)
 {
 	int res  = 0;

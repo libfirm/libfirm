@@ -42,7 +42,6 @@ static int verify_entities = 0;
 
 const char *firm_verify_failure_msg;
 
-/* enable verification of Load/Store entities */
 void verify_enable_entity_tests(int enable)
 {
 	verify_entities = enable;
@@ -1761,7 +1760,6 @@ static int check_dominance_for_node(const ir_node *use)
 	return 1;
 }
 
-/* Tests the modes of n and its predecessors. */
 int irn_verify_irg(const ir_node *n, ir_graph *irg)
 {
 	ir_op *op;
@@ -2030,11 +2028,6 @@ static int check_cfg(ir_graph *irg)
 	return env.res;
 }
 
-/*
- * Calls irn_verify for each node in irg.
- * Graph must be in state "op_pin_state_pinned".
- * If dominance info is available, check the SSA property.
- */
 int irg_verify(ir_graph *irg, unsigned flags)
 {
 	int res = 1;
@@ -2092,7 +2085,6 @@ static int irg_verify_wrapper(ir_graph *irg, void *context)
 	return 0;
 }
 
-/* Creates an ir_graph pass for irg_verify(). */
 ir_graph_pass_t *irg_verify_pass(const char *name, unsigned flags)
 {
 	pass_t *pass = XMALLOCZ(pass_t);
@@ -2108,7 +2100,6 @@ ir_graph_pass_t *irg_verify_pass(const char *name, unsigned flags)
 	return &pass->pass;
 }
 
-/* create a verify pass */
 int irn_verify_irg_dump(const ir_node *n, ir_graph *irg,
                         const char **bad_string)
 {
@@ -2230,9 +2221,6 @@ static void check_bads(ir_node *node, void *env)
 	}
 }
 
-/*
- * verify occurrence of bad nodes
- */
 int irg_verify_bads(ir_graph *irg, int flags)
 {
 	verify_bad_env_t env;
@@ -2245,9 +2233,6 @@ int irg_verify_bads(ir_graph *irg, int flags)
 	return env.res;
 }
 
-/*
- * set the default verify operation
- */
 void firm_set_default_verifier(unsigned code, ir_op_ops *ops)
 {
 #define CASE(a)                           \

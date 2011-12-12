@@ -43,10 +43,6 @@
 #include "iredges_t.h"
 #include "irtools.h"
 
-/*------------------------------------------------------------------*/
-/* apply optimizations of iropt to all nodes.                       */
-/*------------------------------------------------------------------*/
-
 /**
  * A wrapper around optimize_inplace_2() to be called from a walker.
  */
@@ -86,7 +82,6 @@ static inline void do_local_optimize(ir_node *n)
 	irg_walk(n, firm_clear_link, optimize_in_place_wrapper, NULL);
 }
 
-/* Applies local optimizations (see iropt.h) to all nodes reachable from node n */
 void local_optimize_node(ir_node *n)
 {
 	ir_graph *rem = current_ir_graph;
@@ -162,7 +157,6 @@ static void find_unreachable_blocks(ir_node *block, void *env)
 	}
 }
 
-/* Applies local optimizations (see iropt.h) to all nodes reachable from node n. */
 void local_optimize_graph(ir_graph *irg)
 {
 	ir_graph *rem = current_ir_graph;

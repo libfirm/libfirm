@@ -55,7 +55,6 @@ static DISAMBIGUATOR_FUNC language_disambuigator = NULL;
 /** The global memory disambiguator options. */
 static unsigned global_mem_disamgig_opt = aa_opt_no_opt;
 
-/* Returns a human readable name for an alias relation. */
 const char *get_ir_alias_relation_name(ir_alias_relation rel)
 {
 #define X(a) case a: return #a
@@ -69,7 +68,6 @@ const char *get_ir_alias_relation_name(ir_alias_relation rel)
 #undef X
 }
 
-/* Get the memory disambiguator options for a graph. */
 unsigned get_irg_memory_disambiguator_options(const ir_graph *irg)
 {
 	unsigned opt = irg->mem_disambig_opt;
@@ -78,19 +76,16 @@ unsigned get_irg_memory_disambiguator_options(const ir_graph *irg)
 	return opt;
 }
 
-/*  Set the memory disambiguator options for a graph. */
 void set_irg_memory_disambiguator_options(ir_graph *irg, unsigned options)
 {
 	irg->mem_disambig_opt = options & ~aa_opt_inherited;
 }
 
-/* Set the global disambiguator options for all graphs not having local options. */
 void set_irp_memory_disambiguator_options(unsigned options)
 {
 	global_mem_disamgig_opt = options;
 }
 
-/* Get the base storage class (ignore modifier) */
 ir_storage_class_class_t get_base_sc(ir_storage_class_class_t x)
 {
 	return x & ~ir_sc_modifiers;
@@ -696,9 +691,6 @@ leave_type_based_alias:;
 	return ir_may_alias;
 }
 
-/*
- * Determine the alias relation between two addresses.
- */
 ir_alias_relation get_alias_relation(
 	const ir_node *adr1, const ir_mode *mode1,
 	const ir_node *adr2, const ir_mode *mode2)
@@ -708,7 +700,6 @@ ir_alias_relation get_alias_relation(
 	return rel;
 }
 
-/* Set a source language specific memory disambiguator function. */
 void set_language_memory_disambiguator(DISAMBIGUATOR_FUNC func)
 {
 	language_disambuigator = func;
@@ -741,17 +732,11 @@ static int cmp_mem_disambig_entry(const void *elt, const void *key, size_t size)
 	       p1->mode1 == p2->mode1 && p1->mode2 == p2->mode2;
 }
 
-/**
- * Initialize the relation cache.
- */
 void mem_disambig_init(void)
 {
 	result_cache = new_set(cmp_mem_disambig_entry, 8);
 }
 
-/*
- * Determine the alias relation between two addresses.
- */
 ir_alias_relation get_alias_relation_ex(
 	const ir_node *adr1, const ir_mode *mode1,
 	const ir_node *adr2, const ir_mode *mode2)
@@ -783,7 +768,6 @@ ir_alias_relation get_alias_relation_ex(
 	return key.result;
 }
 
-/* Free the relation cache. */
 void mem_disambig_term(void)
 {
 	if (result_cache != NULL) {
@@ -1238,19 +1222,16 @@ static void analyse_irp_globals_entity_usage(void)
 	irp->globals_entity_usage_state = ir_entity_usage_computed;
 }
 
-/* Returns the current address taken state of the globals. */
 ir_entity_usage_computed_state get_irp_globals_entity_usage_state(void)
 {
 	return irp->globals_entity_usage_state;
 }
 
-/* Sets the current address taken state of the graph. */
 void set_irp_globals_entity_usage_state(ir_entity_usage_computed_state state)
 {
 	irp->globals_entity_usage_state = state;
 }
 
-/* Assure that the address taken flag is computed for the globals. */
 void assure_irp_globals_entity_usage_computed(void)
 {
 	if (irp->globals_entity_usage_state != ir_entity_usage_not_computed)
@@ -1314,7 +1295,6 @@ static void update_calls_to_private(ir_node *call, void *env)
 	}
 }
 
-/* Mark all private methods, i.e. those of which all call sites are known. */
 void mark_private_methods(void)
 {
 	size_t i, n;
@@ -1352,7 +1332,6 @@ void mark_private_methods(void)
 	pmap_destroy(mtp_map);
 }
 
-/* create a pass for mark_private_methods() */
 ir_prog_pass_t *mark_private_methods_pass(const char *name)
 {
 	return def_prog_pass(name ? name : "mark_private_methods", mark_private_methods);

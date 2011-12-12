@@ -36,12 +36,6 @@
 #include "irtools.h"
 #include "error.h"
 
-/**
- * Turns a node into a "useless" Tuple.  The Tuple just forms a tuple
- * from several inputs.
- * This is useful if a node returning a tuple is removed, but the Projs
- * extracting values from the tuple are not available.
- */
 void turn_into_tuple(ir_node *node, int arity)
 {
 	ir_graph *irg = get_irn_irg(node);
@@ -57,11 +51,6 @@ void turn_into_tuple(ir_node *node, int arity)
 	set_irn_op(node, op_Tuple);
 }
 
-/**
- * Insert irnode `new' in place of irnode `old'
- * Since `new' may be bigger than `old' replace `old'
- * by an op_Id which is smaller than everything.
- */
 void exchange(ir_node *old, ir_node *nw)
 {
 	ir_graph *irg;
@@ -117,10 +106,6 @@ void exchange(ir_node *old, ir_node *nw)
 	                   | IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
 }
 
-/*--------------------------------------------------------------------*/
-/*  Functionality for collect_phis                                    */
-/*--------------------------------------------------------------------*/
-
 /**
  * Walker: links all Phi nodes to their Blocks lists,
  *         all Proj nodes to there predecessors.
@@ -150,10 +135,6 @@ void collect_phiprojs(ir_graph *irg)
 		(IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST));
 	irg_walk_graph(irg, firm_clear_node_and_phi_links, collect_phiprojs_walker, NULL);
 }
-
-/*--------------------------------------------------------------------*/
-/*  Functionality for part_block                                      */
-/*--------------------------------------------------------------------*/
 
 /**
  * Moves node and all predecessors of node from from_bl to to_bl.

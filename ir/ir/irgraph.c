@@ -75,7 +75,6 @@ void set_current_ir_graph(ir_graph *graph)
 /** contains the suffix for frame type names */
 static ident *frame_type_suffix = NULL;
 
-/* initialize the IR graph module */
 void firm_init_irgraph(void)
 {
 	frame_type_suffix = new_id_from_str(FRAME_TP_SUFFIX);
@@ -119,12 +118,6 @@ static void free_graph(ir_graph *irg)
 	free(ptr - additional_graph_data_size);
 }
 
-/**
- * Set the number of locals for a given graph.
- *
- * @param irg    the graph
- * @param n_loc  number of locals
- */
 void irg_set_nloc(ir_graph *res, int n_loc)
 {
 	assert(res->phase_state == phase_building);
@@ -140,15 +133,6 @@ void irg_set_nloc(ir_graph *res, int n_loc)
 	}
 }
 
-/* Allocates a list of nodes:
-    - The start block containing a start node and Proj nodes for its four
-      results (X, M, P, Tuple).
-    - The end block containing an end node. This block is not matured after
-      new_ir_graph as predecessors need to be added to it.
-    - The current block, which is empty and also not matured.
-   Further it allocates several datastructures needed for graph construction
-   and optimization.
-*/
 ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 {
 	ir_graph *res;
@@ -246,8 +230,6 @@ ir_graph *new_ir_graph(ir_entity *ent, int n_loc)
 	return res;
 }
 
-/* Make a rudimentary IR graph for the constant code.
-   Must look like a correct irg, spare everything else. */
 ir_graph *new_const_code_irg(void)
 {
 	ir_graph *res = alloc_graph();
@@ -360,9 +342,6 @@ static ir_node *get_new_node(const ir_node *old_node)
 	return (ir_node*) get_irn_link(old_node);
 }
 
-/*
- * Create a new graph that is a copy of a given one.
- */
 ir_graph *create_irg_copy(ir_graph *irg)
 {
 	ir_graph *res;
@@ -420,13 +399,6 @@ ir_graph *create_irg_copy(ir_graph *irg)
 	return res;
 }
 
-/* Frees the passed irgraph.
-   Deallocates all nodes in this graph and the ir_graph structure.
-   Sets the field irgraph in the corresponding entity to NULL.
-   Does not remove the irgraph from the list in irprog (requires
-   inefficient search, call remove_irp_irg by hand).
-   Does not free types, entities or modes that are used only by this
-   graph, nor the entity standing for this graph. */
 void free_ir_graph(ir_graph *irg)
 {
 	assert(is_ir_graph(irg));
@@ -449,18 +421,12 @@ void free_ir_graph(ir_graph *irg)
 	free_graph(irg);
 }
 
-/* access routines for all ir_graph attributes:
-   templates:
-   {attr type} get_irg_{attribute name} (ir_graph *irg);
-   void set_irg_{attr name} (ir_graph *irg, {attr type} {attr}); */
-
 int (is_ir_graph)(const void *thing)
 {
 	return is_ir_graph_(thing);
 }
 
 #ifdef DEBUG_libfirm
-/* Outputs a unique number for this node */
 long get_irg_graph_nr(const ir_graph *irg)
 {
 	return irg->graph_nr;
@@ -597,17 +563,11 @@ int get_irg_n_locs(ir_graph *irg)
 	return irg->n_loc - 1;
 }
 
-/* Returns the obstack associated with the graph. */
 struct obstack *(get_irg_obstack)(const ir_graph *irg)
 {
 	return get_irg_obstack_(irg);
 }
 
-/*
- * Returns true if the node n is allocated on the storage of graph irg.
- *
- * Implementation is GLIBC specific as is uses the internal _obstack_chunk implementation.
- */
 int node_is_in_irgs_storage(const ir_graph *irg, const ir_node *n)
 {
 	struct _obstack_chunk *p;
@@ -748,19 +708,16 @@ void (inc_irg_block_visited)(ir_graph *irg)
   inc_irg_block_visited_(irg);
 }
 
-/* Return the floating point model of this graph. */
 unsigned (get_irg_fp_model)(const ir_graph *irg)
 {
 	return get_irg_fp_model_(irg);
 }
 
-/* Sets the floating point model for this graph. */
 void set_irg_fp_model(ir_graph *irg, unsigned model)
 {
 	irg->fp_model = model;
 }
 
-/* set a description for local value n */
 void set_irg_loc_description(ir_graph *irg, int n, void *description)
 {
 	assert(0 <= n && n < irg->n_loc);
@@ -771,7 +728,6 @@ void set_irg_loc_description(ir_graph *irg, int n, void *description)
 	irg->loc_descriptions[n] = description;
 }
 
-/* get the description for local value n */
 void *get_irg_loc_description(ir_graph *irg, int n)
 {
 	assert(0 <= n && n < irg->n_loc);
@@ -795,21 +751,18 @@ ir_resources_t ir_resources_reserved(const ir_graph *irg)
 {
 	return irg->reserved_resources;
 }
-#endif /* NDEBUG */
+#endif
 
-/* Returns a estimated node count of the irg. */
 unsigned (get_irg_estimated_node_cnt)(const ir_graph *irg)
 {
 	return get_irg_estimated_node_cnt_(irg);
 }
 
-/* Returns the last irn index for this graph. */
 unsigned get_irg_last_idx(const ir_graph *irg)
 {
 	return irg->last_node_idx;
 }
 
-/* register additional space in an IR graph */
 size_t register_additional_graph_data(size_t size)
 {
 	assert(!forbid_new_data && "Too late to register additional node data");

@@ -309,12 +309,6 @@ static ir_node *get_r_value_internal(ir_node *block, int pos, ir_mode *mode)
 	return res;
 }
 
-/* ************************************************************************** */
-
-/*
- * Finalize a Block node, when all control flows are known.
- * Acceptable parameters are only Block nodes.
- */
 void mature_immBlock(ir_node *block)
 {
 	size_t   n_preds;

@@ -256,7 +256,6 @@ static void start_type_walk(ir_node *node, void *ctx)
 	irn_type_walker(node, pre, post, envi);
 }
 
-/* walker: walks over all types */
 void type_walk(type_walk_func *pre, type_walk_func *post, void *env)
 {
 	size_t      i, n_types = get_irp_n_types();
@@ -547,7 +546,6 @@ void class_walk_super2sub(class_walk_func *pre,
 }
 
 
-/* Walks over all entities in the type */
 void walk_types_entities(ir_type *tp,
                          entity_walk_func *doit,
                          void *env)

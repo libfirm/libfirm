@@ -77,12 +77,6 @@ static void do_finalization(type_or_ent tore, void *env)
 	}
 }
 
-/**
- * If we have the closed world assumption, we can calculate the
- * finalization of classes and entities by inspecting the class hierarchy.
- * After this is done, all classes and entities that are not overridden
- * anymore have the final property set.
- */
 void types_calc_finalization(void)
 {
 	if (! get_opt_closed_world())

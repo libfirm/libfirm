@@ -390,7 +390,6 @@ size_t get_class_n_downcasts(const ir_type *clss)
 	return n_instances;
 }
 
-/* Cast node that creates an instance of this type */
 ir_node *get_type_cast(const ir_type *tp, size_t pos)
 {
 	ir_node **casts;
@@ -637,7 +636,6 @@ static void chain_types(ir_type *tp)
 	}
 }
 
-/* compute the trouts data structures. */
 void compute_trouts(void)
 {
 	size_t i;
