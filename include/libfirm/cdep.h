@@ -33,30 +33,30 @@
  * @{
  */
 
-/** Compute the control dependence graph for a graph. */
+/** Computes the control dependence graph for a graph. */
 FIRM_API void compute_cdep(ir_graph *irg);
 
-/** Free the control dependence info. */
+/** Frees the control dependence info. */
 FIRM_API void free_cdep(ir_graph *irg);
 
-/** Return control dependent block */
+/** Returns control dependent block */
 FIRM_API ir_node *get_cdep_node(const ir_cdep *cdep);
 
-/** Get next entry in a list of cdeps */
+/** Returns next entry in a list of cdeps */
 FIRM_API ir_cdep *get_cdep_next(const ir_cdep *cdep);
 
 /**
- * Return a list of all control dependences of a block.
+ * Returns a list of all control dependences of a block.
  */
 FIRM_API ir_cdep *find_cdep(const ir_node *block);
 
 /**
- * Replace the control dependence info of old by the info of nw.
+ * Replaces the control dependence info of old by the info of nw.
  */
 FIRM_API void exchange_cdep(ir_node *old, const ir_node *nw);
 
 /**
- * Check whether dependee is (directly) control dependent on candidate.
+ * Checks whether dependee is (directly) control dependent on candidate.
  *
  * @param dependee   the (possible) dependent block
  * @param candidate  the (possible) block on which dependee is dependent
@@ -64,7 +64,7 @@ FIRM_API void exchange_cdep(ir_node *old, const ir_node *nw);
 FIRM_API int is_cdep_on(const ir_node *dependee, const ir_node *candidate);
 
 /**
- * If block is control dependent on exactly one node, return this node,
+ * If block is control dependent on exactly one node, returns this node,
  * else NULL.
  *
  * @param block  the block to check
@@ -72,7 +72,7 @@ FIRM_API int is_cdep_on(const ir_node *dependee, const ir_node *candidate);
 FIRM_API ir_node *get_unique_cdep(const ir_node *block);
 
 /**
- * Check if the given block is control dependent of more than one node.
+ * Checks if the given block is control dependent of more than one node.
  *
  * @param block   the block to check
  */

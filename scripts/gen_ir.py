@@ -596,15 +596,22 @@ FIRM_API ir_node *new_{{node.name}}(
 		{{node|nodeparameters}}
 	{% endfilter %});
 {%- endif %}
-/** Return true if the node is a {{node.name}} node. */
+/**
+ * Test if node is a {{node.name}}
+ * @returns 1 if the node is a {{node.name}} node, 0 otherwise
+ */
 FIRM_API int is_{{node.name}}(const ir_node *node);
 
 {% for input in node.ins -%}
+/** Returns {{input[0]}} input of {{node.name|a_an}} node. */
 FIRM_API ir_node *get_{{node.name}}_{{input[0]}}(const ir_node *node);
+/** Sets {{input[0]}} input of {{node.name|a_an}} node. */
 FIRM_API void set_{{node.name}}_{{input[0]}}(ir_node *node, ir_node *{{input[0]|escape_keywords}});
 {% endfor -%}
 {% for attr in node.attrs|hasnot("noprop") -%}
+/** Returns {{attr.name}} attribute of {{node.name|a_an}} node. */
 FIRM_API {{attr.type}} get_{{node.name}}_{{attr.name}}(const ir_node *node);
+/** Sets {{attr.name}} attribute of {{node.name|a_an}} node. */
 FIRM_API void set_{{node.name}}_{{attr.name}}(ir_node *node, {{attr.type}} {{attr.name}});
 {% endfor -%}
 /** @} */
@@ -656,12 +663,18 @@ typedef enum ir_opcode {
 } ir_opcode;
 
 {% for node in nodes %}
-/** @ingroup {{node.name}} */
+/**
+ * @ingroup {{node.name}}
+ * {{node.name}} opcode
+ */
 FIRM_API ir_op *op_{{node.name}};
 {%- endfor %}
 
 {% for node in nodes %}
-/** @ingroup {{node.name}} */
+/**
+ * @ingroup {{node.name}}
+ * Returns opcode for {{node.name}} nodes.
+ */
 FIRM_API ir_op *get_op_{{node.name}}(void);
 {%- endfor %}
 

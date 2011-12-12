@@ -35,6 +35,7 @@
  * @{
  */
 
+/** Type of a value range */
 enum range_types {
 	VRP_UNDEFINED, /**< No information could be derived so far */
 	VRP_RANGE,     /**< bottom and top form a range, including both values */
@@ -43,7 +44,7 @@ enum range_types {
 	VRP_VARYING    /**< information cannot be derived */
 };
 
-/** VRP information */
+/** VRP information for a single node */
 typedef struct {
 	ir_tarval *bits_set;         /**< The bits which, by analysis, are
 	                                  definitely set:
@@ -52,12 +53,12 @@ typedef struct {
 	                                  not set:
 	                                  1 for may be set, 0: definitely not set */
 	enum range_types range_type; /**< The range represented by range_top, range_bottom */
-	ir_tarval *range_bottom;
-	ir_tarval *range_top;
+	ir_tarval *range_bottom;     /**< lower end of the value range */
+	ir_tarval *range_top;        /**< upper end of the value range */
 } vrp_attr;
 
 /**
- * Set vrp data on the graph irg
+ * Sets vrp data on the graph irg
  * @param irg graph on which to set vrp data
  */
 FIRM_API void set_vrp_data(ir_graph *irg);
@@ -76,8 +77,8 @@ FIRM_API void free_vrp_data(ir_graph *irg);
  */
 FIRM_API ir_relation vrp_cmp(const ir_node *left, const ir_node *right);
 
-/*
- * Return the vrp data for this node
+/**
+ * Returns the vrp data for this node
  * Note: only allowed for nodes with an integer mode!
  *
  * @param n: the node for which to return the vrp information

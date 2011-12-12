@@ -810,15 +810,19 @@ FIRM_API ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
  * @{
  */
 
-/** Global variable holding the current ir graph.
- *
- *  This global variable is used by the ir construction
- *  interface in ircons and by the optimizations.
- *  Further it is set by all walker functions.
+/**
+ * Global variable holding the graph which is currently constructed.
  */
 FIRM_API ir_graph *current_ir_graph;
 
+/**
+ * Returns graph which is currently constructed
+ */
 FIRM_API ir_graph *get_current_ir_graph(void);
+
+/**
+ * Sets graph which is currently constructed
+ */
 FIRM_API void set_current_ir_graph(ir_graph *graph);
 
 /** Create an immature Block.
@@ -827,13 +831,37 @@ FIRM_API void set_current_ir_graph(ir_graph *graph);
  * can be added with add_immBlock_pred().  Once all predecessors are
  * added the block must be matured.
  *
- * Adds the block to the graph in current_ir_graph. Can be used with automatic
- * Phi node construction.
+ * Adds the block to the graph in current_ir_graph.
  * This constructor can only be used if the graph is in state_building.
  */
 FIRM_API ir_node *new_d_immBlock(dbg_info *db);
+/** Create an immature Block.
+ *
+ * An immature Block has an unknown number of predecessors.  Predecessors
+ * can be added with add_immBlock_pred().  Once all predecessors are
+ * added the block must be matured.
+ *
+ * Adds the block to the graph in current_ir_graph.
+ * This constructor can only be used if the graph is in state_building.
+ */
 FIRM_API ir_node *new_immBlock(void);
+/** Create an immature Block.
+ *
+ * An immature Block has an unknown number of predecessors.  Predecessors
+ * can be added with add_immBlock_pred().  Once all predecessors are
+ * added the block must be matured.
+ *
+ * This constructor can only be used if the graph is in state_building.
+ */
 FIRM_API ir_node *new_r_immBlock(ir_graph *irg);
+/** Create an immature Block.
+ *
+ * An immature Block has an unknown number of predecessors.  Predecessors
+ * can be added with add_immBlock_pred().  Once all predecessors are
+ * added the block must be matured.
+ *
+ * This constructor can only be used if the graph is in state_building.
+ */
 FIRM_API ir_node *new_rd_immBlock(dbg_info *db, ir_graph *irg);
 
 /** Add a control flow edge to an immature block. */
@@ -842,19 +870,25 @@ FIRM_API void add_immBlock_pred(ir_node *immblock, ir_node *jmp);
 /** Finalize a Block node, when all control flows are known. */
 FIRM_API void mature_immBlock(ir_node *block);
 
-/** Sets the current block in which the following constructors place the
- *  nodes they construct.
+/**
+ * Sets the current block in which the following constructors place the
+ * nodes they construct.
  *
- *  @param target  The new current block.
+ * @param target  The new current block.
  */
 FIRM_API void set_cur_block(ir_node *target);
+/**
+ * Sets current block of a given graph.
+ * @see set_cur_block()
+ */
 FIRM_API void set_r_cur_block(ir_graph *irg, ir_node *target);
 
 /** Returns the current block of the current graph. */
 FIRM_API ir_node *get_cur_block(void);
+/** Returns current block of a given graph */
 FIRM_API ir_node *get_r_cur_block(ir_graph *irg);
 
-/** Get the current value of a local variable.
+/** Returns the current value of a local variable.
  *
  * Use this function to obtain the last definition of the local variable
  * associated with pos.  Pos may not exceed the value passed as n_loc
@@ -864,6 +898,8 @@ FIRM_API ir_node *get_r_cur_block(ir_graph *irg);
  * @param *mode  The mode of the value to get.
  */
 FIRM_API ir_node *get_value(int pos, ir_mode *mode);
+/** Returns the current value of a local variable in given graph
+ * @see get_value() */
 FIRM_API ir_node *get_r_value(ir_graph *irg, int pos, ir_mode *mode);
 
 /**
@@ -875,6 +911,9 @@ FIRM_API ir_node *get_r_value(ir_graph *irg, int pos, ir_mode *mode);
  * @param  pos   The position/id of the local variable.
  */
 FIRM_API ir_mode *ir_guess_mode(int pos);
+/**
+ * Try to guess the mode of a local variable in a given graph.
+ */
 FIRM_API ir_mode *ir_r_guess_mode(ir_graph *irg, int pos);
 
 /** Remark a new definition of a variable.
@@ -888,6 +927,7 @@ FIRM_API ir_mode *ir_r_guess_mode(ir_graph *irg, int pos);
  * @param *value The new value written to the local variable.
  */
 FIRM_API void set_value(int pos, ir_node *value);
+/** Sets current value of a variable in a given graph */
 FIRM_API void set_r_value(ir_graph *irg, int pos, ir_node *value);
 
 /**
@@ -899,15 +939,21 @@ FIRM_API void set_r_value(ir_graph *irg, int pos, ir_node *value);
  * no value number in the current block.
  */
 FIRM_API int find_value(ir_node *value);
+/**
+ * Find value number for a node in the current block of a given graph
+ * @see find_value()
+ */
 FIRM_API int r_find_value(ir_graph *irg, ir_node *value);
 
-/** Get the current memory state.
+/** Returns the current memory state.
  *
  * Use this function to obtain the last definition of the memory
  * state.  This call automatically inserts Phi nodes for the memory
  * state value.
  */
 FIRM_API ir_node *get_store(void);
+/** Returns current memory state for a given graph
+ * @see get_store() */
 FIRM_API ir_node *get_r_store(ir_graph *irg);
 
 /** Remark a new definition of the memory state.
@@ -918,6 +964,8 @@ FIRM_API ir_node *get_r_store(ir_graph *irg);
  * @param *store The new memory state.
  */
 FIRM_API void set_store(ir_node *store);
+/** Sets current memory state for a given graph
+ * @see set_store() */
 FIRM_API void set_r_store(ir_graph *irg, ir_node *store);
 
 /** keep this node alive even if End is not control-reachable from it
@@ -925,8 +973,6 @@ FIRM_API void set_r_store(ir_graph *irg, ir_node *store);
  * @param ka The node to keep alive.
  */
 FIRM_API void keep_alive(ir_node *ka);
-
-/* --- initialize and finalize IR construction --- */
 
 /** Puts the graph into state "phase_high" */
 FIRM_API void irg_finalize_cons(ir_graph *irg);
@@ -937,6 +983,10 @@ FIRM_API void irg_finalize_cons(ir_graph *irg);
  * e.g., that no more subtypes will be added.  */
 FIRM_API void irp_finalize_cons(void);
 
+/**
+ * Register a new callback for the case that the value of an uninitialized
+ * variable is requested.
+ */
 FIRM_API void ir_set_uninitialized_local_variable_func(
 		uninitialized_local_variable_func_t *func);
 

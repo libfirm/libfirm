@@ -111,7 +111,7 @@ FIRM_API void dump_all_ir_graphs(const char *suffix);
 FIRM_API void ir_set_dump_path(const char *path);
 
 /**
- * Set a prefix filter for output functions.
+ * Sets a prefix filter for output functions.
  *
  * All graph dumpers check this name.  If the name is != "" and
  * not a prefix of the graph to be dumped, the dumper does not
@@ -368,31 +368,31 @@ typedef int (*dump_edge_vcgattr_func)(FILE *out, const ir_node *node, int to);
  */
 typedef void (*dump_node_edge_func)(FILE *out, const ir_node *node);
 
-/** Set the node_vcgattr hook. */
+/** Sets the node_vcgattr hook. */
 FIRM_API void set_dump_node_vcgattr_hook(dump_node_vcgattr_func hook);
-/** Set the edge_vcgattr hook. */
+/** Sets the edge_vcgattr hook. */
 FIRM_API void set_dump_edge_vcgattr_hook(dump_edge_vcgattr_func hook);
 
 /**
- * Set the hook to be called to dump additional edges to a node.
+ * Sets the hook to be called to dump additional edges to a node.
  * @param func The hook to be called.
  */
 FIRM_API void set_dump_node_edge_hook(dump_node_edge_func func);
 
 /**
- * Get the additional edge dump hook.
+ * Returns the additional edge dump hook.
  * @return The current additional edge dump hook.]
  */
 FIRM_API dump_node_edge_func get_dump_node_edge_hook(void);
 
 /**
- * Set the hook to be called to dump additional edges to a block.
+ * Sets the hook to be called to dump additional edges to a block.
  * @param func The hook to be called.
  */
 FIRM_API void set_dump_block_edge_hook(dump_node_edge_func func);
 
 /**
- * Get the additional block edge dump hook.
+ * Returns the additional block edge dump hook.
  * @return The current additional block edge dump hook.
  */
 FIRM_API dump_node_edge_func get_dump_block_edge_hook(void);

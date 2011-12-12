@@ -72,7 +72,7 @@ FIRM_API void opt_jumpthreading(ir_graph* irg);
 FIRM_API ir_graph_pass_t *opt_jumpthreading_pass(const char *name);
 
 /**
- * Try to simplify boolean expression in the given ir graph.
+ * Simplifies boolean expression in the given ir graph.
  * eg. x < 5 && x < 6 becomes x < 5
  *
  * @param irg  the graph
@@ -89,7 +89,7 @@ FIRM_API void opt_bool(ir_graph *irg);
 FIRM_API ir_graph_pass_t *opt_bool_pass(const char *name);
 
 /**
- * Try to reduce the number of conv nodes in the given ir graph.
+ * Reduces the number of Conv nodes in the given ir graph.
  *
  * @param irg  the graph
  *
@@ -113,7 +113,7 @@ FIRM_API ir_graph_pass_t *conv_opt_pass(const char *name);
 typedef int (*check_alloc_entity_func)(ir_entity *ent);
 
 /**
- * Do simple and fast escape analysis for one graph.
+ * Performs simple and fast escape analysis for one graph.
  *
  * @param irg       the graph
  * @param callback  a callback function to check whether a
@@ -123,7 +123,7 @@ FIRM_API void escape_enalysis_irg(ir_graph *irg,
                                   check_alloc_entity_func callback);
 
 /**
- * Do simple and fast escape analysis for all graphs.
+ * Performs simple and fast escape analysis for all graphs.
  *
  * This optimization implements a simple and fast but inexact
  * escape analysis. Some addresses might be marked as 'escaped' even
@@ -248,7 +248,7 @@ FIRM_API void opt_parallelize_mem(ir_graph *irg);
  */
 FIRM_API ir_graph_pass_t *opt_parallelize_mem_pass(const char *name);
 
-/*
+/**
  * Check if we can replace the load by a given const from
  * the const code irg.
  *
@@ -357,13 +357,11 @@ typedef enum osr_flags {
 	                                       induction variables. */
 } osr_flags;
 
-/* FirmJNI cannot handle identical enum values... */
-
 /** default setting */
 #define osr_flag_default osr_flag_lftr_with_ov_check
 
 /**
- * Do the Operator Scalar Replacement optimization and linear
+ * Performs the Operator Scalar Replacement optimization and linear
  * function test replacement for loop control.
  * Can be switched off using the set_opt_strength_red() flag.
  * In that case, only remove_phi_cycles() is executed.
@@ -458,7 +456,7 @@ FIRM_API ir_graph_pass_t *remove_phi_cycles_pass(const char *name);
 #define DEFAULT_CLONE_THRESHOLD 20
 
 /**
- * Do procedure cloning. Evaluate a heuristic weight for every
+ * Performs procedure cloning. Evaluate a heuristic weight for every
  * Call(..., Const, ...). If the weight is bigger than threshold,
  * clone the entity and fix the calls.
  *
@@ -570,8 +568,8 @@ FIRM_API void normalize_n_returns(ir_graph *irg);
 FIRM_API ir_graph_pass_t *normalize_n_returns_pass(const char *name);
 
 /**
- * Do the scalar replacement optimization.
- * Replace local compound entities (like structures and arrays)
+ * Performs the scalar replacement optimization.
+ * Replaces local compound entities (like structures and arrays)
  * with atomic values if possible. Does not handle classes yet.
  *
  * @param irg  the graph which should be optimized
@@ -797,6 +795,7 @@ FIRM_API ir_prog_pass_t *inline_leave_functions_pass(const char *name,
 		unsigned maxsize, unsigned leavesize, unsigned size,
 		int ignore_runtime);
 
+/** pointer to an optimization function */
 typedef void (*opt_ptr)(ir_graph *irg);
 
 /**
@@ -1011,7 +1010,7 @@ FIRM_API void place_code(ir_graph *irg);
 FIRM_API ir_graph_pass_t *place_code_pass(const char *name);
 
 /**
- * Determine information about the values of nodes and perform simplifications
+ * Determines information about the values of nodes and perform simplifications
  * using this information.  This optimization performs a data-flow analysis to
  * find the minimal fixpoint.
  */
@@ -1031,7 +1030,7 @@ FIRM_API void fixpoint_vrp(ir_graph*);
 FIRM_API ir_graph_pass_t *fixpoint_vrp_irg_pass(const char *name);
 
 /**
- * Check, if the value of a node is != 0.
+ * Checks if the value of a node is != 0.
  *
  * This is a often needed case, so we handle here Confirm
  * nodes too.
@@ -1043,7 +1042,7 @@ FIRM_API ir_graph_pass_t *fixpoint_vrp_irg_pass(const char *name);
 FIRM_API int value_not_zero(const ir_node *n, const ir_node **confirm);
 
 /**
- * Check, if the value of a node cannot represent a NULL pointer.
+ * Checks if the value of a node cannot represent a NULL pointer.
  *
  * - If option sel_based_null_check_elim is enabled, all
  *   Sel nodes can be skipped.
@@ -1058,7 +1057,7 @@ FIRM_API int value_not_zero(const ir_node *n, const ir_node **confirm);
 FIRM_API int value_not_null(const ir_node *n, const ir_node **confirm);
 
 /**
- * Check, if the value of a node can be confirmed >= 0 or <= 0,
+ * Checks if the value of a node can be confirmed >= 0 or <= 0,
  * If the mode of the value did not honor signed zeros, else
  * check for >= 0 or < 0.
  *
@@ -1067,8 +1066,7 @@ FIRM_API int value_not_null(const ir_node *n, const ir_node **confirm);
 FIRM_API ir_value_classify_sign classify_value_sign(ir_node *n);
 
 /**
- * Return the value of a Cmp if one or both predecessors
- * are Confirm nodes.
+ * Returns the value of a Cmp if one or both predecessors are Confirm nodes.
  *
  * @param cmp       the compare node that will be evaluated
  * @param left      the left operand of the Cmp
@@ -1078,22 +1076,22 @@ FIRM_API ir_value_classify_sign classify_value_sign(ir_node *n);
 FIRM_API ir_tarval *computed_value_Cmp_Confirm(
 	const ir_node *cmp, ir_node *left, ir_node *right, ir_relation relation);
 
+/** Type of callbacks for createing entities of the compiler library */
 typedef ir_entity *(*compilerlib_entity_creator_t)(ident *id, ir_type *mt);
+
 /**
- * Set the compilerlib entity creation callback that is used to create
+ * Sets the compilerlib entity creation callback that is used to create
  * compilerlib function entities.
  *
  * @param cb  the new compilerlib entity creation callback
  */
 FIRM_API void set_compilerlib_entity_creator(compilerlib_entity_creator_t cb);
 
-/**
- * Get the compilerlib entity creation callback.
- */
+/** Returns the compilerlib entity creation callback. */
 FIRM_API compilerlib_entity_creator_t get_compilerlib_entity_creator(void);
 
 /**
- * Construct the entity for a given function using the current compilerlib
+ * Constructs the entity for a given function using the current compilerlib
  * entity creation callback.
  *
  * @param id  the identifier of the compilerlib function

@@ -136,7 +136,7 @@ FIRM_API int get_mode_sign(const ir_mode *mode);
 /** Returns the arithmetic of a mode */
 FIRM_API ir_mode_arithmetic get_mode_arithmetic(const ir_mode *mode);
 
-/** Get the modulo shift attribute.
+/** Returns the modulo shift attribute.
  *
  *  Attribute modulo shift specifies for modes of kind irms_int_number
  *  whether shift applies modulo to value of bits to shift.  Zero for
@@ -249,26 +249,47 @@ FIRM_API ir_mode *mode_T;  /**< tuple (none) */
 FIRM_API ir_mode *mode_ANY;/**< undefined mode */
 FIRM_API ir_mode *mode_BAD;/**< bad mode */
 
+/** Returns float mode */
 FIRM_API ir_mode *get_modeF(void);
+/** Returns double mode */
 FIRM_API ir_mode *get_modeD(void);
+/** Returns quadruple prevision mode */
 FIRM_API ir_mode *get_modeQ(void);
+/** Returns byte signed mode */
 FIRM_API ir_mode *get_modeBs(void);
+/** Returns byte unsigned mode */
 FIRM_API ir_mode *get_modeBu(void);
+/** Returns halfword signed mode */
 FIRM_API ir_mode *get_modeHs(void);
+/** Returns halfword unsigned mode */
 FIRM_API ir_mode *get_modeHu(void);
+/** Returns integer signed mode */
 FIRM_API ir_mode *get_modeIs(void);
+/** Returns integer unsigned mode */
 FIRM_API ir_mode *get_modeIu(void);
+/** Returns long signed mode */
 FIRM_API ir_mode *get_modeLs(void);
+/** Returns long unsigned mode */
 FIRM_API ir_mode *get_modeLu(void);
+/** Returns long long signed mode */
 FIRM_API ir_mode *get_modeLLs(void);
+/** Returns long long unsigned mode */
 FIRM_API ir_mode *get_modeLLu(void);
+/** Returns pointer mode */
 FIRM_API ir_mode *get_modeP(void);
+/** Returns internal boolean mode */
 FIRM_API ir_mode *get_modeb(void);
+/** Returns control-flow mode */
 FIRM_API ir_mode *get_modeX(void);
+/** Returns Basic-Block mode */
 FIRM_API ir_mode *get_modeBB(void);
+/** Returns memory mode */
 FIRM_API ir_mode *get_modeM(void);
+/** Returns tuple mode */
 FIRM_API ir_mode *get_modeT(void);
+/** Returns ANY mode */
 FIRM_API ir_mode *get_modeANY(void);
+/** Returns BAD mode */
 FIRM_API ir_mode *get_modeBAD(void);
 
 /** Returns the machine specific pointer mode for code addresses. */
@@ -289,44 +310,22 @@ FIRM_API void set_modeP_code(ir_mode *p);
  */
 FIRM_API void set_modeP_data(ir_mode *p);
 
-/*@{
-   Functions to check, whether a mode is signed, float, int, character,
-   reference, num, data, datab or dataM.
-
-   For more exact definitions read the corresponding pages
-   in the firm documentation or the following enumeration
-
-   The set of "float" is defined as:
-   float = {irm_F, irm_D, irm_E}
-
-   The set of "int" is defined as:
-   int   = {irm_Bs, irm_Bu, irm_Hs, irm_Hu, irm_Is, irm_Iu, irm_Ls, irm_Lu}
-
-   The set of "reference" is defined as:
-   reference  = {irm_P}
-
-   The set of "num" is defined as:
-   num   = {float || int}
-
-   The set of "data" is defined as:
-   data  =  {num || reference}
-
-   The set of "datab" is defined as:
-   datab =  {data || irm_b }
-
-   The set of "dataM" is defined as:
-   dataM =  {data || irm_M}
-*/
-
+/** Returns 1 if @p mode is signed, 0 otherwise */
 FIRM_API int mode_is_signed (const ir_mode *mode);
+/** Returns 1 if @p mode is for floatingpoint numbers, 0 otherwise */
 FIRM_API int mode_is_float (const ir_mode *mode);
+/** Returns 1 if @p mode is for integer numbers, 0 otherwise */
 FIRM_API int mode_is_int (const ir_mode *mode);
+/** Returns 1 if @p mode is for references/pointers, 0 otherwise */
 FIRM_API int mode_is_reference (const ir_mode *mode);
+/** Returns 1 if @p mode is for numeric values, 0 otherwise */
 FIRM_API int mode_is_num (const ir_mode *mode);
+/** Returns 1 if @p mode is for data values, 0 otherwise */
 FIRM_API int mode_is_data (const ir_mode *mode);
+/** Returns 1 if @p mode is for data values or internal booleans, 0 otherwise */
 FIRM_API int mode_is_datab (const ir_mode *mode);
+/** Returns 1 if @p mode is for data values or memory, 0 otherwise */
 FIRM_API int mode_is_dataM (const ir_mode *mode);
-/*@}*/
 
 /**
  * Returns true if sm can be converted to lm without loss
@@ -386,7 +385,7 @@ FIRM_API int mode_overflow_on_unary_Minus(const ir_mode *mode);
 FIRM_API int mode_wrap_around(const ir_mode *mode);
 
 /**
- * Return the signed integer equivalent mode for an reference mode.
+ * Returns the signed integer equivalent mode for an reference mode.
  */
 FIRM_API ir_mode *get_reference_mode_signed_eq(ir_mode *mode);
 
@@ -396,7 +395,7 @@ FIRM_API ir_mode *get_reference_mode_signed_eq(ir_mode *mode);
 FIRM_API void set_reference_mode_signed_eq(ir_mode *ref_mode, ir_mode *int_mode);
 
 /**
- * Return the unsigned integer equivalent mode for an reference mode.
+ * Returns the unsigned integer equivalent mode for an reference mode.
  */
 FIRM_API ir_mode *get_reference_mode_unsigned_eq(ir_mode *mode);
 
@@ -406,12 +405,12 @@ FIRM_API ir_mode *get_reference_mode_unsigned_eq(ir_mode *mode);
 FIRM_API void set_reference_mode_unsigned_eq(ir_mode *ref_mode, ir_mode *int_mode);
 
 /**
- * Return size of mantissa in bits (for float modes)
+ * Returns size of mantissa in bits (for float modes)
  */
 FIRM_API unsigned get_mode_mantissa_size(const ir_mode *mode);
 
 /**
- * Return size of exponent in bits (for float modes)
+ * Returns size of exponent in bits (for float modes)
  */
 FIRM_API unsigned get_mode_exponent_size(const ir_mode *mode);
 

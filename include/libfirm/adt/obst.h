@@ -19,7 +19,7 @@
 
 /**
  * @file
- * @brief     Provied obstack_chunk_alloc and obstack_chunk_free for obstack.h
+ * @brief     Provides obstack_chunk_alloc and obstack_chunk_free for obstack.h
  * @author    Martin Trapp, Christian Schaefer
  */
 #ifndef FIRM_ADT_OBST_H
@@ -28,9 +28,13 @@
 #include "obstack.h"
 #include "xmalloc.h"
 
+/** @cond PRIVATE */
 #define obstack_chunk_alloc xmalloc
 #define obstack_chunk_free  free
+/** @endcond */
 
+/** An obstack initializer containing zero values. Can be used to initialize
+ * obstacks in an initializer. */
 #define NULL_OBST     { 0, NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, 0, 0, 0 }
 
 #endif

@@ -18,6 +18,18 @@
    Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
    Boston, MA 02110-1301, USA.  */
 
+/** @page obstack Obstack Memory Allocation
+ *
+ * Obstacks are the prefered way to handle memory allocation in libFirm.
+ * Compared to classical malloc they are faster but don't allow fine-grained
+ * freeing of allocated memory. But in a compile this is fine most of the time
+ * as memory is allocated for a phase or a graph and later the whole phase ends
+ * or the whole graph gets discarded.
+ *
+ * There's very good documentation about Object stacks in the glibc manual:
+ * http://www.gnu.org/s/libc/manual/html_node/Obstacks.html
+ */
+
 /* Summary:
 
 All the apparent functions defined here are macros. The idea
@@ -107,6 +119,8 @@ Summary:
 #define _OBSTACK_H 1
 
 #include "../begin.h"
+
+/** @cond DISABLED */
 
 /* We need the type of a pointer subtraction.  If __PTRDIFF_TYPE__ is
    defined, as with GNU C, use that; that way we don't pollute the
@@ -529,6 +543,8 @@ int obstack_printf(struct obstack *obst, const char *fmt, ...)
 	FIRM_NOTHROW FIRM_PRINTF(2, 3);
 int obstack_vprintf(struct obstack *obst, const char *fmt, va_list ap)
 	FIRM_NOTHROW FIRM_PRINTF(2, 0);
+
+/** @endcond */
 
 #include "../end.h"
 

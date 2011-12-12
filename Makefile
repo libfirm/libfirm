@@ -14,6 +14,7 @@ variant      ?= debug
 
 srcdir       ?= $(top_srcdir)
 builddir     ?= $(top_builddir)/$(variant)
+docdir       ?= $(top_builddir)/firm-doc
 
 # This hides the noisy commandline outputs. You can see them with "make Q="
 Q ?= @
@@ -177,18 +178,18 @@ $(builddir)/%.o: %.c $(IR_SPEC_GENERATED_FILES) config.h
 	@echo CC $@
 	$(Q)$(CC) $(CFLAGS) $(CPPFLAGS) $(libfirm_CPPFLAGS) -MMD -c -o $@ $<
 
-firm-doc/libfirm.tag: $(IR_SPEC_GENERATED_FILES) Doxyfile $(wildcard include/libfirm/*.h) $(wildcard include/libfirm/adt/*.h)
+$(docdir)/libfirm.tag: $(IR_SPEC_GENERATED_FILES) Doxyfile $(wildcard include/libfirm/*.h) $(wildcard include/libfirm/adt/*.h)
 	@echo Doxygen
 	$(Q)$(DOXYGEN)
 
 DOCU_GENERATOR := scripts/gen_docu.py
-firm-doc/html/nodes.html: firm-doc/libfirm.tag $(DOCU_GENERATOR) $(IR_SPEC) scripts/spec_util.py scripts/style.css
+$(docdir)/html/nodes.html: $(docdir)/libfirm.tag $(DOCU_GENERATOR) $(IR_SPEC) scripts/spec_util.py scripts/style.css
 	@echo gen_docu.py
-	$(Q)$(DOCU_GENERATOR) firm-doc/libfirm.tag "" $@
-	$(Q)cp scripts/style.css firm-doc/html
+	$(Q)$(DOCU_GENERATOR) $(docdir)/libfirm.tag "" $@
+	$(Q)cp scripts/style.css $(docdir)/html
 
 .PHONY: documentation
-documentation: firm-doc/libfirm.tag firm-doc/html/nodes.html
+documentation: $(docdir)/libfirm.tag $(docdir)/html/nodes.html
 
 .PHONY: clean
 clean:
@@ -196,4 +197,3 @@ clean:
 	$(Q)rm -f $(libfirm_OBJECTS)
 	$(Q)rm -f $(libfirm_TARGET)
 	$(Q)rm -f $(shell find ir/ -name "gen_*.[ch]")
-	$(Q)rm -rf firm-docu

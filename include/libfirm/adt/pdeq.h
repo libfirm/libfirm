@@ -30,6 +30,13 @@
 #include "../begin.h"
 
 /**
+ * @ingroup adt
+ * @defgroup pdeq Double Ended Queue
+ * Implementation if a double ended queue datastructure for generic pointers
+ * @{
+ */
+
+/**
  * The type of the pointer compare function.
  *
  * @param elem  The list element.
@@ -263,6 +270,8 @@ typedef pdeq stack;
  * @return  non-zero if the stack is empty.
  */
 #define stack_empty(st) pdeq_empty(wq)
+
+/** @} */
 
 #include "../end.h"
 

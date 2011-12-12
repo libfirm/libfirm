@@ -79,7 +79,7 @@ FIRM_API void lower_switch(ir_graph *irg, unsigned small_switch,
 
 /**
  * Replaces SymConsts by a real constant if possible.
- * Replace Sel nodes by address computation.  Also resolves array access.
+ * Replaces Sel nodes by address computation.  Also resolves array access.
  * Handle bit fields by added And/Or calculations.
  *
  * @param irg               the graph to lower
@@ -100,7 +100,7 @@ FIRM_API ir_graph_pass_t *lower_highlevel_graph_pass(const char *name);
 
 /**
  * Replaces SymConsts by a real constant if possible.
- * Replace Sel nodes by address computation.  Also resolves array access.
+ * Replaces Sel nodes by address computation.  Also resolves array access.
  * Handle bit fields by added And/Or calculations.
  * Lowers all graphs.
  *
@@ -165,6 +165,8 @@ FIRM_API ir_graph_pass_t *lower_mux_pass(const char *name,
  */
 typedef int (*i_mapper_func)(ir_node *node, void *ctx);
 
+/** kind of an instruction record
+ * @see #i_record */
 enum ikind {
 	INTRINSIC_CALL  = 0,  /**< the record represents an intrinsic call */
 	INTRINSIC_INSTR       /**< the record represents an intrinsic instruction */
@@ -196,8 +198,9 @@ typedef struct i_instr_record {
  * An intrinsic record.
  */
 typedef union i_record {
-	i_call_record  i_call;
-	i_instr_record i_instr;
+	enum ikind     kind;     /**< kind of record */
+	i_call_record  i_call;   /**< used for call records */
+	i_instr_record i_instr;  /**< used for isnstruction records */
 } i_record;
 
 /**
@@ -215,7 +218,7 @@ typedef union i_record {
  * @return number of found intrinsics.
  */
 FIRM_API size_t lower_intrinsics(i_record *list, size_t length,
-                                   int part_block_used);
+                                 int part_block_used);
 
 /**
  * Creates an irprog pass for lower_intrinsics.

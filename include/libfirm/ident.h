@@ -44,7 +44,6 @@
  *
  * @param str   the string which shall be stored
  * @return id   a handle for the generated ident
- * @see get_id_str(), get_id_strlen()
  */
 FIRM_API ident *new_id_from_str(const char *str);
 
@@ -56,7 +55,6 @@ FIRM_API ident *new_id_from_str(const char *str);
  * @param str   the string (or whatever) which shall be stored
  * @param len   the length of the data in bytes
  * @return id   a handle for the generated ident
- * @see new_id_from_str(), get_id_strlen()
  */
 FIRM_API ident *new_id_from_chars(const char *str, size_t len);
 
@@ -68,7 +66,6 @@ FIRM_API ident *new_id_from_chars(const char *str, size_t len);
  *
  * @param id   the ident
  * @return cp   a string
- * @see new_id_from_str(), new_id_from_chars(), get_id_strlen()
  */
 FIRM_API const char *get_id_str(ident *id);
 
@@ -77,34 +74,33 @@ FIRM_API const char *get_id_str(ident *id);
  *
  * @param id   the ident
  * @return len   the length of the string
- * @see new_id_from_str(), new_id_from_chars(), get_id_str()
  */
 FIRM_API size_t get_id_strlen(ident *id);
 
 /**
- * Returns true if prefix is a prefix of an ident.
+ * Test if @p prefix is a prefix of ident @p id.
  *
  * @param prefix   the prefix
  * @param id       the ident
- * @see new_id_from_str(), new_id_from_chars(), get_id_str(), id_is_prefix()
+ * @returns        1 if @p prefix is prefix of @p id, 0 otherwise
  */
 FIRM_API int id_is_prefix(ident *prefix, ident *id);
 
 /**
- * Returns true if suffix is a suffix of an ident.
+ * Test if @p suffix is a suffix of ident @p id.
  *
  * @param suffix   the suffix
  * @param id       the ident
- * @see new_id_from_str(), new_id_from_chars(), get_id_str(), id_is_prefix()
+ * @returns        1 if @p suffix is suffix of @p id, 0 otherwise
  */
 FIRM_API int id_is_suffix(ident *suffix, ident *id);
 
 /**
- * Return true if an ident contains a given character.
+ * Test if identifier contains a given character.
  *
  * @param id    the ident
  * @param c     the character
- * @see new_id_from_str(), new_id_from_chars(), get_id_str()
+ * @returns     1 if character is contained, 0 otherwise
  */
 FIRM_API int id_contains_char(ident *id, char c);
 

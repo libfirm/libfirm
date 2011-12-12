@@ -37,7 +37,7 @@
  */
 
 /**
- * Get the first edge pointing to some node.
+ * Returns the first edge pointing to some node.
  * @note There is no order on out edges. First in this context only
  * means, that you get some starting point into the list of edges.
  * @param irn The node.
@@ -48,7 +48,7 @@ FIRM_API const ir_edge_t *get_irn_out_edge_first_kind(const ir_node *irn,
                                                       ir_edge_kind_t kind);
 
 /**
- * Get the next edge in the out list of some node.
+ * Returns the next edge in the out list of some node.
  * @param irn The node.
  * @param last The last out edge you have seen.
  * @return The next out edge in @p irn 's out list after @p last.
@@ -94,22 +94,22 @@ FIRM_API const ir_edge_t *get_irn_out_edge_next(const ir_node *irn,
  */
 #define foreach_block_succ(bl, edge)           foreach_out_edge_kind(bl, edge, EDGE_KIND_BLOCK)
 
-/*
- * Get the source node of an edge.
+/**
+ * Returns the source node of an edge.
  * @param edge The edge.
  * @return The source node of that edge.
  */
 FIRM_API ir_node *get_edge_src_irn(const ir_edge_t *edge);
 
 /**
- * Get the position of an edge.
+ * Returns the position of an edge.
  * @param edge The edge.
  * @return The position in the in array of that edges source.
  */
 FIRM_API int get_edge_src_pos(const ir_edge_t *edge);
 
 /**
- * Get the edge object of an outgoing edge at a node.
+ * Returns the edge object of an outgoing edge at a node.
  * @param  irn  The node at which the edge originates.
  * @param  pos  The position of the edge.
  * @param  kind The kind of the edge.
@@ -120,14 +120,14 @@ FIRM_API const ir_edge_t *get_irn_edge_kind(const ir_node *irn,
                                             int pos, ir_edge_kind_t kind);
 
 /**
- * Get the number of registered out edges for a specific kind.
+ * Returns the number of registered out edges for a specific kind.
  * @param irn The node.
  * @param kind The kind.
  */
 FIRM_API int get_irn_n_edges_kind(const ir_node *irn, ir_edge_kind_t kind);
 
 /**
- * Check, if the out edges are activated.
+ * Checks if the out edges are activated.
  *
  * @param irg   The graph.
  * @param kind  The edge kind.
@@ -137,7 +137,7 @@ FIRM_API int get_irn_n_edges_kind(const ir_node *irn, ir_edge_kind_t kind);
 FIRM_API int edges_activated_kind(const ir_graph *irg, ir_edge_kind_t kind);
 
 /**
- * Activate the edges for an irg.
+ * Activates the edges for an irg.
  *
  * @param irg   The graph to activate the edges for.
  * @param kind  The edge kind.
@@ -145,7 +145,7 @@ FIRM_API int edges_activated_kind(const ir_graph *irg, ir_edge_kind_t kind);
 FIRM_API void edges_activate_kind(ir_graph *irg, ir_edge_kind_t kind);
 
 /**
- * Deactivate the edges for an irg.
+ * Deactivates the edges for an irg.
  *
  * @param irg   The graph.
  * @param kind  The edge kind.
@@ -153,8 +153,7 @@ FIRM_API void edges_activate_kind(ir_graph *irg, ir_edge_kind_t kind);
 FIRM_API void edges_deactivate_kind(ir_graph *irg, ir_edge_kind_t kind);
 
 /**
- * Reroute edges of a specified kind from an old node to
- * a new one.
+ * Reroutes edges of a specified kind from an old node to a new one.
  *
  * @param old   the old node
  * @param nw    the new node
@@ -169,13 +168,13 @@ FIRM_API void edges_reroute_kind(ir_node *old, ir_node *nw, ir_edge_kind_t kind)
 FIRM_API int edges_verify(ir_graph *irg);
 
 /**
- * veriy a certrain kind of out edges of graph @p irg.
+ * Verifies a certrain kind of out edges of graph @p irg.
  * @returns 1 if a problem was found, 0 otherwise
  */
 FIRM_API int edges_verify_kind(ir_graph *irg, ir_edge_kind_t kind);
 
 /**
- * Set edge verification flag.
+ * Sets edge verification flag.
  */
 FIRM_API void edges_init_dbg(int do_dbg);
 
@@ -190,22 +189,28 @@ FIRM_API void edges_init_dbg(int do_dbg);
 FIRM_API ir_graph_pass_t *irg_verify_edges_pass(const char *name,
                                                 unsigned assert_on_problem);
 
+/** Convenience version of edges_reroute_kind() with #EDGE_KIND_NORMAL */
 #define edges_reroute(old, nw)                      edges_reroute_kind(old, nw, EDGE_KIND_NORMAL)
+/** Conventience version of edges_activated_kind() for #EDGE_KIND_NORMAL and #EDGE_KIND_BLOCK */
 #define edges_activated(irg)                            (edges_activated_kind(irg, EDGE_KIND_NORMAL) && edges_activated_kind(irg, EDGE_KIND_BLOCK))
 
 #ifndef get_irn_n_edges
+/** Conventience version of get_irn_n_edges_kind() with #EDGE_KIND_NORMAL. */
 #define get_irn_n_edges(irn)                            get_irn_n_edges_kind(irn, EDGE_KIND_NORMAL)
 #endif
 
 #ifndef get_irn_out_edge_first
+/** Convenience version of get_irn_out_edge_first_kind() with #EDGE_KIND_NORMAL */
 #define get_irn_out_edge_first(irn)                     get_irn_out_edge_first_kind(irn, EDGE_KIND_NORMAL)
 #endif
 
 #ifndef get_block_succ_first
+/** Convenience version of get_irn_out_edge_first_kind() with #EDGE_KIND_BLOCK */
 #define get_block_succ_first(irn)                       get_irn_out_edge_first_kind(irn, EDGE_KIND_BLOCK)
 #endif
 
 #ifndef get_block_succ_next
+/** Convenience version of get_irn_out_edge_next() with #EDGE_KIND_BLOCK */
 #define get_block_succ_next(irn, last)                  get_irn_out_edge_next(irn, last)
 #endif
 
@@ -219,7 +224,7 @@ FIRM_API ir_graph_pass_t *irg_verify_edges_pass(const char *name,
 FIRM_API void edges_activate(ir_graph *irg);
 
 /**
- * Deactivate data and block edges for an irg.
+ * Deactivates data and block edges for an irg.
  * If the irg phase is phase_backend, Dependence edges are
  * additionally deactivated.
  * @param irg  The graph.
@@ -227,7 +232,7 @@ FIRM_API void edges_activate(ir_graph *irg);
 FIRM_API void edges_deactivate(ir_graph *irg);
 
 /**
- * Ensure that edges are activated.
+ * Ensures that edges are activated.
  *
  * @param irg  the IR graph
  *
@@ -236,7 +241,7 @@ FIRM_API void edges_deactivate(ir_graph *irg);
 FIRM_API int edges_assure(ir_graph *irg);
 
 /**
- * Ensure that edges of a given kind are activated.
+ * Ensures that edges of a given kind are activated.
  *
  * @param irg   the IR graph
  * @param kind  the edge kind
@@ -257,6 +262,7 @@ FIRM_API int edges_assure_kind(ir_graph *irg, ir_edge_kind_t kind);
 FIRM_API void irg_block_edges_walk(ir_node *block, irg_walk_func *pre,
                                    irg_walk_func *post, void *env);
 
+/** Graph walker following #EDGE_KIND_NORMAL edges. */
 FIRM_API void irg_walk_edges(ir_node *start, irg_walk_func *pre,
                              irg_walk_func *post, void *env);
 

@@ -29,6 +29,13 @@
 #include "../begin.h"
 
 /**
+ * @ingroup adt
+ * @defgroup Pointer Set (custom Compare)
+ * A pointer set with user-definable compare function
+ * @{
+ */
+
+/**
  * The type of a cpset compare function.
  *
  * @param p1   pointer to an element
@@ -43,6 +50,8 @@ typedef int (*cpset_cmp_function) (const void *p1, const void *p2);
  */
 typedef unsigned (*cpset_hash_function) (const void *obj);
 
+/** @cond PRIVATE */
+
 #define HashSet          cpset_t
 #define HashSetIterator  cpset_iterator_t
 #define HashSetEntry     cpset_hashset_entry_t
@@ -55,7 +64,12 @@ typedef unsigned (*cpset_hash_function) (const void *obj);
 #undef HashSetIterator
 #undef HashSet
 
+/** @endcond */
+
+/** a pointer set with custom compare function */
 typedef struct cpset_t          cpset_t;
+/** iterator over a pointer set with custom compare function
+ * @see #cpset_t */
 typedef struct cpset_iterator_t cpset_iterator_t;
 
 /**
@@ -150,6 +164,8 @@ FIRM_API void *cpset_iterator_next(cpset_iterator_t *iterator);
  * @param iterator  Pointer to the cpset iterator.
  */
 FIRM_API void cpset_remove_iterator(cpset_t *cpset, const cpset_iterator_t *iterator);
+
+/** @} */
 
 #include "../end.h"
 

@@ -30,6 +30,14 @@
 #include "../begin.h"
 
 /**
+ * @ingroup adt
+ * @defgroup set Generic Hashset
+ * Generic Hashset
+ * @note This code has been deprecated. Use hashset for new code.
+ * @{
+ */
+
+/**
  * The abstract type of a set.
  *
  * This sets stores copies of its elements, so there is no need
@@ -191,6 +199,8 @@ FIRM_API void set_break(set *set);
  */
 #define foreach_set(set, type, entry) for (entry = (type) set_first(set); entry; entry = (type) set_next(set))
 
+/** @cond PRIVATE */
+
 /* implementation specific */
 #define new_set(cmp, slots) ((new_set) ((cmp), (slots)))
 #define set_find(set, key, size, hash) \
@@ -202,11 +212,13 @@ FIRM_API void set_break(set *set);
 #define set_hinsert0(set, key, size, hash) \
   ((set_entry *)_set_search ((set), (key), (size), (hash), _set_hinsert0))
 
-/* Private */
-
 typedef enum { _set_find, _set_insert, _set_hinsert, _set_hinsert0 } _set_action;
 
 FIRM_API void *_set_search(set *, const void *, size_t, unsigned, _set_action);
+
+/** @endcond */
+
+/** @} */
 
 #include "../end.h"
 

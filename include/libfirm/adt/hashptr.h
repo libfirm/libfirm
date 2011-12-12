@@ -19,7 +19,7 @@
 
 /**
  * @file
- * @brief       Hash function for pointers
+ * @brief       Hash functions
  * @author      Michael Beck, Sebastian Hack
  */
 #ifndef FIRM_ADT_HASHPTR_H
@@ -28,12 +28,25 @@
 #include <stdlib.h>
 #include "../begin.h"
 
+/**
+ * @ingroup algorithms
+ * @defgroup hashptr Hash Functions
+ * @{
+ */
+
+/** @cond DISABLED */
+
 #define _FIRM_FNV_OFFSET_BASIS 2166136261U
 #define _FIRM_FNV_FNV_PRIME 16777619U
 
 /* Computing x * _FIRM_FNV_FNV_PRIME */
 #define _FIRM_FNV_TIMES_PRIME(x) ((x) * _FIRM_FNV_FNV_PRIME)
 
+/** @endcond */
+
+/**
+ * Returns a hash value for a block of data.
+ */
 static inline unsigned hash_data(const unsigned char *data, size_t bytes)
 {
 	size_t   i;
@@ -50,17 +63,16 @@ static inline unsigned hash_data(const unsigned char *data, size_t bytes)
 /**
  * Returns a hash value for a string.
  * @param str The string (can be const).
- * @param len The length of the string.
  * @return A hash value for the string.
  */
-static inline unsigned hash_str(const char *data)
+static inline unsigned hash_str(const char *str)
 {
 	unsigned i;
 	unsigned hash = _FIRM_FNV_OFFSET_BASIS;
 
-	for(i = 0; data[i] != '\0'; ++i) {
+	for(i = 0; str[i] != '\0'; ++i) {
 		hash = _FIRM_FNV_TIMES_PRIME(hash);
-		hash ^= data[i];
+		hash ^= str[i];
 	}
 
 	return hash;
@@ -78,9 +90,9 @@ static inline unsigned hash_ptr(const void *ptr)
 
 /**
  * Combines 2 hash values.
- * @param a One hash value.
- * @param b Another hash value.
- * @return A hash value computed from both.
+ * @param x One hash value.
+ * @param y Another hash value.
+ * @return  A hash value computed from both.
  */
 static inline unsigned hash_combine(unsigned x, unsigned y)
 {
@@ -90,6 +102,8 @@ static inline unsigned hash_combine(unsigned x, unsigned y)
 	hash ^= y;
 	return hash;
 }
+
+/** @} */
 
 #include "../end.h"
 

@@ -30,8 +30,6 @@
 #include "firm_types.h"
 #include "begin.h"
 
-/** @defgroup irana Analyses */
-
 /**
  * @ingroup irana
  * @defgroup irdom Dominance Information
@@ -96,32 +94,32 @@ FIRM_API int block_postdominates(const ir_node *a, const ir_node *b);
 FIRM_API int block_strictly_postdominates(const ir_node *a, const ir_node *b);
 
 /**
- * Get the first node in the list of nodes dominated by a given block.
+ * Returns the first node in the list of nodes dominated by a given block.
  *
  * Each node keeps a list of nodes which it immediately dominates. The
  * nodes are queued using the @c next pointer in the @c dom_info struct.
  * Each node keeps a head of this list using the pointer @c first in the
  * same structure.
  *
- * @param bl The block for which to get the first node dominated by @c bl.
+ * @param block The block for which to get the first node dominated by @c bl.
  * @return The first node dominated by @p bl.
  */
 FIRM_API ir_node *get_Block_dominated_first(const ir_node *block);
 /**
- * Get the first node in the list of nodes postdominated by a given blcok.
+ * Returns the first node in the list of nodes postdominated by a given blcok.
  */
 FIRM_API ir_node *get_Block_postdominated_first(const ir_node *bl);
 
 /**
- * Get the next node in a list of nodes which are dominated by some
+ * Returns the next node in a list of nodes which are dominated by some
  * other node.
  * @see get_Block_dominated_first().
- * @param dom The previous node.
+ * @param node The previous node.
  * @return The next node in this list or NULL if it was the last.
  */
 FIRM_API ir_node *get_Block_dominated_next(const ir_node *node);
 /**
- * Get the next node in a list of nodes which are postdominated by another node
+ * Returns the next node in a list of nodes which are postdominated by another node
  */
 FIRM_API ir_node *get_Block_postdominated_next(const ir_node *node);
 

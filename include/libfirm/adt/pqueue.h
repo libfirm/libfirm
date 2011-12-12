@@ -29,6 +29,15 @@
 
 #include "../begin.h"
 
+/**
+ * @ingroup adt
+ * @defgroup pqueue  Priority Queue
+ * A priority queue.
+ * Implementation based on a heap datastructure
+ * @{
+ */
+
+/** priority queue */
 typedef struct pqueue_t pqueue_t;
 
 /**
@@ -71,6 +80,8 @@ FIRM_API size_t pqueue_length(const pqueue_t *q);
  * @return 1 if the queue is empty, 0 otherwise.
  */
 FIRM_API int pqueue_empty(const pqueue_t *q);
+
+/** @} */
 
 #include "../end.h"
 

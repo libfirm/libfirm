@@ -19,7 +19,7 @@
 
 /**
  * @file
- * @brief       Simplified hashnap for pointer->pointer relations
+ * @brief       Simplified hashmap for pointer->pointer relations
  * @author      Hubert Schmid
  * @date        09.06.2002
  */
@@ -29,6 +29,13 @@
 #include <stddef.h>
 
 #include "../begin.h"
+
+/**
+ * @ingroup adt
+ * @defgroup pmap Pointer Map
+ * Pointer->Pointer hashmap
+ * @{
+ */
 
 /**  A map which maps addresses to addresses. */
 typedef struct pmap pmap;
@@ -61,11 +68,12 @@ FIRM_API void pmap_insert(pmap *map, const void * key, void * value);
 FIRM_API int pmap_contains(pmap *map, const void * key);
 
 /** Returns the key, value pair of "key". */
-FIRM_API pmap_entry * pmap_find(pmap *map, const void * key);
+FIRM_API pmap_entry *pmap_find(pmap *map, const void * key);
 
 /** Returns the value of "key". */
 FIRM_API void * pmap_get(pmap *map, const void * key);
 
+/** Return number of elements in the map */
 FIRM_API size_t pmap_count(pmap *map);
 
 /**
@@ -78,6 +86,9 @@ FIRM_API pmap_entry *pmap_first(pmap *map);
  */
 FIRM_API pmap_entry *pmap_next(pmap *);
 
+/**
+ * Iterate over all elements in the map setting curr to the current element.
+ */
 #define foreach_pmap(pmap, curr) \
 	for (curr = pmap_first(pmap); curr; curr = pmap_next(pmap))
 
@@ -85,6 +96,10 @@ FIRM_API pmap_entry *pmap_next(pmap *);
  *  Must be called, if a iteration ends before p_map_next() returns NULL.
  */
 FIRM_API void pmap_break(pmap *map);
+
+/**
+ * @}
+ */
 
 #include "../end.h"
 

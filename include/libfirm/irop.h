@@ -98,7 +98,7 @@ FIRM_API unsigned get_op_code(const ir_op *op);
 /** Returns a human readable name of an op_pin_state. */
 FIRM_API const char *get_op_pin_state_name(op_pin_state s);
 
-/** Gets pinned state of an opcode. */
+/** Returns pinned state of an opcode. */
 FIRM_API op_pin_state get_op_pinned(const ir_op *op);
 
 /** Sets pinned in the opcode.  Setting it to floating has no effect
@@ -125,12 +125,12 @@ typedef void (*op_func)(void);
 FIRM_API op_func get_generic_function_ptr(const ir_op *op);
 
 /**
- * Store a generic function pointer into an IR operation.
+ * Stores a generic function pointer into an IR operation.
  */
 FIRM_API void set_generic_function_ptr(ir_op *op, op_func func);
 
 /**
- * Return the irop flags of an IR opcode.
+ * Returns the irop flags of an IR opcode.
  */
 FIRM_API irop_flags get_op_flags(const ir_op *op);
 
@@ -192,20 +192,20 @@ typedef void (*copy_attr_func)(ir_graph *irg, const ir_node *old_node, ir_node *
 /**
  * The get_type_attr operation. Used to traverse all types that can be
  * accessed from an ir_graph.
- * Return the type attribute of the node self.
+ * Returns the type attribute of the node self.
  */
 typedef ir_type *(*get_type_attr_func)(const ir_node *self);
 
 /**
  * The get_entity_attr operation. Used to traverse all entities that can be
  * accessed from an ir_graph.
- * Return the entity attribute of the node self.
+ * Returns the entity attribute of the node self.
  */
 typedef ir_entity *(*get_entity_attr_func)(const ir_node *self);
 
 /**
  * The verify_node operation.
- * Return non-zero if the node verification is ok, else 0.
+ * Returns non-zero if the node verification is ok, else 0.
  * Depending on the node verification settings, may even assert.
  *
  * @see do_node_verification()
@@ -214,7 +214,7 @@ typedef int (*verify_node_func)(const ir_node *node);
 
 /**
  * The verify_node operation for Proj(X).
- * Return non-zero if the node verification is ok, else 0.
+ * Returns non-zero if the node verification is ok, else 0.
  * Depending on the node verification settings, may even assert.
  *
  * @see do_node_verification()
@@ -252,8 +252,8 @@ typedef struct {
 	node_cmp_attr_func    node_cmp_attr;        /**< Compares two node attributes. */
 	reassociate_func      reassociate;          /**< Reassociate a tree. */
 	copy_attr_func        copy_attr;            /**< Copy node attributes. */
-	get_type_attr_func    get_type_attr;        /**< Return the type attribute of a node. */
-	get_entity_attr_func  get_entity_attr;      /**< Return the entity attribute of a node. */
+	get_type_attr_func    get_type_attr;        /**< Returns the type attribute of a node. */
+	get_entity_attr_func  get_entity_attr;      /**< Returns the entity attribute of a node. */
 	verify_node_func      verify_node;          /**< Verify the node. */
 	verify_proj_node_func verify_proj_node;     /**< Verify the Proj node. */
 	dump_node_func        dump_node;            /**< Dump a node. */
@@ -284,12 +284,12 @@ FIRM_API ir_op *new_ir_op(unsigned code, const char *name, op_pin_state p,
                           size_t attr_size, const ir_op_ops *ops);
 
 /**
- * set memory input of operation using memory
+ * Sets memory input of operation using memory
  */
 FIRM_API void ir_op_set_memory_index(ir_op *op, int memory_index);
 
 /**
- * Set proj-number for X_regular and X_except projs of fragile nodes.
+ * Sets proj-number for X_regular and X_except projs of fragile nodes.
  * Note: should only be used immediately after new_ir_op
  */
 FIRM_API void ir_op_set_fragile_indices(ir_op *op, int pn_x_regular,

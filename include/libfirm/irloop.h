@@ -54,15 +54,18 @@ FIRM_API void clear_backedges(ir_node *n);
 
 /** Loop elements: loop nodes and ir nodes */
 typedef union {
-	firm_kind *kind;    /**< is either k_ir_node or k_ir_loop */
-	ir_node  *node;     /**< Pointer to an ir_node element */
-	ir_loop  *son;      /**< Pointer to an ir_loop element */
-	ir_graph *irg;      /**< Pointer to an ir_graph element (only callgraph loop trees) */
+	firm_kind *kind; /**< is either k_ir_node or k_ir_loop */
+	ir_node  *node;  /**< Pointer to an ir_node element */
+	ir_loop  *son;   /**< Pointer to an ir_loop element */
+	ir_graph *irg;   /**< Pointer to an ir_graph element (only callgraph loop trees) */
 } loop_element;
 
+/** Tests whether a given pointer points to a loop.
+ * @note only works reliably if @p thing points to something with a #firm_kind
+ * header */
 FIRM_API int is_ir_loop(const void *thing);
 
-/** Set the outermost loop in ir graph as basic access to loop tree. */
+/** Sets the outermost loop in ir graph as basic access to loop tree. */
 FIRM_API void set_irg_loop(ir_graph *irg, ir_loop *l);
 
 /** Returns the root loop info (if exists) for an irg. */
@@ -79,8 +82,8 @@ FIRM_API unsigned get_loop_depth(const ir_loop *loop);
 /** Returns the number of elements contained in loop.  */
 FIRM_API size_t get_loop_n_elements(const ir_loop *loop);
 
-/** Returns a loop element.  A loop element can be interpreted as a
-kind pointer, an ir_node* or an ir_loop*. */
+/** Returns a loop element. A loop element can be interpreted as a
+ * kind pointer, an ir_node* or an ir_loop*. */
 FIRM_API loop_element get_loop_element(const ir_loop *loop, size_t pos);
 
 /** Returns a unique node number for the loop node to make output
@@ -90,6 +93,8 @@ FIRM_API long get_loop_loop_nr(const ir_loop *loop);
 
 /** A field to connect additional information to a loop. */
 FIRM_API void set_loop_link(ir_loop *loop, void *link);
+/** Returns field with additional loop information.
+ * @see set_loop_link() */
 FIRM_API void *get_loop_link(const ir_loop *loop);
 
 /** Constructs backedge information and loop tree for a graph.
@@ -144,9 +149,10 @@ FIRM_API void assure_loopinfo(ir_graph *irg);
  * Resets all backedges.  Works for any construction algorithm.
  */
 FIRM_API void free_loop_information(ir_graph *irg);
-FIRM_API void free_all_loop_information (void);
+/** Removes loop information from all graphs in the current program. */
+FIRM_API void free_all_loop_information(void);
 
-/** Test whether a value is loop invariant.
+/** Tests whether a value is loop invariant.
  *
  * @param n      The node to be tested.
  * @param block  A block node.

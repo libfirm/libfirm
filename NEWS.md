@@ -1,5 +1,10 @@
 
 
+libFirm 1.19.1 (2011-05-17)
+---------------------------
+
+* Fix some set_XXX functions not being exported in the shared library
+
 libFirm 1.19.0 (2011-03-15)
 ---------------------------
 

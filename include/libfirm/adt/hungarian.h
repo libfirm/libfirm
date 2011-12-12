@@ -34,17 +34,29 @@
 
 #include "../begin.h"
 
+/**
+ * @ingroup algorithms
+ * @defgroup hungarian Hungarian Algorithm
+ * Solves bipartite matching problems (minimize/maximize cost function)
+ * @{
+ */
+
+/** type of matching */
 typedef enum match_type_t {
 	HUNGARIAN_MATCH_NORMAL,   /**< ever nodes matches another node */
 	HUNGARIAN_MATCH_PERFECT   /**< matchings of nodes having no edge getting
 	                               removed */
 } match_type_t;
 
+/** mode of matching (the optimization goal) */
 typedef enum hungarian_mode_t {
-	HUNGARIAN_MODE_MINIMIZE_COST,
-	HUNGARIAN_MODE_MAXIMIZE_UTIL
+	HUNGARIAN_MODE_MINIMIZE_COST, /**< minimize cost */
+	HUNGARIAN_MODE_MAXIMIZE_UTIL  /**< maximize cost */
 } hungarian_mode_t;
 
+/**
+ * Internal representation of a bipartite matching problem
+ */
 typedef struct hungarian_problem_t hungarian_problem_t;
 
 /**
@@ -104,6 +116,8 @@ FIRM_API int hungarian_solve(hungarian_problem_t *p, unsigned *assignment,
  */
 FIRM_API void hungarian_print_cost_matrix(hungarian_problem_t *p,
                                           int cost_width);
+
+/** @} */
 
 #include "../end.h"
 

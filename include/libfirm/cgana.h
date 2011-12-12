@@ -67,17 +67,18 @@
 FIRM_API size_t cgana(ir_entity ***free_methods);
 
 /**
- * Free callee information.
+ * Frees callee information.
  *
  * Sets callee_info_state of the graph passed to none.  Sets callee field
  * in all call nodes to NULL.  Else it happens that the field contains
  * pointers to other than firm arrays.
  */
 FIRM_API void free_callee_info(ir_graph *irg);
+/** Frees callee information for all graphs in the current program. */
 FIRM_API void free_irp_callee_info(void);
 
 /**
- * Optimize the address expressions passed to call nodes.
+ * Optimizes the address expressions passed to call nodes.
  * Performs only the optimizations done by cgana.
  */
 FIRM_API void opt_call_addrs(void);

@@ -33,6 +33,8 @@
 
 #include "../begin.h"
 
+/** @cond PRIVATE */
+
 #define HashSet          pset_new_t
 #define HashSetIterator  pset_new_iterator_t
 #define ValueType        void*
@@ -43,7 +45,12 @@
 #undef HashSetIterator
 #undef ValueType
 
+/** @endcond */
+
+/** a pointer (hash)set */
 typedef struct pset_new_t           pset_new_t;
+/** iterator over a pointer set.
+ * @see #pset_new_t */
 typedef struct pset_new_iterator_t  pset_new_iterator_t;
 
 /**

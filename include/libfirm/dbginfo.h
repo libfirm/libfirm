@@ -168,7 +168,7 @@ typedef void (*retrieve_type_dbg_func)(char *buffer, size_t buffer_size,
                                        const type_dbg_info *tdbgi);
 
 /**
- * Set global print_type_dbg_info function in firm
+ * Sets global print_type_dbg_info function in firm
  */
 FIRM_API void ir_set_type_debug_retrieve(retrieve_type_dbg_func func);
 

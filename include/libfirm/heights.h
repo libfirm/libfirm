@@ -41,7 +41,7 @@
  */
 
 /**
- * Get the height of a node inside a basic block.
+ * Returns the height of a node inside a basic block.
  * The height of the node is the maximal number of edges between a sink node in
  * that block and the node itself (plus 1).
  * @param h    The heights object.
@@ -51,7 +51,7 @@
 FIRM_API unsigned get_irn_height(const ir_heights_t *h, const ir_node *irn);
 
 /**
- * Check, if a certain node is reachable according to data dependence edges
+ * Checks if a certain node is reachable according to data dependence edges
  * from another node. Both nodes must be in the same block.
  * @param h The heights object.
  * @param n The first node.
@@ -62,7 +62,7 @@ FIRM_API int heights_reachable_in_block(ir_heights_t *h, const ir_node *n,
                                         const ir_node *m);
 
 /**
- * Recompute the height information for a certain block.
+ * Recomputes the height information for a certain block.
  * This can be used to recompute the height information of a block.
  * @param h     The heights object.
  * @param block The block
@@ -71,14 +71,14 @@ FIRM_API int heights_reachable_in_block(ir_heights_t *h, const ir_node *n,
 FIRM_API unsigned heights_recompute_block(ir_heights_t *h, ir_node *block);
 
 /**
- * Make a new heights object.
- * This also computes the heights for each block in the graph.
+ * Creates a new heights object. This also computes the heights for each block
+ * in the graph.
  * @param irg The graph.
  */
 FIRM_API ir_heights_t *heights_new(ir_graph *irg);
 
 /**
- * Free a heights object.
+ * Frees a heights object.
  * @param h The heights object.
  */
 FIRM_API void heights_free(ir_heights_t *h);

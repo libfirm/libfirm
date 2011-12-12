@@ -34,16 +34,16 @@
  * Flags to customize the behavior of libfirm.
  *
  * There are the following groups of flags:
- * 1. Optimization flags.
- *    a)  There is a flag, 'optimize' to turn on/off all optimizations.
- *    b)  There are flags for each individual optimization.  Some flags turns
+ * -# Optimization flags.
+ *    -#  There is a flag, 'optimize' to turn on/off all optimizations.
+ *    -#  There are flags for each individual optimization.  Some flags turns
  *        transformations in several algorithms on/off.
- * 2. Normalization flags.
+ * -# Normalization flags.
  *    These flags steer transformations of the ir that improve it, as removing
  *    dump Phi nodes (one predecessor, all predecessors are equal ...), Ids, Tuples ...
- * 3. Verbosity flags.
- *    a) Flags to steer the level of the information.
- *    b) Flags to steer in which phase information should be dumped.
+ * -# Verbosity flags.
+ *    -# Flags to steer the level of the information.
+ *    -# Flags to steer in which phase information should be dumped.
  *@{
  */
 
@@ -59,6 +59,8 @@ typedef unsigned optimization_state_t;
  * Default: optimize == 1.
  */
 FIRM_API void set_optimize(int value);
+/** Returns global optimizations flag.
+ * @see set_optimize() */
 FIRM_API int get_optimize(void);
 
 /** Enables/Disables constant folding optimization.
@@ -106,6 +108,8 @@ FIRM_API void set_opt_global_cse(int value);
  *  0 == not suppressed.
  */
 FIRM_API void set_opt_suppress_downcast_optimization(int value);
+/** Returns suppred_downcast flag.
+ * @see set_opt_suppress_downcast_optimization() */
 FIRM_API int get_opt_suppress_downcast_optimization(void);
 
 /**

@@ -42,7 +42,7 @@ FIRM_API ir_graph_pass_manager_t *new_graph_pass_mgr(const char *name,
                                                      int dump_all);
 
 /**
- * Add an ir_graph pass to a graph pass manager.
+ * Adds an ir_graph pass to a graph pass manager.
  *
  * @param mgr   the ir_graph pass manager
  * @param pass  the pass to add
@@ -51,7 +51,7 @@ FIRM_API void ir_graph_pass_mgr_add(ir_graph_pass_manager_t *mgr,
                                     ir_graph_pass_t *pass);
 
 /**
- * Run all passes of an ir_graph pass manager.
+ * Runs all passes of an ir_graph pass manager.
  *
  * @param mgr   the manager
  *
@@ -60,7 +60,7 @@ FIRM_API void ir_graph_pass_mgr_add(ir_graph_pass_manager_t *mgr,
 FIRM_API int ir_graph_pass_mgr_run(ir_graph_pass_manager_t *mgr);
 
 /**
- * Terminate an ir_graph pass manager and all owned passes.
+ * Terminates an ir_graph pass manager and all owned passes.
  *
  * @param mgr   the manager
  */
@@ -80,7 +80,7 @@ FIRM_API ir_prog_pass_manager_t *new_prog_pass_mgr(const char *name,
                                                    int dump_all);
 
 /**
- * Add an ir_prog pass to an ir_prog pass manager.
+ * Adds an ir_prog pass to an ir_prog pass manager.
  *
  * @param mgr   the ir_prog pass manager
  * @param pass  the pass to add
@@ -89,7 +89,7 @@ FIRM_API void ir_prog_pass_mgr_add(ir_prog_pass_manager_t *mgr,
                                    ir_prog_pass_t *pass);
 
 /**
- * Add an ir_graph_pass_manager as a pass to an ir_prog pass manager.
+ * Adds an ir_graph_pass_manager as a pass to an ir_prog pass manager.
  *
  * @param mgr        the ir_prog pass manager
  * @param graph_mgr  the ir_graph pass manager to be added
@@ -98,7 +98,7 @@ FIRM_API void ir_prog_pass_mgr_add_graph_mgr(ir_prog_pass_manager_t *mgr,
                                             ir_graph_pass_manager_t *graph_mgr);
 
 /**
- * Add an ir_graph_pass as a pass to an ir_prog pass manager.
+ * Adds an ir_graph_pass as a pass to an ir_prog pass manager.
  *
  * @param mgr   the ir_prog pass manager
  * @param pass  the ir_graph pass to be added
@@ -107,7 +107,7 @@ FIRM_API void ir_prog_pass_mgr_add_graph_pass(ir_prog_pass_manager_t *mgr,
                                               ir_graph_pass_t *pass);
 
 /**
- * Run all passes of an ir_prog pass manager.
+ * Runs all passes of an ir_prog pass manager.
  *
  * @param mgr   the manager
  *
@@ -116,14 +116,14 @@ FIRM_API void ir_prog_pass_mgr_add_graph_pass(ir_prog_pass_manager_t *mgr,
 FIRM_API int ir_prog_pass_mgr_run(ir_prog_pass_manager_t *mgr);
 
 /**
- * Terminate an ir_prog pass manager and all owned passes.
+ * Terminates an ir_prog pass manager and all owned passes.
  *
  * @param mgr   the manager
  */
 FIRM_API void term_prog_pass_mgr(ir_prog_pass_manager_t *mgr);
 
 /**
- * Set the run index for an irgraph pass manager.
+ * Sets the run index for an irgraph pass manager.
  *
  * @param mgr      the manager
  * @param run_idx  the index for the first pass of this manager
@@ -173,7 +173,7 @@ FIRM_API ir_graph_pass_t *def_graph_pass_constructor(
 	const char *name, int (*function)(ir_graph *irg, void *context));
 
 /**
- * Set the run_parallel property of a graph pass.
+ * Sets the run_parallel property of a graph pass.
  * If the flag is set to non-zero, the pass can be executed
  * parallel on all graphs of a ir_prog.
  *
@@ -211,7 +211,7 @@ FIRM_API ir_prog_pass_t *def_prog_pass_constructor(
 	const char *name, int (*function)(ir_prog *irp, void *context));
 
 /**
- * Create a pass that calls some function.
+ * Creates a pass that calls some function.
  * This pass calls the given function, but has no dump nor verify.
  *
  * @param name      the name of this pass
@@ -224,7 +224,7 @@ FIRM_API ir_prog_pass_t *call_function_pass(
 	const char *name, void (*function)(void *context), void *context);
 
 /**
- * Set the run index for an irprog pass manager.
+ * Sets the run index for an irprog pass manager.
  *
  * @param mgr      the manager
  * @param run_idx  the index for the first pass of this manager
