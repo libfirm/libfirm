@@ -58,7 +58,6 @@ typedef struct ir_graph             ir_graph,            *ir_graph_ptr;
 typedef struct ir_prog              ir_prog,             *ir_prog_ptr;
 /** @ingroup ir_loop */
 typedef struct ir_loop              ir_loop,             *ir_loop_ptr;
-typedef struct ir_region            ir_region,           *ir_region_ptr;
 /** @ingroup ir_entity */
 typedef struct ir_entity            ir_entity,           *ir_entity_ptr;
 typedef struct ir_extblk            ir_extblk,           *ir_extblk_ptr;
@@ -66,7 +65,6 @@ typedef struct ir_extblk            ir_extblk,           *ir_extblk_ptr;
 typedef struct ir_exec_freq         ir_exec_freq,        *ir_exec_freq_ptr;
 /** @ingroup ir_cdep */
 typedef struct ir_cdep              ir_cdep,             *ir_cdep_ptr;
-typedef struct sn_entry             *seqno_t;
 /** @ingroup ir_op */
 typedef struct arch_irn_ops_t       arch_irn_ops_t;
 typedef struct ir_graph_pass_t      ir_graph_pass_t;
@@ -79,7 +77,6 @@ typedef struct ir_prog_pass_manager_t       ir_prog_pass_manager_t;
 typedef union  ir_initializer_t     ir_initializer_t,    *ir_initializer_ptr;
 
 typedef void irg_walk_func(ir_node *, void *);
-typedef void irg_reg_walk_func(ir_region *, void *);
 
 /**
  * A switch table mapping integer numbers to proj-numbers of a Switch-node.
