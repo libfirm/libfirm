@@ -123,13 +123,6 @@ static inline ir_graph *get_const_code_irg_(void)
 	return irp->const_code_irg;
 }
 
-/** Returns a new, unique exception region number. */
-static inline ir_exc_region_t get_irp_next_region_nr_(void)
-{
-	assert(irp);
-	return ++irp->last_region_nr;
-}
-
 /** Returns a new, unique label number. */
 static inline ir_label_t get_irp_next_label_nr_(void)
 {
@@ -180,7 +173,6 @@ void remove_irp_type(ir_type *typ);
 #define get_segment_type(s)              get_segment_type_(s)
 #define get_glob_type()                  get_glob_type_()
 #define get_tls_type()                   get_tls_type_()
-#define get_irp_next_region_nr()         get_irp_next_region_nr_()
 #define get_irp_next_label_nr()          get_irp_next_label_nr_()
 #define get_irp_optimization_dumps()     get_irp_optimization_dumps_()
 #define enable_irp_optimization_dumps()  enable_irp_optimization_dumps_()

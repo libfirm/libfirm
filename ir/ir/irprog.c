@@ -60,7 +60,6 @@ static ir_prog *new_incomplete_ir_prog(void)
 	res->modes          = NEW_ARR_F(ir_mode *, 0);
 	res->opcodes        = NEW_ARR_F(ir_op *, 0);
 	res->global_asms    = NEW_ARR_F(ident *, 0);
-	res->last_region_nr = 0;
 	res->last_label_nr  = 1;  /* 0 is reserved as non-label */
 	res->max_irg_idx    = 0;
 	res->max_node_nr    = 0;

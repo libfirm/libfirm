@@ -650,7 +650,6 @@ struct ir_prog {
 	ir_class_cast_state class_cast_state;    /**< The state of cast operations in code. */
 	ir_entity_usage_computed_state globals_entity_usage_state;
 
-	ir_exc_region_t last_region_nr;      /**< The last exception region number that was assigned. */
 	ir_label_t last_label_nr;            /**< The highest label number for generating unique labels. */
 	size_t max_irg_idx;                  /**< highest unused irg index */
 	long max_node_nr;                    /**< to generate unique numbers for nodes. */

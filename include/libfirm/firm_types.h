@@ -28,7 +28,6 @@
 #include "begin.h"
 
 typedef unsigned long ir_visited_t;
-typedef unsigned long ir_exc_region_t;
 typedef unsigned long ir_label_t;
 
 /** @ingroup dbg_info */

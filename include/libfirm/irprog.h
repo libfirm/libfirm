@@ -271,9 +271,6 @@ FIRM_API ir_prog_pass_t *set_irp_phase_state_pass(const char *name,
 FIRM_API irg_callee_info_state get_irp_callee_info_state(void);
 FIRM_API void                  set_irp_callee_info_state(irg_callee_info_state s);
 
-/** Returns a new, unique exception region number. */
-FIRM_API ir_exc_region_t get_irp_next_region_nr(void);
-
 /** Returns a new, unique label number. */
 FIRM_API ir_label_t get_irp_next_label_nr(void);
 
