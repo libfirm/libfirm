@@ -35,6 +35,7 @@
 #include "obst.h"
 #include "irop_t.h"
 #include "irmemory.h"
+#include "ircons.h"
 
 /** The initial name of the irp program. */
 #define INITAL_PROG_NAME "no_name_set"

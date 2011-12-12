@@ -35,6 +35,7 @@
 #include "irgopt.h"
 #include "irgmod.h"
 #include "irgwalk.h"
+#include "ircons.h"
 
 #include "adt/pdeq.h"
 

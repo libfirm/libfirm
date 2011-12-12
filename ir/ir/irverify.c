@@ -36,6 +36,7 @@
 #include "irflag_t.h"
 #include "irpass_t.h"
 #include "irnodeset.h"
+#include "ircons.h"
 
 /** if this flag is set, verify entity types in Load & Store nodes */
 static int verify_entities = 0;

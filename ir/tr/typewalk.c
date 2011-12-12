@@ -41,6 +41,7 @@
 #include "irnode_t.h"
 #include "irgwalk.h"
 #include "error.h"
+#include "ircons.h"
 
 /**
  * The walker environment

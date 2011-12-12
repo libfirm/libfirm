@@ -36,6 +36,7 @@
 #include "irgwalk.h"
 #include "irhooks.h"
 #include "entity_t.h"
+#include "ircons.h"
 
 #include "error.h"
 #include "pset_new.h"

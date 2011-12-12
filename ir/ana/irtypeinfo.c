@@ -133,7 +133,7 @@ ir_type *get_irn_typeinfo_type(const ir_node *n)
 
 void set_irn_typeinfo_type(ir_node *n, ir_type *tp)
 {
-	assert(get_irg_typeinfo_state(current_ir_graph) != ir_typeinfo_none);
+	assert(get_irg_typeinfo_state(get_irn_irg(n)) != ir_typeinfo_none);
 
 	pmap_insert(type_node_map, (void *)n, (void *)tp);
 }

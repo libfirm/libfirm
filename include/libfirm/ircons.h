@@ -810,6 +810,17 @@ FIRM_API ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
  * @{
  */
 
+/** Global variable holding the current ir graph.
+ *
+ *  This global variable is used by the ir construction
+ *  interface in ircons and by the optimizations.
+ *  Further it is set by all walker functions.
+ */
+FIRM_API ir_graph *current_ir_graph;
+
+FIRM_API ir_graph *get_current_ir_graph(void);
+FIRM_API void set_current_ir_graph(ir_graph *graph);
+
 /** Create an immature Block.
  *
  * An immature Block has an unknown number of predecessors.  Predecessors

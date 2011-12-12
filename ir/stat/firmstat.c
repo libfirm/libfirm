@@ -39,6 +39,7 @@
 #include "xmalloc.h"
 #include "irhooks.h"
 #include "util.h"
+#include "ircons.h"
 
 /*
  * need this to be static:

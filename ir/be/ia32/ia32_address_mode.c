@@ -66,7 +66,7 @@ static bool do_is_immediate(const ir_node *node, int *symconsts, bool negate)
 #ifdef DEBUG_libfirm
 			ir_fprintf(stderr,
 			           "Optimisation warning tarval of %+F(%+F) is not a long.\n",
-			           node, current_ir_graph);
+			           node, get_irn_irg(node));
 #endif
 			return false;
 		}

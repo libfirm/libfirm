@@ -60,6 +60,7 @@
 #include "raw_bitset.h"
 #include "dbginfo.h"
 #include "lc_opts.h"
+#include "ircons.h"
 
 #include "besched.h"
 #include "benode.h"

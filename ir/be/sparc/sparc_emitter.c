@@ -1251,7 +1251,7 @@ static void sparc_emit_node(const ir_node *node)
 		(*func) (node);
 	} else {
 		panic("No emit handler for node %+F (graph %+F)\n", node,
-		      current_ir_graph);
+		      get_irn_irg(node));
 	}
 }
 

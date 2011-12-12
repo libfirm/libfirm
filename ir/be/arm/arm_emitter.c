@@ -833,7 +833,7 @@ static void arm_emit_node(const ir_node *irn)
 		(*emit)(irn);
 	} else {
 		panic("Error: No emit handler for node %+F (graph %+F)\n",
-		      irn, current_ir_graph);
+		      irn, get_irn_irg(irn));
 	}
 }
 

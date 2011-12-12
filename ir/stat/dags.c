@@ -30,6 +30,7 @@
 #include "irdump.h"
 #include "dags.h"
 #include "irtools.h"
+#include "ircons.h"
 
 enum dag_counting_options_t {
 	FIRMSTAT_COPY_CONSTANTS = 0x00000001,  /**< if set, constants will be treated as they are in

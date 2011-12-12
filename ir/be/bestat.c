@@ -238,7 +238,7 @@ unsigned long be_count_insns(ir_graph *irg)
 static void block_count_walker(ir_node *node, void *data)
 {
 	unsigned long *cnt = (unsigned long*)data;
-	if (node == get_irg_end_block(current_ir_graph))
+	if (node == get_irg_end_block(get_irn_irg(node)))
 		return;
 	(*cnt)++;
 }

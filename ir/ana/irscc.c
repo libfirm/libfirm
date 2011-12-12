@@ -40,6 +40,7 @@
 #include "irdump.h"
 #include "array.h"
 #include "pmap.h"
+#include "ircons.h"
 
 /* A variant of the loop tree that avoids loops without head.
    This reduces the depth of the loop tree. */

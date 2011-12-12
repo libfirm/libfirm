@@ -36,6 +36,7 @@
 #include "util.h"
 #include "irprintf.h"
 #include "error.h"
+#include "ircons.h"
 
 /*--------------------------------------------------------------------*/
 /** Accessing the out datastructures                                 **/

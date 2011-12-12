@@ -31,6 +31,7 @@
 #include "irhooks.h"
 #include "array.h"
 #include "hashptr.h"
+#include "ircons.h"
 
 #define _get_walk_arity(env, node) \
 	((env)->follow_deps ? get_irn_ins_or_deps((node)) : get_irn_arity((node)))

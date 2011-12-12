@@ -31,6 +31,7 @@
 #include "irprog_t.h"
 #include "irdump.h"
 #include "irverify.h"
+#include "ircons.h"
 #include "xmalloc.h"
 
 typedef void (*void_pass_func_irg)(ir_graph *irg);

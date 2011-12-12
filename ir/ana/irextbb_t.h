@@ -29,6 +29,7 @@
 #include "irgraph_t.h"
 #include "irextbb.h"
 #include "irtools.h"
+#include "ircons.h"
 
 /**
  * An extended block.

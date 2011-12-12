@@ -49,6 +49,7 @@
 #include "execfreq.h"
 #include "irprofile.h"
 #include "irpass_t.h"
+#include "ircons.h"
 
 #include "bearch.h"
 #include "be_t.h"

@@ -36,7 +36,7 @@
 
 static copy_attr_func old_phi_copy_attr;
 
-void be_info_new_node(ir_node *node)
+void be_info_new_node(ir_graph *irg, ir_node *node)
 {
 	struct obstack *obst;
 	backend_info_t *info;
@@ -45,7 +45,7 @@ void be_info_new_node(ir_node *node)
 	if (is_Proj(node))
 		return;
 
-	obst = be_get_be_obst(current_ir_graph);
+	obst = be_get_be_obst(irg);
 	info = OALLOCZ(obst, backend_info_t);
 
 	assert(node->backend_info == NULL);
@@ -124,8 +124,9 @@ int be_nodes_equal(const ir_node *node1, const ir_node *node2)
 
 static void init_walker(ir_node *node, void *data)
 {
+	ir_graph *irg = get_irn_irg(node);
 	(void) data;
-	be_info_new_node(node);
+	be_info_new_node(irg, node);
 }
 
 static bool initialized = false;

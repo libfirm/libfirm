@@ -183,7 +183,7 @@ ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
 
 	hook_new_node(irg, res);
 	if (get_irg_phase_state(irg) == phase_backend) {
-		be_info_new_node(res);
+		be_info_new_node(irg, res);
 	}
 
 	return res;

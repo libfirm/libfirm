@@ -31,6 +31,7 @@
 #include "irgwalk.h"
 #include "error.h"
 #include "tv.h"
+#include "ircons.h"
 
 #ifdef NDEBUG
 /*

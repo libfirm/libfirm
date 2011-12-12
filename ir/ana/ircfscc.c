@@ -37,6 +37,7 @@
 #include "irgwalk.h"
 #include "irprog_t.h"
 #include "irdump.h"
+#include "ircons_t.h"
 
 #define NO_CFLOOPS_WITHOUT_HEAD 1
 
