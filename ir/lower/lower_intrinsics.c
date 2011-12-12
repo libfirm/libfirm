@@ -430,6 +430,16 @@ int i_mapper_exp(ir_node *call, void *ctx)
 	return 0;
 }
 
+int i_mapper_exp2(ir_node *call, void *ctx)
+{
+	return i_mapper_exp(call, ctx);
+}
+
+int i_mapper_exp10(ir_node *call, void *ctx)
+{
+	return i_mapper_exp(call, ctx);
+}
+
 /**
  * A mapper for mapping f(0.0) to 0.0.
  */
@@ -522,6 +532,18 @@ static int i_mapper_symmetric_zero_to_one(ir_node *call, void *ctx, int reason)
 int i_mapper_log(ir_node *call, void *ctx)
 {
 	/* log(1.0) = 0.0 */
+	return i_mapper_one_to_zero(call, ctx, FS_OPT_RTS_LOG);
+}
+
+int i_mapper_log2(ir_node *call, void *ctx)
+{
+	/* log2(1.0) = 0.0 */
+	return i_mapper_one_to_zero(call, ctx, FS_OPT_RTS_LOG);
+}
+
+int i_mapper_log10(ir_node *call, void *ctx)
+{
+	/* log10(1.0) = 0.0 */
 	return i_mapper_one_to_zero(call, ctx, FS_OPT_RTS_LOG);
 }
 

@@ -272,8 +272,19 @@ FIRM_API int i_mapper_pow(ir_node *call, void *ctx);
  */
 FIRM_API int i_mapper_exp(ir_node *call, void *ctx);
 
-#define i_mapper_exp2   i_mapper_exp
-#define i_mapper_exp10  i_mapper_exp
+/**
+ * A mapper for the floating point exp2(a): floattype exp2(floattype a);
+ *
+ * @return 1 if the exp call was removed, 0 else.
+ */
+FIRM_API int i_mapper_exp2(ir_node *call, void *ctx);
+
+/**
+ * A mapper for the floating point exp10(a): floattype exp10(floattype a);
+ *
+ * @return 1 if the exp call was removed, 0 else.
+ */
+FIRM_API int i_mapper_exp10(ir_node *call, void *ctx);
 
 /**
  * A mapper for the floating point log(a): floattype log(floattype a);
@@ -282,8 +293,19 @@ FIRM_API int i_mapper_exp(ir_node *call, void *ctx);
  */
 FIRM_API int i_mapper_log(ir_node *call, void *ctx);
 
-#define i_mapper_log2   i_mapper_log
-#define i_mapper_log10  i_mapper_log
+/**
+ * A mapper for the floating point log(a): floattype log(floattype a);
+ *
+ * @return 1 if the log call was removed, 0 else.
+ */
+FIRM_API int i_mapper_log2(ir_node *call, void *ctx);
+
+/**
+ * A mapper for the floating point log(a): floattype log(floattype a);
+ *
+ * @return 1 if the log call was removed, 0 else.
+ */
+FIRM_API int i_mapper_log10(ir_node *call, void *ctx);
 
 /**
  * A mapper for the floating point sin(a): floattype sin(floattype a);
