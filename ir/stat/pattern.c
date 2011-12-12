@@ -183,7 +183,7 @@ static inline void put_byte(CODE_BUFFER *buf, BYTE byte)
 		buf->hash = (buf->hash * 9) ^ byte;
 	} else {
 		buf->overrun = 1;
-	}  /* if */
+	}
 }  /* put_byte */
 
 /**
