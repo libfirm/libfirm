@@ -187,14 +187,29 @@ void sr_reinsert(size_red_t *sr)
 
 		/* get free color by inspecting all neighbors */
 		be_ifg_foreach_neighbour(ifg, &iter, irn, other) {
+			const arch_register_req_t *cur_req;
+			unsigned cur_col;
+
 			/* only inspect nodes which are in graph right now */
 			if (sr_is_removed(sr, other))
 				continue;
-			rbitset_clear(possible_cols, get_irn_col(other));
+
+			cur_req = arch_get_irn_register_req(other);
+			cur_col = get_irn_col(other);
+
+			/* Invalidate all single size register when it is a large one */
+			do  {
+				rbitset_clear(possible_cols, cur_col);
+				++cur_col;
+			} while ((cur_col % cur_req->width) != 0);
 		}
 
 		/* now all bits not set are possible colors */
-		free_col = (unsigned)rbitset_next(possible_cols, 0, true);
+		/* take one that matches the alignment constraint */
+		do {
+			free_col = (unsigned)rbitset_next(possible_cols, 0, true);
+		} while ((free_col % arch_get_irn_register_req(irn)->width) != 0
+				 && free_col != n_regs - 1);
 		assert(!rbitset_is_empty(possible_cols, n_regs) && "No free color found. This can not be.");
 		set_irn_col(sr->co->cls, irn, free_col);
 		pset_remove_ptr(sr->all_removed, irn); /* irn is back in graph again */
