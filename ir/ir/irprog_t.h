@@ -161,11 +161,11 @@ void init_irprog_1(void);
 void init_irprog_2(void);
 
 /** Adds type to the list of types in irp. */
-FIRM_API void add_irp_type(ir_type *typ);
+void add_irp_type(ir_type *typ);
 
 /** Removes type from the list of types, deallocates it and
     shrinks the list by one. */
-FIRM_API void remove_irp_type(ir_type *typ);
+void remove_irp_type(ir_type *typ);
 
 /* Inline functions. */
 #define get_irp_n_irgs()                 get_irp_n_irgs_()
