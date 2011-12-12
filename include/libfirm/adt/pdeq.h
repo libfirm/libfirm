@@ -171,13 +171,6 @@ FIRM_API void *pdeq_getl(pdeq *dq);
  */
 FIRM_API void *pdeq_getr(pdeq *dq);
 
-#ifdef NDEBUG
-#define PDEQ_VRFY(deq) ((void)0)
-#else
-#define PDEQ_VRFY(deq) _pdeq_vrfy ((deq))
-FIRM_API void _pdeq_vrfy(pdeq *dq);
-#endif
-
 /**
  * The pdeq is often used as a wait queue. A helper
  * type to support this.

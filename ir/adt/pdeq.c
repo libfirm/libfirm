@@ -115,34 +115,6 @@ static inline pdeq *alloc_pdeq_block (void)
 	return p;
 }
 
-
-#ifndef NDEBUG
-/**
- * Verify a double ended list, assert if failure.
- *
- * @param dq   The list to verify.
- */
-void _pdeq_vrfy(pdeq *dq)
-{
-	pdeq *q;
-
-	assert (   dq
-			&& (dq->magic == PDEQ_MAGIC1)
-			&& (dq->l_end && dq->r_end));
-	q = dq->l_end;
-	while (q) {
-		assert (   ((q == dq) || (q->magic == PDEQ_MAGIC2))
-				&& ((q == dq->l_end) ^ (q->l != NULL))
-				&& ((q == dq->r_end) ^ (q->r != NULL))
-				&& (!q->l || (q == q->l->r))
-				&& (q->n <= NDATA)
-				&& ((q == dq->l_end) || (q == dq->r_end) || (q->n == NDATA))
-				&& (q->p < NDATA));
-		q = q->r;
-	}
-}
-#endif
-
 /* Creates a new double ended pointer list. */
 pdeq *new_pdeq(void)
 {
