@@ -704,10 +704,6 @@ typedef enum ptr_access_kind {
 } ptr_access_kind;
 ENUM_BITSET(ptr_access_kind)
 
-#define IS_READ(a)     ((a) & ptr_access_read)
-#define IS_WRITTEN(a)  ((a) & ptr_access_write)
-#define IS_STORED(a)   ((a) & ptr_access_store)
-
 /**
  * @defgroup ir_type Type System
  *
