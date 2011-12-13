@@ -1815,7 +1815,7 @@ static int cmp_avail_entry(const void *elt, const void *key, size_t size)
  */
 static unsigned hash_cache_entry(const avail_entry_t *entry)
 {
-	return get_irn_idx(entry->ptr) * 9 + HASH_PTR(entry->mode);
+	return get_irn_idx(entry->ptr) * 9 + hash_ptr(entry->mode);
 }  /* hash_cache_entry */
 
 /**

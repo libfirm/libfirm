@@ -77,14 +77,14 @@ size_t eset_count(eset *s)
 void eset_insert(eset *s, void *p)
 {
   if (!eset_contains(s, p)) {
-    set_insert((set *)s, &p, sizeof(p), HASH_PTR(p));
+    set_insert((set *)s, &p, sizeof(p), hash_ptr(p));
   }
 }
 
 
 int eset_contains(eset *s, void *p)
 {
-  return set_find((set *)s, &p, sizeof(p), HASH_PTR(p)) != NULL;
+  return set_find((set *)s, &p, sizeof(p), hash_ptr(p)) != NULL;
 }
 
 

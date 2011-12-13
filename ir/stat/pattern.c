@@ -426,7 +426,7 @@ static int _encode_node(ir_node *node, int max_depth, codec_env_t *env)
 	entry.addr = node;
 	entry.id   = env->curr_id;
 
-	s_entry = set_hinsert(env->id_set, &entry, sizeof(entry), HASH_PTR(node));
+	s_entry = set_hinsert(env->id_set, &entry, sizeof(entry), hash_ptr(node));
 	r_entry = (addr_entry_t *)s_entry->dptr;
 
 	if (r_entry->id != env->curr_id) {

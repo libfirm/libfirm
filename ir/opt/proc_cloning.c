@@ -96,7 +96,7 @@ static int entry_cmp(const void *elt, const void *key)
  */
 static unsigned hash_entry(const entry_t *entry)
 {
-	return HASH_PTR(entry->q.ent) ^ HASH_PTR(entry->q.tv) ^ (unsigned)(entry->q.pos * 9);
+	return hash_ptr(entry->q.ent) ^ hash_ptr(entry->q.tv) ^ (unsigned)(entry->q.pos * 9);
 }
 
 /**

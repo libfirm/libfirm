@@ -172,7 +172,7 @@ static int tr_inh_trans_cmp(const void *e1, const void *e2, size_t size)
  */
 static inline unsigned int tr_inh_trans_hash(const tr_inh_trans_tp *v)
 {
-	return HASH_PTR(v->kind);
+	return hash_ptr(v->kind);
 }
 
 /* This always completes successfully. */

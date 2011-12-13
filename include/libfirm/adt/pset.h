@@ -52,14 +52,17 @@ FIRM_API int pset_default_ptr_cmp(const void *x, const void *y);
  */
 typedef struct pset pset;
 
-/*
- * Define some convenience macros using the predefined hash function.
- */
-#define pset_insert_ptr(set,key)  pset_insert(set, key, HASH_PTR(key))
-#define pset_hinsert_ptr(set,key) pset_hinsert(set, key, HASH_PTR(key))
-#define pset_remove_ptr(set,key)  pset_remove(set, key, HASH_PTR(key))
-#define pset_find_ptr(set,key)    pset_find(set, key, HASH_PTR(key))
+/** Inserts into pointer set with default hash function. */
+#define pset_insert_ptr(set,key)  pset_insert(set, key, hash_ptr(key))
+/** Inserts into pointer set with default hash function and return entry */
+#define pset_hinsert_ptr(set,key) pset_hinsert(set, key, hash_ptr(key))
+/** Removes pointer from pointer set with default hash function */
+#define pset_remove_ptr(set,key)  pset_remove(set, key, hash_ptr(key))
+/** Finds pointer in pointer set with default hash function */
+#define pset_find_ptr(set,key)    pset_find(set, key, hash_ptr(key))
+/** Creates new pointer set with default compare function */
 #define pset_new_ptr(slots)       new_pset(pset_default_ptr_cmp, slots)
+/** Creates new pointer set with default compare function and default size */
 #define pset_new_ptr_default()    pset_new_ptr(64)
 
 /** The entry of a pset, representing an element pointer in the set and its meta-information */

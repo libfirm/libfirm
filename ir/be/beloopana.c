@@ -41,7 +41,7 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-#define HASH_LOOP_INFO(info) (HASH_PTR((info)->loop) ^ HASH_PTR((info)->cls))
+#define HASH_LOOP_INFO(info) (hash_ptr((info)->loop) ^ hash_ptr((info)->cls))
 
 typedef struct be_loop_info_t {
 	ir_loop                     *loop;

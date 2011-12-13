@@ -7049,7 +7049,7 @@ static unsigned hash_Const(const ir_node *node)
 	unsigned h;
 
 	/* special value for const, as they only differ in their tarval. */
-	h = HASH_PTR(node->attr.con.tarval);
+	h = hash_ptr(node->attr.con.tarval);
 
 	return h;
 }
@@ -7062,7 +7062,7 @@ static unsigned hash_SymConst(const ir_node *node)
 	unsigned h;
 
 	/* all others are pointers */
-	h = HASH_PTR(node->attr.symc.sym.type_p);
+	h = hash_ptr(node->attr.symc.sym.type_p);
 
 	return h;
 }

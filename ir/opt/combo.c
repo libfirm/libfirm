@@ -544,7 +544,7 @@ static listmap_entry_t *listmap_find(listmap_t *map, void *id)
 	key.id   = id;
 	key.list = NULL;
 	key.next = NULL;
-	entry = (listmap_entry_t*)set_insert(map->map, &key, sizeof(key), HASH_PTR(id));
+	entry = (listmap_entry_t*)set_insert(map->map, &key, sizeof(key), hash_ptr(id));
 
 	if (entry->list == NULL) {
 		/* a new entry, put into the list */
@@ -571,7 +571,7 @@ static unsigned opcode_hash(const opcode_key_t *entry)
 	unsigned hash = (unsigned)(PTR_TO_INT(mode) * 9 + code) + get_irn_arity(n);
 
 	if (code == iro_Const)
-		hash ^= (unsigned)HASH_PTR(get_Const_tarval(n));
+		hash ^= (unsigned)hash_ptr(get_Const_tarval(n));
 	else if (code == iro_Proj)
 		hash += (unsigned)get_Proj_proj(n);
 	return hash;

@@ -41,7 +41,7 @@
 #include "lpp_solvers.h"
 #include "lpp_net.h"
 
-#define HASH_NAME_T(n) HASH_STR((n)->name, strlen((n)->name))
+#define HASH_NAME_T(n) hash_str((n)->name)
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 

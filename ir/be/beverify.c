@@ -350,13 +350,13 @@ static spill_t *find_spill(be_verify_spillslots_env_t *env, ir_node *node)
 	spill_t spill;
 
 	spill.spill = node;
-	return (spill_t*)set_find(env->spills, &spill, sizeof(spill), HASH_PTR(node));
+	return (spill_t*)set_find(env->spills, &spill, sizeof(spill), hash_ptr(node));
 }
 
 static spill_t *get_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_entity *ent)
 {
 	spill_t spill, *res;
-	int hash = HASH_PTR(node);
+	int hash = hash_ptr(node);
 
 	spill.spill = node;
 	res = (spill_t*)set_find(env->spills, &spill, sizeof(spill), hash);
@@ -413,7 +413,7 @@ static void collect_memperm(be_verify_spillslots_env_t *env, ir_node *node, ir_n
 {
 	int i, arity;
 	spill_t spill, *res;
-	int hash = HASH_PTR(node);
+	int hash = hash_ptr(node);
 	int out;
 	ir_node* memperm;
 	ir_entity *spillent;
@@ -452,7 +452,7 @@ static void collect_memphi(be_verify_spillslots_env_t *env, ir_node *node, ir_no
 {
 	int i, arity;
 	spill_t spill, *res;
-	int hash = HASH_PTR(node);
+	int hash = hash_ptr(node);
 
 	assert(is_Phi(node));
 

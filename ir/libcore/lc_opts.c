@@ -44,7 +44,7 @@ static struct obstack obst;
 static void set_name(lc_opt_entry_t *ent, const char *name)
 {
 	ent->name = name;
-	ent->hash = HASH_STR(name, strlen(name));
+	ent->hash = hash_str(name);
 }
 
 #define entry_matches(ent,hash_val,str) \
@@ -234,7 +234,7 @@ static lc_opt_entry_t *lc_opt_find_ent(const struct list_head *head, const char 
 {
 	lc_opt_entry_t *ent, *found = NULL;
 	int error = error_to_use;
-	unsigned hash = HASH_STR(name, strlen(name));
+	unsigned hash = hash_str(name);
 
 	if (!list_empty(head)) {
 		list_for_each_entry(lc_opt_entry_t, ent, head, list) {

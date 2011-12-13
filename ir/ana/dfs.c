@@ -61,7 +61,7 @@ static int cmp_node(const void *a, const void *b, size_t sz)
 
 static dfs_edge_t *get_edge(const dfs_t *self, const void *src, const void *tgt)
 {
-	unsigned hash = HASH_COMBINE(HASH_PTR(src), HASH_PTR(tgt));
+	unsigned hash = hash_combine(hash_ptr(src), hash_ptr(tgt));
 	dfs_edge_t templ;
 
 	templ.src = src;

@@ -98,7 +98,7 @@ static const be_use_t *get_or_set_use_block(be_uses_t *env,
                                             const ir_node *block,
                                             const ir_node *def)
 {
-	unsigned hash = HASH_COMBINE(hash_irn(block), hash_irn(def));
+	unsigned hash = hash_combine(hash_irn(block), hash_irn(def));
 	be_use_t temp;
 	be_use_t* result;
 

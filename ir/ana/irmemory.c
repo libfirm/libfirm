@@ -717,7 +717,7 @@ typedef struct mem_disambig_entry {
 	ir_alias_relation result;   /**< The alias relation result. */
 } mem_disambig_entry;
 
-#define HASH_ENTRY(adr1, adr2)  (HASH_PTR(adr1) ^ HASH_PTR(adr2))
+#define HASH_ENTRY(adr1, adr2)  (hash_ptr(adr1) ^ hash_ptr(adr2))
 
 /**
  * Compare two relation cache entries.

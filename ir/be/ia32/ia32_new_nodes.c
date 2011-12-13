@@ -1051,7 +1051,7 @@ static unsigned ia32_hash_Immediate(const ir_node *irn)
 {
 	const ia32_immediate_attr_t *a = get_ia32_immediate_attr_const(irn);
 
-	return HASH_PTR(a->symconst) + (a->sc_sign << 16) + a->offset;
+	return hash_ptr(a->symconst) + (a->sc_sign << 16) + a->offset;
 }
 
 /** Compare node attributes for Immediates. */

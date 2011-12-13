@@ -141,7 +141,7 @@ static ir_type *get_conv_type(ir_mode *imode, ir_mode *omode)
 	key.omode = omode;
 	key.mtd   = NULL;
 
-	entry = (conv_tp_entry_t*)set_insert(conv_types, &key, sizeof(key), HASH_PTR(imode) ^ HASH_PTR(omode));
+	entry = (conv_tp_entry_t*)set_insert(conv_types, &key, sizeof(key), hash_ptr(imode) ^ hash_ptr(omode));
 	if (! entry->mtd) {
 		int n_param = 1, n_res = 1;
 
@@ -504,7 +504,7 @@ static ir_node *get_intrinsic_address(ir_type *method, ir_op *op,
 	key.ent   = NULL;
 
 	entry = (op_mode_entry_t*)set_insert(intrinsic_fkt, &key, sizeof(key),
-				HASH_PTR(op) ^ HASH_PTR(imode) ^ (HASH_PTR(omode) << 8));
+				hash_ptr(op) ^ hash_ptr(imode) ^ (hash_ptr(omode) << 8));
 	if (! entry->ent) {
 		/* create a new one */
 		ent = env->params->create_intrinsic(method, op, imode, omode, env->params->ctx);

@@ -118,7 +118,7 @@ typedef struct {
 } bp_ident_t;
 
 /** Calculate the hash value for an ident breakpoint. */
-#define HASH_IDENT_BP(key) (HASH_PTR((key).id) ^ (key).bp.reason)
+#define HASH_IDENT_BP(key) (hash_ptr((key).id) ^ (key).bp.reason)
 
 /** The set containing the breakpoints on node numbers. */
 static set *bp_numbers;

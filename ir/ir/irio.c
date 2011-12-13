@@ -198,7 +198,7 @@ static void symtbl_init(void)
 	key.str = (s);                                               \
 	key.typetag = (tt);                                          \
 	key.code = (cod);                                            \
-	set_insert(symtbl, &key, sizeof(key), firm_fnv_hash_str(s) + tt * 17)
+	set_insert(symtbl, &key, sizeof(key), hash_str(s) + tt * 17)
 
 #define INSERTENUM(tt, e) INSERT(tt, #e, e)
 #define INSERTKEYWORD(k) INSERT(tt_keyword, #k, kw_##k)
@@ -360,7 +360,7 @@ static unsigned symbol(const char *str, typetag_t typetag)
 	key.str = str;
 	key.typetag = typetag;
 
-	entry = (symbol_t*)set_find(symtbl, &key, sizeof(key), firm_fnv_hash_str(str) + typetag * 17);
+	entry = (symbol_t*)set_find(symtbl, &key, sizeof(key), hash_str(str) + typetag * 17);
 	return entry ? entry->code : SYMERROR;
 }
 

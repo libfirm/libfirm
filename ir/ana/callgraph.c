@@ -208,8 +208,8 @@ static void ana_Call(ir_node *n, void *env)
 
 			buf.irg = callee;
 
-			pset_insert((pset *)callee->callers, irg, HASH_PTR(irg));
-			found = (cg_callee_entry*) pset_find((pset *)irg->callees, &buf, HASH_PTR(callee));
+			pset_insert((pset *)callee->callers, irg, hash_ptr(irg));
+			found = (cg_callee_entry*) pset_find((pset *)irg->callees, &buf, hash_ptr(callee));
 			if (found) {  /* add Call node to list, compute new nesting. */
 				ir_node **arr = found->call_list;
 				ARR_APP1(ir_node *, arr, n);
@@ -220,7 +220,7 @@ static void ana_Call(ir_node *n, void *env)
 				found->call_list = NEW_ARR_F(ir_node *, 1);
 				found->call_list[0] = n;
 				found->max_depth = 0;
-				pset_insert((pset *)irg->callees, found, HASH_PTR(callee));
+				pset_insert((pset *)irg->callees, found, hash_ptr(callee));
 			}
 			depth = get_loop_depth(get_irn_loop(get_nodes_block(n)));
 			found->max_depth = (depth > found->max_depth) ? depth : found->max_depth;

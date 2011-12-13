@@ -75,18 +75,18 @@ void pmap_insert(pmap *map, const void *key, void *value)
 	pmap_entry entry, *p;
 
 	entry.key = key;
-	p = (pmap_entry*) set_insert(M2S(map), &entry, sizeof(pmap_entry), HASH_PTR(key));
+	p = (pmap_entry*) set_insert(M2S(map), &entry, sizeof(pmap_entry), hash_ptr(key));
 	p->value = value;
 }
 
 int pmap_contains(pmap *map, const void *key)
 {
-	return set_find(M2S(map), &key, sizeof(pmap_entry), HASH_PTR(key)) != NULL;
+	return set_find(M2S(map), &key, sizeof(pmap_entry), hash_ptr(key)) != NULL;
 }
 
 pmap_entry * pmap_find(pmap *map, const void *key)
 {
-	return (pmap_entry *)set_find(M2S(map), &key, sizeof(pmap_entry), HASH_PTR(key));
+	return (pmap_entry *)set_find(M2S(map), &key, sizeof(pmap_entry), hash_ptr(key));
 }
 
 

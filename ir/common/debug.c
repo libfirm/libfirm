@@ -80,7 +80,7 @@ firm_dbg_module_t *firm_dbg_register(const char *name)
   if (!module_set)
     firm_dbg_init();
 
-  return (firm_dbg_module_t*)set_insert(module_set, &mod, sizeof(mod), HASH_STR(name, strlen(name)));
+  return (firm_dbg_module_t*)set_insert(module_set, &mod, sizeof(mod), hash_str(name));
 }
 
 void firm_dbg_set_mask(firm_dbg_module_t *module, unsigned mask)

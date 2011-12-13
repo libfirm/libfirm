@@ -96,7 +96,7 @@ static freq_t *set_find_freq(set *freqs, const ir_node *irn)
 {
 	freq_t query;
 	query.irn = irn;
-	return (freq_t*) set_find(freqs, &query, sizeof(query), HASH_PTR(irn));
+	return (freq_t*) set_find(freqs, &query, sizeof(query), hash_ptr(irn));
 }
 
 static freq_t *set_insert_freq(set *freqs, const ir_node *irn)
@@ -106,7 +106,7 @@ static freq_t *set_insert_freq(set *freqs, const ir_node *irn)
 	query.irn = irn;
 	query.freq = 0.0;
 	query.idx  = -1;
-	return (freq_t*) set_insert(freqs, &query, sizeof(query), HASH_PTR(irn));
+	return (freq_t*) set_insert(freqs, &query, sizeof(query), hash_ptr(irn));
 }
 
 double get_block_execfreq(const ir_exec_freq *ef, const ir_node *irn)

@@ -1632,13 +1632,13 @@ unsigned firm_default_hash(const ir_node *node)
 		if (is_irn_cse_neutral(pred))
 			h *= 9;
 		else
-			h = 9*h + HASH_PTR(pred);
+			h = 9*h + hash_ptr(pred);
 	}
 
 	/* ...mode,... */
-	h = 9*h + HASH_PTR(get_irn_mode(node));
+	h = 9*h + hash_ptr(get_irn_mode(node));
 	/* ...and code */
-	h = 9*h + HASH_PTR(get_irn_op(node));
+	h = 9*h + hash_ptr(get_irn_op(node));
 
 	return h;
 }

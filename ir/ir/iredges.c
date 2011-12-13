@@ -51,7 +51,7 @@
 #define ValueType                 ir_edge_t*
 #define NullValue                 NULL
 #define DeletedValue              ((ir_edge_t*)-1)
-#define Hash(this,key)            (HASH_PTR(key->src) ^ (key->pos * 40013))
+#define Hash(this,key)            (hash_ptr(key->src) ^ (key->pos * 40013))
 #define KeysEqual(this,key1,key2) ((key1->src) == (key2->src) && (key1->pos == key2->pos))
 #define SetRangeEmpty(ptr,size)   memset(ptr, 0, (size) * sizeof((ptr)[0]))
 
@@ -181,7 +181,7 @@ void edges_reset_private_data(ir_graph *irg, int offset, unsigned size)
 
 #define get_irn_out_list_head(irn) (&get_irn_out_info(irn)->outs)
 
-#define edge_hash(edge) (TIMES37((edge)->pos) + HASH_PTR((edge)->src))
+#define edge_hash(edge) (TIMES37((edge)->pos) + hash_ptr((edge)->src))
 
 void edges_init_graph_kind(ir_graph *irg, ir_edge_kind_t kind)
 {

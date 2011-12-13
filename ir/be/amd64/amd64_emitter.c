@@ -134,7 +134,7 @@ static void emit_amd64_SymConst(const ir_node *irn)
 	key.u.id     = get_entity_ld_ident(attr->entity);
 	key.is_ident = 1;
 	key.label    = 0;
-	entry = (sym_or_tv_t *)set_insert(sym_or_tv, &key, sizeof(key), HASH_PTR(key.u.generic));
+	entry = (sym_or_tv_t *)set_insert(sym_or_tv, &key, sizeof(key), hash_ptr(key.u.generic));
 	if (entry->label == 0) {
 		/* allocate a label */
 		entry->label = get_unique_label();
