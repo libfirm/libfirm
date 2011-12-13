@@ -895,10 +895,6 @@ FIRM_API ir_graph_pass_t *loop_unroll_pass(const char *name);
  */
 FIRM_API ir_graph_pass_t *loop_peeling_pass(const char *name);
 
-typedef ir_type *(*get_Alloc_func)(ir_node *n);
-/** Set a new get_Alloc_func and returns the old one. */
-FIRM_API get_Alloc_func firm_set_Alloc_func(get_Alloc_func newf);
-
 /**
  * Creates an ir_graph pass for set_vrp_data()
  *
