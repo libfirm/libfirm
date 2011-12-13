@@ -1348,13 +1348,6 @@ FIRM_API void set_class_subtype(ir_type *clss, ir_type *subtype, size_t pos);
 /** Finds subtype in the list of subtypes and removes it  */
 FIRM_API void remove_class_subtype(ir_type *clss, ir_type *subtype);
 
-#define add_class_derived_type(clss, drvtype)       add_class_subtype(clss, drvtype)
-#define get_class_n_derived_types(clss)             get_class_n_subtypes(clss)
-#define get_class_derived_type(clss, pos)           get_class_subtype(clss, pos)
-#define get_class_derived_type_index(clss, drvtype) get_class_subtype_index(clss, drvtype)
-#define set_class_derived_type(clss, drvtype, pos)  set_class_subtype(clss, drvtype, pos)
-#define remove_class_derived_type(clss, drvtype)    remove_class_subtype(clss, drvtype)
-
 /** Adds supertype as supertype to class.
  *
  *  Checks whether clss is a subtype of supertype.  If not
