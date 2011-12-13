@@ -202,17 +202,6 @@ FIRM_API void set_break(set *set);
 #define set_hinsert0(set, key, size, hash) \
   ((set_entry *)_set_search ((set), (key), (size), (hash), _set_hinsert0))
 
-#ifdef STATS
-/**
- * Prints statistics on a set to stdout.
- *
- * @param set  the set
- */
-void set_stats (set *set);
-#else
-# define set_stats(s) ((void)0)
-#endif
-
 /* Private */
 
 typedef enum { _set_find, _set_insert, _set_hinsert, _set_hinsert0 } _set_action;

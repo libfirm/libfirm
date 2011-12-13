@@ -228,18 +228,7 @@ FIRM_API void pset_insert_pset_ptr(pset *target, pset *src);
 #define pset_hinsert(pset, key, hash) \
   ((pset_entry *)_pset_search ((pset), (key), (hash), _pset_hinsert))
 
-#ifdef STATS
-/**
- * Prints statistics on a set to stdout.
- *
- * @param pset  the pset
- */
-void pset_stats (pset *pset);
-#else
-# define pset_stats(s) ((void)0)
-#endif
-
-/* Private */
+/** @privatesection */
 
 typedef enum { _pset_find, _pset_insert, _pset_hinsert } _pset_action;
 
