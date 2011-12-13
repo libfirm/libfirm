@@ -195,6 +195,8 @@ ir_entity *new_label_entity(ir_label_t label);
  */
 ir_entity *new_d_label_entity(ir_label_t label, dbg_info *dbgi);
 
+void set_entity_irg(ir_entity *ent, ir_graph *irg);
+
 /* ----------------------- inline functions ------------------------ */
 static inline int _is_entity(const void *thing)
 {

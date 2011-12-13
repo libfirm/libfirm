@@ -375,7 +375,6 @@ FIRM_API void set_entity_link(ir_entity *ent, void *l);
  * This allows to get from a Call to the called irg.
  */
 FIRM_API ir_graph *get_entity_irg(const ir_entity *ent);
-FIRM_API void set_entity_irg(ir_entity *ent, ir_graph *irg);
 
 /** A reserved value for "not yet set". */
 #define IR_VTABLE_NUM_NOT_SET ((unsigned)(-1))
