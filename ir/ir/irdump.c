@@ -32,6 +32,7 @@
 #include <errno.h>
 
 #include "list.h"
+#include "pset.h"
 
 #include "irnode_t.h"
 #include "irgraph_t.h"
@@ -61,7 +62,6 @@
 #include "array.h"
 #include "pmap.h"
 #include "obst.h"
-#include "eset.h"
 #include "pset.h"
 #include "util.h"
 
@@ -2428,7 +2428,7 @@ void dump_callgraph_loop_tree(FILE *out)
 	dump_vcg_footer(out);
 }
 
-static void collect_nodeloop(FILE *F, ir_loop *loop, eset *loopnodes)
+static void collect_nodeloop(FILE *F, ir_loop *loop, pset *loopnodes)
 {
 	size_t i;
 	int    son_number = 0;
@@ -2447,13 +2447,13 @@ static void collect_nodeloop(FILE *F, ir_loop *loop, eset *loopnodes)
 		} else {
 			if (flags & ir_dump_flag_loops)
 				dump_loop_node_edge(F, loop, node_number++);
-			eset_insert(loopnodes, le.node);
+			pset_insert_ptr(loopnodes, le.node);
 		}
 	}
 }
 
-static void collect_nodeloop_external_nodes(ir_loop *loop, eset *loopnodes,
-                                            eset *extnodes)
+static void collect_nodeloop_external_nodes(ir_loop *loop, pset *loopnodes,
+                                            pset *extnodes)
 {
 	size_t i;
 	int j, start;
@@ -2467,11 +2467,12 @@ static void collect_nodeloop_external_nodes(ir_loop *loop, eset *loopnodes,
 			if (is_Block(le.node)) start = 0; else start = -1;
 			for (j = start; j < get_irn_arity(le.node); j++) {
 				ir_node *pred = get_irn_n(le.node, j);
-				if (!eset_contains(loopnodes, pred)) {
-					eset_insert(extnodes, pred);
+				if (!pset_find_ptr(loopnodes, pred)) {
+					pset_insert_ptr(extnodes, pred);
 					if (!is_Block(pred)) {
 						pred = get_nodes_block(pred);
-						if (!eset_contains(loopnodes, pred)) eset_insert(extnodes, pred);
+						if (!pset_find_ptr(loopnodes, pred))
+							pset_insert_ptr(extnodes, pred);
 					}
 				}
 			}
@@ -2481,8 +2482,8 @@ static void collect_nodeloop_external_nodes(ir_loop *loop, eset *loopnodes,
 
 void dump_loop(FILE *F, ir_loop *l)
 {
-	eset *loopnodes = eset_create();
-	eset *extnodes = eset_create();
+	pset *loopnodes = pset_new_ptr_default();
+	pset *extnodes  = pset_new_ptr_default();
 	ir_node *n, *b;
 	char name[50];
 
@@ -2494,20 +2495,20 @@ void dump_loop(FILE *F, ir_loop *l)
 	collect_nodeloop_external_nodes(l, loopnodes, extnodes);
 
 	/* build block lists */
-	eset_foreach(loopnodes, ir_node*, n) {
+	foreach_pset(loopnodes, ir_node*, n) {
 		set_irn_link(n, NULL);
 	}
-	eset_foreach(extnodes, ir_node*, n) {
+	foreach_pset(extnodes, ir_node*, n) {
 		set_irn_link(n, NULL);
 	}
-	eset_foreach(loopnodes, ir_node*, n) {
+	foreach_pset(loopnodes, ir_node*, n) {
 		if (!is_Block(n)) {
 			b = get_nodes_block(n);
 			set_irn_link(n, get_irn_link(b));
 			set_irn_link(b, n);
 		}
 	}
-	eset_foreach(extnodes, ir_node*, n) {
+	foreach_pset(extnodes, ir_node*, n) {
 		if (!is_Block(n)) {
 			b = get_nodes_block(n);
 			set_irn_link(n, get_irn_link(b));
@@ -2515,7 +2516,7 @@ void dump_loop(FILE *F, ir_loop *l)
 		}
 	}
 
-	eset_foreach(loopnodes, ir_node*, b) {
+	foreach_pset(loopnodes, ir_node*, b) {
 		if (is_Block(b)) {
 			fprintf(F, "graph: { title: ");
 			print_nodeid(F, b);
@@ -2529,11 +2530,11 @@ void dump_loop(FILE *F, ir_loop *l)
 
 			/* dump the nodes that go into the block */
 			for (n = (ir_node*)get_irn_link(b); n; n = (ir_node*)get_irn_link(n)) {
-				if (eset_contains(extnodes, n))
+				if (pset_find_ptr(extnodes, n))
 					overrule_nodecolor = ird_color_block_inout;
 				dump_node(F, n);
 				overrule_nodecolor = ird_color_default_node;
-				if (!eset_contains(extnodes, n)) dump_ir_data_edges(F, n);
+				if (!pset_find_ptr(extnodes, n)) dump_ir_data_edges(F, n);
 			}
 
 			/* Close the vcg information for the block */
@@ -2542,7 +2543,7 @@ void dump_loop(FILE *F, ir_loop *l)
 			fprintf(F, "\n");
 		}
 	}
-	eset_foreach(extnodes, ir_node*, b) {
+	foreach_pset(extnodes, ir_node*, b) {
 		if (is_Block(b)) {
 			fprintf(F, "graph: { title: ");
 			print_nodeid(F, b);
@@ -2553,11 +2554,11 @@ void dump_loop(FILE *F, ir_loop *l)
 
 			/* dump the nodes that go into the block */
 			for (n = (ir_node*)get_irn_link(b); n; n = (ir_node*)get_irn_link(n)) {
-				if (!eset_contains(loopnodes, n))
+				if (!pset_find_ptr(loopnodes, n))
 					overrule_nodecolor = ird_color_block_inout;
 				dump_node(F, n);
 				overrule_nodecolor = ird_color_default_node;
-				if (eset_contains(loopnodes, n)) dump_ir_data_edges(F, n);
+				if (pset_find_ptr(loopnodes, n)) dump_ir_data_edges(F, n);
 			}
 
 			/* Close the vcg information for the block */
@@ -2566,8 +2567,8 @@ void dump_loop(FILE *F, ir_loop *l)
 			fprintf(F, "\n");
 		}
 	}
-	eset_destroy(loopnodes);
-	eset_destroy(extnodes);
+	del_pset(loopnodes);
+	del_pset(extnodes);
 
 	dump_vcg_footer(F);
 }
