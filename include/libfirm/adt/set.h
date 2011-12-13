@@ -202,8 +202,6 @@ FIRM_API void set_break(set *set);
 #define set_hinsert0(set, key, size, hash) \
   ((set_entry *)_set_search ((set), (key), (size), (hash), _set_hinsert0))
 
-#define SET_VRFY(set) (void)0
-
 #ifdef STATS
 /**
  * Prints statistics on a set to stdout.
