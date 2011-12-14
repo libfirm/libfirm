@@ -501,6 +501,27 @@ __extension__								\
 
 #endif /* not __GNUC__ or not __STDC__ */
 
+/** @def FIRM_NOTHROW
+ * tells that a function does not throw C++ exceptions. Currently this is only
+ * necessary for obstack_printf to avoid nameclashes when linking with glibc
+ * which has an obstack library with NOTHROW builtin. */
+#ifdef __cplusplus
+# define FIRM_NOTHROW throw ()
+#else
+# define FIRM_NOTHROW
+#endif
+
+/**
+ * @def FIRM_PRINTF
+ * Attribute with marks a function to have a printf style format
+ * string and variadic argument.
+ */
+#if defined(__GNUC__)
+# define FIRM_PRINTF(a,b) __attribute__((__format__(__printf__, a, b)))
+#else
+# define FIRM_PRINTF(a,b)
+#endif
+
 /** prints formated string (printf-style format) to an obstack.
  * This is done by "growing" the obstack with the obstack_*grow*
  * functions. Note: Does NOT append a null-byte. */
