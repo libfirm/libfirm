@@ -25,7 +25,7 @@
  */
 #include "config.h"
 
-#include "trouts.h"
+#include "trouts_t.h"
 
 #include "array.h"
 #include "pmap.h"

@@ -63,19 +63,16 @@ FIRM_API ir_node *get_type_alloc(const ir_type *tp, size_t pos);
 FIRM_API size_t get_type_n_casts(const ir_type *tp);
 /** Cast node that cast a pointer to this type. */
 FIRM_API ir_node *get_type_cast(const ir_type *tp, size_t pos);
-FIRM_API void add_type_cast(const ir_type *tp, ir_node *cast);
-/** Return number of upcasts. O(\#casts). */
+/** Returns number of upcasts. O(\#casts). */
 FIRM_API size_t get_class_n_upcasts(const ir_type *clss);
 /** Return number of downcasts. O(\#casts). */
 FIRM_API size_t get_class_n_downcasts(const ir_type *clss);
 
 FIRM_API size_t  get_type_n_pointertypes_to(const ir_type *tp);
 FIRM_API ir_type *get_type_pointertype_to(const ir_type *tp, size_t pos);
-FIRM_API void    add_type_pointertype_to(const ir_type *tp, ir_type *ptp);
 
 FIRM_API size_t  get_type_n_arraytypes_of(const ir_type *tp);
 FIRM_API ir_type *get_type_arraytype_of(const ir_type *tp, size_t pos);
-FIRM_API void    add_type_arraytype_of(const ir_type *tp, ir_type *atp);
 
 /** Compute the outs of types and entities.
  *
