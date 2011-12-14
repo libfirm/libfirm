@@ -130,19 +130,19 @@ typedef struct stabs_handle {
  */
 static unsigned get_type_number(stabs_handle *h, ir_type *tp)
 {
-	pmap_entry *entry;
+	void *entry;
 	unsigned num;
 
 	if (tp == NULL) {
 		/* map to the void type */
 		return 0;
 	}
-	entry = pmap_find(h->type_map, tp);
-	if (! entry) {
+	entry = pmap_get(h->type_map, tp);
+	if (entry == NULL) {
 		num = h->next_type_nr++;
-		pmap_insert(h->type_map, tp, INT_TO_PTR(num));
+		pmap_insert(h->type_map, tp, INT_TO_PTR(num+1));
 	} else {
-		num = (unsigned)PTR_TO_INT(entry->value);
+		num = ((unsigned)PTR_TO_INT(entry))-1;
 	}
 	return num;
 }
@@ -152,7 +152,7 @@ static unsigned get_type_number(stabs_handle *h, ir_type *tp)
  */
 static void map_to_void(stabs_handle *h, ir_type *tp)
 {
-	pmap_insert(h->type_map, tp, INT_TO_PTR(0));
+	pmap_insert(h->type_map, tp, INT_TO_PTR(1));
 }
 
 /**

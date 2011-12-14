@@ -1257,14 +1257,12 @@ static pmap *mtp_map;
  */
 static ir_type *clone_type_and_cache(ir_type *tp)
 {
-	ir_type *res;
-	pmap_entry *e = pmap_find(mtp_map, tp);
+	ir_type *res = (ir_type*)pmap_get(mtp_map, tp);
 
-	if (e != NULL)
-		return (ir_type*) e->value;
-
-	res = clone_type_method(tp);
-	pmap_insert(mtp_map, tp, res);
+	if (res == NULL) {
+		res = clone_type_method(tp);
+		pmap_insert(mtp_map, tp, res);
+	}
 
 	return res;
 }

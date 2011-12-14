@@ -507,14 +507,9 @@ static void do_copy_return_opt(ir_node *n, void *ctx)
 static ir_node *get_dummy_sel(ir_graph *irg, ir_node *block, ir_type *tp,
                               wlk_env *env)
 {
-	ir_entity *ent;
-	pmap_entry *e;
-
 	/* use a map the check if we already create such an entity */
-	e = pmap_find(env->dummy_map, tp);
-	if (e) {
-		ent = (ir_entity*)e->value;
-	} else {
+	ir_entity *ent = pmap_get(env->dummy_map, tp);
+	if (ent == NULL) {
 		ir_type *ft = get_irg_frame_type(irg);
 		ident   *dummy_id = id_unique("dummy.%u");
 		ent = new_entity(ft, dummy_id, tp);

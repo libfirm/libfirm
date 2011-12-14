@@ -119,14 +119,13 @@ void set_irp_typeinfo_inconsistent(void)
 
 ir_type *get_irn_typeinfo_type(const ir_node *n)
 {
-	ir_type *res = initial_type;
-	pmap_entry *entry;
-
+	ir_type *res;
 	assert(get_irg_typeinfo_state(get_irn_irg(n)) != ir_typeinfo_none);
 
-	entry = pmap_find(type_node_map, n);
-	if (entry != NULL)
-		res = (ir_type*) entry->value;
+	res = pmap_get(type_node_map, n);
+	if (res == NULL) {
+		res = initial_type;
+	}
 
 	return res;
 }

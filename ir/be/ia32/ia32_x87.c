@@ -125,8 +125,6 @@ typedef struct blk_state {
 	x87_state *end;     /**< state at the end or NULL if not assigned */
 } blk_state;
 
-#define PTR_TO_BLKSTATE(p)    ((blk_state *)(p))
-
 /** liveness bitset for vfp registers. */
 typedef unsigned char vfp_liveness;
 
@@ -339,18 +337,17 @@ static void x87_emms(x87_state *state)
  */
 static blk_state *x87_get_bl_state(x87_simulator *sim, ir_node *block)
 {
-	pmap_entry *entry = pmap_find(sim->blk_states, block);
+	blk_state *res = pmap_get(sim->blk_states, block);
 
-	if (! entry) {
-		blk_state *bl_state = OALLOC(&sim->obst, blk_state);
-		bl_state->begin = NULL;
-		bl_state->end   = NULL;
+	if (res == NULL) {
+		res = OALLOC(&sim->obst, blk_state);
+		res->begin = NULL;
+		res->end   = NULL;
 
-		pmap_insert(sim->blk_states, block, bl_state);
-		return bl_state;
+		pmap_insert(sim->blk_states, block, res);
 	}
 
-	return PTR_TO_BLKSTATE(entry->value);
+	return res;
 }
 
 /**

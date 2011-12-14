@@ -1073,7 +1073,7 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 		list_for_each_entry_safe(call_entry, entry, next, &env->calls, list) {
 			irg_inline_property prop;
 			ir_graph            *callee;
-			pmap_entry          *e;
+			ir_graph            *calleee;
 
 			call   = entry->call;
 			callee = entry->callee;
@@ -1083,13 +1083,13 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 				continue;
 			}
 
-			e = pmap_find(copied_graphs, callee);
-			if (e != NULL) {
+			calleee = (ir_graph*)pmap_get(copied_graphs, callee);
+			if (calleee != NULL) {
 				/*
 				 * Remap callee if we have a copy.
 				 * FIXME: Should we do this only for recursive Calls ?
 				 */
-				callee = (ir_graph*)e->value;
+				callee = calleee;
 			}
 
 			if (prop >= irg_inline_forced ||
@@ -1593,9 +1593,9 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 		ir_node             *call_node  = curr_call->call;
 		inline_irg_env      *callee_env = (inline_irg_env*)get_irg_link(callee);
 		irg_inline_property prop        = get_irg_inline_property(callee);
+		ir_graph            *calleee;
 		int                 loop_depth;
 		const call_entry    *centry;
-		pmap_entry          *e;
 
 		if ((prop < irg_inline_forced) && env->n_nodes + callee_env->n_nodes > maxsize) {
 			DB((dbg, LEVEL_2, "%+F: too big (%d) + %+F (%d)\n", irg,
@@ -1603,8 +1603,8 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 			continue;
 		}
 
-		e = pmap_find(copied_graphs, callee);
-		if (e != NULL) {
+		calleee = (ir_graph*)pmap_get(copied_graphs, callee);
+		if (calleee != NULL) {
 			int benefice = curr_call->benefice;
 			/*
 			 * Reduce the weight for recursive function IFF not all arguments are const.
@@ -1618,7 +1618,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 			/*
 			 * Remap callee if we have a copy.
 			 */
-			callee     = (ir_graph*)e->value;
+			callee     = calleee;
 			callee_env = (inline_irg_env*)get_irg_link(callee);
 		}
 
