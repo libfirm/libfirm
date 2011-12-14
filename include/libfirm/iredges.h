@@ -245,8 +245,6 @@ FIRM_API int edges_assure(ir_graph *irg);
  */
 FIRM_API int edges_assure_kind(ir_graph *irg, ir_edge_kind_t kind);
 
-FIRM_API void edges_node_deleted(ir_node *irn);
-
 /**
  * Walks only over Block nodes in the graph. Uses the block visited
  * flag, so that it can be interleaved with another walker.
