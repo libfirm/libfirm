@@ -955,20 +955,12 @@ typedef enum {
 	ir_class_casts_normalized = 2, /**< Class casts conform to inheritance edges. */
 	ir_class_casts_state_max
 } ir_class_cast_state;
-FIRM_API const char *get_class_cast_state_string(ir_class_cast_state s);
 
 FIRM_API void                set_irg_class_cast_state(ir_graph *irg,
                                                       ir_class_cast_state s);
 FIRM_API ir_class_cast_state get_irg_class_cast_state(const ir_graph *irg);
 FIRM_API void                set_irp_class_cast_state(ir_class_cast_state s);
 FIRM_API ir_class_cast_state get_irp_class_cast_state(void);
-
-/** Verify the class cast state of an irg.
- *
- *  Asserts if state is to high, outputs debug warning if state is to low
- *  and firm verbosity is set.
- */
-FIRM_API void verify_irg_class_cast_state(ir_graph *irg);
 
 /**
  * possible trverify() error codes

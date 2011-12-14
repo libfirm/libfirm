@@ -34,8 +34,6 @@
 #include "irgwalk.h"
 #include "irflag.h"
 
-DEBUG_ONLY(static firm_dbg_module_t *dbg;)
-
 /* ----------------------------------------------------------------------- */
 /* Resolve implicit inheritance.                                           */
 /* ----------------------------------------------------------------------- */
@@ -614,90 +612,4 @@ void set_irp_class_cast_state(ir_class_cast_state s)
 ir_class_cast_state get_irp_class_cast_state(void)
 {
 	return irp->class_cast_state;
-}
-
-const char *get_class_cast_state_string(ir_class_cast_state s)
-{
-#define X(a)    case a: return #a
-	switch (s) {
-	X(ir_class_casts_any);
-	X(ir_class_casts_transitive);
-	X(ir_class_casts_normalized);
-	X(ir_class_casts_state_max);
-	default: return "invalid class cast state";
-	}
-#undef X
-}
-
-/* - State verification. ------------------------------------- */
-
-typedef struct ccs_env {
-	ir_class_cast_state expected_state;
-	ir_class_cast_state worst_situation;
-} ccs_env;
-
-/**
- * Walker: check Casts.
- */
-static void verify_irn_class_cast_state(ir_node *n, void *env)
-{
-	ccs_env             *ccs = (ccs_env *)env;
-	ir_class_cast_state this_state = ir_class_casts_any;
-	ir_type             *fromtype, *totype;
-
-	if (!is_Cast(n)) return;
-
-	fromtype = get_irn_typeinfo_type(get_Cast_op(n));
-	totype   = get_Cast_type(n);
-
-	while (is_Pointer_type(totype) && is_Pointer_type(fromtype)) {
-		totype   = get_pointer_points_to_type(totype);
-		fromtype = get_pointer_points_to_type(fromtype);
-	}
-
-	if (!is_Class_type(totype)) return;
-
-	if (is_SubClass_of(totype, fromtype) ||
-		is_SubClass_of(fromtype, totype)) {
-		this_state = ir_class_casts_transitive;
-		if ((get_class_supertype_index(totype, fromtype) != (size_t)-1) ||
-		    (get_class_supertype_index(fromtype, totype) != (size_t)-1) ||
-		    fromtype == totype) {
-			this_state = ir_class_casts_normalized;
-		}
-	}
-
-	if (!(this_state >= ccs->expected_state)) {
-		ir_printf("  Node is %+F\n", n);
-		ir_printf("    totype   %+F\n", totype);
-		ir_printf("    fromtype %+F\n", fromtype);
-		ir_printf("    this_state: %s, exp. state: %s\n",
-			get_class_cast_state_string(this_state),
-			get_class_cast_state_string(ccs->expected_state));
-		assert(this_state >= ccs->expected_state &&
-			"invalid state class cast state setting in graph");
-	}
-
-	if (this_state < ccs->worst_situation)
-		ccs->worst_situation = this_state;
-}
-
-void verify_irg_class_cast_state(ir_graph *irg)
-{
-	ccs_env env;
-
-	FIRM_DBG_REGISTER(dbg, "firm.tr.inheritance");
-
-	env.expected_state  = get_irg_class_cast_state(irg);
-	env.worst_situation = ir_class_casts_normalized;
-
-	irg_walk_graph(irg, NULL, verify_irn_class_cast_state, &env);
-
-	if ((env.worst_situation > env.expected_state)) {
-		DB((dbg, LEVEL_1, "Note:  class cast state is set lower than reqired "
-		    "in graph \n\t%+F\n", irg));
-		DB((dbg, LEVEL_1, "       state is %s, reqired is %s\n",
-			get_class_cast_state_string(env.expected_state),
-			get_class_cast_state_string(env.worst_situation)));
-	}
 }

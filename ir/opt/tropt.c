@@ -176,9 +176,8 @@ static void normalize_irn_class_cast(ir_node *n, void *env)
 static void pure_normalize_irg_class_casts(ir_graph *irg)
 {
 	assert(get_irg_class_cast_state(irg) != ir_class_casts_any &&
-		"Cannot normalize irregular casts.");
+	       "Cannot normalize irregular casts.");
 	if (get_irg_class_cast_state(irg) == ir_class_casts_normalized) {
-		verify_irg_class_cast_state(irg);
 		return;
 	}
 
