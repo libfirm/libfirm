@@ -31,6 +31,7 @@
 #include "irgmod.h"
 #include "irgwalk.h"
 #include "irdump.h"
+#include "irprofile.h"
 
 #include "bearch.h"
 #include "belower.h"
@@ -42,7 +43,6 @@
 #include "gen_sparc_new_nodes.h"
 #include "gen_sparc_regalloc_if.h"
 
-#include "execfreq.h"
 #include "statev.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg_icore;)
@@ -648,22 +648,34 @@ static void handle_chain(ir_node *irn, const perm_move_t *move, reg_pair_t *cons
 	}
 }
 
-static void create_stat_events(ir_node *perm)
+static void create_stat_events(ir_node *perm, reg_pair_t *const pairs, int n_pairs)
 {
-	bool needs_restore = false;
-	ir_node *succ;
+	ir_node      *bb    = get_nodes_block(perm);
+	unsigned      count = ir_profile_get_block_execcount(bb);
+	ir_node      *copy  = sched_next(perm);
+	long          nr    = get_irn_node_nr(perm);
+	bool          needs_restore = false;
 
-	if (!be_is_Perm(perm))
-		return;
+	assert(be_is_Perm(perm));
+	assert(copy && "No Perm successor scheduled");
+	if (be_is_Copy(copy)) {
+		const arch_register_t *reg = arch_get_irn_register(copy);
+		int i;
 
-	succ = sched_next(perm);
-	if (succ == NULL)
-		return;
+		for (i = 0; i < n_pairs; ++i) {
+			if (pairs[i].in_reg == reg || pairs[i].out_reg == reg) {
+				needs_restore = true;
+				break;
+			}
+		}
+	}
 
-	needs_restore = be_is_Copy(succ);
+	stat_ev_int("perm_block_nr", get_irn_node_nr(bb));
+	stat_ev_int("perm_needs_restore", needs_restore);
+	stat_ev_int("perm_exec_count", count);
+	stat_ev_int("perm_restore_exec_count", count * needs_restore);
 
-	DBG((dbg_icore, LEVEL_1, "perm = %+F needs_restore = %d\n", perm, needs_restore));
-	stat_ev_int("needs_restore", needs_restore);
+//	printf("Perm[%6ld]: Count %10u  Restore = %d\n", nr, count, needs_restore);
 }
 
 /**
@@ -699,7 +711,7 @@ static void lower_perm_node(ir_node *irn)
 	DBG((dbg_icore, LEVEL_1, "%+F has %d unresolved constraints\n", irn, n_pairs));
 
 	if (n_pairs > 0)
-		create_stat_events(irn);
+		create_stat_events(irn, pairs, n_pairs);
 
 	/* Collect all cycles and chains */
 	while (get_n_unchecked_pairs(pairs, n_pairs) > 0) {
