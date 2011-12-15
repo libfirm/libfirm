@@ -2698,14 +2698,14 @@ static void setup_modes(void)
 	unsigned           size_bits           = env->params->doubleword_size;
 	ir_mode           *doubleword_signed   = NULL;
 	ir_mode           *doubleword_unsigned = NULL;
-	size_t             n_modes             = get_irp_n_modes();
+	size_t             n_modes             = ir_get_n_modes();
 	ir_mode_arithmetic arithmetic;
 	unsigned           modulo_shift;
 	size_t             i;
 
 	/* search for doubleword modes... */
 	for (i = 0; i < n_modes; ++i) {
-		ir_mode *mode = get_irp_mode(i);
+		ir_mode *mode = ir_get_mode(i);
 		if (!mode_is_int(mode))
 			continue;
 		if (get_mode_size_bits(mode) != size_bits)

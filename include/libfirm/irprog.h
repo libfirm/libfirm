@@ -230,12 +230,6 @@ FIRM_API ir_type *get_irp_type(size_t pos);
  */
 FIRM_API void set_irp_type(size_t pos, ir_type *typ);
 
-/** Returns the number of all modes in the irp. */
-FIRM_API size_t get_irp_n_modes(void);
-
-/** Returns the mode at position pos in the irp. */
-FIRM_API ir_mode *get_irp_mode(size_t pos);
-
 /**  Returns the graph for global constants of the current irp.
  *
  *   Returns an irgraph that only contains constant expressions for

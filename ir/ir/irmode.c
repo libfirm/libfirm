@@ -223,7 +223,6 @@ static ir_mode *register_mode(ir_mode *mode)
 	mode->kind = k_ir_mode;
 	mode->type = new_type_primitive(mode);
 	ARR_APP1(ir_mode*, mode_list, mode);
-	add_irp_mode(mode);
 	set_mode_values(mode);
 	hook_new_mode(mode);
 	return mode;
@@ -674,6 +673,17 @@ int is_reinterpret_cast(const ir_mode *src, const ir_mode *dst)
 ir_type *(get_type_for_mode) (const ir_mode *mode)
 {
 	return get_type_for_mode_(mode);
+}
+
+size_t ir_get_n_modes(void)
+{
+	return ARR_LEN(mode_list);
+}
+
+ir_mode *ir_get_mode(size_t num)
+{
+	assert(num < ARR_LEN(mode_list));
+	return mode_list[num];
 }
 
 void finish_mode(void)

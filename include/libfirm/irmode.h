@@ -29,6 +29,8 @@
 #include "firm_types.h"
 #include "begin.h"
 
+#include <stddef.h>
+
 /**
  * @defgroup ir_mode Value Modes
  *  This module specifies the modes that type the firm nodes.  It defines
@@ -425,6 +427,12 @@ FIRM_API int is_reinterpret_cast(const ir_mode *src, const ir_mode *dst);
  * Returns the primitive type matching the given mode
  */
 FIRM_API ir_type *get_type_for_mode(const ir_mode *mode);
+
+/** Returns number of known modes. */
+FIRM_API size_t ir_get_n_modes(void);
+
+/** Returns known mode number @p num. */
+FIRM_API ir_mode *ir_get_mode(size_t num);
 
 /** @} */
 

@@ -57,7 +57,6 @@ static ir_prog *new_incomplete_ir_prog(void)
 	res->kind           = k_ir_prog;
 	res->graphs         = NEW_ARR_F(ir_graph *, 0);
 	res->types          = NEW_ARR_F(ir_type *, 0);
-	res->modes          = NEW_ARR_F(ir_mode *, 0);
 	res->global_asms    = NEW_ARR_F(ident *, 0);
 	res->last_label_nr  = 1;  /* 0 is reserved as non-label */
 	res->max_irg_idx    = 0;
@@ -148,7 +147,6 @@ void free_ir_prog(void)
 
 	DEL_ARR_F(irp->graphs);
 	DEL_ARR_F(irp->types);
-	DEL_ARR_F(irp->modes);
 
 	DEL_ARR_F(irp->global_asms);
 
@@ -283,23 +281,6 @@ void set_irp_type(size_t pos, ir_type *typ)
 	assert(irp && typ);
 	assert(pos < ARR_LEN((irp)->types));
 	irp->types[pos] = typ;
-}
-
-size_t (get_irp_n_modes)(void)
-{
-	return get_irp_n_modes_();
-}
-
-ir_mode *(get_irp_mode)(size_t pos)
-{
-	return get_irp_mode_(pos);
-}
-
-void add_irp_mode(ir_mode *mode)
-{
-	assert(mode != NULL);
-	assert(irp);
-	ARR_APP1(ir_mode *, irp->modes, mode);
 }
 
 void set_irp_prog_name(ident *name)

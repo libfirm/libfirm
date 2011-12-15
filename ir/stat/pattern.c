@@ -397,10 +397,10 @@ static int addr_cmp(const void *p1, const void *p2, size_t size)
  */
 static size_t find_mode_index(const ir_mode *mode)
 {
-	size_t i, n = get_irp_n_modes();
+	size_t i, n = ir_get_n_modes();
 
 	for (i = 0; i < n; ++i) {
-		if (get_irp_mode(i) == mode)
+		if (ir_get_mode(i) == mode)
 			return i;
 	}
 	/* should really not happen */

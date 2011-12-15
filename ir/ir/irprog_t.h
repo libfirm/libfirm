@@ -35,9 +35,6 @@
 
 #include "array.h"
 
-/** Adds mode to the list of modes in irp. */
-void add_irp_mode(ir_mode *mode);
-
 /* inline functions */
 static inline ir_type *get_segment_type_(ir_segment_t segment)
 {
@@ -79,18 +76,6 @@ static inline ir_type *get_irp_type_(size_t pos)
 	assert(pos < ARR_LEN(irp->types));
 	/* Don't set the skip_tid result so that no double entries are generated. */
 	return irp->types[pos];
-}
-
-static inline size_t get_irp_n_modes_(void)
-{
-	assert(irp->modes);
-	return ARR_LEN(irp->modes);
-}
-
-static inline ir_mode *get_irp_mode_(size_t pos)
-{
-	assert(irp && irp->modes);
-	return irp->modes[pos];
 }
 
 /** Returns a new, unique number to number nodes or the like. */
@@ -153,8 +138,6 @@ void remove_irp_type(ir_type *typ);
 #define get_irp_irg(pos)                 get_irp_irg_(pos)
 #define get_irp_n_types()                get_irp_n_types_()
 #define get_irp_type(pos)                get_irp_type_(pos)
-#define get_irp_n_modes()                get_irp_n_modes_()
-#define get_irp_mode(pos)                get_irp_mode_(pos)
 #define get_const_code_irg()             get_const_code_irg_()
 #define get_segment_type(s)              get_segment_type_(s)
 #define get_glob_type()                  get_glob_type_()

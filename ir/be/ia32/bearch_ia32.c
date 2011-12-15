@@ -1410,8 +1410,8 @@ static void set_tarval_output_modes(void)
 {
 	size_t i;
 
-	for (i = get_irp_n_modes(); i > 0;) {
-		ir_mode *mode = get_irp_mode(--i);
+	for (i = ir_get_n_modes(); i > 0;) {
+		ir_mode *mode = ir_get_mode(--i);
 
 		if (mode_is_int(mode))
 			set_tarval_mode_output_option(mode, &mo_integer);

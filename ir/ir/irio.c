@@ -1074,13 +1074,14 @@ static void write_mode(write_env_t *env, ir_mode *mode)
 
 static void write_modes(write_env_t *env)
 {
-	size_t i, n_modes = get_irp_n_modes();
+	size_t n_modes = ir_get_n_modes();
+	size_t i;
 
 	write_symbol(env, "modes");
 	fputs("{\n", env->file);
 
 	for (i = 0; i < n_modes; i++) {
-		ir_mode *mode = get_irp_mode(i);
+		ir_mode *mode = ir_get_mode(i);
 		if (!mode_is_int(mode) && !mode_is_reference(mode)
 		    && !mode_is_float(mode)) {
 		    /* skip internal modes */
@@ -1548,11 +1549,11 @@ static ir_entity *read_entity_ref(read_env_t *env)
 static ir_mode *read_mode_ref(read_env_t *env)
 {
 	char  *str = read_string(env);
-	size_t n   = get_irp_n_modes();
+	size_t n   = ir_get_n_modes();
 	size_t i;
 
 	for (i = 0; i < n; i++) {
-		ir_mode *mode = get_irp_mode(i);
+		ir_mode *mode = ir_get_mode(i);
 		if (strcmp(str, get_mode_name(mode)) == 0) {
 			obstack_free(&env->obst, str);
 			return mode;
