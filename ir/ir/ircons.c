@@ -314,6 +314,7 @@ void mature_immBlock(ir_node *block)
 	size_t   n_preds;
 	ir_node  *next;
 	ir_node  *phi;
+	ir_node **new_in;
 	ir_graph *irg;
 
 	assert(is_Block(block));
@@ -339,6 +340,15 @@ void mature_immBlock(ir_node *block)
 	}
 
 	set_Block_matured(block, 1);
+
+	/* create final in-array for the block */
+	if (block->attr.block.dynamic_ins) {
+		new_in = NEW_ARR_D(ir_node*, irg->obst, n_preds+1);
+		memcpy(new_in, block->in, (n_preds+1) * sizeof(new_in[0]));
+		DEL_ARR_F(block->in);
+		block->in = new_in;
+		block->attr.block.dynamic_ins = false;
+	}
 
 	/* Now, as the block is a finished Firm node, we can optimize it.
 	   Since other nodes have been allocated since the block was created
@@ -462,6 +472,7 @@ ir_node *new_rd_immBlock(dbg_info *dbgi, ir_graph *irg)
 	res = new_ir_node(dbgi, irg, NULL, op_Block, mode_BB, -1, NULL);
 
 	set_Block_matured(res, 0);
+	res->attr.block.dynamic_ins = true;
 	res->attr.block.irg.irg     = irg;
 	res->attr.block.backedge    = NULL;
 	res->attr.block.in_cg       = NULL;
@@ -699,6 +710,9 @@ void ir_set_uninitialized_local_variable_func(
 
 void irg_finalize_cons(ir_graph *irg)
 {
+	ir_node *end_block = get_irg_end_block(irg);
+	mature_immBlock(end_block);
+
 	set_irg_phase_state(irg, phase_high);
 }
 

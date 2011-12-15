@@ -201,6 +201,7 @@ typedef struct block_attr {
 	ir_visited_t block_visited; /**< For the walker that walks over all blocks. */
 	/* Attributes private to construction: */
 	unsigned is_matured:1;      /**< If set, all in-nodes of the block are fixed. */
+	unsigned dynamic_ins:1;     /**< if set in-array is an ARR_F on the heap. */
 	unsigned marked:1;          /**< Can be set/unset to temporary mark a block. */
 	ir_node **graph_arr;        /**< An array to store all parameters. */
 	/* Attributes holding analyses information */

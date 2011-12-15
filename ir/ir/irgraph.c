@@ -187,7 +187,7 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 	res->anchor = new_r_Anchor(res);
 
 	/*-- Nodes needed in every graph --*/
-	set_irg_end_block (res, new_r_immBlock(res));
+	set_irg_end_block(res, new_r_immBlock(res));
 	set_irg_end(res, new_r_End(res, 0, NULL));
 
 	start_block = new_r_Block_noopt(res, 0, NULL);
@@ -213,9 +213,8 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 	set_r_store(res, initial_mem);
 
 	/*-- Make a block to start with --*/
-	first_block = new_r_immBlock(res);
+	first_block = new_r_Block(res, 1, &projX);
 	set_r_cur_block(res, first_block);
-	add_immBlock_pred(first_block, projX);
 
 	res->method_execution_frequency = -1.0;
 	res->estimated_node_count       = 0;

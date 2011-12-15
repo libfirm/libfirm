@@ -41,10 +41,10 @@ static void prepare_blocks(ir_node *block, void *env)
 {
 	unsigned        n_loc = current_ir_graph->n_loc;
 	struct obstack *obst  = current_ir_graph->obst;
-  (void)env;
+	(void)env;
 	/* reset mature flag */
 	set_Block_matured(block, 0);
-	block->attr.block.graph_arr  = NEW_ARR_D(ir_node *, obst, n_loc);
+	block->attr.block.graph_arr = NEW_ARR_D(ir_node *, obst, n_loc);
 	memset(block->attr.block.graph_arr, 0, sizeof(ir_node*) * n_loc);
 	set_Block_phis(block, NULL);
 }

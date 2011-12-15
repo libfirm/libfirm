@@ -2286,6 +2286,7 @@ static ir_graph *read_irg(read_env_t *env)
 	ir_type            *frame  = read_type_ref(env);
 	irg_inline_property prop   = read_inline_property(env);
 	unsigned            props  = read_unsigned(env);
+	irg_finalize_cons(irg);
 	set_irg_frame_type(irg, frame);
 	set_irg_inline_property(irg, prop);
 	set_irg_additional_properties(irg, (mtp_additional_properties)props);
