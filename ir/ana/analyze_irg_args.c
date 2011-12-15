@@ -98,7 +98,7 @@ static ptr_access_kind analyze_arg(ir_node *arg, ptr_access_kind bits)
 						meth_ent = get_Call_callee(succ, c);
 
 						/* unknown_entity is used to signal that we don't know what is called */
-						if (meth_ent == unknown_entity) {
+						if (is_unknown_entity(meth_ent)) {
 							bits |= ptr_access_all;
 							break;
 						}

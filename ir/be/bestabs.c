@@ -517,7 +517,7 @@ static void walk_type(type_or_ent tore, void *ctx)
 		tp = tore.typ;
 
 		/* ignore the unknown type */
-		if (tp == firm_unknown_type)
+		if (is_unknown_type(tp))
 			return;
 	} else {
 		return;

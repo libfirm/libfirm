@@ -76,7 +76,7 @@ static ir_prog *new_incomplete_ir_prog(void)
  * @param irp          the (yet incomplete) irp
  * @param module_name  the (module) name for this irp
  */
-static ir_prog *complete_ir_prog(ir_prog *irp, const char *module_name)
+static void complete_ir_prog(ir_prog *irp, const char *module_name)
 {
 #define IDENT(x)  new_id_from_chars(x, sizeof(x) - 1)
 
@@ -104,10 +104,6 @@ static ir_prog *complete_ir_prog(ir_prog *irp, const char *module_name)
 	irp->phase_state                = phase_building;
 	irp->class_cast_state           = ir_class_casts_transitive;
 	irp->globals_entity_usage_state = ir_entity_usage_not_computed;
-
-	current_ir_graph = irp->const_code_irg;
-
-	return irp;
 #undef IDENT
 }
 
@@ -118,12 +114,16 @@ void init_irprog_1(void)
 
 void init_irprog_2(void)
 {
-	(void)complete_ir_prog(irp, INITAL_PROG_NAME);
+	complete_ir_prog(irp, INITAL_PROG_NAME);
+	ir_init_type(irp);
+	ir_init_entity(irp);
 }
 
 ir_prog *new_ir_prog(const char *name)
 {
-	return complete_ir_prog(new_incomplete_ir_prog(), name);
+	ir_prog *irp = new_incomplete_ir_prog();
+	complete_ir_prog(irp, name);
+	return irp;
 }
 
 void free_ir_prog(void)

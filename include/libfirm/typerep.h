@@ -689,9 +689,6 @@ FIRM_API ir_type *get_entity_repr_class(const ir_entity *ent);
  * - link          = NULL
  */
 
-/** A variable that contains the only unknown entity. */
-FIRM_API ir_entity *unknown_entity;
-
 /** Returns the @link unknown_entity unknown entity @endlink. */
 FIRM_API ir_entity *get_unknown_entity(void);
 
@@ -2081,8 +2078,6 @@ FIRM_API const tp_op *get_tpop_primitive(void);
  *    - size:  0
  * @{
  */
-/** A variable that contains the only none type. */
-FIRM_API ir_type *firm_none_type;
 /** Returns the none type. */
 FIRM_API ir_type *get_none_type(void);
 /** Checks whether type @p type is the none type. */
@@ -2103,8 +2098,6 @@ FIRM_API const tp_op *get_tpop_none(void);
 /** @defgroup code_type Code
  * @{
  */
-/** A variable that contains the only code type. */
-FIRM_API ir_type *firm_code_type;
 /** Returns the code type. */
 FIRM_API ir_type *get_code_type(void);
 /**
@@ -2137,8 +2130,6 @@ FIRM_API const tp_op *get_tpop_code_type(void);
  *    - size:  0
  * @{
  */
-/** A variable that contains the only unknown type. */
-FIRM_API ir_type *firm_unknown_type;
 /** Returns the unknown type. */
 FIRM_API ir_type *get_unknown_type(void);
 /** Checks whether type @p type is the unknown type */

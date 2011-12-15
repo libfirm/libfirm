@@ -815,7 +815,7 @@ static int dump_node_typeinfo(FILE *F, const ir_node *n)
 		if (get_irg_typeinfo_state(current_ir_graph) == ir_typeinfo_consistent  ||
 			get_irg_typeinfo_state(current_ir_graph) == ir_typeinfo_inconsistent) {
 			ir_type *tp = get_irn_typeinfo_type(n);
-			if (tp != firm_none_type) {
+			if (tp != get_none_type()) {
 				ir_fprintf(F, "[%+F]", tp);
 			} else {
 				fprintf(F, "[] ");

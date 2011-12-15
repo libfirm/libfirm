@@ -102,10 +102,6 @@ void ir_init(void)
 	/* Builds a construct allowing to access all information to be constructed
 	   later. */
 	init_irprog_2();
-	/* Initialize the type module and construct some idents needed. */
-	ir_init_type();
-	/* initialize the entity module */
-	ir_init_entity();
 	/* class cast optimization */
 	firm_init_class_casts_opt();
 	/* memory disambiguation */
@@ -126,9 +122,6 @@ void ir_init(void)
 void ir_finish(void)
 {
 	free_ir_prog();
-
-	ir_finish_entity();
-	ir_finish_type();
 
 	finish_tarval();
 	finish_mode();

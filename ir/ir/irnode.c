@@ -1513,7 +1513,7 @@ static ir_entity *get_SymConst_attr_entity(const ir_node *self)
 static ir_type *get_Null_type(const ir_node *n)
 {
 	(void) n;
-	return firm_unknown_type;
+	return get_unknown_type();
 }
 
 void firm_set_default_get_type_attr(unsigned code, ir_op_ops *ops)

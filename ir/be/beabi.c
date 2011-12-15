@@ -865,7 +865,7 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 	count = get_Alloc_count(alloc);
 
 	/* we might need to multiply the count with the element size */
-	if (type != firm_unknown_type && get_type_size_bytes(type) != 1) {
+	if (!is_unknown_type(type) && get_type_size_bytes(type) != 1) {
 		ir_mode   *mode  = get_irn_mode(count);
 		ir_tarval *tv    = new_tarval_from_long(get_type_size_bytes(type),
 		                                        mode);
@@ -930,7 +930,7 @@ static ir_node *adjust_free(be_abi_irg_t *env, ir_node *free, ir_node *curr_sp)
 	assert(get_Free_where(free) == stack_alloc);
 
 	/* we might need to multiply the size with the element size */
-	if (type != firm_unknown_type && get_type_size_bytes(type) != 1) {
+	if (!is_unknown_type(type) && get_type_size_bytes(type) != 1) {
 		ir_tarval *tv   = new_tarval_from_long(get_type_size_bytes(type), mode_Iu);
 		ir_node   *cnst = new_rd_Const(dbg, irg, tv);
 		ir_node   *mul  = new_rd_Mul(dbg, block, get_Free_count(free),

@@ -62,7 +62,7 @@ static gen_pointer_type_to_func gen_pointer_type_to = default_gen_pointer_type_t
 static ir_type *default_gen_pointer_type_to(ir_type *tp)
 {
 	ir_type *res = find_pointer_type_to_type(tp);
-	if (res == firm_unknown_type)
+	if (is_unknown_type(res))
 		res = new_type_pointer(tp);
 
 	return res;

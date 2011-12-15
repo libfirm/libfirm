@@ -293,7 +293,7 @@ int i_mapper_alloca(ir_node *call, void *ctx)
 		op = new_rd_Conv(dbg, block, op, mode);
 	}
 
-	irn    = new_rd_Alloc(dbg, block, mem, op, firm_unknown_type, stack_alloc);
+	irn    = new_rd_Alloc(dbg, block, mem, op, get_unknown_type(), stack_alloc);
 	mem    = new_rd_Proj(dbg, irn, mode_M, pn_Alloc_M);
 	irn    = new_rd_Proj(dbg, irn, get_modeP_data(), pn_Alloc_res);
 	if (ir_throws_exception(call)) {

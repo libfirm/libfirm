@@ -2022,7 +2022,7 @@ static ir_node *gen_Alloc(ir_node *node)
 	if (get_Alloc_where(node) != stack_alloc)
 		panic("only stack-alloc supported in sparc backend (at %+F)", node);
 	/* lowerer should have transformed all allocas to byte size */
-	if (type != get_unknown_type() && get_type_size_bytes(type) != 1)
+	if (!is_unknown_type(type) && get_type_size_bytes(type) != 1)
 		panic("Found non-byte alloc in sparc backend (at %+F)", node);
 
 	if (is_Const(size)) {
@@ -2082,7 +2082,7 @@ static ir_node *gen_Free(ir_node *node)
 	if (get_Alloc_where(node) != stack_alloc)
 		panic("only stack-alloc supported in sparc backend (at %+F)", node);
 	/* lowerer should have transformed all allocas to byte size */
-	if (type != get_unknown_type() && get_type_size_bytes(type) != 1)
+	if (!is_unknown_type(type) && get_type_size_bytes(type) != 1)
 		panic("Found non-byte alloc in sparc backend (at %+F)", node);
 
 	if (is_Const(size)) {

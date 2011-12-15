@@ -122,6 +122,7 @@ typedef enum keyword_t {
 	kw_segment_type,
 	kw_type,
 	kw_typegraph,
+	kw_unknown,
 } keyword_t;
 
 typedef struct symbol_t {
@@ -247,6 +248,7 @@ static void symtbl_init(void)
 	INSERTKEYWORD(segment_type);
 	INSERTKEYWORD(type);
 	INSERTKEYWORD(typegraph);
+	INSERTKEYWORD(unknown);
 
 	INSERTENUM(tt_align, align_non_aligned);
 	INSERTENUM(tt_align, align_is_aligned);
@@ -397,15 +399,20 @@ static void write_entity_ref(write_env_t *env, ir_entity *entity)
 
 static void write_type_ref(write_env_t *env, ir_type *type)
 {
-	if (type == firm_unknown_type) {
+	switch (get_type_tpop_code(type)) {
+	case tpo_unknown:
 		write_symbol(env, "unknown");
-	} else if (type == firm_none_type) {
+		return;
+	case tpo_none:
 		write_symbol(env, "none");
-	} else if (type == firm_code_type) {
+		return;
+	case tpo_code:
 		write_symbol(env, "code");
-	} else {
-		write_long(env, get_type_nr(type));
+		return;
+	default:
+		break;
 	}
+	write_long(env, get_type_nr(type));
 }
 
 static void write_string(write_env_t *env, const char *string)
@@ -617,7 +624,7 @@ static void write_type_primitive(write_env_t *env, ir_type *tp)
 	write_type_common(env, tp);
 	write_mode_ref(env, get_type_mode(tp));
 	if (base_type == NULL)
-		base_type = firm_none_type;
+		base_type = get_none_type();
 	write_type_ref(env, base_type);
 	fputc('\n', env->file);
 }
@@ -772,6 +779,10 @@ static void write_entity(write_env_t *env, ir_entity *ent)
 	case IR_ENTITY_LABEL:           write_symbol(env, "label");           break;
 	case IR_ENTITY_COMPOUND_MEMBER: write_symbol(env, "compound_member"); break;
 	case IR_ENTITY_PARAMETER:       write_symbol(env, "parameter");       break;
+	case IR_ENTITY_UNKNOWN:
+		write_symbol(env, "unknown");
+		write_long(env, get_entity_nr(ent));
+		return;
 	}
 	write_long(env, get_entity_nr(ent));
 
@@ -830,6 +841,7 @@ static void write_entity(write_env_t *env, ir_entity *ent)
 		}
 		break;
 	}
+	case IR_ENTITY_UNKNOWN:
 	case IR_ENTITY_LABEL:
 	case IR_ENTITY_METHOD:
 		break;
@@ -1474,11 +1486,11 @@ static ir_type *get_type(read_env_t *env, long typenr)
 	ir_type *type = (ir_type *) get_id(env, typenr);
 	if (type == NULL) {
 		parse_error(env, "Type %ld not defined (yet?)\n", typenr);
-		return firm_unknown_type;
+		return get_unknown_type();
 	}
 	if (type->kind != k_type) {
 		parse_error(env, "Object %ld is not a type (but should be)\n", typenr);
-		return firm_unknown_type;
+		return get_unknown_type();
 	}
 	return type;
 }
@@ -1488,15 +1500,15 @@ static ir_type *read_type_ref(read_env_t *env)
 	char *str = read_word(env);
 	if (strcmp(str, "none") == 0) {
 		obstack_free(&env->obst, str);
-		return firm_none_type;
+		return get_none_type();
 	}
 	if (strcmp(str, "unknown") == 0) {
 		obstack_free(&env->obst, str);
-		return firm_unknown_type;
+		return get_unknown_type();
 	}
 	if (strcmp(str, "code") == 0) {
 		obstack_free(&env->obst, str);
-		return firm_code_type;
+		return get_code_type();
 	}
 	long nr = atol(str);
 	obstack_free(&env->obst, str);
@@ -1507,7 +1519,7 @@ static ir_type *read_type_ref(read_env_t *env)
 static ir_entity *create_error_entity(void)
 {
 	ir_entity *res = new_entity(get_glob_type(), new_id_from_str("error"),
-	                            firm_unknown_type);
+	                            get_unknown_type());
 	return res;
 }
 
@@ -1833,7 +1845,7 @@ static void read_type(read_env_t *env)
 		ir_mode *mode = read_mode_ref(env);
 		ir_type *base_type = read_type_ref(env);
 		type = new_type_primitive(mode);
-		if (base_type != firm_none_type) {
+		if (base_type != get_none_type()) {
 			set_primitive_base_type(type, base_type);
 		}
 		goto finish_type;
@@ -1873,6 +1885,13 @@ finish_type:
 		ARR_APP1(ir_type *, env->fixedtypes, type);
 
 	set_id(env, typenr, type);
+}
+
+static void read_unknown_entity(read_env_t *env)
+{
+	long       entnr  = read_long(env);
+	ir_entity *entity = get_unknown_entity();
+	set_id(env, entnr, entity);
 }
 
 /** Reads an entity description and remembers it by its id. */
@@ -1952,6 +1971,8 @@ static void read_entity(read_env_t *env, ir_entity_kind kind)
 		ir_label_t nr = get_irp_next_label_nr();
 		entity = new_label_entity(nr);
 		break;
+	case IR_ENTITY_UNKNOWN:
+		panic("read_entity with IR_ENTITY_UNKNOWN?");
 	}
 	}
 
@@ -2005,6 +2026,9 @@ static void read_typegraph(read_env_t *env)
 			break;
 		case kw_parameter:
 			read_entity(env, IR_ENTITY_PARAMETER);
+			break;
+		case kw_unknown:
+			read_unknown_entity(env);
 			break;
 		default:
 			parse_error(env, "type graph element not supported yet: %d\n", kwkind);

@@ -44,16 +44,13 @@
 #include "error.h"
 #include "compound_path.h"
 
-/*-----------------------------------------------------------------*/
-/** general                                                       **/
-/*-----------------------------------------------------------------*/
-
-ir_entity *unknown_entity = NULL;
-
-ir_entity *get_unknown_entity(void) { return unknown_entity; }
-
 /** The name of the unknown entity. */
 #define UNKNOWN_ENTITY_NAME "unknown_entity"
+
+ir_entity *get_unknown_entity(void)
+{
+	return irp->unknown_entity;
+}
 
 /*-----------------------------------------------------------------*/
 /* ENTITY                                                          */
@@ -62,9 +59,7 @@ ir_entity *get_unknown_entity(void) { return unknown_entity; }
 static ir_entity *intern_new_entity(ir_type *owner, ir_entity_kind kind,
                                     ident *name, ir_type *type, dbg_info *dbgi)
 {
-	ir_entity *res;
-
-	res = XMALLOCZ(ir_entity);
+	ir_entity *res = XMALLOCZ(ir_entity);
 
 	res->kind    = k_entity;
 	res->name    = name;
@@ -161,7 +156,7 @@ ir_entity *new_d_label_entity(ir_label_t label, dbg_info *dbgi)
 	ident *name = id_unique("label_%u");
 	ir_type *global_type = get_glob_type();
 	ir_entity *res
-		= intern_new_entity(global_type, IR_ENTITY_LABEL, name, firm_code_type,
+		= intern_new_entity(global_type, IR_ENTITY_LABEL, name, get_code_type(),
 		                    dbgi);
 	res->attr.code_attr.label = label;
 	hook_new_entity(res);
@@ -285,7 +280,9 @@ void free_entity(ir_entity *ent)
 
 	assert(ent && ent->kind == k_entity);
 	free_entity_attrs(ent);
+#ifdef DEBUG_libfirm
 	ent->kind = k_BAD;
+#endif
 	xfree(ent);
 }
 
@@ -364,7 +361,7 @@ void set_entity_type(ir_entity *ent, ir_type *type)
 		assert(!is_Method_type(type));
 		break;
 	case IR_ENTITY_LABEL:
-		assert(type == firm_code_type);
+		assert(type == get_code_type());
 		break;
 	case IR_ENTITY_COMPOUND_MEMBER:
 		break;
@@ -1079,26 +1076,19 @@ int entity_has_definition(const ir_entity *entity)
 		|| entity_has_compound_ent_values(entity);
 }
 
-void ir_init_entity(void)
+void ir_init_entity(ir_prog *irp)
 {
 	ident *id = new_id_from_str(UNKNOWN_ENTITY_NAME);
-
-	assert(firm_unknown_type && "Call init_type() before firm_init_entity()!");
-	assert(!unknown_entity && "Call firm_init_entity() only once!");
-
-	unknown_entity = intern_new_entity(NULL, IR_ENTITY_UNKNOWN, id,
-	                                   firm_unknown_type, NULL);
-	set_entity_visibility(unknown_entity, ir_visibility_external);
-	set_entity_ld_ident(unknown_entity, get_entity_ident(unknown_entity));
-	hook_new_entity(unknown_entity);
+	irp->unknown_entity = intern_new_entity(NULL, IR_ENTITY_UNKNOWN, id,
+	                                        irp->unknown_type, NULL);
+	set_entity_visibility(irp->unknown_entity, ir_visibility_external);
+	set_entity_ld_ident(irp->unknown_entity, id);
+	hook_new_entity(irp->unknown_entity);
 }
 
-void ir_finish_entity(void)
+void ir_finish_entity(ir_prog *irp)
 {
-	if (unknown_entity != NULL) {
-		free_entity(unknown_entity);
-		unknown_entity = NULL;
-	}
+	free_entity(irp->unknown_entity);
 }
 
 ir_allocation get_entity_allocation(const ir_entity *entity)

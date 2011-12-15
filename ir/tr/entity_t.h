@@ -181,9 +181,9 @@ struct ir_entity {
 };
 
 /** Initialize the entity module. */
-void ir_init_entity(void);
+void ir_init_entity(ir_prog *irp);
 /** Cleanup entity module */
-void ir_finish_entity(void);
+void ir_finish_entity(ir_prog *irp);
 
 /**
  * Creates an entity corresponding to the start address of a basic block
@@ -359,7 +359,7 @@ static inline void _set_entity_link(ir_entity *ent, void *l)
 static inline ir_graph *_get_entity_irg(const ir_entity *ent)
 {
 	assert(ent && ent->kind == k_entity);
-	if (!is_Method_type(ent->type) || ent == unknown_entity) {
+	if (!is_Method_type(ent->type) || is_unknown_entity(ent)) {
 		return NULL;
 	}
 

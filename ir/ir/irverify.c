@@ -655,7 +655,7 @@ static int verify_node_Proj_Proj(const ir_node *p)
 				(proj >= 0 && mode_is_datab(mode)),
 				"wrong Proj from Proj from Call", 0);
 			mt = get_Call_type(pred);
-			ASSERT_AND_RET(mt == get_unknown_type() || is_Method_type(mt),
+			ASSERT_AND_RET(is_unknown_type(mt) || is_Method_type(mt),
 					"wrong call type on call", 0);
 			ASSERT_AND_RET(
 				(proj < (int)get_method_n_ress(mt)),

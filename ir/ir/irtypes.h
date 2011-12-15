@@ -622,8 +622,12 @@ struct ir_prog {
 	                                     to allocate nodes the represent values
 	                                     of constant entities. It is not meant as
 	                                     a procedure.  */
+	ir_entity *unknown_entity;      /**< unique 'unknown'-entity */
 	ir_type   *segment_types[IR_SEGMENT_LAST+1];
 	ir_type  **types;               /**< A list of all types in the ir. */
+	ir_type   *none_type;           /**< unique 'none'-type */
+	ir_type   *code_type;           /**< unique 'code'-type */
+	ir_type   *unknown_type;        /**< unique 'unknown'-type */
 	ir_mode  **modes;               /**< A list of all modes in the ir. */
 	ir_op    **opcodes;             /**< A list of all opcodes in the ir. */
 	ident    **global_asms;         /**< An array of global ASM insertions. */

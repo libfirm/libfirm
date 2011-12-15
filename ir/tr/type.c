@@ -59,56 +59,45 @@
 #include "entity_t.h"
 #include "error.h"
 #include "dbginfo.h"
+#include "irprog_t.h"
 
 #include "array.h"
 
-ir_type *firm_none_type;
 ir_type *get_none_type(void)
 {
-	return firm_none_type;
+	return irp->none_type;
 }
 
-ir_type *firm_code_type;
 ir_type *get_code_type(void)
 {
-	return firm_code_type;
+	return irp->code_type;
 }
 
-ir_type *firm_unknown_type;
 ir_type *get_unknown_type(void)
 {
-	return firm_unknown_type;
+	return irp->unknown_type;
 }
 
-void ir_init_type(void)
+void ir_init_type(ir_prog *irp)
 {
 	/* construct none and unknown type. */
-	firm_none_type = new_type(tpop_none, mode_BAD, NULL);
-	set_type_size_bytes(firm_none_type, 0);
-	set_type_state (firm_none_type, layout_fixed);
+	irp->none_type = new_type(tpop_none, mode_BAD, NULL);
+	set_type_size_bytes(irp->none_type, 0);
+	set_type_state (irp->none_type, layout_fixed);
 
-	firm_code_type = new_type(tpop_code, mode_ANY, NULL);
-	set_type_state(firm_code_type, layout_fixed);
+	irp->code_type = new_type(tpop_code, mode_ANY, NULL);
+	set_type_state(irp->code_type, layout_fixed);
 
-	firm_unknown_type = new_type(tpop_unknown, mode_ANY, NULL);
-	set_type_size_bytes(firm_unknown_type, 0);
-	set_type_state (firm_unknown_type, layout_fixed);
+	irp->unknown_type = new_type(tpop_unknown, mode_ANY, NULL);
+	set_type_size_bytes(irp->unknown_type, 0);
+	set_type_state (irp->unknown_type, layout_fixed);
 }
 
-void ir_finish_type(void)
+void ir_finish_type(ir_prog *irp)
 {
-	if (firm_none_type != NULL) {
-		free_type(firm_none_type);
-		firm_none_type = NULL;
-	}
-	if (firm_code_type != NULL) {
-		free_type(firm_code_type);
-		firm_code_type = NULL;
-	}
-	if (firm_unknown_type != NULL) {
-		free_type(firm_unknown_type);
-		firm_unknown_type = NULL;
-	}
+	/** nothing todo. (The none, code, unknown types are in the global type list
+	 * and freed there */
+	(void)irp;
 }
 
 ir_visited_t firm_type_visited;
@@ -160,9 +149,6 @@ void free_type(ir_type *tp)
 {
 	const tp_op *op = get_type_tpop(tp);
 
-	if ((get_type_tpop(tp) == tpop_none) || (get_type_tpop(tp) == tpop_unknown)
-			|| (get_type_tpop(tp) == tpop_code))
-		return;
 	/* Remove from list of all types */
 	remove_irp_type(tp);
 	/* Free the attributes of the type. */
@@ -171,7 +157,9 @@ void free_type(ir_type *tp)
 	if (op->ops.free_auto_entities)
 		op->ops.free_auto_entities(tp);
 	/* And now the type itself... */
+#ifdef DEBUG_libfirm
 	tp->kind = k_BAD;
+#endif
 	free(tp);
 }
 
@@ -1821,9 +1809,8 @@ ir_type *find_pointer_type_to_type(ir_type *tp)
 		if (is_Pointer_type(found) && get_pointer_points_to_type(found) == tp)
 			return (found);
 	}
-	return firm_unknown_type;
+	return get_unknown_type();
 }
-
 
 
 ir_type *new_d_type_primitive(ir_mode *mode, type_dbg_info *db)

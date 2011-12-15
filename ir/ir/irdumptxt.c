@@ -315,7 +315,7 @@ void dump_irnode_to_file(FILE *F, const ir_node *n)
 
 	if (get_irg_typeinfo_state(get_irn_irg(n)) == ir_typeinfo_consistent  ||
 		get_irg_typeinfo_state(get_irn_irg(n)) == ir_typeinfo_inconsistent  )
-		if (get_irn_typeinfo_type(n) != firm_none_type)
+		if (get_irn_typeinfo_type(n) != get_none_type())
 			ir_fprintf (F, "  Analysed type: %s\n", get_irn_typeinfo_type(n));
 }
 

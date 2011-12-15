@@ -619,7 +619,7 @@ static void callee_ana_proj(ir_node *node, long n, pset *methods)
 			if (is_Tuple(pred)) {
 				callee_ana_proj(get_Tuple_pred(pred, get_Proj_proj(node)), n, methods);
 			} else {
-				pset_insert_ptr(methods, unknown_entity); /* free method -> unknown */
+				pset_insert_ptr(methods, get_unknown_entity()); /* free method -> unknown */
 			}
 		}
 		break;
@@ -630,7 +630,7 @@ static void callee_ana_proj(ir_node *node, long n, pset *methods)
 		break;
 
 	default:
-		pset_insert_ptr(methods, unknown_entity); /* free method -> unknown */
+		pset_insert_ptr(methods, get_unknown_entity()); /* free method -> unknown */
 		break;
 	}
 }
@@ -655,7 +655,7 @@ static void callee_ana_node(ir_node *node, pset *methods)
 	case iro_Const:
 		/* A direct address call. We tread this as an external
 		   call and ignore it completely. */
-		pset_insert_ptr(methods, unknown_entity); /* free method -> unknown */
+		pset_insert_ptr(methods, get_unknown_entity()); /* free method -> unknown */
 		break;
 
 	case iro_SymConst: {
@@ -673,7 +673,7 @@ static void callee_ana_node(ir_node *node, pset *methods)
 			if (ent != NULL) {
 				pset_insert_ptr(methods, ent);
 			} else {
-				pset_insert_ptr(methods, unknown_entity);
+				pset_insert_ptr(methods, get_unknown_entity());
 			}
 		}
 		break;
@@ -708,7 +708,7 @@ static void callee_ana_node(ir_node *node, pset *methods)
 	case iro_Sub:
 	case iro_Conv:
 		/* extern */
-		pset_insert_ptr(methods, unknown_entity); /* free method -> unknown */
+		pset_insert_ptr(methods, get_unknown_entity()); /* free method -> unknown */
 		break;
 
 	default:
@@ -736,9 +736,9 @@ static void callee_walker(ir_node *call, void *env)
 		foreach_pset(methods, ir_entity*, ent) {
 			arr[i] = ent;
 			/* we want the unknown_entity on the zero position for easy tests later */
-			if (ent == unknown_entity) {
+			if (is_unknown_entity(ent)) {
 				arr[i] = arr[0];
-				arr[0] = unknown_entity;
+				arr[0] = get_unknown_entity();
 			}
 			++i;
 		}
