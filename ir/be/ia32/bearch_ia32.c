@@ -253,7 +253,7 @@ static int ia32_get_sp_bias(const ir_node *node)
 static void ia32_build_between_type(void)
 {
 #define IDENT(s) new_id_from_chars(s, sizeof(s)-1)
-	if (! between_type) {
+	if (between_type == NULL) {
 		ir_type *old_bp_type   = new_type_primitive(mode_Iu);
 		ir_type *ret_addr_type = new_type_primitive(mode_Iu);
 
@@ -1768,6 +1768,10 @@ static void ia32_init(void)
 
 static void ia32_finish(void)
 {
+	if (between_type != NULL) {
+		free_type(between_type);
+		between_type = NULL;
+	}
 	ia32_free_opcodes();
 }
 
