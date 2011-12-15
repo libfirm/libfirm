@@ -937,6 +937,11 @@ void set_entity_vtable_number(ir_entity *ent, unsigned vtable_number)
 	ent->attr.mtd_attr.vtable_number = vtable_number;
 }
 
+int is_unknown_entity(const ir_entity *entity)
+{
+	return entity->entity_kind == IR_ENTITY_UNKNOWN;
+}
+
 int (is_entity)(const void *thing)
 {
 	return _is_entity(thing);
@@ -1076,13 +1081,16 @@ int entity_has_definition(const ir_entity *entity)
 
 void ir_init_entity(void)
 {
+	ident *id = new_id_from_str(UNKNOWN_ENTITY_NAME);
+
 	assert(firm_unknown_type && "Call init_type() before firm_init_entity()!");
 	assert(!unknown_entity && "Call firm_init_entity() only once!");
 
-	unknown_entity = new_d_entity(NULL, new_id_from_str(UNKNOWN_ENTITY_NAME),
-	                              firm_unknown_type, NULL);
+	unknown_entity = intern_new_entity(NULL, IR_ENTITY_UNKNOWN, id,
+	                                   firm_unknown_type, NULL);
 	set_entity_visibility(unknown_entity, ir_visibility_external);
 	set_entity_ld_ident(unknown_entity, get_entity_ident(unknown_entity));
+	hook_new_entity(unknown_entity);
 }
 
 void ir_finish_entity(void)

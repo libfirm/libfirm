@@ -117,6 +117,7 @@ typedef enum ir_entity_kind {
 	IR_ENTITY_COMPOUND_MEMBER,
 	IR_ENTITY_PARAMETER,
 	IR_ENTITY_LABEL,
+	IR_ENTITY_UNKNOWN,
 } ir_entity_kind;
 
 /**

@@ -1934,12 +1934,22 @@ void add_compound_member(ir_type *compound, ir_entity *entity)
 	}
 }
 
-
-
 int is_code_type(const ir_type *tp)
 {
-	assert(tp && tp->kind == k_type);
+	assert(tp->kind == k_type);
 	return tp->type_op == tpop_code;
+}
+
+int is_unknown_type(const ir_type *tp)
+{
+	assert(tp->kind == k_type);
+	return tp->type_op == tpop_unknown;
+}
+
+int is_none_type(const ir_type *tp)
+{
+	assert(tp->kind == k_type);
+	return tp->type_op == tpop_none;
 }
 
 int is_frame_type(const ir_type *tp)

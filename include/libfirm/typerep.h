@@ -695,6 +695,10 @@ FIRM_API ir_entity *unknown_entity;
 /** Returns the @link unknown_entity unknown entity @endlink. */
 FIRM_API ir_entity *get_unknown_entity(void);
 
+/** Tests whether entity @p entity is (the) unknown entity.
+ * @returns 1 if it is the unknown entity, 0 otherwise */
+FIRM_API int is_unknown_entity(const ir_entity *entity);
+
 /** @deprecated */
 typedef enum {
 	allocation_automatic,
@@ -2081,6 +2085,8 @@ FIRM_API const tp_op *get_tpop_primitive(void);
 FIRM_API ir_type *firm_none_type;
 /** Returns the none type. */
 FIRM_API ir_type *get_none_type(void);
+/** Checks whether type @p type is the none type. */
+FIRM_API int is_none_type(const ir_type *type);
 /**
  * This type opcode is an auxiliary opcode dedicated to support type analyses.
  *
@@ -2135,6 +2141,8 @@ FIRM_API const tp_op *get_tpop_code_type(void);
 FIRM_API ir_type *firm_unknown_type;
 /** Returns the unknown type. */
 FIRM_API ir_type *get_unknown_type(void);
+/** Checks whether type @p type is the unknown type */
+FIRM_API int is_unknown_type(const ir_type *type);
 /**
  * This type opcode is an auxiliary opcode dedicated to support type analyses.
  *
