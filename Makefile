@@ -35,7 +35,7 @@ CFLAGS_optimize   = $(CFLAGS_all) -O3 -DNDEBUG
 # General flags
 CFLAGS    += $(CFLAGS_$(variant))
 CFLAGS    += -Wall -W -Wextra -Wstrict-prototypes -Wmissing-prototypes -Wwrite-strings
-LINKFLAGS += $(LINKFLAGS_$(variant))
+LINKFLAGS += $(LINKFLAGS_$(variant)) -lm
 VPATH = $(srcdir)
 
 REVISION ?= $(shell git describe --abbrev=40 --always --dirty --match '')
@@ -170,7 +170,7 @@ $(libfirm_a): $(libfirm_OBJECTS)
 
 $(libfirm_dll): $(libfirm_OBJECTS)
 	@echo LINK $@
-	$(Q)$(LINK) -shared -o $@ $^
+	$(Q)$(LINK) -shared $(LINKFLAGS) -o $@ $^
 
 # Generic rules
 UNUSED := $(shell mkdir -p $(libfirm_DIRS:%=$(builddir)/%))
