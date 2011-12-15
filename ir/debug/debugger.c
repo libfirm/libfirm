@@ -1280,6 +1280,12 @@ void firm_init_debugger(void)
 		firm_debug_break();
 }
 
+void firm_finish_debugger(void)
+{
+	del_set(bp_numbers);
+	del_set(bp_idents);
+}
+
 /**
  * A gdb helper function to print firm objects.
  */

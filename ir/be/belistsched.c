@@ -265,6 +265,8 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 		add_to_sched(&be, irn);
 	}
 
+	ir_nodeset_destroy(cands);
+
 	if (selector->finish_block)
 		selector->finish_block(be.selector_block_env);
 }

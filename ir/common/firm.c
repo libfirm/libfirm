@@ -121,11 +121,15 @@ void ir_init(void)
 
 void ir_finish(void)
 {
+#ifdef DEBUG_libfirm
+	firm_finish_debugger();
+#endif
 	free_ir_prog();
 
 	finish_tarval();
 	finish_mode();
 	finish_tpop();
+	firm_finish_mangle();
 	finish_ident();
 
 	firm_be_finish();

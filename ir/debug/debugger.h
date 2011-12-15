@@ -43,6 +43,8 @@ void firm_break(const char *cmd);
 /** Creates the debugger tables. */
 void firm_init_debugger(void);
 
+void firm_finish_debugger(void);
+
 /**
  * @defgroup external_debug    helper functions for debuggers
  *
