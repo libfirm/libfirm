@@ -207,6 +207,7 @@ dfs_t *dfs_new(const absgraph_t *graph_impl, void *graph_self)
 
 void dfs_free(dfs_t *dfs)
 {
+	obstack_free(&dfs->obst, NULL);
 	del_set(dfs->nodes);
 	del_set(dfs->edges);
 	xfree(dfs->pre_order);
