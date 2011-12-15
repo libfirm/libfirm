@@ -93,18 +93,6 @@ static inline ir_mode *get_irp_mode_(size_t pos)
 	return irp->modes[pos];
 }
 
-static inline size_t get_irp_n_opcodes_(void)
-{
-	assert(irp && irp->opcodes);
-	return ARR_LEN(irp->opcodes);
-}
-
-static inline ir_op *get_irp_opcode_(size_t pos)
-{
-	assert(irp && irp->opcodes);
-	return irp->opcodes[pos];
-}
-
 /** Returns a new, unique number to number nodes or the like. */
 static inline long get_irp_new_node_nr(void)
 {
@@ -167,8 +155,6 @@ void remove_irp_type(ir_type *typ);
 #define get_irp_type(pos)                get_irp_type_(pos)
 #define get_irp_n_modes()                get_irp_n_modes_()
 #define get_irp_mode(pos)                get_irp_mode_(pos)
-#define get_irp_n_opcodes()              get_irp_n_opcodes_()
-#define get_irp_opcode(pos)              get_irp_opcode_(pos)
 #define get_const_code_irg()             get_const_code_irg_()
 #define get_segment_type(s)              get_segment_type_(s)
 #define get_glob_type()                  get_glob_type_()

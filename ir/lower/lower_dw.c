@@ -2931,7 +2931,7 @@ void ir_prepare_dw_lowering(const lwrdw_param_t *new_param)
 
 	param = new_param;
 
-	clear_irp_opcodes_generic_func();
+	ir_clear_opcodes_generic_func();
 	ir_register_dw_lower_function(op_ASM,     lower_ASM);
 	ir_register_dw_lower_function(op_Add,     lower_binop);
 	ir_register_dw_lower_function(op_And,     lower_And);

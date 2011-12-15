@@ -1310,7 +1310,7 @@ static void introduce_prolog_epilog(ir_graph *irg)
  * virtual with real x87 instructions, creating a block schedule and peephole
  * optimisations.
  */
-static void ia32_finish(ir_graph *irg)
+static void ia32_finish_graph(ir_graph *irg)
 {
 	ia32_irg_data_t   *irg_data     = ia32_get_irg_data(irg);
 	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
@@ -1736,9 +1736,6 @@ static void ia32_init(void)
 
 	init_asm_constraints();
 
-	ia32_register_init();
-	ia32_create_opcodes(&ia32_irn_ops);
-
 	ia32_mode_fpcw = new_int_mode("Fpcw", irma_twos_complement, 16, 0, 0);
 
 	/* note mantissa is 64bit but with explicitely encoded 1 so the really
@@ -1764,6 +1761,14 @@ static void ia32_init(void)
 		ia32_backend_params.mode_float_arithmetic = ia32_mode_E;
 		ia32_backend_params.type_long_double      = ia32_type_E;
 	}
+
+	ia32_register_init();
+	ia32_create_opcodes(&ia32_irn_ops);
+}
+
+static void ia32_finish(void)
+{
+	ia32_free_opcodes();
 }
 
 /**
@@ -2042,8 +2047,6 @@ static void ia32_lower_for_target(void)
 		&intrinsic_env,
 	};
 
-	ia32_create_opcodes(&ia32_irn_ops);
-
 	/* lower compound param handling
 	 * Note: we lower compound arguments ourself, since on ia32 we don't
 	 * have hidden parameters but know where to find the structs on the stack.
@@ -2163,6 +2166,7 @@ static const lc_opt_table_entry_t ia32_options[] = {
 
 const arch_isa_if_t ia32_isa_if = {
 	ia32_init,
+	ia32_finish,
 	ia32_get_libfirm_params,
 	ia32_lower_for_target,
 	ia32_parse_asm_constraint,
@@ -2182,7 +2186,7 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_before_abi,     /* before abi introduce hook */
 	ia32_prepare_graph,
 	ia32_before_ra,      /* before register allocation hook */
-	ia32_finish,         /* called before codegen */
+	ia32_finish_graph,   /* called before codegen */
 	ia32_emit,           /* emit && done */
 };
 

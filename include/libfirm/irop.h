@@ -283,6 +283,20 @@ FIRM_API ir_op *new_ir_op(unsigned code, const char *name, op_pin_state p,
                           unsigned flags, op_arity opar, int op_index,
                           size_t attr_size, const ir_op_ops *ops);
 
+/** Returns one more than the highest opcode code in use. */
+FIRM_API unsigned ir_get_n_opcodes(void);
+
+/**
+ * Returns the opcode with code @p code.
+ *
+ * @p code has to be smaller than get_irp_n_opcode(), returns NULL if
+ * no opcode with the code exists.
+ */
+FIRM_API ir_op *ir_get_opcode(unsigned code);
+
+/** Sets the generic function pointer of all opcodes to NULL */
+FIRM_API void ir_clear_opcodes_generic_func(void);
+
 /**
  * Sets memory input of operation using memory
  */

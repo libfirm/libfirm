@@ -236,22 +236,6 @@ FIRM_API size_t get_irp_n_modes(void);
 /** Returns the mode at position pos in the irp. */
 FIRM_API ir_mode *get_irp_mode(size_t pos);
 
-/** Adds opcode to the list of opcodes in irp. */
-FIRM_API void add_irp_opcode(ir_op *opcode);
-
-/** Removes opcode from the list of opcodes, deallocates it and
-    shrinks the list by one. */
-FIRM_API void remove_irp_opcode(ir_op *opcode);
-
-/** Returns the number of all opcodes in the irp. */
-FIRM_API size_t get_irp_n_opcodes(void);
-
-/** Returns the opcode at position pos in the irp. */
-FIRM_API ir_op *get_irp_opcode(size_t pos);
-
-/** Sets the generic function pointer of all opcodes to NULL */
-FIRM_API void clear_irp_opcodes_generic_func(void);
-
 /**  Returns the graph for global constants of the current irp.
  *
  *   Returns an irgraph that only contains constant expressions for

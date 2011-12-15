@@ -85,12 +85,12 @@ void ir_init(void)
 	init_mode();
 	/* initialize tarvals, and floating point arithmetic */
 	init_tarval_2();
+	/* initialize node opcodes */
+	firm_init_op();
 	/* init graph construction */
 	firm_init_irgraph();
 	/* kind of obstack initialization */
 	firm_init_mangle();
-	/* initialize all op codes an irnode can consist of */
-	init_op();
 	/* initialize reassociation */
 	firm_init_reassociation();
 	/* initialize function call optimization */
@@ -124,15 +124,15 @@ void ir_finish(void)
 #ifdef DEBUG_libfirm
 	firm_finish_debugger();
 #endif
-	free_ir_prog();
+	firm_be_finish();
 
+	free_ir_prog();
+	firm_finish_op();
 	finish_tarval();
 	finish_mode();
 	finish_tpop();
 	firm_finish_mangle();
 	finish_ident();
-
-	firm_be_finish();
 }
 
 unsigned ir_get_version_major(void)

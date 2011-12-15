@@ -154,6 +154,11 @@ static void TEMPLATE_init(void)
 	TEMPLATE_create_opcodes(&TEMPLATE_irn_ops);
 }
 
+static void TEMPLATE_finish(void)
+{
+	TEMPLATE_free_opcodes();
+}
+
 static arch_env_t *TEMPLATE_begin_codegeneration(const be_main_env_t *env)
 {
 	TEMPLATE_isa_t *isa = XMALLOC(TEMPLATE_isa_t);
@@ -356,6 +361,7 @@ static int TEMPLATE_register_saved_by(const arch_register_t *reg, int callee)
 
 const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_init,
+	TEMPLATE_finish,
     TEMPLATE_get_backend_params,
 	TEMPLATE_lower_for_target,
 	TEMPLATE_parse_asm_constraint,

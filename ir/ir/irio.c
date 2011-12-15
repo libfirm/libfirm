@@ -980,7 +980,7 @@ static void register_node_writer(ir_op *op, write_node_func func)
 
 static void writers_init(void)
 {
-	clear_irp_opcodes_generic_func();
+	ir_clear_opcodes_generic_func();
 	register_node_writer(op_Anchor,   write_Anchor);
 	register_node_writer(op_ASM,      write_ASM);
 	register_node_writer(op_Block,    write_Block);

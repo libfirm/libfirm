@@ -3463,8 +3463,8 @@ static void set_compute_functions(void)
 	size_t i, n;
 
 	/* set the default compute function */
-	for (i = 0, n = get_irp_n_opcodes(); i < n; ++i) {
-		ir_op *op = get_irp_opcode(i);
+	for (i = 0, n = ir_get_n_opcodes(); i < n; ++i) {
+		ir_op *op = ir_get_opcode(i);
 		op->ops.generic = (op_func)default_compute;
 	}
 

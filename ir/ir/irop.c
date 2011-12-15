@@ -36,9 +36,9 @@
 #include "reassoc_t.h"
 
 #include "xmalloc.h"
+#include "benode.h"
 
-void be_init_op(void);
-
+static ir_op **opcodes;
 /** the available next opcode */
 static unsigned next_iro = iro_MaxOpcode;
 
@@ -182,7 +182,16 @@ ir_op *new_ir_op(unsigned code, const char *name, op_pin_state p,
 
 	set_default_operations(code, &res->ops);
 
-	add_irp_opcode(res);
+	{
+		size_t len = ARR_LEN(opcodes);
+		if ((size_t)code >= len) {
+			ARR_RESIZE(ir_op*, opcodes, (size_t)code+1);
+			memset(&opcodes[len], 0, (code-len+1) * sizeof(opcodes[0]));
+		}
+		if (opcodes[code] != NULL)
+			panic("opcode registered twice");
+		opcodes[code] = res;
+	}
 
 	hook_new_ir_op(res);
 	return res;
@@ -192,8 +201,33 @@ void free_ir_op(ir_op *code)
 {
 	hook_free_ir_op(code);
 
-	remove_irp_opcode(code);
+	assert(opcodes[code->code] == code);
+	opcodes[code->code] = NULL;
+
 	free(code);
+}
+
+unsigned ir_get_n_opcodes(void)
+{
+	return ARR_LEN(opcodes);
+}
+
+ir_op *ir_get_opcode(unsigned code)
+{
+	assert((size_t)code < ARR_LEN(opcodes));
+	return opcodes[code];
+}
+
+void ir_clear_opcodes_generic_func(void)
+{
+	size_t n = ir_get_n_opcodes();
+	size_t i;
+
+	for (i = 0; i < n; ++i) {
+		ir_op *op = ir_get_opcode(i);
+		if (op != NULL)
+			op->ops.generic = (op_func)NULL;
+	}
 }
 
 void ir_op_set_memory_index(ir_op *op, int memory_index)
@@ -278,6 +312,24 @@ const ir_op_ops *(get_op_ops)(const ir_op *op)
 irop_flags get_op_flags(const ir_op *op)
 {
 	return (irop_flags)op->flags;
+}
+
+static void generated_init_op(void);
+static void generated_finish_op(void);
+
+void firm_init_op(void)
+{
+	opcodes = NEW_ARR_F(ir_op*, 0);
+	generated_init_op();
+	be_init_op();
+}
+
+void firm_finish_op(void)
+{
+	be_finish_op();
+	generated_finish_op();
+	DEL_ARR_F(opcodes);
+	opcodes = NULL;
 }
 
 #include "gen_irop.c.inl"

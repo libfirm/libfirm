@@ -1209,7 +1209,7 @@ static inline void set_emitter(ir_op *op, emit_func sparc_emit_node)
 static void sparc_register_emitters(void)
 {
 	/* first clear the generic function pointer for all ops */
-	clear_irp_opcodes_generic_func();
+	ir_clear_opcodes_generic_func();
 	/* register all emitter functions defined in spec */
 	sparc_register_spec_emitters();
 

@@ -116,6 +116,7 @@ my @obst_opvar;       # stack for the "ir_op *op_<arch>_<op-name> = NULL;" state
 my @obst_get_opvar;   # stack for the get_op_<arch>_<op-name>() functions
 my $obst_constructor; # stack for node constructor functions
 my @obst_new_irop;    # stack for the new_ir_op calls
+my @obst_free_irop;   # stack for free_ir_op calls
 my @obst_enum_op;     # stack for creating the <arch>_opcode enum
 my $obst_header;      # stack for function prototypes
 my @obst_is_archirn;  # stack for the is_$arch_irn() function
@@ -159,6 +160,7 @@ foreach my $class_name (keys(%reg_classes)) {
 $n_opcodes += $additional_opcodes if (defined($additional_opcodes));
 
 $obst_header .= "void ${arch}_create_opcodes(const arch_irn_ops_t *be_ops);\n";
+$obst_header .= "void ${arch}_free_opcodes(void);\n";
 
 sub create_constructor {
 	my $op   = shift;
@@ -712,6 +714,8 @@ EOF
 		push(@obst_new_irop, "\tset_op_attr(op_$op, attr);\n");
 	}
 
+	push(@obst_free_irop, "\tfree_ir_op(op_$op); op_$op = NULL;\n");
+
 	push(@obst_enum_op, "\tiro_$op,\n");
 
 	$obst_header .= "\n";
@@ -817,10 +821,10 @@ $obst_constructor
  * Creates the $arch specific Firm machine operations
  * needed for the assembler irgs.
  */
-void $arch\_create_opcodes(const arch_irn_ops_t *be_ops) {
+void $arch\_create_opcodes(const arch_irn_ops_t *be_ops)
+{
 	ir_op_ops  ops;
 	int        cur_opcode;
-	static int run_once = 0;
 ENDOFMAIN
 
 	if (defined($default_op_attr_type)) {
@@ -828,10 +832,6 @@ ENDOFMAIN
 	}
 
 print OUT<<ENDOFMAIN;
-
-	if (run_once)
-		return;
-	run_once = 1;
 
 	cur_opcode = get_next_ir_opcodes(iro_$arch\_last);
 
@@ -848,7 +848,18 @@ print OUT "\t$arch\_register_additional_opcodes(cur_opcode);\n" if (defined($add
 print OUT "\t$arch\_opcode_end = cur_opcode + iro_$arch\_last";
 print OUT " + $additional_opcodes" if (defined($additional_opcodes));
 print OUT ";\n";
-print OUT "}\n";
+print OUT <<ENDOFMAIN;
+}
+
+void $arch\_free_opcodes(void)
+{
+ENDOFMAIN
+
+print OUT @obst_free_irop;
+
+print OUT <<ENDOFMAIN;
+}
+ENDOFMAIN
 
 close(OUT);
 

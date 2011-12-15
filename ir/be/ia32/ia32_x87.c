@@ -2208,7 +2208,7 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg)
 		"x87 Simulator started for %+F\n", irg));
 
 	/* set the generic function pointer of instruction we must simulate */
-	clear_irp_opcodes_generic_func();
+	ir_clear_opcodes_generic_func();
 
 	register_sim(op_ia32_Call,         sim_Call);
 	register_sim(op_ia32_vfld,         sim_fld);

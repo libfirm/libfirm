@@ -486,7 +486,7 @@ static inline void set_emitter(ir_op *op, emit_func arm_emit_node)
 static void amd64_register_emitters(void)
 {
 	/* first clear the generic function pointer for all ops */
-	clear_irp_opcodes_generic_func();
+	ir_clear_opcodes_generic_func();
 
 	/* register all emitter functions defined in spec */
 	amd64_register_spec_emitters();

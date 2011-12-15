@@ -433,6 +433,11 @@ static void arm_init(void)
 	arm_create_opcodes(&arm_irn_ops);
 }
 
+static void arm_finish(void)
+{
+	arm_free_opcodes();
+}
+
 static arch_env_t *arm_begin_codegeneration(const be_main_env_t *env)
 {
 	arm_isa_t *isa = XMALLOC(arm_isa_t);
@@ -564,6 +569,7 @@ static const lc_opt_table_entry_t arm_options[] = {
 
 const arch_isa_if_t arm_isa_if = {
 	arm_init,
+	arm_finish,
 	arm_get_libfirm_params,
 	arm_lower_for_target,
 	arm_parse_asm_constraint,

@@ -438,6 +438,11 @@ struct arch_isa_if_t {
 	void (*init)(void);
 
 	/**
+	 * Fress resources allocated by this isa interface.
+	 */
+	void (*finish)(void);
+
+	/**
 	 * Returns the frontend settings needed for this backend.
 	 */
 	const backend_params *(*get_params)(void);
@@ -547,7 +552,7 @@ struct arch_isa_if_t {
 	 * Called directly before done is called. This should be the last place
 	 * where the irg is modified.
 	 */
-	void (*finish)(ir_graph *irg);
+	void (*finish_graph)(ir_graph *irg);
 
 	/**
 	 * Called after everything happened. This call should emit the final

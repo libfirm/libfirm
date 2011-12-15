@@ -38,10 +38,10 @@
 void free_ir_op(ir_op *code);
 
 /** Initialize the irop module. */
-void init_op(void);
+void firm_init_op(void);
 
-/** Free memory used by irop module. */
-void finish_op(void);
+/** frees memory allocated by irop module */
+void firm_finish_op(void);
 
 /**
  * Copies simply all attributes stored in the old node to the new node.

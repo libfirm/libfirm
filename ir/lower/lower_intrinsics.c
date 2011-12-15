@@ -93,7 +93,7 @@ static void call_mapper(ir_node *node, void *env)
 size_t lower_intrinsics(i_record *list, size_t length, int part_block_used)
 {
 	size_t         i, n;
-	size_t         n_ops = get_irp_n_opcodes();
+	size_t         n_ops = ir_get_n_opcodes();
 	ir_graph       *irg;
 	pmap           *c_map = pmap_create_ex(length);
 	i_instr_record **i_map;

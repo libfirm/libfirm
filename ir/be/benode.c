@@ -1334,6 +1334,8 @@ void be_init_op(void)
 {
 	unsigned opc;
 
+	assert(op_be_Spill == NULL);
+
 	/* Acquire all needed opcodes. */
 	op_be_Spill     = new_ir_op(beo_Spill,     "be_Spill",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_unary,    0, sizeof(be_frame_attr_t),   &be_node_op_ops);
 	op_be_Reload    = new_ir_op(beo_Reload,    "be_Reload",    op_pin_state_exc_pinned, irop_flag_none,                          oparity_zero,     0, sizeof(be_frame_attr_t),   &be_node_op_ops);
@@ -1369,10 +1371,28 @@ void be_init_op(void)
 
 	/* attach out dummy_ops to middle end nodes */
 	for (opc = iro_First; opc <= iro_Last; ++opc) {
-		ir_op *op = get_irp_opcode(opc);
+		ir_op *op = ir_get_opcode(opc);
 		assert(op->ops.be_ops == NULL);
 		op->ops.be_ops = &dummy_be_irn_ops;
 	}
 
 	op_Phi->ops.be_ops = &phi_irn_ops;
+}
+
+void be_finish_op(void)
+{
+	free_ir_op(op_be_Spill);     op_be_Spill     = NULL;
+	free_ir_op(op_be_Reload);    op_be_Reload    = NULL;
+	free_ir_op(op_be_Perm);      op_be_Perm      = NULL;
+	free_ir_op(op_be_MemPerm);   op_be_MemPerm   = NULL;
+	free_ir_op(op_be_Copy);      op_be_Copy      = NULL;
+	free_ir_op(op_be_Keep);      op_be_Keep      = NULL;
+	free_ir_op(op_be_CopyKeep);  op_be_CopyKeep  = NULL;
+	free_ir_op(op_be_Call);      op_be_Call      = NULL;
+	free_ir_op(op_be_Return);    op_be_Return    = NULL;
+	free_ir_op(op_be_IncSP);     op_be_IncSP     = NULL;
+	free_ir_op(op_be_AddSP);     op_be_AddSP     = NULL;
+	free_ir_op(op_be_SubSP);     op_be_SubSP     = NULL;
+	free_ir_op(op_be_Start);     op_be_Start     = NULL;
+	free_ir_op(op_be_FrameAddr); op_be_FrameAddr = NULL;
 }

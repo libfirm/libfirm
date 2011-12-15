@@ -149,7 +149,7 @@ static ir_node *transform_end(ir_node *node)
 
 void be_start_transform_setup(void)
 {
-	clear_irp_opcodes_generic_func();
+	ir_clear_opcodes_generic_func();
 
 	be_set_transform_function(op_Bad,         be_duplicate_node);
 	be_set_transform_function(op_be_Copy,     be_duplicate_node);

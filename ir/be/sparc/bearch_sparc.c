@@ -347,6 +347,11 @@ static void sparc_init(void)
 	sparc_cconv_init();
 }
 
+static void sparc_finish(void)
+{
+	sparc_free_opcodes();
+}
+
 static arch_env_t *sparc_begin_codegeneration(const be_main_env_t *env)
 {
 	sparc_isa_t *isa = XMALLOC(sparc_isa_t);
@@ -541,6 +546,7 @@ static ir_node *sparc_new_reload(ir_node *value, ir_node *spill,
 
 const arch_isa_if_t sparc_isa_if = {
 	sparc_init,
+	sparc_finish,
 	sparc_get_backend_params,
 	sparc_lower_for_target,
 	sparc_parse_asm_constraint,
@@ -560,7 +566,7 @@ const arch_isa_if_t sparc_isa_if = {
 	NULL,                /* before_abi */
 	sparc_prepare_graph,
 	sparc_before_ra,
-	sparc_finish,
+	sparc_finish_graph,
 	sparc_emit_routine,
 };
 

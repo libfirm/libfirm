@@ -63,6 +63,8 @@ int is_be_node(const ir_node *irn);
  */
 void be_init_op(void);
 
+void be_finish_op(void);
+
 /**
  * Position numbers for the be_Spill inputs.
  */

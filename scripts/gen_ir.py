@@ -468,9 +468,9 @@ irop_template = env.from_string(
 ir_op *op_{{node.name}}; ir_op *get_op_{{node.name}}(void) { return op_{{node.name}}; }
 {%- endfor %}
 
-void init_op(void)
+static void generated_init_op(void)
 {
-	{% for node in nodes %}
+	{%- for node in nodes %}
 	op_{{node.name}} = new_ir_op(
 		{%- filter arguments %}
 			iro_{{node.name}}
@@ -489,13 +489,11 @@ void init_op(void)
 	ir_op_set_fragile_indices(op_{{node.name}}, pn_{{node.name}}_X_regular, pn_{{node.name}}_X_except);
 	{%- endif -%}
 	{%- endfor %}
-
-	be_init_op();
 }
 
-void finish_op(void)
+static void generated_finish_op(void)
 {
-	{% for node in nodes %}
+	{%- for node in nodes %}
 	free_ir_op(op_{{node.name}}); op_{{node.name}} = NULL;
 	{%- endfor %}
 }

@@ -58,7 +58,6 @@ static ir_prog *new_incomplete_ir_prog(void)
 	res->graphs         = NEW_ARR_F(ir_graph *, 0);
 	res->types          = NEW_ARR_F(ir_type *, 0);
 	res->modes          = NEW_ARR_F(ir_mode *, 0);
-	res->opcodes        = NEW_ARR_F(ir_op *, 0);
 	res->global_asms    = NEW_ARR_F(ident *, 0);
 	res->last_label_nr  = 1;  /* 0 is reserved as non-label */
 	res->max_irg_idx    = 0;
@@ -138,21 +137,26 @@ void free_ir_prog(void)
 	for (i = get_irp_n_types(); i > 0;)
 		free_type_entities(get_irp_type(--i));
 
+	ir_finish_entity(irp);
+
 	for (i = get_irp_n_types(); i > 0;)
 		free_type(get_irp_type(--i));
 
 	free_ir_graph(irp->const_code_irg);
+
+	ir_finish_type(irp);
+
 	DEL_ARR_F(irp->graphs);
 	DEL_ARR_F(irp->types);
 	DEL_ARR_F(irp->modes);
 
-	finish_op();
-	DEL_ARR_F(irp->opcodes);
 	DEL_ARR_F(irp->global_asms);
 
 	irp->name           = NULL;
 	irp->const_code_irg = NULL;
 	irp->kind           = k_BAD;
+	free(irp);
+	irp = NULL;
 }
 
 ir_graph *get_irp_main_irg(void)
@@ -296,49 +300,6 @@ void add_irp_mode(ir_mode *mode)
 	assert(mode != NULL);
 	assert(irp);
 	ARR_APP1(ir_mode *, irp->modes, mode);
-}
-
-void add_irp_opcode(ir_op *opcode)
-{
-	size_t len;
-	size_t code;
-	assert(opcode != NULL);
-	assert(irp);
-	len  = ARR_LEN(irp->opcodes);
-	code = opcode->code;
-	if (code >= len) {
-		ARR_RESIZE(ir_op*, irp->opcodes, code+1);
-		memset(&irp->opcodes[len], 0, (code-len+1) * sizeof(irp->opcodes[0]));
-	}
-
-	assert(irp->opcodes[code] == NULL && "opcode registered twice");
-	irp->opcodes[code] = opcode;
-}
-
-void remove_irp_opcode(ir_op *opcode)
-{
-	assert(opcode->code < ARR_LEN(irp->opcodes));
-	irp->opcodes[opcode->code] = NULL;
-}
-
-size_t (get_irp_n_opcodes)(void)
-{
-	return get_irp_n_opcodes_();
-}
-
-ir_op *(get_irp_opcode)(size_t pos)
-{
-	return get_irp_opcode_(pos);
-}
-
-void clear_irp_opcodes_generic_func(void)
-{
-	size_t i, n;
-
-	for (i = 0, n = get_irp_n_opcodes(); i < n; ++i) {
-		ir_op *op = get_irp_opcode(i);
-		op->ops.generic = (op_func)NULL;
-	}
 }
 
 void set_irp_prog_name(ident *name)
