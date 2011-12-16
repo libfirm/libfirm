@@ -1532,7 +1532,7 @@ static void dump_graph_from_list(FILE *F, ir_graph *irg)
 
 	fprintf(F, "graph: { title: ");
 	print_irgid(F, irg);
-	fprintf(F, " label: \"%s\" status:clustered color:%s \n",
+	fprintf(F, " label: \"%s\" status:clustered color:%s\n",
 	  get_ent_dump_name(ent), color_names[ird_color_prog_background]);
 
 	dump_graph_info(F, irg);
@@ -2120,7 +2120,7 @@ static void dump_blocks_extbb_grouped(FILE *F, ir_graph *irg)
 
 	fprintf(F, "graph: { title: ");
 	print_irgid(F, irg);
-	fprintf(F, " label: \"%s\" status:clustered color: white \n",
+	fprintf(F, " label: \"%s\" status:clustered color: white\n",
 	        get_ent_dump_name(ent));
 
 	dump_graph_info(F, irg);
