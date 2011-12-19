@@ -1166,8 +1166,8 @@ FIRM_API unsigned get_type_alignment_bytes(ir_type *tp);
  *  If the alignment of a type is
  *  not set, it is calculated here according to the following rules:
  *  -#.) if a type has a mode, the alignment is the mode size.
- *  -#.) compound types have the alignment of there biggest member.
- *  -#.) array types have the alignment of there element type.
+ *  -#.) compound types have the alignment of their biggest member.
+ *  -#.) array types have the alignment of their element type.
  *  -#.) method types return 0 here.
  *  -#.) all other types return 1 here (i.e. aligned at byte).
  */
@@ -1912,8 +1912,8 @@ FIRM_API const tp_op *get_tpop_array(void);
  * Enumeration types need not necessarily be represented explicitly
  * by Firm types, as the frontend can lower them to integer constants as
  * well.  For debugging purposes or similar tasks this information is useful.
- * The type state layout_fixed is set, if all enumeration constant have
- * there tarvals assigned.  Until then
+ * The type state layout_fixed is set, if all enumeration constants have
+ * their tarvals assigned.  Until then
  *
  * - *const:        The target values representing the constants used to
  *                  represent individual enumerations.

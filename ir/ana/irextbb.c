@@ -143,7 +143,7 @@ static ir_extblk _sentinel = { k_ir_extblk, 0xFEA1DEAD, NULL, NULL };
 /**
  * Post block-walker. Calculates the extended block info.
  * During construction, we use the (free) block input of all basic blocks
- * to point to there previous block.
+ * to point to their previous block.
  */
 static void post_walk_calc_extbb(ir_node *block, void *ctx)
 {

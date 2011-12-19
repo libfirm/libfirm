@@ -295,7 +295,7 @@ static ir_alias_relation different_index(const ir_node *idx1, const ir_node *idx
 }
 
 /**
- * Two Sel addresses have the same base address, check if there offsets are
+ * Two Sel addresses have the same base address, check if their offsets are
  * different.
  *
  * @param adr1  The first address.
