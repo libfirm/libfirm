@@ -1070,20 +1070,11 @@ FIRM_API int check_type(ir_type *tp);
  */
 FIRM_API int tr_verify(void);
 
-/** Frees all entities associated with a type.
- *  Does not free the array entity.
- *  Warning: ensure these entities are not referenced anywhere else.
- */
-FIRM_API void free_type_entities(ir_type *tp);
-
-/** Frees the memory used by the type.
+/**
+ * Frees the memory used by the type.
  *
- * Removes the type from the type list. Does not free the entities
- * belonging to the type, except for the array element entity.  Does
- * not free if tp is "none" or "unknown".  Frees entities in value
- * param subtypes of method types!!! Make sure these are not
- * referenced any more.  Further make sure there is no pointer type
- * that refers to this type.
+ * Removes the type from the type list and frees all entities
+ * belonging to the type.
  */
 FIRM_API void free_type(ir_type *tp);
 

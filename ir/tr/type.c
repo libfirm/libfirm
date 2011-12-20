@@ -145,10 +145,26 @@ ir_type *new_type(const tp_op *type_op, ir_mode *mode, type_dbg_info *db)
 	return res;
 }
 
+void free_type_entities(ir_type *tp)
+{
+	const tp_op *op = get_type_tpop(tp);
+	if (op->ops.free_entities != NULL)
+		op->ops.free_entities(tp);
+}
+
+static void free_type_attrs(ir_type *tp)
+{
+	const tp_op *tpop = get_type_tpop(tp);
+
+	if (tpop->ops.free_attrs)
+		tpop->ops.free_attrs(tp);
+}
+
 void free_type(ir_type *tp)
 {
 	const tp_op *op = get_type_tpop(tp);
 
+	free_type_entities(tp);
 	/* Remove from list of all types */
 	remove_irp_type(tp);
 	/* Free the attributes of the type. */
@@ -161,22 +177,6 @@ void free_type(ir_type *tp)
 	tp->kind = k_BAD;
 #endif
 	free(tp);
-}
-
-void free_type_entities(ir_type *tp)
-{
-	const tp_op *tpop = get_type_tpop(tp);
-
-	if (tpop->ops.free_entities)
-		tpop->ops.free_entities(tp);
-}
-
-void free_type_attrs(ir_type *tp)
-{
-	const tp_op *tpop = get_type_tpop(tp);
-
-	if (tpop->ops.free_attrs)
-		tpop->ops.free_attrs(tp);
 }
 
 void *(get_type_link)(const ir_type *tp)

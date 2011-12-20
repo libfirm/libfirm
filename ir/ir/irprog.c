@@ -131,8 +131,8 @@ void free_ir_prog(void)
 	for (i = get_irp_n_irgs(); i > 0;)
 		free_ir_graph(get_irp_irg(--i));
 
-	free_type_entities(get_glob_type());
-	/* must iterate backwards here */
+	/* free entities first to avoid entity types being destroyed before
+	 * the entities using them */
 	for (i = get_irp_n_types(); i > 0;)
 		free_type_entities(get_irp_type(--i));
 

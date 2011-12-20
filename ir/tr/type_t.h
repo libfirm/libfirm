@@ -196,7 +196,8 @@ struct ir_type {
  *           initialized.  The type is in state layout_undefined.
  */
 ir_type *new_type(const tp_op *type_op, ir_mode *mode, type_dbg_info *db);
-void free_type_attrs(ir_type *tp);
+
+void free_type_entities(ir_type *tp);
 
 void free_class_entities      (ir_type *clss);
 void free_struct_entities     (ir_type *strct);
