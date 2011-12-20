@@ -239,15 +239,6 @@ static void init_node_attr(ir_node *node, int n_inputs, int n_outputs)
 	}
 }
 
-static void add_register_req_out(ir_node *node)
-{
-	backend_info_t *info = be_get_info(node);
-	reg_out_info_t  out_info;
-	memset(&out_info, 0, sizeof(out_info));
-	out_info.req = arch_no_register_req;
-	ARR_APP1(reg_out_info_t, info->out_infos, out_info);
-}
-
 static void add_register_req_in(ir_node *node)
 {
 	backend_info_t *info = be_get_info(node);
@@ -572,14 +563,9 @@ ir_node *be_new_Return(dbg_info *dbg, ir_graph *irg, ir_node *block, int n_res,
 {
 	be_return_attr_t *a;
 	ir_node *res;
-	int i;
 
-	res = new_ir_node(dbg, irg, block, op_be_Return, mode_X, -1, NULL);
-	init_node_attr(res, -1, 1);
-	for (i = 0; i < n; ++i) {
-		add_irn_n(res, in[i]);
-		add_register_req_in(res);
-	}
+	res = new_ir_node(dbg, irg, block, op_be_Return, mode_X, n, in);
+	init_node_attr(res, n, 1);
 	be_set_constr_out(res, 0, arch_no_register_req);
 
 	a = (be_return_attr_t*)get_irn_generic_attr(res);
@@ -613,16 +599,6 @@ void be_Return_set_emit_pop(ir_node *ret, int emit_pop)
 {
 	be_return_attr_t *a = (be_return_attr_t*)get_irn_generic_attr(ret);
 	a->emit_pop = emit_pop;
-}
-
-int be_Return_append_node(ir_node *ret, ir_node *node)
-{
-	int pos;
-
-	pos = add_irn_n(ret, node);
-	add_register_req_in(ret);
-
-	return pos;
 }
 
 ir_node *be_new_IncSP(const arch_register_t *sp, ir_node *bl,
@@ -704,17 +680,13 @@ ir_node *be_new_SubSP(const arch_register_t *sp, ir_node *bl, ir_node *old_sp, i
 ir_node *be_new_Start(dbg_info *dbgi, ir_node *bl, int n_outs)
 {
 	ir_node *res;
-	int i;
 	ir_graph *irg = get_Block_irg(bl);
 	be_node_attr_t *attr;
 
 	res = new_ir_node(dbgi, irg, bl, op_be_Start, mode_T, 0, NULL);
-	init_node_attr(res, 0, -1);
+	init_node_attr(res, 0, n_outs);
 	attr = (be_node_attr_t*) get_irn_generic_attr(res);
 	attr->exc.pin_state = op_pin_state_pinned;
-	for (i = 0; i < n_outs; ++i) {
-		add_register_req_out(res);
-	}
 
 	return res;
 }
@@ -1347,7 +1319,7 @@ void be_init_op(void)
 	op_be_Call      = new_ir_op(beo_Call,      "be_Call",      op_pin_state_exc_pinned, irop_flag_fragile|irop_flag_uses_memory, oparity_variable, 0, sizeof(be_call_attr_t),    &be_node_op_ops);
 	ir_op_set_memory_index(op_be_Call, n_be_Call_mem);
 	ir_op_set_fragile_indices(op_be_Call, pn_be_Call_X_regular, pn_be_Call_X_except);
-	op_be_Return    = new_ir_op(beo_Return,    "be_Return",    op_pin_state_exc_pinned, irop_flag_cfopcode,                      oparity_dynamic,  0, sizeof(be_return_attr_t),  &be_node_op_ops);
+	op_be_Return    = new_ir_op(beo_Return,    "be_Return",    op_pin_state_exc_pinned, irop_flag_cfopcode,                      oparity_variable, 0, sizeof(be_return_attr_t),  &be_node_op_ops);
 	op_be_AddSP     = new_ir_op(beo_AddSP,     "be_AddSP",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);
 	op_be_SubSP     = new_ir_op(beo_SubSP,     "be_SubSP",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);
 	op_be_IncSP     = new_ir_op(beo_IncSP,     "be_IncSP",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_unary,    0, sizeof(be_incsp_attr_t),   &be_node_op_ops);
