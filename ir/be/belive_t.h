@@ -30,7 +30,6 @@
 #include "irgraph_t.h"
 #include "irnodehashmap.h"
 #include "irhooks.h"
-#include "dfs.h"
 #include "statev.h"
 
 #include "pset.h"
@@ -48,7 +47,6 @@ struct be_lv_t {
 	ir_nodehashmap_t map;
 	struct obstack   obst;
 	ir_graph        *irg;
-	dfs_t           *dfs;
 	bitset_t        *nodes;
 	hook_entry_t     hook_info;
 #ifdef USE_LIVE_CHK

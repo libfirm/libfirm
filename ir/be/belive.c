@@ -34,7 +34,6 @@
 #include "irdump_t.h"
 #include "irnodeset.h"
 
-#include "dfs_t.h"
 #include "absgraph.h"
 #include "statev.h"
 
@@ -533,8 +532,7 @@ be_lv_t *be_liveness(ir_graph *irg)
 
 	lv->irg  = irg;
 #ifdef USE_LIVE_CHK
-	lv->dfs  = dfs_new(&absgraph_irg_cfg_succ, irg);
-	lv->lvc  = lv_chk_new(lv->irg, lv->dfs);
+	lv->lvc  = lv_chk_new(lv->irg);
 #endif
 	lv->hook_info.context = lv;
 	lv->hook_info.hook._hook_node_info = be_dump_liveness_block;
@@ -570,7 +568,6 @@ void be_liveness_free(be_lv_t *lv)
 	be_liveness_invalidate(lv);
 #ifdef USE_LIVE_CHK
 	lv_chk_free(lv->lvc);
-	dfs_free(lv->dfs);
 #endif
 	xfree(lv);
 }
