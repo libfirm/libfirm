@@ -35,6 +35,7 @@
 #include "ircons.h"
 #include <stdio.h>
 #include <assert.h>
+#include "irnodehashmap.h"
 
 #define VA_SMART_RE_USE    0
 //#define VA_DEBUG_ARRANGE   1
@@ -648,6 +649,20 @@ static void va_region_place_single(va_info *vai, va_node *van,
 	}
 }
 
+static void va_exchange_node_in_loop(ir_node *cur_node, ir_node *old_node, ir_node *new_node, ir_nodehashmap_t *borders)
+{
+	ir_nodehashmap_insert(borders, cur_node, cur_node);
+	int arity = get_irn_arity(cur_node), i;
+	for (i = 0; i < arity; ++i) {
+		ir_node *pred  = get_irn_n(cur_node, i);
+		if (pred == old_node) {
+			set_irn_n(cur_node, i, new_node);
+		} else if (! ir_nodehashmap_get(borders, pred)) {
+			va_exchange_node_in_loop(pred, old_node, new_node, borders);
+		}
+	}
+}
+
 /* Resolve multiple hints for the given node and place it in one or more
  * regions. This will continue searching for hints from the placed node. */
 static void va_region_place_multiple(va_info *vai, va_node *van)
@@ -685,6 +700,23 @@ static void va_region_place_multiple(va_info *vai, va_node *van)
 			foreach_plist(hint->edges, it_edge) {
 				va_edge *edge = plist_element_get_value(it_edge);
 				set_irn_n(edge->irn, edge->index, ir_copy);
+
+				if (is_Loop(edge->irn)) {
+					ir_node *loop = edge->irn;
+					ir_nodehashmap_t borders;
+
+					ir_nodehashmap_init(&borders);
+
+					int arity = get_irn_arity(loop), i;
+					for (i = 0; i < arity; ++i) {
+						ir_node *in = get_irn_n(loop, i);
+						ir_nodehashmap_insert(&borders, in, in);
+					}
+
+					va_exchange_node_in_loop(get_Loop_eta(loop), van->irn, ir_copy, &borders);
+
+					ir_nodehashmap_destroy(&borders);
+				}
 			}
 		}
 
