@@ -659,7 +659,7 @@ struct ir_prog {
 	unsigned dump_nr;                    /**< number of program info dumps */
 	unsigned optimization_dumps :1;      /**< dump irg on each optimization */
 #ifndef NDEBUG
-	ir_resources_t reserved_resources;   /**< Bitset for tracking used global resources. */
+	irp_resources_t reserved_resources;  /**< Bitset for tracking used global resources. */
 #endif
 };
 
