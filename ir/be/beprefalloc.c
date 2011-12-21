@@ -2010,8 +2010,8 @@ static void be_pref_alloc_cls(void)
 {
 	size_t i;
 
-	lv = be_assure_liveness(irg);
-	be_liveness_assure_sets(lv);
+	be_assure_live_sets(irg);
+	lv = be_get_irg_liveness(irg);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
@@ -2109,8 +2109,7 @@ static void be_pref_alloc(ir_graph *new_irg)
 
 		/* we most probably constructed new Phis so liveness info is invalid
 		 * now */
-		/* TODO: test liveness_introduce */
-		be_liveness_invalidate(lv);
+		be_invalidate_live_sets(irg);
 		free(normal_regs);
 
 		stat_ev_ctx_pop("regcls");

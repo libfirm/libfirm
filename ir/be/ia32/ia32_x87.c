@@ -2282,9 +2282,8 @@ void ia32_x87_simulate_graph(ir_graph *irg)
 	sim.worklist = new_waitq();
 	waitq_put(sim.worklist, start_block);
 
-	be_assure_liveness(irg);
+	be_assure_live_sets(irg);
 	sim.lv = be_get_irg_liveness(irg);
-	be_liveness_assure_sets(sim.lv);
 
 	/* Calculate the liveness for all nodes. We must precalculate this info,
 	 * because the simulator adds new nodes (possible before Phi nodes) which

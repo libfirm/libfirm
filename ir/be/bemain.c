@@ -429,6 +429,7 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 	birg->irg = irg;
 	birg->main_env = env;
 	obstack_init(&birg->obst);
+	birg->lv = be_liveness_new(irg);
 
 	edges_deactivate_kind(irg, EDGE_KIND_DEP);
 	edges_activate_kind(irg, EDGE_KIND_DEP);

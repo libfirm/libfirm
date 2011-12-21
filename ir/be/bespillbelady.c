@@ -946,7 +946,7 @@ static void be_spill_belady(ir_graph *irg, const arch_register_class_t *rcls)
 {
 	int i;
 
-	be_liveness_assure_sets(be_assure_liveness(irg));
+	be_assure_live_sets(irg);
 
 	stat_ev_tim_push();
 	assure_loopinfo(irg);
