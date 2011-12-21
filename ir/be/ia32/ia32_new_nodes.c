@@ -54,6 +54,8 @@
 #include "ia32_new_nodes.h"
 #include "gen_ia32_regalloc_if.h"
 
+struct obstack opcodes_obst;
+
 /**
  * Dumper interface for dumping ia32 nodes in vcg.
  * @param n        the node to dump
@@ -1112,6 +1114,13 @@ static void ia32_copy_attr(ir_graph *irg, const ir_node *old_node,
 		DUP_ARR_D(reg_out_info_t, obst, old_info->out_infos);
 	new_info->in_reqs = old_info->in_reqs;
 	new_info->flags = old_info->flags;
+}
+
+static void ia32_init_op(ir_op *op, unsigned latency)
+{
+	ia32_op_attr_t *attr = OALLOCZ(&opcodes_obst, ia32_op_attr_t);
+	attr->latency = latency;
+	set_op_attr(op, attr);
 }
 
 /* Include the generated constructor functions */

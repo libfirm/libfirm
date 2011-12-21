@@ -48,6 +48,7 @@ enum {
 	pn_ia32_mem   = 2
 };
 
+extern struct obstack opcodes_obst;
 
 /**
  * returns true if a node has x87 registers

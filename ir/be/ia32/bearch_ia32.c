@@ -1727,10 +1727,10 @@ static backend_params ia32_backend_params = {
  */
 static void ia32_init(void)
 {
-	ir_mode    *mode_long_long;
-	ir_mode    *mode_unsigned_long_long;
-	ir_type    *type_long_long;
-	ir_type    *type_unsigned_long_long;
+	ir_mode *mode_long_long;
+	ir_mode *mode_unsigned_long_long;
+	ir_type *type_long_long;
+	ir_type *type_unsigned_long_long;
 
 	ia32_setup_cg_config();
 
@@ -1763,6 +1763,7 @@ static void ia32_init(void)
 	}
 
 	ia32_register_init();
+	obstack_init(&opcodes_obst);
 	ia32_create_opcodes(&ia32_irn_ops);
 }
 
@@ -1773,6 +1774,7 @@ static void ia32_finish(void)
 		between_type = NULL;
 	}
 	ia32_free_opcodes();
+	obstack_free(&opcodes_obst, NULL);
 }
 
 /**

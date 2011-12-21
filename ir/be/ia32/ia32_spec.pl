@@ -2736,7 +2736,7 @@ foreach my $op (keys(%nodes)) {
 			die("Latency missing for op $op");
 		}
 	}
-	$op_attr_init .= "attr->latency = ".$node->{latency} . ";";
+	$op_attr_init .= "ia32_init_op(op, ".$node->{latency} . ");";
 
 	$node->{op_attr_init} = $op_attr_init;
 }

@@ -698,21 +698,18 @@ EOF
 	}
 
 	$n_opcodes++;
-	$temp  = "\top_$op = new_ir_op(cur_opcode + iro_$op, \"$op\", op_pin_state_".$n{"state"}.", $op_flags";
+	$temp  = "\top = new_ir_op(cur_opcode + iro_$op, \"$op\", op_pin_state_".$n{"state"}.", $op_flags";
 	$temp .= ", ".translate_arity($arity).", 0, ${attr_size}, &ops);\n";
 	push(@obst_new_irop, $temp);
 	if ($is_fragile) {
-		push(@obst_new_irop, "\tir_op_set_memory_index(op_${op}, n_${op}_mem);\n");
-		push(@obst_new_irop, "\tir_op_set_fragile_indices(op_${op}, pn_${op}_X_regular, pn_${op}_X_except);\n");
+		push(@obst_new_irop, "\tir_op_set_memory_index(op, n_${op}_mem);\n");
+		push(@obst_new_irop, "\tir_op_set_fragile_indices(op, pn_${op}_X_regular, pn_${op}_X_except);\n");
 	}
-	push(@obst_new_irop, "\tset_op_tag(op_$op, $arch\_op_tag);\n");
-	if(defined($default_op_attr_type)) {
-		push(@obst_new_irop, "\tattr = &attrs[iro_$op];\n");
-		if(defined($n{op_attr_init})) {
-			push(@obst_new_irop, "\t".$n{op_attr_init}."\n");
-		}
-		push(@obst_new_irop, "\tset_op_attr(op_$op, attr);\n");
+	push(@obst_new_irop, "\tset_op_tag(op, $arch\_op_tag);\n");
+	if(defined($n{op_attr_init})) {
+		push(@obst_new_irop, "\t".$n{op_attr_init}."\n");
 	}
+	push(@obst_new_irop, "\top_${op} = op;\n");
 
 	push(@obst_free_irop, "\tfree_ir_op(op_$op); op_$op = NULL;\n");
 
@@ -824,23 +821,11 @@ $obst_constructor
 void $arch\_create_opcodes(const arch_irn_ops_t *be_ops)
 {
 	ir_op_ops  ops;
-	int        cur_opcode;
-ENDOFMAIN
-
-	if (defined($default_op_attr_type)) {
-		print OUT "\t$default_op_attr_type *attr, *attrs;\n";
-	}
-
-print OUT<<ENDOFMAIN;
-
-	cur_opcode = get_next_ir_opcodes(iro_$arch\_last);
+	ir_op     *op;
+	int        cur_opcode = get_next_ir_opcodes(iro_$arch\_last);
 
 	$arch\_opcode_start = cur_opcode;
 ENDOFMAIN
-
-	if (defined($default_op_attr_type)) {
-		print OUT "\tattrs = XMALLOCNZ(${default_op_attr_type}, iro_${arch}_last);\n";
-	}
 
 print OUT @obst_new_irop;
 print OUT "\n";
