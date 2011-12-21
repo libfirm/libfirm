@@ -518,7 +518,7 @@ typedef struct ir_vrp_info {
 struct ir_graph {
 	firm_kind         kind;        /**< Always set to k_ir_graph. */
 	/* --  Basics of the representation -- */
-    unsigned last_node_idx;        /**< The last IR node index for this graph. */
+	unsigned last_node_idx;        /**< The last IR node index for this graph. */
 	ir_entity  *ent;               /**< The entity of this procedure, i.e.,
 	                                    the type of the procedure and the
 	                                    class it belongs to. */
