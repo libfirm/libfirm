@@ -73,9 +73,8 @@ struct pdeq {
 
 /**
  * cache of unused, pdeq blocks to speed up new_pdeq and del_pdeq.
- * +1 for compilers that can't grok empty arrays
  */
-static pdeq *pdeq_block_cache[TUNE_NSAVED_PDEQS+1];
+static pdeq *pdeq_block_cache[TUNE_NSAVED_PDEQS];
 
 /**
  * Number of pdeqs in pdeq_store.
@@ -107,7 +106,7 @@ static inline void free_pdeq_block (pdeq *p)
 static inline pdeq *alloc_pdeq_block (void)
 {
 	pdeq *p;
-	if (TUNE_NSAVED_PDEQS && pdeqs_cached) {
+	if (pdeqs_cached > 0) {
 		p = pdeq_block_cache[--pdeqs_cached];
 	} else {
 		p = (pdeq*) xmalloc(PREF_MALLOC_SIZE);
@@ -157,7 +156,6 @@ void del_pdeq(pdeq *dq)
 		qq = q->r;
 		free_pdeq_block(q);
 	} while ((q = qq));
-
 }
 
 /* Checks if a list is empty. */

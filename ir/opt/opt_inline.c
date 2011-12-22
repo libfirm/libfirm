@@ -1518,6 +1518,8 @@ static ir_graph **create_irg_list(void)
 	callgraph_walk(NULL, callgraph_walker, &env);
 	assert(n_irgs == env.last_irg);
 
+	free_callgraph();
+
 	return env.irgs;
 }
 

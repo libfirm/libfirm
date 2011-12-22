@@ -186,7 +186,7 @@ ir_node *be_ifg_neighbours_begin(const be_ifg_t *ifg, neighbours_iter_t *iter,
                                  const ir_node *irn)
 {
 	find_neighbours(ifg, iter, irn);
-	return ir_nodeset_iterator_next(&iter->iter);
+	return get_next_neighbour(iter);
 }
 
 ir_node *be_ifg_neighbours_next(neighbours_iter_t *iter)

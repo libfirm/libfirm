@@ -1831,8 +1831,6 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 	phi_entry *phi_list = NULL;
 	set       *avail;
 
-	avail = new_set(cmp_avail_entry, 8);
-
 	/* collect all outer memories */
 	for (phi = pscc->head; phi != NULL; phi = next) {
 		node_entry *ne = get_irn_ne(phi, env);
@@ -1865,6 +1863,8 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 	/* for now, we cannot handle more than one input (only reducible cf) */
 	if (phi_list->next != NULL)
 		return;
+
+	avail = new_set(cmp_avail_entry, 8);
 
 	for (load = pscc->head; load; load = next) {
 		ir_mode *load_mode;
