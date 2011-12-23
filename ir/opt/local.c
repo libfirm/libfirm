@@ -21,6 +21,7 @@
  * @brief   Apply local opts until fixpoint
  * @author  Andreas Zwinkau
  */
+#include <config.h>
 #include "irgopt.h"
 #include "opt_manage.h"
 
