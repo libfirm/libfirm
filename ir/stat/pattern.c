@@ -783,6 +783,7 @@ static HASH_MAP(pattern_entry_t) *read_pattern(const char *fname)
 	HASH_MAP(pattern_entry_t) *pattern_hash = new_pset(pattern_cmp, 8);
 	BYTE            buffer[PATTERN_STORE_SIZE];
 	CODE_BUFFER     buf;
+	int             res;
 
 	f = fopen(fname, "rb");
 	if (! f) {
@@ -790,19 +791,20 @@ static HASH_MAP(pattern_entry_t) *read_pattern(const char *fname)
 		return NULL;
 	}  /* if */
 
-	fread(magic, 4, 1, f);
+	res = fread(magic, 4, 1, f);
+	if (res != 1)
+		goto read_error;
 	count = 0;
-	fread(&count, sizeof(count), 1, f);
-	if (memcmp(magic, "FPS1", 4) != 0 || count <= 0) {
-		fprintf(stderr, "Error: %s is not a Firm pattern store. Ignored.\n", fname);
-		fclose(f);
-		return NULL;
-	}  /* if */
+	res = fread(&count, sizeof(count), 1, f);
+	if (res != 1 || memcmp(magic, "FPS1", 4) != 0 || count <= 0)
+		goto read_error;
 
 	/* read all pattern entries and put them into the hash table. */
 	for (i = 0; i < count; ++i) {
 		init_buf(&buf, buffer, sizeof(buffer));
-		fread(&tmp, offsetof(pattern_entry_t, buf), 1, f);
+		res = fread(&tmp, offsetof(pattern_entry_t, buf), 1, f);
+		if (res != 1)
+			goto read_error;
 		for (j = 0; j < tmp.len; ++j)
 			put_byte(&buf, fgetc(f));
 		entry = pattern_get_entry(&buf, pattern_hash);
@@ -814,6 +816,11 @@ static HASH_MAP(pattern_entry_t) *read_pattern(const char *fname)
 	assert(pset_count(pattern_hash) == count);
 
 	return pattern_hash;
+
+read_error:
+	fprintf(stderr, "Error: %s is not a Firm pattern store. Ignored.\n", fname);
+	fclose(f);
+	return NULL;
 }  /* read_pattern */
 
 /**
