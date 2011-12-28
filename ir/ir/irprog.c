@@ -62,7 +62,7 @@ static ir_prog *new_incomplete_ir_prog(void)
 	res->max_irg_idx    = 0;
 	res->max_node_nr    = 0;
 #ifndef NDEBUG
-	res->reserved_resources = IR_RESOURCE_NONE;
+	res->reserved_resources = IRP_RESOURCE_NONE;
 #endif
 
 	return res;
