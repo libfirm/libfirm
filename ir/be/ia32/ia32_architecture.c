@@ -97,7 +97,7 @@ enum cpu_arch_features {
 	arch_sse4_2_insn  = arch_feature_sse4_2 | arch_sse4_1_insn,   /**< SSE4.2 instructions, include SSE4.1 */
 	arch_sse4a_insn   = arch_feature_sse4a  | arch_ssse3_insn,    /**< SSE4a instructions, include SSSE3 */
 
-	arch_3DNow_insn   = arch_feature_3DNow | arch_feature_mmx,    /**< 3DNow! instructions, including MMX */
+	arch_3DNow_insn   = arch_feature_3DNow  | arch_feature_mmx,   /**< 3DNow! instructions, including MMX */
 	arch_3DNowE_insn  = arch_feature_3DNowE | arch_3DNow_insn,    /**< Enhanced 3DNow! instructions */
 	arch_64bit_insn   = arch_feature_64bit  | arch_sse2_insn,     /**< x86_64 support, includes SSE2 */
 };
@@ -111,30 +111,40 @@ typedef enum cpu_support {
 	cpu_generic     = arch_generic32,
 
 	/* intel CPUs */
-	cpu_i386        = arch_i386,
-	cpu_i486        = arch_i486,
-	cpu_pentium     = arch_pentium,
-	cpu_pentium_mmx = arch_pentium | arch_mmx_insn,
-	cpu_pentium_pro = arch_ppro | arch_feature_cmov | arch_feature_p6_insn,
-	cpu_pentium_2   = arch_ppro | arch_feature_cmov | arch_feature_p6_insn | arch_mmx_insn,
-	cpu_pentium_3   = arch_ppro | arch_feature_cmov | arch_feature_p6_insn | arch_sse1_insn,
-	cpu_pentium_m   = arch_ppro | arch_feature_cmov | arch_feature_p6_insn | arch_sse2_insn,
-	cpu_pentium_4   = arch_netburst | arch_feature_cmov | arch_feature_p6_insn | arch_sse2_insn,
-	cpu_prescott    = arch_nocona | arch_feature_cmov | arch_feature_p6_insn | arch_sse3_insn,
-	cpu_nocona      = arch_nocona | arch_feature_cmov | arch_feature_p6_insn | arch_64bit_insn | arch_sse3_insn,
-	cpu_core2       = arch_core2 | arch_feature_cmov | arch_feature_p6_insn | arch_64bit_insn | arch_ssse3_insn,
-	cpu_penryn      = arch_core2 | arch_feature_cmov | arch_feature_p6_insn | arch_64bit_insn | arch_sse4_1_insn,
+	cpu_i386                = arch_i386,
+	cpu_i486                = arch_i486,
+	cpu_pentium             = arch_pentium,
+	cpu_pentium_mmx         = arch_pentium | arch_mmx_insn,
+	cpu_pentium_pro_generic = arch_ppro | arch_feature_p6_insn,
+	cpu_pentium_pro         = arch_ppro | arch_feature_cmov | arch_feature_p6_insn,
+	cpu_pentium_2           = arch_ppro | arch_feature_cmov | arch_feature_p6_insn | arch_mmx_insn,
+	cpu_pentium_3           = arch_ppro | arch_feature_cmov | arch_feature_p6_insn | arch_sse1_insn,
+	cpu_pentium_m           = arch_ppro | arch_feature_cmov | arch_feature_p6_insn | arch_sse2_insn,
+	cpu_netburst_generic    = arch_netburst | arch_feature_p6_insn,
+	cpu_pentium_4           = arch_netburst | arch_feature_cmov | arch_feature_p6_insn | arch_sse2_insn,
+	cpu_prescott            = arch_nocona | arch_feature_cmov | arch_feature_p6_insn | arch_sse3_insn,
+	cpu_nocona              = arch_nocona | arch_feature_cmov | arch_feature_p6_insn | arch_64bit_insn | arch_sse3_insn,
+	cpu_core2_generic       = arch_core2 | arch_feature_p6_insn,
+	cpu_core2               = arch_core2 | arch_feature_cmov | arch_feature_p6_insn | arch_64bit_insn | arch_ssse3_insn,
+	cpu_penryn              = arch_core2 | arch_feature_cmov | arch_feature_p6_insn | arch_64bit_insn | arch_sse4_1_insn,
+	cpu_atom_generic        = arch_atom | arch_feature_p6_insn,
+	cpu_atom                = arch_atom | arch_feature_cmov | arch_feature_p6_insn | arch_ssse3_insn,
 
 	/* AMD CPUs */
-	cpu_k6          = arch_k6 | arch_mmx_insn,
-	cpu_k6_PLUS     = arch_k6 | arch_3DNow_insn,
-	cpu_geode       = arch_geode  | arch_sse1_insn | arch_3DNowE_insn,
-	cpu_athlon_old  = arch_athlon | arch_3DNowE_insn | arch_feature_cmov | arch_feature_p6_insn,
-	cpu_athlon      = arch_athlon | arch_sse1_insn | arch_3DNowE_insn | arch_feature_cmov | arch_feature_p6_insn,
-	cpu_athlon64    = arch_athlon | arch_sse2_insn | arch_3DNowE_insn | arch_feature_cmov | arch_feature_p6_insn | arch_64bit_insn,
-	cpu_k8          = arch_k8  | arch_3DNowE_insn | arch_feature_cmov | arch_feature_p6_insn | arch_64bit_insn,
-	cpu_k8_sse3     = arch_k8  | arch_3DNowE_insn | arch_feature_cmov | arch_feature_p6_insn | arch_64bit_insn | arch_sse3_insn,
-	cpu_k10         = arch_k10 | arch_3DNowE_insn | arch_feature_cmov | arch_feature_p6_insn | arch_feature_popcnt | arch_64bit_insn | arch_sse4a_insn,
+	cpu_k6_generic     = arch_k6,
+	cpu_k6             = arch_k6 | arch_mmx_insn,
+	cpu_k6_PLUS        = arch_k6 | arch_3DNow_insn,
+	cpu_geode_generic  = arch_geode,
+	cpu_geode          = arch_geode  | arch_sse1_insn | arch_3DNowE_insn,
+	cpu_athlon_generic = arch_athlon | arch_feature_p6_insn,
+	cpu_athlon_old     = arch_athlon | arch_3DNowE_insn | arch_feature_cmov | arch_feature_p6_insn,
+	cpu_athlon         = arch_athlon | arch_sse1_insn | arch_3DNowE_insn | arch_feature_cmov | arch_feature_p6_insn,
+	cpu_athlon64       = arch_athlon | arch_sse2_insn | arch_3DNowE_insn | arch_feature_cmov | arch_feature_p6_insn | arch_64bit_insn,
+	cpu_k8_generic     = arch_k8  | arch_feature_p6_insn,
+	cpu_k8             = arch_k8  | arch_3DNowE_insn | arch_feature_cmov | arch_feature_p6_insn | arch_64bit_insn,
+	cpu_k8_sse3        = arch_k8  | arch_3DNowE_insn | arch_feature_cmov | arch_feature_p6_insn | arch_64bit_insn | arch_sse3_insn,
+	cpu_k10_generic    = arch_k10 | arch_feature_p6_insn,
+	cpu_k10            = arch_k10 | arch_3DNowE_insn | arch_feature_cmov | arch_feature_p6_insn | arch_feature_popcnt | arch_64bit_insn | arch_sse4a_insn,
 
 	/* other CPUs */
 	cpu_winchip_c6  = arch_i486 | arch_feature_mmx,
@@ -177,6 +187,7 @@ static const lc_opt_enum_int_items_t arch_items[] = {
 	{ "merom",        cpu_core2 },
 	{ "core2",        cpu_core2 },
 	{ "penryn",       cpu_penryn },
+	{ "atom",         cpu_atom },
 
 	{ "k6",           cpu_k6 },
 	{ "k6-2",         cpu_k6_PLUS },
@@ -582,10 +593,10 @@ static cpu_support auto_detect_Intel(x86_cpu_info_t const *info)
 
 	switch (family) {
 	case 4:
-		auto_arch = arch_i486;
+		auto_arch = cpu_i486;
 		break;
 	case 5:
-		auto_arch = arch_pentium;
+		auto_arch = cpu_pentium;
 		break;
 	case 6:
 		switch (model) {
@@ -599,16 +610,14 @@ static cpu_support auto_detect_Intel(x86_cpu_info_t const *info)
 		case 0x0A: /* Pentium III Model 0A */
 		case 0x0B: /* Pentium III Model 0B */
 		case 0x0D: /* Pentium M Model 0D */
-			auto_arch = arch_ppro | arch_feature_p6_insn;
-			break;
 		case 0x0E: /* Core Model 0E */
-			auto_arch = arch_ppro | arch_feature_p6_insn;
+			auto_arch = cpu_pentium_pro_generic;
 			break;
 		case 0x0F: /* Core2 Model 0F */
 		case 0x15: /* Intel EP80579 */
 		case 0x16: /* Celeron Model 16 */
 		case 0x17: /* Core2 Model 17 */
-			auto_arch = arch_core2 | arch_feature_p6_insn;
+			auto_arch = cpu_core2_generic;
 			break;
 		default:
 			/* unknown */
@@ -623,16 +632,16 @@ static cpu_support auto_detect_Intel(x86_cpu_info_t const *info)
 		case 0x03: /* Pentium 4 Model 03 */
 		case 0x04: /* Pentium 4 Model 04 */
 		case 0x06: /* Pentium 4 Model 06 */
-			auto_arch = arch_netburst | arch_feature_p6_insn;
+			auto_arch = cpu_netburst_generic;
 			break;
 		case 0x1A: /* Core i7 */
-			auto_arch = arch_core2 | arch_feature_p6_insn;
+			auto_arch = cpu_core2_generic;
 			break;
 		case 0x1C: /* Atom */
-			auto_arch = arch_atom;
+			auto_arch = cpu_atom_generic;
 			break;
 		case 0x1D: /* Xeon MP */
-			auto_arch = arch_core2 | arch_feature_p6_insn;
+			auto_arch = cpu_core2_generic;
 			break;
 		default:
 			/* unknown */
@@ -662,7 +671,7 @@ static cpu_support auto_detect_AMD(x86_cpu_info_t const *info) {
 
 	switch (family) {
 	case 0x04:
-		auto_arch = arch_i486;
+		auto_arch = cpu_i486;
 		break;
 	case 0x05:
 		switch (model) {
@@ -670,21 +679,21 @@ static cpu_support auto_detect_AMD(x86_cpu_info_t const *info) {
 		case 0x01: /* K5 Model 1 */
 		case 0x02: /* K5 Model 2 */
 		case 0x03: /* K5 Model 3 */
-			auto_arch = arch_pentium;
+			auto_arch = cpu_pentium;
 			break;
 		case 0x06: /* K6 Model 6 */
 		case 0x07: /* K6 Model 7 */
 		case 0x08: /* K6-2 Model 8 */
 		case 0x09: /* K6-III Model 9 */
 		case 0x0D: /* K6-2+ or K6-III+ */
-			auto_arch = arch_k6;
+			auto_arch = cpu_k6_generic;
 			break;
 		case 0x0A: /* Geode LX */
-			auto_arch = arch_geode;
+			auto_arch = cpu_geode_generic;
 			break;
 		default:
 			/* unknown K6 */
-			auto_arch = arch_k6;
+			auto_arch = cpu_k6_generic;
 			break;
 		}
 		break;
@@ -698,20 +707,17 @@ static cpu_support auto_detect_AMD(x86_cpu_info_t const *info) {
 		case 0x07: /* Mobile Duron Model 7 */
 		case 0x08: /* Athlon (TH/AP core) including Geode NX */
 		case 0x0A: /* Athlon (BT core) */
-			auto_arch = arch_athlon | arch_feature_p6_insn;
-			break;
-		default:
-			/* unknown K7 */
-			auto_arch = arch_athlon | arch_feature_p6_insn;
+		default:   /* unknown K7 */
+			auto_arch = cpu_athlon_generic;
 			break;
 		}
 		break;
 	case 0x0F:
-		auto_arch = arch_k8 | arch_feature_p6_insn;
+		auto_arch = cpu_k8_generic;
 		break;
 	case 0x1F:
 	case 0x2F: /* AMD Family 11h */
-		auto_arch = arch_k10 | arch_feature_p6_insn;
+		auto_arch = cpu_k10_generic;
 		break;
 	default:
 		/* unknown */
@@ -833,7 +839,7 @@ static void autodetect_arch(void)
 		} else if (0 == strcmp(vendorid, "AuthenticAMD")) {
 			auto_arch = auto_detect_AMD(&cpu_info);
 		} else if (0 == strcmp(vendorid, "Geode by NSC")) {
-			auto_arch = arch_geode;
+			auto_arch = cpu_geode_generic;
 		}
 
 		if (cpu_info.edx_features & CPUID_FEAT_EDX_CMOV)
