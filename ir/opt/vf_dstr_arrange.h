@@ -121,3 +121,5 @@ void va_dump(va_info *vai, FILE *f);
 		(loop) = get_Loop_next(loop), (it) = ((loop) != (first_loop)))
 
 #endif
+
+void va_exchange_nodes_in_loop_hook(void *context, ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt);

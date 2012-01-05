@@ -45,6 +45,7 @@
 #include "irgwalk.h"
 #include <assert.h>
 #include <string.h>
+#include "irhooks.h"
 
 //#define VB_DEBUG_BUILD 1
 
@@ -949,6 +950,11 @@ void vb_build(ir_graph *irg)
 	/* Detach all loops in the graph. */
 	vb_detach_all_etas(&vbi, ret);
 
+	hook_entry_t hook;
+	memset(&hook, 0, sizeof(hook_entry_t));
+	hook.hook._hook_set_irn_n = va_exchange_nodes_in_loop_hook;
+	register_hook(hook_set_irn_n, &hook);
+
 	/* Construct the base layer first. */
 	vb_build_base(&vbi, ret, block);
 
@@ -987,6 +993,8 @@ void vb_build(ir_graph *irg)
 
 	pmap_new_destroy(&vbi.merges);
 	pmap_new_destroy(&vbi.blocks);
+
+	unregister_hook(hook_set_irn_n, &hook);
 
 	/* Ungate the graph. */
 	vb_ungate(&vbi);
