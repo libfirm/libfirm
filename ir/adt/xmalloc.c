@@ -35,7 +35,8 @@
 
 static NORETURN xnomem(void)
 {
-	panic("out of memory");
+	/* Do not use panic() here, because it might try to allocate memory! */
+	fputs("out of memory", stderr);
 }
 
 void *xmalloc(size_t size)
