@@ -1763,15 +1763,18 @@ static void bitcast_float_to_int(dbg_info *dbgi, ir_node *block,
 		              (get_tarval_sub_bits(tv, 1) << 8)  |
 		              (get_tarval_sub_bits(tv, 2) << 16) |
 		              (get_tarval_sub_bits(tv, 3) << 24);
-		result[0] = create_int_const(block, val);
+		ir_node *valc = create_int_const(block, val);
 		if (bits == 64) {
-			int32_t val = get_tarval_sub_bits(tv, 4)         |
+			int32_t val2 = get_tarval_sub_bits(tv, 4)         |
 						  (get_tarval_sub_bits(tv, 5) << 8)  |
 						  (get_tarval_sub_bits(tv, 6) << 16) |
 						  (get_tarval_sub_bits(tv, 7) << 24);
-			result[1] = create_int_const(block, val);
+			ir_node *valc2 = create_int_const(block, val2);
+			result[0] = valc2;
+			result[1] = valc;
 		} else {
 			assert(bits == 32);
+			result[0] = valc;
 			result[1] = NULL;
 		}
 	} else {
