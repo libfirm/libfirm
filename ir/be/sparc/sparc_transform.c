@@ -1371,7 +1371,7 @@ static ir_node *create_ftoi(dbg_info *dbgi, ir_node *block, ir_node *op,
 	ir_graph *irg   = get_irn_irg(block);
 	ir_node  *sp    = get_irg_frame(irg);
 	ir_node  *nomem = get_irg_no_mem(irg);
-	ir_node  *stf   = create_stf(dbgi, block, ftoi, sp, nomem, src_mode,
+	ir_node  *stf   = create_stf(dbgi, block, ftoi, sp, nomem, mode_fp,
 	                             NULL, 0, true);
 	ir_node  *ld    = new_bd_sparc_Ld_imm(dbgi, block, sp, stf, mode_gp,
 	                                      NULL, 0, true);
