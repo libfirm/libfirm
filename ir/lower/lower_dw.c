@@ -156,8 +156,13 @@ static ir_type *get_conv_type(ir_mode *imode, ir_mode *omode)
 		/* set param types and result types */
 		n_param = 0;
 		if (imode == env->high_signed) {
-			set_method_param_type(mtd, n_param++, tp_u);
-			set_method_param_type(mtd, n_param++, tp_s);
+			if (env->params->little_endian) {
+				set_method_param_type(mtd, n_param++, tp_u);
+				set_method_param_type(mtd, n_param++, tp_s);
+			} else {
+				set_method_param_type(mtd, n_param++, tp_s);
+				set_method_param_type(mtd, n_param++, tp_u);
+			}
 		} else if (imode == env->high_unsigned) {
 			set_method_param_type(mtd, n_param++, tp_u);
 			set_method_param_type(mtd, n_param++, tp_u);
@@ -168,8 +173,13 @@ static ir_type *get_conv_type(ir_mode *imode, ir_mode *omode)
 
 		n_res = 0;
 		if (omode == env->high_signed) {
-			set_method_res_type(mtd, n_res++, tp_u);
-			set_method_res_type(mtd, n_res++, tp_s);
+			if (env->params->little_endian) {
+				set_method_res_type(mtd, n_res++, tp_u);
+				set_method_res_type(mtd, n_res++, tp_s);
+			} else {
+				set_method_res_type(mtd, n_res++, tp_s);
+				set_method_res_type(mtd, n_res++, tp_u);
+			}
 		} else if (omode == env->high_unsigned) {
 			set_method_res_type(mtd, n_res++, tp_u);
 			set_method_res_type(mtd, n_res++, tp_u);
@@ -1492,8 +1502,13 @@ static void lower_Conv_to_Ll(ir_node *node)
 		set_irn_pinned(call, get_irn_pinned(node));
 		irn = new_r_Proj(call, mode_T, pn_Call_T_result);
 
-		res_low  = new_r_Proj(irn, low_unsigned, 0);
-		res_high = new_r_Proj(irn, low_signed, 1);
+		if (env->params->little_endian) {
+			res_low  = new_r_Proj(irn, low_unsigned, 0);
+			res_high = new_r_Proj(irn, low_signed, 1);
+		} else {
+			res_low  = new_r_Proj(irn, low_unsigned, 1);
+			res_high = new_r_Proj(irn, low_signed,   0);
+		}
 	}
 	ir_set_dw_lowered(node, res_low, res_high);
 }
@@ -1531,8 +1546,13 @@ static void lower_Conv_from_Ll(ir_node *node)
 		ir_node *res;
 
 		irn   = get_intrinsic_address(mtp, get_irn_op(node), imode, omode);
-		in[0] = entry->low_word;
-		in[1] = entry->high_word;
+		if (env->params->little_endian) {
+			in[0] = entry->low_word;
+			in[1] = entry->high_word;
+		} else {
+			in[0] = entry->high_word;
+			in[1] = entry->low_word;
+		}
 
 		call = new_rd_Call(dbg, block, get_irg_no_mem(irg), irn, 2, in, mtp);
 		set_irn_pinned(call, get_irn_pinned(node));
