@@ -148,15 +148,6 @@ static void build_coloring_cstr(ilp_env_t *ienv)
 				&& (!has_alignment_cstr || ((col % req->width) == 0)))
 				continue;
 
-			// If it is possible to have only a part of a large variable that
-			// cannot be used, we should invalidate the whole piece.
-			// Since we do not think this can happen, we did implemented the
-			// support for that.
-			assert((!has_alignment_cstr
-					|| rbitset_is_set(colors, col)
-					|| !rbitset_is_set(colors, col - (col % req->width)))
-				   && "Register constraints that invalidate just a part of "
-				   "a large variable is not yet supported");
 			make_color_var_name(buf, sizeof(buf), irn, col);
 			cst_idx = lpp_add_cst(ienv->lp, NULL, lpp_equal, 0.0);
 			var_idx = lpp_add_var(ienv->lp, buf, lpp_binary, 0.0);
