@@ -2026,20 +2026,19 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment,
 	char buf[32];
 	int offset, frame_size;
 	static unsigned area_cnt = 0;
-	static ir_type *a_byte = NULL;
 
 	assert(is_frame_type(frame_type));
 	assert(get_type_state(frame_type) == layout_fixed);
 	assert(get_type_alignment_bytes(frame_type) > 0);
 	set_type_state(frame_type, layout_undefined);
 
-	if (! a_byte)
-		a_byte = new_type_primitive(mode_Bu);
+	if (irp->byte_type == NULL)
+		irp->byte_type = new_type_primitive(mode_Bu);
 
 	snprintf(buf, sizeof(buf), "area%u", area_cnt++);
 	name = new_id_from_str(buf);
 
-	tp = new_type_array(1, a_byte);
+	tp = new_type_array(1, irp->byte_type);
 	set_array_bounds_int(tp, 0, 0, size);
 	set_type_alignment_bytes(tp, alignment);
 	set_type_size_bytes(tp, size);

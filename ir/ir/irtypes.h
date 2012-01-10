@@ -629,6 +629,7 @@ struct ir_prog {
 	ir_type   *none_type;           /**< unique 'none'-type */
 	ir_type   *code_type;           /**< unique 'code'-type */
 	ir_type   *unknown_type;        /**< unique 'unknown'-type */
+	ir_type   *byte_type;           /**< type for a 'byte' */
 	ident    **global_asms;         /**< An array of global ASM insertions. */
 
 	/* -- states of and access to generated information -- */
