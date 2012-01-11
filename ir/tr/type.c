@@ -2024,7 +2024,9 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment,
 	ir_type *tp;
 	ident *name;
 	char buf[32];
-	int offset, frame_size;
+	int offset;
+	unsigned frame_size  = get_type_size_bytes(frame_type);
+	unsigned frame_align = get_type_alignment_bytes(frame_type);
 	static unsigned area_cnt = 0;
 
 	assert(is_frame_type(frame_type));
@@ -2043,10 +2045,8 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment,
 	set_type_alignment_bytes(tp, alignment);
 	set_type_size_bytes(tp, size);
 
-	frame_size = get_type_size_bytes(frame_type);
 	if (at_start) {
 		size_t i, n;
-		unsigned frame_align = get_type_alignment_bytes(frame_type);
 		unsigned delta = (size + frame_align - 1) & ~(frame_align - 1);
 		/* fix all offsets so far */
 		for (i = 0, n = get_class_n_members(frame_type); i < n; ++i) {
@@ -2057,13 +2057,6 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment,
 		/* calculate offset and new type size */
 		offset = 0;
 		frame_size += delta;
-
-		/* increase size to match alignment... */
-		if (alignment > frame_align) {
-			frame_align = alignment;
-			set_type_alignment_bytes(frame_type, frame_align);
-			frame_size  = (frame_size + frame_align - 1) & ~(frame_align - 1);
-		}
 	} else {
 		/* calculate offset and new type size */
 		offset = (frame_size + alignment - 1) & ~(alignment - 1);
@@ -2073,6 +2066,9 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment,
 	area = new_entity(frame_type, name, tp);
 	set_entity_offset(area, offset);
 	set_type_size_bytes(frame_type, frame_size);
+	if (alignment > frame_align) {
+		set_type_alignment_bytes(frame_type, alignment);
+	}
 
 	/* mark this entity as compiler generated */
 	set_entity_compiler_generated(area, 1);
