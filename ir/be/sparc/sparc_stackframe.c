@@ -304,8 +304,26 @@ static void process_frame_types(ir_graph *irg)
 	ir_type *between_type = layout->between_type;
 	unsigned between_size = get_type_size_bytes(between_type);
 
-	ir_type *frame_type = get_irg_frame_type(irg);
-	unsigned frame_size = get_type_size_bytes(frame_type);
+	ir_type *frame_type  = get_irg_frame_type(irg);
+	unsigned frame_size  = get_type_size_bytes(frame_type);
+	unsigned frame_align = get_type_alignment_bytes(frame_type);
+
+	/* There's the tricky case of the stackframe size not being a multiple
+	 * of the alignment. There are 2 variants:
+	 *
+	 * - frame-pointer relative addressing:
+	 *   Increase frame_size in case it is not a multiple of the alignment as we
+	 *   address entities from the "top" with negative offsets
+	 * - stack-pointer relative addressing:
+	 *   Stackframesize + SPARC_MIN_STACK_SIZE has to be aligned. Increase
+	 *   frame_size accordingly.
+	 */
+	if (!layout->sp_relative) {
+		frame_size = (frame_size + frame_align-1) & ~(frame_align-1);
+	} else {
+		unsigned misalign = SPARC_MIN_STACKSIZE % frame_align;
+		frame_size += misalign;
+	}
 
 	ir_type *arg_type = layout->arg_type;
 
