@@ -648,34 +648,52 @@ static void handle_chain(ir_node *irn, const perm_move_t *move, reg_pair_t *cons
 	}
 }
 
-static void create_stat_events(ir_node *perm, reg_pair_t *const pairs, int n_pairs)
+static bool is_restore_copy(ir_node *perm, ir_node *copy, reg_pair_t *const pairs, int n_pairs)
 {
-	ir_node      *bb    = get_nodes_block(perm);
-	unsigned      count = ir_profile_get_block_execcount(bb);
-	ir_node      *copy  = sched_next(perm);
-	long          nr    = get_irn_node_nr(perm);
-	bool          needs_restore = false;
+	const arch_register_t *src = arch_get_irn_register_in(copy, 0);
+	const arch_register_t *dst = arch_get_irn_register_out(copy, 0);
+	int i;
 
-	assert(be_is_Perm(perm));
-	assert(copy && "No Perm successor scheduled");
-	if (be_is_Copy(copy)) {
-		const arch_register_t *reg = arch_get_irn_register(copy);
-		int i;
+	if (src == dst)
+		return false;
 
-		for (i = 0; i < n_pairs; ++i) {
-			if (pairs[i].in_reg == reg || pairs[i].out_reg == reg) {
-				needs_restore = true;
-				break;
-			}
+	for (i = 0; i < n_pairs; ++i) {
+		if (pairs[i].in_reg == dst) {
+			printf("Perm[%lu] needs restore because of reg %s with node %lu\n", get_irn_node_nr(perm), dst->name, get_irn_node_nr(copy));
+			return true;
 		}
 	}
 
-	stat_ev_int("perm_block_nr", get_irn_node_nr(bb));
-	stat_ev_int("perm_needs_restore", needs_restore);
-	stat_ev_int("perm_exec_count", count);
-	stat_ev_int("perm_restore_exec_count", count * needs_restore);
+	return false;
+}
 
-//	printf("Perm[%6ld]: Count %10u  Restore = %d\n", nr, count, needs_restore);
+static bool needs_restore(ir_node *perm, reg_pair_t *const pairs, int n_pairs)
+{
+	ir_node *copy = sched_next(perm);
+
+	assert(be_is_Perm(perm));
+	assert(copy && "No Perm successor scheduled");
+
+	/* Check for copies inserted behind Perm by ssadestr. */
+	while (be_is_Copy(copy)) {
+		if (is_restore_copy(perm, copy, pairs, n_pairs))
+			return true;
+
+		copy = sched_next(copy);
+	}
+
+	copy = sched_prev(perm);
+	assert(copy && "No Perm predecessor scheduled");
+
+	/* Check for copies inserted before Perm by bespill. */
+	while (be_is_Copy(copy)) {
+		if (is_restore_copy(perm, copy, pairs, n_pairs))
+			return true;
+
+		copy = sched_prev(copy);
+	}
+
+	return false;
 }
 
 /**
@@ -695,6 +713,7 @@ static void lower_perm_node(ir_node *irn)
 	int                n_pairs   = 0;
 	int                n_cycles2 = 0;
 	int                n_cycles3 = 0;
+	bool               restore   = false;
 
 	assert(be_is_Perm(irn) && "Non-Perm node passed to lower_perm_node");
 	assert(arity == get_irn_n_edges(irn) && "perm's in and out numbers different");
@@ -710,8 +729,18 @@ static void lower_perm_node(ir_node *irn)
 	build_register_pair_list(pairs, &n_pairs, irn);
 	DBG((dbg_icore, LEVEL_1, "%+F has %d unresolved constraints\n", irn, n_pairs));
 
-	if (n_pairs > 0)
-		create_stat_events(irn, pairs, n_pairs);
+	restore = needs_restore(irn, pairs, n_pairs);
+	if (n_pairs > 0) {
+		ir_node *bb    = get_nodes_block(irn);
+		unsigned count = ir_profile_get_block_execcount(bb);
+
+		stat_ev_ctx_push_fmt("perm_stats", "%ld", get_irn_node_nr(irn));
+		stat_ev_int("perm_block_nr", get_irn_node_nr(bb));
+		if (restore) {
+			stat_ev("perm_needs_restore");
+		}
+		stat_ev_int("perm_exec_count", count);
+	}
 
 	/* Collect all cycles and chains */
 	while (get_n_unchecked_pairs(pairs, n_pairs) > 0) {
@@ -733,8 +762,12 @@ static void lower_perm_node(ir_node *irn)
 		DB((dbg_icore, LEVEL_1, "\n"));
 
 		if (move.type == PERM_CHAIN) {
+			stat_ev_int("perm_chain_size", move.n_elems);
+
 			handle_chain(irn, &move, pairs, n_pairs);
 		} else { /* move.type == PERM_CYCLE */
+			stat_ev_int("perm_cycle_size", move.n_elems);
+
 			if (move.n_elems == 2) {
 				cycles2[n_cycles2++] = move; /* Might be combinable, save for later. */
 			} else if (move.n_elems == 3) {
@@ -755,6 +788,10 @@ static void lower_perm_node(ir_node *irn)
 
 	while (n_cycles3) {
 		free(cycles3[--n_cycles3].elems);
+	}
+
+	if (n_pairs > 0) {
+		stat_ev_ctx_pop("perm_stats");
 	}
 
 	/* Remove the perm from schedule */
