@@ -538,8 +538,8 @@ void class_walk_super2sub(class_walk_func *pre,
 		if (is_Class_type(tp) &&
 		    (get_class_n_supertypes(tp) == 0) &&
 		    type_not_visited(tp) &&
+		    (! is_frame_type(tp)) &&
 		    (tp != get_glob_type())) {
-			assert(! is_frame_type(tp));
 			class_walk_s2s_2(tp, pre, post, env);
 		}
 	}
