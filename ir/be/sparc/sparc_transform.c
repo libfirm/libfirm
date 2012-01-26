@@ -1436,7 +1436,7 @@ static ir_node *gen_Conv(ir_node *node)
 			} else {
 				/* float -> int conv */
 				if (!mode_is_signed(dst_mode))
-					panic("float to unsigned not implemented yet");
+					panic("float to unsigned not lowered");
 				return create_ftoi(dbgi, block, new_op, src_mode);
 			}
 		} else {
