@@ -2275,7 +2275,7 @@ static ir_node *gen_Proj_Div(ir_node *node)
 	case pn_Div_res:
 		return new_r_Proj(new_pred, res_mode, pn_sparc_SDiv_res);
 	case pn_Div_M:
-		return new_r_Proj(new_pred, mode_gp, pn_sparc_SDiv_M);
+		return new_r_Proj(new_pred, mode_M, pn_sparc_SDiv_M);
 	default:
 		break;
 	}
