@@ -637,6 +637,7 @@ void sparc_finish_graph(ir_graph *irg)
 	irg_walk_graph(irg, NULL, sparc_collect_frame_entity_nodes, fec_env);
 	be_assign_entities(fec_env, sparc_set_frame_entity, at_begin);
 	be_free_frame_entity_coalescer(fec_env);
+	sparc_adjust_stack_entity_offsets(irg);
 
 	sparc_introduce_prolog_epilog(irg);
 

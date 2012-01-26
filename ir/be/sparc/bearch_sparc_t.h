@@ -83,6 +83,7 @@ void sparc_lower_64bit(void);
 
 bool sparc_variadic_fixups(ir_graph *irg, calling_convention_t *cconv);
 void sparc_create_stacklayout(ir_graph *irg, calling_convention_t *cconv);
+void sparc_adjust_stack_entity_offsets(ir_graph *irg);
 void sparc_fix_stack_bias(ir_graph *irg);
 
 #endif
