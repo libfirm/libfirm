@@ -321,7 +321,7 @@ static void process_frame_types(ir_graph *irg)
 	if (!layout->sp_relative) {
 		frame_size = (frame_size + frame_align-1) & ~(frame_align-1);
 	} else {
-		unsigned misalign = SPARC_MIN_STACKSIZE % frame_align;
+		unsigned misalign = (SPARC_MIN_STACKSIZE+frame_size) % frame_align;
 		frame_size += misalign;
 	}
 
