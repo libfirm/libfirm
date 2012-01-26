@@ -206,11 +206,15 @@ void sr_reinsert(size_red_t *sr)
 
 		/* now all bits not set are possible colors */
 		/* take one that matches the alignment constraint */
-		do {
-			free_col = (unsigned)rbitset_next(possible_cols, 0, true);
-		} while ((free_col % arch_get_irn_register_req(irn)->width) != 0
-				 && free_col != n_regs - 1);
+		free_col = 0;
 		assert(!rbitset_is_empty(possible_cols, n_regs) && "No free color found. This can not be.");
+		while (true) {
+			free_col = (unsigned)rbitset_next(possible_cols, free_col, true);
+			if (free_col % arch_get_irn_register_req(irn)->width == 0)
+				break;
+			++free_col;
+			assert(free_col < n_regs);
+		}
 		set_irn_col(sr->co->cls, irn, free_col);
 		pset_remove_ptr(sr->all_removed, irn); /* irn is back in graph again */
 	}
