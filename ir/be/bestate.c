@@ -182,7 +182,8 @@ static void spill_phi(minibelady_env_t *env, ir_node *phi)
 	DBG((dbg, LEVEL_2, "\tcreate Phi-M for %+F\n", phi));
 
 	/* create a Phi-M */
-	spill_info->spill = be_new_Phi(block, arity, phi_in, mode_M, NULL);
+	spill_info->spill = be_new_Phi(block, arity, phi_in, mode_M,
+	                               arch_no_register_req);
 	sched_add_after(block, spill_info->spill);
 
 	if (spill_to_kill != NULL) {
