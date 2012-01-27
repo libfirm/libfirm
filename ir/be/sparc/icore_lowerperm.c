@@ -823,7 +823,7 @@ void icore_lower_nodes_after_ra(ir_graph *irg)
 	FIRM_DBG_REGISTER(dbg_icore, "firm.be.lower.icore");
 
 	/* we will need interference */
-	be_liveness_assure_chk(be_get_irg_liveness(irg));
+	be_assure_live_chk(irg);
 
 //	dump_ir_graph(irg, "before_icore_lowering");
 	irg_walk_graph(irg, NULL, lower_nodes_after_ra_walker, NULL);
