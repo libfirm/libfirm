@@ -1061,7 +1061,7 @@ void lower_floating_point(void)
 
 	ir_prepare_softfloat_lowering();
 
-	clear_irp_opcodes_generic_func();
+	ir_clear_opcodes_generic_func();
 	ir_register_softloat_lower_function(op_Add,   lower_Add);
 	ir_register_softloat_lower_function(op_Cmp,   lower_Cmp);
 	ir_register_softloat_lower_function(op_Conv,  lower_Conv);
@@ -1085,7 +1085,7 @@ void lower_floating_point(void)
 		ir_nodeset_destroy(&created_mux_nodes);
 	}
 
-	clear_irp_opcodes_generic_func();
+	ir_clear_opcodes_generic_func();
 	ir_register_softloat_lower_function(op_Call,  lower_Call);
 	ir_register_softloat_lower_function(op_Const, lower_Const);
 	ir_register_softloat_lower_function(op_Div,   lower_Div_mode);

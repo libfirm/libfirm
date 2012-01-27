@@ -59,59 +59,47 @@
 #include "entity_t.h"
 #include "error.h"
 #include "dbginfo.h"
+#include "irprog_t.h"
 
 #include "array.h"
 
-ir_type *firm_none_type;
 ir_type *get_none_type(void)
 {
-	return firm_none_type;
+	return irp->none_type;
 }
 
-ir_type *firm_code_type;
 ir_type *get_code_type(void)
 {
-	return firm_code_type;
+	return irp->code_type;
 }
 
-ir_type *firm_unknown_type;
 ir_type *get_unknown_type(void)
 {
-	return firm_unknown_type;
+	return irp->unknown_type;
 }
 
-void ir_init_type(void)
+void ir_init_type(ir_prog *irp)
 {
 	/* construct none and unknown type. */
-	firm_none_type = new_type(tpop_none, mode_BAD, NULL);
-	set_type_size_bytes(firm_none_type, 0);
-	set_type_state (firm_none_type, layout_fixed);
+	irp->none_type = new_type(tpop_none, mode_BAD, NULL);
+	set_type_size_bytes(irp->none_type, 0);
+	set_type_state (irp->none_type, layout_fixed);
 
-	firm_code_type = new_type(tpop_code, mode_ANY, NULL);
-	set_type_state(firm_code_type, layout_fixed);
+	irp->code_type = new_type(tpop_code, mode_ANY, NULL);
+	set_type_state(irp->code_type, layout_fixed);
 
-	firm_unknown_type = new_type(tpop_unknown, mode_ANY, NULL);
-	set_type_size_bytes(firm_unknown_type, 0);
-	set_type_state (firm_unknown_type, layout_fixed);
+	irp->unknown_type = new_type(tpop_unknown, mode_ANY, NULL);
+	set_type_size_bytes(irp->unknown_type, 0);
+	set_type_state (irp->unknown_type, layout_fixed);
 }
 
-void ir_finish_type(void)
+void ir_finish_type(ir_prog *irp)
 {
-	if (firm_none_type != NULL) {
-		free_type(firm_none_type);
-		firm_none_type = NULL;
-	}
-	if (firm_code_type != NULL) {
-		free_type(firm_code_type);
-		firm_code_type = NULL;
-	}
-	if (firm_unknown_type != NULL) {
-		free_type(firm_unknown_type);
-		firm_unknown_type = NULL;
-	}
+	/** nothing todo. (The none, code, unknown types are in the global type list
+	 * and freed there */
+	(void)irp;
 }
 
-/** the global type visited flag */
 ir_visited_t firm_type_visited;
 
 void (set_master_type_visited)(ir_visited_t val)
@@ -157,13 +145,26 @@ ir_type *new_type(const tp_op *type_op, ir_mode *mode, type_dbg_info *db)
 	return res;
 }
 
+void free_type_entities(ir_type *tp)
+{
+	const tp_op *op = get_type_tpop(tp);
+	if (op->ops.free_entities != NULL)
+		op->ops.free_entities(tp);
+}
+
+static void free_type_attrs(ir_type *tp)
+{
+	const tp_op *tpop = get_type_tpop(tp);
+
+	if (tpop->ops.free_attrs)
+		tpop->ops.free_attrs(tp);
+}
+
 void free_type(ir_type *tp)
 {
 	const tp_op *op = get_type_tpop(tp);
 
-	if ((get_type_tpop(tp) == tpop_none) || (get_type_tpop(tp) == tpop_unknown)
-			|| (get_type_tpop(tp) == tpop_code))
-		return;
+	free_type_entities(tp);
 	/* Remove from list of all types */
 	remove_irp_type(tp);
 	/* Free the attributes of the type. */
@@ -172,24 +173,10 @@ void free_type(ir_type *tp)
 	if (op->ops.free_auto_entities)
 		op->ops.free_auto_entities(tp);
 	/* And now the type itself... */
+#ifdef DEBUG_libfirm
 	tp->kind = k_BAD;
+#endif
 	free(tp);
-}
-
-void free_type_entities(ir_type *tp)
-{
-	const tp_op *tpop = get_type_tpop(tp);
-
-	if (tpop->ops.free_entities)
-		tpop->ops.free_entities(tp);
-}
-
-void free_type_attrs(ir_type *tp)
-{
-	const tp_op *tpop = get_type_tpop(tp);
-
-	if (tpop->ops.free_attrs)
-		tpop->ops.free_attrs(tp);
 }
 
 void *(get_type_link)(const ir_type *tp)
@@ -238,7 +225,6 @@ void set_type_mode(ir_type *tp, ir_mode *mode)
 		assert(0 && "setting a mode is NOT allowed for this type");
 }
 
-/* Outputs a unique number for this node */
 long get_type_nr(const ir_type *tp)
 {
 	assert(tp);
@@ -427,7 +413,6 @@ int (is_type)(const void *thing)
 	return _is_type(thing);
 }
 
-/* Checks whether two types are structural equal.*/
 int equal_type(ir_type *typ1, ir_type *typ2)
 {
 	ir_entity **m;
@@ -1481,7 +1466,6 @@ void free_array_attrs(ir_type *array)
 	free(array->attr.aa.order);
 }
 
-/* manipulate private fields of array ir_type */
 size_t get_array_n_dimensions(const ir_type *array)
 {
 	assert(array->type_op == type_array);
@@ -1825,9 +1809,8 @@ ir_type *find_pointer_type_to_type(ir_type *tp)
 		if (is_Pointer_type(found) && get_pointer_points_to_type(found) == tp)
 			return (found);
 	}
-	return firm_unknown_type;
+	return get_unknown_type();
 }
-
 
 
 ir_type *new_d_type_primitive(ir_mode *mode, type_dbg_info *db)
@@ -1938,12 +1921,22 @@ void add_compound_member(ir_type *compound, ir_entity *entity)
 	}
 }
 
-
-
 int is_code_type(const ir_type *tp)
 {
-	assert(tp && tp->kind == k_type);
+	assert(tp->kind == k_type);
 	return tp->type_op == tpop_code;
+}
+
+int is_unknown_type(const ir_type *tp)
+{
+	assert(tp->kind == k_type);
+	return tp->type_op == tpop_unknown;
+}
+
+int is_none_type(const ir_type *tp)
+{
+	assert(tp->kind == k_type);
+	return tp->type_op == tpop_none;
 }
 
 int is_frame_type(const ir_type *tp)
@@ -2031,50 +2024,39 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment,
 	ir_type *tp;
 	ident *name;
 	char buf[32];
-	unsigned frame_align;
-	int offset, frame_size;
+	int offset;
+	unsigned frame_size  = get_type_size_bytes(frame_type);
+	unsigned frame_align = get_type_alignment_bytes(frame_type);
 	static unsigned area_cnt = 0;
-	static ir_type *a_byte = NULL;
 
 	assert(is_frame_type(frame_type));
 	assert(get_type_state(frame_type) == layout_fixed);
 	assert(get_type_alignment_bytes(frame_type) > 0);
 	set_type_state(frame_type, layout_undefined);
 
-	if (! a_byte)
-		a_byte = new_type_primitive(mode_Bu);
+	if (irp->byte_type == NULL)
+		irp->byte_type = new_type_primitive(mode_Bu);
 
 	snprintf(buf, sizeof(buf), "area%u", area_cnt++);
 	name = new_id_from_str(buf);
 
-	/* align the size */
-	frame_align = get_type_alignment_bytes(frame_type);
-	size = (size + frame_align - 1) & ~(frame_align - 1);
-
-	tp = new_type_array(1, a_byte);
+	tp = new_type_array(1, irp->byte_type);
 	set_array_bounds_int(tp, 0, 0, size);
 	set_type_alignment_bytes(tp, alignment);
 	set_type_size_bytes(tp, size);
 
-	frame_size = get_type_size_bytes(frame_type);
 	if (at_start) {
 		size_t i, n;
+		unsigned delta = (size + frame_align - 1) & ~(frame_align - 1);
 		/* fix all offsets so far */
 		for (i = 0, n = get_class_n_members(frame_type); i < n; ++i) {
 			ir_entity *ent = get_class_member(frame_type, i);
 
-			set_entity_offset(ent, get_entity_offset(ent) + size);
+			set_entity_offset(ent, get_entity_offset(ent) + delta);
 		}
 		/* calculate offset and new type size */
 		offset = 0;
-		frame_size += size;
-
-		/* increase size to match alignment... */
-		if (alignment > frame_align) {
-			frame_align = alignment;
-			set_type_alignment_bytes(frame_type, frame_align);
-			frame_size  = (frame_size + frame_align - 1) & ~(frame_align - 1);
-		}
+		frame_size += delta;
 	} else {
 		/* calculate offset and new type size */
 		offset = (frame_size + alignment - 1) & ~(alignment - 1);
@@ -2084,6 +2066,9 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment,
 	area = new_entity(frame_type, name, tp);
 	set_entity_offset(area, offset);
 	set_type_size_bytes(frame_type, frame_size);
+	if (alignment > frame_align) {
+		set_type_alignment_bytes(frame_type, alignment);
+	}
 
 	/* mark this entity as compiler generated */
 	set_entity_compiler_generated(area, 1);

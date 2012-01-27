@@ -29,30 +29,36 @@
 #include "firm_types.h"
 #include "begin.h"
 
-struct ir_exec_freq;
-
 /**
- * Create execfreq structure (to be used with set_execfreq)
+ * @ingroup irana
+ * @defgroup execfreq Basic Block Execution Frequency
+ * @{
  */
+
+/** Creates execfreq structure (to be used with set_execfreq) */
 FIRM_API ir_exec_freq *create_execfreq(ir_graph *irg);
 
 /**
- * Set execution frequency of a basic block
+ * Sets execution frequency of a basic block
  */
 FIRM_API void set_execfreq(ir_exec_freq *ef, const ir_node *block, double freq);
 
-/**
- * Create execfreq structure and initialize with estimated frequencies
- */
+/** Creates execfreq structure and initialize with estimated frequencies. */
 FIRM_API ir_exec_freq *compute_execfreq(ir_graph *irg, double loop_weight);
 
+/** Frees memory occupied by execution frequency structure @p ef. */
 FIRM_API void free_execfreq(ir_exec_freq *ef);
 
+/** Returns execution frequency of block @p block. */
 FIRM_API double get_block_execfreq(const ir_exec_freq *ef,
                                    const ir_node *block);
 
+/** Returns execution frequency of block @p block, scaled into the range
+ * of an unsigned long type. */
 FIRM_API unsigned long get_block_execfreq_ulong(const ir_exec_freq *ef,
                                                 const ir_node *block);
+
+/** @} */
 
 #include "end.h"
 

@@ -133,11 +133,6 @@ typedef struct arm_farith_attr_t {
 	ir_mode    *mode; /* operation mode */
 } arm_farith_attr_t;
 
-/**
- * Return the fpa immediate from the encoding.
- */
-const char *arm_get_fpa_imm_name(long imm_value);
-
 #define CAST_ARM_ATTR(type,ptr)        ((type *)(ptr))
 #define CONST_CAST_ARM_ATTR(type,ptr)  ((const type *)(ptr))
 

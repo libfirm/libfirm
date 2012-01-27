@@ -30,7 +30,11 @@
 #include "firm_types.h"
 #include "begin.h"
 
-typedef struct compound_graph_path  compound_graph_path, *ir_compound_graph_path_ptr;
+/**
+ * path into compound types
+ * @deprecated
+ */
+typedef struct compound_graph_path  compound_graph_path;
 
 /**
  * @deprecated
@@ -58,32 +62,32 @@ FIRM_API size_t get_compound_graph_path_length(const compound_graph_path *gr);
 
 /**
  * @deprecated
- * Get the entity node of an compound graph path at position pos.
+ * Returns the entity node of an compound graph path at position pos.
  */
 ir_entity *get_compound_graph_path_node(const compound_graph_path *gr, size_t pos);
 
 /**
  * @deprecated
- * Set the entity node of an compound graph path at position pos.
+ * Sets the entity node of an compound graph path at position pos.
  */
 FIRM_API void set_compound_graph_path_node(compound_graph_path *gr, size_t pos,
                                            ir_entity *node);
 
 /**
  * @deprecated
- * Get the index of an compound graph path at position pos.
+ * Returns the index of an compound graph path at position pos.
  */
 FIRM_API long get_compound_graph_path_array_index(const compound_graph_path *gr, size_t pos);
 
 /**
  * @deprecated
- * Set the index of an compound graph path at position pos.
+ * Sets the index of an compound graph path at position pos.
  */
 FIRM_API void set_compound_graph_path_array_index(compound_graph_path *gr, size_t pos, long index);
 
 /**
  * @deprecated
- * Get the type of an compound graph path.
+ * Returns the type of an compound graph path.
  */
 FIRM_API ir_type *get_compound_graph_path_type(const compound_graph_path *gr);
 
@@ -100,6 +104,10 @@ FIRM_API int is_proper_compound_graph_path(compound_graph_path *gr, size_t pos);
  * corresponding access path to the member of the compound.
  */
 FIRM_API void add_compound_ent_value_w_path(ir_entity *ent, ir_node *val, compound_graph_path *path);
+/**
+ * @deprecated
+ * Sets initializer value for a compound ent path
+ */
 FIRM_API void set_compound_ent_value_w_path(ir_entity *ent, ir_node *val, compound_graph_path *path, size_t pos);
 
 /**
@@ -159,7 +167,7 @@ FIRM_API void set_array_entity_values(ir_entity *ent, ir_tarval **values, size_t
 
 /**
  * @deprecated
- * Return the offset in bits from the last byte address.
+ * Returns the offset in bits from the last byte address.
  *
  * This requires that the layout of all concerned types is fixed.
  *
@@ -170,7 +178,7 @@ FIRM_API unsigned get_compound_ent_value_offset_bit_remainder(const ir_entity *e
 
 /**
  * @deprecated
- * Return the overall offset of value at position pos in bytes.
+ * Returns the overall offset of value at position pos in bytes.
  *
  * This requires that the layout of all concerned types is fixed.
  * Asserts if bit offset is not byte aligned.

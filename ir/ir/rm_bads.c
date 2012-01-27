@@ -125,12 +125,6 @@ static void collect(ir_node *node, void *env)
 	}
 }
 
-/* Remove Bad nodes from Phi and Block inputs.
- *
- * This does NOT remove unreachable code.
- *
- * Postcondition: No Bad nodes.
- */
 int remove_bads(ir_graph *irg)
 {
 	size_t i;

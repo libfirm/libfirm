@@ -249,6 +249,71 @@ static void rewrite_unsigned_float_Conv(ir_node *node)
 	}
 }
 
+/**
+ * rewrite float->unsigned conversions.
+ * Sparc has no instruction for this so instead we do the following:
+ *
+ * if (x >= 2147483648.) {
+ *   converted ^= (int)(x-2147483648.) ^ 0x80000000;
+ * } else {
+ *   converted = (int)x;
+ * }
+ * return (unsigned)converted;
+ */
+static void rewrite_float_unsigned_Conv(ir_node *node)
+{
+	ir_graph *irg         = get_irn_irg(node);
+	dbg_info *dbgi        = get_irn_dbg_info(node);
+	ir_node  *lower_block = get_nodes_block(node);
+
+	part_block(node);
+
+	{
+		ir_node   *block       = get_nodes_block(node);
+		ir_node   *float_x     = get_Conv_op(node);
+		ir_mode   *mode_u      = get_irn_mode(node);
+		ir_mode   *mode_s      = find_signed_mode(mode_u);
+		ir_mode   *mode_f      = get_irn_mode(float_x);
+		ir_tarval *limit       = new_tarval_from_double(2147483648., mode_f);
+		ir_node   *limitc      = new_r_Const(irg, limit);
+		ir_node   *cmp         = new_rd_Cmp(dbgi, block, float_x, limitc,
+		                                    ir_relation_greater_equal);
+		ir_node   *cond        = new_rd_Cond(dbgi, block, cmp);
+		ir_node   *proj_true   = new_r_Proj(cond, mode_X, pn_Cond_true);
+		ir_node   *proj_false  = new_r_Proj(cond, mode_X, pn_Cond_false);
+		ir_node   *in_true[1]  = { proj_true };
+		ir_node   *in_false[1] = { proj_false };
+		ir_node   *true_block  = new_r_Block(irg, ARRAY_SIZE(in_true), in_true);
+		ir_node   *false_block = new_r_Block(irg, ARRAY_SIZE(in_false),in_false);
+		ir_node   *true_jmp    = new_r_Jmp(true_block);
+		ir_node   *false_jmp   = new_r_Jmp(false_block);
+
+		ir_tarval *correction  = new_tarval_from_long(0x80000000l, mode_s);
+		ir_node   *c_const     = new_r_Const(irg, correction);
+		ir_node   *sub         = new_rd_Sub(dbgi, true_block, float_x, limitc,
+		                                    mode_f);
+		ir_node   *sub_conv    = new_rd_Conv(dbgi, true_block, sub, mode_s);
+		ir_node   *xor         = new_rd_Eor(dbgi, true_block, sub_conv, c_const,
+		                                    mode_s);
+
+		ir_node   *converted   = new_rd_Conv(dbgi, false_block, float_x,mode_s);
+
+		ir_node  *lower_in[2] = { true_jmp, false_jmp };
+		ir_node  *phi_in[2]   = { xor, converted };
+		ir_node  *phi;
+		ir_node  *res_conv;
+
+		set_irn_in(lower_block, ARRAY_SIZE(lower_in), lower_in);
+		phi = new_r_Phi(lower_block, ARRAY_SIZE(phi_in), phi_in, mode_s);
+		assert(get_Block_phis(lower_block) == NULL);
+		set_Block_phis(lower_block, phi);
+		set_Phi_next(phi, NULL);
+
+		res_conv = new_rd_Conv(dbgi, lower_block, phi, mode_u);
+		exchange(node, res_conv);
+	}
+}
+
 static int sparc_rewrite_Conv(ir_node *node, void *ctx)
 {
 	ir_mode *to_mode   = get_irn_mode(node);
@@ -257,10 +322,16 @@ static int sparc_rewrite_Conv(ir_node *node, void *ctx)
 	(void) ctx;
 
 	if (mode_is_float(to_mode) && mode_is_int(from_mode)
-			&& get_mode_size_bits(from_mode) == 32
-			&& !mode_is_signed(from_mode)) {
+	    && get_mode_size_bits(from_mode) == 32
+	    && !mode_is_signed(from_mode)) {
 		rewrite_unsigned_float_Conv(node);
 		return 1;
+	}
+	if (mode_is_float(from_mode) && mode_is_int(to_mode)
+	    && get_mode_size_bits(to_mode) == 32
+	    && !mode_is_signed(to_mode)) {
+	    rewrite_float_unsigned_Conv(node);
+	    return 1;
 	}
 
 	return 0;
@@ -347,6 +418,11 @@ static void sparc_init(void)
 	sparc_register_init();
 	sparc_create_opcodes(&sparc_irn_ops);
 	sparc_cconv_init();
+}
+
+static void sparc_finish(void)
+{
+	sparc_free_opcodes();
 }
 
 static arch_env_t *sparc_begin_codegeneration(const be_main_env_t *env)
@@ -545,6 +621,7 @@ static ir_node *sparc_new_reload(ir_node *value, ir_node *spill,
 
 const arch_isa_if_t sparc_isa_if = {
 	sparc_init,
+	sparc_finish,
 	sparc_get_backend_params,
 	sparc_lower_for_target,
 	sparc_parse_asm_constraint,
@@ -564,7 +641,7 @@ const arch_isa_if_t sparc_isa_if = {
 	NULL,                /* before_abi */
 	sparc_prepare_graph,
 	sparc_before_ra,
-	sparc_finish,
+	sparc_finish_graph,
 	sparc_emit_routine,
 };
 

@@ -112,7 +112,7 @@ static void collect_const_and_pure_calls(ir_node *node, void *env)
 			or_prop  = 0;
 			for (i = 0; i < n_callees; ++i) {
 				ent = get_Call_callee(call, i);
-				if (ent == unknown_entity) {
+				if (is_unknown_entity(ent)) {
 					/* we don't know which entity is called here */
 					return;
 				}
@@ -284,7 +284,7 @@ static void collect_nothrow_calls(ir_node *node, void *env)
 			prop = mtp_property_nothrow;
 			for (i = 0; i < n_callees; ++i) {
 				ent = get_Call_callee(call, i);
-				if (ent == unknown_entity) {
+				if (is_unknown_entity(ent)) {
 					/* we don't know which entity is called here */
 					return;
 				}
@@ -865,7 +865,7 @@ static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, int top)
 
 							for (i = 0; i < n_callees; ++i) {
 								ir_entity *ent = get_Call_callee(res, i);
-								if (ent == unknown_entity) {
+								if (is_unknown_entity(ent)) {
 									/* we don't know which entity is called here */
 									curr_prop &= ~mtp_property_malloc;
 									break;
@@ -923,7 +923,7 @@ static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, int top)
 
 					for (i = 0; i < n_callees; ++i) {
 						ir_entity *ent = get_Call_callee(pred, i);
-						if (ent == unknown_entity) {
+						if (is_unknown_entity(ent)) {
 							/* we don't know which entity is called here */
 							curr_prop &= ~mtp_property_nothrow;
 							break;

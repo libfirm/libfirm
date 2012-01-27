@@ -28,10 +28,8 @@
 
 #include "irhooks.h"
 
-/* the hooks */
 hook_entry_t *hooks[hook_last];
 
-/* register a hook */
 void register_hook(hook_type_t hook, hook_entry_t *entry)
 {
   /* check if a hook function is specified. It's a union, so no matter which one */
@@ -45,7 +43,6 @@ void register_hook(hook_type_t hook, hook_entry_t *entry)
   hooks[hook] = entry;
 }
 
-/* unregister a hook */
 void unregister_hook(hook_type_t hook, hook_entry_t *entry)
 {
   hook_entry_t *p;

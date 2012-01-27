@@ -64,14 +64,14 @@ FIRM_API void compute_extbb_execfreqs(ir_graph *irg, ir_exec_freq *execfreqs);
 FIRM_API void free_extbb(ir_graph *irg);
 
 /**
- * Return the extended block of a node.
+ * Returns the extended block of a node.
  *
  * @param node  the node
  */
 FIRM_API ir_extblk *get_nodes_extbb(const ir_node *node);
 
 /**
- * Gets the visited counter of an extended block.
+ * Returns the visited counter of an extended block.
  *
  * @param blk  the extended basic block
  */
@@ -125,14 +125,14 @@ FIRM_API void *get_extbb_link(const ir_extblk *blk);
 FIRM_API void set_extbb_link(ir_extblk *blk, void *link);
 
 /**
- * Return the number of basic blocks of an extended block.
+ * Returns the number of basic blocks of an extended block.
  *
  * @param blk  the extended basic block
  */
 FIRM_API int get_extbb_n_blocks(const ir_extblk *blk);
 
 /**
- * Return the i'th basic block of an extended block.
+ * Returns the i'th basic block of an extended block.
  *
  * @param blk  the extended basic block
  * @param pos  the position
@@ -140,14 +140,14 @@ FIRM_API int get_extbb_n_blocks(const ir_extblk *blk);
 FIRM_API ir_node *get_extbb_block(const ir_extblk *blk, int pos);
 
 /**
- * Return the leader basic block of an extended block.
+ * Returns the leader basic block of an extended block.
  *
  * @param blk  the extended basic block
  */
 FIRM_API ir_node *get_extbb_leader(const ir_extblk *blk);
 
 /**
- * Return the node number of an extended block.
+ * Returns the node number of an extended block.
  * Its the block number of the leader block
  *
  * @param blk  the extended basic block

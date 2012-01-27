@@ -263,7 +263,7 @@ static void emit_arm_SymConst(const ir_node *irn)
 	key.u.entity  = attr->entity;
 	key.is_entity = true;
 	key.label     = 0;
-	entry = (sym_or_tv_t *)set_insert(sym_or_tv, &key, sizeof(key), HASH_PTR(key.u.generic));
+	entry = (sym_or_tv_t *)set_insert(sym_or_tv, &key, sizeof(key), hash_ptr(key.u.generic));
 	if (entry->label == 0) {
 		/* allocate a label */
 		entry->label = get_unique_label();
@@ -301,7 +301,7 @@ static void emit_arm_fConst(const ir_node *irn)
 	key.u.tv      = get_fConst_value(irn);
 	key.is_entity = false;
 	key.label     = 0;
-	entry = (sym_or_tv_t *)set_insert(sym_or_tv, &key, sizeof(key), HASH_PTR(key.u.generic));
+	entry = (sym_or_tv_t *)set_insert(sym_or_tv, &key, sizeof(key), hash_ptr(key.u.generic));
 	if (entry->label == 0) {
 		/* allocate a label */
 		entry->label = get_unique_label();
@@ -794,7 +794,7 @@ static inline void set_emitter(ir_op *op, emit_func arm_emit_node)
 static void arm_register_emitters(void)
 {
 	/* first clear the generic function pointer for all ops */
-	clear_irp_opcodes_generic_func();
+	ir_clear_opcodes_generic_func();
 
 	/* register all emitter functions defined in spec */
 	arm_register_spec_emitters();
@@ -833,7 +833,7 @@ static void arm_emit_node(const ir_node *irn)
 		(*emit)(irn);
 	} else {
 		panic("Error: No emit handler for node %+F (graph %+F)\n",
-		      irn, current_ir_graph);
+		      irn, get_irn_irg(irn));
 	}
 }
 

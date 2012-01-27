@@ -6,7 +6,7 @@ dnl Firm Versions
 dnl * Increment major/minor/micro version as you see fit. These 3 numbers
 dnl   are intended for humans and are independent from the libtool versions
 m4_define([firm_major_version], [1])
-m4_define([firm_minor_version], [19])
+m4_define([firm_minor_version], [20])
 m4_define([firm_micro_version], [0])
 m4_define([firm_version],
           [firm_major_version.firm_minor_version.firm_micro_version])

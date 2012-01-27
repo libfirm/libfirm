@@ -156,3 +156,8 @@ void firm_init_mangle(void)
 {
 	obstack_init(&mangle_obst);
 }
+
+void firm_finish_mangle(void)
+{
+	obstack_free(&mangle_obst, NULL);
+}

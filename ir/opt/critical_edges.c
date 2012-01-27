@@ -89,9 +89,9 @@ insert:
 				/* set successor of new block */
 				set_irn_n(n, i, jmp);
 				cenv->changed = 1;
-			} /* predecessor has multiple successors */
-		} /* for all predecessors */
-	} /* n is a multi-entry block */
+			}
+		}
+	}
 }
 
 void remove_critical_cf_edges_ex(ir_graph *irg, int ignore_exception_edges)

@@ -21,18 +21,8 @@
  * @file
  * @brief   Write vcg representation of firm to file.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Hubert Schmidt
- * @brief
- *  Dump routines for the ir graph and all type information.
+ * @brief   Dump routines for the ir graph and all type information.
  *
- *  The dump format of most functions is vcg.  This is a text based graph
- *  representation. Some use the original format,
- *  but most generate an extended format that is only read by some special
- *  versions of xvcg or by the comercialized version now calles aiSee.
- *  A test version of aiSee is available at
- *   http://www.absint.de/aisee/download/index.htm.
- *
- *  We have developed an own advanced viewer called ycomp:
- *    http://www.info.uni-karlsruhe.de/software/ycomp/
  */
 #ifndef FIRM_IR_IRDUMP_H
 #define FIRM_IR_IRDUMP_H
@@ -42,8 +32,24 @@
 #include "firm_types.h"
 #include "begin.h"
 
-/** @defgroup convenience_dumper   Convenience interface for dumpers */
-/*@{*/
+/** @defgroup ir_dump Visualisation
+ *
+ * Dumps information so it can be visualised. The dump format of most functions
+ * is vcg.  This is a text based graph representation. Some use the original
+ * format, but most generate an extended format that is only read by some
+ * special versions of xvcg or by the commercialized version now calles aiSee.
+ *
+ * A test version of aiSee is available at
+ *   http://www.absint.de/aisee/download/index.htm.
+ *
+ * We have developed an own advanced viewer called ycomp:
+ *   http://www.info.uni-karlsruhe.de/software/ycomp/
+ *@{
+ */
+
+/** @defgroup convenience Convenience Interface
+ * @{
+ */
 
 /**
  * Convenience interface for dumping a graph as vcg file.
@@ -105,7 +111,7 @@ FIRM_API void dump_all_ir_graphs(const char *suffix);
 FIRM_API void ir_set_dump_path(const char *path);
 
 /**
- * Set a prefix filter for output functions.
+ * Sets a prefix filter for output functions.
  *
  * All graph dumpers check this name.  If the name is != "" and
  * not a prefix of the graph to be dumped, the dumper does not
@@ -133,15 +139,6 @@ FIRM_API ir_prog_pass_t *dump_all_ir_graph_pass(const char *name,
                                                 const char *suffix);
 
 /*@}*/
-
-/**
- * @defgroup dumper     Dump information to file
- * This is the low-level interface for dumping information as text files
- * and xvcg graphs.
- * Normally you should use the convenience interface @ref convenience_dumper
- * instead of the functions in this group.
- */
-/*@{*/
 
 /**
  * Dumps all Firm nodes of a single graph for a single procedure in
@@ -371,31 +368,31 @@ typedef int (*dump_edge_vcgattr_func)(FILE *out, const ir_node *node, int to);
  */
 typedef void (*dump_node_edge_func)(FILE *out, const ir_node *node);
 
-/** Set the node_vcgattr hook. */
+/** Sets the node_vcgattr hook. */
 FIRM_API void set_dump_node_vcgattr_hook(dump_node_vcgattr_func hook);
-/** Set the edge_vcgattr hook. */
+/** Sets the edge_vcgattr hook. */
 FIRM_API void set_dump_edge_vcgattr_hook(dump_edge_vcgattr_func hook);
 
 /**
- * Set the hook to be called to dump additional edges to a node.
+ * Sets the hook to be called to dump additional edges to a node.
  * @param func The hook to be called.
  */
 FIRM_API void set_dump_node_edge_hook(dump_node_edge_func func);
 
 /**
- * Get the additional edge dump hook.
+ * Returns the additional edge dump hook.
  * @return The current additional edge dump hook.]
  */
 FIRM_API dump_node_edge_func get_dump_node_edge_hook(void);
 
 /**
- * Set the hook to be called to dump additional edges to a block.
+ * Sets the hook to be called to dump additional edges to a block.
  * @param func The hook to be called.
  */
 FIRM_API void set_dump_block_edge_hook(dump_node_edge_func func);
 
 /**
- * Get the additional block edge dump hook.
+ * Returns the additional block edge dump hook.
  * @return The current additional block edge dump hook.
  */
 FIRM_API dump_node_edge_func get_dump_block_edge_hook(void);

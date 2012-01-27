@@ -34,7 +34,7 @@
  */
 static unsigned addr_hash(const void *object)
 {
-	return HASH_PTR(object);
+	return hash_ptr(object);
 }
 
 /**

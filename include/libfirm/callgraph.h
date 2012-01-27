@@ -22,7 +22,18 @@
  * @brief       Representation and computation of the callgraph.
  * @author      Goetz Lindenmaier
  * @date        21.7.2004
- * @brief
+ * @brief       callgraph analysis
+ */
+#ifndef FIRM_ANA_CALLGRAPH_H
+#define FIRM_ANA_CALLGRAPH_H
+
+#include "firm_types.h"
+#include "begin.h"
+
+/**
+ * @ingroup irana
+ * @defgroup callgraph Callgraph
+ *
  *  This file contains the representation of the callgraph.
  *  The nodes of the call graph are ir_graphs.  The edges between
  *  the nodes are calling relations.  I.e., if method a calls method
@@ -35,12 +46,8 @@
  *  Finally this file contains an algorithm that computes backedges
  *  in the callgraph, i.e., the algorithm finds possibly recursive calls.
  *  The algorithm computes an upper bound of all recursive calls.
+ * @{
  */
-#ifndef FIRM_ANA_CALLGRAPH_H
-#define FIRM_ANA_CALLGRAPH_H
-
-#include "firm_types.h"
-#include "begin.h"
 
 /** Flag to indicate state of callgraph. */
 typedef enum {
@@ -163,6 +170,8 @@ FIRM_API void set_irp_loop_nesting_depth_state(loop_nesting_depth_state s);
 
 /** Marks the nesting depth state of the program representation as inconsistent. */
 FIRM_API void set_irp_loop_nesting_depth_state_inconsistent(void);
+
+/** @} */
 
 #include "end.h"
 

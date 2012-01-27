@@ -14,17 +14,19 @@ variant      ?= debug
 
 srcdir       ?= $(top_srcdir)
 builddir     ?= $(top_builddir)/$(variant)
+docdir       ?= $(top_builddir)/firm-doc
 
 # This hides the noisy commandline outputs. You can see them with "make Q="
 Q ?= @
 
 CC ?= cc
+DOXYGEN ?= doxygen
 LINK ?= $(CC)
 AR ?= ar
 DLLEXT ?= .so
 
 # Variants
-CFLAGS_all        = -fPIC
+CFLAGS_all        = -fPIC -DHAVE_FIRM_REVISION_H
 CFLAGS_debug      = $(CFLAGS_all) -O0 -g3 -DDEBUG_libfirm
 CFLAGS_profile    = $(CFLAGS_all) -O3 -pg -DNDEBUG -fno-inline
 LINKFLAGS_profile = -pg
@@ -33,7 +35,7 @@ CFLAGS_optimize   = $(CFLAGS_all) -O3 -DNDEBUG
 # General flags
 CFLAGS    += $(CFLAGS_$(variant))
 CFLAGS    += -Wall -W -Wextra -Wstrict-prototypes -Wmissing-prototypes -Wwrite-strings
-LINKFLAGS += $(LINKFLAGS_$(variant))
+LINKFLAGS += $(LINKFLAGS_$(variant)) -lm
 VPATH = $(srcdir)
 
 REVISION ?= $(shell git describe --abbrev=40 --always --dirty --match '')
@@ -168,13 +170,26 @@ $(libfirm_a): $(libfirm_OBJECTS)
 
 $(libfirm_dll): $(libfirm_OBJECTS)
 	@echo LINK $@
-	$(Q)$(LINK) -shared -o $@ $^
+	$(Q)$(LINK) -shared $(LINKFLAGS) -o $@ $^
 
 # Generic rules
 UNUSED := $(shell mkdir -p $(libfirm_DIRS:%=$(builddir)/%))
 $(builddir)/%.o: %.c $(IR_SPEC_GENERATED_FILES) config.h
 	@echo CC $@
 	$(Q)$(CC) $(CFLAGS) $(CPPFLAGS) $(libfirm_CPPFLAGS) -MMD -c -o $@ $<
+
+$(docdir)/libfirm.tag: $(IR_SPEC_GENERATED_FILES) Doxyfile $(wildcard include/libfirm/*.h) $(wildcard include/libfirm/adt/*.h)
+	@echo Doxygen
+	$(Q)$(DOXYGEN)
+
+DOCU_GENERATOR := scripts/gen_docu.py
+$(docdir)/html/nodes.html: $(docdir)/libfirm.tag $(DOCU_GENERATOR) $(IR_SPEC) scripts/spec_util.py scripts/style.css
+	@echo gen_docu.py
+	$(Q)$(DOCU_GENERATOR) $(docdir)/libfirm.tag "" $@
+	$(Q)cp scripts/style.css $(docdir)/html
+
+.PHONY: documentation
+documentation: $(docdir)/libfirm.tag $(docdir)/html/nodes.html
 
 .PHONY: clean
 clean:

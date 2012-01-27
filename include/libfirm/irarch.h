@@ -91,13 +91,13 @@ typedef enum {
 ENUM_BITSET(arch_dep_opts_t)
 
 /**
- * Set the optimizations that shall be applied.
+ * Sets the optimizations that shall be applied.
  * @param opts An optimization bit mask.
  */
 FIRM_API void arch_dep_set_opts(arch_dep_opts_t opts);
 
 /**
- * Replace Muls with Lea/Shifts/Add/Subs if these
+ * Replaces Muls with Lea/Shifts/Add/Subs if these
  * have smaller costs than the original multiplication.
  *
  * @param irn       The Firm node to inspect.
@@ -106,7 +106,7 @@ FIRM_API void arch_dep_set_opts(arch_dep_opts_t opts);
 FIRM_API ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn);
 
 /**
- * Replace Divs with Shifts and Add/Subs and Mulh.
+ * Replaces Divs with Shifts and Add/Subs and Mulh.
  * This function is driven by the 3 parameters:
  * - allow_mulhu
  * - allow_mulhs
@@ -123,7 +123,7 @@ FIRM_API ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn);
 FIRM_API ir_node *arch_dep_replace_div_by_const(ir_node *irn);
 
 /**
- * Replace Mods with Shifts and Add/Subs and Mulh.
+ * Replaces Mods with Shifts and Add/Subs and Mulh.
  * This function is driven by the 3 parameters:
  * - allow_mulhu
  * - allow_mulhs

@@ -48,21 +48,6 @@
 #include "beabi.h"
 #include "bearch_arm_t.h"
 
-const char *arm_get_fpa_imm_name(long imm_value)
-{
-	static const char *fpa_imm[] = {
-		"0",
-		"1",
-		"2",
-		"3",
-		"4",
-		"5",
-		"10",
-		"0.5"
-	};
-	return fpa_imm[imm_value];
-}
-
 static bool arm_has_symconst_attr(const ir_node *node)
 {
 	return is_arm_SymConst(node) || is_arm_FrameAddr(node) || is_arm_Bl(node);

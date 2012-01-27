@@ -149,7 +149,7 @@ static ir_node *transform_end(ir_node *node)
 
 void be_start_transform_setup(void)
 {
-	clear_irp_opcodes_generic_func();
+	ir_clear_opcodes_generic_func();
 
 	be_set_transform_function(op_Bad,         be_duplicate_node);
 	be_set_transform_function(op_be_Copy,     be_duplicate_node);
@@ -420,9 +420,7 @@ void be_transform_graph(ir_graph *irg, arch_pretrans_nodes *func)
 	free_loop_information(irg);
 	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 
-	be_liveness_invalidate(be_get_irg_liveness(irg));
-	/* Hack for now, something is buggy with invalidate liveness... */
-	be_birg_from_irg(irg)->lv = NULL;
+	be_invalidate_live_chk(irg);
 	be_invalidate_dom_front(irg);
 
 	/* recalculate edges */

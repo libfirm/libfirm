@@ -121,10 +121,6 @@ static bool search(ir_heights_t *h, const ir_node *curr, const ir_node *tgt)
 	return false;
 }
 
-/**
- * Check, if one node can be reached from another one, according to data
- * dependence.
- */
 int heights_reachable_in_block(ir_heights_t *h, const ir_node *n,
                                const ir_node *m)
 {

@@ -27,55 +27,113 @@
 
 #include "begin.h"
 
+/**
+ * @page visited_counters Visited Counters
+ * A visited counter is an alternative to a visited flag for elements of a
+ * graph datastructure.
+ * A visited counter is an integer number added to the elements of a graph.
+ * There is also a global reference number for the whole datastructure. It is
+ * now possible to mark nodes by setting their visited counter to the global
+ * reference counter. Testing is done by comparing with the global reference
+ * counter.
+ * The advantage to simple boolean flag variables is that you can clear all
+ * element marks by increasing the global reference counter and don't need to
+ * visit the whole structure.
+ * This makes it more efficient when you only visit/mark a small amount of
+ * nodes in the graph.
+ */
+
+/** Type for visited counters
+ * @see visited_counters */
 typedef unsigned long ir_visited_t;
-typedef unsigned long ir_exc_region_t;
+/** A label in the code (usually attached to a @ref Block) */
 typedef unsigned long ir_label_t;
 
-typedef struct dbg_info             dbg_info,            *dbg_info_ptr;
-typedef struct type_dbg_info        type_dbg_info,       *type_dbg_info_ptr;
-typedef struct ident                ident,               *ir_ident_ptr;
-typedef struct ir_node              ir_node,             *ir_node_ptr;
-typedef struct ir_op                ir_op,               *ir_op_ptr;
-typedef struct ir_mode              ir_mode,             *ir_mode_ptr;
-typedef struct ir_edge_t            ir_edge_t,           *ir_edge_ptr;
+/** @ingroup dbg_info
+ * Source Reference */
+typedef struct dbg_info             dbg_info;
+/** @ingroup dbg_info
+ * Source Type Reference */
+typedef struct type_dbg_info        type_dbg_info;
+/** @ingroup ir_ident
+ * Identifier */
+typedef struct ident                ident;
+/** @ingroup ir_node
+ * Procedure Graph Node */
+typedef struct ir_node              ir_node;
+/** @ingroup ir_op
+ * Node Opcode */
+typedef struct ir_op                ir_op;
+/** @ingroup ir_mode
+ * SSA Value mode */
+typedef struct ir_mode              ir_mode;
+/** @ingroup iredges
+ * Dynamic Reverse Edge */
+typedef struct ir_edge_t            ir_edge_t;
+/** @ingroup ir_heights
+ * Computed graph Heights */
 typedef struct ir_heights_t         ir_heights_t;
-typedef struct ir_tarval            ir_tarval,           *ir_tarval_ptr;
-typedef struct ir_enum_const        ir_enum_const,       *ir_enum_const_ptr;
-typedef struct ir_type              ir_type,             *ir_type_ptr;
-typedef struct ir_graph             ir_graph,            *ir_graph_ptr;
-typedef struct ir_prog              ir_prog,             *ir_prog_ptr;
-typedef struct ir_loop              ir_loop,             *ir_loop_ptr;
-typedef struct ir_region            ir_region,           *ir_region_ptr;
-typedef struct ir_entity            ir_entity,           *ir_entity_ptr;
-typedef struct ir_extblk            ir_extblk,           *ir_extblk_ptr;
-typedef struct ir_exec_freq         ir_exec_freq,        *ir_exec_freq_ptr;
-typedef struct ir_cdep              ir_cdep,             *ir_cdep_ptr;
-typedef struct sn_entry             *seqno_t;
+/** @ingroup ir_tarval
+ * Target Machine Value */
+typedef struct ir_tarval            ir_tarval;
+/** @ingroup enumeration_type
+ * Enumeration constant */
+typedef struct ir_enum_const        ir_enum_const;
+/** @ingroup ir_type
+ * Type */
+typedef struct ir_type              ir_type;
+/** @ingroup ir_graph
+ * Procedure Grpah */
+typedef struct ir_graph             ir_graph;
+/** @ingroup ir_prog
+ * Program */
+typedef struct ir_prog              ir_prog;
+/** @ingroup ir_loop
+ * Loop */
+typedef struct ir_loop              ir_loop;
+/** @ingroup ir_entity
+ * Entity */
+typedef struct ir_entity            ir_entity;
+/** Extended Basic Block */
+typedef struct ir_extblk            ir_extblk;
+/** @ingroup execfreq
+ * Execution Frequency Analysis Results */
+typedef struct ir_exec_freq         ir_exec_freq;
+/** @ingroup ir_cdep
+ * Control Dependence Analysis Results */
+typedef struct ir_cdep              ir_cdep;
+/** @ingroup be
+ * Target Architecture specific node operations */
 typedef struct arch_irn_ops_t       arch_irn_ops_t;
+/** A graph transformation pass */
 typedef struct ir_graph_pass_t      ir_graph_pass_t;
+/** A whole program transformation pass */
 typedef struct ir_prog_pass_t       ir_prog_pass_t;
 
+/** A graph pass manager */
 typedef struct ir_graph_pass_manager_t      ir_graph_pass_manager_t;
+/** A program pass manager */
 typedef struct ir_prog_pass_manager_t       ir_prog_pass_manager_t;
 
-typedef union  ir_initializer_t     ir_initializer_t,    *ir_initializer_ptr;
-
-typedef void irg_walk_func(ir_node *, void *);
-typedef void irg_reg_walk_func(ir_region *, void *);
+/** @ingroup ir_initializer
+ * Initializer (for entities) */
+typedef union  ir_initializer_t     ir_initializer_t;
 
 /**
+ * @ingroup irgwalk
+ * type for graph-walk callbacks */
+typedef void irg_walk_func(ir_node *, void *);
+
+/**
+ * @ingroup Switch
  * A switch table mapping integer numbers to proj-numbers of a Switch-node.
  * Entries map a continuous range of integer numbers to a proj-number.
  * There must never be two different entries matching the same integer number.
  */
 typedef struct ir_switch_table  ir_switch_table;
 
-/* Needed for MSVC to suppress warnings because it doest NOT handle const right. */
-typedef const ir_node *ir_node_cnst_ptr;
-
-/* states */
-
 /**
+ * @ingroup ir_cons
  * This function is called, whenever a local variable is used before definition
  *
  * @param irg       the IR graph on which this happens
@@ -104,6 +162,10 @@ typedef ir_node *uninitialized_local_variable_func_t(ir_graph *irg, ir_mode *mod
 		static inline type operator |= (type& a, type b) { return a = (type)((int)a | (int)b); } \
 	}
 #else
+/** Marks an enum type as bitset enum. That is the enumeration values will
+ * probably be combined to form a (bit)set of flags.
+ * When compiling for C++ this macro will define the ~, &, &=, ^, ^=, | and |=
+ * operators for the enum values. */
 # define ENUM_BITSET(type)
 #endif
 
@@ -114,10 +176,15 @@ typedef ir_node *uninitialized_local_variable_func_t(ir_graph *irg, ir_mode *mod
 		static inline type operator --(type& a) { return a = (type)((int)a - 1); } \
 	}
 #else
+/** Marks an enum type as countable enum. The enumeration values will be a
+ * linear sequence of numbers which can be iterated through by incrementing
+ * by 1.
+ * When compiling for C++ this macro will define the ++ and -- operators. */
 # define ENUM_COUNTABLE(type)
 #endif
 
 /**
+ * @ingroup ir_node
  * Relations for comparing numbers
  */
 typedef enum ir_relation {
@@ -141,6 +208,7 @@ typedef enum ir_relation {
 ENUM_BITSET(ir_relation)
 
 /**
+ * @ingroup ir_node
  * constrained flags for memory operations.
  */
 typedef enum ir_cons_flags {
@@ -154,7 +222,10 @@ typedef enum ir_cons_flags {
 } ir_cons_flags;
 ENUM_BITSET(ir_cons_flags)
 
-/** op_pin_state_pinned states. */
+/**
+ * @ingroup ir_node
+ * pinned states.
+ */
 typedef enum op_pin_state {
 	op_pin_state_floats = 0,    /**< Nodes of this opcode can be placed in any basic block. */
 	op_pin_state_pinned = 1,    /**< Nodes must remain in this basic block. */
@@ -165,6 +236,7 @@ typedef enum op_pin_state {
 } op_pin_state;
 
 /**
+ * @ingroup Cond
  * A type to express conditional jump predictions.
  */
 typedef enum cond_jmp_predicate {
@@ -174,6 +246,7 @@ typedef enum cond_jmp_predicate {
 } cond_jmp_predicate;
 
 /**
+ * @ingroup method_type
  * Additional method type properties:
  * Tell about special properties of a method type. Some
  * of these may be discovered by analyses.
@@ -216,9 +289,12 @@ typedef enum mtp_additional_properties {
 } mtp_additional_properties;
 ENUM_BITSET(mtp_additional_properties)
 
-/**  This enum names the different kinds of symbolic Constants represented by
+/**
+ * @ingroup SymConst
+ * This enum names the different kinds of symbolic Constants represented by
  * SymConst.  The content of the attribute symconst_symbol depends on this tag.
- * Use the proper access routine after testing this flag. */
+ * Use the proper access routine after testing this flag.
+ */
 typedef enum symconst_kind {
 	symconst_type_size,   /**< The SymConst is the size of the given type.
 	                           symconst_symbol is type *. */
@@ -233,9 +309,12 @@ typedef enum symconst_kind {
 	                           enumeration type. */
 } symconst_kind;
 
-/** SymConst attribute.
+/**
+ * @ingroup SymConst
+ * SymConst attribute.
  *
  *  This union contains the symbolic information represented by the node.
+ *  @ingroup SymConst
  */
 typedef union symconst_symbol {
 	ir_type       *type_p;    /**< The type of a SymConst. */
@@ -243,20 +322,27 @@ typedef union symconst_symbol {
 	ir_enum_const *enum_p;    /**< The enumeration constant of a SymConst. */
 } symconst_symbol;
 
-/** The allocation place. */
+/**
+ * @ingroup Alloc
+ * The allocation place.
+ */
 typedef enum ir_where_alloc {
 	stack_alloc,          /**< Alloc allocates the object on the stack. */
 	heap_alloc            /**< Alloc allocates the object on the heap. */
 } ir_where_alloc;
 
-/** A input/output constraint attribute. */
+/** A input/output constraint attribute.
+ * @ingroup ASM
+ */
 typedef struct ir_asm_constraint {
 	unsigned       pos;           /**< The inputs/output position for this constraint. */
 	ident          *constraint;   /**< The constraint for this input/output. */
 	ir_mode        *mode;         /**< The mode of the constraint. */
 } ir_asm_constraint;
 
-/** Supported libFirm builtins. */
+/** Supported libFirm builtins.
+ * @ingroup Builtin
+ */
 typedef enum ir_builtin_kind {
 	ir_bk_trap,                   /**< GCC __builtin_trap(): insert trap */
 	ir_bk_debugbreak,             /**< MS __debugbreak(): insert debug break */

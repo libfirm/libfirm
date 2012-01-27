@@ -386,17 +386,16 @@ static void draw_block(ir_node *bl, void *data)
 
 static void draw(draw_chordal_env_t *env, const rect_t *start_box)
 {
+	ir_graph  *irg = env->chordal_env->irg;
 	plotter_t *p = env->plotter;
-	be_lv_t *lv;
 	rect_t bbox;
 
 	bbox.x = bbox.y = 0;
 	bbox.w = start_box->w + 2 * env->opts->x_margin;
 	bbox.h = start_box->h + 2 * env->opts->y_margin;
 
-	lv = be_assure_liveness(env->chordal_env->irg);
-	be_liveness_assure_sets(lv);
-	be_liveness_assure_chk(lv);
+	be_assure_live_sets(irg);
+	be_assure_live_chk(irg);
 
 	p->vtab->begin(p, &bbox);
 	irg_block_walk_graph(env->chordal_env->irg, draw_block, NULL, env);

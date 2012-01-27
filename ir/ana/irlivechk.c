@@ -75,7 +75,7 @@ typedef struct bl_info_t {
 struct lv_chk_t {
 	ir_nodemap     block_infos;
 	struct obstack obst;
-	const dfs_t   *dfs;
+	dfs_t         *dfs;
 	int            n_blocks;
 	bitset_t      *back_edge_src;
 	bitset_t      *back_edge_tgt;
@@ -240,7 +240,7 @@ static inline void compute_back_edge_chains(lv_chk_t *lv)
 	}
 }
 
-lv_chk_t *lv_chk_new(ir_graph *irg, const dfs_t *dfs)
+lv_chk_t *lv_chk_new(ir_graph *irg)
 {
 	lv_chk_t *res = XMALLOC(lv_chk_t);
 	int i;
@@ -253,7 +253,7 @@ lv_chk_t *lv_chk_new(ir_graph *irg, const dfs_t *dfs)
 
 	FIRM_DBG_REGISTER(res->dbg, "ir.ana.lvchk");
 
-	res->dfs           = dfs;
+	res->dfs           = dfs_new(&absgraph_irg_cfg_succ, irg);
 	res->n_blocks      = dfs_get_n_nodes(res->dfs);
 	res->back_edge_src = bitset_obstack_alloc(&res->obst, res->n_blocks);
 	res->back_edge_tgt = bitset_obstack_alloc(&res->obst, res->n_blocks);
@@ -294,20 +294,12 @@ lv_chk_t *lv_chk_new(ir_graph *irg, const dfs_t *dfs)
 
 void lv_chk_free(lv_chk_t *lv)
 {
+	dfs_free(lv->dfs);
 	obstack_free(&lv->obst, NULL);
 	ir_nodemap_destroy(&lv->block_infos);
 	xfree(lv);
 }
 
-/**
- * Check a nodes liveness situation of a block.
- * This routine considers both cases, the live in and end/out case.
- *
- * @param lv   The liveness check environment.
- * @param bl   The block under investigation.
- * @param var  The node to check for.
- * @return     A bitmask of lv_chk_state_XXX fields.
- */
 unsigned lv_chk_bl_xxx(lv_chk_t *lv, const ir_node *bl, const ir_node *var)
 {
 	int res  = 0;

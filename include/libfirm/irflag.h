@@ -21,28 +21,31 @@
  * @file
  * @brief   Flags to control optimizations.
  * @author  Christian Schaefer, Goetz Lindenmaier, Michael Beck
- * @brief
- * Flags to customize the behavior of libfirm.
- *
- * There are the following groups of flags:
- * 1. Optimization flags.
- *    a)  There is a flag, 'optimize' to turn on/off all optimizations.
- *    b)  There are flags for each individual optimization.  Some flags turns
- *        transformations in several algorithms on/off.
- * 2. Normalization flags.
- *    These flags steer transformations of the ir that improve it, as removing
- *    dump Phi nodes (one predecessor, all predecessors are equal ...), Ids, Tuples ...
- * 3. Verbosity flags.
- *    a) Flags to steer the level of the information.
- *    b) Flags to steer in which phase information should be dumped.
- * 4. Verification flag
- *    This one controls the behavior of node and type verifications
  */
 #ifndef FIRM_IR_IRFLAG_H
 #define FIRM_IR_IRFLAG_H
 
 #include "firm_types.h"
 #include "begin.h"
+
+/**
+ * @ingroup iroptimize
+ * @defgroup Optimization Flags
+ * Flags to customize the behavior of libfirm.
+ *
+ * There are the following groups of flags:
+ * -# Optimization flags.
+ *    -#  There is a flag, 'optimize' to turn on/off all optimizations.
+ *    -#  There are flags for each individual optimization.  Some flags turns
+ *        transformations in several algorithms on/off.
+ * -# Normalization flags.
+ *    These flags steer transformations of the ir that improve it, as removing
+ *    dump Phi nodes (one predecessor, all predecessors are equal ...), Ids, Tuples ...
+ * -# Verbosity flags.
+ *    -# Flags to steer the level of the information.
+ *    -# Flags to steer in which phase information should be dumped.
+ *@{
+ */
 
 /**
  * A container type to load/restore all optimizations
@@ -56,6 +59,8 @@ typedef unsigned optimization_state_t;
  * Default: optimize == 1.
  */
 FIRM_API void set_optimize(int value);
+/** Returns global optimizations flag.
+ * @see set_optimize() */
 FIRM_API int get_optimize(void);
 
 /** Enables/Disables constant folding optimization.
@@ -103,6 +108,8 @@ FIRM_API void set_opt_global_cse(int value);
  *  0 == not suppressed.
  */
 FIRM_API void set_opt_suppress_downcast_optimization(int value);
+/** Returns suppred_downcast flag.
+ * @see set_opt_suppress_downcast_optimization() */
 FIRM_API int get_opt_suppress_downcast_optimization(void);
 
 /**
@@ -156,6 +163,14 @@ FIRM_API void restore_optimization_state(const optimization_state_t *state);
  */
 FIRM_API void all_optimizations_off(void);
 
+/** @} */
+
+/** @ingroup irverify
+ * @defgroup irverify_flags Flags
+ * Enable/Disable automatic correctness tests
+ * @{
+ */
+
 /**
  * Possible verification modes.
  */
@@ -174,6 +189,8 @@ typedef enum firm_verification_t {
  * implementations.
  */
 FIRM_API void do_node_verification(firm_verification_t mode);
+
+/** @} */
 
 #include "end.h"
 

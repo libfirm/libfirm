@@ -22,8 +22,17 @@
  * @brief     Construct and access dominator tree.
  * @author    Goetz Lindenmaier
  * @date      2.2002
- * @brief
- *   This file contains routines to construct and access dominator information.
+ * @brief     This file contains routines to construct and access dominator information.
+ */
+#ifndef FIRM_ANA_IRDOM_H
+#define FIRM_ANA_IRDOM_H
+
+#include "firm_types.h"
+#include "begin.h"
+
+/**
+ * @ingroup irana
+ * @defgroup irdom Dominance Information
  *
  *   The dominator information is stored in three fields of block nodes:
  *     - idom: a reference to the block that is the immediate dominator of
@@ -34,105 +43,15 @@
  *
  * We generally presume (like Tarjan) that endless loops do not exist. The
  * implementation assumes a control dependency from End to loop header.
- */
-#ifndef FIRM_ANA_IRDOM_H
-#define FIRM_ANA_IRDOM_H
-
-#include "firm_types.h"
-#include "begin.h"
-
-/** Accessing the dominator data structure.
  *
- * These routines only work properly if the ir_graph is in state
- * dom_consistent or dom_inconsistent.
- *
- * If the block is not reachable from Start, returns a Bad node.
+ * @{
  */
-FIRM_API ir_node *get_Block_idom(const ir_node *bl);
-FIRM_API void set_Block_idom(ir_node *bl, ir_node *n);
 
-FIRM_API int get_Block_dom_depth(const ir_node *bl);
-FIRM_API void set_Block_dom_depth(ir_node *bl, int depth);
+/** return immediate dominator of block */
+FIRM_API ir_node *get_Block_idom(const ir_node *block);
 
-FIRM_API int get_Block_dom_pre_num(const ir_node *bl);
-FIRM_API void set_Block_dom_pre_num(ir_node *bl, int num);
-
-/** Accessing the post dominator data structure.
- *
- * These routines only work properly if the ir_graph is in state
- * dom_consistent or dom_inconsistent.
- */
-FIRM_API ir_node *get_Block_ipostdom(const ir_node *bl);
-FIRM_API void set_Block_ipostdom(ir_node *bl, ir_node *n);
-
-FIRM_API int get_Block_postdom_depth(const ir_node *bl);
-FIRM_API void set_Block_postdom_depth(ir_node *bl, int depth);
-
-FIRM_API int get_Block_postdom_pre_num(const ir_node *bl);
-FIRM_API void set_Block_postdom_pre_num(ir_node *bl, int num);
-
-/**
- * Get the pre-order number of a block resulting from a
- * Depth-First-Search walkover the dominator tree.
- *
- * @param bl The block.
- * @return The pre-order number.
- */
-FIRM_API unsigned get_Block_dom_tree_pre_num(const ir_node *bl);
-FIRM_API unsigned get_Block_pdom_tree_pre_num(const ir_node *bl);
-
-/**
- * Get the largest pre-order number found in the subtree of the
- * dominator tree rooted at a given block.
- * @param bl The block.
- * @return The largest pre-order number of block's dominator subtree.
- */
-FIRM_API unsigned get_Block_dom_max_subtree_pre_num(const ir_node *bl);
-FIRM_API unsigned get_Block_pdom_max_subtree_pre_num(const ir_node *bl);
-
-/**
- * Get the first node in the list of nodes dominated by a given block.
- *
- * Each node keeps a list of nodes which it immediately dominates. The
- * nodes are queued using the @c next pointer in the @c dom_info struct.
- * Each node keeps a head of this list using the pointer @c first in the
- * same structure.
- *
- * @param bl The block for which to get the first node dominated by @c bl.
- * @return The first node dominated by @p bl.
- */
-FIRM_API ir_node *get_Block_dominated_first(const ir_node *bl);
-FIRM_API ir_node *get_Block_postdominated_first(const ir_node *bl);
-
-/**
- * Get the next node in a list of nodes which are dominated by some
- * other node.
- * @see get_Block_dominated_first().
- * @param dom The previous node.
- * @return The next node in this list or NULL if it was the last.
- */
-FIRM_API ir_node *get_Block_dominated_next(const ir_node *dom);
-FIRM_API ir_node *get_Block_postdominated_next(const ir_node *dom);
-
-/**
- * Iterate over all nodes which are immediately dominated by a given
- * node.
- * @param bl   The block whose dominated blocks shall be iterated on.
- * @param curr An iterator variable of type ir_node*
- */
-#define dominates_for_each(bl,curr) \
-	for(curr = get_Block_dominated_first(bl); curr; \
-			curr = get_Block_dominated_next(curr))
-
-/**
- * Iterate over all nodes which are immediately post dominated by a given
- * node.
- * @param bl   The block whose post dominated blocks shall be iterated on.
- * @param curr An iterator variable of type ir_node*
- */
-#define postdominates_for_each(bl,curr) \
-	for(curr = get_Block_postdominated_first(bl); curr; \
-			curr = get_Block_postdominated_next(curr))
+/** return immediate postdominator of a block */
+FIRM_API ir_node *get_Block_ipostdom(const ir_node *block);
 
 /**
  * Check, if a block dominates another block.
@@ -155,29 +74,6 @@ FIRM_API int block_dominates(const ir_node *a, const ir_node *b);
 FIRM_API int block_strictly_dominates(const ir_node *a, const ir_node *b);
 
 /**
- * Returns the smallest common dominator block of two nodes.
- * @param a A node.
- * @param b Another node.
- * @return The first block dominating @p a and @p b
- */
-FIRM_API ir_node *node_smallest_common_dominator(ir_node *a, ir_node *b);
-
-/**
- * Returns the smallest common dominator block of all users of a node
- * BEWARE: @p irn must not be a block
- * If on or more users are Phi nodes, one can request special handling
- * with @p handle_phi = 1.  In this case the cfg predecessor block
- * corresponding to the position of the irn in the argument list of the
- * Phi is determined and treated as user.
- *
- * @param irn        A node.
- * @param handle_phi 1 if Phis should be handled different
- * @return The first block dominating all users of @p irn
- */
-FIRM_API ir_node *node_users_smallest_common_dominator(ir_node *irn,
-                                                       int handle_phi);
-
-/**
  * Check, if a block post dominates another block.
  *
  * @param a The potential post dominator block.
@@ -196,6 +92,64 @@ FIRM_API int block_postdominates(const ir_node *a, const ir_node *b);
  * @return 1, if @p a strictly post dominates @p b, else 0.
  */
 FIRM_API int block_strictly_postdominates(const ir_node *a, const ir_node *b);
+
+/**
+ * Returns the first node in the list of nodes dominated by a given block.
+ *
+ * Each node keeps a list of nodes which it immediately dominates. The
+ * nodes are queued using the @c next pointer in the @c dom_info struct.
+ * Each node keeps a head of this list using the pointer @c first in the
+ * same structure.
+ *
+ * @param block The block for which to get the first node dominated by @c bl.
+ * @return The first node dominated by @p bl.
+ */
+FIRM_API ir_node *get_Block_dominated_first(const ir_node *block);
+/**
+ * Returns the first node in the list of nodes postdominated by a given blcok.
+ */
+FIRM_API ir_node *get_Block_postdominated_first(const ir_node *bl);
+
+/**
+ * Returns the next node in a list of nodes which are dominated by some
+ * other node.
+ * @see get_Block_dominated_first().
+ * @param node The previous node.
+ * @return The next node in this list or NULL if it was the last.
+ */
+FIRM_API ir_node *get_Block_dominated_next(const ir_node *node);
+/**
+ * Returns the next node in a list of nodes which are postdominated by another node
+ */
+FIRM_API ir_node *get_Block_postdominated_next(const ir_node *node);
+
+/**
+ * Iterate over all nodes which are immediately dominated by a given
+ * node.
+ * @param bl   The block whose dominated blocks shall be iterated on.
+ * @param curr An iterator variable of type ir_node*
+ */
+#define dominates_for_each(bl,curr) \
+	for(curr = get_Block_dominated_first(bl); curr; \
+			curr = get_Block_dominated_next(curr))
+
+/**
+ * Iterate over all nodes which are immediately post dominated by a given
+ * node.
+ * @param bl   The block whose post dominated blocks shall be iterated on.
+ * @param curr An iterator variable of type ir_node*
+ */
+#define postdominates_for_each(bl,curr) \
+	for(curr = get_Block_postdominated_first(bl); curr; \
+			curr = get_Block_postdominated_next(curr))
+
+/**
+ * Returns the smallest common dominator block of two nodes.
+ * @param a A node.
+ * @param b Another node.
+ * @return The first block dominating @p a and @p b
+ */
+FIRM_API ir_node *node_smallest_common_dominator(ir_node *a, ir_node *b);
 
 /**
  * Visit all nodes in the dominator subtree of a given node.
@@ -241,9 +195,7 @@ FIRM_API void dom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
 FIRM_API void postdom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
                                     irg_walk_func *post, void *env);
 
-/* ------------ Building and Removing the dominator data structure ----------- */
-
-/** Computes the dominator trees.
+/** Computes the dominance relation for all basic blocks of a given graph.
  *
  * Sets a flag in irg to "dom_consistent".
  * If the control flow of the graph is changed this flag must be set to
@@ -260,10 +212,10 @@ FIRM_API void postdom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
  */
 FIRM_API void compute_doms(ir_graph *irg);
 
-/** Computes the dominator trees on demand, @see compute_doms(). */
+/** Recomputes dominator relation of a graph if necessary */
 FIRM_API void assure_doms(ir_graph *irg);
 
-/** Computes the post dominator trees.
+/** Computes the post dominance relation for all basic blocks of a given graph.
  *
  * Sets a flag in irg to "dom_consistent".
  * If the control flow of the graph is changed this flag must be set to
@@ -280,17 +232,18 @@ FIRM_API void assure_doms(ir_graph *irg);
  */
 FIRM_API void compute_postdoms(ir_graph *irg);
 
-/** Computes the dominator trees on demand */
+/** Recompute postdominance relation if necessary */
 FIRM_API void assure_postdoms(ir_graph *irg);
 
-/** Frees the dominator data structures.  Sets the flag in irg to "dom_none". */
+/** Frees the dominance data structures.  Sets the flag in irg to "dom_none". */
 FIRM_API void free_dom(ir_graph *irg);
 
 /**
- * Frees the post dominator data structures.
- * Sets the flag in irg to "dom_none".
+ * Frees the postdominance data structures. Sets the flag in irg to "dom_none".
  */
 FIRM_API void free_postdom(ir_graph *irg);
+
+/** @} */
 
 #include "end.h"
 

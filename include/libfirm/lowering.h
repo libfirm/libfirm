@@ -32,6 +32,16 @@
 #include "begin.h"
 
 /**
+ * @defgroup ir_lowering  Lowering
+ *
+ * Lowering is the process of transforming a highlevel representation
+ * (a representation closer to the sourcecode) into a lower-level representation
+ * (something closer to the target machine).
+ *
+ * @{
+ */
+
+/**
  * Lower small CopyB nodes to Load/Store nodes, preserve medium-sized CopyB
  * nodes and replace large CopyBs by a call to memcpy, depending on the given
  * parameters.
@@ -69,7 +79,7 @@ FIRM_API void lower_switch(ir_graph *irg, unsigned small_switch,
 
 /**
  * Replaces SymConsts by a real constant if possible.
- * Replace Sel nodes by address computation.  Also resolves array access.
+ * Replaces Sel nodes by address computation.  Also resolves array access.
  * Handle bit fields by added And/Or calculations.
  *
  * @param irg               the graph to lower
@@ -90,7 +100,7 @@ FIRM_API ir_graph_pass_t *lower_highlevel_graph_pass(const char *name);
 
 /**
  * Replaces SymConsts by a real constant if possible.
- * Replace Sel nodes by address computation.  Also resolves array access.
+ * Replaces Sel nodes by address computation.  Also resolves array access.
  * Handle bit fields by added And/Or calculations.
  * Lowers all graphs.
  *
@@ -155,6 +165,8 @@ FIRM_API ir_graph_pass_t *lower_mux_pass(const char *name,
  */
 typedef int (*i_mapper_func)(ir_node *node, void *ctx);
 
+/** kind of an instruction record
+ * @see #i_record */
 enum ikind {
 	INTRINSIC_CALL  = 0,  /**< the record represents an intrinsic call */
 	INTRINSIC_INSTR       /**< the record represents an intrinsic instruction */
@@ -186,8 +198,9 @@ typedef struct i_instr_record {
  * An intrinsic record.
  */
 typedef union i_record {
-	i_call_record  i_call;
-	i_instr_record i_instr;
+	enum ikind     kind;     /**< kind of record */
+	i_call_record  i_call;   /**< used for call records */
+	i_instr_record i_instr;  /**< used for isnstruction records */
 } i_record;
 
 /**
@@ -205,7 +218,7 @@ typedef union i_record {
  * @return number of found intrinsics.
  */
 FIRM_API size_t lower_intrinsics(i_record *list, size_t length,
-                                   int part_block_used);
+                                 int part_block_used);
 
 /**
  * Creates an irprog pass for lower_intrinsics.
@@ -262,8 +275,19 @@ FIRM_API int i_mapper_pow(ir_node *call, void *ctx);
  */
 FIRM_API int i_mapper_exp(ir_node *call, void *ctx);
 
-#define i_mapper_exp2   i_mapper_exp
-#define i_mapper_exp10  i_mapper_exp
+/**
+ * A mapper for the floating point exp2(a): floattype exp2(floattype a);
+ *
+ * @return 1 if the exp call was removed, 0 else.
+ */
+FIRM_API int i_mapper_exp2(ir_node *call, void *ctx);
+
+/**
+ * A mapper for the floating point exp10(a): floattype exp10(floattype a);
+ *
+ * @return 1 if the exp call was removed, 0 else.
+ */
+FIRM_API int i_mapper_exp10(ir_node *call, void *ctx);
 
 /**
  * A mapper for the floating point log(a): floattype log(floattype a);
@@ -272,8 +296,19 @@ FIRM_API int i_mapper_exp(ir_node *call, void *ctx);
  */
 FIRM_API int i_mapper_log(ir_node *call, void *ctx);
 
-#define i_mapper_log2   i_mapper_log
-#define i_mapper_log10  i_mapper_log
+/**
+ * A mapper for the floating point log(a): floattype log(floattype a);
+ *
+ * @return 1 if the log call was removed, 0 else.
+ */
+FIRM_API int i_mapper_log2(ir_node *call, void *ctx);
+
+/**
+ * A mapper for the floating point log(a): floattype log(floattype a);
+ *
+ * @return 1 if the log call was removed, 0 else.
+ */
+FIRM_API int i_mapper_log10(ir_node *call, void *ctx);
 
 /**
  * A mapper for the floating point sin(a): floattype sin(floattype a);
@@ -482,6 +517,8 @@ typedef struct runtime_rt {
   @endcode
  */
 FIRM_API int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt);
+
+/** @} */
 
 #include "end.h"
 

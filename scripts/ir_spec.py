@@ -31,8 +31,10 @@ class Add(Binop):
 
 class Alloc(Op):
 	"""allocates a block of memory.
-	It can be specified whether the variable should be allocated to the stack
-	or to the heap."""
+	It can be specified whether the memory should be allocated to the stack
+	or to the heap.
+	Allocates memory for one or more objects (depending on value on count input).
+	"""
 	ins   = [
 		("mem",   "memory dependency" ),
 		("count", "number of objects to allocate" ),
@@ -47,7 +49,7 @@ class Alloc(Op):
 		dict(
 			name    = "type",
 			type    = "ir_type*",
-			comment = "type of the allocated variable",
+			comment = "type of the objects to allocate",
 		),
 		dict(
 			name    = "where",
@@ -92,6 +94,9 @@ class ASM(Op):
 	attr_struct      = "asm_attr"
 	attrs_name       = "assem"
 	customSerializer = True
+	ins   = [
+		("mem",    "memory dependency"),
+	]
 	attrs = [
 		dict(
 			name    = "input_constraints",
@@ -422,7 +427,7 @@ class Conv(Unop):
 	attr_struct = "conv_attr"
 
 class CopyB(Op):
-	"""Copies a block of memory"""
+	"""Copies a block of memory with statically known size/type."""
 	ins   = [
 		("mem",  "memory dependency"),
 		("dst",  "destination address"),
@@ -500,7 +505,9 @@ class End(Op):
 	singleton        = True
 
 class Eor(Binop):
-	"""returns the result of a bitwise exclusive or operation of its operands"""
+	"""returns the result of a bitwise exclusive or operation of its operands.
+
+	This is also known as the Xor operation."""
 	flags    = [ "commutative" ]
 
 class Free(Op):
@@ -528,7 +535,10 @@ class Free(Op):
 	attr_struct = "free_attr"
 
 class Id(Op):
-	"""Returns its operand unchanged."""
+	"""Returns its operand unchanged.
+
+	This is mainly used when exchanging nodes. Usually you shouldn't see Id
+	nodes since the getters/setters for node inputs skip them automatically."""
 	ins    = [
 	   ("pred", "the value which is returned unchanged")
 	]
@@ -692,9 +702,7 @@ class NoMem(Op):
 	singleton     = True
 
 class Not(Unop):
-	"""returns the logical complement of a value. Works for integer values too.
-	If the input is false/zero then true/one is returned, otherwise false/zero
-	is returned."""
+	"""returns the bitwise complement of a value. Works for boolean values, too."""
 	flags = []
 
 class Or(Binop):

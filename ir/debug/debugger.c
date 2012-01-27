@@ -52,6 +52,7 @@
 #include "iredges_t.h"
 #include "debug.h"
 #include "error.h"
+#include "util.h"
 
 #ifdef _WIN32
 /* Break into the debugger. The Win32 way. */
@@ -117,7 +118,7 @@ typedef struct {
 } bp_ident_t;
 
 /** Calculate the hash value for an ident breakpoint. */
-#define HASH_IDENT_BP(key) (HASH_PTR((key).id) ^ (key).bp.reason)
+#define HASH_IDENT_BP(key) (hash_ptr((key).id) ^ (key).bp.reason)
 
 /** The set containing the breakpoints on node numbers. */
 static set *bp_numbers;
@@ -189,7 +190,7 @@ static const char __attribute__((used)) firm_debug_info_string[] =
 int firm_debug_active(void)
 {
 	return is_active;
-}  /* firm_debug_active */
+}
 
 /**
  * Reset the debug text buffer.
@@ -197,18 +198,18 @@ int firm_debug_active(void)
 static void reset_dbg_buf(void)
 {
 	firm_dbg_msg_buf[0] = '\0';
-}  /* reset_dbg_buf */
+}
 
 static void add_to_dbg_buf(const char *buf)
 {
 	strncat(firm_dbg_msg_buf, buf, sizeof(firm_dbg_msg_buf));
-}  /* add_to_dbg_buf */
+}
 
 const char *firm_debug_text(void)
 {
 	firm_dbg_msg_buf[sizeof(firm_dbg_msg_buf) - 1] = '\0';
 	return firm_dbg_msg_buf;
-}  /* firm_debug_text */
+}
 
 /**
  * debug output
@@ -232,7 +233,7 @@ static void dbg_printf(const char *fmt, ...)
 		add_to_dbg_buf(buf);
 	else
 		puts(buf);
-}  /* dbg_printf */
+}
 
 /**
  * A new node is created.
@@ -255,7 +256,7 @@ static void dbg_new_node(void *ctx, ir_graph *irg, ir_node *node)
 		dbg_printf("Firm BP %u reached, %+F created\n", elem->bp.bpnr, node);
 		firm_debug_break();
 	}
-}  /* dbg_new_node */
+}
 
 /**
  * A node is replaced.
@@ -277,7 +278,7 @@ static void dbg_replace(void *ctx, ir_node *old, ir_node *nw)
 		dbg_printf("Firm BP %u reached, %+F will be replaced by %+F\n", elem->bp.bpnr, old, nw);
 		firm_debug_break();
 	}
-}  /* dbg_replace */
+}
 
 /**
  * A new node is lowered.
@@ -298,7 +299,7 @@ static void dbg_lower(void *ctx, ir_node *node)
 		dbg_printf("Firm BP %u reached, %+F will be lowered\n", elem->bp.bpnr, node);
 		firm_debug_break();
 	}
-}  /* dbg_lower */
+}
 
 /**
  * A graph will be deleted.
@@ -336,7 +337,7 @@ static void dbg_free_graph(void *ctx, ir_graph *irg)
 			firm_debug_break();
 		}
 	}
-}  /* dbg_free_graph */
+}
 
 /**
  * An entity was created.
@@ -371,7 +372,7 @@ static void dbg_new_entity(void *ctx, ir_entity *ent)
 			firm_debug_break();
 		}
 	}
-}  /* dbg_new_entity */
+}
 
 /**
  * A type was created.
@@ -394,7 +395,7 @@ static void dbg_new_type(void *ctx, ir_type *tp)
 			firm_debug_break();
 		}
 	}
-}  /* dbg_new_type */
+}
 
 /**
  * Return the reason string.
@@ -411,7 +412,7 @@ static const char *reason_str(bp_reasons_t reason)
 	case BP_MAX_REASON:  break;
 	}
 	panic("unsupported reason");
-}  /* reason_str */
+}
 
 /**
  * Compare two number breakpoints.
@@ -423,7 +424,7 @@ static int cmp_nr_bp(const void *elt, const void *key, size_t size)
 	(void) size;
 
 	return (e1->nr - e2->nr) | (e1->bp.reason - e2->bp.reason);
-}  /* cmp_nr_bp */
+}
 
 /**
  * Compare two ident breakpoints.
@@ -435,7 +436,7 @@ static int cmp_ident_bp(const void *elt, const void *key, size_t size)
 	(void) size;
 
 	return (e1->id != e2->id) | (e1->bp.reason - e2->bp.reason);
-}  /* cmp_ident_bp */
+}
 
 /**
  * Update the hooks.
@@ -478,7 +479,7 @@ static void update_hooks(breakpoint *bp)
 	}
 #undef CASE_ON
 #undef CASE_OFF
-}  /* update_hooks */
+}
 
 /**
  * Break if nr is reached.
@@ -505,7 +506,7 @@ static void break_on_nr(long nr, bp_reasons_t reason)
 
 		update_hooks(&elem->bp);
 	}
-}  /* break_on_nr */
+}
 
 /**
  * Break if ident name is reached.
@@ -532,7 +533,7 @@ static void break_on_ident(const char *name, bp_reasons_t reason)
 
 		update_hooks(&elem->bp);
 	}
-}  /* break_on_ident */
+}
 
 /**
  * Sets/resets the active flag of breakpoint bp.
@@ -553,7 +554,7 @@ static void bp_activate(unsigned bp, int active)
 		}
 	}
 	dbg_printf("Error: Firm BP %u not exists.\n", bp);
-}  /* bp_activate */
+}
 
 
 /**
@@ -581,7 +582,7 @@ static void show_commands(void)
 		"irgldname ldname      prints address and graph number of a method given by its ldname\n"
 		"help                  list all commands\n"
 		);
-}  /* show_commands */
+}
 
 /**
  * Shows all Firm breakpoints.
@@ -613,7 +614,7 @@ static void show_bp(void)
 		dbg_printf(p->active ? "+enabled" : "+disabled");
 	}
 	dbg_printf(have_one ? "+\n" : "+ NONE\n");
-}  /* show_bp */
+}
 
 /**
  * firm_dbg_register() expects that the name is stored persistent.
@@ -624,7 +625,7 @@ static firm_dbg_module_t *dbg_register(const char *name)
 	ident *id = new_id_from_str(name);
 
 	return firm_dbg_register(get_id_str(id));
-}  /* dbg_register */
+}
 
 /**
  * Sets the debug mask of module name to lvl
@@ -638,7 +639,7 @@ static void set_dbg_level(const char *name, unsigned lvl)
 
 		dbg_printf("Setting debug mask of module %s to %u\n", name, lvl);
 	}
-}  /* set_dbg_level */
+}
 
 /**
  * Redirects the debug output of module name to fname
@@ -655,7 +656,7 @@ static void set_dbg_outfile(const char *name, const char *fname)
 
 	firm_dbg_set_file(module, f);
 	dbg_printf("Redirecting debug output of module %s to file %s\n", name, fname);
-}  /* set_dbg_outfile */
+}
 
 /**
  * Show info about a firm thing.
@@ -692,7 +693,7 @@ static void show_firm_object(void *firm_thing)
 	default:
 		fprintf(f, "Cannot identify thing at (%p).\n", firm_thing);
 	}
-}  /* show_firm_object */
+}
 
 /**
  * Find a firm type by its number.
@@ -711,7 +712,7 @@ static ir_type *find_type_nr(long nr)
 	if (get_type_nr(tp) == nr)
 		return tp;
 	return NULL;
-}  /* find_type_nr */
+}
 
 /**
  * Find a firm type by its name.
@@ -733,7 +734,7 @@ static ir_type *find_type_name(const char *name)
 	if (strcmp(get_compound_name(tp), name) == 0)
 		return tp;
 	return NULL;
-}  /* find_type_name */
+}
 
 /** The environment for the entity search functions. */
 typedef struct find_env {
@@ -756,7 +757,7 @@ static void check_ent_nr(type_or_ent tore, void *ctx)
 			env->res = tore.ent;
 		}
 	}
-}  /* check_ent_nr */
+}
 
 /**
  * Type-walker: Find an entity with given name.
@@ -769,7 +770,7 @@ static void check_ent_name(type_or_ent tore, void *ctx)
 		if (strcmp(get_entity_name(tore.ent), env->u.name) == 0) {
 			env->res = tore.ent;
 		}
-}  /* check_ent_name */
+}
 
 /**
  * Find a firm entity by its number.
@@ -782,7 +783,7 @@ static ir_entity *find_entity_nr(long nr)
 	env.res  = NULL;
 	type_walk(check_ent_nr, NULL, &env);
 	return env.res;
-}  /* find_entity_nr */
+}
 
 /**
  * Find a firm entity by its name.
@@ -795,7 +796,7 @@ static ir_entity *find_entity_name(const char *name)
 	env.res    = NULL;
 	type_walk(check_ent_name, NULL, &env);
 	return env.res;
-}  /* find_entity_name */
+}
 
 /**
  * Search methods for a name.
@@ -824,7 +825,7 @@ static void show_by_name(type_or_ent tore, void *env)
 			}
 		}
 	}
-}  /* show_by_name */
+}
 
 /**
  * Search methods for a ldname.
@@ -853,7 +854,7 @@ static void show_by_ldname(type_or_ent tore, void *env)
 			}
 		}
 	}
-}  /* show_by_ldname */
+}
 
 /**
  * prints the address and graph number of all irgs with given name
@@ -863,7 +864,7 @@ static void irg_name(const char *name)
 	ident *id = new_id_from_str(name);
 
 	type_walk(show_by_name, NULL, (void *)id);
-}  /* irg_name */
+}
 
 /**
  * prints the address and graph number of all irgs with given ld_name
@@ -873,7 +874,7 @@ static void irg_ld_name(const char *name)
 	ident *id = new_id_from_str(name);
 
 	type_walk(show_by_ldname, NULL, (void *)id);
-}  /* irg_ld_name */
+}
 
 enum tokens {
 	tok_create = 256,
@@ -944,7 +945,7 @@ static void init_lexer(const char *input)
 	lexer.has_token = 0;
 	lexer.curr_pos  = input;
 	lexer.end_pos   = input + strlen(input);
-}  /* init_lexer */
+}
 
 
 /**
@@ -955,7 +956,7 @@ static char next_char(void)
 	if (lexer.curr_pos >= lexer.end_pos)
 		return '\0';
 	return *lexer.curr_pos++;
-}  /* next_char */
+}
 
 #define unput()    if (lexer.curr_pos < lexer.end_pos) --lexer.curr_pos
 
@@ -968,7 +969,7 @@ static char next_char(void)
 static unsigned get_token(void)
 {
 	char c;
-	int i;
+	size_t i;
 
 	/* skip white space */
 	do {
@@ -992,7 +993,7 @@ static unsigned get_token(void)
 			++tok_start;
 			--len;
 		}
-		for (i = sizeof(reserved)/sizeof(reserved[0]) - 1; i >= 0; --i) {
+		for (i = ARRAY_SIZE(reserved); i-- != 0;) {
 			if (strncasecmp(tok_start, reserved[i], len) == 0 && reserved[i][len] == '\0')
 				return 256 + i;
 		}
@@ -1043,7 +1044,7 @@ static unsigned get_token(void)
 	else if (c == '\0')
 		return tok_eof;
 	return c;
-}  /* get_token */
+}
 
 void firm_debug(const char *cmd)
 {
@@ -1259,7 +1260,7 @@ error:
 	}
 leave:
 	;
-}  /* firm_debug */
+}
 
 void firm_init_debugger(void)
 {
@@ -1277,7 +1278,13 @@ void firm_init_debugger(void)
 
 	if (break_on_init)
 		firm_debug_break();
-}  /* firm_init_debugger */
+}
+
+void firm_finish_debugger(void)
+{
+	del_set(bp_numbers);
+	del_set(bp_idents);
+}
 
 /**
  * A gdb helper function to print firm objects.

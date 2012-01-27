@@ -253,7 +253,7 @@ static int ia32_get_sp_bias(const ir_node *node)
 static void ia32_build_between_type(void)
 {
 #define IDENT(s) new_id_from_chars(s, sizeof(s)-1)
-	if (! between_type) {
+	if (between_type == NULL) {
 		ir_type *old_bp_type   = new_type_primitive(mode_Iu);
 		ir_type *ret_addr_type = new_type_primitive(mode_Iu);
 
@@ -1310,7 +1310,7 @@ static void introduce_prolog_epilog(ir_graph *irg)
  * virtual with real x87 instructions, creating a block schedule and peephole
  * optimisations.
  */
-static void ia32_finish(ir_graph *irg)
+static void ia32_finish_graph(ir_graph *irg)
 {
 	ia32_irg_data_t   *irg_data     = ia32_get_irg_data(irg);
 	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
@@ -1412,8 +1412,8 @@ static void set_tarval_output_modes(void)
 {
 	size_t i;
 
-	for (i = get_irp_n_modes(); i > 0;) {
-		ir_mode *mode = get_irp_mode(--i);
+	for (i = ir_get_n_modes(); i > 0;) {
+		ir_mode *mode = ir_get_mode(--i);
 
 		if (mode_is_int(mode))
 			set_tarval_mode_output_option(mode, &mo_integer);
@@ -1729,17 +1729,14 @@ static backend_params ia32_backend_params = {
  */
 static void ia32_init(void)
 {
-	ir_mode    *mode_long_long;
-	ir_mode    *mode_unsigned_long_long;
-	ir_type    *type_long_long;
-	ir_type    *type_unsigned_long_long;
+	ir_mode *mode_long_long;
+	ir_mode *mode_unsigned_long_long;
+	ir_type *type_long_long;
+	ir_type *type_unsigned_long_long;
 
 	ia32_setup_cg_config();
 
 	init_asm_constraints();
-
-	ia32_register_init();
-	ia32_create_opcodes(&ia32_irn_ops);
 
 	ia32_mode_fpcw = new_int_mode("Fpcw", irma_twos_complement, 16, 0, 0);
 
@@ -1766,6 +1763,20 @@ static void ia32_init(void)
 		ia32_backend_params.mode_float_arithmetic = ia32_mode_E;
 		ia32_backend_params.type_long_double      = ia32_type_E;
 	}
+
+	ia32_register_init();
+	obstack_init(&opcodes_obst);
+	ia32_create_opcodes(&ia32_irn_ops);
+}
+
+static void ia32_finish(void)
+{
+	if (between_type != NULL) {
+		free_type(between_type);
+		between_type = NULL;
+	}
+	ia32_free_opcodes();
+	obstack_free(&opcodes_obst, NULL);
 }
 
 /**
@@ -2044,8 +2055,6 @@ static void ia32_lower_for_target(void)
 		&intrinsic_env,
 	};
 
-	ia32_create_opcodes(&ia32_irn_ops);
-
 	/* lower compound param handling
 	 * Note: we lower compound arguments ourself, since on ia32 we don't
 	 * have hidden parameters but know where to find the structs on the stack.
@@ -2165,6 +2174,7 @@ static const lc_opt_table_entry_t ia32_options[] = {
 
 const arch_isa_if_t ia32_isa_if = {
 	ia32_init,
+	ia32_finish,
 	ia32_get_libfirm_params,
 	ia32_lower_for_target,
 	ia32_parse_asm_constraint,
@@ -2184,7 +2194,7 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_before_abi,     /* before abi introduce hook */
 	ia32_prepare_graph,
 	ia32_before_ra,      /* before register allocation hook */
-	ia32_finish,         /* called before codegen */
+	ia32_finish_graph,   /* called before codegen */
 	ia32_emit,           /* emit && done */
 };
 

@@ -26,11 +26,12 @@
 #ifndef FIRM_BE_BELIVE_T_H
 #define FIRM_BE_BELIVE_T_H
 
+#include <stdbool.h>
 #include "be_types.h"
 #include "irgraph_t.h"
 #include "irnodehashmap.h"
 #include "irhooks.h"
-#include "dfs.h"
+#include "irlivechk.h"
 #include "statev.h"
 
 #include "pset.h"
@@ -38,22 +39,14 @@
 
 #include "belive.h"
 
-#define USE_LIVE_CHK
-
-#ifdef USE_LIVE_CHK
-#include "irlivechk.h"
-#endif
-
 struct be_lv_t {
 	ir_nodehashmap_t map;
 	struct obstack   obst;
+	bool             sets_valid;
 	ir_graph        *irg;
-	dfs_t           *dfs;
 	bitset_t        *nodes;
 	hook_entry_t     hook_info;
-#ifdef USE_LIVE_CHK
 	lv_chk_t        *lvc;
-#endif
 };
 
 typedef struct be_lv_info_node_t be_lv_info_node_t;
@@ -104,15 +97,12 @@ static inline unsigned _be_is_live_xxx(const be_lv_t *li, const ir_node *block,
 {
 	unsigned res;
 
-	if (li->nodes != NULL) {
+	if (li->sets_valid) {
 		be_lv_info_node_t *info = be_lv_get(li, block, irn);
 		res = info != NULL ? (info->flags & flags) != 0 : 0;
-	}
-
-#ifdef USE_LIVE_CHK
-	else
+	} else {
 		res = (lv_chk_bl_xxx(li->lvc, block, irn) & flags) != 0;
-#endif
+	}
 
 	return res;
 }

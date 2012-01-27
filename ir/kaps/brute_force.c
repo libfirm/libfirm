@@ -155,7 +155,7 @@ static void apply_Brute_Force(pbqp_t *pbqp)
 	if (pbqp->dump_file) {
 		char     txt[100];
 		sprintf(txt, "BF-Reduction of Node n%d", node->index);
-		dump_section(pbqp->dump_file, 2, txt);
+		pbqp_dump_section(pbqp->dump_file, 2, txt);
 		pbqp_dump_graph(pbqp);
 	}
 #endif
@@ -320,7 +320,7 @@ static void back_propagate_brute_force(pbqp_t *pbqp)
 
 #if KAPS_DUMP
 	if (pbqp->dump_file) {
-		dump_section(pbqp->dump_file, 2, "Back Propagation");
+		pbqp_dump_section(pbqp->dump_file, 2, "Back Propagation");
 	}
 #endif
 

@@ -525,9 +525,9 @@ void be_assure_state(ir_graph *irg, const arch_register_t *reg, void *func_env,
 {
 	minibelady_env_t env;
 	spill_info_t *info;
-	be_lv_t *lv = be_assure_liveness(irg);
+	be_lv_t *lv = be_get_irg_liveness(irg);
 
-	be_liveness_assure_sets(lv);
+	be_assure_live_sets(irg);
 	assure_loopinfo(irg);
 
 	obstack_init(&env.obst);

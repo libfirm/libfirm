@@ -1547,7 +1547,7 @@ char const *be_gas_get_private_prefix(void)
 
 void be_gas_emit_entity(const ir_entity *entity)
 {
-	if (entity->type == firm_code_type) {
+	if (entity->type == get_code_type()) {
 		ir_label_t label = get_entity_label(entity);
 		be_emit_irprintf("%s_%lu", be_gas_get_private_prefix(), label);
 		return;
@@ -1585,7 +1585,7 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 	ir_linkage        linkage    = get_entity_linkage(entity);
 
 	/* block labels are already emittet in the code */
-	if (type == firm_code_type)
+	if (type == get_code_type())
 		return;
 
 	/* we already emitted all methods. Except for the trampolines which

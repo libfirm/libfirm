@@ -36,6 +36,7 @@
 #include "irloop_t.h"
 #include "tv_t.h"
 #include "dbginfo_t.h"
+#include "util.h"
 
 /**
  * identify a firm object type
@@ -332,7 +333,7 @@ lc_arg_env_t *firm_get_arg_env(void)
 		lc_arg_add_std(env);
 
 		lc_arg_register(env, "firm", 'F', &firm_handler);
-		for (i = 0; i < sizeof(args)/sizeof(args[0]); ++i)
+		for (i = 0; i != ARRAY_SIZE(args); ++i)
 			lc_arg_register(env, args[i].name, args[i].letter, &firm_handler);
 
 		lc_arg_register(env, "firm:ident",    'I', &ident_handler);

@@ -31,7 +31,7 @@
 #include "begin.h"
 
 /**
- * @page ir_graph   The struct ir_graph
+ * @defgroup ir_graph  Procedure Graph
  *
  * This struct contains all information about a procedure.
  * It's allocated directly to memory.
@@ -105,18 +105,9 @@
  * - visited         A int used as flag to traverse the ir_graph.
  *
  * - block_visited    A int used as a flag to traverse block nodes in the graph.
- */
-
-/** Global variable holding the current ir graph.
  *
- *  This global variable is used by the ir construction
- *  interface in ircons and by the optimizations.
- *  Further it is set by all walker functions.
+ * @{
  */
-FIRM_API ir_graph *current_ir_graph;
-
-FIRM_API ir_graph *get_current_ir_graph(void);
-FIRM_API void set_current_ir_graph(ir_graph *graph);
 
 /**
  * Create a new ir graph to build ir for a procedure.
@@ -230,6 +221,7 @@ FIRM_API void set_irg_args(ir_graph *irg, ir_node *node);
 
 /** Returns the NoMem node of the given IR graph. */
 FIRM_API ir_node *get_irg_no_mem(const ir_graph *irg);
+/** Sets the NoMem node of graph @p irg. */
 FIRM_API void set_irg_no_mem(ir_graph *irg, ir_node *node);
 
 /** Returns the number of value numbers of an IR graph. */
@@ -246,12 +238,13 @@ FIRM_API long get_irg_graph_nr(const ir_graph *irg);
 FIRM_API size_t get_irg_idx(const ir_graph *irg);
 
 /**
- * Get the node for an index.
+ * Returns the node for an index.
  * @param irg The graph.
  * @param idx The index you want the node for.
  * @return    The node with that index or NULL, if there is no node with that
  *            index.
  * @note      The node you got might be dead.
+ * @see get_irn_idx()
  */
 FIRM_API ir_node *get_idx_irn(const ir_graph *irg, unsigned idx);
 
@@ -352,23 +345,36 @@ FIRM_API void add_irg_additional_properties(ir_graph *irg,
 
 /** A void * field to link arbitrary information to the node. */
 FIRM_API void set_irg_link(ir_graph *irg, void *thing);
+/** Return void* field previously set by set_irg_link() */
 FIRM_API void *get_irg_link(const ir_graph *irg);
 
-/** Increments visited flag by one.
- *  @see also: get_irn_visited() get_irg_block_visited(). */
+/** Increments node visited counter by one.
+ *  @see @ref visited_counters, irn_visited(), mark_irn_visited() */
 FIRM_API void inc_irg_visited(ir_graph *irg);
+/** Returns node visited counter.
+ * @see @ref visited_counters */
 FIRM_API ir_visited_t get_irg_visited(const ir_graph *irg);
+/** Sets node visited counter.
+ * @see @ref visited_counters */
 FIRM_API void set_irg_visited(ir_graph *irg, ir_visited_t i);
-/** An interprocedural flag valid for all irgs.
- *  @see also: get_irn_visited() get_irg_block_visited(). */
+/** Returns interprocedural node visited counter.
+ * @see @ref visited_counters */
 FIRM_API ir_visited_t get_max_irg_visited(void);
+/** Sets interprocedural node visited counter.
+ * @see @ref visited_counters */
 FIRM_API void set_max_irg_visited(int val);
+/** Increment interprocedural node visited counter by one.
+ * @see @ref visited_counters */
 FIRM_API ir_visited_t inc_max_irg_visited(void);
 
-/** Increments block_visited by one.
- *  @see also: get_irn_visited() get_irg_block_visited(). */
+/** Increments block visited counter by one.
+ *  @see @ref visited_counters, Block_block_visited(), mark_Block_block_visited() */
 FIRM_API void inc_irg_block_visited(ir_graph *irg);
+/** Returns block visited counter.
+ * @see @ref visited_counters */
 FIRM_API ir_visited_t get_irg_block_visited(const ir_graph *irg);
+/** Sets block visited counter.
+ * @see @ref visited_counters */
 FIRM_API void set_irg_block_visited(ir_graph *irg, ir_visited_t i);
 
 /**
@@ -377,7 +383,7 @@ FIRM_API void set_irg_block_visited(ir_graph *irg, ir_visited_t i);
  * if 2 parties try to use the flags.
  */
 typedef enum ir_resources_t {
-	IR_RESOURCE_NONE          = 0,
+	IR_RESOURCE_NONE          = 0,       /**< no resource */
 	IR_RESOURCE_BLOCK_VISITED = 1 << 0,  /**< Block visited flags are used. */
 	IR_RESOURCE_BLOCK_MARK    = 1 << 1,  /**< Block mark bits are used. */
 	IR_RESOURCE_IRN_VISITED   = 1 << 2,  /**< IR-node visited flags are used. */
@@ -388,8 +394,17 @@ typedef enum ir_resources_t {
 ENUM_BITSET(ir_resources_t)
 
 #ifndef NDEBUG
+/**
+ * Reserves resources of a graph.
+ *
+ * This is a debug tool: All code should properly allocate the resources it uses
+ * so if two interlocked algorithms use the same resources that bug will get
+ * detected.
+ */
 FIRM_API void ir_reserve_resources(ir_graph *irg, ir_resources_t resources);
+/** Frees previously reserved resources. */
 FIRM_API void ir_free_resources(ir_graph *irg, ir_resources_t resources);
+/** Returns currently reserved resources. */
 FIRM_API ir_resources_t ir_resources_reserved(const ir_graph *irg);
 #else
 #define ir_reserve_resources(irg,resources)  (void)0
@@ -420,14 +435,14 @@ typedef enum {
 	 */
 	IR_GRAPH_STATE_NORMALISATION2            = 1U << 2,
 	/**
-	 * Define the semantic of Load(Sel(x)), if x has a bit offset (Bitfields!).
+	 * Defines the semantic of Load(Sel(x)), if x has a bit offset (Bitfields!).
 	 * Normally, the frontend is responsible for bitfield masking operations.
-	 * Set IMPLICIT_BITFIELD_MASKING, if the lowering phase must insert masking
+	 * Sets IMPLICIT_BITFIELD_MASKING, if the lowering phase must insert masking
 	 * operations.
 	 */
 	IR_GRAPH_STATE_IMPLICIT_BITFIELD_MASKING = 1U << 3,
 	/**
-	 * Allow localopts to remove edges to unreachable code.
+	 * Allows localopts to remove edges to unreachable code.
 	 * Warning: It is only safe to enable this when you are sure that you
 	 * apply all localopts to the fixpunkt. (=in optimize_graph_df)
 	 */
@@ -466,17 +481,17 @@ typedef enum {
 } ir_graph_state_t;
 ENUM_BITSET(ir_graph_state_t)
 
-/** set some state flags on the graph (this does not clear the other flags) */
+/** Sets some state flags on the graph (this does not clear the other flags) */
 FIRM_API void set_irg_state(ir_graph *irg, ir_graph_state_t state);
-/** clear some state flags of the graph */
+/** Clears some state flags of the graph */
 FIRM_API void clear_irg_state(ir_graph *irg, ir_graph_state_t state);
-/** query whether a set of graph state flags are activated */
+/** Queries whether a set of graph state flags are activated */
 FIRM_API int is_irg_state(const ir_graph *irg, ir_graph_state_t state);
 
-/** Set a description for local value n. */
+/** Sets a description for local value n. */
 FIRM_API void set_irg_loc_description(ir_graph *irg, int n, void *description);
 
-/** Get the description for local value n. */
+/** Returns the description for local value n. */
 FIRM_API void *get_irg_loc_description(ir_graph *irg, int n);
 
 /** Returns a estimated node count of the irg. This count is updated
@@ -494,7 +509,7 @@ FIRM_API unsigned get_irg_fp_model(const ir_graph *irg);
 FIRM_API void set_irg_fp_model(ir_graph *irg, unsigned model);
 
 /**
- * Access custom graph data.
+ * Accesses custom graph data.
  * The data must have been registered with
  * register_additional_graph_data() before.
  * @param graph The graph to get the data from.
@@ -506,7 +521,7 @@ FIRM_API void set_irg_fp_model(ir_graph *irg, unsigned model);
 	(assert(off > 0 && "Invalid graph data offset"), (type *) ((char *) (graph) - (off)))
 
 /**
- * Get the pointer to the node some custom data belongs to.
+ * Returns the pointer to the node some custom data belongs to.
  * @param data The pointer to the custom data.
  * @param off The number as returned by register_additional_graph_data().
  * @return A pointer to the ir node the custom data belongs to.
@@ -515,13 +530,15 @@ FIRM_API void set_irg_fp_model(ir_graph *irg, unsigned model);
 	(assert(off > 0 && "Invalid graph data offset"), (ir_graph *) ((char *) (data) + (off)))
 
 /**
- * Request additional data to be allocated with an ir graph.
+ * Requests additional data to be allocated with an ir graph.
  * @param size The size of the additional data required.
  * @return A positive number, if the operation was successful, which
  * must be passed to the access macro get_irg_data(), 0 if the
  * registration failed.
  */
 FIRM_API size_t register_additional_graph_data(size_t size);
+
+/** @} */
 
 #include "end.h"
 

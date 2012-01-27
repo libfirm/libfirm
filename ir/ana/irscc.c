@@ -40,6 +40,7 @@
 #include "irdump.h"
 #include "array.h"
 #include "pmap.h"
+#include "ircons.h"
 
 /* A variant of the loop tree that avoids loops without head.
    This reduces the depth of the loop tree. */
@@ -748,8 +749,6 @@ static void scc(ir_node *n)
 	}
 }
 
-/* Constructs backedge information for irg. In interprocedural view constructs
-   backedges for all methods called by irg, too. */
 int construct_backedges(ir_graph *irg)
 {
 	ir_graph *rem = current_ir_graph;
@@ -810,8 +809,6 @@ static void loop_reset_node(ir_node *n, void *env)
 	reset_backedges(n);
 }
 
-/** Removes all loop information.
-    Resets all backedges */
 void free_loop_information(ir_graph *irg)
 {
 	/* We can not use this recursion, as the loop might contain
@@ -854,14 +851,6 @@ static int is_loop_variant(ir_loop *l, ir_loop *b)
 	return 0;
 }
 
-/* Test whether a value is loop invariant.
- *
- * @param n      The node to be tested.
- * @param block  A block node.  We pass the block, not the loop as we must
- *               start off with a block loop to find all proper uses.
- *
- * Returns non-zero, if the node n is not changed in the loop block
- * belongs to or in inner loops of this blocks loop. */
 int is_loop_invariant(const ir_node *n, const ir_node *block)
 {
 	ir_loop *l = get_irn_loop(block);

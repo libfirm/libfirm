@@ -1278,7 +1278,7 @@ void ia32_peephole_optimization(ir_graph *irg)
 	 */
 
 	/* pass 1 */
-	clear_irp_opcodes_generic_func();
+	ir_clear_opcodes_generic_func();
 	register_peephole_optimisation(op_ia32_Cmp,      peephole_ia32_Cmp);
 	register_peephole_optimisation(op_ia32_Cmp8Bit,  peephole_ia32_Cmp);
 	register_peephole_optimisation(op_ia32_Lea,      peephole_ia32_Lea);
@@ -1291,7 +1291,7 @@ void ia32_peephole_optimization(ir_graph *irg)
 	be_peephole_opt(irg);
 
 	/* pass 2 */
-	clear_irp_opcodes_generic_func();
+	ir_clear_opcodes_generic_func();
 	register_peephole_optimisation(op_ia32_Const,    peephole_ia32_Const);
 	register_peephole_optimisation(op_be_IncSP,      peephole_be_IncSP);
 	register_peephole_optimisation(op_ia32_Test,     peephole_ia32_Test);

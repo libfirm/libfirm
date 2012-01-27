@@ -57,10 +57,12 @@ FIRM_API ir_type *initial_type;
  *  in the order of MIN(\<calls to set_irn_typeinfo_type\>, \#irnodes).
  */
 FIRM_API void init_irtypeinfo(void);
+/** Frees memory used by the type information module */
 FIRM_API void free_irtypeinfo(void);
 
 /* ------------ Irgraph state handling. ------------------------------- */
 
+/** typeinfo information state */
 typedef enum {
 	ir_typeinfo_none,        /**< No typeinfo computed, calls to set/get_irn_typeinfo_type()
 	                              are invalid. */
@@ -70,7 +72,9 @@ typedef enum {
 	                              because of other transformations. */
 } ir_typeinfo_state;
 
-FIRM_API void set_irg_typeinfo_state(ir_graph *irg, ir_typeinfo_state s);
+/** Sets state of typeinfo information in graph @p irg to @p state. */
+FIRM_API void set_irg_typeinfo_state(ir_graph *irg, ir_typeinfo_state state);
+/** Returns state of typeinfo information in graph @p irg. */
 FIRM_API ir_typeinfo_state get_irg_typeinfo_state(const ir_graph *irg);
 
 /** Returns accumulated type information state information.
@@ -80,9 +84,10 @@ FIRM_API ir_typeinfo_state get_irg_typeinfo_state(const ir_graph *irg);
  * or no type information.  Returns ir_typeinfo_none if no irg contains type information.
  */
 FIRM_API ir_typeinfo_state get_irp_typeinfo_state(void);
-FIRM_API void              set_irp_typeinfo_state(ir_typeinfo_state s);
-/** If typeinfo is consistent, sets it to inconsistent. */
-FIRM_API void              set_irp_typeinfo_inconsistent(void);
+/** Sets state of typeinfo information for the current program to @p state */
+FIRM_API void set_irp_typeinfo_state(ir_typeinfo_state state);
+/** Sets state of typeinfo information for the current program to #ir_typeinfo_inconsistent */
+FIRM_API void set_irp_typeinfo_inconsistent(void);
 
 /* ------------ Irnode type information. ------------------------------ */
 
@@ -93,7 +98,8 @@ FIRM_API void              set_irp_typeinfo_inconsistent(void);
  * assume current_ir_graph set properly.
  */
 FIRM_API ir_type *get_irn_typeinfo_type(const ir_node *n);
-FIRM_API void     set_irn_typeinfo_type(ir_node *n, ir_type *tp);
+/** Sets type information of procedure graph node @p node to type @p type. */
+FIRM_API void set_irn_typeinfo_type(ir_node *node, ir_type *type);
 
 #include "end.h"
 

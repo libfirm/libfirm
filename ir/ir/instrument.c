@@ -31,9 +31,6 @@
 #include "ircons.h"
 #include "instrument.h"
 
-/**
- * Adds a Call at the beginning of the given irg.
- */
 void instrument_initcall(ir_graph *irg, ir_entity *ent)
 {
 	const ir_edge_t *edge;

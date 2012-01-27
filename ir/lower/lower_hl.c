@@ -268,7 +268,7 @@ static void lower_symconst(ir_node *symc)
 		assert(!"unknown SymConst kind");
 		break;
 	}
-}  /* lower_symconst */
+}
 
 /**
  * Checks, whether a size is an integral size
@@ -282,7 +282,7 @@ static int is_integral_size(int size)
 		return 0;
 	/* must be at least byte size */
 	return size >= 8;
-}  /* is_integral_size */
+}
 
 /**
  * lower bitfield load access.
@@ -372,7 +372,7 @@ static void lower_bitfields_loads(ir_node *proj, ir_node *load)
 	}
 
 	exchange(proj, res);
-}  /* lower_bitfields_loads */
+}
 
 /**
  * lower bitfield store access.
@@ -456,7 +456,7 @@ static void lower_bitfields_stores(ir_node *store)
 	set_Store_mem(store, mem);
 	set_Store_value(store, value);
 	set_Store_ptr(store, ptr);
-}  /* lower_bitfields_stores */
+}
 
 /**
  * lowers IR-nodes, called from walker
@@ -534,7 +534,7 @@ static int lower_highlevel_graph_wrapper(ir_graph *irg, void *context)
 
 	lower_highlevel_graph(irg);
 	return 0;
-}  /* lower_highlevel_graph_wrapper */
+}
 
 ir_graph_pass_t *lower_highlevel_graph_pass(const char *name)
 {
@@ -542,7 +542,7 @@ ir_graph_pass_t *lower_highlevel_graph_pass(const char *name)
 
 	return def_graph_pass_constructor(
 		&pass->pass, name ? name : "lower_hl", lower_highlevel_graph_wrapper);
-}  /* lower_highlevel_graph_pass */
+}
 
 /*
  * does the same as lower_highlevel() for all nodes on the const code irg
@@ -550,7 +550,7 @@ ir_graph_pass_t *lower_highlevel_graph_pass(const char *name)
 void lower_const_code(void)
 {
 	walk_const_code(NULL, lower_irnode, NULL);
-}  /* lower_const_code */
+}
 
 ir_prog_pass_t *lower_const_code_pass(const char *name)
 {
@@ -572,4 +572,4 @@ void lower_highlevel()
 		lower_highlevel_graph(irg);
 	}
 	lower_const_code();
-}  /* lower_highlevel */
+}

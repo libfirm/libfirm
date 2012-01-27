@@ -117,7 +117,6 @@ void fix_backedges(struct obstack *obst, ir_node *n)
 	assert(legal_backarray(n));
 }
 
-/* Returns non-zero if the predecessor pos is a backedge. */
 int is_backedge(const ir_node *n, int pos)
 {
 	bitset_t *ba = get_backarray(n);
@@ -126,7 +125,6 @@ int is_backedge(const ir_node *n, int pos)
 	return 0;
 }
 
-/* Remarks that edge pos is a backedge. */
 void set_backedge(ir_node *n, int pos)
 {
 	bitset_t *ba = get_backarray(n);
@@ -134,7 +132,6 @@ void set_backedge(ir_node *n, int pos)
 	bitset_set(ba, pos);
 }
 
-/* Remarks that edge pos is a backedge. */
 void set_not_backedge(ir_node *n, int pos)
 {
 	bitset_t *ba = get_backarray(n);
@@ -142,7 +139,6 @@ void set_not_backedge(ir_node *n, int pos)
 	bitset_clear(ba, pos);
 }
 
-/* Returns non-zero if n has backedges. */
 int has_backedges(const ir_node *n)
 {
 	bitset_t *ba = get_backarray(n);
@@ -152,7 +148,6 @@ int has_backedges(const ir_node *n)
 	return 0;
 }
 
-/** Sets all backedge information to zero. */
 void clear_backedges(ir_node *n)
 {
 	bitset_t *ba = get_backarray(n);
@@ -161,7 +156,6 @@ void clear_backedges(ir_node *n)
 	}
 }
 
-/* Allocate a new backedge array on the obstack for given size. */
 bitset_t *new_backedge_arr(struct obstack *obst, size_t size)
 {
 	return bitset_obstack_alloc(obst, size);

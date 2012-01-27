@@ -303,6 +303,11 @@ static void amd64_init(void)
 	amd64_create_opcodes(&amd64_irn_ops);
 }
 
+static void amd64_finish(void)
+{
+	amd64_free_opcodes();
+}
+
 static arch_env_t *amd64_begin_codegeneration(const be_main_env_t *env)
 {
 	amd64_isa_t *isa = XMALLOC(amd64_isa_t);
@@ -538,6 +543,7 @@ static int amd64_register_saved_by(const arch_register_t *reg, int callee)
 
 const arch_isa_if_t amd64_isa_if = {
 	amd64_init,
+	amd64_finish,
     amd64_get_backend_params,
 	amd64_lower_for_target,
 	amd64_parse_asm_constraint,

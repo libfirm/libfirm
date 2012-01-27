@@ -267,7 +267,7 @@ static void register_peephole_optimisation(ir_op *op, peephole_opt_func func)
 void arm_peephole_optimization(ir_graph *irg)
 {
 	/* register peephole optimizations */
-	clear_irp_opcodes_generic_func();
+	ir_clear_opcodes_generic_func();
 	register_peephole_optimisation(op_be_IncSP,      peephole_be_IncSP);
 	register_peephole_optimisation(op_arm_Str,       peephole_arm_Str_Ldr);
 	register_peephole_optimisation(op_arm_Ldr,       peephole_arm_Str_Ldr);

@@ -19,7 +19,7 @@
 
 /**
  * @file
- * @brief       Hash function for pointers
+ * @brief       Hash functions
  * @author      Michael Beck, Sebastian Hack
  */
 #ifndef FIRM_ADT_HASHPTR_H
@@ -28,13 +28,26 @@
 #include <stdlib.h>
 #include "../begin.h"
 
+/**
+ * @ingroup algorithms
+ * @defgroup hashptr Hash Functions
+ * @{
+ */
+
+/** @cond DISABLED */
+
 #define _FIRM_FNV_OFFSET_BASIS 2166136261U
 #define _FIRM_FNV_FNV_PRIME 16777619U
 
 /* Computing x * _FIRM_FNV_FNV_PRIME */
 #define _FIRM_FNV_TIMES_PRIME(x) ((x) * _FIRM_FNV_FNV_PRIME)
 
-static inline unsigned firm_fnv_hash(const unsigned char *data, size_t bytes)
+/** @endcond */
+
+/**
+ * Returns a hash value for a block of data.
+ */
+static inline unsigned hash_data(const unsigned char *data, size_t bytes)
 {
 	size_t   i;
 	unsigned hash = _FIRM_FNV_OFFSET_BASIS;
@@ -47,43 +60,41 @@ static inline unsigned firm_fnv_hash(const unsigned char *data, size_t bytes)
 	return hash;
 }
 
-static inline unsigned firm_fnv_hash_str(const char *data)
+/**
+ * Returns a hash value for a string.
+ * @param str The string (can be const).
+ * @return A hash value for the string.
+ */
+static inline unsigned hash_str(const char *str)
 {
 	unsigned i;
 	unsigned hash = _FIRM_FNV_OFFSET_BASIS;
 
-	for(i = 0; data[i] != '\0'; ++i) {
+	for(i = 0; str[i] != '\0'; ++i) {
 		hash = _FIRM_FNV_TIMES_PRIME(hash);
-		hash ^= data[i];
+		hash ^= str[i];
 	}
 
 	return hash;
 }
 
 /**
- * hash a pointer value: Pointer addresses are mostly aligned to 4
- * or 8 bytes. So we remove the lowest 3 bits
+ * Returns a hash value for a pointer.
+ * Pointer addresses are mostly aligned to 4 or 8 bytes. So we remove the
+ * lowest 3 bits.
  */
-#define HASH_PTR(ptr)    ((unsigned)(((char *) (ptr) - (char *)0) >> 3))
-
 static inline unsigned hash_ptr(const void *ptr)
 {
-	return HASH_PTR(ptr);
+	return ((unsigned)(((char *) (ptr) - (char *)0) >> 3));
 }
 
 /**
- * Hash a string.
- * @param str The string (can be const).
- * @param len The length of the string.
- * @return A hash value for the string.
+ * Combines 2 hash values.
+ * @param x One hash value.
+ * @param y Another hash value.
+ * @return  A hash value computed from both.
  */
-#define HASH_STR(str,len) firm_fnv_hash((const unsigned char *) (str), (len))
-
-#ifdef _MSC_VER
-#pragma warning(disable:4307)
-#endif /* _MSC_VER */
-
-static inline unsigned _hash_combine(unsigned x, unsigned y)
+static inline unsigned hash_combine(unsigned x, unsigned y)
 {
 	unsigned hash = _FIRM_FNV_TIMES_PRIME(_FIRM_FNV_OFFSET_BASIS);
 	hash ^= x;
@@ -92,17 +103,7 @@ static inline unsigned _hash_combine(unsigned x, unsigned y)
 	return hash;
 }
 
-#ifdef _MSC_VER
-#pragma warning(default:4307)
-#endif /* _MSC_VER */
-
-/**
- * Make one hash value out of two others.
- * @param a One hash value.
- * @param b Another hash value.
- * @return A hash value computed from the both.
- */
-#define HASH_COMBINE(a,b) _hash_combine(a, b)
+/** @} */
 
 #include "../end.h"
 

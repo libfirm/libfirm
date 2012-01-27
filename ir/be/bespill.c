@@ -235,7 +235,7 @@ void be_pre_spill_prepare_constr(ir_graph *irg,
 	env.irg = irg;
 	env.cls = cls;
 
-	be_assure_liveness(irg);
+	be_assure_live_sets(irg);
 
 	irg_block_walk_graph(irg, pre_spill_prepare_constr_walker, NULL, &env);
 }

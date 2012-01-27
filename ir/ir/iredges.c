@@ -51,7 +51,7 @@
 #define ValueType                 ir_edge_t*
 #define NullValue                 NULL
 #define DeletedValue              ((ir_edge_t*)-1)
-#define Hash(this,key)            (HASH_PTR(key->src) ^ (key->pos * 40013))
+#define Hash(this,key)            (hash_ptr(key->src) ^ (key->pos * 40013))
 #define KeysEqual(this,key1,key2) ((key1->src) == (key2->src) && (key1->pos == key2->pos))
 #define SetRangeEmpty(ptr,size)   memset(ptr, 0, (size) * sizeof((ptr)[0]))
 
@@ -156,17 +156,6 @@ static inline long edge_get_id(const ir_edge_t *e)
 	return (long)e;
 }
 
-/**
- * Announce to reserve extra space for each edge to be allocated.
- *
- * @param n: Size of the space to reserve
- *
- * @return Offset at which the private data will begin
- *
- * Several users can reserve extra space for private usage.
- * Each user has to remember his given offset and the size of his private data.
- * To be called before FIRM is initialized.
- */
 size_t edges_register_private_data(size_t n)
 {
 	size_t res = edges_private_size;
@@ -177,11 +166,6 @@ size_t edges_register_private_data(size_t n)
 	return res;
 }
 
-/*
- * Reset the user's private data at offset 'offset'
- * The user has to remember his offset and the size of his data!
- * Caution: Using wrong values here can destroy other users private data!
- */
 void edges_reset_private_data(ir_graph *irg, int offset, unsigned size)
 {
 	irg_edge_info_t       *info = get_irg_edge_info(irg, EDGE_KIND_NORMAL);
@@ -197,12 +181,8 @@ void edges_reset_private_data(ir_graph *irg, int offset, unsigned size)
 
 #define get_irn_out_list_head(irn) (&get_irn_out_info(irn)->outs)
 
-#define edge_hash(edge) (TIMES37((edge)->pos) + HASH_PTR((edge)->src))
+#define edge_hash(edge) (TIMES37((edge)->pos) + hash_ptr((edge)->src))
 
-/**
- * Initialize the out information for a graph.
- * @note Dead node elimination can call this on an already initialized graph.
- */
 void edges_init_graph_kind(ir_graph *irg, ir_edge_kind_t kind)
 {
 	if (edges_activated_kind(irg, kind)) {
@@ -222,15 +202,6 @@ void edges_init_graph_kind(ir_graph *irg, ir_edge_kind_t kind)
 	}
 }
 
-/**
- * Get the edge object of an outgoing edge at a node.
- * @param  irg  The graph, the node is in.
- * @param  src  The node at which the edge originates.
- * @param  pos  The position of the edge.
- * @param  kind The kind of the edge.
- * @return      The corresponding edge object or NULL,
- *              if no such edge exists.
- */
 const ir_edge_t *get_irn_edge_kind(const ir_node *src, int pos, ir_edge_kind_t kind)
 {
 	ir_graph *irg = get_irn_irg(src);
@@ -310,7 +281,6 @@ void edges_dump_kind(ir_graph *irg, ir_edge_kind_t kind)
 	}
 }
 
-/* The edge from (src, pos) -> old_tgt is redirected to tgt */
 void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
                             ir_node *old_tgt, ir_edge_kind_t kind,
                             ir_graph *irg)
@@ -602,30 +572,30 @@ static void visitor(ir_node *irn, void *data)
 	}
 }
 
-/*
- * Build the initial edge set.
- * Beware, this is not a simple task because it suffers from two
- * difficulties:
- * - the anchor set allows access to Nodes that may not be reachable from
- *   the End node
- * - the identities add nodes to the "root set" that are not yet reachable
- *   from End. However, after some transformations, the CSE may revival these
- *   nodes
- *
- * These problems can be fixed using different strategies:
- * - Add an age flag to every node. Whenever the edge of a node is older
- *   then the current edge, invalidate the edges of this node.
- *   While this would help for revivaled nodes, it increases memory and runtime.
- * - Delete the identities set.
- *   Solves the revival problem, but may increase the memory consumption, as
- *   nodes cannot be revivaled at all.
- * - Manually iterate over the identities root set. This did not consume more memory
- *   but increase the computation time because the |identities| >= |V|
- *
- * Currently, we use the last option.
- */
 void edges_activate_kind(ir_graph *irg, ir_edge_kind_t kind)
 {
+	/*
+	 * Build the initial edge set.
+	 * Beware, this is not a simple task because it suffers from two
+	 * difficulties:
+	 * - the anchor set allows access to Nodes that may not be reachable from
+	 *   the End node
+	 * - the identities add nodes to the "root set" that are not yet reachable
+	 *   from End. However, after some transformations, the CSE may revival these
+	 *   nodes
+	 *
+	 * These problems can be fixed using different strategies:
+	 * - Add an age flag to every node. Whenever the edge of a node is older
+	 *   then the current edge, invalidate the edges of this node.
+	 *   While this would help for revivaled nodes, it increases memory and runtime.
+	 * - Delete the identities set.
+	 *   Solves the revival problem, but may increase the memory consumption, as
+	 *   nodes cannot be revivaled at all.
+	 * - Manually iterate over the identities root set. This did not consume more memory
+	 *   but increase the computation time because the |identities| >= |V|
+	 *
+	 * Currently, we use the last option.
+	 */
 	struct build_walker w;
 	irg_edge_info_t     *info = get_irg_edge_info(irg, kind);
 	visitor_info_t      visit;
@@ -668,14 +638,6 @@ int (edges_activated_kind)(const ir_graph *irg, ir_edge_kind_t kind)
 	return edges_activated_kind_(irg, kind);
 }
 
-
-/**
- * Reroute all use-edges from a node to another.
- * @param from The node whose use-edges shall be withdrawn.
- * @param to   The node to which all the use-edges of @p from shall be
- *             sent to.
- * @param irg  The graph.
- */
 void edges_reroute_kind(ir_node *from, ir_node *to, ir_edge_kind_t kind)
 {
 	ir_graph *irg = get_irn_irg(from);
@@ -875,9 +837,6 @@ static void verify_edge_counter(ir_node *irn, void *env)
 	bitset_free(bs);
 }
 
-/**
- * Verifies the out edges of an irg.
- */
 int edges_verify(ir_graph *irg)
 {
 	struct build_walker w;
@@ -913,7 +872,6 @@ static int edges_verify_wrapper(ir_graph *irg, void *context)
 	return 0;
 }
 
-/* Creates an ir_graph pass for edges_verify(). */
 ir_graph_pass_t *irg_verify_edges_pass(const char *name, unsigned assert_on_problem)
 {
 	pass_t *pass = XMALLOCZ(pass_t);

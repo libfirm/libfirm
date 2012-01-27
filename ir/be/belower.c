@@ -863,7 +863,7 @@ void assure_constraints(ir_graph *irg)
 
 	ir_nodehashmap_destroy(&cenv.op_set);
 	obstack_free(&cenv.obst, NULL);
-	be_liveness_invalidate(be_get_irg_liveness(irg));
+	be_invalidate_live_sets(irg);
 }
 
 int push_through_perm(ir_node *perm)
@@ -1026,7 +1026,7 @@ void lower_nodes_after_ra(ir_graph *irg)
 	env.irg = irg;
 
 	/* we will need interference */
-	be_liveness_assure_chk(be_get_irg_liveness(irg));
+	be_assure_live_chk(irg);
 
 	irg_walk_graph(irg, NULL, lower_nodes_after_ra_walker, NULL);
 }

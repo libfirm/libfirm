@@ -56,16 +56,6 @@ ir_node *new_rd_Const_long(dbg_info *db, ir_graph *irg, ir_mode *mode,
 	return new_rd_Const(db, irg, new_tarval_from_long(value, mode));
 }
 
-ir_node *new_rd_defaultProj(dbg_info *db, ir_node *arg, long max_proj)
-{
-	ir_node *res;
-
-	assert(is_Cond(arg));
-	arg->attr.cond.default_proj = max_proj;
-	res = new_rd_Proj(db, arg, mode_X, max_proj);
-	return res;
-}
-
 ir_node *new_rd_ASM(dbg_info *db, ir_node *block, int arity, ir_node *in[],
                     ir_asm_constraint *inputs, size_t n_outs,
 	                ir_asm_constraint *outputs, size_t n_clobber,
@@ -151,10 +141,6 @@ ir_node *new_r_simpleSel(ir_node *block, ir_node *store, ir_node *objptr,
                          ir_entity *ent)
 {
 	return new_rd_Sel(NULL, block, store, objptr, 0, NULL, ent);
-}
-ir_node *new_r_defaultProj(ir_node *arg, long max_proj)
-{
-	return new_rd_defaultProj(NULL, arg, max_proj);
 }
 ir_node *new_r_ASM(ir_node *block,
                    int arity, ir_node *in[], ir_asm_constraint *inputs,
@@ -323,17 +309,12 @@ static ir_node *get_r_value_internal(ir_node *block, int pos, ir_mode *mode)
 	return res;
 }
 
-/* ************************************************************************** */
-
-/*
- * Finalize a Block node, when all control flows are known.
- * Acceptable parameters are only Block nodes.
- */
 void mature_immBlock(ir_node *block)
 {
 	size_t   n_preds;
 	ir_node  *next;
 	ir_node  *phi;
+	ir_node **new_in;
 	ir_graph *irg;
 
 	assert(is_Block(block));
@@ -360,6 +341,15 @@ void mature_immBlock(ir_node *block)
 
 	set_Block_matured(block, 1);
 
+	/* create final in-array for the block */
+	if (block->attr.block.dynamic_ins) {
+		new_in = NEW_ARR_D(ir_node*, irg->obst, n_preds+1);
+		memcpy(new_in, block->in, (n_preds+1) * sizeof(new_in[0]));
+		DEL_ARR_F(block->in);
+		block->in = new_in;
+		block->attr.block.dynamic_ins = false;
+	}
+
 	/* Now, as the block is a finished Firm node, we can optimize it.
 	   Since other nodes have been allocated since the block was created
 	   we can not free the node on the obstack.  Therefore we have to call
@@ -376,17 +366,6 @@ ir_node *new_d_Const_long(dbg_info *db, ir_mode *mode, long value)
 {
 	assert(get_irg_phase_state(current_ir_graph) == phase_building);
 	return new_rd_Const_long(db, current_ir_graph, mode, value);
-}
-
-ir_node *new_d_defaultProj(dbg_info *db, ir_node *arg, long max_proj)
-{
-	ir_node *res;
-	assert(is_Cond(arg) || is_Bad(arg));
-	assert(get_irg_phase_state(current_ir_graph) == phase_building);
-	if (is_Cond(arg))
-		arg->attr.cond.default_proj = max_proj;
-	res = new_d_Proj(db, arg, mode_X, max_proj);
-	return res;
 }
 
 ir_node *new_d_simpleSel(dbg_info *db, ir_node *store, ir_node *objptr,
@@ -493,6 +472,7 @@ ir_node *new_rd_immBlock(dbg_info *dbgi, ir_graph *irg)
 	res = new_ir_node(dbgi, irg, NULL, op_Block, mode_BB, -1, NULL);
 
 	set_Block_matured(res, 0);
+	res->attr.block.dynamic_ins = true;
 	res->attr.block.irg.irg     = irg;
 	res->attr.block.backedge    = NULL;
 	res->attr.block.in_cg       = NULL;
@@ -730,6 +710,9 @@ void ir_set_uninitialized_local_variable_func(
 
 void irg_finalize_cons(ir_graph *irg)
 {
+	ir_node *end_block = get_irg_end_block(irg);
+	mature_immBlock(end_block);
+
 	set_irg_phase_state(irg, phase_high);
 }
 
@@ -754,10 +737,6 @@ ir_node *new_SymConst(ir_mode *mode, symconst_symbol value, symconst_kind kind)
 ir_node *new_simpleSel(ir_node *store, ir_node *objptr, ir_entity *ent)
 {
 	return new_d_simpleSel(NULL, store, objptr, ent);
-}
-ir_node *new_defaultProj(ir_node *arg, long max_proj)
-{
-	return new_d_defaultProj(NULL, arg, max_proj);
 }
 ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
                  size_t n_outs, ir_asm_constraint *outputs,

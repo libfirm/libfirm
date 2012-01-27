@@ -31,18 +31,40 @@
 #include "iroptimize.h"
 #include "begin.h"
 
-typedef enum {
-	ASM_CONSTRAINT_FLAG_NONE                  = 0,
+/**
+ * @defgroup be  Code Generation
+ *
+ * Code Generation (backend) produces machine-code.
+ * @{
+ */
+
+/**
+ * flags categorizing assembler constraint specifications
+ */
+typedef enum asm_constraint_flags_t {
+	ASM_CONSTRAINT_FLAG_NONE                  = 0, /**< no constraints */
+	/** input/output can be in a register */
 	ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER     = 1u << 0,
+	/** input/output can be read/written to/from a memory address */
 	ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP        = 1u << 1,
+	/** input can be encoded as an immediate number */
 	ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE    = 1u << 2,
+	/** the constraint is not supported yet by libFirm */
 	ASM_CONSTRAINT_FLAG_NO_SUPPORT            = 1u << 3,
+	/** The input is also written to */
 	ASM_CONSTRAINT_FLAG_MODIFIER_WRITE        = 1u << 4,
+	/** the input is not written to */
 	ASM_CONSTRAINT_FLAG_MODIFIER_NO_WRITE     = 1u << 5,
+	/** the input is read */
 	ASM_CONSTRAINT_FLAG_MODIFIER_READ         = 1u << 6,
+	/** the input is not read */
 	ASM_CONSTRAINT_FLAG_MODIFIER_NO_READ      = 1u << 7,
+	/** the value is modified before all inputs to the asm block
+	 * are handled. */
 	ASM_CONSTRAINT_FLAG_MODIFIER_EARLYCLOBBER = 1u << 8,
+	/** This operand and the following operand are commutative */
 	ASM_CONSTRAINT_FLAG_MODIFIER_COMMUTATIVE  = 1u << 9,
+	/** invalid constraint (due to parse error) */
 	ASM_CONSTRAINT_FLAG_INVALID               = 1u << 10
 } asm_constraint_flags_t;
 ENUM_BITSET(asm_constraint_flags_t)
@@ -131,7 +153,7 @@ typedef struct backend_params {
 FIRM_API int be_parse_arg(const char *arg);
 
 /**
- * Return the backend configuration parameter.
+ * Returns the backend configuration parameter.
  *
  * @return libFirm configuration parameters for the selected
  *         backend
@@ -170,6 +192,8 @@ FIRM_API asm_constraint_flags_t be_parse_asm_constraints(const char *constraints
  * tests whether a string is a valid clobber in an ASM instruction
  */
 FIRM_API int be_is_valid_clobber(const char *clobber);
+
+/** @} */
 
 #include "end.h"
 

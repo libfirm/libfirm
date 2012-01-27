@@ -47,7 +47,7 @@ typedef enum {
  * Compute the inter block liveness for a graph.
  * @param irg The graph.
  */
-be_lv_t *be_liveness(ir_graph *irg);
+be_lv_t *be_liveness_new(ir_graph *irg);
 
 /**
  * Free the liveness information.
@@ -55,9 +55,21 @@ be_lv_t *be_liveness(ir_graph *irg);
 void be_liveness_free(be_lv_t *lv);
 
 /**
- * Recompute the complete liveness information.
+ * (Re)compute the liveness information if necessary.
  */
-void be_liveness_recompute(be_lv_t *lv);
+void be_liveness_compute_sets(be_lv_t *lv);
+void be_liveness_compute_chk(be_lv_t *lv);
+
+/**
+ * Invalidate the liveness information.
+ * You must call this if you modify the program and do not
+ * update the liveness with the be_liveness_{update,remove,introduce}
+ * functions.
+ * @note If changed the control flow then you must also call
+ *       be_liveness_invalidate_chk()
+ */
+void be_liveness_invalidate_sets(be_lv_t *lv);
+void be_liveness_invalidate_chk(be_lv_t *lv);
 
 /**
  * Update the liveness information for a single node.
@@ -148,25 +160,4 @@ void be_liveness_nodes_live_at(const be_lv_t *lv,
                                const arch_register_class_t *cls,
                                const ir_node *pos, ir_nodeset_t *live);
 
-/**
- * Make sure the live sets are computed.
- * @param lv The liveness information.
- */
-void be_liveness_assure_sets(be_lv_t *lv);
-
-/**
- * Make sure all information needed for liveness checks is available.
- * @param lv The liveness information.
- */
-void be_liveness_assure_chk(be_lv_t *lv);
-
-/**
- * Invalidate the liveness information.
- * You must call this if you modify the program and do not
- * update the liveness with the be_liveness_{update,remove,introduce}
- * functions.
- * @param lv The liveness info.
- */
-void be_liveness_invalidate(be_lv_t *lv);
-
-#endif /* FIRM_BE_BELIVE_H */
+#endif

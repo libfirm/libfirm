@@ -42,4 +42,26 @@ typedef struct ir_dom_info {
   int dom_depth;   /**< depth in dominator-tree */
 } ir_dom_info;
 
+void set_Block_idom(ir_node *bl, ir_node *n);
+
+int get_Block_dom_depth(const ir_node *bl);
+void set_Block_dom_depth(ir_node *bl, int depth);
+
+int get_Block_dom_pre_num(const ir_node *bl);
+void set_Block_dom_pre_num(ir_node *bl, int num);
+
+void set_Block_ipostdom(ir_node *bl, ir_node *n);
+
+int get_Block_postdom_depth(const ir_node *bl);
+void set_Block_postdom_depth(ir_node *bl, int depth);
+
+int get_Block_postdom_pre_num(const ir_node *bl);
+void set_Block_postdom_pre_num(ir_node *bl, int num);
+
+unsigned get_Block_dom_tree_pre_num(const ir_node *bl);
+unsigned get_Block_pdom_tree_pre_num(const ir_node *bl);
+
+unsigned get_Block_dom_max_subtree_pre_num(const ir_node *bl);
+unsigned get_Block_pdom_max_subtree_pre_num(const ir_node *bl);
+
 #endif

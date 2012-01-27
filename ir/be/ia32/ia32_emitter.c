@@ -60,6 +60,7 @@
 #include "raw_bitset.h"
 #include "dbginfo.h"
 #include "lc_opts.h"
+#include "ircons.h"
 
 #include "besched.h"
 #include "benode.h"
@@ -1559,7 +1560,7 @@ static void ia32_register_emitters(void)
 #define BE_IGN(a)       op_be_##a->ops.generic = (op_func)emit_Nothing
 
 	/* first clear the generic function pointer for all ops */
-	clear_irp_opcodes_generic_func();
+	ir_clear_opcodes_generic_func();
 
 	/* register all emitter functions defined in spec */
 	ia32_register_spec_emitters();
@@ -3667,7 +3668,7 @@ static void register_emitter(ir_op *op, emit_func func)
 static void ia32_register_binary_emitters(void)
 {
 	/* first clear the generic function pointer for all ops */
-	clear_irp_opcodes_generic_func();
+	ir_clear_opcodes_generic_func();
 
 	/* benode emitter */
 	register_emitter(op_be_Copy,            bemit_copy);

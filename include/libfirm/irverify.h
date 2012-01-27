@@ -29,6 +29,11 @@
 #include "begin.h"
 
 /**
+ * @defgroup irverify  Correctness Tests
+ * @{
+ */
+
+/**
  * Tests the modes of checknode and its predecessors.
  * checknode must be in current_ir_graph.
  *
@@ -107,6 +112,8 @@ FIRM_API int irg_verify_bads(ir_graph *irg, int flags);
  *  (C-frontend builds this :-)
  */
 FIRM_API void verify_enable_entity_tests(int enable);
+
+/** @} */
 
 #include "end.h"
 

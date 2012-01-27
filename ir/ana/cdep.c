@@ -24,7 +24,7 @@
  */
 #include <assert.h>
 #include <stdlib.h>
-#include "irdom.h"
+#include "irdom_t.h"
 #include "irgraph.h"
 #include "irgwalk.h"
 #include "irnode.h"
@@ -52,7 +52,6 @@ ir_cdep *(get_cdep_next)(const ir_cdep *cdep)
 	return _get_cdep_next(cdep);
 }
 
-/* Return a list of all control dependences of a block. */
 ir_cdep *find_cdep(const ir_node *block)
 {
 	assert(is_Block(block));

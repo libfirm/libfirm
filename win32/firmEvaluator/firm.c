@@ -798,13 +798,6 @@ struct pset {
   pset_Element *iter_tail; /**< non-NULL while iterating over elts */
   pset_Element *free_list; /**< list of free Elements */
   struct obstack obst;     /**< obstack for allocation all data */
-#ifdef STATS
-  int naccess, ncollision, ndups;
-  int max_chain_len;
-#endif
-#ifdef DEBUG
-  const char *tag;         /**< an optionally tag for distinguishing sets */
-#endif
 };
 
 typedef struct set_element {
@@ -823,13 +816,6 @@ struct set {
   unsigned iter_i, iter_j;
   set_Element *iter_tail;  /**< non-NULL while iterating over elts */
   struct obstack obst;     /**< obstack for allocation all data */
-#ifdef STATS
-  int naccess, ncollision, ndups;
-  int max_chain_len;
-#endif
-#ifdef DEBUG
-  const char *tag;         /**< an optionally tag for distinguishing sets */
-#endif
 };
 
 /**

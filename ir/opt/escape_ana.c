@@ -192,7 +192,7 @@ static int can_escape(ir_node *n)
 					size_t j;
 					ent = get_Call_callee(succ, --k);
 
-					if (ent == unknown_entity) {
+					if (is_unknown_entity(ent)) {
 						/* we don't know what will be called, a possible escape */
 						return 1;
 					}
@@ -414,7 +414,7 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
 			}
 		}
 
-		if (tp && tp != firm_unknown_type) {
+		if (tp && !is_unknown_type(tp)) {
 			/* we could determine the type, so we could place it on the frame */
 			dbg  = get_irn_dbg_info(alloc);
 			blk  = get_nodes_block(alloc);

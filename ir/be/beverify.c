@@ -130,24 +130,20 @@ int be_verify_register_pressure(ir_graph *irg, const arch_register_class_t *cls)
 {
 	be_verify_register_pressure_env_t env;
 
-	env.lv                  = be_liveness(irg);
+	env.lv                  = be_liveness_new(irg);
 	env.irg                 = irg;
 	env.cls                 = cls;
 	env.registers_available = be_get_n_allocatable_regs(irg, cls);
 	env.problem_found       = 0;
 
-	be_liveness_assure_sets(env.lv);
+	be_liveness_compute_sets(env.lv);
 	irg_block_walk_graph(irg, verify_liveness_walker, NULL, &env);
 	be_liveness_free(env.lv);
 
 	return ! env.problem_found;
 }
 
-
-
 /*--------------------------------------------------------------------------- */
-
-
 
 typedef struct be_verify_schedule_env_t_ {
 	int       problem_found; /**< flags indicating a problem */
@@ -350,13 +346,13 @@ static spill_t *find_spill(be_verify_spillslots_env_t *env, ir_node *node)
 	spill_t spill;
 
 	spill.spill = node;
-	return (spill_t*)set_find(env->spills, &spill, sizeof(spill), HASH_PTR(node));
+	return (spill_t*)set_find(env->spills, &spill, sizeof(spill), hash_ptr(node));
 }
 
 static spill_t *get_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_entity *ent)
 {
 	spill_t spill, *res;
-	int hash = HASH_PTR(node);
+	int hash = hash_ptr(node);
 
 	spill.spill = node;
 	res = (spill_t*)set_find(env->spills, &spill, sizeof(spill), hash);
@@ -413,7 +409,7 @@ static void collect_memperm(be_verify_spillslots_env_t *env, ir_node *node, ir_n
 {
 	int i, arity;
 	spill_t spill, *res;
-	int hash = HASH_PTR(node);
+	int hash = hash_ptr(node);
 	int out;
 	ir_node* memperm;
 	ir_entity *spillent;
@@ -452,7 +448,7 @@ static void collect_memphi(be_verify_spillslots_env_t *env, ir_node *node, ir_no
 {
 	int i, arity;
 	spill_t spill, *res;
-	int hash = HASH_PTR(node);
+	int hash = hash_ptr(node);
 
 	assert(is_Phi(node));
 
@@ -880,12 +876,11 @@ bool be_verify_register_allocation(ir_graph *new_irg)
 {
 	irg           = new_irg;
 	arch_env      = be_get_irg_arch_env(irg);
-	lv            = be_liveness(irg);
+	lv            = be_liveness_new(irg);
 	problem_found = false;
 
-	be_liveness_assure_sets(lv);
+	be_liveness_compute_sets(lv);
 	irg_block_walk_graph(irg, verify_block_register_allocation, NULL, NULL);
-
 	be_liveness_free(lv);
 
 	return !problem_found;
@@ -1001,7 +996,7 @@ static void lv_check_walker(ir_node *bl, void *data)
 void be_liveness_check(be_lv_t *lv)
 {
 	lv_walker_t w;
-	be_lv_t *fresh = be_liveness(lv->irg);
+	be_lv_t *fresh = be_liveness_new(lv->irg);
 
 	w.lv   = lv;
 	w.data = fresh;

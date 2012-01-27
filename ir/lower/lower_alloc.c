@@ -140,7 +140,7 @@ static void lower_alloca_free(ir_node *node, void *data)
 
 	ir_nodeset_insert(&transformed, node);
 	size = get_type_size_bytes(type);
-	if (type == get_unknown_type())
+	if (is_unknown_type(type))
 		size = 1;
 	if (size == 1 && stack_alignment <= 1)
 		return;

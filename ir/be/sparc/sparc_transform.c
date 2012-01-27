@@ -1371,7 +1371,7 @@ static ir_node *create_ftoi(dbg_info *dbgi, ir_node *block, ir_node *op,
 	ir_graph *irg   = get_irn_irg(block);
 	ir_node  *sp    = get_irg_frame(irg);
 	ir_node  *nomem = get_irg_no_mem(irg);
-	ir_node  *stf   = create_stf(dbgi, block, ftoi, sp, nomem, src_mode,
+	ir_node  *stf   = create_stf(dbgi, block, ftoi, sp, nomem, mode_fp,
 	                             NULL, 0, true);
 	ir_node  *ld    = new_bd_sparc_Ld_imm(dbgi, block, sp, stf, mode_gp,
 	                                      NULL, 0, true);
@@ -1763,15 +1763,18 @@ static void bitcast_float_to_int(dbg_info *dbgi, ir_node *block,
 		              (get_tarval_sub_bits(tv, 1) << 8)  |
 		              (get_tarval_sub_bits(tv, 2) << 16) |
 		              (get_tarval_sub_bits(tv, 3) << 24);
-		result[0] = create_int_const(block, val);
+		ir_node *valc = create_int_const(block, val);
 		if (bits == 64) {
-			int32_t val = get_tarval_sub_bits(tv, 4)         |
+			int32_t val2 = get_tarval_sub_bits(tv, 4)         |
 						  (get_tarval_sub_bits(tv, 5) << 8)  |
 						  (get_tarval_sub_bits(tv, 6) << 16) |
 						  (get_tarval_sub_bits(tv, 7) << 24);
-			result[1] = create_int_const(block, val);
+			ir_node *valc2 = create_int_const(block, val2);
+			result[0] = valc2;
+			result[1] = valc;
 		} else {
 			assert(bits == 32);
+			result[0] = valc;
 			result[1] = NULL;
 		}
 	} else {
@@ -2022,7 +2025,7 @@ static ir_node *gen_Alloc(ir_node *node)
 	if (get_Alloc_where(node) != stack_alloc)
 		panic("only stack-alloc supported in sparc backend (at %+F)", node);
 	/* lowerer should have transformed all allocas to byte size */
-	if (type != get_unknown_type() && get_type_size_bytes(type) != 1)
+	if (!is_unknown_type(type) && get_type_size_bytes(type) != 1)
 		panic("Found non-byte alloc in sparc backend (at %+F)", node);
 
 	if (is_Const(size)) {
@@ -2082,7 +2085,7 @@ static ir_node *gen_Free(ir_node *node)
 	if (get_Alloc_where(node) != stack_alloc)
 		panic("only stack-alloc supported in sparc backend (at %+F)", node);
 	/* lowerer should have transformed all allocas to byte size */
-	if (type != get_unknown_type() && get_type_size_bytes(type) != 1)
+	if (!is_unknown_type(type) && get_type_size_bytes(type) != 1)
 		panic("Found non-byte alloc in sparc backend (at %+F)", node);
 
 	if (is_Const(size)) {
@@ -2134,16 +2137,12 @@ static const arch_register_req_t float4_req = {
 
 static const arch_register_req_t *get_float_req(ir_mode *mode)
 {
-	unsigned bits = get_mode_size_bits(mode);
-
 	assert(mode_is_float(mode));
-	if (bits == 32) {
-		return &float1_req;
-	} else if (bits == 64) {
-		return &float2_req;
-	} else {
-		assert(bits == 128);
-		return &float4_req;
+	switch (get_mode_size_bits(mode)) {
+		case  32: return &float1_req;
+		case  64: return &float2_req;
+		case 128: return &float4_req;
+		default:  panic("invalid float mode");
 	}
 }
 
@@ -2166,7 +2165,6 @@ static ir_node *gen_Phi(ir_node *node)
 		mode = mode_gp;
 		req  = sparc_reg_classes[CLASS_sparc_gp].class_req;
 	} else if (mode_is_float(mode)) {
-		mode = mode;
 		req  = get_float_req(mode);
 	} else {
 		req = arch_no_register_req;

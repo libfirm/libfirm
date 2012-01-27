@@ -25,6 +25,7 @@
 #define FIRM_ADT_ARRAY_T_H
 
 #include "array.h"
+#include "fourcc.h"
 
 #define ARR_D_MAGIC FOURCC('A','R','R','D')
 #define ARR_A_MAGIC FOURCC('A','R','R','A')

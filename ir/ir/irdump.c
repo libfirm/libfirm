@@ -32,6 +32,7 @@
 #include <errno.h>
 
 #include "list.h"
+#include "pset.h"
 
 #include "irnode_t.h"
 #include "irgraph_t.h"
@@ -61,7 +62,6 @@
 #include "array.h"
 #include "pmap.h"
 #include "obst.h"
-#include "eset.h"
 #include "pset.h"
 #include "util.h"
 
@@ -262,6 +262,31 @@ static void print_vcg_color(FILE *out, ird_color_t color)
 	fprintf(out, "color:%s", color_names[color]);
 }
 
+void print_nodeid(FILE *F, const ir_node *node)
+{
+	fprintf(F, "\"n%ld\"", get_irn_node_nr(node));
+}
+
+void print_irgid(FILE *F, const ir_graph *irg)
+{
+	fprintf(F, "\"g%ld\"", get_irg_graph_nr(irg));
+}
+
+void print_typeid(FILE *F, const ir_type *type)
+{
+	fprintf(F, "\"t%ld\"", get_type_nr(type));
+}
+
+void print_entityid(FILE *F, const ir_entity *entity)
+{
+	fprintf(F, "\"e%ld\"", get_entity_nr(entity));
+}
+
+static void print_itemid(FILE *F, const ir_type *tp, size_t itemnr)
+{
+	fprintf(F, "\"i%ldT%zu\"", get_type_nr(tp), itemnr);
+}
+
 /**
  * Prints the edge kind of a given IR node.
  *
@@ -285,8 +310,10 @@ static void print_type_type_edge(FILE *F, const ir_type *S, const ir_type *T, co
 	va_list ap;
 
 	va_start(ap, fmt);
-	fprintf(F, "edge: { sourcename: "); PRINT_TYPEID(S);
-	fprintf(F, " targetname: "); PRINT_TYPEID(T);
+	fprintf(F, "edge: { sourcename: ");
+	print_typeid(F, S);
+	fprintf(F, " targetname: ");
+	print_typeid(F, T);
 	ir_vfprintf(F, fmt, ap);
 	fprintf(F,"}\n");
 	va_end(ap);
@@ -301,8 +328,10 @@ static void print_type_ent_edge(FILE *F, const ir_type *tp, const ir_entity *ent
 	va_list ap;
 
 	va_start(ap, fmt);
-	fprintf(F, "edge: { sourcename: "); PRINT_TYPEID(tp);
-	fprintf(F, " targetname: \""); PRINT_ENTID(ent); fprintf(F, "\"");
+	fprintf(F, "edge: { sourcename: ");
+	print_typeid(F, tp);
+	fprintf(F, " targetname: ");
+	print_entityid(F, ent);
 	ir_vfprintf(F, fmt, ap);
 	fprintf(F, "}\n");
 	va_end(ap);
@@ -318,11 +347,12 @@ static void print_ent_ent_edge(FILE *F, const ir_entity *ent1, const ir_entity *
 
 	va_start(ap, fmt);
 	if (backedge)
-		fprintf(F, "backedge: { sourcename: \"");
+		fprintf(F, "backedge: { sourcename: ");
 	else
-		fprintf(F, "edge: { sourcename: \"");
-	PRINT_ENTID(ent1);
-	fprintf(F, "\" targetname: \""); PRINT_ENTID(ent2);  fprintf(F, "\"");
+		fprintf(F, "edge: { sourcename: ");
+	print_entityid(F, ent1);
+	fprintf(F, " targetname: ");
+	print_entityid(F, ent2);
 	ir_vfprintf(F, fmt, ap);
 	fprintf(F, " ");
 	if (color != ird_color_none)
@@ -340,8 +370,10 @@ static void print_ent_type_edge(FILE *F, const ir_entity *ent, const ir_type *tp
 	va_list ap;
 
 	va_start(ap, fmt);
-	fprintf(F, "edge: { sourcename: \""); PRINT_ENTID(ent);
-	fprintf(F, "\" targetname: "); PRINT_TYPEID(tp);
+	fprintf(F, "edge: { sourcename: ");
+	print_entityid(F, ent);
+	fprintf(F, " targetname: ");
+	print_typeid(F, tp);
 	ir_vfprintf(F, fmt, ap);
 	fprintf(F,"}\n");
 	va_end(ap);
@@ -356,8 +388,10 @@ static void print_node_type_edge(FILE *F, const ir_node *irn, ir_type *tp, const
 	va_list ap;
 
 	va_start(ap, fmt);
-	fprintf(F, "edge: { sourcename: \""); PRINT_NODEID(irn);
-	fprintf(F, "\" targetname: "); PRINT_TYPEID(tp);
+	fprintf(F, "edge: { sourcename: ");
+	print_nodeid(F, irn);
+	fprintf(F, " targetname: ");
+	print_typeid(F, tp);
 	ir_vfprintf(F, fmt, ap);
 	fprintf(F,"}\n");
 	va_end(ap);
@@ -372,9 +406,10 @@ static void print_node_ent_edge(FILE *F, const ir_node *irn, const ir_entity *en
 	va_list ap;
 
 	va_start(ap, fmt);
-	fprintf(F, "edge: { sourcename: \""); PRINT_NODEID(irn);
-	fprintf(F, "\" targetname: \""); PRINT_ENTID(ent);
-	fprintf(F, "\"");
+	fprintf(F, "edge: { sourcename: ");
+	print_nodeid(F, irn);
+	fprintf(F, " targetname: ");
+	print_entityid(F, ent);
 	ir_vfprintf(F, fmt, ap);
 	fprintf(F,"}\n");
 	va_end(ap);
@@ -389,8 +424,10 @@ static void print_ent_node_edge(FILE *F, const ir_entity *ent, const ir_node *ir
 	va_list ap;
 
 	va_start(ap, fmt);
-	fprintf(F, "edge: { sourcename: \""); PRINT_ENTID(ent);
-	fprintf(F, "\" targetname: \""); PRINT_NODEID(irn); fprintf(F, "\"");
+	fprintf(F, "edge: { sourcename: ");
+	print_entityid(F, ent);
+	fprintf(F, "\" targetname: ");
+	print_nodeid(F, irn);
 	ir_vfprintf(F, fmt, ap);
 	fprintf(F,"}\n");
 	va_end(ap);
@@ -405,8 +442,10 @@ static void print_enum_item_edge(FILE *F, const ir_type *tp, size_t item, const 
 	va_list ap;
 
 	va_start(ap, fmt);
-	fprintf(F, "edge: { sourcename: "); PRINT_TYPEID(tp);
-	fprintf(F, " targetname: \""); PRINT_ITEMID(tp, item); fprintf(F, "\" ");
+	fprintf(F, "edge: { sourcename: ");
+	print_typeid(F, tp);
+	fprintf(F, " targetname: ");
+	print_itemid(F, tp, item);
 	ir_vfprintf(F, fmt, ap);
 	fprintf(F,"}\n");
 	va_end(ap);
@@ -505,7 +544,7 @@ static void clear_link(ir_node *node, void *env)
  * If the entity has a ld_name, returns it if the dump_ld_name is set,
  * else returns the name of the entity.
  */
-static const char *_get_ent_dump_name(const ir_entity *ent, bool dump_ld_name)
+static const char *get_ent_dump_name_(const ir_entity *ent, bool dump_ld_name)
 {
 	if (ent == NULL)
 		return "<NULL entity>";
@@ -519,13 +558,13 @@ static const char *_get_ent_dump_name(const ir_entity *ent, bool dump_ld_name)
 
 const char *get_ent_dump_name(const ir_entity *ent)
 {
-	return _get_ent_dump_name(ent, flags & ir_dump_flag_ld_names);
+	return get_ent_dump_name_(ent, flags & ir_dump_flag_ld_names);
 }
 
 const char *get_irg_dump_name(const ir_graph *irg)
 {
 	/* Don't use get_entity_ld_ident (ent) as it computes the mangled name! */
-	return _get_ent_dump_name(get_irg_entity(irg), true);
+	return get_ent_dump_name_(get_irg_entity(irg), true);
 }
 
 /**
@@ -776,7 +815,7 @@ static int dump_node_typeinfo(FILE *F, const ir_node *n)
 		if (get_irg_typeinfo_state(current_ir_graph) == ir_typeinfo_consistent  ||
 			get_irg_typeinfo_state(current_ir_graph) == ir_typeinfo_inconsistent) {
 			ir_type *tp = get_irn_typeinfo_type(n);
-			if (tp != firm_none_type) {
+			if (tp != get_none_type()) {
 				ir_fprintf(F, "[%+F]", tp);
 			} else {
 				fprintf(F, "[] ");
@@ -994,6 +1033,16 @@ static int is_constlike_node(const ir_node *node)
 	return is_op_constlike(op);
 }
 
+static void print_constid(FILE *F, const ir_node *user, const ir_node *node)
+{
+	fprintf(F, "\"n%ldb%ld\"", get_irn_node_nr(user), get_irn_node_nr(node));
+}
+
+static void print_constblkid(FILE *F, const ir_node *node, const ir_node *block)
+{
+	fprintf(F, "\"n%ldb%ld\"", get_irn_node_nr(node), get_irn_node_nr(block));
+}
+
 
 /** outputs the predecessors of n, that are constants, local.  I.e.,
    generates a copy of the constant predecessors for each node called with. */
@@ -1016,7 +1065,8 @@ static void dump_const_node_local(FILE *F, const ir_node *n)
 		if (is_constlike_node(con) && !irn_visited_else_mark(con)) {
 			/* Generate a new name for the node by appending the names of
 			n and const. */
-			fprintf(F, "node: {title: "); PRINT_CONSTID(n, con);
+			fprintf(F, "node: {title: ");
+			print_constid(F, n, con);
 			fprintf(F, " label: \"");
 			dump_node_label(F, con);
 			fprintf(F, "\" ");
@@ -1038,30 +1088,28 @@ static void dump_const_block_local(FILE *F, const ir_node *n)
 	if (is_constlike_node(blk)) {
 		/* Generate a new name for the node by appending the names of
 		n and blk. */
-		fprintf(F, "node: {title: \""); PRINT_CONSTBLKID(n, blk);
-		fprintf(F, "\" label: \"");
+		fprintf(F, "node: {title: ");
+		print_constblkid(F, n, blk);
+		fprintf(F, " label: \"");
 		dump_node_label(F, blk);
 		fprintf(F, "\" ");
 		dump_node_info(F, blk);
 		dump_node_vcgattr(F, n, blk, 0);
 		fprintf(F, "}\n");
 
-		fprintf(F, "edge: { sourcename: \"");
-		PRINT_NODEID(n);
-		fprintf(F, "\" targetname: \""); PRINT_CONSTBLKID(n,blk);
+		fprintf(F, "edge: { sourcename: ");
+		print_nodeid(F, n);
+		fprintf(F, " targetname: ");
+		print_constblkid(F, n, blk);
+		fprintf(F, " ");
 
-		if (dump_edge_vcgattr_hook) {
-			fprintf(F, "\" ");
-			if (dump_edge_vcgattr_hook(F, n, -1)) {
-				fprintf(F, "}\n");
-				return;
-			} else {
-				fprintf(F, " " BLOCK_EDGE_ATTR "}\n");
-				return;
-			}
+		if (dump_edge_vcgattr_hook != NULL
+		    && dump_edge_vcgattr_hook(F, n, -1)) {
+			fprintf(F, "}\n");
+			return;
 		}
 
-		fprintf(F, "\" "   BLOCK_EDGE_ATTR "}\n");
+		fprintf(F, BLOCK_EDGE_ATTR "}\n");
 	}
 }
 
@@ -1108,9 +1156,8 @@ void dump_node(FILE *F, const ir_node *n)
 		return;
 
 	/* dump this node */
-	fputs("node: {title: \"", F);
-	PRINT_NODEID(n);
-	fputs("\"", F);
+	fputs("node: {title: ", F);
+	print_nodeid(F, n);
 
 	fputs(" label: \"", F);
 	bad = ! irn_verify_irg_dump(n, current_ir_graph, &p);
@@ -1136,23 +1183,18 @@ static void dump_ir_block_edge(FILE *F, const ir_node *n)
 		if (get_opt_dump_const_local() && is_constlike_node(block)) {
 			dump_const_block_local(F, n);
 		} else {
-			fprintf(F, "edge: { sourcename: \"");
-			PRINT_NODEID(n);
-			fprintf(F, "\" targetname: ");
-			fprintf(F, "\""); PRINT_NODEID(block); fprintf(F, "\"");
+			fprintf(F, "edge: { sourcename: ");
+			print_nodeid(F, n);
+			fprintf(F, " targetname: ");
+			print_nodeid(F, block);
+			fprintf(F, " ");
 
-			if (dump_edge_vcgattr_hook) {
-				fprintf(F, " ");
-				if (dump_edge_vcgattr_hook(F, n, -1)) {
-					fprintf(F, "}\n");
-					return;
-				} else {
-					fprintf(F, " "  BLOCK_EDGE_ATTR "}\n");
-					return;
-				}
+			if (dump_edge_vcgattr_hook && dump_edge_vcgattr_hook(F, n, -1)) {
+				fprintf(F, "}\n");
+				return;
 			}
 
-			fprintf(F, " "   BLOCK_EDGE_ATTR "}\n");
+			fprintf(F, BLOCK_EDGE_ATTR "}\n");
 		}
 	}
 }
@@ -1244,15 +1286,13 @@ static void dump_ir_data_edges(FILE *F, const ir_node *n)
 
 		if (dep) {
 			print_node_edge_kind(F, n);
-			fprintf(F, "{sourcename: \"");
-			PRINT_NODEID(n);
-			fprintf(F, "\" targetname: ");
+			fprintf(F, "{sourcename: ");
+			print_nodeid(F, n);
+			fprintf(F, " targetname: ");
 			if ((get_opt_dump_const_local()) && is_constlike_node(dep)) {
-				PRINT_CONSTID(n, dep);
+				print_constid(F, n, dep);
 			} else {
-				fprintf(F, "\"");
-				PRINT_NODEID(dep);
-				fprintf(F, "\"");
+				print_nodeid(F, dep);
 			}
 			fprintf(F, " label: \"%d\" ", i);
 			fprintf(F, " color: darkgreen}\n");
@@ -1265,17 +1305,17 @@ static void dump_ir_data_edges(FILE *F, const ir_node *n)
 		assert(pred);
 
 		if ((flags & ir_dump_flag_back_edges) && is_backedge(n, i)) {
-			fprintf(F, "backedge: {sourcename: \"");
+			fprintf(F, "backedge: {sourcename: ");
 		} else {
 			print_node_edge_kind(F, n);
-			fprintf(F, "{sourcename: \"");
+			fprintf(F, "{sourcename: ");
 		}
-		PRINT_NODEID(n);
-		fprintf(F, "\" targetname: ");
+		print_nodeid(F, n);
+		fprintf(F, " targetname: ");
 		if ((get_opt_dump_const_local()) && is_constlike_node(pred)) {
-			PRINT_CONSTID(n, pred);
+			print_constid(F, n, pred);
 		} else {
-			fprintf(F, "\""); PRINT_NODEID(pred); fprintf(F, "\"");
+			print_nodeid(F, pred);
 		}
 		fprintf(F, " label: \"%d\" ", i);
 		print_edge_vcgattr(F, n, i);
@@ -1296,11 +1336,10 @@ static void dump_ir_edges(ir_node *node, void *env)
 		ir_node *succ = get_edge_src_irn(edge);
 
 		print_node_edge_kind(F, succ);
-		fprintf(F, "{sourcename: \"");
-		PRINT_NODEID(node);
-		fprintf(F, "\" targetname: \"");
-		PRINT_NODEID(succ);
-		fprintf(F, "\"");
+		fprintf(F, "{sourcename: ");
+		print_nodeid(F, node);
+		fprintf(F, " targetname: ");
+		print_nodeid(F, succ);
 
 		fprintf(F, " label: \"%d\" ", i);
 		fprintf(F, OUT_EDGE_ATTR);
@@ -1368,9 +1407,9 @@ static void dump_whole_block(FILE *F, const ir_node *block)
 
 	assert(is_Block(block));
 
-	fprintf(F, "graph: { title: \"");
-	PRINT_NODEID(block);
-	fprintf(F, "\"  label: \"");
+	fprintf(F, "graph: { title: ");
+	print_nodeid(F, block);
+	fprintf(F, " label: \"");
 	dump_node_label(F, block);
 
 	/* colorize blocks */
@@ -1491,9 +1530,9 @@ static void dump_graph_from_list(FILE *F, ir_graph *irg)
 {
 	ir_entity *ent = get_irg_entity(irg);
 
-	fprintf(F, "graph: { title: \"");
-	PRINT_IRGID(irg);
-	fprintf(F, "\" label: \"%s\" status:clustered color:%s \n",
+	fprintf(F, "graph: { title: ");
+	print_irgid(F, irg);
+	fprintf(F, " label: \"%s\" status:clustered color:%s\n",
 	  get_ent_dump_name(ent), color_names[ird_color_prog_background]);
 
 	dump_graph_info(F, irg);
@@ -1572,7 +1611,7 @@ static void print_typespecific_vcgattr(FILE *F, ir_type *tp)
 void dump_type_node(FILE *F, ir_type *tp)
 {
 	fprintf(F, "node: {title: ");
-	PRINT_TYPEID(tp);
+	print_typeid(F, tp);
 	fprintf(F, " label: \"");
 	if (tp->dbi != NULL) {
 		char buf[1024];
@@ -1591,8 +1630,8 @@ void dump_type_node(FILE *F, ir_type *tp)
 
 static void dump_entity_node(FILE *F, ir_entity *ent)
 {
-	fprintf(F, "node: {title: \"");
-	PRINT_ENTID(ent); fprintf(F, "\"");
+	fprintf(F, "node: {title: ");
+	print_entityid(F, ent);
 	fprintf(F, " label: ");
 	fprintf(F, "\"%s\" ", get_ent_dump_name(ent));
 
@@ -1617,8 +1656,8 @@ static void dump_enum_item(FILE *F, ir_type *tp, size_t pos)
 		tarval_snprintf(buf, sizeof(buf), tv);
 	else
 		strncpy(buf, "<not set>", sizeof(buf));
-	fprintf(F, "node: {title: \"");
-	PRINT_ITEMID(tp, pos); fprintf(F, "\"");
+	fprintf(F, "node: {title: ");
+	print_itemid(F, tp, pos);
 	fprintf(F, " label: ");
 	fprintf(F, "\"enum item %s\" " ENUM_ITEM_NODE_ATTR, get_id_str(id));
 	fprintf(F, "\n info1: \"value: %s\"}\n", buf);
@@ -1745,9 +1784,11 @@ static void dump_type_info(type_or_ent tore, void *env)
 		case tpo_pointer:
 			print_type_type_edge(F, tp, get_pointer_points_to_type(tp), PTR_PTS_TO_EDGE_ATTR);
 			break;
+		case tpo_unknown:
+		case tpo_code:
+		case tpo_uninitialized:
+		case tpo_none:
 		case tpo_primitive:
-			break;
-		default:
 			break;
 		}
 		break; /* case k_type */
@@ -1820,11 +1861,11 @@ static void dump_out_edge(ir_node *n, void *env)
 		ir_node *succ = get_irn_out(n, i);
 		assert(succ);
 		print_node_edge_kind(F, succ);
-		fprintf(F, "{sourcename: \"");
-		PRINT_NODEID(n);
-		fprintf(F, "\" targetname: \"");
-		PRINT_NODEID(succ);
-		fprintf(F, "\" color: red linestyle: dashed");
+		fprintf(F, "{sourcename: ");
+		print_nodeid(F, n);
+		fprintf(F, " targetname: ");
+		print_nodeid(F, succ);
+		fprintf(F, " color: red linestyle: dashed");
 		fprintf(F, "}\n");
 	}
 }
@@ -1844,11 +1885,16 @@ static void dump_loop_info(FILE *F, const ir_loop *loop)
 	fprintf(F, "\"");
 }
 
+void print_loopid(FILE *F, const ir_loop *loop)
+{
+	fprintf(F, "\"l%ld\"", get_loop_loop_nr(loop));
+}
+
 static void dump_loop_node(FILE *F, const ir_loop *loop)
 {
-	fprintf(F, "node: {title: \"");
-	PRINT_LOOPID(loop);
-	fprintf(F, "\" label: \"");
+	fprintf(F, "node: {title: ");
+	print_loopid(F, loop);
+	fprintf(F, " label: \"");
 	dump_loop_label(F, loop);
 	fprintf(F, "\" ");
 	dump_loop_info(F, loop);
@@ -1858,22 +1904,22 @@ static void dump_loop_node(FILE *F, const ir_loop *loop)
 static void dump_loop_node_edge(FILE *F, const ir_loop *loop, size_t i)
 {
 	assert(loop);
-	fprintf(F, "edge: {sourcename: \"");
-	PRINT_LOOPID(loop);
-	fprintf(F, "\" targetname: \"");
-	PRINT_NODEID(get_loop_element(loop, i).node);
-	fprintf(F, "\" color: green");
+	fprintf(F, "edge: {sourcename: ");
+	print_loopid(F, loop);
+	fprintf(F, " targetname: ");
+	print_nodeid(F, get_loop_element(loop, i).node);
+	fprintf(F, " color: green");
 	fprintf(F, "}\n");
 }
 
 static void dump_loop_son_edge(FILE *F, const ir_loop *loop, size_t i)
 {
 	assert(loop);
-	fprintf(F, "edge: {sourcename: \"");
-	PRINT_LOOPID(loop);
-	fprintf(F, "\" targetname: \"");
-	PRINT_LOOPID(get_loop_element(loop, i).son);
-	ir_fprintf(F, "\" color: darkgreen label: \"%zu\"}\n", i);
+	fprintf(F, "edge: {sourcename: ");
+	print_loopid(F, loop);
+	fprintf(F, " targetname: ");
+	print_loopid(F, get_loop_element(loop, i).son);
+	ir_fprintf(F, " color: darkgreen label: \"%zu\"}\n", i);
 }
 
 static void dump_loops(FILE *F, const ir_loop *loop)
@@ -2032,7 +2078,7 @@ static void dump_extblock_graph(FILE *F, ir_graph *irg)
 		size_t j, n_blks;
 
 		fprintf(F, "graph: { title: \"");
-		PRINT_EXTBBID(leader);
+		fprintf(F, "x%ld", get_irn_node_nr(leader));
 		fprintf(F, "\"  label: \"ExtBB %ld\" status:clustered color:lightgreen\n",
 		        get_irn_node_nr(leader));
 
@@ -2072,9 +2118,9 @@ static void dump_blocks_extbb_grouped(FILE *F, ir_graph *irg)
 
 	construct_extblock_lists(irg);
 
-	fprintf(F, "graph: { title: \"");
-	PRINT_IRGID(irg);
-	fprintf(F, "\" label: \"%s\" status:clustered color: white \n",
+	fprintf(F, "graph: { title: ");
+	print_irgid(F, irg);
+	fprintf(F, " label: \"%s\" status:clustered color: white\n",
 	        get_ent_dump_name(ent));
 
 	dump_graph_info(F, irg);
@@ -2163,15 +2209,16 @@ static void dump_block_to_cfg(ir_node *block, void *env)
 
 	if (is_Block(block)) {
 		/* This is a block. Dump a node for the block. */
-		fprintf(F, "node: {title: \""); PRINT_NODEID(block);
-		fprintf(F, "\" label: \"");
+		fprintf(F, "node: {title: ");
+		print_nodeid(F, block);
+		fprintf(F, " label: \"");
 		if (block == get_irg_start_block(get_irn_irg(block)))
 			fprintf(F, "Start ");
 		if (block == get_irg_end_block(get_irn_irg(block)))
 			fprintf(F, "End ");
 
 		fprintf(F, "%s ", get_op_name(get_irn_op(block)));
-		PRINT_NODEID(block);
+		print_nodeid(F, block);
 		fprintf(F, "\" ");
 		fprintf(F, "info1:\"");
 
@@ -2191,10 +2238,10 @@ static void dump_block_to_cfg(ir_node *block, void *env)
 			ir_node *pred = get_Block_cfgpred(block, i);
 			if (!is_Bad(pred))
 				pred = get_nodes_block(pred);
-			fprintf(F, "edge: { sourcename: \"");
-			PRINT_NODEID(block);
-			fprintf(F, "\" targetname: \"");
-			PRINT_NODEID(pred);
+			fprintf(F, "edge: { sourcename: ");
+			print_nodeid(F, block);
+			fprintf(F, " targetname: ");
+			print_nodeid(F, pred);
 			fprintf(F, "\"}\n");
 		}
 
@@ -2202,19 +2249,19 @@ static void dump_block_to_cfg(ir_node *block, void *env)
 		if (ir_get_dump_flags() & ir_dump_flag_dominance) {
 			if (is_irg_state(get_irn_irg(block), IR_GRAPH_STATE_CONSISTENT_DOMINANCE) && get_Block_idom(block)) {
 				ir_node *pred = get_Block_idom(block);
-				fprintf(F, "edge: { sourcename: \"");
-				PRINT_NODEID(block);
-				fprintf(F, "\" targetname: \"");
-				PRINT_NODEID(pred);
-				fprintf(F, "\" " DOMINATOR_EDGE_ATTR "}\n");
+				fprintf(F, "edge: { sourcename: ");
+				print_nodeid(F, block);
+				fprintf(F, " targetname: ");
+				print_nodeid(F, pred);
+				fprintf(F, " " DOMINATOR_EDGE_ATTR "}\n");
 			}
 			if (is_irg_state(get_irn_irg(block), IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE) && get_Block_ipostdom(block)) {
 				ir_node *pred = get_Block_ipostdom(block);
-				fprintf(F, "edge: { sourcename: \"");
-				PRINT_NODEID(block);
-				fprintf(F, "\" targetname: \"");
-				PRINT_NODEID(pred);
-				fprintf(F, "\" " POSTDOMINATOR_EDGE_ATTR "}\n");
+				fprintf(F, "edge: { sourcename: ");
+				print_nodeid(F, block);
+				fprintf(F, " targetname: ");
+				print_nodeid(F, pred);
+				fprintf(F, " " POSTDOMINATOR_EDGE_ATTR "}\n");
 			}
 		}
 	}
@@ -2261,14 +2308,14 @@ void dump_callgraph(FILE *F)
 
 void dump_typegraph(FILE *out)
 {
-	dump_vcg_header(out, "All_types", "Hierarchic", NULL);
+	dump_vcg_header(out, "All_types", NULL, NULL);
 	type_walk(dump_type_info, NULL, out);
 	dump_vcg_footer(out);
 }
 
 void dump_class_hierarchy(FILE *out)
 {
-	dump_vcg_header(out, "class_hierarchy", "Hierarchic", NULL);
+	dump_vcg_header(out, "class_hierarchy", NULL, NULL);
 	type_walk(dump_class_hierarchy_node, NULL, out);
 	dump_vcg_footer(out);
 }
@@ -2295,11 +2342,10 @@ static void dump_loops_standalone(FILE *F, ir_loop *loop)
 
 			if (loop_node_started) { /* Close the "firm-nodes" node first if we started one. */
 				fprintf(F, "\" }\n");
-				fprintf(F, "edge: {sourcename: \"");
-				PRINT_LOOPID(loop);
-				fprintf(F, "\" targetname: \"");
-				PRINT_LOOPID(loop);
-				fprintf(F, "-%lu-nodes\" label:\"%lu...%lu\"}\n",
+				fprintf(F, "edge: {sourcename: ");
+				print_loopid(F, loop);
+				fprintf(F, " targetname: \"l%ld-%lu-nodes\" label:\"%lu...%lu\"}\n",
+				        get_loop_loop_nr(loop),
 						(unsigned long) first,
 						(unsigned long) first,
 				        (unsigned long) i-1);
@@ -2313,9 +2359,8 @@ static void dump_loops_standalone(FILE *F, ir_loop *loop)
 			ir_node *n = le.node;
 			if (!loop_node_started) {
 				/* Start a new node which contains all firm nodes of the current loop */
-				fprintf(F, "node: { title: \"");
-				PRINT_LOOPID(loop);
-				fprintf(F, "-%lu-nodes\" color: lightyellow label: \"",
+				fprintf(F, "node: { title: \"l%ld-%lu-nodes\" color: lightyellow label: \"",
+				        get_loop_loop_nr(loop),
 				        (unsigned long)i);
 				loop_node_started = true;
 				first = i;
@@ -2323,7 +2368,6 @@ static void dump_loops_standalone(FILE *F, ir_loop *loop)
 				fprintf(F, "\n");
 
 			dump_node_label(F, n);
-			/* Causes indeterministic output: if (is_Block(n)) fprintf(F, "\t ->%d", (int)get_irn_link(n)); */
 			if (has_backedges(n)) fprintf(F, "\t loop head!");
 		} else { /* for callgraph loop tree */
 			ir_graph *n;
@@ -2333,9 +2377,8 @@ static void dump_loops_standalone(FILE *F, ir_loop *loop)
 			n = le.irg;
 			if (!loop_node_started) {
 				/* Start a new node which contains all firm nodes of the current loop */
-				fprintf(F, "node: { title: \"");
-				PRINT_LOOPID(loop);
-				fprintf(F, "-%lu-nodes\" color: lightyellow label: \"",
+				fprintf(F, "node: { title: \"l%ld-%lu-nodes\" color: lightyellow label: \"",
+				        get_loop_loop_nr(loop),
 				        (unsigned long)i);
 				loop_node_started = true;
 				first = i;
@@ -2349,10 +2392,9 @@ static void dump_loops_standalone(FILE *F, ir_loop *loop)
 	if (loop_node_started) {
 		fprintf(F, "\" }\n");
 		fprintf(F, "edge: {sourcename: \"");
-		PRINT_LOOPID(loop);
-		fprintf(F, "\" targetname: \"");
-		PRINT_LOOPID(loop);
-		fprintf(F, "-%lu-nodes\" label:\"%lu...%lu\"}\n",
+		print_loopid(F, loop);
+		fprintf(F, "\" targetname: \"l%ld-%lu-nodes\" label:\"%lu...%lu\"}\n",
+		        get_loop_loop_nr(loop),
 		        (unsigned long) first,
 		        (unsigned long) first,
 		        (unsigned long) i-1);
@@ -2386,7 +2428,7 @@ void dump_callgraph_loop_tree(FILE *out)
 	dump_vcg_footer(out);
 }
 
-static void collect_nodeloop(FILE *F, ir_loop *loop, eset *loopnodes)
+static void collect_nodeloop(FILE *F, ir_loop *loop, pset *loopnodes)
 {
 	size_t i;
 	int    son_number = 0;
@@ -2405,13 +2447,13 @@ static void collect_nodeloop(FILE *F, ir_loop *loop, eset *loopnodes)
 		} else {
 			if (flags & ir_dump_flag_loops)
 				dump_loop_node_edge(F, loop, node_number++);
-			eset_insert(loopnodes, le.node);
+			pset_insert_ptr(loopnodes, le.node);
 		}
 	}
 }
 
-static void collect_nodeloop_external_nodes(ir_loop *loop, eset *loopnodes,
-                                            eset *extnodes)
+static void collect_nodeloop_external_nodes(ir_loop *loop, pset *loopnodes,
+                                            pset *extnodes)
 {
 	size_t i;
 	int j, start;
@@ -2425,11 +2467,12 @@ static void collect_nodeloop_external_nodes(ir_loop *loop, eset *loopnodes,
 			if (is_Block(le.node)) start = 0; else start = -1;
 			for (j = start; j < get_irn_arity(le.node); j++) {
 				ir_node *pred = get_irn_n(le.node, j);
-				if (!eset_contains(loopnodes, pred)) {
-					eset_insert(extnodes, pred);
+				if (!pset_find_ptr(loopnodes, pred)) {
+					pset_insert_ptr(extnodes, pred);
 					if (!is_Block(pred)) {
 						pred = get_nodes_block(pred);
-						if (!eset_contains(loopnodes, pred)) eset_insert(extnodes, pred);
+						if (!pset_find_ptr(loopnodes, pred))
+							pset_insert_ptr(extnodes, pred);
 					}
 				}
 			}
@@ -2439,8 +2482,8 @@ static void collect_nodeloop_external_nodes(ir_loop *loop, eset *loopnodes,
 
 void dump_loop(FILE *F, ir_loop *l)
 {
-	eset *loopnodes = eset_create();
-	eset *extnodes = eset_create();
+	pset *loopnodes = pset_new_ptr_default();
+	pset *extnodes  = pset_new_ptr_default();
 	ir_node *n, *b;
 	char name[50];
 
@@ -2452,20 +2495,20 @@ void dump_loop(FILE *F, ir_loop *l)
 	collect_nodeloop_external_nodes(l, loopnodes, extnodes);
 
 	/* build block lists */
-	eset_foreach(loopnodes, ir_node*, n) {
+	foreach_pset(loopnodes, ir_node*, n) {
 		set_irn_link(n, NULL);
 	}
-	eset_foreach(extnodes, ir_node*, n) {
+	foreach_pset(extnodes, ir_node*, n) {
 		set_irn_link(n, NULL);
 	}
-	eset_foreach(loopnodes, ir_node*, n) {
+	foreach_pset(loopnodes, ir_node*, n) {
 		if (!is_Block(n)) {
 			b = get_nodes_block(n);
 			set_irn_link(n, get_irn_link(b));
 			set_irn_link(b, n);
 		}
 	}
-	eset_foreach(extnodes, ir_node*, n) {
+	foreach_pset(extnodes, ir_node*, n) {
 		if (!is_Block(n)) {
 			b = get_nodes_block(n);
 			set_irn_link(n, get_irn_link(b));
@@ -2473,11 +2516,11 @@ void dump_loop(FILE *F, ir_loop *l)
 		}
 	}
 
-	eset_foreach(loopnodes, ir_node*, b) {
+	foreach_pset(loopnodes, ir_node*, b) {
 		if (is_Block(b)) {
-			fprintf(F, "graph: { title: \"");
-			PRINT_NODEID(b);
-			fprintf(F, "\"  label: \"");
+			fprintf(F, "graph: { title: ");
+			print_nodeid(F, b);
+			fprintf(F, "  label: \"");
 			dump_node_opcode(F, b);
 			fprintf(F, " %ld:%u", get_irn_node_nr(b), get_irn_idx(b));
 			fprintf(F, "\" status:clustered color:yellow\n");
@@ -2487,11 +2530,11 @@ void dump_loop(FILE *F, ir_loop *l)
 
 			/* dump the nodes that go into the block */
 			for (n = (ir_node*)get_irn_link(b); n; n = (ir_node*)get_irn_link(n)) {
-				if (eset_contains(extnodes, n))
+				if (pset_find_ptr(extnodes, n))
 					overrule_nodecolor = ird_color_block_inout;
 				dump_node(F, n);
 				overrule_nodecolor = ird_color_default_node;
-				if (!eset_contains(extnodes, n)) dump_ir_data_edges(F, n);
+				if (!pset_find_ptr(extnodes, n)) dump_ir_data_edges(F, n);
 			}
 
 			/* Close the vcg information for the block */
@@ -2500,22 +2543,22 @@ void dump_loop(FILE *F, ir_loop *l)
 			fprintf(F, "\n");
 		}
 	}
-	eset_foreach(extnodes, ir_node*, b) {
+	foreach_pset(extnodes, ir_node*, b) {
 		if (is_Block(b)) {
-			fprintf(F, "graph: { title: \"");
-			PRINT_NODEID(b);
-			fprintf(F, "\"  label: \"");
+			fprintf(F, "graph: { title: ");
+			print_nodeid(F, b);
+			fprintf(F, " label: \"");
 			dump_node_opcode(F, b);
 			fprintf(F, " %ld:%u", get_irn_node_nr(b), get_irn_idx(b));
 			fprintf(F, "\" status:clustered color:lightblue\n");
 
 			/* dump the nodes that go into the block */
 			for (n = (ir_node*)get_irn_link(b); n; n = (ir_node*)get_irn_link(n)) {
-				if (!eset_contains(loopnodes, n))
+				if (!pset_find_ptr(loopnodes, n))
 					overrule_nodecolor = ird_color_block_inout;
 				dump_node(F, n);
 				overrule_nodecolor = ird_color_default_node;
-				if (eset_contains(loopnodes, n)) dump_ir_data_edges(F, n);
+				if (pset_find_ptr(loopnodes, n)) dump_ir_data_edges(F, n);
 			}
 
 			/* Close the vcg information for the block */
@@ -2524,8 +2567,8 @@ void dump_loop(FILE *F, ir_loop *l)
 			fprintf(F, "\n");
 		}
 	}
-	eset_destroy(loopnodes);
-	eset_destroy(extnodes);
+	del_pset(loopnodes);
+	del_pset(extnodes);
 
 	dump_vcg_footer(F);
 }

@@ -1815,7 +1815,7 @@ static int cmp_avail_entry(const void *elt, const void *key, size_t size)
  */
 static unsigned hash_cache_entry(const avail_entry_t *entry)
 {
-	return get_irn_idx(entry->ptr) * 9 + HASH_PTR(entry->mode);
+	return get_irn_idx(entry->ptr) * 9 + hash_ptr(entry->mode);
 }  /* hash_cache_entry */
 
 /**
@@ -1830,8 +1830,6 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 	int       j;
 	phi_entry *phi_list = NULL;
 	set       *avail;
-
-	avail = new_set(cmp_avail_entry, 8);
 
 	/* collect all outer memories */
 	for (phi = pscc->head; phi != NULL; phi = next) {
@@ -1865,6 +1863,8 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 	/* for now, we cannot handle more than one input (only reducible cf) */
 	if (phi_list->next != NULL)
 		return;
+
+	avail = new_set(cmp_avail_entry, 8);
 
 	for (load = pscc->head; load; load = next) {
 		ir_mode *load_mode;
@@ -2142,7 +2142,7 @@ static void dfs(ir_node *irn, loop_env *env)
 				node->low = MIN(o->DFSnum, node->low);
 		}
 	} else if (is_fragile_op(irn)) {
-		ir_node *pred = get_fragile_op_mem(irn);
+		ir_node *pred = get_memop_mem(irn);
 		node_entry *o = get_irn_ne(pred, env);
 
 		if (!irn_visited(pred)) {
@@ -2209,7 +2209,7 @@ static void do_dfs(ir_graph *irg, loop_env *env)
 		} else if (is_Raise(pred)) {
 			dfs(get_Raise_mem(pred), env);
 		} else if (is_fragile_op(pred)) {
-			dfs(get_fragile_op_mem(pred), env);
+			dfs(get_memop_mem(pred), env);
 		} else if (is_Bad(pred)) {
 			/* ignore non-optimized block predecessor */
 		} else {

@@ -233,8 +233,7 @@ static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls)
 	chordal_env->border_heads     = pmap_create();
 	chordal_env->allocatable_regs = bitset_malloc(chordal_env->cls->n_regs);
 
-	be_assure_liveness(irg);
-	be_liveness_assure_chk(be_get_irg_liveness(irg));
+	be_assure_live_chk(irg);
 
 	if (stat_ev_enabled) {
 		pse->pre_spill_cost = be_estimate_irg_costs(irg, exec_freq);
@@ -366,8 +365,6 @@ static void be_ra_chordal_main(ir_graph *irg)
 
 	be_timer_push(T_RA_PROLOG);
 
-	be_assure_liveness(irg);
-
 	chordal_env.obst             = &obst;
 	chordal_env.opts             = &options;
 	chordal_env.irg              = irg;
@@ -436,7 +433,7 @@ static void be_ra_chordal_main(ir_graph *irg)
 	be_timer_push(T_RA_EPILOG);
 
 	obstack_free(&obst, NULL);
-	be_liveness_invalidate(be_get_irg_liveness(irg));
+	be_invalidate_live_sets(irg);
 	be_timer_pop(T_RA_EPILOG);
 
 	be_timer_pop(T_RA_OTHER);

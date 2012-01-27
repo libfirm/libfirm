@@ -20,7 +20,6 @@
 /**
  * @file
  * @brief       data structures for scheduling nodes in basic blocks.
- *              (This file does not contain the scheduling algorithms)
  * @author      Sebastian Hack, Matthias Braun
  */
 #ifndef FIRM_BE_BESCHED_H
@@ -42,6 +41,8 @@ static sched_info_t *get_irn_sched_info(const ir_node *node)
 
 /**
  * Check, if the node is scheduled.
+ * Block nodes are reported as scheduled as they mark the begin and end
+ * of the scheduling list.
  * @param irn The node.
  * @return 1, if the node is scheduled, 0 if not.
  */

@@ -105,7 +105,7 @@ void be_do_stat_reg_pressure(ir_graph *irg, const arch_register_class_t *cls)
 	env.insn_count   = 0;
 	env.max_pressure = 0;
 	env.regpressure  = 0;
-	be_liveness_assure_sets(be_assure_liveness(irg));
+	be_assure_live_sets(irg);
 	env.lv           = be_get_irg_liveness(irg);
 	env.cls          = cls;
 
@@ -238,7 +238,7 @@ unsigned long be_count_insns(ir_graph *irg)
 static void block_count_walker(ir_node *node, void *data)
 {
 	unsigned long *cnt = (unsigned long*)data;
-	if (node == get_irg_end_block(current_ir_graph))
+	if (node == get_irg_end_block(get_irn_irg(node)))
 		return;
 	(*cnt)++;
 }

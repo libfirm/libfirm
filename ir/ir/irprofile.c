@@ -463,14 +463,6 @@ static ir_entity *new_static_string_entity(ident *name, const char *string)
 	return result;
 }
 
-/**
- * Instrument all ir_graphs in the current ir_program. Currently this only
- * works for graphs in the backend. Additionally, the resulting program
- * has to be linked with libfirmprof.
- *
- * @param filename the name of the profile file (usually module_name.prof)
- * @returns the module initializer, may be NULL
- */
 ir_graph *ir_profile_instrument(const char *filename)
 {
 	int n, n_blocks = 0;
@@ -556,7 +548,6 @@ end:
 /**
  * Reads the corresponding profile info file if it exists.
  */
-
 static void block_associate_walker(ir_node *bb, void *env)
 {
 	block_assoc_t *b = (block_assoc_t*) env;
@@ -600,9 +591,6 @@ bool ir_profile_read(const char *filename)
 	return true;
 }
 
-/**
- * Frees the profile info
- */
 void ir_profile_free(void)
 {
 	if (profile) {
@@ -616,17 +604,11 @@ void ir_profile_free(void)
 	}
 }
 
-/**
- * Tells whether profile module has acquired data
- */
 bool ir_profile_has_data(void)
 {
 	return profile != NULL;
 }
 
-/**
- * Get block execution count as determined by profiling
- */
 unsigned int ir_profile_get_block_execcount(const ir_node *block)
 {
 	execcount_t *ec, query;

@@ -107,8 +107,6 @@ static void resize(HashSet *self, size_t new_size)
 	Free(old_entries);
 }
 
-
-/* Inserts a node into a linked nodeset. */
 int ir_lnk_nodeset_insert(ir_lnk_nodeset_t *nodeset, ir_node *node)
 {
 	ir_lnk_nodeset_entry_t *entry = ir_lnk_nodeset_insert_(nodeset, node);
@@ -126,13 +124,6 @@ int ir_lnk_nodeset_contains(const ir_lnk_nodeset_t *nodeset, const ir_node *node
 	return ir_lnk_nodeset_find_(nodeset, node) != NULL;
 }
 
-/**
- * Initializes a nodeset iterator. Sets the iterator before the first element in
- * the linked nodeset.
- *
- * @param iterator   Pointer to already allocated iterator memory
- * @param nodeset       Pointer to the nodeset
- */
 void ir_lnk_nodeset_iterator_init(ir_lnk_nodeset_iterator_t *iterator,
                                   const ir_lnk_nodeset_t *nodeset)
 {
@@ -140,15 +131,6 @@ void ir_lnk_nodeset_iterator_init(ir_lnk_nodeset_iterator_t *iterator,
 	iterator->nodeset = nodeset;
 }
 
-/**
- * Advances the iterator and returns the current element or NULL if all elements
- * in the linked nodeset have been processed.
- * @attention It is not allowed to use ir_lnk_nodeset_insert or ir_lnk_nodeset_remove while
- *            iterating over a nodeset.
- *
- * @param iterator  Pointer to the nodeset iterator.
- * @returns         Next element in the nodeset or NULL
- */
 ir_node *ir_lnk_nodeset_iterator_next(ir_lnk_nodeset_iterator_t *iterator)
 {
 	ir_node *res;
@@ -161,12 +143,6 @@ ir_node *ir_lnk_nodeset_iterator_next(ir_lnk_nodeset_iterator_t *iterator)
 	return res;
 }
 
-/**
- * Removes the element the iterator currently points to.
- *
- * @param nodeset   Pointer to the linked nodeset
- * @param iterator  Pointer to the nodeset iterator.
- */
 void ir_lnk_nodeset_remove_iterator(ir_lnk_nodeset_t *nodeset,
                                     ir_lnk_nodeset_iterator_t *iterator)
 {

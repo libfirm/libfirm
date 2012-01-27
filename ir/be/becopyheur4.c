@@ -1243,7 +1243,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 	 */
 	for (i = 0; i < env->k; ++i) {
 		int         col = order[i].col;
-		waitq       *good_starts = new_waitq();
+		waitq       *good_starts;
 		aff_chunk_t *local_best;
 		int          n_succeeded;
 
@@ -1254,6 +1254,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 		DB((dbg, LEVEL_2, "\ttrying color %d\n", col));
 
 		n_succeeded = 0;
+		good_starts = new_waitq();
 
 		/* try to bring all nodes of given chunk to the current color. */
 		for (idx = 0, len = ARR_LEN(c->n); idx < len; ++idx) {
@@ -1292,8 +1293,10 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 		}
 
 		/* try next color when failed */
-		if (n_succeeded == 0)
+		if (n_succeeded == 0) {
+			del_waitq(good_starts);
 			continue;
+		}
 
 		/* fragment the chunk according to the coloring */
 		local_best = fragment_chunk(env, col, c, tmp_chunks);

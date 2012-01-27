@@ -1041,7 +1041,7 @@ void be_insert_spills_reloads(spill_env_t *env)
 
 	/* Matze: In theory be_ssa_construction should take care of the liveness...
 	 * try to disable this again in the future */
-	be_liveness_invalidate(be_get_irg_liveness(env->irg));
+	be_invalidate_live_sets(env->irg);
 
 	be_remove_dead_nodes_from_schedule(env->irg);
 

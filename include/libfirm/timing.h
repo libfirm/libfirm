@@ -28,6 +28,12 @@
 
 #include "begin.h"
 
+/**
+ * A timer
+ *
+ * A timer can be started/stopped multiple times and measures the (wallclock)
+ * time spent between start and stop calls.
+ */
 typedef struct ir_timer_t ir_timer_t;
 
 /**
@@ -47,7 +53,7 @@ FIRM_API int ir_timer_enter_high_priority(void);
 FIRM_API int ir_timer_leave_high_priority(void);
 
 /**
- * Get the amount of bytes allocated on the heap.
+ * Returns the amount of bytes allocated on the heap.
  * @return The number of bytes allocated on the heap.
  */
 FIRM_API size_t ir_get_heap_used_bytes(void);
@@ -55,6 +61,7 @@ FIRM_API size_t ir_get_heap_used_bytes(void);
 /**
  * Create a new timer
  * @return The timer.
+ * @see #ir_timer_t
  */
 FIRM_API ir_timer_t *ir_timer_new(void);
 
@@ -106,14 +113,14 @@ FIRM_API int ir_timer_push(ir_timer_t *timer);
 FIRM_API ir_timer_t *ir_timer_pop(void);
 
 /**
- * Get the number of milliseconds, the timer has elapsed.
+ * Returns the number of milliseconds, the timer has elapsed.
  * @param timer The timer.
  * @return The number of milliseconds the timer is (was) running.
  */
 FIRM_API unsigned long ir_timer_elapsed_msec(const ir_timer_t *timer);
 
 /**
- * Get the number of microseconds, the timer has elapsed.
+ * Returns the number of microseconds, the timer has elapsed.
  * @param timer The timer.
  * @return The number of milliseconds the timer is (was) running.
  */

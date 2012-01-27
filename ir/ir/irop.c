@@ -36,16 +36,12 @@
 #include "reassoc_t.h"
 
 #include "xmalloc.h"
+#include "benode.h"
 
-void be_init_op(void);
-
+static ir_op **opcodes;
 /** the available next opcode */
 static unsigned next_iro = iro_MaxOpcode;
 
-/*
- * Copies all attributes stored in the old node to the new node.
- * Assumes both have the same opcode and sufficient size.
- */
 void default_copy_attr(ir_graph *irg, const ir_node *old_node,
                        ir_node *new_node)
 {
@@ -164,7 +160,6 @@ static void set_default_operations(unsigned code, ir_op_ops *ops)
 	firm_set_default_reassoc(code, ops);
 }
 
-/* Creates a new ir operation. */
 ir_op *new_ir_op(unsigned code, const char *name, op_pin_state p,
                  unsigned flags, op_arity opar, int op_index, size_t attr_size,
                  const ir_op_ops *ops)
@@ -187,7 +182,16 @@ ir_op *new_ir_op(unsigned code, const char *name, op_pin_state p,
 
 	set_default_operations(code, &res->ops);
 
-	add_irp_opcode(res);
+	{
+		size_t len = ARR_LEN(opcodes);
+		if ((size_t)code >= len) {
+			ARR_RESIZE(ir_op*, opcodes, (size_t)code+1);
+			memset(&opcodes[len], 0, (code-len+1) * sizeof(opcodes[0]));
+		}
+		if (opcodes[code] != NULL)
+			panic("opcode registered twice");
+		opcodes[code] = res;
+	}
 
 	hook_new_ir_op(res);
 	return res;
@@ -197,19 +201,48 @@ void free_ir_op(ir_op *code)
 {
 	hook_free_ir_op(code);
 
-	remove_irp_opcode(code);
+	assert(opcodes[code->code] == code);
+	opcodes[code->code] = NULL;
+
 	free(code);
 }
 
-void ir_op_set_fragile_indices(ir_op *op, int fragile_mem_index,
-                               int pn_x_regular, int pn_x_except)
+unsigned ir_get_n_opcodes(void)
 {
-	op->fragile_mem_index = fragile_mem_index;
+	return ARR_LEN(opcodes);
+}
+
+ir_op *ir_get_opcode(unsigned code)
+{
+	assert((size_t)code < ARR_LEN(opcodes));
+	return opcodes[code];
+}
+
+void ir_clear_opcodes_generic_func(void)
+{
+	size_t n = ir_get_n_opcodes();
+	size_t i;
+
+	for (i = 0; i < n; ++i) {
+		ir_op *op = ir_get_opcode(i);
+		if (op != NULL)
+			op->ops.generic = (op_func)NULL;
+	}
+}
+
+void ir_op_set_memory_index(ir_op *op, int memory_index)
+{
+	assert(op->flags & irop_flag_uses_memory);
+	op->memory_index = memory_index;
+}
+
+void ir_op_set_fragile_indices(ir_op *op, int pn_x_regular, int pn_x_except)
+{
+	assert(op->flags & irop_flag_fragile);
 	op->pn_x_regular = pn_x_regular;
 	op->pn_x_except = pn_x_except;
 }
 
-/* Returns the string for the opcode. */
 const char *get_op_name (const ir_op *op)
 {
 	return get_id_str(op->name);
@@ -243,21 +276,17 @@ op_pin_state (get_op_pinned)(const ir_op *op)
 	return get_op_pinned_(op);
 }
 
-/* Sets op_pin_state_pinned in the opcode.  Setting it to floating has no effect
-   for Phi, Block and control flow nodes. */
 void set_op_pinned(ir_op *op, op_pin_state pinned)
 {
 	if (op == op_Block || op == op_Phi || is_op_cfopcode(op)) return;
 	op->pin_state = pinned;
 }
 
-/* retrieve the next free opcode */
 unsigned get_next_ir_opcode(void)
 {
 	return next_iro++;
 }
 
-/* Returns the next free n IR opcode number, allows to register a bunch of user ops */
 unsigned get_next_ir_opcodes(unsigned num)
 {
 	unsigned base = next_iro;
@@ -265,19 +294,16 @@ unsigned get_next_ir_opcodes(unsigned num)
 	return base;
 }
 
-/* Returns the generic function pointer from an ir operation. */
 op_func (get_generic_function_ptr)(const ir_op *op)
 {
 	return get_generic_function_ptr_(op);
 }
 
-/* Store a generic function pointer into an ir operation. */
 void (set_generic_function_ptr)(ir_op *op, op_func func)
 {
 	set_generic_function_ptr_(op, func);
 }
 
-/* Returns the ir_op_ops of an ir_op. */
 const ir_op_ops *(get_op_ops)(const ir_op *op)
 {
 	return get_op_ops_(op);
@@ -286,6 +312,24 @@ const ir_op_ops *(get_op_ops)(const ir_op *op)
 irop_flags get_op_flags(const ir_op *op)
 {
 	return (irop_flags)op->flags;
+}
+
+static void generated_init_op(void);
+static void generated_finish_op(void);
+
+void firm_init_op(void)
+{
+	opcodes = NEW_ARR_F(ir_op*, 0);
+	generated_init_op();
+	be_init_op();
+}
+
+void firm_finish_op(void)
+{
+	be_finish_op();
+	generated_finish_op();
+	DEL_ARR_F(opcodes);
+	opcodes = NULL;
 }
 
 #include "gen_irop.c.inl"

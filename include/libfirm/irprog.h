@@ -25,17 +25,6 @@
  * @brief
  *  Intermediate Representation (IR) of a program.
  *
- *  This file defines a construct that keeps all information about a
- *  program:
- *   - A reference point to the method to be executed on program start.
- *   - A list of all procedures.
- *   - A list of all types.
- *   - A global type that contains all global variables and procedures that do
- *     not belong to a class.  This type represents the data segment of the
- *     program.  It is not the base class of
- *     all classes in a class hierarchy (as, e.g., "object" in java).
- *   - A degenerated graph that contains constant expressions.
- *   - the output file name
  */
 #ifndef FIRM_IR_IRPROG_H
 #define FIRM_IR_IRPROG_H
@@ -45,6 +34,29 @@
 #include "irgraph.h"
 #include "begin.h"
 
+/**
+ * @defgroup ir_prog Program
+ *
+ *  ir_prog keeps information about a program:
+ *   - A reference point to the method to be executed on program start.
+ *   - A list of all procedures.
+ *   - A list of all types.
+ *   - A global type that contains all global variables and procedures that do
+ *     not belong to a class.  This type represents the data segment of the
+ *     program.  It is not the base class of
+ *     all classes in a class hierarchy (as, e.g., "object" in java).
+ *   - A degenerated graph that contains constant expressions.
+ *   - the output file name
+ *
+ * @{
+ */
+
+/**
+ * Segment
+ *
+ * A progrom has a number of special segments at the toplevel which modify
+ * the behaviour of the entities in them.
+ */
 typedef enum ir_segment_t {
 	IR_SEGMENT_FIRST,
 	/** "normal" global data */
@@ -73,18 +85,35 @@ ENUM_COUNTABLE(ir_segment_t)
  */
 FIRM_API ir_prog *irp;
 
+/**
+ * Resources usable by algorithms modifying the program
+ */
 typedef enum irp_resources_t {
-	IRP_RESOURCE_NONE         = 0,
+	IRP_RESOURCE_NONE         = 0,      /**< no resource */
+	/** irg link field @see set_irg_link(), get_irg_link() */
 	IRP_RESOURCE_IRG_LINK     = 1 << 0,
+	/** entity link field @see set_entity_link(), get_entity_link() */
 	IRP_RESOURCE_ENTITY_LINK  = 1 << 1,
+	/** type visited field @see type_visited(), mark_type_visited(),
+	 *  inc_master_type_visited() */
 	IRP_RESOURCE_TYPE_VISITED = 1 << 2,
+	/** type link field @see set_type_link(), get_type_link() */
 	IRP_RESOURCE_TYPE_LINK    = 1 << 3,
 } irp_resources_t;
 ENUM_BITSET(irp_resources_t)
 
 #ifndef NDEBUG
+/**
+ * Reserve resources available for a whole program.
+ *
+ * This is a debug tool: All code should properly allocate the resources it uses
+ * so if two interlocked algorithms use the same resources that bug will get
+ * detected.
+ */
 FIRM_API void irp_reserve_resources(ir_prog *irp, irp_resources_t resources);
+/** Frees resources availabel for a whole program. */
 FIRM_API void irp_free_resources(ir_prog *irp, irp_resources_t resources);
+/** Returns currently reserved whole program resources. */
 FIRM_API irp_resources_t irp_resources_reserved(const ir_prog *irp);
 #else
 #define irp_reserve_resources(irp, resources) (void)0
@@ -100,9 +129,7 @@ FIRM_API irp_resources_t irp_resources_reserved(const ir_prog *irp);
  */
 FIRM_API ir_prog *get_irp(void);
 
-/**
- * Set current irp
- */
+/** Sets current irp */
 FIRM_API void set_irp(ir_prog *irp);
 
 /**
@@ -113,7 +140,7 @@ FIRM_API void set_irp(ir_prog *irp);
  */
 FIRM_API ir_prog *new_ir_prog(const char *name);
 
-/** frees all memory used by irp.  Types in type list and irgs in irg
+/** Frees all memory used by irp.  Types in type list and irgs in irg
  *  list must be freed by hand before. */
 FIRM_API void free_ir_prog(void);
 
@@ -124,13 +151,13 @@ FIRM_API void set_irp_prog_name(ident *name);
 /** Returns true if the user ever set a program name */
 FIRM_API int irp_prog_name_is_set(void);
 
-/** Gets the name of the current irp. */
+/** Returns the name of the current irp. */
 FIRM_API ident *get_irp_ident(void);
 
-/** Gets the name of the current irp. */
+/** Returns the name of the current irp. */
 FIRM_API const char *get_irp_name(void);
 
-/** Gets the main routine of the compiled program. */
+/** Returns the main routine of the compiled program. */
 FIRM_API ir_graph *get_irp_main_irg(void);
 
 /** Sets the main routine of the compiled program. */
@@ -203,30 +230,7 @@ FIRM_API ir_type *get_irp_type(size_t pos);
  */
 FIRM_API void set_irp_type(size_t pos, ir_type *typ);
 
-/** Returns the number of all modes in the irp. */
-FIRM_API size_t get_irp_n_modes(void);
-
-/** Returns the mode at position pos in the irp. */
-FIRM_API ir_mode *get_irp_mode(size_t pos);
-
-/** Adds opcode to the list of opcodes in irp. */
-FIRM_API void add_irp_opcode(ir_op *opcode);
-
-/** Removes opcode from the list of opcodes, deallocates it and
-    shrinks the list by one. */
-FIRM_API void remove_irp_opcode(ir_op *opcode);
-
-/** Returns the number of all opcodes in the irp. */
-FIRM_API size_t get_irp_n_opcodes(void);
-
-/** Returns the opcode at position pos in the irp. */
-FIRM_API ir_op *get_irp_opcode(size_t pos);
-
-/** Sets the generic function pointer of all opcodes to NULL */
-FIRM_API void clear_irp_opcodes_generic_func(void);
-
-
-/**  Return the graph for global constants of the current irp.
+/**  Returns the graph for global constants of the current irp.
  *
  *   Returns an irgraph that only contains constant expressions for
  *   constant entities.  Do not use any access function for this
@@ -239,7 +243,6 @@ FIRM_API void clear_irp_opcodes_generic_func(void);
  */
 FIRM_API ir_graph *get_const_code_irg(void);
 
-
 /** The phase state for the program.
  *
  *  The phase state of the whole program is
@@ -249,7 +252,8 @@ FIRM_API ir_graph *get_const_code_irg(void);
  *   low:       all graphs are in state low, all types are in state layout fixed.
  */
 FIRM_API irg_phase_state get_irp_phase_state(void);
-FIRM_API void            set_irp_phase_state(irg_phase_state s);
+/** Sets the phase state of the program */
+FIRM_API void set_irp_phase_state(irg_phase_state s);
 
 /**
  * Creates an ir_prog pass for set_irp_phase_state().
@@ -262,11 +266,12 @@ FIRM_API void            set_irp_phase_state(irg_phase_state s);
 FIRM_API ir_prog_pass_t *set_irp_phase_state_pass(const char *name,
                                                   irg_phase_state state);
 
+/** Returns callee info state for the whole program.
+ * @see get_irg_callee_info_state() */
 FIRM_API irg_callee_info_state get_irp_callee_info_state(void);
-FIRM_API void                  set_irp_callee_info_state(irg_callee_info_state s);
-
-/** Returns a new, unique exception region number. */
-FIRM_API ir_exc_region_t get_irp_next_region_nr(void);
+/** Sets callee info state for the whole program.
+ * @see set_irg_callee_info_state() */
+FIRM_API void set_irp_callee_info_state(irg_callee_info_state s);
 
 /** Returns a new, unique label number. */
 FIRM_API ir_label_t get_irp_next_label_nr(void);
@@ -274,17 +279,19 @@ FIRM_API ir_label_t get_irp_next_label_nr(void);
 /** Add a new global asm include. */
 FIRM_API void add_irp_asm(ident *asm_string);
 
-/** Return the number of global asm includes. */
+/** Returns the number of global asm includes. */
 FIRM_API size_t get_irp_n_asms(void);
 
-/** Return the global asm include at position pos. */
+/** Returns the global asm include at position pos. */
 FIRM_API ident *get_irp_asm(size_t pos);
 
-/** Return whether optimization dump vcg graphs */
+/** Returns whether optimization dump vcg graphs */
 FIRM_API int get_irp_optimization_dumps(void);
 
 /** Enable vcg dumping of optimization */
 FIRM_API void enable_irp_optimization_dumps(void);
+
+/** @} */
 
 #include "end.h"
 

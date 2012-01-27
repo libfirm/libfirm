@@ -130,15 +130,11 @@ typedef enum {
 #define TYPE_MEMBER_EDGE_ATTR    "class: 12 label: \"member\" color:blue"
 /* #define CALLGRAPH_EDGE_ATTR      "calls" */
 
-#define PRINT_NODEID(X)       ir_fprintf(F, "n%ld", get_irn_node_nr(X))
-#define PRINT_TYPEID(X)       ir_fprintf(F, "\"t%ld\"", get_type_nr(X))
-#define PRINT_ENTID(X)        ir_fprintf(F, "e%ld", get_entity_nr(X))
-#define PRINT_IRGID(X)        ir_fprintf(F, "g%ld", get_irg_graph_nr(X))
-#define PRINT_CONSTID(X,Y)    ir_fprintf(F, "\"n%ldn%ld\"", get_irn_node_nr(X),get_irn_node_nr(Y))
-#define PRINT_CONSTBLKID(X,Y) ir_fprintf(F, "n%ldb%ld", get_irn_node_nr(X),get_irn_node_nr(Y))
-#define PRINT_LOOPID(X)       ir_fprintf(F, "l%ld", get_loop_loop_nr(X))
-#define PRINT_ITEMID(X,Y)     ir_fprintf(F, "i%ldT%zu", get_type_nr(X), (Y))
-#define PRINT_EXTBBID(X)      ir_fprintf(F, "x%ld", get_irn_node_nr(X))
+void print_nodeid(FILE *F, const ir_node *node);
+void print_irgid(FILE *F, const ir_graph *irg);
+void print_typeid(FILE *F, const ir_type *type);
+void print_entityid(FILE *F, const ir_entity *entity);
+void print_loopid(FILE *F, const ir_loop *loop);
 
 const char *get_irg_dump_name(const ir_graph *irg);
 

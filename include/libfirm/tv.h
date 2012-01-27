@@ -23,27 +23,7 @@
  *           values.
  * @date     2003
  * @author   Mathias Heil
- * @brief
- *   Tarvals represent target machine values.  They are typed by modes.
- *   Tarvals only represent values of mode_sort:
- *    - int_number,
- *    - float_number,
- *    - boolean,
- *    - reference,
- *    - character
- *
- *   In case of references the module accepts an entity to represent the
- *   value.
- *   Furthermore, computations and conversions of these values can
- *   be performed.
- *
- * HISTORY
- *    The original tv module originated in the fiasco compiler written ...
- *    This is the new version, described in the tech report 1999-14 by ...
- *
- * @sa
- *    Techreport 1999-14
- *    irmode.h for the modes definitions
+ * @brief    target machine values.
  */
 #ifndef FIRM_TV_TV_H
 #define FIRM_TV_TV_H
@@ -52,6 +32,26 @@
 #include "firm_types.h"
 
 #include "begin.h"
+
+/** @defgroup ir_tarval  Target Machine Values
+ *
+ * Tarvals only represent values of mode_sort:
+ *    - int_number,
+ *    - float_number,
+ *    - boolean,
+ *    - reference,
+ *    - character
+ *
+ *   In case of references the module accepts an entity to represent the
+ *   value. Furthermore, computations and conversions of these values can
+ *   be performed.
+ *
+ * @sa
+ *    Techreport 1999-14
+ *    irmode.h for the modes definitions
+ *
+ * @{
+ */
 
 /**
  * Constructor function for new tarvals.
@@ -116,7 +116,7 @@ FIRM_API ir_tarval *new_tarval_from_str(const char *str, size_t len,
  *   A tarval with the given mode. If overflow settings are set to
  *   TV_OVERFLOW_BAD then a tarval_bad is returned if the number can't be
  *   represented in the given mode.
- *   Return bad if the number couldn't successfully be parsed.
+ *   Returns bad if the number couldn't successfully be parsed.
  */
 FIRM_API ir_tarval *new_integer_tarval_from_str(const char *str, size_t len,
                                                 char sign, unsigned char base,
@@ -151,7 +151,7 @@ FIRM_API ir_tarval *new_integer_tarval_from_str(const char *str, size_t len,
  */
 FIRM_API ir_tarval *new_tarval_from_long(long l, ir_mode *mode);
 
-/** Return value as long if possible.
+/** Returns value as long if possible.
  *
  * This returns a long int with the value represented value, or
  * gibberish, depending on the size of long int and the size of the
@@ -272,7 +272,7 @@ FIRM_API int tarval_is_minus_one(ir_tarval *tv);
 FIRM_API int tarval_is_all_one(ir_tarval *tv);
 
 /**
- * Return non-zero if the tarval is a constant (ie. NOT
+ * Returns non-zero if the tarval is a constant (ie. NOT
  * a reserved tarval like bad, undef, reachable etc.)
  */
 FIRM_API int tarval_is_constant(ir_tarval *tv);
@@ -338,15 +338,16 @@ FIRM_API ir_tarval *get_tarval_minus_one(ir_mode *mode);
  * returns tarval_bad for float modes */
 FIRM_API ir_tarval *get_tarval_all_one(ir_mode *mode);
 
-/** Return quite nan for float_number modes. */
+/** Returns quite nan for float_number modes. */
 FIRM_API ir_tarval *get_tarval_nan(ir_mode *mode);
 
-/** Return +inf for float_number modes. */
+/** Returns +inf for float_number modes. */
 FIRM_API ir_tarval *get_tarval_plus_inf(ir_mode *mode);
 
-/** Return -inf for float_number modes. */
+/** Returns -inf for float_number modes. */
 FIRM_API ir_tarval *get_tarval_minus_inf(ir_mode *mode);
 
+/** Modes for handling integer overflows. */
 typedef enum tarval_int_overflow_mode_t {
 	TV_OVERFLOW_BAD,      /**< tarval module will return tarval_bad if a overflow occurs */
 	TV_OVERFLOW_WRAP,     /**< tarval module will overflow will be ignored, wrap around occurs */
@@ -361,7 +362,7 @@ typedef enum tarval_int_overflow_mode_t {
 FIRM_API void tarval_set_integer_overflow_mode(tarval_int_overflow_mode_t ov_mode);
 
 /**
- * Get the overflow mode for integer operations.
+ * Returns the overflow mode for integer operations.
  */
 FIRM_API tarval_int_overflow_mode_t tarval_get_integer_overflow_mode(void);
 
@@ -718,7 +719,7 @@ FIRM_API unsigned char get_tarval_sub_bits(ir_tarval *tv, unsigned byte_ofs);
 FIRM_API int tarval_is_single_bit(ir_tarval *tv);
 
 /**
- * Return the number of set bits in a given (integer) tarval.
+ * Returns the number of set bits in a given (integer) tarval.
  *
  * @param tv    the tarval
  *
@@ -727,7 +728,7 @@ FIRM_API int tarval_is_single_bit(ir_tarval *tv);
 FIRM_API int get_tarval_popcount(ir_tarval *tv);
 
 /**
- * Return the number of the lowest set bit in a given (integer) tarval.
+ * Returns the number of the lowest set bit in a given (integer) tarval.
  *
  * @param tv    the tarval
  *
@@ -826,6 +827,8 @@ FIRM_API int tarval_is_finite(ir_tarval *tv);
  *       true if the thing is a tarval, else false
  */
 FIRM_API int is_tarval(const void *thing);
+
+/** @} */
 
 #include "end.h"
 

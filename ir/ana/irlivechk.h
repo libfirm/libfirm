@@ -33,7 +33,6 @@
 
 #include "irgraph.h"
 #include "irnode.h"
-#include "dfs.h"
 
 typedef enum {
 	lv_chk_state_in  = 1,
@@ -47,10 +46,9 @@ typedef struct lv_chk_t lv_chk_t;
 /**
  * Make a new liveness check environment.
  * @param irg The graph.
- * @param dfs A forward DFS on CFG of the given irg.
  * @return    The environment.
  */
-extern lv_chk_t *lv_chk_new(ir_graph *irg, const dfs_t *dfs);
+extern lv_chk_t *lv_chk_new(ir_graph *irg);
 
 /**
  * Free liveness check information.

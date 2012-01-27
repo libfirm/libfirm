@@ -63,6 +63,8 @@ int is_be_node(const ir_node *irn);
  */
 void be_init_op(void);
 
+void be_finish_op(void);
+
 /**
  * Position numbers for the be_Spill inputs.
  */
@@ -356,9 +358,6 @@ int be_Return_get_emit_pop(const ir_node *ret);
  * @param ret  the be_Return node
  */
 void be_Return_set_emit_pop(ir_node *ret, int emit_pop);
-
-/** appends a node to the return node, returns the position of the node */
-int be_Return_append_node(ir_node *ret, ir_node *node);
 
 ir_node *be_new_Start(dbg_info *dbgi, ir_node *block, int n_out);
 

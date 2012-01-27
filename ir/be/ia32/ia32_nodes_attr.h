@@ -143,7 +143,7 @@ ENUM_BITSET(match_flags_t)
 
 typedef struct ia32_op_attr_t ia32_op_attr_t;
 struct ia32_op_attr_t {
-	match_flags_t  flags;
+	//match_flags_t  flags;
 	unsigned       latency;
 };
 

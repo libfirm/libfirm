@@ -139,7 +139,7 @@ static LFTR_edge *LFTR_find(ir_node *src, iv_env *env)
 
 	key.src  = src;
 
-	return (LFTR_edge*)set_find(env->lftr_edges, &key, sizeof(key), HASH_PTR(src));
+	return (LFTR_edge*)set_find(env->lftr_edges, &key, sizeof(key), hash_ptr(src));
 }  /* LFTR_find */
 
 /**
@@ -164,7 +164,7 @@ static void LFTR_add(ir_node *src, ir_node *dst, unsigned code, ir_node *rc, iv_
 	 * There might be more than one edge here. This is rather bad
 	 * because we currently store only one.
 	 */
-	set_insert(env->lftr_edges, &key, sizeof(key), HASH_PTR(src));
+	set_insert(env->lftr_edges, &key, sizeof(key), hash_ptr(src));
 }  /* LFTR_add */
 
 /**
@@ -254,7 +254,7 @@ static ir_node *search(unsigned code, ir_node *op1, ir_node *op2, iv_env *env)
 	key.op2 = op2;
 
 	entry = (quadruple_t*)set_find(env->quad_map, &key, sizeof(key),
-	                               (code * 9) ^ HASH_PTR(op1) ^HASH_PTR(op2));
+	                               (code * 9) ^ hash_ptr(op1) ^hash_ptr(op2));
 	if (entry)
 		return entry->res;
 	return NULL;
@@ -279,7 +279,7 @@ static void add(unsigned code, ir_node *op1, ir_node *op2, ir_node *result, iv_e
 	key.res  = result;
 
 	set_insert(env->quad_map, &key, sizeof(key),
-	           (code * 9) ^ HASH_PTR(op1) ^HASH_PTR(op2));
+	           (code * 9) ^ hash_ptr(op1) ^hash_ptr(op2));
 }  /* add */
 
 /**
