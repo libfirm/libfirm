@@ -1207,6 +1207,23 @@ static void lower_Not(ir_node *node, ir_mode *mode)
 	ir_set_dw_lowered(node, res_low, res_high);
 }
 
+static void lower_Proj(ir_node *node, ir_mode *op_mode)
+{
+	ir_mode *mode = get_irn_mode(node);
+	ir_node *pred;
+	(void)op_mode;
+	if (mode != env->high_signed && mode != env->high_unsigned)
+		return;
+	/* skip tuples */
+	pred = get_Proj_pred(node);
+	if (is_Tuple(pred)) {
+		long                   pn    = get_Proj_proj(node);
+		ir_node               *op    = get_irn_n(pred, pn);
+		const lower64_entry_t *entry = get_node_entry(op);
+		ir_set_dw_lowered(node, entry->low_word, entry->high_word);
+	}
+}
+
 static bool is_equality_cmp(const ir_node *node)
 {
 	ir_relation relation = get_Cmp_relation(node);
@@ -3064,6 +3081,7 @@ void ir_prepare_dw_lowering(const lwrdw_param_t *new_param)
 	ir_register_dw_lower_function(op_Mux,     lower_Mux);
 	ir_register_dw_lower_function(op_Not,     lower_Not);
 	ir_register_dw_lower_function(op_Or,      lower_Or);
+	ir_register_dw_lower_function(op_Proj,    lower_Proj);
 	ir_register_dw_lower_function(op_Return,  lower_Return);
 	ir_register_dw_lower_function(op_Shl,     lower_Shl);
 	ir_register_dw_lower_function(op_Shr,     lower_Shr);
