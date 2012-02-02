@@ -14,7 +14,7 @@ variant      ?= debug
 
 srcdir       ?= $(top_srcdir)
 builddir     ?= $(top_builddir)/$(variant)
-docdir       ?= $(top_builddir)/firm-doc
+docdir       ?= $(top_builddir)/doc
 
 # This hides the noisy commandline outputs. You can see them with "make Q="
 Q ?= @
@@ -179,17 +179,17 @@ $(builddir)/%.o: %.c $(IR_SPEC_GENERATED_FILES) config.h
 	$(Q)$(CC) $(CFLAGS) $(CPPFLAGS) $(libfirm_CPPFLAGS) -MMD -c -o $@ $<
 
 $(docdir)/libfirm.tag: $(IR_SPEC_GENERATED_FILES) Doxyfile $(wildcard include/libfirm/*.h) $(wildcard include/libfirm/adt/*.h)
-	@echo Doxygen
+	@echo Doxygen $@
 	$(Q)$(DOXYGEN)
 
 DOCU_GENERATOR := scripts/gen_docu.py
 $(docdir)/html/nodes.html: $(docdir)/libfirm.tag $(DOCU_GENERATOR) $(IR_SPEC) scripts/spec_util.py scripts/style.css
-	@echo gen_docu.py
+	@echo gen_docu.py $@
 	$(Q)$(DOCU_GENERATOR) $(docdir)/libfirm.tag "" $@
 	$(Q)cp scripts/style.css $(docdir)/html
 
-.PHONY: documentation
-documentation: $(docdir)/libfirm.tag $(docdir)/html/nodes.html
+.PHONY: doc
+doc: $(docdir)/libfirm.tag $(docdir)/html/nodes.html
 
 .PHONY: clean
 clean:
