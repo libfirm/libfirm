@@ -753,8 +753,8 @@ FIRM_API ir_graph_pass_t *inline_small_irgs_pass(const char *name, int size);
 /**
  * Inlineing with a different heuristic than inline_small_irgs().
  *
- * Inlines leave functions.  If inlining creates new leave
- * function inlines these, too. (If g calls f, and f calls leave h,
+ * Inlines leaf functions.  If inlining creates new leafs
+ * function inlines these, too. (If g calls f, and f calls leaf h,
  * h is first inlined in f and then f in g.)
  *
  * Then inlines all small functions (this is not recursive).
@@ -767,32 +767,32 @@ FIRM_API ir_graph_pass_t *inline_small_irgs_pass(const char *name, int size);
  * @param maxsize         Do not inline any calls if a method has more than
  *                        maxsize firm nodes.  It may reach this limit by
  *                        inlining.
- * @param leavesize       Inline leave functions if they have less than leavesize
+ * @param leafsize        Inline leaf functions if they have less than leafsize
  *                        nodes.
  * @param size            Inline all function smaller than size.
  * @param ignore_runtime  count a function only calling runtime functions as
- *                        leave
+ *                        leaf
  */
-FIRM_API void inline_leave_functions(unsigned maxsize, unsigned leavesize,
+FIRM_API void inline_leaf_functions(unsigned maxsize, unsigned leafsize,
                                      unsigned size, int ignore_runtime);
 
 /**
- * Creates an ir_prog pass for inline_leave_functions().
+ * Creates an ir_prog pass for inline_leaf_functions().
  *
  * @param name            the name of this pass or NULL
  * @param maxsize         Do not inline any calls if a method has more than
  *                        maxsize firm nodes.  It may reach this limit by
  *                        inlining.
- * @param leavesize       Inline leave functions if they have less than leavesize
+ * @param leafsize        Inline leaf functions if they have less than leafsize
  *                        nodes.
  * @param size            Inline all function smaller than size.
  * @param ignore_runtime  count a function only calling runtime functions as
- *                        leave
+ *                        leaf
  *
  * @return  the newly created ir_prog pass
  */
-FIRM_API ir_prog_pass_t *inline_leave_functions_pass(const char *name,
-		unsigned maxsize, unsigned leavesize, unsigned size,
+FIRM_API ir_prog_pass_t *inline_leaf_functions_pass(const char *name,
+		unsigned maxsize, unsigned leafsize, unsigned size,
 		int ignore_runtime);
 
 /** pointer to an optimization function */
