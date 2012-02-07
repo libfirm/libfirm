@@ -428,19 +428,19 @@ Restore => {
 		imm => {
 			attr       => "ir_entity *immediate_entity, int32_t immediate_value",
 			custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
-			reg_req    => { in => [ "frame_pointer", "gp" ], out => [ "sp:I|S", "gp" ] },
-			ins        => [ "frame_pointer", "left" ],
+			reg_req    => { in => [ "sp", "frame_pointer", "gp" ], out => [ "sp:I|S", "gp" ] },
+			ins        => [ "stack", "frame_pointer", "left" ],
 		},
 		reg => {
-			reg_req    => { in => [ "frame_pointer", "gp", "gp" ], out => [ "sp:I|S", "gp" ] },
-			ins        => [ "frame_pointer", "left", "right" ],
+			reg_req    => { in => [ "sp", "frame_pointer", "gp", "gp" ], out => [ "sp:I|S", "gp" ] },
+			ins        => [ "stack", "frame_pointer", "left", "right" ],
 		}
 	},
 },
 
 RestoreZero => {
-	reg_req => { in => [ "frame_pointer" ], out => [ "sp:I|S" ] },
-	ins     => [ "frame_pointer" ],
+	reg_req => { in => [ "sp", "frame_pointer" ], out => [ "sp:I|S" ] },
+	ins     => [ "stack", "frame_pointer" ],
 	outs    => [ "stack" ],
 	emit    => '. restore',
 	mode    => $mode_gp,
