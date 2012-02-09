@@ -6516,11 +6516,11 @@ static int node_cmp_attr_Sel(const ir_node *a, const ir_node *b)
 /** Compares the attributes of two Phi nodes. */
 static int node_cmp_attr_Phi(const ir_node *a, const ir_node *b)
 {
-	/* we can only enter this function if both nodes have the same number of inputs,
-	   hence it is enough to check if one of them is a Phi0 */
-	if (is_Phi0(a)) {
-		/* check the Phi0 pos attribute */
-		return a->attr.phi.u.pos != b->attr.phi.u.pos;
+	(void) b;
+	/* do not CSE Phi-nodes without any inputs when building new graphs */
+	if (get_irn_arity(a) == 0 &&
+	    get_irg_phase_state(get_irn_irg(a)) == phase_building) {
+	    return 1;
 	}
 	return 0;
 }

@@ -603,11 +603,6 @@ FIRM_API int is_Cast_downcast(ir_node *node);
  */
 
 /**
- * Returns 1 if irg in phase phase_building and the Phi has zero
- * predecessors. It's a "Phi0" then.
- */
-FIRM_API int is_Phi0(const ir_node *n);
-/**
  * Returns all phi predecessors as array
  */
 FIRM_API ir_node **get_Phi_preds_arr(ir_node *node);
