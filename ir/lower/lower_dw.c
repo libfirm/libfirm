@@ -2414,7 +2414,23 @@ static ir_type *lower_Builtin_type_high(ir_type *mtp)
 	for (i = n_results = 0; i < n_results; ++i) {
 		ir_type *tp = get_method_res_type(mtp, i);
 
-		set_method_res_type(res, i, tp);
+		if (is_Primitive_type(tp)) {
+			ir_mode *mode = get_type_mode(tp);
+
+			if (mode == env->high_signed) {
+				if (env->params->little_endian) {
+					set_method_res_type(res, i, tp_u);
+				} else {
+					set_method_res_type(res, i, tp_s);
+				}
+			} else if (mode == env->high_unsigned) {
+				set_method_res_type(res, i, tp_u);
+			} else {
+				set_method_res_type(res, i, tp);
+			}
+		} else {
+			set_method_res_type(res, i, tp);
+		}
 	}
 
 	set_method_variadicity(res, get_method_variadicity(mtp));
@@ -2494,7 +2510,23 @@ static ir_type *lower_Builtin_type_low(ir_type *mtp)
 	for (i = 0; i < n_results; ++i) {
 		ir_type *tp = get_method_res_type(mtp, i);
 
-		set_method_res_type(res, i, tp);
+		if (is_Primitive_type(tp)) {
+			ir_mode *mode = get_type_mode(tp);
+
+			if (mode == env->high_signed) {
+				if (env->params->little_endian) {
+					set_method_res_type(res, i, tp_s);
+				} else {
+					set_method_res_type(res, i, tp_u);
+				}
+			} else if (mode == env->high_unsigned) {
+				set_method_res_type(res, i, tp_u);
+			} else {
+				set_method_res_type(res, i, tp);
+			}
+		} else {
+			set_method_res_type(res, i, tp);
+		}
 	}
 
 	set_method_variadicity(res, get_method_variadicity(mtp));
@@ -2506,42 +2538,18 @@ static ir_type *lower_Builtin_type_low(ir_type *mtp)
 }
 
 /**
- * Lower double word builtins.
+ * lowers a builtin which reduces a 64bit value to a simple summary value
+ * (popcount, ffs, ...)
  */
-static void lower_Builtin(ir_node *builtin, ir_mode *mode)
+static void lower_reduce_builtin(ir_node *builtin, ir_mode *mode)
 {
 	ir_builtin_kind  kind         = get_Builtin_kind(builtin);
-	ir_node         *operand;
-	ir_mode         *operand_mode;
-
-	switch (kind) {
-	case ir_bk_trap:
-	case ir_bk_debugbreak:
-	case ir_bk_return_address:
-	case ir_bk_frame_address:
-	case ir_bk_prefetch:
-	case ir_bk_bswap:
-	case ir_bk_inport:
-	case ir_bk_outport:
-	case ir_bk_inner_trampoline:
-		/* Nothing to do. */
-		return;
-	case ir_bk_ffs:
-	case ir_bk_clz:
-	case ir_bk_ctz:
-	case ir_bk_popcount:
-	case ir_bk_parity:
-		break;
-	default:
-		panic("unknown builtin");
-	}
-
-	operand      = get_Builtin_param(builtin, 0);
-	operand_mode = get_irn_mode(operand);
-
+	ir_node         *operand      = get_Builtin_param(builtin, 0);
+	ir_mode         *operand_mode = get_irn_mode(operand);
 	if (operand_mode != env->high_signed && operand_mode != env->high_unsigned)
 		return;
 
+	{
 	arch_allow_ifconv_func  allow_ifconv      = be_get_backend_param()->allow_ifconv;
 	int                     arity             = get_irn_arity(builtin);
 	dbg_info               *dbgi              = get_irn_dbg_info(builtin);
@@ -2549,8 +2557,14 @@ static void lower_Builtin(ir_node *builtin, ir_mode *mode)
 	ir_type                *type              = get_Builtin_type(builtin);
 	ir_type                *lowered_type_high = lower_Builtin_type_high(type);
 	ir_type                *lowered_type_low  = lower_Builtin_type_low(type);
+	ir_type                *result_type       = get_method_res_type(lowered_type_low, 0);
+	ir_mode                *result_mode       = get_type_mode(result_type);
 	ir_node                *block             = get_nodes_block(builtin);
 	ir_node                *mem               = get_Builtin_mem(builtin);
+	const lower64_entry_t  *entry             = get_node_entry(operand);
+	ir_mode                *high_mode         = get_irn_mode(entry->high_word);
+	ir_node                *in_high[1]        = {entry->high_word};
+	ir_node                *in_low[1]         = {entry->low_word};
 	ir_node                *res;
 
 	assert(is_NoMem(mem));
@@ -2558,84 +2572,70 @@ static void lower_Builtin(ir_node *builtin, ir_mode *mode)
 
 	switch (kind) {
 	case ir_bk_ffs: {
-		const lower64_entry_t *entry          = get_node_entry(operand);
-		ir_node               *in_high[1]     = {entry->high_word};
-		ir_node               *in_low[1]      = {entry->low_word};
-		ir_node               *number_of_bits = new_r_Const_long(irg, mode_Is, get_mode_size_bits(env->low_unsigned));
-		ir_node               *zero_signed    = new_rd_Const(dbgi, irg, get_mode_null(mode_Is));
-		ir_node               *zero_unsigned  = new_rd_Const(dbgi, irg, get_mode_null(mode_Iu));
+		ir_node               *number_of_bits = new_r_Const_long(irg, result_mode, get_mode_size_bits(env->low_unsigned));
+		ir_node               *zero_high      = new_rd_Const(dbgi, irg, get_mode_null(high_mode));
+		ir_node               *zero_unsigned  = new_rd_Const(dbgi, irg, get_mode_null(env->low_unsigned));
+		ir_node               *zero_result    = new_rd_Const(dbgi, irg, get_mode_null(result_mode));
 		ir_node               *cmp_low        = new_rd_Cmp(dbgi, block, entry->low_word, zero_unsigned, ir_relation_equal);
-		ir_node               *cmp_high       = new_rd_Cmp(dbgi, block, entry->high_word, zero_unsigned, ir_relation_equal);
+		ir_node               *cmp_high       = new_rd_Cmp(dbgi, block, entry->high_word, zero_high, ir_relation_equal);
 		ir_node               *ffs_high       = new_rd_Builtin(dbgi, block, mem, 1, in_high, kind, lowered_type_high);
-		ir_node               *high_proj      = new_r_Proj(ffs_high, mode_Is, pn_Builtin_max+1);
-		ir_node               *high           = new_rd_Add(dbgi, block, high_proj, number_of_bits, mode_Is);
+		ir_node               *high_proj      = new_r_Proj(ffs_high, result_mode, pn_Builtin_max+1);
+		ir_node               *high           = new_rd_Add(dbgi, block, high_proj, number_of_bits, result_mode);
 		ir_node               *ffs_low        = new_rd_Builtin(dbgi, block, mem, 1, in_low, kind, lowered_type_low);
-		ir_node               *low            = new_r_Proj(ffs_low, mode_Is, pn_Builtin_max+1);
-		ir_node               *mux_high       = new_rd_Mux(dbgi, block, cmp_high, high, zero_signed, mode_Is);
+		ir_node               *low            = new_r_Proj(ffs_low, result_mode, pn_Builtin_max+1);
+		ir_node               *mux_high       = new_rd_Mux(dbgi, block, cmp_high, high, zero_result, result_mode);
 
-		if (! allow_ifconv(cmp_high, high, zero_signed))
+		if (! allow_ifconv(cmp_high, high, zero_result))
 			ir_nodeset_insert(&created_mux_nodes, mux_high);
 
-		res = new_rd_Mux(dbgi, block, cmp_low, low, mux_high, mode_Is);
+		res = new_rd_Mux(dbgi, block, cmp_low, low, mux_high, result_mode);
 
 		if (! allow_ifconv(cmp_low, low, mux_high))
 			ir_nodeset_insert(&created_mux_nodes, res);
 		break;
 	}
 	case ir_bk_clz: {
-		const lower64_entry_t *entry          = get_node_entry(operand);
-		ir_node               *in_high[1]     = {entry->high_word};
-		ir_node               *in_low[1]      = {entry->low_word};
-		ir_node               *number_of_bits = new_r_Const_long(irg, mode_Is, get_mode_size_bits(mode));
-		ir_node               *zero_unsigned  = new_rd_Const(dbgi, irg, get_mode_null(mode_Iu));
-		ir_node               *cmp_high       = new_rd_Cmp(dbgi, block, entry->high_word, zero_unsigned, ir_relation_equal);
+		ir_node               *zero           = new_rd_Const(dbgi, irg, get_mode_null(high_mode));
+		ir_node               *cmp_high       = new_rd_Cmp(dbgi, block, entry->high_word, zero, ir_relation_equal);
 		ir_node               *clz_high       = new_rd_Builtin(dbgi, block, mem, 1, in_high, kind, lowered_type_high);
-		ir_node               *high           = new_r_Proj(clz_high, mode_Is, pn_Builtin_max+1);
+		ir_node               *high           = new_r_Proj(clz_high, result_mode, pn_Builtin_max+1);
 		ir_node               *clz_low        = new_rd_Builtin(dbgi, block, mem, 1, in_low, kind, lowered_type_low);
-		ir_node               *low_proj       = new_r_Proj(clz_low, mode_Is, pn_Builtin_max+1);
-		ir_node               *low            = new_rd_Add(dbgi, block, low_proj, number_of_bits, mode_Is);
+		ir_node               *low_proj       = new_r_Proj(clz_low, result_mode, pn_Builtin_max+1);
+		ir_node               *number_of_bits = new_r_Const_long(irg, result_mode, get_mode_size_bits(mode));
+		ir_node               *low            = new_rd_Add(dbgi, block, low_proj, number_of_bits, result_mode);
 
-		res = new_rd_Mux(dbgi, block, cmp_high, high, low, mode_Is);
+		res = new_rd_Mux(dbgi, block, cmp_high, high, low, result_mode);
 
 		if (! allow_ifconv(cmp_high, high, low))
 			ir_nodeset_insert(&created_mux_nodes, res);
 		break;
 	}
 	case ir_bk_ctz: {
-		const lower64_entry_t *entry          = get_node_entry(operand);
-		ir_node               *in_high[1]     = {entry->high_word};
-		ir_node               *in_low[1]      = {entry->low_word};
-		ir_node               *number_of_bits = new_r_Const_long(irg, mode_Is, get_mode_size_bits(env->low_unsigned));
-		ir_node               *zero_unsigned  = new_rd_Const(dbgi, irg, get_mode_null(mode_Iu));
+		ir_node               *zero_unsigned  = new_rd_Const(dbgi, irg, get_mode_null(env->low_unsigned));
 		ir_node               *cmp_low        = new_rd_Cmp(dbgi, block, entry->low_word, zero_unsigned, ir_relation_equal);
 		ir_node               *ffs_high       = new_rd_Builtin(dbgi, block, mem, 1, in_high, kind, lowered_type_high);
-		ir_node               *high_proj      = new_r_Proj(ffs_high, mode_Is, pn_Builtin_max+1);
-		ir_node               *high           = new_rd_Add(dbgi, block, high_proj, number_of_bits, mode_Is);
+		ir_node               *high_proj      = new_r_Proj(ffs_high, result_mode, pn_Builtin_max+1);
+		ir_node               *number_of_bits = new_r_Const_long(irg, result_mode, get_mode_size_bits(env->low_unsigned));
+		ir_node               *high           = new_rd_Add(dbgi, block, high_proj, number_of_bits, result_mode);
 		ir_node               *ffs_low        = new_rd_Builtin(dbgi, block, mem, 1, in_low, kind, lowered_type_low);
-		ir_node               *low            = new_r_Proj(ffs_low, mode_Is, pn_Builtin_max+1);
+		ir_node               *low            = new_r_Proj(ffs_low, result_mode, pn_Builtin_max+1);
 
-		res = new_rd_Mux(dbgi, block, cmp_low, low, high, mode_Is);
+		res = new_rd_Mux(dbgi, block, cmp_low, low, high, result_mode);
 
 		if (! allow_ifconv(cmp_low, low, high))
 			ir_nodeset_insert(&created_mux_nodes, res);
 		break;
 	}
 	case ir_bk_popcount: {
-		const lower64_entry_t *entry         = get_node_entry(operand);
-		ir_node               *in_high[1]    = {entry->high_word};
-		ir_node               *in_low[1]     = {entry->low_word};
 		ir_node               *popcount_high = new_rd_Builtin(dbgi, block, mem, 1, in_high, kind, lowered_type_high);
 		ir_node               *popcount_low  = new_rd_Builtin(dbgi, block, mem, 1, in_low, kind, lowered_type_low);
-		ir_node               *high          = new_r_Proj(popcount_high, mode_Is, pn_Builtin_max+1);
-		ir_node               *low           = new_r_Proj(popcount_low, mode_Is, pn_Builtin_max+1);
+		ir_node               *high          = new_r_Proj(popcount_high, result_mode, pn_Builtin_max+1);
+		ir_node               *low           = new_r_Proj(popcount_low, result_mode, pn_Builtin_max+1);
 
-		res = new_rd_Add(dbgi, block, high, low, mode_Is);
+		res = new_rd_Add(dbgi, block, high, low, result_mode);
 		break;
 	}
 	case ir_bk_parity: {
-		const lower64_entry_t *entry = get_node_entry(operand);
-		ir_node *in_high[1] = {entry->high_word};
-		ir_node *in_low[1] = {entry->low_word};
 		ir_node  *parity_high;
 		ir_node  *parity_low;
 		ir_node  *high;
@@ -2644,10 +2644,10 @@ static void lower_Builtin(ir_node *builtin, ir_mode *mode)
 		assert(arity == 2);
 
 		parity_high = new_rd_Builtin(dbgi, block, mem, 1, in_high, kind, lowered_type_high);
-		high        = new_r_Proj(parity_high, mode_Is, pn_Builtin_max+1);
+		high        = new_r_Proj(parity_high, result_mode, pn_Builtin_max+1);
 		parity_low  = new_rd_Builtin(dbgi, block, mem, 1, in_low, kind, lowered_type_low);
-		low         = new_r_Proj(parity_low, mode_Is, pn_Builtin_max+1);
-		res         = new_rd_Eor(dbgi, block, high, low, mode_Is);
+		low         = new_r_Proj(parity_low, result_mode, pn_Builtin_max+1);
+		res         = new_rd_Eor(dbgi, block, high, low, result_mode);
 		break;
 	}
 	default:
@@ -2657,6 +2657,99 @@ static void lower_Builtin(ir_node *builtin, ir_mode *mode)
 	turn_into_tuple(builtin, 2);
 	set_irn_n(builtin, pn_Builtin_M, mem);
 	set_irn_n(builtin, pn_Builtin_max+1, res);
+	}
+}
+
+/**
+ * lowers builtins performing arithmetic (bswap)
+ */
+static void lower_arithmetic_builtin(ir_node *builtin, ir_mode *mode)
+{
+	ir_builtin_kind  kind         = get_Builtin_kind(builtin);
+	ir_node         *operand      = get_Builtin_param(builtin, 0);
+	ir_mode         *operand_mode = get_irn_mode(operand);
+	(void) mode;
+	if (operand_mode != env->high_signed && operand_mode != env->high_unsigned)
+		return;
+
+	{
+	dbg_info              *dbgi              = get_irn_dbg_info(builtin);
+	ir_type               *type              = get_Builtin_type(builtin);
+	ir_type               *lowered_type_high = lower_Builtin_type_high(type);
+	ir_type               *lowered_type_low  = lower_Builtin_type_low(type);
+	ir_node               *block             = get_nodes_block(builtin);
+	ir_node               *mem               = get_Builtin_mem(builtin);
+	const lower64_entry_t *entry             = get_node_entry(operand);
+	ir_mode               *mode_high         = get_irn_mode(entry->high_word);
+	const ir_edge_t       *edge;
+	const ir_edge_t       *next;
+	ir_node               *res_high;
+	ir_node               *res_low;
+
+	switch (kind) {
+	case ir_bk_bswap: {
+		ir_node               *in_high[1] = { entry->high_word };
+		ir_node               *in_low[1]  = { entry->low_word };
+		ir_node               *swap_high  = new_rd_Builtin(dbgi, block, mem, 1, in_high, kind, lowered_type_high);
+		ir_node               *swap_low   = new_rd_Builtin(dbgi, block, mem, 1, in_low, kind, lowered_type_low);
+		ir_node               *high       = new_r_Proj(swap_high, mode_high, pn_Builtin_max+1);
+		ir_node               *low        = new_r_Proj(swap_low, env->low_unsigned, pn_Builtin_max+1);
+		if (mode_high == env->low_signed) {
+			res_high = new_rd_Conv(dbgi, block, low, env->low_signed);
+			res_low  = new_rd_Conv(dbgi, block, high, env->low_unsigned);
+		} else {
+			res_high = low;
+			res_low  = high;
+		}
+		break;
+	}
+	default:
+		panic("unexpected builtin");
+	}
+
+	/* search result Proj */
+	foreach_out_edge_safe(builtin, edge, next) {
+		ir_node *proj = get_edge_src_irn(edge);
+		if (!is_Proj(proj))
+			continue;
+
+		if (get_Proj_proj(proj) == pn_Builtin_max+1) {
+			ir_set_dw_lowered(proj, res_low, res_high);
+		}
+	}
+	}
+}
+
+/**
+ * Lower double word builtins.
+ */
+static void lower_Builtin(ir_node *builtin, ir_mode *mode)
+{
+	ir_builtin_kind kind = get_Builtin_kind(builtin);
+
+	switch (kind) {
+	case ir_bk_trap:
+	case ir_bk_debugbreak:
+	case ir_bk_return_address:
+	case ir_bk_frame_address:
+	case ir_bk_prefetch:
+	case ir_bk_inport:
+	case ir_bk_outport:
+	case ir_bk_inner_trampoline:
+		/* Nothing to do. */
+		return;
+	case ir_bk_bswap:
+		lower_arithmetic_builtin(builtin, mode);
+		return;
+	case ir_bk_ffs:
+	case ir_bk_clz:
+	case ir_bk_ctz:
+	case ir_bk_popcount:
+	case ir_bk_parity:
+		lower_reduce_builtin(builtin, mode);
+		return;
+	}
+	panic("unknown builtin");
 }
 
 /**
