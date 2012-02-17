@@ -5283,27 +5283,23 @@ static ir_node *gen_bswap(ir_node *node)
 	ir_node *new_block = be_transform_node(block);
 	ir_mode *mode      = get_irn_mode(param);
 	unsigned size      = get_mode_size_bits(mode);
-	ir_node  *m1, *m2, *m3, *m4, *s1, *s2, *s3, *s4;
 
 	switch (size) {
 	case 32:
-		if (ia32_cg_config.use_i486) {
+		if (ia32_cg_config.use_bswap) {
 			/* swap available */
 			return new_bd_ia32_Bswap(dbgi, new_block, param);
+		} else {
+			ir_node *i8 = ia32_create_Immediate(NULL, 0, 8);
+			ir_node *rol1 = new_bd_ia32_Rol(dbgi, new_block, param, i8);
+			ir_node *i16 = ia32_create_Immediate(NULL, 0, 16);
+			ir_node *rol2 = new_bd_ia32_Rol(dbgi, new_block, rol1, i16);
+			ir_node *rol3 = new_bd_ia32_Rol(dbgi, new_block, rol2, i8);
+			set_ia32_ls_mode(rol1, mode_Hu);
+			set_ia32_ls_mode(rol2, mode_Iu);
+			set_ia32_ls_mode(rol3, mode_Hu);
+			return rol3;
 		}
-		s1 = new_bd_ia32_Shl(dbgi, new_block, param, ia32_create_Immediate(NULL, 0, 24));
-		s2 = new_bd_ia32_Shl(dbgi, new_block, param, ia32_create_Immediate(NULL, 0, 8));
-
-		m1 = new_bd_ia32_And(dbgi, new_block, noreg_GP, noreg_GP, nomem, s2, ia32_create_Immediate(NULL, 0, 0xFF00));
-		m2 = new_bd_ia32_Lea(dbgi, new_block, s1, m1);
-
-		s3 = new_bd_ia32_Shr(dbgi, new_block, param, ia32_create_Immediate(NULL, 0, 8));
-
-		m3 = new_bd_ia32_And(dbgi, new_block, noreg_GP, noreg_GP, nomem, s3, ia32_create_Immediate(NULL, 0, 0xFF0000));
-		m4 = new_bd_ia32_Lea(dbgi, new_block, m2, m3);
-
-		s4 = new_bd_ia32_Shr(dbgi, new_block, param, ia32_create_Immediate(NULL, 0, 24));
-		return new_bd_ia32_Lea(dbgi, new_block, m4, s4);
 
 	case 16:
 		/* swap16 always available */

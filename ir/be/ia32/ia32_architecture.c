@@ -108,7 +108,7 @@ enum cpu_arch_features {
  * CPU's.
  */
 typedef enum cpu_support {
-	cpu_generic     = arch_generic32,
+	cpu_generic             = arch_generic32,
 
 	/* intel CPUs */
 	cpu_i386                = arch_i386,
@@ -916,7 +916,7 @@ void ia32_setup_cg_config(void)
 	c->use_sse_prefetch     = FLAGS(arch, (arch_feature_3DNowE | arch_feature_sse1));
 	c->use_3dnow_prefetch   = FLAGS(arch, arch_feature_3DNow);
 	c->use_popcnt           = FLAGS(arch, arch_feature_popcnt);
-	c->use_i486             = (arch & arch_mask) >= arch_i486;
+	c->use_bswap            = (arch & arch_mask) >= arch_i486;
 	c->optimize_cc          = opt_cc;
 	c->use_unsafe_floatconv = opt_unsafe_floatconv;
 	c->emit_machcode        = emit_machcode;
