@@ -102,8 +102,10 @@ static void emit_section_macho(be_gas_section_t section)
 		case GAS_SECTION_CSTRING:         name = "section __TEXT,__const_coal,coalesced"; break;
 		default: panic("unsupported scetion type 0x%X", section);
 		}
+	} else if (flags & GAS_SECTION_FLAG_TLS) {
+		panic("thread local storage not supported on macho (section 0x%X)", section);
 	} else {
-		panic("unsupported section type 0x%X\n", section);
+		panic("unsupported section type 0x%X", section);
 	}
 }
 
