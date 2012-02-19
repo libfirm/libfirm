@@ -37,6 +37,9 @@ const amd64_attr_t *get_amd64_attr_const(const ir_node *node);
 const amd64_SymConst_attr_t *get_amd64_SymConst_attr_const(const ir_node *node);
 amd64_SymConst_attr_t *get_amd64_SymConst_attr(ir_node *node);
 
+const amd64_switch_jmp_attr_t *get_amd64_switch_jmp_attr_const(const ir_node *node);
+amd64_switch_jmp_attr_t *get_amd64_switch_jmp_attr(ir_node *node);
+
 /* Include the generated headers */
 #include "gen_amd64_new_nodes.h"
 

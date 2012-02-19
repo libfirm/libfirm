@@ -99,6 +99,20 @@ amd64_SymConst_attr_t *get_amd64_SymConst_attr(ir_node *node)
 	return attr;
 }
 
+const amd64_switch_jmp_attr_t *get_amd64_switch_jmp_attr_const(const ir_node *node)
+{
+	const amd64_switch_jmp_attr_t *attr
+		= (const amd64_switch_jmp_attr_t*)get_irn_generic_attr_const(node);
+	return attr;
+}
+
+amd64_switch_jmp_attr_t *get_amd64_switch_jmp_attr(ir_node *node)
+{
+	amd64_switch_jmp_attr_t *attr
+		= (amd64_switch_jmp_attr_t*)get_irn_generic_attr(node);
+	return attr;
+}
+
 /**
  * Initializes the nodes attributes.
  */
@@ -132,6 +146,23 @@ static void init_amd64_SymConst_attributes(ir_node *node, ir_entity *entity)
 	amd64_SymConst_attr_t *attr = get_amd64_SymConst_attr(node);
 	attr->entity    = entity;
 	attr->fp_offset = 0;
+}
+
+/**
+ * Initialize SwitchJmp attributes.
+ */
+static void init_amd64_switch_attributes(ir_node *node, const ir_switch_table *table, ir_entity *table_entity)
+{
+	unsigned n_outs = arch_get_irn_n_outs(node);
+	unsigned o;
+
+	amd64_switch_jmp_attr_t *attr = get_amd64_switch_jmp_attr(node);
+	attr->table        = table;
+	attr->table_entity = table_entity;
+
+	for (o = 0; o < n_outs; o++) {
+		arch_set_irn_register_req_out(node, o, arch_no_register_req);
+	}
 }
 
 /** Compare node attributes for SymConst. */

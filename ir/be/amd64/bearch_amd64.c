@@ -358,12 +358,16 @@ static void amd64_get_call_abi(ir_type *method_type, be_abi_call_t *abi)
 
 static void amd64_lower_for_target(void)
 {
-	size_t i, n_irgs = get_irp_n_irgs();
-
 	/* lower compound param handling */
 	lower_calls_with_compounds(LF_RETURN_HIDDEN);
 
-	for (i = 0; i < n_irgs; ++i) {
+	size_t n_irgs = get_irp_n_irgs();
+	for (size_t i = 0; i < n_irgs; ++i) {
+		ir_graph *irg = get_irp_irg(i);
+		lower_switch(irg, 4, 256, mode_Iu);
+	}
+
+	for (size_t i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		/* Turn all small CopyBs into loads/stores, and turn all bigger
 		 * CopyBs into memcpy calls, because we cannot handle CopyB nodes

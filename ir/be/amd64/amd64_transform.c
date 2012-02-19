@@ -138,6 +138,28 @@ static ir_node *gen_Jmp(ir_node *node)
 	return new_bd_amd64_Jmp(dbgi, new_block);
 }
 
+static ir_node *gen_Switch(ir_node *node)
+{
+	ir_graph *irg       = get_irn_irg(node);
+	ir_node  *new_block = be_transform_node(get_nodes_block(node));
+	ir_node  *sel       = get_Switch_selector(node);
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *new_sel   = be_transform_node(sel);
+	const ir_switch_table *table  = get_Switch_table(node);
+	unsigned               n_outs = get_Switch_n_outs(node);
+
+	ir_entity *entity;
+
+	entity = new_entity(NULL, id_unique("TBL%u"), get_unknown_type());
+	set_entity_visibility(entity, ir_visibility_private);
+	add_entity_linkage(entity, IR_LINKAGE_CONSTANT);
+
+	table = ir_switch_table_duplicate(irg, table);
+
+	ir_node *out = new_bd_amd64_SwitchJmp(dbgi, new_block, new_sel, n_outs, table, entity);
+	return out;
+}
+
 static ir_node *gen_be_Call(ir_node *node)
 {
 	ir_node *res = be_duplicate_node(node);
@@ -387,6 +409,7 @@ static void amd64_register_transformers(void)
 	be_set_transform_function(op_be_FrameAddr, gen_be_FrameAddr);
 	be_set_transform_function(op_Conv,         gen_Conv);
 	be_set_transform_function(op_Jmp,          gen_Jmp);
+	be_set_transform_function(op_Switch,       gen_Switch);
 	be_set_transform_function(op_Cmp,          gen_Cmp);
 	be_set_transform_function(op_Cond,         gen_Cond);
 	be_set_transform_function(op_Phi,          gen_Phi);

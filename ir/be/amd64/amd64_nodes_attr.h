@@ -14,6 +14,7 @@
 
 typedef struct amd64_attr_t            amd64_attr_t;
 typedef struct amd64_SymConst_attr_t   amd64_SymConst_attr_t;
+typedef struct amd64_switch_jmp_attr_t amd64_switch_jmp_attr_t;
 
 struct amd64_attr_t
 {
@@ -35,6 +36,13 @@ struct amd64_SymConst_attr_t
 	amd64_attr_t  base;
 	ir_entity    *entity;
 	unsigned      fp_offset;
+};
+
+struct amd64_switch_jmp_attr_t
+{
+	amd64_attr_t           base;
+	const ir_switch_table *table;
+	ir_entity             *table_entity;
 };
 
 #define CAST_AMD64_ATTR(type,ptr)        ((type *)(ptr))

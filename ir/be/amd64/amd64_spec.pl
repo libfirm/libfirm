@@ -73,12 +73,16 @@ $default_copy_attr = "amd64_copy_attr";
 	amd64_condcode_attr_t =>
 		"\tinit_amd64_attributes(res, irn_flags_, in_reqs, n_res);"
 		. "\tinit_amd64_condcode_attributes(res, pnc);",
+	amd64_switch_jmp_attr_t =>
+		"\tinit_amd64_attributes(res, irn_flags_, in_reqs, n_res);"
+		. "\tinit_amd64_switch_attributes(res, table, table_entity);"
 );
 
 %compare_attr = (
-	amd64_attr_t           => "cmp_amd64_attr",
-	amd64_SymConst_attr_t  => "cmp_amd64_attr_SymConst",
-	amd64_condcode_attr_t  => "cmp_amd64_attr_condcode",
+	amd64_attr_t             => "cmp_amd64_attr",
+	amd64_SymConst_attr_t    => "cmp_amd64_attr_SymConst",
+	amd64_switch_jmp_attr_t  => "cmp_amd64_attr",
+	amd64_condcode_attr_t    => "cmp_amd64_attr_condcode",
 );
 
 %nodes = (
@@ -305,4 +309,15 @@ Store => {
 	mode      => "mode_M",
 	emit      => "mov %S1, %O(%S0)"
 },
+
+SwitchJmp => {
+	op_flags     => [ "cfopcode", "forking" ],
+	state        => "pinned",
+	mode         => "mode_T",
+	reg_req      => { in => [ "gp" ], out => [ "none" ] },
+	out_arity    => "variable",
+	attr_type    => "amd64_switch_jmp_attr_t",
+	attr         => "const ir_switch_table *table, ir_entity *table_entity",
+},
+
 );

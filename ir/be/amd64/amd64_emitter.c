@@ -220,6 +220,14 @@ static void emit_amd64_Jmp(const ir_node *node)
 	}
 }
 
+static void emit_amd64_SwitchJmp(const ir_node *node)
+{
+	const amd64_switch_jmp_attr_t *attr = get_amd64_switch_jmp_attr_const(node);
+
+	amd64_emitf(node, "jmp *%E(,%S0,8)", attr->table_entity);
+	be_emit_jump_table(node, attr->table, attr->table_entity, get_cfop_target_block);
+}
+
 /**
  * Emit a Compare with conditional branch.
  */
@@ -400,6 +408,7 @@ static void amd64_register_emitters(void)
 	be_set_emitter(op_amd64_FrameAddr,  emit_amd64_FrameAddr);
 	be_set_emitter(op_amd64_Jcc,        emit_amd64_Jcc);
 	be_set_emitter(op_amd64_Jmp,        emit_amd64_Jmp);
+	be_set_emitter(op_amd64_SwitchJmp,  emit_amd64_SwitchJmp);
 	be_set_emitter(op_amd64_SymConst,   emit_amd64_SymConst);
 	be_set_emitter(op_be_Call,          emit_be_Call);
 	be_set_emitter(op_be_Copy,          emit_be_Copy);
