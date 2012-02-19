@@ -110,11 +110,6 @@ FIRM_API int id_contains_char(ident *id, char c);
  */
 FIRM_API ident *id_unique(const char *tag);
 
-/** Computes a definite name for this entity by concatenating
-   the name of the owner type and the name of the entity with
-   a separating "_". */
-FIRM_API ident *id_mangle_entity(const ir_entity *ent);
-
 /** mangle underscore: Returns a new ident that represents first_scnd. */
 FIRM_API ident *id_mangle_u(ident *first, ident* scnd);
 

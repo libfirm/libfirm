@@ -45,25 +45,6 @@ static inline ident *mangle_type(const ir_type *tp)
 	return tp->name;
 }
 
-ident *id_mangle_entity(const ir_entity *ent)
-{
-	ident *type_id;
-	char *cp;
-	int len;
-	ident *res;
-
-	type_id = mangle_type(ent->owner);
-	obstack_grow(&mangle_obst, get_id_str(type_id), get_id_strlen(type_id));
-	obstack_1grow(&mangle_obst,'_');
-	obstack_grow(&mangle_obst, get_id_str(ent->name), get_id_strlen(ent->name));
-	len = obstack_object_size(&mangle_obst);
-	cp = (char*)obstack_finish(&mangle_obst);
-	res = new_id_from_chars(cp, len);
-	obstack_free(&mangle_obst, cp);
-	return res;
-}
-
-
 /* Returns a new ident that represents 'firstscnd'. */
 ident *id_mangle(ident *first, ident *scnd)
 {
