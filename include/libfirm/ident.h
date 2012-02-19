@@ -128,9 +128,6 @@ FIRM_API ident *id_mangle(ident *first, ident* scnd);
 FIRM_API ident *id_mangle3(const char *prefix, ident *middle,
                            const char *suffix);
 
-/** returns a mangled name for a Win32 function using its calling convention */
-FIRM_API ident *id_decorate_win32_c_fkt(const ir_entity *ent, ident *id);
-
 /** @} */
 
 #include "end.h"

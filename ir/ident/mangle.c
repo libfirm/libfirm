@@ -126,32 +126,6 @@ ident *id_mangle_dot(ident *first, ident *scnd)
 	return id_mangle_3(first, '.', scnd);
 }
 
-/* returns a mangled name for a Win32 function using its calling convention */
-ident *id_decorate_win32_c_fkt(const ir_entity *ent, ident *id)
-{
-	ir_type *tp      = get_entity_type(ent);
-	unsigned cc_mask = get_method_calling_convention(tp);
-	char buf[16];
-
-	if (IS_CDECL(cc_mask))
-		return id_mangle3("_", id, "");
-	else if (IS_STDCALL(cc_mask)) {
-		size_t i, size = 0;
-
-		for (i = get_method_n_params(tp); i > 0;) {
-			size += get_type_size_bytes(get_method_param_type(tp, --i));
-		}
-
-		ir_snprintf(buf, sizeof(buf), "@%zu", size);
-
-		if (cc_mask & cc_reg_param)
-			return id_mangle3("@", id, buf);
-		else
-			return id_mangle3("_", id, buf);
-	}
-	return id;
-}
-
 void firm_init_mangle(void)
 {
 	obstack_init(&mangle_obst);
