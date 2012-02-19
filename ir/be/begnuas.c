@@ -1584,9 +1584,10 @@ void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
 	}
 
 	/* emit table */
+	unsigned pointer_size = get_mode_size_bytes(mode_P);
 	if (entity != NULL) {
 		be_gas_emit_switch_section(GAS_SECTION_RODATA);
-		be_emit_cstring("\t.align 4\n");
+		be_emit_irprintf("\t.align %u\n", pointer_size);
 		be_gas_emit_entity(entity);
 		be_emit_cstring(":\n");
 	}
@@ -1595,7 +1596,7 @@ void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
 		const ir_node *block = labels[i];
 		if (block == NULL)
 			block = targets[0];
-		be_emit_cstring("\t.long ");
+		emit_size_type(pointer_size);
 		be_gas_emit_block_name(block);
 		be_emit_char('\n');
 		be_emit_write_line();
