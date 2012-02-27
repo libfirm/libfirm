@@ -891,7 +891,7 @@ FIRM_API ir_node *get_r_cur_block(ir_graph *irg);
 /** Returns the current value of a local variable.
  *
  * Use this function to obtain the last definition of the local variable
- * associated with pos.  Pos may not exceed the value passed as n_loc
+ * associated with pos.  pos must be less than the value passed as n_loc
  * to new_ir_graph.  This call automatically inserts Phi nodes.
  *
  * @param  pos   The position/id of the local variable.
@@ -919,7 +919,7 @@ FIRM_API ir_mode *ir_r_guess_mode(ir_graph *irg, int pos);
 /** Remark a new definition of a variable.
  *
  * Use this function to remember a new definition of the value
- * associated with pos. Pos may not exceed the value passed as n_loc
+ * associated with pos.  pos must be less than the value passed as n_loc
  * to new_ir_graph.  This call is needed to automatically inserts Phi
  * nodes.
  *
