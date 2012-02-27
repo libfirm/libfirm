@@ -930,21 +930,6 @@ FIRM_API void set_value(int pos, ir_node *value);
 /** Sets current value of a variable in a given graph */
 FIRM_API void set_r_value(ir_graph *irg, int pos, ir_node *value);
 
-/**
- * Find the value number for a node in the current block.
- *
- * @param value  the searched value
- *
- * @return the value number of the value or -1 if this value has
- * no value number in the current block.
- */
-FIRM_API int find_value(ir_node *value);
-/**
- * Find value number for a node in the current block of a given graph
- * @see find_value()
- */
-FIRM_API int r_find_value(ir_graph *irg, ir_node *value);
-
 /** Returns the current memory state.
  *
  * Use this function to obtain the last definition of the memory

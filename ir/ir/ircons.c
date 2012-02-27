@@ -624,23 +624,6 @@ void set_value(int pos, ir_node *value)
 	set_r_value(current_ir_graph, pos, value);
 }
 
-int r_find_value(ir_graph *irg, ir_node *value)
-{
-	size_t i;
-	ir_node *bl = irg->current_block;
-
-	for (i = ARR_LEN(bl->attr.block.graph_arr); i > 1;) {
-		if (bl->attr.block.graph_arr[--i] == value)
-			return i - 1;
-	}
-	return -1;
-}
-
-int find_value(ir_node *value)
-{
-	return r_find_value(current_ir_graph, value);
-}
-
 ir_node *get_r_store(ir_graph *irg)
 {
 	assert(get_irg_phase_state(irg) == phase_building);
