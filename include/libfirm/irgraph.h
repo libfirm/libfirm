@@ -130,7 +130,7 @@
  * - The end block containing an end node. This block is not matured
  *   after executing new_ir_graph() as predecessors need to be added to it.
  *   (Maturing a block means fixing its number of predecessors.)
- * - The current block, which is empty and also not matured.
+ * - The current block, which is empty and matured.
  *
  * Further it enters the global store into the data structure of the start
  * block that contains all valid values in this block (set_store()).  This
