@@ -2638,7 +2638,7 @@ void dump_ir_graph_ext(ir_graph_dump_func func, ir_graph *graph,
 	obstack_1grow(&obst, '\0');
 
 	file_name = (char*)obstack_finish(&obst);
-	/* xvcg expects only <CR> so we need "b"inary mode (for win32) */
+	/* xvcg expects only <LF> so we need "b"inary mode (for win32) */
 	out       = fopen(file_name, "wb");
 	obstack_free(&obst, file_name);
 
