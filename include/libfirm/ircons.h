@@ -916,7 +916,7 @@ FIRM_API ir_mode *ir_guess_mode(int pos);
  */
 FIRM_API ir_mode *ir_r_guess_mode(ir_graph *irg, int pos);
 
-/** Remark a new definition of a variable.
+/** Memorize a new definition of a variable.
  *
  * Use this function to remember a new definition of the value
  * associated with pos.  pos must be less than the value passed as n_loc
@@ -956,7 +956,7 @@ FIRM_API ir_node *get_store(void);
  * @see get_store() */
 FIRM_API ir_node *get_r_store(ir_graph *irg);
 
-/** Remark a new definition of the memory state.
+/** Memorize a new definition of the memory state.
  *
  * Use this function to remember a new definition of the memory state.
  * This call is needed to automatically inserts Phi nodes.
