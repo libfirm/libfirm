@@ -1076,7 +1076,7 @@ FIRM_API ir_value_classify_sign classify_value_sign(ir_node *n);
 FIRM_API ir_tarval *computed_value_Cmp_Confirm(
 	const ir_node *cmp, ir_node *left, ir_node *right, ir_relation relation);
 
-/** Type of callbacks for createing entities of the compiler library */
+/** Type of callbacks for creating entities of the compiler library */
 typedef ir_entity *(*compilerlib_entity_creator_t)(ident *id, ir_type *mt);
 
 /**
