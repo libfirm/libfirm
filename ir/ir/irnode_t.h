@@ -225,13 +225,8 @@ static inline int ir_has_irg_ref(const ir_node *node)
 
 static inline ir_graph *get_irn_irg_(const ir_node *node)
 {
-	/*
-	 * Do not use get_nodes_block() here, because this
-	 * will check the pinned state.
-	 * However even a 'wrong' block is always in the proper irg.
-	 */
 	if (! is_Block(node))
-		node = get_irn_n(node, -1);
+		node = get_nodes_block(node);
 	assert(ir_has_irg_ref(node));
 	return node->attr.irg.irg;
 }
