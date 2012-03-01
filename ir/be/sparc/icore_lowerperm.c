@@ -67,19 +67,29 @@ typedef struct perm_op_t {
 static perm_op_t ops[NUM_REGISTERS];
 static unsigned  num_ops = 0;
 
-static ir_node *sched_point;
+static ir_node               *sched_point     = NULL;
+static const arch_register_class_t *reg_class = NULL;
 
+static const arch_register_t *get_arch_register(unsigned index)
+{
+	return arch_register_for_index(reg_class, index);
+}
+
+static const char *get_register_name_from_index(unsigned index)
+{
+	return arch_register_get_name(get_arch_register(index));
+}
 
 static void print_perm_op(const perm_op_t *op)
 {
 	unsigned i;
 
-	printf("%u", op->regs[0]);
+	printf("%s", get_register_name_from_index(op->regs[0]));
 	for (i = 1; i < op->length; ++i)
-		printf(" -> %u", op->regs[i]);
+		printf(" -> %s", get_register_name_from_index(op->regs[i]));
 
 	if (op->type == PERM_CYCLE)
-		printf(" -> %u", op->regs[0]);
+		printf(" -> %s", get_register_name_from_index(op->regs[0]));
 
 	puts("");
 }
@@ -97,6 +107,9 @@ static void analyze_regs(const ir_node *perm)
 		const arch_register_t *out_reg = arch_get_irn_register(out);
 		unsigned               iidx;
 		unsigned               oidx;
+
+		if (reg_class == NULL)
+			reg_class = arch_register_get_class(in_reg);
 
 		/* Ignore registers that are left untouched by the Perm node. */
 		if (in_reg == out_reg) {
