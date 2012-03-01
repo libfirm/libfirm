@@ -615,6 +615,17 @@ static ir_tarval *compute_cmp(const ir_node *cmp)
 }
 
 /**
+ * some people want to call compute_cmp directly, in this case we have to
+ * test the constant folding flag again
+ */
+static ir_tarval *compute_cmp_ext(const ir_node *cmp)
+{
+	if (!get_opt_constant_folding())
+		return tarval_bad;
+	return compute_cmp(cmp);
+}
+
+/**
  * Return the value of a Cmp.
  *
  * The basic idea here is to determine which relations are possible and which
@@ -1471,7 +1482,7 @@ static ir_node *equivalent_node_Mux(ir_node *n)
 	if (ts == tarval_bad && is_Cmp(sel)) {
 		/* try again with a direct call to compute_cmp, as we don't care
 		 * about the MODEB_LOWERED flag here */
-		ts = compute_cmp(sel);
+		ts = compute_cmp_ext(sel);
 	}
 
 	/* Mux(true, f, t) == t */
@@ -3539,7 +3550,7 @@ static ir_node *transform_node_Cond(ir_node *n)
 	if (ta == tarval_bad && is_Cmp(a)) {
 		/* try again with a direct call to compute_cmp, as we don't care
 		 * about the MODEB_LOWERED flag here */
-		ta = compute_cmp(a);
+		ta = compute_cmp_ext(a);
 	}
 
 	if (ta != tarval_bad && get_irn_mode(a) == mode_b) {
