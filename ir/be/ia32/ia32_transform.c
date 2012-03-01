@@ -2110,13 +2110,16 @@ static ir_node *get_flags_node(ir_node *cmp, ia32_condition_code_t *cc_out)
 		}
 	}
 
-	/* the middle-end tries to eliminate impossible relations, so a ptr != 0
+	/* the middle-end tries to eliminate impossible relations, so a ptr <> 0
 	 * test becomes ptr > 0. But for x86 an equal comparison is preferable to
 	 * a >0 (we can sometimes eliminate the cmp in favor of flags produced by
-	 * a predecessor node). So add the < bit */
+	 * a predecessor node). So add the < bit.
+	 * (Note that we do not want to produce <=> (which can happen for
+	 * unoptimized code), because no x86 flag can represent that */
 	possible = ir_get_possible_cmp_relations(l, r);
-	if (((relation & ir_relation_less) && !(possible & ir_relation_greater))
-	    || ((relation & ir_relation_greater) && !(possible & ir_relation_less)))
+	if (!(relation & ir_relation_equal) &&
+		( ((relation & ir_relation_less) && !(possible & ir_relation_greater))
+	   || ((relation & ir_relation_greater) && !(possible & ir_relation_less))))
 		relation |= ir_relation_less_greater;
 
 	overflow_possible = true;
