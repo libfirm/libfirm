@@ -33,7 +33,7 @@
 
 #include <assert.h>
 #include "irprintf.h"
-#include "irdom.h"
+#include "irdom_t.h"
 #include "set.h"
 #include "statev.h"
 #include "dfs_t.h"
@@ -61,7 +61,7 @@ static int cmp_node(const void *a, const void *b, size_t sz)
 
 static dfs_edge_t *get_edge(const dfs_t *self, const void *src, const void *tgt)
 {
-	unsigned hash = HASH_COMBINE(HASH_PTR(src), HASH_PTR(tgt));
+	unsigned hash = hash_combine(hash_ptr(src), hash_ptr(tgt));
 	dfs_edge_t templ;
 
 	templ.src = src;
@@ -207,6 +207,7 @@ dfs_t *dfs_new(const absgraph_t *graph_impl, void *graph_self)
 
 void dfs_free(dfs_t *dfs)
 {
+	obstack_free(&dfs->obst, NULL);
 	del_set(dfs->nodes);
 	del_set(dfs->edges);
 	xfree(dfs->pre_order);

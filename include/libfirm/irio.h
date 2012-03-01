@@ -19,11 +19,8 @@
 
 /**
  * @file
- * @brief   Import/export textual representation of firm.
+ * @brief   Input/Output textual representation of firm.
  * @author  Moritz Kroll
- *
- * Note: The file format is not considered stable yet. So expect
- * incompatibilities between file formats of different libfirm versions.
  */
 #ifndef FIRM_IR_IRIO_H
 #define FIRM_IR_IRIO_H
@@ -32,6 +29,13 @@
 
 #include "firm_types.h"
 #include "begin.h"
+
+/**
+ * @defgroup irio Input and Output
+ * @note The file format is not considered stable yet. So expect
+ *       incompatibilities between file formats of different libfirm versions.
+ * @{
+ */
 
 /**
  * Exports the whole irp to the given file in a textual form.
@@ -61,6 +65,8 @@ FIRM_API int ir_import(const char *filename);
  * same as ir_import but imports from a FILE*
  */
 FIRM_API int ir_import_file(FILE *input, const char *inputname);
+
+/** @} */
 
 #include "end.h"
 

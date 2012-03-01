@@ -66,7 +66,7 @@ static bool do_is_immediate(const ir_node *node, int *symconsts, bool negate)
 #ifdef DEBUG_libfirm
 			ir_fprintf(stderr,
 			           "Optimisation warning tarval of %+F(%+F) is not a long.\n",
-			           node, current_ir_graph);
+			           node, get_irn_irg(node));
 #endif
 			return false;
 		}
@@ -525,7 +525,10 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 
 void ia32_calculate_non_address_mode_nodes(ir_graph *irg)
 {
-	be_lv_t  *lv  = be_assure_liveness(irg);
+	be_lv_t *lv;
+
+	be_assure_live_chk(irg);
+	lv = be_get_irg_liveness(irg);
 
 	non_address_mode_nodes = bitset_malloc(get_irg_last_idx(irg));
 

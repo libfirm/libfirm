@@ -21,11 +21,6 @@
  * @file
  * @brief      Union-Find datastructure
  * @author     Matthias Braun
- * @brief
- *  Union-Find datastructure
- *
- *  This implementation uses weighted sets and path compression which results
- *  in (nearly) O(n) complexity for n find and union operations
  */
 #ifndef FIRM_ADT_UNIONFIND_H
 #define FIRM_ADT_UNIONFIND_H
@@ -33,6 +28,16 @@
 #include <assert.h>
 
 #include "../begin.h"
+
+/**
+ * @ingroup adt
+ * @defgroup unionfind Union-Find
+ *  Union-Find datastructure
+ *
+ *  This implementation uses weighted sets and path compression which results
+ *  in (nearly) O(n) complexity for n find and union operations
+ * @{
+ */
 
 /**
  * Call this to initialize an array of @p count elements to be used by the
@@ -111,6 +116,8 @@ static inline int uf_find(int* data, int e)
 
 	return repr;
 }
+
+/** @} */
 
 #include "../end.h"
 

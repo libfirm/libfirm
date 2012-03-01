@@ -181,8 +181,6 @@ void init_tpop(void)
 #undef ID
 }
 
-/* Finalize the tpop module.
- * Frees all type opcodes.  */
 void finish_tpop(void)
 {
 	free_tpop(type_class      ); type_class       = NULL;
@@ -198,8 +196,7 @@ void finish_tpop(void)
 	free_tpop(tpop_unknown    ); tpop_unknown     = NULL;
 }
 
-/* Returns the string for the tp_opcode. */
-const char  *get_tpop_name(const tp_op *op)
+const char *get_tpop_name(const tp_op *op)
 {
 	return get_id_str(op->name);
 }
@@ -209,7 +206,6 @@ tp_opcode (get_tpop_code)(const tp_op *op)
 	return _get_tpop_code(op);
 }
 
-/* returns the attribute size of the operator. */
 size_t (get_tpop_attr_size)(const tp_op *op)
 {
 	return _get_tpop_attr_size(op);

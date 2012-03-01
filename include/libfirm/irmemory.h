@@ -29,6 +29,15 @@
 #include "firm_types.h"
 #include "begin.h"
 
+/** @ingroup irana
+ * @defgroup ir_memory  Memory Disambiguator
+ *
+ * A memory disambiguator checks whether 2 given SSA values representing
+ * addresses alias.
+ *
+ * @{
+ */
+
 /** The alias relation of two memory addresses. */
 typedef enum ir_alias_relation {
 	ir_no_alias,       /**< No alias. */
@@ -74,7 +83,7 @@ typedef enum ir_storage_class_class_t {
 } ir_storage_class_class_t;
 ENUM_BITSET(ir_storage_class_class_t)
 
-/** Get the base storage class (ignore modifier) */
+/** Returns the base storage class (ignore modifier) */
 FIRM_API ir_storage_class_class_t get_base_sc(ir_storage_class_class_t x);
 
 /**
@@ -137,7 +146,7 @@ FIRM_API ir_alias_relation get_alias_relation(
 	const ir_node *adr2, const ir_mode *mode2);
 
 /**
- * Set a source language specific memory disambiguator function.
+ * Sets a source language specific memory disambiguator function.
  *
  * @param func  The callback.
  */
@@ -148,11 +157,10 @@ FIRM_API void set_language_memory_disambiguator(DISAMBIGUATOR_FUNC func);
  */
 FIRM_API void mem_disambig_init(void);
 
-/*
+/**
  * Determine the alias relation between two addresses and
  * cache the result.
  *
- * @param irg     The current graph.
  * @param adr1    The first address.
  * @param mode1   The mode of the first memory access.
  * @param adr2    The second address.
@@ -206,14 +214,14 @@ FIRM_API void set_irp_globals_entity_usage_state(ir_entity_usage_computed_state 
 FIRM_API void assure_irp_globals_entity_usage_computed(void);
 
 /**
- * Get the memory disambiguator options for a graph.
+ * Returns the memory disambiguator options for a graph.
  *
  * @param irg  the graph
  */
 FIRM_API unsigned get_irg_memory_disambiguator_options(const ir_graph *irg);
 
 /**
- * Set the memory disambiguator options for a graph.
+ * Sets the memory disambiguator options for a graph.
  *
  * @param irg      the graph
  * @param options  a set of options
@@ -222,7 +230,8 @@ FIRM_API void set_irg_memory_disambiguator_options(ir_graph *irg,
                                                    unsigned options);
 
 /**
- * Set the global disambiguator options for all graphs not having local options.
+ * Sets the global disambiguator options for all graphs not having local
+ * options.
  *
  * @param options  a set of options
  */
@@ -243,6 +252,8 @@ FIRM_API void mark_private_methods(void);
  * @return  the newly created ir_prog pass
  */
 FIRM_API ir_prog_pass_t *mark_private_methods_pass(const char *name);
+
+/** @} */
 
 #include "end.h"
 

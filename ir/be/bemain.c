@@ -49,6 +49,7 @@
 #include "execfreq.h"
 #include "irprofile.h"
 #include "irpass_t.h"
+#include "ircons.h"
 
 #include "bearch.h"
 #include "be_t.h"
@@ -150,6 +151,15 @@ static void initialize_isa(void)
 	if (isa_initialized)
 		return;
 	isa_if->init();
+	isa_initialized = true;
+}
+
+static void finish_isa(void)
+{
+	if (isa_initialized) {
+		isa_if->finish();
+		isa_initialized = false;
+	}
 }
 
 void be_init_default_asm_constraint_flags(void)
@@ -340,6 +350,7 @@ void firm_be_init(void)
 /* Finalize the Firm backend. */
 void firm_be_finish(void)
 {
+	finish_isa();
 	be_quit_modules();
 }
 
@@ -418,6 +429,7 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 	birg->irg = irg;
 	birg->main_env = env;
 	obstack_init(&birg->obst);
+	birg->lv = be_liveness_new(irg);
 
 	edges_deactivate_kind(irg, EDGE_KIND_DEP);
 	edges_activate_kind(irg, EDGE_KIND_DEP);
@@ -557,7 +569,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 			        prof_filename);
 		}
 	}
-	if (be_options.opt_profile_generate) {
+	if (num_birgs > 0 && be_options.opt_profile_generate) {
 		ir_graph *prof_init_irg
 			= ir_profile_instrument(prof_filename);
 		initialize_birg(&birgs[num_birgs], prof_init_irg, &env);
@@ -719,8 +731,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		dump(DUMP_RA, irg, "ra");
 
 		be_timer_push(T_FINISH);
-		if (arch_env->impl->finish != NULL)
-			arch_env->impl->finish(irg);
+		if (arch_env->impl->finish_graph != NULL)
+			arch_env->impl->finish_graph(irg);
 		be_timer_pop(T_FINISH);
 
 		dump(DUMP_FINAL, irg, "finish");

@@ -239,15 +239,6 @@ static void init_node_attr(ir_node *node, int n_inputs, int n_outputs)
 	}
 }
 
-static void add_register_req_out(ir_node *node)
-{
-	backend_info_t *info = be_get_info(node);
-	reg_out_info_t  out_info;
-	memset(&out_info, 0, sizeof(out_info));
-	out_info.req = arch_no_register_req;
-	ARR_APP1(reg_out_info_t, info->out_infos, out_info);
-}
-
 static void add_register_req_in(ir_node *node)
 {
 	backend_info_t *info = be_get_info(node);
@@ -358,8 +349,19 @@ ir_node *be_new_Perm(const arch_register_class_t *cls, ir_node *block,
 	attr                = (be_node_attr_t*) get_irn_generic_attr(irn);
 	attr->exc.pin_state = op_pin_state_pinned;
 	for (i = 0; i < n; ++i) {
-		be_node_set_reg_class_in(irn, i, cls);
-		be_node_set_reg_class_out(irn, i, cls);
+		const ir_node             *input = in[i];
+		const arch_register_req_t *req   = arch_get_irn_register_req(input);
+		if (req->width == 1) {
+			be_set_constr_in(irn, i, cls->class_req);
+			be_set_constr_out(irn, i, cls->class_req);
+		} else {
+			arch_register_req_t *new_req = allocate_reg_req(irn);
+			new_req->cls   = cls;
+			new_req->type  = (req->type & arch_register_req_type_aligned);
+			new_req->width = req->width;
+			be_set_constr_in(irn, i, new_req);
+			be_set_constr_out(irn, i, new_req);
+		}
 	}
 
 	return irn;
@@ -561,14 +563,9 @@ ir_node *be_new_Return(dbg_info *dbg, ir_graph *irg, ir_node *block, int n_res,
 {
 	be_return_attr_t *a;
 	ir_node *res;
-	int i;
 
-	res = new_ir_node(dbg, irg, block, op_be_Return, mode_X, -1, NULL);
-	init_node_attr(res, -1, 1);
-	for (i = 0; i < n; ++i) {
-		add_irn_n(res, in[i]);
-		add_register_req_in(res);
-	}
+	res = new_ir_node(dbg, irg, block, op_be_Return, mode_X, n, in);
+	init_node_attr(res, n, 1);
 	be_set_constr_out(res, 0, arch_no_register_req);
 
 	a = (be_return_attr_t*)get_irn_generic_attr(res);
@@ -604,16 +601,6 @@ void be_Return_set_emit_pop(ir_node *ret, int emit_pop)
 	a->emit_pop = emit_pop;
 }
 
-int be_Return_append_node(ir_node *ret, ir_node *node)
-{
-	int pos;
-
-	pos = add_irn_n(ret, node);
-	add_register_req_in(ret);
-
-	return pos;
-}
-
 ir_node *be_new_IncSP(const arch_register_t *sp, ir_node *bl,
                       ir_node *old_sp, int offset, int align)
 {
@@ -624,7 +611,7 @@ ir_node *be_new_IncSP(const arch_register_t *sp, ir_node *bl,
 
 	in[0]     = old_sp;
 	irn       = new_ir_node(NULL, irg, bl, op_be_IncSP, sp->reg_class->mode,
-	                        sizeof(in) / sizeof(in[0]), in);
+	                        ARRAY_SIZE(in), in);
 	init_node_attr(irn, 1, 1);
 	a                     = (be_incsp_attr_t*)get_irn_generic_attr(irn);
 	a->offset             = offset;
@@ -693,17 +680,13 @@ ir_node *be_new_SubSP(const arch_register_t *sp, ir_node *bl, ir_node *old_sp, i
 ir_node *be_new_Start(dbg_info *dbgi, ir_node *bl, int n_outs)
 {
 	ir_node *res;
-	int i;
 	ir_graph *irg = get_Block_irg(bl);
 	be_node_attr_t *attr;
 
 	res = new_ir_node(dbgi, irg, bl, op_be_Start, mode_T, 0, NULL);
-	init_node_attr(res, 0, -1);
+	init_node_attr(res, 0, n_outs);
 	attr = (be_node_attr_t*) get_irn_generic_attr(res);
 	attr->exc.pin_state = op_pin_state_pinned;
-	for (i = 0; i < n_outs; ++i) {
-		add_register_req_out(res);
-	}
 
 	return res;
 }
@@ -1092,9 +1075,8 @@ static const arch_irn_ops_t dummy_be_irn_ops = {
 
 
 ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
-                    const arch_register_class_t *cls)
+                    const arch_register_req_t *req)
 {
-	const arch_register_req_t *req;
 	ir_graph       *irg  = get_irn_irg(block);
 	struct obstack *obst = be_get_be_obst(irg);
 	backend_info_t *info;
@@ -1106,11 +1088,6 @@ ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
 	memset(info->out_infos, 0, 1 * sizeof(info->out_infos[0]));
 	info->in_reqs = OALLOCN(obst, const arch_register_req_t*, n_ins);
 
-	if (cls == NULL) {
-		req = arch_no_register_req;
-	} else {
-		req = cls->class_req;
-	}
 	info->out_infos[0].req = req;
 	for (i = 0; i < n_ins; ++i) {
 		info->in_reqs[i] = req;
@@ -1133,7 +1110,7 @@ void be_set_phi_reg_req(ir_node *node, const arch_register_req_t *req)
 	assert(mode_is_datab(get_irn_mode(node)));
 }
 
-void be_dump_phi_reg_reqs(FILE *F, ir_node *node, dump_reason_t reason)
+void be_dump_phi_reg_reqs(FILE *F, const ir_node *node, dump_reason_t reason)
 {
 	switch (reason) {
 	case dump_node_opcode_txt:
@@ -1173,7 +1150,7 @@ static const arch_irn_ops_t phi_irn_ops = {
 /**
  * ir_op-Operation: dump a be node to file
  */
-static void dump_node(FILE *f, ir_node *irn, dump_reason_t reason)
+static void dump_node(FILE *f, const ir_node *irn, dump_reason_t reason)
 {
 	assert(is_be_node(irn));
 
@@ -1323,6 +1300,8 @@ void be_init_op(void)
 {
 	unsigned opc;
 
+	assert(op_be_Spill == NULL);
+
 	/* Acquire all needed opcodes. */
 	op_be_Spill     = new_ir_op(beo_Spill,     "be_Spill",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_unary,    0, sizeof(be_frame_attr_t),   &be_node_op_ops);
 	op_be_Reload    = new_ir_op(beo_Reload,    "be_Reload",    op_pin_state_exc_pinned, irop_flag_none,                          oparity_zero,     0, sizeof(be_frame_attr_t),   &be_node_op_ops);
@@ -1332,8 +1311,9 @@ void be_init_op(void)
 	op_be_Keep      = new_ir_op(beo_Keep,      "be_Keep",      op_pin_state_exc_pinned, irop_flag_keep,                          oparity_dynamic,  0, sizeof(be_node_attr_t),    &be_node_op_ops);
 	op_be_CopyKeep  = new_ir_op(beo_CopyKeep,  "be_CopyKeep",  op_pin_state_exc_pinned, irop_flag_keep,                          oparity_variable, 0, sizeof(be_node_attr_t),    &be_node_op_ops);
 	op_be_Call      = new_ir_op(beo_Call,      "be_Call",      op_pin_state_exc_pinned, irop_flag_fragile|irop_flag_uses_memory, oparity_variable, 0, sizeof(be_call_attr_t),    &be_node_op_ops);
-	ir_op_set_fragile_indices(op_be_Call, n_be_Call_mem, pn_be_Call_X_regular, pn_be_Call_X_except);
-	op_be_Return    = new_ir_op(beo_Return,    "be_Return",    op_pin_state_exc_pinned, irop_flag_cfopcode,                      oparity_dynamic,  0, sizeof(be_return_attr_t),  &be_node_op_ops);
+	ir_op_set_memory_index(op_be_Call, n_be_Call_mem);
+	ir_op_set_fragile_indices(op_be_Call, pn_be_Call_X_regular, pn_be_Call_X_except);
+	op_be_Return    = new_ir_op(beo_Return,    "be_Return",    op_pin_state_exc_pinned, irop_flag_cfopcode,                      oparity_variable, 0, sizeof(be_return_attr_t),  &be_node_op_ops);
 	op_be_AddSP     = new_ir_op(beo_AddSP,     "be_AddSP",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);
 	op_be_SubSP     = new_ir_op(beo_SubSP,     "be_SubSP",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);
 	op_be_IncSP     = new_ir_op(beo_IncSP,     "be_IncSP",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_unary,    0, sizeof(be_incsp_attr_t),   &be_node_op_ops);
@@ -1357,10 +1337,28 @@ void be_init_op(void)
 
 	/* attach out dummy_ops to middle end nodes */
 	for (opc = iro_First; opc <= iro_Last; ++opc) {
-		ir_op *op = get_irp_opcode(opc);
+		ir_op *op = ir_get_opcode(opc);
 		assert(op->ops.be_ops == NULL);
 		op->ops.be_ops = &dummy_be_irn_ops;
 	}
 
 	op_Phi->ops.be_ops = &phi_irn_ops;
+}
+
+void be_finish_op(void)
+{
+	free_ir_op(op_be_Spill);     op_be_Spill     = NULL;
+	free_ir_op(op_be_Reload);    op_be_Reload    = NULL;
+	free_ir_op(op_be_Perm);      op_be_Perm      = NULL;
+	free_ir_op(op_be_MemPerm);   op_be_MemPerm   = NULL;
+	free_ir_op(op_be_Copy);      op_be_Copy      = NULL;
+	free_ir_op(op_be_Keep);      op_be_Keep      = NULL;
+	free_ir_op(op_be_CopyKeep);  op_be_CopyKeep  = NULL;
+	free_ir_op(op_be_Call);      op_be_Call      = NULL;
+	free_ir_op(op_be_Return);    op_be_Return    = NULL;
+	free_ir_op(op_be_IncSP);     op_be_IncSP     = NULL;
+	free_ir_op(op_be_AddSP);     op_be_AddSP     = NULL;
+	free_ir_op(op_be_SubSP);     op_be_SubSP     = NULL;
+	free_ir_op(op_be_Start);     op_be_Start     = NULL;
+	free_ir_op(op_be_FrameAddr); op_be_FrameAddr = NULL;
 }

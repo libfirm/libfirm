@@ -590,6 +590,8 @@ static void extend_irn(ir_node *n, ir_node *newnode, bool new_is_backedge)
 				set_backedge(n, i);
 		}
 	}
+	free(ins);
+	free(bes);
 }
 
 /* Extends a block by a copy of its pred at pos,

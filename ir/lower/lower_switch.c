@@ -165,6 +165,7 @@ static void analyse_switch1(switch_info_t *info)
 
 	info->default_block = targets[pn_Switch_default];
 	info->cases         = cases;
+	free(targets);
 }
 
 static void normalize_table(ir_node *switchn, ir_mode *new_mode,

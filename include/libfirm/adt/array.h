@@ -29,10 +29,14 @@
 #include <stddef.h>
 
 #include "obst.h"
-#include "fourcc.h"
-#include "xmalloc.h"
 
 #include "../begin.h"
+
+/**
+ * @ingroup adt
+ * @defgroup array Arrays
+ * @{
+ */
 
 /**
  * Creates a flexible array.
@@ -211,10 +215,14 @@
 # define ARR_VRFY(arr)          ((void)0)
 # define ARR_IDX_VRFY(arr, idx) ((void)0)
 #else
+/** Check array for consistency */
 # define ARR_VRFY(arr)          ir_verify_arr(arr)
+/** Check if index is within array bounds */
 # define ARR_IDX_VRFY(arr, idx) \
     assert((0 <= (idx)) && ((idx) < ARR_LEN((arr))))
 #endif
+
+/** @cond PRIVATE */
 
 /** A type that has most constrained alignment.  */
 typedef union {
@@ -222,7 +230,6 @@ typedef union {
   void *p;
   long l;
 } aligned_type;
-
 
 /**
  * The array descriptor header type.
@@ -258,6 +265,10 @@ static inline void ARR_SHRINKLEN(void *arr, size_t new_len)
 	assert(ARR_DESCR(arr)->nelts >= new_len);
 	ARR_DESCR(arr)->nelts = new_len;
 }
+
+/** @endcond */
+
+/** @} */
 
 #include "../end.h"
 

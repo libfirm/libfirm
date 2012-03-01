@@ -39,6 +39,7 @@
 #include "xmalloc.h"
 #include "irhooks.h"
 #include "util.h"
+#include "ircons.h"
 
 /*
  * need this to be static:
@@ -297,7 +298,7 @@ static graph_entry_t *graph_get_entry(ir_graph *irg, hmap_graph_entry_t *hmap)
 
 	key.irg = irg;
 
-	elem = (graph_entry_t*)pset_find(hmap, &key, HASH_PTR(irg));
+	elem = (graph_entry_t*)pset_find(hmap, &key, hash_ptr(irg));
 
 	if (elem) {
 		/* create hash map backend block information */
@@ -323,10 +324,10 @@ static graph_entry_t *graph_get_entry(ir_graph *irg, hmap_graph_entry_t *hmap)
 	elem->block_hash = NULL;
 	elem->extbb_hash = NULL;
 
-	for (i = 0; i < sizeof(elem->opt_hash)/sizeof(elem->opt_hash[0]); ++i)
+	for (i = 0; i != ARRAY_SIZE(elem->opt_hash); ++i)
 		elem->opt_hash[i] = new_pset(opt_cmp, 4);
 
-	return (graph_entry_t*)pset_insert(hmap, elem, HASH_PTR(irg));
+	return (graph_entry_t*)pset_insert(hmap, elem, hash_ptr(irg));
 }  /* graph_get_entry */
 
 /**
@@ -473,7 +474,7 @@ static perm_class_entry_t *perm_class_get_entry(struct obstack *obst, const char
 
 	key.class_name = class_name;
 
-	elem = (perm_class_entry_t*)pset_find(hmap, &key, HASH_PTR(class_name));
+	elem = (perm_class_entry_t*)pset_find(hmap, &key, hash_ptr(class_name));
 	if (elem)
 		return elem;
 
@@ -484,7 +485,7 @@ static perm_class_entry_t *perm_class_get_entry(struct obstack *obst, const char
 
 	elem->class_name = class_name;
 
-	return (perm_class_entry_t*)pset_insert(hmap, elem, HASH_PTR(class_name));
+	return (perm_class_entry_t*)pset_insert(hmap, elem, hash_ptr(class_name));
 }  /* perm_class_get_entry */
 
 /**
@@ -515,7 +516,7 @@ static perm_stat_entry_t *perm_stat_get_entry(struct obstack *obst, ir_node *per
 
 	key.perm = perm;
 
-	elem = (perm_stat_entry_t*)pset_find(hmap, &key, HASH_PTR(perm));
+	elem = (perm_stat_entry_t*)pset_find(hmap, &key, hash_ptr(perm));
 	if (elem)
 		return elem;
 
@@ -526,7 +527,7 @@ static perm_stat_entry_t *perm_stat_get_entry(struct obstack *obst, ir_node *per
 
 	elem->perm = perm;
 
-	return (perm_stat_entry_t*)pset_insert(hmap, elem, HASH_PTR(perm));
+	return (perm_stat_entry_t*)pset_insert(hmap, elem, hash_ptr(perm));
 }  /* perm_stat_get_entry */
 
 /**
@@ -1035,7 +1036,7 @@ static void update_node_stat_2(ir_node *node, void *env)
  */
 static unsigned get_adr_mark(graph_entry_t *graph, ir_node *node)
 {
-	address_mark_entry_t *value = (address_mark_entry_t*)set_find(graph->address_mark, &node, sizeof(*value), HASH_PTR(node));
+	address_mark_entry_t *value = (address_mark_entry_t*)set_find(graph->address_mark, &node, sizeof(*value), hash_ptr(node));
 
 	return value ? value->mark : 0;
 }  /* get_adr_mark */
@@ -1045,7 +1046,7 @@ static unsigned get_adr_mark(graph_entry_t *graph, ir_node *node)
  */
 static void set_adr_mark(graph_entry_t *graph, ir_node *node, unsigned val)
 {
-	address_mark_entry_t *value = (address_mark_entry_t*)set_insert(graph->address_mark, &node, sizeof(*value), HASH_PTR(node));
+	address_mark_entry_t *value = (address_mark_entry_t*)set_insert(graph->address_mark, &node, sizeof(*value), hash_ptr(node));
 
 	value->mark = val;
 }  /* set_adr_mark */
@@ -1998,7 +1999,7 @@ void stat_be_block_regpressure(ir_graph *irg, ir_node *block, int pressure, cons
 		rp_ent->class_name = class_name;
 		rp_ent->pressure   = pressure;
 
-		pset_insert(block_ent->reg_pressure, rp_ent, HASH_PTR(class_name));
+		pset_insert(block_ent->reg_pressure, rp_ent, hash_ptr(class_name));
 	}
 	STAT_LEAVE;
 }  /* stat_be_block_regpressure */

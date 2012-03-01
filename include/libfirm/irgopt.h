@@ -28,6 +28,12 @@
 #include "firm_types.h"
 #include "begin.h"
 
+/**
+ * @ingroup iroptimize
+ * @defgroup irgopt  Graph Transformations
+ * @{
+ */
+
 /** Applies local optimizations (see iropt.h) to all nodes reachable from node
  * @p n.
  *
@@ -117,6 +123,8 @@ FIRM_API void remove_critical_cf_edges(ir_graph *irg);
  */
 FIRM_API void remove_critical_cf_edges_ex(ir_graph *irg,
                                           int ignore_exception_edges);
+
+/** @} */
 
 #include "end.h"
 

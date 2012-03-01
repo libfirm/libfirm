@@ -44,16 +44,13 @@
 #include "error.h"
 #include "compound_path.h"
 
-/*-----------------------------------------------------------------*/
-/** general                                                       **/
-/*-----------------------------------------------------------------*/
-
-ir_entity *unknown_entity = NULL;
-
-ir_entity *get_unknown_entity(void) { return unknown_entity; }
-
 /** The name of the unknown entity. */
 #define UNKNOWN_ENTITY_NAME "unknown_entity"
+
+ir_entity *get_unknown_entity(void)
+{
+	return irp->unknown_entity;
+}
 
 /*-----------------------------------------------------------------*/
 /* ENTITY                                                          */
@@ -62,9 +59,7 @@ ir_entity *get_unknown_entity(void) { return unknown_entity; }
 static ir_entity *intern_new_entity(ir_type *owner, ir_entity_kind kind,
                                     ident *name, ir_type *type, dbg_info *dbgi)
 {
-	ir_entity *res;
-
-	res = XMALLOCZ(ir_entity);
+	ir_entity *res = XMALLOCZ(ir_entity);
 
 	res->kind    = k_entity;
 	res->name    = name;
@@ -161,7 +156,7 @@ ir_entity *new_d_label_entity(ir_label_t label, dbg_info *dbgi)
 	ident *name = id_unique("label_%u");
 	ir_type *global_type = get_glob_type();
 	ir_entity *res
-		= intern_new_entity(global_type, IR_ENTITY_LABEL, name, firm_code_type,
+		= intern_new_entity(global_type, IR_ENTITY_LABEL, name, get_code_type(),
 		                    dbgi);
 	res->attr.code_attr.label = label;
 	hook_new_entity(res);
@@ -244,10 +239,6 @@ static ir_entity *deep_entity_copy(ir_entity *old)
 	return newe;
 }
 
-/*
- * Copies the entity if the new_owner is different from the
- * owner of the old entity,  else returns the old entity.
- */
 ir_entity *copy_entity_own(ir_entity *old, ir_type *new_owner)
 {
 	ir_entity *newe;
@@ -289,11 +280,12 @@ void free_entity(ir_entity *ent)
 
 	assert(ent && ent->kind == k_entity);
 	free_entity_attrs(ent);
+#ifdef DEBUG_libfirm
 	ent->kind = k_BAD;
+#endif
 	xfree(ent);
 }
 
-/* Outputs a unique number for this node */
 long get_entity_nr(const ir_entity *ent)
 {
 	assert(ent && ent->kind == k_entity);
@@ -369,7 +361,7 @@ void set_entity_type(ir_entity *ent, ir_type *type)
 		assert(!is_Method_type(type));
 		break;
 	case IR_ENTITY_LABEL:
-		assert(type == firm_code_type);
+		assert(type == get_code_type());
 		break;
 	case IR_ENTITY_COMPOUND_MEMBER:
 		break;
@@ -387,7 +379,6 @@ void (set_entity_volatility)(ir_entity *ent, ir_volatility vol)
 	_set_entity_volatility(ent, vol);
 }
 
-/* Return the name of the volatility. */
 const char *get_volatility_name(ir_volatility var)
 {
 #define X(a)    case a: return #a
@@ -419,7 +410,6 @@ void (set_entity_alignment)(ir_entity *ent, unsigned alignment)
 	_set_entity_alignment(ent, alignment);
 }
 
-/* Return the name of the alignment. */
 const char *get_align_name(ir_align a)
 {
 #define X(a)    case a: return #a
@@ -482,13 +472,11 @@ void remove_entity_linkage(ir_entity *entity, ir_linkage linkage)
 	entity->linkage &= ~linkage;
 }
 
-/* Checks if an entity is compiler generated */
 int (is_entity_compiler_generated)(const ir_entity *ent)
 {
 	return _is_entity_compiler_generated(ent);
 }
 
-/* Sets/resets the compiler generated flag */
 void (set_entity_compiler_generated)(ir_entity *ent, int flag)
 {
 	_set_entity_compiler_generated(ent, flag);
@@ -504,7 +492,6 @@ void (set_entity_usage)(ir_entity *ent, ir_entity_usage flags)
 	_set_entity_usage(ent, flags);
 }
 
-/* Set has no effect for existent entities of type method. */
 ir_node *get_atomic_ent_value(ir_entity *entity)
 {
 	ir_initializer_t *initializer = get_entity_initializer(entity);
@@ -545,8 +532,6 @@ void set_atomic_ent_value(ir_entity *entity, ir_node *val)
 	entity->initializer = initializer;
 }
 
-/* Returns true if the the node is representable as code on
- *  const_code_irg. */
 int is_irn_const_expression(ir_node *n)
 {
 	/* we are in danger iff an exception will arise. TODO: be more precisely,
@@ -569,10 +554,6 @@ int is_irn_const_expression(ir_node *n)
 	return 0;
 }
 
-/*
- * Copies a firm subgraph that complies to the restrictions for
- * constant expressions to block.
- */
 ir_node *copy_const_value(dbg_info *dbg, ir_node *n, ir_node *block)
 {
 	ir_graph *irg = get_irn_irg(block);
@@ -637,7 +618,6 @@ ir_node *copy_const_value(dbg_info *dbg, ir_node *n, ir_node *block)
 	return nn;
 }
 
-/** Return the name of the initializer kind. */
 const char *get_initializer_kind_name(ir_initializer_kind_t ini)
 {
 #define X(a)    case a: return #a
@@ -954,6 +934,11 @@ void set_entity_vtable_number(ir_entity *ent, unsigned vtable_number)
 	ent->attr.mtd_attr.vtable_number = vtable_number;
 }
 
+int is_unknown_entity(const ir_entity *entity)
+{
+	return entity->entity_kind == IR_ENTITY_UNKNOWN;
+}
+
 int (is_entity)(const void *thing)
 {
 	return _is_entity(thing);
@@ -1063,8 +1048,6 @@ void add_entity_additional_properties(ir_entity *ent, mtp_additional_properties 
 	}
 }
 
-/* Returns the class type that this type info entity represents or NULL
-   if ent is no type info entity. */
 ir_type *(get_entity_repr_class)(const ir_entity *ent)
 {
 	return _get_entity_repr_class(ent);
@@ -1093,23 +1076,19 @@ int entity_has_definition(const ir_entity *entity)
 		|| entity_has_compound_ent_values(entity);
 }
 
-void ir_init_entity(void)
+void ir_init_entity(ir_prog *irp)
 {
-	assert(firm_unknown_type && "Call init_type() before firm_init_entity()!");
-	assert(!unknown_entity && "Call firm_init_entity() only once!");
-
-	unknown_entity = new_d_entity(NULL, new_id_from_str(UNKNOWN_ENTITY_NAME),
-	                              firm_unknown_type, NULL);
-	set_entity_visibility(unknown_entity, ir_visibility_external);
-	set_entity_ld_ident(unknown_entity, get_entity_ident(unknown_entity));
+	ident *id = new_id_from_str(UNKNOWN_ENTITY_NAME);
+	irp->unknown_entity = intern_new_entity(NULL, IR_ENTITY_UNKNOWN, id,
+	                                        irp->unknown_type, NULL);
+	set_entity_visibility(irp->unknown_entity, ir_visibility_external);
+	set_entity_ld_ident(irp->unknown_entity, id);
+	hook_new_entity(irp->unknown_entity);
 }
 
-void ir_finish_entity(void)
+void ir_finish_entity(ir_prog *irp)
 {
-	if (unknown_entity != NULL) {
-		free_entity(unknown_entity);
-		unknown_entity = NULL;
-	}
+	free_entity(irp->unknown_entity);
 }
 
 ir_allocation get_entity_allocation(const ir_entity *entity)

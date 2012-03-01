@@ -54,6 +54,8 @@
 #include "ia32_new_nodes.h"
 #include "gen_ia32_regalloc_if.h"
 
+struct obstack opcodes_obst;
+
 /**
  * Dumper interface for dumping ia32 nodes in vcg.
  * @param n        the node to dump
@@ -61,7 +63,7 @@
  * @param reason   indicates which kind of information should be dumped
  * @return 0 on success or != 0 on failure
  */
-static void ia32_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
+static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 {
 	ir_mode *mode = NULL;
 
@@ -184,7 +186,7 @@ static void ia32_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 
 			/* dump pn code */
 			if (is_ia32_CMovcc(n) || is_ia32_Setcc(n) || is_ia32_Jcc(n)) {
-				ia32_attr_t *attr = get_ia32_attr(n);
+				const ia32_attr_t *attr = get_ia32_attr_const(n);
 				fprintf(F, "condition_code = 0x%X\n", (unsigned)get_ia32_condcode(n));
 				fprintf(F, "ins_permuted = %u\n", (unsigned)attr->data.ins_permuted);
 			}
@@ -1051,7 +1053,7 @@ static unsigned ia32_hash_Immediate(const ir_node *irn)
 {
 	const ia32_immediate_attr_t *a = get_ia32_immediate_attr_const(irn);
 
-	return HASH_PTR(a->symconst) + (a->sc_sign << 16) + a->offset;
+	return hash_ptr(a->symconst) + (a->sc_sign << 16) + a->offset;
 }
 
 /** Compare node attributes for Immediates. */
@@ -1112,6 +1114,13 @@ static void ia32_copy_attr(ir_graph *irg, const ir_node *old_node,
 		DUP_ARR_D(reg_out_info_t, obst, old_info->out_infos);
 	new_info->in_reqs = old_info->in_reqs;
 	new_info->flags = old_info->flags;
+}
+
+static void ia32_init_op(ir_op *op, unsigned latency)
+{
+	ia32_op_attr_t *attr = OALLOCZ(&opcodes_obst, ia32_op_attr_t);
+	attr->latency = latency;
+	set_op_attr(op, attr);
 }
 
 /* Include the generated constructor functions */

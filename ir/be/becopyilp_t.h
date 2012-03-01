@@ -138,11 +138,4 @@ lpp_sol_state_t ilp_go(ilp_env_t *ienv);
 
 void free_ilp_env(ilp_env_t *ienv);
 
-
-#define name_cdd(buf, char1, int1, int2) \
-			(snprintf(buf, sizeof(buf), "%c_%d_%d", char1, int1, int2), buf)
-
-#define name_cdd_sorted(buf, char1, int1, int2) \
-			name_cdd(buf, char1, MIN(int1, int2), MAX(int1, int2))
-
 #endif

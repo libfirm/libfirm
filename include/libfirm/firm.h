@@ -21,15 +21,15 @@
  * @file
  * @brief     Central firm header.
  * @author    Martin Trapp, Christian Schaefer, Goetz Lindenmaier
- * @brief
- *  Central FIRM header.
+ * This header includes all other firm headers and can be included conveniently
+ * by users of the library.
+ */
+
+/** @mainpage
  *
  *  FIRM is a full graph based intermediate representation in SSA Form
  *  with a novel concept to model side effects.  It allows fast, aggressive
  *  optimizations.
- *
- *  This header is the central header of the library implementation of this
- *  IR.
  *
  *  The internal representation of a program in firm is separated into five
  *  different modules:
@@ -52,8 +52,20 @@
  *
  *   Further this library supplies functionality to build and optimize FIRM graphs
  *   and further functionality needed in a compiler.  Finally there is more
- *   generic functionality to support implementations using firm.  (Code generation,
- *   further optimizations).
+ *   generic functionality to support implementations using firm.
+ *   (Code generation, further optimizations).
+ */
+
+/** @defgroup irana Analyses */
+
+/** @defgroup adt Abstract Data Structures
+ * This module contains abstract datatypes. The firm API is fully functional
+ * without these abstract datatypes. They're provided as a convenience.
+ */
+
+/** @defgroup algorithms Algorithms
+ * This module contains generic algorithms. The firm API is fully functional
+ * without them. They're provided as a convenience.
  */
 #ifndef FIRM_COMMON_FIRM_H
 #define FIRM_COMMON_FIRM_H

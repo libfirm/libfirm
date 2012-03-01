@@ -29,6 +29,11 @@
 #include "begin.h"
 
 /**
+ * @defgroup iroptimize  Transformations and Optimisations
+ * @{
+ */
+
+/**
  * Control flow optimization.
  *
  * Removes empty blocks doing if simplifications and loop simplifications.
@@ -38,10 +43,6 @@
  * Independent of compiler flag it removes Tuples from cf edges,
  * Bad predecessors from Blocks and Phis, and unnecessary predecessors of End.
  * Destroys backedge information.
- *
- * @bug Chokes on Id nodes if called in a certain order with other
- *      optimizations.  Call local_optimize_graph() before to remove
- *      Ids.
  */
 FIRM_API void optimize_cf(ir_graph *irg);
 
@@ -71,7 +72,7 @@ FIRM_API void opt_jumpthreading(ir_graph* irg);
 FIRM_API ir_graph_pass_t *opt_jumpthreading_pass(const char *name);
 
 /**
- * Try to simplify boolean expression in the given ir graph.
+ * Simplifies boolean expression in the given ir graph.
  * eg. x < 5 && x < 6 becomes x < 5
  *
  * @param irg  the graph
@@ -88,7 +89,7 @@ FIRM_API void opt_bool(ir_graph *irg);
 FIRM_API ir_graph_pass_t *opt_bool_pass(const char *name);
 
 /**
- * Try to reduce the number of conv nodes in the given ir graph.
+ * Reduces the number of Conv nodes in the given ir graph.
  *
  * @param irg  the graph
  *
@@ -112,7 +113,7 @@ FIRM_API ir_graph_pass_t *conv_opt_pass(const char *name);
 typedef int (*check_alloc_entity_func)(ir_entity *ent);
 
 /**
- * Do simple and fast escape analysis for one graph.
+ * Performs simple and fast escape analysis for one graph.
  *
  * @param irg       the graph
  * @param callback  a callback function to check whether a
@@ -122,7 +123,7 @@ FIRM_API void escape_enalysis_irg(ir_graph *irg,
                                   check_alloc_entity_func callback);
 
 /**
- * Do simple and fast escape analysis for all graphs.
+ * Performs simple and fast escape analysis for all graphs.
  *
  * This optimization implements a simple and fast but inexact
  * escape analysis. Some addresses might be marked as 'escaped' even
@@ -247,7 +248,7 @@ FIRM_API void opt_parallelize_mem(ir_graph *irg);
  */
 FIRM_API ir_graph_pass_t *opt_parallelize_mem_pass(const char *name);
 
-/*
+/**
  * Check if we can replace the load by a given const from
  * the const code irg.
  *
@@ -356,13 +357,11 @@ typedef enum osr_flags {
 	                                       induction variables. */
 } osr_flags;
 
-/* FirmJNI cannot handle identical enum values... */
-
 /** default setting */
 #define osr_flag_default osr_flag_lftr_with_ov_check
 
 /**
- * Do the Operator Scalar Replacement optimization and linear
+ * Performs the Operator Scalar Replacement optimization and linear
  * function test replacement for loop control.
  * Can be switched off using the set_opt_strength_red() flag.
  * In that case, only remove_phi_cycles() is executed.
@@ -457,7 +456,7 @@ FIRM_API ir_graph_pass_t *remove_phi_cycles_pass(const char *name);
 #define DEFAULT_CLONE_THRESHOLD 20
 
 /**
- * Do procedure cloning. Evaluate a heuristic weight for every
+ * Performs procedure cloning. Evaluate a heuristic weight for every
  * Call(..., Const, ...). If the weight is bigger than threshold,
  * clone the entity and fix the calls.
  *
@@ -569,8 +568,8 @@ FIRM_API void normalize_n_returns(ir_graph *irg);
 FIRM_API ir_graph_pass_t *normalize_n_returns_pass(const char *name);
 
 /**
- * Do the scalar replacement optimization.
- * Replace local compound entities (like structures and arrays)
+ * Performs the scalar replacement optimization.
+ * Replaces local compound entities (like structures and arrays)
  * with atomic values if possible. Does not handle classes yet.
  *
  * @param irg  the graph which should be optimized
@@ -754,8 +753,8 @@ FIRM_API ir_graph_pass_t *inline_small_irgs_pass(const char *name, int size);
 /**
  * Inlineing with a different heuristic than inline_small_irgs().
  *
- * Inlines leave functions.  If inlining creates new leave
- * function inlines these, too. (If g calls f, and f calls leave h,
+ * Inlines leaf functions.  If inlining creates new leafs
+ * function inlines these, too. (If g calls f, and f calls leaf h,
  * h is first inlined in f and then f in g.)
  *
  * Then inlines all small functions (this is not recursive).
@@ -768,34 +767,35 @@ FIRM_API ir_graph_pass_t *inline_small_irgs_pass(const char *name, int size);
  * @param maxsize         Do not inline any calls if a method has more than
  *                        maxsize firm nodes.  It may reach this limit by
  *                        inlining.
- * @param leavesize       Inline leave functions if they have less than leavesize
+ * @param leafsize        Inline leaf functions if they have less than leafsize
  *                        nodes.
  * @param size            Inline all function smaller than size.
  * @param ignore_runtime  count a function only calling runtime functions as
- *                        leave
+ *                        leaf
  */
-FIRM_API void inline_leave_functions(unsigned maxsize, unsigned leavesize,
+FIRM_API void inline_leaf_functions(unsigned maxsize, unsigned leafsize,
                                      unsigned size, int ignore_runtime);
 
 /**
- * Creates an ir_prog pass for inline_leave_functions().
+ * Creates an ir_prog pass for inline_leaf_functions().
  *
  * @param name            the name of this pass or NULL
  * @param maxsize         Do not inline any calls if a method has more than
  *                        maxsize firm nodes.  It may reach this limit by
  *                        inlining.
- * @param leavesize       Inline leave functions if they have less than leavesize
+ * @param leafsize        Inline leaf functions if they have less than leafsize
  *                        nodes.
  * @param size            Inline all function smaller than size.
  * @param ignore_runtime  count a function only calling runtime functions as
- *                        leave
+ *                        leaf
  *
  * @return  the newly created ir_prog pass
  */
-FIRM_API ir_prog_pass_t *inline_leave_functions_pass(const char *name,
-		unsigned maxsize, unsigned leavesize, unsigned size,
+FIRM_API ir_prog_pass_t *inline_leaf_functions_pass(const char *name,
+		unsigned maxsize, unsigned leafsize, unsigned size,
 		int ignore_runtime);
 
+/** pointer to an optimization function */
 typedef void (*opt_ptr)(ir_graph *irg);
 
 /**
@@ -893,10 +893,6 @@ FIRM_API ir_graph_pass_t *loop_unroll_pass(const char *name);
  * @return  the newly created ir_graph pass
  */
 FIRM_API ir_graph_pass_t *loop_peeling_pass(const char *name);
-
-typedef ir_type *(*get_Alloc_func)(ir_node *n);
-/** Set a new get_Alloc_func and returns the old one. */
-FIRM_API get_Alloc_func firm_set_Alloc_func(get_Alloc_func newf);
 
 /**
  * Creates an ir_graph pass for set_vrp_data()
@@ -1014,7 +1010,7 @@ FIRM_API void place_code(ir_graph *irg);
 FIRM_API ir_graph_pass_t *place_code_pass(const char *name);
 
 /**
- * Determine information about the values of nodes and perform simplifications
+ * Determines information about the values of nodes and perform simplifications
  * using this information.  This optimization performs a data-flow analysis to
  * find the minimal fixpoint.
  */
@@ -1034,7 +1030,7 @@ FIRM_API void fixpoint_vrp(ir_graph*);
 FIRM_API ir_graph_pass_t *fixpoint_vrp_irg_pass(const char *name);
 
 /**
- * Check, if the value of a node is != 0.
+ * Checks if the value of a node is != 0.
  *
  * This is a often needed case, so we handle here Confirm
  * nodes too.
@@ -1043,10 +1039,10 @@ FIRM_API ir_graph_pass_t *fixpoint_vrp_irg_pass(const char *name);
  * @param confirm  if n is confirmed to be != 0, returns
  *                 the the Confirm-node, else NULL
  */
-FIRM_API int value_not_zero(const ir_node *n, ir_node_cnst_ptr *confirm);
+FIRM_API int value_not_zero(const ir_node *n, const ir_node **confirm);
 
 /**
- * Check, if the value of a node cannot represent a NULL pointer.
+ * Checks if the value of a node cannot represent a NULL pointer.
  *
  * - If option sel_based_null_check_elim is enabled, all
  *   Sel nodes can be skipped.
@@ -1058,10 +1054,10 @@ FIRM_API int value_not_zero(const ir_node *n, ir_node_cnst_ptr *confirm);
  * @param confirm  if n is confirmed to be != NULL, returns
  *                 the the Confirm-node, else NULL
  */
-FIRM_API int value_not_null(const ir_node *n, ir_node_cnst_ptr *confirm);
+FIRM_API int value_not_null(const ir_node *n, const ir_node **confirm);
 
 /**
- * Check, if the value of a node can be confirmed >= 0 or <= 0,
+ * Checks if the value of a node can be confirmed >= 0 or <= 0,
  * If the mode of the value did not honor signed zeros, else
  * check for >= 0 or < 0.
  *
@@ -1070,8 +1066,7 @@ FIRM_API int value_not_null(const ir_node *n, ir_node_cnst_ptr *confirm);
 FIRM_API ir_value_classify_sign classify_value_sign(ir_node *n);
 
 /**
- * Return the value of a Cmp if one or both predecessors
- * are Confirm nodes.
+ * Returns the value of a Cmp if one or both predecessors are Confirm nodes.
  *
  * @param cmp       the compare node that will be evaluated
  * @param left      the left operand of the Cmp
@@ -1095,28 +1090,30 @@ FIRM_API void vf_construct(ir_graph *irg);
  */
 FIRM_API void vf_destruct(ir_graph *irg);
 
+/** Type of callbacks for creating entities of the compiler library */
 typedef ir_entity *(*compilerlib_entity_creator_t)(ident *id, ir_type *mt);
+
 /**
- * Set the compilerlib entity creation callback that is used to create
+ * Sets the compilerlib entity creation callback that is used to create
  * compilerlib function entities.
  *
  * @param cb  the new compilerlib entity creation callback
  */
-FIRM_API void set_compilerlib_entity_creator(compilerlib_entity_creator_t c);
+FIRM_API void set_compilerlib_entity_creator(compilerlib_entity_creator_t cb);
 
-/**
- * Get the compilerlib entity creation callback.
- */
+/** Returns the compilerlib entity creation callback. */
 FIRM_API compilerlib_entity_creator_t get_compilerlib_entity_creator(void);
 
 /**
- * Construct the entity for a given function using the current compilerlib
+ * Constructs the entity for a given function using the current compilerlib
  * entity creation callback.
  *
  * @param id  the identifier of the compilerlib function
  * @param mt  the method type of the compilerlib function
  */
 FIRM_API ir_entity *create_compilerlib_entity(ident *id, ir_type *mt);
+
+/** @} */
 
 #include "end.h"
 

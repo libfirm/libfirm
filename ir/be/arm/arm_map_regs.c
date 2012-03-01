@@ -68,7 +68,7 @@ static arm_irn_reg_assoc *get_irn_reg_assoc(const ir_node *irn, set *reg_set)
 
 	templ.irn = irn;
 	templ.reg = NULL;
-	hash = HASH_PTR(irn);
+	hash = hash_ptr(irn);
 
 	return (arm_irn_reg_assoc*)set_insert(reg_set, &templ, sizeof(templ), hash);
 }

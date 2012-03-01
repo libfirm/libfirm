@@ -28,6 +28,7 @@
 #include "irtools.h"
 #include "irhooks.h"
 #include "util.h"
+#include "fourcc.h"
 
 /**
  * names of the optimizations
@@ -558,7 +559,7 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 		simple_dump_real_func_calls(dmp, &entry->cnt[gcnt_acc_real_func_call]);
 		simple_dump_tail_recursion(dmp, entry->num_tail_recursion);
 
-		for (i = 0; i < sizeof(entry->opt_hash)/sizeof(entry->opt_hash[0]); ++i) {
+		for (i = 0; i != ARRAY_SIZE(entry->opt_hash); ++i) {
 			simple_dump_opt_hash(dmp, entry->opt_hash[i], i);
 		}  /* for */
 

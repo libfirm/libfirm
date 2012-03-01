@@ -752,7 +752,7 @@ be_fec_env_t *be_new_frame_entity_coalescer(ir_graph *irg)
 {
 	be_fec_env_t *env = XMALLOCZ(be_fec_env_t);
 
-	be_liveness_assure_chk(be_assure_liveness(irg));
+	be_assure_live_chk(irg);
 
 	obstack_init(&env->obst);
 	env->irg            = irg;

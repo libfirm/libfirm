@@ -1,4 +1,23 @@
-libFirm 1.19.0 (1011-03-15)
+libFirm 1.20.0 (2011-12-07)
+---------------------------
+
+* Further improvemens to sparc backend (SPEC2000 works with softfloat)
+* Tuning of x86 backend
+* Software floatingpoint lowerer
+* Fixed firm profiling
+* New pass management allowing to specify pre-/postconditions for passes
+* Remove dependency on liblpp, add support for gurobi ILP solver
+* Experimental dwarf debugging support
+* Code cleanups, refactoring
+* Restructured API documentation
+* Bugfixes (we did alot of csmith testing)
+
+libFirm 1.19.1 (2011-05-17)
+---------------------------
+
+* Fix some set_XXX functions not being exported in the shared library
+
+libFirm 1.19.0 (2011-03-15)
 ---------------------------
 
 * Includes "SSA-Based Register Allocation with PBQP"
@@ -7,7 +26,7 @@ libFirm 1.19.0 (1011-03-15)
 * Code cleanup and refactoring
 * Bugfixes
 
-libFirm 1.18.1 (1010-05-05)
+libFirm 1.18.1 (2010-05-05)
 ---------------------------
 
 * Fix bug where stackframe was not always setup for -fno-omit-frame-pointer

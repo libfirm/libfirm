@@ -25,6 +25,8 @@
  */
 #include "config.h"
 
+#include <stdbool.h>
+
 #include "irtools.h"
 #include "irprintf.h"
 
@@ -103,7 +105,7 @@ size_red_t *new_size_red(copy_opt_t *co)
 /**
  * Checks if a node is simplicial in the graph heeding the already removed nodes.
  */
-static inline int sr_is_simplicial(size_red_t *sr, const ir_node *ifn)
+static inline bool sr_is_simplicial(size_red_t *sr, const ir_node *ifn)
 {
 	be_ifg_t *ifg  = sr->co->cenv->ifg;
 	neighbours_iter_t iter;
@@ -122,37 +124,40 @@ static inline int sr_is_simplicial(size_red_t *sr, const ir_node *ifn)
 	for (i=0; i<size; ++i)
 		for (o=i+1; o<size; ++o)
 			if (!be_ifg_connected(ifg, all[i], all[o]))
-				return 0;
+				return false;
 
 	/* all edges exist so this is a clique */
-	return 1;
+	return true;
 }
 
 void sr_remove(size_red_t *sr)
 {
 	ir_node *irn;
-	int redo = 1;
+	bool redo = true;
 	const be_ifg_t *ifg = sr->co->cenv->ifg;
 	nodes_iter_t iter;
 
 	while (redo) {
-		redo = 0;
+		redo = false;
 		be_ifg_foreach_node(ifg, &iter, irn) {
 			const arch_register_req_t *req = arch_get_irn_register_req(irn);
+			coloring_suffix_t *cs;
 
-			if (!arch_register_req_is(req, limited) && !sr_is_removed(sr, irn) && !co_gs_is_optimizable(sr->co, irn)) {
-				if (sr_is_simplicial(sr, irn)) {
-					coloring_suffix_t *cs = OALLOC(&sr->ob, coloring_suffix_t);
+			if (arch_register_req_is(req, limited) || sr_is_removed(sr, irn))
+				continue;
+			if (co_gs_is_optimizable(sr->co, irn))
+				continue;
+			if (!sr_is_simplicial(sr, irn))
+				continue;
 
-					cs->irn = irn;
-					cs->next = sr->col_suff;
-					sr->col_suff = cs;
+			cs = OALLOC(&sr->ob, coloring_suffix_t);
+			cs->irn = irn;
+			cs->next = sr->col_suff;
+			sr->col_suff = cs;
 
-					pset_insert_ptr(sr->all_removed, irn);
+			pset_insert_ptr(sr->all_removed, irn);
 
-					redo = 1;
-				}
-			}
+			redo = true;
 		}
 	}
 }
@@ -160,28 +165,38 @@ void sr_remove(size_red_t *sr)
 void sr_reinsert(size_red_t *sr)
 {
 	coloring_suffix_t *cs;
+	ir_graph *irg        = sr->co->irg;
 	be_ifg_t *ifg        = sr->co->cenv->ifg;
-	bitset_t *used_cols  = bitset_alloca(arch_register_class_n_regs(sr->co->cls));
+	unsigned  n_regs     = arch_register_class_n_regs(sr->co->cls);
+	unsigned *possible_cols;
+	unsigned *allocatable_cols;
+
+	rbitset_alloca(allocatable_cols, n_regs);
+	be_set_allocatable_regs(irg, sr->co->cls, allocatable_cols);
+
+	rbitset_alloca(possible_cols, n_regs);
 	neighbours_iter_t iter;
 
 	/* color the removed nodes in right order */
 	for (cs = sr->col_suff; cs; cs = cs->next) {
-		int free_col;
-		ir_node *other, *irn;
+		unsigned free_col;
+		ir_node *other;
+		ir_node *irn = cs->irn;
+
+		rbitset_copy(possible_cols, allocatable_cols, n_regs);
 
 		/* get free color by inspecting all neighbors */
-		irn = cs->irn;
-		bitset_clear_all(used_cols);
-
 		be_ifg_foreach_neighbour(ifg, &iter, irn, other) {
-			if (!sr_is_removed(sr, other)) /* only inspect nodes which are in graph right now */
-				bitset_set(used_cols, get_irn_col(other));
+			/* only inspect nodes which are in graph right now */
+			if (sr_is_removed(sr, other))
+				continue;
+			rbitset_clear(possible_cols, get_irn_col(other));
 		}
 
 		/* now all bits not set are possible colors */
-		free_col = bitset_next_clear(used_cols, 0);
-		assert(free_col != -1 && "No free color found. This can not be.");
-		set_irn_col(sr->co, irn, free_col);
+		free_col = (unsigned)rbitset_next(possible_cols, 0, true);
+		assert(!rbitset_is_empty(possible_cols, n_regs) && "No free color found. This can not be.");
+		set_irn_col(sr->co->cls, irn, free_col);
 		pset_remove_ptr(sr->all_removed, irn); /* irn is back in graph again */
 	}
 }
@@ -220,13 +235,28 @@ ilp_env_t *new_ilp_env(copy_opt_t *co, ilp_callback build, ilp_callback apply, v
 
 lpp_sol_state_t ilp_go(ilp_env_t *ienv)
 {
-	be_options_t *options = be_get_irg_options(ienv->co->irg);
+	ir_graph     *irg     = ienv->co->irg;
+	be_options_t *options = be_get_irg_options(irg);
 
 	sr_remove(ienv->sr);
 
 	ienv->build(ienv);
-	lpp_set_time_limit(ienv->lp, time_limit);
 
+	if (dump_flags & DUMP_ILP) {
+		char buf[128];
+		FILE *f;
+
+		ir_snprintf(buf, sizeof(buf), "%F_%s-co.ilp", irg,
+		            ienv->co->cenv->cls->name);
+		f = fopen(buf, "wt");
+		if (f == NULL) {
+			panic("Couldn't open '%s' for writing", buf);
+		}
+		lpp_dump_plain(ienv->lp, f);
+		fclose(f);
+	}
+
+	lpp_set_time_limit(ienv->lp, time_limit);
 	if (solve_log)
 		lpp_set_log(ienv->lp, stdout);
 
@@ -236,20 +266,6 @@ lpp_sol_state_t ilp_go(ilp_env_t *ienv)
 	//be_stat_ev_dbl("co_ilp_best_bound", ienv->lp->best_bound);
 	be_stat_ev    ("co_ilp_iter",       lpp_get_iter_cnt(ienv->lp));
 	be_stat_ev_dbl("co_ilp_sol_time",   lpp_get_sol_time(ienv->lp));
-
-	if (dump_flags & DUMP_ILP) {
-		char buf[128];
-		FILE *f;
-
-		ir_snprintf(buf, sizeof(buf), "%F_%s-co.ilp", ienv->co->cenv->irg,
-		            ienv->co->cenv->cls->name);
-		f = fopen(buf, "wt");
-		if (f == NULL) {
-			panic("Couldn't open '%s' for writing", buf);
-		}
-		lpp_dump_plain(ienv->lp, f);
-		fclose(f);
-	}
 
 	ienv->apply(ienv);
 

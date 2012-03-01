@@ -31,6 +31,7 @@
 #include "irhooks.h"
 #include "array.h"
 #include "hashptr.h"
+#include "ircons.h"
 
 #define _get_walk_arity(env, node) \
 	((env)->follow_deps ? get_irn_ins_or_deps((node)) : get_irn_arity((node)))
@@ -78,7 +79,7 @@ static block_entry_t *block_find_entry(ir_node *block, blk_collect_data_t *ctx)
 	block_entry_t *elem;
 
 	key.block = block;
-	elem = (block_entry_t*)pset_find(ctx->blk_map, &key, HASH_PTR(block));
+	elem = (block_entry_t*)pset_find(ctx->blk_map, &key, hash_ptr(block));
 	if (elem)
 		return elem;
 
@@ -90,7 +91,7 @@ static block_entry_t *block_find_entry(ir_node *block, blk_collect_data_t *ctx)
 	elem->cf_list    = NEW_ARR_F(ir_node *, 0);
 	elem->entry_list = NEW_ARR_F(ir_node *, 0);
 
-	return (block_entry_t*)pset_insert(ctx->blk_map, elem, HASH_PTR(block));
+	return (block_entry_t*)pset_insert(ctx->blk_map, elem, hash_ptr(block));
 }
 
 /**

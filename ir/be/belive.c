@@ -34,7 +34,6 @@
 #include "irdump_t.h"
 #include "irnodeset.h"
 
-#include "dfs_t.h"
 #include "absgraph.h"
 #include "statev.h"
 
@@ -43,16 +42,11 @@
 #include "beirg.h"
 #include "besched.h"
 #include "bemodule.h"
+#include "bedump.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 #define LV_STD_SIZE             64
-
-/* if defined, use binary search for already live nodes, else linear */
-#define LV_USE_BINARY_SEARCH
-#undef  LV_INTESIVE_CHECKS
-
-void be_live_chk_compare(be_lv_t *lv, lv_chk_t *lvc);
 
 /**
  * Filter out some nodes for which we never need liveness.
@@ -89,8 +83,6 @@ int (be_is_live_end)(const be_lv_t *lv, const ir_node *block, const ir_node *irn
 	return _be_is_live_xxx(lv, block, irn, be_lv_state_end);
 }
 
-
-#ifdef LV_USE_BINARY_SEARCH
 static inline unsigned _be_liveness_bsearch(be_lv_info_t *arr, unsigned idx)
 {
 	be_lv_info_t *payload = arr + 1;
@@ -120,38 +112,8 @@ static inline unsigned _be_liveness_bsearch(be_lv_info_t *arr, unsigned idx)
 		res = lo;
 	} while (lo < hi);
 
-#ifdef LV_INTESIVE_CHECKS
-	{
-		unsigned i;
-		for (i = res; i < n; ++i)
-			assert(payload[i].node.idx >= idx);
-
-		for (i = 0; i < res; ++i)
-			assert(payload[i].node.idx < idx);
-	}
-#endif
-
 	return res;
 }
-
-#else
-
-/**
- * This function searches linearly for the node in the array.
- */
-static inline unsigned _be_liveness_bsearch(be_lv_info_t *arr, unsigned idx)
-{
-	unsigned n  = arr[0].head.n_members;
-	unsigned i;
-
-	for (i = 0; i < n; ++i) {
-		if (arr[i + 1].node.idx == idx)
-			return i;
-	}
-
-	return i;
-}
-#endif
 
 be_lv_info_node_t *be_lv_get(const be_lv_t *li, const ir_node *bl,
                              const ir_node *irn)
@@ -230,20 +192,6 @@ static be_lv_info_node_t *be_lv_get_or_set(be_lv_t *li, ir_node *bl,
 		res->idx    = idx;
 		res->flags  = 0;
 	}
-
-#ifdef LV_INTESIVE_CHECKS
-	{
-		unsigned i;
-		unsigned n = irn_live[0].head.n_members;
-		unsigned last = 0;
-		be_lv_info_t *payload = &irn_live[1];
-
-		for (i = 0; i < n; ++i) {
-			assert(payload[i].node.idx >= last);
-			last = payload[i].node.idx;
-		}
-	}
-#endif
 
 	return res;
 }
@@ -373,11 +321,6 @@ static void live_end_at_block(ir_node *block, int is_true_out)
 	}
 }
 
-typedef struct lv_walker_t {
-	be_lv_t *lv;
-	void *data;
-} lv_walker_t;
-
 typedef struct lv_remove_walker_t {
 	be_lv_t       *lv;
 	const ir_node *irn;
@@ -451,41 +394,6 @@ static void lv_remove_irn_walker(ir_node *bl, void *data)
 	be_lv_remove(w->lv, bl, w->irn);
 }
 
-static const char *lv_flags_to_str(unsigned flags)
-{
-	static const char *states[] = {
-		"---",
-		"i--",
-		"-e-",
-		"ie-",
-		"--o",
-		"i-o",
-		"-eo",
-		"ieo"
-	};
-
-	return states[flags & 7];
-}
-
-static void lv_dump_block(void *context, FILE *f, const ir_node *bl)
-{
-	if (is_Block(bl)) {
-		be_lv_t *lv = (be_lv_t*)context;
-		be_lv_info_t *info = (be_lv_info_t*)ir_nodehashmap_get(&lv->map, bl);
-
-		fprintf(f, "liveness:\n");
-		if (info != NULL) {
-			unsigned n = info[0].head.n_members;
-			unsigned i;
-
-			for (i = 0; i < n; ++i) {
-				be_lv_info_node_t *n = &info[i+1].node;
-				ir_fprintf(f, "%s %+F\n", lv_flags_to_str(n->flags), get_idx_irn(lv->irg, n->idx));
-			}
-		}
-	}
-}
-
 /**
  * Walker, collect all nodes for which we want calculate liveness info
  * on an obstack.
@@ -497,21 +405,34 @@ static void collect_liveness_nodes(ir_node *irn, void *data)
 		nodes[get_irn_idx(irn)] = irn;
 }
 
-static void compute_liveness(be_lv_t *lv)
+void be_liveness_compute_sets(be_lv_t *lv)
 {
 	ir_node **nodes;
-	int i, n;
+	int       i;
+	int       n;
+	unsigned  last_idx;
 
-	stat_ev_tim_push();
+	if (lv->sets_valid)
+		return;
+
+	be_timer_push(T_LIVE);
+	last_idx = get_irg_last_idx(lv->irg);
+	if (last_idx >= bitset_size(lv->nodes)) {
+		bitset_free(lv->nodes);
+		lv->nodes = bitset_malloc(last_idx * 2);
+	} else {
+		bitset_clear_all(lv->nodes);
+	}
+	ir_nodehashmap_init(&lv->map);
+	obstack_init(&lv->obst);
+
 	n = get_irg_last_idx(lv->irg);
 	nodes = NEW_ARR_F(ir_node *, n);
 	memset(nodes, 0, sizeof(nodes[0]) * n);
 
-	/*
-	 * inserting the variables sorted by their ID is probably
+	/* inserting the variables sorted by their ID is probably
 	 * more efficient since the binary sorted set insertion
-	 * will not need to move around the data.
-	 */
+	 * will not need to move around the data. */
 	irg_walk_graph(lv->irg, NULL, collect_liveness_nodes, nodes);
 
 	re.lv      = lv;
@@ -525,98 +446,63 @@ static void compute_liveness(be_lv_t *lv)
 	DEL_ARR_F(nodes);
 	free(re.visited);
 	register_hook(hook_node_info, &lv->hook_info);
-	stat_ev_tim_pop("be_lv_sets_cons");
+
+	be_timer_pop(T_LIVE);
+
+	lv->sets_valid = true;
 }
 
-void be_liveness_assure_sets(be_lv_t *lv)
+void be_liveness_compute_chk(be_lv_t *lv)
 {
-	if (!lv->nodes) {
-		be_timer_push(T_LIVE);
-
-		lv->nodes = bitset_malloc(2 * get_irg_last_idx(lv->irg));
-		ir_nodehashmap_init(&lv->map);
-		obstack_init(&lv->obst);
-		compute_liveness(lv);
-		/* be_live_chk_compare(lv, lv->lvc); */
-
-		be_timer_pop(T_LIVE);
-	}
+	if (lv->lvc != NULL)
+		return;
+	lv->lvc = lv_chk_new(lv->irg);
 }
 
-void be_liveness_assure_chk(be_lv_t *lv)
+void be_liveness_invalidate_sets(be_lv_t *lv)
 {
-#ifndef USE_LIVE_CHK
-	be_timer_push(t_verify);
-	be_liveness_assure_sets(lv);
-	be_timer_pop(t_verify);
-#else
-	(void) lv;
-#endif
+	if (!lv->sets_valid)
+		return;
+	unregister_hook(hook_node_info, &lv->hook_info);
+	obstack_free(&lv->obst, NULL);
+	ir_nodehashmap_destroy(&lv->map);
+	lv->sets_valid = false;
 }
 
-void be_liveness_invalidate(be_lv_t *lv)
+void be_liveness_invalidate_chk(be_lv_t *lv)
 {
-	if (lv && lv->nodes) {
-		unregister_hook(hook_node_info, &lv->hook_info);
-		obstack_free(&lv->obst, NULL);
-		ir_nodehashmap_destroy(&lv->map);
-		bitset_free(lv->nodes);
-		lv->nodes = NULL;
-	}
+	be_liveness_invalidate_sets(lv);
+
+	if (lv->lvc == NULL)
+		return;
+	lv_chk_free(lv->lvc);
+	lv->lvc = NULL;
 }
 
-/* Compute the inter block liveness for a graph. */
-be_lv_t *be_liveness(ir_graph *irg)
+be_lv_t *be_liveness_new(ir_graph *irg)
 {
 	be_lv_t *lv = XMALLOCZ(be_lv_t);
 
-	lv->irg  = irg;
-#ifdef USE_LIVE_CHK
-	lv->dfs  = dfs_new(&absgraph_irg_cfg_succ, irg);
-	lv->lvc  = lv_chk_new(lv->irg, lv->dfs);
-#endif
+	lv->irg = irg;
 	lv->hook_info.context = lv;
-	lv->hook_info.hook._hook_node_info = lv_dump_block;
+	lv->hook_info.hook._hook_node_info = be_dump_liveness_block;
+	lv->nodes = bitset_malloc(2 * get_irg_last_idx(lv->irg));
 
 	return lv;
 }
 
-void be_liveness_recompute(be_lv_t *lv)
-{
-	unsigned last_idx;
-
-	be_timer_push(T_LIVE);
-	last_idx = get_irg_last_idx(lv->irg);
-	if (last_idx >= bitset_size(lv->nodes)) {
-		bitset_free(lv->nodes);
-		lv->nodes = bitset_malloc(last_idx * 2);
-	} else
-		bitset_clear_all(lv->nodes);
-
-	ir_nodehashmap_destroy(&lv->map);
-	obstack_free(&lv->obst, NULL);
-
-	ir_nodehashmap_init(&lv->map);
-	obstack_init(&lv->obst);
-	compute_liveness(lv);
-
-	be_timer_pop(T_LIVE);
-}
-
-
 void be_liveness_free(be_lv_t *lv)
 {
-	be_liveness_invalidate(lv);
-#ifdef USE_LIVE_CHK
-	lv_chk_free(lv->lvc);
-	dfs_free(lv->dfs);
-#endif
+	be_liveness_invalidate_sets(lv);
+	be_liveness_invalidate_chk(lv);
+
+	bitset_free(lv->nodes);
 	xfree(lv);
 }
 
 void be_liveness_remove(be_lv_t *lv, const ir_node *irn)
 {
-	if (lv->nodes) {
+	if (lv->sets_valid) {
 		unsigned idx = get_irn_idx(irn);
 		lv_remove_walker_t w;
 
@@ -636,7 +522,7 @@ void be_liveness_remove(be_lv_t *lv, const ir_node *irn)
 void be_liveness_introduce(be_lv_t *lv, ir_node *irn)
 {
 	/* Don't compute liveness information for non-data nodes. */
-	if (lv->nodes && is_liveness_node(irn)) {
+	if (lv->sets_valid && is_liveness_node(irn)) {
 		re.lv      = lv;
 		re.visited = bitset_malloc(get_irg_last_idx(lv->irg));
 		liveness_for_node(irn);
@@ -648,130 +534,6 @@ void be_liveness_update(be_lv_t *lv, ir_node *irn)
 {
 	be_liveness_remove(lv, irn);
 	be_liveness_introduce(lv, irn);
-}
-
-static void lv_check_walker(ir_node *bl, void *data)
-{
-	lv_walker_t *w = (lv_walker_t*)data;
-	be_lv_t *lv    = w->lv;
-	be_lv_t *fresh = (be_lv_t*)w->data;
-
-	be_lv_info_t *curr = (be_lv_info_t*)ir_nodehashmap_get(&fresh->map, bl);
-	be_lv_info_t *fr   = (be_lv_info_t*)ir_nodehashmap_get(&fresh->map, bl);
-
-	if (!fr && curr && curr[0].head.n_members > 0) {
-		unsigned i;
-
-		ir_fprintf(stderr, "%+F liveness should be empty but current liveness contains:\n", bl);
-		for (i = 0; i < curr[0].head.n_members; ++i) {
-			ir_fprintf(stderr, "\t%+F\n", get_idx_irn(lv->irg, curr[1 + i].node.idx));
-		}
-	}
-
-	else if (curr) {
-		unsigned n_curr  = curr[0].head.n_members;
-		unsigned n_fresh = fr[0].head.n_members;
-
-		unsigned i;
-
-		if (n_curr != n_fresh) {
-			ir_fprintf(stderr, "%+F: liveness set sizes differ. curr %d, correct %d\n", bl, n_curr, n_fresh);
-
-			ir_fprintf(stderr, "current:\n");
-			for (i = 0; i < n_curr; ++i) {
-				be_lv_info_node_t *n = &curr[1 + i].node;
-				ir_fprintf(stderr, "%+F %u %+F %s\n", bl, i, get_idx_irn(lv->irg, n->idx), lv_flags_to_str(n->flags));
-			}
-
-			ir_fprintf(stderr, "correct:\n");
-			for (i = 0; i < n_fresh; ++i) {
-				be_lv_info_node_t *n = &fr[1 + i].node;
-				ir_fprintf(stderr, "%+F %u %+F %s\n", bl, i, get_idx_irn(lv->irg, n->idx), lv_flags_to_str(n->flags));
-			}
-		}
-	}
-}
-
-void be_liveness_check(be_lv_t *lv)
-{
-	lv_walker_t w;
-	be_lv_t *fresh = be_liveness(lv->irg);
-
-	w.lv   = lv;
-	w.data = fresh;
-	irg_block_walk_graph(lv->irg, lv_check_walker, NULL, &w);
-	be_liveness_free(fresh);
-}
-
-
-static void lv_dump_block_walker(ir_node *irn, void *data)
-{
-	lv_walker_t *w = (lv_walker_t*)data;
-	if (is_Block(irn))
-		lv_dump_block(w->lv, (FILE*)w->data, irn);
-}
-
-
-/* Dump the liveness information for a graph. */
-void be_liveness_dump(const be_lv_t *lv, FILE *f)
-{
-	lv_walker_t w;
-
-	w.lv   = (be_lv_t *) lv;
-	w.data = f;
-	irg_block_walk_graph(lv->irg, lv_dump_block_walker, NULL, &w);
-}
-
-/* Dump the liveness information for a graph. */
-void be_liveness_dumpto(const be_lv_t *lv, const char *cls_name)
-{
-	FILE *f;
-	char buf[128];
-	ir_snprintf(buf, sizeof(buf), "%F_%s-live.txt", lv->irg, cls_name);
-	if ((f = fopen(buf, "wt")) != NULL) {
-		be_liveness_dump(lv, f);
-		fclose(f);
-	}
-}
-
-/**
- * Walker: checks that every predecessors of a node dominates the node.
- */
-static void dom_check(ir_node *irn, void *data)
-{
-	int *problem_found = (int*)data;
-
-	if (!is_Block(irn) && irn != get_irg_end(get_irn_irg(irn))) {
-		int i, n;
-		ir_node *bl = get_nodes_block(irn);
-
-		for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
-			ir_node *op     = get_irn_n(irn, i);
-			ir_node *def_bl = get_nodes_block(op);
-			ir_node *use_bl = bl;
-
-			if (is_Phi(irn))
-				use_bl = get_Block_cfgpred_block(bl, i);
-
-			if (get_irn_opcode(use_bl) != iro_Bad
-			     && get_irn_opcode(def_bl) != iro_Bad
-			     && !block_dominates(def_bl, use_bl)) {
-				ir_fprintf(stderr, "Verify warning: %+F in %+F must dominate %+F for user %+F (%s)\n", op, def_bl, use_bl, irn, get_irg_dump_name(get_irn_irg(op)));
-				*problem_found = 1;
-			}
-		}
-	}
-}
-
-/* Check, if the SSA dominance property is fulfilled. */
-int be_check_dominance(ir_graph *irg)
-{
-	int problem_found = 0;
-
-	assure_doms(irg);
-	irg_walk_graph(irg, dom_check, NULL, &problem_found);
-
-	return !problem_found;
 }
 
 void be_liveness_transfer(const arch_register_class_t *cls,
@@ -852,7 +614,7 @@ static void collect_node(ir_node *irn, void *data)
 	obstack_ptr_grow(obst, irn);
 }
 
-void be_live_chk_compare(be_lv_t *lv, lv_chk_t *lvc)
+static void be_live_chk_compare(be_lv_t *lv, lv_chk_t *lvc)
 {
 	ir_graph *irg    = lv->irg;
 
@@ -905,5 +667,6 @@ void be_live_chk_compare(be_lv_t *lv, lv_chk_t *lvc)
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_live)
 void be_init_live(void)
 {
+	(void)be_live_chk_compare;
 	FIRM_DBG_REGISTER(dbg, "firm.be.liveness");
 }

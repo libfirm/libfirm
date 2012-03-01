@@ -628,7 +628,7 @@ static void sparc_set_frame_entity(ir_node *node, ir_entity *entity)
 	}
 }
 
-void sparc_finish(ir_graph *irg)
+void sparc_finish_graph(ir_graph *irg)
 {
 	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
 	bool               at_begin     = stack_layout->sp_relative ? true : false;
@@ -637,6 +637,7 @@ void sparc_finish(ir_graph *irg)
 	irg_walk_graph(irg, NULL, sparc_collect_frame_entity_nodes, fec_env);
 	be_assign_entities(fec_env, sparc_set_frame_entity, at_begin);
 	be_free_frame_entity_coalescer(fec_env);
+	sparc_adjust_stack_entity_offsets(irg);
 
 	sparc_introduce_prolog_epilog(irg);
 
@@ -647,7 +648,7 @@ void sparc_finish(ir_graph *irg)
 	heights = heights_new(irg);
 
 	/* perform peephole optimizations */
-	clear_irp_opcodes_generic_func();
+	ir_clear_opcodes_generic_func();
 	register_peephole_optimisation(op_be_IncSP,        peephole_be_IncSP);
 	register_peephole_optimisation(op_sparc_FrameAddr, peephole_sparc_FrameAddr);
 	register_peephole_optimisation(op_sparc_RestoreZero,
@@ -655,7 +656,7 @@ void sparc_finish(ir_graph *irg)
 	be_peephole_opt(irg);
 
 	/* perform legalizations (mostly fix nodes with too big immediates) */
-	clear_irp_opcodes_generic_func();
+	ir_clear_opcodes_generic_func();
 	register_peephole_optimisation(op_be_IncSP,        finish_be_IncSP);
 	register_peephole_optimisation(op_sparc_FrameAddr, finish_sparc_FrameAddr);
 	register_peephole_optimisation(op_sparc_Ld,        finish_sparc_Ld);

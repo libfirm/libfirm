@@ -46,7 +46,7 @@ void init_ident(void)
 
 ident *new_id_from_chars(const char *str, size_t len)
 {
-	unsigned hash   = HASH_STR(str, len);
+	unsigned hash   = hash_data((const unsigned char*)str, len);
 	ident   *result = (ident*) set_hinsert0(id_set, str, len, hash);
 	return result;
 }

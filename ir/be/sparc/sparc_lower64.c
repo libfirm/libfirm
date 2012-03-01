@@ -105,6 +105,30 @@ static ir_entity *create_64_intrinsic_fkt(ir_type *method, const ir_op *op,
 		name = mode_is_signed(imode) ? "__divdi3" : "__udivdi3";
 	} else if (op == op_Mod) {
 		name = mode_is_signed(imode) ? "__moddi3" : "__umoddi3";
+	} else if (op == op_Conv) {
+		if (mode_is_float(imode)) {
+			assert(get_mode_size_bits(omode) == 64);
+			if (get_mode_size_bits(imode) == 64) {
+				name = mode_is_signed(omode) ? "__fixdfdi" : "__fixunsdfdi";
+			} else if (get_mode_size_bits(imode) == 32) {
+				name = mode_is_signed(omode) ? "__fixsfdi" : "__fixunssfdi";
+			} else {
+				assert(get_mode_size_bits(imode) == 128);
+				panic("can't conver long double to long long yet");
+			}
+		} else if (mode_is_float(omode)) {
+			assert(get_mode_size_bits(imode) == 64);
+			if (get_mode_size_bits(omode) == 64) {
+				name = mode_is_signed(imode) ? "__floatdidf" : "__floatundidf";
+			} else if (get_mode_size_bits(omode) == 32) {
+				name = mode_is_signed(imode) ? "__floatdisf" : "__floatundisf";
+			} else {
+				assert(get_mode_size_bits(omode) == 128);
+				panic("can't convert long long to long double yet");
+			}
+		} else {
+			panic("can't lower 64bit Conv");
+		}
 	} else {
 		panic("Can't lower unexpected 64bit operation %s", get_op_name(op));
 	}

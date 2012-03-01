@@ -1,3 +1,5 @@
+import sys
+
 abstracts = set()
 def abstract(cls):
 	abstracts.add(cls)
@@ -29,13 +31,14 @@ def verify_node(node):
 	 	print "ERROR: flags of %s not a list" % node.__name__
 	if hasattr(node, "pinned_init") and not is_dynamic_pinned(node):
 		print "ERROR: node %s has pinned_init attribute but is not marked as dynamically pinned" % node.__name__
+	if hasattr(node, "flags") and "uses_memory" in node.flags:
+		if not inout_contains(node.ins, "mem"):
+			print "ERROR: memory op %s needs an input named 'mem'" % node.__name__
 	if is_fragile(node):
 		if not is_dynamic_pinned(node):
 			print "ERROR: fragile node %s must be dynamically pinned" % node.__name__
 		if not hasattr(node, "throws_init"):
 			print "ERROR: fragile node %s needs a throws_init attribute" % node.__name__
-		if not inout_contains(node.ins, "mem"):
-			print "ERROR: fragile node %s needs an input named 'mem'" % node.__name__
 		if not inout_contains(node.outs, "X_regular"):
 			print "ERROR: fragile node %s needs an output named 'X_regular'" % node.__name__
 		if not inout_contains(node.outs, "X_except"):
@@ -67,3 +70,28 @@ def setnodedefaults(node):
 	setdefault(node, "customSerializer", False)
 	if hasattr(node, "outs"):
 		node.mode = "mode_T"
+
+def trim_docstring(docstring):
+    if not docstring:
+        return ''
+    # Convert tabs to spaces (following the normal Python rules)
+    # and split into a list of lines:
+    lines = docstring.expandtabs().splitlines()
+    # Determine minimum indentation (first line doesn't count):
+    indent = sys.maxint
+    for line in lines[1:]:
+        stripped = line.lstrip()
+        if stripped:
+            indent = min(indent, len(line) - len(stripped))
+    # Remove indentation (first line is special):
+    trimmed = [lines[0].strip()]
+    if indent < sys.maxint:
+        for line in lines[1:]:
+            trimmed.append(line[indent:].rstrip())
+    # Strip off trailing and leading blank lines:
+    while trimmed and not trimmed[-1]:
+        trimmed.pop()
+    while trimmed and not trimmed[0]:
+        trimmed.pop(0)
+    # Return a single string:
+    return '\n'.join(trimmed)

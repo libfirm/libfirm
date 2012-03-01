@@ -58,12 +58,6 @@ void add_loop_irg(ir_loop *loop, ir_graph *irg)
 	ARR_APP1(loop_element, loop->children, ln);
 }
 
-/**
- * Mature all loops by removing the flexible arrays of a loop.
- *
- * @param loop  the loop to mature
- * @param obst  an obstack, where the new arrays are allocated on
- */
 void mature_loops(ir_loop *loop, struct obstack *obst)
 {
 	size_t i;
@@ -82,19 +76,16 @@ void mature_loops(ir_loop *loop, struct obstack *obst)
 	}
 }
 
-/* Returns outer loop, itself if outermost. */
 ir_loop *(get_loop_outer_loop)(const ir_loop *loop)
 {
 	return _get_loop_outer_loop(loop);
 }
 
-/* Returns nesting depth of this loop */
 unsigned (get_loop_depth)(const ir_loop *loop)
 {
 	return _get_loop_depth(loop);
 }
 
-/* Returns the number of elements contained in loop.  */
 size_t get_loop_n_elements(const ir_loop *loop)
 {
 	assert(loop && loop->kind == k_ir_loop);
@@ -107,9 +98,6 @@ loop_element get_loop_element(const ir_loop *loop, size_t pos)
 	return(loop -> children[pos]);
 }
 
-/**
- * Sets the loop for a node.
- */
 void set_irn_loop(ir_node *n, ir_loop *loop)
 {
 	n->loop = loop;
@@ -147,22 +135,16 @@ int (is_ir_loop)(const void *thing)
 	return _is_ir_loop(thing);
 }
 
-/* The outermost loop is remarked in the surrounding graph. */
 void (set_irg_loop)(ir_graph *irg, ir_loop *loop)
 {
 	_set_irg_loop(irg, loop);
 }
 
-/* Returns the root loop info (if exists) for an irg. */
 ir_loop *(get_irg_loop)(const ir_graph *irg)
 {
 	return _get_irg_loop(irg);
 }
 
-/*
- * Allocates a new loop as son of father on the given obstack.
- * If father is equal NULL, a new root loop is created.
- */
 ir_loop *alloc_loop(ir_loop *father, struct obstack *obst)
 {
 	ir_loop *son;

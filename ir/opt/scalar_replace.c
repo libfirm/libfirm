@@ -722,7 +722,7 @@ static ir_graph_state_t do_scalar_replacement(ir_graph *irg)
 				ent_type = get_entity_type(ent);
 
 				key.ent       = ent;
-				set_insert(set_ent, &key, sizeof(key), HASH_PTR(key.ent));
+				set_insert(set_ent, &key, sizeof(key), hash_ptr(key.ent));
 
 #ifdef DEBUG_libfirm
 				if (is_Array_type(ent_type)) {

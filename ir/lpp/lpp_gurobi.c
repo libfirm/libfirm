@@ -28,6 +28,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include "obst.h"
 
@@ -42,6 +43,7 @@ static char gurobi_var_encoding[4] = { 0, 0, GRB_CONTINUOUS, GRB_BINARY };
 typedef struct _gurobi_t {
 	lpp_t *lpp;
 	GRBenv *env;
+	GRBenv *modelenv;
 	GRBmodel *model;
 } gurobi_t;
 
@@ -72,6 +74,11 @@ static gurobi_t *new_gurobi(lpp_t *lpp)
 #if 0
 	error = GRBsetlogfile(grb->env, lpp->log);
 	check_gurobi_error(grb, error);
+#else
+	if (lpp->log != stdout && lpp->log != stderr) {
+		error = GRBsetintparam(grb->env, GRB_INT_PAR_OUTPUTFLAG, 0);
+		check_gurobi_error(grb, error);
+	}
 #endif
 
 	return grb;
@@ -79,6 +86,7 @@ static gurobi_t *new_gurobi(lpp_t *lpp)
 
 static void free_gurobi(gurobi_t *grb)
 {
+	GRBfreemodel(grb->model);
 	GRBfreeenv(grb->env);
 	free(grb);
 }
@@ -168,6 +176,7 @@ static void gurobi_construct(gurobi_t *grb)
 	                     objsen, 0, obj, sense, rhs, matbeg, matcnt, matind,
 	                     matval, lb, NULL, vartype, colname, rowname);
 	check_gurobi_error(grb, error);
+	grb->modelenv = GRBgetenv(grb->model);
 
 	obstack_free(&obst, NULL);
 	lpp_free_matrix(lpp);
@@ -183,39 +192,21 @@ static void gurobi_solve(gurobi_t *grb)
 	double *values;
 	double  iterations;
 
-	/* set performance parameters */
-	// CPXsetintparam(grb->env, CPX_PARAM_MIPSTART, CPX_ON);
-	//CPXsetintparam(grb->env, CPX_PARAM_MIPORDTYPE, CPX_MIPORDER_COST);
-	/* output every search tree node */
-	// CPXsetintparam(grb->env, CPX_PARAM_MIPINTERVAL, 1);
-
-	/* experimental switches */
-	// CPXsetintparam(grb->env, CPX_PARAM_VARSEL, CPX_VARSEL_STRONG);
-	// CPXsetdblparam(grb->env, CPX_PARAM_BTTOL, 1.0);
-	// CPXsetintparam(grb->env, CPX_PARAM_BRDIR, CPX_BRDIR_UP);
-
 	/* Set the time limit appropriately */
 	if(lpp->time_limit_secs > 0.0) {
-		error = GRBsetdblparam(grb->env, GRB_DBL_PAR_TIMELIMIT, lpp->time_limit_secs);
+		error = GRBsetdblparam(grb->modelenv, GRB_DBL_PAR_TIMELIMIT, lpp->time_limit_secs);
 		check_gurobi_error(grb, error);
 	}
 
-	/*
-	 * If we have enough time, we instruct cplex to imply some
-	 * of its higher order magic to pursue the best solution
-	 */
-	if(lpp->emphasis) {
-		/* not implemented */
-	}
-
+#if 0
 	/*
 	 * If a bound of the objective function is supplied,
 	 * set it accordingly, dependign on minimization or maximization.
 	 */
 	if(lpp->set_bound) {
-		//panic("bound not implemented yet");
 		fprintf(stderr, "Warning: gurobi bound not implemented yet\n");
 	}
+#endif
 
 	/* solve */
 	error = GRBoptimize(grb->model);
@@ -250,7 +241,9 @@ static void gurobi_solve(gurobi_t *grb)
 		check_gurobi_error(grb, error);
 		error = GRBgetdblattr(grb->model , GRB_DBL_ATTR_OBJBOUND,
 		                      &lpp->best_bound);
-		check_gurobi_error(grb, error);
+		if (error != 0) {
+			lpp->best_bound = FP_NAN;
+		}
 	}
 
 	/* get some statistics */

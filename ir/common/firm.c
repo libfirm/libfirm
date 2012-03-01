@@ -24,7 +24,9 @@
  */
 #include "config.h"
 
-#include "firm_revision.h"
+#ifdef HAVE_FIRM_REVISION_H
+# include "firm_revision.h"
+#endif
 
 #include <string.h>
 #include <stdio.h>
@@ -83,12 +85,12 @@ void ir_init(void)
 	init_mode();
 	/* initialize tarvals, and floating point arithmetic */
 	init_tarval_2();
+	/* initialize node opcodes */
+	firm_init_op();
 	/* init graph construction */
 	firm_init_irgraph();
 	/* kind of obstack initialization */
 	firm_init_mangle();
-	/* initialize all op codes an irnode can consist of */
-	init_op();
 	/* initialize reassociation */
 	firm_init_reassociation();
 	/* initialize function call optimization */
@@ -100,10 +102,6 @@ void ir_init(void)
 	/* Builds a construct allowing to access all information to be constructed
 	   later. */
 	init_irprog_2();
-	/* Initialize the type module and construct some idents needed. */
-	ir_init_type();
-	/* initialize the entity module */
-	ir_init_entity();
 	/* class cast optimization */
 	firm_init_class_casts_opt();
 	/* memory disambiguation */
@@ -123,17 +121,18 @@ void ir_init(void)
 
 void ir_finish(void)
 {
+#ifdef DEBUG_libfirm
+	firm_finish_debugger();
+#endif
+	firm_be_finish();
+
 	free_ir_prog();
-
-	ir_finish_entity();
-	ir_finish_type();
-
+	firm_finish_op();
 	finish_tarval();
 	finish_mode();
 	finish_tpop();
+	firm_finish_mangle();
 	finish_ident();
-
-	firm_be_finish();
 }
 
 unsigned ir_get_version_major(void)

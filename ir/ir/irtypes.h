@@ -63,7 +63,7 @@ struct ir_op {
 	op_arity opar;            /**< The arity of operator. */
 	int op_index;             /**< The index of the first data operand, 0 for
 	                               most cases, 1 for Div etc. */
-	int fragile_mem_index;    /**< index of memory input for fragile nodes */
+	int memory_index;         /**< index of memory input for memory nodes */
 	int pn_x_regular;         /**< for fragile ops the position of the
 	                               X_regular output */
 	int pn_x_except;          /**< for fragile ops the position of the
@@ -204,6 +204,7 @@ typedef struct block_attr {
 	ir_visited_t block_visited; /**< For the walker that walks over all blocks. */
 	/* Attributes private to construction: */
 	unsigned is_matured:1;      /**< If set, all in-nodes of the block are fixed. */
+	unsigned dynamic_ins:1;     /**< if set in-array is an ARR_F on the heap. */
 	unsigned marked:1;          /**< Can be set/unset to temporary mark a block. */
 	ir_node **graph_arr;        /**< An array to store all parameters. */
 	/* Attributes holding analyses information */
@@ -540,7 +541,7 @@ typedef struct ir_vrp_info {
 struct ir_graph {
 	firm_kind         kind;        /**< Always set to k_ir_graph. */
 	/* --  Basics of the representation -- */
-    unsigned last_node_idx;        /**< The last IR node index for this graph. */
+	unsigned last_node_idx;        /**< The last IR node index for this graph. */
 	ir_entity  *ent;               /**< The entity of this procedure, i.e.,
 	                                    the type of the procedure and the
 	                                    class it belongs to. */
@@ -646,10 +647,13 @@ struct ir_prog {
 	                                     to allocate nodes the represent values
 	                                     of constant entities. It is not meant as
 	                                     a procedure.  */
+	ir_entity *unknown_entity;      /**< unique 'unknown'-entity */
 	ir_type   *segment_types[IR_SEGMENT_LAST+1];
 	ir_type  **types;               /**< A list of all types in the ir. */
-	ir_mode  **modes;               /**< A list of all modes in the ir. */
-	ir_op    **opcodes;             /**< A list of all opcodes in the ir. */
+	ir_type   *none_type;           /**< unique 'none'-type */
+	ir_type   *code_type;           /**< unique 'code'-type */
+	ir_type   *unknown_type;        /**< unique 'unknown'-type */
+	ir_type   *byte_type;           /**< type for a 'byte' */
 	ident    **global_asms;         /**< An array of global ASM insertions. */
 
 	/* -- states of and access to generated information -- */
@@ -674,14 +678,13 @@ struct ir_prog {
 	ir_class_cast_state class_cast_state;    /**< The state of cast operations in code. */
 	ir_entity_usage_computed_state globals_entity_usage_state;
 
-	ir_exc_region_t last_region_nr;      /**< The last exception region number that was assigned. */
 	ir_label_t last_label_nr;            /**< The highest label number for generating unique labels. */
 	size_t max_irg_idx;                  /**< highest unused irg index */
 	long max_node_nr;                    /**< to generate unique numbers for nodes. */
 	unsigned dump_nr;                    /**< number of program info dumps */
 	unsigned optimization_dumps :1;      /**< dump irg on each optimization */
 #ifndef NDEBUG
-	ir_resources_t reserved_resources;   /**< Bitset for tracking used global resources. */
+	irp_resources_t reserved_resources;  /**< Bitset for tracking used global resources. */
 #endif
 };
 

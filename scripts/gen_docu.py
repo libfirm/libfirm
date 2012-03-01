@@ -6,33 +6,44 @@ import docutils.writers.html4css1
 from datetime import datetime
 from jinja2 import Environment, Template
 from jinja2.filters import do_dictsort
-from spec_util import is_dynamic_pinned, verify_node, isAbstract, setdefault
+from spec_util import is_dynamic_pinned, verify_node, isAbstract, setdefault, trim_docstring
 from ir_spec import nodes
 
-def trim(docstring):
-    if not docstring:
-        return ''
-    # Convert tabs to spaces (following the normal Python rules)
-    # and split into a list of lines:
-    lines = docstring.expandtabs().splitlines()
-    # Determine minimum indentation (first line doesn't count):
-    indent = sys.maxint
-    for line in lines[1:]:
-        stripped = line.lstrip()
-        if stripped:
-            indent = min(indent, len(line) - len(stripped))
-    # Remove indentation (first line is special):
-    trimmed = [lines[0].strip()]
-    if indent < sys.maxint:
-        for line in lines[1:]:
-            trimmed.append(line[indent:].rstrip())
-    # Strip off trailing and leading blank lines:
-    while trimmed and not trimmed[-1]:
-        trimmed.pop()
-    while trimmed and not trimmed[0]:
-        trimmed.pop(0)
-    # Return a single string:
-    return '\n'.join(trimmed)
+tags = None
+linkbase = None
+
+def format_doxygrouplink(string, link=None):
+	global tags
+	if link == None:
+		link = string
+	if tags == None:
+		return string
+	e = tags.xpath("//compound[name/text()='%s']" % link)
+	if len(e) == 0:
+		return string
+	e = e[0]
+	anchorfile = e.xpath("filename/text()")
+	if len(anchorfile) == 0:
+		return string
+	global linkbase
+	return "<a href=\"%s%s\">%s</a>" % (linkbase, anchorfile[0], string)
+
+def format_doxylink(string, link=None):
+	global tags
+	if link == None:
+		link = string
+	if tags == None:
+		return string
+	e = tags.xpath("//member[name/text()='%s']" % link)
+	if len(e) == 0:
+		return string
+	e = e[0]
+	anchorfile = e.xpath("anchorfile/text()")
+	anchor = e.xpath("anchor/text()")
+	if len(anchorfile) == 0 or len(anchor) == 0:
+		return string
+	global linkbase
+	return "<a href=\"%s%s#%s\">%s</a>" % (linkbase, anchorfile[0], anchor[0], string)
 
 def format_docutils(string):
 	writer = docutils.writers.html4css1.Writer()
@@ -41,6 +52,8 @@ def format_docutils(string):
 
 env = Environment()
 env.filters['docutils'] = format_docutils
+env.filters['doxylink'] = format_doxylink
+env.filters['doxygrouplink'] = format_doxygrouplink
 
 docu_template = env.from_string(
 '''<html>
@@ -84,8 +97,13 @@ docu_template = env.from_string(
 					{% endfor %}
 					{% endif %}
 					</dl>
+					{% set comma = joiner(", ") %}
 					<h5>Flags</h5>
-					{% for flag in node.flags %} {{flag}} {% endfor %}
+					{% for flag in node.flags -%}
+						{{comma()}}{{flag|doxylink("irop_flag_" + flag)}}
+					{%- endfor %}
+					<h5>{{"API"|doxygrouplink(node.name)}}</h5>
+					<hr/>
 				</div>
 				{% endfor %}
 			</div></div>
@@ -114,7 +132,7 @@ docu_template = env.from_string(
 #############################
 
 def preprocess_node(node):
-	node.doc = trim(node.__doc__)
+	node.doc = trim_docstring(node.__doc__)
 
 def prepare_nodes():
 	real_nodes = []
@@ -127,8 +145,26 @@ def prepare_nodes():
 	return real_nodes
 
 def main(argv):
+	global tags
+	output = sys.stdout
+	if len(argv) > 1:
+		output = open(argv[-1], "w")
+	if len(argv) > 3:
+		tagfile = open(argv[-3], "r")
+		global linkbase
+		linkbase = argv[-2]
+		if linkbase != "":
+			linkbase += "/"
+		try:
+			from lxml import etree
+			tags = etree.parse(tagfile)
+		except:
+			tags = None
+
 	real_nodes = prepare_nodes()
 	time = datetime.now().replace(microsecond=0).isoformat(' ')
-	sys.stdout.write(docu_template.render(nodes = real_nodes, time=time))
+	output.write(docu_template.render(nodes=real_nodes, time=time))
+	if output != sys.stdout:
+		output.close()
 
 main(sys.argv)

@@ -365,11 +365,10 @@ void be_ssa_destruction(be_chordal_env_t *chordal_env)
 	insert_all_perms_env_t insert_perms_env;
 	pmap     *perm_map = pmap_create();
 	ir_graph *irg      = chordal_env->irg;
-	be_lv_t  *lv       = be_assure_liveness(irg);
 
 	FIRM_DBG_REGISTER(dbg, "ir.be.ssadestr");
 
-	be_liveness_invalidate(lv);
+	be_invalidate_live_sets(irg);
 
 	/* create a map for fast lookup of perms: block --> perm */
 	irg_walk_graph(irg, clear_link, collect_phis_walker, chordal_env);
@@ -379,20 +378,16 @@ void be_ssa_destruction(be_chordal_env_t *chordal_env)
 	insert_perms_env.perm_map = perm_map;
 	irg_block_walk_graph(irg, insert_all_perms_walker, NULL, &insert_perms_env);
 
-	// Matze: really needed here?
-	// Sebastian: Yes. the walker function uses interference.
-	be_liveness_invalidate(lv);
-
 	if (chordal_env->opts->dump_flags & BE_CH_DUMP_SSADESTR)
 		dump_ir_graph(irg, "ssa_destr_perms_placed");
 
-	be_liveness_assure_chk(lv);
+	be_assure_live_chk(irg);
 
 	DBG((dbg, LEVEL_1, "Setting regs and placing dupls...\n"));
 	irg_block_walk_graph(irg, set_regs_or_place_dupls_walker, NULL, chordal_env);
 
-	/* TODO: unfortunately updating doesn't work yet. */
-	be_liveness_invalidate(lv);
+	/* unfortunately updating doesn't work yet. */
+	be_invalidate_live_chk(irg);
 
 	if (chordal_env->opts->dump_flags & BE_CH_DUMP_SSADESTR)
 		dump_ir_graph(irg, "ssa_destr_regs_set");

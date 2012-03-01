@@ -57,8 +57,17 @@ struct copy_opt_t {
 #define ASSERT_OU_AVAIL(co)     assert((co)->units.next && "Representation as optimization-units not build")
 #define ASSERT_GS_AVAIL(co)     assert((co)->nodes && "Representation as graph not build")
 
-#define get_irn_col(irn)        arch_register_get_index(arch_get_irn_register(irn))
-#define set_irn_col(co, irn, col) arch_set_irn_register(irn, arch_register_for_index((co)->cls, col))
+static inline unsigned get_irn_col(const ir_node *node)
+{
+	return arch_register_get_index(arch_get_irn_register(node));
+}
+
+static inline void set_irn_col(const arch_register_class_t *cls, ir_node *node,
+                               unsigned color)
+{
+	const arch_register_t *reg = arch_register_for_index(cls, color);
+	arch_set_irn_register(node, reg);
+}
 
 #define list_entry_units(lh) list_entry(lh, unit_t, units)
 
@@ -130,7 +139,8 @@ struct affinity_node_t {
 };
 
 
-static inline affinity_node_t *get_affinity_info(const copy_opt_t *co, const ir_node *irn) {
+static inline affinity_node_t *get_affinity_info(const copy_opt_t *co, const ir_node *irn)
+{
 	affinity_node_t find;
 
 	ASSERT_GS_AVAIL(co);
@@ -145,6 +155,5 @@ static inline affinity_node_t *get_affinity_info(const copy_opt_t *co, const ir_
 
 #define co_gs_foreach_aff_node(co, aff_node)     for (aff_node = (affinity_node_t*)co_gs_nodes_begin(co); aff_node != NULL; aff_node = (affinity_node_t*)co_gs_nodes_next(co))
 #define co_gs_foreach_neighb(aff_node, neighb)   for (neighb = (neighb_t*)aff_node->neighbours; neighb != NULL; neighb = (neighb_t*)neighb->next)
-
 
 #endif /* FIRM_BE_BECOPYOPT_T_H */

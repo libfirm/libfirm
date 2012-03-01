@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 Karlsruhe Institute of Technology.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -18,26 +18,18 @@
  */
 
 /**
- * @brief   Apply local opts until fixpoint
- * @author  Andreas Zwinkau
+ * @file
+ * @brief    Reverse edges that reference types/entities.
+ * @author   Goetz Lindenmaier
+ * @date     29.10.2004
  */
-#include <config.h>
-#include "irgopt.h"
-#include "opt_manage.h"
+#ifndef FIRM_ANA_TROUTS_T_H
+#define FIRM_ANA_TROUTS_T_H
 
-static ir_graph_state_t do_optimize_graph_df(ir_graph *irg)
-{
-	optimize_graph_df(irg);
-	return 0;
-}
+#include "trouts.h"
 
-static optdesc_t opt_local = {
-	"localopts",
-	0, // TODO optimize_graph_df handles preconditions itself
-	do_optimize_graph_df,
-};
+void add_type_cast(const ir_type *tp, ir_node *cast);
+void add_type_pointertype_to(const ir_type *tp, ir_type *ptp);
+void add_type_arraytype_of(const ir_type *tp, ir_type *atp);
 
-void local_opts(ir_graph *irg)
-{
-	perform_irg_optimization(irg, &opt_local);
-}
+#endif

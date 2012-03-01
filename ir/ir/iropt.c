@@ -51,7 +51,6 @@
 #include "bitfiddle.h"
 #include "be.h"
 
-/* Make types visible to allow most efficient access */
 #include "entity_t.h"
 
 static bool is_Or_Eor_Add(const ir_node *node)
@@ -83,7 +82,6 @@ static ir_tarval *default_value_of(const ir_node *n)
 
 value_of_func value_of_ptr = default_value_of;
 
-/* * Set a new value_of function. */
 void set_value_of_func(value_of_func func)
 {
 	if (func != NULL)
@@ -6518,11 +6516,11 @@ static int node_cmp_attr_Sel(const ir_node *a, const ir_node *b)
 /** Compares the attributes of two Phi nodes. */
 static int node_cmp_attr_Phi(const ir_node *a, const ir_node *b)
 {
-	/* we can only enter this function if both nodes have the same number of inputs,
-	   hence it is enough to check if one of them is a Phi0 */
-	if (is_Phi0(a)) {
-		/* check the Phi0 pos attribute */
-		return a->attr.phi.u.pos != b->attr.phi.u.pos;
+	(void) b;
+	/* do not CSE Phi-nodes without any inputs when building new graphs */
+	if (get_irn_arity(a) == 0 &&
+	    get_irg_phase_state(get_irn_irg(a)) == phase_building) {
+	    return 1;
 	}
 	return 0;
 }
@@ -6741,10 +6739,6 @@ void firm_set_default_node_cmp_attr(ir_opcode code, ir_op_ops *ops)
 #undef CASE
 }
 
-/*
- * Compare function for two nodes in the value table. Gets two
- * nodes as parameters.  Returns 0 if the nodes are a Common Sub Expression.
- */
 int identities_cmp(const void *elt, const void *key)
 {
 	ir_node *a = (ir_node *)elt;
@@ -6809,16 +6803,10 @@ int identities_cmp(const void *elt, const void *key)
 	return 0;
 }
 
-/*
- * Calculate a hash value of a node.
- *
- * @param node  The IR-node
- */
 unsigned ir_node_hash(const ir_node *node)
 {
 	return node->op->ops.hash(node);
 }
-
 
 void new_identities(ir_graph *irg)
 {
@@ -6833,8 +6821,6 @@ void del_identities(ir_graph *irg)
 		del_pset(irg->value_table);
 }
 
-/* Normalize a node by putting constants (and operands with larger
- * node index) on the right (operator side). */
 void ir_normalize_node(ir_node *n)
 {
 	if (is_op_commutative(get_irn_op(n))) {
@@ -6853,16 +6839,6 @@ void ir_normalize_node(ir_node *n)
 	}
 }
 
-/*
- * Return the canonical node computing the same value as n.
- * Looks up the node in a hash table, enters it in the table
- * if it isn't there yet.
- *
- * @param n            the node to look up
- *
- * @return a node that computes the same value as n or n if no such
- *         node could be found
- */
 ir_node *identify_remember(ir_node *n)
 {
 	ir_graph *irg         = get_irn_irg(n);
@@ -6903,7 +6879,6 @@ static inline ir_node *identify_cons(ir_node *n)
 	return n;
 }
 
-/* Add a node to the identities value table. */
 void add_identities(ir_node *node)
 {
 	if (!get_opt_cse())
@@ -6914,7 +6889,6 @@ void add_identities(ir_node *node)
 	identify_remember(node);
 }
 
-/* Visit each node in the value table of a graph. */
 void visit_all_identities(ir_graph *irg, irg_walk_func visit, void *env)
 {
 	ir_node  *node;
@@ -6927,13 +6901,6 @@ void visit_all_identities(ir_graph *irg, irg_walk_func visit, void *env)
 	current_ir_graph = rem;
 }
 
-/**
- * These optimizations deallocate nodes from the obstack.
- * It can only be called if it is guaranteed that no other nodes
- * reference this one, i.e., right after construction of a node.
- *
- * @param n   The node to optimize
- */
 ir_node *optimize_node(ir_node *n)
 {
 	ir_node   *oldn = n;
@@ -7026,12 +6993,6 @@ ir_node *optimize_node(ir_node *n)
 	return n;
 }
 
-
-/**
- * These optimizations never deallocate nodes (in place).  This can cause dead
- * nodes lying on the obstack.  Remove these by a dead node elimination,
- * i.e., a copying garbage collection.
- */
 ir_node *optimize_in_place_2(ir_node *n)
 {
 	if (!get_opt_optimize() && !is_Phi(n)) return n;
@@ -7077,9 +7038,6 @@ ir_node *optimize_in_place_2(ir_node *n)
 	return n;
 }
 
-/**
- * Wrapper for external use, set proper status bits after optimization.
- */
 ir_node *optimize_in_place(ir_node *n)
 {
 	ir_graph *irg = get_irn_irg(n);
@@ -7103,7 +7061,7 @@ static unsigned hash_Const(const ir_node *node)
 	unsigned h;
 
 	/* special value for const, as they only differ in their tarval. */
-	h = HASH_PTR(node->attr.con.tarval);
+	h = hash_ptr(node->attr.con.tarval);
 
 	return h;
 }
@@ -7116,7 +7074,7 @@ static unsigned hash_SymConst(const ir_node *node)
 	unsigned h;
 
 	/* all others are pointers */
-	h = HASH_PTR(node->attr.symc.sym.type_p);
+	h = hash_ptr(node->attr.symc.sym.type_p);
 
 	return h;
 }

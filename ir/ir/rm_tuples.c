@@ -55,10 +55,6 @@ static void exchange_tuple_projs(ir_node *node, void *env)
 	*changed = true;
 }
 
-/* Remove Tuple nodes from an ir graph.
- *
- * Postcondition: No Tuple nodes.
- */
 int remove_tuples(ir_graph *irg)
 {
 	bool changed = 0;

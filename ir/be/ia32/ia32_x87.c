@@ -125,8 +125,6 @@ typedef struct blk_state {
 	x87_state *end;     /**< state at the end or NULL if not assigned */
 } blk_state;
 
-#define PTR_TO_BLKSTATE(p)    ((blk_state *)(p))
-
 /** liveness bitset for vfp registers. */
 typedef unsigned char vfp_liveness;
 
@@ -339,18 +337,17 @@ static void x87_emms(x87_state *state)
  */
 static blk_state *x87_get_bl_state(x87_simulator *sim, ir_node *block)
 {
-	pmap_entry *entry = pmap_find(sim->blk_states, block);
+	blk_state *res = pmap_get(sim->blk_states, block);
 
-	if (! entry) {
-		blk_state *bl_state = OALLOC(&sim->obst, blk_state);
-		bl_state->begin = NULL;
-		bl_state->end   = NULL;
+	if (res == NULL) {
+		res = OALLOC(&sim->obst, blk_state);
+		res->begin = NULL;
+		res->end   = NULL;
 
-		pmap_insert(sim->blk_states, block, bl_state);
-		return bl_state;
+		pmap_insert(sim->blk_states, block, res);
 	}
 
-	return PTR_TO_BLKSTATE(entry->value);
+	return res;
 }
 
 /**
@@ -2211,7 +2208,7 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg)
 		"x87 Simulator started for %+F\n", irg));
 
 	/* set the generic function pointer of instruction we must simulate */
-	clear_irp_opcodes_generic_func();
+	ir_clear_opcodes_generic_func();
 
 	register_sim(op_ia32_Call,         sim_Call);
 	register_sim(op_ia32_vfld,         sim_fld);
@@ -2285,9 +2282,8 @@ void ia32_x87_simulate_graph(ir_graph *irg)
 	sim.worklist = new_waitq();
 	waitq_put(sim.worklist, start_block);
 
-	be_assure_liveness(irg);
+	be_assure_live_sets(irg);
 	sim.lv = be_get_irg_liveness(irg);
-	be_liveness_assure_sets(sim.lv);
 
 	/* Calculate the liveness for all nodes. We must precalculate this info,
 	 * because the simulator adds new nodes (possible before Phi nodes) which

@@ -241,7 +241,7 @@ static listmap_entry_t *listmap_find(listmap_t *map, void *id)
 	key.id   = id;
 	key.list = NULL;
 	key.next = NULL;
-	entry    = (listmap_entry_t*)set_insert(map->map, &key, sizeof(key), HASH_PTR(id));
+	entry    = (listmap_entry_t*)set_insert(map->map, &key, sizeof(key), hash_ptr(id));
 
 	if (entry->list == NULL) {
 		/* a new entry, put into the list */
@@ -261,7 +261,7 @@ static listmap_entry_t *listmap_find(listmap_t *map, void *id)
 static unsigned opcode_hash(const opcode_key_t *entry)
 {
 	/* assume long >= int */
-	return (unsigned)(PTR_TO_INT(entry->mode) * 9 + entry->code + entry->u.proj * 3 + HASH_PTR(entry->u.addr) + entry->arity);
+	return (unsigned)(PTR_TO_INT(entry->mode) * 9 + entry->code + entry->u.proj * 3 + hash_ptr(entry->u.addr) + entry->arity);
 }  /* opcode_hash */
 
 /**

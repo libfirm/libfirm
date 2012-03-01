@@ -55,7 +55,7 @@ void set_amd64_ls_mode(ir_node *node, ir_mode *mode)
  * @param n        the node to dump
  * @param reason   indicates which kind of information should be dumped
  */
-static void amd64_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
+static void amd64_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 {
 	ir_mode *mode = NULL;
 

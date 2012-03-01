@@ -63,6 +63,8 @@ int is_be_node(const ir_node *irn);
  */
 void be_init_op(void);
 
+void be_finish_op(void);
+
 /**
  * Position numbers for the be_Spill inputs.
  */
@@ -357,9 +359,6 @@ int be_Return_get_emit_pop(const ir_node *ret);
  */
 void be_Return_set_emit_pop(ir_node *ret, int emit_pop);
 
-/** appends a node to the return node, returns the position of the node */
-int be_Return_append_node(ir_node *ret, ir_node *node);
-
 ir_node *be_new_Start(dbg_info *dbgi, ir_node *block, int n_out);
 
 enum {
@@ -445,13 +444,13 @@ void be_node_set_reg_class_out(ir_node *irn, int pos,
  */
 void be_set_phi_reg_req(ir_node *phi, const arch_register_req_t *req);
 
-void be_dump_phi_reg_reqs(FILE *out, ir_node *node, dump_reason_t reason);
+void be_dump_phi_reg_reqs(FILE *out, const ir_node *node, dump_reason_t reason);
 
 /**
  * Creates a new phi with associated backend informations
  */
 ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
-                    const arch_register_class_t *cls);
+                    const arch_register_req_t *req);
 
 /**
  * Search for output of start node with a specific register

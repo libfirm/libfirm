@@ -501,16 +501,12 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 {
 	be_chordal_alloc_env_t env;
 	char buf[256];
-	be_lv_t *lv;
 	const arch_register_class_t *cls = chordal_env->cls;
 
-	int colors_n          = arch_register_class_n_regs(cls);
-	ir_graph *irg         = chordal_env->irg;
+	int       colors_n = arch_register_class_n_regs(cls);
+	ir_graph *irg      = chordal_env->irg;
 
-	lv = be_assure_liveness(irg);
-	be_liveness_assure_sets(lv);
-	be_liveness_assure_chk(lv);
-
+	be_assure_live_sets(irg);
 	assure_doms(irg);
 
 	env.chordal_env   = chordal_env;

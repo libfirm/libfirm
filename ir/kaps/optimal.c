@@ -328,7 +328,7 @@ static void merge_source_into_target(pbqp_t *pbqp, pbqp_edge_t *edge)
 	if (pbqp->dump_file) {
 		char txt[100];
 		sprintf(txt, "Merging n%d into n%d", src_node->index, tgt_node->index);
-		dump_section(pbqp->dump_file, 3, txt);
+		pbqp_dump_section(pbqp->dump_file, 3, txt);
 	}
 #endif
 
@@ -490,7 +490,7 @@ static void merge_target_into_source(pbqp_t *pbqp, pbqp_edge_t *edge)
 	if (pbqp->dump_file) {
 		char txt[100];
 		sprintf(txt, "Merging n%d into n%d", tgt_node->index, src_node->index);
-		dump_section(pbqp->dump_file, 3, txt);
+		pbqp_dump_section(pbqp->dump_file, 3, txt);
 	}
 #endif
 
@@ -673,7 +673,7 @@ void simplify_edge(pbqp_t *pbqp, pbqp_edge_t *edge)
 	if (pbqp->dump_file) {
 		char txt[100];
 		sprintf(txt, "Simplification of Edge n%d-n%d", src_node->index, tgt_node->index);
-		dump_section(pbqp->dump_file, 3, txt);
+		pbqp_dump_section(pbqp->dump_file, 3, txt);
 	}
 #endif
 
@@ -690,7 +690,7 @@ void simplify_edge(pbqp_t *pbqp, pbqp_edge_t *edge)
 #if KAPS_DUMP
 	if (pbqp->dump_file) {
 		fputs("Input:<br>\n", pbqp->dump_file);
-		dump_simplifyedge(pbqp, edge);
+		pbqp_dump_simplifyedge(pbqp, edge);
 	}
 #endif
 
@@ -700,7 +700,7 @@ void simplify_edge(pbqp_t *pbqp, pbqp_edge_t *edge)
 #if KAPS_DUMP
 	if (pbqp->dump_file) {
 		fputs("<br>\nOutput:<br>\n", pbqp->dump_file);
-		dump_simplifyedge(pbqp, edge);
+		pbqp_dump_simplifyedge(pbqp, edge);
 	}
 #endif
 
@@ -732,7 +732,7 @@ void initial_simplify_edges(pbqp_t *pbqp)
 #if KAPS_DUMP
 	if (pbqp->dump_file) {
 		pbqp_dump_input(pbqp);
-		dump_section(pbqp->dump_file, 1, "2. Simplification of Cost Matrices");
+		pbqp_dump_section(pbqp->dump_file, 1, "2. Simplification of Cost Matrices");
 	}
 #endif
 
@@ -789,8 +789,8 @@ num determine_solution(pbqp_t *pbqp)
 	file = pbqp->dump_file;
 
 	if (file) {
-		dump_section(file, 1, "4. Determine Solution/Minimum");
-		dump_section(file, 2, "4.1. Trivial Solution");
+		pbqp_dump_section(file, 1, "4. Determine Solution/Minimum");
+		pbqp_dump_section(file, 2, "4.1. Trivial Solution");
 	}
 #endif
 
@@ -811,14 +811,14 @@ num determine_solution(pbqp_t *pbqp)
 #if KAPS_DUMP
 		if (file) {
 			fprintf(file, "node n%d is set to %d<br>\n", node->index, node->solution);
-			dump_node(file, node);
+			pbqp_dump_node(file, node);
 		}
 #endif
 	}
 
 #if KAPS_DUMP
 	if (file) {
-		dump_section(file, 2, "Minimum");
+		pbqp_dump_section(file, 2, "Minimum");
 #if KAPS_USE_UNSIGNED
 		fprintf(file, "Minimum is equal to %u.", solution);
 #else
@@ -948,7 +948,7 @@ void back_propagate(pbqp_t *pbqp)
 
 #if KAPS_DUMP
 	if (pbqp->dump_file) {
-		dump_section(pbqp->dump_file, 2, "Back Propagation");
+		pbqp_dump_section(pbqp->dump_file, 2, "Back Propagation");
 	}
 #endif
 
@@ -996,12 +996,12 @@ void apply_RI(pbqp_t *pbqp)
 	if (pbqp->dump_file) {
 		char     txt[100];
 		sprintf(txt, "RI-Reduction of Node n%d", node->index);
-		dump_section(pbqp->dump_file, 2, txt);
+		pbqp_dump_section(pbqp->dump_file, 2, txt);
 		pbqp_dump_graph(pbqp);
 		fputs("<br>\nBefore reduction:<br>\n", pbqp->dump_file);
-		dump_node(pbqp->dump_file, node);
-		dump_node(pbqp->dump_file, other_node);
-		dump_edge(pbqp->dump_file, edge);
+		pbqp_dump_node(pbqp->dump_file, node);
+		pbqp_dump_node(pbqp->dump_file, other_node);
+		pbqp_dump_edge(pbqp->dump_file, edge);
 	}
 #endif
 
@@ -1017,7 +1017,7 @@ void apply_RI(pbqp_t *pbqp)
 #if KAPS_DUMP
 	if (pbqp->dump_file) {
 		fputs("<br>\nAfter reduction:<br>\n", pbqp->dump_file);
-		dump_node(pbqp->dump_file, other_node);
+		pbqp_dump_node(pbqp->dump_file, other_node);
 	}
 #endif
 
@@ -1088,14 +1088,14 @@ void apply_RII(pbqp_t *pbqp)
 	if (pbqp->dump_file) {
 		char     txt[100];
 		sprintf(txt, "RII-Reduction of Node n%d", node->index);
-		dump_section(pbqp->dump_file, 2, txt);
+		pbqp_dump_section(pbqp->dump_file, 2, txt);
 		pbqp_dump_graph(pbqp);
 		fputs("<br>\nBefore reduction:<br>\n", pbqp->dump_file);
-		dump_node(pbqp->dump_file, src_node);
-		dump_edge(pbqp->dump_file, src_edge);
-		dump_node(pbqp->dump_file, node);
-		dump_edge(pbqp->dump_file, tgt_edge);
-		dump_node(pbqp->dump_file, tgt_node);
+		pbqp_dump_node(pbqp->dump_file, src_node);
+		pbqp_dump_edge(pbqp->dump_file, src_edge);
+		pbqp_dump_node(pbqp->dump_file, node);
+		pbqp_dump_edge(pbqp->dump_file, tgt_edge);
+		pbqp_dump_node(pbqp->dump_file, tgt_node);
 	}
 #endif
 
@@ -1162,7 +1162,7 @@ void apply_RII(pbqp_t *pbqp)
 #if KAPS_DUMP
 	if (pbqp->dump_file) {
 		fputs("<br>\nAfter reduction:<br>\n", pbqp->dump_file);
-		dump_edge(pbqp->dump_file, edge);
+		pbqp_dump_edge(pbqp->dump_file, edge);
 	}
 #endif
 

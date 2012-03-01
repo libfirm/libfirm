@@ -10,15 +10,12 @@ libfirminclude_HEADERS = \
 	dbginfo.h \
 	end.h \
 	execfreq.h \
-	execution_frequency.h \
-	field_temperature.h \
 	firm_common.h \
 	firm.h \
 	firmstat.h \
 	firm_types.h \
 	heights.h \
 	ident.h \
-	interval_analysis.h \
 	irarch.h \
 	ircgopt.h \
 	irconsconfirm.h \
@@ -51,8 +48,6 @@ libfirminclude_HEADERS = \
 	lowering.h \
 	nodeops.h \
 	opcodes.h \
-	rta.h \
-	structure.h \
 	timing.h \
 	trouts.h \
 	tv.h \
@@ -64,14 +59,11 @@ libfirminclude_adt_HEADERS = \
 	adt/array.h \
 	adt/bipartite.h \
 	adt/cpset.h \
-	adt/eset.h \
-	adt/fourcc.h \
 	adt/gaussjordan.h \
 	adt/gaussseidel.h \
 	adt/hashptr.h \
 	adt/hashset.h \
 	adt/hungarian.h \
-	adt/iterator.h \
 	adt/list.h \
 	adt/obstack.h \
 	adt/obst.h \

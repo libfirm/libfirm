@@ -22,12 +22,6 @@
  * @brief    Reverse edges that reference types/entities.
  * @author   Goetz Lindenmaier
  * @date     29.10.2004
- * @brief
- *  Trouts list all uses of types and entities.
- *  Each type gets a list of all Alloc nodes allocating it.
- *  Each entity gets two lists:
- *    - one containing all accesses (Load, (Call), Store),
- *    - and one containing all uses to get a reference (Sel, SymConst).
  */
 #ifndef FIRM_ANA_TROUTS_H
 #define FIRM_ANA_TROUTS_H
@@ -37,42 +31,54 @@
 
 #include "begin.h"
 
-/** Number of Load/Store nodes that possibly access this entity. */
-FIRM_API size_t get_entity_n_accesses(const ir_entity *ent);
-/** Load/Store node that possibly access this entity. */
-FIRM_API ir_node *get_entity_access(const ir_entity *ent, size_t pos);
+/**
+ * @ingroup ir_type
+ * @defgroup trouts Reverse Type Edges
+ * Trouts list all uses of types and entities.
+ * Each type gets a list of all Alloc nodes allocating it.
+ * Each entity gets two lists:
+ *   - one containing all accesses (Load, (Call), Store),
+ *   - and one containing all uses to get a reference (Sel, SymConst).
+ * @{
+ */
 
-/** Number of references to an entity, in form of SymConst/Sel.
- *  Including references from constant entities and the like. */
-FIRM_API size_t get_entity_n_references(const ir_entity *ent);
-/** References to an entity, in form of SymConst/Sel
- *  Including references from constants. */
-FIRM_API ir_node *get_entity_reference(const ir_entity *ent, size_t pos);
+/** Returns number of Load/Store nodes that possibly access entity @p entity. */
+FIRM_API size_t get_entity_n_accesses(const ir_entity *entity);
+/** Returns Load/Store node number @p pos that possibly accesses entity @p entity. */
+FIRM_API ir_node *get_entity_access(const ir_entity *entity, size_t pos);
 
-/** Number of Alloc nodes that create an instance of this type. */
-FIRM_API size_t get_type_n_allocs(const ir_type *tp);
-/** Alloc node that create an instance of this type. */
-FIRM_API ir_node *get_type_alloc(const ir_type *tp, size_t pos);
+/** Returns number of references to entity @p entity, in form of SymConst/Sel,
+ * including references from constant entities and the like. */
+FIRM_API size_t get_entity_n_references(const ir_entity *entity);
+/** Returns reference number @p pos of references to an entity, in form of
+ * SymConst/Sel, including references from constants. */
+FIRM_API ir_node *get_entity_reference(const ir_entity *entity, size_t pos);
 
-/** Number of Cast nodes that cast a pointer to this type. */
-FIRM_API size_t get_type_n_casts(const ir_type *tp);
+/** Returns number of Alloc nodes that create an instance of type @p type. */
+FIRM_API size_t get_type_n_allocs(const ir_type *type);
+/** Returns Alloc node number @p pos that create an instance of type @p type. */
+FIRM_API ir_node *get_type_alloc(const ir_type *type, size_t pos);
+
+/** Returns number of Cast nodes that cast a pointer to type @p type. */
+FIRM_API size_t get_type_n_casts(const ir_type *type);
 /** Cast node that cast a pointer to this type. */
-FIRM_API ir_node *get_type_cast(const ir_type *tp, size_t pos);
-FIRM_API void add_type_cast(const ir_type *tp, ir_node *cast);
-/** Return number of upcasts. O(\#casts). */
+FIRM_API ir_node *get_type_cast(const ir_type *type, size_t pos);
+/** Returns number of upcasts. O(\#casts). */
 FIRM_API size_t get_class_n_upcasts(const ir_type *clss);
-/** Return number of downcasts. O(\#casts). */
+/** Returns number of downcasts. O(\#casts). */
 FIRM_API size_t get_class_n_downcasts(const ir_type *clss);
 
-FIRM_API size_t  get_type_n_pointertypes_to(const ir_type *tp);
-FIRM_API ir_type *get_type_pointertype_to(const ir_type *tp, size_t pos);
-FIRM_API void    add_type_pointertype_to(const ir_type *tp, ir_type *ptp);
+/** Returns number of pointertypes that point to type @p type. */
+FIRM_API size_t get_type_n_pointertypes_to(const ir_type *type);
+/** Returns pointer type number @p pos that points to type @p type. */
+FIRM_API ir_type *get_type_pointertype_to(const ir_type *type, size_t pos);
 
-FIRM_API size_t  get_type_n_arraytypes_of(const ir_type *tp);
-FIRM_API ir_type *get_type_arraytype_of(const ir_type *tp, size_t pos);
-FIRM_API void    add_type_arraytype_of(const ir_type *tp, ir_type *atp);
+/** Returns number of array types with element type @p type. */
+FIRM_API size_t get_type_n_arraytypes_of(const ir_type *type);
+/** Returns array type number @p pos with element type @p type. */
+FIRM_API ir_type *get_type_arraytype_of(const ir_type *type, size_t pos);
 
-/** Compute the outs of types and entities.
+/** Computes the outs of types and entities.
  *
  *  Collects all reference from irnodes to types or entities in the
  *  corresponding types/entities.  Further reverses references between
@@ -96,8 +102,10 @@ FIRM_API void    add_type_arraytype_of(const ir_type *tp, ir_type *atp);
  */
 FIRM_API void compute_trouts(void);
 
-/** Free trout data. */
+/** Frees trout data. */
 FIRM_API void free_trouts(void);
+
+/** @} */
 
 #include "end.h"
 

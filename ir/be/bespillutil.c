@@ -462,7 +462,7 @@ static void spill_phi(spill_env_t *env, spill_info_t *spillinfo)
 	/* override or replace spills list... */
 	spill         = OALLOC(&env->obst, spill_t);
 	spill->after  = determine_spill_point(phi);
-	spill->spill  = be_new_Phi(block, arity, ins, mode_M, NULL);
+	spill->spill  = be_new_Phi(block, arity, ins, mode_M, arch_no_register_req);
 	spill->next   = NULL;
 	sched_add_after(block, spill->spill);
 
@@ -1041,7 +1041,7 @@ void be_insert_spills_reloads(spill_env_t *env)
 
 	/* Matze: In theory be_ssa_construction should take care of the liveness...
 	 * try to disable this again in the future */
-	be_liveness_invalidate(be_get_irg_liveness(env->irg));
+	be_invalidate_live_sets(env->irg);
 
 	be_remove_dead_nodes_from_schedule(env->irg);
 

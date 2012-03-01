@@ -99,14 +99,9 @@ ir_relation get_inversed_relation(ir_relation relation)
  */
 static int forbid_new_data = 0;
 
-/**
- * The amount of additional space for custom data to be allocated upon
- * creating a new node.
- */
 unsigned firm_add_node_size = 0;
 
 
-/* register new space for every node */
 unsigned firm_register_additional_node_data(unsigned size)
 {
 	assert(!forbid_new_data && "Too late to register additional node data");
@@ -133,12 +128,6 @@ struct struct_align {
 	} s;
 };
 
-/*
- * irnode constructor.
- * Create a new irnode in irg, with an op, mode, arity and
- * some incoming irnodes.
- * If arity is negative, a node with a dynamic array is created.
- */
 ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
                      ir_mode *mode, int arity, ir_node *const *in)
 {
@@ -194,13 +183,11 @@ ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
 
 	hook_new_node(irg, res);
 	if (get_irg_phase_state(irg) == phase_backend) {
-		be_info_new_node(res);
+		be_info_new_node(irg, res);
 	}
 
 	return res;
 }
-
-/*-- getting some parameters from ir_nodes --*/
 
 int (is_ir_node)(const void *thing)
 {
@@ -212,12 +199,6 @@ int (get_irn_arity)(const ir_node *node)
 	return get_irn_arity_(node);
 }
 
-/* Returns the array with ins. This array is shifted with respect to the
-   array accessed by get_irn_n: The block operand is at position 0 not -1.
-   (@@@ This should be changed.)
-   The order of the predecessors in this array is not guaranteed, except that
-   lists of operands as predecessors of Block or arguments of a Call are
-   consecutive. */
 ir_node **get_irn_in(const ir_node *node)
 {
 	return node->in;
@@ -386,7 +367,6 @@ ir_op *(get_irn_op)(const ir_node *node)
 	return get_irn_op_(node);
 }
 
-/* should be private to the library: */
 void (set_irn_op)(ir_node *node, ir_op *op)
 {
 	set_irn_op_(node, op);
@@ -399,8 +379,6 @@ unsigned (get_irn_opcode)(const ir_node *node)
 
 const char *get_irn_opname(const ir_node *node)
 {
-	assert(node);
-	if (is_Phi0(node)) return "Phi0";
 	return get_id_str(node->op->name);
 }
 
@@ -467,7 +445,6 @@ void set_irn_pinned(ir_node *node, op_pin_state state)
 	node->attr.except.pin_state = state;
 }
 
-/* Outputs a unique number for this node */
 long get_irn_node_nr(const ir_node *node)
 {
 	assert(node);
@@ -502,8 +479,6 @@ int get_irn_pred_pos(ir_node *node, ir_node *arg)
 	return -1;
 }
 
-/** manipulate fields of individual nodes **/
-
 ir_node *(get_nodes_block)(const ir_node *node)
 {
 	return get_nodes_block_(node);
@@ -515,8 +490,6 @@ void set_nodes_block(ir_node *node, ir_node *block)
 	set_irn_n(node, -1, block);
 }
 
-/* Test whether arbitrary node is frame pointer, i.e. Proj(pn_Start_P_frame_base)
- * from Start.  If so returns frame type, else Null. */
 ir_type *is_frame_pointer(const ir_node *n)
 {
 	if (is_Proj(n) && (get_Proj_proj(n) == pn_Start_P_frame_base)) {
@@ -614,7 +587,6 @@ void set_Block_extbb(ir_node *block, ir_extblk *extblk)
 	block->attr.block.extblk = extblk;
 }
 
-/* returns the graph of a Block. */
 ir_graph *(get_Block_irg)(const ir_node *block)
 {
 	return get_Block_irg_(block);
@@ -653,13 +625,11 @@ void (add_Block_phi)(ir_node *block, ir_node *phi)
 	add_Block_phi_(block, phi);
 }
 
-/* Get the Block mark (single bit). */
 unsigned (get_Block_mark)(const ir_node *block)
 {
 	return get_Block_mark_(block);
 }
 
-/* Set the Block mark (single bit). */
 void (set_Block_mark)(ir_node *block, unsigned mark)
 {
 	set_Block_mark_(block, mark);
@@ -689,7 +659,6 @@ void set_End_keepalive(ir_node *end, int pos, ir_node *ka)
 	set_irn_n(end, pos + END_KEEPALIVE_OFFSET, ka);
 }
 
-/* Set new keep-alives */
 void set_End_keepalives(ir_node *end, int n, ir_node *in[])
 {
 	size_t e;
@@ -711,7 +680,6 @@ void set_End_keepalives(ir_node *end, int n, ir_node *in[])
 	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS);
 }
 
-/* Set new keep-alives from old keep-alives, skipping irn */
 void remove_End_keepalive(ir_node *end, ir_node *irn)
 {
 	int      n = get_End_n_keepalives(end);
@@ -749,7 +717,6 @@ found:
 	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS);
 }
 
-/* remove Bads, NoMems and doublets from the keep-alive set */
 void remove_End_Bads_and_doublets(ir_node *end)
 {
 	pset_new_t keeps;
@@ -877,8 +844,6 @@ void set_SymConst_type(ir_node *node, ir_type *tp)
 	node->attr.symc.sym.type_p = tp;
 }
 
-
-/* Only to access SymConst of kind symconst_addr_ent.  Else assertion: */
 ir_entity *get_SymConst_entity(const ir_node *node)
 {
 	assert(is_SymConst(node) && SYMCONST_HAS_ENT(get_SymConst_kind(node)));
@@ -991,7 +956,6 @@ void set_Builtin_param(ir_node *node, int pos, ir_node *param)
 	set_irn_n(node, pos + BUILTIN_PARAM_OFFSET, param);
 }
 
-/* Returns a human readable string for the ir_builtin_kind. */
 const char *get_builtin_kind_name(ir_builtin_kind kind)
 {
 #define X(a)    case a: return #a
@@ -1052,10 +1016,6 @@ void remove_Call_callee_arr(ir_node *node)
 	node->attr.call.callee_arr = NULL;
 }
 
-/* Checks for upcast.
- *
- * Returns true if the Cast node casts a class type to a super type.
- */
 int is_Cast_upcast(ir_node *node)
 {
 	ir_type *totype   = get_Cast_type(node);
@@ -1075,10 +1035,6 @@ int is_Cast_upcast(ir_node *node)
 	return is_SubClass_of(fromtype, totype);
 }
 
-/* Checks for downcast.
- *
- * Returns true if the Cast node casts a class type to a sub type.
- */
 int is_Cast_downcast(ir_node *node)
 {
 	ir_type *totype   = get_Cast_type(node);
@@ -1149,15 +1105,6 @@ void set_binop_right(ir_node *node, ir_node *right)
 	set_irn_n(node, node->op->op_index + 1, right);
 }
 
-int is_Phi0(const ir_node *n)
-{
-	assert(n);
-
-	return ((get_irn_op(n) == op_Phi) &&
-	        (get_irn_arity(n) == 0) &&
-	        (get_irg_phase_state(get_irn_irg(n)) ==  phase_building));
-}
-
 ir_node **get_Phi_preds_arr(ir_node *node)
 {
   assert(is_Phi(node));
@@ -1166,19 +1113,19 @@ ir_node **get_Phi_preds_arr(ir_node *node)
 
 int get_Phi_n_preds(const ir_node *node)
 {
-	assert(is_Phi(node) || is_Phi0(node));
-	return (get_irn_arity(node));
+	assert(is_Phi(node));
+	return get_irn_arity(node);
 }
 
 ir_node *get_Phi_pred(const ir_node *node, int pos)
 {
-	assert(is_Phi(node) || is_Phi0(node));
+	assert(is_Phi(node));
 	return get_irn_n(node, pos);
 }
 
 void set_Phi_pred(ir_node *node, int pos, ir_node *pred)
 {
-	assert(is_Phi(node) || is_Phi0(node));
+	assert(is_Phi(node));
 	set_irn_n(node, pos, pred);
 }
 
@@ -1194,38 +1141,22 @@ void (set_Phi_next)(ir_node *phi, ir_node *next)
 
 int is_memop(const ir_node *node)
 {
-	unsigned code = get_irn_opcode(node);
-	return (code == iro_Load || code == iro_Store);
+	return is_op_uses_memory(get_irn_op(node));
 }
 
 ir_node *get_memop_mem(const ir_node *node)
 {
+	const ir_op *op = get_irn_op(node);
 	assert(is_memop(node));
-	assert(n_Load_mem == 0 && n_Store_mem == 0);
-	return get_irn_n(node, 0);
+	return get_irn_n(node, op->memory_index);
 }
 
 void set_memop_mem(ir_node *node, ir_node *mem)
 {
+	const ir_op *op = get_irn_op(node);
 	assert(is_memop(node));
-	assert(n_Load_mem == 0 && n_Store_mem == 0);
-	set_irn_n(node, 0, mem);
+	set_irn_n(node, op->memory_index, mem);
 }
-
-ir_node *get_memop_ptr(const ir_node *node)
-{
-	assert(is_memop(node));
-	assert(n_Load_mem == 1 && n_Store_mem == 1);
-	return get_irn_n(node, 1);
-}
-
-void set_memop_ptr(ir_node *node, ir_node *ptr)
-{
-	assert(is_memop(node));
-	assert(n_Load_mem == 1 && n_Store_mem == 1);
-	set_irn_n(node, 1, ptr);
-}
-
 
 ir_node **get_Sync_preds_arr(ir_node *node)
 {
@@ -1239,13 +1170,6 @@ int get_Sync_n_preds(const ir_node *node)
 	return (get_irn_arity(node));
 }
 
-/*
-void set_Sync_n_preds(ir_node *node, int n_preds)
-{
-	assert(is_Sync(node));
-}
-*/
-
 ir_node *get_Sync_pred(const ir_node *node, int pos)
 {
 	assert(is_Sync(node));
@@ -1258,7 +1182,6 @@ void set_Sync_pred(ir_node *node, int pos, ir_node *pred)
 	set_irn_n(node, pos, pred);
 }
 
-/* Add a new Sync predecessor */
 void add_Sync_pred(ir_node *node, ir_node *pred)
 {
 	assert(is_Sync(node));
@@ -1348,16 +1271,10 @@ size_t get_ASM_n_clobbers(const ir_node *node)
 	return ARR_LEN(node->attr.assem.clobbers);
 }
 
-/* returns the graph of a node */
 ir_graph *(get_irn_irg)(const ir_node *node)
 {
 	return get_irn_irg_(node);
 }
-
-
-/*----------------------------------------------------------------*/
-/*  Auxiliary routines                                            */
-/*----------------------------------------------------------------*/
 
 ir_node *skip_Proj(ir_node *node)
 {
@@ -1407,7 +1324,6 @@ restart:
 	return node;
 }
 
-/* returns operand of node if node is a Cast */
 ir_node *skip_Cast(ir_node *node)
 {
 	if (is_Cast(node))
@@ -1415,7 +1331,6 @@ ir_node *skip_Cast(ir_node *node)
 	return node;
 }
 
-/* returns operand of node if node is a Cast */
 const ir_node *skip_Cast_const(const ir_node *node)
 {
 	if (is_Cast(node))
@@ -1423,7 +1338,6 @@ const ir_node *skip_Cast_const(const ir_node *node)
 	return node;
 }
 
-/* returns operand of node if node is a Pin */
 ir_node *skip_Pin(ir_node *node)
 {
 	if (is_Pin(node))
@@ -1431,7 +1345,6 @@ ir_node *skip_Pin(ir_node *node)
 	return node;
 }
 
-/* returns operand of node if node is a Confirm */
 ir_node *skip_Confirm(ir_node *node)
 {
 	if (is_Confirm(node))
@@ -1439,7 +1352,6 @@ ir_node *skip_Confirm(ir_node *node)
 	return node;
 }
 
-/* skip all high-level ops */
 ir_node *skip_HighLevel_ops(ir_node *node)
 {
 	while (is_op_highlevel(get_irn_op(node))) {
@@ -1449,15 +1361,15 @@ ir_node *skip_HighLevel_ops(ir_node *node)
 }
 
 
-/* This should compact Id-cycles to self-cycles. It has the same (or less?) complexity
- * than any other approach, as Id chains are resolved and all point to the real node, or
- * all id's are self loops.
- *
- * Note: This function takes 10% of mostly ANY the compiler run, so it's
- * a little bit "hand optimized".
- */
 ir_node *skip_Id(ir_node *node)
 {
+	/* This should compact Id-cycles to self-cycles. It has the same (or less?) complexity
+	 * than any other approach, as Id chains are resolved and all point to the real node, or
+	 * all id's are self loops.
+	 *
+	 * Note: This function takes 10% of mostly ANY the compiler run, so it's
+	 * a little bit "hand optimized".
+	 */
 	ir_node *pred;
 	/* don't assert node !!! */
 
@@ -1493,13 +1405,11 @@ int (is_strictConv)(const ir_node *node)
 	return is_strictConv_(node);
 }
 
-/* Returns true if node is a SymConst node with kind symconst_addr_ent. */
 int (is_SymConst_addr_ent)(const ir_node *node)
 {
 	return is_SymConst_addr_ent_(node);
 }
 
-/* Returns true if the operation manipulates control flow. */
 int is_cfop(const ir_node *node)
 {
 	if (is_fragile_op(node) && ir_throws_exception(node))
@@ -1513,21 +1423,11 @@ int is_unknown_jump(const ir_node *node)
 	return is_op_unknown_jump(get_irn_op(node));
 }
 
-/* Returns true if the operation can change the control flow because
-   of an exception. */
 int is_fragile_op(const ir_node *node)
 {
 	return is_op_fragile(get_irn_op(node));
 }
 
-/* Returns the memory operand of fragile operations. */
-ir_node *get_fragile_op_mem(ir_node *node)
-{
-	assert(node && is_fragile_op(node));
-	return get_irn_n(node, node->op->fragile_mem_index);
-}
-
-/* Returns true if the operation is a forking control flow operation. */
 int (is_irn_forking)(const ir_node *node)
 {
 	return is_irn_forking_(node);
@@ -1538,49 +1438,36 @@ void (copy_node_attr)(ir_graph *irg, const ir_node *old_node, ir_node *new_node)
 	copy_node_attr_(irg, old_node, new_node);
 }
 
-/* Return the type attribute of a node n (SymConst, Call, Alloc, Free,
-   Cast) or NULL.*/
 ir_type *(get_irn_type_attr)(ir_node *node)
 {
 	return get_irn_type_attr_(node);
 }
 
-/* Return the entity attribute of a node n (SymConst, Sel) or NULL. */
 ir_entity *(get_irn_entity_attr)(ir_node *node)
 {
 	return get_irn_entity_attr_(node);
 }
 
-/* Returns non-zero for constant-like nodes. */
 int (is_irn_constlike)(const ir_node *node)
 {
 	return is_irn_constlike_(node);
 }
 
-/*
- * Returns non-zero for nodes that are allowed to have keep-alives and
- * are neither Block nor PhiM.
- */
 int (is_irn_keep)(const ir_node *node)
 {
 	return is_irn_keep_(node);
 }
 
-/*
- * Returns non-zero for nodes that are always placed in the start block.
- */
 int (is_irn_start_block_placed)(const ir_node *node)
 {
 	return is_irn_start_block_placed_(node);
 }
 
-/* Returns non-zero for nodes that are CSE neutral to its users. */
 int (is_irn_cse_neutral)(const ir_node *node)
 {
 	return is_irn_cse_neutral_(node);
 }
 
-/* Gets the string representation of the jump prediction .*/
 const char *get_cond_jmp_predicate_name(cond_jmp_predicate pred)
 {
 #define X(a)    case a: return #a
@@ -1615,10 +1502,9 @@ static ir_entity *get_SymConst_attr_entity(const ir_node *self)
 static ir_type *get_Null_type(const ir_node *n)
 {
 	(void) n;
-	return firm_unknown_type;
+	return get_unknown_type();
 }
 
-/* Sets the get_type operation for an ir_op_ops. */
 void firm_set_default_get_type_attr(unsigned code, ir_op_ops *ops)
 {
 	switch (code) {
@@ -1645,7 +1531,6 @@ static ir_entity *get_Null_ent(const ir_node *n)
 	return NULL;
 }
 
-/* Sets the get_type operation for an ir_op_ops. */
 void firm_set_default_get_entity_attr(unsigned code, ir_op_ops *ops)
 {
 	switch (code) {
@@ -1660,17 +1545,11 @@ void firm_set_default_get_entity_attr(unsigned code, ir_op_ops *ops)
 	}
 }
 
-/* Sets the debug information of a node. */
 void (set_irn_dbg_info)(ir_node *n, dbg_info *db)
 {
 	set_irn_dbg_info_(n, db);
 }
 
-/**
- * Returns the debug information of an node.
- *
- * @param n   The node.
- */
 dbg_info *(get_irn_dbg_info)(const ir_node *n)
 {
 	return get_irn_dbg_info_(n);
@@ -1728,9 +1607,6 @@ ir_switch_table *ir_switch_table_duplicate(ir_graph *irg,
 	return res;
 }
 
-/*
- * Calculate a hash value of a node.
- */
 unsigned firm_default_hash(const ir_node *node)
 {
 	unsigned h;
@@ -1745,13 +1621,13 @@ unsigned firm_default_hash(const ir_node *node)
 		if (is_irn_cse_neutral(pred))
 			h *= 9;
 		else
-			h = 9*h + HASH_PTR(pred);
+			h = 9*h + hash_ptr(pred);
 	}
 
 	/* ...mode,... */
-	h = 9*h + HASH_PTR(get_irn_mode(node));
+	h = 9*h + hash_ptr(get_irn_mode(node));
 	/* ...and code */
-	h = 9*h + HASH_PTR(get_irn_op(node));
+	h = 9*h + hash_ptr(get_irn_op(node));
 
 	return h;
 }

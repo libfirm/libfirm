@@ -67,7 +67,7 @@ my $target_h = $target_dir."/gen_".$arch."_new_nodes.h";
 if(!defined($default_attr_type)) {
 	$default_attr_type = "${arch}_attr_t";
 }
-if(!defined(%init_attr)) {
+if(! %init_attr) {
 	%init_attr = (
 		"$default_attr_type" => "\tinit_${arch}_attributes(res, irn_flags_, in_reqs, n_res);",
 	);
@@ -75,7 +75,7 @@ if(!defined(%init_attr)) {
 if(!defined($default_cmp_attr)) {
 	$default_cmp_attr = "${arch}_compare_attr";
 }
-if(!defined(%compare_attr)) {
+if(! %compare_attr) {
 	%compare_attr = (
 		"${default_attr_type}" => "${default_cmp_attr}",
 	);
@@ -116,6 +116,7 @@ my @obst_opvar;       # stack for the "ir_op *op_<arch>_<op-name> = NULL;" state
 my @obst_get_opvar;   # stack for the get_op_<arch>_<op-name>() functions
 my $obst_constructor; # stack for node constructor functions
 my @obst_new_irop;    # stack for the new_ir_op calls
+my @obst_free_irop;   # stack for free_ir_op calls
 my @obst_enum_op;     # stack for creating the <arch>_opcode enum
 my $obst_header;      # stack for function prototypes
 my @obst_is_archirn;  # stack for the is_$arch_irn() function
@@ -159,6 +160,7 @@ foreach my $class_name (keys(%reg_classes)) {
 $n_opcodes += $additional_opcodes if (defined($additional_opcodes));
 
 $obst_header .= "void ${arch}_create_opcodes(const arch_irn_ops_t *be_ops);\n";
+$obst_header .= "void ${arch}_free_opcodes(void);\n";
 
 sub create_constructor {
 	my $op   = shift;
@@ -409,7 +411,7 @@ EOF
 			"simple_jump"      => "arch_irn_flags_simple_jump",
 			"not_scheduled"    => "arch_irn_flags_not_scheduled",
 		);
-		if (defined(%custom_irn_flags)) {
+		if (%custom_irn_flags) {
 			%known_irn_flags = (%known_irn_flags, %custom_irn_flags);
 		}
 		foreach my $flag (@{$n->{"irn_flags"}}) {
@@ -696,20 +698,20 @@ EOF
 	}
 
 	$n_opcodes++;
-	$temp  = "\top_$op = new_ir_op(cur_opcode + iro_$op, \"$op\", op_pin_state_".$n{"state"}.", $op_flags";
+	$temp  = "\top = new_ir_op(cur_opcode + iro_$op, \"$op\", op_pin_state_".$n{"state"}.", $op_flags";
 	$temp .= ", ".translate_arity($arity).", 0, ${attr_size}, &ops);\n";
 	push(@obst_new_irop, $temp);
 	if ($is_fragile) {
-		push(@obst_new_irop, "\tir_op_set_fragile_indices(op_${op}, n_${op}_mem, pn_${op}_X_regular, pn_${op}_X_except);\n");
+		push(@obst_new_irop, "\tir_op_set_memory_index(op, n_${op}_mem);\n");
+		push(@obst_new_irop, "\tir_op_set_fragile_indices(op, pn_${op}_X_regular, pn_${op}_X_except);\n");
 	}
-	push(@obst_new_irop, "\tset_op_tag(op_$op, $arch\_op_tag);\n");
-	if(defined($default_op_attr_type)) {
-		push(@obst_new_irop, "\tattr = &attrs[iro_$op];\n");
-		if(defined($n{op_attr_init})) {
-			push(@obst_new_irop, "\t".$n{op_attr_init}."\n");
-		}
-		push(@obst_new_irop, "\tset_op_attr(op_$op, attr);\n");
+	push(@obst_new_irop, "\tset_op_tag(op, $arch\_op_tag);\n");
+	if(defined($n{op_attr_init})) {
+		push(@obst_new_irop, "\t".$n{op_attr_init}."\n");
 	}
+	push(@obst_new_irop, "\top_${op} = op;\n");
+
+	push(@obst_free_irop, "\tfree_ir_op(op_$op); op_$op = NULL;\n");
 
 	push(@obst_enum_op, "\tiro_$op,\n");
 
@@ -726,6 +728,7 @@ open(OUT, ">$target_c") || die("Fatal error: Could not open $target_c, reason: $
 
 print OUT "#include \"gen_$arch\_regalloc_if.h\"\n";
 print OUT "#include \"irverify_t.h\"\n";
+print OUT "#include \"fourcc.h\"\n";
 print OUT "\n";
 print OUT @obst_cmp_attr;
 print OUT "\n";
@@ -815,30 +818,14 @@ $obst_constructor
  * Creates the $arch specific Firm machine operations
  * needed for the assembler irgs.
  */
-void $arch\_create_opcodes(const arch_irn_ops_t *be_ops) {
+void $arch\_create_opcodes(const arch_irn_ops_t *be_ops)
+{
 	ir_op_ops  ops;
-	int        cur_opcode;
-	static int run_once = 0;
-ENDOFMAIN
-
-	if (defined($default_op_attr_type)) {
-		print OUT "\t$default_op_attr_type *attr, *attrs;\n";
-	}
-
-print OUT<<ENDOFMAIN;
-
-	if (run_once)
-		return;
-	run_once = 1;
-
-	cur_opcode = get_next_ir_opcodes(iro_$arch\_last);
+	ir_op     *op;
+	int        cur_opcode = get_next_ir_opcodes(iro_$arch\_last);
 
 	$arch\_opcode_start = cur_opcode;
 ENDOFMAIN
-
-	if (defined($default_op_attr_type)) {
-		print OUT "\tattrs = XMALLOCNZ(${default_op_attr_type}, iro_${arch}_last);\n";
-	}
 
 print OUT @obst_new_irop;
 print OUT "\n";
@@ -846,7 +833,18 @@ print OUT "\t$arch\_register_additional_opcodes(cur_opcode);\n" if (defined($add
 print OUT "\t$arch\_opcode_end = cur_opcode + iro_$arch\_last";
 print OUT " + $additional_opcodes" if (defined($additional_opcodes));
 print OUT ";\n";
-print OUT "}\n";
+print OUT <<ENDOFMAIN;
+}
+
+void $arch\_free_opcodes(void)
+{
+ENDOFMAIN
+
+print OUT @obst_free_irop;
+
+print OUT <<ENDOFMAIN;
+}
+ENDOFMAIN
 
 close(OUT);
 

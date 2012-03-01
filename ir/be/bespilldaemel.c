@@ -369,7 +369,7 @@ static void be_spill_daemel(ir_graph *irg, const arch_register_class_t *new_cls)
 	if (n_regs == 0)
 		return;
 
-	be_liveness_assure_sets(be_assure_liveness(irg));
+	be_assure_live_sets(irg);
 
 	spill_env     = be_new_spill_env(irg);
 	cls           = new_cls;

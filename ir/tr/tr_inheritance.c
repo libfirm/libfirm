@@ -34,8 +34,6 @@
 #include "irgwalk.h"
 #include "irflag.h"
 
-DEBUG_ONLY(static firm_dbg_module_t *dbg;)
-
 /* ----------------------------------------------------------------------- */
 /* Resolve implicit inheritance.                                           */
 /* ----------------------------------------------------------------------- */
@@ -93,10 +91,6 @@ static void copy_entities_from_superclass(ir_type *clss, void *env)
 	}
 }
 
-/* Resolve implicit inheritance.
- *
- *  Resolves the implicit inheritance supplied by firm.
- */
 void resolve_inheritance(mangle_inherited_name_func *mfunc)
 {
 	if (!mfunc)
@@ -176,7 +170,7 @@ static int tr_inh_trans_cmp(const void *e1, const void *e2, size_t size)
  */
 static inline unsigned int tr_inh_trans_hash(const tr_inh_trans_tp *v)
 {
-	return HASH_PTR(v->kind);
+	return hash_ptr(v->kind);
 }
 
 /* This always completes successfully. */
@@ -341,11 +335,6 @@ static void compute_up_closure(ir_type *tp)
 	}
 }
 
-/** Compute the transitive closure of the subclass/superclass and
- *  overwrites/overwrittenby relation.
- *
- *  This function walks over the ir (O(#types+#entities)) to compute the
- *  transitive closure.    */
 void compute_inh_transitive_closure(void)
 {
 	size_t i, n_types = get_irp_n_types();
@@ -404,7 +393,6 @@ void compute_inh_transitive_closure(void)
 	irp_free_resources(irp, IRP_RESOURCE_TYPE_VISITED);
 }
 
-/** Free memory occupied by the transitive closure information. */
 void free_inh_transitive_closure(void)
 {
 	if (tr_inh_trans_set) {
@@ -471,7 +459,6 @@ ir_entity *get_entity_trans_overwrittenby_next(const ir_entity *ent)
 /* - overwrites ---------------------------------------------------------- */
 
 
-/** Iterate over all transitive overwritten entities. */
 ir_entity *get_entity_trans_overwrites_first(const ir_entity *ent)
 {
 	assert_valid_state();
@@ -505,7 +492,6 @@ static int check_is_SubClass_of(ir_type *low, ir_type *high)
 	return 0;
 }
 
-/* Returns true if low is subclass of high. */
 int is_SubClass_of(ir_type *low, ir_type *high)
 {
 	assert(is_Class_type(low) && is_Class_type(high));
@@ -519,13 +505,6 @@ int is_SubClass_of(ir_type *low, ir_type *high)
 	return check_is_SubClass_of(low, high);
 }
 
-
-/* Subclass check for pointers to classes.
- *
- *  Dereferences at both types the same amount of pointer types (as
- *  many as possible).  If the remaining types are both class types
- *  and subclasses, returns true, else false.  Can also be called with
- *  two class types.  */
 int is_SubClass_ptr_of(ir_type *low, ir_type *high)
 {
 	while (is_Pointer_type(low) && is_Pointer_type(high)) {
@@ -589,12 +568,6 @@ static ir_entity *do_resolve_ent_polymorphy(ir_type *dynamic_class, ir_entity *s
 	return static_ent;
 }
 
-/* Resolve polymorphy in the inheritance relation.
- *
- * Returns the dynamically referenced entity if the static entity and the
- * dynamic type are given.
- * Search downwards in overwritten tree.
- */
 ir_entity *resolve_ent_polymorphy(ir_type *dynamic_class, ir_entity *static_ent)
 {
 	ir_entity *res;
@@ -639,91 +612,4 @@ void set_irp_class_cast_state(ir_class_cast_state s)
 ir_class_cast_state get_irp_class_cast_state(void)
 {
 	return irp->class_cast_state;
-}
-
-const char *get_class_cast_state_string(ir_class_cast_state s)
-{
-#define X(a)    case a: return #a
-	switch (s) {
-	X(ir_class_casts_any);
-	X(ir_class_casts_transitive);
-	X(ir_class_casts_normalized);
-	X(ir_class_casts_state_max);
-	default: return "invalid class cast state";
-	}
-#undef X
-}
-
-/* - State verification. ------------------------------------- */
-
-typedef struct ccs_env {
-	ir_class_cast_state expected_state;
-	ir_class_cast_state worst_situation;
-} ccs_env;
-
-/**
- * Walker: check Casts.
- */
-static void verify_irn_class_cast_state(ir_node *n, void *env)
-{
-	ccs_env             *ccs = (ccs_env *)env;
-	ir_class_cast_state this_state = ir_class_casts_any;
-	ir_type             *fromtype, *totype;
-
-	if (!is_Cast(n)) return;
-
-	fromtype = get_irn_typeinfo_type(get_Cast_op(n));
-	totype   = get_Cast_type(n);
-
-	while (is_Pointer_type(totype) && is_Pointer_type(fromtype)) {
-		totype   = get_pointer_points_to_type(totype);
-		fromtype = get_pointer_points_to_type(fromtype);
-	}
-
-	if (!is_Class_type(totype)) return;
-
-	if (is_SubClass_of(totype, fromtype) ||
-		is_SubClass_of(fromtype, totype)) {
-		this_state = ir_class_casts_transitive;
-		if ((get_class_supertype_index(totype, fromtype) != (size_t)-1) ||
-		    (get_class_supertype_index(fromtype, totype) != (size_t)-1) ||
-		    fromtype == totype) {
-			this_state = ir_class_casts_normalized;
-		}
-	}
-
-	if (!(this_state >= ccs->expected_state)) {
-		ir_printf("  Node is %+F\n", n);
-		ir_printf("    totype   %+F\n", totype);
-		ir_printf("    fromtype %+F\n", fromtype);
-		ir_printf("    this_state: %s, exp. state: %s\n",
-			get_class_cast_state_string(this_state),
-			get_class_cast_state_string(ccs->expected_state));
-		assert(this_state >= ccs->expected_state &&
-			"invalid state class cast state setting in graph");
-	}
-
-	if (this_state < ccs->worst_situation)
-		ccs->worst_situation = this_state;
-}
-
-/** Verify that the graph meets requirements of state set. */
-void verify_irg_class_cast_state(ir_graph *irg)
-{
-	ccs_env env;
-
-	FIRM_DBG_REGISTER(dbg, "firm.tr.inheritance");
-
-	env.expected_state  = get_irg_class_cast_state(irg);
-	env.worst_situation = ir_class_casts_normalized;
-
-	irg_walk_graph(irg, NULL, verify_irn_class_cast_state, &env);
-
-	if ((env.worst_situation > env.expected_state)) {
-		DB((dbg, LEVEL_1, "Note:  class cast state is set lower than reqired "
-		    "in graph \n\t%+F\n", irg));
-		DB((dbg, LEVEL_1, "       state is %s, reqired is %s\n",
-			get_class_cast_state_string(env.expected_state),
-			get_class_cast_state_string(env.worst_situation)));
-	}
 }

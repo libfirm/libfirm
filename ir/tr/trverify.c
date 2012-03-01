@@ -31,6 +31,7 @@
 #include "irgwalk.h"
 #include "error.h"
 #include "tv.h"
+#include "ircons.h"
 
 #ifdef NDEBUG
 /*
@@ -241,13 +242,6 @@ static int check_primitive(ir_type *tp)
 	return 0;
 }
 
-
-/*
- * Checks a type.
- *
- * return
- *  0   if no error encountered
- */
 int check_type(ir_type *tp)
 {
 	switch (get_type_tpop_code(tp)) {
@@ -354,14 +348,6 @@ static int constants_on_wrong_irg(ir_entity *ent)
 	return 0;
 }
 
-/*
- * Check an entity. Currently, we check only if initialized constants
- * are build on the const irg graph.
- *
- * @return
- *  0   if no error encountered
- *  != 0    a trverify_error_codes code
- */
 int check_entity(ir_entity *ent)
 {
 	ir_type *tp = get_entity_type(ent);
@@ -429,9 +415,6 @@ static void check_tore(type_or_ent tore, void *env)
 	}
 }
 
-/*
- * Verify types and entities.
- */
 int tr_verify(void)
 {
 	static ident *empty = NULL;

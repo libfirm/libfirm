@@ -69,6 +69,8 @@ typedef struct be_dom_front_info_t      be_dom_front_info_t;
 typedef struct backend_info_t           backend_info_t;
 typedef struct sched_info_t             sched_info_t;
 typedef struct reg_out_info_t           reg_out_info_t;
+typedef struct be_ifg_t                 be_ifg_t;
+typedef struct copy_opt_t               copy_opt_t;
 
 typedef struct be_main_env_t be_main_env_t;
 typedef struct be_options_t  be_options_t;

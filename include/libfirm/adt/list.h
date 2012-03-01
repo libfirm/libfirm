@@ -1,5 +1,13 @@
+#ifndef FIRM_ADT_LIST_H
+#define FIRM_ADT_LIST_H
+
+#include <stdlib.h>
+
+#include "../begin.h"
+
 /**
- * @file
+ * @ingroup adt
+ * @defgroup lists Linked Lists
  * @brief   Doubly linked lists.
  *
  * Simple doubly linked list implementation.
@@ -9,36 +17,41 @@
  * sometimes we already know the next/prev entries and we can
  * generate better code by using them directly rather than
  * using the generic single-entry routines.
-  */
-#ifndef FIRM_ADT_LIST_H
-#define FIRM_ADT_LIST_H
+ * @{
+ */
 
-#include <stdlib.h>
-
-#include "../begin.h"
-
+/**
+ * List Header.
+ * Put this into all list elements and at the place where you want to keep
+ * references to the list. */
 typedef struct list_head list_head;
-struct list_head {
-	struct list_head *next, *prev;
-};
 
+/** Static initializer for a list header */
 #define LIST_HEAD_INIT(name) { &(name), &(name) }
 
+/** Defines a (static) list reference */
 #define LIST_HEAD(name) \
 	struct list_head name = LIST_HEAD_INIT(name)
 
+/** Initializes a list header */
 #define INIT_LIST_HEAD(ptr) do { \
 	(ptr)->next = (ptr); (ptr)->prev = (ptr); \
 } while (0)
+
+/** @cond PRIVATE */
+struct list_head {
+	struct list_head *next, *prev;
+};
 
 #define _list_offsetof(type,member) \
   ((char *) &(((type *) 0)->member) - (char *) 0)
 
 #define _list_container_of(ptr, type, member) \
 	((type *) ((char *) (ptr) - _list_offsetof(type, member)))
+/** @endcond  */
 
-/*
- * Insert a new entry between two known consecutive entries.
+/**
+ * Inserts a new entry between two known consecutive entries.
  *
  * This is only for internal list manipulation where we know
  * the prev/next entries already!
@@ -54,7 +67,7 @@ static inline void __list_add(struct list_head *new_node,
 }
 
 /**
- * list_add - add a new entry
+ * Adds a new entry
  * @param new_node   new entry to be added
  * @param head       list head to add it after
  *
@@ -67,7 +80,7 @@ static inline void list_add(struct list_head *new_node, struct list_head *head)
 }
 
 /**
- * list_add_tail - add a new entry
+ * Adds a new entry
  * @param new_node   new entry to be added
  * @param head       list head to add it before
  *
@@ -79,8 +92,8 @@ static inline void list_add_tail(struct list_head *new_node, struct list_head *h
 	__list_add(new_node, head->prev, head);
 }
 
-/*
- * Delete a list entry by making the prev/next entries
+/**
+ * Deletes a list entry by making the prev/next entries
  * point to each other.
  *
  * This is only for internal list manipulation where we know
@@ -93,7 +106,7 @@ static inline void __list_del(struct list_head * prev, struct list_head * next)
 }
 
 /**
- * list_del - deletes entry from list.
+ * Deletes entry from list.
  * @param entry  the element to delete from the list.
  *
  * @note
@@ -109,7 +122,7 @@ static inline void list_del(struct list_head *entry)
 
 
 /**
- * list_del_init - deletes entry from list and reinitialize it.
+ * Deletes entry from list and reinitialize it.
  * @param entry   the element to delete from the list.
  */
 static inline void list_del_init(struct list_head *entry)
@@ -119,7 +132,7 @@ static inline void list_del_init(struct list_head *entry)
 }
 
 /**
- * list_move - delete from one list and add as another's head
+ * Deletes from one list and add as another's head
  * @param list   the entry to move
  * @param head   the head that will precede our entry
  */
@@ -130,7 +143,7 @@ static inline void list_move(struct list_head *list, struct list_head *head)
 }
 
 /**
- * list_move_tail - delete from one list and add as another's tail
+ * Deletes from one list and add as another's tail
  * @param list   the entry to move
  * @param head   the head that will follow our entry
  */
@@ -142,7 +155,7 @@ static inline void list_move_tail(struct list_head *list,
 }
 
 /**
- * list_empty - tests whether a list is empty
+ * Tests whether a list is empty
  * @param head   the list to test.
  */
 static inline int list_empty(const struct list_head *head)
@@ -150,6 +163,13 @@ static inline int list_empty(const struct list_head *head)
 	return head->next == head;
 }
 
+/**
+ * Join two nonempty lists.
+ *
+ * @note Use list_splice() if @p list is possibly empty.
+ * @param list   the new list to add.
+ * @param head   the place to add it in the first list.
+ */
 static inline void __list_splice(struct list_head *list,
                                  struct list_head *head)
 {
@@ -277,6 +297,8 @@ static inline void list_splice_init(struct list_head *list,
 		n = list_entry(pos->member.next, type, member);      \
 	     &pos->member != (head);                             \
 	     pos = n, n = list_entry(n->member.next, type, member))
+
+/** @} */
 
 #include "../end.h"
 

@@ -31,15 +31,6 @@
 #include "belive.h"
 #include "bedomfront.h"
 
-be_lv_t *be_assure_liveness(ir_graph *irg)
-{
-	be_irg_t *birg = be_birg_from_irg(irg);
-	if (birg->lv != NULL)
-		return birg->lv;
-
-	return birg->lv = be_liveness(birg->irg);
-}
-
 void be_assure_dom_front(ir_graph *irg)
 {
 	be_irg_t *birg = be_birg_from_irg(irg);
@@ -57,6 +48,30 @@ void be_invalidate_dom_front(ir_graph *irg)
 
 	be_free_dominance_frontiers(birg->dom_front);
 	birg->dom_front = NULL;
+}
+
+void be_invalidate_live_sets(ir_graph *irg)
+{
+	be_irg_t *birg = be_birg_from_irg(irg);
+	be_liveness_invalidate_sets(birg->lv);
+}
+
+void be_invalidate_live_chk(ir_graph *irg)
+{
+	be_irg_t *birg = be_birg_from_irg(irg);
+	be_liveness_invalidate_chk(birg->lv);
+}
+
+void be_assure_live_sets(ir_graph *irg)
+{
+	be_irg_t *birg = be_birg_from_irg(irg);
+	be_liveness_compute_sets(birg->lv);
+}
+
+void be_assure_live_chk(ir_graph *irg)
+{
+	be_irg_t *birg = be_birg_from_irg(irg);
+	be_liveness_compute_chk(birg->lv);
 }
 
 void be_free_birg(ir_graph *irg)

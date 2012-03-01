@@ -117,6 +117,7 @@ typedef enum ir_entity_kind {
 	IR_ENTITY_COMPOUND_MEMBER,
 	IR_ENTITY_PARAMETER,
 	IR_ENTITY_LABEL,
+	IR_ENTITY_UNKNOWN,
 } ir_entity_kind;
 
 /**
@@ -180,9 +181,9 @@ struct ir_entity {
 };
 
 /** Initialize the entity module. */
-void ir_init_entity(void);
+void ir_init_entity(ir_prog *irp);
 /** Cleanup entity module */
-void ir_finish_entity(void);
+void ir_finish_entity(ir_prog *irp);
 
 /**
  * Creates an entity corresponding to the start address of a basic block
@@ -194,6 +195,8 @@ ir_entity *new_label_entity(ir_label_t label);
  * Like new_label_entity() but with debug information.
  */
 ir_entity *new_d_label_entity(ir_label_t label, dbg_info *dbgi);
+
+void set_entity_irg(ir_entity *ent, ir_graph *irg);
 
 /* ----------------------- inline functions ------------------------ */
 static inline int _is_entity(const void *thing)
@@ -356,7 +359,7 @@ static inline void _set_entity_link(ir_entity *ent, void *l)
 static inline ir_graph *_get_entity_irg(const ir_entity *ent)
 {
 	assert(ent && ent->kind == k_entity);
-	if (!is_Method_type(ent->type) || ent == unknown_entity) {
+	if (!is_Method_type(ent->type) || is_unknown_entity(ent)) {
 		return NULL;
 	}
 

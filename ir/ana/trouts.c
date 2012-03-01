@@ -25,7 +25,7 @@
  */
 #include "config.h"
 
-#include "trouts.h"
+#include "trouts_t.h"
 
 #include "array.h"
 #include "pmap.h"
@@ -390,7 +390,6 @@ size_t get_class_n_downcasts(const ir_type *clss)
 	return n_instances;
 }
 
-/* Cast node that creates an instance of this type */
 ir_node *get_type_cast(const ir_type *tp, size_t pos)
 {
 	ir_node **casts;
@@ -603,8 +602,10 @@ static void chain_accesses(ir_node *n, void *env)
 	} else if (is_SymConst_addr_ent(n)) {
 		add_entity_reference(get_SymConst_entity(n), n);
 		return;
-	} else if (is_memop(n)) {
-		addr = get_memop_ptr(n);
+	} else if (is_Store(n)) {
+		addr = get_Store_ptr(n);
+	} else if (is_Load(n)) {
+		addr = get_Load_ptr(n);
 	} else if (is_Call(n)) {
 		addr = get_Call_ptr(n);
 		if (! is_Sel(addr)) return;  /* Sels before Calls mean a Load / polymorphic Call. */
@@ -635,7 +636,6 @@ static void chain_types(ir_type *tp)
 	}
 }
 
-/* compute the trouts data structures. */
 void compute_trouts(void)
 {
 	size_t i;

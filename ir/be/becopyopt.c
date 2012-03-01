@@ -30,35 +30,37 @@
  */
 #include "config.h"
 
-#include "execfreq.h"
-#include "xmalloc.h"
 #include "debug.h"
-#include "pmap.h"
-#include "raw_bitset.h"
-#include "irnode.h"
+#include "error.h"
+#include "execfreq.h"
+#include "irdump_t.h"
+#include "iredges_t.h"
 #include "irgraph.h"
 #include "irgwalk.h"
-#include "irprog.h"
 #include "irloop_t.h"
-#include "iredges_t.h"
+#include "irnode.h"
 #include "irprintf_t.h"
+#include "irprog.h"
 #include "irtools.h"
+#include "pmap.h"
+#include "raw_bitset.h"
 #include "util.h"
+#include "xmalloc.h"
 
-#include "bemodule.h"
 #include "bearch.h"
-#include "benode.h"
-#include "beutil.h"
-#include "beifg.h"
-#include "beintlive_t.h"
 #include "becopyopt_t.h"
 #include "becopystat.h"
-#include "belive_t.h"
+#include "bedump.h"
+#include "beifg.h"
 #include "beinsn_t.h"
+#include "beintlive_t.h"
+#include "beirg.h"
+#include "belive_t.h"
+#include "bemodule.h"
+#include "benode.h"
 #include "besched.h"
 #include "bestatevent.h"
-#include "beirg.h"
-#include "error.h"
+#include "beutil.h"
 
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
@@ -72,8 +74,22 @@
 #define COST_FUNC_LOOP     2
 #define COST_FUNC_ALL_ONE  3
 
+/**
+ * Flags for dumping the IFG.
+ */
+enum {
+	CO_IFG_DUMP_COLORS = 1 << 0, /**< Dump the graph colored. */
+	CO_IFG_DUMP_LABELS = 1 << 1, /**< Dump node/edge labels. */
+	CO_IFG_DUMP_SHAPE  = 1 << 2, /**< Give constrained nodes special shapes. */
+	CO_IFG_DUMP_CONSTR = 1 << 3, /**< Dump the node constraints in the label. */
+};
+
+static int co_get_costs_loop_depth(const ir_node *root, int pos);
+static int co_get_costs_exec_freq(const ir_node *root, int pos);
+static int co_get_costs_all_one(const ir_node *root, int pos);
+
 static unsigned   dump_flags  = 0;
-static unsigned   style_flags = 0;
+static unsigned   style_flags = CO_IFG_DUMP_COLORS;
 static int        do_stats    = 0;
 static cost_fct_t cost_func   = co_get_costs_exec_freq;
 static int        improve     = 1;
@@ -96,7 +112,6 @@ static const lc_opt_enum_mask_items_t style_items[] = {
 };
 
 typedef int (*opt_funcptr)(void);
-
 static const lc_opt_enum_func_ptr_items_t cost_func_items[] = {
 	{ "freq",   (opt_funcptr) co_get_costs_exec_freq },
 	{ "loop",   (opt_funcptr) co_get_costs_loop_depth },
@@ -241,47 +256,56 @@ static int co_is_optimizable_root(ir_node *irn)
 	return 0;
 }
 
-int co_get_costs_loop_depth(const copy_opt_t *co, ir_node *root, ir_node* arg, int pos)
+/**
+ * Computes the costs of a copy according to loop depth
+ * @param pos  the argument position of arg in the root arguments
+ * @return     Must be >= 0 in all cases.
+ */
+static int co_get_costs_loop_depth(const ir_node *root, int pos)
 {
-	int cost = 0;
+	ir_node *block = get_nodes_block(root);
 	ir_loop *loop;
-	ir_node *root_block = get_nodes_block(root);
-	(void) co;
-	(void) arg;
+	int      cost;
 
 	if (is_Phi(root)) {
-		/* for phis the copies are placed in the corresponding pred-block */
-		loop = get_irn_loop(get_Block_cfgpred_block(root_block, pos));
-	} else {
-		/* a perm places the copy in the same block as it resides */
-		loop = get_irn_loop(root_block);
+		block = get_Block_cfgpred_block(block, pos);
 	}
+	loop = get_irn_loop(block);
 	if (loop) {
 		int d = get_loop_depth(loop);
 		cost = d*d;
+	} else {
+		cost = 0;
 	}
 	return 1+cost;
 }
 
-int co_get_costs_exec_freq(const copy_opt_t *co, ir_node *root, ir_node* arg, int pos)
+/**
+ * Computes the costs of a copy according to execution frequency
+ * @param pos  the argument position of arg in the root arguments
+ * @return Must be >= 0 in all cases.
+ */
+static int co_get_costs_exec_freq(const ir_node *root, int pos)
 {
-	int res;
-	ir_node *root_bl = get_nodes_block(root);
-	ir_node *copy_bl = is_Phi(root) ? get_Block_cfgpred_block(root_bl, pos) : root_bl;
-	ir_exec_freq *exec_freq = be_get_irg_exec_freq(co->cenv->irg);
-	(void) arg;
-	res = get_block_execfreq_ulong(exec_freq, copy_bl);
+	ir_graph     *irg       = get_irn_irg(root);
+	ir_node      *root_bl   = get_nodes_block(root);
+	ir_node      *copy_bl
+		= is_Phi(root) ? get_Block_cfgpred_block(root_bl, pos) : root_bl;
+	ir_exec_freq *exec_freq = be_get_irg_exec_freq(irg);
+	int           res       = get_block_execfreq_ulong(exec_freq, copy_bl);
 
 	/* don't allow values smaller than one. */
 	return res < 1 ? 1 : res;
 }
 
-
-int co_get_costs_all_one(const copy_opt_t *co, ir_node *root, ir_node *arg, int pos)
+/**
+ * All costs equal 1. Using this will reduce the _number_ of copies.
+ * @param co   The copy opt object.
+ * @return Must be >= 0 in all cases.
+ */
+static int co_get_costs_all_one(const ir_node *root, int pos)
 {
-	(void) co;
 	(void) root;
-	(void) arg;
 	(void) pos;
 	return 1;
 }
@@ -425,7 +449,7 @@ static void co_collect_units(ir_node *irn, void *env)
 			if (arg == irn)
 				continue;
 			if (nodes_interfere(co->cenv, irn, arg)) {
-				unit->inevitable_costs += co->get_costs(co, irn, arg, i);
+				unit->inevitable_costs += co->get_costs(irn, i);
 				continue;
 			}
 
@@ -447,11 +471,11 @@ static void co_collect_units(ir_node *irn, void *env)
 			if (!arg_pos) { /* a new argument */
 				/* insert node, set costs */
 				unit->nodes[unit->node_count] = arg;
-				unit->costs[unit->node_count] = co->get_costs(co, irn, arg, i);
+				unit->costs[unit->node_count] = co->get_costs(irn, i);
 				unit->node_count++;
 			} else { /* arg has occurred before in same phi */
 				/* increase costs for existing arg */
-				unit->costs[arg_pos] += co->get_costs(co, irn, arg, i);
+				unit->costs[arg_pos] += co->get_costs(irn, i);
 			}
 		}
 		unit->nodes = XREALLOC(unit->nodes, ir_node*, unit->node_count);
@@ -464,7 +488,7 @@ static void co_collect_units(ir_node *irn, void *env)
 		unit->node_count = 2;
 		unit->nodes[0] = irn;
 		unit->nodes[1] = get_Perm_src(irn);
-		unit->costs[1] = co->get_costs(co, irn, unit->nodes[1], -1);
+		unit->costs[1] = co->get_costs(irn, -1);
 	} else {
 		/* Src == Tgt of a 2-addr-code instruction */
 		if (is_2addr_code(req)) {
@@ -497,7 +521,7 @@ static void co_collect_units(ir_node *irn, void *env)
 						if (!arch_irn_is_ignore(o) &&
 								!nodes_interfere(co->cenv, irn, o)) {
 							unit->nodes[k] = o;
-							unit->costs[k] = co->get_costs(co, irn, o, -1);
+							unit->costs[k] = co->get_costs(irn, -1);
 							++k;
 						}
 					}
@@ -809,11 +833,11 @@ static void build_graph_walker(ir_node *irn, void *env)
 	if (is_Reg_Phi(irn)) { /* Phis */
 		for (pos=0, max=get_irn_arity(irn); pos<max; ++pos) {
 			ir_node *arg = get_irn_n(irn, pos);
-			add_edges(co, irn, arg, co->get_costs(co, irn, arg, pos));
+			add_edges(co, irn, arg, co->get_costs(irn, pos));
 		}
 	} else if (is_Perm_Proj(irn)) { /* Perms */
 		ir_node *arg = get_Perm_src(irn);
-		add_edges(co, irn, arg, co->get_costs(co, irn, arg, 0));
+		add_edges(co, irn, arg, co->get_costs(irn, -1));
 	} else { /* 2-address code */
 		if (is_2addr_code(req)) {
 			const unsigned other = req->other_same;
@@ -823,7 +847,7 @@ static void build_graph_walker(ir_node *irn, void *env)
 				if (other & (1U << i)) {
 					ir_node *other = get_irn_n(skip_Proj(irn), i);
 					if (!arch_irn_is_ignore(other))
-						add_edges(co, irn, other, co->get_costs(co, irn, other, 0));
+						add_edges(co, irn, other, co->get_costs(irn, -1));
 				}
 			}
 		}
@@ -882,7 +906,14 @@ static int co_dump_appel_disjoint_constraints(const copy_opt_t *co, ir_node *a, 
 	return !bitset_intersect(constr[0], constr[1]);
 }
 
-void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
+/**
+ * Dump the interference graph according to the Appel/George coalescing contest file format.
+ * See: http://www.cs.princeton.edu/~appel/coalesce/format.html
+ * @note Requires graph structure.
+ * @param co The copy opt object.
+ * @param f  A file to dump to.
+ */
+static void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 {
 	be_ifg_t *ifg       = co->cenv->ifg;
 	int      *color_map = ALLOCAN(int, co->cls->n_regs);
@@ -960,164 +991,8 @@ void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 	xfree(node_map);
 }
 
-/*
-	 ___ _____ ____   ____   ___ _____   ____                        _
-	|_ _|  ___/ ___| |  _ \ / _ \_   _| |  _ \ _   _ _ __ ___  _ __ (_)_ __   __ _
-	 | || |_ | |  _  | | | | | | || |   | | | | | | | '_ ` _ \| '_ \| | '_ \ / _` |
-	 | ||  _|| |_| | | |_| | |_| || |   | |_| | |_| | | | | | | |_) | | | | | (_| |
-	|___|_|   \____| |____/ \___/ |_|   |____/ \__,_|_| |_| |_| .__/|_|_| |_|\__, |
-	                                                          |_|            |___/
-*/
-
-static const char *get_dot_color_name(size_t col)
-{
-	static const char *names[] = {
-		"blue",
-		"red",
-		"green",
-		"yellow",
-		"cyan",
-		"magenta",
-		"orange",
-		"chocolate",
-		"beige",
-		"navy",
-		"darkgreen",
-		"darkred",
-		"lightPink",
-		"chartreuse",
-		"lightskyblue",
-		"linen",
-		"pink",
-		"lightslateblue",
-		"mintcream",
-		"red",
-		"darkolivegreen",
-		"mediumblue",
-		"mistyrose",
-		"salmon",
-		"darkseagreen",
-		"mediumslateblue"
-		"moccasin",
-		"tomato",
-		"forestgreen",
-		"darkturquoise",
-		"palevioletred"
-	};
-
-	return col < sizeof(names)/sizeof(names[0]) ? names[col] : "white";
-}
-
-typedef struct co_ifg_dump_t {
-	const copy_opt_t *co;
-	unsigned flags;
-} co_ifg_dump_t;
-
-static void ifg_dump_graph_attr(FILE *f, void *self)
-{
-	(void) self;
-	fprintf(f, "overlap=scale");
-}
-
-static int ifg_is_dump_node(void *self, ir_node *irn)
-{
-	(void)self;
-	return !arch_irn_is_ignore(irn);
-}
-
-static void ifg_dump_node_attr(FILE *f, void *self, ir_node *irn)
-{
-	co_ifg_dump_t             *env     = (co_ifg_dump_t*)self;
-	const arch_register_t     *reg     = arch_get_irn_register(irn);
-	const arch_register_req_t *req     = arch_get_irn_register_req(irn);
-	int                        limited = arch_register_req_is(req, limited);
-
-	if (env->flags & CO_IFG_DUMP_LABELS) {
-		ir_fprintf(f, "label=\"%+F", irn);
-
-		if ((env->flags & CO_IFG_DUMP_CONSTR) && limited) {
-			bitset_t *bs = bitset_alloca(env->co->cls->n_regs);
-			rbitset_copy_to_bitset(req->limited, bs);
-			ir_fprintf(f, "\\n%B", bs);
-		}
-		ir_fprintf(f, "\" ");
-	} else {
-		fprintf(f, "label=\"\" shape=point " );
-	}
-
-	if (env->flags & CO_IFG_DUMP_SHAPE)
-		fprintf(f, "shape=%s ", limited ? "diamond" : "ellipse");
-
-	if (env->flags & CO_IFG_DUMP_COLORS)
-		fprintf(f, "style=filled color=%s ", get_dot_color_name(reg->index));
-}
-
-static void ifg_dump_at_end(FILE *file, void *self)
-{
-	co_ifg_dump_t *env = (co_ifg_dump_t*)self;
-	affinity_node_t *a;
-
-	co_gs_foreach_aff_node(env->co, a) {
-		const arch_register_t *ar = arch_get_irn_register(a->irn);
-		unsigned aidx = get_irn_idx(a->irn);
-		neighb_t *n;
-
-		co_gs_foreach_neighb(a, n) {
-			const arch_register_t *nr = arch_get_irn_register(n->irn);
-			unsigned nidx = get_irn_idx(n->irn);
-
-			if (aidx < nidx) {
-				const char *color = nr == ar ? "blue" : "red";
-				fprintf(file, "\tn%u -- n%u [weight=0.01 ", aidx, nidx);
-				if (env->flags & CO_IFG_DUMP_LABELS)
-					fprintf(file, "label=\"%d\" ", n->costs);
-				if (env->flags & CO_IFG_DUMP_COLORS)
-					fprintf(file, "color=%s ", color);
-				else
-					fprintf(file, "style=dotted");
-				fprintf(file, "];\n");
-			}
-		}
-	}
-}
-
-
-static be_ifg_dump_dot_cb_t ifg_dot_cb = {
-	ifg_is_dump_node,
-	ifg_dump_graph_attr,
-	ifg_dump_node_attr,
-	NULL,
-	NULL,
-	ifg_dump_at_end
-};
-
-
-
-void co_dump_ifg_dot(const copy_opt_t *co, FILE *f, unsigned flags)
-{
-	co_ifg_dump_t cod;
-
-	cod.co    = co;
-	cod.flags = flags;
-	be_ifg_dump_dot(co->cenv->ifg, co->irg, f, &ifg_dot_cb, &cod);
-}
-
-
-void co_solve_park_moon(copy_opt_t *opt)
-{
-	(void) opt;
-}
-
-/*
-    __  __       _         ____       _
-   |  \/  | __ _(_)_ __   |  _ \ _ __(_)_   _____ _ __
-   | |\/| |/ _` | | '_ \  | | | | '__| \ \ / / _ \ '__|
-   | |  | | (_| | | | | | | |_| | |  | |\ V /  __/ |
-   |_|  |_|\__,_|_|_| |_| |____/|_|  |_| \_/ \___|_|
-
-*/
-
-static FILE *my_open(const be_chordal_env_t *env, const char *prefix, const char *suffix)
+static FILE *my_open(const be_chordal_env_t *env, const char *prefix,
+                     const char *suffix)
 {
 	FILE *result;
 	char buf[1024];
@@ -1156,7 +1031,7 @@ void co_driver(be_chordal_env_t *cenv)
 	if (selected_copyopt->copyopt == void_algo)
 		return;
 
-	be_liveness_assure_chk(be_get_irg_liveness(cenv->irg));
+	be_assure_live_chk(cenv->irg);
 
 	co = new_copy_opt(cenv, cost_func);
 	co_build_ou_structure(co);
@@ -1174,8 +1049,8 @@ void co_driver(be_chordal_env_t *cenv)
 	be_stat_ev_ull("co_init_unsat",   before.unsatisfied_edges);
 
 	if (dump_flags & DUMP_BEFORE) {
-		FILE *f = my_open(cenv, "", "-before.dot");
-		co_dump_ifg_dot(co, f, style_flags);
+		FILE *f = my_open(cenv, "", "-before.vcg");
+		be_dump_ifg_co(f, co, style_flags & CO_IFG_DUMP_LABELS, style_flags & CO_IFG_DUMP_COLORS);
 		fclose(f);
 	}
 
@@ -1201,8 +1076,8 @@ void co_driver(be_chordal_env_t *cenv)
 	ir_timer_free(timer);
 
 	if (dump_flags & DUMP_AFTER) {
-		FILE *f = my_open(cenv, "", "-after.dot");
-		co_dump_ifg_dot(co, f, style_flags);
+		FILE *f = my_open(cenv, "", "-after.vcg");
+		be_dump_ifg_co(f, co, style_flags & CO_IFG_DUMP_LABELS, style_flags & CO_IFG_DUMP_COLORS);
 		fclose(f);
 	}
 

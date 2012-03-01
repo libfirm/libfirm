@@ -22,8 +22,6 @@
  * @brief      optimized version of set for sets containing only pointers
  *             (deprecated)
  * @author     Markus Armbruster
- * @note       This code has been deprecated. Use pset_new or cpset for new
- *             code.
  */
 #ifndef FIRM_ADT_PSET_H
 #define FIRM_ADT_PSET_H
@@ -31,9 +29,16 @@
 #include <stddef.h>
 
 #include "hashptr.h"
-#include "iterator.h"
 
 #include "../begin.h"
+
+/**
+ * @ingroup adt
+ * @defgroup pset Pointer Set
+ * (Hash)sets containing pointers.
+ * @note This code has been deprecated. Use pset_new or cpset for new code.
+ * @{
+ */
 
 /**
  * The default comparison function for pointers.
@@ -53,20 +58,23 @@ FIRM_API int pset_default_ptr_cmp(const void *x, const void *y);
  */
 typedef struct pset pset;
 
-/*
- * Define some convenience macros using the predefined hash function.
- */
-#define pset_insert_ptr(set,key)  pset_insert(set, key, HASH_PTR(key))
-#define pset_hinsert_ptr(set,key) pset_hinsert(set, key, HASH_PTR(key))
-#define pset_remove_ptr(set,key)  pset_remove(set, key, HASH_PTR(key))
-#define pset_find_ptr(set,key)    pset_find(set, key, HASH_PTR(key))
+/** Inserts into pointer set with default hash function. */
+#define pset_insert_ptr(set,key)  pset_insert(set, key, hash_ptr(key))
+/** Inserts into pointer set with default hash function and return entry */
+#define pset_hinsert_ptr(set,key) pset_hinsert(set, key, hash_ptr(key))
+/** Removes pointer from pointer set with default hash function */
+#define pset_remove_ptr(set,key)  pset_remove(set, key, hash_ptr(key))
+/** Finds pointer in pointer set with default hash function */
+#define pset_find_ptr(set,key)    pset_find(set, key, hash_ptr(key))
+/** Creates new pointer set with default compare function */
 #define pset_new_ptr(slots)       new_pset(pset_default_ptr_cmp, slots)
+/** Creates new pointer set with default compare function and default size */
 #define pset_new_ptr_default()    pset_new_ptr(64)
 
 /** The entry of a pset, representing an element pointer in the set and its meta-information */
 typedef struct {
-  unsigned hash;
-  void *dptr;
+  unsigned hash; /**< hash value of element */
+  void *dptr;    /**< pointer to element data */
 } pset_entry;
 
 /**
@@ -218,6 +226,8 @@ FIRM_API void pset_break(pset *pset);
  */
 FIRM_API void pset_insert_pset_ptr(pset *target, pset *src);
 
+/** @cond PRIVATE */
+
 #define new_pset(cmp, slots) ((new_pset) ((cmp), (slots)))
 #define pset_find(pset, key, hash) \
   _pset_search ((pset), (key), (hash), _pset_find)
@@ -226,39 +236,13 @@ FIRM_API void pset_insert_pset_ptr(pset *target, pset *src);
 #define pset_hinsert(pset, key, hash) \
   ((pset_entry *)_pset_search ((pset), (key), (hash), _pset_hinsert))
 
-#ifdef STATS
-/**
- * Prints statistics on a set to stdout.
- *
- * @param pset  the pset
- */
-void pset_stats (pset *pset);
-#else
-# define pset_stats(s) ((void)0)
-#endif
-
-#ifdef DEBUG
-/**
- * Describe a pset.
- *
- * Writes a description of a set to stdout. The description includes:
- * - a header telling how many elements (nkey) and segments (nseg) are in use
- * - for every collision chain the number of element with its hash values
- *
- * @param pset  the pset
- */
-void pset_describe (pset *pset);
-#endif
-
-/* @@@ NYI */
-#define PSET_VRFY(pset) (void)0
-
-
-/* Private */
-
 typedef enum { _pset_find, _pset_insert, _pset_hinsert } _pset_action;
 
 FIRM_API void *_pset_search(pset *, const void *, unsigned, _pset_action);
+
+/** @endcond */
+
+/** @} */
 
 #include "../end.h"
 

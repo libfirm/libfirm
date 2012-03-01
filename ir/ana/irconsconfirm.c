@@ -607,7 +607,6 @@ void construct_confirms(ir_graph *irg)
 	perform_irg_optimization(irg, &opt_confirms);
 }
 
-/* Construct a pass. */
 ir_graph_pass_t *construct_confirms_pass(const char *name)
 {
 	return def_graph_pass(name ? name : "confirm", construct_confirms);
@@ -625,15 +624,11 @@ static void remove_confirm(ir_node *n, void *env)
 	exchange(n, value);
 }
 
-/*
- * Remove all Confirm nodes from a graph.
- */
 void remove_confirms(ir_graph *irg)
 {
 	irg_walk_graph(irg, NULL, remove_confirm, NULL);
 }
 
-/* Construct a pass. */
 ir_graph_pass_t *remove_confirms_pass(const char *name)
 {
 	return def_graph_pass(name ? name : "rem_confirm", remove_confirms);

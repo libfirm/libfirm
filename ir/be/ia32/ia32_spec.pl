@@ -587,7 +587,7 @@ l_Sbb => {
 },
 
 IDiv => {
-	op_flags  => [ "fragile", "labeled" ],
+	op_flags  => [ "fragile", "uses_memory", "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "eax", "edx" ],
 	               out => [ "eax", "flags", "none", "edx", "none", "none" ] },
@@ -601,7 +601,7 @@ IDiv => {
 },
 
 Div => {
-	op_flags  => [ "fragile", "labeled" ],
+	op_flags  => [ "fragile", "uses_memory", "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "eax", "edx" ],
 	               out => [ "eax", "flags", "none", "edx", "none", "none" ] },
@@ -746,7 +746,7 @@ Rol => {
 	               out => [ "in_r1 !in_r2", "flags" ] },
 	ins       => [ "val", "count" ],
 	outs      => [ "res", "flags" ],
-	emit      => '. rol%M %SB1, %S0',
+	emit      => '. rol%M %SB1, %DS0',
 	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_gp,
@@ -1195,7 +1195,7 @@ Cltd => {
 # lateny of 0 for load is correct
 
 Load => {
-	op_flags  => [ "fragile", "labeled" ],
+	op_flags  => [ "uses_memory", "fragile", "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ],
 	               out => [ "gp", "none", "none", "none", "none" ] },
@@ -1207,7 +1207,7 @@ Load => {
 },
 
 Store => {
-	op_flags  => [ "fragile", "labeled" ],
+	op_flags  => [ "uses_memory", "fragile", "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp" ],
 	               out => [ "none", "none", "none" ] },
@@ -1219,7 +1219,7 @@ Store => {
 },
 
 Store8Bit => {
-	op_flags  => [ "fragile", "labeled" ],
+	op_flags  => [ "uses_memory", "fragile", "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ],
 	               out => ["none", "none", "none" ] },
@@ -1429,7 +1429,7 @@ Popcnt => {
 },
 
 Call => {
-	op_flags  => [ "fragile" ],
+	op_flags  => [ "uses_memory", "fragile" ],
 	state     => "exc_pinned",
 	reg_req   => {
 		in  => [ "gp", "gp", "none", "gp", "esp", "fpcw", "eax", "ecx", "edx" ],
@@ -1853,7 +1853,7 @@ Ucomi => {
 },
 
 xLoad => {
-	op_flags  => [ "fragile", "labeled" ],
+	op_flags  => [ "uses_memory", "fragile", "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ],
 	               out => [ "xmm", "none", "none", "none", "none" ] },
@@ -1867,7 +1867,7 @@ xLoad => {
 },
 
 xStore => {
-	op_flags => [ "fragile", "labeled" ],
+	op_flags => [ "uses_memory", "fragile", "labeled" ],
 	state    => "exc_pinned",
 	reg_req  => { in => [ "gp", "gp", "none", "xmm" ],
 	              out => [ "none", "none", "none" ] },
@@ -1879,7 +1879,7 @@ xStore => {
 },
 
 xStoreSimple => {
-	op_flags => [ "fragile", "labeled" ],
+	op_flags => [ "uses_memory", "fragile", "labeled" ],
 	state    => "exc_pinned",
 	reg_req  => { in => [ "gp", "gp", "none", "xmm" ],
 	              out => [ "none", "none", "none" ] },
@@ -1929,7 +1929,7 @@ l_FloattoLL => {
 },
 
 CopyB => {
-	op_flags  => [ "fragile" ],
+	op_flags  => [ "uses_memory", "fragile" ],
 	state     => "pinned",
 	reg_req   => { in => [ "edi", "esi", "ecx", "none" ],
 	               out => [ "edi", "esi", "ecx", "none", "none", "none" ] },
@@ -1944,7 +1944,7 @@ CopyB => {
 },
 
 CopyB_i => {
-	op_flags  => [ "fragile" ],
+	op_flags  => [ "uses_memory", "fragile" ],
 	state     => "pinned",
 	reg_req   => { in => [ "edi", "esi", "none" ],
 	               out => [  "edi", "esi", "none", "none", "none" ] },
@@ -1970,7 +1970,7 @@ Cwtl => {
 },
 
 Conv_I2I => {
-	op_flags  => [ "fragile" ],
+	op_flags  => [ "uses_memory", "fragile" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp" ],
 	               out => [ "gp", "none", "none", "none", "none" ] },
@@ -1985,7 +1985,7 @@ Conv_I2I => {
 },
 
 Conv_I2I8Bit => {
-	op_flags  => [ "fragile" ],
+	op_flags  => [ "uses_memory", "fragile" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ],
 	               out => [ "gp", "none", "none", "none", "none" ] },
@@ -2117,7 +2117,7 @@ vfchs => {
 
 vfld => {
 	irn_flags => [ "rematerializable" ],
-	op_flags  => [ "fragile", "labeled" ],
+	op_flags  => [ "uses_memory", "fragile", "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ],
 	               out => [ "vfp", "none", "none", "none", "none" ] },
@@ -2132,7 +2132,7 @@ vfld => {
 
 vfst => {
 	irn_flags => [ "rematerializable" ],
-	op_flags  => [ "fragile", "labeled" ],
+	op_flags  => [ "uses_memory", "fragile", "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "vfp" ],
 	               out => [ "none", "none", "none" ] },
@@ -2157,7 +2157,7 @@ vfild => {
 },
 
 vfist => {
-	op_flags  => [ "fragile" ],
+	op_flags  => [ "uses_memory", "fragile" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "vfp", "fpcw" ],
 	               out => [ "none", "none", "none", "none" ] },
@@ -2170,7 +2170,7 @@ vfist => {
 
 # SSE3 fisttp instruction
 vfisttp => {
-	op_flags  => [ "fragile" ],
+	op_flags  => [ "uses_memory", "fragile" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "vfp" ],
 	               out => [ "in_r4", "none", "none", "none" ]},
@@ -2693,7 +2693,7 @@ FtstFnstsw => {
 # Spilling and reloading of SSE registers, hardcoded, not generated #
 
 xxLoad => {
-	op_flags  => [ "fragile", "labeled" ],
+	op_flags  => [ "uses_memory", "fragile", "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ],
 	               out => [ "xmm", "none", "none", "none" ] },
@@ -2705,7 +2705,7 @@ xxLoad => {
 },
 
 xxStore => {
-	op_flags => [ "fragile", "labeled" ],
+	op_flags => [ "uses_memory", "fragile", "labeled" ],
 	state    => "exc_pinned",
 	reg_req  => { in => [ "gp", "gp", "none", "xmm" ],
 	              out => [ "none", "none", "none" ] },
@@ -2736,7 +2736,7 @@ foreach my $op (keys(%nodes)) {
 			die("Latency missing for op $op");
 		}
 	}
-	$op_attr_init .= "attr->latency = ".$node->{latency} . ";";
+	$op_attr_init .= "ia32_init_op(op, ".$node->{latency} . ");";
 
 	$node->{op_attr_init} = $op_attr_init;
 }

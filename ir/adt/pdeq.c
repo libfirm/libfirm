@@ -73,9 +73,8 @@ struct pdeq {
 
 /**
  * cache of unused, pdeq blocks to speed up new_pdeq and del_pdeq.
- * +1 for compilers that can't grok empty arrays
  */
-static pdeq *pdeq_block_cache[TUNE_NSAVED_PDEQS+1];
+static pdeq *pdeq_block_cache[TUNE_NSAVED_PDEQS];
 
 /**
  * Number of pdeqs in pdeq_store.
@@ -107,41 +106,13 @@ static inline void free_pdeq_block (pdeq *p)
 static inline pdeq *alloc_pdeq_block (void)
 {
 	pdeq *p;
-	if (TUNE_NSAVED_PDEQS && pdeqs_cached) {
+	if (pdeqs_cached > 0) {
 		p = pdeq_block_cache[--pdeqs_cached];
 	} else {
 		p = (pdeq*) xmalloc(PREF_MALLOC_SIZE);
 	}
 	return p;
 }
-
-
-#ifndef NDEBUG
-/**
- * Verify a double ended list, assert if failure.
- *
- * @param dq   The list to verify.
- */
-void _pdeq_vrfy(pdeq *dq)
-{
-	pdeq *q;
-
-	assert (   dq
-			&& (dq->magic == PDEQ_MAGIC1)
-			&& (dq->l_end && dq->r_end));
-	q = dq->l_end;
-	while (q) {
-		assert (   ((q == dq) || (q->magic == PDEQ_MAGIC2))
-				&& ((q == dq->l_end) ^ (q->l != NULL))
-				&& ((q == dq->r_end) ^ (q->r != NULL))
-				&& (!q->l || (q == q->l->r))
-				&& (q->n <= NDATA)
-				&& ((q == dq->l_end) || (q == dq->r_end) || (q->n == NDATA))
-				&& (q->p < NDATA));
-		q = q->r;
-	}
-}
-#endif
 
 /* Creates a new double ended pointer list. */
 pdeq *new_pdeq(void)
@@ -185,7 +156,6 @@ void del_pdeq(pdeq *dq)
 		qq = q->r;
 		free_pdeq_block(q);
 	} while ((q = qq));
-
 }
 
 /* Checks if a list is empty. */

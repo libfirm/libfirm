@@ -173,65 +173,6 @@ plotter_t *new_plotter_ps(const char *filename)
 	return p;
 }
 
-/*
-   _____ _ _     _____  ____  _       _   _
-  |_   _(_) | __|__  / |  _ \| | ___ | |_| |_ ___ _ __
-    | | | | |/ /  / /  | |_) | |/ _ \| __| __/ _ \ '__|
-    | | | |   <  / /_  |  __/| | (_) | |_| ||  __/ |
-    |_| |_|_|\_\/____| |_|   |_|\___/ \__|\__\___|_|
-
-*/
-
-/* chriswue: the following seems to be unused and can be deleted? */
-#if 0
-typedef struct {
-	base_plotter_t inh;
-	const char *filename;
-	FILE *f;
-} tikz_plotter_t;
-
-static void tikz_begin(plotter_t *_self, const rect_t *vis)
-{
-	FILE *f;
-	decl_self(tikz_plotter_t, _self);
-
-	f = self->f = fopen(self->filename, "wt");
-	fprintf(f, "\\begin{tikzpicture}\n");
-}
-
-static void tikz_setcolor(plotter_t *_self, const color_t *color)
-{
-	set_color(_self, color);
-}
-
-static void tikz_line(plotter_t *_self, int x1, int y1, int x2, int y2)
-{
-	decl_self(tikz_plotter_t, _self);
-	fprintf(self->f, "\t\\draw (%d,%d) -- (%d,%d);\n", x1, y1, x2, y2);
-}
-
-static void tikz_box(plotter_t *_self, const rect_t *rect)
-{
-	decl_self(tikz_plotter_t, _self);
-
-	fprintf(self->f, "\t\\draw (%d,%d) rectangle (%d, %d)\n",
-		rect->x, rect->y, rect->x + rect->w, rect->y + rect->h);
-}
-
-void tikz_text(plotter_t *_self, int x, int y, const char *str)
-{
-	decl_self(tikz_plotter_t, _self);
-	fprintf(self->f, "\t\\draw (%d,%d) node {%s};\n", x, y, str);
-}
-
-static void tikz_finish(plotter_t *_self)
-{
-	decl_self(tikz_plotter_t, _self);
-	fclose(self->f);
-}
-#endif /* if 0 */
-
-
 extern void plotter_free(plotter_t *self)
 {
 	self->vtab->free(self);
@@ -445,17 +386,16 @@ static void draw_block(ir_node *bl, void *data)
 
 static void draw(draw_chordal_env_t *env, const rect_t *start_box)
 {
+	ir_graph  *irg = env->chordal_env->irg;
 	plotter_t *p = env->plotter;
-	be_lv_t *lv;
 	rect_t bbox;
 
 	bbox.x = bbox.y = 0;
 	bbox.w = start_box->w + 2 * env->opts->x_margin;
 	bbox.h = start_box->h + 2 * env->opts->y_margin;
 
-	lv = be_assure_liveness(env->chordal_env->irg);
-	be_liveness_assure_sets(lv);
-	be_liveness_assure_chk(lv);
+	be_assure_live_sets(irg);
+	be_assure_live_chk(irg);
 
 	p->vtab->begin(p, &bbox);
 	irg_block_walk_graph(env->chordal_env->irg, draw_block, NULL, env);

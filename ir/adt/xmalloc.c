@@ -28,6 +28,7 @@
 #include "config.h"
 
 #include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "xmalloc.h"
@@ -35,7 +36,9 @@
 
 static NORETURN xnomem(void)
 {
-	panic("out of memory");
+	/* Do not use panic() here, because it might try to allocate memory! */
+	fputs("out of memory", stderr);
+	abort();
 }
 
 void *xmalloc(size_t size)

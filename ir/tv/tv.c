@@ -636,7 +636,7 @@ ir_tarval *get_tarval_all_one(ir_mode *mode)
 
 int tarval_is_constant(ir_tarval *tv)
 {
-	int num_res = sizeof(reserved_tv) / sizeof(reserved_tv[0]);
+	size_t const num_res = ARRAY_SIZE(reserved_tv);
 
 	/* reserved tarvals are NOT constants. Note that although
 	   tarval_b_true and tarval_b_false are reserved, they are constants of course. */

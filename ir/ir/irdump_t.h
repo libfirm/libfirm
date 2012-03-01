@@ -130,18 +130,12 @@ typedef enum {
 #define TYPE_MEMBER_EDGE_ATTR    "class: 12 label: \"member\" color:blue"
 /* #define CALLGRAPH_EDGE_ATTR      "calls" */
 
-#define PRINT_NODEID(X)       ir_fprintf(F, "n%ld", get_irn_node_nr(X))
-#define PRINT_TYPEID(X)       ir_fprintf(F, "\"t%ld\"", get_type_nr(X))
-#define PRINT_ENTID(X)        ir_fprintf(F, "e%ld", get_entity_nr(X))
-#define PRINT_IRGID(X)        ir_fprintf(F, "g%ld", get_irg_graph_nr(X))
-#define PRINT_CONSTID(X,Y)    ir_fprintf(F, "\"n%ldn%ld\"", get_irn_node_nr(X),get_irn_node_nr(Y))
-#define PRINT_CONSTBLKID(X,Y) ir_fprintf(F, "n%ldb%ld", get_irn_node_nr(X),get_irn_node_nr(Y))
-#define PRINT_LOOPID(X)       ir_fprintf(F, "l%ld", get_loop_loop_nr(X))
-#define PRINT_ITEMID(X,Y)     ir_fprintf(F, "i%ldT%zu", get_type_nr(X), (Y))
-#define PRINT_EXTBBID(X)      ir_fprintf(F, "x%ld", get_irn_node_nr(X))
+void print_nodeid(FILE *F, const ir_node *node);
+void print_irgid(FILE *F, const ir_graph *irg);
+void print_typeid(FILE *F, const ir_type *type);
+void print_entityid(FILE *F, const ir_entity *entity);
+void print_loopid(FILE *F, const ir_loop *loop);
 
-void dump_vcg_header(FILE *out, const char *name, const char *layout, const char *orientation);
-void dump_vcg_footer(FILE *out);
 const char *get_irg_dump_name(const ir_graph *irg);
 
 const char *get_ent_dump_name(const ir_entity *ent);
@@ -152,11 +146,21 @@ const char *get_ent_dump_name(const ir_entity *ent);
  */
 const char *get_mode_name_ex(const ir_mode *mode, int *bad);
 /** dump the name of a node n to the File F. */
-void dump_node_opcode(FILE *out, ir_node *n);
+void dump_node_opcode(FILE *out, const ir_node *n);
 
-void dump_node_label(FILE *out, ir_node *n);
+void dump_node_label(FILE *out, const ir_node *n);
 
 /** Writes vcg representation with title "PRINT_TYPEID(tp)" to file F. */
 void dump_type_node(FILE *out, ir_type *tp);
+
+void dump_vcg_header(FILE *out, const char *name, const char *layout, const char *orientation);
+void dump_vcg_footer(FILE *out);
+void dump_vcg_header_colors(FILE *out);
+void dump_vcg_infonames(FILE *out);
+void dump_node(FILE *out, const ir_node *node);
+
+/** Write the irnode and all its attributes to the file passed.
+ * (plain text format) */
+void dump_irnode_to_file(FILE *out, const ir_node *node);
 
 #endif

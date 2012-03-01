@@ -30,6 +30,13 @@
 #include "../begin.h"
 
 /**
+ * @ingroup adt
+ * @defgroup pdeq Double Ended Queue
+ * Implementation if a double ended queue datastructure for generic pointers
+ * @{
+ */
+
+/**
  * The type of the pointer compare function.
  *
  * @param elem  The list element.
@@ -171,13 +178,6 @@ FIRM_API void *pdeq_getl(pdeq *dq);
  */
 FIRM_API void *pdeq_getr(pdeq *dq);
 
-#ifdef NDEBUG
-#define PDEQ_VRFY(deq) ((void)0)
-#else
-#define PDEQ_VRFY(deq) _pdeq_vrfy ((deq))
-FIRM_API void _pdeq_vrfy(pdeq *dq);
-#endif
-
 /**
  * The pdeq is often used as a wait queue. A helper
  * type to support this.
@@ -270,6 +270,8 @@ typedef pdeq stack;
  * @return  non-zero if the stack is empty.
  */
 #define stack_empty(st) pdeq_empty(wq)
+
+/** @} */
 
 #include "../end.h"
 

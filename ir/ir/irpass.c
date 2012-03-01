@@ -31,13 +31,13 @@
 #include "irprog_t.h"
 #include "irdump.h"
 #include "irverify.h"
+#include "ircons.h"
 #include "xmalloc.h"
 
 typedef void (*void_pass_func_irg)(ir_graph *irg);
 typedef int (*int_pass_func_irg)(ir_graph *irg);
 typedef void (*void_pass_func)(void);
 
-/*Add a graph pass to a graph pass manager. */
 void ir_graph_pass_mgr_add(ir_graph_pass_manager_t *mgr, ir_graph_pass_t *pass)
 {
 	list_add_tail(&pass->list, &mgr->passes);
@@ -46,7 +46,6 @@ void ir_graph_pass_mgr_add(ir_graph_pass_manager_t *mgr, ir_graph_pass_t *pass)
 		pass->add_to_mgr(pass->context);
 }
 
-/* Add an irprog pass to an irprog pass manager. */
 void ir_prog_pass_mgr_add(ir_prog_pass_manager_t *mgr, ir_prog_pass_t *pass)
 {
 	list_add_tail(&pass->list, &mgr->passes);
@@ -67,7 +66,6 @@ static int run_wrapper(ir_prog *prog, void *ctx)
 	return ir_graph_pass_mgr_run(mgr);
 }
 
-/* Ensure that no verifier is run an ir_prog pass. */
 int ir_prog_no_verify(ir_prog *prog, void *ctx)
 {
 	(void)prog;
@@ -75,7 +73,6 @@ int ir_prog_no_verify(ir_prog *prog, void *ctx)
 	return 0;
 }
 
-/* Ensure that no dumper is run from an ir_prog pass. */
 void ir_prog_no_dump(ir_prog *prog, void *ctx, unsigned idx)
 {
 	(void)prog;
@@ -116,7 +113,6 @@ static ir_prog_pass_t *create_wrapper_pass(ir_graph_pass_manager_t *graph_mgr)
 	return pass;
 }
 
-/* Add an ir_graph_pass as a pass to an ir_prog pass manager. */
 void ir_prog_pass_mgr_add_graph_pass(
 	ir_prog_pass_manager_t *mgr, ir_graph_pass_t *pass)
 {
@@ -146,7 +142,6 @@ void ir_prog_pass_mgr_add_graph_pass(
 	ir_prog_pass_mgr_add(mgr, wrapper);
 }
 
-/* Add an ir_graph_pass_manager as a pass to an ir_prog pass manager. */
 void ir_prog_pass_mgr_add_graph_mgr(
 	ir_prog_pass_manager_t *mgr, ir_graph_pass_manager_t *graph_mgr)
 {
@@ -166,7 +161,6 @@ static void create_suffix(char *suffix, size_t n, const char *pass_name)
 	snprintf(suffix, n, "%s.svg", pass_name);
 }
 
-/* Run all passes of an ir_graph pass manager. */
 int ir_graph_pass_mgr_run(ir_graph_pass_manager_t *mgr)
 {
 	ir_graph_pass_t *pass;
@@ -222,7 +216,6 @@ static int irp_verify_irgs(void)
 	return res;
 }
 
-/* Run all passes of an ir_prog pass manager. */
 int ir_prog_pass_mgr_run(ir_prog_pass_manager_t *mgr)
 {
 	ir_prog_pass_t *pass;
@@ -261,7 +254,6 @@ int ir_prog_pass_mgr_run(ir_prog_pass_manager_t *mgr)
 	return res;
 }
 
-/* Creates a new ir_graph pass manager. */
 ir_graph_pass_manager_t *new_graph_pass_mgr(
 	const char *name, int verify_all, int dump_all)
 {
@@ -277,7 +269,6 @@ ir_graph_pass_manager_t *new_graph_pass_mgr(
 	return res;
 }
 
-/* Creates a new ir_prog pass manager. */
 ir_prog_pass_manager_t *new_prog_pass_mgr(
 	const char *name, int verify_all, int dump_all)
 {
@@ -293,7 +284,6 @@ ir_prog_pass_manager_t *new_prog_pass_mgr(
 	return res;
 }
 
-/* Terminate an ir_graph pass manager and all owned passes. */
 void term_graph_pass_mgr(ir_graph_pass_manager_t *mgr)
 {
 	ir_graph_pass_t *pass, *next;
@@ -308,7 +298,6 @@ void term_graph_pass_mgr(ir_graph_pass_manager_t *mgr)
 	xfree(mgr);
 }
 
-/* Terminate an ir_prog pass manager and all owned passes. */
 void term_prog_pass_mgr(ir_prog_pass_manager_t *mgr)
 {
 	ir_prog_pass_t *pass, *next;
@@ -323,24 +312,12 @@ void term_prog_pass_mgr(ir_prog_pass_manager_t *mgr)
 	xfree(mgr);
 }
 
-/**
- * Set the run index for an irgraph pass manager.
- *
- * @param mgr      the manager
- * @param run_idx  the index for the first pass of this manager
- */
 void ir_graph_pass_mgr_set_run_idx(
 	ir_graph_pass_manager_t *mgr, unsigned run_idx)
 {
 	mgr->run_idx = run_idx;
 }
 
-/**
- * Set the run index for an irprog pass manager.
- *
- * @param mgr      the manager
- * @param run_idx  the index for the first pass of this manager
- */
 void ir_prog_pass_mgr_set_run_idx(
 	ir_prog_pass_manager_t *mgr, unsigned run_idx)
 {
@@ -357,7 +334,6 @@ static int void_graph_wrapper(ir_graph *irg, void *context)
 	return 0;
 }
 
-/* Creates an ir_graph pass for running void function(ir_graph *irg). */
 ir_graph_pass_t *def_graph_pass(
 	const char *name, void (*function)(ir_graph *irg))
 {
@@ -382,7 +358,6 @@ static int int_graph_wrapper(ir_graph *irg, void *context)
 	return function(irg);
 }
 
-/* Creates an ir_graph pass for running void function(ir_graph *irg). */
 ir_graph_pass_t *def_graph_pass_ret(
 		const char *name, int (*function)(ir_graph *irg))
 {
@@ -398,7 +373,6 @@ ir_graph_pass_t *def_graph_pass_ret(
 	return pass;
 }
 
-/* constructor for a default graph pass */
 ir_graph_pass_t *def_graph_pass_constructor(
 	ir_graph_pass_t *pass,
 	const char *name, int (*function)(ir_graph *irg, void *context)) {
@@ -416,7 +390,6 @@ ir_graph_pass_t *def_graph_pass_constructor(
 	return pass;
 }
 
-/* set the run parallel property */
 void ir_graph_pass_set_parallel(ir_graph_pass_t *pass, int flag)
 {
 	pass->run_parallel = flag != 0;
@@ -434,7 +407,6 @@ static int void_prog_wrapper(ir_prog *irp, void *context)
 	return 0;
 }
 
-/* Creates an ir_prog pass for running void function(void). */
 ir_prog_pass_t *def_prog_pass(
 	const char *name,
 	void (*function)(void))
@@ -451,7 +423,6 @@ ir_prog_pass_t *def_prog_pass(
 	return pass;
 }
 
-/* Creates an ir_prog pass for running void function(void). */
 ir_prog_pass_t *def_prog_pass_constructor(
 	ir_prog_pass_t *pass,
 	const char *name,

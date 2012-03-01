@@ -47,12 +47,7 @@ typedef enum {
  * Compute the inter block liveness for a graph.
  * @param irg The graph.
  */
-be_lv_t *be_liveness(ir_graph *irg);
-
-/**
- * Check the given liveness information against a freshly computed one.
- */
-void be_liveness_check(be_lv_t *lv);
+be_lv_t *be_liveness_new(ir_graph *irg);
 
 /**
  * Free the liveness information.
@@ -60,9 +55,21 @@ void be_liveness_check(be_lv_t *lv);
 void be_liveness_free(be_lv_t *lv);
 
 /**
- * Recompute the complete liveness information.
+ * (Re)compute the liveness information if necessary.
  */
-void be_liveness_recompute(be_lv_t *lv);
+void be_liveness_compute_sets(be_lv_t *lv);
+void be_liveness_compute_chk(be_lv_t *lv);
+
+/**
+ * Invalidate the liveness information.
+ * You must call this if you modify the program and do not
+ * update the liveness with the be_liveness_{update,remove,introduce}
+ * functions.
+ * @note If changed the control flow then you must also call
+ *       be_liveness_invalidate_chk()
+ */
+void be_liveness_invalidate_sets(be_lv_t *lv);
+void be_liveness_invalidate_chk(be_lv_t *lv);
 
 /**
  * Update the liveness information for a single node.
@@ -94,20 +101,6 @@ void be_liveness_introduce(be_lv_t *lv, ir_node *irn);
 void be_liveness_add_missing(be_lv_t *lv);
 
 /**
- * Dump the liveness information for a graph.
- * @param f The output.
- * @param irg The graph.
- */
-void be_liveness_dump(const be_lv_t *lv, FILE *f);
-
-/**
- * Dump the liveness information for a graph.
- * @param irg The graph.
- * @param cls_name A string used as substring in the filename.
- */
-void be_liveness_dumpto(const be_lv_t *lv, const char *cls_name);
-
-/**
  * Check, if a node is live in at a block.
  * @param block The block.
  * @param irn The node to check for.
@@ -130,13 +123,6 @@ int (be_is_live_out)(const be_lv_t *lv, const ir_node *block, const ir_node *irn
  * @return 1, if @p irn is live at the end of the block, 0 if not.
  */
 int (be_is_live_end)(const be_lv_t *lv, const ir_node *block, const ir_node *irn);
-
-/**
- * Check, if the SSA dominance property is fulfilled.
- * @param irg The graph.
- * @return   1 if dominance property is fulfilled, 0 otherwise
- */
-int be_check_dominance(ir_graph *irg);
 
 /**
  * The liveness transfer function.
@@ -174,25 +160,4 @@ void be_liveness_nodes_live_at(const be_lv_t *lv,
                                const arch_register_class_t *cls,
                                const ir_node *pos, ir_nodeset_t *live);
 
-/**
- * Make sure the live sets are computed.
- * @param lv The liveness information.
- */
-void be_liveness_assure_sets(be_lv_t *lv);
-
-/**
- * Make sure all information needed for liveness checks is available.
- * @param lv The liveness information.
- */
-void be_liveness_assure_chk(be_lv_t *lv);
-
-/**
- * Invalidate the liveness information.
- * You must call this if you modify the program and do not
- * update the liveness with the be_liveness_{update,remove,introduce}
- * functions.
- * @param lv The liveness info.
- */
-void be_liveness_invalidate(be_lv_t *lv);
-
-#endif /* FIRM_BE_BELIVE_H */
+#endif

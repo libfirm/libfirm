@@ -890,9 +890,9 @@ static void collect_calls2(ir_node *call, void *ctx)
 
 /**
  * Returns TRUE if the number of callers is 0 in the irg's environment,
- * hence this irg is a leave.
+ * hence this irg is a leaf.
  */
-inline static int is_leave(ir_graph *irg)
+inline static int is_leaf(ir_graph *irg)
 {
 	inline_irg_env *env = (inline_irg_env*)get_irg_link(irg);
 	return env->n_call_nodes == 0;
@@ -954,14 +954,14 @@ static void append_call_list(inline_irg_env *dst, inline_irg_env *src, int loop_
 }
 
 /*
- * Inlines small leave methods at call sites where the called address comes
+ * Inlines small leaf methods at call sites where the called address comes
  * from a Const node that references the entity representing the called
  * method.
  * The size argument is a rough measure for the code size of the method:
  * Methods where the obstack containing the firm graph is smaller than
  * size are inlined.
  */
-void inline_leave_functions(unsigned maxsize, unsigned leavesize,
+void inline_leaf_functions(unsigned maxsize, unsigned leafsize,
                             unsigned size, int ignore_runtime)
 {
 	inline_irg_env   *env;
@@ -1002,7 +1002,7 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 
 	/* -- and now inline. -- */
 
-	/* Inline leaves recursively -- we might construct new leaves. */
+	/* Inline leafs recursively -- we might construct new leafs. */
 	do {
 		did_inline = 0;
 
@@ -1029,8 +1029,8 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 					continue;
 				}
 
-				if (is_leave(callee) && (
-				    is_smaller(callee, leavesize) || prop >= irg_inline_forced)) {
+				if (is_leaf(callee) && (
+				    is_smaller(callee, leafsize) || prop >= irg_inline_forced)) {
 					if (!phiproj_computed) {
 						phiproj_computed = 1;
 						collect_phiprojs(current_ir_graph);
@@ -1073,7 +1073,7 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 		list_for_each_entry_safe(call_entry, entry, next, &env->calls, list) {
 			irg_inline_property prop;
 			ir_graph            *callee;
-			pmap_entry          *e;
+			ir_graph            *calleee;
 
 			call   = entry->call;
 			callee = entry->callee;
@@ -1083,13 +1083,13 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 				continue;
 			}
 
-			e = pmap_find(copied_graphs, callee);
-			if (e != NULL) {
+			calleee = (ir_graph*)pmap_get(copied_graphs, callee);
+			if (calleee != NULL) {
 				/*
 				 * Remap callee if we have a copy.
 				 * FIXME: Should we do this only for recursive Calls ?
 				 */
-				callee = (ir_graph*)e->value;
+				callee = calleee;
 			}
 
 			if (prop >= irg_inline_forced ||
@@ -1108,7 +1108,7 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 
 					/*
 					 * No copy yet, create one.
-					 * Note that recursive methods are never leaves, so it is sufficient
+					 * Note that recursive methods are never leafs, so it is sufficient
 					 * to test this condition here.
 					 */
 					copy = create_irg_copy(callee);
@@ -1204,44 +1204,44 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 	current_ir_graph = rem;
 }
 
-typedef struct inline_leave_functions_pass_t {
+typedef struct inline_leaf_functions_pass_t {
 	ir_prog_pass_t pass;
 	unsigned       maxsize;
-	unsigned       leavesize;
+	unsigned       leafsize;
 	unsigned       size;
 	int            ignore_runtime;
-} inline_leave_functions_pass_t;
+} inline_leaf_functions_pass_t;
 
 /**
- * Wrapper to run inline_leave_functions() as a ir_prog pass.
+ * Wrapper to run inline_leaf_functions() as a ir_prog pass.
  */
-static int inline_leave_functions_wrapper(ir_prog *irp, void *context)
+static int inline_leaf_functions_wrapper(ir_prog *irp, void *context)
 {
-	inline_leave_functions_pass_t *pass = (inline_leave_functions_pass_t*)context;
+	inline_leaf_functions_pass_t *pass = (inline_leaf_functions_pass_t*)context;
 
 	(void)irp;
-	inline_leave_functions(
-		pass->maxsize, pass->leavesize,
+	inline_leaf_functions(
+		pass->maxsize, pass->leafsize,
 		pass->size, pass->ignore_runtime);
 	return 0;
 }
 
-/* create a pass for inline_leave_functions() */
-ir_prog_pass_t *inline_leave_functions_pass(
-	const char *name, unsigned maxsize, unsigned leavesize,
+/* create a pass for inline_leaf_functions() */
+ir_prog_pass_t *inline_leaf_functions_pass(
+	const char *name, unsigned maxsize, unsigned leafsize,
 	unsigned size, int ignore_runtime)
 {
-	inline_leave_functions_pass_t *pass = XMALLOCZ(inline_leave_functions_pass_t);
+	inline_leaf_functions_pass_t *pass = XMALLOCZ(inline_leaf_functions_pass_t);
 
 	pass->maxsize        = maxsize;
-	pass->leavesize      = leavesize;
+	pass->leafsize       = leafsize;
 	pass->size           = size;
 	pass->ignore_runtime = ignore_runtime;
 
 	return def_prog_pass_constructor(
 		&pass->pass,
-		name ? name : "inline_leave_functions",
-		inline_leave_functions_wrapper);
+		name ? name : "inline_leaf_functions",
+		inline_leaf_functions_wrapper);
 }
 
 /**
@@ -1462,7 +1462,7 @@ static int calc_inline_benefice(call_entry *entry, ir_graph *callee)
 	if (callee_env->n_nodes < 30 && !callee_env->recursive)
 		weight += 2000;
 
-	/* and finally for leaves: they do not increase the register pressure
+	/* and finally for leafs: they do not increase the register pressure
 	   because of callee safe registers */
 	if (callee_env->n_call_nodes == 0)
 		weight += 400;
@@ -1517,6 +1517,8 @@ static ir_graph **create_irg_list(void)
 
 	callgraph_walk(NULL, callgraph_walker, &env);
 	assert(n_irgs == env.last_irg);
+
+	free_callgraph();
 
 	return env.irgs;
 }
@@ -1593,9 +1595,9 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 		ir_node             *call_node  = curr_call->call;
 		inline_irg_env      *callee_env = (inline_irg_env*)get_irg_link(callee);
 		irg_inline_property prop        = get_irg_inline_property(callee);
+		ir_graph            *calleee;
 		int                 loop_depth;
 		const call_entry    *centry;
-		pmap_entry          *e;
 
 		if ((prop < irg_inline_forced) && env->n_nodes + callee_env->n_nodes > maxsize) {
 			DB((dbg, LEVEL_2, "%+F: too big (%d) + %+F (%d)\n", irg,
@@ -1603,8 +1605,8 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 			continue;
 		}
 
-		e = pmap_find(copied_graphs, callee);
-		if (e != NULL) {
+		calleee = (ir_graph*)pmap_get(copied_graphs, callee);
+		if (calleee != NULL) {
 			int benefice = curr_call->benefice;
 			/*
 			 * Reduce the weight for recursive function IFF not all arguments are const.
@@ -1618,7 +1620,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 			/*
 			 * Remap callee if we have a copy.
 			 */
-			callee     = (ir_graph*)e->value;
+			callee     = calleee;
 			callee_env = (inline_irg_env*)get_irg_link(callee);
 		}
 
@@ -1644,7 +1646,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 
 			/*
 			 * No copy yet, create one.
-			 * Note that recursive methods are never leaves, so it is
+			 * Note that recursive methods are never leafs, so it is
 			 * sufficient to test this condition here.
 			 */
 			copy = create_irg_copy(callee);

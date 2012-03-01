@@ -102,79 +102,7 @@ struct SET {
 	Element *free_list;       /**< list of free Elements */
 #endif
 	struct obstack obst;      /**< obstack for allocation all data */
-#ifdef STATS
-	size_t naccess, ncollision, ndups;
-	size_t max_chain_len;
-#endif
-#ifdef DEBUG
-	const char *tag;          /**< an optionally tag for distinguishing sets */
-#endif
 };
-
-
-#ifdef STATS
-
-void MANGLEP(stats) (SET *table)
-{
-	size_t nfree = 0;
-#ifdef PSET
-	Element *q = table->free_list;
-	while (q) { q = q->chain; ++nfree; }
-#endif
-	lc_printf("     accesses  collisions        keys  duplicates     longest      wasted\n%12zu%12zu%12zu%12zu%12zu%12zu\n",
-			table->naccess, table->ncollision, table->nkey, table->ndups, table->max_chain_len, nfree);
-}
-
-static inline void stat_chain_len(SET *table, size_t chain_len)
-{
-	table->ncollision += chain_len;
-	if (table->max_chain_len < chain_len) table->max_chain_len = chain_len;
-}
-
-# define stat_access(table) (++(table)->naccess)
-# define stat_dup(table) (++(table)->ndups)
-
-#else /* !STATS */
-
-# define stat_chain_len(table, chain_len) ((void)chain_len)
-# define stat_access(table) ((void)0)
-# define stat_dup(table) ((void)0)
-
-#endif /* !STATS */
-
-#ifdef DEBUG
-
-const char *MANGLEP(tag);
-
-
-void MANGLEP(describe) (SET *table)
-{
-	size_t i, j, collide;
-	Element *ptr;
-	Segment *seg;
-
-	lc_printf("p=%zu maxp=%zu nkey=%zu nseg=%zu\n",
-			table->p, table->maxp, table->nkey, table->nseg);
-	for (i = 0;  i < table->nseg;  i++) {
-		seg = table->dir[i];
-		for (j = 0;  j < SEGMENT_SIZE;  j++) {
-			collide = 0;
-			ptr = seg[j];
-			while (ptr) {
-				if (collide) lc_printf("<%3zu>", collide);
-				else printf ("table");
-				lc_printf("[%zd][%3zd]: %u %p\n", i, j, ptr->entry.hash, (void *)ptr->entry.dptr);
-				ptr = ptr->chain;
-				++collide;
-			}
-		}
-	}
-#ifdef STATS
-	MANGLEP(stats)(table);
-#endif
-}
-
-#endif /* !DEBUG */
 
 
 SET *(PMANGLE(new)) (MANGLEP(cmp_fun) cmp, size_t nslots)
@@ -206,22 +134,12 @@ SET *(PMANGLE(new)) (MANGLEP(cmp_fun) cmp, size_t nslots)
 		table->nseg++;
 	}
 
-#ifdef STATS
-	table->naccess = table->ncollision = table->ndups = 0;
-	table->max_chain_len = 0;
-#endif
-#ifdef DEBUG
-	table->tag = MANGLEP(tag);
-#endif
 	return table;
 }
 
 
 void PMANGLE(del) (SET *table)
 {
-#ifdef DEBUG
-	MANGLEP(tag) = table->tag;
-#endif
 	obstack_free (&table->obst, NULL);
 	xfree (table);
 }
@@ -389,14 +307,9 @@ void * MANGLE(_,_search) (SET *table,
 	int SegmentIndex;
 	MANGLEP(cmp_fun) cmp = table->cmp;
 	Segment q;
-	size_t chain_len = 0;
 
 	assert (table);
 	assert (key);
-#ifdef DEBUG
-	MANGLEP(tag) = table->tag;
-#endif
-	stat_access (table);
 
 	/* Find collision chain */
 	h = Hash (table, hash);
@@ -408,15 +321,10 @@ void * MANGLE(_,_search) (SET *table,
 	/* Follow collision chain */
 	while (q && !EQUAL (cmp, q, key, size)) {
 		q = q->chain;
-		++chain_len;
 	}
-
-	stat_chain_len(table, chain_len);
 
 	if (!q && (action != MANGLE(_,_find))) { /* not found, insert */
 		assert (!table->iter_tail && "insert an element into a set that is iterated");
-
-		if (CurrentSegment[SegmentIndex]) stat_dup (table);
 
 #ifdef PSET
 		if (table->free_list) {
@@ -469,10 +377,8 @@ void *pset_remove(SET *table, const void *key, unsigned hash)
 	pset_cmp_fun cmp = table->cmp;
 	Segment *p;
 	Segment q;
-	int chain_len = 0;
 
 	assert (table && !table->iter_tail);
-	stat_access (table);
 
 	/* Find collision chain */
 	h = Hash (table, hash);
@@ -485,10 +391,7 @@ void *pset_remove(SET *table, const void *key, unsigned hash)
 	while (!EQUAL (cmp, *p, key, size)) {
 		p = &(*p)->chain;
 		assert (*p);
-		++chain_len;
 	}
-
-	stat_chain_len (table, chain_len);
 
 	q = *p;
 

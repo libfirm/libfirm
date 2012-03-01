@@ -832,9 +832,8 @@ void assure_constraints(ir_graph *irg)
 
 	ir_nodehashmap_destroy(&cenv.op_set);
 	obstack_free(&cenv.obst, NULL);
-	be_liveness_invalidate(be_get_irg_liveness(irg));
+	be_invalidate_live_sets(irg);
 }
-
 
 /**
  * Push nodes that do not need to be permed through the Perm.
@@ -1014,7 +1013,7 @@ void lower_nodes_after_ra(ir_graph *irg, int do_copy)
 	env.do_copy = do_copy;
 
 	/* we will need interference */
-	be_liveness_assure_chk(be_get_irg_liveness(irg));
+	be_assure_live_chk(irg);
 
 	irg_walk_graph(irg, NULL, lower_nodes_after_ra_walker, &env);
 }

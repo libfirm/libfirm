@@ -26,9 +26,6 @@
  *          not very well suited for the interference graph implementation.
  *          This list uses an obstack and a free-list to efficiently manage its
  *          elements.
- * @note    Until now the code is entirely untested so it probably contains
- *          plenty of errors. (Matze: Is this still true, the code seems to be
- *          used at some places....)
  * @deprecated
  */
 #ifndef FIRM_ADT_PLIST_H
@@ -46,27 +43,19 @@ typedef struct plist plist_t;
  * The plist data type.
  */
 struct plist {
-	/**
-	 * The obstack used for all allocations.
-	 */
+	/** The obstack used for all allocations. */
 	struct obstack *obst;
 
-	/* Set to 1 if plist uses a foreign obstack  */
+	/** Set to 1 if plist uses a foreign obstack */
 	unsigned foreign_obstack : 1;
 
-	/**
-	 * First element in the list.
-	 */
+	/** First element in the list. */
 	plist_element_t *first_element;
 
-	/**
-	 * Last element in the list.
-	 */
+	/** Last element in the list. */
 	plist_element_t *last_element;
 
-	/**
-	 * Current number of elements in the list.
-	 */
+	/** Current number of elements in the list. */
 	int element_count;
 
 	/**
@@ -81,9 +70,9 @@ struct plist {
  * An element in the pointer list.
  */
 struct plist_element {
-	plist_element_t *next;
-	plist_element_t *prev;
-	void *data;
+	plist_element_t *next; /**< next element in double linked list */
+	plist_element_t *prev; /**< previous element in double linked list */
+	void            *data; /**< element data */
 };
 
 /**

@@ -102,8 +102,10 @@ static void emit_section_macho(be_gas_section_t section)
 		case GAS_SECTION_CSTRING:         name = "section __TEXT,__const_coal,coalesced"; break;
 		default: panic("unsupported scetion type 0x%X", section);
 		}
+	} else if (flags & GAS_SECTION_FLAG_TLS) {
+		panic("thread local storage not supported on macho (section 0x%X)", section);
 	} else {
-		panic("unsupported section type 0x%X\n", section);
+		panic("unsupported section type 0x%X", section);
 	}
 }
 
@@ -1547,7 +1549,7 @@ char const *be_gas_get_private_prefix(void)
 
 void be_gas_emit_entity(const ir_entity *entity)
 {
-	if (entity->type == firm_code_type) {
+	if (entity->type == get_code_type()) {
 		ir_label_t label = get_entity_label(entity);
 		be_emit_irprintf("%s_%lu", be_gas_get_private_prefix(), label);
 		return;
@@ -1585,7 +1587,7 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 	ir_linkage        linkage    = get_entity_linkage(entity);
 
 	/* block labels are already emittet in the code */
-	if (type == firm_code_type)
+	if (type == get_code_type())
 		return;
 
 	/* we already emitted all methods. Except for the trampolines which

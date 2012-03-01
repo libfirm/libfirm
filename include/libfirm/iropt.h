@@ -29,6 +29,12 @@
 #include "begin.h"
 
 /**
+ * @ingroup iroptimize
+ * @defgroup iropt  Local Optimizations
+ * @{
+ */
+
+/**
  * The Floating point model.
  *
  * Several basic properties are defined:
@@ -101,6 +107,8 @@ FIRM_API int ir_is_negated_value(const ir_node *a, const ir_node *b);
  */
 FIRM_API ir_relation ir_get_possible_cmp_relations(const ir_node *left,
                                                    const ir_node *right);
+
+/** @} */
 
 #include "end.h"
 

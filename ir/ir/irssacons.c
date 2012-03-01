@@ -41,25 +41,14 @@ static void prepare_blocks(ir_node *block, void *env)
 {
 	unsigned        n_loc = current_ir_graph->n_loc;
 	struct obstack *obst  = current_ir_graph->obst;
-  (void)env;
+	(void)env;
 	/* reset mature flag */
 	set_Block_matured(block, 0);
-	block->attr.block.graph_arr  = NEW_ARR_D(ir_node *, obst, n_loc);
+	block->attr.block.graph_arr = NEW_ARR_D(ir_node *, obst, n_loc);
 	memset(block->attr.block.graph_arr, 0, sizeof(ir_node*) * n_loc);
 	set_Block_phis(block, NULL);
 }
 
-/*
- * Restarts SSA construction on the given graph with n_loc
- * new values.
- *
- * @param irg    the graph on which the SSA construction is restarted
- * @param n_loc  number of new variables
- *
- * After this function is complete, the graph is in phase_building
- * again and set_value()/get_value() and mature_block() can be used
- * to construct new values.
- */
 void ssa_cons_start(ir_graph *irg, int n_loc)
 {
 	/* for now we support only phase_high graphs */
@@ -89,10 +78,6 @@ static void finish_block(ir_node *block, void *env)
 		mature_immBlock(block);
 }
 
-/*
- * Finalize the (restarted) SSA construction. Matures all blocks that are
- * not matured yet and reset the graph state to phase_high.
- */
 void ssa_cons_finish(ir_graph *irg)
 {
 	ssa_cons_walker(irg, NULL, finish_block, NULL);

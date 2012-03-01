@@ -182,7 +182,8 @@ static void spill_phi(minibelady_env_t *env, ir_node *phi)
 	DBG((dbg, LEVEL_2, "\tcreate Phi-M for %+F\n", phi));
 
 	/* create a Phi-M */
-	spill_info->spill = be_new_Phi(block, arity, phi_in, mode_M, NULL);
+	spill_info->spill = be_new_Phi(block, arity, phi_in, mode_M,
+	                               arch_no_register_req);
 	sched_add_after(block, spill_info->spill);
 
 	if (spill_to_kill != NULL) {
@@ -525,9 +526,9 @@ void be_assure_state(ir_graph *irg, const arch_register_t *reg, void *func_env,
 {
 	minibelady_env_t env;
 	spill_info_t *info;
-	be_lv_t *lv = be_assure_liveness(irg);
+	be_lv_t *lv = be_get_irg_liveness(irg);
 
-	be_liveness_assure_sets(lv);
+	be_assure_live_sets(irg);
 	assure_loopinfo(irg);
 
 	obstack_init(&env.obst);

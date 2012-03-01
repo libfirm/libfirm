@@ -220,9 +220,9 @@ static void cpx_solve(cpx_t *cpx)
 	// CPXsetintparam (cpx->env, CPX_PARAM_SCRIND, CPX_ON);
 
 	/* solve */
-	timing_ticks(&tvb);
+	timing_ticks(tvb);
 	cpx->status = CPXmipopt(cpx->env, cpx->prob);
-	timing_ticks(&tva);
+	timing_ticks(tva);
 	chk_cpx_err(cpx);
 
 	/* get solution status */

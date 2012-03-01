@@ -31,10 +31,21 @@
 #include "be_t.h"
 #include "irtypes.h"
 
-be_lv_t *be_assure_liveness(ir_graph *irg);
-
 void be_assure_dom_front(ir_graph *irg);
 void be_invalidate_dom_front(ir_graph *irg);
+
+void be_assure_live_sets(ir_graph *irg);
+void be_assure_live_chk(ir_graph *irg);
+/**
+ * Liveness is invalid (call when nodes have been added but the control
+ * flow has not been changed)
+ */
+void be_invalidate_live_sets(ir_graph *irg);
+/**
+ * Call when control flow has changed.
+ * be_invalidate_live_sets() is called.
+ */
+void be_invalidate_live_chk(ir_graph *irg);
 
 /**
  * frees all memory allocated by birg structures (liveness, dom_front, ...).

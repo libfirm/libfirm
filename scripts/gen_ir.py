@@ -3,7 +3,7 @@ import sys
 import re
 from jinja2 import Environment, Template
 from jinja2.filters import do_dictsort
-from spec_util import is_dynamic_pinned, verify_node, isAbstract, setdefault
+from spec_util import is_dynamic_pinned, verify_node, isAbstract, setdefault, trim_docstring
 from ir_spec import nodes
 
 def format_parameterlist(parameterlist):
@@ -217,6 +217,7 @@ def prepare_attr(attr):
 
 def preprocess_node(node):
 	verify_node(node)
+	node.doc = trim_docstring(node.__doc__)
 
 	setdefault(node, "attrs_name", node.name.lower())
 	setdefault(node, "block", "block")
@@ -467,9 +468,9 @@ irop_template = env.from_string(
 ir_op *op_{{node.name}}; ir_op *get_op_{{node.name}}(void) { return op_{{node.name}}; }
 {%- endfor %}
 
-void init_op(void)
+static void generated_init_op(void)
 {
-	{% for node in nodes %}
+	{%- for node in nodes %}
 	op_{{node.name}} = new_ir_op(
 		{%- filter arguments %}
 			iro_{{node.name}}
@@ -481,17 +482,18 @@ void init_op(void)
 			{{node|attr_size}}
 			NULL
 		{% endfilter %});
+	{%- if "uses_memory" in node.flags: %}
+	ir_op_set_memory_index(op_{{node.name}}, n_{{node.name}}_mem);
+	{%- endif -%}
 	{%- if "fragile" in node.flags: %}
-	ir_op_set_fragile_indices(op_{{node.name}}, n_{{node.name}}_mem, pn_{{node.name}}_X_regular, pn_{{node.name}}_X_except);
+	ir_op_set_fragile_indices(op_{{node.name}}, pn_{{node.name}}_X_regular, pn_{{node.name}}_X_except);
 	{%- endif -%}
 	{%- endfor %}
-
-	be_init_op();
 }
 
-void finish_op(void)
+static void generated_finish_op(void)
 {
-	{% for node in nodes %}
+	{%- for node in nodes %}
 	free_ir_op(op_{{node.name}}); op_{{node.name}} = NULL;
 	{%- endfor %}
 }
@@ -513,6 +515,13 @@ nodeops_h_template = env.from_string(
  */
 
 {% for node in nodes -%}
+
+/**
+ * @defgroup {{node.name}} {{node.name}} node
+ *
+ * {{node.doc}}
+ * @{
+ */
 {% if node.ins %}
 /**
  * Input numbers for {{node.name}} node
@@ -536,9 +545,6 @@ typedef enum {
 	pn_{{node.name}}_max = pn_{{node.name}}_{{node.outs[-1][0]}}
 } pn_{{node.name}};
 {% endif %}
-{%- endfor %}
-
-{% for node in nodes %}
 {%- if not node.noconstructor %}
 /**
  * Construct {{node.name|a_an}} node.
@@ -588,22 +594,26 @@ FIRM_API ir_node *new_{{node.name}}(
 		{{node|nodeparameters}}
 	{% endfilter %});
 {%- endif %}
-{% endfor %}
-
-{% for node in nodes %}
-/** Return true if the node is a {{node.name}} node. */
+/**
+ * Test if node is a {{node.name}}
+ * @returns 1 if the node is a {{node.name}} node, 0 otherwise
+ */
 FIRM_API int is_{{node.name}}(const ir_node *node);
-{%- endfor %}
 
-{% for node in nodes %}
 {% for input in node.ins -%}
+/** Returns {{input[0]}} input of {{node.name|a_an}} node. */
 FIRM_API ir_node *get_{{node.name}}_{{input[0]}}(const ir_node *node);
+/** Sets {{input[0]}} input of {{node.name|a_an}} node. */
 FIRM_API void set_{{node.name}}_{{input[0]}}(ir_node *node, ir_node *{{input[0]|escape_keywords}});
 {% endfor -%}
 {% for attr in node.attrs|hasnot("noprop") -%}
+/** Returns {{attr.name}} attribute of {{node.name|a_an}} node. */
 FIRM_API {{attr.type}} get_{{node.name}}_{{attr.name}}(const ir_node *node);
+/** Sets {{attr.name}} attribute of {{node.name|a_an}} node. */
 FIRM_API void set_{{node.name}}_{{attr.name}}(ir_node *node, {{attr.type}} {{attr.name}});
 {% endfor -%}
+/** @} */
+
 {% endfor -%}
 
 /** @} */
@@ -619,7 +629,9 @@ opcodes_h_template = env.from_string(
 #ifndef FIRM_IR_OPCODES_H
 #define FIRM_IR_OPCODES_H
 
-/** The opcodes of the libFirm predefined operations. */
+/** The opcodes of the libFirm predefined operations.
+ * @ingroup ir_op
+ */
 typedef enum ir_opcode {
 {%- for node in nodes %}
 	iro_{{node.name}},
@@ -649,10 +661,18 @@ typedef enum ir_opcode {
 } ir_opcode;
 
 {% for node in nodes %}
+/**
+ * @ingroup {{node.name}}
+ * {{node.name}} opcode
+ */
 FIRM_API ir_op *op_{{node.name}};
 {%- endfor %}
 
 {% for node in nodes %}
+/**
+ * @ingroup {{node.name}}
+ * Returns opcode for {{node.name}} nodes.
+ */
 FIRM_API ir_op *get_op_{{node.name}}(void);
 {%- endfor %}
 

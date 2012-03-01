@@ -134,6 +134,8 @@ static inline void edges_assure_kind_(ir_graph *irg, ir_edge_kind_t kind)
 
 void edges_init_graph_kind(ir_graph *irg, ir_edge_kind_t kind);
 
+void edges_node_deleted(ir_node *irn);
+
 /**
  * A node might be revivaled by CSE.
  */
