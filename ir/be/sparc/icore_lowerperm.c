@@ -45,15 +45,13 @@
 
 #include "statev.h"
 
+#define MAX_PERMI_SIZE 5
+#define NUM_REGISTERS  32
+
 DEBUG_ONLY(static firm_dbg_module_t *dbg_icore;)
 
-static const int MAX_PERMI_SIZE = 5;
-static ir_node *sched_point;
-
-static unsigned                max_size;
-static const arch_register_t **regs;
-static unsigned               *sourceof;
-static unsigned               *usecount;
+static unsigned sourceof[NUM_REGISTERS];
+static unsigned usecount[NUM_REGISTERS];
 
 typedef enum perm_type_t {
 	PERM_CHAIN,
@@ -61,104 +59,195 @@ typedef enum perm_type_t {
 } perm_type_t;
 
 typedef struct perm_op_t {
-	perm_type_t  type;
-	unsigned    *regs;
-	unsigned     size;
+	perm_type_t type;
+	unsigned    regs[NUM_REGISTERS];
+	unsigned    length;
 } perm_op_t;
 
-static perm_op_t **ops;
+static perm_op_t ops[NUM_REGISTERS];
+static unsigned  num_ops = 0;
+
+static ir_node *sched_point;
 
 
-static int get_reg_index(const arch_register_t *reg)
+static void print_perm_op(const perm_op_t *op)
 {
-	int i;
+	unsigned i;
 
-	for (i = 0; i < max_size; ++i)
-		if (regs[i] == reg)
-			return i;
+	printf("%u", op->regs[0]);
+	for (i = 1; i < op->length; ++i)
+		printf(" -> %u", op->regs[i]);
 
-	return -1;
+	if (op->type == PERM_CYCLE)
+		printf(" -> %u", op->regs[0]);
+
+	puts("");
 }
 
-static void init_regs(const ir_node *perm)
+static void analyze_regs(const ir_node *perm)
 {
 	const ir_edge_t *edge;
 	const ir_edge_t *next;
-	unsigned         n = 0;
 
 	foreach_out_edge_safe(perm, edge, next) {
-		const ir_node         *out     = get_edge_src_irn(edge);
+		ir_node               *out     = get_edge_src_irn(edge);
 		long                   pn      = get_Proj_proj(out);
-		const ir_node         *in      = get_irn_n(irn, pn);
+		ir_node               *in      = get_irn_n(perm, pn);
 		const arch_register_t *in_reg  = arch_get_irn_register(in);
 		const arch_register_t *out_reg = arch_get_irn_register(out);
 		unsigned               iidx;
 		unsigned               oidx;
 
-		/* Ignore registers that are left untouched by the Perm node */
+		/* Ignore registers that are left untouched by the Perm node. */
 		if (in_reg == out_reg) {
 			DBG((dbg_icore, LEVEL_1,
 				"%+F removing equal perm register pair (%+F, %+F, %s)\n",
-				perm, in, out, out_reg->name));
+				perm, in, out, arch_register_get_name(out_reg)));
 
 			exchange(out, in);
 			continue;
 		}
 
-		if (get_index(out_reg) == -1)
-			regs[n++] = out;
-		if (get_index(in_reg)  == -1)
-			regs[n++] = in;
-
-		oidx = (unsigned) get_index(out_reg);
-		iidx = (unsigned) get_index(in_reg);
+		oidx = arch_register_get_index(out_reg);
+		iidx = arch_register_get_index(in_reg);
 
 		sourceof[oidx] = iidx; /* Remember the source, Luke. */
-		++usecount[iidx];      /* Increment usecount of this register.*/
+		++usecount[iidx];      /* Increment usecount of source register.*/
 	}
+}
+
+static void reverse_regs(perm_op_t *op)
+{
+	const unsigned length = op->length;
+	unsigned       i;
+
+	for (i = 0; i < length / 2; ++i) {
+		const unsigned other = length - i - 1;
+		const unsigned tmp   = op->regs[other];
+
+		op->regs[other] = op->regs[i];
+		op->regs[i]     = tmp;
+	}
+}
+
+/* reg is the last register in the chain. */
+static void create_chain(unsigned reg)
+{
+	perm_op_t *op     = &ops[num_ops++];
+	unsigned   length = 0;
+
+	/* reg is guaranteed to be part of our chain. */
+	op->regs[length++] = reg;
+
+	while (usecount[reg] == 0 && sourceof[reg] != reg) {
+		unsigned src = sourceof[reg];
+
+		/* Mark as done. */
+		sourceof[reg] = reg;
+
+		/* src is also part of our chain. */
+		op->regs[length++] = src;
+
+		assert(usecount[src] > 0);
+		--usecount[src];
+
+		reg = src;
+	}
+
+	/* Set all op attributes and reverse register ordering. */
+	op->type   = PERM_CHAIN;
+	op->length = length;
+	reverse_regs(op);
+
+	printf("Found a chain: ");
+	print_perm_op(op);
 }
 
 static void search_chains()
 {
-	unsigned  oidx;
-	bool     *seen = ALLOCANZ(bool, max_size);
+	unsigned reg;
 
-	for (oidx = 0; oidx < n; /* empty */) {
-		unsigned iidx = sourceof[oidx];
+	for (reg = 0; reg < NUM_REGISTERS; /* empty */) {
+		unsigned src = sourceof[reg];
 
-		if (iidx == oidx || usecount[oidx] > 0) {
-			++oidx;
+		/* Skip fix points.
+		 * Also, all registers with a usecount > 0 cannot be the end
+		 * of a chain. */
+		if (src == reg || usecount[reg] > 0) {
+			++reg;
 			continue;
 		}
 
-		/* We know: register with index oidx is the end of a chain. */
+		/* We know: register reg is the end of a chain. */
+		create_chain(reg);
+	}
+}
 
+static void create_cycle(unsigned reg)
+{
+	perm_op_t *op     = &ops[num_ops++];
+	unsigned   length = 0;
+
+	while (sourceof[reg] != reg) {
+		unsigned src = sourceof[reg];
+
+		op->regs[length++] = reg;
+		sourceof[reg] = reg;
+		reg = src;
+	}
+
+	op->type   = PERM_CYCLE;
+	op->length = length;
+	reverse_regs(op);
+
+	printf("Found a cycle: ");
+	print_perm_op(op);
+}
+
+/* Precondition: all chains have already been handled. */
+static void search_cycles()
+{
+	unsigned reg;
+
+	for (reg = 0; reg < NUM_REGISTERS; /* empty */) {
+		unsigned src = sourceof[reg];
+
+		/* Skip fix points. */
+		if (src == reg) {
+			++reg;
+			continue;
+		}
+
+		/* This must hold as only cycles are left. */
+		assert(usecount[reg] == 1);
+		create_cycle(reg);
 	}
 }
 
 static void analyze_perm(const ir_node *perm)
 {
-	const int arity = get_irn_arity(perm);
 	unsigned i;
 
-	max_size  = 2 * arity;
-	regs      = ALLOCANZ(const arch_register_t *, max_size);
-	sourceof  = ALLOCANZ(unsigned, max_size);
-	n_users   = ALLOCANZ(unsigned, max_size);
-
-	for (i = 0; i < size; ++i)
+	memset(usecount, 0, NUM_REGISTERS * sizeof(unsigned));
+	for (i = 0; i < NUM_REGISTERS; ++i)
 		sourceof[i] = i;
 
-	init_regs(perm);
+	analyze_regs(perm);
 
 	search_chains();
 	search_cycles();
+
+#ifdef DEBUG_libfirm
+	for (i = 0; i < NUM_REGISTERS; ++i)
+		assert(sourceof[i] == i);
+#endif
 }
 
 static void lower_perm_node(ir_node *perm)
 {
 	int arity = get_irn_arity(perm);
 
+	/* Check preconditions. */
 	assert(be_is_Perm(perm) && "Non-Perm node passed to lower_perm_node");
 	assert(arity == get_irn_n_edges(perm)
 	       && "Perm's in and out numbers differ");
