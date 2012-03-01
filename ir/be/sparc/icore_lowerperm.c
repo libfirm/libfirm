@@ -70,6 +70,16 @@ static unsigned  num_ops = 0;
 static ir_node               *sched_point     = NULL;
 static const arch_register_class_t *reg_class = NULL;
 
+static void save_register_class(const ir_node *perm)
+{
+	if (reg_class == NULL) {
+		ir_node               *in  = get_irn_n(perm, 0);
+		const arch_register_t *reg = arch_get_irn_register(in);
+
+		reg_class = arch_register_get_class(reg);
+	}
+}
+
 static const arch_register_t *get_arch_register(unsigned index)
 {
 	return arch_register_for_index(reg_class, index);
@@ -107,9 +117,6 @@ static void analyze_regs(const ir_node *perm)
 		const arch_register_t *out_reg = arch_get_irn_register(out);
 		unsigned               iidx;
 		unsigned               oidx;
-
-		if (reg_class == NULL)
-			reg_class = arch_register_get_class(in_reg);
 
 		/* Ignore registers that are left untouched by the Perm node. */
 		if (in_reg == out_reg) {
@@ -245,6 +252,7 @@ static void analyze_perm(const ir_node *perm)
 	for (i = 0; i < NUM_REGISTERS; ++i)
 		sourceof[i] = i;
 
+	save_register_class(perm);
 	analyze_regs(perm);
 
 	search_chains();
