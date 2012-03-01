@@ -70,6 +70,8 @@ FIRM_API int get_optimize(void);
  * Default: opt_constant_folding == 1.
  */
 FIRM_API void set_opt_constant_folding(int value);
+/** returns 0 if constant_folding is disabled, !=0 otherwise */
+FIRM_API int get_opt_constant_folding(void);
 
 /** Enables/Disables algebraic simplifications.
  *

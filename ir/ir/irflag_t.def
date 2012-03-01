@@ -43,7 +43,7 @@ E_FLAG(cse                                , 1, ON)
 I_FLAG(global_cse                         , 2, OFF)
 
 /** Evaluate operations. */
-I_FLAG(constant_folding                   , 3, ON)
+E_FLAG(constant_folding                   , 3, ON)
 
 /** Algebraic simplifications. */
 I_FLAG(algebraic_simplification           , 4, ON)
