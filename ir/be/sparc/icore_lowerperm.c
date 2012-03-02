@@ -158,9 +158,7 @@ static void analyze_regs()
 		oidx = arch_register_get_index(out_reg);
 		iidx = arch_register_get_index(in_reg);
 		out_nodes[oidx] = out;
-		ir_printf("out_nodes[%u] = %+F\n", oidx, out);
 		in_nodes[iidx]  = in;
-		ir_printf("in_nodes[%u] = %+F\n", iidx, in);
 
 		sourceof[oidx] = iidx; /* Remember the source, Luke. */
 		++usecount[iidx];      /* Increment usecount of source register.*/
@@ -210,7 +208,7 @@ static void create_chain(unsigned reg)
 	op->length = length;
 	reverse_regs(op);
 
-	printf("Found a chain: ");
+	printf("  Found a chain: ");
 	print_perm_op(op);
 }
 
@@ -251,7 +249,7 @@ static void create_cycle(unsigned reg)
 	op->length = length;
 	reverse_regs(op);
 
-	printf("Found a cycle: ");
+	printf("  Found a cycle: ");
 	print_perm_op(op);
 }
 
@@ -360,7 +358,8 @@ static void create_permi(const perm_op_t *op)
 
 		set_Proj_pred(proj, permi);
 		set_Proj_proj(proj, i);
-		arch_set_irn_register_out(permi, i, get_arch_register_from_index(out));
+		arch_set_irn_register_out(permi, i,
+			get_arch_register_from_index(op->regs[out]));
 	}
 
 	schedule_node(permi);
@@ -455,6 +454,8 @@ static void analyze_perm()
 {
 	unsigned i;
 
+	ir_printf("Analyzing %+F\n", perm);
+
 	save_register_class();
 	analyze_regs();
 
@@ -474,6 +475,8 @@ static void analyze_perm()
 		assert(ops[i].length > 3);
 		handle_op(&ops[i]);
 	}
+
+	ir_printf("Finished %+F\n", perm);
 }
 
 static void lower_perm_node(ir_node *irn)
