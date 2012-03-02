@@ -281,7 +281,7 @@ static void set_Permi_reg_reqs(ir_node *irn)
 	int i;
 	const int arity = get_irn_arity(irn);
 
-	assert(is_sparc_Permi(irn) || is_sparc_Permi23(irn) || is_sparc_PermiP(irn));
+	assert(is_sparc_Permi(irn) || is_sparc_Permi23(irn));
 	/* Get register requirement.  Assumes all input/registers belong to the
 	 * same register class and have the same requirements. */
 	req = reg_class->class_req;
@@ -349,7 +349,7 @@ static void create_permi(const perm_op_t *op)
 	}
 
 	/* TODO: Fix debuginfo. */
-	permi = new_bd_sparc_Permi(NULL, bb, length, args, length);
+	permi = new_bd_sparc_Permi_cycle(NULL, bb, length, args, length);
 	set_Permi_reg_reqs(permi);
 
 	for (i = 0; i < length; ++i) {

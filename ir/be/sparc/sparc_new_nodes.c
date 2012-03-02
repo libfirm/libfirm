@@ -74,6 +74,16 @@ static bool has_fp_conv_attr(const ir_node *node)
 	return is_sparc_fftof(node);
 }
 
+static bool has_permi_attr(const ir_node *node)
+{
+	return is_sparc_Permi(node);
+}
+
+static bool has_permi23_attr(const ir_node *node)
+{
+	return is_sparc_Permi23(node);
+}
+
 /**
  * Dumper interface for dumping sparc nodes in vcg.
  * @param F        the output file
@@ -123,6 +133,15 @@ static void sparc_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 			const sparc_fp_conv_attr_t *attr = get_sparc_fp_conv_attr_const(n);
 			ir_fprintf(F, "conv from: %+F\n", attr->src_mode);
 			ir_fprintf(F, "conv to: %+F\n", attr->dest_mode);
+		}
+		if (has_permi_attr(n)) {
+			const sparc_permi_attr_t *attr = get_sparc_permi_attr_const(n);
+			ir_fprintf(F, "real cycle: %s\n", (attr->is_cycle ? "yes" : "no"));
+		}
+		if (has_permi23_attr(n)) {
+			const sparc_permi23_attr_t *attr = get_sparc_permi23_attr_const(n);
+			ir_fprintf(F, "first real cycle: %s\n",  (attr->is_cycle2 ? "yes" : "no"));
+			ir_fprintf(F, "second real cycle: %s\n", (attr->is_cycle3 ? "yes" : "no"));
 		}
 		break;
 
@@ -220,6 +239,30 @@ const sparc_fp_conv_attr_t *get_sparc_fp_conv_attr_const(const ir_node *node)
 	return (const sparc_fp_conv_attr_t*) get_irn_generic_attr_const(node);
 }
 
+sparc_permi_attr_t *get_sparc_permi_attr(ir_node *node)
+{
+	assert(has_permi_attr(node));
+	return (sparc_permi_attr_t*) get_irn_generic_attr(node);
+}
+
+const sparc_permi_attr_t *get_sparc_permi_attr_const(const ir_node *node)
+{
+	assert(has_permi_attr(node));
+	return (const sparc_permi_attr_t*) get_irn_generic_attr_const(node);
+}
+
+sparc_permi23_attr_t *get_sparc_permi23_attr(ir_node *node)
+{
+	assert(has_permi23_attr(node));
+	return (sparc_permi23_attr_t*) get_irn_generic_attr(node);
+}
+
+const sparc_permi23_attr_t *get_sparc_permi23_attr_const(const ir_node *node)
+{
+	assert(has_permi23_attr(node));
+	return (const sparc_permi23_attr_t*) get_irn_generic_attr_const(node);
+}
+
 /**
  * Initializes the nodes attributes.
  */
@@ -280,6 +323,20 @@ static void init_sparc_switch_jmp_attributes(ir_node *node,
 	for (o = 0; o < n_outs; ++o) {
 		arch_set_irn_register_req_out(node, o, arch_no_register_req);
 	}
+}
+
+static void init_sparc_permi_attributes(ir_node *node, bool is_cycle)
+{
+	sparc_permi_attr_t *attr = get_sparc_permi_attr(node);
+	attr->is_cycle = is_cycle;
+}
+
+static void init_sparc_permi23_attributes(ir_node *node,
+                                          bool is_cycle2, bool is_cycle3)
+{
+	sparc_permi23_attr_t *attr = get_sparc_permi23_attr(node);
+	attr->is_cycle2 = is_cycle2;
+	attr->is_cycle3 = is_cycle3;
 }
 
 /**
@@ -360,6 +417,29 @@ static int cmp_attr_sparc_fp_conv(const ir_node *a, const ir_node *b)
 
 	return attr_a->src_mode != attr_b->src_mode
 	    || attr_a->dest_mode != attr_b->dest_mode;
+}
+
+static int cmp_attr_sparc_permi(const ir_node *a, const ir_node *b)
+{
+	const sparc_permi_attr_t *attr_a = get_sparc_permi_attr_const(a);
+	const sparc_permi_attr_t *attr_b = get_sparc_permi_attr_const(b);
+
+	if (cmp_attr_sparc(a, b))
+		return 1;
+
+	return attr_a->is_cycle != attr_b->is_cycle;
+}
+
+static int cmp_attr_sparc_permi23(const ir_node *a, const ir_node *b)
+{
+	const sparc_permi23_attr_t *attr_a = get_sparc_permi23_attr_const(a);
+	const sparc_permi23_attr_t *attr_b = get_sparc_permi23_attr_const(b);
+
+	if (cmp_attr_sparc(a, b))
+		return 1;
+
+	return attr_a->is_cycle2 != attr_b->is_cycle2
+	    || attr_a->is_cycle3 != attr_b->is_cycle3;
 }
 
 /* Include the generated constructor functions */

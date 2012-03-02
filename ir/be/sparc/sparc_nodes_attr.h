@@ -96,4 +96,23 @@ struct sparc_switch_jmp_attr_t {
 	ir_entity             *table_entity;
 };
 
+/**
+ * attributes for permis
+ */
+typedef struct sparc_permi_attr_t sparc_permi_attr_t;
+struct sparc_permi_attr_t {
+	sparc_attr_t           base;
+	bool is_cycle : 1;
+};
+
+/**
+ * attributes for permi23s
+ */
+typedef struct sparc_permi23_attr_t sparc_permi23_attr_t;
+struct sparc_permi23_attr_t {
+	sparc_attr_t           base;
+	bool is_cycle2 : 1;
+	bool is_cycle3 : 1;
+};
+
 #endif

@@ -50,6 +50,12 @@ const sparc_fp_attr_t *get_sparc_fp_attr_const(const ir_node *node);
 sparc_fp_conv_attr_t *get_sparc_fp_conv_attr(ir_node *node);
 const sparc_fp_conv_attr_t *get_sparc_fp_conv_attr_const(const ir_node *node);
 
+sparc_permi_attr_t *get_sparc_permi_attr(ir_node *node);
+const sparc_permi_attr_t *get_sparc_permi_attr_const(const ir_node *node);
+
+sparc_permi23_attr_t *get_sparc_permi23_attr(ir_node *node);
+const sparc_permi23_attr_t *get_sparc_permi23_attr_const(const ir_node *node);
+
 /* Include the generated headers */
 #include "gen_sparc_new_nodes.h"
 

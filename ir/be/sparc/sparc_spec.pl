@@ -138,6 +138,10 @@ $default_copy_attr = "sparc_copy_attr";
 	                            "\tinit_sparc_fp_attributes(res, fp_mode);\n",
 	sparc_fp_conv_attr_t     => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, n_res);".
 	                            "\tinit_sparc_fp_conv_attributes(res, src_mode, dest_mode);\n",
+	sparc_permi_attr_t       => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, n_res);\n".
+	                            "\tinit_sparc_permi_attributes(res, false);\n",
+	sparc_permi23_attr_t     => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, n_res);\n".
+	                            "\tinit_sparc_permi23_attributes(res, false, false);\n",
 );
 
 %compare_attr = (
@@ -147,6 +151,8 @@ $default_copy_attr = "sparc_copy_attr";
 	sparc_jmp_cond_attr_t   => "cmp_attr_sparc_jmp_cond",
 	sparc_load_store_attr_t => "cmp_attr_sparc_load_store",
 	sparc_switch_jmp_attr_t => "cmp_attr_sparc",
+	sparc_permi_attr_t      => "cmp_attr_sparc_permi",
+	sparc_permi23_attr_t    => "cmp_attr_sparc_permi23",
 );
 
 %custom_irn_flags = (
@@ -731,38 +737,46 @@ UDiv => {
 
 Permi => {
 	irn_flags => [ "rematerializable" ],
-	arity     => "variable",
-	out_arity => "variable",
-},
-
-PermiP => {
-	irn_flags => [ "rematerializable" ],
-	arity     => "variable",
-	out_arity => "variable",
+	attr_type => "sparc_permi_attr_t",
+	constructors => {
+		cycle => {
+			arity     => "variable",
+			out_arity => "variable",
+			custominit => "init_sparc_permi_attributes(res, true);",
+		},
+		chain => {
+			arity     => "variable",
+			out_arity => "variable",
+			custominit => "init_sparc_permi_attributes(res, false);",
+		},
+	},
 },
 
 Permi23 => {
 	irn_flags => [ "rematerializable" ],
-	arity     => "variable",
-	out_arity => "variable",
-},
-
-Permi2P3 => {
-	irn_flags => [ "rematerializable" ],
-	arity     => "variable",
-	out_arity => "variable",
-},
-
-Permi23P => {
-	irn_flags => [ "rematerializable" ],
-	arity     => "variable",
-	out_arity => "variable",
-},
-
-Permi2P3P => {
-	irn_flags => [ "rematerializable" ],
-	arity     => "variable",
-	out_arity => "variable",
+	attr_type => "sparc_permi23_attr_t",
+	constructors => {
+		cyclecycle => {
+			arity     => "variable",
+			out_arity => "variable",
+			custominit => "init_sparc_permi23_attributes(res, true, true);",
+		},
+		cyclechain => {
+			arity     => "variable",
+			out_arity => "variable",
+			custominit => "init_sparc_permi23_attributes(res, true, false);",
+		},
+		chaincycle => {
+			arity     => "variable",
+			out_arity => "variable",
+			custominit => "init_sparc_permi23_attributes(res, false, true);",
+		},
+		chainchain => {
+			arity     => "variable",
+			out_arity => "variable",
+			custominit => "init_sparc_permi23_attributes(res, false, false);",
+		},
+	},
 },
 
 fcmp => {
