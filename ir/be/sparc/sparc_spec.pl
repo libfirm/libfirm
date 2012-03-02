@@ -735,13 +735,31 @@ Permi => {
 	out_arity => "variable",
 },
 
+PermiP => {
+	irn_flags => [ "rematerializable" ],
+	arity     => "variable",
+	out_arity => "variable",
+},
+
 Permi23 => {
 	irn_flags => [ "rematerializable" ],
 	arity     => "variable",
 	out_arity => "variable",
 },
 
-PseudoCycle => {
+Permi2P3 => {
+	irn_flags => [ "rematerializable" ],
+	arity     => "variable",
+	out_arity => "variable",
+},
+
+Permi23P => {
+	irn_flags => [ "rematerializable" ],
+	arity     => "variable",
+	out_arity => "variable",
+},
+
+Permi2P3P => {
 	irn_flags => [ "rematerializable" ],
 	arity     => "variable",
 	out_arity => "variable",

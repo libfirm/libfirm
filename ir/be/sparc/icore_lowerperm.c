@@ -273,6 +273,33 @@ static void search_cycles()
 	}
 }
 
+static void set_Permi_reg_reqs(ir_node *irn)
+{
+	const arch_register_req_t *req;
+	const arch_register_req_t **in_reqs;
+	struct obstack *obs;
+	int i;
+	const int arity = get_irn_arity(irn);
+
+	assert(is_sparc_Permi(irn) || is_sparc_Permi23(irn) || is_sparc_PermiP(irn));
+	/* Get register requirement.  Assumes all input/registers belong to the
+	 * same register class and have the same requirements. */
+	req = reg_class->class_req;
+
+	/* Set in register requirements. */
+	obs = be_get_be_obst(get_irn_irg(irn));
+	in_reqs = OALLOCNZ(obs, const arch_register_req_t*, arity);
+	for (i = 0; i < arity; ++i) {
+		in_reqs[i] = req;
+	}
+	arch_set_irn_register_reqs_in(irn, in_reqs);
+
+	/* Set out register requirements. */
+	for (i = 0; i < arity; ++i) {
+		arch_set_irn_register_req_out(irn, i, req);
+	}
+}
+
 static void split_chain_into_copies(const perm_op_t *op)
 {
 	ir_node *bb = get_nodes_block(perm);
@@ -295,38 +322,11 @@ static void split_chain_into_copies(const perm_op_t *op)
 
 static void handle_chain(const perm_op_t *op)
 {
-	if (op->length <= MAX_PERMI_SIZE && op->regs[0] > 0) {
+	if (op->length <= MAX_PERMI_SIZE && op->regs[0] != 0) {
 		/* TODO: Implement pseudo cycle. */
 		split_chain_into_copies(op);
 	} else
 		split_chain_into_copies(op);
-}
-
-static void set_Permi_reg_reqs(ir_node *irn)
-{
-	const arch_register_req_t *req;
-	const arch_register_req_t **in_reqs;
-	struct obstack *obs;
-	int i;
-	const int arity = get_irn_arity(irn);
-
-	assert(is_sparc_Permi(irn) || is_sparc_Permi23(irn) || is_sparc_PseudoCycle(irn));
-	/* Get register requirement.  Assumes all input/registers belong to the
-	 * same register class and have the same requirements. */
-	req = reg_class->class_req;
-
-	/* Set in register requirements. */
-	obs = be_get_be_obst(get_irn_irg(irn));
-	in_reqs = OALLOCNZ(obs, const arch_register_req_t*, arity);
-	for (i = 0; i < arity; ++i) {
-		in_reqs[i] = req;
-	}
-	arch_set_irn_register_reqs_in(irn, in_reqs);
-
-	/* Set out register requirements. */
-	for (i = 0; i < arity; ++i) {
-		arch_set_irn_register_req_out(irn, i, req);
-	}
 }
 
 static void create_permi(const perm_op_t *op)
@@ -353,8 +353,8 @@ static void create_permi(const perm_op_t *op)
 	set_Permi_reg_reqs(permi);
 
 	for (i = 0; i < length; ++i) {
-		unsigned  out  = (i + 1) % length;
-		ir_node  *proj = ress[i];
+		const unsigned  out  = (i + 1) % length;
+		ir_node        *proj = ress[i];
 
 		set_Proj_pred(proj, permi);
 		set_Proj_proj(proj, i);
@@ -391,7 +391,7 @@ static void handle_op(const perm_op_t *op)
 
 static void combine_ops(const perm_op_t *op1, const perm_op_t *op2)
 {
-	/* TODO: Remove stub. */
+	/* TODO: Implement all cases. */
 	handle_op(op1);
 	handle_op(op2);
 }

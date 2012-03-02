@@ -855,7 +855,7 @@ static void emit_icore_Permi23(const ir_node *irn)
 	emit_permi(irn, regns);
 }
 
-static void emit_icore_PseudoCycle(const ir_node *irn)
+static void emit_icore_PermiP(const ir_node *irn)
 {
 	const int MAX_CYCLE_SIZE = 5;
 	const arch_register_t *in_regs[MAX_CYCLE_SIZE - 1];
@@ -951,6 +951,24 @@ static void emit_icore_PseudoCycle(const ir_node *irn)
 	be_emit_finish_line_gas(NULL);
 
 	emit_permi(irn, regns);
+}
+
+static void emit_icore_Permi2P3(const ir_node *irn)
+{
+	(void) irn;
+	assert(!"emit_icore_Permi2P3 not implemented yet");
+}
+
+static void emit_icore_Permi23P(const ir_node *irn)
+{
+	(void) irn;
+	assert(!"emit_icore_Permi23P not implemented yet");
+}
+
+static void emit_icore_Permi2P3P(const ir_node *irn)
+{
+	(void) irn;
+	assert(!"emit_icore_Permi2P3P not implemented yet");
 }
 
 static void emit_be_Perm_xor(const ir_node *irn)
@@ -1587,8 +1605,11 @@ static void sparc_register_emitters(void)
 	set_emitter(op_sparc_SwitchJmp, emit_sparc_SwitchJmp);
 	set_emitter(op_sparc_UDiv,      emit_sparc_UDiv);
 	set_emitter(op_sparc_Permi,     emit_icore_Permi);
+	set_emitter(op_sparc_PermiP,    emit_icore_PermiP);
 	set_emitter(op_sparc_Permi23,   emit_icore_Permi23);
-	set_emitter(op_sparc_PseudoCycle, emit_icore_PseudoCycle);
+	set_emitter(op_sparc_Permi2P3,  emit_icore_Permi2P3);
+	set_emitter(op_sparc_Permi23P,  emit_icore_Permi23P);
+	set_emitter(op_sparc_Permi2P3P, emit_icore_Permi2P3P);
 
 	/* no need to emit anything for the following nodes */
 	set_emitter(op_be_Keep,     emit_nothing);
