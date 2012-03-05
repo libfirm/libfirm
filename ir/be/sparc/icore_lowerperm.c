@@ -322,9 +322,34 @@ static void split_chain_into_copies(const perm_op_t *op)
 	}
 }
 
+/* Chains g0 -> ... can never be turned into a cycle
+ * because writing to g0 does not make sense. */
+static void handle_zero_chains()
+{
+	unsigned i;
+	unsigned j;
+
+	for (i = 0; i < num_ops; ++i)
+		if (ops[i].regs[0] == 0)
+			split_chain_into_copies(&ops[i]);
+
+	/* Remove all zero chains. */
+	j = 0;
+	for (i = 0; i < num_ops; ++i) {
+		if (ops[i].regs[0] != 0) {
+			if (j != i)
+				ops[j] = ops[i];
+			++j;
+		}
+	}
+	num_ops = j;
+}
+
 static void handle_chain(const perm_op_t *op)
 {
-	if (op->length <= PERMI_SIZE && op->regs[0] != 0) {
+	assert(op->regs[0] != 0);
+
+	if (op->length <= PERMI_SIZE) {
 		/* TODO: Implement pseudo cycle. */
 		split_chain_into_copies(op);
 	} else
@@ -568,6 +593,9 @@ static void analyze_perm()
 	for (i = 0; i < NUM_REGISTERS; ++i)
 		assert(sourceof[i] == i);
 #endif
+
+	/* Handle all zero chains. */
+	handle_zero_chains();
 
 	/* Try to combine small ops into one instruction. */
 	search_combinable_ops();
