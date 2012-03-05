@@ -45,7 +45,7 @@
 
 #include "statev.h"
 
-#define MAX_PERMI_SIZE 5
+#define PERMI_SIZE 5
 #define NUM_REGISTERS  32
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg_icore;)
@@ -69,6 +69,7 @@ static perm_op_t  ops[NUM_REGISTERS];
 static unsigned   num_ops     = 0;
 static ir_node   *sched_point = NULL;
 static ir_node   *perm        = NULL;
+static ir_mode   *perm_mode   = NULL;
 static const arch_register_class_t *reg_class = NULL;
 
 static void init_state()
@@ -84,16 +85,18 @@ static void init_state()
 	num_ops     = 0;
 	sched_point = NULL;
 	perm        = NULL;
+	perm_mode   = NULL;
 	reg_class   = NULL;
 }
 
-static void save_register_class()
+static void save_perm_info()
 {
 	if (reg_class == NULL) {
 		ir_node               *in  = get_irn_n(perm, 0);
 		const arch_register_t *reg = arch_get_irn_register(in);
 
 		reg_class = arch_register_get_class(reg);
+		perm_mode = get_irn_mode(in);
 	}
 }
 
@@ -321,23 +324,23 @@ static void split_chain_into_copies(const perm_op_t *op)
 
 static void handle_chain(const perm_op_t *op)
 {
-	if (op->length <= MAX_PERMI_SIZE && op->regs[0] != 0) {
+	if (op->length <= PERMI_SIZE && op->regs[0] != 0) {
 		/* TODO: Implement pseudo cycle. */
 		split_chain_into_copies(op);
 	} else
 		split_chain_into_copies(op);
 }
 
-static void create_permi(const perm_op_t *op)
+static ir_node *create_permi(const perm_op_t *op)
 {
-	ir_node *args[MAX_PERMI_SIZE];
-	ir_node *ress[MAX_PERMI_SIZE];
+	ir_node *args[PERMI_SIZE];
+	ir_node *ress[PERMI_SIZE];
 	ir_node *permi;
 	ir_node *bb     = get_nodes_block(perm);
 	unsigned length = op->length;
 	unsigned i;
 
-	assert(op->type == PERM_CYCLE && op->length <= MAX_PERMI_SIZE);
+	assert(op->type == PERM_CYCLE && op->length <= PERMI_SIZE);
 
 	for (i = 0; i < op->length; ++i) {
 		const unsigned in  = i;
@@ -351,6 +354,7 @@ static void create_permi(const perm_op_t *op)
 	permi = new_bd_sparc_Permi_cycle(NULL, bb, length, args, length);
 	set_Permi_reg_reqs(permi);
 
+	/* Rewire Projs. */
 	for (i = 0; i < length; ++i) {
 		const unsigned  out  = (i + 1) % length;
 		ir_node        *proj = ress[i];
@@ -361,21 +365,65 @@ static void create_permi(const perm_op_t *op)
 			get_arch_register_from_index(op->regs[out]));
 	}
 
-	schedule_node(permi);
+	return permi;
 }
 
 static void split_big_cycle(const perm_op_t *op)
 {
-	(void) op;
-	assert(!"split_big_cycle not implemented yet");
+	unsigned i;
+	unsigned j;
+	const unsigned length = op->length;
+
+	assert(length > PERMI_SIZE);
+
+	/* Place every permi except for the last.
+	 * All permis are of the maximum size PERMI_SIZE. */
+	for (i = length; i > PERMI_SIZE; i -= (PERMI_SIZE - 1)) {
+		const unsigned  start = i - PERMI_SIZE;
+		const unsigned  last  = PERMI_SIZE - 1;
+		perm_op_t       subop;
+		ir_node        *permi;
+		ir_node        *proj;
+
+		subop.type   = PERM_CYCLE;
+		subop.length = PERMI_SIZE;
+		for (j = 0; j < PERMI_SIZE; ++j)
+			subop.regs[j] = op->regs[start + j];
+
+		permi = create_permi(&subop);
+		schedule_node(permi);
+
+		/* Create intermediate Proj. */
+		proj = new_r_Proj(permi, perm_mode, last);
+		in_nodes[subop.regs[0]] = proj;
+		arch_set_irn_register(proj,
+			get_arch_register_from_index(subop.regs[0]));
+
+		sched_point = proj;
+	}
+
+	/* Place the last permi. */
+	{
+		const unsigned  lastlen = i;
+		perm_op_t       lastop;
+		ir_node        *permi;
+
+		lastop.type   = PERM_CYCLE;
+		lastop.length = lastlen;
+		for (j = 0; j < lastlen; ++j)
+			lastop.regs[j] = op->regs[j];
+
+		permi = create_permi(&lastop);
+		schedule_node(permi);
+	}
 }
 
 static void handle_cycle(const perm_op_t *op)
 {
 	assert(op->type == PERM_CYCLE);
 
-	if (op->length <= MAX_PERMI_SIZE)
-		create_permi(op);
+	if (op->length <= PERMI_SIZE)
+		schedule_node(create_permi(op));
 	else
 		split_big_cycle(op);
 }
@@ -395,12 +443,12 @@ static void combine_ops(const perm_op_t *op2, const perm_op_t *op3)
 	if (op2->type == PERM_CYCLE && op3->type == PERM_CYCLE) {
 		ir_node *bb      = get_nodes_block(perm);
 		ir_node *permi23;
-		ir_node *args[MAX_PERMI_SIZE];
-		ir_node *ress[MAX_PERMI_SIZE];
+		ir_node *args[PERMI_SIZE];
+		ir_node *ress[PERMI_SIZE];
 		const unsigned length = op2->length + op3->length;
 		unsigned       i;
 
-		/* Add cycle of size 2 */
+		/* Add cycle of size 2. */
 		for (i = 0; i < 2; ++i) {
 			const unsigned in  = i;
 			const unsigned out = (in + 1) % 2;
@@ -409,7 +457,7 @@ static void combine_ops(const perm_op_t *op2, const perm_op_t *op3)
 			ress[i] = out_nodes[op2->regs[out]];
 		}
 
-		/* Add cycle of size 2 or 3 */
+		/* Add cycle of size 2 or 3. */
 		for (i = 0; i < op3->length; ++i) {
 			const unsigned in  = i;
 			const unsigned out = (in + 1) % op3->length;
@@ -421,6 +469,7 @@ static void combine_ops(const perm_op_t *op2, const perm_op_t *op3)
 		permi23 = new_bd_sparc_Permi23_cycle_cycle(NULL, bb, length, args, length);
 		set_Permi_reg_reqs(permi23);
 
+		/* Rewire Projs. */
 		for (i = 0; i < 2; ++i) {
 			const unsigned  out  = (i + 1) % 2;
 			ir_node        *proj = ress[i];
@@ -509,7 +558,7 @@ static void analyze_perm()
 
 	ir_printf("Analyzing %+F\n", perm);
 
-	save_register_class();
+	save_perm_info();
 	analyze_regs();
 
 	search_chains();
