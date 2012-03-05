@@ -345,13 +345,47 @@ static void handle_zero_chains()
 	num_ops = j;
 }
 
+static ir_node *create_chain_permi(const perm_op_t *op)
+{
+	ir_node *args[PERMI_SIZE];
+	ir_node *ress[PERMI_SIZE];
+	ir_node *permi;
+	ir_node *bb     = get_nodes_block(perm);
+	unsigned length = op->length;
+	unsigned i;
+
+	assert(op->type == PERM_CHAIN && op->length <= PERMI_SIZE);
+
+	for (i = 0; i < length - 1; ++i) {
+		args[i] = in_nodes[op->regs[i]];
+		ress[i] = out_nodes[op->regs[i + 1]];
+	}
+
+	/* TODO: Fix debuginfo. */
+	permi = new_bd_sparc_Permi_chain(NULL, bb, length - 1, args, length - 1);
+	set_Permi_reg_reqs(permi);
+
+	/* Rewire Projs. */
+	for (i = 0; i < length - 1; ++i) {
+		const unsigned  out  = (i + 1);
+		ir_node        *proj = ress[i];
+
+		set_Proj_pred(proj, permi);
+		set_Proj_proj(proj, i);
+		arch_set_irn_register_out(permi, i,
+			get_arch_register_from_index(op->regs[out]));
+	}
+
+	return permi;
+}
+
 static void handle_chain(const perm_op_t *op)
 {
 	assert(op->regs[0] != 0);
 
 	if (op->length <= PERMI_SIZE) {
-		/* TODO: Implement pseudo cycle. */
-		split_chain_into_copies(op);
+		/* TODO: Implement long pseudo cycle. */
+		schedule_node(create_chain_permi(op));
 	} else
 		split_chain_into_copies(op);
 }
@@ -367,7 +401,7 @@ static ir_node *create_permi(const perm_op_t *op)
 
 	assert(op->type == PERM_CYCLE && op->length <= PERMI_SIZE);
 
-	for (i = 0; i < op->length; ++i) {
+	for (i = 0; i < length; ++i) {
 		const unsigned in  = i;
 		const unsigned out = (in + 1) % length;
 
@@ -461,7 +495,7 @@ static void handle_op(const perm_op_t *op)
 		handle_cycle(op);
 }
 
-static void combine_ops(const perm_op_t *op2, const perm_op_t *op3)
+static void combine_small_ops(const perm_op_t *op2, const perm_op_t *op3)
 {
 	assert(op2->length == 2 && op3->length >= 2 && op3->length <= 3);
 
@@ -550,10 +584,10 @@ static void search_combinable_ops()
 	 * If also not possible, handle it separately. */
 	for (i = 0; i < num_twos; ++i) {
 		if (used_threes < num_threes) {
-			combine_ops(twos[i], threes[used_threes]);
+			combine_small_ops(twos[i], threes[used_threes]);
 			++used_threes;
 		} else if (i + 1 < num_twos) {
-			combine_ops(twos[i], twos[i + 1]);
+			combine_small_ops(twos[i], twos[i + 1]);
 			++i;
 		} else {
 			handle_op(twos[i]);

@@ -687,12 +687,12 @@ static void emit_icore_Permi(const ir_node *irn)
 	const int arity = get_irn_arity(irn);
 	const sparc_permi_attr_t *attr = get_sparc_permi_attr_const(irn);
 
-	assert(arity >= 2 && arity <= MAX_CYCLE_SIZE);
 	if (!attr->is_cycle) {
 		emit_icore_Permi_chain(irn);
 		return;
 	}
 
+	assert(arity >= 2 && arity <= MAX_CYCLE_SIZE);
 	for (i = 0; i < arity; ++i) {
 		in_regs[i]  = arch_get_irn_register_in(irn, i);
 		out_regs[i] = arch_get_irn_register_out(irn, i);
