@@ -756,22 +756,22 @@ Permi23 => {
 	irn_flags => [ "rematerializable" ],
 	attr_type => "sparc_permi23_attr_t",
 	constructors => {
-		cyclecycle => {
+		cycle_cycle => {
 			arity     => "variable",
 			out_arity => "variable",
 			custominit => "init_sparc_permi23_attributes(res, true, true);",
 		},
-		cyclechain => {
+		cycle_chain => {
 			arity     => "variable",
 			out_arity => "variable",
 			custominit => "init_sparc_permi23_attributes(res, true, false);",
 		},
-		chaincycle => {
+		chain_cycle => {
 			arity     => "variable",
 			out_arity => "variable",
 			custominit => "init_sparc_permi23_attributes(res, false, true);",
 		},
-		chainchain => {
+		chain_chain => {
 			arity     => "variable",
 			out_arity => "variable",
 			custominit => "init_sparc_permi23_attributes(res, false, false);",

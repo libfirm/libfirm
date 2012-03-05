@@ -69,19 +69,18 @@ static perm_op_t  ops[NUM_REGISTERS];
 static unsigned   num_ops     = 0;
 static ir_node   *sched_point = NULL;
 static ir_node   *perm        = NULL;
-
 static const arch_register_class_t *reg_class = NULL;
 
 static void init_state()
 {
 	unsigned i;
 
-	memset(usecount, 0, NUM_REGISTERS * sizeof(unsigned));
+	memset(usecount,  0, NUM_REGISTERS * sizeof(unsigned));
+	memset(in_nodes,  0, NUM_REGISTERS * sizeof(ir_node *));
+	memset(out_nodes, 0, NUM_REGISTERS * sizeof(ir_node *));
+	memset(ops,       0, NUM_REGISTERS * sizeof(perm_op_t));
 	for (i = 0; i < NUM_REGISTERS; ++i)
 		sourceof[i] = i;
-	memset(in_nodes, 0, NUM_REGISTERS * sizeof(ir_node *));
-	memset(out_nodes, 0, NUM_REGISTERS * sizeof(ir_node *));
-	memset(ops, 0, NUM_REGISTERS * sizeof(perm_op_t));
 	num_ops     = 0;
 	sched_point = NULL;
 	perm        = NULL;
@@ -389,11 +388,65 @@ static void handle_op(const perm_op_t *op)
 		handle_cycle(op);
 }
 
-static void combine_ops(const perm_op_t *op1, const perm_op_t *op2)
+static void combine_ops(const perm_op_t *op2, const perm_op_t *op3)
 {
-	/* TODO: Implement all cases. */
-	handle_op(op1);
-	handle_op(op2);
+	assert(op2->length == 2 && op3->length >= 2 && op3->length <= 3);
+
+	if (op2->type == PERM_CYCLE && op3->type == PERM_CYCLE) {
+		ir_node *bb      = get_nodes_block(perm);
+		ir_node *permi23;
+		ir_node *args[MAX_PERMI_SIZE];
+		ir_node *ress[MAX_PERMI_SIZE];
+		const unsigned length = op2->length + op3->length;
+		unsigned       i;
+
+		/* Add cycle of size 2 */
+		for (i = 0; i < 2; ++i) {
+			const unsigned in  = i;
+			const unsigned out = (in + 1) % 2;
+
+			args[i] = in_nodes[op2->regs[in]];
+			ress[i] = out_nodes[op2->regs[out]];
+		}
+
+		/* Add cycle of size 2 or 3 */
+		for (i = 0; i < op3->length; ++i) {
+			const unsigned in  = i;
+			const unsigned out = (in + 1) % op3->length;
+
+			args[2 + i] = in_nodes[op3->regs[in]];
+			ress[2 + i] = out_nodes[op3->regs[out]];
+		}
+
+		permi23 = new_bd_sparc_Permi23_cycle_cycle(NULL, bb, length, args, length);
+		set_Permi_reg_reqs(permi23);
+
+		for (i = 0; i < 2; ++i) {
+			const unsigned  out  = (i + 1) % 2;
+			ir_node        *proj = ress[i];
+
+			set_Proj_pred(proj, permi23);
+			set_Proj_proj(proj, i);
+			arch_set_irn_register_out(permi23, i,
+				get_arch_register_from_index(op2->regs[out]));
+		}
+
+		for (i = 0; i < op3->length; ++i) {
+			const unsigned  out  = (i + 1) % op3->length;
+			ir_node        *proj = ress[2 + i];
+
+			set_Proj_pred(proj, permi23);
+			set_Proj_proj(proj, 2 + i);
+			arch_set_irn_register_out(permi23, 2 + i,
+				get_arch_register_from_index(op3->regs[out]));
+		}
+
+		schedule_node(permi23);
+	} else {
+		/* TODO: Implement all cases. */
+		handle_op(op2);
+		handle_op(op3);
+	}
 }
 
 static void search_combinable_ops()

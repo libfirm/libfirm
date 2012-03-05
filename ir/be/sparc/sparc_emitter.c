@@ -786,6 +786,9 @@ static void emit_icore_Permi23(const ir_node *irn)
 
 	/* At least two cycles of size 2. */
 	assert(arity >= 4 && arity <= 5);
+	/* Only support for two cycles. */
+	assert(get_sparc_permi23_attr_const(irn)->is_cycle2);
+	assert(get_sparc_permi23_attr_const(irn)->is_cycle3);
 
 	for (i = 0; i < arity; ++i) {
 		in_regs[i]  = arch_get_irn_register_in(irn, i);
