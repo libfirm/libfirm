@@ -2877,9 +2877,8 @@ static ir_node *create_Fucom(ir_node *node)
 		} else {
 			new_right = be_transform_node(right);
 			new_node  = new_bd_ia32_vFucomFnstsw(dbgi, new_block, new_left, new_right, 0);
+			set_ia32_commutative(new_node);
 		}
-
-		set_ia32_commutative(new_node);
 
 		SET_IA32_ORIG_NODE(new_node, node);
 
