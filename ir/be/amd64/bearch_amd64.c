@@ -331,11 +331,6 @@ static void amd64_end_codegeneration(void *self)
 	free(self);
 }
 
-typedef struct {
-	be_abi_call_flags_bits_t flags;
-	ir_graph *irg;
-} amd64_abi_env_t;
-
 /**
  * Get the between type for that call.
  * @param self The callback object.
@@ -398,10 +393,7 @@ static void amd64_get_call_abi(ir_type *method_type, be_abi_call_t *abi)
 	int no_reg = 0;
 
 	/* set abi flags for calls */
-	call_flags.bits.store_args_sequential = 0;
-	call_flags.bits.try_omit_fp           = 1;
-	call_flags.bits.fp_free               = 0;
-	call_flags.bits.call_has_imm          = 1;
+	call_flags.bits.call_has_imm = true;
 
 	/* set stack parameter passing style */
 	be_abi_call_set_flags(abi, call_flags, &amd64_abi_callbacks);
