@@ -890,7 +890,6 @@ void ia32_setup_cg_config(void)
 	c->use_softfloat        = FLAGS(fpu_arch, IA32_FPU_ARCH_SOFTFLOAT);
 	c->use_sse2             = FLAGS(fpu_arch, IA32_FPU_ARCH_SSE2) && FLAGS(arch, arch_feature_sse2);
 	c->use_ffreep           = FLAGS(opt_arch, arch_athlon_plus);
-	c->use_ftst             = !FLAGS(arch, arch_feature_p6_insn);
 	/* valgrind can't cope with femms yet and the usefulness of the optimization
 	 * is questionable anyway */
 #if 0

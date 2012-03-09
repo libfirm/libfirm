@@ -38,8 +38,6 @@ typedef struct {
 	unsigned use_sse2:1;
 	/** use ffreep instead of fpop */
 	unsigned use_ffreep:1;
-	/** use ftst where possible */
-	unsigned use_ftst:1;
 	/** use femms to pop all float registers */
 	unsigned use_femms:1;
 	/** use emms to pop all float registers */
