@@ -2078,7 +2078,6 @@ static ir_node *get_flags_node(ir_node *cmp, ia32_condition_code_t *cc_out)
 	ir_node    *r        = get_Cmp_right(cmp);
 	ir_mode    *mode     = get_irn_mode(l);
 	bool        overflow_possible;
-	ir_relation possible;
 	ir_node    *flags;
 
 	/* check for bit-test */
@@ -2116,11 +2115,8 @@ static ir_node *get_flags_node(ir_node *cmp, ia32_condition_code_t *cc_out)
 	 * a predecessor node). So add the < bit.
 	 * (Note that we do not want to produce <=> (which can happen for
 	 * unoptimized code), because no x86 flag can represent that */
-	possible = ir_get_possible_cmp_relations(l, r);
-	if (!(relation & ir_relation_equal) &&
-		( ((relation & ir_relation_less) && !(possible & ir_relation_greater))
-	   || ((relation & ir_relation_greater) && !(possible & ir_relation_less))))
-		relation |= ir_relation_less_greater;
+	if (!(relation & ir_relation_equal) && relation & ir_relation_less_greater)
+		relation |= get_negated_relation(ir_get_possible_cmp_relations(l, r)) & ir_relation_less_greater;
 
 	overflow_possible = true;
 	if (is_Const(r) && is_Const_null(r))
