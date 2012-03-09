@@ -21,7 +21,7 @@
  * @file
  * @date   31.05.2005
  * @author Sebastian Hack
- * @brief  Miscelaneous utility macros.
+ * @brief  Miscellaneous utility macros.
  */
 #ifndef FIRM_ADT_UTIL_H
 #define FIRM_ADT_UTIL_H
