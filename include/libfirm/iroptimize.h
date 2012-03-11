@@ -1084,6 +1084,13 @@ FIRM_API ir_tarval *computed_value_Cmp_Confirm(
 FIRM_API void vf_construct(ir_graph *irg);
 
 /**
+ * Verify a vfirm graph.
+ *
+ * @param irg    The vfirm graph to verify.
+ */
+FIRM_API void vf_verify(ir_graph *irg);
+
+/**
  * Convert a vfirm graph to a firm graph.
  *
  * @param irg    The vfirm graph to convert.
