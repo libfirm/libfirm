@@ -1880,6 +1880,19 @@ FIRM_API void set_array_element_entity(ir_type *array, ir_entity *ent);
 /** Returns the array element entity. */
 FIRM_API ir_entity *get_array_element_entity(const ir_type *array);
 
+/**
+ * Sets the array variable size flag.
+ * If this flag is set then no upper/lower bounds need to be set and
+ * get_type_size_bytes() returns -1
+ */
+FIRM_API void set_array_variable_size(ir_type *array, int variable_size_flag);
+
+/**
+ * Returns the array variable size flag.
+ * @see set_array_variable_size()
+ */
+FIRM_API int is_array_variable_size(const ir_type *array);
+
 /** Returns true if a type is an array type. */
 FIRM_API int is_Array_type(const ir_type *array);
 
@@ -2187,6 +2200,20 @@ FIRM_API size_t get_compound_member_index(const ir_type *tp, ir_entity *member);
 
 /** Remove a member from a compound type. */
 FIRM_API void remove_compound_member(ir_type *compound, ir_entity *entity);
+
+/**
+ * Sets the variable size flag of a compound type.
+ * The last member of a variable size compound type may be an array type
+ * without explicit size. So the get_type_size_bytes() of a variable size
+ * compound type only returns a minimum size for the type (the size if the
+ * last members size is 0)
+ */
+FIRM_API void set_compound_variable_size(ir_type *compound, int variable_size);
+
+/**
+ * Returns the variable size flag. @see set_compound_variable_size()
+ */
+FIRM_API int is_compound_variable_size(const ir_type *compound);
 
 /**
  * layout members of a struct/union or class type in a default way.

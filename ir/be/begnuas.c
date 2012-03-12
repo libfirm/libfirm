@@ -930,13 +930,6 @@ typedef struct {
 	} v;
 } normal_or_bitfield;
 
-static int is_type_variable_size(ir_type *type)
-{
-	(void) type;
-	/* TODO */
-	return 0;
-}
-
 static size_t get_initializer_size(const ir_initializer_t *initializer,
                                    ir_type *type)
 {
@@ -948,28 +941,34 @@ static size_t get_initializer_size(const ir_initializer_t *initializer,
 	case IR_INITIALIZER_NULL:
 		return get_type_size_bytes(type);
 	case IR_INITIALIZER_COMPOUND:
-		if (!is_type_variable_size(type)) {
-			return get_type_size_bytes(type);
-		} else {
-			size_t n_entries
-				= get_initializer_compound_n_entries(initializer);
-			size_t i;
-			unsigned initializer_size = get_type_size_bytes(type);
-			for (i = 0; i < n_entries; ++i) {
-				ir_entity *entity = get_compound_member(type, i);
-				ir_type   *type   = get_entity_type(entity);
-
-				const ir_initializer_t *sub_initializer
-					= get_initializer_compound_value(initializer, i);
-
-				unsigned offset = get_entity_offset(entity);
-				unsigned size   = get_initializer_size(sub_initializer, type);
-
-				if (offset + size > initializer_size) {
-					initializer_size = offset + size;
-				}
+		if (is_Array_type(type)) {
+			if (is_array_variable_size(type)) {
+				ir_type   *element_type = get_array_element_type(type);
+				unsigned   element_size = get_type_size_bytes(element_type);
+				unsigned   element_align
+					= get_type_alignment_bytes(element_type);
+				unsigned   misalign     = element_size % element_align;
+				size_t     n_inits
+					= get_initializer_compound_n_entries(initializer);
+				element_size += element_align - misalign;
+				return n_inits * element_size;
+			} else {
+				return get_type_size_bytes(type);
 			}
-			return initializer_size;
+		} else {
+			assert(is_compound_type(type));
+			size_t size = get_type_size_bytes(type);
+			if (is_compound_variable_size(type)) {
+				/* last initializer has to be an array of variable size */
+				size_t l = get_initializer_compound_n_entries(initializer)-1;
+				const ir_initializer_t *last
+					= get_initializer_compound_value(initializer, l);
+				const ir_entity *last_ent  = get_compound_member(type, l);
+				ir_type         *last_type = get_entity_type(last_ent);
+				assert(is_array_variable_size(last_type));
+				size += get_initializer_size(last, last_type);
+			}
+			return size;
 		}
 	}
 
