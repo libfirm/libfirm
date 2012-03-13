@@ -1562,8 +1562,8 @@ void be_gas_emit_entity(const ir_entity *entity)
 
 void be_gas_emit_block_name(const ir_node *block)
 {
-	if (get_Block_entity(block) != NULL) {
-		ir_entity *entity = get_Block_entity(block);
+	ir_entity *entity = get_Block_entity(block);
+	if (entity != NULL) {
 		be_gas_emit_entity(entity);
 	} else {
 		be_emit_irprintf("%s%ld", be_gas_get_private_prefix(), get_irn_node_nr(block));

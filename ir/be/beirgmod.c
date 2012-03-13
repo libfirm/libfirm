@@ -145,13 +145,16 @@ static int blocks_removed;
  */
 static void remove_empty_block(ir_node *block)
 {
-	const ir_edge_t *edge, *next;
-	int      i, arity;
-	ir_node *node;
-	ir_node *pred;
-	ir_node *succ_block;
-	ir_node *jump = NULL;
-	ir_graph *irg = get_irn_irg(block);
+	const ir_edge_t *edge;
+	const ir_edge_t *next;
+	int              i;
+	int              arity;
+	ir_node         *node;
+	ir_node         *pred;
+	ir_node         *succ_block;
+	ir_node         *jump = NULL;
+	ir_graph        *irg = get_irn_irg(block);
+	ir_entity       *entity;
 
 	if (irn_visited_else_mark(block))
 		return;
@@ -173,6 +176,7 @@ static void remove_empty_block(ir_node *block)
 	if (jump == NULL)
 		goto check_preds;
 
+	entity     = get_Block_entity(block);
 	pred       = get_Block_cfgpred(block, 0);
 	succ_block = NULL;
 	foreach_out_edge_safe(jump, edge, next) {
@@ -180,8 +184,7 @@ static void remove_empty_block(ir_node *block)
 
 		assert(succ_block == NULL);
 		succ_block = get_edge_src_irn(edge);
-		if (get_Block_entity(succ_block) != NULL
-		    && get_Block_entity(block) != NULL) {
+		if (get_Block_entity(succ_block) != NULL && entity != NULL) {
 			/*
 			 * Currently we can add only one label for a block.
 			 * Therefore we cannot combine them if  both block already have one.
@@ -192,9 +195,8 @@ static void remove_empty_block(ir_node *block)
 		set_irn_n(succ_block, pos, pred);
 	}
 
-	if (get_Block_entity(block) != NULL) {
+	if (entity != NULL) {
 		/* move the label to the successor block */
-		ir_entity *entity = get_Block_entity(block);
 		set_Block_entity(succ_block, entity);
 	}
 

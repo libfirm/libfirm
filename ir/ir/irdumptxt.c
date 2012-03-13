@@ -151,8 +151,9 @@ void dump_irnode_to_file(FILE *F, const ir_node *n)
 	/* Source types */
 	switch (get_irn_opcode(n)) {
 	case iro_Block: {
-		if (get_Block_entity(n) != NULL)
-			fprintf(F, "  Label: %lu\n", get_entity_label(get_Block_entity(n)));
+		ir_entity *const entity = get_Block_entity(n);
+		if (entity != NULL)
+			fprintf(F, "  Label: %lu\n", get_entity_label(entity));
 		fprintf(F, "  block visited: %lu\n", get_Block_block_visited(n));
 		fprintf(F, "  block marked: %u\n", get_Block_mark(n));
 		if (is_irg_state(get_irn_irg(n), IR_GRAPH_STATE_CONSISTENT_DOMINANCE)) {
