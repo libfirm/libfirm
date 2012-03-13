@@ -657,6 +657,11 @@ static void insert_etas_walk(ir_node* node, void *ctx)
 	/* Ignore those keep-alive edges. */
 	if (is_End(node)) return;
 
+	/* Ignore already inserted eta nodes in later iterations. */
+	if (is_Eta(node)) {
+		return;
+	}
+
 	block = get_nodes_block(node);
 
 	for (i = 0; i < get_irn_arity(node); i++)
@@ -692,13 +697,24 @@ static void insert_etas_walk(ir_node* node, void *ctx)
  */
 static void insert_etas(ir_graph* irg)
 {
-	pmap *break_conds;
+	pmap     *break_conds;
+	unsigned  last_idx;
+	unsigned  old_last_idx;
 	assert(irg);
 
 	assure_loopinfo(irg);
 	break_conds = pmap_create();
+	last_idx    = get_irg_last_idx(irg);
 
-	irg_walk_graph(irg, NULL, insert_etas_walk, break_conds);
+	/*
+	 * Since break condition may need additional eta nodes,
+	 * we need to iterate the insertion.
+	 */
+	do {
+		old_last_idx = last_idx;
+		irg_walk_graph(irg, NULL, insert_etas_walk, break_conds);
+		last_idx = get_irg_last_idx(irg);
+	} while (old_last_idx != last_idx);
 
 	pmap_destroy(break_conds);
 }
