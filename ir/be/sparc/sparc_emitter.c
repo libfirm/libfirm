@@ -936,9 +936,9 @@ static void emit_sparc_Restore(const ir_node *node)
 		= arch_get_irn_register_out(node, pn_sparc_Restore_res);
 	sparc_emit_indent();
 	be_emit_cstring("restore ");
-	sparc_emit_source_register(node, 1);
+	sparc_emit_source_register(node, 2);
 	be_emit_cstring(", ");
-	sparc_emit_reg_or_imm(node, 2);
+	sparc_emit_reg_or_imm(node, 3);
 	be_emit_cstring(", ");
 	destreg = map_i_to_o_reg(destreg);
 	be_emit_char('%');
