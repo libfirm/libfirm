@@ -903,7 +903,6 @@ static ir_node *transform_node_gamma(ir_node *gamma)
 	if (mode == mode_b && is_Const(ir_true)  && is_Const_null(ir_true) &&
 		is_Const(ir_false) && is_Const_one(ir_false)) {
 
-		ir_node *block = get_nodes_block(gamma);
 		return new_r_Not(block, get_Gamma_cond(gamma), mode_b);
 	}
 
