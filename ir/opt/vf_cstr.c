@@ -876,17 +876,47 @@ static ir_node *equivalent_node_gamma(ir_node *gamma)
 
 static ir_node *transform_node_gamma(ir_node *gamma)
 {
+	ir_node *block    = get_nodes_block(gamma);
+	ir_node *ir_cond  = get_Gamma_cond(gamma);
 	ir_node *ir_true  = get_Gamma_true(gamma);
 	ir_node *ir_false = get_Gamma_false(gamma);
-
-	if (get_irn_mode(gamma) != mode_b) return gamma;
+	ir_mode *mode     = get_irn_mode(gamma);
 
 	/* Gamma(cond, false, true) --> Not(cond) */
-	if (is_Const(ir_true)  && is_Const_null(ir_true) &&
+	if (mode == mode_b && is_Const(ir_true)  && is_Const_null(ir_true) &&
 		is_Const(ir_false) && is_Const_one(ir_false)) {
 
 		ir_node *block = get_nodes_block(gamma);
 		return new_r_Not(block, get_Gamma_cond(gamma), mode_b);
+	}
+
+	if (is_Eta(ir_cond)) {
+		ir_node *eta_cond      = get_Eta_cond(ir_cond);
+		ir_node *false_operand = ir_false;
+		ir_node *true_operand  = ir_true;
+		ir_node *new_cond;
+		ir_node *new_gamma;
+
+		if (is_Eta(ir_false)) {
+			if (get_Eta_cond(ir_false) != eta_cond) {
+				return gamma;
+			}
+
+			false_operand = get_Eta_value(ir_false);
+		}
+
+		if (is_Eta(ir_true)) {
+			if (get_Eta_cond(ir_true) != eta_cond) {
+				return gamma;
+			}
+
+			true_operand = get_Eta_value(ir_true);
+		}
+
+		new_cond  = get_Eta_value(ir_cond);
+		new_gamma = new_r_Gamma(block, new_cond, false_operand, true_operand, mode);
+
+		return new_r_Eta(block, new_gamma, eta_cond, mode);
 	}
 
 	return gamma;
