@@ -551,6 +551,7 @@ static void find_iter_exits_walk(ir_loop *loop, iter_exits *exits)
 			if (is_header) {
 				assert(!exits->header && "Multiple loop headers.");
 				exits->header = element.node;
+				set_loop_link(loop, element.node);
 
 				for (j = 0; j < get_Block_n_cfgpreds(element.node); j++) {
 					ir_node *pred = get_Block_cfgpred(element.node, j);
@@ -642,6 +643,15 @@ static ir_node *create_break_cond(ir_node *block, ir_loop *loop)
 	return result;
 }
 
+static ir_node *get_loop_header(ir_loop *loop)
+{
+	ir_node *header = get_loop_link(loop);
+	if (! header) {
+		header = find_iter_exits(loop)->header;
+	}
+	return header;
+}
+
 /**
  * This walker function walks through the graph and inserts eta nodes when
  * a node inside a loop is accessed from the outside.
@@ -685,7 +695,14 @@ static void insert_etas_walk(ir_node* node, void *ctx)
 				pmap_insert(break_conds, in_loop, cond);
 			}
 
-			eta = new_r_Eta(block, in, cond, mode);
+			ir_loop *outer = get_loop_outer_loop(in_loop);
+			ir_node *out_block;
+			if (get_loop_depth(outer) == 0 || outer == get_irn_loop(block))
+				out_block = block;
+			else
+				out_block = get_loop_header(outer);
+
+			eta = new_r_Eta(out_block, in, cond, mode);
 			set_irn_n(node, i, eta);
 		}
 	}
