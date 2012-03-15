@@ -85,8 +85,7 @@ FIRM_API void part_block(ir_node *node);
 FIRM_API ir_node *part_block_edges(ir_node *node);
 
 /**
- * Kill a node by setting its predecessors to Bad and finally
- * exchange the node by Bad itself.
+ * Kill a node.  No other node may have this node as operand.
  */
 FIRM_API void kill_node(ir_node *node);
 
