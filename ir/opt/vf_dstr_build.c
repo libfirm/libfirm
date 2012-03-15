@@ -932,6 +932,7 @@ void vb_build(ir_graph *irg)
 
 	/* Get the return node for construction. */
 	end = get_irg_end_block(irg);
+	assert(get_Block_n_cfgpreds(end) > 0 && "Invalid VFirm graph.");
 	ret = get_Block_cfgpred(end, 0);
 	assert(is_Return(ret) && "Invalid VFirm graph.");
 
