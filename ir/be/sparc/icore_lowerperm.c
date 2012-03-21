@@ -351,22 +351,22 @@ static ir_node *create_chain_permi(const perm_op_t *op)
 	ir_node *ress[PERMI_SIZE];
 	ir_node *permi;
 	ir_node *bb     = get_nodes_block(perm);
-	unsigned length = op->length;
+	unsigned size = op->length - 1;
 	unsigned i;
 
 	assert(op->type == PERM_CHAIN && op->length <= PERMI_SIZE);
 
-	for (i = 0; i < length - 1; ++i) {
+	for (i = 0; i < size; ++i) {
 		args[i] = in_nodes[op->regs[i]];
 		ress[i] = out_nodes[op->regs[i + 1]];
 	}
 
 	/* TODO: Fix debuginfo. */
-	permi = new_bd_sparc_Permi_chain(NULL, bb, length - 1, args, length - 1);
+	permi = new_bd_sparc_Permi_chain(NULL, bb, size, args, size);
 	set_Permi_reg_reqs(permi);
 
 	/* Rewire Projs. */
-	for (i = 0; i < length - 1; ++i) {
+	for (i = 0; i < size; ++i) {
 		const unsigned  out  = (i + 1);
 		ir_node        *proj = ress[i];
 
@@ -379,15 +379,54 @@ static ir_node *create_chain_permi(const perm_op_t *op)
 	return permi;
 }
 
+static void split_chain_into_chain_permis(const perm_op_t *op)
+{
+	const unsigned length = op->length;
+	unsigned i;
+	unsigned j;
+
+	assert(op->type == PERM_CHAIN && length > PERMI_SIZE);
+
+	/* Place every permi except for the last.
+	 * All permis are of the maximum size PERMI_SIZE. */
+	for (i = length; i > PERMI_SIZE; i -= (PERMI_SIZE - 1)) {
+		const unsigned  start = i - PERMI_SIZE;
+		perm_op_t       subop;
+		ir_node        *permi;
+
+		subop.type   = PERM_CHAIN;
+		subop.length = PERMI_SIZE;
+		for (j = 0; j < PERMI_SIZE; ++j)
+			subop.regs[j] = op->regs[start + j];
+
+		permi = create_chain_permi(&subop);
+		schedule_node(permi);
+	}
+
+	/* Place the last permi. */
+	{
+		const unsigned  lastlen = i;
+		perm_op_t       lastop;
+		ir_node        *permi;
+
+		lastop.type   = PERM_CHAIN;
+		lastop.length = lastlen;
+		for (j = 0; j < lastlen; ++j)
+			lastop.regs[j] = op->regs[j];
+
+		permi = create_chain_permi(&lastop);
+		schedule_node(permi);
+	}
+}
+
 static void handle_chain(const perm_op_t *op)
 {
 	assert(op->regs[0] != 0);
 
-	if (op->length <= PERMI_SIZE) {
-		/* TODO: Implement long pseudo cycle. */
+	if (op->length <= PERMI_SIZE)
 		schedule_node(create_chain_permi(op));
-	} else
-		split_chain_into_copies(op);
+	else
+		split_chain_into_chain_permis(op);
 }
 
 static ir_node *create_permi(const perm_op_t *op)
@@ -429,11 +468,11 @@ static ir_node *create_permi(const perm_op_t *op)
 
 static void split_big_cycle(const perm_op_t *op)
 {
+	const unsigned length = op->length;
 	unsigned i;
 	unsigned j;
-	const unsigned length = op->length;
 
-	assert(length > PERMI_SIZE);
+	assert(op->type == PERM_CYCLE && length > PERMI_SIZE);
 
 	/* Place every permi except for the last.
 	 * All permis are of the maximum size PERMI_SIZE. */
