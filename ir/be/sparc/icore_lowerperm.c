@@ -534,19 +534,57 @@ static void handle_op(const perm_op_t *op)
 		handle_cycle(op);
 }
 
-static void combine_small_ops(const perm_op_t *op2, const perm_op_t *op3)
+static ir_node *create_permi23(ir_node **args, const perm_op_t *op2,
+                               const perm_op_t *op3)
 {
-	assert(op2->length == 2 && op3->length >= 2 && op3->length <= 3);
+	ir_node *bb      = get_nodes_block(perm);
+	unsigned sz      = op2->length + op3->length;
+	ir_node *permi23;
+
+	if (op2->type == PERM_CHAIN)
+		--sz;
+	if (op3->type == PERM_CHAIN)
+		--sz;
 
 	if (op2->type == PERM_CYCLE && op3->type == PERM_CYCLE) {
-		ir_node *bb      = get_nodes_block(perm);
-		ir_node *permi23;
-		ir_node *args[PERMI_SIZE];
-		ir_node *ress[PERMI_SIZE];
-		const unsigned length = op2->length + op3->length;
-		unsigned       i;
+		permi23 = new_bd_sparc_Permi23_cycle_cycle(NULL, bb, sz, args, sz);
+	} else if (op2->type == PERM_CYCLE && op3->type == PERM_CHAIN) {
+		permi23 = new_bd_sparc_Permi23_cycle_chain(NULL, bb, sz, args, sz);
+	} else if (op2->type == PERM_CHAIN && op3->type == PERM_CYCLE) {
+		permi23 = new_bd_sparc_Permi23_chain_cycle(NULL, bb, sz, args, sz);
+	} else if (op2->type == PERM_CHAIN && op3->type == PERM_CHAIN) {
+		permi23 = new_bd_sparc_Permi23_chain_chain(NULL, bb, sz, args, sz);
+	} else
+		assert(!"Unknown perm ops");
 
-		/* Add cycle of size 2. */
+	set_Permi_reg_reqs(permi23);
+	return permi23;
+}
+
+static void combine_small_ops(const perm_op_t *op2, const perm_op_t *op3)
+{
+	ir_node *args[PERMI_SIZE];
+	ir_node *ress[PERMI_SIZE];
+	ir_node *permi23;
+	unsigned pos     = 0;
+	unsigned i       = 0;
+
+	assert(op2->length == 2 && op3->length >= 2 && op3->length <= 3);
+
+/*
+	if (op2->type != PERM_CYCLE || op3->type != PERM_CYCLE) {
+		handle_op(op2);
+		handle_op(op3);
+		return;
+	}
+*/
+
+	puts("Combining two small ops:");
+	printf("  "); print_perm_op(op2);
+	printf("  "); print_perm_op(op3);
+	puts("");
+
+	if (op2->type == PERM_CYCLE) {
 		for (i = 0; i < 2; ++i) {
 			const unsigned in  = i;
 			const unsigned out = (in + 1) % 2;
@@ -554,20 +592,37 @@ static void combine_small_ops(const perm_op_t *op2, const perm_op_t *op3)
 			args[i] = in_nodes[op2->regs[in]];
 			ress[i] = out_nodes[op2->regs[out]];
 		}
+		pos = 2;
+	} else if (op2->type == PERM_CHAIN) {
+		args[0] = in_nodes[op2->regs[0]];
+		ress[0] = out_nodes[op2->regs[1]];
+		pos = 1;
+	} else
+		assert(!"Unknown perm op type");
 
-		/* Add cycle of size 2 or 3. */
+	if (op3->type == PERM_CYCLE) {
 		for (i = 0; i < op3->length; ++i) {
 			const unsigned in  = i;
 			const unsigned out = (in + 1) % op3->length;
 
-			args[2 + i] = in_nodes[op3->regs[in]];
-			ress[2 + i] = out_nodes[op3->regs[out]];
+			args[pos + i] = in_nodes[op3->regs[in]];
+			ress[pos + i] = out_nodes[op3->regs[out]];
 		}
+	} else if (op3->type == PERM_CHAIN) {
+		for (i = 0; i + 1 < op3->length; ++i) {
+			const unsigned in  = i;
+			const unsigned out = i + 1;
 
-		permi23 = new_bd_sparc_Permi23_cycle_cycle(NULL, bb, length, args, length);
-		set_Permi_reg_reqs(permi23);
+			args[pos + i] = in_nodes[op3->regs[in]];
+			ress[pos + i] = out_nodes[op3->regs[out]];
+		}
+	} else
+		assert(!"Unknown perm op type");
 
-		/* Rewire Projs. */
+	permi23 = create_permi23(args, op2, op3);
+
+	/* Rewire Projs. */
+	if (op2->type == PERM_CYCLE) {
 		for (i = 0; i < 2; ++i) {
 			const unsigned  out  = (i + 1) % 2;
 			ir_node        *proj = ress[i];
@@ -577,26 +632,43 @@ static void combine_small_ops(const perm_op_t *op2, const perm_op_t *op3)
 			arch_set_irn_register_out(permi23, i,
 				get_arch_register_from_index(op2->regs[out]));
 		}
+	} else if (op2->type == PERM_CHAIN) {
+		ir_node *proj = ress[0];
 
+		set_Proj_pred(proj, permi23);
+		set_Proj_proj(proj, 0);
+		arch_set_irn_register_out(permi23, 0,
+			get_arch_register_from_index(op2->regs[1]));
+	} else
+		assert(!"Unknown perm op type");
+
+	if (op3->type == PERM_CYCLE) {
 		for (i = 0; i < op3->length; ++i) {
 			const unsigned  out  = (i + 1) % op3->length;
-			ir_node        *proj = ress[2 + i];
+			ir_node        *proj = ress[pos + i];
 
 			set_Proj_pred(proj, permi23);
-			set_Proj_proj(proj, 2 + i);
-			arch_set_irn_register_out(permi23, 2 + i,
+			set_Proj_proj(proj, pos + i);
+			arch_set_irn_register_out(permi23, pos + i,
 				get_arch_register_from_index(op3->regs[out]));
 		}
+	} else if (op3->type == PERM_CHAIN) {
+		for (i = 0; i + 1 < op3->length; ++i) {
+			const unsigned  out  = (i + 1);
+			ir_node        *proj = ress[pos + i];
 
-		schedule_node(permi23);
-	} else {
-		/* TODO: Implement all cases. */
-		handle_op(op2);
-		handle_op(op3);
-	}
+			set_Proj_pred(proj, permi23);
+			set_Proj_proj(proj, pos + i);
+			arch_set_irn_register_out(permi23, pos + i,
+				get_arch_register_from_index(op3->regs[out]));
+		}
+	} else
+		assert(!"Unknown perm op type");
+
+	schedule_node(permi23);
 }
 
-static void search_combinable_ops()
+static void search_and_combine_small_ops()
 {
 	const perm_op_t *twos[NUM_REGISTERS];
 	const perm_op_t *threes[NUM_REGISTERS];
@@ -671,7 +743,7 @@ static void analyze_perm()
 	handle_zero_chains();
 
 	/* Try to combine small ops into one instruction. */
-	search_combinable_ops();
+	search_and_combine_small_ops();
 
 	/* Handle all remaining ops. */
 	for (i = 0; i < num_ops; ++i) {
@@ -731,7 +803,5 @@ void icore_lower_nodes_after_ra(ir_graph *irg)
 	/* we will need interference */
 	be_assure_live_chk(irg);
 
-	dump_ir_graph(irg, "before_icore_lowering");
 	irg_walk_graph(irg, NULL, lower_nodes_after_ra_walker, NULL);
-	dump_ir_graph(irg, "after_icore_lowering");
 }

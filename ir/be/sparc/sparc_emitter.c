@@ -778,47 +778,88 @@ static void emit_icore_Permi(const ir_node *irn)
 
 static void emit_icore_Permi23(const ir_node *irn)
 {
+	const int  arity     = get_irn_arity(irn);
+	const bool is_cycle2 = get_sparc_permi23_attr_const(irn)->is_cycle2;
+	const bool is_cycle3 = get_sparc_permi23_attr_const(irn)->is_cycle3;
+	const int  pos3      = is_cycle2 ? 2 : 1;
+	const int  size3     = arity - pos3 + (is_cycle3 ? 0 : 1);
+	unsigned   regns[5];
 	const arch_register_t *in_regs[5];
 	const arch_register_t *out_regs[5];
-	unsigned regns[5];
 	int i;
-	const int arity = get_irn_arity(irn);
 
-	/* At least two cycles of size 2. */
-	assert(arity >= 4 && arity <= 5);
-	/* Only support for two cycles. */
-	assert(get_sparc_permi23_attr_const(irn)->is_cycle2);
-	assert(get_sparc_permi23_attr_const(irn)->is_cycle3);
+	assert(size3 >= 2 && size3 <= 3
+	       && "Second op in Permi23 has invalid size");
 
 	for (i = 0; i < arity; ++i) {
 		in_regs[i]  = arch_get_irn_register_in(irn, i);
 		out_regs[i] = arch_get_irn_register_out(irn, i);
 	}
 
-	/* Sanity check */
 #ifndef NDEBUG
-	for (i = 0; i < 2; ++i) {
-		assert(out_regs[i] == in_regs[(i + 1) % 2] && "First cycle in Permi23 node does not represent a cycle of the required form");
+	/* Sanity checks */
+
+	if (is_cycle2) {
+		for (i = 0; i < 2; ++i) {
+			assert(out_regs[i] == in_regs[(i + 1) % 2]
+			       && "First cycle in Permi23 is malformed");
+		}
+	} else {
+		assert(out_regs[0] != in_regs[0]
+		       && "First chain in Permi23 is malformed");
 	}
 
-	for (i = 0; i < (arity - 2); ++i) {
-		assert(out_regs[2 + i] == in_regs[2 + (i + 1) % (arity - 2)] && "Second cycle in Permi23 node does not represent a cycle of the required form");
+	if (is_cycle3) {
+		for (i = 0; i < size3; ++i) {
+			assert(out_regs[pos3 + i] == in_regs[pos3 + (i + 1) % size3]
+			       && "Second cycle in Permi23 is malformed");
+		}
+	} else {
+		if (size3 == 2) {
+			assert(out_regs[pos3] != in_regs[pos3]
+			       && "Second chain in Permi23 is malformed");
+		} else if (size3 == 3) {
+			assert(out_regs[pos3] == in_regs[pos3 + 1]
+			       && "Second chain in Permi23 is malformed");
+		}
 	}
 #endif
 
 	/*
 	 * The current hardware implementation of the permi instruction
 	 * describes a 'left rotation', i.e.
-	 *   permi r0, r1, r2, r3, r4
+	 *   permi23 r0, r1, r2, r3, r4
 	 * encodes
-	 *   r0->r4->r3->r2->r1->r0.
-	 * Therefore, we reverse the order of the register numbers for
-	 * actual code generation.
+	 *   r1->r0->r1   and   r2->r4->r3->r2
 	 */
-	regns[0] = (unsigned) in_regs[0]->index;
-	regns[1] = (unsigned) in_regs[1]->index;
-	for (i = 2; i < arity; ++i) {
-		regns[i] = (unsigned) in_regs[2 + arity - i - 1]->index;
+	if (is_cycle2) {
+		regns[0] = (unsigned) in_regs[1]->index;
+		regns[1] = (unsigned) in_regs[0]->index;
+	} else {
+		regns[0] = (unsigned) out_regs[0]->index;
+		regns[1] = (unsigned) in_regs[0]->index;
+	}
+
+	if (is_cycle3) {
+		if (size3 == 2) {
+			regns[2] = (unsigned) in_regs[pos3 + 1]->index;
+			regns[3] = (unsigned) in_regs[pos3]->index;
+			regns[4] = regns[3];
+		} else {
+			regns[2] = (unsigned) in_regs[pos3 + 2]->index;
+			regns[3] = (unsigned) in_regs[pos3 + 1]->index;
+			regns[4] = (unsigned) in_regs[pos3]->index;
+		}
+	} else {
+		if (size3 == 2) {
+			regns[2] = (unsigned) out_regs[pos3]->index;
+			regns[3] = (unsigned) in_regs[pos3]->index;
+			regns[4] = regns[3];
+		} else {
+			regns[2] = (unsigned) out_regs[pos3 + 1]->index;
+			regns[3] = (unsigned) out_regs[pos3]->index;
+			regns[4] = (unsigned) in_regs[pos3]->index;
+		}
 	}
 
 	/*
@@ -835,31 +876,28 @@ static void emit_icore_Permi23(const ir_node *irn)
 		regns[1] = regn0;
 	}
 
-	/*
-	 * The permi23 instruction always operates on five registers.  However,
-	 * if two two-cycles shall be encoded, we don't have enough register
-	 * numbers.  Therefore, we insert an additional register in the three cycle.
-	 * Example:
-	 * To encode swapping r0, r1 and swapping r2, r3, we would like to write
-	 *   permi23 r1, r0, r3, r2
-	 * which we can't do, because we have to provide five registers.
-	 * Because it's allowed to mention the same register multiple times, we can
-	 * write
-	 *   permi23 r1, r0, r3, r2, r2
-	 * instead.
-	 */
-	if (arity == 4) {
-		regns[4] = regns[3];
-	}
-
 	/* Print some information about the meaning of the following permi. */
-	be_emit_irprintf("\t/* First cycle: %s->%s->%s */", in_regs[0]->name, in_regs[1]->name, in_regs[0]->name);
-	be_emit_finish_line_gas(NULL);
-	be_emit_irprintf("\t/* Second cycle: ");
-	for (i = 2; i < arity; ++i) {
-		be_emit_irprintf("%s->", in_regs[i]->name);
+	if (is_cycle2) {
+		be_emit_irprintf("\t/* First cycle: %s->%s->%s */", in_regs[0]->name, in_regs[1]->name, in_regs[0]->name);
+	} else {
+		be_emit_irprintf("\t/* First chain: %s->%s */", in_regs[0]->name, out_regs[0]->name);
 	}
-	be_emit_irprintf("%s */", in_regs[2]->name);
+	be_emit_finish_line_gas(NULL);
+	if (is_cycle3) {
+		be_emit_irprintf("\t/* Second cycle: ");
+		for (i = 0; i < size3; ++i) {
+			be_emit_irprintf("%s->", in_regs[pos3 + i]->name);
+		}
+		be_emit_irprintf("%s */", in_regs[pos3]->name);
+	} else {
+		be_emit_irprintf("\t/* Second chain: ");
+		be_emit_irprintf("%s->%s", in_regs[pos3]->name, out_regs[pos3]->name);
+		if (size3 == 3) {
+			be_emit_irprintf("->%s */", out_regs[pos3 + 1]->name);
+		} else {
+			be_emit_irprintf(" */");
+		}
+	}
 	be_emit_finish_line_gas(NULL);
 
 	emit_permi(irn, regns);
