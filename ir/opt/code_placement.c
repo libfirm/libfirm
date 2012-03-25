@@ -425,6 +425,7 @@ static ir_graph_state_t do_codeplacement(ir_graph *irg)
 static optdesc_t opt_codeplacement = {
 	"code-placement",
 	IR_GRAPH_STATE_NO_CRITICAL_EDGES |
+	IR_GRAPH_STATE_NO_UNREACHABLE_CODE |
 	IR_GRAPH_STATE_CONSISTENT_OUTS |
 	IR_GRAPH_STATE_CONSISTENT_DOMINANCE |
 	IR_GRAPH_STATE_CONSISTENT_LOOPINFO,
