@@ -239,8 +239,10 @@ non_dispensable:
  * has only one predecessor with an unconditional jump to this block;
  * and if this block does not contain any phis.
  */
-static void merge_blocks(ir_node *b)
+static void merge_blocks(ir_node *b, void *env)
 {
+	(void) env;
+
 	if (get_Block_n_cfgpreds(b) == 1) {
 		ir_node* pred = get_Block_cfgpred(b, 0);
 		if (is_Jmp(pred)) {
