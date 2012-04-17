@@ -235,6 +235,24 @@ non_dispensable:
 }
 
 /**
+ * This method merges blocks. A block is applicable to be merged, if it
+ * has only one predecessor with an unconditional jump to this block;
+ * and if this block does not contain any phis.
+ */
+static void merge_blocks(ir_node *b)
+{
+	if (get_Block_n_cfgpreds(b) == 1) {
+		ir_node* pred = get_Block_cfgpred(b, 0);
+		if (is_Jmp(pred)) {
+			ir_node* pred_block = get_nodes_block(pred);
+			if (get_Block_phis(b) == NULL) {
+				exchange(b, pred_block);
+			}
+		}
+	}
+}
+
+/**
  * This method removes empty blocks.  A block is empty if it only contains Phi
  * and Jmp nodes.
  *
@@ -861,7 +879,7 @@ static ir_graph_state_t do_cfopt(ir_graph *irg)
 	 * blocks, which it finds in a linked list computed before.
 	 * */
 	assure_doms(irg);
-	irg_block_walk_graph(irg, optimize_blocks, NULL, &env);
+	irg_block_walk_graph(irg, optimize_blocks, merge_blocks, &env);
 
 	new_end = optimize_in_place(end);
 	if (new_end != end) {
