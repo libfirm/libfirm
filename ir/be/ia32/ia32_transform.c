@@ -1344,9 +1344,6 @@ static ir_node *gen_Add(ir_node *node)
 
 	ia32_mark_non_am(node);
 
-	op2 = ia32_skip_downconv(op2);
-	op1 = ia32_skip_downconv(op1);
-
 	/**
 	 * Rules for an Add:
 	 *   0. Immediate Trees (example Add(Symconst, Const) -> Const)
