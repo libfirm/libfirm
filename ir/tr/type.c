@@ -64,6 +64,8 @@
 
 #include "array.h"
 
+static ir_type *new_type(tp_op const *type_op, ir_mode *mode, type_dbg_info *db);
+
 ir_type *get_none_type(void)
 {
 	return irp->none_type;
@@ -118,7 +120,17 @@ void (inc_master_type_visited)(void)
 	_inc_master_type_visited();
 }
 
-ir_type *new_type(const tp_op *type_op, ir_mode *mode, type_dbg_info *db)
+/**
+ *   Creates a new type representation:
+ *
+ *   @param type_op  the kind of this type.  May not be type_id.
+ *   @param mode     the mode to be used for this type, may be NULL
+ *   @param db       debug info
+ *
+ *   @return A new type of the given type.  The remaining private attributes are
+ *           not initialized.  The type is in state layout_undefined.
+ */
+static ir_type *new_type(tp_op const *type_op, ir_mode *mode, type_dbg_info *db)
 {
 	ir_type *res;
 	size_t node_size;

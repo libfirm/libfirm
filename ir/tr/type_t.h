@@ -186,18 +186,6 @@ struct ir_type {
 	                              last entry in this struct!  Varying size! */
 };
 
-/**
- *   Creates a new type representation:
- *
- *   @param type_op  the kind of this type.  May not be type_id.
- *   @param mode     the mode to be used for this type, may be NULL
- *   @param db       debug info
- *
- *   @return A new type of the given type.  The remaining private attributes are not
- *           initialized.  The type is in state layout_undefined.
- */
-ir_type *new_type(const tp_op *type_op, ir_mode *mode, type_dbg_info *db);
-
 void free_type_entities(ir_type *tp);
 
 void free_class_entities      (ir_type *clss);
