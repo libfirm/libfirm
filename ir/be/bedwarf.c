@@ -663,6 +663,12 @@ static void emit_entity_label(const ir_entity *entity)
 	be_emit_write_line();
 }
 
+static void register_dbginfo_attributes(void)
+{
+	register_attribute(DW_AT_decl_file, DW_FORM_udata);
+	register_attribute(DW_AT_decl_line, DW_FORM_udata);
+}
+
 /**
  * emits values for DW_AT_decl_file then DW_AT_decl_line
  */
@@ -678,8 +684,7 @@ static void emit_subprogram_abbrev(void)
 {
 	begin_abbrev(DW_TAG_subprogram, DW_TAG_subprogram, DW_CHILDREN_no);
 	register_attribute(DW_AT_name,      DW_FORM_string);
-	register_attribute(DW_AT_decl_file, DW_FORM_udata);
-	register_attribute(DW_AT_decl_line, DW_FORM_udata);
+	register_dbginfo_attributes();
 	//register_attribute(DW_AT_prototyped, DW_FORM_flag);
 	//register_attribute(DW_AT_type,       DW_FORM_ref4);
 	register_attribute(DW_AT_external,  DW_FORM_flag);
@@ -849,27 +854,23 @@ static void emit_compound_type_abbrev(void)
 {
 	begin_abbrev(DW_TAG_structure_type, DW_TAG_structure_type, DW_CHILDREN_yes);
 	register_attribute(DW_AT_byte_size,  DW_FORM_udata);
-	//register_attribute(DW_AT_decl_file,  DW_FORM_udata);
-	//register_attribute(DW_AT_decl_line,  DW_FORM_udata);
+	// TODO register_dbginfo_attributes();
 	end_abbrev();
 
 	begin_abbrev(DW_TAG_union_type, DW_TAG_union_type, DW_CHILDREN_yes);
 	register_attribute(DW_AT_byte_size,  DW_FORM_udata);
-	//register_attribute(DW_AT_decl_file,  DW_FORM_udata);
-	//register_attribute(DW_AT_decl_line,  DW_FORM_udata);
+	// TODO register_dbginfo_attributes();
 	end_abbrev();
 
 	begin_abbrev(DW_TAG_class_type, DW_TAG_class_type, DW_CHILDREN_yes);
 	register_attribute(DW_AT_byte_size,  DW_FORM_udata);
-	//register_attribute(DW_AT_decl_file,  DW_FORM_udata);
-	//register_attribute(DW_AT_decl_line,  DW_FORM_udata);
+	// TODO register_dbginfo_attributes();
 	end_abbrev();
 
 	begin_abbrev(DW_TAG_member, DW_TAG_member, DW_CHILDREN_no);
 	register_attribute(DW_AT_type,                 DW_FORM_ref4);
 	register_attribute(DW_AT_name,                 DW_FORM_string);
-	register_attribute(DW_AT_decl_file,            DW_FORM_udata);
-	register_attribute(DW_AT_decl_line,            DW_FORM_udata);
+	register_dbginfo_attributes();
 	register_attribute(DW_AT_data_member_location, DW_FORM_block1);
 	end_abbrev();
 
@@ -879,8 +880,7 @@ static void emit_compound_type_abbrev(void)
 	register_attribute(DW_AT_bit_offset,           DW_FORM_udata);
 	register_attribute(DW_AT_type,                 DW_FORM_ref4);
 	register_attribute(DW_AT_name,                 DW_FORM_string);
-	register_attribute(DW_AT_decl_file,            DW_FORM_udata);
-	register_attribute(DW_AT_decl_line,            DW_FORM_udata);
+	register_dbginfo_attributes();
 	register_attribute(DW_AT_data_member_location, DW_FORM_block1);
 	end_abbrev();
 }
@@ -1035,8 +1035,7 @@ static void emit_variable_abbrev(void)
 	register_attribute(DW_AT_name,      DW_FORM_string);
 	register_attribute(DW_AT_type,      DW_FORM_ref4);
 	register_attribute(DW_AT_external,  DW_FORM_flag);
-	register_attribute(DW_AT_decl_file, DW_FORM_udata);
-	register_attribute(DW_AT_decl_line, DW_FORM_udata);
+	register_dbginfo_attributes();
 	register_attribute(DW_AT_location,  DW_FORM_block1);
 	end_abbrev();
 }
