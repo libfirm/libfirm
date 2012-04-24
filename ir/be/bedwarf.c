@@ -718,7 +718,7 @@ static void dwarf_method_begin(dbg_handle *handle, const ir_entity *entity)
 
 	emit_entity_label(entity);
 	emit_uleb128(DW_TAG_subprogram);
-	emit_string(get_entity_name(entity));
+	emit_string(get_entity_ld_name(entity));
 	emit_dbginfo(env, get_entity_dbg_info(entity));
 	emit_int8(is_extern_entity(entity));
 	emit_ref(entity);
@@ -1064,7 +1064,7 @@ static void dwarf_variable(dbg_handle *handle, const ir_entity *entity)
 
 	emit_entity_label(entity);
 	emit_uleb128(DW_TAG_variable);
-	emit_string(get_entity_name(entity));
+	emit_string(get_entity_ld_name(entity));
 	emit_type_address(type);
 	emit_int8(is_extern_entity(entity));
 	emit_dbginfo(env, get_entity_dbg_info(entity));
