@@ -759,7 +759,7 @@ static void dwarf_unit_begin(dbg_handle *handle, const char *filename)
 	                   ir_get_version_revision());
 	emit_string(filename);
 	if (language != 0)
-		emit_int16(DW_LANG_C_plus_plus);
+		emit_int16(language);
 	if (comp_dir != NULL)
 		emit_string(comp_dir);
 }
