@@ -665,12 +665,13 @@ static void emit_entity_label(const ir_entity *entity)
 
 static void register_dbginfo_attributes(void)
 {
-	register_attribute(DW_AT_decl_file, DW_FORM_udata);
-	register_attribute(DW_AT_decl_line, DW_FORM_udata);
+	register_attribute(DW_AT_decl_file,   DW_FORM_udata);
+	register_attribute(DW_AT_decl_line,   DW_FORM_udata);
+	register_attribute(DW_AT_decl_column, DW_FORM_udata);
 }
 
 /**
- * emits values for DW_AT_decl_file then DW_AT_decl_line
+ * Emit values for DW_AT_decl_file, DW_AT_decl_line and DW_AT_decl_column.
  */
 static void emit_dbginfo(dwarf_t *env, const dbg_info *dbgi)
 {
@@ -678,6 +679,7 @@ static void emit_dbginfo(dwarf_t *env, const dbg_info *dbgi)
 	unsigned  const file = loc.file ? insert_file(env, loc.file) : 0;
 	emit_uleb128(file);
 	emit_uleb128(loc.line);
+	emit_uleb128(loc.column);
 }
 
 static void emit_subprogram_abbrev(void)
