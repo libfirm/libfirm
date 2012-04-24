@@ -100,8 +100,7 @@ void be_emit_pad_comment(void)
 void be_emit_finish_line_gas(const ir_node *node)
 {
 	dbg_info   *dbg;
-	const char *sourcefile;
-	unsigned    lineno;
+	src_loc_t   loc;
 
 	if (node == NULL) {
 		be_emit_char('\n');
@@ -113,11 +112,16 @@ void be_emit_finish_line_gas(const ir_node *node)
 	be_emit_cstring("/* ");
 	be_emit_irprintf("%+F ", node);
 
-	dbg        = get_irn_dbg_info(node);
-	sourcefile = ir_retrieve_dbg_info(dbg, &lineno);
-	if (sourcefile != NULL) {
-		be_emit_string(sourcefile);
-		be_emit_irprintf(":%u", lineno);
+	dbg = get_irn_dbg_info(node);
+	loc = ir_retrieve_dbg_info(dbg);
+	if (loc.file) {
+		be_emit_string(loc.file);
+		if (loc.line != 0) {
+			be_emit_irprintf(":%u", loc.line);
+			if (loc.column != 0) {
+				be_emit_irprintf(":%u", loc.column);
+			}
+		}
 	}
 	be_emit_cstring(" */\n");
 	be_emit_write_line();

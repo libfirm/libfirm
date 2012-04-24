@@ -661,28 +661,26 @@ static void stabs_unit_end(dbg_handle *handle)
 
 static void stabs_set_dbg_info(dbg_handle *h, dbg_info *dbgi)
 {
-	stabs_handle *handle = (stabs_handle*) h;
-	unsigned      lineno;
-	const char   *fname  = ir_retrieve_dbg_info(dbgi, &lineno);
+	stabs_handle *const handle = (stabs_handle*) h;
+	src_loc_t     const loc    = ir_retrieve_dbg_info(dbgi);
 
-	if (fname == NULL)
+	if (!loc.file)
 		return;
 
-	if (handle->curr_file != fname) {
-		if (fname != handle->main_file) {
-			be_emit_irprintf("\t.stabs\t\"%s\",%d,0,0,0\n", fname, N_SOL);
+	if (handle->curr_file != loc.file) {
+		if (handle->main_file != loc.file) {
+			be_emit_irprintf("\t.stabs\t\"%s\",%d,0,0,0\n", loc.file, N_SOL);
 			be_emit_write_line();
 		}
-		handle->curr_file = fname;
+		handle->curr_file = loc.file;
 	}
-	if (handle->last_line != lineno) {
+	if (handle->last_line != loc.line) {
 		char label[64];
 
 		snprintf(label, sizeof(label), ".LM%u", ++handle->label_num);
-		handle->last_line = lineno;
+		handle->last_line = loc.line;
 
-		be_emit_irprintf("\t.stabn\t%d, 0, %u, %s-%s\n", N_SLINE, lineno,
-		                 label, get_entity_ld_name(handle->cur_ent));
+		be_emit_irprintf("\t.stabn\t%d, 0, %u, %s-%s\n", N_SLINE, loc.line, label, get_entity_ld_name(handle->cur_ent));
 		be_emit_write_line();
 
 		be_emit_string(label);

@@ -144,13 +144,20 @@ typedef void merge_sets_func(ir_node **new_node_array, int new_num_entries, ir_n
 FIRM_API void dbg_init(merge_pair_func *dbg_info_merge_pair,
                        merge_sets_func *dbg_info_merge_sets);
 
+typedef struct src_loc_t {
+	char const *file;
+	unsigned    line;
+	unsigned    column;
+} src_loc_t;
+
 /**
  * The type of the debug info retriever function.
- *  When given a dbg_info returns the name (usually the filename) of the
- *  compilation unit defining it. @p line is set to the line number of the
- *  definition.
+ *  When given a dbg_info returns the name (usually the filename), line number
+ *  and column number of the definition.
+ *  Any part of the returned information may be NULL/0, which means it is not
+ *  available.
  */
-typedef const char *(*retrieve_dbg_func)(const dbg_info *dbg, unsigned *line);
+typedef src_loc_t (*retrieve_dbg_func)(dbg_info const *dbg);
 
 /**
  * Sets a debug info retriever.
@@ -175,7 +182,7 @@ FIRM_API void ir_set_type_debug_retrieve(retrieve_type_dbg_func func);
 /**
  * Retrieve the debug info.
  */
-FIRM_API const char *ir_retrieve_dbg_info(const dbg_info *dbg, unsigned *line);
+FIRM_API src_loc_t ir_retrieve_dbg_info(dbg_info const *dbg);
 
 /**
  * Retrieve type debug info

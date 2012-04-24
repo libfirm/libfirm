@@ -637,21 +637,15 @@ static void emit_pubnames(dwarf_t *env)
 
 static void dwarf_set_dbg_info(dbg_handle *h, dbg_info *dbgi)
 {
-	dwarf_t *env = (dwarf_t*) h;
-	const char *filename;
-	unsigned    lineno;
-	unsigned    column = 0;
-	unsigned    filenum;
+	dwarf_t  *const env = (dwarf_t*)h;
+	src_loc_t const loc = ir_retrieve_dbg_info(dbgi);
+	unsigned        filenum;
 
-	if (dbgi == NULL)
+	if (!loc.file)
 		return;
 
-	filename = ir_retrieve_dbg_info(dbgi, &lineno);
-	if (filename == NULL)
-		return;
-	filenum = insert_file(env, filename);
-
-	be_emit_irprintf("\t.loc %u %u %u\n", filenum, lineno, column);
+	filenum = insert_file(env, loc.file);
+	be_emit_irprintf("\t.loc %u %u %u\n", filenum, loc.line, loc.column);
 	be_emit_write_line();
 }
 
@@ -674,25 +668,10 @@ static void emit_entity_label(const ir_entity *entity)
  */
 static void emit_dbginfo(dwarf_t *env, const dbg_info *dbgi)
 {
-	const char *filename;
-	unsigned line;
-	unsigned file;
-
-	if (dbgi == NULL) {
-		emit_uleb128(0);
-		emit_uleb128(0);
-		return;
-	}
-	filename = ir_retrieve_dbg_info(dbgi, &line);
-	if (filename == NULL) {
-		emit_uleb128(0);
-		emit_uleb128(0);
-		return;
-	}
-
-	file = insert_file(env, filename);
+	src_loc_t const loc  = ir_retrieve_dbg_info(dbgi);
+	unsigned  const file = loc.file ? insert_file(env, loc.file) : 0;
 	emit_uleb128(file);
-	emit_uleb128(line);
+	emit_uleb128(loc.line);
 }
 
 static void emit_subprogram_abbrev(void)
