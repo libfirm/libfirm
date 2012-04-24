@@ -877,6 +877,12 @@ static void emit_compound_type_abbrev(void)
 	//register_attribute(DW_AT_decl_line,  DW_FORM_udata);
 	end_abbrev();
 
+	begin_abbrev(DW_TAG_class_type, DW_TAG_class_type, DW_CHILDREN_yes);
+	register_attribute(DW_AT_byte_size,  DW_FORM_udata);
+	//register_attribute(DW_AT_decl_file,  DW_FORM_udata);
+	//register_attribute(DW_AT_decl_line,  DW_FORM_udata);
+	end_abbrev();
+
 	begin_abbrev(DW_TAG_member, DW_TAG_member, DW_CHILDREN_no);
 	register_attribute(DW_AT_type,                 DW_FORM_ref4);
 	register_attribute(DW_AT_name,                 DW_FORM_string);
@@ -920,11 +926,13 @@ static void emit_compound_type(dwarf_t *env, const ir_type *type)
 	}
 
 	emit_type_label(type);
-	if (is_Union_type(type)) {
+	if (is_Struct_type(type)) {
+		emit_uleb128(DW_TAG_structure_type);
+	} else if (is_Union_type(type)) {
 		emit_uleb128(DW_TAG_union_type);
 	} else {
-		assert(is_Struct_type(type));
-		emit_uleb128(DW_TAG_structure_type);
+		assert(is_Class_type(type));
+		emit_uleb128(DW_TAG_class_type);
 	}
 	emit_uleb128(get_type_size_bytes(type));
 	for (i = 0; i < n_members; ++i) {
@@ -1021,6 +1029,7 @@ static void emit_type(dwarf_t *env, ir_type *type)
 	case tpo_primitive: emit_base_type(type);            break;
 	case tpo_pointer:   emit_pointer_type(env, type);    break;
 	case tpo_array:     emit_array_type(env, type);      break;
+	case tpo_class:
 	case tpo_struct:
 	case tpo_union:     emit_compound_type(env, type);   break;
 	case tpo_method:    emit_subroutine_type(env, type); break;
