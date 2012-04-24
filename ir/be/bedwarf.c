@@ -432,6 +432,9 @@ typedef struct dwarf_t {
 	unsigned                 last_line;
 } dwarf_t;
 
+static dwarf_source_language language;
+static const char           *comp_dir;
+
 static unsigned insert_file(dwarf_t *env, const char *filename)
 {
 	unsigned num;
@@ -1090,7 +1093,10 @@ static void emit_compile_unit_abbrev(void)
 	register_attribute(DW_AT_stmt_list, DW_FORM_data4);
 	register_attribute(DW_AT_producer,  DW_FORM_string);
 	register_attribute(DW_AT_name,      DW_FORM_string);
-	register_attribute(DW_AT_comp_dir,  DW_FORM_string);
+	if (language != 0)
+		register_attribute(DW_AT_language,  DW_FORM_data2);
+	if (comp_dir != NULL)
+		register_attribute(DW_AT_comp_dir,  DW_FORM_string);
 	end_abbrev();
 }
 
@@ -1139,7 +1145,10 @@ static void dwarf_unit_begin(dbg_handle *handle, const char *filename)
 	                   ir_get_version_minor(),
 	                   ir_get_version_revision());
 	emit_string(filename);
-	emit_string("/foo/bar/");
+	if (language != 0)
+		emit_int16(DW_LANG_C_plus_plus);
+	if (comp_dir != NULL)
+		emit_string(comp_dir);
 }
 
 static void dwarf_unit_end(dbg_handle *handle)
@@ -1201,4 +1210,14 @@ BE_REGISTER_MODULE_CONSTRUCTOR(be_init_dwarf)
 void be_init_dwarf(void)
 {
 	be_register_dbgout_module("dwarf", be_dwarf_open);
+}
+
+void be_dwarf_set_source_language(dwarf_source_language new_language)
+{
+	language = new_language;
+}
+
+void be_dwarf_set_compilation_directory(const char *new_comp_dir)
+{
+	comp_dir = new_comp_dir;
 }

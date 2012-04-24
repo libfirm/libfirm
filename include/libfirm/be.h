@@ -69,6 +69,31 @@ typedef enum asm_constraint_flags_t {
 } asm_constraint_flags_t;
 ENUM_BITSET(asm_constraint_flags_t)
 
+/* Dwarf source language codes. */
+typedef enum {
+	DW_LANG_C89 = 0x0001,
+	DW_LANG_C = 0x0002,
+	DW_LANG_Ada83 = 0x0003,
+	DW_LANG_C_plus_plus = 0x0004,
+	DW_LANG_Cobol74 = 0x0005,
+	DW_LANG_Cobol85 = 0x0006,
+	DW_LANG_Fortran77 = 0x0007,
+	DW_LANG_Fortran90 = 0x0008,
+	DW_LANG_Pascal83 = 0x0009,
+	DW_LANG_Modula2 = 0x000a,
+	DW_LANG_Java = 0x000b,
+	DW_LANG_C99 = 0x000c,
+	DW_LANG_Ada95 = 0x000d,
+	DW_LANG_Fortran95 = 0x000e,
+	DW_LANG_PLI = 0x000f,
+	DW_LANG_ObjC = 0x0010,
+	DW_LANG_ObjC_plus_plus = 0x0011,
+	DW_LANG_UPC = 0x0012,
+	DW_LANG_D = 0x0013,
+	DW_LANG_Python = 0x0014,
+	DW_LANG_Go = 0x0016,
+} dwarf_source_language;
+
 /**
  * Build a Trampoline for the closure.
  * @param block       the block where to build the trampoline
@@ -192,6 +217,17 @@ FIRM_API asm_constraint_flags_t be_parse_asm_constraints(const char *constraints
  * tests whether a string is a valid clobber in an ASM instruction
  */
 FIRM_API int be_is_valid_clobber(const char *clobber);
+
+/**
+ * Sets source language for dwarf debug information.
+ */
+FIRM_API void be_dwarf_set_source_language(dwarf_source_language language);
+
+/**
+ * Sets working directory of the compiler (or directory where the compiler
+ * searched for sources) for dwarf debug information.
+ */
+FIRM_API void be_dwarf_set_compilation_directory(const char *directory);
 
 /** @} */
 
