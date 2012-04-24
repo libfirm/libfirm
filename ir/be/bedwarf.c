@@ -228,7 +228,7 @@ static void emit_line_info(dwarf_t *env)
 
 		/* file list */
 		for (i = 0; i < ARR_LEN(env->file_list); ++i) {
-			emit_string(env->file_list[0]);
+			emit_string(env->file_list[i]);
 			emit_uleb128(1); /* directory */
 			emit_uleb128(0); /* modification time */
 			emit_uleb128(0); /* file length */
