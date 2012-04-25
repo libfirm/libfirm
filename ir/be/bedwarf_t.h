@@ -64,13 +64,6 @@ typedef enum dwarf_tag {
 	DW_TAG_shared_type            = 0x40,
 } dwarf_tag;
 
-typedef enum custom_abbrevs {
-	abbrev_void_pointer_type = 100,
-	abbrev_unnamed_formal_parameter,
-	abbrev_void_subroutine_type,
-	abbrev_bitfield_member,
-} custom_abbrevs;
-
 typedef enum dw_children {
 	DW_CHILDREN_no  = 0x00,
 	DW_CHILDREN_yes = 0x01

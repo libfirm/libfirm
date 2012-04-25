@@ -48,6 +48,18 @@
 #include "begnuas.h"
 
 /**
+ * Usually we simply use the DW_TAG_xxx numbers for our abbrev IDs, but for
+ * the cases where we need multiple ids with the same DW_TAG we define new IDs
+ * here
+ */
+typedef enum custom_abbrevs {
+	abbrev_void_pointer_type = 100,
+	abbrev_unnamed_formal_parameter,
+	abbrev_void_subroutine_type,
+	abbrev_bitfield_member,
+} custom_abbrevs;
+
+/**
  * The dwarf handle.
  */
 typedef struct dwarf_t {
