@@ -69,7 +69,7 @@ typedef enum asm_constraint_flags_t {
 } asm_constraint_flags_t;
 ENUM_BITSET(asm_constraint_flags_t)
 
-/* Dwarf source language codes. */
+/** Dwarf source language codes. */
 typedef enum {
 	DW_LANG_C89 = 0x0001,
 	DW_LANG_C = 0x0002,

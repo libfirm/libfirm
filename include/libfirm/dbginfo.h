@@ -144,10 +144,11 @@ typedef void merge_sets_func(ir_node **new_node_array, int new_num_entries, ir_n
 FIRM_API void dbg_init(merge_pair_func *dbg_info_merge_pair,
                        merge_sets_func *dbg_info_merge_sets);
 
+/** A sourcecode location */
 typedef struct src_loc_t {
-	char const *file;
-	unsigned    line;
-	unsigned    column;
+	char const *file;    /**< the name of the source (usually a file) */
+	unsigned    line;    /**< line number (starting at 1; 0 if unknown) */
+	unsigned    column;  /**< column number (starting at 1; 0 if unknown) */
 } src_loc_t;
 
 /**
