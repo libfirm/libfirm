@@ -257,7 +257,7 @@ void TEMPLATE_emit_routine(ir_graph *irg)
 	block_schedule = be_create_block_schedule(irg);
 
 	/* emit assembler prolog */
-	be_gas_emit_function_prolog(entity, 4);
+	be_gas_emit_function_prolog(entity, 4, NULL);
 
 	/* populate jump link fields with their destinations */
 	irg_block_walk_graph(irg, TEMPLATE_gen_labels, NULL, NULL);

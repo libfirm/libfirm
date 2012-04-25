@@ -65,7 +65,9 @@ static int debug_level = LEVEL_NONE;
 typedef enum custom_abbrevs {
 	abbrev_void_pointer_type = 100,
 	abbrev_unnamed_formal_parameter,
+	abbrev_formal_parameter_no_location,
 	abbrev_void_subroutine_type,
+	abbrev_void_subprogram,
 	abbrev_bitfield_member,
 } custom_abbrevs;
 
@@ -74,7 +76,6 @@ typedef enum custom_abbrevs {
  */
 typedef struct dwarf_t {
 	const ir_entity         *cur_ent;     /**< current method entity */
-	const be_stack_layout_t *layout;      /**< current stack layout */
 	unsigned                 next_type_nr; /**< next type number */
 	pmap                    *file_map;    /**< a map from file names to number in file list */
 	const char             **file_list;
@@ -101,6 +102,7 @@ static unsigned insert_file(const char *filename)
 	ARR_APP1(const char*, env.file_list, filename);
 	num = (unsigned)ARR_LEN(env.file_list);
 	pmap_insert(env.file_map, filename, INT_TO_PTR(num));
+
 	/* TODO: quote chars in string */
 	be_emit_irprintf("\t.file %u \"%s\"\n", num, filename);
 	return num;
@@ -140,8 +142,25 @@ static unsigned get_uleb128_size(unsigned value)
 	return size;
 }
 
+static void emit_sleb128(long value)
+{
+	be_emit_irprintf("\t.sleb128 %ld\n", value);
+	be_emit_write_line();
+}
+
+static unsigned get_sleb128_size(long value)
+{
+	unsigned size = 0;
+	do {
+		value >>= 7;
+		size += 1;
+	} while (value != 0 && value != -1);
+	return size;
+}
+
 static void emit_string(const char *string)
 {
+	/* TODO: quote special chars */
 	be_emit_irprintf("\t.asciz \"%s\"\n", string);
 	be_emit_write_line();
 }
@@ -307,6 +326,33 @@ void be_dwarf_location(dbg_info *dbgi)
 	be_emit_write_line();
 }
 
+void be_dwarf_callframe_register(const arch_register_t *reg)
+{
+	if (debug_level < LEVEL_FRAMEINFO)
+		return;
+	be_emit_cstring("\t.cfi_def_cfa_register ");
+	be_emit_irprintf("%d\n", reg->dwarf_number);
+	be_emit_write_line();
+}
+
+void be_dwarf_callframe_offset(int offset)
+{
+	if (debug_level < LEVEL_FRAMEINFO)
+		return;
+	be_emit_cstring("\t.cfi_def_cfa_offset ");
+	be_emit_irprintf("%d\n", offset);
+	be_emit_write_line();
+}
+
+void be_dwarf_callframe_spilloffset(const arch_register_t *reg, int offset)
+{
+	if (debug_level < LEVEL_FRAMEINFO)
+		return;
+	be_emit_cstring("\t.cfi_offset ");
+	be_emit_irprintf("%d, %d\n", reg->dwarf_number, offset);
+	be_emit_write_line();
+}
+
 static bool is_extern_entity(const ir_entity *entity)
 {
 	ir_visited_t visibility = get_entity_visibility(entity);
@@ -337,38 +383,147 @@ static void emit_dbginfo(const dbg_info *dbgi)
 	emit_uleb128(loc.column);
 }
 
+static void emit_type_address(const ir_type *type)
+{
+	be_emit_irprintf("\t.long %sT%ld - %sinfo_begin\n",
+	                 be_gas_get_private_prefix(),
+	                 get_type_nr(type), be_gas_get_private_prefix());
+	be_emit_write_line();
+}
+
 static void emit_subprogram_abbrev(void)
 {
-	begin_abbrev(DW_TAG_subprogram, DW_TAG_subprogram, DW_CHILDREN_no);
+	begin_abbrev(DW_TAG_subprogram, DW_TAG_subprogram, DW_CHILDREN_yes);
 	register_attribute(DW_AT_name,      DW_FORM_string);
 	register_dbginfo_attributes();
+	register_attribute(DW_AT_type,       DW_FORM_ref4);
+	register_attribute(DW_AT_external,   DW_FORM_flag);
+	register_attribute(DW_AT_low_pc,     DW_FORM_addr);
+	register_attribute(DW_AT_high_pc,    DW_FORM_addr);
 	//register_attribute(DW_AT_prototyped, DW_FORM_flag);
-	//register_attribute(DW_AT_type,       DW_FORM_ref4);
-	register_attribute(DW_AT_external,  DW_FORM_flag);
-	register_attribute(DW_AT_low_pc,    DW_FORM_addr);
-	register_attribute(DW_AT_high_pc,   DW_FORM_addr);
-	//register_attribute(DW_AT_frame_base, DW_FORM_block1);
+	if (debug_level >= LEVEL_FRAMEINFO)
+		register_attribute(DW_AT_frame_base, DW_FORM_block1);
+	end_abbrev();
+
+	begin_abbrev(abbrev_void_subprogram, DW_TAG_subprogram, DW_CHILDREN_yes);
+	register_attribute(DW_AT_name,       DW_FORM_string);
+	register_dbginfo_attributes();
+	register_attribute(DW_AT_external,   DW_FORM_flag);
+	register_attribute(DW_AT_low_pc,     DW_FORM_addr);
+	register_attribute(DW_AT_high_pc,    DW_FORM_addr);
+	//register_attribute(DW_AT_prototyped, DW_FORM_flag);
+	if (debug_level >= LEVEL_FRAMEINFO)
+		register_attribute(DW_AT_frame_base, DW_FORM_block1);
+	end_abbrev();
+
+	begin_abbrev(DW_TAG_formal_parameter, DW_TAG_formal_parameter,
+	             DW_CHILDREN_no);
+	register_attribute(DW_AT_name,      DW_FORM_string);
+	register_dbginfo_attributes();
+	register_attribute(DW_AT_type,      DW_FORM_ref4);
+	register_attribute(DW_AT_location,  DW_FORM_block1);
+	end_abbrev();
+
+	begin_abbrev(abbrev_formal_parameter_no_location, DW_TAG_formal_parameter,
+	             DW_CHILDREN_no);
+	register_attribute(DW_AT_name,      DW_FORM_string);
+	register_dbginfo_attributes();
+	register_attribute(DW_AT_type,      DW_FORM_ref4);
 	end_abbrev();
 }
 
-void be_dwarf_method_begin(const ir_entity *entity)
+static void emit_type(ir_type *type);
+
+static void emit_stack_location(long offset)
+{
+	unsigned size = 1 + get_sleb128_size(offset);
+	emit_int8(size);
+	emit_int8(DW_OP_fbreg);
+	emit_sleb128(offset);
+}
+
+static void emit_function_parameters(const ir_entity *entity,
+                                     const parameter_dbg_info_t *infos)
+{
+	ir_type  *type     = get_entity_type(entity);
+	size_t    n_params = get_method_n_params(type);
+	dbg_info *dbgi     = get_entity_dbg_info(entity);
+	size_t    i;
+	for (i = 0; i < n_params; ++i) {
+		ir_type *param_type = get_method_param_type(type, i);
+
+		if (infos != NULL && infos[i].entity != NULL) {
+			const ir_entity *entity = infos[i].entity;
+			long             offset = get_entity_offset(entity);
+			emit_uleb128(DW_TAG_formal_parameter);
+			emit_string_printf("arg%u", (unsigned)i);
+			emit_dbginfo(dbgi);
+			emit_type_address(param_type);
+			emit_stack_location(offset);
+		} else {
+			emit_uleb128(abbrev_formal_parameter_no_location);
+			emit_string_printf("arg%u", (unsigned)i);
+			emit_dbginfo(dbgi);
+			emit_type_address(param_type);
+		}
+	}
+}
+
+void be_dwarf_method_before(const ir_entity *entity,
+                            const parameter_dbg_info_t *parameter_infos)
 {
 	if (debug_level < LEVEL_BASIC)
 		return;
+	{
+	ir_type *type     = get_entity_type(entity);
+	size_t   n_ress   = get_method_n_ress(type);
+	size_t   n_params = get_method_n_params(type);
+	size_t   i;
+
+	(void)parameter_infos;
+
 	be_gas_emit_switch_section(GAS_SECTION_DEBUG_INFO);
 
+	if (n_ress > 0) {
+		ir_type *res = get_method_res_type(type, 0);
+		emit_type(res);
+	}
+	for (i = 0; i < n_params; ++i) {
+		ir_type *param_type = get_method_param_type(type, i);
+		emit_type(param_type);
+	}
+
 	emit_entity_label(entity);
-	emit_uleb128(DW_TAG_subprogram);
+	emit_uleb128(n_ress == 0 ? abbrev_void_subprogram : DW_TAG_subprogram);
 	emit_string(get_entity_ld_name(entity));
 	emit_dbginfo(get_entity_dbg_info(entity));
+	if (n_ress > 0) {
+		ir_type *res = get_method_res_type(type, 0);
+		emit_type_address(res);
+	}
 	emit_int8(is_extern_entity(entity));
 	emit_ref(entity);
 	be_emit_irprintf("\t.long %smethod_end_%s\n", be_gas_get_private_prefix(),
 	                 get_entity_ld_name(entity));
+	/* frame_base prog */
+	emit_int8(1);
+	emit_int8(DW_OP_call_frame_cfa);
+
+	emit_function_parameters(entity, parameter_infos);
+	emit_int8(0);
 
 	ARR_APP1(const ir_entity*, env.pubnames_list, entity);
 
 	env.cur_ent = entity;
+	}
+}
+
+void be_dwarf_method_begin(void)
+{
+	if (debug_level < LEVEL_FRAMEINFO)
+		return;
+	be_emit_cstring("\t.cfi_startproc\n");
+	be_emit_write_line();
 }
 
 void be_dwarf_method_end(void)
@@ -378,9 +533,12 @@ void be_dwarf_method_end(void)
 	const ir_entity *entity = env.cur_ent;
 	be_emit_irprintf("%smethod_end_%s:\n", be_gas_get_private_prefix(),
 	                 get_entity_ld_name(entity));
-}
 
-static void emit_type(ir_type *type);
+	if (debug_level >= LEVEL_FRAMEINFO) {
+		be_emit_cstring("\t.cfi_endproc\n");
+		be_emit_write_line();
+	}
+}
 
 static void emit_base_type_abbrev(void)
 {
@@ -394,14 +552,6 @@ static void emit_base_type_abbrev(void)
 static void emit_type_label(const ir_type *type)
 {
 	be_emit_irprintf("%sT%ld:\n", be_gas_get_private_prefix(), get_type_nr(type));
-	be_emit_write_line();
-}
-
-static void emit_type_address(const ir_type *type)
-{
-	be_emit_irprintf("\t.long %sT%ld - %sinfo_begin\n",
-	                 be_gas_get_private_prefix(),
-	                 get_type_nr(type), be_gas_get_private_prefix());
 	be_emit_write_line();
 }
 
@@ -694,6 +844,9 @@ void be_dwarf_variable(const ir_entity *entity)
 		return;
 	if (get_entity_ld_name(entity)[0] == '\0')
 		return;
+	/* skip external variables */
+	if (get_entity_visibility(entity) == ir_visibility_external)
+		return;
 
 	be_gas_emit_switch_section(GAS_SECTION_DEBUG_INFO);
 
@@ -756,9 +909,9 @@ void be_dwarf_unit_begin(const char *filename)
 	/* length of compilation unit info */
 	emit_size("compile_unit_begin", "compile_unit_end");
 	emit_label("compile_unit_begin");
-	emit_int16(2);   /* dwarf version */
+	emit_int16(3);   /* dwarf version */
 	emit_address("abbrev_begin");
-	emit_int8(4);    /* pointer size */
+	emit_int8(4);    /* pointer size, TODO: query backend */
 
 	/* compile_unit die */
 	emit_uleb128(DW_TAG_compile_unit);
@@ -771,6 +924,13 @@ void be_dwarf_unit_begin(const char *filename)
 		emit_int16(language);
 	if (comp_dir != NULL)
 		emit_string(comp_dir);
+
+	/* tell gas to emit cfi in debug_frame
+	 * TODO: if we produce exception handling code then this should be
+	 *       .eh_frame (I also wonder if bad things happen if simply always
+	 *       use eh_frame) */
+	be_emit_cstring("\t.cfi_sections .debug_frame\n");
+	be_emit_write_line();
 }
 
 void be_dwarf_unit_end(void)

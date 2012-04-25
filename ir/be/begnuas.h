@@ -29,6 +29,7 @@
 #include <stdbool.h>
 #include "be_types.h"
 #include "beemitter.h"
+#include "bedwarf.h"
 
 typedef enum {
 	GAS_SECTION_TEXT,            /**< text section - program code */
@@ -44,7 +45,8 @@ typedef enum {
 	GAS_SECTION_DEBUG_ABBREV,    /**< dwarf debug abbrev */
 	GAS_SECTION_DEBUG_LINE,      /**< dwarf debug line */
 	GAS_SECTION_DEBUG_PUBNAMES,  /**< dwarf pub names */
-	GAS_SECTION_LAST = GAS_SECTION_DEBUG_PUBNAMES,
+	GAS_SECTION_DEBUG_FRAME,     /**< dwarf callframe infos */
+	GAS_SECTION_LAST = GAS_SECTION_DEBUG_FRAME,
 	GAS_SECTION_TYPE_MASK    = 0xFF,
 
 	GAS_SECTION_FLAG_TLS     = 1 << 8,  /**< thread local flag */
@@ -86,7 +88,8 @@ void be_gas_emit_switch_section(be_gas_section_t section);
  * emit assembler instructions necessary before starting function code
  */
 void be_gas_emit_function_prolog(const ir_entity *entity,
-                                 unsigned po2alignment);
+                                 unsigned po2alignment,
+                                 const parameter_dbg_info_t *paramter_infos);
 
 void be_gas_emit_function_epilog(const ir_entity *entity);
 

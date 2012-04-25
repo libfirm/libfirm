@@ -1695,7 +1695,6 @@ static void create_stacklayout(ir_graph *irg)
 	layout->frame_type     = get_irg_frame_type(irg);
 	layout->between_type   = arm_get_between_type();
 	layout->arg_type       = arg_type;
-	layout->param_map      = NULL; /* TODO */
 	layout->initial_offset = 0;
 	layout->initial_bias   = 0;
 	layout->sp_relative    = true;

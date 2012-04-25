@@ -313,13 +313,11 @@ static void be_abi_call_free(be_abi_call_t *call)
  * @param args      the stack argument layout type
  * @param between   the between layout type
  * @param locals    the method frame type
- * @param param_map an array mapping method argument positions to the stack argument type
  *
  * @return the initialized stack layout
  */
 static be_stack_layout_t *stack_frame_init(be_stack_layout_t *frame, ir_type *args,
-                                           ir_type *between, ir_type *locals,
-                                           ir_entity *param_map[])
+                                           ir_type *between, ir_type *locals)
 {
 	frame->arg_type       = args;
 	frame->between_type   = between;
@@ -327,7 +325,6 @@ static be_stack_layout_t *stack_frame_init(be_stack_layout_t *frame, ir_type *ar
 	frame->initial_offset = 0;
 	frame->initial_bias   = 0;
 	frame->order[1]       = between;
-	frame->param_map      = param_map;
 
 	/* typical decreasing stack: locals have the
 	 * lowest addresses, arguments the highest */
@@ -1107,13 +1104,11 @@ static void process_calls(ir_graph *irg)
  *
  * @param call          the current call ABI
  * @param method_type   the method type
- * @param param_map     an array mapping method arguments to the stack layout
- *                      type
  *
  * @return the stack argument layout type
  */
 static ir_type *compute_arg_type(ir_graph *irg, be_abi_call_t *call,
-								 ir_type *method_type, ir_entity ***param_map)
+								 ir_type *method_type)
 {
 	struct obstack *obst = be_get_be_obst(irg);
 	ir_type   *frame_type      = get_irg_frame_type(irg);
@@ -1125,9 +1120,7 @@ static ir_type *compute_arg_type(ir_graph *irg, be_abi_call_t *call,
 
 	ir_type *res;
 	size_t i;
-	ir_entity **map;
-
-	*param_map = map = OALLOCNZ(obst, ir_entity*, n_params);
+	ir_entity **map = OALLOCNZ(obst, ir_entity*, n_params);
 	res = new_type_struct(new_id_from_chars("arg_type", 8));
 
 	/* collect existing entities for value_param_types */
@@ -1430,7 +1423,6 @@ static void modify_irg(ir_graph *irg)
 	const ir_edge_t *edge;
 	ir_type *arg_type, *bet_type;
 	lower_frame_sels_env_t ctx;
-	ir_entity **param_map;
 
 	DBG((dbg, LEVEL_1, "introducing abi on %+F\n", irg));
 
@@ -1438,7 +1430,7 @@ static void modify_irg(ir_graph *irg)
 
 	irp_reserve_resources(irp, IRP_RESOURCE_ENTITY_LINK);
 
-	arg_type = compute_arg_type(irg, call, method_type, &param_map);
+	arg_type = compute_arg_type(irg, call, method_type);
 
 	/* Convert the Sel nodes in the irg to frame addr nodes: */
 	ctx.frame            = get_irg_frame(irg);
@@ -1482,7 +1474,7 @@ static void modify_irg(ir_graph *irg)
 	stack_layout->sp_relative = call->flags.bits.try_omit_fp;
 	bet_type = call->cb->get_between_type(irg);
 	stack_frame_init(stack_layout, arg_type, bet_type,
-	                 get_irg_frame_type(irg), param_map);
+	                 get_irg_frame_type(irg));
 
 	/* Count the register params and add them to the number of Projs for the RegParams node */
 	for (i = 0; i < n_params; ++i) {

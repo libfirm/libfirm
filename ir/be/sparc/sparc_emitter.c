@@ -1330,7 +1330,7 @@ static void sparc_emit_block(ir_node *block, ir_node *prev)
 static void sparc_emit_func_prolog(ir_graph *irg)
 {
 	ir_entity *entity = get_irg_entity(irg);
-	be_gas_emit_function_prolog(entity, 4);
+	be_gas_emit_function_prolog(entity, 4, NULL);
 }
 
 /**

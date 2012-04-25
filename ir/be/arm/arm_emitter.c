@@ -955,7 +955,7 @@ void arm_gen_routine(ir_graph *irg)
 	/* create the block schedule */
 	blk_sched = be_create_block_schedule(irg);
 
-	be_gas_emit_function_prolog(entity, 4);
+	be_gas_emit_function_prolog(entity, 4, NULL);
 
 	irg_block_walk_graph(irg, arm_gen_labels, NULL, NULL);
 

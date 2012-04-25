@@ -579,7 +579,7 @@ void amd64_gen_routine(ir_graph *irg)
 
 	blk_sched = be_create_block_schedule(irg);
 
-	be_gas_emit_function_prolog(entity, 4);
+	be_gas_emit_function_prolog(entity, 4, NULL);
 
 	irg_block_walk_graph(irg, amd64_gen_labels, NULL, NULL);
 

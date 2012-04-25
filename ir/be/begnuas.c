@@ -89,6 +89,7 @@ static void emit_section_macho(be_gas_section_t section)
 		case GAS_SECTION_DEBUG_ABBREV:    name = "section __DWARF,__debug_abbrev,regular,debug"; break;
 		case GAS_SECTION_DEBUG_LINE:      name = "section __DWARF,__debug_line,regular,debug"; break;
 		case GAS_SECTION_DEBUG_PUBNAMES:  name = "section __DWARF,__debug_pubnames,regular,debug"; break;
+		case GAS_SECTION_DEBUG_FRAME:     name = "section __DWARF,__debug_frame,regular,debug"; break;
 		default: panic("unsupported scetion type 0x%X", section);
 		}
 		be_emit_irprintf("\t.%s\n", name);
@@ -127,6 +128,7 @@ static void emit_section_sparc(be_gas_section_t section, const ir_entity *entity
 		"debug_abbrev",
 		"debug_line",
 		"debug_pubnames"
+		"debug_frame",
 	};
 
 	if (current_section == section && !(section & GAS_SECTION_FLAG_COMDAT))
@@ -193,6 +195,7 @@ static void emit_section(be_gas_section_t section, const ir_entity *entity)
 		{ "debug_abbrev",   "progbits", ""   },
 		{ "debug_line",     "progbits", ""   },
 		{ "debug_pubnames", "progbits", ""   },
+		{ "debug_frame",    "progbits", ""   },
 	};
 
 	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
@@ -528,18 +531,17 @@ static void emit_visibility(const ir_entity *entity)
 	}
 }
 
-void be_gas_emit_function_prolog(const ir_entity *entity, unsigned po2alignment)
+void be_gas_emit_function_prolog(const ir_entity *entity, unsigned po2alignment,                                 const parameter_dbg_info_t *parameter_infos)
 {
 	be_gas_section_t section;
 
-	be_dwarf_method_begin(entity);
+	be_dwarf_method_before(entity, parameter_infos);
 
 	section = determine_section(NULL, entity);
 	emit_section(section, entity);
 
 	/* write the begin line (makes the life easier for scripts parsing the
 	 * assembler) */
-	be_emit_write_line();
 	be_emit_cstring("# -- Begin  ");
 	be_gas_emit_entity(entity);
 	be_emit_char('\n');
@@ -585,10 +587,14 @@ void be_gas_emit_function_prolog(const ir_entity *entity, unsigned po2alignment)
 	be_gas_emit_entity(entity);
 	be_emit_cstring(":\n");
 	be_emit_write_line();
+
+	be_dwarf_method_begin();
 }
 
 void be_gas_emit_function_epilog(const ir_entity *entity)
 {
+	be_dwarf_method_end();
+
 	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_ELF) {
 		be_emit_cstring("\t.size\t");
 		be_gas_emit_entity(entity);
@@ -602,8 +608,6 @@ void be_gas_emit_function_epilog(const ir_entity *entity)
 	be_gas_emit_entity(entity);
 	be_emit_char('\n');
 	be_emit_write_line();
-
-	be_dwarf_method_end();
 
 	be_emit_char('\n');
 	be_emit_write_line();
