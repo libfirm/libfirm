@@ -330,7 +330,7 @@ static void emit_subprogram_abbrev(void)
 }
 
 /**
- * dump the drwarf for a method begin
+ * dump the dwarf for a method begin
  */
 static void dwarf_method_begin(dbg_handle *handle, const ir_entity *entity)
 {
@@ -353,7 +353,7 @@ static void dwarf_method_begin(dbg_handle *handle, const ir_entity *entity)
 }
 
 /**
- * dump the drwarf for a method end
+ * dump the dwarf for a method end
  */
 static void dwarf_method_end(dbg_handle *handle)
 {
@@ -781,7 +781,7 @@ static void dwarf_unit_end(dbg_handle *handle)
 }
 
 /**
- * Close the drwarf handler.
+ * Close the dwarf handler.
  */
 static void dwarf_close(dbg_handle *handle)
 {
@@ -793,7 +793,7 @@ static void dwarf_close(dbg_handle *handle)
 	free(h);
 }
 
-/** The drwarf operations. */
+/** The dwarf operations. */
 static const debug_ops dwarf_ops = {
 	dwarf_close,
 	dwarf_unit_begin,
@@ -805,7 +805,7 @@ static const debug_ops dwarf_ops = {
 	dwarf_set_dbg_info
 };
 
-/* Opens a drwarf handler */
+/* Opens a dwarf handler */
 static dbg_handle *be_dwarf_open(void)
 {
 	dwarf_t *h = XMALLOCZ(dwarf_t);
