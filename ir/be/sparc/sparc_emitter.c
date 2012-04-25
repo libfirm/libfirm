@@ -46,7 +46,7 @@
 #include "beblocksched.h"
 #include "beirg.h"
 #include "begnuas.h"
-#include "be_dbgout.h"
+#include "bedwarf.h"
 #include "benode.h"
 #include "bestack.h"
 #include "bepeephole.h"
@@ -1247,7 +1247,7 @@ static void sparc_emit_node(const ir_node *node)
 
 	if (op->ops.generic) {
 		emit_func func = (emit_func) op->ops.generic;
-		be_dbg_location(get_irn_dbg_info(node));
+		be_dwarf_location(get_irn_dbg_info(node));
 		(*func) (node);
 	} else {
 		panic("No emit handler for node %+F (graph %+F)\n", node,

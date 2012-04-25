@@ -38,7 +38,6 @@
 #include "besched.h"
 #include "begnuas.h"
 #include "beblocksched.h"
-#include "be_dbgout.h"
 
 #include "amd64_emitter.h"
 #include "gen_amd64_emitter.h"

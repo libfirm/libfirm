@@ -19,39 +19,37 @@
 
 /**
  * @file
- * @brief   Debug output support.
- * @author  Michael Beck
- * @date    11.9.2006
+ * @brief   Dwarf debug output support.
+ * @author  Matthias Braun
  */
-#ifndef FIRM_BE_BE_DBGOUT_H
-#define FIRM_BE_BE_DBGOUT_H
+#ifndef FIRM_BE_BEDWARF_H
+#define FIRM_BE_BEDWARF_H
 
 #include "beabi.h"
 
-/* initialize and open debug handle */
-void be_dbg_open(void);
+/** initialize and open debug handle */
+void be_dwarf_open(void);
 
 /** close a debug handler. */
-void be_dbg_close(void);
+void be_dwarf_close(void);
 
 /** start a compilation unit */
-void be_dbg_unit_begin(const char *filename);
+void be_dwarf_unit_begin(const char *filename);
 
 /** end compilation unit */
-void be_dbg_unit_end(void);
+void be_dwarf_unit_end(void);
 
 /** debug for a method begin */
-void be_dbg_method_begin(const ir_entity *ent);
+void be_dwarf_method_begin(const ir_entity *ent);
 
 /** debug for a method end */
-void be_dbg_method_end(void);
-
-/** dump types */
-void be_dbg_types(void);
+void be_dwarf_method_end(void);
 
 /** dump a variable in the global type */
-void be_dbg_variable(const ir_entity *ent);
+void be_dwarf_variable(const ir_entity *ent);
 
-void be_dbg_location(dbg_info *dbgi);
+/** Set "location" in the sourcefile corresponding to the following
+ * assembly instructions */
+void be_dwarf_location(dbg_info *dbgi);
 
 #endif

@@ -42,7 +42,7 @@
 
 #include "be_t.h"
 #include "beemitter.h"
-#include "be_dbgout.h"
+#include "bedwarf.h"
 
 /** by default, we generate assembler code for the Linux gas */
 object_file_format_t  be_gas_object_file_format = OBJECT_FILE_FORMAT_ELF;
@@ -532,7 +532,7 @@ void be_gas_emit_function_prolog(const ir_entity *entity, unsigned po2alignment)
 {
 	be_gas_section_t section;
 
-	be_dbg_method_begin(entity);
+	be_dwarf_method_begin(entity);
 
 	section = determine_section(NULL, entity);
 	emit_section(section, entity);
@@ -603,7 +603,7 @@ void be_gas_emit_function_epilog(const ir_entity *entity)
 	be_emit_char('\n');
 	be_emit_write_line();
 
-	be_dbg_method_end();
+	be_dwarf_method_end();
 
 	be_emit_char('\n');
 	be_emit_write_line();
@@ -1600,7 +1600,7 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 		return;
 	}
 
-	be_dbg_variable(entity);
+	be_dwarf_variable(entity);
 
 	if (section == GAS_SECTION_BSS) {
 		switch (visibility) {
@@ -1838,9 +1838,8 @@ static void emit_global_asms(void)
 
 void be_gas_begin_compilation_unit(const be_main_env_t *env)
 {
-	be_dbg_open();
-	be_dbg_unit_begin(env->cup_name);
-	be_dbg_types();
+	be_dwarf_open();
+	be_dwarf_unit_begin(env->cup_name);
 
 	emit_global_asms();
 }
@@ -1849,6 +1848,6 @@ void be_gas_end_compilation_unit(const be_main_env_t *env)
 {
 	emit_global_decls(env);
 
-	be_dbg_unit_end();
-	be_dbg_close();
+	be_dwarf_unit_end();
+	be_dwarf_close();
 }

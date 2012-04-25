@@ -40,12 +40,22 @@
 #include "util.h"
 #include "obst.h"
 #include "array_t.h"
-#include "be_dbgout_t.h"
+#include "irtools.h"
+#include "lc_opts.h"
+#include "lc_opts_enum.h"
 #include "beabi.h"
 #include "bemodule.h"
 #include "beemitter.h"
 #include "dbginfo.h"
 #include "begnuas.h"
+
+enum {
+	LEVEL_NONE,
+	LEVEL_BASIC,
+	LEVEL_LOCATIONS,
+	LEVEL_FRAMEINFO
+};
+static int debug_level = LEVEL_NONE;
 
 /**
  * Usually we simply use the DW_TAG_xxx numbers for our abbrev IDs, but for
@@ -63,7 +73,6 @@ typedef enum custom_abbrevs {
  * The dwarf handle.
  */
 typedef struct dwarf_t {
-	dbg_handle               base;         /**< the base class */
 	const ir_entity         *cur_ent;     /**< current method entity */
 	const be_stack_layout_t *layout;      /**< current stack layout */
 	unsigned                 next_type_nr; /**< next type number */
@@ -77,19 +86,21 @@ typedef struct dwarf_t {
 	unsigned                 last_line;
 } dwarf_t;
 
+static dwarf_t env;
+
 static dwarf_source_language language;
 static const char           *comp_dir;
 
-static unsigned insert_file(dwarf_t *env, const char *filename)
+static unsigned insert_file(const char *filename)
 {
 	unsigned num;
-	void    *entry = pmap_get(env->file_map, filename);
+	void    *entry = pmap_get(env.file_map, filename);
 	if (entry != NULL) {
 		return PTR_TO_INT(entry);
 	}
-	ARR_APP1(const char*, env->file_list, filename);
-	num = (unsigned)ARR_LEN(env->file_list);
-	pmap_insert(env->file_map, filename, INT_TO_PTR(num));
+	ARR_APP1(const char*, env.file_list, filename);
+	num = (unsigned)ARR_LEN(env.file_list);
+	pmap_insert(env.file_map, filename, INT_TO_PTR(num));
 	/* TODO: quote chars in string */
 	be_emit_irprintf("\t.file %u \"%s\"\n", num, filename);
 	return num;
@@ -203,7 +214,7 @@ static void end_abbrev(void)
 	emit_uleb128(0);
 }
 
-static void emit_line_info(dwarf_t *env)
+static void emit_line_info(void)
 {
 	be_gas_emit_switch_section(GAS_SECTION_DEBUG_LINE);
 
@@ -239,8 +250,8 @@ static void emit_line_info(dwarf_t *env)
 		emit_int8(0);
 
 		/* file list */
-		for (i = 0; i < ARR_LEN(env->file_list); ++i) {
-			emit_string(env->file_list[i]);
+		for (i = 0; i < ARR_LEN(env.file_list); ++i) {
+			emit_string(env.file_list[i]);
 			emit_uleb128(1); /* directory */
 			emit_uleb128(0); /* modification time */
 			emit_uleb128(0); /* file length */
@@ -255,7 +266,7 @@ static void emit_line_info(dwarf_t *env)
 	}
 }
 
-static void emit_pubnames(dwarf_t *env)
+static void emit_pubnames(void)
 {
 	size_t i;
 
@@ -268,8 +279,8 @@ static void emit_pubnames(dwarf_t *env)
 	emit_size("info_section_begin", "info_begin");
 	emit_size("compile_unit_begin", "compile_unit_end");
 
-	for (i = 0; i < ARR_LEN(env->pubnames_list); ++i) {
-		const ir_entity *entity = env->pubnames_list[i];
+	for (i = 0; i < ARR_LEN(env.pubnames_list); ++i) {
+		const ir_entity *entity = env.pubnames_list[i];
 		be_emit_irprintf("\t.long %sE%ld - %sinfo_begin\n",
 		                 be_gas_get_private_prefix(),
 		                 get_entity_nr(entity), be_gas_get_private_prefix());
@@ -280,16 +291,18 @@ static void emit_pubnames(dwarf_t *env)
 	emit_label("pubnames_end");
 }
 
-static void dwarf_location(dbg_handle *h, dbg_info *dbgi)
+void be_dwarf_location(dbg_info *dbgi)
 {
-	dwarf_t  *const env = (dwarf_t*)h;
-	src_loc_t const loc = ir_retrieve_dbg_info(dbgi);
-	unsigned        filenum;
+	src_loc_t loc;
+	unsigned  filenum;
 
+	if (debug_level < LEVEL_LOCATIONS)
+		return;
+	loc = ir_retrieve_dbg_info(dbgi);
 	if (!loc.file)
 		return;
 
-	filenum = insert_file(env, loc.file);
+	filenum = insert_file(loc.file);
 	be_emit_irprintf("\t.loc %u %u %u\n", filenum, loc.line, loc.column);
 	be_emit_write_line();
 }
@@ -315,13 +328,10 @@ static void register_dbginfo_attributes(void)
 	register_attribute(DW_AT_decl_column, DW_FORM_udata);
 }
 
-/**
- * Emit values for DW_AT_decl_file, DW_AT_decl_line and DW_AT_decl_column.
- */
-static void emit_dbginfo(dwarf_t *env, const dbg_info *dbgi)
+static void emit_dbginfo(const dbg_info *dbgi)
 {
 	src_loc_t const loc  = ir_retrieve_dbg_info(dbgi);
-	unsigned  const file = loc.file ? insert_file(env, loc.file) : 0;
+	unsigned  const file = loc.file ? insert_file(loc.file) : 0;
 	emit_uleb128(file);
 	emit_uleb128(loc.line);
 	emit_uleb128(loc.column);
@@ -341,47 +351,36 @@ static void emit_subprogram_abbrev(void)
 	end_abbrev();
 }
 
-/**
- * dump the dwarf for a method begin
- */
-static void dwarf_method_begin(dbg_handle *handle, const ir_entity *entity)
+void be_dwarf_method_begin(const ir_entity *entity)
 {
-	dwarf_t *env = (dwarf_t*)handle;
-
+	if (debug_level < LEVEL_BASIC)
+		return;
 	be_gas_emit_switch_section(GAS_SECTION_DEBUG_INFO);
 
 	emit_entity_label(entity);
 	emit_uleb128(DW_TAG_subprogram);
 	emit_string(get_entity_ld_name(entity));
-	emit_dbginfo(env, get_entity_dbg_info(entity));
+	emit_dbginfo(get_entity_dbg_info(entity));
 	emit_int8(is_extern_entity(entity));
 	emit_ref(entity);
 	be_emit_irprintf("\t.long %smethod_end_%s\n", be_gas_get_private_prefix(),
 	                 get_entity_ld_name(entity));
 
-	ARR_APP1(const ir_entity*, env->pubnames_list, entity);
+	ARR_APP1(const ir_entity*, env.pubnames_list, entity);
 
-	env->cur_ent = entity;
+	env.cur_ent = entity;
 }
 
-/**
- * dump the dwarf for a method end
- */
-static void dwarf_method_end(dbg_handle *handle)
+void be_dwarf_method_end(void)
 {
-	dwarf_t *env = (dwarf_t*)handle;
-	const ir_entity *entity = env->cur_ent;
-
+	if (debug_level < LEVEL_BASIC)
+		return;
+	const ir_entity *entity = env.cur_ent;
 	be_emit_irprintf("%smethod_end_%s:\n", be_gas_get_private_prefix(),
 	                 get_entity_ld_name(entity));
 }
 
-static void dwarf_types(dbg_handle *handle)
-{
-	(void)handle;
-}
-
-static void emit_type(dwarf_t *env, ir_type *type);
+static void emit_type(ir_type *type);
 
 static void emit_base_type_abbrev(void)
 {
@@ -445,14 +444,14 @@ static void emit_pointer_type_abbrev(void)
 	end_abbrev();
 }
 
-static void emit_pointer_type(dwarf_t *env, const ir_type *type)
+static void emit_pointer_type(const ir_type *type)
 {
 	ir_type *points_to = get_pointer_points_to_type(type);
 	unsigned size      = get_type_size_bytes(type);
 	assert(size < 256);
 
 	if (!is_Primitive_type(points_to) || get_type_mode(points_to) != mode_ANY) {
-		emit_type(env, points_to);
+		emit_type(points_to);
 
 		emit_type_label(type);
 		emit_uleb128(DW_TAG_pointer_type);
@@ -475,14 +474,14 @@ static void emit_array_type_abbrev(void)
 	end_abbrev();
 }
 
-static void emit_array_type(dwarf_t *env, const ir_type *type)
+static void emit_array_type(const ir_type *type)
 {
 	ir_type *element_type = get_array_element_type(type);
 
 	if (get_array_n_dimensions(type) != 1)
 		panic("dwarf: multidimensional arrays no supported yet");
 
-	emit_type(env, element_type);
+	emit_type(element_type);
 
 	emit_type_label(type);
 	emit_uleb128(DW_TAG_array_type);
@@ -538,7 +537,7 @@ static void emit_op_plus_uconst(unsigned value)
 	emit_uleb128(value);
 }
 
-static void emit_compound_type(dwarf_t *env, const ir_type *type)
+static void emit_compound_type(const ir_type *type)
 {
 	size_t i;
 	size_t n_members = get_compound_n_members(type);
@@ -551,7 +550,7 @@ static void emit_compound_type(dwarf_t *env, const ir_type *type)
 			if (base != NULL)
 				member_type = base;
 		}
-		emit_type(env, member_type);
+		emit_type(member_type);
 	}
 
 	emit_type_label(type);
@@ -590,7 +589,7 @@ static void emit_compound_type(dwarf_t *env, const ir_type *type)
 
 		emit_type_address(member_type);
 		emit_string(get_entity_name(member));
-		emit_dbginfo(env, get_entity_dbg_info(member));
+		emit_dbginfo(get_entity_dbg_info(member));
 		assert(offset >= 0);
 		emit_int8(1 + get_uleb128_size(offset));
 		emit_op_plus_uconst(offset);
@@ -618,18 +617,18 @@ static void emit_subroutine_type_abbrev(void)
 	end_abbrev();
 }
 
-static void emit_subroutine_type(dwarf_t *env, const ir_type *type)
+static void emit_subroutine_type(const ir_type *type)
 {
 	size_t n_params = get_method_n_params(type);
 	size_t n_ress   = get_method_n_ress(type);
 	size_t i;
 	for (i = 0; i < n_params; ++i) {
 		ir_type *param_type = get_method_param_type(type, i);
-		emit_type(env, param_type);
+		emit_type(param_type);
 	}
 	for (i = 0; i < n_ress; ++i) {
 		ir_type *res_type = get_method_res_type(type, i);
-		emit_type(env, res_type);
+		emit_type(res_type);
 	}
 
 	emit_type_label(type);
@@ -649,19 +648,19 @@ static void emit_subroutine_type(dwarf_t *env, const ir_type *type)
 	emit_int8(0);
 }
 
-static void emit_type(dwarf_t *env, ir_type *type)
+static void emit_type(ir_type *type)
 {
-	if (pset_new_insert(&env->emitted_types, type))
+	if (pset_new_insert(&env.emitted_types, type))
 		return;
 
 	switch (get_type_tpop_code(type)) {
-	case tpo_primitive: emit_base_type(type);            break;
-	case tpo_pointer:   emit_pointer_type(env, type);    break;
-	case tpo_array:     emit_array_type(env, type);      break;
+	case tpo_primitive: emit_base_type(type);       break;
+	case tpo_pointer:   emit_pointer_type(type);    break;
+	case tpo_array:     emit_array_type(type);      break;
 	case tpo_class:
 	case tpo_struct:
-	case tpo_union:     emit_compound_type(env, type);   break;
-	case tpo_method:    emit_subroutine_type(env, type); break;
+	case tpo_union:     emit_compound_type(type);   break;
+	case tpo_method:    emit_subroutine_type(type); break;
 	default:
 		panic("bedwarf: type %+F not implemented yet", type);
 	}
@@ -687,29 +686,30 @@ static void emit_variable_abbrev(void)
 	end_abbrev();
 }
 
-static void dwarf_variable(dbg_handle *handle, const ir_entity *entity)
+void be_dwarf_variable(const ir_entity *entity)
 {
-	dwarf_t  *env  = (dwarf_t*) handle;
-	ir_type  *type = get_entity_type(entity);
+	ir_type *type = get_entity_type(entity);
 
+	if (debug_level < LEVEL_BASIC)
+		return;
 	if (get_entity_ld_name(entity)[0] == '\0')
 		return;
 
 	be_gas_emit_switch_section(GAS_SECTION_DEBUG_INFO);
 
-	emit_type(env, type);
+	emit_type(type);
 
 	emit_entity_label(entity);
 	emit_uleb128(DW_TAG_variable);
 	emit_string(get_entity_ld_name(entity));
 	emit_type_address(type);
 	emit_int8(is_extern_entity(entity));
-	emit_dbginfo(env, get_entity_dbg_info(entity));
+	emit_dbginfo(get_entity_dbg_info(entity));
 	/* DW_AT_location */
 	emit_int8(5); /* block length */
 	emit_op_addr(entity);
 
-	ARR_APP1(const ir_entity*, env->pubnames_list, entity);
+	ARR_APP1(const ir_entity*, env.pubnames_list, entity);
 }
 
 static void emit_compile_unit_abbrev(void)
@@ -743,13 +743,10 @@ static void emit_abbrev(void)
 	emit_uleb128(0);
 }
 
-/**
- * start a new source object (compilation unit)
- */
-static void dwarf_unit_begin(dbg_handle *handle, const char *filename)
+void be_dwarf_unit_begin(const char *filename)
 {
-	(void) handle;
-
+	if (debug_level < LEVEL_BASIC)
+		return;
 	emit_abbrev();
 
 	be_gas_emit_switch_section(GAS_SECTION_DEBUG_INFO);
@@ -776,10 +773,10 @@ static void dwarf_unit_begin(dbg_handle *handle, const char *filename)
 		emit_string(comp_dir);
 }
 
-static void dwarf_unit_end(dbg_handle *handle)
+void be_dwarf_unit_end(void)
 {
-	dwarf_t *env = (dwarf_t*)handle;
-
+	if (debug_level < LEVEL_BASIC)
+		return;
 	be_gas_emit_switch_section(GAS_SECTION_TEXT);
 	emit_label("section_end");
 
@@ -788,53 +785,29 @@ static void dwarf_unit_end(dbg_handle *handle)
 
 	emit_label("compile_unit_end");
 
-	emit_line_info(env);
-	emit_pubnames(env);
+	emit_line_info();
+	emit_pubnames();
 }
 
-/**
- * Close the dwarf handler.
- */
-static void dwarf_close(dbg_handle *handle)
+void be_dwarf_close(void)
 {
-	dwarf_t *h = (dwarf_t *)handle;
-	pmap_destroy(h->file_map);
-	DEL_ARR_F(h->file_list);
-	DEL_ARR_F(h->pubnames_list);
-	pset_new_destroy(&h->emitted_types);
-	free(h);
+	if (debug_level < LEVEL_BASIC)
+		return;
+	pmap_destroy(env.file_map);
+	DEL_ARR_F(env.file_list);
+	DEL_ARR_F(env.pubnames_list);
+	pset_new_destroy(&env.emitted_types);
 }
-
-/** The dwarf operations. */
-static const debug_ops dwarf_ops = {
-	dwarf_close,
-	dwarf_unit_begin,
-	dwarf_unit_end,
-	dwarf_method_begin,
-	dwarf_method_end,
-	dwarf_types,
-	dwarf_variable,
-	dwarf_location,
-};
 
 /* Opens a dwarf handler */
-static dbg_handle *be_dwarf_open(void)
+void be_dwarf_open(void)
 {
-	dwarf_t *h = XMALLOCZ(dwarf_t);
-
-	h->base.ops      = &dwarf_ops;
-	h->file_map      = pmap_create();
-	h->file_list     = NEW_ARR_F(const char*, 0);
-	h->pubnames_list = NEW_ARR_F(const ir_entity*, 0);
-	pset_new_init(&h->emitted_types);
-
-	return &h->base;
-}
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_dwarf)
-void be_init_dwarf(void)
-{
-	be_register_dbgout_module("dwarf", be_dwarf_open);
+	if (debug_level < LEVEL_BASIC)
+		return;
+	env.file_map      = pmap_create();
+	env.file_list     = NEW_ARR_F(const char*, 0);
+	env.pubnames_list = NEW_ARR_F(const ir_entity*, 0);
+	pset_new_init(&env.emitted_types);
 }
 
 void be_dwarf_set_source_language(dwarf_source_language new_language)
@@ -845,4 +818,26 @@ void be_dwarf_set_source_language(dwarf_source_language new_language)
 void be_dwarf_set_compilation_directory(const char *new_comp_dir)
 {
 	comp_dir = new_comp_dir;
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_dwarf)
+void be_init_dwarf(void)
+{
+	static const lc_opt_enum_int_items_t level_items[] = {
+		{ "none",      LEVEL_NONE },
+		{ "basic",     LEVEL_BASIC },
+		{ "locations", LEVEL_LOCATIONS },
+		{ "frameinfo", LEVEL_FRAMEINFO },
+		{ NULL,        0 }
+	};
+	static lc_opt_enum_int_var_t debug_level_opt = {
+		&debug_level, level_items
+	};
+	static lc_opt_table_entry_t be_main_options[] = {
+		LC_OPT_ENT_ENUM_INT("debug", "debug output (dwarf) level",
+		                    &debug_level_opt),
+		LC_OPT_LAST
+	};
+	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_add_table(be_grp, be_main_options);
 }

@@ -70,7 +70,6 @@
 #include "belower.h"
 #include "bestat.h"
 #include "beverify.h"
-#include "be_dbgout.h"
 #include "beirg.h"
 #include "bestack.h"
 #include "beemitter.h"

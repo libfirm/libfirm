@@ -1,6 +1,8 @@
 #ifndef FIRM_BE_BEDWARF_T_H
 #define FIRM_BE_BEDWARF_T_H
 
+#include "bedwarf.h"
+
 /* Tag names and codes.  */
 typedef enum dwarf_tag {
 	DW_TAG_padding                = 0x00,
