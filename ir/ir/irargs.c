@@ -187,8 +187,12 @@ static int firm_emit(lc_appendable_t *app,
 				snprintf(buf, sizeof(buf), "%s%s %s[%s]", A("irn"), get_irn_opname(node),
 				get_mode_name(get_irn_mode(node)), get_entity_name(get_SymConst_entity(node)));
 			} else if (is_Sel(node)) {
+				ir_entity *entity = get_Sel_entity(node);
+				const char *entity_name = "(null)";
+				if (entity != NULL)
+					entity_name = get_entity_name(entity);
 				snprintf(buf, sizeof(buf), "%s%s %s[%s]", A("irn"), get_irn_opname(node),
-				get_mode_name(get_irn_mode(node)), get_entity_name(get_Sel_entity(node)));
+				get_mode_name(get_irn_mode(node)), entity_name);
 			} else if (is_Cmp(node)) {
 				ir_relation relation = get_Cmp_relation(node);
 				snprintf(buf, sizeof(buf), "%s%s %s", A("irn"), get_irn_opname(node), get_relation_string(relation));
