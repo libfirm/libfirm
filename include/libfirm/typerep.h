@@ -227,11 +227,9 @@ FIRM_API ir_entity *new_d_parameter_entity(ir_type *owner, size_t pos,
  * Check an entity. Currently, we check only if initialized constants
  * are build on the const irg graph.
  *
- * @return
- *  0   if no error encountered
- *  != 0    a trverify_error_codes code
+ * @return non-zero if no errors were found
  */
-FIRM_API int check_entity(ir_entity *ent);
+FIRM_API int check_entity(const ir_entity *ent);
 
 /**
  * Copies the entity if the new_owner is different from the
@@ -482,7 +480,7 @@ FIRM_API int is_irn_const_expression(ir_node *n);
 FIRM_API ir_node *copy_const_value(dbg_info *dbg, ir_node *n, ir_node *to_block);
 
 /** Returns initial value of entity with atomic type @p ent. */
-FIRM_API ir_node *get_atomic_ent_value(ir_entity *ent);
+FIRM_API ir_node *get_atomic_ent_value(const ir_entity *ent);
 /** Sets initial value of entity with atomic type @p ent to node @p val.
  * @note @p val must be a node in the const_code graph */
 FIRM_API void set_atomic_ent_value(ir_entity *ent, ir_node *val);
@@ -1033,28 +1031,11 @@ FIRM_API void set_irp_class_cast_state(ir_class_cast_state state);
 FIRM_API ir_class_cast_state get_irp_class_cast_state(void);
 
 /**
- * possible trverify() error codes
- */
-enum trverify_error_codes {
-	no_error = 0,                      /**< no error */
-	error_ent_not_cont,                /**< overwritten entity not in superclass */
-	error_null_mem,                    /**< compound contains NULL member */
-	error_const_on_wrong_irg,          /**< constant placed on wrong IRG */
-	error_existent_entity_without_irg, /**< Method entities with pecularity_exist must have an irg */
-	error_wrong_ent_overwrites,        /**< number of entity overwrites exceeds number of class overwrites */
-	error_inherited_ent_without_const, /**< inherited method entity not pointing to existent entity */
-	error_glob_ent_allocation,         /**< wrong allocation of a global entity */
-	error_ent_const_mode,              /**< Mode of constant in entity did not match entities type. */
-	error_ent_wrong_owner              /**< Mode of constant in entity did not match entities type. */
-};
-
-/**
  * Checks a type.
  *
- * @return
- *  0   if no error encountered
+ * @return non-zero if no errors were found
  */
-FIRM_API int check_type(ir_type *tp);
+FIRM_API int check_type(const ir_type *tp);
 
 /**
  * Walks the type information and performs a set of sanity checks.
@@ -1064,9 +1045,7 @@ FIRM_API int check_type(ir_type *tp);
  * - class types: doesn't have NULL members
  * - class types: all overwrites are existent in the super type
  *
- * @return
- *    0 if graph is correct
- *    else error code.
+ * @return 0 if no error encountered
  */
 FIRM_API int tr_verify(void);
 

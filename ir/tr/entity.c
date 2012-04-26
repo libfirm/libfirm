@@ -492,7 +492,7 @@ void (set_entity_usage)(ir_entity *ent, ir_entity_usage flags)
 	_set_entity_usage(ent, flags);
 }
 
-ir_node *get_atomic_ent_value(ir_entity *entity)
+ir_node *get_atomic_ent_value(const ir_entity *entity)
 {
 	ir_initializer_t *initializer = get_entity_initializer(entity);
 
