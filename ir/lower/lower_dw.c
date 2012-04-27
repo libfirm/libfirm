@@ -1667,12 +1667,8 @@ static void lower_Conv(ir_node *node, ir_mode *mode)
 	}
 }
 
-static void fix_parameter_entities(ir_graph *irg)
+static void fix_parameter_entities(ir_graph *irg, ir_type *orig_mtp)
 {
-	ir_entity *entity   = get_irg_entity(irg);
-	ir_type   *mtp      = get_entity_type(entity);
-	ir_type   *orig_mtp = get_type_link(mtp);
-
 	size_t      orig_n_params      = get_method_n_params(orig_mtp);
 	ir_entity **parameter_entities;
 
@@ -1746,6 +1742,9 @@ static ir_type *lower_mtp(ir_type *mtp)
 	res = (ir_type*)pmap_get(lowered_type, mtp);
 	if (res != NULL)
 		return res;
+	if (type_visited(mtp))
+		return mtp;
+	mark_type_visited(mtp);
 
 	orig_n_params   = get_method_n_params(mtp);
 	orig_n_res      = get_method_n_ress(mtp);
@@ -1846,6 +1845,7 @@ static ir_type *lower_mtp(ir_type *mtp)
 	set_higher_type(res, mtp);
 	set_type_link(res, mtp);
 
+	mark_type_visited(res);
 	pmap_insert(lowered_type, mtp, res);
 	return res;
 }
@@ -1941,7 +1941,7 @@ static void lower_Start(ir_node *node, ir_mode *high_mode)
 		}
 	}
 
-	/* lower method type */
+	/* find args Proj */
 	args = NULL;
 	foreach_out_edge(node, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
@@ -3006,7 +3006,7 @@ static void lower_irg(ir_graph *irg)
 		set_entity_type(ent, lowered_mtp);
 		env->flags |= MUST_BE_LOWERED;
 
-		fix_parameter_entities(irg);
+		fix_parameter_entities(irg, mtp);
 	}
 
 	/* first step: link all nodes and allocate data */
@@ -3189,7 +3189,8 @@ void ir_lower_dw_ops(void)
 	lenv.first_id      = new_id_from_chars(param->little_endian ? ".l" : ".h", 2);
 	lenv.next_id       = new_id_from_chars(param->little_endian ? ".h" : ".l", 2);
 
-	irp_reserve_resources(irp, IRP_RESOURCE_TYPE_LINK);
+	irp_reserve_resources(irp, IRP_RESOURCE_TYPE_LINK | IRP_RESOURCE_TYPE_VISITED);
+	inc_master_type_visited();
 	/* transform all graphs */
 	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		ir_graph *irg = get_irp_irg(i);
@@ -3203,7 +3204,7 @@ void ir_lower_dw_ops(void)
 
 		ir_nodeset_destroy(&created_mux_nodes);
 	}
-	irp_free_resources(irp, IRP_RESOURCE_TYPE_LINK);
+	irp_free_resources(irp, IRP_RESOURCE_TYPE_LINK | IRP_RESOURCE_TYPE_VISITED);
 	del_pdeq(lenv.waitq);
 
 	env = NULL;
