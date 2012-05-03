@@ -515,7 +515,7 @@ static void emit_visibility(const ir_entity *entity)
 		emit_weak(entity);
 		/* Note: .weak seems to imply .globl so no need to output .globl */
 	} else if (get_entity_visibility(entity) == ir_visibility_default) {
-		be_emit_cstring(".globl ");
+		be_emit_cstring("\t.globl ");
 		be_gas_emit_entity(entity);
 		be_emit_char('\n');
 		be_emit_write_line();
