@@ -421,15 +421,8 @@ static int entity_is_string_const(const ir_entity *ent)
 
 static bool entity_is_null(const ir_entity *entity)
 {
-	if (entity->initializer != NULL) {
-		return initializer_is_null(entity->initializer);
-	} else if (entity_has_compound_ent_values(entity)) {
-		/* I'm too lazy to implement this case as compound graph paths will be
-		 * remove anyway in the future */
-		return false;
-	}
-	/* uninitialized, NULL is fine */
-	return true;
+	ir_initializer_t *initializer = get_entity_initializer(entity);
+	return initializer == NULL || initializer_is_null(initializer);
 }
 
 static bool is_comdat(const ir_entity *entity)
@@ -450,7 +443,7 @@ static be_gas_section_t determine_basic_section(const ir_entity *entity)
 	if (linkage & IR_LINKAGE_CONSTANT) {
 		/* mach-o is the only one with a cstring section */
 		if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O
-				&& entity_is_string_const(entity))
+		    && entity_is_string_const(entity))
 			return GAS_SECTION_CSTRING;
 
 		return GAS_SECTION_RODATA;
@@ -514,7 +507,8 @@ static void emit_visibility(const ir_entity *entity)
 	if (get_entity_linkage(entity) & IR_LINKAGE_WEAK) {
 		emit_weak(entity);
 		/* Note: .weak seems to imply .globl so no need to output .globl */
-	} else if (get_entity_visibility(entity) == ir_visibility_default) {
+	} else if (get_entity_visibility(entity) == ir_visibility_external
+	           && entity_has_definition(entity)) {
 		be_emit_cstring("\t.globl ");
 		be_gas_emit_entity(entity);
 		be_emit_char('\n');
@@ -1612,24 +1606,19 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 		case ir_visibility_private:
 			emit_local_common(entity);
 			return;
-		case ir_visibility_default:
+		case ir_visibility_external:
 			if (linkage & IR_LINKAGE_MERGE) {
 				emit_common(entity);
 				return;
 			}
 			break;
-		case ir_visibility_external:
-			if (linkage & IR_LINKAGE_MERGE)
-				panic("merge link semantic not supported for extern entities");
-			break;
 		}
 	}
 
 	emit_visibility(entity);
-	if (visibility == ir_visibility_external) {
-		/* nothing to do for externally defined values */
+	/* nothing left to do without an initializer */
+	if (!entity_has_definition(entity))
 		return;
-	}
 
 	if (!is_po2(alignment))
 		panic("alignment not a power of 2");
@@ -1665,6 +1654,7 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 	}
 
 	if (entity_is_null(entity)) {
+		/* we should use .space for stuff in the bss segment */
 		unsigned size = get_type_size_bytes(type);
 		if (size > 0) {
 			be_emit_irprintf("\t.space %u, 0\n", get_type_size_bytes(type));

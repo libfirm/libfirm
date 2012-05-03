@@ -356,8 +356,7 @@ void be_dwarf_callframe_spilloffset(const arch_register_t *reg, int offset)
 static bool is_extern_entity(const ir_entity *entity)
 {
 	ir_visited_t visibility = get_entity_visibility(entity);
-	return visibility == ir_visibility_default
-	    || visibility == ir_visibility_external;
+	return visibility == ir_visibility_external;
 }
 
 static void emit_entity_label(const ir_entity *entity)

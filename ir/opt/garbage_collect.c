@@ -122,7 +122,7 @@ static void visit_segment(ir_type *segment)
 
 	for (i = 0; i < n_entities; ++i) {
 		ir_entity *entity = get_compound_member(segment, i);
-		if (get_entity_visibility(entity) != ir_visibility_default
+		if (get_entity_visibility(entity) != ir_visibility_external
 				&& !(get_entity_linkage(entity) & IR_LINKAGE_HIDDEN_USER))
 			continue;
 

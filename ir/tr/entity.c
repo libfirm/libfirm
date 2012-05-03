@@ -72,7 +72,7 @@ static ir_entity *intern_new_entity(ir_type *owner, ir_entity_kind kind,
 	res->aligned              = align_is_aligned;
 	res->usage                = ir_usage_unknown;
 	res->compiler_gen         = 0;
-	res->visibility           = ir_visibility_default;
+	res->visibility           = ir_visibility_external;
 	res->offset               = -1;
 	res->offset_bit_remainder = 0;
 	res->alignment            = 0;

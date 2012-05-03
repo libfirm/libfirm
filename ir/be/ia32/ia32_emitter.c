@@ -223,7 +223,7 @@ static void ia32_emit_entity(ir_entity *entity, int no_pic_adjust)
 	be_gas_emit_entity(entity);
 
 	if (get_entity_owner(entity) == get_tls_type()) {
-		if (get_entity_visibility(entity) == ir_visibility_external) {
+		if (!entity_has_definition(entity)) {
 			be_emit_cstring("@INDNTPOFF");
 		} else {
 			be_emit_cstring("@NTPOFF");
