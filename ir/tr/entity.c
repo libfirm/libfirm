@@ -433,18 +433,9 @@ ir_label_t get_entity_label(const ir_entity *ent)
 	return ent->attr.code_attr.label;
 }
 
-static void verify_visibility(const ir_entity *entity)
-{
-	if (get_entity_visibility(entity) == ir_visibility_external
-			&& !is_method_entity(entity)) {
-		assert(!entity_has_definition(entity));
-	}
-}
-
 void set_entity_visibility(ir_entity *entity, ir_visibility visibility)
 {
 	entity->visibility = visibility;
-	verify_visibility(entity);
 }
 
 ir_visibility get_entity_visibility(const ir_entity *entity)
@@ -1071,9 +1062,12 @@ int entity_is_externally_visible(const ir_entity *entity)
 
 int entity_has_definition(const ir_entity *entity)
 {
-	return entity->initializer != NULL
-		|| get_entity_irg(entity) != NULL
-		|| entity_has_compound_ent_values(entity);
+	if (is_method_entity(entity)) {
+		return get_entity_irg(entity) != NULL;
+	} else {
+		return entity->initializer != NULL
+		    || entity_has_compound_ent_values(entity);
+	}
 }
 
 void ir_init_entity(ir_prog *irp)
