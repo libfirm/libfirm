@@ -1063,7 +1063,8 @@ int entity_is_externally_visible(const ir_entity *entity)
 int entity_has_definition(const ir_entity *entity)
 {
 	if (is_method_entity(entity)) {
-		return get_entity_irg(entity) != NULL;
+		return get_entity_irg(entity) != NULL
+		    && (get_entity_linkage(entity) & IR_LINKAGE_NO_CODEGEN) == 0;
 	} else {
 		return entity->initializer != NULL
 		    || entity_has_compound_ent_values(entity);

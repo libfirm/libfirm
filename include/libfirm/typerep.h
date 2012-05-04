@@ -154,7 +154,15 @@ typedef enum ir_linkage {
 	 * read/write behaviour to global variables or changing calling conventions
 	 * from cdecl to fastcall.
 	 */
-	IR_LINKAGE_HIDDEN_USER     = 1 << 4
+	IR_LINKAGE_HIDDEN_USER     = 1 << 4,
+	/**
+	 * Do not generate code even if the entity has a graph attached. The graph
+	 * is only used for inlining. Otherwise the entity is regarded as a
+	 * declaration of an externally defined entity.
+	 * This linkage flag can be used to implement C99 "inline" or GNU89
+	 * "extern inline".
+	 */
+	IR_LINKAGE_NO_CODEGEN      = 1 << 5,
 } ir_linkage;
 ENUM_BITSET(ir_linkage)
 
@@ -180,7 +188,8 @@ FIRM_API int entity_is_externally_visible(const ir_entity *entity);
 
 /**
  * Returns 1 if the entity has a definition (initializer) in the current
- * compilation unit
+ * compilation unit. Note that this function returns false if
+ * IR_LINKAGE_NO_CODEGEN is set even if a graph is present.
  */
 FIRM_API int entity_has_definition(const ir_entity *entity);
 

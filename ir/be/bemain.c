@@ -520,7 +520,9 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 {
 	static const char suffix[] = ".prof";
 
-	size_t        i, num_birgs;
+	size_t        i;
+	size_t        num_irgs;
+	size_t        num_birgs;
 	be_main_env_t env;
 	char          prof_filename[256];
 	be_irg_t      *birgs;
@@ -543,15 +545,19 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	arch_env = env.arch_env;
 
 	/* we might need 1 birg more for instrumentation constructor */
-	num_birgs = get_irp_n_irgs();
-	birgs     = ALLOCAN(be_irg_t, num_birgs + 1);
+	num_irgs = get_irp_n_irgs();
+	birgs    = ALLOCAN(be_irg_t, num_irgs + 1);
 
 	be_info_init();
 
 	/* First: initialize all birgs */
-	for (i = 0; i < num_birgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
-		initialize_birg(&birgs[i], irg, &env);
+	num_birgs = 0;
+	for (i = 0; i < num_irgs; ++i) {
+		ir_graph  *irg    = get_irp_irg(i);
+		ir_entity *entity = get_irg_entity(irg);
+		if (get_entity_linkage(entity) & IR_LINKAGE_NO_CODEGEN)
+			continue;
+		initialize_birg(&birgs[num_birgs++], irg, &env);
 	}
 	arch_env_handle_intrinsics(arch_env);
 

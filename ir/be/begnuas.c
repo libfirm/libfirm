@@ -1587,14 +1587,10 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 	if (type == get_code_type())
 		return;
 
-	/* we already emitted all methods. Except for the trampolines which
-	 * the assembler/linker generates */
+	/* we already emitted all methods with graphs in other functions like
+	 * be_gas_emit_function_prolog(). All others don't need to be emitted.
+	 */
 	if (is_Method_type(type) && section != GAS_SECTION_PIC_TRAMPOLINES) {
-		/* functions with graph are already emitted with
-		 * be_gas_emit_function_prolog */
-		if (get_entity_irg(entity) == NULL) {
-			emit_visibility(entity);
-		}
 		return;
 	}
 
