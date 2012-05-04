@@ -212,35 +212,71 @@ static bool constants_on_wrong_irg(const ir_entity *ent)
 	return true;
 }
 
-int check_entity(const ir_entity *ent)
+static bool check_external_linkage(const ir_entity *entity, ir_linkage linkage,
+                                   const char *linkage_name)
 {
-	bool     fine = true;
-	ir_type *tp   = get_entity_type(ent);
+	bool fine = true;
+	if ((get_entity_linkage(entity) & linkage) == 0)
+		return true;
+	if (get_entity_visibility(entity) != ir_visibility_external) {
+		report_error("entity %+F has IR_LINKAGE_%s but is not externally visible", entity, linkage_name);
+		fine = false;
+	}
+	if (!entity_has_definition(entity)) {
+		report_error("entity %+F has IR_LINKAGE_%s but is just a declaration", entity, linkage_name);
+		fine = false;
+	}
+	return fine;
+}
 
-	fine &= constants_on_wrong_irg(ent);
+int check_entity(const ir_entity *entity)
+{
+	bool          fine           = true;
+	ir_type      *tp             = get_entity_type(entity);
+	ir_linkage    linkage        = get_entity_linkage(entity);
 
-	if (is_method_entity(ent)) {
-		ir_graph *irg = get_entity_irg(ent);
+	fine &= constants_on_wrong_irg(entity);
+
+	if (is_method_entity(entity)) {
+		ir_graph *irg = get_entity_irg(entity);
 		if (irg != NULL) {
 			ir_entity *irg_entity = get_irg_entity(irg);
-			if (irg_entity != ent) {
+			if (irg_entity != entity) {
 				report_error("entity(%+F)->irg->entity(%+F) relation invalid",
-				             ent, irg_entity);
+				             entity, irg_entity);
 				fine = false;
 			}
 		}
-		if (get_entity_peculiarity(ent) == peculiarity_existent) {
-			ir_entity *impl = get_SymConst_entity(get_atomic_ent_value(ent));
+		if (get_entity_peculiarity(entity) == peculiarity_existent) {
+			ir_entity *impl = get_SymConst_entity(get_atomic_ent_value(entity));
 			if (impl == NULL) {
-				report_error("inherited method entity %+F must have constant pointing to existent entity.", ent);
+				report_error("inherited method entity %+F must have constant pointing to existent entity.", entity);
 				fine = false;
 			}
 		}
 	}
 
-	if (is_atomic_entity(ent) && ent->initializer != NULL) {
+	if (linkage & IR_LINKAGE_NO_CODEGEN) {
+		if (!is_method_entity(entity)) {
+			report_error("entity %+F has IR_LINKAGE_NO_CODEGEN but is not a function", entity);
+			fine = false;
+		} else if (get_entity_irg(entity) == NULL) {
+			report_error("entity %+F has IR_LINKAGE_NO_CODEGEN but has no ir-graph anyway", entity);
+			fine = false;
+		}
+		if (get_entity_visibility(entity) != ir_visibility_external) {
+			report_error("entity %+F has IR_LINKAGE_NO_CODEGEN but is not externally visible", entity);
+			fine = false;
+		}
+	}
+	check_external_linkage(entity, IR_LINKAGE_WEAK, "WEAK");
+	check_external_linkage(entity, IR_LINKAGE_GARBAGE_COLLECT,
+	                       "GARBAGE_COLLECT");
+	check_external_linkage(entity, IR_LINKAGE_MERGE, "MERGE");
+
+	if (is_atomic_entity(entity) && entity->initializer != NULL) {
 		ir_mode *mode = NULL;
-		ir_initializer_t *initializer = ent->initializer;
+		ir_initializer_t *initializer = entity->initializer;
 		switch (initializer->kind) {
 		case IR_INITIALIZER_CONST:
 			mode = get_irn_mode(get_initializer_const_value(initializer));
@@ -253,7 +289,7 @@ int check_entity(const ir_entity *ent)
 			break;
 		}
 		if (mode != NULL && mode != get_type_mode(tp)) {
-			report_error("initializer of entity %+F has wrong mode.", ent);
+			report_error("initializer of entity %+F has wrong mode.", entity);
 			fine = false;
 		}
 	}
