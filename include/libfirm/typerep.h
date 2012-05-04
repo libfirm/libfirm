@@ -93,8 +93,9 @@ typedef enum {
 	/**
 	 * The entity is visible across compilation units. It might have an
 	 * initializer/graph.
-	 * Note that variables with visibility_external but not initializer are
-	 * not "uninitialized" but considered to be in another compilation unit.
+	 * Note that entities with visibility_external without initializer are
+	 * assumed to be defined in another compilation unit (not like C variables
+	 * which are considered 'uninitialized' in this case).
 	 */
 	ir_visibility_external,
 	/**
