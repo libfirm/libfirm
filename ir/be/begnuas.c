@@ -1583,7 +1583,7 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 	ir_visibility     visibility = get_entity_visibility(entity);
 	ir_linkage        linkage    = get_entity_linkage(entity);
 
-	/* block labels are already emittet in the code */
+	/* Block labels are already emitted in the code. */
 	if (type == get_code_type())
 		return;
 
