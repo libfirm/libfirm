@@ -525,7 +525,7 @@ static void emit_visibility(const ir_entity *entity)
 	}
 }
 
-void be_gas_emit_function_prolog(const ir_entity *entity, unsigned po2alignment,                                 const parameter_dbg_info_t *parameter_infos)
+void be_gas_emit_function_prolog(const ir_entity *entity, unsigned po2alignment, const parameter_dbg_info_t *parameter_infos)
 {
 	be_gas_section_t section;
 
@@ -1645,7 +1645,7 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 	}
 
 	if (get_id_str(ld_ident)[0] != '\0') {
-	    be_gas_emit_entity(entity);
+		be_gas_emit_entity(entity);
 		be_emit_cstring(":\n");
 		be_emit_write_line();
 	}
