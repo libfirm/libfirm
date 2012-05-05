@@ -452,8 +452,7 @@ static void emit_function_parameters(const ir_entity *entity,
 		ir_type *param_type = get_method_param_type(type, i);
 
 		if (infos != NULL && infos[i].entity != NULL) {
-			const ir_entity *entity = infos[i].entity;
-			long             offset = get_entity_offset(entity);
+			long const offset = get_entity_offset(infos[i].entity);
 			emit_uleb128(DW_TAG_formal_parameter);
 			emit_string_printf("arg%u", (unsigned)i);
 			emit_dbginfo(dbgi);
