@@ -843,8 +843,7 @@ void be_dwarf_variable(const ir_entity *entity)
 		return;
 	if (get_entity_ld_name(entity)[0] == '\0')
 		return;
-	/* skip external variables */
-	if (get_entity_visibility(entity) == ir_visibility_external)
+	if (!entity_has_definition(entity))
 		return;
 
 	be_gas_emit_switch_section(GAS_SECTION_DEBUG_INFO);

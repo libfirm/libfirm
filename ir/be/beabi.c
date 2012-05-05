@@ -1742,8 +1742,7 @@ static ir_entity *get_pic_symbol(be_main_env_t *env, ir_entity *entity)
  */
 static int can_address_relative(ir_entity *entity)
 {
-	return get_entity_visibility(entity) != ir_visibility_external
-		&& !(get_entity_linkage(entity) & IR_LINKAGE_MERGE);
+	return entity_has_definition(entity) && !(get_entity_linkage(entity) & IR_LINKAGE_MERGE);
 }
 
 static ir_node *get_pic_base(ir_graph *irg)
