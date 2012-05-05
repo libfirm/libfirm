@@ -479,8 +479,6 @@ void be_dwarf_method_before(const ir_entity *entity,
 	size_t   n_params = get_method_n_params(type);
 	size_t   i;
 
-	(void)parameter_infos;
-
 	be_gas_emit_switch_section(GAS_SECTION_DEBUG_INFO);
 
 	if (n_ress > 0) {
