@@ -502,9 +502,9 @@ static void emit_weak(const ir_entity *entity)
 
 static void emit_visibility(const ir_entity *entity)
 {
-	ir_linkage linkage = get_entity_linkage(entity);
+	ir_linkage const linkage = get_entity_linkage(entity);
 
-	if (get_entity_linkage(entity) & IR_LINKAGE_WEAK) {
+	if (linkage & IR_LINKAGE_WEAK) {
 		emit_weak(entity);
 		/* Note: .weak seems to imply .globl so no need to output .globl */
 	} else if (get_entity_visibility(entity) == ir_visibility_external
