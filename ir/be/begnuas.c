@@ -1612,9 +1612,6 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 	}
 
 	emit_visibility(entity);
-	/* nothing left to do without an initializer */
-	if (!entity_has_definition(entity))
-		return;
 
 	if (!is_po2(alignment))
 		panic("alignment not a power of 2");
@@ -1626,6 +1623,10 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 		emit_indirect_symbol(entity, section);
 		return;
 	}
+
+	/* nothing left to do without an initializer */
+	if (!entity_has_definition(entity))
+		return;
 
 	/* alignment */
 	if (alignment > 1) {
