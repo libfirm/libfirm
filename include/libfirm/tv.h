@@ -68,18 +68,16 @@
  * This function accepts the following strings:
  *
  * if mode is int_number:
- *  - 0(x|X)[0-9a-fA-F]+ (hexadecimal representation)
- *  - 0[0-7]*            (octal representation)
- *  - (+|-)?[1-9][0-9]*  (decimal representation)
+ *  - [+-]?0[xX][0-9a-fA-F]+ (hexadecimal representation)
+ *  - [+-]?0[0-7]*           (octal representation)
+ *  - [+-]?[1-9][0-9]*       (decimal representation)
  *
  * if mode is float_number:
- *  - (+|-)?(decimal int) (. (decimal int))? ((e|E)(+|-)?(decimal int))?
+ *  - [+-]?(decimal int) (. (decimal int))? ([eE][+-]?(decimal int))?
  *
  * if mode is boolean: true, True, TRUE ... False... 0, 1,
  *
- * if mode is reference: hexadecimal of decimal number as int
- *
- * if mode is character: hex or dec
+ * if mode is reference: "null" and the same as for int_number
  *
  * Leading and/or trailing spaces are ignored
  *
