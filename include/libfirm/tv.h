@@ -70,6 +70,7 @@
  * if mode is int_number:
  *  - [+-]?0[xX][0-9a-fA-F]+ (hexadecimal representation)
  *  - [+-]?0[0-7]*           (octal representation)
+ *  - [+-]?0[bB][01]+        (binary representation)
  *  - [+-]?[1-9][0-9]*       (decimal representation)
  *
  * if mode is float_number:

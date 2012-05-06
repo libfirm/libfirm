@@ -344,6 +344,10 @@ static ir_tarval *new_tarval_from_str_int(const char *str, size_t len,
 			str += 2;
 			len -= 2;
 			base = 16;
+		} else if (str[1] == 'b' || str[1] == 'B') {
+			str += 2;
+			len -= 2;
+			base = 2;
 		} else {
 			++str;
 			--len;
