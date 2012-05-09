@@ -74,7 +74,7 @@ static ir_node   *perm        = NULL;
 static ir_mode   *perm_mode   = NULL;
 static const arch_register_class_t *reg_class = NULL;
 
-static void init_state()
+static void init_state(void)
 {
 	unsigned i;
 
@@ -91,7 +91,7 @@ static void init_state()
 	reg_class   = NULL;
 }
 
-static void save_perm_info()
+static void save_perm_info(void)
 {
 	if (reg_class == NULL) {
 		ir_node               *in  = get_irn_n(perm, 0);
@@ -135,7 +135,7 @@ static void schedule_node(ir_node *irn)
 	sched_point = irn;
 }
 
-static void analyze_regs()
+static void analyze_regs(void)
 {
 	const ir_edge_t *edge;
 	const ir_edge_t *next;
@@ -216,7 +216,7 @@ static void create_chain(unsigned reg)
 	print_perm_op(op);
 }
 
-static void search_chains()
+static void search_chains(void)
 {
 	unsigned reg;
 
@@ -258,7 +258,7 @@ static void create_cycle(unsigned reg)
 }
 
 /* Precondition: all chains have already been handled. */
-static void search_cycles()
+static void search_cycles(void)
 {
 	unsigned reg;
 
@@ -326,7 +326,7 @@ static void split_chain_into_copies(const perm_op_t *op)
 
 /* Chains g0 -> ... can never be turned into a cycle
  * because writing to g0 does not make sense. */
-static void handle_zero_chains()
+static void handle_zero_chains(void)
 {
 	unsigned i;
 	unsigned j;
@@ -348,7 +348,7 @@ static void handle_zero_chains()
 }
 
 #ifdef NO_PSEUDO_CYCLES
-static void handle_all_chains()
+static void handle_all_chains(void)
 {
 	unsigned i;
 	unsigned j;
@@ -684,7 +684,7 @@ static void combine_small_ops(const perm_op_t *op2, const perm_op_t *op3)
 	schedule_node(permi23);
 }
 
-static void search_and_combine_small_ops()
+static void search_and_combine_small_ops(void)
 {
 	const perm_op_t *twos[NUM_REGISTERS];
 	const perm_op_t *threes[NUM_REGISTERS];
@@ -738,7 +738,7 @@ static void search_and_combine_small_ops()
 	num_ops = j;
 }
 
-static void analyze_perm()
+static void analyze_perm(void)
 {
 	unsigned i;
 
