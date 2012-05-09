@@ -45,10 +45,12 @@
 
 #include "statev.h"
 
-#define PERMI_SIZE 5
-#define NUM_REGISTERS  32
+#define PERMI_SIZE    5
+#define NUM_REGISTERS 32
 
-DEBUG_ONLY(static firm_dbg_module_t *dbg_icore;)
+//#define NO_PSEUDO_CYCLES
+
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 typedef enum perm_type_t {
 	PERM_CHAIN,
@@ -114,17 +116,17 @@ static void print_perm_op(const perm_op_t *op)
 {
 	unsigned i;
 
-	printf("%s(%u)", get_register_name_from_index(op->regs[0]),
-		op->regs[0]);
+	DB((dbg, LEVEL_2, "%s(%u)", get_register_name_from_index(op->regs[0]),
+		op->regs[0]));
 	for (i = 1; i < op->length; ++i)
-		printf(" -> %s(%u)", get_register_name_from_index(op->regs[i]),
-			op->regs[i]);
+		DB((dbg, LEVEL_2, " -> %s(%u)",
+			get_register_name_from_index(op->regs[i]), op->regs[i]));
 
 	if (op->type == PERM_CYCLE)
-		printf(" -> %s(%u)", get_register_name_from_index(op->regs[0]),
-			op->regs[0]);
+		DB((dbg, LEVEL_2, " -> %s(%u)",
+			get_register_name_from_index(op->regs[0]), op->regs[0]));
 
-	puts("");
+	DB((dbg, LEVEL_2, "\n"));
 }
 
 static void schedule_node(ir_node *irn)
@@ -149,7 +151,7 @@ static void analyze_regs()
 
 		/* Ignore registers that are left untouched by the Perm node. */
 		if (in_reg == out_reg) {
-			DBG((dbg_icore, LEVEL_1,
+			DB((dbg, LEVEL_3,
 				"%+F removing equal perm register pair (%+F, %+F, %s)\n",
 				perm, in, out, arch_register_get_name(out_reg)));
 
@@ -162,7 +164,7 @@ static void analyze_regs()
 		out_nodes[oidx] = out;
 		in_nodes[iidx]  = in;
 
-		sourceof[oidx] = iidx; /* Remember the source, Luke. */
+		sourceof[oidx] = iidx;
 		++usecount[iidx];      /* Increment usecount of source register.*/
 	}
 }
@@ -210,7 +212,7 @@ static void create_chain(unsigned reg)
 	op->length = length;
 	reverse_regs(op);
 
-	printf("  Found a chain: ");
+	DB((dbg, LEVEL_2, "  Found a chain: "));
 	print_perm_op(op);
 }
 
@@ -251,7 +253,7 @@ static void create_cycle(unsigned reg)
 	op->length = length;
 	reverse_regs(op);
 
-	printf("  Found a cycle: ");
+	DB((dbg, LEVEL_2, "  Found a cycle: "));
 	print_perm_op(op);
 }
 
@@ -284,7 +286,7 @@ static void set_Permi_reg_reqs(ir_node *irn)
 	const int arity = get_irn_arity(irn);
 
 	assert(is_sparc_Permi(irn) || is_sparc_Permi23(irn));
-	/* Get register requirement.  Assumes all input/registers belong to the
+	/* Get register requirements.  Assumes all input/registers belong to the
 	 * same register class and have the same requirements. */
 	req = reg_class->class_req;
 
@@ -344,6 +346,28 @@ static void handle_zero_chains()
 	}
 	num_ops = j;
 }
+
+#ifdef NO_PSEUDO_CYCLES
+static void handle_all_chains()
+{
+	unsigned i;
+	unsigned j;
+
+	for (i = 0; i < num_ops; ++i)
+		if (ops[i].type == PERM_CHAIN)
+			split_chain_into_copies(&ops[i]);
+
+	j = 0;
+	for (i = 0; i < num_ops; ++i) {
+		if (ops[i].type != PERM_CHAIN) {
+			if (j != i)
+				ops[j] = ops[i];
+			++j;
+		}
+	}
+	num_ops = j;
+}
+#endif
 
 static ir_node *create_chain_permi(const perm_op_t *op)
 {
@@ -571,18 +595,10 @@ static void combine_small_ops(const perm_op_t *op2, const perm_op_t *op3)
 
 	assert(op2->length == 2 && op3->length >= 2 && op3->length <= 3);
 
-/*
-	if (op2->type != PERM_CYCLE || op3->type != PERM_CYCLE) {
-		handle_op(op2);
-		handle_op(op3);
-		return;
-	}
-*/
-
-	puts("Combining two small ops:");
-	printf("  "); print_perm_op(op2);
-	printf("  "); print_perm_op(op3);
-	puts("");
+	DB((dbg, LEVEL_2, "Combining two small ops:\n"));
+	DB((dbg, LEVEL_2, "  ")); print_perm_op(op2);
+	DB((dbg, LEVEL_2, "  ")); print_perm_op(op3);
+	DB((dbg, LEVEL_2, "\n"));
 
 	if (op2->type == PERM_CYCLE) {
 		for (i = 0; i < 2; ++i) {
@@ -726,7 +742,7 @@ static void analyze_perm()
 {
 	unsigned i;
 
-	ir_printf("Analyzing %+F\n", perm);
+	DB((dbg, LEVEL_2, "Analyzing %+F\n", perm));
 
 	save_perm_info();
 	analyze_regs();
@@ -742,6 +758,10 @@ static void analyze_perm()
 	/* Handle all zero chains. */
 	handle_zero_chains();
 
+#ifdef NO_PSEUDO_CYCLES
+	handle_all_chains();
+#endif
+
 	/* Try to combine small ops into one instruction. */
 	search_and_combine_small_ops();
 
@@ -751,7 +771,7 @@ static void analyze_perm()
 		handle_op(&ops[i]);
 	}
 
-	ir_printf("Finished %+F\n", perm);
+	DB((dbg, LEVEL_2, "Finished %+F\n", perm));
 }
 
 static void lower_perm_node(ir_node *irn)
@@ -798,7 +818,7 @@ static void lower_nodes_after_ra_walker(ir_node *irn, void *walk_env)
 
 void icore_lower_nodes_after_ra(ir_graph *irg)
 {
-	FIRM_DBG_REGISTER(dbg_icore, "firm.be.lower.icore");
+	FIRM_DBG_REGISTER(dbg, "firm.be.lower.icore");
 
 	/* we will need interference */
 	be_assure_live_chk(irg);
