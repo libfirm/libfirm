@@ -528,8 +528,8 @@ void set_cur_block(ir_node *target)
 void set_r_cur_block(ir_graph *irg, ir_node *target)
 {
 	assert(get_irg_phase_state(irg) == phase_building);
-	assert(target == NULL || get_irn_mode(target) == mode_BB);
-	assert(target == NULL || get_irn_irg(target)  == irg);
+	assert(target == NULL || is_Block(target));
+	assert(target == NULL || get_irn_irg(target) == irg);
 	irg->current_block = target;
 }
 
