@@ -64,10 +64,7 @@ void be_emit_tarval(ir_tarval *tv)
 
 void be_emit_irvprintf(const char *fmt, va_list args)
 {
-	char buf[256];
-
-	ir_vsnprintf(buf, sizeof(buf), fmt, args);
-	be_emit_string(buf);
+	ir_obst_vprintf(&emit_obst, fmt, args);
 }
 
 void be_emit_irprintf(const char *fmt, ...)
