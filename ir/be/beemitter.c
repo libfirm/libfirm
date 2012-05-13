@@ -46,14 +46,6 @@ void be_emit_exit(void)
 	obstack_free(&emit_obst, NULL);
 }
 
-void be_emit_ident(ident *id)
-{
-	size_t      len = get_id_strlen(id);
-	const char *str = get_id_str(id);
-
-	be_emit_string_len(str, len);
-}
-
 void be_emit_irvprintf(const char *fmt, va_list args)
 {
 	ir_obst_vprintf(&emit_obst, fmt, args);

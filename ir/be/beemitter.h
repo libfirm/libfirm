@@ -89,13 +89,6 @@ void be_emit_init(FILE *F);
 void be_emit_exit(void);
 
 /**
- * Emit an ident to the (assembler) output.
- *
- * @param id   the ident to be emitted
- */
-void be_emit_ident(ident *id);
-
-/**
  * Emit the output of an ir_printf.
  *
  * @param fmt  the ir_printf format
