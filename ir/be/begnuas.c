@@ -1525,9 +1525,7 @@ static void emit_indirect_symbol(const ir_entity *entity, be_gas_section_t secti
 	be_gas_emit_entity(entity);
 	be_emit_cstring(":\n");
 	be_emit_write_line();
-	be_emit_cstring("\t.indirect_symbol ");
-	be_emit_ident(get_entity_ident(entity));
-	be_emit_char('\n');
+	be_emit_irprintf("\t.indirect_symbol %I\n", get_entity_ident(entity));
 	be_emit_write_line();
 	if (section == GAS_SECTION_PIC_TRAMPOLINES) {
 		be_emit_cstring("\thlt ; hlt ; hlt ; hlt ; hlt\n");
@@ -1555,7 +1553,7 @@ void be_gas_emit_entity(const ir_entity *entity)
 	if (get_entity_visibility(entity) == ir_visibility_private) {
 		be_emit_string(be_gas_get_private_prefix());
 	}
-	be_emit_ident(get_entity_ld_ident(entity));
+	be_emit_irprintf("%I", get_entity_ld_ident(entity));
 }
 
 void be_gas_emit_block_name(const ir_node *block)
@@ -1819,8 +1817,7 @@ static void emit_global_asms(void)
 
 		be_emit_cstring("#APP\n");
 		be_emit_write_line();
-		be_emit_ident(asmtext);
-		be_emit_char('\n');
+		be_emit_irprintf("%I\n", asmtext);
 		be_emit_write_line();
 		be_emit_cstring("#NO_APP\n");
 		be_emit_write_line();
