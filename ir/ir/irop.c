@@ -76,7 +76,6 @@ static void block_copy_attr(ir_graph *irg, const ir_node *old_node,
 	default_copy_attr(irg, old_node, new_node);
 	new_node->attr.block.irg.irg       = irg;
 	new_node->attr.block.phis          = NULL;
-	new_node->attr.block.cg_backedge   = NULL;
 	new_node->attr.block.backedge      = new_backedge_arr(irg->obst, get_irn_arity(new_node));
 	new_node->attr.block.block_visited = 0;
 	memset(&new_node->attr.block.dom, 0, sizeof(new_node->attr.block.dom));

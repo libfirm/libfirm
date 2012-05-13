@@ -475,8 +475,6 @@ ir_node *new_rd_immBlock(dbg_info *dbgi, ir_graph *irg)
 	res->attr.block.dynamic_ins = true;
 	res->attr.block.irg.irg     = irg;
 	res->attr.block.backedge    = NULL;
-	res->attr.block.in_cg       = NULL;
-	res->attr.block.cg_backedge = NULL;
 	res->attr.block.extblk      = NULL;
 	res->attr.block.entity      = NULL;
 

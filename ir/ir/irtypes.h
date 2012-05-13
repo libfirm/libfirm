@@ -211,11 +211,7 @@ typedef struct block_attr {
 	                                 in different phases.  Eventually inline the whole
 	                                 datastructure. */
 	ir_dom_info pdom;           /**< Datastructure that holds information about post-dominators. */
-	ir_node ** in_cg;           /**< array with predecessors in
-	                             * interprocedural_view, if they differ
-	                             * from intraprocedural predecessors */
 	bitset_t *backedge;         /**< Bitfield n set to true if pred n is backedge.*/
-	bitset_t *cg_backedge;      /**< Bitfield n set to true if pred n is interprocedural backedge. */
 	ir_extblk *extblk;          /**< The extended basic block this block belongs to. */
 	ir_entity *entity;          /**< entitiy representing this block */
 	ir_node  *phis;             /**< The list of Phi nodes in this block. */
