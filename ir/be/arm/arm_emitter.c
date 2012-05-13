@@ -57,8 +57,6 @@
 
 #include "benode.h"
 
-#define SNPRINTF_BUF_LEN 128
-
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static set       *sym_or_tv;

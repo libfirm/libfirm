@@ -81,8 +81,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-#define SNPRINTF_BUF_LEN 128
-
 static const ia32_isa_t *isa;
 static char              pic_base_label[128];
 static ir_label_t        exc_label_id;

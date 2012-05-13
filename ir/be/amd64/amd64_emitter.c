@@ -45,8 +45,6 @@
 #include "amd64_nodes_attr.h"
 #include "amd64_new_nodes.h"
 
-#define SNPRINTF_BUF_LEN 128
-
 #include "benode.h"
 
 /*************************************************************

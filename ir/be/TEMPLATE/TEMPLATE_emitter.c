@@ -46,8 +46,6 @@
 #include "TEMPLATE_nodes_attr.h"
 #include "TEMPLATE_new_nodes.h"
 
-#define SNPRINTF_BUF_LEN 128
-
 void TEMPLATE_emit_immediate(const ir_node *node)
 {
 	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
