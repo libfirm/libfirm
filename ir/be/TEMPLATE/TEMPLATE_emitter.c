@@ -49,7 +49,7 @@
 void TEMPLATE_emit_immediate(const ir_node *node)
 {
 	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
-	be_emit_tarval(attr->value);
+	be_emit_irprintf("%T", attr->value);
 }
 
 static void emit_register(const arch_register_t *reg)
