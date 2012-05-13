@@ -90,7 +90,7 @@ typedef struct dwarf_t {
 static dwarf_t env;
 
 static dwarf_source_language language;
-static const char           *comp_dir;
+static char                 *comp_dir;
 
 static unsigned insert_file(const char *filename)
 {
