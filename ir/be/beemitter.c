@@ -54,14 +54,6 @@ void be_emit_ident(ident *id)
 	be_emit_string_len(str, len);
 }
 
-void be_emit_tarval(ir_tarval *tv)
-{
-	char buf[64];
-
-	tarval_snprintf(buf, sizeof(buf), tv);
-	be_emit_string(buf);
-}
-
 void be_emit_irvprintf(const char *fmt, va_list args)
 {
 	ir_obst_vprintf(&emit_obst, fmt, args);

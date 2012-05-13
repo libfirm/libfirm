@@ -96,13 +96,6 @@ void be_emit_exit(void);
 void be_emit_ident(ident *id);
 
 /**
- * Emit a firm tarval.
- *
- * @param tv   the tarval to be emitted
- */
-void be_emit_tarval(ir_tarval *tv);
-
-/**
  * Emit the output of an ir_printf.
  *
  * @param fmt  the ir_printf format
