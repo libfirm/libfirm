@@ -7020,8 +7020,6 @@ ir_node *optimize_in_place_2(ir_node *n)
 	irn_verify(n);
 
 	/* Now we have a legal, useful node. Enter it in hash table for cse.
-	 * Blocks should be unique anyways.  (Except the successor of start:
-	 * is cse with the start block!)
 	 *
 	 * Note: This is only necessary because some of the optimisations
 	 * operate in-place (set_XXX_bla, turn_into_tuple, ...) which is considered
