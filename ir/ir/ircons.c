@@ -232,13 +232,12 @@ static ir_node *set_phi_arguments(ir_node *phi, int pos)
 
 	phi->attr.phi.u.backedge = new_backedge_arr(irg->obst, arity);
 	set_irn_in(phi, arity, in);
-	set_irn_op(phi, op_Phi);
 
 	irn_verify_irg(phi, irg);
 
 	/* Memory Phis in endless loops must be kept alive.
 	   As we can't distinguish these easily we keep all of them alive. */
-	if (is_Phi(phi) && mode == mode_M)
+	if (mode == mode_M)
 		add_End_keepalive(get_irg_end(irg), phi);
 
 	try_remove_unnecessary_phi(phi);
