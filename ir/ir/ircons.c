@@ -271,14 +271,19 @@ static ir_node *get_r_value_internal(ir_node *block, int pos, ir_mode *mode)
 	if (get_Block_matured(block)) {
 		int arity = get_irn_arity(block);
 		/* no predecessors: use unknown value */
-		if (arity == 0 && block == get_irg_start_block(get_irn_irg(block))) {
-			if (default_initialize_local_variable != NULL) {
-				ir_node *rem = get_r_cur_block(irg);
-				set_r_cur_block(irg, block);
-				res = default_initialize_local_variable(irg, mode, pos - 1);
-				set_r_cur_block(irg, rem);
+		if (arity == 0) {
+			if (block == get_irg_start_block(irg)) {
+				if (default_initialize_local_variable != NULL) {
+					ir_node *rem = get_r_cur_block(irg);
+					set_r_cur_block(irg, block);
+					res = default_initialize_local_variable(irg, mode, pos - 1);
+					set_r_cur_block(irg, rem);
+				} else {
+					res = new_r_Unknown(irg, mode);
+				}
 			} else {
-				res = new_r_Unknown(irg, mode);
+				/* unreachable block, use Bad */
+				res = new_r_Bad(irg, mode);
 			}
 		/* one predecessor just use its value */
 		} else if (arity == 1) {
