@@ -871,7 +871,7 @@ static void remove_phi_cycle(scc *pscc, iv_env *env)
 	int j;
 	ir_node *out_rc;
 
-	/* check if this scc contains only Phi, Add or Sub nodes */
+	/* check if this scc contains only Phi nodes */
 	out_rc      = NULL;
 	for (irn = pscc->head; irn; irn = next) {
 		node_entry *e = get_irn_ne(irn, env);
