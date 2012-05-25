@@ -77,6 +77,7 @@ static const arch_register_class_t *reg_class = NULL;
 static int dump_graphs = 0;
 static int only_cycles = 0;
 static int fill_nops   = 0;
+static int single_movs = 1;
 
 static void init_state(void)
 {
@@ -450,6 +451,11 @@ static void split_chain_into_chain_permis(const perm_op_t *op)
 static void handle_chain(const perm_op_t *op)
 {
 	assert(op->regs[0] != 0);
+
+	if (op->length == 2 && !single_movs) {
+		split_chain_into_copies(op);
+		return;
+	}
 
 	if (op->length <= PERMI_SIZE)
 		schedule_node(create_chain_permi(op));
@@ -839,6 +845,7 @@ static const lc_opt_table_entry_t icore_lowerperm_options[] = {
 	LC_OPT_ENT_BOOL("dump_lower", "dump graphs before/after icore lowering", &dump_graphs),
 	LC_OPT_ENT_BOOL("only_cycles", "only turn real cycles into permis", &only_cycles),
 	LC_OPT_ENT_BOOL("fill_nops", "insert fill nops", &fill_nops),
+	LC_OPT_ENT_BOOL("single_movs", "generate permi for single movs", &single_movs),
 	LC_OPT_LAST
 };
 
