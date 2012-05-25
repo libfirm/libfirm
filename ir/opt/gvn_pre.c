@@ -563,10 +563,11 @@ static void compute_avail_top_down(ir_node *block, void *ctx)
  */
 static ir_node *phi_translate(ir_node *node, ir_node *block, int pos)
 {
-	ir_node  *nn;
-	ir_node **in;
 	int       i;
 	int       arity;
+	ir_node **in;
+	ir_node  *nn;
+	ir_node  *target_block;
 
 	if (is_Phi(node)) {
 		if (get_nodes_block(node) == block) {
@@ -594,10 +595,17 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos)
 			in[i] = trans;
 	}
 
+	target_block = get_Block_cfgpred_block(block, pos);
+	if (is_Proj(node)) {
+		/* Projections are the sole case where we have to ensure
+		   that they are in the same block as their tuple node. */
+		target_block = get_nodes_block(in[0]);
+	}
+
 	nn = new_ir_node(
 		get_irn_dbg_info(node),
 		get_irn_irg(node),
-		get_Block_cfgpred_block(block, pos),
+		target_block,
 		get_irn_op(node),
 		get_irn_mode(node),
 		arity,
