@@ -29,6 +29,11 @@
 #include "beirg.h"
 
 /**
+ * Initializes the icore lowerperm submodule.
+ */
+void icore_init_lowerperm(void);
+
+/**
  * Walks over all blocks in an irg and performs lowering that needs to be
  * done after register allocation (e.g. perm lowering).  Differs from the
  * default implementation in belower.c in that it creates bigger Perm

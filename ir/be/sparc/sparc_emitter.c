@@ -69,6 +69,8 @@ static const ir_node *delay_slot_filler; /**< this node has been choosen to fill
 static void sparc_emit_node(const ir_node *node);
 static bool emitting_delay_slot;
 static int raw_permis = 0;
+static int fill_nops  = 0;
+static int permi_info = 0;
 
 void sparc_emit_indent(void)
 {
@@ -372,6 +374,9 @@ static bool emits_multiple_instructions(const ir_node *node)
 		return arch_get_irn_flags(node) & sparc_arch_irn_flag_aggregate_return;
 	}
 
+	if (fill_nops && (is_sparc_Permi(node) || is_sparc_Permi23(node)))
+		return true;
+
 	return is_sparc_SMulh(node) || is_sparc_UMulh(node)
 		|| is_sparc_SDiv(node) || is_sparc_UDiv(node)
 		|| be_is_MemPerm(node) || be_is_Perm(node);
@@ -655,6 +660,46 @@ static unsigned permi5(unsigned *regs)
 	return (regs[0] << 20) | (regs[1] << 15) | (regs[2] << 10) | (regs[3] << 5) | regs[4];
 }
 
+static void icore_emit_fill_nops(const ir_node *irn)
+{
+	if (fill_nops) {
+		int num_sparc_insns = 0;
+		int saved_insns;
+		int i;
+
+		if (is_sparc_Permi(irn)) {
+			const int  length   = get_irn_arity(irn);
+			const bool is_cycle = get_sparc_permi_attr_const(irn)->is_cycle;
+
+			if (is_cycle)
+				num_sparc_insns = (length - 1) * 3;
+			else
+				num_sparc_insns = length - 1;
+		} else if (is_sparc_Permi23(irn)) {
+			const int  arity     = get_irn_arity(irn);
+			const bool is_cycle2 = get_sparc_permi23_attr_const(irn)->is_cycle2;
+			const bool is_cycle3 = get_sparc_permi23_attr_const(irn)->is_cycle3;
+			const int  pos3      = is_cycle2 ? 2 : 1;
+			const int  size3     = arity - pos3 + (is_cycle3 ? 0 : 1);
+
+			if (is_cycle2)
+				num_sparc_insns = 3;
+			else
+				num_sparc_insns = 1;
+
+			if (is_cycle3)
+				num_sparc_insns += (size3 - 1) * 3;
+			else
+				num_sparc_insns += size3 - 1;
+		} else
+			assert(!"Invalid node passed to icore_emit_fill_nops");
+
+		saved_insns = num_sparc_insns - 1;
+		for (i = 0; i < saved_insns; ++i)
+			be_emit_cstring("\tnop\n");
+	}
+}
+
 static void emit_permi(const ir_node *irn, unsigned *regs)
 {
 	sparc_emit_indent();
@@ -673,6 +718,8 @@ static void emit_permi(const ir_node *irn, unsigned *regs)
 		be_emit_irprintf(".long %u", insn);
 		be_emit_finish_line_gas(irn);
 	}
+
+	icore_emit_fill_nops(irn);
 }
 
 static void emit_icore_Permi_chain(const ir_node *irn);
@@ -765,13 +812,15 @@ static void emit_icore_Permi(const ir_node *irn)
 		regns[i] = regns[arity - 1];
 	}
 
-	/* Print some information about the meaning of the following permi. */
-	be_emit_irprintf("\t/* Cycle: ");
-	for (i = 0; i < arity; ++i) {
-		be_emit_irprintf("%s->", in_regs[i]->name);
+	if (permi_info) {
+		/* Print some information about the meaning of the following permi. */
+		be_emit_irprintf("\t/* Cycle: ");
+		for (i = 0; i < arity; ++i) {
+			be_emit_irprintf("%s->", in_regs[i]->name);
+		}
+		be_emit_irprintf("%s */", in_regs[0]->name);
+		be_emit_finish_line_gas(NULL);
 	}
-	be_emit_irprintf("%s */", in_regs[0]->name);
-	be_emit_finish_line_gas(NULL);
 
 	emit_permi(irn, regns);
 }
@@ -876,29 +925,35 @@ static void emit_icore_Permi23(const ir_node *irn)
 		regns[1] = regn0;
 	}
 
-	/* Print some information about the meaning of the following permi. */
-	if (is_cycle2) {
-		be_emit_irprintf("\t/* First cycle: %s->%s->%s */", in_regs[0]->name, in_regs[1]->name, in_regs[0]->name);
-	} else {
-		be_emit_irprintf("\t/* First chain: %s->%s */", in_regs[0]->name, out_regs[0]->name);
-	}
-	be_emit_finish_line_gas(NULL);
-	if (is_cycle3) {
-		be_emit_irprintf("\t/* Second cycle: ");
-		for (i = 0; i < size3; ++i) {
-			be_emit_irprintf("%s->", in_regs[pos3 + i]->name);
-		}
-		be_emit_irprintf("%s */", in_regs[pos3]->name);
-	} else {
-		be_emit_irprintf("\t/* Second chain: ");
-		be_emit_irprintf("%s->%s", in_regs[pos3]->name, out_regs[pos3]->name);
-		if (size3 == 3) {
-			be_emit_irprintf("->%s */", out_regs[pos3 + 1]->name);
+	if (permi_info) {
+		/* Print some information about the meaning of the following permi. */
+		if (is_cycle2) {
+			be_emit_irprintf("\t/* First cycle: %s->%s->%s */",
+				in_regs[0]->name, in_regs[1]->name, in_regs[0]->name);
 		} else {
-			be_emit_irprintf(" */");
+			be_emit_irprintf("\t/* First chain: %s->%s */",
+				in_regs[0]->name, out_regs[0]->name);
 		}
+		be_emit_finish_line_gas(NULL);
+		if (is_cycle3) {
+			be_emit_irprintf("\t/* Second cycle: ");
+			for (i = 0; i < size3; ++i) {
+				be_emit_irprintf("%s->", in_regs[pos3 + i]->name);
+			}
+			be_emit_irprintf("%s */", in_regs[pos3]->name);
+		} else {
+			be_emit_irprintf("\t/* Second chain: ");
+			be_emit_irprintf("%s->%s",
+				in_regs[pos3]->name, out_regs[pos3]->name);
+
+			if (size3 == 3) {
+				be_emit_irprintf("->%s */", out_regs[pos3 + 1]->name);
+			} else {
+				be_emit_irprintf(" */");
+			}
+		}
+		be_emit_finish_line_gas(NULL);
 	}
-	be_emit_finish_line_gas(NULL);
 
 	emit_permi(irn, regns);
 }
@@ -989,14 +1044,16 @@ static void emit_icore_Permi_chain(const ir_node *irn)
 		regns[i] = regns[chain_size - 1];
 	}
 
-	/* Print some information about the meaning of the following permi. */
-	be_emit_irprintf("\t/* PseudoCycle with chain: ");
-	be_emit_irprintf("%s", in_regs[0]->name);
-	for (i = 0; i < arity; ++i) {
-		be_emit_irprintf("->%s", out_regs[i]->name);
+	if (permi_info) {
+		/* Print some information about the meaning of the following permi. */
+		be_emit_irprintf("\t/* PseudoCycle with chain: ");
+		be_emit_irprintf("%s", in_regs[0]->name);
+		for (i = 0; i < arity; ++i) {
+			be_emit_irprintf("->%s", out_regs[i]->name);
+		}
+		be_emit_irprintf("*/");
+		be_emit_finish_line_gas(NULL);
 	}
-	be_emit_irprintf("*/");
-	be_emit_finish_line_gas(NULL);
 
 	emit_permi(irn, regns);
 }
@@ -1800,6 +1857,8 @@ void sparc_emit_routine(ir_graph *irg)
 
 static const lc_opt_table_entry_t sparc_emitter_options[] = {
 	LC_OPT_ENT_BOOL("raw_permis", "emit raw bytes for permi instruction", &raw_permis),
+	LC_OPT_ENT_BOOL("fill_nops", "emit fill nops", &fill_nops),
+	LC_OPT_ENT_BOOL("permi_info", "emit permi info", &permi_info),
 	LC_OPT_LAST
 };
 
@@ -1807,11 +1866,13 @@ void sparc_init_emitter(void)
 {
 	lc_opt_entry_t *be_grp;
 	lc_opt_entry_t *sparc_grp;
+	lc_opt_entry_t *icore_grp;
 
 	be_grp    = lc_opt_get_grp(firm_opt_get_root(), "be");
 	sparc_grp = lc_opt_get_grp(be_grp, "sparc");
+	icore_grp = lc_opt_get_grp(sparc_grp, "icore");
 
-	lc_opt_add_table(sparc_grp, sparc_emitter_options);
+	lc_opt_add_table(icore_grp, sparc_emitter_options);
 
 	FIRM_DBG_REGISTER(dbg, "firm.be.sparc.emit");
 }

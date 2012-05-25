@@ -658,4 +658,5 @@ void be_init_arch_sparc(void)
 	sparc_init_transform();
 	sparc_init_emitter();
 	sparc_init_architecture();
+	icore_init_lowerperm();
 }

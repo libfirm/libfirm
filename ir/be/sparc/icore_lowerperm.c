@@ -43,12 +43,12 @@
 #include "gen_sparc_new_nodes.h"
 #include "gen_sparc_regalloc_if.h"
 
+#include "lc_opts.h"
+#include "irtools.h"
 #include "statev.h"
 
 #define PERMI_SIZE    5
 #define NUM_REGISTERS 32
-
-//#define NO_PSEUDO_CYCLES
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
@@ -73,6 +73,10 @@ static ir_node   *sched_point = NULL;
 static ir_node   *perm        = NULL;
 static ir_mode   *perm_mode   = NULL;
 static const arch_register_class_t *reg_class = NULL;
+
+static int dump_graphs = 0;
+static int only_cycles = 0;
+static int fill_nops   = 0;
 
 static void init_state(void)
 {
@@ -347,11 +351,12 @@ static void handle_zero_chains(void)
 	num_ops = j;
 }
 
-#ifdef NO_PSEUDO_CYCLES
 static void handle_all_chains(void)
 {
 	unsigned i;
 	unsigned j;
+
+	assert(only_cycles);
 
 	for (i = 0; i < num_ops; ++i)
 		if (ops[i].type == PERM_CHAIN)
@@ -367,7 +372,6 @@ static void handle_all_chains(void)
 	}
 	num_ops = j;
 }
-#endif
 
 static ir_node *create_chain_permi(const perm_op_t *op)
 {
@@ -758,9 +762,8 @@ static void analyze_perm(void)
 	/* Handle all zero chains. */
 	handle_zero_chains();
 
-#ifdef NO_PSEUDO_CYCLES
-	handle_all_chains();
-#endif
+	if (only_cycles)
+		handle_all_chains();
 
 	/* Try to combine small ops into one instruction. */
 	search_and_combine_small_ops();
@@ -823,5 +826,30 @@ void icore_lower_nodes_after_ra(ir_graph *irg)
 	/* we will need interference */
 	be_assure_live_chk(irg);
 
+	if (dump_graphs)
+		dump_ir_graph(irg, "before_icore_lowering");
+
 	irg_walk_graph(irg, NULL, lower_nodes_after_ra_walker, NULL);
+
+	if (dump_graphs)
+		dump_ir_graph(irg, "after_icore_lowering");
+}
+
+static const lc_opt_table_entry_t icore_lowerperm_options[] = {
+	LC_OPT_ENT_BOOL("dump_lower", "dump graphs before/after icore lowering", &dump_graphs),
+	LC_OPT_ENT_BOOL("only_cycles", "only turn real cycles into permis", &only_cycles),
+	LC_OPT_ENT_BOOL("fill_nops", "insert fill nops", &fill_nops),
+	LC_OPT_LAST
+};
+
+void icore_init_lowerperm(void)
+{
+	lc_opt_entry_t *be_grp;
+	lc_opt_entry_t *sparc_grp;
+	lc_opt_entry_t *icore_grp;
+
+	be_grp    = lc_opt_get_grp(firm_opt_get_root(), "be");
+	sparc_grp = lc_opt_get_grp(be_grp, "sparc");
+	icore_grp = lc_opt_get_grp(sparc_grp, "icore");
+	lc_opt_add_table(icore_grp, icore_lowerperm_options);
 }
