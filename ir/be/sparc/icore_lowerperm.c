@@ -77,7 +77,7 @@ static const arch_register_class_t *reg_class = NULL;
 static int dump_graphs = 0;
 static int only_cycles = 0;
 static int fill_nops   = 0;
-static int single_movs = 1;
+static int single_movs = 0;
 
 static void init_state(void)
 {
