@@ -986,7 +986,8 @@ static void emit_ia32_Jcc(const ir_node *node)
 
 	/* the second Proj might be a fallthrough */
 	if (can_be_fallthrough(proj_false)) {
-		ia32_emitf(proj_false, "\t/* fallthrough to %L */\n");
+		if (be_options.verbose_asm)
+			ia32_emitf(proj_false, "\t/* fallthrough to %L */\n");
 	} else {
 		ia32_emitf(proj_false, "\tjmp %L\n");
 	}
@@ -1080,7 +1081,8 @@ static void emit_ia32_Jmp(const ir_node *node)
 {
 	/* we have a block schedule */
 	if (can_be_fallthrough(node)) {
-		ia32_emitf(node, "\t/* fallthrough to %L */\n");
+		if (be_options.verbose_asm)
+			ia32_emitf(node, "\t/* fallthrough to %L */\n");
 	} else {
 		ia32_emitf(node, "\tjmp %L\n");
 	}
@@ -1738,8 +1740,6 @@ static void ia32_emit_block_header(ir_node *block)
 {
 	ir_graph     *irg        = current_ir_graph;
 	int           need_label = block_needs_label(block);
-	ir_exec_freq *exec_freq  = be_get_irg_exec_freq(irg);
-	int           arity;
 
 	if (block == get_irg_end_block(irg))
 		return;
@@ -1770,37 +1770,7 @@ static void ia32_emit_block_header(ir_node *block)
 		}
 	}
 
-	if (need_label) {
-		be_gas_emit_block_name(block);
-		be_emit_char(':');
-
-		be_emit_pad_comment();
-		be_emit_cstring("   /* ");
-	} else {
-		be_emit_cstring("\t/* ");
-		be_gas_emit_block_name(block);
-		be_emit_cstring(": ");
-	}
-
-	be_emit_cstring("preds:");
-
-	/* emit list of pred blocks in comment */
-	arity = get_irn_arity(block);
-	if (arity <= 0) {
-		be_emit_cstring(" none");
-	} else {
-		int i;
-		for (i = 0; i < arity; ++i) {
-			ir_node *predblock = get_Block_cfgpred_block(block, i);
-			be_emit_irprintf(" %d", get_irn_node_nr(predblock));
-		}
-	}
-	if (exec_freq != NULL) {
-		be_emit_irprintf(", freq: %f",
-		                 get_block_execfreq(exec_freq, block));
-	}
-	be_emit_cstring(" */\n");
-	be_emit_write_line();
+	be_gas_begin_block(block, need_label);
 }
 
 /**

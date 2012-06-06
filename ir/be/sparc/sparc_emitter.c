@@ -1530,13 +1530,16 @@ static void emit_sparc_branch(const ir_node *node, get_cc_func get_cc)
 
 	fill_delay_slot();
 
-	sparc_emit_indent();
 	if (get_irn_link(proj_false) == next_block) {
-		be_emit_cstring("/* fallthrough to ");
-		sparc_emit_cfop_target(proj_false);
-		be_emit_cstring(" */");
-		be_emit_finish_line_gas(proj_false);
+		if (be_options.verbose_asm) {
+			sparc_emit_indent();
+			be_emit_cstring("/* fallthrough to ");
+			sparc_emit_cfop_target(proj_false);
+			be_emit_cstring(" */");
+			be_emit_finish_line_gas(proj_false);
+		}
 	} else {
+		sparc_emit_indent();
 		be_emit_cstring("ba ");
 		sparc_emit_cfop_target(proj_false);
 		be_emit_finish_line_gas(proj_false);
@@ -1572,13 +1575,16 @@ static void emit_sparc_fbfcc(const ir_node *node)
 
 static void emit_sparc_Ba(const ir_node *node)
 {
-	sparc_emit_indent();
 	if (ba_is_fallthrough(node)) {
-		be_emit_cstring("/* fallthrough to ");
-		sparc_emit_cfop_target(node);
-		be_emit_cstring(" */");
-		be_emit_finish_line_gas(node);
+		if (be_options.verbose_asm) {
+			sparc_emit_indent();
+			be_emit_cstring("/* fallthrough to ");
+			sparc_emit_cfop_target(node);
+			be_emit_cstring(" */");
+			be_emit_finish_line_gas(node);
+		}
 	} else {
+		sparc_emit_indent();
 		be_emit_cstring("ba ");
 		sparc_emit_cfop_target(node);
 		be_emit_finish_line_gas(node);
@@ -1757,14 +1763,9 @@ static void sparc_emit_block(ir_node *block, ir_node *prev)
 {
 	ir_node *node;
 	ir_node *next_delay_slot;
+	bool     needs_label = block_needs_label(block, prev);
 
-	assert(is_Block(block));
-
-	if (block_needs_label(block, prev)) {
-		be_gas_emit_block_name(block);
-		be_emit_cstring(":\n");
-		be_emit_write_line();
-	}
+	be_gas_begin_block(block, needs_label);
 
 	next_delay_slot = find_next_delay_slot(sched_first(block));
 	if (next_delay_slot != NULL)

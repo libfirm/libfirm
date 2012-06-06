@@ -26,6 +26,7 @@
 #include "config.h"
 
 #include "beemitter.h"
+#include "be_t.h"
 #include "irnode_t.h"
 #include "irprintf.h"
 #include "ident.h"
@@ -103,7 +104,7 @@ void be_emit_finish_line_gas(const ir_node *node)
 	const char *sourcefile;
 	unsigned    lineno;
 
-	if (node == NULL) {
+	if (node == NULL || !be_options.verbose_asm) {
 		be_emit_char('\n');
 		be_emit_write_line();
 		return;

@@ -537,11 +537,12 @@ void be_gas_emit_function_prolog(const ir_entity *entity, unsigned po2alignment)
 
 	/* write the begin line (makes the life easier for scripts parsing the
 	 * assembler) */
-	be_emit_write_line();
-	be_emit_cstring("# -- Begin  ");
-	be_gas_emit_entity(entity);
-	be_emit_char('\n');
-	be_emit_write_line();
+	if (be_options.verbose_asm) {
+		be_emit_cstring("# -- Begin  ");
+		be_gas_emit_entity(entity);
+		be_emit_char('\n');
+		be_emit_write_line();
+	}
 
 	if (po2alignment > 0) {
 		const char *fill_byte = "";
@@ -596,10 +597,12 @@ void be_gas_emit_function_epilog(const ir_entity *entity)
 		be_emit_write_line();
 	}
 
-	be_emit_cstring("# -- End  ");
-	be_gas_emit_entity(entity);
-	be_emit_char('\n');
-	be_emit_write_line();
+	if (be_options.verbose_asm) {
+		be_emit_cstring("# -- End  ");
+		be_gas_emit_entity(entity);
+		be_emit_char('\n');
+		be_emit_write_line();
+	}
 
 	be_dbg_method_end();
 
@@ -1567,6 +1570,48 @@ void be_gas_emit_block_name(const ir_node *block)
 	} else {
 		be_emit_irprintf("%s%ld", be_gas_get_private_prefix(), get_irn_node_nr(block));
 	}
+}
+
+void be_gas_begin_block(const ir_node *block, bool needs_label)
+{
+	if (needs_label) {
+		be_gas_emit_block_name(block);
+		be_emit_char(':');
+	} else {
+		if (!be_options.verbose_asm)
+			return;
+		be_emit_cstring("/*");
+		be_gas_emit_block_name(block);
+		be_emit_cstring(":*/");
+	}
+
+	if (be_options.verbose_asm) {
+		int           arity;
+		ir_graph     *irg       = get_irn_irg(block);
+		ir_exec_freq *exec_freq = be_get_irg_exec_freq(irg);
+
+		be_emit_pad_comment();
+		be_emit_cstring("/* preds:");
+
+		arity = get_irn_arity(block);
+		if (arity == 0) {
+			be_emit_cstring(" none");
+		} else {
+			int i;
+			for (i = 0; i < arity; ++i) {
+				ir_node *predblock = get_Block_cfgpred_block(block, i);
+				be_emit_char(' ');
+				be_gas_emit_block_name(predblock);
+			}
+		}
+		if (exec_freq != NULL) {
+			be_emit_irprintf(", freq: %.3f",
+			                 get_block_execfreq(exec_freq, block));
+		}
+		be_emit_cstring(" */");
+	}
+	be_emit_char('\n');
+	be_emit_write_line();
 }
 
 /**

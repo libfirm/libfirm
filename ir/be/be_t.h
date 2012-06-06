@@ -70,6 +70,7 @@ struct be_options_t {
 	char ilp_solver[128];      /**< the ilp solver name */
 	int  statev;               /**< enable stat event dumping */
 	char filtev[128];          /**< filter mask for stat events */
+	int  verbose_asm;          /**< dump verbose assembler */
 };
 extern be_options_t be_options;
 

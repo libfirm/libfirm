@@ -412,10 +412,12 @@ static void emit_arm_B(const ir_node *irn)
 	be_emit_finish_line_gas(proj_true);
 
 	if (get_cfop_target_block(proj_false) == next_block) {
-		be_emit_cstring("\t/* fallthrough to ");
-		arm_emit_cfop_target(proj_false);
-		be_emit_cstring(" */");
-		be_emit_finish_line_gas(proj_false);
+		if (be_options.verbose_asm) {
+			be_emit_cstring("\t/* fallthrough to ");
+			arm_emit_cfop_target(proj_false);
+			be_emit_cstring(" */");
+			be_emit_finish_line_gas(proj_false);
+		}
 	} else {
 		be_emit_cstring("\tb ");
 		arm_emit_cfop_target(proj_false);
@@ -461,20 +463,22 @@ static void emit_arm_CopyB(const ir_node *irn)
 	t2 = arch_register_get_name(tmpregs[2]);
 	t3 = arch_register_get_name(tmpregs[3]);
 
-	be_emit_cstring("/* MemCopy (");
-	be_emit_string(src);
-	be_emit_cstring(")->(");
-	arm_emit_source_register(irn, 0);
-	be_emit_irprintf(" [%u bytes], Uses ", size);
-	be_emit_string(t0);
-	be_emit_cstring(", ");
-	be_emit_string(t1);
-	be_emit_cstring(", ");
-	be_emit_string(t2);
-	be_emit_cstring(", and ");
-	be_emit_string(t3);
-	be_emit_cstring("*/");
-	be_emit_finish_line_gas(NULL);
+	if (be_options.verbose_asm) {
+		be_emit_cstring("/* MemCopy (");
+		be_emit_string(src);
+		be_emit_cstring(")->(");
+		arm_emit_source_register(irn, 0);
+		be_emit_irprintf(" [%u bytes], Uses ", size);
+		be_emit_string(t0);
+		be_emit_cstring(", ");
+		be_emit_string(t1);
+		be_emit_cstring(", ");
+		be_emit_string(t2);
+		be_emit_cstring(", and ");
+		be_emit_string(t3);
+		be_emit_cstring("*/");
+		be_emit_finish_line_gas(NULL);
+	}
 
 	assert(size > 0 && "CopyB needs size > 0" );
 
@@ -761,12 +765,15 @@ static void emit_arm_Jmp(const ir_node *node)
 	if (get_cfop_target_block(node) != next_block) {
 		be_emit_cstring("\tb ");
 		arm_emit_cfop_target(node);
+		be_emit_finish_line_gas(node);
 	} else {
-		be_emit_cstring("\t/* fallthrough to ");
-		arm_emit_cfop_target(node);
-		be_emit_cstring(" */");
+		if (be_options.verbose_asm) {
+			be_emit_cstring("\t/* fallthrough to ");
+			arm_emit_cfop_target(node);
+			be_emit_cstring(" */");
+			be_emit_finish_line_gas(node);
+		}
 	}
-	be_emit_finish_line_gas(node);
 }
 
 static void emit_nothing(const ir_node *irn)
@@ -842,13 +849,9 @@ static void arm_emit_node(const ir_node *irn)
  */
 static void arm_emit_block_header(ir_node *block, ir_node *prev)
 {
-	int           n_cfgpreds;
-	int           need_label;
-	int           i, arity;
-	ir_graph      *irg       = get_irn_irg(block);
-	ir_exec_freq  *exec_freq = be_get_irg_exec_freq(irg);
+	bool need_label = false;
+	int  n_cfgpreds;
 
-	need_label = 0;
 	n_cfgpreds = get_Block_n_cfgpreds(block);
 	if (n_cfgpreds == 1) {
 		ir_node *pred       = get_Block_cfgpred(block, 0);
@@ -858,38 +861,15 @@ static void arm_emit_block_header(ir_node *block, ir_node *prev)
 		 * are no fallthroughs */
 		if (pred_block == prev &&
 				!(is_Proj(pred) && is_arm_SwitchJmp(get_Proj_pred(pred)))) {
-			need_label = 0;
+			need_label = false;
 		} else {
-			need_label = 1;
+			need_label = true;
 		}
 	} else {
-		need_label = 1;
+		need_label = true;
 	}
 
-	if (need_label) {
-		be_gas_emit_block_name(block);
-		be_emit_char(':');
-
-		be_emit_pad_comment();
-		be_emit_cstring("   /* preds:");
-
-		/* emit list of pred blocks in comment */
-		arity = get_irn_arity(block);
-		for (i = 0; i < arity; ++i) {
-			ir_node *predblock = get_Block_cfgpred_block(block, i);
-			be_emit_irprintf(" %d", get_irn_node_nr(predblock));
-		}
-	} else {
-		be_emit_cstring("\t/* ");
-		be_gas_emit_block_name(block);
-		be_emit_cstring(": ");
-	}
-	if (exec_freq != NULL) {
-		be_emit_irprintf(" freq: %f",
-		                 get_block_execfreq(exec_freq, block));
-	}
-	be_emit_cstring(" */\n");
-	be_emit_write_line();
+	be_gas_begin_block(block, need_label);
 }
 
 /**
