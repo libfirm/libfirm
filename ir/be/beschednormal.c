@@ -287,15 +287,19 @@ static int root_cmp(const void* a, const void* b)
 	const irn_cost_pair* const a1 = (const irn_cost_pair*)a;
 	const irn_cost_pair* const b1 = (const irn_cost_pair*)b;
 	int ret;
-	if (is_irn_forking(a1->irn)) {
+	if (is_irn_forking(a1->irn) && !is_irn_forking(b1->irn)) {
 		ret = 1;
-	} else if (is_irn_forking(b1->irn)) {
+	} else if (is_irn_forking(b1->irn) && !is_irn_forking(a1->irn)) {
 		ret = -1;
 	} else {
 		ret = b1->cost - a1->cost;
 		if (ret == 0) {
 			/* place live-out nodes later */
 			ret = (count_result(a1->irn) != 0) - (count_result(b1->irn) != 0);
+			if (ret == 0) {
+				/* compare node idx */
+				ret = get_irn_idx(a1->irn) - get_irn_idx(b1->irn);
+			}
 		}
 	}
 #if defined NORMAL_DBG
