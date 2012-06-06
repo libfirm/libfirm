@@ -51,6 +51,8 @@ bool                  be_gas_emit_types         = true;
 char                  be_gas_elf_type_char      = '@';
 
 static be_gas_section_t current_section = (be_gas_section_t) -1;
+static pmap            *block_numbers;
+static unsigned         next_block_nr;
 
 /**
  * An environment containing all needed dumper data.
@@ -1566,7 +1568,15 @@ void be_gas_emit_block_name(const ir_node *block)
 	if (entity != NULL) {
 		be_gas_emit_entity(entity);
 	} else {
-		be_emit_irprintf("%s%ld", be_gas_get_private_prefix(), get_irn_node_nr(block));
+		void *nr_val = pmap_get(block_numbers, block);
+		int   nr;
+		if (nr_val == NULL) {
+			nr = next_block_nr++;
+			pmap_insert(block_numbers, block, INT_TO_PTR(nr+1));
+		} else {
+			nr = PTR_TO_INT(nr_val)-1;
+		}
+		be_emit_irprintf("%s%d", be_gas_get_private_prefix(), nr);
 	}
 }
 
@@ -1875,12 +1885,17 @@ void be_gas_begin_compilation_unit(const be_main_env_t *env)
 	be_dwarf_open();
 	be_dwarf_unit_begin(env->cup_name);
 
+	block_numbers = pmap_create();
+	next_block_nr = 0;
+
 	emit_global_asms();
 }
 
 void be_gas_end_compilation_unit(const be_main_env_t *env)
 {
 	emit_global_decls(env);
+
+	pmap_destroy(block_numbers);
 
 	be_dwarf_unit_end();
 	be_dwarf_close();
