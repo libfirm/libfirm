@@ -675,13 +675,13 @@ static void icore_emit_fill_nops(const ir_node *irn)
 			if (is_cycle)
 				num_sparc_insns = (length - 1) * 3;
 			else
-				num_sparc_insns = length - 1;
+				num_sparc_insns = length;
 		} else if (is_sparc_Permi23(irn)) {
 			const int  arity     = get_irn_arity(irn);
 			const bool is_cycle2 = get_sparc_permi23_attr_const(irn)->is_cycle2;
 			const bool is_cycle3 = get_sparc_permi23_attr_const(irn)->is_cycle3;
 			const int  pos3      = is_cycle2 ? 2 : 1;
-			const int  size3     = arity - pos3 + (is_cycle3 ? 0 : 1);
+			const int  size3     = arity - pos3;
 
 			if (is_cycle2)
 				num_sparc_insns = 3;
@@ -691,13 +691,20 @@ static void icore_emit_fill_nops(const ir_node *irn)
 			if (is_cycle3)
 				num_sparc_insns += (size3 - 1) * 3;
 			else
-				num_sparc_insns += size3 - 1;
+				num_sparc_insns += size3;
 		} else
 			assert(!"Invalid node passed to icore_emit_fill_nops");
 
 		saved_insns = num_sparc_insns - 1;
-		for (i = 0; i < saved_insns; ++i)
-			be_emit_cstring("\tnop\n");
+		for (i = 0; i < saved_insns; ++i) {
+			if (i == 0) {
+				be_emit_irprintf("\tnop /* permi saved %d instruction%s */\n",
+					saved_insns, (saved_insns > 1 ? "s" : ""));
+			} else {
+				be_emit_cstring("\tnop\n");
+			}
+			be_emit_write_line();
+		}
 	}
 }
 
