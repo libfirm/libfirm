@@ -214,9 +214,7 @@ static void TEMPLATE_emit_block(ir_node *block)
 {
 	ir_node *node;
 
-	be_gas_emit_block_name(block);
-	be_emit_cstring(":\n");
-	be_emit_write_line();
+	be_gas_begin_block(block, true);
 
 	sched_foreach(block, node) {
 		TEMPLATE_emit_node(node);

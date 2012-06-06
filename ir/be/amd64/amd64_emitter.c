@@ -201,9 +201,11 @@ static void emit_amd64_Jmp(const ir_node *node)
 		be_emit_cstring("\tjmp ");
 		amd64_emit_cfop_target(node);
 	} else {
-		be_emit_cstring("\t/* fallthrough to ");
-		amd64_emit_cfop_target(node);
-		be_emit_cstring(" */");
+		if (be_options.verbose_asm) {
+			be_emit_cstring("\t/* fallthrough to ");
+			amd64_emit_cfop_target(node);
+			be_emit_cstring(" */");
+		}
 	}
 	be_emit_finish_line_gas(node);
 }
@@ -276,10 +278,12 @@ static void emit_amd64_Jcc(const ir_node *irn)
 	be_emit_finish_line_gas(proj_true);
 
 	if (get_cfop_target_block(proj_false) == next_block) {
-		be_emit_cstring("\t/* fallthrough to ");
-		amd64_emit_cfop_target(proj_false);
-		be_emit_cstring(" */");
-		be_emit_finish_line_gas(proj_false);
+		if (be_options.verbose_asm) {
+			be_emit_cstring("\t/* fallthrough to ");
+			amd64_emit_cfop_target(proj_false);
+			be_emit_cstring(" */");
+			be_emit_finish_line_gas(proj_false);
+		}
 	} else {
 		be_emit_cstring("\tjmp ");
 		amd64_emit_cfop_target(proj_false);
@@ -536,10 +540,7 @@ static void amd64_gen_block(ir_node *block, void *data)
 	if (! is_Block(block))
 		return;
 
-	be_gas_emit_block_name(block);
-	be_emit_char(':');
-
-	be_emit_write_line();
+	be_gas_begin_block(block, false);
 
 	sched_foreach(block, node) {
 		amd64_emit_node(node);
