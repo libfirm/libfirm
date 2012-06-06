@@ -616,7 +616,6 @@ static void collect_egde_frequency_ilp(ir_node *block, void *data)
 static void coalesce_blocks_ilp(blocksched_ilp_env_t *env)
 {
 	int           edge_count = ARR_LEN(env->ilpedges);
-	be_options_t *options    = be_get_irg_options(env->env.irg);
 	int           i;
 
 	/* complete out constraints */
@@ -638,7 +637,7 @@ static void coalesce_blocks_ilp(blocksched_ilp_env_t *env)
 		lpp_set_factor_fast(env->lpp, entry->out_cst, edge->ilpvar, 1.0);
 	}
 
-	lpp_solve_net(env->lpp, options->ilp_server, options->ilp_solver);
+	lpp_solve_net(env->lpp, be_options.ilp_server, be_options.ilp_solver);
 	assert(lpp_is_sol_valid(env->lpp));
 
 	/* Apply results to edges */

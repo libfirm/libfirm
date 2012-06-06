@@ -71,11 +71,11 @@ struct be_options_t {
 	int  statev;               /**< enable stat event dumping */
 	char filtev[128];          /**< filter mask for stat events */
 };
+extern be_options_t be_options;
 
 struct be_main_env_t {
 	arch_env_t   *arch_env;
 	FILE         *file_handle;
-	be_options_t *options;              /**< backend options */
 	const char   *cup_name;             /**< name of the compilation unit */
 	pmap         *ent_trampoline_map;   /**< A map containing PIC trampolines for methods. */
 	ir_type      *pic_trampolines_type; /**< Class type containing all trampolines */

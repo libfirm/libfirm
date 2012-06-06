@@ -1389,11 +1389,11 @@ static void ia32_init_graph(ir_graph *irg)
 	struct obstack  *obst     = be_get_be_obst(irg);
 	ia32_irg_data_t *irg_data = OALLOCZ(obst, ia32_irg_data_t);
 
-	irg_data->dump = (be_get_irg_options(irg)->dump_flags & DUMP_BE) ? 1 : 0;
+	irg_data->dump = (be_options.dump_flags & DUMP_BE) ? 1 : 0;
 
 	if (gprof) {
 		/* Linux gprof implementation needs base pointer */
-		be_get_irg_options(irg)->omit_fp = 0;
+		be_options.omit_fp = 0;
 	}
 
 	be_birg_from_irg(irg)->isa_link = irg_data;

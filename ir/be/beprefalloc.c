@@ -1210,10 +1210,8 @@ static void solve_lpp(ir_nodeset_t *live_nodes, ir_node *node,
 
 	/* solve lpp */
 	{
-		ir_graph     *irg     = get_irn_irg(node);
-		be_options_t *options = be_get_irg_options(irg);
-		unsigned     *assignment;
-		lpp_solve(lpp, options->ilp_server, options->ilp_solver);
+		unsigned *assignment;
+		lpp_solve(lpp, be_options.ilp_server, be_options.ilp_solver);
 		if (!lpp_is_sol_valid(lpp))
 			panic("ilp solution not valid!");
 
@@ -2033,7 +2031,7 @@ static void be_pref_alloc_cls(void)
 
 static void dump(int mask, ir_graph *irg, const char *suffix)
 {
-	if (be_get_irg_options(irg)->dump_flags & mask)
+	if (be_options.dump_flags & mask)
 		dump_ir_graph(irg, suffix);
 }
 
@@ -2093,10 +2091,10 @@ static void be_pref_alloc(ir_graph *new_irg)
 
 		/* verify schedule and register pressure */
 		be_timer_push(T_VERIFY);
-		if (be_get_irg_options(irg)->verify_option == BE_VERIFY_WARN) {
+		if (be_options.verify_option == BE_VERIFY_WARN) {
 			be_verify_schedule(irg);
 			be_verify_register_pressure(irg, cls);
-		} else if (be_get_irg_options(irg)->verify_option == BE_VERIFY_ASSERT) {
+		} else if (be_options.verify_option == BE_VERIFY_ASSERT) {
 			assert(be_verify_schedule(irg) && "Schedule verification failed");
 			assert(be_verify_register_pressure(irg, cls)
 				&& "Register pressure verification failed");
@@ -2120,9 +2118,9 @@ static void be_pref_alloc(ir_graph *new_irg)
 	be_timer_pop(T_RA_SPILL_APPLY);
 
 	be_timer_push(T_VERIFY);
-	if (be_get_irg_options(irg)->verify_option == BE_VERIFY_WARN) {
+	if (be_options.verify_option == BE_VERIFY_WARN) {
 		be_verify_register_allocation(irg);
-	} else if (be_get_irg_options(irg)->verify_option == BE_VERIFY_ASSERT) {
+	} else if (be_options.verify_option == BE_VERIFY_ASSERT) {
 		assert(be_verify_register_allocation(irg)
 		       && "Register allocation invalid");
 	}

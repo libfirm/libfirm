@@ -1878,7 +1878,6 @@ void be_abi_introduce(ir_graph *irg)
 {
 	be_abi_irg_t     *env         = XMALLOCZ(be_abi_irg_t);
 	ir_node          *old_frame   = get_irg_frame(irg);
-	be_options_t     *options     = be_get_irg_options(irg);
 	const arch_env_t *arch_env    = be_get_irg_arch_env(irg);
 	ir_entity        *entity      = get_irg_entity(irg);
 	ir_type          *method_type = get_entity_type(entity);
@@ -1904,7 +1903,7 @@ void be_abi_introduce(ir_graph *irg)
 	 */
 	be_set_irg_abi(irg, env);
 
-	be_omit_fp      = options->omit_fp;
+	be_omit_fp        = be_options.omit_fp;
 
 	env->keep_map     = pmap_create();
 	env->call         = be_abi_call_new(arch_env->sp->reg_class);
@@ -1915,7 +1914,7 @@ void be_abi_introduce(ir_graph *irg)
 
 	edges_assure(irg);
 
-	if (options->pic) {
+	if (be_options.pic) {
 		irg_walk_graph(irg, fix_pic_symconsts, NULL, env);
 	}
 
