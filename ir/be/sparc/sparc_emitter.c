@@ -68,9 +68,10 @@ static const ir_node *delay_slot_filler; /**< this node has been choosen to fill
 
 static void sparc_emit_node(const ir_node *node);
 static bool emitting_delay_slot;
-static int raw_permis = 0;
-static int fill_nops  = 0;
-static int permi_info = 0;
+static int raw_permis  = 0;
+static int fill_nops   = 0;
+static int delay_slots = 1;
+static int permi_info  = 0;
 
 void sparc_emit_indent(void)
 {
@@ -374,9 +375,6 @@ static bool emits_multiple_instructions(const ir_node *node)
 		return arch_get_irn_flags(node) & sparc_arch_irn_flag_aggregate_return;
 	}
 
-	if (fill_nops && (is_sparc_Permi(node) || is_sparc_Permi23(node)))
-		return true;
-
 	return is_sparc_SMulh(node) || is_sparc_UMulh(node)
 		|| is_sparc_SDiv(node) || is_sparc_UDiv(node)
 		|| be_is_MemPerm(node) || be_is_Perm(node);
@@ -459,6 +457,9 @@ static const ir_node *pick_delay_slot_for(const ir_node *node)
 	static const unsigned PICK_DELAY_SLOT_MAX_DISTANCE = 10;
 
 	assert(has_delay_slot(node));
+
+	if (!delay_slots)
+		return NULL;
 
 	while (sched_has_prev(schedpoint)) {
 		schedpoint = sched_prev(schedpoint);
@@ -1859,6 +1860,7 @@ void sparc_emit_routine(ir_graph *irg)
 static const lc_opt_table_entry_t sparc_emitter_options[] = {
 	LC_OPT_ENT_BOOL("raw_permis", "emit raw bytes for permi instruction", &raw_permis),
 	LC_OPT_ENT_BOOL("fill_nops", "emit fill nops", &fill_nops),
+	LC_OPT_ENT_BOOL("delay_slots", "fill delay slots with other instructions", &delay_slots),
 	LC_OPT_ENT_BOOL("permi_info", "emit permi info", &permi_info),
 	LC_OPT_LAST
 };
