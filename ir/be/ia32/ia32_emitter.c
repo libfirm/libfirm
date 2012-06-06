@@ -1926,8 +1926,8 @@ void ia32_gen_routine(ir_graph *irg)
 	parameter_dbg_info_t *infos;
 	int i, n;
 
-	isa      = (ia32_isa_t*) arch_env;
-	do_pic   = be_get_irg_options(irg)->pic;
+	isa    = (ia32_isa_t*) arch_env;
+	do_pic = be_options.pic;
 
 	be_gas_elf_type_char = '@';
 

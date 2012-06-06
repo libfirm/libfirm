@@ -187,7 +187,7 @@ static ir_node *get_symconst_base(void)
 {
 	ir_graph *irg = current_ir_graph;
 
-	if (be_get_irg_options(irg)->pic) {
+	if (be_options.pic) {
 		const arch_env_t *arch_env = be_get_irg_arch_env(irg);
 		return arch_env->impl->get_pic_base(irg);
 	}
@@ -4778,7 +4778,7 @@ static ir_node *gen_be_Call(ir_node *node)
 
 	/* special case for PIC trampoline calls */
 	old_no_pic_adjust  = ia32_no_pic_adjust;
-	ia32_no_pic_adjust = be_get_irg_options(current_ir_graph)->pic;
+	ia32_no_pic_adjust = be_options.pic;
 
 	match_arguments(&am, src_block, NULL, src_ptr, src_mem,
 	                match_am | match_immediate);

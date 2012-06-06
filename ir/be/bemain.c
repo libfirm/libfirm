@@ -77,7 +77,7 @@
 #define NEW_ID(s) new_id_from_chars(s, sizeof(s) - 1)
 
 /* options visible for anyone */
-static be_options_t be_options = {
+be_options_t be_options = {
 	DUMP_NONE,                         /* dump flags */
 	BE_TIME_OFF,                       /* no timing */
 	false,                             /* profile_generate */
@@ -370,7 +370,6 @@ static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle,
                                   const char *compilation_unit_name)
 {
 	memset(env, 0, sizeof(*env));
-	env->options              = &be_options;
 	env->file_handle          = file_handle;
 	env->ent_trampoline_map   = pmap_create();
 	env->pic_trampolines_type = new_type_class(NEW_ID("$PIC_TRAMPOLINE_TYPE"));

@@ -254,8 +254,7 @@ ilp_env_t *new_ilp_env(copy_opt_t *co, ilp_callback build, ilp_callback apply, v
 
 lpp_sol_state_t ilp_go(ilp_env_t *ienv)
 {
-	ir_graph     *irg     = ienv->co->irg;
-	be_options_t *options = be_get_irg_options(irg);
+	ir_graph *irg = ienv->co->irg;
 
 	sr_remove(ienv->sr);
 
@@ -279,7 +278,7 @@ lpp_sol_state_t ilp_go(ilp_env_t *ienv)
 	if (solve_log)
 		lpp_set_log(ienv->lp, stdout);
 
-	lpp_solve(ienv->lp, options->ilp_server, options->ilp_solver);
+	lpp_solve(ienv->lp, be_options.ilp_server, be_options.ilp_solver);
 
 	//be_stat_ev_dbl("co_ilp_objval",     ienv->lp->objval);
 	//be_stat_ev_dbl("co_ilp_best_bound", ienv->lp->best_bound);

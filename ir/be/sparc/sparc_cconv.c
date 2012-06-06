@@ -193,8 +193,7 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 	unsigned             *caller_saves;
 
 	if (irg != NULL) {
-		const be_options_t *options = be_get_irg_options(irg);
-		omit_fp = options->omit_fp;
+		omit_fp = be_options.omit_fp;
 		/* our current vaarg handling needs the standard space to store the
 		 * args 0-5 in it */
 		if (get_method_variadicity(function_type) == variadicity_variadic)

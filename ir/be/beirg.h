@@ -136,11 +136,6 @@ static inline void be_set_irg_abi(ir_graph *irg, be_abi_irg_t *abi)
 	be_birg_from_irg(irg)->abi = abi;
 }
 
-static inline be_options_t *be_get_irg_options(const ir_graph *irg)
-{
-	return be_birg_from_irg(irg)->main_env->options;
-}
-
 /** deprecated */
 static inline ir_graph *be_get_birg_irg(const be_irg_t *birg)
 {
