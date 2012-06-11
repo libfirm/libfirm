@@ -76,7 +76,6 @@ static const arch_register_class_t *reg_class = NULL;
 
 static int dump_graphs = 0;
 static int only_cycles = 0;
-static int fill_nops   = 0;
 static int single_movs = 0;
 
 static void init_state(void)
@@ -870,7 +869,6 @@ void icore_lower_nodes_after_ra(ir_graph *irg)
 static const lc_opt_table_entry_t icore_lowerperm_options[] = {
 	LC_OPT_ENT_BOOL("dump_lower", "dump graphs before/after icore lowering", &dump_graphs),
 	LC_OPT_ENT_BOOL("only_cycles", "only turn real cycles into permis", &only_cycles),
-	LC_OPT_ENT_BOOL("fill_nops", "insert fill nops", &fill_nops),
 	LC_OPT_ENT_BOOL("single_movs", "generate permi for single movs", &single_movs),
 	LC_OPT_LAST
 };
