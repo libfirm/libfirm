@@ -748,6 +748,28 @@ static void search_and_combine_small_ops(void)
 	num_ops = j;
 }
 
+static void emit_stat_events(void)
+{
+	ir_node *bb    = get_nodes_block(perm);
+	unsigned count = ir_profile_get_block_execcount(bb);
+	unsigned i;
+
+	stat_ev_ctx_push_fmt("perm_stats", "%ld", get_irn_node_nr(perm));
+	stat_ev_int("perm_block_nr", get_irn_node_nr(bb));
+	stat_ev_int("perm_exec_count", count);
+
+	for (i = 0; i < num_ops; ++i) {
+		if (ops[i].type == PERM_CYCLE)
+			stat_ev_int("perm_cycle_size", ops[i].length);
+		else if (ops[i].type == PERM_CHAIN)
+			stat_ev_int("perm_chain_size", ops[i].length);
+		else
+			assert(!"Invalid perm op type");
+	}
+
+	stat_ev_ctx_pop("perm_stats");
+}
+
 static void analyze_perm(void)
 {
 	unsigned i;
@@ -767,6 +789,10 @@ static void analyze_perm(void)
 
 	/* Handle all zero chains. */
 	handle_zero_chains();
+
+	/* For non-empty register transfer graphs, emit statistic events. */
+	if (num_ops > 0)
+		emit_stat_events();
 
 	if (only_cycles)
 		handle_all_chains();
