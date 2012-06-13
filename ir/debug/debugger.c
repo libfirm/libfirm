@@ -215,7 +215,7 @@ const char *firm_debug_text(void)
  */
 static void dbg_printf(const char *fmt, ...)
 {
-	char buf[1024];
+	static char buf[2048];
 
 	va_list args;
 	va_start(args, fmt);
