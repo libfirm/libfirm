@@ -918,7 +918,7 @@ static const char *reserved[] = {
 	"disable",
 	"dumpfilter",
 	"enable",
-	"help"
+	"help",
 	"init",
 	"irgldname",
 	"irgname",
