@@ -39,6 +39,7 @@
 #include "entity_t.h"
 #include "error.h"
 #include "util.h"
+#include "execfreq.h"
 
 #include "be_t.h"
 #include "beemitter.h"

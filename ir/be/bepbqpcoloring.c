@@ -37,8 +37,7 @@
 #include "irgwalk.h"
 #include "irtools.h"
 #include "time.h"
-
-/* libfirm/ir/adt includes */
+#include "execfreq.h"
 #include "bipartite.h"
 
 /* libfirm/ir/be includes */

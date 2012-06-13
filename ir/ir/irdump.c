@@ -50,7 +50,6 @@
 #include "irdom.h"
 #include "irloop_t.h"
 #include "callgraph.h"
-#include "irextbb_t.h"
 #include "irhooks.h"
 #include "dbginfo_t.h"
 #include "irtools.h"
@@ -647,44 +646,6 @@ static ir_node **construct_block_lists(ir_graph *irg)
 	}
 
 	return (ir_node**)ird_get_irg_link(irg);
-}
-
-typedef struct list_tuple {
-	ir_node **blk_list;
-	ir_extblk **extbb_list;
-} list_tuple;
-
-/** Construct lists to walk IR extended block-wise.
- * Free the lists in the tuple with DEL_ARR_F(). Sets the irg link field to
- * NULL in all graphs not visited.
- */
-static list_tuple *construct_extblock_lists(ir_graph *irg)
-{
-	ir_node **blk_list = construct_block_lists(irg);
-	size_t i, n;
-	list_tuple *lists = XMALLOC(list_tuple);
-
-	lists->blk_list   = NEW_ARR_F(ir_node *, 0);
-	lists->extbb_list = NEW_ARR_F(ir_extblk *, 0);
-
-	inc_irg_block_visited(irg);
-	for (i = 0, n = ARR_LEN(blk_list); i < n; ++i) {
-		ir_extblk *ext;
-
-		if (is_Block(blk_list[i])) {
-			ext = get_Block_extbb(blk_list[i]);
-
-			if (extbb_not_visited(ext)) {
-				ARR_APP1(ir_extblk *, lists->extbb_list, ext);
-				mark_extbb_visited(ext);
-			}
-		} else
-			ARR_APP1(ir_node *, lists->blk_list, blk_list[i]);
-	}
-	DEL_ARR_F(blk_list);
-
-	ird_set_irg_link(irg, lists);
-	return lists;
 }
 
 void dump_node_opcode(FILE *F, const ir_node *n)
@@ -1509,8 +1470,6 @@ static void dump_graph_info(FILE *F, ir_graph *irg)
 		fprintf(F, " consistent_loopinfo");
 	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE))
 		fprintf(F, " consistent_entity_usage");
-	if (is_irg_state(irg, IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS))
-		fprintf(F, " valid_exended_blocks");
 	fprintf(F, "\"\n");
 }
 
@@ -2048,106 +2007,13 @@ static void dump_blocks_as_subgraphs(FILE *out, ir_graph *irg)
 	}
 }
 
-/** dumps a graph extended block-wise. Expects all blockless nodes in arr in irgs link.
- *  The outermost nodes: blocks and nodes not op_pin_state_pinned, Bad, Unknown. */
-static void dump_extblock_graph(FILE *F, ir_graph *irg)
-{
-	size_t i, arr_len;
-	ir_extblk **arr = (ir_extblk**)ird_get_irg_link(irg);
-
-	for (i = 0, arr_len = ARR_LEN(arr); i < arr_len; ++i) {
-		ir_extblk *extbb = arr[i];
-		ir_node *leader = get_extbb_leader(extbb);
-		size_t j, n_blks;
-
-		fprintf(F, "graph: { title: \"");
-		fprintf(F, "x%ld", get_irn_node_nr(leader));
-		fprintf(F, "\"  label: \"ExtBB %ld\" status:clustered color:lightgreen\n",
-		        get_irn_node_nr(leader));
-
-		for (j = 0, n_blks = ARR_LEN(extbb->blks); j < n_blks; ++j) {
-			ir_node *node = extbb->blks[j];
-			if (is_Block(node)) {
-			/* Dumps the block and all the nodes in the block, which are to
-				be found in Block->link. */
-				dump_whole_block(F, node);
-			} else {
-				/* Nodes that are not in a Block. */
-				dump_node(F, node);
-				if (is_Bad(get_nodes_block(node)) && !node_floats(node)) {
-					dump_const_block_local(F, node);
-				}
-				dump_ir_data_edges(F, node);
-			}
-		}
-		fprintf(F, "}\n");
-	}
-
-	if ((flags & ir_dump_flag_loops)
-			&& (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO)))
-		dump_loop_nodes_into_graph(F, irg);
-
-	free_extbb(irg);
-}
-
-static void dump_blocks_extbb_grouped(FILE *F, ir_graph *irg)
-{
-	size_t    i;
-	ir_entity *ent = get_irg_entity(irg);
-
-	if (!is_irg_state(irg, IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS))
-		compute_extbb(irg);
-
-	construct_extblock_lists(irg);
-
-	fprintf(F, "graph: { title: ");
-	print_irgid(F, irg);
-	fprintf(F, " label: \"%s\" status:clustered color: white\n",
-	        get_ent_dump_name(ent));
-
-	dump_graph_info(F, irg);
-	print_dbg_info(F, get_entity_dbg_info(ent));
-
-	for (i = get_irp_n_irgs(); i > 0;) {
-		ir_graph   *other_irg = get_irp_irg(--i);
-		list_tuple *lists     = (list_tuple*)ird_get_irg_link(other_irg);
-
-		if (lists) {
-			/* dump the extended blocks first */
-			if (ARR_LEN(lists->extbb_list)) {
-				ird_set_irg_link(other_irg, lists->extbb_list);
-				dump_extblock_graph(F, other_irg);
-			}
-
-			/* we may have blocks without extended blocks, bad for instance */
-			if (ARR_LEN(lists->blk_list)) {
-				ird_set_irg_link(other_irg, lists->blk_list);
-				dump_block_graph(F, other_irg);
-			}
-
-			DEL_ARR_F(lists->extbb_list);
-			DEL_ARR_F(lists->blk_list);
-			xfree(lists);
-		}
-	}
-
-	/* Close the vcg information for the irg */
-	fprintf(F, "}\n\n");
-
-	free_extbb(irg);
-}
-
 void dump_ir_graph_file(FILE *out, ir_graph *irg)
 {
 	dump_vcg_header(out, get_irg_dump_name(irg), NULL, NULL);
 
 	/* dump nodes */
 	if (flags & ir_dump_flag_blocks_as_subgraphs) {
-		if (flags & ir_dump_flag_group_extbb) {
-			dump_blocks_extbb_grouped(out, irg);
-		} else {
-			dump_blocks_as_subgraphs(out, irg);
-		}
+		dump_blocks_as_subgraphs(out, irg);
 	} else {
 		/* dump_node_with_edges must be called in post visiting predecessors */
 		ird_walk_graph(irg, NULL, dump_node_with_edges, out);

@@ -158,8 +158,6 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 	res->visited       = 0; /* visited flag, for the ir walker */
 	res->block_visited = 0; /* visited flag, for the 'block'-walker */
 
-	res->extbb_obst = NULL;
-
 	res->last_node_idx = 0;
 
 	new_identities(res);
@@ -248,7 +246,6 @@ ir_graph *new_const_code_irg(void)
 	res->block_visited = 0; /* visited flag, for the 'block'-walker */
 	res->obst          = XMALLOC(struct obstack);
 	obstack_init(res->obst);
-	res->extbb_obst = NULL;
 
 	res->last_node_idx = 0;
 
@@ -352,7 +349,6 @@ ir_graph *create_irg_copy(ir_graph *irg)
 	res->block_visited = 0; /* visited flag, for the 'block'-walker */
 	res->obst       = XMALLOC(struct obstack);
 	obstack_init(res->obst);
-	res->extbb_obst = NULL;
 
 	res->last_node_idx = 0;
 

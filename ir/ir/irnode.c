@@ -571,22 +571,6 @@ int (Block_block_visited)(const ir_node *node)
 	return Block_block_visited_(node);
 }
 
-ir_extblk *get_Block_extbb(const ir_node *block)
-{
-	ir_extblk *res;
-	assert(is_Block(block));
-	res = block->attr.block.extblk;
-	assert(res == NULL || is_ir_extbb(res));
-	return res;
-}
-
-void set_Block_extbb(ir_node *block, ir_extblk *extblk)
-{
-	assert(is_Block(block));
-	assert(extblk == NULL || is_ir_extbb(extblk));
-	block->attr.block.extblk = extblk;
-}
-
 ir_graph *(get_Block_irg)(const ir_node *block)
 {
 	return get_Block_irg_(block);

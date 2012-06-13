@@ -195,12 +195,6 @@
     <ClCompile Include="$(FirmRoot)\ir\ana\irdom.c">
       <Filter>ir\ana</Filter>
     </ClCompile>
-    <ClCompile Include="$(FirmRoot)\ir\ana\irextbb2.c">
-      <Filter>ir\ana</Filter>
-    </ClCompile>
-    <ClCompile Include="$(FirmRoot)\ir\ana\irextbb.c">
-      <Filter>ir\ana</Filter>
-    </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\irlivechk.c">
       <Filter>ir\ana</Filter>
     </ClCompile>
@@ -247,9 +241,6 @@
       <Filter>ir\ana</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\ana\irdom_t.h">
-      <Filter>ir\ana</Filter>
-    </ClInclude>
-    <ClInclude Include="$(FirmRoot)\ir\ana\irextbb_t.h">
       <Filter>ir\ana</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\ana\irlivechk.h">
@@ -1275,9 +1266,6 @@
     <ClInclude Include="$(FirmRoot)\include\libfirm\iredges.h">
       <Filter>include\libfirm</Filter>
     </ClInclude>
-    <ClInclude Include="$(FirmRoot)\include\libfirm\irextbb.h">
-      <Filter>include\libfirm</Filter>
-    </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\irflag.h">
       <Filter>include\libfirm</Filter>
     </ClInclude>
@@ -2064,12 +2052,6 @@
     <ClCompile Include="$(FirmRoot)\ir\ana\irdom.c">
       <Filter>ir\ana</Filter>
     </ClCompile>
-    <ClCompile Include="$(FirmRoot)\ir\ana\irextbb.c">
-      <Filter>ir\ana</Filter>
-    </ClCompile>
-    <ClCompile Include="$(FirmRoot)\ir\ana\irextbb2.c">
-      <Filter>ir\ana</Filter>
-    </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\irlivechk.c">
       <Filter>ir\ana</Filter>
     </ClCompile>
@@ -2104,9 +2086,6 @@
       <Filter>ir\ana</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\ana\irdom_t.h">
-      <Filter>ir\ana</Filter>
-    </ClInclude>
-    <ClInclude Include="$(FirmRoot)\ir\ana\irextbb_t.h">
       <Filter>ir\ana</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\ana\irlivechk.h">
@@ -3100,9 +3079,6 @@
       <Filter>include\libfirm</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\iredges.h">
-      <Filter>include\libfirm</Filter>
-    </ClInclude>
-    <ClInclude Include="$(FirmRoot)\include\libfirm\irextbb.h">
       <Filter>include\libfirm</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\irflag.h">
@@ -3771,12 +3747,6 @@
     <ClCompile Include="$(FirmRoot)\ir\ana\irdom.c">
       <Filter>ir\ana</Filter>
     </ClCompile>
-    <ClCompile Include="$(FirmRoot)\ir\ana\irextbb.c">
-      <Filter>ir\ana</Filter>
-    </ClCompile>
-    <ClCompile Include="$(FirmRoot)\ir\ana\irextbb2.c">
-      <Filter>ir\ana</Filter>
-    </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\irlivechk.c">
       <Filter>ir\ana</Filter>
     </ClCompile>
@@ -3814,9 +3784,6 @@
       <Filter>ir\ana</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\ana\irdom_t.h">
-      <Filter>ir\ana</Filter>
-    </ClInclude>
-    <ClInclude Include="$(FirmRoot)\ir\ana\irextbb_t.h">
       <Filter>ir\ana</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\ana\irlivechk.h">
@@ -4807,9 +4774,6 @@
       <Filter>include\libfirm</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\iredges.h">
-      <Filter>include\libfirm</Filter>
-    </ClInclude>
-    <ClInclude Include="$(FirmRoot)\include\libfirm\irextbb.h">
       <Filter>include\libfirm</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\irflag.h">
@@ -5472,12 +5436,6 @@
     <ClCompile Include="$(FirmRoot)\ir\ana\irdom.c">
       <Filter>ir\ana</Filter>
     </ClCompile>
-    <ClCompile Include="$(FirmRoot)\ir\ana\irextbb.c">
-      <Filter>ir\ana</Filter>
-    </ClCompile>
-    <ClCompile Include="$(FirmRoot)\ir\ana\irextbb2.c">
-      <Filter>ir\ana</Filter>
-    </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\irlivechk.c">
       <Filter>ir\ana</Filter>
     </ClCompile>
@@ -5515,9 +5473,6 @@
       <Filter>ir\ana</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\ana\irdom_t.h">
-      <Filter>ir\ana</Filter>
-    </ClInclude>
-    <ClInclude Include="$(FirmRoot)\ir\ana\irextbb_t.h">
       <Filter>ir\ana</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\ana\irlivechk.h">
@@ -6508,9 +6463,6 @@
       <Filter>include\libfirm</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\iredges.h">
-      <Filter>include\libfirm</Filter>
-    </ClInclude>
-    <ClInclude Include="$(FirmRoot)\include\libfirm\irextbb.h">
       <Filter>include\libfirm</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\irflag.h">

@@ -1260,8 +1260,7 @@ int shape_blocks(ir_graph *irg)
 
 	if (res) {
 		/* control flow changed */
-		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
-		                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 	}
 
 	for (bl = env.all_blocks; bl != NULL; bl = bl->all_next) {

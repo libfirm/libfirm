@@ -94,8 +94,6 @@ typedef struct ir_loop              ir_loop;
 /** @ingroup ir_entity
  * Entity */
 typedef struct ir_entity            ir_entity;
-/** Extended Basic Block */
-typedef struct ir_extblk            ir_extblk;
 /** @ingroup execfreq
  * Execution Frequency Analysis Results */
 typedef struct ir_exec_freq         ir_exec_freq;

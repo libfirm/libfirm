@@ -474,10 +474,8 @@ typedef enum {
 	IR_GRAPH_STATE_CONSISTENT_LOOPINFO       = 1U << 13,
 	/** entity usage information is computed and up to date */
 	IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE   = 1U << 14,
-	/** extended basic blocks have been formed and are up to date */
-	IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS     = 1U << 15,
 	/** graph contains as many returns as possible */
-	IR_GRAPH_STATE_MANY_RETURNS              = 1U << 16,
+	IR_GRAPH_STATE_MANY_RETURNS              = 1U << 15,
 } ir_graph_state_t;
 ENUM_BITSET(ir_graph_state_t)
 

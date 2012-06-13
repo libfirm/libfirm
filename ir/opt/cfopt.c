@@ -867,7 +867,6 @@ static ir_graph_state_t do_cfopt(ir_graph *irg)
 			break;
 
 		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
-		                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS
 		                   | IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE);
 	}
 

@@ -243,12 +243,6 @@ static int firm_emit(lc_appendable_t *app,
 		add[0] = '\0';
 		break;
 	}
-	case k_ir_extblk: {
-		ir_extblk *extblk = (ir_extblk*)X;
-		snprintf(buf, sizeof(buf), "ExtBlock");
-		snprintf(add, sizeof(add), "[%ld]", get_irn_node_nr(get_extbb_leader(extblk)));
-		break;
-	}
 
 	default:
 		snprintf(buf, sizeof(buf), "UNKWN");

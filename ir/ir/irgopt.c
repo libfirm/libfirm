@@ -233,7 +233,6 @@ int optimize_graph_df(ir_graph *irg)
 	/* invalidate infos */
 	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
-	clear_irg_state(irg, IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
 	edges_deactivate(irg);
 
 	/* Finally kill BAD and doublets from the keep alives.

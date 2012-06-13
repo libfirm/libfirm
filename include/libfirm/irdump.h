@@ -292,8 +292,6 @@ FIRM_API ir_dump_verbosity_t ir_get_dump_verbosity(void);
 typedef enum {
 	/** dump basic blocks as subgraphs which contain the nodes in the block */
 	ir_dump_flag_blocks_as_subgraphs   = 1U << 0,
-	/** display blocks in extended basic grouped inside a subgraph */
-	ir_dump_flag_group_extbb           = 1U << 1,
 	/** dump (parts of) typegraph along with nodes */
 	ir_dump_flag_with_typegraph        = 1U << 2,
 	/** Sets the vcg flag "display_edge_labels" to no.

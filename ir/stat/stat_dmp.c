@@ -473,7 +473,6 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 {
 	int dump_opts = 1;
 	block_entry_t *b_entry;
-	extbb_entry_t *eb_entry;
 
 	if (! dmp->f)
 		return;
@@ -586,22 +585,6 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 
 		/* dump block permutation statistics */
 		simple_dump_be_block_permstat(dmp, entry);
-
-		if (dmp->status->stat_options & FIRMSTAT_COUNT_EXTBB && entry->extbb_hash) {
-			/* dump extended block info */
-			fprintf(dmp->f, "\n%12s %12s %12s %12s %12s %12s %12s\n", "Extbb Nr", "Nodes", "intern E", "incoming E", "outgoing E", "Phi", "quot");
-			foreach_pset(entry->extbb_hash, extbb_entry_t*, eb_entry) {
-				fprintf(dmp->f, "ExtBB %6ld %12u %12u %12u %12u %12u %4.8f\n",
-					eb_entry->block_nr,
-					cnt_to_uint(&eb_entry->cnt[bcnt_nodes]),
-					cnt_to_uint(&eb_entry->cnt[bcnt_edges]),
-					cnt_to_uint(&eb_entry->cnt[bcnt_in_edges]),
-					cnt_to_uint(&eb_entry->cnt[bcnt_out_edges]),
-					cnt_to_uint(&eb_entry->cnt[bcnt_phi_data]),
-					cnt_to_dbl(&eb_entry->cnt[bcnt_edges]) / cnt_to_dbl(&eb_entry->cnt[bcnt_nodes])
-				);
-			}  /* foreach_pset */
-		}  /* if */
 	}
 }  /* simple_dump_graph */
 

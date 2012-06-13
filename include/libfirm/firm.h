@@ -91,7 +91,6 @@
 #include "irdump.h"
 #include "iredgekinds.h"
 #include "iredges.h"
-#include "irextbb.h"
 #include "irflag.h"
 #include "irgmod.h"
 #include "irgopt.h"

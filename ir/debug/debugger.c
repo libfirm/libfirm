@@ -698,7 +698,6 @@ static void show_firm_object(void *firm_thing)
 	case k_tarval:
 	case k_ir_loop:
 	case k_ir_compound_graph_path:
-	case k_ir_extblk:
 	case k_ir_prog:
 		fprintf(f, "NIY\n");
 		break;

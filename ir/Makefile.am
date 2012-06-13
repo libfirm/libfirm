@@ -54,8 +54,6 @@ libfirm_la_SOURCES = \
 	ana/ircfscc.c \
 	ana/irconsconfirm.c \
 	ana/irdom.c \
-	ana/irextbb2.c \
-	ana/irextbb.c \
 	ana/irlivechk.c \
 	ana/irloop.c \
 	ana/irmemory.c \
@@ -273,7 +271,6 @@ EXTRA_DIST = \
 	ana/dfs_t.h \
 	ana/irbackedge_t.h \
 	ana/irdom_t.h \
-	ana/irextbb_t.h \
 	ana/irlivechk.h \
 	ana/irloop_t.h \
 	ana/irmemory_t.h \

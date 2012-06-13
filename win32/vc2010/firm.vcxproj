@@ -154,8 +154,6 @@
     <ClCompile Include="$(FirmRoot)\ir\ana\irscc.c"/>
     <ClCompile Include="$(FirmRoot)\ir\ana\irconsconfirm.c"/>
     <ClCompile Include="$(FirmRoot)\ir\ana\irdom.c"/>
-    <ClCompile Include="$(FirmRoot)\ir\ana\irextbb.c"/>
-    <ClCompile Include="$(FirmRoot)\ir\ana\irextbb2.c"/>
     <ClCompile Include="$(FirmRoot)\ir\ana\irlivechk.c"/>
     <ClCompile Include="$(FirmRoot)\ir\ana\irloop.c"/>
     <ClCompile Include="$(FirmRoot)\ir\ana\irmemory.c"/>
@@ -169,7 +167,6 @@
     <ClInclude Include="$(FirmRoot)\ir\ana\dfs_t.h"/>
     <ClInclude Include="$(FirmRoot)\ir\ana\irbackedge_t.h"/>
     <ClInclude Include="$(FirmRoot)\ir\ana\irdom_t.h"/>
-    <ClInclude Include="$(FirmRoot)\ir\ana\irextbb_t.h"/>
     <ClInclude Include="$(FirmRoot)\ir\ana\irlivechk.h"/>
     <ClInclude Include="$(FirmRoot)\ir\ana\irloop_t.h"/>
     <ClInclude Include="$(FirmRoot)\ir\ana\irmemory_t.h"/>
@@ -500,7 +497,6 @@
     <ClInclude Include="$(FirmRoot)\include\libfirm\irgraph.h"/>
     <ClInclude Include="$(FirmRoot)\include\libfirm\iredgekinds.h"/>
     <ClInclude Include="$(FirmRoot)\include\libfirm\iredges.h"/>
-    <ClInclude Include="$(FirmRoot)\include\libfirm\irextbb.h"/>
     <ClInclude Include="$(FirmRoot)\include\libfirm\irflag.h"/>
     <ClInclude Include="$(FirmRoot)\include\libfirm\irgmod.h"/>
     <ClInclude Include="$(FirmRoot)\include\libfirm\irgopt.h"/>

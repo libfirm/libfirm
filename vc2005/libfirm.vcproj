@@ -6903,45 +6903,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\ir\ana\irextbb.c"
-					>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="DebugJTEST|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\ir\ana\irextbb2.c"
-					>
-				</File>
-				<File
-					RelativePath="..\ir\ana\irextbb_t.h"
-					>
-				</File>
-				<File
 					RelativePath="..\ir\ana\irlivechk.c"
 					>
 				</File>
@@ -7329,10 +7290,6 @@
 			</File>
 			<File
 				RelativePath="..\include\libfirm\iredges.h"
-				>
-			</File>
-			<File
-				RelativePath="..\include\libfirm\irextbb.h"
 				>
 			</File>
 			<File

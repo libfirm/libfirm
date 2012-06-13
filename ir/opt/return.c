@@ -143,8 +143,7 @@ void normalize_one_return(ir_graph *irg)
 	 * a new Block was added, so dominator, outs and loop are inconsistent,
 	 * trouts and callee-state should be still valid
 	 */
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
-	                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 }
 
 /* Create a graph pass. */
@@ -365,8 +364,7 @@ void normalize_n_returns(ir_graph *irg)
 	                   | IR_GRAPH_STATE_ONE_RETURN
 	                   | IR_GRAPH_STATE_CONSISTENT_OUTS
 	                   | IR_GRAPH_STATE_NO_UNREACHABLE_CODE
-	                   | IR_GRAPH_STATE_NO_BADS
-	                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
+	                   | IR_GRAPH_STATE_NO_BADS);
 }
 
 /* Create a graph pass. */

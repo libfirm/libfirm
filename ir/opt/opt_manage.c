@@ -41,7 +41,6 @@ void perform_irg_optimization(ir_graph *irg, optdesc_t *opt)
 	PREPARE(IR_GRAPH_STATE_CONSISTENT_OUTS,          assure_irg_outs)
 	PREPARE(IR_GRAPH_STATE_CONSISTENT_LOOPINFO,      assure_loopinfo)
 	PREPARE(IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE,  assure_irg_entity_usage_computed)
-	PREPARE(IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS,    compute_extbb)
 
 	/* now all the requirements for the optimization are fulfilled */
 	if (dump)
@@ -68,7 +67,6 @@ void perform_irg_optimization(ir_graph *irg, optdesc_t *opt)
 	INVALIDATE(IR_GRAPH_STATE_CONSISTENT_OUT_EDGES,     edges_deactivate)
 	INVALIDATE(IR_GRAPH_STATE_CONSISTENT_LOOPINFO,      nop)
 	INVALIDATE(IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE,  nop)
-	INVALIDATE(IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS,    nop)
 
 	remove_End_Bads_and_doublets(get_irg_end(irg));
 

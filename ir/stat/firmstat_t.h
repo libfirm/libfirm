@@ -151,7 +151,6 @@ typedef struct graph_entry_t {
 	struct obstack             recalc_cnts;                  /**< obstack containing the counters that are recalculated */
 	HASH_MAP(node_entry_t)     *opcode_hash;                 /**< hash map containing the opcode counter */
 	HASH_MAP(block_entry_t)    *block_hash;                  /**< hash map containing the block counter */
-	HASH_MAP(block_entry_t)    *extbb_hash;                  /**< hash map containing the extended block counter */
 	HASH_MAP(be_block_entry_t) *be_block_hash;               /**< hash map containing backend block information */
 	counter_t                  cnt[_gcnt_last];               /**< counter */
 	unsigned                   num_tail_recursion;           /**< number of tail recursion optimizations */
@@ -241,9 +240,6 @@ typedef struct block_entry_t {
 	unsigned        is_start:1;       /**< set, if it's the Start block. */
 	unsigned        is_end:1;         /**< set, if it's the End block. */
 } block_entry_t;
-
-/** An entry for an extended block in a ir-graph */
-typedef block_entry_t extbb_entry_t;
 
 /**
  * Some potential interesting float values

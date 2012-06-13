@@ -263,18 +263,6 @@ SOURCE=..\ir\ana\irdom_t.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\ir\ana\irextbb.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\ana\irextbb2.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\ir\ana\irextbb_t.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\ir\ana\irlivechk.c
 # End Source File
 # Begin Source File
@@ -2753,10 +2741,6 @@ SOURCE=..\include\libfirm\iredgekinds.h
 # Begin Source File
 
 SOURCE=..\include\libfirm\iredges.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\include\libfirm\irextbb.h
 # End Source File
 # Begin Source File
 

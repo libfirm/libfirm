@@ -24,7 +24,6 @@ libfirminclude_HEADERS = \
 	irdump.h \
 	iredgekinds.h \
 	iredges.h \
-	irextbb.h \
 	irflag.h \
 	irgmod.h \
 	irgopt.h \

@@ -26,7 +26,6 @@
 #include "irmode_t.h"
 #include "tv_t.h"
 #include "irloop_t.h"
-#include "irextbb_t.h"
 #include "irprog_t.h"
 #include "compound_path_t.h"
 #include "tpop_t.h"
@@ -80,8 +79,6 @@ int get_firm_object_size(firm_kind kind)
     return sizeof(ir_loop);
   case k_ir_compound_graph_path: /* a compound graph path, see entity.h */
     return sizeof(compound_graph_path);
-  case k_ir_extblk:  /* an extended block */
-    return sizeof(ir_extblk);
   case k_ir_prog:    /* a program representation (irp) */
     return sizeof(ir_prog);
   default:
@@ -621,51 +618,6 @@ static HRESULT get_array_desc(DEBUGHELPER *pHelper, const void *address, ir_arr_
 }  /* get_array_desc */
 
 /**
- * format an extended block
- */
-static HRESULT format_extblk(DEBUGHELPER *pHelper, int nBase, const void *addr, char *pResult, size_t max)
-{
-  ir_extblk extbb;
-  ir_arr_descr blocks;
-  ir_node *blks = NULL;
-  char name[256];
-  int len;
-
-  if (copy_from_debuggee(addr, pHelper, &extbb, sizeof(extbb)) != S_OK)
-    return E_FAIL;
-  if (extbb.blks == NULL)
-    return E_FAIL;
-
-  if (get_array_desc(pHelper, extbb.blks, &blocks) != S_OK)
-    return E_FAIL;
-
-  len = ARR_LEN(&blocks.v.elts);
-
-  if (len > 0) {
-    if (copy_from_debuggee(extbb.blks, pHelper, &blks, sizeof(blks)) != S_OK)
-      return E_FAIL;
-  }
-
-  if (blks) {
-    switch (nBase) {
-    case 16:
-      _snprintf(name, sizeof(name), "0x%x 0x%x blocks", blks->node_nr, len);
-      break;
-    case 8:
-      _snprintf(name, sizeof(name), "0%o 0%o blocks", blks->node_nr, len);
-      break;
-    default:
-      _snprintf(name, sizeof(name), "%d %d blocks", blks->node_nr, len);
-    }
-    _tcsncpy(pResult, name, max);
-  }
-  else
-    _tcsncpy(pResult, "<EMPTY>", max);
-  return S_OK;
-}  /* format_extblk */
-
-
-/**
  * format a ir_prog
  */
 static HRESULT format_prog(DEBUGHELPER *pHelper, int nBase, const void *addr, char *pResult, size_t max)
@@ -766,8 +718,6 @@ HRESULT FormatFirmObject(DEBUGHELPER *pHelper, int nBase, firm_kind kind, const 
     return format_loop(pHelper, addr, pResult, max);
   case k_ir_compound_graph_path: /* a compound graph path, see entity.h */
     return E_FAIL;
-  case k_ir_extblk:  /* an extended block */
-    return format_extblk(pHelper, nBase, addr, pResult, max);
   case k_ir_prog:    /* a program representation (irp) */
     return format_prog(pHelper, nBase, addr, pResult, max);
   default:

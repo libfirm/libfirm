@@ -34,7 +34,6 @@
 #include "irgraph.h"
 #include "iredgekinds.h"
 #include "irtypeinfo.h"
-#include "irextbb.h"
 #include "irmemory.h"
 #include "callgraph.h"
 #include "irprog.h"
@@ -212,7 +211,6 @@ typedef struct block_attr {
 	                                 datastructure. */
 	ir_dom_info pdom;           /**< Datastructure that holds information about post-dominators. */
 	bitset_t *backedge;         /**< Bitfield n set to true if pred n is backedge.*/
-	ir_extblk *extblk;          /**< The extended basic block this block belongs to. */
 	ir_entity *entity;          /**< entitiy representing this block */
 	ir_node  *phis;             /**< The list of Phi nodes in this block. */
 
@@ -523,7 +521,6 @@ struct ir_graph {
 	ir_node *anchor;               /**< Pointer to the anchor node of this graph. */
 	struct obstack *obst;          /**< The obstack where all of the ir_nodes live. */
 	ir_node *current_block;        /**< Current block for newly gen_*()-erated ir_nodes. */
-	struct obstack *extbb_obst;    /**< The obstack for extended basic block info. */
 
 	/* -- Fields for graph properties -- */
 	irg_inline_property        inline_property;       /**< How to handle inlineing. */
