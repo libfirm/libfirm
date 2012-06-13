@@ -572,7 +572,7 @@ static void bp_activate(unsigned bp, int active)
  */
 static void show_commands(void)
 {
-	dbg_printf("Internal Firm debugger extension $Revision$ commands:\n"
+	dbg_printf("Internal Firm debugger extension commands:\n"
 		"init                  break after initialization\n"
 		"create nr             break if node nr was created\n"
 		"replace nr            break if node nr is replaced by another node\n"
