@@ -200,11 +200,6 @@ static void reset_dbg_buf(void)
 	firm_dbg_msg_buf[0] = '\0';
 }
 
-static void add_to_dbg_buf(const char *buf)
-{
-	strncat(firm_dbg_msg_buf, buf, sizeof(firm_dbg_msg_buf));
-}
-
 const char *firm_debug_text(void)
 {
 	firm_dbg_msg_buf[sizeof(firm_dbg_msg_buf) - 1] = '\0';
@@ -216,23 +211,20 @@ const char *firm_debug_text(void)
  */
 static void dbg_printf(const char *fmt, ...)
 {
-	static char buf[2048];
-
-	va_list args;
-	va_start(args, fmt);
-
 	if (fmt[0] != '+')
 		reset_dbg_buf();
 	else
 		++fmt;
 
-	ir_vsnprintf(buf, sizeof(buf), fmt, args);
+	va_list args;
+	va_start(args, fmt);
+	if (redir_output) {
+		size_t const cur = strlen(firm_dbg_msg_buf);
+		ir_vsnprintf(firm_dbg_msg_buf + cur, sizeof(firm_dbg_msg_buf) - cur, fmt, args);
+	} else {
+		ir_vprintf(fmt, args);
+	}
 	va_end(args);
-
-	if (redir_output)
-		add_to_dbg_buf(buf);
-	else
-		puts(buf);
 }
 
 /**
