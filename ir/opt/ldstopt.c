@@ -1182,8 +1182,7 @@ static unsigned optimize_load(ir_node *load)
 			if (value != NULL) {
 				ir_graph *irg = get_irn_irg(load);
 				value = can_replace_load_by_const(load, value);
-				if (value != NULL && is_Sel(ptr) &&
-						!is_irg_state(irg, IR_GRAPH_STATE_IMPLICIT_BITFIELD_MASKING)) {
+				if (value != NULL && is_Sel(ptr)) {
 					/* frontend has inserted masking operations after bitfield accesses,
 					 * so we might have to shift the const. */
 					unsigned char bit_offset = get_entity_offset_bits_remainder(get_Sel_entity(ptr));

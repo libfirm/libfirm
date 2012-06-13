@@ -1446,8 +1446,6 @@ static void dump_graph_info(FILE *F, ir_graph *irg)
 		fprintf(F, " modeb_lowered");
 	if (is_irg_state(irg, IR_GRAPH_STATE_NORMALISATION2))
 		fprintf(F, " normalisation2");
-	if (is_irg_state(irg, IR_GRAPH_STATE_IMPLICIT_BITFIELD_MASKING))
-		fprintf(F, " implicit_bitfield_masking");
 	if (is_irg_state(irg, IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE))
 		fprintf(F, " optimize_unreachable_code");
 	if (is_irg_state(irg, IR_GRAPH_STATE_NO_CRITICAL_EDGES))

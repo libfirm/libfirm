@@ -435,47 +435,40 @@ typedef enum {
 	 */
 	IR_GRAPH_STATE_NORMALISATION2            = 1U << 2,
 	/**
-	 * Defines the semantic of Load(Sel(x)), if x has a bit offset (Bitfields!).
-	 * Normally, the frontend is responsible for bitfield masking operations.
-	 * Sets IMPLICIT_BITFIELD_MASKING, if the lowering phase must insert masking
-	 * operations.
-	 */
-	IR_GRAPH_STATE_IMPLICIT_BITFIELD_MASKING = 1U << 3,
-	/**
 	 * Allows localopts to remove edges to unreachable code.
 	 * Warning: It is only safe to enable this when you are sure that you
 	 * apply all localopts to the fixpunkt. (=in optimize_graph_df)
 	 */
-	IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE = 1U << 4,
+	IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE = 1U << 3,
 	/** graph contains no critical edges */
-	IR_GRAPH_STATE_NO_CRITICAL_EDGES         = 1U << 5,
+	IR_GRAPH_STATE_NO_CRITICAL_EDGES         = 1U << 4,
 	/** graph contains no Bad nodes */
-	IR_GRAPH_STATE_NO_BADS                   = 1U << 6,
+	IR_GRAPH_STATE_NO_BADS                   = 1U << 5,
 	/**
 	 * there exists no (obviously) unreachable code in the graph.
 	 * Unreachable in this context is code that you can't reach by following
 	 * execution flow from the start block.
 	 */
-	IR_GRAPH_STATE_NO_UNREACHABLE_CODE       = 1U << 7,
+	IR_GRAPH_STATE_NO_UNREACHABLE_CODE       = 1U << 6,
 	/** graph contains at most one return */
-	IR_GRAPH_STATE_ONE_RETURN                = 1U << 8,
+	IR_GRAPH_STATE_ONE_RETURN                = 1U << 7,
 	/** dominance information about the graph is valid */
-	IR_GRAPH_STATE_CONSISTENT_DOMINANCE      = 1U << 9,
+	IR_GRAPH_STATE_CONSISTENT_DOMINANCE      = 1U << 8,
 	/** postdominance information about the graph is valid */
-	IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE  = 1U << 10,
+	IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE  = 1U << 9,
 	/**
 	 * out edges (=iredges) are enable and there is no dead code that can be
 	 * reached by following them
 	 */
-	IR_GRAPH_STATE_CONSISTENT_OUT_EDGES      = 1U << 11,
+	IR_GRAPH_STATE_CONSISTENT_OUT_EDGES      = 1U << 10,
 	/** outs (irouts) are computed and up to date */
-	IR_GRAPH_STATE_CONSISTENT_OUTS           = 1U << 12,
+	IR_GRAPH_STATE_CONSISTENT_OUTS           = 1U << 11,
 	/** loopinfo is computed and up to date */
-	IR_GRAPH_STATE_CONSISTENT_LOOPINFO       = 1U << 13,
+	IR_GRAPH_STATE_CONSISTENT_LOOPINFO       = 1U << 12,
 	/** entity usage information is computed and up to date */
-	IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE   = 1U << 14,
+	IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE   = 1U << 13,
 	/** graph contains as many returns as possible */
-	IR_GRAPH_STATE_MANY_RETURNS              = 1U << 15,
+	IR_GRAPH_STATE_MANY_RETURNS              = 1U << 14,
 } ir_graph_state_t;
 ENUM_BITSET(ir_graph_state_t)
 
