@@ -39,6 +39,7 @@
 #include <signal.h>
 #include <string.h>
 #include <strings.h>
+#include <time.h>
 
 #include <ctype.h>
 
@@ -590,6 +591,7 @@ static void show_commands(void)
 		"setoutfile name file  redirects debug output of module name to file\n"
 		"irgname name          prints address and graph number of a method given by its name\n"
 		"irgldname ldname      prints address and graph number of a method given by its ldname\n"
+		"randnodenr            randomize initial node number\n"
 		"help                  list all commands\n"
 		);
 }
@@ -906,6 +908,7 @@ enum tokens {
 	tok_setoutfile,
 	tok_showent,
 	tok_showtype,
+	tok_randnodenr,
 	tok_identifier,
 	tok_number,
 	tok_eof,
@@ -931,6 +934,7 @@ static const char *reserved[] = {
 	"setoutfile",
 	"showent",
 	"showtype",
+	"randnodenr",
 };
 
 /**
@@ -1225,6 +1229,12 @@ void firm_debug(const char *cmd)
 			strncpy(name, lexer.s, len);
 			name[len] = '\0';
 			irg_name(name);
+			break;
+
+		case tok_randnodenr:
+			dbg_printf("Randomizing initial node number\n");
+			srand(time(0));
+			irp->max_node_nr += rand() % 6666;
 			break;
 
 		case tok_irgldname:
