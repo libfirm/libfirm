@@ -271,20 +271,6 @@ static void lower_symconst(ir_node *symc)
 }
 
 /**
- * Checks, whether a size is an integral size
- *
- * @param size  the size on bits
- */
-static int is_integral_size(int size)
-{
-	/* must be a 2^n */
-	if (size & (size-1))
-		return 0;
-	/* must be at least byte size */
-	return size >= 8;
-}
-
-/**
  * lowers IR-nodes, called from walker
  */
 static void lower_irnode(ir_node *irn, void *env)
