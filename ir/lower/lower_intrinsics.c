@@ -617,6 +617,29 @@ static ir_entity *get_const_entity(ir_node *ptr)
 	return NULL;
 }
 
+static ir_tarval *get_initializer_value(ir_initializer_t *const init, ir_mode *const mode)
+{
+	switch (get_initializer_kind(init)) {
+	case IR_INITIALIZER_NULL:
+		return get_mode_null(mode);
+
+	case IR_INITIALIZER_TARVAL:
+		return get_initializer_tarval_value(init);
+
+	case IR_INITIALIZER_CONST: {
+		ir_node *const irn = get_initializer_const_value(init);
+		if (is_Const(irn))
+			return get_Const_tarval(irn);
+		break;
+	}
+
+	case IR_INITIALIZER_COMPOUND:
+		break;
+	}
+
+	return get_tarval_undefined();
+}
+
 static bool initializer_val_is_null(ir_initializer_t *init)
 {
 	ir_tarval *tv;
@@ -740,8 +763,14 @@ int i_mapper_strlen(ir_node *call, void *ctx)
 static ir_node *eval_strcmp(ir_graph *irg, ir_entity *left, ir_entity *right,
                             ir_type *res_tp)
 {
-	ir_type *tp;
-	ir_mode *mode;
+	ir_type          *tp;
+	ir_mode          *mode;
+	ir_initializer_t *init_l;
+	ir_initializer_t *init_r;
+	size_t            size_l;
+	size_t            size_r;
+	size_t            size;
+	size_t            i;
 
 	tp = get_entity_type(left);
 	if (! is_Array_type(tp))
@@ -815,7 +844,38 @@ static ir_node *eval_strcmp(ir_graph *irg, ir_entity *left, ir_entity *right,
 		return NULL;
 	}
 
-	/* TODO */
+	init_l = get_entity_initializer(left);
+	init_r = get_entity_initializer(right);
+	if (get_initializer_kind(init_l) != IR_INITIALIZER_COMPOUND ||
+	    get_initializer_kind(init_r) != IR_INITIALIZER_COMPOUND)
+		return NULL;
+
+	size_l = get_initializer_compound_n_entries(init_l);
+	size_r = get_initializer_compound_n_entries(init_r);
+	size   = size_l < size_r ? size_l : size_r;
+
+	for (i = 0; i != size; ++i) {
+		ir_initializer_t *const val_l = get_initializer_compound_value(init_l, i);
+		ir_tarval        *const tv_l  = get_initializer_value(val_l, mode);
+		ir_initializer_t *const val_r = get_initializer_compound_value(init_r, i);
+		ir_tarval        *const tv_r  = get_initializer_value(val_r, mode);
+
+		if (!tarval_is_constant(tv_l) || !tarval_is_constant(tv_r))
+			return NULL;
+
+		if (tv_l != tv_r) {
+			ir_mode   *const res_mode = get_type_mode(res_tp);
+			ir_tarval *const res_l    = tarval_convert_to(tv_l, res_mode);
+			ir_tarval *const res_r    = tarval_convert_to(tv_r, res_mode);
+			ir_tarval *const tv       = tarval_sub(res_l, res_r, res_mode);
+			return new_r_Const(irg, tv);
+		}
+
+		if (tarval_is_null(tv_l)) {
+			ir_tarval *const tv = get_mode_null(get_type_mode(res_tp));
+			return new_r_Const(irg, tv);
+		}
+	}
 
 	return NULL;
 }
