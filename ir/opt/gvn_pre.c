@@ -262,7 +262,7 @@ static void dump_all_expgen_sets(block_info *list)
 
 #else
 #define dump_value_set(set, txt, block)
-#define dump_all_expgen_sets(list, txt)
+#define dump_all_expgen_sets(list)
 #endif /* DEBUG_libfirm */
 
 /**
