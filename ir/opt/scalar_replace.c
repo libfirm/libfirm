@@ -677,7 +677,7 @@ static void do_scalar_replacements(ir_graph *irg, pset *sels, unsigned nvals,
  *
  * @param irg  The current ir graph.
  */
-static ir_graph_state_t do_scalar_replacement(ir_graph *irg)
+static ir_graph_properties_t do_scalar_replacement(ir_graph *irg)
 {
 	unsigned  nvals;
 	int       i;
@@ -769,7 +769,7 @@ static ir_graph_state_t do_scalar_replacement(ir_graph *irg)
 
 static optdesc_t opt_scalar_rep = {
 	"scalar-replace",
-	IR_GRAPH_STATE_NO_UNREACHABLE_CODE | IR_GRAPH_STATE_CONSISTENT_OUTS,
+	IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE | IR_GRAPH_PROPERTY_CONSISTENT_OUTS,
 	do_scalar_replacement,
 };
 

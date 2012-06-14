@@ -139,7 +139,7 @@ size_t lower_intrinsics(i_record *list, size_t length, int part_block_used)
 			set_irg_callee_info_state(irg, irg_callee_info_inconsistent);
 
 			/* Exception control flow might have changed / new block might have added. */
-			clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
+			clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
 			/* verify here */
 			irg_verify(irg, VERIFY_NORMAL);

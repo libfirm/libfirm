@@ -3512,7 +3512,7 @@ static void add_memory_keeps(ir_node **kept_memory, size_t len)
 	ir_nodeset_destroy(&set);
 }  /* add_memory_keeps */
 
-static ir_graph_state_t do_combo(ir_graph *irg)
+static ir_graph_properties_t do_combo(ir_graph *irg)
 {
 	environment_t env;
 	ir_node       *initial_bl;
@@ -3627,7 +3627,7 @@ static ir_graph_state_t do_combo(ir_graph *irg)
 
 static optdesc_t opt_combo = {
 	"combo",
-	IR_GRAPH_STATE_NO_BADS | IR_GRAPH_STATE_CONSISTENT_OUTS | IR_GRAPH_STATE_CONSISTENT_LOOPINFO,
+	IR_GRAPH_PROPERTY_NO_BADS | IR_GRAPH_PROPERTY_CONSISTENT_OUTS | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO,
 	do_combo,
 };
 

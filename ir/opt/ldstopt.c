@@ -2081,10 +2081,10 @@ static int optimize_loops(ir_graph *irg)
 /*
  * do the load store optimization
  */
-static ir_graph_state_t do_loadstore_opt(ir_graph *irg)
+static ir_graph_properties_t do_loadstore_opt(ir_graph *irg)
 {
 	walk_env_t env;
-	ir_graph_state_t res = 0;
+	ir_graph_properties_t res = 0;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.ldstopt");
 
@@ -2116,7 +2116,7 @@ static ir_graph_state_t do_loadstore_opt(ir_graph *irg)
 	}
 
 	if (!(env.changes & CF_CHANGED)) {
-		res |= IR_GRAPH_STATE_CONSISTENT_DOMINANCE | IR_GRAPH_STATE_NO_BADS;
+		res |= IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE | IR_GRAPH_PROPERTY_NO_BADS;
 	}
 
 	return res;
@@ -2124,7 +2124,7 @@ static ir_graph_state_t do_loadstore_opt(ir_graph *irg)
 
 static optdesc_t opt_loadstore = {
 	"load-store",
-	IR_GRAPH_STATE_NO_UNREACHABLE_CODE | IR_GRAPH_STATE_CONSISTENT_OUT_EDGES | IR_GRAPH_STATE_NO_CRITICAL_EDGES | IR_GRAPH_STATE_CONSISTENT_DOMINANCE | IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE,
+	IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE | IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES | IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE | IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE,
 	do_loadstore_opt,
 };
 

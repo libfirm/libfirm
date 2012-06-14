@@ -238,7 +238,7 @@ static void walker(ir_node *proj, void *env)
 	ir_nodeset_destroy(&pi.user_mem);
 }
 
-static ir_graph_state_t do_parallelize_mem(ir_graph *irg)
+static ir_graph_properties_t do_parallelize_mem(ir_graph *irg)
 {
 	irg_walk_graph(irg, NULL, walker, NULL);
 

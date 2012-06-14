@@ -152,7 +152,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 	assert(env->n_tail_calls > 0);
 
 	/* we add new blocks and change the control flow */
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
 	/* we must build some new nodes WITHOUT CSE */
 	set_optimize(0);
@@ -261,8 +261,8 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 	}
 
 	/* tail recursion was done, all info is invalid */
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
-	                   | IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+	                   | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 	set_irg_callee_info_state(irg, irg_callee_info_inconsistent);
 
 	set_optimize(rem);
@@ -559,7 +559,7 @@ static tail_rec_variants find_variant(ir_node *irn, ir_node *call)
 /*
  * convert simple tail-calls into loops
  */
-static ir_graph_state_t do_tailrec(ir_graph *irg)
+static ir_graph_properties_t do_tailrec(ir_graph *irg)
 {
 	tr_env            env;
 	ir_node           *end_block;
@@ -697,7 +697,7 @@ static ir_graph_state_t do_tailrec(ir_graph *irg)
  */
 static optdesc_t opt_tailrec = {
 	"tail-recursion",
-	IR_GRAPH_STATE_MANY_RETURNS | IR_GRAPH_STATE_NO_BADS | IR_GRAPH_STATE_CONSISTENT_OUTS,
+	IR_GRAPH_PROPERTY_MANY_RETURNS | IR_GRAPH_PROPERTY_NO_BADS | IR_GRAPH_PROPERTY_CONSISTENT_OUTS,
 	do_tailrec,
 };
 

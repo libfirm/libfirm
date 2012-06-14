@@ -464,7 +464,7 @@ static void collect_phis(ir_node *node, void *env)
 	}
 }
 
-static ir_graph_state_t do_ifconv(ir_graph *irg)
+static ir_graph_properties_t do_ifconv(ir_graph *irg)
 {
 	walker_env            env;
 	const backend_params *be_params = be_get_backend_param();
@@ -493,12 +493,12 @@ static ir_graph_state_t do_ifconv(ir_graph *irg)
 
 	free_cdep(irg);
 
-	return IR_GRAPH_STATE_NO_CRITICAL_EDGES | IR_GRAPH_STATE_ONE_RETURN;
+	return IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES | IR_GRAPH_PROPERTY_ONE_RETURN;
 }
 
 static optdesc_t opt_ifconv = {
 	"if-conversion",
-	IR_GRAPH_STATE_NO_CRITICAL_EDGES | IR_GRAPH_STATE_NO_UNREACHABLE_CODE | IR_GRAPH_STATE_NO_BADS | IR_GRAPH_STATE_ONE_RETURN,
+	IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES | IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE | IR_GRAPH_PROPERTY_NO_BADS | IR_GRAPH_PROPERTY_ONE_RETURN,
 	do_ifconv,
 };
 

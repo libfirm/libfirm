@@ -102,8 +102,8 @@ void exchange(ir_node *old, ir_node *nw)
 	}
 
 	/* update irg flags */
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS
-	                   | IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS
+	                   | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 }
 
 /**

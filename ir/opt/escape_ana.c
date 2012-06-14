@@ -451,7 +451,7 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
 	/* if allocs were removed somehow */
 	if (env->nr_removed && env->nr_deads) {
 		/* exception control flow might have been changed */
-		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
+		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	}
 }
 
@@ -498,7 +498,7 @@ void escape_enalysis_irg(ir_graph *irg, check_alloc_entity_func callback)
 		return;
 	}
 
-	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS))
+	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS))
 		compute_irg_outs(irg);
 
 	env.found_allocs = NULL;

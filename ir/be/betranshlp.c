@@ -418,7 +418,7 @@ void be_transform_graph(ir_graph *irg, arch_pretrans_nodes *func)
 	free_irg_outs(irg);
 	free_trouts();
 	free_loop_information(irg);
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
 	be_invalidate_live_chk(irg);
 	be_invalidate_dom_front(irg);

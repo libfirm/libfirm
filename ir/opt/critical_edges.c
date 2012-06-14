@@ -104,9 +104,9 @@ void remove_critical_cf_edges_ex(ir_graph *irg, int ignore_exception_edges)
 	irg_block_walk_graph(irg, NULL, walk_critical_cf_edges, &env);
 	if (env.changed) {
 		/* control flow changed */
-		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
+		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	}
-	set_irg_state(irg, IR_GRAPH_STATE_NO_CRITICAL_EDGES);
+	add_irg_properties(irg, IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES);
 }
 
 void remove_critical_cf_edges(ir_graph *irg)

@@ -74,7 +74,7 @@ static inline void do_local_optimize(ir_node *n)
 
 	if (get_opt_global_cse())
 		set_irg_pinned(irg, op_pin_state_floats);
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
 	/* Clean the value_table in irg for the CSE. */
 	new_identities(irg);
@@ -199,8 +199,8 @@ int optimize_graph_df(ir_graph *irg)
 		set_irg_pinned(irg, op_pin_state_floats);
 
 	/* enable unreachable code elimination */
-	assert(!is_irg_state(irg, IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE));
-	set_irg_state(irg, IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE);
+	assert(!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_OPTIMIZE_UNREACHABLE_CODE));
+	add_irg_constraints(irg, IR_GRAPH_CONSTRAINT_OPTIMIZE_UNREACHABLE_CODE);
 
 	new_identities(irg);
 	edges_assure(irg);
@@ -227,12 +227,12 @@ int optimize_graph_df(ir_graph *irg)
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	/* disable unreachable code elimination */
-	clear_irg_state(irg, IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE);
-	set_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE);
+	clear_irg_constraints(irg, IR_GRAPH_CONSTRAINT_OPTIMIZE_UNREACHABLE_CODE);
+	add_irg_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE);
 
 	/* invalidate infos */
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 	edges_deactivate(irg);
 
 	/* Finally kill BAD and doublets from the keep alives.

@@ -124,10 +124,10 @@ void remove_unreachable_code(ir_graph *irg)
 
 	if (changed) {
 		edges_deactivate(irg);
-		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS
-		                   | IR_GRAPH_STATE_NO_BADS
-		                   | IR_GRAPH_STATE_CONSISTENT_OUT_EDGES
-		                   | IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
+		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS
+		                   | IR_GRAPH_PROPERTY_NO_BADS
+		                   | IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
+		                   | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 	}
-	set_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE);
+	add_irg_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE);
 }

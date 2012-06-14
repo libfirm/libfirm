@@ -303,7 +303,7 @@ static void conv_opt_walker(ir_node *node, void *data)
 	}
 }
 
-static ir_graph_state_t do_deconv(ir_graph *irg)
+static ir_graph_properties_t do_deconv(ir_graph *irg)
 {
 	bool changed;
 	FIRM_DBG_REGISTER(dbg, "firm.opt.conv");
@@ -321,7 +321,7 @@ static ir_graph_state_t do_deconv(ir_graph *irg)
 
 static optdesc_t opt_deconv = {
 	"deconv",
-	IR_GRAPH_STATE_CONSISTENT_OUT_EDGES,
+	IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES,
 	do_deconv,
 };
 

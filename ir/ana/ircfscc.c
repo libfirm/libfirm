@@ -651,7 +651,7 @@ int construct_cf_backedges(ir_graph *irg)
 	assert(head_rem == current_loop);
 	mature_loops(current_loop, irg->obst);
 	set_irg_loop(irg, current_loop);
-	set_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
+	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 
 	current_ir_graph = rem;
 	return max_loop_depth;
@@ -659,7 +659,7 @@ int construct_cf_backedges(ir_graph *irg)
 
 void assure_loopinfo(ir_graph *irg)
 {
-	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO))
+	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO))
 		return;
 	construct_cf_backedges(irg);
 }

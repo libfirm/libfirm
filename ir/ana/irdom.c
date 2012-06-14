@@ -307,7 +307,7 @@ void dom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
 	/* The root of the dominator tree should be the Start block. */
 	ir_node *root = get_irg_start_block(irg);
 
-	assert(is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE)
+	assert(irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE)
 			&& "The dominators of the irg must be consistent");
 	assert(root && "The start block of the graph is NULL?");
 	assert(get_dom_info(root)->idom == NULL
@@ -321,7 +321,7 @@ void postdom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
 	/* The root of the post dominator tree should be the End block. */
 	ir_node *root = get_irg_end_block(irg);
 
-	assert(is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE)
+	assert(irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE)
 			&& "The dominators of the irg must be consistent");
 	assert(root && "The end block of the graph is NULL?");
 	assert(get_pdom_info(root)->idom == NULL
@@ -684,12 +684,12 @@ void compute_doms(ir_graph *irg)
 		                  assign_tree_dom_pre_order_max, &tree_pre_order);
 	}
 	current_ir_graph = rem;
-	set_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
+	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 }
 
 void assure_doms(ir_graph *irg)
 {
-	if (! is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE))
+	if (! irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE))
 		compute_doms(irg);
 }
 
@@ -697,7 +697,7 @@ void free_dom(ir_graph *irg)
 {
 	/* Update graph state */
 	assert(get_irg_phase_state(irg) != phase_building);
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
 	/* With the implementation right now there is nothing to free,
 	   but better call it anyways... */
@@ -796,12 +796,12 @@ void compute_postdoms(ir_graph *irg)
 			assign_tree_postdom_pre_order_max, &tree_pre_order);
 	}
 	current_ir_graph = rem;
-	set_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE);
+	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE);
 }
 
 void assure_postdoms(ir_graph *irg)
 {
-	if (! is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE))
+	if (! irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE))
 		compute_postdoms(irg);
 }
 
@@ -809,7 +809,7 @@ void free_postdom(ir_graph *irg)
 {
 	/* Update graph state */
 	assert(get_irg_phase_state(irg) != phase_building);
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE);
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE);
 
 	/* With the implementation right now there is nothing to free,
 	   but better call it anyways... */

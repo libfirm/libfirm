@@ -583,7 +583,7 @@ ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn)
 	/* we should never do the reverse transformations again
 	   (like x+x -> 2*x) */
 	irg = get_irn_irg(irn);
-	set_irg_state(irg, IR_GRAPH_STATE_ARCH_DEP);
+	add_irg_constraints(irg, IR_GRAPH_CONSTRAINT_ARCH_DEP);
 
 	left    = get_binop_left(irn);
 	right   = get_binop_right(irn);

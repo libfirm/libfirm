@@ -1355,8 +1355,8 @@ static void loop_inversion(ir_graph *irg)
 		DEL_ARR_F(cur_head_outs);
 
 		/* Duplicated blocks changed doms */
-		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
-		                   | IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
+		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+		                   | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 
 		++stats.inverted;
 	}
@@ -2576,7 +2576,7 @@ static void unroll_loop(void)
 		else
 			++stats.invariant_unroll;
 
-		clear_irg_state(current_ir_graph, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
+		clear_irg_properties(current_ir_graph, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
 		DEL_ARR_F(loop_entries);
 		obstack_free(&obst, NULL);
@@ -2728,21 +2728,21 @@ void loop_optimization(ir_graph *irg)
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 }
 
-static ir_graph_state_t perform_loop_unrolling(ir_graph *irg)
+static ir_graph_properties_t perform_loop_unrolling(ir_graph *irg)
 {
 	loop_op = loop_op_unrolling;
 	loop_optimization(irg);
 	return 0;
 }
 
-static ir_graph_state_t perform_loop_inversion(ir_graph *irg)
+static ir_graph_properties_t perform_loop_inversion(ir_graph *irg)
 {
 	loop_op = loop_op_inversion;
 	loop_optimization(irg);
 	return 0;
 }
 
-static ir_graph_state_t perform_loop_peeling(ir_graph *irg)
+static ir_graph_properties_t perform_loop_peeling(ir_graph *irg)
 {
 	loop_op = loop_op_peeling;
 	loop_optimization(irg);
@@ -2751,19 +2751,19 @@ static ir_graph_state_t perform_loop_peeling(ir_graph *irg)
 
 static optdesc_t opt_unroll_loops = {
 	"unroll-loops",
-	IR_GRAPH_STATE_CONSISTENT_OUT_EDGES | IR_GRAPH_STATE_CONSISTENT_OUTS | IR_GRAPH_STATE_CONSISTENT_LOOPINFO,
+	IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES | IR_GRAPH_PROPERTY_CONSISTENT_OUTS | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO,
 	perform_loop_unrolling,
 };
 
 static optdesc_t opt_invert_loops = {
 	"invert-loops",
-	IR_GRAPH_STATE_CONSISTENT_OUT_EDGES | IR_GRAPH_STATE_CONSISTENT_OUTS | IR_GRAPH_STATE_CONSISTENT_LOOPINFO,
+	IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES | IR_GRAPH_PROPERTY_CONSISTENT_OUTS | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO,
 	perform_loop_inversion,
 };
 
 static optdesc_t opt_peel_loops = {
 	"peel-loops",
-	IR_GRAPH_STATE_CONSISTENT_OUT_EDGES | IR_GRAPH_STATE_CONSISTENT_OUTS | IR_GRAPH_STATE_CONSISTENT_LOOPINFO,
+	IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES | IR_GRAPH_PROPERTY_CONSISTENT_OUTS | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO,
 	perform_loop_peeling,
 };
 

@@ -809,7 +809,7 @@ static void cfgopt_ignoring_phis(ir_graph *irg)
 		irg_block_walk_graph(irg, NULL, optimize_ifs, &env);
 
 		if (env.changed) {
-			clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
+			clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 			/* clear block info, because it must be recomputed */
 			irg_block_walk_graph(irg, clear_block_info, NULL, &env.block_infos);
 			/* Removing blocks and Conds might enable more optimizations */
@@ -823,7 +823,7 @@ static void cfgopt_ignoring_phis(ir_graph *irg)
 }
 
 /* Optimizations of the control flow that also require changes of Phi nodes.  */
-static ir_graph_state_t do_cfopt(ir_graph *irg)
+static ir_graph_properties_t do_cfopt(ir_graph *irg)
 {
 	int i, j, n;
 	ir_node **in = NULL;
@@ -866,8 +866,8 @@ static ir_graph_state_t do_cfopt(ir_graph *irg)
 		if (!changed)
 			break;
 
-		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
-		                   | IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE);
+		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+		                   | IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE);
 	}
 
 	/* assert due to collect_nodes:
@@ -933,7 +933,7 @@ static ir_graph_state_t do_cfopt(ir_graph *irg)
 
 static optdesc_t opt_cf = {
 	"control-flow",
-	IR_GRAPH_STATE_NO_UNREACHABLE_CODE,
+	IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE,
 	do_cfopt,
 };
 

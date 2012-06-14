@@ -140,7 +140,7 @@ void dump_irnode_to_file(FILE *F, const ir_node *n)
 	}
 
 	/* Loop node.   Someone else please tell me what's wrong ... */
-	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO)) {
+	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO)) {
 		ir_loop *loop = get_irn_loop(n);
 		if (loop != NULL) {
 			fprintf(F, "  in loop %ld with depth %u\n",
@@ -156,12 +156,12 @@ void dump_irnode_to_file(FILE *F, const ir_node *n)
 			fprintf(F, "  Label: %lu\n", get_entity_label(entity));
 		fprintf(F, "  block visited: %lu\n", get_Block_block_visited(n));
 		fprintf(F, "  block marked: %u\n", get_Block_mark(n));
-		if (is_irg_state(get_irn_irg(n), IR_GRAPH_STATE_CONSISTENT_DOMINANCE)) {
+		if (irg_has_properties(get_irn_irg(n), IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE)) {
 			fprintf(F, "  dom depth %d\n", get_Block_dom_depth(n));
 			fprintf(F, "  domtree pre num %u\n", get_Block_dom_tree_pre_num(n));
 			fprintf(F, "  max subtree pre num %u\n", get_Block_dom_max_subtree_pre_num(n));
 		}
-		if (is_irg_state(get_irn_irg(n), IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE)) {
+		if (irg_has_properties(get_irn_irg(n), IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE)) {
 			fprintf(F, "  pdom depth %d\n", get_Block_postdom_depth(n));
 			fprintf(F, "  pdomtree pre num %u\n", get_Block_pdom_tree_pre_num(n));
 			fprintf(F, "  max pdomsubtree pre num %u\n", get_Block_pdom_max_subtree_pre_num(n));

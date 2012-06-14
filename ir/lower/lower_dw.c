@@ -3040,7 +3040,7 @@ static void lower_irg(ir_graph *irg)
 
 		if (env->flags & CF_CHANGED) {
 			/* control flow changed, dominance info is invalid */
-			clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
+			clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 		}
 		edges_deactivate(irg);
 	}

@@ -25,7 +25,7 @@
 #include "irgopt.h"
 #include "opt_manage.h"
 
-static ir_graph_state_t do_optimize_graph_df(ir_graph *irg)
+static ir_graph_properties_t do_optimize_graph_df(ir_graph *irg)
 {
 	optimize_graph_df(irg);
 	return 0;

@@ -112,7 +112,7 @@ void dead_node_elimination(ir_graph *irg)
 	free_trouts();
 	free_loop_information(irg);
 	free_vrp_data(irg);
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
 	/* A quiet place, where the old obstack can rest in peace,
 	   until it will be cremated. */

@@ -239,8 +239,8 @@ static void fix_const_call_lists(ir_graph *irg, env_t *ctx)
 
 	if (exc_changed) {
 		/* ... including exception edges */
-		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
-		                   | IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
+		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+		                   | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 	}
 }  /* fix_const_call_list */
 
@@ -372,8 +372,8 @@ static void fix_nothrow_call_list(ir_graph *irg, ir_node *call_list, ir_node *pr
 	/* changes were done ... */
 	if (exc_changed) {
 		/* ... including exception edges */
-		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
-		                   | IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
+		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+		                   | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 	}
 }  /* fix_nothrow_call_list */
 

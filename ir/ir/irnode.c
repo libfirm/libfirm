@@ -240,7 +240,7 @@ void set_irn_in(ir_node *node, int arity, ir_node **in)
 	memcpy((*pOld_in) + 1, in, sizeof(ir_node *) * arity);
 
 	/* update irg flags */
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS | IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 }
 
 ir_node *(get_irn_n)(const ir_node *node, int n)
@@ -265,7 +265,7 @@ void set_irn_n(ir_node *node, int n, ir_node *in)
 	node->in[n + 1] = in;
 
 	/* update irg flags */
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS | IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 }
 
 int add_irn_n(ir_node *node, ir_node *in)
@@ -661,7 +661,7 @@ void set_End_keepalives(ir_node *end, int n, ir_node *in[])
 	}
 
 	/* update irg flags */
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS);
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 }
 
 void remove_End_keepalive(ir_node *end, ir_node *irn)
@@ -698,7 +698,7 @@ found:
 	ARR_RESIZE(ir_node *, end->in, (n - 1) + 1 + END_KEEPALIVE_OFFSET);
 
 	/* update irg flags */
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS);
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 }
 
 void remove_End_Bads_and_doublets(ir_node *end)
@@ -740,7 +740,7 @@ void remove_End_Bads_and_doublets(ir_node *end)
 	pset_new_destroy(&keeps);
 
 	if (changed) {
-		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS);
+		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 	}
 }
 

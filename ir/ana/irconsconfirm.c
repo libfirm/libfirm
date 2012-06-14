@@ -566,7 +566,7 @@ static void insert_Confirm(ir_node *node, void *data)
 /*
  * Construct Confirm nodes
  */
-static ir_graph_state_t do_construct_confirms(ir_graph *irg)
+static ir_graph_properties_t do_construct_confirms(ir_graph *irg)
 {
 	env_t env;
 	FIRM_DBG_REGISTER(dbg, "firm.ana.confirm");
@@ -596,9 +596,9 @@ static ir_graph_state_t do_construct_confirms(ir_graph *irg)
 
 static optdesc_t opt_confirms = {
 	"confirms",
-	IR_GRAPH_STATE_CONSISTENT_OUT_EDGES
-	| IR_GRAPH_STATE_CONSISTENT_DOMINANCE
-	| IR_GRAPH_STATE_NO_CRITICAL_EDGES,
+	IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
+	| IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+	| IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES,
 	do_construct_confirms
 };
 

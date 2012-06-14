@@ -768,17 +768,32 @@ size_t register_additional_graph_data(size_t size)
 	return additional_graph_data_size += size;
 }
 
-void (set_irg_state)(ir_graph *irg, ir_graph_state_t state)
+void add_irg_constraints(ir_graph *irg, ir_graph_constraints_t constraints)
 {
-	set_irg_state_(irg, state);
+	irg->constraints |= constraints;
 }
 
-void (clear_irg_state)(ir_graph *irg, ir_graph_state_t state)
+void clear_irg_constraints(ir_graph *irg, ir_graph_constraints_t constraints)
 {
-	clear_irg_state_(irg, state);
+	irg->constraints &= ~constraints;
 }
 
-int (is_irg_state)(const ir_graph *irg, ir_graph_state_t state)
+int (irg_is_constrained)(const ir_graph *irg, ir_graph_constraints_t constraints)
 {
-	return is_irg_state_(irg, state);
+	return irg_is_constrained_(irg, constraints);
+}
+
+void (add_irg_properties)(ir_graph *irg, ir_graph_properties_t props)
+{
+	add_irg_properties_(irg, props);
+}
+
+void (clear_irg_properties)(ir_graph *irg, ir_graph_properties_t props)
+{
+	clear_irg_properties_(irg, props);
+}
+
+int (irg_has_properties)(const ir_graph *irg, ir_graph_properties_t props)
+{
+	return irg_has_properties_(irg, props);
 }

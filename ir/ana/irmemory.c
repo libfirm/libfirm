@@ -1023,12 +1023,12 @@ static void analyse_irg_entity_usage(ir_graph *irg)
 
 
 	/* now computed */
-	set_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE);
+	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE);
 }
 
 void assure_irg_entity_usage_computed(ir_graph *irg)
 {
-	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE))
+	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE))
 		return;
 
 	analyse_irg_entity_usage(irg);

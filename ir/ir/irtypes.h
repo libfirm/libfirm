@@ -527,12 +527,13 @@ struct ir_graph {
 	mtp_additional_properties  additional_properties; /**< Additional graph properties. */
 
 	/* -- Fields indicating different states of irgraph -- */
-	ir_graph_state_t      state;
-	irg_phase_state       phase_state;       /**< Compiler phase. */
-	op_pin_state          irg_pinned_state;  /**< Flag for status of nodes. */
-	ir_typeinfo_state     typeinfo_state;    /**< Validity of type information. */
-	irg_callee_info_state callee_info_state; /**< Validity of callee information. */
-	ir_class_cast_state   class_cast_state;  /**< Kind of cast operations in code. */
+	ir_graph_properties_t  properties;
+	ir_graph_constraints_t constraints;
+	irg_phase_state        phase_state;       /**< Compiler phase. */
+	op_pin_state           irg_pinned_state;  /**< Flag for status of nodes. */
+	ir_typeinfo_state      typeinfo_state;    /**< Validity of type information. */
+	irg_callee_info_state  callee_info_state; /**< Validity of callee information. */
+	ir_class_cast_state    class_cast_state;  /**< Kind of cast operations in code. */
 	unsigned mem_disambig_opt;               /**< Options for the memory disambiguator. */
 	unsigned fp_model;                       /**< floating point model of the graph. */
 

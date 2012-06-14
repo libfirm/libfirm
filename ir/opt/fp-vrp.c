@@ -837,10 +837,10 @@ static void build_phi_lists(ir_node *irn, void *env)
 		add_Block_phi(get_nodes_block(irn), irn);
 }
 
-static ir_graph_state_t do_fixpoint_vrp(ir_graph* const irg)
+static ir_graph_properties_t do_fixpoint_vrp(ir_graph* const irg)
 {
 	environment_t env;
-	ir_graph_state_t res = 0;
+	ir_graph_properties_t res = 0;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.fp-vrp");
 	DB((dbg, LEVEL_1, "===> Performing constant propagation on %+F\n", irg));
@@ -880,7 +880,7 @@ static ir_graph_state_t do_fixpoint_vrp(ir_graph* const irg)
 	irg_walk_graph(irg, NULL, apply_result, &env);
 
 	if (! env.modified) {
-		res |= IR_GRAPH_STATE_CONSISTENT_DOMINANCE | IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE;
+		res |= IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE | IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE;
 	}
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
@@ -892,7 +892,7 @@ static ir_graph_state_t do_fixpoint_vrp(ir_graph* const irg)
 
 static optdesc_t opt_fpvrp = {
 	"fp-vrp",
-	IR_GRAPH_STATE_NO_BADS | IR_GRAPH_STATE_NO_UNREACHABLE_CODE | IR_GRAPH_STATE_CONSISTENT_DOMINANCE | IR_GRAPH_STATE_CONSISTENT_OUT_EDGES,
+	IR_GRAPH_PROPERTY_NO_BADS | IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE | IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES,
 	do_fixpoint_vrp,
 };
 

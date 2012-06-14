@@ -750,10 +750,10 @@ static void thread_jumps(ir_node* block, void* data)
 	*changed = 1;
 }
 
-static ir_graph_state_t do_jumpthread(ir_graph* irg)
+static ir_graph_properties_t do_jumpthread(ir_graph* irg)
 {
 	int changed, rerun;
-	ir_graph_state_t res = 0;
+	ir_graph_properties_t res = 0;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.jumpthreading");
 
@@ -771,7 +771,7 @@ static ir_graph_state_t do_jumpthread(ir_graph* irg)
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_IRN_VISITED);
 
 	if (!changed) {
-		res |= IR_GRAPH_STATE_CONSISTENT_DOMINANCE | IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE;
+		res |= IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE | IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE;
 	}
 
 	return res;
@@ -779,7 +779,7 @@ static ir_graph_state_t do_jumpthread(ir_graph* irg)
 
 static optdesc_t opt_jumpthread = {
 	"jumpthreading",
-	IR_GRAPH_STATE_NO_UNREACHABLE_CODE | IR_GRAPH_STATE_CONSISTENT_OUT_EDGES | IR_GRAPH_STATE_NO_CRITICAL_EDGES,
+	IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE | IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES | IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES,
 	do_jumpthread,
 };
 

@@ -634,7 +634,7 @@ static ir_tarval *compute_cmp_ext(const ir_node *cmp)
 static ir_tarval *computed_value_Cmp(const ir_node *cmp)
 {
 	/* we can't construct Constb after lowering mode_b nodes */
-	if (is_irg_state(get_irn_irg(cmp), IR_GRAPH_STATE_MODEB_LOWERED))
+	if (irg_is_constrained(get_irn_irg(cmp), IR_GRAPH_CONSTRAINT_MODEB_LOWERED))
 		return tarval_bad;
 
 	return compute_cmp(cmp);
@@ -2369,7 +2369,7 @@ static ir_node *transform_node_bitop_shift(ir_node *n)
 	ir_tarval *tv2;
 	ir_tarval *tv_bitop;
 
-	if (!is_irg_state(irg, IR_GRAPH_STATE_NORMALISATION2))
+	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_NORMALISATION2))
 		return n;
 
 	assert(is_And(n) || is_Or(n) || is_Eor(n) || is_Or_Eor_Add(n));
@@ -2762,7 +2762,7 @@ static ir_node *transform_node_Add(ir_node *n)
 		ir_graph *irg = get_irn_irg(n);
 		/* the following code leads to endless recursion when Mul are replaced
 		 * by a simple instruction chain */
-		if (!is_irg_state(irg, IR_GRAPH_STATE_ARCH_DEP)
+		if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_ARCH_DEP)
 				&& a == b && mode_is_int(mode)) {
 			ir_node *block = get_nodes_block(n);
 
@@ -3568,7 +3568,7 @@ static ir_node *transform_node_Cond(ir_node *n)
 		}
 		/* We might generate an endless loop, so keep it alive. */
 		add_End_keepalive(get_irg_end(irg), blk);
-		clear_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE);
+		clear_irg_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE);
 	}
 	return n;
 }
@@ -3642,7 +3642,7 @@ static ir_node *transform_node_shift_bitop(ir_node *n)
 	ir_tarval *tv2;
 	ir_tarval *tv_shift;
 
-	if (is_irg_state(irg, IR_GRAPH_STATE_NORMALISATION2))
+	if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_NORMALISATION2))
 		return n;
 
 	assert(is_Shrs(n) || is_Shr(n) || is_Shl(n) || is_Rotl(n));
@@ -5128,7 +5128,7 @@ static ir_node *transform_node_Proj(ir_node *proj)
 /**
  * Test whether a block is unreachable
  * Note: That this only returns true when
- * IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE is set.
+ * IR_GRAPH_CONSTRAINT_OPTIMIZE_UNREACHABLE_CODE is set.
  * This is important, as you easily end up producing invalid constructs in the
  * unreachable code when optimizing away edges into the unreachable code.
  * So only set this flag when you iterate localopts to the fixpoint.
@@ -5139,7 +5139,7 @@ static ir_node *transform_node_Proj(ir_node *proj)
 static bool is_block_unreachable(const ir_node *block)
 {
 	const ir_graph *irg = get_irn_irg(block);
-	if (!is_irg_state(irg, IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE))
+	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_OPTIMIZE_UNREACHABLE_CODE))
 		return false;
 	return get_Block_dom_depth(block) < 0;
 }
@@ -5151,7 +5151,7 @@ static ir_node *transform_node_Block(ir_node *block)
 	ir_node  *bad   = NULL;
 	int       i;
 
-	if (!is_irg_state(irg, IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE))
+	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_OPTIMIZE_UNREACHABLE_CODE))
 		return block;
 
 	for (i = 0; i < arity; ++i) {
@@ -6022,7 +6022,7 @@ static ir_node *transform_node_Mux(ir_node *n)
 
 	/* the following optimisations create new mode_b nodes, so only do them
 	 * before mode_b lowering */
-	if (!is_irg_state(irg, IR_GRAPH_STATE_MODEB_LOWERED)) {
+	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_MODEB_LOWERED)) {
 		if (is_Mux(t)) {
 			ir_node*  block = get_nodes_block(n);
 			ir_node*  c0    = sel;
@@ -7046,7 +7046,7 @@ ir_node *optimize_in_place(ir_node *n)
 
 	/* FIXME: Maybe we could also test whether optimizing the node can
 	   change the control graph. */
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	return optimize_in_place_2(n);
 }
 

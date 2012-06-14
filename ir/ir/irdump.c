@@ -1406,7 +1406,7 @@ static void dump_block_graph(FILE *F, ir_graph *irg)
 	}
 
 	if ((flags & ir_dump_flag_loops)
-	     && is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO))
+	     && irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO))
 		dump_loop_nodes_into_graph(F, irg);
 }
 
@@ -1421,34 +1421,37 @@ static void dump_graph_info(FILE *F, ir_graph *irg)
 	fprintf(F, "\n");
 
 	/* dump graph state */
-	fprintf(F, "state:");
-	if (is_irg_state(irg, IR_GRAPH_STATE_ARCH_DEP))
+	fprintf(F, "constraints:");
+	if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_ARCH_DEP))
 		fprintf(F, " arch_dep");
-	if (is_irg_state(irg, IR_GRAPH_STATE_MODEB_LOWERED))
+	if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_MODEB_LOWERED))
 		fprintf(F, " modeb_lowered");
-	if (is_irg_state(irg, IR_GRAPH_STATE_NORMALISATION2))
+	if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_NORMALISATION2))
 		fprintf(F, " normalisation2");
-	if (is_irg_state(irg, IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE))
+	if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_OPTIMIZE_UNREACHABLE_CODE))
 		fprintf(F, " optimize_unreachable_code");
-	if (is_irg_state(irg, IR_GRAPH_STATE_NO_CRITICAL_EDGES))
+	fprintf(F, "\n");
+
+	fprintf(F, "properties:");
+	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES))
 		fprintf(F, " no_critical_edges");
-	if (is_irg_state(irg, IR_GRAPH_STATE_NO_BADS))
+	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_NO_BADS))
 		fprintf(F, " no_bads");
-	if (is_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE))
+	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE))
 		fprintf(F, " no_unreachable_code");
-	if (is_irg_state(irg, IR_GRAPH_STATE_ONE_RETURN))
+	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_ONE_RETURN))
 		fprintf(F, " one_return");
-	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE))
+	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE))
 		fprintf(F, " consistent_dominance");
-	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE))
+	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE))
 		fprintf(F, " consistent_postdominance");
-	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUT_EDGES))
+	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES))
 		fprintf(F, " consistent_out_edges");
-	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS))
+	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS))
 		fprintf(F, " consistent_outs");
-	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO))
+	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO))
 		fprintf(F, " consistent_loopinfo");
-	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE))
+	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE))
 		fprintf(F, " consistent_entity_usage");
 	fprintf(F, "\"\n");
 }
@@ -1998,7 +2001,7 @@ void dump_ir_graph_file(FILE *out, ir_graph *irg)
 
 	/* dump the out edges in a separate walk */
 	if ((flags & ir_dump_flag_out_edges)
-			&& (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS))) {
+			&& (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS))) {
 		irg_out_walk(get_irg_start(irg), dump_out_edge, NULL, out);
 	}
 
@@ -2054,7 +2057,7 @@ static void dump_block_to_cfg(ir_node *block, void *env)
 
 		/* Dump dominator/postdominator edge */
 		if (ir_get_dump_flags() & ir_dump_flag_dominance) {
-			if (is_irg_state(get_irn_irg(block), IR_GRAPH_STATE_CONSISTENT_DOMINANCE) && get_Block_idom(block)) {
+			if (irg_has_properties(get_irn_irg(block), IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE) && get_Block_idom(block)) {
 				ir_node *pred = get_Block_idom(block);
 				fprintf(F, "edge: { sourcename: ");
 				print_nodeid(F, block);
@@ -2062,7 +2065,7 @@ static void dump_block_to_cfg(ir_node *block, void *env)
 				print_nodeid(F, pred);
 				fprintf(F, " " DOMINATOR_EDGE_ATTR "}\n");
 			}
-			if (is_irg_state(get_irn_irg(block), IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE) && get_Block_ipostdom(block)) {
+			if (irg_has_properties(get_irn_irg(block), IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE) && get_Block_ipostdom(block)) {
 				ir_node *pred = get_Block_ipostdom(block);
 				fprintf(F, "edge: { sourcename: ");
 				print_nodeid(F, block);

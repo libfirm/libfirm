@@ -396,7 +396,7 @@ static void place_late(ir_graph *irg, waitq *worklist)
 }
 
 /* Code Placement. */
-static ir_graph_state_t do_codeplacement(ir_graph *irg)
+static ir_graph_properties_t do_codeplacement(ir_graph *irg)
 {
 	waitq *worklist;
 
@@ -424,11 +424,11 @@ static ir_graph_state_t do_codeplacement(ir_graph *irg)
 
 static optdesc_t opt_codeplacement = {
 	"code-placement",
-	IR_GRAPH_STATE_NO_CRITICAL_EDGES |
-	IR_GRAPH_STATE_NO_UNREACHABLE_CODE |
-	IR_GRAPH_STATE_CONSISTENT_OUTS |
-	IR_GRAPH_STATE_CONSISTENT_DOMINANCE |
-	IR_GRAPH_STATE_CONSISTENT_LOOPINFO,
+	IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES |
+	IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE |
+	IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
+	IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
+	IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO,
 	do_codeplacement,
 };
 
@@ -449,7 +449,7 @@ static void place_code_wrapper(ir_graph *irg)
 }
 
 #if 0
-static ir_graph_state_t do_gcse(ir_graph *irg)
+static ir_graph_properties_t do_gcse(ir_graph *irg)
 {
 	set_opt_global_cse(1);
 	optimize_graph_df(irg);
@@ -460,10 +460,10 @@ static ir_graph_state_t do_gcse(ir_graph *irg)
 
 static optdesc_t opt_gcse = {
 	"gcse",
-	IR_GRAPH_STATE_NO_CRITICAL_EDGES |
-	IR_GRAPH_STATE_CONSISTENT_OUTS |
-	IR_GRAPH_STATE_CONSISTENT_DOMINANCE |
-	IR_GRAPH_STATE_CONSISTENT_LOOPINFO,
+	IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES |
+	IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
+	IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
+	IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO,
 	do_gcse,
 };
 #endif

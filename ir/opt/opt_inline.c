@@ -352,10 +352,10 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 	assert(get_irg_phase_state(irg) != phase_building);
 	assert(get_irg_pinned(irg) == op_pin_state_pinned);
 	assert(get_irg_pinned(called_graph) == op_pin_state_pinned);
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
-	                   | IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE);
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+	                   | IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE);
 	set_irg_callee_info_state(irg, irg_callee_info_inconsistent);
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE);
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE);
 	edges_deactivate(irg);
 
 	/* here we know we WILL inline, so inform the statistics */

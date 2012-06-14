@@ -40,16 +40,16 @@ typedef struct optdesc_t {
 	const char * const name;
 
 	/**
-	 * required irg_state for this optimization
+	 * required properties for this optimization
 	 */
-	ir_graph_state_t requirements;
+	ir_graph_properties_t requirements;
 
 	/**
 	 * The optimization function itself
 	 *
-	 * @returns  zero by default; set some flags, if you guarantee some irg_state properties
+	 * @returns  zero by default; set some flags, if you guarantee some properties
 	 **/
-	ir_graph_state_t (*const optimization)(ir_graph *irg);
+	ir_graph_properties_t (*const optimization)(ir_graph *irg);
 } optdesc_t;
 
 /** Apply an optimization to an ir graph.

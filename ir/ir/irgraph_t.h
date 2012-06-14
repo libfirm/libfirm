@@ -336,19 +336,28 @@ static inline unsigned get_irg_fp_model_(const ir_graph *irg)
 	return irg->fp_model;
 }
 
-static inline void set_irg_state_(ir_graph *irg, ir_graph_state_t state)
+static inline int irg_is_constrained_(const ir_graph *irg,
+                                      ir_graph_constraints_t constraints)
 {
-	irg->state = (ir_graph_state_t) (irg->state | state);
+	return (irg->constraints & constraints) == constraints;
 }
 
-static inline void clear_irg_state_(ir_graph *irg, ir_graph_state_t state)
+static inline void add_irg_properties_(ir_graph *irg,
+                                       ir_graph_properties_t props)
 {
-	irg->state = (ir_graph_state_t) (irg->state & ~state);
+	irg->properties |= props;
 }
 
-static inline int is_irg_state_(const ir_graph *irg, ir_graph_state_t state)
+static inline void clear_irg_properties_(ir_graph *irg,
+                                    ir_graph_properties_t props)
 {
-	return (irg->state & state) == state;
+	irg->properties &= ~props;
+}
+
+static inline int irg_has_properties_(const ir_graph *irg,
+                                      ir_graph_properties_t props)
+{
+	return (irg->properties & props) == props;
 }
 
 /**
@@ -465,8 +474,9 @@ static inline void set_irg_anchor(ir_graph *irg, int idx, ir_node *irn)
 #define get_irg_estimated_node_cnt(irg)       get_irg_estimated_node_cnt_(irg)
 #define get_irg_fp_model(irg)                 get_irg_fp_model_(irg)
 #define get_idx_irn(irg, idx)                 get_idx_irn_(irg, idx)
-#define set_irg_state(irg, state)             set_irg_state_(irg, state)
-#define clear_irg_state(irg, state)           clear_irg_state_(irg, state)
-#define is_irg_state(irg, state)              is_irg_state_(irg, state)
+#define irg_is_constrained(irg, constraints)  irg_is_constrained_(irg, constraints)
+#define add_irg_properties(irg, props)        add_irg_properties_(irg, props)
+#define clear_irg_properties(irg, props)      clear_irg_properties_(irg, props)
+#define irg_has_properties(irg, props)        irg_has_properties_(irg, props)
 
 #endif

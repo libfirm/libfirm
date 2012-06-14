@@ -716,10 +716,10 @@ restart:
 	}
 }
 
-static ir_graph_state_t do_simplify_bool(ir_graph *const irg)
+static ir_graph_properties_t do_simplify_bool(ir_graph *const irg)
 {
 	bool_opt_env_t env;
-	ir_graph_state_t res = 0;
+	ir_graph_properties_t res = 0;
 
 	/* register a debug mask */
 	FIRM_DBG_REGISTER(dbg, "firm.opt.bool");
@@ -736,7 +736,7 @@ static ir_graph_state_t do_simplify_bool(ir_graph *const irg)
 	irg_block_walk_graph(irg, NULL, find_cf_and_or_walker, &env);
 
 	if (! env.changed) {
-		res |= IR_GRAPH_STATE_CONSISTENT_DOMINANCE;
+		res |= IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE;
 	}
 
 	ir_free_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_PHI_LIST);
@@ -746,7 +746,7 @@ static ir_graph_state_t do_simplify_bool(ir_graph *const irg)
 
 static optdesc_t opt_simplify_bool = {
 	"bool-simplification",
-	IR_GRAPH_STATE_ONE_RETURN, /* works better with one return block only */
+	IR_GRAPH_PROPERTY_ONE_RETURN, /* works better with one return block only */
 	do_simplify_bool,
 };
 
