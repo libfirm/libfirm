@@ -1104,18 +1104,6 @@ static void check_initializer(ir_entity *ent)
 
 	if (ent->initializer != NULL) {
 		check_initializer_nodes(ent->initializer);
-	} else if (entity_has_compound_ent_values(ent)) {
-		size_t i, n;
-
-		for (i = 0, n = get_compound_ent_n_values(ent); i < n; ++i) {
-			ir_node *irn = get_compound_ent_value(ent, i);
-
-			/* let's check if it's an address */
-			if (is_SymConst_addr_ent(irn)) {
-				ir_entity *symconst_ent = get_SymConst_entity(irn);
-				set_entity_usage(symconst_ent, ir_usage_unknown);
-			}
-		}
 	}
 }
 

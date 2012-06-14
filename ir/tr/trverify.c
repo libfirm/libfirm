@@ -200,14 +200,6 @@ static bool constants_on_wrong_irg(const ir_entity *ent)
 {
 	if (ent->initializer != NULL) {
 		return initializer_constant_on_wrong_irg(ent->initializer);
-	} else if (entity_has_compound_ent_values(ent)) {
-		bool   fine = true;
-		size_t n    = get_compound_ent_n_values(ent);
-		size_t i;
-		for (i = 0; i < n; ++i) {
-			fine &= constant_on_wrong_irg(get_compound_ent_value(ent, i));
-		}
-		return fine;
 	}
 	return true;
 }

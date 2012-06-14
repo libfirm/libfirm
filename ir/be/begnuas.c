@@ -375,7 +375,6 @@ static int entity_is_string_const(const ir_entity *ent)
 {
 	ir_type *type, *element_type;
 	ir_mode *mode;
-	int i, c, n;
 
 	type = get_entity_type(ent);
 
@@ -397,26 +396,6 @@ static int entity_is_string_const(const ir_entity *ent)
 
 	if (ent->initializer != NULL) {
 		return initializer_is_string_const(ent->initializer);
-	} else if (entity_has_compound_ent_values(ent)) {
-		int found_printable = 0;
-		/* if it contains only printable chars and a 0 at the end */
-		n = get_compound_ent_n_values(ent);
-		for (i = 0; i < n; ++i) {
-			ir_node *irn = get_compound_ent_value(ent, i);
-			if (! is_Const(irn))
-				return 0;
-
-			c = (int) get_tarval_long(get_Const_tarval(irn));
-
-			if (isgraph(c) || isspace(c))
-				found_printable = 1;
-			else if (c != 0)
-				return 0;
-
-			if (i == n - 1 && c != '\0')
-				return 0;
-		}
-		return found_printable;
 	}
 
 	return 0;
@@ -659,55 +638,6 @@ const char *be_gas_insn_label_prefix(void)
 }
 
 /**
- * Return the tarval of an atomic initializer.
- *
- * @param init  a node representing the initializer (on the const code irg)
- *
- * @return the tarval
- */
-static ir_tarval *get_atomic_init_tv(ir_node *init)
-{
-	for (;;) {
-		ir_mode *mode = get_irn_mode(init);
-
-		switch (get_irn_opcode(init)) {
-
-		case iro_Cast:
-			init = get_Cast_op(init);
-			continue;
-
-		case iro_Conv:
-			init = get_Conv_op(init);
-			continue;
-
-		case iro_Const:
-			return get_Const_tarval(init);
-
-		case iro_SymConst:
-			switch (get_SymConst_kind(init)) {
-			case symconst_type_size:
-				return new_tarval_from_long(get_type_size_bytes(get_SymConst_type(init)), mode);
-
-			case symconst_type_align:
-				return new_tarval_from_long(get_type_alignment_bytes(get_SymConst_type(init)), mode);
-
-			case symconst_ofs_ent:
-				return new_tarval_from_long(get_entity_offset(get_SymConst_entity(init)), mode);
-
-			case symconst_enum_const:
-				return get_enumeration_value(get_SymConst_enum(init));
-
-			default:
-				return NULL;
-			}
-
-		default:
-			return NULL;
-		}
-	}
-}
-
-/**
  * Dump an atomic value.
  *
  * @param env   the gas output environment
@@ -819,62 +749,6 @@ static void emit_size_type(size_t size)
 
 	default:
 		panic("Try to dump a type with %u bytes", (unsigned)size);
-	}
-}
-
-/**
- * Dump a string constant.
- * No checks are made!!
- *
- * @param ent  The entity to dump.
- */
-static void emit_string_cst(const ir_entity *ent)
-{
-	int      i, len;
-	int      output_len;
-	ir_type *type;
-	int      type_size;
-	int      remaining_space;
-
-	len        = get_compound_ent_n_values(ent);
-	output_len = len;
-	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
-		be_emit_cstring("\t.ascii \"");
-	} else {
-		be_emit_cstring("\t.string \"");
-		output_len -= 1;
-	}
-
-	for (i = 0; i < output_len; ++i) {
-		ir_node *irn;
-		int c;
-
-		irn = get_compound_ent_value(ent, i);
-		c = (int) get_tarval_long(get_Const_tarval(irn));
-
-		switch (c) {
-		case '"' : be_emit_cstring("\\\""); break;
-		case '\n': be_emit_cstring("\\n"); break;
-		case '\r': be_emit_cstring("\\r"); break;
-		case '\t': be_emit_cstring("\\t"); break;
-		case '\\': be_emit_cstring("\\\\"); break;
-		default  :
-			if (isprint(c))
-				be_emit_char(c);
-			else
-				be_emit_irprintf("\\%03o", c);
-			break;
-		}
-	}
-	be_emit_cstring("\"\n");
-	be_emit_write_line();
-
-	type            = get_entity_type(ent);
-	type_size       = get_type_size_bytes(type);
-	remaining_space = type_size - len;
-	assert(remaining_space >= 0);
-	if (remaining_space > 0) {
-		be_emit_irprintf("\t.space\t%d, 0\n", remaining_space);
 	}
 }
 
@@ -1329,117 +1203,6 @@ static void emit_initializer(be_gas_decl_env_t *env, const ir_entity *entity)
 	xfree(vals);
 }
 
-static void emit_compound_graph_init(be_gas_decl_env_t *env,
-                                     const ir_entity *ent)
-{
-	normal_or_bitfield *vals;
-	int i, j, n;
-	unsigned k, last_ofs;
-
-	if (entity_is_string_const(ent)) {
-		emit_string_cst(ent);
-		return;
-	}
-
-	n = get_compound_ent_n_values(ent);
-
-	/* Find the initializer size. Sorrily gcc support a nasty feature:
-	   The last field of a compound may be a flexible array. This allows
-	   initializers bigger than the type size. */
-	last_ofs = get_type_size_bytes(get_entity_type(ent));
-	for (i = 0; i < n; ++i) {
-		unsigned offset         = get_compound_ent_value_offset_bytes(ent, i);
-		unsigned bits_remainder = get_compound_ent_value_offset_bit_remainder(ent, i);
-		ir_node  *value         = get_compound_ent_value(ent, i);
-		unsigned value_len      = get_mode_size_bits(get_irn_mode(value));
-
-		offset += (value_len + bits_remainder + 7) >> 3;
-
-		if (offset > last_ofs) {
-			last_ofs = offset;
-		}
-	}
-
-	/*
-	 * In the worst case, every initializer allocates one byte.
-	 * Moreover, initializer might be big, do not allocate on stack.
-	 */
-	vals = XMALLOCNZ(normal_or_bitfield, last_ofs);
-
-	/* collect the values and store them at the offsets */
-	for (i = 0; i < n; ++i) {
-		unsigned offset      = get_compound_ent_value_offset_bytes(ent, i);
-		int      offset_bits = get_compound_ent_value_offset_bit_remainder(ent, i);
-		ir_node  *value      = get_compound_ent_value(ent, i);
-		int      value_len   = get_mode_size_bits(get_irn_mode(value));
-
-		assert(offset_bits >= 0);
-
-		if (offset_bits != 0 ||
-				(value_len != 8 && value_len != 16 && value_len != 32 && value_len != 64)) {
-			ir_tarval *tv = get_atomic_init_tv(value);
-			unsigned char curr_bits, last_bits = 0;
-			if (tv == NULL) {
-				panic("Couldn't get numeric value for bitfield initializer '%s'",
-						get_entity_ld_name(ent));
-			}
-			/* normalize offset */
-			offset += offset_bits >> 3;
-			offset_bits &= 7;
-
-			for (j = 0; value_len + offset_bits > 0; ++j) {
-				assert(offset + j < last_ofs);
-				assert(vals[offset + j].kind == BITFIELD || vals[offset + j].v.value == NULL);
-				vals[offset + j].kind = BITFIELD;
-				curr_bits = get_tarval_sub_bits(tv, j);
-				vals[offset + j].v.bf_val |= (last_bits >> (8 - offset_bits)) | (curr_bits << offset_bits);
-				value_len -= 8;
-				last_bits = curr_bits;
-			}
-		} else {
-			int i;
-
-			assert(offset < last_ofs);
-			assert(vals[offset].kind == NORMAL);
-			for (i = 1; i < value_len / 8; ++i) {
-				assert(vals[offset + i].v.value == NULL);
-			}
-			vals[offset].v.value = value;
-		}
-	}
-
-	/* now write them sorted */
-	for (k = 0; k < last_ofs; ) {
-		int space = 0, skip = 0;
-		if (vals[k].kind == NORMAL) {
-			if (vals[k].v.value != NULL) {
-				emit_node_data(env, vals[k].v.value, vals[k].type);
-				skip = get_mode_size_bytes(get_irn_mode(vals[k].v.value)) - 1;
-			} else {
-				space = 1;
-			}
-		} else {
-			assert(vals[k].kind == BITFIELD);
-			be_emit_irprintf("\t.byte\t%d\n", vals[k].v.bf_val);
-		}
-
-		++k;
-		while (k < last_ofs && vals[k].kind == NORMAL && vals[k].v.value == NULL) {
-			++space;
-			++k;
-		}
-		space -= skip;
-		assert(space >= 0);
-
-		/* a gap */
-		if (space > 0) {
-			be_emit_irprintf("\t.space\t%d, 0\n", space);
-			be_emit_write_line();
-		}
-	}
-	xfree(vals);
-}
-
 static void emit_align(unsigned p2alignment)
 {
 	be_emit_irprintf("\t.p2align\t%u\n", log2_floor(p2alignment));
@@ -1712,8 +1475,6 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 			be_emit_irprintf("\t.space %u, 0\n", get_type_size_bytes(type));
 			be_emit_write_line();
 		}
-	} else if (entity_has_compound_ent_values(entity)) {
-		emit_compound_graph_init(env, entity);
 	} else {
 		assert(entity->initializer != NULL);
 		emit_initializer(env, entity);

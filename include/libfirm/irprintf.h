@@ -50,7 +50,6 @@ struct obstack;
  * - @%N The node number of an ir node.
  * - @%m The mode name of an ir mode.
  * - @%B The block node number of the nodes block.
- * - @%P A compound graph path.
  * - @%I An ident.
  * - @%D Print as many white spaces as given in the parameter.
  * - @%G A debug info (if available) from the given ir node.

@@ -1110,9 +1110,6 @@
     <ClInclude Include="$(FirmRoot)\ir\stat\stat_timing.h">
       <Filter>ir\stat</Filter>
     </ClInclude>
-    <ClCompile Include="$(FirmRoot)\ir\tr\compound_path.c">
-      <Filter>ir\tr</Filter>
-    </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\tr\entity.c">
       <Filter>ir\tr</Filter>
     </ClCompile>
@@ -1198,9 +1195,6 @@
       <Filter>include\libfirm</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\cgana.h">
-      <Filter>include\libfirm</Filter>
-    </ClInclude>
-    <ClInclude Include="$(FirmRoot)\include\libfirm\compound_path.h">
       <Filter>include\libfirm</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\dbginfo.h">
@@ -2928,9 +2922,6 @@
     <ClInclude Include="$(FirmRoot)\ir\stat\statev.h">
       <Filter>ir\stat</Filter>
     </ClInclude>
-    <ClCompile Include="$(FirmRoot)\ir\tr\compound_path.c">
-      <Filter>ir\tr</Filter>
-    </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\tr\entity.c">
       <Filter>ir\tr</Filter>
     </ClCompile>
@@ -4623,9 +4614,6 @@
     <ClInclude Include="$(FirmRoot)\ir\stat\statev.h">
       <Filter>ir\stat</Filter>
     </ClInclude>
-    <ClCompile Include="$(FirmRoot)\ir\tr\compound_path.c">
-      <Filter>ir\tr</Filter>
-    </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\tr\entity.c">
       <Filter>ir\tr</Filter>
     </ClCompile>
@@ -6312,9 +6300,6 @@
     <ClInclude Include="$(FirmRoot)\ir\stat\statev.h">
       <Filter>ir\stat</Filter>
     </ClInclude>
-    <ClCompile Include="$(FirmRoot)\ir\tr\compound_path.c">
-      <Filter>ir\tr</Filter>
-    </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\tr\entity.c">
       <Filter>ir\tr</Filter>
     </ClCompile>
@@ -6400,9 +6385,6 @@
       <Filter>include\libfirm</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\cgana.h">
-      <Filter>include\libfirm</Filter>
-    </ClInclude>
-    <ClInclude Include="$(FirmRoot)\include\libfirm\compound_path.h">
       <Filter>include\libfirm</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\dbginfo.h">

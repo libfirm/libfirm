@@ -602,27 +602,6 @@ static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, const char *pref
 			need_nl = 1;
 			dump_ir_initializers_to_file(F, prefix, initializer, get_entity_type(ent));
 			fputc('\n', F);
-		} else if (entity_has_compound_ent_values(ent)) {
-			size_t i;
-			fprintf(F, "%s  compound values:", prefix);
-			for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
-				size_t j;
-				compound_graph_path *path = get_compound_ent_value_path(ent, i);
-				ir_entity *ent0 = get_compound_graph_path_node(path, 0);
-				fprintf(F, "\n%s    %3d:%d ", prefix, get_entity_offset(ent0), get_entity_offset_bits_remainder(ent0));
-				if (get_type_state(type) == layout_fixed)
-					fprintf(F, "(%3u:%u) ",   get_compound_ent_value_offset_bytes(ent, i), get_compound_ent_value_offset_bit_remainder(ent, i));
-				fprintf(F, "%s", get_entity_name(ent));
-				for (j = 0; j < get_compound_graph_path_length(path); ++j) {
-					ir_entity *node = get_compound_graph_path_node(path, j);
-					fprintf(F, ".%s", get_entity_name(node));
-					if (is_Array_type(get_entity_owner(node)))
-						fprintf(F, "[%ld]", get_compound_graph_path_array_index(path, j));
-				}
-				fprintf(F, "\t = ");
-				dump_node_opcode(F, get_compound_ent_value(ent, i));
-			}
-			fputc('\n', F);
 		}
 	}
 

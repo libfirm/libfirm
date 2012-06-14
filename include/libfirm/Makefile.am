@@ -6,7 +6,6 @@ libfirminclude_HEADERS = \
 	callgraph.h \
 	cdep.h \
 	cgana.h \
-	compound_path.h \
 	dbginfo.h \
 	end.h \
 	execfreq.h \

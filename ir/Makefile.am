@@ -232,7 +232,6 @@ libfirm_la_SOURCES = \
 	stat/stat_dmp.c \
 	stat/statev.c \
 	stat/stat_timing.c \
-	tr/compound_path.c \
 	tr/entity.c \
 	tr/tpop.c \
 	tr/tr_inheritance.c \

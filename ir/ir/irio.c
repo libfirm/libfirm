@@ -819,9 +819,6 @@ static void write_entity(write_env_t *env, ir_entity *ent)
 		if (ent->initializer != NULL) {
 			write_symbol(env, "initializer");
 			write_initializer(env, get_entity_initializer(ent));
-		} else if (entity_has_compound_ent_values(ent)) {
-			/* compound graph API is deprecated */
-			panic("exporting compound_graph initializers not supported");
 		} else {
 			write_symbol(env, "none");
 		}

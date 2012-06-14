@@ -64,7 +64,6 @@ typedef enum {
 	k_ir_op,                  /**< An IR opcode. */
 	k_tarval,                 /**< A tarval. */
 	k_ir_loop,                /**< A loop. */
-	k_ir_compound_graph_path, /**< A compound graph path, see entity.h. */
 	k_ir_prog,                /**< A program representation (irp). */
 	k_ir_graph_pass,          /**< An ir_graph pass. */
 	k_ir_prog_pass,           /**< An ir_prog pass. */

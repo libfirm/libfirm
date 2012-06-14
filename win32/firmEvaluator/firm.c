@@ -77,8 +77,6 @@ int get_firm_object_size(firm_kind kind)
     return sizeof(tarval);
   case k_ir_loop:    /* a loop */
     return sizeof(ir_loop);
-  case k_ir_compound_graph_path: /* a compound graph path, see entity.h */
-    return sizeof(compound_graph_path);
   case k_ir_prog:    /* a program representation (irp) */
     return sizeof(ir_prog);
   default:
@@ -716,8 +714,6 @@ HRESULT FormatFirmObject(DEBUGHELPER *pHelper, int nBase, firm_kind kind, const 
     return format_tarval(pHelper, nBase, addr, pResult, max);
   case k_ir_loop:    /* a loop */
     return format_loop(pHelper, addr, pResult, max);
-  case k_ir_compound_graph_path: /* a compound graph path, see entity.h */
-    return E_FAIL;
   case k_ir_prog:    /* a program representation (irp) */
     return format_prog(pHelper, nBase, addr, pResult, max);
   default:

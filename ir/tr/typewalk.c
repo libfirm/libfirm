@@ -93,7 +93,6 @@ static void do_type_walk(type_or_ent tore,
 	size_t      i, n_types, n_mem;
 	ir_entity   *ent = NULL;
 	ir_type     *tp = NULL;
-	ir_node     *n;
 	type_or_ent cont;
 
 	/* marked? */
@@ -129,12 +128,6 @@ static void do_type_walk(type_or_ent tore,
 		/* walk over the value types */
 		if (ent->initializer != NULL) {
 			walk_initializer(ent->initializer, pre, post, env);
-		} else if (entity_has_compound_ent_values(ent)) {
-			size_t i, n_mem = get_compound_ent_n_values(ent);
-			for (i = 0; i < n_mem; ++i) {
-				n = get_compound_ent_value(ent, i);
-				irn_type_walker(n, pre, post, env);
-			}
 		}
 		break;
 	case k_type:

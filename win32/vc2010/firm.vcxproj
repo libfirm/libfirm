@@ -446,7 +446,6 @@
     <ClInclude Include="$(FirmRoot)\ir\stat\stat_dmp.h"/>
     <ClInclude Include="$(FirmRoot)\ir\stat\stat_timing.h"/>
     <ClInclude Include="$(FirmRoot)\ir\stat\statev.h"/>
-    <ClCompile Include="$(FirmRoot)\ir\tr\compound_path.c"/>
     <ClCompile Include="$(FirmRoot)\ir\tr\entity.c"/>
     <ClCompile Include="$(FirmRoot)\ir\tr\tpop.c"/>
     <ClCompile Include="$(FirmRoot)\ir\tr\tr_inheritance.c"/>
@@ -476,7 +475,6 @@
     <ClInclude Include="$(FirmRoot)\include\libfirm\callgraph.h"/>
     <ClInclude Include="$(FirmRoot)\include\libfirm\cdep.h"/>
     <ClInclude Include="$(FirmRoot)\include\libfirm\cgana.h"/>
-    <ClInclude Include="$(FirmRoot)\include\libfirm\compound_path.h"/>
     <ClInclude Include="$(FirmRoot)\include\libfirm\dbginfo.h"/>
     <ClInclude Include="$(FirmRoot)\include\libfirm\execfreq.h"/>
     <ClInclude Include="$(FirmRoot)\include\libfirm\execution_frequency.h"/>

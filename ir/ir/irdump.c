@@ -415,24 +415,6 @@ static void print_node_ent_edge(FILE *F, const ir_node *irn, const ir_entity *en
 }
 
 /**
- * Prints the edge from an entity ent to a node irn with additional info fmt, ...
- * to the file F.
- */
-static void print_ent_node_edge(FILE *F, const ir_entity *ent, const ir_node *irn, const char *fmt, ...)
-{
-	va_list ap;
-
-	va_start(ap, fmt);
-	fprintf(F, "edge: { sourcename: ");
-	print_entityid(F, ent);
-	fprintf(F, "\" targetname: ");
-	print_nodeid(F, irn);
-	ir_vfprintf(F, fmt, ap);
-	fprintf(F,"}\n");
-	va_end(ap);
-}
-
-/**
  * Prints the edge from a type tp to an enumeration item item with additional info fmt, ...
  * to the file F.
  */
@@ -1634,7 +1616,6 @@ static void dump_type_info(type_or_ent tore, void *env)
 	switch (get_kind(tore.ent)) {
 	case k_entity: {
 		ir_entity *ent = tore.ent;
-		ir_node *value;
 		/* The node */
 		dump_entity_node(F, ent);
 		/* The Edges */
@@ -1651,21 +1632,6 @@ static void dump_type_info(type_or_ent tore, void *env)
 			if (ent->initializer != NULL) {
 				/* new style initializers */
 				dump_entity_initializer(F, ent);
-			} else if (entity_has_compound_ent_values(ent)) {
-				/* old style compound entity values */
-				for (i = get_compound_ent_n_values(ent); i > 0;) {
-					value = get_compound_ent_value(ent, --i);
-					if (value) {
-						print_ent_node_edge(F, ent, value, ENT_VALUE_EDGE_ATTR, i);
-						dump_const_expression(F, value);
-						print_ent_ent_edge(F, ent, get_compound_ent_value_member(ent, i), 0, ird_color_none, ENT_CORR_EDGE_ATTR, i);
-						/*
-						fprintf(F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-						ENT_CORR_EDGE_ATTR  "}\n", GET_ENTID(ent),
-						get_compound_ent_value_member(ent, i), i);
-						*/
-					}
-				}
 			}
 		}
 		break;

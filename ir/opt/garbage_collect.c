@@ -100,13 +100,6 @@ static void visit_entity(ir_entity *entity)
 
 	if (entity->initializer != NULL) {
 		visit_initializer(entity->initializer);
-	}  else if (entity_has_compound_ent_values(entity)) {
-		size_t i;
-		size_t n_members = get_compound_ent_n_values(entity);
-		for (i = 0; i < n_members; ++i) {
-			ir_node *node = get_compound_ent_value(entity, i);
-			start_visit_node(node);
-		}
 	}
 
 	irg = get_entity_irg(entity);

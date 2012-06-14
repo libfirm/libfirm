@@ -438,11 +438,6 @@ static void walk_entity(ir_entity *ent, void *env)
 
 	if (ent->initializer != NULL) {
 		walk_initializer(ent->initializer, my_env);
-	} else if (entity_has_compound_ent_values(ent)) {
-		size_t i, n_vals = get_compound_ent_n_values(ent);
-
-		for (i = 0; i < n_vals; i++)
-			irg_walk(get_compound_ent_value(ent, i), my_env->pre, my_env->post, my_env->env);
 	}
 }
 

@@ -689,25 +689,6 @@ static ir_node *eval_strlen(ir_graph *irg, ir_entity *ent, ir_type *res_tp)
 	if (!mode_is_int(mode) || get_mode_size_bits(mode) != 8)
 		return NULL;
 
-	if (!has_entity_initializer(ent)) {
-		size_t i, n;
-
-		n = get_compound_ent_n_values(ent);
-		for (i = 0; i < n; ++i) {
-			ir_node *irn = get_compound_ent_value(ent, i);
-
-			if (! is_Const(irn))
-				return NULL;
-
-			if (is_Const_null(irn)) {
-				/* found the length */
-				ir_tarval *tv = new_tarval_from_long(i, get_type_mode(res_tp));
-				return new_r_Const(irg, tv);
-			}
-		}
-		return NULL;
-	}
-
 	initializer = get_entity_initializer(ent);
 	if (get_initializer_kind(initializer) != IR_INITIALIZER_COMPOUND)
 		return NULL;
@@ -796,54 +777,6 @@ static ir_node *eval_strcmp(ir_graph *irg, ir_entity *left, ir_entity *right,
 	if (!mode_is_int(mode) || get_mode_size_bits(mode) != 8)
 		return NULL;
 
-	if (!has_entity_initializer(left) && !has_entity_initializer(right)) {
-		/* code that uses deprecated compound_graph_path stuff */
-		size_t n   = get_compound_ent_n_values(left);
-		size_t n_r = get_compound_ent_n_values(right);
-		size_t i;
-		int    res = 0;
-
-		if (n_r < n)
-			n = n_r;
-		for (i = 0; i < n; ++i) {
-			ir_node *irn;
-			long v_l, v_r;
-			ir_tarval *tv;
-
-			irn = get_compound_ent_value(left, i);
-			if (! is_Const(irn))
-				return NULL;
-			tv = get_Const_tarval(irn);
-			v_l = get_tarval_long(tv);
-
-			irn = get_compound_ent_value(right, i);
-			if (! is_Const(irn))
-				return NULL;
-			tv = get_Const_tarval(irn);
-			v_r = get_tarval_long(tv);
-
-			if (v_l < v_r) {
-				res = -1;
-				break;
-			}
-			if (v_l > v_r) {
-				res = +1;
-				break;
-			}
-
-			if (v_l == 0) {
-				res = 0;
-				break;
-			}
-		}
-		if (i < n) {
-			/* we found an end */
-			ir_tarval *tv = new_tarval_from_long(res, get_type_mode(res_tp));
-			return new_r_Const(irg, tv);
-		}
-		return NULL;
-	}
-
 	init_l = get_entity_initializer(left);
 	init_r = get_entity_initializer(right);
 	if (get_initializer_kind(init_l) != IR_INITIALIZER_COMPOUND ||
@@ -891,7 +824,6 @@ static int is_empty_string(ir_entity *ent)
 {
 	ir_type          *tp = get_entity_type(ent);
 	ir_mode          *mode;
-	ir_node          *irn;
 	ir_initializer_t *initializer;
 	ir_initializer_t *init0;
 
@@ -905,16 +837,6 @@ static int is_empty_string(ir_entity *ent)
 	/* FIXME: This is too restrict, as the type char might be more the 8bits */
 	if (!mode_is_int(mode) || get_mode_size_bits(mode) != 8)
 		return 0;
-
-	if (!has_entity_initializer(ent)) {
-		/* code for deprecated compound_graph_path stuff */
-		size_t n = get_compound_ent_n_values(ent);
-		if (n < 1)
-			return 0;
-		irn = get_compound_ent_value(ent, 0);
-
-		return is_Const(irn) && is_Const_null(irn);
-	}
 
 	initializer = get_entity_initializer(ent);
 	if (get_initializer_kind(initializer) != IR_INITIALIZER_COMPOUND)
