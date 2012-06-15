@@ -2987,7 +2987,7 @@ static void lower_irg(ir_graph *irg)
 
 	/* just here for debugging */
 	current_ir_graph = irg;
-	edges_assure(irg);
+	assure_edges(irg);
 
 	n_idx = get_irg_last_idx(irg);
 	n_idx = n_idx + (n_idx >> 2);  /* add 25% */

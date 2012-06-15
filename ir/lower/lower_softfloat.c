@@ -1075,7 +1075,7 @@ void lower_floating_point(void)
 
 		ir_nodeset_init(&created_mux_nodes);
 
-		edges_assure(irg);
+		assure_edges(irg);
 
 		irg_walk_graph(irg, NULL, lower_node, NULL);
 

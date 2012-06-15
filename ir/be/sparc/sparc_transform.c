@@ -2589,7 +2589,7 @@ void sparc_transform_graph(ir_graph *irg)
 	/* do code placement, to optimize the position of constants */
 	place_code(irg);
 	/* backend expects outedges to be always on */
-	edges_assure(irg);
+	assure_edges(irg);
 }
 
 void sparc_init_transform(void)

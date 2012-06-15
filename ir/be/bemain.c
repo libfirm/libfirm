@@ -449,7 +449,7 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 	remove_bads(irg);
 
 	/* Ensure, that the ir_edges are computed. */
-	edges_assure(irg);
+	assure_edges(irg);
 
 	set_irg_phase_state(irg, phase_backend);
 	be_info_init_irg(irg);

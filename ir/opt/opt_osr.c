@@ -1418,8 +1418,7 @@ static void fix_adds_and_subs(ir_node *irn, void *ctx)
 /* Performs Operator Strength Reduction for the passed graph. */
 void opt_osr(ir_graph *irg, unsigned flags)
 {
-	iv_env   env;
-	int      edges;
+	iv_env env;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.osr");
 
@@ -1447,7 +1446,7 @@ void opt_osr(ir_graph *irg, unsigned flags)
 	/* we need dominance */
 	assure_doms(irg);
 
-	edges = edges_assure(irg);
+	assure_edges(irg);
 
 	/* calculate the post order number for blocks by walking the out edges. */
 	assure_irg_outs(irg);
@@ -1474,9 +1473,8 @@ void opt_osr(ir_graph *irg, unsigned flags)
 	DEL_ARR_F(env.stack);
 	obstack_free(&env.obst, NULL);
 
-	if (! edges)
-		edges_deactivate(irg);
-}  /* opt_osr */
+	edges_deactivate(irg);
+}
 
 typedef struct pass_t {
 	ir_graph_pass_t pass;

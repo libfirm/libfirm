@@ -913,32 +913,16 @@ void edges_deactivate(ir_graph *irg)
 	edges_deactivate_kind(irg, EDGE_KIND_NORMAL);
 }
 
-int edges_assure(ir_graph *irg)
+void assure_edges(ir_graph *irg)
 {
-	int activated = 0;
-
-	if (edges_activated_kind(irg, EDGE_KIND_BLOCK)) {
-		activated = 1;
-	} else {
-		edges_activate_kind(irg, EDGE_KIND_BLOCK);
-	}
-	if (edges_activated_kind(irg, EDGE_KIND_NORMAL)) {
-		activated = 1;
-	} else {
-		edges_activate_kind(irg, EDGE_KIND_NORMAL);
-	}
-
-	return activated;
+	assure_edges_kind(irg, EDGE_KIND_BLOCK);
+	assure_edges_kind(irg, EDGE_KIND_NORMAL);
 }
 
-int edges_assure_kind(ir_graph *irg, ir_edge_kind_t kind)
+void assure_edges_kind(ir_graph *irg, ir_edge_kind_t kind)
 {
-	int activated = edges_activated_kind(irg, kind);
-
-	if (!activated)
+	if (!edges_activated_kind(irg, kind))
 		edges_activate_kind(irg, kind);
-
-	return activated;
 }
 
 void edges_node_deleted(ir_node *irn)

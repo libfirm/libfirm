@@ -235,20 +235,16 @@ FIRM_API void edges_deactivate(ir_graph *irg);
  * Ensures that edges are activated.
  *
  * @param irg  the IR graph
- *
- * @return 0 if edges was deactivated before the call, 1 else
  */
-FIRM_API int edges_assure(ir_graph *irg);
+FIRM_API void assure_edges(ir_graph *irg);
 
 /**
  * Ensures that edges of a given kind are activated.
  *
  * @param irg   the IR graph
  * @param kind  the edge kind
- *
- * @return 0 if edges was deactivated before the call, 1 else
  */
-FIRM_API int edges_assure_kind(ir_graph *irg, ir_edge_kind_t kind);
+FIRM_API void assure_edges_kind(ir_graph *irg, ir_edge_kind_t kind);
 
 /**
  * Walks only over Block nodes in the graph. Uses the block visited

@@ -226,7 +226,7 @@ unsigned heights_recompute_block(ir_heights_t *h, ir_node *block)
 	ir_graph *irg = get_irn_irg(block);
 	const ir_edge_t *edge;
 
-	edges_assure(irg);
+	assure_edges(irg);
 
 	/* reset phase data for all nodes in the block */
 	foreach_out_edge(block, edge) {
@@ -246,7 +246,7 @@ ir_heights_t *heights_new(ir_graph *irg)
 	obstack_init(&res->obst);
 	res->dump_handle = dump_add_node_info_callback(height_dump_cb, res);
 
-	edges_assure(irg);
+	assure_edges(irg);
 	irg_block_walk_graph(irg, compute_heights_in_block_walker, NULL, res);
 
 	return res;

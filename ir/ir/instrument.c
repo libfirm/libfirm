@@ -42,7 +42,7 @@ void instrument_initcall(ir_graph *irg, ir_entity *ent)
 	int             i, idx, need_new_block;
 	symconst_symbol sym;
 
-	edges_assure(irg);
+	assure_edges(irg);
 
 	/* find the first block */
 	initial_exec = get_irg_initial_exec(irg);

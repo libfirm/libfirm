@@ -275,7 +275,7 @@ void ir_lower_mode_b(ir_graph *const irg, ir_mode *const nlowered_mode)
 	lowered_mode = nlowered_mode;
 
 	/* edges are used by part_block_edges in the ir_create_cond_set variant. */
-	edges_assure(irg);
+	assure_edges(irg);
 	/* part_block_edges can go wrong with tuples present */
 	remove_tuples(irg);
 

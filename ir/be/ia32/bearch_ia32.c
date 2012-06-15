@@ -663,7 +663,7 @@ static void ia32_prepare_graph(ir_graph *irg)
 	/* do local optimizations (mainly CSE) */
 	optimize_graph_df(irg);
 	/* backend code expects that outedges are always enabled */
-	edges_assure(irg);
+	assure_edges(irg);
 
 	if (irg_data->dump)
 		dump_ir_graph(irg, "transformed");
@@ -674,7 +674,7 @@ static void ia32_prepare_graph(ir_graph *irg)
 	/* do code placement, to optimize the position of constants */
 	place_code(irg);
 	/* backend code expects that outedges are always enabled */
-	edges_assure(irg);
+	assure_edges(irg);
 
 	if (irg_data->dump)
 		dump_ir_graph(irg, "place");

@@ -385,7 +385,7 @@ be_uses_t *be_begin_uses(ir_graph *irg, const be_lv_t *lv)
 {
 	be_uses_t *env = XMALLOC(be_uses_t);
 
-	edges_assure(irg);
+	assure_edges(irg);
 
 	//set_using_irn_link(irg);
 

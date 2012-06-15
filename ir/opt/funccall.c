@@ -761,7 +761,7 @@ static mtp_additional_properties check_stored_result(ir_graph *irg)
 	ir_node  *end_blk = get_irg_end_block(irg);
 	int      i;
 	mtp_additional_properties res = ~mtp_no_property;
-	int      old_edges = edges_assure_kind(irg, EDGE_KIND_NORMAL);
+	assure_edges_kind(irg, EDGE_KIND_NORMAL);
 
 	for (i = get_Block_n_cfgpreds(end_blk) - 1; i >= 0; --i) {
 		ir_node *pred = get_Block_cfgpred(end_blk, i);
@@ -780,8 +780,7 @@ static mtp_additional_properties check_stored_result(ir_graph *irg)
 		}
 	}
 finish:
-	if (! old_edges)
-		edges_deactivate_kind(irg, EDGE_KIND_NORMAL);
+	edges_deactivate_kind(irg, EDGE_KIND_NORMAL);
 	return res;
 }
 

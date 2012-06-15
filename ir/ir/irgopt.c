@@ -203,7 +203,7 @@ int optimize_graph_df(ir_graph *irg)
 	add_irg_constraints(irg, IR_GRAPH_CONSTRAINT_OPTIMIZE_UNREACHABLE_CODE);
 
 	new_identities(irg);
-	edges_assure(irg);
+	assure_edges(irg);
 	assure_doms(irg);
 
 
