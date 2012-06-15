@@ -1274,27 +1274,6 @@ static void lftr(ir_graph *irg, iv_env *env)
 	irg_walk_graph(irg, NULL, do_lftr, env);
 }  /* lftr */
 
-/**
- * Pre-walker: set all node links to NULL and fix the
- * block of Proj nodes.
- */
-static void clear_and_fix(ir_node *irn, void *env)
-{
-	(void)env;
-
-	set_irn_link(irn, NULL);
-
-	if (is_Proj(irn)) {
-		ir_node *pred       = get_Proj_pred(irn);
-		ir_node *pred_block = get_nodes_block(pred);
-
-		if (get_nodes_block(irn) != pred_block) {
-			set_nodes_block(irn, pred_block);
-		}
-	}
-}  /* clear_and_fix */
-
-
 /* Remove any Phi cycles with only one real input. */
 void remove_phi_cycles(ir_graph *irg)
 {
@@ -1326,7 +1305,7 @@ void remove_phi_cycles(ir_graph *irg)
 	 * the same block as their predecessors.
 	 * This can improve the placement of new nodes.
 	 */
-	irg_walk_graph(irg, NULL, clear_and_fix, NULL);
+	irg_walk_graph(irg, NULL, firm_clear_link, NULL);
 
 	/* calculate the post order number for blocks. */
 	irg_out_block_walk(get_irg_start_block(irg), NULL, assign_po, &env);
@@ -1451,7 +1430,7 @@ void opt_osr(ir_graph *irg, unsigned flags)
 	 * the same block as its predecessors.
 	 * This can improve the placement of new nodes.
 	 */
-	irg_walk_graph(irg, NULL, clear_and_fix, NULL);
+	irg_walk_graph(irg, NULL, firm_clear_link, NULL);
 
 	irg_block_edges_walk(get_irg_start_block(irg), NULL, assign_po, &env);
 
