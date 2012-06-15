@@ -714,18 +714,14 @@ exchange_only:
 			ir_node*       const r  = get_And_right(irn);
 			bitinfo const* const bl = get_bitinfo(l);
 			bitinfo const* const br = get_bitinfo(r);
-			if (bl->z == bl->o) {
-				if (tarval_is_null(tarval_andnot(br->z, bl->z))) {
-					DB((dbg, LEVEL_2, "%+F(%+F, %+F) is superfluous\n", irn, l, r));
-					exchange(irn, r);
-					env->modified = 1;
-				}
-			} else if (br->z == br->o) {
-				if (tarval_is_null(tarval_andnot(bl->z, br->z))) {
-					DB((dbg, LEVEL_2, "%+F(%+F, %+F) is superfluous\n", irn, l, r));
-					exchange(irn, l);
-					env->modified = 1;
-				}
+			if (tarval_is_null(tarval_andnot(br->z, bl->o))) {
+				DB((dbg, LEVEL_2, "%+F(%+F, %+F) is superfluous\n", irn, l, r));
+				exchange(irn, r);
+				env->modified = 1;
+			} else if (tarval_is_null(tarval_andnot(bl->z, br->o))) {
+				DB((dbg, LEVEL_2, "%+F(%+F, %+F) is superfluous\n", irn, l, r));
+				exchange(irn, l);
+				env->modified = 1;
 			}
 			break;
 		}
@@ -757,18 +753,14 @@ exchange_only:
 			ir_node*       const r  = get_Or_right(irn);
 			bitinfo const* const bl = get_bitinfo(l);
 			bitinfo const* const br = get_bitinfo(r);
-			if (bl->z == bl->o) {
-				if (tarval_is_null(tarval_andnot(bl->o, br->o))) {
-					DB((dbg, LEVEL_2, "%+F(%+F, %+F) is superfluous\n", irn, l, r));
-					exchange(irn, r);
-					env->modified = 1;
-				}
-			} else if (br->z == br->o) {
-				if (tarval_is_null(tarval_andnot(br->o, bl->o))) {
-					DB((dbg, LEVEL_2, "%+F(%+F, %+F) is superfluous\n", irn, l, r));
-					exchange(irn, l);
-					env->modified = 1;
-				}
+			if (tarval_is_null(tarval_andnot(bl->z, br->o))) {
+				DB((dbg, LEVEL_2, "%+F(%+F, %+F) is superfluous\n", irn, l, r));
+				exchange(irn, r);
+				env->modified = 1;
+			} else if (tarval_is_null(tarval_andnot(br->z, bl->o))) {
+				DB((dbg, LEVEL_2, "%+F(%+F, %+F) is superfluous\n", irn, l, r));
+				exchange(irn, l);
+				env->modified = 1;
 			}
 
 			/* if each bit is guaranteed to be zero on either the left or right
