@@ -849,26 +849,13 @@ static ir_graph_properties_t do_cfopt(ir_graph *irg)
 	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_IRN_LINK
 	                     | IR_RESOURCE_PHI_LIST);
 
-	/* The switch Cond optimization might expose unreachable code, so we loop */
-	for (;;) {
-		bool changed = false;
-
-		assure_doms(irg);
-
-		/*
-		 * This pass collects all Phi nodes in a link list in the block
-		 * nodes.  Further it performs simple control flow optimizations.
-		 * Finally it marks all blocks that do not contain useful
-		 * computations, i.e., these blocks might be removed.
-		 */
-		irg_walk(end, clear_link_and_mark_blocks_removable, collect_nodes, NULL);
-
-		if (!changed)
-			break;
-
-		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
-		                   | IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE);
-	}
+	/*
+	 * This pass collects all Phi nodes in a link list in the block
+	 * nodes.  Further it performs simple control flow optimizations.
+	 * Finally it marks all blocks that do not contain useful
+	 * computations, i.e., these blocks might be removed.
+	 */
+	irg_walk(end, clear_link_and_mark_blocks_removable, collect_nodes, NULL);
 
 	/* assert due to collect_nodes:
 	 * 1. removable blocks are now marked as such
@@ -876,9 +863,9 @@ static ir_graph_properties_t do_cfopt(ir_graph *irg)
 	 */
 
 	/* Optimize the standard code.
-	 * It walks only over block nodes and adapts these and the Phi nodes in these
-	 * blocks, which it finds in a linked list computed before.
-	 * */
+	 * It walks only over block nodes and adapts these and the Phi nodes in
+	 * these blocks, which it finds in a linked list computed before.
+	 */
 	assure_doms(irg);
 	irg_block_walk_graph(irg, optimize_blocks, merge_blocks, &env);
 
