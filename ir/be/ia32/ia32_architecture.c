@@ -24,6 +24,7 @@
  */
 #include "config.h"
 
+#include <stdbool.h>
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
 
@@ -762,9 +763,10 @@ static void x86_cpuid(cpuid_registers *regs, unsigned level)
 #endif
 }
 
-static int x86_toogle_cpuid(void)
+static bool x86_toogle_cpuid(void)
 {
-	unsigned eflags_before = 0, eflags_after = 0;
+	unsigned eflags_before = 0;
+	unsigned eflags_after = 0;
 
 #if defined(__GNUC__)
 #ifdef __i386__
@@ -781,8 +783,7 @@ static int x86_toogle_cpuid(void)
 		: "=r" (eflags_before), "=r" (eflags_after) :: "cc"
 		);
 #else
-	/* cpuid always available on 64bit */
-	return true;
+	eflags_after = 0x00200000;
 #endif
 #elif defined(_MSC_VER)
 #if defined(_M_IX86)
@@ -798,7 +799,7 @@ static int x86_toogle_cpuid(void)
 		mov eflags_after, eax
 	}
 #else
-	return true;
+	eflags_after = 0x00200000;
 #endif
 #endif
 	return (eflags_before ^ eflags_after) & 0x00200000;
