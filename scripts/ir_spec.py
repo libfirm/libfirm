@@ -813,18 +813,27 @@ class Sel(Op):
 
 class Shl(Binop):
 	"""Returns its first operands bits shifted left by the amount of the 2nd
-	operand"""
+	operand.
+	The right input (shift amount) must be an unsigned integer value.
+	If the result mode has modulo_shift!=0, then the effective shift amount is
+	the right input modulo this modulo_shift amount."""
 	flags = []
 
 class Shr(Binop):
 	"""Returns its first operands bits shifted right by the amount of the 2nd
-	operand. No special handling for the sign bit (zero extension)"""
+	operand. No special handling for the sign bit is performed (zero extension).
+	The right input (shift amount) must be an unsigned integer value.
+	If the result mode has modulo_shift!=0, then the effective shift amount is
+	the right input modulo this modulo_shift amount."""
 	flags = []
 
 class Shrs(Binop):
 	"""Returns its first operands bits shifted right by the amount of the 2nd
 	operand. The leftmost bit (usually the sign bit) stays the same
-	(sign extension)"""
+	(sign extension).
+	The right input (shift amount) must be an unsigned integer value.
+	If the result mode has modulo_shift!=0, then the effective shift amount is
+	the right input modulo this modulo_shift amount."""
 	flags = []
 
 class Start(Op):
