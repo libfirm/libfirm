@@ -99,9 +99,13 @@ docu_template = env.from_string(
 					</dl>
 					{% set comma = joiner(", ") %}
 					<h5>Flags</h5>
+					{% if node.flags.__len__() > 0 %}
 					{% for flag in node.flags -%}
 						{{comma()}}{{flag|doxylink("irop_flag_" + flag)}}
 					{%- endfor %}
+					{% else %}
+					None
+					{% endif %}
 					<h5>{{"API"|doxygrouplink(node.name)}}</h5>
 					<hr/>
 				</div>
