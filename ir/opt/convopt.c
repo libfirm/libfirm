@@ -53,7 +53,6 @@
 #include "irpass_t.h"
 #include "tv.h"
 #include "vrp.h"
-#include "opt_manage.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
@@ -303,10 +302,13 @@ static void conv_opt_walker(ir_node *node, void *data)
 	}
 }
 
-static ir_graph_properties_t do_deconv(ir_graph *irg)
+void conv_opt(ir_graph *irg)
 {
+	bool global_changed = false;
 	bool changed;
 	FIRM_DBG_REGISTER(dbg, "firm.opt.conv");
+
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 
 	DB((dbg, LEVEL_1, "===> Performing conversion optimization on %+F\n", irg));
 
@@ -314,20 +316,11 @@ static ir_graph_properties_t do_deconv(ir_graph *irg)
 		changed = false;
 		irg_walk_graph(irg, NULL, conv_opt_walker, &changed);
 		local_optimize_graph(irg);
+		global_changed |= changed;
 	} while (changed);
 
-	return 0;
-}
-
-static optdesc_t opt_deconv = {
-	"deconv",
-	IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES,
-	do_deconv,
-};
-
-void conv_opt(ir_graph *irg)
-{
-	perform_irg_optimization(irg, &opt_deconv);
+	confirm_irg_properties(irg,
+		global_changed ? IR_GRAPH_PROPERTIES_NONE : IR_GRAPH_PROPERTIES_ALL);
 }
 
 /* Creates an ir_graph pass for conv_opt. */

@@ -450,8 +450,7 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
 
 	/* if allocs were removed somehow */
 	if (env->nr_removed && env->nr_deads) {
-		/* exception control flow might have been changed */
-		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
+		confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 	}
 }
 
@@ -484,6 +483,8 @@ static void transform_alloc_calls(ir_graph *irg, walk_env_t *env)
 	for (call = env->found_allocs; call; call = next) {
 		next = (ir_node*)get_irn_link(call);
 	}
+
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 }
 
 
@@ -551,7 +552,7 @@ void escape_analysis(int run_scalar_replace, check_alloc_entity_func callback)
 	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 
-		assure_irg_outs(irg);
+		assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 
 		if (callback) {
 			/* search for Calls */

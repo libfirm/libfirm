@@ -961,7 +961,7 @@ static void append_call_list(inline_irg_env *dst, inline_irg_env *src, int loop_
  * size are inlined.
  */
 void inline_leaf_functions(unsigned maxsize, unsigned leafsize,
-                            unsigned size, int ignore_runtime)
+                           unsigned size, int ignore_runtime)
 {
 	inline_irg_env   *env;
 	ir_graph         *irg;
@@ -994,9 +994,11 @@ void inline_leaf_functions(unsigned maxsize, unsigned leafsize,
 		assert(get_irg_phase_state(irg) != phase_building);
 		free_callee_info(irg);
 
-		assure_loopinfo(irg);
+		assure_irg_properties(irg,
+			IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 		wenv.x = (inline_irg_env*)get_irg_link(irg);
 		irg_walk_graph(irg, NULL, collect_calls2, &wenv);
+		confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_ALL);
 	}
 
 	/* -- and now inline. -- */
@@ -1121,7 +1123,8 @@ void inline_leaf_functions(unsigned maxsize, unsigned leafsize,
 					callee_env = alloc_inline_irg_env();
 					set_irg_link(copy, callee_env);
 
-					assure_loopinfo(copy);
+					assure_irg_properties(copy,
+						IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 					wenv.x              = callee_env;
 					wenv.ignore_callers = 1;
 					irg_walk_graph(copy, NULL, collect_calls2, &wenv);
@@ -1659,7 +1662,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 			callee_env = alloc_inline_irg_env();
 			set_irg_link(copy, callee_env);
 
-			assure_loopinfo(copy);
+			assure_irg_properties(copy, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 			memset(&wenv, 0, sizeof(wenv));
 			wenv.x              = callee_env;
 			wenv.ignore_callers = 1;

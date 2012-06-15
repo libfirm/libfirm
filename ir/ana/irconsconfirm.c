@@ -42,7 +42,6 @@
 #include "debug.h"
 #include "error.h"
 #include "irflag.h"
-#include "opt_manage.h"
 
 /**
  * Walker environment.
@@ -563,13 +562,15 @@ static void insert_Confirm(ir_node *node, void *data)
 	}
 }
 
-/*
- * Construct Confirm nodes
- */
-static ir_graph_properties_t do_construct_confirms(ir_graph *irg)
+void construct_confirms(ir_graph *irg)
 {
 	env_t env;
 	FIRM_DBG_REGISTER(dbg, "firm.ana.confirm");
+
+	assure_irg_properties(irg,
+	      IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
+		| IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+		| IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES);
 
 	assert(get_irg_pinned(irg) == op_pin_state_pinned &&
 	       "Nodes must be placed to insert Confirms");
@@ -591,20 +592,8 @@ static ir_graph_properties_t do_construct_confirms(ir_graph *irg)
 	DB((dbg, LEVEL_1, "# Const replacements: %u\n", env.num_consts));
 	DB((dbg, LEVEL_1, "# node equalities   : %u\n", env.num_eq));
 	DB((dbg, LEVEL_1, "# non-null Confirms : %u\n", env.num_non_null));
-	return 0;
-}
 
-static optdesc_t opt_confirms = {
-	"confirms",
-	IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
-	| IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
-	| IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES,
-	do_construct_confirms
-};
-
-void construct_confirms(ir_graph *irg)
-{
-	perform_irg_optimization(irg, &opt_confirms);
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW);
 }
 
 ir_graph_pass_t *construct_confirms_pass(const char *name)
@@ -627,6 +616,7 @@ static void remove_confirm(ir_node *n, void *env)
 void remove_confirms(ir_graph *irg)
 {
 	irg_walk_graph(irg, NULL, remove_confirm, NULL);
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW);
 }
 
 ir_graph_pass_t *remove_confirms_pass(const char *name)

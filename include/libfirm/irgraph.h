@@ -464,31 +464,58 @@ typedef enum ir_graph_properties_t {
 	IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES         = 1U << 0,
 	/** graph contains no Bad nodes */
 	IR_GRAPH_PROPERTY_NO_BADS                   = 1U << 1,
+	/** No tuple nodes exist in the graph */
+	IR_GRAPH_PROPERTY_NO_TUPLES                 = 1U << 2,
 	/**
 	 * there exists no (obviously) unreachable code in the graph.
 	 * Unreachable in this context is code that you can't reach by following
 	 * execution flow from the start block.
 	 */
-	IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE       = 1U << 2,
+	IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE       = 1U << 3,
 	/** graph contains at most one return */
-	IR_GRAPH_PROPERTY_ONE_RETURN                = 1U << 3,
+	IR_GRAPH_PROPERTY_ONE_RETURN                = 1U << 4,
 	/** dominance information about the graph is valid */
-	IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE      = 1U << 4,
+	IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE      = 1U << 5,
 	/** postdominance information about the graph is valid */
-	IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE  = 1U << 5,
+	IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE  = 1U << 6,
 	/**
 	 * out edges (=iredges) are enable and there is no dead code that can be
 	 * reached by following them
 	 */
-	IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES      = 1U << 6,
+	IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES      = 1U << 7,
 	/** outs (irouts) are computed and up to date */
-	IR_GRAPH_PROPERTY_CONSISTENT_OUTS           = 1U << 7,
+	IR_GRAPH_PROPERTY_CONSISTENT_OUTS           = 1U << 8,
 	/** loopinfo is computed and up to date */
-	IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO       = 1U << 8,
+	IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO       = 1U << 9,
 	/** entity usage information is computed and up to date */
-	IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE   = 1U << 9,
+	IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE   = 1U << 10,
 	/** graph contains as many returns as possible */
-	IR_GRAPH_PROPERTY_MANY_RETURNS              = 1U << 10,
+	IR_GRAPH_PROPERTY_MANY_RETURNS              = 1U << 11,
+
+	/**
+	 * List of all graph properties that are only affected byt control flow
+	 * changes.
+	 */
+	IR_GRAPH_PROPERTIES_CONTROL_FLOW =
+		  IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
+		| IR_GRAPH_PROPERTY_ONE_RETURN
+		| IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
+		| IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO
+		| IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+		| IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE,
+
+	/**
+	 * List of all graph properties.
+	 */
+	IR_GRAPH_PROPERTIES_ALL =
+		  IR_GRAPH_PROPERTIES_CONTROL_FLOW
+	    | IR_GRAPH_PROPERTY_NO_BADS
+	    | IR_GRAPH_PROPERTY_NO_TUPLES
+	    | IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
+	    | IR_GRAPH_PROPERTY_CONSISTENT_OUTS
+	    | IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE
+	    | IR_GRAPH_PROPERTY_MANY_RETURNS,
+
 } ir_graph_properties_t;
 ENUM_BITSET(ir_graph_properties_t)
 
@@ -519,6 +546,19 @@ FIRM_API unsigned get_irg_fp_model(const ir_graph *irg);
 
 /** Sets a floating point model for this graph. */
 FIRM_API void set_irg_fp_model(ir_graph *irg, unsigned model);
+
+/**
+ * Ensures that a graph fulfills all properties stated in @p state.
+ * Performs graph transformations if necessary.
+ */
+FIRM_API void assure_irg_properties(ir_graph *irg, ir_graph_properties_t props);
+
+/**
+ * Invalidates all graph properties/analysis data except the ones specified
+ * in @p props.
+ * This should be called after a transformation phase.
+ */
+FIRM_API void confirm_irg_properties(ir_graph *irg, ir_graph_properties_t props);
 
 /**
  * Accesses custom graph data.

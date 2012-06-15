@@ -49,7 +49,6 @@
 #include "set.h"
 #include "be.h"
 #include "debug.h"
-#include "opt_manage.h"
 
 /** The debug handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
@@ -2081,10 +2080,16 @@ static int optimize_loops(ir_graph *irg)
 /*
  * do the load store optimization
  */
-static ir_graph_properties_t do_loadstore_opt(ir_graph *irg)
+void optimize_load_store(ir_graph *irg)
 {
 	walk_env_t env;
-	ir_graph_properties_t res = 0;
+
+	assure_irg_properties(irg,
+		IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
+		| IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
+		| IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
+		| IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+		| IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE);
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.ldstopt");
 
@@ -2110,27 +2115,12 @@ static ir_graph_properties_t do_loadstore_opt(ir_graph *irg)
 
 	obstack_free(&env.obst, NULL);
 
-	/* Handle graph state */
-	if (env.changes) {
-		edges_deactivate(irg);
-	}
-
-	if (!(env.changes & CF_CHANGED)) {
-		res |= IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE | IR_GRAPH_PROPERTY_NO_BADS;
-	}
-
-	return res;
-}
-
-static optdesc_t opt_loadstore = {
-	"load-store",
-	IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE | IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES | IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE | IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE,
-	do_loadstore_opt,
-};
-
-void optimize_load_store(ir_graph *irg)
-{
-	perform_irg_optimization(irg, &opt_loadstore);
+	confirm_irg_properties(irg,
+		env.changes
+		? env.changes & CF_CHANGED
+			? IR_GRAPH_PROPERTIES_NONE
+			: IR_GRAPH_PROPERTIES_CONTROL_FLOW
+		: IR_GRAPH_PROPERTIES_ALL);
 }
 
 ir_graph_pass_t *optimize_load_store_pass(const char *name)

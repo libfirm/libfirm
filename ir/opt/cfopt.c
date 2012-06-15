@@ -46,7 +46,6 @@
 #include "irdump.h"
 #include "irverify.h"
 #include "iredges.h"
-#include "opt_manage.h"
 
 #include "array_t.h"
 
@@ -809,12 +808,13 @@ static void cfgopt_ignoring_phis(ir_graph *irg)
 		irg_block_walk_graph(irg, NULL, optimize_ifs, &env);
 
 		if (env.changed) {
-			clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
+			confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 			/* clear block info, because it must be recomputed */
 			irg_block_walk_graph(irg, clear_block_info, NULL, &env.block_infos);
 			/* Removing blocks and Conds might enable more optimizations */
 			continue;
 		} else {
+			confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_ALL);
 			break;
 		}
 	}
@@ -823,7 +823,7 @@ static void cfgopt_ignoring_phis(ir_graph *irg)
 }
 
 /* Optimizations of the control flow that also require changes of Phi nodes.  */
-static ir_graph_properties_t do_cfopt(ir_graph *irg)
+void optimize_cf(ir_graph *irg)
 {
 	int i, j, n;
 	ir_node **in = NULL;
@@ -840,7 +840,7 @@ static ir_graph_properties_t do_cfopt(ir_graph *irg)
 	assert(get_irg_pinned(irg) != op_pin_state_floats &&
 	       "Control flow optimization need a pinned graph");
 
-	edges_deactivate(irg);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE);
 
 	/* First the "simple" optimizations, which do not touch Phis */
 	cfgopt_ignoring_phis(irg);
@@ -866,7 +866,7 @@ static ir_graph_properties_t do_cfopt(ir_graph *irg)
 	 * It walks only over block nodes and adapts these and the Phi nodes in
 	 * these blocks, which it finds in a linked list computed before.
 	 */
-	assure_doms(irg);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	irg_block_walk_graph(irg, optimize_blocks, merge_blocks, &env);
 
 	new_end = optimize_in_place(end);
@@ -915,18 +915,8 @@ static ir_graph_properties_t do_cfopt(ir_graph *irg)
 		}
 	}
 
-	return 0;
-}
-
-static optdesc_t opt_cf = {
-	"control-flow",
-	IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE,
-	do_cfopt,
-};
-
-void optimize_cf(ir_graph *irg)
-{
-	perform_irg_optimization(irg, &opt_cf);
+	confirm_irg_properties(irg,
+		env.changed ? IR_GRAPH_PROPERTIES_NONE : IR_GRAPH_PROPERTIES_ALL);
 }
 
 /* Creates an ir_graph pass for optimize_cf. */

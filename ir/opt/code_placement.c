@@ -38,7 +38,6 @@
 #include "irouts.h"
 #include "irgopt.h"
 #include "irpass.h"
-#include "opt_manage.h"
 
 static bool is_block_reachable(ir_node *block)
 {
@@ -396,12 +395,18 @@ static void place_late(ir_graph *irg, waitq *worklist)
 }
 
 /* Code Placement. */
-static ir_graph_properties_t do_codeplacement(ir_graph *irg)
+void place_code(ir_graph *irg)
 {
 	waitq *worklist;
 
 	/* Handle graph state */
 	assert(get_irg_phase_state(irg) != phase_building);
+	assure_irg_properties(irg,
+		IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES |
+		IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE |
+		IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
+		IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
+		IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 
 	/* Place all floating nodes as early as possible. This guarantees
 	 a legal code placement. */
@@ -419,22 +424,7 @@ static ir_graph_properties_t do_codeplacement(ir_graph *irg)
 	place_late(irg, worklist);
 
 	del_waitq(worklist);
-	return 0;
-}
-
-static optdesc_t opt_codeplacement = {
-	"code-placement",
-	IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES |
-	IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE |
-	IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
-	IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
-	IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO,
-	do_codeplacement,
-};
-
-void place_code(ir_graph *irg)
-{
-	perform_irg_optimization(irg, &opt_codeplacement);
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 }
 
 /**
@@ -447,26 +437,6 @@ static void place_code_wrapper(ir_graph *irg)
 	place_code(irg);
 	set_opt_global_cse(0);
 }
-
-#if 0
-static ir_graph_properties_t do_gcse(ir_graph *irg)
-{
-	set_opt_global_cse(1);
-	optimize_graph_df(irg);
-	do_codeplacement(irg);
-	set_opt_global_cse(0);
-	return 0;
-}
-
-static optdesc_t opt_gcse = {
-	"gcse",
-	IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES |
-	IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
-	IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
-	IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO,
-	do_gcse,
-};
-#endif
 
 ir_graph_pass_t *place_code_pass(const char *name)
 {

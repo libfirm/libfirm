@@ -1148,18 +1148,16 @@ void do_gvn_pre(ir_graph *irg)
 	unsigned              antic_iter;
 	unsigned              insert_iter;
 
+	assure_irg_properties(irg,
+		IR_GRAPH_PROPERTY_CONSISTENT_OUTS
+		| IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
+		| IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+		| IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE);
+
 	/* register a debug mask */
 	FIRM_DBG_REGISTER(dbg, "firm.opt.gvn_pre");
 	/* edges will crash if enabled due to our allocate on other obstack trick */
 	edges_deactivate(irg);
-
-	/* algorithm preconditions */
-	remove_critical_cf_edges(irg);
-	/* we get all nodes of a block by following outs */
-	assure_irg_outs(irg);
-	/* we need dominator for Antic_out calculation */
-	compute_doms(irg);
-	compute_postdoms(irg);
 
 	save_optimization_state(&state);
 
@@ -1245,10 +1243,11 @@ void do_gvn_pre(ir_graph *irg)
 	set_irg_pinned(irg, op_pin_state_pinned);
 	restore_optimization_state(&state);
 
-}  /* do_gvn_pre */
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
+}
 
 /* Creates an ir_graph pass for do_gvn_pre. */
 ir_graph_pass_t *do_gvn_pre_pass(const char *name)
 {
 	return def_graph_pass(name ? name : "gvn_pre", do_gvn_pre);
-}  /* do_gvn_pre_pass */
+}

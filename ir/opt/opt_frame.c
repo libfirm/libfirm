@@ -44,9 +44,12 @@ void opt_frame_irg(ir_graph *irg)
 	ir_entity *ent, *list;
 	ir_node   *frame, *sel;
 	size_t    i, n = get_class_n_members(frame_tp);
+	int       o;
 
 	if (n <= 0)
 		return;
+
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 
 	irp_reserve_resources(irp, IRP_RESOURCE_ENTITY_LINK);
 
@@ -59,32 +62,14 @@ void opt_frame_irg(ir_graph *irg)
 	/* look for uses */
 	frame = get_irg_frame(irg);
 
-	if (edges_activated(irg)) { /* use inplace edges */
-		const ir_edge_t *edge;
-
-		/* mark all used entities */
-		foreach_out_edge(frame, edge) {
-			sel = get_edge_src_irn(edge);
-			if (is_Sel(sel)) {
-				ent = get_Sel_entity(sel);
+	/* mark all used entities */
+	for (o = get_irn_n_outs(frame) - 1; o >= 0; --o) {
+		sel = get_irn_out(frame, o);
+		if (is_Sel(sel)) {
+			ent = get_Sel_entity(sel);
+			/* only entities on the frame */
+			if (get_entity_owner(ent) == frame_tp)
 				set_entity_link(ent, ent);
-			}
-		}
-	} else {
-		int i;
-
-		/* use traditionally out edges */
-		assure_irg_outs(irg);
-
-		/* mark all used entities */
-		for (i = get_irn_n_outs(frame) - 1; i >= 0; --i) {
-			sel = get_irn_out(frame, i);
-			if (is_Sel(sel)) {
-				ent = get_Sel_entity(sel);
-				/* only entities on the frame */
-				if (get_entity_owner(ent) == frame_tp)
-					set_entity_link(ent, ent);
-			}
 		}
 	}
 
@@ -109,6 +94,18 @@ void opt_frame_irg(ir_graph *irg)
 		set_type_state(frame_tp, layout_undefined);
 	}
 	irp_free_resources(irp, IRP_RESOURCE_ENTITY_LINK);
+
+	/* we changed the type, this affects none of the currently known graph
+	 * properties, but I don't use ALL because I don't know if someone adds
+	 * type-based properties at some point */
+	confirm_irg_properties(irg,
+		IR_GRAPH_PROPERTIES_CONTROL_FLOW
+		| IR_GRAPH_PROPERTY_NO_BADS
+		| IR_GRAPH_PROPERTY_NO_TUPLES
+		| IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
+		| IR_GRAPH_PROPERTY_CONSISTENT_OUTS
+		| IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE
+		| IR_GRAPH_PROPERTY_MANY_RETURNS);
 }
 
 ir_graph_pass_t *opt_frame_irg_pass(const char *name)

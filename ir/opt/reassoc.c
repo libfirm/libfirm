@@ -929,19 +929,14 @@ void optimize_reassociation(ir_graph *irg)
 	assert(get_irg_pinned(irg) != op_pin_state_floats &&
 		"Reassociation needs pinned graph to work properly");
 
-	/* we use dominance to detect dead blocks */
-	assure_doms(irg);
+	assure_irg_properties(irg,
+		IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+		| IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 
 #ifdef NEW_REASSOC
-	assure_irg_outs(irg);
+	assire_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 	obstack_init(&commutative_args);
 #endif
-
-	/*
-	 * Calculate loop info, so we could identify loop-invariant
-	 * code and treat it like a constant.
-	 */
-	assure_loopinfo(irg);
 
 	env.changes = 0;
 	env.irg     = irg;
@@ -964,6 +959,8 @@ void optimize_reassociation(ir_graph *irg)
 #endif
 
 	del_waitq(env.wq);
+
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW);
 }  /* optimize_reassociation */
 
 /* create a pass for the reassociation */

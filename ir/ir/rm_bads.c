@@ -146,4 +146,5 @@ void remove_bads(ir_graph *irg)
 		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	}
+	add_irg_properties(irg, IR_GRAPH_PROPERTY_NO_BADS);
 }

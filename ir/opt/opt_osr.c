@@ -1300,6 +1300,11 @@ void remove_phi_cycles(ir_graph *irg)
 {
 	iv_env env;
 
+	assure_irg_properties(irg,
+		IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+		| IR_GRAPH_PROPERTY_CONSISTENT_OUTS
+		| IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
+
 	FIRM_DBG_REGISTER(dbg, "firm.opt.remove_phi");
 
 	DB((dbg, LEVEL_1, "Doing Phi cycle removement for %+F\n", irg));
@@ -1323,9 +1328,6 @@ void remove_phi_cycles(ir_graph *irg)
 	 */
 	irg_walk_graph(irg, NULL, clear_and_fix, NULL);
 
-	/* we need outs for calculating the post order */
-	assure_irg_outs(irg);
-
 	/* calculate the post order number for blocks. */
 	irg_out_block_walk(get_irg_start_block(irg), NULL, assign_po, &env);
 
@@ -1335,12 +1337,15 @@ void remove_phi_cycles(ir_graph *irg)
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	if (env.replaced) {
-		DB((dbg, LEVEL_1, "remove_phi_cycles: %u Cycles removed\n\n", env.replaced));
+		DB((dbg, LEVEL_1, "remove_phi_cycles: %u Cycles removed\n\n",
+		    env.replaced));
 	}
 
 	DEL_ARR_F(env.stack);
 	obstack_free(&env.obst, NULL);
-}  /* remove_phi_cycles */
+
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW);
+}
 
 ir_graph_pass_t *remove_phi_cycles_pass(const char *name)
 {
@@ -1422,6 +1427,11 @@ void opt_osr(ir_graph *irg, unsigned flags)
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.osr");
 
+	assure_irg_properties(irg,
+		IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+		| IR_GRAPH_PROPERTY_CONSISTENT_OUTS
+		| IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
+
 	DB((dbg, LEVEL_1, "Doing Operator Strength Reduction for %+F\n", irg));
 
 	obstack_init(&env.obst);
@@ -1443,13 +1453,6 @@ void opt_osr(ir_graph *irg, unsigned flags)
 	 */
 	irg_walk_graph(irg, NULL, clear_and_fix, NULL);
 
-	/* we need dominance */
-	assure_doms(irg);
-
-	assure_edges(irg);
-
-	/* calculate the post order number for blocks by walking the out edges. */
-	assure_irg_outs(irg);
 	irg_block_edges_walk(get_irg_start_block(irg), NULL, assign_po, &env);
 
 	/* calculate the SCC's and drive OSR. */
@@ -1473,7 +1476,7 @@ void opt_osr(ir_graph *irg, unsigned flags)
 	DEL_ARR_F(env.stack);
 	obstack_free(&env.obst, NULL);
 
-	edges_deactivate(irg);
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 }
 
 typedef struct pass_t {

@@ -631,6 +631,7 @@ void edges_deactivate_kind(ir_graph *irg, ir_edge_kind_t kind)
 		ir_edgeset_destroy(&info->edges);
 		info->allocated = 0;
 	}
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 }
 
 int (edges_activated_kind)(const ir_graph *irg, ir_edge_kind_t kind)
@@ -917,6 +918,7 @@ void assure_edges(ir_graph *irg)
 {
 	assure_edges_kind(irg, EDGE_KIND_BLOCK);
 	assure_edges_kind(irg, EDGE_KIND_NORMAL);
+	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 }
 
 void assure_edges_kind(ir_graph *irg, ir_edge_kind_t kind)

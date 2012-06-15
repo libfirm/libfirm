@@ -57,4 +57,5 @@ static void exchange_tuple_projs(ir_node *node, void *env)
 void remove_tuples(ir_graph *irg)
 {
 	irg_walk_graph(irg, exchange_tuple_projs, NULL, NULL);
+	add_irg_properties(irg, IR_GRAPH_PROPERTY_NO_TUPLES);
 }

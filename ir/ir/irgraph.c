@@ -46,6 +46,8 @@
 #include "iredges_t.h"
 #include "type_t.h"
 #include "irmemory.h"
+#include "iroptimize.h"
+#include "irgopt.h"
 
 #define INITIAL_IDX_IRN_MAP_SIZE 1024
 
@@ -796,4 +798,44 @@ void (clear_irg_properties)(ir_graph *irg, ir_graph_properties_t props)
 int (irg_has_properties)(const ir_graph *irg, ir_graph_properties_t props)
 {
 	return irg_has_properties_(irg, props);
+}
+
+typedef void (*assure_property_func)(ir_graph *irg);
+
+void assure_irg_properties(ir_graph *irg, ir_graph_properties_t props)
+{
+	static struct {
+		ir_graph_properties_t property;
+		assure_property_func  func;
+	} property_functions[] = {
+		{ IR_GRAPH_PROPERTY_ONE_RETURN,               normalize_one_return },
+		{ IR_GRAPH_PROPERTY_MANY_RETURNS,             normalize_n_returns },
+		{ IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES,        remove_critical_cf_edges },
+		{ IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE,      remove_unreachable_code },
+		{ IR_GRAPH_PROPERTY_NO_BADS,                  remove_bads },
+		{ IR_GRAPH_PROPERTY_NO_TUPLES,                remove_tuples },
+		{ IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE,     assure_doms },
+		{ IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE, assure_postdoms },
+		{ IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES,     assure_edges },
+		{ IR_GRAPH_PROPERTY_CONSISTENT_OUTS,          assure_irg_outs },
+		{ IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO,      assure_loopinfo },
+		{ IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE,  assure_irg_entity_usage_computed },
+	};
+	size_t i;
+	for (i = 0; i < ARRAY_SIZE(property_functions); ++i) {
+		ir_graph_properties_t missing = props & ~irg->properties;
+		if (missing & property_functions[i].property)
+			property_functions[i].func(irg);
+	}
+	assert((props & ~irg->properties) == IR_GRAPH_PROPERTIES_NONE);
+}
+
+void confirm_irg_properties(ir_graph *irg, ir_graph_properties_t props)
+{
+	clear_irg_properties(irg, ~props);
+	if (! (props & IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES))
+		edges_deactivate(irg);
+	if (! (props & IR_GRAPH_PROPERTY_CONSISTENT_OUTS)
+	    && (irg->properties & IR_GRAPH_PROPERTY_CONSISTENT_OUTS))
+	    free_irg_outs(irg);
 }

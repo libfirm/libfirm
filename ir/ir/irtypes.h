@@ -652,7 +652,6 @@ struct ir_prog {
 	size_t max_irg_idx;                  /**< highest unused irg index */
 	long max_node_nr;                    /**< to generate unique numbers for nodes. */
 	unsigned dump_nr;                    /**< number of program info dumps */
-	unsigned optimization_dumps :1;      /**< dump irg on each optimization */
 #ifndef NDEBUG
 	irp_resources_t reserved_resources;  /**< Bitset for tracking used global resources. */
 #endif

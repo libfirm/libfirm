@@ -950,6 +950,8 @@ static void analyse_irg_entity_usage(ir_graph *irg)
 	size_t i, n;
 	int j, k, static_link_arg;
 
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
+
 	/* set initial state to not_taken, as this is the "smallest" state */
 	for (i = 0, n = get_class_n_members(ft); i < n; ++i) {
 		ir_entity *ent = get_class_member(ft, i);
@@ -962,8 +964,6 @@ static void analyse_irg_entity_usage(ir_graph *irg)
 			set_entity_usage(ent, flags);
 		}
 	}
-
-	assure_irg_outs(irg);
 
 	irg_frame = get_irg_frame(irg);
 
@@ -1020,7 +1020,6 @@ static void analyse_irg_entity_usage(ir_graph *irg)
 			}
 		}
 	}
-
 
 	/* now computed */
 	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE);

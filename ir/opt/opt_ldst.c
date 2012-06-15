@@ -2060,103 +2060,6 @@ static void insert_Loads_upwards(void)
 	DB((dbg, LEVEL_2, "Finished Load inserting after %d iterations\n", i));
 }  /* insert_Loads_upwards */
 
-/**
- * Kill unreachable control flow.
- *
- * @param irg  the graph to operate on
- */
-static void kill_unreachable_blocks(ir_graph *irg)
-{
-	block_t *bl;
-	ir_node **ins;
-	int     changed = 0;
-
-	NEW_ARR_A(ir_node *, ins, env.max_cfg_preds);
-
-	for (bl = env.forward; bl != NULL; bl = bl->forward_next) {
-		ir_node *block = bl->block;
-		int     i, j, k, n;
-
-		assert(get_Block_mark(block));
-
-		n = get_Block_n_cfgpreds(block);
-
-		for (i = j = 0; i < n; ++i) {
-			ir_node *pred = get_Block_cfgpred(block, i);
-			ir_node *pred_bl;
-
-			if (is_Bad(pred))
-				continue;
-
-			pred_bl = get_nodes_block(skip_Proj(pred));
-			if (! get_Block_mark(pred_bl))
-				continue;
-
-			ins[j++] = pred;
-		}
-		if (j != n) {
-			ir_node *phi, *next;
-
-			/* some unreachable blocks detected */
-			changed = 1;
-
-			DB((dbg, LEVEL_1, "Killing dead block predecessors on %+F\n", block));
-
-			set_irn_in(block, j, ins);
-
-			/* shorten all Phi nodes */
-			for (phi = get_Block_phis(block); phi != NULL; phi = next) {
-				next = get_Phi_next(phi);
-
-				for (i = k = 0; i < n; ++i) {
-					ir_node *pred = get_Block_cfgpred_block(block, i);
-
-					if (is_Bad(pred))
-						continue;
-
-					if (! get_Block_mark(pred))
-						continue;
-
-					ins[k++] = get_Phi_pred(phi, i);
-				}
-				if (k == 1)
-					exchange(phi, ins[0]);
-				else
-					set_irn_in(phi, k, ins);
-			}
-		}
-
-	}
-
-	if (changed) {
-		/* kick keep alives */
-		ir_node *end = get_irg_end(irg);
-		int     i, j, n = get_End_n_keepalives(end);
-
-		NEW_ARR_A(ir_node *, ins, n);
-
-		for (i = j = 0; i < n; ++i) {
-			ir_node *ka = get_End_keepalive(end, i);
-			ir_node *ka_bl;
-
-			if (is_Bad(ka))
-				continue;
-			if (is_Block(ka))
-				ka_bl = ka;
-			else
-				ka_bl = get_nodes_block(skip_Proj(ka));
-			if (get_Block_mark(ka_bl))
-				ins[j++] = ka;
-		}
-		if (j != n)
-			set_End_keepalives(end, j, ins);
-
-		free_irg_outs(irg);
-
-		/* this transformation do NOT invalidate the dominance */
-	}
-}  /* kill_unreachable_blocks */
-
 void opt_ldst(ir_graph *irg)
 {
 	block_t *bl;
@@ -2165,11 +2068,14 @@ void opt_ldst(ir_graph *irg)
 
 	DB((dbg, LEVEL_1, "\nDoing Load/Store optimization on %+F\n", irg));
 
-	/* we need landing pads */
-	remove_critical_cf_edges(irg);
+	assure_irg_properties(irg,
+		IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES /* we need landing pads */
+		| IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE
+		| IR_GRAPH_PROPERTY_CONSISTENT_OUTS
+		| IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
+		| IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
 	if (get_opt_alias_analysis()) {
-		assure_irg_entity_usage_computed(irg);
 		assure_irp_globals_entity_usage_computed();
 	}
 
@@ -2187,8 +2093,6 @@ void opt_ldst(ir_graph *irg)
 #ifdef DEBUG_libfirm
 	env.id_2_address  = NEW_ARR_F(ir_node *, 0);
 #endif
-
-	assure_irg_outs(irg);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_BLOCK_MARK);
 
@@ -2212,11 +2116,6 @@ void opt_ldst(ir_graph *irg)
 		set_Block_mark(env.end_bl, 1);
 	}
 
-	/* KILL unreachable blocks: these disturb the data flow analysis */
-	kill_unreachable_blocks(irg);
-
-	assure_doms(irg);
-
 	/* second step: find and sort all memory ops */
 	walk_memory_irg(irg, collect_memops, NULL, NULL);
 
@@ -2227,7 +2126,7 @@ void opt_ldst(ir_graph *irg)
 
 	if (env.n_mem_ops == 0) {
 		/* no memory ops */
-		goto end;
+		goto no_changes;
 	}
 
 	/* create the backward links. */
@@ -2283,10 +2182,11 @@ void opt_ldst(ir_graph *irg)
 
 		/* not only invalidate but free them. We might allocate new out arrays
 		   on our obstack which will be deleted yet. */
-		free_irg_outs(irg);
-		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE);
+		confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW);
+	} else {
+no_changes:
+		confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_ALL);
 	}
-end:
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_BLOCK_MARK);
 	ir_nodehashmap_destroy(&env.adr_map);
