@@ -325,16 +325,15 @@ static optdesc_t opt_deconv = {
 	do_deconv,
 };
 
-int conv_opt(ir_graph *irg)
+void conv_opt(ir_graph *irg)
 {
 	perform_irg_optimization(irg, &opt_deconv);
-	return 1;
 }
 
 /* Creates an ir_graph pass for conv_opt. */
 ir_graph_pass_t *conv_opt_pass(const char *name)
 {
-	ir_graph_pass_t *path = def_graph_pass_ret(name ? name : "conv_opt", conv_opt);
+	ir_graph_pass_t *path = def_graph_pass(name ? name : "conv_opt", conv_opt);
 
 	/* safe to run parallel on all irgs */
 	ir_graph_pass_set_parallel(path, 1);

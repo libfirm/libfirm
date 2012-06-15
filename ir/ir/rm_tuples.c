@@ -39,9 +39,9 @@
  */
 static void exchange_tuple_projs(ir_node *node, void *env)
 {
-	bool *changed = (bool*)env;
 	ir_node *pred;
 	int proj;
+	(void)env;
 
 	if (!is_Proj(node)) return;
 
@@ -52,12 +52,9 @@ static void exchange_tuple_projs(ir_node *node, void *env)
 
 	pred = get_Tuple_pred(pred, proj);
 	exchange(node, pred);
-	*changed = true;
 }
 
-int remove_tuples(ir_graph *irg)
+void remove_tuples(ir_graph *irg)
 {
-	bool changed = 0;
-	irg_walk_graph(irg, exchange_tuple_projs, NULL, &changed);
-	return changed;
+	irg_walk_graph(irg, exchange_tuple_projs, NULL, NULL);
 }

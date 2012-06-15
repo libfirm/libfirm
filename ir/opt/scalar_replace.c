@@ -773,16 +773,14 @@ static optdesc_t opt_scalar_rep = {
 	do_scalar_replacement,
 };
 
-int scalar_replacement_opt(ir_graph *irg)
+void scalar_replacement_opt(ir_graph *irg)
 {
 	perform_irg_optimization(irg, &opt_scalar_rep);
-	return 1;
 }
 
 ir_graph_pass_t *scalar_replacement_opt_pass(const char *name)
 {
-	return def_graph_pass_ret(name ? name : "scalar_rep",
-	                          scalar_replacement_opt);
+	return def_graph_pass(name ? name : "scalar_rep", scalar_replacement_opt);
 }
 
 void firm_init_scalar_replace(void)

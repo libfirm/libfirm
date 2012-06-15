@@ -2157,7 +2157,7 @@ static void kill_unreachable_blocks(ir_graph *irg)
 	}
 }  /* kill_unreachable_blocks */
 
-int opt_ldst(ir_graph *irg)
+void opt_ldst(ir_graph *irg)
 {
 	block_t *bl;
 
@@ -2295,11 +2295,9 @@ end:
 #ifdef DEBUG_libfirm
 	DEL_ARR_F(env.id_2_address);
 #endif
-
-	return env.changed != 0;
 }  /* opt_ldst */
 
 ir_graph_pass_t *opt_ldst_pass(const char *name)
 {
-	return def_graph_pass_ret(name ? name : "ldst_df", opt_ldst);
+	return def_graph_pass(name ? name : "ldst_df", opt_ldst);
 }  /* opt_ldst_pass */

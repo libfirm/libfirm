@@ -1192,7 +1192,7 @@ static void add_roots(ir_graph *irg, environment_t *env)
 #endif /* GENERAL_SHAPE */
 
 /* Combines congruent end blocks into one. */
-int shape_blocks(ir_graph *irg)
+void shape_blocks(ir_graph *irg)
 {
 	environment_t env;
 	partition_t   *part;
@@ -1270,11 +1270,9 @@ int shape_blocks(ir_graph *irg)
 	DEL_ARR_F(env.live_outs);
 	del_set(env.opcode2id_map);
 	obstack_free(&env.obst, NULL);
-
-	return res;
 }  /* shape_blocks */
 
 ir_graph_pass_t *shape_blocks_pass(const char *name)
 {
-	return def_graph_pass_ret(name ? name : "shape_blocks", shape_blocks);
+	return def_graph_pass(name ? name : "shape_blocks", shape_blocks);
 }  /* shape_blocks_pass */

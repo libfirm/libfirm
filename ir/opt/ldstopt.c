@@ -2128,13 +2128,12 @@ static optdesc_t opt_loadstore = {
 	do_loadstore_opt,
 };
 
-int optimize_load_store(ir_graph *irg)
+void optimize_load_store(ir_graph *irg)
 {
 	perform_irg_optimization(irg, &opt_loadstore);
-	return 1;
 }
 
 ir_graph_pass_t *optimize_load_store_pass(const char *name)
 {
-	return def_graph_pass_ret(name ? name : "ldst", optimize_load_store);
+	return def_graph_pass(name ? name : "ldst", optimize_load_store);
 }  /* optimize_load_store_pass */

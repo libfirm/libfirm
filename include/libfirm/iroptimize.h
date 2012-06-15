@@ -92,10 +92,8 @@ FIRM_API ir_graph_pass_t *opt_bool_pass(const char *name);
  * Reduces the number of Conv nodes in the given ir graph.
  *
  * @param irg  the graph
- *
- * @return non-zero if the optimization could be applied, 0 else
  */
-FIRM_API int conv_opt(ir_graph *irg);
+FIRM_API void conv_opt(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for conv_opt().
@@ -285,10 +283,8 @@ FIRM_API ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c);
  *
  * Store after Load: A Store after a Load is removed, if the
  *   Store doesn't have an exception handler.
- *
- * @return non-zero if the optimization could be applied, 0 else
  */
-FIRM_API int optimize_load_store(ir_graph *irg);
+FIRM_API void optimize_load_store(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for optimize_load_store().
@@ -304,7 +300,7 @@ FIRM_API ir_graph_pass_t *optimize_load_store_pass(const char *name);
  * Based on a dataflow analysis, so load/stores are moved out of loops
  * where possible
  */
-FIRM_API int opt_ldst(ir_graph *irg);
+FIRM_API void opt_ldst(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for opt_ldst().
@@ -491,10 +487,8 @@ FIRM_API ir_prog_pass_t *proc_cloning_pass(const char *name, float threshold);
  *
  * See Muchnik 12.3.1 Algebraic Simplification and Reassociation of
  * Addressing Expressions.
- *
- * @return non-zero if the optimization could be applied, 0 else
  */
-FIRM_API int optimize_reassociation(ir_graph *irg);
+FIRM_API void optimize_reassociation(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for optimize_reassociation().
@@ -573,10 +567,8 @@ FIRM_API ir_graph_pass_t *normalize_n_returns_pass(const char *name);
  * with atomic values if possible. Does not handle classes yet.
  *
  * @param irg  the graph which should be optimized
- *
- * @return non-zero, if at least one entity was replaced
  */
-FIRM_API int scalar_replacement_opt(ir_graph *irg);
+FIRM_API void scalar_replacement_opt(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for scalar_replacement_opt().
@@ -600,10 +592,8 @@ FIRM_API ir_graph_pass_t *scalar_replacement_opt_pass(const char *name);
  * Does not work for Calls that use the exception stuff.
  *
  * @param irg   the graph to be optimized
- *
- * @return non-zero if the optimization could be applied, 0 else
  */
-FIRM_API int opt_tail_rec_irg(ir_graph *irg);
+FIRM_API void opt_tail_rec_irg(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for opt_tail_rec_irg().
@@ -834,10 +824,8 @@ FIRM_API ir_prog_pass_t *inline_functions_pass(const char *name,
  * Combines congruent blocks into one.
  *
  * @param irg   The IR-graph to optimize.
- *
- * @return non-zero if the graph was transformed
  */
-FIRM_API int shape_blocks(ir_graph *irg);
+FIRM_API void shape_blocks(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for shape_blocks().

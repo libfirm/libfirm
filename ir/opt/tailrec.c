@@ -701,14 +701,14 @@ static optdesc_t opt_tailrec = {
 	do_tailrec,
 };
 
-int opt_tail_rec_irg(ir_graph *irg) {
+void opt_tail_rec_irg(ir_graph *irg)
+{
 	perform_irg_optimization(irg, &opt_tailrec);
-	return 1; /* conservatively report changes */
 }
 
 ir_graph_pass_t *opt_tail_rec_irg_pass(const char *name)
 {
-	return def_graph_pass_ret(name ? name : "tailrec", opt_tail_rec_irg);
+	return def_graph_pass(name ? name : "tailrec", opt_tail_rec_irg);
 }
 
 /*
@@ -717,20 +717,14 @@ ir_graph_pass_t *opt_tail_rec_irg_pass(const char *name)
 void opt_tail_recursion(void)
 {
 	size_t i, n;
-	size_t n_opt_applications = 0;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.tailrec");
 
 	DB((dbg, LEVEL_1, "Performing tail recursion ...\n"));
 	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		ir_graph *irg = get_irp_irg(i);
-
-		if (opt_tail_rec_irg(irg))
-			++n_opt_applications;
+		opt_tail_rec_irg(irg);
 	}
-
-	DB((dbg, LEVEL_1, "Done for %zu of %zu graphs.\n",
-	    n_opt_applications, get_irp_n_irgs()));
 }
 
 ir_prog_pass_t *opt_tail_recursion_pass(const char *name)

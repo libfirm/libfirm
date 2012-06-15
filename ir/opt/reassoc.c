@@ -921,7 +921,7 @@ static void reverse_rules(ir_node *node, void *env)
 /*
  * do the reassociation
  */
-int optimize_reassociation(ir_graph *irg)
+void optimize_reassociation(ir_graph *irg)
 {
 	walker_t env;
 
@@ -964,13 +964,12 @@ int optimize_reassociation(ir_graph *irg)
 #endif
 
 	del_waitq(env.wq);
-	return env.changes;
 }  /* optimize_reassociation */
 
 /* create a pass for the reassociation */
 ir_graph_pass_t *optimize_reassociation_pass(const char *name)
 {
-	return def_graph_pass_ret(name ? name : "reassoc", optimize_reassociation);
+	return def_graph_pass(name ? name : "reassoc", optimize_reassociation);
 }  /* optimize_reassociation_pass */
 
 /* Sets the default reassociation operation for an ir_op_ops. */
