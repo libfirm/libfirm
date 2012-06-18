@@ -1,6 +1,3 @@
-# Creation: 2006/02/13
-# $Id: amd64_spec.pl 26673 2009-10-01 16:43:13Z matze $
-
 # the cpu architecture (ia32, ia64, mips, sparc, ppc, ...)
 
 $arch = "amd64";
