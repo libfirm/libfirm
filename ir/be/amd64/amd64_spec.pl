@@ -83,6 +83,7 @@ $default_copy_attr = "amd64_copy_attr";
 
 %nodes = (
 Push => {
+	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "rsp" ], out => [ "rsp:I|S", "none" ] },
 	ins       => [ "base", "index", "mem", "val", "stack" ],
