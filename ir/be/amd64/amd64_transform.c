@@ -136,7 +136,7 @@ static ir_node *gen_Mul(ir_node *node) {
 	ir_node  *new_op1 = be_transform_node(op1);
 	ir_node  *new_op2 = be_transform_node(op2);
 
-	ir_node *res = new_bd_amd64_Mul(dbgi, block, new_op1, new_op2);
+	ir_node *res = new_bd_amd64_IMul(dbgi, block, new_op1, new_op2);
 	return res;
 }
 

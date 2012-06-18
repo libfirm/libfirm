@@ -103,15 +103,13 @@ Add => {
 	modified_flags => 1,
 },
 
-Mul => {
-	# we should not rematrialize this node. It produces 2 results and has
-	# very strict constraints
+IMul => {
+	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in  => [ "rax", "gp" ],
-	               out => [ "rax rdx" ] },
+	reg_req   => { in  => [ "gp", "gp" ], out => [ "in_r1 !in_r2" ] },
 	ins       => [ "left", "right" ],
-	emit      => 'mul %S1',
 	outs      => [ "res" ],
+	emit      => 'imul %S1, %D0',
 	mode      => $mode_gp,
 	am        => "source,binary",
 	modified_flags => $status_flags
