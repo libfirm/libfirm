@@ -134,10 +134,10 @@ Sub => {
 Neg => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp" ],
-	               out => [ "in_r1", "flags" ] },
+	               out => [ "in_r1" ] },
 	emit      => 'neg %S0',
 	ins       => [ "val" ],
-	outs      => [ "res", "flags" ],
+	outs      => [ "res" ],
 	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
