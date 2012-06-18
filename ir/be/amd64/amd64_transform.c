@@ -94,51 +94,21 @@ static ir_node *gen_SymConst(ir_node *node)
 	return new_node;
 }
 
-/**
- * Transforms an Add node.
- *
- * @return The transformed AMD64 node.
- */
-static ir_node *gen_Add(ir_node *node) {
-	ir_node  *block = be_transform_node(get_nodes_block(node));
-	ir_node  *op1   = get_Add_left(node);
-	ir_node  *op2   = get_Add_right(node);
-	dbg_info *dbgi  = get_irn_dbg_info(node);
-	ir_node  *new_op1 = be_transform_node(op1);
-	ir_node  *new_op2 = be_transform_node(op2);
+static ir_node *gen_binop(ir_node *const node, ir_node *(*const new_node)(dbg_info*, ir_node*, ir_node*, ir_node*))
+{
+	dbg_info *const dbgi    = get_irn_dbg_info(node);
+	ir_node  *const block   = be_transform_node(get_nodes_block(node));
+	ir_node  *const op1     = get_binop_left(node);
+	ir_node  *const new_op1 = be_transform_node(op1);
+	ir_node  *const op2     = get_binop_right(node);
+	ir_node  *const new_op2 = be_transform_node(op2);
 
-	ir_node *res = new_bd_amd64_Add(dbgi, block, new_op1, new_op2);
-	return res;
+	return new_node(dbgi, block, new_op1, new_op2);
 }
 
-/**
- * Transforms an Sub node.
- *
- * @return The transformed AMD64 node.
- */
-static ir_node *gen_Sub(ir_node *node) {
-	ir_node  *block = be_transform_node(get_nodes_block(node));
-	ir_node  *op1   = get_Sub_left(node);
-	ir_node  *op2   = get_Sub_right(node);
-	dbg_info *dbgi  = get_irn_dbg_info(node);
-	ir_node  *new_op1 = be_transform_node(op1);
-	ir_node  *new_op2 = be_transform_node(op2);
-
-	ir_node *res = new_bd_amd64_Sub(dbgi, block, new_op1, new_op2);
-	return res;
-}
-
-static ir_node *gen_Mul(ir_node *node) {
-	ir_node  *block = be_transform_node(get_nodes_block(node));
-	ir_node  *op1   = get_Mul_left(node);
-	ir_node  *op2   = get_Mul_right(node);
-	dbg_info *dbgi  = get_irn_dbg_info(node);
-	ir_node  *new_op1 = be_transform_node(op1);
-	ir_node  *new_op2 = be_transform_node(op2);
-
-	ir_node *res = new_bd_amd64_IMul(dbgi, block, new_op1, new_op2);
-	return res;
-}
+static ir_node *gen_Add (ir_node *const node) { return gen_binop(node, &new_bd_amd64_Add);  }
+static ir_node *gen_Mul (ir_node *const node) { return gen_binop(node, &new_bd_amd64_IMul); }
+static ir_node *gen_Sub (ir_node *const node) { return gen_binop(node, &new_bd_amd64_Sub);  }
 
 static ir_node *gen_Minus(ir_node *node)
 {
