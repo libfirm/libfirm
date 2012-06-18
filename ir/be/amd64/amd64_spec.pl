@@ -278,7 +278,7 @@ Jcc => {
 },
 
 Load => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory", "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "none" ],
 	               out => [ "gp", "none" ] },
@@ -300,7 +300,7 @@ FrameAddr => {
 },
 
 Store => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory", "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "ptr", "val", "mem" ],

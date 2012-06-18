@@ -347,7 +347,7 @@ SubX_t => {
 
 # Load / Store
 Ld => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory", "labeled" ],
 	state     => "exc_pinned",
 	constructors => {
 		imm => {
@@ -380,7 +380,7 @@ SetHi => {
 },
 
 St => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory", "labeled" ],
 	mode      => "mode_M",
 	state     => "exc_pinned",
 	constructors => {
@@ -889,7 +889,7 @@ fftoi => {
 },
 
 Ldf => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory", "labeled" ],
 	state     => "exc_pinned",
 	constructors => {
 		s => {
@@ -911,7 +911,7 @@ Ldf => {
 },
 
 Stf => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory", "labeled" ],
 	state     => "exc_pinned",
 	constructors => {
 		s => {

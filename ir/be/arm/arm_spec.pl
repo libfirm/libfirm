@@ -421,7 +421,7 @@ SwitchJmp => {
 },
 
 Ldr => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory", "labeled" ],
 	state     => "exc_pinned",
 	ins       => [ "ptr", "mem" ],
 	outs      => [ "res", "M" ],
@@ -432,7 +432,7 @@ Ldr => {
 },
 
 Str => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory", "labeled" ],
 	state     => "exc_pinned",
 	ins       => [ "ptr", "val", "mem" ],
 	outs      => [ "M" ],
@@ -444,7 +444,7 @@ Str => {
 },
 
 StoreStackM4Inc => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory", "labeled" ],
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "sp", "gp", "gp", "gp", "gp", "none" ], out => [ "sp:I|S", "none" ] },
@@ -453,7 +453,7 @@ StoreStackM4Inc => {
 },
 
 LoadStackM3Epilogue => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory", "labeled" ],
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "sp", "none" ], out => [ "r11:I", "sp:I|S", "pc:I", "none" ] },
@@ -528,7 +528,7 @@ Cmfe => {
 },
 
 Ldf => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory", "labeled" ],
 	state     => "exc_pinned",
 	ins       => [ "ptr", "mem" ],
 	outs      => [ "res", "M" ],
@@ -539,7 +539,7 @@ Ldf => {
 },
 
 Stf => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory", "labeled" ],
 	state     => "exc_pinned",
 	ins       => [ "ptr", "val", "mem" ],
 	outs      => [ "M" ],

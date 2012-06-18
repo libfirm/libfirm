@@ -1147,7 +1147,7 @@ ChangeCW => {
 },
 
 FldCW => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory", "labeled" ],
 	state     => "pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "fpcw:I" ] },
 	ins       => [ "base", "index", "mem" ],
@@ -1159,7 +1159,7 @@ FldCW => {
 },
 
 FnstCW => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory", "labeled" ],
 	state     => "pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "fp_cw" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "fpcw" ],
@@ -1170,7 +1170,7 @@ FnstCW => {
 },
 
 FnstCWNOP => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory", "labeled" ],
 	state     => "pinned",
 	reg_req   => { in => [ "fp_cw" ], out => [ "none" ] },
 	ins       => [ "fpcw" ],
@@ -1550,7 +1550,7 @@ Inport => {
 # Intel style prefetching
 #
 Prefetch0 => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory", "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
@@ -1561,7 +1561,7 @@ Prefetch0 => {
 },
 
 Prefetch1 => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory", "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
@@ -1572,7 +1572,7 @@ Prefetch1 => {
 },
 
 Prefetch2 => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory", "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
@@ -1583,7 +1583,7 @@ Prefetch2 => {
 },
 
 PrefetchNTA => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory", "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
@@ -1597,7 +1597,7 @@ PrefetchNTA => {
 # 3DNow! prefetch instructions
 #
 Prefetch => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory", "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
@@ -1608,7 +1608,7 @@ Prefetch => {
 },
 
 PrefetchW => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory", "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
