@@ -203,7 +203,7 @@ static void amd64_after_ra_walker(ir_node *block, void *data)
 
 static void amd64_set_frame_entity(ir_node *node, ir_entity *entity)
 {
-	assert(be_is_Reload(node));
+	assert(be_is_Reload(node) || be_is_Spill(node));
 	be_node_set_frame_entity(node, entity);
 }
 
