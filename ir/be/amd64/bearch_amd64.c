@@ -34,6 +34,7 @@
 
 #include "bearch_amd64_t.h"
 
+#include "amd64_finish.h"
 #include "amd64_new_nodes.h"
 #include "gen_amd64_regalloc_if.h"
 #include "amd64_transform.h"
@@ -195,7 +196,7 @@ static void amd64_collect_frame_entity_nodes(ir_node *node, void *data)
 /**
  * Called immediatly before emit phase.
  */
-static void amd64_finish_irg(ir_graph *irg)
+static void amd64_finish_graph(ir_graph *irg)
 {
 	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
 	bool               at_begin     = stack_layout->sp_relative ? true : false;
@@ -211,6 +212,9 @@ static void amd64_finish_irg(ir_graph *irg)
 	/* fix stack entity offsets */
 	be_abi_fix_stack_nodes(irg);
 	be_abi_fix_stack_bias(irg);
+
+	/* Fix 2-address code constraints. */
+	amd64_finish_irg(irg);
 }
 
 extern const arch_isa_if_t amd64_isa_if;
@@ -463,7 +467,7 @@ const arch_isa_if_t amd64_isa_if = {
 	NULL,              /* before_abi */
 	amd64_prepare_graph,
 	amd64_before_ra,
-	amd64_finish_irg,
+	amd64_finish_graph,
 	amd64_gen_routine,
 };
 
@@ -472,5 +476,7 @@ void be_init_arch_amd64(void)
 {
 	be_register_isa_if("amd64", &amd64_isa_if);
 	FIRM_DBG_REGISTER(dbg, "firm.be.amd64.cg");
+
+	amd64_init_finish();
 	amd64_init_transform();
 }
