@@ -93,13 +93,12 @@ Push => {
 },
 
 Add => {
-	op_flags   => [ "commutative" ],
 	irn_flags  => [ "rematerializable" ],
 	state      => "exc_pinned",
-	reg_req    => { in => [ "gp", "gp" ],
-	                out => [ "gp" ] },
+	reg_req    => { in => [ "gp", "gp" ], out => [ "in_r1 !in_r2" ] },
 	ins        => [ "left", "right" ],
 	outs       => [ "res" ],
+	emit       => 'add %S1, %D0',
 	mode       => $mode_gp,
 	modified_flags => 1,
 },
@@ -121,10 +120,10 @@ Mul => {
 Sub => {
 	irn_flags  => [ "rematerializable" ],
 	state      => "exc_pinned",
-	reg_req    => { in => [ "gp", "gp" ],
-	                out => [ "gp" ] },
+	reg_req    => { in => [ "gp", "gp" ], out => [ "in_r1 !in_r2" ] },
 	ins        => [ "left", "right" ],
 	outs       => [ "res" ],
+	emit       => 'sub %S1, %D0',
 	mode       => $mode_gp,
 	modified_flags => 1,
 },

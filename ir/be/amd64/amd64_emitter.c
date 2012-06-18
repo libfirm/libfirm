@@ -130,9 +130,6 @@ emit_R:
 				int pos;
 				if ('0' <= *fmt && *fmt <= '9') {
 					pos = *fmt++ - '0';
-				} else if (*fmt == '*') {
-					++fmt;
-					pos = va_arg(ap, int);
 				} else {
 					goto unknown;
 				}
@@ -387,40 +384,6 @@ static void emit_be_Return(const ir_node *node)
 	be_emit_finish_line_gas(node);
 }
 
-
-static void emit_amd64_binop_op(const ir_node *irn, int second_op)
-{
-	if (irn->op == op_amd64_Add) {
-		amd64_emitf(irn, "add %S*, %D0", second_op);
-	} else if (irn->op == op_amd64_Sub) {
-		amd64_emitf(irn, "neg %S*",      second_op);
-		amd64_emitf(irn, "add %S*, %D0", second_op);
-		amd64_emitf(irn, "neg %S*",      second_op);
-	}
-
-}
-
-/**
- * Emits an arithmetic operation that handles arbitraty input registers.
- */
-static void emit_amd64_binop(const ir_node *irn)
-{
-	const arch_register_t *reg_s1 = arch_get_irn_register_in(irn, 0);
-	const arch_register_t *reg_s2 = arch_get_irn_register_in(irn, 1);
-	const arch_register_t *reg_d1 = arch_get_irn_register_out(irn, 0);
-
-	int second_op = 0;
-
-	if (reg_d1 != reg_s1 && reg_d1 != reg_s2) {
-		amd64_emitf(irn, "mov %R, %R", reg_s1, reg_d1);
-		second_op = 1;
-	} else if (reg_d1 == reg_s2 && reg_d1 != reg_s1) {
-		second_op = 0;
-	}
-
-	emit_amd64_binop_op(irn, second_op);
-}
-
 /**
  * Enters the emitter functions for handled nodes into the generic
  * pointer of an opcode.
@@ -433,12 +396,10 @@ static void amd64_register_emitters(void)
 	/* register all emitter functions defined in spec */
 	amd64_register_spec_emitters();
 
-	be_set_emitter(op_amd64_Add,        emit_amd64_binop);
 	be_set_emitter(op_amd64_Conv,       emit_amd64_Conv);
 	be_set_emitter(op_amd64_FrameAddr,  emit_amd64_FrameAddr);
 	be_set_emitter(op_amd64_Jcc,        emit_amd64_Jcc);
 	be_set_emitter(op_amd64_Jmp,        emit_amd64_Jmp);
-	be_set_emitter(op_amd64_Sub,        emit_amd64_binop);
 	be_set_emitter(op_amd64_SymConst,   emit_amd64_SymConst);
 	be_set_emitter(op_be_Call,          emit_be_Call);
 	be_set_emitter(op_be_Copy,          emit_be_Copy);
