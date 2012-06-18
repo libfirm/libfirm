@@ -127,6 +127,7 @@ static ir_node *gen_unop(ir_node *const node, ir_node *(*const new_node)(dbg_inf
 }
 
 static ir_node *gen_Minus(ir_node *const node) { return gen_unop(node, &new_bd_amd64_Neg); }
+static ir_node *gen_Not  (ir_node *const node) { return gen_unop(node, &new_bd_amd64_Not); }
 
 static ir_node *gen_Jmp(ir_node *node)
 {
@@ -377,6 +378,7 @@ static void amd64_register_transformers(void)
 	be_set_transform_function(op_Eor,          gen_Eor);
 	be_set_transform_function(op_Sub,          gen_Sub);
 	be_set_transform_function(op_Mul,          gen_Mul);
+	be_set_transform_function(op_Not,          gen_Not);
 	be_set_transform_function(op_Or,           gen_Or);
 	be_set_transform_function(op_Shl,          gen_Shl);
 	be_set_transform_function(op_Shr,          gen_Shr);

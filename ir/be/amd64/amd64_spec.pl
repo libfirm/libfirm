@@ -189,6 +189,16 @@ Neg => {
 	modified_flags => $status_flags
 },
 
+Not => {
+	irn_flags => [ "rematerializable" ],
+	reg_req   => { in => [ "gp" ], out => [ "in_r1" ] },
+	emit      => 'not %S0',
+	ins       => [ "val" ],
+	outs      => [ "res" ],
+	mode      => $mode_gp,
+	modified_flags => $status_flags
+},
+
 Xor => {
 	irn_flags  => [ "rematerializable" ],
 	state      => "exc_pinned",
