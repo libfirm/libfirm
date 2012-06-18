@@ -166,6 +166,7 @@ Push => {
 	latency   => 2,
 #	units     => [ "GP" ],
 },
+
 Add => {
 	op_flags   => [ "commutative" ],
 	irn_flags  => [ "rematerializable" ],
@@ -177,6 +178,7 @@ Add => {
 	mode       => $mode_gp,
 	modified_flags => 1,
 },
+
 Mul => {
 	# we should not rematrialize this node. It produces 2 results and has
 	# very strict constraints
@@ -190,6 +192,7 @@ Mul => {
 	am        => "source,binary",
 	modified_flags => $status_flags
 },
+
 Sub => {
 	irn_flags  => [ "rematerializable" ],
 	state      => "exc_pinned",
@@ -200,6 +203,7 @@ Sub => {
 	mode       => $mode_gp,
 	modified_flags => 1,
 },
+
 Neg => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp" ],
@@ -210,6 +214,7 @@ Neg => {
 	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
+
 Immediate => {
 	op_flags  => [ "constlike" ],
 	attr      => "unsigned imm_value",
@@ -218,6 +223,7 @@ Immediate => {
 	emit      => '. mov %C, %D1',
 	mode      => $mode_gp,
 },
+
 SymConst => {
 	op_flags  => [ "constlike" ],
 	irn_flags => [ "rematerializable" ],
@@ -227,6 +233,7 @@ SymConst => {
 	outs      => [ "res" ],
 	mode      => $mode_gp,
 },
+
 Conv => {
 	state     => "exc_pinned",
 	attr      => "ir_mode *smaller_mode",
@@ -236,12 +243,14 @@ Conv => {
 	outs      => [ "res" ],
 	mode      => $mode_gp,
 },
+
 Jmp => {
 	state     => "pinned",
 	op_flags  => [ "cfopcode" ],
 	reg_req   => { out => [ "none" ] },
 	mode      => "mode_X",
 },
+
 Cmp => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
@@ -256,6 +265,7 @@ Cmp => {
 	mode      => $mode_flags,
 	modified_flags => 1,
 },
+
 Jcc => {
 	state     => "pinned",
 	op_flags  => [ "labeled", "cfopcode", "forking" ],
@@ -266,6 +276,7 @@ Jcc => {
 	init_attr => "attr->ext.relation = relation;",
 	mode      => "mode_T",
 },
+
 Load => {
 	op_flags  => [ "labeled" ],
 	state     => "exc_pinned",
@@ -277,6 +288,7 @@ Load => {
 	attr_type => "amd64_SymConst_attr_t",
 	emit      => ". mov %O(%S1), %D1"
 },
+
 FrameAddr => {
 	op_flags  => [ "constlike" ],
 	irn_flags => [ "rematerializable" ],
@@ -286,6 +298,7 @@ FrameAddr => {
 	attr_type => "amd64_SymConst_attr_t",
 	mode      => $mode_gp,
 },
+
 Store => {
 	op_flags  => [ "labeled" ],
 	state     => "exc_pinned",
