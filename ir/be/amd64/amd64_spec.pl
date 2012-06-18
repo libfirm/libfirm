@@ -103,6 +103,17 @@ Add => {
 	modified_flags => 1,
 },
 
+And => {
+	irn_flags  => [ "rematerializable" ],
+	state      => "exc_pinned",
+	reg_req    => { in => [ "gp", "gp" ], out => [ "in_r1 !in_r2" ] },
+	ins        => [ "left", "right" ],
+	outs       => [ "res" ],
+	emit       => 'and %S1, %D0',
+	mode       => $mode_gp,
+	modified_flags => 1,
+},
+
 IMul => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
@@ -112,6 +123,47 @@ IMul => {
 	emit      => 'imul %S1, %D0',
 	mode      => $mode_gp,
 	am        => "source,binary",
+	modified_flags => $status_flags
+},
+
+Or => {
+	irn_flags  => [ "rematerializable" ],
+	state      => "exc_pinned",
+	reg_req    => { in => [ "gp", "gp" ], out => [ "in_r1 !in_r2" ] },
+	ins        => [ "left", "right" ],
+	outs       => [ "res" ],
+	emit       => 'or %S1, %D0',
+	mode       => $mode_gp,
+	modified_flags => 1,
+},
+
+Shl => {
+	irn_flags => [ "rematerializable" ],
+	reg_req   => { in => [ "gp", "rcx" ], out => [ "in_r1 !in_r2" ] },
+	ins       => [ "val", "count" ],
+	out       => [ "res" ],
+	emit      => 'shl %%cl, %D0',
+	mode      => $mode_gp,
+	modified_flags => $status_flags
+},
+
+Shr => {
+	irn_flags => [ "rematerializable" ],
+	reg_req   => { in => [ "gp", "rcx" ], out => [ "in_r1 !in_r2" ] },
+	ins       => [ "val", "count" ],
+	out       => [ "res" ],
+	emit      => 'shr %%cl, %D0',
+	mode      => $mode_gp,
+	modified_flags => $status_flags
+},
+
+Sar => {
+	irn_flags => [ "rematerializable" ],
+	reg_req   => { in => [ "gp", "rcx" ], out => [ "in_r1 !in_r2" ] },
+	ins       => [ "val", "count" ],
+	out       => [ "res" ],
+	emit      => 'sar %%cl, %D0',
+	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
 
@@ -135,6 +187,17 @@ Neg => {
 	outs      => [ "res" ],
 	mode      => $mode_gp,
 	modified_flags => $status_flags
+},
+
+Xor => {
+	irn_flags  => [ "rematerializable" ],
+	state      => "exc_pinned",
+	reg_req    => { in => [ "gp", "gp" ], out => [ "in_r1 !in_r2" ] },
+	ins        => [ "left", "right" ],
+	outs       => [ "res" ],
+	emit       => 'xor %S1, %D0',
+	mode       => $mode_gp,
+	modified_flags => 1,
 },
 
 Immediate => {

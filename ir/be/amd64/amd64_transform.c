@@ -107,7 +107,13 @@ static ir_node *gen_binop(ir_node *const node, ir_node *(*const new_node)(dbg_in
 }
 
 static ir_node *gen_Add (ir_node *const node) { return gen_binop(node, &new_bd_amd64_Add);  }
+static ir_node *gen_And (ir_node *const node) { return gen_binop(node, &new_bd_amd64_And);  }
+static ir_node *gen_Eor (ir_node *const node) { return gen_binop(node, &new_bd_amd64_Xor);  }
+static ir_node *gen_Or  (ir_node *const node) { return gen_binop(node, &new_bd_amd64_Or);   }
 static ir_node *gen_Mul (ir_node *const node) { return gen_binop(node, &new_bd_amd64_IMul); }
+static ir_node *gen_Shl (ir_node *const node) { return gen_binop(node, &new_bd_amd64_Shl);  }
+static ir_node *gen_Shr (ir_node *const node) { return gen_binop(node, &new_bd_amd64_Shr);  }
+static ir_node *gen_Shrs(ir_node *const node) { return gen_binop(node, &new_bd_amd64_Sar);  }
 static ir_node *gen_Sub (ir_node *const node) { return gen_binop(node, &new_bd_amd64_Sub);  }
 
 static ir_node *gen_Minus(ir_node *node)
@@ -364,8 +370,14 @@ static void amd64_register_transformers(void)
 	be_set_transform_function(op_Const,        gen_Const);
 	be_set_transform_function(op_SymConst,     gen_SymConst);
 	be_set_transform_function(op_Add,          gen_Add);
+	be_set_transform_function(op_And,          gen_And);
+	be_set_transform_function(op_Eor,          gen_Eor);
 	be_set_transform_function(op_Sub,          gen_Sub);
 	be_set_transform_function(op_Mul,          gen_Mul);
+	be_set_transform_function(op_Or,           gen_Or);
+	be_set_transform_function(op_Shl,          gen_Shl);
+	be_set_transform_function(op_Shr,          gen_Shr);
+	be_set_transform_function(op_Shrs,         gen_Shrs);
 	be_set_transform_function(op_be_Call,      gen_be_Call);
 	be_set_transform_function(op_be_FrameAddr, gen_be_FrameAddr);
 	be_set_transform_function(op_Conv,         gen_Conv);
