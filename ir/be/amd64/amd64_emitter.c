@@ -540,7 +540,7 @@ static void amd64_gen_block(ir_node *block, void *data)
 	if (! is_Block(block))
 		return;
 
-	be_gas_begin_block(block, false);
+	be_gas_begin_block(block, true);
 
 	sched_foreach(block, node) {
 		amd64_emit_node(node);
