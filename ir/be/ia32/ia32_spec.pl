@@ -1103,7 +1103,7 @@ GetEIP => {
 
 NoReg_GP => {
 	state     => "pinned",
-	op_flags  => [ "constlike", "dump_noblock", "dump_noinput" ],
+	op_flags  => [ "constlike", "dump_noblock" ],
 	irn_flags => [ "not_scheduled" ],
 	reg_req   => { out => [ "gp_NOREG:I" ] },
 	units     => [],
@@ -1114,7 +1114,7 @@ NoReg_GP => {
 
 NoReg_VFP => {
 	state     => "pinned",
-	op_flags  => [ "constlike", "dump_noblock", "dump_noinput" ],
+	op_flags  => [ "constlike", "dump_noblock" ],
 	irn_flags => [ "not_scheduled" ],
 	reg_req   => { out => [ "vfp_NOREG:I" ] },
 	units     => [],
@@ -1126,7 +1126,7 @@ NoReg_VFP => {
 
 NoReg_XMM => {
 	state     => "pinned",
-	op_flags  => [ "constlike", "dump_noblock", "dump_noinput" ],
+	op_flags  => [ "constlike", "dump_noblock" ],
 	irn_flags => [ "not_scheduled" ],
 	reg_req   => { out => [ "xmm_NOREG:I" ] },
 	units     => [],

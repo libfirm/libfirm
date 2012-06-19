@@ -313,7 +313,7 @@ Store => {
 
 #NoReg_GP => {
 #	state     => "pinned",
-#	op_flags  => [ "constlike", "dump_noblcok", "dump_noinput" ],
+#	op_flags  => [ "constlike", "dump_noblcok" ],
 #	reg_req   => { out => [ "gp_NOREG:I" ] },
 #	units     => [],
 #	emit      => "",

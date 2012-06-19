@@ -695,7 +695,7 @@ class Mux(Op):
 class NoMem(Op):
 	"""Placeholder node for cases where you don't need any memory input"""
 	mode          = "mode_M"
-	flags         = [ "dump_noblock", "dump_noinput" ]
+	flags         = [ "dump_noblock" ]
 	pinned        = "yes"
 	knownBlock    = True
 	block         = "get_irg_start_block(irg)"

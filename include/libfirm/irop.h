@@ -77,12 +77,11 @@ typedef enum {
 	irop_flag_start_block  = 1U <<  8, /**< This operation is always placed in the Start block. */
 	irop_flag_uses_memory  = 1U <<  9, /**< This operation has a memory input and may change the memory state. */
 	irop_flag_dump_noblock = 1U << 10, /**< node should be dumped outside any blocks */
-	irop_flag_dump_noinput = 1U << 11, /**< node is a placeholder for "no input" */
-	irop_flag_cse_neutral  = 1U << 12, /**< This operation is CSE neutral to its users. */
+	irop_flag_cse_neutral  = 1U << 11, /**< This operation is CSE neutral to its users. */
 	/** This operation jumps to an unknown destination. The CFG is a
 	 * conservative aproximation in this case. You cannot change the destination
 	 * of an unknown_jump */
-	irop_flag_unknown_jump = 1U << 13,
+	irop_flag_unknown_jump = 1U << 12,
 } irop_flags;
 
 /** Returns the ident for the opcode name */

@@ -677,8 +677,7 @@ EOF
 	my %known_flags = map { $_ => 1 } (
 		"none", "commutative", "cfopcode", "unknown_jump", "fragile",
 		"forking", "highlevel", "constlike", "always_opt", "keep",
-		"start_block", "uses_memory", "dump_noblock", "dump_noinput",
-		"cse_neutral"
+		"start_block", "uses_memory", "dump_noblock", "cse_neutral"
 	);
 	my $is_fragile = 0;
 	foreach my $flag (@{$n{"op_flags"}}) {
