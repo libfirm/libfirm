@@ -461,11 +461,6 @@ static inline int is_irn_constlike_(const ir_node *node)
 	return is_op_constlike(get_irn_op_(node));
 }
 
-static inline int is_irn_always_opt_(const ir_node *node)
-{
-	return is_op_always_opt(get_irn_op_(node));
-}
-
 static inline int is_irn_keep_(const ir_node *node)
 {
 	return is_op_keep(get_irn_op_(node));
@@ -649,7 +644,6 @@ void init_irnode(void);
 #define get_irn_type_attr(node)               get_irn_type_attr_(node)
 #define get_irn_entity_attr(node)             get_irn_entity_attr_(node)
 #define is_irn_constlike(node)                is_irn_constlike_(node)
-#define is_irn_always_opt(node)               is_irn_always_opt_(node)
 #define is_irn_keep(node)                     is_irn_keep_(node)
 #define is_irn_start_block_placed(node)       is_irn_start_block_placed_(node)
 #define is_irn_cse_neutral(node)              is_irn_cse_neutral_(node)
