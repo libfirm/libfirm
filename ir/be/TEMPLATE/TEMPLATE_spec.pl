@@ -230,7 +230,7 @@ Jmp => {
 # Load / Store
 
 Load => {
-	op_flags  => [ "uses_memory", "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "none" ], out => [ "gp" ] },
@@ -238,7 +238,7 @@ Load => {
 },
 
 Store => {
-	op_flags  => [ "uses_memory", "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ] },
@@ -298,7 +298,7 @@ fConst => {
 # Load / Store
 
 fLoad => {
-	op_flags  => [ "uses_memory", "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "none" ], out => [ "fp" ] },
@@ -306,7 +306,7 @@ fLoad => {
 },
 
 fStore => {
-	op_flags  => [ "uses_memory", "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "fp", "none" ] },

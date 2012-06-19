@@ -268,7 +268,7 @@ Cmp => {
 
 Jcc => {
 	state     => "pinned",
-	op_flags  => [ "labeled", "cfopcode", "forking" ],
+	op_flags  => [ "cfopcode", "forking" ],
 	reg_req   => { in  => [ "eflags" ], out => [ "none", "none" ] },
 	ins       => [ "eflags" ],
 	outs      => [ "false", "true" ],
@@ -278,7 +278,7 @@ Jcc => {
 },
 
 Load => {
-	op_flags  => [ "uses_memory", "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "none" ],
 	               out => [ "gp", "none" ] },
@@ -300,7 +300,7 @@ FrameAddr => {
 },
 
 Store => {
-	op_flags  => [ "uses_memory", "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "ptr", "val", "mem" ],

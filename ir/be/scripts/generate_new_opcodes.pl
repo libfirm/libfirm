@@ -675,7 +675,7 @@ EOF
 	}
 
 	my %known_flags = map { $_ => 1 } (
-		"none", "labeled", "commutative", "cfopcode", "unknown_jump", "fragile",
+		"none", "commutative", "cfopcode", "unknown_jump", "fragile",
 		"forking", "highlevel", "constlike", "always_opt", "keep",
 		"start_block", "uses_memory", "dump_noblock", "dump_noinput",
 		"cse_neutral"

@@ -347,7 +347,7 @@ SubX_t => {
 
 # Load / Store
 Ld => {
-	op_flags  => [ "uses_memory", "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	constructors => {
 		imm => {
@@ -380,7 +380,7 @@ SetHi => {
 },
 
 St => {
-	op_flags  => [ "uses_memory", "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	mode      => "mode_M",
 	state     => "exc_pinned",
 	constructors => {
@@ -474,7 +474,7 @@ FrameAddr => {
 },
 
 Bicc => {
-	op_flags  => [ "labeled", "cfopcode", "forking" ],
+	op_flags  => [ "cfopcode", "forking" ],
 	irn_flags => [ "has_delay_slot" ],
 	state     => "pinned",
 	mode      => "mode_T",
@@ -487,7 +487,7 @@ Bicc => {
 },
 
 fbfcc => {
-	op_flags  => [ "labeled", "cfopcode", "forking" ],
+	op_flags  => [ "cfopcode", "forking" ],
 	irn_flags => [ "has_delay_slot" ],
 	state     => "pinned",
 	mode      => "mode_T",
@@ -569,7 +569,7 @@ Cmp => {  # aka SubccZero
 },
 
 SwitchJmp => {
-	op_flags     => [ "labeled", "cfopcode", "forking" ],
+	op_flags     => [ "cfopcode", "forking" ],
 	irn_flags    => [ "has_delay_slot" ],
 	state        => "pinned",
 	mode         => "mode_T",
@@ -889,7 +889,7 @@ fftoi => {
 },
 
 Ldf => {
-	op_flags  => [ "uses_memory", "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	constructors => {
 		s => {
@@ -911,7 +911,7 @@ Ldf => {
 },
 
 Stf => {
-	op_flags  => [ "uses_memory", "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	constructors => {
 		s => {

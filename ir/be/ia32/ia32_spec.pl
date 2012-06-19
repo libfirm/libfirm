@@ -587,7 +587,7 @@ l_Sbb => {
 },
 
 IDiv => {
-	op_flags  => [ "fragile", "uses_memory", "labeled" ],
+	op_flags  => [ "fragile", "uses_memory" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "eax", "edx" ],
 	               out => [ "eax", "flags", "none", "edx", "none", "none" ] },
@@ -601,7 +601,7 @@ IDiv => {
 },
 
 Div => {
-	op_flags  => [ "fragile", "uses_memory", "labeled" ],
+	op_flags  => [ "fragile", "uses_memory" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "eax", "edx" ],
 	               out => [ "eax", "flags", "none", "edx", "none", "none" ] },
@@ -1027,7 +1027,7 @@ CMovcc => {
 
 Jcc => {
 	state     => "pinned",
-	op_flags  => [ "labeled", "cfopcode", "forking" ],
+	op_flags  => [ "cfopcode", "forking" ],
 	reg_req   => { in  => [ "eflags" ], out => [ "none", "none" ] },
 	ins       => [ "eflags" ],
 	outs      => [ "false", "true" ],
@@ -1039,7 +1039,7 @@ Jcc => {
 
 SwitchJmp => {
 	state     => "pinned",
-	op_flags  => [ "labeled", "cfopcode", "forking" ],
+	op_flags  => [ "cfopcode", "forking" ],
 	reg_req   => { in => [ "gp", "gp" ] },
 	ins       => [ "base", "index" ],
 	out_arity => "variable",
@@ -1147,7 +1147,7 @@ ChangeCW => {
 },
 
 FldCW => {
-	op_flags  => [ "uses_memory", "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "fpcw:I" ] },
 	ins       => [ "base", "index", "mem" ],
@@ -1159,7 +1159,7 @@ FldCW => {
 },
 
 FnstCW => {
-	op_flags  => [ "uses_memory", "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "fp_cw" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "fpcw" ],
@@ -1170,7 +1170,7 @@ FnstCW => {
 },
 
 FnstCWNOP => {
-	op_flags  => [ "uses_memory", "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "pinned",
 	reg_req   => { in => [ "fp_cw" ], out => [ "none" ] },
 	ins       => [ "fpcw" ],
@@ -1195,7 +1195,7 @@ Cltd => {
 # lateny of 0 for load is correct
 
 Load => {
-	op_flags  => [ "uses_memory", "fragile", "labeled" ],
+	op_flags  => [ "uses_memory", "fragile" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ],
 	               out => [ "gp", "none", "none", "none", "none" ] },
@@ -1207,7 +1207,7 @@ Load => {
 },
 
 Store => {
-	op_flags  => [ "uses_memory", "fragile", "labeled" ],
+	op_flags  => [ "uses_memory", "fragile" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp" ],
 	               out => [ "none", "none", "none" ] },
@@ -1219,7 +1219,7 @@ Store => {
 },
 
 Store8Bit => {
-	op_flags  => [ "uses_memory", "fragile", "labeled" ],
+	op_flags  => [ "uses_memory", "fragile" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ],
 	               out => ["none", "none", "none" ] },
@@ -1550,7 +1550,7 @@ Inport => {
 # Intel style prefetching
 #
 Prefetch0 => {
-	op_flags  => [ "uses_memory", "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
@@ -1561,7 +1561,7 @@ Prefetch0 => {
 },
 
 Prefetch1 => {
-	op_flags  => [ "uses_memory", "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
@@ -1572,7 +1572,7 @@ Prefetch1 => {
 },
 
 Prefetch2 => {
-	op_flags  => [ "uses_memory", "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
@@ -1583,7 +1583,7 @@ Prefetch2 => {
 },
 
 PrefetchNTA => {
-	op_flags  => [ "uses_memory", "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
@@ -1597,7 +1597,7 @@ PrefetchNTA => {
 # 3DNow! prefetch instructions
 #
 Prefetch => {
-	op_flags  => [ "uses_memory", "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
@@ -1608,7 +1608,7 @@ Prefetch => {
 },
 
 PrefetchW => {
-	op_flags  => [ "uses_memory", "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
@@ -1853,7 +1853,7 @@ Ucomi => {
 },
 
 xLoad => {
-	op_flags  => [ "uses_memory", "fragile", "labeled" ],
+	op_flags  => [ "uses_memory", "fragile" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ],
 	               out => [ "xmm", "none", "none", "none", "none" ] },
@@ -1867,7 +1867,7 @@ xLoad => {
 },
 
 xStore => {
-	op_flags => [ "uses_memory", "fragile", "labeled" ],
+	op_flags => [ "uses_memory", "fragile" ],
 	state    => "exc_pinned",
 	reg_req  => { in => [ "gp", "gp", "none", "xmm" ],
 	              out => [ "none", "none", "none" ] },
@@ -1879,7 +1879,7 @@ xStore => {
 },
 
 xStoreSimple => {
-	op_flags => [ "uses_memory", "fragile", "labeled" ],
+	op_flags => [ "uses_memory", "fragile" ],
 	state    => "exc_pinned",
 	reg_req  => { in => [ "gp", "gp", "none", "xmm" ],
 	              out => [ "none", "none", "none" ] },
@@ -1891,7 +1891,6 @@ xStoreSimple => {
 },
 
 CvtSI2SS => {
-	op_flags => [ "labeled" ],
 	state     => "exc_pinned",
 	reg_req  => { in => [ "gp", "gp", "none", "gp" ], out => [ "xmm" ] },
 	ins      => [ "base", "index", "mem", "val" ],
@@ -1903,7 +1902,6 @@ CvtSI2SS => {
 },
 
 CvtSI2SD => {
-	op_flags => [ "labeled" ],
 	state     => "exc_pinned",
 	reg_req  => { in => [ "gp", "gp", "none", "gp" ], out => [ "xmm" ] },
 	ins      => [ "base", "index", "mem", "val" ],
@@ -2117,7 +2115,7 @@ vfchs => {
 
 vfld => {
 	irn_flags => [ "rematerializable" ],
-	op_flags  => [ "uses_memory", "fragile", "labeled" ],
+	op_flags  => [ "uses_memory", "fragile" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ],
 	               out => [ "vfp", "none", "none", "none", "none" ] },
@@ -2132,7 +2130,7 @@ vfld => {
 
 vfst => {
 	irn_flags => [ "rematerializable" ],
-	op_flags  => [ "uses_memory", "fragile", "labeled" ],
+	op_flags  => [ "uses_memory", "fragile" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "vfp" ],
 	               out => [ "none", "none", "none" ] },
@@ -2443,7 +2441,6 @@ fchs => {
 
 fld => {
 	irn_flags => [ "rematerializable" ],
-	op_flags  => [ "labeled" ],
 	state     => "exc_pinned",
 	emit      => '. fld%XM %AM',
 	attr_type => "ia32_x87_attr_t",
@@ -2453,7 +2450,6 @@ fld => {
 
 fst => {
 	irn_flags => [ "rematerializable" ],
-	op_flags  => [ "labeled" ],
 	state     => "exc_pinned",
 	emit      => '. fst%XM %AM',
 	mode      => "mode_M",
@@ -2464,7 +2460,6 @@ fst => {
 
 fstp => {
 	irn_flags => [ "rematerializable" ],
-	op_flags  => [ "labeled" ],
 	state     => "exc_pinned",
 	emit      => '. fstp%XM %AM',
 	mode      => "mode_M",
@@ -2693,7 +2688,7 @@ FtstFnstsw => {
 # Spilling and reloading of SSE registers, hardcoded, not generated #
 
 xxLoad => {
-	op_flags  => [ "uses_memory", "fragile", "labeled" ],
+	op_flags  => [ "uses_memory", "fragile" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ],
 	               out => [ "xmm", "none", "none", "none" ] },
@@ -2705,7 +2700,7 @@ xxLoad => {
 },
 
 xxStore => {
-	op_flags => [ "uses_memory", "fragile", "labeled" ],
+	op_flags => [ "uses_memory", "fragile" ],
 	state    => "exc_pinned",
 	reg_req  => { in => [ "gp", "gp", "none", "xmm" ],
 	              out => [ "none", "none", "none" ] },

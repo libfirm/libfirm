@@ -178,7 +178,7 @@ class Block(Op):
 	block            = "NULL"
 	pinned           = "yes"
 	arity            = "variable"
-	flags            = [ "labeled" ]
+	flags            = []
 	attr_struct      = "block_attr"
 	attrs            = [
 		dict(
@@ -953,7 +953,7 @@ class Tuple(Op):
 	arity  = "variable"
 	mode   = "mode_T"
 	pinned = "no"
-	flags  = [ "labeled" ]
+	flags  = []
 
 class Unknown(Op):
 	"""Returns an unknown (at compile- and runtime) value. It is a valid
