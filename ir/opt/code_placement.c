@@ -348,11 +348,7 @@ static void place_floats_late(ir_node *n, pdeq *worklist)
 		return;
 	/* some nodes should simply stay in the startblock */
 	if (is_irn_start_block_placed(n)) {
-#ifndef NDEBUG
-		ir_graph *irg         = get_irn_irg(n);
-		ir_node  *start_block = get_irg_start_block(irg);
-		assert(get_nodes_block(n) == start_block);
-#endif
+		assert(get_nodes_block(n) == get_irg_start_block(get_irn_irg(n)));
 		return;
 	}
 
