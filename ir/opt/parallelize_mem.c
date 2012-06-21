@@ -41,6 +41,7 @@
 #include "irflag_t.h"
 #include "irprintf.h"
 #include "irpass.h"
+#include "iredges.h"
 
 typedef struct parallelize_info
 {
@@ -190,45 +191,35 @@ static void walker(ir_node *proj, void *env)
 	}
 
 	n = ir_nodeset_size(&pi.user_mem);
-	if (n != 0) { /* nothing happened otherwise */
-		ir_graph               *irg  = get_irn_irg(block);
+	if (n > 0) { /* nothing happened otherwise */
 		ir_node                *sync;
-		ir_node               **in;
+		ir_node               **in   = XMALLOCN(ir_node*, n+1);
+		ir_node                *node;
 		ir_nodeset_iterator_t   iter;
 		size_t                  i;
 
-		++n;
-		NEW_ARR_A(ir_node*, in, n);
 		i = 0;
-		in[i++] = new_r_Unknown(irg, mode_M);
-		ir_nodeset_iterator_init(&iter, &pi.user_mem);
-		for (;;) {
-			ir_node* p = ir_nodeset_iterator_next(&iter);
-			if (p == NULL) break;
-			in[i++] = p;
+		in[i++] = proj;
+		foreach_ir_nodeset(&pi.user_mem, node, iter) {
+			in[i++] = node;
 		}
-		assert(i == n);
-		sync = new_r_Sync(block, n, in);
-		exchange(proj, sync);
-
-		assert((long)pn_Load_M == (long)pn_Store_M);
-		proj = new_r_Proj(mem_op, mode_M, pn_Load_M);
-		set_Sync_pred(sync, 0, proj);
+		assert(i == n+1);
+		sync = new_r_Sync(block, i, in);
+		xfree(in);
+		edges_reroute_except(proj, sync, sync);
 
 		n = ir_nodeset_size(&pi.this_mem);
-		ir_nodeset_iterator_init(&iter, &pi.this_mem);
 		if (n == 1) {
+			ir_nodeset_iterator_init(&iter, &pi.this_mem);
 			sync = ir_nodeset_iterator_next(&iter);
 		} else {
-			NEW_ARR_A(ir_node*, in, n);
+			in = XMALLOCN(ir_node*, n);
 			i = 0;
-			for (;;) {
-				ir_node* p = ir_nodeset_iterator_next(&iter);
-				if (p == NULL) break;
-				in[i++] = p;
+			foreach_ir_nodeset(&pi.this_mem, node, iter) {
+				in[i++] = node;
 			}
 			assert(i == n);
-			sync = new_r_Sync(block, n, in);
+			sync = new_r_Sync(block, i, in);
 		}
 		set_memop_mem(mem_op, sync);
 	}
@@ -239,6 +230,7 @@ static void walker(ir_node *proj, void *env)
 
 void opt_parallelize_mem(ir_graph *irg)
 {
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 	irg_walk_graph(irg, NULL, walker, NULL);
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW);
 }
