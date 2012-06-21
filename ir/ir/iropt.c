@@ -6194,7 +6194,8 @@ static ir_node *transform_node_Sync(ir_node *n)
 					++arity;
 					break;
 				}
-				if (get_Sync_pred(n, k) == pred_pred) break;
+				if (get_Sync_pred(n, k) == pred_pred)
+					break;
 			}
 		}
 	}
@@ -6820,6 +6821,15 @@ void del_identities(ir_graph *irg)
 		del_pset(irg->value_table);
 }
 
+static int cmp_node_nr(const void *a, const void *b)
+{
+	ir_node **p1 = (ir_node**)a;
+	ir_node **p2 = (ir_node**)b;
+	long      n1 = get_irn_node_nr(*p1);
+	long      n2 = get_irn_node_nr(*p2);
+	return (n1>n2) - (n1<n2);
+}
+
 void ir_normalize_node(ir_node *n)
 {
 	if (is_op_commutative(get_irn_op(n))) {
@@ -6834,6 +6844,30 @@ void ir_normalize_node(ir_node *n)
 			set_binop_left(n, r);
 			set_binop_right(n, l);
 			hook_normalize(n);
+		}
+	} else if (is_Sync(n)) {
+		/* we assume that most of the time the inputs of a Sync node are already
+		 * sorted, so check this first as a shortcut */
+		bool           ins_sorted = true;
+		int            arity      = get_irn_arity(n);
+		const ir_node *last       = get_irn_n(n, 0);
+		int      i;
+		for (i = 1; i < arity; ++i) {
+			const ir_node *node = get_irn_n(n, i);
+			if (get_irn_node_nr(node) < get_irn_node_nr(last)) {
+				ins_sorted = false;
+				break;
+			}
+			last = node;
+		}
+
+		if (!ins_sorted) {
+			ir_node **ins     = get_irn_in(n)+1;
+			ir_node **new_ins = XMALLOCN(ir_node*, arity);
+			memcpy(new_ins, ins, arity*sizeof(ins[0]));
+			qsort(new_ins, arity, sizeof(new_ins[0]), cmp_node_nr);
+			set_irn_in(n, arity, new_ins);
+			xfree(new_ins);
 		}
 	}
 }
