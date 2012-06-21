@@ -162,6 +162,13 @@ FIRM_API void edges_deactivate_kind(ir_graph *irg, ir_edge_kind_t kind);
 FIRM_API void edges_reroute_kind(ir_node *old, ir_node *nw, ir_edge_kind_t kind);
 
 /**
+ * reroutes (normal) edges from an old node to a new node, except for the
+ * @p exception which keeps its input even if it is old.
+ */
+FIRM_API void edges_reroute_except(ir_node *old, ir_node *nw,
+                                   ir_node *exception);
+
+/**
  * Verifies the out edges of graph @p irg.
  * @return 1 if a problem was found, 0 otherwise
  */

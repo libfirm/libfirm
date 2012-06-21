@@ -657,6 +657,18 @@ void edges_reroute_kind(ir_node *from, ir_node *to, ir_edge_kind_t kind)
 	}
 }
 
+void edges_reroute_except(ir_node *from, ir_node *to, ir_node *exception)
+{
+	const ir_edge_t *edge;
+	const ir_edge_t *next;
+	foreach_out_edge_safe(from, edge, next) {
+		ir_node *src = get_edge_src_irn(edge);
+		if (src == exception)
+			continue;
+		set_irn_n(src, edge->pos, to);
+	}
+}
+
 static void verify_set_presence(ir_node *irn, void *data)
 {
 	build_walker *w     = (build_walker*)data;
