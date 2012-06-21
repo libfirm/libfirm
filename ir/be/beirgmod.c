@@ -69,6 +69,15 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
+static int cmp_node_nr(const void *a, const void *b)
+{
+	ir_node **p1 = (ir_node**)a;
+	ir_node **p2 = (ir_node**)b;
+	long      n1 = get_irn_node_nr(*p1);
+	long      n2 = get_irn_node_nr(*p2);
+	return (n1>n2) - (n1<n2);
+}
+
 /*
   ___                     _     ____
  |_ _|_ __  ___  ___ _ __| |_  |  _ \ ___ _ __ _ __ ___
@@ -110,6 +119,8 @@ ir_node *insert_Perm_after(ir_graph *irg, const arch_register_class_t *cls,
 		i++;
 	}
 	ir_nodeset_destroy(&live);
+	/* make the input order deterministic */
+	qsort(nodes, n, sizeof(nodes[0]), cmp_node_nr);
 
 	perm = be_new_Perm(cls, bl, n, nodes);
 	sched_add_after(pos, perm);
