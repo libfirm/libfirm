@@ -1363,7 +1363,7 @@ void be_gas_begin_block(const ir_node *block, bool needs_label)
 		ir_exec_freq *exec_freq = be_get_irg_exec_freq(irg);
 
 		be_emit_pad_comment();
-		be_emit_cstring("/* preds:");
+		be_emit_irprintf("/* %+F preds:", block);
 
 		arity = get_irn_arity(block);
 		if (arity == 0) {
