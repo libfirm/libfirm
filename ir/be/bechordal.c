@@ -196,7 +196,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 	 * Perms inserted before the constraint handling phase are considered to be
 	 * correctly precolored. These Perms arise during the ABI handling phase.
 	 */
-	if (!insn->has_constraints)
+	if (!insn->has_constraints || is_Phi(irn))
 		goto end;
 
 	n_regs      = env->cls->n_regs;
@@ -515,6 +515,15 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 	env.tmp_colors    = bitset_alloca(colors_n);
 	env.in_colors     = bitset_alloca(colors_n);
 	env.pre_colored   = pset_new_ptr_default();
+
+	be_timer_push(T_SPLIT);
+
+	if (chordal_env->opts->dump_flags & BE_CH_DUMP_SPLIT) {
+		snprintf(buf, sizeof(buf), "%s-split", chordal_env->cls->name);
+		dump_ir_graph(chordal_env->irg, buf);
+	}
+
+	be_timer_pop(T_SPLIT);
 
 	be_timer_push(T_CONSTR);
 

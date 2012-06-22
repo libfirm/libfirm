@@ -230,11 +230,13 @@ struct arch_register_t {
 	const arch_register_class_t *reg_class;    /**< The class of the register */
 	unsigned short               index;        /**< The index of the register in
 	                                                the class. */
-	unsigned short               global_index; /** The global index this register
-											       in the architecture. */
+	unsigned short               global_index; /**< The global index this
+												    register in the architecture. */
 	arch_register_type_t         type;         /**< The type of the register. */
 	/** register constraint allowing just this register */
 	const arch_register_req_t   *single_req;
+	/** register number in dwarf debugging format */
+	unsigned short               dwarf_number;
 };
 
 static inline const arch_register_class_t *arch_register_get_class(
@@ -307,14 +309,16 @@ struct arch_register_req_t {
 	arch_register_req_type_t     type; /**< The type of the constraint. */
 	const arch_register_class_t *cls;  /**< The register class this constraint
 	                                        belongs to. */
-	const unsigned *limited;            /**< allowed register bitset */
-	unsigned other_same;                /**< Bitmask of ins which should use the
-	                                         same register (should_be_same). */
-	unsigned other_different;           /**< Bitmask of ins which shall use a
-	                                         different register
-	                                         (must_be_different) */
-	unsigned char width;                /**< specifies how many sequential
-	                                         registers are required */
+	const unsigned *limited;           /**< allowed register bitset
+	                                        (in case of wide-values this is
+	                                         only about the first register) */
+	unsigned other_same;               /**< Bitmask of ins which should use the
+	                                        same register (should_be_same). */
+	unsigned other_different;          /**< Bitmask of ins which shall use a
+	                                        different register
+	                                        (must_be_different) */
+	unsigned char width;               /**< specifies how many sequential
+	                                        registers are required */
 };
 
 static inline bool reg_reqs_equal(const arch_register_req_t *req1,

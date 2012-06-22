@@ -100,13 +100,6 @@ static void visit_entity(ir_entity *entity)
 
 	if (entity->initializer != NULL) {
 		visit_initializer(entity->initializer);
-	}  else if (entity_has_compound_ent_values(entity)) {
-		size_t i;
-		size_t n_members = get_compound_ent_n_values(entity);
-		for (i = 0; i < n_members; ++i) {
-			ir_node *node = get_compound_ent_value(entity, i);
-			start_visit_node(node);
-		}
 	}
 
 	irg = get_entity_irg(entity);
@@ -122,8 +115,9 @@ static void visit_segment(ir_type *segment)
 
 	for (i = 0; i < n_entities; ++i) {
 		ir_entity *entity = get_compound_member(segment, i);
-		if (get_entity_visibility(entity) != ir_visibility_default
-				&& !(get_entity_linkage(entity) & IR_LINKAGE_HIDDEN_USER))
+		if (get_entity_visibility(entity) != ir_visibility_external
+				&& !(get_entity_linkage(entity) & IR_LINKAGE_HIDDEN_USER)
+				&& !(get_entity_linkage(entity) & IR_LINKAGE_NO_CODEGEN))
 			continue;
 
 		visit_entity(entity);

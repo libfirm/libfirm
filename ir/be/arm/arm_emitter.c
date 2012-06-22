@@ -45,7 +45,7 @@
 #include "beblocksched.h"
 #include "beirg.h"
 #include "begnuas.h"
-#include "be_dbgout.h"
+#include "bedwarf.h"
 
 #include "arm_emitter.h"
 #include "arm_optimize.h"
@@ -56,8 +56,6 @@
 #include "gen_arm_regalloc_if.h"
 
 #include "benode.h"
-
-#define SNPRINTF_BUF_LEN 128
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -836,7 +834,7 @@ static void arm_emit_node(const ir_node *irn)
 
 	if (op->ops.generic) {
 		emit_func *emit = (emit_func *)op->ops.generic;
-		be_dbg_set_dbg_info(get_irn_dbg_info(irn));
+		be_dwarf_location(get_irn_dbg_info(irn));
 		(*emit)(irn);
 	} else {
 		panic("Error: No emit handler for node %+F (graph %+F)\n",
@@ -881,7 +879,7 @@ static void arm_gen_block(ir_node *block, ir_node *prev_block)
 	ir_node *irn;
 
 	arm_emit_block_header(block, prev_block);
-	be_dbg_set_dbg_info(get_irn_dbg_info(block));
+	be_dwarf_location(get_irn_dbg_info(block));
 	sched_foreach(block, irn) {
 		arm_emit_node(irn);
 	}
@@ -935,7 +933,7 @@ void arm_gen_routine(ir_graph *irg)
 	/* create the block schedule */
 	blk_sched = be_create_block_schedule(irg);
 
-	be_gas_emit_function_prolog(entity, 4);
+	be_gas_emit_function_prolog(entity, 4, NULL);
 
 	irg_block_walk_graph(irg, arm_gen_labels, NULL, NULL);
 

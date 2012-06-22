@@ -232,13 +232,12 @@ static ir_node *set_phi_arguments(ir_node *phi, int pos)
 
 	phi->attr.phi.u.backedge = new_backedge_arr(irg->obst, arity);
 	set_irn_in(phi, arity, in);
-	set_irn_op(phi, op_Phi);
 
 	irn_verify_irg(phi, irg);
 
 	/* Memory Phis in endless loops must be kept alive.
 	   As we can't distinguish these easily we keep all of them alive. */
-	if (is_Phi(phi) && mode == mode_M)
+	if (mode == mode_M)
 		add_End_keepalive(get_irg_end(irg), phi);
 
 	try_remove_unnecessary_phi(phi);
@@ -272,14 +271,19 @@ static ir_node *get_r_value_internal(ir_node *block, int pos, ir_mode *mode)
 	if (get_Block_matured(block)) {
 		int arity = get_irn_arity(block);
 		/* no predecessors: use unknown value */
-		if (arity == 0 && block == get_irg_start_block(get_irn_irg(block))) {
-			if (default_initialize_local_variable != NULL) {
-				ir_node *rem = get_r_cur_block(irg);
-				set_r_cur_block(irg, block);
-				res = default_initialize_local_variable(irg, mode, pos - 1);
-				set_r_cur_block(irg, rem);
+		if (arity == 0) {
+			if (block == get_irg_start_block(irg)) {
+				if (default_initialize_local_variable != NULL) {
+					ir_node *rem = get_r_cur_block(irg);
+					set_r_cur_block(irg, block);
+					res = default_initialize_local_variable(irg, mode, pos - 1);
+					set_r_cur_block(irg, rem);
+				} else {
+					res = new_r_Unknown(irg, mode);
+				}
 			} else {
-				res = new_r_Unknown(irg, mode);
+				/* unreachable block, use Bad */
+				res = new_r_Bad(irg, mode);
 			}
 		/* one predecessor just use its value */
 		} else if (arity == 1) {
@@ -475,9 +479,6 @@ ir_node *new_rd_immBlock(dbg_info *dbgi, ir_graph *irg)
 	res->attr.block.dynamic_ins = true;
 	res->attr.block.irg.irg     = irg;
 	res->attr.block.backedge    = NULL;
-	res->attr.block.in_cg       = NULL;
-	res->attr.block.cg_backedge = NULL;
-	res->attr.block.extblk      = NULL;
 	res->attr.block.entity      = NULL;
 
 	set_Block_block_visited(res, 0);
@@ -527,13 +528,15 @@ void set_cur_block(ir_node *target)
 
 void set_r_cur_block(ir_graph *irg, ir_node *target)
 {
-	assert(target == NULL || get_irn_mode(target) == mode_BB);
-	assert(target == NULL || get_irn_irg(target)  == irg);
+	assert(get_irg_phase_state(irg) == phase_building);
+	assert(target == NULL || is_Block(target));
+	assert(target == NULL || get_irn_irg(target) == irg);
 	irg->current_block = target;
 }
 
 ir_node *get_r_cur_block(ir_graph *irg)
 {
+	assert(get_irg_phase_state(irg) == phase_building);
 	return irg->current_block;
 }
 
@@ -622,23 +625,6 @@ void set_r_value(ir_graph *irg, int pos, ir_node *value)
 void set_value(int pos, ir_node *value)
 {
 	set_r_value(current_ir_graph, pos, value);
-}
-
-int r_find_value(ir_graph *irg, ir_node *value)
-{
-	size_t i;
-	ir_node *bl = irg->current_block;
-
-	for (i = ARR_LEN(bl->attr.block.graph_arr); i > 1;) {
-		if (bl->attr.block.graph_arr[--i] == value)
-			return i - 1;
-	}
-	return -1;
-}
-
-int find_value(ir_node *value)
-{
-	return r_find_value(current_ir_graph, value);
 }
 
 ir_node *get_r_store(ir_graph *irg)

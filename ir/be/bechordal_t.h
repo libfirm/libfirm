@@ -94,7 +94,8 @@ enum {
 	BE_CH_DUMP_CONSTR     = (1 << 7),
 	BE_CH_DUMP_SPILLSLOTS = (1 << 8),
 	BE_CH_DUMP_LOWER      = (1 << 9),
-	BE_CH_DUMP_APPEL      = (1 << 10),
+	BE_CH_DUMP_SPLIT      = (1 << 10),
+	BE_CH_DUMP_APPEL      = (1 << 11),
 	BE_CH_DUMP_ALL        = 2 * BE_CH_DUMP_APPEL - 1,
 
 	/* lower perm options */

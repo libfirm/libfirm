@@ -49,7 +49,6 @@
 #include "set.h"
 #include "be.h"
 #include "debug.h"
-#include "opt_manage.h"
 
 /** The debug handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
@@ -337,170 +336,6 @@ static long get_Sel_array_index_long(ir_node *n, int dim)
 	assert(is_Const(index));
 	return get_tarval_long(get_Const_tarval(index));
 }  /* get_Sel_array_index_long */
-
-/**
- * Returns the accessed component graph path for an
- * node computing an address.
- *
- * @param ptr    the node computing the address
- * @param depth  current depth in steps upward from the root
- *               of the address
- */
-static compound_graph_path *rec_get_accessed_path(ir_node *ptr, size_t depth)
-{
-	compound_graph_path *res = NULL;
-	ir_entity           *root, *field, *ent;
-	size_t              path_len, pos, idx;
-	ir_tarval           *tv;
-	ir_type             *tp;
-
-	if (is_SymConst(ptr)) {
-		/* a SymConst. If the depth is 0, this is an access to a global
-		 * entity and we don't need a component path, else we know
-		 * at least its length.
-		 */
-		assert(get_SymConst_kind(ptr) == symconst_addr_ent);
-		root = get_SymConst_entity(ptr);
-		res = (depth == 0) ? NULL : new_compound_graph_path(get_entity_type(root), depth);
-	} else if (is_Sel(ptr)) {
-		/* it's a Sel, go up until we find the root */
-		res = rec_get_accessed_path(get_Sel_ptr(ptr), depth+1);
-		if (res == NULL)
-			return NULL;
-
-		/* fill up the step in the path at the current position */
-		field    = get_Sel_entity(ptr);
-		path_len = get_compound_graph_path_length(res);
-		pos      = path_len - depth - 1;
-		set_compound_graph_path_node(res, pos, field);
-
-		if (is_Array_type(get_entity_owner(field))) {
-			assert(get_Sel_n_indexs(ptr) == 1 && "multi dim arrays not implemented");
-			set_compound_graph_path_array_index(res, pos, get_Sel_array_index_long(ptr, 0));
-		}
-	} else if (is_Add(ptr)) {
-		ir_mode   *mode;
-		ir_tarval *tmp;
-
-		{
-			ir_node   *l    = get_Add_left(ptr);
-			ir_node   *r    = get_Add_right(ptr);
-			if (is_Const(r) && get_irn_mode(l) == get_irn_mode(ptr)) {
-				ptr = l;
-				tv  = get_Const_tarval(r);
-			} else {
-				ptr = r;
-				tv  = get_Const_tarval(l);
-			}
-		}
-ptr_arith:
-		mode = get_tarval_mode(tv);
-		tmp  = tv;
-
-		/* ptr must be a Sel or a SymConst, this was checked in find_constant_entity() */
-		if (is_Sel(ptr)) {
-			field = get_Sel_entity(ptr);
-		} else {
-			field = get_SymConst_entity(ptr);
-		}
-		idx = 0;
-		for (ent = field;;) {
-			unsigned   size;
-			ir_tarval *sz, *tv_index, *tlower, *tupper;
-			ir_node   *bound;
-
-			tp = get_entity_type(ent);
-			if (! is_Array_type(tp))
-				break;
-			ent = get_array_element_entity(tp);
-			size = get_type_size_bytes(get_entity_type(ent));
-			sz   = new_tarval_from_long(size, mode);
-
-			tv_index = tarval_div(tmp, sz);
-			tmp      = tarval_mod(tmp, sz);
-
-			if (tv_index == tarval_bad || tmp == tarval_bad)
-				return NULL;
-
-			assert(get_array_n_dimensions(tp) == 1 && "multiarrays not implemented");
-			bound  = get_array_lower_bound(tp, 0);
-			tlower = computed_value(bound);
-			bound  = get_array_upper_bound(tp, 0);
-			tupper = computed_value(bound);
-
-			if (tlower == tarval_bad || tupper == tarval_bad)
-				return NULL;
-
-			if (tarval_cmp(tv_index, tlower) == ir_relation_less)
-				return NULL;
-			if (tarval_cmp(tupper, tv_index) == ir_relation_less)
-				return NULL;
-
-			/* ok, bounds check finished */
-			++idx;
-		}
-		if (! tarval_is_null(tmp)) {
-			/* access to some struct/union member */
-			return NULL;
-		}
-
-		/* should be at least ONE array */
-		if (idx == 0)
-			return NULL;
-
-		res = rec_get_accessed_path(ptr, depth + idx);
-		if (res == NULL)
-			return NULL;
-
-		path_len = get_compound_graph_path_length(res);
-		pos      = path_len - depth - idx;
-
-		for (ent = field;;) {
-			unsigned   size;
-			ir_tarval *sz, *tv_index;
-			long       index;
-
-			tp = get_entity_type(ent);
-			if (! is_Array_type(tp))
-				break;
-			ent = get_array_element_entity(tp);
-			set_compound_graph_path_node(res, pos, ent);
-
-			size = get_type_size_bytes(get_entity_type(ent));
-			sz   = new_tarval_from_long(size, mode);
-
-			tv_index = tarval_div(tv, sz);
-			tv       = tarval_mod(tv, sz);
-
-			/* worked above, should work again */
-			assert(tv_index != tarval_bad && tv != tarval_bad);
-
-			/* bounds already checked above */
-			index = get_tarval_long(tv_index);
-			set_compound_graph_path_array_index(res, pos, index);
-			++pos;
-		}
-	} else if (is_Sub(ptr)) {
-		ir_node *l = get_Sub_left(ptr);
-		ir_node *r = get_Sub_right(ptr);
-
-		ptr = l;
-		tv  = get_Const_tarval(r);
-		tv  = tarval_neg(tv);
-		goto ptr_arith;
-	}
-	return res;
-}  /* rec_get_accessed_path */
-
-/**
- * Returns an access path or NULL.  The access path is only
- * valid, if the graph is in phase_high and _no_ address computation is used.
- */
-static compound_graph_path *get_accessed_path(ir_node *ptr)
-{
-	compound_graph_path *gr = rec_get_accessed_path(ptr, 0);
-	return gr;
-}  /* get_accessed_path */
 
 typedef struct path_entry {
 	ir_entity         *ent;
@@ -1167,23 +1002,11 @@ static unsigned optimize_load(ir_node *load)
 			if (has_entity_initializer(ent)) {
 				/* new style initializer */
 				value = find_compound_ent_value(ptr);
-			} else if (entity_has_compound_ent_values(ent)) {
-				/* old style initializer */
-				compound_graph_path *path = get_accessed_path(ptr);
-
-				if (path != NULL) {
-					assert(is_proper_compound_graph_path(path, get_compound_graph_path_length(path)-1));
-
-					value = get_compound_ent_value_by_path(ent, path);
-					DB((dbg, LEVEL_1, "  Constant access at %F%F resulted in %+F\n", ent, path, value));
-					free_compound_graph_path(path);
-				}
 			}
 			if (value != NULL) {
 				ir_graph *irg = get_irn_irg(load);
 				value = can_replace_load_by_const(load, value);
-				if (value != NULL && is_Sel(ptr) &&
-						!is_irg_state(irg, IR_GRAPH_STATE_IMPLICIT_BITFIELD_MASKING)) {
+				if (value != NULL && is_Sel(ptr)) {
 					/* frontend has inserted masking operations after bitfield accesses,
 					 * so we might have to shift the const. */
 					unsigned char bit_offset = get_entity_offset_bits_remainder(get_Sel_entity(ptr));
@@ -2257,10 +2080,16 @@ static int optimize_loops(ir_graph *irg)
 /*
  * do the load store optimization
  */
-static ir_graph_state_t do_loadstore_opt(ir_graph *irg)
+void optimize_load_store(ir_graph *irg)
 {
 	walk_env_t env;
-	ir_graph_state_t res = 0;
+
+	assure_irg_properties(irg,
+		IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
+		| IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
+		| IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
+		| IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+		| IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE);
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.ldstopt");
 
@@ -2286,31 +2115,15 @@ static ir_graph_state_t do_loadstore_opt(ir_graph *irg)
 
 	obstack_free(&env.obst, NULL);
 
-	/* Handle graph state */
-	if (env.changes) {
-		edges_deactivate(irg);
-	}
-
-	if (!(env.changes & CF_CHANGED)) {
-		res |= IR_GRAPH_STATE_CONSISTENT_DOMINANCE | IR_GRAPH_STATE_NO_BADS;
-	}
-
-	return res;
-}
-
-static optdesc_t opt_loadstore = {
-	"load-store",
-	IR_GRAPH_STATE_NO_UNREACHABLE_CODE | IR_GRAPH_STATE_CONSISTENT_OUT_EDGES | IR_GRAPH_STATE_NO_CRITICAL_EDGES | IR_GRAPH_STATE_CONSISTENT_DOMINANCE | IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE,
-	do_loadstore_opt,
-};
-
-int optimize_load_store(ir_graph *irg)
-{
-	perform_irg_optimization(irg, &opt_loadstore);
-	return 1;
+	confirm_irg_properties(irg,
+		env.changes
+		? env.changes & CF_CHANGED
+			? IR_GRAPH_PROPERTIES_NONE
+			: IR_GRAPH_PROPERTIES_CONTROL_FLOW
+		: IR_GRAPH_PROPERTIES_ALL);
 }
 
 ir_graph_pass_t *optimize_load_store_pass(const char *name)
 {
-	return def_graph_pass_ret(name ? name : "ldst", optimize_load_store);
+	return def_graph_pass(name ? name : "ldst", optimize_load_store);
 }  /* optimize_load_store_pass */

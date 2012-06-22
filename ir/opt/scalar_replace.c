@@ -46,7 +46,6 @@
 #include "xmalloc.h"
 #include "debug.h"
 #include "error.h"
-#include "opt_manage.h"
 
 static unsigned get_vnum(const ir_node *node)
 {
@@ -367,7 +366,7 @@ static int find_possible_replacements(ir_graph *irg)
 			ir_node  *args;
 			int      j;
 
-			assure_irg_outs(inner_irg);
+			assure_irg_properties(inner_irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 			args = get_irg_args(inner_irg);
 			for (j = get_irn_n_outs(args) - 1; j >= 0; --j) {
 				ir_node *arg = get_irn_out(args, j);
@@ -677,7 +676,7 @@ static void do_scalar_replacements(ir_graph *irg, pset *sels, unsigned nvals,
  *
  * @param irg  The current ir graph.
  */
-static ir_graph_state_t do_scalar_replacement(ir_graph *irg)
+void scalar_replacement_opt(ir_graph *irg)
 {
 	unsigned  nvals;
 	int       i;
@@ -687,6 +686,10 @@ static ir_graph_state_t do_scalar_replacement(ir_graph *irg)
 	set       *set_ent;
 	pset      *sels;
 	ir_type   *ent_type, *frame_tp;
+
+	assure_irg_properties(irg,
+		IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
+		| IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 
 	/* we use the link field to store the VNUM */
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
@@ -764,25 +767,12 @@ static ir_graph_state_t do_scalar_replacement(ir_graph *irg)
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	irp_free_resources(irp, IRP_RESOURCE_ENTITY_LINK);
 
-	return 0;
-}
-
-static optdesc_t opt_scalar_rep = {
-	"scalar-replace",
-	IR_GRAPH_STATE_NO_UNREACHABLE_CODE | IR_GRAPH_STATE_CONSISTENT_OUTS,
-	do_scalar_replacement,
-};
-
-int scalar_replacement_opt(ir_graph *irg)
-{
-	perform_irg_optimization(irg, &opt_scalar_rep);
-	return 1;
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 }
 
 ir_graph_pass_t *scalar_replacement_opt_pass(const char *name)
 {
-	return def_graph_pass_ret(name ? name : "scalar_rep",
-	                          scalar_replacement_opt);
+	return def_graph_pass(name ? name : "scalar_rep", scalar_replacement_opt);
 }
 
 void firm_init_scalar_replace(void)

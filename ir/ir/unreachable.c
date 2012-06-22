@@ -117,17 +117,16 @@ void remove_unreachable_code(ir_graph *irg)
 {
 	bool changed = false;
 
-	assure_doms(irg);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
 	irg_walk_graph(irg, unreachable_to_bad, NULL, &changed);
 	remove_unreachable_keeps(irg);
 
-	if (changed) {
-		edges_deactivate(irg);
-		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS
-		                   | IR_GRAPH_STATE_NO_BADS
-		                   | IR_GRAPH_STATE_CONSISTENT_OUT_EDGES
-		                   | IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
-	}
-	set_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE);
+	confirm_irg_properties(irg, changed
+		? IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
+		| IR_GRAPH_PROPERTY_NO_TUPLES
+		| IR_GRAPH_PROPERTY_ONE_RETURN
+		| IR_GRAPH_PROPERTY_MANY_RETURNS
+		: IR_GRAPH_PROPERTIES_ALL);
+	add_irg_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE);
 }

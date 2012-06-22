@@ -83,7 +83,6 @@
 #include "irpass.h"
 #include "tv_t.h"
 #include "irtools.h"
-#include "opt_manage.h"
 
 #include "irprintf.h"
 #include "irdump.h"
@@ -3512,13 +3511,18 @@ static void add_memory_keeps(ir_node **kept_memory, size_t len)
 	ir_nodeset_destroy(&set);
 }  /* add_memory_keeps */
 
-static ir_graph_state_t do_combo(ir_graph *irg)
+void combo(ir_graph *irg)
 {
 	environment_t env;
 	ir_node       *initial_bl;
 	node_t        *start;
 	ir_graph      *rem = current_ir_graph;
 	size_t        len;
+
+	assure_irg_properties(irg,
+		IR_GRAPH_PROPERTY_NO_BADS
+		| IR_GRAPH_PROPERTY_CONSISTENT_OUTS
+		| IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 
 	current_ir_graph = irg;
 
@@ -3622,19 +3626,8 @@ static ir_graph_state_t do_combo(ir_graph *irg)
 	set_value_of_func(NULL);
 	current_ir_graph = rem;
 
-	return 0; // cannot guarantee anything
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 }  /* combo */
-
-static optdesc_t opt_combo = {
-	"combo",
-	IR_GRAPH_STATE_NO_BADS | IR_GRAPH_STATE_CONSISTENT_OUTS | IR_GRAPH_STATE_CONSISTENT_LOOPINFO,
-	do_combo,
-};
-
-void combo(ir_graph *irg)
-{
-	perform_irg_optimization(irg, &opt_combo);
-}
 
 /* Creates an ir_graph pass for combo. */
 ir_graph_pass_t *combo_pass(const char *name)

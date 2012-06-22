@@ -12,41 +12,41 @@ $mode_fp4     = "mode_Q";
 # available SPARC registers: 8 globals, 24 window regs (8 ins, 8 outs, 8 locals)
 %reg_classes = (
 	gp => [
-		{ name => "g0" },
-		{ name => "g1" },
-		{ name => "g2" },
-		{ name => "g3" },
-		{ name => "g4" },
-		{ name => "g5" },
-		{ name => "g6" },
-		{ name => "g7" },
+		{ name => "g0", dwarf => 0 },
+		{ name => "g1", dwarf => 1 },
+		{ name => "g2", dwarf => 2 },
+		{ name => "g3", dwarf => 3 },
+		{ name => "g4", dwarf => 4 },
+		{ name => "g5", dwarf => 5 },
+		{ name => "g6", dwarf => 6 },
+		{ name => "g7", dwarf => 7 },
 
-		{ name => "o0" },
-		{ name => "o1" },
-		{ name => "o2" },
-		{ name => "o3" },
-		{ name => "o4" },
-		{ name => "o5" },
-		{ name => "sp" },
-		{ name => "o7" },
+		{ name => "o0", dwarf => 8 },
+		{ name => "o1", dwarf => 9 },
+		{ name => "o2", dwarf => 10 },
+		{ name => "o3", dwarf => 11 },
+		{ name => "o4", dwarf => 12 },
+		{ name => "o5", dwarf => 13 },
+		{ name => "sp", dwarf => 14 },
+		{ name => "o7", dwarf => 15 },
 
-		{ name => "l0" },
-		{ name => "l1" },
-		{ name => "l2" },
-		{ name => "l3" },
-		{ name => "l4" },
-		{ name => "l5" },
-		{ name => "l6" },
-		{ name => "l7" },
+		{ name => "l0", dwarf => 16 },
+		{ name => "l1", dwarf => 17 },
+		{ name => "l2", dwarf => 18 },
+		{ name => "l3", dwarf => 19 },
+		{ name => "l4", dwarf => 20 },
+		{ name => "l5", dwarf => 21 },
+		{ name => "l6", dwarf => 22 },
+		{ name => "l7", dwarf => 23 },
 
-		{ name => "i0" },
-		{ name => "i1" },
-		{ name => "i2" },
-		{ name => "i3" },
-		{ name => "i4" },
-		{ name => "i5" },
-		{ name => "frame_pointer", realname => "fp" },
-		{ name => "i7" },
+		{ name => "i0", dwarf => 24 },
+		{ name => "i1", dwarf => 25 },
+		{ name => "i2", dwarf => 26 },
+		{ name => "i3", dwarf => 27 },
+		{ name => "i4", dwarf => 28 },
+		{ name => "i5", dwarf => 29 },
+		{ name => "frame_pointer", dwarf => 30, realname => "fp" },
+		{ name => "i7", dwarf => 30 },
 		{ mode => $mode_gp }
 	],
 	fpflags_class => [
@@ -63,38 +63,38 @@ $mode_fp4     = "mode_Q";
 	],
 	# fp registers can be accessed any time
 	fp => [
-		{ name => "f0" },
-		{ name => "f1" },
-		{ name => "f2" },
-		{ name => "f3" },
-		{ name => "f4" },
-		{ name => "f5" },
-		{ name => "f6" },
-		{ name => "f7" },
-		{ name => "f8" },
-		{ name => "f9" },
-		{ name => "f10" },
-		{ name => "f11" },
-		{ name => "f12" },
-		{ name => "f13" },
-		{ name => "f14" },
-		{ name => "f15" },
-		{ name => "f16" },
-		{ name => "f17" },
-		{ name => "f18" },
-		{ name => "f19" },
-		{ name => "f20" },
-		{ name => "f21" },
-		{ name => "f22" },
-		{ name => "f23" },
-		{ name => "f24" },
-		{ name => "f25" },
-		{ name => "f26" },
-		{ name => "f27" },
-		{ name => "f28" },
-		{ name => "f29" },
-		{ name => "f30" },
-		{ name => "f31" },
+		{ name => "f0",  dwarf => 32 },
+		{ name => "f1",  dwarf => 33 },
+		{ name => "f2",  dwarf => 34 },
+		{ name => "f3",  dwarf => 35 },
+		{ name => "f4",  dwarf => 36 },
+		{ name => "f5",  dwarf => 37 },
+		{ name => "f6",  dwarf => 38 },
+		{ name => "f7",  dwarf => 39 },
+		{ name => "f8",  dwarf => 40 },
+		{ name => "f9",  dwarf => 41 },
+		{ name => "f10", dwarf => 42 },
+		{ name => "f11", dwarf => 43 },
+		{ name => "f12", dwarf => 44 },
+		{ name => "f13", dwarf => 45 },
+		{ name => "f14", dwarf => 46 },
+		{ name => "f15", dwarf => 47 },
+		{ name => "f16", dwarf => 48 },
+		{ name => "f17", dwarf => 49 },
+		{ name => "f18", dwarf => 50 },
+		{ name => "f19", dwarf => 51 },
+		{ name => "f20", dwarf => 52 },
+		{ name => "f21", dwarf => 53 },
+		{ name => "f22", dwarf => 54 },
+		{ name => "f23", dwarf => 55 },
+		{ name => "f24", dwarf => 56 },
+		{ name => "f25", dwarf => 57 },
+		{ name => "f26", dwarf => 58 },
+		{ name => "f27", dwarf => 59 },
+		{ name => "f28", dwarf => 60 },
+		{ name => "f29", dwarf => 61 },
+		{ name => "f30", dwarf => 62 },
+		{ name => "f31", dwarf => 63 },
 		{ mode => $mode_fp }
 	]
 ); # %reg_classes
@@ -356,7 +356,7 @@ SubX_t => {
 
 # Load / Store
 Ld => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	constructors => {
 		imm => {
@@ -389,7 +389,7 @@ SetHi => {
 },
 
 St => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	mode      => "mode_M",
 	state     => "exc_pinned",
 	constructors => {
@@ -437,19 +437,19 @@ Restore => {
 		imm => {
 			attr       => "ir_entity *immediate_entity, int32_t immediate_value",
 			custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
-			reg_req    => { in => [ "frame_pointer", "gp" ], out => [ "sp:I|S", "gp" ] },
-			ins        => [ "frame_pointer", "left" ],
+			reg_req    => { in => [ "sp", "frame_pointer", "gp" ], out => [ "sp:I|S", "gp" ] },
+			ins        => [ "stack", "frame_pointer", "left" ],
 		},
 		reg => {
-			reg_req    => { in => [ "frame_pointer", "gp", "gp" ], out => [ "sp:I|S", "gp" ] },
-			ins        => [ "frame_pointer", "left", "right" ],
+			reg_req    => { in => [ "sp", "frame_pointer", "gp", "gp" ], out => [ "sp:I|S", "gp" ] },
+			ins        => [ "stack", "frame_pointer", "left", "right" ],
 		}
 	},
 },
 
 RestoreZero => {
-	reg_req => { in => [ "frame_pointer" ], out => [ "sp:I|S" ] },
-	ins     => [ "frame_pointer" ],
+	reg_req => { in => [ "sp", "frame_pointer" ], out => [ "sp:I|S" ] },
+	ins     => [ "stack", "frame_pointer" ],
 	outs    => [ "stack" ],
 	emit    => '. restore',
 	mode    => $mode_gp,
@@ -483,7 +483,7 @@ FrameAddr => {
 },
 
 Bicc => {
-	op_flags  => [ "labeled", "cfopcode", "forking" ],
+	op_flags  => [ "cfopcode", "forking" ],
 	irn_flags => [ "has_delay_slot" ],
 	state     => "pinned",
 	mode      => "mode_T",
@@ -496,7 +496,7 @@ Bicc => {
 },
 
 fbfcc => {
-	op_flags  => [ "labeled", "cfopcode", "forking" ],
+	op_flags  => [ "cfopcode", "forking" ],
 	irn_flags => [ "has_delay_slot" ],
 	state     => "pinned",
 	mode      => "mode_T",
@@ -578,7 +578,7 @@ Cmp => {  # aka SubccZero
 },
 
 SwitchJmp => {
-	op_flags     => [ "labeled", "cfopcode", "forking" ],
+	op_flags     => [ "cfopcode", "forking" ],
 	irn_flags    => [ "has_delay_slot" ],
 	state        => "pinned",
 	mode         => "mode_T",
@@ -942,7 +942,7 @@ fftoi => {
 },
 
 Ldf => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	constructors => {
 		s => {
@@ -964,7 +964,7 @@ Ldf => {
 },
 
 Stf => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	constructors => {
 		s => {

@@ -125,7 +125,7 @@ static void collect(ir_node *node, void *env)
 	}
 }
 
-int remove_bads(ir_graph *irg)
+void remove_bads(ir_graph *irg)
 {
 	size_t i;
 	size_t n_to_process;
@@ -143,10 +143,8 @@ int remove_bads(ir_graph *irg)
 
 	if (n_to_process > 0) {
 		edges_deactivate(irg);
-		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS);
-		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
-		return 1;
+		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
+		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	}
-
-	return 0;
+	add_irg_properties(irg, IR_GRAPH_PROPERTY_NO_BADS);
 }

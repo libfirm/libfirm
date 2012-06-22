@@ -69,6 +69,15 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
+static int cmp_node_nr(const void *a, const void *b)
+{
+	ir_node **p1 = (ir_node**)a;
+	ir_node **p2 = (ir_node**)b;
+	long      n1 = get_irn_node_nr(*p1);
+	long      n2 = get_irn_node_nr(*p2);
+	return (n1>n2) - (n1<n2);
+}
+
 /*
   ___                     _     ____
  |_ _|_ __  ___  ___ _ __| |_  |  _ \ ___ _ __ _ __ ___
@@ -110,6 +119,8 @@ ir_node *insert_Perm_after(ir_graph *irg, const arch_register_class_t *cls,
 		i++;
 	}
 	ir_nodeset_destroy(&live);
+	/* make the input order deterministic */
+	qsort(nodes, n, sizeof(nodes[0]), cmp_node_nr);
 
 	perm = be_new_Perm(cls, bl, n, nodes);
 	sched_add_after(pos, perm);
@@ -145,13 +156,16 @@ static int blocks_removed;
  */
 static void remove_empty_block(ir_node *block)
 {
-	const ir_edge_t *edge, *next;
-	int      i, arity;
-	ir_node *node;
-	ir_node *pred;
-	ir_node *succ_block;
-	ir_node *jump = NULL;
-	ir_graph *irg = get_irn_irg(block);
+	const ir_edge_t *edge;
+	const ir_edge_t *next;
+	int              i;
+	int              arity;
+	ir_node         *node;
+	ir_node         *pred;
+	ir_node         *succ_block;
+	ir_node         *jump = NULL;
+	ir_graph        *irg = get_irn_irg(block);
+	ir_entity       *entity;
 
 	if (irn_visited_else_mark(block))
 		return;
@@ -173,6 +187,7 @@ static void remove_empty_block(ir_node *block)
 	if (jump == NULL)
 		goto check_preds;
 
+	entity     = get_Block_entity(block);
 	pred       = get_Block_cfgpred(block, 0);
 	succ_block = NULL;
 	foreach_out_edge_safe(jump, edge, next) {
@@ -180,8 +195,7 @@ static void remove_empty_block(ir_node *block)
 
 		assert(succ_block == NULL);
 		succ_block = get_edge_src_irn(edge);
-		if (get_Block_entity(succ_block) != NULL
-		    && get_Block_entity(block) != NULL) {
+		if (get_Block_entity(succ_block) != NULL && entity != NULL) {
 			/*
 			 * Currently we can add only one label for a block.
 			 * Therefore we cannot combine them if  both block already have one.
@@ -192,9 +206,8 @@ static void remove_empty_block(ir_node *block)
 		set_irn_n(succ_block, pos, pred);
 	}
 
-	if (get_Block_entity(block) != NULL) {
+	if (entity != NULL) {
 		/* move the label to the successor block */
-		ir_entity *entity = get_Block_entity(block);
 		set_Block_entity(succ_block, entity);
 	}
 
@@ -263,8 +276,7 @@ int be_remove_empty_blocks(ir_graph *irg)
 
 	if (blocks_removed) {
 		/* invalidate analysis info */
-		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
-		                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
+		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	}
 	return blocks_removed;
 }

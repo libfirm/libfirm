@@ -24,6 +24,7 @@
  */
 #include "config.h"
 
+#include <stdbool.h>
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
 
@@ -108,7 +109,7 @@ enum cpu_arch_features {
  * CPU's.
  */
 typedef enum cpu_support {
-	cpu_generic     = arch_generic32,
+	cpu_generic             = arch_generic32,
 
 	/* intel CPUs */
 	cpu_i386                = arch_i386,
@@ -762,9 +763,10 @@ static void x86_cpuid(cpuid_registers *regs, unsigned level)
 #endif
 }
 
-static int x86_toogle_cpuid(void)
+static bool x86_toogle_cpuid(void)
 {
-	unsigned eflags_before = 0, eflags_after = 0;
+	unsigned eflags_before = 0;
+	unsigned eflags_after = 0;
 
 #if defined(__GNUC__)
 #ifdef __i386__
@@ -781,8 +783,7 @@ static int x86_toogle_cpuid(void)
 		: "=r" (eflags_before), "=r" (eflags_after) :: "cc"
 		);
 #else
-	/* cpuid always available on 64bit */
-	return true;
+	eflags_after = 0x00200000;
 #endif
 #elif defined(_MSC_VER)
 #if defined(_M_IX86)
@@ -798,7 +799,7 @@ static int x86_toogle_cpuid(void)
 		mov eflags_after, eax
 	}
 #else
-	return true;
+	eflags_after = 0x00200000;
 #endif
 #endif
 	return (eflags_before ^ eflags_after) & 0x00200000;
@@ -890,7 +891,6 @@ void ia32_setup_cg_config(void)
 	c->use_softfloat        = FLAGS(fpu_arch, IA32_FPU_ARCH_SOFTFLOAT);
 	c->use_sse2             = FLAGS(fpu_arch, IA32_FPU_ARCH_SSE2) && FLAGS(arch, arch_feature_sse2);
 	c->use_ffreep           = FLAGS(opt_arch, arch_athlon_plus);
-	c->use_ftst             = !FLAGS(arch, arch_feature_p6_insn);
 	/* valgrind can't cope with femms yet and the usefulness of the optimization
 	 * is questionable anyway */
 #if 0
@@ -916,7 +916,7 @@ void ia32_setup_cg_config(void)
 	c->use_sse_prefetch     = FLAGS(arch, (arch_feature_3DNowE | arch_feature_sse1));
 	c->use_3dnow_prefetch   = FLAGS(arch, arch_feature_3DNow);
 	c->use_popcnt           = FLAGS(arch, arch_feature_popcnt);
-	c->use_i486             = (arch & arch_mask) >= arch_i486;
+	c->use_bswap            = (arch & arch_mask) >= arch_i486;
 	c->optimize_cc          = opt_cc;
 	c->use_unsafe_floatconv = opt_unsafe_floatconv;
 	c->emit_machcode        = emit_machcode;

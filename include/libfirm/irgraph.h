@@ -130,7 +130,7 @@
  * - The end block containing an end node. This block is not matured
  *   after executing new_ir_graph() as predecessors need to be added to it.
  *   (Maturing a block means fixing its number of predecessors.)
- * - The current block, which is empty and also not matured.
+ * - The current block, which is empty and matured.
  *
  * Further it enters the global store into the data structure of the start
  * block that contains all valid values in this block (set_store()).  This
@@ -413,80 +413,119 @@ FIRM_API ir_resources_t ir_resources_reserved(const ir_graph *irg);
 #endif
 
 /**
- * graph state. This is used for 2 things:
- * - stating properties about a graph
- * - disallow certain transformations for the graph (typically highlevel
- *   constructs are disallowed after lowering them)
+ * graph constraints:
+ * These are typically used when lowering a graph for a target machine,
+ * typically you get stricter constraints the closer you get to a real
+ * machine.
  */
-typedef enum {
+typedef enum ir_graph_constraints_t {
 	/**
 	 * Should not construct more nodes which irarch potentially breaks down
 	 */
-	IR_GRAPH_STATE_ARCH_DEP                  = 1U << 0,
+	IR_GRAPH_CONSTRAINT_ARCH_DEP                  = 1U << 0,
 	/**
 	 * mode_b nodes have been lowered so you should not create any new nodes
 	 * with mode_b (except for Cmp)
 	 */
-	IR_GRAPH_STATE_MODEB_LOWERED             = 1U << 1,
+	IR_GRAPH_CONSTRAINT_MODEB_LOWERED             = 1U << 1,
 	/**
 	 * There are normalisations where there is no "best" representative.
 	 * In this case we first normalise into 1 direction (!NORMALISATION2) and
 	 * later in the other (NORMALISATION2).
 	 */
-	IR_GRAPH_STATE_NORMALISATION2            = 1U << 2,
-	/**
-	 * Defines the semantic of Load(Sel(x)), if x has a bit offset (Bitfields!).
-	 * Normally, the frontend is responsible for bitfield masking operations.
-	 * Sets IMPLICIT_BITFIELD_MASKING, if the lowering phase must insert masking
-	 * operations.
-	 */
-	IR_GRAPH_STATE_IMPLICIT_BITFIELD_MASKING = 1U << 3,
+	IR_GRAPH_CONSTRAINT_NORMALISATION2            = 1U << 2,
 	/**
 	 * Allows localopts to remove edges to unreachable code.
 	 * Warning: It is only safe to enable this when you are sure that you
 	 * apply all localopts to the fixpunkt. (=in optimize_graph_df)
 	 */
-	IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE = 1U << 4,
+	IR_GRAPH_CONSTRAINT_OPTIMIZE_UNREACHABLE_CODE = 1U << 4,
+} ir_graph_constraints_t;
+ENUM_BITSET(ir_graph_constraints_t)
+
+/** sets @p constraints on the graph @p irg */
+FIRM_API void add_irg_constraints(ir_graph *irg,
+                                  ir_graph_constraints_t constraints);
+/** clears some graph constraints */
+FIRM_API void clear_irg_constraints(ir_graph *irg,
+                                    ir_graph_constraints_t constraints);
+/** queries whether @p irg is at least as constrained as @p constraints. */
+FIRM_API int irg_is_constrained(const ir_graph *irg,
+                                ir_graph_constraints_t constraints);
+
+/**
+ * graph state. They properties about a graph.
+ * Graph transformations may destroy these properties and have to explicitely
+ * state when they did not affect some properties and want to keep them.
+ */
+typedef enum ir_graph_properties_t {
+	IR_GRAPH_PROPERTIES_NONE                    = 0,
 	/** graph contains no critical edges */
-	IR_GRAPH_STATE_NO_CRITICAL_EDGES         = 1U << 5,
+	IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES         = 1U << 0,
 	/** graph contains no Bad nodes */
-	IR_GRAPH_STATE_NO_BADS                   = 1U << 6,
+	IR_GRAPH_PROPERTY_NO_BADS                   = 1U << 1,
+	/** No tuple nodes exist in the graph */
+	IR_GRAPH_PROPERTY_NO_TUPLES                 = 1U << 2,
 	/**
 	 * there exists no (obviously) unreachable code in the graph.
 	 * Unreachable in this context is code that you can't reach by following
 	 * execution flow from the start block.
 	 */
-	IR_GRAPH_STATE_NO_UNREACHABLE_CODE       = 1U << 7,
+	IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE       = 1U << 3,
 	/** graph contains at most one return */
-	IR_GRAPH_STATE_ONE_RETURN                = 1U << 8,
+	IR_GRAPH_PROPERTY_ONE_RETURN                = 1U << 4,
 	/** dominance information about the graph is valid */
-	IR_GRAPH_STATE_CONSISTENT_DOMINANCE      = 1U << 9,
+	IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE      = 1U << 5,
 	/** postdominance information about the graph is valid */
-	IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE  = 1U << 10,
+	IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE  = 1U << 6,
 	/**
 	 * out edges (=iredges) are enable and there is no dead code that can be
 	 * reached by following them
 	 */
-	IR_GRAPH_STATE_CONSISTENT_OUT_EDGES      = 1U << 11,
+	IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES      = 1U << 7,
 	/** outs (irouts) are computed and up to date */
-	IR_GRAPH_STATE_CONSISTENT_OUTS           = 1U << 12,
+	IR_GRAPH_PROPERTY_CONSISTENT_OUTS           = 1U << 8,
 	/** loopinfo is computed and up to date */
-	IR_GRAPH_STATE_CONSISTENT_LOOPINFO       = 1U << 13,
+	IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO       = 1U << 9,
 	/** entity usage information is computed and up to date */
-	IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE   = 1U << 14,
-	/** extended basic blocks have been formed and are up to date */
-	IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS     = 1U << 15,
+	IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE   = 1U << 10,
 	/** graph contains as many returns as possible */
-	IR_GRAPH_STATE_MANY_RETURNS              = 1U << 16,
-} ir_graph_state_t;
-ENUM_BITSET(ir_graph_state_t)
+	IR_GRAPH_PROPERTY_MANY_RETURNS              = 1U << 11,
 
-/** Sets some state flags on the graph (this does not clear the other flags) */
-FIRM_API void set_irg_state(ir_graph *irg, ir_graph_state_t state);
-/** Clears some state flags of the graph */
-FIRM_API void clear_irg_state(ir_graph *irg, ir_graph_state_t state);
-/** Queries whether a set of graph state flags are activated */
-FIRM_API int is_irg_state(const ir_graph *irg, ir_graph_state_t state);
+	/**
+	 * List of all graph properties that are only affected byt control flow
+	 * changes.
+	 */
+	IR_GRAPH_PROPERTIES_CONTROL_FLOW =
+		  IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
+		| IR_GRAPH_PROPERTY_ONE_RETURN
+		| IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
+		| IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO
+		| IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+		| IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE,
+
+	/**
+	 * List of all graph properties.
+	 */
+	IR_GRAPH_PROPERTIES_ALL =
+		  IR_GRAPH_PROPERTIES_CONTROL_FLOW
+	    | IR_GRAPH_PROPERTY_NO_BADS
+	    | IR_GRAPH_PROPERTY_NO_TUPLES
+	    | IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
+	    | IR_GRAPH_PROPERTY_CONSISTENT_OUTS
+	    | IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE
+	    | IR_GRAPH_PROPERTY_MANY_RETURNS,
+
+} ir_graph_properties_t;
+ENUM_BITSET(ir_graph_properties_t)
+
+/** sets some state properties on the graph */
+FIRM_API void add_irg_properties(ir_graph *irg, ir_graph_properties_t props);
+/** clears some graph properties */
+FIRM_API void clear_irg_properties(ir_graph *irg, ir_graph_properties_t props);
+/** queries whether @p irg has the @p props properties set */
+FIRM_API int irg_has_properties(const ir_graph *irg,
+                                ir_graph_properties_t props);
 
 /** Sets a description for local value n. */
 FIRM_API void set_irg_loc_description(ir_graph *irg, int n, void *description);
@@ -507,6 +546,19 @@ FIRM_API unsigned get_irg_fp_model(const ir_graph *irg);
 
 /** Sets a floating point model for this graph. */
 FIRM_API void set_irg_fp_model(ir_graph *irg, unsigned model);
+
+/**
+ * Ensures that a graph fulfills all properties stated in @p state.
+ * Performs graph transformations if necessary.
+ */
+FIRM_API void assure_irg_properties(ir_graph *irg, ir_graph_properties_t props);
+
+/**
+ * Invalidates all graph properties/analysis data except the ones specified
+ * in @p props.
+ * This should be called after a transformation phase.
+ */
+FIRM_API void confirm_irg_properties(ir_graph *irg, ir_graph_properties_t props);
 
 /**
  * Accesses custom graph data.

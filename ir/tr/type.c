@@ -46,6 +46,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 #include "type_t.h"
 
@@ -62,6 +63,8 @@
 #include "irprog_t.h"
 
 #include "array.h"
+
+static ir_type *new_type(tp_op const *type_op, ir_mode *mode, type_dbg_info *db);
 
 ir_type *get_none_type(void)
 {
@@ -117,7 +120,17 @@ void (inc_master_type_visited)(void)
 	_inc_master_type_visited();
 }
 
-ir_type *new_type(const tp_op *type_op, ir_mode *mode, type_dbg_info *db)
+/**
+ *   Creates a new type representation:
+ *
+ *   @param type_op  the kind of this type.  May not be type_id.
+ *   @param mode     the mode to be used for this type, may be NULL
+ *   @param db       debug info
+ *
+ *   @return A new type of the given type.  The remaining private attributes are
+ *           not initialized.  The type is in state layout_undefined.
+ */
+static ir_type *new_type(tp_op const *type_op, ir_mode *mode, type_dbg_info *db)
 {
 	ir_type *res;
 	size_t node_size;
@@ -1448,7 +1461,7 @@ ir_type *new_type_array(size_t n_dimensions, ir_type *element_type)
 
 void free_array_automatic_entities(ir_type *array)
 {
-	assert(array && (array->type_op == type_array));
+	assert(array->type_op == type_array);
 	free_entity(get_array_element_entity(array));
 }
 
@@ -1475,7 +1488,7 @@ size_t get_array_n_dimensions(const ir_type *array)
 void set_array_bounds(ir_type *array, size_t dimension, ir_node *lower_bound,
                       ir_node *upper_bound)
 {
-	assert(array && (array->type_op == type_array));
+	assert(array->type_op == type_array);
 	assert(lower_bound && "lower_bound node may not be NULL.");
 	assert(upper_bound && "upper_bound node may not be NULL.");
 	assert(dimension < array->attr.aa.n_dimensions);
@@ -1495,7 +1508,7 @@ void set_array_bounds_int(ir_type *array, size_t dimension, int lower_bound,
 void set_array_lower_bound(ir_type *array, size_t dimension,
                            ir_node *lower_bound)
 {
-	assert(array && (array->type_op == type_array));
+	assert(array->type_op == type_array);
 	assert(lower_bound && "lower_bound node may not be NULL.");
 	array->attr.aa.lower_bound[dimension] = lower_bound;
 }
@@ -1509,7 +1522,7 @@ void set_array_lower_bound_int(ir_type *array, size_t dimension, int lower_bound
 
 void set_array_upper_bound(ir_type *array, size_t dimension, ir_node *upper_bound)
 {
-  assert(array && (array->type_op == type_array));
+  assert(array->type_op == type_array);
   assert(upper_bound && "upper_bound node may not be NULL.");
   array->attr.aa.upper_bound[dimension] = upper_bound;
 }
@@ -1523,20 +1536,20 @@ void set_array_upper_bound_int(ir_type *array, size_t dimension, int upper_bound
 
 int has_array_lower_bound(const ir_type *array, size_t dimension)
 {
-	assert(array && (array->type_op == type_array));
+	assert(array->type_op == type_array);
 	return !is_Unknown(array->attr.aa.lower_bound[dimension]);
 }
 
 ir_node *get_array_lower_bound(const ir_type *array, size_t dimension)
 {
-	assert(array && (array->type_op == type_array));
+	assert(array->type_op == type_array);
 	return array->attr.aa.lower_bound[dimension];
 }
 
 long get_array_lower_bound_int(const ir_type *array, size_t dimension)
 {
 	ir_node *node;
-	assert(array && (array->type_op == type_array));
+	assert(array->type_op == type_array);
 	node = array->attr.aa.lower_bound[dimension];
 	assert(is_Const(node));
 	return get_tarval_long(get_Const_tarval(node));
@@ -1544,20 +1557,20 @@ long get_array_lower_bound_int(const ir_type *array, size_t dimension)
 
 int has_array_upper_bound(const ir_type *array, size_t dimension)
 {
-	assert(array && (array->type_op == type_array));
+	assert(array->type_op == type_array);
 	return !is_Unknown(array->attr.aa.upper_bound[dimension]);
 }
 
 ir_node *get_array_upper_bound(const ir_type *array, size_t dimension)
 {
-	assert(array && (array->type_op == type_array));
+	assert(array->type_op == type_array);
 	return array->attr.aa.upper_bound[dimension];
 }
 
 long get_array_upper_bound_int(const ir_type *array, size_t dimension)
 {
 	ir_node *node;
-	assert(array && (array->type_op == type_array));
+	assert(array->type_op == type_array);
 	node = array->attr.aa.upper_bound[dimension];
 	assert(is_Const(node));
 	return get_tarval_long(get_Const_tarval(node));
@@ -1565,13 +1578,13 @@ long get_array_upper_bound_int(const ir_type *array, size_t dimension)
 
 void set_array_order(ir_type *array, size_t dimension, size_t order)
 {
-	assert(array && (array->type_op == type_array));
+	assert(array->type_op == type_array);
 	array->attr.aa.order[dimension] = order;
 }
 
 size_t get_array_order(const ir_type *array, size_t dimension)
 {
-	assert(array && (array->type_op == type_array));
+	assert(array->type_op == type_array);
 	return array->attr.aa.order[dimension];
 }
 
@@ -1590,20 +1603,20 @@ size_t find_array_dimension(const ir_type *array, size_t order)
 
 void set_array_element_type(ir_type *array, ir_type *tp)
 {
-	assert(array && (array->type_op == type_array));
+	assert(array->type_op == type_array);
 	assert(!is_Method_type(tp));
 	array->attr.aa.element_type = tp;
 }
 
 ir_type *get_array_element_type(const ir_type *array)
 {
-	assert(array && (array->type_op == type_array));
+	assert(array->type_op == type_array);
 	return array->attr.aa.element_type;
 }
 
 void set_array_element_entity(ir_type *array, ir_entity *ent)
 {
-	assert(array && (array->type_op == type_array));
+	assert(array->type_op == type_array);
 	assert((get_entity_type(ent)->type_op != type_method));
 	array->attr.aa.element_ent = ent;
 	array->attr.aa.element_type = get_entity_type(ent);
@@ -1611,8 +1624,21 @@ void set_array_element_entity(ir_type *array, ir_entity *ent)
 
 ir_entity *get_array_element_entity(const ir_type *array)
 {
-	assert(array && (array->type_op == type_array));
+	assert(array->type_op == type_array);
 	return array->attr.aa.element_ent;
+}
+
+int is_array_variable_size(const ir_type *array)
+{
+	assert(array->type_op == type_array);
+	return (array->flags & tf_variable_size) != 0;
+}
+
+void set_array_variable_size(ir_type *array, int flag)
+{
+	assert(array->type_op == type_array);
+	array->flags = (array->flags & ~tf_variable_size)
+	               | (flag != 0 ? tf_variable_size : 0);
 }
 
 int (is_Array_type)(const ir_type *array)
@@ -1880,6 +1906,19 @@ size_t get_compound_member_index(const ir_type *tp, ir_entity *member)
 	return op->ops.get_member_index(tp, member);
 }
 
+void set_compound_variable_size(ir_type *tp, int variable_size_flag)
+{
+	assert(is_compound_type(tp));
+	tp->flags = (tp->flags & ~tf_variable_size)
+	            | (variable_size_flag != 0 ? tf_variable_size : 0);
+}
+
+int is_compound_variable_size(const ir_type *tp)
+{
+	assert(is_compound_type(tp));
+	return (tp->flags & tf_variable_size) != 0;
+}
+
 int is_compound_type(const ir_type *tp)
 {
 	assert(tp->kind == k_type);
@@ -1982,21 +2021,29 @@ void set_default_size(ir_type *tp, unsigned size)
 
 void default_layout_compound_type(ir_type *type)
 {
-	size_t i;
-	size_t n = get_compound_n_members(type);
-	int size = 0;
+	size_t   i;
+	size_t   n         = get_compound_n_members(type);
+	int      size      = 0;
 	unsigned align_all = 1;
+	bool     var_size  = is_compound_variable_size(type);
 
 	for (i = 0; i < n; ++i) {
 		ir_entity *entity      = get_compound_member(type, i);
 		ir_type   *entity_type = get_entity_type(entity);
 		unsigned   align;
 		unsigned   misalign;
+		unsigned   entity_size;
 
 		if (is_Method_type(entity_type))
 			continue;
 
-		assert(get_type_state(entity_type) == layout_fixed);
+		if (i+1 < n || !var_size) {
+			assert(get_type_state(entity_type) == layout_fixed);
+			entity_size = get_type_size_bytes(entity_type);
+		} else {
+			entity_size = 0;
+		}
+
 		align     = get_type_alignment_bytes(entity_type);
 		align_all = align > align_all ? align : align_all;
 		misalign  = (align ? size % align : 0);
@@ -2004,7 +2051,7 @@ void default_layout_compound_type(ir_type *type)
 
 		set_entity_offset(entity, size);
 		if (!is_Union_type(type)) {
-			size += get_type_size_bytes(entity_type);
+			size += entity_size;
 		}
 	}
 	if (align_all > 0 && size % align_all) {

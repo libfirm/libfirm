@@ -67,7 +67,7 @@ FIRM_API void set_irp_callgraph_state(irp_callgraph_state s);
 FIRM_API size_t get_irg_n_callers(const ir_graph *irg);
 
 /** Returns the caller at position pos. */
-ir_graph *get_irg_caller(const ir_graph *irg, size_t pos);
+FIRM_API ir_graph *get_irg_caller(const ir_graph *irg, size_t pos);
 
 /** Returns non-zero if the caller at position pos is "a backedge", i.e. a recursion. */
 FIRM_API int is_irg_caller_backedge(const ir_graph *irg, size_t pos);

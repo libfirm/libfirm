@@ -72,7 +72,6 @@ struct be_stack_layout_t {
 
 	ir_type *order[N_FRAME_TYPES]; /**< arg, between and frame types ordered. */
 
-	ir_entity **param_map;         /**< An array mapping type parameters to arg_type entries */
 	int initial_offset;            /**< the initial difference between stack pointer and frame pointer */
 	int initial_bias;              /**< the initial stack bias */
 	bool sp_relative : 1;          /**< entities are addressed relative to

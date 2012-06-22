@@ -43,7 +43,6 @@
 #include "tv.h"
 #include "irpass.h"
 #include "irmemory.h"
-#include "opt_manage.h"
 
 /* TODO:
  * - Implement cleared/set bit calculation for Add, Sub, Minus, Mul, Div, Mod, Shl, Shr, Shrs, Rotl
@@ -715,18 +714,14 @@ exchange_only:
 			ir_node*       const r  = get_And_right(irn);
 			bitinfo const* const bl = get_bitinfo(l);
 			bitinfo const* const br = get_bitinfo(r);
-			if (bl->z == bl->o) {
-				if (tarval_is_null(tarval_andnot(br->z, bl->z))) {
-					DB((dbg, LEVEL_2, "%+F(%+F, %+F) is superfluous\n", irn, l, r));
-					exchange(irn, r);
-					env->modified = 1;
-				}
-			} else if (br->z == br->o) {
-				if (tarval_is_null(tarval_andnot(bl->z, br->z))) {
-					DB((dbg, LEVEL_2, "%+F(%+F, %+F) is superfluous\n", irn, l, r));
-					exchange(irn, l);
-					env->modified = 1;
-				}
+			if (tarval_is_null(tarval_andnot(br->z, bl->o))) {
+				DB((dbg, LEVEL_2, "%+F(%+F, %+F) is superfluous\n", irn, l, r));
+				exchange(irn, r);
+				env->modified = 1;
+			} else if (tarval_is_null(tarval_andnot(bl->z, br->o))) {
+				DB((dbg, LEVEL_2, "%+F(%+F, %+F) is superfluous\n", irn, l, r));
+				exchange(irn, l);
+				env->modified = 1;
 			}
 			break;
 		}
@@ -758,18 +753,14 @@ exchange_only:
 			ir_node*       const r  = get_Or_right(irn);
 			bitinfo const* const bl = get_bitinfo(l);
 			bitinfo const* const br = get_bitinfo(r);
-			if (bl->z == bl->o) {
-				if (tarval_is_null(tarval_andnot(bl->o, br->o))) {
-					DB((dbg, LEVEL_2, "%+F(%+F, %+F) is superfluous\n", irn, l, r));
-					exchange(irn, r);
-					env->modified = 1;
-				}
-			} else if (br->z == br->o) {
-				if (tarval_is_null(tarval_andnot(br->o, bl->o))) {
-					DB((dbg, LEVEL_2, "%+F(%+F, %+F) is superfluous\n", irn, l, r));
-					exchange(irn, l);
-					env->modified = 1;
-				}
+			if (tarval_is_null(tarval_andnot(bl->z, br->o))) {
+				DB((dbg, LEVEL_2, "%+F(%+F, %+F) is superfluous\n", irn, l, r));
+				exchange(irn, r);
+				env->modified = 1;
+			} else if (tarval_is_null(tarval_andnot(br->z, bl->o))) {
+				DB((dbg, LEVEL_2, "%+F(%+F, %+F) is superfluous\n", irn, l, r));
+				exchange(irn, l);
+				env->modified = 1;
 			}
 
 			/* if each bit is guaranteed to be zero on either the left or right
@@ -837,13 +828,18 @@ static void build_phi_lists(ir_node *irn, void *env)
 		add_Block_phi(get_nodes_block(irn), irn);
 }
 
-static ir_graph_state_t do_fixpoint_vrp(ir_graph* const irg)
+void fixpoint_vrp(ir_graph* const irg)
 {
 	environment_t env;
-	ir_graph_state_t res = 0;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.fp-vrp");
 	DB((dbg, LEVEL_1, "===> Performing constant propagation on %+F\n", irg));
+
+	assure_irg_properties(irg,
+		IR_GRAPH_PROPERTY_NO_BADS
+		| IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
+		| IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+		| IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 
 	obstack_init(&obst);
 
@@ -879,26 +875,11 @@ static ir_graph_state_t do_fixpoint_vrp(ir_graph* const irg)
 	env.modified = 0;
 	irg_walk_graph(irg, NULL, apply_result, &env);
 
-	if (! env.modified) {
-		res |= IR_GRAPH_STATE_CONSISTENT_DOMINANCE | IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE;
-	}
-
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 
 	obstack_free(&obst, NULL);
-
-	return res;
-}
-
-static optdesc_t opt_fpvrp = {
-	"fp-vrp",
-	IR_GRAPH_STATE_NO_BADS | IR_GRAPH_STATE_NO_UNREACHABLE_CODE | IR_GRAPH_STATE_CONSISTENT_DOMINANCE | IR_GRAPH_STATE_CONSISTENT_OUT_EDGES,
-	do_fixpoint_vrp,
-};
-
-void fixpoint_vrp(ir_graph* const irg)
-{
-	perform_irg_optimization(irg, &opt_fpvrp);
+	confirm_irg_properties(irg,
+		env.modified ? IR_GRAPH_PROPERTIES_NONE : IR_GRAPH_PROPERTIES_ALL);
 }
 
 ir_graph_pass_t *fixpoint_vrp_irg_pass(const char *name)

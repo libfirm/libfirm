@@ -104,6 +104,7 @@ static const lc_opt_enum_mask_items_t dump_items[] = {
 	{ "copymin",    BE_CH_DUMP_COPYMIN    },
 	{ "ssadestr",   BE_CH_DUMP_SSADESTR   },
 	{ "tree",       BE_CH_DUMP_TREE_INTV  },
+	{ "split",      BE_CH_DUMP_SPLIT      },
 	{ "constr",     BE_CH_DUMP_CONSTR     },
 	{ "lower",      BE_CH_DUMP_LOWER      },
 	{ "spillslots", BE_CH_DUMP_SPILLSLOTS },

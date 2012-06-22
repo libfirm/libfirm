@@ -74,6 +74,8 @@ void normalize_one_return(ir_graph *irg)
 	if (n <= 0) {
 		/* The end block has no predecessors, we have an endless
 		   loop. In that case, no returns exists. */
+		confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_ALL);
+		add_irg_properties(irg, IR_GRAPH_PROPERTY_ONE_RETURN);
 		return;
 	}
 
@@ -99,8 +101,11 @@ void normalize_one_return(ir_graph *irg)
 		}
 	}
 
-	if (n_rets <= 1)
+	if (n_rets <= 1) {
+		confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_ALL);
+		add_irg_properties(irg, IR_GRAPH_PROPERTY_ONE_RETURN);
 		return;
+	}
 
 	in       = ALLOCAN(ir_node*, MAX(n_rets, n_ret_vals));
 	retvals  = ALLOCAN(ir_node*, n_rets * n_ret_vals);
@@ -141,10 +146,14 @@ void normalize_one_return(ir_graph *irg)
 
 	/* invalidate analysis information:
 	 * a new Block was added, so dominator, outs and loop are inconsistent,
-	 * trouts and callee-state should be still valid
-	 */
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
-	                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
+	 * trouts and callee-state should be still valid */
+	confirm_irg_properties(irg,
+		IR_GRAPH_PROPERTY_NO_BADS
+		| IR_GRAPH_PROPERTY_NO_TUPLES
+		| IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
+		| IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
+		| IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE);
+	add_irg_properties(irg, IR_GRAPH_PROPERTY_ONE_RETURN);
 }
 
 /* Create a graph pass. */
@@ -264,8 +273,11 @@ void normalize_n_returns(ir_graph *irg)
 		}
 	}
 
-	if (n_rets == 0)
+	if (n_rets == 0) {
+		confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_ALL);
+		add_irg_properties(irg, IR_GRAPH_PROPERTY_MANY_RETURNS);
 		return;
+	}
 
 	/*
 	 * Now move the Returns upwards. We move always one block up (and create n
@@ -360,13 +372,11 @@ void normalize_n_returns(ir_graph *irg)
 	/* Invalidate analysis information:
 	 * Blocks become dead and new Returns were deleted, so dominator, outs and
 	 * loop are inconsistent, trouts and callee-state should be still valid */
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
-	                   | IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE
-	                   | IR_GRAPH_STATE_ONE_RETURN
-	                   | IR_GRAPH_STATE_CONSISTENT_OUTS
-	                   | IR_GRAPH_STATE_NO_UNREACHABLE_CODE
-	                   | IR_GRAPH_STATE_NO_BADS
-	                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
+	confirm_irg_properties(irg,
+		IR_GRAPH_PROPERTY_NO_TUPLES
+		| IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
+		| IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE);
+	add_irg_properties(irg, IR_GRAPH_PROPERTY_MANY_RETURNS);
 }
 
 /* Create a graph pass. */

@@ -25,6 +25,7 @@
 #include "config.h"
 
 #include "opt_init.h"
+#include <stdbool.h>
 
 #include "irnode_t.h"
 #include "irgraph_t.h"
@@ -239,8 +240,8 @@ static void fix_const_call_lists(ir_graph *irg, env_t *ctx)
 
 	if (exc_changed) {
 		/* ... including exception edges */
-		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
-		                   | IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
+		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+		                   | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 	}
 }  /* fix_const_call_list */
 
@@ -372,8 +373,8 @@ static void fix_nothrow_call_list(ir_graph *irg, ir_node *call_list, ir_node *pr
 	/* changes were done ... */
 	if (exc_changed) {
 		/* ... including exception edges */
-		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
-		                   | IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
+		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+		                   | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 	}
 }  /* fix_nothrow_call_list */
 
@@ -637,8 +638,13 @@ static void handle_const_Calls(env_t *ctx)
 		if (ctx->float_const_call_list != NULL)
 			fix_const_call_lists(irg, ctx);
 		ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+
+		confirm_irg_properties(irg,
+			IR_GRAPH_PROPERTIES_CONTROL_FLOW
+			| IR_GRAPH_PROPERTY_ONE_RETURN
+			| IR_GRAPH_PROPERTY_MANY_RETURNS);
 	}
-}  /* handle_const_Calls */
+}
 
 /**
  * Handle calls to nothrow functions.
@@ -697,7 +703,7 @@ static mtp_additional_properties update_property(mtp_additional_properties orig_
 /**
  * Check if a node is stored.
  */
-static int is_stored(const ir_node *n)
+static bool is_stored(const ir_node *n)
 {
 	const ir_edge_t *edge;
 	const ir_node   *ptr;
@@ -713,14 +719,14 @@ static int is_stored(const ir_node *n)
 			break;
 		case iro_Store:
 			if (get_Store_value(succ) == n)
-				return 1;
+				return true;
 			/* ok if its only the address input */
 			break;
 		case iro_Sel:
 		case iro_Cast:
 		case iro_Confirm:
 			if (is_stored(succ))
-				return 1;
+				return true;
 			break;
 		case iro_Call:
 			ptr = get_Call_ptr(succ);
@@ -734,22 +740,22 @@ static int is_stored(const ir_node *n)
 						/* n is the i'th param of the call */
 						if (get_method_param_access(ent, i) & ptr_access_store) {
 							/* n is store in ent */
-							return 1;
+							return true;
 						}
 					}
 				}
 			} else {
 				/* unknown call address */
-				return 1;
+				return true;
 			}
 			break;
 		default:
 			/* bad, potential alias */
-			return 1;
+			return true;
 		}
 	}
-	return 0;
-}  /* is_stored */
+	return false;
+}
 
 /**
  * Check that the return value of an irg is not stored anywhere.
@@ -761,7 +767,8 @@ static mtp_additional_properties check_stored_result(ir_graph *irg)
 	ir_node  *end_blk = get_irg_end_block(irg);
 	int      i;
 	mtp_additional_properties res = ~mtp_no_property;
-	int      old_edges = edges_assure_kind(irg, EDGE_KIND_NORMAL);
+
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 
 	for (i = get_Block_n_cfgpreds(end_blk) - 1; i >= 0; --i) {
 		ir_node *pred = get_Block_cfgpred(end_blk, i);
@@ -780,8 +787,7 @@ static mtp_additional_properties check_stored_result(ir_graph *irg)
 		}
 	}
 finish:
-	if (! old_edges)
-		edges_deactivate_kind(irg, EDGE_KIND_NORMAL);
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_ALL);
 	return res;
 }
 
@@ -981,11 +987,13 @@ static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, int top)
 static void check_for_possible_endless_loops(ir_graph *irg)
 {
 	ir_loop *root_loop;
-	assure_loopinfo(irg);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 
 	root_loop = get_irg_loop(irg);
 	if (root_loop->flags & loop_outer_loop)
 		add_irg_additional_properties(irg, mtp_property_has_loop);
+
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_ALL);
 }
 
 /*
@@ -1048,9 +1056,10 @@ void optimize_funccalls(void)
 	}
 
 	handle_const_Calls(&ctx);
-	DB((dbg, LEVEL_1, "Detected %zu const graphs, %zu pure graphs.\n", num_const, num_pure));
+	DB((dbg, LEVEL_1, "Detected %zu const graphs, %zu pure graphs.\n",
+	    num_const, num_pure));
 	DB((dbg, LEVEL_1, "Optimizes %u(SymConst) + %u(Sel) calls to const functions.\n",
-		   ctx.n_calls_SymConst, ctx.n_calls_Sel));
+	    ctx.n_calls_SymConst, ctx.n_calls_Sel));
 
 	xfree(busy_set);
 	xfree(ready_set);

@@ -6,7 +6,6 @@ libfirminclude_HEADERS = \
 	callgraph.h \
 	cdep.h \
 	cgana.h \
-	compound_path.h \
 	dbginfo.h \
 	end.h \
 	execfreq.h \
@@ -24,7 +23,6 @@ libfirminclude_HEADERS = \
 	irdump.h \
 	iredgekinds.h \
 	iredges.h \
-	irextbb.h \
 	irflag.h \
 	irgmod.h \
 	irgopt.h \

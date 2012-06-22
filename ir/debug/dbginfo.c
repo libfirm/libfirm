@@ -100,22 +100,25 @@ void default_dbg_info_merge_sets(ir_node **new_nodes, int n_new_nodes,
 	}
 }
 
+static src_loc_t default_retrieve_dbg(dbg_info const *const dbg)
+{
+	(void)dbg;
+	src_loc_t const loc = { NULL, 0, 0 };
+	return loc;
+}
+
 /** The debug info retriever function. */
-static retrieve_dbg_func      retrieve_dbg      = NULL;
+static retrieve_dbg_func      retrieve_dbg      = default_retrieve_dbg;
 static retrieve_type_dbg_func retrieve_type_dbg = NULL;
 
 void ir_set_debug_retrieve(retrieve_dbg_func func)
 {
-	retrieve_dbg = func;
+	retrieve_dbg = func ? func : default_retrieve_dbg;
 }
 
-const char *ir_retrieve_dbg_info(const dbg_info *dbg, unsigned *line)
+src_loc_t ir_retrieve_dbg_info(dbg_info const *const dbg)
 {
-	if (retrieve_dbg)
-		return retrieve_dbg(dbg, line);
-
-	*line = 0;
-	return NULL;
+	return retrieve_dbg(dbg);
 }
 
 void ir_set_type_debug_retrieve(retrieve_type_dbg_func func)
@@ -135,13 +138,16 @@ void ir_retrieve_type_dbg_info(char *buffer, size_t buffer_size,
 
 void ir_dbg_info_snprint(char *buf, size_t bufsize, const dbg_info *dbg)
 {
-	unsigned    line;
-	const char *source = ir_retrieve_dbg_info(dbg, &line);
+	src_loc_t const loc = ir_retrieve_dbg_info(dbg);
 
-	if (source == NULL) {
+	if (!loc.file) {
 		assert(bufsize > 0);
 		buf[0] = 0;
 		return;
 	}
-	snprintf(buf, bufsize, "%s:%u", source, line);
+	if (loc.column == 0) {
+		snprintf(buf, bufsize, "%s:%u", loc.file, loc.line);
+	} else {
+		snprintf(buf, bufsize, "%s:%u:%u", loc.file, loc.line, loc.column);
+	}
 }

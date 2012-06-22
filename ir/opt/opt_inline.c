@@ -352,11 +352,10 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 	assert(get_irg_phase_state(irg) != phase_building);
 	assert(get_irg_pinned(irg) == op_pin_state_pinned);
 	assert(get_irg_pinned(called_graph) == op_pin_state_pinned);
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
-	                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS
-	                   | IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE);
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+	                   | IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE);
 	set_irg_callee_info_state(irg, irg_callee_info_inconsistent);
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE);
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE);
 	edges_deactivate(irg);
 
 	/* here we know we WILL inline, so inform the statistics */
@@ -890,9 +889,9 @@ static void collect_calls2(ir_node *call, void *ctx)
 
 /**
  * Returns TRUE if the number of callers is 0 in the irg's environment,
- * hence this irg is a leave.
+ * hence this irg is a leaf.
  */
-inline static int is_leave(ir_graph *irg)
+inline static int is_leaf(ir_graph *irg)
 {
 	inline_irg_env *env = (inline_irg_env*)get_irg_link(irg);
 	return env->n_call_nodes == 0;
@@ -954,15 +953,15 @@ static void append_call_list(inline_irg_env *dst, inline_irg_env *src, int loop_
 }
 
 /*
- * Inlines small leave methods at call sites where the called address comes
+ * Inlines small leaf methods at call sites where the called address comes
  * from a Const node that references the entity representing the called
  * method.
  * The size argument is a rough measure for the code size of the method:
  * Methods where the obstack containing the firm graph is smaller than
  * size are inlined.
  */
-void inline_leave_functions(unsigned maxsize, unsigned leavesize,
-                            unsigned size, int ignore_runtime)
+void inline_leaf_functions(unsigned maxsize, unsigned leafsize,
+                           unsigned size, int ignore_runtime)
 {
 	inline_irg_env   *env;
 	ir_graph         *irg;
@@ -995,14 +994,16 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 		assert(get_irg_phase_state(irg) != phase_building);
 		free_callee_info(irg);
 
-		assure_loopinfo(irg);
+		assure_irg_properties(irg,
+			IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 		wenv.x = (inline_irg_env*)get_irg_link(irg);
 		irg_walk_graph(irg, NULL, collect_calls2, &wenv);
+		confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_ALL);
 	}
 
 	/* -- and now inline. -- */
 
-	/* Inline leaves recursively -- we might construct new leaves. */
+	/* Inline leafs recursively -- we might construct new leafs. */
 	do {
 		did_inline = 0;
 
@@ -1029,8 +1030,8 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 					continue;
 				}
 
-				if (is_leave(callee) && (
-				    is_smaller(callee, leavesize) || prop >= irg_inline_forced)) {
+				if (is_leaf(callee) && (
+				    is_smaller(callee, leafsize) || prop >= irg_inline_forced)) {
 					if (!phiproj_computed) {
 						phiproj_computed = 1;
 						collect_phiprojs(current_ir_graph);
@@ -1108,7 +1109,7 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 
 					/*
 					 * No copy yet, create one.
-					 * Note that recursive methods are never leaves, so it is sufficient
+					 * Note that recursive methods are never leafs, so it is sufficient
 					 * to test this condition here.
 					 */
 					copy = create_irg_copy(callee);
@@ -1122,7 +1123,8 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 					callee_env = alloc_inline_irg_env();
 					set_irg_link(copy, callee_env);
 
-					assure_loopinfo(copy);
+					assure_irg_properties(copy,
+						IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 					wenv.x              = callee_env;
 					wenv.ignore_callers = 1;
 					irg_walk_graph(copy, NULL, collect_calls2, &wenv);
@@ -1204,44 +1206,44 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 	current_ir_graph = rem;
 }
 
-typedef struct inline_leave_functions_pass_t {
+typedef struct inline_leaf_functions_pass_t {
 	ir_prog_pass_t pass;
 	unsigned       maxsize;
-	unsigned       leavesize;
+	unsigned       leafsize;
 	unsigned       size;
 	int            ignore_runtime;
-} inline_leave_functions_pass_t;
+} inline_leaf_functions_pass_t;
 
 /**
- * Wrapper to run inline_leave_functions() as a ir_prog pass.
+ * Wrapper to run inline_leaf_functions() as a ir_prog pass.
  */
-static int inline_leave_functions_wrapper(ir_prog *irp, void *context)
+static int inline_leaf_functions_wrapper(ir_prog *irp, void *context)
 {
-	inline_leave_functions_pass_t *pass = (inline_leave_functions_pass_t*)context;
+	inline_leaf_functions_pass_t *pass = (inline_leaf_functions_pass_t*)context;
 
 	(void)irp;
-	inline_leave_functions(
-		pass->maxsize, pass->leavesize,
+	inline_leaf_functions(
+		pass->maxsize, pass->leafsize,
 		pass->size, pass->ignore_runtime);
 	return 0;
 }
 
-/* create a pass for inline_leave_functions() */
-ir_prog_pass_t *inline_leave_functions_pass(
-	const char *name, unsigned maxsize, unsigned leavesize,
+/* create a pass for inline_leaf_functions() */
+ir_prog_pass_t *inline_leaf_functions_pass(
+	const char *name, unsigned maxsize, unsigned leafsize,
 	unsigned size, int ignore_runtime)
 {
-	inline_leave_functions_pass_t *pass = XMALLOCZ(inline_leave_functions_pass_t);
+	inline_leaf_functions_pass_t *pass = XMALLOCZ(inline_leaf_functions_pass_t);
 
 	pass->maxsize        = maxsize;
-	pass->leavesize      = leavesize;
+	pass->leafsize       = leafsize;
 	pass->size           = size;
 	pass->ignore_runtime = ignore_runtime;
 
 	return def_prog_pass_constructor(
 		&pass->pass,
-		name ? name : "inline_leave_functions",
-		inline_leave_functions_wrapper);
+		name ? name : "inline_leaf_functions",
+		inline_leaf_functions_wrapper);
 }
 
 /**
@@ -1462,7 +1464,7 @@ static int calc_inline_benefice(call_entry *entry, ir_graph *callee)
 	if (callee_env->n_nodes < 30 && !callee_env->recursive)
 		weight += 2000;
 
-	/* and finally for leaves: they do not increase the register pressure
+	/* and finally for leafs: they do not increase the register pressure
 	   because of callee safe registers */
 	if (callee_env->n_call_nodes == 0)
 		weight += 400;
@@ -1646,7 +1648,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 
 			/*
 			 * No copy yet, create one.
-			 * Note that recursive methods are never leaves, so it is
+			 * Note that recursive methods are never leafs, so it is
 			 * sufficient to test this condition here.
 			 */
 			copy = create_irg_copy(callee);
@@ -1660,7 +1662,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 			callee_env = alloc_inline_irg_env();
 			set_irg_link(copy, callee_env);
 
-			assure_loopinfo(copy);
+			assure_irg_properties(copy, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 			memset(&wenv, 0, sizeof(wenv));
 			wenv.x              = callee_env;
 			wenv.ignore_callers = 1;

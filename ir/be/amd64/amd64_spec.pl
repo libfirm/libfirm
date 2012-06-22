@@ -1,6 +1,3 @@
-# Creation: 2006/02/13
-# $Id: amd64_spec.pl 26673 2009-10-01 16:43:13Z matze $
-
 # the cpu architecture (ia32, ia64, mips, sparc, ppc, ...)
 
 $arch = "amd64";
@@ -62,46 +59,46 @@ $state       =  8; # register represents a state
 # NOTE: Last entry of each class is the largest Firm-Mode a register can hold
 %reg_classes = (
 	gp => [
-		{ name => "rax" },
-		{ name => "rcx" },
-		{ name => "rdx" },
-		{ name => "rsi" },
-		{ name => "rdi" },
-		{ name => "rbx" },
-		{ name => "rbp" },
-		{ name => "rsp", type => $ignore }, # stackpointer?
-		{ name => "r8" },
-		{ name => "r9" },
-		{ name => "r10" },
-		{ name => "r11" },
-		{ name => "r12" },
-		{ name => "r13" },
-		{ name => "r14" },
-		{ name => "r15" },
+		{ name => "rax", dwarf => 0 },
+		{ name => "rcx", dwarf => 2 },
+		{ name => "rdx", dwarf => 1 },
+		{ name => "rsi", dwarf => 4 },
+		{ name => "rdi", dwarf => 5 },
+		{ name => "rbx", dwarf => 3 },
+		{ name => "rbp", dwarf => 6 },
+		{ name => "rsp", dwarf => 7, type => $ignore }, # stackpointer?
+		{ name => "r8",  dwarf => 8 },
+		{ name => "r9",  dwarf => 9 },
+		{ name => "r10", dwarf => 10 },
+		{ name => "r11", dwarf => 11 },
+		{ name => "r12", dwarf => 12 },
+		{ name => "r13", dwarf => 13 },
+		{ name => "r14", dwarf => 14 },
+		{ name => "r15", dwarf => 15 },
 #		{ name => "gp_NOREG", type => $ignore }, # we need a dummy register for NoReg nodes
 		{ mode => "mode_Lu" }
 	],
 #	fp => [
-#		{ name => "xmm0" },
-#		{ name => "xmm1" },
-#		{ name => "xmm2" },
-#		{ name => "xmm3" },
-#		{ name => "xmm4" },
-#		{ name => "xmm5" },
-#		{ name => "xmm6" },
-#		{ name => "xmm7" },
-#		{ name => "xmm8" },
-#		{ name => "xmm9" },
-#		{ name => "xmm10" },
-#		{ name => "xmm11" },
-#		{ name => "xmm12" },
-#		{ name => "xmm13" },
-#		{ name => "xmm14" },
-#		{ name => "xmm15" },
+#		{ name => "xmm0",  dwarf => 17 },
+#		{ name => "xmm1",  dwarf => 18 },
+#		{ name => "xmm2",  dwarf => 19 },
+#		{ name => "xmm3",  dwarf => 20 },
+#		{ name => "xmm4",  dwarf => 21 },
+#		{ name => "xmm5",  dwarf => 22 },
+#		{ name => "xmm6",  dwarf => 23 },
+#		{ name => "xmm7",  dwarf => 24 },
+#		{ name => "xmm8",  dwarf => 25 },
+#		{ name => "xmm9",  dwarf => 26 },
+#		{ name => "xmm10", dwarf => 27 },
+#		{ name => "xmm11", dwarf => 28 },
+#		{ name => "xmm12", dwarf => 29 },
+#		{ name => "xmm13", dwarf => 30 },
+#		{ name => "xmm14", dwarf => 31 },
+#		{ name => "xmm15", dwarf => 32 },
 #		{ mode => "mode_D" }
 #	]
 	flags => [
-		{ name => "eflags" },
+		{ name => "eflags", dwarf => 49 },
 		{ mode => "mode_Iu", flags => "manual_ra" }
 	],
 );
@@ -169,17 +166,19 @@ Push => {
 	latency   => 2,
 #	units     => [ "GP" ],
 },
+
 Add => {
 	op_flags   => [ "commutative" ],
 	irn_flags  => [ "rematerializable" ],
 	state      => "exc_pinned",
 	reg_req    => { in => [ "gp", "gp" ],
 	                out => [ "gp" ] },
-	in         => [ "left", "right" ],
+	ins        => [ "left", "right" ],
 	outs       => [ "res" ],
 	mode       => $mode_gp,
 	modified_flags => 1,
 },
+
 Mul => {
 	# we should not rematrialize this node. It produces 2 results and has
 	# very strict constraints
@@ -193,16 +192,18 @@ Mul => {
 	am        => "source,binary",
 	modified_flags => $status_flags
 },
+
 Sub => {
 	irn_flags  => [ "rematerializable" ],
 	state      => "exc_pinned",
 	reg_req    => { in => [ "gp", "gp" ],
 	                out => [ "gp" ] },
-	in         => [ "left", "right" ],
+	ins        => [ "left", "right" ],
 	outs       => [ "res" ],
 	mode       => $mode_gp,
 	modified_flags => 1,
 },
+
 Neg => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp" ],
@@ -213,6 +214,7 @@ Neg => {
 	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
+
 Immediate => {
 	op_flags  => [ "constlike" ],
 	attr      => "unsigned imm_value",
@@ -221,6 +223,7 @@ Immediate => {
 	emit      => '. mov %C, %D1',
 	mode      => $mode_gp,
 },
+
 SymConst => {
 	op_flags  => [ "constlike" ],
 	irn_flags => [ "rematerializable" ],
@@ -230,6 +233,7 @@ SymConst => {
 	outs      => [ "res" ],
 	mode      => $mode_gp,
 },
+
 Conv => {
 	state     => "exc_pinned",
 	attr      => "ir_mode *smaller_mode",
@@ -239,12 +243,14 @@ Conv => {
 	outs      => [ "res" ],
 	mode      => $mode_gp,
 },
+
 Jmp => {
 	state     => "pinned",
 	op_flags  => [ "cfopcode" ],
 	reg_req   => { out => [ "none" ] },
 	mode      => "mode_X",
 },
+
 Cmp => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
@@ -259,9 +265,10 @@ Cmp => {
 	mode      => $mode_flags,
 	modified_flags => 1,
 },
+
 Jcc => {
 	state     => "pinned",
-	op_flags  => [ "labeled", "cfopcode", "forking" ],
+	op_flags  => [ "cfopcode", "forking" ],
 	reg_req   => { in  => [ "eflags" ], out => [ "none", "none" ] },
 	ins       => [ "eflags" ],
 	outs      => [ "false", "true" ],
@@ -269,8 +276,9 @@ Jcc => {
 	init_attr => "attr->ext.relation = relation;",
 	mode      => "mode_T",
 },
+
 Load => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "none" ],
 	               out => [ "gp", "none" ] },
@@ -280,6 +288,7 @@ Load => {
 	attr_type => "amd64_SymConst_attr_t",
 	emit      => ". mov %O(%S1), %D1"
 },
+
 FrameAddr => {
 	op_flags  => [ "constlike" ],
 	irn_flags => [ "rematerializable" ],
@@ -289,8 +298,9 @@ FrameAddr => {
 	attr_type => "amd64_SymConst_attr_t",
 	mode      => $mode_gp,
 },
+
 Store => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "ptr", "val", "mem" ],
@@ -303,7 +313,7 @@ Store => {
 
 #NoReg_GP => {
 #	state     => "pinned",
-#	op_flags  => [ "constlike", "dump_noblcok", "dump_noinput" ],
+#	op_flags  => [ "constlike", "dump_noblcok" ],
 #	reg_req   => { out => [ "gp_NOREG:I" ] },
 #	units     => [],
 #	emit      => "",

@@ -1436,7 +1436,7 @@ static ir_node *gen_Conv(ir_node *node)
 			} else {
 				/* float -> int conv */
 				if (!mode_is_signed(dst_mode))
-					panic("float to unsigned not implemented yet");
+					panic("float to unsigned not lowered");
 				return create_ftoi(dbgi, block, new_op, src_mode);
 			}
 		} else {
@@ -2275,7 +2275,7 @@ static ir_node *gen_Proj_Div(ir_node *node)
 	case pn_Div_res:
 		return new_r_Proj(new_pred, res_mode, pn_sparc_SDiv_res);
 	case pn_Div_M:
-		return new_r_Proj(new_pred, mode_gp, pn_sparc_SDiv_M);
+		return new_r_Proj(new_pred, mode_M, pn_sparc_SDiv_M);
 	default:
 		break;
 	}
@@ -2589,7 +2589,7 @@ void sparc_transform_graph(ir_graph *irg)
 	/* do code placement, to optimize the position of constants */
 	place_code(irg);
 	/* backend expects outedges to be always on */
-	edges_assure(irg);
+	assure_edges(irg);
 }
 
 void sparc_init_transform(void)

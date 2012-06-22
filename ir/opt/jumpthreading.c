@@ -28,6 +28,7 @@
 #include "iroptimize.h"
 
 #include <assert.h>
+#include <stdbool.h>
 #include "array_t.h"
 #include "debug.h"
 #include "ircons.h"
@@ -45,7 +46,6 @@
 #include "iropt_dbg.h"
 #include "irpass.h"
 #include "vrp.h"
-#include "opt_manage.h"
 
 #undef AVOID_PHIB
 
@@ -633,7 +633,7 @@ static ir_node *find_candidate(jumpthreading_env_t *env, ir_node *jump,
 static void thread_jumps(ir_node* block, void* data)
 {
 	jumpthreading_env_t env;
-	int *changed = (int*)data;
+	bool *changed = (bool*)data;
 	ir_node *selector;
 	ir_node *projx;
 	ir_node *cond;
@@ -703,14 +703,14 @@ static void thread_jumps(ir_node* block, void* data)
 		ir_graph *irg = get_irn_irg(block);
 		ir_node  *bad = new_r_Bad(irg, mode_X);
 		exchange(projx, bad);
-		*changed = 1;
+		*changed = true;
 		return;
 	} else if (selector_evaluated == 1) {
 		dbg_info *dbgi = get_irn_dbg_info(selector);
 		ir_node  *jmp  = new_rd_Jmp(dbgi, get_nodes_block(projx));
 		DBG_OPT_JUMPTHREADING(projx, jmp);
 		exchange(projx, jmp);
-		*changed = 1;
+		*changed = true;
 		return;
 	}
 
@@ -747,13 +747,18 @@ static void thread_jumps(ir_node* block, void* data)
 	set_Block_cfgpred(env.cnst_pred, cnst_pos, badX);
 
 	/* the graph is changed now */
-	*changed = 1;
+	*changed = true;
 }
 
-static ir_graph_state_t do_jumpthread(ir_graph* irg)
+void opt_jumpthreading(ir_graph* irg)
 {
-	int changed, rerun;
-	ir_graph_state_t res = 0;
+	bool changed;
+	bool rerun;
+
+	assure_irg_properties(irg,
+		IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
+		| IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
+		| IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES);
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.jumpthreading");
 
@@ -761,31 +766,17 @@ static ir_graph_state_t do_jumpthread(ir_graph* irg)
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_IRN_VISITED);
 
-	changed = 0;
+	changed = false;
 	do {
-		rerun = 0;
+		rerun = false;
 		irg_block_walk_graph(irg, thread_jumps, NULL, &rerun);
 		changed |= rerun;
 	} while (rerun);
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_IRN_VISITED);
 
-	if (!changed) {
-		res |= IR_GRAPH_STATE_CONSISTENT_DOMINANCE | IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE;
-	}
-
-	return res;
-}
-
-static optdesc_t opt_jumpthread = {
-	"jumpthreading",
-	IR_GRAPH_STATE_NO_UNREACHABLE_CODE | IR_GRAPH_STATE_CONSISTENT_OUT_EDGES | IR_GRAPH_STATE_NO_CRITICAL_EDGES,
-	do_jumpthread,
-};
-
-void opt_jumpthreading(ir_graph* irg)
-{
-	perform_irg_optimization(irg, &opt_jumpthread);
+	confirm_irg_properties(irg,
+		changed ? IR_GRAPH_PROPERTIES_NONE : IR_GRAPH_PROPERTIES_ALL);
 }
 
 /* Creates an ir_graph pass for opt_jumpthreading. */

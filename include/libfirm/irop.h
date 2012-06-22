@@ -62,28 +62,25 @@ typedef enum {
 /** The irop flags */
 typedef enum {
 	irop_flag_none         = 0, /**< Nothing. */
-	irop_flag_labeled      = 1U << 0, /**< If set, output edge labels on in-edges in vcg graph. */
-	irop_flag_commutative  = 1U << 1, /**< This operation is commutative. */
-	irop_flag_cfopcode     = 1U << 2, /**< This operation is a control flow operation. */
-	irop_flag_fragile      = 1U << 3, /**< Set if the operation can change the
+	irop_flag_commutative  = 1U <<  0, /**< This operation is commutative. */
+	irop_flag_cfopcode     = 1U <<  1, /**< This operation is a control flow operation. */
+	irop_flag_fragile      = 1U <<  2, /**< Set if the operation can change the
 	                                       control flow because of an exception.
 	                                   */
-	irop_flag_forking      = 1U << 4, /**< Forking control flow at this operation. */
-	irop_flag_highlevel    = 1U << 5, /**< This operation is a pure high-level one and can be
+	irop_flag_forking      = 1U <<  3, /**< Forking control flow at this operation. */
+	irop_flag_highlevel    = 1U <<  4, /**< This operation is a pure high-level one and can be
 	                                      skipped in low-level optimizations. */
-	irop_flag_constlike    = 1U << 6, /**< This operation has no arguments and is some
+	irop_flag_constlike    = 1U <<  5, /**< This operation has no arguments and is some
 	                                       kind of a constant. */
-	irop_flag_always_opt   = 1U << 7, /**< This operation must always be optimized .*/
-	irop_flag_keep         = 1U << 8, /**< This operation can be kept in End's keep-alive list. */
-	irop_flag_start_block  = 1U << 9, /**< This operation is always placed in the Start block. */
-	irop_flag_uses_memory  = 1U << 10, /**< This operation has a memory input and may change the memory state. */
-	irop_flag_dump_noblock = 1U << 11, /**< node should be dumped outside any blocks */
-	irop_flag_dump_noinput = 1U << 12, /**< node is a placeholder for "no input" */
-	irop_flag_cse_neutral  = 1U << 13, /**< This operation is CSE neutral to its users. */
+	irop_flag_keep         = 1U <<  6, /**< This operation can be kept in End's keep-alive list. */
+	irop_flag_start_block  = 1U <<  7, /**< This operation is always placed in the Start block. */
+	irop_flag_uses_memory  = 1U <<  8, /**< This operation has a memory input and may change the memory state. */
+	irop_flag_dump_noblock = 1U <<  9, /**< node should be dumped outside any blocks */
+	irop_flag_cse_neutral  = 1U << 10, /**< This operation is CSE neutral to its users. */
 	/** This operation jumps to an unknown destination. The CFG is a
 	 * conservative aproximation in this case. You cannot change the destination
 	 * of an unknown_jump */
-	irop_flag_unknown_jump = 1U << 14,
+	irop_flag_unknown_jump = 1U << 11,
 } irop_flags;
 
 /** Returns the ident for the opcode name */

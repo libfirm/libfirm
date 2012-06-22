@@ -46,7 +46,6 @@
 #include "irdump.h"
 #include "irverify.h"
 #include "iredges.h"
-#include "opt_manage.h"
 
 #include "array_t.h"
 
@@ -232,6 +231,26 @@ static unsigned test_whether_dispensable(const ir_node *b, int pos)
 non_dispensable:
 	set_Block_removable(predb, false);
 	return 1;
+}
+
+/**
+ * This method merges blocks. A block is applicable to be merged, if it
+ * has only one predecessor with an unconditional jump to this block;
+ * and if this block does not contain any phis.
+ */
+static void merge_blocks(ir_node *b, void *env)
+{
+	(void) env;
+
+	if (get_Block_n_cfgpreds(b) == 1) {
+		ir_node* pred = get_Block_cfgpred(b, 0);
+		if (is_Jmp(pred)) {
+			ir_node* pred_block = get_nodes_block(pred);
+			if (get_Block_phis(b) == NULL) {
+				exchange(b, pred_block);
+			}
+		}
+	}
 }
 
 /**
@@ -789,12 +808,13 @@ static void cfgopt_ignoring_phis(ir_graph *irg)
 		irg_block_walk_graph(irg, NULL, optimize_ifs, &env);
 
 		if (env.changed) {
-			clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
+			confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 			/* clear block info, because it must be recomputed */
 			irg_block_walk_graph(irg, clear_block_info, NULL, &env.block_infos);
 			/* Removing blocks and Conds might enable more optimizations */
 			continue;
 		} else {
+			confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_ALL);
 			break;
 		}
 	}
@@ -803,7 +823,7 @@ static void cfgopt_ignoring_phis(ir_graph *irg)
 }
 
 /* Optimizations of the control flow that also require changes of Phi nodes.  */
-static ir_graph_state_t do_cfopt(ir_graph *irg)
+void optimize_cf(ir_graph *irg)
 {
 	int i, j, n;
 	ir_node **in = NULL;
@@ -820,7 +840,7 @@ static ir_graph_state_t do_cfopt(ir_graph *irg)
 	assert(get_irg_pinned(irg) != op_pin_state_floats &&
 	       "Control flow optimization need a pinned graph");
 
-	edges_deactivate(irg);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE);
 
 	/* First the "simple" optimizations, which do not touch Phis */
 	cfgopt_ignoring_phis(irg);
@@ -829,27 +849,13 @@ static ir_graph_state_t do_cfopt(ir_graph *irg)
 	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_IRN_LINK
 	                     | IR_RESOURCE_PHI_LIST);
 
-	/* The switch Cond optimization might expose unreachable code, so we loop */
-	for (;;) {
-		bool changed = false;
-
-		assure_doms(irg);
-
-		/*
-		 * This pass collects all Phi nodes in a link list in the block
-		 * nodes.  Further it performs simple control flow optimizations.
-		 * Finally it marks all blocks that do not contain useful
-		 * computations, i.e., these blocks might be removed.
-		 */
-		irg_walk(end, clear_link_and_mark_blocks_removable, collect_nodes, NULL);
-
-		if (!changed)
-			break;
-
-		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
-		                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS
-		                   | IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE);
-	}
+	/*
+	 * This pass collects all Phi nodes in a link list in the block
+	 * nodes.  Further it performs simple control flow optimizations.
+	 * Finally it marks all blocks that do not contain useful
+	 * computations, i.e., these blocks might be removed.
+	 */
+	irg_walk(end, clear_link_and_mark_blocks_removable, collect_nodes, NULL);
 
 	/* assert due to collect_nodes:
 	 * 1. removable blocks are now marked as such
@@ -857,11 +863,11 @@ static ir_graph_state_t do_cfopt(ir_graph *irg)
 	 */
 
 	/* Optimize the standard code.
-	 * It walks only over block nodes and adapts these and the Phi nodes in these
-	 * blocks, which it finds in a linked list computed before.
-	 * */
-	assure_doms(irg);
-	irg_block_walk_graph(irg, optimize_blocks, NULL, &env);
+	 * It walks only over block nodes and adapts these and the Phi nodes in
+	 * these blocks, which it finds in a linked list computed before.
+	 */
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
+	irg_block_walk_graph(irg, optimize_blocks, merge_blocks, &env);
 
 	new_end = optimize_in_place(end);
 	if (new_end != end) {
@@ -909,18 +915,8 @@ static ir_graph_state_t do_cfopt(ir_graph *irg)
 		}
 	}
 
-	return 0;
-}
-
-static optdesc_t opt_cf = {
-	"control-flow",
-	IR_GRAPH_STATE_NO_UNREACHABLE_CODE,
-	do_cfopt,
-};
-
-void optimize_cf(ir_graph *irg)
-{
-	perform_irg_optimization(irg, &opt_cf);
+	confirm_irg_properties(irg,
+		env.changed ? IR_GRAPH_PROPERTIES_NONE : IR_GRAPH_PROPERTIES_ALL);
 }
 
 /* Creates an ir_graph pass for optimize_cf. */

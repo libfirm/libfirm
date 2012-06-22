@@ -1767,7 +1767,8 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 
 		if (need_phi) {
 			ir_mode *mode = get_irn_mode(node);
-			ir_node *phi  = be_new_Phi(block, n_preds, phi_ins, mode, cls);
+			ir_node *phi  = be_new_Phi(block, n_preds, phi_ins, mode,
+			                           cls->class_req);
 
 			DB((dbg, LEVEL_3, "Create Phi %+F (for %+F) -", phi, node));
 #ifdef DEBUG_libfirm

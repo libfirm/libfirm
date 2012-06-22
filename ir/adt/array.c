@@ -54,9 +54,7 @@ void ir_verify_arr(const void *arr)
 	ir_arr_descr *descr = ARR_DESCR(arr);
 	assert(descr->magic == ARR_D_MAGIC || descr->magic == ARR_A_MAGIC
 			 || descr->magic == ARR_F_MAGIC);
-	if (descr->magic == ARR_F_MAGIC) {
-		assert(descr->u.allocated >= descr->nelts);
-	}
+	assert(descr->magic != ARR_F_MAGIC || descr->u.allocated >= descr->nelts);
 #else
 	(void) arr;
 #endif

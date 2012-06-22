@@ -871,7 +871,7 @@ static void remove_phi_cycle(scc *pscc, iv_env *env)
 	int j;
 	ir_node *out_rc;
 
-	/* check if this scc contains only Phi, Add or Sub nodes */
+	/* check if this scc contains only Phi nodes */
 	out_rc      = NULL;
 	for (irn = pscc->head; irn; irn = next) {
 		node_entry *e = get_irn_ne(irn, env);
@@ -1274,31 +1274,15 @@ static void lftr(ir_graph *irg, iv_env *env)
 	irg_walk_graph(irg, NULL, do_lftr, env);
 }  /* lftr */
 
-/**
- * Pre-walker: set all node links to NULL and fix the
- * block of Proj nodes.
- */
-static void clear_and_fix(ir_node *irn, void *env)
-{
-	(void)env;
-
-	set_irn_link(irn, NULL);
-
-	if (is_Proj(irn)) {
-		ir_node *pred       = get_Proj_pred(irn);
-		ir_node *pred_block = get_nodes_block(pred);
-
-		if (get_nodes_block(irn) != pred_block) {
-			set_nodes_block(irn, pred_block);
-		}
-	}
-}  /* clear_and_fix */
-
-
 /* Remove any Phi cycles with only one real input. */
 void remove_phi_cycles(ir_graph *irg)
 {
 	iv_env env;
+
+	assure_irg_properties(irg,
+		IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+		| IR_GRAPH_PROPERTY_CONSISTENT_OUTS
+		| IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.remove_phi");
 
@@ -1321,10 +1305,7 @@ void remove_phi_cycles(ir_graph *irg)
 	 * the same block as their predecessors.
 	 * This can improve the placement of new nodes.
 	 */
-	irg_walk_graph(irg, NULL, clear_and_fix, NULL);
-
-	/* we need outs for calculating the post order */
-	assure_irg_outs(irg);
+	irg_walk_graph(irg, NULL, firm_clear_link, NULL);
 
 	/* calculate the post order number for blocks. */
 	irg_out_block_walk(get_irg_start_block(irg), NULL, assign_po, &env);
@@ -1335,12 +1316,15 @@ void remove_phi_cycles(ir_graph *irg)
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	if (env.replaced) {
-		DB((dbg, LEVEL_1, "remove_phi_cycles: %u Cycles removed\n\n", env.replaced));
+		DB((dbg, LEVEL_1, "remove_phi_cycles: %u Cycles removed\n\n",
+		    env.replaced));
 	}
 
 	DEL_ARR_F(env.stack);
 	obstack_free(&env.obst, NULL);
-}  /* remove_phi_cycles */
+
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW);
+}
 
 ir_graph_pass_t *remove_phi_cycles_pass(const char *name)
 {
@@ -1418,10 +1402,14 @@ static void fix_adds_and_subs(ir_node *irn, void *ctx)
 /* Performs Operator Strength Reduction for the passed graph. */
 void opt_osr(ir_graph *irg, unsigned flags)
 {
-	iv_env   env;
-	int      edges;
+	iv_env env;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.osr");
+
+	assure_irg_properties(irg,
+		IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+		| IR_GRAPH_PROPERTY_CONSISTENT_OUTS
+		| IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 
 	DB((dbg, LEVEL_1, "Doing Operator Strength Reduction for %+F\n", irg));
 
@@ -1442,15 +1430,8 @@ void opt_osr(ir_graph *irg, unsigned flags)
 	 * the same block as its predecessors.
 	 * This can improve the placement of new nodes.
 	 */
-	irg_walk_graph(irg, NULL, clear_and_fix, NULL);
+	irg_walk_graph(irg, NULL, firm_clear_link, NULL);
 
-	/* we need dominance */
-	assure_doms(irg);
-
-	edges = edges_assure(irg);
-
-	/* calculate the post order number for blocks by walking the out edges. */
-	assure_irg_outs(irg);
 	irg_block_edges_walk(get_irg_start_block(irg), NULL, assign_po, &env);
 
 	/* calculate the SCC's and drive OSR. */
@@ -1474,9 +1455,8 @@ void opt_osr(ir_graph *irg, unsigned flags)
 	DEL_ARR_F(env.stack);
 	obstack_free(&env.obst, NULL);
 
-	if (! edges)
-		edges_deactivate(irg);
-}  /* opt_osr */
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
+}
 
 typedef struct pass_t {
 	ir_graph_pass_t pass;

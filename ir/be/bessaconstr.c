@@ -245,7 +245,7 @@ static ir_node *insert_dummy_phi(be_ssa_construction_env_t *env, ir_node *block)
 	for (i = 0; i < n_preds; ++i) {
 		ins[i] = dummy;
 	}
-	phi = be_new_Phi(block, n_preds, ins, env->mode, env->phi_cls);
+	phi = be_new_Phi(block, n_preds, ins, env->mode, env->phi_req);
 	sched_add_after(block, phi);
 	ARR_APP1(ir_node*, env->new_phis, phi);
 
@@ -458,6 +458,24 @@ void be_ssa_construction_destroy(be_ssa_construction_env_t *env)
 	stat_ev_ctx_pop("bessaconstr");
 }
 
+static void determine_phi_req(be_ssa_construction_env_t *env, ir_node *value)
+{
+	const arch_register_req_t *req   = arch_get_irn_register_req(value);
+	env->mode = get_irn_mode(value);
+	if (req->width == 1) {
+		env->phi_req = req->cls->class_req;
+	} else {
+		/* construct a new register req... */
+		ir_graph            *irg     = get_irn_irg(value);
+		struct obstack      *obst    = be_get_be_obst(irg);
+		arch_register_req_t *new_req = OALLOCZ(obst, arch_register_req_t);
+		new_req->cls   = req->cls;
+		new_req->type  = req->type & arch_register_req_type_aligned;
+		new_req->width = req->width;
+		env->phi_req = new_req;
+	}
+}
+
 void be_ssa_construction_add_copy(be_ssa_construction_env_t *env,
                                   ir_node *copy)
 {
@@ -466,8 +484,7 @@ void be_ssa_construction_add_copy(be_ssa_construction_env_t *env,
 	assert(env->iterated_domfront_calculated == 0);
 
 	if (env->mode == NULL) {
-		env->mode    = get_irn_mode(copy);
-		env->phi_cls = arch_get_irn_reg_class(copy);
+		determine_phi_req(env, copy);
 	} else {
 		assert(env->mode == get_irn_mode(copy));
 	}
@@ -488,8 +505,7 @@ void be_ssa_construction_add_copies(be_ssa_construction_env_t *env,
 	assert(env->iterated_domfront_calculated == 0);
 
 	if (env->mode == NULL) {
-		env->mode    = get_irn_mode(copies[0]);
-		env->phi_cls = arch_get_irn_reg_class(copies[0]);
+		determine_phi_req(env, copies[0]);
 	}
 
 	for (i = 0; i < copies_len; ++i) {

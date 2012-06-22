@@ -123,7 +123,7 @@ static int opt_cmp(const void *elt, const void *key)
 }  /* opt_cmp */
 
 /**
- * Compare two elements of the block/extbb hash.
+ * Compare two elements of the block hash.
  */
 static int block_cmp(const void *elt, const void *key)
 {
@@ -275,11 +275,6 @@ static void graph_clear_entry(graph_entry_t *elem, int all)
 		elem->block_hash = NULL;
 	}  /* if */
 
-	if (elem->extbb_hash) {
-		del_pset(elem->extbb_hash);
-		elem->extbb_hash = NULL;
-	}  /* if */
-
 	obstack_free(&elem->recalc_cnts, NULL);
 	obstack_init(&elem->recalc_cnts);
 }  /* graph_clear_entry */
@@ -322,7 +317,6 @@ static graph_entry_t *graph_get_entry(ir_graph *irg, hmap_graph_entry_t *hmap)
 
 	/* these hash tables are created on demand */
 	elem->block_hash = NULL;
-	elem->extbb_hash = NULL;
 
 	for (i = 0; i != ARRAY_SIZE(elem->opt_hash); ++i)
 		elem->opt_hash[i] = new_pset(opt_cmp, 4);
@@ -669,69 +663,6 @@ static void undate_block_info(ir_node *node, graph_entry_t *graph)
 }  /* undate_block_info */
 
 /**
- * Update the extended block counter.
- */
-static void update_extbb_info(ir_node *node, graph_entry_t *graph)
-{
-	ir_op *op = get_irn_op(node);
-	ir_extblk *extbb;
-	extbb_entry_t *eb_entry;
-	int i, arity;
-
-	/* check for block */
-	if (op == op_Block) {
-		extbb = get_nodes_extbb(node);
-		arity = get_irn_arity(node);
-		eb_entry = block_get_entry(&graph->recalc_cnts, get_extbb_node_nr(extbb), graph->extbb_hash);
-
-		/* count all incoming edges */
-		for (i = 0; i < arity; ++i) {
-			ir_node *pred = get_irn_n(node, i);
-			ir_extblk *other_extbb = get_nodes_extbb(pred);
-
-			if (extbb != other_extbb) {
-				extbb_entry_t *eb_entry_other = block_get_entry(&graph->recalc_cnts, get_extbb_node_nr(other_extbb), graph->extbb_hash);
-
-				cnt_inc(&eb_entry->cnt[bcnt_in_edges]); /* an edge coming from another extbb */
-				cnt_inc(&eb_entry_other->cnt[bcnt_out_edges]);
-			}  /* if */
-		}  /* for */
-		return;
-	}  /* if */
-
-	extbb    = get_nodes_extbb(node);
-	eb_entry = block_get_entry(&graph->recalc_cnts, get_extbb_node_nr(extbb), graph->extbb_hash);
-
-	if (op == op_Phi && mode_is_datab(get_irn_mode(node))) {
-		/* count data Phi per extbb */
-		cnt_inc(&eb_entry->cnt[bcnt_phi_data]);
-	}  /* if */
-
-	/* we have a new node in our block */
-	cnt_inc(&eb_entry->cnt[bcnt_nodes]);
-
-	/* don't count keep-alive edges */
-	if (is_End(node))
-		return;
-
-	arity = get_irn_arity(node);
-
-	for (i = 0; i < arity; ++i) {
-		ir_node *pred = get_irn_n(node, i);
-		ir_extblk *other_extbb = get_nodes_extbb(pred);
-
-		if (other_extbb == extbb)
-			cnt_inc(&eb_entry->cnt[bcnt_edges]);    /* a in extbb edge */
-		else {
-			extbb_entry_t *eb_entry_other = block_get_entry(&graph->recalc_cnts, get_extbb_node_nr(other_extbb), graph->extbb_hash);
-
-			cnt_inc(&eb_entry->cnt[bcnt_in_edges]); /* an edge coming from another extbb */
-			cnt_inc(&eb_entry_other->cnt[bcnt_out_edges]);
-		}  /* if */
-	}  /* for */
-}  /* update_extbb_info */
-
-/**
  * Calculates how many arguments of the call are const, updates
  * param distribution.
  */
@@ -969,12 +900,6 @@ static void update_node_stat(ir_node *node, void *env)
 	/* count block edges */
 	undate_block_info(node, graph);
 
-	/* count extended block edges */
-	if (status->stat_options & FIRMSTAT_COUNT_EXTBB) {
-		if (graph->irg != get_const_code_irg())
-			update_extbb_info(node, graph);
-	}  /* if */
-
 	/* handle statistics for special node types */
 
 	switch (op->code) {
@@ -1197,14 +1122,6 @@ static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
 	/* we need dominator info */
 	if (graph->irg != get_const_code_irg()) {
 		assure_doms(graph->irg);
-
-		if (status->stat_options & FIRMSTAT_COUNT_EXTBB) {
-			/* we need extended basic blocks */
-			compute_extbb(graph->irg);
-
-			/* create new extbb counter */
-			graph->extbb_hash = new_pset(block_cmp, 5);
-		}  /* if */
 	}  /* if */
 
 	/* count the nodes in the graph */

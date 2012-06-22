@@ -200,20 +200,53 @@ static void collect_egde_frequency(ir_node *block, void *data)
 	}
 }
 
+static int cmp_edges_base(const edge_t *e1, const edge_t *e2)
+{
+	long nr1 = get_irn_node_nr(e1->block);
+	long nr2 = get_irn_node_nr(e2->block);
+	if (nr1 < nr2) {
+		return 1;
+	} else if (nr1 > nr2) {
+		return -1;
+	} else {
+		if (e1->pos < e2->pos) {
+			return 1;
+		} else if (e1->pos > e2->pos) {
+			return -1;
+		} else {
+			return 0;
+		}
+	}
+}
+
 static int cmp_edges(const void *d1, const void *d2)
 {
 	const edge_t *e1 = (const edge_t*)d1;
 	const edge_t *e2 = (const edge_t*)d2;
-
-	return QSORT_CMP(e2->execfreq, e1->execfreq);
+	double        freq1 = e1->execfreq;
+	double        freq2 = e2->execfreq;
+	if (freq1 < freq2) {
+		return 1;
+	} else if (freq1 > freq2) {
+		return -1;
+	} else {
+		return cmp_edges_base(e1, e2);
+	}
 }
 
 static int cmp_edges_outedge_penalty(const void *d1, const void *d2)
 {
-	const edge_t *e1 = (const edge_t*)d1;
-	const edge_t *e2 = (const edge_t*)d2;
-	/* reverse sorting as penalties are negative */
-	return QSORT_CMP(e1->outedge_penalty_freq, e2->outedge_penalty_freq);
+	const edge_t *e1   = (const edge_t*)d1;
+	const edge_t *e2   = (const edge_t*)d2;
+	double        pen1 = e1->outedge_penalty_freq;
+	double        pen2 = e2->outedge_penalty_freq;
+	if (pen1 > pen2) {
+		return 1;
+	} else if (pen1 < pen2) {
+		return -1;
+	} else {
+		return cmp_edges_base(e1, e2);
+	}
 }
 
 static void clear_loop_links(ir_loop *loop)

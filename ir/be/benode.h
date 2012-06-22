@@ -450,7 +450,7 @@ void be_dump_phi_reg_reqs(FILE *out, const ir_node *node, dump_reason_t reason);
  * Creates a new phi with associated backend informations
  */
 ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
-                    const arch_register_class_t *cls);
+                    const arch_register_req_t *req);
 
 /**
  * Search for output of start node with a specific register

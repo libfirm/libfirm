@@ -717,7 +717,7 @@ static void create_stores_for_type(ir_graph *irg, ir_type *type)
 				first_store = store0;
 		} else {
 			ir_type *tp    = get_entity_type(entity);
-			ir_mode *mode  = get_type_mode(tp);
+			ir_mode *mode  = is_compound_type(tp) ? mode_P : get_type_mode(tp);
 			ir_node *val   = new_r_Proj(args, mode, arg);
 			ir_node *store = new_r_Store(start_block, mem, addr, val, cons_none);
 			mem = new_r_Proj(store, mode_M, pn_Store_M);

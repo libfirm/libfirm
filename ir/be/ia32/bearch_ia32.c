@@ -62,7 +62,6 @@
 #include "be.h"
 #include "be_t.h"
 #include "beirgmod.h"
-#include "be_dbgout.h"
 #include "beblocksched.h"
 #include "bespillutil.h"
 #include "bespillslots.h"
@@ -189,14 +188,6 @@ static ir_node *ia32_get_admissible_noreg(ir_node *irn, int pos)
 		return ia32_new_NoReg_vfp(irg);
 	}
 }
-
-/**
- * The IA32 ABI callback object.
- */
-typedef struct {
-	be_abi_call_flags_bits_t flags;  /**< The call flags. */
-	ir_graph *irg;                   /**< The associated graph. */
-} ia32_abi_env_t;
 
 static ir_entity *ia32_get_frame_entity(const ir_node *irn)
 {
@@ -672,7 +663,7 @@ static void ia32_prepare_graph(ir_graph *irg)
 	/* do local optimizations (mainly CSE) */
 	optimize_graph_df(irg);
 	/* backend code expects that outedges are always enabled */
-	edges_assure(irg);
+	assure_edges(irg);
 
 	if (irg_data->dump)
 		dump_ir_graph(irg, "transformed");
@@ -683,7 +674,7 @@ static void ia32_prepare_graph(ir_graph *irg)
 	/* do code placement, to optimize the position of constants */
 	place_code(irg);
 	/* backend code expects that outedges are always enabled */
-	edges_assure(irg);
+	assure_edges(irg);
 
 	if (irg_data->dump)
 		dump_ir_graph(irg, "place");
@@ -1931,10 +1922,8 @@ static void ia32_get_call_abi(ir_type *method_type, be_abi_call_t *abi)
 	be_abi_call_flags_t call_flags = be_abi_call_get_flags(abi);
 
 	/* set abi flags for calls */
-	call_flags.bits.store_args_sequential = 0;
 	/* call_flags.bits.try_omit_fp                 not changed: can handle both settings */
-	call_flags.bits.fp_free               = 0;  /* the frame pointer is fixed in IA32 */
-	call_flags.bits.call_has_imm          = 0;  /* No call immediate, we handle this by ourselves */
+	call_flags.bits.call_has_imm = false;  /* No call immediate, we handle this by ourselves */
 
 	/* set parameter passing style */
 	be_abi_call_set_flags(abi, call_flags, &ia32_abi_callbacks);

@@ -38,15 +38,12 @@
 #include "besched.h"
 #include "begnuas.h"
 #include "beblocksched.h"
-#include "be_dbgout.h"
 
 #include "amd64_emitter.h"
 #include "gen_amd64_emitter.h"
 #include "gen_amd64_regalloc_if.h"
 #include "amd64_nodes_attr.h"
 #include "amd64_new_nodes.h"
-
-#define SNPRINTF_BUF_LEN 128
 
 #include "benode.h"
 
@@ -543,7 +540,7 @@ static void amd64_gen_block(ir_node *block, void *data)
 	if (! is_Block(block))
 		return;
 
-	be_gas_begin_block(block, false);
+	be_gas_begin_block(block, true);
 
 	sched_foreach(block, node) {
 		amd64_emit_node(node);
@@ -581,7 +578,7 @@ void amd64_gen_routine(ir_graph *irg)
 
 	blk_sched = be_create_block_schedule(irg);
 
-	be_gas_emit_function_prolog(entity, 4);
+	be_gas_emit_function_prolog(entity, 4, NULL);
 
 	irg_block_walk_graph(irg, amd64_gen_labels, NULL, NULL);
 

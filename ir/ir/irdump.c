@@ -50,7 +50,6 @@
 #include "irdom.h"
 #include "irloop_t.h"
 #include "callgraph.h"
-#include "irextbb_t.h"
 #include "irhooks.h"
 #include "dbginfo_t.h"
 #include "irtools.h"
@@ -416,24 +415,6 @@ static void print_node_ent_edge(FILE *F, const ir_node *irn, const ir_entity *en
 }
 
 /**
- * Prints the edge from an entity ent to a node irn with additional info fmt, ...
- * to the file F.
- */
-static void print_ent_node_edge(FILE *F, const ir_entity *ent, const ir_node *irn, const char *fmt, ...)
-{
-	va_list ap;
-
-	va_start(ap, fmt);
-	fprintf(F, "edge: { sourcename: ");
-	print_entityid(F, ent);
-	fprintf(F, "\" targetname: ");
-	print_nodeid(F, irn);
-	ir_vfprintf(F, fmt, ap);
-	fprintf(F,"}\n");
-	va_end(ap);
-}
-
-/**
  * Prints the edge from a type tp to an enumeration item item with additional info fmt, ...
  * to the file F.
  */
@@ -572,8 +553,9 @@ const char *get_irg_dump_name(const ir_graph *irg)
  */
 static int node_floats(const ir_node *n)
 {
+	ir_graph *irg = get_irn_irg(n);
 	return ((get_irn_pinned(n) == op_pin_state_floats) &&
-	        (get_irg_pinned(current_ir_graph) == op_pin_state_floats));
+	        (get_irg_pinned(irg) == op_pin_state_floats));
 }
 
 /**
@@ -631,9 +613,6 @@ static ir_node **construct_block_lists(ir_graph *irg)
 {
 	size_t   i;
 	int      walk_flag = ir_resources_reserved(irg) & IR_RESOURCE_IRN_VISITED;
-	ir_graph *rem      = current_ir_graph;
-
-	current_ir_graph = irg;
 
 	if (walk_flag) {
 		ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
@@ -642,56 +621,13 @@ static ir_node **construct_block_lists(ir_graph *irg)
 	for (i = get_irp_n_irgs(); i > 0;)
 		ird_set_irg_link(get_irp_irg(--i), NULL);
 
-	ird_walk_graph(current_ir_graph, clear_link, collect_node, current_ir_graph);
+	ird_walk_graph(irg, clear_link, collect_node, irg);
 
 	if (walk_flag) {
 		ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 	}
 
-	current_ir_graph = rem;
 	return (ir_node**)ird_get_irg_link(irg);
-}
-
-typedef struct list_tuple {
-	ir_node **blk_list;
-	ir_extblk **extbb_list;
-} list_tuple;
-
-/** Construct lists to walk IR extended block-wise.
- * Free the lists in the tuple with DEL_ARR_F(). Sets the irg link field to
- * NULL in all graphs not visited.
- */
-static list_tuple *construct_extblock_lists(ir_graph *irg)
-{
-	ir_node **blk_list = construct_block_lists(irg);
-	size_t i, n;
-	ir_graph *rem = current_ir_graph;
-	list_tuple *lists = XMALLOC(list_tuple);
-
-	current_ir_graph = irg;
-
-	lists->blk_list   = NEW_ARR_F(ir_node *, 0);
-	lists->extbb_list = NEW_ARR_F(ir_extblk *, 0);
-
-	inc_irg_block_visited(irg);
-	for (i = 0, n = ARR_LEN(blk_list); i < n; ++i) {
-		ir_extblk *ext;
-
-		if (is_Block(blk_list[i])) {
-			ext = get_Block_extbb(blk_list[i]);
-
-			if (extbb_not_visited(ext)) {
-				ARR_APP1(ir_extblk *, lists->extbb_list, ext);
-				mark_extbb_visited(ext);
-			}
-		} else
-			ARR_APP1(ir_node *, lists->blk_list, blk_list[i]);
-	}
-	DEL_ARR_F(blk_list);
-
-	current_ir_graph = rem;
-	ird_set_irg_link(irg, lists);
-	return lists;
 }
 
 void dump_node_opcode(FILE *F, const ir_node *n)
@@ -809,11 +745,12 @@ static void dump_node_mode(FILE *F, const ir_node *n)
  */
 static int dump_node_typeinfo(FILE *F, const ir_node *n)
 {
+	ir_graph *irg = get_irn_irg(n);
 	int bad = 0;
 
 	if (ir_get_dump_flags() & ir_dump_flag_analysed_types) {
-		if (get_irg_typeinfo_state(current_ir_graph) == ir_typeinfo_consistent  ||
-			get_irg_typeinfo_state(current_ir_graph) == ir_typeinfo_inconsistent) {
+		if (get_irg_typeinfo_state(irg) == ir_typeinfo_consistent  ||
+			get_irg_typeinfo_state(irg) == ir_typeinfo_inconsistent) {
 			ir_type *tp = get_irn_typeinfo_type(n);
 			if (tp != get_none_type()) {
 				ir_fprintf(F, "[%+F]", tp);
@@ -1048,6 +985,7 @@ static void print_constblkid(FILE *F, const ir_node *node, const ir_node *block)
    generates a copy of the constant predecessors for each node called with. */
 static void dump_const_node_local(FILE *F, const ir_node *n)
 {
+	ir_graph *irg = get_irn_irg(n);
 	int i;
 	if (!get_opt_dump_const_local()) return;
 
@@ -1056,7 +994,7 @@ static void dump_const_node_local(FILE *F, const ir_node *n)
 	for (i = 0; i < get_irn_arity(n); i++) {
 		ir_node *con = get_irn_n(n, i);
 		if (is_constlike_node(con)) {
-			set_irn_visited(con, get_irg_visited(current_ir_graph) - 1);
+			set_irn_visited(con, get_irg_visited(irg) - 1);
 		}
 	}
 
@@ -1151,6 +1089,7 @@ void dump_node(FILE *F, const ir_node *n)
 {
 	int bad = 0;
 	const char *p;
+	ir_graph   *irg;
 
 	if (get_opt_dump_const_local() && is_constlike_node(n))
 		return;
@@ -1160,7 +1099,8 @@ void dump_node(FILE *F, const ir_node *n)
 	print_nodeid(F, n);
 
 	fputs(" label: \"", F);
-	bad = ! irn_verify_irg_dump(n, current_ir_graph, &p);
+	irg = get_irn_irg(n);
+	bad = ! irn_verify_irg_dump(n, irg, &p);
 	dump_node_label(F, n);
 	fputs("\" ", F);
 
@@ -1380,19 +1320,17 @@ static void dump_const_node(ir_node *n, void *env)
 /** Dumps a constant expression as entity initializer, array bound ... */
 static void dump_const_expression(FILE *F, ir_node *value)
 {
-	ir_graph *rem = current_ir_graph;
+	ir_graph *irg = get_const_code_irg();
 	ir_dump_flags_t old_flags = ir_get_dump_flags();
 	ir_remove_dump_flags(ir_dump_flag_consts_local);
 
-	current_ir_graph = get_const_code_irg();
 	irg_walk(value, dump_const_node, NULL, F);
 	/* Decrease visited flag so that we walk with the same flag for the next
 	   expression.  This guarantees that we don't dump the same node twice,
 	   as for const expressions cse is performed to save memory. */
-	set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph) -1);
+	set_irg_visited(irg, get_irg_visited(irg) -1);
 
 	ir_set_dump_flags(old_flags);
-	current_ir_graph = rem;
 }
 
 /** Dump a block as graph containing its nodes.
@@ -1447,9 +1385,7 @@ static void dump_whole_block(FILE *F, const ir_node *block)
 static void dump_block_graph(FILE *F, ir_graph *irg)
 {
 	size_t i, n;
-	ir_graph *rem = current_ir_graph;
 	ir_node **arr = (ir_node**)ird_get_irg_link(irg);
-	current_ir_graph = irg;
 
 	for (i = 0, n = ARR_LEN(arr); i < n; ++i) {
 		ir_node *node = arr[i];
@@ -1470,10 +1406,8 @@ static void dump_block_graph(FILE *F, ir_graph *irg)
 	}
 
 	if ((flags & ir_dump_flag_loops)
-	     && is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO))
+	     && irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO))
 		dump_loop_nodes_into_graph(F, irg);
-
-	current_ir_graph = rem;
 }
 
 /**
@@ -1487,39 +1421,38 @@ static void dump_graph_info(FILE *F, ir_graph *irg)
 	fprintf(F, "\n");
 
 	/* dump graph state */
-	fprintf(F, "state:");
-	if (is_irg_state(irg, IR_GRAPH_STATE_ARCH_DEP))
+	fprintf(F, "constraints:");
+	if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_ARCH_DEP))
 		fprintf(F, " arch_dep");
-	if (is_irg_state(irg, IR_GRAPH_STATE_MODEB_LOWERED))
+	if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_MODEB_LOWERED))
 		fprintf(F, " modeb_lowered");
-	if (is_irg_state(irg, IR_GRAPH_STATE_NORMALISATION2))
+	if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_NORMALISATION2))
 		fprintf(F, " normalisation2");
-	if (is_irg_state(irg, IR_GRAPH_STATE_IMPLICIT_BITFIELD_MASKING))
-		fprintf(F, " implicit_bitfield_masking");
-	if (is_irg_state(irg, IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE))
+	if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_OPTIMIZE_UNREACHABLE_CODE))
 		fprintf(F, " optimize_unreachable_code");
-	if (is_irg_state(irg, IR_GRAPH_STATE_NO_CRITICAL_EDGES))
+	fprintf(F, "\n");
+
+	fprintf(F, "properties:");
+	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES))
 		fprintf(F, " no_critical_edges");
-	if (is_irg_state(irg, IR_GRAPH_STATE_NO_BADS))
+	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_NO_BADS))
 		fprintf(F, " no_bads");
-	if (is_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE))
+	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE))
 		fprintf(F, " no_unreachable_code");
-	if (is_irg_state(irg, IR_GRAPH_STATE_ONE_RETURN))
+	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_ONE_RETURN))
 		fprintf(F, " one_return");
-	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE))
+	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE))
 		fprintf(F, " consistent_dominance");
-	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE))
+	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE))
 		fprintf(F, " consistent_postdominance");
-	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUT_EDGES))
+	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES))
 		fprintf(F, " consistent_out_edges");
-	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS))
+	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS))
 		fprintf(F, " consistent_outs");
-	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO))
+	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO))
 		fprintf(F, " consistent_loopinfo");
-	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE))
+	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE))
 		fprintf(F, " consistent_entity_usage");
-	if (is_irg_state(irg, IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS))
-		fprintf(F, " valid_exended_blocks");
 	fprintf(F, "\"\n");
 }
 
@@ -1686,7 +1619,6 @@ static void dump_type_info(type_or_ent tore, void *env)
 	switch (get_kind(tore.ent)) {
 	case k_entity: {
 		ir_entity *ent = tore.ent;
-		ir_node *value;
 		/* The node */
 		dump_entity_node(F, ent);
 		/* The Edges */
@@ -1703,21 +1635,6 @@ static void dump_type_info(type_or_ent tore, void *env)
 			if (ent->initializer != NULL) {
 				/* new style initializers */
 				dump_entity_initializer(F, ent);
-			} else if (entity_has_compound_ent_values(ent)) {
-				/* old style compound entity values */
-				for (i = get_compound_ent_n_values(ent); i > 0;) {
-					value = get_compound_ent_value(ent, --i);
-					if (value) {
-						print_ent_node_edge(F, ent, value, ENT_VALUE_EDGE_ATTR, i);
-						dump_const_expression(F, value);
-						print_ent_ent_edge(F, ent, get_compound_ent_value_member(ent, i), 0, ird_color_none, ENT_CORR_EDGE_ATTR, i);
-						/*
-						fprintf(F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-						ENT_CORR_EDGE_ATTR  "}\n", GET_ENTID(ent),
-						get_compound_ent_value_member(ent, i), i);
-						*/
-					}
-				}
 			}
 		}
 		break;
@@ -1954,14 +1871,8 @@ static void dump_loops(FILE *F, const ir_loop *loop)
 static void dump_loop_nodes_into_graph(FILE *F, ir_graph *irg)
 {
 	ir_loop *loop = get_irg_loop(irg);
-
 	if (loop != NULL) {
-		ir_graph *rem = current_ir_graph;
-		current_ir_graph = irg;
-
 		dump_loops(F, loop);
-
-		current_ir_graph = rem;
 	}
 }
 
@@ -2063,109 +1974,13 @@ static void dump_blocks_as_subgraphs(FILE *out, ir_graph *irg)
 	}
 }
 
-/** dumps a graph extended block-wise. Expects all blockless nodes in arr in irgs link.
- *  The outermost nodes: blocks and nodes not op_pin_state_pinned, Bad, Unknown. */
-static void dump_extblock_graph(FILE *F, ir_graph *irg)
-{
-	size_t i, arr_len;
-	ir_graph *rem = current_ir_graph;
-	ir_extblk **arr = (ir_extblk**)ird_get_irg_link(irg);
-	current_ir_graph = irg;
-
-	for (i = 0, arr_len = ARR_LEN(arr); i < arr_len; ++i) {
-		ir_extblk *extbb = arr[i];
-		ir_node *leader = get_extbb_leader(extbb);
-		size_t j, n_blks;
-
-		fprintf(F, "graph: { title: \"");
-		fprintf(F, "x%ld", get_irn_node_nr(leader));
-		fprintf(F, "\"  label: \"ExtBB %ld\" status:clustered color:lightgreen\n",
-		        get_irn_node_nr(leader));
-
-		for (j = 0, n_blks = ARR_LEN(extbb->blks); j < n_blks; ++j) {
-			ir_node *node = extbb->blks[j];
-			if (is_Block(node)) {
-			/* Dumps the block and all the nodes in the block, which are to
-				be found in Block->link. */
-				dump_whole_block(F, node);
-			} else {
-				/* Nodes that are not in a Block. */
-				dump_node(F, node);
-				if (is_Bad(get_nodes_block(node)) && !node_floats(node)) {
-					dump_const_block_local(F, node);
-				}
-				dump_ir_data_edges(F, node);
-			}
-		}
-		fprintf(F, "}\n");
-	}
-
-	if ((flags & ir_dump_flag_loops)
-			&& (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO)))
-		dump_loop_nodes_into_graph(F, irg);
-
-	current_ir_graph = rem;
-	free_extbb(irg);
-}
-
-static void dump_blocks_extbb_grouped(FILE *F, ir_graph *irg)
-{
-	size_t    i;
-	ir_entity *ent = get_irg_entity(irg);
-
-	if (!is_irg_state(irg, IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS))
-		compute_extbb(irg);
-
-	construct_extblock_lists(irg);
-
-	fprintf(F, "graph: { title: ");
-	print_irgid(F, irg);
-	fprintf(F, " label: \"%s\" status:clustered color: white\n",
-	        get_ent_dump_name(ent));
-
-	dump_graph_info(F, irg);
-	print_dbg_info(F, get_entity_dbg_info(ent));
-
-	for (i = get_irp_n_irgs(); i > 0;) {
-		ir_graph   *other_irg = get_irp_irg(--i);
-		list_tuple *lists     = (list_tuple*)ird_get_irg_link(other_irg);
-
-		if (lists) {
-			/* dump the extended blocks first */
-			if (ARR_LEN(lists->extbb_list)) {
-				ird_set_irg_link(other_irg, lists->extbb_list);
-				dump_extblock_graph(F, other_irg);
-			}
-
-			/* we may have blocks without extended blocks, bad for instance */
-			if (ARR_LEN(lists->blk_list)) {
-				ird_set_irg_link(other_irg, lists->blk_list);
-				dump_block_graph(F, other_irg);
-			}
-
-			DEL_ARR_F(lists->extbb_list);
-			DEL_ARR_F(lists->blk_list);
-			xfree(lists);
-		}
-	}
-
-	/* Close the vcg information for the irg */
-	fprintf(F, "}\n\n");
-
-	free_extbb(irg);
-}
-
 void dump_ir_graph_file(FILE *out, ir_graph *irg)
 {
 	dump_vcg_header(out, get_irg_dump_name(irg), NULL, NULL);
 
 	/* dump nodes */
 	if (flags & ir_dump_flag_blocks_as_subgraphs) {
-		if (flags & ir_dump_flag_group_extbb) {
-			dump_blocks_extbb_grouped(out, irg);
-		} else {
-			dump_blocks_as_subgraphs(out, irg);
-		}
+		dump_blocks_as_subgraphs(out, irg);
 	} else {
 		/* dump_node_with_edges must be called in post visiting predecessors */
 		ird_walk_graph(irg, NULL, dump_node_with_edges, out);
@@ -2173,25 +1988,20 @@ void dump_ir_graph_file(FILE *out, ir_graph *irg)
 
 	/* dump type info */
 	if (flags & ir_dump_flag_with_typegraph) {
-		ir_graph *rem = current_ir_graph;
-		current_ir_graph = irg;
-
 		type_walk_irg(irg, dump_type_info, NULL, out);
 		inc_irg_visited(get_const_code_irg());
 		/* dump edges from graph to type info */
 		irg_walk(get_irg_end(irg), dump_node2type_edges, NULL, out);
-
-		current_ir_graph = rem;
 	}
 
 	/* dump iredges out edges */
-	if ((flags & ir_dump_flag_iredges) && edges_activated(current_ir_graph)) {
+	if ((flags & ir_dump_flag_iredges) && edges_activated(irg)) {
 		irg_walk_edges(get_irg_start_block(irg), dump_ir_edges, NULL, out);
 	}
 
 	/* dump the out edges in a separate walk */
 	if ((flags & ir_dump_flag_out_edges)
-			&& (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS))) {
+			&& (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS))) {
 		irg_out_walk(get_irg_start(irg), dump_out_edge, NULL, out);
 	}
 
@@ -2247,7 +2057,7 @@ static void dump_block_to_cfg(ir_node *block, void *env)
 
 		/* Dump dominator/postdominator edge */
 		if (ir_get_dump_flags() & ir_dump_flag_dominance) {
-			if (is_irg_state(get_irn_irg(block), IR_GRAPH_STATE_CONSISTENT_DOMINANCE) && get_Block_idom(block)) {
+			if (irg_has_properties(get_irn_irg(block), IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE) && get_Block_idom(block)) {
 				ir_node *pred = get_Block_idom(block);
 				fprintf(F, "edge: { sourcename: ");
 				print_nodeid(F, block);
@@ -2255,7 +2065,7 @@ static void dump_block_to_cfg(ir_node *block, void *env)
 				print_nodeid(F, pred);
 				fprintf(F, " " DOMINATOR_EDGE_ATTR "}\n");
 			}
-			if (is_irg_state(get_irn_irg(block), IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE) && get_Block_ipostdom(block)) {
+			if (irg_has_properties(get_irn_irg(block), IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE) && get_Block_ipostdom(block)) {
 				ir_node *pred = get_Block_ipostdom(block);
 				fprintf(F, "edge: { sourcename: ");
 				print_nodeid(F, block);
@@ -2404,10 +2214,8 @@ static void dump_loops_standalone(FILE *F, ir_loop *loop)
 
 void dump_loop_tree(FILE *out, ir_graph *irg)
 {
-	ir_graph       *rem       = current_ir_graph;
 	ir_dump_flags_t old_flags = ir_get_dump_flags();
 
-	current_ir_graph = irg;
 	ir_remove_dump_flags(ir_dump_flag_disable_edge_labels);
 
 	dump_vcg_header(out, get_irg_dump_name(irg), "Tree", "top_to_bottom");
@@ -2418,7 +2226,6 @@ void dump_loop_tree(FILE *out, ir_graph *irg)
 	dump_vcg_footer(out);
 
 	ir_set_dump_flags(old_flags);
-	current_ir_graph = rem;
 }
 
 void dump_callgraph_loop_tree(FILE *out)
@@ -2638,7 +2445,7 @@ void dump_ir_graph_ext(ir_graph_dump_func func, ir_graph *graph,
 	obstack_1grow(&obst, '\0');
 
 	file_name = (char*)obstack_finish(&obst);
-	/* xvcg expects only <CR> so we need "b"inary mode (for win32) */
+	/* xvcg expects only <LF> so we need "b"inary mode (for win32) */
 	out       = fopen(file_name, "wb");
 	obstack_free(&obst, file_name);
 

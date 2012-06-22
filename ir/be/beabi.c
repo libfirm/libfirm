@@ -313,13 +313,11 @@ static void be_abi_call_free(be_abi_call_t *call)
  * @param args      the stack argument layout type
  * @param between   the between layout type
  * @param locals    the method frame type
- * @param param_map an array mapping method argument positions to the stack argument type
  *
  * @return the initialized stack layout
  */
 static be_stack_layout_t *stack_frame_init(be_stack_layout_t *frame, ir_type *args,
-                                           ir_type *between, ir_type *locals,
-                                           ir_entity *param_map[])
+                                           ir_type *between, ir_type *locals)
 {
 	frame->arg_type       = args;
 	frame->between_type   = between;
@@ -327,7 +325,6 @@ static be_stack_layout_t *stack_frame_init(be_stack_layout_t *frame, ir_type *ar
 	frame->initial_offset = 0;
 	frame->initial_bias   = 0;
 	frame->order[1]       = between;
-	frame->param_map      = param_map;
 
 	/* typical decreasing stack: locals have the
 	 * lowest addresses, arguments the highest */
@@ -368,9 +365,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	const arch_register_t *sp  = arch_env->sp;
 	be_abi_call_t *call        = be_abi_call_new(sp->reg_class);
 	ir_mode *mach_mode         = sp->reg_class->mode;
-	int no_alloc               = call->flags.bits.frame_is_setup_on_call;
 	int n_res                  = get_method_n_ress(call_tp);
-	int do_seq                 = call->flags.bits.store_args_sequential && !no_alloc;
 
 	ir_node *res_proj  = NULL;
 	int n_reg_params   = 0;
@@ -430,9 +425,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	 * Note: we also have to do this for stack_size == 0, because we may have
 	 * to adjust stack alignment for the call.
 	 */
-	if (!do_seq && !no_alloc) {
-		curr_sp = be_new_IncSP(sp, bl, curr_sp, stack_size, 1);
-	}
+	curr_sp = be_new_IncSP(sp, bl, curr_sp, stack_size, 1);
 
 	dbgi = get_irn_dbg_info(irn);
 	/* If there are some parameters which shall be passed on the stack. */
@@ -441,20 +434,8 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		ir_node **in       = ALLOCAN(ir_node*, n_stack_params+1);
 		unsigned  n_in     = 0;
 
-		/* push params in reverse direction because stack grows downwards */
-		if (do_seq) {
-			for (i = 0; i < n_stack_params >> 1; ++i) {
-				int other  = n_stack_params - i - 1;
-				int tmp    = stack_param_idx[i];
-				stack_param_idx[i]     = stack_param_idx[other];
-				stack_param_idx[other] = tmp;
-			}
-		}
-
 		curr_mem = get_Call_mem(irn);
-		if (! do_seq) {
-			in[n_in++] = curr_mem;
-		}
+		in[n_in++] = curr_mem;
 
 		for (i = 0; i < n_stack_params; ++i) {
 			int p                  = stack_param_idx[i];
@@ -470,30 +451,23 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			 * the stack pointer for the next must be incremented,
 			 * and the memory value propagated.
 			 */
-			if (do_seq) {
-				curr_ofs = 0;
-				addr = curr_sp = be_new_IncSP(sp, bl, curr_sp,
-				                              param_size + arg->space_before, 0);
-				add_irn_dep(curr_sp, curr_mem);
-			} else {
-				curr_ofs += arg->space_before;
-				curr_ofs =  round_up2(curr_ofs, arg->alignment);
+			curr_ofs += arg->space_before;
+			curr_ofs =  round_up2(curr_ofs, arg->alignment);
 
-				/* Make the expression to compute the argument's offset. */
-				if (curr_ofs > 0) {
-					ir_mode *constmode = mach_mode;
-					if (mode_is_reference(mach_mode)) {
-						constmode = mode_Is;
-					}
-					addr = new_r_Const_long(irg, constmode, curr_ofs);
-					addr = new_r_Add(bl, curr_sp, addr, mach_mode);
+			/* Make the expression to compute the argument's offset. */
+			if (curr_ofs > 0) {
+				ir_mode *constmode = mach_mode;
+				if (mode_is_reference(mach_mode)) {
+					constmode = mode_Is;
 				}
+				addr = new_r_Const_long(irg, constmode, curr_ofs);
+				addr = new_r_Add(bl, curr_sp, addr, mach_mode);
 			}
 
 			/* Insert a store for primitive arguments. */
 			if (is_atomic_type(param_type)) {
 				ir_node *nomem     = get_irg_no_mem(irg);
-				ir_node *mem_input = do_seq ? curr_mem : nomem;
+				ir_node *mem_input = nomem;
 				ir_node *store     = new_rd_Store(dbgi, bl, mem_input, addr, param, cons_none);
 				mem   = new_r_Proj(store, mode_M, pn_Store_M);
 			} else {
@@ -507,19 +481,14 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 			curr_ofs += param_size;
 
-			if (do_seq)
-				curr_mem = mem;
-			else
-				in[n_in++] = mem;
+			in[n_in++] = mem;
 		}
 
 		/* We need the sync only, if we didn't build the stores sequentially. */
-		if (! do_seq) {
-			if (n_stack_params >= 1) {
-				curr_mem = new_r_Sync(bl, n_in, in);
-			} else {
-				curr_mem = get_Call_mem(irn);
-			}
+		if (n_stack_params >= 1) {
+			curr_mem = new_r_Sync(bl, n_in, in);
+		} else {
+			curr_mem = get_Call_mem(irn);
 		}
 	}
 
@@ -768,9 +737,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		}
 	}
 	/* Clean up the stack frame or revert alignment fixes if we allocated it */
-	if (! no_alloc) {
-		curr_sp = be_new_IncSP(sp, bl, curr_sp, -stack_size, 0);
-	}
+	curr_sp = be_new_IncSP(sp, bl, curr_sp, -stack_size, 0);
 
 	be_abi_call_free(call);
 
@@ -1015,7 +982,6 @@ static int cmp_call_dependency(const void *c1, const void *c2)
 
 /**
  * Walker: links all Call/Alloc/Free nodes to the Block they are contained.
- * Clears the irg_is_leaf flag if a Call is detected.
  */
 static void link_ops_in_block_walker(ir_node *irn, void *data)
 {
@@ -1027,9 +993,6 @@ static void link_ops_in_block_walker(ir_node *irn, void *data)
 	   (code == iro_Free && get_Free_where(irn) == stack_alloc)) {
 		ir_node *bl       = get_nodes_block(irn);
 		void *save        = get_irn_link(bl);
-
-		if (code == iro_Call)
-			env->call->flags.bits.irg_is_leaf = 0;
 
 		set_irn_link(irn, save);
 		set_irn_link(bl, irn);
@@ -1127,7 +1090,6 @@ static void process_calls(ir_graph *irg)
 {
 	be_abi_irg_t *abi = be_get_irg_abi(irg);
 
-	abi->call->flags.bits.irg_is_leaf = 1;
 	irg_walk_graph(irg, firm_clear_link, link_ops_in_block_walker, abi);
 
 	ir_heights = heights_new(irg);
@@ -1142,13 +1104,11 @@ static void process_calls(ir_graph *irg)
  *
  * @param call          the current call ABI
  * @param method_type   the method type
- * @param param_map     an array mapping method arguments to the stack layout
- *                      type
  *
  * @return the stack argument layout type
  */
 static ir_type *compute_arg_type(ir_graph *irg, be_abi_call_t *call,
-								 ir_type *method_type, ir_entity ***param_map)
+								 ir_type *method_type)
 {
 	struct obstack *obst = be_get_be_obst(irg);
 	ir_type   *frame_type      = get_irg_frame_type(irg);
@@ -1160,9 +1120,7 @@ static ir_type *compute_arg_type(ir_graph *irg, be_abi_call_t *call,
 
 	ir_type *res;
 	size_t i;
-	ir_entity **map;
-
-	*param_map = map = OALLOCNZ(obst, ir_entity*, n_params);
+	ir_entity **map = OALLOCNZ(obst, ir_entity*, n_params);
 	res = new_type_struct(new_id_from_chars("arg_type", 8));
 
 	/* collect existing entities for value_param_types */
@@ -1465,7 +1423,6 @@ static void modify_irg(ir_graph *irg)
 	const ir_edge_t *edge;
 	ir_type *arg_type, *bet_type;
 	lower_frame_sels_env_t ctx;
-	ir_entity **param_map;
 
 	DBG((dbg, LEVEL_1, "introducing abi on %+F\n", irg));
 
@@ -1473,7 +1430,7 @@ static void modify_irg(ir_graph *irg)
 
 	irp_reserve_resources(irp, IRP_RESOURCE_ENTITY_LINK);
 
-	arg_type = compute_arg_type(irg, call, method_type, &param_map);
+	arg_type = compute_arg_type(irg, call, method_type);
 
 	/* Convert the Sel nodes in the irg to frame addr nodes: */
 	ctx.frame            = get_irg_frame(irg);
@@ -1517,7 +1474,7 @@ static void modify_irg(ir_graph *irg)
 	stack_layout->sp_relative = call->flags.bits.try_omit_fp;
 	bet_type = call->cb->get_between_type(irg);
 	stack_frame_init(stack_layout, arg_type, bet_type,
-	                 get_irg_frame_type(irg), param_map);
+	                 get_irg_frame_type(irg));
 
 	/* Count the register params and add them to the number of Projs for the RegParams node */
 	for (i = 0; i < n_params; ++i) {
@@ -1785,8 +1742,7 @@ static ir_entity *get_pic_symbol(be_main_env_t *env, ir_entity *entity)
  */
 static int can_address_relative(ir_entity *entity)
 {
-	return get_entity_visibility(entity) != ir_visibility_external
-		&& !(get_entity_linkage(entity) & IR_LINKAGE_MERGE);
+	return entity_has_definition(entity) && !(get_entity_linkage(entity) & IR_LINKAGE_MERGE);
 }
 
 static ir_node *get_pic_base(ir_graph *irg)
@@ -1912,7 +1868,7 @@ void be_abi_introduce(ir_graph *irg)
 	env->init_sp = dummy;
 	env->calls   = NEW_ARR_F(ir_node*, 0);
 
-	edges_assure(irg);
+	assure_edges(irg);
 
 	if (be_options.pic) {
 		irg_walk_graph(irg, fix_pic_symconsts, NULL, env);

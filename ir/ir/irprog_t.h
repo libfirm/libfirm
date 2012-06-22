@@ -103,20 +103,6 @@ static inline ir_label_t get_irp_next_label_nr_(void)
 	return ++irp->last_label_nr;
 }
 
-/** Whether optimizations should dump irgs */
-static inline int get_irp_optimization_dumps_(void)
-{
-	assert(irp);
-	return irp->optimization_dumps;
-}
-
-/** Set optimizations to dump irgs */
-static inline void enable_irp_optimization_dumps_(void)
-{
-	assert(irp);
-	irp->optimization_dumps = 1;
-}
-
 void      set_irp_ip_outedges(ir_node ** ip_outedges);
 ir_node** get_irp_ip_outedges(void);
 
@@ -143,7 +129,5 @@ void remove_irp_type(ir_type *typ);
 #define get_glob_type()                  get_glob_type_()
 #define get_tls_type()                   get_tls_type_()
 #define get_irp_next_label_nr()          get_irp_next_label_nr_()
-#define get_irp_optimization_dumps()     get_irp_optimization_dumps_()
-#define enable_irp_optimization_dumps()  enable_irp_optimization_dumps_()
 
 #endif

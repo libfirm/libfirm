@@ -75,7 +75,7 @@ be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 				o.irn             = irn;
 				o.pos             = -(get_Proj_proj(p) + 1);
 				o.partner         = NULL;
-				o.has_constraints = arch_register_req_is(o.req, limited);
+				o.has_constraints = arch_register_req_is(o.req, limited) | (o.req->width > 1);
 				obstack_grow(obst, &o, sizeof(o));
 				insn->n_ops++;
 				insn->out_constraints |= o.has_constraints;
@@ -89,7 +89,7 @@ be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 		o.irn     = irn;
 		o.pos     = -1;
 		o.partner = NULL;
-		o.has_constraints = arch_register_req_is(o.req, limited);
+		o.has_constraints = arch_register_req_is(o.req, limited) | (o.req->width > 1);
 		obstack_grow(obst, &o, sizeof(o));
 		insn->n_ops++;
 		insn->out_constraints |= o.has_constraints;

@@ -47,28 +47,9 @@ void be_emit_exit(void)
 	obstack_free(&emit_obst, NULL);
 }
 
-void be_emit_ident(ident *id)
-{
-	size_t      len = get_id_strlen(id);
-	const char *str = get_id_str(id);
-
-	be_emit_string_len(str, len);
-}
-
-void be_emit_tarval(ir_tarval *tv)
-{
-	char buf[64];
-
-	tarval_snprintf(buf, sizeof(buf), tv);
-	be_emit_string(buf);
-}
-
 void be_emit_irvprintf(const char *fmt, va_list args)
 {
-	char buf[256];
-
-	ir_vsnprintf(buf, sizeof(buf), fmt, args);
-	be_emit_string(buf);
+	ir_obst_vprintf(&emit_obst, fmt, args);
 }
 
 void be_emit_irprintf(const char *fmt, ...)
@@ -100,9 +81,8 @@ void be_emit_pad_comment(void)
 
 void be_emit_finish_line_gas(const ir_node *node)
 {
-	dbg_info   *dbg;
-	const char *sourcefile;
-	unsigned    lineno;
+	dbg_info  *dbg;
+	src_loc_t  loc;
 
 	if (node == NULL || !be_options.verbose_asm) {
 		be_emit_char('\n');
@@ -114,11 +94,16 @@ void be_emit_finish_line_gas(const ir_node *node)
 	be_emit_cstring("/* ");
 	be_emit_irprintf("%+F ", node);
 
-	dbg        = get_irn_dbg_info(node);
-	sourcefile = ir_retrieve_dbg_info(dbg, &lineno);
-	if (sourcefile != NULL) {
-		be_emit_string(sourcefile);
-		be_emit_irprintf(":%u", lineno);
+	dbg = get_irn_dbg_info(node);
+	loc = ir_retrieve_dbg_info(dbg);
+	if (loc.file) {
+		be_emit_string(loc.file);
+		if (loc.line != 0) {
+			be_emit_irprintf(":%u", loc.line);
+			if (loc.column != 0) {
+				be_emit_irprintf(":%u", loc.column);
+			}
+		}
 	}
 	be_emit_cstring(" */\n");
 	be_emit_write_line();

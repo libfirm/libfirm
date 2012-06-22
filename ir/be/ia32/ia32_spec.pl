@@ -18,37 +18,37 @@ $state       =  8; # register represents a state
 # NOTE: Last entry of each class is the largest Firm-Mode a register can hold
 %reg_classes = (
 	gp => [
-		{ name => "edx" },
-		{ name => "ecx" },
-		{ name => "eax" },
-		{ name => "ebx" },
-		{ name => "esi" },
-		{ name => "edi" },
-		{ name => "ebp" },
-		{ name => "esp", type => $ignore },
+		{ name => "edx", dwarf => 2 },
+		{ name => "ecx", dwarf => 1 },
+		{ name => "eax", dwarf => 0 },
+		{ name => "ebx", dwarf => 3 },
+		{ name => "esi", dwarf => 6 },
+		{ name => "edi", dwarf => 7 },
+		{ name => "ebp", dwarf => 5 },
+		{ name => "esp", dwarf => 4, type => $ignore },
 		{ name => "gp_NOREG", type => $ignore | $arbitrary | $virtual }, # we need a dummy register for NoReg nodes
 		{ mode => $mode_gp }
 	],
 	mmx => [
-		{ name => "mm0", type => $ignore },
-		{ name => "mm1", type => $ignore },
-		{ name => "mm2", type => $ignore },
-		{ name => "mm3", type => $ignore },
-		{ name => "mm4", type => $ignore },
-		{ name => "mm5", type => $ignore },
-		{ name => "mm6", type => $ignore },
-		{ name => "mm7", type => $ignore },
+		{ name => "mm0", dwarf => 29, type => $ignore },
+		{ name => "mm1", dwarf => 30, type => $ignore },
+		{ name => "mm2", dwarf => 31, type => $ignore },
+		{ name => "mm3", dwarf => 32, type => $ignore },
+		{ name => "mm4", dwarf => 33, type => $ignore },
+		{ name => "mm5", dwarf => 34, type => $ignore },
+		{ name => "mm6", dwarf => 35, type => $ignore },
+		{ name => "mm7", dwarf => 36, type => $ignore },
 		{ mode => $mode_mmx, flags => "manual_ra" }
 	],
 	xmm => [
-		{ name => "xmm0" },
-		{ name => "xmm1" },
-		{ name => "xmm2" },
-		{ name => "xmm3" },
-		{ name => "xmm4" },
-		{ name => "xmm5" },
-		{ name => "xmm6" },
-		{ name => "xmm7" },
+		{ name => "xmm0", dwarf => 21 },
+		{ name => "xmm1", dwarf => 22 },
+		{ name => "xmm2", dwarf => 23 },
+		{ name => "xmm3", dwarf => 24 },
+		{ name => "xmm4", dwarf => 25 },
+		{ name => "xmm5", dwarf => 26 },
+		{ name => "xmm6", dwarf => 27 },
+		{ name => "xmm7", dwarf => 28 },
 		{ name => "xmm_NOREG", type => $ignore | $virtual },     # we need a dummy register for NoReg nodes
 		{ mode => $mode_xmm }
 	],
@@ -65,22 +65,22 @@ $state       =  8; # register represents a state
 		{ mode => $mode_fp87 }
 	],
 	st => [
-		{ name => "st0", realname => "st",    type => $ignore },
-		{ name => "st1", realname => "st(1)", type => $ignore },
-		{ name => "st2", realname => "st(2)", type => $ignore },
-		{ name => "st3", realname => "st(3)", type => $ignore },
-		{ name => "st4", realname => "st(4)", type => $ignore },
-		{ name => "st5", realname => "st(5)", type => $ignore },
-		{ name => "st6", realname => "st(6)", type => $ignore },
-		{ name => "st7", realname => "st(7)", type => $ignore },
+		{ name => "st0", realname => "st",    dwarf => 11, type => $ignore },
+		{ name => "st1", realname => "st(1)", dwarf => 12, type => $ignore },
+		{ name => "st2", realname => "st(2)", dwarf => 13, type => $ignore },
+		{ name => "st3", realname => "st(3)", dwarf => 14, type => $ignore },
+		{ name => "st4", realname => "st(4)", dwarf => 15, type => $ignore },
+		{ name => "st5", realname => "st(5)", dwarf => 16, type => $ignore },
+		{ name => "st6", realname => "st(6)", dwarf => 17, type => $ignore },
+		{ name => "st7", realname => "st(7)", dwarf => 18, type => $ignore },
 		{ mode => $mode_fp87, flags => "manual_ra" }
 	],
 	fp_cw => [	# the floating point control word
-		{ name => "fpcw", type => $ignore | $state },
+		{ name => "fpcw", dwarf => 37, type => $ignore | $state },
 		{ mode => $mode_fpcw, flags => "manual_ra|state" }
 	],
 	flags => [
-		{ name => "eflags", type => 0 },
+		{ name => "eflags", dwarf => 9, type => 0 },
 		{ mode => "mode_Iu", flags => "manual_ra" }
 	],
 ); # %reg_classes
@@ -587,7 +587,7 @@ l_Sbb => {
 },
 
 IDiv => {
-	op_flags  => [ "fragile", "uses_memory", "labeled" ],
+	op_flags  => [ "fragile", "uses_memory" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "eax", "edx" ],
 	               out => [ "eax", "flags", "none", "edx", "none", "none" ] },
@@ -601,7 +601,7 @@ IDiv => {
 },
 
 Div => {
-	op_flags  => [ "fragile", "uses_memory", "labeled" ],
+	op_flags  => [ "fragile", "uses_memory" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "eax", "edx" ],
 	               out => [ "eax", "flags", "none", "edx", "none", "none" ] },
@@ -746,7 +746,7 @@ Rol => {
 	               out => [ "in_r1 !in_r2", "flags" ] },
 	ins       => [ "val", "count" ],
 	outs      => [ "res", "flags" ],
-	emit      => '. rol%M %SB1, %S0',
+	emit      => '. rol%M %SB1, %DS0',
 	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_gp,
@@ -1027,7 +1027,7 @@ CMovcc => {
 
 Jcc => {
 	state     => "pinned",
-	op_flags  => [ "labeled", "cfopcode", "forking" ],
+	op_flags  => [ "cfopcode", "forking" ],
 	reg_req   => { in  => [ "eflags" ], out => [ "none", "none" ] },
 	ins       => [ "eflags" ],
 	outs      => [ "false", "true" ],
@@ -1039,7 +1039,7 @@ Jcc => {
 
 SwitchJmp => {
 	state     => "pinned",
-	op_flags  => [ "labeled", "cfopcode", "forking" ],
+	op_flags  => [ "cfopcode", "forking" ],
 	reg_req   => { in => [ "gp", "gp" ] },
 	ins       => [ "base", "index" ],
 	out_arity => "variable",
@@ -1103,7 +1103,7 @@ GetEIP => {
 
 NoReg_GP => {
 	state     => "pinned",
-	op_flags  => [ "constlike", "dump_noblock", "dump_noinput" ],
+	op_flags  => [ "constlike", "dump_noblock" ],
 	irn_flags => [ "not_scheduled" ],
 	reg_req   => { out => [ "gp_NOREG:I" ] },
 	units     => [],
@@ -1114,7 +1114,7 @@ NoReg_GP => {
 
 NoReg_VFP => {
 	state     => "pinned",
-	op_flags  => [ "constlike", "dump_noblock", "dump_noinput" ],
+	op_flags  => [ "constlike", "dump_noblock" ],
 	irn_flags => [ "not_scheduled" ],
 	reg_req   => { out => [ "vfp_NOREG:I" ] },
 	units     => [],
@@ -1126,7 +1126,7 @@ NoReg_VFP => {
 
 NoReg_XMM => {
 	state     => "pinned",
-	op_flags  => [ "constlike", "dump_noblock", "dump_noinput" ],
+	op_flags  => [ "constlike", "dump_noblock" ],
 	irn_flags => [ "not_scheduled" ],
 	reg_req   => { out => [ "xmm_NOREG:I" ] },
 	units     => [],
@@ -1147,7 +1147,7 @@ ChangeCW => {
 },
 
 FldCW => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "fpcw:I" ] },
 	ins       => [ "base", "index", "mem" ],
@@ -1159,7 +1159,7 @@ FldCW => {
 },
 
 FnstCW => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "fp_cw" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "fpcw" ],
@@ -1170,7 +1170,7 @@ FnstCW => {
 },
 
 FnstCWNOP => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "pinned",
 	reg_req   => { in => [ "fp_cw" ], out => [ "none" ] },
 	ins       => [ "fpcw" ],
@@ -1195,7 +1195,7 @@ Cltd => {
 # lateny of 0 for load is correct
 
 Load => {
-	op_flags  => [ "uses_memory", "fragile", "labeled" ],
+	op_flags  => [ "uses_memory", "fragile" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ],
 	               out => [ "gp", "none", "none", "none", "none" ] },
@@ -1207,7 +1207,7 @@ Load => {
 },
 
 Store => {
-	op_flags  => [ "uses_memory", "fragile", "labeled" ],
+	op_flags  => [ "uses_memory", "fragile" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp" ],
 	               out => [ "none", "none", "none" ] },
@@ -1219,7 +1219,7 @@ Store => {
 },
 
 Store8Bit => {
-	op_flags  => [ "uses_memory", "fragile", "labeled" ],
+	op_flags  => [ "uses_memory", "fragile" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ],
 	               out => ["none", "none", "none" ] },
@@ -1550,7 +1550,7 @@ Inport => {
 # Intel style prefetching
 #
 Prefetch0 => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
@@ -1561,7 +1561,7 @@ Prefetch0 => {
 },
 
 Prefetch1 => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
@@ -1572,7 +1572,7 @@ Prefetch1 => {
 },
 
 Prefetch2 => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
@@ -1583,7 +1583,7 @@ Prefetch2 => {
 },
 
 PrefetchNTA => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
@@ -1597,7 +1597,7 @@ PrefetchNTA => {
 # 3DNow! prefetch instructions
 #
 Prefetch => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
@@ -1608,7 +1608,7 @@ Prefetch => {
 },
 
 PrefetchW => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
@@ -1853,7 +1853,7 @@ Ucomi => {
 },
 
 xLoad => {
-	op_flags  => [ "uses_memory", "fragile", "labeled" ],
+	op_flags  => [ "uses_memory", "fragile" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ],
 	               out => [ "xmm", "none", "none", "none", "none" ] },
@@ -1867,7 +1867,7 @@ xLoad => {
 },
 
 xStore => {
-	op_flags => [ "uses_memory", "fragile", "labeled" ],
+	op_flags => [ "uses_memory", "fragile" ],
 	state    => "exc_pinned",
 	reg_req  => { in => [ "gp", "gp", "none", "xmm" ],
 	              out => [ "none", "none", "none" ] },
@@ -1879,7 +1879,7 @@ xStore => {
 },
 
 xStoreSimple => {
-	op_flags => [ "uses_memory", "fragile", "labeled" ],
+	op_flags => [ "uses_memory", "fragile" ],
 	state    => "exc_pinned",
 	reg_req  => { in => [ "gp", "gp", "none", "xmm" ],
 	              out => [ "none", "none", "none" ] },
@@ -1891,7 +1891,6 @@ xStoreSimple => {
 },
 
 CvtSI2SS => {
-	op_flags => [ "labeled" ],
 	state     => "exc_pinned",
 	reg_req  => { in => [ "gp", "gp", "none", "gp" ], out => [ "xmm" ] },
 	ins      => [ "base", "index", "mem", "val" ],
@@ -1903,7 +1902,6 @@ CvtSI2SS => {
 },
 
 CvtSI2SD => {
-	op_flags => [ "labeled" ],
 	state     => "exc_pinned",
 	reg_req  => { in => [ "gp", "gp", "none", "gp" ], out => [ "xmm" ] },
 	ins      => [ "base", "index", "mem", "val" ],
@@ -2117,7 +2115,7 @@ vfchs => {
 
 vfld => {
 	irn_flags => [ "rematerializable" ],
-	op_flags  => [ "uses_memory", "fragile", "labeled" ],
+	op_flags  => [ "uses_memory", "fragile" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ],
 	               out => [ "vfp", "none", "none", "none", "none" ] },
@@ -2132,7 +2130,7 @@ vfld => {
 
 vfst => {
 	irn_flags => [ "rematerializable" ],
-	op_flags  => [ "uses_memory", "fragile", "labeled" ],
+	op_flags  => [ "uses_memory", "fragile" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "vfp" ],
 	               out => [ "none", "none", "none" ] },
@@ -2443,7 +2441,6 @@ fchs => {
 
 fld => {
 	irn_flags => [ "rematerializable" ],
-	op_flags  => [ "labeled" ],
 	state     => "exc_pinned",
 	emit      => '. fld%XM %AM',
 	attr_type => "ia32_x87_attr_t",
@@ -2453,7 +2450,6 @@ fld => {
 
 fst => {
 	irn_flags => [ "rematerializable" ],
-	op_flags  => [ "labeled" ],
 	state     => "exc_pinned",
 	emit      => '. fst%XM %AM',
 	mode      => "mode_M",
@@ -2464,7 +2460,6 @@ fst => {
 
 fstp => {
 	irn_flags => [ "rematerializable" ],
-	op_flags  => [ "labeled" ],
 	state     => "exc_pinned",
 	emit      => '. fstp%XM %AM',
 	mode      => "mode_M",
@@ -2693,7 +2688,7 @@ FtstFnstsw => {
 # Spilling and reloading of SSE registers, hardcoded, not generated #
 
 xxLoad => {
-	op_flags  => [ "uses_memory", "fragile", "labeled" ],
+	op_flags  => [ "uses_memory", "fragile" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ],
 	               out => [ "xmm", "none", "none", "none" ] },
@@ -2705,7 +2700,7 @@ xxLoad => {
 },
 
 xxStore => {
-	op_flags => [ "uses_memory", "fragile", "labeled" ],
+	op_flags => [ "uses_memory", "fragile" ],
 	state    => "exc_pinned",
 	reg_req  => { in => [ "gp", "gp", "none", "xmm" ],
 	              out => [ "none", "none", "none" ] },

@@ -1344,9 +1344,6 @@ static ir_node *gen_Add(ir_node *node)
 
 	ia32_mark_non_am(node);
 
-	op2 = ia32_skip_downconv(op2);
-	op1 = ia32_skip_downconv(op1);
-
 	/**
 	 * Rules for an Add:
 	 *   0. Immediate Trees (example Add(Symconst, Const) -> Const)
@@ -2078,7 +2075,6 @@ static ir_node *get_flags_node(ir_node *cmp, ia32_condition_code_t *cc_out)
 	ir_node    *r        = get_Cmp_right(cmp);
 	ir_mode    *mode     = get_irn_mode(l);
 	bool        overflow_possible;
-	ir_relation possible;
 	ir_node    *flags;
 
 	/* check for bit-test */
@@ -2110,14 +2106,14 @@ static ir_node *get_flags_node(ir_node *cmp, ia32_condition_code_t *cc_out)
 		}
 	}
 
-	/* the middle-end tries to eliminate impossible relations, so a ptr != 0
+	/* the middle-end tries to eliminate impossible relations, so a ptr <> 0
 	 * test becomes ptr > 0. But for x86 an equal comparison is preferable to
 	 * a >0 (we can sometimes eliminate the cmp in favor of flags produced by
-	 * a predecessor node). So add the < bit */
-	possible = ir_get_possible_cmp_relations(l, r);
-	if (((relation & ir_relation_less) && !(possible & ir_relation_greater))
-	    || ((relation & ir_relation_greater) && !(possible & ir_relation_less)))
-		relation |= ir_relation_less_greater;
+	 * a predecessor node). So add the < bit.
+	 * (Note that we do not want to produce <=> (which can happen for
+	 * unoptimized code), because no x86 flag can represent that */
+	if (!(relation & ir_relation_equal) && relation & ir_relation_less_greater)
+		relation |= get_negated_relation(ir_get_possible_cmp_relations(l, r)) & ir_relation_less_greater;
 
 	overflow_possible = true;
 	if (is_Const(r) && is_Const_null(r))
@@ -2869,14 +2865,13 @@ static ir_node *create_Fucom(ir_node *node)
 		set_ia32_commutative(new_node);
 		SET_IA32_ORIG_NODE(new_node, node);
 	} else {
-		if (ia32_cg_config.use_ftst && is_Const_0(right)) {
+		if (is_Const_0(right)) {
 			new_node = new_bd_ia32_vFtstFnstsw(dbgi, new_block, new_left, 0);
 		} else {
 			new_right = be_transform_node(right);
 			new_node  = new_bd_ia32_vFucomFnstsw(dbgi, new_block, new_left, new_right, 0);
+			set_ia32_commutative(new_node);
 		}
-
-		set_ia32_commutative(new_node);
 
 		SET_IA32_ORIG_NODE(new_node, node);
 
@@ -5283,27 +5278,23 @@ static ir_node *gen_bswap(ir_node *node)
 	ir_node *new_block = be_transform_node(block);
 	ir_mode *mode      = get_irn_mode(param);
 	unsigned size      = get_mode_size_bits(mode);
-	ir_node  *m1, *m2, *m3, *m4, *s1, *s2, *s3, *s4;
 
 	switch (size) {
 	case 32:
-		if (ia32_cg_config.use_i486) {
+		if (ia32_cg_config.use_bswap) {
 			/* swap available */
 			return new_bd_ia32_Bswap(dbgi, new_block, param);
+		} else {
+			ir_node *i8 = ia32_create_Immediate(NULL, 0, 8);
+			ir_node *rol1 = new_bd_ia32_Rol(dbgi, new_block, param, i8);
+			ir_node *i16 = ia32_create_Immediate(NULL, 0, 16);
+			ir_node *rol2 = new_bd_ia32_Rol(dbgi, new_block, rol1, i16);
+			ir_node *rol3 = new_bd_ia32_Rol(dbgi, new_block, rol2, i8);
+			set_ia32_ls_mode(rol1, mode_Hu);
+			set_ia32_ls_mode(rol2, mode_Iu);
+			set_ia32_ls_mode(rol3, mode_Hu);
+			return rol3;
 		}
-		s1 = new_bd_ia32_Shl(dbgi, new_block, param, ia32_create_Immediate(NULL, 0, 24));
-		s2 = new_bd_ia32_Shl(dbgi, new_block, param, ia32_create_Immediate(NULL, 0, 8));
-
-		m1 = new_bd_ia32_And(dbgi, new_block, noreg_GP, noreg_GP, nomem, s2, ia32_create_Immediate(NULL, 0, 0xFF00));
-		m2 = new_bd_ia32_Lea(dbgi, new_block, s1, m1);
-
-		s3 = new_bd_ia32_Shr(dbgi, new_block, param, ia32_create_Immediate(NULL, 0, 8));
-
-		m3 = new_bd_ia32_And(dbgi, new_block, noreg_GP, noreg_GP, nomem, s3, ia32_create_Immediate(NULL, 0, 0xFF0000));
-		m4 = new_bd_ia32_Lea(dbgi, new_block, m2, m3);
-
-		s4 = new_bd_ia32_Shr(dbgi, new_block, param, ia32_create_Immediate(NULL, 0, 24));
-		return new_bd_ia32_Lea(dbgi, new_block, m4, s4);
 
 	case 16:
 		/* swap16 always available */

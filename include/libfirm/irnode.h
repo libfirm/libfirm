@@ -259,10 +259,6 @@ FIRM_API void set_Block_cfgpred(ir_node *block, int pos, ir_node *pred);
  * @param pred   a predecessor block of block
  *
  * @return the position of pred in block or -1
- *
- * @note When using the old extended basic block form for blocks
- * with exception exists, a predecessor block might have more
- * than one position. In that case it is not specified, with is returned.
  */
 FIRM_API int get_Block_cfgpred_pos(const ir_node *block, const ir_node *pred);
 
@@ -295,10 +291,6 @@ FIRM_API void mark_Block_block_visited(ir_node *node);
 /** Returns 1 if a block is marked as visited */
 FIRM_API int Block_block_visited(const ir_node *node);
 
-/** Returns the extended basic block a block belongs to. */
-FIRM_API ir_extblk *get_Block_extbb(const ir_node *block);
-/** Sets the extended basic block a block belongs to. */
-FIRM_API void set_Block_extbb(ir_node *block, ir_extblk *extblk);
 /** Returns the ir_graph this Block belongs to. */
 FIRM_API ir_graph *get_Block_irg(const ir_node *block);
 /** Returns the entity for a Block (creating it if necessary) */
@@ -602,11 +594,6 @@ FIRM_API int is_Cast_downcast(ir_node *node);
  * @{
  */
 
-/**
- * Returns 1 if irg in phase phase_building and the Phi has zero
- * predecessors. It's a "Phi0" then.
- */
-FIRM_API int is_Phi0(const ir_node *n);
 /**
  * Returns all phi predecessors as array
  */

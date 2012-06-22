@@ -31,7 +31,6 @@
 #include "typerep.h"
 #include "type_t.h"
 #include "ident.h"
-#include "compound_path.h"
 
 typedef struct ir_initializer_base_t {
 	ir_initializer_kind_t kind;
@@ -70,13 +69,6 @@ union ir_initializer_t {
 	ir_initializer_tarval_t    tarval;
 };
 
-/** The attributes for compound entities. */
-typedef struct compound_ent_attr {
-	ir_node **values;     /**< constant values of compound entities. */
-	compound_graph_path **val_paths;
-	                     /**< paths corresponding to constant values. */
-} compound_ent_attr;
-
 /** The attributes for methods. */
 typedef struct method_ent_attr {
 	ir_graph *irg;                 /**< The corresponding irg if known.
@@ -98,9 +90,6 @@ typedef struct code_ent_attr {
 } code_ent_attr;
 
 typedef struct parameter_ent_attr {
-	/**< parameters might be compounds too */
-	compound_ent_attr  cmpd_attr;
-
 	size_t   number; /**< corresponding parameter number */
 	ir_mode *doubleword_low_mode;/**< entity is a lowered doubleword parameter,
 								so additional stores because of calling
@@ -169,8 +158,6 @@ struct ir_entity {
 #endif
 
 	union {
-		/* ------------- fields for compound entities -------------- */
-		compound_ent_attr  cmpd_attr;
 		/* ------------- fields for method entities ---------------- */
 		method_ent_attr    mtd_attr;
 		/* fields for code entities */

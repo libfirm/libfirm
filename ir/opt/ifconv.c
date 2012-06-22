@@ -39,7 +39,6 @@
 #include "array_t.h"
 #include "irpass_t.h"
 #include "be.h"
-#include "opt_manage.h"
 
 #include "irdump.h"
 #include "debug.h"
@@ -464,10 +463,16 @@ static void collect_phis(ir_node *node, void *env)
 	}
 }
 
-static ir_graph_state_t do_ifconv(ir_graph *irg)
+void opt_if_conv(ir_graph *irg)
 {
 	walker_env            env;
 	const backend_params *be_params = be_get_backend_param();
+
+	assure_irg_properties(irg,
+		IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
+		| IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
+		| IR_GRAPH_PROPERTY_NO_BADS
+		| IR_GRAPH_PROPERTY_ONE_RETURN);
 
 	/* get the parameters */
 	env.allow_ifconv = be_params->allow_ifconv;
@@ -493,18 +498,9 @@ static ir_graph_state_t do_ifconv(ir_graph *irg)
 
 	free_cdep(irg);
 
-	return IR_GRAPH_STATE_NO_CRITICAL_EDGES | IR_GRAPH_STATE_ONE_RETURN;
-}
-
-static optdesc_t opt_ifconv = {
-	"if-conversion",
-	IR_GRAPH_STATE_NO_CRITICAL_EDGES | IR_GRAPH_STATE_NO_UNREACHABLE_CODE | IR_GRAPH_STATE_NO_BADS | IR_GRAPH_STATE_ONE_RETURN,
-	do_ifconv,
-};
-
-void opt_if_conv(ir_graph *irg)
-{
-	perform_irg_optimization(irg, &opt_ifconv);
+	confirm_irg_properties(irg,
+		IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
+		| IR_GRAPH_PROPERTY_ONE_RETURN);
 }
 
 ir_graph_pass_t *opt_if_conv_pass(const char *name)

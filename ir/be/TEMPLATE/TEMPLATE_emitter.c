@@ -46,12 +46,10 @@
 #include "TEMPLATE_nodes_attr.h"
 #include "TEMPLATE_new_nodes.h"
 
-#define SNPRINTF_BUF_LEN 128
-
 void TEMPLATE_emit_immediate(const ir_node *node)
 {
 	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
-	be_emit_tarval(attr->value);
+	be_emit_irprintf("%T", attr->value);
 }
 
 static void emit_register(const arch_register_t *reg)
@@ -255,7 +253,7 @@ void TEMPLATE_emit_routine(ir_graph *irg)
 	block_schedule = be_create_block_schedule(irg);
 
 	/* emit assembler prolog */
-	be_gas_emit_function_prolog(entity, 4);
+	be_gas_emit_function_prolog(entity, 4, NULL);
 
 	/* populate jump link fields with their destinations */
 	irg_block_walk_graph(irg, TEMPLATE_gen_labels, NULL, NULL);

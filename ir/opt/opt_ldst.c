@@ -631,170 +631,6 @@ static long get_Sel_array_index_long(ir_node *n, int dim)
 	return get_tarval_long(get_Const_tarval(index));
 }  /* get_Sel_array_index_long */
 
-/**
- * Returns the accessed component graph path for an
- * node computing an address.
- *
- * @param ptr    the node computing the address
- * @param depth  current depth in steps upward from the root
- *               of the address
- */
-static compound_graph_path *rec_get_accessed_path(ir_node *ptr, size_t depth)
-{
-	compound_graph_path *res = NULL;
-	ir_entity           *root, *field, *ent;
-	size_t              path_len, pos, idx;
-	ir_tarval           *tv;
-	ir_type             *tp;
-
-	if (is_SymConst(ptr)) {
-		/* a SymConst. If the depth is 0, this is an access to a global
-		 * entity and we don't need a component path, else we know
-		 * at least its length.
-		 */
-		assert(get_SymConst_kind(ptr) == symconst_addr_ent);
-		root = get_SymConst_entity(ptr);
-		res = (depth == 0) ? NULL : new_compound_graph_path(get_entity_type(root), depth);
-	} else if (is_Sel(ptr)) {
-		/* it's a Sel, go up until we find the root */
-		res = rec_get_accessed_path(get_Sel_ptr(ptr), depth+1);
-		if (res == NULL)
-			return NULL;
-
-		/* fill up the step in the path at the current position */
-		field    = get_Sel_entity(ptr);
-		path_len = get_compound_graph_path_length(res);
-		pos      = path_len - depth - 1;
-		set_compound_graph_path_node(res, pos, field);
-
-		if (is_Array_type(get_entity_owner(field))) {
-			assert(get_Sel_n_indexs(ptr) == 1 && "multi dim arrays not implemented");
-			set_compound_graph_path_array_index(res, pos, get_Sel_array_index_long(ptr, 0));
-		}
-	} else if (is_Add(ptr)) {
-		ir_mode   *mode;
-		ir_tarval *tmp;
-
-		{
-			ir_node *l = get_Add_left(ptr);
-			ir_node *r = get_Add_right(ptr);
-			if (is_Const(r) && get_irn_mode(l) == get_irn_mode(ptr)) {
-				ptr = l;
-				tv  = get_Const_tarval(r);
-			} else {
-				ptr = r;
-				tv  = get_Const_tarval(l);
-			}
-		}
-ptr_arith:
-		mode = get_tarval_mode(tv);
-		tmp  = tv;
-
-		/* ptr must be a Sel or a SymConst, this was checked in find_constant_entity() */
-		if (is_Sel(ptr)) {
-			field = get_Sel_entity(ptr);
-		} else {
-			field = get_SymConst_entity(ptr);
-		}
-		idx = 0;
-		for (ent = field;;) {
-			unsigned  size;
-			ir_tarval *sz, *tv_index, *tlower, *tupper;
-			ir_node   *bound;
-
-			tp = get_entity_type(ent);
-			if (! is_Array_type(tp))
-				break;
-			ent = get_array_element_entity(tp);
-			size = get_type_size_bytes(get_entity_type(ent));
-			sz   = new_tarval_from_long(size, mode);
-
-			tv_index = tarval_div(tmp, sz);
-			tmp      = tarval_mod(tmp, sz);
-
-			if (tv_index == tarval_bad || tmp == tarval_bad)
-				return NULL;
-
-			assert(get_array_n_dimensions(tp) == 1 && "multiarrays not implemented");
-			bound  = get_array_lower_bound(tp, 0);
-			tlower = computed_value(bound);
-			bound  = get_array_upper_bound(tp, 0);
-			tupper = computed_value(bound);
-
-			if (tlower == tarval_bad || tupper == tarval_bad)
-				return NULL;
-
-			if (tarval_cmp(tv_index, tlower) == ir_relation_less)
-				return NULL;
-			if (tarval_cmp(tupper, tv_index) == ir_relation_less)
-				return NULL;
-
-			/* ok, bounds check finished */
-			++idx;
-		}
-		if (! tarval_is_null(tmp)) {
-			/* access to some struct/union member */
-			return NULL;
-		}
-
-		/* should be at least ONE array */
-		if (idx == 0)
-			return NULL;
-
-		res = rec_get_accessed_path(ptr, depth + idx);
-		if (res == NULL)
-			return NULL;
-
-		path_len = get_compound_graph_path_length(res);
-		pos      = path_len - depth - idx;
-
-		for (ent = field;;) {
-			unsigned   size;
-			ir_tarval *sz, *tv_index;
-			long       index;
-
-			tp = get_entity_type(ent);
-			if (! is_Array_type(tp))
-				break;
-			ent = get_array_element_entity(tp);
-			set_compound_graph_path_node(res, pos, ent);
-
-			size = get_type_size_bytes(get_entity_type(ent));
-			sz   = new_tarval_from_long(size, mode);
-
-			tv_index = tarval_div(tv, sz);
-			tv       = tarval_mod(tv, sz);
-
-			/* worked above, should work again */
-			assert(tv_index != tarval_bad && tv != tarval_bad);
-
-			/* bounds already checked above */
-			index = get_tarval_long(tv_index);
-			set_compound_graph_path_array_index(res, pos, index);
-			++pos;
-		}
-	} else if (is_Sub(ptr)) {
-		ir_node *l = get_Sub_left(ptr);
-		ir_node *r = get_Sub_right(ptr);
-
-		ptr = l;
-		tv  = get_Const_tarval(r);
-		tv  = tarval_neg(tv);
-		goto ptr_arith;
-	}
-	return res;
-}  /* rec_get_accessed_path */
-
-/**
- * Returns an access path or NULL.  The access path is only
- * valid, if the graph is in phase_high and _no_ address computation is used.
- */
-static compound_graph_path *get_accessed_path(ir_node *ptr)
-{
-	compound_graph_path *gr = rec_get_accessed_path(ptr, 0);
-	return gr;
-}  /* get_accessed_path */
-
 typedef struct path_entry {
 	ir_entity         *ent;
 	struct path_entry *next;
@@ -1079,17 +915,6 @@ static void update_Load_memop(memop_t *m)
 			if (ent->initializer) {
 				/* new style initializer */
 				value = find_compound_ent_value(ptr);
-			} else if (entity_has_compound_ent_values(ent)) {
-				/* old style initializer */
-				compound_graph_path *path = get_accessed_path(ptr);
-
-				if (path != NULL) {
-					assert(is_proper_compound_graph_path(path, get_compound_graph_path_length(path)-1));
-
-					value = get_compound_ent_value_by_path(ent, path);
-					DB((dbg, LEVEL_1, "  Constant access at %F%F resulted in %+F\n", ent, path, value));
-					free_compound_graph_path(path);
-				}
 			}
 			if (value != NULL)
 				value = can_replace_load_by_const(load, value);
@@ -2235,104 +2060,7 @@ static void insert_Loads_upwards(void)
 	DB((dbg, LEVEL_2, "Finished Load inserting after %d iterations\n", i));
 }  /* insert_Loads_upwards */
 
-/**
- * Kill unreachable control flow.
- *
- * @param irg  the graph to operate on
- */
-static void kill_unreachable_blocks(ir_graph *irg)
-{
-	block_t *bl;
-	ir_node **ins;
-	int     changed = 0;
-
-	NEW_ARR_A(ir_node *, ins, env.max_cfg_preds);
-
-	for (bl = env.forward; bl != NULL; bl = bl->forward_next) {
-		ir_node *block = bl->block;
-		int     i, j, k, n;
-
-		assert(get_Block_mark(block));
-
-		n = get_Block_n_cfgpreds(block);
-
-		for (i = j = 0; i < n; ++i) {
-			ir_node *pred = get_Block_cfgpred(block, i);
-			ir_node *pred_bl;
-
-			if (is_Bad(pred))
-				continue;
-
-			pred_bl = get_nodes_block(skip_Proj(pred));
-			if (! get_Block_mark(pred_bl))
-				continue;
-
-			ins[j++] = pred;
-		}
-		if (j != n) {
-			ir_node *phi, *next;
-
-			/* some unreachable blocks detected */
-			changed = 1;
-
-			DB((dbg, LEVEL_1, "Killing dead block predecessors on %+F\n", block));
-
-			set_irn_in(block, j, ins);
-
-			/* shorten all Phi nodes */
-			for (phi = get_Block_phis(block); phi != NULL; phi = next) {
-				next = get_Phi_next(phi);
-
-				for (i = k = 0; i < n; ++i) {
-					ir_node *pred = get_Block_cfgpred_block(block, i);
-
-					if (is_Bad(pred))
-						continue;
-
-					if (! get_Block_mark(pred))
-						continue;
-
-					ins[k++] = get_Phi_pred(phi, i);
-				}
-				if (k == 1)
-					exchange(phi, ins[0]);
-				else
-					set_irn_in(phi, k, ins);
-			}
-		}
-
-	}
-
-	if (changed) {
-		/* kick keep alives */
-		ir_node *end = get_irg_end(irg);
-		int     i, j, n = get_End_n_keepalives(end);
-
-		NEW_ARR_A(ir_node *, ins, n);
-
-		for (i = j = 0; i < n; ++i) {
-			ir_node *ka = get_End_keepalive(end, i);
-			ir_node *ka_bl;
-
-			if (is_Bad(ka))
-				continue;
-			if (is_Block(ka))
-				ka_bl = ka;
-			else
-				ka_bl = get_nodes_block(skip_Proj(ka));
-			if (get_Block_mark(ka_bl))
-				ins[j++] = ka;
-		}
-		if (j != n)
-			set_End_keepalives(end, j, ins);
-
-		free_irg_outs(irg);
-
-		/* this transformation do NOT invalidate the dominance */
-	}
-}  /* kill_unreachable_blocks */
-
-int opt_ldst(ir_graph *irg)
+void opt_ldst(ir_graph *irg)
 {
 	block_t *bl;
 
@@ -2340,11 +2068,14 @@ int opt_ldst(ir_graph *irg)
 
 	DB((dbg, LEVEL_1, "\nDoing Load/Store optimization on %+F\n", irg));
 
-	/* we need landing pads */
-	remove_critical_cf_edges(irg);
+	assure_irg_properties(irg,
+		IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES /* we need landing pads */
+		| IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE
+		| IR_GRAPH_PROPERTY_CONSISTENT_OUTS
+		| IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
+		| IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
 	if (get_opt_alias_analysis()) {
-		assure_irg_entity_usage_computed(irg);
 		assure_irp_globals_entity_usage_computed();
 	}
 
@@ -2362,8 +2093,6 @@ int opt_ldst(ir_graph *irg)
 #ifdef DEBUG_libfirm
 	env.id_2_address  = NEW_ARR_F(ir_node *, 0);
 #endif
-
-	assure_irg_outs(irg);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_BLOCK_MARK);
 
@@ -2387,11 +2116,6 @@ int opt_ldst(ir_graph *irg)
 		set_Block_mark(env.end_bl, 1);
 	}
 
-	/* KILL unreachable blocks: these disturb the data flow analysis */
-	kill_unreachable_blocks(irg);
-
-	assure_doms(irg);
-
 	/* second step: find and sort all memory ops */
 	walk_memory_irg(irg, collect_memops, NULL, NULL);
 
@@ -2402,7 +2126,7 @@ int opt_ldst(ir_graph *irg)
 
 	if (env.n_mem_ops == 0) {
 		/* no memory ops */
-		goto end;
+		goto no_changes;
 	}
 
 	/* create the backward links. */
@@ -2458,10 +2182,11 @@ int opt_ldst(ir_graph *irg)
 
 		/* not only invalidate but free them. We might allocate new out arrays
 		   on our obstack which will be deleted yet. */
-		free_irg_outs(irg);
-		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE);
+		confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW);
+	} else {
+no_changes:
+		confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_ALL);
 	}
-end:
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_BLOCK_MARK);
 	ir_nodehashmap_destroy(&env.adr_map);
@@ -2470,11 +2195,9 @@ end:
 #ifdef DEBUG_libfirm
 	DEL_ARR_F(env.id_2_address);
 #endif
-
-	return env.changed != 0;
 }  /* opt_ldst */
 
 ir_graph_pass_t *opt_ldst_pass(const char *name)
 {
-	return def_graph_pass_ret(name ? name : "ldst_df", opt_ldst);
+	return def_graph_pass(name ? name : "ldst_df", opt_ldst);
 }  /* opt_ldst_pass */

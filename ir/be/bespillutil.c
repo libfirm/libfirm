@@ -462,7 +462,7 @@ static void spill_phi(spill_env_t *env, spill_info_t *spillinfo)
 	/* override or replace spills list... */
 	spill         = OALLOC(&env->obst, spill_t);
 	spill->after  = determine_spill_point(phi);
-	spill->spill  = be_new_Phi(block, arity, ins, mode_M, NULL);
+	spill->spill  = be_new_Phi(block, arity, ins, mode_M, arch_no_register_req);
 	spill->next   = NULL;
 	sched_add_after(block, spill->spill);
 

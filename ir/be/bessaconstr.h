@@ -62,7 +62,7 @@ typedef struct be_ssa_construction_env_t {
 	ir_graph                    *irg;
 	const be_dom_front_info_t   *domfronts;
 	ir_mode                     *mode;
-	const arch_register_class_t *phi_cls;
+	const arch_register_req_t   *phi_req;
 	waitq                       *worklist;
 	const ir_nodeset_t          *ignore_uses;
 	ir_node                    **new_phis;

@@ -23,21 +23,8 @@
  */
 #include <config.h>
 #include "irgopt.h"
-#include "opt_manage.h"
-
-static ir_graph_state_t do_optimize_graph_df(ir_graph *irg)
-{
-	optimize_graph_df(irg);
-	return 0;
-}
-
-static optdesc_t opt_local = {
-	"localopts",
-	0, // TODO optimize_graph_df handles preconditions itself
-	do_optimize_graph_df,
-};
 
 void local_opts(ir_graph *irg)
 {
-	perform_irg_optimization(irg, &opt_local);
+	optimize_graph_df(irg);
 }

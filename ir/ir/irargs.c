@@ -118,12 +118,10 @@ static int firm_emit(lc_appendable_t *app,
 
 	void *X = (void*)arg->v_ptr;
 	firm_kind *obj = (firm_kind*)X;
-	size_t i, n;
 	ir_node *block;
 	char add[64];
 	char buf[256];
 	char tv_buf[256];
-	ir_entity *ent;
 
 	buf[0] = '\0';
 	add[0] = '\0';
@@ -187,8 +185,12 @@ static int firm_emit(lc_appendable_t *app,
 				snprintf(buf, sizeof(buf), "%s%s %s[%s]", A("irn"), get_irn_opname(node),
 				get_mode_name(get_irn_mode(node)), get_entity_name(get_SymConst_entity(node)));
 			} else if (is_Sel(node)) {
+				ir_entity *entity = get_Sel_entity(node);
+				const char *entity_name = "(null)";
+				if (entity != NULL)
+					entity_name = get_entity_name(entity);
 				snprintf(buf, sizeof(buf), "%s%s %s[%s]", A("irn"), get_irn_opname(node),
-				get_mode_name(get_irn_mode(node)), get_entity_name(get_Sel_entity(node)));
+				get_mode_name(get_irn_mode(node)), entity_name);
 			} else if (is_Cmp(node)) {
 				ir_relation relation = get_Cmp_relation(node);
 				snprintf(buf, sizeof(buf), "%s%s %s", A("irn"), get_irn_opname(node), get_relation_string(relation));
@@ -219,30 +221,6 @@ static int firm_emit(lc_appendable_t *app,
 	case k_ir_op: {
 		ir_op *op = (ir_op*)X;
 		snprintf(buf, sizeof(buf), "%s%s", A("op"), get_op_name(op));
-		break;
-	}
-	case k_ir_compound_graph_path: {
-		compound_graph_path *path = (compound_graph_path*)X;
-		n = get_compound_graph_path_length(path);
-
-		for (i = 0; i < n; ++i) {
-			ent = get_compound_graph_path_node(path, i);
-
-			strncat(buf, ".", sizeof(buf)-1);
-			strncat(buf, get_entity_name(ent), sizeof(buf)-1);
-			if (is_Array_type(get_entity_owner(ent))) {
-				snprintf(add, sizeof(add), "[%ld]",
-					get_compound_graph_path_array_index(path, i));
-				strncat(buf, add, sizeof(buf)-1);
-			}
-		}
-		add[0] = '\0';
-		break;
-	}
-	case k_ir_extblk: {
-		ir_extblk *extblk = (ir_extblk*)X;
-		snprintf(buf, sizeof(buf), "ExtBlock");
-		snprintf(add, sizeof(add), "[%ld]", get_irn_node_nr(get_extbb_leader(extblk)));
 		break;
 	}
 
@@ -323,7 +301,6 @@ lc_arg_env_t *firm_get_arg_env(void)
 		{"firm:irn_nr",    'N'},
 		{"firm:mode",      'm'},
 		{"firm:block",     'B'},
-		{"firm:cg_path",   'P'},
 	};
 
 	size_t i;

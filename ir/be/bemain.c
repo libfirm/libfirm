@@ -70,7 +70,6 @@
 #include "belower.h"
 #include "bestat.h"
 #include "beverify.h"
-#include "be_dbgout.h"
 #include "beirg.h"
 #include "bestack.h"
 #include "beemitter.h"
@@ -450,7 +449,7 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 	remove_bads(irg);
 
 	/* Ensure, that the ir_edges are computed. */
-	edges_assure(irg);
+	assure_edges(irg);
 
 	set_irg_phase_state(irg, phase_backend);
 	be_info_init_irg(irg);
@@ -467,6 +466,7 @@ static const char *get_timer_name(be_timer_id_t id)
 	case T_CODEGEN:        return "codegen";
 	case T_RA_PREPARATION: return "ra_preparation";
 	case T_SCHED:          return "sched";
+	case T_SPLIT:          return "split";
 	case T_CONSTR:         return "constr";
 	case T_FINISH:         return "finish";
 	case T_EMIT:           return "emit";
@@ -521,7 +521,9 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 {
 	static const char suffix[] = ".prof";
 
-	size_t        i, num_birgs;
+	size_t        i;
+	size_t        num_irgs;
+	size_t        num_birgs;
 	be_main_env_t env;
 	char          prof_filename[256];
 	be_irg_t      *birgs;
@@ -544,15 +546,19 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	arch_env = env.arch_env;
 
 	/* we might need 1 birg more for instrumentation constructor */
-	num_birgs = get_irp_n_irgs();
-	birgs     = ALLOCAN(be_irg_t, num_birgs + 1);
+	num_irgs = get_irp_n_irgs();
+	birgs    = ALLOCAN(be_irg_t, num_irgs + 1);
 
 	be_info_init();
 
 	/* First: initialize all birgs */
-	for (i = 0; i < num_birgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
-		initialize_birg(&birgs[i], irg, &env);
+	num_birgs = 0;
+	for (i = 0; i < num_irgs; ++i) {
+		ir_graph  *irg    = get_irp_irg(i);
+		ir_entity *entity = get_irg_entity(irg);
+		if (get_entity_linkage(entity) & IR_LINKAGE_NO_CODEGEN)
+			continue;
+		initialize_birg(&birgs[num_birgs++], irg, &env);
 	}
 	arch_env_handle_intrinsics(arch_env);
 

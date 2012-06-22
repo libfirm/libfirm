@@ -631,6 +631,7 @@ void edges_deactivate_kind(ir_graph *irg, ir_edge_kind_t kind)
 		ir_edgeset_destroy(&info->edges);
 		info->allocated = 0;
 	}
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 }
 
 int (edges_activated_kind)(const ir_graph *irg, ir_edge_kind_t kind)
@@ -653,6 +654,18 @@ void edges_reroute_kind(ir_node *from, ir_node *to, ir_edge_kind_t kind)
 			assert(edge->pos >= -1);
 			set_edge(edge->src, edge->pos, to);
 		}
+	}
+}
+
+void edges_reroute_except(ir_node *from, ir_node *to, ir_node *exception)
+{
+	const ir_edge_t *edge;
+	const ir_edge_t *next;
+	foreach_out_edge_safe(from, edge, next) {
+		ir_node *src = get_edge_src_irn(edge);
+		if (src == exception)
+			continue;
+		set_irn_n(src, edge->pos, to);
 	}
 }
 
@@ -913,32 +926,17 @@ void edges_deactivate(ir_graph *irg)
 	edges_deactivate_kind(irg, EDGE_KIND_NORMAL);
 }
 
-int edges_assure(ir_graph *irg)
+void assure_edges(ir_graph *irg)
 {
-	int activated = 0;
-
-	if (edges_activated_kind(irg, EDGE_KIND_BLOCK)) {
-		activated = 1;
-	} else {
-		edges_activate_kind(irg, EDGE_KIND_BLOCK);
-	}
-	if (edges_activated_kind(irg, EDGE_KIND_NORMAL)) {
-		activated = 1;
-	} else {
-		edges_activate_kind(irg, EDGE_KIND_NORMAL);
-	}
-
-	return activated;
+	assure_edges_kind(irg, EDGE_KIND_BLOCK);
+	assure_edges_kind(irg, EDGE_KIND_NORMAL);
+	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 }
 
-int edges_assure_kind(ir_graph *irg, ir_edge_kind_t kind)
+void assure_edges_kind(ir_graph *irg, ir_edge_kind_t kind)
 {
-	int activated = edges_activated_kind(irg, kind);
-
-	if (!activated)
+	if (!edges_activated_kind(irg, kind))
 		edges_activate_kind(irg, kind);
-
-	return activated;
 }
 
 void edges_node_deleted(ir_node *irn)

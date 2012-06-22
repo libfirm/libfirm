@@ -110,11 +110,6 @@ FIRM_API int id_contains_char(ident *id, char c);
  */
 FIRM_API ident *id_unique(const char *tag);
 
-/** Computes a definite name for this entity by concatenating
-   the name of the owner type and the name of the entity with
-   a separating "_". */
-FIRM_API ident *id_mangle_entity(const ir_entity *ent);
-
 /** mangle underscore: Returns a new ident that represents first_scnd. */
 FIRM_API ident *id_mangle_u(ident *first, ident* scnd);
 
@@ -127,9 +122,6 @@ FIRM_API ident *id_mangle(ident *first, ident* scnd);
 /** Returns a new ident that represents 'prefixscndsuffix'. */
 FIRM_API ident *id_mangle3(const char *prefix, ident *middle,
                            const char *suffix);
-
-/** returns a mangled name for a Win32 function using its calling convention */
-FIRM_API ident *id_decorate_win32_c_fkt(const ir_entity *ent, ident *id);
 
 /** @} */
 

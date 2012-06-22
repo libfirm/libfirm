@@ -91,10 +91,13 @@
  */
 typedef enum {
 	/**
-	 * The entity is visible outside the compilation unit, but it is defined
-	 * here.
+	 * The entity is visible across compilation units. It might have an
+	 * initializer/graph.
+	 * Note that entities with visibility_external without initializer are
+	 * assumed to be defined in another compilation unit (not like C variables
+	 * which are considered 'uninitialized' in this case).
 	 */
-	ir_visibility_default,
+	ir_visibility_external,
 	/**
 	 * The entity is local to the compilation unit.
 	 * A local entity is not visible in other compilation units.
@@ -103,18 +106,13 @@ typedef enum {
 	 */
 	ir_visibility_local,
 	/**
-	 * The entity is defined outside the compilation unit but potentially used
-	 * here.
-	 */
-	ir_visibility_external,
-	/**
-	 * This has the same semantic as visibility_local. Additionally the symbol is
-	 * completely hidden from the linker (it only appears in the assembly).
+	 * This has the same semantic as visibility_local. Additionally the symbol
+	 * is completely hidden from the linker (it only appears in the assembly).
 	 * While visibility_local is probably still visible to debuggers,
 	 * visibility_private symbols aren't and probably won't appear in the object
 	 * files
 	 */
-	ir_visibility_private
+	ir_visibility_private,
 } ir_visibility;
 
 /**
@@ -157,7 +155,15 @@ typedef enum ir_linkage {
 	 * read/write behaviour to global variables or changing calling conventions
 	 * from cdecl to fastcall.
 	 */
-	IR_LINKAGE_HIDDEN_USER     = 1 << 4
+	IR_LINKAGE_HIDDEN_USER     = 1 << 4,
+	/**
+	 * Do not generate code even if the entity has a graph attached. The graph
+	 * is only used for inlining. Otherwise the entity is regarded as a
+	 * declaration of an externally defined entity.
+	 * This linkage flag can be used to implement C99 "inline" or GNU89
+	 * "extern inline".
+	 */
+	IR_LINKAGE_NO_CODEGEN      = 1 << 5,
 } ir_linkage;
 ENUM_BITSET(ir_linkage)
 
@@ -183,7 +189,8 @@ FIRM_API int entity_is_externally_visible(const ir_entity *entity);
 
 /**
  * Returns 1 if the entity has a definition (initializer) in the current
- * compilation unit
+ * compilation unit. Note that this function returns false if
+ * IR_LINKAGE_NO_CODEGEN is set even if a graph is present.
  */
 FIRM_API int entity_has_definition(const ir_entity *entity);
 
@@ -227,11 +234,9 @@ FIRM_API ir_entity *new_d_parameter_entity(ir_type *owner, size_t pos,
  * Check an entity. Currently, we check only if initialized constants
  * are build on the const irg graph.
  *
- * @return
- *  0   if no error encountered
- *  != 0    a trverify_error_codes code
+ * @return non-zero if no errors were found
  */
-FIRM_API int check_entity(ir_entity *ent);
+FIRM_API int check_entity(const ir_entity *ent);
 
 /**
  * Copies the entity if the new_owner is different from the
@@ -482,7 +487,7 @@ FIRM_API int is_irn_const_expression(ir_node *n);
 FIRM_API ir_node *copy_const_value(dbg_info *dbg, ir_node *n, ir_node *to_block);
 
 /** Returns initial value of entity with atomic type @p ent. */
-FIRM_API ir_node *get_atomic_ent_value(ir_entity *ent);
+FIRM_API ir_node *get_atomic_ent_value(const ir_entity *ent);
 /** Sets initial value of entity with atomic type @p ent to node @p val.
  * @note @p val must be a node in the const_code graph */
 FIRM_API void set_atomic_ent_value(ir_entity *ent, ir_node *val);
@@ -1033,28 +1038,11 @@ FIRM_API void set_irp_class_cast_state(ir_class_cast_state state);
 FIRM_API ir_class_cast_state get_irp_class_cast_state(void);
 
 /**
- * possible trverify() error codes
- */
-enum trverify_error_codes {
-	no_error = 0,                      /**< no error */
-	error_ent_not_cont,                /**< overwritten entity not in superclass */
-	error_null_mem,                    /**< compound contains NULL member */
-	error_const_on_wrong_irg,          /**< constant placed on wrong IRG */
-	error_existent_entity_without_irg, /**< Method entities with pecularity_exist must have an irg */
-	error_wrong_ent_overwrites,        /**< number of entity overwrites exceeds number of class overwrites */
-	error_inherited_ent_without_const, /**< inherited method entity not pointing to existent entity */
-	error_glob_ent_allocation,         /**< wrong allocation of a global entity */
-	error_ent_const_mode,              /**< Mode of constant in entity did not match entities type. */
-	error_ent_wrong_owner              /**< Mode of constant in entity did not match entities type. */
-};
-
-/**
  * Checks a type.
  *
- * @return
- *  0   if no error encountered
+ * @return non-zero if no errors were found
  */
-FIRM_API int check_type(ir_type *tp);
+FIRM_API int check_type(const ir_type *tp);
 
 /**
  * Walks the type information and performs a set of sanity checks.
@@ -1064,9 +1052,7 @@ FIRM_API int check_type(ir_type *tp);
  * - class types: doesn't have NULL members
  * - class types: all overwrites are existent in the super type
  *
- * @return
- *    0 if graph is correct
- *    else error code.
+ * @return 0 if no error encountered
  */
 FIRM_API int tr_verify(void);
 
@@ -1880,6 +1866,19 @@ FIRM_API void set_array_element_entity(ir_type *array, ir_entity *ent);
 /** Returns the array element entity. */
 FIRM_API ir_entity *get_array_element_entity(const ir_type *array);
 
+/**
+ * Sets the array variable size flag.
+ * If this flag is set then no upper/lower bounds need to be set and
+ * get_type_size_bytes() returns -1
+ */
+FIRM_API void set_array_variable_size(ir_type *array, int variable_size_flag);
+
+/**
+ * Returns the array variable size flag.
+ * @see set_array_variable_size()
+ */
+FIRM_API int is_array_variable_size(const ir_type *array);
+
 /** Returns true if a type is an array type. */
 FIRM_API int is_Array_type(const ir_type *array);
 
@@ -2187,6 +2186,20 @@ FIRM_API size_t get_compound_member_index(const ir_type *tp, ir_entity *member);
 
 /** Remove a member from a compound type. */
 FIRM_API void remove_compound_member(ir_type *compound, ir_entity *entity);
+
+/**
+ * Sets the variable size flag of a compound type.
+ * The last member of a variable size compound type may be an array type
+ * without explicit size. So the get_type_size_bytes() of a variable size
+ * compound type only returns a minimum size for the type (the size if the
+ * last members size is 0)
+ */
+FIRM_API void set_compound_variable_size(ir_type *compound, int variable_size);
+
+/**
+ * Returns the variable size flag. @see set_compound_variable_size()
+ */
+FIRM_API int is_compound_variable_size(const ir_type *compound);
 
 /**
  * layout members of a struct/union or class type in a default way.

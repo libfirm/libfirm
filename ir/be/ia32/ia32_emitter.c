@@ -65,11 +65,10 @@
 #include "besched.h"
 #include "benode.h"
 #include "beabi.h"
-#include "be_dbgout.h"
+#include "bedwarf.h"
 #include "beemitter.h"
 #include "begnuas.h"
 #include "beirg.h"
-#include "be_dbgout.h"
 
 #include "ia32_emitter.h"
 #include "ia32_common_transform.h"
@@ -82,13 +81,15 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-#define SNPRINTF_BUF_LEN 128
-
 static const ia32_isa_t *isa;
 static char              pic_base_label[128];
 static ir_label_t        exc_label_id;
 static int               mark_spill_reload = 0;
 static int               do_pic;
+
+static bool              sp_relative;
+static int               frame_type_size;
+static int               callframe_offset;
 
 /** Return the next block in Block schedule */
 static ir_node *get_prev_block_sched(const ir_node *block)
@@ -220,7 +221,7 @@ static void ia32_emit_entity(ir_entity *entity, int no_pic_adjust)
 	be_gas_emit_entity(entity);
 
 	if (get_entity_owner(entity) == get_tls_type()) {
-		if (get_entity_visibility(entity) == ir_visibility_external) {
+		if (!entity_has_definition(entity)) {
 			be_emit_cstring("@INDNTPOFF");
 		} else {
 			be_emit_cstring("@NTPOFF");
@@ -1656,13 +1657,22 @@ static void ia32_emit_node(ir_node *node)
 	if (op->ops.generic) {
 		emit_func_ptr func = (emit_func_ptr) op->ops.generic;
 
-		be_dbg_set_dbg_info(get_irn_dbg_info(node));
+		be_dwarf_location(get_irn_dbg_info(node));
 
 		(*func) (node);
 	} else {
 		emit_Nothing(node);
 		ir_fprintf(stderr, "Error: No emit handler for node %+F (%+G, graph %+F)\n", node, node, current_ir_graph);
 		abort();
+	}
+
+	if (sp_relative) {
+		int sp_change = arch_get_sp_bias(node);
+		if (sp_change != 0) {
+			assert(sp_change != SP_BIAS_RESET);
+			callframe_offset += sp_change;
+			be_dwarf_callframe_offset(callframe_offset);
+		}
 	}
 }
 
@@ -1783,8 +1793,18 @@ static void ia32_gen_block(ir_node *block)
 
 	ia32_emit_block_header(block);
 
+	if (sp_relative) {
+		ir_graph *irg = get_irn_irg(block);
+		callframe_offset = 4; /* 4 bytes for the return address */
+		/* ESP guessing, TODO perform a real ESP simulation */
+		if (block != get_irg_start_block(irg)) {
+			callframe_offset += frame_type_size;
+		}
+		be_dwarf_callframe_offset(callframe_offset);
+	}
+
 	/* emit the contents of the block */
-	be_dbg_set_dbg_info(get_irn_dbg_info(block));
+	be_dwarf_location(get_irn_dbg_info(block));
 	sched_foreach(block, node) {
 		ia32_emit_node(node);
 	}
@@ -1835,6 +1855,33 @@ static int cmp_exc_entry(const void *a, const void *b)
 	return +1;
 }
 
+static parameter_dbg_info_t *construct_parameter_infos(ir_graph *irg)
+{
+	ir_entity            *entity    = get_irg_entity(irg);
+	ir_type              *type      = get_entity_type(entity);
+	size_t                n_params  = get_method_n_params(type);
+	be_stack_layout_t    *layout    = be_get_irg_stack_layout(irg);
+	ir_type              *arg_type  = layout->arg_type;
+	size_t                n_members = get_compound_n_members(arg_type);
+	parameter_dbg_info_t *infos     = XMALLOCNZ(parameter_dbg_info_t, n_params);
+	size_t                i;
+
+	for (i = 0; i < n_members; ++i) {
+		ir_entity *member = get_compound_member(arg_type, i);
+		size_t     param;
+		if (!is_parameter_entity(member))
+			continue;
+		param = get_entity_parameter_number(member);
+		if (param == IR_VA_START_PARAMETER_NUMBER)
+			continue;
+		assert(infos[param].entity == NULL && infos[param].reg == NULL);
+		infos[param].reg    = NULL;
+		infos[param].entity = member;
+	}
+
+	return infos;
+}
+
 /**
  * Main driver. Emits the code for one routine.
  */
@@ -1845,6 +1892,8 @@ void ia32_gen_routine(ir_graph *irg)
 	const arch_env_t *arch_env  = be_get_irg_arch_env(irg);
 	ia32_irg_data_t  *irg_data  = ia32_get_irg_data(irg);
 	ir_node         **blk_sched = irg_data->blk_sched;
+	be_stack_layout_t *layout   = be_get_irg_stack_layout(irg);
+	parameter_dbg_info_t *infos;
 	int i, n;
 
 	isa    = (ia32_isa_t*) arch_env;
@@ -1856,7 +1905,24 @@ void ia32_gen_routine(ir_graph *irg)
 
 	get_unique_label(pic_base_label, sizeof(pic_base_label), "PIC_BASE");
 
-	be_gas_emit_function_prolog(entity, ia32_cg_config.function_alignment);
+	infos = construct_parameter_infos(irg);
+	be_gas_emit_function_prolog(entity, ia32_cg_config.function_alignment,
+	                            infos);
+	xfree(infos);
+
+	sp_relative = layout->sp_relative;
+	if (layout->sp_relative) {
+		ir_type *frame_type = get_irg_frame_type(irg);
+		frame_type_size = get_type_size_bytes(frame_type);
+		be_dwarf_callframe_register(&ia32_registers[REG_ESP]);
+	} else {
+		/* well not entirely correct here, we should emit this after the
+		 * "movl esp, ebp" */
+		be_dwarf_callframe_register(&ia32_registers[REG_EBP]);
+		/* TODO: do not hardcode the following */
+		be_dwarf_callframe_offset(8);
+		be_dwarf_callframe_spilloffset(&ia32_registers[REG_EBP], -8);
+	}
 
 	/* we use links to point to target blocks */
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
@@ -1995,7 +2061,7 @@ static void bemit_entity(ir_entity *entity, bool entity_sign, int offset,
 	be_gas_emit_entity(entity);
 
 	if (get_entity_owner(entity) == get_tls_type()) {
-		if (get_entity_visibility(entity) == ir_visibility_external) {
+		if (!entity_has_definition(entity)) {
 			be_emit_cstring("@INDNTPOFF");
 		} else {
 			be_emit_cstring("@NTPOFF");
@@ -3785,12 +3851,16 @@ void ia32_gen_binary_routine(ir_graph *irg)
 	ia32_irg_data_t  *irg_data  = ia32_get_irg_data(irg);
 	ir_node         **blk_sched = irg_data->blk_sched;
 	size_t            i, n;
+	parameter_dbg_info_t *infos;
 
 	isa = (ia32_isa_t*) arch_env;
 
 	ia32_register_binary_emitters();
 
-	be_gas_emit_function_prolog(entity, ia32_cg_config.function_alignment);
+	infos = construct_parameter_infos(irg);
+	be_gas_emit_function_prolog(entity, ia32_cg_config.function_alignment,
+	                            NULL);
+	xfree(infos);
 
 	/* we use links to point to target blocks */
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);

@@ -112,7 +112,7 @@ be_dom_front_info_t *be_compute_dominance_frontiers(ir_graph *irg)
 {
 	be_dom_front_info_t *info = XMALLOC(be_dom_front_info_t);
 
-	edges_assure(irg);
+	assure_edges(irg);
 	obstack_init(&info->obst);
 	info->df_map = pmap_create();
 	assure_doms(irg);

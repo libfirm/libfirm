@@ -92,10 +92,8 @@ FIRM_API ir_graph_pass_t *opt_bool_pass(const char *name);
  * Reduces the number of Conv nodes in the given ir graph.
  *
  * @param irg  the graph
- *
- * @return non-zero if the optimization could be applied, 0 else
  */
-FIRM_API int conv_opt(ir_graph *irg);
+FIRM_API void conv_opt(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for conv_opt().
@@ -285,10 +283,8 @@ FIRM_API ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c);
  *
  * Store after Load: A Store after a Load is removed, if the
  *   Store doesn't have an exception handler.
- *
- * @return non-zero if the optimization could be applied, 0 else
  */
-FIRM_API int optimize_load_store(ir_graph *irg);
+FIRM_API void optimize_load_store(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for optimize_load_store().
@@ -304,7 +300,7 @@ FIRM_API ir_graph_pass_t *optimize_load_store_pass(const char *name);
  * Based on a dataflow analysis, so load/stores are moved out of loops
  * where possible
  */
-FIRM_API int opt_ldst(ir_graph *irg);
+FIRM_API void opt_ldst(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for opt_ldst().
@@ -491,10 +487,8 @@ FIRM_API ir_prog_pass_t *proc_cloning_pass(const char *name, float threshold);
  *
  * See Muchnik 12.3.1 Algebraic Simplification and Reassociation of
  * Addressing Expressions.
- *
- * @return non-zero if the optimization could be applied, 0 else
  */
-FIRM_API int optimize_reassociation(ir_graph *irg);
+FIRM_API void optimize_reassociation(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for optimize_reassociation().
@@ -573,10 +567,8 @@ FIRM_API ir_graph_pass_t *normalize_n_returns_pass(const char *name);
  * with atomic values if possible. Does not handle classes yet.
  *
  * @param irg  the graph which should be optimized
- *
- * @return non-zero, if at least one entity was replaced
  */
-FIRM_API int scalar_replacement_opt(ir_graph *irg);
+FIRM_API void scalar_replacement_opt(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for scalar_replacement_opt().
@@ -600,10 +592,8 @@ FIRM_API ir_graph_pass_t *scalar_replacement_opt_pass(const char *name);
  * Does not work for Calls that use the exception stuff.
  *
  * @param irg   the graph to be optimized
- *
- * @return non-zero if the optimization could be applied, 0 else
  */
-FIRM_API int opt_tail_rec_irg(ir_graph *irg);
+FIRM_API void opt_tail_rec_irg(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for opt_tail_rec_irg().
@@ -753,8 +743,8 @@ FIRM_API ir_graph_pass_t *inline_small_irgs_pass(const char *name, int size);
 /**
  * Inlineing with a different heuristic than inline_small_irgs().
  *
- * Inlines leave functions.  If inlining creates new leave
- * function inlines these, too. (If g calls f, and f calls leave h,
+ * Inlines leaf functions.  If inlining creates new leafs
+ * function inlines these, too. (If g calls f, and f calls leaf h,
  * h is first inlined in f and then f in g.)
  *
  * Then inlines all small functions (this is not recursive).
@@ -767,32 +757,32 @@ FIRM_API ir_graph_pass_t *inline_small_irgs_pass(const char *name, int size);
  * @param maxsize         Do not inline any calls if a method has more than
  *                        maxsize firm nodes.  It may reach this limit by
  *                        inlining.
- * @param leavesize       Inline leave functions if they have less than leavesize
+ * @param leafsize        Inline leaf functions if they have less than leafsize
  *                        nodes.
  * @param size            Inline all function smaller than size.
  * @param ignore_runtime  count a function only calling runtime functions as
- *                        leave
+ *                        leaf
  */
-FIRM_API void inline_leave_functions(unsigned maxsize, unsigned leavesize,
+FIRM_API void inline_leaf_functions(unsigned maxsize, unsigned leafsize,
                                      unsigned size, int ignore_runtime);
 
 /**
- * Creates an ir_prog pass for inline_leave_functions().
+ * Creates an ir_prog pass for inline_leaf_functions().
  *
  * @param name            the name of this pass or NULL
  * @param maxsize         Do not inline any calls if a method has more than
  *                        maxsize firm nodes.  It may reach this limit by
  *                        inlining.
- * @param leavesize       Inline leave functions if they have less than leavesize
+ * @param leafsize        Inline leaf functions if they have less than leafsize
  *                        nodes.
  * @param size            Inline all function smaller than size.
  * @param ignore_runtime  count a function only calling runtime functions as
- *                        leave
+ *                        leaf
  *
  * @return  the newly created ir_prog pass
  */
-FIRM_API ir_prog_pass_t *inline_leave_functions_pass(const char *name,
-		unsigned maxsize, unsigned leavesize, unsigned size,
+FIRM_API ir_prog_pass_t *inline_leaf_functions_pass(const char *name,
+		unsigned maxsize, unsigned leafsize, unsigned size,
 		int ignore_runtime);
 
 /** pointer to an optimization function */
@@ -834,10 +824,8 @@ FIRM_API ir_prog_pass_t *inline_functions_pass(const char *name,
  * Combines congruent blocks into one.
  *
  * @param irg   The IR-graph to optimize.
- *
- * @return non-zero if the graph was transformed
  */
-FIRM_API int shape_blocks(ir_graph *irg);
+FIRM_API void shape_blocks(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for shape_blocks().
@@ -1076,7 +1064,7 @@ FIRM_API ir_value_classify_sign classify_value_sign(ir_node *n);
 FIRM_API ir_tarval *computed_value_Cmp_Confirm(
 	const ir_node *cmp, ir_node *left, ir_node *right, ir_relation relation);
 
-/** Type of callbacks for createing entities of the compiler library */
+/** Type of callbacks for creating entities of the compiler library */
 typedef ir_entity *(*compilerlib_entity_creator_t)(ident *id, ir_type *mt);
 
 /**

@@ -67,7 +67,6 @@ ir\ana\rta.h
 ir\ana\interval_analysis.h
 ir\ana\field_temperature.h
 ir\ana\execution_frequency.h
-ir\ana\irextbb.h
 ir\ana\execfreq.h
 ir\ana\irconsconfirm.h
 ir\ana\analyze_irg_args.h

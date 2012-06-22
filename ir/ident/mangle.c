@@ -45,25 +45,6 @@ static inline ident *mangle_type(const ir_type *tp)
 	return tp->name;
 }
 
-ident *id_mangle_entity(const ir_entity *ent)
-{
-	ident *type_id;
-	char *cp;
-	int len;
-	ident *res;
-
-	type_id = mangle_type(ent->owner);
-	obstack_grow(&mangle_obst, get_id_str(type_id), get_id_strlen(type_id));
-	obstack_1grow(&mangle_obst,'_');
-	obstack_grow(&mangle_obst, get_id_str(ent->name), get_id_strlen(ent->name));
-	len = obstack_object_size(&mangle_obst);
-	cp = (char*)obstack_finish(&mangle_obst);
-	res = new_id_from_chars(cp, len);
-	obstack_free(&mangle_obst, cp);
-	return res;
-}
-
-
 /* Returns a new ident that represents 'firstscnd'. */
 ident *id_mangle(ident *first, ident *scnd)
 {
@@ -124,32 +105,6 @@ ident *id_mangle_u(ident *first, ident* scnd)
 ident *id_mangle_dot(ident *first, ident *scnd)
 {
 	return id_mangle_3(first, '.', scnd);
-}
-
-/* returns a mangled name for a Win32 function using its calling convention */
-ident *id_decorate_win32_c_fkt(const ir_entity *ent, ident *id)
-{
-	ir_type *tp      = get_entity_type(ent);
-	unsigned cc_mask = get_method_calling_convention(tp);
-	char buf[16];
-
-	if (IS_CDECL(cc_mask))
-		return id_mangle3("_", id, "");
-	else if (IS_STDCALL(cc_mask)) {
-		size_t i, size = 0;
-
-		for (i = get_method_n_params(tp); i > 0;) {
-			size += get_type_size_bytes(get_method_param_type(tp, --i));
-		}
-
-		ir_snprintf(buf, sizeof(buf), "@%zu", size);
-
-		if (cc_mask & cc_reg_param)
-			return id_mangle3("@", id, buf);
-		else
-			return id_mangle3("_", id, buf);
-	}
-	return id;
 }
 
 void firm_init_mangle(void)

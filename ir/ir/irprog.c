@@ -398,16 +398,6 @@ ident *get_irp_asm(size_t pos)
 	return irp->global_asms[pos];
 }
 
-int (get_irp_optimization_dumps)(void)
-{
-	return get_irp_optimization_dumps_();
-}
-
-void (enable_irp_optimization_dumps)(void)
-{
-	enable_irp_optimization_dumps_();
-}
-
 #ifndef NDEBUG
 void irp_reserve_resources(ir_prog *irp, irp_resources_t resources)
 {

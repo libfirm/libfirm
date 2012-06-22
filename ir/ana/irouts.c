@@ -219,7 +219,7 @@ void irg_out_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
 {
 	assert(node);
 	ir_graph *irg = get_irn_irg(node);
-	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS)) {
+	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS)) {
 		inc_irg_visited (irg);
 		irg_out_walk_2(node, pre, post, env);
 	}
@@ -454,13 +454,13 @@ void compute_irg_outs(ir_graph *irg)
 	/* Check how much memory we have used */
 	assert (end == (irg->outs + n_out_edges));
 
-	set_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS);
+	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 	current_ir_graph = rem;
 }
 
 void assure_irg_outs(ir_graph *irg)
 {
-	if (! is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS))
+	if (! irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS))
 		compute_irg_outs(irg);
 }
 

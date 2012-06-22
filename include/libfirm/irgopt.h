@@ -77,19 +77,15 @@ FIRM_API void remove_unreachable_code(ir_graph *irg);
  * Removes all Bad nodes from a graph.
  *
  * @param irg  The graph to be optimized.
- *
- * @return non-zero if at least one Bad was removed, otherwise 0
  */
-FIRM_API int remove_bads(ir_graph *irg);
+FIRM_API void remove_bads(ir_graph *irg);
 
 /**
  * Removes all Tuple nodes from a graph.
  *
  * @param irg  The graph to be optimized.
- *
- * @return non-zero if at least one Tuple was removed, otherwise 0
  */
-FIRM_API int remove_tuples(ir_graph *irg);
+FIRM_API void remove_tuples(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for optimize_graph_df().

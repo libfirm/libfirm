@@ -45,7 +45,6 @@
 #include "irhooks.h"
 #include "ircons_t.h"
 #include "irpass.h"
-#include "opt_manage.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
@@ -152,8 +151,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 	assert(env->n_tail_calls > 0);
 
 	/* we add new blocks and change the control flow */
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
-	                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
 	/* we must build some new nodes WITHOUT CSE */
 	set_optimize(0);
@@ -262,9 +260,8 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 	}
 
 	/* tail recursion was done, all info is invalid */
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
-	                   | IR_GRAPH_STATE_CONSISTENT_LOOPINFO
-	                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+	                   | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 	set_irg_callee_info_state(irg, irg_callee_info_inconsistent);
 
 	set_optimize(rem);
@@ -561,20 +558,27 @@ static tail_rec_variants find_variant(ir_node *irn, ir_node *call)
 /*
  * convert simple tail-calls into loops
  */
-static ir_graph_state_t do_tailrec(ir_graph *irg)
+void opt_tail_rec_irg(ir_graph *irg)
 {
-	tr_env            env;
-	ir_node           *end_block;
-	int               i, n_ress, n_tail_calls = 0;
-	ir_node           *rets = NULL;
-	ir_type           *mtd_type, *call_type;
-	ir_entity         *ent;
-	ir_graph          *rem;
+	tr_env    env;
+	ir_node   *end_block;
+	int       i, n_ress, n_tail_calls = 0;
+	ir_node   *rets = NULL;
+	ir_type   *mtd_type, *call_type;
+	ir_entity *ent;
+	ir_graph  *rem;
+
+	assure_irg_properties(irg,
+		IR_GRAPH_PROPERTY_MANY_RETURNS
+		| IR_GRAPH_PROPERTY_NO_BADS
+		| IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.tailrec");
 
-	if (! check_lifetime_of_locals(irg))
-		return 0;
+	if (! check_lifetime_of_locals(irg)) {
+		confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_ALL);
+		return;
+	}
 
 	rem = current_ir_graph;
 	current_ir_graph = irg;
@@ -653,10 +657,11 @@ static ir_graph_state_t do_tailrec(ir_graph *irg)
 				/* cannot be transformed */
 				break;
 			}
-			if (var == TR_DIRECT)
-			var = env.variants[j];
-			else if (env.variants[j] == TR_DIRECT)
+			if (var == TR_DIRECT) {
+				var = env.variants[j];
+			} else if (env.variants[j] == TR_DIRECT) {
 				env.variants[j] = var;
+			}
 			if (env.variants[j] != var) {
 				/* not compatible */
 				DB((dbg, LEVEL_3, "  tail recursion fails for %d return value of %+F\n", j, ret));
@@ -686,31 +691,17 @@ static ir_graph_state_t do_tailrec(ir_graph *irg)
 		env.n_tail_calls = n_tail_calls;
 		env.rets         = rets;
 		do_opt_tail_rec(irg, &env);
+		confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
+	} else {
+		confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_ALL);
 	}
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	current_ir_graph = rem;
-	return 0;
-}
-
-
-/*
- * This tail recursion optimization works best
- * if the Returns are normalized.
- */
-static optdesc_t opt_tailrec = {
-	"tail-recursion",
-	IR_GRAPH_STATE_MANY_RETURNS | IR_GRAPH_STATE_NO_BADS | IR_GRAPH_STATE_CONSISTENT_OUTS,
-	do_tailrec,
-};
-
-int opt_tail_rec_irg(ir_graph *irg) {
-	perform_irg_optimization(irg, &opt_tailrec);
-	return 1; /* conservatively report changes */
 }
 
 ir_graph_pass_t *opt_tail_rec_irg_pass(const char *name)
 {
-	return def_graph_pass_ret(name ? name : "tailrec", opt_tail_rec_irg);
+	return def_graph_pass(name ? name : "tailrec", opt_tail_rec_irg);
 }
 
 /*
@@ -719,20 +710,14 @@ ir_graph_pass_t *opt_tail_rec_irg_pass(const char *name)
 void opt_tail_recursion(void)
 {
 	size_t i, n;
-	size_t n_opt_applications = 0;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.tailrec");
 
 	DB((dbg, LEVEL_1, "Performing tail recursion ...\n"));
 	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		ir_graph *irg = get_irp_irg(i);
-
-		if (opt_tail_rec_irg(irg))
-			++n_opt_applications;
+		opt_tail_rec_irg(irg);
 	}
-
-	DB((dbg, LEVEL_1, "Done for %zu of %zu graphs.\n",
-	    n_opt_applications, get_irp_n_irgs()));
 }
 
 ir_prog_pass_t *opt_tail_recursion_pass(const char *name)

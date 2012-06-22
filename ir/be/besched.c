@@ -32,7 +32,6 @@
 #include "irgraph_t.h"
 #include "iredges_t.h"
 #include "ircons.h"
-#include "irextbb.h"
 #include "irgmod.h"
 #include "debug.h"
 

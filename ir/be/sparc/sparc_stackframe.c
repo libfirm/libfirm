@@ -280,7 +280,7 @@ void sparc_create_stacklayout(ir_graph *irg, calling_convention_t *cconv)
 /* Assign entity offsets, to all stack-related entities.
  * The offsets are relative to the begin of the stack frame.
  */
-static void process_frame_types(ir_graph *irg)
+void sparc_adjust_stack_entity_offsets(ir_graph *irg)
 {
 	be_stack_layout_t *layout = be_get_irg_stack_layout(irg);
 
@@ -321,9 +321,10 @@ static void process_frame_types(ir_graph *irg)
 	if (!layout->sp_relative) {
 		frame_size = (frame_size + frame_align-1) & ~(frame_align-1);
 	} else {
-		unsigned misalign = SPARC_MIN_STACKSIZE % frame_align;
+		unsigned misalign = (SPARC_MIN_STACKSIZE+frame_size) % frame_align;
 		frame_size += misalign;
 	}
+	set_type_size_bytes(frame_type, frame_size);
 
 	ir_type *arg_type = layout->arg_type;
 
@@ -337,8 +338,6 @@ void sparc_fix_stack_bias(ir_graph *irg)
 	bool sp_relative = be_get_irg_stack_layout(irg)->sp_relative;
 
 	ir_node *start_block = get_irg_start_block(irg);
-
-	process_frame_types(irg);
 
 	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 	inc_irg_block_visited(irg);

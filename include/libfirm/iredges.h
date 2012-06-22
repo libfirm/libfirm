@@ -162,6 +162,13 @@ FIRM_API void edges_deactivate_kind(ir_graph *irg, ir_edge_kind_t kind);
 FIRM_API void edges_reroute_kind(ir_node *old, ir_node *nw, ir_edge_kind_t kind);
 
 /**
+ * reroutes (normal) edges from an old node to a new node, except for the
+ * @p exception which keeps its input even if it is old.
+ */
+FIRM_API void edges_reroute_except(ir_node *old, ir_node *nw,
+                                   ir_node *exception);
+
+/**
  * Verifies the out edges of graph @p irg.
  * @return 1 if a problem was found, 0 otherwise
  */
@@ -235,20 +242,16 @@ FIRM_API void edges_deactivate(ir_graph *irg);
  * Ensures that edges are activated.
  *
  * @param irg  the IR graph
- *
- * @return 0 if edges was deactivated before the call, 1 else
  */
-FIRM_API int edges_assure(ir_graph *irg);
+FIRM_API void assure_edges(ir_graph *irg);
 
 /**
  * Ensures that edges of a given kind are activated.
  *
  * @param irg   the IR graph
  * @param kind  the edge kind
- *
- * @return 0 if edges was deactivated before the call, 1 else
  */
-FIRM_API int edges_assure_kind(ir_graph *irg, ir_edge_kind_t kind);
+FIRM_API void assure_edges_kind(ir_graph *irg, ir_edge_kind_t kind);
 
 /**
  * Walks only over Block nodes in the graph. Uses the block visited

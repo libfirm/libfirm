@@ -38,12 +38,9 @@
 #include "beabihelper.h"
 
 struct be_abi_call_flags_bits_t {
-	unsigned store_args_sequential  : 1;  /**< Use sequential stores for arguments. */
-	unsigned try_omit_fp            : 1;  /**< Try to omit the frame pointer. */
-	unsigned fp_free                : 1;  /**< The function can use any register as frame pointer. */
-	unsigned call_has_imm           : 1;  /**< A call can take the callee's address as an immediate. */
-	unsigned irg_is_leaf            : 1;  /**< 1, if the IRG is a leaf function. */
-	unsigned frame_is_setup_on_call : 1;  /**< Set to one, if there is already enough room on the stack for call args. */
+	bool try_omit_fp   : 1; /**< Try to omit the frame pointer. */
+	bool call_has_imm  : 1; /**< A call can take the callee's address as an
+	                             immediate. */
 };
 
 union be_abi_call_flags_t {

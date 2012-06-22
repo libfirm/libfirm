@@ -38,8 +38,6 @@ typedef struct {
 	unsigned use_sse2:1;
 	/** use ffreep instead of fpop */
 	unsigned use_ffreep:1;
-	/** use ftst where possible */
-	unsigned use_ftst:1;
 	/** use femms to pop all float registers */
 	unsigned use_femms:1;
 	/** use emms to pop all float registers */
@@ -80,7 +78,7 @@ typedef struct {
 	/** use SSE4.2 or SSE4a popcnt instruction */
 	unsigned use_popcnt:1;
 	/** use i486 instructions */
-	unsigned use_i486:1;
+	unsigned use_bswap:1;
 	/** optimize calling convention where possible */
 	unsigned optimize_cc:1;
 	/**

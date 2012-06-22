@@ -34,7 +34,6 @@
 #include "irgraph.h"
 #include "iredgekinds.h"
 #include "irtypeinfo.h"
-#include "irextbb.h"
 #include "irmemory.h"
 #include "callgraph.h"
 #include "irprog.h"
@@ -211,12 +210,7 @@ typedef struct block_attr {
 	                                 in different phases.  Eventually inline the whole
 	                                 datastructure. */
 	ir_dom_info pdom;           /**< Datastructure that holds information about post-dominators. */
-	ir_node ** in_cg;           /**< array with predecessors in
-	                             * interprocedural_view, if they differ
-	                             * from intraprocedural predecessors */
 	bitset_t *backedge;         /**< Bitfield n set to true if pred n is backedge.*/
-	bitset_t *cg_backedge;      /**< Bitfield n set to true if pred n is interprocedural backedge. */
-	ir_extblk *extblk;          /**< The extended basic block this block belongs to. */
 	ir_entity *entity;          /**< entitiy representing this block */
 	ir_node  *phis;             /**< The list of Phi nodes in this block. */
 
@@ -527,19 +521,19 @@ struct ir_graph {
 	ir_node *anchor;               /**< Pointer to the anchor node of this graph. */
 	struct obstack *obst;          /**< The obstack where all of the ir_nodes live. */
 	ir_node *current_block;        /**< Current block for newly gen_*()-erated ir_nodes. */
-	struct obstack *extbb_obst;    /**< The obstack for extended basic block info. */
 
 	/* -- Fields for graph properties -- */
 	irg_inline_property        inline_property;       /**< How to handle inlineing. */
 	mtp_additional_properties  additional_properties; /**< Additional graph properties. */
 
 	/* -- Fields indicating different states of irgraph -- */
-	ir_graph_state_t      state;
-	irg_phase_state       phase_state;       /**< Compiler phase. */
-	op_pin_state          irg_pinned_state;  /**< Flag for status of nodes. */
-	ir_typeinfo_state     typeinfo_state;    /**< Validity of type information. */
-	irg_callee_info_state callee_info_state; /**< Validity of callee information. */
-	ir_class_cast_state   class_cast_state;  /**< Kind of cast operations in code. */
+	ir_graph_properties_t  properties;
+	ir_graph_constraints_t constraints;
+	irg_phase_state        phase_state;       /**< Compiler phase. */
+	op_pin_state           irg_pinned_state;  /**< Flag for status of nodes. */
+	ir_typeinfo_state      typeinfo_state;    /**< Validity of type information. */
+	irg_callee_info_state  callee_info_state; /**< Validity of callee information. */
+	ir_class_cast_state    class_cast_state;  /**< Kind of cast operations in code. */
 	unsigned mem_disambig_opt;               /**< Options for the memory disambiguator. */
 	unsigned fp_model;                       /**< floating point model of the graph. */
 
@@ -658,7 +652,6 @@ struct ir_prog {
 	size_t max_irg_idx;                  /**< highest unused irg index */
 	long max_node_nr;                    /**< to generate unique numbers for nodes. */
 	unsigned dump_nr;                    /**< number of program info dumps */
-	unsigned optimization_dumps :1;      /**< dump irg on each optimization */
 #ifndef NDEBUG
 	irp_resources_t reserved_resources;  /**< Bitset for tracking used global resources. */
 #endif

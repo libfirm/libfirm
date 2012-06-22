@@ -13,33 +13,33 @@ $mode_fp    = "mode_F";
 # NOTE: Last entry of each class is the largest Firm-Mode a register can hold
 %reg_classes = (
 	gp => [
-		{ name => "r0" },
-		{ name => "r1" },
-		{ name => "r2" },
-		{ name => "r3" },
-		{ name => "r4" },
-		{ name => "r5" },
-		{ name => "r6" },
-		{ name => "r7" },
-		{ name => "r8" },
-		{ name => "r9" },
-		{ name => "r10" },
-		{ name => "r11" },
-		{ name => "r12" },
-		{ name => "sp" },
-		{ name => "lr" },
-		{ name => "pc" },
+		{ name => "r0",  dwarf => 0 },
+		{ name => "r1",  dwarf => 1 },
+		{ name => "r2",  dwarf => 2 },
+		{ name => "r3",  dwarf => 3 },
+		{ name => "r4",  dwarf => 4 },
+		{ name => "r5",  dwarf => 5 },
+		{ name => "r6",  dwarf => 6 },
+		{ name => "r7",  dwarf => 7 },
+		{ name => "r8",  dwarf => 8 },
+		{ name => "r9",  dwarf => 9 },
+		{ name => "r10", dwarf => 10 },
+		{ name => "r11", dwarf => 11 },
+		{ name => "r12", dwarf => 12 },
+		{ name => "sp",  dwarf => 13 },
+		{ name => "lr",  dwarf => 14 },
+		{ name => "pc",  dwarf => 15 },
 		{ mode => $mode_gp }
 	],
 	fpa => [
-		{ name => "f0" },
-		{ name => "f1" },
-		{ name => "f2" },
-		{ name => "f3" },
-		{ name => "f4" },
-		{ name => "f5" },
-		{ name => "f6" },
-		{ name => "f7" },
+		{ name => "f0", dwarf => 96 },
+		{ name => "f1", dwarf => 97 },
+		{ name => "f2", dwarf => 98 },
+		{ name => "f3", dwarf => 99 },
+		{ name => "f4", dwarf => 100 },
+		{ name => "f5", dwarf => 101 },
+		{ name => "f6", dwarf => 102 },
+		{ name => "f7", dwarf => 103 },
 		{ mode => $mode_fp }
 	],
 	flags => [
@@ -392,7 +392,7 @@ Tst => {
 },
 
 B => {
-	op_flags  => [ "labeled", "cfopcode", "forking" ],
+	op_flags  => [ "cfopcode", "forking" ],
 	state     => "pinned",
 	mode      => "mode_T",
 	reg_req   => { in => [ "flags" ], out => [ "none", "none" ] },
@@ -410,7 +410,7 @@ Jmp => {
 },
 
 SwitchJmp => {
-	op_flags  => [ "labeled", "cfopcode", "forking" ],
+	op_flags  => [ "cfopcode", "forking" ],
 	state     => "pinned",
 	mode      => "mode_T",
 	attr      => "const ir_switch_table *table",
@@ -421,7 +421,7 @@ SwitchJmp => {
 },
 
 Ldr => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	ins       => [ "ptr", "mem" ],
 	outs      => [ "res", "M" ],
@@ -432,7 +432,7 @@ Ldr => {
 },
 
 Str => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	ins       => [ "ptr", "val", "mem" ],
 	outs      => [ "M" ],
@@ -444,7 +444,7 @@ Str => {
 },
 
 StoreStackM4Inc => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "sp", "gp", "gp", "gp", "gp", "none" ], out => [ "sp:I|S", "none" ] },
@@ -453,7 +453,7 @@ StoreStackM4Inc => {
 },
 
 LoadStackM3Epilogue => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "sp", "none" ], out => [ "r11:I", "sp:I|S", "pc:I", "none" ] },
@@ -528,7 +528,7 @@ Cmfe => {
 },
 
 Ldf => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	ins       => [ "ptr", "mem" ],
 	outs      => [ "res", "M" ],
@@ -539,7 +539,7 @@ Ldf => {
 },
 
 Stf => {
-	op_flags  => [ "labeled" ],
+	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	ins       => [ "ptr", "val", "mem" ],
 	outs      => [ "M" ],

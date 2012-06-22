@@ -46,6 +46,8 @@
 #include "iredges_t.h"
 #include "type_t.h"
 #include "irmemory.h"
+#include "iroptimize.h"
+#include "irgopt.h"
 
 #define INITIAL_IDX_IRN_MAP_SIZE 1024
 
@@ -158,8 +160,6 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 	res->visited       = 0; /* visited flag, for the ir walker */
 	res->block_visited = 0; /* visited flag, for the 'block'-walker */
 
-	res->extbb_obst = NULL;
-
 	res->last_node_idx = 0;
 
 	new_identities(res);
@@ -248,7 +248,6 @@ ir_graph *new_const_code_irg(void)
 	res->block_visited = 0; /* visited flag, for the 'block'-walker */
 	res->obst          = XMALLOC(struct obstack);
 	obstack_init(res->obst);
-	res->extbb_obst = NULL;
 
 	res->last_node_idx = 0;
 
@@ -352,7 +351,6 @@ ir_graph *create_irg_copy(ir_graph *irg)
 	res->block_visited = 0; /* visited flag, for the 'block'-walker */
 	res->obst       = XMALLOC(struct obstack);
 	obstack_init(res->obst);
-	res->extbb_obst = NULL;
 
 	res->last_node_idx = 0;
 
@@ -772,17 +770,72 @@ size_t register_additional_graph_data(size_t size)
 	return additional_graph_data_size += size;
 }
 
-void (set_irg_state)(ir_graph *irg, ir_graph_state_t state)
+void add_irg_constraints(ir_graph *irg, ir_graph_constraints_t constraints)
 {
-	set_irg_state_(irg, state);
+	irg->constraints |= constraints;
 }
 
-void (clear_irg_state)(ir_graph *irg, ir_graph_state_t state)
+void clear_irg_constraints(ir_graph *irg, ir_graph_constraints_t constraints)
 {
-	clear_irg_state_(irg, state);
+	irg->constraints &= ~constraints;
 }
 
-int (is_irg_state)(const ir_graph *irg, ir_graph_state_t state)
+int (irg_is_constrained)(const ir_graph *irg, ir_graph_constraints_t constraints)
 {
-	return is_irg_state_(irg, state);
+	return irg_is_constrained_(irg, constraints);
+}
+
+void (add_irg_properties)(ir_graph *irg, ir_graph_properties_t props)
+{
+	add_irg_properties_(irg, props);
+}
+
+void (clear_irg_properties)(ir_graph *irg, ir_graph_properties_t props)
+{
+	clear_irg_properties_(irg, props);
+}
+
+int (irg_has_properties)(const ir_graph *irg, ir_graph_properties_t props)
+{
+	return irg_has_properties_(irg, props);
+}
+
+typedef void (*assure_property_func)(ir_graph *irg);
+
+void assure_irg_properties(ir_graph *irg, ir_graph_properties_t props)
+{
+	static struct {
+		ir_graph_properties_t property;
+		assure_property_func  func;
+	} property_functions[] = {
+		{ IR_GRAPH_PROPERTY_ONE_RETURN,               normalize_one_return },
+		{ IR_GRAPH_PROPERTY_MANY_RETURNS,             normalize_n_returns },
+		{ IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES,        remove_critical_cf_edges },
+		{ IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE,      remove_unreachable_code },
+		{ IR_GRAPH_PROPERTY_NO_BADS,                  remove_bads },
+		{ IR_GRAPH_PROPERTY_NO_TUPLES,                remove_tuples },
+		{ IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE,     assure_doms },
+		{ IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE, assure_postdoms },
+		{ IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES,     assure_edges },
+		{ IR_GRAPH_PROPERTY_CONSISTENT_OUTS,          assure_irg_outs },
+		{ IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO,      assure_loopinfo },
+		{ IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE,  assure_irg_entity_usage_computed },
+	};
+	size_t i;
+	for (i = 0; i < ARRAY_SIZE(property_functions); ++i) {
+		ir_graph_properties_t missing = props & ~irg->properties;
+		if (missing & property_functions[i].property)
+			property_functions[i].func(irg);
+	}
+	assert((props & ~irg->properties) == IR_GRAPH_PROPERTIES_NONE);
+}
+
+void confirm_irg_properties(ir_graph *irg, ir_graph_properties_t props)
+{
+	clear_irg_properties(irg, ~props);
+	if (! (props & IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES))
+		edges_deactivate(irg);
+	if (! (props & IR_GRAPH_PROPERTY_CONSISTENT_OUTS)
+	    && (irg->properties & IR_GRAPH_PROPERTY_CONSISTENT_OUTS))
+	    free_irg_outs(irg);
 }

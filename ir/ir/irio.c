@@ -226,7 +226,6 @@ static void symtbl_init(void)
 
 	INSERT(tt_visibility, "local", ir_visibility_local);
 	INSERT(tt_visibility, "external", ir_visibility_external);
-	INSERT(tt_visibility, "default", ir_visibility_default);
 	INSERT(tt_visibility, "private", ir_visibility_private);
 
 	INSERT(tt_throws, "throw",   true);
@@ -324,7 +323,6 @@ static const char *get_visibility_name(ir_visibility visibility)
 	switch (visibility) {
 	case ir_visibility_local:    return "local";
 	case ir_visibility_external: return "external";
-	case ir_visibility_default:  return "default";
 	case ir_visibility_private:  return "private";
 	}
 	panic("INVALID_VISIBILITY");
@@ -821,9 +819,6 @@ static void write_entity(write_env_t *env, ir_entity *ent)
 		if (ent->initializer != NULL) {
 			write_symbol(env, "initializer");
 			write_initializer(env, get_entity_initializer(ent));
-		} else if (entity_has_compound_ent_values(ent)) {
-			/* compound graph API is deprecated */
-			panic("exporting compound_graph initializers not supported");
 		} else {
 			write_symbol(env, "none");
 		}
@@ -1901,7 +1896,7 @@ static void read_entity(read_env_t *env, ir_entity_kind kind)
 	long           entnr      = read_long(env);
 	ident         *name       = NULL;
 	ident         *ld_name    = NULL;
-	ir_visibility  visibility = ir_visibility_default;
+	ir_visibility  visibility = ir_visibility_external;
 	ir_linkage     linkage    = IR_LINKAGE_DEFAULT;
 	ir_type       *owner      = NULL;
 	ir_entity     *entity     = NULL;
@@ -2287,11 +2282,11 @@ static ir_graph *read_irg(read_env_t *env)
 	ir_type            *frame  = read_type_ref(env);
 	irg_inline_property prop   = read_inline_property(env);
 	unsigned            props  = read_unsigned(env);
-	irg_finalize_cons(irg);
 	set_irg_frame_type(irg, frame);
 	set_irg_inline_property(irg, prop);
 	set_irg_additional_properties(irg, (mtp_additional_properties)props);
 	read_graph(env, irg);
+	irg_finalize_cons(irg);
 	return irg;
 }
 

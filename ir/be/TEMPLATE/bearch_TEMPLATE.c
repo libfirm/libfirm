@@ -230,10 +230,7 @@ static void TEMPLATE_get_call_abi(ir_type *method_type, be_abi_call_t *abi)
 	be_abi_call_flags_t call_flags;
 
 	/* set abi flags for calls */
-	call_flags.bits.store_args_sequential = 1;
-	call_flags.bits.try_omit_fp           = 1;
-	call_flags.bits.fp_free               = 0;
-	call_flags.bits.call_has_imm          = 1;
+	call_flags.bits.call_has_imm = true;
 
 	/* set stack parameter passing style */
 	be_abi_call_set_flags(abi, call_flags, &TEMPLATE_abi_callbacks);

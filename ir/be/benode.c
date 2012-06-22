@@ -1075,9 +1075,8 @@ static const arch_irn_ops_t dummy_be_irn_ops = {
 
 
 ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
-                    const arch_register_class_t *cls)
+                    const arch_register_req_t *req)
 {
-	const arch_register_req_t *req;
 	ir_graph       *irg  = get_irn_irg(block);
 	struct obstack *obst = be_get_be_obst(irg);
 	backend_info_t *info;
@@ -1089,11 +1088,6 @@ ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
 	memset(info->out_infos, 0, 1 * sizeof(info->out_infos[0]));
 	info->in_reqs = OALLOCN(obst, const arch_register_req_t*, n_ins);
 
-	if (cls == NULL) {
-		req = arch_no_register_req;
-	} else {
-		req = cls->class_req;
-	}
 	info->out_infos[0].req = req;
 	for (i = 0; i < n_ins; ++i) {
 		info->in_reqs[i] = req;

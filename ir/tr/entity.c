@@ -42,7 +42,6 @@
 #include "irgraph_t.h"
 #include "callgraph.h"
 #include "error.h"
-#include "compound_path.h"
 
 /** The name of the unknown entity. */
 #define UNKNOWN_ENTITY_NAME "unknown_entity"
@@ -72,7 +71,7 @@ static ir_entity *intern_new_entity(ir_type *owner, ir_entity_kind kind,
 	res->aligned              = align_is_aligned;
 	res->usage                = ir_usage_unknown;
 	res->compiler_gen         = 0;
-	res->visibility           = ir_visibility_default;
+	res->visibility           = ir_visibility_external;
 	res->offset               = -1;
 	res->offset_bit_remainder = 0;
 	res->alignment            = 0;
@@ -113,8 +112,6 @@ ir_entity *new_d_entity(ir_type *owner, ident *name, ir_type *type,
 	} else if (owner != NULL
 	           && (is_compound_type(owner) && !(owner->flags & tf_segment))) {
 		res = intern_new_entity(owner, IR_ENTITY_COMPOUND_MEMBER, name, type, db);
-		res->attr.cmpd_attr.values    = NULL;
-		res->attr.cmpd_attr.val_paths = NULL;
 	} else {
 		res = intern_new_entity(owner, IR_ENTITY_NORMAL, name, type, db);
 	}
@@ -186,14 +183,8 @@ static void free_entity_attrs(ir_entity *ent)
 
 	if (ent->initializer != NULL) {
 		/* TODO: free initializers */
-	} else if (entity_has_compound_ent_values(ent)) {
-		/* can't free compound graph path as it might be used
-		 * multiple times */
-		ent->attr.cmpd_attr.val_paths = NULL;
 	}
-	if (ent->entity_kind == IR_ENTITY_COMPOUND_MEMBER) {
-		ent->attr.cmpd_attr.values = NULL;
-	} else if (ent->entity_kind == IR_ENTITY_METHOD) {
+	if (ent->entity_kind == IR_ENTITY_METHOD) {
 		if (ent->attr.mtd_attr.param_access) {
 			DEL_ARR_F(ent->attr.mtd_attr.param_access);
 			ent->attr.mtd_attr.param_access = NULL;
@@ -215,15 +206,6 @@ static ir_entity *deep_entity_copy(ir_entity *old)
 	*newe = *old;
 	if (old->initializer != NULL) {
 		/* FIXME: the initializers are NOT copied */
-	} else if (entity_has_compound_ent_values(old)) {
-		newe->attr.cmpd_attr.values    = NULL;
-		newe->attr.cmpd_attr.val_paths = NULL;
-		if (old->attr.cmpd_attr.values)
-			newe->attr.cmpd_attr.values = DUP_ARR_F(ir_node *, old->attr.cmpd_attr.values);
-
-		/* FIXME: the compound graph paths are NOT copied */
-		if (old->attr.cmpd_attr.val_paths)
-			newe->attr.cmpd_attr.val_paths = DUP_ARR_F(compound_graph_path *, old->attr.cmpd_attr.val_paths);
 	} else if (is_method_entity(old)) {
 		/* do NOT copy them, reanalyze. This might be the best solution */
 		newe->attr.mtd_attr.param_access = NULL;
@@ -433,18 +415,9 @@ ir_label_t get_entity_label(const ir_entity *ent)
 	return ent->attr.code_attr.label;
 }
 
-static void verify_visibility(const ir_entity *entity)
-{
-	if (get_entity_visibility(entity) == ir_visibility_external
-			&& !is_method_entity(entity)) {
-		assert(!entity_has_definition(entity));
-	}
-}
-
 void set_entity_visibility(ir_entity *entity, ir_visibility visibility)
 {
 	entity->visibility = visibility;
-	verify_visibility(entity);
 }
 
 ir_visibility get_entity_visibility(const ir_entity *entity)
@@ -492,7 +465,7 @@ void (set_entity_usage)(ir_entity *ent, ir_entity_usage flags)
 	_set_entity_usage(ent, flags);
 }
 
-ir_node *get_atomic_ent_value(ir_entity *entity)
+ir_node *get_atomic_ent_value(const ir_entity *entity)
 {
 	ir_initializer_t *initializer = get_entity_initializer(entity);
 
@@ -1071,9 +1044,12 @@ int entity_is_externally_visible(const ir_entity *entity)
 
 int entity_has_definition(const ir_entity *entity)
 {
-	return entity->initializer != NULL
-		|| get_entity_irg(entity) != NULL
-		|| entity_has_compound_ent_values(entity);
+	if (is_method_entity(entity)) {
+		return get_entity_irg(entity) != NULL
+		    && (get_entity_linkage(entity) & IR_LINKAGE_NO_CODEGEN) == 0;
+	} else {
+		return entity->initializer != NULL;
+	}
 }
 
 void ir_init_entity(ir_prog *irp)

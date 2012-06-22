@@ -139,6 +139,7 @@ enum type_flags {
 	tf_tls_type         = 1U << 5, /**< Set only for the tls type */
 	tf_constructors     = 1U << 6, /**< Set only for the constructors segment type */
 	tf_destructors      = 1U << 7, /**< Set only for the destructors segment type */
+	tf_variable_size    = 1U << 8, /**< compound or array type may have variable size last element */
 };
 ENUM_BITSET(type_flags)
 
@@ -184,18 +185,6 @@ struct ir_type {
 	tp_attr attr;            /**< Type kind specific fields. This must be the
 	                              last entry in this struct!  Varying size! */
 };
-
-/**
- *   Creates a new type representation:
- *
- *   @param type_op  the kind of this type.  May not be type_id.
- *   @param mode     the mode to be used for this type, may be NULL
- *   @param db       debug info
- *
- *   @return A new type of the given type.  The remaining private attributes are not
- *           initialized.  The type is in state layout_undefined.
- */
-ir_type *new_type(const tp_op *type_op, ir_mode *mode, type_dbg_info *db);
 
 void free_type_entities(ir_type *tp);
 

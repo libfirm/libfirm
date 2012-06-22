@@ -776,7 +776,7 @@ int construct_backedges(ir_graph *irg)
 	assert(head_rem == current_loop);
 	mature_loops(current_loop, irg->obst);
 	set_irg_loop(irg, current_loop);
-	set_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
+	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 	assert(get_irg_loop(irg)->kind == k_ir_loop);
 	current_ir_graph = rem;
 	return max_loop_depth;
@@ -818,7 +818,7 @@ void free_loop_information(ir_graph *irg)
 	*/
 	irg_walk_graph(irg, loop_reset_node, NULL, NULL);
 	set_irg_loop(irg, NULL);
-	clear_irg_state(current_ir_graph, IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
+	clear_irg_properties(current_ir_graph, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 	/* We cannot free the loop nodes, they are on the obstack. */
 }
 

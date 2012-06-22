@@ -615,6 +615,17 @@ static ir_tarval *compute_cmp(const ir_node *cmp)
 }
 
 /**
+ * some people want to call compute_cmp directly, in this case we have to
+ * test the constant folding flag again
+ */
+static ir_tarval *compute_cmp_ext(const ir_node *cmp)
+{
+	if (!get_opt_constant_folding())
+		return tarval_bad;
+	return compute_cmp(cmp);
+}
+
+/**
  * Return the value of a Cmp.
  *
  * The basic idea here is to determine which relations are possible and which
@@ -623,7 +634,7 @@ static ir_tarval *compute_cmp(const ir_node *cmp)
 static ir_tarval *computed_value_Cmp(const ir_node *cmp)
 {
 	/* we can't construct Constb after lowering mode_b nodes */
-	if (is_irg_state(get_irn_irg(cmp), IR_GRAPH_STATE_MODEB_LOWERED))
+	if (irg_is_constrained(get_irn_irg(cmp), IR_GRAPH_CONSTRAINT_MODEB_LOWERED))
 		return tarval_bad;
 
 	return compute_cmp(cmp);
@@ -1471,7 +1482,7 @@ static ir_node *equivalent_node_Mux(ir_node *n)
 	if (ts == tarval_bad && is_Cmp(sel)) {
 		/* try again with a direct call to compute_cmp, as we don't care
 		 * about the MODEB_LOWERED flag here */
-		ts = compute_cmp(sel);
+		ts = compute_cmp_ext(sel);
 	}
 
 	/* Mux(true, f, t) == t */
@@ -2358,7 +2369,7 @@ static ir_node *transform_node_bitop_shift(ir_node *n)
 	ir_tarval *tv2;
 	ir_tarval *tv_bitop;
 
-	if (!is_irg_state(irg, IR_GRAPH_STATE_NORMALISATION2))
+	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_NORMALISATION2))
 		return n;
 
 	assert(is_And(n) || is_Or(n) || is_Eor(n) || is_Or_Eor_Add(n));
@@ -2751,7 +2762,7 @@ static ir_node *transform_node_Add(ir_node *n)
 		ir_graph *irg = get_irn_irg(n);
 		/* the following code leads to endless recursion when Mul are replaced
 		 * by a simple instruction chain */
-		if (!is_irg_state(irg, IR_GRAPH_STATE_ARCH_DEP)
+		if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_ARCH_DEP)
 				&& a == b && mode_is_int(mode)) {
 			ir_node *block = get_nodes_block(n);
 
@@ -3539,7 +3550,7 @@ static ir_node *transform_node_Cond(ir_node *n)
 	if (ta == tarval_bad && is_Cmp(a)) {
 		/* try again with a direct call to compute_cmp, as we don't care
 		 * about the MODEB_LOWERED flag here */
-		ta = compute_cmp(a);
+		ta = compute_cmp_ext(a);
 	}
 
 	if (ta != tarval_bad && get_irn_mode(a) == mode_b) {
@@ -3557,7 +3568,7 @@ static ir_node *transform_node_Cond(ir_node *n)
 		}
 		/* We might generate an endless loop, so keep it alive. */
 		add_End_keepalive(get_irg_end(irg), blk);
-		clear_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE);
+		clear_irg_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE);
 	}
 	return n;
 }
@@ -3631,7 +3642,7 @@ static ir_node *transform_node_shift_bitop(ir_node *n)
 	ir_tarval *tv2;
 	ir_tarval *tv_shift;
 
-	if (is_irg_state(irg, IR_GRAPH_STATE_NORMALISATION2))
+	if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_NORMALISATION2))
 		return n;
 
 	assert(is_Shrs(n) || is_Shr(n) || is_Shl(n) || is_Rotl(n));
@@ -5117,7 +5128,7 @@ static ir_node *transform_node_Proj(ir_node *proj)
 /**
  * Test whether a block is unreachable
  * Note: That this only returns true when
- * IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE is set.
+ * IR_GRAPH_CONSTRAINT_OPTIMIZE_UNREACHABLE_CODE is set.
  * This is important, as you easily end up producing invalid constructs in the
  * unreachable code when optimizing away edges into the unreachable code.
  * So only set this flag when you iterate localopts to the fixpoint.
@@ -5128,7 +5139,7 @@ static ir_node *transform_node_Proj(ir_node *proj)
 static bool is_block_unreachable(const ir_node *block)
 {
 	const ir_graph *irg = get_irn_irg(block);
-	if (!is_irg_state(irg, IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE))
+	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_OPTIMIZE_UNREACHABLE_CODE))
 		return false;
 	return get_Block_dom_depth(block) < 0;
 }
@@ -5140,7 +5151,7 @@ static ir_node *transform_node_Block(ir_node *block)
 	ir_node  *bad   = NULL;
 	int       i;
 
-	if (!is_irg_state(irg, IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE))
+	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_OPTIMIZE_UNREACHABLE_CODE))
 		return block;
 
 	for (i = 0; i < arity; ++i) {
@@ -6011,7 +6022,7 @@ static ir_node *transform_node_Mux(ir_node *n)
 
 	/* the following optimisations create new mode_b nodes, so only do them
 	 * before mode_b lowering */
-	if (!is_irg_state(irg, IR_GRAPH_STATE_MODEB_LOWERED)) {
+	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_MODEB_LOWERED)) {
 		if (is_Mux(t)) {
 			ir_node*  block = get_nodes_block(n);
 			ir_node*  c0    = sel;
@@ -6183,7 +6194,8 @@ static ir_node *transform_node_Sync(ir_node *n)
 					++arity;
 					break;
 				}
-				if (get_Sync_pred(n, k) == pred_pred) break;
+				if (get_Sync_pred(n, k) == pred_pred)
+					break;
 			}
 		}
 	}
@@ -6516,11 +6528,11 @@ static int node_cmp_attr_Sel(const ir_node *a, const ir_node *b)
 /** Compares the attributes of two Phi nodes. */
 static int node_cmp_attr_Phi(const ir_node *a, const ir_node *b)
 {
-	/* we can only enter this function if both nodes have the same number of inputs,
-	   hence it is enough to check if one of them is a Phi0 */
-	if (is_Phi0(a)) {
-		/* check the Phi0 pos attribute */
-		return a->attr.phi.u.pos != b->attr.phi.u.pos;
+	(void) b;
+	/* do not CSE Phi-nodes without any inputs when building new graphs */
+	if (get_irn_arity(a) == 0 &&
+	    get_irg_phase_state(get_irn_irg(a)) == phase_building) {
+	    return 1;
 	}
 	return 0;
 }
@@ -6809,6 +6821,15 @@ void del_identities(ir_graph *irg)
 		del_pset(irg->value_table);
 }
 
+static int cmp_node_nr(const void *a, const void *b)
+{
+	ir_node **p1 = (ir_node**)a;
+	ir_node **p2 = (ir_node**)b;
+	long      n1 = get_irn_node_nr(*p1);
+	long      n2 = get_irn_node_nr(*p2);
+	return (n1>n2) - (n1<n2);
+}
+
 void ir_normalize_node(ir_node *n)
 {
 	if (is_op_commutative(get_irn_op(n))) {
@@ -6823,6 +6844,30 @@ void ir_normalize_node(ir_node *n)
 			set_binop_left(n, r);
 			set_binop_right(n, l);
 			hook_normalize(n);
+		}
+	} else if (is_Sync(n)) {
+		/* we assume that most of the time the inputs of a Sync node are already
+		 * sorted, so check this first as a shortcut */
+		bool           ins_sorted = true;
+		int            arity      = get_irn_arity(n);
+		const ir_node *last       = get_irn_n(n, 0);
+		int      i;
+		for (i = 1; i < arity; ++i) {
+			const ir_node *node = get_irn_n(n, i);
+			if (get_irn_node_nr(node) < get_irn_node_nr(last)) {
+				ins_sorted = false;
+				break;
+			}
+			last = node;
+		}
+
+		if (!ins_sorted) {
+			ir_node **ins     = get_irn_in(n)+1;
+			ir_node **new_ins = XMALLOCN(ir_node*, arity);
+			memcpy(new_ins, ins, arity*sizeof(ins[0]));
+			qsort(new_ins, arity, sizeof(new_ins[0]), cmp_node_nr);
+			set_irn_in(n, arity, new_ins);
+			xfree(new_ins);
 		}
 	}
 }
@@ -7009,8 +7054,6 @@ ir_node *optimize_in_place_2(ir_node *n)
 	irn_verify(n);
 
 	/* Now we have a legal, useful node. Enter it in hash table for cse.
-	 * Blocks should be unique anyways.  (Except the successor of start:
-	 * is cse with the start block!)
 	 *
 	 * Note: This is only necessary because some of the optimisations
 	 * operate in-place (set_XXX_bla, turn_into_tuple, ...) which is considered
@@ -7037,7 +7080,7 @@ ir_node *optimize_in_place(ir_node *n)
 
 	/* FIXME: Maybe we could also test whether optimizing the node can
 	   change the control graph. */
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	return optimize_in_place_2(n);
 }
 

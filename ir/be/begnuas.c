@@ -39,10 +39,11 @@
 #include "entity_t.h"
 #include "error.h"
 #include "util.h"
+#include "execfreq.h"
 
 #include "be_t.h"
 #include "beemitter.h"
-#include "be_dbgout.h"
+#include "bedwarf.h"
 
 /** by default, we generate assembler code for the Linux gas */
 object_file_format_t  be_gas_object_file_format = OBJECT_FILE_FORMAT_ELF;
@@ -91,6 +92,7 @@ static void emit_section_macho(be_gas_section_t section)
 		case GAS_SECTION_DEBUG_ABBREV:    name = "section __DWARF,__debug_abbrev,regular,debug"; break;
 		case GAS_SECTION_DEBUG_LINE:      name = "section __DWARF,__debug_line,regular,debug"; break;
 		case GAS_SECTION_DEBUG_PUBNAMES:  name = "section __DWARF,__debug_pubnames,regular,debug"; break;
+		case GAS_SECTION_DEBUG_FRAME:     name = "section __DWARF,__debug_frame,regular,debug"; break;
 		default: panic("unsupported scetion type 0x%X", section);
 		}
 		be_emit_irprintf("\t.%s\n", name);
@@ -104,8 +106,10 @@ static void emit_section_macho(be_gas_section_t section)
 		case GAS_SECTION_CSTRING:         name = "section __TEXT,__const_coal,coalesced"; break;
 		default: panic("unsupported scetion type 0x%X", section);
 		}
+	} else if (flags & GAS_SECTION_FLAG_TLS) {
+		panic("thread local storage not supported on macho (section 0x%X)", section);
 	} else {
-		panic("unsupported section type 0x%X\n", section);
+		panic("unsupported section type 0x%X", section);
 	}
 }
 
@@ -127,6 +131,7 @@ static void emit_section_sparc(be_gas_section_t section, const ir_entity *entity
 		"debug_abbrev",
 		"debug_line",
 		"debug_pubnames"
+		"debug_frame",
 	};
 
 	if (current_section == section && !(section & GAS_SECTION_FLAG_COMDAT))
@@ -193,6 +198,7 @@ static void emit_section(be_gas_section_t section, const ir_entity *entity)
 		{ "debug_abbrev",   "progbits", ""   },
 		{ "debug_line",     "progbits", ""   },
 		{ "debug_pubnames", "progbits", ""   },
+		{ "debug_frame",    "progbits", ""   },
 	};
 
 	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
@@ -369,7 +375,6 @@ static int entity_is_string_const(const ir_entity *ent)
 {
 	ir_type *type, *element_type;
 	ir_mode *mode;
-	int i, c, n;
 
 	type = get_entity_type(ent);
 
@@ -391,26 +396,6 @@ static int entity_is_string_const(const ir_entity *ent)
 
 	if (ent->initializer != NULL) {
 		return initializer_is_string_const(ent->initializer);
-	} else if (entity_has_compound_ent_values(ent)) {
-		int found_printable = 0;
-		/* if it contains only printable chars and a 0 at the end */
-		n = get_compound_ent_n_values(ent);
-		for (i = 0; i < n; ++i) {
-			ir_node *irn = get_compound_ent_value(ent, i);
-			if (! is_Const(irn))
-				return 0;
-
-			c = (int) get_tarval_long(get_Const_tarval(irn));
-
-			if (isgraph(c) || isspace(c))
-				found_printable = 1;
-			else if (c != 0)
-				return 0;
-
-			if (i == n - 1 && c != '\0')
-				return 0;
-		}
-		return found_printable;
 	}
 
 	return 0;
@@ -418,15 +403,8 @@ static int entity_is_string_const(const ir_entity *ent)
 
 static bool entity_is_null(const ir_entity *entity)
 {
-	if (entity->initializer != NULL) {
-		return initializer_is_null(entity->initializer);
-	} else if (entity_has_compound_ent_values(entity)) {
-		/* I'm too lazy to implement this case as compound graph paths will be
-		 * remove anyway in the future */
-		return false;
-	}
-	/* uninitialized, NULL is fine */
-	return true;
+	ir_initializer_t *initializer = get_entity_initializer(entity);
+	return initializer == NULL || initializer_is_null(initializer);
 }
 
 static bool is_comdat(const ir_entity *entity)
@@ -447,7 +425,7 @@ static be_gas_section_t determine_basic_section(const ir_entity *entity)
 	if (linkage & IR_LINKAGE_CONSTANT) {
 		/* mach-o is the only one with a cstring section */
 		if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O
-				&& entity_is_string_const(entity))
+		    && entity_is_string_const(entity))
 			return GAS_SECTION_CSTRING;
 
 		return GAS_SECTION_RODATA;
@@ -506,13 +484,14 @@ static void emit_weak(const ir_entity *entity)
 
 static void emit_visibility(const ir_entity *entity)
 {
-	ir_linkage linkage = get_entity_linkage(entity);
+	ir_linkage const linkage = get_entity_linkage(entity);
 
-	if (get_entity_linkage(entity) & IR_LINKAGE_WEAK) {
+	if (linkage & IR_LINKAGE_WEAK) {
 		emit_weak(entity);
 		/* Note: .weak seems to imply .globl so no need to output .globl */
-	} else if (get_entity_visibility(entity) == ir_visibility_default) {
-		be_emit_cstring(".globl ");
+	} else if (get_entity_visibility(entity) == ir_visibility_external
+	           && entity_has_definition(entity)) {
+		be_emit_cstring("\t.globl ");
 		be_gas_emit_entity(entity);
 		be_emit_char('\n');
 		be_emit_write_line();
@@ -528,11 +507,11 @@ static void emit_visibility(const ir_entity *entity)
 	}
 }
 
-void be_gas_emit_function_prolog(const ir_entity *entity, unsigned po2alignment)
+void be_gas_emit_function_prolog(const ir_entity *entity, unsigned po2alignment, const parameter_dbg_info_t *parameter_infos)
 {
 	be_gas_section_t section;
 
-	be_dbg_method_begin(entity);
+	be_dwarf_method_before(entity, parameter_infos);
 
 	section = determine_section(NULL, entity);
 	emit_section(section, entity);
@@ -586,10 +565,14 @@ void be_gas_emit_function_prolog(const ir_entity *entity, unsigned po2alignment)
 	be_gas_emit_entity(entity);
 	be_emit_cstring(":\n");
 	be_emit_write_line();
+
+	be_dwarf_method_begin();
 }
 
 void be_gas_emit_function_epilog(const ir_entity *entity)
 {
+	be_dwarf_method_end();
+
 	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_ELF) {
 		be_emit_cstring("\t.size\t");
 		be_gas_emit_entity(entity);
@@ -605,8 +588,6 @@ void be_gas_emit_function_epilog(const ir_entity *entity)
 		be_emit_char('\n');
 		be_emit_write_line();
 	}
-
-	be_dbg_method_end();
 
 	be_emit_char('\n');
 	be_emit_write_line();
@@ -654,55 +635,6 @@ static void emit_arith_tarval(ir_tarval *tv, unsigned bytes)
 const char *be_gas_insn_label_prefix(void)
 {
 	return ".LE";
-}
-
-/**
- * Return the tarval of an atomic initializer.
- *
- * @param init  a node representing the initializer (on the const code irg)
- *
- * @return the tarval
- */
-static ir_tarval *get_atomic_init_tv(ir_node *init)
-{
-	for (;;) {
-		ir_mode *mode = get_irn_mode(init);
-
-		switch (get_irn_opcode(init)) {
-
-		case iro_Cast:
-			init = get_Cast_op(init);
-			continue;
-
-		case iro_Conv:
-			init = get_Conv_op(init);
-			continue;
-
-		case iro_Const:
-			return get_Const_tarval(init);
-
-		case iro_SymConst:
-			switch (get_SymConst_kind(init)) {
-			case symconst_type_size:
-				return new_tarval_from_long(get_type_size_bytes(get_SymConst_type(init)), mode);
-
-			case symconst_type_align:
-				return new_tarval_from_long(get_type_alignment_bytes(get_SymConst_type(init)), mode);
-
-			case symconst_ofs_ent:
-				return new_tarval_from_long(get_entity_offset(get_SymConst_entity(init)), mode);
-
-			case symconst_enum_const:
-				return get_enumeration_value(get_SymConst_enum(init));
-
-			default:
-				return NULL;
-			}
-
-		default:
-			return NULL;
-		}
-	}
 }
 
 /**
@@ -820,62 +752,6 @@ static void emit_size_type(size_t size)
 	}
 }
 
-/**
- * Dump a string constant.
- * No checks are made!!
- *
- * @param ent  The entity to dump.
- */
-static void emit_string_cst(const ir_entity *ent)
-{
-	int      i, len;
-	int      output_len;
-	ir_type *type;
-	int      type_size;
-	int      remaining_space;
-
-	len        = get_compound_ent_n_values(ent);
-	output_len = len;
-	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
-		be_emit_cstring("\t.ascii \"");
-	} else {
-		be_emit_cstring("\t.string \"");
-		output_len -= 1;
-	}
-
-	for (i = 0; i < output_len; ++i) {
-		ir_node *irn;
-		int c;
-
-		irn = get_compound_ent_value(ent, i);
-		c = (int) get_tarval_long(get_Const_tarval(irn));
-
-		switch (c) {
-		case '"' : be_emit_cstring("\\\""); break;
-		case '\n': be_emit_cstring("\\n"); break;
-		case '\r': be_emit_cstring("\\r"); break;
-		case '\t': be_emit_cstring("\\t"); break;
-		case '\\': be_emit_cstring("\\\\"); break;
-		default  :
-			if (isprint(c))
-				be_emit_char(c);
-			else
-				be_emit_irprintf("\\%03o", c);
-			break;
-		}
-	}
-	be_emit_cstring("\"\n");
-	be_emit_write_line();
-
-	type            = get_entity_type(ent);
-	type_size       = get_type_size_bytes(type);
-	remaining_space = type_size - len;
-	assert(remaining_space >= 0);
-	if (remaining_space > 0) {
-		be_emit_irprintf("\t.space\t%d, 0\n", remaining_space);
-	}
-}
-
 static size_t emit_string_initializer(const ir_initializer_t *initializer)
 {
 	size_t i, len;
@@ -933,13 +809,6 @@ typedef struct {
 	} v;
 } normal_or_bitfield;
 
-static int is_type_variable_size(ir_type *type)
-{
-	(void) type;
-	/* TODO */
-	return 0;
-}
-
 static size_t get_initializer_size(const ir_initializer_t *initializer,
                                    ir_type *type)
 {
@@ -951,28 +820,34 @@ static size_t get_initializer_size(const ir_initializer_t *initializer,
 	case IR_INITIALIZER_NULL:
 		return get_type_size_bytes(type);
 	case IR_INITIALIZER_COMPOUND:
-		if (!is_type_variable_size(type)) {
-			return get_type_size_bytes(type);
-		} else {
-			size_t n_entries
-				= get_initializer_compound_n_entries(initializer);
-			size_t i;
-			unsigned initializer_size = get_type_size_bytes(type);
-			for (i = 0; i < n_entries; ++i) {
-				ir_entity *entity = get_compound_member(type, i);
-				ir_type   *type   = get_entity_type(entity);
-
-				const ir_initializer_t *sub_initializer
-					= get_initializer_compound_value(initializer, i);
-
-				unsigned offset = get_entity_offset(entity);
-				unsigned size   = get_initializer_size(sub_initializer, type);
-
-				if (offset + size > initializer_size) {
-					initializer_size = offset + size;
-				}
+		if (is_Array_type(type)) {
+			if (is_array_variable_size(type)) {
+				ir_type   *element_type = get_array_element_type(type);
+				unsigned   element_size = get_type_size_bytes(element_type);
+				unsigned   element_align
+					= get_type_alignment_bytes(element_type);
+				unsigned   misalign     = element_size % element_align;
+				size_t     n_inits
+					= get_initializer_compound_n_entries(initializer);
+				element_size += element_align - misalign;
+				return n_inits * element_size;
+			} else {
+				return get_type_size_bytes(type);
 			}
-			return initializer_size;
+		} else {
+			assert(is_compound_type(type));
+			size_t size = get_type_size_bytes(type);
+			if (is_compound_variable_size(type)) {
+				/* last initializer has to be an array of variable size */
+				size_t l = get_initializer_compound_n_entries(initializer)-1;
+				const ir_initializer_t *last
+					= get_initializer_compound_value(initializer, l);
+				const ir_entity *last_ent  = get_compound_member(type, l);
+				ir_type         *last_type = get_entity_type(last_ent);
+				assert(is_array_variable_size(last_type));
+				size += get_initializer_size(last, last_type);
+			}
+			return size;
 		}
 	}
 
@@ -1328,117 +1203,6 @@ static void emit_initializer(be_gas_decl_env_t *env, const ir_entity *entity)
 	xfree(vals);
 }
 
-static void emit_compound_graph_init(be_gas_decl_env_t *env,
-                                     const ir_entity *ent)
-{
-	normal_or_bitfield *vals;
-	int i, j, n;
-	unsigned k, last_ofs;
-
-	if (entity_is_string_const(ent)) {
-		emit_string_cst(ent);
-		return;
-	}
-
-	n = get_compound_ent_n_values(ent);
-
-	/* Find the initializer size. Sorrily gcc support a nasty feature:
-	   The last field of a compound may be a flexible array. This allows
-	   initializers bigger than the type size. */
-	last_ofs = get_type_size_bytes(get_entity_type(ent));
-	for (i = 0; i < n; ++i) {
-		unsigned offset         = get_compound_ent_value_offset_bytes(ent, i);
-		unsigned bits_remainder = get_compound_ent_value_offset_bit_remainder(ent, i);
-		ir_node  *value         = get_compound_ent_value(ent, i);
-		unsigned value_len      = get_mode_size_bits(get_irn_mode(value));
-
-		offset += (value_len + bits_remainder + 7) >> 3;
-
-		if (offset > last_ofs) {
-			last_ofs = offset;
-		}
-	}
-
-	/*
-	 * In the worst case, every initializer allocates one byte.
-	 * Moreover, initializer might be big, do not allocate on stack.
-	 */
-	vals = XMALLOCNZ(normal_or_bitfield, last_ofs);
-
-	/* collect the values and store them at the offsets */
-	for (i = 0; i < n; ++i) {
-		unsigned offset      = get_compound_ent_value_offset_bytes(ent, i);
-		int      offset_bits = get_compound_ent_value_offset_bit_remainder(ent, i);
-		ir_node  *value      = get_compound_ent_value(ent, i);
-		int      value_len   = get_mode_size_bits(get_irn_mode(value));
-
-		assert(offset_bits >= 0);
-
-		if (offset_bits != 0 ||
-				(value_len != 8 && value_len != 16 && value_len != 32 && value_len != 64)) {
-			ir_tarval *tv = get_atomic_init_tv(value);
-			unsigned char curr_bits, last_bits = 0;
-			if (tv == NULL) {
-				panic("Couldn't get numeric value for bitfield initializer '%s'",
-						get_entity_ld_name(ent));
-			}
-			/* normalize offset */
-			offset += offset_bits >> 3;
-			offset_bits &= 7;
-
-			for (j = 0; value_len + offset_bits > 0; ++j) {
-				assert(offset + j < last_ofs);
-				assert(vals[offset + j].kind == BITFIELD || vals[offset + j].v.value == NULL);
-				vals[offset + j].kind = BITFIELD;
-				curr_bits = get_tarval_sub_bits(tv, j);
-				vals[offset + j].v.bf_val |= (last_bits >> (8 - offset_bits)) | (curr_bits << offset_bits);
-				value_len -= 8;
-				last_bits = curr_bits;
-			}
-		} else {
-			int i;
-
-			assert(offset < last_ofs);
-			assert(vals[offset].kind == NORMAL);
-			for (i = 1; i < value_len / 8; ++i) {
-				assert(vals[offset + i].v.value == NULL);
-			}
-			vals[offset].v.value = value;
-		}
-	}
-
-	/* now write them sorted */
-	for (k = 0; k < last_ofs; ) {
-		int space = 0, skip = 0;
-		if (vals[k].kind == NORMAL) {
-			if (vals[k].v.value != NULL) {
-				emit_node_data(env, vals[k].v.value, vals[k].type);
-				skip = get_mode_size_bytes(get_irn_mode(vals[k].v.value)) - 1;
-			} else {
-				space = 1;
-			}
-		} else {
-			assert(vals[k].kind == BITFIELD);
-			be_emit_irprintf("\t.byte\t%d\n", vals[k].v.bf_val);
-		}
-
-		++k;
-		while (k < last_ofs && vals[k].kind == NORMAL && vals[k].v.value == NULL) {
-			++space;
-			++k;
-		}
-		space -= skip;
-		assert(space >= 0);
-
-		/* a gap */
-		if (space > 0) {
-			be_emit_irprintf("\t.space\t%d, 0\n", space);
-			be_emit_write_line();
-		}
-	}
-	xfree(vals);
-}
-
 static void emit_align(unsigned p2alignment)
 {
 	be_emit_irprintf("\t.p2align\t%u\n", log2_floor(p2alignment));
@@ -1531,9 +1295,7 @@ static void emit_indirect_symbol(const ir_entity *entity, be_gas_section_t secti
 	be_gas_emit_entity(entity);
 	be_emit_cstring(":\n");
 	be_emit_write_line();
-	be_emit_cstring("\t.indirect_symbol ");
-	be_emit_ident(get_entity_ident(entity));
-	be_emit_char('\n');
+	be_emit_irprintf("\t.indirect_symbol %I\n", get_entity_ident(entity));
 	be_emit_write_line();
 	if (section == GAS_SECTION_PIC_TRAMPOLINES) {
 		be_emit_cstring("\thlt ; hlt ; hlt ; hlt ; hlt\n");
@@ -1561,13 +1323,13 @@ void be_gas_emit_entity(const ir_entity *entity)
 	if (get_entity_visibility(entity) == ir_visibility_private) {
 		be_emit_string(be_gas_get_private_prefix());
 	}
-	be_emit_ident(get_entity_ld_ident(entity));
+	be_emit_irprintf("%I", get_entity_ld_ident(entity));
 }
 
 void be_gas_emit_block_name(const ir_node *block)
 {
-	if (get_Block_entity(block) != NULL) {
-		ir_entity *entity = get_Block_entity(block);
+	ir_entity *entity = get_Block_entity(block);
+	if (entity != NULL) {
 		be_gas_emit_entity(entity);
 	} else {
 		void *nr_val = pmap_get(block_numbers, block);
@@ -1601,7 +1363,7 @@ void be_gas_begin_block(const ir_node *block, bool needs_label)
 		ir_exec_freq *exec_freq = be_get_irg_exec_freq(irg);
 
 		be_emit_pad_comment();
-		be_emit_cstring("/* preds:");
+		be_emit_irprintf("/* %+F preds:", block);
 
 		arity = get_irn_arity(block);
 		if (arity == 0) {
@@ -1639,22 +1401,18 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 	ir_visibility     visibility = get_entity_visibility(entity);
 	ir_linkage        linkage    = get_entity_linkage(entity);
 
-	/* block labels are already emittet in the code */
+	/* Block labels are already emitted in the code. */
 	if (type == get_code_type())
 		return;
 
-	/* we already emitted all methods. Except for the trampolines which
-	 * the assembler/linker generates */
+	/* we already emitted all methods with graphs in other functions like
+	 * be_gas_emit_function_prolog(). All others don't need to be emitted.
+	 */
 	if (is_Method_type(type) && section != GAS_SECTION_PIC_TRAMPOLINES) {
-		/* functions with graph are already emitted with
-		 * be_gas_emit_function_prolog */
-		if (get_entity_irg(entity) == NULL) {
-			emit_visibility(entity);
-		}
 		return;
 	}
 
-	be_dbg_variable(entity);
+	be_dwarf_variable(entity);
 
 	if (section == GAS_SECTION_BSS) {
 		switch (visibility) {
@@ -1662,24 +1420,16 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 		case ir_visibility_private:
 			emit_local_common(entity);
 			return;
-		case ir_visibility_default:
+		case ir_visibility_external:
 			if (linkage & IR_LINKAGE_MERGE) {
 				emit_common(entity);
 				return;
 			}
 			break;
-		case ir_visibility_external:
-			if (linkage & IR_LINKAGE_MERGE)
-				panic("merge link semantic not supported for extern entities");
-			break;
 		}
 	}
 
 	emit_visibility(entity);
-	if (visibility == ir_visibility_external) {
-		/* nothing to do for externally defined values */
-		return;
-	}
 
 	if (!is_po2(alignment))
 		panic("alignment not a power of 2");
@@ -1691,6 +1441,10 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 		emit_indirect_symbol(entity, section);
 		return;
 	}
+
+	/* nothing left to do without an initializer */
+	if (!entity_has_definition(entity))
+		return;
 
 	/* alignment */
 	if (alignment > 1) {
@@ -1709,19 +1463,18 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 	}
 
 	if (get_id_str(ld_ident)[0] != '\0') {
-	    be_gas_emit_entity(entity);
+		be_gas_emit_entity(entity);
 		be_emit_cstring(":\n");
 		be_emit_write_line();
 	}
 
 	if (entity_is_null(entity)) {
+		/* we should use .space for stuff in the bss segment */
 		unsigned size = get_type_size_bytes(type);
 		if (size > 0) {
 			be_emit_irprintf("\t.space %u, 0\n", get_type_size_bytes(type));
 			be_emit_write_line();
 		}
-	} else if (entity_has_compound_ent_values(entity)) {
-		emit_compound_graph_init(env, entity);
 	} else {
 		assert(entity->initializer != NULL);
 		emit_initializer(env, entity);
@@ -1882,8 +1635,7 @@ static void emit_global_asms(void)
 
 		be_emit_cstring("#APP\n");
 		be_emit_write_line();
-		be_emit_ident(asmtext);
-		be_emit_char('\n');
+		be_emit_irprintf("%I\n", asmtext);
 		be_emit_write_line();
 		be_emit_cstring("#NO_APP\n");
 		be_emit_write_line();
@@ -1892,9 +1644,11 @@ static void emit_global_asms(void)
 
 void be_gas_begin_compilation_unit(const be_main_env_t *env)
 {
-	be_dbg_open();
-	be_dbg_unit_begin(env->cup_name);
-	be_dbg_types();
+	be_dwarf_open();
+	be_dwarf_unit_begin(env->cup_name);
+
+	block_numbers = pmap_create();
+	next_block_nr = 0;
 
 	block_numbers = pmap_create();
 	next_block_nr = 0;
@@ -1908,6 +1662,6 @@ void be_gas_end_compilation_unit(const be_main_env_t *env)
 
 	pmap_destroy(block_numbers);
 
-	be_dbg_unit_end();
-	be_dbg_close();
+	be_dwarf_unit_end();
+	be_dwarf_close();
 }

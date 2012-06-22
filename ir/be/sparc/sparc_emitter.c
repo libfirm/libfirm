@@ -48,7 +48,7 @@
 #include "beblocksched.h"
 #include "beirg.h"
 #include "begnuas.h"
-#include "be_dbgout.h"
+#include "bedwarf.h"
 #include "benode.h"
 #include "bestack.h"
 #include "bepeephole.h"
@@ -1404,9 +1404,9 @@ static void emit_sparc_Restore(const ir_node *node)
 		= arch_get_irn_register_out(node, pn_sparc_Restore_res);
 	sparc_emit_indent();
 	be_emit_cstring("restore ");
-	sparc_emit_source_register(node, 1);
+	sparc_emit_source_register(node, 2);
 	be_emit_cstring(", ");
-	sparc_emit_reg_or_imm(node, 2);
+	sparc_emit_reg_or_imm(node, 3);
 	be_emit_cstring(", ");
 	destreg = map_i_to_o_reg(destreg);
 	be_emit_char('%');
@@ -1723,7 +1723,7 @@ static void sparc_emit_node(const ir_node *node)
 
 	if (op->ops.generic) {
 		emit_func func = (emit_func) op->ops.generic;
-		be_dbg_set_dbg_info(get_irn_dbg_info(node));
+		be_dwarf_location(get_irn_dbg_info(node));
 		(*func) (node);
 	} else {
 		panic("No emit handler for node %+F (graph %+F)\n", node,
@@ -1801,7 +1801,7 @@ static void sparc_emit_block(ir_node *block, ir_node *prev)
 static void sparc_emit_func_prolog(ir_graph *irg)
 {
 	ir_entity *entity = get_irg_entity(irg);
-	be_gas_emit_function_prolog(entity, 4);
+	be_gas_emit_function_prolog(entity, 4, NULL);
 }
 
 /**

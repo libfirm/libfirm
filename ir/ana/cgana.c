@@ -511,19 +511,6 @@ static void add_method_address(ir_entity *ent, pset *set)
 
 	if (ent->initializer != NULL) {
 		add_method_address_inititializer(get_entity_initializer(ent), set);
-	} else if (entity_has_compound_ent_values(ent)) {
-		size_t i, n;
-		for (i = 0, n = get_compound_ent_n_values(ent); i < n; ++i) {
-			ir_node *irn = get_compound_ent_value(ent, i);
-
-			/* let's check if it's the address of a function */
-			if (is_SymConst_addr_ent(irn)) {
-				ir_entity *ent2 = get_SymConst_entity(irn);
-
-				if (is_Method_type(get_entity_type(ent2)))
-					pset_insert_ptr(set, ent2);
-			}
-		}
 	}
 }
 

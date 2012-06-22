@@ -891,7 +891,7 @@ FIRM_API ir_node *get_r_cur_block(ir_graph *irg);
 /** Returns the current value of a local variable.
  *
  * Use this function to obtain the last definition of the local variable
- * associated with pos.  Pos may not exceed the value passed as n_loc
+ * associated with pos.  pos must be less than the value passed as n_loc
  * to new_ir_graph.  This call automatically inserts Phi nodes.
  *
  * @param  pos   The position/id of the local variable.
@@ -916,10 +916,10 @@ FIRM_API ir_mode *ir_guess_mode(int pos);
  */
 FIRM_API ir_mode *ir_r_guess_mode(ir_graph *irg, int pos);
 
-/** Remark a new definition of a variable.
+/** Memorize a new definition of a variable.
  *
  * Use this function to remember a new definition of the value
- * associated with pos. Pos may not exceed the value passed as n_loc
+ * associated with pos.  pos must be less than the value passed as n_loc
  * to new_ir_graph.  This call is needed to automatically inserts Phi
  * nodes.
  *
@@ -929,21 +929,6 @@ FIRM_API ir_mode *ir_r_guess_mode(ir_graph *irg, int pos);
 FIRM_API void set_value(int pos, ir_node *value);
 /** Sets current value of a variable in a given graph */
 FIRM_API void set_r_value(ir_graph *irg, int pos, ir_node *value);
-
-/**
- * Find the value number for a node in the current block.
- *
- * @param value  the searched value
- *
- * @return the value number of the value or -1 if this value has
- * no value number in the current block.
- */
-FIRM_API int find_value(ir_node *value);
-/**
- * Find value number for a node in the current block of a given graph
- * @see find_value()
- */
-FIRM_API int r_find_value(ir_graph *irg, ir_node *value);
 
 /** Returns the current memory state.
  *
@@ -956,7 +941,7 @@ FIRM_API ir_node *get_store(void);
  * @see get_store() */
 FIRM_API ir_node *get_r_store(ir_graph *irg);
 
-/** Remark a new definition of the memory state.
+/** Memorize a new definition of the memory state.
  *
  * Use this function to remember a new definition of the memory state.
  * This call is needed to automatically inserts Phi nodes.

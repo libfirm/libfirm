@@ -398,8 +398,7 @@ static void create_out_of_bounds_check(switch_info_t *info)
 
 	DEL_ARR_F(default_preds);
 
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
-	                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 }
 
 /**
@@ -474,9 +473,8 @@ static void find_switch_nodes(ir_node *block, void *ctx)
 
 	DEL_ARR_F(info.defusers);
 	xfree(info.cases);
-	clear_irg_state(get_irn_irg(block), IR_GRAPH_STATE_NO_CRITICAL_EDGES
-	                                  | IR_GRAPH_STATE_CONSISTENT_DOMINANCE
-	                                  | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
+	clear_irg_properties(get_irn_irg(block), IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
+	                                  | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 }
 
 void lower_switch(ir_graph *irg, unsigned small_switch, unsigned spare_size,

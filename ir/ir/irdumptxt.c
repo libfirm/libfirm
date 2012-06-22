@@ -138,7 +138,7 @@ void dump_irnode_to_file(FILE *F, const ir_node *n)
 	}
 
 	/* Loop node.   Someone else please tell me what's wrong ... */
-	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO)) {
+	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO)) {
 		ir_loop *loop = get_irn_loop(n);
 		if (loop != NULL) {
 			fprintf(F, "  in loop %ld with depth %u\n",
@@ -149,16 +149,17 @@ void dump_irnode_to_file(FILE *F, const ir_node *n)
 	/* Source types */
 	switch (get_irn_opcode(n)) {
 	case iro_Block: {
-		if (get_Block_entity(n) != NULL)
-			fprintf(F, "  Label: %lu\n", get_entity_label(get_Block_entity(n)));
+		ir_entity *const entity = get_Block_entity(n);
+		if (entity != NULL)
+			fprintf(F, "  Label: %lu\n", get_entity_label(entity));
 		fprintf(F, "  block visited: %lu\n", get_Block_block_visited(n));
 		fprintf(F, "  block marked: %u\n", get_Block_mark(n));
-		if (is_irg_state(get_irn_irg(n), IR_GRAPH_STATE_CONSISTENT_DOMINANCE)) {
+		if (irg_has_properties(get_irn_irg(n), IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE)) {
 			fprintf(F, "  dom depth %d\n", get_Block_dom_depth(n));
 			fprintf(F, "  domtree pre num %u\n", get_Block_dom_tree_pre_num(n));
 			fprintf(F, "  max subtree pre num %u\n", get_Block_dom_max_subtree_pre_num(n));
 		}
-		if (is_irg_state(get_irn_irg(n), IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE)) {
+		if (irg_has_properties(get_irn_irg(n), IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE)) {
 			fprintf(F, "  pdom depth %d\n", get_Block_postdom_depth(n));
 			fprintf(F, "  pdomtree pre num %u\n", get_Block_pdom_tree_pre_num(n));
 			fprintf(F, "  max pdomsubtree pre num %u\n", get_Block_pdom_max_subtree_pre_num(n));
@@ -598,27 +599,6 @@ static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, const char *pref
 			fprintf(F, "\n%s  Initializers:", prefix);
 			need_nl = 1;
 			dump_ir_initializers_to_file(F, prefix, initializer, get_entity_type(ent));
-			fputc('\n', F);
-		} else if (entity_has_compound_ent_values(ent)) {
-			size_t i;
-			fprintf(F, "%s  compound values:", prefix);
-			for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
-				size_t j;
-				compound_graph_path *path = get_compound_ent_value_path(ent, i);
-				ir_entity *ent0 = get_compound_graph_path_node(path, 0);
-				fprintf(F, "\n%s    %3d:%d ", prefix, get_entity_offset(ent0), get_entity_offset_bits_remainder(ent0));
-				if (get_type_state(type) == layout_fixed)
-					fprintf(F, "(%3u:%u) ",   get_compound_ent_value_offset_bytes(ent, i), get_compound_ent_value_offset_bit_remainder(ent, i));
-				fprintf(F, "%s", get_entity_name(ent));
-				for (j = 0; j < get_compound_graph_path_length(path); ++j) {
-					ir_entity *node = get_compound_graph_path_node(path, j);
-					fprintf(F, ".%s", get_entity_name(node));
-					if (is_Array_type(get_entity_owner(node)))
-						fprintf(F, "[%ld]", get_compound_graph_path_array_index(path, j));
-				}
-				fprintf(F, "\t = ");
-				dump_node_opcode(F, get_compound_ent_value(ent, i));
-			}
 			fputc('\n', F);
 		}
 	}

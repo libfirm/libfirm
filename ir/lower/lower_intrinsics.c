@@ -139,8 +139,7 @@ size_t lower_intrinsics(i_record *list, size_t length, int part_block_used)
 			set_irg_callee_info_state(irg, irg_callee_info_inconsistent);
 
 			/* Exception control flow might have changed / new block might have added. */
-			clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
-			                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
+			clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
 			/* verify here */
 			irg_verify(irg, VERIFY_NORMAL);
@@ -618,6 +617,29 @@ static ir_entity *get_const_entity(ir_node *ptr)
 	return NULL;
 }
 
+static ir_tarval *get_initializer_value(ir_initializer_t *const init, ir_mode *const mode)
+{
+	switch (get_initializer_kind(init)) {
+	case IR_INITIALIZER_NULL:
+		return get_mode_null(mode);
+
+	case IR_INITIALIZER_TARVAL:
+		return get_initializer_tarval_value(init);
+
+	case IR_INITIALIZER_CONST: {
+		ir_node *const irn = get_initializer_const_value(init);
+		if (is_Const(irn))
+			return get_Const_tarval(irn);
+		break;
+	}
+
+	case IR_INITIALIZER_COMPOUND:
+		break;
+	}
+
+	return get_tarval_undefined();
+}
+
 static bool initializer_val_is_null(ir_initializer_t *init)
 {
 	ir_tarval *tv;
@@ -666,25 +688,6 @@ static ir_node *eval_strlen(ir_graph *irg, ir_entity *ent, ir_type *res_tp)
 	/* FIXME: This is too restrict, as the type char might be more the 8bits */
 	if (!mode_is_int(mode) || get_mode_size_bits(mode) != 8)
 		return NULL;
-
-	if (!has_entity_initializer(ent)) {
-		size_t i, n;
-
-		n = get_compound_ent_n_values(ent);
-		for (i = 0; i < n; ++i) {
-			ir_node *irn = get_compound_ent_value(ent, i);
-
-			if (! is_Const(irn))
-				return NULL;
-
-			if (is_Const_null(irn)) {
-				/* found the length */
-				ir_tarval *tv = new_tarval_from_long(i, get_type_mode(res_tp));
-				return new_r_Const(irg, tv);
-			}
-		}
-		return NULL;
-	}
 
 	initializer = get_entity_initializer(ent);
 	if (get_initializer_kind(initializer) != IR_INITIALIZER_COMPOUND)
@@ -741,8 +744,14 @@ int i_mapper_strlen(ir_node *call, void *ctx)
 static ir_node *eval_strcmp(ir_graph *irg, ir_entity *left, ir_entity *right,
                             ir_type *res_tp)
 {
-	ir_type *tp;
-	ir_mode *mode;
+	ir_type          *tp;
+	ir_mode          *mode;
+	ir_initializer_t *init_l;
+	ir_initializer_t *init_r;
+	size_t            size_l;
+	size_t            size_r;
+	size_t            size;
+	size_t            i;
 
 	tp = get_entity_type(left);
 	if (! is_Array_type(tp))
@@ -768,55 +777,38 @@ static ir_node *eval_strcmp(ir_graph *irg, ir_entity *left, ir_entity *right,
 	if (!mode_is_int(mode) || get_mode_size_bits(mode) != 8)
 		return NULL;
 
-	if (!has_entity_initializer(left) && !has_entity_initializer(right)) {
-		/* code that uses deprecated compound_graph_path stuff */
-		size_t n   = get_compound_ent_n_values(left);
-		size_t n_r = get_compound_ent_n_values(right);
-		size_t i;
-		int    res = 0;
+	init_l = get_entity_initializer(left);
+	init_r = get_entity_initializer(right);
+	if (get_initializer_kind(init_l) != IR_INITIALIZER_COMPOUND ||
+	    get_initializer_kind(init_r) != IR_INITIALIZER_COMPOUND)
+		return NULL;
 
-		if (n_r < n)
-			n = n_r;
-		for (i = 0; i < n; ++i) {
-			ir_node *irn;
-			long v_l, v_r;
-			ir_tarval *tv;
+	size_l = get_initializer_compound_n_entries(init_l);
+	size_r = get_initializer_compound_n_entries(init_r);
+	size   = size_l < size_r ? size_l : size_r;
 
-			irn = get_compound_ent_value(left, i);
-			if (! is_Const(irn))
-				return NULL;
-			tv = get_Const_tarval(irn);
-			v_l = get_tarval_long(tv);
+	for (i = 0; i != size; ++i) {
+		ir_initializer_t *const val_l = get_initializer_compound_value(init_l, i);
+		ir_tarval        *const tv_l  = get_initializer_value(val_l, mode);
+		ir_initializer_t *const val_r = get_initializer_compound_value(init_r, i);
+		ir_tarval        *const tv_r  = get_initializer_value(val_r, mode);
 
-			irn = get_compound_ent_value(right, i);
-			if (! is_Const(irn))
-				return NULL;
-			tv = get_Const_tarval(irn);
-			v_r = get_tarval_long(tv);
+		if (!tarval_is_constant(tv_l) || !tarval_is_constant(tv_r))
+			return NULL;
 
-			if (v_l < v_r) {
-				res = -1;
-				break;
-			}
-			if (v_l > v_r) {
-				res = +1;
-				break;
-			}
-
-			if (v_l == 0) {
-				res = 0;
-				break;
-			}
-		}
-		if (i < n) {
-			/* we found an end */
-			ir_tarval *tv = new_tarval_from_long(res, get_type_mode(res_tp));
+		if (tv_l != tv_r) {
+			ir_mode   *const res_mode = get_type_mode(res_tp);
+			ir_tarval *const res_l    = tarval_convert_to(tv_l, res_mode);
+			ir_tarval *const res_r    = tarval_convert_to(tv_r, res_mode);
+			ir_tarval *const tv       = tarval_sub(res_l, res_r, res_mode);
 			return new_r_Const(irg, tv);
 		}
-		return NULL;
-	}
 
-	/* TODO */
+		if (tarval_is_null(tv_l)) {
+			ir_tarval *const tv = get_mode_null(get_type_mode(res_tp));
+			return new_r_Const(irg, tv);
+		}
+	}
 
 	return NULL;
 }
@@ -832,7 +824,6 @@ static int is_empty_string(ir_entity *ent)
 {
 	ir_type          *tp = get_entity_type(ent);
 	ir_mode          *mode;
-	ir_node          *irn;
 	ir_initializer_t *initializer;
 	ir_initializer_t *init0;
 
@@ -846,16 +837,6 @@ static int is_empty_string(ir_entity *ent)
 	/* FIXME: This is too restrict, as the type char might be more the 8bits */
 	if (!mode_is_int(mode) || get_mode_size_bits(mode) != 8)
 		return 0;
-
-	if (!has_entity_initializer(ent)) {
-		/* code for deprecated compound_graph_path stuff */
-		size_t n = get_compound_ent_n_values(ent);
-		if (n < 1)
-			return 0;
-		irn = get_compound_ent_value(ent, 0);
-
-		return is_Const(irn) && is_Const_null(irn);
-	}
 
 	initializer = get_entity_initializer(ent);
 	if (get_initializer_kind(initializer) != IR_INITIALIZER_COMPOUND)

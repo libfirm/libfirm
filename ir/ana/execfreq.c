@@ -286,7 +286,7 @@ ir_exec_freq *compute_execfreq(ir_graph *irg, double loop_weight)
 	irg_block_walk_graph(irg, collect_blocks, NULL, freqs);
 
 	construct_cf_backedges(irg);
-	edges_assure(irg);
+	assure_edges(irg);
 
 	size = dfs_get_n_nodes(dfs);
 	mat  = gs_new_matrix(size, size);
