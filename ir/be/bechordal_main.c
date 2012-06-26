@@ -469,5 +469,5 @@ void be_init_chordal_main(void)
 	be_register_allocator("chordal", &be_ra_chordal_allocator);
 
 	lc_opt_add_table(chordal_grp, be_chordal_options);
-	be_add_module_list_opt(chordal_grp, "coloring", "select coloring methode", &colorings, (void**) &selected_coloring);
+	be_add_module_list_opt(chordal_grp, "coloring", "select coloring method", &colorings, (void**) &selected_coloring);
 }
