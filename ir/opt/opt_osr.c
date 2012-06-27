@@ -760,8 +760,26 @@ static void classify_iv(scc *pscc, iv_env *env)
 
 		next = e->next;
 		switch (get_irn_opcode(irn)) {
-		case iro_Add:
 		case iro_Sub:
+			only_phi = 0;
+			{
+				ir_node    *left        = get_Sub_left(irn);
+				node_entry *left_entry  = get_irn_ne(left, env);
+				ir_node    *right       = get_Sub_right(irn);
+				node_entry *right_entry = get_irn_ne(right, env);
+
+				if (left_entry->pscc != e->pscc ||
+				    (right_entry->pscc != e->pscc && !is_rc(right, header))) {
+					/*
+					 * Not an induction variable.
+					 * Region constant are only allowed on right hand side.
+					 */
+					goto fail;
+				}
+			}
+			break;
+
+		case iro_Add:
 			only_phi = 0;
 			/* fall through */
 		case iro_Phi:

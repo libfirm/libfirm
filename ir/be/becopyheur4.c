@@ -312,7 +312,13 @@ static __attribute__((unused)) int cmp_col_cost_lt(const void *a, const void *b)
 	const col_cost_t *c1 = (const col_cost_t*)a;
 	const col_cost_t *c2 = (const col_cost_t*)b;
 	real_t diff = c1->cost - c2->cost;
-	return (diff > 0) - (diff < 0);
+
+	if (diff < 0)
+		return 1;
+	if (diff > 0)
+		return -1;
+
+	return QSORT_CMP(c1->col, c2->col);
 }
 
 static int cmp_col_cost_gt(const void *a, const void *b)
@@ -321,10 +327,12 @@ static int cmp_col_cost_gt(const void *a, const void *b)
 	const col_cost_t *c2 = (const col_cost_t*)b;
 	real_t diff = c2->cost - c1->cost;
 
-	if (diff == 0.0)
-		return QSORT_CMP(c1->col, c2->col);
+	if (diff > 0)
+		return 1;
+	if (diff < 0)
+		return -1;
 
-	return (diff > 0) - (diff < 0);
+	return QSORT_CMP(c1->col, c2->col);
 }
 
 /**

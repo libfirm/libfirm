@@ -1736,7 +1736,7 @@ static void ia32_init(void)
 	ia32_mode_E = new_float_mode("E", irma_x86_extended_float, 15, 63);
 	ia32_type_E = new_type_primitive(ia32_mode_E);
 	set_type_size_bytes(ia32_type_E, 12);
-	set_type_alignment_bytes(ia32_type_E, 16);
+	set_type_alignment_bytes(ia32_type_E, 4);
 
 	mode_long_long = new_int_mode("long long", irma_twos_complement, 64, 1, 64);
 	type_long_long = new_type_primitive(mode_long_long);

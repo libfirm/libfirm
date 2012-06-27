@@ -92,6 +92,9 @@ struct spill_info_t {
 	double      spill_costs; /**< costs needed for spilling the value */
 	const arch_register_class_t *reload_cls; /** the register class in which the
 	                                             reload should be placed */
+	bool        spilled_phi; /* true when the whole Phi has been spilled and
+	                            will be replaced with a PhiM. false if only the
+	                            value of the Phi gets spilled */
 };
 
 struct spill_env_t {
@@ -102,7 +105,7 @@ struct spill_env_t {
 	int               reload_cost;    /**< the cost of a reload node */
 	set              *spills;         /**< all spill_info_t's, which must be
 	                                       placed */
-	ir_nodeset_t      mem_phis;       /**< set of all spilled phis. */
+	spill_info_t    **mem_phis;       /**< set of all spilled phis. */
 	ir_exec_freq     *exec_freq;
 
 	unsigned          spill_count;
@@ -139,6 +142,7 @@ static spill_info_t *get_spillinfo(const spill_env_t *env, ir_node *value)
 		info.spills      = NULL;
 		info.spill_costs = -1;
 		info.reload_cls  = NULL;
+		info.spilled_phi = false;
 		res = (spill_info_t*)set_insert(env->spills, &info, sizeof(info), hash);
 	}
 
@@ -153,7 +157,7 @@ spill_env_t *be_new_spill_env(ir_graph *irg)
 	env->spills         = new_set(cmp_spillinfo, 1024);
 	env->irg            = irg;
 	env->arch_env       = arch_env;
-	ir_nodeset_init(&env->mem_phis);
+	env->mem_phis       = NEW_ARR_F(spill_info_t*, 0);
 	env->spill_cost     = arch_env->spill_cost;
 	env->reload_cost    = arch_env->reload_cost;
 	env->exec_freq      = be_get_irg_exec_freq(irg);
@@ -170,7 +174,7 @@ spill_env_t *be_new_spill_env(ir_graph *irg)
 void be_delete_spill_env(spill_env_t *env)
 {
 	del_set(env->spills);
-	ir_nodeset_destroy(&env->mem_phis);
+	DEL_ARR_F(env->mem_phis);
 	obstack_free(&env->obst, NULL);
 	free(env);
 }
@@ -347,10 +351,13 @@ void be_spill_phi(spill_env_t *env, ir_node *node)
 {
 	ir_node *block;
 	int i, arity;
+	spill_info_t *info;
 
 	assert(is_Phi(node));
 
-	ir_nodeset_insert(&env->mem_phis, node);
+	info              = get_spillinfo(env, node);
+	info->spilled_phi = true;
+	ARR_APP1(spill_info_t*, env->mem_phis, info);
 
 	/* create spills for the phi arguments */
 	block = get_nodes_block(node);
@@ -490,15 +497,11 @@ static void spill_phi(spill_env_t *env, spill_info_t *spillinfo)
  */
 static void spill_node(spill_env_t *env, spill_info_t *spillinfo)
 {
-	ir_node *to_spill;
-
 	/* node is already spilled */
 	if (spillinfo->spills != NULL && spillinfo->spills->spill != NULL)
 		return;
 
-	to_spill = spillinfo->to_spill;
-
-	if (is_Phi(to_spill) && ir_nodeset_contains(&env->mem_phis, to_spill)) {
+	if (spillinfo->spilled_phi) {
 		spill_phi(env, spillinfo);
 	} else {
 		spill_irn(env, spillinfo);
@@ -792,7 +795,7 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 	spill_block    = get_nodes_block(insn);
 	spill_execfreq = get_block_execfreq(env->exec_freq, spill_block);
 
-	if (is_Phi(to_spill) && ir_nodeset_contains(&env->mem_phis, to_spill)) {
+	if (spillinfo->spilled_phi) {
 		/* TODO calculate correct costs...
 		 * (though we can't remat this node anyway so no big problem) */
 		spillinfo->spill_costs = env->spill_cost * spill_execfreq;
@@ -872,17 +875,17 @@ void make_spill_locations_dominate_irn(spill_env_t *env, ir_node *irn)
 
 void be_insert_spills_reloads(spill_env_t *env)
 {
-	const ir_exec_freq    *exec_freq = env->exec_freq;
+	const ir_exec_freq    *exec_freq  = env->exec_freq;
+	size_t                 n_mem_phis = ARR_LEN(env->mem_phis);
 	spill_info_t          *si;
-	ir_nodeset_iterator_t  iter;
-	ir_node               *node;
+	size_t                 i;
 
 	be_timer_push(T_RA_SPILL_APPLY);
 
 	/* create all phi-ms first, this is needed so, that phis, hanging on
 	   spilled phis work correctly */
-	foreach_ir_nodeset(&env->mem_phis, node, iter) {
-		spill_info_t *info = get_spillinfo(env, node);
+	for (i = 0; i < n_mem_phis; ++i) {
+		spill_info_t *info = env->mem_phis[i];
 		spill_node(env, info);
 	}
 
