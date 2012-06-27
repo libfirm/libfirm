@@ -212,9 +212,17 @@ static const loc_t *workset_contains(const workset_t *ws, const ir_node *val)
 
 static int loc_compare(const void *a, const void *b)
 {
-	const loc_t *p = (const loc_t*)a;
-	const loc_t *q = (const loc_t*)b;
-	return p->time - q->time;
+	const loc_t   *p  = ((const loc_t*) a);
+	const loc_t   *q  = ((const loc_t*) b);
+	const unsigned pt = p->time;
+	const unsigned qt = q->time;
+
+	if (pt < qt)
+		return -1;
+	if (pt > qt)
+		return 1;
+
+	return get_irn_node_nr(p->node) - get_irn_node_nr(q->node);
 }
 
 static void workset_sort(workset_t *workset)
