@@ -25,15 +25,6 @@
 #ifndef REASSOC_T_H
 #define REASSOC_T_H
 
-/**
- * Sets the default reassociation operation for an ir_op_ops.
- *
- * @param code   the opcode for the default operation
- * @param ops    the operations initialized
- *
- * @return
- *    The operations.
- */
-ir_op_ops *firm_set_default_reassoc(unsigned code, ir_op_ops *ops);
+void ir_register_reassoc_node_ops(void);
 
-#endif /* _REASSOC_T_H_ */
+#endif

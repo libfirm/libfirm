@@ -2234,84 +2234,74 @@ int irg_verify_bads(ir_graph *irg, int flags)
 	return env.res;
 }
 
-void firm_set_default_verifier(unsigned code, ir_op_ops *ops)
+static void register_verify_node_func(ir_op *op, verify_node_func func)
 {
-#define CASE(a)                           \
-   case iro_##a:                          \
-     ops->verify_node  = verify_node_##a; \
-     break
+	op->ops.verify_node = func;
+}
 
-	switch (code) {
-	CASE(Add);
-	CASE(Alloc);
-	CASE(And);
-	CASE(Block);
-	CASE(Bound);
-	CASE(Call);
-	CASE(Cast);
-	CASE(Cmp);
-	CASE(Cond);
-	CASE(Confirm);
-	CASE(Const);
-	CASE(Conv);
-	CASE(CopyB);
-	CASE(Div);
-	CASE(Eor);
-	CASE(Free);
-	CASE(IJmp);
-	CASE(InstOf);
-	CASE(Jmp);
-	CASE(Load);
-	CASE(Minus);
-	CASE(Mod);
-	CASE(Mul);
-	CASE(Mulh);
-	CASE(Mux);
-	CASE(Not);
-	CASE(Or);
-	CASE(Phi);
-	CASE(Proj);
-	CASE(Raise);
-	CASE(Return);
-	CASE(Rotl);
-	CASE(Sel);
-	CASE(Shl);
-	CASE(Shr);
-	CASE(Shrs);
-	CASE(Start);
-	CASE(Store);
-	CASE(Sub);
-	CASE(Switch);
-	CASE(SymConst);
-	CASE(Sync);
-	default:
-		break;
-	}
-#undef CASE
+static void register_verify_node_func_proj(ir_op *op, verify_node_func func)
+{
+	op->ops.verify_proj_node = func;
+}
 
-#define CASE(a)                          \
-   case iro_##a:                         \
-     ops->verify_proj_node  = verify_node_Proj_##a; \
-     break
+void ir_register_verify_node_ops(void)
+{
+	register_verify_node_func(op_Add,      verify_node_Add);
+	register_verify_node_func(op_Alloc,    verify_node_Alloc);
+	register_verify_node_func(op_And,      verify_node_And);
+	register_verify_node_func(op_Block,    verify_node_Block);
+	register_verify_node_func(op_Bound,    verify_node_Bound);
+	register_verify_node_func(op_Call,     verify_node_Call);
+	register_verify_node_func(op_Cast,     verify_node_Cast);
+	register_verify_node_func(op_Cmp,      verify_node_Cmp);
+	register_verify_node_func(op_Cond,     verify_node_Cond);
+	register_verify_node_func(op_Confirm,  verify_node_Confirm);
+	register_verify_node_func(op_Const,    verify_node_Const);
+	register_verify_node_func(op_Conv,     verify_node_Conv);
+	register_verify_node_func(op_CopyB,    verify_node_CopyB);
+	register_verify_node_func(op_Div,      verify_node_Div);
+	register_verify_node_func(op_Eor,      verify_node_Eor);
+	register_verify_node_func(op_Free,     verify_node_Free);
+	register_verify_node_func(op_IJmp,     verify_node_IJmp);
+	register_verify_node_func(op_InstOf,   verify_node_InstOf);
+	register_verify_node_func(op_Jmp,      verify_node_Jmp);
+	register_verify_node_func(op_Load,     verify_node_Load);
+	register_verify_node_func(op_Minus,    verify_node_Minus);
+	register_verify_node_func(op_Mod,      verify_node_Mod);
+	register_verify_node_func(op_Mul,      verify_node_Mul);
+	register_verify_node_func(op_Mulh,     verify_node_Mulh);
+	register_verify_node_func(op_Mux,      verify_node_Mux);
+	register_verify_node_func(op_Not,      verify_node_Not);
+	register_verify_node_func(op_Or,       verify_node_Or);
+	register_verify_node_func(op_Phi,      verify_node_Phi);
+	register_verify_node_func(op_Proj,     verify_node_Proj);
+	register_verify_node_func(op_Raise,    verify_node_Raise);
+	register_verify_node_func(op_Return,   verify_node_Return);
+	register_verify_node_func(op_Rotl,     verify_node_Rotl);
+	register_verify_node_func(op_Sel,      verify_node_Sel);
+	register_verify_node_func(op_Shl,      verify_node_Shl);
+	register_verify_node_func(op_Shr,      verify_node_Shr);
+	register_verify_node_func(op_Shrs,     verify_node_Shrs);
+	register_verify_node_func(op_Start,    verify_node_Start);
+	register_verify_node_func(op_Store,    verify_node_Store);
+	register_verify_node_func(op_Sub,      verify_node_Sub);
+	register_verify_node_func(op_Switch,   verify_node_Switch);
+	register_verify_node_func(op_SymConst, verify_node_SymConst);
+	register_verify_node_func(op_Sync,     verify_node_Sync);
 
-	switch (code) {
-	CASE(Alloc);
-	CASE(Bound);
-	CASE(Call);
-	CASE(Cond);
-	CASE(CopyB);
-	CASE(Div);
-	CASE(InstOf);
-	CASE(Load);
-	CASE(Mod);
-	CASE(Proj);
-	CASE(Raise);
-	CASE(Start);
-	CASE(Store);
-	CASE(Switch);
-	CASE(Tuple);
-	default:
-		break;
-	}
-#undef CASE
+	register_verify_node_func_proj(op_Alloc,  verify_node_Proj_Alloc);
+	register_verify_node_func_proj(op_Bound,  verify_node_Proj_Bound);
+	register_verify_node_func_proj(op_Call,   verify_node_Proj_Call);
+	register_verify_node_func_proj(op_Cond,   verify_node_Proj_Cond);
+	register_verify_node_func_proj(op_CopyB,  verify_node_Proj_CopyB);
+	register_verify_node_func_proj(op_Div,    verify_node_Proj_Div);
+	register_verify_node_func_proj(op_InstOf, verify_node_Proj_InstOf);
+	register_verify_node_func_proj(op_Load,   verify_node_Proj_Load);
+	register_verify_node_func_proj(op_Mod,    verify_node_Proj_Mod);
+	register_verify_node_func_proj(op_Proj,   verify_node_Proj_Proj);
+	register_verify_node_func_proj(op_Raise,  verify_node_Proj_Raise);
+	register_verify_node_func_proj(op_Start,  verify_node_Proj_Start);
+	register_verify_node_func_proj(op_Store,  verify_node_Proj_Store);
+	register_verify_node_func_proj(op_Switch, verify_node_Proj_Switch);
+	register_verify_node_func_proj(op_Tuple,  verify_node_Proj_Tuple);
 }

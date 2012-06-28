@@ -480,7 +480,6 @@ static void generated_init_op(void)
 			{{node|arity}}
 			{{node|opindex}}
 			{{node|attr_size}}
-			NULL
 		{% endfilter %});
 	{%- if "uses_memory" in node.flags: %}
 	ir_op_set_memory_index(op_{{node.name}}, n_{{node.name}}_mem);

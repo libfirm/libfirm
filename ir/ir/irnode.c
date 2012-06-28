@@ -1482,51 +1482,30 @@ static ir_entity *get_SymConst_attr_entity(const ir_node *self)
 	return NULL;
 }
 
-/** the get_type_attr operation must be always implemented */
-static ir_type *get_Null_type(const ir_node *n)
+static void register_get_type_func(ir_op *op, get_type_attr_func func)
 {
-	(void) n;
-	return get_unknown_type();
+	op->ops.get_type_attr = func;
 }
 
-void firm_set_default_get_type_attr(unsigned code, ir_op_ops *ops)
+static void register_get_entity_func(ir_op *op, get_entity_attr_func func)
 {
-	switch (code) {
-	case iro_Alloc:    ops->get_type_attr = get_Alloc_type;         break;
-	case iro_Builtin:  ops->get_type_attr = get_Builtin_type;       break;
-	case iro_Call:     ops->get_type_attr = get_Call_type;          break;
-	case iro_Cast:     ops->get_type_attr = get_Cast_type;          break;
-	case iro_CopyB:    ops->get_type_attr = get_CopyB_type;         break;
-	case iro_Free:     ops->get_type_attr = get_Free_type;          break;
-	case iro_InstOf:   ops->get_type_attr = get_InstOf_type;        break;
-	case iro_SymConst: ops->get_type_attr = get_SymConst_attr_type; break;
-	default:
-		/* not allowed to be NULL */
-		if (! ops->get_type_attr)
-			ops->get_type_attr = get_Null_type;
-		break;
-	}
+	op->ops.get_entity_attr = func;
 }
 
-/** the get_entity_attr operation must be always implemented */
-static ir_entity *get_Null_ent(const ir_node *n)
+void ir_register_getter_ops(void)
 {
-	(void) n;
-	return NULL;
-}
+	register_get_type_func(op_Alloc,    get_Alloc_type);
+	register_get_type_func(op_Builtin,  get_Builtin_type);
+	register_get_type_func(op_Call,     get_Call_type);
+	register_get_type_func(op_Cast,     get_Cast_type);
+	register_get_type_func(op_CopyB,    get_CopyB_type);
+	register_get_type_func(op_Free,     get_Free_type);
+	register_get_type_func(op_InstOf,   get_InstOf_type);
+	register_get_type_func(op_SymConst, get_SymConst_attr_type);
 
-void firm_set_default_get_entity_attr(unsigned code, ir_op_ops *ops)
-{
-	switch (code) {
-	case iro_SymConst: ops->get_entity_attr = get_SymConst_attr_entity; break;
-	case iro_Sel:      ops->get_entity_attr = get_Sel_entity; break;
-	case iro_Block:    ops->get_entity_attr = get_Block_entity; break;
-	default:
-		/* not allowed to be NULL */
-		if (! ops->get_entity_attr)
-			ops->get_entity_attr = get_Null_ent;
-		break;
-	}
+	register_get_entity_func(op_SymConst, get_SymConst_attr_entity);
+	register_get_entity_func(op_Sel,      get_Sel_entity);
+	register_get_entity_func(op_Block,    get_Block_entity);
 }
 
 void (set_irn_dbg_info)(ir_node *n, dbg_info *db)

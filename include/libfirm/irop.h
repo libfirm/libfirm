@@ -82,6 +82,7 @@ typedef enum {
 	 * of an unknown_jump */
 	irop_flag_unknown_jump = 1U << 11,
 } irop_flags;
+ENUM_BITSET(irop_flags)
 
 /** Returns the ident for the opcode name */
 FIRM_API ident *get_op_ident(const ir_op *op);
@@ -245,7 +246,7 @@ typedef struct {
 	equivalent_node_func  equivalent_node;      /**< Optimizes the node by returning an equivalent one. */
 	equivalent_node_func  equivalent_node_Proj; /**< Optimizes the Proj node by returning an equivalent one. */
 	transform_node_func   transform_node;       /**< Optimizes the node by transforming it. */
-	equivalent_node_func  transform_node_Proj;  /**< Optimizes the Proj node by transforming it. */
+	transform_node_func   transform_node_Proj;  /**< Optimizes the Proj node by transforming it. */
 	node_cmp_attr_func    node_cmp_attr;        /**< Compares two node attributes. */
 	reassociate_func      reassociate;          /**< Reassociate a tree. */
 	copy_attr_func        copy_attr;            /**< Copy node attributes. */
@@ -268,7 +269,6 @@ typedef struct {
  * @param opar      the parity of this IR operation
  * @param op_index  if the parity is oparity_unary, oparity_binary or oparity_trinary the index
  *                  of the left operand
- * @param ops       operations for this opcode, iff NULL default operations are used
  * @param attr_size attribute size for this IR operation
  *
  * @return The generated IR operation.
@@ -277,8 +277,8 @@ typedef struct {
  * The behavior of new opcode depends on the operations \c ops and the \c flags.
  */
 FIRM_API ir_op *new_ir_op(unsigned code, const char *name, op_pin_state p,
-                          unsigned flags, op_arity opar, int op_index,
-                          size_t attr_size, const ir_op_ops *ops);
+                          irop_flags flags, op_arity opar, int op_index,
+                          size_t attr_size);
 
 /** Returns one more than the highest opcode code in use. */
 FIRM_API unsigned ir_get_n_opcodes(void);

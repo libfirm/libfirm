@@ -969,26 +969,21 @@ ir_graph_pass_t *optimize_reassociation_pass(const char *name)
 	return def_graph_pass(name ? name : "reassoc", optimize_reassociation);
 }  /* optimize_reassociation_pass */
 
-/* Sets the default reassociation operation for an ir_op_ops. */
-ir_op_ops *firm_set_default_reassoc(unsigned code, ir_op_ops *ops)
+static void register_node_reassoc_func(ir_op *op, reassociate_func func)
 {
-#define CASE(a) case iro_##a: ops->reassociate  = reassoc_##a; break
+	op->ops.reassociate = func;
+}
 
-	switch (code) {
-	CASE(Mul);
-	CASE(Add);
-	CASE(Sub);
-	CASE(And);
-	CASE(Or);
-	CASE(Eor);
-	CASE(Shl);
-	default:
-		break;
-	}
-
-	return ops;
-#undef CASE
-}  /* firm_set_default_reassoc */
+void ir_register_reassoc_node_ops(void)
+{
+	register_node_reassoc_func(op_Mul, reassoc_Mul);
+	register_node_reassoc_func(op_Add, reassoc_Add);
+	register_node_reassoc_func(op_Sub, reassoc_Sub);
+	register_node_reassoc_func(op_And, reassoc_And);
+	register_node_reassoc_func(op_Or,  reassoc_Or);
+	register_node_reassoc_func(op_Eor, reassoc_Eor);
+	register_node_reassoc_func(op_Shl, reassoc_Shl);
+}
 
 /* initialize the reassociation by adding operations to some opcodes */
 void firm_init_reassociation(void)
