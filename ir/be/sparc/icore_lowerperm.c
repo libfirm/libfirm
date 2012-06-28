@@ -27,6 +27,7 @@
 #include <stdlib.h>
 
 #include "icore_lowerperm.h"
+#include "icore_permana.h"
 #include "ircons.h"
 #include "irgmod.h"
 #include "irgwalk.h"
@@ -41,38 +42,23 @@
 #include "beirg.h"
 
 #include "gen_sparc_new_nodes.h"
-#include "gen_sparc_regalloc_if.h"
 
 #include "lc_opts.h"
 #include "irtools.h"
 #include "statev.h"
 
-#define PERMI_SIZE    5
-#define NUM_REGISTERS 32
+#define PERMI_SIZE 5
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
-typedef enum perm_type_t {
-	PERM_CHAIN,
-	PERM_CYCLE
-} perm_type_t;
-
-typedef struct perm_op_t {
-	perm_type_t type;
-	unsigned    regs[NUM_REGISTERS];
-	unsigned    length;
-} perm_op_t;
-
-static unsigned   sourceof[NUM_REGISTERS];
-static unsigned   usecount[NUM_REGISTERS];
 static ir_node   *in_nodes[NUM_REGISTERS];
 static ir_node   *out_nodes[NUM_REGISTERS];
 static perm_op_t  ops[NUM_REGISTERS];
-static unsigned   num_ops     = 0;
-static ir_node   *sched_point = NULL;
-static ir_node   *perm        = NULL;
-static ir_mode   *perm_mode   = NULL;
-static const arch_register_class_t *reg_class = NULL;
+static unsigned   num_ops;
+static ir_node   *sched_point;
+static ir_node   *perm;
+static ir_mode   *perm_mode;
+static const arch_register_class_t *reg_class;
 
 static int dump_graphs = 0;
 static int only_cycles = 0;
@@ -80,19 +66,19 @@ static int single_movs = 0;
 
 static void init_state(void)
 {
-	unsigned i;
-
-	memset(usecount,  0, NUM_REGISTERS * sizeof(unsigned));
-	memset(in_nodes,  0, NUM_REGISTERS * sizeof(ir_node *));
-	memset(out_nodes, 0, NUM_REGISTERS * sizeof(ir_node *));
-	memset(ops,       0, NUM_REGISTERS * sizeof(perm_op_t));
-	for (i = 0; i < NUM_REGISTERS; ++i)
-		sourceof[i] = i;
+	memset(in_nodes,  0, NUM_REGISTERS * sizeof(in_nodes[0]));
+	memset(out_nodes, 0, NUM_REGISTERS * sizeof(out_nodes[0]));
+	memset(ops,       0, NUM_REGISTERS * sizeof(ops[0]));
 	num_ops     = 0;
 	sched_point = NULL;
 	perm        = NULL;
 	perm_mode   = NULL;
 	reg_class   = NULL;
+}
+
+static const arch_register_t *get_arch_register_from_index(unsigned index)
+{
+	return arch_register_for_index(reg_class, index);
 }
 
 static void save_perm_info(void)
@@ -104,33 +90,6 @@ static void save_perm_info(void)
 		reg_class = arch_register_get_class(reg);
 		perm_mode = get_irn_mode(in);
 	}
-}
-
-static const arch_register_t *get_arch_register_from_index(unsigned index)
-{
-	return arch_register_for_index(reg_class, index);
-}
-
-static const char *get_register_name_from_index(unsigned index)
-{
-	return arch_register_get_name(get_arch_register_from_index(index));
-}
-
-static void print_perm_op(const perm_op_t *op)
-{
-	unsigned i;
-
-	DB((dbg, LEVEL_2, "%s(%u)", get_register_name_from_index(op->regs[0]),
-		op->regs[0]));
-	for (i = 1; i < op->length; ++i)
-		DB((dbg, LEVEL_2, " -> %s(%u)",
-			get_register_name_from_index(op->regs[i]), op->regs[i]));
-
-	if (op->type == PERM_CYCLE)
-		DB((dbg, LEVEL_2, " -> %s(%u)",
-			get_register_name_from_index(op->regs[0]), op->regs[0]));
-
-	DB((dbg, LEVEL_2, "\n"));
 }
 
 static void schedule_node(ir_node *irn)
@@ -167,117 +126,6 @@ static void analyze_regs(void)
 		iidx = arch_register_get_index(in_reg);
 		out_nodes[oidx] = out;
 		in_nodes[iidx]  = in;
-
-		sourceof[oidx] = iidx;
-		++usecount[iidx];      /* Increment usecount of source register.*/
-	}
-}
-
-static void reverse_regs(perm_op_t *op)
-{
-	const unsigned length = op->length;
-	unsigned       i;
-
-	for (i = 0; i < length / 2; ++i) {
-		const unsigned other = length - i - 1;
-		const unsigned tmp   = op->regs[other];
-
-		op->regs[other] = op->regs[i];
-		op->regs[i]     = tmp;
-	}
-}
-
-/* reg is the last register in the chain. */
-static void create_chain(unsigned reg)
-{
-	perm_op_t *op     = &ops[num_ops++];
-	unsigned   length = 0;
-
-	/* reg is guaranteed to be part of our chain. */
-	op->regs[length++] = reg;
-
-	while (usecount[reg] == 0 && sourceof[reg] != reg) {
-		unsigned src = sourceof[reg];
-
-		/* Mark as done. */
-		sourceof[reg] = reg;
-
-		/* src is also part of our chain. */
-		op->regs[length++] = src;
-
-		assert(usecount[src] > 0);
-		--usecount[src];
-
-		reg = src;
-	}
-
-	/* Set all op attributes and reverse register ordering. */
-	op->type   = PERM_CHAIN;
-	op->length = length;
-	reverse_regs(op);
-
-	DB((dbg, LEVEL_2, "  Found a chain: "));
-	print_perm_op(op);
-}
-
-static void search_chains(void)
-{
-	unsigned reg;
-
-	for (reg = 0; reg < NUM_REGISTERS; /* empty */) {
-		unsigned src = sourceof[reg];
-
-		/* Skip fix points.
-		 * Also, all registers with a usecount > 0 cannot be the end
-		 * of a chain. */
-		if (src == reg || usecount[reg] > 0) {
-			++reg;
-			continue;
-		}
-
-		/* We know: register reg is the end of a chain. */
-		create_chain(reg);
-	}
-}
-
-static void create_cycle(unsigned reg)
-{
-	perm_op_t *op     = &ops[num_ops++];
-	unsigned   length = 0;
-
-	while (sourceof[reg] != reg) {
-		unsigned src = sourceof[reg];
-
-		op->regs[length++] = reg;
-		sourceof[reg] = reg;
-		reg = src;
-	}
-
-	op->type   = PERM_CYCLE;
-	op->length = length;
-	reverse_regs(op);
-
-	DB((dbg, LEVEL_2, "  Found a cycle: "));
-	print_perm_op(op);
-}
-
-/* Precondition: all chains have already been handled. */
-static void search_cycles(void)
-{
-	unsigned reg;
-
-	for (reg = 0; reg < NUM_REGISTERS; /* empty */) {
-		unsigned src = sourceof[reg];
-
-		/* Skip fix points. */
-		if (src == reg) {
-			++reg;
-			continue;
-		}
-
-		/* This must hold as only cycles are left. */
-		assert(usecount[reg] == 1);
-		create_cycle(reg);
 	}
 }
 
@@ -312,7 +160,7 @@ static void split_chain_into_copies(const perm_op_t *op)
 {
 	ir_node *bb = get_nodes_block(perm);
 	unsigned i;
-	assert(op->type == PERM_CHAIN);
+	assert(op->type == PERM_OP_CHAIN);
 
 	for (i = 2; i <= op->length; ++i) {
 		unsigned  in_idx  = op->regs[op->length - i];
@@ -359,12 +207,12 @@ static void handle_all_chains(void)
 	assert(only_cycles);
 
 	for (i = 0; i < num_ops; ++i)
-		if (ops[i].type == PERM_CHAIN)
+		if (ops[i].type == PERM_OP_CHAIN)
 			split_chain_into_copies(&ops[i]);
 
 	j = 0;
 	for (i = 0; i < num_ops; ++i) {
-		if (ops[i].type != PERM_CHAIN) {
+		if (ops[i].type != PERM_OP_CHAIN) {
 			if (j != i)
 				ops[j] = ops[i];
 			++j;
@@ -382,7 +230,7 @@ static ir_node *create_chain_permi(const perm_op_t *op)
 	unsigned size = op->length - 1;
 	unsigned i;
 
-	assert(op->type == PERM_CHAIN && op->length <= PERMI_SIZE);
+	assert(op->type == PERM_OP_CHAIN && op->length <= PERMI_SIZE);
 
 	for (i = 0; i < size; ++i) {
 		args[i] = in_nodes[op->regs[i]];
@@ -413,7 +261,7 @@ static void split_chain_into_chain_permis(const perm_op_t *op)
 	unsigned i;
 	unsigned j;
 
-	assert(op->type == PERM_CHAIN && length > PERMI_SIZE);
+	assert(op->type == PERM_OP_CHAIN && length > PERMI_SIZE);
 
 	/* Place every permi except for the last.
 	 * All permis are of the maximum size PERMI_SIZE. */
@@ -422,7 +270,7 @@ static void split_chain_into_chain_permis(const perm_op_t *op)
 		perm_op_t       subop;
 		ir_node        *permi;
 
-		subop.type   = PERM_CHAIN;
+		subop.type   = PERM_OP_CHAIN;
 		subop.length = PERMI_SIZE;
 		for (j = 0; j < PERMI_SIZE; ++j)
 			subop.regs[j] = op->regs[start + j];
@@ -437,7 +285,7 @@ static void split_chain_into_chain_permis(const perm_op_t *op)
 		perm_op_t       lastop;
 		ir_node        *permi;
 
-		lastop.type   = PERM_CHAIN;
+		lastop.type   = PERM_OP_CHAIN;
 		lastop.length = lastlen;
 		for (j = 0; j < lastlen; ++j)
 			lastop.regs[j] = op->regs[j];
@@ -471,7 +319,7 @@ static ir_node *create_permi(const perm_op_t *op)
 	unsigned length = op->length;
 	unsigned i;
 
-	assert(op->type == PERM_CYCLE && op->length <= PERMI_SIZE);
+	assert(op->type == PERM_OP_CYCLE && op->length <= PERMI_SIZE);
 
 	for (i = 0; i < length; ++i) {
 		const unsigned in  = i;
@@ -505,7 +353,7 @@ static void split_big_cycle(const perm_op_t *op)
 	unsigned i;
 	unsigned j;
 
-	assert(op->type == PERM_CYCLE && length > PERMI_SIZE);
+	assert(op->type == PERM_OP_CYCLE && length > PERMI_SIZE);
 
 	/* Place every permi except for the last.
 	 * All permis are of the maximum size PERMI_SIZE. */
@@ -516,7 +364,7 @@ static void split_big_cycle(const perm_op_t *op)
 		ir_node        *permi;
 		ir_node        *proj;
 
-		subop.type   = PERM_CYCLE;
+		subop.type   = PERM_OP_CYCLE;
 		subop.length = PERMI_SIZE;
 		for (j = 0; j < PERMI_SIZE; ++j)
 			subop.regs[j] = op->regs[start + j];
@@ -539,7 +387,7 @@ static void split_big_cycle(const perm_op_t *op)
 		perm_op_t       lastop;
 		ir_node        *permi;
 
-		lastop.type   = PERM_CYCLE;
+		lastop.type   = PERM_OP_CYCLE;
 		lastop.length = lastlen;
 		for (j = 0; j < lastlen; ++j)
 			lastop.regs[j] = op->regs[j];
@@ -551,7 +399,7 @@ static void split_big_cycle(const perm_op_t *op)
 
 static void handle_cycle(const perm_op_t *op)
 {
-	assert(op->type == PERM_CYCLE);
+	assert(op->type == PERM_OP_CYCLE);
 
 	if (op->length <= PERMI_SIZE)
 		schedule_node(create_permi(op));
@@ -561,7 +409,7 @@ static void handle_cycle(const perm_op_t *op)
 
 static void handle_op(const perm_op_t *op)
 {
-	if (op->type == PERM_CHAIN)
+	if (op->type == PERM_OP_CHAIN)
 		handle_chain(op);
 	else
 		handle_cycle(op);
@@ -574,18 +422,18 @@ static ir_node *create_permi23(ir_node **args, const perm_op_t *op2,
 	unsigned sz      = op2->length + op3->length;
 	ir_node *permi23;
 
-	if (op2->type == PERM_CHAIN)
+	if (op2->type == PERM_OP_CHAIN)
 		--sz;
-	if (op3->type == PERM_CHAIN)
+	if (op3->type == PERM_OP_CHAIN)
 		--sz;
 
-	if (op2->type == PERM_CYCLE && op3->type == PERM_CYCLE) {
+	if (op2->type == PERM_OP_CYCLE && op3->type == PERM_OP_CYCLE) {
 		permi23 = new_bd_sparc_Permi23_cycle_cycle(NULL, bb, sz, args, sz);
-	} else if (op2->type == PERM_CYCLE && op3->type == PERM_CHAIN) {
+	} else if (op2->type == PERM_OP_CYCLE && op3->type == PERM_OP_CHAIN) {
 		permi23 = new_bd_sparc_Permi23_cycle_chain(NULL, bb, sz, args, sz);
-	} else if (op2->type == PERM_CHAIN && op3->type == PERM_CYCLE) {
+	} else if (op2->type == PERM_OP_CHAIN && op3->type == PERM_OP_CYCLE) {
 		permi23 = new_bd_sparc_Permi23_chain_cycle(NULL, bb, sz, args, sz);
-	} else if (op2->type == PERM_CHAIN && op3->type == PERM_CHAIN) {
+	} else if (op2->type == PERM_OP_CHAIN && op3->type == PERM_OP_CHAIN) {
 		permi23 = new_bd_sparc_Permi23_chain_chain(NULL, bb, sz, args, sz);
 	} else
 		assert(!"Unknown perm ops");
@@ -609,7 +457,7 @@ static void combine_small_ops(const perm_op_t *op2, const perm_op_t *op3)
 	DB((dbg, LEVEL_2, "  ")); print_perm_op(op3);
 	DB((dbg, LEVEL_2, "\n"));
 
-	if (op2->type == PERM_CYCLE) {
+	if (op2->type == PERM_OP_CYCLE) {
 		for (i = 0; i < 2; ++i) {
 			const unsigned in  = i;
 			const unsigned out = (in + 1) % 2;
@@ -618,14 +466,14 @@ static void combine_small_ops(const perm_op_t *op2, const perm_op_t *op3)
 			ress[i] = out_nodes[op2->regs[out]];
 		}
 		pos = 2;
-	} else if (op2->type == PERM_CHAIN) {
+	} else if (op2->type == PERM_OP_CHAIN) {
 		args[0] = in_nodes[op2->regs[0]];
 		ress[0] = out_nodes[op2->regs[1]];
 		pos = 1;
 	} else
 		assert(!"Unknown perm op type");
 
-	if (op3->type == PERM_CYCLE) {
+	if (op3->type == PERM_OP_CYCLE) {
 		for (i = 0; i < op3->length; ++i) {
 			const unsigned in  = i;
 			const unsigned out = (in + 1) % op3->length;
@@ -633,7 +481,7 @@ static void combine_small_ops(const perm_op_t *op2, const perm_op_t *op3)
 			args[pos + i] = in_nodes[op3->regs[in]];
 			ress[pos + i] = out_nodes[op3->regs[out]];
 		}
-	} else if (op3->type == PERM_CHAIN) {
+	} else if (op3->type == PERM_OP_CHAIN) {
 		for (i = 0; i + 1 < op3->length; ++i) {
 			const unsigned in  = i;
 			const unsigned out = i + 1;
@@ -647,7 +495,7 @@ static void combine_small_ops(const perm_op_t *op2, const perm_op_t *op3)
 	permi23 = create_permi23(args, op2, op3);
 
 	/* Rewire Projs. */
-	if (op2->type == PERM_CYCLE) {
+	if (op2->type == PERM_OP_CYCLE) {
 		for (i = 0; i < 2; ++i) {
 			const unsigned  out  = (i + 1) % 2;
 			ir_node        *proj = ress[i];
@@ -657,7 +505,7 @@ static void combine_small_ops(const perm_op_t *op2, const perm_op_t *op3)
 			arch_set_irn_register_out(permi23, i,
 				get_arch_register_from_index(op2->regs[out]));
 		}
-	} else if (op2->type == PERM_CHAIN) {
+	} else if (op2->type == PERM_OP_CHAIN) {
 		ir_node *proj = ress[0];
 
 		set_Proj_pred(proj, permi23);
@@ -667,7 +515,7 @@ static void combine_small_ops(const perm_op_t *op2, const perm_op_t *op3)
 	} else
 		assert(!"Unknown perm op type");
 
-	if (op3->type == PERM_CYCLE) {
+	if (op3->type == PERM_OP_CYCLE) {
 		for (i = 0; i < op3->length; ++i) {
 			const unsigned  out  = (i + 1) % op3->length;
 			ir_node        *proj = ress[pos + i];
@@ -677,7 +525,7 @@ static void combine_small_ops(const perm_op_t *op2, const perm_op_t *op3)
 			arch_set_irn_register_out(permi23, pos + i,
 				get_arch_register_from_index(op3->regs[out]));
 		}
-	} else if (op3->type == PERM_CHAIN) {
+	} else if (op3->type == PERM_OP_CHAIN) {
 		for (i = 0; i + 1 < op3->length; ++i) {
 			const unsigned  out  = (i + 1);
 			ir_node        *proj = ress[pos + i];
@@ -758,9 +606,9 @@ static void emit_stat_events(void)
 	stat_ev_int("perm_exec_count", count);
 
 	for (i = 0; i < num_ops; ++i) {
-		if (ops[i].type == PERM_CYCLE)
+		if (ops[i].type == PERM_OP_CYCLE)
 			stat_ev_int("perm_cycle_size", ops[i].length);
-		else if (ops[i].type == PERM_CHAIN)
+		else if (ops[i].type == PERM_OP_CHAIN)
 			stat_ev_int("perm_chain_size", ops[i].length);
 		else
 			assert(!"Invalid perm op type");
@@ -769,22 +617,17 @@ static void emit_stat_events(void)
 	stat_ev_ctx_pop("perm_stats");
 }
 
-static void analyze_perm(void)
+static void lower_perm(void)
 {
 	unsigned i;
 
-	DB((dbg, LEVEL_2, "Analyzing %+F\n", perm));
+	assert(perm && "No Perm node has been set");
+	DB((dbg, LEVEL_2, "Lowering %+F\n", perm));
 
 	save_perm_info();
 	analyze_regs();
 
-	search_chains();
-	search_cycles();
-
-#ifdef DEBUG_libfirm
-	for (i = 0; i < NUM_REGISTERS; ++i)
-		assert(sourceof[i] == i);
-#endif
+	num_ops = analyze_perm(perm, ops);
 
 	/* Handle all zero chains. */
 	handle_zero_chains();
@@ -824,7 +667,7 @@ static void lower_perm_node(ir_node *irn)
 	assert(sched_point && "Perm is not scheduled or has no predecessor");
 
 	perm = irn;
-	analyze_perm();
+	lower_perm();
 
 	/* Remove the perm from schedule */
 	sched_remove(perm);
