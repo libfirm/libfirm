@@ -156,6 +156,117 @@ static void set_Permi_reg_reqs(ir_node *irn)
 	}
 }
 
+static ir_node *create_permi(const perm_op_t *op)
+{
+	ir_node *args[PERMI_SIZE];
+	ir_node *ress[PERMI_SIZE];
+	ir_node *permi;
+	ir_node *bb     = get_nodes_block(perm);
+	unsigned length = op->length;
+	unsigned i;
+
+	assert(op->type == PERM_OP_CYCLE && op->length <= PERMI_SIZE);
+
+	DB((dbg, LEVEL_2, "Implementing cycle: "));
+	print_perm_op(op);
+	DB((dbg, LEVEL_2, "\n"));
+
+	for (i = 0; i < length; ++i) {
+		const unsigned in  = i;
+		const unsigned out = (in + 1) % length;
+
+		args[i] = in_nodes[op->regs[in]];
+		ress[i] = out_nodes[op->regs[out]];
+	}
+
+	/* TODO: Fix debuginfo. */
+	permi = new_bd_sparc_Permi_cycle(NULL, bb, length, args, length);
+	set_Permi_reg_reqs(permi);
+
+	/* Rewire Projs. */
+	for (i = 0; i < length; ++i) {
+		const unsigned  out  = (i + 1) % length;
+		ir_node        *proj = ress[i];
+
+		set_Proj_pred(proj, permi);
+		set_Proj_proj(proj, i);
+		arch_set_irn_register_out(permi, i,
+			get_arch_register_from_index(op->regs[out]));
+	}
+
+	return permi;
+}
+
+static ir_node *create_chain_permi(const perm_op_t *op)
+{
+	ir_node *args[PERMI_SIZE];
+	ir_node *ress[PERMI_SIZE];
+	ir_node *permi;
+	ir_node *bb     = get_nodes_block(perm);
+	unsigned size = op->length - 1;
+	unsigned i;
+
+	assert(op->type == PERM_OP_CHAIN && op->length <= PERMI_SIZE);
+
+	DB((dbg, LEVEL_2, "Implementing chain: "));
+	print_perm_op(op);
+	DB((dbg, LEVEL_2, "\n"));
+
+	for (i = 0; i < size; ++i) {
+		args[i] = in_nodes[op->regs[i]];
+		ress[i] = out_nodes[op->regs[i + 1]];
+	}
+
+	/* TODO: Fix debuginfo. */
+	permi = new_bd_sparc_Permi_chain(NULL, bb, size, args, size);
+	set_Permi_reg_reqs(permi);
+
+	/* Rewire Projs. */
+	for (i = 0; i < size; ++i) {
+		const unsigned  out  = (i + 1);
+		ir_node        *proj = ress[i];
+
+		set_Proj_pred(proj, permi);
+		set_Proj_proj(proj, i);
+		arch_set_irn_register_out(permi, i,
+			get_arch_register_from_index(op->regs[out]));
+	}
+
+	return permi;
+}
+
+static ir_node *create_permi23(ir_node **args, const perm_op_t *op2,
+                               const perm_op_t *op3)
+{
+	ir_node *bb      = get_nodes_block(perm);
+	unsigned sz      = op2->length + op3->length;
+	ir_node *permi23;
+
+	DB((dbg, LEVEL_2, "Combining two small ops:\n"));
+	DB((dbg, LEVEL_2, "  ")); print_perm_op(op2);
+	DB((dbg, LEVEL_2, "  ")); print_perm_op(op3);
+	DB((dbg, LEVEL_2, "\n"));
+
+	if (op2->type == PERM_OP_CHAIN)
+		--sz;
+	if (op3->type == PERM_OP_CHAIN)
+		--sz;
+
+	if (op2->type == PERM_OP_CYCLE && op3->type == PERM_OP_CYCLE) {
+		permi23 = new_bd_sparc_Permi23_cycle_cycle(NULL, bb, sz, args, sz);
+	} else if (op2->type == PERM_OP_CYCLE && op3->type == PERM_OP_CHAIN) {
+		permi23 = new_bd_sparc_Permi23_cycle_chain(NULL, bb, sz, args, sz);
+	} else if (op2->type == PERM_OP_CHAIN && op3->type == PERM_OP_CYCLE) {
+		permi23 = new_bd_sparc_Permi23_chain_cycle(NULL, bb, sz, args, sz);
+	} else if (op2->type == PERM_OP_CHAIN && op3->type == PERM_OP_CHAIN) {
+		permi23 = new_bd_sparc_Permi23_chain_chain(NULL, bb, sz, args, sz);
+	} else
+		assert(!"Unknown perm ops");
+
+	set_Permi_reg_reqs(permi23);
+	return permi23;
+}
+
 static void split_chain_into_copies(const perm_op_t *op)
 {
 	ir_node *bb = get_nodes_block(perm);
@@ -210,6 +321,7 @@ static void handle_all_chains(void)
 		if (ops[i].type == PERM_OP_CHAIN)
 			split_chain_into_copies(&ops[i]);
 
+	/* Keep only cycles. */
 	j = 0;
 	for (i = 0; i < num_ops; ++i) {
 		if (ops[i].type != PERM_OP_CHAIN) {
@@ -221,143 +333,16 @@ static void handle_all_chains(void)
 	num_ops = j;
 }
 
-static ir_node *create_chain_permi(const perm_op_t *op)
-{
-	ir_node *args[PERMI_SIZE];
-	ir_node *ress[PERMI_SIZE];
-	ir_node *permi;
-	ir_node *bb     = get_nodes_block(perm);
-	unsigned size = op->length - 1;
-	unsigned i;
-
-	assert(op->type == PERM_OP_CHAIN && op->length <= PERMI_SIZE);
-
-	for (i = 0; i < size; ++i) {
-		args[i] = in_nodes[op->regs[i]];
-		ress[i] = out_nodes[op->regs[i + 1]];
-	}
-
-	/* TODO: Fix debuginfo. */
-	permi = new_bd_sparc_Permi_chain(NULL, bb, size, args, size);
-	set_Permi_reg_reqs(permi);
-
-	/* Rewire Projs. */
-	for (i = 0; i < size; ++i) {
-		const unsigned  out  = (i + 1);
-		ir_node        *proj = ress[i];
-
-		set_Proj_pred(proj, permi);
-		set_Proj_proj(proj, i);
-		arch_set_irn_register_out(permi, i,
-			get_arch_register_from_index(op->regs[out]));
-	}
-
-	return permi;
-}
-
-static void split_chain_into_chain_permis(const perm_op_t *op)
+static void split_big_cycle(perm_op_t *op)
 {
 	const unsigned length = op->length;
 	unsigned i;
 	unsigned j;
 
-	assert(op->type == PERM_OP_CHAIN && length > PERMI_SIZE);
+	assert(op->type == PERM_OP_CYCLE && length >= PERMI_SIZE);
 
-	/* Place every permi except for the last.
-	 * All permis are of the maximum size PERMI_SIZE. */
-	for (i = length; i > PERMI_SIZE; i -= (PERMI_SIZE - 1)) {
-		const unsigned  start = i - PERMI_SIZE;
-		perm_op_t       subop;
-		ir_node        *permi;
-
-		subop.type   = PERM_OP_CHAIN;
-		subop.length = PERMI_SIZE;
-		for (j = 0; j < PERMI_SIZE; ++j)
-			subop.regs[j] = op->regs[start + j];
-
-		permi = create_chain_permi(&subop);
-		schedule_node(permi);
-	}
-
-	/* Place the last permi. */
-	{
-		const unsigned  lastlen = i;
-		perm_op_t       lastop;
-		ir_node        *permi;
-
-		lastop.type   = PERM_OP_CHAIN;
-		lastop.length = lastlen;
-		for (j = 0; j < lastlen; ++j)
-			lastop.regs[j] = op->regs[j];
-
-		permi = create_chain_permi(&lastop);
-		schedule_node(permi);
-	}
-}
-
-static void handle_chain(const perm_op_t *op)
-{
-	assert(op->regs[0] != 0);
-
-	if (op->length == 2 && !single_movs) {
-		split_chain_into_copies(op);
-		return;
-	}
-
-	if (op->length <= PERMI_SIZE)
-		schedule_node(create_chain_permi(op));
-	else
-		split_chain_into_chain_permis(op);
-}
-
-static ir_node *create_permi(const perm_op_t *op)
-{
-	ir_node *args[PERMI_SIZE];
-	ir_node *ress[PERMI_SIZE];
-	ir_node *permi;
-	ir_node *bb     = get_nodes_block(perm);
-	unsigned length = op->length;
-	unsigned i;
-
-	assert(op->type == PERM_OP_CYCLE && op->length <= PERMI_SIZE);
-
-	for (i = 0; i < length; ++i) {
-		const unsigned in  = i;
-		const unsigned out = (in + 1) % length;
-
-		args[i] = in_nodes[op->regs[in]];
-		ress[i] = out_nodes[op->regs[out]];
-	}
-
-	/* TODO: Fix debuginfo. */
-	permi = new_bd_sparc_Permi_cycle(NULL, bb, length, args, length);
-	set_Permi_reg_reqs(permi);
-
-	/* Rewire Projs. */
-	for (i = 0; i < length; ++i) {
-		const unsigned  out  = (i + 1) % length;
-		ir_node        *proj = ress[i];
-
-		set_Proj_pred(proj, permi);
-		set_Proj_proj(proj, i);
-		arch_set_irn_register_out(permi, i,
-			get_arch_register_from_index(op->regs[out]));
-	}
-
-	return permi;
-}
-
-static void split_big_cycle(const perm_op_t *op)
-{
-	const unsigned length = op->length;
-	unsigned i;
-	unsigned j;
-
-	assert(op->type == PERM_OP_CYCLE && length > PERMI_SIZE);
-
-	/* Place every permi except for the last.
-	 * All permis are of the maximum size PERMI_SIZE. */
-	for (i = length; i > PERMI_SIZE; i -= (PERMI_SIZE - 1)) {
+	/* Place as many permis of maximum size PERMI_SIZE as possible. */
+	for (i = length; i >= PERMI_SIZE; i -= (PERMI_SIZE - 1)) {
 		const unsigned  start = i - PERMI_SIZE;
 		const unsigned  last  = PERMI_SIZE - 1;
 		perm_op_t       subop;
@@ -372,74 +357,87 @@ static void split_big_cycle(const perm_op_t *op)
 		permi = create_permi(&subop);
 		schedule_node(permi);
 
-		/* Create intermediate Proj. */
-		proj = new_r_Proj(permi, perm_mode, last);
-		in_nodes[subop.regs[0]] = proj;
-		arch_set_irn_register(proj,
-			get_arch_register_from_index(subop.regs[0]));
+		/* Check if another permi will be placed. */
+		if (i >= PERMI_SIZE + PERMI_SIZE - 1) {
+			/* Create intermediate Proj. */
+			proj = new_r_Proj(permi, perm_mode, last);
+			in_nodes[subop.regs[0]] = proj;
+			arch_set_irn_register(proj,
+				get_arch_register_from_index(subop.regs[0]));
 
-		sched_point = proj;
+			sched_point = proj;
+		}
 	}
 
-	/* Place the last permi. */
-	{
-		const unsigned  lastlen = i;
-		perm_op_t       lastop;
+	/* If there's something left, it must be of size < PERMI_SIZE.
+	 * Remember it for combination with other small ops later. */
+	if (i > 1) {
+		const unsigned lastlen = i;
+
+		op->type   = PERM_OP_CYCLE;
+		op->length = lastlen;
+	}
+}
+
+static void split_big_chain(perm_op_t *op)
+{
+	const unsigned length = op->length;
+	unsigned i;
+	unsigned j;
+
+	assert(op->type == PERM_OP_CHAIN && length >= PERMI_SIZE);
+
+	/* Place as many chain permis of maximum size PERMI_SIZE as possible. */
+	for (i = length; i >= PERMI_SIZE; i -= (PERMI_SIZE - 1)) {
+		const unsigned  start = i - PERMI_SIZE;
+		perm_op_t       subop;
 		ir_node        *permi;
 
-		lastop.type   = PERM_OP_CYCLE;
-		lastop.length = lastlen;
-		for (j = 0; j < lastlen; ++j)
-			lastop.regs[j] = op->regs[j];
+		subop.type   = PERM_OP_CHAIN;
+		subop.length = PERMI_SIZE;
+		for (j = 0; j < PERMI_SIZE; ++j)
+			subop.regs[j] = op->regs[start + j];
 
-		permi = create_permi(&lastop);
+		permi = create_chain_permi(&subop);
 		schedule_node(permi);
+	}
+
+	/* If there's something left, it must be of size < PERMI_SIZE.
+	 * Remember it for combination with other small ops later. */
+	if (i > 1) {
+		const unsigned lastlen = i;
+
+		op->type   = PERM_OP_CHAIN;
+		op->length = lastlen;
 	}
 }
 
-static void handle_cycle(const perm_op_t *op)
+static void handle_big_ops(void)
 {
-	assert(op->type == PERM_OP_CYCLE);
+	unsigned i;
+	unsigned j;
 
-	if (op->length <= PERMI_SIZE)
-		schedule_node(create_permi(op));
-	else
-		split_big_cycle(op);
-}
+	for (i = 0; i < num_ops; ++i) {
+		perm_op_t *op = &ops[i];
 
-static void handle_op(const perm_op_t *op)
-{
-	if (op->type == PERM_OP_CHAIN)
-		handle_chain(op);
-	else
-		handle_cycle(op);
-}
+		if (op->length >= PERMI_SIZE) {
+			if (op->type == PERM_OP_CYCLE)
+				split_big_cycle(op);
+			else
+				split_big_chain(op);
+		}
+	}
 
-static ir_node *create_permi23(ir_node **args, const perm_op_t *op2,
-                               const perm_op_t *op3)
-{
-	ir_node *bb      = get_nodes_block(perm);
-	unsigned sz      = op2->length + op3->length;
-	ir_node *permi23;
-
-	if (op2->type == PERM_OP_CHAIN)
-		--sz;
-	if (op3->type == PERM_OP_CHAIN)
-		--sz;
-
-	if (op2->type == PERM_OP_CYCLE && op3->type == PERM_OP_CYCLE) {
-		permi23 = new_bd_sparc_Permi23_cycle_cycle(NULL, bb, sz, args, sz);
-	} else if (op2->type == PERM_OP_CYCLE && op3->type == PERM_OP_CHAIN) {
-		permi23 = new_bd_sparc_Permi23_cycle_chain(NULL, bb, sz, args, sz);
-	} else if (op2->type == PERM_OP_CHAIN && op3->type == PERM_OP_CYCLE) {
-		permi23 = new_bd_sparc_Permi23_chain_cycle(NULL, bb, sz, args, sz);
-	} else if (op2->type == PERM_OP_CHAIN && op3->type == PERM_OP_CHAIN) {
-		permi23 = new_bd_sparc_Permi23_chain_chain(NULL, bb, sz, args, sz);
-	} else
-		assert(!"Unknown perm ops");
-
-	set_Permi_reg_reqs(permi23);
-	return permi23;
+	/* Keep all small ops. */
+	j = 0;
+	for (i = 0; i < num_ops; ++i) {
+		if (ops[i].length < PERMI_SIZE) {
+			if (j != i)
+				ops[j] = ops[i];
+			++j;
+		}
+	}
+	num_ops = j;
 }
 
 static void combine_small_ops(const perm_op_t *op2, const perm_op_t *op3)
@@ -451,11 +449,6 @@ static void combine_small_ops(const perm_op_t *op2, const perm_op_t *op3)
 	unsigned i       = 0;
 
 	assert(op2->length == 2 && op3->length >= 2 && op3->length <= 3);
-
-	DB((dbg, LEVEL_2, "Combining two small ops:\n"));
-	DB((dbg, LEVEL_2, "  ")); print_perm_op(op2);
-	DB((dbg, LEVEL_2, "  ")); print_perm_op(op3);
-	DB((dbg, LEVEL_2, "\n"));
 
 	if (op2->type == PERM_OP_CYCLE) {
 		for (i = 0; i < 2; ++i) {
@@ -541,58 +534,115 @@ static void combine_small_ops(const perm_op_t *op2, const perm_op_t *op3)
 	schedule_node(permi23);
 }
 
-static void search_and_combine_small_ops(void)
+static void handle_small_op(const perm_op_t *op)
 {
-	const perm_op_t *twos[NUM_REGISTERS];
-	const perm_op_t *threes[NUM_REGISTERS];
+	assert(op->length < PERMI_SIZE);
+
+	if (op->type == PERM_OP_CYCLE)
+		schedule_node(create_permi(op));
+	else
+		schedule_node(create_chain_permi(op));
+}
+
+static void shave_off_op(perm_op_t *op, perm_op_t *part, unsigned len)
+{
+	unsigned i;
+
+	assert(op->length >= 3 && op->length < PERMI_SIZE && op->length > len);
+
+	part->type   = op->type;
+	part->length = len;
+	for (i = 0; i < len; ++i) {
+		part->regs[i] = op->regs[op->length - len + i];
+	}
+
+	op->length -= (len - 1);
+}
+
+static void handle_small_ops(void)
+{
+	perm_op_t *twos  [NUM_REGISTERS];
+	perm_op_t *threes[NUM_REGISTERS];
+	perm_op_t *fours [NUM_REGISTERS];
 	unsigned num_twos    = 0;
 	unsigned num_threes  = 0;
+	unsigned num_fours   = 0;
+	unsigned used_twos   = 0;
 	unsigned used_threes = 0;
-	unsigned i, j;
+	unsigned used_fours  = 0;
+	unsigned i;
 
-	/* Collect all perm ops of size 2 or 3, i.e.
-	 *   - all chains of the form  x -> y  or  x -> y -> z
-	 *   - all cycles of the form  x -> y -> x or  x -> y -> z -> x
-	 */
+	/* Scan remaining ops. */
 	for (i = 0; i < num_ops; ++i) {
-		const unsigned length = ops[i].length;
+		assert(ops[i].length < PERMI_SIZE);
 
-		if (length == 2)
-			twos[num_twos++] = &ops[i];
-		else if (length == 3)
-			threes[num_threes++] = &ops[i];
+		switch (ops[i].length) {
+		case 2: twos  [num_twos++]   = ops + i; break;
+		case 3: threes[num_threes++] = ops + i; break;
+		case 4: fours [num_fours++]  = ops + i; break;
+		default: assert(!"Invalid op size");
+		}
 	}
 
-	/* Try to combine each op of size 2 with an op of size 3.
-	 * If no op of size 3 available, try to combine it with op of size 2.
-	 * If also not possible, handle it separately. */
-	for (i = 0; i < num_twos; ++i) {
+	while (used_twos < num_twos || used_threes < num_threes
+	       || used_fours < num_fours) {
+
+		/* Check if there's a three op remaining. */
 		if (used_threes < num_threes) {
-			combine_small_ops(twos[i], threes[used_threes]);
-			++used_threes;
-		} else if (i + 1 < num_twos) {
-			combine_small_ops(twos[i], twos[i + 1]);
-			++i;
+			if (used_twos < num_twos) {
+				/* Perfect match, combine the two. */
+				combine_small_ops(twos[used_twos++], threes[used_threes++]);
+			} else if (used_fours < num_fours) {
+				perm_op_t  swap;
+				perm_op_t *shave = fours[used_fours++];
+
+				/* Shave off a swap from a four op. */
+				shave_off_op(shave, &swap, 2);
+				combine_small_ops(&swap, threes[used_threes++]);
+
+				/* Save remainder. */
+				threes[num_threes++] = shave;
+			} else if (used_threes + 1 < num_threes) {
+				perm_op_t  swap;
+				perm_op_t *shave = threes[used_threes++];
+
+				/* Shave off a swap from a three op. */
+				shave_off_op(shave, &swap, 2);
+				combine_small_ops(&swap, threes[used_threes++]);
+
+				/* Save remainder. */
+				twos[num_twos++] = shave;
+			} else {
+				/* Single remaining three op. */
+				handle_small_op(threes[used_threes++]);
+			}
+		} else if (used_twos < num_twos) {
+			/* At this point: No three ops remaining. */
+
+			if (used_fours < num_fours) {
+				perm_op_t  three;
+				perm_op_t *shave = fours[used_fours++];
+
+				/* Shave off a three op from a four op. */
+				shave_off_op(shave, &three, 3);
+				combine_small_ops(twos[used_twos++], &three);
+
+				/* Save remainder. */
+				twos[num_twos++] = shave;
+			} else if (used_twos + 1 < num_twos) {
+				combine_small_ops(twos[used_twos], twos[used_twos + 1]);
+				used_twos += 2;
+			} else {
+				/* Single remaining two op. */
+				handle_small_op(twos[used_twos++]);
+			}
 		} else {
-			handle_op(twos[i]);
+			/* Only four ops remaining. */
+			for (; used_fours < num_fours; ++used_fours) {
+				handle_small_op(fours[used_fours]);
+			}
 		}
 	}
-
-	/* Handle all leftover ops of size 3.
-	 * Can happen, for example, if no op of size 2 was available. */
-	for (i = used_threes; i < num_threes; ++i)
-		handle_op(threes[i]);
-
-	/* Remove all ops of size <= 3. */
-	j = 0;
-	for (i = 0; i < num_ops; ++i) {
-		if (ops[i].length > 3) {
-			if (j != i)
-				ops[j] = ops[i];
-			++j;
-		}
-	}
-	num_ops = j;
 }
 
 static void emit_stat_events(void)
@@ -639,14 +689,14 @@ static void lower_perm(void)
 	if (only_cycles)
 		handle_all_chains();
 
-	/* Try to combine small ops into one instruction. */
-	search_and_combine_small_ops();
+	/* Place as many permis of maximum size as possible. */
+	handle_big_ops();
 
-	/* Handle all remaining ops. */
-	for (i = 0; i < num_ops; ++i) {
-		assert(ops[i].length > 3);
-		handle_op(&ops[i]);
-	}
+	for (i = 0; i < num_ops; ++i)
+		assert(ops[i].length >= 2 && ops[i].length < PERMI_SIZE);
+
+	/* Try to combine small ops efficiently. */
+	handle_small_ops();
 
 	DB((dbg, LEVEL_2, "Finished %+F\n", perm));
 }
