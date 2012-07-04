@@ -540,8 +540,10 @@ static void handle_small_op(const perm_op_t *op)
 
 	if (op->type == PERM_OP_CYCLE)
 		schedule_node(create_permi(op));
-	else
+	else if (single_movs || op->length >= 3)
 		schedule_node(create_chain_permi(op));
+	else /* op->type == PERM_OP_CHAIN && !single_movs && op->length == 2 */
+		split_chain_into_copies(op);
 }
 
 static void shave_off_op(perm_op_t *op, perm_op_t *part, unsigned len)
