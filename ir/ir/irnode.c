@@ -304,19 +304,32 @@ ir_node *(get_irn_dep)(const ir_node *node, int pos)
 	return get_irn_dep_(node, pos);
 }
 
-void (set_irn_dep)(ir_node *node, int pos, ir_node *dep)
+void set_irn_dep(ir_node *node, int pos, ir_node *dep)
 {
-	set_irn_dep_(node, pos, dep);
+	ir_node *old;
+	ir_graph *irg;
+
+	assert(node->deps && "dependency array node yet allocated. use add_irn_dep()");
+	assert(pos >= 0 && pos < (int)ARR_LEN(node->deps) && "dependency index out of range");
+	assert(dep != NULL);
+	old = node->deps[pos];
+	node->deps[pos] = dep;
+	irg = get_irn_irg(node);
+	if (edges_activated_kind(irg, EDGE_KIND_DEP))
+		edges_notify_edge_kind(node, pos, dep, old, EDGE_KIND_DEP, irg);
 }
 
 void add_irn_dep(ir_node *node, ir_node *dep)
 {
+	ir_graph *irg;
 	assert(dep != NULL);
 	if (node->deps == NULL) {
 		node->deps = NEW_ARR_F(ir_node *, 0);
 	}
 	ARR_APP1(ir_node*, node->deps, dep);
-	edges_notify_edge_kind(node, ARR_LEN(node->deps)-1, dep, NULL, EDGE_KIND_DEP, get_irn_irg(node));
+	irg = get_irn_irg(node);
+	if (edges_activated_kind(irg, EDGE_KIND_DEP))
+		edges_notify_edge_kind(node, ARR_LEN(node->deps)-1, dep, NULL, EDGE_KIND_DEP, irg);
 }
 
 void delete_irn_dep(ir_node *node, ir_node *dep)

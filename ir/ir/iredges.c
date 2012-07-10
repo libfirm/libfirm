@@ -914,14 +914,12 @@ void edges_activate(ir_graph *irg)
 {
 	edges_activate_kind(irg, EDGE_KIND_NORMAL);
 	edges_activate_kind(irg, EDGE_KIND_BLOCK);
-	if (get_irg_phase_state(irg) == phase_backend)
-		edges_activate_kind(irg, EDGE_KIND_DEP);
+	edges_activate_kind(irg, EDGE_KIND_DEP);
 }
 
 void edges_deactivate(ir_graph *irg)
 {
-	if (get_irg_phase_state(irg) == phase_backend)
-		edges_deactivate_kind(irg, EDGE_KIND_DEP);
+	edges_deactivate_kind(irg, EDGE_KIND_DEP);
 	edges_deactivate_kind(irg, EDGE_KIND_BLOCK);
 	edges_deactivate_kind(irg, EDGE_KIND_NORMAL);
 }
@@ -930,6 +928,7 @@ void assure_edges(ir_graph *irg)
 {
 	assure_edges_kind(irg, EDGE_KIND_BLOCK);
 	assure_edges_kind(irg, EDGE_KIND_NORMAL);
+	assure_edges_kind(irg, EDGE_KIND_DEP);
 	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 }
 
@@ -943,6 +942,7 @@ void edges_node_deleted(ir_node *irn)
 {
 	edges_node_deleted_kind(irn, EDGE_KIND_NORMAL);
 	edges_node_deleted_kind(irn, EDGE_KIND_BLOCK);
+	edges_node_deleted_kind(irn, EDGE_KIND_DEP);
 }
 
 void edges_node_revival(ir_node *irn)

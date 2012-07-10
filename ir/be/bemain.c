@@ -431,8 +431,8 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 	obstack_init(&birg->obst);
 	birg->lv = be_liveness_new(irg);
 
-	edges_deactivate_kind(irg, EDGE_KIND_DEP);
-	edges_activate_kind(irg, EDGE_KIND_DEP);
+	edges_deactivate(irg);
+	edges_activate(irg);
 
 	/* set the current graph (this is important for several firm functions) */
 	current_ir_graph = irg;

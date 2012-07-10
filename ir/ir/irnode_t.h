@@ -153,19 +153,6 @@ static inline ir_node *get_irn_dep_(const ir_node *node, int pos)
 /* forward declaration outside iredges_t.h to avoid circular include problems */
 void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir_edge_kind_t kind, ir_graph *irg);
 
-static inline void set_irn_dep_(ir_node *node, int pos, ir_node *dep)
-{
-	ir_node *old;
-
-	assert(node->deps && "dependency array node yet allocated. use add_irn_dep()");
-	assert(pos >= 0 && pos < (int)ARR_LEN(node->deps) && "dependency index out of range");
-	assert(dep != NULL);
-	old = node->deps[pos];
-	node->deps[pos] = dep;
-	edges_notify_edge_kind(node, pos, dep, old, EDGE_KIND_DEP, get_irn_irg(node));
-}
-
-
 static inline int get_irn_ins_or_deps_(const ir_node *irn)
 {
 	return get_irn_deps_(irn) + get_irn_arity_(irn);
@@ -635,7 +622,6 @@ void init_irnode(void);
 #define get_irn_idx(node)                     get_irn_idx_(node)
 
 #define get_irn_deps(node)                    get_irn_deps_(node)
-#define set_irn_dep(node, pos, dep)           set_irn_dep_(node, pos, dep)
 #define get_irn_dep(node, pos)                get_irn_dep_(node, pos)
 
 #define get_irn_ins_or_deps(node)             get_irn_ins_or_deps_(node)
