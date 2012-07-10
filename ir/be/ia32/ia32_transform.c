@@ -5134,14 +5134,14 @@ static ir_node *gen_parity(ir_node *node)
 	 * operations)
 	 */
 	ir_node *count = ia32_create_Immediate(NULL, 0, 16);
-	ir_node *shr = new_bd_ia32_Shr(dbgi, new_block, new_param, count);
-	ir_node *xor = new_bd_ia32_Xor(dbgi, new_block, noreg_GP, noreg_GP, nomem,
-	                               shr, new_param);
-	ir_node *xor2 = new_bd_ia32_XorHighLow(dbgi, new_block, xor);
+	ir_node *shr   = new_bd_ia32_Shr(dbgi, new_block, new_param, count);
+	ir_node *xorn  = new_bd_ia32_Xor(dbgi, new_block, noreg_GP, noreg_GP, nomem,
+	                                 shr, new_param);
+	ir_node *xor2  = new_bd_ia32_XorHighLow(dbgi, new_block, xorn);
 	ir_node *flags;
 
-	set_ia32_ls_mode(xor, mode_Iu);
-	set_ia32_commutative(xor);
+	set_ia32_ls_mode(xorn, mode_Iu);
+	set_ia32_commutative(xorn);
 
 	set_irn_mode(xor2, mode_T);
 	flags = new_r_Proj(xor2, mode_Iu, pn_ia32_XorHighLow_flags);

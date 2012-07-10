@@ -508,7 +508,7 @@ static ir_node *get_dummy_sel(ir_graph *irg, ir_node *block, ir_type *tp,
                               wlk_env *env)
 {
 	/* use a map the check if we already create such an entity */
-	ir_entity *ent = pmap_get(env->dummy_map, tp);
+	ir_entity *ent = (ir_entity*)pmap_get(env->dummy_map, tp);
 	if (ent == NULL) {
 		ir_type *ft = get_irg_frame_type(irg);
 		ident   *dummy_id = id_unique("dummy.%u");

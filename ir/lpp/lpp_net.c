@@ -59,6 +59,7 @@
 #include "lpp_net.h"
 #include "lpp_t.h"
 #include "lpp_comm.h"
+#include "xmalloc.h"
 
 #ifdef _WIN32
 static int winsock_init(void)
@@ -136,7 +137,7 @@ char **lpp_get_solvers(const char *host)
 	lpp_writel(comm, LPP_CMD_SOLVERS);
 	lpp_flush(comm);
 	n = lpp_readl(comm);
-	res = malloc((n + 1) * sizeof(res[0]));
+	res = XMALLOCN(char*, n+1);
 	res[n] = NULL;
 
 	if(n > 0) {

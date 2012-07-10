@@ -829,7 +829,7 @@ static void lower_shr_helper(ir_node *node, ir_mode *mode,
 	ir_node  *lower_block;
 	ir_node  *block;
 	ir_node  *cnst;
-	ir_node  *and;
+	ir_node  *andn;
 	ir_node  *cmp;
 	ir_node  *cond;
 	ir_node  *proj_true;
@@ -873,9 +873,9 @@ static void lower_shr_helper(ir_node *node, ir_mode *mode,
 	/* add a Cmp to test if highest bit is set <=> whether we shift more
 	 * than half the word width */
 	cnst       = new_r_Const_long(irg, low_unsigned, modulo_shift2);
-	and        = new_r_And(block, right, cnst, low_unsigned);
+	andn       = new_r_And(block, right, cnst, low_unsigned);
 	cnst       = new_r_Const(irg, get_mode_null(low_unsigned));
-	cmp        = new_rd_Cmp(dbgi, block, and, cnst, ir_relation_equal);
+	cmp        = new_rd_Cmp(dbgi, block, andn, cnst, ir_relation_equal);
 	cond       = new_rd_Cond(dbgi, block, cmp);
 	proj_true  = new_r_Proj(cond, mode_X, pn_Cond_true);
 	proj_false = new_r_Proj(cond, mode_X, pn_Cond_false);
@@ -964,7 +964,7 @@ static void lower_Shl(ir_node *node, ir_mode *mode)
 	ir_node  *lower_block   = get_nodes_block(node);
 	ir_node  *block;
 	ir_node  *cnst;
-	ir_node  *and;
+	ir_node  *andn;
 	ir_node  *cmp;
 	ir_node  *cond;
 	ir_node  *proj_true;
@@ -1006,9 +1006,9 @@ static void lower_Shl(ir_node *node, ir_mode *mode)
 	/* add a Cmp to test if highest bit is set <=> whether we shift more
 	 * than half the word width */
 	cnst       = new_r_Const_long(irg, low_unsigned, modulo_shift2);
-	and        = new_r_And(block, right, cnst, low_unsigned);
+	andn       = new_r_And(block, right, cnst, low_unsigned);
 	cnst       = new_r_Const(irg, get_mode_null(low_unsigned));
-	cmp        = new_rd_Cmp(dbgi, block, and, cnst, ir_relation_equal);
+	cmp        = new_rd_Cmp(dbgi, block, andn, cnst, ir_relation_equal);
 	cond       = new_rd_Cond(dbgi, block, cmp);
 	proj_true  = new_r_Proj(cond, mode_X, pn_Cond_true);
 	proj_false = new_r_Proj(cond, mode_X, pn_Cond_false);
@@ -1912,7 +1912,7 @@ static void lower_Start(ir_node *node, ir_mode *high_mode)
 	ir_graph  *irg      = get_irn_irg(node);
 	ir_entity *ent      = get_irg_entity(irg);
 	ir_type   *mtp      = get_entity_type(ent);
-	ir_type   *orig_mtp = get_type_link(mtp);
+	ir_type   *orig_mtp = (ir_type*)get_type_link(mtp);
 	ir_node   *args;
 	long      *new_projs;
 	size_t    i, j, n_params;

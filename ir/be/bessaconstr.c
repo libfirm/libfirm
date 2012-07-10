@@ -101,7 +101,7 @@ static bool has_definition(const ir_node *block)
 static constr_info *get_or_set_info(be_ssa_construction_env_t *env,
                                     const ir_node *node)
 {
-	constr_info *info = ir_nodemap_get(&env->infos, node);
+	constr_info *info = (constr_info*)ir_nodemap_get(&env->infos, node);
 	if (info == NULL) {
 		info = OALLOCZ(&env->obst, constr_info);
 		ir_nodemap_insert(&env->infos, node, info);

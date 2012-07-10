@@ -47,13 +47,13 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static inline char *obst_xstrdup(struct obstack *obst, const char *str)
 {
-	return obstack_copy0(obst, str, strlen(str));
+	return (char*)obstack_copy0(obst, str, strlen(str));
 }
 
 static int cmp_name_t(const void *x, const void *y, size_t size)
 {
-	const lpp_name_t *n = x;
-	const lpp_name_t *m = y;
+	const lpp_name_t *n = (const lpp_name_t*)x;
+	const lpp_name_t *m = (const lpp_name_t*)y;
 	(void)size;
 	return strcmp(n->name, m->name);
 }
@@ -140,7 +140,8 @@ static int name2nr(set *where, const char *name)
 {
 	lpp_name_t find, *found;
 	find.name = name;
-	found = set_find(where, &find, sizeof(find), HASH_NAME_T(&find));
+	found
+		= (lpp_name_t*)set_find(where, &find, sizeof(find), HASH_NAME_T(&find));
 	return (found ? found->nr : -1);
 }
 
@@ -156,7 +157,7 @@ static int var_nr(const lpp_t *lpp, const char *name)
 
 static inline char *get_next_name(lpp_t *lpp)
 {
-	char *res = obstack_alloc(&lpp->obst, 12);
+	char *res = OALLOCN(&lpp->obst, char, 12);
 	snprintf(res, 12, "_%u", lpp->next_name_number++);
 	return res;
 }
@@ -176,7 +177,7 @@ int lpp_add_cst(lpp_t *lpp, const char *cst_name, lpp_cst_t cst_type, double rhs
 		n.name = get_next_name(lpp);
 
 	n.nr  = -1;
-	inner = set_insert(lpp->cst2nr, &n, sizeof(n), HASH_NAME_T(&n));
+	inner = (lpp_name_t*)set_insert(lpp->cst2nr, &n, sizeof(n), HASH_NAME_T(&n));
 	assert(inner);
 
 	if (inner->nr == -1) {
@@ -251,12 +252,12 @@ int lpp_add_var(lpp_t *lpp, const char *var_name, lpp_var_t var_type, double obj
 		n.name = get_next_name(lpp);
 
 	n.nr  = -1;
-	inner = set_insert(lpp->var2nr, &n, sizeof(n), HASH_NAME_T(&n));
+	inner = (lpp_name_t*)set_insert(lpp->var2nr, &n, sizeof(n), HASH_NAME_T(&n));
 	assert(inner);
 
 	if (inner->nr == -1) {
 		inner->nr            = lpp->var_next;
-		inner->value_kind    = 0;
+		inner->value_kind    = lpp_none;
 		inner->value         = 0;
 		inner->type.var_type = var_type;
 
@@ -448,7 +449,7 @@ void lpp_serialize(lpp_comm_t *comm, const lpp_t *lpp, int with_names)
 	lpp_writel(comm, lpp->set_bound);
 	lpp_writed(comm, lpp->bound);
 	lpp_writed(comm, lpp->time_limit_secs);
-	lpp_writed(comm, lpp->emphasis);
+	lpp_writel(comm, lpp->emphasis);
 
 	for(i = 0; i < lpp->cst_next; ++i) {
 		lpp_name_t *name = lpp->csts[i];
@@ -503,14 +504,14 @@ lpp_t *lpp_deserialize(lpp_comm_t *comm)
 	with_names    = lpp_readl(comm);
 	lpp->cst_next = lpp_readl(comm);
 	lpp->var_next = lpp_readl(comm);
-	lpp->opt_type = lpp_readl(comm);
+	lpp->opt_type = (lpp_opt_t)lpp_readl(comm);
 	lpp->name     = lpp_reads(comm);
 
 	/* read options */
 	lpp->set_bound       = lpp_readl(comm);
 	lpp->bound           = lpp_readd(comm);
 	lpp->time_limit_secs = lpp_readd(comm);
-	lpp->emphasis        = lpp_readd(comm);
+	lpp->emphasis        = (lpp_emphasis_t)lpp_readl(comm);
 
 	lpp->cst_size = lpp->cst_next;
 	lpp->var_size = lpp->var_next;
@@ -526,8 +527,8 @@ lpp_t *lpp_deserialize(lpp_comm_t *comm)
 		lpp_name_t name, *res;
 
 		name.nr            = lpp_readl(comm);
-		name.value_kind    = lpp_readl(comm);
-		name.type.cst_type = lpp_readl(comm);
+		name.value_kind    = (lpp_value_kind_t)lpp_readl(comm);
+		name.type.cst_type = (lpp_cst_t)lpp_readl(comm);
 
 		if(with_names) {
 			name.name = lpp_reads(comm);
@@ -537,7 +538,7 @@ lpp_t *lpp_deserialize(lpp_comm_t *comm)
 			name.name = buf;
 		}
 
-		res = set_insert(lpp->cst2nr, &name, sizeof(name), HASH_NAME_T(&name));
+		res = (lpp_name_t*)set_insert(lpp->cst2nr, &name, sizeof(name), HASH_NAME_T(&name));
 		lpp->csts[name.nr] = res;
 	}
 
@@ -545,8 +546,8 @@ lpp_t *lpp_deserialize(lpp_comm_t *comm)
 		lpp_name_t name, *res;
 
 		name.nr            = lpp_readl(comm);
-		name.value_kind    = lpp_readl(comm);
-		name.type.var_type = lpp_readl(comm);
+		name.value_kind    = (lpp_value_kind_t)lpp_readl(comm);
+		name.type.var_type = (lpp_var_t)lpp_readl(comm);
 
 		if(with_names) {
 			name.name = lpp_reads(comm);
@@ -556,7 +557,7 @@ lpp_t *lpp_deserialize(lpp_comm_t *comm)
 			name.name = buf;
 		}
 
-		res = set_insert(lpp->var2nr, &name, sizeof(name), HASH_NAME_T(&name));
+		res = (lpp_name_t*)set_insert(lpp->var2nr, &name, sizeof(name), HASH_NAME_T(&name));
 		lpp->vars[name.nr] = res;
 	}
 
@@ -619,7 +620,7 @@ void lpp_serialize_stats(lpp_comm_t *comm, const lpp_t *lpp)
 
 void lpp_deserialize_stats(lpp_comm_t *comm, lpp_t *lpp)
 {
-	lpp->sol_state  = lpp_readl(comm);
+	lpp->sol_state  = (lpp_sol_state_t)lpp_readl(comm);
 	lpp->iterations = lpp_readl(comm);
 	lpp->sol_time   = lpp_readd(comm);
 	lpp->objval     = lpp_readd(comm);

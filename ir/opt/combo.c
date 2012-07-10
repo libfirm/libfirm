@@ -565,7 +565,7 @@ static unsigned opcode_hash(const opcode_key_t *entry)
 	/* we cannot use the ir ops hash function here, because it hashes the
 	 * predecessors. */
 	const ir_node *n = entry->irn;
-	ir_opcode code  = get_irn_opcode(n);
+	ir_opcode code  = (ir_opcode)get_irn_opcode(n);
 	ir_mode   *mode = get_irn_mode(n);
 	unsigned hash = (unsigned)(PTR_TO_INT(mode) * 9 + code) + get_irn_arity(n);
 

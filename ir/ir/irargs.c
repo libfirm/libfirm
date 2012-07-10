@@ -270,7 +270,7 @@ static int firm_emit_indent(lc_appendable_t *app,
 static int firm_emit_pnc(lc_appendable_t *app,
     const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
 {
-	int value = arg->v_int;
+	ir_relation value = (ir_relation)arg->v_int;
 	const char *p = get_relation_string(value);
 
 	return lc_arg_append(app, occ, p, strlen(p));

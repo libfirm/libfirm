@@ -156,7 +156,7 @@ void be_register_scheduler(const char *name, schedule_func func)
 {
 	if (scheduler == NULL)
 		scheduler = func;
-	be_add_module_to_list(&schedulers, name, func);
+	be_add_module_to_list(&schedulers, name, (void*)func);
 }
 
 void be_schedule_graph(ir_graph *irg)

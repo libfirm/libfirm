@@ -727,7 +727,7 @@ static void build_affinity_chunks(co_mst_env_t *env)
 	}
 
 	for (pn = 0; pn < ARR_LEN(env->map.data); ++pn) {
-		co_mst_irn_t *mirn = env->map.data[pn];
+		co_mst_irn_t *mirn = (co_mst_irn_t*)env->map.data[pn];
 		if (mirn == NULL)
 			continue;
 		if (mirn->chunk != NULL)
@@ -1501,7 +1501,7 @@ static int co_solve_heuristic_mst(copy_opt_t *co)
 
 	/* apply coloring */
 	for (pn = 0; pn < ARR_LEN(mst_env.map.data); ++pn) {
-		co_mst_irn_t *mirn = mst_env.map.data[pn];
+		co_mst_irn_t *mirn = (co_mst_irn_t*)mst_env.map.data[pn];
 		const arch_register_t *reg;
 		if (mirn == NULL)
 			continue;

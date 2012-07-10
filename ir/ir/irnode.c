@@ -89,7 +89,8 @@ ir_relation get_inversed_relation(ir_relation relation)
 	ir_relation code    = relation & ~(ir_relation_less|ir_relation_greater);
 	bool        less    = relation & ir_relation_less;
 	bool        greater = relation & ir_relation_greater;
-	code |= (less ? ir_relation_greater : 0) | (greater ? ir_relation_less : 0);
+	code |= (less ? ir_relation_greater : ir_relation_false)
+	      | (greater ? ir_relation_less : ir_relation_false);
 	return code;
 }
 
@@ -1568,31 +1569,6 @@ ir_switch_table *ir_switch_table_duplicate(ir_graph *irg,
 		*new_entry = *entry;
 	}
 	return res;
-}
-
-unsigned firm_default_hash(const ir_node *node)
-{
-	unsigned h;
-	int i, irn_arity;
-
-	/* hash table value = 9*(9*(9*(9*(9*arity+in[0])+in[1])+ ...)+mode)+code */
-	h = irn_arity = get_irn_arity(node);
-
-	/* consider all in nodes... except the block if not a control flow. */
-	for (i = is_cfop(node) ? -1 : 0;  i < irn_arity;  ++i) {
-		ir_node *pred = get_irn_n(node, i);
-		if (is_irn_cse_neutral(pred))
-			h *= 9;
-		else
-			h = 9*h + hash_ptr(pred);
-	}
-
-	/* ...mode,... */
-	h = 9*h + hash_ptr(get_irn_mode(node));
-	/* ...and code */
-	h = 9*h + hash_ptr(get_irn_op(node));
-
-	return h;
 }
 
 /* include generated code */

@@ -178,7 +178,7 @@ typedef struct {
 
 static co2_irn_t *get_co2_irn(co2_t *env, const ir_node *node)
 {
-	co2_irn_t *ci = ir_nodemap_get(&env->map, node);
+	co2_irn_t *ci = (co2_irn_t*)ir_nodemap_get(&env->map, node);
 	if (ci == NULL) {
 		ci = OALLOCZ(&env->obst, co2_irn_t);
 
@@ -196,7 +196,7 @@ static co2_irn_t *get_co2_irn(co2_t *env, const ir_node *node)
 
 static co2_cloud_irn_t *get_co2_cloud_irn(co2_t *env, const ir_node *node)
 {
-	co2_cloud_irn_t *ci = ir_nodemap_get(&env->map, node);
+	co2_cloud_irn_t *ci = (co2_cloud_irn_t*)ir_nodemap_get(&env->map, node);
 	if (ci == NULL) {
 		ci = OALLOCZ(&env->obst, co2_cloud_irn_t);
 

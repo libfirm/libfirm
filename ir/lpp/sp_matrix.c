@@ -645,7 +645,7 @@ void matrix_optimize(sp_matrix_t *m)
 		}
 	}
 
-	c       = alloca(size * sizeof(*c));
+	c       = ALLOCAN(int, size);
 	redo    = 1;
 	fullrow = bitset_alloca(size);
 

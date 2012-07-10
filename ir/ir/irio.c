@@ -177,7 +177,7 @@ parse_error(read_env_t *env, const char *fmt, ...)
 	env->read_errors = true;
 
 	/* let's hope firm doesn't die on further errors */
-	do_node_verification(0);
+	do_node_verification(FIRM_VERIFICATION_OFF);
 
 	va_start(ap, fmt);
 	vfprintf(stderr, fmt, ap);
@@ -1804,7 +1804,7 @@ static void read_type(read_env_t *env)
 		size_t nparams  = read_size_t(env);
 		size_t nresults = read_size_t(env);
 		size_t i;
-		int    variadicity;
+		ir_variadicity variadicity;
 
 		type = new_type_method(nparams, nresults);
 
@@ -1821,7 +1821,7 @@ static void read_type(read_env_t *env)
 			set_method_res_type(type, i, restype);
 		}
 
-		variadicity = (int) read_long(env);
+		variadicity = (ir_variadicity) read_long(env);
 		set_method_variadicity(type, variadicity);
 
 		set_method_calling_convention(type, callingconv);
@@ -1967,9 +1967,9 @@ static void read_entity(read_env_t *env, ir_entity_kind kind)
 		ir_label_t nr = get_irp_next_label_nr();
 		entity = new_label_entity(nr);
 		break;
+	}
 	case IR_ENTITY_UNKNOWN:
 		panic("read_entity with IR_ENTITY_UNKNOWN?");
-	}
 	}
 
 	set_entity_compiler_generated(entity, compiler_generated);
@@ -2124,7 +2124,7 @@ static ir_node *read_ASM(read_env_t *env)
 	pin_state = read_pin_state(env);
 
 	n_in = read_preds(env);
-	in   = obstack_finish(&env->preds_obst);
+	in   = (ir_node**)obstack_finish(&env->preds_obst);
 
 	if (ARR_LEN(input_constraints) != (size_t)n_in) {
 		parse_error(env, "input_constraints != n_in in ir file");
@@ -2192,13 +2192,13 @@ static pmap *node_readers;
 
 static void register_node_reader(ident *ident, read_node_func func)
 {
-	pmap_insert(node_readers, ident, func);
+	pmap_insert(node_readers, ident, (void*)func);
 }
 
 static ir_node *read_node(read_env_t *env)
 {
 	ident         *id   = read_symbol(env);
-	read_node_func func = pmap_get(node_readers, id);
+	read_node_func func = (read_node_func)pmap_get(node_readers, id);
 	long           nr   = read_long(env);
 	ir_node       *res;
 	if (func == NULL) {

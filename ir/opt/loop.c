@@ -2061,7 +2061,7 @@ static ir_node *is_simple_loop(void)
 	if (!is_Cmp(cmp))
 		return NULL;
 
-	DB((dbg, LEVEL_5, "projection is %s\n", get_relation_string(get_Proj_proj(projx))));
+	DB((dbg, LEVEL_5, "projection is %s\n", get_relation_string(get_Cmp_relation(cmp))));
 
 	switch(get_Proj_proj(projx)) {
 		case pn_Cond_false:

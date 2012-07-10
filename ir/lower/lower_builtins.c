@@ -99,7 +99,7 @@ static void replace_with_call(ir_node *node)
 	snprintf(buf, sizeof(buf), "__%s%s2", name, gcc_machmode);
 	id = new_id_from_str(buf);
 
-	entity = pmap_get(entities, id);
+	entity = (ir_entity*)pmap_get(entities, id);
 	if (entity == NULL) {
 		entity = create_compilerlib_entity(id, mtp);
 		pmap_insert(entities, id, entity);

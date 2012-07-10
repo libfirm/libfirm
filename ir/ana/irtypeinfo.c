@@ -122,7 +122,7 @@ ir_type *get_irn_typeinfo_type(const ir_node *n)
 	ir_type *res;
 	assert(get_irg_typeinfo_state(get_irn_irg(n)) != ir_typeinfo_none);
 
-	res = pmap_get(type_node_map, n);
+	res = (ir_type*)pmap_get(type_node_map, n);
 	if (res == NULL) {
 		res = initial_type;
 	}

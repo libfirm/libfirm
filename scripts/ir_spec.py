@@ -612,14 +612,14 @@ class Load(Op):
 			name      = "volatility",
 			comment   = "volatile loads are a visible side-effect and may not be optimized",
 			init      = "flags & cons_volatile ? volatility_is_volatile : volatility_non_volatile",
-			to_flags  = "%s == volatility_is_volatile ? cons_volatile : 0"
+			to_flags  = "%s == volatility_is_volatile ? cons_volatile : cons_none"
 		),
 		dict(
 			type      = "ir_align",
 			name      = "unaligned",
 			comment   = "pointers to unaligned loads don't need to respect the load-mode/type alignments",
 			init      = "flags & cons_unaligned ? align_non_aligned : align_is_aligned",
-			to_flags  = "%s == align_non_aligned ? cons_unaligned : 0"
+			to_flags  = "%s == align_non_aligned ? cons_unaligned : cons_none"
 		),
 	]
 	attr_struct = "load_attr"
@@ -874,14 +874,14 @@ class Store(Op):
 			name      = "volatility",
 			comment   = "volatile stores are a visible side-effect and may not be optimized",
 			init      = "flags & cons_volatile ? volatility_is_volatile : volatility_non_volatile",
-			to_flags  = "%s == volatility_is_volatile ? cons_volatile : 0"
+			to_flags  = "%s == volatility_is_volatile ? cons_volatile : cons_none"
 		),
 		dict(
 			type      = "ir_align",
 			name      = "unaligned",
 			comment   = "pointers to unaligned stores don't need to respect the load-mode/type alignments",
 			init      = "flags & cons_unaligned ? align_non_aligned : align_is_aligned",
-			to_flags  = "%s == align_non_aligned ? cons_unaligned : 0"
+			to_flags  = "%s == align_non_aligned ? cons_unaligned : cons_none"
 		),
 	]
 	constructor_args = [
