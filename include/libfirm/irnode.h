@@ -89,16 +89,12 @@ FIRM_API ir_node *get_irn_n(const ir_node *node, int n);
 FIRM_API void set_irn_in(ir_node *node, int arity, ir_node *in[]);
 
 /**
- * Add a artificial dependency to the node.
- * The dependency is only inserted if it is not there already.
- * This is only allowed in phase_backend!
+ * Add an artificial dependency to the node.
  *
  * @param node The node.
  * @param dep  The dependency target.
- *
- * @return The index in the array (get_irn_dep with that index returns @p dep).
  */
-FIRM_API int add_irn_dep(ir_node *node, ir_node *dep);
+FIRM_API void add_irn_dep(ir_node *node, ir_node *dep);
 
 /**
  * Copy all dependencies from a node to another.
@@ -131,6 +127,15 @@ FIRM_API ir_node *get_irn_dep(const ir_node *node, int pos);
  * @param dep  The dependency target.
  */
 FIRM_API void set_irn_dep(ir_node *node, int pos, ir_node *dep);
+
+/**
+ * Deletes the entry of the dependency array, that points to dep. Does nothing
+ * if no dependency exists.
+ *
+ * @param node the node to delete the dependency at
+ * @param dep the target of the dependency to delete
+ */
+FIRM_API void delete_irn_dep(ir_node *node, ir_node *dep);
 
 /** Replaces the n-th predecessor of a node with a new one. */
 FIRM_API void set_irn_n(ir_node *node, int n, ir_node *in);

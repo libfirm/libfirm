@@ -159,6 +159,7 @@ static inline void set_irn_dep_(ir_node *node, int pos, ir_node *dep)
 
 	assert(node->deps && "dependency array node yet allocated. use add_irn_dep()");
 	assert(pos >= 0 && pos < (int)ARR_LEN(node->deps) && "dependency index out of range");
+	assert(dep != NULL);
 	old = node->deps[pos];
 	node->deps[pos] = dep;
 	edges_notify_edge_kind(node, pos, dep, old, EDGE_KIND_DEP, get_irn_irg(node));

@@ -309,39 +309,32 @@ void (set_irn_dep)(ir_node *node, int pos, ir_node *dep)
 	set_irn_dep_(node, pos, dep);
 }
 
-int add_irn_dep(ir_node *node, ir_node *dep)
+void add_irn_dep(ir_node *node, ir_node *dep)
 {
-	int res = 0;
-
-	/* DEP edges are only allowed in backend phase */
-	assert(get_irg_phase_state(get_irn_irg(node)) == phase_backend);
+	assert(dep != NULL);
 	if (node->deps == NULL) {
-		node->deps = NEW_ARR_F(ir_node *, 1);
-		node->deps[0] = dep;
-	} else {
-		int i, n;
-		int first_zero = -1;
+		node->deps = NEW_ARR_F(ir_node *, 0);
+	}
+	ARR_APP1(ir_node*, node->deps, dep);
+	edges_notify_edge_kind(node, ARR_LEN(node->deps)-1, dep, NULL, EDGE_KIND_DEP, get_irn_irg(node));
+}
 
-		for (i = 0, n = ARR_LEN(node->deps); i < n; ++i) {
-			if (node->deps[i] == NULL)
-				first_zero = i;
+void delete_irn_dep(ir_node *node, ir_node *dep)
+{
+	size_t i;
+	size_t n_deps;
+	if (node->deps == NULL)
+		return;
 
-			if (node->deps[i] == dep)
-				return i;
-		}
-
-		if (first_zero >= 0) {
-			node->deps[first_zero] = dep;
-			res = first_zero;
-		} else {
-			ARR_APP1(ir_node *, node->deps, dep);
-			res = n;
+	n_deps = ARR_LEN(node->deps);
+	for (i = 0; i < n_deps; ++i) {
+		if (node->deps[i] == dep) {
+			set_irn_dep(node, i, node->deps[n_deps-1]);
+			edges_notify_edge(node, i, NULL, dep, get_irn_irg(node));
+			ARR_SHRINKLEN(node->deps, n_deps-1);
+			break;
 		}
 	}
-
-	edges_notify_edge_kind(node, res, dep, NULL, EDGE_KIND_DEP, get_irn_irg(node));
-
-	return res;
 }
 
 void add_irn_deps(ir_node *tgt, ir_node *src)
