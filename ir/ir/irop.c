@@ -549,7 +549,6 @@ static void block_copy_attr(ir_graph *irg, const ir_node *old_node,
 	 * This is at least what we need for DCE to work. */
 	new_node->attr.block.entity         = old_node->attr.block.entity;
 	new_node->attr.block.phis           = NULL;
-	INIT_LIST_HEAD(&new_node->attr.block.succ_head);
 }
 
 /**

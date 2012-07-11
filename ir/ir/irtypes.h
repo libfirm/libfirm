@@ -213,13 +213,10 @@ typedef struct block_attr {
 	bitset_t *backedge;         /**< Bitfield n set to true if pred n is backedge.*/
 	ir_entity *entity;          /**< entitiy representing this block */
 	ir_node  *phis;             /**< The list of Phi nodes in this block. */
-
-	struct list_head succ_head; /**< A list head for all successor edges of a block. */
 } block_attr;
 
 /** Cond attributes. */
 typedef struct cond_attr {
-	long default_proj;           /**< only for non-binary Conds: biggest Proj number, i.e. the one used for default. */
 	cond_jmp_predicate jmp_pred; /**< only for binary Conds: The jump predication. */
 } cond_attr;
 
