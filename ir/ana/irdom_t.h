@@ -27,6 +27,8 @@
 #define FIRM_ANA_IRDOM_T_H
 
 #include "irdom.h"
+#include "pmap.h"
+#include "obst.h"
 
 /** For dominator information */
 typedef struct ir_dom_info {
@@ -41,6 +43,11 @@ typedef struct ir_dom_info {
   int pre_num;     /**< pre-order graph-walk number */
   int dom_depth;   /**< depth in dominator-tree */
 } ir_dom_info;
+
+typedef struct ir_dom_front_info_t {
+	pmap *df_map;         /**< A map, mapping every block to a list of its dominance frontier blocks. */
+	struct obstack obst;  /**< An obstack holding all the frontier data. */
+} ir_dom_front_info_t;
 
 void set_Block_idom(ir_node *bl, ir_node *n);
 
@@ -63,5 +70,7 @@ unsigned get_Block_pdom_tree_pre_num(const ir_node *bl);
 
 unsigned get_Block_dom_max_subtree_pre_num(const ir_node *bl);
 unsigned get_Block_pdom_max_subtree_pre_num(const ir_node *bl);
+
+void ir_free_dominance_frontiers(ir_graph *irg);
 
 #endif

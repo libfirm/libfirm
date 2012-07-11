@@ -29,26 +29,6 @@
 #include "beirg.h"
 #include "absgraph.h"
 #include "belive.h"
-#include "bedomfront.h"
-
-void be_assure_dom_front(ir_graph *irg)
-{
-	be_irg_t *birg = be_birg_from_irg(irg);
-	if (birg->dom_front != NULL)
-		return;
-
-	birg->dom_front = be_compute_dominance_frontiers(birg->irg);
-}
-
-void be_invalidate_dom_front(ir_graph *irg)
-{
-	be_irg_t *birg = be_birg_from_irg(irg);
-	if (birg->dom_front == NULL)
-		return;
-
-	be_free_dominance_frontiers(birg->dom_front);
-	birg->dom_front = NULL;
-}
 
 void be_invalidate_live_sets(ir_graph *irg)
 {
@@ -80,10 +60,6 @@ void be_free_birg(ir_graph *irg)
 	free_execfreq(birg->exec_freq);
 	birg->exec_freq = NULL;
 
-	if (birg->dom_front != NULL) {
-		be_free_dominance_frontiers(birg->dom_front);
-		birg->dom_front = NULL;
-	}
 	if (birg->lv != NULL) {
 		be_liveness_free(birg->lv);
 		birg->lv = NULL;

@@ -48,8 +48,8 @@
 #ifndef FIRM_BE_BESSACONSTR_H
 #define FIRM_BE_BESSACONSTR_H
 
+#include <stdbool.h>
 #include "firm_types.h"
-#include "bedomfront.h"
 #include "irnodeset.h"
 #include "belive.h"
 #include "bitset.h"
@@ -60,13 +60,12 @@
 
 typedef struct be_ssa_construction_env_t {
 	ir_graph                    *irg;
-	const be_dom_front_info_t   *domfronts;
 	ir_mode                     *mode;
 	const arch_register_req_t   *phi_req;
 	waitq                       *worklist;
 	const ir_nodeset_t          *ignore_uses;
 	ir_node                    **new_phis;
-	int                          iterated_domfront_calculated;
+	bool                         iterated_domfront_calculated;
 	ir_nodemap                   infos;
 	struct obstack               obst;
 } be_ssa_construction_env_t;

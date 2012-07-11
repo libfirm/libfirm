@@ -820,6 +820,7 @@ void assure_irg_properties(ir_graph *irg, ir_graph_properties_t props)
 		{ IR_GRAPH_PROPERTY_CONSISTENT_OUTS,          assure_irg_outs },
 		{ IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO,      assure_loopinfo },
 		{ IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE,  assure_irg_entity_usage_computed },
+		{ IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE_FRONTIERS, ir_compute_dominance_frontiers },
 	};
 	size_t i;
 	for (i = 0; i < ARRAY_SIZE(property_functions); ++i) {
@@ -838,4 +839,6 @@ void confirm_irg_properties(ir_graph *irg, ir_graph_properties_t props)
 	if (! (props & IR_GRAPH_PROPERTY_CONSISTENT_OUTS)
 	    && (irg->properties & IR_GRAPH_PROPERTY_CONSISTENT_OUTS))
 	    free_irg_outs(irg);
+	if (! (props & IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE_FRONTIERS))
+		ir_free_dominance_frontiers(irg);
 }

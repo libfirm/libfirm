@@ -198,7 +198,7 @@ static void mark_iterated_dominance_frontiers(
 	while (!waitq_empty(env->worklist)) {
 		int i;
 		ir_node  *block    = (ir_node*)waitq_get(env->worklist);
-		ir_node **domfront = be_get_dominance_frontier(env->domfronts, block);
+		ir_node **domfront = ir_get_dominance_frontier(block);
 		int domfront_len = ARR_LEN(domfront);
 
 		for (i = 0; i < domfront_len; ++i) {
@@ -423,14 +423,15 @@ void be_ssa_construction_init(be_ssa_construction_env_t *env, ir_graph *irg)
 	stat_ev_dbl("bessaconstr_n_blocks", n_blocks);
 
 	memset(env, 0, sizeof(env[0]));
-	be_assure_dom_front(irg);
 
 	env->irg       = irg;
-	env->domfronts = be_get_irg_dom_front(irg);
 	env->new_phis  = NEW_ARR_F(ir_node*, 0);
 	env->worklist  = new_waitq();
 	ir_nodemap_init(&env->infos, irg);
 	obstack_init(&env->obst);
+
+	assure_irg_properties(env->irg,
+	                      IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE_FRONTIERS);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED
 			| IR_RESOURCE_BLOCK_VISITED | IR_RESOURCE_IRN_LINK);

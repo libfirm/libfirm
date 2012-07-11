@@ -243,6 +243,20 @@ FIRM_API void free_dom(ir_graph *irg);
  */
 FIRM_API void free_postdom(ir_graph *irg);
 
+/**
+ * Compute the dominance frontiers for a given graph.
+ * The information is freed automatically when dominance info is freed.
+ */
+FIRM_API void ir_compute_dominance_frontiers(ir_graph *irg);
+
+/**
+ * Get the dominance frontier of a block.
+ * @param block   The block whose dominance frontier you want.
+ * @return        A list containing all blocks in the dominance frontier of
+ *                @p block (as array, use ARR_LEN() to determine the size)
+ */
+FIRM_API ir_node **ir_get_dominance_frontier(const ir_node *block);
+
 /** @} */
 
 #include "end.h"

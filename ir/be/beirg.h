@@ -31,9 +31,6 @@
 #include "be_t.h"
 #include "irtypes.h"
 
-void be_assure_dom_front(ir_graph *irg);
-void be_invalidate_dom_front(ir_graph *irg);
-
 void be_assure_live_sets(ir_graph *irg);
 void be_assure_live_chk(ir_graph *irg);
 /**
@@ -48,7 +45,7 @@ void be_invalidate_live_sets(ir_graph *irg);
 void be_invalidate_live_chk(ir_graph *irg);
 
 /**
- * frees all memory allocated by birg structures (liveness, dom_front, ...).
+ * frees all memory allocated by birg structures (liveness, ...).
  * The memory of the birg structure itself is not freed.
  */
 void be_free_birg(ir_graph *irg);
@@ -87,7 +84,6 @@ typedef struct be_irg_t {
 	be_main_env_t         *main_env;
 	be_abi_irg_t          *abi;
 	ir_exec_freq          *exec_freq;
-	be_dom_front_info_t   *dom_front;
 	be_lv_t               *lv;
 	be_stack_layout_t      stack_layout;
 	unsigned              *allocatable_regs; /**< registers available for the
@@ -119,11 +115,6 @@ static inline be_lv_t *be_get_irg_liveness(const ir_graph *irg)
 static inline ir_exec_freq *be_get_irg_exec_freq(const ir_graph *irg)
 {
 	return be_birg_from_irg(irg)->exec_freq;
-}
-
-static inline be_dom_front_info_t *be_get_irg_dom_front(const ir_graph *irg)
-{
-	return be_birg_from_irg(irg)->dom_front;
 }
 
 static inline be_abi_irg_t *be_get_irg_abi(const ir_graph *irg)

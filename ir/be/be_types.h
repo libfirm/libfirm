@@ -64,8 +64,6 @@ typedef struct be_abi_call_t            be_abi_call_t;
 typedef struct be_abi_irg_t             be_abi_irg_t;
 typedef struct be_stack_layout_t        be_stack_layout_t;
 
-typedef struct be_dom_front_info_t      be_dom_front_info_t;
-
 typedef struct backend_info_t           backend_info_t;
 typedef struct sched_info_t             sched_info_t;
 typedef struct reg_out_info_t           reg_out_info_t;

@@ -459,38 +459,40 @@ FIRM_API int irg_is_constrained(const ir_graph *irg,
  * state when they did not affect some properties and want to keep them.
  */
 typedef enum ir_graph_properties_t {
-	IR_GRAPH_PROPERTIES_NONE                    = 0,
+	IR_GRAPH_PROPERTIES_NONE                         = 0,
 	/** graph contains no critical edges */
-	IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES         = 1U << 0,
+	IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES              = 1U << 0,
 	/** graph contains no Bad nodes */
-	IR_GRAPH_PROPERTY_NO_BADS                   = 1U << 1,
+	IR_GRAPH_PROPERTY_NO_BADS                        = 1U << 1,
 	/** No tuple nodes exist in the graph */
-	IR_GRAPH_PROPERTY_NO_TUPLES                 = 1U << 2,
+	IR_GRAPH_PROPERTY_NO_TUPLES                      = 1U << 2,
 	/**
 	 * there exists no (obviously) unreachable code in the graph.
 	 * Unreachable in this context is code that you can't reach by following
 	 * execution flow from the start block.
 	 */
-	IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE       = 1U << 3,
+	IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE            = 1U << 3,
 	/** graph contains at most one return */
-	IR_GRAPH_PROPERTY_ONE_RETURN                = 1U << 4,
+	IR_GRAPH_PROPERTY_ONE_RETURN                     = 1U << 4,
 	/** dominance information about the graph is valid */
-	IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE      = 1U << 5,
+	IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE           = 1U << 5,
 	/** postdominance information about the graph is valid */
-	IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE  = 1U << 6,
+	IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE       = 1U << 6,
+	/** dominance frontiers information is calculated */
+	IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE_FRONTIERS = 1U << 7,
 	/**
 	 * out edges (=iredges) are enable and there is no dead code that can be
 	 * reached by following them
 	 */
-	IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES      = 1U << 7,
+	IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES           = 1U << 8,
 	/** outs (irouts) are computed and up to date */
-	IR_GRAPH_PROPERTY_CONSISTENT_OUTS           = 1U << 8,
+	IR_GRAPH_PROPERTY_CONSISTENT_OUTS                = 1U << 9,
 	/** loopinfo is computed and up to date */
-	IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO       = 1U << 9,
+	IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO            = 1U << 10,
 	/** entity usage information is computed and up to date */
-	IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE   = 1U << 10,
+	IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE        = 1U << 11,
 	/** graph contains as many returns as possible */
-	IR_GRAPH_PROPERTY_MANY_RETURNS              = 1U << 11,
+	IR_GRAPH_PROPERTY_MANY_RETURNS                   = 1U << 12,
 
 	/**
 	 * List of all graph properties that are only affected byt control flow
@@ -502,7 +504,8 @@ typedef enum ir_graph_properties_t {
 		| IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
 		| IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO
 		| IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
-		| IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE,
+		| IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE
+		| IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE_FRONTIERS,
 
 	/**
 	 * List of all graph properties.

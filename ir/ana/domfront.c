@@ -34,16 +34,6 @@
 #include "iredges_t.h"
 #include "irnodeset.h"
 
-#include "bedomfront.h"
-
-/**
- * The dominance frontier for a graph.
- */
-struct be_dom_front_info_t {
-	pmap *df_map;         /**< A map, mapping every block to a list of its dominance frontier blocks. */
-	struct obstack obst;  /**< An obstack holding all the frontier data. */
-};
-
 /**
  * A wrapper for get_Block_idom.
  * This function returns the block itself, if the block is the start
@@ -65,7 +55,7 @@ static inline ir_node *get_idom(ir_node *bl)
  *
  * @return the list of all blocks in the dominance frontier of blk
  */
-static ir_node **compute_df(ir_node *blk, be_dom_front_info_t *info)
+static ir_node **compute_df(ir_node *blk, ir_dom_front_info_t *info)
 {
 	ir_node *c;
 	const ir_edge_t *edge;
@@ -108,29 +98,36 @@ static ir_node **compute_df(ir_node *blk, be_dom_front_info_t *info)
 	return df;
 }
 
-be_dom_front_info_t *be_compute_dominance_frontiers(ir_graph *irg)
+void ir_compute_dominance_frontiers(ir_graph *irg)
 {
-	be_dom_front_info_t *info = XMALLOC(be_dom_front_info_t);
+	ir_dom_front_info_t *info = &irg->domfront;
 
 	assure_edges(irg);
 	obstack_init(&info->obst);
 	info->df_map = pmap_create();
 	assure_doms(irg);
-	(void)compute_df(get_irg_start_block(irg), info);
+	compute_df(get_irg_start_block(irg), info);
 
-	return info;
+	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE_FRONTIERS);
 }
 
-void be_free_dominance_frontiers(be_dom_front_info_t *info)
+void ir_free_dominance_frontiers(ir_graph *irg)
 {
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE_FRONTIERS);
+
+	ir_dom_front_info_t *info = &irg->domfront;
+	if (info->df_map == NULL)
+		return;
+
 	obstack_free(&info->obst, NULL);
 	pmap_destroy(info->df_map);
-	free(info);
+	info->df_map = NULL;
 }
 
 /* Get the dominance frontier of a block. */
-ir_node **be_get_dominance_frontier(const be_dom_front_info_t *info,
-                                    ir_node *block)
+ir_node **ir_get_dominance_frontier(const ir_node *block)
 {
+	ir_graph            *irg  = get_irn_irg(block);
+	ir_dom_front_info_t *info = &irg->domfront;
 	return (ir_node**)pmap_get(info->df_map, block);
 }
