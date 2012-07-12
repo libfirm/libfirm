@@ -104,7 +104,7 @@ static const be_use_t *get_or_set_use_block(be_uses_t *env,
 
 	temp.block = block;
 	temp.node = def;
-	result = (be_use_t*)set_find(env->uses, &temp, sizeof(temp), hash);
+	result = set_find(be_use_t, env->uses, &temp, sizeof(temp), hash);
 
 	if (result == NULL) {
 		// insert templ first as we might end in a loop in the get_next_use
@@ -112,7 +112,7 @@ static const be_use_t *get_or_set_use_block(be_uses_t *env,
 		temp.next_use = USES_INFINITY;
 		temp.outermost_loop = UNKNOWN_OUTERMOST_LOOP;
 		temp.visited = 0;
-		result = (be_use_t*)set_insert(env->uses, &temp, sizeof(temp), hash);
+		result = set_insert(be_use_t, env->uses, &temp, sizeof(temp), hash);
 	}
 
 	if (result->outermost_loop == UNKNOWN_OUTERMOST_LOOP && result->visited < env->visited_counter) {

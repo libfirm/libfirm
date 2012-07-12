@@ -447,13 +447,13 @@ void pset_insert_pset_ptr(pset *target, pset *src)
 
 void *(set_find) (set *se, const void *key, size_t size, unsigned hash)
 {
-	return set_find (se, key, size, hash);
+	return set_find(void, se, key, size, hash);
 }
 
 
 void *(set_insert) (set *se, const void *key, size_t size, unsigned hash)
 {
-	return set_insert (se, key, size, hash);
+	return set_insert(void, se, key, size, hash);
 }
 
 

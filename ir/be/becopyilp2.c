@@ -312,7 +312,7 @@ static inline edge_t *add_edge(set *edges, ir_node *n1, ir_node *n2, size_t *cou
 		new_edge.n2 = n1;
 	}
 	(*counter)++;
-	return (edge_t*)set_insert(edges, &new_edge, sizeof(new_edge), HASH_EDGE(&new_edge));
+	return set_insert(edge_t, edges, &new_edge, sizeof(new_edge), HASH_EDGE(&new_edge));
 }
 
 static inline edge_t *find_edge(set *edges, ir_node *n1, ir_node *n2)
@@ -326,7 +326,7 @@ static inline edge_t *find_edge(set *edges, ir_node *n1, ir_node *n2)
 		new_edge.n1 = n2;
 		new_edge.n2 = n1;
 	}
-	return (edge_t*)set_find(edges, &new_edge, sizeof(new_edge), HASH_EDGE(&new_edge));
+	return set_find(edge_t, edges, &new_edge, sizeof(new_edge), HASH_EDGE(&new_edge));
 }
 
 static inline void remove_edge(set *edges, ir_node *n1, ir_node *n2, size_t *counter)
@@ -340,7 +340,7 @@ static inline void remove_edge(set *edges, ir_node *n1, ir_node *n2, size_t *cou
 		new_edge.n1 = n2;
 		new_edge.n2 = n1;
 	}
-	e = (edge_t*)set_find(edges, &new_edge, sizeof(new_edge), HASH_EDGE(&new_edge));
+	e = set_find(edge_t, edges, &new_edge, sizeof(new_edge), HASH_EDGE(&new_edge));
 	if (e) {
 		e->n1 = NULL;
 		e->n2 = NULL;

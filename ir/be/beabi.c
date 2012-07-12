@@ -185,7 +185,7 @@ static be_abi_call_arg_t *get_call_arg(be_abi_call_t *call, int is_res, int pos,
 
 	hash = is_res * 128 + pos;
 
-	return (be_abi_call_arg_t*)set_find(call->params, &arg, sizeof(arg), hash);
+	return set_find(be_abi_call_arg_t, call->params, &arg, sizeof(arg), hash);
 }
 
 /**
@@ -196,11 +196,11 @@ static void remember_call_arg(be_abi_call_arg_t *arg, be_abi_call_t *call, be_ab
 	unsigned hash = arg->is_res * 128 + arg->pos;
 	if (context & ABI_CONTEXT_CALLEE) {
 		arg->callee = 1;
-		set_insert(call->params, arg, sizeof(*arg), hash);
+		set_insert(be_abi_call_arg_t, call->params, arg, sizeof(*arg), hash);
 	}
 	if (context & ABI_CONTEXT_CALLER) {
 		arg->callee = 0;
-		set_insert(call->params, arg, sizeof(*arg), hash);
+		set_insert(be_abi_call_arg_t, call->params, arg, sizeof(*arg), hash);
 	}
 }
 

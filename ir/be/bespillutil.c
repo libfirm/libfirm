@@ -135,7 +135,7 @@ static spill_info_t *get_spillinfo(const spill_env_t *env, ir_node *value)
 	int hash = hash_irn(value);
 
 	info.to_spill = value;
-	res = (spill_info_t*)set_find(env->spills, &info, sizeof(info), hash);
+	res = set_find(spill_info_t, env->spills, &info, sizeof(info), hash);
 
 	if (res == NULL) {
 		info.reloaders   = NULL;
@@ -143,7 +143,7 @@ static spill_info_t *get_spillinfo(const spill_env_t *env, ir_node *value)
 		info.spill_costs = -1;
 		info.reload_cls  = NULL;
 		info.spilled_phi = false;
-		res = (spill_info_t*)set_insert(env->spills, &info, sizeof(info), hash);
+		res = set_insert(spill_info_t, env->spills, &info, sizeof(info), hash);
 	}
 
 	return res;

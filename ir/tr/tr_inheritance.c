@@ -181,11 +181,11 @@ static tr_inh_trans_tp *get_firm_kind_entry(const firm_kind *k)
 
 	if (!tr_inh_trans_set) tr_inh_trans_set = new_set(tr_inh_trans_cmp, 128);
 
-	found = (tr_inh_trans_tp*)set_find(tr_inh_trans_set, &a, sizeof(a), tr_inh_trans_hash(&a));
+	found = set_find(tr_inh_trans_tp, tr_inh_trans_set, &a, sizeof(a), tr_inh_trans_hash(&a));
 	if (!found) {
 		a.directions[d_up]   = pset_new_ptr(16);
 		a.directions[d_down] = pset_new_ptr(16);
-		found = (tr_inh_trans_tp*)set_insert(tr_inh_trans_set, &a, sizeof(a), tr_inh_trans_hash(&a));
+		found = set_insert(tr_inh_trans_tp, tr_inh_trans_set, &a, sizeof(a), tr_inh_trans_hash(&a));
 	}
 	return found;
 }

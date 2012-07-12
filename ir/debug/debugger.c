@@ -243,7 +243,7 @@ static void dbg_new_node(void *ctx, ir_graph *irg, ir_node *node)
 	key.nr        = get_irn_node_nr(node);
 	key.bp.reason = BP_ON_NEW_THING;
 
-	elem = (bp_nr_t*)set_find(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
+	elem = set_find(bp_nr_t, bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
 	if (elem && elem->bp.active) {
 		dbg_printf("Firm BP %u reached, %+F created\n", elem->bp.bpnr, node);
 		firm_debug_break();
@@ -265,7 +265,7 @@ static void dbg_replace(void *ctx, ir_node *old, ir_node *nw)
 	key.nr        = get_irn_node_nr(old);
 	key.bp.reason = BP_ON_REPLACE;
 
-	elem = (bp_nr_t*)set_find(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
+	elem = set_find(bp_nr_t, bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
 	if (elem && elem->bp.active) {
 		dbg_printf("Firm BP %u reached, %+F will be replaced by %+F\n", elem->bp.bpnr, old, nw);
 		firm_debug_break();
@@ -286,7 +286,7 @@ static void dbg_lower(void *ctx, ir_node *node)
 	key.nr        = get_irn_node_nr(node);
 	key.bp.reason = BP_ON_LOWER;
 
-	elem = (bp_nr_t*)set_find(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
+	elem = set_find(bp_nr_t, bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
 	if (elem && elem->bp.active) {
 		dbg_printf("Firm BP %u reached, %+F will be lowered\n", elem->bp.bpnr, node);
 		firm_debug_break();
@@ -307,7 +307,7 @@ static void dbg_free_graph(void *ctx, ir_graph *irg)
 		key.nr        = get_irg_graph_nr(irg);
 		key.bp.reason = BP_ON_REMIRG;
 
-		elem = (bp_nr_t*)set_find(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
+		elem = set_find(bp_nr_t, bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
 		if (elem && elem->bp.active) {
 			ir_printf("Firm BP %u reached, %+F will be deleted\n", elem->bp.bpnr, irg);
 			firm_debug_break();
@@ -323,7 +323,7 @@ static void dbg_free_graph(void *ctx, ir_graph *irg)
 		key.id        = get_entity_ident(ent);
 		key.bp.reason = BP_ON_REMIRG;
 
-		elem = (bp_ident_t*)set_find(bp_idents, &key, sizeof(key), HASH_IDENT_BP(key));
+		elem = set_find(bp_ident_t, bp_idents, &key, sizeof(key), HASH_IDENT_BP(key));
 		if (elem && elem->bp.active) {
 			dbg_printf("Firm BP %u reached, %+F will be deleted\n", elem->bp.bpnr, ent);
 			firm_debug_break();
@@ -346,7 +346,7 @@ static void dbg_new_entity(void *ctx, ir_entity *ent)
 		key.id        = get_entity_ident(ent);
 		key.bp.reason = BP_ON_NEW_ENT;
 
-		elem = (bp_ident_t*)set_find(bp_idents, &key, sizeof(key), HASH_IDENT_BP(key));
+		elem = set_find(bp_ident_t, bp_idents, &key, sizeof(key), HASH_IDENT_BP(key));
 		if (elem && elem->bp.active) {
 			ir_printf("Firm BP %u reached, %+F was created\n", elem->bp.bpnr, ent);
 			firm_debug_break();
@@ -358,7 +358,7 @@ static void dbg_new_entity(void *ctx, ir_entity *ent)
 		key.nr        = get_entity_nr(ent);
 		key.bp.reason = BP_ON_NEW_THING;
 
-		elem = (bp_nr_t*)set_find(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
+		elem = set_find(bp_nr_t, bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
 		if (elem && elem->bp.active) {
 			dbg_printf("Firm BP %u reached, %+F was created\n", elem->bp.bpnr, ent);
 			firm_debug_break();
@@ -381,7 +381,7 @@ static void dbg_new_type(void *ctx, ir_type *tp)
 		key.nr        = get_type_nr(tp);
 		key.bp.reason = BP_ON_NEW_THING;
 
-		elem = (bp_nr_t*)set_find(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
+		elem = set_find(bp_nr_t, bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
 		if (elem && elem->bp.active) {
 			ir_printf("Firm BP %u reached, %+F was created\n", elem->bp.bpnr, tp);
 			firm_debug_break();
@@ -497,7 +497,7 @@ static void break_on_nr(long nr, bp_reasons_t reason)
 	key.bp.reason = reason;
 	key.nr        = nr;
 
-	elem = (bp_nr_t*)set_insert(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
+	elem = set_insert(bp_nr_t, bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
 
 	if (elem->bp.bpnr == 0) {
 		/* new break point */
@@ -524,7 +524,7 @@ static void break_on_ident(const char *name, bp_reasons_t reason)
 	key.bp.reason = reason;
 	key.id        = new_id_from_str(name);
 
-	elem = (bp_ident_t*)set_insert(bp_idents, &key, sizeof(key), HASH_IDENT_BP(key));
+	elem = set_insert(bp_ident_t, bp_idents, &key, sizeof(key), HASH_IDENT_BP(key));
 
 	if (elem->bp.bpnr == 0) {
 		/* new break point */

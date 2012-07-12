@@ -68,7 +68,7 @@ static dfs_edge_t *get_edge(const dfs_t *self, const void *src, const void *tgt)
 	templ.tgt = tgt;
 	templ.kind = (dfs_edge_kind_t) -1;
 
-	return (dfs_edge_t*) set_insert(self->edges, &templ, sizeof(templ), hash);
+	return set_insert(dfs_edge_t, self->edges, &templ, sizeof(templ), hash);
 }
 
 static void dfs_perform(dfs_t *dfs, void *n, void *anc, int level)

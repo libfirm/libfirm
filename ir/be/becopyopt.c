@@ -787,7 +787,7 @@ static void add_edge(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs)
 	new_node.irn        = n1;
 	new_node.degree     = 0;
 	new_node.neighbours = NULL;
-	node = (affinity_node_t*)set_insert(co->nodes, &new_node, sizeof(new_node), hash_irn(new_node.irn));
+	node = set_insert(affinity_node_t, co->nodes, &new_node, sizeof(new_node), hash_irn(new_node.irn));
 
 	for (nbr = node->neighbours; nbr; nbr = nbr->next)
 		if (nbr->irn == n2) {
@@ -878,7 +878,7 @@ int co_gs_is_optimizable(copy_opt_t *co, ir_node *irn)
 	ASSERT_GS_AVAIL(co);
 
 	new_node.irn = irn;
-	n = (affinity_node_t*)set_find(co->nodes, &new_node, sizeof(new_node), hash_irn(new_node.irn));
+	n = set_find(affinity_node_t, co->nodes, &new_node, sizeof(new_node), hash_irn(new_node.irn));
 	if (n) {
 		return (n->degree > 0);
 	} else

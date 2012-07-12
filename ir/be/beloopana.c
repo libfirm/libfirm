@@ -141,7 +141,7 @@ static unsigned be_compute_loop_pressure(be_loopana_t *loop_ana, ir_loop *loop,
 	key.loop            = loop;
 	key.cls             = cls;
 	key.max_pressure    = 0;
-	entry               = (be_loop_info_t*)set_insert(loop_ana->data, &key, sizeof(key), HASH_LOOP_INFO(&key));
+	entry               = set_insert(be_loop_info_t, loop_ana->data, &key, sizeof(key), HASH_LOOP_INFO(&key));
 	entry->max_pressure = MAX(entry->max_pressure, pressure);
 
 	return pressure;
@@ -218,7 +218,7 @@ unsigned be_get_loop_pressure(be_loopana_t *loop_ana, const arch_register_class_
 
 	key.loop = loop;
 	key.cls  = cls;
-	entry    = (be_loop_info_t*)set_find(loop_ana->data, &key, sizeof(key), HASH_LOOP_INFO(&key));
+	entry    = set_find(be_loop_info_t, loop_ana->data, &key, sizeof(key), HASH_LOOP_INFO(&key));
 
 	if (entry)
 		pressure = entry->max_pressure;

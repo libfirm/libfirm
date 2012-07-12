@@ -130,7 +130,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 
 			hash = hash_irn(arg);
 			templ.arg  = arg;
-			pp         = (perm_proj_t*)set_find(arg_set, &templ, sizeof(templ), hash);
+			pp         = set_find(perm_proj_t, arg_set, &templ, sizeof(templ), hash);
 
 			/*
 			 * If a proj_perm_t entry has not been made in the argument set,
@@ -141,7 +141,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 			 */
 			if (!pp && !be_is_live_in(lv, bl, arg)) {
 				templ.pos = n_projs++;
-				set_insert(arg_set, &templ, sizeof(templ), hash);
+				set_insert(perm_proj_t, arg_set, &templ, sizeof(templ), hash);
 			}
 		}
 
@@ -188,7 +188,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 				perm_proj_t templ;
 
 				templ.arg = get_irn_n(phi, i);
-				pp        = (perm_proj_t*)set_find(arg_set, &templ, sizeof(templ), hash_irn(templ.arg));
+				pp        = set_find(perm_proj_t, arg_set, &templ, sizeof(templ), hash_irn(templ.arg));
 
 				/* If not found, it was an interfering argument */
 				if (pp) {

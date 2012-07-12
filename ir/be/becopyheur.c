@@ -126,7 +126,7 @@ static inline void qnode_add_conflict(const qnode_t *qn, const ir_node *n1, cons
 		c.n1 = n2;
 		c.n2 = n1;
 	}
-	set_insert(qn->conflicts, &c, sizeof(c), HASH_CONFLICT(c));
+	set_insert(conflict_t, qn->conflicts, &c, sizeof(c), HASH_CONFLICT(c));
 }
 
 /**
@@ -146,7 +146,7 @@ static inline int qnode_are_conflicting(const qnode_t *qn, const ir_node *n1, co
 		c.n1 = n2;
 		c.n2 = n1;
 	}
-	return set_find(qn->conflicts, &c, sizeof(c), HASH_CONFLICT(c)) != 0;
+	return set_find(conflict_t, qn->conflicts, &c, sizeof(c), HASH_CONFLICT(c)) != 0;
 }
 
 static int set_cmp_node_stat_t(const void *x, const void *y, size_t size)
@@ -162,7 +162,7 @@ static inline const node_stat_t *qnode_find_node(const qnode_t *qn, ir_node *irn
 {
 	node_stat_t find;
 	find.irn = irn;
-	return (const node_stat_t*)set_find(qn->changed_nodes, &find, sizeof(find), hash_irn(irn));
+	return set_find(node_stat_t, qn->changed_nodes, &find, sizeof(find), hash_irn(irn));
 }
 
 /**
@@ -175,7 +175,7 @@ static inline node_stat_t *qnode_find_or_insert_node(const qnode_t *qn, ir_node 
 	find.irn = irn;
 	find.new_color = NO_COLOR;
 	find.pinned_local = 0;
-	return (node_stat_t*)set_insert(qn->changed_nodes, &find, sizeof(find), hash_irn(irn));
+	return set_insert(node_stat_t, qn->changed_nodes, &find, sizeof(find), hash_irn(irn));
 }
 
 /**

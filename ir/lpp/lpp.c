@@ -140,8 +140,7 @@ static int name2nr(set *where, const char *name)
 {
 	lpp_name_t find, *found;
 	find.name = name;
-	found
-		= (lpp_name_t*)set_find(where, &find, sizeof(find), HASH_NAME_T(&find));
+	found = set_find(lpp_name_t, where, &find, sizeof(find), HASH_NAME_T(&find));
 	return (found ? found->nr : -1);
 }
 
@@ -177,7 +176,7 @@ int lpp_add_cst(lpp_t *lpp, const char *cst_name, lpp_cst_t cst_type, double rhs
 		n.name = get_next_name(lpp);
 
 	n.nr  = -1;
-	inner = (lpp_name_t*)set_insert(lpp->cst2nr, &n, sizeof(n), HASH_NAME_T(&n));
+	inner = set_insert(lpp_name_t, lpp->cst2nr, &n, sizeof(n), HASH_NAME_T(&n));
 	assert(inner);
 
 	if (inner->nr == -1) {
@@ -207,7 +206,7 @@ int lpp_add_cst_uniq(lpp_t *lpp, const char *cst_name, lpp_cst_t cst_type, doubl
 
 		n.name = cst_name;
 		n.nr   = -1;
-		assert(!set_find(lpp->cst2nr, &n, sizeof(n), HASH_NAME_T(&n)) &&
+		assert(!set_find(lpp_name_t, lpp->cst2nr, &n, sizeof(n), HASH_NAME_T(&n)) &&
 		    "constraint already exists");
 	}
 	return lpp_add_cst(lpp, cst_name, cst_type, rhs);
@@ -252,7 +251,7 @@ int lpp_add_var(lpp_t *lpp, const char *var_name, lpp_var_t var_type, double obj
 		n.name = get_next_name(lpp);
 
 	n.nr  = -1;
-	inner = (lpp_name_t*)set_insert(lpp->var2nr, &n, sizeof(n), HASH_NAME_T(&n));
+	inner = set_insert(lpp_name_t, lpp->var2nr, &n, sizeof(n), HASH_NAME_T(&n));
 	assert(inner);
 
 	if (inner->nr == -1) {
@@ -538,7 +537,7 @@ lpp_t *lpp_deserialize(lpp_comm_t *comm)
 			name.name = buf;
 		}
 
-		res = (lpp_name_t*)set_insert(lpp->cst2nr, &name, sizeof(name), HASH_NAME_T(&name));
+		res = set_insert(lpp_name_t, lpp->cst2nr, &name, sizeof(name), HASH_NAME_T(&name));
 		lpp->csts[name.nr] = res;
 	}
 
@@ -557,7 +556,7 @@ lpp_t *lpp_deserialize(lpp_comm_t *comm)
 			name.name = buf;
 		}
 
-		res = (lpp_name_t*)set_insert(lpp->var2nr, &name, sizeof(name), HASH_NAME_T(&name));
+		res = set_insert(lpp_name_t, lpp->var2nr, &name, sizeof(name), HASH_NAME_T(&name));
 		lpp->vars[name.nr] = res;
 	}
 

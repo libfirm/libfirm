@@ -346,7 +346,7 @@ static spill_t *find_spill(be_verify_spillslots_env_t *env, ir_node *node)
 	spill_t spill;
 
 	spill.spill = node;
-	return (spill_t*)set_find(env->spills, &spill, sizeof(spill), hash_ptr(node));
+	return set_find(spill_t, env->spills, &spill, sizeof(spill), hash_ptr(node));
 }
 
 static spill_t *get_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_entity *ent)
@@ -355,11 +355,11 @@ static spill_t *get_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_ent
 	int hash = hash_ptr(node);
 
 	spill.spill = node;
-	res = (spill_t*)set_find(env->spills, &spill, sizeof(spill), hash);
+	res = set_find(spill_t, env->spills, &spill, sizeof(spill), hash);
 
 	if (res == NULL) {
 		spill.ent = ent;
-		res = (spill_t*)set_insert(env->spills, &spill, sizeof(spill), hash);
+		res = set_insert(spill_t, env->spills, &spill, sizeof(spill), hash);
 	}
 
 	return res;
@@ -428,13 +428,13 @@ static void collect_memperm(be_verify_spillslots_env_t *env, ir_node *node, ir_n
 	}
 
 	spill.spill = node;
-	res = (spill_t*)set_find(env->spills, &spill, sizeof(spill), hash);
+	res = set_find(spill_t, env->spills, &spill, sizeof(spill), hash);
 	if (res != NULL) {
 		return;
 	}
 
 	spill.ent = spillent;
-	res = (spill_t*)set_insert(env->spills, &spill, sizeof(spill), hash);
+	res = set_insert(spill_t, env->spills, &spill, sizeof(spill), hash);
 
 	for (i = 0, arity = be_get_MemPerm_entity_arity(memperm); i < arity; ++i) {
 		ir_node* arg = get_irn_n(memperm, i + 1);
@@ -453,13 +453,13 @@ static void collect_memphi(be_verify_spillslots_env_t *env, ir_node *node, ir_no
 	assert(is_Phi(node));
 
 	spill.spill = node;
-	res = (spill_t*)set_find(env->spills, &spill, sizeof(spill), hash);
+	res = set_find(spill_t, env->spills, &spill, sizeof(spill), hash);
 	if (res != NULL) {
 		return;
 	}
 
 	spill.ent = ent;
-	res = (spill_t*)set_insert(env->spills, &spill, sizeof(spill), hash);
+	res = set_insert(spill_t, env->spills, &spill, sizeof(spill), hash);
 
 	/* is 1 of the arguments a spill? */
 	for (i = 0, arity = get_irn_arity(node); i < arity; ++i) {

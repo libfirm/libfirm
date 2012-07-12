@@ -146,7 +146,7 @@ static inline affinity_node_t *get_affinity_info(const copy_opt_t *co, const ir_
 	ASSERT_GS_AVAIL(co);
 
 	find.irn = irn;
-	return (affinity_node_t*)set_find(co->nodes, &find, sizeof(find), hash_irn(irn));
+	return set_find(affinity_node_t, co->nodes, &find, sizeof(find), hash_irn(irn));
 }
 
 #define co_gs_foreach_aff_node(co, aff_node)     foreach_set((co)->nodes, affinity_node_t, (aff_node))

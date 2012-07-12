@@ -460,12 +460,12 @@ static memperm_t *get_memperm(be_fec_env_t *env, ir_node *block)
 	entry.block = block;
 	hash        = hash_irn(block);
 
-	res = (memperm_t*)set_find(env->memperms, &entry, sizeof(entry), hash);
+	res = set_find(memperm_t, env->memperms, &entry, sizeof(entry), hash);
 
 	if (res == NULL) {
 		entry.entrycount = 0;
 		entry.entries = NULL;
-		res = (memperm_t*)set_insert(env->memperms, &entry, sizeof(entry), hash);
+		res = set_insert(memperm_t, env->memperms, &entry, sizeof(entry), hash);
 	}
 
 	return res;

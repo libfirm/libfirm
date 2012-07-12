@@ -261,7 +261,7 @@ static void emit_arm_SymConst(const ir_node *irn)
 	key.u.entity  = attr->entity;
 	key.is_entity = true;
 	key.label     = 0;
-	entry = (sym_or_tv_t *)set_insert(sym_or_tv, &key, sizeof(key), hash_ptr(key.u.generic));
+	entry = set_insert(sym_or_tv_t, sym_or_tv, &key, sizeof(key), hash_ptr(key.u.generic));
 	if (entry->label == 0) {
 		/* allocate a label */
 		entry->label = get_unique_label();
@@ -299,7 +299,7 @@ static void emit_arm_fConst(const ir_node *irn)
 	key.u.tv      = get_fConst_value(irn);
 	key.is_entity = false;
 	key.label     = 0;
-	entry = (sym_or_tv_t *)set_insert(sym_or_tv, &key, sizeof(key), hash_ptr(key.u.generic));
+	entry = set_insert(sym_or_tv_t, sym_or_tv, &key, sizeof(key), hash_ptr(key.u.generic));
 	if (entry->label == 0) {
 		/* allocate a label */
 		entry->label = get_unique_label();

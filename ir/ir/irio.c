@@ -199,7 +199,7 @@ static void symtbl_init(void)
 	key.str = (s);                                               \
 	key.typetag = (tt);                                          \
 	key.code = (cod);                                            \
-	set_insert(symtbl, &key, sizeof(key), hash_str(s) + tt * 17)
+	set_insert(symbol_t, symtbl, &key, sizeof(key), hash_str(s) + tt * 17)
 
 #define INSERTENUM(tt, e) INSERT(tt, #e, e)
 #define INSERTKEYWORD(k) INSERT(tt_keyword, #k, kw_##k)
@@ -360,7 +360,7 @@ static unsigned symbol(const char *str, typetag_t typetag)
 	key.str = str;
 	key.typetag = typetag;
 
-	entry = (symbol_t*)set_find(symtbl, &key, sizeof(key), hash_str(str) + typetag * 17);
+	entry = set_find(symbol_t, symtbl, &key, sizeof(key), hash_str(str) + typetag * 17);
 	return entry ? entry->code : SYMERROR;
 }
 
@@ -1454,7 +1454,7 @@ static void *get_id(read_env_t *env, long id)
 	id_entry key, *entry;
 	key.id = id;
 
-	entry = (id_entry*)set_find(env->idset, &key, sizeof(key), (unsigned) id);
+	entry = set_find(id_entry, env->idset, &key, sizeof(key), (unsigned) id);
 	return entry ? entry->elem : NULL;
 }
 
@@ -1463,7 +1463,7 @@ static void set_id(read_env_t *env, long id, void *elem)
 	id_entry key;
 	key.id = id;
 	key.elem = elem;
-	set_insert(env->idset, &key, sizeof(key), (unsigned) id);
+	set_insert(id_entry, env->idset, &key, sizeof(key), (unsigned) id);
 }
 
 static ir_node *get_node_or_null(read_env_t *env, long nodenr)

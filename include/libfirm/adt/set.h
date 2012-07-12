@@ -203,10 +203,10 @@ FIRM_API void set_break(set *set);
 
 /* implementation specific */
 #define new_set(cmp, slots) ((new_set) ((cmp), (slots)))
-#define set_find(set, key, size, hash) \
-  _set_search ((set), (key), (size), (hash), _set_find)
-#define set_insert(set, key, size, hash) \
-  _set_search ((set), (key), (size), (hash), _set_insert)
+#define set_find(type, set, key, size, hash) \
+  ((type*)_set_search((set), 1 ? (key) : (type*)0 /* type check */, (size), (hash), _set_find))
+#define set_insert(type, set, key, size, hash) \
+  ((type*)_set_search((set), 1 ? (key) : (type*)0 /* type check */, (size), (hash), _set_insert))
 #define set_hinsert(set, key, size, hash) \
   ((set_entry *)_set_search ((set), (key), (size), (hash), _set_hinsert))
 #define set_hinsert0(set, key, size, hash) \

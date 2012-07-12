@@ -543,7 +543,7 @@ static listmap_entry_t *listmap_find(listmap_t *map, void *id)
 	key.id   = id;
 	key.list = NULL;
 	key.next = NULL;
-	entry = (listmap_entry_t*)set_insert(map->map, &key, sizeof(key), hash_ptr(id));
+	entry = set_insert(listmap_entry_t, map->map, &key, sizeof(key), hash_ptr(id));
 
 	if (entry->list == NULL) {
 		/* a new entry, put into the list */
@@ -1702,7 +1702,7 @@ static void *lambda_opcode(const node_t *node, environment_t *env)
 
 	key.irn = node->node;
 
-	entry = (opcode_key_t*)set_insert(env->opcode2id_map, &key, sizeof(key), opcode_hash(&key));
+	entry = set_insert(opcode_key_t, env->opcode2id_map, &key, sizeof(key), opcode_hash(&key));
 	return entry;
 }  /* lambda_opcode */
 
