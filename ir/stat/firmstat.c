@@ -961,7 +961,8 @@ static void update_node_stat_2(ir_node *node, void *env)
  */
 static unsigned get_adr_mark(graph_entry_t *graph, ir_node *node)
 {
-	address_mark_entry_t *value = (address_mark_entry_t*)set_find(graph->address_mark, &node, sizeof(*value), hash_ptr(node));
+	address_mark_entry_t const val = { node, 0 };
+	address_mark_entry_t *value = (address_mark_entry_t*)set_find(graph->address_mark, &val, sizeof(val), hash_ptr(node));
 
 	return value ? value->mark : 0;
 }  /* get_adr_mark */
@@ -971,9 +972,8 @@ static unsigned get_adr_mark(graph_entry_t *graph, ir_node *node)
  */
 static void set_adr_mark(graph_entry_t *graph, ir_node *node, unsigned val)
 {
-	address_mark_entry_t *value = (address_mark_entry_t*)set_insert(graph->address_mark, &node, sizeof(*value), hash_ptr(node));
-
-	value->mark = val;
+	address_mark_entry_t const value = { node, val };
+	set_insert(graph->address_mark, &value, sizeof(value), hash_ptr(node));
 }  /* set_adr_mark */
 
 #undef DUMP_ADR_MODE

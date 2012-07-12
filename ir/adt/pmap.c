@@ -86,7 +86,8 @@ int pmap_contains(pmap *map, const void *key)
 
 pmap_entry * pmap_find(pmap *map, const void *key)
 {
-	return (pmap_entry *)set_find(M2S(map), &key, sizeof(pmap_entry), hash_ptr(key));
+	pmap_entry const entry = { key, 0 };
+	return (pmap_entry*)set_find(M2S(map), &entry, sizeof(entry), hash_ptr(key));
 }
 
 
