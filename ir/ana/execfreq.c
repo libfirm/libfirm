@@ -66,8 +66,6 @@
 
 #define MAX_INT_FREQ 1000000
 
-#define set_foreach(s,type,i) for ((i)=(type)set_first((s)); (i); (i)=(type)set_next((s)))
-
 typedef struct freq_t {
 	const ir_node    *irn;
 	int               idx;
@@ -351,7 +349,7 @@ ir_exec_freq *compute_execfreq(ir_graph *irg, double loop_weight)
 	norm = x[s->idx] != 0.0 ? 1.0 / x[s->idx] : 1.0;
 
 	ef->max = 0.0;
-	set_foreach(freqs, freq_t*, freq) {
+	foreach_set(freqs, freq_t, freq) {
 		idx = freq->idx;
 
 		/* take abs because it sometimes can be -0 in case of endless loops */
@@ -377,7 +375,7 @@ ir_exec_freq *compute_execfreq(ir_graph *irg, double loop_weight)
 		double *fs = (double*) malloc(set_count(freqs) * sizeof(fs[0]));
 		int i, j, n = 0;
 
-		set_foreach(freqs, freq_t*, freq)
+		foreach_set(freqs, freq_t, freq)
 			fs[n++] = freq->freq;
 
 		/*
