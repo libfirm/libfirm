@@ -68,9 +68,7 @@ static ir_node **get_entity_access_array(const ir_entity *ent)
 
 static void set_entity_access_array(const ir_entity *ent, ir_node **accs)
 {
-	ir_node **old = (ir_node**)pmap_get(entity_access_map, ent);
-	if (old != accs)
-		pmap_insert(entity_access_map, ent, (void *)accs);
+	pmap_insert(entity_access_map, ent, (void *)accs);
 }
 
 /**
@@ -94,9 +92,7 @@ static ir_node **get_entity_reference_array(const ir_entity *ent)
 
 static void set_entity_reference_array(const ir_entity *ent, ir_node **refs)
 {
-	ir_node **old = (ir_node**)pmap_get(entity_reference_map, ent);
-	if (old != refs)
-		pmap_insert(entity_reference_map, ent, (void *)refs);
+	pmap_insert(entity_reference_map, ent, (void *)refs);
 }
 
 /**
@@ -120,9 +116,7 @@ static ir_node **get_type_alloc_array(const ir_type *tp)
 
 static void set_type_alloc_array(const ir_type *tp, ir_node **alls)
 {
-	ir_node **old = (ir_node**)pmap_get(type_alloc_map, tp);
-	if (old != alls)
-		pmap_insert(type_alloc_map, tp, (void *)alls);
+	pmap_insert(type_alloc_map, tp, (void *)alls);
 }
 
 /**
@@ -145,9 +139,7 @@ static ir_node **get_type_cast_array(const ir_type *tp)
 
 static void set_type_cast_array(const ir_type *tp, ir_node **alls)
 {
-	ir_node **old = (ir_node**)pmap_get(type_cast_map, tp);
-	if (old != alls)
-		pmap_insert(type_cast_map, tp, (void *)alls);
+	pmap_insert(type_cast_map, tp, (void *)alls);
 }
 
 /**
@@ -171,9 +163,7 @@ static ir_type **get_type_pointertype_array(const ir_type *tp)
 
 static void set_type_pointertype_array(const ir_type *tp, ir_type **pts)
 {
-	ir_type **old = (ir_type**)pmap_get(type_pointertype_map, tp);
-	if (old != pts)
-		pmap_insert(type_pointertype_map, tp, (void *)pts);
+	pmap_insert(type_pointertype_map, tp, (void *)pts);
 }
 
 /**
@@ -197,9 +187,7 @@ static ir_type **get_type_arraytype_array(const ir_type *tp)
 
 static void set_type_arraytype_array(const ir_type *tp, ir_type **pts)
 {
-	ir_type **old = (ir_type**)pmap_get(type_arraytype_map, tp);
-	if (old != pts)
-		pmap_insert(type_arraytype_map, tp, (void *)pts);
+	pmap_insert(type_arraytype_map, tp, (void *)pts);
 }
 
 /*------------------------------------------------------------------*/
