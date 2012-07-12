@@ -109,6 +109,8 @@ static inline void *ir_nodemap_get(const ir_nodemap *nodemap,
 	return nodemap->data[idx];
 }
 
+#define ir_nodemap_get(type, nodemap, node) ((type*)ir_nodemap_get(nodemap, node))
+
 /**
  * Get mapping for @p node (fast version). Returns NULL if nothing is mapped.
  *

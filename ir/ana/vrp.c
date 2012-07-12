@@ -51,7 +51,7 @@ typedef struct vrp_env_t {
 
 static vrp_attr *vrp_get_or_set_info(ir_vrp_info *info, const ir_node *node)
 {
-	vrp_attr *attr = (vrp_attr*)ir_nodemap_get(&info->infos, node);
+	vrp_attr *attr = ir_nodemap_get(vrp_attr, &info->infos, node);
 	if (attr == NULL) {
 		ir_mode *mode = get_irn_mode(node);
 		assert(mode_is_int(mode));
@@ -73,7 +73,7 @@ vrp_attr *vrp_get_info(const ir_node *node)
 	ir_graph *irg = get_irn_irg(node);
 	if (irg->vrp.infos.data == NULL)
 		return NULL;
-	return (vrp_attr*) ir_nodemap_get(&irg->vrp.infos, node);
+	return ir_nodemap_get(vrp_attr, &irg->vrp.infos, node);
 }
 
 static int vrp_update_node(ir_vrp_info *info, ir_node *node)

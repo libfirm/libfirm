@@ -85,7 +85,7 @@ struct lv_chk_t {
 
 static bl_info_t *get_block_info(lv_chk_t *lv, const ir_node *block)
 {
-	bl_info_t *info = (bl_info_t*)ir_nodemap_get(&lv->block_infos, block);
+	bl_info_t *info = ir_nodemap_get(bl_info_t, &lv->block_infos, block);
 	if (info == NULL) {
 		info                = OALLOC(&lv->obst, bl_info_t);
 		info->id            = get_Block_dom_tree_pre_num(block);

@@ -53,13 +53,13 @@ typedef struct {
 static irn_height_t *maybe_get_height_data(const ir_heights_t *heights,
                                            const ir_node *node)
 {
-	irn_height_t *height = (irn_height_t*)ir_nodemap_get(&heights->data, node);
+	irn_height_t *height = ir_nodemap_get(irn_height_t, &heights->data, node);
 	return height;
 }
 
 static irn_height_t *get_height_data(ir_heights_t *heights, const ir_node *node)
 {
-	irn_height_t *height = (irn_height_t*)ir_nodemap_get(&heights->data, node);
+	irn_height_t *height = ir_nodemap_get(irn_height_t, &heights->data, node);
 	if (height == NULL) {
 		height = OALLOCZ(&heights->obst, irn_height_t);
 		ir_nodemap_insert(&heights->data, node, height);

@@ -201,7 +201,7 @@ static co_mst_irn_t *co_mst_irn_init(co_mst_env_t *env, const ir_node *irn)
 
 static co_mst_irn_t *get_co_mst_irn(co_mst_env_t *env, const ir_node *node)
 {
-	co_mst_irn_t *res = (co_mst_irn_t*)ir_nodemap_get(&env->map, node);
+	co_mst_irn_t *res = ir_nodemap_get(co_mst_irn_t, &env->map, node);
 	if (res == NULL) {
 		res = co_mst_irn_init(env, node);
 		ir_nodemap_insert(&env->map, node, res);

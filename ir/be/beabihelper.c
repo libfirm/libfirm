@@ -665,7 +665,7 @@ be_stackorder_t *be_collect_stacknodes(ir_graph *irg)
 
 ir_node *be_get_stack_pred(const be_stackorder_t *env, const ir_node *node)
 {
-	return (ir_node*)ir_nodemap_get(&env->stack_order, node);
+	return ir_nodemap_get(ir_node, &env->stack_order, node);
 }
 
 void be_free_stackorder(be_stackorder_t *env)

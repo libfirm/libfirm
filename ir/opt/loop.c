@@ -494,7 +494,7 @@ static void set_unroll_copy(ir_node *n, int nr, ir_node *cp)
 	unrolling_node_info *info;
 	assert(nr != 0 && "0 reserved");
 
-	info = (unrolling_node_info*)ir_nodemap_get(&map, n);
+	info = ir_nodemap_get(unrolling_node_info, &map, n);
 	if (! info) {
 		ir_node **arr = NEW_ARR_D(ir_node*, &obst, unroll_nr);
 		memset(arr, 0, unroll_nr * sizeof(ir_node*));
@@ -513,7 +513,7 @@ static void set_unroll_copy(ir_node *n, int nr, ir_node *cp)
 static ir_node *get_unroll_copy(ir_node *n, int nr)
 {
 	ir_node             *cp;
-	unrolling_node_info *info = (unrolling_node_info *)ir_nodemap_get(&map, n);
+	unrolling_node_info *info = ir_nodemap_get(unrolling_node_info, &map, n);
 	if (! info)
 		return NULL;
 
@@ -533,7 +533,7 @@ static void set_inversion_copy(ir_node *n, ir_node *cp)
 /* Getter of copy of n for inversion */
 static ir_node *get_inversion_copy(ir_node *n)
 {
-	ir_node *cp = (ir_node *)ir_nodemap_get(&map, n);
+	ir_node *cp = ir_nodemap_get(ir_node, &map, n);
 	return cp;
 }
 
