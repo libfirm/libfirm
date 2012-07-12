@@ -1891,7 +1891,7 @@ static int check_block_cfg(const ir_node *block, check_cfg_env_t *env)
 		branch = skip_Tuple(branch);
 		if (is_Bad(branch))
 			continue;
-		former_dest = (ir_node*)pmap_get(branch_nodes, branch);
+		former_dest = pmap_get(ir_node, branch_nodes, branch);
 		ASSERT_AND_RET_DBG(former_dest==NULL || is_unknown_jump(skip_Proj(branch)),
 						   "Multiple users on mode_X node", 0,
 						   ir_printf("node %+F\n", branch);
@@ -1904,7 +1904,7 @@ static int check_block_cfg(const ir_node *block, check_cfg_env_t *env)
 		if (is_Proj(branch)) {
 			branch = skip_Proj(branch);
 		}
-		former_branch = (ir_node*)pmap_get(branch_nodes, branch_block);
+		former_branch = pmap_get(ir_node, branch_nodes, branch_block);
 
 		ASSERT_AND_RET_DBG(former_branch == NULL || former_branch == branch,
 						   "Multiple branching nodes in a block", 0,
@@ -1939,7 +1939,7 @@ static void check_cfg_walk_func(ir_node *node, void *data)
 
 static int verify_block_branch(const ir_node *block, check_cfg_env_t *env)
 {
-	ir_node *branch = (ir_node*)pmap_get(env->branch_nodes, block);
+	ir_node *branch = pmap_get(ir_node, env->branch_nodes, block);
 	ASSERT_AND_RET_DBG(branch != NULL
 	                   || ir_nodeset_contains(&env->kept_nodes, block)
 	                   || block == get_irg_end_block(get_irn_irg(block)),

@@ -1084,7 +1084,7 @@ void inline_leaf_functions(unsigned maxsize, unsigned leafsize,
 				continue;
 			}
 
-			calleee = (ir_graph*)pmap_get(copied_graphs, callee);
+			calleee = pmap_get(ir_graph, copied_graphs, callee);
 			if (calleee != NULL) {
 				/*
 				 * Remap callee if we have a copy.
@@ -1607,7 +1607,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 			continue;
 		}
 
-		calleee = (ir_graph*)pmap_get(copied_graphs, callee);
+		calleee = pmap_get(ir_graph, copied_graphs, callee);
 		if (calleee != NULL) {
 			int benefice = curr_call->benefice;
 			/*

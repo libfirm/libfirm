@@ -1739,7 +1739,7 @@ static ir_type *lower_mtp(ir_type *mtp)
 	size_t   n_res;
 	bool     must_be_lowered;
 
-	res = (ir_type*)pmap_get(lowered_type, mtp);
+	res = pmap_get(ir_type, lowered_type, mtp);
 	if (res != NULL)
 		return res;
 	if (type_visited(mtp))
@@ -2377,7 +2377,7 @@ static ir_type *lower_Builtin_type_high(ir_type *mtp)
 	size_t   n_results;
 	bool     must_be_lowered;
 
-	res = (ir_type*)pmap_get(lowered_builtin_type_high, mtp);
+	res = pmap_get(ir_type, lowered_builtin_type_high, mtp);
 	if (res != NULL)
 		return res;
 
@@ -2473,7 +2473,7 @@ static ir_type *lower_Builtin_type_low(ir_type *mtp)
 	size_t   n_results;
 	bool     must_be_lowered;
 
-	res = (ir_type*)pmap_get(lowered_builtin_type_low, mtp);
+	res = pmap_get(ir_type, lowered_builtin_type_low, mtp);
 	if (res != NULL)
 		return res;
 

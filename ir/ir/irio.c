@@ -2187,20 +2187,20 @@ static ir_node *read_Anchor(read_env_t *env)
 	return res;
 }
 
-typedef ir_node* (*read_node_func)(read_env_t *env);
+typedef ir_node* read_node_func(read_env_t *env);
 static pmap *node_readers;
 
-static void register_node_reader(ident *ident, read_node_func func)
+static void register_node_reader(ident *ident, read_node_func* func)
 {
 	pmap_insert(node_readers, ident, (void*)func);
 }
 
 static ir_node *read_node(read_env_t *env)
 {
-	ident         *id   = read_symbol(env);
-	read_node_func func = (read_node_func)pmap_get(node_readers, id);
-	long           nr   = read_long(env);
-	ir_node       *res;
+	ident          *id   = read_symbol(env);
+	read_node_func *func = pmap_get(read_node_func, node_readers, id);
+	long            nr   = read_long(env);
+	ir_node        *res;
 	if (func == NULL) {
 		parse_error(env, "Unknown nodetype '%s'", get_id_str(id));
 		skip_to(env, '\n');

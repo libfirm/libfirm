@@ -129,5 +129,5 @@ ir_node **ir_get_dominance_frontier(const ir_node *block)
 {
 	ir_graph            *irg  = get_irn_irg(block);
 	ir_dom_front_info_t *info = &irg->domfront;
-	return (ir_node**)pmap_get(info->df_map, block);
+	return pmap_get(ir_node*, info->df_map, block);
 }

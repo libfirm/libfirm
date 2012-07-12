@@ -108,7 +108,7 @@ static char                 *comp_dir;
 static unsigned insert_file(const char *filename)
 {
 	unsigned num;
-	void    *entry = pmap_get(env.file_map, filename);
+	void    *entry = pmap_get(void, env.file_map, filename);
 	if (entry != NULL) {
 		return PTR_TO_INT(entry);
 	}

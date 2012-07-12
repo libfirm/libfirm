@@ -108,7 +108,7 @@ static int be_omit_fp = 1;
 
 static ir_node *be_abi_reg_map_get(pmap *map, const arch_register_t *reg)
 {
-	return (ir_node*)pmap_get(map, reg);
+	return pmap_get(ir_node, map, reg);
 }
 
 static void be_abi_reg_map_set(pmap *map, const arch_register_t* reg,
@@ -1229,7 +1229,7 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
 	dbg_info *dbgi;
 	pmap *reg_map  = pmap_create();
-	ir_node *keep  = (ir_node*)pmap_get(env->keep_map, bl);
+	ir_node *keep  = pmap_get(ir_node, env->keep_map, bl);
 	size_t in_max;
 	ir_node *ret;
 	int i, n;
@@ -1580,7 +1580,7 @@ static void modify_irg(ir_graph *irg)
 			param_type = get_method_param_type(method_type, nr);
 
 			if (arg->in_reg) {
-				repl = (ir_node*)pmap_get(env->regs, arg->reg);
+				repl = pmap_get(ir_node, env->regs, arg->reg);
 			} else if (arg->on_stack) {
 				ir_node *addr = be_new_FrameAddr(sp->reg_class, start_bl, frame_pointer, arg->stack_ent);
 
@@ -1701,7 +1701,7 @@ static ir_entity *create_trampoline(be_main_env_t *be, ir_entity *method)
  */
 static ir_entity *get_trampoline(be_main_env_t *env, ir_entity *method)
 {
-	ir_entity *result = (ir_entity*)pmap_get(env->ent_trampoline_map, method);
+	ir_entity *result = pmap_get(ir_entity, env->ent_trampoline_map, method);
 	if (result == NULL) {
 		result = create_trampoline(env, method);
 		pmap_insert(env->ent_trampoline_map, method, result);
@@ -1726,7 +1726,7 @@ static ir_entity *create_pic_symbol(be_main_env_t *be, ir_entity *entity)
 
 static ir_entity *get_pic_symbol(be_main_env_t *env, ir_entity *entity)
 {
-	ir_entity *result = (ir_entity*)pmap_get(env->ent_pic_symbol_map, entity);
+	ir_entity *result = pmap_get(ir_entity, env->ent_pic_symbol_map, entity);
 	if (result == NULL) {
 		result = create_pic_symbol(env, entity);
 		pmap_insert(env->ent_pic_symbol_map, entity, result);

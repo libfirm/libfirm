@@ -337,7 +337,7 @@ static void x87_emms(x87_state *state)
  */
 static blk_state *x87_get_bl_state(x87_simulator *sim, ir_node *block)
 {
-	blk_state *res = (blk_state*)pmap_get(sim->blk_states, block);
+	blk_state *res = pmap_get(blk_state, sim->blk_states, block);
 
 	if (res == NULL) {
 		res = OALLOC(&sim->obst, blk_state);

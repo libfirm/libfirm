@@ -90,7 +90,7 @@ pmap_entry * pmap_find(pmap *map, const void *key)
 }
 
 
-void * pmap_get(pmap *map, const void *key)
+void * (pmap_get)(pmap *map, const void *key)
 {
 	pmap_entry * entry = pmap_find(map, key);
 	return entry == NULL ? NULL : entry->value;

@@ -128,7 +128,7 @@ void create_borders(ir_node *block, void *env_ptr)
 	/* Set up the border list in the block info */
 	head = OALLOC(env->obst, struct list_head);
 	INIT_LIST_HEAD(head);
-	assert(pmap_get(env->border_heads, block) == NULL);
+	assert(pmap_get(struct list_head, env->border_heads, block) == NULL);
 	pmap_insert(env->border_heads, block, head);
 
 	/*

@@ -1753,7 +1753,7 @@ static ir_node *get_stack_pointer_for(ir_node *node)
 	}
 
 	be_transform_node(stack_pred);
-	stack = (ir_node*)pmap_get(node_to_stack, stack_pred);
+	stack = pmap_get(ir_node, node_to_stack, stack_pred);
 	if (stack == NULL) {
 		return get_stack_pointer_for(stack_pred);
 	}

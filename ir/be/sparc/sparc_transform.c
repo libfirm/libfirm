@@ -1105,7 +1105,7 @@ static ir_entity *create_float_const_entity(ir_tarval *tv)
 {
 	const arch_env_t *arch_env = be_get_irg_arch_env(current_ir_graph);
 	sparc_isa_t      *isa      = (sparc_isa_t*) arch_env;
-	ir_entity        *entity   = (ir_entity*) pmap_get(isa->constants, tv);
+	ir_entity        *entity   = pmap_get(ir_entity, isa->constants, tv);
 	ir_initializer_t *initializer;
 	ir_mode          *mode;
 	ir_type          *type;
@@ -1642,7 +1642,7 @@ static ir_node *get_stack_pointer_for(ir_node *node)
 	}
 
 	be_transform_node(stack_pred);
-	stack = (ir_node*)pmap_get(node_to_stack, stack_pred);
+	stack = pmap_get(ir_node, node_to_stack, stack_pred);
 	if (stack == NULL) {
 		return get_stack_pointer_for(stack_pred);
 	}

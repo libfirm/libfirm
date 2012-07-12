@@ -1332,7 +1332,7 @@ void be_gas_emit_block_name(const ir_node *block)
 	if (entity != NULL) {
 		be_gas_emit_entity(entity);
 	} else {
-		void *nr_val = pmap_get(block_numbers, block);
+		void *nr_val = pmap_get(void, block_numbers, block);
 		int   nr;
 		if (nr_val == NULL) {
 			nr = next_block_nr++;

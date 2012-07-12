@@ -238,7 +238,7 @@ static void block_dims_walker(ir_node *block, void *data)
 static void layout(const draw_chordal_env_t *env, ir_node *bl, int x)
 {
 	const draw_chordal_opts_t *opts   = env->opts;
-	struct block_dims         *dims   = (struct block_dims*)pmap_get(env->block_dims, bl);
+	struct block_dims         *dims   = pmap_get(struct block_dims, env->block_dims, bl);
 	rect_t                    *rect   = &dims->subtree_box;
 	int                       h_space = 0;
 	int                       v_space = 0;
@@ -248,7 +248,7 @@ static void layout(const draw_chordal_env_t *env, ir_node *bl, int x)
 	rect->x = x;
 
 	dominates_for_each(bl, sub) {
-		struct block_dims *bl_dim = (struct block_dims*)pmap_get(env->block_dims, sub);
+		struct block_dims *bl_dim = pmap_get(struct block_dims, env->block_dims, sub);
 
 		layout(env, sub, rect->x + rect->w);
 
@@ -270,12 +270,12 @@ static void layout(const draw_chordal_env_t *env, ir_node *bl, int x)
 static void set_y(const draw_chordal_env_t *env, ir_node *bl, int up)
 {
 	const draw_chordal_opts_t *opts      = env->opts;
-	struct block_dims         *dims      = (struct block_dims*)pmap_get(env->block_dims, bl);
+	struct block_dims         *dims      = pmap_get(struct block_dims, env->block_dims, bl);
 	int                       max_height = dims->subtree_box.h - dims->box.h - opts->v_gap;
 	ir_node                   *sub;
 
 	dominates_for_each(bl, sub) {
-		struct block_dims *bl_dim = (struct block_dims*)pmap_get(env->block_dims, sub);
+		struct block_dims *bl_dim = pmap_get(struct block_dims, env->block_dims, sub);
 		int height_diff = max_height - bl_dim->subtree_box.h;
 
 		set_y(env, sub, up + height_diff);
@@ -322,7 +322,7 @@ static void draw_block(ir_node *bl, void *data)
 	struct list_head          *head    = get_block_border_head(env->chordal_env, bl);
 	ir_node                   *dom     = get_Block_idom(bl);
 	const draw_chordal_opts_t *opts    = env->opts;
-	struct block_dims         *dims    = (struct block_dims*)pmap_get(env->block_dims, bl);
+	struct block_dims         *dims    = pmap_get(struct block_dims, env->block_dims, bl);
 	char                      buf[64];
 	border_t                  *b;
 	int                       idx;
@@ -361,7 +361,7 @@ static void draw_block(ir_node *bl, void *data)
 	}
 
 	if (dom) {
-		struct block_dims *dom_dims = (struct block_dims*)pmap_get(env->block_dims, dom);
+		struct block_dims *dom_dims = pmap_get(struct block_dims, env->block_dims, dom);
 
 		be_lv_foreach(lv, bl, be_lv_state_in, idx) {
 			ir_node *irn = be_lv_get_irn(lv, bl, idx);
@@ -420,7 +420,7 @@ void draw_interval_tree(const draw_chordal_opts_t *opts,
 	irg_block_walk_graph(chordal_env->irg, block_dims_walker, NULL, &env);
 	layout(&env, start_block, opts->x_margin);
 	set_y(&env, start_block, opts->y_margin);
-	start_dims = (struct block_dims*)pmap_get(env.block_dims, start_block);
+	start_dims = pmap_get(struct block_dims, env.block_dims, start_block);
 	draw(&env, &start_dims->subtree_box);
 
 	pmap_destroy(env.block_dims);

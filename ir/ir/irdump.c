@@ -474,7 +474,7 @@ static void *ird_get_irn_link(const ir_node *n)
 		return NULL;
 
 	if (pmap_contains(irdump_link_map, n))
-		res = pmap_get(irdump_link_map, n);
+		res = pmap_get(void, irdump_link_map, n);
 	return res;
 }
 
@@ -498,7 +498,7 @@ static void *ird_get_irg_link(const ir_graph *irg)
 		return NULL;
 
 	if (pmap_contains(irdump_link_map, irg))
-		res = pmap_get(irdump_link_map, irg);
+		res = pmap_get(void, irdump_link_map, irg);
 	return res;
 }
 

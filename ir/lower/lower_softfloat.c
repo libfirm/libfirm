@@ -379,7 +379,7 @@ static ir_type *lower_method_type(ir_type *mtp)
 	size_t   n_param;
 	size_t   n_res;
 
-	res = (ir_type*)pmap_get(lowered_type, mtp);
+	res = pmap_get(ir_type, lowered_type, mtp);
 	if (res != NULL)
 		return res;
 

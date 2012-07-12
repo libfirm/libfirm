@@ -1244,7 +1244,7 @@ static pmap *mtp_map;
  */
 static ir_type *clone_type_and_cache(ir_type *tp)
 {
-	ir_type *res = (ir_type*)pmap_get(mtp_map, tp);
+	ir_type *res = pmap_get(ir_type, mtp_map, tp);
 
 	if (res == NULL) {
 		res = clone_type_method(tp);

@@ -70,7 +70,7 @@ static void call_mapper(ir_node *node, void *env)
 			return;
 
 		ent = get_SymConst_entity(symconst);
-		r   = (const i_call_record*)pmap_get(wenv->c_map, ent);
+		r   = pmap_get(i_call_record const, wenv->c_map, ent);
 
 		if (r != NULL) {
 			wenv->nr_of_intrinsics += r->i_mapper(node, r->ctx) ? 1 : 0;
