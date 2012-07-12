@@ -95,19 +95,12 @@ static int cmp_perm_proj(const void *a, const void *b, size_t n)
 	return !(p->arg == q->arg);
 }
 
-typedef struct insert_all_perms_env_t {
-	be_chordal_env_t *chordal_env;
-	pmap *perm_map;
-} insert_all_perms_env_t;
-
 /**
  * Insert Perms in all predecessors of a block containing a phi
  */
 static void insert_all_perms_walker(ir_node *bl, void *data)
 {
-	insert_all_perms_env_t *env = (insert_all_perms_env_t*)data;
-	be_chordal_env_t *chordal_env = env->chordal_env;
-	pmap *perm_map = env->perm_map;
+	be_chordal_env_t *const chordal_env = (be_chordal_env_t*)data;
 	be_lv_t *lv = be_get_irg_liveness(chordal_env->irg);
 	int i, n;
 
@@ -124,8 +117,6 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 		set *arg_set     = new_set(cmp_perm_proj, chordal_env->cls->n_regs);
 		ir_node *pred_bl = get_Block_cfgpred_block(bl, i);
 		int n_projs      = 0;
-
-		assert(!pmap_contains(perm_map, pred_bl) && "Already permed that block");
 
 		/*
 		 * Note that all phis in the list are in the same
@@ -213,9 +204,6 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 					be_liveness_update(lv, in[i]);
 			}
 			free(in);
-
-			/* register in perm map */
-			pmap_insert(perm_map, pred_bl, perm);
 		}
 
 		del_set(arg_set);
@@ -362,9 +350,7 @@ static void set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 
 void be_ssa_destruction(be_chordal_env_t *chordal_env)
 {
-	insert_all_perms_env_t insert_perms_env;
-	pmap     *perm_map = pmap_create();
-	ir_graph *irg      = chordal_env->irg;
+	ir_graph *irg = chordal_env->irg;
 
 	FIRM_DBG_REGISTER(dbg, "ir.be.ssadestr");
 
@@ -374,9 +360,7 @@ void be_ssa_destruction(be_chordal_env_t *chordal_env)
 	irg_walk_graph(irg, clear_link, collect_phis_walker, chordal_env);
 
 	DBG((dbg, LEVEL_1, "Placing perms...\n"));
-	insert_perms_env.chordal_env = chordal_env;
-	insert_perms_env.perm_map = perm_map;
-	irg_block_walk_graph(irg, insert_all_perms_walker, NULL, &insert_perms_env);
+	irg_block_walk_graph(irg, insert_all_perms_walker, NULL, chordal_env);
 
 	if (chordal_env->opts->dump_flags & BE_CH_DUMP_SSADESTR)
 		dump_ir_graph(irg, "ssa_destr_perms_placed");
@@ -391,8 +375,6 @@ void be_ssa_destruction(be_chordal_env_t *chordal_env)
 
 	if (chordal_env->opts->dump_flags & BE_CH_DUMP_SSADESTR)
 		dump_ir_graph(irg, "ssa_destr_regs_set");
-
-	pmap_destroy(perm_map);
 }
 
 static void ssa_destruction_check_walker(ir_node *bl, void *data)
