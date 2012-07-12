@@ -840,13 +840,6 @@ FIRM_API void set_irn_dbg_info(ir_node *n, dbg_info *db);
 FIRM_API dbg_info *get_irn_dbg_info(const ir_node *n);
 
 /**
- * Calculate a hash value of a node. Only inputs, mode and opcode are used.
- *
- * @param node  the node to hash
- */
-FIRM_API unsigned firm_default_hash(const ir_node *node);
-
-/**
  * Returns a descriptive name of a node (containing type+number)
  */
 FIRM_API const char *gdb_node_helper(void *firm_object);
