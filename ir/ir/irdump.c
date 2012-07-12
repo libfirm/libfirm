@@ -469,13 +469,10 @@ static void init_irdump(void)
  */
 static void *ird_get_irn_link(const ir_node *n)
 {
-	void *res = NULL;
 	if (irdump_link_map == NULL)
 		return NULL;
 
-	if (pmap_contains(irdump_link_map, n))
-		res = pmap_get(void, irdump_link_map, n);
-	return res;
+	return pmap_get(void, irdump_link_map, n);
 }
 
 /**
@@ -493,13 +490,10 @@ static void ird_set_irn_link(const ir_node *n, void *x)
  */
 static void *ird_get_irg_link(const ir_graph *irg)
 {
-	void *res = NULL;
 	if (irdump_link_map == NULL)
 		return NULL;
 
-	if (pmap_contains(irdump_link_map, irg))
-		res = pmap_get(void, irdump_link_map, irg);
-	return res;
+	return pmap_get(void, irdump_link_map, irg);
 }
 
 /**

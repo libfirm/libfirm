@@ -53,12 +53,10 @@ static pmap *type_arraytype_map = NULL;
  */
 static ir_node **get_entity_access_array(const ir_entity *ent)
 {
-	ir_node **res;
 	if (!entity_access_map) entity_access_map = pmap_create();
 
-	if (pmap_contains(entity_access_map, ent)) {
-		res = pmap_get(ir_node*, entity_access_map, ent);
-	} else {
+	ir_node **res = pmap_get(ir_node*, entity_access_map, ent);
+	if (!res) {
 		res = NEW_ARR_F(ir_node *, 0);
 		pmap_insert(entity_access_map, ent, (void *)res);
 	}
@@ -77,12 +75,10 @@ static void set_entity_access_array(const ir_entity *ent, ir_node **accs)
  */
 static ir_node **get_entity_reference_array(const ir_entity *ent)
 {
-	ir_node **res;
 	if (!entity_reference_map) entity_reference_map = pmap_create();
 
-	if (pmap_contains(entity_reference_map, ent)) {
-		res = pmap_get(ir_node*, entity_reference_map, ent);
-	} else {
+	ir_node **res = pmap_get(ir_node*, entity_reference_map, ent);
+	if (!res) {
 		res = NEW_ARR_F(ir_node *, 0);
 		pmap_insert(entity_reference_map, ent, (void *)res);
 	}
@@ -101,12 +97,10 @@ static void set_entity_reference_array(const ir_entity *ent, ir_node **refs)
  */
 static ir_node **get_type_alloc_array(const ir_type *tp)
 {
-	ir_node **res;
 	if (!type_alloc_map) type_alloc_map = pmap_create();
 
-	if (pmap_contains(type_alloc_map, tp)) {
-		res = pmap_get(ir_node*, type_alloc_map, tp);
-	} else {
+	ir_node **res = pmap_get(ir_node*, type_alloc_map, tp);
+	if (!res) {
 		res = NEW_ARR_F(ir_node *, 0);
 		pmap_insert(type_alloc_map, tp, (void *)res);
 	}
@@ -125,12 +119,10 @@ static void set_type_alloc_array(const ir_type *tp, ir_node **alls)
  */
 static ir_node **get_type_cast_array(const ir_type *tp)
 {
-	ir_node **res;
 	if (!type_cast_map) type_cast_map = pmap_create();
 
-	if (pmap_contains(type_cast_map, tp)) {
-		res = pmap_get(ir_node*, type_cast_map, tp);
-	} else {
+	ir_node **res = pmap_get(ir_node*, type_cast_map, tp);
+	if (!res) {
 		res = NEW_ARR_F(ir_node *, 0);
 		pmap_insert(type_cast_map, tp, (void *)res);
 	}
@@ -148,12 +140,10 @@ static void set_type_cast_array(const ir_type *tp, ir_node **alls)
  */
 static ir_type **get_type_pointertype_array(const ir_type *tp)
 {
-	ir_type **res;
 	if (!type_pointertype_map) type_pointertype_map = pmap_create();
 
-	if (pmap_contains(type_pointertype_map, tp)) {
-		res = pmap_get(ir_type*, type_pointertype_map, tp);
-	} else {
+	ir_type **res = pmap_get(ir_type*, type_pointertype_map, tp);
+	if (!res) {
 		res = NEW_ARR_F(ir_type *, 0);
 		pmap_insert(type_pointertype_map, tp, (void *)res);
 	}
@@ -172,12 +162,10 @@ static void set_type_pointertype_array(const ir_type *tp, ir_type **pts)
  */
 static ir_type **get_type_arraytype_array(const ir_type *tp)
 {
-	ir_type **res;
 	if (!type_arraytype_map) type_arraytype_map = pmap_create();
 
-	if (pmap_contains(type_arraytype_map, tp)) {
-		res = pmap_get(ir_type*, type_arraytype_map, tp);
-	} else {
+	ir_type **res = pmap_get(ir_type*, type_arraytype_map, tp);
+	if (!res) {
 		res = NEW_ARR_F(ir_type *, 0);
 		pmap_insert(type_arraytype_map, tp, (void *)res);
 	}
