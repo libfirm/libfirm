@@ -370,7 +370,8 @@ static bool emits_multiple_instructions(const ir_node *node)
 
 	return is_sparc_SMulh(node) || is_sparc_UMulh(node)
 		|| is_sparc_SDiv(node) || is_sparc_UDiv(node)
-		|| be_is_MemPerm(node) || be_is_Perm(node);
+		|| be_is_MemPerm(node) || be_is_Perm(node)
+		|| is_sparc_SubSP(node);
 }
 
 static bool uses_reg(const ir_node *node, const arch_register_t *reg)
@@ -500,6 +501,28 @@ static void emit_be_IncSP(const ir_node *irn)
 	be_emit_irprintf(", %d", -offset);
 	be_emit_cstring(", ");
 	sparc_emit_dest_register(irn, 0);
+	be_emit_finish_line_gas(irn);
+}
+
+/**
+ * Emits code for stack space management.
+ */
+static void emit_sparc_SubSP(const ir_node *irn)
+{
+	sparc_emit_indent();
+	be_emit_cstring("sub ");
+	sparc_emit_source_register(irn, 0);
+	be_emit_cstring(", ");
+	sparc_emit_reg_or_imm(irn, 1);
+	be_emit_cstring(", ");
+	sparc_emit_dest_register(irn, 0);
+	be_emit_finish_line_gas(irn);
+
+	sparc_emit_indent();
+	be_emit_cstring("add ");
+	sparc_emit_source_register(irn, 0);
+	be_emit_irprintf(", %u, ", SPARC_MIN_STACKSIZE);
+	sparc_emit_dest_register(irn, 1);
 	be_emit_finish_line_gas(irn);
 }
 
@@ -1230,6 +1253,7 @@ static void sparc_register_emitters(void)
 	set_emitter(op_sparc_fbfcc,     emit_sparc_fbfcc);
 	set_emitter(op_sparc_FrameAddr, emit_sparc_FrameAddr);
 	set_emitter(op_sparc_SMulh,     emit_sparc_Mulh);
+	set_emitter(op_sparc_SubSP,     emit_sparc_SubSP);
 	set_emitter(op_sparc_UMulh,     emit_sparc_Mulh);
 	set_emitter(op_sparc_Restore,   emit_sparc_Restore);
 	set_emitter(op_sparc_Return,    emit_sparc_Return);

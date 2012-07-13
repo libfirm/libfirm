@@ -2022,7 +2022,10 @@ static ir_node *gen_Alloc(ir_node *node)
 	ir_type  *type       = get_Alloc_type(node);
 	ir_node  *size       = get_Alloc_count(node);
 	ir_node  *stack_pred = get_stack_pointer_for(node);
+	ir_node  *mem        = get_Alloc_mem(node);
+	ir_node  *new_mem    = be_transform_node(mem);
 	ir_node  *subsp;
+
 	if (get_Alloc_where(node) != stack_alloc)
 		panic("only stack-alloc supported in sparc backend (at %+F)", node);
 	/* lowerer should have transformed all allocas to byte size */
@@ -2032,37 +2035,38 @@ static ir_node *gen_Alloc(ir_node *node)
 	if (is_Const(size)) {
 		ir_tarval *tv    = get_Const_tarval(size);
 		long       sizel = get_tarval_long(tv);
-		subsp = be_new_IncSP(sp_reg, new_block, stack_pred, sizel, 0);
-		set_irn_dbg_info(subsp, dbgi);
+
+		assert((sizel & (SPARC_STACK_ALIGNMENT - 1)) == 0 && "Found Alloc with misaligned constant");
+		subsp = new_bd_sparc_SubSP_imm(dbgi, new_block, stack_pred, new_mem, NULL, sizel);
 	} else {
 		ir_node *new_size = be_transform_node(size);
-		subsp = new_bd_sparc_SubSP(dbgi, new_block, stack_pred, new_size);
-		arch_set_irn_register(subsp, sp_reg);
+		subsp = new_bd_sparc_SubSP_reg(dbgi, new_block, stack_pred, new_size, new_mem);
 	}
 
-	/* if we are the last IncSP producer in a block then we have to keep
-	 * the stack value.
-	 * Note: This here keeps all producers which is more than necessary */
-	keep_alive(subsp);
+	ir_node *stack_proj = new_r_Proj(subsp, mode_gp, pn_sparc_SubSP_stack);
+	arch_set_irn_register(stack_proj, sp_reg);
+	/* If we are the last stack producer in a block, we have to keep the
+	 * stack value.  This keeps all producers, which is more than necessary. */
+	keep_alive(stack_proj);
 
-	pmap_insert(node_to_stack, node, subsp);
-	/* the "result" is the unmodified sp value */
-	return stack_pred;
+	pmap_insert(node_to_stack, node, stack_proj);
+
+	return subsp;
 }
 
 static ir_node *gen_Proj_Alloc(ir_node *node)
 {
-	ir_node *alloc = get_Proj_pred(node);
-	long     pn    = get_Proj_proj(node);
+	ir_node *alloc     = get_Proj_pred(node);
+	ir_node *new_alloc = be_transform_node(alloc);
+	long     pn        = get_Proj_proj(node);
 
 	switch ((pn_Alloc)pn) {
-	case pn_Alloc_M: {
-		ir_node *alloc_mem = get_Alloc_mem(alloc);
-		return be_transform_node(alloc_mem);
-	}
+	case pn_Alloc_M:
+		return new_r_Proj(new_alloc, mode_M, pn_sparc_SubSP_M);
 	case pn_Alloc_res: {
-		ir_node *new_alloc = be_transform_node(alloc);
-		return new_alloc;
+		ir_node *addr_proj = new_r_Proj(new_alloc, mode_gp, pn_sparc_SubSP_addr);
+		arch_set_irn_register(addr_proj, arch_get_irn_register(node));
+		return addr_proj;
 	}
 	case pn_Alloc_X_regular:
 	case pn_Alloc_X_except:

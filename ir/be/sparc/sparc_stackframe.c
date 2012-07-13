@@ -65,6 +65,14 @@ static void process_bias(ir_node *block, bool sp_relative, int bias,
 			arch_set_frame_offset(irn, offset);
 		}
 
+		/* The additional alignment bytes cannot be used
+		 * anymore after alloca. */
+		if (is_sparc_SubSP(irn)) {
+			free_bytes = 0;
+		} else if (is_sparc_AddSP(irn)) {
+			assert(free_bytes == 0);
+		}
+
 		irn_bias = arch_get_sp_bias(irn);
 		if (irn_bias == 0) {
 			/* do nothing */
