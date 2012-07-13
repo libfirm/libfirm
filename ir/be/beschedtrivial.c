@@ -55,10 +55,7 @@ static ir_node *trivial_select(void *block_env, ir_nodeset_t *ready_set)
 	}
 
 	/* at last: schedule branches */
-	ir_nodeset_iterator_init(&iter, ready_set);
-	irn = ir_nodeset_iterator_next(&iter);
-
-	return irn;
+	return ir_nodeset_first(ready_set);
 }
 
 static void *trivial_init_graph(ir_graph *irg)

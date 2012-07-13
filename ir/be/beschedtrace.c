@@ -61,10 +61,7 @@ typedef struct trace_env {
  */
 static ir_node *get_nodeset_node(const ir_nodeset_t *nodeset)
 {
-	ir_nodeset_iterator_t iter;
-
-	ir_nodeset_iterator_init(&iter, nodeset);
-	return ir_nodeset_iterator_next(&iter);
+	return ir_nodeset_first(nodeset);
 }
 
 /**

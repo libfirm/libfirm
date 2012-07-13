@@ -59,7 +59,6 @@ static ir_node *normal_select(void *block_env, ir_nodeset_t *ready_set)
 	ir_node*    irn;
 	ir_node*    next;
 	ir_node*    last = NULL;
-	ir_nodeset_iterator_t iter;
 
 	for (irn = inst->curr_list; irn != NULL; last = irn, irn = next) {
 		next = (ir_node*)get_irn_link(irn);
@@ -75,9 +74,7 @@ static ir_node *normal_select(void *block_env, ir_nodeset_t *ready_set)
 		}
 	}
 
-	ir_nodeset_iterator_init(&iter, ready_set);
-	irn = ir_nodeset_iterator_next(&iter);
-	return irn;
+	return ir_nodeset_first(ready_set);
 }
 
 

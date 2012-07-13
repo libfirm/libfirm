@@ -286,9 +286,7 @@ static ir_node *reg_pressure_select(void *block_env, ir_nodeset_t *ready_set)
 	*/
 
 	if (!res) {
-		ir_nodeset_iterator_init(&iter, ready_set);
-		res = ir_nodeset_iterator_next(&iter);
-
+		res = ir_nodeset_first(ready_set);
 		assert(res && "There must be a node scheduled.");
 	}
 

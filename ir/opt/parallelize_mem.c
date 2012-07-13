@@ -210,8 +210,7 @@ static void walker(ir_node *proj, void *env)
 
 		n = ir_nodeset_size(&pi.this_mem);
 		if (n == 1) {
-			ir_nodeset_iterator_init(&iter, &pi.this_mem);
-			sync = ir_nodeset_iterator_next(&iter);
+			sync = ir_nodeset_first(&pi.this_mem);
 		} else {
 			in = XMALLOCN(ir_node*, n);
 			i = 0;

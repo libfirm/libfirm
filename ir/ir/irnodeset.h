@@ -157,6 +157,13 @@ ir_node *ir_nodeset_iterator_next(ir_nodeset_iterator_t *iterator);
 void ir_nodeset_remove_iterator(ir_nodeset_t *nodeset,
                                 const ir_nodeset_iterator_t *iterator);
 
+static inline ir_node *ir_nodeset_first(ir_nodeset_t const *const nodeset)
+{
+	ir_nodeset_iterator_t iter;
+	ir_nodeset_iterator_init(&iter, nodeset);
+	return ir_nodeset_iterator_next(&iter);
+}
+
 #define foreach_ir_nodeset(nodeset, irn, iter) \
 	for(ir_nodeset_iterator_init(&iter, nodeset), \
         irn = ir_nodeset_iterator_next(&iter);    \
