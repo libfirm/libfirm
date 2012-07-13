@@ -235,7 +235,6 @@ static void dbg_aff_chunk(const co_mst_env_t *env, const aff_chunk_t *c)
  */
 static void dbg_admissible_colors(const co_mst_env_t *env, const co_mst_irn_t *node)
 {
-	size_t idx;
 	(void) env;
 
 	if (bitset_popcount(node->adm_colors) < 1)
@@ -583,7 +582,6 @@ static void aff_chunk_assure_weight(co_mst_env_t *env, aff_chunk_t *c)
 
 			node->chunk = c;
 			if (node->constr_factor > REAL(0.0)) {
-				size_t col;
 				bitset_foreach (node->adm_colors, col)
 					c->color_affinity[col].cost += node->constr_factor;
 			}

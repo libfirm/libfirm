@@ -399,7 +399,6 @@ static inline void qnode_max_ind_set(qnode_t *qn, const unit_t *ou)
 	ir_node **safe, **unsafe;
 	int i, o, safe_count, safe_costs, unsafe_count, *unsafe_costs;
 	bitset_t *curr, *best;
-	size_t pos;
 	int next, curr_weight, best_weight = 0;
 
 	/* assign the nodes into two groups.

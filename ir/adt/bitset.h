@@ -225,12 +225,12 @@ static inline size_t bitset_next_set(const bitset_t *bs, size_t pos)
  * @param bitset The bitset.
  * @param elm A size_t variable.
  */
-#define bitset_foreach(bitset,elm) \
-	for(elm = bitset_next_set(bitset,0); elm != (size_t)-1; elm = bitset_next_set(bitset,elm+1))
+#define bitset_foreach(bitset, elm) \
+	for (size_t elm = 0; (elm = bitset_next_set((bitset), elm)) != (size_t)-1; ++elm)
 
 
-#define bitset_foreach_clear(bitset,elm) \
-	for(elm = bitset_next_clear(bitset,0); elm != (size_t) -1; elm = bitset_next_clear(bitset,elm+1))
+#define bitset_foreach_clear(bitset, elm) \
+	for (size_t elm = 0; (elm = bitset_next_clear((bitset), elm)) != (size_t)-1; ++elm)
 
 /**
  * Count the bits set.

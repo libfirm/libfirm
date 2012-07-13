@@ -117,7 +117,6 @@ void create_borders(ir_node *block, void *env_ptr)
 	be_lv_t          *lv   = be_get_irg_liveness(env->irg);
 
 	int i, n;
-	size_t elm;
 	unsigned step = 0;
 	unsigned pressure = 0;
 	struct list_head *head;

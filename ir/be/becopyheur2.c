@@ -337,7 +337,6 @@ static void determine_color_costs(co2_t *env, co2_irn_t *ci, col_cost_pair_t *co
 	bitset_t *forb     = bitset_alloca(n_regs);
 	affinity_node_t *a = ci->aff;
 
-	size_t elm;
 	const ir_node *pos;
 	neighbours_iter_t it;
 	int i;
@@ -620,7 +619,6 @@ static void node_color_badness(co2_cloud_irn_t *ci, int *badness)
 	be_ifg_t *ifg  = env->co->cenv->ifg;
 	bitset_t *bs   = bitset_alloca(n_regs);
 
-	size_t elm;
 	const ir_node *irn;
 	neighbours_iter_t it;
 

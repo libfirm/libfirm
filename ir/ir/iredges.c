@@ -795,7 +795,6 @@ static void verify_edge_counter(ir_node *irn, void *env)
 	int                    list_cnt;
 	int                    ref_cnt;
 	int                    edge_cnt;
-	size_t                 idx;
 	const struct list_head *head;
 	const struct list_head *pos;
 	ir_graph               *irg;
