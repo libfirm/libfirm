@@ -205,20 +205,14 @@ double stat_calc_mean_distrib_tbl(distrib_tbl_t *tbl)
 
 	if (tbl->int_dist) {
 		/* integer distribution, need min, max */
-		int min, max;
-
-		entry = (distrib_entry_t*)pset_first(tbl->hash_map);
-
-		if (! entry)
+		if (pset_count(tbl->hash_map) == 0)
 			return 0.0;
 
-		min =
-		max = PTR_TO_INT(entry->object);
-		sum = cnt_to_dbl(&entry->cnt);
+		int min = INT_MAX;
+		int max = INT_MIN;
+		sum = 0.0;
 
-
-		for (entry = (distrib_entry_t*)pset_next(tbl->hash_map); entry != NULL;
-		     entry = (distrib_entry_t*)pset_next(tbl->hash_map)) {
+		foreach_pset(tbl->hash_map, distrib_entry_t*, entry) {
 			int value = PTR_TO_INT(entry->object);
 
 			if (value < min)

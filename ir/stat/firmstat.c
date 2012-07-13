@@ -2077,8 +2077,7 @@ void stat_dump_snapshot(const char *name, const char *phase)
 		stat_dump_init(fname);
 
 		/* calculate the graph statistics */
-		for (entry = (graph_entry_t*)pset_first(status->irg_hash);
-		      entry != NULL; entry = (graph_entry_t*)pset_next(status->irg_hash)) {
+		foreach_pset(status->irg_hash, graph_entry_t*, entry) {
 			if (entry->irg == NULL) {
 				/* special entry for the global count */
 				continue;
@@ -2097,8 +2096,7 @@ void stat_dump_snapshot(const char *name, const char *phase)
 		}  /* while */
 
 		/* dump per graph */
-		for (entry = (graph_entry_t*)pset_first(status->irg_hash);
-		     entry != NULL; entry = (graph_entry_t*)pset_next(status->irg_hash)) {
+		foreach_pset(status->irg_hash, graph_entry_t*, entry) {
 			if (entry->irg == NULL) {
 				/* special entry for the global count */
 				continue;
@@ -2137,8 +2135,7 @@ void stat_dump_snapshot(const char *name, const char *phase)
 		{
 			node_entry_t *entry;
 
-			for (entry = (node_entry_t*)pset_first(global->opcode_hash);
-			     entry != NULL; entry = (node_entry_t*)pset_next(global->opcode_hash)) {
+			foreach_pset(global->opcode_hash, node_entry_t*, entry) {
 				opcode_clear_entry(entry);
 			}  /* for */
 			/* clear all global counter */

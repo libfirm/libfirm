@@ -278,9 +278,7 @@ static void simple_dump_be_block_reg_pressure(dumper_t *dmp, graph_entry_t *entr
 	fprintf(dmp->f, "\n");
 
 	/* print the reg pressure for all blocks and register classes */
-	for (/* b_entry is already initialized */ ;
-	     b_entry;
-	     b_entry = (be_block_entry_t*)pset_next(entry->be_block_hash)) {
+	foreach_pset(entry->block_hash, be_block_entry_t*, b_entry) {
 		fprintf(dmp->f, "BLK   %6ld", b_entry->block_nr);
 
 		foreach_pset(b_entry->reg_pressure, reg_pressure_entry_t*, rp_entry)
