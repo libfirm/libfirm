@@ -621,8 +621,7 @@ static void ou_optimize(unit_t *ou)
 		}
 
 		/* set color of all changed nodes */
-		for (ns = (node_stat_t*)set_first(curr->changed_nodes); ns != NULL;
-		     ns = (node_stat_t*)set_next(curr->changed_nodes)) {
+		foreach_set(curr->changed_nodes, node_stat_t, ns) {
 			/* NO_COLOR is possible, if we had an undo */
 			if (ns->new_color != NO_COLOR) {
 				DBG((dbg, LEVEL_1, "\t    color(%+F) := %d\n", ns->irn, ns->new_color));

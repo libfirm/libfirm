@@ -149,10 +149,7 @@ static inline affinity_node_t *get_affinity_info(const copy_opt_t *co, const ir_
 	return (affinity_node_t*)set_find(co->nodes, &find, sizeof(find), hash_irn(irn));
 }
 
-#define co_gs_nodes_begin(co)         set_first((co)->nodes)
-#define co_gs_nodes_next(co)          set_next((co)->nodes)
-
-#define co_gs_foreach_aff_node(co, aff_node)     for (aff_node = (affinity_node_t*)co_gs_nodes_begin(co); aff_node != NULL; aff_node = (affinity_node_t*)co_gs_nodes_next(co))
+#define co_gs_foreach_aff_node(co, aff_node)     foreach_set((co)->nodes, affinity_node_t, (aff_node))
 #define co_gs_foreach_neighb(aff_node, neighb)   for (neighb = aff_node->neighbours; neighb != NULL; neighb = neighb->next)
 
 #endif /* FIRM_BE_BECOPYOPT_T_H */

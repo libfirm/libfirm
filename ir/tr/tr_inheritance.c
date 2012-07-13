@@ -397,8 +397,7 @@ void free_inh_transitive_closure(void)
 {
 	if (tr_inh_trans_set) {
 		tr_inh_trans_tp *elt;
-		for (elt = (tr_inh_trans_tp*)set_first(tr_inh_trans_set); elt != NULL;
-		     elt = (tr_inh_trans_tp*)set_next(tr_inh_trans_set)) {
+		foreach_set(tr_inh_trans_set, tr_inh_trans_tp, elt) {
 			del_pset(elt->directions[d_up]);
 			del_pset(elt->directions[d_down]);
 		}
