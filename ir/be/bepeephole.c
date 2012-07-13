@@ -184,7 +184,6 @@ void be_peephole_exchange(ir_node *old, ir_node *nw)
  */
 static void process_block(ir_node *block, void *data)
 {
-	int l;
 	(void) data;
 
 	/* construct initial register assignment */
@@ -192,8 +191,7 @@ static void process_block(ir_node *block, void *data)
 
 	assert(lv->sets_valid && "live sets must be computed");
 	DB((dbg, LEVEL_1, "\nProcessing block %+F (from end)\n", block));
-	be_lv_foreach(lv, block, be_lv_state_end, l) {
-		ir_node *node = be_lv_get_irn(lv, block, l);
+	be_lv_foreach(lv, block, be_lv_state_end, node) {
 		set_reg_value(node);
 	}
 	DB((dbg, LEVEL_1, "\nstart processing\n"));

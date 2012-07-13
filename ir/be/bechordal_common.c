@@ -116,7 +116,6 @@ void create_borders(ir_node *block, void *env_ptr)
 	bitset_t         *live = bitset_malloc(get_irg_last_idx(env->irg));
 	be_lv_t          *lv   = be_get_irg_liveness(env->irg);
 
-	int i, n;
 	unsigned step = 0;
 	unsigned pressure = 0;
 	struct list_head *head;
@@ -133,8 +132,7 @@ void create_borders(ir_node *block, void *env_ptr)
 	 * Make final uses of all values live out of the block.
 	 * They are necessary to build up real intervals.
 	 */
-	be_lv_foreach(lv, block, be_lv_state_end, i) {
-		ir_node *irn = be_lv_get_irn(lv, block, i);
+	be_lv_foreach(lv, block, be_lv_state_end, irn) {
 		if (has_reg_class(env, irn)) {
 			DBG((dbg, LEVEL_3, "\tMaking live: %+F/%d\n", irn, get_irn_idx(irn)));
 			bitset_set(live, get_irn_idx(irn));
@@ -183,7 +181,7 @@ void create_borders(ir_node *block, void *env_ptr)
 		 * If the node is no phi node we can examine the uses.
 		 */
 		if (!is_Phi(irn)) {
-			for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
+			for (int i = 0, n = get_irn_arity(irn); i < n; ++i) {
 				ir_node *op = get_irn_n(irn, i);
 
 				if (has_reg_class(env, op)) {

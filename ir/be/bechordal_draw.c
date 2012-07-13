@@ -324,7 +324,6 @@ static void draw_block(ir_node *bl, void *data)
 	struct block_dims         *dims    = pmap_get(struct block_dims, env->block_dims, bl);
 	char                      buf[64];
 	border_t                  *b;
-	int                       idx;
 
 	ir_snprintf(buf, sizeof(buf), "%F", bl);
 
@@ -362,8 +361,7 @@ static void draw_block(ir_node *bl, void *data)
 	if (dom) {
 		struct block_dims *dom_dims = pmap_get(struct block_dims, env->block_dims, dom);
 
-		be_lv_foreach(lv, bl, be_lv_state_in, idx) {
-			ir_node *irn = be_lv_get_irn(lv, bl, idx);
+		be_lv_foreach(lv, bl, be_lv_state_in, irn) {
 			if (arch_irn_consider_in_reg_alloc(env->cls, irn)) {
 				const arch_register_t *reg = arch_get_irn_register(irn);
 				int     col = arch_register_get_index(reg);

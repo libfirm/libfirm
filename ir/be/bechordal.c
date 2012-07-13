@@ -404,9 +404,7 @@ static void assign(ir_node *block, void *env_ptr)
 	struct list_head *head      = get_block_border_head(env, block);
 	be_lv_t *lv                 = be_get_irg_liveness(env->irg);
 
-	const ir_node *irn;
 	border_t *b;
-	int idx;
 
 	bitset_clear_all(colors);
 	bitset_clear_all(live);
@@ -424,8 +422,7 @@ static void assign(ir_node *block, void *env_ptr)
 	 * Since their colors have already been assigned (The dominators were
 	 * allocated before), we have to mark their colors as used also.
 	 */
-	be_lv_foreach(lv, block, be_lv_state_in, idx) {
-		irn = be_lv_get_irn(lv, block, idx);
+	be_lv_foreach(lv, block, be_lv_state_in, irn) {
 		if (has_reg_class(env, irn)) {
 			const arch_register_t *reg = arch_get_irn_register(irn);
 			int col;

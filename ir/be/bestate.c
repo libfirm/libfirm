@@ -217,7 +217,6 @@ static block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *b
 	int            n_cfgpreds;
 	unsigned       best_time;
 	int            outer_loop_allowed;
-	int            i;
 
 	/* Create the block info for this block. */
 	block_info = new_block_info(&env->obst, block);
@@ -300,9 +299,7 @@ static block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *b
 	}
 
 	/* check all Live-Ins */
-	be_lv_foreach(env->lv, block, be_lv_state_in, i) {
-		ir_node *const node = be_lv_get_irn(env->lv, block, i);
-
+	be_lv_foreach(env->lv, block, be_lv_state_in, node) {
 		if (!mode_is_data(get_irn_mode(node)))
 			continue;
 

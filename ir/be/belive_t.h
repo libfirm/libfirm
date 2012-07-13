@@ -64,30 +64,6 @@ union be_lv_info_t {
 	struct be_lv_info_node_t node;
 };
 
-static inline int _be_lv_next_irn(const be_lv_t *lv, const ir_node *block,
-                                  unsigned flags, int i)
-{
-	be_lv_info_t *arr = ir_nodehashmap_get(be_lv_info_t, &lv->map, block);
-	if (arr != NULL) {
-		int n_members = (int) arr[0].head.n_members;
-		while(i < n_members) {
-			if(arr[i + 1].node.flags & flags) {
-				return i;
-			}
-			++i;
-		}
-	}
-
-	return -1;
-}
-
-static inline ir_node *_be_lv_get_irn(const be_lv_t *lv, const ir_node *block,
-                                      int i)
-{
-	be_lv_info_t *arr = ir_nodehashmap_get(be_lv_info_t, &lv->map, block);
-	return get_idx_irn(lv->irg, arr[i + 1].node.idx);
-}
-
 be_lv_info_node_t *be_lv_get(const be_lv_t *li, const ir_node *block,
                              const ir_node *irn);
 
@@ -106,16 +82,45 @@ static inline unsigned _be_is_live_xxx(const be_lv_t *li, const ir_node *block,
 	return res;
 }
 
-#define be_lv_foreach(lv, bl, flags, i) \
-	for (i = 0; (i = _be_lv_next_irn(lv, bl, flags, i)) >= 0; ++i)
+typedef struct lv_iterator_t
+{
+	be_lv_info_t *info;
+	ir_graph     *irg;
+	be_lv_state_t flags;
+	size_t        i;
+} lv_iterator_t;
 
+static inline lv_iterator_t be_lv_iteration_begin(const be_lv_t *lv,
+	const ir_node *block, be_lv_state_t flags)
+{
+	lv_iterator_t res;
+	res.info  = ir_nodehashmap_get(be_lv_info_t, &lv->map, block);
+	res.irg   = get_Block_irg(block);
+	res.flags = flags;
+	res.i     = res.info != NULL ? res.info[0].head.n_members : 0;
+	return res;
+}
+
+static inline ir_node *be_lv_iteration_next(lv_iterator_t *iterator)
+{
+	while (iterator->i != 0) {
+		const be_lv_info_t *info = iterator->info + iterator->i--;
+		if (info->node.flags & iterator->flags)
+			return get_idx_irn(iterator->irg, info->node.idx);
+	}
+	return NULL;
+}
+
+#define be_lv_foreach(lv, block, flags, node) \
+	for (bool once = true; once;) \
+		for (lv_iterator_t iter = be_lv_iteration_begin((lv), (block), (flags)); once; once = false) \
+			for (ir_node *node; (node = be_lv_iteration_next(&iter)) != NULL;)
 
 static inline pset *_be_lv_pset_put(const be_lv_t *lv, const ir_node *block,
                                     int state, pset *s)
 {
-	int i;
-	be_lv_foreach(lv, block, state, i)
-		pset_insert_ptr(s, _be_lv_get_irn(lv, block, i));
+	be_lv_foreach(lv, block, state, node)
+		pset_insert_ptr(s, node);
 	return s;
 }
 

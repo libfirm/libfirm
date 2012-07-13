@@ -1686,7 +1686,6 @@ static void assign_phi_registers(ir_node *block)
  */
 static void allocate_coalesce_block(ir_node *block, void *data)
 {
-	int            i;
 	ir_nodeset_t   live_nodes;
 	int            n_preds;
 	block_info_t  *block_info;
@@ -1707,7 +1706,7 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 	/* gather regalloc infos of predecessor blocks */
 	n_preds          = get_Block_n_cfgpreds(block);
 	pred_block_infos = ALLOCAN(block_info_t*, n_preds);
-	for (i = 0; i < n_preds; ++i) {
+	for (int i = 0; i < n_preds; ++i) {
 		ir_node      *pred      = get_Block_cfgpred_block(block, i);
 		block_info_t *pred_info = get_block_info(pred);
 		pred_block_infos[i]     = pred_info;
@@ -1716,13 +1715,12 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 	phi_ins = ALLOCAN(ir_node*, n_preds);
 
 	/* collect live-in nodes and preassigned values */
-	be_lv_foreach(lv, block, be_lv_state_in, i) {
+	be_lv_foreach(lv, block, be_lv_state_in, node) {
 		bool                       need_phi = false;
 		const arch_register_req_t *req;
 		const arch_register_t     *reg;
 		int                        p;
 
-		ir_node *node = be_lv_get_irn(lv, block, i);
 		req  = arch_get_irn_register_req(node);
 		if (req->cls != cls)
 			continue;
@@ -1835,7 +1833,7 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 
 		/* we may not use registers used for inputs for optimistic splits */
 		arity = get_irn_arity(node);
-		for (i = 0; i < arity; ++i) {
+		for (int i = 0; i < arity; ++i) {
 			ir_node *op = get_irn_n(node, i);
 			const arch_register_t *reg;
 			if (!arch_irn_consider_in_reg_alloc(cls, op))

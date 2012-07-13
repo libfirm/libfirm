@@ -545,7 +545,6 @@ static void decide_start_workset(const ir_node *block)
 	loc_t      *delayed;
 	unsigned    len;
 	unsigned    i;
-	int         in;
 	unsigned    ws_count;
 	int         free_slots, free_pressure_slots;
 	unsigned    pressure;
@@ -557,7 +556,7 @@ static void decide_start_workset(const ir_node *block)
 	arity           = get_irn_arity(block);
 	pred_worksets   = ALLOCAN(workset_t*, arity);
 	all_preds_known = true;
-	for (in = 0; in < arity; ++in) {
+	for (int in = 0; in < arity; ++in) {
 		ir_node      *pred_block = get_Block_cfgpred_block(block, in);
 		block_info_t *pred_info  = get_block_info(pred_block);
 
@@ -604,8 +603,7 @@ static void decide_start_workset(const ir_node *block)
 	}
 
 	/* check all Live-Ins */
-	be_lv_foreach(lv, block, be_lv_state_in, in) {
-		ir_node *node = be_lv_get_irn(lv, block, in);
+	be_lv_foreach(lv, block, be_lv_state_in, node) {
 		unsigned available;
 
 		if (all_preds_known) {

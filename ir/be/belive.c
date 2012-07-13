@@ -542,11 +542,8 @@ void be_liveness_end_of_block(const be_lv_t *lv,
                               const arch_register_class_t *cls,
                               const ir_node *block, ir_nodeset_t *live)
 {
-	int i;
-
 	assert(lv->sets_valid && "live sets must be computed");
-	be_lv_foreach(lv, block, be_lv_state_end, i) {
-		ir_node *node = be_lv_get_irn(lv, block, i);
+	be_lv_foreach(lv, block, be_lv_state_end, node) {
 		if (!arch_irn_consider_in_reg_alloc(cls, node))
 			continue;
 

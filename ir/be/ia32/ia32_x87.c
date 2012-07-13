@@ -772,14 +772,12 @@ static vfp_liveness vfp_liveness_transfer(ir_node *irn, vfp_liveness live)
  */
 static vfp_liveness vfp_liveness_end_of_block(x87_simulator *sim, const ir_node *block)
 {
-	int i;
 	vfp_liveness live = 0;
 	const arch_register_class_t *cls = &ia32_reg_classes[CLASS_ia32_vfp];
 	const be_lv_t *lv = sim->lv;
 
-	be_lv_foreach(lv, block, be_lv_state_end, i) {
+	be_lv_foreach(lv, block, be_lv_state_end, node) {
 		const arch_register_t *reg;
-		const ir_node *node = be_lv_get_irn(lv, block, i);
 		if (!arch_irn_consider_in_reg_alloc(cls, node))
 			continue;
 

@@ -809,7 +809,6 @@ static void verify_block_register_allocation(ir_node *block, void *data)
 {
 	unsigned i;
 	unsigned n_regs;
-	int      idx;
 
 	(void) data;
 
@@ -818,8 +817,7 @@ static void verify_block_register_allocation(ir_node *block, void *data)
 	n_regs    = arch_env->n_registers;
 	registers = ALLOCANZ(const ir_node*, n_regs);
 
-	be_lv_foreach(lv, block, be_lv_state_end, idx) {
-		ir_node *lv_node = be_lv_get_irn(lv, block, idx);
+	be_lv_foreach(lv, block, be_lv_state_end, lv_node) {
 		value_used(block, lv_node);
 	}
 
@@ -850,8 +848,7 @@ static void verify_block_register_allocation(ir_node *block, void *data)
 		}
 	}
 
-	be_lv_foreach(lv, block, be_lv_state_in, idx) {
-		ir_node *lv_node = be_lv_get_irn(lv, block, idx);
+	be_lv_foreach(lv, block, be_lv_state_in, lv_node) {
 		value_def(lv_node);
 	}
 
