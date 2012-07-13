@@ -155,12 +155,11 @@ static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *
 	ir_node *c_b = NULL, *c_o = NULL;
 	const ir_edge_t *edge, *next;
 
-	for (edge = get_irn_out_edge_first(selector); edge; edge = next) {
+	foreach_out_edge_safe(selector, edge, next) {
 		ir_node *user     = get_edge_src_irn(edge);
 		int     pos       = get_edge_src_pos(edge);
 		ir_node *user_blk = get_effective_use_block(user, pos);
 
-		next = get_irn_out_edge_next(selector, edge);
 		if (block_dominates(block, user_blk)) {
 			/*
 			 * Ok, we found a usage of selector in a block
@@ -300,12 +299,11 @@ static void handle_if(ir_node *block, ir_node *cmp, ir_relation rel, env_t *env)
 	 */
 	if (rel == ir_relation_equal) {
 		cond_block = get_Block_cfgpred_block(block, 0);
-		for (edge = get_irn_out_edge_first(left); edge; edge = next) {
+		foreach_out_edge_safe(left, edge, next) {
 			ir_node *user = get_edge_src_irn(edge);
 			int     pos   = get_edge_src_pos(edge);
 			ir_node *blk  = get_effective_use_block(user, pos);
 
-			next = get_irn_out_edge_next(left, edge);
 			if (block_dominates(block, blk)) {
 				/*
 				 * Ok, we found a usage of left in a block
