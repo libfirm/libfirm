@@ -85,8 +85,6 @@ static void dump_affinity_edges(FILE *F, const copy_opt_t *co,
                                 bool dump_costs, bool dump_colors)
 {
 	co_gs_foreach_aff_node(co, a) {
-		neighb_t *n;
-
 		co_gs_foreach_neighb(a, n) {
 			/* edges are bidirection, dumping one direction is enough */
 			if (get_irn_node_nr(a->irn) >= get_irn_node_nr(n->irn))

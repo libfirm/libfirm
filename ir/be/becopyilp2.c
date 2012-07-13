@@ -360,7 +360,6 @@ static void build_clique_star_cstr(ilp_env_t *ienv)
 	/* for each node with affinity edges */
 	co_gs_foreach_aff_node(ienv->co, aff) {
 		struct obstack ob;
-		neighb_t *nbr;
 		const ir_node *center = aff->irn;
 		ir_node **nodes;
 		set *edges;
@@ -476,7 +475,6 @@ static void extend_path(ilp_env_t *ienv, pdeq *path, const ir_node *irn)
 	int i, len;
 	ir_node **curr_path;
 	affinity_node_t *aff;
-	neighb_t *nbr;
 
 	/* do not walk backwards or in circles */
 	if (pdeq_contains(path, irn))

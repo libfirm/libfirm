@@ -589,7 +589,6 @@ static void aff_chunk_assure_weight(co_mst_env_t *env, aff_chunk_t *c)
 			}
 
 			if (an != NULL) {
-				neighb_t *neigh;
 				co_gs_foreach_neighb(an, neigh) {
 					const ir_node *m = neigh->irn;
 
@@ -615,7 +614,6 @@ static void aff_chunk_assure_weight(co_mst_env_t *env, aff_chunk_t *c)
  */
 static int count_interfering_aff_neighs(co_mst_env_t *env, const affinity_node_t *an)
 {
-	const neighb_t     *neigh;
 	const ir_node      *irn  = an->irn;
 	const co_mst_irn_t *node = get_co_mst_irn(env, irn);
 	int                res   = 0;
@@ -668,8 +666,6 @@ static void build_affinity_chunks(co_mst_env_t *env)
 		an = get_affinity_info(env->co, n);
 
 		if (an != NULL) {
-			neighb_t *neigh;
-
 			if (n1->int_aff_neigh < 0)
 				n1->int_aff_neigh = count_interfering_aff_neighs(env, an);
 
@@ -760,7 +756,6 @@ static __attribute__((unused)) void chunk_order_nodes(co_mst_env_t *env, aff_chu
 		const ir_node   *irn = chunk->n[--i];
 		affinity_node_t *an  = get_affinity_info(env->co, irn);
 		int w = 0;
-		neighb_t *neigh;
 
 		if (arch_irn_is_ignore(irn))
 			continue;
@@ -788,7 +783,6 @@ static __attribute__((unused)) void chunk_order_nodes(co_mst_env_t *env, aff_chu
 		while (!pqueue_empty(grow)) {
 			ir_node *irn = (ir_node*)pqueue_pop_front(grow);
 			affinity_node_t *an = get_affinity_info(env->co, irn);
-			neighb_t        *neigh;
 
 			if (arch_irn_is_ignore(irn))
 				continue;
@@ -837,7 +831,6 @@ static void expand_chunk_from(co_mst_env_t *env, co_mst_irn_t *node, bitset_t *v
 
 		/* check all affinity neighbors */
 		if (an != NULL) {
-			neighb_t *neigh;
 			co_gs_foreach_neighb(an, neigh) {
 				const ir_node *m    = neigh->irn;
 				int            m_idx = get_irn_idx(m);

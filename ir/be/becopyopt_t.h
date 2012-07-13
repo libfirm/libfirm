@@ -150,6 +150,6 @@ static inline affinity_node_t *get_affinity_info(const copy_opt_t *co, const ir_
 }
 
 #define co_gs_foreach_aff_node(co, aff_node)     foreach_set((co)->nodes, affinity_node_t, (aff_node))
-#define co_gs_foreach_neighb(aff_node, neighb)   for (neighb = aff_node->neighbours; neighb != NULL; neighb = neighb->next)
+#define co_gs_foreach_neighb(aff_node, neighb)   for (neighb_t *neighb = aff_node->neighbours; neighb; neighb = neighb->next)
 
 #endif /* FIRM_BE_BECOPYOPT_T_H */

@@ -732,7 +732,6 @@ void co_complete_stats(const copy_opt_t *co, co_complete_stats_t *stat)
 
 	/* count affinity edges. */
 	co_gs_foreach_aff_node(co, an) {
-		neighb_t *neigh;
 		stat->aff_nodes += 1;
 		bitset_set(seen, get_irn_idx(an->irn));
 		co_gs_foreach_neighb(an, neigh) {
@@ -974,8 +973,6 @@ static void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 			}
 
 			if (a) {
-				neighb_t *n;
-
 				co_gs_foreach_neighb(a, n) {
 					if (!arch_irn_is_ignore(n->irn)) {
 						int n_idx = node_map[get_irn_idx(n->irn)];
