@@ -107,7 +107,7 @@ static inline unsigned _be_is_live_xxx(const be_lv_t *li, const ir_node *block,
 }
 
 #define be_lv_foreach(lv, bl, flags, i) \
-	for (i = _be_lv_next_irn(lv, bl, flags, 0); i >= 0; i = _be_lv_next_irn(lv, bl, flags, i + 1))
+	for (i = 0; (i = _be_lv_next_irn(lv, bl, flags, i)) >= 0; ++i)
 
 
 static inline pset *_be_lv_pset_put(const be_lv_t *lv, const ir_node *block,
