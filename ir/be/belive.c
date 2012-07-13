@@ -561,7 +561,6 @@ void be_liveness_nodes_live_at(const be_lv_t *lv,
                                const ir_node *pos, ir_nodeset_t *live)
 {
 	const ir_node *bl = is_Block(pos) ? pos : get_nodes_block(pos);
-	ir_node *irn;
 
 	be_liveness_end_of_block(lv, cls, bl, live);
 	sched_foreach_reverse(bl, irn) {

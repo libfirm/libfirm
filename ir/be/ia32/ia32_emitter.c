@@ -1789,8 +1789,6 @@ static void ia32_emit_block_header(ir_node *block)
  */
 static void ia32_gen_block(ir_node *block)
 {
-	ir_node *node;
-
 	ia32_emit_block_header(block);
 
 	if (sp_relative) {
@@ -3834,8 +3832,6 @@ static void ia32_register_binary_emitters(void)
 
 static void gen_binary_block(ir_node *block)
 {
-	ir_node *node;
-
 	ia32_emit_block_header(block);
 
 	/* emit the contents of the block */

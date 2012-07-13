@@ -158,7 +158,6 @@ static void remove_empty_block(ir_node *block)
 {
 	int        i;
 	int        arity;
-	ir_node   *node;
 	ir_node   *pred;
 	ir_node   *succ_block;
 	ir_node   *jump = NULL;
@@ -212,7 +211,7 @@ static void remove_empty_block(ir_node *block)
 	/* there can be some non-scheduled Pin nodes left in the block, move them
 	 * to the succ block (Pin) or pred block (Sync) */
 	foreach_out_edge_safe(block, edge) {
-		node = get_edge_src_irn(edge);
+		ir_node *const node = get_edge_src_irn(edge);
 
 		if (node == jump)
 			continue;

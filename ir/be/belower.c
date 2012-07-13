@@ -619,7 +619,6 @@ static void assure_different_constraints(ir_node *irn, ir_node *skipped_irn, con
  */
 static void assure_constraints_walker(ir_node *block, void *walk_env)
 {
-	ir_node *irn;
 	constraint_env_t *env = (constraint_env_t*)walk_env;
 
 	sched_foreach_reverse(block, irn) {
@@ -856,7 +855,6 @@ static int push_through_perm(ir_node *perm)
 	int n_moved;
 	int new_size;
 	ir_node *frontier = bl;
-	ir_node *irn;
 	int i, n;
 
 	/* get some Proj and find out the register class of that Proj. */

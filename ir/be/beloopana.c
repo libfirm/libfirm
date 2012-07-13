@@ -74,10 +74,9 @@ static unsigned be_compute_block_pressure(const ir_graph *irg,
                                           ir_node *block,
                                           const arch_register_class_t *cls)
 {
-	be_lv_t      *lv = be_get_irg_liveness(irg);
-	ir_nodeset_t  live_nodes;
-	ir_node      *irn;
-	size_t        max_live;
+	be_lv_t     *lv = be_get_irg_liveness(irg);
+	ir_nodeset_t live_nodes;
+	size_t       max_live;
 
 	DBG((dbg, LEVEL_1, "Processing Block %+F\n", block));
 

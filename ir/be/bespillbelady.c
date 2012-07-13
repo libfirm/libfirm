@@ -540,7 +540,6 @@ static void decide_start_workset(const ir_node *block)
 {
 	ir_loop    *loop = get_irn_loop(block);
 	ir_node    *first;
-	ir_node    *node;
 	loc_t       loc;
 	loc_t      *starters;
 	loc_t      *delayed;
@@ -761,7 +760,6 @@ static void decide_start_workset(const ir_node *block)
 static void process_block(ir_node *block)
 {
 	workset_t    *new_vals;
-	ir_node      *irn;
 	unsigned      iter;
 	block_info_t *block_info;
 	int           arity;
@@ -793,9 +791,11 @@ static void process_block(ir_node *block)
 	set_block_info(block, block_info);
 
 	DB((dbg, DBG_WSETS, "Start workset for %+F:\n", block));
-	workset_foreach(ws, irn, iter) {
-		DB((dbg, DBG_WSETS, "  %+F (%u)\n", irn,
-		     workset_get_time(ws, iter)));
+	{
+		ir_node *irn;
+		workset_foreach(ws, irn, iter) {
+			DB((dbg, DBG_WSETS, "  %+F (%u)\n", irn, workset_get_time(ws, iter)));
+		}
 	}
 
 	block_info->start_workset = workset_clone(ws);
@@ -843,8 +843,11 @@ static void process_block(ir_node *block)
 	/* Remember end-workset for this block */
 	block_info->end_workset = workset_clone(ws);
 	DB((dbg, DBG_WSETS, "End workset for %+F:\n", block));
-	workset_foreach(ws, irn, iter)
-		DB((dbg, DBG_WSETS, "  %+F (%u)\n", irn, workset_get_time(ws, iter)));
+	{
+		ir_node *irn;
+		workset_foreach(ws, irn, iter)
+			DB((dbg, DBG_WSETS, "  %+F (%u)\n", irn, workset_get_time(ws, iter)));
+	}
 }
 
 /**

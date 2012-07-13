@@ -50,7 +50,6 @@
 
 static void sched_renumber(const ir_node *block)
 {
-	ir_node *irn;
 	sched_info_t *inf;
 	sched_timestep_t step = SCHED_INITIAL_GRANULARITY;
 

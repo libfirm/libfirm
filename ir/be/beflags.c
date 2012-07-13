@@ -203,19 +203,21 @@ static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
  */
 static void fix_flags_walker(ir_node *block, void *env)
 {
-	ir_node *node;
 	ir_node *flags_needed   = NULL;
 	ir_node *flag_consumers = NULL;
 	int      pn = -1;
 	(void) env;
 
+	ir_node *place = block;
 	sched_foreach_reverse(block, node) {
 		int i, arity;
 		ir_node *new_flags_needed = NULL;
 		ir_node *test;
 
-		if (is_Phi(node))
+		if (is_Phi(node)) {
+			place = node;
 			break;
+		}
 
 		if (node == flags_needed) {
 			/* all ok */
@@ -278,7 +280,7 @@ static void fix_flags_walker(ir_node *block, void *env)
 
 	if (flags_needed != NULL) {
 		assert(get_nodes_block(flags_needed) != block);
-		rematerialize_or_move(flags_needed, node, flag_consumers, pn);
+		rematerialize_or_move(flags_needed, place, flag_consumers, pn);
 		flags_needed   = NULL;
 		flag_consumers = NULL;
 	}

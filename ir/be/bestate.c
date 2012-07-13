@@ -215,7 +215,6 @@ static block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *b
 	be_next_use_t  next_use;
 	ir_loop       *loop;
 	ir_node       *best_starter, *first;
-	ir_node       *node;
 	int            n_cfgpreds;
 	unsigned       best_time;
 	int            outer_loop_allowed;
@@ -303,7 +302,7 @@ static block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *b
 
 	/* check all Live-Ins */
 	be_lv_foreach(env->lv, block, be_lv_state_in, i) {
-		node = be_lv_get_irn(env->lv, block, i);
+		ir_node *const node = be_lv_get_irn(env->lv, block, i);
 
 		if (!mode_is_data(get_irn_mode(node)))
 			continue;
@@ -359,7 +358,6 @@ static block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *b
 static void belady(minibelady_env_t *env, ir_node *block)
 {
 	ir_node *current_state;
-	ir_node *node;
 	block_info_t *block_info;
 
 	/* Don't do a block twice */

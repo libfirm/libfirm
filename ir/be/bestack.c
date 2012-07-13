@@ -160,7 +160,6 @@ static int process_stack_bias(ir_node *bl, int real_bias)
 	be_stack_layout_t *layout      = be_get_irg_stack_layout(irg);
 	bool               sp_relative = layout->sp_relative;
 	const arch_env_t  *arch_env    = be_get_irg_arch_env(irg);
-	ir_node           *irn;
 
 	sched_foreach(bl, irn) {
 		int ofs;

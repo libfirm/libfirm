@@ -533,7 +533,6 @@ static void amd64_emit_node(const ir_node *node)
  */
 static void amd64_gen_block(ir_node *block, void *data)
 {
-	ir_node *node;
 	(void) data;
 
 	if (! is_Block(block))

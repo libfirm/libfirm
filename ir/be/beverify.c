@@ -85,7 +85,6 @@ static void verify_liveness_walker(ir_node *block, void *data)
 {
 	be_verify_register_pressure_env_t *env = (be_verify_register_pressure_env_t *)data;
 	ir_nodeset_t live_nodes;
-	ir_node *irn;
 	int pressure;
 
 	/* collect register pressure info, start with end of a block */
@@ -157,7 +156,6 @@ typedef struct be_verify_schedule_env_t_ {
 static void verify_schedule_walker(ir_node *block, void *data)
 {
 	be_verify_schedule_env_t *env = (be_verify_schedule_env_t*) data;
-	ir_node *node;
 	ir_node *non_phi_found  = NULL;
 	ir_node *cfchange_found = NULL;
 	int last_timestep = INT_MIN;
@@ -810,7 +808,6 @@ static void value_def(const ir_node *node)
 static void verify_block_register_allocation(ir_node *block, void *data)
 {
 	unsigned i;
-	ir_node *node;
 	unsigned n_regs;
 	int      idx;
 

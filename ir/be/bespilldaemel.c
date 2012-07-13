@@ -278,13 +278,12 @@ void print_nodeset(ir_nodeset_t *nodeset)
  */
 static void spill_block(ir_node *block, void *data)
 {
-	ir_nodeset_t           live_nodes;
-	ir_nodeset_iterator_t  iter;
-	ir_node               *node;
-	int                    n_phi_values_spilled;
-	int                    regpressure;
-	int                    live_nodes_pressure;
-	int                    phi_spills_needed;
+	ir_nodeset_t          live_nodes;
+	ir_nodeset_iterator_t iter;
+	int                   n_phi_values_spilled;
+	int                   regpressure;
+	int                   live_nodes_pressure;
+	int                   phi_spills_needed;
 	(void) data;
 
 	DBG((dbg, LEVEL_1, "spilling block %+F\n", block));
@@ -294,13 +293,16 @@ static void spill_block(ir_node *block, void *data)
 	be_liveness_end_of_block(lv, cls, block, &live_nodes);
 
 	/* remove already spilled nodes from liveset */
-	foreach_ir_nodeset(&live_nodes, node, iter) {
-		DBG((dbg, LEVEL_2, "\t%+F is live-end... ", node));
-		if (bitset_is_set(spilled_nodes, get_irn_idx(node))) {
-			DBG((dbg, LEVEL_2, "but spilled; removing.\n"));
-			ir_nodeset_remove_iterator(&live_nodes, &iter);
-		} else {
-			DBG((dbg, LEVEL_2, "keeping.\n"));
+	{
+		ir_node *node;
+		foreach_ir_nodeset(&live_nodes, node, iter) {
+			DBG((dbg, LEVEL_2, "\t%+F is live-end... ", node));
+			if (bitset_is_set(spilled_nodes, get_irn_idx(node))) {
+				DBG((dbg, LEVEL_2, "but spilled; removing.\n"));
+				ir_nodeset_remove_iterator(&live_nodes, &iter);
+			} else {
+				DBG((dbg, LEVEL_2, "keeping.\n"));
+			}
 		}
 	}
 
@@ -329,8 +331,11 @@ static void spill_block(ir_node *block, void *data)
 	}
 
 	live_nodes_pressure = 0;
-	foreach_ir_nodeset(&live_nodes, node, iter) {
-		live_nodes_pressure += get_value_width(node);
+	{
+		ir_node *node;
+		foreach_ir_nodeset(&live_nodes, node, iter) {
+			live_nodes_pressure += get_value_width(node);
+		}
 	}
 
 	/* calculate how many of the phis need to be spilled */

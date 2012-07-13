@@ -143,7 +143,6 @@ static const be_use_t *get_or_set_use_block(be_uses_t *env,
  */
 static int be_is_phi_argument(const ir_node *block, const ir_node *def)
 {
-	ir_node *node;
 	ir_node *succ_block = NULL;
 	int arity, i;
 
@@ -368,7 +367,6 @@ be_next_use_t be_get_next_use(be_uses_t *env, ir_node *from,
  */
 static void set_sched_step_walker(ir_node *block, void *data)
 {
-	ir_node  *node;
 	unsigned step = 0;
 	(void) data;
 

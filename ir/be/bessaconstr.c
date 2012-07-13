@@ -297,7 +297,6 @@ static void set_operands(be_ssa_construction_env_t *env, ir_node *use, ir_node *
  */
 static void process_block(be_ssa_construction_env_t *env, ir_node *block)
 {
-	ir_node     *node;
 	ir_node     *def        = NULL;
 	constr_info *block_info = get_or_set_info(env, block);
 
@@ -353,22 +352,17 @@ static ir_node *search_def_end_of_block(be_ssa_construction_env_t *env,
 			}
 		}
 		else {
-			ir_node *def = NULL;
-
 			/* Search the last definition of the block. */
 			sched_foreach_reverse(block, def) {
 				if (is_definition(env, def)) {
 					constr_info *info = get_info(env, def);
-					def = info->u.definition;
-					DBG((dbg, LEVEL_3, "\t...found definition %+F\n", def));
-
+					DBG((dbg, LEVEL_3, "\t...found definition %+F\n", info->u.definition));
+					block_info->u.last_definition = info->u.definition;
 					break;
 				}
 			}
 
-			assert(def && "No definition found");
-
-			block_info->u.last_definition = def;
+			assert(block_info->u.last_definition && "No definition found");
 		}
 
 		return block_info->u.last_definition;

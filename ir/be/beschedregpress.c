@@ -174,7 +174,6 @@ static void *reg_pressure_graph_init(ir_graph *irg)
 
 static void *reg_pressure_block_init(void *graph_env, ir_node *bl)
 {
-	ir_node *irn;
 	reg_pressure_selector_env_t *env = XMALLOC(reg_pressure_selector_env_t);
 	(void) graph_env;
 

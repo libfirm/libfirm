@@ -875,8 +875,6 @@ static void arm_emit_block_header(ir_node *block, ir_node *prev)
  */
 static void arm_gen_block(ir_node *block, ir_node *prev_block)
 {
-	ir_node *irn;
-
 	arm_emit_block_header(block, prev_block);
 	be_dwarf_location(get_irn_dbg_info(block));
 	sched_foreach(block, irn) {

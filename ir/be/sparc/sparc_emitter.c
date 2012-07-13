@@ -1298,7 +1298,6 @@ static bool block_needs_label(const ir_node *block, const ir_node *sched_prev)
  */
 static void sparc_emit_block(ir_node *block, ir_node *prev)
 {
-	ir_node *node;
 	ir_node *next_delay_slot;
 	bool     needs_label = block_needs_label(block, prev);
 

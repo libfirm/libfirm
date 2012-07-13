@@ -316,9 +316,8 @@ static void check_defs(const ir_nodeset_t *live_nodes, float weight,
  */
 static void analyze_block(ir_node *block, void *data)
 {
-	float         weight = (float)get_block_execfreq(execfreqs, block);
-	ir_nodeset_t  live_nodes;
-	ir_node      *node;
+	float        weight = (float)get_block_execfreq(execfreqs, block);
+	ir_nodeset_t live_nodes;
 	(void) data;
 
 	ir_nodeset_init(&live_nodes);
@@ -439,8 +438,7 @@ static void congruence_def(ir_nodeset_t *live_nodes, const ir_node *node)
 
 static void create_congruence_class(ir_node *block, void *data)
 {
-	ir_nodeset_t  live_nodes;
-	ir_node      *node;
+	ir_nodeset_t live_nodes;
 
 	(void) data;
 	ir_nodeset_init(&live_nodes);
@@ -478,7 +476,6 @@ static void create_congruence_class(ir_node *block, void *data)
 			unsigned              r;
 			int                   old_node_idx;
 			ir_node              *live;
-			ir_node              *phi;
 			allocation_info_t    *head_info;
 			allocation_info_t    *other_info;
 			ir_node              *op     = get_Phi_pred(node, i);
@@ -1604,7 +1601,6 @@ static void assign_phi_registers(ir_node *block)
 	int                  n;
 	int                  res;
 	unsigned            *assignment;
-	ir_node             *node;
 	hungarian_problem_t *bp;
 
 	/* count phi nodes */
@@ -1692,7 +1688,6 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 {
 	int            i;
 	ir_nodeset_t   live_nodes;
-	ir_node       *node;
 	int            n_preds;
 	block_info_t  *block_info;
 	block_info_t **pred_block_infos;
@@ -1727,7 +1722,7 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		const arch_register_t     *reg;
 		int                        p;
 
-		node = be_lv_get_irn(lv, block, i);
+		ir_node *node = be_lv_get_irn(lv, block, i);
 		req  = arch_get_irn_register_req(node);
 		if (req->cls != cls)
 			continue;
@@ -1812,7 +1807,8 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 	/* all live-ins must have a register */
 #ifdef DEBUG_libfirm
 	{
-		ir_nodeset_iterator_t  iter;
+		ir_nodeset_iterator_t iter;
+		ir_node              *node;
 		foreach_ir_nodeset(&live_nodes, node, iter) {
 			const arch_register_t *reg = arch_get_irn_register(node);
 			assert(reg != NULL);

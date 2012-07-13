@@ -112,10 +112,9 @@ void create_borders(ir_node *block, void *env_ptr)
 #define border_use(irn, step, real) \
 	border_add(env, head, irn, step, ++pressure, 0, real)
 
-	be_chordal_env_t *env             = (be_chordal_env_t*)env_ptr;
-	bitset_t *live                    = bitset_malloc(get_irg_last_idx(env->irg));
-	ir_node *irn;
-	be_lv_t *lv                       = be_get_irg_liveness(env->irg);
+	be_chordal_env_t *env  = (be_chordal_env_t*)env_ptr;
+	bitset_t         *live = bitset_malloc(get_irg_last_idx(env->irg));
+	be_lv_t          *lv   = be_get_irg_liveness(env->irg);
 
 	int i, n;
 	size_t elm;

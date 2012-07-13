@@ -361,8 +361,6 @@ static void peephole_ia32_Test(ir_node *node)
  */
 static void peephole_ia32_Return(ir_node *node)
 {
-	ir_node *irn;
-
 	if (!ia32_cg_config.use_pad_return)
 		return;
 
@@ -575,7 +573,6 @@ static ir_node *create_push(dbg_info *dbgi, ir_node *block,
 static void peephole_store_incsp(ir_node *store)
 {
 	dbg_info *dbgi;
-	ir_node  *node;
 	ir_node  *block;
 	ir_node  *noreg;
 	ir_node  *mem;

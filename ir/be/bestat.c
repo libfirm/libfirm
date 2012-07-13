@@ -59,10 +59,9 @@ static void check_reg_pressure_class(pressure_walker_env_t *env,
                                      ir_node *block,
                                      const arch_register_class_t *cls)
 {
-	ir_graph     *irg  = env->irg;
-	ir_node      *irn;
-	ir_nodeset_t  live_nodes;
-	size_t        max_live;
+	ir_graph    *irg  = env->irg;
+	ir_nodeset_t live_nodes;
+	size_t       max_live;
 
 	ir_nodeset_init(&live_nodes);
 	be_liveness_end_of_block(env->lv, cls, block, &live_nodes);
@@ -128,8 +127,7 @@ typedef struct estimate_irg_costs_env_t {
 static void estimate_block_costs(ir_node *block, void *data)
 {
 	estimate_irg_costs_env_t *env = (estimate_irg_costs_env_t*)data;
-	ir_node *node;
-	double  costs = 0.0;
+	double costs = 0.0;
 
 	sched_foreach(block, node) {
 		costs += arch_get_op_estimated_cost(node);

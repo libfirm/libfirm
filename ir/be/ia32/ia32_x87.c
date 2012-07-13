@@ -821,7 +821,6 @@ static void update_liveness(x87_simulator *sim, ir_node *block)
 {
 	vfp_liveness live = vfp_liveness_end_of_block(sim, block);
 	unsigned idx;
-	ir_node *irn;
 
 	/* now iterate through the block backward and cache the results */
 	sched_foreach_reverse(block, irn) {

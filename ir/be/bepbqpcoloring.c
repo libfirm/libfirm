@@ -319,7 +319,6 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 	pbqp_t                      *pbqp_inst          = pbqp_alloc_env->pbqp_inst;
 	plist_t                     *temp_list          = plist_new();
 	plist_element_t             *el;
-	ir_node                     *irn;
 	ir_nodeset_t                 live_nodes;
 #if USE_BIPARTIT_MATCHING
 	int                         *assignment         = ALLOCAN(int, cls->n_regs);

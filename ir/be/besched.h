@@ -199,10 +199,10 @@ static inline bool sched_comes_after(const ir_node *n1, const ir_node *n2)
 }
 
 #define sched_foreach_from(from, irn) \
-  for(irn = from; !sched_is_end(irn); irn = sched_next(irn))
+  for (ir_node *irn = from; !sched_is_end(irn); irn = sched_next(irn))
 
 #define sched_foreach_reverse_from(from, irn) \
-  for(irn = from; !sched_is_begin(irn); irn = sched_prev(irn))
+  for (ir_node *irn = from; !sched_is_begin(irn); irn = sched_prev(irn))
 
 /**
  * A shorthand macro for iterating over a schedule.
