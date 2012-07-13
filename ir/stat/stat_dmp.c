@@ -261,7 +261,7 @@ static void simple_dump_opt_hash(dumper_t *dmp, pset *set, int index)
 static void simple_dump_be_block_reg_pressure(dumper_t *dmp, graph_entry_t *entry)
 {
 	/* return if no be statistic information available */
-	be_block_entry_t *const b_first = (be_block_entry_t*)pset_first(entry->be_block_hash);
+	be_block_entry_t *const b_first = pset_first(be_block_entry_t, entry->be_block_hash);
 	if (!b_first)
 		return;
 

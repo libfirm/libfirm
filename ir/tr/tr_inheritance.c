@@ -411,13 +411,13 @@ void free_inh_transitive_closure(void)
 ir_type *get_class_trans_subtype_first(const ir_type *tp)
 {
 	assert_valid_state();
-	return (ir_type*)pset_first(get_type_map(tp, d_down));
+	return pset_first(ir_type, get_type_map(tp, d_down));
 }
 
 ir_type *get_class_trans_subtype_next(const ir_type *tp)
 {
 	assert_valid_state();
-	return (ir_type*)pset_next(get_type_map(tp, d_down));
+	return pset_next(ir_type, get_type_map(tp, d_down));
 }
 
 int is_class_trans_subtype(const ir_type *tp, const ir_type *subtp)
@@ -431,13 +431,13 @@ int is_class_trans_subtype(const ir_type *tp, const ir_type *subtp)
 ir_type *get_class_trans_supertype_first(const ir_type *tp)
 {
 	assert_valid_state();
-	return (ir_type*)pset_first(get_type_map(tp, d_up));
+	return pset_first(ir_type, get_type_map(tp, d_up));
 }
 
 ir_type *get_class_trans_supertype_next(const ir_type *tp)
 {
 	assert_valid_state();
-	return (ir_type*)pset_next(get_type_map(tp, d_up));
+	return pset_next(ir_type, get_type_map(tp, d_up));
 }
 
 /* - overwrittenby ------------------------------------------------------- */
@@ -445,13 +445,13 @@ ir_type *get_class_trans_supertype_next(const ir_type *tp)
 ir_entity *get_entity_trans_overwrittenby_first(const ir_entity *ent)
 {
 	assert_valid_state();
-	return (ir_entity*)pset_first(get_entity_map(ent, d_down));
+	return pset_first(ir_entity, get_entity_map(ent, d_down));
 }
 
 ir_entity *get_entity_trans_overwrittenby_next(const ir_entity *ent)
 {
 	assert_valid_state();
-	return (ir_entity*)pset_next(get_entity_map(ent, d_down));
+	return pset_next(ir_entity, get_entity_map(ent, d_down));
 }
 
 /* - overwrites ---------------------------------------------------------- */
@@ -460,13 +460,13 @@ ir_entity *get_entity_trans_overwrittenby_next(const ir_entity *ent)
 ir_entity *get_entity_trans_overwrites_first(const ir_entity *ent)
 {
 	assert_valid_state();
-	return (ir_entity*)pset_first(get_entity_map(ent, d_up));
+	return pset_first(ir_entity, get_entity_map(ent, d_up));
 }
 
 ir_entity *get_entity_trans_overwrites_next(const ir_entity *ent)
 {
 	assert_valid_state();
-	return (ir_entity*)pset_next(get_entity_map(ent, d_up));
+	return pset_next(ir_entity, get_entity_map(ent, d_up));
 }
 
 

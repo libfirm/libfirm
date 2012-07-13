@@ -189,6 +189,8 @@ FIRM_API void *pset_remove(pset *pset, const void *key, unsigned hash);
  */
 FIRM_API void *pset_first(pset *pset);
 
+#define pset_first(type, pset) ((type*)pset_first((pset)))
+
 /**
  * Returns the next element of a pset.
  *
@@ -198,6 +200,8 @@ FIRM_API void *pset_first(pset *pset);
  *         iteration is finished
  */
 FIRM_API void *pset_next(pset *pset);
+
+#define pset_next(type, pset) ((type*)pset_next((pset)))
 
 /**
  * Breaks the iteration of a set. Must be called before
@@ -215,7 +219,7 @@ FIRM_API void pset_break(pset *pset);
  * @param type   type of iterator variable
  * @param entry  the iterator
  */
-#define foreach_pset(pset, type, entry) for (type *entry = (type*)pset_first(pset); entry; entry = (type*)pset_next(pset))
+#define foreach_pset(pset, type, entry) for (type *entry = pset_first(type, pset); entry; entry = pset_next(type, pset))
 
 /**
  * Inserts all elements of the pointer set src into
