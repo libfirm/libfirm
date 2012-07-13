@@ -7488,10 +7488,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\include\libfirm\adt\iterator.h"
-					>
-				</File>
-				<File
 					RelativePath="..\include\libfirm\adt\list.h"
 					>
 				</File>

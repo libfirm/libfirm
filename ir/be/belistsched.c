@@ -36,7 +36,6 @@
 
 #include "obst.h"
 #include "list.h"
-#include "iterator.h"
 
 #include "iredges_t.h"
 #include "irgwalk.h"

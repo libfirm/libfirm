@@ -537,7 +537,6 @@
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\hashptr.h"/>
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\hungarian.h"/>
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\hashset.h"/>
-    <ClInclude Include="$(FirmRoot)\include\libfirm\adt\iterator.h"/>
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\list.h"/>
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\obstack.h"/>
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\pdeq.h"/>

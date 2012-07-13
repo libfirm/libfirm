@@ -261,7 +261,6 @@ EXTRA_DIST = \
 	adt/bitset.h \
 	adt/compiler.h \
 	adt/fourcc.h \
-	adt/iterator.h \
 	adt/raw_bitset.h \
 	adt/util.h \
 	ana/absgraph.h \

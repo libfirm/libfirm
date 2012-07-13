@@ -32,7 +32,6 @@
 #include "list.h"
 #include "bitset.h"
 #include "raw_bitset.h"
-#include "iterator.h"
 #include "bipartite.h"
 #include "hungarian.h"
 
