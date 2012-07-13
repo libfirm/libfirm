@@ -553,7 +553,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	sched_add_after(skip_Proj(irn), keep);
 
 	/* insert the other different and its copies into the map */
-	entry = (op_copy_assoc_t*)ir_nodehashmap_get(op_set, other_different);
+	entry = ir_nodehashmap_get(op_copy_assoc_t, op_set, other_different);
 	if (! entry) {
 		entry      = OALLOC(&env->obst, op_copy_assoc_t);
 		entry->cls = cls;

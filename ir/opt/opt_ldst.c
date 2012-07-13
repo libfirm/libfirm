@@ -311,7 +311,7 @@ restart:
 		goto restart;
 	}
 
-	entry = (address_entry*)ir_nodehashmap_get(&env.adr_map, adr);
+	entry = ir_nodehashmap_get(address_entry, &env.adr_map, adr);
 
 	if (entry == NULL) {
 		/* new address */

@@ -101,6 +101,8 @@ void ir_nodehashmap_remove(ir_nodehashmap_t *nodehashmap, const ir_node *node);
 void *ir_nodehashmap_get(const ir_nodehashmap_t *nodehashmap,
                          const ir_node *node);
 
+#define ir_nodehashmap_get(type, self, node) ((type*)ir_nodehashmap_get((self), (node)))
+
 /**
  * Returns the number of pointers contained in the nodehashmap
  *

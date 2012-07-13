@@ -110,8 +110,7 @@ static inline spill_info_t *create_spill_info(minibelady_env_t *env, ir_node *st
 
 static inline spill_info_t *get_spill_info(minibelady_env_t *env, const ir_node *node)
 {
-	spill_info_t *spill_info
-		= (spill_info_t*) ir_nodehashmap_get(&env->spill_infos, node);
+	spill_info_t *spill_info = ir_nodehashmap_get(spill_info_t, &env->spill_infos, node);
 	//ir_fprintf(stderr, "Get %+F -> %p\n", node, spill_info);
 	return spill_info;
 }

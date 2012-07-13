@@ -282,7 +282,7 @@ static ir_node *get_translated(ir_node *node, ir_node *block)
 		return node;
 
 	bi    = get_block_info(block);
-	trans = (ir_node *)ir_nodehashmap_get(bi->trans, node);
+	trans = ir_nodehashmap_get(ir_node, bi->trans, node);
 	return trans;
 }
 

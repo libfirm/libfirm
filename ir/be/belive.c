@@ -122,7 +122,7 @@ be_lv_info_node_t *be_lv_get(const be_lv_t *li, const ir_node *bl,
 	be_lv_info_node_t *res = NULL;
 
 	stat_ev_tim_push();
-	irn_live = (be_lv_info_t*)ir_nodehashmap_get(&li->map, bl);
+	irn_live = ir_nodehashmap_get(be_lv_info_t, &li->map, bl);
 	if (irn_live != NULL) {
 		unsigned idx = get_irn_idx(irn);
 
@@ -144,7 +144,7 @@ be_lv_info_node_t *be_lv_get(const be_lv_t *li, const ir_node *bl,
 static be_lv_info_node_t *be_lv_get_or_set(be_lv_t *li, ir_node *bl,
                                            ir_node *irn)
 {
-	be_lv_info_t *irn_live = (be_lv_info_t*)ir_nodehashmap_get(&li->map, bl);
+	be_lv_info_t *irn_live = ir_nodehashmap_get(be_lv_info_t, &li->map, bl);
 	if (irn_live == NULL) {
 		irn_live = OALLOCNZ(&li->obst, be_lv_info_t, LV_STD_SIZE);
 		irn_live[0].head.n_size = LV_STD_SIZE-1;
@@ -203,7 +203,7 @@ static be_lv_info_node_t *be_lv_get_or_set(be_lv_t *li, ir_node *bl,
 static int be_lv_remove(be_lv_t *li, const ir_node *bl,
                         const ir_node *irn)
 {
-	be_lv_info_t *irn_live = (be_lv_info_t*)ir_nodehashmap_get(&li->map, bl);
+	be_lv_info_t *irn_live = ir_nodehashmap_get(be_lv_info_t, &li->map, bl);
 
 	if (irn_live != NULL) {
 		unsigned n   = irn_live[0].head.n_members;

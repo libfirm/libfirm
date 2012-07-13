@@ -1545,7 +1545,7 @@ typedef struct loop_env {
 */
 static node_entry *get_irn_ne(ir_node *irn, loop_env *env)
 {
-	node_entry *e = (node_entry*)ir_nodehashmap_get(&env->map, irn);
+	node_entry *e = ir_nodehashmap_get(node_entry, &env->map, irn);
 
 	if (e == NULL) {
 		e = OALLOC(&env->obst, node_entry);

@@ -572,13 +572,13 @@ typedef enum block_flags_t {
 static bool get_block_flag(const ir_nodehashmap_t *infos, const ir_node *block,
                            int flag)
 {
-	return PTR_TO_INT(ir_nodehashmap_get(infos, block)) & flag;
+	return PTR_TO_INT(ir_nodehashmap_get(void, infos, block)) & flag;
 }
 
 static void set_block_flag(ir_nodehashmap_t *infos, ir_node *block,
                            block_flags_t flag)
 {
-	int data = PTR_TO_INT(ir_nodehashmap_get(infos, block));
+	int data = PTR_TO_INT(ir_nodehashmap_get(void, infos, block));
 	data |= flag;
 	ir_nodehashmap_insert(infos, block, INT_TO_PTR(data));
 }

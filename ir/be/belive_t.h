@@ -67,7 +67,7 @@ union be_lv_info_t {
 static inline int _be_lv_next_irn(const be_lv_t *lv, const ir_node *block,
                                   unsigned flags, int i)
 {
-	be_lv_info_t *arr = (be_lv_info_t*)ir_nodehashmap_get(&lv->map, block);
+	be_lv_info_t *arr = ir_nodehashmap_get(be_lv_info_t, &lv->map, block);
 	if (arr != NULL) {
 		int n_members = (int) arr[0].head.n_members;
 		while(i < n_members) {
@@ -84,7 +84,7 @@ static inline int _be_lv_next_irn(const be_lv_t *lv, const ir_node *block,
 static inline ir_node *_be_lv_get_irn(const be_lv_t *lv, const ir_node *block,
                                       int i)
 {
-	be_lv_info_t *arr = (be_lv_info_t*)ir_nodehashmap_get(&lv->map, block);
+	be_lv_info_t *arr = ir_nodehashmap_get(be_lv_info_t, &lv->map, block);
 	return get_idx_irn(lv->irg, arr[i + 1].node.idx);
 }
 

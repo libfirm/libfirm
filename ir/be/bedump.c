@@ -152,7 +152,7 @@ void be_dump_liveness_block(void *context, FILE *F, const ir_node *bl)
 {
 	if (is_Block(bl)) {
 		be_lv_t *lv = (be_lv_t*)context;
-		be_lv_info_t *info = (be_lv_info_t*)ir_nodehashmap_get(&lv->map, bl);
+		be_lv_info_t *info = ir_nodehashmap_get(be_lv_info_t, &lv->map, bl);
 
 		fprintf(F, "liveness:\n");
 		if (info != NULL) {
