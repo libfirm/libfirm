@@ -759,7 +759,7 @@ static void store_pattern(const char *fname)
 	fwrite("FPS1", 4, 1, f);
 	fwrite(&count, sizeof(count), 1, f);
 
-	foreach_pset(status->pattern_hash, pattern_entry_t*, entry) {
+	foreach_pset(status->pattern_hash, pattern_entry_t, entry) {
 		fwrite(entry, offsetof(pattern_entry_t, buf) + entry->len, 1, f);
 	}  /* for */
 	fclose(f);
@@ -841,7 +841,7 @@ static void pattern_output(const char *fname)
 
 	pattern_arr = XMALLOCN(pattern_entry_t*, count);
 	i           = 0;
-	foreach_pset(status->pattern_hash, pattern_entry_t*, entry) {
+	foreach_pset(status->pattern_hash, pattern_entry_t, entry) {
 		pattern_arr[i++] =  entry;
 	}  /* for */
 	assert(count == i);

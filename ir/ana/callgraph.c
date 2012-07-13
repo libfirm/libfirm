@@ -278,7 +278,7 @@ void compute_callgraph(void)
 		irg->callees = NEW_ARR_F(cg_callee_entry *, count);
 		irg->callee_isbe = NULL;
 		j = 0;
-		foreach_pset(callee_set, cg_callee_entry*, callee) {
+		foreach_pset(callee_set, cg_callee_entry, callee) {
 			irg->callees[j++] = callee;
 		}
 		del_pset(callee_set);
@@ -289,7 +289,7 @@ void compute_callgraph(void)
 		irg->callers = NEW_ARR_F(ir_graph *, count);
 		irg->caller_isbe =  NULL;
 		j = 0;
-		foreach_pset(caller_set, ir_graph*, c) {
+		foreach_pset(caller_set, ir_graph, c) {
 			irg->callers[j++] = c;
 		}
 		del_pset(caller_set);

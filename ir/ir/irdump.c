@@ -2294,20 +2294,20 @@ void dump_loop(FILE *F, ir_loop *l)
 	collect_nodeloop_external_nodes(l, loopnodes, extnodes);
 
 	/* build block lists */
-	foreach_pset(loopnodes, ir_node*, n) {
+	foreach_pset(loopnodes, ir_node, n) {
 		set_irn_link(n, NULL);
 	}
-	foreach_pset(extnodes, ir_node*, n) {
+	foreach_pset(extnodes, ir_node, n) {
 		set_irn_link(n, NULL);
 	}
-	foreach_pset(loopnodes, ir_node*, n) {
+	foreach_pset(loopnodes, ir_node, n) {
 		if (!is_Block(n)) {
 			ir_node *const b = get_nodes_block(n);
 			set_irn_link(n, get_irn_link(b));
 			set_irn_link(b, n);
 		}
 	}
-	foreach_pset(extnodes, ir_node*, n) {
+	foreach_pset(extnodes, ir_node, n) {
 		if (!is_Block(n)) {
 			ir_node *const b = get_nodes_block(n);
 			set_irn_link(n, get_irn_link(b));
@@ -2315,7 +2315,7 @@ void dump_loop(FILE *F, ir_loop *l)
 		}
 	}
 
-	foreach_pset(loopnodes, ir_node*, b) {
+	foreach_pset(loopnodes, ir_node, b) {
 		if (is_Block(b)) {
 			fprintf(F, "graph: { title: ");
 			print_nodeid(F, b);
@@ -2342,7 +2342,7 @@ void dump_loop(FILE *F, ir_loop *l)
 			fprintf(F, "\n");
 		}
 	}
-	foreach_pset(extnodes, ir_node*, b) {
+	foreach_pset(extnodes, ir_node, b) {
 		if (is_Block(b)) {
 			fprintf(F, "graph: { title: ");
 			print_nodeid(F, b);

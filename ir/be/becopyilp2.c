@@ -348,7 +348,7 @@ static inline void remove_edge(set *edges, ir_node *n1, ir_node *n2, size_t *cou
 	}
 }
 
-#define pset_foreach(pset, irn) foreach_pset((pset), ir_node*, (irn))
+#define pset_foreach(pset, irn) foreach_pset((pset), ir_node, (irn))
 
 /**
  * Search for an interference clique and an external node

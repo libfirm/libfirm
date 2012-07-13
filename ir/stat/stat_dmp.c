@@ -204,7 +204,7 @@ static void simple_dump_opcode_hash(dumper_t *dmp, pset *set)
 	cnt_clr(&f_normlized);
 
 	fprintf(dmp->f, "%-16s %-8s %-8s %-8s %-8s\n", "Opcode", "alive", "created", "->Id", "normalized");
-	foreach_pset(set, node_entry_t*, entry) {
+	foreach_pset(set, node_entry_t, entry) {
 		fprintf(dmp->f, "%-16s %8u %8u %8u %8u\n",
 			get_id_str(entry->op->name),
 			cnt_to_uint(&entry->cnt_alive),
@@ -248,7 +248,7 @@ static void simple_dump_opt_hash(dumper_t *dmp, pset *set, int index)
 		fprintf(dmp->f, "\n%s:\n", name);
 		fprintf(dmp->f, "%-16s %-8s\n", "Opcode", "deref");
 
-		foreach_pset(set, opt_entry_t*, entry) {
+		foreach_pset(set, opt_entry_t, entry) {
 			fprintf(dmp->f, "%-16s %8u\n",
 				get_id_str(entry->op->name), cnt_to_uint(&entry->count));
 		}  /* foreach_pset */
@@ -269,15 +269,15 @@ static void simple_dump_be_block_reg_pressure(dumper_t *dmp, graph_entry_t *entr
 	fprintf(dmp->f, "%12s", "Block Nr");
 
 	/* print table head (register class names) */
-	foreach_pset(b_first->reg_pressure, reg_pressure_entry_t*, rp_entry)
+	foreach_pset(b_first->reg_pressure, reg_pressure_entry_t, rp_entry)
 		fprintf(dmp->f, "%15s", rp_entry->class_name);
 	fprintf(dmp->f, "\n");
 
 	/* print the reg pressure for all blocks and register classes */
-	foreach_pset(entry->block_hash, be_block_entry_t*, b_entry) {
+	foreach_pset(entry->block_hash, be_block_entry_t, b_entry) {
 		fprintf(dmp->f, "BLK   %6ld", b_entry->block_nr);
 
-		foreach_pset(b_entry->reg_pressure, reg_pressure_entry_t*, rp_entry)
+		foreach_pset(b_entry->reg_pressure, reg_pressure_entry_t, rp_entry)
 			fprintf(dmp->f, "%15d", rp_entry->pressure);
 		fprintf(dmp->f, "\n");
 	}  /* for */
@@ -302,7 +302,7 @@ static void simple_dump_be_block_sched_ready(dumper_t *dmp, graph_entry_t *entry
 		fprintf(dmp->f, "%12s %12s %12s %12s %12s %12s %12s\n",
 			"Block Nr", "1 node", "2 nodes", "3 nodes", "4 nodes", "5 or more", "AVERAGE");
 
-		foreach_pset(entry->be_block_hash, be_block_entry_t*, b_entry) {
+		foreach_pset(entry->be_block_hash, be_block_entry_t, b_entry) {
 			/* this ensures that all keys from 1 to 5 are in the table */
 			for (i = 1; i < 6; ++i)
 				stat_insert_int_distrib_tbl(b_entry->sched_ready, i);
@@ -344,7 +344,7 @@ static void simple_dump_be_block_permstat_class(dumper_t *dmp, perm_class_entry_
 		"# exchanges"
 	);
 
-	foreach_pset(entry->perm_stat, perm_stat_entry_t*, ps_ent) {
+	foreach_pset(entry->perm_stat, perm_stat_entry_t, ps_ent) {
 		fprintf(dmp->f, "%12d %12d %12d %12d %12d %12d\n",
 			ps_ent->size,
 			ps_ent->real_size,
@@ -400,11 +400,11 @@ static void simple_dump_be_block_permstat(dumper_t *dmp, graph_entry_t *entry)
 {
 	if (pset_count(entry->be_block_hash) > 0) {
 		fprintf(dmp->f, "\nPERMUTATION STATISTICS BEGIN:\n");
-		foreach_pset(entry->be_block_hash, be_block_entry_t*, b_entry) {
+		foreach_pset(entry->be_block_hash, be_block_entry_t, b_entry) {
 			fprintf(dmp->f, "BLOCK %ld:\n", b_entry->block_nr);
 
 			if (b_entry->perm_class_stat) {
-				foreach_pset(b_entry->perm_class_stat, perm_class_entry_t*, pc_ent) {
+				foreach_pset(b_entry->perm_class_stat, perm_class_entry_t, pc_ent) {
 					fprintf(dmp->f, "register class %s:\n", pc_ent->class_name);
 					simple_dump_be_block_permstat_class(dmp, pc_ent);
 				}  /* foreach_pset */
@@ -551,7 +551,7 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 
 		/* dump block info */
 		fprintf(dmp->f, "\n%12s %12s %12s %12s %12s %12s %12s\n", "Block Nr", "Nodes", "intern E", "incoming E", "outgoing E", "Phi", "quot");
-		foreach_pset(entry->block_hash, block_entry_t*, b_entry) {
+		foreach_pset(entry->block_hash, block_entry_t, b_entry) {
 			fprintf(dmp->f, "BLK   %6ld %12u %12u %12u %12u %12u %4.8f %s\n",
 				b_entry->block_nr,
 				cnt_to_uint(&b_entry->cnt[bcnt_nodes]),
@@ -722,7 +722,7 @@ static void csv_count_nodes(dumper_t *dmp, graph_entry_t *graph, counter_t cnt[]
 	for (i = 0; i < 4; ++i)
 		cnt_clr(&cnt[i]);
 
-	foreach_pset(graph->opcode_hash, node_entry_t*, entry) {
+	foreach_pset(graph->opcode_hash, node_entry_t, entry) {
 		if (entry->op == op_Phi) {
 			/* normal Phi */
 			cnt_add(&cnt[1], &entry->cnt_alive);

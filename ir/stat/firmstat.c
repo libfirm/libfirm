@@ -1104,7 +1104,7 @@ static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
 	int i;
 
 	/* clear first the alive counter in the graph */
-	foreach_pset(graph->opcode_hash, node_entry_t*, entry) {
+	foreach_pset(graph->opcode_hash, node_entry_t, entry) {
 		cnt_clr(&entry->cnt_alive);
 	}  /* foreach_pset */
 
@@ -1140,7 +1140,7 @@ static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
 		graph->is_chain_call = 0;
 
 	/* assume we walk every graph only ONCE, we could sum here the global count */
-	foreach_pset(graph->opcode_hash, node_entry_t*, entry) {
+	foreach_pset(graph->opcode_hash, node_entry_t, entry) {
 		node_entry_t *g_entry = opcode_get_entry(entry->op, global->opcode_hash);
 
 		/* update the node counter */
@@ -1252,7 +1252,7 @@ static void stat_dump_registered(graph_entry_t *entry)
 
 	for (dumper = status->dumper; dumper; dumper = dumper->next) {
 		if (dumper->func_map) {
-			foreach_pset(dumper->func_map, dump_graph_FUNC*, func)
+			foreach_pset(dumper->func_map, dump_graph_FUNC, func)
 				func(dumper, entry);
 		}  /* if */
 	}  /* for */
@@ -2073,7 +2073,7 @@ void stat_dump_snapshot(const char *name, const char *phase)
 		stat_dump_init(fname);
 
 		/* calculate the graph statistics */
-		foreach_pset(status->irg_hash, graph_entry_t*, entry) {
+		foreach_pset(status->irg_hash, graph_entry_t, entry) {
 			if (entry->irg == NULL) {
 				/* special entry for the global count */
 				continue;
@@ -2092,7 +2092,7 @@ void stat_dump_snapshot(const char *name, const char *phase)
 		}  /* while */
 
 		/* dump per graph */
-		foreach_pset(status->irg_hash, graph_entry_t*, entry) {
+		foreach_pset(status->irg_hash, graph_entry_t, entry) {
 			if (entry->irg == NULL) {
 				/* special entry for the global count */
 				continue;
@@ -2128,7 +2128,7 @@ void stat_dump_snapshot(const char *name, const char *phase)
 		stat_finish_pattern_history(fname);
 
 		/* clear the global counters here */
-		foreach_pset(global->opcode_hash, node_entry_t*, entry) {
+		foreach_pset(global->opcode_hash, node_entry_t, entry) {
 			opcode_clear_entry(entry);
 		}  /* for */
 		/* clear all global counter */

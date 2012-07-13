@@ -437,7 +437,7 @@ void *(pset_insert) (SET *se, const void *key, unsigned hash)
 
 void pset_insert_pset_ptr(pset *target, pset *src)
 {
-	foreach_pset(src, void*, elt) {
+	foreach_pset(src, void, elt) {
 		pset_insert_ptr(target, elt);
 	}
 }

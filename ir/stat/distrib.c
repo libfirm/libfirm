@@ -188,7 +188,7 @@ int stat_get_count_distrib_tbl(distrib_tbl_t *tbl)
 {
 	counter_t cnt = ZERO_CNT;
 
-	foreach_pset(tbl->hash_map, distrib_entry_t*, entry)
+	foreach_pset(tbl->hash_map, distrib_entry_t, entry)
 		cnt_add(&cnt, &entry->cnt);
 	return cnt_to_uint(&cnt);
 }
@@ -210,7 +210,7 @@ double stat_calc_mean_distrib_tbl(distrib_tbl_t *tbl)
 		int max = INT_MIN;
 		sum = 0.0;
 
-		foreach_pset(tbl->hash_map, distrib_entry_t*, entry) {
+		foreach_pset(tbl->hash_map, distrib_entry_t, entry) {
 			int value = PTR_TO_INT(entry->object);
 
 			if (value < min)
@@ -224,7 +224,7 @@ double stat_calc_mean_distrib_tbl(distrib_tbl_t *tbl)
 	} else {
 		sum = 0.0;
 		count = 0;
-		foreach_pset(tbl->hash_map, distrib_entry_t*, entry) {
+		foreach_pset(tbl->hash_map, distrib_entry_t, entry) {
 			sum += cnt_to_dbl(&entry->cnt);
 			++count;
 		}
@@ -245,12 +245,12 @@ double stat_calc_avg_distrib_tbl(distrib_tbl_t *tbl)
 		if (pset_count(tbl->hash_map) <= 0)
 			return 0.0;
 
-		foreach_pset(tbl->hash_map, distrib_entry_t*, entry) {
+		foreach_pset(tbl->hash_map, distrib_entry_t, entry) {
 			sum   += cnt_to_dbl(&entry->cnt) * PTR_TO_INT(entry->object);
 			count += cnt_to_uint(&entry->cnt);
 		}
 	} else {
-		foreach_pset(tbl->hash_map, distrib_entry_t*, entry) {
+		foreach_pset(tbl->hash_map, distrib_entry_t, entry) {
 			sum += cnt_to_dbl(&entry->cnt);
 			++count;
 		}
@@ -264,6 +264,6 @@ double stat_calc_avg_distrib_tbl(distrib_tbl_t *tbl)
  */
 void stat_iterate_distrib_tbl(const distrib_tbl_t *tbl, eval_distrib_entry_fun eval, void *env)
 {
-	foreach_pset(tbl->hash_map, distrib_entry_t*, entry)
+	foreach_pset(tbl->hash_map, distrib_entry_t, entry)
 		eval(entry, env);
 }

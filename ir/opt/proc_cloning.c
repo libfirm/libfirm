@@ -612,7 +612,7 @@ void proc_cloning(float threshold)
 		/* We iterate the set and arrange the element of the set in a list.
 		   The elements are arranged dependent of their value descending.*/
 		if (hmap.map) {
-			foreach_pset(hmap.map, entry_t*, entry) {
+			foreach_pset(hmap.map, entry_t, entry) {
 				entry->weight = calculate_weight(entry);
 
 				/*

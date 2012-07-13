@@ -6622,7 +6622,7 @@ void visit_all_identities(ir_graph *irg, irg_walk_func visit, void *env)
 	ir_graph *rem = current_ir_graph;
 
 	current_ir_graph = irg;
-	foreach_pset(irg->value_table, ir_node*, node) {
+	foreach_pset(irg->value_table, ir_node, node) {
 		visit(node, env);
 	}
 	current_ir_graph = rem;

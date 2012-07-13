@@ -246,7 +246,7 @@ static inline int get_next_clique(cliques_iter_t *it)
 					int count = 0;
 
 					/* fill the output buffer */
-					foreach_pset(it->living, ir_node*, irn) {
+					foreach_pset(it->living, ir_node, irn) {
 						it->buf[count++] = irn;
 					}
 

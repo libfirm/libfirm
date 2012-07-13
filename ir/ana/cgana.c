@@ -120,7 +120,7 @@ static ir_entity **get_impl_methods(ir_entity *method)
 		arr = NULL;
 	} else {
 		arr = NEW_ARR_F(ir_entity *, size);
-		foreach_pset(set, ir_entity*, ent) {
+		foreach_pset(set, ir_entity, ent) {
 			arr[--size] = ent;
 		}
 	}
@@ -570,7 +570,7 @@ static size_t get_free_methods(ir_entity ***free_methods)
 	length = pset_count(free_set);
 	arr = XMALLOCN(ir_entity*, length);
 	i = 0;
-	foreach_pset(free_set, ir_entity*, ent) {
+	foreach_pset(free_set, ir_entity, ent) {
 		arr[i++] = ent;
 	}
 	del_pset(free_set);
@@ -717,7 +717,7 @@ static void callee_walker(ir_node *call, void *env)
 		callee_ana_node(get_Call_ptr(call), methods);
 		arr = NEW_ARR_F(ir_entity*, pset_count(methods));
 		i = 0;
-		foreach_pset(methods, ir_entity*, ent) {
+		foreach_pset(methods, ir_entity, ent) {
 			arr[i] = ent;
 			/* we want the unknown_entity on the zero position for easy tests later */
 			if (is_unknown_entity(ent)) {
@@ -771,7 +771,7 @@ static void callee_ana(void)
 static void sel_methods_dispose(void)
 {
 	assert(entities);
-	foreach_pset(entities, ir_entity*, ent) {
+	foreach_pset(entities, ir_entity, ent) {
 		ir_entity **arr = (ir_entity**) get_entity_link(ent);
 		if (arr != NULL) {
 			DEL_ARR_F(arr);
