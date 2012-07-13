@@ -32,16 +32,6 @@
 #include "firm_types.h"
 #include "xmalloc.h"
 
-/*
- * sebastian experimental:
- * use ordered arrays as node sets.
- * the guys here have made good experiences with that.
- * Internally we use normal Firm arrays and binary
- * search for locating the elements. Using arrays should
- * give the sets a small footprint.
- */
-#undef  IR_NODESET_USE_ORDERED_SETS
-
 #define HashSet          ir_nodeset_t
 #define HashSetIterator  ir_nodeset_iterator_t
 #define ValueType        ir_node*

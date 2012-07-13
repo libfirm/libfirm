@@ -29,16 +29,6 @@
 #include "xmalloc.h"
 #include "list.h"
 
-/*
- * sebastian experimental:
- * use ordered arrays as node sets.
- * the guys here have made good experiences with that.
- * Internally we use normal Firm arrays and binary
- * search for locating the elements. Using arrays should
- * give the sets a small footprint.
- */
-#undef IR_NODESET_USE_ORDERED_SETS
-
 typedef struct ir_lnk_nodeset_entry_t {
 	ir_node     *node;  /**< the node itself */
 	list_head   list;   /**< link field for the list iterator */
