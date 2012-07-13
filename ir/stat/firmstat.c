@@ -1101,7 +1101,6 @@ static void count_adr_ops(ir_node *node, void *env)
  */
 static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
 {
-	node_entry_t *entry;
 	int i;
 
 	/* clear first the alive counter in the graph */
@@ -1253,8 +1252,6 @@ static void stat_dump_registered(graph_entry_t *entry)
 
 	for (dumper = status->dumper; dumper; dumper = dumper->next) {
 		if (dumper->func_map) {
-			dump_graph_FUNC func;
-
 			foreach_pset(dumper->func_map, dump_graph_FUNC, func)
 				func(dumper, entry);
 		}  /* if */
@@ -2032,7 +2029,6 @@ void stat_dump_snapshot(const char *name, const char *phase)
 
 	STAT_ENTER;
 	{
-		graph_entry_t *entry;
 		graph_entry_t *global = graph_get_entry(NULL, status->irg_hash);
 
 		/*
@@ -2090,7 +2086,7 @@ void stat_dump_snapshot(const char *name, const char *phase)
 
 		/* some calculations are dependent, we pushed them on the wait_q */
 		while (! pdeq_empty(status->wait_q)) {
-			entry = (graph_entry_t*)pdeq_getr(status->wait_q);
+			graph_entry_t *const entry = (graph_entry_t*)pdeq_getr(status->wait_q);
 
 			update_graph_stat_2(global, entry);
 		}  /* while */
@@ -2132,15 +2128,11 @@ void stat_dump_snapshot(const char *name, const char *phase)
 		stat_finish_pattern_history(fname);
 
 		/* clear the global counters here */
-		{
-			node_entry_t *entry;
-
-			foreach_pset(global->opcode_hash, node_entry_t*, entry) {
-				opcode_clear_entry(entry);
-			}  /* for */
-			/* clear all global counter */
-			graph_clear_entry(global, /*all=*/1);
-		}
+		foreach_pset(global->opcode_hash, node_entry_t*, entry) {
+			opcode_clear_entry(entry);
+		}  /* for */
+		/* clear all global counter */
+		graph_clear_entry(global, /*all=*/1);
 	}
 	STAT_LEAVE;
 }  /* stat_dump_snapshot */

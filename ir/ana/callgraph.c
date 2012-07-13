@@ -270,8 +270,7 @@ void compute_callgraph(void)
 	/* Change the sets to arrays. */
 	for (i = 0; i < n_irgs; ++i) {
 		size_t j, count;
-		cg_callee_entry *callee;
-		ir_graph *c, *irg = get_irp_irg(i);
+		ir_graph *irg = get_irp_irg(i);
 		pset *callee_set, *caller_set;
 
 		callee_set = (pset *)irg->callees;

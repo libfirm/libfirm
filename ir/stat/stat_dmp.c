@@ -193,7 +193,6 @@ static const char *if_conv_names[IF_RESULT_LAST] = {
  */
 static void simple_dump_opcode_hash(dumper_t *dmp, pset *set)
 {
-	node_entry_t *entry;
 	counter_t f_alive;
 	counter_t f_new_node;
 	counter_t f_Id;
@@ -244,7 +243,6 @@ static const char *get_opt_name(int index)
 static void simple_dump_opt_hash(dumper_t *dmp, pset *set, int index)
 {
 	if (pset_count(set) > 0) {
-		opt_entry_t *entry;
 		const char *name = get_opt_name(index);
 
 		fprintf(dmp->f, "\n%s:\n", name);
@@ -262,18 +260,16 @@ static void simple_dump_opt_hash(dumper_t *dmp, pset *set, int index)
  */
 static void simple_dump_be_block_reg_pressure(dumper_t *dmp, graph_entry_t *entry)
 {
-	be_block_entry_t     *b_entry = (be_block_entry_t*)pset_first(entry->be_block_hash);
-	reg_pressure_entry_t *rp_entry;
-
 	/* return if no be statistic information available */
-	if (! b_entry)
+	be_block_entry_t *const b_first = (be_block_entry_t*)pset_first(entry->be_block_hash);
+	if (!b_first)
 		return;
 
 	fprintf(dmp->f, "\nREG PRESSURE:\n");
 	fprintf(dmp->f, "%12s", "Block Nr");
 
 	/* print table head (register class names) */
-	foreach_pset(b_entry->reg_pressure, reg_pressure_entry_t*, rp_entry)
+	foreach_pset(b_first->reg_pressure, reg_pressure_entry_t*, rp_entry)
 		fprintf(dmp->f, "%15s", rp_entry->class_name);
 	fprintf(dmp->f, "\n");
 
@@ -300,8 +296,7 @@ static void simple_dump_distrib_entry(const distrib_entry_t *entry, void *env)
 static void simple_dump_be_block_sched_ready(dumper_t *dmp, graph_entry_t *entry)
 {
 	if (pset_count(entry->be_block_hash) > 0) {
-		be_block_entry_t *b_entry;
-		int              i;
+		int i;
 
 		fprintf(dmp->f, "\nSCHEDULING: NUMBER OF READY NODES\n");
 		fprintf(dmp->f, "%12s %12s %12s %12s %12s %12s %12s\n",
@@ -335,11 +330,10 @@ static void add_distrib_entry(const distrib_entry_t *entry, void *env)
  */
 static void simple_dump_be_block_permstat_class(dumper_t *dmp, perm_class_entry_t *entry)
 {
-	perm_stat_entry_t *ps_ent;
-	distrib_tbl_t     *sum_chains = stat_new_int_distrib_tbl();
-	distrib_tbl_t     *sum_cycles = stat_new_int_distrib_tbl();
-	char              buf[16];
-	int               i;
+	distrib_tbl_t *sum_chains = stat_new_int_distrib_tbl();
+	distrib_tbl_t *sum_cycles = stat_new_int_distrib_tbl();
+	char           buf[16];
+	int            i;
 
 	fprintf(dmp->f, "%12s %12s %12s %12s %12s %12s\n",
 		"size",
@@ -405,12 +399,8 @@ static void simple_dump_be_block_permstat_class(dumper_t *dmp, perm_class_entry_
 static void simple_dump_be_block_permstat(dumper_t *dmp, graph_entry_t *entry)
 {
 	if (pset_count(entry->be_block_hash) > 0) {
-		be_block_entry_t *b_entry;
-
 		fprintf(dmp->f, "\nPERMUTATION STATISTICS BEGIN:\n");
 		foreach_pset(entry->be_block_hash, be_block_entry_t*, b_entry) {
-			perm_class_entry_t *pc_ent;
-
 			fprintf(dmp->f, "BLOCK %ld:\n", b_entry->block_nr);
 
 			if (b_entry->perm_class_stat) {
@@ -470,7 +460,6 @@ static void simple_dump_edges(dumper_t *dmp, counter_t *cnt)
 static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 {
 	int dump_opts = 1;
-	block_entry_t *b_entry;
 
 	if (! dmp->f)
 		return;
@@ -728,7 +717,6 @@ const dumper_t simple_dumper = {
  */
 static void csv_count_nodes(dumper_t *dmp, graph_entry_t *graph, counter_t cnt[])
 {
-	node_entry_t *entry;
 	int i;
 
 	for (i = 0; i < 4; ++i)

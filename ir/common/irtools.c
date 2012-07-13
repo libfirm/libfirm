@@ -211,8 +211,6 @@ void irn_rewire_inputs(ir_node *node)
 
 void firm_pset_dump(pset *set)
 {
-	void *obj;
-
 	foreach_pset(set, void*, obj) {
 		ir_fprintf(stderr, "%+F\n", obj);
 	}

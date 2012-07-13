@@ -6619,7 +6619,6 @@ void add_identities(ir_node *node)
 
 void visit_all_identities(ir_graph *irg, irg_walk_func visit, void *env)
 {
-	ir_node  *node;
 	ir_graph *rem = current_ir_graph;
 
 	current_ir_graph = irg;

@@ -414,7 +414,6 @@ static void build_clique_star_cstr(ilp_env_t *ienv)
 				/* search for a candidate to extend the clique */
 				for (i=0; i<n_nodes; ++i) {
 					ir_node *cand = nodes[i];
-					ir_node *member;
 					bool     is_cand;
 
 					/* if its already in the clique try the next */
@@ -447,10 +446,9 @@ static void build_clique_star_cstr(ilp_env_t *ienv)
 
 			/* now the clique is maximal. Finally add the constraint */
 			{
-				ir_node *member;
-				int      var_idx;
-				int      cst_idx;
-				char     buf[32];
+				int  var_idx;
+				int  cst_idx;
+				char buf[32];
 
 				cst_idx = lpp_add_cst(ienv->lp, NULL, lpp_greater_equal, pset_count(clique)-1);
 

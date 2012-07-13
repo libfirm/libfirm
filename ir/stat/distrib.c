@@ -186,7 +186,6 @@ void stat_insert_int_distrib_tbl(distrib_tbl_t *tbl, int key)
  */
 int stat_get_count_distrib_tbl(distrib_tbl_t *tbl)
 {
-	distrib_entry_t *entry;
 	counter_t cnt = ZERO_CNT;
 
 	foreach_pset(tbl->hash_map, distrib_entry_t*, entry)
@@ -199,7 +198,6 @@ int stat_get_count_distrib_tbl(distrib_tbl_t *tbl)
  */
 double stat_calc_mean_distrib_tbl(distrib_tbl_t *tbl)
 {
-	distrib_entry_t *entry;
 	size_t count;
 	double sum;
 
@@ -240,9 +238,8 @@ double stat_calc_mean_distrib_tbl(distrib_tbl_t *tbl)
  */
 double stat_calc_avg_distrib_tbl(distrib_tbl_t *tbl)
 {
-	distrib_entry_t *entry;
-	size_t          count = 0;
-	double          sum   = 0.0;
+	size_t count = 0;
+	double sum   = 0.0;
 
 	if (tbl->int_dist) {
 		if (pset_count(tbl->hash_map) <= 0)
@@ -267,8 +264,6 @@ double stat_calc_avg_distrib_tbl(distrib_tbl_t *tbl)
  */
 void stat_iterate_distrib_tbl(const distrib_tbl_t *tbl, eval_distrib_entry_fun eval, void *env)
 {
-	distrib_entry_t *entry;
-
 	foreach_pset(tbl->hash_map, distrib_entry_t*, entry)
 		eval(entry, env);
 }

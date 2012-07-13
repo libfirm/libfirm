@@ -745,7 +745,6 @@ static void calc_nodes_pattern(ir_node *node, void *ctx)
 static void store_pattern(const char *fname)
 {
 	FILE *f;
-	pattern_entry_t *entry;
 	size_t count = pset_count(status->pattern_hash);
 
 	if (count <= 0)
@@ -828,7 +827,6 @@ read_error:
  */
 static void pattern_output(const char *fname)
 {
-	pattern_entry_t  *entry;
 	pattern_entry_t  **pattern_arr;
 	pattern_dumper_t *dump;
 	size_t i, count = pset_count(status->pattern_hash);
@@ -853,7 +851,7 @@ static void pattern_output(const char *fname)
 	qsort(pattern_arr, count, sizeof(*pattern_arr), pattern_count_cmp);
 
 	for (i = 0; i < count; ++i) {
-		entry = pattern_arr[i];
+		pattern_entry_t *const entry = pattern_arr[i];
 		if (cnt_to_uint(&entry->count) < status->bound)
 			continue;
 

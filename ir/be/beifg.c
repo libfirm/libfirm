@@ -244,7 +244,6 @@ static inline int get_next_clique(cliques_iter_t *it)
 				/* before shrinking the set, return the current maximal clique */
 				if (output_on_shrink) {
 					int count = 0;
-					ir_node *irn;
 
 					/* fill the output buffer */
 					foreach_pset(it->living, ir_node*, irn) {
