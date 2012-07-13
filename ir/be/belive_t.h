@@ -44,7 +44,6 @@ struct be_lv_t {
 	struct obstack   obst;
 	bool             sets_valid;
 	ir_graph        *irg;
-	bitset_t        *nodes;
 	hook_entry_t     hook_info;
 	lv_chk_t        *lvc;
 };

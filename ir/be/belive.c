@@ -231,19 +231,6 @@ static int be_lv_remove(be_lv_t *li, const ir_node *bl,
 	return 0;
 }
 
-static void register_node(be_lv_t *lv, const ir_node *irn)
-{
-	unsigned idx = get_irn_idx(irn);
-	if (idx >= bitset_size(lv->nodes)) {
-		bitset_t *nw = bitset_malloc(2 * idx);
-		bitset_copy_into(nw, lv->nodes);
-		bitset_free(lv->nodes);
-		lv->nodes = nw;
-	}
-
-	bitset_set(lv->nodes, idx);
-}
-
 /**
  * Mark a node as live-in in a block.
  */
@@ -252,7 +239,6 @@ static inline void mark_live_in(be_lv_t *lv, ir_node *block, ir_node *irn)
 	be_lv_info_node_t *n = be_lv_get_or_set(lv, block, irn);
 	DBG((dbg, LEVEL_2, "marking %+F live in at %+F\n", irn, block));
 	n->flags |= be_lv_state_in;
-	register_node(lv, irn);
 }
 
 /**
@@ -263,7 +249,6 @@ static inline void mark_live_out(be_lv_t *lv, ir_node *block, ir_node *irn)
 	be_lv_info_node_t *n = be_lv_get_or_set(lv, block, irn);
 	DBG((dbg, LEVEL_2, "marking %+F live out at %+F\n", irn, block));
 	n->flags |= be_lv_state_out | be_lv_state_end;
-	register_node(lv, irn);
 }
 
 /**
@@ -274,7 +259,6 @@ static inline void mark_live_end(be_lv_t *lv, ir_node *block, ir_node *irn)
 	be_lv_info_node_t *n = be_lv_get_or_set(lv, block, irn);
 	DBG((dbg, LEVEL_2, "marking %+F live end at %+F\n", irn, block));
 	n->flags |= be_lv_state_end;
-	register_node(lv, irn);
 }
 
 static struct {
@@ -410,19 +394,11 @@ void be_liveness_compute_sets(be_lv_t *lv)
 	ir_node **nodes;
 	int       i;
 	int       n;
-	unsigned  last_idx;
 
 	if (lv->sets_valid)
 		return;
 
 	be_timer_push(T_LIVE);
-	last_idx = get_irg_last_idx(lv->irg);
-	if (last_idx >= bitset_size(lv->nodes)) {
-		bitset_free(lv->nodes);
-		lv->nodes = bitset_malloc(last_idx * 2);
-	} else {
-		bitset_clear_all(lv->nodes);
-	}
 	ir_nodehashmap_init(&lv->map);
 	obstack_init(&lv->obst);
 
@@ -486,7 +462,6 @@ be_lv_t *be_liveness_new(ir_graph *irg)
 	lv->irg = irg;
 	lv->hook_info.context = lv;
 	lv->hook_info.hook._hook_node_info = be_dump_liveness_block;
-	lv->nodes = bitset_malloc(2 * get_irg_last_idx(lv->irg));
 
 	return lv;
 }
@@ -496,14 +471,12 @@ void be_liveness_free(be_lv_t *lv)
 	be_liveness_invalidate_sets(lv);
 	be_liveness_invalidate_chk(lv);
 
-	bitset_free(lv->nodes);
 	xfree(lv);
 }
 
 void be_liveness_remove(be_lv_t *lv, const ir_node *irn)
 {
 	if (lv->sets_valid) {
-		unsigned idx = get_irn_idx(irn);
 		lv_remove_walker_t w;
 
 		/*
@@ -514,8 +487,6 @@ void be_liveness_remove(be_lv_t *lv, const ir_node *irn)
 		w.lv  = lv;
 		w.irn = irn;
 		dom_tree_walk(get_nodes_block(irn), lv_remove_irn_walker, NULL, &w);
-		if (idx < bitset_size(lv->nodes))
-			bitset_clear(lv->nodes, idx);
 	}
 }
 
@@ -576,7 +547,7 @@ void be_liveness_end_of_block(const be_lv_t *lv,
 {
 	int i;
 
-	assert(lv->nodes && "live sets must be computed");
+	assert(lv->sets_valid && "live sets must be computed");
 	be_lv_foreach(lv, block, be_lv_state_end, i) {
 		ir_node *node = be_lv_get_irn(lv, block, i);
 		if (!arch_irn_consider_in_reg_alloc(cls, node))

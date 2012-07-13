@@ -818,7 +818,7 @@ static void verify_block_register_allocation(ir_node *block, void *data)
 
 	(void) data;
 
-	assert(lv->nodes && "live sets must be computed");
+	assert(lv->sets_valid && "live sets must be computed");
 
 	n_regs    = arch_env->n_registers;
 	registers = ALLOCANZ(const ir_node*, n_regs);
