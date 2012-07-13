@@ -266,8 +266,7 @@ static ir_node *reg_pressure_select(void *block_env, ir_nodeset_t *ready_set)
 
 	assert(ir_nodeset_size(ready_set) > 0);
 
-	ir_nodeset_iterator_init(&iter, ready_set);
-	while ( (irn = ir_nodeset_iterator_next(&iter)) != NULL) {
+	foreach_ir_nodeset(ready_set, irn, iter) {
 		/*
 		Ignore branch instructions for the time being.
 		They should only be scheduled if there is nothing else.
