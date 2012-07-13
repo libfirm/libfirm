@@ -294,8 +294,8 @@ static void coalesce_blocks(blocksched_env_t *env)
 			continue;
 
 		pred_block = get_Block_cfgpred_block(block, pos);
-		entry      = (blocksched_entry_t*)get_irn_link(block);
-		pred_entry = (blocksched_entry_t*)get_irn_link(pred_block);
+		entry      = get_blocksched_entry(block);
+		pred_entry = get_blocksched_entry(pred_block);
 
 		if (pred_entry->next != NULL || entry->prev != NULL)
 			continue;
@@ -333,8 +333,8 @@ static void coalesce_blocks(blocksched_env_t *env)
 			continue;
 
 		pred_block = get_Block_cfgpred_block(block, pos);
-		entry      = (blocksched_entry_t*)get_irn_link(block);
-		pred_entry = (blocksched_entry_t*)get_irn_link(pred_block);
+		entry      = get_blocksched_entry(block);
+		pred_entry = get_blocksched_entry(pred_block);
 
 		if (pred_entry->next != NULL || entry->prev != NULL)
 			continue;
@@ -375,8 +375,8 @@ static void coalesce_blocks(blocksched_env_t *env)
 			continue;
 
 		pred_block = get_Block_cfgpred_block(block, pos);
-		entry      = (blocksched_entry_t*)get_irn_link(block);
-		pred_entry = (blocksched_entry_t*)get_irn_link(pred_block);
+		entry      = get_blocksched_entry(block);
+		pred_entry = get_blocksched_entry(pred_block);
 
 		/* is 1 of the blocks already attached to another block? */
 		if (pred_entry->next != NULL || entry->prev != NULL)
@@ -413,7 +413,7 @@ static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *en
 
 		/* we only need to put the first of a series of already connected
 		 * blocks into the worklist */
-		succ_entry = (blocksched_entry_t*)get_irn_link(succ_block);
+		succ_entry = get_blocksched_entry(succ_block);
 		while (succ_entry->prev != NULL) {
 			/* break cycles... */
 			if (succ_entry->prev->block == succ_block) {
@@ -449,7 +449,7 @@ static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *en
 		if (irn_visited(succ_block))
 			continue;
 
-		succ_entry = (blocksched_entry_t*)get_irn_link(succ_block);
+		succ_entry = get_blocksched_entry(succ_block);
 		if (succ_entry->prev != NULL)
 			continue;
 
@@ -472,7 +472,7 @@ static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *en
 		} while (irn_visited(succ));
 	}
 
-	succ_entry       = (blocksched_entry_t*)get_irn_link(succ);
+	succ_entry       = get_blocksched_entry(succ);
 	entry->next      = succ_entry;
 	succ_entry->prev = entry;
 
@@ -483,7 +483,7 @@ static blocksched_entry_t *finish_block_schedule(blocksched_env_t *env)
 {
 	ir_graph           *irg        = env->irg;
 	ir_node            *startblock = get_irg_start_block(irg);
-	blocksched_entry_t *entry      = (blocksched_entry_t*)get_irn_link(startblock);
+	blocksched_entry_t *entry      = get_blocksched_entry(startblock);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 	inc_irg_visited(irg);
