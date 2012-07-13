@@ -78,7 +78,7 @@ typedef struct loc_t {
 
 typedef struct workset_t {
 	unsigned len;     /**< current length */
-	loc_t    vals[0]; /**< array of the values/distances in this working set */
+	loc_t    vals[];  /**< array of the values/distances in this working set */
 } workset_t;
 
 static struct obstack               obst;

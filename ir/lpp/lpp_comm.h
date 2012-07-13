@@ -28,11 +28,6 @@
 #include <stdarg.h>
 #include <stdint.h>
 
-#ifdef _WIN32
-#include <BaseTsd.h>
-typedef SSIZE_T ssize_t;
-#endif
-
 #define LPP_PORT    2175
 #define LPP_BUFSIZE (1 << 20)
 
@@ -95,7 +90,7 @@ lpp_comm_t *lpp_comm_new(int fd, size_t buf_size);
 
 int lpp_comm_fileno(const lpp_comm_t *comm);
 
-ssize_t lpp_flush(lpp_comm_t *comm);
+void lpp_flush(lpp_comm_t *comm);
 
 void lpp_comm_free(lpp_comm_t *comm);
 

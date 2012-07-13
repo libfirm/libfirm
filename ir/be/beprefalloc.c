@@ -119,7 +119,7 @@ struct allocation_info_t {
 	unsigned  last_uses[2];   /**< bitset indicating last uses (input pos) */
 	ir_node  *current_value;  /**< copy of the value that should be used */
 	ir_node  *original_value; /**< for copies point to original value */
-	float     prefs[0];       /**< register preferences */
+	float     prefs[];        /**< register preferences */
 };
 typedef struct allocation_info_t allocation_info_t;
 
@@ -133,7 +133,7 @@ typedef struct reg_pref_t reg_pref_t;
 /** per basic-block information */
 struct block_info_t {
 	bool     processed;       /**< indicate whether block is processed */
-	ir_node *assignments[0];  /**< register assignments at end of block */
+	ir_node *assignments[];   /**< register assignments at end of block */
 };
 typedef struct block_info_t block_info_t;
 

@@ -33,6 +33,8 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <winsock2.h>
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
 #else
 #include <unistd.h>
 #include <sys/types.h>
@@ -119,7 +121,7 @@ static ssize_t secure_send(int fd, const void *buf, size_t n)
 	return n;
 }
 
-ssize_t lpp_flush(lpp_comm_t *comm)
+static ssize_t lpp_flush_(lpp_comm_t *comm)
 {
 	ssize_t res = 0;
 	if(comm->w_pos - comm->w_buf > 0) {
@@ -131,6 +133,11 @@ ssize_t lpp_flush(lpp_comm_t *comm)
 		comm->w_pos = comm->w_buf;
 	}
 	return res;
+}
+
+void lpp_flush(lpp_comm_t *comm)
+{
+	lpp_flush_(comm);
 }
 
 static ssize_t lpp_write(lpp_comm_t *comm, const void *buf, size_t len)
@@ -160,7 +167,7 @@ static ssize_t lpp_write(lpp_comm_t *comm, const void *buf, size_t len)
 			size_t n_direct = rest / comm->buf_size;
 			size_t last_rest;
 
-			if(lpp_flush(comm) < 0)
+			if(lpp_flush_(comm) < 0)
 				return -1;
 
 			for(i = 0; i < n_direct; ++i) {

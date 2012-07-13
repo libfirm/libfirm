@@ -35,6 +35,9 @@
 #ifdef _WIN32
 #include <malloc.h>
 #endif
+#if defined(__linux__) || defined(__APPLE__)
+#include <alloca.h>
+#endif
 
 #include "../begin.h"
 
