@@ -1252,7 +1252,7 @@ static void stat_dump_registered(graph_entry_t *entry)
 
 	for (dumper = status->dumper; dumper; dumper = dumper->next) {
 		if (dumper->func_map) {
-			foreach_pset(dumper->func_map, dump_graph_FUNC, func)
+			foreach_pset(dumper->func_map, dump_graph_FUNC*, func)
 				func(dumper, entry);
 		}  /* if */
 	}  /* for */
@@ -1326,7 +1326,7 @@ static void stat_dump_finish(void)
 /**
  * Register an additional function for all dumper.
  */
-void stat_register_dumper_func(dump_graph_FUNC func)
+void stat_register_dumper_func(dump_graph_FUNC *const func)
 {
 	dumper_t *dumper;
 
