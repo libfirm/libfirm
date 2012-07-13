@@ -221,14 +221,6 @@ static inline bool sched_comes_after(const ir_node *n1, const ir_node *n2)
   sched_foreach_reverse_from(sched_last(block), irn)
 
 /**
- * A shorthand macro for iterating over all Phi nodes of a schedule.
- * @param block The block.
- * @param phi A ir node pointer used as an iterator.
- */
-#define sched_foreach_Phi(block,phi) \
-	for (phi = sched_first(block); is_Phi(phi); phi = sched_next(phi))
-
-/**
  * Type for a function scheduling a graph
  */
 typedef void (*schedule_func) (ir_graph *irg);
