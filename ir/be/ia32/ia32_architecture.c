@@ -148,7 +148,7 @@ typedef enum cpu_arch_features {
 
 	cpu_autodetect  = 0,
 } cpu_arch_features;
-ENUM_BITSET(cpu_arch_features);
+ENUM_BITSET(cpu_arch_features)
 
 static int               opt_size             = 0;
 static int               emit_machcode        = 0;
