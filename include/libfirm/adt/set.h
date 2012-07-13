@@ -171,6 +171,8 @@ FIRM_API set_entry *set_hinsert0(set *set, const void *key, size_t size, unsigne
  */
 FIRM_API void *set_first(set *set);
 
+#define set_first(type, set) ((type*)set_first((set)))
+
 /**
  * Returns the next element of a set.
  *
@@ -180,6 +182,8 @@ FIRM_API void *set_first(set *set);
  *         iteration is finished
  */
 FIRM_API void *set_next(set *set);
+
+#define set_next(type, set) ((type*)set_next((set)))
 
 /**
  * Breaks the iteration of a set. Must be called before
@@ -197,7 +201,7 @@ FIRM_API void set_break(set *set);
  * @param type   type of iterator variable
  * @param entry  the iterator
  */
-#define foreach_set(set, type, entry) for (entry = (type*)set_first(set); entry; entry = (type*)set_next(set))
+#define foreach_set(set, type, entry) for (entry = set_first(type, set); entry; entry = set_next(type, set))
 
 /** @cond PRIVATE */
 

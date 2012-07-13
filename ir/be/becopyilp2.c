@@ -401,8 +401,7 @@ static void build_clique_star_cstr(ilp_env_t *ienv)
 			bool    growed;
 
 			/* get 2 starting nodes to form a clique */
-			for (e=(edge_t*)set_first(edges); !e->n1; e=(edge_t*)set_next(edges)) {
-			}
+			for (e = set_first(edge_t, edges); !e->n1; e = set_next(edge_t, edges)) {}
 
 			/* we could be stepped out of the loop before the set iterated to the end */
 			set_break(edges);

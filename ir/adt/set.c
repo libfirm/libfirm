@@ -168,7 +168,7 @@ static inline int iter_step(SET *table)
 /*
  * finds the first entry in the table
  */
-void * MANGLEP(first) (SET *table)
+void *(MANGLEP(first))(SET *table)
 {
 	assert (!table->iter_tail);
 	table->iter_i = 0;
@@ -184,7 +184,7 @@ void * MANGLEP(first) (SET *table)
 /*
  * returns next entry in the table
  */
-void *MANGLEP(next) (SET *table)
+void *(MANGLEP(next))(SET *table)
 {
 	if (!table->iter_tail)
 		return NULL;

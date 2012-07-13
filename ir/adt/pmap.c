@@ -104,12 +104,12 @@ size_t pmap_count(pmap *map)
 
 pmap_entry *pmap_first(pmap *map)
 {
-	return (pmap_entry *) set_first(M2S(map));
+	return set_first(pmap_entry, M2S(map));
 }
 
 pmap_entry *pmap_next(pmap *map)
 {
-	return (pmap_entry *) set_next(M2S(map));
+	return set_next(pmap_entry, M2S(map));
 }
 
 void pmap_break(pmap *map)
