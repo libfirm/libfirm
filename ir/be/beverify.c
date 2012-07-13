@@ -520,7 +520,7 @@ static void check_spillslot_interference(be_verify_spillslots_env_t *env)
 	int       i;
 
 	i = 0;
-	foreach_set(env->spills, spill_t*, spill) {
+	foreach_set(env->spills, spill_t, spill) {
 		spills[i++] = spill;
 	}
 

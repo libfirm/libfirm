@@ -152,7 +152,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 			 * above in the arg_set and insert it into the schedule.
 			 */
 			in = XMALLOCN(ir_node*, n_projs);
-			foreach_set(arg_set, perm_proj_t*, pp) {
+			foreach_set(arg_set, perm_proj_t, pp) {
 				in[pp->pos] = pp->arg;
 			}
 
@@ -171,7 +171,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 			 * arguments to the projs (new phi arguments).
 			 */
 			insert_after = perm;
-			foreach_set(arg_set, perm_proj_t*, pp) {
+			foreach_set(arg_set, perm_proj_t, pp) {
 				ir_node *proj = new_r_Proj(perm, get_irn_mode(pp->arg), pp->pos);
 				pp->proj = proj;
 				assert(arch_get_irn_register(pp->arg));

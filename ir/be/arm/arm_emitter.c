@@ -957,7 +957,7 @@ void arm_gen_routine(ir_graph *irg)
 
 		be_emit_cstring("\t.align 2\n");
 
-		foreach_set(sym_or_tv, sym_or_tv_t*, entry) {
+		foreach_set(sym_or_tv, sym_or_tv_t, entry) {
 			emit_constant_name(entry);
 			be_emit_cstring(":\n");
 			be_emit_write_line();

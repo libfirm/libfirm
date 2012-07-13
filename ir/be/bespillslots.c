@@ -642,7 +642,7 @@ static void create_memperms(be_fec_env_t *env)
 {
 	memperm_t *memperm;
 
-	foreach_set(env->memperms, memperm_t*, memperm) {
+	foreach_set(env->memperms, memperm_t, memperm) {
 		ir_node         **nodes = ALLOCAN(ir_node*, memperm->entrycount);
 		memperm_entry_t  *entry;
 		ir_node          *blockend;

@@ -749,7 +749,7 @@ void scalar_replacement_opt(ir_graph *irg)
 		if (nvals > 0) {
 			do_scalar_replacements(irg, sels, nvals, modes);
 
-			foreach_set(set_ent, scalars_t*, value) {
+			foreach_set(set_ent, scalars_t, value) {
 				free_entity(value->ent);
 			}
 

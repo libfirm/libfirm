@@ -119,7 +119,7 @@ static void classify_edges(dfs_t *dfs)
 	stat_ev_cnt_decl(fwd);
 	stat_ev_cnt_decl(cross);
 
-	foreach_set (dfs->edges, dfs_edge_t*, edge) {
+	foreach_set (dfs->edges, dfs_edge_t, edge) {
 		dfs_node_t *src = edge->s;
 		dfs_node_t *tgt = edge->t;
 
@@ -192,7 +192,7 @@ dfs_t *dfs_new(const absgraph_t *graph_impl, void *graph_self)
 	assert(res->pre_num == res->post_num);
 	res->pre_order  = XMALLOCN(dfs_node_t*, res->pre_num);
 	res->post_order = XMALLOCN(dfs_node_t*, res->post_num);
-	foreach_set (res->nodes, dfs_node_t*, node) {
+	foreach_set (res->nodes, dfs_node_t, node) {
 		assert(node->pre_num < res->pre_num);
 		assert(node->post_num < res->post_num);
 
@@ -255,7 +255,7 @@ void dfs_dump(const dfs_t *dfs, FILE *file)
 	int i, n = 0;
 
 	ir_fprintf(file, "digraph G {\nranksep=0.5\n");
-	foreach_set (dfs->nodes, dfs_node_t*, node) {
+	foreach_set (dfs->nodes, dfs_node_t, node) {
 		nodes[n++] = node;
 	}
 
@@ -283,7 +283,7 @@ void dfs_dump(const dfs_t *dfs, FILE *file)
 #endif
 	}
 
-	foreach_set (dfs->edges, dfs_edge_t*, edge)
+	foreach_set (dfs->edges, dfs_edge_t, edge)
 		dfs_dump_edge(edge, file);
 
 	ir_fprintf(file, "}\n");

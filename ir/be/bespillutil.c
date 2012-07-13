@@ -890,7 +890,7 @@ void be_insert_spills_reloads(spill_env_t *env)
 	}
 
 	/* process each spilled node */
-	foreach_set(env->spills, spill_info_t*, si) {
+	foreach_set(env->spills, spill_info_t, si) {
 		ir_node  *to_spill        = si->to_spill;
 		ir_node **copies          = NEW_ARR_F(ir_node*, 0);
 		double    all_remat_costs = 0; /** costs when we would remat all nodes */
