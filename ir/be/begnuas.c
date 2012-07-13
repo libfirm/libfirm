@@ -1530,14 +1530,13 @@ static void emit_global_decls(const be_main_env_t *main_env)
 void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
                         ir_entity *entity, get_cfop_target_func get_cfop_target)
 {
-	unsigned          n_outs    = arch_get_irn_n_outs(node);
-	const ir_node   **targets   = XMALLOCNZ(const ir_node*, n_outs);
-	size_t            n_entries = ir_switch_table_get_n_entries(table);
-	unsigned long     length    = 0;
-	size_t            e;
-	const ir_edge_t  *edge;
-	unsigned          i;
-	const ir_node   **labels;
+	unsigned        n_outs    = arch_get_irn_n_outs(node);
+	const ir_node **targets   = XMALLOCNZ(const ir_node*, n_outs);
+	size_t          n_entries = ir_switch_table_get_n_entries(table);
+	unsigned long   length    = 0;
+	size_t          e;
+	unsigned        i;
+	const ir_node **labels;
 
 	/* go over all proj's and collect their jump targets */
 	foreach_out_edge(node, edge) {

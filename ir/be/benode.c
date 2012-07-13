@@ -1011,7 +1011,6 @@ ir_node *be_get_initial_reg_value(ir_graph *irg, const arch_register_t *reg)
 	int      i     = get_start_reg_index(irg, reg);
 	ir_node *start = get_irg_start(irg);
 	ir_mode *mode  = arch_register_class_mode(arch_register_get_class(reg));
-	const ir_edge_t *edge;
 
 	foreach_out_edge(start, edge) {
 		ir_node *proj = get_edge_src_irn(edge);

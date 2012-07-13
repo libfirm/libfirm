@@ -912,8 +912,7 @@ static void ia32_emit_exc_label(const ir_node *node)
  */
 static ir_node *get_proj(const ir_node *node, long proj)
 {
-	const ir_edge_t *edge;
-	ir_node         *src;
+	ir_node *src;
 
 	assert(get_irn_mode(node) == mode_T && "expected mode_T node");
 

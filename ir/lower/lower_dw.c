@@ -203,7 +203,6 @@ static void add_block_cf_input_nr(ir_node *block, int nr, ir_node *cf)
 {
 	int i, arity = get_irn_arity(block);
 	ir_node **in;
-	const ir_edge_t *edge;
 
 	assert(nr < arity);
 
@@ -379,8 +378,6 @@ static void lower_Load(ir_node *node, ir_mode *mode)
 	ir_node    *block = get_nodes_block(node);
 	ir_cons_flags volatility = get_Load_volatility(node) == volatility_is_volatile
 	                         ? cons_volatile : cons_none;
-	const ir_edge_t *edge;
-	const ir_edge_t *next;
 
 	if (env->params->little_endian) {
 		low  = adr;
@@ -396,7 +393,7 @@ static void lower_Load(ir_node *node, ir_mode *mode)
 	proj_m = new_r_Proj(low, mode_M, pn_Load_M);
 	high   = new_rd_Load(dbg, block, proj_m, high, mode, volatility);
 
-	foreach_out_edge_safe(node, edge, next) {
+	foreach_out_edge_safe(node, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
 		if (!is_Proj(proj))
 			continue;
@@ -438,8 +435,6 @@ static void lower_Store(ir_node *node, ir_mode *mode)
 	const lower64_entry_t *entry = get_node_entry(value);
 	ir_cons_flags volatility = get_Store_volatility(node) == volatility_is_volatile
 	                           ? cons_volatile : cons_none;
-	const ir_edge_t *edge;
-	const ir_edge_t *next;
 	(void) mode;
 
 	assert(entry);
@@ -469,7 +464,7 @@ static void lower_Store(ir_node *node, ir_mode *mode)
 	proj_m = new_r_Proj(low, mode_M, pn_Store_M);
 	high   = new_rd_Store(dbg, block, proj_m, high, entry->high_word, volatility);
 
-	foreach_out_edge_safe(node, edge, next) {
+	foreach_out_edge_safe(node, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
 		if (!is_Proj(proj))
 			continue;
@@ -535,19 +530,16 @@ static ir_node *get_intrinsic_address(ir_type *method, ir_op *op,
  */
 static void lower_Div(ir_node *node, ir_mode *mode)
 {
-	ir_node         *left   = get_Div_left(node);
-	ir_node         *right  = get_Div_right(node);
-	ir_node         *block  = get_nodes_block(node);
-	dbg_info        *dbgi   = get_irn_dbg_info(node);
-	ir_type         *mtp    = mode_is_signed(mode) ? binop_tp_s : binop_tp_u;
-	ir_mode         *opmode = get_irn_op_mode(node);
-	ir_node         *addr
-	    = get_intrinsic_address(mtp, get_irn_op(node), opmode, opmode);
-	ir_node         *in[4];
-	ir_node         *call;
-	ir_node         *resproj;
-	const ir_edge_t *edge;
-	const ir_edge_t *next;
+	ir_node  *left   = get_Div_left(node);
+	ir_node  *right  = get_Div_right(node);
+	ir_node  *block  = get_nodes_block(node);
+	dbg_info *dbgi   = get_irn_dbg_info(node);
+	ir_type  *mtp    = mode_is_signed(mode) ? binop_tp_s : binop_tp_u;
+	ir_mode  *opmode = get_irn_op_mode(node);
+	ir_node  *addr   = get_intrinsic_address(mtp, get_irn_op(node), opmode, opmode);
+	ir_node  *in[4];
+	ir_node  *call;
+	ir_node  *resproj;
 
 	if (env->params->little_endian) {
 		in[0] = get_lowered_low(left);
@@ -564,7 +556,7 @@ static void lower_Div(ir_node *node, ir_mode *mode)
 	resproj = new_r_Proj(call, mode_T, pn_Call_T_result);
 	set_irn_pinned(call, get_irn_pinned(node));
 
-	foreach_out_edge_safe(node, edge, next) {
+	foreach_out_edge_safe(node, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
 		if (!is_Proj(proj))
 			continue;
@@ -610,19 +602,16 @@ static void lower_Div(ir_node *node, ir_mode *mode)
  */
 static void lower_Mod(ir_node *node, ir_mode *mode)
 {
-	ir_node         *left   = get_Mod_left(node);
-	ir_node         *right  = get_Mod_right(node);
-	dbg_info        *dbgi   = get_irn_dbg_info(node);
-	ir_node         *block  = get_nodes_block(node);
-	ir_type         *mtp    = mode_is_signed(mode) ? binop_tp_s : binop_tp_u;
-	ir_mode         *opmode = get_irn_op_mode(node);
-	ir_node         *addr
-	    = get_intrinsic_address(mtp, get_irn_op(node), opmode, opmode);
-	ir_node         *in[4];
-	ir_node         *call;
-	ir_node         *resproj;
-	const ir_edge_t *edge;
-	const ir_edge_t *next;
+	ir_node  *left   = get_Mod_left(node);
+	ir_node  *right  = get_Mod_right(node);
+	dbg_info *dbgi   = get_irn_dbg_info(node);
+	ir_node  *block  = get_nodes_block(node);
+	ir_type  *mtp    = mode_is_signed(mode) ? binop_tp_s : binop_tp_u;
+	ir_mode  *opmode = get_irn_op_mode(node);
+	ir_node  *addr   = get_intrinsic_address(mtp, get_irn_op(node), opmode, opmode);
+	ir_node  *in[4];
+	ir_node  *call;
+	ir_node  *resproj;
 
 	if (env->params->little_endian) {
 		in[0] = get_lowered_low(left);
@@ -639,7 +628,7 @@ static void lower_Mod(ir_node *node, ir_mode *mode)
 	resproj = new_r_Proj(call, mode_T, pn_Call_T_result);
 	set_irn_pinned(call, get_irn_pinned(node));
 
-	foreach_out_edge_safe(node, edge, next) {
+	foreach_out_edge_safe(node, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
 		if (!is_Proj(proj))
 			continue;
@@ -742,7 +731,6 @@ static void move(ir_node *node, ir_node *from_bl, ir_node *to_bl)
 
 	/* move its Projs */
 	if (get_irn_mode(node) == mode_T) {
-		const ir_edge_t *edge;
 		foreach_out_edge(node, edge) {
 			ir_node *proj = get_edge_src_irn(edge);
 			if (!is_Proj(proj))
@@ -790,8 +778,6 @@ static ir_node *part_block_dw(ir_node *node)
 	int       n_cfgpreds = get_Block_n_cfgpreds(old_block);
 	ir_node **cfgpreds   = get_Block_cfgpred_arr(old_block);
 	ir_node  *new_block  = new_r_Block(irg, n_cfgpreds, cfgpreds);
-	const ir_edge_t *edge;
-	const ir_edge_t *next;
 
 	/* old_block has no predecessors anymore for now */
 	set_irn_in(old_block, 0, NULL);
@@ -800,7 +786,7 @@ static ir_node *part_block_dw(ir_node *node)
 	move(node, old_block, new_block);
 
 	/* move Phi nodes to new_block */
-	foreach_out_edge_safe(old_block, edge, next) {
+	foreach_out_edge_safe(old_block, edge) {
 		ir_node *phi = get_edge_src_irn(edge);
 		if (!is_Phi(phi))
 			continue;
@@ -1282,8 +1268,6 @@ static void lower_Cond(ir_node *node, ir_mode *high_mode)
 	ir_relation relation;
 	ir_graph *irg;
 	dbg_info *dbg;
-	const ir_edge_t *edge;
-	const ir_edge_t *next;
 
 	(void) high_mode;
 
@@ -1306,7 +1290,7 @@ static void lower_Cond(ir_node *node, ir_mode *high_mode)
 	rentry = get_node_entry(right);
 
 	/* all right, build the code */
-	foreach_out_edge_safe(node, edge, next) {
+	foreach_out_edge_safe(node, edge) {
 		ir_node *proj    = get_edge_src_irn(edge);
 		long     proj_nr;
 		if (!is_Proj(proj))
@@ -1916,8 +1900,6 @@ static void lower_Start(ir_node *node, ir_mode *high_mode)
 	ir_node   *args;
 	long      *new_projs;
 	size_t    i, j, n_params;
-	const ir_edge_t *edge;
-	const ir_edge_t *next;
 	(void) high_mode;
 
 	/* if type link is NULL then the type was not lowered, hence no changes
@@ -1956,7 +1938,7 @@ static void lower_Start(ir_node *node, ir_mode *high_mode)
 		return;
 
 	/* fix all Proj's and create new ones */
-	foreach_out_edge_safe(args, edge, next) {
+	foreach_out_edge_safe(args, edge) {
 		ir_node *proj   = get_edge_src_irn(edge);
 		ir_mode *mode   = get_irn_mode(proj);
 		ir_mode *mode_l = env->low_unsigned;
@@ -2012,8 +1994,6 @@ static void lower_Call(ir_node *node, ir_mode *mode)
 	size_t   p;
 	long     *res_numbers = NULL;
 	ir_node  *resproj;
-	const ir_edge_t *edge;
-	const ir_edge_t *next;
 	(void) mode;
 
 	n_params = get_method_n_params(tp);
@@ -2093,7 +2073,7 @@ static void lower_Call(ir_node *node, ir_mode *mode)
 		return;
 
 	/* fix the results */
-	foreach_out_edge_safe(resproj, edge, next) {
+	foreach_out_edge_safe(resproj, edge) {
 		ir_node  *proj      = get_edge_src_irn(edge);
 		ir_mode  *proj_mode = get_irn_mode(proj);
 		ir_mode  *mode_l    = env->low_unsigned;
@@ -2304,8 +2284,6 @@ static void lower_ASM(ir_node *asmn, ir_mode *mode)
 		ir_asm_constraint *new_outputs
 			= ALLOCAN(ir_asm_constraint, n_outs+n_64bit_outs);
 		ir_node           *new_asm;
-		const ir_edge_t   *edge;
-		const ir_edge_t   *next;
 
 		for (i = 0; i < n_outs; ++i) {
 			const ir_asm_constraint *constraint = &output_constraints[i];
@@ -2334,7 +2312,7 @@ static void lower_ASM(ir_node *asmn, ir_mode *mode)
 		                     new_n_outs, new_outputs, n_clobber, clobbers,
 		                     asm_text);
 
-		foreach_out_edge_safe(asmn, edge, next) {
+		foreach_out_edge_safe(asmn, edge) {
 			ir_node *proj      = get_edge_src_irn(edge);
 			ir_mode *proj_mode = get_irn_mode(proj);
 			long     pn;
@@ -2698,8 +2676,6 @@ static void lower_arithmetic_builtin(ir_node *builtin, ir_mode *mode)
 	ir_node               *mem               = get_Builtin_mem(builtin);
 	const lower64_entry_t *entry             = get_node_entry(operand);
 	ir_mode               *mode_high         = get_irn_mode(entry->high_word);
-	const ir_edge_t       *edge;
-	const ir_edge_t       *next;
 	ir_node               *res_high;
 	ir_node               *res_low;
 
@@ -2725,7 +2701,7 @@ static void lower_arithmetic_builtin(ir_node *builtin, ir_mode *mode)
 	}
 
 	/* search result Proj */
-	foreach_out_edge_safe(builtin, edge, next) {
+	foreach_out_edge_safe(builtin, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
 		if (!is_Proj(proj))
 			continue;

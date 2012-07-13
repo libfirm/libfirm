@@ -422,8 +422,7 @@ int ia32_is_non_address_mode_node(ir_node const *node)
  */
 static int value_last_used_here(be_lv_t *lv, ir_node *here, ir_node *value)
 {
-	ir_node         *block = get_nodes_block(here);
-	const ir_edge_t *edge;
+	ir_node *block = get_nodes_block(here);
 
 	/* If the value is live end it is for sure it does not die here */
 	if (be_is_live_end(lv, block, value)) return 0;

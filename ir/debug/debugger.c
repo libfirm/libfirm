@@ -1323,7 +1323,6 @@ const char *gdb_out_edge_helper(const ir_node *node)
 	char *b = buf;
 	size_t l;
 	size_t len = sizeof(buf);
-	const ir_edge_t *edge;
 	foreach_out_edge(node, edge) {
 		ir_node *n = get_edge_src_irn(edge);
 

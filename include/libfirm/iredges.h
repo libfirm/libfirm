@@ -64,7 +64,7 @@ FIRM_API const ir_edge_t *get_irn_out_edge_next(const ir_node *irn,
  * edge.
  */
 #define foreach_out_edge_kind(irn, edge, kind) \
-	for(edge = get_irn_out_edge_first_kind(irn, kind); edge; edge = get_irn_out_edge_next(irn, edge))
+	for (ir_edge_t const *edge = get_irn_out_edge_first_kind(irn, kind); edge; edge = get_irn_out_edge_next(irn, edge))
 
 /**
  * A convenience iteration macro over all out edges of a node, which is safe
@@ -72,27 +72,27 @@ FIRM_API const ir_edge_t *get_irn_out_edge_next(const ir_node *irn,
  *
  * @param irn  The node.
  * @param edge An ir_edge_t pointer which shall be set to the current edge.
- * @param ne   The next edge, enables alteration safe edge processing.
  * @param kind The kind of the edge.
  */
-#define foreach_out_edge_kind_safe(irn, edge, ne, kind) \
-	for((edge) = (get_irn_out_edge_first_kind(irn, kind)), (ne) = ((edge) ? (get_irn_out_edge_next(irn, edge)) : NULL); \
-		edge; (edge) = (ne), (ne) = ((edge) ? (get_irn_out_edge_next(irn, edge)) : NULL))
+#define foreach_out_edge_kind_safe(irn, edge, kind) \
+	for (ir_edge_t const *edge = get_irn_out_edge_first_kind((irn), (kind)), *edge##__next; \
+	     edge ? edge##__next = get_irn_out_edge_next((irn), edge), 1 : 0; \
+	     edge = edge##__next)
 
 /**
  * Convenience macro for normal out edges.
  */
-#define foreach_out_edge(irn, edge)            foreach_out_edge_kind(irn, edge, EDGE_KIND_NORMAL)
+#define foreach_out_edge(irn, edge)       foreach_out_edge_kind(irn, edge, EDGE_KIND_NORMAL)
 
 /**
  * Convenience macro for normal out edges.
  */
-#define foreach_out_edge_safe(irn, edge, tmp)  foreach_out_edge_kind_safe(irn, edge, tmp, EDGE_KIND_NORMAL)
+#define foreach_out_edge_safe(irn, edge)  foreach_out_edge_kind_safe(irn, edge, EDGE_KIND_NORMAL)
 
 /**
  * A convenience iteration macro for all control flow edges.
  */
-#define foreach_block_succ(bl, edge)           foreach_out_edge_kind(bl, edge, EDGE_KIND_BLOCK)
+#define foreach_block_succ(bl, edge)      foreach_out_edge_kind(bl, edge, EDGE_KIND_BLOCK)
 
 /**
  * Returns the source node of an edge.

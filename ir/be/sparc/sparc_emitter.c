@@ -1029,12 +1029,11 @@ typedef const char* (*get_cc_func)(ir_relation relation);
 static void emit_sparc_branch(const ir_node *node, get_cc_func get_cc)
 {
 	const sparc_jmp_cond_attr_t *attr = get_sparc_jmp_cond_attr_const(node);
-	ir_relation      relation    = attr->relation;
-	const ir_node   *proj_true   = NULL;
-	const ir_node   *proj_false  = NULL;
-	const ir_edge_t *edge;
-	const ir_node   *block;
-	const ir_node   *next_block;
+	ir_relation    relation    = attr->relation;
+	const ir_node *proj_true   = NULL;
+	const ir_node *proj_false  = NULL;
+	const ir_node *block;
+	const ir_node *next_block;
 
 	foreach_out_edge(node, edge) {
 		ir_node *proj = get_edge_src_irn(edge);

@@ -135,8 +135,6 @@ static void red_trans_closure(lv_chk_t *lv)
 		const ir_node *bl = (const ir_node*) dfs_get_post_num_node(lv->dfs, i);
 		bl_info_t *bi = get_block_info(lv, bl);
 
-		const ir_edge_t *edge;
-
 		bitset_set(bi->red_reachable, bi->id);
 		foreach_block_succ (bl, edge) {
 			ir_node *succ = get_edge_src_irn(edge);
@@ -183,7 +181,6 @@ static void compute_back_edge_chain(lv_chk_t *lv, const ir_node *bl)
 	/* iterate over them ... */
 	bitset_foreach(tmp, elm) {
 		bl_info_t *si = lv->map[elm];
-		const ir_edge_t *edge;
 
 		/* and find back edge targets which are not reduced reachable from bl */
 		foreach_block_succ (si->block, edge) {
@@ -216,8 +213,6 @@ static inline void compute_back_edge_chains(lv_chk_t *lv)
 	for (i = 0, n = dfs_get_n_nodes(lv->dfs); i < n; ++i) {
 		const ir_node *bl = (const ir_node*) dfs_get_post_num_node(lv->dfs, i);
 		bl_info_t *bi     = get_block_info(lv, bl);
-
-		const ir_edge_t *edge;
 
 		if (!bitset_is_set(lv->back_edge_tgt, bi->id)) {
 			foreach_block_succ (bl, edge) {
@@ -328,8 +323,6 @@ unsigned lv_chk_bl_xxx(lv_chk_t *lv, const ir_node *bl, const ir_node *var)
 	 * the algorithm is simple. Just check for uses not inside this block.
 	 */
 	if (def_bl == bl) {
-		const ir_edge_t *edge;
-
 		stat_ev("lv_chk_def_block");
 		DBG((lv->dbg, LEVEL_2, "lv check same block %+F in %+F\n", var, bl));
 		foreach_out_edge (var, edge) {
@@ -376,7 +369,6 @@ unsigned lv_chk_bl_xxx(lv_chk_t *lv, const ir_node *bl, const ir_node *var)
 
 		size_t i;
 		unsigned min_dom, max_dom;
-		const ir_edge_t *edge;
 
 		/* if the block has no DFS info, it cannot be reached.
 		 * This can happen in functions with endless loops.

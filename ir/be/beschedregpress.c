@@ -152,8 +152,6 @@ static int compute_max_hops(reg_pressure_selector_env_t *env, ir_node *irn)
 	ir_graph *irg = get_irn_irg(bl);
 	int res       = 0;
 
-	const ir_edge_t *edge;
-
 	foreach_out_edge(irn, edge) {
 		ir_node *user       = get_edge_src_irn(edge);
 		unsigned visited_nr = get_irg_visited(irg) + 1;
@@ -224,8 +222,6 @@ static int get_result_hops_sum(reg_pressure_selector_env_t *env, ir_node *irn)
 {
 	int res = 0;
 	if (get_irn_mode(irn) == mode_T) {
-		const ir_edge_t *edge;
-
 		foreach_out_edge(irn, edge)
 			res += get_result_hops_sum(env, get_edge_src_irn(edge));
 	}

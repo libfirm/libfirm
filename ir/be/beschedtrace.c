@@ -266,7 +266,6 @@ static sched_timestep_t latency(trace_env_t *env, ir_node *pred, int pred_cycle,
 static int get_num_successors(ir_node *irn)
 {
 	int sum = 0;
-	const ir_edge_t *edge;
 
 	if (get_irn_mode(irn) == mode_T) {
 		/* for mode_T nodes: count the users of all Projs */
@@ -308,7 +307,6 @@ static int get_reg_difference(trace_env_t *env, ir_node *irn)
 
 	if (get_irn_mode(irn) == mode_T) {
 		/* mode_T nodes: num out regs == num Projs with mode datab */
-		const ir_edge_t *edge;
 		foreach_out_edge(irn, edge) {
 			ir_node *proj = get_edge_src_irn(edge);
 			if (mode_is_datab(get_irn_mode(proj)))
@@ -387,8 +385,6 @@ static void descent(ir_node *root, ir_node *block, ir_node **list, trace_env_t *
  */
 static int is_root(ir_node *root, ir_node *block)
 {
-	const ir_edge_t *edge;
-
 	foreach_out_edge(root, edge) {
 		ir_node *succ = get_edge_src_irn(edge);
 
@@ -411,7 +407,6 @@ static void trace_preprocess_block(trace_env_t *env, ir_node *block)
 	ir_node *root = NULL, *preord = NULL;
 	ir_node *curr, *irn;
 	int cur_pos;
-	const ir_edge_t *edge;
 
 	/* First step: Find the root set. */
 	foreach_out_edge(block, edge) {

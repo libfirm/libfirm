@@ -348,7 +348,6 @@ static void arm_emit_cfop_target(const ir_node *irn)
  */
 static void emit_arm_B(const ir_node *irn)
 {
-	const ir_edge_t *edge;
 	const ir_node *proj_true  = NULL;
 	const ir_node *proj_false = NULL;
 	const ir_node *block;

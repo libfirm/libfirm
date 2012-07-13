@@ -215,17 +215,16 @@ static void emit_amd64_Jmp(const ir_node *node)
  */
 static void emit_amd64_Jcc(const ir_node *irn)
 {
-	const ir_edge_t      *edge;
-	const ir_node        *proj_true  = NULL;
-	const ir_node        *proj_false = NULL;
-	const ir_node        *block;
-	const ir_node        *next_block;
-	const char           *suffix;
-	const amd64_attr_t   *attr      = get_amd64_attr_const(irn);
-	ir_relation           relation  = attr->ext.relation;
-	ir_node              *op1       = get_irn_n(irn, 0);
-	const amd64_attr_t   *cmp_attr  = get_amd64_attr_const(op1);
-	bool                  is_signed = !cmp_attr->data.cmp_unsigned;
+	const ir_node      *proj_true  = NULL;
+	const ir_node      *proj_false = NULL;
+	const ir_node      *block;
+	const ir_node      *next_block;
+	const char         *suffix;
+	const amd64_attr_t *attr      = get_amd64_attr_const(irn);
+	ir_relation         relation  = attr->ext.relation;
+	ir_node            *op1       = get_irn_n(irn, 0);
+	const amd64_attr_t *cmp_attr  = get_amd64_attr_const(op1);
+	bool                is_signed = !cmp_attr->data.cmp_unsigned;
 
 	assert(is_amd64_Cmp(op1));
 

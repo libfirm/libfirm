@@ -108,9 +108,8 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 		res = new_bd_ia32_xAdd(dbgi, block, noreg, noreg, nomem, res, in1);
 		set_ia32_ls_mode(res, get_ia32_ls_mode(irn));
 	} else {
-		ir_node         *flags_proj = NULL;
-		ir_node         *carry;
-		const ir_edge_t *edge;
+		ir_node *flags_proj = NULL;
+		ir_node *carry;
 
 		if (get_irn_mode(irn) == mode_T) {
 			/* collect the Proj uses */

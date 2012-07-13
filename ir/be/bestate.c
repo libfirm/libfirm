@@ -417,8 +417,6 @@ static void belady(minibelady_env_t *env, ir_node *block)
 
 		/* record state changes by the node */
 		if (get_irn_mode(node) == mode_T) {
-			const ir_edge_t *edge;
-
 			foreach_out_edge(node, edge) {
 				const arch_register_t *reg;
 				ir_node *proj = get_edge_src_irn(edge);

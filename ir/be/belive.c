@@ -318,7 +318,6 @@ typedef struct lv_remove_walker_t {
  */
 static void liveness_for_node(ir_node *irn)
 {
-	const ir_edge_t *edge;
 	ir_node *def_block;
 
 	bitset_clear_all(re.visited);
@@ -517,8 +516,6 @@ void be_liveness_transfer(const arch_register_class_t *cls,
 	assert(!is_Phi(node) && "liveness_transfer produces invalid results for phi nodes");
 
 	if (get_irn_mode(node) == mode_T) {
-		const ir_edge_t *edge;
-
 		foreach_out_edge(node, edge) {
 			ir_node *proj = get_edge_src_irn(edge);
 

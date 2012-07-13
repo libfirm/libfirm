@@ -705,8 +705,7 @@ static mtp_additional_properties update_property(mtp_additional_properties orig_
  */
 static bool is_stored(const ir_node *n)
 {
-	const ir_edge_t *edge;
-	const ir_node   *ptr;
+	const ir_node *ptr;
 
 	foreach_out_edge(n, edge) {
 		const ir_node *succ = get_edge_src_irn(edge);

@@ -395,8 +395,7 @@ static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *en
 	ir_node            *block = entry->block;
 	ir_node            *succ  = NULL;
 	blocksched_entry_t *succ_entry;
-	const ir_edge_t    *edge;
-	double             best_succ_execfreq;
+	double              best_succ_execfreq;
 
 	if (irn_visited_else_mark(block))
 		return;

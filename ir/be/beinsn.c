@@ -56,7 +56,6 @@ be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 	insn->irn       = irn;
 	insn->next_insn = sched_next(irn);
 	if (get_irn_mode(irn) == mode_T) {
-		const ir_edge_t *edge;
 		ir_node *p;
 
 		/* This instruction might create more than one def. These are handled

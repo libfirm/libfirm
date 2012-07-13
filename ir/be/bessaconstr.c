@@ -581,12 +581,11 @@ void be_ssa_construction_fix_users_array(be_ssa_construction_env_t *env,
 	stat_ev_tim_push();
 
 	for (i = 0; i < nodes_len; ++i) {
-		const ir_edge_t *edge, *next;
 		ir_node *value = nodes[i];
 		DBG((dbg, LEVEL_3, "\tfixing users of %+F\n", value));
 		introduce_definition(env, value);
 
-		foreach_out_edge_safe(value, edge, next) {
+		foreach_out_edge_safe(value, edge) {
 			ir_node *use   = get_edge_src_irn(edge);
 
 			if (env->ignore_uses != NULL &&

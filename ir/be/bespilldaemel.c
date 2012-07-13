@@ -77,10 +77,8 @@ static int compare_spill_candidates_desc(const void *d1, const void *d2)
 
 static double get_spill_costs(ir_node *node)
 {
-	const ir_edge_t *edge;
-	ir_node         *spill_place = skip_Proj(node);
-	double           costs       = be_get_spill_costs(spill_env, node,
-	                                                  spill_place);
+	ir_node *spill_place = skip_Proj(node);
+	double   costs       = be_get_spill_costs(spill_env, node, spill_place);
 
 	foreach_out_edge(node, edge) {
 		ir_node *use = get_edge_src_irn(edge);
@@ -108,8 +106,6 @@ static double get_spill_costs(ir_node *node)
  */
 static void spill_node(ir_node *node)
 {
-	const ir_edge_t *edge;
-
 	DBG((dbg, LEVEL_3, "\tspilling %+F\n", node));
 
 	foreach_out_edge(node, edge) {

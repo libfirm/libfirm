@@ -624,7 +624,6 @@ static inline bool arch_irn_consider_in_reg_alloc(
 #define be_foreach_definition_(node, cls, value, code)                     \
 	do {                                                                   \
 	if (get_irn_mode(node) == mode_T) {                                    \
-		const ir_edge_t *edge_;                                            \
 		foreach_out_edge(node, edge_) {                                    \
 			const arch_register_req_t *req_;                               \
 			value = get_edge_src_irn(edge_);                               \

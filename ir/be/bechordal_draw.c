@@ -288,8 +288,7 @@ static void set_y(const draw_chordal_env_t *env, ir_node *bl, int up)
 static color_t *reg_to_color(const draw_chordal_env_t *env,
 							 ir_node *rel_bl, ir_node *irn, color_t *color)
 {
-	int             phi_arg = 0;
-	const ir_edge_t *edge;
+	int phi_arg = 0;
 	(void) env;
 	(void) rel_bl;
 

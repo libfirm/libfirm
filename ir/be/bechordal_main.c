@@ -185,9 +185,8 @@ static void dump(unsigned mask, ir_graph *irg,
  */
 static void memory_operand_walker(ir_node *irn, void *env)
 {
-	const ir_edge_t  *edge, *ne;
-	ir_node          *block;
-	ir_node          *spill;
+	ir_node *block;
+	ir_node *spill;
 
 	(void)env;
 
@@ -201,7 +200,7 @@ static void memory_operand_walker(ir_node *irn, void *env)
 	spill = be_get_Reload_mem(irn);
 	block = get_nodes_block(irn);
 
-	foreach_out_edge_safe(irn, edge, ne) {
+	foreach_out_edge_safe(irn, edge) {
 		ir_node *src = get_edge_src_irn(edge);
 		int     pos  = get_edge_src_pos(edge);
 

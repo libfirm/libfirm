@@ -378,7 +378,6 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	ir_node               **in;
 	ir_node               **res_projs;
 	int                     n_reg_results = 0;
-	const ir_edge_t        *edge;
 	int                    *reg_param_idxs;
 	int                    *stack_param_idx;
 	int                     i, n;
@@ -524,8 +523,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	res_projs = ALLOCANZ(ir_node*, n_res);
 
 	foreach_out_edge(irn, edge) {
-		const ir_edge_t *res_edge;
-		ir_node         *irn = get_edge_src_irn(edge);
+		ir_node *irn = get_edge_src_irn(edge);
 
 		if (!is_Proj(irn) || get_Proj_proj(irn) != pn_Call_T_result)
 			continue;
@@ -794,7 +792,6 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 	ir_type          *type      = get_Alloc_type(alloc);
 	dbg_info         *dbg;
 
-	const ir_edge_t *edge;
 	ir_node *new_alloc;
 	ir_node *count;
 	ir_node *size;
@@ -1377,7 +1374,6 @@ static void fix_start_block(ir_graph *irg)
 
 	/* merge start block with successor if possible */
 	{
-		const ir_edge_t *edge;
 		foreach_out_edge(jmp, edge) {
 			ir_node *succ = get_edge_src_irn(edge);
 			if (!is_Block(succ))
@@ -1420,7 +1416,6 @@ static void modify_irg(ir_graph *irg)
 	ir_node *start_bl;
 	ir_node **args;
 	ir_node *arg_tuple;
-	const ir_edge_t *edge;
 	ir_type *arg_type, *bet_type;
 	lower_frame_sels_env_t ctx;
 

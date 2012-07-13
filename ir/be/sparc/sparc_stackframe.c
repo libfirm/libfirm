@@ -50,8 +50,7 @@ static void set_irn_sp_bias(ir_node *node, int new_bias)
 static void process_bias(ir_node *block, bool sp_relative, int bias,
                          int free_bytes)
 {
-	const ir_edge_t *edge;
-	ir_node         *irn;
+	ir_node *irn;
 
 	mark_Block_block_visited(block);
 

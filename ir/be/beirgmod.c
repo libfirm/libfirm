@@ -156,16 +156,14 @@ static int blocks_removed;
  */
 static void remove_empty_block(ir_node *block)
 {
-	const ir_edge_t *edge;
-	const ir_edge_t *next;
-	int              i;
-	int              arity;
-	ir_node         *node;
-	ir_node         *pred;
-	ir_node         *succ_block;
-	ir_node         *jump = NULL;
-	ir_graph        *irg = get_irn_irg(block);
-	ir_entity       *entity;
+	int        i;
+	int        arity;
+	ir_node   *node;
+	ir_node   *pred;
+	ir_node   *succ_block;
+	ir_node   *jump = NULL;
+	ir_graph  *irg = get_irn_irg(block);
+	ir_entity *entity;
 
 	if (irn_visited_else_mark(block))
 		return;
@@ -190,7 +188,7 @@ static void remove_empty_block(ir_node *block)
 	entity     = get_Block_entity(block);
 	pred       = get_Block_cfgpred(block, 0);
 	succ_block = NULL;
-	foreach_out_edge_safe(jump, edge, next) {
+	foreach_out_edge_safe(jump, edge) {
 		int pos = get_edge_src_pos(edge);
 
 		assert(succ_block == NULL);
@@ -213,7 +211,7 @@ static void remove_empty_block(ir_node *block)
 
 	/* there can be some non-scheduled Pin nodes left in the block, move them
 	 * to the succ block (Pin) or pred block (Sync) */
-	foreach_out_edge_safe(block, edge, next) {
+	foreach_out_edge_safe(block, edge) {
 		node = get_edge_src_irn(edge);
 
 		if (node == jump)
@@ -320,9 +318,7 @@ static void remove_dead_nodes_walker(ir_node *block, void *data)
 
 		/* kill projs */
 		if (get_irn_mode(node) == mode_T) {
-			const ir_edge_t *edge;
-			const ir_edge_t *next_edge;
-			foreach_out_edge_safe(node, edge, next_edge) {
+			foreach_out_edge_safe(node, edge) {
 				ir_node *proj = get_edge_src_irn(edge);
 				if (!is_Proj(proj))
 					continue;

@@ -227,7 +227,6 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 	ir_node  *node;
 	unsigned  timestep;
 	unsigned  next_use_step;
-	const ir_edge_t *edge;
 
 	assert(skip_from_uses == 0 || skip_from_uses == 1);
 	if (skip_from_uses) {

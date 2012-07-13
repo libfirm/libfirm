@@ -164,8 +164,6 @@ static void try_make_ready(block_sched_env_t *env, ir_node *pred, ir_node *irn)
 
 static void selected(block_sched_env_t *env, ir_node *node)
 {
-	const ir_edge_t *edge;
-
 	/* notify the selector about the finally selected node. */
 	if (env->selector->node_selected)
 		env->selector->node_selected(env->selector_block_env, node);
@@ -221,7 +219,6 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	const list_sched_selector_t *selector = env->selector;
 
 	block_sched_env_t be;
-	const ir_edge_t *edge;
 	ir_nodeset_t *cands = &be.cands;
 
 	/* Initialize the block's list head that will hold the schedule. */

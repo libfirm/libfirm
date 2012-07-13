@@ -153,8 +153,6 @@ static void peephole_ia32_Cmp(ir_node *const node)
 	int                          ins_permuted;
 	ir_node                     *test;
 	arch_register_t       const *reg;
-	ir_edge_t             const *edge;
-	ir_edge_t             const *tmp;
 
 	if (get_ia32_op_type(node) != ia32_Normal)
 		return;
@@ -188,7 +186,7 @@ static void peephole_ia32_Cmp(ir_node *const node)
 	reg = arch_get_irn_register_out(node, pn_ia32_Cmp_eflags);
 	arch_set_irn_register_out(test, pn_ia32_Test_eflags, reg);
 
-	foreach_out_edge_safe(node, edge, tmp) {
+	foreach_out_edge_safe(node, edge) {
 		ir_node *const user = get_edge_src_irn(edge);
 
 		if (is_Proj(user))
@@ -221,7 +219,6 @@ static void peephole_ia32_Test(ir_node *node)
 		ir_mode         *flags_mode;
 		ir_mode         *op_mode;
 		ir_node         *schedpoint;
-		const ir_edge_t *edge;
 		produces_flag_t  produced;
 
 		if (get_nodes_block(left) != block)
@@ -405,18 +402,16 @@ static void peephole_ia32_Return(ir_node *node)
  */
 static void peephole_IncSP_Store_to_push(ir_node *irn)
 {
-	int              i;
-	int              maxslot;
-	int              inc_ofs;
-	ir_node         *node;
-	ir_node         *stores[MAXPUSH_OPTIMIZE];
-	ir_node         *block;
-	ir_graph        *irg;
-	ir_node         *curr_sp;
-	ir_mode         *spmode;
-	ir_node         *first_push = NULL;
-	ir_edge_t const *edge;
-	ir_edge_t const *next;
+	int       i;
+	int       maxslot;
+	int       inc_ofs;
+	ir_node  *node;
+	ir_node  *stores[MAXPUSH_OPTIMIZE];
+	ir_node  *block;
+	ir_graph *irg;
+	ir_node  *curr_sp;
+	ir_mode  *spmode;
+	ir_node  *first_push = NULL;
 
 	memset(stores, 0, sizeof(stores));
 
@@ -515,7 +510,7 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 		mem_proj = new_r_Proj(push, mode_M, pn_ia32_Push_M);
 
 		/* rewire Store Projs */
-		foreach_out_edge_safe(store, edge, next) {
+		foreach_out_edge_safe(store, edge) {
 			ir_node *proj = get_edge_src_irn(edge);
 			if (!is_Proj(proj))
 				continue;
@@ -534,7 +529,7 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 		inc_ofs -= 4;
 	}
 
-	foreach_out_edge_safe(irn, edge, next) {
+	foreach_out_edge_safe(irn, edge) {
 		ir_node *const src = get_edge_src_irn(edge);
 		int      const pos = get_edge_src_pos(edge);
 
@@ -803,7 +798,6 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 	for (++i; i <= maxslot; ++i) {
 		ir_node *load = loads[i];
 		ir_node *mem, *pop;
-		const ir_edge_t *edge, *tmp;
 		const arch_register_t *reg;
 
 		mem = get_irn_n(load, n_ia32_mem);
@@ -821,7 +815,7 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 		sched_add_before(irn, pop);
 
 		/* rewire now */
-		foreach_out_edge_safe(load, edge, tmp) {
+		foreach_out_edge_safe(load, edge) {
 			ir_node *proj = get_edge_src_irn(edge);
 
 			set_Proj_pred(proj, pop);
@@ -1308,8 +1302,7 @@ void ia32_peephole_optimization(ir_graph *irg)
 static inline void try_kill(ir_node *node)
 {
 	if (get_irn_mode(node) == mode_T) {
-		const ir_edge_t *edge, *next;
-		foreach_out_edge_safe(node, edge, next) {
+		foreach_out_edge_safe(node, edge) {
 			ir_node *proj = get_edge_src_irn(edge);
 			try_kill(proj);
 		}

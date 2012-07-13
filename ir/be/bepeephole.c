@@ -94,7 +94,6 @@ static void clear_defs(ir_node *node)
 {
 	/* clear values defined */
 	if (get_irn_mode(node) == mode_T) {
-		const ir_edge_t *edge;
 		foreach_out_edge(node, edge) {
 			ir_node *proj = get_edge_src_irn(edge);
 			clear_reg_value(proj);
@@ -229,9 +228,8 @@ static void process_block(ir_node *block, void *data)
  */
 bool be_has_only_one_user(ir_node *node)
 {
-	int              n = get_irn_n_edges(node);
-	int              n_users;
-	const ir_edge_t *edge;
+	int n = get_irn_n_edges(node);
+	int n_users;
 
 	if (n <= 1)
 		return 1;

@@ -596,7 +596,6 @@ int be_verify_spillslots(ir_graph *irg)
  */
 static int my_values_interfere(const ir_node *a, const ir_node *b)
 {
-	const ir_edge_t *edge;
 	ir_node *bb;
 	int a2b = value_dominates(a, b);
 	int b2a = value_dominates(b, a);
@@ -831,7 +830,6 @@ static void verify_block_register_allocation(ir_node *block, void *data)
 		int arity;
 
 		if (get_irn_mode(node) == mode_T) {
-			const ir_edge_t *edge;
 			foreach_out_edge(node, edge) {
 				ir_node *def = get_edge_src_irn(edge);
 				value_def(def);

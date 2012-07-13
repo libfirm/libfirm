@@ -127,7 +127,6 @@ static inline int be_values_interfere(const be_lv_t *lv, const ir_node *a, const
 
 	/* If there is no dominance relation, they do not interfere. */
 	if(a2b) {
-		const ir_edge_t *edge;
 		ir_node *bb = get_nodes_block(b);
 
 		/*
@@ -210,7 +209,6 @@ static inline int _be_lv_chk_before_irn(ir_graph *irg, const ir_node *irn,
                                         const ir_node *where)
 {
 	const be_lv_t *lv = be_get_irg_liveness(irg);
-	const ir_edge_t *edge;
 
 	/* the node must strictly dominate the location, else it cannot be live there. */
 	if (!_value_dominates(irn, where) || irn == where)
@@ -246,7 +244,6 @@ static inline int _be_lv_chk_after_irn(ir_graph *irg, const ir_node *irn,
                                        const ir_node *where)
 {
 	const be_lv_t *lv = be_get_irg_liveness(irg);
-	const ir_edge_t *edge;
 
 	if (!_value_dominates(irn, where))
 		return 0;

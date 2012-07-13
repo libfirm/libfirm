@@ -58,7 +58,6 @@ static inline ir_node *get_idom(ir_node *bl)
 static ir_node **compute_df(ir_node *blk, ir_dom_front_info_t *info)
 {
 	ir_node *c;
-	const ir_edge_t *edge;
 	ir_node **df_list = NEW_ARR_F(ir_node *, 0);
 	ir_node **df;
 	size_t len;

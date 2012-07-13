@@ -613,8 +613,6 @@ static int check_users_for_reg_pressure(ir_node *iv, iv_env *env)
 	scc        *pscc      = e->pscc;
 
 	for (irn = pscc->head; irn != NULL; irn = e->next) {
-		const ir_edge_t *edge;
-
 		foreach_out_edge(irn, edge) {
 			ir_node    *user = get_edge_src_irn(edge);
 			node_entry *ne = get_irn_ne(user, env);

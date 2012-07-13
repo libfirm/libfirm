@@ -53,8 +53,7 @@ void be_clear_links(ir_graph *irg)
  */
 ir_node *be_get_Proj_for_pn(const ir_node *irn, long pn)
 {
-	const ir_edge_t *edge;
-	ir_node         *proj;
+	ir_node *proj;
 	assert(get_irn_mode(irn) == mode_T && "need mode_T");
 
 	foreach_out_edge(irn, edge) {

@@ -5792,7 +5792,6 @@ static void postprocess_fp_call_results(void)
 		for (j = get_method_n_ress(mtp) - 1; j >= 0; --j) {
 			ir_type *res_tp = get_method_res_type(mtp, j);
 			ir_node *res, *new_res;
-			const ir_edge_t *edge, *next;
 			ir_mode *res_mode;
 
 			if (! is_atomic_type(res_tp)) {
@@ -5809,7 +5808,7 @@ static void postprocess_fp_call_results(void)
 			new_res = NULL;
 
 			/* now patch the users */
-			foreach_out_edge_safe(res, edge, next) {
+			foreach_out_edge_safe(res, edge) {
 				ir_node *succ = get_edge_src_irn(edge);
 
 				/* ignore Keeps */

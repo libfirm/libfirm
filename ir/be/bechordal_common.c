@@ -154,8 +154,6 @@ void create_borders(ir_node *block, void *env_ptr)
 		DBG((dbg, LEVEL_2, "\tlive: %B\n", live));
 
 		if (get_irn_mode(irn) == mode_T) {
-			const ir_edge_t *edge;
-
 			foreach_out_edge(irn, edge) {
 				ir_node *proj = get_edge_src_irn(edge);
 
@@ -229,11 +227,10 @@ be_insn_t *chordal_scan_insn(be_chordal_env_t *env, ir_node *irn)
 
 ir_node *pre_process_constraints(be_chordal_env_t *env, be_insn_t **the_insn)
 {
-	be_insn_t *insn             = *the_insn;
-	ir_node *perm               = NULL;
-	bitset_t *out_constr        = bitset_alloca(env->cls->n_regs);
-	const ir_edge_t *edge;
-	int i;
+	be_insn_t *insn       = *the_insn;
+	ir_node   *perm       = NULL;
+	bitset_t  *out_constr = bitset_alloca(env->cls->n_regs);
+	int        i;
 
 	assert(insn->has_constraints && "only do this for constrained nodes");
 

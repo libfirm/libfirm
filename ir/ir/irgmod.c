@@ -171,8 +171,6 @@ static void move(ir_node *node, ir_node *from_bl, ir_node *to_bl)
 
 static void move_projs(const ir_node *node, ir_node *to_bl)
 {
-	const ir_edge_t *edge;
-
 	if (get_irn_mode(node) != mode_T)
 		return;
 
@@ -251,13 +249,9 @@ void part_block(ir_node *node)
 
 ir_node *part_block_edges(ir_node *node)
 {
-	ir_graph        *irg       = get_irn_irg(node);
-	ir_node         *old_block = get_nodes_block(node);
-	ir_node         *new_block = new_r_Block(irg,
-	                                         get_Block_n_cfgpreds(old_block),
-	                                         get_Block_cfgpred_arr(old_block));
-	const ir_edge_t *edge;
-	const ir_edge_t *next;
+	ir_graph *irg       = get_irn_irg(node);
+	ir_node  *old_block = get_nodes_block(node);
+	ir_node  *new_block = new_r_Block(irg, get_Block_n_cfgpreds(old_block), get_Block_cfgpred_arr(old_block));
 
 	/* old_block has no predecessors anymore for now */
 	set_irn_in(old_block, 0, NULL);
@@ -266,7 +260,7 @@ ir_node *part_block_edges(ir_node *node)
 	move_edges(node, old_block, new_block);
 
 	/* move Phi nodes to new_block */
-	foreach_out_edge_safe(old_block, edge, next) {
+	foreach_out_edge_safe(old_block, edge) {
 		ir_node *phi = get_edge_src_irn(edge);
 		if (!is_Phi(phi))
 			continue;

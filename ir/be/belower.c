@@ -301,8 +301,6 @@ static void lower_perm_node(ir_node *irn, lower_env_t *env)
 	 * NOTE: This works with auto-magic. If we insert the new copy/exchange
 	 * nodes after this node, everything should be ok. */
 	ir_node                     *      sched_point = sched_prev(irn);
-	const ir_edge_t             *      edge;
-	const ir_edge_t             *      next;
 	int                                n;
 	int                                i;
 
@@ -313,7 +311,7 @@ static void lower_perm_node(ir_node *irn, lower_env_t *env)
 
 	/* build the list of register pairs (in, out) */
 	n = 0;
-	foreach_out_edge_safe(irn, edge, next) {
+	foreach_out_edge_safe(irn, edge) {
 		ir_node               *const out     = get_edge_src_irn(edge);
 		long                   const pn      = get_Proj_proj(out);
 		ir_node               *const in      = get_irn_n(irn, pn);
@@ -628,8 +626,6 @@ static void assure_constraints_walker(ir_node *block, void *walk_env)
 		ir_mode *mode = get_irn_mode(irn);
 
 		if (mode == mode_T) {
-			const ir_edge_t *edge;
-
 			foreach_out_edge(irn, edge) {
 				ir_node *proj = get_edge_src_irn(edge);
 
@@ -864,8 +860,7 @@ static int push_through_perm(ir_node *perm)
 	int i, n;
 
 	/* get some Proj and find out the register class of that Proj. */
-	const ir_edge_t             *edge     = get_irn_out_edge_first_kind(perm, EDGE_KIND_NORMAL);
-	ir_node                     *one_proj = get_edge_src_irn(edge);
+	ir_node                     *one_proj = get_edge_src_irn(get_irn_out_edge_first_kind(perm, EDGE_KIND_NORMAL));
 	const arch_register_class_t *cls      = arch_get_irn_reg_class(one_proj);
 	assert(is_Proj(one_proj));
 

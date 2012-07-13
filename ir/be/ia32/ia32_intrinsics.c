@@ -73,9 +73,7 @@ void ia32_handle_intrinsics(void)
  */
 static void reroute_result(ir_node *resproj, ir_node *l_res, ir_node *h_res)
 {
-	const ir_edge_t *edge, *next;
-
-	foreach_out_edge_safe(resproj, edge, next) {
+	foreach_out_edge_safe(resproj, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
 		long    pn    = get_Proj_proj(proj);
 
@@ -106,9 +104,7 @@ static void resolve_call(ir_node *call, ir_node *l_res, ir_node *h_res, ir_graph
 
 	if (edges_activated(irg)) {
 		/* use rerouting to prevent some warning in the backend */
-		const ir_edge_t *edge, *next;
-
-		foreach_out_edge_safe(call, edge, next) {
+		foreach_out_edge_safe(call, edge) {
 			ir_node *proj = get_edge_src_irn(edge);
 			pn_Call pn    = (pn_Call)get_Proj_proj(proj);
 

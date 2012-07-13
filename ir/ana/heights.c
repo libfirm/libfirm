@@ -149,8 +149,6 @@ static unsigned compute_height(ir_heights_t *h, ir_node *irn, const ir_node *bl)
 {
 	irn_height_t *ih = get_height_data(h, irn);
 
-	const ir_edge_t *edge;
-
 	/* bail out if we already visited that node. */
 	if (ih->visited >= h->visited)
 		return ih->height;
@@ -186,8 +184,7 @@ static unsigned compute_height(ir_heights_t *h, ir_node *irn, const ir_node *bl)
 
 static unsigned compute_heights_in_block(ir_node *bl, ir_heights_t *h)
 {
-	int             max_height = -1;
-	const ir_edge_t *edge;
+	int max_height = -1;
 
 	h->visited++;
 
@@ -224,7 +221,6 @@ unsigned get_irn_height(const ir_heights_t *heights, const ir_node *irn)
 unsigned heights_recompute_block(ir_heights_t *h, ir_node *block)
 {
 	ir_graph *irg = get_irn_irg(block);
-	const ir_edge_t *edge;
 
 	assure_edges(irg);
 

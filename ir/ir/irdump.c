@@ -1262,9 +1262,8 @@ static void dump_ir_data_edges(FILE *F, const ir_node *n)
  */
 static void dump_ir_edges(ir_node *node, void *env)
 {
-	int              i = 0;
-	FILE            *F = (FILE*)env;
-	const ir_edge_t *edge;
+	int   i = 0;
+	FILE *F = (FILE*)env;
 
 	foreach_out_edge(node, edge) {
 		ir_node *succ = get_edge_src_irn(edge);

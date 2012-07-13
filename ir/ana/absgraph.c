@@ -47,7 +47,6 @@ static void *irg_cfg_succ_get_end(void *self)
 static void irg_cfg_succ_grow_succs(void *self, void *node, struct obstack *obst)
 {
 	ir_node *bl = (ir_node*) node;
-	const ir_edge_t *edge;
 
 	(void) self;
 	foreach_block_succ(bl, edge) {

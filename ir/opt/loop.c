@@ -291,7 +291,6 @@ static void get_loop_info(ir_node *node, void *env)
 
 		/* Find the loops head/the blocks with cfpred outside of the loop */
 		if (is_Block(node)) {
-			const ir_edge_t *edge;
 			unsigned outs_n = 0;
 
 			/* Count innerloop branches */
@@ -438,8 +437,6 @@ static void construct_ssa(ir_node *orig_block, ir_node *orig_val,
 {
 	ir_graph *irg;
 	ir_mode *mode;
-	const ir_edge_t *edge;
-	const ir_edge_t *next;
 
 	assert(orig_block && orig_val && second_block && second_val &&
 			"no parameter of construct_ssa may be NULL");
@@ -460,7 +457,7 @@ static void construct_ssa(ir_node *orig_block, ir_node *orig_val,
 	ssa_second_def       = second_val;
 
 	/* Only fix the users of the first, i.e. the original node */
-	foreach_out_edge_safe(orig_val, edge, next) {
+	foreach_out_edge_safe(orig_val, edge) {
 		ir_node *user = get_edge_src_irn(edge);
 		int j = get_edge_src_pos(edge);
 		ir_node *user_block = get_nodes_block(user);
@@ -930,7 +927,6 @@ static void get_head_outs(ir_node *node, void *env)
  */
 static void find_condition_chain(ir_node *block)
 {
-	const    ir_edge_t *edge;
 	bool     mark     = false;
 	bool     has_be   = false;
 	bool     jmp_only = true;

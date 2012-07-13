@@ -224,7 +224,6 @@ static int my_values_interfere2(ir_graph *irg, const ir_node *a,
 
 	/* If there is no dominance relation, they do not interfere. */
 	if ((a2b | b2a) > 0) {
-		const ir_edge_t *edge;
 		ir_node *bb;
 
 		/*
@@ -260,7 +259,6 @@ static int my_values_interfere2(ir_graph *irg, const ir_node *a,
 		foreach_out_edge(a, edge) {
 			const ir_node *user = get_edge_src_irn(edge);
 			if (is_Sync(user)) {
-				const ir_edge_t *edge2;
 				foreach_out_edge(user, edge2) {
 					const ir_node *user2 = get_edge_src_irn(edge2);
 					assert(!is_Sync(user2));
