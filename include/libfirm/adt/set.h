@@ -201,7 +201,7 @@ FIRM_API void set_break(set *set);
  * @param type   type of iterator variable
  * @param entry  the iterator
  */
-#define foreach_set(set, type, entry) for (entry = set_first(type, set); entry; entry = set_next(type, set))
+#define foreach_set(set, type, entry) for (type *entry = set_first(type, set); entry; entry = set_next(type, set))
 
 /** @cond PRIVATE */
 

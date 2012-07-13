@@ -953,8 +953,6 @@ void arm_gen_routine(ir_graph *irg)
 
 	/* emit SymConst values */
 	if (set_count(sym_or_tv) > 0) {
-		sym_or_tv_t *entry;
-
 		be_emit_cstring("\t.align 2\n");
 
 		foreach_set(sym_or_tv, sym_or_tv_t, entry) {

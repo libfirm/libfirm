@@ -727,7 +727,6 @@ int co_get_lower_bound(const copy_opt_t *co)
 void co_complete_stats(const copy_opt_t *co, co_complete_stats_t *stat)
 {
 	bitset_t *seen = bitset_malloc(get_irg_last_idx(co->irg));
-	affinity_node_t *an;
 
 	memset(stat, 0, sizeof(stat[0]));
 

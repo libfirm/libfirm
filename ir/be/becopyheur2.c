@@ -1036,7 +1036,6 @@ static void writeback_colors(co2_t *env)
 
 static void process(co2_t *env)
 {
-	affinity_node_t *a;
 	co2_cloud_t *pos;
 	co2_cloud_t **clouds;
 	int n_clouds;

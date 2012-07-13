@@ -516,7 +516,6 @@ static void check_spillslot_interference(be_verify_spillslots_env_t *env)
 {
 	int       spillcount = set_count(env->spills);
 	spill_t **spills     = ALLOCAN(spill_t*, spillcount);
-	spill_t  *spill;
 	int       i;
 
 	i = 0;

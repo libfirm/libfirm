@@ -640,8 +640,6 @@ static ir_node *get_end_of_block_insertion_point(ir_node* block)
 
 static void create_memperms(be_fec_env_t *env)
 {
-	memperm_t *memperm;
-
 	foreach_set(env->memperms, memperm_t, memperm) {
 		ir_node         **nodes = ALLOCAN(ir_node*, memperm->entrycount);
 		memperm_entry_t  *entry;

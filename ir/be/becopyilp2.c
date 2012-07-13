@@ -357,8 +357,6 @@ static inline void remove_edge(set *edges, ir_node *n1, ir_node *n2, size_t *cou
  */
 static void build_clique_star_cstr(ilp_env_t *ienv)
 {
-	affinity_node_t *aff;
-
 	/* for each node with affinity edges */
 	co_gs_foreach_aff_node(ienv->co, aff) {
 		struct obstack ob;
@@ -540,8 +538,6 @@ end:
  */
 static void build_path_cstr(ilp_env_t *ienv)
 {
-	affinity_node_t *aff_info;
-
 	/* for each node with affinity edges */
 	co_gs_foreach_aff_node(ienv->co, aff_info) {
 		pdeq *path = new_pdeq();

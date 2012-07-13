@@ -113,7 +113,6 @@ static void dfs_perform(dfs_t *dfs, void *n, void *anc, int level)
 
 static void classify_edges(dfs_t *dfs)
 {
-	dfs_edge_t *edge;
 	stat_ev_cnt_decl(anc);
 	stat_ev_cnt_decl(back);
 	stat_ev_cnt_decl(fwd);
@@ -160,7 +159,6 @@ dfs_edge_kind_t dfs_get_edge_kind(const dfs_t *dfs, const void *a, const void *b
 dfs_t *dfs_new(const absgraph_t *graph_impl, void *graph_self)
 {
 	dfs_t *res = XMALLOC(dfs_t);
-	dfs_node_t *node;
 
 	res->graph_impl = graph_impl;
 	res->graph      = graph_self;
@@ -176,7 +174,7 @@ dfs_t *dfs_new(const absgraph_t *graph_impl, void *graph_self)
 	dfs_perform(res, graph_impl->get_root(graph_self), NULL, 0);
 
 	/* make sure the end node (which might not be accessible) has a number */
-	node = get_node(res, graph_impl->get_end(graph_self));
+	dfs_node_t *const node = get_node(res, graph_impl->get_end(graph_self));
 	if (!node->visited) {
 		node->visited     = 1;
 		node->node        = graph_impl->get_end(graph_self);
@@ -250,8 +248,6 @@ static int node_level_cmp(const void *a, const void *b)
 void dfs_dump(const dfs_t *dfs, FILE *file)
 {
 	dfs_node_t **nodes = XMALLOCN(dfs_node_t*, dfs->pre_num);
-	dfs_node_t *node;
-	dfs_edge_t *edge;
 	int i, n = 0;
 
 	ir_fprintf(file, "digraph G {\nranksep=0.5\n");
@@ -274,7 +270,7 @@ void dfs_dump(const dfs_t *dfs, FILE *file)
 	}
 
 	for (i = 0; i < n; ++i) {
-		node = nodes[i];
+		dfs_node_t *const node = nodes[i];
 		ir_fprintf(file, "\tn%d [label=\"%d\"]\n", node->pre_num, get_Block_dom_tree_pre_num((ir_node*) node->node));
 #if 0
 		ir_fprintf(file, "\tn%d [shape=box,label=\"%+F\\l%d %d/%d %d\"];\n",

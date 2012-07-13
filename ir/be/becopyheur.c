@@ -608,7 +608,6 @@ static void ou_optimize(unit_t *ou)
 
 	/* apply the best found qnode */
 	if (curr->mis_size >= 2) {
-		node_stat_t *ns;
 		int root_col = qnode_get_new_color(curr, ou->nodes[0]);
 		DBG((dbg, LEVEL_1, "\t  Best color: %d  Costs: %d << %d << %d\n", curr->color, ou->min_nodes_costs, ou->all_nodes_costs - curr->mis_costs, ou->all_nodes_costs));
 		/* globally pin root and all args which have the same color */

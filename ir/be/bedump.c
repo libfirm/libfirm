@@ -84,7 +84,6 @@ void be_dump_ifg(FILE *F, ir_graph *irg, const be_ifg_t *ifg)
 static void dump_affinity_edges(FILE *F, const copy_opt_t *co,
                                 bool dump_costs, bool dump_colors)
 {
-	affinity_node_t *a;
 	co_gs_foreach_aff_node(co, a) {
 		neighb_t *n;
 

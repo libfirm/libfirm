@@ -680,7 +680,7 @@ void scalar_replacement_opt(ir_graph *irg)
 {
 	unsigned  nvals;
 	int       i;
-	scalars_t key, *value;
+	scalars_t key;
 	ir_node   *irg_frame;
 	ir_mode   **modes;
 	set       *set_ent;

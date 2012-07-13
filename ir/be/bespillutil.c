@@ -875,10 +875,9 @@ void make_spill_locations_dominate_irn(spill_env_t *env, ir_node *irn)
 
 void be_insert_spills_reloads(spill_env_t *env)
 {
-	const ir_exec_freq    *exec_freq  = env->exec_freq;
-	size_t                 n_mem_phis = ARR_LEN(env->mem_phis);
-	spill_info_t          *si;
-	size_t                 i;
+	const ir_exec_freq *exec_freq  = env->exec_freq;
+	size_t              n_mem_phis = ARR_LEN(env->mem_phis);
+	size_t              i;
 
 	be_timer_push(T_RA_SPILL_APPLY);
 
