@@ -1171,8 +1171,9 @@ static ir_node *gen_Const(ir_node *node)
 	if (mode_is_float(mode)) {
 		return gen_float_const(dbgi, block, tv);
 	}
+
+	assert(get_mode_size_bits(get_tarval_mode(tv)) <= 32);
 	val = (int32_t)get_tarval_long(tv);
-	assert((long)val == get_tarval_long(tv));
 	return create_int_const(block, val);
 }
 
