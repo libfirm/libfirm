@@ -155,9 +155,10 @@ static void set_Permi_reg_reqs(ir_node *irn)
 
 static ir_node *create_permi(const perm_op_t *op)
 {
-	ir_node *args[PERMI_SIZE];
-	ir_node *ress[PERMI_SIZE];
-	ir_node *permi;
+	ir_node  *args[PERMI_SIZE];
+	ir_node  *ress[PERMI_SIZE];
+	ir_node  *permi;
+	dbg_info *dbgi  = get_irn_dbg_info(perm);
 	ir_node *bb     = get_nodes_block(perm);
 	unsigned length = op->length;
 	unsigned i;
@@ -176,8 +177,7 @@ static ir_node *create_permi(const perm_op_t *op)
 		ress[i] = out_nodes[op->regs[out]];
 	}
 
-	/* TODO: Fix debuginfo. */
-	permi = new_bd_sparc_Permi_cycle(NULL, bb, length, args, length);
+	permi = new_bd_sparc_Permi_cycle(dbgi, bb, length, args, length);
 	set_Permi_reg_reqs(permi);
 
 	/* Rewire Projs. */
@@ -196,9 +196,10 @@ static ir_node *create_permi(const perm_op_t *op)
 
 static ir_node *create_chain_permi(const perm_op_t *op)
 {
-	ir_node *args[PERMI_SIZE];
-	ir_node *ress[PERMI_SIZE];
-	ir_node *permi;
+	ir_node  *args[PERMI_SIZE];
+	ir_node  *ress[PERMI_SIZE];
+	ir_node  *permi;
+	dbg_info *dbgi  = get_irn_dbg_info(perm);
 	ir_node *bb     = get_nodes_block(perm);
 	unsigned size   = op->length - 1;
 	unsigned i;
@@ -214,8 +215,7 @@ static ir_node *create_chain_permi(const perm_op_t *op)
 		ress[i] = out_nodes[op->regs[i + 1]];
 	}
 
-	/* TODO: Fix debuginfo. */
-	permi = new_bd_sparc_Permi_chain(NULL, bb, size, args, size + 1);
+	permi = new_bd_sparc_Permi_chain(dbgi, bb, size, args, size + 1);
 	set_Permi_reg_reqs(permi);
 
 	/* Rewire Projs. */
@@ -239,9 +239,10 @@ static ir_node *create_chain_permi(const perm_op_t *op)
 static ir_node *create_permi23(ir_node **args, const perm_op_t *op2,
                                const perm_op_t *op3)
 {
-	ir_node *bb      = get_nodes_block(perm);
-	unsigned sz      = op2->length + op3->length;
-	ir_node *permi23;
+	ir_node  *bb      = get_nodes_block(perm);
+	unsigned  sz      = op2->length + op3->length;
+	dbg_info *dbgi    = get_irn_dbg_info(perm);
+	ir_node  *permi23;
 
 	DB((dbg, LEVEL_2, "Combining two small ops:\n"));
 	DB((dbg, LEVEL_2, "  ")); print_perm_op(op2);
@@ -254,13 +255,13 @@ static ir_node *create_permi23(ir_node **args, const perm_op_t *op2,
 		--sz;
 
 	if (op2->type == PERM_OP_CYCLE && op3->type == PERM_OP_CYCLE) {
-		permi23 = new_bd_sparc_Permi23_cycle_cycle(NULL, bb, sz, args, sz);
+		permi23 = new_bd_sparc_Permi23_cycle_cycle(dbgi, bb, sz, args, sz);
 	} else if (op2->type == PERM_OP_CYCLE && op3->type == PERM_OP_CHAIN) {
-		permi23 = new_bd_sparc_Permi23_cycle_chain(NULL, bb, sz, args, sz + 1);
+		permi23 = new_bd_sparc_Permi23_cycle_chain(dbgi, bb, sz, args, sz + 1);
 	} else if (op2->type == PERM_OP_CHAIN && op3->type == PERM_OP_CYCLE) {
-		permi23 = new_bd_sparc_Permi23_chain_cycle(NULL, bb, sz, args, sz + 1);
+		permi23 = new_bd_sparc_Permi23_chain_cycle(dbgi, bb, sz, args, sz + 1);
 	} else if (op2->type == PERM_OP_CHAIN && op3->type == PERM_OP_CHAIN) {
-		permi23 = new_bd_sparc_Permi23_chain_chain(NULL, bb, sz, args, sz + 2);
+		permi23 = new_bd_sparc_Permi23_chain_chain(dbgi, bb, sz, args, sz + 2);
 	} else
 		assert(!"Unknown perm ops");
 
