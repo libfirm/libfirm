@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2012 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -36,7 +36,7 @@
  *  <li><b>Hash(hashset,key)</b> calculates the hash value for a given key</li>
  * </ul>
  *
- * Note that by default it is assumed that the data values themselfes are used
+ * Note that by default it is assumed that the data values themselves are used
  * as keys. However you can change that with additional defines:
  *
  * <ul>
@@ -83,7 +83,7 @@
 
 #ifdef DO_REHASH
 #define HashSetEntry                   ValueType
-#define EntrySetHash(entry,new_hash)   (void)0
+#define EntrySetHash(entry,new_hash)   ((void)0)
 #define EntryGetHash(self,entry)       Hash(self, GetKey(entry))
 #define EntryGetValue(entry)           (entry)
 #else /* ! DO_REHASH */
@@ -174,41 +174,7 @@
 
 #define ILLEGAL_POS       ((size_t)-1)
 
-/* check that all needed functions are defined */
-#ifndef hashset_init
-#error You have to redefine hashset_init
-#endif
-#ifndef hashset_init_size
-#error You have to redefine hashset_init_size
-#endif
-#ifndef hashset_destroy
-#error You have to redefine hashset_destroy
-#endif
-#ifndef hashset_insert
-#error You have to redefine hashset_insert
-#endif
-#ifndef hashset_remove
-#error You have to redefine hashset_remove
-#endif
-#ifndef hashset_find
-#error You have to redefine hashset_find
-#endif
-#ifndef hashset_size
-#error You have to redefine hashset_size
-#endif
-
-#ifndef NO_ITERATOR
-#ifndef hashset_iterator_init
-#error You have to redefine hashset_iterator_init
-#endif
-#ifndef hashset_iterator_next
-#error You have to redefine hashset_iterator_next
-#endif
-#ifndef hashset_remove_iterator
-#error You have to redefine hashset_remove_iterator
-#endif
-#endif
-
+#ifdef hashset_size
 /**
  * Returns the number of elements in the hashset
  */
@@ -216,6 +182,12 @@ size_t hashset_size(const HashSet *self)
 {
 	return self->num_elements - self->num_deleted;
 }
+#else
+static inline size_t hashset_size(const HashSet *self)
+{
+	return self->num_elements - self->num_deleted;
+}
+#endif
 
 /**
  * Inserts an element into a hashset without growing the set (you have to make
@@ -412,6 +384,7 @@ static inline void maybe_shrink(HashSet *self)
 	resize(self, resize_to);
 }
 
+#ifdef hashset_insert
 /**
  * Insert an element into the hashset. If no element with the given key exists yet,
  * then a new one is created and initialized with the InitData function.
@@ -432,7 +405,9 @@ FindReturnValue hashset_insert(HashSet *self, KeyType key)
 	maybe_grow(self);
 	return InsertReturnValue(insert_nogrow(self, key));
 }
+#endif
 
+#ifdef hashset_find
 /**
  * Searches for an element with key @p key.
  *
@@ -468,7 +443,9 @@ FindReturnValue hashset_find(const HashSet *self, ConstKeyType key)
 		assert(num_probes < num_buckets);
 	}
 }
+#endif
 
+#ifdef hashset_remove
 /**
  * Removes an element from a hashset. Does nothing if the set doesn't contain
  * the element.
@@ -510,6 +487,7 @@ void hashset_remove(HashSet *self, ConstKeyType key)
 		assert(num_probes < num_buckets);
 	}
 }
+#endif
 
 /**
  * Initializes hashset with a specific size
@@ -536,6 +514,7 @@ static inline void init_size(HashSet *self, size_t initial_size)
 	reset_thresholds(self);
 }
 
+#ifdef hashset_init
 /**
  * Initializes a hashset with the default size. The memory for the set has to
  * already allocated.
@@ -544,7 +523,9 @@ void hashset_init(HashSet *self)
 {
 	init_size(self, HT_MIN_BUCKETS);
 }
+#endif
 
+#ifdef hashset_destroy
 /**
  * Destroys a hashset, freeing all used memory (except the memory for the
  * HashSet struct itself).
@@ -559,7 +540,9 @@ void hashset_destroy(HashSet *self)
 	self->entries = NULL;
 #endif
 }
+#endif
 
+#ifdef hashset_init_size
 /**
  * Initializes a hashset expecting expected_element size.
  */
@@ -576,8 +559,9 @@ void hashset_init_size(HashSet *self, size_t expected_elements)
 	po2size     = ceil_po2(needed_size);
 	init_size(self, po2size);
 }
+#endif
 
-#ifndef NO_ITERATOR
+#ifdef hashset_iterator_init
 /**
  * Initializes a hashset iterator. The memory for the allocator has to be
  * already allocated.
@@ -592,7 +576,9 @@ void hashset_iterator_init(HashSetIterator *self, const HashSet *hashset)
 	self->entries_version = hashset->entries_version;
 #endif
 }
+#endif
 
+#ifdef hashset_iterator_next
 /**
  * Returns the next value in the iterator or NULL if no value is left
  * in the hashset.
@@ -615,7 +601,9 @@ ValueType hashset_iterator_next(HashSetIterator *self)
 	self->current_bucket = current_bucket;
 	return EntryGetValue(*current_bucket);
 }
+#endif
 
+#ifdef hashset_remove_iterator
 /**
  * Removes the element the iterator points to. Removing an element a second time
  * has no result.
@@ -636,6 +624,6 @@ void hashset_remove_iterator(HashSet *self, const HashSetIterator *iter)
 	self->num_deleted++;
 	self->consider_shrink = 1;
 }
-#endif /* NO_ITERATOR */
+#endif
 
-#endif /* HashSet */
+#endif

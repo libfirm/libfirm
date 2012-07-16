@@ -60,7 +60,6 @@ ir_lnk_nodeset_entry_t *ir_lnk_nodeset_find_(const ir_lnk_nodeset_t *nodeset, co
 #define ADDITIONAL_INIT         INIT_LIST_HEAD(&self->elem_list); INIT_LIST_HEAD(&self->all_iters);
 #define ADDITIONAL_TERM         INIT_LIST_HEAD(&self->elem_list); INIT_LIST_HEAD(&self->all_iters);
 
-#define NO_ITERATOR
 #define HAVE_OWN_RESIZE
 
 #include "hashset.c"

@@ -36,18 +36,14 @@ typedef struct ir_valueset_entry_t {
 } ir_valueset_entry_t;
 
 #define HashSet          ir_valueset_t
-#define HashSetIterator  ir_valueset_iterator_t
 #define ValueType        ir_valueset_entry_t
 #define ADDITIONAL_DATA  list_head elem_list; list_head all_iters;
 #undef DO_REHASH
-#define NO_ITERATOR
 
 #include "hashset.h"
 
-#undef NO_ITERATOR
 #undef ADDITIONAL_DATA
 #undef ValueType
-#undef HashSetIterator
 #undef HashSet
 
 typedef struct ir_valueset_t ir_valueset_t;
