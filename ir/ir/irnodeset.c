@@ -53,7 +53,7 @@ void ir_nodeset_init_(ir_nodeset_t *self);
 #define hashset_iterator_next   ir_nodeset_iterator_next
 #define hashset_remove_iterator ir_nodeset_remove_iterator
 
-#include "hashset.c"
+#include "hashset.c.inl"
 
 void ir_nodeset_init(ir_nodeset_t *nodeset)
 {

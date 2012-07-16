@@ -31,7 +31,6 @@ libfirm_la_SOURCES = \
 	adt/cpset.c \
 	adt/gaussjordan.c \
 	adt/gaussseidel.c \
-	adt/hashset.c \
 	adt/hungarian.c \
 	adt/iterator.c \
 	adt/pdeq.c \
@@ -261,6 +260,7 @@ EXTRA_DIST = \
 	adt/bitset.h \
 	adt/compiler.h \
 	adt/fourcc.h \
+	adt/hashset.c.inl \
 	adt/raw_bitset.h \
 	adt/util.h \
 	ana/absgraph.h \

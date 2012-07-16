@@ -63,7 +63,7 @@ ir_lnk_nodemap_entry_t *ir_lnk_nodemap_find_(const ir_lnk_nodemap_t *self,
 
 #define HAVE_OWN_RESIZE
 
-#include "hashset.c"
+#include "hashset.c.inl"
 
 /**
  * Resize the hashset

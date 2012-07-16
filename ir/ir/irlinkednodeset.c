@@ -62,7 +62,7 @@ ir_lnk_nodeset_entry_t *ir_lnk_nodeset_find_(const ir_lnk_nodeset_t *nodeset, co
 
 #define HAVE_OWN_RESIZE
 
-#include "hashset.c"
+#include "hashset.c.inl"
 
 /**
  * Resize the hashset

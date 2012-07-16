@@ -66,7 +66,7 @@ ir_nodehashmap_entry_t *ir_nodehashmap_find_(const ir_nodehashmap_t *self,
 #define hashset_iterator_next   ir_nodehashmap_iterator_next
 #define hashset_remove_iterator ir_nodehashmap_remove_iterator
 
-#include "hashset.c"
+#include "hashset.c.inl"
 
 void ir_nodehashmap_init(ir_nodehashmap_t *nodehashmap)
 {
