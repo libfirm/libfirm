@@ -199,7 +199,7 @@ static void symtbl_init(void)
 	key.str = (s);                                               \
 	key.typetag = (tt);                                          \
 	key.code = (cod);                                            \
-	set_insert(symbol_t, symtbl, &key, sizeof(key), hash_str(s) + tt * 17)
+	(void)set_insert(symbol_t, symtbl, &key, sizeof(key), hash_str(s) + tt * 17)
 
 #define INSERTENUM(tt, e) INSERT(tt, #e, e)
 #define INSERTKEYWORD(k) INSERT(tt_keyword, #k, kw_##k)
@@ -1463,7 +1463,7 @@ static void set_id(read_env_t *env, long id, void *elem)
 	id_entry key;
 	key.id = id;
 	key.elem = elem;
-	set_insert(id_entry, env->idset, &key, sizeof(key), (unsigned) id);
+	(void)set_insert(id_entry, env->idset, &key, sizeof(key), (unsigned) id);
 }
 
 static ir_node *get_node_or_null(read_env_t *env, long nodenr)

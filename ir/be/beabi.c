@@ -196,11 +196,11 @@ static void remember_call_arg(be_abi_call_arg_t *arg, be_abi_call_t *call, be_ab
 	unsigned hash = arg->is_res * 128 + arg->pos;
 	if (context & ABI_CONTEXT_CALLEE) {
 		arg->callee = 1;
-		set_insert(be_abi_call_arg_t, call->params, arg, sizeof(*arg), hash);
+		(void)set_insert(be_abi_call_arg_t, call->params, arg, sizeof(*arg), hash);
 	}
 	if (context & ABI_CONTEXT_CALLER) {
 		arg->callee = 0;
-		set_insert(be_abi_call_arg_t, call->params, arg, sizeof(*arg), hash);
+		(void)set_insert(be_abi_call_arg_t, call->params, arg, sizeof(*arg), hash);
 	}
 }
 

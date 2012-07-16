@@ -764,7 +764,7 @@ ir_alias_relation get_alias_relation_ex(
 
 	key.result = get_alias_relation(adr1, mode1, adr2, mode2);
 
-	set_insert(mem_disambig_entry, result_cache, &key, sizeof(key), HASH_ENTRY(adr1, adr2));
+	(void)set_insert(mem_disambig_entry, result_cache, &key, sizeof(key), HASH_ENTRY(adr1, adr2));
 	return key.result;
 }
 

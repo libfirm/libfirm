@@ -126,7 +126,7 @@ static inline void qnode_add_conflict(const qnode_t *qn, const ir_node *n1, cons
 		c.n1 = n2;
 		c.n2 = n1;
 	}
-	set_insert(conflict_t, qn->conflicts, &c, sizeof(c), HASH_CONFLICT(c));
+	(void)set_insert(conflict_t, qn->conflicts, &c, sizeof(c), HASH_CONFLICT(c));
 }
 
 /**

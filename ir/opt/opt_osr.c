@@ -164,7 +164,7 @@ static void LFTR_add(ir_node *src, ir_node *dst, unsigned code, ir_node *rc, iv_
 	 * There might be more than one edge here. This is rather bad
 	 * because we currently store only one.
 	 */
-	set_insert(LFTR_edge, env->lftr_edges, &key, sizeof(key), hash_ptr(src));
+	(void)set_insert(LFTR_edge, env->lftr_edges, &key, sizeof(key), hash_ptr(src));
 }  /* LFTR_add */
 
 /**
@@ -277,7 +277,7 @@ static void add(unsigned code, ir_node *op1, ir_node *op2, ir_node *result, iv_e
 	key.op2  = op2;
 	key.res  = result;
 
-	set_insert(quadruple_t, env->quad_map, &key, sizeof(key), (code * 9) ^ hash_ptr(op1) ^ hash_ptr(op2));
+	(void)set_insert(quadruple_t, env->quad_map, &key, sizeof(key), (code * 9) ^ hash_ptr(op1) ^ hash_ptr(op2));
 }  /* add */
 
 /**

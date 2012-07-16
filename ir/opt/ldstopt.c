@@ -1746,7 +1746,7 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 					} else {
 						irn = new_rd_Load(db, pred, get_Phi_pred(phi, pos), ptr, load_mode, cons_none);
 						entry.load = irn;
-						set_insert(avail_entry_t, avail, &entry, sizeof(entry), hash_cache_entry(&entry));
+						(void)set_insert(avail_entry_t, avail, &entry, sizeof(entry), hash_cache_entry(&entry));
 						DB((dbg, LEVEL_1, "  Created %+F in %+F\n", irn, pred));
 					}
 					pe->load = irn;

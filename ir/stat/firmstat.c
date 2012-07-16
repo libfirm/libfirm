@@ -973,7 +973,7 @@ static unsigned get_adr_mark(graph_entry_t *graph, ir_node *node)
 static void set_adr_mark(graph_entry_t *graph, ir_node *node, unsigned val)
 {
 	address_mark_entry_t const value = { node, val };
-	set_insert(address_mark_entry_t, graph->address_mark, &value, sizeof(value), hash_ptr(node));
+	(void)set_insert(address_mark_entry_t, graph->address_mark, &value, sizeof(value), hash_ptr(node));
 }  /* set_adr_mark */
 
 #undef DUMP_ADR_MODE

@@ -557,7 +557,7 @@ static void block_associate_walker(ir_node *bb, void *env)
 	query.count = b->counters[(b->i)++];
 	DBG((dbg, LEVEL_4, "execcount(%+F, %u): %u\n", bb, query.block,
 	    query.count));
-	set_insert(execcount_t, profile, &query, sizeof(query), query.block);
+	(void)set_insert(execcount_t, profile, &query, sizeof(query), query.block);
 }
 
 static void irp_associate_blocks(block_assoc_t *env)

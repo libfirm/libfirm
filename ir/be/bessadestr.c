@@ -140,7 +140,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 			 */
 			if (!pp && !be_is_live_in(lv, bl, arg)) {
 				templ.pos = n_projs++;
-				set_insert(perm_proj_t, arg_set, &templ, sizeof(templ), hash);
+				(void)set_insert(perm_proj_t, arg_set, &templ, sizeof(templ), hash);
 			}
 		}
 
