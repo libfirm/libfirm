@@ -31,6 +31,8 @@
 #ifndef FIRM_ADT_PSET_NEW_H
 #define FIRM_ADT_PSET_NEW_H
 
+#include <stdbool.h>
+
 /** @cond PRIVATE */
 
 #define HashSet          pset_new_t
@@ -79,9 +81,9 @@ void pset_new_destroy(pset_new_t *pset_new);
  *
  * @param pset_new   Pointer to the pset_new
  * @param ptr    Pointer to insert into the pset_new
- * @returns      1 if the pointer was inserted, 0 if it was already there
+ * @returns      true if the pointer was inserted, false if it was already there
  */
-int pset_new_insert(pset_new_t *pset_new, void *ptr);
+bool pset_new_insert(pset_new_t *pset_new, void *ptr);
 
 /**
  * Removes an element from a pset_new. Does nothing if the pset_new doesn't contain the
@@ -97,9 +99,8 @@ void pset_new_remove(pset_new_t *pset_new, const void *ptr);
  *
  * @param pset_new   Pointer to the pset_new
  * @param ptr    The pointer to test
- * @returns      1 @p pset_new contains the @p ptr, 0 otherwise
  */
-int pset_new_contains(const pset_new_t *pset_new, const void *ptr);
+bool pset_new_contains(const pset_new_t *pset_new, const void *ptr);
 
 /**
  * Returns the number of pointers contained in the pset_new

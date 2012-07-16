@@ -99,20 +99,25 @@
 #endif /* Alloc */
 
 #ifdef ID_HASH
-#define InsertReturnValue                 int
-#define GetInsertReturnValue(entry,found) (found)
-#define NullReturnValue                   0
+#define FindReturnValue                 bool
+#define GetFindReturnValue(entry,found) (found)
+#define NullReturnValue                 false
+#define InsertReturnValue(findreturn)   !(findreturn)
 #else /* ! ID_HASH */
 #ifdef SCALAR_RETURN
-#define InsertReturnValue                 ValueType
-#define GetInsertReturnValue(entry,found) EntryGetValue(entry)
-#define NullReturnValue                   NullValue
+#define FindReturnValue                 ValueType
+#define GetFindReturnValue(entry,found) EntryGetValue(entry)
+#define NullReturnValue                 NullValue
 #else
-#define InsertReturnValue                 ValueType*
-#define GetInsertReturnValue(entry,found) & EntryGetValue(entry)
-#define NullReturnValue                   & NullValue
+#define FindReturnValue                 ValueType*
+#define GetFindReturnValue(entry,found) & EntryGetValue(entry)
+#define NullReturnValue                 & NullValue
 #endif
 #endif /* ID_HASH */
+
+#ifndef InsertReturnValue
+#define InsertReturnValue(findreturn)   findreturn
+#endif
 
 #ifndef KeyType
 #define KeyType                  ValueType
@@ -215,10 +220,11 @@ size_t hashset_size(const HashSet *self)
 /**
  * Inserts an element into a hashset without growing the set (you have to make
  * sure there's enough room for that.
+ * @returns  previous value if found, NullValue otherwise
  * @note also see comments for hashset_insert()
  * @internal
  */
-static inline InsertReturnValue insert_nogrow(HashSet *self, KeyType key)
+static inline FindReturnValue insert_nogrow(HashSet *self, KeyType key)
 {
 	size_t   num_probes  = 0;
 	size_t   num_buckets = self->num_buckets;
@@ -246,7 +252,7 @@ static inline InsertReturnValue insert_nogrow(HashSet *self, KeyType key)
 			InitData(self, EntryGetValue(*nentry), key);
 			EntrySetHash(*nentry, hash);
 			self->num_elements++;
-			return GetInsertReturnValue(*nentry, 0);
+			return GetFindReturnValue(*nentry, false);
 		}
 		if (EntryIsDeleted(*entry)) {
 			if (insert_pos == ILLEGAL_POS)
@@ -254,7 +260,7 @@ static inline InsertReturnValue insert_nogrow(HashSet *self, KeyType key)
 		} else if (EntryGetHash(self, *entry) == hash) {
 			if (KeysEqual(self, GetKey(EntryGetValue(*entry)), key)) {
 				// Value already in the set, return it
-				return GetInsertReturnValue(*entry, 1);
+				return GetFindReturnValue(*entry, true);
 			}
 		}
 
@@ -416,7 +422,7 @@ static inline void maybe_shrink(HashSet *self)
  * @param key    the key that identifies the data
  * @returns      the existing or newly created data element (or nothing in case of hashs where keys are the while value)
  */
-InsertReturnValue hashset_insert(HashSet *self, KeyType key)
+FindReturnValue hashset_insert(HashSet *self, KeyType key)
 {
 #ifndef NDEBUG
 	self->entries_version++;
@@ -424,7 +430,7 @@ InsertReturnValue hashset_insert(HashSet *self, KeyType key)
 
 	maybe_shrink(self);
 	maybe_grow(self);
-	return insert_nogrow(self, key);
+	return InsertReturnValue(insert_nogrow(self, key));
 }
 
 /**
@@ -434,7 +440,7 @@ InsertReturnValue hashset_insert(HashSet *self, KeyType key)
  * @param key       the key to search for
  * @returns         the found value or NullValue if nothing was found
  */
-InsertReturnValue hashset_find(const HashSet *self, ConstKeyType key)
+FindReturnValue hashset_find(const HashSet *self, ConstKeyType key)
 {
 	size_t   num_probes  = 0;
 	size_t   num_buckets = self->num_buckets;
@@ -453,7 +459,7 @@ InsertReturnValue hashset_find(const HashSet *self, ConstKeyType key)
 		} else if (EntryGetHash(self, *entry) == hash) {
 			if (KeysEqual(self, GetKey(EntryGetValue(*entry)), key)) {
 				// found the value
-				return GetInsertReturnValue(*entry, 1);
+				return GetFindReturnValue(*entry, true);
 			}
 		}
 

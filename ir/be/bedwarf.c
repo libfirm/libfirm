@@ -810,7 +810,7 @@ static void emit_subroutine_type(const ir_type *type)
 
 static void emit_type(ir_type *type)
 {
-	if (pset_new_insert(&env.emitted_types, type))
+	if (!pset_new_insert(&env.emitted_types, type))
 		return;
 
 	switch (get_type_tpop_code(type)) {

@@ -29,6 +29,7 @@
 #ifndef _FIRM_IRNODESET_H_
 #define _FIRM_IRNODESET_H_
 
+#include <stdbool.h>
 #include "firm_types.h"
 #include "xmalloc.h"
 
@@ -95,10 +96,10 @@ static inline void ir_nodeset_del(ir_nodeset_t *nodeset) {
  *
  * @param nodeset   Pointer to the nodeset
  * @param node      node to insert into the nodeset
- * @returns         1 if the element has been inserted,
- *                  0 if it was already there
+ * @returns         true if the element has been inserted,
+ *                  false if it was already there
  */
-int ir_nodeset_insert(ir_nodeset_t *nodeset, ir_node *node);
+bool ir_nodeset_insert(ir_nodeset_t *nodeset, ir_node *node);
 
 
 /**
@@ -115,9 +116,8 @@ void ir_nodeset_remove(ir_nodeset_t *nodeset, const ir_node *node);
  *
  * @param nodeset   Pointer to the nodeset
  * @param node      The pointer to find
- * @returns         1 if nodeset contains the node, 0 else
  */
-int ir_nodeset_contains(const ir_nodeset_t *nodeset, const ir_node *node);
+bool ir_nodeset_contains(const ir_nodeset_t *nodeset, const ir_node *node);
 
 /**
  * Returns the number of pointers contained in the nodeset
