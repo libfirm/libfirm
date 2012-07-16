@@ -445,31 +445,36 @@ static void create_congruence_class(ir_node *block, void *data)
 	be_liveness_end_of_block(lv, cls, block, &live_nodes);
 
 	/* check should be same constraints */
+	ir_node *last_phi = NULL;
 	sched_foreach_reverse(block, node) {
 		ir_node *value;
-		if (is_Phi(node))
+		if (is_Phi(node)) {
+			last_phi = node;
 			break;
+		}
 
 		be_foreach_definition(node, cls, value,
 			congruence_def(&live_nodes, value);
 		);
 		be_liveness_transfer(cls, node, &live_nodes);
 	}
+	if (!last_phi)
+		return;
 
 	/* check phi congruence classes */
-	sched_foreach_reverse_from(node, node) {
+	sched_foreach_reverse_from(last_phi, phi) {
 		int i;
 		int arity;
 		int node_idx;
-		assert(is_Phi(node));
+		assert(is_Phi(phi));
 
-		if (!arch_irn_consider_in_reg_alloc(cls, node))
+		if (!arch_irn_consider_in_reg_alloc(cls, phi))
 			continue;
 
-		node_idx = get_irn_idx(node);
+		node_idx = get_irn_idx(phi);
 		node_idx = uf_find(congruence_classes, node_idx);
 
-		arity = get_irn_arity(node);
+		arity = get_irn_arity(phi);
 		for (i = 0; i < arity; ++i) {
 			bool                  interferes = false;
 			ir_nodeset_iterator_t iter;
@@ -478,7 +483,7 @@ static void create_congruence_class(ir_node *block, void *data)
 			ir_node              *live;
 			allocation_info_t    *head_info;
 			allocation_info_t    *other_info;
-			ir_node              *op     = get_Phi_pred(node, i);
+			ir_node              *op     = get_Phi_pred(phi, i);
 			int                   op_idx = get_irn_idx(op);
 			op_idx = uf_find(congruence_classes, op_idx);
 
@@ -519,7 +524,7 @@ static void create_congruence_class(ir_node *block, void *data)
 			old_node_idx = node_idx;
 			node_idx = uf_union(congruence_classes, node_idx, op_idx);
 			DB((dbg, LEVEL_3, "Merge %+F and %+F congruence classes\n",
-			    node, op));
+			    phi, op));
 
 			old_node_idx = node_idx == old_node_idx ? op_idx : old_node_idx;
 			head_info  = get_allocation_info(get_idx_irn(irg, node_idx));
