@@ -189,6 +189,16 @@ FIRM_API void *pset_remove(pset *pset, const void *key, unsigned hash);
  */
 FIRM_API void *pset_first(pset *pset);
 
+/**
+ * Returns the first element of a pset.
+ * This is a wrapper for pset_first(pmap *map); It allows to express the
+ * intended type of the set elements (instead of weakly typed void*).
+ *
+ * @param type  destination type of the pointers in the set
+ * @param pset  the pset to iterate
+ *
+ * @return a pointer to the element or NULL if the set is empty
+ */
 #define pset_first(type, pset) ((type*)pset_first((pset)))
 
 /**
@@ -201,6 +211,17 @@ FIRM_API void *pset_first(pset *pset);
  */
 FIRM_API void *pset_next(pset *pset);
 
+/**
+ * Returns the next element of a pset.
+ * This is a wrapper for pset_next(pmap *map); It allows to express the
+ * intended type of the set elements (instead of weakly typed void*).
+ *
+ * @param type  destination type of the pointers in the set
+ * @param pset  the pset to iterate
+ *
+ * @return a pointer to the next element or NULL if the
+ *         iteration is finished
+ */
 #define pset_next(type, pset) ((type*)pset_next((pset)))
 
 /**
