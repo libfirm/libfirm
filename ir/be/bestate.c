@@ -38,7 +38,7 @@
 #include "irgmod.h"
 #include "irnodeset.h"
 #include "irnodehashmap.h"
-#include "adt/cpset.h"
+#include "cpset.h"
 
 #include "bearch.h"
 #include "beuses.h"
