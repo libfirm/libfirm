@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2o008 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -58,7 +58,7 @@ struct code_fragment_t {
 	unsigned short   jumpsize_min;
 	unsigned short   jumpsize_max;
 
-	unsigned char    data[0];      /**< data starts here */
+	unsigned char    data[];       /**< data starts here */
 };
 
 typedef struct binary_emiter_interface_t binary_emiter_interface_t;
