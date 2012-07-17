@@ -75,7 +75,7 @@ ir_type *ia32_get_prim_type(const ir_mode *mode)
 ir_entity *ia32_create_float_const_entity(ia32_isa_t *isa, ir_tarval *tv,
                                           ident *name)
 {
-	ir_entity        *res = (ir_entity*)pmap_get(isa->tv_ent, tv);
+	ir_entity        *res = pmap_get(ir_entity, isa->tv_ent, tv);
 	ir_initializer_t *initializer;
 	ir_mode          *mode;
 	ir_type          *tp;

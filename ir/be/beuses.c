@@ -104,7 +104,7 @@ static const be_use_t *get_or_set_use_block(be_uses_t *env,
 
 	temp.block = block;
 	temp.node = def;
-	result = (be_use_t*)set_find(env->uses, &temp, sizeof(temp), hash);
+	result = set_find(be_use_t, env->uses, &temp, sizeof(temp), hash);
 
 	if (result == NULL) {
 		// insert templ first as we might end in a loop in the get_next_use
@@ -112,7 +112,7 @@ static const be_use_t *get_or_set_use_block(be_uses_t *env,
 		temp.next_use = USES_INFINITY;
 		temp.outermost_loop = UNKNOWN_OUTERMOST_LOOP;
 		temp.visited = 0;
-		result = (be_use_t*)set_insert(env->uses, &temp, sizeof(temp), hash);
+		result = set_insert(be_use_t, env->uses, &temp, sizeof(temp), hash);
 	}
 
 	if (result->outermost_loop == UNKNOWN_OUTERMOST_LOOP && result->visited < env->visited_counter) {
@@ -143,7 +143,6 @@ static const be_use_t *get_or_set_use_block(be_uses_t *env,
  */
 static int be_is_phi_argument(const ir_node *block, const ir_node *def)
 {
-	ir_node *node;
 	ir_node *succ_block = NULL;
 	int arity, i;
 
@@ -227,7 +226,6 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 	ir_node  *node;
 	unsigned  timestep;
 	unsigned  next_use_step;
-	const ir_edge_t *edge;
 
 	assert(skip_from_uses == 0 || skip_from_uses == 1);
 	if (skip_from_uses) {
@@ -369,7 +367,6 @@ be_next_use_t be_get_next_use(be_uses_t *env, ir_node *from,
  */
 static void set_sched_step_walker(ir_node *block, void *data)
 {
-	ir_node  *node;
 	unsigned step = 0;
 	(void) data;
 

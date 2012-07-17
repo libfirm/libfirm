@@ -28,6 +28,7 @@
 
 /** probing method: quadratic probing */
 #define DO_REHASH
+#define ID_HASH
 #define HashSet                    pset_new_t
 #define HashSetIterator            pset_new_iterator_t
 #define ValueType                  void*
@@ -47,4 +48,4 @@
 #define hashset_iterator_next   pset_new_iterator_next
 #define hashset_remove_iterator pset_new_remove_iterator
 
-#include "hashset.c"
+#include "hashset.c.inl"

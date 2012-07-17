@@ -736,49 +736,6 @@ ir_tarval *computed_value(const ir_node *n)
 	return tarval_bad;
 }
 
-void firm_set_default_computed_value(ir_opcode code, ir_op_ops *ops)
-{
-#define CASE(a)                                        \
-	case iro_##a:                                      \
-		ops->computed_value      = computed_value_##a; \
-		break
-#define CASE_PROJ(a)                                        \
-	case iro_##a:                                           \
-		ops->computed_value_Proj = computed_value_Proj_##a; \
-		break
-
-	switch (code) {
-	CASE(Add);
-	CASE(And);
-	CASE(Borrow);
-	CASE(Carry);
-	CASE(Cmp);
-	CASE(Confirm);
-	CASE(Const);
-	CASE(Conv);
-	CASE(Eor);
-	CASE(Minus);
-	CASE(Mul);
-	CASE(Mux);
-	CASE(Not);
-	CASE(Or);
-	CASE(Proj);
-	CASE(Rotl);
-	CASE(Shl);
-	CASE(Shr);
-	CASE(Shrs);
-	CASE(Sub);
-	CASE(SymConst);
-	CASE_PROJ(Div);
-	CASE_PROJ(Mod);
-	default:
-		/* leave NULL */
-		break;
-	}
-#undef CASE_PROJ
-#undef CASE
-}
-
 /**
  * Optimize operations that are commutative and have neutral 0,
  * so a op 0 = 0 op a = a.
@@ -942,11 +899,6 @@ static ir_node *equivalent_node_left_zero(ir_node *n)
 	return n;
 }
 
-#define equivalent_node_Shl   equivalent_node_left_zero
-#define equivalent_node_Shr   equivalent_node_left_zero
-#define equivalent_node_Shrs  equivalent_node_left_zero
-#define equivalent_node_Rotl  equivalent_node_left_zero
-
 /**
  * Optimize a - 0 and (a + x) - x (for modes with wrap-around).
  *
@@ -1006,13 +958,6 @@ static ir_node *equivalent_node_idempotent_unop(ir_node *n)
 	}
 	return n;
 }
-
-/** Optimize Not(Not(x)) == x. */
-#define equivalent_node_Not    equivalent_node_idempotent_unop
-
-/** -(-x) == x       ??? Is this possible or can --x raise an
-                       out of bounds exception if min =! max? */
-#define equivalent_node_Minus  equivalent_node_idempotent_unop
 
 /**
  * Optimize a * 1 = 1 * a = a.
@@ -1111,9 +1056,9 @@ static ir_node *equivalent_node_And(ir_node *n)
 				/* Check Conv(all_one) & Const = all_one */
 				ir_tarval *one  = get_mode_all_one(convopmode);
 				ir_tarval *conv = tarval_convert_to(one, mode);
-				ir_tarval *and  = tarval_and(conv, tv);
+				ir_tarval *tand = tarval_and(conv, tv);
 
-				if (tarval_is_all_one(and)) {
+				if (tarval_is_all_one(tand)) {
 					/* Conv(X) & Const = X */
 					n = a;
 					DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_AND);
@@ -1611,48 +1556,6 @@ ir_node *equivalent_node(ir_node *n)
 	if (n->op->ops.equivalent_node)
 		return n->op->ops.equivalent_node(n);
 	return n;
-}
-
-void firm_set_default_equivalent_node(ir_opcode code, ir_op_ops *ops)
-{
-#define CASE(a)                                      \
-	case iro_##a:                                    \
-		ops->equivalent_node  = equivalent_node_##a; \
-		break
-#define CASE_PROJ(a)                                          \
-	case iro_##a:                                             \
-		ops->equivalent_node_Proj = equivalent_node_Proj_##a; \
-		break
-
-	switch (code) {
-	CASE(Eor);
-	CASE(Add);
-	CASE(Shl);
-	CASE(Shr);
-	CASE(Shrs);
-	CASE(Rotl);
-	CASE(Sub);
-	CASE(Not);
-	CASE(Minus);
-	CASE(Mul);
-	CASE(Or);
-	CASE(And);
-	CASE(Conv);
-	CASE(Phi);
-	CASE_PROJ(Tuple);
-	CASE_PROJ(Div);
-	CASE_PROJ(CopyB);
-	CASE_PROJ(Bound);
-	CASE(Proj);
-	CASE(Id);
-	CASE(Mux);
-	CASE(Confirm);
-	default:
-		/* leave NULL */
-		break;
-	}
-#undef CASE
-#undef CASE_PROJ
 }
 
 /**
@@ -2559,9 +2462,9 @@ static ir_node *transform_node_Or_(ir_node *n)
 				ir_node  *xora   = new_rd_Eor(dbgi, block, a_left, a_right, a_mode);
 				ir_node  *xorb   = new_rd_Eor(dbgi, block, b_left, b_right, b_mode);
 				ir_node  *conv   = new_rd_Conv(dbgi, block, xora, b_mode);
-				ir_node  *or     = new_rd_Or(dbgi, block, conv, xorb, b_mode);
+				ir_node  *orn    = new_rd_Or(dbgi, block, conv, xorb, b_mode);
 				ir_node  *zero   = create_zero_const(irg, b_mode);
-				return new_rd_Cmp(dbgi, block, or, zero, ir_relation_less_greater);
+				return new_rd_Cmp(dbgi, block, orn, zero, ir_relation_less_greater);
 			}
 			if (values_in_mode(get_irn_mode(b_left), get_irn_mode(a_left))) {
 				ir_graph *irg    = get_irn_irg(n);
@@ -2572,9 +2475,9 @@ static ir_node *transform_node_Or_(ir_node *n)
 				ir_node  *xora   = new_rd_Eor(dbgi, block, a_left, a_right, a_mode);
 				ir_node  *xorb   = new_rd_Eor(dbgi, block, b_left, b_right, b_mode);
 				ir_node  *conv   = new_rd_Conv(dbgi, block, xorb, a_mode);
-				ir_node  *or     = new_rd_Or(dbgi, block, xora, conv, a_mode);
+				ir_node  *orn    = new_rd_Or(dbgi, block, xora, conv, a_mode);
 				ir_node  *zero   = create_zero_const(irg, a_mode);
-				return new_rd_Cmp(dbgi, block, or, zero, ir_relation_less_greater);
+				return new_rd_Cmp(dbgi, block, orn, zero, ir_relation_less_greater);
 			}
 		}
 	}
@@ -3151,8 +3054,8 @@ restart:
 				ir_node  *block = get_nodes_block(n);
 				ir_mode  *mode  = get_irn_mode(n);
 				ir_node  *notn  = new_rd_Not(dbgi, block, and_right, mode);
-				ir_node  *and   = new_rd_And(dbgi, block, a, notn, mode);
-				return and;
+				ir_node  *andn  = new_rd_And(dbgi, block, a, notn, mode);
+				return andn;
 			}
 		}
 	}
@@ -3746,10 +3649,10 @@ static ir_node *transform_node_And(ir_node *n)
 				ir_node  *xora   = new_rd_Eor(dbgi, block, a_left, a_right, a_mode);
 				ir_node  *xorb   = new_rd_Eor(dbgi, block, b_left, b_right, b_mode);
 				ir_node  *conv   = new_rd_Conv(dbgi, block, xora, b_mode);
-				ir_node  *or     = new_rd_Or(dbgi, block, conv, xorb, b_mode);
+				ir_node  *orn    = new_rd_Or(dbgi, block, conv, xorb, b_mode);
 				ir_graph *irg    = get_irn_irg(n);
 				ir_node  *zero   = create_zero_const(irg, b_mode);
-				return new_rd_Cmp(dbgi, block, or, zero, ir_relation_equal);
+				return new_rd_Cmp(dbgi, block, orn, zero, ir_relation_equal);
 			}
 			if (values_in_mode(get_irn_mode(b_left), get_irn_mode(a_left))) {
 				dbg_info *dbgi   = get_irn_dbg_info(n);
@@ -3759,10 +3662,10 @@ static ir_node *transform_node_And(ir_node *n)
 				ir_node  *xora   = new_rd_Eor(dbgi, block, a_left, a_right, a_mode);
 				ir_node  *xorb   = new_rd_Eor(dbgi, block, b_left, b_right, b_mode);
 				ir_node  *conv   = new_rd_Conv(dbgi, block, xorb, a_mode);
-				ir_node  *or     = new_rd_Or(dbgi, block, xora, conv, a_mode);
+				ir_node  *orn    = new_rd_Or(dbgi, block, xora, conv, a_mode);
 				ir_graph *irg    = get_irn_irg(n);
 				ir_node  *zero   = create_zero_const(irg, a_mode);
-				return new_rd_Cmp(dbgi, block, or, zero, ir_relation_equal);
+				return new_rd_Cmp(dbgi, block, orn, zero, ir_relation_equal);
 			}
 		}
 	}
@@ -6343,60 +6246,6 @@ static ir_node *transform_node_Call(ir_node *call)
 	return res;
 }
 
-void firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops)
-{
-#define CASE(a)                                         \
-	case iro_##a:                                       \
-		ops->transform_node      = transform_node_##a;  \
-		break
-#define CASE_PROJ(a)                                         \
-	case iro_##a:                                            \
-		ops->transform_node_Proj = transform_node_Proj_##a;  \
-		break
-#define CASE_PROJ_EX(a)                                      \
-	case iro_##a:                                            \
-		ops->transform_node      = transform_node_##a;       \
-		ops->transform_node_Proj = transform_node_Proj_##a;  \
-		break
-
-	switch (code) {
-	CASE(Add);
-	CASE(And);
-	CASE(Block);
-	CASE(Call);
-	CASE(Cmp);
-	CASE(Cond);
-	CASE(Conv);
-	CASE(End);
-	CASE(Eor);
-	CASE(Minus);
-	CASE(Mul);
-	CASE(Mux);
-	CASE(Not);
-	CASE(Or);
-	CASE(Phi);
-	CASE(Proj);
-	CASE(Rotl);
-	CASE(Shl);
-	CASE(Shr);
-	CASE(Shrs);
-	CASE(Sub);
-	CASE(Switch);
-	CASE(Sync);
-	CASE_PROJ(Bound);
-	CASE_PROJ(CopyB);
-	CASE_PROJ(Store);
-	CASE_PROJ_EX(Div);
-	CASE_PROJ_EX(Load);
-	CASE_PROJ_EX(Mod);
-	default:
-		break;
-	}
-#undef CASE_PROJ_EX
-#undef CASE_PROJ
-#undef CASE
-}
-
 /**
  * Tries several [inplace] [optimizing] transformations and returns an
  * equivalent node.  The difference to equivalent_node() is that these
@@ -6454,290 +6303,136 @@ restart:
 	return n;
 }
 
+static void register_computed_value_func(ir_op *op, computed_value_func func)
+{
+	assert(op->ops.computed_value == NULL || op->ops.computed_value == func);
+	op->ops.computed_value = func;
+}
+
+static void register_computed_value_func_proj(ir_op *op,
+                                              computed_value_func func)
+{
+	assert(op->ops.computed_value_Proj == NULL
+	    || op->ops.computed_value_Proj == func);
+	op->ops.computed_value_Proj = func;
+}
+
+static void register_equivalent_node_func(ir_op *op, equivalent_node_func func)
+{
+	assert(op->ops.equivalent_node == NULL || op->ops.equivalent_node == func);
+	op->ops.equivalent_node = func;
+}
+
+static void register_equivalent_node_func_proj(ir_op *op,
+                                               equivalent_node_func func)
+{
+	assert(op->ops.equivalent_node_Proj == NULL
+	    || op->ops.equivalent_node_Proj == func);
+	op->ops.equivalent_node_Proj = func;
+}
+
+static void register_transform_node_func(ir_op *op, transform_node_func func)
+{
+	assert(op->ops.transform_node == NULL || op->ops.transform_node == func);
+	op->ops.transform_node = func;
+}
+
+static void register_transform_node_func_proj(ir_op *op,
+                                              transform_node_func func)
+{
+	assert(op->ops.transform_node_Proj == NULL
+	    || op->ops.transform_node_Proj == func);
+	op->ops.transform_node_Proj = func;
+}
+
+void ir_register_opt_node_ops(void)
+{
+	register_computed_value_func(op_Add,      computed_value_Add);
+	register_computed_value_func(op_And,      computed_value_And);
+	register_computed_value_func(op_Borrow,   computed_value_Borrow);
+	register_computed_value_func(op_Carry,    computed_value_Carry);
+	register_computed_value_func(op_Cmp,      computed_value_Cmp);
+	register_computed_value_func(op_Confirm,  computed_value_Confirm);
+	register_computed_value_func(op_Const,    computed_value_Const);
+	register_computed_value_func(op_Conv,     computed_value_Conv);
+	register_computed_value_func(op_Eor,      computed_value_Eor);
+	register_computed_value_func(op_Minus,    computed_value_Minus);
+	register_computed_value_func(op_Mul,      computed_value_Mul);
+	register_computed_value_func(op_Mux,      computed_value_Mux);
+	register_computed_value_func(op_Not,      computed_value_Not);
+	register_computed_value_func(op_Or,       computed_value_Or);
+	register_computed_value_func(op_Proj,     computed_value_Proj);
+	register_computed_value_func(op_Rotl,     computed_value_Rotl);
+	register_computed_value_func(op_Shl,      computed_value_Shl);
+	register_computed_value_func(op_Shr,      computed_value_Shr);
+	register_computed_value_func(op_Shrs,     computed_value_Shrs);
+	register_computed_value_func(op_Sub,      computed_value_Sub);
+	register_computed_value_func(op_SymConst, computed_value_SymConst);
+	register_computed_value_func_proj(op_Div, computed_value_Proj_Div);
+	register_computed_value_func_proj(op_Mod, computed_value_Proj_Mod);
+
+	register_equivalent_node_func(op_Add,     equivalent_node_Add);
+	register_equivalent_node_func(op_And,     equivalent_node_And);
+	register_equivalent_node_func(op_Confirm, equivalent_node_Confirm);
+	register_equivalent_node_func(op_Conv,    equivalent_node_Conv);
+	register_equivalent_node_func(op_Eor,     equivalent_node_Eor);
+	register_equivalent_node_func(op_Id,      equivalent_node_Id);
+	register_equivalent_node_func(op_Minus,   equivalent_node_idempotent_unop);
+	register_equivalent_node_func(op_Mul,     equivalent_node_Mul);
+	register_equivalent_node_func(op_Mux,     equivalent_node_Mux);
+	register_equivalent_node_func(op_Not,     equivalent_node_idempotent_unop);
+	register_equivalent_node_func(op_Or,      equivalent_node_Or);
+	register_equivalent_node_func(op_Phi,     equivalent_node_Phi);
+	register_equivalent_node_func(op_Proj,    equivalent_node_Proj);
+	register_equivalent_node_func(op_Rotl,    equivalent_node_left_zero);
+	register_equivalent_node_func(op_Shl,     equivalent_node_left_zero);
+	register_equivalent_node_func(op_Shr,     equivalent_node_left_zero);
+	register_equivalent_node_func(op_Shrs,    equivalent_node_left_zero);
+	register_equivalent_node_func(op_Sub,     equivalent_node_Sub);
+	register_equivalent_node_func_proj(op_Bound, equivalent_node_Proj_Bound);
+	register_equivalent_node_func_proj(op_CopyB, equivalent_node_Proj_CopyB);
+	register_equivalent_node_func_proj(op_Div,   equivalent_node_Proj_Div);
+	register_equivalent_node_func_proj(op_Tuple, equivalent_node_Proj_Tuple);
+
+	register_transform_node_func(op_Add,    transform_node_Add);
+	register_transform_node_func(op_And,    transform_node_And);
+	register_transform_node_func(op_Block,  transform_node_Block);
+	register_transform_node_func(op_Call,   transform_node_Call);
+	register_transform_node_func(op_Cmp,    transform_node_Cmp);
+	register_transform_node_func(op_Cond,   transform_node_Cond);
+	register_transform_node_func(op_Conv,   transform_node_Conv);
+	register_transform_node_func(op_Div,    transform_node_Div);
+	register_transform_node_func(op_End,    transform_node_End);
+	register_transform_node_func(op_Eor,    transform_node_Eor);
+	register_transform_node_func(op_Load,   transform_node_Load);
+	register_transform_node_func(op_Minus,  transform_node_Minus);
+	register_transform_node_func(op_Mod,    transform_node_Mod);
+	register_transform_node_func(op_Mul,    transform_node_Mul);
+	register_transform_node_func(op_Mux,    transform_node_Mux);
+	register_transform_node_func(op_Not,    transform_node_Not);
+	register_transform_node_func(op_Or,     transform_node_Or);
+	register_transform_node_func(op_Phi,    transform_node_Phi);
+	register_transform_node_func(op_Proj,   transform_node_Proj);
+	register_transform_node_func(op_Rotl,   transform_node_Rotl);
+	register_transform_node_func(op_Shl,    transform_node_Shl);
+	register_transform_node_func(op_Shrs,   transform_node_Shrs);
+	register_transform_node_func(op_Shr,    transform_node_Shr);
+	register_transform_node_func(op_Sub,    transform_node_Sub);
+	register_transform_node_func(op_Switch, transform_node_Switch);
+	register_transform_node_func(op_Sync,   transform_node_Sync);
+	register_transform_node_func_proj(op_Bound, transform_node_Proj_Bound);
+	register_transform_node_func_proj(op_CopyB, transform_node_Proj_CopyB);
+	register_transform_node_func_proj(op_Div,   transform_node_Proj_Div);
+	register_transform_node_func_proj(op_Load,  transform_node_Proj_Load);
+	register_transform_node_func_proj(op_Mod,   transform_node_Proj_Mod);
+	register_transform_node_func_proj(op_Store, transform_node_Proj_Store);
+}
+
 /* **************** Common Subexpression Elimination **************** */
 
 /** The size of the hash table used, should estimate the number of nodes
     in a graph. */
 #define N_IR_NODES 512
-
-/** Compares two exception attributes */
-static int node_cmp_exception(const ir_node *a, const ir_node *b)
-{
-	const except_attr *ea = &a->attr.except;
-	const except_attr *eb = &b->attr.except;
-	return ea->pin_state != eb->pin_state;
-}
-
-/** Compares the attributes of two Const nodes. */
-static int node_cmp_attr_Const(const ir_node *a, const ir_node *b)
-{
-	return get_Const_tarval(a) != get_Const_tarval(b);
-}
-
-/** Compares the attributes of two Proj nodes. */
-static int node_cmp_attr_Proj(const ir_node *a, const ir_node *b)
-{
-	return a->attr.proj.proj != b->attr.proj.proj;
-}
-
-/** Compares the attributes of two Alloc nodes. */
-static int node_cmp_attr_Alloc(const ir_node *a, const ir_node *b)
-{
-	const alloc_attr *pa = &a->attr.alloc;
-	const alloc_attr *pb = &b->attr.alloc;
-	if (pa->where != pb->where || pa->type != pb->type)
-		return 1;
-	return node_cmp_exception(a, b);
-}
-
-/** Compares the attributes of two Free nodes. */
-static int node_cmp_attr_Free(const ir_node *a, const ir_node *b)
-{
-	const free_attr *pa = &a->attr.free;
-	const free_attr *pb = &b->attr.free;
-	return (pa->where != pb->where) || (pa->type != pb->type);
-}
-
-/** Compares the attributes of two SymConst nodes. */
-static int node_cmp_attr_SymConst(const ir_node *a, const ir_node *b)
-{
-	const symconst_attr *pa = &a->attr.symc;
-	const symconst_attr *pb = &b->attr.symc;
-	return (pa->kind       != pb->kind)
-	    || (pa->sym.type_p != pb->sym.type_p);
-}
-
-/** Compares the attributes of two Call nodes. */
-static int node_cmp_attr_Call(const ir_node *a, const ir_node *b)
-{
-	const call_attr *pa = &a->attr.call;
-	const call_attr *pb = &b->attr.call;
-	if (pa->type != pb->type)
-		return 1;
-	return node_cmp_exception(a, b);
-}
-
-/** Compares the attributes of two Sel nodes. */
-static int node_cmp_attr_Sel(const ir_node *a, const ir_node *b)
-{
-	const ir_entity *a_ent = get_Sel_entity(a);
-	const ir_entity *b_ent = get_Sel_entity(b);
-	return a_ent != b_ent;
-}
-
-/** Compares the attributes of two Phi nodes. */
-static int node_cmp_attr_Phi(const ir_node *a, const ir_node *b)
-{
-	(void) b;
-	/* do not CSE Phi-nodes without any inputs when building new graphs */
-	if (get_irn_arity(a) == 0 &&
-	    get_irg_phase_state(get_irn_irg(a)) == phase_building) {
-	    return 1;
-	}
-	return 0;
-}
-
-/** Compares the attributes of two Conv nodes. */
-static int node_cmp_attr_Conv(const ir_node *a, const ir_node *b)
-{
-	return get_Conv_strict(a) != get_Conv_strict(b);
-}
-
-/** Compares the attributes of two Cast nodes. */
-static int node_cmp_attr_Cast(const ir_node *a, const ir_node *b)
-{
-	return get_Cast_type(a) != get_Cast_type(b);
-}
-
-/** Compares the attributes of two Load nodes. */
-static int node_cmp_attr_Load(const ir_node *a, const ir_node *b)
-{
-	if (get_Load_volatility(a) == volatility_is_volatile ||
-	    get_Load_volatility(b) == volatility_is_volatile)
-		/* NEVER do CSE on volatile Loads */
-		return 1;
-	/* do not CSE Loads with different alignment. Be conservative. */
-	if (get_Load_unaligned(a) != get_Load_unaligned(b))
-		return 1;
-	if (get_Load_mode(a) != get_Load_mode(b))
-		return 1;
-	return node_cmp_exception(a, b);
-}
-
-/** Compares the attributes of two Store nodes. */
-static int node_cmp_attr_Store(const ir_node *a, const ir_node *b)
-{
-	/* do not CSE Stores with different alignment. Be conservative. */
-	if (get_Store_unaligned(a) != get_Store_unaligned(b))
-		return 1;
-	/* NEVER do CSE on volatile Stores */
-	if (get_Store_volatility(a) == volatility_is_volatile ||
-	    get_Store_volatility(b) == volatility_is_volatile)
-		return 1;
-	return node_cmp_exception(a, b);
-}
-
-static int node_cmp_attr_CopyB(const ir_node *a, const ir_node *b)
-{
-	if (get_CopyB_type(a) != get_CopyB_type(b))
-		return 1;
-
-	return node_cmp_exception(a, b);
-}
-
-static int node_cmp_attr_Bound(const ir_node *a, const ir_node *b)
-{
-	return node_cmp_exception(a, b);
-}
-
-/** Compares the attributes of two Div nodes. */
-static int node_cmp_attr_Div(const ir_node *a, const ir_node *b)
-{
-	const div_attr *ma = &a->attr.div;
-	const div_attr *mb = &b->attr.div;
-	if (ma->resmode != mb->resmode || ma->no_remainder  != mb->no_remainder)
-		return 1;
-	return node_cmp_exception(a, b);
-}
-
-/** Compares the attributes of two Mod nodes. */
-static int node_cmp_attr_Mod(const ir_node *a, const ir_node *b)
-{
-	const mod_attr *ma = &a->attr.mod;
-	const mod_attr *mb = &b->attr.mod;
-	if (ma->resmode != mb->resmode)
-		return 1;
-	return node_cmp_exception(a, b);
-}
-
-static int node_cmp_attr_Cmp(const ir_node *a, const ir_node *b)
-{
-	const cmp_attr *ma = &a->attr.cmp;
-	const cmp_attr *mb = &b->attr.cmp;
-	return ma->relation != mb->relation;
-}
-
-/** Compares the attributes of two Confirm nodes. */
-static int node_cmp_attr_Confirm(const ir_node *a, const ir_node *b)
-{
-	const confirm_attr *ma = &a->attr.confirm;
-	const confirm_attr *mb = &b->attr.confirm;
-	return ma->relation != mb->relation;
-}
-
-/** Compares the attributes of two Builtin nodes. */
-static int node_cmp_attr_Builtin(const ir_node *a, const ir_node *b)
-{
-	if (get_Builtin_kind(a) != get_Builtin_kind(b))
-		return 1;
-	if (get_Builtin_type(a) != get_Builtin_type(b))
-		return 1;
-	return node_cmp_exception(a, b);
-}
-
-/** Compares the attributes of two ASM nodes. */
-static int node_cmp_attr_ASM(const ir_node *a, const ir_node *b)
-{
-	size_t n;
-	size_t i;
-	const ir_asm_constraint *ca;
-	const ir_asm_constraint *cb;
-	ident **cla, **clb;
-
-	if (get_ASM_text(a) != get_ASM_text(b))
-		return 1;
-
-	/* Should we really check the constraints here? Should be better, but is strange. */
-	n = get_ASM_n_input_constraints(a);
-	if (n != get_ASM_n_input_constraints(b))
-		return 1;
-
-	ca = get_ASM_input_constraints(a);
-	cb = get_ASM_input_constraints(b);
-	for (i = 0; i < n; ++i) {
-		if (ca[i].pos != cb[i].pos || ca[i].constraint != cb[i].constraint
-		    || ca[i].mode != cb[i].mode)
-			return 1;
-	}
-
-	n = get_ASM_n_output_constraints(a);
-	if (n != get_ASM_n_output_constraints(b))
-		return 1;
-
-	ca = get_ASM_output_constraints(a);
-	cb = get_ASM_output_constraints(b);
-	for (i = 0; i < n; ++i) {
-		if (ca[i].pos != cb[i].pos || ca[i].constraint != cb[i].constraint
-		    || ca[i].mode != cb[i].mode)
-			return 1;
-	}
-
-	n = get_ASM_n_clobbers(a);
-	if (n != get_ASM_n_clobbers(b))
-		return 1;
-
-	cla = get_ASM_clobbers(a);
-	clb = get_ASM_clobbers(b);
-	for (i = 0; i < n; ++i) {
-		if (cla[i] != clb[i])
-			return 1;
-	}
-
-	return node_cmp_exception(a, b);
-}
-
-/** Compares the inexistent attributes of two Dummy nodes. */
-static int node_cmp_attr_Dummy(const ir_node *a, const ir_node *b)
-{
-	(void) a;
-	(void) b;
-	/* Dummy nodes never equal by definition */
-	return 1;
-}
-
-static int node_cmp_attr_InstOf(const ir_node *a, const ir_node *b)
-{
-	if (get_InstOf_type(a) != get_InstOf_type(b))
-		return 1;
-	return node_cmp_exception(a, b);
-}
-
-void firm_set_default_node_cmp_attr(ir_opcode code, ir_op_ops *ops)
-{
-#define CASE(a)                              \
-	case iro_##a:                              \
-		ops->node_cmp_attr  = node_cmp_attr_##a; \
-		break
-
-	switch (code) {
-	CASE(ASM);
-	CASE(Alloc);
-	CASE(Bound);
-	CASE(Builtin);
-	CASE(Call);
-	CASE(Cast);
-	CASE(Cmp);
-	CASE(Confirm);
-	CASE(Const);
-	CASE(Conv);
-	CASE(CopyB);
-	CASE(Div);
-	CASE(Dummy);
-	CASE(Free);
-	CASE(InstOf);
-	CASE(Load);
-	CASE(Mod);
-	CASE(Phi);
-	CASE(Proj);
-	CASE(Sel);
-	CASE(Store);
-	CASE(SymConst);
-	default:
-		/* leave NULL */
-		break;
-	}
-#undef CASE
-}
 
 int identities_cmp(const void *elt, const void *key)
 {
@@ -6924,11 +6619,10 @@ void add_identities(ir_node *node)
 
 void visit_all_identities(ir_graph *irg, irg_walk_func visit, void *env)
 {
-	ir_node  *node;
 	ir_graph *rem = current_ir_graph;
 
 	current_ir_graph = irg;
-	foreach_pset(irg->value_table, ir_node*, node) {
+	foreach_pset(irg->value_table, ir_node, node) {
 		visit(node, env);
 	}
 	current_ir_graph = rem;
@@ -7082,51 +6776,4 @@ ir_node *optimize_in_place(ir_node *n)
 	   change the control graph. */
 	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	return optimize_in_place_2(n);
-}
-
-/**
- * Calculate a hash value of a Const node.
- */
-static unsigned hash_Const(const ir_node *node)
-{
-	unsigned h;
-
-	/* special value for const, as they only differ in their tarval. */
-	h = hash_ptr(node->attr.con.tarval);
-
-	return h;
-}
-
-/**
- * Calculate a hash value of a SymConst node.
- */
-static unsigned hash_SymConst(const ir_node *node)
-{
-	unsigned h;
-
-	/* all others are pointers */
-	h = hash_ptr(node->attr.symc.sym.type_p);
-
-	return h;
-}
-
-void firm_set_default_hash(unsigned code, ir_op_ops *ops)
-{
-#define CASE(a)                                    \
-	case iro_##a:                                  \
-		ops->hash  = hash_##a; \
-		break
-
-	/* hash function already set */
-	if (ops->hash != NULL)
-		return;
-
-	switch (code) {
-	CASE(Const);
-	CASE(SymConst);
-	default:
-		/* use input/mode default hash if no function was given */
-		ops->hash = firm_default_hash;
-	}
-#undef CASE
 }

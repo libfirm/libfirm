@@ -69,7 +69,7 @@ size_t ir_edgeset_size(const ir_edgeset_t *self);
 #define hashset_iterator_next   ir_edgeset_iterator_next
 #define hashset_remove_iterator ir_edgeset_remove_iterator
 
-#include "hashset.c"
+#include "hashset.c.inl"
 
 /**
  * A function that allows for setting an edge.
@@ -412,9 +412,7 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt,
 			edges_notify_edge_kind(src, pos, bl_tgt, bl_old, EDGE_KIND_BLOCK, irg);
 		} else if (get_irn_mode(src) == mode_X && old_tgt != NULL && is_Block(old_tgt)) {
 			/* moving a jump node from one block to another */
-			const ir_edge_t *edge;
-			const ir_edge_t *next;
-			foreach_out_edge_kind_safe(old_tgt, edge, next, EDGE_KIND_BLOCK) {
+			foreach_out_edge_kind_safe(old_tgt, edge, EDGE_KIND_BLOCK) {
 				ir_node *succ       = get_edge_src_irn(edge);
 				int      succ_pos   = get_edge_src_pos(edge);
 				ir_node *block_pred = get_Block_cfgpred(succ, succ_pos);
@@ -659,9 +657,7 @@ void edges_reroute_kind(ir_node *from, ir_node *to, ir_edge_kind_t kind)
 
 void edges_reroute_except(ir_node *from, ir_node *to, ir_node *exception)
 {
-	const ir_edge_t *edge;
-	const ir_edge_t *next;
-	foreach_out_edge_safe(from, edge, next) {
+	foreach_out_edge_safe(from, edge) {
 		ir_node *src = get_edge_src_irn(edge);
 		if (src == exception)
 			continue;
@@ -693,8 +689,7 @@ static void verify_set_presence(ir_node *irn, void *data)
 
 static void verify_list_presence(ir_node *irn, void *data)
 {
-	build_walker    *w = (build_walker*)data;
-	const ir_edge_t *e;
+	build_walker *w = (build_walker*)data;
 
 	bitset_set(w->reachable, get_irn_idx(irn));
 
@@ -800,7 +795,6 @@ static void verify_edge_counter(ir_node *irn, void *env)
 	int                    list_cnt;
 	int                    ref_cnt;
 	int                    edge_cnt;
-	size_t                 idx;
 	const struct list_head *head;
 	const struct list_head *pos;
 	ir_graph               *irg;
@@ -914,14 +908,12 @@ void edges_activate(ir_graph *irg)
 {
 	edges_activate_kind(irg, EDGE_KIND_NORMAL);
 	edges_activate_kind(irg, EDGE_KIND_BLOCK);
-	if (get_irg_phase_state(irg) == phase_backend)
-		edges_activate_kind(irg, EDGE_KIND_DEP);
+	edges_activate_kind(irg, EDGE_KIND_DEP);
 }
 
 void edges_deactivate(ir_graph *irg)
 {
-	if (get_irg_phase_state(irg) == phase_backend)
-		edges_deactivate_kind(irg, EDGE_KIND_DEP);
+	edges_deactivate_kind(irg, EDGE_KIND_DEP);
 	edges_deactivate_kind(irg, EDGE_KIND_BLOCK);
 	edges_deactivate_kind(irg, EDGE_KIND_NORMAL);
 }
@@ -930,6 +922,7 @@ void assure_edges(ir_graph *irg)
 {
 	assure_edges_kind(irg, EDGE_KIND_BLOCK);
 	assure_edges_kind(irg, EDGE_KIND_NORMAL);
+	assure_edges_kind(irg, EDGE_KIND_DEP);
 	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 }
 
@@ -943,6 +936,7 @@ void edges_node_deleted(ir_node *irn)
 {
 	edges_node_deleted_kind(irn, EDGE_KIND_NORMAL);
 	edges_node_deleted_kind(irn, EDGE_KIND_BLOCK);
+	edges_node_deleted_kind(irn, EDGE_KIND_DEP);
 }
 
 void edges_node_revival(ir_node *irn)
@@ -979,15 +973,13 @@ int (get_irn_n_edges_kind)(const ir_node *irn, ir_edge_kind_t kind)
 static void irg_walk_edges2(ir_node *node, irg_walk_func *pre,
                             irg_walk_func *post, void *env)
 {
-	const ir_edge_t *edge, *next;
-
 	if (irn_visited_else_mark(node))
 		return;
 
 	if (pre != NULL)
 		pre(node, env);
 
-	foreach_out_edge_kind_safe(node, edge, next, EDGE_KIND_NORMAL) {
+	foreach_out_edge_kind_safe(node, edge, EDGE_KIND_NORMAL) {
 		/* find the corresponding successor block. */
 		ir_node *pred = get_edge_src_irn(edge);
 		irg_walk_edges2(pred, pre, post, env);
@@ -1016,15 +1008,13 @@ void irg_walk_edges(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
 static void irg_block_edges_walk2(ir_node *bl, irg_walk_func *pre,
                                   irg_walk_func *post, void *env)
 {
-	const ir_edge_t *edge, *next;
-
 	if (!Block_block_visited(bl)) {
 		mark_Block_block_visited(bl);
 
 		if (pre)
 			pre(bl, env);
 
-		foreach_out_edge_kind_safe(bl, edge, next, EDGE_KIND_BLOCK) {
+		foreach_out_edge_kind_safe(bl, edge, EDGE_KIND_BLOCK) {
 			/* find the corresponding successor block. */
 			ir_node *pred = get_edge_src_irn(edge);
 			irg_block_edges_walk2(pred, pre, post, env);

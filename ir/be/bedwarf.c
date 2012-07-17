@@ -63,12 +63,25 @@ static int debug_level = LEVEL_NONE;
  * here
  */
 typedef enum custom_abbrevs {
-	abbrev_void_pointer_type = 100,
+	abbrev_void_subprogram,
+	abbrev_subprogram,
+	abbrev_formal_parameter,
 	abbrev_unnamed_formal_parameter,
 	abbrev_formal_parameter_no_location,
-	abbrev_void_subroutine_type,
-	abbrev_void_subprogram,
+	abbrev_variable,
+	abbrev_compile_unit,
+	abbrev_base_type,
+	abbrev_pointer_type,
+	abbrev_void_pointer_type,
+	abbrev_array_type,
+	abbrev_subrange_type,
+	abbrev_structure_type,
+	abbrev_union_type,
+	abbrev_class_type,
+	abbrev_member,
 	abbrev_bitfield_member,
+	abbrev_subroutine_type,
+	abbrev_void_subroutine_type,
 } custom_abbrevs;
 
 /**
@@ -95,7 +108,7 @@ static char                 *comp_dir;
 static unsigned insert_file(const char *filename)
 {
 	unsigned num;
-	void    *entry = pmap_get(env.file_map, filename);
+	void    *entry = pmap_get(void, env.file_map, filename);
 	if (entry != NULL) {
 		return PTR_TO_INT(entry);
 	}
@@ -220,7 +233,8 @@ static void register_attribute(dwarf_attribute attribute, dwarf_form form)
 	emit_uleb128(form);
 }
 
-static void begin_abbrev(unsigned code, dwarf_tag tag, dw_children children)
+static void begin_abbrev(custom_abbrevs code, dwarf_tag tag,
+                         dw_children children)
 {
 	emit_uleb128(code);
 	emit_uleb128(tag);
@@ -392,7 +406,7 @@ static void emit_type_address(const ir_type *type)
 
 static void emit_subprogram_abbrev(void)
 {
-	begin_abbrev(DW_TAG_subprogram, DW_TAG_subprogram, DW_CHILDREN_yes);
+	begin_abbrev(abbrev_subprogram, DW_TAG_subprogram, DW_CHILDREN_yes);
 	register_attribute(DW_AT_name,      DW_FORM_string);
 	register_dbginfo_attributes();
 	register_attribute(DW_AT_type,       DW_FORM_ref4);
@@ -415,7 +429,7 @@ static void emit_subprogram_abbrev(void)
 		register_attribute(DW_AT_frame_base, DW_FORM_block1);
 	end_abbrev();
 
-	begin_abbrev(DW_TAG_formal_parameter, DW_TAG_formal_parameter,
+	begin_abbrev(abbrev_formal_parameter, DW_TAG_formal_parameter,
 	             DW_CHILDREN_no);
 	register_attribute(DW_AT_name,      DW_FORM_string);
 	register_dbginfo_attributes();
@@ -453,7 +467,7 @@ static void emit_function_parameters(const ir_entity *entity,
 
 		if (infos != NULL && infos[i].entity != NULL) {
 			long const offset = get_entity_offset(infos[i].entity);
-			emit_uleb128(DW_TAG_formal_parameter);
+			emit_uleb128(abbrev_formal_parameter);
 			emit_string_printf("arg%u", (unsigned)i);
 			emit_dbginfo(dbgi);
 			emit_type_address(param_type);
@@ -490,7 +504,7 @@ void be_dwarf_method_before(const ir_entity *entity,
 	}
 
 	emit_entity_label(entity);
-	emit_uleb128(n_ress == 0 ? abbrev_void_subprogram : DW_TAG_subprogram);
+	emit_uleb128(n_ress == 0 ? abbrev_void_subprogram : abbrev_subprogram);
 	emit_string(get_entity_ld_name(entity));
 	emit_dbginfo(get_entity_dbg_info(entity));
 	if (n_ress > 0) {
@@ -538,7 +552,7 @@ void be_dwarf_method_end(void)
 
 static void emit_base_type_abbrev(void)
 {
-	begin_abbrev(DW_TAG_base_type, DW_TAG_base_type, DW_CHILDREN_no);
+	begin_abbrev(abbrev_base_type, DW_TAG_base_type, DW_CHILDREN_no);
 	register_attribute(DW_AT_encoding,  DW_FORM_data1);
 	register_attribute(DW_AT_byte_size, DW_FORM_data1);
 	register_attribute(DW_AT_name,      DW_FORM_string);
@@ -558,7 +572,7 @@ static void emit_base_type(const ir_type *type)
 	ir_print_type(buf, sizeof(buf), type);
 
 	emit_type_label(type);
-	emit_uleb128(DW_TAG_base_type);
+	emit_uleb128(abbrev_base_type);
 	if (mode_is_int(mode)) {
 		/* bool hack */
 		if (strcmp(buf, "_Bool")==0 || strcmp(buf, "bool")==0) {
@@ -579,7 +593,7 @@ static void emit_base_type(const ir_type *type)
 
 static void emit_pointer_type_abbrev(void)
 {
-	begin_abbrev(DW_TAG_pointer_type, DW_TAG_pointer_type, DW_CHILDREN_no);
+	begin_abbrev(abbrev_pointer_type, DW_TAG_pointer_type, DW_CHILDREN_no);
 	register_attribute(DW_AT_type,      DW_FORM_ref4);
 	register_attribute(DW_AT_byte_size, DW_FORM_data1);
 	end_abbrev();
@@ -600,7 +614,7 @@ static void emit_pointer_type(const ir_type *type)
 		emit_type(points_to);
 
 		emit_type_label(type);
-		emit_uleb128(DW_TAG_pointer_type);
+		emit_uleb128(abbrev_pointer_type);
 		emit_type_address(points_to);
 	} else {
 		emit_type_label(type);
@@ -611,11 +625,11 @@ static void emit_pointer_type(const ir_type *type)
 
 static void emit_array_type_abbrev(void)
 {
-	begin_abbrev(DW_TAG_array_type, DW_TAG_array_type, DW_CHILDREN_yes);
+	begin_abbrev(abbrev_array_type, DW_TAG_array_type, DW_CHILDREN_yes);
 	register_attribute(DW_AT_type, DW_FORM_ref4);
 	end_abbrev();
 
-	begin_abbrev(DW_TAG_subrange_type, DW_TAG_subrange_type, DW_CHILDREN_no);
+	begin_abbrev(abbrev_subrange_type, DW_TAG_subrange_type, DW_CHILDREN_no);
 	register_attribute(DW_AT_upper_bound, DW_FORM_udata);
 	end_abbrev();
 }
@@ -630,12 +644,12 @@ static void emit_array_type(const ir_type *type)
 	emit_type(element_type);
 
 	emit_type_label(type);
-	emit_uleb128(DW_TAG_array_type);
+	emit_uleb128(abbrev_array_type);
 	emit_type_address(element_type);
 
 	if (has_array_upper_bound(type, 0)) {
 		int bound = get_array_upper_bound_int(type, 0);
-		emit_uleb128(DW_TAG_subrange_type);
+		emit_uleb128(abbrev_subrange_type);
 		emit_uleb128(bound);
 	}
 
@@ -644,22 +658,22 @@ static void emit_array_type(const ir_type *type)
 
 static void emit_compound_type_abbrev(void)
 {
-	begin_abbrev(DW_TAG_structure_type, DW_TAG_structure_type, DW_CHILDREN_yes);
+	begin_abbrev(abbrev_structure_type, DW_TAG_structure_type, DW_CHILDREN_yes);
 	register_attribute(DW_AT_byte_size,  DW_FORM_udata);
 	// TODO register_dbginfo_attributes();
 	end_abbrev();
 
-	begin_abbrev(DW_TAG_union_type, DW_TAG_union_type, DW_CHILDREN_yes);
+	begin_abbrev(abbrev_union_type, DW_TAG_union_type, DW_CHILDREN_yes);
 	register_attribute(DW_AT_byte_size,  DW_FORM_udata);
 	// TODO register_dbginfo_attributes();
 	end_abbrev();
 
-	begin_abbrev(DW_TAG_class_type, DW_TAG_class_type, DW_CHILDREN_yes);
+	begin_abbrev(abbrev_class_type, DW_TAG_class_type, DW_CHILDREN_yes);
 	register_attribute(DW_AT_byte_size,  DW_FORM_udata);
 	// TODO register_dbginfo_attributes();
 	end_abbrev();
 
-	begin_abbrev(DW_TAG_member, DW_TAG_member, DW_CHILDREN_no);
+	begin_abbrev(abbrev_member, DW_TAG_member, DW_CHILDREN_no);
 	register_attribute(DW_AT_type,                 DW_FORM_ref4);
 	register_attribute(DW_AT_name,                 DW_FORM_string);
 	register_dbginfo_attributes();
@@ -701,12 +715,12 @@ static void emit_compound_type(const ir_type *type)
 
 	emit_type_label(type);
 	if (is_Struct_type(type)) {
-		emit_uleb128(DW_TAG_structure_type);
+		emit_uleb128(abbrev_structure_type);
 	} else if (is_Union_type(type)) {
-		emit_uleb128(DW_TAG_union_type);
+		emit_uleb128(abbrev_union_type);
 	} else {
 		assert(is_Class_type(type));
-		emit_uleb128(DW_TAG_class_type);
+		emit_uleb128(abbrev_class_type);
 	}
 	emit_uleb128(get_type_size_bytes(type));
 	for (i = 0; i < n_members; ++i) {
@@ -730,7 +744,7 @@ static void emit_compound_type(const ir_type *type)
 			emit_uleb128(bit_offset);
 			member_type = base;
 		} else {
-			emit_uleb128(DW_TAG_member);
+			emit_uleb128(abbrev_member);
 		}
 
 		emit_type_address(member_type);
@@ -746,7 +760,7 @@ static void emit_compound_type(const ir_type *type)
 
 static void emit_subroutine_type_abbrev(void)
 {
-	begin_abbrev(DW_TAG_subroutine_type,
+	begin_abbrev(abbrev_subroutine_type,
 	             DW_TAG_subroutine_type, DW_CHILDREN_yes);
 	register_attribute(DW_AT_prototyped,   DW_FORM_flag);
 	register_attribute(DW_AT_type,         DW_FORM_ref4);
@@ -778,7 +792,7 @@ static void emit_subroutine_type(const ir_type *type)
 	}
 
 	emit_type_label(type);
-	emit_uleb128(n_ress == 0 ? abbrev_void_subroutine_type : DW_TAG_subroutine_type);
+	emit_uleb128(n_ress == 0 ? abbrev_void_subroutine_type : abbrev_subroutine_type);
 	emit_int8(1); /* prototyped */
 	if (n_ress > 0) {
 		/* dwarf only supports 1 return type */
@@ -796,7 +810,7 @@ static void emit_subroutine_type(const ir_type *type)
 
 static void emit_type(ir_type *type)
 {
-	if (pset_new_insert(&env.emitted_types, type))
+	if (!pset_new_insert(&env.emitted_types, type))
 		return;
 
 	switch (get_type_tpop_code(type)) {
@@ -823,7 +837,7 @@ static void emit_op_addr(const ir_entity *entity)
 
 static void emit_variable_abbrev(void)
 {
-	begin_abbrev(DW_TAG_variable, DW_TAG_variable, DW_CHILDREN_no);
+	begin_abbrev(abbrev_variable, DW_TAG_variable, DW_CHILDREN_no);
 	register_attribute(DW_AT_name,      DW_FORM_string);
 	register_attribute(DW_AT_type,      DW_FORM_ref4);
 	register_attribute(DW_AT_external,  DW_FORM_flag);
@@ -848,7 +862,7 @@ void be_dwarf_variable(const ir_entity *entity)
 	emit_type(type);
 
 	emit_entity_label(entity);
-	emit_uleb128(DW_TAG_variable);
+	emit_uleb128(abbrev_variable);
 	emit_string(get_entity_ld_name(entity));
 	emit_type_address(type);
 	emit_int8(is_extern_entity(entity));
@@ -862,7 +876,7 @@ void be_dwarf_variable(const ir_entity *entity)
 
 static void emit_compile_unit_abbrev(void)
 {
-	begin_abbrev(DW_TAG_compile_unit, DW_TAG_compile_unit, DW_CHILDREN_yes);
+	begin_abbrev(abbrev_compile_unit, DW_TAG_compile_unit, DW_CHILDREN_yes);
 	register_attribute(DW_AT_stmt_list, DW_FORM_data4);
 	register_attribute(DW_AT_producer,  DW_FORM_string);
 	register_attribute(DW_AT_name,      DW_FORM_string);
@@ -909,7 +923,7 @@ void be_dwarf_unit_begin(const char *filename)
 	emit_int8(4);    /* pointer size, TODO: query backend */
 
 	/* compile_unit die */
-	emit_uleb128(DW_TAG_compile_unit);
+	emit_uleb128(abbrev_compile_unit);
 	emit_address("line_section_begin");
 	emit_string_printf("libFirm (%u.%u %s)", ir_get_version_major(),
 	                   ir_get_version_minor(),

@@ -1380,9 +1380,6 @@
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\hungarian.h">
       <Filter>include\libfirm\adt</Filter>
     </ClInclude>
-    <ClInclude Include="$(FirmRoot)\include\libfirm\adt\iterator.h">
-      <Filter>include\libfirm\adt</Filter>
-    </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\list.h">
       <Filter>include\libfirm\adt</Filter>
     </ClInclude>
@@ -3198,9 +3195,6 @@
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\hashset.h">
       <Filter>include\libfirm\adt</Filter>
     </ClInclude>
-    <ClInclude Include="$(FirmRoot)\include\libfirm\adt\iterator.h">
-      <Filter>include\libfirm\adt</Filter>
-    </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\list.h">
       <Filter>include\libfirm\adt</Filter>
     </ClInclude>
@@ -4890,9 +4884,6 @@
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\hashset.h">
       <Filter>include\libfirm\adt</Filter>
     </ClInclude>
-    <ClInclude Include="$(FirmRoot)\include\libfirm\adt\iterator.h">
-      <Filter>include\libfirm\adt</Filter>
-    </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\list.h">
       <Filter>include\libfirm\adt</Filter>
     </ClInclude>
@@ -6571,9 +6562,6 @@
       <Filter>include\libfirm\adt</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\hashset.h">
-      <Filter>include\libfirm\adt</Filter>
-    </ClInclude>
-    <ClInclude Include="$(FirmRoot)\include\libfirm\adt\iterator.h">
       <Filter>include\libfirm\adt</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\list.h">

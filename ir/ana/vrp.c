@@ -51,13 +51,12 @@ typedef struct vrp_env_t {
 
 static vrp_attr *vrp_get_or_set_info(ir_vrp_info *info, const ir_node *node)
 {
-	vrp_attr *attr = ir_nodemap_get(&info->infos, node);
+	vrp_attr *attr = ir_nodemap_get(vrp_attr, &info->infos, node);
 	if (attr == NULL) {
 		ir_mode *mode = get_irn_mode(node);
 		assert(mode_is_int(mode));
 
-		attr = obstack_alloc(&info->obst, sizeof(*attr));
-		memset(attr, 0, sizeof(*attr));
+		attr = OALLOCZ(&info->obst, vrp_attr);
 		attr->range_type   = VRP_UNDEFINED;
 		attr->bits_set     = get_mode_null(mode);
 		attr->bits_not_set = get_mode_all_one(mode);
@@ -74,7 +73,7 @@ vrp_attr *vrp_get_info(const ir_node *node)
 	ir_graph *irg = get_irn_irg(node);
 	if (irg->vrp.infos.data == NULL)
 		return NULL;
-	return (vrp_attr*) ir_nodemap_get(&irg->vrp.infos, node);
+	return ir_nodemap_get(vrp_attr, &irg->vrp.infos, node);
 }
 
 static int vrp_update_node(ir_vrp_info *info, ir_node *node)
@@ -570,7 +569,7 @@ void set_vrp_data(ir_graph *irg)
 		register_hook(hook_node_info, &dump_hook);
 	}
 
-	env = obstack_alloc(&irg->vrp.obst, sizeof(*env));
+	env = OALLOCZ(&irg->vrp.obst, vrp_env_t);
 	env->workqueue = new_waitq();
 	env->info      = info;
 

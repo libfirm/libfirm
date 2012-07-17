@@ -178,7 +178,7 @@ typedef struct {
 
 static co2_irn_t *get_co2_irn(co2_t *env, const ir_node *node)
 {
-	co2_irn_t *ci = ir_nodemap_get(&env->map, node);
+	co2_irn_t *ci = ir_nodemap_get(co2_irn_t, &env->map, node);
 	if (ci == NULL) {
 		ci = OALLOCZ(&env->obst, co2_irn_t);
 
@@ -196,7 +196,7 @@ static co2_irn_t *get_co2_irn(co2_t *env, const ir_node *node)
 
 static co2_cloud_irn_t *get_co2_cloud_irn(co2_t *env, const ir_node *node)
 {
-	co2_cloud_irn_t *ci = ir_nodemap_get(&env->map, node);
+	co2_cloud_irn_t *ci = ir_nodemap_get(co2_cloud_irn_t, &env->map, node);
 	if (ci == NULL) {
 		ci = OALLOCZ(&env->obst, co2_cloud_irn_t);
 
@@ -337,7 +337,6 @@ static void determine_color_costs(co2_t *env, co2_irn_t *ci, col_cost_pair_t *co
 	bitset_t *forb     = bitset_alloca(n_regs);
 	affinity_node_t *a = ci->aff;
 
-	size_t elm;
 	const ir_node *pos;
 	neighbours_iter_t it;
 	int i;
@@ -352,8 +351,6 @@ static void determine_color_costs(co2_t *env, co2_irn_t *ci, col_cost_pair_t *co
 	}
 
 	if (a) {
-		neighb_t *n;
-
 		co_gs_foreach_neighb(a, n) {
 			if (color_is_fix(env, n->irn)) {
 				col_t col = get_col(env, n->irn);
@@ -622,7 +619,6 @@ static void node_color_badness(co2_cloud_irn_t *ci, int *badness)
 	be_ifg_t *ifg  = env->co->cenv->ifg;
 	bitset_t *bs   = bitset_alloca(n_regs);
 
-	size_t elm;
 	const ir_node *irn;
 	neighbours_iter_t it;
 
@@ -780,7 +776,6 @@ static void populate_cloud(co2_t *env, co2_cloud_t *cloud, affinity_node_t *a, i
 	be_ifg_t *ifg       = env->co->cenv->ifg;
 	co2_cloud_irn_t *ci = get_co2_cloud_irn(env, a->irn);
 	int costs           = 0;
-	neighb_t *n;
 
 	if (ci->cloud)
 		return;
@@ -893,7 +888,6 @@ static void process_cloud(co2_cloud_t *cloud)
 	obstack_init(&cloud->obst);
 	for (i = 0; i < cloud->n_memb; ++i) {
 		co2_cloud_irn_t *ci = cloud->seq[i];
-		neighb_t *n;
 
 		co_gs_foreach_neighb(ci->inh.aff, n) {
 			co2_cloud_irn_t *ni = get_co2_cloud_irn(cloud->env, n->irn);
@@ -1010,7 +1004,6 @@ static void process_cloud(co2_cloud_t *cloud)
 static int cloud_costs(co2_cloud_t *cloud)
 {
 	int i, costs = 0;
-	neighb_t *n;
 
 	for (i = 0; i < cloud->n_memb; ++i) {
 		co2_irn_t *ci = (co2_irn_t *) cloud->seq[i];
@@ -1036,7 +1029,6 @@ static void writeback_colors(co2_t *env)
 
 static void process(co2_t *env)
 {
-	affinity_node_t *a;
 	co2_cloud_t *pos;
 	co2_cloud_t **clouds;
 	int n_clouds;

@@ -272,24 +272,24 @@ typedef struct dumper_t dumper_t;
  * @param dmp   the dumper
  * @param entry the IR-graph hash map entry
  */
-typedef void (*dump_graph_FUNC)(dumper_t *dmp, graph_entry_t *entry);
+typedef void dump_graph_FUNC(dumper_t *dmp, graph_entry_t *entry);
 
 /**
  * handler for dumper a constant info table
  *
  * @param dmp   the dumper
  */
-typedef void (*dump_const_table_FUNC)(dumper_t *dmp, const constant_info_t *tbl);
+typedef void dump_const_table_FUNC(dumper_t *dmp, const constant_info_t *tbl);
 
 /**
  * dumps the parameter distribution table
  */
-typedef void (*dump_param_tbl_FUNC)(dumper_t *dmp, const distrib_tbl_t *tbl, graph_entry_t *global);
+typedef void dump_param_tbl_FUNC(dumper_t *dmp, const distrib_tbl_t *tbl, graph_entry_t *global);
 
 /**
  * dumps the optimizations counter
  */
-typedef void (*dump_opt_cnt_FUNC)(dumper_t *dumper, const counter_t *tbl, unsigned len);
+typedef void dump_opt_cnt_FUNC(dumper_t *dumper, const counter_t *tbl, unsigned len);
 
 /**
  * handler for dumper init
@@ -297,14 +297,14 @@ typedef void (*dump_opt_cnt_FUNC)(dumper_t *dumper, const counter_t *tbl, unsign
  * @param dmp   the dumper
  * @param name  name of the file to dump to
  */
-typedef void (*dump_init_FUNC)(dumper_t *dmp, const char *name);
+typedef void dump_init_FUNC(dumper_t *dmp, const char *name);
 
 /**
  * handler for dumper finish
  *
  * @param dmp   the dumper
  */
-typedef void (*dump_finish_FUNC)(dumper_t *dmp);
+typedef void dump_finish_FUNC(dumper_t *dmp);
 
 /**
  * statistics info
@@ -338,17 +338,17 @@ typedef struct statistic_info_t {
  * a dumper description
  */
 struct dumper_t {
-	dump_graph_FUNC         dump_graph;     /**< handler for dumping an irg */
-	dump_const_table_FUNC   dump_const_tbl; /**< handler for dumping a const table */
-	dump_param_tbl_FUNC     dump_param_tbl; /**< handler for dumping the Call parameter table */
-	dump_opt_cnt_FUNC       dump_opt_cnt;   /**< handler for dumping the optimization table. */
-	dump_init_FUNC          init;           /**< handler for init */
-	dump_finish_FUNC        finish;         /**< handler for finish */
-	FILE                    *f;             /**< the file to dump to */
-	stat_info_t             *status;        /**< access to the global status */
-	dumper_t                *next;          /**< link to the next dumper */
-	pset                    *func_map;      /**< pset containing all registered functions */
-	unsigned                tag;            /**< the id tag of the dumper */
+	dump_graph_FUNC       *dump_graph;     /**< handler for dumping an irg */
+	dump_const_table_FUNC *dump_const_tbl; /**< handler for dumping a const table */
+	dump_param_tbl_FUNC   *dump_param_tbl; /**< handler for dumping the Call parameter table */
+	dump_opt_cnt_FUNC     *dump_opt_cnt;   /**< handler for dumping the optimization table. */
+	dump_init_FUNC        *init;           /**< handler for init */
+	dump_finish_FUNC      *finish;         /**< handler for finish */
+	FILE                  *f;             /**< the file to dump to */
+	stat_info_t           *status;        /**< access to the global status */
+	dumper_t              *next;          /**< link to the next dumper */
+	pset                  *func_map;      /**< pset containing all registered functions */
+	unsigned               tag;            /**< the id tag of the dumper */
 };
 
 /**
@@ -504,6 +504,6 @@ void stat_be_block_stat_permcycle(const char *class_name, ir_node *perm, ir_node
  *
  * @param func  the dump function to register
  */
-void stat_register_dumper_func(dump_graph_FUNC func);
+void stat_register_dumper_func(dump_graph_FUNC *func);
 
 #endif /* FIRM_STAT_FIRMSTAT_T_H */

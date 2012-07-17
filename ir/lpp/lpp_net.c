@@ -59,6 +59,7 @@
 #include "lpp_net.h"
 #include "lpp_t.h"
 #include "lpp_comm.h"
+#include "xmalloc.h"
 
 #ifdef _WIN32
 static int winsock_init(void)
@@ -109,7 +110,7 @@ static int connect_tcp(const char *host, uint16_t port)
 	sin.sin_port   = htons(port);
 
 	if ((phe = gethostbyname(host)))
-		memcpy(&sin.sin_addr, phe->h_addr, phe->h_length);
+		memcpy(&sin.sin_addr, phe->h_addr_list[0], phe->h_length);
 	else if((sin.sin_addr.s_addr = inet_addr(host)) == INADDR_NONE) {
 		lpp_print_err("cannot get host entry for %s", host);
 		return -1;
@@ -136,7 +137,7 @@ char **lpp_get_solvers(const char *host)
 	lpp_writel(comm, LPP_CMD_SOLVERS);
 	lpp_flush(comm);
 	n = lpp_readl(comm);
-	res = malloc((n + 1) * sizeof(res[0]));
+	res = XMALLOCN(char*, n+1);
 	res[n] = NULL;
 
 	if(n > 0) {

@@ -85,7 +85,6 @@ static void verify_liveness_walker(ir_node *block, void *data)
 {
 	be_verify_register_pressure_env_t *env = (be_verify_register_pressure_env_t *)data;
 	ir_nodeset_t live_nodes;
-	ir_node *irn;
 	int pressure;
 
 	/* collect register pressure info, start with end of a block */
@@ -157,7 +156,6 @@ typedef struct be_verify_schedule_env_t_ {
 static void verify_schedule_walker(ir_node *block, void *data)
 {
 	be_verify_schedule_env_t *env = (be_verify_schedule_env_t*) data;
-	ir_node *node;
 	ir_node *non_phi_found  = NULL;
 	ir_node *cfchange_found = NULL;
 	int last_timestep = INT_MIN;
@@ -346,7 +344,7 @@ static spill_t *find_spill(be_verify_spillslots_env_t *env, ir_node *node)
 	spill_t spill;
 
 	spill.spill = node;
-	return (spill_t*)set_find(env->spills, &spill, sizeof(spill), hash_ptr(node));
+	return set_find(spill_t, env->spills, &spill, sizeof(spill), hash_ptr(node));
 }
 
 static spill_t *get_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_entity *ent)
@@ -355,11 +353,11 @@ static spill_t *get_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_ent
 	int hash = hash_ptr(node);
 
 	spill.spill = node;
-	res = (spill_t*)set_find(env->spills, &spill, sizeof(spill), hash);
+	res = set_find(spill_t, env->spills, &spill, sizeof(spill), hash);
 
 	if (res == NULL) {
 		spill.ent = ent;
-		res = (spill_t*)set_insert(env->spills, &spill, sizeof(spill), hash);
+		res = set_insert(spill_t, env->spills, &spill, sizeof(spill), hash);
 	}
 
 	return res;
@@ -428,13 +426,13 @@ static void collect_memperm(be_verify_spillslots_env_t *env, ir_node *node, ir_n
 	}
 
 	spill.spill = node;
-	res = (spill_t*)set_find(env->spills, &spill, sizeof(spill), hash);
+	res = set_find(spill_t, env->spills, &spill, sizeof(spill), hash);
 	if (res != NULL) {
 		return;
 	}
 
 	spill.ent = spillent;
-	res = (spill_t*)set_insert(env->spills, &spill, sizeof(spill), hash);
+	res = set_insert(spill_t, env->spills, &spill, sizeof(spill), hash);
 
 	for (i = 0, arity = be_get_MemPerm_entity_arity(memperm); i < arity; ++i) {
 		ir_node* arg = get_irn_n(memperm, i + 1);
@@ -453,13 +451,13 @@ static void collect_memphi(be_verify_spillslots_env_t *env, ir_node *node, ir_no
 	assert(is_Phi(node));
 
 	spill.spill = node;
-	res = (spill_t*)set_find(env->spills, &spill, sizeof(spill), hash);
+	res = set_find(spill_t, env->spills, &spill, sizeof(spill), hash);
 	if (res != NULL) {
 		return;
 	}
 
 	spill.ent = ent;
-	res = (spill_t*)set_insert(env->spills, &spill, sizeof(spill), hash);
+	res = set_insert(spill_t, env->spills, &spill, sizeof(spill), hash);
 
 	/* is 1 of the arguments a spill? */
 	for (i = 0, arity = get_irn_arity(node); i < arity; ++i) {
@@ -516,11 +514,10 @@ static void check_spillslot_interference(be_verify_spillslots_env_t *env)
 {
 	int       spillcount = set_count(env->spills);
 	spill_t **spills     = ALLOCAN(spill_t*, spillcount);
-	spill_t  *spill;
 	int       i;
 
 	i = 0;
-	foreach_set(env->spills, spill_t*, spill) {
+	foreach_set(env->spills, spill_t, spill) {
 		spills[i++] = spill;
 	}
 
@@ -597,7 +594,6 @@ int be_verify_spillslots(ir_graph *irg)
  */
 static int my_values_interfere(const ir_node *a, const ir_node *b)
 {
-	const ir_edge_t *edge;
 	ir_node *bb;
 	int a2b = value_dominates(a, b);
 	int b2a = value_dominates(b, a);
@@ -812,19 +808,16 @@ static void value_def(const ir_node *node)
 static void verify_block_register_allocation(ir_node *block, void *data)
 {
 	unsigned i;
-	ir_node *node;
 	unsigned n_regs;
-	int      idx;
 
 	(void) data;
 
-	assert(lv->nodes && "live sets must be computed");
+	assert(lv->sets_valid && "live sets must be computed");
 
 	n_regs    = arch_env->n_registers;
 	registers = ALLOCANZ(const ir_node*, n_regs);
 
-	be_lv_foreach(lv, block, be_lv_state_end, idx) {
-		ir_node *lv_node = be_lv_get_irn(lv, block, idx);
+	be_lv_foreach(lv, block, be_lv_state_end, lv_node) {
 		value_used(block, lv_node);
 	}
 
@@ -832,7 +825,6 @@ static void verify_block_register_allocation(ir_node *block, void *data)
 		int arity;
 
 		if (get_irn_mode(node) == mode_T) {
-			const ir_edge_t *edge;
 			foreach_out_edge(node, edge) {
 				ir_node *def = get_edge_src_irn(edge);
 				value_def(def);
@@ -856,8 +848,7 @@ static void verify_block_register_allocation(ir_node *block, void *data)
 		}
 	}
 
-	be_lv_foreach(lv, block, be_lv_state_in, idx) {
-		ir_node *lv_node = be_lv_get_irn(lv, block, idx);
+	be_lv_foreach(lv, block, be_lv_state_in, lv_node) {
 		value_def(lv_node);
 	}
 
@@ -957,8 +948,8 @@ static void lv_check_walker(ir_node *bl, void *data)
 	be_lv_t *lv    = w->lv;
 	be_lv_t *fresh = (be_lv_t*)w->data;
 
-	be_lv_info_t *curr = (be_lv_info_t*)ir_nodehashmap_get(&fresh->map, bl);
-	be_lv_info_t *fr   = (be_lv_info_t*)ir_nodehashmap_get(&fresh->map, bl);
+	be_lv_info_t *curr = ir_nodehashmap_get(be_lv_info_t, &fresh->map, bl);
+	be_lv_info_t *fr   = ir_nodehashmap_get(be_lv_info_t, &fresh->map, bl);
 
 	if (!fr && curr && curr[0].head.n_members > 0) {
 		unsigned i;

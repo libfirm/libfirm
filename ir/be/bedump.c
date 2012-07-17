@@ -84,10 +84,7 @@ void be_dump_ifg(FILE *F, ir_graph *irg, const be_ifg_t *ifg)
 static void dump_affinity_edges(FILE *F, const copy_opt_t *co,
                                 bool dump_costs, bool dump_colors)
 {
-	affinity_node_t *a;
 	co_gs_foreach_aff_node(co, a) {
-		neighb_t *n;
-
 		co_gs_foreach_neighb(a, n) {
 			/* edges are bidirection, dumping one direction is enough */
 			if (get_irn_node_nr(a->irn) >= get_irn_node_nr(n->irn))
@@ -155,7 +152,7 @@ void be_dump_liveness_block(void *context, FILE *F, const ir_node *bl)
 {
 	if (is_Block(bl)) {
 		be_lv_t *lv = (be_lv_t*)context;
-		be_lv_info_t *info = (be_lv_info_t*)ir_nodehashmap_get(&lv->map, bl);
+		be_lv_info_t *info = ir_nodehashmap_get(be_lv_info_t, &lv->map, bl);
 
 		fprintf(F, "liveness:\n");
 		if (info != NULL) {

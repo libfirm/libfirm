@@ -149,8 +149,6 @@ static void construct_ssa(ir_node *orig_block, ir_node *orig_val,
 {
 	ir_graph *irg;
 	ir_mode *mode;
-	const ir_edge_t *edge;
-	const ir_edge_t *next;
 
 	/* no need to do anything */
 	if (orig_val == second_val)
@@ -167,7 +165,7 @@ static void construct_ssa(ir_node *orig_block, ir_node *orig_val,
 	ssa_second_def       = second_val;
 
 	/* Only fix the users of the first, i.e. the original node */
-	foreach_out_edge_safe(orig_val, edge, next) {
+	foreach_out_edge_safe(orig_val, edge) {
 		ir_node *user = get_edge_src_irn(edge);
 		int j = get_edge_src_pos(edge);
 		ir_node *user_block = get_nodes_block(user);
@@ -277,8 +275,6 @@ static ir_node *copy_and_fix_node(const jumpthreading_env_t *env,
 static void copy_and_fix(const jumpthreading_env_t *env, ir_node *block,
                          ir_node *copy_block, int j)
 {
-	const ir_edge_t *edge;
-
 	/* Look at all nodes in the cond_block and copy them into pred */
 	foreach_out_edge(block, edge) {
 		ir_node *node = get_edge_src_irn(edge);
@@ -301,7 +297,6 @@ static void copy_and_fix(const jumpthreading_env_t *env, ir_node *block,
 		 * mode_bs which can't be handled in all backends. Instead we duplicate
 		 * the node and move it to its users */
 		if (mode == mode_b) {
-			const ir_edge_t *edge, *next;
 			ir_node *pred;
 			int      pn;
 
@@ -310,7 +305,7 @@ static void copy_and_fix(const jumpthreading_env_t *env, ir_node *block,
 			pred = get_Proj_pred(node);
 			pn   = get_Proj_proj(node);
 
-			foreach_out_edge_safe(node, edge, next) {
+			foreach_out_edge_safe(node, edge) {
 				ir_node *cmp_copy;
 				ir_node *user       = get_edge_src_irn(edge);
 				int pos             = get_edge_src_pos(edge);
@@ -639,7 +634,6 @@ static void thread_jumps(ir_node* block, void* data)
 	ir_node *cond;
 	ir_node *copy_block;
 	int      selector_evaluated;
-	const ir_edge_t *edge, *next;
 	ir_graph *irg;
 	ir_node *badX;
 	int      cnst_pos;
@@ -735,7 +729,7 @@ static void thread_jumps(ir_node* block, void* data)
 	cnst_pos = env.cnst_pos;
 
 	/* shorten Phis */
-	foreach_out_edge_safe(env.cnst_pred, edge, next) {
+	foreach_out_edge_safe(env.cnst_pred, edge) {
 		ir_node *node = get_edge_src_irn(edge);
 
 		if (is_Phi(node)) {

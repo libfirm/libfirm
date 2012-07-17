@@ -73,6 +73,13 @@ FIRM_API pmap_entry *pmap_find(pmap *map, const void * key);
 /** Returns the value of "key". */
 FIRM_API void * pmap_get(pmap *map, const void * key);
 
+/**
+ * Returns the value of "key".
+ * This is a wrapper for pmap_get(pmap *map); It allows to express the
+ * intended type of the set elements (instead of weakly typed void*).
+ */
+#define pmap_get(type, map, key) ((type*)pmap_get(map, key))
+
 /** Return number of elements in the map */
 FIRM_API size_t pmap_count(pmap *map);
 

@@ -319,7 +319,6 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 	pbqp_t                      *pbqp_inst          = pbqp_alloc_env->pbqp_inst;
 	plist_t                     *temp_list          = plist_new();
 	plist_element_t             *el;
-	ir_node                     *irn;
 	ir_nodeset_t                 live_nodes;
 #if USE_BIPARTIT_MATCHING
 	int                         *assignment         = ALLOCAN(int, cls->n_regs);
@@ -345,7 +344,6 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 		ir_nodeset_iterator_t  iter;
 
 		if (get_irn_mode(irn) == mode_T) {
-			const ir_edge_t *edge;
 			foreach_out_edge(irn, edge) {
 				ir_node *proj = get_edge_src_irn(edge);
 				if (!arch_irn_consider_in_reg_alloc(cls, proj))
@@ -410,7 +408,6 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 			bipartite_t *bp                  = bipartite_new(cls->n_regs, cls->n_regs);
 
 			/* add all proj after a perm to clique */
-			const ir_edge_t *edge;
 			foreach_out_edge(irn, edge) {
 				ir_node *proj = get_edge_src_irn(edge);
 
@@ -510,9 +507,7 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 #else
 		/* order nodes for perfect elimination order */
 		if (get_irn_mode(irn) == mode_T) {
-			bool             allHaveIFEdges = true;
-			const ir_edge_t *edge;
-
+			bool allHaveIFEdges = true;
 			foreach_out_edge(irn, edge) {
 				ir_node *proj = get_edge_src_irn(edge);
 				if (!arch_irn_consider_in_reg_alloc(cls, proj))

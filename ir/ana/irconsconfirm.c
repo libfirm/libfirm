@@ -108,16 +108,14 @@ static ir_node *get_case_value(ir_node *switchn, long pn)
  */
 static void handle_case(ir_node *block, ir_node *switchn, long pn, env_t *env)
 {
-	ir_node         *c = NULL;
-	ir_node         *selector = get_Switch_selector(switchn);
-	const ir_edge_t *edge;
-	const ir_edge_t *next;
+	ir_node *c = NULL;
+	ir_node *selector = get_Switch_selector(switchn);
 
 	/* we can't do usefull things with the default label */
 	if (pn == pn_Switch_default)
 		return;
 
-	foreach_out_edge_safe(selector, edge, next) {
+	foreach_out_edge_safe(selector, edge) {
 		ir_node *succ = get_edge_src_irn(edge);
 		int     pos   = get_edge_src_pos(edge);
 		ir_node *blk  = get_effective_use_block(succ, pos);
@@ -153,14 +151,12 @@ static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *
 {
 	ir_node *cond, *old, *other_blk = NULL, *con = NULL;
 	ir_node *c_b = NULL, *c_o = NULL;
-	const ir_edge_t *edge, *next;
 
-	for (edge = get_irn_out_edge_first(selector); edge; edge = next) {
+	foreach_out_edge_safe(selector, edge) {
 		ir_node *user     = get_edge_src_irn(edge);
 		int     pos       = get_edge_src_pos(edge);
 		ir_node *user_blk = get_effective_use_block(user, pos);
 
-		next = get_irn_out_edge_next(selector, edge);
 		if (block_dominates(block, user_blk)) {
 			/*
 			 * Ok, we found a usage of selector in a block
@@ -271,7 +267,6 @@ static void handle_if(ir_node *block, ir_node *cmp, ir_relation rel, env_t *env)
 	ir_node *right = get_Cmp_right(cmp);
 	ir_node *cond_block;
 	ir_op *op;
-	const ir_edge_t *edge, *next;
 
 	/* Beware of Bads */
 	if (is_Bad(left) || is_Bad(right))
@@ -300,12 +295,11 @@ static void handle_if(ir_node *block, ir_node *cmp, ir_relation rel, env_t *env)
 	 */
 	if (rel == ir_relation_equal) {
 		cond_block = get_Block_cfgpred_block(block, 0);
-		for (edge = get_irn_out_edge_first(left); edge; edge = next) {
+		foreach_out_edge_safe(left, edge) {
 			ir_node *user = get_edge_src_irn(edge);
 			int     pos   = get_edge_src_pos(edge);
 			ir_node *blk  = get_effective_use_block(user, pos);
 
-			next = get_irn_out_edge_next(left, edge);
 			if (block_dominates(block, blk)) {
 				/*
 				 * Ok, we found a usage of left in a block
@@ -325,9 +319,7 @@ static void handle_if(ir_node *block, ir_node *cmp, ir_relation rel, env_t *env)
 				 * left == Const and we found a movable user of left in a
 				 * dominator of the Cond block
 				 */
-				const ir_edge_t *user_edge;
-				const ir_edge_t *user_next;
-				foreach_out_edge_safe(user, user_edge, user_next) {
+				foreach_out_edge_safe(user, user_edge) {
 					ir_node *usr_of_usr = get_edge_src_irn(user_edge);
 					int      npos       = get_edge_src_pos(user_edge);
 					ir_node *user_blk   = get_effective_use_block(usr_of_usr, npos);
@@ -359,7 +351,7 @@ static void handle_if(ir_node *block, ir_node *cmp, ir_relation rel, env_t *env)
 	} else { /* not ir_relation_equal cases */
 		ir_node *c = NULL;
 
-		foreach_out_edge_safe(left, edge, next) {
+		foreach_out_edge_safe(left, edge) {
 			ir_node *succ = get_edge_src_irn(edge);
 			int     pos   = get_edge_src_pos(edge);
 			ir_node *blk  = get_effective_use_block(succ, pos);
@@ -386,7 +378,7 @@ static void handle_if(ir_node *block, ir_node *cmp, ir_relation rel, env_t *env)
 			ir_node *rc = NULL;
 
 			rel = get_inversed_relation(rel);
-			foreach_out_edge_safe(right, edge, next) {
+			foreach_out_edge_safe(right, edge) {
 				ir_node *succ = get_edge_src_irn(edge);
 				int     pos;
 				ir_node *blk;
@@ -497,10 +489,9 @@ static int is_non_null_Confirm(const ir_node *ptr)
  */
 static void insert_non_null(ir_node *ptr, ir_node *block, env_t *env)
 {
-	const ir_edge_t *edge, *next;
-	ir_node         *c = NULL;
+	ir_node *c = NULL;
 
-	foreach_out_edge_safe(ptr, edge, next) {
+	foreach_out_edge_safe(ptr, edge) {
 		ir_node *succ = get_edge_src_irn(edge);
 		int     pos;
 		ir_node *blk;

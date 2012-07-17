@@ -46,19 +46,15 @@ typedef struct ir_lnk_nodemap_entry_t {
 } ir_lnk_nodemap_entry_t;
 
 #define HashSet          ir_lnk_nodemap_t
-#define HashSetIterator  ir_lnk_nodemap_iterator_t
 #define ValueType        ir_lnk_nodemap_entry_t
 #define ADDITIONAL_DATA  list_head elem_list; list_head all_iters;
 #define DO_REHASH
-#define NO_ITERATOR
 
 #include "hashset.h"
 
-#undef NO_ITERATOR
 #undef DO_REHASH
 #undef ADDITIONAL_DATA
 #undef ValueType
-#undef HashSetIterator
 #undef HashSet
 
 typedef struct ir_lnk_nodemap_t ir_lnk_nodemap_t;

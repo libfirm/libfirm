@@ -337,7 +337,7 @@ static void x87_emms(x87_state *state)
  */
 static blk_state *x87_get_bl_state(x87_simulator *sim, ir_node *block)
 {
-	blk_state *res = pmap_get(sim->blk_states, block);
+	blk_state *res = pmap_get(blk_state, sim->blk_states, block);
 
 	if (res == NULL) {
 		res = OALLOC(&sim->obst, blk_state);
@@ -397,8 +397,6 @@ static ir_node *x87_patch_insn(ir_node *n, ir_op *op)
 
 	if (mode == mode_T) {
 		/* patch all Proj's */
-		const ir_edge_t *edge;
-
 		foreach_out_edge(n, edge) {
 			ir_node *proj = get_edge_src_irn(edge);
 			if (is_Proj(proj)) {
@@ -423,8 +421,6 @@ static ir_node *x87_patch_insn(ir_node *n, ir_op *op)
  */
 static ir_node *get_irn_Proj_for_mode(ir_node *n, ir_mode *m)
 {
-	const ir_edge_t *edge;
-
 	assert(get_irn_mode(n) == mode_T && "Need mode_T node");
 
 	foreach_out_edge(n, edge) {
@@ -740,8 +736,6 @@ static vfp_liveness vfp_liveness_transfer(ir_node *irn, vfp_liveness live)
 	const arch_register_class_t *cls = &ia32_reg_classes[CLASS_ia32_vfp];
 
 	if (get_irn_mode(irn) == mode_T) {
-		const ir_edge_t *edge;
-
 		foreach_out_edge(irn, edge) {
 			ir_node *proj = get_edge_src_irn(edge);
 
@@ -778,14 +772,12 @@ static vfp_liveness vfp_liveness_transfer(ir_node *irn, vfp_liveness live)
  */
 static vfp_liveness vfp_liveness_end_of_block(x87_simulator *sim, const ir_node *block)
 {
-	int i;
 	vfp_liveness live = 0;
 	const arch_register_class_t *cls = &ia32_reg_classes[CLASS_ia32_vfp];
 	const be_lv_t *lv = sim->lv;
 
-	be_lv_foreach(lv, block, be_lv_state_end, i) {
+	be_lv_foreach(lv, block, be_lv_state_end, node) {
 		const arch_register_t *reg;
-		const ir_node *node = be_lv_get_irn(lv, block, i);
 		if (!arch_irn_consider_in_reg_alloc(cls, node))
 			continue;
 
@@ -827,7 +819,6 @@ static void update_liveness(x87_simulator *sim, ir_node *block)
 {
 	vfp_liveness live = vfp_liveness_end_of_block(sim, block);
 	unsigned idx;
-	ir_node *irn;
 
 	/* now iterate through the block backward and cache the results */
 	sched_foreach_reverse(block, irn) {
@@ -1126,9 +1117,7 @@ static int sim_load(x87_state *state, ir_node *n, ir_op *op, int res_pos)
  */
 static void collect_and_rewire_users(ir_node *store, ir_node *old_val, ir_node *new_val)
 {
-	const ir_edge_t *edge, *ne;
-
-	foreach_out_edge_safe(old_val, edge, ne) {
+	foreach_out_edge_safe(old_val, edge) {
 		ir_node *user = get_edge_src_irn(edge);
 
 		if (! user || user == store)
@@ -1855,8 +1844,6 @@ static int sim_Copy(x87_state *state, ir_node *n)
  */
 static ir_node *get_call_result_proj(ir_node *call)
 {
-	const ir_edge_t *edge;
-
 	/* search the result proj */
 	foreach_out_edge(call, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
@@ -1961,10 +1948,9 @@ typedef struct perm_data_t {
  */
 static int sim_Perm(x87_state *state, ir_node *irn)
 {
-	int             i, n;
-	ir_node         *pred = get_irn_n(irn, 0);
-	int             *stack_pos;
-	const ir_edge_t *edge;
+	int      i, n;
+	ir_node *pred = get_irn_n(irn, 0);
+	int     *stack_pos;
 
 	/* handle only floating point Perms */
 	if (! mode_is_float(get_irn_mode(pred)))
@@ -2100,7 +2086,6 @@ static void x87_simulate_block(x87_simulator *sim, ir_node *block)
 	ir_node *n, *next;
 	blk_state *bl_state = x87_get_bl_state(sim, block);
 	x87_state *state = bl_state->begin;
-	const ir_edge_t *edge;
 	ir_node *start_block;
 
 	assert(state != NULL);

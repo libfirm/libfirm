@@ -497,7 +497,7 @@ static unsigned allocate_value_numbers(pset *sels, ir_entity *ent, unsigned vnum
 		pset_insert_ptr(sels, sel);
 
 		key  = find_path(sel, 0);
-		path = (path_t*)set_find(pathes, key, path_size(key), path_hash(key));
+		path = set_find(path_t, pathes, key, path_size(key), path_hash(key));
 
 		if (path) {
 			set_vnum(sel, path->vnum);
@@ -505,7 +505,7 @@ static unsigned allocate_value_numbers(pset *sels, ir_entity *ent, unsigned vnum
 		} else {
 			key->vnum = vnum++;
 
-			set_insert(pathes, key, path_size(key), path_hash(key));
+			(void)set_insert(path_t, pathes, key, path_size(key), path_hash(key));
 
 			set_vnum(sel, key->vnum);
 			DB((dbg, SET_LEVEL_3, "  %+F represents value %u\n", sel, key->vnum));
@@ -680,7 +680,7 @@ void scalar_replacement_opt(ir_graph *irg)
 {
 	unsigned  nvals;
 	int       i;
-	scalars_t key, *value;
+	scalars_t key;
 	ir_node   *irg_frame;
 	ir_mode   **modes;
 	set       *set_ent;
@@ -725,7 +725,7 @@ void scalar_replacement_opt(ir_graph *irg)
 				ent_type = get_entity_type(ent);
 
 				key.ent       = ent;
-				set_insert(set_ent, &key, sizeof(key), hash_ptr(key.ent));
+				(void)set_insert(scalars_t, set_ent, &key, sizeof(key), hash_ptr(key.ent));
 
 #ifdef DEBUG_libfirm
 				if (is_Array_type(ent_type)) {
@@ -749,7 +749,7 @@ void scalar_replacement_opt(ir_graph *irg)
 		if (nvals > 0) {
 			do_scalar_replacements(irg, sels, nvals, modes);
 
-			foreach_set(set_ent, scalars_t*, value) {
+			foreach_set(set_ent, scalars_t, value) {
 				free_entity(value->ent);
 			}
 

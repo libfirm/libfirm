@@ -204,22 +204,15 @@ typedef struct block_attr {
 	unsigned marked:1;          /**< Can be set/unset to temporary mark a block. */
 	ir_node **graph_arr;        /**< An array to store all parameters. */
 	/* Attributes holding analyses information */
-	ir_dom_info dom;            /**< Datastructure that holds information about dominators.
-	                                 @@@ @todo
-	                                 Eventually overlay with graph_arr as only valid
-	                                 in different phases.  Eventually inline the whole
-	                                 datastructure. */
+	ir_dom_info dom;            /**< Datastructure that holds information about dominators. */
 	ir_dom_info pdom;           /**< Datastructure that holds information about post-dominators. */
 	bitset_t *backedge;         /**< Bitfield n set to true if pred n is backedge.*/
 	ir_entity *entity;          /**< entitiy representing this block */
 	ir_node  *phis;             /**< The list of Phi nodes in this block. */
-
-	struct list_head succ_head; /**< A list head for all successor edges of a block. */
 } block_attr;
 
 /** Cond attributes. */
 typedef struct cond_attr {
-	long default_proj;           /**< only for non-binary Conds: biggest Proj number, i.e. the one used for default. */
 	cond_jmp_predicate jmp_pred; /**< only for binary Conds: The jump predication. */
 } cond_attr;
 
@@ -290,16 +283,16 @@ typedef struct cast_attr {
 /** Load attributes. */
 typedef struct load_attr {
 	except_attr   exc;            /**< The exception attribute. MUST be the first one. */
-    unsigned      volatility:1;   /**< The volatility of this Load operation. */
-    unsigned      unaligned:1;    /**< The align attribute of this Load operation. */
+    ir_volatility volatility:1;   /**< The volatility of this Load operation. */
+    ir_align      unaligned:1;    /**< The align attribute of this Load operation. */
 	ir_mode       *mode;          /**< The mode of this Load operation. */
 } load_attr;
 
 /** Store attributes. */
 typedef struct store_attr {
 	except_attr   exc;            /**< the exception attribute. MUST be the first one. */
-	unsigned      volatility:1;   /**< The volatility of this Store operation. */
-	unsigned      unaligned:1;    /**< The align attribute of this Store operation. */
+	ir_volatility volatility:1;   /**< The volatility of this Store operation. */
+	ir_align      unaligned:1;    /**< The align attribute of this Store operation. */
 } store_attr;
 
 typedef struct phi_attr {
@@ -549,6 +542,7 @@ struct ir_graph {
 	ir_vrp_info      vrp;              /**< vrp info */
 
 	ir_loop *loop;                     /**< The outermost loop for this graph. */
+	ir_dom_front_info_t domfront;      /**< dominance frontier analysis data */
 	void *link;                        /**< A void* field to link any information to
 	                                        the node. */
 

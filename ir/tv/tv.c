@@ -77,11 +77,11 @@ static float_to_int_mode current_float_to_int_mode = TRUNCATE;
 #  define TARVAL_VERIFY(a) ((void)0)
 #endif
 
-#define INSERT_TARVAL(tv) ((ir_tarval*)set_insert(tarvals, (tv), sizeof(ir_tarval), hash_tv((tv))))
-#define FIND_TARVAL(tv) ((ir_tarval*)set_find(tarvals, (tv), sizeof(ir_tarval), hash_tv((tv))))
+#define INSERT_TARVAL(tv) (set_insert(ir_tarval, tarvals, (tv), sizeof(ir_tarval), hash_tv((tv))))
+#define FIND_TARVAL(tv) (set_find(ir_tarval, tarvals, (tv), sizeof(ir_tarval), hash_tv((tv))))
 
-#define INSERT_VALUE(val, size) (set_insert(values, (val), size, hash_val((val), size)))
-#define FIND_VALUE(val, size) (set_find(values, (val), size, hash_val((val), size)))
+#define INSERT_VALUE(val, size) (set_insert(char, values, (val), size, hash_val((val), size)))
+#define FIND_VALUE(val, size) (set_find(char, values, (val), size, hash_val((val), size)))
 
 #define fail_verify(a) _fail_verify((a), __FILE__, __LINE__)
 
@@ -199,7 +199,7 @@ static ir_tarval *get_tarval(const void *value, size_t length, ir_mode *mode)
 	}
 	/* if there is such a tarval, it is returned, else tv is copied
 	 * into the set */
-	return (ir_tarval *)INSERT_TARVAL(&tv);
+	return INSERT_TARVAL(&tv);
 }
 
 /**

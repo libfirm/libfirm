@@ -72,7 +72,7 @@ static void collect_data(ir_node *node, void *env)
 	case iro_Proj:
 		pred = get_Proj_pred(node);
 
-		opcode = get_irn_opcode(pred);
+		opcode = (ir_opcode)get_irn_opcode(pred);
 		if (opcode == iro_Proj) {
 			ir_node *start = get_Proj_pred(pred);
 

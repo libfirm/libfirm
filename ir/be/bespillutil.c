@@ -135,7 +135,7 @@ static spill_info_t *get_spillinfo(const spill_env_t *env, ir_node *value)
 	int hash = hash_irn(value);
 
 	info.to_spill = value;
-	res = (spill_info_t*)set_find(env->spills, &info, sizeof(info), hash);
+	res = set_find(spill_info_t, env->spills, &info, sizeof(info), hash);
 
 	if (res == NULL) {
 		info.reloaders   = NULL;
@@ -143,7 +143,7 @@ static spill_info_t *get_spillinfo(const spill_env_t *env, ir_node *value)
 		info.spill_costs = -1;
 		info.reload_cls  = NULL;
 		info.spilled_phi = false;
-		res = (spill_info_t*)set_insert(env->spills, &info, sizeof(info), hash);
+		res = set_insert(spill_info_t, env->spills, &info, sizeof(info), hash);
 	}
 
 	return res;
@@ -875,10 +875,9 @@ void make_spill_locations_dominate_irn(spill_env_t *env, ir_node *irn)
 
 void be_insert_spills_reloads(spill_env_t *env)
 {
-	const ir_exec_freq    *exec_freq  = env->exec_freq;
-	size_t                 n_mem_phis = ARR_LEN(env->mem_phis);
-	spill_info_t          *si;
-	size_t                 i;
+	const ir_exec_freq *exec_freq  = env->exec_freq;
+	size_t              n_mem_phis = ARR_LEN(env->mem_phis);
+	size_t              i;
 
 	be_timer_push(T_RA_SPILL_APPLY);
 
@@ -890,7 +889,7 @@ void be_insert_spills_reloads(spill_env_t *env)
 	}
 
 	/* process each spilled node */
-	foreach_set(env->spills, spill_info_t*, si) {
+	foreach_set(env->spills, spill_info_t, si) {
 		ir_node  *to_spill        = si->to_spill;
 		ir_node **copies          = NEW_ARR_F(ir_node*, 0);
 		double    all_remat_costs = 0; /** costs when we would remat all nodes */

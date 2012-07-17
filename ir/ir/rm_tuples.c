@@ -57,5 +57,18 @@ static void exchange_tuple_projs(ir_node *node, void *env)
 void remove_tuples(ir_graph *irg)
 {
 	irg_walk_graph(irg, exchange_tuple_projs, NULL, NULL);
+
+	ir_node *end          = get_irg_end(irg);
+	int      n_keepalives = get_End_n_keepalives(end);
+	int      i;
+
+	for (i = n_keepalives - 1; i >= 0; --i) {
+		ir_node *irn = get_End_keepalive(end, i);
+
+		if (is_Tuple(irn)) {
+			remove_End_keepalive(end, irn);
+		}
+	}
+
 	add_irg_properties(irg, IR_GRAPH_PROPERTY_NO_TUPLES);
 }

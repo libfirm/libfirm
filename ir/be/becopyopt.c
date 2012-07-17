@@ -331,7 +331,6 @@ static int ou_max_ind_set_costs(unit_t *ou)
 	ir_node **safe, **unsafe;
 	int i, o, safe_count, safe_costs, unsafe_count, *unsafe_costs;
 	bitset_t *curr;
-	size_t  pos;
 	int curr_weight, best_weight = 0;
 
 	/* assign the nodes into two groups.
@@ -727,13 +726,11 @@ int co_get_lower_bound(const copy_opt_t *co)
 void co_complete_stats(const copy_opt_t *co, co_complete_stats_t *stat)
 {
 	bitset_t *seen = bitset_malloc(get_irg_last_idx(co->irg));
-	affinity_node_t *an;
 
 	memset(stat, 0, sizeof(stat[0]));
 
 	/* count affinity edges. */
 	co_gs_foreach_aff_node(co, an) {
-		neighb_t *neigh;
 		stat->aff_nodes += 1;
 		bitset_set(seen, get_irn_idx(an->irn));
 		co_gs_foreach_neighb(an, neigh) {
@@ -787,7 +784,7 @@ static void add_edge(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs)
 	new_node.irn        = n1;
 	new_node.degree     = 0;
 	new_node.neighbours = NULL;
-	node = (affinity_node_t*)set_insert(co->nodes, &new_node, sizeof(new_node), hash_irn(new_node.irn));
+	node = set_insert(affinity_node_t, co->nodes, &new_node, sizeof(new_node), hash_irn(new_node.irn));
 
 	for (nbr = node->neighbours; nbr; nbr = nbr->next)
 		if (nbr->irn == n2) {
@@ -878,7 +875,7 @@ int co_gs_is_optimizable(copy_opt_t *co, ir_node *irn)
 	ASSERT_GS_AVAIL(co);
 
 	new_node.irn = irn;
-	n = (affinity_node_t*)set_find(co->nodes, &new_node, sizeof(new_node), hash_irn(new_node.irn));
+	n = set_find(affinity_node_t, co->nodes, &new_node, sizeof(new_node), hash_irn(new_node.irn));
 	if (n) {
 		return (n->degree > 0);
 	} else
@@ -975,8 +972,6 @@ static void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 			}
 
 			if (a) {
-				neighb_t *n;
-
 				co_gs_foreach_neighb(a, n) {
 					if (!arch_irn_is_ignore(n->irn)) {
 						int n_idx = node_map[get_irn_idx(n->irn)];

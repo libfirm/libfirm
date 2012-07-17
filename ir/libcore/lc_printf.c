@@ -113,7 +113,7 @@ int lc_arg_register(lc_arg_env_t *env, const char *name, char letter, const lc_a
 		base = 'a';
 	}
 
-	ent = (lc_arg_t*)set_insert(env->args, &arg, sizeof(arg), hash_str(name));
+	ent = set_insert(lc_arg_t, env->args, &arg, sizeof(arg), hash_str(name));
 
 	if (ent && base != 0)
 		map[letter - base] = ent;
@@ -438,7 +438,7 @@ int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
 						name[n] = '\0';
 						tmp.name = name;
 
-						arg = (lc_arg_t*)set_find(env->args, &tmp, sizeof(tmp), hash_str(named));
+						arg = set_find(lc_arg_t, env->args, &tmp, sizeof(tmp), hash_str(named));
 						occ.modifier = "";
 						occ.modifier_length = 0;
 

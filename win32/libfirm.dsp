@@ -2559,10 +2559,6 @@ SOURCE=..\include\libfirm\adt\impl.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\include\libfirm\adt\iterator.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\include\libfirm\adt\list.h
 # End Source File
 # Begin Source File

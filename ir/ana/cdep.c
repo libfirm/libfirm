@@ -55,7 +55,7 @@ ir_cdep *(get_cdep_next)(const ir_cdep *cdep)
 ir_cdep *find_cdep(const ir_node *block)
 {
 	assert(is_Block(block));
-	return (ir_cdep*) pmap_get(cdep_data->cdep_map, block);
+	return pmap_get(ir_cdep, cdep_data->cdep_map, block);
 }
 
 void exchange_cdep(ir_node *old, const ir_node *nw)

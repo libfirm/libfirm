@@ -38,7 +38,7 @@
 #include "irgmod.h"
 #include "irnodeset.h"
 #include "irnodehashmap.h"
-#include "adt/cpset.h"
+#include "cpset.h"
 
 #include "bearch.h"
 #include "beuses.h"
@@ -110,8 +110,7 @@ static inline spill_info_t *create_spill_info(minibelady_env_t *env, ir_node *st
 
 static inline spill_info_t *get_spill_info(minibelady_env_t *env, const ir_node *node)
 {
-	spill_info_t *spill_info
-		= (spill_info_t*) ir_nodehashmap_get(&env->spill_infos, node);
+	spill_info_t *spill_info = ir_nodehashmap_get(spill_info_t, &env->spill_infos, node);
 	//ir_fprintf(stderr, "Get %+F -> %p\n", node, spill_info);
 	return spill_info;
 }
@@ -215,11 +214,9 @@ static block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *b
 	be_next_use_t  next_use;
 	ir_loop       *loop;
 	ir_node       *best_starter, *first;
-	ir_node       *node;
 	int            n_cfgpreds;
 	unsigned       best_time;
 	int            outer_loop_allowed;
-	int            i;
 
 	/* Create the block info for this block. */
 	block_info = new_block_info(&env->obst, block);
@@ -302,9 +299,7 @@ static block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *b
 	}
 
 	/* check all Live-Ins */
-	be_lv_foreach(env->lv, block, be_lv_state_in, i) {
-		node = be_lv_get_irn(env->lv, block, i);
-
+	be_lv_foreach(env->lv, block, be_lv_state_in, node) {
 		if (!mode_is_data(get_irn_mode(node)))
 			continue;
 
@@ -359,7 +354,6 @@ static block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *b
 static void belady(minibelady_env_t *env, ir_node *block)
 {
 	ir_node *current_state;
-	ir_node *node;
 	block_info_t *block_info;
 
 	/* Don't do a block twice */
@@ -417,8 +411,6 @@ static void belady(minibelady_env_t *env, ir_node *block)
 
 		/* record state changes by the node */
 		if (get_irn_mode(node) == mode_T) {
-			const ir_edge_t *edge;
-
 			foreach_out_edge(node, edge) {
 				const arch_register_t *reg;
 				ir_node *proj = get_edge_src_irn(edge);

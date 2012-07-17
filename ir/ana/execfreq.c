@@ -66,8 +66,6 @@
 
 #define MAX_INT_FREQ 1000000
 
-#define set_foreach(s,type,i) for ((i)=(type)set_first((s)); (i); (i)=(type)set_next((s)))
-
 typedef struct freq_t {
 	const ir_node    *irn;
 	int               idx;
@@ -96,7 +94,7 @@ static freq_t *set_find_freq(set *freqs, const ir_node *irn)
 {
 	freq_t query;
 	query.irn = irn;
-	return (freq_t*) set_find(freqs, &query, sizeof(query), hash_ptr(irn));
+	return set_find(freq_t, freqs, &query, sizeof(query), hash_ptr(irn));
 }
 
 static freq_t *set_insert_freq(set *freqs, const ir_node *irn)
@@ -106,7 +104,7 @@ static freq_t *set_insert_freq(set *freqs, const ir_node *irn)
 	query.irn = irn;
 	query.freq = 0.0;
 	query.idx  = -1;
-	return (freq_t*) set_insert(freqs, &query, sizeof(query), hash_ptr(irn));
+	return set_insert(freq_t, freqs, &query, sizeof(query), hash_ptr(irn));
 }
 
 double get_block_execfreq(const ir_exec_freq *ef, const ir_node *irn)
@@ -176,16 +174,15 @@ static double *solve_lgs(gs_matrix_t *mat, double *x, int size)
  */
 static double get_cf_probability(ir_node *bb, int pos, double loop_weight)
 {
-	double           sum = 0.0;
-	double           cur = 1.0;
-	double           inv_loop_weight = 1./loop_weight;
-	const ir_node   *pred = get_Block_cfgpred_block(bb, pos);
-	const ir_loop   *pred_loop;
-	int              pred_depth;
-	const ir_edge_t *edge;
-	const ir_loop   *loop;
-	int              depth;
-	int              d;
+	double         sum = 0.0;
+	double         cur = 1.0;
+	double         inv_loop_weight = 1./loop_weight;
+	const ir_node *pred = get_Block_cfgpred_block(bb, pos);
+	const ir_loop *pred_loop;
+	int            pred_depth;
+	const ir_loop *loop;
+	int            depth;
+	int            d;
 
 	if (is_Bad(pred))
 		return 0;
@@ -351,7 +348,7 @@ ir_exec_freq *compute_execfreq(ir_graph *irg, double loop_weight)
 	norm = x[s->idx] != 0.0 ? 1.0 / x[s->idx] : 1.0;
 
 	ef->max = 0.0;
-	set_foreach(freqs, freq_t*, freq) {
+	foreach_set(freqs, freq_t, freq) {
 		idx = freq->idx;
 
 		/* take abs because it sometimes can be -0 in case of endless loops */
@@ -377,7 +374,7 @@ ir_exec_freq *compute_execfreq(ir_graph *irg, double loop_weight)
 		double *fs = (double*) malloc(set_count(freqs) * sizeof(fs[0]));
 		int i, j, n = 0;
 
-		set_foreach(freqs, freq_t*, freq)
+		foreach_set(freqs, freq_t, freq)
 			fs[n++] = freq->freq;
 
 		/*

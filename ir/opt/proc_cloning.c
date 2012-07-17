@@ -585,7 +585,7 @@ restart:
  */
 void proc_cloning(float threshold)
 {
-	entry_t *entry = NULL, *p;
+	entry_t *p;
 	size_t i, n;
 	q_set hmap;
 
@@ -612,7 +612,7 @@ void proc_cloning(float threshold)
 		/* We iterate the set and arrange the element of the set in a list.
 		   The elements are arranged dependent of their value descending.*/
 		if (hmap.map) {
-			foreach_pset(hmap.map, entry_t*, entry) {
+			foreach_pset(hmap.map, entry_t, entry) {
 				entry->weight = calculate_weight(entry);
 
 				/*
@@ -651,14 +651,14 @@ void proc_cloning(float threshold)
 #ifdef DEBUG_libfirm
 		/* Print some information about the list. */
 		DB((dbg, LEVEL_2, "-----------------\n"));
-		for (entry = hmap.heavy_uses; entry; entry = entry->next) {
+		for (entry_t *entry = hmap.heavy_uses; entry; entry = entry->next) {
 			DB((dbg, LEVEL_2, "\nweight: is %f\n", entry->weight));
 			DB((dbg, LEVEL_2, "Call for Method %E\n", entry->q.ent));
 			DB((dbg, LEVEL_2, "Position %zu\n", entry->q.pos));
 			DB((dbg, LEVEL_2, "Value %T\n", entry->q.tv));
 		}
 #endif
-		entry = hmap.heavy_uses;
+		entry_t *const entry = hmap.heavy_uses;
 		if (entry) {
 			quadruple_t *qp = &entry->q;
 

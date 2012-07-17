@@ -33,12 +33,11 @@
 
 void instrument_initcall(ir_graph *irg, ir_entity *ent)
 {
-	const ir_edge_t *edge;
-	ir_node         *initial_exec;
-	ir_node         *initial_mem;
-	ir_node         *start_block;
-	ir_node         *adr, *call, *new_mem;
-	ir_node         *first_block = NULL;
+	ir_node        *initial_exec;
+	ir_node        *initial_mem;
+	ir_node        *start_block;
+	ir_node        *adr, *call, *new_mem;
+	ir_node        *first_block = NULL;
 	int             i, idx, need_new_block;
 	symconst_symbol sym;
 

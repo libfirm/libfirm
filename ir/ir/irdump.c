@@ -469,13 +469,10 @@ static void init_irdump(void)
  */
 static void *ird_get_irn_link(const ir_node *n)
 {
-	void *res = NULL;
 	if (irdump_link_map == NULL)
 		return NULL;
 
-	if (pmap_contains(irdump_link_map, n))
-		res = pmap_get(irdump_link_map, n);
-	return res;
+	return pmap_get(void, irdump_link_map, n);
 }
 
 /**
@@ -493,13 +490,10 @@ static void ird_set_irn_link(const ir_node *n, void *x)
  */
 static void *ird_get_irg_link(const ir_graph *irg)
 {
-	void *res = NULL;
 	if (irdump_link_map == NULL)
 		return NULL;
 
-	if (pmap_contains(irdump_link_map, irg))
-		res = pmap_get(irdump_link_map, irg);
-	return res;
+	return pmap_get(void, irdump_link_map, irg);
 }
 
 /**
@@ -1268,9 +1262,8 @@ static void dump_ir_data_edges(FILE *F, const ir_node *n)
  */
 static void dump_ir_edges(ir_node *node, void *env)
 {
-	int              i = 0;
-	FILE            *F = (FILE*)env;
-	const ir_edge_t *edge;
+	int   i = 0;
+	FILE *F = (FILE*)env;
 
 	foreach_out_edge(node, edge) {
 		ir_node *succ = get_edge_src_irn(edge);
@@ -2291,7 +2284,6 @@ void dump_loop(FILE *F, ir_loop *l)
 {
 	pset *loopnodes = pset_new_ptr_default();
 	pset *extnodes  = pset_new_ptr_default();
-	ir_node *n, *b;
 	char name[50];
 
 	snprintf(name, sizeof(name), "loop_%ld", get_loop_loop_nr(l));
@@ -2302,28 +2294,28 @@ void dump_loop(FILE *F, ir_loop *l)
 	collect_nodeloop_external_nodes(l, loopnodes, extnodes);
 
 	/* build block lists */
-	foreach_pset(loopnodes, ir_node*, n) {
+	foreach_pset(loopnodes, ir_node, n) {
 		set_irn_link(n, NULL);
 	}
-	foreach_pset(extnodes, ir_node*, n) {
+	foreach_pset(extnodes, ir_node, n) {
 		set_irn_link(n, NULL);
 	}
-	foreach_pset(loopnodes, ir_node*, n) {
+	foreach_pset(loopnodes, ir_node, n) {
 		if (!is_Block(n)) {
-			b = get_nodes_block(n);
+			ir_node *const b = get_nodes_block(n);
 			set_irn_link(n, get_irn_link(b));
 			set_irn_link(b, n);
 		}
 	}
-	foreach_pset(extnodes, ir_node*, n) {
+	foreach_pset(extnodes, ir_node, n) {
 		if (!is_Block(n)) {
-			b = get_nodes_block(n);
+			ir_node *const b = get_nodes_block(n);
 			set_irn_link(n, get_irn_link(b));
 			set_irn_link(b, n);
 		}
 	}
 
-	foreach_pset(loopnodes, ir_node*, b) {
+	foreach_pset(loopnodes, ir_node, b) {
 		if (is_Block(b)) {
 			fprintf(F, "graph: { title: ");
 			print_nodeid(F, b);
@@ -2336,7 +2328,7 @@ void dump_loop(FILE *F, ir_loop *l)
 			dump_ir_data_edges(F, b);
 
 			/* dump the nodes that go into the block */
-			for (n = (ir_node*)get_irn_link(b); n; n = (ir_node*)get_irn_link(n)) {
+			for (ir_node *n = (ir_node*)get_irn_link(b); n; n = (ir_node*)get_irn_link(n)) {
 				if (pset_find_ptr(extnodes, n))
 					overrule_nodecolor = ird_color_block_inout;
 				dump_node(F, n);
@@ -2350,7 +2342,7 @@ void dump_loop(FILE *F, ir_loop *l)
 			fprintf(F, "\n");
 		}
 	}
-	foreach_pset(extnodes, ir_node*, b) {
+	foreach_pset(extnodes, ir_node, b) {
 		if (is_Block(b)) {
 			fprintf(F, "graph: { title: ");
 			print_nodeid(F, b);
@@ -2360,7 +2352,7 @@ void dump_loop(FILE *F, ir_loop *l)
 			fprintf(F, "\" status:clustered color:lightblue\n");
 
 			/* dump the nodes that go into the block */
-			for (n = (ir_node*)get_irn_link(b); n; n = (ir_node*)get_irn_link(n)) {
+			for (ir_node *n = (ir_node*)get_irn_link(b); n; n = (ir_node*)get_irn_link(n)) {
 				if (!pset_find_ptr(loopnodes, n))
 					overrule_nodecolor = ird_color_block_inout;
 				dump_node(F, n);

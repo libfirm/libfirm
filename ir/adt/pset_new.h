@@ -31,7 +31,7 @@
 #ifndef FIRM_ADT_PSET_NEW_H
 #define FIRM_ADT_PSET_NEW_H
 
-#include "../begin.h"
+#include <stdbool.h>
 
 /** @cond PRIVATE */
 
@@ -58,7 +58,7 @@ typedef struct pset_new_iterator_t  pset_new_iterator_t;
  *
  * @param pset_new   Pointer to allocated space for the pset_new
  */
-FIRM_API void pset_new_init(pset_new_t *pset_new);
+void pset_new_init(pset_new_t *pset_new);
 
 /**
  * Initializes a pset_new
@@ -66,7 +66,7 @@ FIRM_API void pset_new_init(pset_new_t *pset_new);
  * @param pset_new            Pointer to allocated space for the pset_new
  * @param expected_elements   Number of elements expected in the pset_new (roughly)
  */
-FIRM_API void pset_new_init_size(pset_new_t *pset_new, size_t expected_elements);
+void pset_new_init_size(pset_new_t *pset_new, size_t expected_elements);
 
 /**
  * Destroys a pset_new and frees the memory allocated for hashtable. The memory of
@@ -74,16 +74,16 @@ FIRM_API void pset_new_init_size(pset_new_t *pset_new, size_t expected_elements)
  *
  * @param pset_new   Pointer to the pset_new
  */
-FIRM_API void pset_new_destroy(pset_new_t *pset_new);
+void pset_new_destroy(pset_new_t *pset_new);
 
 /**
  * Inserts an element into a pset_new.
  *
  * @param pset_new   Pointer to the pset_new
  * @param ptr    Pointer to insert into the pset_new
- * @returns      1 if the pointer was inserted, 0 if it was already there
+ * @returns      true if the pointer was inserted, false if it was already there
  */
-FIRM_API int pset_new_insert(pset_new_t *pset_new, void *ptr);
+bool pset_new_insert(pset_new_t *pset_new, void *ptr);
 
 /**
  * Removes an element from a pset_new. Does nothing if the pset_new doesn't contain the
@@ -92,16 +92,15 @@ FIRM_API int pset_new_insert(pset_new_t *pset_new, void *ptr);
  * @param pset_new   Pointer to the pset_new
  * @param ptr    Pointer to remove from the pset_new
  */
-FIRM_API void pset_new_remove(pset_new_t *pset_new, const void *ptr);
+void pset_new_remove(pset_new_t *pset_new, const void *ptr);
 
 /**
  * Tests whether a pset_new contains a pointer
  *
  * @param pset_new   Pointer to the pset_new
  * @param ptr    The pointer to test
- * @returns      1 @p pset_new contains the @p ptr, 0 otherwise
  */
-FIRM_API int pset_new_contains(const pset_new_t *pset_new, const void *ptr);
+bool pset_new_contains(const pset_new_t *pset_new, const void *ptr);
 
 /**
  * Returns the number of pointers contained in the pset_new
@@ -109,7 +108,7 @@ FIRM_API int pset_new_contains(const pset_new_t *pset_new, const void *ptr);
  * @param pset_new   Pointer to the pset_new
  * @returns      Number of pointers contained in the pset_new
  */
-FIRM_API size_t pset_new_size(const pset_new_t *pset_new);
+size_t pset_new_size(const pset_new_t *pset_new);
 
 /**
  * Initializes a pset_new iterator. Sets the iterator before the first element in
@@ -118,7 +117,7 @@ FIRM_API size_t pset_new_size(const pset_new_t *pset_new);
  * @param iterator   Pointer to already allocated iterator memory
  * @param pset_new       Pointer to the pset_new
  */
-FIRM_API void pset_new_iterator_init(pset_new_iterator_t *iterator, const pset_new_t *pset_new);
+void pset_new_iterator_init(pset_new_iterator_t *iterator, const pset_new_t *pset_new);
 
 /**
  * Advances the iterator and returns the current element or NULL if all elements
@@ -129,7 +128,7 @@ FIRM_API void pset_new_iterator_init(pset_new_iterator_t *iterator, const pset_n
  * @param iterator  Pointer to the pset_new iterator.
  * @returns         Next element in the pset_new or NULL
  */
-FIRM_API void* pset_new_iterator_next(pset_new_iterator_t *iterator);
+void* pset_new_iterator_next(pset_new_iterator_t *iterator);
 
 /**
  * Removes the element that the iterator currently points to from the hashset.
@@ -137,7 +136,7 @@ FIRM_API void* pset_new_iterator_next(pset_new_iterator_t *iterator);
  * @param pset_new      Pointer to the pset_new
  * @param iterator  Pointer to the iterator
  */
-FIRM_API void pset_new_remove_iterator(pset_new_t *pset_new, const pset_new_iterator_t *iterator);
+void pset_new_remove_iterator(pset_new_t *pset_new, const pset_new_iterator_t *iterator);
 
 /**
  * Convenience macro for iterating over a pset_new.
@@ -146,7 +145,5 @@ FIRM_API void pset_new_remove_iterator(pset_new_t *pset_new, const pset_new_iter
 	for(pset_new_iterator_init(&iter, pset_new), \
 		ptr = (type) pset_new_iterator_next(&iter);     \
 		ptr != NULL; ptr = (type) pset_new_iterator_next(&iter))
-
-#include "../end.h"
 
 #endif

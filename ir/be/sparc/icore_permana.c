@@ -181,10 +181,7 @@ static void search_cycles(void)
 
 static void analyze_regs(void)
 {
-	const ir_edge_t *edge;
-	const ir_edge_t *next;
-
-	foreach_out_edge_safe(perm, edge, next) {
+	foreach_out_edge_safe(perm, edge) {
 		ir_node               *out     = get_edge_src_irn(edge);
 		long                   pn      = get_Proj_proj(out);
 		ir_node               *in      = get_irn_n(perm, pn);

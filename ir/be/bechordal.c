@@ -32,7 +32,6 @@
 #include "list.h"
 #include "bitset.h"
 #include "raw_bitset.h"
-#include "iterator.h"
 #include "bipartite.h"
 #include "hungarian.h"
 
@@ -176,8 +175,6 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 	int *assignment;
 	pmap *partners;
 	int i, n_alloc;
-	size_t col;
-	const ir_edge_t *edge;
 	ir_node *perm = NULL;
 	//int match_res, cost;
 	be_chordal_env_t *env  = alloc_env->chordal_env;
@@ -332,7 +329,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 			DBG((dbg, LEVEL_2, "\tsetting %+F to register %s\n", irn, reg->name));
 		}
 
-		irn = (ir_node*)pmap_get(partners, alloc_nodes[i]);
+		irn = pmap_get(ir_node, partners, alloc_nodes[i]);
 		if (irn != NULL) {
 			arch_set_irn_register(irn, reg);
 			(void) pset_hinsert_ptr(alloc_env->pre_colored, irn);
@@ -361,7 +358,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 			DBG((dbg, LEVEL_2, "\tchecking reg of %+F: %s\n", proj, reg ? reg->name : "<none>"));
 
 			if (reg == NULL) {
-				col = get_next_free_reg(alloc_env, bs);
+				size_t const col = get_next_free_reg(alloc_env, bs);
 				reg = arch_register_for_index(env->cls, col);
 				bitset_set(bs, reg->index);
 				arch_set_irn_register(proj, reg);
@@ -407,9 +404,7 @@ static void assign(ir_node *block, void *env_ptr)
 	struct list_head *head      = get_block_border_head(env, block);
 	be_lv_t *lv                 = be_get_irg_liveness(env->irg);
 
-	const ir_node *irn;
 	border_t *b;
-	int idx;
 
 	bitset_clear_all(colors);
 	bitset_clear_all(live);
@@ -427,8 +422,7 @@ static void assign(ir_node *block, void *env_ptr)
 	 * Since their colors have already been assigned (The dominators were
 	 * allocated before), we have to mark their colors as used also.
 	 */
-	be_lv_foreach(lv, block, be_lv_state_in, idx) {
-		irn = be_lv_get_irn(lv, block, idx);
+	be_lv_foreach(lv, block, be_lv_state_in, irn) {
 		if (has_reg_class(env, irn)) {
 			const arch_register_t *reg = arch_get_irn_register(irn);
 			int col;

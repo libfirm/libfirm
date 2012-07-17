@@ -68,7 +68,7 @@ static dfs_edge_t *get_edge(const dfs_t *self, const void *src, const void *tgt)
 	templ.tgt = tgt;
 	templ.kind = (dfs_edge_kind_t) -1;
 
-	return (dfs_edge_t*) set_insert(self->edges, &templ, sizeof(templ), hash);
+	return set_insert(dfs_edge_t, self->edges, &templ, sizeof(templ), hash);
 }
 
 static void dfs_perform(dfs_t *dfs, void *n, void *anc, int level)
@@ -113,13 +113,12 @@ static void dfs_perform(dfs_t *dfs, void *n, void *anc, int level)
 
 static void classify_edges(dfs_t *dfs)
 {
-	dfs_edge_t *edge;
 	stat_ev_cnt_decl(anc);
 	stat_ev_cnt_decl(back);
 	stat_ev_cnt_decl(fwd);
 	stat_ev_cnt_decl(cross);
 
-	foreach_set (dfs->edges, dfs_edge_t*, edge) {
+	foreach_set (dfs->edges, dfs_edge_t, edge) {
 		dfs_node_t *src = edge->s;
 		dfs_node_t *tgt = edge->t;
 
@@ -160,7 +159,6 @@ dfs_edge_kind_t dfs_get_edge_kind(const dfs_t *dfs, const void *a, const void *b
 dfs_t *dfs_new(const absgraph_t *graph_impl, void *graph_self)
 {
 	dfs_t *res = XMALLOC(dfs_t);
-	dfs_node_t *node;
 
 	res->graph_impl = graph_impl;
 	res->graph      = graph_self;
@@ -176,7 +174,7 @@ dfs_t *dfs_new(const absgraph_t *graph_impl, void *graph_self)
 	dfs_perform(res, graph_impl->get_root(graph_self), NULL, 0);
 
 	/* make sure the end node (which might not be accessible) has a number */
-	node = get_node(res, graph_impl->get_end(graph_self));
+	dfs_node_t *const node = get_node(res, graph_impl->get_end(graph_self));
 	if (!node->visited) {
 		node->visited     = 1;
 		node->node        = graph_impl->get_end(graph_self);
@@ -192,7 +190,7 @@ dfs_t *dfs_new(const absgraph_t *graph_impl, void *graph_self)
 	assert(res->pre_num == res->post_num);
 	res->pre_order  = XMALLOCN(dfs_node_t*, res->pre_num);
 	res->post_order = XMALLOCN(dfs_node_t*, res->post_num);
-	foreach_set (res->nodes, dfs_node_t*, node) {
+	foreach_set (res->nodes, dfs_node_t, node) {
 		assert(node->pre_num < res->pre_num);
 		assert(node->post_num < res->post_num);
 
@@ -250,12 +248,10 @@ static int node_level_cmp(const void *a, const void *b)
 void dfs_dump(const dfs_t *dfs, FILE *file)
 {
 	dfs_node_t **nodes = XMALLOCN(dfs_node_t*, dfs->pre_num);
-	dfs_node_t *node;
-	dfs_edge_t *edge;
 	int i, n = 0;
 
 	ir_fprintf(file, "digraph G {\nranksep=0.5\n");
-	foreach_set (dfs->nodes, dfs_node_t*, node) {
+	foreach_set (dfs->nodes, dfs_node_t, node) {
 		nodes[n++] = node;
 	}
 
@@ -274,7 +270,7 @@ void dfs_dump(const dfs_t *dfs, FILE *file)
 	}
 
 	for (i = 0; i < n; ++i) {
-		node = nodes[i];
+		dfs_node_t *const node = nodes[i];
 		ir_fprintf(file, "\tn%d [label=\"%d\"]\n", node->pre_num, get_Block_dom_tree_pre_num((ir_node*) node->node));
 #if 0
 		ir_fprintf(file, "\tn%d [shape=box,label=\"%+F\\l%d %d/%d %d\"];\n",
@@ -283,7 +279,7 @@ void dfs_dump(const dfs_t *dfs, FILE *file)
 #endif
 	}
 
-	foreach_set (dfs->edges, dfs_edge_t*, edge)
+	foreach_set (dfs->edges, dfs_edge_t, edge)
 		dfs_dump_edge(edge, file);
 
 	ir_fprintf(file, "}\n");

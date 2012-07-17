@@ -190,6 +190,18 @@ FIRM_API void *pset_remove(pset *pset, const void *key, unsigned hash);
 FIRM_API void *pset_first(pset *pset);
 
 /**
+ * Returns the first element of a pset.
+ * This is a wrapper for pset_first(pmap *map); It allows to express the
+ * intended type of the set elements (instead of weakly typed void*).
+ *
+ * @param type  destination type of the pointers in the set
+ * @param pset  the pset to iterate
+ *
+ * @return a pointer to the element or NULL if the set is empty
+ */
+#define pset_first(type, pset) ((type*)pset_first((pset)))
+
+/**
  * Returns the next element of a pset.
  *
  * @param pset  the pset to iterate
@@ -198,6 +210,19 @@ FIRM_API void *pset_first(pset *pset);
  *         iteration is finished
  */
 FIRM_API void *pset_next(pset *pset);
+
+/**
+ * Returns the next element of a pset.
+ * This is a wrapper for pset_next(pmap *map); It allows to express the
+ * intended type of the set elements (instead of weakly typed void*).
+ *
+ * @param type  destination type of the pointers in the set
+ * @param pset  the pset to iterate
+ *
+ * @return a pointer to the next element or NULL if the
+ *         iteration is finished
+ */
+#define pset_next(type, pset) ((type*)pset_next((pset)))
 
 /**
  * Breaks the iteration of a set. Must be called before
@@ -215,7 +240,7 @@ FIRM_API void pset_break(pset *pset);
  * @param type   type of iterator variable
  * @param entry  the iterator
  */
-#define foreach_pset(pset, type, entry) for (entry = (type)pset_first(pset); entry; entry = (type)pset_next(pset))
+#define foreach_pset(pset, type, entry) for (type *entry = pset_first(type, pset); entry; entry = pset_next(type, pset))
 
 /**
  * Inserts all elements of the pointer set src into

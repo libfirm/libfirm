@@ -89,7 +89,8 @@ ir_relation get_inversed_relation(ir_relation relation)
 	ir_relation code    = relation & ~(ir_relation_less|ir_relation_greater);
 	bool        less    = relation & ir_relation_less;
 	bool        greater = relation & ir_relation_greater;
-	code |= (less ? ir_relation_greater : 0) | (greater ? ir_relation_less : 0);
+	code |= (less ? ir_relation_greater : ir_relation_false)
+	      | (greater ? ir_relation_less : ir_relation_false);
 	return code;
 }
 
@@ -303,44 +304,50 @@ ir_node *(get_irn_dep)(const ir_node *node, int pos)
 	return get_irn_dep_(node, pos);
 }
 
-void (set_irn_dep)(ir_node *node, int pos, ir_node *dep)
+void set_irn_dep(ir_node *node, int pos, ir_node *dep)
 {
-	set_irn_dep_(node, pos, dep);
+	ir_node *old;
+	ir_graph *irg;
+
+	assert(node->deps && "dependency array node yet allocated. use add_irn_dep()");
+	assert(pos >= 0 && pos < (int)ARR_LEN(node->deps) && "dependency index out of range");
+	assert(dep != NULL);
+	old = node->deps[pos];
+	node->deps[pos] = dep;
+	irg = get_irn_irg(node);
+	if (edges_activated_kind(irg, EDGE_KIND_DEP))
+		edges_notify_edge_kind(node, pos, dep, old, EDGE_KIND_DEP, irg);
 }
 
-int add_irn_dep(ir_node *node, ir_node *dep)
+void add_irn_dep(ir_node *node, ir_node *dep)
 {
-	int res = 0;
-
-	/* DEP edges are only allowed in backend phase */
-	assert(get_irg_phase_state(get_irn_irg(node)) == phase_backend);
+	ir_graph *irg;
+	assert(dep != NULL);
 	if (node->deps == NULL) {
-		node->deps = NEW_ARR_F(ir_node *, 1);
-		node->deps[0] = dep;
-	} else {
-		int i, n;
-		int first_zero = -1;
+		node->deps = NEW_ARR_F(ir_node *, 0);
+	}
+	ARR_APP1(ir_node*, node->deps, dep);
+	irg = get_irn_irg(node);
+	if (edges_activated_kind(irg, EDGE_KIND_DEP))
+		edges_notify_edge_kind(node, ARR_LEN(node->deps)-1, dep, NULL, EDGE_KIND_DEP, irg);
+}
 
-		for (i = 0, n = ARR_LEN(node->deps); i < n; ++i) {
-			if (node->deps[i] == NULL)
-				first_zero = i;
+void delete_irn_dep(ir_node *node, ir_node *dep)
+{
+	size_t i;
+	size_t n_deps;
+	if (node->deps == NULL)
+		return;
 
-			if (node->deps[i] == dep)
-				return i;
-		}
-
-		if (first_zero >= 0) {
-			node->deps[first_zero] = dep;
-			res = first_zero;
-		} else {
-			ARR_APP1(ir_node *, node->deps, dep);
-			res = n;
+	n_deps = ARR_LEN(node->deps);
+	for (i = 0; i < n_deps; ++i) {
+		if (node->deps[i] == dep) {
+			set_irn_dep(node, i, node->deps[n_deps-1]);
+			edges_notify_edge(node, i, NULL, dep, get_irn_irg(node));
+			ARR_SHRINKLEN(node->deps, n_deps-1);
+			break;
 		}
 	}
-
-	edges_notify_edge_kind(node, res, dep, NULL, EDGE_KIND_DEP, get_irn_irg(node));
-
-	return res;
 }
 
 void add_irn_deps(ir_node *tgt, ir_node *src)
@@ -1482,51 +1489,30 @@ static ir_entity *get_SymConst_attr_entity(const ir_node *self)
 	return NULL;
 }
 
-/** the get_type_attr operation must be always implemented */
-static ir_type *get_Null_type(const ir_node *n)
+static void register_get_type_func(ir_op *op, get_type_attr_func func)
 {
-	(void) n;
-	return get_unknown_type();
+	op->ops.get_type_attr = func;
 }
 
-void firm_set_default_get_type_attr(unsigned code, ir_op_ops *ops)
+static void register_get_entity_func(ir_op *op, get_entity_attr_func func)
 {
-	switch (code) {
-	case iro_Alloc:    ops->get_type_attr = get_Alloc_type;         break;
-	case iro_Builtin:  ops->get_type_attr = get_Builtin_type;       break;
-	case iro_Call:     ops->get_type_attr = get_Call_type;          break;
-	case iro_Cast:     ops->get_type_attr = get_Cast_type;          break;
-	case iro_CopyB:    ops->get_type_attr = get_CopyB_type;         break;
-	case iro_Free:     ops->get_type_attr = get_Free_type;          break;
-	case iro_InstOf:   ops->get_type_attr = get_InstOf_type;        break;
-	case iro_SymConst: ops->get_type_attr = get_SymConst_attr_type; break;
-	default:
-		/* not allowed to be NULL */
-		if (! ops->get_type_attr)
-			ops->get_type_attr = get_Null_type;
-		break;
-	}
+	op->ops.get_entity_attr = func;
 }
 
-/** the get_entity_attr operation must be always implemented */
-static ir_entity *get_Null_ent(const ir_node *n)
+void ir_register_getter_ops(void)
 {
-	(void) n;
-	return NULL;
-}
+	register_get_type_func(op_Alloc,    get_Alloc_type);
+	register_get_type_func(op_Builtin,  get_Builtin_type);
+	register_get_type_func(op_Call,     get_Call_type);
+	register_get_type_func(op_Cast,     get_Cast_type);
+	register_get_type_func(op_CopyB,    get_CopyB_type);
+	register_get_type_func(op_Free,     get_Free_type);
+	register_get_type_func(op_InstOf,   get_InstOf_type);
+	register_get_type_func(op_SymConst, get_SymConst_attr_type);
 
-void firm_set_default_get_entity_attr(unsigned code, ir_op_ops *ops)
-{
-	switch (code) {
-	case iro_SymConst: ops->get_entity_attr = get_SymConst_attr_entity; break;
-	case iro_Sel:      ops->get_entity_attr = get_Sel_entity; break;
-	case iro_Block:    ops->get_entity_attr = get_Block_entity; break;
-	default:
-		/* not allowed to be NULL */
-		if (! ops->get_entity_attr)
-			ops->get_entity_attr = get_Null_ent;
-		break;
-	}
+	register_get_entity_func(op_SymConst, get_SymConst_attr_entity);
+	register_get_entity_func(op_Sel,      get_Sel_entity);
+	register_get_entity_func(op_Block,    get_Block_entity);
 }
 
 void (set_irn_dbg_info)(ir_node *n, dbg_info *db)
@@ -1589,31 +1575,6 @@ ir_switch_table *ir_switch_table_duplicate(ir_graph *irg,
 		*new_entry = *entry;
 	}
 	return res;
-}
-
-unsigned firm_default_hash(const ir_node *node)
-{
-	unsigned h;
-	int i, irn_arity;
-
-	/* hash table value = 9*(9*(9*(9*(9*arity+in[0])+in[1])+ ...)+mode)+code */
-	h = irn_arity = get_irn_arity(node);
-
-	/* consider all in nodes... except the block if not a control flow. */
-	for (i = is_cfop(node) ? -1 : 0;  i < irn_arity;  ++i) {
-		ir_node *pred = get_irn_n(node, i);
-		if (is_irn_cse_neutral(pred))
-			h *= 9;
-		else
-			h = 9*h + hash_ptr(pred);
-	}
-
-	/* ...mode,... */
-	h = 9*h + hash_ptr(get_irn_mode(node));
-	/* ...and code */
-	h = 9*h + hash_ptr(get_irn_op(node));
-
-	return h;
 }
 
 /* include generated code */

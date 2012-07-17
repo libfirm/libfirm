@@ -201,7 +201,7 @@ static co_mst_irn_t *co_mst_irn_init(co_mst_env_t *env, const ir_node *irn)
 
 static co_mst_irn_t *get_co_mst_irn(co_mst_env_t *env, const ir_node *node)
 {
-	co_mst_irn_t *res = (co_mst_irn_t*)ir_nodemap_get(&env->map, node);
+	co_mst_irn_t *res = ir_nodemap_get(co_mst_irn_t, &env->map, node);
 	if (res == NULL) {
 		res = co_mst_irn_init(env, node);
 		ir_nodemap_insert(&env->map, node, res);
@@ -235,7 +235,6 @@ static void dbg_aff_chunk(const co_mst_env_t *env, const aff_chunk_t *c)
  */
 static void dbg_admissible_colors(const co_mst_env_t *env, const co_mst_irn_t *node)
 {
-	size_t idx;
 	(void) env;
 
 	if (bitset_popcount(node->adm_colors) < 1)
@@ -583,13 +582,11 @@ static void aff_chunk_assure_weight(co_mst_env_t *env, aff_chunk_t *c)
 
 			node->chunk = c;
 			if (node->constr_factor > REAL(0.0)) {
-				size_t col;
 				bitset_foreach (node->adm_colors, col)
 					c->color_affinity[col].cost += node->constr_factor;
 			}
 
 			if (an != NULL) {
-				neighb_t *neigh;
 				co_gs_foreach_neighb(an, neigh) {
 					const ir_node *m = neigh->irn;
 
@@ -615,7 +612,6 @@ static void aff_chunk_assure_weight(co_mst_env_t *env, aff_chunk_t *c)
  */
 static int count_interfering_aff_neighs(co_mst_env_t *env, const affinity_node_t *an)
 {
-	const neighb_t     *neigh;
 	const ir_node      *irn  = an->irn;
 	const co_mst_irn_t *node = get_co_mst_irn(env, irn);
 	int                res   = 0;
@@ -668,8 +664,6 @@ static void build_affinity_chunks(co_mst_env_t *env)
 		an = get_affinity_info(env->co, n);
 
 		if (an != NULL) {
-			neighb_t *neigh;
-
 			if (n1->int_aff_neigh < 0)
 				n1->int_aff_neigh = count_interfering_aff_neighs(env, an);
 
@@ -727,7 +721,7 @@ static void build_affinity_chunks(co_mst_env_t *env)
 	}
 
 	for (pn = 0; pn < ARR_LEN(env->map.data); ++pn) {
-		co_mst_irn_t *mirn = env->map.data[pn];
+		co_mst_irn_t *mirn = (co_mst_irn_t*)env->map.data[pn];
 		if (mirn == NULL)
 			continue;
 		if (mirn->chunk != NULL)
@@ -760,7 +754,6 @@ static __attribute__((unused)) void chunk_order_nodes(co_mst_env_t *env, aff_chu
 		const ir_node   *irn = chunk->n[--i];
 		affinity_node_t *an  = get_affinity_info(env->co, irn);
 		int w = 0;
-		neighb_t *neigh;
 
 		if (arch_irn_is_ignore(irn))
 			continue;
@@ -788,7 +781,6 @@ static __attribute__((unused)) void chunk_order_nodes(co_mst_env_t *env, aff_chu
 		while (!pqueue_empty(grow)) {
 			ir_node *irn = (ir_node*)pqueue_pop_front(grow);
 			affinity_node_t *an = get_affinity_info(env->co, irn);
-			neighb_t        *neigh;
 
 			if (arch_irn_is_ignore(irn))
 				continue;
@@ -837,7 +829,6 @@ static void expand_chunk_from(co_mst_env_t *env, co_mst_irn_t *node, bitset_t *v
 
 		/* check all affinity neighbors */
 		if (an != NULL) {
-			neighb_t *neigh;
 			co_gs_foreach_neighb(an, neigh) {
 				const ir_node *m    = neigh->irn;
 				int            m_idx = get_irn_idx(m);
@@ -1501,7 +1492,7 @@ static int co_solve_heuristic_mst(copy_opt_t *co)
 
 	/* apply coloring */
 	for (pn = 0; pn < ARR_LEN(mst_env.map.data); ++pn) {
-		co_mst_irn_t *mirn = mst_env.map.data[pn];
+		co_mst_irn_t *mirn = (co_mst_irn_t*)mst_env.map.data[pn];
 		const arch_register_t *reg;
 		if (mirn == NULL)
 			continue;

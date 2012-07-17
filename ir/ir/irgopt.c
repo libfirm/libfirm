@@ -107,11 +107,8 @@ static void enqueue_node(ir_node *node, pdeq *waitq)
  */
 static void enqueue_users(ir_node *n, pdeq *waitq)
 {
-	const ir_edge_t *edge;
-
 	foreach_out_edge(n, edge) {
-		ir_node         *succ  = get_edge_src_irn(edge);
-		const ir_edge_t *edge2;
+		ir_node *succ  = get_edge_src_irn(edge);
 
 		enqueue_node(succ, waitq);
 
@@ -143,9 +140,7 @@ static void find_unreachable_blocks(ir_node *block, void *env)
 		ir_graph *irg = get_irn_irg(block);
 		ir_node  *end = get_irg_end(irg);
 
-		const ir_edge_t *edge;
 		foreach_block_succ(block, edge) {
-			const ir_edge_t *edge2;
 			ir_node *succ_block = get_edge_src_irn(edge);
 			enqueue_node(succ_block, waitq);
 			foreach_out_edge(succ_block, edge2) {

@@ -293,13 +293,13 @@ static void rewrite_float_unsigned_Conv(ir_node *node)
 		ir_node   *sub         = new_rd_Sub(dbgi, true_block, float_x, limitc,
 		                                    mode_f);
 		ir_node   *sub_conv    = new_rd_Conv(dbgi, true_block, sub, mode_s);
-		ir_node   *xor         = new_rd_Eor(dbgi, true_block, sub_conv, c_const,
+		ir_node   *xorn        = new_rd_Eor(dbgi, true_block, sub_conv, c_const,
 		                                    mode_s);
 
 		ir_node   *converted   = new_rd_Conv(dbgi, false_block, float_x,mode_s);
 
 		ir_node  *lower_in[2] = { true_jmp, false_jmp };
-		ir_node  *phi_in[2]   = { xor, converted };
+		ir_node  *phi_in[2]   = { xorn, converted };
 		ir_node  *phi;
 		ir_node  *res_conv;
 
@@ -480,7 +480,9 @@ static void sparc_lower_for_target(void)
 		ir_graph *irg = get_irp_irg(i);
 		ir_lower_mode_b(irg, mode_Iu);
 		lower_switch(irg, 4, 256, false);
-		lower_alloc(irg, SPARC_STACK_ALIGNMENT, false, SPARC_MIN_STACKSIZE);
+		/* TODO: Pass SPARC_MIN_STACKSIZE as addr_delta as soon as
+		 * Alloc nodes are implemented more efficiently. */
+		lower_alloc(irg, SPARC_STACK_ALIGNMENT, true, 0);
 	}
 }
 

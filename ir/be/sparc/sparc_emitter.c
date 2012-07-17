@@ -377,7 +377,8 @@ static bool emits_multiple_instructions(const ir_node *node)
 
 	return is_sparc_SMulh(node) || is_sparc_UMulh(node)
 		|| is_sparc_SDiv(node) || is_sparc_UDiv(node)
-		|| be_is_MemPerm(node) || be_is_Perm(node);
+		|| be_is_MemPerm(node) || be_is_Perm(node)
+		|| is_sparc_SubSP(node);
 }
 
 static bool uses_reg(const ir_node *node, const arch_register_t *reg)
@@ -510,6 +511,28 @@ static void emit_be_IncSP(const ir_node *irn)
 	be_emit_irprintf(", %d", -offset);
 	be_emit_cstring(", ");
 	sparc_emit_dest_register(irn, 0);
+	be_emit_finish_line_gas(irn);
+}
+
+/**
+ * Emits code for stack space management.
+ */
+static void emit_sparc_SubSP(const ir_node *irn)
+{
+	sparc_emit_indent();
+	be_emit_cstring("sub ");
+	sparc_emit_source_register(irn, 0);
+	be_emit_cstring(", ");
+	sparc_emit_reg_or_imm(irn, 1);
+	be_emit_cstring(", ");
+	sparc_emit_dest_register(irn, 0);
+	be_emit_finish_line_gas(irn);
+
+	sparc_emit_indent();
+	be_emit_cstring("add ");
+	sparc_emit_source_register(irn, 0);
+	be_emit_irprintf(", %u, ", SPARC_MIN_STACKSIZE);
+	sparc_emit_dest_register(irn, 1);
 	be_emit_finish_line_gas(irn);
 }
 
@@ -1497,12 +1520,11 @@ typedef const char* (*get_cc_func)(ir_relation relation);
 static void emit_sparc_branch(const ir_node *node, get_cc_func get_cc)
 {
 	const sparc_jmp_cond_attr_t *attr = get_sparc_jmp_cond_attr_const(node);
-	ir_relation      relation    = attr->relation;
-	const ir_node   *proj_true   = NULL;
-	const ir_node   *proj_false  = NULL;
-	const ir_edge_t *edge;
-	const ir_node   *block;
-	const ir_node   *next_block;
+	ir_relation    relation    = attr->relation;
+	const ir_node *proj_true   = NULL;
+	const ir_node *proj_false  = NULL;
+	const ir_node *block;
+	const ir_node *next_block;
 
 	foreach_out_edge(node, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
@@ -1699,6 +1721,7 @@ static void sparc_register_emitters(void)
 	set_emitter(op_sparc_fbfcc,     emit_sparc_fbfcc);
 	set_emitter(op_sparc_FrameAddr, emit_sparc_FrameAddr);
 	set_emitter(op_sparc_SMulh,     emit_sparc_Mulh);
+	set_emitter(op_sparc_SubSP,     emit_sparc_SubSP);
 	set_emitter(op_sparc_UMulh,     emit_sparc_Mulh);
 	set_emitter(op_sparc_Restore,   emit_sparc_Restore);
 	set_emitter(op_sparc_Return,    emit_sparc_Return);
@@ -1769,7 +1792,6 @@ static bool block_needs_label(const ir_node *block, const ir_node *sched_prev)
  */
 static void sparc_emit_block(ir_node *block, ir_node *prev)
 {
-	ir_node *node;
 	ir_node *next_delay_slot;
 	bool     needs_label = block_needs_label(block, prev);
 

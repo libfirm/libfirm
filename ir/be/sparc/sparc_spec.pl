@@ -456,11 +456,19 @@ RestoreZero => {
 },
 
 SubSP => {
-	reg_req => { in => [ "sp", "gp" ], out => [ "sp:I|S" ] },
-	ins     => [ "stack", "size" ],
-	outs    => [ "stack" ],
-	emit    => ". sub %S0, %S1, %D0\n",
-	mode    => $mode_gp,
+	constructors => {
+		imm => {
+			attr       => "ir_entity *immediate_entity, int32_t immediate_value",
+			custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
+			reg_req    => { in => [ "sp", "none" ], out => [ "sp:I|S", "gp", "none" ] },
+			ins        => [ "stack", "mem" ],
+		},
+		reg => {
+			reg_req    => { in => [ "sp", "gp", "none" ], out => [ "sp:I|S", "gp", "none" ] },
+			ins        => [ "stack", "size", "mem" ],
+		}
+	},
+	outs    => [ "stack", "addr", "M" ],
 },
 
 AddSP => {

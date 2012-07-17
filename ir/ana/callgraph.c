@@ -270,33 +270,30 @@ void compute_callgraph(void)
 	/* Change the sets to arrays. */
 	for (i = 0; i < n_irgs; ++i) {
 		size_t j, count;
-		cg_callee_entry *callee;
-		ir_graph *c, *irg = get_irp_irg(i);
+		ir_graph *irg = get_irp_irg(i);
 		pset *callee_set, *caller_set;
 
 		callee_set = (pset *)irg->callees;
 		count = pset_count(callee_set);
 		irg->callees = NEW_ARR_F(cg_callee_entry *, count);
 		irg->callee_isbe = NULL;
-		callee = (cg_callee_entry*) pset_first(callee_set);
-		for (j = 0; j < count; ++j) {
-			irg->callees[j] = callee;
-			callee = (cg_callee_entry*) pset_next(callee_set);
+		j = 0;
+		foreach_pset(callee_set, cg_callee_entry, callee) {
+			irg->callees[j++] = callee;
 		}
 		del_pset(callee_set);
-		assert(callee == NULL);
+		assert(j == count);
 
 		caller_set = (pset *)irg->callers;
 		count = pset_count(caller_set);
 		irg->callers = NEW_ARR_F(ir_graph *, count);
 		irg->caller_isbe =  NULL;
-		c = (ir_graph*) pset_first(caller_set);
-		for (j = 0; j < count; ++j) {
-			irg->callers[j] = c;
-			c = (ir_graph*) pset_next(caller_set);
+		j = 0;
+		foreach_pset(caller_set, ir_graph, c) {
+			irg->callers[j++] = c;
 		}
 		del_pset(caller_set);
-		assert(c == NULL);
+		assert(j == count);
 	}
 	set_irp_callgraph_state(irp_callgraph_consistent);
 }

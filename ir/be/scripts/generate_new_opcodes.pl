@@ -652,28 +652,6 @@ EOF
 	$n{"dump_func"} = "${arch}_dump_node" if (!exists($n{"dump_func"}));
 	my $dump_func = $n{"dump_func"};
 
-	push(@obst_new_irop, "\n\tmemset(&ops, 0, sizeof(ops));\n");
-	push(@obst_new_irop, "\tops.be_ops        = be_ops;\n");
-	push(@obst_new_irop, "\tops.dump_node     = ${dump_func};\n");
-
-	if (defined($cmp_attr_func)) {
-		push(@obst_new_irop, "\tops.node_cmp_attr = ${cmp_attr_func};\n");
-	}
-	my $copy_attr_func = $copy_attr{$attr_type};
-	if (!defined($copy_attr_func)) {
-		if ($attr_type eq "") {
-			$copy_attr_func = "NULL";
-		} else {
-			$copy_attr_func = $default_copy_attr;
-		}
-	}
-	if (defined($copy_attr_func)) {
-		push(@obst_new_irop, "\tops.copy_attr = ${copy_attr_func};\n");
-	}
-	if (defined($hash_func)) {
-		push(@obst_new_irop, "\tops.hash = ${hash_func};\n");
-	}
-
 	my %known_flags = map { $_ => 1 } (
 		"none", "commutative", "cfopcode", "unknown_jump", "fragile",
 		"forking", "highlevel", "constlike", "keep", "start_block",
@@ -698,8 +676,28 @@ EOF
 
 	$n_opcodes++;
 	$temp  = "\top = new_ir_op(cur_opcode + iro_$op, \"$op\", op_pin_state_".$n{"state"}.", $op_flags";
-	$temp .= ", ".translate_arity($arity).", 0, ${attr_size}, &ops);\n";
+	$temp .= ", ".translate_arity($arity).", 0, ${attr_size});\n";
 	push(@obst_new_irop, $temp);
+	push(@obst_new_irop, "\top->ops.be_ops        = be_ops;\n");
+	push(@obst_new_irop, "\top->ops.dump_node     = ${dump_func};\n");
+	if (defined($cmp_attr_func)) {
+		push(@obst_new_irop, "\top->ops.node_cmp_attr = ${cmp_attr_func};\n");
+	}
+	my $copy_attr_func = $copy_attr{$attr_type};
+	if (!defined($copy_attr_func)) {
+		if ($attr_type eq "") {
+			$copy_attr_func = "NULL";
+		} else {
+			$copy_attr_func = $default_copy_attr;
+		}
+	}
+	if (defined($copy_attr_func)) {
+		push(@obst_new_irop, "\top->ops.copy_attr     = ${copy_attr_func};\n");
+	}
+	if (defined($hash_func)) {
+		push(@obst_new_irop, "\top->ops.hash          = ${hash_func};\n");
+	}
+
 	if ($is_fragile) {
 		push(@obst_new_irop, "\tir_op_set_memory_index(op, n_${op}_mem);\n");
 		push(@obst_new_irop, "\tir_op_set_fragile_indices(op, pn_${op}_X_regular, pn_${op}_X_except);\n");
@@ -819,9 +817,8 @@ $obst_constructor
  */
 void $arch\_create_opcodes(const arch_irn_ops_t *be_ops)
 {
-	ir_op_ops  ops;
-	ir_op     *op;
-	int        cur_opcode = get_next_ir_opcodes(iro_$arch\_last);
+	ir_op *op;
+	int    cur_opcode = get_next_ir_opcodes(iro_$arch\_last);
 
 	$arch\_opcode_start = cur_opcode;
 ENDOFMAIN

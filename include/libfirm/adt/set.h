@@ -172,6 +172,18 @@ FIRM_API set_entry *set_hinsert0(set *set, const void *key, size_t size, unsigne
 FIRM_API void *set_first(set *set);
 
 /**
+ * Returns the first element of a set.
+ * This is a wrapper for set_first(set *set); It allows to express the
+ * intended type of the set elements (instead of weakly typed void*).
+ *
+ * @param set  the set to iterate
+ * @param type type of the set elements
+ *
+ * @return a pointer to the element or NULL if the set is empty
+ */
+#define set_first(type, set) ((type*)set_first((set)))
+
+/**
  * Returns the next element of a set.
  *
  * @param set  the set to iterate
@@ -180,6 +192,19 @@ FIRM_API void *set_first(set *set);
  *         iteration is finished
  */
 FIRM_API void *set_next(set *set);
+
+/**
+ * Returns the next element of a set.
+ * This is a wrapper for set_next(set *set); It allows to express the
+ * intended type of the set elements (instead of weakly typed void*).
+ *
+ * @param set  the set to iterate
+ * @param type type of the set elements
+ *
+ * @return a pointer to the next element or NULL if the
+ *         iteration is finished
+ */
+#define set_next(type, set) ((type*)set_next((set)))
 
 /**
  * Breaks the iteration of a set. Must be called before
@@ -197,16 +222,16 @@ FIRM_API void set_break(set *set);
  * @param type   type of iterator variable
  * @param entry  the iterator
  */
-#define foreach_set(set, type, entry) for (entry = (type) set_first(set); entry; entry = (type) set_next(set))
+#define foreach_set(set, type, entry) for (type *entry = set_first(type, set); entry; entry = set_next(type, set))
 
 /** @cond PRIVATE */
 
 /* implementation specific */
 #define new_set(cmp, slots) ((new_set) ((cmp), (slots)))
-#define set_find(set, key, size, hash) \
-  _set_search ((set), (key), (size), (hash), _set_find)
-#define set_insert(set, key, size, hash) \
-  _set_search ((set), (key), (size), (hash), _set_insert)
+#define set_find(type, set, key, size, hash) \
+  ((type*)_set_search((set), 1 ? (key) : (type*)0 /* type check */, (size), (hash), _set_find))
+#define set_insert(type, set, key, size, hash) \
+  ((type*)_set_search((set), 1 ? (key) : (type*)0 /* type check */, (size), (hash), _set_insert))
 #define set_hinsert(set, key, size, hash) \
   ((set_entry *)_set_search ((set), (key), (size), (hash), _set_hinsert))
 #define set_hinsert0(set, key, size, hash) \

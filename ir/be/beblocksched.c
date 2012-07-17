@@ -127,6 +127,11 @@ struct blocksched_env_t {
 	int            blockcount;
 };
 
+static blocksched_entry_t* get_blocksched_entry(const ir_node *block)
+{
+	return (blocksched_entry_t*)get_irn_link(block);
+}
+
 /**
  * Collect cfg frequencies of all edges between blocks.
  * Also determines edge with highest frequency.
@@ -289,8 +294,8 @@ static void coalesce_blocks(blocksched_env_t *env)
 			continue;
 
 		pred_block = get_Block_cfgpred_block(block, pos);
-		entry      = (blocksched_entry_t*)get_irn_link(block);
-		pred_entry = (blocksched_entry_t*)get_irn_link(pred_block);
+		entry      = get_blocksched_entry(block);
+		pred_entry = get_blocksched_entry(pred_block);
 
 		if (pred_entry->next != NULL || entry->prev != NULL)
 			continue;
@@ -328,8 +333,8 @@ static void coalesce_blocks(blocksched_env_t *env)
 			continue;
 
 		pred_block = get_Block_cfgpred_block(block, pos);
-		entry      = (blocksched_entry_t*)get_irn_link(block);
-		pred_entry = (blocksched_entry_t*)get_irn_link(pred_block);
+		entry      = get_blocksched_entry(block);
+		pred_entry = get_blocksched_entry(pred_block);
 
 		if (pred_entry->next != NULL || entry->prev != NULL)
 			continue;
@@ -370,8 +375,8 @@ static void coalesce_blocks(blocksched_env_t *env)
 			continue;
 
 		pred_block = get_Block_cfgpred_block(block, pos);
-		entry      = (blocksched_entry_t*)get_irn_link(block);
-		pred_entry = (blocksched_entry_t*)get_irn_link(pred_block);
+		entry      = get_blocksched_entry(block);
+		pred_entry = get_blocksched_entry(pred_block);
 
 		/* is 1 of the blocks already attached to another block? */
 		if (pred_entry->next != NULL || entry->prev != NULL)
@@ -390,8 +395,7 @@ static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *en
 	ir_node            *block = entry->block;
 	ir_node            *succ  = NULL;
 	blocksched_entry_t *succ_entry;
-	const ir_edge_t    *edge;
-	double             best_succ_execfreq;
+	double              best_succ_execfreq;
 
 	if (irn_visited_else_mark(block))
 		return;
@@ -409,7 +413,7 @@ static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *en
 
 		/* we only need to put the first of a series of already connected
 		 * blocks into the worklist */
-		succ_entry = (blocksched_entry_t*)get_irn_link(succ_block);
+		succ_entry = get_blocksched_entry(succ_block);
 		while (succ_entry->prev != NULL) {
 			/* break cycles... */
 			if (succ_entry->prev->block == succ_block) {
@@ -445,7 +449,7 @@ static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *en
 		if (irn_visited(succ_block))
 			continue;
 
-		succ_entry = (blocksched_entry_t*)get_irn_link(succ_block);
+		succ_entry = get_blocksched_entry(succ_block);
 		if (succ_entry->prev != NULL)
 			continue;
 
@@ -468,7 +472,7 @@ static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *en
 		} while (irn_visited(succ));
 	}
 
-	succ_entry       = (blocksched_entry_t*)get_irn_link(succ);
+	succ_entry       = get_blocksched_entry(succ);
 	entry->next      = succ_entry;
 	succ_entry->prev = entry;
 
@@ -479,7 +483,7 @@ static blocksched_entry_t *finish_block_schedule(blocksched_env_t *env)
 {
 	ir_graph           *irg        = env->irg;
 	ir_node            *startblock = get_irg_start_block(irg);
-	blocksched_entry_t *entry      = (blocksched_entry_t*)get_irn_link(startblock);
+	blocksched_entry_t *entry      = get_blocksched_entry(startblock);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 	inc_irg_visited(irg);
@@ -598,11 +602,10 @@ static int add_ilp_edge(ir_node *block, int pos, double execfreq, blocksched_ilp
 
 static void collect_egde_frequency_ilp(ir_node *block, void *data)
 {
-	blocksched_ilp_env_t *env        = data;
+	blocksched_ilp_env_t *env        = (blocksched_ilp_env_t*)data;
 	ir_graph             *irg        = env->env.irg;
 	ir_node              *startblock = get_irg_start_block(irg);
 	int                  arity;
-	lpp_cst_t            cst;
 	char                 name[64];
 	int                  out_count;
 	blocksched_ilp_entry_t *entry;
@@ -627,9 +630,10 @@ static void collect_egde_frequency_ilp(ir_node *block, void *data)
 	}
 	else {
 		int i;
+		int cst_idx;
 
 		snprintf(name, sizeof(name), "block_in_constr_%ld", get_irn_node_nr(block));
-		cst = lpp_add_cst_uniq(env->lpp, name, lpp_greater_equal, arity - 1);
+		cst_idx = lpp_add_cst_uniq(env->lpp, name, lpp_greater_equal, arity - 1);
 
 		for (i = 0; i < arity; ++i) {
 			double     execfreq;
@@ -640,11 +644,15 @@ static void collect_egde_frequency_ilp(ir_node *block, void *data)
 			execfreq = get_block_execfreq(env->env.execfreqs, pred_block);
 			edgenum  = add_ilp_edge(block, i, execfreq, env);
 			edge     = &env->ilpedges[edgenum];
-			lpp_set_factor_fast(env->lpp, cst, edge->ilpvar, 1.0);
+			lpp_set_factor_fast(env->lpp, cst_idx, edge->ilpvar, 1.0);
 		}
 	}
 }
 
+static blocksched_ilp_entry_t *get_blocksched_ilp_entry(const ir_node *block)
+{
+	return (blocksched_ilp_entry_t*)get_irn_link(block);
+}
 
 static void coalesce_blocks_ilp(blocksched_ilp_env_t *env)
 {
@@ -663,7 +671,7 @@ static void coalesce_blocks_ilp(blocksched_ilp_env_t *env)
 			continue;
 
 		pred  = get_Block_cfgpred_block(block, edge->pos);
-		entry = get_irn_link(pred);
+		entry = get_blocksched_ilp_entry(pred);
 
 		DB((dbg, LEVEL_1, "Adding out cst to %+F from %+F,%d\n",
 				  pred, block, edge->pos));
@@ -691,8 +699,8 @@ static void coalesce_blocks_ilp(blocksched_ilp_env_t *env)
 			continue;
 
 		pred       = get_Block_cfgpred_block(block, edge->pos);
-		entry      = get_irn_link(block);
-		pred_entry = get_irn_link(pred);
+		entry      = get_blocksched_entry(block);
+		pred_entry = get_blocksched_entry(pred);
 
 		assert(entry->prev == NULL && pred_entry->next == NULL);
 		entry->prev      = pred_entry;

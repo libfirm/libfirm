@@ -103,7 +103,7 @@ static inline const ir_edge_t *get_irn_out_edge_next_(const ir_node *irn, const 
 {
 	struct list_head *next = last->list.next;
 	const struct list_head *head
-		= &get_irn_edge_info_const(irn, last->kind)->outs_head;
+		= &get_irn_edge_info_const(irn, (ir_edge_kind_t)last->kind)->outs_head;
 	return next == head ? NULL : list_entry(next, ir_edge_t, list);
 }
 
@@ -112,7 +112,7 @@ static inline const ir_edge_t *get_irn_out_edge_next_(const ir_node *irn, const 
  * @param irn The node.
  * @return The number of edges pointing to this node.
  */
-static inline int get_irn_n_edges_kind_(const ir_node *irn, int kind)
+static inline int get_irn_n_edges_kind_(const ir_node *irn, ir_edge_kind_t kind)
 {
 	return get_irn_edge_info_const(irn, kind)->out_count;
 }

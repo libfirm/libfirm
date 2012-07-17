@@ -261,7 +261,7 @@ static void emit_arm_SymConst(const ir_node *irn)
 	key.u.entity  = attr->entity;
 	key.is_entity = true;
 	key.label     = 0;
-	entry = (sym_or_tv_t *)set_insert(sym_or_tv, &key, sizeof(key), hash_ptr(key.u.generic));
+	entry = set_insert(sym_or_tv_t, sym_or_tv, &key, sizeof(key), hash_ptr(key.u.generic));
 	if (entry->label == 0) {
 		/* allocate a label */
 		entry->label = get_unique_label();
@@ -299,7 +299,7 @@ static void emit_arm_fConst(const ir_node *irn)
 	key.u.tv      = get_fConst_value(irn);
 	key.is_entity = false;
 	key.label     = 0;
-	entry = (sym_or_tv_t *)set_insert(sym_or_tv, &key, sizeof(key), hash_ptr(key.u.generic));
+	entry = set_insert(sym_or_tv_t, sym_or_tv, &key, sizeof(key), hash_ptr(key.u.generic));
 	if (entry->label == 0) {
 		/* allocate a label */
 		entry->label = get_unique_label();
@@ -348,7 +348,6 @@ static void arm_emit_cfop_target(const ir_node *irn)
  */
 static void emit_arm_B(const ir_node *irn)
 {
-	const ir_edge_t *edge;
 	const ir_node *proj_true  = NULL;
 	const ir_node *proj_false = NULL;
 	const ir_node *block;
@@ -876,8 +875,6 @@ static void arm_emit_block_header(ir_node *block, ir_node *prev)
  */
 static void arm_gen_block(ir_node *block, ir_node *prev_block)
 {
-	ir_node *irn;
-
 	arm_emit_block_header(block, prev_block);
 	be_dwarf_location(get_irn_dbg_info(block));
 	sched_foreach(block, irn) {
@@ -953,11 +950,9 @@ void arm_gen_routine(ir_graph *irg)
 
 	/* emit SymConst values */
 	if (set_count(sym_or_tv) > 0) {
-		sym_or_tv_t *entry;
-
 		be_emit_cstring("\t.align 2\n");
 
-		foreach_set(sym_or_tv, sym_or_tv_t*, entry) {
+		foreach_set(sym_or_tv, sym_or_tv_t, entry) {
 			emit_constant_name(entry);
 			be_emit_cstring(":\n");
 			be_emit_write_line();

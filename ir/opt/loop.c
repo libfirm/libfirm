@@ -291,7 +291,6 @@ static void get_loop_info(ir_node *node, void *env)
 
 		/* Find the loops head/the blocks with cfpred outside of the loop */
 		if (is_Block(node)) {
-			const ir_edge_t *edge;
 			unsigned outs_n = 0;
 
 			/* Count innerloop branches */
@@ -438,8 +437,6 @@ static void construct_ssa(ir_node *orig_block, ir_node *orig_val,
 {
 	ir_graph *irg;
 	ir_mode *mode;
-	const ir_edge_t *edge;
-	const ir_edge_t *next;
 
 	assert(orig_block && orig_val && second_block && second_val &&
 			"no parameter of construct_ssa may be NULL");
@@ -460,7 +457,7 @@ static void construct_ssa(ir_node *orig_block, ir_node *orig_val,
 	ssa_second_def       = second_val;
 
 	/* Only fix the users of the first, i.e. the original node */
-	foreach_out_edge_safe(orig_val, edge, next) {
+	foreach_out_edge_safe(orig_val, edge) {
 		ir_node *user = get_edge_src_irn(edge);
 		int j = get_edge_src_pos(edge);
 		ir_node *user_block = get_nodes_block(user);
@@ -494,7 +491,7 @@ static void set_unroll_copy(ir_node *n, int nr, ir_node *cp)
 	unrolling_node_info *info;
 	assert(nr != 0 && "0 reserved");
 
-	info = (unrolling_node_info*)ir_nodemap_get(&map, n);
+	info = ir_nodemap_get(unrolling_node_info, &map, n);
 	if (! info) {
 		ir_node **arr = NEW_ARR_D(ir_node*, &obst, unroll_nr);
 		memset(arr, 0, unroll_nr * sizeof(ir_node*));
@@ -513,7 +510,7 @@ static void set_unroll_copy(ir_node *n, int nr, ir_node *cp)
 static ir_node *get_unroll_copy(ir_node *n, int nr)
 {
 	ir_node             *cp;
-	unrolling_node_info *info = (unrolling_node_info *)ir_nodemap_get(&map, n);
+	unrolling_node_info *info = ir_nodemap_get(unrolling_node_info, &map, n);
 	if (! info)
 		return NULL;
 
@@ -533,7 +530,7 @@ static void set_inversion_copy(ir_node *n, ir_node *cp)
 /* Getter of copy of n for inversion */
 static ir_node *get_inversion_copy(ir_node *n)
 {
-	ir_node *cp = (ir_node *)ir_nodemap_get(&map, n);
+	ir_node *cp = ir_nodemap_get(ir_node, &map, n);
 	return cp;
 }
 
@@ -930,7 +927,6 @@ static void get_head_outs(ir_node *node, void *env)
  */
 static void find_condition_chain(ir_node *block)
 {
-	const    ir_edge_t *edge;
 	bool     mark     = false;
 	bool     has_be   = false;
 	bool     jmp_only = true;
@@ -2061,7 +2057,7 @@ static ir_node *is_simple_loop(void)
 	if (!is_Cmp(cmp))
 		return NULL;
 
-	DB((dbg, LEVEL_5, "projection is %s\n", get_relation_string(get_Proj_proj(projx))));
+	DB((dbg, LEVEL_5, "projection is %s\n", get_relation_string(get_Cmp_relation(cmp))));
 
 	switch(get_Proj_proj(projx)) {
 		case pn_Cond_false:

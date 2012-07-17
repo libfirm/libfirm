@@ -75,22 +75,23 @@ void pmap_insert(pmap *map, const void *key, void *value)
 	pmap_entry entry, *p;
 
 	entry.key = key;
-	p = (pmap_entry*) set_insert(M2S(map), &entry, sizeof(pmap_entry), hash_ptr(key));
+	p = set_insert(pmap_entry, M2S(map), &entry, sizeof(pmap_entry), hash_ptr(key));
 	p->value = value;
 }
 
 int pmap_contains(pmap *map, const void *key)
 {
-	return set_find(M2S(map), &key, sizeof(pmap_entry), hash_ptr(key)) != NULL;
+	return pmap_find(map, key) != NULL;
 }
 
 pmap_entry * pmap_find(pmap *map, const void *key)
 {
-	return (pmap_entry *)set_find(M2S(map), &key, sizeof(pmap_entry), hash_ptr(key));
+	pmap_entry const entry = { key, 0 };
+	return set_find(pmap_entry, M2S(map), &entry, sizeof(entry), hash_ptr(key));
 }
 
 
-void * pmap_get(pmap *map, const void *key)
+void * (pmap_get)(pmap *map, const void *key)
 {
 	pmap_entry * entry = pmap_find(map, key);
 	return entry == NULL ? NULL : entry->value;
@@ -103,12 +104,12 @@ size_t pmap_count(pmap *map)
 
 pmap_entry *pmap_first(pmap *map)
 {
-	return (pmap_entry *) set_first(M2S(map));
+	return set_first(pmap_entry, M2S(map));
 }
 
 pmap_entry *pmap_next(pmap *map)
 {
-	return (pmap_entry *) set_next(M2S(map));
+	return set_next(pmap_entry, M2S(map));
 }
 
 void pmap_break(pmap *map)

@@ -50,9 +50,6 @@ static void set_irn_sp_bias(ir_node *node, int new_bias)
 static void process_bias(ir_node *block, bool sp_relative, int bias,
                          int free_bytes)
 {
-	const ir_edge_t *edge;
-	ir_node         *irn;
-
 	mark_Block_block_visited(block);
 
 	/* process schedule */
@@ -66,6 +63,14 @@ static void process_bias(ir_node *block, bool sp_relative, int bias,
 			if (sp_relative)
 				offset += bias + SPARC_MIN_STACKSIZE;
 			arch_set_frame_offset(irn, offset);
+		}
+
+		/* The additional alignment bytes cannot be used
+		 * anymore after alloca. */
+		if (is_sparc_SubSP(irn)) {
+			free_bytes = 0;
+		} else if (is_sparc_AddSP(irn)) {
+			assert(free_bytes == 0);
 		}
 
 		irn_bias = arch_get_sp_bias(irn);

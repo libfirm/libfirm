@@ -79,8 +79,8 @@ do { \
 #endif
 
 /**
- * Set the default verify_node and verify_proj_node operation for an ir_op_ops.
+ * Set the default verify_node and verify_proj_node operations.
  */
-void firm_set_default_verifier(unsigned code, ir_op_ops *ops);
+void ir_register_verify_node_ops(void);
 
 #endif

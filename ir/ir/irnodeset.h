@@ -29,18 +29,9 @@
 #ifndef _FIRM_IRNODESET_H_
 #define _FIRM_IRNODESET_H_
 
+#include <stdbool.h>
 #include "firm_types.h"
 #include "xmalloc.h"
-
-/*
- * sebastian experimental:
- * use ordered arrays as node sets.
- * the guys here have made good experiences with that.
- * Internally we use normal Firm arrays and binary
- * search for locating the elements. Using arrays should
- * give the sets a small footprint.
- */
-#undef  IR_NODESET_USE_ORDERED_SETS
 
 #define HashSet          ir_nodeset_t
 #define HashSetIterator  ir_nodeset_iterator_t
@@ -105,10 +96,10 @@ static inline void ir_nodeset_del(ir_nodeset_t *nodeset) {
  *
  * @param nodeset   Pointer to the nodeset
  * @param node      node to insert into the nodeset
- * @returns         1 if the element has been inserted,
- *                  0 if it was already there
+ * @returns         true if the element has been inserted,
+ *                  false if it was already there
  */
-int ir_nodeset_insert(ir_nodeset_t *nodeset, ir_node *node);
+bool ir_nodeset_insert(ir_nodeset_t *nodeset, ir_node *node);
 
 
 /**
@@ -125,9 +116,8 @@ void ir_nodeset_remove(ir_nodeset_t *nodeset, const ir_node *node);
  *
  * @param nodeset   Pointer to the nodeset
  * @param node      The pointer to find
- * @returns         1 if nodeset contains the node, 0 else
  */
-int ir_nodeset_contains(const ir_nodeset_t *nodeset, const ir_node *node);
+bool ir_nodeset_contains(const ir_nodeset_t *nodeset, const ir_node *node);
 
 /**
  * Returns the number of pointers contained in the nodeset
@@ -166,6 +156,13 @@ ir_node *ir_nodeset_iterator_next(ir_nodeset_iterator_t *iterator);
  */
 void ir_nodeset_remove_iterator(ir_nodeset_t *nodeset,
                                 const ir_nodeset_iterator_t *iterator);
+
+static inline ir_node *ir_nodeset_first(ir_nodeset_t const *const nodeset)
+{
+	ir_nodeset_iterator_t iter;
+	ir_nodeset_iterator_init(&iter, nodeset);
+	return ir_nodeset_iterator_next(&iter);
+}
 
 #define foreach_ir_nodeset(nodeset, irn, iter) \
 	for(ir_nodeset_iterator_init(&iter, nodeset), \

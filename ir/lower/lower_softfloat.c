@@ -379,7 +379,7 @@ static ir_type *lower_method_type(ir_type *mtp)
 	size_t   n_param;
 	size_t   n_res;
 
-	res = (ir_type*)pmap_get(lowered_type, mtp);
+	res = pmap_get(ir_type, lowered_type, mtp);
 	if (res != NULL)
 		return res;
 
@@ -694,16 +694,14 @@ static void lower_Conv(ir_node *n)
  */
 static void lower_Div(ir_node *n)
 {
-	ir_node         *symconst;
-	ir_node         *block       = get_nodes_block(n);
-	ir_node         *call_result = NULL;
-	dbg_info        *dbgi        = get_irn_dbg_info(n);
-	ir_graph        *irg         = get_irn_irg(n);
-	ir_node         *left        = get_Div_left(n);
-	ir_mode         *mode        = get_Div_resmode(n);
-	ir_node         *right       = get_Div_right(n);
-	const ir_edge_t *edge;
-	const ir_edge_t *next;
+	ir_node  *symconst;
+	ir_node  *block       = get_nodes_block(n);
+	ir_node  *call_result = NULL;
+	dbg_info *dbgi        = get_irn_dbg_info(n);
+	ir_graph *irg         = get_irn_irg(n);
+	ir_node  *left        = get_Div_left(n);
+	ir_mode  *mode        = get_Div_resmode(n);
+	ir_node  *right       = get_Div_right(n);
 
 	if (! mode_is_float(mode))
 		return;
@@ -723,7 +721,7 @@ static void lower_Div(ir_node *n)
 
 	set_irn_pinned(call, get_irn_pinned(n));
 
-	foreach_out_edge_safe(n, edge, next) {
+	foreach_out_edge_safe(n, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
 		if (! is_Proj(proj))
 			continue;

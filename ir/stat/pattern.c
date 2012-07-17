@@ -745,8 +745,7 @@ static void calc_nodes_pattern(ir_node *node, void *ctx)
 static void store_pattern(const char *fname)
 {
 	FILE *f;
-	pattern_entry_t *entry;
-	size_t i, count = pset_count(status->pattern_hash);
+	size_t count = pset_count(status->pattern_hash);
 
 	if (count <= 0)
 		return;
@@ -760,9 +759,7 @@ static void store_pattern(const char *fname)
 	fwrite("FPS1", 4, 1, f);
 	fwrite(&count, sizeof(count), 1, f);
 
-	for (i = 0, entry = (pattern_entry_t*)pset_first(status->pattern_hash);
-	     entry && i < count;
-	     entry = (pattern_entry_t*)pset_next(status->pattern_hash), ++i) {
+	foreach_pset(status->pattern_hash, pattern_entry_t, entry) {
 		fwrite(entry, offsetof(pattern_entry_t, buf) + entry->len, 1, f);
 	}  /* for */
 	fclose(f);
@@ -830,7 +827,6 @@ read_error:
  */
 static void pattern_output(const char *fname)
 {
-	pattern_entry_t  *entry;
 	pattern_entry_t  **pattern_arr;
 	pattern_dumper_t *dump;
 	size_t i, count = pset_count(status->pattern_hash);
@@ -844,10 +840,9 @@ static void pattern_output(const char *fname)
 	dump = new_vcg_dumper(fname, 100);
 
 	pattern_arr = XMALLOCN(pattern_entry_t*, count);
-	for (i = 0, entry = (pattern_entry_t*)pset_first(status->pattern_hash);
-	     entry && i < count;
-	     entry = (pattern_entry_t*)pset_next(status->pattern_hash), ++i) {
-		pattern_arr[i] =  entry;
+	i           = 0;
+	foreach_pset(status->pattern_hash, pattern_entry_t, entry) {
+		pattern_arr[i++] =  entry;
 	}  /* for */
 	assert(count == i);
 	count = i;
@@ -856,7 +851,7 @@ static void pattern_output(const char *fname)
 	qsort(pattern_arr, count, sizeof(*pattern_arr), pattern_count_cmp);
 
 	for (i = 0; i < count; ++i) {
-		entry = pattern_arr[i];
+		pattern_entry_t *const entry = pattern_arr[i];
 		if (cnt_to_uint(&entry->count) < status->bound)
 			continue;
 

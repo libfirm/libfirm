@@ -168,7 +168,7 @@ static inline int iter_step(SET *table)
 /*
  * finds the first entry in the table
  */
-void * MANGLEP(first) (SET *table)
+void *(MANGLEP(first))(SET *table)
 {
 	assert (!table->iter_tail);
 	table->iter_i = 0;
@@ -184,7 +184,7 @@ void * MANGLEP(first) (SET *table)
 /*
  * returns next entry in the table
  */
-void *MANGLEP(next) (SET *table)
+void *(MANGLEP(next))(SET *table)
 {
 	if (!table->iter_tail)
 		return NULL;
@@ -437,8 +437,7 @@ void *(pset_insert) (SET *se, const void *key, unsigned hash)
 
 void pset_insert_pset_ptr(pset *target, pset *src)
 {
-	void *elt;
-	for (elt = pset_first(src); elt; elt = pset_next(src)) {
+	foreach_pset(src, void, elt) {
 		pset_insert_ptr(target, elt);
 	}
 }
@@ -447,13 +446,13 @@ void pset_insert_pset_ptr(pset *target, pset *src)
 
 void *(set_find) (set *se, const void *key, size_t size, unsigned hash)
 {
-	return set_find (se, key, size, hash);
+	return set_find(void, se, key, size, hash);
 }
 
 
 void *(set_insert) (set *se, const void *key, size_t size, unsigned hash)
 {
-	return set_insert (se, key, size, hash);
+	return set_insert(void, se, key, size, hash);
 }
 
 

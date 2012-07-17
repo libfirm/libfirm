@@ -383,7 +383,6 @@ ir_node *be_epilog_create_return(beabi_helper_env_t *env, dbg_info *dbgi,
  */
 static bool has_real_user(const ir_node *node)
 {
-	const ir_edge_t *edge;
 	foreach_out_edge(node, edge) {
 		ir_node *user = get_edge_src_irn(edge);
 		if (!is_End(user) && !is_Anchor(user))
@@ -413,12 +412,11 @@ static ir_node *add_to_keep(ir_node *last_keep,
 
 void be_add_missing_keeps_node(ir_node *node)
 {
-	int              n_outs, i;
-	unsigned        *found_projs;
-	const ir_edge_t *edge;
-	ir_mode         *mode = get_irn_mode(node);
-	ir_node         *last_keep;
-	ir_node        **existing_projs;
+	int       n_outs, i;
+	unsigned *found_projs;
+	ir_mode  *mode = get_irn_mode(node);
+	ir_node  *last_keep;
+	ir_node **existing_projs;
 
 	if (mode != mode_T) {
 		if (!has_real_user(node)) {
@@ -665,7 +663,7 @@ be_stackorder_t *be_collect_stacknodes(ir_graph *irg)
 
 ir_node *be_get_stack_pred(const be_stackorder_t *env, const ir_node *node)
 {
-	return (ir_node*)ir_nodemap_get(&env->stack_order, node);
+	return ir_nodemap_get(ir_node, &env->stack_order, node);
 }
 
 void be_free_stackorder(be_stackorder_t *env)

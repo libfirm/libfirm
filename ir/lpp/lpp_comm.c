@@ -33,6 +33,8 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <winsock2.h>
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
 #else
 #include <unistd.h>
 #include <sys/types.h>
@@ -40,6 +42,7 @@
 #include <arpa/inet.h>
 #endif
 
+#include "xmalloc.h"
 #include "util.h"
 #include "debug.h"
 
@@ -80,7 +83,7 @@ static ssize_t secure_recv(int fd, void *buf, size_t try_amount, size_t at_least
 {
 	ssize_t res;
 	size_t bytes_read = 0;
-	char *data = buf;
+	char *data = (char*)buf;
 
 	do {
 		res = recv(fd, &data[bytes_read], try_amount - bytes_read, 0);
@@ -101,7 +104,7 @@ static ssize_t secure_send(int fd, const void *buf, size_t n)
 {
 	ssize_t res;
 	size_t bytes_written = 0;
-	const char *data = buf;
+	const char *data = (const char*)buf;
 
 	do {
 		res = send(fd, &data[bytes_written], n - bytes_written, 0);
@@ -118,7 +121,7 @@ static ssize_t secure_send(int fd, const void *buf, size_t n)
 	return n;
 }
 
-ssize_t lpp_flush(lpp_comm_t *comm)
+static ssize_t lpp_flush_(lpp_comm_t *comm)
 {
 	ssize_t res = 0;
 	if(comm->w_pos - comm->w_buf > 0) {
@@ -132,6 +135,11 @@ ssize_t lpp_flush(lpp_comm_t *comm)
 	return res;
 }
 
+void lpp_flush(lpp_comm_t *comm)
+{
+	lpp_flush_(comm);
+}
+
 static ssize_t lpp_write(lpp_comm_t *comm, const void *buf, size_t len)
 {
 	assert(comm->w_pos - comm->w_buf >= 0);
@@ -141,7 +149,7 @@ static ssize_t lpp_write(lpp_comm_t *comm, const void *buf, size_t len)
 		size_t free = (comm->w_buf + comm->buf_size) - comm->w_pos;
 		size_t copy = MIN(free, len);
 		size_t rest = len - copy;
-		const char *pos   = buf;
+		const char *pos = (const char*)buf;
 
 		DBG((dbg, LEVEL_1, "\tfree = %d, copy = %d, rest = %d\n", free, copy, rest));
 		if(copy > 0) {
@@ -159,7 +167,7 @@ static ssize_t lpp_write(lpp_comm_t *comm, const void *buf, size_t len)
 			size_t n_direct = rest / comm->buf_size;
 			size_t last_rest;
 
-			if(lpp_flush(comm) < 0)
+			if(lpp_flush_(comm) < 0)
 				return -1;
 
 			for(i = 0; i < n_direct; ++i) {
@@ -190,7 +198,7 @@ static ssize_t lpp_read(lpp_comm_t *comm, void *buf, size_t len)
 		size_t left = comm->r_max - comm->r_pos;
 		size_t copy = MIN(left, len);
 		size_t rest = len - copy;
-		char *pos   = buf;
+		char *pos = (char*)buf;
 
 		DBG((dbg, LEVEL_1, "\tleft = %d, copy = %d, rest = %d\n", left, copy, rest));
 		if(copy > 0) {
@@ -244,12 +252,12 @@ static ssize_t lpp_read(lpp_comm_t *comm, void *buf, size_t len)
 
 lpp_comm_t *lpp_comm_new(int fd, size_t buf_size)
 {
-	lpp_comm_t *res = malloc(sizeof(res[0]));
+	lpp_comm_t *res = XMALLOCZ(lpp_comm_t);
 
 	res->fd       = fd;
-	res->w_buf    = malloc(buf_size);
+	res->w_buf    = XMALLOCN(char, buf_size);
 	res->w_pos    = res->w_buf;
-	res->r_buf    = malloc(buf_size);
+	res->r_buf    = XMALLOCN(char, buf_size);
 	res->r_pos    = res->r_buf;
 	res->r_max    = res->r_buf;
 	res->buf_size = buf_size;
@@ -333,7 +341,7 @@ double lpp_readd(lpp_comm_t *comm)
 char *lpp_reads(lpp_comm_t *comm)
 {
 	size_t len = lpp_readl(comm);
-	char *res = malloc(sizeof(char) * (len + 1));
+	char *res = XMALLOCN(char, len+1);
 
 	ERRNO_CHECK(lpp_read(comm, res, len), !=, (ssize_t) len);
 	res[len] = '\0';

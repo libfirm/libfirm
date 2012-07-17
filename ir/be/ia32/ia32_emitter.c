@@ -678,7 +678,7 @@ emit_I:
 				break;
 
 			case 'P': {
-				ia32_condition_code_t cc = va_arg(ap, ia32_condition_code_t);
+				ia32_condition_code_t cc = (ia32_condition_code_t)va_arg(ap, int);
 				ia32_emit_condition_code(cc);
 				break;
 			}
@@ -862,7 +862,8 @@ static ir_node *find_original_value(ir_node *node)
 	}
 }
 
-static int determine_final_cc(const ir_node *node, int flags_pos, int cc)
+static ia32_condition_code_t determine_final_cc(const ir_node *node,
+		int flags_pos, ia32_condition_code_t cc)
 {
 	ir_node           *flags = get_irn_n(node, flags_pos);
 	const ia32_attr_t *flags_attr;
@@ -911,8 +912,7 @@ static void ia32_emit_exc_label(const ir_node *node)
  */
 static ir_node *get_proj(const ir_node *node, long proj)
 {
-	const ir_edge_t *edge;
-	ir_node         *src;
+	ir_node *src;
 
 	assert(get_irn_mode(node) == mode_T && "expected mode_T node");
 
@@ -980,7 +980,7 @@ static void emit_ia32_Jcc(const ir_node *node)
 			}
 		}
 	}
-	ia32_emitf(proj_true, "\tj%P %L\n", cc);
+	ia32_emitf(proj_true, "\tj%P %L\n", (int)cc);
 	if (need_parity_label) {
 		ia32_emitf(NULL, "1:\n");
 	}
@@ -1006,16 +1006,16 @@ static void emit_ia32_Setcc(const ir_node *node)
 	cc = determine_final_cc(node, n_ia32_Setcc_eflags, cc);
 	if (cc & ia32_cc_float_parity_cases) {
 		if (cc & ia32_cc_negated) {
-			ia32_emitf(node, "\tset%P %<R\n", cc, dreg);
+			ia32_emitf(node, "\tset%P %<R\n", (int)cc, dreg);
 			ia32_emitf(node, "\tsetp %>R\n", dreg);
 			ia32_emitf(node, "\torb %>R, %<R\n", dreg, dreg);
 		} else {
-			ia32_emitf(node, "\tset%P %<R\n", cc, dreg);
+			ia32_emitf(node, "\tset%P %<R\n", (int)cc, dreg);
 			ia32_emitf(node, "\tsetnp %>R\n", dreg);
 			ia32_emitf(node, "\tandb %>R, %<R\n", dreg, dreg);
 		}
 	} else {
-		ia32_emitf(node, "\tset%P %#R\n", cc, dreg);
+		ia32_emitf(node, "\tset%P %#R\n", (int)cc, dreg);
 	}
 }
 
@@ -1060,7 +1060,7 @@ static void emit_ia32_CMovcc(const ir_node *node)
 		panic("CMov with floatingpoint compare/parity not supported yet");
 	}
 
-	ia32_emitf(node, "\tcmov%P %#AR, %#R\n", cc, in_true, out);
+	ia32_emitf(node, "\tcmov%P %#AR, %#R\n", (int)cc, in_true, out);
 }
 
 /**
@@ -1789,8 +1789,6 @@ static void ia32_emit_block_header(ir_node *block)
  */
 static void ia32_gen_block(ir_node *block)
 {
-	ir_node *node;
-
 	ia32_emit_block_header(block);
 
 	if (sp_relative) {
@@ -3184,7 +3182,7 @@ static void bemit_jump(const ir_node *node)
 	bemit_jmp(get_cfop_target_block(node));
 }
 
-static void bemit_jcc(int pnc, const ir_node *dest_block)
+static void bemit_jcc(ia32_condition_code_t pnc, const ir_node *dest_block)
 {
 	unsigned char cc = pnc2cc(pnc);
 	bemit8(0x0F);
@@ -3834,8 +3832,6 @@ static void ia32_register_binary_emitters(void)
 
 static void gen_binary_block(ir_node *block)
 {
-	ir_node *node;
-
 	ia32_emit_block_header(block);
 
 	/* emit the contents of the block */

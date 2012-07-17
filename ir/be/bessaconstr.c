@@ -85,7 +85,7 @@ struct constr_info {
 
 		/* Last definition of a block. */
 		ir_node *last_definition;
-	};
+	} u;
 };
 
 typedef struct constr_info constr_info;
@@ -101,7 +101,7 @@ static bool has_definition(const ir_node *block)
 static constr_info *get_or_set_info(be_ssa_construction_env_t *env,
                                     const ir_node *node)
 {
-	constr_info *info = ir_nodemap_get(&env->infos, node);
+	constr_info *info = ir_nodemap_get(constr_info, &env->infos, node);
 	if (info == NULL) {
 		info = OALLOCZ(&env->obst, constr_info);
 		ir_nodemap_insert(&env->infos, node, info);
@@ -112,7 +112,7 @@ static constr_info *get_or_set_info(be_ssa_construction_env_t *env,
 static constr_info *get_info(const be_ssa_construction_env_t *env,
                              const ir_node *node)
 {
-	return (constr_info*)ir_nodemap_get(&env->infos, node);
+	return ir_nodemap_get(constr_info, &env->infos, node);
 }
 
 /**
@@ -158,15 +158,15 @@ static void introduce_definition(be_ssa_construction_env_t *env, ir_node *def)
 	def_info->is_definition = true;
 
 	skip_info->is_definition = true;
-	skip_info->definition    = def;
+	skip_info->u.definition  = def;
 
 	// Set the last definition if we only introduce one definition for the block
 	if (has_definition(block)) {
 		assert(!block_info->already_processed);
-		block_info->last_definition = NULL;
+		block_info->u.last_definition = NULL;
 	} else {
 		mark_irn_visited(block);
-		block_info->last_definition = def;
+		block_info->u.last_definition = def;
 	}
 }
 
@@ -198,7 +198,7 @@ static void mark_iterated_dominance_frontiers(
 	while (!waitq_empty(env->worklist)) {
 		int i;
 		ir_node  *block    = (ir_node*)waitq_get(env->worklist);
-		ir_node **domfront = be_get_dominance_frontier(env->domfronts, block);
+		ir_node **domfront = ir_get_dominance_frontier(block);
 		int domfront_len = ARR_LEN(domfront);
 
 		for (i = 0; i < domfront_len; ++i) {
@@ -297,7 +297,6 @@ static void set_operands(be_ssa_construction_env_t *env, ir_node *use, ir_node *
  */
 static void process_block(be_ssa_construction_env_t *env, ir_node *block)
 {
-	ir_node     *node;
 	ir_node     *def        = NULL;
 	constr_info *block_info = get_or_set_info(env, block);
 
@@ -325,13 +324,13 @@ static void process_block(be_ssa_construction_env_t *env, ir_node *block)
 
 		if (is_definition(env, node)) {
 			constr_info *info = get_info(env, node);
-			def = info->definition;
+			def = info->u.definition;
 			DBG((dbg, LEVEL_3, "\t...found definition %+F\n", def));
 		}
 	}
 
 	block_info->already_processed = true;
-	block_info->last_definition   = def;
+	block_info->u.last_definition = def;
 }
 
 /**
@@ -341,7 +340,7 @@ static ir_node *search_def_end_of_block(be_ssa_construction_env_t *env,
                                         ir_node *block)
 {
 	constr_info *block_info      = get_or_set_info(env, block);
-	ir_node     *last_definition = block_info->last_definition;
+	ir_node     *last_definition = block_info->u.last_definition;
 
 	if (last_definition != NULL)
 		return last_definition;
@@ -353,35 +352,30 @@ static ir_node *search_def_end_of_block(be_ssa_construction_env_t *env,
 			}
 		}
 		else {
-			ir_node *def = NULL;
-
 			/* Search the last definition of the block. */
 			sched_foreach_reverse(block, def) {
 				if (is_definition(env, def)) {
 					constr_info *info = get_info(env, def);
-					def = info->definition;
-					DBG((dbg, LEVEL_3, "\t...found definition %+F\n", def));
-
+					DBG((dbg, LEVEL_3, "\t...found definition %+F\n", info->u.definition));
+					block_info->u.last_definition = info->u.definition;
 					break;
 				}
 			}
 
-			assert(def && "No definition found");
-
-			block_info->last_definition = def;
+			assert(block_info->u.last_definition && "No definition found");
 		}
 
-		return block_info->last_definition;
+		return block_info->u.last_definition;
 	} else if (Block_block_visited(block)) {
 		ir_node *phi = insert_dummy_phi(env, block);
 
-		block_info->last_definition = phi;
+		block_info->u.last_definition = phi;
 
 		return phi;
 	} else {
 		ir_node *def = get_def_at_idom(env, block);
 
-		block_info->last_definition = def;
+		block_info->u.last_definition = def;
 
 		return def;
 	}
@@ -423,14 +417,15 @@ void be_ssa_construction_init(be_ssa_construction_env_t *env, ir_graph *irg)
 	stat_ev_dbl("bessaconstr_n_blocks", n_blocks);
 
 	memset(env, 0, sizeof(env[0]));
-	be_assure_dom_front(irg);
 
 	env->irg       = irg;
-	env->domfronts = be_get_irg_dom_front(irg);
 	env->new_phis  = NEW_ARR_F(ir_node*, 0);
 	env->worklist  = new_waitq();
 	ir_nodemap_init(&env->infos, irg);
 	obstack_init(&env->obst);
+
+	assure_irg_properties(env->irg,
+	                      IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE_FRONTIERS);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED
 			| IR_RESOURCE_BLOCK_VISITED | IR_RESOURCE_IRN_LINK);
@@ -580,12 +575,11 @@ void be_ssa_construction_fix_users_array(be_ssa_construction_env_t *env,
 	stat_ev_tim_push();
 
 	for (i = 0; i < nodes_len; ++i) {
-		const ir_edge_t *edge, *next;
 		ir_node *value = nodes[i];
 		DBG((dbg, LEVEL_3, "\tfixing users of %+F\n", value));
 		introduce_definition(env, value);
 
-		foreach_out_edge_safe(value, edge, next) {
+		foreach_out_edge_safe(value, edge) {
 			ir_node *use   = get_edge_src_irn(edge);
 
 			if (env->ignore_uses != NULL &&

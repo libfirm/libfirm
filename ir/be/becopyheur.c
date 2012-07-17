@@ -126,7 +126,7 @@ static inline void qnode_add_conflict(const qnode_t *qn, const ir_node *n1, cons
 		c.n1 = n2;
 		c.n2 = n1;
 	}
-	set_insert(qn->conflicts, &c, sizeof(c), HASH_CONFLICT(c));
+	(void)set_insert(conflict_t, qn->conflicts, &c, sizeof(c), HASH_CONFLICT(c));
 }
 
 /**
@@ -146,7 +146,7 @@ static inline int qnode_are_conflicting(const qnode_t *qn, const ir_node *n1, co
 		c.n1 = n2;
 		c.n2 = n1;
 	}
-	return set_find(qn->conflicts, &c, sizeof(c), HASH_CONFLICT(c)) != 0;
+	return set_find(conflict_t, qn->conflicts, &c, sizeof(c), HASH_CONFLICT(c)) != 0;
 }
 
 static int set_cmp_node_stat_t(const void *x, const void *y, size_t size)
@@ -162,7 +162,7 @@ static inline const node_stat_t *qnode_find_node(const qnode_t *qn, ir_node *irn
 {
 	node_stat_t find;
 	find.irn = irn;
-	return (const node_stat_t*)set_find(qn->changed_nodes, &find, sizeof(find), hash_irn(irn));
+	return set_find(node_stat_t, qn->changed_nodes, &find, sizeof(find), hash_irn(irn));
 }
 
 /**
@@ -175,7 +175,7 @@ static inline node_stat_t *qnode_find_or_insert_node(const qnode_t *qn, ir_node 
 	find.irn = irn;
 	find.new_color = NO_COLOR;
 	find.pinned_local = 0;
-	return (node_stat_t*)set_insert(qn->changed_nodes, &find, sizeof(find), hash_irn(irn));
+	return set_insert(node_stat_t, qn->changed_nodes, &find, sizeof(find), hash_irn(irn));
 }
 
 /**
@@ -399,7 +399,6 @@ static inline void qnode_max_ind_set(qnode_t *qn, const unit_t *ou)
 	ir_node **safe, **unsafe;
 	int i, o, safe_count, safe_costs, unsafe_count, *unsafe_costs;
 	bitset_t *curr, *best;
-	size_t pos;
 	int next, curr_weight, best_weight = 0;
 
 	/* assign the nodes into two groups.
@@ -608,7 +607,6 @@ static void ou_optimize(unit_t *ou)
 
 	/* apply the best found qnode */
 	if (curr->mis_size >= 2) {
-		node_stat_t *ns;
 		int root_col = qnode_get_new_color(curr, ou->nodes[0]);
 		DBG((dbg, LEVEL_1, "\t  Best color: %d  Costs: %d << %d << %d\n", curr->color, ou->min_nodes_costs, ou->all_nodes_costs - curr->mis_costs, ou->all_nodes_costs));
 		/* globally pin root and all args which have the same color */
@@ -621,8 +619,7 @@ static void ou_optimize(unit_t *ou)
 		}
 
 		/* set color of all changed nodes */
-		for (ns = (node_stat_t*)set_first(curr->changed_nodes); ns != NULL;
-		     ns = (node_stat_t*)set_next(curr->changed_nodes)) {
+		foreach_set(curr->changed_nodes, node_stat_t, ns) {
 			/* NO_COLOR is possible, if we had an undo */
 			if (ns->new_color != NO_COLOR) {
 				DBG((dbg, LEVEL_1, "\t    color(%+F) := %d\n", ns->irn, ns->new_color));

@@ -758,13 +758,13 @@ ir_alias_relation get_alias_relation_ex(
 	key.adr2  = adr2;
 	key.mode1 = mode1;
 	key.mode2 = mode2;
-	entry = (mem_disambig_entry*) set_find(result_cache, &key, sizeof(key), HASH_ENTRY(adr1, adr2));
+	entry = set_find(mem_disambig_entry, result_cache, &key, sizeof(key), HASH_ENTRY(adr1, adr2));
 	if (entry != NULL)
 		return entry->result;
 
 	key.result = get_alias_relation(adr1, mode1, adr2, mode2);
 
-	set_insert(result_cache, &key, sizeof(key), HASH_ENTRY(adr1, adr2));
+	(void)set_insert(mem_disambig_entry, result_cache, &key, sizeof(key), HASH_ENTRY(adr1, adr2));
 	return key.result;
 }
 
@@ -1244,7 +1244,7 @@ static pmap *mtp_map;
  */
 static ir_type *clone_type_and_cache(ir_type *tp)
 {
-	ir_type *res = (ir_type*)pmap_get(mtp_map, tp);
+	ir_type *res = pmap_get(ir_type, mtp_map, tp);
 
 	if (res == NULL) {
 		res = clone_type_method(tp);

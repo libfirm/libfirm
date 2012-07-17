@@ -724,7 +724,6 @@ ir_node *ia32_turn_back_am(ir_node *node)
 
 	/* rewire mem-proj */
 	if (get_irn_mode(node) == mode_T) {
-		const ir_edge_t *edge;
 		foreach_out_edge(node, edge) {
 			ir_node *out = get_edge_src_irn(edge);
 			if (get_irn_mode(out) == mode_M) {
@@ -971,16 +970,14 @@ static ir_node* create_spproj(ir_node *node, ir_node *pred, int pos)
  */
 static void transform_MemPerm(ir_node *node)
 {
-	ir_node         *block = get_nodes_block(node);
-	ir_graph        *irg   = get_irn_irg(node);
-	ir_node         *sp    = be_get_initial_reg_value(irg, &ia32_registers[REG_ESP]);
-	int              arity = be_get_MemPerm_entity_arity(node);
-	ir_node        **pops  = ALLOCAN(ir_node*, arity);
-	ir_node         *in[1];
-	ir_node         *keep;
-	int              i;
-	const ir_edge_t *edge;
-	const ir_edge_t *next;
+	ir_node  *block = get_nodes_block(node);
+	ir_graph *irg   = get_irn_irg(node);
+	ir_node  *sp    = be_get_initial_reg_value(irg, &ia32_registers[REG_ESP]);
+	int       arity = be_get_MemPerm_entity_arity(node);
+	ir_node **pops  = ALLOCAN(ir_node*, arity);
+	ir_node  *in[1];
+	ir_node  *keep;
+	int       i;
 
 	/* create Pushs */
 	for (i = 0; i < arity; ++i) {
@@ -1041,7 +1038,7 @@ static void transform_MemPerm(ir_node *node)
 	sched_add_before(node, keep);
 
 	/* exchange memprojs */
-	foreach_out_edge_safe(node, edge, next) {
+	foreach_out_edge_safe(node, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
 		int p = get_Proj_proj(proj);
 

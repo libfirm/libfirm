@@ -84,7 +84,7 @@ static void make_color_var_name(char *buf, size_t buf_size,
 
 static void build_coloring_cstr(ilp_env_t *ienv)
 {
-	local_env_t    *lenv   = ienv->env;
+	local_env_t    *lenv   = (local_env_t*)ienv->env;
 	be_ifg_t       *ifg    = ienv->co->cenv->ifg;
 	unsigned        n_regs = arch_register_class_n_regs(ienv->co->cls);
 	const unsigned *allocatable_colors = lenv->allocatable_colors;
@@ -162,7 +162,7 @@ static void build_coloring_cstr(ilp_env_t *ienv)
 static void build_interference_cstr(ilp_env_t *ienv)
 {
 	lpp_t          *lpp      = ienv->lp;
-	local_env_t    *lenv     = ienv->env;
+	local_env_t    *lenv     = (local_env_t*)ienv->env;
 	be_ifg_t       *ifg      = ienv->co->cenv->ifg;
 	unsigned        n_colors = arch_register_class_n_regs(ienv->co->cls);
 	ir_node       **clique   = ALLOCAN(ir_node*, n_colors);
@@ -291,8 +291,8 @@ typedef struct edge_t {
 
 static int compare_edge_t(const void *k1, const void *k2, size_t size)
 {
-	const edge_t *e1 = k1;
-	const edge_t *e2 = k2;
+	const edge_t *e1 = (const edge_t*)k1;
+	const edge_t *e2 = (const edge_t*)k2;
 	(void) size;
 
 	return ! (e1->n1 == e2->n1 && e1->n2 == e2->n2);
@@ -312,7 +312,7 @@ static inline edge_t *add_edge(set *edges, ir_node *n1, ir_node *n2, size_t *cou
 		new_edge.n2 = n1;
 	}
 	(*counter)++;
-	return set_insert(edges, &new_edge, sizeof(new_edge), HASH_EDGE(&new_edge));
+	return set_insert(edge_t, edges, &new_edge, sizeof(new_edge), HASH_EDGE(&new_edge));
 }
 
 static inline edge_t *find_edge(set *edges, ir_node *n1, ir_node *n2)
@@ -326,7 +326,7 @@ static inline edge_t *find_edge(set *edges, ir_node *n1, ir_node *n2)
 		new_edge.n1 = n2;
 		new_edge.n2 = n1;
 	}
-	return set_find(edges, &new_edge, sizeof(new_edge), HASH_EDGE(&new_edge));
+	return set_find(edge_t, edges, &new_edge, sizeof(new_edge), HASH_EDGE(&new_edge));
 }
 
 static inline void remove_edge(set *edges, ir_node *n1, ir_node *n2, size_t *counter)
@@ -340,7 +340,7 @@ static inline void remove_edge(set *edges, ir_node *n1, ir_node *n2, size_t *cou
 		new_edge.n1 = n2;
 		new_edge.n2 = n1;
 	}
-	e = set_find(edges, &new_edge, sizeof(new_edge), HASH_EDGE(&new_edge));
+	e = set_find(edge_t, edges, &new_edge, sizeof(new_edge), HASH_EDGE(&new_edge));
 	if (e) {
 		e->n1 = NULL;
 		e->n2 = NULL;
@@ -348,7 +348,7 @@ static inline void remove_edge(set *edges, ir_node *n1, ir_node *n2, size_t *cou
 	}
 }
 
-#define pset_foreach(pset, irn)  for (irn=pset_first(pset); irn; irn=pset_next(pset))
+#define pset_foreach(pset, irn) foreach_pset((pset), ir_node, (irn))
 
 /**
  * Search for an interference clique and an external node
@@ -357,12 +357,9 @@ static inline void remove_edge(set *edges, ir_node *n1, ir_node *n2, size_t *cou
  */
 static void build_clique_star_cstr(ilp_env_t *ienv)
 {
-	affinity_node_t *aff;
-
 	/* for each node with affinity edges */
 	co_gs_foreach_aff_node(ienv->co, aff) {
 		struct obstack ob;
-		neighb_t *nbr;
 		const ir_node *center = aff->irn;
 		ir_node **nodes;
 		set *edges;
@@ -383,7 +380,7 @@ static void build_clique_star_cstr(ilp_env_t *ienv)
 				++n_nodes;
 			}
 		}
-		nodes = obstack_finish(&ob);
+		nodes = (ir_node**)obstack_finish(&ob);
 
 		/* get all interference edges between these */
 		n_edges = 0;
@@ -401,8 +398,7 @@ static void build_clique_star_cstr(ilp_env_t *ienv)
 			bool    growed;
 
 			/* get 2 starting nodes to form a clique */
-			for (e=set_first(edges); !e->n1; e=set_next(edges)) {
-			}
+			for (e = set_first(edge_t, edges); !e->n1; e = set_next(edge_t, edges)) {}
 
 			/* we could be stepped out of the loop before the set iterated to the end */
 			set_break(edges);
@@ -418,7 +414,6 @@ static void build_clique_star_cstr(ilp_env_t *ienv)
 				/* search for a candidate to extend the clique */
 				for (i=0; i<n_nodes; ++i) {
 					ir_node *cand = nodes[i];
-					ir_node *member;
 					bool     is_cand;
 
 					/* if its already in the clique try the next */
@@ -451,10 +446,9 @@ static void build_clique_star_cstr(ilp_env_t *ienv)
 
 			/* now the clique is maximal. Finally add the constraint */
 			{
-				ir_node *member;
-				int      var_idx;
-				int      cst_idx;
-				char     buf[32];
+				int  var_idx;
+				int  cst_idx;
+				char buf[32];
 
 				cst_idx = lpp_add_cst(ienv->lp, NULL, lpp_greater_equal, pset_count(clique)-1);
 
@@ -479,7 +473,6 @@ static void extend_path(ilp_env_t *ienv, pdeq *path, const ir_node *irn)
 	int i, len;
 	ir_node **curr_path;
 	affinity_node_t *aff;
-	neighb_t *nbr;
 
 	/* do not walk backwards or in circles */
 	if (pdeq_contains(path, irn))
@@ -541,8 +534,6 @@ end:
  */
 static void build_path_cstr(ilp_env_t *ienv)
 {
-	affinity_node_t *aff_info;
-
 	/* for each node with affinity edges */
 	co_gs_foreach_aff_node(ienv->co, aff_info) {
 		pdeq *path = new_pdeq();
@@ -570,7 +561,7 @@ static void ilp2_build(ilp_env_t *ienv)
 
 static void ilp2_apply(ilp_env_t *ienv)
 {
-	local_env_t *lenv = ienv->env;
+	local_env_t *lenv = (local_env_t*)ienv->env;
 	ir_graph    *irg  = ienv->co->irg;
 
 	/* first check if there was sth. to optimize */

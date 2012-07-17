@@ -66,14 +66,14 @@ ir_nodehashmap_entry_t *ir_nodehashmap_find_(const ir_nodehashmap_t *self,
 #define hashset_iterator_next   ir_nodehashmap_iterator_next
 #define hashset_remove_iterator ir_nodehashmap_remove_iterator
 
-#include "hashset.c"
+#include "hashset.c.inl"
 
 void ir_nodehashmap_init(ir_nodehashmap_t *nodehashmap)
 {
 	ir_nodehashmap_init_size(nodehashmap, 16);
 }
 
-void *ir_nodehashmap_get(const ir_nodehashmap_t *self, const ir_node *node)
+void *(ir_nodehashmap_get)(const ir_nodehashmap_t *self, const ir_node *node)
 {
 	ir_nodehashmap_entry_t *entry = ir_nodehashmap_find_(self, node);
 	return entry->data;

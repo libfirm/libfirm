@@ -94,7 +94,6 @@ static void clear_defs(ir_node *node)
 {
 	/* clear values defined */
 	if (get_irn_mode(node) == mode_T) {
-		const ir_edge_t *edge;
 		foreach_out_edge(node, edge) {
 			ir_node *proj = get_edge_src_irn(edge);
 			clear_reg_value(proj);
@@ -185,16 +184,14 @@ void be_peephole_exchange(ir_node *old, ir_node *nw)
  */
 static void process_block(ir_node *block, void *data)
 {
-	int l;
 	(void) data;
 
 	/* construct initial register assignment */
 	memset(register_values, 0, sizeof(ir_node*) * arch_env->n_registers);
 
-	assert(lv->nodes && "live sets must be computed");
+	assert(lv->sets_valid && "live sets must be computed");
 	DB((dbg, LEVEL_1, "\nProcessing block %+F (from end)\n", block));
-	be_lv_foreach(lv, block, be_lv_state_end, l) {
-		ir_node *node = be_lv_get_irn(lv, block, l);
+	be_lv_foreach(lv, block, be_lv_state_end, node) {
 		set_reg_value(node);
 	}
 	DB((dbg, LEVEL_1, "\nstart processing\n"));
@@ -229,9 +226,8 @@ static void process_block(ir_node *block, void *data)
  */
 bool be_has_only_one_user(ir_node *node)
 {
-	int              n = get_irn_n_edges(node);
-	int              n_users;
-	const ir_edge_t *edge;
+	int n = get_irn_n_edges(node);
+	int n_users;
 
 	if (n <= 1)
 		return 1;

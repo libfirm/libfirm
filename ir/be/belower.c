@@ -281,11 +281,9 @@ static void get_perm_move_info(perm_move_t *const move,
 
 static void build_register_pair_list(reg_pair_t *pairs, int *n, ir_node *irn)
 {
-	const ir_edge_t *edge;
-	const ir_edge_t *next;
 	*n = 0;
 
-	foreach_out_edge_safe(irn, edge, next) {
+	foreach_out_edge_safe(irn, edge) {
 		ir_node               *const out     = get_edge_src_irn(edge);
 		long                   const pn      = get_Proj_proj(out);
 		ir_node               *const in      = get_irn_n(irn, pn);
@@ -586,7 +584,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	sched_add_after(skip_Proj(irn), keep);
 
 	/* insert the other different and its copies into the map */
-	entry = (op_copy_assoc_t*)ir_nodehashmap_get(op_set, other_different);
+	entry = ir_nodehashmap_get(op_copy_assoc_t, op_set, other_different);
 	if (! entry) {
 		entry      = OALLOC(&env->obst, op_copy_assoc_t);
 		entry->cls = cls;
@@ -652,15 +650,12 @@ static void assure_different_constraints(ir_node *irn, ir_node *skipped_irn, con
  */
 static void assure_constraints_walker(ir_node *block, void *walk_env)
 {
-	ir_node *irn;
 	constraint_env_t *env = (constraint_env_t*)walk_env;
 
 	sched_foreach_reverse(block, irn) {
 		ir_mode *mode = get_irn_mode(irn);
 
 		if (mode == mode_T) {
-			const ir_edge_t *edge;
-
 			foreach_out_edge(irn, edge) {
 				ir_node *proj = get_edge_src_irn(edge);
 
@@ -878,12 +873,10 @@ int push_through_perm(ir_node *perm)
 	int n_moved;
 	int new_size;
 	ir_node *frontier = bl;
-	ir_node *irn;
 	int i, n;
 
 	/* get some Proj and find out the register class of that Proj. */
-	const ir_edge_t             *edge     = get_irn_out_edge_first_kind(perm, EDGE_KIND_NORMAL);
-	ir_node                     *one_proj = get_edge_src_irn(edge);
+	ir_node                     *one_proj = get_edge_src_irn(get_irn_out_edge_first_kind(perm, EDGE_KIND_NORMAL));
 	const arch_register_class_t *cls      = arch_get_irn_reg_class(one_proj);
 	assert(is_Proj(one_proj));
 

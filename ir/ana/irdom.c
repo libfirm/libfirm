@@ -699,8 +699,10 @@ void free_dom(ir_graph *irg)
 	assert(get_irg_phase_state(irg) != phase_building);
 	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
-	/* With the implementation right now there is nothing to free,
-	   but better call it anyways... */
+	/* With the implementation right now there is nothing to free */
+
+	/* free dominance frontiers */
+	ir_free_dominance_frontiers(irg);
 }
 
 void compute_postdoms(ir_graph *irg)

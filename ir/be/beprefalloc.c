@@ -119,7 +119,7 @@ struct allocation_info_t {
 	unsigned  last_uses[2];   /**< bitset indicating last uses (input pos) */
 	ir_node  *current_value;  /**< copy of the value that should be used */
 	ir_node  *original_value; /**< for copies point to original value */
-	float     prefs[0];       /**< register preferences */
+	float     prefs[];        /**< register preferences */
 };
 typedef struct allocation_info_t allocation_info_t;
 
@@ -133,7 +133,7 @@ typedef struct reg_pref_t reg_pref_t;
 /** per basic-block information */
 struct block_info_t {
 	bool     processed;       /**< indicate whether block is processed */
-	ir_node *assignments[0];  /**< register assignments at end of block */
+	ir_node *assignments[];   /**< register assignments at end of block */
 };
 typedef struct block_info_t block_info_t;
 
@@ -316,9 +316,8 @@ static void check_defs(const ir_nodeset_t *live_nodes, float weight,
  */
 static void analyze_block(ir_node *block, void *data)
 {
-	float         weight = (float)get_block_execfreq(execfreqs, block);
-	ir_nodeset_t  live_nodes;
-	ir_node      *node;
+	float        weight = (float)get_block_execfreq(execfreqs, block);
+	ir_nodeset_t live_nodes;
 	(void) data;
 
 	ir_nodeset_init(&live_nodes);
@@ -439,49 +438,52 @@ static void congruence_def(ir_nodeset_t *live_nodes, const ir_node *node)
 
 static void create_congruence_class(ir_node *block, void *data)
 {
-	ir_nodeset_t  live_nodes;
-	ir_node      *node;
+	ir_nodeset_t live_nodes;
 
 	(void) data;
 	ir_nodeset_init(&live_nodes);
 	be_liveness_end_of_block(lv, cls, block, &live_nodes);
 
 	/* check should be same constraints */
+	ir_node *last_phi = NULL;
 	sched_foreach_reverse(block, node) {
 		ir_node *value;
-		if (is_Phi(node))
+		if (is_Phi(node)) {
+			last_phi = node;
 			break;
+		}
 
 		be_foreach_definition(node, cls, value,
 			congruence_def(&live_nodes, value);
 		);
 		be_liveness_transfer(cls, node, &live_nodes);
 	}
+	if (!last_phi)
+		return;
 
 	/* check phi congruence classes */
-	sched_foreach_reverse_from(node, node) {
+	sched_foreach_reverse_from(last_phi, phi) {
 		int i;
 		int arity;
 		int node_idx;
-		assert(is_Phi(node));
+		assert(is_Phi(phi));
 
-		if (!arch_irn_consider_in_reg_alloc(cls, node))
+		if (!arch_irn_consider_in_reg_alloc(cls, phi))
 			continue;
 
-		node_idx = get_irn_idx(node);
+		node_idx = get_irn_idx(phi);
 		node_idx = uf_find(congruence_classes, node_idx);
 
-		arity = get_irn_arity(node);
+		arity = get_irn_arity(phi);
 		for (i = 0; i < arity; ++i) {
 			bool                  interferes = false;
 			ir_nodeset_iterator_t iter;
 			unsigned              r;
 			int                   old_node_idx;
 			ir_node              *live;
-			ir_node              *phi;
 			allocation_info_t    *head_info;
 			allocation_info_t    *other_info;
-			ir_node              *op     = get_Phi_pred(node, i);
+			ir_node              *op     = get_Phi_pred(phi, i);
 			int                   op_idx = get_irn_idx(op);
 			op_idx = uf_find(congruence_classes, op_idx);
 
@@ -522,7 +524,7 @@ static void create_congruence_class(ir_node *block, void *data)
 			old_node_idx = node_idx;
 			node_idx = uf_union(congruence_classes, node_idx, op_idx);
 			DB((dbg, LEVEL_3, "Merge %+F and %+F congruence classes\n",
-			    node, op));
+			    phi, op));
 
 			old_node_idx = node_idx == old_node_idx ? op_idx : old_node_idx;
 			head_info  = get_allocation_info(get_idx_irn(irg, node_idx));
@@ -1604,7 +1606,6 @@ static void assign_phi_registers(ir_node *block)
 	int                  n;
 	int                  res;
 	unsigned            *assignment;
-	ir_node             *node;
 	hungarian_problem_t *bp;
 
 	/* count phi nodes */
@@ -1690,9 +1691,7 @@ static void assign_phi_registers(ir_node *block)
  */
 static void allocate_coalesce_block(ir_node *block, void *data)
 {
-	int            i;
 	ir_nodeset_t   live_nodes;
-	ir_node       *node;
 	int            n_preds;
 	block_info_t  *block_info;
 	block_info_t **pred_block_infos;
@@ -1712,7 +1711,7 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 	/* gather regalloc infos of predecessor blocks */
 	n_preds          = get_Block_n_cfgpreds(block);
 	pred_block_infos = ALLOCAN(block_info_t*, n_preds);
-	for (i = 0; i < n_preds; ++i) {
+	for (int i = 0; i < n_preds; ++i) {
 		ir_node      *pred      = get_Block_cfgpred_block(block, i);
 		block_info_t *pred_info = get_block_info(pred);
 		pred_block_infos[i]     = pred_info;
@@ -1721,13 +1720,12 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 	phi_ins = ALLOCAN(ir_node*, n_preds);
 
 	/* collect live-in nodes and preassigned values */
-	be_lv_foreach(lv, block, be_lv_state_in, i) {
+	be_lv_foreach(lv, block, be_lv_state_in, node) {
 		bool                       need_phi = false;
 		const arch_register_req_t *req;
 		const arch_register_t     *reg;
 		int                        p;
 
-		node = be_lv_get_irn(lv, block, i);
 		req  = arch_get_irn_register_req(node);
 		if (req->cls != cls)
 			continue;
@@ -1812,7 +1810,8 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 	/* all live-ins must have a register */
 #ifdef DEBUG_libfirm
 	{
-		ir_nodeset_iterator_t  iter;
+		ir_nodeset_iterator_t iter;
+		ir_node              *node;
 		foreach_ir_nodeset(&live_nodes, node, iter) {
 			const arch_register_t *reg = arch_get_irn_register(node);
 			assert(reg != NULL);
@@ -1839,7 +1838,7 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 
 		/* we may not use registers used for inputs for optimistic splits */
 		arity = get_irn_arity(node);
-		for (i = 0; i < arity; ++i) {
+		for (int i = 0; i < arity; ++i) {
 			ir_node *op = get_irn_n(node, i);
 			const arch_register_t *reg;
 			if (!arch_irn_consider_in_reg_alloc(cls, op))

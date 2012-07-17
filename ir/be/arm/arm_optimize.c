@@ -99,8 +99,6 @@ static void peephole_be_IncSP(ir_node *node)
 	int       cnt;
 	int       sign = 1;
 	arm_vals  v;
-	const ir_edge_t *edge;
-	const ir_edge_t *next;
 
 	/* first optimize incsp->incsp combinations */
 	node = be_peephole_IncSP_IncSP(node);
@@ -129,7 +127,7 @@ static void peephole_be_IncSP(ir_node *node)
 	/* reattach IncSP users */
 	last = node;
 	node = sched_next(first);
-	foreach_out_edge_safe(first, edge, next) {
+	foreach_out_edge_safe(first, edge) {
 		ir_node *user = get_edge_src_irn(edge);
 		int      pos  = get_edge_src_pos(edge);
 		if (user == node)

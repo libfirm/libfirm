@@ -5134,14 +5134,14 @@ static ir_node *gen_parity(ir_node *node)
 	 * operations)
 	 */
 	ir_node *count = ia32_create_Immediate(NULL, 0, 16);
-	ir_node *shr = new_bd_ia32_Shr(dbgi, new_block, new_param, count);
-	ir_node *xor = new_bd_ia32_Xor(dbgi, new_block, noreg_GP, noreg_GP, nomem,
-	                               shr, new_param);
-	ir_node *xor2 = new_bd_ia32_XorHighLow(dbgi, new_block, xor);
+	ir_node *shr   = new_bd_ia32_Shr(dbgi, new_block, new_param, count);
+	ir_node *xorn  = new_bd_ia32_Xor(dbgi, new_block, noreg_GP, noreg_GP, nomem,
+	                                 shr, new_param);
+	ir_node *xor2  = new_bd_ia32_XorHighLow(dbgi, new_block, xorn);
 	ir_node *flags;
 
-	set_ia32_ls_mode(xor, mode_Iu);
-	set_ia32_commutative(xor);
+	set_ia32_ls_mode(xorn, mode_Iu);
+	set_ia32_commutative(xorn);
 
 	set_irn_mode(xor2, mode_T);
 	flags = new_r_Proj(xor2, mode_Iu, pn_ia32_XorHighLow_flags);
@@ -5792,7 +5792,6 @@ static void postprocess_fp_call_results(void)
 		for (j = get_method_n_ress(mtp) - 1; j >= 0; --j) {
 			ir_type *res_tp = get_method_res_type(mtp, j);
 			ir_node *res, *new_res;
-			const ir_edge_t *edge, *next;
 			ir_mode *res_mode;
 
 			if (! is_atomic_type(res_tp)) {
@@ -5809,7 +5808,7 @@ static void postprocess_fp_call_results(void)
 			new_res = NULL;
 
 			/* now patch the users */
-			foreach_out_edge_safe(res, edge, next) {
+			foreach_out_edge_safe(res, edge) {
 				ir_node *succ = get_edge_src_irn(edge);
 
 				/* ignore Keeps */

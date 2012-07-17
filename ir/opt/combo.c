@@ -543,7 +543,7 @@ static listmap_entry_t *listmap_find(listmap_t *map, void *id)
 	key.id   = id;
 	key.list = NULL;
 	key.next = NULL;
-	entry = (listmap_entry_t*)set_insert(map->map, &key, sizeof(key), hash_ptr(id));
+	entry = set_insert(listmap_entry_t, map->map, &key, sizeof(key), hash_ptr(id));
 
 	if (entry->list == NULL) {
 		/* a new entry, put into the list */
@@ -565,7 +565,7 @@ static unsigned opcode_hash(const opcode_key_t *entry)
 	/* we cannot use the ir ops hash function here, because it hashes the
 	 * predecessors. */
 	const ir_node *n = entry->irn;
-	ir_opcode code  = get_irn_opcode(n);
+	ir_opcode code  = (ir_opcode)get_irn_opcode(n);
 	ir_mode   *mode = get_irn_mode(n);
 	unsigned hash = (unsigned)(PTR_TO_INT(mode) * 9 + code) + get_irn_arity(n);
 
@@ -1702,7 +1702,7 @@ static void *lambda_opcode(const node_t *node, environment_t *env)
 
 	key.irn = node->node;
 
-	entry = (opcode_key_t*)set_insert(env->opcode2id_map, &key, sizeof(key), opcode_hash(&key));
+	entry = set_insert(opcode_key_t, env->opcode2id_map, &key, sizeof(key), opcode_hash(&key));
 	return entry;
 }  /* lambda_opcode */
 

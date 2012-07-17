@@ -108,7 +108,7 @@ static int be_omit_fp = 1;
 
 static ir_node *be_abi_reg_map_get(pmap *map, const arch_register_t *reg)
 {
-	return (ir_node*)pmap_get(map, reg);
+	return pmap_get(ir_node, map, reg);
 }
 
 static void be_abi_reg_map_set(pmap *map, const arch_register_t* reg,
@@ -185,7 +185,7 @@ static be_abi_call_arg_t *get_call_arg(be_abi_call_t *call, int is_res, int pos,
 
 	hash = is_res * 128 + pos;
 
-	return (be_abi_call_arg_t*)set_find(call->params, &arg, sizeof(arg), hash);
+	return set_find(be_abi_call_arg_t, call->params, &arg, sizeof(arg), hash);
 }
 
 /**
@@ -196,11 +196,11 @@ static void remember_call_arg(be_abi_call_arg_t *arg, be_abi_call_t *call, be_ab
 	unsigned hash = arg->is_res * 128 + arg->pos;
 	if (context & ABI_CONTEXT_CALLEE) {
 		arg->callee = 1;
-		set_insert(call->params, arg, sizeof(*arg), hash);
+		(void)set_insert(be_abi_call_arg_t, call->params, arg, sizeof(*arg), hash);
 	}
 	if (context & ABI_CONTEXT_CALLER) {
 		arg->callee = 0;
-		set_insert(call->params, arg, sizeof(*arg), hash);
+		(void)set_insert(be_abi_call_arg_t, call->params, arg, sizeof(*arg), hash);
 	}
 }
 
@@ -378,7 +378,6 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	ir_node               **in;
 	ir_node               **res_projs;
 	int                     n_reg_results = 0;
-	const ir_edge_t        *edge;
 	int                    *reg_param_idxs;
 	int                    *stack_param_idx;
 	int                     i, n;
@@ -524,8 +523,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	res_projs = ALLOCANZ(ir_node*, n_res);
 
 	foreach_out_edge(irn, edge) {
-		const ir_edge_t *res_edge;
-		ir_node         *irn = get_edge_src_irn(edge);
+		ir_node *irn = get_edge_src_irn(edge);
 
 		if (!is_Proj(irn) || get_Proj_proj(irn) != pn_Call_T_result)
 			continue;
@@ -794,7 +792,6 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 	ir_type          *type      = get_Alloc_type(alloc);
 	dbg_info         *dbg;
 
-	const ir_edge_t *edge;
 	ir_node *new_alloc;
 	ir_node *count;
 	ir_node *size;
@@ -1229,7 +1226,7 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
 	dbg_info *dbgi;
 	pmap *reg_map  = pmap_create();
-	ir_node *keep  = (ir_node*)pmap_get(env->keep_map, bl);
+	ir_node *keep  = pmap_get(ir_node, env->keep_map, bl);
 	size_t in_max;
 	ir_node *ret;
 	int i, n;
@@ -1377,7 +1374,6 @@ static void fix_start_block(ir_graph *irg)
 
 	/* merge start block with successor if possible */
 	{
-		const ir_edge_t *edge;
 		foreach_out_edge(jmp, edge) {
 			ir_node *succ = get_edge_src_irn(edge);
 			if (!is_Block(succ))
@@ -1420,7 +1416,6 @@ static void modify_irg(ir_graph *irg)
 	ir_node *start_bl;
 	ir_node **args;
 	ir_node *arg_tuple;
-	const ir_edge_t *edge;
 	ir_type *arg_type, *bet_type;
 	lower_frame_sels_env_t ctx;
 
@@ -1580,7 +1575,7 @@ static void modify_irg(ir_graph *irg)
 			param_type = get_method_param_type(method_type, nr);
 
 			if (arg->in_reg) {
-				repl = (ir_node*)pmap_get(env->regs, arg->reg);
+				repl = pmap_get(ir_node, env->regs, arg->reg);
 			} else if (arg->on_stack) {
 				ir_node *addr = be_new_FrameAddr(sp->reg_class, start_bl, frame_pointer, arg->stack_ent);
 
@@ -1701,7 +1696,7 @@ static ir_entity *create_trampoline(be_main_env_t *be, ir_entity *method)
  */
 static ir_entity *get_trampoline(be_main_env_t *env, ir_entity *method)
 {
-	ir_entity *result = (ir_entity*)pmap_get(env->ent_trampoline_map, method);
+	ir_entity *result = pmap_get(ir_entity, env->ent_trampoline_map, method);
 	if (result == NULL) {
 		result = create_trampoline(env, method);
 		pmap_insert(env->ent_trampoline_map, method, result);
@@ -1726,7 +1721,7 @@ static ir_entity *create_pic_symbol(be_main_env_t *be, ir_entity *entity)
 
 static ir_entity *get_pic_symbol(be_main_env_t *env, ir_entity *entity)
 {
-	ir_entity *result = (ir_entity*)pmap_get(env->ent_pic_symbol_map, entity);
+	ir_entity *result = pmap_get(ir_entity, env->ent_pic_symbol_map, entity);
 	if (result == NULL) {
 		result = create_pic_symbol(env, entity);
 		pmap_insert(env->ent_pic_symbol_map, entity, result);

@@ -75,13 +75,14 @@ static void copy_node_dce(ir_node *node, void *env)
  */
 static void copy_graph_env(ir_graph *irg)
 {
+	ir_node *anchor = irg->anchor;
 	ir_node *new_anchor;
 
 	/* copy nodes */
-	irg_walk_anchors(irg, copy_node_dce, rewire_inputs, NULL);
+	irg_walk_in_or_dep(anchor, copy_node_dce, rewire_inputs, NULL);
 
 	/* fix the anchor */
-	new_anchor = (ir_node*)get_irn_link(irg->anchor);
+	new_anchor = (ir_node*)get_irn_link(anchor);
 	assert(new_anchor != NULL);
 	irg->anchor = new_anchor;
 }

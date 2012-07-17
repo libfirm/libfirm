@@ -51,7 +51,7 @@ static pmap *lowered_mtps;
  */
 static ir_type *get_pointer_type(ir_type *dest_type)
 {
-	ir_type *res = (ir_type*)pmap_get(pointer_types, dest_type);
+	ir_type *res = pmap_get(ir_type, pointer_types, dest_type);
 	if (res == NULL) {
 		res = new_type_pointer(dest_type);
 		pmap_insert(pointer_types, dest_type, res);
@@ -119,7 +119,7 @@ static ir_type *lower_mtp(compound_call_lowering_flags flags, ir_type *mtp)
 	if (!is_Method_type(mtp))
 		return mtp;
 
-	lowered = (ir_type*)pmap_get(lowered_mtps, mtp);
+	lowered = pmap_get(ir_type, lowered_mtps, mtp);
 	if (lowered != NULL)
 		return lowered;
 
@@ -508,7 +508,7 @@ static ir_node *get_dummy_sel(ir_graph *irg, ir_node *block, ir_type *tp,
                               wlk_env *env)
 {
 	/* use a map the check if we already create such an entity */
-	ir_entity *ent = pmap_get(env->dummy_map, tp);
+	ir_entity *ent = pmap_get(ir_entity, env->dummy_map, tp);
 	if (ent == NULL) {
 		ir_type *ft = get_irg_frame_type(irg);
 		ident   *dummy_id = id_unique("dummy.%u");

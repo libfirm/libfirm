@@ -47,28 +47,6 @@ ir_node **get_irn_in(const ir_node *node);
 extern unsigned firm_add_node_size;
 
 /**
- * Sets the get_type_attr operation for an ir_op_ops.
- *
- * @param code   the opcode for the default operation
- * @param ops    the operations initialized
- *
- * @return
- *    The operations.
- */
-void firm_set_default_get_type_attr(unsigned code, ir_op_ops *ops);
-
-/**
- * Sets the get_entity_attr operation for an ir_op_ops.
- *
- * @param code   the opcode for the default operation
- * @param ops    the operations initialized
- *
- * @return
- *    The operations.
- */
-void firm_set_default_get_entity_attr(unsigned code, ir_op_ops *ops);
-
-/**
  * Returns an array with the predecessors of the Block. Depending on
  * the implementation of the graph data structure this can be a copy of
  * the internal representation of predecessors as well as the internal
@@ -174,18 +152,6 @@ static inline ir_node *get_irn_dep_(const ir_node *node, int pos)
 
 /* forward declaration outside iredges_t.h to avoid circular include problems */
 void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir_edge_kind_t kind, ir_graph *irg);
-
-static inline void set_irn_dep_(ir_node *node, int pos, ir_node *dep)
-{
-	ir_node *old;
-
-	assert(node->deps && "dependency array node yet allocated. use add_irn_dep()");
-	assert(pos >= 0 && pos < (int)ARR_LEN(node->deps) && "dependency index out of range");
-	old = node->deps[pos];
-	node->deps[pos] = dep;
-	edges_notify_edge_kind(node, pos, dep, old, EDGE_KIND_DEP, get_irn_irg(node));
-}
-
 
 static inline int get_irn_ins_or_deps_(const ir_node *irn)
 {
@@ -597,6 +563,8 @@ static inline const ir_switch_table_entry *ir_switch_table_get_entry_const(
 	return &table->entries[entry];
 }
 
+void ir_register_getter_ops(void);
+
 /** initialize ir_node module */
 void init_irnode(void);
 
@@ -654,7 +622,6 @@ void init_irnode(void);
 #define get_irn_idx(node)                     get_irn_idx_(node)
 
 #define get_irn_deps(node)                    get_irn_deps_(node)
-#define set_irn_dep(node, pos, dep)           set_irn_dep_(node, pos, dep)
 #define get_irn_dep(node, pos)                get_irn_dep_(node, pos)
 
 #define get_irn_ins_or_deps(node)             get_irn_ins_or_deps_(node)

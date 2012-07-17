@@ -26,8 +26,6 @@
 #ifndef FIRM_ADT_CPSET_H
 #define FIRM_ADT_CPSET_H
 
-#include "../begin.h"
-
 /**
  * @ingroup adt
  * @defgroup Pointer Set (custom Compare)
@@ -79,7 +77,7 @@ typedef struct cpset_iterator_t cpset_iterator_t;
  * @param hash_function   The hash function to use
  * @param cmp_function    The compare function to use
  */
-FIRM_API void cpset_init(cpset_t *cpset, cpset_hash_function hash_function,
+void cpset_init(cpset_t *cpset, cpset_hash_function hash_function,
                 cpset_cmp_function cmp_function);
 
 /**
@@ -90,7 +88,7 @@ FIRM_API void cpset_init(cpset_t *cpset, cpset_hash_function hash_function,
  * @param cmp_function       The compare function to use
  * @param expected_elements  Number of elements expected in the cpset (roughly)
  */
-FIRM_API void cpset_init_size(cpset_t *cpset, cpset_hash_function hash_function,
+void cpset_init_size(cpset_t *cpset, cpset_hash_function hash_function,
                      cpset_cmp_function cmp_function,
                      size_t expected_elements);
 
@@ -100,7 +98,7 @@ FIRM_API void cpset_init_size(cpset_t *cpset, cpset_hash_function hash_function,
  *
  * @param cpset   Pointer to the cpset
  */
-FIRM_API void cpset_destroy(cpset_t *cpset);
+void cpset_destroy(cpset_t *cpset);
 
 /**
  * Inserts an element into a cpset.
@@ -109,7 +107,7 @@ FIRM_API void cpset_destroy(cpset_t *cpset);
  * @param obj     Element to insert into the cpset
  * @returns       The element itself or a pointer to an existing element
  */
-FIRM_API void* cpset_insert(cpset_t *cpset, void *obj);
+void* cpset_insert(cpset_t *cpset, void *obj);
 
 /**
  * Removes an element from a cpset. Does nothing if the cpset doesn't contain the
@@ -118,7 +116,7 @@ FIRM_API void* cpset_insert(cpset_t *cpset, void *obj);
  * @param cpset   Pointer to the cpset
  * @param obj     Pointer to remove from the cpset
  */
-FIRM_API void cpset_remove(cpset_t *cpset, const void *obj);
+void cpset_remove(cpset_t *cpset, const void *obj);
 
 /**
  * Tests whether a cpset contains a pointer
@@ -127,7 +125,7 @@ FIRM_API void cpset_remove(cpset_t *cpset, const void *obj);
  * @param obj     The pointer to find
  * @returns       An equivalent object to @p obj or NULL
  */
-FIRM_API void *cpset_find(const cpset_t *cpset, const void *obj);
+void *cpset_find(const cpset_t *cpset, const void *obj);
 
 /**
  * Returns the number of pointers contained in the cpset
@@ -135,7 +133,7 @@ FIRM_API void *cpset_find(const cpset_t *cpset, const void *obj);
  * @param cpset   Pointer to the cpset
  * @returns       Number of pointers contained in the cpset
  */
-FIRM_API size_t cpset_size(const cpset_t *cpset);
+size_t cpset_size(const cpset_t *cpset);
 
 /**
  * Initializes a cpset iterator. Sets the iterator before the first element in
@@ -144,7 +142,7 @@ FIRM_API size_t cpset_size(const cpset_t *cpset);
  * @param iterator   Pointer to already allocated iterator memory
  * @param cpset       Pointer to the cpset
  */
-FIRM_API void cpset_iterator_init(cpset_iterator_t *iterator, const cpset_t *cpset);
+void cpset_iterator_init(cpset_iterator_t *iterator, const cpset_t *cpset);
 
 /**
  * Advances the iterator and returns the current element or NULL if all elements
@@ -155,7 +153,7 @@ FIRM_API void cpset_iterator_init(cpset_iterator_t *iterator, const cpset_t *cps
  * @param iterator  Pointer to the cpset iterator.
  * @returns         Next element in the cpset or NULL
  */
-FIRM_API void *cpset_iterator_next(cpset_iterator_t *iterator);
+void *cpset_iterator_next(cpset_iterator_t *iterator);
 
 /**
  * Removed the element the iterator currently points to
@@ -163,10 +161,8 @@ FIRM_API void *cpset_iterator_next(cpset_iterator_t *iterator);
  * @param cpset     Pointer to the cpset
  * @param iterator  Pointer to the cpset iterator.
  */
-FIRM_API void cpset_remove_iterator(cpset_t *cpset, const cpset_iterator_t *iterator);
+void cpset_remove_iterator(cpset_t *cpset, const cpset_iterator_t *iterator);
 
 /** @} */
-
-#include "../end.h"
 
 #endif

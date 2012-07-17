@@ -219,48 +219,46 @@ static int my_values_interfere2(ir_graph *irg, const ir_node *a,
 {
 	be_lv_t *lv = be_get_irg_liveness(irg);
 
-    int a2b = _value_dominates(a, b);
-    int b2a = _value_dominates(b, a);
+	int a2b = _value_dominates(a, b);
+	int b2a = _value_dominates(b, a);
 
-    /* If there is no dominance relation, they do not interfere. */
-    if ((a2b | b2a) > 0) {
-        const ir_edge_t *edge;
-        ir_node *bb;
+	/* If there is no dominance relation, they do not interfere. */
+	if ((a2b | b2a) > 0) {
+		ir_node *bb;
 
-        /*
-         * Adjust a and b so, that a dominates b if
-         * a dominates b or vice versa.
-         */
-        if (b2a) {
-            const ir_node *t = a;
-            a = b;
-            b = t;
-        }
+		/*
+		 * Adjust a and b so, that a dominates b if
+		 * a dominates b or vice versa.
+		 */
+		if (b2a) {
+			const ir_node *t = a;
+			a = b;
+			b = t;
+		}
 
-        bb = get_nodes_block(b);
+		bb = get_nodes_block(b);
 
-        /*
-         * If a is live end in b's block it is
-         * live at b's definition (a dominates b)
-         */
-        if (be_is_live_end(lv, bb, a))
-            return 1;
+		/*
+		 * If a is live end in b's block it is
+		 * live at b's definition (a dominates b)
+		 */
+		if (be_is_live_end(lv, bb, a))
+			return 1;
 
-        /*
-         * Look at all usages of a.
-         * If there's one usage of a in the block of b, then
-         * we check, if this use is dominated by b, if that's true
-         * a and b interfere. Note that b must strictly dominate the user,
-         * since if b is the last user of in the block, b and a do not
-         * interfere.
-         * Uses of a not in b's block can be disobeyed, because the
-         * check for a being live at the end of b's block is already
-         * performed.
-         */
-        foreach_out_edge(a, edge) {
-            const ir_node *user = get_edge_src_irn(edge);
+		/*
+		 * Look at all usages of a.
+		 * If there's one usage of a in the block of b, then
+		 * we check, if this use is dominated by b, if that's true
+		 * a and b interfere. Note that b must strictly dominate the user,
+		 * since if b is the last user of in the block, b and a do not
+		 * interfere.
+		 * Uses of a not in b's block can be disobeyed, because the
+		 * check for a being live at the end of b's block is already
+		 * performed.
+		 */
+		foreach_out_edge(a, edge) {
+			const ir_node *user = get_edge_src_irn(edge);
 			if (is_Sync(user)) {
-				const ir_edge_t *edge2;
 				foreach_out_edge(user, edge2) {
 					const ir_node *user2 = get_edge_src_irn(edge2);
 					assert(!is_Sync(user2));
@@ -271,10 +269,10 @@ static int my_values_interfere2(ir_graph *irg, const ir_node *a,
 			} else {
 				if (get_nodes_block(user) == bb && !is_Phi(user) &&
 						_value_strictly_dominates(b, user))
-                return 1;
+					return 1;
 			}
-        }
-    }
+		}
+	}
 
 	return 0;
 }
@@ -460,12 +458,12 @@ static memperm_t *get_memperm(be_fec_env_t *env, ir_node *block)
 	entry.block = block;
 	hash        = hash_irn(block);
 
-	res = (memperm_t*)set_find(env->memperms, &entry, sizeof(entry), hash);
+	res = set_find(memperm_t, env->memperms, &entry, sizeof(entry), hash);
 
 	if (res == NULL) {
 		entry.entrycount = 0;
 		entry.entries = NULL;
-		res = (memperm_t*)set_insert(env->memperms, &entry, sizeof(entry), hash);
+		res = set_insert(memperm_t, env->memperms, &entry, sizeof(entry), hash);
 	}
 
 	return res;
@@ -640,9 +638,7 @@ static ir_node *get_end_of_block_insertion_point(ir_node* block)
 
 static void create_memperms(be_fec_env_t *env)
 {
-	memperm_t *memperm;
-
-	foreach_set(env->memperms, memperm_t*, memperm) {
+	foreach_set(env->memperms, memperm_t, memperm) {
 		ir_node         **nodes = ALLOCAN(ir_node*, memperm->entrycount);
 		memperm_entry_t  *entry;
 		ir_node          *blockend;

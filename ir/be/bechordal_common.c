@@ -112,13 +112,10 @@ void create_borders(ir_node *block, void *env_ptr)
 #define border_use(irn, step, real) \
 	border_add(env, head, irn, step, ++pressure, 0, real)
 
-	be_chordal_env_t *env             = (be_chordal_env_t*)env_ptr;
-	bitset_t *live                    = bitset_malloc(get_irg_last_idx(env->irg));
-	ir_node *irn;
-	be_lv_t *lv                       = be_get_irg_liveness(env->irg);
+	be_chordal_env_t *env  = (be_chordal_env_t*)env_ptr;
+	bitset_t         *live = bitset_malloc(get_irg_last_idx(env->irg));
+	be_lv_t          *lv   = be_get_irg_liveness(env->irg);
 
-	int i, n;
-	size_t elm;
 	unsigned step = 0;
 	unsigned pressure = 0;
 	struct list_head *head;
@@ -128,15 +125,14 @@ void create_borders(ir_node *block, void *env_ptr)
 	/* Set up the border list in the block info */
 	head = OALLOC(env->obst, struct list_head);
 	INIT_LIST_HEAD(head);
-	assert(pmap_get(env->border_heads, block) == NULL);
+	assert(pmap_get(struct list_head, env->border_heads, block) == NULL);
 	pmap_insert(env->border_heads, block, head);
 
 	/*
 	 * Make final uses of all values live out of the block.
 	 * They are necessary to build up real intervals.
 	 */
-	be_lv_foreach(lv, block, be_lv_state_end, i) {
-		ir_node *irn = be_lv_get_irn(lv, block, i);
+	be_lv_foreach(lv, block, be_lv_state_end, irn) {
 		if (has_reg_class(env, irn)) {
 			DBG((dbg, LEVEL_3, "\tMaking live: %+F/%d\n", irn, get_irn_idx(irn)));
 			bitset_set(live, get_irn_idx(irn));
@@ -154,8 +150,6 @@ void create_borders(ir_node *block, void *env_ptr)
 		DBG((dbg, LEVEL_2, "\tlive: %B\n", live));
 
 		if (get_irn_mode(irn) == mode_T) {
-			const ir_edge_t *edge;
-
 			foreach_out_edge(irn, edge) {
 				ir_node *proj = get_edge_src_irn(edge);
 
@@ -187,7 +181,7 @@ void create_borders(ir_node *block, void *env_ptr)
 		 * If the node is no phi node we can examine the uses.
 		 */
 		if (!is_Phi(irn)) {
-			for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
+			for (int i = 0, n = get_irn_arity(irn); i < n; ++i) {
 				ir_node *op = get_irn_n(irn, i);
 
 				if (has_reg_class(env, op)) {
@@ -229,11 +223,10 @@ be_insn_t *chordal_scan_insn(be_chordal_env_t *env, ir_node *irn)
 
 ir_node *pre_process_constraints(be_chordal_env_t *env, be_insn_t **the_insn)
 {
-	be_insn_t *insn             = *the_insn;
-	ir_node *perm               = NULL;
-	bitset_t *out_constr        = bitset_alloca(env->cls->n_regs);
-	const ir_edge_t *edge;
-	int i;
+	be_insn_t *insn       = *the_insn;
+	ir_node   *perm       = NULL;
+	bitset_t  *out_constr = bitset_alloca(env->cls->n_regs);
+	int        i;
 
 	assert(insn->has_constraints && "only do this for constrained nodes");
 

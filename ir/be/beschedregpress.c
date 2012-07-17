@@ -152,8 +152,6 @@ static int compute_max_hops(reg_pressure_selector_env_t *env, ir_node *irn)
 	ir_graph *irg = get_irn_irg(bl);
 	int res       = 0;
 
-	const ir_edge_t *edge;
-
 	foreach_out_edge(irn, edge) {
 		ir_node *user       = get_edge_src_irn(edge);
 		unsigned visited_nr = get_irg_visited(irg) + 1;
@@ -176,7 +174,6 @@ static void *reg_pressure_graph_init(ir_graph *irg)
 
 static void *reg_pressure_block_init(void *graph_env, ir_node *bl)
 {
-	ir_node *irn;
 	reg_pressure_selector_env_t *env = XMALLOC(reg_pressure_selector_env_t);
 	(void) graph_env;
 
@@ -224,8 +221,6 @@ static int get_result_hops_sum(reg_pressure_selector_env_t *env, ir_node *irn)
 {
 	int res = 0;
 	if (get_irn_mode(irn) == mode_T) {
-		const ir_edge_t *edge;
-
 		foreach_out_edge(irn, edge)
 			res += get_result_hops_sum(env, get_edge_src_irn(edge));
 	}
@@ -266,8 +261,7 @@ static ir_node *reg_pressure_select(void *block_env, ir_nodeset_t *ready_set)
 
 	assert(ir_nodeset_size(ready_set) > 0);
 
-	ir_nodeset_iterator_init(&iter, ready_set);
-	while ( (irn = ir_nodeset_iterator_next(&iter)) != NULL) {
+	foreach_ir_nodeset(ready_set, irn, iter) {
 		/*
 		Ignore branch instructions for the time being.
 		They should only be scheduled if there is nothing else.
@@ -287,9 +281,7 @@ static ir_node *reg_pressure_select(void *block_env, ir_nodeset_t *ready_set)
 	*/
 
 	if (!res) {
-		ir_nodeset_iterator_init(&iter, ready_set);
-		res = ir_nodeset_iterator_next(&iter);
-
+		res = ir_nodeset_first(ready_set);
 		assert(res && "There must be a node scheduled.");
 	}
 

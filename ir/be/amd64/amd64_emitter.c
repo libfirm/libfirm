@@ -131,7 +131,7 @@ static void emit_amd64_SymConst(const ir_node *irn)
 	key.u.id     = get_entity_ld_ident(attr->entity);
 	key.is_ident = 1;
 	key.label    = 0;
-	entry = (sym_or_tv_t *)set_insert(sym_or_tv, &key, sizeof(key), hash_ptr(key.u.generic));
+	entry = set_insert(sym_or_tv_t, sym_or_tv, &key, sizeof(key), hash_ptr(key.u.generic));
 	if (entry->label == 0) {
 		/* allocate a label */
 		entry->label = get_unique_label();
@@ -215,17 +215,16 @@ static void emit_amd64_Jmp(const ir_node *node)
  */
 static void emit_amd64_Jcc(const ir_node *irn)
 {
-	const ir_edge_t      *edge;
-	const ir_node        *proj_true  = NULL;
-	const ir_node        *proj_false = NULL;
-	const ir_node        *block;
-	const ir_node        *next_block;
-	const char           *suffix;
-	const amd64_attr_t   *attr      = get_amd64_attr_const(irn);
-	ir_relation           relation  = attr->ext.relation;
-	ir_node              *op1       = get_irn_n(irn, 0);
-	const amd64_attr_t   *cmp_attr  = get_amd64_attr_const(op1);
-	bool                  is_signed = !cmp_attr->data.cmp_unsigned;
+	const ir_node      *proj_true  = NULL;
+	const ir_node      *proj_false = NULL;
+	const ir_node      *block;
+	const ir_node      *next_block;
+	const char         *suffix;
+	const amd64_attr_t *attr      = get_amd64_attr_const(irn);
+	ir_relation         relation  = attr->ext.relation;
+	ir_node            *op1       = get_irn_n(irn, 0);
+	const amd64_attr_t *cmp_attr  = get_amd64_attr_const(op1);
+	bool                is_signed = !cmp_attr->data.cmp_unsigned;
 
 	assert(is_amd64_Cmp(op1));
 
@@ -534,7 +533,6 @@ static void amd64_emit_node(const ir_node *node)
  */
 static void amd64_gen_block(ir_node *block, void *data)
 {
-	ir_node *node;
 	(void) data;
 
 	if (! is_Block(block))

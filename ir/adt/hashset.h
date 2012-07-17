@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2012 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -55,7 +55,7 @@ struct HashSet {
 #endif
 };
 
-#ifndef NO_ITERATOR
+#ifdef HashSetIterator
 struct HashSetIterator {
 	HashSetEntry *current_bucket;
 	HashSetEntry *end;

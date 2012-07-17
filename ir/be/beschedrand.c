@@ -43,8 +43,7 @@ static ir_node *random_select(void *block_env, ir_nodeset_t *ready_set)
 	(void)block_env;
 
 	/* assure that branches and constants are executed last */
-	ir_nodeset_iterator_init(&iter, ready_set);
-	while ( (irn = ir_nodeset_iterator_next(&iter)) != NULL) {
+	foreach_ir_nodeset(ready_set, irn, iter) {
 		if (!is_cfop(irn)) {
 			only_branches_left = 0;
 			break;
@@ -53,15 +52,13 @@ static ir_node *random_select(void *block_env, ir_nodeset_t *ready_set)
 
 	if (only_branches_left) {
 		/* at last: schedule branches */
-		ir_nodeset_iterator_init(&iter, ready_set);
-		irn = ir_nodeset_iterator_next(&iter);
+		irn = ir_nodeset_first(ready_set);
 	} else {
 		do {
 			/* take 1 random node */
 			int n = rand() % ir_nodeset_size(ready_set);
 			int i = 0;
-			ir_nodeset_iterator_init(&iter, ready_set);
-			while ((irn = ir_nodeset_iterator_next(&iter)) != NULL) {
+			foreach_ir_nodeset(ready_set, irn, iter) {
 				if (i == n) {
 					break;
 				}

@@ -414,16 +414,9 @@ void be_transform_graph(ir_graph *irg, arch_pretrans_nodes *func)
 	current_ir_graph = old_current_ir_graph;
 
 	/* most analysis info is wrong after transformation */
-	free_callee_info(irg);
-	free_irg_outs(irg);
-	free_trouts();
-	free_loop_information(irg);
-	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
-
 	be_invalidate_live_chk(irg);
-	be_invalidate_dom_front(irg);
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 
 	/* recalculate edges */
-	edges_deactivate(irg);
 	edges_activate(irg);
 }

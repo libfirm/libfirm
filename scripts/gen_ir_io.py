@@ -181,7 +181,7 @@ static ir_node *read_{{node.name}}(read_env_t *env)
 	{%- endif %}
 	{%- if node.arity == "dynamic" or node.arity == "variable" %}
 	int       n_preds = read_preds(env);
-	ir_node **preds   = obstack_finish(&env->preds_obst);
+	ir_node **preds   = (ir_node**)obstack_finish(&env->preds_obst);
 	{%- endif %}
 	{%- if node.constructorFlags %}
 	ir_cons_flags flags = cons_none;
@@ -194,10 +194,10 @@ static ir_node *read_{{node.name}}(read_env_t *env)
 			{%- endif %}
 		{%- endfor %}
 		{%- if node.dynamic_pinned %}
-	flags |= pin_state == op_pin_state_floats ? cons_floats : 0;
+	flags |= pin_state == op_pin_state_floats ? cons_floats : cons_none;
 		{%- endif %}
 		{%- if "fragile" in node.flags %}
-	flags |= throws ? cons_throws_exception : 0;
+	flags |= throws ? cons_throws_exception : cons_none;
 		{%- endif %}
 	{%- endif %}
 	res = new_r_{{node.name}}(

@@ -212,8 +212,6 @@ static void TEMPLATE_emit_node(const ir_node *node)
  */
 static void TEMPLATE_emit_block(ir_node *block)
 {
-	ir_node *node;
-
 	be_gas_begin_block(block, true);
 
 	sched_foreach(block, node) {

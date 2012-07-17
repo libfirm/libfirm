@@ -789,7 +789,6 @@ static void queue_users(pdeq* const q, ir_node* const n)
 		/* When the state of a control flow node changes, not only queue its
 		 * successor blocks, but also the Phis in these blocks, because the Phis
 		 * must reconsider this input path. */
-		ir_edge_t const* e;
 		foreach_out_edge(n, e) {
 			ir_node*  const  src = get_edge_src_irn(e);
 			pdeq_putr(q, src);
@@ -801,7 +800,6 @@ static void queue_users(pdeq* const q, ir_node* const n)
 			}
 		}
 	} else {
-		ir_edge_t const* e;
 		foreach_out_edge(n, e) {
 			ir_node* const src = get_edge_src_irn(e);
 			if (get_irn_mode(src) == mode_T) {

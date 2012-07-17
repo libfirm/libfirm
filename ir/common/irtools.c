@@ -180,6 +180,7 @@ void irn_rewire_inputs(ir_node *node)
 {
 	ir_node *new_node;
 	int      arity;
+	int      n_deps;
 	int      i;
 
 	new_node = get_new_node(node);
@@ -197,15 +198,20 @@ void irn_rewire_inputs(ir_node *node)
 		set_irn_n(new_node, i, new_in);
 	}
 
+	n_deps = get_irn_deps(new_node);
+	for (i = 0; i < n_deps; ++i) {
+		ir_node *dep     = get_irn_dep(node, i);
+		ir_node *new_dep = get_new_node(dep);
+		set_irn_dep(new_node, i, new_dep);
+	}
+
 	/* Now the new node is complete. We can add it to the hash table for CSE. */
 	add_identities(new_node);
 }
 
 void firm_pset_dump(pset *set)
 {
-	void *obj;
-
-	foreach_pset(set, void*, obj) {
+	foreach_pset(set, void, obj) {
 		ir_fprintf(stderr, "%+F\n", obj);
 	}
 }

@@ -181,11 +181,11 @@ static tr_inh_trans_tp *get_firm_kind_entry(const firm_kind *k)
 
 	if (!tr_inh_trans_set) tr_inh_trans_set = new_set(tr_inh_trans_cmp, 128);
 
-	found = (tr_inh_trans_tp*)set_find(tr_inh_trans_set, &a, sizeof(a), tr_inh_trans_hash(&a));
+	found = set_find(tr_inh_trans_tp, tr_inh_trans_set, &a, sizeof(a), tr_inh_trans_hash(&a));
 	if (!found) {
 		a.directions[d_up]   = pset_new_ptr(16);
 		a.directions[d_down] = pset_new_ptr(16);
-		found = (tr_inh_trans_tp*)set_insert(tr_inh_trans_set, &a, sizeof(a), tr_inh_trans_hash(&a));
+		found = set_insert(tr_inh_trans_tp, tr_inh_trans_set, &a, sizeof(a), tr_inh_trans_hash(&a));
 	}
 	return found;
 }
@@ -396,9 +396,7 @@ void compute_inh_transitive_closure(void)
 void free_inh_transitive_closure(void)
 {
 	if (tr_inh_trans_set) {
-		tr_inh_trans_tp *elt;
-		for (elt = (tr_inh_trans_tp*)set_first(tr_inh_trans_set); elt != NULL;
-		     elt = (tr_inh_trans_tp*)set_next(tr_inh_trans_set)) {
+		foreach_set(tr_inh_trans_set, tr_inh_trans_tp, elt) {
 			del_pset(elt->directions[d_up]);
 			del_pset(elt->directions[d_down]);
 		}
@@ -413,13 +411,13 @@ void free_inh_transitive_closure(void)
 ir_type *get_class_trans_subtype_first(const ir_type *tp)
 {
 	assert_valid_state();
-	return (ir_type*)pset_first(get_type_map(tp, d_down));
+	return pset_first(ir_type, get_type_map(tp, d_down));
 }
 
 ir_type *get_class_trans_subtype_next(const ir_type *tp)
 {
 	assert_valid_state();
-	return (ir_type*)pset_next(get_type_map(tp, d_down));
+	return pset_next(ir_type, get_type_map(tp, d_down));
 }
 
 int is_class_trans_subtype(const ir_type *tp, const ir_type *subtp)
@@ -433,13 +431,13 @@ int is_class_trans_subtype(const ir_type *tp, const ir_type *subtp)
 ir_type *get_class_trans_supertype_first(const ir_type *tp)
 {
 	assert_valid_state();
-	return (ir_type*)pset_first(get_type_map(tp, d_up));
+	return pset_first(ir_type, get_type_map(tp, d_up));
 }
 
 ir_type *get_class_trans_supertype_next(const ir_type *tp)
 {
 	assert_valid_state();
-	return (ir_type*)pset_next(get_type_map(tp, d_up));
+	return pset_next(ir_type, get_type_map(tp, d_up));
 }
 
 /* - overwrittenby ------------------------------------------------------- */
@@ -447,13 +445,13 @@ ir_type *get_class_trans_supertype_next(const ir_type *tp)
 ir_entity *get_entity_trans_overwrittenby_first(const ir_entity *ent)
 {
 	assert_valid_state();
-	return (ir_entity*)pset_first(get_entity_map(ent, d_down));
+	return pset_first(ir_entity, get_entity_map(ent, d_down));
 }
 
 ir_entity *get_entity_trans_overwrittenby_next(const ir_entity *ent)
 {
 	assert_valid_state();
-	return (ir_entity*)pset_next(get_entity_map(ent, d_down));
+	return pset_next(ir_entity, get_entity_map(ent, d_down));
 }
 
 /* - overwrites ---------------------------------------------------------- */
@@ -462,13 +460,13 @@ ir_entity *get_entity_trans_overwrittenby_next(const ir_entity *ent)
 ir_entity *get_entity_trans_overwrites_first(const ir_entity *ent)
 {
 	assert_valid_state();
-	return (ir_entity*)pset_first(get_entity_map(ent, d_up));
+	return pset_first(ir_entity, get_entity_map(ent, d_up));
 }
 
 ir_entity *get_entity_trans_overwrites_next(const ir_entity *ent)
 {
 	assert_valid_state();
-	return (ir_entity*)pset_next(get_entity_map(ent, d_up));
+	return pset_next(ir_entity, get_entity_map(ent, d_up));
 }
 
 

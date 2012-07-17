@@ -119,9 +119,8 @@ static ir_entity **get_impl_methods(ir_entity *method)
 		/* no overwriting methods found */
 		arr = NULL;
 	} else {
-		ir_entity * ent;
 		arr = NEW_ARR_F(ir_entity *, size);
-		foreach_pset(set, ir_entity*, ent) {
+		foreach_pset(set, ir_entity, ent) {
 			arr[--size] = ent;
 		}
 	}
@@ -529,7 +528,6 @@ static size_t get_free_methods(ir_entity ***free_methods)
 	pset *free_set = pset_new_ptr_default();
 	size_t i, n, j, m;
 	ir_entity **arr;
-	ir_entity *ent;
 	ir_graph *irg;
 	ir_type *tp;
 	size_t length;
@@ -537,7 +535,7 @@ static size_t get_free_methods(ir_entity ***free_methods)
 	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		ir_linkage linkage;
 		irg = get_irp_irg(i);
-		ent = get_irg_entity(irg);
+		ir_entity *const ent = get_irg_entity(irg);
 		linkage = get_entity_linkage(ent);
 
 		if ((linkage & IR_LINKAGE_HIDDEN_USER) || entity_is_externally_visible(ent)) {
@@ -554,12 +552,12 @@ static size_t get_free_methods(ir_entity ***free_methods)
 	/* insert all methods that are used in global variables initializers */
 	tp = get_glob_type();
 	for (j = 0, m = get_class_n_members(tp); j < m; ++j) {
-		ent = get_class_member(tp, j);
+		ir_entity *const ent = get_class_member(tp, j);
 		add_method_address(ent, free_set);
 	}
 	tp = get_tls_type();
 	for (j = 0, m = get_compound_n_members(tp); j < m; ++j) {
-		ent = get_compound_member(tp, j);
+		ir_entity *const ent = get_compound_member(tp, j);
 		add_method_address(ent, free_set);
 	}
 
@@ -572,7 +570,7 @@ static size_t get_free_methods(ir_entity ***free_methods)
 	length = pset_count(free_set);
 	arr = XMALLOCN(ir_entity*, length);
 	i = 0;
-	foreach_pset(free_set, ir_entity*, ent) {
+	foreach_pset(free_set, ir_entity, ent) {
 		arr[i++] = ent;
 	}
 	del_pset(free_set);
@@ -713,14 +711,13 @@ static void callee_walker(ir_node *call, void *env)
 	(void) env;
 	if (is_Call(call)) {
 		pset *methods = pset_new_ptr_default();
-		ir_entity *ent;
 		ir_entity **arr;
 		size_t i;
 
 		callee_ana_node(get_Call_ptr(call), methods);
 		arr = NEW_ARR_F(ir_entity*, pset_count(methods));
 		i = 0;
-		foreach_pset(methods, ir_entity*, ent) {
+		foreach_pset(methods, ir_entity, ent) {
 			arr[i] = ent;
 			/* we want the unknown_entity on the zero position for easy tests later */
 			if (is_unknown_entity(ent)) {
@@ -773,9 +770,8 @@ static void callee_ana(void)
 /** Frees intermediate data structures. */
 static void sel_methods_dispose(void)
 {
-	ir_entity * ent;
 	assert(entities);
-	foreach_pset(entities, ir_entity*, ent) {
+	foreach_pset(entities, ir_entity, ent) {
 		ir_entity **arr = (ir_entity**) get_entity_link(ent);
 		if (arr != NULL) {
 			DEL_ARR_F(arr);
