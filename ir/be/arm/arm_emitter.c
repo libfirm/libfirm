@@ -67,19 +67,19 @@ static void arm_emit_register(const arch_register_t *reg)
 	be_emit_string(arch_register_get_name(reg));
 }
 
-void arm_emit_source_register(const ir_node *node, int pos)
+static void arm_emit_source_register(const ir_node *node, int pos)
 {
 	const arch_register_t *reg = arch_get_irn_register_in(node, pos);
 	arm_emit_register(reg);
 }
 
-void arm_emit_dest_register(const ir_node *node, int pos)
+static void arm_emit_dest_register(const ir_node *node, int pos)
 {
 	const arch_register_t *reg = arch_get_irn_register_out(node, pos);
 	arm_emit_register(reg);
 }
 
-void arm_emit_offset(const ir_node *node)
+static void arm_emit_offset(const ir_node *node)
 {
 	const arm_load_store_attr_t *attr = get_arm_load_store_attr_const(node);
 	assert(attr->base.is_load_store);
@@ -102,19 +102,19 @@ static void arm_emit_fpa_postfix(const ir_mode *mode)
 	be_emit_char(c);
 }
 
-void arm_emit_float_load_store_mode(const ir_node *node)
+static void arm_emit_float_load_store_mode(const ir_node *node)
 {
 	const arm_load_store_attr_t *attr = get_arm_load_store_attr_const(node);
 	arm_emit_fpa_postfix(attr->load_store_mode);
 }
 
-void arm_emit_float_arithmetic_mode(const ir_node *node)
+static void arm_emit_float_arithmetic_mode(const ir_node *node)
 {
 	const arm_farith_attr_t *attr = get_arm_farith_attr_const(node);
 	arm_emit_fpa_postfix(attr->mode);
 }
 
-void arm_emit_symconst(const ir_node *node)
+static void arm_emit_symconst(const ir_node *node)
 {
 	const arm_SymConst_attr_t *symconst = get_arm_SymConst_attr_const(node);
 	ir_entity                 *entity   = symconst->entity;
@@ -124,7 +124,7 @@ void arm_emit_symconst(const ir_node *node)
 	/* TODO do something with offset */
 }
 
-void arm_emit_load_mode(const ir_node *node)
+static void arm_emit_load_mode(const ir_node *node)
 {
 	const arm_load_store_attr_t *attr = get_arm_load_store_attr_const(node);
 	ir_mode *mode      = attr->load_store_mode;
@@ -139,7 +139,7 @@ void arm_emit_load_mode(const ir_node *node)
 	}
 }
 
-void arm_emit_store_mode(const ir_node *node)
+static void arm_emit_store_mode(const ir_node *node)
 {
 	const arm_load_store_attr_t *attr = get_arm_load_store_attr_const(node);
 	ir_mode *mode      = attr->load_store_mode;
@@ -178,7 +178,7 @@ static void emit_shf_mod_name(arm_shift_modifier_t mod)
 	panic("can't emit this shf_mod_name %d", (int) mod);
 }
 
-void arm_emit_shifter_operand(const ir_node *node)
+static void arm_emit_shifter_operand(const ir_node *node)
 {
 	const arm_shifter_operand_t *attr = get_arm_shifter_operand_attr_const(node);
 
@@ -251,6 +251,146 @@ static void emit_constant_name(const sym_or_tv_t *entry)
 }
 
 /**
+ * Returns the target block for a control flow node.
+ */
+static ir_node *get_cfop_target_block(const ir_node *irn)
+{
+	return (ir_node*)get_irn_link(irn);
+}
+
+/**
+ * Emit the target label for a control flow node.
+ */
+static void arm_emit_cfop_target(const ir_node *irn)
+{
+	ir_node *block = get_cfop_target_block(irn);
+
+	be_gas_emit_block_name(block);
+}
+
+void arm_emitf(const ir_node *node, const char *format, ...)
+{
+	va_list ap;
+	va_start(ap, format);
+	be_emit_char('\t');
+	for (;;) {
+		const char *start = format;
+		while (*format != '%' && *format != '\0')
+			++format;
+		be_emit_string_len(start, format-start);
+		if (*format == '\0')
+			break;
+		++format;
+
+		switch (*format++) {
+		case '%':
+			be_emit_char('%');
+			break;
+
+		case 'S': {
+			if (*format < '0' || '9' <= *format)
+				goto unknown;
+			unsigned const pos = *format++ - '0';
+			arm_emit_source_register(node, pos);
+			break;
+		}
+
+		case 'D': {
+			if (*format < '0' || '9' <= *format)
+				goto unknown;
+			unsigned const pos = *format++ - '0';
+			arm_emit_dest_register(node, pos);
+			break;
+		}
+
+		case 'I':
+			arm_emit_symconst(node);
+			break;
+
+		case 'o':
+			arm_emit_offset(node);
+			break;
+
+		case 'O':
+			arm_emit_shifter_operand(node);
+			break;
+
+		case 'C': {
+			const sym_or_tv_t *name = va_arg(ap, const sym_or_tv_t*);
+			emit_constant_name(name);
+			break;
+		}
+
+		case 'm': {
+			ir_mode *mode = va_arg(ap, ir_mode*);
+			arm_emit_fpa_postfix(mode);
+			break;
+		}
+
+		case 'M':
+			switch (*format++) {
+			case 'L': arm_emit_load_mode(node);             break;
+			case 'S': arm_emit_store_mode(node);            break;
+			case 'A': arm_emit_float_arithmetic_mode(node); break;
+			case 'F': arm_emit_float_load_store_mode(node); break;
+			default:
+				--format;
+				goto unknown;
+			}
+			break;
+
+		case 'X': {
+			int num = va_arg(ap, int);
+			be_emit_irprintf("%X", num);
+			break;
+		}
+
+		case 'u': {
+			unsigned num = va_arg(ap, unsigned);
+			be_emit_irprintf("%u", num);
+			break;
+		}
+
+		case 'd': {
+			int num = va_arg(ap, int);
+			be_emit_irprintf("%d", num);
+			break;
+		}
+
+		case 's': {
+			const char *string = va_arg(ap, const char *);
+			be_emit_string(string);
+			break;
+		}
+
+		case 'r': {
+			arch_register_t *reg = va_arg(ap, arch_register_t*);
+			arm_emit_register(reg);
+			break;
+		}
+
+		case 't': {
+			const ir_node *n = va_arg(ap, const ir_node*);
+			arm_emit_cfop_target(n);
+			break;
+		}
+
+		case '\n':
+			be_emit_char('\n');
+			be_emit_write_line();
+			be_emit_char('\t');
+			break;
+
+		default:
+unknown:
+			panic("unknown format conversion in arm_emitf()");
+		}
+	}
+	va_end(ap);
+	be_emit_finish_line_gas(node);
+}
+
+/**
  * Emit a SymConst.
  */
 static void emit_arm_SymConst(const ir_node *irn)
@@ -268,24 +408,13 @@ static void emit_arm_SymConst(const ir_node *irn)
 	}
 
 	/* load the symbol indirect */
-	be_emit_cstring("\tldr ");
-	arm_emit_dest_register(irn, 0);
-	be_emit_cstring(", ");
-	emit_constant_name(entry);
-	be_emit_finish_line_gas(irn);
+	arm_emitf(irn, "ldr %D0, %C", entry);
 }
 
 static void emit_arm_FrameAddr(const ir_node *irn)
 {
 	const arm_SymConst_attr_t *attr = get_arm_SymConst_attr_const(irn);
-
-	be_emit_cstring("\tadd ");
-	arm_emit_dest_register(irn, 0);
-	be_emit_cstring(", ");
-	arm_emit_source_register(irn, 0);
-	be_emit_cstring(", ");
-	be_emit_irprintf("#0x%X", attr->fp_offset);
-	be_emit_finish_line_gas(irn);
+	arm_emitf(irn, "add %D0, %S0, #0x%X", attr->fp_offset);
 }
 
 /**
@@ -293,28 +422,20 @@ static void emit_arm_FrameAddr(const ir_node *irn)
  */
 static void emit_arm_fConst(const ir_node *irn)
 {
-	sym_or_tv_t key, *entry;
-	ir_mode *mode;
+	sym_or_tv_t key;
 
 	key.u.tv      = get_fConst_value(irn);
 	key.is_entity = false;
 	key.label     = 0;
-	entry = set_insert(sym_or_tv_t, sym_or_tv, &key, sizeof(key), hash_ptr(key.u.generic));
+	sym_or_tv_t *entry = set_insert(sym_or_tv_t, sym_or_tv, &key, sizeof(key), hash_ptr(key.u.generic));
 	if (entry->label == 0) {
 		/* allocate a label */
 		entry->label = get_unique_label();
 	}
 
 	/* load the tarval indirect */
-	mode = get_irn_mode(irn);
-	be_emit_cstring("\tldf");
-	arm_emit_fpa_postfix(mode);
-	be_emit_char(' ');
-
-	arm_emit_dest_register(irn, 0);
-	be_emit_cstring(", ");
-	emit_constant_name(entry);
-	be_emit_finish_line_gas(irn);
+	ir_mode *mode = get_irn_mode(irn);
+	arm_emitf(irn, "ldf%m %D0, %C", mode, entry);
 }
 
 /**
@@ -323,24 +444,6 @@ static void emit_arm_fConst(const ir_node *irn)
 static ir_node *sched_next_block(const ir_node *block)
 {
     return (ir_node*)get_irn_link(block);
-}
-
-/**
- * Returns the target block for a control flow node.
- */
-static ir_node *get_cfop_target_block(const ir_node *irn)
-{
-	return (ir_node*)get_irn_link(irn);
-}
-
-/**
- * Emit the target label for a control flow node.
- */
-static void arm_emit_cfop_target(const ir_node *irn)
-{
-	ir_node *block = get_cfop_target_block(irn);
-
-	be_gas_emit_block_name(block);
 }
 
 /**
@@ -404,21 +507,14 @@ static void emit_arm_B(const ir_node *irn)
 	}
 
 	/* emit the true proj */
-	be_emit_irprintf("\tb%s ", suffix);
-	arm_emit_cfop_target(proj_true);
-	be_emit_finish_line_gas(proj_true);
+	arm_emitf(irn, "b%s %t", suffix, proj_true);
 
 	if (get_cfop_target_block(proj_false) == next_block) {
 		if (be_options.verbose_asm) {
-			be_emit_cstring("\t/* fallthrough to ");
-			arm_emit_cfop_target(proj_false);
-			be_emit_cstring(" */");
-			be_emit_finish_line_gas(proj_false);
+			arm_emitf(irn, "/* fallthrough to %t */", proj_false);
 		}
 	} else {
-		be_emit_cstring("\tb ");
-		arm_emit_cfop_target(proj_false);
-		be_emit_finish_line_gas(proj_false);
+		arm_emitf(irn, "b %t", proj_false);
 	}
 }
 
@@ -438,11 +534,6 @@ static void emit_arm_CopyB(const ir_node *irn)
 {
 	const arm_CopyB_attr_t *attr = get_arm_CopyB_attr_const(irn);
 	unsigned size = attr->size;
-
-	const char *tgt = arch_register_get_name(arch_get_irn_register_in(irn, 0));
-	const char *src = arch_register_get_name(arch_get_irn_register_in(irn, 1));
-	const char *t0, *t1, *t2, *t3;
-
 	const arch_register_t *tmpregs[4];
 
 	/* collect the temporary registers and sort them, we need ascending order */
@@ -454,27 +545,9 @@ static void emit_arm_CopyB(const ir_node *irn)
 	/* Note: R12 is always the last register because the RA did not assign higher ones */
 	qsort((void *)tmpregs, 3, sizeof(tmpregs[0]), reg_cmp);
 
-	/* need ascending order */
-	t0 = arch_register_get_name(tmpregs[0]);
-	t1 = arch_register_get_name(tmpregs[1]);
-	t2 = arch_register_get_name(tmpregs[2]);
-	t3 = arch_register_get_name(tmpregs[3]);
-
 	if (be_options.verbose_asm) {
-		be_emit_cstring("/* MemCopy (");
-		be_emit_string(src);
-		be_emit_cstring(")->(");
-		arm_emit_source_register(irn, 0);
-		be_emit_irprintf(" [%u bytes], Uses ", size);
-		be_emit_string(t0);
-		be_emit_cstring(", ");
-		be_emit_string(t1);
-		be_emit_cstring(", ");
-		be_emit_string(t2);
-		be_emit_cstring(", and ");
-		be_emit_string(t3);
-		be_emit_cstring("*/");
-		be_emit_finish_line_gas(NULL);
+		arm_emitf(irn, "/* MemCopy (%S1)->(%S0) [%u bytes], Uses %r, %r, %r and %r */",
+		          size, tmpregs[0], tmpregs[1], tmpregs[2], tmpregs[3]);
 	}
 
 	assert(size > 0 && "CopyB needs size > 0" );
@@ -489,90 +562,22 @@ static void emit_arm_CopyB(const ir_node *irn)
 	case 0:
 		break;
 	case 1:
-		be_emit_cstring("\tldr ");
-		be_emit_string(t3);
-		be_emit_cstring(", [");
-		be_emit_string(src);
-		be_emit_cstring(", #0]");
-		be_emit_finish_line_gas(NULL);
-
-		be_emit_cstring("\tstr ");
-		be_emit_string(t3);
-		be_emit_cstring(", [");
-		be_emit_string(tgt);
-		be_emit_cstring(", #0]");
-		be_emit_finish_line_gas(irn);
+		arm_emitf(irn, "ldr %r, [%S1, #0]", tmpregs[3]);
+		arm_emitf(irn, "str %r, [%S0, #0]", tmpregs[3]);
 		break;
 	case 2:
-		be_emit_cstring("\tldmia ");
-		be_emit_string(src);
-		be_emit_cstring("!, {");
-		be_emit_string(t0);
-		be_emit_cstring(", ");
-		be_emit_string(t1);
-		be_emit_char('}');
-		be_emit_finish_line_gas(NULL);
-
-		be_emit_cstring("\tstmia ");
-		be_emit_string(tgt);
-		be_emit_cstring("!, {");
-		be_emit_string(t0);
-		be_emit_cstring(", ");
-		be_emit_string(t1);
-		be_emit_char('}');
-		be_emit_finish_line_gas(irn);
+		arm_emitf(irn, "ldmia %S1!, {%r, %r}", tmpregs[0], tmpregs[1]);
+		arm_emitf(irn, "stmia %S0!, {%r, %r}", tmpregs[0], tmpregs[1]);
 		break;
 	case 3:
-		be_emit_cstring("\tldmia ");
-		be_emit_string(src);
-		be_emit_cstring("!, {");
-		be_emit_string(t0);
-		be_emit_cstring(", ");
-		be_emit_string(t1);
-		be_emit_cstring(", ");
-		be_emit_string(t2);
-		be_emit_char('}');
-		be_emit_finish_line_gas(NULL);
-
-		be_emit_cstring("\tstmia ");
-		be_emit_string(tgt);
-		be_emit_cstring("!, {");
-		be_emit_string(t0);
-		be_emit_cstring(", ");
-		be_emit_string(t1);
-		be_emit_cstring(", ");
-		be_emit_string(t2);
-		be_emit_char('}');
-		be_emit_finish_line_gas(irn);
+		arm_emitf(irn, "ldmia %S1!, {%r, %r, %r}", tmpregs[0], tmpregs[1], tmpregs[2]);
+		arm_emitf(irn, "stmia %S0!, {%r, %r, %r}", tmpregs[0], tmpregs[1], tmpregs[2]);
 		break;
 	}
 	size >>= 2;
 	while (size) {
-		be_emit_cstring("\tldmia ");
-		be_emit_string(src);
-		be_emit_cstring("!, {");
-		be_emit_string(t0);
-		be_emit_cstring(", ");
-		be_emit_string(t1);
-		be_emit_cstring(", ");
-		be_emit_string(t2);
-		be_emit_cstring(", ");
-		be_emit_string(t3);
-		be_emit_char('}');
-		be_emit_finish_line_gas(NULL);
-
-		be_emit_cstring("\tstmia ");
-		be_emit_string(tgt);
-		be_emit_cstring("!, {");
-		be_emit_string(t0);
-		be_emit_cstring(", ");
-		be_emit_string(t1);
-		be_emit_cstring(", ");
-		be_emit_string(t2);
-		be_emit_cstring(", ");
-		be_emit_string(t3);
-		be_emit_char('}');
-		be_emit_finish_line_gas(irn);
+		arm_emitf(irn, "ldmia %S1!, {%r, %r, %r}", tmpregs[0], tmpregs[1], tmpregs[2], tmpregs[3]);
+		arm_emitf(irn, "stmia %S0!, {%r, %r, %r}", tmpregs[0], tmpregs[1], tmpregs[2], tmpregs[3]);
 		--size;
 	}
 }
@@ -580,10 +585,7 @@ static void emit_arm_CopyB(const ir_node *irn)
 static void emit_arm_SwitchJmp(const ir_node *irn)
 {
 	const arm_SwitchJmp_attr_t *attr = get_arm_SwitchJmp_attr_const(irn);
-	be_emit_cstring("\tldrls pc, [pc, ");
-	arm_emit_source_register(irn, 0);
-	be_emit_cstring(", asl #2]");
-	be_emit_finish_line_gas(irn);
+	arm_emitf(irn, "ldrls pc, [pc, %S0, asl #2]");
 
 	be_emit_jump_table(irn, attr->table, NULL, get_cfop_target_block);
 }
@@ -593,22 +595,15 @@ static void emit_be_IncSP(const ir_node *irn)
 {
 	int offs = -be_get_IncSP_offset(irn);
 
-	if (offs != 0) {
-		if (offs < 0) {
-			be_emit_cstring("\tsub ");
-			offs = -offs;
-		} else {
-			be_emit_cstring("\tadd ");
-		}
-		arm_emit_dest_register(irn, 0);
-		be_emit_cstring(", ");
-		arm_emit_source_register(irn, 0);
-		be_emit_irprintf(", #0x%X", offs);
-		be_emit_finish_line_gas(irn);
-	} else {
-		/* omitted IncSP(0) */
+	if (offs == 0)
 		return;
+
+	const char *op = "add";
+	if (offs < 0) {
+		op   = "sub";
+		offs = -offs;
 	}
+	arm_emitf(irn, "%s %D0, %S0, #0x%X", op, offs);
 }
 
 static void emit_be_Copy(const ir_node *irn)
@@ -622,21 +617,12 @@ static void emit_be_Copy(const ir_node *irn)
 
 	if (mode_is_float(mode)) {
 		if (USE_FPA(isa)) {
-			be_emit_cstring("\tmvf");
-			be_emit_char(' ');
-			arm_emit_dest_register(irn, 0);
-			be_emit_cstring(", ");
-			arm_emit_source_register(irn, 0);
-			be_emit_finish_line_gas(irn);
+			arm_emitf(irn, "mvf %D0, %S0");
 		} else {
 			panic("emit_be_Copy: move not supported for this mode");
 		}
 	} else if (mode_is_data(mode)) {
-		be_emit_cstring("\tmov ");
-		arm_emit_dest_register(irn, 0);
-		be_emit_cstring(", ");
-		arm_emit_source_register(irn, 0);
-		be_emit_finish_line_gas(irn);
+		arm_emitf(irn, "mov %D0, %S0");
 	} else {
 		panic("emit_be_Copy: move not supported for this mode");
 	}
@@ -644,29 +630,10 @@ static void emit_be_Copy(const ir_node *irn)
 
 static void emit_be_Perm(const ir_node *irn)
 {
-	be_emit_cstring("\teor ");
-	arm_emit_source_register(irn, 0);
-	be_emit_cstring(", ");
-	arm_emit_source_register(irn, 0);
-	be_emit_cstring(", ");
-	arm_emit_source_register(irn, 1);
-	be_emit_finish_line_gas(NULL);
-
-	be_emit_cstring("\teor ");
-	arm_emit_source_register(irn, 1);
-	be_emit_cstring(", ");
-	arm_emit_source_register(irn, 0);
-	be_emit_cstring(", ");
-	arm_emit_source_register(irn, 1);
-	be_emit_finish_line_gas(NULL);
-
-	be_emit_cstring("\teor ");
-	arm_emit_source_register(irn, 0);
-	be_emit_cstring(", ");
-	arm_emit_source_register(irn, 0);
-	be_emit_cstring(", ");
-	arm_emit_source_register(irn, 1);
-	be_emit_finish_line_gas(irn);
+	arm_emitf(irn,
+		"eor %S0, %S0, %S1\n"
+		"eor %S1, %S0, %S1\n"
+		"eor %S0, %S0, %S1");
 }
 
 static void emit_be_MemPerm(const ir_node *node)
@@ -683,31 +650,23 @@ static void emit_be_MemPerm(const ir_node *node)
 		panic("memperm with more than 12 inputs not supported yet");
 
 	for (i = 0; i < memperm_arity; ++i) {
-		int offset;
-		ir_entity *entity = be_get_MemPerm_in_entity(node, i);
-
 		/* spill register */
-		be_emit_irprintf("\tstr r%d, [sp, #-4]!", i);
-		be_emit_finish_line_gas(node);
+		arm_emitf(node, "str r%d, [sp, #-4]!", i);
 		sp_change += 4;
 		/* load from entity */
-		offset = get_entity_offset(entity) + sp_change;
-		be_emit_irprintf("\tldr r%d, [sp, #%d]", i, offset);
-		be_emit_finish_line_gas(node);
+		ir_entity *entity = be_get_MemPerm_in_entity(node, i);
+		int        offset = get_entity_offset(entity) + sp_change;
+		arm_emitf(node, "ldr r%d, [sp, #%d]", i, offset);
 	}
 
 	for (i = memperm_arity-1; i >= 0; --i) {
-		int        offset;
-		ir_entity *entity = be_get_MemPerm_out_entity(node, i);
-
 		/* store to new entity */
-		offset = get_entity_offset(entity) + sp_change;
-		be_emit_irprintf("\tstr r%d, [sp, #%d]", i, offset);
-		be_emit_finish_line_gas(node);
+		ir_entity *entity = be_get_MemPerm_out_entity(node, i);
+		int        offset = get_entity_offset(entity) + sp_change;
+		arm_emitf(node, "str r%d, [sp, #%d]", i, offset);
 		/* restore register */
-		be_emit_irprintf("\tldr r%d, [sp], #4", i);
+		arm_emitf(node, "ldr r%d, [sp], #4", i);
 		sp_change -= 4;
-		be_emit_finish_line_gas(node);
 	}
 	assert(sp_change == 0);
 }
@@ -720,12 +679,7 @@ static void emit_be_Start(const ir_node *node)
 
 	/* allocate stackframe */
 	if (size > 0) {
-		be_emit_cstring("\tsub ");
-		arm_emit_register(&arm_registers[REG_SP]);
-		be_emit_cstring(", ");
-		arm_emit_register(&arm_registers[REG_SP]);
-		be_emit_irprintf(", #0x%X", size);
-		be_emit_finish_line_gas(node);
+		arm_emitf(node, "sub sp, sp, #0x%X", size);
 	}
 }
 
@@ -737,16 +691,9 @@ static void emit_be_Return(const ir_node *node)
 
 	/* deallocate stackframe */
 	if (size > 0) {
-		be_emit_cstring("\tadd ");
-		arm_emit_register(&arm_registers[REG_SP]);
-		be_emit_cstring(", ");
-		arm_emit_register(&arm_registers[REG_SP]);
-		be_emit_irprintf(", #0x%X", size);
-		be_emit_finish_line_gas(node);
+		arm_emitf(node, "add sp, sp, #0x%X", size);
 	}
-
-	be_emit_cstring("\tmov pc, lr");
-	be_emit_finish_line_gas(node);
+	arm_emitf(node, "mov pc, lr");
 }
 
 
@@ -760,15 +707,10 @@ static void emit_arm_Jmp(const ir_node *node)
 	/* we have a block schedule */
 	next_block = sched_next_block(block);
 	if (get_cfop_target_block(node) != next_block) {
-		be_emit_cstring("\tb ");
-		arm_emit_cfop_target(node);
-		be_emit_finish_line_gas(node);
+		arm_emitf(node, "b %t", node);
 	} else {
 		if (be_options.verbose_asm) {
-			be_emit_cstring("\t/* fallthrough to ");
-			arm_emit_cfop_target(node);
-			be_emit_cstring(" */");
-			be_emit_finish_line_gas(node);
+			arm_emitf(node, "/* fallthrough to %t */", node);
 		}
 	}
 }
