@@ -103,22 +103,6 @@ $mode_fp  = "mode_F";  # mode used by floatingpoint registers
 	]
 );
 
-%emit_templates = (
-	S1 => "${arch}_emit_source_register(node, 0);",
-	S2 => "${arch}_emit_source_register(node, 1);",
-	S3 => "${arch}_emit_source_register(node, 2);",
-	S4 => "${arch}_emit_source_register(node, 3);",
-	S5 => "${arch}_emit_source_register(node, 4);",
-	S6 => "${arch}_emit_source_register(node, 5);",
-	D1 => "${arch}_emit_dest_register(node, 0);",
-	D2 => "${arch}_emit_dest_register(node, 1);",
-	D3 => "${arch}_emit_dest_register(node, 2);",
-	D4 => "${arch}_emit_dest_register(node, 3);",
-	D5 => "${arch}_emit_dest_register(node, 4);",
-	D6 => "${arch}_emit_dest_register(node, 5);",
-	C  => "${arch}_emit_immediate(node);"
-);
-
 $default_attr_type = "TEMPLATE_attr_t";
 $default_copy_attr = "TEMPLATE_copy_attr";
 
@@ -130,7 +114,7 @@ Add => {
 	op_flags  => [ "commutative" ],
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '. add %S1, %S2, %D1',
+	emit      => 'add %S1, %S2, %D1',
 	mode      => $mode_gp,
 },
 
@@ -138,7 +122,7 @@ Mul => {
 	op_flags  => [ "commutative" ],
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      =>'. mul %S1, %S2, %D1',
+	emit      =>'mul %S1, %S2, %D1',
 	mode      => $mode_gp,
 },
 
@@ -146,7 +130,7 @@ And => {
 	op_flags  => [ "commutative" ],
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '. and %S1, %S2, %D1',
+	emit      => 'and %S1, %S2, %D1',
 	mode      => $mode_gp,
 },
 
@@ -154,7 +138,7 @@ Or => {
 	op_flags  => [ "commutative" ],
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '. or %S1, %S2, %D1',
+	emit      => 'or %S1, %S2, %D1',
 	mode      => $mode_gp,
 },
 
@@ -162,35 +146,35 @@ Xor => {
 	op_flags  => [ "commutative" ],
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '. xor %S1, %S2, %D1',
+	emit      => 'xor %S1, %S2, %D1',
 	mode      => $mode_gp,
 },
 
 Sub => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '. sub %S1, %S2, %D1',
+	emit      => 'sub %S1, %S2, %D1',
 	mode      => $mode_gp,
 },
 
 Shl => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '. shl %S1, %S2, %D1',
+	emit      => 'shl %S1, %S2, %D1',
 	mode      => $mode_gp,
 },
 
 Shr => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "in_r1" ] },
-	emit      => '. shr %S2, %D1',
+	emit      => 'shr %S2, %D1',
 	mode      => $mode_gp,
 },
 
 Minus => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-	emit      => '. neg %S1, %D1',
+	emit      => 'neg %S1, %D1',
 	mode      => $mode_gp,
 },
 
@@ -198,7 +182,7 @@ Not => {
 	arity   => 1,
 	remat   => 1,
 	reg_req => { in => [ "gp" ], out => [ "gp" ] },
-	emit    => '. not %S1, %D1',
+	emit    => 'not %S1, %D1',
 	mode    => $mode_gp,
 },
 
@@ -208,7 +192,7 @@ Const => {
 	attr       => "ir_tarval *value",
 	custominit => "set_TEMPLATE_value(res, value);",
 	reg_req    => { out => [ "gp" ] },
-	emit       => '. mov %C, %D1',
+	emit       => 'mov %I, %D1',
 	cmp_attr   =>
 '
 	/* TODO: compare Const attributes */
@@ -234,7 +218,7 @@ Load => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "none" ], out => [ "gp" ] },
-	emit      => '. mov (%S1), %D1',
+	emit      => 'mov (%S1), %D1',
 },
 
 Store => {
@@ -242,7 +226,7 @@ Store => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ] },
-	emit      => '. movl %S2, (%S1)',
+	emit      => 'movl %S2, (%S1)',
 },
 
 # Floating Point operations
@@ -251,34 +235,34 @@ fAdd => {
 	op_flags  => [ "commutative" ],
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-	emit      => '. fadd %S1, %S2, %D1',
+	emit      => 'fadd %S1, %S2, %D1',
 	mode    => $mode_fp,
 },
 
 fMul => {
 	op_flags  => [ "commutative" ],
 	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-	emit      =>'. fmul %S1, %S2, %D1',
+	emit      =>'fmul %S1, %S2, %D1',
 	mode      => $mode_fp,
 },
 
 fSub => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-	emit      => '. fsub %S1, %S2, %D1',
+	emit      => 'fsub %S1, %S2, %D1',
 	mode      => $mode_fp,
 },
 
 fDiv => {
 	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-	emit      => '. fdiv %S1, %S2, %D1',
+	emit      => 'fdiv %S1, %S2, %D1',
 	mode      => $mode_fp,
 },
 
 fMinus => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
-	emit      => '. fneg %S1, %D1',
+	emit      => 'fneg %S1, %D1',
 	mode      => $mode_fp,
 },
 
@@ -286,7 +270,7 @@ fConst => {
 	op_flags  => [ "constlike" ],
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { out => [ "fp" ] },
-	emit      => '. fmov %C, %D1',
+	emit      => 'fmov %I, %D1',
 	cmp_attr  =>
 '
 	/* TODO: compare fConst attributes */
@@ -302,7 +286,7 @@ fLoad => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "none" ], out => [ "fp" ] },
-	emit      => '. fmov (%S1), %D1',
+	emit      => 'fmov (%S1), %D1',
 },
 
 fStore => {
@@ -310,7 +294,7 @@ fStore => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "fp", "none" ] },
-	emit      => '. fmov %S2, (%S1)',
+	emit      => 'fmov %S2, (%S1)',
 },
 
 );
