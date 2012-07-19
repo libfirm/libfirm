@@ -211,6 +211,21 @@ Jmp => {
 	mode      => "mode_X",
 },
 
+Start => {
+	state     => "pinned",
+	reg_req   => { in => [], out => [ "sp:I|S", "none" ] },
+	outs      => [ "stack", "M" ],
+	ins       => [],
+},
+
+Return => {
+	state    => "pinned",
+	op_flags => [ "cfopcode" ],
+	ins      => [ "stack", "mem" ],
+	reg_req  => { in => [ "sp", "none", ], out => [] },
+	mode     => "mode_X",
+},
+
 # Load / Store
 
 Load => {
