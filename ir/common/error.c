@@ -31,11 +31,11 @@
 #include "error.h"
 #include "irprintf.h"
 
-NORETURN panic(const char *fmt, ...)
+NORETURN (panic)(char const *const file, int const line, char const *const func, char const *const fmt, ...)
 {
 	va_list ap;
 
-	fputs("libFirm panic: ", stderr);
+	fprintf(stderr, "%s:%d: libFirm panic in %s: ", file, line, func);
 	va_start(ap, fmt);
 	ir_vfprintf(stderr, fmt, ap);
 	va_end(ap);

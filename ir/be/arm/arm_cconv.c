@@ -99,7 +99,7 @@ calling_convention_t *arm_decide_calling_convention(const ir_graph *irg,
 		/* we might need a 2nd 32bit component (for 64bit or double values) */
 		if (bits > 32) {
 			if (bits > 64)
-				panic("only 32 and 64bit modes supported in arm backend");
+				panic("only 32 and 64bit modes supported");
 
 			if (regnum < n_param_regs) {
 				const arch_register_t *reg = param_regs[regnum++];
@@ -127,18 +127,18 @@ calling_convention_t *arm_decide_calling_convention(const ir_graph *irg,
 
 		if (mode_is_float(result_mode)) {
 			if (float_regnum >= n_float_result_regs) {
-				panic("Too many float results for arm backend");
+				panic("Too many float results");
 			} else {
 				const arch_register_t *reg = float_result_regs[float_regnum++];
 				result->reg0 = reg;
 			}
 		} else {
 			if (get_mode_size_bits(result_mode) > 32) {
-				panic("Results with more than 32bits not supported by arm backend yet");
+				panic("Results with more than 32bits not supported yet");
 			}
 
 			if (regnum >= n_result_regs) {
-				panic("Too many results for arm backend");
+				panic("Too many results");
 			} else {
 				const arch_register_t *reg = result_regs[regnum++];
 				result->reg0 = reg;

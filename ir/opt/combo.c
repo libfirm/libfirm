@@ -488,7 +488,7 @@ static void verify_type(const lattice_elem_t old_type, node_t *node)
 		/* bottom reached */
 		return;
 	}
-	panic("combo: wrong translation from %+F to %+F on node %+F", old_type, node->type, node->node);
+	panic("wrong translation from %+F to %+F on node %+F", old_type, node->type, node->node);
 }  /* verify_type */
 
 #else

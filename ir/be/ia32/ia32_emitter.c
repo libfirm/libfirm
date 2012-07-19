@@ -697,7 +697,7 @@ emit_S:
 
 			default:
 unknown:
-				panic("unknown format conversion in ia32_emitf()");
+				panic("unknown format conversion");
 		}
 	}
 

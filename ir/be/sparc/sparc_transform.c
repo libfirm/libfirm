@@ -663,7 +663,7 @@ static ir_node *gen_Proj_AddCC_t(ir_node *node)
 	case pn_sparc_AddCC_t_flags:
 		return new_r_Proj(new_pred, mode_flags, pn_sparc_AddCC_flags);
 	default:
-		panic("Invalid AddCC_t proj found");
+		panic("Invalid proj found");
 	}
 }
 
@@ -710,7 +710,7 @@ static ir_node *gen_Proj_SubCC_t(ir_node *node)
 	case pn_sparc_SubCC_t_flags:
 		return new_r_Proj(new_pred, mode_flags, pn_sparc_SubCC_flags);
 	default:
-		panic("Invalid SubCC_t proj found");
+		panic("Invalid proj found");
 	}
 }
 
@@ -777,7 +777,7 @@ static ir_node *gen_Load(ir_node *node)
 	address_t address;
 
 	if (get_Load_unaligned(node) == align_non_aligned) {
-		panic("sparc: transformation of unaligned Loads not implemented yet");
+		panic("transformation of unaligned Loads not implemented yet");
 	}
 
 	if (mode_is_float(mode)) {
@@ -820,7 +820,7 @@ static ir_node *gen_Store(ir_node *node)
 	address_t address;
 
 	if (get_Store_unaligned(node) == align_non_aligned) {
-		panic("sparc: transformation of unaligned Stores not implemented yet");
+		panic("transformation of unaligned Stores not implemented yet");
 	}
 
 	if (mode_is_float(mode)) {
@@ -1054,7 +1054,7 @@ static ir_node *gen_Shl(ir_node *node)
 {
 	ir_mode *mode = get_irn_mode(node);
 	if (get_mode_modulo_shift(mode) != 32)
-		panic("modulo_shift!=32 not supported by sparc backend");
+		panic("modulo_shift!=32 not supported");
 	return gen_helper_binop(node, MATCH_NONE, new_bd_sparc_Sll_reg, new_bd_sparc_Sll_imm);
 }
 
@@ -1062,7 +1062,7 @@ static ir_node *gen_Shr(ir_node *node)
 {
 	ir_mode *mode = get_irn_mode(node);
 	if (get_mode_modulo_shift(mode) != 32)
-		panic("modulo_shift!=32 not supported by sparc backend");
+		panic("modulo_shift!=32 not supported");
 	return gen_helper_binop(node, MATCH_NONE, new_bd_sparc_Srl_reg, new_bd_sparc_Srl_imm);
 }
 
@@ -1070,7 +1070,7 @@ static ir_node *gen_Shrs(ir_node *node)
 {
 	ir_mode *mode = get_irn_mode(node);
 	if (get_mode_modulo_shift(mode) != 32)
-		panic("modulo_shift!=32 not supported by sparc backend");
+		panic("modulo_shift!=32 not supported");
 	return gen_helper_binop(node, MATCH_NONE, new_bd_sparc_Sra_reg, new_bd_sparc_Sra_imm);
 }
 
@@ -2070,10 +2070,10 @@ static ir_node *gen_Proj_Alloc(ir_node *node)
 	}
 	case pn_Alloc_X_regular:
 	case pn_Alloc_X_except:
-		panic("sparc backend: exception output of alloc not supported (at %+F)",
+		panic("exception output of alloc not supported (at %+F)",
 		      node);
 	}
-	panic("sparc backend: invalid Proj->Alloc");
+	panic("invalid Proj->Alloc");
 }
 
 static ir_node *gen_Free(ir_node *node)
@@ -2269,7 +2269,7 @@ static ir_node *gen_Proj_Div(ir_node *node)
 	} else if (is_sparc_fdiv(new_pred)) {
 		res_mode = get_Div_resmode(pred);
 	} else {
-		panic("sparc backend: Div transformed to something unexpected: %+F",
+		panic("Div transformed to something unexpected: %+F",
 		      new_pred);
 	}
 	assert((int)pn_sparc_SDiv_res == (int)pn_sparc_UDiv_res);

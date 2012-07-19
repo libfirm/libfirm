@@ -54,6 +54,8 @@
 /**
  * Prints a panic message to stderr and exits.
  */
-NORETURN panic(const char *fmt, ...);
+NORETURN panic(char const *file, int line, char const *func, char const *fmt, ...);
+
+#define panic(...) panic(__FILE__, __LINE__, __func__, __VA_ARGS__)
 
 # endif

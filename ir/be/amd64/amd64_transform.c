@@ -196,7 +196,7 @@ static ir_node *gen_Cmp(ir_node *node)
 	bool      is_unsigned;
 
 	if (mode_is_float(cmp_mode)) {
-		panic("Floating point not implemented yet (in gen_Cmp)!");
+		panic("Floating point not implemented yet!");
 	}
 
 	assert(get_irn_mode(op2) == cmp_mode);

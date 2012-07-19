@@ -387,7 +387,7 @@ void arm_emitf(const ir_node *node, const char *format, ...)
 
 		default:
 unknown:
-			panic("unknown format conversion in arm_emitf()");
+			panic("unknown format conversion");
 		}
 	}
 	va_end(ap);
@@ -623,12 +623,12 @@ static void emit_be_Copy(const ir_node *irn)
 		if (USE_FPA(isa)) {
 			arm_emitf(irn, "mvf %D0, %S0");
 		} else {
-			panic("emit_be_Copy: move not supported for this mode");
+			panic("move not supported for this mode");
 		}
 	} else if (mode_is_data(mode)) {
 		arm_emitf(irn, "mov %D0, %S0");
 	} else {
-		panic("emit_be_Copy: move not supported for this mode");
+		panic("move not supported for this mode");
 	}
 }
 

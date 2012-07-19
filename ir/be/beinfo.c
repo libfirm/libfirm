@@ -175,7 +175,7 @@ void be_info_init_irg(ir_graph *irg)
 void be_info_free(void)
 {
 	if (!initialized)
-		panic("be_info_free called without prior init");
+		panic("called without prior init");
 
 	assert(op_Phi->ops.copy_attr == new_phi_copy_attr);
 	op_Phi->ops.copy_attr = old_phi_copy_attr;

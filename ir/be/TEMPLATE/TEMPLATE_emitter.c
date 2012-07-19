@@ -154,7 +154,7 @@ void TEMPLATE_emitf(const ir_node *node, const char *format, ...)
 
 		default:
 unknown:
-			panic("unknown format conversion in arm_emitf()");
+			panic("unknown format conversion");
 		}
 	}
 	va_end(ap);

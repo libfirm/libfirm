@@ -328,7 +328,7 @@ static void emit_be_Copy(const ir_node *irn)
 	}
 
 	if (mode_is_float(mode)) {
-		panic("emit_be_Copy: move not supported for FP");
+		panic("move not supported for FP");
 	} else if (mode_is_data(mode)) {
 		be_emit_cstring("\tmov ");
 		amd64_emit_source_register(irn, 0);
@@ -336,7 +336,7 @@ static void emit_be_Copy(const ir_node *irn)
 		amd64_emit_dest_register(irn, 0);
 		be_emit_finish_line_gas(irn);
 	} else {
-		panic("emit_be_Copy: move not supported for this mode");
+		panic("move not supported for this mode");
 	}
 }
 

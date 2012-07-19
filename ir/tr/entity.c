@@ -491,7 +491,7 @@ ir_node *get_atomic_ent_value(const ir_entity *entity)
 		panic("compound initializer in atomic entity not allowed (%+F)", entity);
 	}
 
-	panic("invalid initializer kind in get_atomic_ent_value(%+F)", entity);
+	panic("invalid initializer kind (%+F)", entity);
 }
 
 void set_atomic_ent_value(ir_entity *entity, ir_node *val)

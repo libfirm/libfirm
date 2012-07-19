@@ -1491,7 +1491,7 @@ unsigned char get_tarval_sub_bits(ir_tarval *tv, unsigned byte_ofs)
 	case irma_x86_extended_float:
 		return fc_sub_bits((const fp_value*) tv->value, get_mode_size_bits(tv->mode), byte_ofs);
 	default:
-		panic("get_tarval_sub_bits(): arithmetic mode not supported");
+		panic("arithmetic mode not supported");
 	}
 }
 

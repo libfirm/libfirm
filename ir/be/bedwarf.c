@@ -639,7 +639,7 @@ static void emit_array_type(const ir_type *type)
 	ir_type *element_type = get_array_element_type(type);
 
 	if (get_array_n_dimensions(type) != 1)
-		panic("dwarf: multidimensional arrays no supported yet");
+		panic("multidimensional arrays no supported yet");
 
 	emit_type(element_type);
 
@@ -822,7 +822,7 @@ static void emit_type(ir_type *type)
 	case tpo_union:     emit_compound_type(type);   break;
 	case tpo_method:    emit_subroutine_type(type); break;
 	default:
-		panic("bedwarf: type %+F not implemented yet", type);
+		panic("type %+F not implemented yet", type);
 	}
 }
 

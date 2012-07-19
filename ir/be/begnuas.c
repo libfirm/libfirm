@@ -730,7 +730,7 @@ static void emit_init_expression(be_gas_decl_env_t *env, ir_node *init)
 		return;
 
 	default:
-		panic("emit_atomic_init(): unsupported IR-node %+F", init);
+		panic("unsupported IR-node %+F", init);
 	}
 }
 

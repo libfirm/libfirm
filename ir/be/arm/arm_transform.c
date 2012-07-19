@@ -738,7 +738,7 @@ static ir_node *make_shift(ir_node *node, match_flags_t flags,
 	ir_node  *new_op2;
 
 	if (get_mode_modulo_shift(mode) != 32)
-		panic("modulo shift!=32 not supported by arm backend");
+		panic("modulo shift!=32 not supported");
 
 	if (flags & MATCH_SIZE_NEUTRAL) {
 		op1 = arm_skip_downconv(op1);
@@ -942,7 +942,7 @@ static ir_node *gen_Load(ir_node *node)
 	ir_node  *new_load = NULL;
 
 	if (get_Load_unaligned(node) == align_non_aligned)
-		panic("arm: unaligned Loads not supported yet");
+		panic("unaligned Loads not supported yet");
 
 	if (mode_is_float(mode)) {
 		if (USE_FPA(isa)) {
@@ -984,7 +984,7 @@ static ir_node *gen_Store(ir_node *node)
 	ir_node *new_store = NULL;
 
 	if (get_Store_unaligned(node) == align_non_aligned)
-		panic("arm: unaligned Stores not supported yet");
+		panic("unaligned Stores not supported yet");
 
 	if (mode_is_float(mode)) {
 		if (USE_FPA(isa)) {
@@ -1293,7 +1293,7 @@ static ir_node *gen_Builtin(ir_node *node)
 	case ir_bk_inner_trampoline:
 		break;
 	}
-	panic("Builtin %s not implemented in ARM", get_builtin_kind_name(kind));
+	panic("Builtin %s not implemented", get_builtin_kind_name(kind));
 }
 
 /**
@@ -1326,7 +1326,7 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 	case ir_bk_inner_trampoline:
 		break;
 	}
-	panic("Builtin %s not implemented in ARM", get_builtin_kind_name(kind));
+	panic("Builtin %s not implemented", get_builtin_kind_name(kind));
 }
 
 static ir_node *gen_Proj_Load(ir_node *node)

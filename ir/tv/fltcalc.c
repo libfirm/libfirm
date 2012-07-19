@@ -1506,7 +1506,7 @@ fp_value *fc_rnd(const fp_value *a, fp_value *result)
 	TRACEPRINTF(("%s ", fc_print(a, buffer, sizeof(buffer), FC_PACKED)));
 	TRACEPRINTF(("rounded to integer "));
 
-	panic("fc_rnd() not yet implemented");
+	panic("not yet implemented");
 }
 
 /*

@@ -1071,7 +1071,7 @@ static void emit_be_Copy(const ir_node *node)
 	} else if (mode_is_data(mode)) {
 		sparc_emitf(node, "mov %S0, %D0");
 	} else {
-		panic("emit_be_Copy: invalid mode");
+		panic("invalid mode");
 	}
 }
 
