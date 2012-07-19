@@ -37,8 +37,6 @@
  */
 static ir_node *random_select(void *block_env, ir_nodeset_t *ready_set)
 {
-	ir_nodeset_iterator_t iter;
-	ir_node          *irn      = NULL;
 	int only_branches_left = 1;
 	(void)block_env;
 
@@ -50,6 +48,7 @@ static ir_node *random_select(void *block_env, ir_nodeset_t *ready_set)
 		}
 	}
 
+	ir_node *irn;
 	if (only_branches_left) {
 		/* at last: schedule branches */
 		irn = ir_nodeset_first(ready_set);

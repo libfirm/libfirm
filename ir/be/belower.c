@@ -651,9 +651,7 @@ static void melt_copykeeps(constraint_env_t *cenv)
 	foreach_ir_nodehashmap(&cenv->op_set, map_entry, map_iter) {
 		op_copy_assoc_t *entry = (op_copy_assoc_t*)map_entry.data;
 		int     idx, num_ck;
-		ir_node *cp;
 		struct obstack obst;
-		ir_nodeset_iterator_t iter;
 		ir_node **ck_arr, **melt_arr;
 
 		obstack_init(&obst);
@@ -783,8 +781,6 @@ void assure_constraints(ir_graph *irg)
 		op_copy_assoc_t          *entry = (op_copy_assoc_t*)map_entry.data;
 		size_t                    n     = ir_nodeset_size(&entry->copies);
 		ir_node                 **nodes = ALLOCAN(ir_node*, n);
-		ir_node                  *cp;
-		ir_nodeset_iterator_t     iter;
 		be_ssa_construction_env_t senv;
 
 		/* put the node in an array */

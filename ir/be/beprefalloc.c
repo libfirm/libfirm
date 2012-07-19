@@ -218,11 +218,9 @@ static void give_penalties_for_limits(const ir_nodeset_t *live_nodes,
                                       float penalty, const unsigned* limited,
                                       ir_node *node)
 {
-	ir_nodeset_iterator_t iter;
-	unsigned              r;
-	size_t                n_allowed;
-	allocation_info_t     *info = get_allocation_info(node);
-	ir_node               *neighbor;
+	unsigned           r;
+	size_t             n_allowed;
+	allocation_info_t *info = get_allocation_info(node);
 
 	/* give penalty for all forbidden regs */
 	for (r = 0; r < n_regs; ++r) {
@@ -401,11 +399,9 @@ static void congruence_def(ir_nodeset_t *live_nodes, const ir_node *node)
 		node_idx          = uf_find(congruence_classes, node_idx);
 
 		for (i = 0; i < arity; ++i) {
-			ir_node               *live;
-			ir_node               *op;
-			int                    op_idx;
-			ir_nodeset_iterator_t  iter;
-			bool                   interferes = false;
+			ir_node *op;
+			int      op_idx;
+			bool     interferes = false;
 
 			if (!rbitset_is_set(&req->other_same, i))
 				continue;
@@ -476,15 +472,13 @@ static void create_congruence_class(ir_node *block, void *data)
 
 		arity = get_irn_arity(phi);
 		for (i = 0; i < arity; ++i) {
-			bool                  interferes = false;
-			ir_nodeset_iterator_t iter;
-			unsigned              r;
-			int                   old_node_idx;
-			ir_node              *live;
-			allocation_info_t    *head_info;
-			allocation_info_t    *other_info;
-			ir_node              *op     = get_Phi_pred(phi, i);
-			int                   op_idx = get_irn_idx(op);
+			bool               interferes = false;
+			unsigned           r;
+			int                old_node_idx;
+			allocation_info_t *head_info;
+			allocation_info_t *other_info;
+			ir_node           *op     = get_Phi_pred(phi, i);
+			int                op_idx = get_irn_idx(op);
 			op_idx = uf_find(congruence_classes, op_idx);
 
 			/* do we interfere with the value */
@@ -1809,13 +1803,9 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 
 	/* all live-ins must have a register */
 #ifdef DEBUG_libfirm
-	{
-		ir_nodeset_iterator_t iter;
-		ir_node              *node;
-		foreach_ir_nodeset(&live_nodes, node, iter) {
-			const arch_register_t *reg = arch_get_irn_register(node);
-			assert(reg != NULL);
-		}
+	foreach_ir_nodeset(&live_nodes, node, iter) {
+		const arch_register_t *reg = arch_get_irn_register(node);
+		assert(reg != NULL);
 	}
 #endif
 

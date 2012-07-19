@@ -340,9 +340,6 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 
 	/* create pbqp nodes, interference edges and reverse perfect elimination order */
 	sched_foreach_reverse(block, irn) {
-		ir_node               *live;
-		ir_nodeset_iterator_t  iter;
-
 		if (get_irn_mode(irn) == mode_T) {
 			foreach_out_edge(irn, edge) {
 				ir_node *proj = get_edge_src_irn(edge);

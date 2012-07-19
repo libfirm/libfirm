@@ -165,8 +165,9 @@ static inline ir_node *ir_nodeset_first(ir_nodeset_t const *const nodeset)
 }
 
 #define foreach_ir_nodeset(nodeset, irn, iter) \
-	for(ir_nodeset_iterator_init(&iter, nodeset), \
-        irn = ir_nodeset_iterator_next(&iter);    \
-		irn != NULL; irn = ir_nodeset_iterator_next(&iter))
+	for (bool irn##__once = true; irn##__once;) \
+		for (ir_nodeset_iterator_t iter; irn##__once;) \
+			for (ir_node *irn; irn##__once; irn##__once = false) \
+				for (ir_nodeset_iterator_init(&iter, nodeset); (irn = ir_nodeset_iterator_next(&iter));)
 
 #endif

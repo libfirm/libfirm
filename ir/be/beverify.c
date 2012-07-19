@@ -62,9 +62,6 @@ typedef struct be_verify_register_pressure_env_t_ {
  */
 static void print_living_values(FILE *F, const ir_nodeset_t *live_nodes)
 {
-	ir_nodeset_iterator_t iter;
-	ir_node *node;
-
 	ir_fprintf(F, "\t");
 	foreach_ir_nodeset(live_nodes, node, iter) {
 		ir_fprintf(F, "%+F ", node);
