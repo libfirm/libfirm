@@ -48,10 +48,6 @@ $mode_fp    = "mode_F";
 	],
 );
 
-%emit_templates = (
-	SO  => "${arch}_emit_shifter_operand(node);",
-);
-
 $default_attr_type = "arm_attr_t";
 $default_copy_attr = "arm_copy_attr";
 
