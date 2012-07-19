@@ -275,11 +275,21 @@ void arm_emitf(const ir_node *node, const char *format, ...)
 	be_emit_char('\t');
 	for (;;) {
 		const char *start = format;
-		while (*format != '%' && *format != '\0')
+		while (*format != '%' && *format != '\n'  && *format != '\0')
 			++format;
-		be_emit_string_len(start, format-start);
+		be_emit_string_len(start, format - start);
+
 		if (*format == '\0')
 			break;
+
+		if (*format == '\n') {
+			++format;
+			be_emit_char('\n');
+			be_emit_write_line();
+			be_emit_char('\t');
+			continue;
+		}
+
 		++format;
 
 		switch (*format++) {
@@ -374,12 +384,6 @@ void arm_emitf(const ir_node *node, const char *format, ...)
 			arm_emit_cfop_target(n);
 			break;
 		}
-
-		case '\n':
-			be_emit_char('\n');
-			be_emit_write_line();
-			be_emit_char('\t');
-			break;
 
 		default:
 unknown:
