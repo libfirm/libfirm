@@ -51,7 +51,7 @@
 #define MAX_ANTIC_ITER 10
 #define MAX_INSERT_ITER 3
 
-#define HOIST_HIGH 0
+#define HOIST_HIGH 1
 #define BETTER_GREED 0
 #define LOADS 0
 #define DIVMODS 0
@@ -63,9 +63,7 @@ typedef struct block_info {
 	ir_valueset_t     *exp_gen;    /* contains this blocks clean expressions */
 	ir_valueset_t     *avail_out;  /* available values at block end */
 	ir_valueset_t     *antic_in;   /* clean anticipated values at block entry */
-#if HOIST_HIGH
 	ir_valueset_t     *antic_done; /* keeps elements of antic_in after insert_nodes() */
-#endif
 	ir_valueset_t     *new_set;    /* new by hoisting made available values */
 	ir_nodehashmap_t  *trans;      /* contains translated nodes translated into block */
 	ir_node           *avail;      /* saves available node for insert_nodes */
@@ -391,9 +389,7 @@ static void alloc_block_info(ir_node *block, pre_env *env)
 	info->exp_gen    = ir_valueset_new(16);
 	info->avail_out  = ir_valueset_new(16);
 	info->antic_in   = ir_valueset_new(16);
-#if HOIST_HIGH
 	info->antic_done = ir_valueset_new(16);
-#endif
 	info->trans = XMALLOC(ir_nodehashmap_t);
 	ir_nodehashmap_init(info->trans);
 
@@ -405,6 +401,19 @@ static void alloc_block_info(ir_node *block, pre_env *env)
 	info->next = env->list;
 	env->list  = info;
 }  /* alloc_block_info */
+
+static void free_block_info(block_info *block_info)
+{
+	ir_valueset_del(block_info->exp_gen);
+	ir_valueset_del(block_info->avail_out);
+	ir_valueset_del(block_info->antic_in);
+	if (block_info->trans) {
+		ir_nodehashmap_destroy(block_info->trans);
+		free(block_info->trans);
+	}
+	if (block_info->new_set)
+		ir_valueset_del(block_info->new_set);
+}
 
 /**
  * Bottom up walker that ensures that every block gets a block info.
@@ -739,20 +748,17 @@ static void set_translated(ir_nodehashmap_t *map, ir_node *node, ir_node *trans)
 }
 
 /**
- * Checks if a node node is clean in block block for use in antic_in.
+ * Checks if node is hoistable into block.
  *
- * A clean node in block block can be hoisted above block block.
+ * A clean node in block block can be hoisted above block succ.
  * A node is not clean if its representative is killed in block block.
- * This reveals that antic_in is basically antic_out, because if the
- * removal of TMP_GEN which are the representatives in the current block.
  * The node can still be hoisted into block block.
  *
- *
- * @param n      the phi translated or not translated node
- * @param block  the block
- * @return non-zero value for clean node
+ * @param n      the node to be checked
+ * @param block  the block to be hoisted into
+ * @returns      block which node can be hoisted above
  */
-static unsigned is_clean_in_block_antic(ir_node *node, ir_node *block)
+static ir_node *is_hoistable_above(ir_node *node, ir_node *block, ir_node *succ)
 {
 	int i;
 	int arity = get_irn_arity(node);
@@ -760,7 +766,7 @@ static unsigned is_clean_in_block_antic(ir_node *node, ir_node *block)
 	/* make sure that node can be hoisted above block */
 
 	if (is_irn_constlike(node))
-		return 1;
+		return block;
 
 	for (i = 0; i < arity; ++i) {
 		block_info *info       = get_block_info(block);
@@ -774,20 +780,20 @@ static unsigned is_clean_in_block_antic(ir_node *node, ir_node *block)
 			/* is it possible to hoist node above block? */
 			if (! block_strictly_dominates(pred_block, block)) {
 				DB((dbg, LEVEL_3, "unclean %+F: %+F (%+F) not antic\n", node, pred, pred_value));
-				return 0;
+				return succ;
 			}
 		}
+
 		/* predecessor value to be antic in is not enough.
 		   if we didn't translate the exact representative we cannot translate */
 		if (! get_translated(pred_block, pred)) {
 			if (! block_strictly_dominates(pred_block, block)) {
 				DB((dbg, LEVEL_3, "unclean %+F: %+F (%+F) lost of representative\n", node, pred, pred_value));
-				return 0;
+				return NULL;
 			}
-
 		}
 	}
-	return 1;
+	return block;
 }
 
 #if LOADS || DIVMODS
@@ -1075,6 +1081,7 @@ static void compute_antic(ir_node *block, void *ctx)
 			/* create new value if necessary */
 			ir_node *trans_value = identify_or_remember(trans);
 			ir_node *represent;
+			ir_node *hoistable;
 
 			DB((dbg, LEVEL_3, "Translate %+F %+F to %d = %+F (%+F)\n", expr, succ, pos, trans, trans_value));
 
@@ -1085,11 +1092,19 @@ static void compute_antic(ir_node *block, void *ctx)
 			else
 				represent = expr;
 
-			if (is_clean_in_block_antic(expr, block)) {
+			hoistable = is_hoistable_above(expr, block, succ);
+			//if (is_clean_in_block_antic(expr, block)) {
+			if (hoistable != NULL) {
 				/* Where is the difference between replace and insert?
 				   If we replace, we might use a representative with non translated*/
 				ir_valueset_insert(info->antic_in, trans_value, represent);
 				DB((dbg, LEVEL_3, "Translated %+F repr %+F\n", expr, represent));
+
+				if (hoistable == block)
+					ir_valueset_set_link(info->antic_in, trans_value, trans_value);
+				else
+					/* hoistable into block but not above */
+					ir_valueset_set_link(info->antic_in, trans_value, NULL);
 			}
 			/* during insert we use the translated node, because it may be
 			   hoisted into block whilst being not anticipated there. */
@@ -1103,6 +1118,8 @@ static void compute_antic(ir_node *block, void *ctx)
 
 		/* disjoint of antic_ins */
 		foreach_valueset(succ0_info->antic_in, value, expr, iter) {
+			ir_node *hoistable;
+
 			/* iterate over remaining successors */
 			for (i = 1; i < n_succ; ++i) {
 				ir_node    *succ      = get_Block_cfg_out(block, i);
@@ -1114,8 +1131,17 @@ static void compute_antic(ir_node *block, void *ctx)
 					break;
 			}
 
-			if (common && is_clean_in_block_antic(expr, block)) {
+			hoistable = is_hoistable_above(expr, block, succ0);
+
+			if (common && hoistable != NULL) {
 				ir_valueset_insert(info->antic_in, value, expr);
+
+				if (hoistable == block)
+					ir_valueset_set_link(info->antic_in, value, value);
+				else
+					/* hoistable into block but not above */
+					ir_valueset_set_link(info->antic_in, value, NULL);
+
 				DB((dbg, LEVEL_3, "common and clean %+F(%+F) in %+F\n", expr, value, block));
 			}
 		}
@@ -1398,6 +1424,14 @@ static void insert_nodes(ir_node *block, void *ctx)
 		ir_node  *phi;
 		ir_node **phi_in;
 
+		/* already done? */
+		if (ir_valueset_lookup(info->antic_done, value))
+			continue;
+
+		/* hoistable above block? */
+		if (ir_valueset_get_link(info->antic_in, value) == NULL)
+			continue;
+
 #if BETTER_GREED
 		plist_insert_front(stack, expr);
 #endif
@@ -1413,10 +1447,10 @@ static void insert_nodes(ir_node *block, void *ctx)
 		/* A value computed in the dominator is totally redundant.
 		   Hence we have nothing to insert. */
 		if (ir_valueset_lookup(get_block_info(idom)->avail_out, value)) {
+			flag_redundant(expr, 1);
 			DB((dbg, LEVEL_2, "Fully redundant expr %+F value %+F\n", expr, value));
 			DEBUG_ONLY(inc_stats(gvnpre_stats->fully);)
 
-			flag_redundant(expr, 1);
 			continue;
 		}
 
@@ -1513,12 +1547,12 @@ static void insert_nodes(ir_node *block, void *ctx)
 		}
 		free(phi_in);
 
+#if 0
 		/* remove from antic_in, because expr is not anticipated
 		   anymore in this block */
 		ir_valueset_remove_iterator(info->antic_in, &iter);
-#if HOIST_HIGH
-		ir_valueset_insert(info->antic_done, value, expr);
 #endif
+		ir_valueset_insert(info->antic_done, value, expr);
 
 		env->changes |= 1;
 	}
@@ -1560,6 +1594,11 @@ static void insert_nodes(ir_node *block, void *ctx)
 }
 
 #if HOIST_HIGH
+/**
+ * Dom tree block walker to insert nodes into the highest
+ * possible block where their .
+ *
+ */
 static void hoist_high(ir_node *block, void *ctx)
 {
 	pre_env                *env        = (pre_env*)ctx;
@@ -1567,8 +1606,12 @@ static void hoist_high(ir_node *block, void *ctx)
 	ir_valueset_iterator_t  iter;
 	ir_node                *expr;
 	ir_node                *value;
+	int                     arity      = get_irn_arity(block);
 
 	if (! is_Block(block))
+		return;
+
+	if (arity < 2)
 		return;
 
 	if (block == env->start_block)
@@ -1578,9 +1621,8 @@ static void hoist_high(ir_node *block, void *ctx)
 
 	DB((dbg, LEVEL_2, "High hoisting %+F\n", block));
 
-	/* foreach antic in */
+	/* foreach entry optimized by insert_nodes */
 	foreach_valueset(curr_info->antic_done, value, expr, iter) {
-		int arity = get_irn_arity(block);
 		int pos;
 
 		if (is_memop(expr) || is_Proj(expr))
@@ -1593,6 +1635,7 @@ static void hoist_high(ir_node *block, void *ctx)
 			block_info *pred_info  = get_block_info(target);
 			ir_node    *avail;
 			ir_node    *new_target;
+			ir_node    *last_target;
 			ir_node    *trans_expr;
 			ir_node    *trans_value;
 			ir_node    *dom;
@@ -1600,6 +1643,7 @@ static void hoist_high(ir_node *block, void *ctx)
 			int         i;
 			unsigned    nest_depth;
 
+			/* get phi translated value */
 			trans_expr  = get_translated(target, expr);
 			trans_value = identify(trans_expr);
 			avail = (ir_node*)ir_valueset_lookup(pred_info->avail_out, trans_value);
@@ -1611,9 +1655,10 @@ static void hoist_high(ir_node *block, void *ctx)
 			avail_arity = get_irn_arity(avail);
 
 			/* anticipation border */
-			new_target = NULL;
-			nest_depth = get_loop_depth(get_irn_loop(target));
-			dom        = target;
+			new_target  = NULL;
+			last_target = NULL;
+			nest_depth  = get_loop_depth(get_irn_loop(target));
+			dom         = target;
 
 			while(dom != environ->start_block) {
 				dom = get_Block_idom(dom);
@@ -1624,6 +1669,9 @@ static void hoist_high(ir_node *block, void *ctx)
 				/* do not hoist into loops */
 				if (get_loop_depth(get_irn_loop(dom)) > nest_depth)
 					break;
+
+				if (get_loop_depth(get_irn_loop(dom)) < nest_depth)
+					last_target = dom;
 
 				nest_depth = get_loop_depth(get_irn_loop(dom));
 
@@ -1640,7 +1688,7 @@ static void hoist_high(ir_node *block, void *ctx)
 			if (new_target) {
 				DB((dbg, LEVEL_2, "leader block %+F\n", get_nodes_block(avail)));
 				/* already same block or dominating?*/
-				if (block_striclty_dominates(new_target, get_nodes_block(avail)))
+				if (block_strictly_dominates(new_target, get_nodes_block(avail)))
 					new_target = NULL;
 			}
 
@@ -1934,15 +1982,7 @@ void do_gvn_pre(ir_graph *irg)
 
 	/* clean up: delete all sets */
 	for (block_info = env.list; block_info != NULL; block_info = block_info->next) {
-		ir_valueset_del(block_info->exp_gen);
-		ir_valueset_del(block_info->avail_out);
-		ir_valueset_del(block_info->antic_in);
-		if (block_info->trans) {
-			ir_nodehashmap_destroy(block_info->trans);
-			free(block_info->trans);
-		}
-		if (block_info->new_set)
-			ir_valueset_del(block_info->new_set);
+		free_block_info(block_info);
 	}
 
 	DEBUG_ONLY(free_stats();)
