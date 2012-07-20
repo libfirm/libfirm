@@ -232,7 +232,7 @@ lc_opt_entry_t *lc_opt_add_opt(lc_opt_entry_t *parent,
 static lc_opt_entry_t *lc_opt_find_ent(const struct list_head *head, const char *name,
 		int error_to_use, lc_opt_err_info_t *err)
 {
-	lc_opt_entry_t *ent, *found = NULL;
+	lc_opt_entry_t *found = NULL;
 	int error = error_to_use;
 	unsigned hash = hash_str(name);
 
@@ -611,7 +611,6 @@ static void lc_opt_print_help_rec(lc_opt_entry_t *ent, char separator, lc_opt_en
 	char grp_name[512];
 	char value[256];
 	char values[512];
-	lc_opt_entry_t *e;
 
 	if (!list_empty(&s->opts)) {
 		lc_opt_print_grp_path(grp_name, sizeof(grp_name), ent, separator, stop_ent);
@@ -669,8 +668,6 @@ static void lc_opt_print_tree_grp_indent(lc_opt_entry_t *ent, FILE *f, int level
 	lc_grp_special_t *s;
 
 	if (ent->is_grp) {
-		lc_opt_entry_t *e;
-
 		s = lc_get_grp_special(ent);
 		indent(f, level);
 		fprintf(f, "/%s\n", ent->name);

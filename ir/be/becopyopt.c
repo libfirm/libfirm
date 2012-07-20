@@ -604,7 +604,7 @@ static int compare_ous(const void *k1, const void *k2)
 static void co_sort_units(copy_opt_t *co)
 {
 	int i, count = 0, costs;
-	unit_t *ou, **ous;
+	unit_t **ous;
 
 	/* get the number of ous, remove them form the list and fill the array */
 	list_for_each_entry(unit_t, ou, &co->units, units)
@@ -650,7 +650,6 @@ void co_build_ou_structure(copy_opt_t *co)
 
 void co_free_ou_structure(copy_opt_t *co)
 {
-	unit_t *curr, *tmp;
 	ASSERT_OU_AVAIL(co);
 	list_for_each_entry_safe(unit_t, curr, tmp, &co->units, units) {
 		xfree(curr->nodes);
@@ -665,7 +664,6 @@ void co_free_ou_structure(copy_opt_t *co)
 int co_get_max_copy_costs(const copy_opt_t *co)
 {
 	int i, res = 0;
-	unit_t *curr;
 
 	ASSERT_OU_AVAIL(co);
 
@@ -680,7 +678,6 @@ int co_get_max_copy_costs(const copy_opt_t *co)
 int co_get_inevit_copy_costs(const copy_opt_t *co)
 {
 	int res = 0;
-	unit_t *curr;
 
 	ASSERT_OU_AVAIL(co);
 
@@ -692,7 +689,6 @@ int co_get_inevit_copy_costs(const copy_opt_t *co)
 int co_get_copy_costs(const copy_opt_t *co)
 {
 	int i, res = 0;
-	unit_t *curr;
 
 	ASSERT_OU_AVAIL(co);
 
@@ -714,7 +710,6 @@ int co_get_copy_costs(const copy_opt_t *co)
 int co_get_lower_bound(const copy_opt_t *co)
 {
 	int res = 0;
-	unit_t *curr;
 
 	ASSERT_OU_AVAIL(co);
 

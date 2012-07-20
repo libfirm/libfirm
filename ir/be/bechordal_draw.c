@@ -209,7 +209,6 @@ static void block_dims_walker(ir_node *block, void *data)
 	struct list_head          *head = get_block_border_head(env->chordal_env, block);
 	const draw_chordal_opts_t *opts = env->opts;
 	struct block_dims         *dims = OALLOCZ(&env->obst, struct block_dims);
-	border_t                  *b;
 
 	dims->min_step = INT_MAX;
 
@@ -323,7 +322,6 @@ static void draw_block(ir_node *bl, void *data)
 	const draw_chordal_opts_t *opts    = env->opts;
 	struct block_dims         *dims    = pmap_get(struct block_dims, env->block_dims, bl);
 	char                      buf[64];
-	border_t                  *b;
 
 	ir_snprintf(buf, sizeof(buf), "%F", bl);
 

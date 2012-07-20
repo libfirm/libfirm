@@ -75,7 +75,6 @@ static void resize(HashSet *self, size_t new_size)
 	HashSetEntry *old_entries = self->entries;
 	HashSetEntry *new_entries;
 	list_head    list = self->elem_list;
-	ValueType    *entry;
 	int          res = 1;
 
 	/* allocate a new array with double size */

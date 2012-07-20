@@ -254,7 +254,7 @@ static inline void list_splice_init(struct list_head *list,
  * @param member  the name of the list_struct within the struct.
  */
 #define list_for_each_entry(type, pos, head, member)    \
-	for (pos = list_entry((head)->next, type, member);  \
+	for (type *pos = list_entry((head)->next, type, member); \
 	     &pos->member != (head);                        \
 	     pos = list_entry(pos->member.next, type, member))
 
@@ -266,7 +266,7 @@ static inline void list_splice_init(struct list_head *list,
  * @param member  the name of the list_struct within the struct.
  */
 #define list_for_each_entry_reverse(type, pos, head, member) \
-	for (pos = list_entry((head)->prev, type, member);       \
+	for (type *pos = list_entry((head)->prev, type, member); \
 	     &pos->member != (head);                             \
 	     pos = list_entry(pos->member.prev, type, member))
 
@@ -280,8 +280,8 @@ static inline void list_splice_init(struct list_head *list,
  * @param member  the name of the list_struct within the struct.
  */
 #define list_for_each_entry_safe(type, pos, n, head, member) \
-	for (pos = list_entry((head)->next, type, member),       \
-		n = list_entry(pos->member.next, type, member);      \
+	for (type *pos = list_entry((head)->next, type, member), \
+	          *n   = list_entry(pos->member.next, type, member); \
 	     &pos->member != (head);                             \
 	     pos = n, n = list_entry(n->member.next, type, member))
 

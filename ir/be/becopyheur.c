@@ -549,13 +549,12 @@ static inline void ou_insert_qnode(unit_t *ou, qnode_t *qn)
  */
 static void ou_optimize(unit_t *ou)
 {
-	qnode_t                     *curr = NULL;
-	qnode_t                     *tmp;
-	const arch_register_req_t   *req;
-	bitset_t const*              allocatable_regs;
-	unsigned                     n_regs;
-	unsigned                     idx;
-	int                          i;
+	qnode_t                   *curr = NULL;
+	const arch_register_req_t *req;
+	bitset_t const*            allocatable_regs;
+	unsigned                   n_regs;
+	unsigned                   idx;
+	int                        i;
 
 	DBG((dbg, LEVEL_1, "\tOptimizing unit:\n"));
 	for (i=0; i<ou->node_count; ++i)
@@ -640,8 +639,6 @@ static void ou_optimize(unit_t *ou)
  */
 int co_solve_heuristic(copy_opt_t *co)
 {
-	unit_t *curr;
-
 	ASSERT_OU_AVAIL(co);
 
 	pinned_global = pset_new_ptr(SLOTS_PINNED_GLOBAL);
