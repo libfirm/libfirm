@@ -738,9 +738,6 @@
     <ClCompile Include="$(FirmRoot)\ir\ir\irio.c">
       <Filter>ir\ir</Filter>
     </ClCompile>
-    <ClCompile Include="$(FirmRoot)\ir\ir\irlinkednodemap.c">
-      <Filter>ir\ir</Filter>
-    </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\irlinkednodeset.c">
       <Filter>ir\ir</Filter>
     </ClCompile>
@@ -814,9 +811,6 @@
       <Filter>ir\ir</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\ir\irgraph_t.h">
-      <Filter>ir\ir</Filter>
-    </ClInclude>
-    <ClInclude Include="$(FirmRoot)\ir\ir\irlinkednodemap.h">
       <Filter>ir\ir</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\ir\irlinkednodeset.h">
@@ -2544,9 +2538,6 @@
     <ClCompile Include="$(FirmRoot)\ir\ir\irio.c">
       <Filter>ir\ir</Filter>
     </ClCompile>
-    <ClCompile Include="$(FirmRoot)\ir\ir\irlinkednodemap.c">
-      <Filter>ir\ir</Filter>
-    </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\irlinkednodeset.c">
       <Filter>ir\ir</Filter>
     </ClCompile>
@@ -2620,9 +2611,6 @@
       <Filter>ir\ir</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\ir\irgraph_t.h">
-      <Filter>ir\ir</Filter>
-    </ClInclude>
-    <ClInclude Include="$(FirmRoot)\ir\ir\irlinkednodemap.h">
       <Filter>ir\ir</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\ir\irlinkednodeset.h">
@@ -4233,9 +4221,6 @@
     <ClCompile Include="$(FirmRoot)\ir\ir\irio.c">
       <Filter>ir\ir</Filter>
     </ClCompile>
-    <ClCompile Include="$(FirmRoot)\ir\ir\irlinkednodemap.c">
-      <Filter>ir\ir</Filter>
-    </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\irlinkednodeset.c">
       <Filter>ir\ir</Filter>
     </ClCompile>
@@ -4309,9 +4294,6 @@
       <Filter>ir\ir</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\ir\irgraph_t.h">
-      <Filter>ir\ir</Filter>
-    </ClInclude>
-    <ClInclude Include="$(FirmRoot)\ir\ir\irlinkednodemap.h">
       <Filter>ir\ir</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\ir\irlinkednodeset.h">
@@ -5916,9 +5898,6 @@
     <ClCompile Include="$(FirmRoot)\ir\ir\irio.c">
       <Filter>ir\ir</Filter>
     </ClCompile>
-    <ClCompile Include="$(FirmRoot)\ir\ir\irlinkednodemap.c">
-      <Filter>ir\ir</Filter>
-    </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\irlinkednodeset.c">
       <Filter>ir\ir</Filter>
     </ClCompile>
@@ -5992,9 +5971,6 @@
       <Filter>ir\ir</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\ir\irgraph_t.h">
-      <Filter>ir\ir</Filter>
-    </ClInclude>
-    <ClInclude Include="$(FirmRoot)\ir\ir\irlinkednodemap.h">
       <Filter>ir\ir</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\ir\irlinkednodeset.h">

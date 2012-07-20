@@ -321,7 +321,6 @@
     <ClCompile Include="$(FirmRoot)\ir\ir\irgwalk_blk.c"/>
     <ClCompile Include="$(FirmRoot)\ir\ir\irhooks.c"/>
     <ClCompile Include="$(FirmRoot)\ir\ir\irio.c"/>
-    <ClCompile Include="$(FirmRoot)\ir\ir\irlinkednodemap.c"/>
     <ClCompile Include="$(FirmRoot)\ir\ir\irlinkednodeset.c"/>
     <ClCompile Include="$(FirmRoot)\ir\ir\irmode.c"/>
     <ClCompile Include="$(FirmRoot)\ir\ir\irnode.c"/>
@@ -347,7 +346,6 @@
     <ClInclude Include="$(FirmRoot)\ir\ir\iredgeset.h"/>
     <ClInclude Include="$(FirmRoot)\ir\ir\irflag_t.h"/>
     <ClInclude Include="$(FirmRoot)\ir\ir\irgraph_t.h"/>
-    <ClInclude Include="$(FirmRoot)\ir\ir\irlinkednodemap.h"/>
     <ClInclude Include="$(FirmRoot)\ir\ir\irlinkednodeset.h"/>
     <ClInclude Include="$(FirmRoot)\ir\ir\irmode_t.h"/>
     <ClInclude Include="$(FirmRoot)\ir\ir\irnode_t.h"/>

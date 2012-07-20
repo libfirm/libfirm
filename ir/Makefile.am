@@ -147,7 +147,6 @@ libfirm_la_SOURCES = \
 	ir/irgwalk.c \
 	ir/irhooks.c \
 	ir/irio.c \
-	ir/irlinkednodemap.c \
 	ir/irlinkednodeset.c \
 	ir/irmode.c \
 	ir/irnode.c \
@@ -349,7 +348,6 @@ EXTRA_DIST = \
 	ir/iropt_t.h \
 	ir/irprintf_t.h \
 	ir/irprog_t.h \
-	ir/irlinkednodemap.h \
 	ir/irlinkednodeset.h \
 	ir/irnodehashmap.h \
 	ir/irnodemap.h \
