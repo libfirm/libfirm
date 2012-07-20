@@ -613,7 +613,6 @@ static int cmp_count(const void *e1, const void *e2)
 
 static inline void matrix_fill_row(sp_matrix_t *m, int row, bitset_t *fullrow)
 {
-	const matrix_elem_t *e;
 	bitset_set(fullrow, row);
 	matrix_foreach_in_col(m, row, e) {
 		if (! bitset_is_set(fullrow, e->row)) {
@@ -628,7 +627,6 @@ void matrix_optimize(sp_matrix_t *m)
 {
 	int i, size, redo;
 	int *c;
-	const matrix_elem_t *e;
 	bitset_t *fullrow;
 
 	size = MAX(m->maxcol, m->maxrow)+1;
@@ -662,7 +660,8 @@ void matrix_optimize(sp_matrix_t *m)
 			if (c[i] == 1 && ! bitset_is_set(fullrow, i)) {
 				redo = 1;
 				/* if the other row isn't empty move the e in there, else fill e's row */
-				if (e = matrix_row_first(m, i), e) {
+				matrix_elem_t const *const e = matrix_row_first(m, i);
+				if (e) {
 					if (c[e->col] > 0)
 						matrix_fill_row(m, e->col, fullrow);
 					else
@@ -687,7 +686,6 @@ void matrix_optimize(sp_matrix_t *m)
 void matrix_dump(sp_matrix_t *m, FILE *out, int factor)
 {
 	int i, o, last_idx;
-	const matrix_elem_t *e;
 
 	for (i = 0; i <= m->maxrow; ++i) {
 		last_idx = -1;
@@ -709,7 +707,6 @@ void matrix_dump(sp_matrix_t *m, FILE *out, int factor)
 void matrix_self_test(int d)
 {
 	int i, o;
-	const matrix_elem_t *e;
 	sp_matrix_t *m = new_matrix(10, 10);
 
 	for (i = 0; i < d; ++i)
@@ -757,9 +754,10 @@ void matrix_self_test(int d)
 	matrix_set(m, 3,5,4);
 	matrix_set(m, 4,4,5);
 	matrix_set(m, 5,5,6);
-	for (i=1, e = matrix_first(m); e; ++i, e=matrix_next(m))
-		assert(e->val == i);
-	assert(i == 7);
+	i = 0;
+	matrix_foreach(m, e)
+		assert(e->val == ++i);
+	assert(i == 6);
 	matrix_set(m, 1,1,0);
 	assert(5 == matrix_get_entries(m));
 	del_matrix(m);

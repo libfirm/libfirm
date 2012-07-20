@@ -413,7 +413,6 @@ void lpp_dump_plain(lpp_t *lpp, FILE *f)
 	int i;
 
 	for(i = 0; i < lpp->cst_next; ++i) {
-		const matrix_elem_t *elm;
 		lpp_name_t *cst = lpp->csts[i];
 
 		fprintf(f, "%16s: ", cst->name);
@@ -470,20 +469,16 @@ void lpp_serialize(lpp_comm_t *comm, const lpp_t *lpp, int with_names)
 			lpp_writes(comm, name->name);
 	}
 
-	{
-		const matrix_elem_t *elm;
-		n = 0;
+	n = 0;
+	matrix_foreach(lpp->m, elm)
+		n++;
 
-		matrix_foreach(lpp->m, elm)
-			n++;
-
-		assert(n == matrix_get_entries(lpp->m));
-		lpp_writel(comm, n);
-		matrix_foreach(lpp->m, elm) {
-			lpp_writel(comm, elm->row);
-			lpp_writel(comm, elm->col);
-			lpp_writed(comm, elm->val);
-		}
+	assert(n == matrix_get_entries(lpp->m));
+	lpp_writel(comm, n);
+	matrix_foreach(lpp->m, elm) {
+		lpp_writel(comm, elm->row);
+		lpp_writel(comm, elm->col);
+		lpp_writed(comm, elm->val);
 	}
 }
 

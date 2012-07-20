@@ -117,7 +117,7 @@ unsigned matrix_get_elem_size(void);
  * Save against removal of curr
  */
 #define matrix_foreach(m,curr) \
-		for (curr = matrix_first(m); curr; curr = matrix_next(m))
+		for (matrix_elem_t const *curr = matrix_first(m); curr; curr = matrix_next(m))
 
 /**
  * m    The matrix
@@ -126,7 +126,7 @@ unsigned matrix_get_elem_size(void);
  * Save against removal of curr
  */
 #define matrix_foreach_in_row(m,r,curr) \
-		for (curr = matrix_row_first(m, r); curr; curr = matrix_next(m))
+		for (matrix_elem_t const *curr = matrix_row_first(m, r); curr; curr = matrix_next(m))
 
 /**
  * m    The matrix
@@ -135,7 +135,7 @@ unsigned matrix_get_elem_size(void);
  * Save against removal of curr
  */
 #define matrix_foreach_in_col(m,c,curr) \
-		for (curr = matrix_col_first(m, c); curr; curr = matrix_next(m))
+		for (matrix_elem_t const *curr = matrix_col_first(m, c); curr; curr = matrix_next(m))
 
 /**
  * Changes the matrix into an equivalent one with maximal number zero-rows.
