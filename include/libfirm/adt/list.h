@@ -229,19 +229,6 @@ static inline void list_splice_init(struct list_head *list,
 	for (pos = (head)->next; pos != (head); pos = pos->next)
 
 /**
- * __list_for_each - iterate over a list
- * @param pos   the &struct list_head to use as a loop counter.
- * @param head  the head for your list.
- *
- * This variant differs from list_for_each() in that it's the
- * simplest possible list iteration code, no ing is done.
- * Use this for code that knows the list to be very short (empty
- * or 1 entry) most of the time.
- */
-#define __list_for_each(pos, head) \
-	for (pos = (head)->next; pos != (head); pos = pos->next)
-
-/**
  * list_for_each_prev - iterate over a list backwards
  * @param pos   the &struct list_head to use as a loop counter.
  * @param head  the head for your list.
