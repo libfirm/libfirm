@@ -1259,24 +1259,23 @@ static ir_mode *is_partially_redundant(ir_node *block, ir_node *expr, ir_node *v
 		trans_expr = get_translated(pred_block, expr);
 		trans_value = identify(trans_expr);
 
-		/* value might be available through a constant */
-		if (is_irn_constlike(trans_expr)) {
-			avail_expr = trans_expr;
-			if (get_irn_idx(trans_expr) > environ->last_idx) {
-				/* limit new constants */
-				ir_mode   *cmode  = get_irn_mode(trans_expr);
-				ir_tarval *upper = new_tarval_from_long(127, cmode);
-				ir_tarval *lower = new_tarval_from_long(-127, cmode);
-				ir_tarval *c     = get_Const_tarval(trans_expr);
+		avail_expr = (ir_node*)ir_valueset_lookup(pred_info->avail_out, trans_value);
+		/* value might be available through a not yet existing constant */
+		if (avail_expr == NULL && is_irn_constlike(trans_expr)) {
+			/* limit range of new constants */
+			ir_mode   *cmode  = get_irn_mode(trans_expr);
+			ir_tarval *upper = new_tarval_from_long(127, cmode);
+			ir_tarval *lower = new_tarval_from_long(-127, cmode);
+			ir_tarval *c     = get_Const_tarval(trans_expr);
 
-				if (tarval_cmp(lower, c) != ir_relation_greater_equal &&
-				    tarval_cmp(c, upper) != ir_relation_greater_equal) {
-					avail_expr = NULL;
-				}
+			if (tarval_cmp(lower, c) != ir_relation_greater_equal &&
+				tarval_cmp(c, upper) != ir_relation_greater_equal) {
+				avail_expr = NULL;
+			} else {
+				avail_expr = trans_expr;
 			}
-	    } else {
-			avail_expr = (ir_node*)ir_valueset_lookup(pred_info->avail_out, trans_value);
-		}
+	    }
+
 		DB((dbg, LEVEL_3, "avail_expr %+F\n", avail_expr));
 
 		if (avail_expr == NULL) {
@@ -1628,7 +1627,6 @@ static void hoist_high(ir_node *block, void *ctx)
 		if (is_memop(expr) || is_Proj(expr))
 			continue;
 
-		/* for each path to block */
 		for (pos = 0; pos < arity; ++pos) {
 			/* standard target is predecessor block */
 			ir_node    *target     = get_Block_cfgpred_block(block, pos);
