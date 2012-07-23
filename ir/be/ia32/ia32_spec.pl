@@ -1178,7 +1178,7 @@ Store => {
 	               out => [ "none", "none", "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
 	outs      => [ "M", "X_regular", "X_except" ],
-	emit      => 'mov%M %S3, %AM',
+	emit      => 'mov%M %#S3, %AM',
 	latency   => 2,
 	units     => [ "GP" ],
 },
