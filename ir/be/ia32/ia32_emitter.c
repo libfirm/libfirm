@@ -629,6 +629,7 @@ emit_I:
 				} else if ('0' <= *fmt && *fmt <= '9') {
 					cc = get_ia32_condcode(node);
 					cc = determine_final_cc(node, *fmt - '0', cc);
+					++fmt;
 				} else {
 					goto unknown;
 				}
