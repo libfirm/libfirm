@@ -12,6 +12,17 @@ $mode_fp4     = "mode_Q";
 # available SPARC registers: 8 globals, 24 window regs (8 ins, 8 outs, 8 locals)
 %reg_classes = (
 	gp => [
+		# Note: locals come first here since they're usually constrained last
+		# (by calls and others)
+		{ name => "l0", dwarf => 16 },
+		{ name => "l1", dwarf => 17 },
+		{ name => "l2", dwarf => 18 },
+		{ name => "l3", dwarf => 19 },
+		{ name => "l4", dwarf => 20 },
+		{ name => "l5", dwarf => 21 },
+		{ name => "l6", dwarf => 22 },
+		{ name => "l7", dwarf => 23 },
+
 		{ name => "g0", dwarf => 0 },
 		{ name => "g1", dwarf => 1 },
 		{ name => "g2", dwarf => 2 },
@@ -29,15 +40,6 @@ $mode_fp4     = "mode_Q";
 		{ name => "o5", dwarf => 13 },
 		{ name => "sp", dwarf => 14 },
 		{ name => "o7", dwarf => 15 },
-
-		{ name => "l0", dwarf => 16 },
-		{ name => "l1", dwarf => 17 },
-		{ name => "l2", dwarf => 18 },
-		{ name => "l3", dwarf => 19 },
-		{ name => "l4", dwarf => 20 },
-		{ name => "l5", dwarf => 21 },
-		{ name => "l6", dwarf => 22 },
-		{ name => "l7", dwarf => 23 },
 
 		{ name => "i0", dwarf => 24 },
 		{ name => "i1", dwarf => 25 },
