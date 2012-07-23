@@ -734,6 +734,7 @@ FIRM_API ir_node *new_DivRL(ir_node *memop, ir_node *op1, ir_node *op2,
  *
  * @param *db         A pointer for debug information.
  * @param *block      The block the node belong to.
+ * @param *mem        memory dependency
  * @param arity       The number of data inputs to the node.
  * @param *in         The array of length arity of data inputs.
  * @param *inputs     The array of length arity of input constraints.
@@ -743,7 +744,7 @@ FIRM_API ir_node *new_DivRL(ir_node *memop, ir_node *op1, ir_node *op2,
  * @param *clobber    The array of length n_clobber of clobbered registers.
  * @param *asm_text   The assembler text.
  */
-FIRM_API ir_node *new_rd_ASM(dbg_info *db, ir_node *block,
+FIRM_API ir_node *new_rd_ASM(dbg_info *db, ir_node *block, ir_node *mem,
                             int arity, ir_node *in[], ir_asm_constraint *inputs,
                             size_t n_outs, ir_asm_constraint *outputs,
                             size_t n_clobber, ident *clobber[],
@@ -752,6 +753,7 @@ FIRM_API ir_node *new_rd_ASM(dbg_info *db, ir_node *block,
 /** Constructor for an ASM pseudo node.
  *
  * @param *block      The block the node belong to.
+ * @param *mem        memory dependency
  * @param arity       The number of data inputs to the node.
  * @param *in         The array of length arity of data inputs.
  * @param *inputs     The array of length arity of input constraints.
@@ -761,7 +763,7 @@ FIRM_API ir_node *new_rd_ASM(dbg_info *db, ir_node *block,
  * @param *clobber    The array of length n_clobber of clobbered registers.
  * @param *asm_text   The assembler text.
  */
-FIRM_API ir_node *new_r_ASM(ir_node *block,
+FIRM_API ir_node *new_r_ASM(ir_node *block, ir_node *mem,
                             int arity, ir_node *in[], ir_asm_constraint *inputs,
                             size_t n_outs, ir_asm_constraint *outputs,
                             size_t n_clobber, ident *clobber[],
@@ -770,6 +772,7 @@ FIRM_API ir_node *new_r_ASM(ir_node *block,
 /** Constructor for an ASM pseudo node.
  *
  * @param *db         A pointer for debug information.
+ * @param *mem        memory dependency
  * @param arity       The number of data inputs to the node.
  * @param *in         The array of length arity of data inputs.
  * @param *inputs     The array of length arity of input constraints.
@@ -780,14 +783,15 @@ FIRM_API ir_node *new_r_ASM(ir_node *block,
  * @param *asm_text   The assembler text.
  * @ingroup ASM
  */
-FIRM_API ir_node *new_d_ASM(dbg_info *db, int arity, ir_node *in[],
-                            ir_asm_constraint *inputs,
+FIRM_API ir_node *new_d_ASM(dbg_info *db, ir_node *mem, int arity,
+                            ir_node *in[], ir_asm_constraint *inputs,
                             size_t n_outs, ir_asm_constraint *outputs,
                             size_t n_clobber, ident *clobber[],
                             ident *asm_text);
 
 /** Constructor for an ASM pseudo node.
  *
+ * @param *mem        memory dependency
  * @param arity       The number of data inputs to the node.
  * @param *in         The array of length arity of data inputs.
  * @param *inputs     The array of length arity of input constraints.
@@ -798,8 +802,9 @@ FIRM_API ir_node *new_d_ASM(dbg_info *db, int arity, ir_node *in[],
  * @param *asm_text   The assembler text.
  * @ingroup ASM
  */
-FIRM_API ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
-                          size_t n_outs, ir_asm_constraint *outputs,
+FIRM_API ir_node *new_ASM(ir_node *mem, int arity, ir_node *in[],
+                          ir_asm_constraint *inputs, size_t n_outs,
+                          ir_asm_constraint *outputs,
                           size_t n_clobber, ident *clobber[], ident *asm_text);
 
 /** @} */

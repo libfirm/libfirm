@@ -416,90 +416,66 @@ static inline ir_node *get_new_node(ir_node *node)
 
 ir_node *ia32_gen_ASM(ir_node *node)
 {
-	ir_node                    *block     = get_nodes_block(node);
-	ir_node                    *new_block = get_new_node(block);
-	dbg_info                   *dbgi      = get_irn_dbg_info(node);
-	int                         arity;
-	size_t                      value_arity;
-	size_t                      out_idx;
-	ir_node                   **in;
-	ir_node                    *new_node;
-	size_t                      out_arity;
-	size_t                      n_out_constraints;
-	size_t                      n_clobbers;
-	const arch_register_req_t **out_reg_reqs;
-	const arch_register_req_t **in_reg_reqs;
-	ia32_asm_reg_t             *register_map;
-	unsigned                    reg_map_size = 0;
-	struct obstack             *obst;
-	const ir_asm_constraint    *in_constraints;
-	const ir_asm_constraint    *out_constraints;
-	ident                     **clobbers;
-	unsigned                    clobber_bits[N_IA32_CLASSES];
-	size_t                      out_size;
-	backend_info_t             *info;
-	int                         i;
-	size_t                      c;
-	size_t                      o;
-
+	ir_node        *block        = get_nodes_block(node);
+	ir_node        *new_block    = get_new_node(block);
+	dbg_info       *dbgi         = get_irn_dbg_info(node);
+	int             n_inputs     = get_ASM_n_inputs(node);
+	int             n_ins        = n_inputs+1;
+	ir_node       **in           = ALLOCANZ(ir_node*, n_ins);
+	size_t          n_clobbers   = 0;
+	ident         **clobbers     = get_ASM_clobbers(node);
+	unsigned        reg_map_size = 0;
+	ir_graph       *irg          = get_irn_irg(node);
+	struct obstack *obst         = get_irg_obstack(irg);
+	unsigned        clobber_bits[N_IA32_CLASSES];
 	memset(&clobber_bits, 0, sizeof(clobber_bits));
 
-	arity = get_irn_arity(node);
-	in    = ALLOCANZ(ir_node*, arity);
-
-	clobbers   = get_ASM_clobbers(node);
-	n_clobbers = 0;
-	for (c = 0; c < get_ASM_n_clobbers(node); ++c) {
-		const arch_register_req_t *req;
+	for (size_t c = 0; c < get_ASM_n_clobbers(node); ++c) {
 		const char                *clobber = get_id_str(clobbers[c]);
-
-		if (strcmp(clobber, "memory") == 0)
+		const arch_register_req_t *req     = ia32_parse_clobber(clobber);
+		if (req == NULL)
 			continue;
-		if (strcmp(clobber, "cc") == 0) {
-			continue;
-		}
 
-		req = ia32_parse_clobber(clobber);
 		clobber_bits[req->cls->index] |= *req->limited;
-
-		n_clobbers++;
+		assert(req->cls->n_regs <= sizeof(unsigned)*8);
+		++n_clobbers;
 	}
-	n_out_constraints = get_ASM_n_output_constraints(node);
-	out_arity         = n_out_constraints + n_clobbers;
+	size_t n_out_constraints = get_ASM_n_output_constraints(node);
+	size_t out_arity         = n_out_constraints + n_clobbers;
 
-	in_constraints  = get_ASM_input_constraints(node);
-	out_constraints = get_ASM_output_constraints(node);
+	const ir_asm_constraint *in_constraints  = get_ASM_input_constraints(node);
+	const ir_asm_constraint *out_constraints = get_ASM_output_constraints(node);
 
 	/* determine size of register_map */
-	for (out_idx = 0; out_idx < n_out_constraints; ++out_idx) {
+	for (size_t out_idx = 0; out_idx < n_out_constraints; ++out_idx) {
 		const ir_asm_constraint *constraint = &out_constraints[out_idx];
-		if (constraint->pos > reg_map_size)
-			reg_map_size = constraint->pos;
+		if (constraint->pos+1 > reg_map_size)
+			reg_map_size = constraint->pos+1;
 	}
-	for (i = 0; i < arity; ++i) {
+	for (int i = 0; i < n_inputs; ++i) {
 		const ir_asm_constraint *constraint = &in_constraints[i];
-		if (constraint->pos > reg_map_size)
-			reg_map_size = constraint->pos;
+		if (constraint->pos+1 > reg_map_size)
+			reg_map_size = constraint->pos+1;
 	}
-	++reg_map_size;
 
-	obst         = get_irg_obstack(current_ir_graph);
-	register_map = NEW_ARR_D(ia32_asm_reg_t, obst, reg_map_size);
+	ia32_asm_reg_t *register_map
+		= NEW_ARR_D(ia32_asm_reg_t, obst, reg_map_size);
 	memset(register_map, 0, reg_map_size * sizeof(register_map[0]));
 
 	/* construct output constraints */
-	out_size     = out_arity + 1;
-	out_reg_reqs = OALLOCN(obst, const arch_register_req_t*, out_size);
+	size_t                      out_size = out_arity + 1;
+	const arch_register_req_t **out_reg_reqs
+		= OALLOCN(obst, const arch_register_req_t*, out_size);
 
+	size_t out_idx;
 	for (out_idx = 0; out_idx < n_out_constraints; ++out_idx) {
-		const ir_asm_constraint   *constraint = &out_constraints[out_idx];
-		const char                *c       = get_id_str(constraint->constraint);
-		unsigned                   pos     = constraint->pos;
-		constraint_t               parsed_constraint;
-		const arch_register_req_t *req;
-
+		constraint_t             parsed_constraint;
+		const ir_asm_constraint *constraint = &out_constraints[out_idx];
+		const char              *c          = get_id_str(constraint->constraint);
+		unsigned                 pos        = constraint->pos;
 		parse_asm_constraints(&parsed_constraint, c, true);
-		req = ia32_make_register_req(&parsed_constraint, n_out_constraints,
+		const arch_register_req_t *req
+			= ia32_make_register_req(&parsed_constraint, n_out_constraints,
 		                             out_reg_reqs, out_idx);
 		out_reg_reqs[out_idx] = req;
 
@@ -517,26 +493,26 @@ ir_node *ia32_gen_ASM(ir_node *node)
 	}
 
 	/* inputs + input constraints */
-	in_reg_reqs = OALLOCN(obst, const arch_register_req_t*, arity);
-	for (i = 0; i < arity; ++i) {
-		ir_node                   *pred         = get_irn_n(node, i);
+	const arch_register_req_t **in_reg_reqs
+		= OALLOCN(obst, const arch_register_req_t*, n_ins);
+	for (int i = 0; i < n_inputs; ++i) {
+		constraint_t               parsed_constraint;
+		ir_node                   *pred         = get_ASM_input(node, i);
 		const ir_asm_constraint   *constraint   = &in_constraints[i];
 		ident                     *constr_id    = constraint->constraint;
 		const char                *c            = get_id_str(constr_id);
 		unsigned                   pos          = constraint->pos;
 		int                        is_memory_op = 0;
 		ir_node                   *input        = NULL;
-		unsigned                   r_clobber_bits;
-		constraint_t               parsed_constraint;
-		const arch_register_req_t *req;
 
 		parse_asm_constraints(&parsed_constraint, c, false);
 		if (parsed_constraint.cls != NULL) {
-			r_clobber_bits = clobber_bits[parsed_constraint.cls->index];
+			unsigned r_clobber_bits
+				= clobber_bits[parsed_constraint.cls->index];
 			if (r_clobber_bits != 0) {
 				if (parsed_constraint.all_registers_allowed) {
 					parsed_constraint.all_registers_allowed = 0;
-					be_set_allocatable_regs(current_ir_graph,
+					be_set_allocatable_regs(irg,
 							parsed_constraint.cls,
 							&parsed_constraint.allowed_registers);
 				}
@@ -544,8 +520,9 @@ ir_node *ia32_gen_ASM(ir_node *node)
 			}
 		}
 
-		req = ia32_make_register_req(&parsed_constraint, n_out_constraints,
-		                        out_reg_reqs, i);
+		const arch_register_req_t *req
+			= ia32_make_register_req(&parsed_constraint, n_out_constraints,
+		                             out_reg_reqs, i);
 		in_reg_reqs[i] = req;
 
 		if (parsed_constraint.immediate_type != '\0') {
@@ -572,26 +549,19 @@ ir_node *ia32_gen_ASM(ir_node *node)
 		register_map[pos].mode      = constraint->mode;
 	}
 
+	assert(n_inputs == n_ins-1);
+	ir_node *mem = get_ASM_mem(node);
+	in[n_inputs]          = be_transform_node(mem);
+	in_reg_reqs[n_inputs] = arch_no_register_req;
+
 	/* parse clobbers */
-	for (c = 0; c < get_ASM_n_clobbers(node); ++c) {
+	for (size_t c = 0; c < get_ASM_n_clobbers(node); ++c) {
 		const char                *clobber = get_id_str(clobbers[c]);
-		const arch_register_req_t *req;
-
-		if (strcmp(clobber, "memory") == 0 || strcmp(clobber, "cc") == 0)
+		const arch_register_req_t *req     = ia32_parse_clobber(clobber);
+		if (req == NULL)
 			continue;
-
-		req = ia32_parse_clobber(clobber);
 		out_reg_reqs[out_idx] = req;
 		++out_idx;
-	}
-
-	/* count inputs which are real values (and not memory) */
-	value_arity = 0;
-	for (i = 0; i < arity; ++i) {
-		ir_node *node_in = get_irn_n(node, i);
-		if (get_irn_mode(node_in) == mode_M)
-			continue;
-		++value_arity;
 	}
 
 	/* Attempt to make ASM node register pressure faithful.
@@ -606,43 +576,41 @@ ir_node *ia32_gen_ASM(ir_node *node)
 	 *        before...
 	 * FIXME: need to do this per register class...
 	 */
-	if (out_arity <= value_arity) {
-		int       orig_arity = arity;
-		int       in_size    = arity;
-		bitset_t *used_ins   = bitset_alloca(arity);
-		size_t    o;
-		for (o = 0; o < out_arity; ++o) {
+	if (out_arity <= (size_t)n_inputs) {
+		int       orig_inputs = n_ins;
+		int       in_size     = n_ins;
+		bitset_t *used_ins    = bitset_alloca(n_ins);
+		for (size_t o = 0; o < out_arity; ++o) {
 			const arch_register_req_t *outreq = out_reg_reqs[o];
 
 			if (outreq->cls == NULL) {
 				continue;
 			}
 
-			for (i = 0; i < orig_arity; ++i) {
-				const arch_register_req_t *inreq;
+			int i;
+			for (i = 0; i < orig_inputs; ++i) {
 				if (bitset_is_set(used_ins, i))
 					continue;
-				inreq = in_reg_reqs[i];
+				const arch_register_req_t *inreq = in_reg_reqs[i];
 				if (!can_match(outreq, inreq))
 					continue;
 				bitset_set(used_ins, i);
 				break;
 			}
 			/* did we find any match? */
-			if (i < orig_arity)
+			if (i < orig_inputs)
 				continue;
 
 			/* we might need more space in the input arrays */
-			if (arity >= in_size) {
-				const arch_register_req_t **new_in_reg_reqs;
-				ir_node             **new_in;
-
+			if (n_ins >= in_size) {
 				in_size *= 2;
-				new_in_reg_reqs = OALLOCN(obst, const arch_register_req_t*,
+				const arch_register_req_t **new_in_reg_reqs
+					= OALLOCN(obst, const arch_register_req_t*,
 				                          in_size);
-				memcpy(new_in_reg_reqs, in_reg_reqs, arity * sizeof(new_in_reg_reqs[0]));
-				new_in = ALLOCANZ(ir_node*, in_size);
-				memcpy(new_in, in, arity*sizeof(new_in[0]));
+				memcpy(new_in_reg_reqs, in_reg_reqs,
+				       n_ins*sizeof(new_in_reg_reqs[0]));
+				ir_node **new_in = ALLOCANZ(ir_node*, in_size);
+				memcpy(new_in, in, n_ins*sizeof(new_in[0]));
 
 				in_reg_reqs = new_in_reg_reqs;
 				in          = new_in;
@@ -650,21 +618,20 @@ ir_node *ia32_gen_ASM(ir_node *node)
 
 			/* add a new (dummy) input which occupies the register */
 			assert(outreq->type & arch_register_req_type_limited);
-			in_reg_reqs[arity] = outreq;
-			in[arity]          = new_bd_ia32_ProduceVal(NULL, block);
-			++arity;
+			in_reg_reqs[n_ins] = outreq;
+			in[n_ins]          = new_bd_ia32_ProduceVal(NULL, block);
+			++n_ins;
 		}
 	} else {
 		bitset_t *used_outs      = bitset_alloca(out_arity);
 		size_t    orig_out_arity = out_arity;
-		for (i = 0; i < arity; ++i) {
+		for (int i = 0; i < n_inputs; ++i) {
 			const arch_register_req_t *inreq = in_reg_reqs[i];
-			size_t                     o;
 
-			if (inreq->cls == NULL) {
+			if (inreq->cls == NULL)
 				continue;
-			}
 
+			size_t o;
 			for (o = 0; o < orig_out_arity; ++o) {
 				const arch_register_req_t *outreq;
 				if (bitset_is_set(used_outs, o))
@@ -714,11 +681,11 @@ ir_node *ia32_gen_ASM(ir_node *node)
 	out_reg_reqs[out_arity] = arch_no_register_req;
 	++out_arity;
 
-	new_node = new_bd_ia32_Asm(dbgi, new_block, arity, in, out_arity,
-	                           get_ASM_text(node), register_map);
+	ir_node *new_node = new_bd_ia32_Asm(dbgi, new_block, n_ins, in, out_arity,
+	                                    get_ASM_text(node), register_map);
 
-	info = be_get_info(new_node);
-	for (o = 0; o < out_arity; ++o) {
+	backend_info_t *info = be_get_info(new_node);
+	for (size_t o = 0; o < out_arity; ++o) {
 		info->out_infos[o].req = out_reg_reqs[o];
 	}
 	arch_set_irn_register_reqs_in(new_node, in_reg_reqs);
@@ -796,8 +763,9 @@ ir_node *ia32_gen_Unknown(ir_node *node)
 	return res;
 }
 
-const arch_register_req_t *ia32_make_register_req(const constraint_t *constraint,
-		int n_outs, const arch_register_req_t **out_reqs, int pos)
+const arch_register_req_t *ia32_make_register_req(
+		const constraint_t *constraint,  int n_outs,
+		const arch_register_req_t **out_reqs, int pos)
 {
 	struct obstack      *obst    = get_irg_obstack(current_ir_graph);
 	int                  same_as = constraint->same_as;
@@ -852,6 +820,9 @@ const arch_register_req_t *ia32_make_register_req(const constraint_t *constraint
 
 const arch_register_req_t *ia32_parse_clobber(const char *clobber)
 {
+	if (strcmp(clobber, "memory") == 0 || strcmp(clobber, "cc") == 0)
+		return NULL;
+
 	struct obstack        *obst = get_irg_obstack(current_ir_graph);
 	const arch_register_t *reg  = ia32_get_clobber_register(clobber);
 	arch_register_req_t   *req;

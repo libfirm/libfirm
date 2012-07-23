@@ -442,47 +442,42 @@ static int node_cmp_attr_Builtin(const ir_node *a, const ir_node *b)
 /** Compares the attributes of two ASM nodes. */
 static int node_cmp_attr_ASM(const ir_node *a, const ir_node *b)
 {
-	size_t n;
-	size_t i;
-	const ir_asm_constraint *ca;
-	const ir_asm_constraint *cb;
-	ident **cla, **clb;
-
 	if (get_ASM_text(a) != get_ASM_text(b))
 		return 1;
 
-	/* Should we really check the constraints here? Should be better, but is strange. */
-	n = get_ASM_n_input_constraints(a);
-	if (n != get_ASM_n_input_constraints(b))
+	int n_inputs = get_ASM_n_inputs(a);
+	if (n_inputs != get_ASM_n_inputs(b))
 		return 1;
 
-	ca = get_ASM_input_constraints(a);
-	cb = get_ASM_input_constraints(b);
-	for (i = 0; i < n; ++i) {
-		if (ca[i].pos != cb[i].pos || ca[i].constraint != cb[i].constraint
-		    || ca[i].mode != cb[i].mode)
+	const ir_asm_constraint *in_a = get_ASM_input_constraints(a);
+	const ir_asm_constraint *in_b = get_ASM_input_constraints(b);
+	for (int i = 0; i < n_inputs; ++i) {
+		if (in_a[i].pos != in_b[i].pos
+		    || in_a[i].constraint != in_b[i].constraint
+		    || in_a[i].mode != in_b[i].mode)
 			return 1;
 	}
 
-	n = get_ASM_n_output_constraints(a);
-	if (n != get_ASM_n_output_constraints(b))
+	size_t n_outputs = get_ASM_n_output_constraints(a);
+	if (n_outputs != get_ASM_n_output_constraints(b))
 		return 1;
 
-	ca = get_ASM_output_constraints(a);
-	cb = get_ASM_output_constraints(b);
-	for (i = 0; i < n; ++i) {
-		if (ca[i].pos != cb[i].pos || ca[i].constraint != cb[i].constraint
-		    || ca[i].mode != cb[i].mode)
+	const ir_asm_constraint *out_a = get_ASM_output_constraints(a);
+	const ir_asm_constraint *out_b = get_ASM_output_constraints(b);
+	for (size_t i = 0; i < n_outputs; ++i) {
+		if (out_a[i].pos != out_b[i].pos
+		    || out_a[i].constraint != out_b[i].constraint
+		    || out_a[i].mode != out_b[i].mode)
 			return 1;
 	}
 
-	n = get_ASM_n_clobbers(a);
-	if (n != get_ASM_n_clobbers(b))
+	size_t n_clobbers = get_ASM_n_clobbers(a);
+	if (n_clobbers != get_ASM_n_clobbers(b))
 		return 1;
 
-	cla = get_ASM_clobbers(a);
-	clb = get_ASM_clobbers(b);
-	for (i = 0; i < n; ++i) {
+	ident **cla = get_ASM_clobbers(a);
+	ident **clb = get_ASM_clobbers(b);
+	for (size_t i = 0; i < n_clobbers; ++i) {
 		if (cla[i] != clb[i])
 			return 1;
 	}
