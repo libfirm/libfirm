@@ -390,7 +390,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	arch_env_get_call_abi(arch_env, call_tp, call);
 
 	/* Insert code to put the stack arguments on the stack. */
-	assert(get_Call_n_params(irn) == n_params);
+	assert((size_t)get_Call_n_params(irn) == n_params);
 	stack_param_idx = ALLOCAN(int, n_params);
 	for (p = 0; p < n_params; ++p) {
 		be_abi_call_arg_t *arg = get_call_arg(call, 0, p, 0);

@@ -463,7 +463,7 @@ FIRM_API void set_Sel_index(ir_node *node, int pos, ir_node *index);
 /** Returns parameter inputs of Call node @p node as array. */
 FIRM_API ir_node **get_Call_param_arr(ir_node *node);
 /** Returns the number of parameters of a call. */
-FIRM_API size_t get_Call_n_params(const ir_node *node);
+FIRM_API int get_Call_n_params(const ir_node *node);
 /** Returns the call parameter at position pos. */
 FIRM_API ir_node *get_Call_param(const ir_node *node, int pos);
 /** Sets the call parameter at position pos. */

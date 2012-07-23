@@ -905,10 +905,10 @@ ir_node **get_Call_param_arr(ir_node *node)
 	return &get_irn_in(node)[CALL_PARAM_OFFSET + 1];
 }
 
-size_t get_Call_n_params(const ir_node *node)
+int get_Call_n_params(const ir_node *node)
 {
 	assert(is_Call(node));
-	return (size_t) (get_irn_arity(node) - CALL_PARAM_OFFSET);
+	return get_irn_arity(node) - CALL_PARAM_OFFSET;
 }
 
 ir_node *get_Call_param(const ir_node *node, int pos)

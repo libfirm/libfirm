@@ -233,18 +233,19 @@ static void show_node_on_graph(const ir_graph *irg, const ir_node *n)
  */
 static void show_call_param(const ir_node *n, ir_type *mt)
 {
-	size_t i;
 	char type_name[256];
 	ir_print_type(type_name, sizeof(type_name), mt);
 
 	show_entity_failure(n);
 	fprintf(stderr, "  Call type-check failed: %s(", type_name);
-	for (i = 0; i < get_method_n_params(mt); ++i) {
+	size_t n_method_params = get_method_n_params(mt);
+	for (size_t i = 0; i < n_method_params; ++i) {
 		fprintf(stderr, "%s ", get_mode_name_ex(get_type_mode(get_method_param_type(mt, i))));
 	}
 	fprintf(stderr, ") != CALL(");
 
-	for (i = 0; i < get_Call_n_params(n); ++i) {
+	int n_params = get_Call_n_params(n);
+	for (int i = 0; i < n_params; ++i) {
 		fprintf(stderr, "%s ", get_mode_name_ex(get_irn_mode(get_Call_param(n, i))));
 	}
 	fprintf(stderr, ")\n");
@@ -1108,7 +1109,7 @@ static int verify_node_Call(const ir_node *n)
 
 	if (get_method_variadicity(mt) == variadicity_variadic) {
 		ASSERT_AND_RET_DBG(
-			get_Call_n_params(n) >= get_method_n_params(mt),
+			(size_t)get_Call_n_params(n) >= get_method_n_params(mt),
 			"Number of args for Call doesn't match number of args in variadic type.",
 			0,
 			ir_fprintf(stderr, "Call %+F has %d params, type %d\n",
@@ -1116,7 +1117,7 @@ static int verify_node_Call(const ir_node *n)
 		);
 	} else {
 		ASSERT_AND_RET_DBG(
-			get_Call_n_params(n) == get_method_n_params(mt),
+			(size_t)get_Call_n_params(n) == get_method_n_params(mt),
 			"Number of args for Call doesn't match number of args in non variadic type.",
 			0,
 			ir_fprintf(stderr, "Call %+F has %d params, type %d\n",
