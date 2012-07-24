@@ -58,47 +58,128 @@
  * |_|                                       |_|
  *************************************************************/
 
-void amd64_emit_register(const arch_register_t *reg)
-{
-	be_emit_char('%');
-	be_emit_string(arch_register_get_name(reg));
-}
-
-void amd64_emit_immediate(const ir_node *node)
-{
-	const amd64_attr_t *attr = get_amd64_attr_const (node);
-	be_emit_char('$');
-	be_emit_irprintf("0x%X", attr->ext.imm_value);
-}
-
-void amd64_emit_fp_offset(const ir_node *node)
-{
-	const amd64_SymConst_attr_t *attr = get_amd64_SymConst_attr_const(node);
-	if (attr->fp_offset)
-		be_emit_irprintf("%d", attr->fp_offset);
-}
-
-void amd64_emit_source_register(const ir_node *node, int pos)
-{
-	amd64_emit_register(arch_get_irn_register_in(node, pos));
-}
-
-void amd64_emit_dest_register(const ir_node *node, int pos)
-{
-	amd64_emit_register(arch_get_irn_register_out(node, pos));
-}
-
 /**
- * Returns the target label for a control flow node.
+ * Returns the target block for a control flow node.
  */
-/*
-static void amd64_emit_cfop_target(const ir_node *node)
+static ir_node *get_cfop_target_block(const ir_node *irn)
 {
-	ir_node *block = get_irn_link(node);
-
-	be_emit_irprintf("BLOCK_%ld", get_irn_node_nr(block));
+	return (ir_node*)get_irn_link(irn);
 }
-*/
+
+void amd64_emitf(ir_node const *const node, char const *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+
+	be_emit_char('\t');
+	for (;;) {
+		char const *start = fmt;
+
+		while (*fmt != '%' && *fmt != '\n' && *fmt != '\0')
+			++fmt;
+		if (fmt != start) {
+			be_emit_string_len(start, fmt - start);
+		}
+
+		if (*fmt == '\n') {
+			be_emit_char('\n');
+			be_emit_write_line();
+			be_emit_char('\t');
+			++fmt;
+			continue;
+		}
+
+		if (*fmt == '\0')
+			break;
+
+		++fmt;
+
+		switch (*fmt++) {
+			arch_register_t const *reg;
+
+			case '%':
+				be_emit_char('%');
+				break;
+
+			case 'C': {
+				amd64_attr_t const *const attr = get_amd64_attr_const(node);
+				be_emit_irprintf("$0x%X", attr->ext.imm_value);
+				break;
+			}
+
+			case 'D':
+				if (*fmt < '0' || '9' <= *fmt)
+					goto unknown;
+				reg = arch_get_irn_register_out(node, *fmt++ - '0');
+				goto emit_R;
+
+			case 'E': {
+				ir_entity const *const ent = va_arg(ap, ir_entity const*);
+				be_gas_emit_entity(ent);
+				break;
+			}
+
+			case 'L': {
+				ir_node *const block = get_cfop_target_block(node);
+				be_gas_emit_block_name(block);
+				break;
+			}
+
+			case 'O': {
+				amd64_SymConst_attr_t const *const attr = get_amd64_SymConst_attr_const(node);
+				if (attr->fp_offset)
+					be_emit_irprintf("%d", attr->fp_offset);
+				break;
+			}
+
+			case 'R':
+				reg = va_arg(ap, arch_register_t const*);
+emit_R:
+				be_emit_char('%');
+				be_emit_string(arch_register_get_name(reg));
+				break;
+
+			case 'S': {
+				int pos;
+				if ('0' <= *fmt && *fmt <= '9') {
+					pos = *fmt++ - '0';
+				} else if (*fmt == '*') {
+					++fmt;
+					pos = va_arg(ap, int);
+				} else {
+					goto unknown;
+				}
+				reg = arch_get_irn_register_in(node, pos);
+				goto emit_R;
+			}
+
+			case 'd': {
+				int const num = va_arg(ap, int);
+				be_emit_irprintf("%d", num);
+				break;
+			}
+
+			case 's': {
+				char const *const str = va_arg(ap, char const*);
+				be_emit_string(str);
+				break;
+			}
+
+			case 'u': {
+				unsigned const num = va_arg(ap, unsigned);
+				be_emit_irprintf("%u", num);
+				break;
+			}
+
+			default:
+unknown:
+				panic("unknown format conversion");
+		}
+	}
+
+	be_emit_finish_line_gas(node);
+	va_end(ap);
+}
 
 /***********************************************************************************
  *                  _          __                                             _
@@ -139,11 +220,7 @@ static void emit_amd64_SymConst(const ir_node *irn)
 	label = entry->label;
 #endif
 
-	be_emit_cstring("\tmov $");
-	be_gas_emit_entity(attr->entity);
-	be_emit_cstring(", ");
-	amd64_emit_dest_register(irn, 0);
-	be_emit_finish_line_gas(irn);
+	amd64_emitf(irn, "mov $%E, %D0", attr->entity);
 }
 
 /**
@@ -151,11 +228,7 @@ static void emit_amd64_SymConst(const ir_node *irn)
  */
 static void emit_amd64_Conv(const ir_node *irn)
 {
-	be_emit_cstring("\tmov ");
-	amd64_emit_source_register(irn, 0);
-	be_emit_cstring(", ");
-	amd64_emit_dest_register(irn, 0);
-	be_emit_finish_line_gas(irn);
+	amd64_emitf(irn, "mov %S0, %D0");
 }
 
 
@@ -165,24 +238,6 @@ static void emit_amd64_Conv(const ir_node *irn)
 static ir_node *sched_next_block(const ir_node *block)
 {
     return (ir_node*)get_irn_link(block);
-}
-
-/**
- * Returns the target block for a control flow node.
- */
-static ir_node *get_cfop_target_block(const ir_node *irn)
-{
-	return (ir_node*)get_irn_link(irn);
-}
-
-/**
- * Emit the target label for a control flow node.
- */
-static void amd64_emit_cfop_target(const ir_node *irn)
-{
-	ir_node *block = get_cfop_target_block(irn);
-
-	be_gas_emit_block_name(block);
 }
 
 /**
@@ -198,16 +253,10 @@ static void emit_amd64_Jmp(const ir_node *node)
 	/* we have a block schedule */
 	next_block = sched_next_block(block);
 	if (get_cfop_target_block(node) != next_block) {
-		be_emit_cstring("\tjmp ");
-		amd64_emit_cfop_target(node);
-	} else {
-		if (be_options.verbose_asm) {
-			be_emit_cstring("\t/* fallthrough to ");
-			amd64_emit_cfop_target(node);
-			be_emit_cstring(" */");
-		}
+		amd64_emitf(node, "jmp %L");
+	} else if (be_options.verbose_asm) {
+		amd64_emitf(node, "/* fallthrough to %L */");
 	}
-	be_emit_finish_line_gas(node);
 }
 
 /**
@@ -272,21 +321,12 @@ static void emit_amd64_Jcc(const ir_node *irn)
 	}
 
 	/* emit the true proj */
-	be_emit_irprintf("\tj%s ", suffix);
-	amd64_emit_cfop_target(proj_true);
-	be_emit_finish_line_gas(proj_true);
+	amd64_emitf(proj_true, "j%s %L", suffix);
 
-	if (get_cfop_target_block(proj_false) == next_block) {
-		if (be_options.verbose_asm) {
-			be_emit_cstring("\t/* fallthrough to ");
-			amd64_emit_cfop_target(proj_false);
-			be_emit_cstring(" */");
-			be_emit_finish_line_gas(proj_false);
-		}
-	} else {
-		be_emit_cstring("\tjmp ");
-		amd64_emit_cfop_target(proj_false);
-		be_emit_finish_line_gas(proj_false);
+	if (get_cfop_target_block(proj_false) != next_block) {
+		amd64_emitf(proj_false, "jmp %L");
+	} else if (be_options.verbose_asm) {
+		amd64_emitf(proj_false, "/* fallthrough to %L */");
 	}
 }
 
@@ -301,14 +341,11 @@ static void emit_be_Call(const ir_node *node)
 	 * variable argument counts */
 	if (get_method_variadicity (be_Call_get_type((ir_node *) node))) {
 		/* But this still is a hack... */
-		be_emit_cstring("\txor %rax, %rax");
-		be_emit_finish_line_gas(node);
+		amd64_emitf(node, "xor %%rax, %%rax");
 	}
 
 	if (entity) {
-		be_emit_cstring("\tcall ");
-		be_gas_emit_entity (be_Call_get_entity(node));
-		be_emit_finish_line_gas(node);
+		amd64_emitf(node, "call %E", entity);
 	} else {
 		be_emit_pad_comment();
 		be_emit_cstring("/* FIXME: call NULL entity?! */\n");
@@ -330,11 +367,7 @@ static void emit_be_Copy(const ir_node *irn)
 	if (mode_is_float(mode)) {
 		panic("move not supported for FP");
 	} else if (mode_is_data(mode)) {
-		be_emit_cstring("\tmov ");
-		amd64_emit_source_register(irn, 0);
-		be_emit_cstring(", ");
-		amd64_emit_dest_register(irn, 0);
-		be_emit_finish_line_gas(irn);
+		amd64_emitf(irn, "mov %S0, %D0");
 	} else {
 		panic("move not supported for this mode");
 	}
@@ -353,11 +386,7 @@ static void emit_be_Perm(const ir_node *node)
 
 	assert(cls0 == cls1 && "Register class mismatch at Perm");
 
-	be_emit_cstring("\txchg ");
-	amd64_emit_register (in0);
-	be_emit_cstring(", ");
-	amd64_emit_register (in1);
-	be_emit_finish_line_gas(node);
+	amd64_emitf(node, "xchg %R, %R", in0, in1);
 
 	if (cls0 != &amd64_reg_classes[CLASS_amd64_gp]) {
 		panic("unexpected register class in be_Perm (%+F)", node);
@@ -369,17 +398,8 @@ static void emit_amd64_FrameAddr(const ir_node *irn)
 	const amd64_SymConst_attr_t *attr =
 		(const amd64_SymConst_attr_t*) get_amd64_attr_const(irn);
 
-	be_emit_cstring("\tmov ");
-	amd64_emit_source_register(irn, 0);
-	be_emit_cstring(", ");
-	amd64_emit_dest_register(irn, 0);
-	be_emit_finish_line_gas(irn);
-
-	be_emit_cstring("\tadd ");
-	be_emit_irprintf("$0x%X", attr->fp_offset);
-	be_emit_cstring(", ");
-	amd64_emit_dest_register(irn, 0);
-	be_emit_finish_line_gas(irn);
+	amd64_emitf(irn, "mov %S0, %D0");
+	amd64_emitf(irn, "add $%u, %D0", attr->fp_offset);
 }
 
 /**
@@ -393,15 +413,9 @@ static void emit_be_IncSP(const ir_node *node)
 		return;
 
 	if (offs > 0) {
-		be_emit_irprintf("\tsub ");
-		be_emit_irprintf("$%u, ", offs);
-		amd64_emit_dest_register(node, 0);
-		be_emit_finish_line_gas(node);
+		amd64_emitf(node, "sub, $%d, %D0", offs);
 	} else {
-		be_emit_irprintf("\tadd ");
-		be_emit_irprintf("$%u, ", -offs);
-		amd64_emit_dest_register(node, 0);
-		be_emit_finish_line_gas(node);
+		amd64_emitf(node, "add, $%d, %D0", -offs);
 	}
 }
 
@@ -418,23 +432,11 @@ static void emit_be_Return(const ir_node *node)
 static void emit_amd64_binop_op(const ir_node *irn, int second_op)
 {
 	if (irn->op == op_amd64_Add) {
-		be_emit_cstring("\tadd ");
-		amd64_emit_source_register(irn, second_op);
-		be_emit_cstring(", ");
-		amd64_emit_dest_register(irn, 0);
-		be_emit_finish_line_gas(irn);
+		amd64_emitf(irn, "add %S*, %D0", second_op);
 	} else if (irn->op == op_amd64_Sub) {
-		be_emit_cstring("\tneg ");
-		amd64_emit_source_register(irn, second_op);
-		be_emit_finish_line_gas(irn);
-		be_emit_cstring("\tadd ");
-		amd64_emit_source_register(irn, second_op);
-		be_emit_cstring(", ");
-		amd64_emit_dest_register(irn, 0);
-		be_emit_finish_line_gas(irn);
-		be_emit_cstring("\tneg ");
-		amd64_emit_source_register(irn, second_op);
-		be_emit_finish_line_gas(irn);
+		amd64_emitf(irn, "neg %S*",      second_op);
+		amd64_emitf(irn, "add %S*, %D0", second_op);
+		amd64_emitf(irn, "neg %S*",      second_op);
 	}
 
 }
@@ -451,16 +453,10 @@ static void emit_amd64_binop(const ir_node *irn)
 	int second_op = 0;
 
 	if (reg_d1 != reg_s1 && reg_d1 != reg_s2) {
-		be_emit_cstring("\tmov ");
-		amd64_emit_register(reg_s1);
-		be_emit_cstring(", ");
-		amd64_emit_register(reg_d1);
-		be_emit_finish_line_gas(irn);
+		amd64_emitf(irn, "mov %R, %R", reg_s1, reg_d1);
 		second_op = 1;
-
 	} else if (reg_d1 == reg_s2 && reg_d1 != reg_s1) {
 		second_op = 0;
-
 	}
 
 	emit_amd64_binop_op(irn, second_op);

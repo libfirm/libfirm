@@ -33,14 +33,25 @@
 
 #include "bearch_amd64_t.h"
 
-void amd64_emit_register(const arch_register_t *reg);
-void amd64_emit_source_register(const ir_node *node, int pos);
-void amd64_emit_dest_register(const ir_node *node, int pos);
-void amd64_emit_immediate(const ir_node *node);
-void amd64_emit_fp_offset(const ir_node *node);
-
-int get_amd64_reg_nr(ir_node *irn, int posi, int in_out);
-const char *get_amd64_in_reg_name(ir_node *irn, int pos);
+/**
+ * fmt  parameter               output
+ * ---- ----------------------  ---------------------------------------------
+ * %%                           %
+ * %C   <node>                  immediate value
+ * %Dx  <node>                  destination register x
+ * %E   ir_entity const*        entity
+ * %L   <node>                  control flow target
+ * %O   <node>                  offset
+ * %R   arch_register_t const*  register
+ * %Sx  <node>                  source register x
+ * %S*  <node>, int             source register
+ * %d   signed int              signed int
+ * %s   char const*             string
+ * %u   unsigned int            unsigned int
+ *
+ * x starts at 0
+ */
+void amd64_emitf(ir_node const *node, char const *fmt, ...);
 
 void amd64_gen_routine(ir_graph *irg);
 

@@ -121,23 +121,6 @@ $custom_init_attr_func = \&amd64_custom_init_attr;
 
 $default_copy_attr = "amd64_copy_attr";
 
-%emit_templates = (
-	S1 => "${arch}_emit_source_register(node, 0);",
-	S2 => "${arch}_emit_source_register(node, 1);",
-	S3 => "${arch}_emit_source_register(node, 2);",
-	S4 => "${arch}_emit_source_register(node, 3);",
-	S5 => "${arch}_emit_source_register(node, 4);",
-	S6 => "${arch}_emit_source_register(node, 5);",
-	D1 => "${arch}_emit_dest_register(node, 0);",
-	D2 => "${arch}_emit_dest_register(node, 1);",
-	D3 => "${arch}_emit_dest_register(node, 2);",
-	D4 => "${arch}_emit_dest_register(node, 3);",
-	D5 => "${arch}_emit_dest_register(node, 4);",
-	D6 => "${arch}_emit_dest_register(node, 5);",
-	C  => "${arch}_emit_immediate(node);",
-	O  => "${arch}_emit_fp_offset(node);",
-);
-
 %init_attr = (
 	amd64_attr_t           =>
 		 "\tinit_amd64_attributes(res, irn_flags_, in_reqs, n_res);",
@@ -160,7 +143,7 @@ Push => {
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "rsp" ], out => [ "rsp:I|S", "none" ] },
 	ins       => [ "base", "index", "mem", "val", "stack" ],
-	emit      => '. push %S1',
+	emit      => 'push %S0',
 	outs      => [ "stack", "M" ],
 	am        => "source,unary",
 	latency   => 2,
@@ -186,7 +169,7 @@ Mul => {
 	reg_req   => { in  => [ "rax", "gp" ],
 	               out => [ "rax rdx" ] },
 	ins       => [ "left", "right" ],
-	emit      => '. mul %S2',
+	emit      => 'mul %S1',
 	outs      => [ "res" ],
 	mode      => $mode_gp,
 	am        => "source,binary",
@@ -208,7 +191,7 @@ Neg => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp" ],
 	               out => [ "in_r1", "flags" ] },
-	emit      => '. neg %S1',
+	emit      => 'neg %S0',
 	ins       => [ "val" ],
 	outs      => [ "res", "flags" ],
 	mode      => $mode_gp,
@@ -220,7 +203,7 @@ Immediate => {
 	attr      => "unsigned imm_value",
 	init_attr => "attr->ext.imm_value = imm_value;",
 	reg_req   => { out => [ "gp" ] },
-	emit      => '. mov %C, %D1',
+	emit      => 'mov %C, %D0',
 	mode      => $mode_gp,
 },
 
@@ -258,7 +241,7 @@ Cmp => {
 	               out => [ "flags" ] },
 	ins       => [ "left", "right" ],
 	outs      => [ "eflags" ],
-	emit      => '. cmp %S1, %S2',
+	emit      => 'cmp %S0, %S1',
 	attr      => "int ins_permuted, int cmp_unsigned",
 	init_attr => "attr->data.ins_permuted   = ins_permuted;\n".
 	             "\tattr->data.cmp_unsigned = cmp_unsigned;\n",
@@ -286,7 +269,7 @@ Load => {
 	outs      => [ "res",  "M" ],
 	attr      => "ir_entity *entity",
 	attr_type => "amd64_SymConst_attr_t",
-	emit      => ". mov %O(%S1), %D1"
+	emit      => "mov %O(%S0), %D0"
 },
 
 FrameAddr => {
@@ -308,7 +291,7 @@ Store => {
 	attr      => "ir_entity *entity",
 	attr_type => "amd64_SymConst_attr_t",
 	mode      => "mode_M",
-	emit      => ". mov %S2, %O(%S1)"
+	emit      => "mov %S1, %O(%S0)"
 },
 
 #NoReg_GP => {
