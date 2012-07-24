@@ -2379,6 +2379,10 @@ int ir_import_file(FILE *input, const char *inputname)
 	/* read first character */
 	read_c(env);
 
+	/* if the first line starts with '#', it contains a comment. */
+	if (env->c == '#')
+		skip_to(env, '\n');
+
 	set_optimize(0);
 
 	while (true) {
