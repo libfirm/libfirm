@@ -53,10 +53,9 @@
 
 #define HOIST_HIGH 1
 #define BETTER_GREED 0
-#define LOADS 0
-#define DIVMODS 0
+#define LOADS 1
+#define DIVMODS 1
 #define NO_INF_LOOPS 0
-#define NO_INF_LOOPS2 0
 
 /** Additional info we need for every block. */
 typedef struct block_info {
@@ -250,7 +249,7 @@ static int compare_gvn_identities(const void *elt, const void *key)
 		if (get_irn_n(a, -1) != get_irn_n(b, -1))
 			return 1;
 	} else {
-		/* we need global values independent from their blocks */
+		/* we need global values independently from their blocks */
 		assert(get_opt_global_cse());
 	}
 
@@ -570,7 +569,7 @@ static void analyse_loops(ir_graph *irg)
 	ir_free_resources(irg, IR_RESOURCE_BLOCK_MARK);
 }
 
-#if NO_INF_LOOPS || NO_INF_LOOPS2
+#if NO_INF_LOOPS
 /**
  * Returns non-zero if block is part of an infinite loop.
  */
@@ -729,6 +728,16 @@ static ir_node *get_translated(ir_node *block, ir_node *node)
 	return ir_nodehashmap_get(ir_node, get_block_info(block)->trans, node);
 }
 
+static ir_node *get_translated_pred(ir_node *block, int pos, ir_node *node)
+{
+	ir_node *pred_block;
+	if (is_irn_constlike(node))
+		return node;
+
+	pred_block = get_Block_cfgpred_block(block, pos);
+	return ir_nodehashmap_get(ir_node, get_block_info(pred_block)->trans, node);
+}
+
 /**
  * Saves result of phi translation of node into predecessor
  * at pos of block succ.
@@ -758,7 +767,7 @@ static void set_translated(ir_nodehashmap_t *map, ir_node *node, ir_node *trans)
  * @param block  the block to be hoisted into
  * @returns      block which node can be hoisted above
  */
-static ir_node *is_hoistable_above(ir_node *node, ir_node *block, ir_node *succ)
+static unsigned is_hoistable_above(ir_node *node, ir_node *block, unsigned translated)
 {
 	int i;
 	int arity = get_irn_arity(node);
@@ -766,7 +775,7 @@ static ir_node *is_hoistable_above(ir_node *node, ir_node *block, ir_node *succ)
 	/* make sure that node can be hoisted above block */
 
 	if (is_irn_constlike(node))
-		return block;
+		return 1;
 
 	for (i = 0; i < arity; ++i) {
 		block_info *info       = get_block_info(block);
@@ -774,26 +783,18 @@ static ir_node *is_hoistable_above(ir_node *node, ir_node *block, ir_node *succ)
 		ir_node    *pred_value = identify(pred);
 		ir_node    *pred_block = get_nodes_block(pred);
 
-		/* remove TMP_GEN */
-		/* is predecessor not known to be clean */
-		if (! ir_valueset_lookup(info->antic_in, pred_value)) {
-			/* is it possible to hoist node above block? */
-			if (! block_strictly_dominates(pred_block, block)) {
-				DB((dbg, LEVEL_3, "unclean %+F: %+F (%+F) not antic\n", node, pred, pred_value));
-				return succ;
-			}
-		}
+		/* predecessor strictly dominating */
+		if (block_strictly_dominates(pred_block, block))
+			continue;
 
-		/* predecessor value to be antic in is not enough.
-		   if we didn't translate the exact representative we cannot translate */
-		if (! get_translated(pred_block, pred)) {
-			if (! block_strictly_dominates(pred_block, block)) {
-				DB((dbg, LEVEL_3, "unclean %+F: %+F (%+F) lost of representative\n", node, pred, pred_value));
-				return NULL;
-			}
-		}
+		/* if we didn't translate the exact representative we cannot translate */
+		if (translated && !get_translated(pred_block, pred))
+			return 0;
+
+		if (! ir_valueset_lookup(info->antic_in, pred_value))
+			return 0;
 	}
-	return block;
+	return 1;
 }
 
 #if LOADS || DIVMODS
@@ -801,7 +802,7 @@ static ir_node *is_hoistable_above(ir_node *node, ir_node *block, ir_node *succ)
 static unsigned match_pred(ir_node *pred, ir_node *avail_pred, ir_node *block, int pos)
 {
 	ir_node *avail_value  = identify(avail_pred);
-	ir_node *trans_pred   = get_translated_pred(pred, block, pos);
+	ir_node *trans_pred   = get_translated_pred(block, pos, pred);
 	ir_node *value;
 
 	if (trans_pred == NULL)
@@ -827,7 +828,7 @@ static unsigned match_pred(ir_node *pred, ir_node *avail_pred, ir_node *block, i
 static ir_node *phi_translate_load(ir_node *load, ir_node *block, int pos)
 {
 	ir_node *mem   = get_Load_mem(load);
-	ir_node *trans = get_translated_pred(mem, block, pos);
+	ir_node *trans = get_translated_pred(block, pos, mem);
 
 	if (trans == NULL)
 		trans = mem;
@@ -859,7 +860,7 @@ static ir_node *phi_translate_load(ir_node *load, ir_node *block, int pos)
 static ir_node *phi_translate_divmod(ir_node *divmod, ir_node *block, int pos)
 {
 	ir_node *mem   = get_memop_mem(divmod);
-	ir_node *trans = get_translated_pred(mem, block, pos);
+	ir_node *trans = get_translated_pred(block, pos, mem);
 
 	if (trans == NULL)
 		trans = mem;
@@ -1057,9 +1058,17 @@ static void compute_antic(ir_node *block, void *ctx)
 	n_succ = get_Block_n_cfg_outs(block);
 
 	if (env->first_iter) {
+#if NO_INF_LOOPS
+		if (! is_in_infinite_loop(block)) {
+			foreach_valueset(info->exp_gen, value, expr, iter) {
+				ir_valueset_insert(info->antic_in, value, expr);
+			}
+		}
+#else
 		foreach_valueset(info->exp_gen, value, expr, iter) {
 			ir_valueset_insert(info->antic_in, value, expr);
 		}
+#endif
 	}
 
 	/* successor might have phi nodes */
@@ -1081,7 +1090,6 @@ static void compute_antic(ir_node *block, void *ctx)
 			/* create new value if necessary */
 			ir_node *trans_value = identify_or_remember(trans);
 			ir_node *represent;
-			ir_node *hoistable;
 
 			DB((dbg, LEVEL_3, "Translate %+F %+F to %d = %+F (%+F)\n", expr, succ, pos, trans, trans_value));
 
@@ -1092,22 +1100,8 @@ static void compute_antic(ir_node *block, void *ctx)
 			else
 				represent = expr;
 
-			hoistable = is_hoistable_above(expr, block, succ);
-			//if (is_clean_in_block_antic(expr, block)) {
-			if (hoistable != NULL) {
-				/* Where is the difference between replace and insert?
-				   If we replace, we might use a representative with non translated*/
-				ir_valueset_insert(info->antic_in, trans_value, represent);
-				DB((dbg, LEVEL_3, "Translated %+F repr %+F\n", expr, represent));
-
-				if (hoistable == block)
-					ir_valueset_set_link(info->antic_in, trans_value, trans_value);
-				else
-					/* hoistable into block but not above */
-					ir_valueset_set_link(info->antic_in, trans_value, NULL);
-			}
-			/* during insert we use the translated node, because it may be
-			   hoisted into block whilst being not anticipated there. */
+			if (is_hoistable_above(expr, block, 1))
+				ir_valueset_replace(info->antic_in, trans_value, represent);
 			set_translated(info->trans, expr, represent);
 		}
 	} else if (n_succ > 1) {
@@ -1118,8 +1112,6 @@ static void compute_antic(ir_node *block, void *ctx)
 
 		/* disjoint of antic_ins */
 		foreach_valueset(succ0_info->antic_in, value, expr, iter) {
-			ir_node *hoistable;
-
 			/* iterate over remaining successors */
 			for (i = 1; i < n_succ; ++i) {
 				ir_node    *succ      = get_Block_cfg_out(block, i);
@@ -1131,17 +1123,8 @@ static void compute_antic(ir_node *block, void *ctx)
 					break;
 			}
 
-			hoistable = is_hoistable_above(expr, block, succ0);
-
-			if (common && hoistable != NULL) {
+			if (common && is_hoistable_above(expr, block, 0)) {
 				ir_valueset_insert(info->antic_in, value, expr);
-
-				if (hoistable == block)
-					ir_valueset_set_link(info->antic_in, value, value);
-				else
-					/* hoistable into block but not above */
-					ir_valueset_set_link(info->antic_in, value, NULL);
-
 				DB((dbg, LEVEL_3, "common and clean %+F(%+F) in %+F\n", expr, value, block));
 			}
 		}
@@ -1355,6 +1338,7 @@ static unsigned is_hoisting_greedy(ir_node *irn, ir_node *block)
 	for (i = 0; i < arity; ++i) {
 		ir_node *pred  = get_irn_n(irn, i);
 
+		/* predecessor is on current path we have to ensure redundancy */
 		if (! block_strictly_dominates(get_nodes_block(pred), block) && ! is_redundant(pred))
 			return 1;
 	}
@@ -1425,10 +1409,6 @@ static void insert_nodes(ir_node *block, void *ctx)
 
 		/* already done? */
 		if (ir_valueset_lookup(info->antic_done, value))
-			continue;
-
-		/* hoistable above block? */
-		if (ir_valueset_get_link(info->antic_in, value) == NULL)
 			continue;
 
 #if BETTER_GREED
@@ -1558,13 +1538,13 @@ static void insert_nodes(ir_node *block, void *ctx)
 
 #if BETTER_GREED
 	if (env->changes) {
-		/* iterate in inverse topological order */
 		plist_element_t *it;
+		/* iterate in inverse topological order */
 		foreach_plist(stack, it) {
-			ir_node *irn = (ir_node *)plist_element_get_value(it);
-			int j;
-			char redundant = 1;
-			ir_node *block = get_nodes_block(irn);
+			ir_node *irn       = (ir_node *)plist_element_get_value(it);
+			ir_node *block     = get_nodes_block(irn);
+			int      j;
+			char     redundant = 1;
 
 			/* does irn only have redundant successors? */
 
@@ -1627,13 +1607,14 @@ static void hoist_high(ir_node *block, void *ctx)
 		if (is_memop(expr) || is_Proj(expr))
 			continue;
 
+		/* visit hoisted expressions */
 		for (pos = 0; pos < arity; ++pos) {
 			/* standard target is predecessor block */
 			ir_node    *target     = get_Block_cfgpred_block(block, pos);
 			block_info *pred_info  = get_block_info(target);
 			ir_node    *avail;
+			ir_node    *temp_target;
 			ir_node    *new_target;
-			ir_node    *last_target;
 			ir_node    *trans_expr;
 			ir_node    *trans_value;
 			ir_node    *dom;
@@ -1646,84 +1627,89 @@ static void hoist_high(ir_node *block, void *ctx)
 			trans_value = identify(trans_expr);
 			avail = (ir_node*)ir_valueset_lookup(pred_info->avail_out, trans_value);
 
+			/* get the used expr on this path */
 			if (avail == NULL)
 				avail = trans_expr;
 
 			value = identify(avail);
-			avail_arity = get_irn_arity(avail);
 
 			/* anticipation border */
 			new_target  = NULL;
-			last_target = NULL;
+			temp_target = NULL;
 			nest_depth  = get_loop_depth(get_irn_loop(target));
 			dom         = target;
 
 			while(dom != environ->start_block) {
+				block_info *dom_info;
+
 				dom = get_Block_idom(dom);
+				dom_info = get_block_info(dom);
 
 				if (is_Bad(dom))
 					break;
 
-				/* do not hoist into loops */
-				if (get_loop_depth(get_irn_loop(dom)) > nest_depth)
+				/* check if available node ist still anticipated and clean
+				   (clean is part of antic) */
+				/* value may be hoisted abover block */
+				if (! ir_valueset_lookup(dom_info->antic_in, value))
 					break;
-
-				if (get_loop_depth(get_irn_loop(dom)) < nest_depth)
-					last_target = dom;
 
 				nest_depth = get_loop_depth(get_irn_loop(dom));
 
-				/* antic_in means that the expression is clean to be
-				   hoisted above block, but still into */
-				new_target = dom;
-				/* check if available node ist still anticipated and clean
-				   (clean is part of antic) */
-				if (! ir_valueset_lookup(get_block_info(dom)->antic_in, value))
-					break;
+				/* do not hoist into loops */
+				if (get_loop_depth(get_irn_loop(dom)) <= nest_depth)
+					new_target = dom;
+
+				temp_target = dom;
 			}
 
 			/* No new target or does the available node already dominate the new_target? */
 			if (new_target) {
 				DB((dbg, LEVEL_2, "leader block %+F\n", get_nodes_block(avail)));
 				/* already same block or dominating?*/
-				if (block_strictly_dominates(new_target, get_nodes_block(avail)))
+				if (block_dominates(get_nodes_block(avail), new_target)) {
+					DB((dbg, LEVEL_4, "fail: antic border %+F\n", block));
 					new_target = NULL;
+				}
 			}
 
-			DB((dbg, LEVEL_2, "dom border %+F\n", new_target));
+			DB((dbg, LEVEL_2, "antic border %+F\n", new_target));
 
-			/* check for uses of available ins on our path*/
+			avail_arity = get_irn_arity(avail);
+			/* check for uses of available ins on current path*/
 			for (i = 0; i < avail_arity; i++) {
 				ir_node *pred       = get_irn_n(avail, i);
-				ir_node *pred_block = get_nodes_block(avail);
+				//ir_node *pred_block = get_nodes_block(avail);
 				int      j;
 
 				if (new_target == NULL)
 					break;
 
+				/* TODO this might be a problem as we mainly operate on new nodes */
 				if (! get_irn_outs_computed(pred)) {
 					new_target = NULL;
 					break;
 				}
 
 				/**/
-				if (! block_strictly_dominates(pred_block, new_target)) {
+#if 0
+				if (! block_dominates(pred_block, new_target)) {
 					new_target = pred_block;
 				}
+#endif
 
-				/* outs of def*/
+				/* check for every successor */
 				for (j = get_irn_n_outs(pred) - 1; j >= 0; --j) {
 					ir_node *succ = get_irn_out(pred, j);
 
-					/* on our path?*/
 					/* is succ on this path? */
-					if (block_strictly_dominates(get_nodes_block(succ), new_target)) {
+					if (block_dominates(new_target, get_nodes_block(succ))) {
 						ir_node *succ_value = identify(succ);
 
-						/* pred not dead? */
+						/* Do we have another user than avail?
+						   Then predecessor is not dead after removal of avail. */
 						if (succ_value != value) {
-							continue;
-						} else {
+							DB((dbg, LEVEL_4, "fail: still used %+F\n", succ));
 							new_target = NULL;
 							break;
 						}
