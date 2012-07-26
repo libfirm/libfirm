@@ -70,16 +70,13 @@ arch_env_t *arch_env_begin_codegeneration(const arch_isa_if_t *isa_if,
  */
 static const arch_irn_ops_t *get_irn_ops(const ir_node *irn)
 {
-	const ir_op          *ops;
-	const arch_irn_ops_t *be_ops;
-
 	if (is_Proj(irn)) {
 		irn = get_Proj_pred(irn);
 		assert(!is_Proj(irn));
 	}
 
-	ops    = get_irn_op(irn);
-	be_ops = get_op_ops(ops)->be_ops;
+	ir_op                *ops    = get_irn_op(irn);
+	const arch_irn_ops_t *be_ops = get_op_ops(ops)->be_ops;
 
 	return be_ops;
 }
