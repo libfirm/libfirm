@@ -51,10 +51,10 @@
 #define MAX_ANTIC_ITER 10
 #define MAX_INSERT_ITER 3
 
-#define HOIST_HIGH 1
+#define HOIST_HIGH 0
 #define BETTER_GREED 0
-#define LOADS 1
-#define DIVMODS 1
+#define LOADS 0
+#define DIVMODS 0
 #define NO_INF_LOOPS 0
 
 /** Additional info we need for every block. */
@@ -258,7 +258,6 @@ static int compare_gvn_identities(const void *elt, const void *key)
 		ir_node *pred_a = get_irn_n(a, i);
 		ir_node *pred_b = get_irn_n(b, i);
 		if (pred_a != pred_b) {
-			/* if both predecessors are CSE neutral they might be different */
 			if (!is_irn_cse_neutral(pred_a) || !is_irn_cse_neutral(pred_b))
 				return 1;
 		}
@@ -594,6 +593,19 @@ static unsigned is_in_infinite_loop(ir_node *block)
  * --------------------------------------------------------
  */
 
+static ir_node *get_anti_leader(ir_node *node, ir_node *block)
+{
+	block_info *info   = get_block_info(block);
+	ir_node    *value  = identify(node);
+	ir_node    *leader = ir_valueset_lookup(info->antic_in, value);
+
+	/* //what if not antic because killed  */
+	if (leader)
+		return leader;
+	else
+		return node;
+}
+
 /**
  * Returns non-zero if a node is movable and a possible candidate for PRE.
  */
@@ -609,6 +621,9 @@ static unsigned is_nice_value(ir_node *n)
 #if LOADS || DIVMODS
 	if (is_Proj(n))
 		return 1;
+#else
+	if (is_Proj(n))
+		return 0;
 #endif
 
 #if LOADS
@@ -649,7 +664,7 @@ static unsigned is_clean_in_block_expgen(ir_node *n, ir_node *block)
 	for (i = 0; i < arity; ++i) {
 		ir_node *pred = get_irn_n(n, i);
 
-		/* sufficient for exp_gen because block is always node's block */
+		/* sufficient for exp_gen */
 		if (get_nodes_block(pred) != block)
 			continue;
 
@@ -688,12 +703,15 @@ static void topo_walker(ir_node *irn, void *ctx)
 	block = get_nodes_block(irn);
 	info  = get_block_info(block);
 
-	/* values for avail_out do not need to be clean */
-	ir_valueset_insert(info->avail_out, value, irn);
 
 	/* no need to put constants into the sets: they are always redundant */
-	if (! is_nice_value(irn) || is_irn_constlike(irn))
-		return;
+	if (! is_nice_value(irn)) {
+		/* filter unnecessary values from avail_out */
+		ir_valueset_insert(info->avail_out, value, irn);
+
+		if (is_irn_constlike(irn))
+			return;
+	}
 
 	if (is_clean_in_block_expgen(irn, block)) {
 		DB((dbg, LEVEL_3, "%+F clean in block %+F\n", irn, block));
@@ -922,7 +940,6 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, ir_node *p
 		/* this phi does not need translation */
 		return node;
 	}
-
 	arity = get_irn_arity(node);
 
 #if LOADS
@@ -948,18 +965,17 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, ir_node *p
 
 	in = XMALLOCN(ir_node *, arity);
 
+	// explain anti leader stuff
 	for (i = 0; i < arity; ++i) {
-		ir_node *pred       = get_irn_n(node, i);
+		/* get anti leader for pred to lookup its translated value */
+		ir_node    *pred        = get_irn_n(node, i);
+		ir_node    *anti_leader = get_anti_leader(pred, block);
 		/* we cannot find this value in antic_in, because the value
 		   has (possibly) changed! */
-		ir_node *pred_trans = get_translated(pred_block, pred);
-		ir_node *expr;
+		ir_node    *pred_trans  = get_translated(pred_block, anti_leader);
+		ir_node    *expr;
 
 		if (pred_trans == NULL) {
-			/* reasons for this are:
-			   1. pred not dominated by block: use predecessor.
-			   2. dangling-represenatative: predecessor not translated.
-			   We cannot phi translate, it will be the wrong value. */
 			expr = pred;
 		} else {
 			expr = pred_trans;
@@ -1006,28 +1022,6 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, ir_node *p
  * Block-walker, computes Antic_in(block).
  * Builds a value tree out of the graph by translating values
  * over phi nodes.
- * Although the algorithm works on values, constructing the value tree
- * depends on actual representations through nodes and their actual
- * predecessors.
- * By using only one representative (GVN-PRE) for every value, we have to be
- * careful not to break the topological order during translation. If a node
- * needs to be translated, but its predecessor - a representative in the same
- * antic_in scope - has not been, then it has to be killed.
- * one-representative-problem: Two blocks yield the same value through
- *    completely different calculations. The value is common, but the
- *    representative cannot be phi translated, because the predecessors
- *    haven't been.
- *    If a value is in exp_gen and also in antic_in of the successor,
- *    a similar situation sets in.
- *
- * By using antic_in exclusively, we lose information about translated nodes.
- * We need to permanently keep the translated nodes list.
- * For insert_nodes() we actually need antic_out. But antic_out is not usable,
- * because every value had to be cross-looked up in every available set.
- *
- * If we used antic_out, the translated nodes list would not be necessary
- * permanently, because instead of looking for translated(antic_in) we could
- * just use antic_out of the predecessor block.
  *
  * @param block  the block
  * @param ctx    the walker environment
@@ -1057,6 +1051,7 @@ static void compute_antic(ir_node *block, void *ctx)
 	size = ir_valueset_size(info->antic_in);
 	n_succ = get_Block_n_cfg_outs(block);
 
+#if 0
 	if (env->first_iter) {
 #if NO_INF_LOOPS
 		if (! is_in_infinite_loop(block)) {
@@ -1070,6 +1065,7 @@ static void compute_antic(ir_node *block, void *ctx)
 		}
 #endif
 	}
+#endif
 
 	/* successor might have phi nodes */
 	if (n_succ == 1 && get_irn_arity(get_Block_cfg_out(block, 0)) > 1) {
@@ -1101,9 +1097,18 @@ static void compute_antic(ir_node *block, void *ctx)
 				represent = expr;
 
 			if (is_hoistable_above(expr, block, 1))
-				ir_valueset_replace(info->antic_in, trans_value, represent);
+				//ir_valueset_replace(info->antic_in, trans_value, represent);
+				ir_valueset_insert(info->antic_in, trans_value, represent);
 			set_translated(info->trans, expr, represent);
 		}
+		/* add exp_gen */
+		if (env->first_iter) {
+			foreach_valueset(info->exp_gen, value, expr, iter) {
+				ir_valueset_insert(info->antic_in, value, expr);
+			}
+		}
+
+
 	} else if (n_succ > 1) {
 		int         i;
 		ir_node    *common     = NULL;
@@ -1128,7 +1133,15 @@ static void compute_antic(ir_node *block, void *ctx)
 				DB((dbg, LEVEL_3, "common and clean %+F(%+F) in %+F\n", expr, value, block));
 			}
 		}
+		/* add exp_gen */
+		if (env->first_iter) {
+			foreach_valueset(info->exp_gen, value, expr, iter) {
+				ir_valueset_insert(info->antic_in, value, expr);
+			}
+		}
 	}
+
+
 
 	DEBUG_ONLY(dump_value_set(info->antic_in, "Antic_in", block);)
 
@@ -1228,8 +1241,8 @@ static ir_mode *is_partially_redundant(ir_node *block, ir_node *expr, ir_node *v
 
 	/* for each predecessor blocks */
 	for (pos = 0; pos < arity; ++pos) {
-		block_info *pred_info;
 		ir_node    *pred_block  = get_Block_cfgpred_block(block, pos);
+		block_info *pred_info;
 		ir_node    *trans_expr;
 		ir_node    *trans_value;
 		ir_node    *avail_expr;
@@ -1244,9 +1257,9 @@ static ir_mode *is_partially_redundant(ir_node *block, ir_node *expr, ir_node *v
 
 		avail_expr = (ir_node*)ir_valueset_lookup(pred_info->avail_out, trans_value);
 		/* value might be available through a not yet existing constant */
-		if (avail_expr == NULL && is_irn_constlike(trans_expr)) {
+		if (avail_expr == NULL && is_Const(trans_expr)) {
 			/* limit range of new constants */
-			ir_mode   *cmode  = get_irn_mode(trans_expr);
+			ir_mode   *cmode = get_irn_mode(trans_expr);
 			ir_tarval *upper = new_tarval_from_long(127, cmode);
 			ir_tarval *lower = new_tarval_from_long(-127, cmode);
 			ir_tarval *c     = get_Const_tarval(trans_expr);
@@ -1336,10 +1349,11 @@ static unsigned is_hoisting_greedy(ir_node *irn, ir_node *block)
 	int i;
 
 	for (i = 0; i < arity; ++i) {
-		ir_node *pred  = get_irn_n(irn, i);
+		ir_node *pred        = get_irn_n(irn, i);
+		ir_node *anti_leader = get_anti_leader(pred, block);
 
 		/* predecessor is on current path we have to ensure redundancy */
-		if (! block_strictly_dominates(get_nodes_block(pred), block) && ! is_redundant(pred))
+		if (block_dominates(block, get_nodes_block(pred)) && ! is_redundant(anti_leader))
 			return 1;
 	}
 	return 0;
@@ -1371,6 +1385,9 @@ static void insert_nodes(ir_node *block, void *ctx)
 	ir_node                *idom;
 	int                     pos;
 	ir_valueset_iterator_t  iter;
+#if BETTER_GREED
+	plist_t *stack;
+#endif
 
 	/* only blocks */
 	if (! is_Block(block))
@@ -1396,10 +1413,10 @@ static void insert_nodes(ir_node *block, void *ctx)
 	}
 
 #if BETTER_GREED
-	plist_t *stack = plist_new();
+	stack = plist_new();
 #endif
 
-	/* This is the main reason we choose to use antic_in over antic_out;
+	/* This is the main reason antic_in is preverred over antic_out;
 	   we may iterate over every anticipated value first and not
 	   over the predecessor blocks. */
 	foreach_valueset(info->antic_in, value, expr, iter) {
@@ -1412,6 +1429,7 @@ static void insert_nodes(ir_node *block, void *ctx)
 			continue;
 
 #if BETTER_GREED
+		/* inverse topologic */
 		plist_insert_front(stack, expr);
 #endif
 
@@ -1434,15 +1452,20 @@ static void insert_nodes(ir_node *block, void *ctx)
 		}
 
 #if !BETTER_GREED
-		if (is_hoisting_greedy(expr, block))
+		if (is_hoisting_greedy(expr, block)) {
+			DB((dbg, LEVEL_2, "Greedy\n"));
+			flag_redundant(expr, 0);
 			continue;
+		}
 #endif
 
 		mode = is_partially_redundant(block, expr, value);
 		if (mode == NULL) {
+			DB((dbg, LEVEL_2, "FLAGRED 0\n"));
 			flag_redundant(expr, 0);
 			continue;
 		} else {
+			DB((dbg, LEVEL_2, "FLAGRED 1\n"));
 			flag_redundant(expr, 1);
 		}
 
@@ -1756,6 +1779,14 @@ static void eliminate(ir_node *irn, void *ctx)
 			ir_node *expr = (ir_node*)ir_valueset_lookup(info->avail_out, value);
 
 			if (expr != NULL && expr != irn) {
+
+#if 0
+				// REM
+				if (get_irn_idx(expr) < env->last_idx)
+					return;
+#endif
+
+
 				elim_pair *p = OALLOC(env->obst, elim_pair);
 
 				p->old_node = irn;
@@ -1781,9 +1812,9 @@ static void eliminate(ir_node *irn, void *ctx)
 static void eliminate_nodes(elim_pair *pairs, ir_nodeset_t *keeps)
 {
 	elim_pair             *p;
-	ir_nodeset_iterator_t iter;
+	ir_nodeset_iterator_t  iter;
 	ir_node               *m_phi;
-	ir_node               *end = environ->end_node;
+	ir_node               *end    = environ->end_node;
 
 	for (p = pairs; p != NULL; p = p->next) {
 		/* might be already changed */
