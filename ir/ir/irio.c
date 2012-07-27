@@ -919,7 +919,7 @@ static void write_ASM(write_env_t *env, const ir_node *node)
 	write_list_end(env);
 
 	write_pin_state(env, get_irn_pinned(node));
-	write_pred_refs(env, node, 0);
+	write_pred_refs(env, node, n_ASM_max+1);
 }
 
 static void write_Phi(write_env_t *env, const ir_node *node)
