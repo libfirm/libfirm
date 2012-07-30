@@ -27,18 +27,17 @@
 #define FIRM_BE_BEPROFILE_H
 
 #include <stdbool.h>
+#include <stdint.h>
 #include "irgraph.h"
 #include "irnode.h"
 
 /**
- * Instruments irgs with profile code
- *
- * @param filename  The name of the output file for the profile information
- * @param flags     Additional flags
- *
- * @return The irg doing the profile initialization.
+ * Instruments all irgs in the program with profile code.
+ * The final code will have a counter for each basic block which is
+ * incremented in that block. After the program has run the info is written
+ * to @p filename.
  */
-ir_graph *ir_profile_instrument(const char *filename);
+void ir_profile_instrument(const char *filename);
 
 /**
  * Reads the corresponding profile info file if it exists and returns a
@@ -55,16 +54,11 @@ void ir_profile_free(void);
 /**
  * Get block execution count as determined be profiling
  */
-unsigned int ir_profile_get_block_execcount(const ir_node *block);
+uint32_t ir_profile_get_block_execcount(const ir_node *block);
 
 /**
  * Initializes exec_freq structure for an irg based on profile data
  */
-ir_exec_freq *ir_create_execfreqs_from_profile(ir_graph *irg);
-
-/**
- * Tells whether profile module has acquired data
- */
-bool ir_profile_has_data(void);
+void ir_create_execfreqs_from_profile(void);
 
 #endif

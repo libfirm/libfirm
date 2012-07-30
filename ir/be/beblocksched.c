@@ -121,7 +121,6 @@ typedef struct blocksched_env_t blocksched_env_t;
 struct blocksched_env_t {
 	ir_graph       *irg;
 	struct obstack *obst;
-	ir_exec_freq   *execfreqs;
 	edge_t         *edges;
 	pdeq           *worklist;
 	int            blockcount;
@@ -164,11 +163,11 @@ static void collect_egde_frequency(ir_node *block, void *data)
 	} else if (arity == 1) {
 		ir_node *pred_block = get_Block_cfgpred_block(block, 0);
 		ir_loop *pred_loop  = get_irn_loop(pred_block);
-		float    freq       = (float)get_block_execfreq(env->execfreqs, block);
+		float    freq       = (float)get_block_execfreq(block);
 
 		/* is it an edge leaving a loop */
 		if (get_loop_depth(pred_loop) > get_loop_depth(loop)) {
-			float pred_freq = (float)get_block_execfreq(env->execfreqs, pred_block);
+			float pred_freq = (float)get_block_execfreq(pred_block);
 			edge.outedge_penalty_freq = -(pred_freq - freq);
 		}
 
@@ -187,7 +186,7 @@ static void collect_egde_frequency(ir_node *block, void *data)
 			double  execfreq;
 			ir_node *pred_block = get_Block_cfgpred_block(block, i);
 
-			execfreq = get_block_execfreq(env->execfreqs, pred_block);
+			execfreq = get_block_execfreq(pred_block);
 
 			edge.pos              = i;
 			edge.execfreq         = execfreq;
@@ -444,7 +443,6 @@ static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *en
 
 	foreach_block_succ(block, edge) {
 		ir_node *succ_block = get_edge_src_irn(edge);
-		double  execfreq;
 
 		if (irn_visited(succ_block))
 			continue;
@@ -453,7 +451,7 @@ static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *en
 		if (succ_entry->prev != NULL)
 			continue;
 
-		execfreq = get_block_execfreq(env->execfreqs, succ_block);
+		double execfreq = get_block_execfreq(succ_block);
 		if (execfreq > best_succ_execfreq) {
 			best_succ_execfreq = execfreq;
 			succ = succ_block;
@@ -519,7 +517,7 @@ static ir_node **create_blocksched_array(blocksched_env_t *env, blocksched_entry
 	return block_list;
 }
 
-static ir_node **create_block_schedule_greedy(ir_graph *irg, ir_exec_freq *execfreqs)
+static ir_node **create_block_schedule_greedy(ir_graph *irg)
 {
 	blocksched_env_t   env;
 	struct obstack     obst;
@@ -530,7 +528,6 @@ static ir_node **create_block_schedule_greedy(ir_graph *irg, ir_exec_freq *execf
 
 	env.irg        = irg;
 	env.obst       = &obst;
-	env.execfreqs  = execfreqs;
 	env.edges      = NEW_ARR_F(edge_t, 0);
 	env.worklist   = NULL;
 	env.blockcount = 0;
@@ -625,7 +622,7 @@ static void collect_egde_frequency_ilp(ir_node *block, void *data)
 
 	arity = get_irn_arity(block);
 	if (arity == 1) {
-		double execfreq = get_block_execfreq(env->env.execfreqs, block);
+		double execfreq = get_block_execfreq(block);
 		add_ilp_edge(block, 0, execfreq, env);
 	}
 	else {
@@ -641,7 +638,7 @@ static void collect_egde_frequency_ilp(ir_node *block, void *data)
 			ilp_edge_t *edge;
 			ir_node    *pred_block = get_Block_cfgpred_block(block, i);
 
-			execfreq = get_block_execfreq(env->env.execfreqs, pred_block);
+			execfreq = get_block_execfreq(pred_block);
 			edgenum  = add_ilp_edge(block, i, execfreq, env);
 			edge     = &env->ilpedges[edgenum];
 			lpp_set_factor_fast(env->lpp, cst_idx, edge->ilpvar, 1.0);
@@ -708,7 +705,7 @@ static void coalesce_blocks_ilp(blocksched_ilp_env_t *env)
 	}
 }
 
-static ir_node **create_block_schedule_ilp(ir_graph *irg, ir_exec_freq *execfreqs)
+static ir_node **create_block_schedule_ilp(ir_graph *irg)
 {
 	blocksched_ilp_env_t env;
 	struct obstack       obst;
@@ -719,7 +716,6 @@ static ir_node **create_block_schedule_ilp(ir_graph *irg, ir_exec_freq *execfreq
 
 	env.env.irg        = irg;
 	env.env.obst       = &obst;
-	env.env.execfreqs  = execfreqs;
 	env.env.worklist   = NULL;
 	env.env.blockcount = 0;
 	env.ilpedges       = NEW_ARR_F(ilp_edge_t, 0);
@@ -765,14 +761,12 @@ void be_init_blocksched(void)
 
 ir_node **be_create_block_schedule(ir_graph *irg)
 {
-	ir_exec_freq *execfreqs = be_get_irg_exec_freq(irg);
-
 	switch (algo) {
 	case BLOCKSCHED_GREEDY:
 	case BLOCKSCHED_NAIV:
-		return create_block_schedule_greedy(irg, execfreqs);
+		return create_block_schedule_greedy(irg);
 	case BLOCKSCHED_ILP:
-		return create_block_schedule_ilp(irg, execfreqs);
+		return create_block_schedule_ilp(irg);
 	}
 
 	panic("unknown blocksched algo");

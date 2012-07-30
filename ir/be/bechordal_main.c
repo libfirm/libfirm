@@ -238,7 +238,6 @@ static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls)
 {
 	be_chordal_env_t *chordal_env = &pse->cenv;
 	ir_graph         *irg         = pse->irg;
-	ir_exec_freq     *exec_freq   = be_get_irg_exec_freq(irg);
 
 	pse->cls                      = cls;
 	chordal_env->cls              = cls;
@@ -248,7 +247,7 @@ static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls)
 	be_assure_live_chk(irg);
 
 	if (stat_ev_enabled) {
-		pse->pre_spill_cost = be_estimate_irg_costs(irg, exec_freq);
+		pse->pre_spill_cost = be_estimate_irg_costs(irg);
 	}
 
 	/* put all ignore registers into the ignore register set. */
@@ -268,12 +267,11 @@ static void post_spill(post_spill_env_t *pse, int iteration)
 {
 	be_chordal_env_t *chordal_env = &pse->cenv;
 	ir_graph         *irg         = pse->irg;
-	ir_exec_freq     *exec_freq   = be_get_irg_exec_freq(irg);
 	int               allocatable_regs = be_get_n_allocatable_regs(irg, chordal_env->cls);
 
 	/* some special classes contain only ignore regs, no work to be done */
 	if (allocatable_regs > 0) {
-		stat_ev_dbl("bechordal_spillcosts", be_estimate_irg_costs(irg, exec_freq) - pse->pre_spill_cost);
+		stat_ev_dbl("bechordal_spillcosts", be_estimate_irg_costs(irg) - pse->pre_spill_cost);
 
 		/*
 			If we have a backend provided spiller, post spill is

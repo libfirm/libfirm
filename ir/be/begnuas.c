@@ -1358,14 +1358,10 @@ void be_gas_begin_block(const ir_node *block, bool needs_label)
 	}
 
 	if (be_options.verbose_asm) {
-		int           arity;
-		ir_graph     *irg       = get_irn_irg(block);
-		ir_exec_freq *exec_freq = be_get_irg_exec_freq(irg);
-
 		be_emit_pad_comment();
 		be_emit_irprintf("/* %+F preds:", block);
 
-		arity = get_irn_arity(block);
+		int arity = get_irn_arity(block);
 		if (arity == 0) {
 			be_emit_cstring(" none");
 		} else {
@@ -1376,11 +1372,7 @@ void be_gas_begin_block(const ir_node *block, bool needs_label)
 				be_gas_emit_block_name(predblock);
 			}
 		}
-		if (exec_freq != NULL) {
-			be_emit_irprintf(", freq: %.3f",
-			                 get_block_execfreq(exec_freq, block));
-		}
-		be_emit_cstring(" */");
+		be_emit_irprintf(", freq: %.3f */", get_block_execfreq(block));
 	}
 	be_emit_char('\n');
 	be_emit_write_line();

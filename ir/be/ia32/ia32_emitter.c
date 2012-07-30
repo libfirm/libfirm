@@ -1560,27 +1560,23 @@ static void ia32_emit_align_label(void)
 static int should_align_block(const ir_node *block)
 {
 	static const double DELTA = .0001;
-	ir_graph     *irg         = get_irn_irg(block);
-	ir_exec_freq *exec_freq   = be_get_irg_exec_freq(irg);
-	ir_node      *prev        = get_prev_block_sched(block);
-	double        block_freq;
-	double        prev_freq = 0;  /**< execfreq of the fallthrough block */
-	double        jmp_freq  = 0;  /**< execfreq of all non-fallthrough blocks */
-	int           i, n_cfgpreds;
+	ir_node *prev      = get_prev_block_sched(block);
+	double   prev_freq = 0;  /**< execfreq of the fallthrough block */
+	double   jmp_freq  = 0;  /**< execfreq of all non-fallthrough blocks */
+	double   block_freq;
+	int      i, n_cfgpreds;
 
-	if (exec_freq == NULL)
-		return 0;
 	if (ia32_cg_config.label_alignment_factor <= 0)
 		return 0;
 
-	block_freq = get_block_execfreq(exec_freq, block);
+	block_freq = get_block_execfreq(block);
 	if (block_freq < DELTA)
 		return 0;
 
 	n_cfgpreds = get_Block_n_cfgpreds(block);
 	for (i = 0; i < n_cfgpreds; ++i) {
 		const ir_node *pred      = get_Block_cfgpred_block(block, i);
-		double         pred_freq = get_block_execfreq(exec_freq, pred);
+		double         pred_freq = get_block_execfreq(pred);
 
 		if (pred == prev) {
 			prev_freq += pred_freq;

@@ -32,7 +32,7 @@
 
 #include "debug.h"
 #include "error.h"
-#include "execfreq.h"
+#include "execfreq_t.h"
 #include "irdump_t.h"
 #include "iredges_t.h"
 #include "irgraph.h"
@@ -280,6 +280,8 @@ static int co_get_costs_loop_depth(const ir_node *root, int pos)
 	return 1+cost;
 }
 
+static ir_execfreq_int_factors factors;
+
 /**
  * Computes the costs of a copy according to execution frequency
  * @param pos  the argument position of arg in the root arguments
@@ -287,12 +289,10 @@ static int co_get_costs_loop_depth(const ir_node *root, int pos)
  */
 static int co_get_costs_exec_freq(const ir_node *root, int pos)
 {
-	ir_graph     *irg       = get_irn_irg(root);
-	ir_node      *root_bl   = get_nodes_block(root);
-	ir_node      *copy_bl
+	ir_node *root_bl = get_nodes_block(root);
+	ir_node *copy_bl
 		= is_Phi(root) ? get_Block_cfgpred_block(root_bl, pos) : root_bl;
-	ir_exec_freq *exec_freq = be_get_irg_exec_freq(irg);
-	int           res       = get_block_execfreq_ulong(exec_freq, copy_bl);
+	int      res     = get_block_execfreq_int(&factors, copy_bl);
 
 	/* don't allow values smaller than one. */
 	return res < 1 ? 1 : res;

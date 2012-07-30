@@ -37,7 +37,7 @@
 #include "irgwalk.h"
 #include "irtools.h"
 #include "time.h"
-#include "execfreq.h"
+#include "execfreq_t.h"
 #include "bipartite.h"
 
 /* libfirm/ir/be includes */
@@ -90,6 +90,7 @@ typedef struct be_pbqp_alloc_env_t {
 	plist_t                     *rpeo;
 	unsigned                    *restr_nodes;
 	unsigned                    *ife_edge_num;
+	ir_execfreq_int_factors      execfreq_factors;
 	be_chordal_env_t            *env;
 } be_pbqp_alloc_env_t;
 
@@ -218,10 +219,9 @@ static void insert_afe_edge(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *src_no
 	if (get_edge(pbqp, get_irn_idx(src_node), get_irn_idx(trg_node)) == NULL) {
 		if (use_exec_freq) {
 			/* get exec_freq for copy_block */
-			ir_node       *root_bl   = get_nodes_block(src_node);
-			ir_node       *copy_bl   = is_Phi(src_node) ? get_Block_cfgpred_block(root_bl, pos) : root_bl;
-			ir_exec_freq  *exec_freq = be_get_irg_exec_freq(pbqp_alloc_env->irg);
-			unsigned long  res       = get_block_execfreq_ulong(exec_freq, copy_bl);
+			ir_node *root_bl = get_nodes_block(src_node);
+			ir_node *copy_bl = is_Phi(src_node) ? get_Block_cfgpred_block(root_bl, pos) : root_bl;
+			int      res     = get_block_execfreq_int(&pbqp_alloc_env->execfreq_factors, copy_bl);
 
 			/* create afe-matrix */
 			unsigned row, col;
@@ -641,6 +641,7 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 		dump_ir_graph(irg, buf);
 	}
 
+	ir_calculate_execfreq_int_factors(&pbqp_alloc_env.execfreq_factors, irg);
 
 	/* initialize pbqp allocation data structure */
 	pbqp_alloc_env.pbqp_inst        = alloc_pbqp(get_irg_last_idx(irg));  /* initialize pbqp instance */

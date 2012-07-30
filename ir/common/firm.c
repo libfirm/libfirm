@@ -54,6 +54,7 @@
 #include "debugger.h"
 #include "be_t.h"
 #include "irtools.h"
+#include "execfreq_t.h"
 
 /* returns the firm root */
 lc_opt_entry_t *firm_opt_get_root(void)
@@ -113,6 +114,8 @@ void ir_init(void)
 
 	init_irnode();
 
+	init_execfreq();
+
 #ifdef DEBUG_libfirm
 	/* integrated debugger extension */
 	firm_init_debugger();
@@ -124,6 +127,7 @@ void ir_finish(void)
 #ifdef DEBUG_libfirm
 	firm_finish_debugger();
 #endif
+	exit_execfreq();
 	firm_be_finish();
 
 	free_ir_prog();

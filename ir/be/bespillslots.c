@@ -152,7 +152,6 @@ static spill_t *collect_spill(be_fec_env_t *env, ir_node *node,
 	DB((dbg, DBG_COALESCING, "Slot %d: %+F\n", spill->spillslot, node));
 
 	if (is_Phi(node)) {
-		const ir_exec_freq *exec_freq = be_get_irg_exec_freq(env->irg);
 		int                 arity     = get_irn_arity(node);
 		int                 i;
 		for (i = 0; i < arity; ++i) {
@@ -163,7 +162,7 @@ static spill_t *collect_spill(be_fec_env_t *env, ir_node *node,
 
 			/* add an affinity edge */
 			affinty_edge           = OALLOC(&env->obst, affinity_edge_t);
-			affinty_edge->affinity = get_block_execfreq(exec_freq, block);
+			affinty_edge->affinity = get_block_execfreq(block);
 			affinty_edge->slot1    = spill->spillslot;
 			affinty_edge->slot2    = arg_spill->spillslot;
 			ARR_APP1(affinity_edge_t*, env->affinity_edges, affinty_edge);

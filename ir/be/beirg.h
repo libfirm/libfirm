@@ -83,7 +83,6 @@ typedef struct be_irg_t {
 	ir_graph              *irg;
 	be_main_env_t         *main_env;
 	be_abi_irg_t          *abi;
-	ir_exec_freq          *exec_freq;
 	be_lv_t               *lv;
 	be_stack_layout_t      stack_layout;
 	unsigned              *allocatable_regs; /**< registers available for the
@@ -110,11 +109,6 @@ static inline be_main_env_t *be_get_irg_main_env(const ir_graph *irg)
 static inline be_lv_t *be_get_irg_liveness(const ir_graph *irg)
 {
 	return be_birg_from_irg(irg)->lv;
-}
-
-static inline ir_exec_freq *be_get_irg_exec_freq(const ir_graph *irg)
-{
-	return be_birg_from_irg(irg)->exec_freq;
 }
 
 static inline be_abi_irg_t *be_get_irg_abi(const ir_graph *irg)
