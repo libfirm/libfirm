@@ -300,9 +300,7 @@ static bool emits_multiple_instructions(const ir_node *node)
 static bool uses_reg(const ir_node *node, const arch_register_t *reg)
 {
 	int arity = get_irn_arity(node);
-	int i;
-
-	for (i = 0; i < arity; ++i) {
+	for (int i = 0; i < arity; ++i) {
 		const arch_register_t *in_reg = arch_get_irn_register_in(node, i);
 		if (reg == in_reg)
 			return true;
@@ -313,8 +311,7 @@ static bool uses_reg(const ir_node *node, const arch_register_t *reg)
 static bool writes_reg(const ir_node *node, const arch_register_t *reg)
 {
 	unsigned n_outs = arch_get_irn_n_outs(node);
-	unsigned o;
-	for (o = 0; o < n_outs; ++o) {
+	for (unsigned o = 0; o < n_outs; ++o) {
 		const arch_register_t *out_reg = arch_get_irn_register_out(node, o);
 		if (out_reg == reg)
 			return true;
@@ -352,8 +349,7 @@ static bool can_move_into_delayslot(const ir_node *node, const ir_node *to)
 	} else {
 		/* the node must not use our computed values */
 		int arity = get_irn_arity(to);
-		int i;
-		for (i = 0; i < arity; ++i) {
+		for (int i = 0; i < arity; ++i) {
 			ir_node *in = get_irn_n(to, i);
 			if (skip_Proj(in) == node)
 				return false;
@@ -565,13 +561,12 @@ static void fill_delay_slot(void)
 
 static void emit_sparc_Div(const ir_node *node, char const *const insn)
 {
-	/* can we get the delay count of the wr instruction somewhere? */
-	unsigned wry_delay_count = 3;
-	unsigned i;
-
 	sparc_emitf(node, "wr %S0, 0, %%y");
 
-	for (i = 0; i < wry_delay_count; ++i) {
+	/* TODO: we should specify number of delayslots in an architecture
+	 * specification */
+	unsigned wry_delay_count = 3;
+	for (unsigned i = 0; i < wry_delay_count; ++i) {
 		fill_delay_slot();
 	}
 
@@ -649,8 +644,6 @@ static void memperm_emit_spill_registers(const ir_node *node, int n_spilled,
 /* Restore register l0 or both l0 and l1, depending on n_spilled. */
 static void memperm_emit_restore_registers(const ir_node *node, int n_spilled)
 {
-	unsigned sp_change;
-
 	if (n_spilled == 2) {
 		/* Restore register l1. */
 		sparc_emitf(node, "ld [%%sp%+d], %%l1", SPARC_MIN_STACKSIZE + SPARC_REGISTER_SIZE);
@@ -660,7 +653,7 @@ static void memperm_emit_restore_registers(const ir_node *node, int n_spilled)
 	sparc_emitf(node, "ld [%%sp%+d], %%l0", SPARC_MIN_STACKSIZE);
 
 	/* Restore stack pointer. */
-	sp_change = get_aligned_sp_change(2);
+	unsigned sp_change = get_aligned_sp_change(2);
 	sparc_emitf(node, "add %%sp, %u, %%sp", sp_change);
 }
 
@@ -701,11 +694,10 @@ static void memperm_emit_swap(const ir_node *node, ir_entity *ent1,
 /* Find the index of ent in ents or return -1 if not found. */
 static int get_index(ir_entity **ents, int n, ir_entity *ent)
 {
-	int i;
-
-	for (i = 0; i < n; ++i)
+	for (int i = 0; i < n; ++i) {
 		if (ents[i] == ent)
 			return i;
+	}
 
 	return -1;
 }
@@ -732,22 +724,20 @@ static void emit_be_MemPerm(const ir_node *node)
 	int        *n_users       = ALLOCANZ(int,         max_size);
 	/* n_spilled records the number of spilled registers, either 1 or 2. */
 	int         n_spilled     = 0;
-	int         i, n, oidx;
 
 	/* This implementation currently only works with frame pointers. */
 	ir_graph          *irg    = get_irn_irg(node);
 	be_stack_layout_t *layout = be_get_irg_stack_layout(irg);
 	assert(!layout->sp_relative && "MemPerms currently do not work without frame pointers");
 
-	for (i = 0; i < max_size; ++i) {
+	for (int i = 0; i < max_size; ++i) {
 		sourceof[i] = i;
 	}
 
-	for (i = n = 0; i < memperm_arity; ++i) {
+	int n = 0;
+	for (int i = 0; i < memperm_arity; ++i) {
 		ir_entity *out  = be_get_MemPerm_out_entity(node, i);
 		ir_entity *in   = be_get_MemPerm_in_entity(node, i);
-		int              oidx; /* Out index */
-		int              iidx; /* In index */
 
 		/* Insert into entities to be able to operate on unique indices. */
 		if (get_index(entities, n, out) == -1)
@@ -755,15 +745,15 @@ static void emit_be_MemPerm(const ir_node *node)
 		if (get_index(entities, n, in) == -1)
 			entities[n++] = in;
 
-		oidx = get_index(entities, n, out);
-		iidx = get_index(entities, n, in);
+		int oidx = get_index(entities, n, out);
+		int iidx = get_index(entities, n, in);
 
 		sourceof[oidx] = iidx; /* Remember the source. */
 		++n_users[iidx]; /* Increment number of users of this entity. */
 	}
 
 	/* First do all the copies. */
-	for (oidx = 0; oidx < n; /* empty */) {
+	for (int oidx = 0; oidx < n; /* empty */) {
 		int iidx = sourceof[oidx];
 
 		/* Nothing to do for fix points.
@@ -797,9 +787,8 @@ static void emit_be_MemPerm(const ir_node *node)
 	}
 
 	/* The rest are cycles. */
-	for (oidx = 0; oidx < n; /* empty */) {
+	for (int oidx = 0; oidx < n; /* empty */) {
 		int iidx = sourceof[oidx];
-		int tidx;
 
 		/* Nothing to do for fix points. */
 		if (iidx == oidx) {
@@ -816,7 +805,7 @@ static void emit_be_MemPerm(const ir_node *node)
 		}
 		memperm_emit_swap(node, entities[iidx], entities[oidx]);
 
-		tidx = sourceof[iidx];
+		int tidx = sourceof[iidx];
 		/* Mark as done. */
 		sourceof[iidx] = iidx;
 
@@ -827,7 +816,7 @@ static void emit_be_MemPerm(const ir_node *node)
 
 #ifdef DEBUG_libfirm
 	/* Only fix points should remain. */
-	for (i = 0; i < max_size; ++i) {
+	for (int i = 0; i < max_size; ++i) {
 		assert(sourceof[i] == i);
 	}
 #endif
@@ -945,8 +934,6 @@ static void emit_sparc_branch(const ir_node *node, get_cc_func get_cc)
 	ir_relation    relation    = attr->relation;
 	const ir_node *proj_true   = NULL;
 	const ir_node *proj_false  = NULL;
-	const ir_node *block;
-	const ir_node *next_block;
 
 	foreach_out_edge(node, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
@@ -959,10 +946,10 @@ static void emit_sparc_branch(const ir_node *node, get_cc_func get_cc)
 	}
 
 	/* for now, the code works for scheduled and non-schedules blocks */
-	block = get_nodes_block(node);
+	const ir_node *block = get_nodes_block(node);
 
 	/* we have a block schedule */
-	next_block = (ir_node*)get_irn_link(block);
+	const ir_node *next_block = (ir_node*)get_irn_link(block);
 
 	if (get_irn_link(proj_true) == next_block) {
 		/* exchange both proj's so the second one can be omitted */
@@ -1061,9 +1048,8 @@ static void emit_be_Copy(const ir_node *node)
 	if (mode_is_float(mode)) {
 		unsigned bits = get_mode_size_bits(mode);
 		int      n    = bits > 32 ? bits > 64 ? 3 : 1 : 0;
-		int      i;
 		emit_fmov(node, src_reg, dst_reg);
-		for (i = 0; i < n; ++i) {
+		for (int i = 0; i < n; ++i) {
 			src_reg = get_next_fp_reg(src_reg);
 			dst_reg = get_next_fp_reg(dst_reg);
 			emit_fmov(node, src_reg, dst_reg);
@@ -1152,12 +1138,10 @@ static ir_node *find_next_delay_slot(ir_node *from)
 
 static bool block_needs_label(const ir_node *block, const ir_node *sched_prev)
 {
-	int n_cfgpreds;
-
 	if (get_Block_entity(block) != NULL)
 		return true;
 
-	n_cfgpreds = get_Block_n_cfgpreds(block);
+	int n_cfgpreds = get_Block_n_cfgpreds(block);
 	if (n_cfgpreds == 0) {
 		return false;
 	} else if (n_cfgpreds > 1) {
@@ -1177,12 +1161,11 @@ static bool block_needs_label(const ir_node *block, const ir_node *sched_prev)
  */
 static void sparc_emit_block(ir_node *block, ir_node *prev)
 {
-	ir_node *next_delay_slot;
-	bool     needs_label = block_needs_label(block, prev);
+	bool needs_label = block_needs_label(block, prev);
 
 	be_gas_begin_block(block, needs_label);
 
-	next_delay_slot = find_next_delay_slot(sched_first(block));
+	ir_node *next_delay_slot = find_next_delay_slot(sched_first(block));
 	if (next_delay_slot != NULL)
 		delay_slot_filler = pick_delay_slot_for(next_delay_slot);
 
@@ -1222,42 +1205,37 @@ static void sparc_emit_func_epilog(ir_graph *irg)
 
 static void sparc_gen_labels(ir_node *block, void *env)
 {
-	ir_node *pred;
-	int n = get_Block_n_cfgpreds(block);
 	(void) env;
 
+	int n = get_Block_n_cfgpreds(block);
 	for (n--; n >= 0; n--) {
-		pred = get_Block_cfgpred(block, n);
+		ir_node *pred = get_Block_cfgpred(block, n);
 		set_irn_link(pred, block); // link the pred of a block (which is a jmp)
 	}
 }
 
 void sparc_emit_routine(ir_graph *irg)
 {
-	ir_node **block_schedule;
-	size_t    i;
-	size_t    n;
-
 	heights = heights_new(irg);
 
 	/* register all emitter functions */
 	sparc_register_emitters();
 
 	/* create the block schedule. For now, we don't need it earlier. */
-	block_schedule = be_create_block_schedule(irg);
+	ir_node **block_schedule = be_create_block_schedule(irg);
 
 	sparc_emit_func_prolog(irg);
 	irg_block_walk_graph(irg, sparc_gen_labels, NULL, NULL);
 
 	/* inject block scheduling links & emit code of each block */
-	n = ARR_LEN(block_schedule);
-	for (i = 0; i < n; ++i) {
+	size_t n = ARR_LEN(block_schedule);
+	for (size_t i = 0; i < n; ++i) {
 		ir_node *block      = block_schedule[i];
 		ir_node *next_block = i+1 < n ? block_schedule[i+1] : NULL;
 		set_irn_link(block, next_block);
 	}
 
-	for (i = 0; i < n; ++i) {
+	for (size_t i = 0; i < n; ++i) {
 		ir_node *block = block_schedule[i];
 		ir_node *prev  = i>=1 ? block_schedule[i-1] : NULL;
 		if (block == get_irg_end_block(irg))
