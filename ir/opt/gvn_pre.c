@@ -53,7 +53,7 @@
 
 #define HOIST_HIGH 0
 #define BETTER_GREED 0
-#define LOADS 0
+#define LOADS 1
 #define DIVMODS 0
 #define NO_INF_LOOPS 0
 
@@ -62,11 +62,11 @@ typedef struct block_info {
 	ir_valueset_t     *exp_gen;    /* contains this blocks clean expressions */
 	ir_valueset_t     *avail_out;  /* available values at block end */
 	ir_valueset_t     *antic_in;   /* clean anticipated values at block entry */
-	ir_valueset_t     *antic_done; /* keeps elements of antic_in after insert_nodes() */
+	ir_valueset_t     *antic_done; /* keeps elements of antic_in after insert nodes phase*/
 	ir_valueset_t     *new_set;    /* new by hoisting made available values */
 	ir_nodehashmap_t  *trans;      /* contains translated nodes translated into block */
-	ir_node           *avail;      /* saves available node for insert_nodes */
-	int                found;      /* saves kind of availability for insert_nodes */
+	ir_node           *avail;      /* saves available node for insert node phase */
+	int                found;      /* saves kind of availability for insert_node phase */
 	ir_node           *block;      /* block of the block_info */
 	struct block_info *next;       /* links all instances for easy access */
 } block_info;
@@ -231,6 +231,16 @@ static int compare_gvn_identities(const void *elt, const void *key)
 	if (is_Phi(a) || is_Phi(b))
 		return 1;
 
+	/* memops are not the same, even if we want optimize them
+	   we have to take the order in account */
+	if (is_memop(a) || is_memop(b))
+		return 1;
+
+#if 0
+	if (is_Call(a) || is_Call(b))
+		return 1;
+#endif
+
 	if ((get_irn_op(a) != get_irn_op(b)) ||
 	    (get_irn_mode(a) != get_irn_mode(b))) return 1;
 
@@ -285,7 +295,7 @@ static ir_node *identify(ir_node *irn)
 	ir_node *value = ir_nodehashmap_get(ir_node, &value_map, irn);
 	if (value)
 		return value;
-	/* irn represents a new value */
+	/* irn represents a new value, so return the leader */
 	return identify_remember(irn);
 }
 
@@ -293,13 +303,14 @@ static ir_node *identify(ir_node *irn)
  * remember() adds node irn to the GVN valuetable.
  * Identify_remember only identifies values of nodes with the
  * same predecessor nodes (not values). By creating a node from the predecessor
- * values, a true valuetree is built. Phis kill their predecessor value,
+ * values/leaders, a true valuetree is built. Phis kill their predecessor value,
  * so no circular dependencies need to be resolved.
  *
  * TODO Improvement:
  *      Maybe this could be implemented with a custom node hash that takes
  *      phi nodes and true values (instead of predecessors) into account,
  *      resulting in value numbers.
+ * TODO This unnecessarily also handles nodes like calls, which are never equal.
  *
  * @param irn  a node representing an expression
  * @return     the value of the expression
@@ -312,21 +323,20 @@ static ir_node *remember(ir_node *irn)
 	ir_node **in      = XMALLOCN(ir_node *, arity);
 	ir_node  *value;
 
-	DB((dbg, LEVEL_4, "Remember %+F\n", irn));
-
 	for (i = 0; i < arity; ++i) {
 		ir_node *pred       = get_irn_n(irn, i);
+		/* value and leader at the same time */
 		ir_node *pred_value = identify(pred);
 
 		/* phi will be translated anyway, so kill the predecessor values
-		   also prevents circular dependencies */
+		   this also prevents circular dependencies */
 		if (is_Phi(pred)) {
 			/* every phi represents its own value */
 			in[i] = pred;
 			continue;
 		}
 
-		/* predecessor is not its value representation */
+		/* predecessor is not its value representation/the leader */
 		if (pred != pred_value)
 			changed = 1;
 		in[i] = pred_value;
@@ -344,13 +354,15 @@ static ir_node *remember(ir_node *irn)
 			in);
 		copy_node_attr(environ->graph, irn, nn);
 
-		/* now the value can be determined */
+		/* now the value can be determined because the
+		   predecessors are the leaders */
 		value = identify_remember(nn);
 	} else {
 		value = identify_remember(irn);
 	}
 	free(in);
 
+	DB((dbg, LEVEL_4, "Remember %+F as value %+F\n", irn, value));
 	ir_nodehashmap_insert(&value_map, irn, value);
 
 	return value;
@@ -593,13 +605,15 @@ static unsigned is_in_infinite_loop(ir_node *block)
  * --------------------------------------------------------
  */
 
+/**
+ * Helper function to get the anti leader of node in block.
+ */
 static ir_node *get_anti_leader(ir_node *node, ir_node *block)
 {
 	block_info *info   = get_block_info(block);
 	ir_node    *value  = identify(node);
 	ir_node    *leader = ir_valueset_lookup(info->antic_in, value);
 
-	/* //what if not antic because killed  */
 	if (leader)
 		return leader;
 	else
@@ -931,6 +945,7 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, ir_node *p
 	int       i;
 	int       arity;
 	ir_node **in;
+	ir_node  *target_block;
 	ir_node  *nn;
 	int       needed;
 
@@ -965,7 +980,10 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, ir_node *p
 
 	in = XMALLOCN(ir_node *, arity);
 
-	// explain anti leader stuff
+	/* A value has several representatives. The anti leader is chosen to be
+	   the main representative. If we access a node as representative of a
+	   value we always use the anti leader. The anti leader can be found by
+	   antic_in(identify(node)). */
 	for (i = 0; i < arity; ++i) {
 		/* get anti leader for pred to lookup its translated value */
 		ir_node    *pred        = get_irn_n(node, i);
@@ -994,15 +1012,20 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, ir_node *p
 		return node;
 
 	DB((dbg, LEVEL_3, "Translate\n"));
+
+	target_block = get_Block_cfgpred_block(block, pos);
+	if (is_Proj(node))
+		target_block = get_nodes_block(in[0]);
+
 	/* copy node to represent the new value.
 	   We do not translate nodes that do not need translation,
 	   so we use the newly created nodes as value representatives only.
 	   Their block is not important, because we create new ones during
-	   insert_nodes(). */
+	   insert node phase. */
 	nn = new_ir_node(
 		get_irn_dbg_info(node),
 		environ->graph,
-		get_Block_cfgpred_block(block, pos),
+		target_block,
 		get_irn_op(node),
 		get_irn_mode(node),
 		arity,
@@ -1097,7 +1120,6 @@ static void compute_antic(ir_node *block, void *ctx)
 				represent = expr;
 
 			if (is_hoistable_above(expr, block, 1))
-				//ir_valueset_replace(info->antic_in, trans_value, represent);
 				ir_valueset_insert(info->antic_in, trans_value, represent);
 			set_translated(info->trans, expr, represent);
 		}
@@ -1375,7 +1397,7 @@ static unsigned is_hoisting_greedy(ir_node *irn, ir_node *block)
  * @param block  the block
  * @param ctx    the walker environment
  */
-static void insert_nodes(ir_node *block, void *ctx)
+static void insert_nodes_walker(ir_node *block, void *ctx)
 {
 	pre_env                *env    = (pre_env*)ctx;
 	int                     arity  = get_irn_arity(block);
@@ -1414,6 +1436,10 @@ static void insert_nodes(ir_node *block, void *ctx)
 
 #if BETTER_GREED
 	stack = plist_new();
+	foreach_valueset(info->antic_in, value, expr, iter) {
+		/* inverse topologic */
+		plist_insert_front(stack, expr);
+	}
 #endif
 
 	/* This is the main reason antic_in is preverred over antic_out;
@@ -1428,11 +1454,6 @@ static void insert_nodes(ir_node *block, void *ctx)
 		if (ir_valueset_lookup(info->antic_done, value))
 			continue;
 
-#if BETTER_GREED
-		/* inverse topologic */
-		plist_insert_front(stack, expr);
-#endif
-
 		/* filter phi nodes from antic_in */
 		if (is_Phi(expr)) {
 			flag_redundant(expr, 1);
@@ -1444,10 +1465,10 @@ static void insert_nodes(ir_node *block, void *ctx)
 		/* A value computed in the dominator is totally redundant.
 		   Hence we have nothing to insert. */
 		if (ir_valueset_lookup(get_block_info(idom)->avail_out, value)) {
-			flag_redundant(expr, 1);
 			DB((dbg, LEVEL_2, "Fully redundant expr %+F value %+F\n", expr, value));
 			DEBUG_ONLY(inc_stats(gvnpre_stats->fully);)
 
+			flag_redundant(expr, 1);
 			continue;
 		}
 
@@ -1461,17 +1482,17 @@ static void insert_nodes(ir_node *block, void *ctx)
 
 		mode = is_partially_redundant(block, expr, value);
 		if (mode == NULL) {
-			DB((dbg, LEVEL_2, "FLAGRED 0\n"));
 			flag_redundant(expr, 0);
 			continue;
 		} else {
-			DB((dbg, LEVEL_2, "FLAGRED 1\n"));
 			flag_redundant(expr, 1);
 		}
 
 #if BETTER_GREED
-		if (is_hoisting_greedy(expr, block))
+		if (is_hoisting_greedy(expr, block)) {
+			DB((dbg, LEVEL_2, "Better greed: greedy\n"));
 			continue;
+		}
 #endif
 
 #if LOADS || DIVMODS
@@ -1564,8 +1585,8 @@ static void insert_nodes(ir_node *block, void *ctx)
 		plist_element_t *it;
 		/* iterate in inverse topological order */
 		foreach_plist(stack, it) {
-			ir_node *irn       = (ir_node *)plist_element_get_value(it);
-			ir_node *block     = get_nodes_block(irn);
+			ir_node *irn   = (ir_node *)plist_element_get_value(it);
+			ir_node *block = get_nodes_block(irn);
 			int      j;
 			char     redundant = 1;
 
@@ -1623,7 +1644,7 @@ static void hoist_high(ir_node *block, void *ctx)
 
 	DB((dbg, LEVEL_2, "High hoisting %+F\n", block));
 
-	/* foreach entry optimized by insert_nodes */
+	/* foreach entry optimized by insert node phase */
 	foreach_valueset(curr_info->antic_done, value, expr, iter) {
 		int pos;
 
@@ -1702,7 +1723,6 @@ static void hoist_high(ir_node *block, void *ctx)
 			/* check for uses of available ins on current path*/
 			for (i = 0; i < avail_arity; i++) {
 				ir_node *pred       = get_irn_n(avail, i);
-				//ir_node *pred_block = get_nodes_block(avail);
 				int      j;
 
 				if (new_target == NULL)
@@ -1714,13 +1734,11 @@ static void hoist_high(ir_node *block, void *ctx)
 					break;
 				}
 
-				/**/
 #if 0
 				if (! block_dominates(pred_block, new_target)) {
 					new_target = pred_block;
 				}
 #endif
-
 				/* check for every successor */
 				for (j = get_irn_n_outs(pred) - 1; j >= 0; --j) {
 					ir_node *succ = get_irn_out(pred, j);
@@ -1779,14 +1797,6 @@ static void eliminate(ir_node *irn, void *ctx)
 			ir_node *expr = (ir_node*)ir_valueset_lookup(info->avail_out, value);
 
 			if (expr != NULL && expr != irn) {
-
-#if 0
-				// REM
-				if (get_irn_idx(expr) < env->last_idx)
-					return;
-#endif
-
-
 				elim_pair *p = OALLOC(env->obst, elim_pair);
 
 				p->old_node = irn;
@@ -1911,7 +1921,7 @@ static void gvn_pre(ir_graph *irg, pre_env *env)
 		DB((dbg, LEVEL_2, "= Insert Iteration %d ==========================\n", insert_iter));
 		env->changes = 0;
 		/* TODO topologically top down would be better; fewer iterations. */
-		dom_tree_walk_irg(irg, insert_nodes, NULL, env);
+		dom_tree_walk_irg(irg, insert_nodes_walker, NULL, env);
 		env->first_iter = 0;
 		DB((dbg, LEVEL_2, "----------------------------------------------\n"));
 	} while (env->changes != 0 && insert_iter < MAX_INSERT_ITER);
