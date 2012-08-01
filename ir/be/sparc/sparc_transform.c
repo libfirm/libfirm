@@ -1949,12 +1949,16 @@ static ir_node *gen_Call(ir_node *node)
 		}
 		assert(result_info->req1 == NULL);
 	}
+	const unsigned *allocatable_regs = be_birg_from_irg(irg)->allocatable_regs;
 	for (i = 0; i < N_SPARC_REGISTERS; ++i) {
 		const arch_register_t *reg;
 		if (!rbitset_is_set(cconv->caller_saves, i))
 			continue;
 		reg = &sparc_registers[i];
-		arch_set_irn_register_req_out(res, o++, reg->single_req);
+		arch_set_irn_register_req_out(res, o, reg->single_req);
+		if (!rbitset_is_set(allocatable_regs, reg->global_index))
+			arch_set_irn_register_out(res, o, reg);
+		++o;
 	}
 	assert(o == out_arity);
 

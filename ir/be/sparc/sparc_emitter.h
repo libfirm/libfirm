@@ -38,11 +38,12 @@
  * fmt   parameter               output
  * ----  ----------------------  -------------------------------
  * %%                            %
+ * %A    <node>                  emit ",a" in delay slot annul mode
  * %Dx   <node>                  destination register x
  * %E    <node>                  entity+offset
  * %F    <node>                  floating point mode
  * %H    <node>                  high immediate
- * %L    <node>                  control flow target of the node
+ * %L    ir_node*                control flow target of the node
  * %ML   <node>                  load mode
  * %MS   <node>                  store mode
  * %R    arch_register_t const*  register

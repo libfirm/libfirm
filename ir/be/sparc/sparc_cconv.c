@@ -118,6 +118,9 @@ static const unsigned caller_saves[] = {
 	REG_F29,
 	REG_F30,
 	REG_F31,
+	REG_FLAGS,
+	REG_FPFLAGS,
+	REG_Y,
 };
 static unsigned default_caller_saves[BITSET_SIZE_ELEMS(N_SPARC_REGISTERS)];
 

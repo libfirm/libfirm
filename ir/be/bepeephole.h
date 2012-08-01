@@ -80,8 +80,11 @@ bool be_has_only_one_user(ir_node *node);
  * Note: It is allowed to use this function without being in a peephole
  * optimization phase.
  */
-bool be_can_move_before(ir_heights_t *heights, const ir_node *node,
-                        const ir_node *before);
+bool be_can_move_down(ir_heights_t *heights, const ir_node *node,
+                      const ir_node *before);
+
+bool be_can_move_up(ir_heights_t *heights, const ir_node *node,
+                    const ir_node *after);
 
 /**
  * Do peephole optimisations. It traverses the schedule of all blocks in

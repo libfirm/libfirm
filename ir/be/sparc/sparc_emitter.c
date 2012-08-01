@@ -41,6 +41,8 @@
 #include "raw_bitset.h"
 #include "dbginfo.h"
 #include "heights.h"
+#include "pmap.h"
+#include "execfreq_t.h"
 
 #include "besched.h"
 #include "beblocksched.h"
@@ -59,9 +61,9 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static ir_heights_t  *heights;
-static const ir_node *delay_slot_filler; /**< this node has been choosen to fill
-                                              the next delay slot */
+static ir_heights_t *heights;
+static unsigned     *delay_slot_fillers;
+static pmap         *delay_slots;
 
 static void sparc_emit_node(const ir_node *node);
 static bool emitting_delay_slot;
@@ -212,6 +214,11 @@ static void emit_fp_suffix(const ir_mode *mode)
 	}
 }
 
+static void set_jump_target(ir_node *jump, ir_node *target)
+{
+	set_irn_link(jump, target);
+}
+
 static ir_node *get_jump_target(const ir_node *jump)
 {
 	return (ir_node*)get_irn_link(jump);
@@ -245,7 +252,7 @@ static bool ba_is_fallthrough(const ir_node *node)
 {
 	ir_node *block      = get_nodes_block(node);
 	ir_node *next_block = (ir_node*)get_irn_link(block);
-	return get_irn_link(node) == next_block;
+	return get_jump_target(node) == next_block;
 }
 
 static bool is_no_instruction(const ir_node *node)
@@ -287,9 +294,8 @@ static bool emits_multiple_instructions(const ir_node *node)
 	if (has_delay_slot(node))
 		return true;
 
-	if (is_sparc_Call(node)) {
+	if (is_sparc_Call(node))
 		return arch_get_irn_flags(node) & sparc_arch_irn_flag_aggregate_return;
-	}
 
 	return is_sparc_SMulh(node) || is_sparc_UMulh(node)
 		|| is_sparc_SDiv(node) || is_sparc_UDiv(node)
@@ -297,36 +303,58 @@ static bool emits_multiple_instructions(const ir_node *node)
 		|| is_sparc_SubSP(node);
 }
 
-static bool uses_reg(const ir_node *node, const arch_register_t *reg)
+static bool uses_reg(const ir_node *node, unsigned reg_index, unsigned width)
 {
 	int arity = get_irn_arity(node);
 	for (int i = 0; i < arity; ++i) {
-		const arch_register_t *in_reg = arch_get_irn_register_in(node, i);
-		if (reg == in_reg)
+		const arch_register_t     *in_reg = arch_get_irn_register_in(node, i);
+		const arch_register_req_t *in_req = arch_get_irn_register_req_in(node, i);
+		if (in_reg == NULL)
+			continue;
+		if (reg_index < (unsigned)in_reg->global_index + in_req->width
+			&& reg_index + width > in_reg->global_index)
 			return true;
 	}
 	return false;
 }
 
-static bool writes_reg(const ir_node *node, const arch_register_t *reg)
+static bool writes_reg(const ir_node *node, unsigned reg_index, unsigned width)
 {
 	unsigned n_outs = arch_get_irn_n_outs(node);
 	for (unsigned o = 0; o < n_outs; ++o) {
-		const arch_register_t *out_reg = arch_get_irn_register_out(node, o);
-		if (out_reg == reg)
+		const arch_register_t     *out_reg = arch_get_irn_register_out(node, o);
+		if (out_reg == NULL)
+			continue;
+		const arch_register_req_t *out_req = arch_get_irn_register_req_out(node, o);
+		if (reg_index < (unsigned)out_reg->global_index + out_req->width
+			&& reg_index + width > out_reg->global_index)
 			return true;
 	}
 	return false;
 }
 
-static bool can_move_into_delayslot(const ir_node *node, const ir_node *to)
+static bool is_legal_delay_slot_filler(const ir_node *node)
 {
-	if (!be_can_move_before(heights, node, to))
+	if (is_no_instruction(node))
+		return false;
+	if (emits_multiple_instructions(node))
+		return false;
+	if (rbitset_is_set(delay_slot_fillers, get_irn_idx(node)))
+		return false;
+	return true;
+}
+
+static bool can_move_down_into_delayslot(const ir_node *node, const ir_node *to)
+{
+	if (!is_legal_delay_slot_filler(node))
+		return false;
+
+	if (!be_can_move_down(heights, node, to))
 		return false;
 
 	if (is_sparc_Call(to)) {
 		ir_node *check;
-		/** all deps are used after the delay slot so, we're fine */
+		/** all inputs are used after the delay slot so, we're fine */
 		if (!is_sparc_reg_call(to))
 			return true;
 
@@ -337,13 +365,13 @@ static bool can_move_into_delayslot(const ir_node *node, const ir_node *to)
 		/* the Call also destroys the value of %o7, but since this is
 		 * currently marked as ignore register in the backend, it
 		 * should never be used by the instruction in the delay slot. */
-		if (uses_reg(node, &sparc_registers[REG_O7]))
+		if (uses_reg(node, REG_O7, 1))
 			return false;
 		return true;
 	} else if (is_sparc_Return(to)) {
 		/* return uses the value of %o7, all other values are not
 		 * immediately used */
-		if (writes_reg(node, &sparc_registers[REG_O7]))
+		if (writes_reg(node, REG_O7, 1))
 			return false;
 		return true;
 	} else {
@@ -358,40 +386,190 @@ static bool can_move_into_delayslot(const ir_node *node, const ir_node *to)
 	}
 }
 
+static bool can_move_up_into_delayslot(const ir_node *node, const ir_node *to)
+{
+	if (!be_can_move_up(heights, node, to))
+		return false;
+
+	/* node must not use any results of 'to' */
+	int arity = get_irn_arity(node);
+	for (int i = 0; i < arity; ++i) {
+		ir_node *in      = get_irn_n(node, i);
+		ir_node *skipped = skip_Proj(in);
+		if (skipped == to)
+			return false;
+	}
+
+	/* register window cycling effects at Restore aren't correctly represented
+	 * in the graph yet so we need this exception here */
+	if (is_sparc_Restore(to) || is_sparc_RestoreZero(to)) {
+		return false;
+	} else if (is_sparc_Call(to)) {
+		/* node must not overwrite any of the inputs of the call,
+		 * (except for the dest_addr) */
+		int dest_addr_pos = is_sparc_reg_call(to)
+			? get_sparc_Call_dest_addr_pos(to) : -1;
+
+		int call_arity = get_irn_arity(to);
+		for (int i = 0; i < call_arity; ++i) {
+			if (i == dest_addr_pos)
+				continue;
+			const arch_register_t *reg = arch_get_irn_register_in(to, i);
+			if (reg == NULL)
+				continue;
+			const arch_register_req_t *req = arch_get_irn_register_req_in(to, i);
+			if (writes_reg(node, reg->global_index, req->width))
+				return false;
+		}
+
+		/* node must not write to one of the call outputs */
+		unsigned n_call_outs = arch_get_irn_n_outs(to);
+		for (unsigned o = 0; o < n_call_outs; ++o) {
+			const arch_register_t *reg = arch_get_irn_register_out(to, o);
+			if (reg == NULL)
+				continue;
+			const arch_register_req_t *req = arch_get_irn_register_req_out(to, o);
+			if (writes_reg(node, reg->global_index, req->width))
+				return false;
+		}
+	} else if (is_sparc_SDiv(to) || is_sparc_UDiv(to)) {
+		/* node will be inserted between wr and div so it must not overwrite
+		 * anything except the wr input */
+		int arity = get_irn_arity(to);
+		for (int i = 0; i < arity; ++i) {
+			assert((long)n_sparc_SDiv_dividend_high == (long)n_sparc_UDiv_dividend_high);
+			if (i == n_sparc_SDiv_dividend_high)
+				continue;
+			const arch_register_t *reg = arch_get_irn_register_in(to, i);
+			if (reg == NULL)
+				continue;
+			const arch_register_req_t *req = arch_get_irn_register_req_in(to, i);
+			if (writes_reg(node, reg->global_index, req->width))
+				return false;
+		}
+}
+	return true;
+}
+
+static void optimize_fallthrough(ir_node *node)
+{
+	ir_node *proj_true  = NULL;
+	ir_node *proj_false = NULL;
+
+	assert((long)pn_sparc_Bicc_false == (long)pn_sparc_fbfcc_false);
+	assert((long)pn_sparc_Bicc_true  == (long)pn_sparc_fbfcc_true);
+	foreach_out_edge(node, edge) {
+		ir_node *proj = get_edge_src_irn(edge);
+		long nr = get_Proj_proj(proj);
+		if (nr == pn_sparc_Bicc_true) {
+			proj_true = proj;
+		} else {
+			assert(nr == pn_sparc_Bicc_false);
+			proj_false = proj;
+		}
+	}
+	assert(proj_true != NULL && proj_false != NULL);
+
+	/* for now, the code works for scheduled and non-schedules blocks */
+	const ir_node *block = get_nodes_block(node);
+
+	/* we have a block schedule */
+	const ir_node *next_block = (ir_node*)get_irn_link(block);
+
+	if (get_jump_target(proj_true) == next_block) {
+		/* exchange both proj destinations so the second one can be omitted */
+		set_Proj_proj(proj_true,  pn_sparc_Bicc_false);
+		set_Proj_proj(proj_false, pn_sparc_Bicc_true);
+
+		sparc_jmp_cond_attr_t *attr = get_sparc_jmp_cond_attr(node);
+		attr->relation = get_negated_relation(attr->relation);
+	}
+}
+
 /**
  * search for an instruction that can fill the delay slot of @p node
  */
-static const ir_node *pick_delay_slot_for(const ir_node *node)
+static ir_node *pick_delay_slot_for(ir_node *node)
 {
-	const ir_node *schedpoint = node;
-	unsigned       tries      = 0;
-	/* currently we don't track which registers are still alive, so we can't
-	 * pick any other instructions other than the one directly preceding */
 	static const unsigned PICK_DELAY_SLOT_MAX_DISTANCE = 10;
-
 	assert(has_delay_slot(node));
 
-	while (sched_has_prev(schedpoint)) {
-		schedpoint = sched_prev(schedpoint);
+	if (is_sparc_Bicc(node) || is_sparc_fbfcc(node)) {
+		optimize_fallthrough(node);
+	}
 
+	unsigned tries = 0;
+	sched_foreach_reverse_from(sched_prev(node), schedpoint) {
 		if (has_delay_slot(schedpoint))
 			break;
-
-		/* skip things which don't really result in instructions */
-		if (is_no_instruction(schedpoint))
-			continue;
-
 		if (tries++ >= PICK_DELAY_SLOT_MAX_DISTANCE)
 			break;
 
-		if (emits_multiple_instructions(schedpoint))
-			continue;
-
-		if (!can_move_into_delayslot(schedpoint, node))
+		if (!can_move_down_into_delayslot(schedpoint, node))
 			continue;
 
 		/* found something */
 		return schedpoint;
+	}
+
+	/* search after the current position */
+	tries = 0;
+	sched_foreach_from(sched_next(node), schedpoint) {
+		if (has_delay_slot(schedpoint))
+			break;
+		if (tries++ >= PICK_DELAY_SLOT_MAX_DISTANCE)
+			break;
+		if (!is_legal_delay_slot_filler(schedpoint))
+			continue;
+		if (!can_move_up_into_delayslot(schedpoint, node))
+			continue;
+
+		/* found something */
+		return schedpoint;
+	}
+
+	/* look in successor blocks */
+	ir_node *block = get_nodes_block(node);
+	/* TODO: sort succs by execution frequency */
+	foreach_block_succ(block, edge) {
+		ir_node *succ = get_edge_src_irn(edge);
+		/* we can't easily move up stuff from blocks with multiple predecessors
+		 * since the instruction is lacking for the other preds then.
+		 * (We also don't have to do any phi translation) */
+		if (get_Block_n_cfgpreds(succ) > 1)
+			continue;
+
+		tries = 0;
+		sched_foreach(succ, schedpoint) {
+			if (has_delay_slot(schedpoint))
+				break;
+			/* can't move pinned nodes accross blocks */
+			if (get_irn_pinned(schedpoint) == op_pin_state_pinned)
+				continue;
+			/* restore doesn't model register window switching correctly,
+			 * so it appears like we could move it, which is not true */
+			if (is_sparc_Restore(schedpoint)
+			    || is_sparc_RestoreZero(schedpoint))
+				continue;
+			if (tries++ >= PICK_DELAY_SLOT_MAX_DISTANCE)
+				break;
+			if (!is_legal_delay_slot_filler(schedpoint))
+				continue;
+			if (can_move_up_into_delayslot(schedpoint, node)) {
+				/* it's fine to move the insn accross blocks */
+				return schedpoint;
+			} else if (is_sparc_Bicc(node) || is_sparc_fbfcc(node)) {
+				ir_node *proj = get_Block_cfgpred(succ, 0);
+				long     nr   = get_Proj_proj(proj);
+				if ((nr == pn_sparc_Bicc_true || nr == pn_sparc_fbfcc_true)
+					&& be_can_move_up(heights, schedpoint, succ)) {
+					/* we can use it with the annul flag */
+					sparc_jmp_cond_attr_t *attr = get_sparc_jmp_cond_attr(node);
+					attr->annul_delay_slot = true;
+					return schedpoint;
+				}
+			}
+		}
 	}
 
 	return NULL;
@@ -422,6 +600,15 @@ void sparc_emitf(ir_node const *const node, char const *fmt, ...)
 		case '%':
 			be_emit_char('%');
 			break;
+
+		case 'A': {
+			const sparc_jmp_cond_attr_t *attr
+				= get_sparc_jmp_cond_attr_const(node);
+			if (attr->annul_delay_slot) {
+				be_emit_cstring(",a");
+			}
+			break;
+		}
 
 		case 'D':
 			if (*fmt < '0' || '9' <= *fmt)
@@ -454,9 +641,11 @@ void sparc_emitf(ir_node const *const node, char const *fmt, ...)
 			sparc_emit_high_immediate(node);
 			break;
 
-		case 'L':
-			sparc_emit_cfop_target(node);
+		case 'L': {
+			ir_node *n = va_arg(ap, ir_node*);
+			sparc_emit_cfop_target(n);
 			break;
+		}
 
 		case 'M':
 			switch (*fmt++) {
@@ -547,12 +736,14 @@ static void emit_sparc_SubSP(const ir_node *irn)
 	sparc_emitf(irn, "add %S0, %u, %D1", SPARC_MIN_STACKSIZE);
 }
 
-static void fill_delay_slot(void)
+static void fill_delay_slot(const ir_node *node)
 {
 	emitting_delay_slot = true;
-	if (delay_slot_filler != NULL) {
-		sparc_emit_node(delay_slot_filler);
-		delay_slot_filler = NULL;
+	const ir_node *filler = pmap_get(ir_node, delay_slots, node);
+	if (filler != NULL) {
+		assert(!is_no_instruction(filler));
+		assert(!emits_multiple_instructions(filler));
+		sparc_emit_node(filler);
 	} else {
 		sparc_emitf(NULL, "nop");
 	}
@@ -567,7 +758,13 @@ static void emit_sparc_Div(const ir_node *node, char const *const insn)
 	 * specification */
 	unsigned wry_delay_count = 3;
 	for (unsigned i = 0; i < wry_delay_count; ++i) {
-		fill_delay_slot();
+		if (i == 0) {
+			fill_delay_slot(node);
+		} else {
+			emitting_delay_slot = true;
+			sparc_emitf(NULL, "nop");
+			emitting_delay_slot = false;
+		}
 	}
 
 	sparc_emitf(node, "%s %S1, %SI2, %D0", insn);
@@ -592,7 +789,7 @@ static void emit_sparc_Call(const ir_node *node)
 		sparc_emitf(node, "call %E, 0");
 	}
 
-	fill_delay_slot();
+	fill_delay_slot(node);
 
 	if (arch_get_irn_flags(node) & sparc_arch_irn_flag_aggregate_return) {
 		sparc_emitf(NULL, "unimp 8");
@@ -836,14 +1033,14 @@ static void emit_sparc_Return(const ir_node *node)
 
 	/* hack: we don't explicitely model register changes because of the
 	 * restore node. So we have to do it manually here */
-	if (delay_slot_filler != NULL &&
-			(is_sparc_Restore(delay_slot_filler)
-			 || is_sparc_RestoreZero(delay_slot_filler))) {
+	const ir_node *delay_slot = pmap_get(ir_node, delay_slots, node);
+	if (delay_slot != NULL &&
+	    (is_sparc_Restore(delay_slot) || is_sparc_RestoreZero(delay_slot))) {
 		destreg = "%i7";
 	}
 	char const *const offset = get_method_calling_convention(type) & cc_compound_ret ? "12" : "8";
 	sparc_emitf(node, "jmp %s+%s", destreg, offset);
-	fill_delay_slot();
+	fill_delay_slot(node);
 }
 
 static const arch_register_t *map_i_to_o_reg(const arch_register_t *reg)
@@ -935,42 +1132,36 @@ static void emit_sparc_branch(const ir_node *node, get_cc_func get_cc)
 	const ir_node *proj_true   = NULL;
 	const ir_node *proj_false  = NULL;
 
+	assert((long)pn_sparc_Bicc_false == (long)pn_sparc_fbfcc_false);
+	assert((long)pn_sparc_Bicc_true  == (long)pn_sparc_fbfcc_true);
 	foreach_out_edge(node, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
 		long nr = get_Proj_proj(proj);
-		if (nr == pn_Cond_true) {
+		if (nr == pn_sparc_Bicc_true) {
 			proj_true = proj;
 		} else {
+			assert(nr == pn_sparc_Bicc_false);
 			proj_false = proj;
 		}
 	}
 
-	/* for now, the code works for scheduled and non-schedules blocks */
-	const ir_node *block = get_nodes_block(node);
+	/* emit the true proj */
+	sparc_emitf(node, "%s%A %L", get_cc(relation), proj_true);
+	fill_delay_slot(node);
 
-	/* we have a block schedule */
+	const ir_node *block      = get_nodes_block(node);
 	const ir_node *next_block = (ir_node*)get_irn_link(block);
 
-	if (get_irn_link(proj_true) == next_block) {
-		/* exchange both proj's so the second one can be omitted */
-		const ir_node *t = proj_true;
-
-		proj_true  = proj_false;
-		proj_false = t;
-		relation   = get_negated_relation(relation);
-	}
-
-	/* emit the true proj */
-	sparc_emitf(proj_true, "%s %L", get_cc(relation));
-	fill_delay_slot();
-
-	if (get_irn_link(proj_false) == next_block) {
+	if (get_jump_target(proj_false) == next_block) {
 		if (be_options.verbose_asm) {
-			sparc_emitf(proj_false, "/* fallthrough to %L */");
+			sparc_emitf(node, "/* fallthrough to %L */", proj_false);
 		}
 	} else {
-		sparc_emitf(proj_false, "ba %L");
-		fill_delay_slot();
+		sparc_emitf(node, "ba %L", proj_false);
+		/* TODO: fill this slot as well */
+		emitting_delay_slot = true;
+		sparc_emitf(NULL, "nop");
+		emitting_delay_slot = false;
 	}
 }
 
@@ -1003,11 +1194,11 @@ static void emit_sparc_Ba(const ir_node *node)
 {
 	if (ba_is_fallthrough(node)) {
 		if (be_options.verbose_asm) {
-			sparc_emitf(node, "/* fallthrough to %L */");
+			sparc_emitf(node, "/* fallthrough to %L */", node);
 		}
 	} else {
-		sparc_emitf(node, "ba %L");
-		fill_delay_slot();
+		sparc_emitf(node, "ba %L", node);
+		fill_delay_slot(node);
 	}
 }
 
@@ -1016,7 +1207,7 @@ static void emit_sparc_SwitchJmp(const ir_node *node)
 	const sparc_switch_jmp_attr_t *attr = get_sparc_switch_jmp_attr_const(node);
 
 	sparc_emitf(node, "jmp %S0");
-	fill_delay_slot();
+	fill_delay_slot(node);
 
 	be_emit_jump_table(node, attr->table, attr->table_entity, get_jump_target);
 }
@@ -1125,17 +1316,6 @@ static void sparc_emit_node(const ir_node *node)
 	}
 }
 
-static ir_node *find_next_delay_slot(ir_node *from)
-{
-	ir_node *schedpoint = from;
-	while (!has_delay_slot(schedpoint)) {
-		if (!sched_has_next(schedpoint))
-			return NULL;
-		schedpoint = sched_next(schedpoint);
-	}
-	return schedpoint;
-}
-
 static bool block_needs_label(const ir_node *block, const ir_node *sched_prev)
 {
 	if (get_Block_entity(block) != NULL)
@@ -1151,7 +1331,7 @@ static bool block_needs_label(const ir_node *block, const ir_node *sched_prev)
 		ir_node *cfgpred_block = get_nodes_block(cfgpred);
 		if (is_Proj(cfgpred) && is_sparc_SwitchJmp(get_Proj_pred(cfgpred)))
 			return true;
-		return sched_prev != cfgpred_block || get_irn_link(cfgpred) != block;
+		return sched_prev != cfgpred_block || get_jump_target(cfgpred) != block;
 	}
 }
 
@@ -1162,26 +1342,12 @@ static bool block_needs_label(const ir_node *block, const ir_node *sched_prev)
 static void sparc_emit_block(ir_node *block, ir_node *prev)
 {
 	bool needs_label = block_needs_label(block, prev);
-
 	be_gas_begin_block(block, needs_label);
 
-	ir_node *next_delay_slot = find_next_delay_slot(sched_first(block));
-	if (next_delay_slot != NULL)
-		delay_slot_filler = pick_delay_slot_for(next_delay_slot);
-
 	sched_foreach(block, node) {
-		if (node == delay_slot_filler) {
+		if (rbitset_is_set(delay_slot_fillers, get_irn_idx(node)))
 			continue;
-		}
-
 		sparc_emit_node(node);
-
-		if (node == next_delay_slot) {
-			assert(delay_slot_filler == NULL);
-			next_delay_slot = find_next_delay_slot(sched_next(node));
-			if (next_delay_slot != NULL)
-				delay_slot_filler = pick_delay_slot_for(next_delay_slot);
-		}
 	}
 }
 
@@ -1203,20 +1369,57 @@ static void sparc_emit_func_epilog(ir_graph *irg)
 	be_gas_emit_function_epilog(entity);
 }
 
-static void sparc_gen_labels(ir_node *block, void *env)
+static void init_jump_links(ir_node *block, void *env)
 {
 	(void) env;
 
 	int n = get_Block_n_cfgpreds(block);
 	for (n--; n >= 0; n--) {
 		ir_node *pred = get_Block_cfgpred(block, n);
-		set_irn_link(pred, block); // link the pred of a block (which is a jmp)
+		set_jump_target(pred, block);
+	}
+}
+
+static int cmp_block_execfreqs(const void *d1, const void *d2)
+{
+	ir_node **p1 = (ir_node**)d1;
+	ir_node **p2 = (ir_node**)d2;
+	double freq1 = get_block_execfreq(*p1);
+	double freq2 = get_block_execfreq(*p2);
+	if (freq1 < freq2)
+		return -1;
+	if (freq1 > freq2)
+		return 1;
+	return get_irn_node_nr(*p2)-get_irn_node_nr(*p1);
+}
+
+static void pick_delay_slots(size_t n_blocks, ir_node **blocks)
+{
+	/* create blocklist sorted by execution frequency */
+	ir_node **sorted_blocks = XMALLOCN(ir_node*, n_blocks);
+	memcpy(sorted_blocks, blocks, n_blocks*sizeof(sorted_blocks[0]));
+	qsort(sorted_blocks, n_blocks, sizeof(sorted_blocks[0]),
+	      cmp_block_execfreqs);
+
+	for (size_t i = 0; i < n_blocks; ++i) {
+		const ir_node *block = blocks[i];
+		sched_foreach(block, node) {
+			if (!has_delay_slot(node))
+				continue;
+			ir_node *filler = pick_delay_slot_for(node);
+			if (filler == NULL)
+				continue;
+			rbitset_set(delay_slot_fillers, get_irn_idx(filler));
+			pmap_insert(delay_slots, node, filler);
+		}
 	}
 }
 
 void sparc_emit_routine(ir_graph *irg)
 {
-	heights = heights_new(irg);
+	heights            = heights_new(irg);
+	delay_slot_fillers = rbitset_malloc(get_irg_last_idx(irg));
+	delay_slots        = pmap_create();
 
 	/* register all emitter functions */
 	sparc_register_emitters();
@@ -1225,17 +1428,19 @@ void sparc_emit_routine(ir_graph *irg)
 	ir_node **block_schedule = be_create_block_schedule(irg);
 
 	sparc_emit_func_prolog(irg);
-	irg_block_walk_graph(irg, sparc_gen_labels, NULL, NULL);
+	irg_block_walk_graph(irg, init_jump_links, NULL, NULL);
 
 	/* inject block scheduling links & emit code of each block */
-	size_t n = ARR_LEN(block_schedule);
-	for (size_t i = 0; i < n; ++i) {
+	size_t n_blocks = ARR_LEN(block_schedule);
+	for (size_t i = 0; i < n_blocks; ++i) {
 		ir_node *block      = block_schedule[i];
-		ir_node *next_block = i+1 < n ? block_schedule[i+1] : NULL;
+		ir_node *next_block = i+1 < n_blocks ? block_schedule[i+1] : NULL;
 		set_irn_link(block, next_block);
 	}
 
-	for (size_t i = 0; i < n; ++i) {
+	pick_delay_slots(n_blocks, block_schedule);
+
+	for (size_t i = 0; i < n_blocks; ++i) {
 		ir_node *block = block_schedule[i];
 		ir_node *prev  = i>=1 ? block_schedule[i-1] : NULL;
 		if (block == get_irg_end_block(irg))
@@ -1246,6 +1451,8 @@ void sparc_emit_routine(ir_graph *irg)
 	/* emit function epilog */
 	sparc_emit_func_epilog(irg);
 
+	pmap_destroy(delay_slots);
+	xfree(delay_slot_fillers);
 	heights_free(heights);
 }
 
