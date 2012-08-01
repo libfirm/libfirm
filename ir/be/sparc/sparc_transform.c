@@ -1495,6 +1495,15 @@ static ir_node *gen_Unknown(ir_node *node)
 	panic("Unexpected Unknown mode");
 }
 
+static void make_start_out(reg_info_t *const info, struct obstack *const obst, ir_node *const start, size_t const offset, arch_register_t const *const reg, arch_register_req_type_t const flags)
+{
+	info->offset = offset;
+	info->irn    = NULL;
+	arch_register_req_t const *const req = be_create_reg_req(obst, reg, arch_register_req_type_ignore | flags);
+	arch_set_irn_register_req_out(start, offset, req);
+	arch_set_irn_register_out(start, offset, reg);
+}
+
 /**
  * transform the start node to the prolog code
  */
@@ -1507,11 +1516,9 @@ static ir_node *gen_Start(ir_node *node)
 	ir_node   *new_block     = be_transform_node(block);
 	dbg_info  *dbgi          = get_irn_dbg_info(node);
 	struct obstack *obst     = be_get_be_obst(irg);
-	const arch_register_req_t *req;
 	size_t     n_outs;
 	ir_node   *start;
 	size_t     i;
-	size_t     o;
 
 	/* start building list of start constraints */
 	assert(obstack_object_size(obst) == 0);
@@ -1529,43 +1536,25 @@ static ir_node *gen_Start(ir_node *node)
 
 	start = new_bd_sparc_Start(dbgi, new_block, n_outs);
 
-	o = 0;
+	size_t o = 0;
 
 	/* first output is memory */
 	start_mem.offset = o;
+	start_mem.irn    = NULL;
 	arch_set_irn_register_req_out(start, o, arch_no_register_req);
 	++o;
 
 	/* the zero register */
-	start_g0.offset = o;
-	req = be_create_reg_req(obst, &sparc_registers[REG_G0],
-	                        arch_register_req_type_ignore);
-	arch_set_irn_register_req_out(start, o, req);
-	arch_set_irn_register_out(start, o, &sparc_registers[REG_G0]);
-	++o;
+	make_start_out(&start_g0, obst, start, o++, &sparc_registers[REG_G0], arch_register_req_type_none);
 
 	/* g7 is used for TLS data */
-	start_g7.offset = o;
-	req = be_create_reg_req(obst, &sparc_registers[REG_G7],
-	                        arch_register_req_type_ignore);
-	arch_set_irn_register_req_out(start, o, req);
-	arch_set_irn_register_out(start, o, &sparc_registers[REG_G7]);
-	++o;
+	make_start_out(&start_g7, obst, start, o++, &sparc_registers[REG_G7], arch_register_req_type_none);
 
 	/* we need an output for the stackpointer */
-	start_sp.offset = o;
-	req = be_create_reg_req(obst, sp_reg,
-			arch_register_req_type_produces_sp | arch_register_req_type_ignore);
-	arch_set_irn_register_req_out(start, o, req);
-	arch_set_irn_register_out(start, o, sp_reg);
-	++o;
+	make_start_out(&start_sp, obst, start, o++, sp_reg, arch_register_req_type_produces_sp);
 
 	if (!current_cconv->omit_fp) {
-		start_fp.offset = o;
-		req = be_create_reg_req(obst, fp_reg, arch_register_req_type_ignore);
-		arch_set_irn_register_req_out(start, o, req);
-		arch_set_irn_register_out(start, o, fp_reg);
-		++o;
+		make_start_out(&start_fp, obst, start, o++, fp_reg, arch_register_req_type_none);
 	}
 
 	/* function parameters in registers */
@@ -2548,12 +2537,7 @@ void sparc_transform_graph(ir_graph *irg)
 	mode_flags = sparc_reg_classes[CLASS_sparc_flags_class].mode;
 	assert(sparc_reg_classes[CLASS_sparc_fpflags_class].mode == mode_flags);
 
-	start_mem.irn = NULL;
-	start_g0.irn  = NULL;
-	start_g7.irn  = NULL;
-	start_sp.irn  = NULL;
-	start_fp.irn  = NULL;
-	frame_base    = NULL;
+	frame_base = NULL;
 
 	stackorder = be_collect_stacknodes(irg);
 	current_cconv
