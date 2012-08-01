@@ -90,7 +90,9 @@ static void exec_freq_node_info(void *ctx, FILE *f, const ir_node *irn)
 	(void)ctx;
 	if (!is_Block(irn))
 		return;
-	fprintf(f, "execution frequency: %g\n", get_block_execfreq(irn));
+	const freq_t *freq = ir_nodehashmap_get(freq_t, &freq_map, irn);
+	if (freq != NULL)
+		fprintf(f, "execution frequency: %g\n", get_block_execfreq(irn));
 }
 
 void init_execfreq(void)
@@ -272,7 +274,7 @@ void ir_estimate_execfreq(ir_graph *irg)
 
 	ir_node *end_block = get_irg_end_block(irg);
 
-	for (int idx = dfs_get_n_nodes(dfs) - 1; idx >= 0; --idx) {
+	for (int idx = size - 1; idx >= 0; --idx) {
 		const ir_node *bb = (ir_node*)dfs_get_post_num_node(dfs, size-idx-1);
 
 		/* Sum of (execution frequency of predecessor * probability of cf edge) ... */
@@ -330,7 +332,7 @@ void ir_estimate_execfreq(ir_graph *irg)
 	double start_freq = x[start_idx];
 	double norm       = start_freq != 0.0 ? 1.0 / start_freq : 1.0;
 
-	for (int idx = dfs_get_n_nodes(dfs) - 1; idx >= 0; --idx) {
+	for (int idx = size - 1; idx >= 0; --idx) {
 		ir_node *bb = (ir_node *) dfs_get_post_num_node(dfs, size - idx - 1);
 
 		/* take abs because it sometimes can be -0 in case of endless loops */
