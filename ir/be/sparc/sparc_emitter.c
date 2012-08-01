@@ -563,7 +563,7 @@ static void fill_delay_slot(void)
 	emitting_delay_slot = false;
 }
 
-static void emit_sparc_Div(const ir_node *node, bool is_signed)
+static void emit_sparc_Div(const ir_node *node, char const *const insn)
 {
 	/* can we get the delay count of the wr instruction somewhere? */
 	unsigned wry_delay_count = 3;
@@ -575,17 +575,17 @@ static void emit_sparc_Div(const ir_node *node, bool is_signed)
 		fill_delay_slot();
 	}
 
-	sparc_emitf(node, "%s %S1, %SI2, %D0", is_signed ? "sdiv" : "udiv");
+	sparc_emitf(node, "%s %S1, %SI2, %D0", insn);
 }
 
 static void emit_sparc_SDiv(const ir_node *node)
 {
-	emit_sparc_Div(node, true);
+	emit_sparc_Div(node, "sdiv");
 }
 
 static void emit_sparc_UDiv(const ir_node *node)
 {
-	emit_sparc_Div(node, false);
+	emit_sparc_Div(node, "udiv");
 }
 
 static void emit_sparc_Call(const ir_node *node)
