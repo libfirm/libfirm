@@ -482,25 +482,26 @@ static ir_node *gen_helper_binopx(ir_node *node, match_flags_t match_flags,
 
 }
 
-static ir_node *get_g0(ir_graph *irg)
+static ir_node *get_reg(ir_graph *const irg, reg_info_t *const reg)
 {
-	if (start_g0.irn == NULL) {
+	if (!reg->irn) {
 		/* this is already the transformed start node */
 		ir_node *const start = get_irg_start(irg);
 		assert(is_sparc_Start(start));
-		start_g0.irn = new_r_Proj(start, mode_gp, start_g0.offset);
+		arch_register_class_t const *const cls = arch_get_irn_register_req_out(start, reg->offset)->cls;
+		reg->irn = new_r_Proj(start, cls ? cls->mode : mode_M, reg->offset);
 	}
-	return start_g0.irn;
+	return reg->irn;
+}
+
+static ir_node *get_g0(ir_graph *irg)
+{
+	return get_reg(irg, &start_g0);
 }
 
 static ir_node *get_g7(ir_graph *irg)
 {
-	if (start_g7.irn == NULL) {
-		ir_node *start = get_irg_start(irg);
-		assert(is_sparc_Start(start));
-		start_g7.irn = new_r_Proj(start, mode_gp, start_g7.offset);
-	}
-	return start_g7.irn;
+	return get_reg(irg, &start_g7);
 }
 
 static ir_node *make_tls_offset(dbg_info *dbgi, ir_node *block,
@@ -1604,29 +1605,17 @@ static ir_node *gen_Start(ir_node *node)
 
 static ir_node *get_initial_sp(ir_graph *irg)
 {
-	if (start_sp.irn == NULL) {
-		ir_node *start = get_irg_start(irg);
-		start_sp.irn = new_r_Proj(start, mode_gp, start_sp.offset);
-	}
-	return start_sp.irn;
+	return get_reg(irg, &start_sp);
 }
 
 static ir_node *get_initial_fp(ir_graph *irg)
 {
-	if (start_fp.irn == NULL) {
-		ir_node *start = get_irg_start(irg);
-		start_fp.irn = new_r_Proj(start, mode_gp, start_fp.offset);
-	}
-	return start_fp.irn;
+	return get_reg(irg, &start_fp);
 }
 
 static ir_node *get_initial_mem(ir_graph *irg)
 {
-	if (start_mem.irn == NULL) {
-		ir_node *start = get_irg_start(irg);
-		start_mem.irn = new_r_Proj(start, mode_M, start_mem.offset);
-	}
-	return start_mem.irn;
+	return get_reg(irg, &start_mem);
 }
 
 static ir_node *get_stack_pointer_for(ir_node *node)
