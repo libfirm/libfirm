@@ -2223,15 +2223,6 @@ static ir_node *gen_Proj_Store(ir_node *node)
 }
 
 /**
- * Transform the Projs from a Cmp.
- */
-static ir_node *gen_Proj_Cmp(ir_node *node)
-{
-	(void) node;
-	panic("not implemented");
-}
-
-/**
  * transform Projs from a Div
  */
 static ir_node *gen_Proj_Div(ir_node *node)
@@ -2431,8 +2422,6 @@ static ir_node *gen_Proj(ir_node *node)
 		return gen_Proj_Load(node);
 	case iro_Call:
 		return gen_Proj_Call(node);
-	case iro_Cmp:
-		return gen_Proj_Cmp(node);
 	case iro_Switch:
 	case iro_Cond:
 		return be_duplicate_node(node);

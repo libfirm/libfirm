@@ -1398,16 +1398,6 @@ static ir_node *gen_Proj_Div(ir_node *node)
 	panic("Unsupported Proj from Div");
 }
 
-/**
- * Transform the Projs from a Cmp.
- */
-static ir_node *gen_Proj_Cmp(ir_node *node)
-{
-	(void) node;
-	/* we should only be here in case of a Mux node */
-	panic("Mux NYI");
-}
-
 static ir_node *gen_Proj_Start(ir_node *node)
 {
 	ir_node *block     = get_nodes_block(node);
@@ -1580,8 +1570,6 @@ static ir_node *gen_Proj(ir_node *node)
 		return gen_Proj_CopyB(node);
 	case iro_Div:
 		return gen_Proj_Div(node);
-	case iro_Cmp:
-		return gen_Proj_Cmp(node);
 	case iro_Start:
 		return gen_Proj_Start(node);
 	case iro_Cond:

@@ -5595,16 +5595,6 @@ static ir_node *gen_Proj_be_Call(ir_node *node)
 	return res;
 }
 
-/**
- * Transform the Projs from a Cmp.
- */
-static ir_node *gen_Proj_Cmp(ir_node *node)
-{
-	/* this probably means not all mode_b nodes were lowered... */
-	panic("trying to directly transform Proj_Cmp %+F (mode_b not lowered?)",
-	      node);
-}
-
 static ir_node *gen_Proj_ASM(ir_node *node)
 {
 	ir_mode *mode     = get_irn_mode(node);
@@ -5654,8 +5644,6 @@ static ir_node *gen_Proj(ir_node *node)
 		return gen_Proj_be_AddSP(node);
 	case beo_Call:
 		return gen_Proj_be_Call(node);
-	case iro_Cmp:
-		return gen_Proj_Cmp(node);
 	case iro_Start:
 		proj = get_Proj_proj(node);
 		switch (proj) {
