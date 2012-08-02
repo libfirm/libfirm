@@ -60,6 +60,11 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
+typedef struct reg_info_t {
+	size_t   offset;
+	ir_node *irn;
+} reg_info_t;
+
 static const arch_register_t *sp_reg = &sparc_registers[REG_SP];
 static const arch_register_t *fp_reg = &sparc_registers[REG_FRAME_POINTER];
 static calling_convention_t  *current_cconv = NULL;
@@ -70,16 +75,11 @@ static ir_mode               *mode_fp;
 static ir_mode               *mode_fp2;
 //static ir_mode               *mode_fp4;
 static pmap                  *node_to_stack;
-static size_t                 start_mem_offset;
-static ir_node               *start_mem;
-static size_t                 start_g0_offset;
-static ir_node               *start_g0;
-static size_t                 start_g7_offset;
-static ir_node               *start_g7;
-static size_t                 start_sp_offset;
-static ir_node               *start_sp;
-static size_t                 start_fp_offset;
-static ir_node               *start_fp;
+static reg_info_t             start_mem;
+static reg_info_t             start_g0;
+static reg_info_t             start_g7;
+static reg_info_t             start_sp;
+static reg_info_t             start_fp;
 static ir_node               *frame_base;
 static size_t                 start_params_offset;
 static size_t                 start_callee_saves_offset;
@@ -484,23 +484,23 @@ static ir_node *gen_helper_binopx(ir_node *node, match_flags_t match_flags,
 
 static ir_node *get_g0(ir_graph *irg)
 {
-	if (start_g0 == NULL) {
+	if (start_g0.irn == NULL) {
 		/* this is already the transformed start node */
-		ir_node *start = get_irg_start(irg);
+		ir_node *const start = get_irg_start(irg);
 		assert(is_sparc_Start(start));
-		start_g0 = new_r_Proj(start, mode_gp, start_g0_offset);
+		start_g0.irn = new_r_Proj(start, mode_gp, start_g0.offset);
 	}
-	return start_g0;
+	return start_g0.irn;
 }
 
 static ir_node *get_g7(ir_graph *irg)
 {
-	if (start_g7 == NULL) {
+	if (start_g7.irn == NULL) {
 		ir_node *start = get_irg_start(irg);
 		assert(is_sparc_Start(start));
-		start_g7 = new_r_Proj(start, mode_gp, start_g7_offset);
+		start_g7.irn = new_r_Proj(start, mode_gp, start_g7.offset);
 	}
-	return start_g7;
+	return start_g7.irn;
 }
 
 static ir_node *make_tls_offset(dbg_info *dbgi, ir_node *block,
@@ -1531,12 +1531,12 @@ static ir_node *gen_Start(ir_node *node)
 	o = 0;
 
 	/* first output is memory */
-	start_mem_offset = o;
+	start_mem.offset = o;
 	arch_set_irn_register_req_out(start, o, arch_no_register_req);
 	++o;
 
 	/* the zero register */
-	start_g0_offset = o;
+	start_g0.offset = o;
 	req = be_create_reg_req(obst, &sparc_registers[REG_G0],
 	                        arch_register_req_type_ignore);
 	arch_set_irn_register_req_out(start, o, req);
@@ -1544,7 +1544,7 @@ static ir_node *gen_Start(ir_node *node)
 	++o;
 
 	/* g7 is used for TLS data */
-	start_g7_offset = o;
+	start_g7.offset = o;
 	req = be_create_reg_req(obst, &sparc_registers[REG_G7],
 	                        arch_register_req_type_ignore);
 	arch_set_irn_register_req_out(start, o, req);
@@ -1552,7 +1552,7 @@ static ir_node *gen_Start(ir_node *node)
 	++o;
 
 	/* we need an output for the stackpointer */
-	start_sp_offset = o;
+	start_sp.offset = o;
 	req = be_create_reg_req(obst, sp_reg,
 			arch_register_req_type_produces_sp | arch_register_req_type_ignore);
 	arch_set_irn_register_req_out(start, o, req);
@@ -1560,7 +1560,7 @@ static ir_node *gen_Start(ir_node *node)
 	++o;
 
 	if (!current_cconv->omit_fp) {
-		start_fp_offset = o;
+		start_fp.offset = o;
 		req = be_create_reg_req(obst, fp_reg, arch_register_req_type_ignore);
 		arch_set_irn_register_req_out(start, o, req);
 		arch_set_irn_register_out(start, o, fp_reg);
@@ -1604,29 +1604,29 @@ static ir_node *gen_Start(ir_node *node)
 
 static ir_node *get_initial_sp(ir_graph *irg)
 {
-	if (start_sp == NULL) {
+	if (start_sp.irn == NULL) {
 		ir_node *start = get_irg_start(irg);
-		start_sp = new_r_Proj(start, mode_gp, start_sp_offset);
+		start_sp.irn = new_r_Proj(start, mode_gp, start_sp.offset);
 	}
-	return start_sp;
+	return start_sp.irn;
 }
 
 static ir_node *get_initial_fp(ir_graph *irg)
 {
-	if (start_fp == NULL) {
+	if (start_fp.irn == NULL) {
 		ir_node *start = get_irg_start(irg);
-		start_fp = new_r_Proj(start, mode_gp, start_fp_offset);
+		start_fp.irn = new_r_Proj(start, mode_gp, start_fp.offset);
 	}
-	return start_fp;
+	return start_fp.irn;
 }
 
 static ir_node *get_initial_mem(ir_graph *irg)
 {
-	if (start_mem == NULL) {
+	if (start_mem.irn == NULL) {
 		ir_node *start = get_irg_start(irg);
-		start_mem = new_r_Proj(start, mode_M, start_mem_offset);
+		start_mem.irn = new_r_Proj(start, mode_M, start_mem.offset);
 	}
-	return start_mem;
+	return start_mem.irn;
 }
 
 static ir_node *get_stack_pointer_for(ir_node *node)
@@ -2559,12 +2559,12 @@ void sparc_transform_graph(ir_graph *irg)
 	mode_flags = sparc_reg_classes[CLASS_sparc_flags_class].mode;
 	assert(sparc_reg_classes[CLASS_sparc_fpflags_class].mode == mode_flags);
 
-	start_mem  = NULL;
-	start_g0   = NULL;
-	start_g7   = NULL;
-	start_sp   = NULL;
-	start_fp   = NULL;
-	frame_base = NULL;
+	start_mem.irn = NULL;
+	start_g0.irn  = NULL;
+	start_g7.irn  = NULL;
+	start_sp.irn  = NULL;
+	start_fp.irn  = NULL;
+	frame_base    = NULL;
 
 	stackorder = be_collect_stacknodes(irg);
 	current_cconv
