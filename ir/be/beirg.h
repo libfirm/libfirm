@@ -134,8 +134,10 @@ static inline const arch_env_t *be_get_irg_arch_env(const ir_graph *irg)
 
 static inline struct obstack *be_get_be_obst(const ir_graph *irg)
 {
-	be_irg_t *birg = be_birg_from_irg(irg);
-	return &birg->obst;
+	be_irg_t       *const birg = be_birg_from_irg(irg);
+	struct obstack *const obst = &birg->obst;
+	assert(obstack_object_size(obst) == 0);
+	return obst;
 }
 
 static inline be_stack_layout_t *be_get_irg_stack_layout(const ir_graph *irg)

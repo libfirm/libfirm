@@ -1521,7 +1521,6 @@ static ir_node *gen_Start(ir_node *node)
 	size_t     i;
 
 	/* start building list of start constraints */
-	assert(obstack_object_size(obst) == 0);
 
 	/* calculate number of outputs */
 	n_outs = 4; /* memory, g0, g7, sp */
