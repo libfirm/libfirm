@@ -35,26 +35,29 @@
 #include "bearch_sparc_t.h"
 
 /**
- * indent before instruction. (Adds additional indentation when emitting
- * delay slots)
+ * fmt   parameter               output
+ * ----  ----------------------  -------------------------------
+ * %%                            %
+ * %A    <node>                  emit ",a" in delay slot annul mode
+ * %Dx   <node>                  destination register x
+ * %E    <node>                  entity+offset
+ * %F    <node>                  floating point mode
+ * %H    <node>                  high immediate
+ * %L    ir_node*                control flow target of the node
+ * %ML   <node>                  load mode
+ * %MS   <node>                  store mode
+ * %R    arch_register_t const*  register
+ * %Sx   <node>                  source register x
+ * %SIx  <node>                  immediate or source register x
+ * %d    signed int              signed int
+ * %s    const char*             string
+ * %u    unsigned int            unsigned int
+ *
+ * x starts at 0
+ * %#M prints load modeu
+ * + may be used with %d and %u
  */
-void sparc_emit_indent(void);
-
-void sparc_emit_immediate(const ir_node *node);
-void sparc_emit_high_immediate(const ir_node *node);
-void sparc_emit_mode(const ir_node *node);
-void sparc_emit_source_register(const ir_node *node, int pos);
-void sparc_emit_reg_or_imm(const ir_node *node, int pos);
-void sparc_emit_dest_register(const ir_node *node, int pos);
-void sparc_emit_offset(const ir_node *node, int offset_node_pos);
-void sparc_emit_load_mode(const ir_node *node);
-void sparc_emit_store_mode(const ir_node *node);
-void sparc_emit_float_load_store_mode(const ir_node *node);
-void sparc_emit_source_reg_and_offset(const ir_node *node, int regpos,
-                                      int offpos);
-void sparc_emit_fp_mode_suffix(const ir_node *node);
-void sparc_emit_fp_conv_source(const ir_node *node);
-void sparc_emit_fp_conv_destination(const ir_node *node);
+void sparc_emitf(ir_node const *node, char const *fmt, ...);
 
 void sparc_emit_routine(ir_graph *irg);
 

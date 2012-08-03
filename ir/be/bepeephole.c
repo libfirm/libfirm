@@ -244,48 +244,139 @@ bool be_has_only_one_user(ir_node *node)
 	return n_users == 1;
 }
 
-bool be_can_move_before(ir_heights_t *heights, const ir_node *node,
-                        const ir_node *before)
+static inline bool overlapping_regs(const arch_register_t *reg0,
+	const arch_register_req_t *req0, const arch_register_t *reg1,
+	const arch_register_req_t *req1)
 {
+	if (reg0 == NULL || reg1 == NULL)
+		return false;
+	return reg0->global_index < (unsigned)reg1->global_index + req1->width
+		&& reg1->global_index < (unsigned)reg0->global_index + req0->width;
+}
+
+bool be_can_move_down(ir_heights_t *heights, const ir_node *node,
+                      const ir_node *before)
+{
+	assert(get_nodes_block(node) == get_nodes_block(before));
+	assert(sched_get_time_step(node) < sched_get_time_step(before));
+
 	int      node_arity = get_irn_arity(node);
 	ir_node *schedpoint = sched_next(node);
 
 	while (schedpoint != before) {
-		int      i;
-		unsigned n_outs = arch_get_irn_n_outs(schedpoint);
-
-		/* the node must not use our computed values */
+		/* schedpoint must not use our computed values */
 		if (heights_reachable_in_block(heights, schedpoint, node))
 			return false;
 
-		/* the node must not overwrite registers of our inputs */
-		for (i = 0; i < node_arity; ++i) {
+		/* schedpoint must not overwrite registers of our inputs */
+		unsigned n_outs = arch_get_irn_n_outs(schedpoint);
+		for (int i = 0; i < node_arity; ++i) {
 			ir_node                   *in  = get_irn_n(node, i);
 			const arch_register_t     *reg = arch_get_irn_register(in);
-			const arch_register_req_t *in_req
-				= arch_get_irn_register_req_in(node, i);
-			unsigned                   o;
 			if (reg == NULL)
 				continue;
-			for (o = 0; o < n_outs; ++o) {
+			const arch_register_req_t *in_req
+				= arch_get_irn_register_req_in(node, i);
+			for (unsigned o = 0; o < n_outs; ++o) {
 				const arch_register_t *outreg
 					= arch_get_irn_register_out(schedpoint, o);
 				const arch_register_req_t *outreq
 					= arch_get_irn_register_req_out(schedpoint, o);
-				if (outreg == NULL)
-					continue;
-				if (outreg->global_index >= reg->global_index
-					&& outreg->global_index
-					   < (unsigned)reg->global_index + in_req->width)
-					return false;
-				if (reg->global_index >= outreg->global_index
-					&& reg->global_index
-					   < (unsigned)outreg->global_index + outreq->width)
+				if (overlapping_regs(reg, in_req, outreg, outreq))
 					return false;
 			}
 		}
 
 		schedpoint = sched_next(schedpoint);
+	}
+	return true;
+}
+
+bool be_can_move_up(ir_heights_t *heights, const ir_node *node,
+                    const ir_node *after)
+{
+	unsigned       n_outs      = arch_get_irn_n_outs(node);
+	const ir_node *node_block  = get_nodes_block(node);
+	const ir_node *after_block = get_block_const(after);
+	const ir_node *schedpoint;
+	if (node_block != after_block) {
+		/* currently we can move up exactly 1 block */
+		assert(get_Block_cfgpred_block(node_block, 0) == after_block);
+		ir_node *first = sched_first(node_block);
+		/* make sure we can move to the beginning of the succ block */
+		if (node != first && !be_can_move_up(heights, node, sched_prev(first)))
+			return false;
+
+		/* check if node overrides any of live-in values of other successors */
+		ir_graph *irg = get_irn_irg(node);
+		be_lv_t  *lv  = be_get_irg_liveness(irg);
+		foreach_block_succ(after_block, edge) {
+			ir_node *succ = get_edge_src_irn(edge);
+			if (succ == node_block)
+				continue;
+
+			be_lv_foreach(lv, succ, be_lv_state_in, live_node) {
+				const arch_register_t     *reg = arch_get_irn_register(live_node);
+				const arch_register_req_t *req = arch_get_irn_register_req(live_node);
+				for (unsigned o = 0; o < n_outs; ++o) {
+					const arch_register_t *outreg
+						= arch_get_irn_register_out(node, o);
+					const arch_register_req_t *outreq
+						= arch_get_irn_register_req_out(node, o);
+					if (overlapping_regs(outreg, outreq, reg, req))
+						return false;
+				}
+			}
+			sched_foreach(succ, phi) {
+				if (!is_Phi(phi))
+					break;
+				const arch_register_t     *reg = arch_get_irn_register(phi);
+				const arch_register_req_t *req = arch_get_irn_register_req(phi);
+				for (unsigned o = 0; o < n_outs; ++o) {
+					const arch_register_t *outreg
+						= arch_get_irn_register_out(node, o);
+					const arch_register_req_t *outreq
+						= arch_get_irn_register_req_out(node, o);
+					if (overlapping_regs(outreg, outreq, reg, req))
+						return false;
+				}
+			}
+		}
+		schedpoint = sched_last(after_block);
+	} else {
+		schedpoint = sched_prev(node);
+	}
+
+	/* move schedule upwards until we hit the "after" node */
+	while (schedpoint != after) {
+		/* TODO: the following heights query only works for nodes in the same
+		 * block, otherwise we have to be conservative here */
+		if (get_nodes_block(node) != get_nodes_block(schedpoint))
+			return false;
+		/* node must not depend on schedpoint */
+		if (heights_reachable_in_block(heights, node, schedpoint))
+			return false;
+
+		/* node must not overwrite registers used by schedpoint */
+		int arity = get_irn_arity(schedpoint);
+		for (int i = 0; i < arity; ++i) {
+			const arch_register_t *reg
+				= arch_get_irn_register_in(schedpoint, i);
+			if (reg == NULL)
+				continue;
+			const arch_register_req_t *in_req
+				= arch_get_irn_register_req_in(schedpoint, i);
+			for (unsigned o = 0; o < n_outs; ++o) {
+				const arch_register_t *outreg
+					= arch_get_irn_register_out(node, o);
+				const arch_register_req_t *outreq
+					= arch_get_irn_register_req_out(node, o);
+				if (overlapping_regs(outreg, outreq, reg, in_req))
+					return false;
+			}
+		}
+
+		schedpoint = sched_prev(schedpoint);
 	}
 	return true;
 }

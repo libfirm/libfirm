@@ -648,7 +648,6 @@ static void build_affinity_chunks(co_mst_env_t *env)
 	aff_edge_t  *edges    = NEW_ARR_F(aff_edge_t, 0);
 	ir_node     *n;
 	int         i, len;
-	aff_chunk_t *curr_chunk;
 	size_t      pn;
 
 	/* at first we create the affinity edge objects */
@@ -924,7 +923,6 @@ static aff_chunk_t *fragment_chunk(co_mst_env_t *env, int col, aff_chunk_t *c, w
  */
 static inline void reject_coloring(struct list_head *nodes)
 {
-	co_mst_irn_t *n, *temp;
 	DB((dbg, LEVEL_4, "\treject coloring for"));
 	list_for_each_entry_safe(co_mst_irn_t, n, temp, nodes, list) {
 		DB((dbg, LEVEL_4, " %+F", n->irn));
@@ -937,7 +935,6 @@ static inline void reject_coloring(struct list_head *nodes)
 
 static inline void materialize_coloring(struct list_head *nodes)
 {
-	co_mst_irn_t *n, *temp;
 	list_for_each_entry_safe(co_mst_irn_t, n, temp, nodes, list) {
 		assert(n->tmp_col >= 0);
 		n->col     = n->tmp_col;

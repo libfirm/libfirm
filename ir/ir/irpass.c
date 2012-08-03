@@ -163,10 +163,9 @@ static void create_suffix(char *suffix, size_t n, const char *pass_name)
 
 int ir_graph_pass_mgr_run(ir_graph_pass_manager_t *mgr)
 {
-	ir_graph_pass_t *pass;
-	size_t           i;
-	int              res = 0;
-	ir_graph        *rem = current_ir_graph;
+	size_t    i;
+	int       res = 0;
+	ir_graph *rem = current_ir_graph;
 
 	/* on all graphs: beware: number of irgs might be changed */
 	for (i = 0; i < get_irp_n_irgs(); ++i) {
@@ -218,8 +217,7 @@ static int irp_verify_irgs(void)
 
 int ir_prog_pass_mgr_run(ir_prog_pass_manager_t *mgr)
 {
-	ir_prog_pass_t *pass;
-	int            res = 0;
+	int res = 0;
 
 	/* run every pass on every graph */
 	unsigned idx = mgr->run_idx;
@@ -286,8 +284,6 @@ ir_prog_pass_manager_t *new_prog_pass_mgr(
 
 void term_graph_pass_mgr(ir_graph_pass_manager_t *mgr)
 {
-	ir_graph_pass_t *pass, *next;
-
 	list_for_each_entry_safe(ir_graph_pass_t, pass, next, &mgr->passes, list) {
 		if (pass->rem_from_mgr)
 			pass->rem_from_mgr(pass->context);
@@ -300,8 +296,6 @@ void term_graph_pass_mgr(ir_graph_pass_manager_t *mgr)
 
 void term_prog_pass_mgr(ir_prog_pass_manager_t *mgr)
 {
-	ir_prog_pass_t *pass, *next;
-
 	list_for_each_entry_safe(ir_prog_pass_t, pass, next, &mgr->passes, list) {
 		if (pass->rem_from_mgr)
 			pass->rem_from_mgr(pass->context);

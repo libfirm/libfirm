@@ -90,7 +90,6 @@ static struct obstack               obst;
 static ir_graph                    *irg;
 static const arch_register_class_t *cls;
 static be_lv_t                     *lv;
-static const ir_exec_freq          *execfreqs;
 static unsigned                     n_regs;
 static unsigned                    *normal_regs;
 static int                         *congruence_classes;
@@ -218,11 +217,9 @@ static void give_penalties_for_limits(const ir_nodeset_t *live_nodes,
                                       float penalty, const unsigned* limited,
                                       ir_node *node)
 {
-	ir_nodeset_iterator_t iter;
-	unsigned              r;
-	size_t                n_allowed;
-	allocation_info_t     *info = get_allocation_info(node);
-	ir_node               *neighbor;
+	unsigned           r;
+	size_t             n_allowed;
+	allocation_info_t *info = get_allocation_info(node);
 
 	/* give penalty for all forbidden regs */
 	for (r = 0; r < n_regs; ++r) {
@@ -316,7 +313,7 @@ static void check_defs(const ir_nodeset_t *live_nodes, float weight,
  */
 static void analyze_block(ir_node *block, void *data)
 {
-	float        weight = (float)get_block_execfreq(execfreqs, block);
+	float        weight = (float)get_block_execfreq(block);
 	ir_nodeset_t live_nodes;
 	(void) data;
 
@@ -401,11 +398,9 @@ static void congruence_def(ir_nodeset_t *live_nodes, const ir_node *node)
 		node_idx          = uf_find(congruence_classes, node_idx);
 
 		for (i = 0; i < arity; ++i) {
-			ir_node               *live;
-			ir_node               *op;
-			int                    op_idx;
-			ir_nodeset_iterator_t  iter;
-			bool                   interferes = false;
+			ir_node *op;
+			int      op_idx;
+			bool     interferes = false;
 
 			if (!rbitset_is_set(&req->other_same, i))
 				continue;
@@ -476,15 +471,13 @@ static void create_congruence_class(ir_node *block, void *data)
 
 		arity = get_irn_arity(phi);
 		for (i = 0; i < arity; ++i) {
-			bool                  interferes = false;
-			ir_nodeset_iterator_t iter;
-			unsigned              r;
-			int                   old_node_idx;
-			ir_node              *live;
-			allocation_info_t    *head_info;
-			allocation_info_t    *other_info;
-			ir_node              *op     = get_Phi_pred(phi, i);
-			int                   op_idx = get_irn_idx(op);
+			bool               interferes = false;
+			unsigned           r;
+			int                old_node_idx;
+			allocation_info_t *head_info;
+			allocation_info_t *other_info;
+			ir_node           *op     = get_Phi_pred(phi, i);
+			int                op_idx = get_irn_idx(op);
 			op_idx = uf_find(congruence_classes, op_idx);
 
 			/* do we interfere with the value */
@@ -659,7 +652,7 @@ static bool try_optimistic_split(ir_node *to_split, ir_node *before,
 	from_reg        = arch_get_irn_register(to_split);
 	from_r          = arch_register_get_index(from_reg);
 	block           = get_nodes_block(before);
-	split_threshold = (float)get_block_execfreq(execfreqs, block) * SPLIT_DELTA;
+	split_threshold = (float)get_block_execfreq(block) * SPLIT_DELTA;
 
 	if (pref_delta < split_threshold*0.5)
 		return false;
@@ -770,7 +763,7 @@ static void assign_reg(const ir_node *block, ir_node *node,
 	info    = get_allocation_info(node);
 	in_node = skip_Proj(node);
 	if (req->type & arch_register_req_type_should_be_same) {
-		float weight = (float)get_block_execfreq(execfreqs, block);
+		float weight = (float)get_block_execfreq(block);
 		int   arity  = get_irn_arity(in_node);
 		int   i;
 
@@ -1560,7 +1553,7 @@ static void adapt_phi_prefs(ir_node *phi)
 			continue;
 
 		/* give bonus for already assigned register */
-		weight = (float)get_block_execfreq(execfreqs, pred_block);
+		weight = (float)get_block_execfreq(pred_block);
 		r      = arch_register_get_index(reg);
 		info->prefs[r] += weight * AFF_PHI;
 	}
@@ -1582,7 +1575,7 @@ static void propagate_phi_register(ir_node *phi, unsigned assigned_r)
 		ir_node           *pred_block = get_Block_cfgpred_block(block, i);
 		unsigned           r;
 		float              weight
-			= (float)get_block_execfreq(execfreqs, pred_block) * AFF_PHI;
+			= (float)get_block_execfreq(pred_block) * AFF_PHI;
 
 		if (info->prefs[assigned_r] >= weight)
 			continue;
@@ -1809,13 +1802,9 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 
 	/* all live-ins must have a register */
 #ifdef DEBUG_libfirm
-	{
-		ir_nodeset_iterator_t iter;
-		ir_node              *node;
-		foreach_ir_nodeset(&live_nodes, node, iter) {
-			const arch_register_t *reg = arch_get_irn_register(node);
-			assert(reg != NULL);
-		}
+	foreach_ir_nodeset(&live_nodes, node, iter) {
+		const arch_register_t *reg = arch_get_irn_register(node);
+		assert(reg != NULL);
 	}
 #endif
 
@@ -1923,7 +1912,7 @@ static void determine_block_order(void)
 		block_costs_t *cost_info;
 		ir_node *block = blocklist[--p];
 
-		float execfreq   = (float)get_block_execfreq(execfreqs, block);
+		float execfreq   = (float)get_block_execfreq(block);
 		float costs      = execfreq;
 		int   n_cfgpreds = get_Block_n_cfgpreds(block);
 		int   p2;
@@ -2070,8 +2059,7 @@ static void be_pref_alloc(ir_graph *new_irg)
 
 	obstack_init(&obst);
 
-	irg       = new_irg;
-	execfreqs = be_get_irg_exec_freq(irg);
+	irg = new_irg;
 
 	/* determine a good coloring order */
 	determine_block_order();

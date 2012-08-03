@@ -34,16 +34,29 @@
 
 #include "bearch_arm_t.h"
 
-void arm_emit_float_load_store_mode(const ir_node *node);
-void arm_emit_float_arithmetic_mode(const ir_node *node);
-void arm_emit_symconst(const ir_node *node);
-void arm_emit_source_register(const ir_node *node, int pos);
-void arm_emit_dest_register(const ir_node *node, int pos);
-void arm_emit_offset(const ir_node *node);
-void arm_emit_shift(const ir_node *node);
-void arm_emit_shifter_operand(const ir_node *node);
-void arm_emit_load_mode(const ir_node *node);
-void arm_emit_store_mode(const ir_node *node);
+/**
+ * emit assembler instructions with format string. Automatically indents
+ * instructions and adds debug comments at the end (in verbose-asm mode).
+ * Format specifiers:
+ *
+ * fmt  parameter               output
+ * ---- ----------------------  ---------------------------------------------
+ * %%                           %
+ * %r   const arch_register_t*  register
+ * %Sx  <node>                  source register x
+ * %Dx  <node>                  destination register x
+ * %O   <node>                  shifter operand
+ * %I   <node>                  symconst immediate
+ * %o   <node>                  load/store offset
+ * %C   const sym_or_tv_t*      constant
+ * %t   const ir_node*          controlflow target
+ * %m   ir_mode*                fpa mode postfix
+ * %s   const char*             string
+ * %u   unsigned int            unsigned int
+ * %d   signed int              signed int
+ * %X   signed int              signed int (hexadecimal)
+ */
+void arm_emitf(const ir_node *node, const char *format, ...);
 
 void arm_gen_routine(ir_graph *irg);
 

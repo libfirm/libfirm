@@ -60,6 +60,11 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
+typedef struct reg_info_t {
+	size_t   offset;
+	ir_node *irn;
+} reg_info_t;
+
 static const arch_register_t *sp_reg = &sparc_registers[REG_SP];
 static const arch_register_t *fp_reg = &sparc_registers[REG_FRAME_POINTER];
 static calling_convention_t  *current_cconv = NULL;
@@ -70,16 +75,11 @@ static ir_mode               *mode_fp;
 static ir_mode               *mode_fp2;
 //static ir_mode               *mode_fp4;
 static pmap                  *node_to_stack;
-static size_t                 start_mem_offset;
-static ir_node               *start_mem;
-static size_t                 start_g0_offset;
-static ir_node               *start_g0;
-static size_t                 start_g7_offset;
-static ir_node               *start_g7;
-static size_t                 start_sp_offset;
-static ir_node               *start_sp;
-static size_t                 start_fp_offset;
-static ir_node               *start_fp;
+static reg_info_t             start_mem;
+static reg_info_t             start_g0;
+static reg_info_t             start_g7;
+static reg_info_t             start_sp;
+static reg_info_t             start_fp;
 static ir_node               *frame_base;
 static size_t                 start_params_offset;
 static size_t                 start_callee_saves_offset;
@@ -482,25 +482,26 @@ static ir_node *gen_helper_binopx(ir_node *node, match_flags_t match_flags,
 
 }
 
+static ir_node *get_reg(ir_graph *const irg, reg_info_t *const reg)
+{
+	if (!reg->irn) {
+		/* this is already the transformed start node */
+		ir_node *const start = get_irg_start(irg);
+		assert(is_sparc_Start(start));
+		arch_register_class_t const *const cls = arch_get_irn_register_req_out(start, reg->offset)->cls;
+		reg->irn = new_r_Proj(start, cls ? cls->mode : mode_M, reg->offset);
+	}
+	return reg->irn;
+}
+
 static ir_node *get_g0(ir_graph *irg)
 {
-	if (start_g0 == NULL) {
-		/* this is already the transformed start node */
-		ir_node *start = get_irg_start(irg);
-		assert(is_sparc_Start(start));
-		start_g0 = new_r_Proj(start, mode_gp, start_g0_offset);
-	}
-	return start_g0;
+	return get_reg(irg, &start_g0);
 }
 
 static ir_node *get_g7(ir_graph *irg)
 {
-	if (start_g7 == NULL) {
-		ir_node *start = get_irg_start(irg);
-		assert(is_sparc_Start(start));
-		start_g7 = new_r_Proj(start, mode_gp, start_g7_offset);
-	}
-	return start_g7;
+	return get_reg(irg, &start_g7);
 }
 
 static ir_node *make_tls_offset(dbg_info *dbgi, ir_node *block,
@@ -663,7 +664,7 @@ static ir_node *gen_Proj_AddCC_t(ir_node *node)
 	case pn_sparc_AddCC_t_flags:
 		return new_r_Proj(new_pred, mode_flags, pn_sparc_AddCC_flags);
 	default:
-		panic("Invalid AddCC_t proj found");
+		panic("Invalid proj found");
 	}
 }
 
@@ -710,7 +711,7 @@ static ir_node *gen_Proj_SubCC_t(ir_node *node)
 	case pn_sparc_SubCC_t_flags:
 		return new_r_Proj(new_pred, mode_flags, pn_sparc_SubCC_flags);
 	default:
-		panic("Invalid SubCC_t proj found");
+		panic("Invalid proj found");
 	}
 }
 
@@ -777,7 +778,7 @@ static ir_node *gen_Load(ir_node *node)
 	address_t address;
 
 	if (get_Load_unaligned(node) == align_non_aligned) {
-		panic("sparc: transformation of unaligned Loads not implemented yet");
+		panic("transformation of unaligned Loads not implemented yet");
 	}
 
 	if (mode_is_float(mode)) {
@@ -820,7 +821,7 @@ static ir_node *gen_Store(ir_node *node)
 	address_t address;
 
 	if (get_Store_unaligned(node) == align_non_aligned) {
-		panic("sparc: transformation of unaligned Stores not implemented yet");
+		panic("transformation of unaligned Stores not implemented yet");
 	}
 
 	if (mode_is_float(mode)) {
@@ -1054,7 +1055,7 @@ static ir_node *gen_Shl(ir_node *node)
 {
 	ir_mode *mode = get_irn_mode(node);
 	if (get_mode_modulo_shift(mode) != 32)
-		panic("modulo_shift!=32 not supported by sparc backend");
+		panic("modulo_shift!=32 not supported");
 	return gen_helper_binop(node, MATCH_NONE, new_bd_sparc_Sll_reg, new_bd_sparc_Sll_imm);
 }
 
@@ -1062,7 +1063,7 @@ static ir_node *gen_Shr(ir_node *node)
 {
 	ir_mode *mode = get_irn_mode(node);
 	if (get_mode_modulo_shift(mode) != 32)
-		panic("modulo_shift!=32 not supported by sparc backend");
+		panic("modulo_shift!=32 not supported");
 	return gen_helper_binop(node, MATCH_NONE, new_bd_sparc_Srl_reg, new_bd_sparc_Srl_imm);
 }
 
@@ -1070,7 +1071,7 @@ static ir_node *gen_Shrs(ir_node *node)
 {
 	ir_mode *mode = get_irn_mode(node);
 	if (get_mode_modulo_shift(mode) != 32)
-		panic("modulo_shift!=32 not supported by sparc backend");
+		panic("modulo_shift!=32 not supported");
 	return gen_helper_binop(node, MATCH_NONE, new_bd_sparc_Sra_reg, new_bd_sparc_Sra_imm);
 }
 
@@ -1494,6 +1495,15 @@ static ir_node *gen_Unknown(ir_node *node)
 	panic("Unexpected Unknown mode");
 }
 
+static void make_start_out(reg_info_t *const info, struct obstack *const obst, ir_node *const start, size_t const offset, arch_register_t const *const reg, arch_register_req_type_t const flags)
+{
+	info->offset = offset;
+	info->irn    = NULL;
+	arch_register_req_t const *const req = be_create_reg_req(obst, reg, arch_register_req_type_ignore | flags);
+	arch_set_irn_register_req_out(start, offset, req);
+	arch_set_irn_register_out(start, offset, reg);
+}
+
 /**
  * transform the start node to the prolog code
  */
@@ -1506,14 +1516,11 @@ static ir_node *gen_Start(ir_node *node)
 	ir_node   *new_block     = be_transform_node(block);
 	dbg_info  *dbgi          = get_irn_dbg_info(node);
 	struct obstack *obst     = be_get_be_obst(irg);
-	const arch_register_req_t *req;
 	size_t     n_outs;
 	ir_node   *start;
 	size_t     i;
-	size_t     o;
 
 	/* start building list of start constraints */
-	assert(obstack_object_size(obst) == 0);
 
 	/* calculate number of outputs */
 	n_outs = 4; /* memory, g0, g7, sp */
@@ -1528,43 +1535,25 @@ static ir_node *gen_Start(ir_node *node)
 
 	start = new_bd_sparc_Start(dbgi, new_block, n_outs);
 
-	o = 0;
+	size_t o = 0;
 
 	/* first output is memory */
-	start_mem_offset = o;
+	start_mem.offset = o;
+	start_mem.irn    = NULL;
 	arch_set_irn_register_req_out(start, o, arch_no_register_req);
 	++o;
 
 	/* the zero register */
-	start_g0_offset = o;
-	req = be_create_reg_req(obst, &sparc_registers[REG_G0],
-	                        arch_register_req_type_ignore);
-	arch_set_irn_register_req_out(start, o, req);
-	arch_set_irn_register_out(start, o, &sparc_registers[REG_G0]);
-	++o;
+	make_start_out(&start_g0, obst, start, o++, &sparc_registers[REG_G0], arch_register_req_type_none);
 
 	/* g7 is used for TLS data */
-	start_g7_offset = o;
-	req = be_create_reg_req(obst, &sparc_registers[REG_G7],
-	                        arch_register_req_type_ignore);
-	arch_set_irn_register_req_out(start, o, req);
-	arch_set_irn_register_out(start, o, &sparc_registers[REG_G7]);
-	++o;
+	make_start_out(&start_g7, obst, start, o++, &sparc_registers[REG_G7], arch_register_req_type_none);
 
 	/* we need an output for the stackpointer */
-	start_sp_offset = o;
-	req = be_create_reg_req(obst, sp_reg,
-			arch_register_req_type_produces_sp | arch_register_req_type_ignore);
-	arch_set_irn_register_req_out(start, o, req);
-	arch_set_irn_register_out(start, o, sp_reg);
-	++o;
+	make_start_out(&start_sp, obst, start, o++, sp_reg, arch_register_req_type_produces_sp);
 
 	if (!current_cconv->omit_fp) {
-		start_fp_offset = o;
-		req = be_create_reg_req(obst, fp_reg, arch_register_req_type_ignore);
-		arch_set_irn_register_req_out(start, o, req);
-		arch_set_irn_register_out(start, o, fp_reg);
-		++o;
+		make_start_out(&start_fp, obst, start, o++, fp_reg, arch_register_req_type_none);
 	}
 
 	/* function parameters in registers */
@@ -1604,29 +1593,17 @@ static ir_node *gen_Start(ir_node *node)
 
 static ir_node *get_initial_sp(ir_graph *irg)
 {
-	if (start_sp == NULL) {
-		ir_node *start = get_irg_start(irg);
-		start_sp = new_r_Proj(start, mode_gp, start_sp_offset);
-	}
-	return start_sp;
+	return get_reg(irg, &start_sp);
 }
 
 static ir_node *get_initial_fp(ir_graph *irg)
 {
-	if (start_fp == NULL) {
-		ir_node *start = get_irg_start(irg);
-		start_fp = new_r_Proj(start, mode_gp, start_fp_offset);
-	}
-	return start_fp;
+	return get_reg(irg, &start_fp);
 }
 
 static ir_node *get_initial_mem(ir_graph *irg)
 {
-	if (start_mem == NULL) {
-		ir_node *start = get_irg_start(irg);
-		start_mem = new_r_Proj(start, mode_M, start_mem_offset);
-	}
-	return start_mem;
+	return get_reg(irg, &start_mem);
 }
 
 static ir_node *get_stack_pointer_for(ir_node *node)
@@ -1972,12 +1949,16 @@ static ir_node *gen_Call(ir_node *node)
 		}
 		assert(result_info->req1 == NULL);
 	}
+	const unsigned *allocatable_regs = be_birg_from_irg(irg)->allocatable_regs;
 	for (i = 0; i < N_SPARC_REGISTERS; ++i) {
 		const arch_register_t *reg;
 		if (!rbitset_is_set(cconv->caller_saves, i))
 			continue;
 		reg = &sparc_registers[i];
-		arch_set_irn_register_req_out(res, o++, reg->single_req);
+		arch_set_irn_register_req_out(res, o, reg->single_req);
+		if (!rbitset_is_set(allocatable_regs, reg->global_index))
+			arch_set_irn_register_out(res, o, reg);
+		++o;
 	}
 	assert(o == out_arity);
 
@@ -2070,10 +2051,10 @@ static ir_node *gen_Proj_Alloc(ir_node *node)
 	}
 	case pn_Alloc_X_regular:
 	case pn_Alloc_X_except:
-		panic("sparc backend: exception output of alloc not supported (at %+F)",
+		panic("exception output of alloc not supported (at %+F)",
 		      node);
 	}
-	panic("sparc backend: invalid Proj->Alloc");
+	panic("invalid Proj->Alloc");
 }
 
 static ir_node *gen_Free(ir_node *node)
@@ -2246,15 +2227,6 @@ static ir_node *gen_Proj_Store(ir_node *node)
 }
 
 /**
- * Transform the Projs from a Cmp.
- */
-static ir_node *gen_Proj_Cmp(ir_node *node)
-{
-	(void) node;
-	panic("not implemented");
-}
-
-/**
  * transform Projs from a Div
  */
 static ir_node *gen_Proj_Div(ir_node *node)
@@ -2269,7 +2241,7 @@ static ir_node *gen_Proj_Div(ir_node *node)
 	} else if (is_sparc_fdiv(new_pred)) {
 		res_mode = get_Div_resmode(pred);
 	} else {
-		panic("sparc backend: Div transformed to something unexpected: %+F",
+		panic("Div transformed to something unexpected: %+F",
 		      new_pred);
 	}
 	assert((int)pn_sparc_SDiv_res == (int)pn_sparc_UDiv_res);
@@ -2454,8 +2426,6 @@ static ir_node *gen_Proj(ir_node *node)
 		return gen_Proj_Load(node);
 	case iro_Call:
 		return gen_Proj_Call(node);
-	case iro_Cmp:
-		return gen_Proj_Cmp(node);
 	case iro_Switch:
 	case iro_Cond:
 		return be_duplicate_node(node);
@@ -2559,11 +2529,6 @@ void sparc_transform_graph(ir_graph *irg)
 	mode_flags = sparc_reg_classes[CLASS_sparc_flags_class].mode;
 	assert(sparc_reg_classes[CLASS_sparc_fpflags_class].mode == mode_flags);
 
-	start_mem  = NULL;
-	start_g0   = NULL;
-	start_g7   = NULL;
-	start_sp   = NULL;
-	start_fp   = NULL;
 	frame_base = NULL;
 
 	stackorder = be_collect_stacknodes(irg);

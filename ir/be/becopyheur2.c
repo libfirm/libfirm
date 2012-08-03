@@ -399,16 +399,12 @@ static void single_color_cost(co2_t *env, co2_irn_t *ci, col_t col, col_cost_pai
 
 static void reject_coloring(struct list_head *h)
 {
-	co2_irn_t *pos;
-
 	list_for_each_entry(co2_irn_t, pos, h, changed_list)
 		pos->tmp_fixed = 0;
 }
 
 static void materialize_coloring(struct list_head *h)
 {
-	co2_irn_t *pos;
-
 	list_for_each_entry(co2_irn_t, pos, h, changed_list) {
 		pos->orig_col  = pos->tmp_col;
 		pos->tmp_fixed = 0;
@@ -819,7 +815,6 @@ static void populate_cloud(co2_t *env, co2_cloud_t *cloud, affinity_node_t *a, i
 static co2_cloud_t *new_cloud(co2_t *env, affinity_node_t *a)
 {
 	co2_cloud_t *cloud = OALLOC(&env->obst, co2_cloud_t);
-	co2_cloud_irn_t *ci;
 	int i;
 
 	DBG((env->dbg, LEVEL_2, "new cloud with %+F\n", a->irn));
@@ -1029,7 +1024,6 @@ static void writeback_colors(co2_t *env)
 
 static void process(co2_t *env)
 {
-	co2_cloud_t *pos;
 	co2_cloud_t **clouds;
 	int n_clouds;
 	int i;

@@ -48,6 +48,8 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 typedef ir_node* (*new_binop_func)(dbg_info *dbgi, ir_node *block,
                                    ir_node *left, ir_node *right);
 
+static ir_mode *gp_regs_mode;
+
 static ir_node *transform_binop(ir_node *node, new_binop_func new_func)
 {
 	ir_node  *block     = get_nodes_block(node);
@@ -87,7 +89,7 @@ static ir_node *gen_Shl(ir_node *node)
 {
 	ir_mode *mode = get_irn_mode(node);
 	if (get_mode_modulo_shift(mode) != 32)
-		panic("modulo shift!=32 not supported by TEMPLATE backend");
+		panic("modulo shift!=32 not supported");
 	return transform_binop(node, new_bd_TEMPLATE_Shl);
 }
 
@@ -95,7 +97,7 @@ static ir_node *gen_Shr(ir_node *node)
 {
 	ir_mode *mode = get_irn_mode(node);
 	if (get_mode_modulo_shift(mode) != 32)
-		panic("modulo shift!=32 not supported by TEMPLATE backend");
+		panic("modulo shift!=32 not supported");
 	return transform_binop(node, new_bd_TEMPLATE_Shr);
 }
 
@@ -216,6 +218,28 @@ static ir_node *gen_Jmp(ir_node *node)
 	return new_bd_TEMPLATE_Jmp(dbgi, new_block);
 }
 
+static ir_node *gen_Start(ir_node *node)
+{
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+
+	return new_bd_TEMPLATE_Start(dbgi, new_block);
+}
+
+static ir_node *gen_Return(ir_node *node)
+{
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	ir_node  *mem       = get_Return_mem(node);
+	ir_node  *new_mem   = be_transform_node(mem);
+	ir_graph *irg       = get_irn_irg(node);
+	ir_node  *sp        = get_irg_frame(irg);
+
+	return new_bd_TEMPLATE_Return(dbgi, new_block, sp, new_mem);
+}
+
 /**
  * returns true if mode should be stored in a general purpose register
  */
@@ -251,26 +275,62 @@ static ir_node *gen_Phi(ir_node *node)
 	return phi;
 }
 
+static ir_node *gen_Proj_Start(ir_node *node)
+{
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	ir_node  *start     = get_Proj_pred(node);
+	ir_node  *new_start = be_transform_node(start);
+	long      pn        = get_Proj_proj(node);
+
+	switch ((pn_Start) pn) {
+	case pn_Start_X_initial_exec:
+		return new_bd_TEMPLATE_Jmp(dbgi, new_block);
+	case pn_Start_M:
+		return new_rd_Proj(dbgi, new_start, mode_M, pn_TEMPLATE_Start_M);
+	case pn_Start_T_args:
+		return new_r_Bad(get_irn_irg(block), mode_T);
+	case pn_Start_P_frame_base:
+		return new_rd_Proj(dbgi, new_start, gp_regs_mode, pn_TEMPLATE_Start_stack);
+	}
+	panic("unexpected Start proj %ld\n", pn);
+}
+
+static ir_node *gen_Proj(ir_node *node)
+{
+	ir_node *pred = get_Proj_pred(node);
+
+	switch (get_irn_opcode(pred)) {
+	case iro_Start: return gen_Proj_Start(node);
+	default:
+		panic("code selection can't handle Proj after %+F\n", pred);
+	}
+}
+
 static void TEMPLATE_register_transformers(void)
 {
 	be_start_transform_setup();
 
-	be_set_transform_function(op_Add,   gen_Add);
-	be_set_transform_function(op_And,   gen_And);
-	be_set_transform_function(op_Const, gen_Const);
-	be_set_transform_function(op_Div,   gen_Div);
-	be_set_transform_function(op_Eor,   gen_Eor);
-	be_set_transform_function(op_Jmp,   gen_Jmp);
-	be_set_transform_function(op_Load,  gen_Load);
-	be_set_transform_function(op_Minus, gen_Minus);
-	be_set_transform_function(op_Mul,   gen_Mul);
-	be_set_transform_function(op_Not,   gen_Not);
-	be_set_transform_function(op_Or,    gen_Or);
-	be_set_transform_function(op_Phi,   gen_Phi);
-	be_set_transform_function(op_Shl,   gen_Shl);
-	be_set_transform_function(op_Shr,   gen_Shr);
-	be_set_transform_function(op_Store, gen_Store);
-	be_set_transform_function(op_Sub,   gen_Sub);
+	be_set_transform_function(op_Add,    gen_Add);
+	be_set_transform_function(op_And,    gen_And);
+	be_set_transform_function(op_Const,  gen_Const);
+	be_set_transform_function(op_Div,    gen_Div);
+	be_set_transform_function(op_Eor,    gen_Eor);
+	be_set_transform_function(op_Jmp,    gen_Jmp);
+	be_set_transform_function(op_Load,   gen_Load);
+	be_set_transform_function(op_Minus,  gen_Minus);
+	be_set_transform_function(op_Mul,    gen_Mul);
+	be_set_transform_function(op_Not,    gen_Not);
+	be_set_transform_function(op_Or,     gen_Or);
+	be_set_transform_function(op_Proj,   gen_Proj);
+	be_set_transform_function(op_Phi,    gen_Phi);
+	be_set_transform_function(op_Return, gen_Return);
+	be_set_transform_function(op_Shl,    gen_Shl);
+	be_set_transform_function(op_Shr,    gen_Shr);
+	be_set_transform_function(op_Start,  gen_Start);
+	be_set_transform_function(op_Store,  gen_Store);
+	be_set_transform_function(op_Sub,    gen_Sub);
 }
 
 /**
@@ -278,6 +338,8 @@ static void TEMPLATE_register_transformers(void)
  */
 void TEMPLATE_transform_graph(ir_graph *irg)
 {
+	gp_regs_mode = TEMPLATE_reg_classes[CLASS_TEMPLATE_gp].mode;
+
 	TEMPLATE_register_transformers();
 	be_transform_graph(irg, NULL);
 }

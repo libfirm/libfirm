@@ -1051,7 +1051,7 @@ static void dummy_set_frame_offset(ir_node *node, int bias)
 {
 	(void) node;
 	(void) bias;
-	panic("dummy_set_frame_offset() should not be called");
+	panic("should not be called");
 }
 
 static int dummy_get_sp_bias(const ir_node *node)

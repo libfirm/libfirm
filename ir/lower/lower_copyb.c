@@ -276,7 +276,6 @@ void lower_CopyB(ir_graph *irg, unsigned max_small_sz, unsigned min_large_sz,
 {
 	const backend_params *bparams = be_get_backend_param();
 	walk_env_t            env;
-	entry_t              *entry;
 
 	assert(max_small_sz < min_large_sz && "CopyB size ranges must not overlap");
 

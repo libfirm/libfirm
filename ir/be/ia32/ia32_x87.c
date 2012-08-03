@@ -1558,7 +1558,7 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 		case 0: dst = op_ia32_FucomFnstsw;   break;
 		case 1: dst = op_ia32_FucompFnstsw;  break;
 		case 2: dst = op_ia32_FucomppFnstsw; break;
-		default: panic("invalid popcount in sim_Fucom");
+		default: panic("invalid popcount");
 		}
 
 		for (i = 0; i < pops; ++i) {
@@ -1573,10 +1573,10 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 			x87_pop(state);
 			x87_create_fpop(state, sched_next(n), 1);
 			break;
-		default: panic("invalid popcount in sim_Fucom");
+		default: panic("invalid popcount");
 		}
 	} else {
-		panic("invalid operation %+F in sim_FucomFnstsw", n);
+		panic("invalid operation %+F", n);
 	}
 
 	x87_patch_insn(n, dst);
@@ -1793,7 +1793,7 @@ static int sim_Copy(x87_state *state, ir_node *n)
 
 		if (out_idx >= 0 && out_idx != op1_idx) {
 			/* Matze: out already on stack? how can this happen? */
-			panic("invalid stack state in x87 simulator");
+			panic("invalid stack state");
 
 #if 0
 			/* op1 must be killed and placed where out is */

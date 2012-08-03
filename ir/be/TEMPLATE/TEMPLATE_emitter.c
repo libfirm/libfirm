@@ -46,7 +46,7 @@
 #include "TEMPLATE_nodes_attr.h"
 #include "TEMPLATE_new_nodes.h"
 
-void TEMPLATE_emit_immediate(const ir_node *node)
+static void TEMPLATE_emit_immediate(const ir_node *node)
 {
 	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
 	be_emit_irprintf("%T", attr->value);
@@ -57,13 +57,13 @@ static void emit_register(const arch_register_t *reg)
 	be_emit_string(arch_register_get_name(reg));
 }
 
-void TEMPLATE_emit_source_register(const ir_node *node, int pos)
+static void TEMPLATE_emit_source_register(const ir_node *node, int pos)
 {
 	const arch_register_t *reg = arch_get_irn_register_in(node, pos);
 	emit_register(reg);
 }
 
-void TEMPLATE_emit_dest_register(const ir_node *node, int pos)
+static void TEMPLATE_emit_dest_register(const ir_node *node, int pos)
 {
 	const arch_register_t *reg = arch_get_irn_register_out(node, pos);
 	emit_register(reg);
@@ -78,16 +78,96 @@ static void TEMPLATE_emit_cfop_target(const ir_node *node)
 	be_gas_emit_block_name(block);
 }
 
+void TEMPLATE_emitf(const ir_node *node, const char *format, ...)
+{
+	va_list ap;
+	va_start(ap, format);
+	be_emit_char('\t');
+	for (;;) {
+		const char *start = format;
+		while (*format != '%' && *format != '\0')
+			++format;
+		be_emit_string_len(start, format-start);
+		if (*format == '\0')
+			break;
+		++format;
 
+		switch (*format++) {
+		case '%':
+			be_emit_char('%');
+			break;
+
+		case 'S': {
+			if (*format < '0' || '9' <= *format)
+				goto unknown;
+			unsigned const pos = *format++ - '0';
+			TEMPLATE_emit_source_register(node, pos);
+			break;
+		}
+
+		case 'D': {
+			if (*format < '0' || '9' <= *format)
+				goto unknown;
+			unsigned const pos = *format++ - '0';
+			TEMPLATE_emit_dest_register(node, pos);
+			break;
+		}
+
+		case 'I':
+			TEMPLATE_emit_immediate(node);
+			break;
+
+		case 'X': {
+			int num = va_arg(ap, int);
+			be_emit_irprintf("%X", num);
+			break;
+		}
+
+		case 'u': {
+			unsigned num = va_arg(ap, unsigned);
+			be_emit_irprintf("%u", num);
+			break;
+		}
+
+		case 'd': {
+			int num = va_arg(ap, int);
+			be_emit_irprintf("%d", num);
+			break;
+		}
+
+		case 's': {
+			const char *string = va_arg(ap, const char *);
+			be_emit_string(string);
+			break;
+		}
+
+		case 'L': {
+			TEMPLATE_emit_cfop_target(node);
+			break;
+		}
+
+		case '\n':
+			be_emit_char('\n');
+			be_emit_write_line();
+			be_emit_char('\t');
+			break;
+
+		default:
+unknown:
+			panic("unknown format conversion");
+		}
+	}
+	va_end(ap);
+	be_emit_finish_line_gas(node);
+
+}
 
 /**
  * Emits code for a unconditional jump.
  */
 static void emit_TEMPLATE_Jmp(const ir_node *node)
 {
-	be_emit_cstring("\tjmp ");
-	TEMPLATE_emit_cfop_target(node);
-	be_emit_finish_line_gas(node);
+	TEMPLATE_emitf(node, "jmp %L");
 }
 
 static void emit_be_IncSP(const ir_node *node)
@@ -98,17 +178,13 @@ static void emit_be_IncSP(const ir_node *node)
 		return;
 
 	/* downwards growing stack */
-	if (offset > 0) {
-		be_emit_cstring("\tsub ");
-	} else {
-		be_emit_cstring("\tadd ");
+	const char *op = "add";
+	if (offset < 0) {
+		op = "sub";
 		offset = -offset;
 	}
 
-	TEMPLATE_emit_source_register(node, 0);
-	be_emit_irprintf(", %d, ", offset);
-	TEMPLATE_emit_dest_register(node, 0);
-	be_emit_finish_line_gas(node);
+	TEMPLATE_emitf(node, "%s %S0, %d, %D0", op, offset);
 }
 
 static void emit_be_Start(const ir_node *node)
@@ -121,11 +197,7 @@ static void emit_be_Start(const ir_node *node)
 
 	/* allocate stackframe */
 	if (size > 0) {
-		be_emit_cstring("\tsub ");
-		emit_register(&TEMPLATE_registers[REG_SP]);
-		be_emit_irprintf(", %u, ", size);
-		emit_register(&TEMPLATE_registers[REG_SP]);
-		be_emit_finish_line_gas(node);
+		TEMPLATE_emitf(node, "sub %%sp, %u, %%sp", size);
 	}
 }
 
@@ -139,16 +211,11 @@ static void emit_be_Return(const ir_node *node)
 
 	/* deallocate stackframe */
 	if (size > 0) {
-		be_emit_cstring("\tadd ");
-		emit_register(&TEMPLATE_registers[REG_SP]);
-		be_emit_irprintf(", %u, ", size);
-		emit_register(&TEMPLATE_registers[REG_SP]);
-		be_emit_finish_line_gas(node);
+		TEMPLATE_emitf(node, "add %%sp, %u, %%sp", size);
 	}
 
 	/* return */
-	be_emit_cstring("\tret");
-	be_emit_finish_line_gas(node);
+	TEMPLATE_emitf(node, "ret");
 }
 
 static void emit_nothing(const ir_node *node)

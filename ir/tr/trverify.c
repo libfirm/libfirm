@@ -193,7 +193,7 @@ static bool initializer_constant_on_wrong_irg(const ir_initializer_t *initialize
 		return fine;
 	}
 	}
-	panic("invalid initializer in initializer_on_wrong_irg");
+	panic("invalid initializer");
 }
 
 static bool constants_on_wrong_irg(const ir_entity *ent)

@@ -83,7 +83,8 @@ typedef struct sparc_jmp_cond_attr_t sparc_jmp_cond_attr_t;
 struct sparc_jmp_cond_attr_t {
 	sparc_attr_t base;    /**< generic attribute */
 	ir_relation  relation;
-	bool         is_unsigned : 1;
+	bool         is_unsigned      : 1;
+	bool         annul_delay_slot : 1;
 };
 
 /**

@@ -32,7 +32,6 @@
 #include "irgmod.h"
 #include "irgwalk.h"
 #include "irdump.h"
-#include "irprofile.h"
 
 #include "bearch.h"
 #include "belower.h"
@@ -45,6 +44,7 @@
 
 #include "lc_opts.h"
 #include "irtools.h"
+#include "execfreq_t.h"
 #include "statev.h"
 
 #define PERMI_SIZE 5
@@ -646,15 +646,18 @@ static void handle_small_ops(void)
 
 static void emit_stat_events(void)
 {
-	ir_node *bb    = get_nodes_block(perm);
-	unsigned count = ir_profile_get_block_execcount(bb);
-	unsigned i;
+	ir_node  *block = get_nodes_block(perm);
+	ir_graph *irg   = get_irn_irg(block);
+	ir_execfreq_int_factors ef_factors;
+
+	ir_calculate_execfreq_int_factors(&ef_factors, irg);
+	int count = get_block_execfreq_int(&ef_factors, block);
 
 	stat_ev_ctx_push_fmt("perm_stats", "%ld", get_irn_node_nr(perm));
-	stat_ev_int("perm_block_nr", get_irn_node_nr(bb));
+	stat_ev_int("perm_block_nr", get_irn_node_nr(block));
 	stat_ev_int("perm_exec_count", count);
 
-	for (i = 0; i < num_ops; ++i) {
+	for (unsigned i = 0; i < num_ops; ++i) {
 		if (ops[i].type == PERM_OP_CYCLE)
 			stat_ev_int("perm_cycle_size", ops[i].length);
 		else if (ops[i].type == PERM_OP_CHAIN)

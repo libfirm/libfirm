@@ -267,7 +267,6 @@ static int cmp_irn_opcode(const ir_node *a, const ir_node *b)
  */
 static void check_partition(const partition_t *T)
 {
-	node_t   *node;
 	unsigned n = 0;
 
 	list_for_each_entry(node_t, node, &T->Leader, node_list) {
@@ -290,7 +289,6 @@ static void check_partition(const partition_t *T)
  */
 static void check_opcode(const partition_t *Z)
 {
-	node_t        *node;
 	const ir_node *repr = NULL;
 
 	list_for_each_entry(node_t, node, &Z->Leader, node_list) {
@@ -308,7 +306,6 @@ static void check_all_partitions(environment_t *env)
 {
 #ifdef DEBUG_libfirm
 	partition_t *P;
-	node_t      *node;
 
 	for (P = env->dbg_list; P != NULL; P = P->dbg_next) {
 		check_partition(P);
@@ -367,7 +364,6 @@ static inline lattice_elem_t get_partition_type(const partition_t *X);
  */
 static void dump_partition(const char *msg, const partition_t *part)
 {
-	const node_t   *node;
 	int            first = 1;
 	lattice_elem_t type = get_partition_type(part);
 
@@ -488,7 +484,7 @@ static void verify_type(const lattice_elem_t old_type, node_t *node)
 		/* bottom reached */
 		return;
 	}
-	panic("combo: wrong translation from %+F to %+F on node %+F", old_type, node->type, node->node);
+	panic("wrong translation from %+F to %+F on node %+F", old_type, node->type, node->node);
 }  /* verify_type */
 
 #else
@@ -1177,7 +1173,7 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env)
 	partition_t *X_prime;
 	list_head   tmp;
 	step_env    senv[2];
-	node_t      *g, *h, *node, *t;
+	node_t      *g, *h;
 	int         max_input, transitions, winner, shf;
 	unsigned    n;
 	DEBUG_ONLY(static int run = 0;)
@@ -1197,7 +1193,7 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env)
 
 	/* Remove gg from X.Leader and put into g */
 	g = NULL;
-	for (node = gg; node != NULL; node = node->next) {
+	for (node_t *node = gg; node != NULL; node = node->next) {
 		assert(node->part == X);
 		assert(node->is_follower == 0);
 
@@ -1268,7 +1264,7 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env)
 	X_prime   = new_partition(env);
 	max_input = 0;
 	n         = 0;
-	for (node = senv[winner].walked; node != NULL; node = node->race_next) {
+	for (node_t *node = senv[winner].walked; node != NULL; node = node->race_next) {
 		list_del(&node->node_list);
 		node->part = X_prime;
 		if (node->is_follower) {
@@ -1397,7 +1393,7 @@ static int type_is_neither_top_nor_const(const lattice_elem_t type)
  */
 static void collect_touched(list_head *list, int idx, environment_t *env)
 {
-	node_t  *x, *y;
+	node_t *y;
 	int     end_idx = env->end_idx;
 
 	list_for_each_entry(node_t, x, list, node_list) {
@@ -1463,7 +1459,7 @@ static void collect_touched(list_head *list, int idx, environment_t *env)
  */
 static void collect_commutative_touched(list_head *list, environment_t *env)
 {
-	node_t  *x, *y;
+	node_t *y;
 
 	list_for_each_entry(node_t, x, list, node_list) {
 		int num_edges;
@@ -1644,7 +1640,7 @@ static void cause_splits(environment_t *env)
 static partition_t *split_by_what(partition_t *X, what_func What,
                                   partition_t **P, environment_t *env)
 {
-	node_t          *x, *S;
+	node_t          *S;
 	listmap_t       map;
 	listmap_entry_t *iter;
 	partition_t     *R;
@@ -2911,8 +2907,6 @@ static void propagate(environment_t *env)
 			x->on_fallen = 0;
 
 		if (old_type_was_T_or_C) {
-			node_t *y, *tmp;
-
 			/* check if some nodes will make the leader -> follower transition */
 			list_for_each_entry_safe(node_t, y, tmp, &Y->Leader, node_list) {
 				if (y->type.tv != tarval_top && ! is_con(y->type)) {

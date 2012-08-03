@@ -32,31 +32,23 @@
 /**
  * @ingroup irana
  * @defgroup execfreq Basic Block Execution Frequency
+ *
+ * Execution frequencies specify how often a basic block is expected to get
+ * executed during execution of a function.
+ * For example the start block has a natural execution frequency of 1.0, the
+ * two branches of a simple if 0.5, nodes in a simple loop 10.0 ...
+ * Execution frequencies can either get estimated based on the structure of the
+ * control flow graph or can be calculated based on profile information.
  * @{
  */
 
-/** Creates execfreq structure (to be used with set_execfreq) */
-FIRM_API ir_exec_freq *create_execfreq(ir_graph *irg);
-
-/**
- * Sets execution frequency of a basic block
+/** Estimates execution frequency of a graph.
+ * You can query the frequencies with get_block_execfreq().
  */
-FIRM_API void set_execfreq(ir_exec_freq *ef, const ir_node *block, double freq);
-
-/** Creates execfreq structure and initialize with estimated frequencies. */
-FIRM_API ir_exec_freq *compute_execfreq(ir_graph *irg, double loop_weight);
-
-/** Frees memory occupied by execution frequency structure @p ef. */
-FIRM_API void free_execfreq(ir_exec_freq *ef);
+FIRM_API void ir_estimate_execfreq(ir_graph *irg);
 
 /** Returns execution frequency of block @p block. */
-FIRM_API double get_block_execfreq(const ir_exec_freq *ef,
-                                   const ir_node *block);
-
-/** Returns execution frequency of block @p block, scaled into the range
- * of an unsigned long type. */
-FIRM_API unsigned long get_block_execfreq_ulong(const ir_exec_freq *ef,
-                                                const ir_node *block);
+FIRM_API double get_block_execfreq(const ir_node *block);
 
 /** @} */
 

@@ -33,9 +33,22 @@
 
 #include "bearch_TEMPLATE_t.h"
 
-void TEMPLATE_emit_source_register(const ir_node *node, int pos);
-void TEMPLATE_emit_dest_register(const ir_node *node, int pos);
-void TEMPLATE_emit_immediate(const ir_node *node);
+/**
+ * emit assembler instructions with format string. Automatically indents
+ * instructions and adds debug comments at the end (in verbose-asm mode).
+ * Format specifiers:
+ *
+ * fmt  parameter               output
+ * ---- ----------------------  ---------------------------------------------
+ * %%                           %
+ * %r   const arch_register_t*  register
+ * %Sx  <node>                  source register x
+ * %Dx  <node>                  destination register x
+ * %O   <node>                  shifter operand
+ * %I   <node>                  immediate
+ * %L   <node>                  target label
+ */
+void TEMPLATE_emitf(const ir_node *node, const char *format, ...);
 
 void TEMPLATE_emit_routine(ir_graph *irg);
 

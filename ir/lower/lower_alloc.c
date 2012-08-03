@@ -179,7 +179,7 @@ void lower_alloc(ir_graph *irg, unsigned new_stack_alignment, bool lower_consts,
                  long new_addr_delta)
 {
 	if (!is_po2(stack_alignment))
-		panic("lower_alloc only supports stack alignments that are a power of 2");
+		panic("stack alignment not a power of 2");
 	addr_delta           = new_addr_delta;
 	stack_alignment      = new_stack_alignment;
 	lower_constant_sizes = lower_consts;

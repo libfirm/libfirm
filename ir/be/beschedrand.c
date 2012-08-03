@@ -37,8 +37,6 @@
  */
 static ir_node *random_select(void *block_env, ir_nodeset_t *ready_set)
 {
-	ir_nodeset_iterator_t iter;
-	ir_node          *irn      = NULL;
 	int only_branches_left = 1;
 	(void)block_env;
 
@@ -50,24 +48,26 @@ static ir_node *random_select(void *block_env, ir_nodeset_t *ready_set)
 		}
 	}
 
+	ir_node *rand_node = NULL;
 	if (only_branches_left) {
 		/* at last: schedule branches */
-		irn = ir_nodeset_first(ready_set);
+		rand_node = ir_nodeset_first(ready_set);
 	} else {
 		do {
 			/* take 1 random node */
 			int n = rand() % ir_nodeset_size(ready_set);
 			int i = 0;
 			foreach_ir_nodeset(ready_set, irn, iter) {
+				rand_node = irn;
 				if (i == n) {
 					break;
 				}
 				++i;
 			}
-		} while (is_cfop(irn));
+		} while (is_cfop(rand_node));
 	}
 
-	return irn;
+	return rand_node;
 }
 
 static void *random_init_graph(ir_graph *irg)

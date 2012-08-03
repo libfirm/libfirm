@@ -50,6 +50,7 @@
    in the in array */
 #define CALL_PARAM_OFFSET     (n_Call_max+1)
 #define BUILTIN_PARAM_OFFSET  (n_Builtin_max+1)
+#define ASM_PARAM_OFFSET      (n_ASM_max+1)
 #define SEL_INDEX_OFFSET      (n_Sel_max+1)
 #define RETURN_RESULT_OFFSET  (n_Return_max+1)
 #define END_KEEPALIVE_OFFSET  0
@@ -905,10 +906,10 @@ ir_node **get_Call_param_arr(ir_node *node)
 	return &get_irn_in(node)[CALL_PARAM_OFFSET + 1];
 }
 
-size_t get_Call_n_params(const ir_node *node)
+int get_Call_n_params(const ir_node *node)
 {
 	assert(is_Call(node));
-	return (size_t) (get_irn_arity(node) - CALL_PARAM_OFFSET);
+	return get_irn_arity(node) - CALL_PARAM_OFFSET;
 }
 
 ir_node *get_Call_param(const ir_node *node, int pos)
@@ -1244,10 +1245,15 @@ void set_Tuple_pred(ir_node *node, int pos, ir_node *pred)
 	set_irn_n(node, pos, pred);
 }
 
-size_t get_ASM_n_input_constraints(const ir_node *node)
+int get_ASM_n_inputs(const ir_node *node)
 {
 	assert(is_ASM(node));
-	return ARR_LEN(node->attr.assem.input_constraints);
+	return get_irn_arity(node) - ASM_PARAM_OFFSET;
+}
+
+ir_node *get_ASM_input(const ir_node *node, int pos)
+{
+	return get_irn_n(node, ASM_PARAM_OFFSET + pos);
 }
 
 size_t get_ASM_n_output_constraints(const ir_node *node)

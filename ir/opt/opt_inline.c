@@ -714,7 +714,6 @@ void inline_small_irgs(ir_graph *irg, int size)
 {
 	ir_graph *rem = current_ir_graph;
 	inline_env_t env;
-	call_entry *entry;
 
 	current_ir_graph = irg;
 	/* Handle graph state */
@@ -939,7 +938,7 @@ static call_entry *duplicate_call_entry(const call_entry *entry,
  */
 static void append_call_list(inline_irg_env *dst, inline_irg_env *src, int loop_depth)
 {
-	call_entry *entry, *nentry;
+	call_entry *nentry;
 
 	/* Note that the src list points to Call nodes in the inlined graph, but
 	   we need Call nodes in our graph. Luckily the inliner leaves this information
@@ -969,8 +968,6 @@ void inline_leaf_functions(unsigned maxsize, unsigned leafsize,
 	ir_graph         *rem;
 	int              did_inline;
 	wenv_t           wenv;
-	call_entry       *entry, *next;
-	const call_entry *centry;
 	pmap             *copied_graphs;
 	pmap_entry       *pm_entry;
 
@@ -1566,7 +1563,6 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 {
 	int            phiproj_computed = 0;
 	inline_irg_env *env = (inline_irg_env*)get_irg_link(irg);
-	call_entry     *curr_call;
 	wenv_t         wenv;
 	pqueue_t       *pqueue;
 
@@ -1599,7 +1595,6 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 		irg_inline_property prop        = get_irg_inline_property(callee);
 		ir_graph            *calleee;
 		int                 loop_depth;
-		const call_entry    *centry;
 
 		if ((prop < irg_inline_forced) && env->n_nodes + callee_env->n_nodes > maxsize) {
 			DB((dbg, LEVEL_2, "%+F: too big (%d) + %+F (%d)\n", irg,

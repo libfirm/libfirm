@@ -48,24 +48,6 @@ $mode_fp    = "mode_F";
 	],
 );
 
-%emit_templates = (
-	FM  => "${arch}_emit_float_load_store_mode(node);",
-	AM  => "${arch}_emit_float_arithmetic_mode(node);",
-	LM  => "${arch}_emit_load_mode(node);",
-	SM  => "${arch}_emit_store_mode(node);",
-	SO  => "${arch}_emit_shifter_operand(node);",
-	S0  => "${arch}_emit_source_register(node, 0);",
-	SC  => "${arch}_emit_symconst(node);",
-	S1  => "${arch}_emit_source_register(node, 1);",
-	S2  => "${arch}_emit_source_register(node, 2);",
-	S3  => "${arch}_emit_source_register(node, 3);",
-	S4  => "${arch}_emit_source_register(node, 4);",
-	D0  => "${arch}_emit_dest_register(node, 0);",
-	D1  => "${arch}_emit_dest_register(node, 1);",
-	D2  => "${arch}_emit_dest_register(node, 2);",
-	O   => "${arch}_emit_offset(node);",
-);
-
 $default_attr_type = "arm_attr_t";
 $default_copy_attr = "arm_copy_attr";
 
@@ -193,7 +175,7 @@ my %cmp_shifter_operand_constructors = (
 
 Add => {
 	irn_flags => [ "rematerializable" ],
-	emit      => '. add %D0, %S0, %SO',
+	emit      => 'add %D0, %S0, %O',
 	mode      => $mode_gp,
 	attr_type => "arm_shifter_operand_t",
 	constructors => \%binop_shifter_operand_constructors,
@@ -202,21 +184,21 @@ Add => {
 Mul => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "!in_r1" ] },
-	emit      =>'. mul %D0, %S0, %S1',
+	emit      => 'mul %D0, %S0, %S1',
 	mode      => $mode_gp,
 },
 
 Smull => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "gp" ] },
-	emit      =>'. smull %D0, %D1, %S0, %S1',
+	emit      => 'smull %D0, %D1, %S0, %S1',
 	outs      => [ "low", "high" ],
 },
 
 Umull => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "gp" ] },
-	emit      =>'. umull %D0, %D1, %S0, %S1',
+	emit      =>'umull %D0, %D1, %S0, %S1',
 	outs      => [ "low", "high" ],
 	mode      => $mode_gp,
 },
@@ -224,13 +206,13 @@ Umull => {
 Mla => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp", "gp" ], out => [ "!in_r1" ] },
-	emit      =>'. mla %D0, %S0, %S1, %S2',
+	emit      =>'mla %D0, %S0, %S1, %S2',
 	mode      => $mode_gp,
 },
 
 And => {
 	irn_flags => [ "rematerializable" ],
-	emit      => '. and %D0, %S0, %SO',
+	emit      => 'and %D0, %S0, %O',
 	mode      => $mode_gp,
 	attr_type => "arm_shifter_operand_t",
 	constructors => \%binop_shifter_operand_constructors,
@@ -238,7 +220,7 @@ And => {
 
 Or => {
 	irn_flags => [ "rematerializable" ],
-	emit      => '. orr %D0, %S0, %SO',
+	emit      => 'orr %D0, %S0, %O',
 	mode      => $mode_gp,
 	attr_type => "arm_shifter_operand_t",
 	constructors => \%binop_shifter_operand_constructors,
@@ -246,7 +228,7 @@ Or => {
 
 Eor => {
 	irn_flags => [ "rematerializable" ],
-	emit      => '. eor %D0, %S0, %SO',
+	emit      => 'eor %D0, %S0, %O',
 	mode      => $mode_gp,
 	attr_type => "arm_shifter_operand_t",
 	constructors => \%binop_shifter_operand_constructors,
@@ -254,7 +236,7 @@ Eor => {
 
 Bic => {
 	irn_flags => [ "rematerializable" ],
-	emit      => '. bic %D0, %S0, %SO',
+	emit      => 'bic %D0, %S0, %O',
 	mode      => $mode_gp,
 	attr_type => "arm_shifter_operand_t",
 	constructors => \%binop_shifter_operand_constructors,
@@ -262,7 +244,7 @@ Bic => {
 
 Sub => {
 	irn_flags => [ "rematerializable" ],
-	emit      => '. sub %D0, %S0, %SO',
+	emit      => 'sub %D0, %S0, %O',
 	mode      => $mode_gp,
 	attr_type => "arm_shifter_operand_t",
 	constructors => \%binop_shifter_operand_constructors,
@@ -270,7 +252,7 @@ Sub => {
 
 Rsb => {
 	irn_flags => [ "rematerializable" ],
-	emit      => '. rsb %D0, %S0, %SO',
+	emit      => 'rsb %D0, %S0, %O',
 	mode      => $mode_gp,
 	attr_type => "arm_shifter_operand_t",
 	constructors => \%binop_shifter_operand_constructors,
@@ -279,7 +261,7 @@ Rsb => {
 Mov => {
 	irn_flags => [ "rematerializable" ],
 	arity     => "variable",
-	emit      => '. mov %D0, %SO',
+	emit      => 'mov %D0, %O',
 	mode      => $mode_gp,
 	attr_type => "arm_shifter_operand_t",
 	constructors => \%unop_shifter_operand_constructors,
@@ -289,7 +271,7 @@ Mvn => {
 	irn_flags => [ "rematerializable" ],
 	attr_type => "arm_shifter_operand_t",
 	arity     => "variable",
-	emit      => '. mvn %D0, %SO',
+	emit      => 'mvn %D0, %O',
 	mode      => $mode_gp,
 	constructors => \%unop_shifter_operand_constructors,
 },
@@ -297,7 +279,7 @@ Mvn => {
 Clz => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-	emit      =>'. clz %D0, %S0',
+	emit      => 'clz %D0, %S0',
 	mode      => $mode_gp,
 },
 
@@ -311,8 +293,8 @@ LinkMovPC => {
 	attr         => "arm_shift_modifier_t shift_modifier, unsigned char immediate_value, unsigned char immediate_rot",
 	custominit   => "init_arm_shifter_operand(res, immediate_value, shift_modifier, immediate_rot);\n".
 	                "\tarch_add_irn_flags(res, arch_irn_flags_modify_flags);",
-	emit         => ". mov lr, pc\n".
-	                ". mov pc, %SO",
+	emit         => "mov lr, pc\n".
+	                "mov pc, %O",
 },
 
 # mov lr, pc\n ldr pc, XXX -- This combination is used for calls to function
@@ -324,8 +306,8 @@ LinkLdrPC => {
 	attr_type    => "arm_load_store_attr_t",
 	attr         => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
 	custominit   => "arch_add_irn_flags(res, arch_irn_flags_modify_flags);",
-	emit         => ". mov lr, pc\n".
-	                ". ldr pc, %SO",
+	emit         => "mov lr, pc\n".
+	                "ldr pc, %O",
 },
 
 Bl => {
@@ -335,7 +317,7 @@ Bl => {
 	attr_type  => "arm_SymConst_attr_t",
 	attr       => "ir_entity *entity, int symconst_offset",
 	custominit => "arch_add_irn_flags(res, arch_irn_flags_modify_flags);",
-	emit       => '. bl %SC',
+	emit       => 'bl %I',
 },
 
 # this node produces ALWAYS an empty (tempary) gp reg and cannot be CSE'd
@@ -343,7 +325,7 @@ EmptyReg => {
 	op_flags  => [ "constlike" ],
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { out => [ "gp" ] },
-	emit      => '. /* %D0 now available for calculations */',
+	emit      => '/* %D0 now available for calculations */',
 	cmp_attr  => 'return 1;',
 	mode      => $mode_gp,
 },
@@ -377,7 +359,7 @@ SymConst => {
 
 Cmp => {
 	irn_flags    => [ "rematerializable", "modify_flags" ],
-	emit         => '. cmp %S0, %SO',
+	emit         => 'cmp %S0, %O',
 	mode         => $mode_flags,
 	attr_type    => "arm_cmp_attr_t",
 	constructors => \%cmp_shifter_operand_constructors,
@@ -385,7 +367,7 @@ Cmp => {
 
 Tst => {
 	irn_flags    => [ "rematerializable", "modify_flags" ],
-	emit         => '. tst %S0, %SO',
+	emit         => 'tst %S0, %O',
 	mode         => $mode_flags,
 	attr_type    => "arm_cmp_attr_t",
 	constructors => \%cmp_shifter_operand_constructors,
@@ -426,7 +408,7 @@ Ldr => {
 	ins       => [ "ptr", "mem" ],
 	outs      => [ "res", "M" ],
 	reg_req   => { in => [ "gp", "none" ], out => [ "gp", "none" ] },
-	emit      => '. ldr%LM %D0, [%S0, #%O]',
+	emit      => 'ldr%ML %D0, [%S0, #%o]',
 	attr_type => "arm_load_store_attr_t",
 	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
 },
@@ -437,7 +419,7 @@ Str => {
 	ins       => [ "ptr", "val", "mem" ],
 	outs      => [ "M" ],
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
-	emit      => '. str%SM %S1, [%S0, #%O]',
+	emit      => 'str%MS %S1, [%S0, #%o]',
 	mode      => "mode_M",
 	attr_type => "arm_load_store_attr_t",
 	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
@@ -448,7 +430,7 @@ StoreStackM4Inc => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "sp", "gp", "gp", "gp", "gp", "none" ], out => [ "sp:I|S", "none" ] },
-	emit      => '. stmfd %S0!, {%S1, %S2, %S3, %S4}',
+	emit      => 'stmfd %S0!, {%S1, %S2, %S3, %S4}',
 	outs      => [ "ptr", "M" ],
 },
 
@@ -457,7 +439,7 @@ LoadStackM3Epilogue => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "sp", "none" ], out => [ "r11:I", "sp:I|S", "pc:I", "none" ] },
-	emit      => '. ldmfd %S0, {%D0, %D1, %D2}',
+	emit      => 'ldmfd %S0, {%D0, %D1, %D2}',
 	outs      => [ "res0", "res1", "res2", "M" ],
 },
 
@@ -466,7 +448,7 @@ LoadStackM3Epilogue => {
 Adf => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "fpa", "fpa" ], out => [ "fpa" ] },
-	emit      => '. adf%AM %D0, %S0, %S1',
+	emit      => 'adf%MA %D0, %S0, %S1',
 	attr_type => "arm_farith_attr_t",
 	attr      => "ir_mode *op_mode",
 	mode      => $mode_fp,
@@ -475,7 +457,7 @@ Adf => {
 Muf => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "fpa", "fpa" ], out => [ "fpa" ] },
-	emit      =>'. muf%AM %D0, %S0, %S1',
+	emit      => 'muf%MA %D0, %S0, %S1',
 	attr_type => "arm_farith_attr_t",
 	attr      => "ir_mode *op_mode",
 	mode      => $mode_fp,
@@ -484,7 +466,7 @@ Muf => {
 Suf => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "fpa", "fpa" ], out => [ "fpa" ] },
-	emit      => '. suf%AM %D0, %S0, %S1',
+	emit      => 'suf%MA %D0, %S0, %S1',
 	attr_type => "arm_farith_attr_t",
 	attr      => "ir_mode *op_mode",
 	mode      => $mode_fp,
@@ -492,7 +474,7 @@ Suf => {
 
 Dvf => {
 	reg_req   => { in => [ "fpa", "fpa" ], out => [ "fpa", "none" ] },
-	emit      =>'. dvf%AM %D0, %S0, %S1',
+	emit      => 'dvf%MA %D0, %S0, %S1',
 	outs      => [ "res", "M" ],
 	attr_type => "arm_farith_attr_t",
 	attr      => "ir_mode *op_mode",
@@ -502,7 +484,7 @@ Dvf => {
 Mvf => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "fpa" ], out => [ "fpa" ] },
-	emit      => '. mvf%AM %S0, %D0',
+	emit      => 'mvf%MA %S0, %D0',
 	attr_type => "arm_farith_attr_t",
 	attr      => "ir_mode *op_mode",
 	mode      => $mode_fp,
@@ -511,7 +493,7 @@ Mvf => {
 FltX => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp" ], out => [ "fpa" ] },
-	emit      => '. flt%AM %D0, %S0',
+	emit      => 'flt%MA %D0, %S0',
 	attr_type => "arm_farith_attr_t",
 	attr      => "ir_mode *op_mode",
 	mode      => $mode_fp,
@@ -524,7 +506,7 @@ Cmfe => {
 	attr      => "bool ins_permuted",
 	init_attr => "init_arm_cmp_attr(res, ins_permuted, false);",
 	reg_req   => { in => [ "fpa", "fpa" ], out => [ "flags" ] },
-	emit      => '. cmfe %S0, %S1',
+	emit      => 'cmfe %S0, %S1',
 },
 
 Ldf => {
@@ -533,7 +515,7 @@ Ldf => {
 	ins       => [ "ptr", "mem" ],
 	outs      => [ "res", "M" ],
 	reg_req   => { in => [ "gp", "none" ], out => [ "fpa", "none" ] },
-	emit      => '. ldf%FM %D0, [%S0, #%O]',
+	emit      => 'ldf%MF %D0, [%S0, #%o]',
 	attr_type => "arm_load_store_attr_t",
 	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
 },
@@ -545,7 +527,7 @@ Stf => {
 	outs      => [ "M" ],
 	mode      => "mode_M",
 	reg_req   => { in => [ "gp", "fpa", "none" ], out => [ "none" ] },
-	emit      => '. stf%FM %S1, [%S0, #%O]',
+	emit      => 'stf%MF %S1, [%S0, #%o]',
 	attr_type => "arm_load_store_attr_t",
 	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
 },

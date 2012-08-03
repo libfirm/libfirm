@@ -12,6 +12,17 @@ $mode_fp4     = "mode_Q";
 # available SPARC registers: 8 globals, 24 window regs (8 ins, 8 outs, 8 locals)
 %reg_classes = (
 	gp => [
+		# Note: locals come first here since they're usually constrained last
+		# (by calls and others)
+		{ name => "l0", dwarf => 16 },
+		{ name => "l1", dwarf => 17 },
+		{ name => "l2", dwarf => 18 },
+		{ name => "l3", dwarf => 19 },
+		{ name => "l4", dwarf => 20 },
+		{ name => "l5", dwarf => 21 },
+		{ name => "l6", dwarf => 22 },
+		{ name => "l7", dwarf => 23 },
+
 		{ name => "g0", dwarf => 0 },
 		{ name => "g1", dwarf => 1 },
 		{ name => "g2", dwarf => 2 },
@@ -29,15 +40,6 @@ $mode_fp4     = "mode_Q";
 		{ name => "o5", dwarf => 13 },
 		{ name => "sp", dwarf => 14 },
 		{ name => "o7", dwarf => 15 },
-
-		{ name => "l0", dwarf => 16 },
-		{ name => "l1", dwarf => 17 },
-		{ name => "l2", dwarf => 18 },
-		{ name => "l3", dwarf => 19 },
-		{ name => "l4", dwarf => 20 },
-		{ name => "l5", dwarf => 21 },
-		{ name => "l6", dwarf => 22 },
-		{ name => "l7", dwarf => 23 },
 
 		{ name => "i0", dwarf => 24 },
 		{ name => "i1", dwarf => 25 },
@@ -98,32 +100,6 @@ $mode_fp4     = "mode_Q";
 		{ mode => $mode_fp }
 	]
 ); # %reg_classes
-
-%emit_templates = (
-# emit source reg or imm dep. on node's arity
-	RI  => "${arch}_emit_reg_or_imm(node, -1);",
-	R1I => "${arch}_emit_reg_or_imm(node, 1);",
-	R2I => "${arch}_emit_reg_or_imm(node, 2);",
-	S0  => "${arch}_emit_source_register(node, 0);",
-	S1  => "${arch}_emit_source_register(node, 1);",
-	S2  => "${arch}_emit_source_register(node, 2);",
-	S3  => "${arch}_emit_source_register(node, 3);",
-	S4  => "${arch}_emit_source_register(node, 4);",
-	D0  => "${arch}_emit_dest_register(node, 0);",
-	D1  => "${arch}_emit_dest_register(node, 1);",
-	HIM => "${arch}_emit_high_immediate(node);",
-	LM  => "${arch}_emit_load_mode(node);",
-	SM  => "${arch}_emit_store_mode(node);",
-	FLSM => "${arch}_emit_float_load_store_mode(node);",
-	FPM  => "${arch}_emit_fp_mode_suffix(node);",
-	FCONVS => "${arch}_emit_fp_conv_source(node);",
-	FCONVD => "${arch}_emit_fp_conv_destination(node);",
-	O1     => "${arch}_emit_offset(node, 1);",
-	O2     => "${arch}_emit_offset(node, 2);",
-	S0O1   => "${arch}_emit_source_reg_and_offset(node, 0, 1);",
-	S1O2   => "${arch}_emit_source_reg_and_offset(node, 1, 2);",
-);
-$indent_line_func = "sparc_emit_indent()";
 
 $default_attr_type = "sparc_attr_t";
 $default_copy_attr = "sparc_copy_attr";
@@ -273,20 +249,20 @@ my %float_unop_constructors = (
 Add => {
 	irn_flags    => [ "rematerializable" ],
 	mode         => $mode_gp,
-	emit         => '. add %S0, %R1I, %D0',
+	emit         => 'add %S0, %SI1, %D0',
 	constructors => \%binop_operand_constructors,
 },
 
 AddCC => {
 	irn_flags    => [ "rematerializable", "modifies_flags" ],
-	emit         => '. addcc %S0, %R1I, %D0',
+	emit         => 'addcc %S0, %SI1, %D0',
 	outs         => [ "res", "flags" ],
 	constructors => \%binopcc_operand_constructors,
 },
 
 AddCCZero => {
 	irn_flags    => [ "rematerializable", "modifies_flags" ],
-	emit         => '. addcc %S0, %R1I, %%g0',
+	emit         => 'addcc %S0, %SI1, %%g0',
 	mode         => $mode_flags,
 	constructors => \%binopcczero_operand_constructors,
 },
@@ -295,7 +271,7 @@ AddX => {
 	# At the moment not rematerializable because of assert in beflags.c/
 	# (it claims that spiller can't rematerialize flag stuff correctly)
 	#irn_flags    => [ "rematerializable" ],
-	emit         => '. addx %S0, %R1I, %D0',
+	emit         => 'addx %S0, %SI1, %D0',
 	constructors => \%binopx_operand_constructors,
 	mode         => $mode_gp,
 },
@@ -316,27 +292,27 @@ AddX_t => {
 Sub => {
 	irn_flags    => [ "rematerializable" ],
 	mode         => $mode_gp,
-	emit         => '. sub %S0, %R1I, %D0',
+	emit         => 'sub %S0, %SI1, %D0',
 	constructors => \%binop_operand_constructors,
 },
 
 SubCC => {
 	irn_flags    => [ "rematerializable", "modifies_flags" ],
-	emit         => '. subcc %S0, %R1I, %D0',
+	emit         => 'subcc %S0, %SI1, %D0',
 	outs         => [ "res", "flags" ],
 	constructors => \%binopcc_operand_constructors,
 },
 
 SubCCZero => {
 	irn_flags    => [ "rematerializable", "modifies_flags" ],
-	emit         => '. subcc %S0, %R1I, %%g0',
+	emit         => 'subcc %S0, %SI1, %%g0',
 	mode         => $mode_flags,
 	constructors => \%binopcczero_operand_constructors,
 },
 
 SubX => {
 	# Not rematerializable (see AddX)
-	emit         => '. subx %S0, %R1I, %D0',
+	emit         => 'subx %S0, %SI1, %D0',
 	constructors => \%binopx_operand_constructors,
 	mode         => $mode_gp,
 },
@@ -375,7 +351,7 @@ Ld => {
 	ins       => [ "ptr", "mem" ],
 	outs      => [ "res", "M" ],
 	attr_type => "sparc_load_store_attr_t",
-	emit      => '. ld%LM [%S0O1], %D0'
+	emit      => 'ld%ML [%S0%O1], %D0'
 },
 
 SetHi => {
@@ -385,7 +361,7 @@ SetHi => {
 	reg_req    => { in => [], out => [ "gp" ] },
 	attr       => "ir_entity *entity, int32_t immediate_value",
 	custominit => "sparc_set_attr_imm(res, entity, immediate_value);",
-	emit       => '. sethi %HIM, %D0'
+	emit       => 'sethi %H, %D0'
 },
 
 St => {
@@ -409,11 +385,11 @@ St => {
 	ins       => [ "val", "ptr", "mem" ],
 	outs      => [ "M" ],
 	attr_type => "sparc_load_store_attr_t",
-	emit      => '. st%SM %S0, [%S1O2]'
+	emit      => 'st%MS %S0, [%S1%O2]'
 },
 
 Save => {
-	emit      => '. save %S0, %R1I, %D0',
+	emit      => 'save %S0, %SI1, %D0',
 	outs      => [ "stack" ],
 	ins       => [ "stack" ],
 	constructors => {
@@ -451,7 +427,7 @@ RestoreZero => {
 	reg_req => { in => [ "sp", "frame_pointer" ], out => [ "sp:I|S" ] },
 	ins     => [ "stack", "frame_pointer" ],
 	outs    => [ "stack" ],
-	emit    => '. restore',
+	emit    => 'restore',
 	mode    => $mode_gp,
 },
 
@@ -475,7 +451,7 @@ AddSP => {
 	reg_req => { in => [ "sp", "gp" ], out => [ "sp:I|S" ] },
 	ins     => [ "stack", "size" ],
 	outs    => [ "stack" ],
-	emit    => ". add %S0, %S1, %D0\n",
+	emit    => "add %S0, %S1, %D0\n",
 	mode    => $mode_gp,
 },
 
@@ -580,7 +556,7 @@ Call => {
 
 Cmp => {  # aka SubccZero
 	irn_flags    => [ "rematerializable", "modifies_flags" ],
-	emit         => '. cmp %S0, %R1I',
+	emit         => 'cmp %S0, %SI1',
 	mode         => $mode_flags,
 	constructors => \%binopcczero_operand_constructors,
 },
@@ -599,34 +575,34 @@ SwitchJmp => {
 Sll => {
 	irn_flags    => [ "rematerializable" ],
 	mode         => $mode_gp,
-	emit         => '. sll %S0, %R1I, %D0',
+	emit         => 'sll %S0, %SI1, %D0',
 	constructors => \%binop_operand_constructors,
 },
 
 Srl => {
 	irn_flags    => [ "rematerializable" ],
 	mode         => $mode_gp,
-	emit         => '. srl %S0, %R1I, %D0',
+	emit         => 'srl %S0, %SI1, %D0',
 	constructors => \%binop_operand_constructors,
 },
 
 Sra => {
 	irn_flags    => [ "rematerializable" ],
 	mode         => $mode_gp,
-	emit         => '. sra %S0, %R1I, %D0',
+	emit         => 'sra %S0, %SI1, %D0',
 	constructors => \%binop_operand_constructors,
 },
 
 And => {
 	irn_flags    => [ "rematerializable" ],
 	mode         => $mode_gp,
-	emit         => '. and %S0, %R1I, %D0',
+	emit         => 'and %S0, %SI1, %D0',
 	constructors => \%binop_operand_constructors,
 },
 
 AndCCZero => {
 	irn_flags    => [ "rematerializable", "modifies_flags" ],
-	emit         => '. andcc %S0, %R1I, %%g0',
+	emit         => 'andcc %S0, %SI1, %%g0',
 	mode         => $mode_flags,
 	constructors => \%binopcczero_operand_constructors,
 },
@@ -634,13 +610,13 @@ AndCCZero => {
 AndN => {
 	irn_flags => [ "rematerializable" ],
 	mode      => $mode_gp,
-	emit      => '. andn %S0, %R1I, %D0',
+	emit      => 'andn %S0, %SI1, %D0',
 	constructors => \%binop_operand_constructors,
 },
 
 AndNCCZero => {
 	irn_flags    => [ "rematerializable", "modifies_flags" ],
-	emit         => '. andncc %S0, %R1I, %%g0',
+	emit         => 'andncc %S0, %SI1, %%g0',
 	mode         => $mode_flags,
 	constructors => \%binopcczero_operand_constructors,
 },
@@ -648,13 +624,13 @@ AndNCCZero => {
 Or => {
 	irn_flags    => [ "rematerializable" ],
 	mode         => $mode_gp,
-	emit         => '. or %S0, %R1I, %D0',
+	emit         => 'or %S0, %SI1, %D0',
 	constructors => \%binop_operand_constructors,
 },
 
 OrCCZero => {
 	irn_flags    => [ "rematerializable", "modifies_flags" ],
-	emit         => '. orcc %S0, %R1I, %%g0',
+	emit         => 'orcc %S0, %SI1, %%g0',
 	mode         => $mode_flags,
 	constructors => \%binopcczero_operand_constructors,
 },
@@ -662,13 +638,13 @@ OrCCZero => {
 OrN => {
 	irn_flags => [ "rematerializable" ],
 	mode      => $mode_gp,
-	emit      => '. orn %S0, %R1I, %D0',
+	emit      => 'orn %S0, %SI1, %D0',
 	constructors => \%binop_operand_constructors,
 },
 
 OrNCCZero => {
 	irn_flags    => [ "rematerializable", "modifies_flags" ],
-	emit         => '. orncc %S0, %R1I, %%g0',
+	emit         => 'orncc %S0, %SI1, %%g0',
 	mode         => $mode_flags,
 	constructors => \%binopcczero_operand_constructors,
 },
@@ -676,13 +652,13 @@ OrNCCZero => {
 Xor => {
 	irn_flags    => [ "rematerializable" ],
 	mode         => $mode_gp,
-	emit         => '. xor %S0, %R1I, %D0',
+	emit         => 'xor %S0, %SI1, %D0',
 	constructors => \%binop_operand_constructors,
 },
 
 XorCCZero => {
 	irn_flags    => [ "rematerializable", "modifies_flags" ],
-	emit         => '. xorcc %S0, %R1I, %%g0',
+	emit         => 'xorcc %S0, %SI1, %%g0',
 	mode         => $mode_flags,
 	constructors => \%binopcczero_operand_constructors,
 },
@@ -690,13 +666,13 @@ XorCCZero => {
 XNor => {
 	irn_flags => [ "rematerializable" ],
 	mode      => $mode_gp,
-	emit      => '. xnor %S0, %R1I, %D0',
+	emit      => 'xnor %S0, %SI1, %D0',
 	constructors => \%binop_operand_constructors,
 },
 
 XNorCCZero => {
 	irn_flags    => [ "rematerializable", "modifies_flags" ],
-	emit         => '. xnorcc %S0, %R1I, %%g0',
+	emit         => 'xnorcc %S0, %SI1, %%g0',
 	mode         => $mode_flags,
 	constructors => \%binopcczero_operand_constructors,
 },
@@ -704,13 +680,13 @@ XNorCCZero => {
 Mul => {
 	irn_flags    => [ "rematerializable" ],
 	mode         => $mode_gp,
-	emit         => '. smul %S0, %R1I, %D0',
+	emit         => 'smul %S0, %SI1, %D0',
 	constructors => \%binop_operand_constructors,
 },
 
 MulCCZero => {
 	irn_flags    => [ "rematerializable", "modifies_flags" ],
-	emit         => '. smulcc %S0, %R1I, %%g0',
+	emit         => 'smulcc %S0, %SI1, %%g0',
 	mode         => $mode_flags,
 	constructors => \%binopcczero_operand_constructors,
 },
@@ -718,12 +694,16 @@ MulCCZero => {
 SMulh => {
 	irn_flags    => [ "rematerializable" ],
 	outs         => [ "low", "high" ],
+	emit         => 'smul %S0, %SI1, %D0\n'.
+	                'mov %%y, %D0',
 	constructors => \%binop_operand_constructors,
 },
 
 UMulh => {
 	irn_flags    => [ "rematerializable" ],
 	outs         => [ "low", "high" ],
+	emit         => 'umul %S0, %SI1, %D0\n'.
+	                'mov %%y, %D0',
 	constructors => \%binop_operand_constructors,
 },
 
@@ -789,7 +769,7 @@ Permi23 => {
 
 fcmp => {
 	irn_flags => [ "rematerializable", "modifies_fp_flags" ],
-	emit      => '. fcmp%FPM %S0, %S1',
+	emit      => 'fcmp%FM %S0, %S1',
 	attr_type => "sparc_fp_attr_t",
 	attr      => "ir_mode *fp_mode",
 	mode      => $mode_fpflags,
@@ -809,7 +789,7 @@ fcmp => {
 fadd => {
 	op_flags     => [ "commutative" ],
 	irn_flags    => [ "rematerializable" ],
-	emit         => '. fadd%FPM %S0, %S1, %D0',
+	emit         => 'fadd%FM %S0, %S1, %D0',
 	attr_type    => "sparc_fp_attr_t",
 	attr         => "ir_mode *fp_mode",
 	ins          => [ "left", "right" ],
@@ -818,7 +798,7 @@ fadd => {
 
 fsub => {
 	irn_flags    => [ "rematerializable" ],
-	emit         => '. fsub%FPM %S0, %S1, %D0',
+	emit         => 'fsub%FM %S0, %S1, %D0',
 	attr_type    => "sparc_fp_attr_t",
 	attr         => "ir_mode *fp_mode",
 	ins          => [ "left", "right" ],
@@ -828,7 +808,7 @@ fsub => {
 fmul => {
 	irn_flags    => [ "rematerializable" ],
 	op_flags     => [ "commutative" ],
-	emit         =>'. fmul%FPM %S0, %S1, %D0',
+	emit         =>'fmul%FM %S0, %S1, %D0',
 	attr_type    => "sparc_fp_attr_t",
 	attr         => "ir_mode *fp_mode",
 	ins          => [ "left", "right" ],
@@ -837,7 +817,7 @@ fmul => {
 
 fdiv => {
 	irn_flags    => [ "rematerializable" ],
-	emit         => '. fdiv%FPM %S0, %S1, %D0',
+	emit         => 'fdiv%FM %S0, %S1, %D0',
 	attr_type    => "sparc_fp_attr_t",
 	attr         => "ir_mode *fp_mode",
 	ins          => [ "left", "right" ],
@@ -859,7 +839,7 @@ fneg => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
 	# note that we only need the first register even for wide-values
-	emit      => '. fnegs %S0, %D0',
+	emit      => 'fnegs %S0, %D0',
 	attr_type => "sparc_fp_attr_t",
 	attr      => "ir_mode *fp_mode",
 	ins          => [ "val" ],
@@ -869,7 +849,7 @@ fneg => {
 "fabs" => {
 	irn_flags    => [ "rematerializable" ],
 	# note that we only need the first register even for wide-values
-	emit         => '. fabs %S0, %D0',
+	emit         => 'fabs %S0, %D0',
 	attr_type    => "sparc_fp_attr_t",
 	attr         => "ir_mode *fp_mode",
 	ins          => [ "val" ],
@@ -878,7 +858,7 @@ fneg => {
 
 fftof => {
 	irn_flags => [ "rematerializable" ],
-	emit      => '. f%FCONVS%.to%FCONVD %S0, %D0',
+	emit      => 'f%FSto%FD %S0, %D0',
 	attr_type => "sparc_fp_conv_attr_t",
 	attr      => "ir_mode *src_mode, ir_mode *dest_mode",
 	constructors => {
@@ -911,7 +891,7 @@ fftof => {
 
 fitof => {
 	irn_flags => [ "rematerializable" ],
-	emit      => '. fito%FPM %S0, %D0',
+	emit      => 'fito%FM %S0, %D0',
 	attr_type => "sparc_fp_attr_t",
 	attr      => "ir_mode *fp_mode",
 	constructors => {
@@ -932,7 +912,7 @@ fitof => {
 
 fftoi => {
 	irn_flags => [ "rematerializable" ],
-	emit      => '. f%FPM%.toi %S0, %D0',
+	emit      => 'f%FMtoi %S0, %D0',
 	attr_type => "sparc_fp_attr_t",
 	attr      => "ir_mode *fp_mode",
 	mode      => $mode_gp,
@@ -968,7 +948,7 @@ Ldf => {
 	attr_type => "sparc_load_store_attr_t",
 	attr      => "ir_mode *ls_mode, ir_entity *entity, int32_t offset, bool is_frame_entity",
 	custominit => "init_sparc_load_store_attributes(res, ls_mode, entity, offset, is_frame_entity, false);",
-	emit      => '. ld%FLSM [%S0%O1], %D0'
+	emit      => 'ld%ML [%S0%O1], %D0'
 },
 
 Stf => {
@@ -990,7 +970,7 @@ Stf => {
 	attr_type => "sparc_load_store_attr_t",
 	attr      => "ir_mode *ls_mode, ir_entity *entity, int32_t offset, bool is_frame_entity",
 	custominit => "init_sparc_load_store_attributes(res, ls_mode, entity, offset, is_frame_entity, false);",
-	emit      => '. st%FLSM %S0, [%S1%O2]',
+	emit      => 'st%MS %S0, [%S1%O2]',
 	mode      => 'mode_M',
 },
 

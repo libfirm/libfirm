@@ -404,8 +404,6 @@ static void assign(ir_node *block, void *env_ptr)
 	struct list_head *head      = get_block_border_head(env, block);
 	be_lv_t *lv                 = be_get_irg_liveness(env->irg);
 
-	border_t *b;
-
 	bitset_clear_all(colors);
 	bitset_clear_all(live);
 	bitset_clear_all(in_colors);

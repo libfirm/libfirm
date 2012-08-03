@@ -128,7 +128,7 @@ void hungarian_prepare_cost_matrix(hungarian_problem_t *p,
 	} else if (mode == HUNGARIAN_MODE_MINIMIZE_COST) {
 		/* nothing to do */
 	} else {
-		panic("Unknown hungarian problem mode\n");
+		panic("Unknown hungarian problem mode");
 	}
 }
 

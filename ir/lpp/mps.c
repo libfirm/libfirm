@@ -90,7 +90,7 @@ void mps_write_mps(lpp_t *lpp, lpp_mps_style_t style, FILE *out)
 {
 	int i, count, marker_nr = 0;
 	const lpp_name_t *curr;
-	const matrix_elem_t *elem, *before = NULL;
+	const matrix_elem_t *before = NULL;
 	lpp_var_t last_type;
 	assert(style == s_mps_fixed || style == s_mps_free);
 

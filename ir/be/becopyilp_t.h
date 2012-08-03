@@ -86,8 +86,7 @@ void free_size_red(size_red_t *sr);
  *       Is this necessary?
  */
 static inline int co_ilp_get_costs(copy_opt_t *co, ir_node *root, ir_node *arg) {
-	int    i;
-	unit_t *curr;
+	int i;
 
 	/* search optimization unit for phi */
 	list_for_each_entry(unit_t, curr, &co->units, units)

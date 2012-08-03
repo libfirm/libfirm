@@ -39,10 +39,9 @@
 #include "irdump_t.h"
 #include "irnode_t.h"
 #include "ircons_t.h"
-#include "execfreq.h"
-#include "typerep.h"
-
+#include "execfreq_t.h"
 #include "irprofile.h"
+#include "typerep.h"
 
 /* Instrument blocks walker. */
 typedef struct block_id_walker_data_t {
@@ -55,12 +54,6 @@ typedef struct block_assoc_t {
 	unsigned int i;          /**< current block id number */
 	unsigned int *counters;  /**< block execution counts */
 } block_assoc_t;
-
-typedef struct intialize_execfreq_env_t {
-	ir_graph *irg;
-	ir_exec_freq *execfreqs;
-	double freq_factor;
-} initialize_execfreq_env_t;
 
 /* minimal execution frequency (an execfreq of 0 confuses algos) */
 #define MIN_EXECFREQ 0.00001
@@ -80,7 +73,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
  */
 typedef struct execcount_t {
 	unsigned long block; /**< block id */
-	unsigned int  count; /**< execution count */
+	uint32_t      count; /**< execution count */
 } execcount_t;
 
 /**
@@ -92,6 +85,22 @@ static int cmp_execcount(const void *a, const void *b, size_t size)
 	const execcount_t *eb = (const execcount_t*)b;
 	(void) size;
 	return ea->block != eb->block;
+}
+
+uint32_t ir_profile_get_block_execcount(const ir_node *block)
+{
+	execcount_t *ec, query;
+
+	query.block = get_irn_node_nr(block);
+	ec = set_find(execcount_t, profile, &query, sizeof(query), query.block);
+
+	if (ec != NULL) {
+		return ec->count;
+	} else {
+		DBG((dbg, LEVEL_3,
+			"Warning: Profile contains no data for %+F\n", block));
+		return 0;
+	}
 }
 
 /**
@@ -463,7 +472,7 @@ static ir_entity *new_static_string_entity(ident *name, const char *string)
 	return result;
 }
 
-ir_graph *ir_profile_instrument(const char *filename)
+void ir_profile_instrument(const char *filename)
 {
 	int n, n_blocks = 0;
 	ident *counter_id, *filename_id;
@@ -474,7 +483,7 @@ ir_graph *ir_profile_instrument(const char *filename)
 	/* Don't do anything for modules without code. Else the linker will
 	 * complain. */
 	if (get_irp_n_irgs() == 0)
-		return NULL;
+		return;
 
 	/* count the number of block first */
 	n_blocks = get_irp_n_blocks();
@@ -495,17 +504,11 @@ ir_graph *ir_profile_instrument(const char *filename)
 		instrument_irg(irg, bblock_counts, &wd);
 	}
 
-	return gen_initializer_irg(ent_filename, bblock_counts, n_blocks);
+	gen_initializer_irg(ent_filename, bblock_counts, n_blocks);
 }
 
-static unsigned int *
-parse_profile(const char *filename, unsigned int num_blocks)
+static unsigned int *parse_profile(const char *filename, unsigned int num_blocks)
 {
-	unsigned int *result = NULL;
-	char          buf[8];
-	size_t        ret;
-	unsigned int  i;
-
 	FILE *f = fopen(filename, "rb");
 	if (!f) {
 		DBG((dbg, LEVEL_2, "Failed to open profile file (%s)\n", filename));
@@ -513,7 +516,9 @@ parse_profile(const char *filename, unsigned int num_blocks)
 	}
 
 	/* check header */
-	ret = fread(buf, 8, 1, f);
+	uint32_t *result = NULL;
+	char      buf[8];
+	size_t    ret = fread(buf, 8, 1, f);
 	if (ret == 0 || strncmp(buf, "firmprof", 8) != 0) {
 		DBG((dbg, LEVEL_2, "Broken fileheader in profile\n"));
 		goto end;
@@ -523,7 +528,7 @@ parse_profile(const char *filename, unsigned int num_blocks)
 
 	/* The profiling output format is defined to be a sequence of integer
 	 * values stored little endian format. */
-	for (i = 0; i < num_blocks; ++i) {
+	for (unsigned i = 0; i < num_blocks; ++i) {
 		unsigned char bytes[4];
 
 		if ((ret = fread(bytes, 1, 4, f)) < 1)
@@ -562,33 +567,10 @@ static void block_associate_walker(ir_node *bb, void *env)
 
 static void irp_associate_blocks(block_assoc_t *env)
 {
-	int n;
-	for (n = get_irp_n_irgs() - 1; n >= 0; --n) {
+	for (int n = get_irp_n_irgs() - 1; n >= 0; --n) {
 		ir_graph *irg = get_irp_irg(n);
 		irg_block_walk_graph(irg, block_associate_walker, NULL, env);
 	}
-}
-
-bool ir_profile_read(const char *filename)
-{
-	block_assoc_t env;
-	FIRM_DBG_REGISTER(dbg, "firm.ir.profile");
-
-	env.i = 0;
-	env.counters = parse_profile(filename, get_irp_n_blocks());
-	if (!env.counters)
-		return false;
-
-	if (profile)
-		ir_profile_free();
-	profile = new_set(cmp_execcount, 16);
-
-	irp_associate_blocks(&env);
-	xfree(env.counters);
-
-	/* register the vcg hook */
-	hook = dump_add_node_info_callback(dump_profile_node_info, NULL);
-	return true;
 }
 
 void ir_profile_free(void)
@@ -604,37 +586,40 @@ void ir_profile_free(void)
 	}
 }
 
-bool ir_profile_has_data(void)
+bool ir_profile_read(const char *filename)
 {
-	return profile != NULL;
+	block_assoc_t env;
+	FIRM_DBG_REGISTER(dbg, "firm.ir.profile");
+
+	unsigned n_blocks = get_irp_n_blocks();
+	env.i        = 0;
+	env.counters = parse_profile(filename, n_blocks);
+	if (!env.counters)
+		return false;
+
+	ir_profile_free();
+	profile = new_set(cmp_execcount, 16);
+
+	irp_associate_blocks(&env);
+	xfree(env.counters);
+
+	/* register the vcg hook */
+	hook = dump_add_node_info_callback(dump_profile_node_info, NULL);
+	return 1;
 }
 
-unsigned int ir_profile_get_block_execcount(const ir_node *block)
-{
-	execcount_t *ec, query;
-
-	if (!ir_profile_has_data())
-		return 1;
-
-	query.block = get_irn_node_nr(block);
-	ec = set_find(execcount_t, profile, &query, sizeof(query), query.block);
-
-	if (ec != NULL) {
-		return ec->count;
-	} else {
-		DBG((dbg, LEVEL_3,
-			"Warning: Profile contains no data for %+F\n", block));
-		return 1;
-	}
-}
+typedef struct initialize_execfreq_env_t {
+	double freq_factor;
+} initialize_execfreq_env_t;
 
 static void initialize_execfreq(ir_node *block, void *data)
 {
-	initialize_execfreq_env_t *env = (initialize_execfreq_env_t*)data;
+	const initialize_execfreq_env_t *env
+		= (const initialize_execfreq_env_t*) data;
+	ir_graph *irg = get_irn_irg(block);
 	double freq;
 
-	if (block == get_irg_start_block(env->irg)
-	   || block == get_irg_end_block(env->irg)) {
+	if (block == get_irg_start_block(irg) || block == get_irg_end_block(irg)) {
 		freq = 1.0;
 	} else {
 		freq = ir_profile_get_block_execcount(block);
@@ -643,29 +628,29 @@ static void initialize_execfreq(ir_node *block, void *data)
 			freq = MIN_EXECFREQ;
 	}
 
-	set_execfreq(env->execfreqs, block, freq);
+	set_block_execfreq(block, freq);
 }
 
-ir_exec_freq *ir_create_execfreqs_from_profile(ir_graph *irg)
+static void ir_set_execfreqs_from_profile(ir_graph *irg)
 {
-	ir_node *start_block;
-	initialize_execfreq_env_t env;
-	unsigned count;
-
-	env.irg = irg;
-	env.execfreqs = create_execfreq(irg);
-
 	/* Find the first block containing instructions */
-	start_block = get_irg_start_block(irg);
-	count = ir_profile_get_block_execcount(start_block);
+	ir_node *start_block = get_irg_start_block(irg);
+	unsigned count       = ir_profile_get_block_execcount(start_block);
 	if (count == 0) {
 		/* the function was never executed, so fallback to estimated freqs */
-		free_execfreq(env.execfreqs);
-		return compute_execfreq(irg, 10);
+		ir_estimate_execfreq(irg);
+		return;
 	}
 
+	initialize_execfreq_env_t env;
 	env.freq_factor = 1.0 / count;
 	irg_block_walk_graph(irg, initialize_execfreq, NULL, &env);
+}
 
-	return env.execfreqs;
+void ir_create_execfreqs_from_profile(void)
+{
+	for (int n = get_irp_n_irgs() - 1; n >= 0; --n) {
+		ir_graph *irg = get_irp_irg(n);
+		ir_set_execfreqs_from_profile(irg);
+	}
 }

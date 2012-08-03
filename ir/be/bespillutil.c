@@ -106,7 +106,6 @@ struct spill_env_t {
 	set              *spills;         /**< all spill_info_t's, which must be
 	                                       placed */
 	spill_info_t    **mem_phis;       /**< set of all spilled phis. */
-	ir_exec_freq     *exec_freq;
 
 	unsigned          spill_count;
 	unsigned          reload_count;
@@ -160,7 +159,6 @@ spill_env_t *be_new_spill_env(ir_graph *irg)
 	env->mem_phis       = NEW_ARR_F(spill_info_t*, 0);
 	env->spill_cost     = arch_env->spill_cost;
 	env->reload_cost    = arch_env->reload_cost;
-	env->exec_freq      = be_get_irg_exec_freq(irg);
 	obstack_init(&env->obst);
 
 	env->spill_count       = 0;
@@ -665,7 +663,7 @@ static ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader)
 double be_get_spill_costs(spill_env_t *env, ir_node *to_spill, ir_node *before)
 {
 	ir_node *block = get_nodes_block(before);
-	double   freq  = get_block_execfreq(env->exec_freq, block);
+	double   freq  = get_block_execfreq(block);
 	(void) to_spill;
 
 	return env->spill_cost * freq;
@@ -686,8 +684,8 @@ unsigned be_get_reload_costs_no_weight(spill_env_t *env, const ir_node *to_spill
 
 double be_get_reload_costs(spill_env_t *env, ir_node *to_spill, ir_node *before)
 {
-	ir_node      *block = get_nodes_block(before);
-	double        freq  = get_block_execfreq(env->exec_freq, block);
+	ir_node *block = get_nodes_block(before);
+	double   freq  = get_block_execfreq(block);
 
 	if (be_do_remats) {
 		/* is the node rematerializable? */
@@ -793,7 +791,7 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 	}
 
 	spill_block    = get_nodes_block(insn);
-	spill_execfreq = get_block_execfreq(env->exec_freq, spill_block);
+	spill_execfreq = get_block_execfreq(spill_block);
 
 	if (spillinfo->spilled_phi) {
 		/* TODO calculate correct costs...
@@ -811,7 +809,7 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 		s               = spillinfo->spills;
 		for ( ; s != NULL; s = s->next) {
 			ir_node *spill_block = get_block(s->after);
-			double   freq = get_block_execfreq(env->exec_freq, spill_block);
+			double   freq = get_block_execfreq(spill_block);
 
 			spills_execfreq += freq;
 		}
@@ -875,9 +873,8 @@ void make_spill_locations_dominate_irn(spill_env_t *env, ir_node *irn)
 
 void be_insert_spills_reloads(spill_env_t *env)
 {
-	const ir_exec_freq *exec_freq  = env->exec_freq;
-	size_t              n_mem_phis = ARR_LEN(env->mem_phis);
-	size_t              i;
+	size_t n_mem_phis = ARR_LEN(env->mem_phis);
+	size_t i;
 
 	be_timer_push(T_RA_SPILL_APPLY);
 
@@ -936,7 +933,7 @@ void be_insert_spills_reloads(spill_env_t *env)
 				remat_cost_delta      = remat_cost - env->reload_cost;
 				rld->remat_cost_delta = remat_cost_delta;
 				block                 = is_Block(reloader) ? reloader : get_nodes_block(reloader);
-				freq                  = get_block_execfreq(exec_freq, block);
+				freq                  = get_block_execfreq(block);
 				all_remat_costs      += remat_cost_delta * freq;
 				DBG((dbg, LEVEL_2, "\tremat costs delta before %+F: "
 				     "%d (rel %f)\n", reloader, remat_cost_delta,

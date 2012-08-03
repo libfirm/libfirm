@@ -61,7 +61,6 @@ static void nodes_walker(ir_node *bl, void *data)
 {
 	nodes_iter_t     *it   = (nodes_iter_t*)data;
 	struct list_head *head = get_block_border_head(it->env, bl);
-	border_t         *b;
 
 	foreach_border_head(head, b) {
 		if (b->is_def && b->is_real) {
@@ -125,7 +124,6 @@ static void find_neighbour_walker(ir_node *block, void *data)
 	struct list_head  *head  = get_block_border_head(it->env, block);
 	be_lv_t           *lv    = be_get_irg_liveness(it->env->irg);
 
-	border_t *b;
 	int has_started = 0;
 
 	if (!be_is_live_in(lv, block, it->irn) && block != get_nodes_block(it->irn))

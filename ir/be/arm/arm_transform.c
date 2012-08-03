@@ -738,7 +738,7 @@ static ir_node *make_shift(ir_node *node, match_flags_t flags,
 	ir_node  *new_op2;
 
 	if (get_mode_modulo_shift(mode) != 32)
-		panic("modulo shift!=32 not supported by arm backend");
+		panic("modulo shift!=32 not supported");
 
 	if (flags & MATCH_SIZE_NEUTRAL) {
 		op1 = arm_skip_downconv(op1);
@@ -942,7 +942,7 @@ static ir_node *gen_Load(ir_node *node)
 	ir_node  *new_load = NULL;
 
 	if (get_Load_unaligned(node) == align_non_aligned)
-		panic("arm: unaligned Loads not supported yet");
+		panic("unaligned Loads not supported yet");
 
 	if (mode_is_float(mode)) {
 		if (USE_FPA(isa)) {
@@ -984,7 +984,7 @@ static ir_node *gen_Store(ir_node *node)
 	ir_node *new_store = NULL;
 
 	if (get_Store_unaligned(node) == align_non_aligned)
-		panic("arm: unaligned Stores not supported yet");
+		panic("unaligned Stores not supported yet");
 
 	if (mode_is_float(mode)) {
 		if (USE_FPA(isa)) {
@@ -1293,7 +1293,7 @@ static ir_node *gen_Builtin(ir_node *node)
 	case ir_bk_inner_trampoline:
 		break;
 	}
-	panic("Builtin %s not implemented in ARM", get_builtin_kind_name(kind));
+	panic("Builtin %s not implemented", get_builtin_kind_name(kind));
 }
 
 /**
@@ -1326,7 +1326,7 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 	case ir_bk_inner_trampoline:
 		break;
 	}
-	panic("Builtin %s not implemented in ARM", get_builtin_kind_name(kind));
+	panic("Builtin %s not implemented", get_builtin_kind_name(kind));
 }
 
 static ir_node *gen_Proj_Load(ir_node *node)
@@ -1396,16 +1396,6 @@ static ir_node *gen_Proj_Div(ir_node *node)
 		break;
 	}
 	panic("Unsupported Proj from Div");
-}
-
-/**
- * Transform the Projs from a Cmp.
- */
-static ir_node *gen_Proj_Cmp(ir_node *node)
-{
-	(void) node;
-	/* we should only be here in case of a Mux node */
-	panic("Mux NYI");
 }
 
 static ir_node *gen_Proj_Start(ir_node *node)
@@ -1580,8 +1570,6 @@ static ir_node *gen_Proj(ir_node *node)
 		return gen_Proj_CopyB(node);
 	case iro_Div:
 		return gen_Proj_Div(node);
-	case iro_Cmp:
-		return gen_Proj_Cmp(node);
 	case iro_Start:
 		return gen_Proj_Start(node);
 	case iro_Cond:

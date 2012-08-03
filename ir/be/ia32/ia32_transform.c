@@ -449,7 +449,7 @@ ir_entity *ia32_gen_fp_known_const(ia32_known_const_t kct)
 		case 0:  mode = mode_Iu; break;
 		case 1:  mode = mode_Lu; break;
 		case 2:  mode = mode_F;  break;
-		default: panic("internal compiler error (ia32_gen_fp_known_const)");
+		default: panic("internal compiler error");
 		}
 		tv = new_tarval_from_str(cnst_str, strlen(cnst_str), mode);
 
@@ -4288,7 +4288,7 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 	ir_node  *mem_high;
 
 	if (ia32_cg_config.use_sse2) {
-		panic("ia32_l_LLtoFloat not implemented for SSE2");
+		panic("not implemented for SSE2");
 	}
 
 	/* do a store */
@@ -4617,7 +4617,7 @@ static ir_node *gen_Proj_Store(ir_node *node)
 		if (pn == pn_Store_M) {
 			return new_pred;
 		}
-		panic("exception control flow for gen_float_const_Store not implemented yet");
+		panic("exception control flow not implemented yet");
 	} else if (get_ia32_op_type(new_pred) == ia32_AddrModeD) {
 		/* destination address mode */
 		if (pn == pn_Store_M) {
@@ -5471,7 +5471,7 @@ static ir_node *gen_Builtin(ir_node *node)
 	case ir_bk_inner_trampoline:
 		return gen_inner_trampoline(node);
 	}
-	panic("Builtin %s not implemented in IA32", get_builtin_kind_name(kind));
+	panic("Builtin %s not implemented", get_builtin_kind_name(kind));
 }
 
 /**
@@ -5515,7 +5515,7 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 			return get_Tuple_pred(new_node, 0);
 		}
 	}
-	panic("Builtin %s not implemented in IA32", get_builtin_kind_name(kind));
+	panic("Builtin %s not implemented", get_builtin_kind_name(kind));
 }
 
 static ir_node *gen_be_IncSP(ir_node *node)
@@ -5595,16 +5595,6 @@ static ir_node *gen_Proj_be_Call(ir_node *node)
 	return res;
 }
 
-/**
- * Transform the Projs from a Cmp.
- */
-static ir_node *gen_Proj_Cmp(ir_node *node)
-{
-	/* this probably means not all mode_b nodes were lowered... */
-	panic("trying to directly transform Proj_Cmp %+F (mode_b not lowered?)",
-	      node);
-}
-
 static ir_node *gen_Proj_ASM(ir_node *node)
 {
 	ir_mode *mode     = get_irn_mode(node);
@@ -5654,8 +5644,6 @@ static ir_node *gen_Proj(ir_node *node)
 		return gen_Proj_be_AddSP(node);
 	case beo_Call:
 		return gen_Proj_be_Call(node);
-	case iro_Cmp:
-		return gen_Proj_Cmp(node);
 	case iro_Start:
 		proj = get_Proj_proj(node);
 		switch (proj) {

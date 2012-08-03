@@ -97,19 +97,18 @@ static void free_gurobi(gurobi_t *grb)
  */
 static void gurobi_construct(gurobi_t *grb)
 {
-	const matrix_elem_t *elem;
-	int                  i, o;
-	//int                  sv_cnt;
-	//int                 *indices;
-	//double              *startv;
-	int                  numcols, numrows, numentries;
-	int                  objsen, *matbeg, *matcnt, *matind;
-	double               *obj, *rhs, *matval, *lb;
-	char                 *sense, *vartype;
-	char                 **colname, **rowname;
-	struct obstack       obst;
-	lpp_t                *lpp = grb->lpp;
-	int                  error;
+	int            i, o;
+	//int            sv_cnt;
+	//int           *indices;
+	//double        *startv;
+	int            numcols, numrows, numentries;
+	int            objsen, *matbeg, *matcnt, *matind;
+	double        *obj, *rhs, *matval, *lb;
+	char          *sense, *vartype;
+	char         **colname, **rowname;
+	struct obstack obst;
+	lpp_t         *lpp = grb->lpp;
+	int            error;
 
 	numcols    = lpp->var_next-1;
 	numrows    = lpp->cst_next-1;

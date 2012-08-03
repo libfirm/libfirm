@@ -47,9 +47,6 @@
 #include "beintlive_t.h"
 #include "bemodule.h"
 
-#include "execfreq.h"
-#include "statev.h"
-
 #undef KEEP_ALIVE_COPYKEEP_HACK
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
@@ -309,23 +306,6 @@ static void build_register_pair_list(reg_pair_t *pairs, int *n, ir_node *irn)
 	}
 }
 
-static void emit_stat_info(const ir_node *irn, const perm_move_t *move)
-{
-	ir_node      *block     = get_nodes_block(irn);
-	ir_graph     *irg       = get_irn_irg(block);
-	ir_exec_freq *exec_freq = be_get_irg_exec_freq(irg);
-	double        freq      = get_block_execfreq(exec_freq, block);
-
-	if (move->type == PERM_CYCLE) {
-		stat_ev_int("cycle_length", move->n_elems);
-		stat_ev_dbl("cycle_weight", freq * move->n_elems);
-	}
-	else if (move->type == PERM_CHAIN) {
-		stat_ev_int("chain_length", move->n_elems);
-		stat_ev_dbl("chain_weight", freq * move->n_elems);
-	}
-}
-
 static void reduce_perm_size(ir_node *irn, const perm_move_t* move, reg_pair_t *const pairs, int n_pairs)
 {
 	const arch_register_class_t *const reg_class   = arch_get_irn_register(get_irn_n(irn, 0))->reg_class;
@@ -480,8 +460,6 @@ static void lower_perm_node(ir_node *irn, lower_env_t *env)
 		 * Found cycles/chains are written to move.n_elems, the type (cycle
 		 * or chain) is saved in move.type. */
 		get_perm_move_info(&move, pairs, n_pairs, i);
-
-		emit_stat_info(irn, &move);
 
 		DB((dbg, LEVEL_1, "%+F: following %s created:\n  ", irn, move.type == PERM_CHAIN ? "chain" : "cycle"));
 		for (i = 0; i < move.n_elems; ++i) {
@@ -682,9 +660,7 @@ static void melt_copykeeps(constraint_env_t *cenv)
 	foreach_ir_nodehashmap(&cenv->op_set, map_entry, map_iter) {
 		op_copy_assoc_t *entry = (op_copy_assoc_t*)map_entry.data;
 		int     idx, num_ck;
-		ir_node *cp;
 		struct obstack obst;
-		ir_nodeset_iterator_t iter;
 		ir_node **ck_arr, **melt_arr;
 
 		obstack_init(&obst);
@@ -814,8 +790,6 @@ void assure_constraints(ir_graph *irg)
 		op_copy_assoc_t          *entry = (op_copy_assoc_t*)map_entry.data;
 		size_t                    n     = ir_nodeset_size(&entry->copies);
 		ir_node                 **nodes = ALLOCAN(ir_node*, n);
-		ir_node                  *cp;
-		ir_nodeset_iterator_t     iter;
 		be_ssa_construction_env_t senv;
 
 		/* put the node in an array */

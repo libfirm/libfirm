@@ -192,11 +192,9 @@ static void walker(ir_node *proj, void *env)
 
 	n = ir_nodeset_size(&pi.user_mem);
 	if (n > 0) { /* nothing happened otherwise */
-		ir_node                *sync;
-		ir_node               **in   = XMALLOCN(ir_node*, n+1);
-		ir_node                *node;
-		ir_nodeset_iterator_t   iter;
-		size_t                  i;
+		ir_node  *sync;
+		ir_node **in   = XMALLOCN(ir_node*, n+1);
+		size_t    i;
 
 		i = 0;
 		in[i++] = proj;

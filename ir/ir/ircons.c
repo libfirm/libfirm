@@ -56,13 +56,20 @@ ir_node *new_rd_Const_long(dbg_info *db, ir_graph *irg, ir_mode *mode,
 	return new_rd_Const(db, irg, new_tarval_from_long(value, mode));
 }
 
-ir_node *new_rd_ASM(dbg_info *db, ir_node *block, int arity, ir_node *in[],
-                    ir_asm_constraint *inputs, size_t n_outs,
-	                ir_asm_constraint *outputs, size_t n_clobber,
+ir_node *new_rd_ASM(dbg_info *db, ir_node *block, ir_node *mem,
+                    int arity, ir_node *in[], ir_asm_constraint *inputs,
+                    size_t n_outs, ir_asm_constraint *outputs, size_t n_clobber,
 	                ident *clobber[], ident *text)
 {
 	ir_graph *irg = get_irn_irg(block);
-	ir_node  *res = new_ir_node(db, irg, block, op_ASM, mode_T, arity, in);
+
+	int r_arity = arity+1;
+	ir_node **r_in;
+	NEW_ARR_A(ir_node*, r_in, r_arity);
+	r_in[0] = mem;
+	memcpy(&r_in[1], in, arity*sizeof(ir_node*));
+
+	ir_node *res = new_ir_node(db, irg, block, op_ASM, mode_T, r_arity, r_in);
 
 	res->attr.assem.pin_state = op_pin_state_pinned;
 	res->attr.assem.input_constraints
@@ -142,12 +149,12 @@ ir_node *new_r_simpleSel(ir_node *block, ir_node *store, ir_node *objptr,
 {
 	return new_rd_Sel(NULL, block, store, objptr, 0, NULL, ent);
 }
-ir_node *new_r_ASM(ir_node *block,
+ir_node *new_r_ASM(ir_node *block, ir_node *mem,
                    int arity, ir_node *in[], ir_asm_constraint *inputs,
                    size_t n_outs, ir_asm_constraint *outputs,
                    size_t n_clobber, ident *clobber[], ident *text)
 {
-	return new_rd_ASM(NULL, block, arity, in, inputs, n_outs, outputs, n_clobber, clobber, text);
+	return new_rd_ASM(NULL, block, mem, arity, in, inputs, n_outs, outputs, n_clobber, clobber, text);
 }
 
 /** Creates a Phi node with 0 predecessors. */
@@ -387,14 +394,14 @@ ir_node *new_d_SymConst(dbg_info *db, ir_mode *mode, symconst_symbol value,
 	return new_rd_SymConst(db, current_ir_graph, mode, value, kind);
 }
 
-ir_node *new_d_ASM(dbg_info *db, int arity, ir_node *in[],
+ir_node *new_d_ASM(dbg_info *db, ir_node *mem, int arity, ir_node *in[],
                    ir_asm_constraint *inputs,
                    size_t n_outs, ir_asm_constraint *outputs,
                    size_t n_clobber, ident *clobber[], ident *text)
 {
 	assert(get_irg_phase_state(current_ir_graph) == phase_building);
-	return new_rd_ASM(db, current_ir_graph->current_block, arity, in, inputs,
-	                  n_outs, outputs, n_clobber, clobber, text);
+	return new_rd_ASM(db, current_ir_graph->current_block, mem, arity, in,
+	                  inputs, n_outs, outputs, n_clobber, clobber, text);
 }
 
 ir_node *new_rd_strictConv(dbg_info *dbgi, ir_node *block, ir_node * irn_op, ir_mode * mode)
@@ -724,11 +731,12 @@ ir_node *new_simpleSel(ir_node *store, ir_node *objptr, ir_entity *ent)
 {
 	return new_d_simpleSel(NULL, store, objptr, ent);
 }
-ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
-                 size_t n_outs, ir_asm_constraint *outputs,
-                 size_t n_clobber, ident *clobber[], ident *text)
+ir_node *new_ASM(ir_node *mem, int arity, ir_node *in[],
+                 ir_asm_constraint *inputs, size_t n_outs,
+                 ir_asm_constraint *outputs, size_t n_clobber,
+                 ident *clobber[], ident *text)
 {
-	return new_d_ASM(NULL, arity, in, inputs, n_outs, outputs, n_clobber, clobber, text);
+	return new_d_ASM(NULL, mem, arity, in, inputs, n_outs, outputs, n_clobber, clobber, text);
 }
 
 ir_node *new_r_Anchor(ir_graph *irg)

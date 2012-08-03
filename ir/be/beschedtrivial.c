@@ -43,8 +43,6 @@
  */
 static ir_node *trivial_select(void *block_env, ir_nodeset_t *ready_set)
 {
-	ir_node               *irn;
-	ir_nodeset_iterator_t  iter;
 	(void)block_env;
 
 	/* assure that branches and constants are executed last */

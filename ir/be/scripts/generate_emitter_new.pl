@@ -107,11 +107,13 @@ foreach my $op (keys(%nodes)) {
 
 	foreach my $template (@emit) {
 		# substitute only lines, starting with a '.'
-		if ($template =~ /^(\s*)\.\s*(.*)/) {
+		if ($template eq '') {
+			# nothing
+		} elsif ($template =~ /^(\s*)\.\s*(.*)/) {
 			my $indent = "\t$1";
 			create_emitter(\@obst_func, $indent, $2);
 		} else {
-			push(@obst_func, "\t$template\n");
+			push(@obst_func, "\t${arch}_emitf(node, \"$template\");\n");
 		}
 	}
 

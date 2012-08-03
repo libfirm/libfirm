@@ -2243,11 +2243,10 @@ static void lower_ASM(ir_node *asmn, ir_mode *mode)
 	ir_asm_constraint *output_constraints = get_ASM_output_constraints(asmn);
 	ir_asm_constraint *input_constraints  = get_ASM_input_constraints(asmn);
 	unsigned           n_64bit_outs       = 0;
-	int      i;
 
 	(void)mode;
 
-	for (i = get_irn_arity(asmn) - 1; i >= 0; --i) {
+	for (int i = get_irn_arity(asmn) - 1; i >= 0; --i) {
 		ir_node *op      = get_irn_n(asmn, i);
 		ir_mode *op_mode = get_irn_mode(op);
 		if (op_mode == high_signed || op_mode == high_unsigned) {
@@ -2255,8 +2254,8 @@ static void lower_ASM(ir_node *asmn, ir_mode *mode)
 		}
 	}
 
-	for (i = 0; i < n_outs; ++i) {
-		const ir_asm_constraint *constraint = &output_constraints[i];
+	for (int o = 0; o < n_outs; ++o) {
+		const ir_asm_constraint *constraint = &output_constraints[o];
 		if (constraint->mode == high_signed || constraint->mode == high_unsigned) {
 			const char *constr = get_id_str(constraint->constraint);
 			++n_64bit_outs;
@@ -2271,71 +2270,73 @@ static void lower_ASM(ir_node *asmn, ir_mode *mode)
 	if (n_64bit_outs == 0)
 		return;
 
-	{
-		dbg_info          *dbgi       = get_irn_dbg_info(asmn);
-		ir_node           *block      = get_nodes_block(asmn);
-		int                arity      = get_irn_arity(asmn);
-		ir_node          **in         = get_irn_in(asmn) + 1;
-		int                new_n_outs = 0;
-		int                n_clobber  = get_ASM_n_clobbers(asmn);
-		long              *proj_map   = ALLOCAN(long, n_outs);
-		ident            **clobbers   = get_ASM_clobbers(asmn);
-		ident             *asm_text   = get_ASM_text(asmn);
-		ir_asm_constraint *new_outputs
-			= ALLOCAN(ir_asm_constraint, n_outs+n_64bit_outs);
-		ir_node           *new_asm;
+	dbg_info          *dbgi       = get_irn_dbg_info(asmn);
+	ir_node           *block      = get_nodes_block(asmn);
+	ir_node           *mem        = get_ASM_mem(asmn);
+	int                new_n_outs = 0;
+	int                n_clobber  = get_ASM_n_clobbers(asmn);
+	long              *proj_map   = ALLOCAN(long, n_outs);
+	ident            **clobbers   = get_ASM_clobbers(asmn);
+	ident             *asm_text   = get_ASM_text(asmn);
+	ir_asm_constraint *new_outputs
+		= ALLOCAN(ir_asm_constraint, n_outs+n_64bit_outs);
+	ir_node           *new_asm;
 
-		for (i = 0; i < n_outs; ++i) {
-			const ir_asm_constraint *constraint = &output_constraints[i];
-			if (constraint->mode == high_signed || constraint->mode == high_unsigned) {
-				new_outputs[new_n_outs].pos        = constraint->pos;
-				new_outputs[new_n_outs].constraint = new_id_from_str("=a");
-				new_outputs[new_n_outs].mode       = env->low_unsigned;
-				proj_map[i] = new_n_outs;
-				++new_n_outs;
-				new_outputs[new_n_outs].pos        = constraint->pos;
-				new_outputs[new_n_outs].constraint = new_id_from_str("=d");
-				if (constraint->mode == high_signed)
-					new_outputs[new_n_outs].mode = env->low_signed;
-				else
-					new_outputs[new_n_outs].mode = env->low_unsigned;
-				++new_n_outs;
-			} else {
-				new_outputs[new_n_outs] = *constraint;
-				proj_map[i] = new_n_outs;
-				++new_n_outs;
-			}
-		}
-		assert(new_n_outs == n_outs+(int)n_64bit_outs);
-
-		new_asm = new_rd_ASM(dbgi, block, arity, in, input_constraints,
-		                     new_n_outs, new_outputs, n_clobber, clobbers,
-		                     asm_text);
-
-		foreach_out_edge_safe(asmn, edge) {
-			ir_node *proj      = get_edge_src_irn(edge);
-			ir_mode *proj_mode = get_irn_mode(proj);
-			long     pn;
-
-			if (!is_Proj(proj))
-				continue;
-			pn = get_Proj_proj(proj);
-
-			if (pn < n_outs)
-				pn = proj_map[pn];
+	for (int o = 0; o < n_outs; ++o) {
+		const ir_asm_constraint *constraint = &output_constraints[o];
+		if (constraint->mode == high_signed || constraint->mode == high_unsigned) {
+			new_outputs[new_n_outs].pos        = constraint->pos;
+			new_outputs[new_n_outs].constraint = new_id_from_str("=a");
+			new_outputs[new_n_outs].mode       = env->low_unsigned;
+			proj_map[o] = new_n_outs;
+			++new_n_outs;
+			new_outputs[new_n_outs].pos        = constraint->pos;
+			new_outputs[new_n_outs].constraint = new_id_from_str("=d");
+			if (constraint->mode == high_signed)
+				new_outputs[new_n_outs].mode = env->low_signed;
 			else
-				pn = new_n_outs + pn - n_outs;
+				new_outputs[new_n_outs].mode = env->low_unsigned;
+			++new_n_outs;
+		} else {
+			new_outputs[new_n_outs] = *constraint;
+			proj_map[o] = new_n_outs;
+			++new_n_outs;
+		}
+	}
+	assert(new_n_outs == n_outs+(int)n_64bit_outs);
 
-			if (proj_mode == high_signed || proj_mode == high_unsigned) {
-				ir_mode *high_mode
-					= proj_mode == high_signed ? env->low_signed : env->low_unsigned;
-				ir_node *np_low  = new_r_Proj(new_asm, env->low_unsigned, pn);
-				ir_node *np_high = new_r_Proj(new_asm, high_mode, pn+1);
-				ir_set_dw_lowered(proj, np_low, np_high);
-			} else {
-				ir_node *np = new_r_Proj(new_asm, proj_mode, pn);
-				exchange(proj, np);
-			}
+	int       n_inputs = get_ASM_n_inputs(asmn);
+	ir_node **new_ins  = ALLOCAN(ir_node*, n_inputs);
+	for (int i = 0; i < n_inputs; ++i)
+		new_ins[i] = get_ASM_input(asmn, i);
+
+	new_asm = new_rd_ASM(dbgi, block, mem, n_inputs, new_ins, input_constraints,
+						 new_n_outs, new_outputs, n_clobber, clobbers,
+						 asm_text);
+
+	foreach_out_edge_safe(asmn, edge) {
+		ir_node *proj      = get_edge_src_irn(edge);
+		ir_mode *proj_mode = get_irn_mode(proj);
+		long     pn;
+
+		if (!is_Proj(proj))
+			continue;
+		pn = get_Proj_proj(proj);
+
+		if (pn < n_outs)
+			pn = proj_map[pn];
+		else
+			pn = new_n_outs + pn - n_outs;
+
+		if (proj_mode == high_signed || proj_mode == high_unsigned) {
+			ir_mode *high_mode
+				= proj_mode == high_signed ? env->low_signed : env->low_unsigned;
+			ir_node *np_low  = new_r_Proj(new_asm, env->low_unsigned, pn);
+			ir_node *np_high = new_r_Proj(new_asm, high_mode, pn+1);
+			ir_set_dw_lowered(proj, np_low, np_high);
+		} else {
+			ir_node *np = new_r_Proj(new_asm, proj_mode, pn);
+			exchange(proj, np);
 		}
 	}
 }

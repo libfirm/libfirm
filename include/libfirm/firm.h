@@ -59,13 +59,18 @@
 /** @defgroup irana Analyses */
 
 /** @defgroup adt Abstract Data Structures
- * This module contains abstract datatypes. The firm API is fully functional
- * without these abstract datatypes. They're provided as a convenience.
+ * This module contains abstract datatypes like lists and hashmaps.
+ * They're provided as a convenience, the firm API is fully functionaly without
+ * them so you can just as well use a library like glib and libapr or write
+ * your own.
  */
 
 /** @defgroup algorithms Algorithms
- * This module contains generic algorithms. The firm API is fully functional
- * without them. They're provided as a convenience.
+ * This module contains generic algorithms like bipartite matching or solvers
+ * for linear equation systems.
+ * They're provided as a convenience, the firm API is fully functionaly without
+ * them so you can just as well use a library like glib and libapr or write
+ * your own.
  */
 #ifndef FIRM_COMMON_FIRM_H
 #define FIRM_COMMON_FIRM_H

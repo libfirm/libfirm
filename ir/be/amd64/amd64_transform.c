@@ -196,7 +196,7 @@ static ir_node *gen_Cmp(ir_node *node)
 	bool      is_unsigned;
 
 	if (mode_is_float(cmp_mode)) {
-		panic("Floating point not implemented yet (in gen_Cmp)!");
+		panic("Floating point not implemented yet!");
 	}
 
 	assert(get_irn_mode(op2) == cmp_mode);
@@ -514,9 +514,6 @@ static ir_node *gen_Proj(ir_node *node)
 	} else if (be_is_AddSP(pred)) {
 		//panic("gen_Proj not implemented for AddSP");
 		return gen_Proj_be_AddSP(node);
-	} else if (is_Cmp(pred)) {
-		//panic("gen_Proj not implemented for Cmp");
-		return gen_Proj_Cmp(node);
 	} else if (is_Div(pred)) {
 		return gen_Proj_Div(node);
 #endif

@@ -463,7 +463,7 @@ FIRM_API void set_Sel_index(ir_node *node, int pos, ir_node *index);
 /** Returns parameter inputs of Call node @p node as array. */
 FIRM_API ir_node **get_Call_param_arr(ir_node *node);
 /** Returns the number of parameters of a call. */
-FIRM_API size_t get_Call_n_params(const ir_node *node);
+FIRM_API int get_Call_n_params(const ir_node *node);
 /** Returns the call parameter at position pos. */
 FIRM_API ir_node *get_Call_param(const ir_node *node, int pos);
 /** Sets the call parameter at position pos. */
@@ -689,7 +689,9 @@ FIRM_API void set_Tuple_pred(ir_node *node, int pos, ir_node *pred);
  */
 
 /** Returns the number of input constraints for an ASM node. */
-FIRM_API size_t get_ASM_n_input_constraints(const ir_node *node);
+FIRM_API int get_ASM_n_inputs(const ir_node *node);
+/** Returns input number @p pos of an ASM node. */
+FIRM_API ir_node *get_ASM_input(const ir_node *node, int pos);
 /** Returns the number of output constraints for an ASM node.  */
 FIRM_API size_t get_ASM_n_output_constraints(const ir_node *node);
 /** Returns the number of clobbered registers for an ASM node.  */

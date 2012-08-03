@@ -32,7 +32,7 @@
 
 #include "debug.h"
 #include "error.h"
-#include "execfreq.h"
+#include "execfreq_t.h"
 #include "irdump_t.h"
 #include "iredges_t.h"
 #include "irgraph.h"
@@ -280,6 +280,8 @@ static int co_get_costs_loop_depth(const ir_node *root, int pos)
 	return 1+cost;
 }
 
+static ir_execfreq_int_factors factors;
+
 /**
  * Computes the costs of a copy according to execution frequency
  * @param pos  the argument position of arg in the root arguments
@@ -287,12 +289,10 @@ static int co_get_costs_loop_depth(const ir_node *root, int pos)
  */
 static int co_get_costs_exec_freq(const ir_node *root, int pos)
 {
-	ir_graph     *irg       = get_irn_irg(root);
-	ir_node      *root_bl   = get_nodes_block(root);
-	ir_node      *copy_bl
+	ir_node *root_bl = get_nodes_block(root);
+	ir_node *copy_bl
 		= is_Phi(root) ? get_Block_cfgpred_block(root_bl, pos) : root_bl;
-	ir_exec_freq *exec_freq = be_get_irg_exec_freq(irg);
-	int           res       = get_block_execfreq_ulong(exec_freq, copy_bl);
+	int      res     = get_block_execfreq_int(&factors, copy_bl);
 
 	/* don't allow values smaller than one. */
 	return res < 1 ? 1 : res;
@@ -604,7 +604,7 @@ static int compare_ous(const void *k1, const void *k2)
 static void co_sort_units(copy_opt_t *co)
 {
 	int i, count = 0, costs;
-	unit_t *ou, **ous;
+	unit_t **ous;
 
 	/* get the number of ous, remove them form the list and fill the array */
 	list_for_each_entry(unit_t, ou, &co->units, units)
@@ -650,7 +650,6 @@ void co_build_ou_structure(copy_opt_t *co)
 
 void co_free_ou_structure(copy_opt_t *co)
 {
-	unit_t *curr, *tmp;
 	ASSERT_OU_AVAIL(co);
 	list_for_each_entry_safe(unit_t, curr, tmp, &co->units, units) {
 		xfree(curr->nodes);
@@ -665,7 +664,6 @@ void co_free_ou_structure(copy_opt_t *co)
 int co_get_max_copy_costs(const copy_opt_t *co)
 {
 	int i, res = 0;
-	unit_t *curr;
 
 	ASSERT_OU_AVAIL(co);
 
@@ -680,7 +678,6 @@ int co_get_max_copy_costs(const copy_opt_t *co)
 int co_get_inevit_copy_costs(const copy_opt_t *co)
 {
 	int res = 0;
-	unit_t *curr;
 
 	ASSERT_OU_AVAIL(co);
 
@@ -692,7 +689,6 @@ int co_get_inevit_copy_costs(const copy_opt_t *co)
 int co_get_copy_costs(const copy_opt_t *co)
 {
 	int i, res = 0;
-	unit_t *curr;
 
 	ASSERT_OU_AVAIL(co);
 
@@ -714,7 +710,6 @@ int co_get_copy_costs(const copy_opt_t *co)
 int co_get_lower_bound(const copy_opt_t *co)
 {
 	int res = 0;
-	unit_t *curr;
 
 	ASSERT_OU_AVAIL(co);
 

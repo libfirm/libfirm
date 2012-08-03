@@ -118,6 +118,9 @@ static const unsigned caller_saves[] = {
 	REG_F29,
 	REG_F30,
 	REG_F31,
+	REG_FLAGS,
+	REG_FPFLAGS,
+	REG_Y,
 };
 static unsigned default_caller_saves[BITSET_SIZE_ELEMS(N_SPARC_REGISTERS)];
 
@@ -167,7 +170,7 @@ static unsigned determine_n_float_regs(ir_mode *mode)
 	case 128:
 		return 4;
 	default:
-		panic("sparc: Unexpected floatingpoint mode %+F", mode);
+		panic("Unexpected floatingpoint mode %+F", mode);
 	}
 }
 
@@ -223,7 +226,7 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 		reg_or_stackslot_t *param;
 
 		if (is_compound_type(param_type))
-			panic("sparc: compound arguments not supported yet");
+			panic("compound arguments not supported yet");
 
 		mode  = get_type_mode(param_type);
 		bits  = get_mode_size_bits(mode);
@@ -258,7 +261,7 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 		/* we might need a 2nd 32bit component (for 64bit or double values) */
 		if (bits > 32) {
 			if (bits > 64)
-				panic("only 32 and 64bit modes supported in sparc backend");
+				panic("only 32 and 64bit modes supported");
 
 			if (regnum < n_param_regs) {
 				const arch_register_t *reg = param_regs[regnum];
@@ -294,7 +297,7 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 			unsigned next_reg = round_up2(float_regnum, n_regs);
 
 			if (next_reg >= n_float_result_regs) {
-				panic("Too many float results for sparc backend");
+				panic("Too many float results");
 			} else {
 				const arch_register_t *reg = float_result_regs[next_reg];
 				rbitset_clear(caller_saves, reg->global_index);
@@ -310,7 +313,7 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 					rbitset_clear(caller_saves, reg->global_index+2);
 					rbitset_clear(caller_saves, reg->global_index+3);
 				} else {
-					panic("invalid number of registers in sparc float result");
+					panic("invalid number of registers in result");
 				}
 				float_regnum = next_reg + n_regs;
 
@@ -318,11 +321,11 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 			}
 		} else {
 			if (get_mode_size_bits(result_mode) > 32) {
-				panic("Results with more than 32bits not supported by sparc backend yet");
+				panic("Results with more than 32bits not supported yet");
 			}
 
 			if (regnum >= n_param_regs) {
-				panic("Too many results for sparc backend");
+				panic("Too many results");
 			} else {
 				const arch_register_t *reg = param_regs[regnum++];
 				if (irg == NULL || omit_fp)

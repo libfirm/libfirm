@@ -85,15 +85,14 @@ static void free_cpx(cpx_t *cpx)
  */
 static void cpx_construct(cpx_t *cpx)
 {
-	const matrix_elem_t *elem;
-	int                  i, o, sv_cnt;
-	int                  numcols, numrows, numentries;
-	int                  objsen, *matbeg, *matcnt, *matind, *indices;
-	double               *obj, *rhs, *matval, *lb, *ub, *startv;
-	char                 *sense, *vartype;
-	char                 **colname, **rowname;
-	struct obstack       obst;
-	lpp_t                *lpp = cpx->lpp;
+	int            i, o, sv_cnt;
+	int            numcols, numrows, numentries;
+	int            objsen, *matbeg, *matcnt, *matind, *indices;
+	double        *obj, *rhs, *matval, *lb, *ub, *startv;
+	char          *sense, *vartype;
+	char         **colname, **rowname;
+	struct obstack obst;
+	lpp_t         *lpp = cpx->lpp;
 
 	numcols    = lpp->var_next-1;
 	numrows    = lpp->cst_next-1;

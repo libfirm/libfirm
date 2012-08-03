@@ -1,3 +1,6 @@
+# Firm node specifications
+# The comments are in (standard python) restructured text format and are used
+# to generate documentation.
 from spec_util import abstract, setnodedefaults
 
 class Op(object):
@@ -85,7 +88,33 @@ class And(Binop):
 	flags    = [ "commutative" ]
 
 class ASM(Op):
-	"""executes assembler fragments of the target machine"""
+	"""executes assembler fragments of the target machine.
+
+	The node contains a template for an assembler snippet. The compiler will
+	replace occurences of %0 to %9 with input/output registers,
+	%% with a single % char. Some backends allow additional specifiers (for
+	example %w3, %l3, %h3 on x86 to get a 16bit, 8hit low, 8bit high part
+	of a register).
+	After the replacements the text is emitted into the final assembly.
+
+	The clobber list contains names of registers which have an undefined value
+	after the assembler instruction is executed; it may also contain 'memory'
+	or 'cc' if global state/memory changes or the condition code registers
+	(some backends implicitely set cc, memory clobbers on all ASM statements).
+
+	Example (an i386 instruction)::
+
+		ASM(text="btsl %1, %0",
+			input_constraints = ["=m", "r"],
+			clobbers = ["cc"])
+
+	As there are no output, the %0 references the first input which is just an
+	address which the asm operation writes to. %1 references to an input which
+	is passed as a register. The condition code register has an unknown value
+	after the instruction.
+
+	(This format is inspired by the gcc extended asm syntax)
+	"""
 	mode             = "mode_T"
 	arity            = "variable"
 	flags            = [ "keep", "uses_memory" ]

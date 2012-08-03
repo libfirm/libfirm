@@ -229,19 +229,6 @@ static inline void list_splice_init(struct list_head *list,
 	for (pos = (head)->next; pos != (head); pos = pos->next)
 
 /**
- * __list_for_each - iterate over a list
- * @param pos   the &struct list_head to use as a loop counter.
- * @param head  the head for your list.
- *
- * This variant differs from list_for_each() in that it's the
- * simplest possible list iteration code, no ing is done.
- * Use this for code that knows the list to be very short (empty
- * or 1 entry) most of the time.
- */
-#define __list_for_each(pos, head) \
-	for (pos = (head)->next; pos != (head); pos = pos->next)
-
-/**
  * list_for_each_prev - iterate over a list backwards
  * @param pos   the &struct list_head to use as a loop counter.
  * @param head  the head for your list.
@@ -267,7 +254,7 @@ static inline void list_splice_init(struct list_head *list,
  * @param member  the name of the list_struct within the struct.
  */
 #define list_for_each_entry(type, pos, head, member)    \
-	for (pos = list_entry((head)->next, type, member);  \
+	for (type *pos = list_entry((head)->next, type, member); \
 	     &pos->member != (head);                        \
 	     pos = list_entry(pos->member.next, type, member))
 
@@ -279,7 +266,7 @@ static inline void list_splice_init(struct list_head *list,
  * @param member  the name of the list_struct within the struct.
  */
 #define list_for_each_entry_reverse(type, pos, head, member) \
-	for (pos = list_entry((head)->prev, type, member);       \
+	for (type *pos = list_entry((head)->prev, type, member); \
 	     &pos->member != (head);                             \
 	     pos = list_entry(pos->member.prev, type, member))
 
@@ -293,8 +280,8 @@ static inline void list_splice_init(struct list_head *list,
  * @param member  the name of the list_struct within the struct.
  */
 #define list_for_each_entry_safe(type, pos, n, head, member) \
-	for (pos = list_entry((head)->next, type, member),       \
-		n = list_entry(pos->member.next, type, member);      \
+	for (type *pos = list_entry((head)->next, type, member), \
+	          *n   = list_entry(pos->member.next, type, member); \
 	     &pos->member != (head);                             \
 	     pos = n, n = list_entry(n->member.next, type, member))
 

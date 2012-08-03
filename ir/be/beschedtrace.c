@@ -541,9 +541,6 @@ static void trace_free(void *data)
  */
 static ir_node *basic_selection(ir_nodeset_t *ready_set)
 {
-	ir_node *irn = NULL;
-	ir_nodeset_iterator_t iter;
-
 	/* assure that branches and constants are executed last */
 	foreach_ir_nodeset(ready_set, irn, iter) {
 		if (!is_cfop(irn)) {
@@ -552,9 +549,7 @@ static ir_node *basic_selection(ir_nodeset_t *ready_set)
 	}
 
 	/* at last: schedule branches */
-	irn = get_nodeset_node(ready_set);
-
-	return irn;
+	return get_nodeset_node(ready_set);
 }
 
 /**
@@ -564,9 +559,7 @@ static ir_node *muchnik_select(void *block_env, ir_nodeset_t *ready_set)
 {
 	trace_env_t *env = (trace_env_t*)block_env;
 	ir_nodeset_t mcands, ecands;
-	ir_nodeset_iterator_t iter;
 	sched_timestep_t max_delay = 0;
-	ir_node *irn;
 
 	/* calculate the max delay of all candidates */
 	foreach_ir_nodeset(ready_set, irn, iter) {
@@ -588,6 +581,7 @@ static ir_node *muchnik_select(void *block_env, ir_nodeset_t *ready_set)
 	}
 
 	/* select a node */
+	ir_node *irn;
 	if (ir_nodeset_size(&mcands) == 1) {
 		irn = get_nodeset_node(&mcands);
 		DB((env->dbg, LEVEL_3, "\tirn = %+F, mcand = 1, max_delay = %u\n", irn, max_delay));
@@ -650,11 +644,10 @@ static void sched_muchnik(ir_graph *irg)
 static ir_node *heuristic_select(void *block_env, ir_nodeset_t *ns)
 {
 	trace_env_t *trace_env   = (trace_env_t*)block_env;
-	ir_node     *irn, *cand  = NULL;
+	ir_node     *cand        = NULL;
 	int         max_prio     = INT_MIN;
 	int         cur_prio     = INT_MIN;
 	int         reg_fact;
-	ir_nodeset_iterator_t iter;
 	/* Note: register pressure calculation needs an overhaul, you need correct
 	 * tracking for each register class indidually and weight by each class
 	int         cur_pressure = ir_nodeset_size(lv); */

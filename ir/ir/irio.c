@@ -881,21 +881,16 @@ static void write_node_nr(write_env_t *env, const ir_node *node)
 
 static void write_ASM(write_env_t *env, const ir_node *node)
 {
-	ir_asm_constraint *input_constraints    = get_ASM_input_constraints(node);
-	ir_asm_constraint *output_constraints   = get_ASM_output_constraints(node);
-	ident            **clobbers             = get_ASM_clobbers(node);
-	size_t             n_input_constraints  = get_ASM_n_input_constraints(node);
-	size_t             n_output_constraints = get_ASM_n_output_constraints(node);
-	size_t             n_clobbers           = get_ASM_n_clobbers(node);
-	size_t             i;
-
 	write_symbol(env, "ASM");
 	write_node_nr(env, node);
 	write_node_nr(env, get_nodes_block(node));
+	write_node_nr(env, get_ASM_mem(node));
 
 	write_ident(env, get_ASM_text(node));
 	write_list_begin(env);
-	for (i = 0; i < n_input_constraints; ++i) {
+	ir_asm_constraint *input_constraints = get_ASM_input_constraints(node);
+	int                n_inputs          = get_ASM_n_inputs(node);
+	for (int i = 0; i < n_inputs; ++i) {
 		const ir_asm_constraint *constraint = &input_constraints[i];
 		write_unsigned(env, constraint->pos);
 		write_ident(env, constraint->constraint);
@@ -904,7 +899,9 @@ static void write_ASM(write_env_t *env, const ir_node *node)
 	write_list_end(env);
 
 	write_list_begin(env);
-	for (i = 0; i < n_output_constraints; ++i) {
+	ir_asm_constraint *output_constraints  = get_ASM_output_constraints(node);
+	size_t            n_output_constraints = get_ASM_n_output_constraints(node);
+	for (size_t i = 0; i < n_output_constraints; ++i) {
 		const ir_asm_constraint *constraint = &output_constraints[i];
 		write_unsigned(env, constraint->pos);
 		write_ident(env, constraint->constraint);
@@ -913,14 +910,16 @@ static void write_ASM(write_env_t *env, const ir_node *node)
 	write_list_end(env);
 
 	write_list_begin(env);
-	for (i = 0; i < n_clobbers; ++i) {
+	ident **clobbers   = get_ASM_clobbers(node);
+	size_t  n_clobbers = get_ASM_n_clobbers(node);
+	for (size_t i = 0; i < n_clobbers; ++i) {
 		ident *clobber = clobbers[i];
 		write_ident(env, clobber);
 	}
 	write_list_end(env);
 
 	write_pin_state(env, get_irn_pinned(node));
-	write_pred_refs(env, node, 0);
+	write_pred_refs(env, node, n_ASM_max+1);
 }
 
 static void write_Phi(write_env_t *env, const ir_node *node)
@@ -2093,6 +2092,7 @@ static ir_node *read_ASM(read_env_t *env)
 	ir_asm_constraint *output_constraints = NEW_ARR_F(ir_asm_constraint, 0);
 	ident            **clobbers           = NEW_ARR_F(ident*, 0);
 	ir_node           *block              = read_node_ref(env);
+	ir_node           *mem                = read_node_ref(env);
 	op_pin_state       pin_state;
 
 	ident *asm_text = read_ident(env);
@@ -2131,7 +2131,7 @@ static ir_node *read_ASM(read_env_t *env)
 		return new_r_Bad(env->irg, mode_T);
 	}
 
-	newnode = new_r_ASM(block, n_in, in,
+	newnode = new_r_ASM(block, mem, n_in, in,
 		input_constraints, ARR_LEN(output_constraints),
 		output_constraints, ARR_LEN(clobbers),
 		clobbers, asm_text);

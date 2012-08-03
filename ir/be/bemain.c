@@ -46,7 +46,7 @@
 #include "irprintf.h"
 #include "iroptimize.h"
 #include "firmstat.h"
-#include "execfreq.h"
+#include "execfreq_t.h"
 #include "irprofile.h"
 #include "irpass_t.h"
 #include "ircons.h"
@@ -569,18 +569,36 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	sprintf(prof_filename, "%.*s%s",
 	        (int)(sizeof(prof_filename) - sizeof(suffix)), cup_name, suffix);
 
+	bool have_profile = false;
 	if (be_options.opt_profile_use) {
 		bool res = ir_profile_read(prof_filename);
 		if (!res) {
 			fprintf(stderr, "Warning: Couldn't read profile data '%s'\n",
 			        prof_filename);
+		} else {
+			ir_create_execfreqs_from_profile();
+			ir_profile_free();
+			have_profile = true;
 		}
 	}
+
 	if (num_birgs > 0 && be_options.opt_profile_generate) {
-		ir_graph *prof_init_irg
-			= ir_profile_instrument(prof_filename);
+		ir_profile_instrument(prof_filename);
+		ir_graph *prof_init_irg = get_irp_irg(get_irp_n_irgs()-1);
+		assert(prof_init_irg->be_data == NULL);
 		initialize_birg(&birgs[num_birgs], prof_init_irg, &env);
 		num_birgs++;
+		num_irgs++;
+		assert(num_irgs == get_irp_n_irgs());
+	}
+
+	if (!have_profile) {
+		be_timer_push(T_EXECFREQ);
+		for (i = 0; i < num_irgs; ++i) {
+			ir_graph *irg = get_irp_irg(i);
+			ir_estimate_execfreq(irg);
+		}
+		be_timer_pop(T_EXECFREQ);
 	}
 
 	/* For all graphs */
@@ -661,21 +679,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		dump(DUMP_PREPARED, irg, "code-selection");
 
-		be_timer_push(T_EXECFREQ);
-		/**
-		 * Create execution frequencies from profile data or estimate some
-		 */
-		if (ir_profile_has_data())
-			birg->exec_freq = ir_create_execfreqs_from_profile(irg);
-		else {
-			/* TODO: edges are corrupt for EDGE_KIND_BLOCK after the local
-			 * optimize graph phase merges blocks in the x86 backend */
-			edges_deactivate(irg);
-			birg->exec_freq = compute_execfreq(irg, 10);
-		}
-		be_timer_pop(T_EXECFREQ);
-
-
 		/* disabled for now, fails for EmptyFor.c and XXEndless.c */
 		/* be_live_chk_compare(irg); */
 
@@ -724,8 +727,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_timer_pop(T_VERIFY);
 
 		if (stat_ev_enabled) {
-			stat_ev_dbl("bemain_costs_before_ra",
-					be_estimate_irg_costs(irg, birg->exec_freq));
+			stat_ev_dbl("bemain_costs_before_ra", be_estimate_irg_costs(irg));
 			be_stat_ev("bemain_insns_before_ra", be_count_insns(irg));
 			be_stat_ev("bemain_blocks_before_ra", be_count_blocks(irg));
 		}
@@ -733,7 +735,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		/* Do register allocation */
 		be_allocate_registers(irg);
 
-		stat_ev_dbl("bemain_costs_before_ra", be_estimate_irg_costs(irg, birg->exec_freq));
+		stat_ev_dbl("bemain_costs_before_ra", be_estimate_irg_costs(irg));
 
 		dump(DUMP_RA, irg, "ra");
 
@@ -813,7 +815,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 	arch_env_end_codegeneration(arch_env);
 
-	ir_profile_free();
 	be_done_env(&env);
 
 	be_info_free();

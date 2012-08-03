@@ -240,7 +240,6 @@ static void make_affinity_var_name(char *buf, size_t buf_size,
 static void build_affinity_cstr(ilp_env_t *ienv)
 {
 	unsigned  n_colors = arch_register_class_n_regs(ienv->co->cls);
-	unit_t   *curr;
 
 	/* for all optimization units */
 	list_for_each_entry(unit_t, curr, &ienv->co->units, units) {

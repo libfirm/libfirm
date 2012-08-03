@@ -162,8 +162,7 @@ DEBUG_ONLY(static unsigned part_nr = 0;)
  */
 static void dump_partition(const char *msg, const partition_t *part)
 {
-	const block_t *block;
-	int           first = 1;
+	int first = 1;
 
 	DB((dbg, LEVEL_2, " %s part%u (%u blocks) {\n  ", msg, part->nr, part->n_blocks));
 	list_for_each_entry(block_t, block, &part->blocks, block_list) {
@@ -507,7 +506,6 @@ static void propagate_blocks(partition_t *part, environment_t *env)
 {
 	block_t         *ready_blocks = NULL;
 	unsigned        n_ready       = 0;
-	block_t         *bl, *next;
 	listmap_t       map;
 	listmap_entry_t *iter;
 
@@ -617,8 +615,6 @@ static void propagate_blocks(partition_t *part, environment_t *env)
  */
 static void propagate(environment_t *env)
 {
-	partition_t *part, *next;
-
 	list_for_each_entry_safe(partition_t, part, next, &env->partitions, part_list) {
 		if (part->n_blocks < 2) {
 			/* zero or one block left, kill this partition */
@@ -654,7 +650,6 @@ static void *live_throughs(const block_t *bl, const ir_node *phi)
 static void propagate_blocks_live_troughs(partition_t *part, environment_t *env)
 {
 	const ir_node   *meet_block = part->meet_block;
-	block_t         *bl, *next;
 	listmap_t       map;
 	listmap_entry_t *iter;
 	const ir_node   *phi;
@@ -708,8 +703,6 @@ static void propagate_blocks_live_troughs(partition_t *part, environment_t *env)
  */
 static void propagate_live_troughs(environment_t *env)
 {
-	partition_t *part, *next;
-
 	list_for_each_entry_safe(partition_t, part, next, &env->partitions, part_list) {
 		propagate_blocks_live_troughs(part, env);
 	}
@@ -729,7 +722,6 @@ static void propagate_live_troughs(environment_t *env)
 static void apply(ir_graph *irg, partition_t *part)
 {
 	block_t *repr = list_entry(part->blocks.next, block_t, block_list);
-	block_t *bl;
 	ir_node *block, *end, *meet_block, *p, *next;
 	ir_node **ins, **phi_ins;
 	phi_t   *repr_phi, *phi;
@@ -1195,7 +1187,6 @@ static void add_roots(ir_graph *irg, environment_t *env)
 void shape_blocks(ir_graph *irg)
 {
 	environment_t env;
-	partition_t   *part;
 	block_t       *bl;
 	int           res, n;
 

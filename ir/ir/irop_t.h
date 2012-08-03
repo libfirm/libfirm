@@ -144,7 +144,7 @@ static inline op_func get_generic_function_ptr_(const ir_op *op)
 	return op->ops.generic;
 }
 
-static inline const ir_op_ops *get_op_ops_(const ir_op *op)
+static inline ir_op_ops *get_op_ops_(ir_op *op)
 {
 	return &op->ops;
 }

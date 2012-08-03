@@ -19,26 +19,31 @@
 
 /**
  * @file
- * @brief     Error handling for libFirm
- * @author    Michael Beck
+ * @brief       Compute an estimate of basic block executions.
+ * @author      Adam M. Szalkowski
+ * @date        28.05.2006
  */
-#include "config.h"
+#ifndef FIRM_ANA_EXECFREQ_T_H
+#define FIRM_ANA_EXECFREQ_T_H
 
-#include <stdlib.h>
+#include "execfreq.h"
 
-#include <stdio.h>
-#include <stdarg.h>
-#include "error.h"
-#include "irprintf.h"
+void init_execfreq(void);
 
-NORETURN (panic)(char const *const file, int const line, char const *const func, char const *const fmt, ...)
-{
-	va_list ap;
+void exit_execfreq(void);
 
-	fprintf(stderr, "%s:%d: libFirm panic in %s: ", file, line, func);
-	va_start(ap, fmt);
-	ir_vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	putc('\n', stderr);
-	abort();
-}
+void set_block_execfreq(ir_node *block, double freq);
+
+typedef struct ir_execfreq_int_factors {
+	double max;
+	double min_non_zero;
+	double m, b;
+} ir_execfreq_int_factors;
+
+void ir_calculate_execfreq_int_factors(ir_execfreq_int_factors *factors,
+                                       ir_graph *irg);
+
+int get_block_execfreq_int(const ir_execfreq_int_factors *factors,
+                           const ir_node *block);
+
+#endif

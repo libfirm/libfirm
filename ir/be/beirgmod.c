@@ -90,12 +90,11 @@ static int cmp_node_nr(const void *a, const void *b)
 ir_node *insert_Perm_after(ir_graph *irg, const arch_register_class_t *cls,
 						   ir_node *pos)
 {
-	be_lv_t *lv     = be_get_irg_liveness(irg);
-	ir_node *bl     = is_Block(pos) ? pos : get_nodes_block(pos);
-	ir_nodeset_t          live;
-	ir_nodeset_iterator_t iter;
+	be_lv_t     *lv = be_get_irg_liveness(irg);
+	ir_node     *bl = is_Block(pos) ? pos : get_nodes_block(pos);
+	ir_nodeset_t live;
 
-	ir_node *irn, *perm, **nodes;
+	ir_node *perm, **nodes;
 	size_t i, n;
 
 	DBG((dbg, LEVEL_1, "Insert Perm after: %+F\n", pos));

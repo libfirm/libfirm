@@ -37,6 +37,7 @@
 #include "trouts.h"
 #include "cgana.h"
 #include "debug.h"
+#include "execfreq_t.h"
 
 #include "beirg.h"
 #include "beabi.h"
@@ -113,6 +114,10 @@ static ir_node *transform_block(ir_node *node)
 	                    get_irn_arity(node), get_irn_in(node) + 1);
 	copy_node_attr(irg, node, block);
 	block->node_nr = node->node_nr;
+
+	/* transfer execfreq value */
+	double execfreq = get_block_execfreq(node);
+	set_block_execfreq(block, execfreq);
 
 	/* put the preds in the worklist */
 	be_enqueue_preds(node);

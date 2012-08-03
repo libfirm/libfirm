@@ -274,39 +274,32 @@ void dump_irnode_to_file(FILE *F, const ir_node *n)
 		fprintf(F, "  compare operation: %s\n", get_relation_string(get_Confirm_relation(n)));
 		break;
 	case iro_ASM: {
-		const ir_asm_constraint *cons;
-		ident **clobber;
-		int l;
-
 		fprintf(F, "  assembler text: %s", get_id_str(get_ASM_text(n)));
-		l = get_ASM_n_input_constraints(n);
-		if (l > 0) {
-			int i;
-			fprintf(F, "\n  inputs:  ");
-			cons = get_ASM_input_constraints(n);
-			for (i = 0; i < l; ++i)
-				fprintf(F, "%%%u %s ", cons[i].pos, get_id_str(cons[i].constraint));
+		fprintf(F, "\n  inputs:  ");
+		const ir_asm_constraint *in_cons = get_ASM_input_constraints(n);
+		int n_inputs = get_ASM_n_inputs(n);
+		for (int i = 0; i < n_inputs; ++i) {
+			fprintf(F, "%%%u %s ", in_cons[i].pos,
+			        get_id_str(in_cons[i].constraint));
 		}
-		l = get_ASM_n_output_constraints(n);
-		if (l > 0) {
-			int i;
-			fprintf(F, "\n  outputs: ");
-			cons = get_ASM_output_constraints(n);
-			for (i = 0; i < l; ++i)
-				fprintf(F, "%%%u %s ", cons[i].pos, get_id_str(cons[i].constraint));
+		fprintf(F, "\n  outputs: ");
+		const ir_asm_constraint *out_cons = get_ASM_output_constraints(n);
+		int n_outputs = get_ASM_n_output_constraints(n);
+		for (int i = 0; i < n_outputs; ++i) {
+			fprintf(F, "%%%u %s ", out_cons[i].pos,
+			        get_id_str(out_cons[i].constraint));
 		}
-		l = get_ASM_n_clobbers(n);
-		if (l > 0) {
-			int i;
-			fprintf(F, "\n  clobber: ");
-			clobber = get_ASM_clobbers(n);
-			for (i = 0; i < l; ++i)
-				fprintf(F, "%s ", get_id_str(clobber[i]));
-		}
+
+		fprintf(F, "\n  clobber: ");
+		ident **clobber = get_ASM_clobbers(n);
+		int n_clobbers = get_ASM_n_clobbers(n);
+		for (int i = 0; i < n_clobbers; ++i)
+			fprintf(F, "%s ", get_id_str(clobber[i]));
 		if (get_irn_pinned(n) != op_pin_state_floats)
 			fprintf(F, "\n  volatile");
 		fprintf(F, "\n");
-	} break;
+		break;
+	}
 
 	default:
 		break;

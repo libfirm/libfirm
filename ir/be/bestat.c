@@ -120,8 +120,7 @@ void be_do_stat_reg_pressure(ir_graph *irg, const arch_register_class_t *cls)
 
 
 typedef struct estimate_irg_costs_env_t {
-	ir_exec_freq     *execfreqs;
-	double           costs;
+	double costs;
 } estimate_irg_costs_env_t;
 
 static void estimate_block_costs(ir_node *block, void *data)
@@ -133,15 +132,13 @@ static void estimate_block_costs(ir_node *block, void *data)
 		costs += arch_get_op_estimated_cost(node);
 	}
 
-	env->costs += costs * get_block_execfreq(env->execfreqs, block);
+	env->costs += costs * get_block_execfreq(block);
 }
 
-double be_estimate_irg_costs(ir_graph *irg, ir_exec_freq *execfreqs)
+double be_estimate_irg_costs(ir_graph *irg)
 {
 	estimate_irg_costs_env_t env;
-
-	env.execfreqs = execfreqs;
-	env.costs     = 0.0;
+	env.costs = 0.0;
 
 	irg_block_walk_graph(irg, estimate_block_costs, NULL, &env);
 
