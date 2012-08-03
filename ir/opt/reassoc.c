@@ -48,7 +48,6 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 typedef struct walker_t {
-	ir_graph *irg;
 	waitq    *wq;        /**< a wait queue */
 } walker_t;
 
@@ -623,7 +622,7 @@ static void do_reassociation(walker_t *wenv)
 			res = 0;
 
 			/* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
-			if (mode_is_float(mode) && get_irg_fp_model(wenv->irg) & fp_strict_algebraic)
+			if (mode_is_float(mode) && get_irg_fp_model(get_irn_irg(n)) & fp_strict_algebraic)
 				break;
 
 			if (op->ops.reassociate) {
@@ -936,7 +935,6 @@ void optimize_reassociation(ir_graph *irg)
 	obstack_init(&commutative_args);
 #endif
 
-	env.irg = irg;
 	env.wq  = new_waitq();
 
 	/* disable some optimizations while reassoc is running to prevent endless loops */
