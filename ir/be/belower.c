@@ -1021,7 +1021,7 @@ void lower_nodes_after_ra(ir_graph *irg)
 	/* we will need interference */
 	be_assure_live_chk(irg);
 
-	irg_walk_graph(irg, NULL, lower_nodes_after_ra_walker, NULL);
+	irg_walk_graph(irg, NULL, lower_nodes_after_ra_walker, &env);
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_lower)
