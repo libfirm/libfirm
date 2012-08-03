@@ -47,10 +47,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
-typedef struct walker_t {
-	waitq    *wq;        /**< a wait queue */
-} walker_t;
-
 typedef enum {
 	NO_CONSTANT   = 0,    /**< node is not constant */
 	REAL_CONSTANT = 1,    /**< node is a Const that is suitable for constant folding */
@@ -590,25 +586,25 @@ static int reassoc_Shl(ir_node **node)
  */
 static void wq_walker(ir_node *n, void *env)
 {
-	walker_t *wenv = (walker_t*)env;
+	waitq *const wq = (waitq*)env;
 
 	set_irn_link(n, NULL);
 	if (!is_Block(n)) {
-		waitq_put(wenv->wq, n);
-		set_irn_link(n, wenv->wq);
+		waitq_put(wq, n);
+		set_irn_link(n, wq);
 	}
 }  /* wq_walker */
 
 /**
  * The walker for the reassociation.
  */
-static void do_reassociation(walker_t *wenv)
+static void do_reassociation(waitq *const wq)
 {
 	int i, res, changed;
 	ir_node *n;
 
-	while (! waitq_empty(wenv->wq)) {
-		n = (ir_node*)waitq_get(wenv->wq);
+	while (! waitq_empty(wq)) {
+		n = (ir_node*)waitq_get(wq);
 		set_irn_link(n, NULL);
 
 		hook_reassociate(1);
@@ -637,9 +633,9 @@ static void do_reassociation(walker_t *wenv)
 			for (i = get_irn_arity(n) - 1; i >= 0; --i) {
 				ir_node *pred = get_irn_n(n, i);
 
-				if (get_irn_link(pred) != wenv->wq) {
-					waitq_put(wenv->wq, pred);
-					set_irn_link(pred, wenv->wq);
+				if (get_irn_link(pred) != wq) {
+					waitq_put(wq, pred);
+					set_irn_link(pred, wq);
 				}
 			}
 		}
@@ -920,8 +916,6 @@ static void reverse_rules(ir_node *node, void *env)
  */
 void optimize_reassociation(ir_graph *irg)
 {
-	walker_t env;
-
 	assert(get_irg_phase_state(irg) != phase_building);
 	assert(get_irg_pinned(irg) != op_pin_state_floats &&
 		"Reassociation needs pinned graph to work properly");
@@ -935,14 +929,14 @@ void optimize_reassociation(ir_graph *irg)
 	obstack_init(&commutative_args);
 #endif
 
-	env.wq  = new_waitq();
+	waitq *const wq = new_waitq();
 
 	/* disable some optimizations while reassoc is running to prevent endless loops */
 	set_reassoc_running(1);
 	{
 		/* now we have collected enough information, optimize */
-		irg_walk_graph(irg, NULL, wq_walker, &env);
-		do_reassociation(&env);
+		irg_walk_graph(irg, NULL, wq_walker, wq);
+		do_reassociation(wq);
 
 		/* reverse those rules that do not result in collapsed constants */
 		irg_walk_graph(irg, NULL, reverse_rules, NULL);
@@ -953,7 +947,7 @@ void optimize_reassociation(ir_graph *irg)
 	obstack_free(&commutative_args, NULL);
 #endif
 
-	del_waitq(env.wq);
+	del_waitq(wq);
 
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW);
 }  /* optimize_reassociation */
