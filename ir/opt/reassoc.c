@@ -48,7 +48,6 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 typedef struct walker_t {
-	int       changes;   /**< set, if a reassociation take place */
 	ir_graph *irg;
 	waitq    *wq;        /**< a wait queue */
 } walker_t;
@@ -635,8 +634,6 @@ static void do_reassociation(walker_t *wenv)
 		} while (res == 1);
 		hook_reassociate(0);
 
-		wenv->changes |= changed;
-
 		if (changed) {
 			for (i = get_irn_arity(n) - 1; i >= 0; --i) {
 				ir_node *pred = get_irn_n(n, i);
@@ -895,7 +892,8 @@ transform:
  */
 static void reverse_rules(ir_node *node, void *env)
 {
-	walker_t *wenv = (walker_t*)env;
+	(void)env;
+
 	ir_graph *irg  = get_irn_irg(node);
 	ir_mode  *mode = get_irn_mode(node);
 	int res;
@@ -909,11 +907,11 @@ static void reverse_rules(ir_node *node, void *env)
 
 		res = 0;
 		if (is_op_commutative(op)) {
-			wenv->changes |= res = move_consts_up(&node);
+			res = move_consts_up(&node);
 		}
 		/* beware: move_consts_up might have changed the opcode, check again */
 		if (is_Add(node) || is_Sub(node)) {
-			wenv->changes |= res = reverse_rule_distributive(&node);
+			res = reverse_rule_distributive(&node);
 		}
 	} while (res);
 }
@@ -938,9 +936,8 @@ void optimize_reassociation(ir_graph *irg)
 	obstack_init(&commutative_args);
 #endif
 
-	env.changes = 0;
-	env.irg     = irg;
-	env.wq      = new_waitq();
+	env.irg = irg;
+	env.wq  = new_waitq();
 
 	/* disable some optimizations while reassoc is running to prevent endless loops */
 	set_reassoc_running(1);
@@ -950,7 +947,7 @@ void optimize_reassociation(ir_graph *irg)
 		do_reassociation(&env);
 
 		/* reverse those rules that do not result in collapsed constants */
-		irg_walk_graph(irg, NULL, reverse_rules, &env);
+		irg_walk_graph(irg, NULL, reverse_rules, NULL);
 	}
 	set_reassoc_running(0);
 
