@@ -436,16 +436,6 @@ unsigned (get_irn_idx)(const ir_node *node)
 	return get_irn_idx_(node);
 }
 
-int get_irn_pred_pos(ir_node *node, ir_node *arg)
-{
-	int i;
-	for (i = get_irn_arity(node) - 1; i >= 0; i--) {
-		if (get_irn_n(node, i) == arg)
-			return i;
-	}
-	return -1;
-}
-
 ir_node *(get_nodes_block)(const ir_node *node)
 {
 	return get_nodes_block_(node);
