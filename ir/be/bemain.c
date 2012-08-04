@@ -583,8 +583,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	}
 
 	if (num_birgs > 0 && be_options.opt_profile_generate) {
-		ir_profile_instrument(prof_filename);
-		ir_graph *prof_init_irg = get_irp_irg(get_irp_n_irgs()-1);
+		ir_graph *const prof_init_irg = ir_profile_instrument(prof_filename);
 		assert(prof_init_irg->be_data == NULL);
 		initialize_birg(&birgs[num_birgs], prof_init_irg, &env);
 		num_birgs++;
