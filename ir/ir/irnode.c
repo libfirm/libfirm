@@ -675,21 +675,21 @@ void set_End_keepalives(ir_node *end, int n, ir_node *in[])
 void remove_End_keepalive(ir_node *end, ir_node *irn)
 {
 	int      n = get_End_n_keepalives(end);
-	int      i, idx;
 	ir_graph *irg;
 
-	idx = -1;
-	for (i = n -1; i >= 0; --i) {
+	int idx = -1;
+	for (int i = n;;) {
+		if (i-- == 0)
+			return;
+
 		ir_node *old_ka = end->in[1 + END_KEEPALIVE_OFFSET + i];
 
 		/* find irn */
 		if (old_ka == irn) {
 			idx = i;
-			goto found;
+			break;
 		}
 	}
-	return;
-found:
 	irg = get_irn_irg(end);
 
 	/* remove the edge */
