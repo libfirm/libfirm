@@ -2046,7 +2046,7 @@ static ir_node *transform_node_Or_bf_store(ir_node *irn_or)
 		}
 
 		/* ok, all conditions met */
-		block = get_irn_n(irn_or, -1);
+		block = get_nodes_block(irn_or);
 		irg   = get_irn_irg(block);
 
 		new_and = new_r_And(block, value, new_r_Const(irg, tarval_and(tv4, tv2)), mode);
@@ -3092,7 +3092,7 @@ static ir_node *transform_node_Mul2n(ir_node *n, ir_mode *mode)
 	}
 	if (tb == get_mode_one(smode)) {
 		/* (L)a * (L)1 = (L)a */
-		ir_node *blk = get_irn_n(a, -1);
+		ir_node *blk = get_nodes_block(a);
 		n = new_rd_Conv(get_irn_dbg_info(n), blk, a, mode);
 		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_1);
 		return n;
@@ -4112,7 +4112,7 @@ static ir_node *transform_node_Proj_Mod(ir_node *proj)
 		switch (proj_nr) {
 
 		case pn_Mod_X_regular:
-			return new_r_Jmp(get_irn_n(mod, -1));
+			return new_r_Jmp(get_nodes_block(mod));
 
 		case pn_Mod_X_except: {
 			ir_graph *irg = get_irn_irg(proj);
@@ -4905,7 +4905,7 @@ is_bittest: {
 				if (tarval_is_single_bit(tv)) {
 					/* special case: (x % 2^n) CMP 0 ==> x & (2^n-1) CMP 0 */
 					ir_node *v    = get_binop_left(op);
-					ir_node *blk  = get_irn_n(op, -1);
+					ir_node *blk  = get_nodes_block(op);
 					ir_graph *irg = get_irn_irg(op);
 					ir_mode *mode = get_irn_mode(v);
 
@@ -6454,7 +6454,7 @@ int identities_cmp(const void *elt, const void *key)
 
 	if (get_irn_pinned(a) == op_pin_state_pinned) {
 		/* for pinned nodes, the block inputs must be equal */
-		if (get_irn_n(a, -1) != get_irn_n(b, -1))
+		if (get_nodes_block(a) != get_nodes_block(b))
 			return 1;
 	} else {
 		ir_node *block_a = get_nodes_block(a);

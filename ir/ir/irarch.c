@@ -830,7 +830,7 @@ static ir_node *replace_div_by_mulh(ir_node *div, ir_tarval *tv)
 {
 	dbg_info *dbg  = get_irn_dbg_info(div);
 	ir_node *n     = get_binop_left(div);
-	ir_node *block = get_irn_n(div, -1);
+	ir_node *block = get_nodes_block(div);
 	ir_mode *mode  = get_irn_mode(n);
 	int bits       = get_mode_size_bits(mode);
 	ir_node *q;
@@ -936,7 +936,7 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn)
 	if (!mode_is_int(mode))
 		return irn;
 
-	block = get_irn_n(irn, -1);
+	block = get_nodes_block(irn);
 	dbg   = get_irn_dbg_info(irn);
 
 	bits = get_mode_size_bits(mode);
@@ -1039,7 +1039,7 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn)
 
 		left  = get_Mod_left(irn);
 		mode  = get_irn_mode(left);
-		block = get_irn_n(irn, -1);
+		block = get_nodes_block(irn);
 		dbg   = get_irn_dbg_info(irn);
 		bits = get_mode_size_bits(mode);
 		n    = (bits + 7) / 8;

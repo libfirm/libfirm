@@ -76,8 +76,9 @@ void dump_irnode_to_file(FILE *F, const ir_node *n)
 	if (get_irn_pinned(n) == op_pin_state_floats &&
 		get_irg_pinned(get_irn_irg(n)) == op_pin_state_floats) {
 		fprintf(F, "  node was pinned in ");
-		dump_node_opcode(F, get_irn_n(n, -1));
-		fprintf(F, " %ld\n", get_irn_node_nr(get_irn_n(n, -1)));
+		ir_node *const block = get_nodes_block(n);
+		dump_node_opcode(F, block);
+		fprintf(F, " %ld\n", get_irn_node_nr(block));
 	}
 
 	fprintf(F, "  arity:   %d\n", get_irn_arity(n));
@@ -85,8 +86,9 @@ void dump_irnode_to_file(FILE *F, const ir_node *n)
 	fprintf(F, "  pred nodes:\n");
 	if (!is_Block(n)) {
 		fprintf(F, "    -1:    ");
-		dump_node_opcode(F, get_irn_n(n, -1));
-		fprintf(F, " %ld\n", get_irn_node_nr(get_irn_n(n, -1)));
+		ir_node *const block = get_nodes_block(n);
+		dump_node_opcode(F, block);
+		fprintf(F, " %ld\n", get_irn_node_nr(block));
 	}
 
 	{

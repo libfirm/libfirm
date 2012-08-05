@@ -1139,7 +1139,7 @@ static void print_data_edge_vcgattr(FILE *F, const ir_node *from, int to)
 	 * do not use get_nodes_block() here, will fail
 	 * if the irg is not pinned.
 	 */
-	if (get_irn_n(from, -1) == get_irn_n(get_irn_n(from, to), -1))
+	if (get_nodes_block(from) == get_nodes_block(get_irn_n(from, to)))
 		fprintf(F, INTRA_DATA_EDGE_ATTR);
 	else
 		fprintf(F, INTER_DATA_EDGE_ATTR);
@@ -1151,7 +1151,7 @@ static void print_mem_edge_vcgattr(FILE *F, const ir_node *from, int to)
 	 * do not use get_nodes_block() here, will fail
 	 * if the irg is not pinned.
 	 */
-	if (get_irn_n(from, -1) == get_irn_n(get_irn_n(from, to), -1))
+	if (get_nodes_block(from) == get_nodes_block(get_irn_n(from, to)))
 		fprintf(F, INTRA_MEM_EDGE_ATTR);
 	else
 		fprintf(F, INTER_MEM_EDGE_ATTR);
