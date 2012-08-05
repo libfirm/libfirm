@@ -5119,7 +5119,6 @@ static ir_node *transform_node_Phi(ir_node *phi)
 				return phi;
 
 			/* Move the Pin nodes "behind" the Phi. */
-			block   = get_irn_n(phi, -1);
 			new_phi = new_r_Phi(block, n, in, mode_M);
 			return new_r_Pin(block, new_phi);
 		}
@@ -5163,7 +5162,6 @@ static ir_node *transform_node_Phi(ir_node *phi)
 				return phi;
 
 			/* move the Confirm nodes "behind" the Phi */
-			block = get_irn_n(phi, -1);
 			new_phi = new_r_Phi(block, n, in, get_irn_mode(phi));
 			return new_r_Confirm(block, new_phi, bound, relation);
 		}
