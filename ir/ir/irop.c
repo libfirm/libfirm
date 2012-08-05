@@ -620,14 +620,6 @@ void firm_init_op(void)
 	register_node_cmp_func(op_Mod,      node_cmp_attr_Mod);
 	register_node_cmp_func(op_Phi,      node_cmp_attr_Phi);
 	register_node_cmp_func(op_Proj,     node_cmp_attr_Proj);
-	register_node_cmp_func(op_Div,      node_cmp_attr_Div);
-	register_node_cmp_func(op_Dummy,    node_cmp_attr_Dummy);
-	register_node_cmp_func(op_Free,     node_cmp_attr_Free);
-	register_node_cmp_func(op_InstOf,   node_cmp_attr_InstOf);
-	register_node_cmp_func(op_Load,     node_cmp_attr_Load);
-	register_node_cmp_func(op_Mod,      node_cmp_attr_Mod);
-	register_node_cmp_func(op_Phi,      node_cmp_attr_Phi);
-	register_node_cmp_func(op_Proj,     node_cmp_attr_Proj);
 	register_node_cmp_func(op_Sel,      node_cmp_attr_Sel);
 	register_node_cmp_func(op_Store,    node_cmp_attr_Store);
 	register_node_cmp_func(op_SymConst, node_cmp_attr_SymConst);
