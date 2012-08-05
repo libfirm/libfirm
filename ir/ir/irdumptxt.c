@@ -132,7 +132,7 @@ void dump_irnode_to_file(FILE *F, const ir_node *n)
 	}
 
 	/* This is not nice, output it as a marker in the predecessor list. */
-	if (is_Block(n) || get_irn_op(n) == op_Phi) {
+	if (is_Block(n) || is_Phi(n)) {
 	    int i;
 		fprintf(F, "  backedges:");
 		comma = ' ';

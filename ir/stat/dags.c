@@ -324,18 +324,14 @@ static int stat_dag_mark_hook(FILE *F, const ir_node *n, const ir_node *l)
 
 	/* do not count Bad / NoMem */
 	if (l) {
-		ir_op *op = get_irn_op(l);
-
-		if (op == op_NoMem || op == op_Bad)
+		if (is_NoMem(l) || is_Bad(l))
 			return DEFAULT_RET;
 
 		/* check for additional options */
-		op = get_irn_op(n);
-
-		if (mark_options & FIRMSTAT_LOAD_IS_LEAVE && op == op_Load)
+		if (mark_options & FIRMSTAT_LOAD_IS_LEAVE && is_Load(n))
 			return DEFAULT_RET;
 
-		if (mark_options & FIRMSTAT_CALL_IS_LEAVE && op == op_Call)
+		if (mark_options & FIRMSTAT_CALL_IS_LEAVE && is_Call(n))
 			return DEFAULT_RET;
 	}  /* if */
 

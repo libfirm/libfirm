@@ -494,7 +494,7 @@ ir_node *(get_nodes_block)(const ir_node *node)
 
 void set_nodes_block(ir_node *node, ir_node *block)
 {
-	assert(node->op != op_Block);
+	assert(!is_Block(node));
 	set_irn_n(node, -1, block);
 }
 

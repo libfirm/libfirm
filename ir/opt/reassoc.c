@@ -676,20 +676,21 @@ static ir_node *earliest_block(ir_node *a, ir_node *b, ir_node *curr_blk)
  */
 static int is_constant_expr(ir_node *irn)
 {
-	ir_op *op;
-
 	switch (get_irn_opcode(irn)) {
 	case iro_Const:
 	case iro_SymConst:
 		return 1;
-	case iro_Add:
-		op = get_irn_op(get_Add_left(irn));
-		if (op != op_Const && op != op_SymConst)
+
+	case iro_Add: {
+		ir_node *const l = get_Add_left(irn);
+		if (!is_Const(l) && !is_SymConst(l))
 			return 0;
-		op = get_irn_op(get_Add_right(irn));
-		if (op != op_Const && op != op_SymConst)
+		ir_node *const r = get_Add_right(irn);
+		if (!is_Const(r) && !is_SymConst(r))
 			return 0;
 		return 1;
+	}
+
 	default:
 		return 0;
 	}

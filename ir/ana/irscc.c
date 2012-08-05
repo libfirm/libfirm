@@ -393,8 +393,8 @@ static inline int get_start_index(ir_node *n)
 	   means not reachable.
 	   I.e., with this code, the order on the loop tree is correct. But a
 	   (single) test showed the loop tree is deeper. */
-	if (get_irn_op(n) == op_Phi  ||
-	    is_Block(n)              ||
+	if (is_Phi(n)   ||
+	    is_Block(n) ||
 	    (get_irg_pinned(get_irn_irg(n)) == op_pin_state_floats &&
 	      get_irn_pinned(n)              == op_pin_state_floats))
 		// Here we could test for backedge at -1 which is illegal
@@ -425,9 +425,7 @@ static inline int get_start_index(ir_node *n)
  */
 static inline int is_possible_loop_head(ir_node *n)
 {
-	ir_op *op = get_irn_op(n);
-	return ((op == op_Block) ||
-	        (op == op_Phi));
+	return is_Block(n) || is_Phi(n);
 }
 
 /**

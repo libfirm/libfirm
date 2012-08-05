@@ -266,21 +266,18 @@ static void handle_if(ir_node *block, ir_node *cmp, ir_relation rel, env_t *env)
 	ir_node *left  = get_Cmp_left(cmp);
 	ir_node *right = get_Cmp_right(cmp);
 	ir_node *cond_block;
-	ir_op *op;
 
 	/* Beware of Bads */
 	if (is_Bad(left) || is_Bad(right))
 		return;
 
-	op = get_irn_op(left);
-
 	/* Do not create Confirm nodes for Cmp(Const, Const) constructs.
 	   These are removed anyway */
-	if (op == op_Const && is_Const(right))
+	if (is_Const(left) && is_Const(right))
 		return;
 
 	/* try to place the constant on the right side for a Confirm */
-	if (op == op_Const || op == op_SymConst) {
+	if (is_Const(left) || is_SymConst(left)) {
 		ir_node *t = left;
 
 		left  = right;

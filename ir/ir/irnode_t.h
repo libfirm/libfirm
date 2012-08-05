@@ -125,7 +125,7 @@ static inline ir_node *get_irn_n_(const ir_node *node, int n)
 	assert(-1 <= n && n < get_irn_arity_(node));
 
 	nn = node->in[n + 1];
-	if (nn->op != op_Id) return nn;
+	if (!is_Id(nn)) return nn;
 
 	return (node->in[n + 1] = skip_Id(nn));
 }
@@ -388,7 +388,7 @@ static inline ir_graph *get_Block_irg_(const ir_node *block)
 
 static inline ir_tarval *get_Const_tarval_(const ir_node *node)
 {
-	assert(get_irn_op_(node) == op_Const);
+	assert(is_Const(node));
 	return node->attr.con.tarval;
 }
 
@@ -444,13 +444,13 @@ static inline int is_irn_cse_neutral_(const ir_node *node)
 
 static inline cond_jmp_predicate get_Cond_jmp_pred_(const ir_node *node)
 {
-	assert(get_irn_op_(node) == op_Cond);
+	assert(is_Cond(node));
 	return node->attr.cond.jmp_pred;
 }
 
 static inline void set_Cond_jmp_pred_(ir_node *node, cond_jmp_predicate pred)
 {
-	assert(get_irn_op_(node) == op_Cond);
+	assert(is_Cond(node));
 	node->attr.cond.jmp_pred = pred;
 }
 

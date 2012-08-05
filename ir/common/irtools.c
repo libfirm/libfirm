@@ -69,28 +69,33 @@ void firm_collect_block_phis(ir_node *node, void *env)
 
 void copy_irn_to_irg(ir_node *n, ir_graph *irg)
 {
-	ir_op *op = get_irn_op(n);
 	ir_graph *old_irg;
 	ir_node *nn = NULL;
 
 	/* do not copy standard nodes */
-	if (op == op_NoMem)
+	switch (get_irn_opcode(n)) {
+	case iro_NoMem:
 		n = get_irg_no_mem(irg);
-	else if (op == op_Block) {
-		old_irg = get_irn_irg(n);
+		break;
 
+	case iro_Block:
+		old_irg = get_irn_irg(n);
 		if (n == get_irg_start_block(old_irg))
 			nn = get_irg_start_block(irg);
 		else if (n == get_irg_end_block(old_irg))
 			nn = get_irg_end_block(irg);
-	}
-	else if (op == op_Start)
-		nn = get_irg_start(irg);
-	else if (op == op_End)
-		nn = get_irg_end(irg);
-	else if (op == op_Proj) {
-		old_irg = get_irn_irg(n);
+		break;
 
+	case iro_Start:
+		nn = get_irg_start(irg);
+		break;
+
+	case iro_End:
+		nn = get_irg_end(irg);
+		break;
+
+	case iro_Proj:
+		old_irg = get_irn_irg(n);
 		if (n == get_irg_initial_exec(old_irg))
 			nn = get_irg_initial_exec(irg);
 		else if (n == get_irg_frame(old_irg))
@@ -99,6 +104,7 @@ void copy_irn_to_irg(ir_node *n, ir_graph *irg)
 			nn = get_irg_initial_mem(irg);
 		else if (n == get_irg_args(old_irg))
 			nn = get_irg_args(irg);
+		break;
 	}
 
 	if (nn) {
@@ -109,7 +115,7 @@ void copy_irn_to_irg(ir_node *n, ir_graph *irg)
 	nn = new_ir_node(get_irn_dbg_info(n),
 	                 irg,
 	                 NULL,            /* no block yet, will be set later */
-	                 op,
+	                 get_irn_op(n),
 	                 get_irn_mode(n),
 	                 get_irn_arity(n),
 	                 get_irn_in(n) + 1);
