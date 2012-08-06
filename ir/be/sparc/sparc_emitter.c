@@ -70,10 +70,10 @@ static pmap         *delay_slots;
 
 static void sparc_emit_node(const ir_node *node);
 static bool emitting_delay_slot;
-static int emit_raw_permis  = 0;
-static int emit_fill_nops   = 0;
-static int fill_delay_slots = 1;
-static int emit_permi_info  = 0;
+static int  emit_raw_permis  = 0;
+static int  emit_fill_nops   = 0;
+static int  fill_delay_slots = 1;
+static int  emit_permi_info  = 0;
 
 /**
  * indent before instruction. (Adds additional indentation when emitting
@@ -501,11 +501,12 @@ static ir_node *pick_delay_slot_for(ir_node *node)
 	static const unsigned PICK_DELAY_SLOT_MAX_DISTANCE = 10;
 	assert(has_delay_slot(node));
 
-	if (!fill_delay_slots)
-		return NULL;
-
 	if (is_sparc_Bicc(node) || is_sparc_fbfcc(node)) {
 		optimize_fallthrough(node);
+	}
+
+	if (!fill_delay_slots) {
+		return NULL;
 	}
 
 	unsigned tries = 0;
@@ -917,6 +918,47 @@ static void emit_permi(const ir_node *irn, unsigned *regs)
 	icore_emit_fill_nops(irn);
 }
 
+static unsigned get_permi_register_index(const arch_register_t *reg)
+{
+	switch (arch_register_get_index(reg)) {
+	case REG_GP_G0:            return  0;
+	case REG_GP_G1:            return  1;
+	case REG_GP_G2:            return  2;
+	case REG_GP_G3:            return  3;
+	case REG_GP_G4:            return  4;
+	case REG_GP_G5:            return  5;
+	case REG_GP_G6:            return  6;
+	case REG_GP_G7:            return  7;
+	case REG_GP_O0:            return  8;
+	case REG_GP_O1:            return  9;
+	case REG_GP_O2:            return 10;
+	case REG_GP_O3:            return 11;
+	case REG_GP_O4:            return 12;
+	case REG_GP_O5:            return 13;
+	case REG_GP_SP:            return 14;
+	case REG_GP_O7:            return 15;
+	case REG_GP_L0:            return 16;
+	case REG_GP_L1:            return 17;
+	case REG_GP_L2:            return 18;
+	case REG_GP_L3:            return 19;
+	case REG_GP_L4:            return 20;
+	case REG_GP_L5:            return 21;
+	case REG_GP_L6:            return 22;
+	case REG_GP_L7:            return 23;
+	case REG_GP_I0:            return 24;
+	case REG_GP_I1:            return 25;
+	case REG_GP_I2:            return 26;
+	case REG_GP_I3:            return 27;
+	case REG_GP_I4:            return 28;
+	case REG_GP_I5:            return 29;
+	case REG_GP_FRAME_POINTER: return 30;
+	case REG_GP_I7:            return 31;
+	}
+
+	panic("get_permi_register_index: Unknown register");
+	return (unsigned) -1;
+}
+
 static void emit_icore_Permi_chain(const ir_node *irn);
 
 static void emit_icore_Permi(const ir_node *irn)
@@ -976,7 +1018,7 @@ static void emit_icore_Permi(const ir_node *irn)
 	 * actual code generation.
 	 */
 	for (i = 0; i < arity; ++i) {
-		regns[i] = (unsigned) in_regs[arity - i - 1]->index;
+		regns[i] = get_permi_register_index(in_regs[arity - i - 1]);
 	}
 
 	/*
@@ -1077,32 +1119,32 @@ static void emit_icore_Permi23(const ir_node *irn)
 	 *   r1->r0->r1   and   r2->r4->r3->r2
 	 */
 	if (is_cycle2) {
-		regns[0] = (unsigned) in_regs[1]->index;
-		regns[1] = (unsigned) in_regs[0]->index;
+		regns[0] = get_permi_register_index(in_regs[1]);
+		regns[1] = get_permi_register_index(in_regs[0]);
 	} else {
-		regns[0] = (unsigned) out_regs[0]->index;
-		regns[1] = (unsigned) in_regs[0]->index;
+		regns[0] = get_permi_register_index(out_regs[0]);
+		regns[1] = get_permi_register_index(in_regs[0]);
 	}
 
 	if (is_cycle3) {
 		if (size3 == 2) {
-			regns[2] = (unsigned) in_regs[pos3 + 1]->index;
-			regns[3] = (unsigned) in_regs[pos3]->index;
+			regns[2] = get_permi_register_index(in_regs[pos3 + 1]);
+			regns[3] = get_permi_register_index(in_regs[pos3]);
 			regns[4] = regns[3];
 		} else {
-			regns[2] = (unsigned) in_regs[pos3 + 2]->index;
-			regns[3] = (unsigned) in_regs[pos3 + 1]->index;
-			regns[4] = (unsigned) in_regs[pos3]->index;
+			regns[2] = get_permi_register_index(in_regs[pos3 + 2]);
+			regns[3] = get_permi_register_index(in_regs[pos3 + 1]);
+			regns[4] = get_permi_register_index(in_regs[pos3]);
 		}
 	} else {
 		if (size3 == 2) {
-			regns[2] = (unsigned) out_regs[pos3]->index;
-			regns[3] = (unsigned) in_regs[pos3]->index;
+			regns[2] = get_permi_register_index(out_regs[pos3]);
+			regns[3] = get_permi_register_index(in_regs[pos3]);
 			regns[4] = regns[3];
 		} else {
-			regns[2] = (unsigned) out_regs[pos3 + 1]->index;
-			regns[3] = (unsigned) out_regs[pos3]->index;
-			regns[4] = (unsigned) in_regs[pos3]->index;
+			regns[2] = get_permi_register_index(out_regs[pos3 + 1]);
+			regns[3] = get_permi_register_index(out_regs[pos3]);
+			regns[4] = get_permi_register_index(in_regs[pos3]);
 		}
 	}
 
@@ -1206,9 +1248,9 @@ static void emit_icore_Permi_chain(const ir_node *irn)
 	 * Therefore, we reverse the order of the register numbers for
 	 * actual code generation.
 	 */
-	regns[0] = out_regs[arity - 1]->index;
+	regns[0] = get_permi_register_index(out_regs[arity - 1]);
 	for (i = 1; i < chain_size; ++i) {
-		regns[i] = (unsigned) in_regs[arity - i]->index;
+		regns[i] = get_permi_register_index(in_regs[arity - i]);
 	}
 
 	/*

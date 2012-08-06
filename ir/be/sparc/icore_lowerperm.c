@@ -131,8 +131,7 @@ static void set_Permi_reg_reqs(ir_node *irn)
 	const arch_register_req_t *req;
 	const arch_register_req_t **in_reqs;
 	struct obstack *obs;
-	int i;
-	const int arity = get_irn_arity(irn);
+	const unsigned arity = (unsigned) get_irn_arity(irn);
 
 	assert(is_sparc_Permi(irn) || is_sparc_Permi23(irn));
 	/* Get register requirements.  Assumes all input/registers belong to the
@@ -142,13 +141,14 @@ static void set_Permi_reg_reqs(ir_node *irn)
 	/* Set in register requirements. */
 	obs = be_get_be_obst(get_irn_irg(irn));
 	in_reqs = OALLOCNZ(obs, const arch_register_req_t*, arity);
-	for (i = 0; i < arity; ++i) {
+	for (unsigned i = 0; i < arity; ++i) {
 		in_reqs[i] = req;
 	}
 	arch_set_irn_register_reqs_in(irn, in_reqs);
 
 	/* Set out register requirements. */
-	for (i = 0; i < arity; ++i) {
+	const unsigned outs = arch_get_irn_n_outs(irn);
+	for (unsigned i = 0; i < outs; ++i) {
 		arch_set_irn_register_req_out(irn, i, req);
 	}
 }
@@ -200,7 +200,7 @@ static ir_node *create_chain_permi(const perm_op_t *op)
 	ir_node *ress[PERMI_SIZE];
 	ir_node *permi;
 	ir_node *bb     = get_nodes_block(perm);
-	unsigned size = op->length - 1;
+	unsigned size   = op->length - 1;
 	unsigned i;
 
 	assert(op->type == PERM_OP_CHAIN && op->length <= PERMI_SIZE);
@@ -215,7 +215,7 @@ static ir_node *create_chain_permi(const perm_op_t *op)
 	}
 
 	/* TODO: Fix debuginfo. */
-	permi = new_bd_sparc_Permi_chain(NULL, bb, size, args, size);
+	permi = new_bd_sparc_Permi_chain(NULL, bb, size, args, size + 1);
 	set_Permi_reg_reqs(permi);
 
 	/* Rewire Projs. */
@@ -228,6 +228,10 @@ static ir_node *create_chain_permi(const perm_op_t *op)
 		arch_set_irn_register_out(permi, i,
 			get_arch_register_from_index(op->regs[out]));
 	}
+
+	/* Set additional output to signal that we also write to the
+	 * first register in our chain. */
+	arch_set_irn_register_out(permi, size, get_arch_register_from_index(op->regs[0]));
 
 	return permi;
 }
@@ -252,11 +256,11 @@ static ir_node *create_permi23(ir_node **args, const perm_op_t *op2,
 	if (op2->type == PERM_OP_CYCLE && op3->type == PERM_OP_CYCLE) {
 		permi23 = new_bd_sparc_Permi23_cycle_cycle(NULL, bb, sz, args, sz);
 	} else if (op2->type == PERM_OP_CYCLE && op3->type == PERM_OP_CHAIN) {
-		permi23 = new_bd_sparc_Permi23_cycle_chain(NULL, bb, sz, args, sz);
+		permi23 = new_bd_sparc_Permi23_cycle_chain(NULL, bb, sz, args, sz + 1);
 	} else if (op2->type == PERM_OP_CHAIN && op3->type == PERM_OP_CYCLE) {
-		permi23 = new_bd_sparc_Permi23_chain_cycle(NULL, bb, sz, args, sz);
+		permi23 = new_bd_sparc_Permi23_chain_cycle(NULL, bb, sz, args, sz + 1);
 	} else if (op2->type == PERM_OP_CHAIN && op3->type == PERM_OP_CHAIN) {
-		permi23 = new_bd_sparc_Permi23_chain_chain(NULL, bb, sz, args, sz);
+		permi23 = new_bd_sparc_Permi23_chain_chain(NULL, bb, sz, args, sz + 2);
 	} else
 		assert(!"Unknown perm ops");
 
@@ -292,13 +296,13 @@ static void handle_zero_chains(void)
 	unsigned j;
 
 	for (i = 0; i < num_ops; ++i)
-		if (ops[i].regs[0] == 0)
+		if (ops[i].regs[0] == REG_GP_G0)
 			split_chain_into_copies(&ops[i]);
 
 	/* Remove all zero chains. */
 	j = 0;
 	for (i = 0; i < num_ops; ++i) {
-		if (ops[i].regs[0] != 0) {
+		if (ops[i].regs[0] != REG_GP_G0) {
 			if (j != i)
 				ops[j] = ops[i];
 			++j;
@@ -482,7 +486,8 @@ static void combine_small_ops(const perm_op_t *op2, const perm_op_t *op3)
 	} else
 		assert(!"Unknown perm op type");
 
-	permi23 = create_permi23(args, op2, op3);
+	permi23   = create_permi23(args, op2, op3);
+	int arity = get_irn_arity(permi23);
 
 	/* Rewire Projs. */
 	if (op2->type == PERM_OP_CYCLE) {
@@ -502,6 +507,12 @@ static void combine_small_ops(const perm_op_t *op2, const perm_op_t *op3)
 		set_Proj_proj(proj, 0);
 		arch_set_irn_register_out(permi23, 0,
 			get_arch_register_from_index(op2->regs[1]));
+
+		/* Set an additional output register (that noone will read) to
+		 * preserve the information that we also write to the first
+		 * register in the chain. */
+		arch_set_irn_register_out(permi23, arity,
+			get_arch_register_from_index(op2->regs[0]));
 	} else
 		assert(!"Unknown perm op type");
 
@@ -525,6 +536,13 @@ static void combine_small_ops(const perm_op_t *op2, const perm_op_t *op3)
 			arch_set_irn_register_out(permi23, pos + i,
 				get_arch_register_from_index(op3->regs[out]));
 		}
+
+		/* Set an additional output register (that noone will read) to
+		 * preserve the information that we also write to the first
+		 * register in the chain. */
+		const int pos = arity + (op2->type == PERM_OP_CHAIN ? 1 : 0);
+		arch_set_irn_register_out(permi23, pos,
+			get_arch_register_from_index(op3->regs[0]));
 	} else
 		assert(!"Unknown perm op type");
 
