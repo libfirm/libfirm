@@ -45,7 +45,7 @@ int get_irn_outs_computed(const ir_node *node)
 
 int get_irn_n_outs(const ir_node *node)
 {
-	assert(node && node->kind == k_ir_node);
+	assert(node->kind == k_ir_node);
 	assert(node->out_valid);
 	/* we misuse the first for the size info of the out array */
 	return node->out[0].pos;
@@ -68,7 +68,7 @@ ir_node *get_irn_out_ex(const ir_node *def, int pos, int *in_pos)
 
 void set_irn_out(ir_node *def, int pos, ir_node *use, int in_pos)
 {
-	assert(def && use);
+	assert(use);
 	assert(pos >= 0 && pos < get_irn_n_outs(def));
 	assert(def->out_valid);
 	def->out[pos+1].use = use;
@@ -77,11 +77,11 @@ void set_irn_out(ir_node *def, int pos, ir_node *use, int in_pos)
 
 int get_Block_n_cfg_outs(const ir_node *bl)
 {
-	assert(bl && is_Block(bl));
+	assert(is_Block(bl));
 	assert(bl->out_valid);
 	int n_cfg_outs = 0;
 	for (int i = 1; i <= bl->out[0].pos; ++i) {
-		ir_node *succ = bl->out[i].use;
+		const ir_node *succ = bl->out[i].use;
 		if (get_irn_mode(succ) == mode_X && !is_End(succ) && !is_Bad(succ))
 			n_cfg_outs += succ->out[0].pos;
 	}
@@ -90,7 +90,7 @@ int get_Block_n_cfg_outs(const ir_node *bl)
 
 int get_Block_n_cfg_outs_ka(const ir_node *bl)
 {
-	assert(bl && is_Block(bl));
+	assert(is_Block(bl));
 	assert(bl->out_valid);
 	int n_cfg_outs = 0;
 	for (int i = 1; i <= bl->out[0].pos; ++i) {
@@ -113,7 +113,7 @@ int get_Block_n_cfg_outs_ka(const ir_node *bl)
 
 ir_node *get_Block_cfg_out(const ir_node *bl, int pos)
 {
-	assert(bl && is_Block(bl));
+	assert(is_Block(bl));
 	assert(bl->out_valid);
 	for (int i = 1; i <= bl->out[0].pos; ++i) {
 		const ir_node *succ = bl->out[i].use;
@@ -130,7 +130,7 @@ ir_node *get_Block_cfg_out(const ir_node *bl, int pos)
 
 ir_node *get_Block_cfg_out_ka(const ir_node *bl, int pos)
 {
-	assert(bl && is_Block(bl));
+	assert(is_Block(bl));
 	assert(bl->out_valid);
 	for (int i = 1; i <= bl->out[0].pos; ++i) {
 		const ir_node *succ = bl->out[i].use;
@@ -163,7 +163,6 @@ ir_node *get_Block_cfg_out_ka(const ir_node *bl, int pos)
 static void irg_out_walk_2(ir_node *node, irg_walk_func *pre,
                            irg_walk_func *post, void *env)
 {
-	assert(node);
 	assert(get_irn_visited(node) < get_irg_visited(current_ir_graph));
 
 	set_irn_visited(node, get_irg_visited(current_ir_graph));
@@ -217,9 +216,13 @@ static void irg_out_block_walk2(ir_node *bl, irg_walk_func *pre,
 void irg_out_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
                         void *env)
 {
+	ir_graph *irg = get_irn_irg(node);
 	assert(is_Block(node) || (get_irn_mode(node) == mode_X));
 
-	inc_irg_block_visited(current_ir_graph);
+	ir_graph *rem = current_ir_graph;
+	current_ir_graph = irg;
+
+	inc_irg_block_visited(irg);
 
 	if (get_irn_mode(node) == mode_X) {
 		int n = get_irn_n_outs(node);
@@ -230,6 +233,8 @@ void irg_out_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
 	} else {
 		irg_out_block_walk2(node, pre, post, env);
 	}
+
+	current_ir_graph = rem;
 }
 
 /*--------------------------------------------------------------------*/
@@ -378,16 +383,13 @@ static ir_def_use_edge *set_out_edges(ir_graph *irg, ir_def_use_edge *free)
 
 void compute_irg_outs(ir_graph *irg)
 {
-	ir_graph        *rem = current_ir_graph;
 	int             n_out_edges = 0;
 	ir_def_use_edge *end = NULL;         /* Only for debugging */
 
-	current_ir_graph = irg;
-
 	/* Update graph state */
-	assert(get_irg_phase_state(current_ir_graph) != phase_building);
+	assert(get_irg_phase_state(irg) != phase_building);
 
-	free_irg_outs(current_ir_graph);
+	free_irg_outs(irg);
 
 	/* This first iteration counts the overall number of out edges and the
 	   number of out edges for each node. */
@@ -407,7 +409,6 @@ void compute_irg_outs(ir_graph *irg)
 	assert (end == (irg->outs + n_out_edges));
 
 	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
-	current_ir_graph = rem;
 }
 
 void assure_irg_outs(ir_graph *irg)
