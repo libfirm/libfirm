@@ -276,9 +276,9 @@ static void get_perm_move_info(perm_move_t *const move,
 	}
 }
 
-static void build_register_pair_list(reg_pair_t *pairs, int *n, ir_node *irn)
+static int build_register_pair_list(reg_pair_t *pairs, ir_node *irn)
 {
-	*n = 0;
+	int n = 0;
 
 	foreach_out_edge_safe(irn, edge) {
 		ir_node               *const out     = get_edge_src_irn(edge);
@@ -297,13 +297,15 @@ static void build_register_pair_list(reg_pair_t *pairs, int *n, ir_node *irn)
 			continue;
 		}
 
-		pair           = &pairs[(*n)++];
+		pair           = &pairs[n++];
 		pair->in_node  = in;
 		pair->in_reg   = in_reg;
 		pair->out_node = out;
 		pair->out_reg  = out_reg;
 		pair->checked  = 0;
 	}
+
+	return n;
 }
 
 static void reduce_perm_size(ir_node *irn, const perm_move_t* move, reg_pair_t *const pairs, int n_pairs)
@@ -443,7 +445,7 @@ static void lower_perm_node(ir_node *irn, lower_env_t *env)
 	assert(arity == get_irn_n_edges(irn) && "perm's in and out numbers different");
 
 	/* Build the list of register pairs (in, out) */
-	build_register_pair_list(pairs, &n_pairs, irn);
+	n_pairs = build_register_pair_list(pairs, irn);
 
 	DBG((dbg, LEVEL_1, "%+F has %d unresolved constraints\n", irn, n_pairs));
 
