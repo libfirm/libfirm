@@ -143,9 +143,6 @@ static const be_use_t *get_or_set_use_block(be_uses_t *env,
  */
 static int be_is_phi_argument(const ir_node *block, const ir_node *def)
 {
-	ir_node *succ_block = NULL;
-	int arity, i;
-
 #if 1
 	if (get_irn_n_edges_kind(block, EDGE_KIND_BLOCK) < 1)
 #else
@@ -153,20 +150,16 @@ static int be_is_phi_argument(const ir_node *block, const ir_node *def)
 #endif
 		return 0;
 
-	succ_block = get_first_block_succ(block);
+	ir_node *const succ_block = get_first_block_succ(block);
 
-	arity = get_Block_n_cfgpreds(succ_block);
-	if (arity <= 1) {
+	if (get_Block_n_cfgpreds(succ_block) <= 1) {
 		/* no Phis in the successor */
 		return 0;
 	}
 
 	/* find the index of block in its successor */
-	for (i = 0; i < arity; ++i) {
-		if (get_Block_cfgpred_block(succ_block, i) == block)
-			break;
-	}
-	assert(i < arity);
+	int const i = get_Block_cfgpred_pos(succ_block, block);
+	assert(i >= 0);
 
 	/* iterate over the Phi nodes in the successor and check if def is
 	 * one of its arguments */

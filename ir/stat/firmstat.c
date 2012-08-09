@@ -601,13 +601,12 @@ static ir_op *stat_get_irn_op(ir_node *node)
  */
 static void undate_block_info(ir_node *node, graph_entry_t *graph)
 {
-	ir_op *op = get_irn_op(node);
 	ir_node *block;
 	block_entry_t *b_entry;
 	int i, arity;
 
 	/* check for block */
-	if (op == op_Block) {
+	if (is_Block(node)) {
 		arity = get_irn_arity(node);
 		b_entry = block_get_entry(&graph->recalc_cnts, get_irn_node_nr(node), graph->block_hash);
 		/* mark start end block to allow to filter them out */
@@ -631,7 +630,7 @@ static void undate_block_info(ir_node *node, graph_entry_t *graph)
 	block   = get_nodes_block(node);
 	b_entry = block_get_entry(&graph->recalc_cnts, get_irn_node_nr(block), graph->block_hash);
 
-	if (op == op_Phi && mode_is_datab(get_irn_mode(node))) {
+	if (is_Phi(node) && mode_is_datab(get_irn_mode(node))) {
 		/* count data Phi per block */
 		cnt_inc(&b_entry->cnt[bcnt_phi_data]);
 	}  /* if */
@@ -1673,9 +1672,8 @@ static void stat_merge_nodes(
 
 				/* sometimes we did not detect, that it is replaced by a Const */
 				if (opt == HOOK_OPT_CONFIRM && new_num_entries == 1) {
-					ir_op *op = get_irn_op(new_node_array[0]);
-
-					if (op == op_Const || op == op_SymConst)
+					ir_node *const irn = new_node_array[0];
+					if (is_Const(irn) || is_SymConst(irn))
 						xopt = HOOK_OPT_CONFIRM_C;
 				}  /* if */
 

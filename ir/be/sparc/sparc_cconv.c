@@ -51,6 +51,8 @@ static const unsigned ignore_regs[] = {
 	REG_FPFLAGS,
 	REG_FLAGS,
 	REG_Y,
+
+	REG_F31,
 };
 
 static const arch_register_t* const param_regs[] = {
@@ -117,7 +119,6 @@ static const unsigned caller_saves[] = {
 	REG_F28,
 	REG_F29,
 	REG_F30,
-	REG_F31,
 	REG_FLAGS,
 	REG_FPFLAGS,
 	REG_Y,

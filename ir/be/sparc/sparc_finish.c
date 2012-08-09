@@ -291,6 +291,36 @@ static void finish_sparc_Ld(ir_node *node)
 
 }
 
+static void split_sparc_ldf(ir_node *node)
+{
+	sparc_load_store_attr_t *attr = get_sparc_load_store_attr(node);
+	unsigned                 bits = get_mode_size_bits(attr->load_store_mode);
+	/* split 128bit loads into 2 64bit loads */
+	if (bits == 128) {
+		dbg_info *dbgi  = get_irn_dbg_info(node);
+		ir_node  *block = get_nodes_block(node);
+		ir_node  *ptr   = get_irn_n(node, n_sparc_Ldf_ptr);
+		ir_node  *mem   = get_irn_n(node, n_sparc_Ldf_mem);
+		ir_node  *new_load
+			= new_bd_sparc_Ldf_d(dbgi, block, ptr, mem, mode_D,
+			                     attr->base.immediate_value_entity,
+			                     attr->base.immediate_value + 8,
+			                     attr->is_frame_entity);
+		ir_node  *new_mem = new_r_Proj(new_load, mode_M, pn_sparc_Ldf_M);
+
+		const arch_register_t *reg
+			= arch_get_irn_register_out(node, pn_sparc_Ldf_res);
+		unsigned reg_index = reg->global_index;
+
+		arch_set_irn_register_out(new_load, pn_sparc_Ldf_res,
+		                          &sparc_registers[reg_index+2]);
+
+		attr->load_store_mode = mode_D;
+		set_irn_n(node, n_sparc_Ldf_mem, new_mem);
+		sched_add_before(node, new_load);
+	}
+}
+
 static void finish_sparc_Ldf(ir_node *node)
 {
 	sparc_attr_t                  *attr            = get_sparc_attr(node);
@@ -666,6 +696,7 @@ void sparc_finish_graph(ir_graph *irg)
 	register_peephole_optimisation(op_sparc_FrameAddr, peephole_sparc_FrameAddr);
 	register_peephole_optimisation(op_sparc_RestoreZero,
 	                               peephole_sparc_RestoreZero);
+	register_peephole_optimisation(op_sparc_Ldf, split_sparc_ldf);
 	be_peephole_opt(irg);
 
 	/* perform legalizations (mostly fix nodes with too big immediates) */

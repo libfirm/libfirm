@@ -472,7 +472,7 @@ static ir_entity *new_static_string_entity(ident *name, const char *string)
 	return result;
 }
 
-void ir_profile_instrument(const char *filename)
+ir_graph *ir_profile_instrument(const char *filename)
 {
 	int n, n_blocks = 0;
 	ident *counter_id, *filename_id;
@@ -483,7 +483,7 @@ void ir_profile_instrument(const char *filename)
 	/* Don't do anything for modules without code. Else the linker will
 	 * complain. */
 	if (get_irp_n_irgs() == 0)
-		return;
+		return NULL;
 
 	/* count the number of block first */
 	n_blocks = get_irp_n_blocks();
@@ -504,7 +504,7 @@ void ir_profile_instrument(const char *filename)
 		instrument_irg(irg, bblock_counts, &wd);
 	}
 
-	gen_initializer_irg(ent_filename, bblock_counts, n_blocks);
+	return gen_initializer_irg(ent_filename, bblock_counts, n_blocks);
 }
 
 static unsigned int *parse_profile(const char *filename, unsigned int num_blocks)

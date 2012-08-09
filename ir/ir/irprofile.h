@@ -37,7 +37,7 @@
  * incremented in that block. After the program has run the info is written
  * to @p filename.
  */
-void ir_profile_instrument(const char *filename);
+ir_graph *ir_profile_instrument(const char *filename);
 
 /**
  * Reads the corresponding profile info file if it exists and returns a

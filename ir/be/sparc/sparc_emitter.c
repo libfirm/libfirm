@@ -409,7 +409,7 @@ static bool can_move_up_into_delayslot(const ir_node *node, const ir_node *to)
 
 	/* register window cycling effects at Restore aren't correctly represented
 	 * in the graph yet so we need this exception here */
-	if (is_sparc_Restore(to) || is_sparc_RestoreZero(to)) {
+	if (is_sparc_Restore(node) || is_sparc_RestoreZero(node)) {
 		return false;
 	} else if (is_sparc_Call(to)) {
 		/* node must not overwrite any of the inputs of the call,
@@ -1297,9 +1297,25 @@ static void emit_icore_Permi_chain(const ir_node *irn)
 
 static void emit_be_Perm_xor(const ir_node *irn)
 {
-	sparc_emitf(irn, "xor %S1, %S0, %S0");
-	sparc_emitf(irn, "xor %S1, %S0, %S1");
-	sparc_emitf(irn, "xor %S1, %S0, %S0");
+	ir_mode *mode = get_irn_mode(get_irn_n(irn, 0));
+	if (mode_is_float(mode)) {
+		const arch_register_t *reg0 = arch_get_irn_register_in(irn, 0);
+		const arch_register_t *reg1 = arch_get_irn_register_in(irn, 1);
+		unsigned reg_idx0 = reg0->global_index;
+		unsigned reg_idx1 = reg1->global_index;
+		unsigned width    = arch_get_irn_register_req_in(irn, 0)->width;
+		for (unsigned i = 0; i < width; ++i) {
+			const arch_register_t *r0 = &sparc_registers[reg_idx0+i];
+			const arch_register_t *r1 = &sparc_registers[reg_idx1+i];
+			sparc_emitf(irn, "fmovs %R, %%f31", r0);
+			sparc_emitf(irn, "fmovs %R, %R", r1, r0);
+			sparc_emitf(irn, "fmovs %%f31, %R", r1);
+		}
+	} else {
+		sparc_emitf(irn, "xor %S1, %S0, %S0");
+		sparc_emitf(irn, "xor %S1, %S0, %S1");
+		sparc_emitf(irn, "xor %S1, %S0, %S0");
+	}
 }
 
 /**
@@ -1912,7 +1928,7 @@ static void pick_delay_slots(size_t n_blocks, ir_node **blocks)
 	      cmp_block_execfreqs);
 
 	for (size_t i = 0; i < n_blocks; ++i) {
-		const ir_node *block = blocks[i];
+		const ir_node *block = sorted_blocks[i];
 		sched_foreach(block, node) {
 			if (!has_delay_slot(node))
 				continue;

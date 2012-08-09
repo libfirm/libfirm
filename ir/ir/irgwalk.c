@@ -57,8 +57,8 @@ static unsigned irg_walk_2_pre(ir_node *node, irg_walk_func *pre, void *env)
 
 	pre(node, env);
 
-	if (node->op != op_Block) {
-		ir_node *pred = get_irn_n(node, -1);
+	if (!is_Block(node)) {
+		ir_node *pred = get_nodes_block(node);
 		if (pred->visited < irg->visited)
 			cnt += irg_walk_2_pre(pred, pre, env);
 	}
@@ -83,8 +83,8 @@ static unsigned irg_walk_2_post(ir_node *node, irg_walk_func *post, void *env)
 
 	set_irn_visited(node, irg->visited);
 
-	if (node->op != op_Block) {
-		ir_node *pred = get_irn_n(node, -1);
+	if (!is_Block(node)) {
+		ir_node *pred = get_nodes_block(node);
 		if (pred->visited < irg->visited)
 			cnt += irg_walk_2_post(pred, post, env);
 	}
@@ -115,8 +115,8 @@ static unsigned irg_walk_2_both(ir_node *node, irg_walk_func *pre,
 
 	pre(node, env);
 
-	if (node->op != op_Block) {
-		ir_node *pred = get_irn_n(node, -1);
+	if (!is_Block(node)) {
+		ir_node *pred = get_nodes_block(node);
 		if (pred->visited < irg->visited)
 			cnt += irg_walk_2_both(pred, pre, post, env);
 	}
@@ -203,8 +203,8 @@ static unsigned irg_walk_in_or_dep_2_pre(ir_node *node, irg_walk_func *pre, void
 
 	pre(node, env);
 
-	if (node->op != op_Block) {
-		ir_node *pred = get_irn_n(node, -1);
+	if (!is_Block(node)) {
+		ir_node *pred = get_nodes_block(node);
 		if (pred->visited < irg->visited)
 			cnt += irg_walk_in_or_dep_2_pre(pred, pre, env);
 	}
@@ -229,8 +229,8 @@ static unsigned irg_walk_in_or_dep_2_post(ir_node *node, irg_walk_func *post, vo
 
 	set_irn_visited(node, irg->visited);
 
-	if (node->op != op_Block) {
-		ir_node *pred = get_irn_n(node, -1);
+	if (!is_Block(node)) {
+		ir_node *pred = get_nodes_block(node);
 		if (pred->visited < irg->visited)
 			cnt += irg_walk_in_or_dep_2_post(pred, post, env);
 	}
@@ -260,8 +260,8 @@ static unsigned irg_walk_in_or_dep_2_both(ir_node *node, irg_walk_func *pre, irg
 
 	pre(node, env);
 
-	if (node->op != op_Block) {
-		ir_node *pred = get_irn_n(node, -1);
+	if (!is_Block(node)) {
+		ir_node *pred = get_nodes_block(node);
 		if (pred->visited < irg->visited)
 			cnt += irg_walk_in_or_dep_2_both(pred, pre, post, env);
 	}
