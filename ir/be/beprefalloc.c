@@ -547,10 +547,11 @@ static void combine_congruence_classes(void)
  * @param node  the node
  * @param reg   the register
  */
-static void use_reg(ir_node *node, const arch_register_t *reg)
+static void use_reg(ir_node *node, const arch_register_t *reg, unsigned width)
 {
 	unsigned r = arch_register_get_index(reg);
-	assignments[r] = node;
+	for (unsigned r0 = r; r0 < r + width; ++r0)
+		assignments[r0] = node;
 	arch_set_irn_register(node, reg);
 }
 
@@ -559,12 +560,15 @@ static void free_reg_of_value(ir_node *node)
 	if (!arch_irn_consider_in_reg_alloc(cls, node))
 		return;
 
-	const arch_register_t *reg = arch_get_irn_register(node);
-	unsigned               r   = arch_register_get_index(reg);
+	const arch_register_t     *reg = arch_get_irn_register(node);
+	const arch_register_req_t *req = arch_get_irn_register_req(node);
+	unsigned                   r   = arch_register_get_index(reg);
 	/* assignment->value may be NULL if a value is used at 2 inputs
-	   so it gets freed twice. */
-	assert(assignments[r] == node || assignments[r] == NULL);
-	assignments[r] = NULL;
+	 * so it gets freed twice. */
+	for (unsigned r0 = r; r0 < r + req->width; ++r0) {
+		assert(assignments[r0] == node || assignments[r0] == NULL);
+		assignments[r0] = NULL;
+	}
 }
 
 /**
@@ -672,13 +676,14 @@ static bool try_optimistic_split(ir_node *to_split, ir_node *before,
 	if (i >= n_regs)
 		return false;
 
-	const arch_register_t *reg  = arch_register_for_index(cls, r);
-	ir_node               *copy = be_new_Copy(block, to_split);
+	const arch_register_t *reg   = arch_register_for_index(cls, r);
+	ir_node               *copy  = be_new_Copy(block, to_split);
+	unsigned               width = 1;
 	mark_as_copy_of(copy, to_split);
 	/* hacky, but correct here */
 	if (assignments[arch_register_get_index(from_reg)] == to_split)
 		free_reg_of_value(to_split);
-	use_reg(copy, reg);
+	use_reg(copy, reg, width);
 	sched_add_before(before, copy);
 
 	DB((dbg, LEVEL_3,
@@ -695,14 +700,15 @@ static void assign_reg(const ir_node *block, ir_node *node,
 {
 	assert(!is_Phi(node));
 	/* preassigned register? */
-	const arch_register_t *final_reg = arch_get_irn_register(node);
+	const arch_register_t     *final_reg = arch_get_irn_register(node);
+	const arch_register_req_t *req       = arch_get_irn_register_req(node);
+	unsigned                   width     = req->width;
 	if (final_reg != NULL) {
 		DB((dbg, LEVEL_2, "Preassignment %+F -> %s\n", node, final_reg->name));
-		use_reg(node, final_reg);
+		use_reg(node, final_reg, width);
 		return;
 	}
 
-	const arch_register_req_t *req = arch_get_irn_register_req(node);
 	/* ignore reqs must be preassigned */
 	assert (! (req->type & arch_register_req_type_ignore));
 
@@ -756,9 +762,19 @@ static void assign_reg(const ir_node *block, ir_node *node,
 		if (!rbitset_is_set(allowed_regs, final_reg_index))
 			continue;
 		/* alignment constraint? */
-		if (req->width > 1 && (req->type & arch_register_req_type_aligned)
-				&& (final_reg_index % req->width) != 0)
-			continue;
+		if (width > 1) {
+			if ((req->type & arch_register_req_type_aligned)
+				&& (final_reg_index % width) != 0)
+				continue;
+			bool fine = true;
+			for (unsigned r0 = r+1; r0 < r+width; ++r0) {
+				if (assignments[r0] != NULL)
+					fine = false;
+			}
+			/* TODO: attempt optimistic split here */
+			if (!fine)
+				continue;
+		}
 
 		if (assignments[final_reg_index] == NULL)
 			break;
@@ -779,7 +795,7 @@ static void assign_reg(const ir_node *block, ir_node *node,
 
 	final_reg = arch_register_for_index(cls, final_reg_index);
 	DB((dbg, LEVEL_2, "Assign %+F -> %s\n", node, final_reg->name));
-	use_reg(node, final_reg);
+	use_reg(node, final_reg, width);
 }
 
 /**
@@ -858,7 +874,8 @@ static void permute_values(ir_nodeset_t *live_nodes, ir_node *before,
 		DB((dbg, LEVEL_2, "Copy %+F (from %+F, before %+F) -> %s\n",
 		    copy, src, before, reg->name));
 		mark_as_copy_of(copy, src);
-		use_reg(copy, reg);
+		unsigned width = 1; /* TODO */
+		use_reg(copy, reg, width);
 
 		if (live_nodes != NULL) {
 			ir_nodeset_insert(live_nodes, copy);
@@ -913,15 +930,17 @@ static void permute_values(ir_nodeset_t *live_nodes, ir_node *before,
 		DB((dbg, LEVEL_2, "Perm %+F (perm %+F,%+F, before %+F)\n",
 		    perm, in[0], in[1], before));
 
+		unsigned width = 1; /* TODO */
+
 		ir_node *proj0 = new_r_Proj(perm, get_irn_mode(in[0]), 0);
 		mark_as_copy_of(proj0, in[0]);
 		const arch_register_t *reg0 = arch_register_for_index(cls, old_r);
-		use_reg(proj0, reg0);
+		use_reg(proj0, reg0, width);
 
 		ir_node *proj1 = new_r_Proj(perm, get_irn_mode(in[1]), 1);
 		mark_as_copy_of(proj1, in[1]);
 		const arch_register_t *reg1 = arch_register_for_index(cls, r2);
-		use_reg(proj1, reg1);
+		use_reg(proj1, reg1, width);
 
 		/* 1 value is now in the correct register */
 		permutation[old_r] = old_r;
@@ -937,7 +956,7 @@ static void permute_values(ir_nodeset_t *live_nodes, ir_node *before,
 		}
 	}
 
-#ifdef DEBUG_libfirm
+#ifndef NDEBUG
 	/* now we should only have fixpoints left */
 	for (unsigned r = 0; r < n_regs; ++r) {
 		assert(permutation[r] == r);
@@ -1513,17 +1532,26 @@ static void assign_phi_registers(ir_node *block)
 			break;
 		if (!arch_irn_consider_in_reg_alloc(cls, node))
 			continue;
+		const arch_register_req_t *req
+			= arch_get_irn_register_req(node);
 
 		unsigned r = assignment[n++];
 		assert(rbitset_is_set(normal_regs, r));
 		const arch_register_t *reg = arch_register_for_index(cls, r);
 		DB((dbg, LEVEL_2, "Assign %+F -> %s\n", node, reg->name));
-		use_reg(node, reg);
+		use_reg(node, reg, req->width);
 
 		/* adapt preferences for phi inputs */
 		if (propagate_phi_registers)
 			propagate_phi_register(node, r);
 	}
+}
+
+static arch_register_req_t *allocate_reg_req(ir_graph *irg)
+{
+	struct obstack *obst = be_get_be_obst(irg);
+	arch_register_req_t *req = OALLOCZ(obst, arch_register_req_t);
+	return req;
 }
 
 /**
@@ -1565,7 +1593,7 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 
 			const arch_register_t *reg = arch_get_irn_register(node);
 			assert(reg != NULL); /* ignore values must be preassigned */
-			use_reg(node, reg);
+			use_reg(node, reg, req->width);
 			continue;
 		}
 
@@ -1595,8 +1623,16 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 
 		if (need_phi) {
 			ir_mode *mode = get_irn_mode(node);
+			const arch_register_req_t *phi_req = cls->class_req;
+			if (req->width > 1) {
+				arch_register_req_t *new_req = allocate_reg_req(irg);
+				new_req->cls   = cls;
+				new_req->type  = req->type & arch_register_req_type_aligned;
+				new_req->width = req->width;
+				phi_req = new_req;
+			}
 			ir_node *phi  = be_new_Phi(block, n_preds, phi_ins, mode,
-			                           cls->class_req);
+			                           phi_req);
 
 			DB((dbg, LEVEL_3, "Create Phi %+F (for %+F) -", phi, node));
 #ifdef DEBUG_libfirm
@@ -1622,22 +1658,22 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		/* if the node already has a register assigned use it */
 		const arch_register_t *reg = arch_get_irn_register(node);
 		if (reg != NULL) {
-			use_reg(node, reg);
+			use_reg(node, reg, req->width);
 		}
 
 		/* remember that this node is live at the beginning of the block */
 		ir_nodeset_insert(&live_nodes, node);
 	}
 
-	unsigned      *forbidden_regs; /**< collects registers which must
-	                                    not be used for optimistic splits */
+	unsigned *forbidden_regs; /**< collects registers which must
+	                               not be used for optimistic splits */
 	rbitset_alloca(forbidden_regs, n_regs);
 
 	/* handle phis... */
 	assign_phi_registers(block);
 
 	/* all live-ins must have a register */
-#ifdef DEBUG_libfirm
+#ifndef NDEBUG
 	foreach_ir_nodeset(&live_nodes, node, iter) {
 		const arch_register_t *reg = arch_get_irn_register(node);
 		assert(reg != NULL);
