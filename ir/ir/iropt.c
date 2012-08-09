@@ -5130,7 +5130,7 @@ static ir_node *transform_node_Phi(ir_node *phi)
 		/* Beware of Phi0 */
 		if (n > 0) {
 			ir_node    *pred = get_irn_n(phi, 0);
-			ir_node    *bound, *new_phi, *block, **in;
+			ir_node    *bound, *new_phi, **in;
 			ir_relation relation;
 			bool        has_confirm = false;
 
