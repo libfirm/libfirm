@@ -798,9 +798,25 @@ static void emit_sparc_Call(const ir_node *node)
 
 static void emit_be_Perm(const ir_node *irn)
 {
-	sparc_emitf(irn, "xor %S1, %S0, %S0");
-	sparc_emitf(irn, "xor %S1, %S0, %S1");
-	sparc_emitf(irn, "xor %S1, %S0, %S0");
+	ir_mode *mode = get_irn_mode(get_irn_n(irn, 0));
+	if (mode_is_float(mode)) {
+		const arch_register_t *reg0 = arch_get_irn_register_in(irn, 0);
+		const arch_register_t *reg1 = arch_get_irn_register_in(irn, 1);
+		unsigned reg_idx0 = reg0->global_index;
+		unsigned reg_idx1 = reg1->global_index;
+		unsigned width    = arch_get_irn_register_req_in(irn, 0)->width;
+		for (unsigned i = 0; i < width; ++i) {
+			const arch_register_t *r0 = &sparc_registers[reg_idx0+i];
+			const arch_register_t *r1 = &sparc_registers[reg_idx1+i];
+			sparc_emitf(irn, "fmovs %R, %%f31", r0);
+			sparc_emitf(irn, "fmovs %R, %R", r1, r0);
+			sparc_emitf(irn, "fmovs %%f31, %R", r1);
+		}
+	} else {
+		sparc_emitf(irn, "xor %S1, %S0, %S0");
+		sparc_emitf(irn, "xor %S1, %S0, %S1");
+		sparc_emitf(irn, "xor %S1, %S0, %S0");
+	}
 }
 
 /* The stack pointer must always be SPARC_STACK_ALIGNMENT bytes aligned, so get
