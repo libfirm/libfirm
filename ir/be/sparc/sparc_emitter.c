@@ -1418,7 +1418,7 @@ static void pick_delay_slots(size_t n_blocks, ir_node **blocks)
 	      cmp_block_execfreqs);
 
 	for (size_t i = 0; i < n_blocks; ++i) {
-		const ir_node *block = blocks[i];
+		const ir_node *block = sorted_blocks[i];
 		sched_foreach(block, node) {
 			if (!has_delay_slot(node))
 				continue;
