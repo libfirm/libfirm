@@ -44,6 +44,7 @@
 #include "besched.h"
 #include "bestat.h"
 #include "bessaconstr.h"
+#include "belive_t.h"
 #include "beintlive_t.h"
 #include "bemodule.h"
 
@@ -65,11 +66,6 @@ typedef struct {
 	ir_nodehashmap_t op_set;
 	struct obstack   obst;
 } constraint_env_t;
-
-/** Lowering walker environment. */
-typedef struct lower_env_t {
-	ir_graph *irg;
-} lower_env_t;
 
 /** Holds a Perm register pair. */
 typedef struct reg_pair_t {
@@ -94,6 +90,10 @@ typedef struct perm_move_t {
 	int                     n_elems;     /**< number of elements in the cycle */
 	perm_type_t             type;        /**< type (CHAIN or CYCLE) */
 } perm_move_t;
+
+
+static const arch_register_t *free_register = NULL;
+
 
 /** returns the number register pairs marked as checked. */
 static int get_n_unchecked_pairs(reg_pair_t const *const pairs, int const n)
@@ -276,6 +276,17 @@ static void get_perm_move_info(perm_move_t *const move,
 	}
 }
 
+static void lv_aware_exchange(ir_node *old, ir_node *new, bool fresh)
+{
+	be_lv_t *liveness = be_get_irg_liveness(get_irn_irg(old));
+	if (fresh)
+		be_liveness_introduce(liveness, new);
+	else
+		be_liveness_update(liveness, new);
+	exchange(old, new);
+	be_liveness_remove(liveness, old);
+}
+
 static int build_register_pair_list(reg_pair_t *pairs, ir_node *irn)
 {
 	int n = 0;
@@ -293,7 +304,7 @@ static int build_register_pair_list(reg_pair_t *pairs, ir_node *irn)
 		if (in_reg == out_reg) {
 			DBG((dbg, LEVEL_1, "%+F removing equal perm register pair (%+F, %+F, %s)\n",
 					irn, in, out, out_reg->name));
-			exchange(out, in);
+			lv_aware_exchange(out, in, false);
 			continue;
 		}
 
@@ -308,115 +319,278 @@ static int build_register_pair_list(reg_pair_t *pairs, ir_node *irn)
 	return n;
 }
 
-static void reduce_perm_size(ir_node *irn, const perm_move_t* move, reg_pair_t *const pairs, int n_pairs)
+static void set_reg_in_use(ir_node *node, const arch_register_class_t *reg_class, bool *regs_in_use, bool in_use)
 {
-	const arch_register_class_t *const reg_class   = arch_get_irn_register(get_irn_n(irn, 0))->reg_class;
-	ir_node                     *const block       = get_nodes_block(irn);
-	/* Get the schedule predecessor node to the perm.
-	 * NOTE: This works with auto-magic. If we insert the new copy/exchange
-	 * nodes after this node, everything should be ok. */
-	ir_node                     *      sched_point = sched_prev(irn);
-	int                                i;
+	const arch_register_t *reg;
+	unsigned               reg_idx;
 
-	/* build copy/swap nodes from back to front */
-	for (i = move->n_elems - 2; i >= 0; --i) {
+	if (!mode_is_data(get_irn_mode(node)))
+		return;
+
+	reg = arch_get_irn_register(node);
+	if (reg == NULL)
+		panic("No register assigned at %+F", node);
+	if (reg->type & arch_register_type_virtual)
+		return;
+	if (reg->reg_class != reg_class)
+		return;
+	reg_idx = arch_register_get_index(reg);
+
+	DBG((dbg, LEVEL_3, "    Register %s is now %s\n", arch_register_get_name(reg), in_use ? "not free" : "free"));
+	regs_in_use[reg_idx] = in_use;
+}
+
+static void update_reg_defs(ir_node *node, const arch_register_class_t *reg_class, bool *regs_in_use)
+{
+	if (get_irn_mode(node) == mode_T) {
+		foreach_out_edge(node, edge) {
+			ir_node *proj = get_edge_src_irn(edge);
+			set_reg_in_use(proj, reg_class, regs_in_use, true);
+		}
+	} else {
+		set_reg_in_use(node, reg_class, regs_in_use, true);
+	}
+}
+
+static void update_reg_uses(ir_node *node, const arch_register_class_t *reg_class, bool *regs_in_use)
+{
+	int i, arity;
+
+	arity = get_irn_arity(node);
+	for (i = 0; i < arity; ++i) {
+		ir_node *in = get_irn_n(node, i);
+		set_reg_in_use(in, reg_class, regs_in_use, true);
+	}
+}
+
+static void find_free_register(const ir_node *irn, const arch_register_class_t *reg_class)
+{
+	ir_node  *block            = get_nodes_block(irn);
+	ir_graph *irg              = get_irn_irg(irn);
+	be_irg_t *birg             = be_birg_from_irg(irg);
+	unsigned  num_registers    = reg_class->n_regs;
+	bool     *registers_in_use = ALLOCANZ(bool, num_registers);
+	free_register = NULL;
+
+	DBG((dbg, LEVEL_2, "Looking for free register for %+F\n", irn));
+	be_lv_t *lv = be_get_irg_liveness(irg);
+	be_lv_foreach(lv, block, be_lv_state_end, node) {
+		DBG((dbg, LEVEL_2, "  Live at block end: %+F\n", node));
+		set_reg_in_use(node, reg_class, registers_in_use, true);
+	}
+
+	sched_foreach_reverse(block, node) {
+		if (is_Phi(node))
+			break;
+
+		DBG((dbg, LEVEL_2, "  Looking at node: %+F\n", node));
+
+		update_reg_defs(node, reg_class, registers_in_use);
+		update_reg_uses(node, reg_class, registers_in_use);
+
+		if (irn == node)
+			break;
+	}
+
+	for (unsigned i = 0; i < num_registers; ++i) {
+		const arch_register_t *reg = arch_register_for_index(reg_class, i);
+		bool okay_to_use = rbitset_is_set(birg->allocatable_regs, reg->global_index);
+
+		if (!registers_in_use[i] && okay_to_use) {
+			DBG((dbg, LEVEL_1, "Free reg for %+F: register %s is free and okay to use.\n", irn, arch_register_get_name(reg)));
+			free_register = reg;
+			break;
+		}
+	}
+}
+
+static const arch_register_t *get_free_register(void)
+{
+	return free_register;
+}
+
+static void split_chain_into_copies(ir_node *irn, const perm_move_t *move, reg_pair_t *pairs, int n_pairs)
+{
+	ir_node *block       = get_nodes_block(irn);
+	ir_node *sched_point = sched_prev(irn);
+
+	assert(move->type == PERM_CHAIN);
+
+	for (int i = move->n_elems - 2; i >= 0; --i) {
+		ir_node *arg1 = get_node_for_in_register(pairs, n_pairs, move->elems[i]);
+		ir_node *res2 = get_node_for_out_register(pairs, n_pairs, move->elems[i + 1]);
+		ir_node *cpy;
+
+		DB((dbg, LEVEL_1, "%+F creating copy node (%+F, %s) -> (%+F, %s)\n",
+					irn, arg1, move->elems[i]->name, res2, move->elems[i + 1]->name));
+
+		cpy = be_new_Copy(block, arg1);
+		arch_set_irn_register(cpy, move->elems[i + 1]);
+
+		/* exchange copy node and proj */
+		lv_aware_exchange(res2, cpy, true);
+
+		/* insert the copy/exchange node in schedule after the magic schedule node (see above) */
+		sched_add_after(skip_Proj(sched_point), cpy);
+
+		/* set the new scheduling point */
+		sched_point = cpy;
+	}
+}
+
+static void split_cycle_into_swaps(ir_node *irn, const perm_move_t *move, reg_pair_t *pairs, int n_pairs)
+{
+	const arch_register_class_t *reg_class   = arch_get_irn_register(get_irn_n(irn, 0))->reg_class;
+	ir_node                     *block       = get_nodes_block(irn);
+	ir_node                     *sched_point = sched_prev(irn);
+	be_lv_t                     *liveness    = be_get_irg_liveness(get_irn_irg(irn));
+
+
+	assert(move->type == PERM_CYCLE);
+
+	for (int i = move->n_elems - 2; i >= 0; --i) {
 		ir_node *arg1 = get_node_for_in_register(pairs, n_pairs, move->elems[i]);
 		ir_node *arg2 = get_node_for_in_register(pairs, n_pairs, move->elems[i + 1]);
 
 		ir_node *res1 = get_node_for_out_register(pairs, n_pairs, move->elems[i]);
 		ir_node *res2 = get_node_for_out_register(pairs, n_pairs, move->elems[i + 1]);
-		/* If we have a cycle and don't copy: we need to create exchange
-		 * nodes
+		/* We need to create exchange nodes.
 		 * NOTE: An exchange node is a perm node with 2 INs and 2 OUTs
 		 * IN_1  = in  node with register i
 		 * IN_2  = in  node with register i + 1
 		 * OUT_1 = out node with register i + 1
 		 * OUT_2 = out node with register i */
-		if (move->type == PERM_CYCLE) {
-			ir_node *in[2];
-			ir_node *cpyxchg;
+		ir_node *in[2];
+		ir_node *xchg;
 
-			in[0] = arg1;
-			in[1] = arg2;
+		in[0] = arg1;
+		in[1] = arg2;
 
-			/* At this point we have to handle the following problem:
-			 *
-			 * If we have a cycle with more than two elements, then this
-			 * could correspond to the following Perm node:
-			 *
-			 *   +----+   +----+   +----+
-			 *   | r1 |   | r2 |   | r3 |
-			 *   +-+--+   +-+--+   +--+-+
-			 *     |        |         |
-			 *     |        |         |
-			 *   +-+--------+---------+-+
-			 *   |         Perm         |
-			 *   +-+--------+---------+-+
-			 *     |        |         |
-			 *     |        |         |
-			 *   +-+--+   +-+--+   +--+-+
-			 *   |Proj|   |Proj|   |Proj|
-			 *   | r2 |   | r3 |   | r1 |
-			 *   +----+   +----+   +----+
-			 *
-			 * This node is about to be split up into two 2x Perm's for
-			 * which we need 4 Proj's and the one additional Proj of the
-			 * first Perm has to be one IN of the second. So in general
-			 * we need to create one additional Proj for each "middle"
-			 * Perm and set this to one in node of the successor Perm. */
+		/* At this point we have to handle the following problem:
+		 *
+		 * If we have a cycle with more than two elements, then this
+		 * could correspond to the following Perm node:
+		 *
+		 *   +----+   +----+   +----+
+		 *   | r1 |   | r2 |   | r3 |
+		 *   +-+--+   +-+--+   +--+-+
+		 *     |        |         |
+		 *     |        |         |
+		 *   +-+--------+---------+-+
+		 *   |         Perm         |
+		 *   +-+--------+---------+-+
+		 *     |        |         |
+		 *     |        |         |
+		 *   +-+--+   +-+--+   +--+-+
+		 *   |Proj|   |Proj|   |Proj|
+		 *   | r2 |   | r3 |   | r1 |
+		 *   +----+   +----+   +----+
+		 *
+		 * This node is about to be split up into two 2x Perm's for
+		 * which we need 4 Proj's and the one additional Proj of the
+		 * first Perm has to be one IN of the second. So in general
+		 * we need to create one additional Proj for each "middle"
+		 * Perm and set this to one in node of the successor Perm. */
 
-			DBG((dbg, LEVEL_1, "%+F creating exchange node (%+F, %s) and (%+F, %s) with\n",
-						irn, arg1, move->elems[i]->name, arg2, move->elems[i + 1]->name));
-			DBG((dbg, LEVEL_1, "%+F                        (%+F, %s) and (%+F, %s)\n",
-						irn, res1, move->elems[i]->name, res2, move->elems[i + 1]->name));
+		DBG((dbg, LEVEL_1, "%+F creating exchange node (%+F, %s) and (%+F, %s) with\n",
+					irn, arg1, move->elems[i]->name, arg2, move->elems[i + 1]->name));
+		DBG((dbg, LEVEL_1, "%+F                        (%+F, %s) and (%+F, %s)\n",
+					irn, res1, move->elems[i]->name, res2, move->elems[i + 1]->name));
 
-			cpyxchg = be_new_Perm(reg_class, block, 2, in);
+		xchg = be_new_Perm(reg_class, block, 2, in);
+		be_liveness_introduce(liveness, xchg);
 
-			if (i > 0) {
-				/* cycle is not done yet */
-				int pidx = get_pairidx_for_in_regidx(pairs, n_pairs, move->elems[i]->index);
+		if (i > 0) {
+			/* cycle is not done yet */
+			int pidx = get_pairidx_for_in_regidx(pairs, n_pairs, move->elems[i]->index);
 
-				/* create intermediate proj */
-				res1 = new_r_Proj(cpyxchg, get_irn_mode(res1), 0);
+			/* create intermediate proj */
+			res1 = new_r_Proj(xchg, get_irn_mode(res1), 0);
+			be_liveness_introduce(liveness, res1);
 
-				/* set as in for next Perm */
-				pairs[pidx].in_node = res1;
-			}
-
-			set_Proj_pred(res2, cpyxchg);
-			set_Proj_proj(res2, 0);
-			set_Proj_pred(res1, cpyxchg);
-			set_Proj_proj(res1, 1);
-
-			arch_set_irn_register(res2, move->elems[i + 1]);
-			arch_set_irn_register(res1, move->elems[i]);
-
-			/* insert the copy/exchange node in schedule after the magic schedule node
-			 * (see comment in lower_perm_node) */
-			sched_add_after(skip_Proj(sched_point), cpyxchg);
-
-			DB((dbg, LEVEL_1, "replacing %+F with %+F, placed new node after %+F\n", irn, cpyxchg, sched_point));
-
-			/* set the new scheduling point */
-			sched_point = res1;
-		} else {
-			ir_node *cpyxchg;
-
-			DB((dbg, LEVEL_1, "%+F creating copy node (%+F, %s) -> (%+F, %s)\n",
-						irn, arg1, move->elems[i]->name, res2, move->elems[i + 1]->name));
-
-			cpyxchg = be_new_Copy(block, arg1);
-			arch_set_irn_register(cpyxchg, move->elems[i + 1]);
-
-			/* exchange copy node and proj */
-			exchange(res2, cpyxchg);
-
-			/* insert the copy/exchange node in schedule after the magic schedule node (see above) */
-			sched_add_after(skip_Proj(sched_point), cpyxchg);
-
-			/* set the new scheduling point */
-			sched_point = cpyxchg;
+			/* set as in for next Perm */
+			pairs[pidx].in_node = res1;
 		}
+
+		set_Proj_pred(res2, xchg);
+		set_Proj_proj(res2, 0);
+		set_Proj_pred(res1, xchg);
+		set_Proj_proj(res1, 1);
+
+		arch_set_irn_register(res2, move->elems[i + 1]);
+		arch_set_irn_register(res1, move->elems[i]);
+		be_liveness_update(liveness, res1);
+		be_liveness_update(liveness, res2);
+
+		/* insert the copy/exchange node in schedule after the magic schedule node
+		 * (see comment in lower_perm_node) */
+		sched_add_after(skip_Proj(sched_point), xchg);
+
+		DB((dbg, LEVEL_1, "replacing %+F with %+F, placed new node after %+F\n", irn, xchg, sched_point));
+
+		/* set the new scheduling point */
+		sched_point = res1;
+	}
+}
+
+static void split_cycle_into_copies(ir_node *irn, const perm_move_t *move, reg_pair_t *pairs, int n_pairs, const arch_register_t *free_reg)
+{
+	ir_node *block       = get_nodes_block(irn);
+	ir_node *sched_point = sched_prev(irn);
+	be_lv_t *liveness    = be_get_irg_liveness(get_irn_irg(irn));
+
+	assert(move->type == PERM_CYCLE);
+
+	int num_elems = move->n_elems;
+	/* Save last register content. */
+	ir_node *arg      = get_node_for_in_register(pairs, n_pairs, move->elems[num_elems - 1]);
+	ir_node *save_cpy = be_new_Copy(block, arg);
+	arch_set_irn_register(save_cpy, free_reg);
+	sched_add_after(skip_Proj(sched_point), save_cpy);
+	sched_point = save_cpy;
+	be_liveness_introduce(liveness, save_cpy);
+
+	for (int i = move->n_elems - 2; i >= 0; --i) {
+		ir_node *arg1 = get_node_for_in_register(pairs, n_pairs, move->elems[i]);
+		ir_node *res2 = get_node_for_out_register(pairs, n_pairs, move->elems[i + 1]);
+		ir_node *cpy;
+
+		DB((dbg, LEVEL_1, "%+F creating copy node (%+F, %s) -> (%+F, %s)\n",
+					irn, arg1, move->elems[i]->name, res2, move->elems[i + 1]->name));
+
+		cpy = be_new_Copy(block, arg1);
+		arch_set_irn_register(cpy, move->elems[i + 1]);
+
+		/* exchange copy node and proj */
+		lv_aware_exchange(res2, cpy, true);
+
+		/* insert the copy/exchange node in schedule after the magic schedule node (see above) */
+		sched_add_after(skip_Proj(sched_point), cpy);
+
+		/* set the new scheduling point */
+		sched_point = cpy;
+	}
+
+	/* Restore last register content and write it to first register. */
+	ir_node *restore_cpy = be_new_Copy(block, save_cpy);
+	arch_set_irn_register(restore_cpy, move->elems[0]);
+	ir_node *proj = get_node_for_out_register(pairs, n_pairs, move->elems[0]);
+
+	lv_aware_exchange(proj, restore_cpy, true);
+	sched_add_after(skip_Proj(sched_point), restore_cpy);
+	sched_point = restore_cpy;
+}
+
+static void reduce_perm_size(ir_node *irn, const perm_move_t *move, reg_pair_t *pairs, int n_pairs)
+{
+	if (move->type == PERM_CYCLE) {
+		const arch_register_t *free_reg = get_free_register();
+		if (free_reg == NULL)
+			split_cycle_into_swaps(irn, move, pairs, n_pairs);
+		else
+			split_cycle_into_copies(irn, move, pairs, n_pairs, free_reg);
+	} else {
+		split_chain_into_copies(irn, move, pairs, n_pairs);
 	}
 }
 
@@ -427,16 +601,16 @@ static void reduce_perm_size(ir_node *irn, const perm_move_t* move, reg_pair_t *
  *       is a Perm node.
  *
  * @param irn      The perm node
- * @param env      The lowerer environment
  */
-static void lower_perm_node(ir_node *irn, lower_env_t *env)
+static void lower_perm_node(ir_node *irn)
 {
-	int         const arity        = get_irn_arity(irn);
-	reg_pair_t *const pairs        = ALLOCAN(reg_pair_t, arity);
-	int               n_pairs      = 0;
-	int               keep_perm    = 0;
-	ir_node    *      sched_point  = sched_prev(irn);
-	(void) env;
+	int         arity       = get_irn_arity(irn);
+	reg_pair_t *pairs       = ALLOCAN(reg_pair_t, arity);
+	int         n_pairs     = 0;
+	int         keep_perm   = 0;
+	ir_node    *sched_point = sched_prev(irn);
+	be_lv_t    *liveness    = be_get_irg_liveness(get_irn_irg(irn));
+
 
 	assert(be_is_Perm(irn) && "Non-Perm node passed to lower_perm_node");
 	DBG((dbg, LEVEL_1, "perm: %+F, sched point is %+F\n", irn, sched_point));
@@ -448,6 +622,11 @@ static void lower_perm_node(ir_node *irn, lower_env_t *env)
 	n_pairs = build_register_pair_list(pairs, irn);
 
 	DBG((dbg, LEVEL_1, "%+F has %d unresolved constraints\n", irn, n_pairs));
+
+	if (n_pairs > 0) {
+		const arch_register_class_t *reg_class = arch_get_irn_register(get_irn_n(irn, 0))->reg_class;
+		find_free_register(irn, reg_class);
+	}
 
 	/* Check for cycles and chains */
 	while (get_n_unchecked_pairs(pairs, n_pairs) > 0) {
@@ -486,6 +665,7 @@ static void lower_perm_node(ir_node *irn, lower_env_t *env)
 
 	/* Remove the perm from schedule */
 	if (!keep_perm) {
+		be_liveness_remove(liveness, irn);
 		sched_remove(irn);
 		kill_node(irn);
 	}
@@ -840,6 +1020,7 @@ void assure_constraints(ir_graph *irg)
 int push_through_perm(ir_node *perm)
 {
 	ir_graph *irg     = get_irn_irg(perm);
+	be_lv_t *lv       = be_get_irg_liveness(irg);
 	ir_node *bl       = get_nodes_block(perm);
 	ir_node *node;
 	int  arity        = get_irn_arity(perm);
@@ -869,7 +1050,6 @@ int push_through_perm(ir_node *perm)
 	sched_foreach_reverse_from(sched_prev(perm), irn) {
 		for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
 			ir_node *op = get_irn_n(irn, i);
-			be_lv_t *lv = be_get_irg_liveness(irg);
 			if (arch_irn_consider_in_reg_alloc(cls, op) &&
 			    !be_values_interfere(lv, op, one_proj)) {
 				frontier = irn;
@@ -928,7 +1108,7 @@ found_front:
 		arch_set_irn_register(node, arch_get_irn_register(proj));
 
 		/* reroute all users of the proj to the moved node. */
-		exchange(proj, node);
+		lv_aware_exchange(proj, node, false);
 
 		bitset_set(moved, input);
 		n_moved++;
@@ -942,6 +1122,7 @@ found_front:
 
 	new_size = arity - n_moved;
 	if (new_size == 0) {
+		be_liveness_remove(lv, perm);
 		sched_remove(perm);
 		kill_node(perm);
 		return 0;
@@ -965,9 +1146,11 @@ found_front:
 		pn = proj_map[pn];
 		assert(pn >= 0);
 		set_Proj_proj(proj, pn);
+		be_liveness_update(lv, proj);
 	}
 
 	be_Perm_reduce(perm, new_size, map);
+	be_liveness_update(lv, perm);
 	return 1;
 }
 
@@ -975,29 +1158,29 @@ found_front:
  * Calls the corresponding lowering function for the node.
  *
  * @param irn      The node to be checked for lowering
- * @param walk_env The walker environment
  */
-static void lower_nodes_after_ra_walker(ir_node *irn, void *walk_env)
+static void lower_nodes_after_ra_walker(ir_node *irn, void *env)
 {
-	int perm_stayed;
+	(void) env;
 
 	if (!be_is_Perm(irn))
 		return;
 
-	perm_stayed = push_through_perm(irn);
+	int perm_stayed = push_through_perm(irn);
 	if (perm_stayed)
-		lower_perm_node(irn, (lower_env_t*)walk_env);
+		lower_perm_node(irn);
 }
 
 void lower_nodes_after_ra(ir_graph *irg)
 {
-	lower_env_t env;
-	env.irg = irg;
-
 	/* we will need interference */
 	be_assure_live_chk(irg);
+	be_assure_live_sets(irg);
 
-	irg_walk_graph(irg, NULL, lower_nodes_after_ra_walker, &env);
+	irg_walk_graph(irg, NULL, lower_nodes_after_ra_walker, NULL);
+
+	be_lv_t *liveness = be_get_irg_liveness(irg);
+	be_liveness_invalidate_sets(liveness);
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_lower)
