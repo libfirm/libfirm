@@ -402,7 +402,7 @@ static bool can_move_up_into_delayslot(const ir_node *node, const ir_node *to)
 
 	/* register window cycling effects at Restore aren't correctly represented
 	 * in the graph yet so we need this exception here */
-	if (is_sparc_Restore(to) || is_sparc_RestoreZero(to)) {
+	if (is_sparc_Restore(node) || is_sparc_RestoreZero(node)) {
 		return false;
 	} else if (is_sparc_Call(to)) {
 		/* node must not overwrite any of the inputs of the call,
