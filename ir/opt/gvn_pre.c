@@ -52,7 +52,7 @@
 #define MAX_INSERT_ITER 3
 
 #define PARTLY_ONLY 0
-#define HOIST_HIGH 0
+#define HOIST_HIGH 1
 #define BETTER_GREED 0
 #define LOADS 0
 #define DIVMODS 1
@@ -231,22 +231,10 @@ static int compare_gvn_identities(const void *elt, const void *key)
 	if (is_Phi(a) || is_Phi(b))
 		return 1;
 
-	//// REM
-	assert(! is_Call(a) || is_memop(a));
-	assert(! is_Load(a) || is_memop(a));
-
-	assert(! is_Call(b) || is_memop(b));
-	assert(! is_Load(b) || is_memop(b));
-
 	/* memops are not the same, even if we want optimize them
 	   we have to take the order in account */
 	if (is_memop(a) || is_memop(b))
 		return 1;
-
-#if 0
-	if (is_Call(a) || is_Call(b))
-		return 1;
-#endif
 
 	if ((get_irn_op(a) != get_irn_op(b)) ||
 	    (get_irn_mode(a) != get_irn_mode(b))) return 1;
@@ -736,13 +724,6 @@ static void topo_walker(ir_node *irn, void *ctx)
 		DB((dbg, LEVEL_3, "%+F clean in block %+F\n", irn, block));
 
 		ir_valueset_insert(info->exp_gen, value, irn);
-#if 0
-		/* flag irn as clean*/
-		set_irn_link(irn, irn);
-	} else {
-		/* flag irn as not clean */
-		set_irn_link(irn, NULL);
-#endif
 	}
 }
 
@@ -799,49 +780,6 @@ static void set_translated(ir_nodehashmap_t *map, ir_node *node, ir_node *trans)
 	/* insert or replace */
 	ir_nodehashmap_insert(map, node, trans);
 }
-
-#if 0
-/**
- * Checks if node is hoistable into block.
- *
- * A clean node in block block can be hoisted above block succ.
- * A node is not clean if its representative is killed in block block.
- * The node can still be hoisted into block block.
- *
- * @param n      the node to be checked
- * @param block  the block to be hoisted into
- * @returns      block which node can be hoisted above
- */
-static unsigned is_hoistable_above(ir_node *node, ir_node *block, unsigned translated)
-{
-	int i;
-	int arity = get_irn_arity(node);
-
-	/* make sure that node can be hoisted above block */
-
-	if (is_irn_constlike(node))
-		return 1;
-
-	for (i = 0; i < arity; ++i) {
-		block_info *info       = get_block_info(block);
-		ir_node    *pred       = get_irn_n(node, i);
-		ir_node    *pred_value = identify(pred);
-		ir_node    *pred_block = get_nodes_block(pred);
-
-		/* predecessor strictly dominating */
-		if (block_strictly_dominates(pred_block, block))
-			continue;
-
-		/* if we didn't translate the exact representative we cannot translate */
-		if (translated && !get_translated(pred_block, pred))
-			return 0;
-
-		if (! ir_valueset_lookup(info->antic_in, pred_value))
-			return 0;
-	}
-	return 1;
-}
-#endif
 
 #if LOADS || DIVMODS
 /* Helper function to compare the values of pred and avail_pred. */
@@ -1010,7 +948,7 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, ir_node *p
 				needed |= 1;
 		}
 
-		DB((dbg, LEVEL_3, "in %+F\n", expr));
+		DB((dbg, LEVEL_4, "in %+F\n", expr));
 		in[i] = expr;
 	}
 
@@ -1096,8 +1034,6 @@ static void compute_antic(ir_node *block, void *ctx)
 #endif
 	}
 
-	// do exp_gen first, because we nee to know which values to kill of with tmpgen.
-
 	/* successor might have phi nodes */
 	if (n_succ == 1 && get_irn_arity(get_Block_cfg_out(block, 0)) > 1) {
 		succ      = get_Block_cfg_out(block, 0);
@@ -1125,15 +1061,9 @@ static void compute_antic(ir_node *block, void *ctx)
 			else
 				represent = expr;
 
-			if (is_clean_in_block(expr, block, info->antic_in)) {
-					ir_valueset_replace(info->antic_in, trans_value, represent);
-			}
+			if (is_clean_in_block(expr, block, info->antic_in))
+				ir_valueset_replace(info->antic_in, trans_value, represent);
 			set_translated(info->trans, expr, represent);
-#if 0
-			if (is_hoistable_above(expr, block, 1))
-				ir_valueset_insert(info->antic_in, trans_value, represent);
-			set_translated(info->trans, expr, represent);
-#endif
 		}
 
 	} else if (n_succ > 1) {
@@ -1155,16 +1085,8 @@ static void compute_antic(ir_node *block, void *ctx)
 					break;
 			}
 
-			//if (common && is_hoistable_above(expr, block, 0) && is_clean_in_block(expr, block, info->antic_in))
 			if (common && is_clean_in_block(expr, block, info->antic_in))
-				//ir_valueset_insert(info->antic_in, value, expr);
 				ir_valueset_replace(info->antic_in, value, expr);
-#if 0
-			if (common && is_hoistable_above(expr, block, 0)) {
-				ir_valueset_insert(info->antic_in, value, expr);
-				DB((dbg, LEVEL_3, "common and clean %+F(%+F) in %+F\n", expr, value, block));
-			}
-#endif
 		}
 	}
 
@@ -1224,30 +1146,6 @@ static void compute_avail_top_down(ir_node *block, void *ctx)
  * Main algorithm redundancy detection
  * --------------------------------------------------------
  */
-
-#if 0
-/**
- * Flags node irn redundant depending on redundant parameter.
- */
-static void flag_redundant(ir_node *irn, unsigned redundant)
-{
-	if (redundant) {
-		set_irn_link(irn, irn);
-	} else {
-		set_irn_link(irn, NULL);
-	}
-}
-#endif
-
-#if 0
-/*
- * Returns redundant flag of node irn.
- */
-static unsigned is_redundant(ir_node *irn)
-{
-	return (get_irn_link(irn) != NULL);
-}
-#endif
 
 /**
  * Returns a valid mode if the value of expr is a partially redundant value.
@@ -1327,7 +1225,7 @@ static ir_mode *is_partially_redundant(ir_node *block, ir_node *expr, ir_node *v
 #if BETTER_GREED
 	/* value is redundant from last iteration,
 	   but has not been removed from antic_in (is not optimized) */
-	if (! environ->first_iter && is_redundant(expr))
+	if (! environ->first_iter && is_redundant(block, expr))
 		return mode;
 #endif
 
@@ -1353,7 +1251,7 @@ static void update_new_set(ir_node *block, ir_node *idom)
 	block_info             *idom_info = get_block_info(idom);
 	int                     updated   = 0;
 
-	//DEBUG_ONLY(dump_value_set(idom_info->new_set, "[New Set]", idom);)
+	DEBUG_ONLY(dump_value_set(idom_info->new_set, "[New Set]", idom);)
 	foreach_valueset(idom_info->new_set, value, expr, iter) {
 		/* inherit new_set from immediate dominator */
 		ir_valueset_insert(curr_info->new_set, value, expr);
@@ -1365,6 +1263,21 @@ static void update_new_set(ir_node *block, ir_node *idom)
 		dump_value_set(curr_info->avail_out, "Updated [Avail_out]", block);
 #endif
 } /* update_new_set */
+
+#if BETTER_GREED
+/*
+ * Returns redundant flag of node irn in block block.
+ */
+static unsigned is_redundant(ir_node *block, ir_node *irn)
+{
+	(void) block;
+	(void) irn;
+
+	/* TODO Needs to use a flag, because antic_done should only be used
+	   if node is finally processed by insert_nodes. */
+	return 0;
+}
+#endif
 
 /**
  * Checks if hoisting irn is greedy.
@@ -1387,13 +1300,11 @@ static unsigned is_hoisting_greedy(ir_node *irn, ir_node *block)
 		for (i = 0; i < arity; ++i) {
 			ir_node *pred        = get_irn_n(irn, i);
 			ir_node *value       = identify(pred);
-			//ir_node *anti_leader = get_anti_leader(pred, block);
 
 			if (is_irn_constlike(value))
 				continue;
 
 			/* predecessor is on current path we have to ensure redundancy */
-			//if (block_dominates(block, get_nodes_block(pred)) && ! is_redundant(anti_leader))
 			if (ir_valueset_lookup(pred_info->avail_out, value) == NULL)
 				return 1;
 		}
@@ -1475,12 +1386,8 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 			continue;
 
 		/* filter phi nodes from antic_in */
-		if (is_Phi(expr)) {
-#if 0
-			flag_redundant(expr, 1);
-#endif
+		if (is_Phi(expr))
 			continue;
-		}
 
 		DB((dbg, LEVEL_2, "Insert for %+F (value %+F) in %+F\n", expr, value, block));
 
@@ -1490,33 +1397,19 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 			DB((dbg, LEVEL_2, "Fully redundant expr %+F value %+F\n", expr, value));
 			DEBUG_ONLY(inc_stats(gvnpre_stats->fully);)
 
-#if 0
-			flag_redundant(expr, 1);
-#endif
 			continue;
 		}
 
 #if !BETTER_GREED
 		if (is_hoisting_greedy(expr, block)) {
-			DB((dbg, LEVEL_2, "Greedy\n"));
-#if 0
-			flag_redundant(expr, 0);
-#endif
+			DB((dbg, LEVEL_2, "greedy\n"));
 			continue;
 		}
 #endif
 
 		mode = is_partially_redundant(block, expr, value);
-		if (mode == NULL) {
-#if 0
-			flag_redundant(expr, 0);
-#endif
+		if (mode == NULL)
 			continue;
-		} else {
-#if 0
-			flag_redundant(expr, 1);
-#endif
-		}
 
 #if BETTER_GREED
 		if (is_hoisting_greedy(expr, block)) {
@@ -1572,7 +1465,7 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 					ir_node **in          = XMALLOCN(ir_node *, trans_arity);
 					ir_node  *nn;
 					/* non phi descendants can also be redundant, but have
-					   not yet been (phi) translated. */
+					   not yet been translated and copied into target block. */
 					for (i = 0; i < trans_arity; ++i) {
 						ir_node *pred  = get_irn_n(trans, i);
 						ir_node *avail = ir_valueset_lookup(pred_info->avail_out, identify(pred));
@@ -1604,9 +1497,6 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 				   insert (not replace) because it has not been available */
 				ir_valueset_insert(pred_info->avail_out, value, trans);
 
-				// REMOVe
-				DEBUG_ONLY(dump_value_set(pred_info->antic_in, "Antic_in", block);)
-
 				phi_in[pos] = trans;
 			} else {
 				/* value available */
@@ -1628,17 +1518,24 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 		}
 		free(phi_in);
 
-#if 0
-		/* remove from antic_in, because expr is not anticipated
-		   anymore in this block */
-		ir_valueset_remove_iterator(info->antic_in, &iter);
-#endif
+		/* already optimized this value in this block */
 		ir_valueset_insert(info->antic_done, value, expr);
-
 		env->changes |= 1;
 	}
 
 #if BETTER_GREED
+	/* TODO Unfinished
+	   Better greed first determines which values are redundant
+	   and decides then which to take.
+	   insert_nodes needs to be split up for that. The cycle could be
+	   for each block: flag redundant nodes,
+	   use heuristic to adjust these flags (also consider antic_done),
+	   do insert nodes.
+	   This way we could decide if we hoist a non redundant node,
+	   if all its successors are redundant.
+	   Or we might try to minimize the cut along hoisted nodes and their
+	   non redundant successors.
+	 */
 	if (env->changes) {
 		plist_element_t *it;
 		/* iterate in inverse topological order */
@@ -1650,14 +1547,13 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 
 			/* does irn only have redundant successors? */
 
-			if (! get_irn_outs_computed(irn))
-				continue;
+			assert(get_irn_outs_computed(irn));
 
 			for (j = get_irn_n_outs(irn) - 1; j >= 0; --j) {
 				ir_node *succ = get_irn_out(irn, j);
 
 				/* if succ and irn are in the same block */
-				if (get_nodes_block(succ) == block && is_redundant(succ)) {
+				if (get_nodes_block(succ) == block && is_redundant(block, succ)) {
 					continue;
 				} else {
 					redundant = 0;
@@ -1688,8 +1584,8 @@ static void update_new_set_walker(ir_node *block, void *ctx)
 }
 
 /**
- * Dom tree block walker to insert nodes into the highest
- * possible block where their .
+ * Domtree block walker to insert nodes into the highest
+ * possible block. .
  *
  */
 static void hoist_high(ir_node *block, void *ctx)
@@ -1725,7 +1621,7 @@ static void hoist_high(ir_node *block, void *ctx)
 		if (is_memop(expr) || is_Proj(expr))
 			continue;
 
-		DB((dbg, LEVEL_2, "leader %+F value %+F\n", expr, value));
+		DB((dbg, LEVEL_4, "leader %+F value %+F\n", expr, value));
 
 		/* visit hoisted expressions */
 		for (pos = 0; pos < arity; ++pos) {
@@ -1766,28 +1662,27 @@ static void hoist_high(ir_node *block, void *ctx)
 
 				dom = get_Block_idom(dom);
 				dom_info = get_block_info(dom);
-				DB((dbg, LEVEL_2, "testing dom %+F\n", dom));
+				DB((dbg, LEVEL_4, "testing dom %+F\n", dom));
 
 				/* TODO antic_in means hoistable above block,
 				   but we need 'hoistable into block'. */
 
 				/* check if available node ist still anticipated and clean */
 				if (! ir_valueset_lookup(dom_info->antic_in, value)) {
-					DB((dbg, LEVEL_2, "%+F not antic in %+F\n", value, dom));
+					DB((dbg, LEVEL_4, "%+F not antic in %+F\n", value, dom));
 					break;
 				}
 
 				nest_depth = get_loop_depth(get_irn_loop(dom));
 
 				/* do not hoist into loops */
-				if (! get_loop_depth(get_irn_loop(dom)) <= nest_depth) {
-					DB((dbg, LEVEL_2, "%+F deeper nested\n", dom));
+				if (get_loop_depth(get_irn_loop(dom)) > nest_depth) {
+					DB((dbg, LEVEL_4, "%+F deeper nested\n", dom));
 					/* not a suitable location */
 					continue;
 				}
 
-
-				/************* check if value dies */
+				/* check if operands die */
 
 				/* check for uses on current path*/
 				for (i = 0; i < avail_arity; i++) {
@@ -1798,25 +1693,20 @@ static void hoist_high(ir_node *block, void *ctx)
 					if (dom == NULL)
 						break;
 
-					DB((dbg, LEVEL_2, "testing pred %+F\n", pred));
+					DB((dbg, LEVEL_4, "testing pred %+F\n", pred));
 
 					if (! ir_valueset_lookup(dom_info->avail_out, pred_value)) {
-						DB((dbg, LEVEL_2, "pred %+F not available\n", pred));
+						DB((dbg, LEVEL_4, "pred %+F not available\n", pred));
 						dom = NULL;
 						break;
 					}
 
-					/* TODO this might be a problem as we mainly operate on new nodes */
-					if (! get_irn_outs_computed(pred)) {
-						DB((dbg, LEVEL_2, "%+F outs not computed\n", pred));
-						dom = NULL;
-						break;
-					}
+					assert(get_irn_outs_computed(pred));
 
 					/* check every successor */
 					for (j = get_irn_n_outs(pred) - 1; j >= 0; --j) {
 						ir_node *succ = get_irn_out(pred, j);
-						DB((dbg, LEVEL_2, "testing succ %+F\n", succ));
+						DB((dbg, LEVEL_4, "testing succ %+F\n", succ));
 
 						/* check only successors on current path to end */
 						if (block_dominates(dom, get_nodes_block(succ))) {
@@ -1838,40 +1728,36 @@ static void hoist_high(ir_node *block, void *ctx)
 
 			if (new_target) {
 				block_info *target_info = get_block_info(new_target);
+				int         nn_arity    = get_irn_arity(avail);
+				ir_node   **in          = XMALLOCN(ir_node *, nn_arity);
+				ir_node    *nn;
+				int         i;
 
 				DB((dbg, LEVEL_2, "Hoisting %+F into %+F\n", avail, new_target));
 				DEBUG_ONLY(inc_stats(gvnpre_stats->hoist_high);)
 
+				for (i = 0; i < nn_arity; ++i) {
+					ir_node *pred       = get_irn_n(avail, i);
+					ir_node *avail_pred = ir_valueset_lookup(target_info->avail_out, identify(pred));
+					assert(avail_pred);
+					in[i] = avail_pred;
+				}
+				nn = new_ir_node(
+					get_irn_dbg_info(avail),
+					environ->graph,
+					new_target,
+					get_irn_op(avail),
+					get_irn_mode(avail),
+					nn_arity,
+					in);
+				free(in);
 
-					int       nn_arity = get_irn_arity(avail);
-					int       i;
-					ir_node **in          = XMALLOCN(ir_node *, nn_arity);
-					ir_node  *nn;
-					ir_node *avail_pred;
-					for (i = 0; i < nn_arity; ++i) {
-						ir_node *pred  = get_irn_n(avail, i);
-						ir_node *avail_pred = ir_valueset_lookup(target_info->avail_out, identify(pred));
-						if (! avail_pred)
-							assert(0);
-						in[i] = avail_pred;
-					}
-					nn = new_ir_node(
-						get_irn_dbg_info(avail),
-						environ->graph,
-						new_target,
-						get_irn_op(avail),
-						get_irn_mode(avail),
-						nn_arity,
-						in);
-					free(in);
-
-					identify_or_remember(nn);
-				//set_nodes_block(avail, new_target);
-
+				identify_or_remember(nn);
+				/* NOTE: Nodes are inserted into a dominating block and should
+				   be available from this point on. Currently we do not push
+				   the availability information through during the walk. */
 				ir_valueset_insert(target_info->new_set, value, nn);
 			}
-
-
 		}
 	}
 }
@@ -2039,7 +1925,10 @@ static void gvn_pre(ir_graph *irg, pre_env *env)
 	DEBUG_ONLY(set_stats(gvnpre_stats->insert_iterations, insert_iter);)
 
 #if HOIST_HIGH
+	/* An attempt to reduce lifetime by hoisting already hoisted values
+	   even higher, if their operands die. */
 	dom_tree_walk_irg(irg, hoist_high, NULL, env);
+	/* update avail_out for elimination */
 	dom_tree_walk_irg(irg, update_new_set_walker, NULL, env);
 #endif
 
@@ -2082,12 +1971,9 @@ void do_gvn_pre(ir_graph *irg)
 	FIRM_DBG_REGISTER(dbg, "firm.opt.gvn_pre");
 
 	save_optimization_state(&state);
-	environ = &env;
-
-	/* edges will crash if enabled due to our allocate on other obstack trick */
-	edges_deactivate(irg);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_LOOP_LINK);
 
+	environ = &env;
 	DEBUG_ONLY(init_stats();)
 
 	/* setup environment */
@@ -2134,7 +2020,8 @@ void do_gvn_pre(ir_graph *irg)
 	restore_optimization_state(&state);
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 
-	/* TODO there seem to be optimizations that try to use the existing value_table! */
+	/* TODO there seem to be optimizations that try to use the existing
+	   value_table. */
 	new_identities(irg);
 }
 
