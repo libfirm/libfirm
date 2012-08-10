@@ -52,7 +52,7 @@
 #define MAX_INSERT_ITER 3
 
 #define PARTLY_ONLY 0
-#define HOIST_HIGH 1
+#define HOIST_HIGH 0
 #define BETTER_GREED 0
 #define LOADS 0
 #define DIVMODS 1
@@ -1801,7 +1801,7 @@ static void hoist_high(ir_node *block, void *ctx)
 					DB((dbg, LEVEL_2, "testing pred %+F\n", pred));
 
 					if (! ir_valueset_lookup(dom_info->avail_out, pred_value)) {
-						DB((dbg, LEVEL_2, "%+F deeper nested\n", dom));
+						DB((dbg, LEVEL_2, "pred %+F not available\n", pred));
 						dom = NULL;
 						break;
 					}
@@ -1837,40 +1837,43 @@ static void hoist_high(ir_node *block, void *ctx)
 			}
 
 			if (new_target) {
+				block_info *target_info = get_block_info(new_target);
+
 				DB((dbg, LEVEL_2, "Hoisting %+F into %+F\n", avail, new_target));
-				set_nodes_block(avail, new_target);
-				ir_valueset_insert(dom_info->new_set, value, avail);
+				DEBUG_ONLY(inc_stats(gvnpre_stats->hoist_high);)
+
+
+					int       nn_arity = get_irn_arity(avail);
+					int       i;
+					ir_node **in          = XMALLOCN(ir_node *, nn_arity);
+					ir_node  *nn;
+					ir_node *avail_pred;
+					for (i = 0; i < nn_arity; ++i) {
+						ir_node *pred  = get_irn_n(avail, i);
+						ir_node *avail_pred = ir_valueset_lookup(target_info->avail_out, identify(pred));
+						if (! avail_pred)
+							assert(0);
+						in[i] = avail_pred;
+					}
+					nn = new_ir_node(
+						get_irn_dbg_info(avail),
+						environ->graph,
+						new_target,
+						get_irn_op(avail),
+						get_irn_mode(avail),
+						nn_arity,
+						in);
+					free(in);
+
+					identify_or_remember(nn);
+				//set_nodes_block(avail, new_target);
+
+				ir_valueset_insert(target_info->new_set, value, nn);
 			}
 
 
 		}
 	}
-#if 0
-			/* No new target or does the available node already dominate the new_target? */
-			if (new_target) {
-				DB((dbg, LEVEL_2, "leader block %+F\n", get_nodes_block(avail)));
-				if (! block_strictly_dominates(new_target, get_nodes_block(avail))) {
-					DB((dbg, LEVEL_4, "fail: antic border %+F\n", block));
-					new_target = NULL;
-				} else {
-					assert(0);
-				}
-				assert(0);
-			}
-
-			DB((dbg, LEVEL_2, "antic border %+F\n", new_target));
-#endif
-
-
-#if 0
-			/* only one usage on our path */
-			if (new_target) {
-				/* push the available node up into */
-				set_nodes_block(avail, new_target);
-
-				DEBUG_ONLY(inc_stats(gvnpre_stats->hoist_high);)
-			}
-#endif
 }
 #endif
 
@@ -2131,7 +2134,7 @@ void do_gvn_pre(ir_graph *irg)
 	restore_optimization_state(&state);
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 
-	/* TODO there are optimizations that try to use the existing value_table */
+	/* TODO there seem to be optimizations that try to use the existing value_table! */
 	new_identities(irg);
 }
 
