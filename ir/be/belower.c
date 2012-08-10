@@ -92,8 +92,119 @@ typedef struct perm_move_t {
 } perm_move_t;
 
 
-static const arch_register_t *free_register = NULL;
+static ir_nodehashmap_t free_register_map;
 
+static void set_reg_in_use(ir_node *node, const arch_register_class_t *reg_class, bool *regs_in_use, bool in_use)
+{
+	const arch_register_t *reg;
+	unsigned               reg_idx;
+
+	if (!mode_is_data(get_irn_mode(node)))
+		return;
+
+	reg = arch_get_irn_register(node);
+	if (reg == NULL)
+		panic("No register assigned at %+F", node);
+	if (reg->type & arch_register_type_virtual)
+		return;
+	if (reg->reg_class != reg_class)
+		return;
+	reg_idx = arch_register_get_index(reg);
+
+	DB((dbg, LEVEL_3, "    Register %s is now %s\n", arch_register_get_name(reg), in_use ? "not free" : "free"));
+	regs_in_use[reg_idx] = in_use;
+}
+
+static void update_reg_defs(ir_node *node, const arch_register_class_t *reg_class, bool *regs_in_use, bool in_use)
+{
+	if (get_irn_mode(node) == mode_T) {
+		foreach_out_edge(node, edge) {
+			ir_node *proj = get_edge_src_irn(edge);
+			set_reg_in_use(proj, reg_class, regs_in_use, in_use);
+		}
+	} else {
+		set_reg_in_use(node, reg_class, regs_in_use, in_use);
+	}
+}
+
+static void update_reg_uses(ir_node *node, const arch_register_class_t *reg_class, bool *regs_in_use)
+{
+	int i, arity;
+
+	arity = get_irn_arity(node);
+	for (i = 0; i < arity; ++i) {
+		ir_node *in = get_irn_n(node, i);
+		set_reg_in_use(in, reg_class, regs_in_use, true);
+	}
+}
+
+static void find_free_register(const ir_node *irn, const arch_register_class_t *reg_class)
+{
+	ir_node  *block            = get_nodes_block(irn);
+	ir_graph *irg              = get_irn_irg(irn);
+	be_irg_t *birg             = be_birg_from_irg(irg);
+	unsigned  num_registers    = reg_class->n_regs;
+	bool     *registers_in_use = ALLOCANZ(bool, num_registers);
+
+	DB((dbg, LEVEL_2, "Looking for free register for %+F\n", irn));
+	be_lv_t *lv = be_get_irg_liveness(irg);
+	assert(lv->sets_valid && "Live sets are invalid");
+	be_lv_foreach(lv, block, be_lv_state_end, node) {
+		DB((dbg, LEVEL_2, "  Live at block end: %+F\n", node));
+		set_reg_in_use(node, reg_class, registers_in_use, true);
+	}
+
+	sched_foreach_reverse(block, node) {
+		if (is_Phi(node))
+			break;
+
+		DB((dbg, LEVEL_2, "  Looking at node: %+F\n", node));
+
+		if (irn == node)
+			update_reg_defs(node, reg_class, registers_in_use, true);
+		else
+			update_reg_defs(node, reg_class, registers_in_use, false);
+		update_reg_uses(node, reg_class, registers_in_use);
+
+		if (irn == node)
+			break;
+	}
+
+	for (unsigned i = 0; i < num_registers; ++i) {
+		const arch_register_t *reg = arch_register_for_index(reg_class, i);
+		bool okay_to_use = rbitset_is_set(birg->allocatable_regs, reg->global_index);
+
+		if (!registers_in_use[i] && okay_to_use) {
+			DB((dbg, LEVEL_1,
+				"Free reg for %+F: register %s is free and okay to use.\n",
+				irn, arch_register_get_name(reg)));
+
+			ir_nodehashmap_insert(&free_register_map,
+				(ir_node*) irn, (arch_register_t*) reg);
+
+			return;
+		}
+	}
+
+	DB((dbg, LEVEL_1, "No free reg for %+F found.\n", irn));
+}
+
+static void find_free_registers_walker(ir_node *irn, void *env)
+{
+	(void) env;
+
+	if (!be_is_Perm(irn))
+		return;
+
+	const arch_register_class_t *reg_class;
+	reg_class = arch_get_irn_register(get_irn_n(irn, 0))->reg_class;
+	find_free_register(irn, reg_class);
+}
+
+static const arch_register_t *get_free_register(ir_node *irn)
+{
+	return ir_nodehashmap_get(const arch_register_t, &free_register_map, irn);
+}
 
 /** returns the number register pairs marked as checked. */
 static int get_n_unchecked_pairs(reg_pair_t const *const pairs, int const n)
@@ -276,17 +387,6 @@ static void get_perm_move_info(perm_move_t *const move,
 	}
 }
 
-static void lv_aware_exchange(ir_node *old, ir_node *new, bool fresh)
-{
-	be_lv_t *liveness = be_get_irg_liveness(get_irn_irg(old));
-	if (fresh)
-		be_liveness_introduce(liveness, new);
-	else
-		be_liveness_update(liveness, new);
-	exchange(old, new);
-	be_liveness_remove(liveness, old);
-}
-
 static int build_register_pair_list(reg_pair_t *pairs, ir_node *irn)
 {
 	int n = 0;
@@ -304,7 +404,7 @@ static int build_register_pair_list(reg_pair_t *pairs, ir_node *irn)
 		if (in_reg == out_reg) {
 			DBG((dbg, LEVEL_1, "%+F removing equal perm register pair (%+F, %+F, %s)\n",
 					irn, in, out, out_reg->name));
-			lv_aware_exchange(out, in, false);
+			exchange(out, in);
 			continue;
 		}
 
@@ -317,96 +417,6 @@ static int build_register_pair_list(reg_pair_t *pairs, ir_node *irn)
 	}
 
 	return n;
-}
-
-static void set_reg_in_use(ir_node *node, const arch_register_class_t *reg_class, bool *regs_in_use, bool in_use)
-{
-	const arch_register_t *reg;
-	unsigned               reg_idx;
-
-	if (!mode_is_data(get_irn_mode(node)))
-		return;
-
-	reg = arch_get_irn_register(node);
-	if (reg == NULL)
-		panic("No register assigned at %+F", node);
-	if (reg->type & arch_register_type_virtual)
-		return;
-	if (reg->reg_class != reg_class)
-		return;
-	reg_idx = arch_register_get_index(reg);
-
-	DBG((dbg, LEVEL_3, "    Register %s is now %s\n", arch_register_get_name(reg), in_use ? "not free" : "free"));
-	regs_in_use[reg_idx] = in_use;
-}
-
-static void update_reg_defs(ir_node *node, const arch_register_class_t *reg_class, bool *regs_in_use)
-{
-	if (get_irn_mode(node) == mode_T) {
-		foreach_out_edge(node, edge) {
-			ir_node *proj = get_edge_src_irn(edge);
-			set_reg_in_use(proj, reg_class, regs_in_use, true);
-		}
-	} else {
-		set_reg_in_use(node, reg_class, regs_in_use, true);
-	}
-}
-
-static void update_reg_uses(ir_node *node, const arch_register_class_t *reg_class, bool *regs_in_use)
-{
-	int i, arity;
-
-	arity = get_irn_arity(node);
-	for (i = 0; i < arity; ++i) {
-		ir_node *in = get_irn_n(node, i);
-		set_reg_in_use(in, reg_class, regs_in_use, true);
-	}
-}
-
-static void find_free_register(const ir_node *irn, const arch_register_class_t *reg_class)
-{
-	ir_node  *block            = get_nodes_block(irn);
-	ir_graph *irg              = get_irn_irg(irn);
-	be_irg_t *birg             = be_birg_from_irg(irg);
-	unsigned  num_registers    = reg_class->n_regs;
-	bool     *registers_in_use = ALLOCANZ(bool, num_registers);
-	free_register = NULL;
-
-	DBG((dbg, LEVEL_2, "Looking for free register for %+F\n", irn));
-	be_lv_t *lv = be_get_irg_liveness(irg);
-	be_lv_foreach(lv, block, be_lv_state_end, node) {
-		DBG((dbg, LEVEL_2, "  Live at block end: %+F\n", node));
-		set_reg_in_use(node, reg_class, registers_in_use, true);
-	}
-
-	sched_foreach_reverse(block, node) {
-		if (is_Phi(node))
-			break;
-
-		DBG((dbg, LEVEL_2, "  Looking at node: %+F\n", node));
-
-		update_reg_defs(node, reg_class, registers_in_use);
-		update_reg_uses(node, reg_class, registers_in_use);
-
-		if (irn == node)
-			break;
-	}
-
-	for (unsigned i = 0; i < num_registers; ++i) {
-		const arch_register_t *reg = arch_register_for_index(reg_class, i);
-		bool okay_to_use = rbitset_is_set(birg->allocatable_regs, reg->global_index);
-
-		if (!registers_in_use[i] && okay_to_use) {
-			DBG((dbg, LEVEL_1, "Free reg for %+F: register %s is free and okay to use.\n", irn, arch_register_get_name(reg)));
-			free_register = reg;
-			break;
-		}
-	}
-}
-
-static const arch_register_t *get_free_register(void)
-{
-	return free_register;
 }
 
 static void split_chain_into_copies(ir_node *irn, const perm_move_t *move, reg_pair_t *pairs, int n_pairs)
@@ -428,7 +438,7 @@ static void split_chain_into_copies(ir_node *irn, const perm_move_t *move, reg_p
 		arch_set_irn_register(cpy, move->elems[i + 1]);
 
 		/* exchange copy node and proj */
-		lv_aware_exchange(res2, cpy, true);
+		exchange(res2, cpy);
 
 		/* insert the copy/exchange node in schedule after the magic schedule node (see above) */
 		sched_add_after(skip_Proj(sched_point), cpy);
@@ -443,8 +453,6 @@ static void split_cycle_into_swaps(ir_node *irn, const perm_move_t *move, reg_pa
 	const arch_register_class_t *reg_class   = arch_get_irn_register(get_irn_n(irn, 0))->reg_class;
 	ir_node                     *block       = get_nodes_block(irn);
 	ir_node                     *sched_point = sched_prev(irn);
-	be_lv_t                     *liveness    = be_get_irg_liveness(get_irn_irg(irn));
-
 
 	assert(move->type == PERM_CYCLE);
 
@@ -498,7 +506,6 @@ static void split_cycle_into_swaps(ir_node *irn, const perm_move_t *move, reg_pa
 					irn, res1, move->elems[i]->name, res2, move->elems[i + 1]->name));
 
 		xchg = be_new_Perm(reg_class, block, 2, in);
-		be_liveness_introduce(liveness, xchg);
 
 		if (i > 0) {
 			/* cycle is not done yet */
@@ -506,7 +513,6 @@ static void split_cycle_into_swaps(ir_node *irn, const perm_move_t *move, reg_pa
 
 			/* create intermediate proj */
 			res1 = new_r_Proj(xchg, get_irn_mode(res1), 0);
-			be_liveness_introduce(liveness, res1);
 
 			/* set as in for next Perm */
 			pairs[pidx].in_node = res1;
@@ -519,8 +525,6 @@ static void split_cycle_into_swaps(ir_node *irn, const perm_move_t *move, reg_pa
 
 		arch_set_irn_register(res2, move->elems[i + 1]);
 		arch_set_irn_register(res1, move->elems[i]);
-		be_liveness_update(liveness, res1);
-		be_liveness_update(liveness, res2);
 
 		/* insert the copy/exchange node in schedule after the magic schedule node
 		 * (see comment in lower_perm_node) */
@@ -537,7 +541,6 @@ static void split_cycle_into_copies(ir_node *irn, const perm_move_t *move, reg_p
 {
 	ir_node *block       = get_nodes_block(irn);
 	ir_node *sched_point = sched_prev(irn);
-	be_lv_t *liveness    = be_get_irg_liveness(get_irn_irg(irn));
 
 	assert(move->type == PERM_CYCLE);
 
@@ -548,7 +551,6 @@ static void split_cycle_into_copies(ir_node *irn, const perm_move_t *move, reg_p
 	arch_set_irn_register(save_cpy, free_reg);
 	sched_add_after(skip_Proj(sched_point), save_cpy);
 	sched_point = save_cpy;
-	be_liveness_introduce(liveness, save_cpy);
 
 	for (int i = move->n_elems - 2; i >= 0; --i) {
 		ir_node *arg1 = get_node_for_in_register(pairs, n_pairs, move->elems[i]);
@@ -562,7 +564,7 @@ static void split_cycle_into_copies(ir_node *irn, const perm_move_t *move, reg_p
 		arch_set_irn_register(cpy, move->elems[i + 1]);
 
 		/* exchange copy node and proj */
-		lv_aware_exchange(res2, cpy, true);
+		exchange(res2, cpy);
 
 		/* insert the copy/exchange node in schedule after the magic schedule node (see above) */
 		sched_add_after(skip_Proj(sched_point), cpy);
@@ -576,7 +578,7 @@ static void split_cycle_into_copies(ir_node *irn, const perm_move_t *move, reg_p
 	arch_set_irn_register(restore_cpy, move->elems[0]);
 	ir_node *proj = get_node_for_out_register(pairs, n_pairs, move->elems[0]);
 
-	lv_aware_exchange(proj, restore_cpy, true);
+	exchange(proj, restore_cpy);
 	sched_add_after(skip_Proj(sched_point), restore_cpy);
 	sched_point = restore_cpy;
 }
@@ -584,11 +586,14 @@ static void split_cycle_into_copies(ir_node *irn, const perm_move_t *move, reg_p
 static void reduce_perm_size(ir_node *irn, const perm_move_t *move, reg_pair_t *pairs, int n_pairs)
 {
 	if (move->type == PERM_CYCLE) {
-		const arch_register_t *free_reg = get_free_register();
-		if (free_reg == NULL)
+		const arch_register_t *free_reg = get_free_register(irn);
+		if (free_reg == NULL || move->n_elems <= 2)
 			split_cycle_into_swaps(irn, move, pairs, n_pairs);
-		else
+		else {
+			DBG((dbg, LEVEL_1, "Using register %s to implement cycle of %+F\n",
+				arch_register_get_name(free_reg), irn));
 			split_cycle_into_copies(irn, move, pairs, n_pairs, free_reg);
+		}
 	} else {
 		split_chain_into_copies(irn, move, pairs, n_pairs);
 	}
@@ -609,7 +614,6 @@ static void lower_perm_node(ir_node *irn)
 	int         n_pairs     = 0;
 	int         keep_perm   = 0;
 	ir_node    *sched_point = sched_prev(irn);
-	be_lv_t    *liveness    = be_get_irg_liveness(get_irn_irg(irn));
 
 
 	assert(be_is_Perm(irn) && "Non-Perm node passed to lower_perm_node");
@@ -622,11 +626,6 @@ static void lower_perm_node(ir_node *irn)
 	n_pairs = build_register_pair_list(pairs, irn);
 
 	DBG((dbg, LEVEL_1, "%+F has %d unresolved constraints\n", irn, n_pairs));
-
-	if (n_pairs > 0) {
-		const arch_register_class_t *reg_class = arch_get_irn_register(get_irn_n(irn, 0))->reg_class;
-		find_free_register(irn, reg_class);
-	}
 
 	/* Check for cycles and chains */
 	while (get_n_unchecked_pairs(pairs, n_pairs) > 0) {
@@ -665,7 +664,6 @@ static void lower_perm_node(ir_node *irn)
 
 	/* Remove the perm from schedule */
 	if (!keep_perm) {
-		be_liveness_remove(liveness, irn);
 		sched_remove(irn);
 		kill_node(irn);
 	}
@@ -1020,7 +1018,6 @@ void assure_constraints(ir_graph *irg)
 int push_through_perm(ir_node *perm)
 {
 	ir_graph *irg     = get_irn_irg(perm);
-	be_lv_t *lv       = be_get_irg_liveness(irg);
 	ir_node *bl       = get_nodes_block(perm);
 	ir_node *node;
 	int  arity        = get_irn_arity(perm);
@@ -1050,6 +1047,7 @@ int push_through_perm(ir_node *perm)
 	sched_foreach_reverse_from(sched_prev(perm), irn) {
 		for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
 			ir_node *op = get_irn_n(irn, i);
+			be_lv_t *lv = be_get_irg_liveness(irg);
 			if (arch_irn_consider_in_reg_alloc(cls, op) &&
 			    !be_values_interfere(lv, op, one_proj)) {
 				frontier = irn;
@@ -1108,7 +1106,7 @@ found_front:
 		arch_set_irn_register(node, arch_get_irn_register(proj));
 
 		/* reroute all users of the proj to the moved node. */
-		lv_aware_exchange(proj, node, false);
+		exchange(proj, node);
 
 		bitset_set(moved, input);
 		n_moved++;
@@ -1122,7 +1120,6 @@ found_front:
 
 	new_size = arity - n_moved;
 	if (new_size == 0) {
-		be_liveness_remove(lv, perm);
 		sched_remove(perm);
 		kill_node(perm);
 		return 0;
@@ -1146,11 +1143,9 @@ found_front:
 		pn = proj_map[pn];
 		assert(pn >= 0);
 		set_Proj_proj(proj, pn);
-		be_liveness_update(lv, proj);
 	}
 
 	be_Perm_reduce(perm, new_size, map);
-	be_liveness_update(lv, perm);
 	return 1;
 }
 
@@ -1173,13 +1168,17 @@ static void lower_nodes_after_ra_walker(ir_node *irn, void *env)
 
 void lower_nodes_after_ra(ir_graph *irg)
 {
+	be_lv_t *liveness = be_get_irg_liveness(irg);
+
 	/* we will need interference */
 	be_assure_live_chk(irg);
 	be_assure_live_sets(irg);
 
+	ir_nodehashmap_init(&free_register_map);
+	irg_walk_graph(irg, NULL, find_free_registers_walker, NULL);
 	irg_walk_graph(irg, NULL, lower_nodes_after_ra_walker, NULL);
+	ir_nodehashmap_destroy(&free_register_map);
 
-	be_lv_t *liveness = be_get_irg_liveness(irg);
 	be_liveness_invalidate_sets(liveness);
 }
 
