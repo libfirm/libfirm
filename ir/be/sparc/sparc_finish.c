@@ -254,7 +254,7 @@ static void finish_sparc_FrameAddr(ir_node *node)
 
 		sched_add_before(node, new_frameaddr);
 		arch_set_irn_register(new_frameaddr, reg);
-		exchange(node, new_frameaddr);
+		be_peephole_exchange(node, new_frameaddr);
 	}
 }
 
@@ -286,7 +286,7 @@ static void finish_sparc_Ld(ir_node *node)
 		for (i = 0; i < n_outs; i++) {
 			arch_set_irn_register_out(new_load, i, arch_get_irn_register_out(node, i));
 		}
-		exchange(node, new_load);
+		be_peephole_exchange(node, new_load);
 	}
 
 }
@@ -350,7 +350,7 @@ static void finish_sparc_Ldf(ir_node *node)
 		for (i = 0; i < n_outs; i++) {
 			arch_set_irn_register_out(new_load, i, arch_get_irn_register_out(node, i));
 		}
-		exchange(node, new_load);
+		be_peephole_exchange(node, new_load);
 	}
 
 }
@@ -384,7 +384,7 @@ static void finish_sparc_St(ir_node *node)
 		for (i = 0; i < n_outs; i++) {
 			arch_set_irn_register_out(new_load, i, arch_get_irn_register_out(node, i));
 		}
-		exchange(node, new_load);
+		be_peephole_exchange(node, new_load);
 	}
 
 }
@@ -419,7 +419,7 @@ static void finish_sparc_Stf(ir_node *node)
 		for (i = 0; i < n_outs; i++) {
 			arch_set_irn_register_out(new_load, i, arch_get_irn_register_out(node, i));
 		}
-		exchange(node, new_load);
+		be_peephole_exchange(node, new_load);
 	}
 
 }

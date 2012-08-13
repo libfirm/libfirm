@@ -591,6 +591,8 @@ void be_gas_emit_function_epilog(const ir_entity *entity)
 
 	be_emit_char('\n');
 	be_emit_write_line();
+
+	next_block_nr += 100;
 }
 
 /**
