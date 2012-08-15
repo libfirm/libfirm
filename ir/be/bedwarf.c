@@ -63,7 +63,7 @@ static int debug_level = LEVEL_NONE;
  * here
  */
 typedef enum custom_abbrevs {
-	abbrev_void_subprogram,
+	abbrev_void_subprogram = 1,
 	abbrev_subprogram,
 	abbrev_formal_parameter,
 	abbrev_unnamed_formal_parameter,
