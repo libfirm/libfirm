@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 import sys
-import re
 from jinja2 import Environment, Template
-from jinja2.filters import do_dictsort
-from spec_util import is_dynamic_pinned, verify_node, isAbstract, setdefault, trim_docstring
-from ir_spec import nodes
+from spec_util import is_dynamic_pinned, isAbstract, setdefault, load_spec
+from filters import format_arguments, filter_isnot, filter_hasnot, filter_notset
 
 def format_parameterlist(parameterlist):
 	return "\n".join(parameterlist)
@@ -159,22 +157,6 @@ def format_escape_keywords(word):
 		return word + "_"
 	return word
 
-def filter_isnot(list, flag):
-	return filter(lambda x: not hasattr(x, flag), list)
-
-def filter_hasnot(list, flag):
-	return filter(lambda x: flag not in x, list)
-
-def format_arguments(string, voidwhenempty = False):
-	args = re.split('\s*\n\s*', string)
-	if args[0] == '':
-		args = args[1:]
-	if len(args) > 0 and args[-1] == '':
-		args = args[:-1]
-	if len(args) == 0 and voidwhenempty:
-		return "void"
-	return ", ".join(args)
-
 def format_parameters(string):
 	return format_arguments(string, voidwhenempty = True)
 
@@ -216,9 +198,6 @@ def prepare_attr(attr):
 			comment = attr["comment"])
 
 def preprocess_node(node):
-	verify_node(node)
-	node.doc = trim_docstring(node.__doc__)
-
 	setdefault(node, "attrs_name", node.name.lower())
 	setdefault(node, "block", "block")
 
@@ -456,7 +435,7 @@ static const pns_lookup_t {{node.name}}_lut[] = {
 static const proj_lookup_t proj_lut[] = {
 	{%- for node in nodes -%}
 	{%- if node.outs %}
-	{ iro_{{node.name}}, ARRAY_SIZE({{node.name}}_lut), {{node.name}}_lut },
+	{ {{spec.name}}o_{{node.name}}, ARRAY_SIZE({{node.name}}_lut), {{node.name}}_lut },
 	{%- endif %}
 	{%- endfor %}
 };
@@ -473,7 +452,7 @@ static void generated_init_op(void)
 	{%- for node in nodes %}
 	op_{{node.name}} = new_ir_op(
 		{%- filter arguments %}
-			iro_{{node.name}}
+			{{spec.name}}o_{{node.name}}
 			"{{node.name}}"
 			{{node|pinned}}
 			{{node|flags}}
@@ -631,13 +610,14 @@ opcodes_h_template = env.from_string(
 /** The opcodes of the libFirm predefined operations.
  * @ingroup ir_op
  */
-typedef enum ir_opcode {
+typedef enum {{spec.name}}_opcode {
 {%- for node in nodes %}
-	iro_{{node.name}},
+	{{spec.name}}o_{{node.name}},
 {%- endfor %}
-	iro_First = iro_{{nodes[0].name}},
-	iro_Last = iro_{{nodes[-1].name}},
+	{{spec.name}}o_First = {{spec.name}}o_{{nodes[0].name}},
+	{{spec.name}}o_Last  = {{spec.name}}o_{{nodes[-1].name}},
 
+{%- if spec.name == "ir" %}
 	beo_First,
 	/* backend specific nodes */
 	beo_Spill = beo_First,
@@ -656,8 +636,9 @@ typedef enum ir_opcode {
 	beo_FrameAddr,
 	/* last backend node number */
 	beo_Last = beo_FrameAddr,
-	iro_MaxOpcode
-} ir_opcode;
+{%- endif %}
+	{{spec.name}}o_MaxOpcode
+} {{spec.name}}_opcode;
 
 {% for node in nodes %}
 /**
@@ -681,7 +662,7 @@ FIRM_API ir_op *get_op_{{node.name}}(void);
 
 #############################
 
-def prepare_nodes():
+def prepare_nodes(nodes):
 	real_nodes = []
 	for node in nodes:
 		if isAbstract(node):
@@ -698,38 +679,48 @@ def main(argv):
 		print "usage: %s specname(ignored) destdirectory" % argv[0]
 		sys.exit(1)
 
+	specfile = argv[1]
+	spec = load_spec(specfile)
+	nodes = spec.nodes
+
 	gendir = argv[2]
 	# hardcoded path to libfirm/include/libfirm
-	gendir2 = argv[2] + "/../../include/libfirm"
+	if len(argv) > 3:
+		gendir2 = argv[3]
+	else:
+		gendir2 = argv[2] + "/../../include/libfirm"
 
-	real_nodes = prepare_nodes()
+	real_nodes = prepare_nodes(nodes)
+
+	env.globals['nodes'] = real_nodes
+	env.globals['spec'] = spec
 
 	file = open(gendir + "/gen_ir_cons.c.inl", "w")
-	file.write(gen_ircons_c_inl_template.render(nodes = real_nodes))
+	file.write(gen_ircons_c_inl_template.render())
 	file.close()
 
 	file = open(gendir + "/gen_irnode.h", "w")
-	file.write(irnode_h_template.render(nodes = real_nodes))
+	file.write(irnode_h_template.render())
 	file.close()
 
 	file = open(gendir + "/gen_irnode.c.inl", "w")
-	file.write(irnode_template.render(nodes = real_nodes))
+	file.write(irnode_template.render())
 	file.close()
 
 	file = open(gendir + "/gen_irop.c.inl", "w")
-	file.write(irop_template.render(nodes = real_nodes))
+	file.write(irop_template.render())
 	file.close()
 
 	file = open(gendir + "/gen_irdump.c.inl", "w")
-	file.write(irdump_template.render(nodes = real_nodes))
+	file.write(irdump_template.render())
 	file.close()
 
 	file = open(gendir2 + "/opcodes.h", "w")
-	file.write(opcodes_h_template.render(nodes = real_nodes))
+	file.write(opcodes_h_template.render())
 	file.close()
 
 	file = open(gendir2 + "/nodeops.h", "w")
-	file.write(nodeops_h_template.render(nodes = real_nodes))
+	file.write(nodeops_h_template.render())
 	file.close()
 
 main(sys.argv)

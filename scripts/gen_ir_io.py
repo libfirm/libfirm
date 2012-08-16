@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 import sys
-import re
 from jinja2 import Environment, Template
-from jinja2.filters import do_dictsort
-from spec_util import is_dynamic_pinned, verify_node, isAbstract
-import ir_spec
+from spec_util import is_dynamic_pinned, isAbstract, load_spec
+from filters import format_arguments, filter_isnot, filter_hasnot, filter_notset
 
 def error(msg):
 	"""writes an error message to stderr"""
@@ -24,23 +22,6 @@ def format_block(node):
 		return "env->irg"
 	else:
 		return "block"
-
-def format_arguments(string):
-	args = re.split('\s*\n\s*', string)
-	if args[0] == '':
-		args = args[1:]
-	if len(args) > 0 and args[-1] == '':
-		args = args[:-1]
-	return ", ".join(args)
-
-def filter_isnot(list, flag):
-	return filter(lambda x: not hasattr(x, flag), list)
-
-def filter_notset(list, flag):
-	return filter(lambda x: not getattr(x,flag), list)
-
-def filter_hasnot(list, flag):
-	return filter(lambda x: flag not in x, list)
 
 env = Environment()
 env.filters['args']      = format_args
@@ -118,8 +99,6 @@ def prepare_attr(node, attr):
 
 
 def preprocess_node(node):
-	verify_node(node)
-
 	if node.customSerializer:
 		return
 
@@ -276,10 +255,13 @@ def main(argv):
 		print "usage: %s specname(ignored) destdirectory" % argv[0]
 		sys.exit(1)
 
+	specfile = argv[1]
 	gendir = argv[2]
 
+	spec = load_spec(specfile)
+	nodes = spec.nodes
 	real_nodes = []
-	for node in ir_spec.nodes:
+	for node in nodes:
 		if isAbstract(node):
 			continue
 		preprocess_node(node)

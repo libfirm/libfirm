@@ -1,13 +1,13 @@
 # Firm node specifications
 # The comments are in (standard python) restructured text format and are used
 # to generate documentation.
-from spec_util import abstract, setnodedefaults
+from spec_util import abstract, op
 
-class Op(object):
-	"""Base class for firm nodes"""
-abstract(Op)
+name = "ir"
 
-class Unop(Op):
+@abstract
+@op
+class Unop(object):
 	"""Unary nodes have exactly 1 input"""
 	name     = "unop"
 	ins      = [
@@ -15,9 +15,10 @@ class Unop(Op):
 	]
 	op_index = 0
 	pinned   = "no"
-abstract(Unop)
 
-class Binop(Op):
+@abstract
+@op
+class Binop(object):
 	"""Binary nodes have exactly 2 inputs"""
 	name     = "binop"
 	ins      = [
@@ -26,13 +27,14 @@ class Binop(Op):
 	]
 	op_index = 0
 	pinned   = "no"
-abstract(Binop)
 
+@op
 class Add(Binop):
 	"""returns the sum of its operands"""
 	flags = [ "commutative" ]
 
-class Alloc(Op):
+@op
+class Alloc:
 	"""allocates a block of memory.
 	It can be specified whether the memory should be allocated to the stack
 	or to the heap.
@@ -66,7 +68,8 @@ class Alloc(Op):
 	pinned_init = "op_pin_state_pinned"
 	attr_struct = "alloc_attr"
 
-class Anchor(Op):
+@op
+class Anchor:
 	"""utiliy node used to "hold" nodes in a graph that might possibly not be
 	reachable by other means or which should be reachable immediately without
 	searching through the graph.
@@ -83,11 +86,13 @@ class Anchor(Op):
 	noconstructor    = True
 	customSerializer = True
 
+@op
 class And(Binop):
 	"""returns the result of a bitwise and operation of its operands"""
 	flags    = [ "commutative" ]
 
-class ASM(Op):
+@op
+class ASM:
 	"""executes assembler fragments of the target machine.
 
 	The node contains a template for an assembler snippet. The compiler will
@@ -164,7 +169,8 @@ class ASM(Op):
 	# constraints arrays needing special handling (2 arguments for 1 attribute)
 	noconstructor = True
 
-class Bad(Op):
+@op
+class Bad:
 	"""Bad nodes indicate invalid input, which is values which should never be
 	computed.
 
@@ -191,7 +197,8 @@ class Bad(Op):
 	res->attr.bad.irg.irg = irg;
 	'''
 
-class Deleted(Op):
+@op
+class Deleted:
 	"""Internal node which is temporary set to nodes which are already removed
 	from the graph."""
 	mode             = "mode_Bad"
@@ -200,7 +207,8 @@ class Deleted(Op):
 	noconstructor    = True
 	customSerializer = True # this has no serializer
 
-class Block(Op):
+@op
+class Block:
 	"""A basic block"""
 	mode             = "mode_BB"
 	knownBlock       = True
@@ -231,11 +239,13 @@ class Block(Op):
 	}
 	'''
 
+@op
 class Borrow(Binop):
 	"""Returns the borrow bit from and implied subtractions of its 2 operands"""
 	flags = []
 
-class Bound(Op):
+@op
+class Bound:
 	"""Performs a bounds-check: if lower <= index < upper then return index,
 	otherwise throw an exception."""
 	ins    = [
@@ -256,7 +266,8 @@ class Bound(Op):
 	throws_init = "false"
 	attr_struct = "bound_attr"
 
-class Builtin(Op):
+@op
+class Builtin:
 	"""performs a backend-specific builtin."""
 	ins      = [
 		("mem", "memory dependency"),
@@ -286,7 +297,8 @@ class Builtin(Op):
 	assert((get_unknown_type() == type) || is_Method_type(type));
 	'''
 
-class Call(Op):
+@op
+class Call:
 	"""Calls other code. Control flow is transfered to ptr, additional
 	operands are passed to the called code. Called code usually performs a
 	return operation. The operands of this return operation are the result
@@ -318,11 +330,13 @@ class Call(Op):
 	assert((get_unknown_type() == type) || is_Method_type(type));
 	'''
 
+@op
 class Carry(Binop):
 	"""Computes the value of the carry-bit that would result when adding the 2
 	operands"""
 	flags = [ "commutative" ]
 
+@op
 class Cast(Unop):
 	"""perform a high-level type cast"""
 	mode     = "get_irn_mode(irn_op)"
@@ -337,6 +351,7 @@ class Cast(Unop):
 	attr_struct = "cast_attr"
 	init     = "assert(is_atomic_type(type));"
 
+@op
 class Cmp(Binop):
 	"""Compares its two operands and checks whether a specified
 	   relation (like less or equal) is fulfilled."""
@@ -351,7 +366,8 @@ class Cmp(Binop):
 	]
 	attr_struct = "cmp_attr"
 
-class Cond(Op):
+@op
+class Cond:
 	"""Conditionally change control flow."""
 	ins      = [
 		("selector",  "condition parameter"),
@@ -372,7 +388,8 @@ class Cond(Op):
 	]
 	attr_struct = "cond_attr"
 
-class Switch(Op):
+@op
+class Switch:
 	"""Change control flow. The destination is choosen based on an integer input value which is looked up in a table.
 
 	Backends can implement this efficiently using a jump table."""
@@ -399,7 +416,8 @@ class Switch(Op):
 	attr_struct = "switch_attr"
 	attrs_name  = "switcha"
 
-class Confirm(Op):
+@op
+class Confirm:
 	"""Specifies constraints for a value. This allows explicit representation
 	of path-sensitive properties. (Example: This value is always >= 0 on 1
 	if-branch then all users within that branch are rerouted to a confirm-node
@@ -425,7 +443,8 @@ class Confirm(Op):
 	]
 	attr_struct = "confirm_attr"
 
-class Const(Op):
+@op
+class Const:
 	"""Returns a constant value."""
 	flags      = [ "constlike", "start_block" ]
 	block      = "get_irg_start_block(irg)"
@@ -442,6 +461,7 @@ class Const(Op):
 	attr_struct = "const_attr"
 	attrs_name  = "con"
 
+@op
 class Conv(Unop):
 	"""Converts values between modes"""
 	flags = []
@@ -455,7 +475,8 @@ class Conv(Unop):
 	]
 	attr_struct = "conv_attr"
 
-class CopyB(Op):
+@op
+class CopyB:
 	"""Copies a block of memory with statically known size/type."""
 	ins   = [
 		("mem",  "memory dependency"),
@@ -480,7 +501,8 @@ class CopyB(Op):
 	pinned_init = "op_pin_state_pinned"
 	throws_init = "false"
 
-class Div(Op):
+@op
+class Div:
 	"""returns the quotient of its 2 operands"""
 	ins   = [
 		("mem",   "memory dependency"),
@@ -512,7 +534,8 @@ class Div(Op):
 	op_index    = 1
 	arity_override = "oparity_binary"
 
-class Dummy(Op):
+@op
+class Dummy:
 	"""A placeholder value. This is used when constructing cyclic graphs where
 	you have cases where not all predecessors of a phi-node are known. Dummy
 	nodes are used for the unknown predecessors and replaced later."""
@@ -522,7 +545,8 @@ class Dummy(Op):
 	pinned     = "yes"
 	block      = "get_irg_start_block(irg)"
 
-class End(Op):
+@op
+class End:
 	"""Last node of a graph. It references nodes in endless loops (so called
 	keepalive edges)"""
 	mode             = "mode_X"
@@ -533,13 +557,15 @@ class End(Op):
 	block            = "get_irg_end_block(irg)"
 	singleton        = True
 
+@op
 class Eor(Binop):
 	"""returns the result of a bitwise exclusive or operation of its operands.
 
 	This is also known as the Xor operation."""
 	flags    = [ "commutative" ]
 
-class Free(Op):
+@op
+class Free:
 	"""Frees a block of memory previously allocated by an Alloc node"""
 	ins    = [
 		("mem",   "memory dependency" ),
@@ -563,7 +589,8 @@ class Free(Op):
 	]
 	attr_struct = "free_attr"
 
-class Id(Op):
+@op
+class Id:
 	"""Returns its operand unchanged.
 
 	This is mainly used when exchanging nodes. Usually you shouldn't see Id
@@ -574,7 +601,8 @@ class Id(Op):
 	pinned = "no"
 	flags  = []
 
-class IJmp(Op):
+@op
+class IJmp:
 	"""Jumps to the code in its argument. The code has to be in the same
 	function and the the destination must be one of the blocks reachable
 	by the tuple results"""
@@ -585,7 +613,8 @@ class IJmp(Op):
 	]
 	flags    = [ "cfopcode", "forking", "keep", "unknown_jump" ]
 
-class InstOf(Op):
+@op
+class InstOf:
 	"""Tests whether an object is an instance of a class-type"""
 	ins   = [
 	   ("store", "memory dependency"),
@@ -609,14 +638,16 @@ class InstOf(Op):
 	pinned      = "memory"
 	pinned_init = "op_pin_state_floats"
 
-class Jmp(Op):
+@op
+class Jmp:
 	"""Jumps to the block connected through the out-value"""
 	mode     = "mode_X"
 	pinned   = "yes"
 	ins      = []
 	flags    = [ "cfopcode" ]
 
-class Load(Op):
+@op
+class Load:
 	"""Loads a value from memory (heap or stack)."""
 	ins   = [
 		("mem", "memory dependency"),
@@ -662,11 +693,13 @@ class Load(Op):
 	pinned_init = "flags & cons_floats ? op_pin_state_floats : op_pin_state_pinned"
 	throws_init = "(flags & cons_throws_exception) != 0"
 
+@op
 class Minus(Unop):
 	"""returns the difference between its operands"""
 	flags = []
 
-class Mod(Op):
+@op
+class Mod:
 	"""returns the remainder of its operands from an implied division.
 
 	Examples:
@@ -710,7 +743,8 @@ class Mulh(Binop):
 	would not fit into the result mode of a normal Mul anymore)"""
 	flags = [ "commutative" ]
 
-class Mux(Op):
+@op
+class Mux:
 	"""returns the false or true operand depending on the value of the sel
 	operand"""
 	ins    = [
@@ -721,7 +755,8 @@ class Mux(Op):
 	flags  = []
 	pinned = "no"
 
-class NoMem(Op):
+@op
+class NoMem:
 	"""Placeholder node for cases where you don't need any memory input"""
 	mode          = "mode_M"
 	flags         = [ "dump_noblock" ]
@@ -730,15 +765,18 @@ class NoMem(Op):
 	block         = "get_irg_start_block(irg)"
 	singleton     = True
 
+@op
 class Not(Unop):
 	"""returns the bitwise complement of a value. Works for boolean values, too."""
 	flags = []
 
+@op
 class Or(Binop):
 	"""returns the result of a bitwise or operation of its operands"""
 	flags = [ "commutative" ]
 
-class Phi(Op):
+@op
+class Phi:
 	"""Choose a value based on control flow. A phi node has 1 input for each
 	predecessor of its block. If a block is entered from its nth predecessor
 	all phi nodes produce their nth input as result."""
@@ -755,7 +793,8 @@ class Phi(Op):
 		add_End_keepalive(get_irg_end(irg), res);'''
 	customSerializer = True
 
-class Pin(Op):
+@op
+class Pin:
 	"""Pin the value of the node node in the current block. No users of the Pin
 	node can float above the Block of the Pin. The node cannot float behind
 	this block. Often used to Pin the NoMem node."""
@@ -766,7 +805,8 @@ class Pin(Op):
 	flags    = [ "highlevel" ]
 	pinned   = "yes"
 
-class Proj(Op):
+@op
+class Proj:
 	"""returns an entry of a tuple value"""
 	ins              = [
 		("pred", "the tuple value from which a part is extracted"),
@@ -786,7 +826,8 @@ class Proj(Op):
 	]
 	attr_struct = "proj_attr"
 
-class Raise(Op):
+@op
+class Raise:
 	"""Raises an exception. Unconditional change of control flow. Writes an
 	explicit Except variable to memory to pass it to the exception handler.
 	Must be lowered to a Call to a runtime check function."""
@@ -801,7 +842,8 @@ class Raise(Op):
 	flags  = [ "highlevel", "cfopcode" ]
 	pinned = "yes"
 
-class Return(Op):
+@op
+class Return:
 	"""Returns from the current function. Takes memory and return values as
 	operands."""
 	ins      = [
@@ -817,7 +859,8 @@ class Rotl(Binop):
 	operand"""
 	flags    = []
 
-class Sel(Op):
+@op
+class Sel:
 	"""Computes the address of a entity of a compound type given the base
 	address of an instance of the compound type.
 
@@ -840,6 +883,7 @@ class Sel(Op):
 	]
 	attr_struct = "sel_attr"
 
+@op
 class Shl(Binop):
 	"""Returns its first operands bits shifted left by the amount of the 2nd
 	operand.
@@ -848,6 +892,7 @@ class Shl(Binop):
 	the right input modulo this modulo_shift amount."""
 	flags = []
 
+@op
 class Shr(Binop):
 	"""Returns its first operands bits shifted right by the amount of the 2nd
 	operand. No special handling for the sign bit is performed (zero extension).
@@ -856,6 +901,7 @@ class Shr(Binop):
 	the right input modulo this modulo_shift amount."""
 	flags = []
 
+@op
 class Shrs(Binop):
 	"""Returns its first operands bits shifted right by the amount of the 2nd
 	operand. The leftmost bit (usually the sign bit) stays the same
@@ -865,7 +911,8 @@ class Shrs(Binop):
 	the right input modulo this modulo_shift amount."""
 	flags = []
 
-class Start(Op):
+@op
+class Start:
 	"""The first node of a graph. Execution starts with this node."""
 	outs       = [
 		("X_initial_exec", "control flow"),
@@ -880,7 +927,8 @@ class Start(Op):
 	knownBlock       = True
 	block            = "get_irg_start_block(irg)"
 
-class Store(Op):
+@op
+class Store:
 	"""Stores a value into memory (heap or stack)."""
 	ins   = [
 	   ("mem",   "memory dependency"),
@@ -921,11 +969,13 @@ class Store(Op):
 		),
 	]
 
+@op
 class Sub(Binop):
 	"""returns the difference of its operands"""
 	flags = []
 
-class SymConst(Op):
+@op
+class SymConst:
 	"""A symbolic constant.
 
 	 - *symconst_type_size* The symbolic constant represents the size of a type.
@@ -959,7 +1009,8 @@ class SymConst(Op):
 	# union argument
 	noconstructor = True
 
-class Sync(Op):
+@op
+class Sync:
 	"""The Sync operation unifies several partial memory blocks. These blocks
 	have to be pairwise disjunct or the values in common locations have to
 	be identical.  This operation allows to specify all operations that
@@ -970,7 +1021,8 @@ class Sync(Op):
 	pinned   = "no"
 	arity    = "dynamic"
 
-class Tuple(Op):
+@op
+class Tuple:
 	"""Builds a Tuple from single values.
 
 	This is needed to implement optimizations that remove a node that produced
@@ -984,26 +1036,11 @@ class Tuple(Op):
 	pinned = "no"
 	flags  = []
 
-class Unknown(Op):
+@op
+class Unknown:
 	"""Returns an unknown (at compile- and runtime) value. It is a valid
 	optimisation to replace an Unknown by any other constant value."""
 	knownBlock = True
 	pinned     = "yes"
 	block      = "get_irg_start_block(irg)"
 	flags      = [ "start_block", "constlike", "dump_noblock" ]
-
-# Prepare node list
-
-def getOpList(namespace):
-	nodes = []
-	for t in namespace.values():
-		if type(t) != type:
-			continue
-
-		if issubclass(t, Op):
-			setnodedefaults(t)
-			nodes.append(t)
-	return nodes
-
-nodes = getOpList(globals())
-nodes = sorted(nodes, lambda x,y: cmp(x.name, y.name))
