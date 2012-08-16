@@ -142,12 +142,24 @@ static void sparc_prepare_graph(ir_graph *irg)
 
 static bool sparc_modifies_flags(const ir_node *node)
 {
-	return arch_get_irn_flags(node) & sparc_arch_irn_flag_modifies_flags;
+	unsigned n_outs = arch_get_irn_n_outs(node);
+	for (unsigned o = 0; o < n_outs; ++o) {
+		const arch_register_req_t *req = arch_get_irn_register_req_out(node, o);
+		if (req->cls == &sparc_reg_classes[CLASS_sparc_flags_class])
+			return true;
+	}
+	return false;
 }
 
 static bool sparc_modifies_fp_flags(const ir_node *node)
 {
-	return arch_get_irn_flags(node) & sparc_arch_irn_flag_modifies_fp_flags;
+	unsigned n_outs = arch_get_irn_n_outs(node);
+	for (unsigned o = 0; o < n_outs; ++o) {
+		const arch_register_req_t *req = arch_get_irn_register_req_out(node, o);
+		if (req->cls == &sparc_reg_classes[CLASS_sparc_fpflags_class])
+			return true;
+	}
+	return false;
 }
 
 static void sparc_before_ra(ir_graph *irg)

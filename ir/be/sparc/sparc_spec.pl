@@ -126,8 +126,6 @@ $default_copy_attr = "sparc_copy_attr";
 );
 
 %custom_irn_flags = (
-	modifies_flags    => "(arch_irn_flags_t)sparc_arch_irn_flag_modifies_flags",
-	modifies_fp_flags => "(arch_irn_flags_t)sparc_arch_irn_flag_modifies_fp_flags",
 	has_delay_slot    => "(arch_irn_flags_t)sparc_arch_irn_flag_has_delay_slot",
 );
 
@@ -248,14 +246,14 @@ Add => {
 },
 
 AddCC => {
-	irn_flags    => [ "rematerializable", "modifies_flags" ],
+	irn_flags    => [ "rematerializable" ],
 	emit         => 'addcc %S0, %SI1, %D0',
 	outs         => [ "res", "flags" ],
 	constructors => \%binopcc_operand_constructors,
 },
 
 AddCCZero => {
-	irn_flags    => [ "rematerializable", "modifies_flags" ],
+	irn_flags    => [ "rematerializable" ],
 	emit         => 'addcc %S0, %SI1, %%g0',
 	mode         => $mode_flags,
 	constructors => \%binopcczero_operand_constructors,
@@ -291,14 +289,14 @@ Sub => {
 },
 
 SubCC => {
-	irn_flags    => [ "rematerializable", "modifies_flags" ],
+	irn_flags    => [ "rematerializable" ],
 	emit         => 'subcc %S0, %SI1, %D0',
 	outs         => [ "res", "flags" ],
 	constructors => \%binopcc_operand_constructors,
 },
 
 SubCCZero => {
-	irn_flags    => [ "rematerializable", "modifies_flags" ],
+	irn_flags    => [ "rematerializable" ],
 	emit         => 'subcc %S0, %SI1, %%g0',
 	mode         => $mode_flags,
 	constructors => \%binopcczero_operand_constructors,
@@ -527,7 +525,7 @@ Return => {
 # This is a JumpLink instruction, but with the addition that you can add custom
 # register constraints to model your calling conventions
 Call => {
-	irn_flags => [ "modifies_flags", "modifies_fp_flags", "has_delay_slot" ],
+	irn_flags => [ "has_delay_slot" ],
 	state     => "exc_pinned",
 	arity     => "variable",
 	out_arity => "variable",
@@ -549,7 +547,7 @@ Call => {
 },
 
 Cmp => {  # aka SubccZero
-	irn_flags    => [ "rematerializable", "modifies_flags" ],
+	irn_flags    => [ "rematerializable" ],
 	emit         => 'cmp %S0, %SI1',
 	mode         => $mode_flags,
 	constructors => \%binopcczero_operand_constructors,
@@ -595,7 +593,7 @@ And => {
 },
 
 AndCCZero => {
-	irn_flags    => [ "rematerializable", "modifies_flags" ],
+	irn_flags    => [ "rematerializable" ],
 	emit         => 'andcc %S0, %SI1, %%g0',
 	mode         => $mode_flags,
 	constructors => \%binopcczero_operand_constructors,
@@ -609,7 +607,7 @@ AndN => {
 },
 
 AndNCCZero => {
-	irn_flags    => [ "rematerializable", "modifies_flags" ],
+	irn_flags    => [ "rematerializable" ],
 	emit         => 'andncc %S0, %SI1, %%g0',
 	mode         => $mode_flags,
 	constructors => \%binopcczero_operand_constructors,
@@ -623,7 +621,7 @@ Or => {
 },
 
 OrCCZero => {
-	irn_flags    => [ "rematerializable", "modifies_flags" ],
+	irn_flags    => [ "rematerializable" ],
 	emit         => 'orcc %S0, %SI1, %%g0',
 	mode         => $mode_flags,
 	constructors => \%binopcczero_operand_constructors,
@@ -637,7 +635,7 @@ OrN => {
 },
 
 OrNCCZero => {
-	irn_flags    => [ "rematerializable", "modifies_flags" ],
+	irn_flags    => [ "rematerializable" ],
 	emit         => 'orncc %S0, %SI1, %%g0',
 	mode         => $mode_flags,
 	constructors => \%binopcczero_operand_constructors,
@@ -651,7 +649,7 @@ Xor => {
 },
 
 XorCCZero => {
-	irn_flags    => [ "rematerializable", "modifies_flags" ],
+	irn_flags    => [ "rematerializable" ],
 	emit         => 'xorcc %S0, %SI1, %%g0',
 	mode         => $mode_flags,
 	constructors => \%binopcczero_operand_constructors,
@@ -665,7 +663,7 @@ XNor => {
 },
 
 XNorCCZero => {
-	irn_flags    => [ "rematerializable", "modifies_flags" ],
+	irn_flags    => [ "rematerializable" ],
 	emit         => 'xnorcc %S0, %SI1, %%g0',
 	mode         => $mode_flags,
 	constructors => \%binopcczero_operand_constructors,
@@ -679,7 +677,7 @@ Mul => {
 },
 
 MulCCZero => {
-	irn_flags    => [ "rematerializable", "modifies_flags" ],
+	irn_flags    => [ "rematerializable" ],
 	emit         => 'smulcc %S0, %SI1, %%g0',
 	mode         => $mode_flags,
 	constructors => \%binopcczero_operand_constructors,
@@ -718,7 +716,7 @@ UDiv => {
 },
 
 fcmp => {
-	irn_flags => [ "rematerializable", "modifies_fp_flags" ],
+	irn_flags => [ "rematerializable" ],
 	emit      => 'fcmp%FM %S0, %S1',
 	attr_type => "sparc_fp_attr_t",
 	attr      => "ir_mode *fp_mode",
