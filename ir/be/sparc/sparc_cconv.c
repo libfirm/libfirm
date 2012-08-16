@@ -147,8 +147,6 @@ static const arch_register_t *map_i_to_o_reg(const arch_register_t *reg)
 
 static void check_omit_fp(ir_node *node, void *env)
 {
-	bool *can_omit_fp = (bool*) env;
-
 	/* omit-fp is not possible if:
 	 *  - we have allocations on the stack
 	 *  - we have calls (with the exception of tail-calls once we support them)
@@ -156,6 +154,7 @@ static void check_omit_fp(ir_node *node, void *env)
 	if ((is_Alloc(node) && get_Alloc_where(node) == stack_alloc)
 			|| (is_Free(node) && get_Free_where(node) == stack_alloc)
 			|| is_Call(node)) {
+		bool *can_omit_fp = (bool*) env;
 		*can_omit_fp = false;
 	}
 }
@@ -178,24 +177,7 @@ static unsigned determine_n_float_regs(ir_mode *mode)
 calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
                                                       ir_graph *irg)
 {
-	unsigned              stack_offset        = 0;
-	unsigned              n_param_regs_used   = 0;
-	int                   n_param_regs        = ARRAY_SIZE(param_regs);
-	unsigned              n_float_result_regs = ARRAY_SIZE(float_result_regs);
-	bool                  omit_fp             = false;
-	mtp_additional_properties mtp
-		= get_method_additional_properties(function_type);
-	reg_or_stackslot_t   *params;
-	reg_or_stackslot_t   *results;
-	int                   n_params;
-	int                   n_results;
-	int                   i;
-	int                   regnum;
-	unsigned              float_regnum;
-	unsigned              n_reg_results = 0;
-	calling_convention_t *cconv;
-	unsigned             *caller_saves;
-
+	bool omit_fp = false;
 	if (irg != NULL) {
 		omit_fp = be_options.omit_fp;
 		/* our current vaarg handling needs the standard space to store the
@@ -207,7 +189,9 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 		}
 	}
 
-	caller_saves = rbitset_malloc(N_SPARC_REGISTERS);
+	mtp_additional_properties mtp
+		= get_method_additional_properties(function_type);
+	unsigned *caller_saves = rbitset_malloc(N_SPARC_REGISTERS);
 	if (mtp & mtp_property_returns_twice) {
 		rbitset_copy(caller_saves, default_returns_twice_saves,
 		             N_SPARC_REGISTERS);
@@ -216,11 +200,13 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 	}
 
 	/* determine how parameters are passed */
-	n_params = get_method_n_params(function_type);
-	regnum   = 0;
-	params   = XMALLOCNZ(reg_or_stackslot_t, n_params);
+	int                 n_params = get_method_n_params(function_type);
+	int                 regnum   = 0;
+	reg_or_stackslot_t *params   = XMALLOCNZ(reg_or_stackslot_t, n_params);
 
-	for (i = 0; i < n_params; ++i) {
+	int      n_param_regs = ARRAY_SIZE(param_regs);
+	unsigned stack_offset = 0;
+	for (int i = 0; i < n_params; ++i) {
 		ir_type            *param_type = get_method_param_type(function_type,i);
 		ir_mode            *mode;
 		int                 bits;
@@ -281,14 +267,16 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 			}
 		}
 	}
-	n_param_regs_used = regnum;
+	unsigned n_param_regs_used = regnum;
 
 	/* determine how results are passed */
-	n_results    = get_method_n_ress(function_type);
-	regnum       = 0;
-	float_regnum = 0;
-	results      = XMALLOCNZ(reg_or_stackslot_t, n_results);
-	for (i = 0; i < n_results; ++i) {
+	int                 n_results           = get_method_n_ress(function_type);
+	unsigned            float_regnum        = 0;
+	unsigned            n_reg_results       = 0;
+	unsigned            n_float_result_regs = ARRAY_SIZE(float_result_regs);
+	reg_or_stackslot_t *results = XMALLOCNZ(reg_or_stackslot_t, n_results);
+	regnum        = 0;
+	for (int i = 0; i < n_results; ++i) {
 		ir_type            *result_type = get_method_res_type(function_type, i);
 		ir_mode            *result_mode = get_type_mode(result_type);
 		reg_or_stackslot_t *result      = &results[i];
@@ -339,7 +327,7 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 		}
 	}
 
-	cconv                   = XMALLOCZ(calling_convention_t);
+	calling_convention_t *cconv = XMALLOCZ(calling_convention_t);
 	cconv->parameters       = params;
 	cconv->param_stack_size = stack_offset;
 	cconv->n_param_regs     = n_param_regs_used;
@@ -375,26 +363,25 @@ void sparc_free_calling_convention(calling_convention_t *cconv)
 
 void sparc_cconv_init(void)
 {
-	size_t i;
-	for (i = 0; i < ARRAY_SIZE(caller_saves); ++i) {
+	for (size_t i = 0; i < ARRAY_SIZE(caller_saves); ++i) {
 		rbitset_set(default_caller_saves, caller_saves[i]);
 	}
 
 	rbitset_set_all(default_returns_twice_saves, N_SPARC_REGISTERS);
-	for (i = 0; i < ARRAY_SIZE(returns_twice_saved); ++i) {
+	for (size_t i = 0; i < ARRAY_SIZE(returns_twice_saved); ++i) {
 		rbitset_clear(default_returns_twice_saves, returns_twice_saved[i]);
 	}
-	for (i = 0; i < ARRAY_SIZE(ignore_regs); ++i) {
+	for (size_t i = 0; i < ARRAY_SIZE(ignore_regs); ++i) {
 		rbitset_clear(default_returns_twice_saves, ignore_regs[i]);
 	}
 
-	for (i = 0; i < ARRAY_SIZE(float_result_reqs_double); i += 2) {
+	for (size_t i = 0; i < ARRAY_SIZE(float_result_reqs_double); i += 2) {
 		arch_register_req_t *req = &float_result_reqs_double[i];
 		*req = *float_result_regs[i]->single_req;
 		req->type |= arch_register_req_type_aligned;
 		req->width = 2;
 	}
-	for (i = 0; i < ARRAY_SIZE(float_result_reqs_quad); i += 4) {
+	for (size_t i = 0; i < ARRAY_SIZE(float_result_reqs_quad); i += 4) {
 		arch_register_req_t *req = &float_result_reqs_quad[i];
 		*req = *float_result_regs[i]->single_req;
 		req->type |= arch_register_req_type_aligned;

@@ -116,8 +116,8 @@ static void spill_node(ir_node *node)
 			continue;
 
 		if (is_Phi(use)) {
-			int      in         = get_edge_src_pos(edge);
-			ir_node *block      = get_nodes_block(use);
+			int      in    = get_edge_src_pos(edge);
+			ir_node *block = get_nodes_block(use);
 
 			be_add_reload_on_edge(spill_env, node, block, in, cls, 1);
 		} else {
@@ -140,24 +140,17 @@ static unsigned get_value_width(const ir_node *node)
  */
 static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 {
-	size_t             n_live_nodes     = ir_nodeset_size(live_nodes);
-	size_t             values_defined   = 0;
-	size_t             free_regs_needed = 0;
-	spill_candidate_t *candidates;
-	int                i, arity;
-	size_t             c;
-	int                spills_needed;
-	size_t             cand_idx;
-	ir_node           *value;
-
+	size_t   values_defined = 0;
+	ir_node *value;
 	be_foreach_definition(node, cls, value,
 		assert(req_->width >= 1);
 		values_defined += req_->width;
 	);
 
 	/* we need registers for the non-live argument values */
-	arity = get_irn_arity(node);
-	for (i = 0; i < arity; ++i) {
+	size_t free_regs_needed = 0;
+	int arity = get_irn_arity(node);
+	for (int i = 0; i < arity; ++i) {
 		ir_node *pred = get_irn_n(node, i);
 		if (arch_irn_consider_in_reg_alloc(cls, pred)
 				&& !ir_nodeset_contains(live_nodes, pred)) {
@@ -170,15 +163,16 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 	if (values_defined > free_regs_needed)
 		free_regs_needed = values_defined;
 
-	spills_needed = (n_live_nodes + free_regs_needed) - n_regs;
+	size_t n_live_nodes  = ir_nodeset_size(live_nodes);
+	int    spills_needed = (n_live_nodes + free_regs_needed) - n_regs;
 	if (spills_needed <= 0)
 		return;
 	DBG((dbg, LEVEL_2, "\tspills needed after %+F: %d\n", node, spills_needed));
 
-	candidates = ALLOCAN(spill_candidate_t, n_live_nodes);
+	spill_candidate_t *candidates = ALLOCAN(spill_candidate_t, n_live_nodes);
 
 	/* construct array with spill candidates and calculate their costs */
-	c = 0;
+	size_t c = 0;
 	foreach_ir_nodeset(live_nodes, n, iter) {
 		spill_candidate_t *candidate = & candidates[c];
 
@@ -195,25 +189,22 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 	      compare_spill_candidates_desc);
 
 	/* spill cheapest ones */
-	cand_idx = 0;
+	size_t cand_idx = 0;
 	while (spills_needed > 0) {
-		bool                       is_use = false;
-		spill_candidate_t         *candidate;
-		ir_node                   *cand_node;
-
 		if (cand_idx >= n_live_nodes) {
 			panic("can't spill enough values for node %+F", node);
 		}
 
-		candidate = &candidates[cand_idx];
-		cand_node = candidate->node;
+		spill_candidate_t *candidate = &candidates[cand_idx];
+		ir_node           *cand_node = candidate->node;
 		++cand_idx;
 
 		if (arch_irn_is(skip_Proj_const(cand_node), dont_spill))
 			continue;
 
 		/* make sure the node is not an argument of the instruction */
-		for (i = 0; i < arity; ++i) {
+		bool is_use = false;
+		for (int i = 0; i < arity; ++i) {
 			ir_node *in = get_irn_n(node, i);
 			if (in == cand_node) {
 				is_use = true;
@@ -234,10 +225,10 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
  */
 static void remove_defs(ir_node *node, ir_nodeset_t *nodeset)
 {
-	ir_node *value;
 	/* You must break out of your loop when hitting the first phi function. */
 	assert(!is_Phi(node));
 
+	ir_node *value;
 	be_foreach_definition(node, cls, value,
 		ir_nodeset_remove(nodeset, value);
 	);
@@ -245,10 +236,8 @@ static void remove_defs(ir_node *node, ir_nodeset_t *nodeset)
 
 static void add_uses(ir_node *node, ir_nodeset_t *nodeset)
 {
-	int i, arity;
-
-	arity = get_irn_arity(node);
-	for (i = 0; i < arity; ++i) {
+	int arity = get_irn_arity(node);
+	for (int i = 0; i < arity; ++i) {
 		ir_node *op = get_irn_n(node, i);
 
 		if (arch_irn_consider_in_reg_alloc(cls, op) &&
@@ -273,16 +262,11 @@ void print_nodeset(ir_nodeset_t *nodeset)
  */
 static void spill_block(ir_node *block, void *data)
 {
-	ir_nodeset_t live_nodes;
-	int          n_phi_values_spilled;
-	int          regpressure;
-	int          live_nodes_pressure;
-	int          phi_spills_needed;
 	(void) data;
-
 	DBG((dbg, LEVEL_1, "spilling block %+F\n", block));
 
 	/* construct set of live nodes at end of block */
+	ir_nodeset_t live_nodes;
 	ir_nodeset_init(&live_nodes);
 	be_liveness_end_of_block(lv, cls, block, &live_nodes);
 
@@ -311,7 +295,7 @@ static void spill_block(ir_node *block, void *data)
 	/* until now only the values of some phis have been spilled the phis itself
 	 * are still there and occupy registers, so we need to count them and might
 	 * have to spill some of them. */
-	n_phi_values_spilled = 0;
+	int n_phi_values_spilled = 0;
 	sched_foreach(block, node) {
 		if (!is_Phi(node))
 			break;
@@ -321,14 +305,14 @@ static void spill_block(ir_node *block, void *data)
 		}
 	}
 
-	live_nodes_pressure = 0;
+	int live_nodes_pressure = 0;
 	foreach_ir_nodeset(&live_nodes, node, iter) {
 		live_nodes_pressure += get_value_width(node);
 	}
 
 	/* calculate how many of the phis need to be spilled */
-	regpressure       = live_nodes_pressure + n_phi_values_spilled;
-	phi_spills_needed = regpressure - n_regs;
+	int regpressure       = live_nodes_pressure + n_phi_values_spilled;
+	int phi_spills_needed = regpressure - n_regs;
 	DBG((dbg, LEVEL_3, "Regpressure before phis: %d phispills: %d\n",
 	     regpressure, phi_spills_needed));
 
