@@ -59,7 +59,6 @@ void be_set_transformed_node(ir_node *old_node, ir_node *new_node)
 {
 	set_irn_link(old_node, new_node);
 	mark_irn_visited(old_node);
-	hook_dead_node_elim_subst(irg, old_node, new_node);
 }
 
 int be_is_transformed(const ir_node *node)
