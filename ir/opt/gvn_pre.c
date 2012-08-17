@@ -52,11 +52,11 @@
 #define MAX_INSERT_ITER 3
 
 #define PARTLY_ONLY 0
-#define HOIST_HIGH 1
+#define HOIST_HIGH 0
 #define BETTER_GREED 0
 #define LOADS 1
 #define DIVMODS 0
-#define NO_INF_LOOPS 1
+#define NO_INF_LOOPS 0
 #define NO_INF_LOOPS2 0
 
 /** Additional info we need for every block. */
@@ -335,7 +335,9 @@ static ir_node *remember(ir_node *irn)
 		in[i] = pred_value;
 	}
 
-	if (changed) {
+	/* do not create new value for loads or else it will not
+	   be found in avail_out during insert phase */
+	if (changed && ! is_Load(irn)) {
 		/* create representative for */
 		ir_node *nn = new_ir_node(
 			get_irn_dbg_info(irn),
@@ -598,24 +600,6 @@ static unsigned is_in_infinite_loop(ir_node *block)
  * --------------------------------------------------------
  */
 
-#if 0
-/**
- * Helper function to get the anti leader of node in block.
- */
-static ir_node *get_anti_leader(ir_node *node, ir_node *block)
-{
-	block_info *info   = get_block_info(block);
-	ir_node    *value  = identify(node);
-	ir_node    *leader = ir_valueset_lookup(info->antic_in, value);
-
-	if (leader)
-		return leader;
-	else
-		/* this applies in the context of this algorithm */
-		return node;
-}
-#endif
-
 /**
  * Returns non-zero if a node is movable and a possible candidate for PRE.
  */
@@ -723,7 +707,6 @@ static void topo_walker(ir_node *irn, void *ctx)
 	block = get_nodes_block(irn);
 	info  = get_block_info(block);
 
-	// TEST avail has to contain basically everything that could be pred of an antic node.
 	ir_valueset_insert(info->avail_out, value, irn);
 
 	if (is_clean_in_block(irn, block, info->exp_gen)) {
@@ -789,107 +772,7 @@ static unsigned match_pred(ir_node *pred, ir_node *avail_pred, ir_node *block, i
 
 	return (value == avail_value);
 }
-#endif
 
-#if 0
-/**
- * Does phi translation for redundant load nodes only.
- * Returns NULL for non-redundant loads, which need to be phi translated.
- * Loads are compared by comparing their pointer values,
- * and assuring that they are adjacent.
- * This is equivalent to what phi_translation does.
- */
-static ir_node *phi_translate_load(ir_node *load, ir_node *block, int pos)
-{
-
-#if 0
-	needed = 0;
-	in = XMALLOCN(ir_node *, arity);
-	ir_node *mem             = get_Load_mem(load);
-	ir_node *mem_trans;
-
-	ir_node *ptr             = get_Load_ptr(load);
-	ir_node *ptr_anti_leader = get_anti_leader(ptr, block);
-	ir_node *pred_trans      = get_translated_pred(block, ptr_anti_leader);
-	ir_node *pred;
-
-	ir_node *mem_trans       = get_irn_n(mem, pos);
-	ir_node *
-
-		if (pred_trans == NULL) {
-			expr = ptr;
-		} else {
-			expr = pred_trans;
-			/* predecessor value changed, so translation is needed */
-			if (identify(expr) != identify(pred))
-				needed |= 1;
-		}
-
-		DB((dbg, LEVEL_4, "in %+F\n", expr));
-		in[i] = expr;
-	}
-
-	if (! needed)
-		return node;
-
-	DB((dbg, LEVEL_3, "Translate\n"));
-
-	target_block = get_Block_cfgpred_block(block, pos);
-	if (is_Proj(node))
-		target_block = get_nodes_block(in[0]);
-
-	/* copy node to represent the new value.
-	   We do not translate nodes that do not need translation,
-	   so we use the newly created nodes as value representatives only.
-	   Their block is not important, because we create new ones during
-	   insert node phase. */
-	nn = new_ir_node(
-		get_irn_dbg_info(node),
-		environ->graph,
-		target_block,
-		get_irn_op(node),
-		get_irn_mode(node),
-		arity,
-		in);
-	free(in);
-	/* We need the attribute copy here, because the Hash value of a
-	   node might depend on it. */
-	copy_node_attr(environ->graph, node, nn);
-	/* Optimizing nn here is tempting but might be against the GVN-PRE algorithm
-	   because it already uses availability. */
-
-	DB((dbg, LEVEL_3, "New node %+F in %+F origin %+F\n", nn, get_Block_cfgpred_block(block, pos), node));
-	return nn;
-
-#endif
-	ir_node *mem   = get_Load_mem(load);
-	ir_node *trans = get_translated(pred_block, pos, mem);
-
-	assert(is_Phi(mem));
-	/* memphi should have been translated */
-	if (trans == NULL)
-		assert(0);
-
-	/* no partial redundancy if this is a mode_M phi */
-	if (is_Proj(trans)) {
-		/* The last memory operation in predecessor block */
-		ir_node *avail_load = get_Proj_pred(trans);
-
-		/* memop is a load with matching type */
-		if (is_Load(avail_load) &&
-			    get_Load_mode(load) == get_Load_mode(avail_load)) {
-
-			unsigned match = match_pred(get_Load_ptr(load), get_Load_ptr(avail_load), block, pos);
-
-			if (match)
-				return avail_load;
-		}
-	}
-	return NULL;
-}
-#endif
-
-#if DIVMODS
 /**
  * Does phi translation for redundant Div/Mod nodes only.
  * Returns NULL for non-redundant node, which needs to be phi translated.
@@ -1131,13 +1014,17 @@ static void compute_antic(ir_node *block, void *ctx)
 			else
 				represent = expr;
 
-			if (is_clean_in_block(expr, block, info->antic_in))
+			// test only 1 translation, because more failed, because of uncleanliness of load
+			if (is_clean_in_block(expr, block, info->antic_in) && ! is_Load(expr)) {
 #if NO_INF_LOOPS2
-				if (! is_in_infinite_loop(succ) || ! is_backedge(succ, pos))
+				/* TODO to be determined why nearly every spec benchmark fails */
+				if (! is_in_infinite_loop(succ) || ! is_backedge(succ, pos)) {
 					ir_valueset_replace(info->antic_in, trans_value, represent);
+				}
 #else
 				ir_valueset_replace(info->antic_in, trans_value, represent);
 #endif
+			}
 			set_translated(info->trans, expr, represent);
 		}
 
@@ -1361,7 +1248,7 @@ static unsigned is_hoisting_greedy(ir_node *irn, ir_node *block)
 	int block_arity = get_irn_arity(block);
 	int arity = get_irn_arity(irn);
 	int pos, i;
-	//block_info *info = get_block_info(block);
+	block_info *info = get_block_info(block);
 
 	/* As long as the predecessor values are available in all predecessor blocks,
 	   we can hoist this value. */
@@ -1370,29 +1257,53 @@ static unsigned is_hoisting_greedy(ir_node *irn, ir_node *block)
 		block_info *pred_info  = get_block_info(pred_block);
 
 		for (i = 0; i < arity; ++i) {
-			ir_node *pred  = get_irn_n(irn, i);
-			ir_node *value = identify(pred);
+			ir_node *pred     = get_irn_n(irn, i);
+			ir_node *value;
+			ir_node *leader;
+			ir_node *trans;
+			ir_node *trans_val;
+			ir_node *avail;
 
-			//TEST
-			// seems to be useful with gzip etc -1,6
 			if (get_loop_depth(get_irn_loop(pred_block)) > get_loop_depth(get_irn_loop(get_nodes_block(irn))))
 				return 1;
-
 
 			if (is_Phi(pred) && get_nodes_block(pred) == block)
 				continue;
 
-			if (is_irn_constlike(value))
+			DB((dbg, LEVEL_3, "pred %+F\n", pred));
+			value = identify(pred);
+			leader = ir_valueset_lookup(info->antic_in, value);
+			if (! leader)
+				leader = pred;
+			DB((dbg, LEVEL_3, "lead %+F\n", leader));
+			trans   = get_translated(pred_block, leader);
+			if (! trans)
+				trans = pred;
+			DB((dbg, LEVEL_3, "trans %+F\n", trans));
+
+			if (is_Load(trans))
 				continue;
 
-			// TEST
+			trans_val = identify(trans);
+			DB((dbg, LEVEL_3, "value %+F\n", trans_val));
+			if (is_irn_constlike(trans_val))
+				continue;
+			avail = ir_valueset_lookup(pred_info->avail_out, trans_val);
+
+			if (! avail)
+				return 1;
 #if 0
+			/* only optimize if predecessors have been optimized */
 			if (ir_valueset_lookup(info->antic_done, value) == NULL)
 				return 1;
 #endif
 
-			if (ir_valueset_lookup(pred_info->avail_out, value) == NULL)
+#if 0
+			/* Try to reduce cut. Turned out to be not very effective. */
+			/* TODO Use out edges. */
+			if (get_irn_outs_computed(irn) && get_irn_n_outs(irn) > 1)
 				return 1;
+#endif
 		}
 	}
 	return 0;
@@ -1536,14 +1447,6 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 			ir_node    *pred_block = get_Block_cfgpred_block(block, pos);
 			block_info *pred_info;
 
-#if 0
-			/* ignore bad blocks. */
-			if (is_Bad(pred_block)) {
-				ir_graph *irg = get_irn_irg(pred_block);
-				phi_in[pos] = new_r_Bad(irg, mode);
-				continue;
-			}
-#endif
 			pred_info = get_block_info(pred_block);
 
 			if (! pred_info->found) {
@@ -1552,9 +1455,10 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 				ir_node **in = XMALLOCNZ(ir_node *, node_arity);
 				ir_node *trans;
 				ir_node *new_value;
+				ir_node *target_block = pred_block;
 
 				for (i = 0; i < node_arity; ++i) {
-					ir_node *pred = get_irn_n(expr, i);
+					ir_node *pred     = get_irn_n(expr, i);
 					ir_node *value    = identify(pred);
 					ir_node *leader;
 					ir_node *trans;
@@ -1580,6 +1484,8 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 						in[i] = trans;
 						continue;
 					}
+
+					/* handle load predecessor */
 					if (is_Load(trans)) {
 						in[i] = trans;
 						continue;
@@ -1593,7 +1499,9 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 						continue;
 					}
 
-					/* use the leader */
+					/* use the leader
+					   In case of loads we need to make sure the hoisted
+					   loads are found despite their unique value. */
 					avail = ir_valueset_lookup(pred_info->avail_out, trans_val);
 					DB((dbg, LEVEL_3, "avail %+F\n", avail));
 
@@ -1601,10 +1509,8 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 					in[i] = avail;
 				}
 
-#if 0
 				if (is_Proj(expr))
 					target_block = get_nodes_block(in[0]);
-#endif
 
 				/* copy node to represent the new value.
 				   We do not translate nodes that do not need translation,
@@ -1614,7 +1520,7 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 				trans = new_ir_node(
 					get_irn_dbg_info(expr),
 					environ->graph,
-					pred_block,
+					target_block,
 					get_irn_op(expr),
 					get_irn_mode(expr),
 					get_irn_arity(expr),
@@ -1631,9 +1537,9 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 				   insert (not replace) because it has not been available */
 				ir_valueset_insert(pred_info->avail_out, value, trans);
 				ir_valueset_insert(pred_info->avail_out, new_value, trans);
-				//
-				DB((dbg, LEVEL_2, "SET AVAIL value %+F trans %+F  in %+F\n",value, trans, pred_block));
-				DB((dbg, LEVEL_2, "SET AVAIL newvalue %+F trans %+F  in %+F\n", new_value,trans, pred_block));
+
+				DB((dbg, LEVEL_4, "SET AVAIL value %+F trans %+F  in %+F\n", value, trans, pred_block));
+				DB((dbg, LEVEL_4, "SET AVAIL newvalue %+F trans %+F  in %+F\n", new_value, trans, pred_block));
 
 				phi_in[pos] = trans;
 			} else {
@@ -1841,15 +1747,6 @@ static void hoist_high(ir_node *block, void *ctx)
 						break;
 					}
 
-#if 0
-					if (! get_irn_outs_computed(pred)) {
-						DB((dbg, LEVEL_4, "ALERT pred %+F  lastidx %d\n", pred, environ->last_idx));
-						dom = NULL;
-						break;
-					}
-
-#endif
-
 					/* check every successor */
 					foreach_out_edge(pred, edge) {
 						ir_node *succ = get_edge_src_irn(edge);
@@ -1976,6 +1873,11 @@ static void eliminate_nodes(elim_pair *pairs, ir_nodeset_t *keeps)
 	for (p = pairs; p != NULL; p = p->next) {
 		/* might be already changed */
 		p->new_node = skip_Id(p->new_node);
+
+		// TEST
+		/* happens with load nodes */
+		if (p->new_node == p->old_node)
+			continue;
 
 		DB((dbg, LEVEL_2, "Replacing %+F by %+F\n", p->old_node, p->new_node));
 
