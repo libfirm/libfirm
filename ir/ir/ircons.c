@@ -404,39 +404,6 @@ ir_node *new_d_ASM(dbg_info *db, ir_node *mem, int arity, ir_node *in[],
 	                  inputs, n_outs, outputs, n_clobber, clobber, text);
 }
 
-ir_node *new_rd_strictConv(dbg_info *dbgi, ir_node *block, ir_node * irn_op, ir_mode * mode)
-{
-	ir_node *res;
-	ir_graph *irg = get_Block_irg(block);
-
-	ir_node *in[1];
-	in[0] = irn_op;
-
-	res = new_ir_node(dbgi, irg, block, op_Conv, mode, 1, in);
-	res->attr.conv.strict = 1;
-	irn_verify_irg(res, irg);
-	res = optimize_node(res);
-	return res;
-}
-
-ir_node *new_r_strictConv(ir_node *block, ir_node * irn_op, ir_mode * mode)
-{
-	return new_rd_strictConv(NULL, block, irn_op, mode);
-}
-
-ir_node *new_d_strictConv(dbg_info *dbgi, ir_node * irn_op, ir_mode * mode)
-{
-	ir_node *res;
-	assert(get_irg_phase_state(current_ir_graph) == phase_building);
-	res = new_rd_strictConv(dbgi, current_ir_graph->current_block, irn_op, mode);
-	return res;
-}
-
-ir_node *new_strictConv(ir_node * irn_op, ir_mode * mode)
-{
-	return new_d_strictConv(NULL, irn_op, mode);
-}
-
 ir_node *new_rd_DivRL(dbg_info *dbgi, ir_node *block, ir_node * irn_mem, ir_node * irn_left, ir_node * irn_right, ir_mode* resmode, op_pin_state pin_state)
 {
 	ir_node *res;

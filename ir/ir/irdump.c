@@ -674,11 +674,6 @@ void dump_node_opcode(FILE *F, const ir_node *n)
 		fprintf(F, "%s%s", get_irn_opname(n),
 			(flags & ir_dump_flag_show_marks) ? (get_Block_mark(n) ? "*" : "") : "");
 		break;
-	case iro_Conv:
-		if (get_Conv_strict(n))
-			fprintf(F, "strict");
-		fprintf(F, "%s", get_irn_opname(n));
-		break;
 	case iro_Div:
 		fprintf(F, "%s", get_irn_opname(n));
 		if (get_Div_no_remainder(n))

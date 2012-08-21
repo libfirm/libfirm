@@ -311,11 +311,6 @@ static inline int is_binop_(const ir_node *node)
 	return (node->op->opar == oparity_binary);
 }
 
-static inline int is_strictConv_(const ir_node *node)
-{
-	return is_Conv_(node) && get_Conv_strict(node);
-}
-
 static inline int is_SymConst_addr_ent_(const ir_node *node)
 {
 	return is_SymConst(node) && get_SymConst_kind(node) == symconst_addr_ent;
@@ -592,7 +587,6 @@ void init_irnode(void);
 #define is_binop(node)                        is_binop_(node)
 #define is_Proj(node)                         is_Proj_(node)
 #define is_Phi(node)                          is_Phi_(node)
-#define is_strictConv(node)                   is_strictConv_(node)
 #define is_SymConst_addr_ent(node)            is_SymConst_addr_ent_(node)
 #define get_Block_n_cfgpreds(node)            get_Block_n_cfgpreds_(node)
 #define get_Block_cfgpred(node, pos)          get_Block_cfgpred_(node, pos)

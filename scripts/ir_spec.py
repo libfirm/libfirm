@@ -465,15 +465,6 @@ class Const:
 class Conv(Unop):
 	"""Converts values between modes"""
 	flags = []
-	attrs = [
-		dict(
-			name    = "strict",
-			type    = "int",
-			init    = "0",
-			comment = "force floating point to restrict precision even if backend computes in higher precision (deprecated)",
-		)
-	]
-	attr_struct = "conv_attr"
 
 @op
 class CopyB:

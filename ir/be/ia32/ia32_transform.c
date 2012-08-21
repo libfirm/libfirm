@@ -1017,6 +1017,13 @@ static ir_node *skip_float_upconv(ir_node *node)
 	return node;
 }
 
+static void check_x87_floatmode(ir_mode *mode)
+{
+	if (mode != ia32_mode_E) {
+		panic("ia32: x87 only supports x86 extended float mode");
+	}
+}
+
 /**
  * Construct a standard binary operation, set AM and immediate if required.
  *
@@ -1038,6 +1045,9 @@ static ir_node *gen_binop_x87_float(ir_node *node, ir_node *op1, ir_node *op2,
 	/* All operations are considered commutative, because there are reverse
 	 * variants */
 	match_flags_t        flags = match_commutative | match_am;
+	ir_mode             *mode
+		= is_Div(node) ? get_Div_resmode(node) : get_irn_mode(node);
+	check_x87_floatmode(mode);
 
 	op1 = skip_float_upconv(op1);
 	op2 = skip_float_upconv(op2);
@@ -1907,6 +1917,7 @@ static ir_node *gen_Minus(ir_node *node)
 			set_ia32_op_type(new_node, ia32_AddrModeS);
 			set_ia32_ls_mode(new_node, mode);
 		} else {
+			check_x87_floatmode(mode);
 			new_node = new_bd_ia32_vfchs(dbgi, block, new_op);
 		}
 	} else {
@@ -1963,6 +1974,7 @@ static ir_node *create_float_abs(dbg_info *dbgi, ir_node *block, ir_node *op,
 		/* TODO, implement -Abs case */
 		assert(!negate);
 	} else {
+		check_x87_floatmode(mode);
 		new_node = new_bd_ia32_vfabs(dbgi, new_block, new_op);
 		SET_IA32_ORIG_NODE(new_node, node);
 		if (negate) {
@@ -2693,8 +2705,7 @@ static ir_node *gen_general_Store(ir_node *node)
 	addr.mem = be_transform_node(mem);
 
 	if (mode_is_float(mode)) {
-		/* Convs (and strict-Convs) before stores are unnecessary if the mode
-		   is the same. */
+		/* Convs before stores are unnecessary if the mode is the same. */
 		while (is_Conv(val) && mode == get_irn_mode(val)) {
 			ir_node *op = get_Conv_op(val);
 			if (!mode_is_float(get_irn_mode(op)))
@@ -2713,8 +2724,7 @@ static ir_node *gen_general_Store(ir_node *node)
 		val = get_Conv_op(val);
 
 		/* TODO: is this optimisation still necessary at all (middleend)? */
-		/* We can skip ALL float->float up-Convs (and strict-up-Convs) before
-		 * stores. */
+		/* We can skip ALL float->float up-Convs before stores. */
 		while (is_Conv(val)) {
 			ir_node *op = get_Conv_op(val);
 			if (!mode_is_float(get_irn_mode(op)))
@@ -2855,8 +2865,10 @@ static ir_node *create_Fucom(ir_node *node)
 	ir_node  *left      = get_Cmp_left(node);
 	ir_node  *new_left  = be_transform_node(left);
 	ir_node  *right     = get_Cmp_right(node);
+	ir_mode  *cmp_mode  = get_irn_mode(left);
 	ir_node  *new_right;
 	ir_node  *new_node;
+	check_x87_floatmode(cmp_mode);
 
 	if (ia32_cg_config.use_fucomi) {
 		new_right = be_transform_node(right);
@@ -3654,9 +3666,9 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node)
 }
 
 /**
- * Creates a x87 strict Conv by placing a Store and a Load
+ * Creates a x87 Conv by placing a Store and a Load
  */
-static ir_node *gen_x87_strict_conv(ir_mode *tgt_mode, ir_node *node)
+static ir_node *gen_x87_conv(ir_mode *tgt_mode, ir_node *node)
 {
 	ir_node  *block    = get_nodes_block(node);
 	ir_graph *irg      = get_Block_irg(block);
@@ -3869,17 +3881,10 @@ static ir_node *gen_Conv(ir_node *node)
 	}
 
 	if (src_mode == tgt_mode) {
-		if (get_Conv_strict(node)) {
-			if (ia32_cg_config.use_sse2) {
-				/* when we are in SSE mode, we can kill all strict no-op conversion */
-				return be_transform_node(op);
-			}
-		} else {
-			/* this should be optimized already, but who knows... */
-			DEBUG_ONLY(ir_fprintf(stderr, "Debug warning: conv %+F is pointless\n", node);)
+		/* this should be optimized already, but who knows... */
+		DEBUG_ONLY(ir_fprintf(stderr, "Debug warning: conv %+F is pointless\n", node);)
 			DB((dbg, LEVEL_1, "killed Conv(mode, mode) ..."));
-			return be_transform_node(op);
-		}
+		return be_transform_node(op);
 	}
 
 	if (mode_is_float(src_mode)) {
@@ -3893,21 +3898,14 @@ static ir_node *gen_Conv(ir_node *node)
 				                             nomem, new_op);
 				set_ia32_ls_mode(res, tgt_mode);
 			} else {
-				if (get_Conv_strict(node)) {
-					/* if fp_no_float_fold is not set then we assume that we
-					 * don't have any float operations in a non
-					 * mode_float_arithmetic mode and can skip strict upconvs */
-					if (src_bits < tgt_bits) {
-						DB((dbg, LEVEL_1, "killed Conv(float, float) ..."));
-						return new_op;
-					} else {
-						res = gen_x87_strict_conv(tgt_mode, new_op);
-						SET_IA32_ORIG_NODE(get_Proj_pred(res), node);
-						return res;
-					}
+				if (src_bits < tgt_bits) {
+					DB((dbg, LEVEL_1, "killed Conv(float, float) ..."));
+					return new_op;
+				} else {
+					res = gen_x87_conv(tgt_mode, new_op);
+					SET_IA32_ORIG_NODE(get_Proj_pred(res), node);
+					return res;
 				}
-				DB((dbg, LEVEL_1, "killed Conv(float, float) ..."));
-				return new_op;
 			}
 		} else {
 			/* ... to int */
@@ -3935,10 +3933,10 @@ static ir_node *gen_Conv(ir_node *node)
 				unsigned float_mantissa = get_mode_mantissa_size(tgt_mode);
 				res = gen_x87_gp_to_fp(node, src_mode);
 
-				/* we need a strict-Conv, if the int mode has more bits than the
+				/* we need a float-conv, if the int mode has more bits than the
 				 * float mantissa */
 				if (float_mantissa < int_mantissa) {
-					res = gen_x87_strict_conv(tgt_mode, res);
+					res = gen_x87_conv(tgt_mode, res);
 					SET_IA32_ORIG_NODE(get_Proj_pred(res), node);
 				}
 				return res;

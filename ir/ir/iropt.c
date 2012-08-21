@@ -1101,99 +1101,24 @@ static ir_node *equivalent_node_Conv(ir_node *n)
 	ir_mode *n_mode = get_irn_mode(n);
 	ir_mode *a_mode = get_irn_mode(a);
 
-restart:
 	if (n_mode == a_mode) { /* No Conv necessary */
-		if (get_Conv_strict(n)) {
-			ir_node *p = a;
-
-			/* neither Minus nor Confirm change the precision,
-			   so we can "look-through" */
-			for (;;) {
-				if (is_Minus(p)) {
-					p = get_Minus_op(p);
-				} else if (is_Confirm(p)) {
-					p = get_Confirm_value(p);
-				} else {
-					/* stop here */
-					break;
-				}
-			}
-			if (is_Conv(p) && get_Conv_strict(p)) {
-				/* we known already, that a_mode == n_mode, and neither
-				   Minus change the mode, so the second Conv
-				   can be kicked */
-				assert(get_irn_mode(p) == n_mode);
-				n = a;
-				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CONV);
-				return n;
-			}
-			if (is_Proj(p)) {
-				ir_node *pred = get_Proj_pred(p);
-				if (is_Load(pred)) {
-					/* Loads always return with the exact precision of n_mode */
-					assert(get_Load_mode(pred) == n_mode);
-					n = a;
-					DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CONV);
-					return n;
-				}
-				if (is_Proj(pred) && get_Proj_proj(pred) == pn_Start_T_args) {
-					pred = get_Proj_pred(pred);
-					if (is_Start(pred)) {
-						/* Arguments always return with the exact precision,
-						   as strictConv's are place before Call -- if the
-						   caller was compiled with the same setting.
-						   Otherwise, the semantics is probably still right. */
-						assert(get_irn_mode(p) == n_mode);
-						n = a;
-						DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CONV);
-						return n;
-					}
-				}
-			}
-			if (is_Conv(a)) {
-				/* special case: the immediate predecessor is also a Conv */
-				if (! get_Conv_strict(a)) {
-					/* first one is not strict, kick it */
-					a = get_Conv_op(a);
-					a_mode = get_irn_mode(a);
-					set_Conv_op(n, a);
-					goto restart;
-				}
-				/* else both are strict conv, second is superfluous */
-				n = a;
-				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CONV);
-				return n;
-			}
-		} else {
-			n = a;
-			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CONV);
-			return n;
-		}
+		n = a;
+		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CONV);
+		return n;
 	} else if (is_Conv(a)) { /* Conv(Conv(b)) */
 		ir_node *b      = get_Conv_op(a);
 		ir_mode *b_mode = get_irn_mode(b);
 
-		if (get_Conv_strict(n) && get_Conv_strict(a)) {
-			/* both are strict conv */
-			if (smaller_mode(a_mode, n_mode)) {
-				/* both are strict, but the first is smaller, so
-				   the second cannot remove more precision, remove the
-				   strict bit */
-				set_Conv_strict(n, 0);
-			}
-		}
 		if (n_mode == b_mode) {
-			if (! get_Conv_strict(n) && ! get_Conv_strict(a)) {
-				if (n_mode == mode_b) {
-					n = b; /* Convb(Conv*(xxxb(...))) == xxxb(...) */
+			if (n_mode == mode_b) {
+				n = b; /* Convb(Conv*(xxxb(...))) == xxxb(...) */
+				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
+				return n;
+			} else if (get_mode_arithmetic(n_mode) == get_mode_arithmetic(a_mode)) {
+				if (values_in_mode(b_mode, a_mode)) {
+					n = b;        /* ConvS(ConvL(xxxS(...))) == xxxS(...) */
 					DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
 					return n;
-				} else if (get_mode_arithmetic(n_mode) == get_mode_arithmetic(a_mode)) {
-					if (values_in_mode(b_mode, a_mode)) {
-						n = b;        /* ConvS(ConvL(xxxS(...))) == xxxS(...) */
-						DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
-						return n;
-					}
 				}
 			}
 			if (mode_is_int(n_mode) && get_mode_arithmetic(a_mode) == irma_ieee754) {
@@ -1207,14 +1132,10 @@ restart:
 					return n;
 				}
 			}
-			if (is_Conv(b)) {
-				if (smaller_mode(b_mode, a_mode)) {
-					if (get_Conv_strict(n))
-						set_Conv_strict(b, 1);
-					n = b; /* ConvA(ConvB(ConvA(...))) == ConvA(...) */
-					DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
-					return n;
-				}
+			if (is_Conv(b) && smaller_mode(b_mode, a_mode)) {
+				n = b; /* ConvA(ConvB(ConvA(...))) == ConvA(...) */
+				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
+				return n;
 			}
 		}
 	}
@@ -4213,53 +4134,56 @@ static ir_node *transform_node_Cmp(ir_node *n)
 	}
 
 	/* Remove unnecessary conversions */
-	if (is_Conv(left) && is_Conv(right)) {
-		ir_node *op_left    = get_Conv_op(left);
-		ir_node *op_right   = get_Conv_op(right);
-		ir_mode *mode_left  = get_irn_mode(op_left);
-		ir_mode *mode_right = get_irn_mode(op_right);
+	if (!mode_is_float(mode)
+	    || be_get_backend_param()->mode_float_arithmetic == NULL) {
+		if (is_Conv(left) && is_Conv(right)) {
+			ir_node *op_left    = get_Conv_op(left);
+			ir_node *op_right   = get_Conv_op(right);
+			ir_mode *mode_left  = get_irn_mode(op_left);
+			ir_mode *mode_right = get_irn_mode(op_right);
 
-		if (smaller_mode(mode_left, mode) && smaller_mode(mode_right, mode)
-				&& mode_left != mode_b && mode_right != mode_b) {
-			ir_node *block = get_nodes_block(n);
+			if (smaller_mode(mode_left, mode) && smaller_mode(mode_right, mode)
+					&& mode_left != mode_b && mode_right != mode_b) {
+				ir_node *block = get_nodes_block(n);
 
-			if (mode_left == mode_right) {
-				left    = op_left;
-				right   = op_right;
-				changed = true;
-				DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CONV_CONV);
-			} else if (smaller_mode(mode_left, mode_right)) {
-				left    = new_r_Conv(block, op_left, mode_right);
-				right   = op_right;
-				changed = true;
-				DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CONV);
-			} else if (smaller_mode(mode_right, mode_left)) {
-				left    = op_left;
-				right   = new_r_Conv(block, op_right, mode_left);
-				changed = true;
-				DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CONV);
+				if (mode_left == mode_right) {
+					left    = op_left;
+					right   = op_right;
+					changed = true;
+					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CONV_CONV);
+				} else if (smaller_mode(mode_left, mode_right)) {
+					left    = new_r_Conv(block, op_left, mode_right);
+					right   = op_right;
+					changed = true;
+					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CONV);
+				} else if (smaller_mode(mode_right, mode_left)) {
+					left    = op_left;
+					right   = new_r_Conv(block, op_right, mode_left);
+					changed = true;
+					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CONV);
+				}
+				mode = get_irn_mode(left);
 			}
-			mode = get_irn_mode(left);
 		}
-	}
-	if (is_Conv(left) && is_Const(right)) {
-		ir_node   *op_left   = get_Conv_op(left);
-		ir_mode   *mode_left = get_irn_mode(op_left);
-		if (smaller_mode(mode_left, mode) && mode_left != mode_b) {
-			ir_tarval *tv        = get_Const_tarval(right);
-			tarval_int_overflow_mode_t last_mode
-				= tarval_get_integer_overflow_mode();
-			ir_tarval *new_tv;
-			tarval_set_integer_overflow_mode(TV_OVERFLOW_BAD);
-			new_tv = tarval_convert_to(tv, mode_left);
-			tarval_set_integer_overflow_mode(last_mode);
-			if (new_tv != tarval_bad) {
-				ir_graph *irg = get_irn_irg(n);
-				left    = op_left;
-				right   = new_r_Const(irg, new_tv);
-				mode    = get_irn_mode(left);
-				changed = true;
-				DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CONV);
+		if (is_Conv(left) && is_Const(right)) {
+			ir_node   *op_left   = get_Conv_op(left);
+			ir_mode   *mode_left = get_irn_mode(op_left);
+			if (smaller_mode(mode_left, mode) && mode_left != mode_b) {
+				ir_tarval *tv        = get_Const_tarval(right);
+				tarval_int_overflow_mode_t last_mode
+					= tarval_get_integer_overflow_mode();
+				ir_tarval *new_tv;
+				tarval_set_integer_overflow_mode(TV_OVERFLOW_BAD);
+				new_tv = tarval_convert_to(tv, mode_left);
+				tarval_set_integer_overflow_mode(last_mode);
+				if (new_tv != tarval_bad) {
+					ir_graph *irg = get_irn_irg(n);
+					left    = op_left;
+					right   = new_r_Const(irg, new_tv);
+					mode    = get_irn_mode(left);
+					changed = true;
+					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CONV);
+				}
 			}
 		}
 	}

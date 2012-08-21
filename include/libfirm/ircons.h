@@ -557,45 +557,6 @@ FIRM_API ir_node *new_SymConst(ir_mode *mode, union symconst_symbol value,
 
 /** @} */
 
-/** @addtogroup Conv
- * @{
- */
-
-/** Constructor for a strictConv node.
- *
- * @param db    A pointer for debug information.
- * @param block The IR block the node belongs to.
- * @param op    The operand.
- * @param mode  The mode of this the operand muss be converted .
- */
-FIRM_API ir_node *new_rd_strictConv(dbg_info *db, ir_node *block,
-                                    ir_node *op, ir_mode *mode);
-
-/** Constructor for a strictConv node.
- *
- * @param block The IR block the node belongs to.
- * @param op    The operand.
- * @param mode  The mode of this the operand muss be converted .
- */
-FIRM_API ir_node *new_r_strictConv(ir_node *block, ir_node *op, ir_mode *mode);
-
-/** Constructor for a strict Conv node.
- *
- * @param db    A pointer for debug information.
- * @param op    The operand.
- * @param mode  The mode of this the operand muss be converted .
- */
-FIRM_API ir_node *new_d_strictConv(dbg_info *db, ir_node *op, ir_mode *mode);
-
-/** Constructor for a strict Conv node.
- *
- * @param op    The operand.
- * @param mode  The mode of this the operand muss be converted .
- */
-FIRM_API ir_node *new_strictConv(ir_node *op, ir_mode *mode);
-
-/** @} */
-
 /** @addtogroup Sel
  * @{
  */

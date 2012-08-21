@@ -329,11 +329,6 @@ typedef struct bound_attr {
 	except_attr exc;              /**< The exception attribute. MUST be the first one. */
 } bound_attr;
 
-/** Conv attribute. */
-typedef struct conv_attr {
-	char           strict;        /**< If set, this is a strict Conv that cannot be removed. */
-} conv_attr;
-
 /** Div attribute. */
 typedef struct div_attr {
 	except_attr    exc;           /**< The exception attribute. MUST be the first one. */
@@ -392,7 +387,6 @@ typedef union ir_attr {
 	except_attr    except;        /**< For Phi node construction in case of exceptions */
 	copyb_attr     copyb;         /**< For CopyB operation */
 	bound_attr     bound;         /**< For Bound operation */
-	conv_attr      conv;          /**< For Conv operation */
 	div_attr       div;           /**< For Div operation */
 	mod_attr       mod;           /**< For Mod operation */
 	asm_attr       assem;         /**< For ASM operation. */

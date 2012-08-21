@@ -1397,11 +1397,6 @@ ir_node *skip_Id(ir_node *node)
 	}
 }
 
-int (is_strictConv)(const ir_node *node)
-{
-	return is_strictConv_(node);
-}
-
 int (is_SymConst_addr_ent)(const ir_node *node)
 {
 	return is_SymConst_addr_ent_(node);

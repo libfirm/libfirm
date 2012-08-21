@@ -341,12 +341,6 @@ static int node_cmp_attr_Phi(const ir_node *a, const ir_node *b)
 	return 0;
 }
 
-/** Compares the attributes of two Conv nodes. */
-static int node_cmp_attr_Conv(const ir_node *a, const ir_node *b)
-{
-	return get_Conv_strict(a) != get_Conv_strict(b);
-}
-
 /** Compares the attributes of two Cast nodes. */
 static int node_cmp_attr_Cast(const ir_node *a, const ir_node *b)
 {
@@ -610,7 +604,6 @@ void firm_init_op(void)
 	register_node_cmp_func(op_Cmp,      node_cmp_attr_Cmp);
 	register_node_cmp_func(op_Confirm,  node_cmp_attr_Confirm);
 	register_node_cmp_func(op_Const,    node_cmp_attr_Const);
-	register_node_cmp_func(op_Conv,     node_cmp_attr_Conv);
 	register_node_cmp_func(op_CopyB,    node_cmp_attr_CopyB);
 	register_node_cmp_func(op_Div,      node_cmp_attr_Div);
 	register_node_cmp_func(op_Dummy,    node_cmp_attr_Dummy);

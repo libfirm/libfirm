@@ -391,8 +391,15 @@ int i_mapper_pow(ir_node *call, void *ctx)
 	dbg = get_irn_dbg_info(call);
 
 	if (irn == NULL) {
-		ir_mode *mode = get_irn_mode(left);
+		ir_mode *result_mode = get_irn_mode(left);
 		ir_node *div;
+
+		ir_mode *mode             = result_mode;
+		ir_mode *float_arithmetic = be_get_backend_param()->mode_float_arithmetic;
+		if (float_arithmetic != NULL) {
+			left = new_r_Conv(block, left, float_arithmetic);
+			mode = float_arithmetic;
+		}
 
 		irn  = new_r_Const(irg, get_mode_one(mode));
 		div  = new_rd_Div(dbg, block, mem, irn, left, mode, op_pin_state_pinned);
@@ -402,6 +409,9 @@ int i_mapper_pow(ir_node *call, void *ctx)
 			reg_jmp = new_r_Proj(div, mode_X, pn_Div_X_regular);
 			exc_jmp = new_r_Proj(div, mode_X, pn_Div_X_except);
 			ir_set_throws_exception(div, true);
+		}
+		if (result_mode != mode) {
+			irn = new_r_Conv(block, irn, result_mode);
 		}
 	}
 	DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_POW);
@@ -487,7 +497,7 @@ static int i_mapper_symmetric_zero_to_one(ir_node *call, void *ctx, int reason)
 	ir_node *val     = get_Call_param(call, 0);
 	(void) ctx;
 
-	if (is_strictConv(val)) {
+	if (is_Conv(val)) {
 		ir_node *op = get_Conv_op(val);
 		if (is_Minus(op)) {
 			/* f(-x) = f(x) with strictConv */
@@ -497,10 +507,6 @@ static int i_mapper_symmetric_zero_to_one(ir_node *call, void *ctx, int reason)
 
 			op = get_Minus_op(op);
 			val = new_rd_Conv(dbg, block, op, mode);
-			if (is_Conv(val)) {
-				/* still a Conv ? */
-				set_Conv_strict(val, 1);
-			}
 			DBG_OPT_ALGSIM2(call, op, call, FS_OPT_RTS_SYMMETRIC);
 			set_Call_param(call, 0, val);
 			changed = 1;

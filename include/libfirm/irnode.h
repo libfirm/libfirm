@@ -384,12 +384,6 @@ FIRM_API int is_Const_all_one(const ir_node *node);
 /** @} */
 
 /**
- * @ingroup Conv
- * Returns true if a node is a Conv node with strict attribute set.
- */
-FIRM_API int is_strictConv(const ir_node *node);
-
-/**
  * @addtogroup SymConst
  * @{
  */
