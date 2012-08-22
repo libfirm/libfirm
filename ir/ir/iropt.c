@@ -50,6 +50,7 @@
 #include "firm_types.h"
 #include "bitfiddle.h"
 #include "be.h"
+#include "error.h"
 
 #include "entity_t.h"
 
@@ -1109,34 +1110,10 @@ static ir_node *equivalent_node_Conv(ir_node *n)
 		ir_node *b      = get_Conv_op(a);
 		ir_mode *b_mode = get_irn_mode(b);
 
-		if (n_mode == b_mode) {
-			if (n_mode == mode_b) {
-				n = b; /* Convb(Conv*(xxxb(...))) == xxxb(...) */
-				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
-				return n;
-			} else if (get_mode_arithmetic(n_mode) == get_mode_arithmetic(a_mode)) {
-				if (values_in_mode(b_mode, a_mode)) {
-					n = b;        /* ConvS(ConvL(xxxS(...))) == xxxS(...) */
-					DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
-					return n;
-				}
-			}
-			if (mode_is_int(n_mode) && get_mode_arithmetic(a_mode) == irma_ieee754) {
-				/* ConvI(ConvF(I)) -> I, iff float mantissa >= int mode */
-				unsigned int_mantissa   = get_mode_size_bits(n_mode) - (mode_is_signed(n_mode) ? 1 : 0);
-				unsigned float_mantissa = get_mode_mantissa_size(a_mode);
-
-				if (float_mantissa >= int_mantissa) {
-					n = b;
-					DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
-					return n;
-				}
-			}
-			if (is_Conv(b) && smaller_mode(b_mode, a_mode)) {
-				n = b; /* ConvA(ConvB(ConvA(...))) == ConvA(...) */
-				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
-				return n;
-			}
+		if (n_mode == b_mode && values_in_mode(b_mode, a_mode)) {
+			n = b;
+			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
+			return n;
 		}
 	}
 	return n;
@@ -5488,6 +5465,77 @@ static ir_node *transform_node_Rotl(ir_node *n)
 }
 
 /**
+ * returns mode size for may_leave_out_middle_mode
+ */
+static unsigned get_significand_size(ir_mode *mode)
+{
+	const ir_mode_arithmetic arithmetic = get_mode_arithmetic(mode);
+	switch (arithmetic) {
+	case irma_ieee754:
+	case irma_x86_extended_float:
+		return get_mode_mantissa_size(mode) + 1;
+	case irma_twos_complement:
+		return get_mode_size_bits(mode);
+	case irma_none:
+		panic("Conv node with irma_none mode?");
+	}
+	panic("unexpected mode_arithmetic in get_significand_size");
+}
+
+/**
+ * Returns true if a conversion from mode @p m0 to @p m1 has the same effect
+ * as converting from @p m0 to @p m1 and then to @p m2.
+ * Classifying the 3 modes as the big(b), middle(m) and small(s) mode this
+ * gives the following truth table:
+ * s -> b -> m  : true
+ * s -> m -> b  : !signed(s) || signed(m)
+ * m -> b -> s  : true
+ * m -> s -> b  : false
+ * b -> s -> m  : false
+ * b -> m -> s  : true
+ *
+ * s -> b -> b  : true
+ * s -> s -> b  : false
+ *
+ * additional float constraints:
+ * F -> F -> F: fine
+ * F -> I -> I: signedness of Is must match
+ * I -> F -> I: signedness of Is must match
+ * I -> I -> F: signedness of Is must match
+ * F -> I -> F: bad
+ * I -> F -> F: fine
+ * F -> F -> I: fine
+ * at least 1 float involved: signedness must match
+ */
+bool may_leave_out_middle_conv(ir_mode *m0, ir_mode *m1, ir_mode *m2)
+{
+	int n_floats = mode_is_float(m0) + mode_is_float(m1) + mode_is_float(m2);
+	if (n_floats == 1) {
+#if 0
+		int n_signed = mode_is_signed(m0) + mode_is_signed(m1)
+		             + mode_is_signed(m2);
+		/* we assume that float modes are always signed */
+		if ((n_signed & 1) != 1)
+			return false;
+#else
+		/* because overflow gives strange results we don't touch this case */
+		return false;
+#endif
+	} else if (n_floats == 2 && !mode_is_float(m1)) {
+		return false;
+	}
+
+	unsigned size0 = get_significand_size(m0);
+	unsigned size1 = get_significand_size(m1);
+	unsigned size2 = get_significand_size(m2);
+	if (size1 < size2 && size0 >= size1)
+		return false;
+	if (size1 >= size2)
+		return true;
+	return !mode_is_signed(m0) || mode_is_signed(m1);
+}
+
+/**
  * Transform a Conv.
  */
 static ir_node *transform_node_Conv(ir_node *n)
@@ -5495,6 +5543,17 @@ static ir_node *transform_node_Conv(ir_node *n)
 	ir_node *c, *oldn = n;
 	ir_mode *mode = get_irn_mode(n);
 	ir_node *a    = get_Conv_op(n);
+
+	if (is_Conv(a)) {
+		ir_mode *a_mode = get_irn_mode(a);
+		ir_node *b      = get_Conv_op(a);
+		ir_mode *b_mode = get_irn_mode(b);
+		if (may_leave_out_middle_conv(b_mode, a_mode, mode)) {
+			dbg_info *dbgi  = get_irn_dbg_info(n);
+			ir_node  *block = get_nodes_block(n);
+			return new_rd_Conv(dbgi, block, b, mode);
+		}
+	}
 
 	if (mode != mode_b && is_const_Phi(a)) {
 		/* Do NOT optimize mode_b Conv's, this leads to remaining

@@ -330,20 +330,25 @@ FIRM_API int mode_is_datab (const ir_mode *mode);
 FIRM_API int mode_is_dataM (const ir_mode *mode);
 
 /**
- * Returns true if sm can be converted to lm without loss
- * according to firm definition.
+ * Returns true if a value of mode @p sm can be converted to mode @p lm without
+ * loss.
  *
- * Note that mode_Iu is NOT smaller than mode_Is here.
+ * That is the interpretation of the numbers does not changes, so you a signed
+ * integer mode is never smaller than an unsigned integer mode since the
+ * unsigned mode can't represent negative numbers in a way that they are
+ * interpreted as negative numbers.
  *
  * @see values_in_mode()
  */
 FIRM_API int smaller_mode(const ir_mode *sm, const ir_mode *lm);
 
 /**
- * Returns true if a value of mode sm can be converted into mode lm
- * and backwards without loss.
+ * Returns true if no information is lost when converting a value of mode @p sm
+ * into mode @p lm (and back to mode @p sm).
  *
- * Note that mode_Iu values CAN be converted in mode_Is and back.
+ * So the interpretation of the values may change in the intermediate mode @p sm
+ * (for example when converting negative signed integer numbers into unsigned
+ * integers) but after a conversion back they are exactly the same value.
  *
  * @see smaller_mode()
  */
