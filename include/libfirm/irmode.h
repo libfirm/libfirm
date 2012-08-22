@@ -48,7 +48,6 @@
  * mode.
  */
 typedef enum ir_mode_arithmetic {
-	irma_uninitialized = 0,
 	irma_none = 1,            /**< For modes for which no representation is
 	                               specified. These are modes of sort auxiliary,
 	                               internal_boolean and character. */

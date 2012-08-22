@@ -276,7 +276,6 @@ static void symtbl_init(void)
 	INSERTENUM(tt_initializer, IR_INITIALIZER_NULL);
 	INSERTENUM(tt_initializer, IR_INITIALIZER_COMPOUND);
 
-	INSERT(tt_mode_arithmetic, "uninitialized",      irma_uninitialized);
 	INSERT(tt_mode_arithmetic, "none",               irma_none);
 	INSERT(tt_mode_arithmetic, "twos_complement",    irma_twos_complement);
 	INSERT(tt_mode_arithmetic, "ieee754",            irma_ieee754);
@@ -331,7 +330,6 @@ static const char *get_visibility_name(ir_visibility visibility)
 static const char *get_mode_arithmetic_name(ir_mode_arithmetic arithmetic)
 {
 	switch (arithmetic) {
-	case irma_uninitialized:      return "uninitialized";
 	case irma_none:               return "none";
 	case irma_twos_complement:    return "twos_complement";
 	case irma_ieee754:            return "ieee754";
