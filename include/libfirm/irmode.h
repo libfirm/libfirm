@@ -100,7 +100,8 @@ FIRM_API ir_mode *new_reference_mode(const char *name,
  * @param name          the name of the mode to be created
  * @param arithmetic    arithmetic/representation of the mode
  * @param exponent_size size of exponent in bits
- * @param mantissa_size size of mantissa in bits
+ * @param mantissa_size size of mantissa in bits (number of bits after the
+ *                      leading one).
  */
 FIRM_API ir_mode *new_float_mode(const char *name,
                                  ir_mode_arithmetic arithmetic,
@@ -407,7 +408,11 @@ FIRM_API ir_mode *get_reference_mode_unsigned_eq(ir_mode *mode);
 FIRM_API void set_reference_mode_unsigned_eq(ir_mode *ref_mode, ir_mode *int_mode);
 
 /**
- * Returns size of mantissa in bits (for float modes)
+ * Returns size of mantissa in bits (for float modes).
+ * Note: This is the number of bits used after the leading one. So the actual
+ * accuracy of the significand is get_mode_mantissa_size()+1. The number of bits
+ * used in the encoding depends on wether the floatingpoint mode has an implicit
+ * (ieee754) or explicit (x86_extended) encoding of the leading one.
  */
 FIRM_API unsigned get_mode_mantissa_size(const ir_mode *mode);
 
