@@ -52,11 +52,11 @@
 #define MAX_INSERT_ITER 3
 
 #define PARTLY_ONLY 0
-#define HOIST_HIGH 0
+#define HOIST_HIGH 1
 #define BETTER_GREED 0
 #define LOADS 1
 #define DIVMODS 0
-#define NO_INF_LOOPS 0
+#define NO_INF_LOOPS 1
 #define NO_INF_LOOPS2 0
 
 /** Additional info we need for every block. */
@@ -64,9 +64,10 @@ typedef struct block_info {
 	ir_valueset_t     *exp_gen;    /* contains this blocks clean expressions */
 	ir_valueset_t     *avail_out;  /* available values at block end */
 	ir_valueset_t     *antic_in;   /* clean anticipated values at block entry */
-	ir_valueset_t     *antic_done; /* keeps elements of antic_in after insert nodes phase*/
+	ir_valueset_t     *antic_done; /* keeps elements of antic_in after insert nodes phase */
 	ir_valueset_t     *new_set;    /* new by hoisting made available values */
-	ir_nodehashmap_t  *trans;      /* contains translated nodes translated into block */
+	ir_nodehashmap_t  *trans;      /* contains translated nodes translated into block
+								      TODO might be omitted if antic_out is used */
 	ir_node           *avail;      /* saves available node for insert node phase */
 	int                found;      /* saves kind of availability for insert_node phase */
 	ir_node           *block;      /* block of the block_info */
@@ -335,9 +336,7 @@ static ir_node *remember(ir_node *irn)
 		in[i] = pred_value;
 	}
 
-	/* do not create new value for loads or else it will not
-	   be found in avail_out during insert phase */
-	if (changed && ! is_Load(irn)) {
+	if (changed) {
 		/* create representative for */
 		ir_node *nn = new_ir_node(
 			get_irn_dbg_info(irn),
@@ -650,7 +649,7 @@ static unsigned is_clean_in_block(ir_node *n, ir_node *block, ir_valueset_t *val
 	if (! is_nice_value(n))
 		return 0;
 
-	/* filter loads from antic_in */
+	/* filter loads with no phi predecessor from antic_in */
 	if (is_Load(n) && ! is_Phi(get_Load_mem(n)))
 		return 0;
 
@@ -880,15 +879,16 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, ir_valuese
 		} else {
 			new_pred = pred_trans;
 
-			/* loads: in case of memory projection and load,
-			   skip them and use the loads memory */
+			/* loads: Predecessor is a memory phi, which translated yields a proj or
+			   another phi. In case of projection and a load predecessor,
+			   skip them and use the loads memory. */
 			if (is_Proj(pred_trans) && get_irn_mode(pred_trans) == mode_M) {
 				ir_node *load = get_Proj_pred(pred_trans);
-				/* translated predecessor will be different */
+				/* If we do not translate this node, we will get its value wrong. */
 				needed |= 1;
 
 				if (is_Load(load)) {
-					/* Put new load under the adjacent loads mem
+					/* Put new load under the adjacent loads memory edge
 					   such that GVN may compare them. */
 					new_pred = get_Load_mem(load);
 				}
@@ -1007,15 +1007,14 @@ static void compute_antic(ir_node *block, void *ctx)
 
 			DB((dbg, LEVEL_3, "Translate %+F %+F to %d = %+F (%+F)\n", expr, succ, pos, trans, trans_value));
 
-			/* on value change (phi present) we need the translated node
+			/* On value change (phi present) we need the translated node
 			   to represent the new value for possible further translation. */
 			if (value != trans_value)
 				represent = trans;
 			else
 				represent = expr;
 
-			// test only 1 translation, because more failed, because of uncleanliness of load
-			if (is_clean_in_block(expr, block, info->antic_in) && ! is_Load(expr)) {
+			if (is_clean_in_block(expr, block, info->antic_in)) {
 #if NO_INF_LOOPS2
 				/* TODO to be determined why nearly every spec benchmark fails */
 				if (! is_in_infinite_loop(succ) || ! is_backedge(succ, pos)) {
@@ -1140,7 +1139,12 @@ static ir_mode *is_partially_redundant(ir_node *block, ir_node *expr, ir_node *v
 		trans_expr = get_translated(pred_block, expr);
 		trans_value = identify(trans_expr);
 
-		avail_expr = (ir_node*)ir_valueset_lookup(pred_info->avail_out, trans_value);
+		if (is_Const(trans_expr))
+			avail_expr = trans_expr;
+		else
+			avail_expr = (ir_node*)ir_valueset_lookup(pred_info->avail_out, trans_value);
+
+#if 0
 		/* value might be available through a not yet existing constant */
 		if (avail_expr == NULL && is_Const(trans_expr)) {
 			/* limit range of new constants */
@@ -1149,13 +1153,15 @@ static ir_mode *is_partially_redundant(ir_node *block, ir_node *expr, ir_node *v
 			ir_tarval *lower = new_tarval_from_long(-127, cmode);
 			ir_tarval *c     = get_Const_tarval(trans_expr);
 
-			if (tarval_cmp(lower, c) != ir_relation_greater_equal &&
-				tarval_cmp(c, upper) != ir_relation_greater_equal) {
-				avail_expr = NULL;
-			} else {
+			/* tarval within range? */
+			if (tarval_cmp(lower, c) == ir_relation_less_equal &&
+				tarval_cmp(c, upper) == ir_relation_less_equal) {
 				avail_expr = trans_expr;
+			} else {
+				avail_expr = NULL;
 			}
 	    }
+#endif
 
 		DB((dbg, LEVEL_3, "avail_expr %+F  trans_expr %+F\n", avail_expr, trans_expr));
 
@@ -1173,7 +1179,8 @@ static ir_mode *is_partially_redundant(ir_node *block, ir_node *expr, ir_node *v
 			if (first_avail == NULL)
 				first_avail = avail_expr;
 			else if (first_avail != avail_expr)
-				/* Multiple different expressions are available */
+				/* Multiple different expressions are available,
+				   This is why we need no cut over avail_out sets. */
 				fully_redundant = 0;
 
 			DB((dbg, LEVEL_2, "Found %+F from block %+F as %+F in pred %+F\n", expr, block, avail_expr, pred_block));
@@ -1264,8 +1271,12 @@ static unsigned is_hoisting_greedy(ir_node *irn, ir_node *block)
 			ir_node *trans_val;
 			ir_node *avail;
 
+#if 0
+			/* TODO With critical edges removed,
+			   this should have no effect but it has. */
 			if (get_loop_depth(get_irn_loop(pred_block)) > get_loop_depth(get_irn_loop(get_nodes_block(irn))))
 				return 1;
+#endif
 
 			if (is_Phi(pred) && get_nodes_block(pred) == block)
 				continue;
@@ -1281,11 +1292,25 @@ static unsigned is_hoisting_greedy(ir_node *irn, ir_node *block)
 				trans = pred;
 			DB((dbg, LEVEL_3, "trans %+F\n", trans));
 
-			if (is_Load(trans))
-				continue;
-
 			trans_val = identify(trans);
 			DB((dbg, LEVEL_3, "value %+F\n", trans_val));
+
+			if (is_Const(trans_val)) {
+				/* limit range of new constants */
+				ir_mode   *cmode = get_irn_mode(trans);
+				ir_tarval *upper = new_tarval_from_long(127, cmode);
+				ir_tarval *lower = new_tarval_from_long(-127, cmode);
+				ir_tarval *c     = get_Const_tarval(trans);
+
+				/* tarval within range? */
+				if (tarval_cmp(lower, c) == ir_relation_less_equal &&
+					tarval_cmp(c, upper) == ir_relation_less_equal) {
+					avail_expr = trans;
+				} else {
+					avail_expr = NULL;
+				}
+			}
+
 			if (is_irn_constlike(trans_val))
 				continue;
 			avail = ir_valueset_lookup(pred_info->avail_out, trans_val);
@@ -1299,7 +1324,8 @@ static unsigned is_hoisting_greedy(ir_node *irn, ir_node *block)
 #endif
 
 #if 0
-			/* Try to reduce cut. Turned out to be not very effective. */
+			/* Try to reduce cut.
+			   Turned out to be not very effective in this simple form. */
 			/* TODO Use out edges. */
 			if (get_irn_outs_computed(irn) && get_irn_n_outs(irn) > 1)
 				return 1;
@@ -1454,7 +1480,7 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 				int node_arity = get_irn_arity(expr);
 				ir_node **in = XMALLOCNZ(ir_node *, node_arity);
 				ir_node *trans;
-				ir_node *new_value;
+				ir_node *new_value, *new_value2;
 				ir_node *target_block = pred_block;
 
 				for (i = 0; i < node_arity; ++i) {
@@ -1465,9 +1491,12 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 					ir_node *trans_val;
 					ir_node *avail;
 
+					/* transform knowledge over the predecessor from
+					   anti-leader world into leader world. */
+
 					DB((dbg, LEVEL_3, "pred %+F\n", pred));
 					value = identify(pred);
-					/* transform knowledge over anti leader into knowledge over leader */
+
 					/* get leader for pred to lookup its translated value */
 					leader = ir_valueset_lookup(info->antic_in, value);
 					if (! leader)
@@ -1485,17 +1514,13 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 						continue;
 					}
 
-					/* handle load predecessor */
-					if (is_Load(trans)) {
-						in[i] = trans;
-						continue;
-					}
-
 					trans_val = identify(trans);
 					DB((dbg, LEVEL_3, "value %+F\n", trans_val));
 					/* constants are always available but not in avail set */
 					if (is_irn_constlike(trans_val)) {
-						in[i] = pred;
+						/* TODO add check  */
+						in[i] = trans;
+						//in[i] = pred;
 						continue;
 					}
 
@@ -1512,11 +1537,10 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 				if (is_Proj(expr))
 					target_block = get_nodes_block(in[0]);
 
-				/* copy node to represent the new value.
-				   We do not translate nodes that do not need translation,
-				   so we use the newly created nodes as value representatives only.
-				   Their block is not important, because we create new ones during
-				   the insert node phase. */
+				/* Copy node to represent the new value.
+				   We use translated nodes as value representatives only.
+				   They have anti leaders as predecessors, not leaders!
+				   So we have to create a new node using leaders. */
 				trans = new_ir_node(
 					get_irn_dbg_info(expr),
 					environ->graph,
@@ -1529,17 +1553,18 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 				/* We need the attribute copy here, because the Hash value of a
 				   node might depend on it. */
 				copy_node_attr(environ->graph, expr, trans);
-				new_value = identify_or_remember(trans);
-
-				DB((dbg, LEVEL_3, "Use new %+F in %+F because expr %+F(%+F) not available\n", trans, pred_block, expr, value));
 
 				/* value is now available in target block through trans
 				   insert (not replace) because it has not been available */
-				ir_valueset_insert(pred_info->avail_out, value, trans);
+				new_value = identify_or_remember(trans);
 				ir_valueset_insert(pred_info->avail_out, new_value, trans);
+				DB((dbg, LEVEL_4, "avail%+F+= trans %+F(%+F)\n", pred_block, trans, new_value));
 
-				DB((dbg, LEVEL_4, "SET AVAIL value %+F trans %+F  in %+F\n", value, trans, pred_block));
-				DB((dbg, LEVEL_4, "SET AVAIL newvalue %+F trans %+F  in %+F\n", new_value, trans, pred_block));
+				new_value2 = identify(get_translated(pred_block, expr));
+				ir_valueset_insert(pred_info->avail_out, new_value2, trans);
+				DB((dbg, LEVEL_4, "avail%+F+= trans %+F(%+F)\n", pred_block, trans, new_value2));
+
+				DB((dbg, LEVEL_3, "Use new %+F in %+F because %+F(%+F) not available\n", trans, pred_block, expr, value));
 
 				phi_in[pos] = trans;
 			} else {
@@ -1556,7 +1581,8 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 			phi = new_r_Phi(block, arity, phi_in, mode);
 			DB((dbg, LEVEL_3, "New %+F for redundant %+F created\n", phi, expr));
 
-			/* this value is now available through the new phi */
+			/* This value is now available through the new phi.
+			   insert || replace in avail_out */
 			ir_valueset_replace(info->avail_out, value, phi);
 			ir_valueset_insert(info->new_set, value, phi);
 		}
@@ -1663,6 +1689,7 @@ static void hoist_high(ir_node *block, void *ctx)
 	foreach_valueset(curr_info->antic_done, value, expr, iter) {
 		int pos;
 
+		/* TODO currently we cannot handle load and their projections */
 		if (is_memop(expr) || is_Proj(expr))
 			continue;
 
@@ -1835,6 +1862,7 @@ static void eliminate(ir_node *irn, void *ctx)
 
 		if (value != NULL) {
 			ir_node *expr = (ir_node*)ir_valueset_lookup(info->avail_out, value);
+			DB((dbg, LEVEL_3, "Elim %+F(%+F) avail %+F\n", irn, value, expr));
 
 #if ! PARTLY_ONLY
 			if (expr && get_irn_idx(expr) <= env->last_idx)
@@ -1873,11 +1901,6 @@ static void eliminate_nodes(elim_pair *pairs, ir_nodeset_t *keeps)
 	for (p = pairs; p != NULL; p = p->next) {
 		/* might be already changed */
 		p->new_node = skip_Id(p->new_node);
-
-		// TEST
-		/* happens with load nodes */
-		if (p->new_node == p->old_node)
-			continue;
 
 		DB((dbg, LEVEL_2, "Replacing %+F by %+F\n", p->old_node, p->new_node));
 
