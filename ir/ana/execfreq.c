@@ -240,7 +240,8 @@ void ir_estimate_execfreq(ir_graph *irg)
 
 	assure_irg_properties(irg,
 		IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
-		| IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
+		| IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO
+		| IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE);
 
 	/* compute a DFS.
 	 * using a toposort on the CFG (without back edges) will propagate
