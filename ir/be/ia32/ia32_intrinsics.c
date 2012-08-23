@@ -516,8 +516,7 @@ static int map_Conv(ir_node *call, void *ctx)
 							   pn_ia32_l_FloattoLL_res_high);
 		} else {
 			/* Convert from float to unsigned 64bit. */
-			ir_mode   *flt_mode = get_irn_mode(a_f);
-			ir_tarval *flt_tv   = new_tarval_from_str("9223372036854775808", 19, flt_mode);
+			ir_tarval *flt_tv   = new_tarval_from_str("9223372036854775808", 19, ia32_mode_E);
 			ir_node   *flt_corr = new_r_Const(irg, flt_tv);
 			ir_node   *lower_blk = block;
 			ir_node   *upper_blk;
@@ -527,6 +526,7 @@ static int map_Conv(ir_node *call, void *ctx)
 			part_block(call);
 			upper_blk = get_nodes_block(call);
 
+			a_f   = new_rd_Conv(dbg, upper_blk, a_f, ia32_mode_E);
 			cmp   = new_rd_Cmp(dbg, upper_blk, a_f, flt_corr, ir_relation_less);
 			cond  = new_rd_Cond(dbg, upper_blk, cmp);
 			in[0] = new_r_Proj(cond, mode_X, pn_Cond_true);
@@ -543,14 +543,15 @@ static int map_Conv(ir_node *call, void *ctx)
 			int_phi = new_r_Phi(lower_blk, 2, in, h_res_mode);
 
 			in[0] = a_f;
-			in[1] = new_rd_Sub(dbg, upper_blk, a_f, flt_corr, flt_mode);
+			in[1] = new_rd_Sub(dbg, upper_blk, a_f, flt_corr, ia32_mode_E);
 
-			flt_phi = new_r_Phi(lower_blk, 2, in, flt_mode);
+			flt_phi = new_r_Phi(lower_blk, 2, in, ia32_mode_E);
 
 			/* fix Phi links for next part_block() */
-			set_Block_phis(lower_blk, int_phi);
-			set_Phi_next(int_phi, flt_phi);
-			set_Phi_next(flt_phi, NULL);
+			if (is_Phi(int_phi))
+				add_Block_phi(lower_blk, int_phi);
+			if (is_Phi(flt_phi))
+				add_Block_phi(lower_blk, flt_phi);
 
 			float_to_ll = new_bd_ia32_l_FloattoLL(dbg, lower_blk, flt_phi);
 
