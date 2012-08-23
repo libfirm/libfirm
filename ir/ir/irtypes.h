@@ -209,6 +209,7 @@ typedef struct block_attr {
 	bitset_t *backedge;         /**< Bitfield n set to true if pred n is backedge.*/
 	ir_entity *entity;          /**< entitiy representing this block */
 	ir_node  *phis;             /**< The list of Phi nodes in this block. */
+	double    execfreq;         /**< block execution frequency */
 } block_attr;
 
 /** Cond attributes. */
