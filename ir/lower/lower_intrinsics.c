@@ -135,15 +135,7 @@ size_t lower_intrinsics(i_record *list, size_t length, int part_block_used)
 			ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 
 		if (wenv.nr_of_intrinsics > 0) {
-			/* Changes detected: we might have added/removed nodes. */
-			set_irg_callee_info_state(irg, irg_callee_info_inconsistent);
-
-			/* Exception control flow might have changed / new block might have added. */
-			clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
-
-			/* verify here */
-			irg_verify(irg, VERIFY_NORMAL);
-
+			confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 			nr_of_intrinsics += wenv.nr_of_intrinsics;
 		}
 	}
