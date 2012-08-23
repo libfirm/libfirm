@@ -662,12 +662,6 @@ static int is_downconv(const ir_node *node)
 	if (!is_Conv(node))
 		return 0;
 
-	/* we only want to skip the conv when we're the only user
-	 * (because this test is used in the context of address-mode selection
-	 *  and we don't want to use address mode for multiple users) */
-	if (get_irn_n_edges(node) > 1)
-		return 0;
-
 	src_mode  = get_irn_mode(get_Conv_op(node));
 	dest_mode = get_irn_mode(node);
 	return
@@ -679,8 +673,15 @@ static int is_downconv(const ir_node *node)
 /** Skip all Down-Conv's on a given node and return the resulting node. */
 ir_node *ia32_skip_downconv(ir_node *node)
 {
-	while (is_downconv(node))
+	while (is_downconv(node)) {
+		/* we only want to skip the conv when we're the only user
+		 * (because this test is used in the context of address-mode selection
+		 *  and we don't want to use address mode for multiple users) */
+		if (get_irn_n_edges(node) > 1)
+			break;
+
 		node = get_Conv_op(node);
+	}
 
 	return node;
 }
@@ -2705,13 +2706,6 @@ static ir_node *gen_general_Store(ir_node *node)
 	addr.mem = be_transform_node(mem);
 
 	if (mode_is_float(mode)) {
-		/* Convs before stores are unnecessary if the mode is the same. */
-		while (is_Conv(val) && mode == get_irn_mode(val)) {
-			ir_node *op = get_Conv_op(val);
-			if (!mode_is_float(get_irn_mode(op)))
-				break;
-			val = op;
-		}
 		new_val = be_transform_node(val);
 		if (ia32_cg_config.use_sse2) {
 			new_node = new_bd_ia32_xStore(dbgi, new_block, addr.base,
@@ -2721,25 +2715,19 @@ static ir_node *gen_general_Store(ir_node *node)
 			                            addr.index, addr.mem, new_val, mode);
 		}
 	} else if (!ia32_cg_config.use_sse2 && is_float_to_int_conv(val)) {
-		val = get_Conv_op(val);
-
-		/* TODO: is this optimisation still necessary at all (middleend)? */
-		/* We can skip ALL float->float up-Convs before stores. */
-		while (is_Conv(val)) {
-			ir_node *op = get_Conv_op(val);
-			if (!mode_is_float(get_irn_mode(op)))
-				break;
-			if (get_mode_size_bits(get_irn_mode(op)) > get_mode_size_bits(get_irn_mode(val)))
-				break;
-			val = op;
-		}
+		val      = get_Conv_op(val);
 		new_val  = be_transform_node(val);
 		new_node = gen_vfist(dbgi, new_block, addr.base, addr.index, addr.mem, new_val);
 	} else {
+		unsigned dest_bits = get_mode_size_bits(mode);
+		while (is_downconv(val)
+		       && get_mode_size_bits(get_irn_mode(val)) >= dest_bits) {
+		    val = get_Conv_op(val);
+		}
 		new_val = create_immediate_or_transform(val, 0);
 		assert(mode != mode_b);
 
-		if (get_mode_size_bits(mode) == 8) {
+		if (dest_bits == 8) {
 			new_node = new_bd_ia32_Store8Bit(dbgi, new_block, addr.base,
 			                                 addr.index, addr.mem, new_val);
 		} else {
