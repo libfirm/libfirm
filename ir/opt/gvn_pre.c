@@ -48,16 +48,20 @@
 #include "iropt_t.h"
 #include "plist.h"
 
+/* suggested by GVN-PRE authors */
 #define MAX_ANTIC_ITER 10
 #define MAX_INSERT_ITER 3
 
-#define PARTLY_ONLY 0
-#define HOIST_HIGH 1
-#define BETTER_GREED 0
-#define LOADS 1
+#define HOIST_HIGH 0
+#define LOADS 0
 #define DIVMODS 0
-#define NO_INF_LOOPS 1
+#define NO_INF_LOOPS 0
+
+/* testing */
+#define PARTLY_ONLY 0
+/* not working */
 #define NO_INF_LOOPS2 0
+#define BETTER_GREED 0
 
 /** Additional info we need for every block. */
 typedef struct block_info {
@@ -1295,24 +1299,31 @@ static unsigned is_hoisting_greedy(ir_node *irn, ir_node *block)
 			trans_val = identify(trans);
 			DB((dbg, LEVEL_3, "value %+F\n", trans_val));
 
-			if (is_Const(trans_val)) {
-				/* limit range of new constants */
-				ir_mode   *cmode = get_irn_mode(trans);
-				ir_tarval *upper = new_tarval_from_long(127, cmode);
-				ir_tarval *lower = new_tarval_from_long(-127, cmode);
-				ir_tarval *c     = get_Const_tarval(trans);
-
-				/* tarval within range? */
-				if (tarval_cmp(lower, c) == ir_relation_less_equal &&
-					tarval_cmp(c, upper) == ir_relation_less_equal) {
-					avail_expr = trans;
+			if (is_Const(trans_val) || is_SymConst(trans_val)) {
+				/* existing constant */
+				if (get_irn_idx(trans_val) < environ->last_idx) {
+					continue;
 				} else {
-					avail_expr = NULL;
+					/* limit range of new constants */
+					ir_mode   *cmode = get_irn_mode(trans);
+					ir_tarval *upper = new_tarval_from_long(128, cmode);
+					ir_tarval *lower = new_tarval_from_long(-128, cmode);
+					ir_tarval *c     = get_Const_tarval(trans);
+
+					/* tarval within range? */
+					if (tarval_cmp(lower, c) == ir_relation_less &&
+						tarval_cmp(c, upper) == ir_relation_less) {
+						continue;
+					} else {
+						return 1;
+					}
 				}
 			}
 
+			/* */
 			if (is_irn_constlike(trans_val))
 				continue;
+
 			avail = ir_valueset_lookup(pred_info->avail_out, trans_val);
 
 			if (! avail)
@@ -1516,11 +1527,10 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 
 					trans_val = identify(trans);
 					DB((dbg, LEVEL_3, "value %+F\n", trans_val));
+
 					/* constants are always available but not in avail set */
 					if (is_irn_constlike(trans_val)) {
-						/* TODO add check  */
 						in[i] = trans;
-						//in[i] = pred;
 						continue;
 					}
 
@@ -1617,11 +1627,8 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 
 			/* does irn only have redundant successors? */
 
-			/* TODO we need to use edges */
-			assert(get_irn_outs_computed(irn));
-
-			for (j = get_irn_n_outs(irn) - 1; j >= 0; --j) {
-				ir_node *succ = get_irn_out(irn, j);
+			foreach_out_edge(irn, edge) {
+				ir_node *succ = get_edge_src_irn(edge);
 
 				/* if succ and irn are in the same block */
 				if (get_nodes_block(succ) == block && is_redundant(block, succ)) {
@@ -1655,9 +1662,8 @@ static void update_new_set_walker(ir_node *block, void *ctx)
 }
 
 /**
- * Domtree block walker to insert nodes into the highest
- * possible block. .
- *
+ * Domtree block walker to insert nodes with dying operands
+ * into the highest possible block whilst still being anticipated.
  */
 static void hoist_high(ir_node *block, void *ctx)
 {
@@ -1758,7 +1764,7 @@ static void hoist_high(ir_node *block, void *ctx)
 
 				/* check if operands die */
 
-				/* check for uses on current path*/
+				/* check for uses on current path */
 				for (i = 0; i < avail_arity; i++) {
 					ir_node   *pred       = get_irn_n(avail, i);
 					ir_node   *pred_value = identify(pred);
@@ -1998,17 +2004,18 @@ static void gvn_pre(ir_graph *irg, pre_env *env)
 	DEBUG_ONLY(set_stats(gvnpre_stats->insert_iterations, insert_iter);)
 
 #if HOIST_HIGH
-	/* An attempt to reduce lifetime by hoisting already hoisted values
-	   even higher, if their operands die. */
+	/* An attempt to reduce lifetimes by hoisting already hoisted values
+	   even higher if their operands die. */
 	dom_tree_walk_irg(irg, hoist_high, NULL, env);
 	/* update avail_out for elimination */
 	dom_tree_walk_irg(irg, update_new_set_walker, NULL, env);
 #endif
 
-	/* TODO deactivate edges to prevent intelligent removal of nodes */
+	/* Deactivate edges to prevent intelligent removal of nodes,
+	   else we will get deleted nodes which we try to exchange. */
 	edges_deactivate(environ->graph);
 
-	/* last step: eliminate nodes */
+	/* eliminate nodes */
 	irg_walk_graph(irg, NULL, eliminate, env);
 	eliminate_nodes(env->pairs, env->keeps);
 
@@ -2097,7 +2104,7 @@ void do_gvn_pre(ir_graph *irg)
 	restore_optimization_state(&state);
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 
-	/* TODO there seem to be optimizations that try to use the existing
+	/* TODO There seem to be optimizations that try to use the existing
 	   value_table. */
 	new_identities(irg);
 }
