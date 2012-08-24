@@ -2908,85 +2908,18 @@ static ir_node *create_Ucomi(ir_node *node)
 	return new_node;
 }
 
-/**
- * returns true if it is assured, that the upper bits of a node are "clean"
- * which means for a 16 or 8 bit value, that the upper bits in the register
- * are 0 for unsigned and a copy of the last significant bit for signed
- * numbers.
- */
-static bool upper_bits_clean(ir_node *transformed_node, ir_mode *mode)
+static bool ia32_mux_upper_bits_clean(const ir_node *node, ir_mode *mode)
 {
-	assert(ia32_mode_needs_gp_reg(mode));
-	if (get_mode_size_bits(mode) >= 32)
-		return true;
-
-	if (is_Proj(transformed_node))
-		return upper_bits_clean(get_Proj_pred(transformed_node), mode);
-
-	switch (get_ia32_irn_opcode(transformed_node)) {
-		case iro_ia32_Conv_I2I:
-		case iro_ia32_Conv_I2I8Bit: {
-			ir_mode *smaller_mode = get_ia32_ls_mode(transformed_node);
-			if (mode_is_signed(smaller_mode) != mode_is_signed(mode))
-				return false;
-			if (get_mode_size_bits(smaller_mode) > get_mode_size_bits(mode))
-				return false;
-
-			return true;
-		}
-
-		case iro_ia32_Shr:
-			if (mode_is_signed(mode)) {
-				return false; /* TODO handle signed modes */
-			} else {
-				ir_node *right = get_irn_n(transformed_node, n_ia32_Shr_count);
-				if (is_ia32_Immediate(right) || is_ia32_Const(right)) {
-					const ia32_immediate_attr_t *attr
-						= get_ia32_immediate_attr_const(right);
-					if (attr->symconst == 0 &&
-							(unsigned)attr->offset >= 32 - get_mode_size_bits(mode)) {
-						return true;
-					}
-				}
-				return upper_bits_clean(get_irn_n(transformed_node, n_ia32_Shr_val), mode);
-			}
-
-		case iro_ia32_Sar:
-			/* TODO too conservative if shift amount is constant */
-			return upper_bits_clean(get_irn_n(transformed_node, n_ia32_Sar_val), mode);
-
-		case iro_ia32_And:
-			if (!mode_is_signed(mode)) {
-				return
-					upper_bits_clean(get_irn_n(transformed_node, n_ia32_And_right), mode) ||
-					upper_bits_clean(get_irn_n(transformed_node, n_ia32_And_left),  mode);
-			}
-			/* TODO if one is known to be zero extended, then || is sufficient */
-			/* FALLTHROUGH */
-		case iro_ia32_Or:
-		case iro_ia32_Xor:
-			return
-				upper_bits_clean(get_irn_n(transformed_node, n_ia32_binary_right), mode) &&
-				upper_bits_clean(get_irn_n(transformed_node, n_ia32_binary_left),  mode);
-
-		case iro_ia32_Const:
-		case iro_ia32_Immediate: {
-			const ia32_immediate_attr_t *attr =
-				get_ia32_immediate_attr_const(transformed_node);
-			if (mode_is_signed(mode)) {
-				long shifted = attr->offset >> (get_mode_size_bits(mode) - 1);
-				return shifted == 0 || shifted == -1;
-			} else {
-				unsigned long shifted = (unsigned long)attr->offset;
-				shifted >>= get_mode_size_bits(mode)-1;
-				shifted >>= 1;
-				return shifted == 0;
-			}
-		}
-
-		default:
-			return false;
+	ir_node *mux_true  = get_Mux_true(node);
+	ir_node *mux_false = get_Mux_false(node);
+	ir_mode *mux_mode  = get_irn_mode(node);
+	/* mux nodes which get transformed to the set instruction are not clean */
+	if (is_Const(mux_true) && is_Const(mux_false)
+		&& get_mode_size_bits(mux_mode) == 8) {
+		return false;
 	}
+	return be_upper_bits_clean(mux_true, mode)
+		&& be_upper_bits_clean(mux_false, mode);
 }
 
 /**
@@ -3034,8 +2967,9 @@ static ir_node *gen_Cmp(ir_node *node)
 		                match_am_and_immediates | match_immediate);
 
 		/* use 32bit compare mode if possible since the opcode is smaller */
-		if (upper_bits_clean(am.new_op1, cmp_mode) &&
-		    upper_bits_clean(am.new_op2, cmp_mode)) {
+		if (am.op_type == ia32_Normal &&
+			be_upper_bits_clean(and_left, cmp_mode) &&
+		    be_upper_bits_clean(and_right, cmp_mode)) {
 			cmp_mode = mode_is_signed(cmp_mode) ? mode_Is : mode_Iu;
 		}
 
@@ -3056,8 +2990,9 @@ static ir_node *gen_Cmp(ir_node *node)
 		                match_16bit_am | match_am_and_immediates |
 		                match_immediate);
 		/* use 32bit compare mode if possible since the opcode is smaller */
-		if (upper_bits_clean(am.new_op1, cmp_mode) &&
-		    upper_bits_clean(am.new_op2, cmp_mode)) {
+		if (am.op_type == ia32_Normal &&
+			be_upper_bits_clean(left, cmp_mode) &&
+		    be_upper_bits_clean(right, cmp_mode)) {
 			cmp_mode = mode_is_signed(cmp_mode) ? mode_Is : mode_Iu;
 		}
 
@@ -3737,7 +3672,7 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode)
 
 	/* first convert to 32 bit signed if necessary */
 	if (get_mode_size_bits(src_mode) < 32) {
-		if (!upper_bits_clean(new_op, src_mode)) {
+		if (!be_upper_bits_clean(op, src_mode)) {
 			new_op = create_Conv_I2I(dbgi, block, noreg_GP, noreg_GP, nomem, new_op, src_mode);
 			SET_IA32_ORIG_NODE(new_op, node);
 		}
@@ -3800,16 +3735,11 @@ static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
 {
 	ir_node             *new_block = be_transform_node(block);
 	ir_node             *new_node;
-	ir_mode             *smaller_mode;
 	ia32_address_mode_t  am;
 	ia32_address_t      *addr = &am.addr;
 
 	(void) node;
-	if (get_mode_size_bits(src_mode) < get_mode_size_bits(tgt_mode)) {
-		smaller_mode = src_mode;
-	} else {
-		smaller_mode = tgt_mode;
-	}
+	assert(get_mode_size_bits(src_mode) < get_mode_size_bits(tgt_mode));
 
 #ifdef DEBUG_libfirm
 	if (is_Const(op)) {
@@ -3818,25 +3748,19 @@ static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
 	}
 #endif
 
+	if (be_upper_bits_clean(op, src_mode)) {
+		return be_transform_node(op);
+	}
+
 	match_arguments(&am, block, NULL, op, NULL,
 	                match_am | match_8bit_am | match_16bit_am);
 
-	if (upper_bits_clean(am.new_op2, smaller_mode)) {
-		/* unnecessary conv. in theory it shouldn't have been AM */
-		assert(is_ia32_NoReg_GP(addr->base));
-		assert(is_ia32_NoReg_GP(addr->index));
-		assert(is_NoMem(addr->mem));
-		assert(am.addr.offset == 0);
-		assert(am.addr.symconst_ent == NULL);
-		return am.new_op2;
-	}
-
 	new_node = create_Conv_I2I(dbgi, new_block, addr->base, addr->index,
-			addr->mem, am.new_op2, smaller_mode);
+			addr->mem, am.new_op2, src_mode);
 	set_am_attributes(new_node, &am);
 	/* match_arguments assume that out-mode = in-mode, this isn't true here
 	 * so fix it */
-	set_ia32_ls_mode(new_node, smaller_mode);
+	set_ia32_ls_mode(new_node, src_mode);
 	SET_IA32_ORIG_NODE(new_node, node);
 	new_node = fix_mem_proj(new_node, &am);
 	return new_node;
@@ -3936,7 +3860,7 @@ static ir_node *gen_Conv(ir_node *node)
 			return be_transform_node(op);
 		} else {
 			/* to int */
-			if (src_bits == tgt_bits) {
+			if (src_bits >= tgt_bits) {
 				DB((dbg, LEVEL_1, "omitting unnecessary Conv(%+F, %+F) ...",
 				    src_mode, tgt_mode));
 				return be_transform_node(op);
@@ -5729,6 +5653,8 @@ static void register_transformers(void)
 	be_set_transform_function(op_Switch,           gen_Switch);
 	be_set_transform_function(op_SymConst,         gen_SymConst);
 	be_set_transform_function(op_Unknown,          ia32_gen_Unknown);
+
+	be_set_upper_bits_clean_function(op_Mux, ia32_mux_upper_bits_clean);
 }
 
 /**

@@ -143,25 +143,6 @@ static ir_node *transform_end(ir_node *node)
 	return new_end;
 }
 
-void be_start_transform_setup(void)
-{
-	ir_clear_opcodes_generic_func();
-
-	be_set_transform_function(op_Bad,         be_duplicate_node);
-	be_set_transform_function(op_be_Copy,     be_duplicate_node);
-	be_set_transform_function(op_be_CopyKeep, be_duplicate_node);
-	be_set_transform_function(op_be_IncSP,    be_duplicate_node);
-	be_set_transform_function(op_be_Keep,     be_duplicate_node);
-	be_set_transform_function(op_be_Return,   be_duplicate_node);
-	be_set_transform_function(op_be_Start,    be_duplicate_node);
-	be_set_transform_function(op_Block,       transform_block);
-	be_set_transform_function(op_End,         transform_end);
-	be_set_transform_function(op_NoMem,       be_duplicate_node);
-	be_set_transform_function(op_Pin,         be_duplicate_node);
-	be_set_transform_function(op_Start,       be_duplicate_node);
-	be_set_transform_function(op_Sync,        be_duplicate_node);
-}
-
 ir_node *be_duplicate_node(ir_node *node)
 {
 	ir_node  *block = be_transform_node(get_nodes_block(node));
@@ -400,4 +381,145 @@ void be_transform_graph(ir_graph *irg, arch_pretrans_nodes *func)
 
 	/* recalculate edges */
 	edges_activate(irg);
+}
+
+bool be_upper_bits_clean(const ir_node *node, ir_mode *mode)
+{
+	ir_op *op = get_irn_op(node);
+	if (op->ops.generic1 == NULL)
+		return false;
+	upper_bits_clean_func func = (upper_bits_clean_func)op->ops.generic1;
+	return func(node, mode);
+}
+
+static bool bit_binop_upper_bits_clean(const ir_node *node, ir_mode *mode)
+{
+	return be_upper_bits_clean(get_binop_left(node), mode)
+	    && be_upper_bits_clean(get_binop_right(node), mode);
+}
+
+static bool mux_upper_bits_clean(const ir_node *node, ir_mode *mode)
+{
+	return be_upper_bits_clean(get_Mux_true(node), mode)
+	    && be_upper_bits_clean(get_Mux_false(node), mode);
+}
+
+static bool and_upper_bits_clean(const ir_node *node, ir_mode *mode)
+{
+	if (!mode_is_signed(mode)) {
+		return be_upper_bits_clean(get_And_left(node), mode)
+		    || be_upper_bits_clean(get_And_right(node), mode);
+	} else {
+		return bit_binop_upper_bits_clean(node, mode);
+	}
+}
+
+static bool shr_upper_bits_clean(const ir_node *node, ir_mode *mode)
+{
+	if (mode_is_signed(mode)) {
+		/* TODO */
+		return false;
+	} else {
+		const ir_node *right = get_Shr_right(node);
+		if (is_Const(right)) {
+			ir_tarval *tv  = get_Const_tarval(right);
+			long       val = get_tarval_long(tv);
+			if (val >= 32 - (long)get_mode_size_bits(mode))
+				return true;
+		}
+		return be_upper_bits_clean(get_Shr_left(node), mode);
+	}
+}
+
+static bool shrs_upper_bits_clean(const ir_node *node, ir_mode *mode)
+{
+	return be_upper_bits_clean(get_Shrs_left(node), mode);
+}
+
+static bool const_upper_bits_clean(const ir_node *node, ir_mode *mode)
+{
+	ir_tarval *tv  = get_Const_tarval(node);
+	long       val = get_tarval_long(tv);
+	if (mode_is_signed(mode)) {
+		long    shifted = val >> (get_mode_size_bits(mode)-1);
+		return shifted == 0 || shifted == -1;
+	} else {
+		unsigned long shifted = (unsigned long)val;
+		shifted >>= get_mode_size_bits(mode)-1;
+		shifted >>= 1;
+		return shifted == 0;
+	}
+}
+
+static bool conv_upper_bits_clean(const ir_node *node, ir_mode *mode)
+{
+	ir_mode       *dest_mode = get_irn_mode(node);
+	const ir_node *op        = get_Conv_op(node);
+	ir_mode       *src_mode  = get_irn_mode(op);
+	if (mode_is_float(src_mode))
+		return true;
+
+	unsigned src_bits  = get_mode_size_bits(src_mode);
+	unsigned dest_bits = get_mode_size_bits(dest_mode);
+	/* downconvs are a nop */
+	if (src_bits >= dest_bits)
+		return be_upper_bits_clean(op, mode);
+	/* upconvs are fine if src is big enough or if sign matches */
+	if (src_bits <= get_mode_size_bits(mode)
+		&& mode_is_signed(src_mode) == mode_is_signed(mode))
+		return true;
+	return false;
+}
+
+static bool proj_upper_bits_clean(const ir_node *node, ir_mode *mode)
+{
+	const ir_node *pred = get_Proj_pred(node);
+	switch (get_irn_opcode(pred)) {
+	case iro_Load: {
+		ir_mode *load_mode = get_Load_mode(pred);
+		unsigned load_bits = get_mode_size_bits(load_mode);
+		if (load_bits > get_mode_size_bits(mode))
+			return false;
+		if (mode_is_signed(load_mode) != mode_is_signed(mode))
+			return false;
+		return true;
+	}
+	default:
+		break;
+	}
+	return false;
+}
+
+void be_set_upper_bits_clean_function(ir_op *op, upper_bits_clean_func func)
+{
+	op->ops.generic1 = (op_func)func;
+}
+
+void be_start_transform_setup(void)
+{
+	ir_clear_opcodes_generic_func();
+
+	be_set_transform_function(op_Bad,         be_duplicate_node);
+	be_set_transform_function(op_be_Copy,     be_duplicate_node);
+	be_set_transform_function(op_be_CopyKeep, be_duplicate_node);
+	be_set_transform_function(op_be_IncSP,    be_duplicate_node);
+	be_set_transform_function(op_be_Keep,     be_duplicate_node);
+	be_set_transform_function(op_be_Return,   be_duplicate_node);
+	be_set_transform_function(op_be_Start,    be_duplicate_node);
+	be_set_transform_function(op_Block,       transform_block);
+	be_set_transform_function(op_End,         transform_end);
+	be_set_transform_function(op_NoMem,       be_duplicate_node);
+	be_set_transform_function(op_Pin,         be_duplicate_node);
+	be_set_transform_function(op_Start,       be_duplicate_node);
+	be_set_transform_function(op_Sync,        be_duplicate_node);
+
+	be_set_upper_bits_clean_function(op_And,   and_upper_bits_clean);
+	be_set_upper_bits_clean_function(op_Const, const_upper_bits_clean);
+	be_set_upper_bits_clean_function(op_Conv,  conv_upper_bits_clean);
+	be_set_upper_bits_clean_function(op_Eor,   bit_binop_upper_bits_clean);
+	be_set_upper_bits_clean_function(op_Mux,   mux_upper_bits_clean);
+	be_set_upper_bits_clean_function(op_Or,    bit_binop_upper_bits_clean);
+	be_set_upper_bits_clean_function(op_Proj,  proj_upper_bits_clean);
+	be_set_upper_bits_clean_function(op_Shr,   shr_upper_bits_clean);
+	be_set_upper_bits_clean_function(op_Shrs,  shrs_upper_bits_clean);
 }
