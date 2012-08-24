@@ -435,9 +435,9 @@ undefined:
 						ir_tarval* const rzn = tarval_or(rz, tarval_neg(rz));
 						// Concatenate safe lower zeroes.
 						if (tarval_cmp(lzn, rzn) == ir_relation_less) {
-							z = tarval_mul(tarval_eor(lzn, tarval_shl(lzn, get_tarval_one(m))), rzn);
+							z = tarval_mul(tarval_eor(lzn, tarval_shl_unsigned(lzn, 1)), rzn);
 						} else {
-							z = tarval_mul(tarval_eor(rzn, tarval_shl(rzn, get_tarval_one(m))), lzn);
+							z = tarval_mul(tarval_eor(rzn, tarval_shl_unsigned(rzn, 1)), lzn);
 						}
 						o = get_tarval_null(m);
 					}

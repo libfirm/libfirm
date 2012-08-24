@@ -111,7 +111,6 @@ typedef struct lower_dw_env_t {
 	ir_graph      *irg;
 	struct obstack obst;           /**< an obstack holding the temporary data */
 	ir_tarval *tv_mode_bytes;      /**< a tarval containing the number of bytes in the lowered modes */
-	ir_tarval *tv_mode_bits;       /**< a tarval containing the number of bits in the lowered modes */
 	pdeq      *waitq;              /**< a wait queue of all nodes that must be handled later */
 	ir_node  **lowered_phis;       /**< list of lowered phis */
 	ir_mode   *high_signed;        /**< doubleword signed type */
@@ -355,7 +354,7 @@ static void lower_Const(ir_node *node, ir_mode *mode)
 	ir_tarval *tv       = get_Const_tarval(node);
 	ir_tarval *tv_l     = tarval_convert_to(tv, low_mode);
 	ir_node   *res_low  = new_rd_Const(dbg, irg, tv_l);
-	ir_tarval *tv_shrs  = tarval_shrs(tv, env->tv_mode_bits);
+	ir_tarval *tv_shrs  = tarval_shrs_unsigned(tv, get_mode_size_bits(low_mode));
 	ir_tarval *tv_h     = tarval_convert_to(tv_shrs, mode);
 	ir_node   *res_high = new_rd_Const(dbg, irg, tv_h);
 
@@ -3160,7 +3159,6 @@ void ir_lower_dw_ops(void)
 	}
 
 	lenv.tv_mode_bytes = new_tarval_from_long(param->doubleword_size/(2*8), lenv.low_unsigned);
-	lenv.tv_mode_bits  = new_tarval_from_long(param->doubleword_size/2, lenv.low_unsigned);
 	lenv.waitq         = new_pdeq();
 	lenv.first_id      = new_id_from_chars(param->little_endian ? ".l" : ".h", 2);
 	lenv.next_id       = new_id_from_chars(param->little_endian ? ".h" : ".l", 2);

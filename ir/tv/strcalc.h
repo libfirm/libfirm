@@ -168,6 +168,11 @@ void sc_shrI(const void *val1, long shift_cnt, int bitsize, int sign, void *buff
 void sc_shr(const void *value1, const void *value2, int bitsize, int sign, void *buffer);
 
 /**
+ * buffer = value1 >>s offset
+ */
+void sc_shrsI(const void *val1, long shift_cnt, int bitsize, int sign, void *buffer);
+
+/**
  * buffer = value1 >>s value2
  */
 void sc_shrs(const void *value1, const void *value2, int bitsize, int sign, void *buffer);

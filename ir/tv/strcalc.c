@@ -1566,6 +1566,20 @@ void sc_shr(const void *val1, const void *val2, int bitsize, int sign, void *buf
 	sc_shrI(val1, shift_cnt, bitsize, sign, buffer);
 }
 
+void sc_shrsI(const void *val1, long shift_cnt, int bitsize, int sign, void *buffer)
+{
+	carry_flag = 0;
+
+	DEBUGPRINTF_COMPUTATION(("%s >>s %ld ", sc_print_hex(value1), shift_cnt));
+	do_shr((const char*) val1, calc_buffer, shift_cnt, bitsize, sign, 1);
+
+	DEBUGPRINTF_COMPUTATION(("-> %s\n", sc_print_hex(calc_buffer)));
+
+	if ((buffer != NULL) && (buffer != calc_buffer)) {
+		memmove(buffer, calc_buffer, calc_buffer_size);
+	}
+}
+
 void sc_shrs(const void *val1, const void *val2, int bitsize, int sign, void *buffer)
 {
 	long offset = sc_val_to_long(val2);

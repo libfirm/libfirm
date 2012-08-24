@@ -1291,6 +1291,17 @@ ir_tarval *tarval_shl(ir_tarval *a, ir_tarval *b)
 	return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 }
 
+ir_tarval *tarval_shl_unsigned(ir_tarval *a, unsigned b)
+{
+	ir_mode *mode   = a->mode;
+	unsigned modulo = get_mode_modulo_shift(mode);
+	if (modulo != 0)
+		b %= modulo;
+	assert((unsigned)(long)b==b);
+	sc_shlI(a->value, (long)b, get_mode_size_bits(mode), mode_is_signed(mode), NULL);
+	return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
+}
+
 /*
  * bitwise unsigned right shift
  */
@@ -1314,6 +1325,17 @@ ir_tarval *tarval_shr(ir_tarval *a, ir_tarval *b)
 	return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 }
 
+ir_tarval *tarval_shr_unsigned(ir_tarval *a, unsigned b)
+{
+	ir_mode *mode   = a->mode;
+	unsigned modulo = get_mode_modulo_shift(mode);
+	if (modulo != 0)
+		b %= modulo;
+	assert((unsigned)(long)b==b);
+	sc_shrI(a->value, (long)b, get_mode_size_bits(mode), mode_is_signed(mode), NULL);
+	return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
+}
+
 /*
  * bitwise signed right shift
  */
@@ -1335,6 +1357,17 @@ ir_tarval *tarval_shrs(ir_tarval *a, ir_tarval *b)
 
 	sc_shrs(a->value, temp_val, get_mode_size_bits(a->mode), mode_is_signed(a->mode), NULL);
 	return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
+}
+
+ir_tarval *tarval_shrs_unsigned(ir_tarval *a, unsigned b)
+{
+	ir_mode *mode   = a->mode;
+	unsigned modulo = get_mode_modulo_shift(mode);
+	if (modulo != 0)
+		b %= modulo;
+	assert((unsigned)(long)b==b);
+	sc_shrsI(a->value, (long)b, get_mode_size_bits(mode), mode_is_signed(mode), NULL);
+	return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
 }
 
 /*
