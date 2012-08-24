@@ -5597,6 +5597,26 @@ static ir_node *transform_node_Conv(ir_node *n)
 		}
 	}
 
+	/* shrink mode of load if possible. */
+	if (is_Proj(a)) {
+		ir_node *pred = get_Proj_pred(a);
+		if (is_Load(pred)) {
+			/* only do it if we are the only user (otherwise the risk is too
+			 * great that we end up with 2 loads instead of one). */
+			ir_graph *irg = get_irn_irg(n);
+			if (edges_activated(irg) && get_irn_n_edges(a) == 1) {
+				ir_mode *load_mode = get_Load_mode(pred);
+				if (!mode_is_float(load_mode) && !mode_is_float(mode) &&
+					get_mode_size_bits(mode) <= get_mode_size_bits(load_mode)
+					&& !be_get_backend_param()->byte_order_big_endian) {
+					set_Load_mode(pred, mode);
+					set_irn_mode(a, mode);
+					return a;
+				}
+			}
+		}
+	}
+
 	return n;
 }
 
