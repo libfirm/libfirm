@@ -3187,7 +3187,6 @@ enum setcc_transform_insn {
 	SETCC_TR_NOT,
 	SETCC_TR_AND,
 	SETCC_TR_SET,
-	SETCC_TR_SBB,
 };
 
 typedef struct setcc_transform {
@@ -3522,9 +3521,6 @@ static ir_node *gen_Mux(ir_node *node)
 					break;
 				case SETCC_TR_SET:
 					new_node = create_set_32bit(dbgi, new_block, flags, res.cc, node);
-					break;
-				case SETCC_TR_SBB:
-					new_node = new_bd_ia32_Sbb0(dbgi, new_block, flags);
 					break;
 				default:
 					panic("unknown setcc transform");
