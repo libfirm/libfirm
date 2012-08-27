@@ -112,8 +112,11 @@ void ir_clear_opcodes_generic_func(void)
 
 	for (i = 0; i < n; ++i) {
 		ir_op *op = ir_get_opcode(i);
-		if (op != NULL)
-			op->ops.generic = (op_func)NULL;
+		if (op == NULL)
+			continue;
+		op->ops.generic  = (op_func)NULL;
+		op->ops.generic1 = (op_func)NULL;
+		op->ops.generic2 = (op_func)NULL;
 	}
 }
 

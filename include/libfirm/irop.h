@@ -256,6 +256,8 @@ typedef struct {
 	verify_proj_node_func verify_proj_node;     /**< Verify the Proj node. */
 	dump_node_func        dump_node;            /**< Dump a node. */
 	op_func               generic;              /**< A generic function pointer. */
+	op_func               generic1;             /**< A generic function pointer. */
+	op_func               generic2;             /**< A generic function pointer. */
 	const arch_irn_ops_t *be_ops;               /**< callbacks used by the backend. */
 } ir_op_ops;
 
