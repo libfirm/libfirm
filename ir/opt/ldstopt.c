@@ -1487,6 +1487,44 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 	return res | DF_CHANGED;
 }  /* optimize_phi */
 
+static int optimize_conv_load(ir_node *conv)
+{
+	ir_node *op = get_Conv_op(conv);
+	if (!is_Proj(op))
+		return 0;
+	if (get_irn_n_edges(op) > 1)
+		return 0;
+	/* shrink mode of load if possible. */
+	ir_node *load = get_Proj_pred(op);
+	if (!is_Load(load))
+		return 0;
+
+	/* only do it if we are the only user (otherwise the risk is too
+	 * great that we end up with 2 loads instead of one). */
+	ir_mode *mode      = get_irn_mode(conv);
+	ir_mode *load_mode = get_Load_mode(load);
+	int      bits_diff
+		= get_mode_size_bits(load_mode) - get_mode_size_bits(mode);
+	if (mode_is_float(load_mode) || mode_is_float(mode) || bits_diff < 0)
+	    return 0;
+
+	if (be_get_backend_param()->byte_order_big_endian) {
+		if (bits_diff % 8 != 0)
+			return 0;
+		ir_graph *irg   = get_irn_irg(conv);
+		ir_node  *ptr   = get_Load_ptr(load);
+		ir_mode  *mode  = get_irn_mode(ptr);
+		ir_node  *delta = new_r_Const_long(irg, mode, bits_diff/8);
+		ir_node  *block = get_nodes_block(load);
+		ir_node  *add   = new_r_Add(block, ptr, delta, mode);
+		set_Load_ptr(load, add);
+	}
+	set_Load_mode(load, mode);
+	set_irn_mode(op, mode);
+	exchange(conv, op);
+	return DF_CHANGED;
+}
+
 /**
  * walker, do the optimizations
  */
@@ -1506,6 +1544,10 @@ static void do_load_store_optimize(ir_node *n, void *env)
 
 	case iro_Phi:
 		wenv->changes |= optimize_phi(n, wenv);
+		break;
+
+	case iro_Conv:
+		wenv->changes |= optimize_conv_load(n);
 		break;
 
 	default:
