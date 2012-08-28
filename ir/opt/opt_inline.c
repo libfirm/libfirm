@@ -1248,10 +1248,10 @@ ir_prog_pass_t *inline_leaf_functions_pass(
  */
 static unsigned calc_method_local_weight(ir_node *arg)
 {
-	int      i, j, k;
+	int      j;
 	unsigned v, weight = 0;
 
-	for (i = get_irn_n_outs(arg) - 1; i >= 0; --i) {
+	for (unsigned i = get_irn_n_outs(arg); i-- > 0; ) {
 		ir_node *succ = get_irn_out(arg, i);
 
 		switch (get_irn_opcode(succ)) {
@@ -1285,7 +1285,7 @@ static unsigned calc_method_local_weight(ir_node *arg)
 				ir_node *pred = get_Tuple_pred(succ, j);
 				if (pred == arg) {
 					/* look for Proj(j) */
-					for (k = get_irn_n_outs(succ) - 1; k >= 0; --k) {
+					for (unsigned k = get_irn_n_outs(succ); k-- > 0; ) {
 						ir_node *succ_succ = get_irn_out(succ, k);
 						if (is_Proj(succ_succ)) {
 							if (get_Proj_proj(succ_succ) == j) {
@@ -1316,7 +1316,6 @@ static void analyze_irg_local_weights(inline_irg_env *env, ir_graph *irg)
 	ir_entity *ent = get_irg_entity(irg);
 	ir_type  *mtp;
 	size_t   nparams;
-	int      i;
 	long     proj_nr;
 	ir_node  *irg_args, *arg;
 
@@ -1332,7 +1331,7 @@ static void analyze_irg_local_weights(inline_irg_env *env, ir_graph *irg)
 
 	assure_irg_outs(irg);
 	irg_args = get_irg_args(irg);
-	for (i = get_irn_n_outs(irg_args) - 1; i >= 0; --i) {
+	for (unsigned i = get_irn_n_outs(irg_args); i-- > 0; ) {
 		arg     = get_irn_out(irg_args, i);
 		proj_nr = get_Proj_proj(arg);
 		env->local_weights[proj_nr] = calc_method_local_weight(arg);

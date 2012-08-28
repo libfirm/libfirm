@@ -168,7 +168,6 @@ ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
 
 	res->in[0]   = block;
 	set_irn_dbg_info(res, db);
-	res->out     = NULL;
 	res->node_nr = get_irp_new_node_nr();
 
 	for (i = 0; i < EDGE_KIND_LAST; ++i) {

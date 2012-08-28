@@ -301,13 +301,12 @@ static void set_preds(ir_node *irn, void *env)
 static ir_node *get_irg_arg(ir_graph *irg, size_t pos)
 {
 	ir_node *irg_args = get_irg_args(irg), *arg = NULL;
-	int i;
 
 	/* Call algorithm that computes the out edges */
 	assure_irg_outs(irg);
 
 	/* Search the argument with the number pos.*/
-	for (i = get_irn_n_outs(irg_args) - 1; i >= 0; --i) {
+	for (unsigned i = get_irn_n_outs(irg_args); i-- > 0; ) {
 		ir_node *proj = get_irn_out(irg_args, i);
 		if ((int)pos == get_Proj_proj(proj)) {
 			if (arg) {

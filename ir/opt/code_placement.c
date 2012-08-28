@@ -266,9 +266,7 @@ static void move_out_of_loops(ir_node *n, ir_node *early)
  */
 static ir_node *get_deepest_common_dom_ancestor(ir_node *node, ir_node *dca)
 {
-	int i;
-
-	for (i = get_irn_n_outs(node) - 1; i >= 0; --i) {
+	for (unsigned i = get_irn_n_outs(node); i-- > 0; ) {
 		ir_node *succ = get_irn_out(node, i);
 
 		/* keepalive edges are special and don't respect the dominance */
@@ -295,9 +293,7 @@ static ir_node *get_deepest_common_dom_ancestor(ir_node *node, ir_node *dca)
  */
 static void set_projs_block(ir_node *node, ir_node *block)
 {
-	int i;
-
-	for (i = get_irn_n_outs(node) - 1; i >= 0; --i) {
+	for (unsigned i = get_irn_n_outs(node); i-- > 0; ) {
 		ir_node *succ = get_irn_out(node, i);
 
 		assert(is_Proj(succ));
@@ -319,18 +315,16 @@ static void set_projs_block(ir_node *node, ir_node *block)
  */
 static void place_floats_late(ir_node *n, pdeq *worklist)
 {
-	int      n_outs;
-	int      i;
 	ir_node *block;
 	ir_node *dca;
 
 	if (irn_visited_else_mark(n))
 		return;
 
-	n_outs = get_irn_n_outs(n);
+	unsigned n_outs = get_irn_n_outs(n);
 	/* break cycles at pinned nodes (see place place_floats_early) as to why */
 	if (get_irn_pinned(n) != op_pin_state_floats) {
-		for (i = 0; i < n_outs; ++i) {
+		for (unsigned i = 0; i < n_outs; ++i) {
 			ir_node *succ = get_irn_out(n, i);
 			pdeq_putr(worklist, succ);
 		}
@@ -338,7 +332,7 @@ static void place_floats_late(ir_node *n, pdeq *worklist)
 	}
 
 	/* place our users */
-	for (i = 0; i < n_outs; ++i) {
+	for (unsigned i = 0; i < n_outs; ++i) {
 		ir_node *succ = get_irn_out(n, i);
 		place_floats_late(succ, worklist);
 	}
