@@ -100,16 +100,12 @@ FIRM_API int get_irn_outs_computed(const ir_node *node);
  * "op_pin_state_floats".   Optimizes Tuple nodes.
  */
 FIRM_API void compute_irg_outs(ir_graph *irg);
-/** Recomputes out edges for each graph where it is necessary */
-FIRM_API void compute_irp_outs(void);
 
 /** Recomputes out edges if necessary */
 FIRM_API void assure_irg_outs(ir_graph *irg);
 
 /** Frees memory occupied by out edges datastructures */
 FIRM_API void free_irg_outs(ir_graph *irg);
-/** Frees memory occupied by out edges datastructures in the whole program */
-FIRM_API void free_irp_outs(void);
 
 /** @} */
 

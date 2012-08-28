@@ -417,20 +417,6 @@ void assure_irg_outs(ir_graph *irg)
 		compute_irg_outs(irg);
 }
 
-void compute_irp_outs(void)
-{
-	size_t n = get_irp_n_irgs();
-	for (size_t i = 0; i < n; ++i)
-		compute_irg_outs(get_irp_irg(i));
-}
-
-void free_irp_outs(void)
-{
-	size_t n = get_irp_n_irgs();
-	for (size_t i = 0; i < n; ++i)
-		free_irg_outs(get_irp_irg(i));
-}
-
 #ifdef DEBUG_libfirm
 /** Clear the outs of a node */
 static void reset_outs(ir_node *node, void *unused)
