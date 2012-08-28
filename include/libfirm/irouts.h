@@ -87,13 +87,6 @@ FIRM_API void irg_out_block_walk(ir_node *node, irg_walk_func *pre,
                                  irg_walk_func *post, void *env);
 
 /**
- * Returns 1 if outs have been computed for a node, 0 otherwise.
- *
- * this is useful to detect newly created nodes that have no outs set yet
- */
-FIRM_API int get_irn_outs_computed(const ir_node *node);
-
-/**
  * Computes the out edges.  Sets a flag in irg to "outs_consistent".  If the
  * graph is changed this flag must be set to "outs_inconsistent".  Computes
  * out edges from block to floating nodes even if graph is in state

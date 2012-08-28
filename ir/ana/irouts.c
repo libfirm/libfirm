@@ -38,11 +38,6 @@
 #include "error.h"
 #include "ircons.h"
 
-int get_irn_outs_computed(const ir_node *node)
-{
-	return node->out != NULL;
-}
-
 int get_irn_n_outs(const ir_node *node)
 {
 	assert(node->kind == k_ir_node);
