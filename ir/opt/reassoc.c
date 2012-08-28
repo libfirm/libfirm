@@ -43,8 +43,6 @@
 #include "debug.h"
 #include "irpass.h"
 
-//#define NEW_REASSOC
-
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 typedef enum {
@@ -205,8 +203,6 @@ static ir_mode *get_mode_from_ops(ir_node *op1, ir_node *op2)
 	return m1;
 }  /* get_mode_from_ops */
 
-#ifndef NEW_REASSOC
-
 /**
  * reassociate a commutative Binop
  *
@@ -354,136 +350,6 @@ static int reassoc_commutative(ir_node **node)
 	}
 	return 0;
 }  /* reassoc_commutative */
-
-#else
-
-static ir_op          *commutative_op;
-static ir_node        *commutative_block;
-static struct obstack  commutative_args;
-
-static void collect_args(ir_node *node)
-{
-	ir_node *left  = get_binop_left(node);
-	ir_node *right = get_binop_right(node);
-
-	if (get_irn_op(left) == commutative_op
-			&& (!get_irn_outs_computed(left) || get_irn_n_outs(left) == 1)) {
-		collect_args(left);
-	} else {
-		obstack_ptr_grow(&commutative_args, left);
-	}
-
-	if (get_irn_op(right) == commutative_op
-			&& (!get_irn_outs_computed(right) || get_irn_n_outs(right) == 1)) {
-		collect_args(right);
-	} else {
-		obstack_ptr_grow(&commutative_args, right);
-	}
-
-#ifndef NDEBUG
-	{
-		ir_mode *mode = get_irn_mode(node);
-		if (is_Add(node) && mode_is_reference(mode)) {
-			assert(get_irn_mode(left) == mode || get_irn_mode(right) == mode);
-		} else {
-			assert(get_irn_mode(left) == mode);
-			assert(get_irn_mode(right) == mode);
-		}
-	}
-#endif
-}
-
-static int compare_nodes(const ir_node *node1, const ir_node *node2)
-{
-	const_class_t class1 = get_const_class(node1, commutative_block);
-	const_class_t class2 = get_const_class(node2, commutative_block);
-
-	if (class1 == class2)
-		return 0;
-	// return get_irn_idx(node1) - get_irn_idx(node2);
-
-	if (class1 < class2)
-		return -1;
-
-	assert(class1 > class2);
-	return 1;
-}
-
-static int compare_node_ptr(const void *e1, const void *e2)
-{
-	const ir_node *node1  = *((const ir_node *const*) e1);
-	const ir_node *node2  = *((const ir_node *const*) e2);
-	return compare_nodes(node1, node2);
-}
-
-static int reassoc_commutative(ir_node **n)
-{
-	int       i;
-	int       n_args;
-	ir_node  *last;
-	ir_node **args;
-	ir_mode  *mode;
-	ir_node  *node = *n;
-
-	commutative_op    = get_irn_op(node);
-	commutative_block = get_nodes_block(node);
-
-	/* collect all nodes with same op type */
-	collect_args(node);
-
-	n_args = obstack_object_size(&commutative_args) / sizeof(ir_node*);
-	args   = obstack_finish(&commutative_args);
-
-	/* shortcut: in most cases there's nothing to do */
-	if (n_args == 2 && compare_nodes(args[0], args[1]) <= 0) {
-		obstack_free(&commutative_args, args);
-		return 0;
-	}
-
-	/* sort the arguments */
-	qsort(args, n_args, sizeof(ir_node*), compare_node_ptr);
-
-	/* build new tree */
-	last = args[n_args-1];
-	mode = get_irn_mode(last);
-	for (i = n_args-2; i >= 0; --i) {
-		ir_mode *mode_right;
-		ir_node *new_node;
-		ir_node *in[2];
-		ir_graph *irg = get_irn_irg(last);
-
-		in[0] = last;
-		in[1] = args[i];
-
-		/* AddP violates the assumption that all modes in args are equal...
-		 * we need some hacks to cope with this */
-		mode_right = get_irn_mode(in[1]);
-		if (mode_is_reference(mode_right)) {
-			assert(is_Add(node) && mode_is_reference(get_irn_mode(node)));
-			mode = get_irn_mode(in[1]);
-		}
-		if (mode_right != mode) {
-			assert(is_Add(node) && mode_is_reference(get_irn_mode(node)));
-			in[1] = new_r_Conv(irg, commutative_block,in[1], mode);
-		}
-
-		/* TODO: produce useful debug info! */
-		new_node = new_ir_node(NULL, irg, commutative_block,
-		                       commutative_op, mode, 2, in);
-		new_node = optimize_node(new_node);
-		last     = new_node;
-	}
-
-	/* CSE often returns the old node again, only exchange if needed */
-	if (last != node) {
-		exchange(node, last);
-		*n = last;
-		return 1;
-	}
-	return 0;
-}
-
-#endif
 
 #define reassoc_Add  reassoc_commutative
 #define reassoc_And  reassoc_commutative
@@ -925,11 +791,6 @@ void optimize_reassociation(ir_graph *irg)
 		IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
 		| IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 
-#ifdef NEW_REASSOC
-	assire_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
-	obstack_init(&commutative_args);
-#endif
-
 	waitq *const wq = new_waitq();
 
 	/* disable some optimizations while reassoc is running to prevent endless loops */
@@ -943,10 +804,6 @@ void optimize_reassociation(ir_graph *irg)
 		irg_walk_graph(irg, NULL, reverse_rules, NULL);
 	}
 	set_reassoc_running(0);
-
-#ifdef NEW_REASSOC
-	obstack_free(&commutative_args, NULL);
-#endif
 
 	del_waitq(wq);
 
