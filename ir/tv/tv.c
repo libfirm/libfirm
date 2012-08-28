@@ -1474,7 +1474,16 @@ int tarval_snprintf(char *buf, size_t len, ir_tarval *tv)
 		}
 
 	default:
-		return snprintf(buf, len, "<TV_??""?>");
+		if (tv == tarval_bad)
+			return snprintf(buf, len, "<TV_BAD>");
+		else if (tv == tarval_undefined)
+			return snprintf(buf, len, "<TV_UNDEFINED>");
+		else if (tv == tarval_reachable)
+			return snprintf(buf, len, "<TV_REACHABLE>");
+		else if (tv == tarval_unreachable)
+			return snprintf(buf, len, "<TV_UNREACHABLE>");
+		else
+			return snprintf(buf, len, "<TV_??""?>");
 	}
 }
 
