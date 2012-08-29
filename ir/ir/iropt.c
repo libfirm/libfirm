@@ -6099,23 +6099,28 @@ static ir_node *transform_node_Sync(ir_node *n)
 
 static ir_node *transform_node_Load(ir_node *n)
 {
-	/* if our memory predecessor is a load from the same address, then reuse the
-	 * previous result */
-	ir_node *mem = get_Load_mem(n);
-	ir_node *mem_pred;
-
-	if (!is_Proj(mem))
-		return n;
 	/* don't touch volatile loads */
 	if (get_Load_volatility(n) == volatility_is_volatile)
 		return n;
-	mem_pred = get_Proj_pred(mem);
+
+	ir_node *ptr = get_Load_ptr(n);
+	const ir_node *confirm;
+	if (value_not_zero(ptr, &confirm) && confirm == NULL) {
+		set_irn_pinned(n, op_pin_state_floats);
+	}
+
+	/* if our memory predecessor is a load from the same address, then reuse the
+	 * previous result */
+	ir_node *mem = get_Load_mem(n);
+	if (!is_Proj(mem))
+		return n;
+	ir_node *mem_pred = get_Proj_pred(mem);
 	if (is_Load(mem_pred)) {
 		ir_node *pred_load = mem_pred;
 
 		/* conservatively compare the 2 loads. TODO: This could be less strict
 		 * with fixup code in some situations (like smaller/bigger modes) */
-		if (get_Load_ptr(pred_load) != get_Load_ptr(n))
+		if (get_Load_ptr(pred_load) != ptr)
 			return n;
 		if (get_Load_mode(pred_load) != get_Load_mode(n))
 			return n;
@@ -6136,7 +6141,7 @@ static ir_node *transform_node_Load(ir_node *n)
 		ir_node *pred_store = mem_pred;
 		ir_node *value      = get_Store_value(pred_store);
 
-		if (get_Store_ptr(pred_store) != get_Load_ptr(n))
+		if (get_Store_ptr(pred_store) != ptr)
 			return n;
 		if (get_irn_mode(value) != get_Load_mode(n))
 			return n;
@@ -6154,6 +6159,20 @@ static ir_node *transform_node_Load(ir_node *n)
 		}
 	}
 
+	return n;
+}
+
+static ir_node *transform_node_Store(ir_node *n)
+{
+	/* don't touch volatile stores */
+	if (get_Store_volatility(n) == volatility_is_volatile)
+		return n;
+
+	ir_node *ptr = get_Store_ptr(n);
+	const ir_node *confirm;
+	if (value_not_zero(ptr, &confirm) && confirm == NULL) {
+		set_irn_pinned(n, op_pin_state_floats);
+	}
 	return n;
 }
 
@@ -6398,6 +6417,7 @@ void ir_register_opt_node_ops(void)
 	register_transform_node_func(op_Shl,    transform_node_Shl);
 	register_transform_node_func(op_Shrs,   transform_node_Shrs);
 	register_transform_node_func(op_Shr,    transform_node_Shr);
+	register_transform_node_func(op_Store,  transform_node_Store);
 	register_transform_node_func(op_Sub,    transform_node_Sub);
 	register_transform_node_func(op_Switch, transform_node_Switch);
 	register_transform_node_func(op_Sync,   transform_node_Sync);
