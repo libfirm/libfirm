@@ -606,7 +606,7 @@ static void sort_irn_outs(node_t *node)
 	unsigned n_outs = get_irn_n_outs(irn);
 	qsort(irn->o.out->edges, n_outs, sizeof(irn->o.out->edges[0]),
 		  cmp_def_use_edge);
-	node->max_user_input = irn->o.out->edges[n_outs-1].pos;
+	node->max_user_input = n_outs > 0 ? irn->o.out->edges[n_outs-1].pos : -1;
 }  /* sort_irn_outs */
 
 /**
