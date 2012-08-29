@@ -120,8 +120,10 @@ int value_not_zero(const ir_node *n, const ir_node **confirm)
 		 * without the fear that is might be hidden by a further Confirm.
 		 */
 		tv = value_of(get_Confirm_bound(n));
-		if (tv == tarval_bad)
-			return 0;
+		if (tv == tarval_bad) {
+			n = get_Confirm_value(n);
+			continue;
+		}
 
 		relation = tarval_cmp(tv, get_mode_null(mode));
 
@@ -151,10 +153,13 @@ int value_not_zero(const ir_node *n, const ir_node **confirm)
 		}
 		n = get_Confirm_value(n);
 	}
-	tv = value_of(n);
+	/* global entities are never NULL */
+	if (is_SymConst_addr_ent(n))
+		return true;
 
+	tv = value_of(n);
 	if (tv == tarval_bad)
-		return 0;
+		return false;
 
 	relation = tarval_cmp(tv, get_mode_null(mode));
 
