@@ -165,9 +165,6 @@ static unsigned update_exc(ldst_info_t *info, ir_node *block, int pos)
 	return 0;
 }  /* update_exc */
 
-/** Return the number of uses of an address node */
-#define get_irn_n_uses(adr)     get_irn_n_edges(adr)
-
 /**
  * walker, collects all Load/Store/Proj nodes
  *
@@ -1046,7 +1043,7 @@ static unsigned optimize_load(ir_node *load)
 
 	/* Check, if the address of this load is used more than once.
 	 * If not, more load cannot be removed in any case. */
-	if (get_irn_n_uses(ptr) <= 1 && get_irn_n_uses(get_base_and_offset(ptr, &dummy)) <= 1)
+	if (get_irn_n_edges(ptr) <= 1 && get_irn_n_edges(get_base_and_offset(ptr, &dummy)) <= 1)
 		return res;
 
 	/*
@@ -1278,7 +1275,7 @@ static unsigned optimize_store(ir_node *store)
 
 	/* Check, if the address of this Store is used more than once.
 	 * If not, this Store cannot be removed in any case. */
-	if (get_irn_n_uses(ptr) <= 1)
+	if (get_irn_n_edges(ptr) <= 1)
 		return 0;
 
 	mem = get_Store_mem(store);
@@ -1288,6 +1285,22 @@ static unsigned optimize_store(ir_node *store)
 
 	return follow_Mem_chain_for_Store(store, skip_Proj(mem));
 }  /* optimize_store */
+
+/* check if a node has more than one real user. Keepalive edges do not count as
+ * real users */
+static bool has_multiple_users(const ir_node *node)
+{
+	unsigned real_users = 0;
+	foreach_out_edge(node, edge) {
+		ir_node *user = get_edge_src_irn(edge);
+		if (is_End(user))
+			continue;
+		++real_users;
+		if (real_users > 1)
+			return true;
+	}
+	return false;
+}
 
 /**
  * walker, optimizes Phi after Stores to identical places:
@@ -1333,7 +1346,7 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 
 	/* must be only one user */
 	projM = get_Phi_pred(phi, 0);
-	if (get_irn_n_edges(projM) != 1)
+	if (has_multiple_users(projM))
 		return 0;
 
 	store = skip_Proj(projM);
@@ -1364,7 +1377,7 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 	for (i = 1; i < n; ++i) {
 		ir_node *pred = get_Phi_pred(phi, i);
 
-		if (get_irn_n_edges(pred) != 1)
+		if (has_multiple_users(pred))
 			return 0;
 
 		pred = skip_Proj(pred);
@@ -1492,7 +1505,7 @@ static int optimize_conv_load(ir_node *conv)
 	ir_node *op = get_Conv_op(conv);
 	if (!is_Proj(op))
 		return 0;
-	if (get_irn_n_edges(op) > 1)
+	if (has_multiple_users(op))
 		return 0;
 	/* shrink mode of load if possible. */
 	ir_node *load = get_Proj_pred(op);
