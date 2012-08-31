@@ -563,6 +563,13 @@ void ir_register_getter_ops(void);
 /** initialize ir_node module */
 void init_irnode(void);
 
+/**
+ * because firm keepalive edges are a broken concept, we have to make sure that
+ * nodes which are only held by a keepalive edges are never moved again.
+ * This function returns true in this case.
+ */
+bool only_used_by_keepalive(const ir_node *node);
+
 /* this section MUST contain all inline functions */
 #define is_ir_node(thing)                     is_ir_node_(thing)
 #define get_irn_arity(node)                   get_irn_arity_(node)

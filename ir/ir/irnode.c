@@ -1577,5 +1577,19 @@ ir_switch_table *ir_switch_table_duplicate(ir_graph *irg,
 	return res;
 }
 
+bool only_used_by_keepalive(const ir_node *node)
+{
+	foreach_out_edge(node, edge) {
+		ir_node *succ = get_edge_src_irn(edge);
+		if (is_End(succ))
+			continue;
+		if (is_Proj(succ) && only_used_by_keepalive(succ))
+			return true;
+		/* found a real user */
+		return false;
+	}
+	return true;
+}
+
 /* include generated code */
 #include "gen_irnode.c.inl"

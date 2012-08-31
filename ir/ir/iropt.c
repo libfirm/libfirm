@@ -6475,6 +6475,10 @@ int identities_cmp(const void *elt, const void *key)
 			if (!block_dominates(block_a, block_b)
 			    && !block_dominates(block_b, block_a))
 			    return 1;
+			/* respect the workaround rule: do not move nodes which are only
+			 * held by keepalive edges */
+			if (only_used_by_keepalive(a) || only_used_by_keepalive(b))
+				return 1;
 		}
 	}
 

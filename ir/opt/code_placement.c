@@ -45,25 +45,6 @@ static bool is_block_reachable(ir_node *block)
 }
 
 /**
- * Firm keepalive edges are broken (the user should really be the endless loop
- * and not the End node.) This wrong place of the user will lead to wrong
- * results in place_early()/place_late(). We work around these problems by not
- * moving nodes which just have keepalive edges as their users (or no users at
- * all)
- */
-static bool float_exceptions(const ir_node *node)
-{
-	foreach_out_edge(node, edge) {
-		ir_node *succ = get_edge_src_irn(edge);
-		if (is_End(succ))
-			continue;
-		/* found a real user */
-		return false;
-	}
-	return true;
-}
-
-/**
  * Find the earliest correct block for node n.  --- Place n into the
  * same Block as its dominance-deepest Input.
  *
@@ -100,7 +81,7 @@ static void place_floats_early(ir_node *n, waitq *worklist)
 	 * This works because in firm each cycle contains a Phi or Block node
 	 * (which are pinned)
 	 */
-	if (get_irn_pinned(n) != op_pin_state_floats || float_exceptions(n)) {
+	if (get_irn_pinned(n) != op_pin_state_floats || only_used_by_keepalive(n)) {
 		/* we can't move pinned nodes */
 		arity = get_irn_arity(n);
 		for (i = 0; i < arity; ++i) {
@@ -302,6 +283,13 @@ static ir_node *get_deepest_common_dom_ancestor(ir_node *node, ir_node *dca)
 			dca = consumer_dom_dca(dca, succ, node);
 		}
 	}
+	/* respect the keepalive rule: if our only user is a keepalive, then we must
+	 * not move the node any further */
+	if (dca == NULL) {
+		assert(only_used_by_keepalive(node));
+		return get_nodes_block(node);
+	}
+
 	foreach_out_edge_kind(node, edge, EDGE_KIND_DEP) {
 		ir_node *succ = get_edge_src_irn(edge);
 		assert(is_block_reachable(get_nodes_block(succ)));
