@@ -47,7 +47,7 @@
 #include "beintlive_t.h"
 #include "belistsched.h"
 
-static int my_values_interfere(const ir_node *a, const ir_node *b);
+static bool my_values_interfere(const ir_node *a, const ir_node *b);
 
 typedef struct be_verify_register_pressure_env_t_ {
 	ir_graph                    *irg;                 /**< the irg to verify */
@@ -166,8 +166,6 @@ static void verify_schedule_walker(ir_node *block, void *data)
 	 *       (except mode_X projs)
 	 */
 	sched_foreach(block, node) {
-		int timestep;
-
 		/* this node is scheduled */
 		if (bitset_is_set(env->scheduled, get_irn_idx(node))) {
 			ir_fprintf(stderr, "Verify warning: %+F appears to be schedule twice\n");
@@ -182,7 +180,7 @@ static void verify_schedule_walker(ir_node *block, void *data)
 		}
 
 		/* Check that timesteps are increasing */
-		timestep = sched_get_time_step(node);
+		int timestep = sched_get_time_step(node);
 		if (timestep <= last_timestep) {
 			ir_fprintf(stderr, "Verify warning: Schedule timestep did not increase at node %+F\n",
 			           node);
@@ -222,13 +220,11 @@ static void verify_schedule_walker(ir_node *block, void *data)
 
 		/* Check that all uses come before their definitions */
 		if (!is_Phi(node)) {
-			int i;
-			int arity;
 			sched_timestep_t nodetime = sched_get_time_step(node);
-			for (i = 0, arity = get_irn_arity(node); i < arity; ++i) {
+			int              arity    = get_irn_arity(node);
+			for (int i = 0; i < arity; ++i) {
 				ir_node *arg = get_irn_n(node, i);
-				if (get_nodes_block(arg) != block
-				   || !sched_is_scheduled(arg))
+				if (get_nodes_block(arg) != block || !sched_is_scheduled(arg))
 					continue;
 
 				if (sched_get_time_step(arg) >= nodetime) {
@@ -249,15 +245,14 @@ static void verify_schedule_walker(ir_node *block, void *data)
 		if (be_is_Keep(node) || be_is_CopyKeep(node)) {
 			/* at least 1 of the keep arguments has to be its schedule
 			 * predecessor */
-			int      arity   = get_irn_arity(node);
-			bool     found   = false;
 			ir_node *prev    = sched_prev(node);
 			while (be_is_Keep(prev) || be_is_CopyKeep(prev))
 				prev = sched_prev(prev);
 
+			int  arity = get_irn_arity(node);
+			bool found = false;
 			while (true) {
-				int i;
-				for (i = 0; i < arity; ++i) {
+				for (int i = 0; i < arity; ++i) {
 					ir_node *in = get_irn_n(node, i);
 					in = skip_Proj(in);
 					if (in == prev)
@@ -309,11 +304,7 @@ int be_verify_schedule(ir_graph *irg)
 	return ! env.problem_found;
 }
 
-
-
 /*--------------------------------------------------------------------------- */
-
-
 
 typedef struct spill_t {
 	ir_node *spill;
@@ -329,28 +320,25 @@ typedef struct {
 
 static int cmp_spill(const void* d1, const void* d2, size_t size)
 {
+	(void) size;
 	const spill_t* s1 = (const spill_t*)d1;
 	const spill_t* s2 = (const spill_t*)d2;
-	(void) size;
-
 	return s1->spill != s2->spill;
 }
 
 static spill_t *find_spill(be_verify_spillslots_env_t *env, ir_node *node)
 {
 	spill_t spill;
-
 	spill.spill = node;
 	return set_find(spill_t, env->spills, &spill, sizeof(spill), hash_ptr(node));
 }
 
 static spill_t *get_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_entity *ent)
 {
-	spill_t spill, *res;
 	int hash = hash_ptr(node);
-
+	spill_t spill;
 	spill.spill = node;
-	res = set_find(spill_t, env->spills, &spill, sizeof(spill), hash);
+	spill_t *res = set_find(spill_t, env->spills, &spill, sizeof(spill), hash);
 
 	if (res == NULL) {
 		spill.ent = ent;
@@ -362,11 +350,9 @@ static spill_t *get_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_ent
 
 static ir_node *get_memory_edge(const ir_node *node)
 {
-	int i, arity;
 	ir_node *result = NULL;
-
-	arity = get_irn_arity(node);
-	for (i = arity - 1; i >= 0; --i) {
+	int      arity  = get_irn_arity(node);
+	for (int i = arity - 1; i >= 0; --i) {
 		ir_node *arg = get_irn_n(node, i);
 		if (get_irn_mode(arg) == mode_M) {
 			assert(result == NULL);
@@ -402,19 +388,12 @@ static void collect_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_nod
 
 static void collect_memperm(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity* ent)
 {
-	int i, arity;
-	spill_t spill, *res;
-	int hash = hash_ptr(node);
-	int out;
-	ir_node* memperm;
-	ir_entity *spillent;
-
 	assert(is_Proj(node));
 
-	memperm = get_Proj_pred(node);
-	out = get_Proj_proj(node);
+	ir_node *memperm = get_Proj_pred(node);
+	int      out     = get_Proj_proj(node);
 
-	spillent = be_get_MemPerm_out_entity(memperm, out);
+	ir_entity *spillent = be_get_MemPerm_out_entity(memperm, out);
 	be_check_entity(env, memperm, spillent);
 	if (spillent != ent) {
 		ir_fprintf(stderr, "Verify warning: MemPerm %+F has different entity than reload %+F in block %+F(%s)\n",
@@ -422,8 +401,10 @@ static void collect_memperm(be_verify_spillslots_env_t *env, ir_node *node, ir_n
 		env->problem_found = 1;
 	}
 
+	int hash = hash_ptr(node);
+	spill_t spill;
 	spill.spill = node;
-	res = set_find(spill_t, env->spills, &spill, sizeof(spill), hash);
+	spill_t *res = set_find(spill_t, env->spills, &spill, sizeof(spill), hash);
 	if (res != NULL) {
 		return;
 	}
@@ -431,7 +412,8 @@ static void collect_memperm(be_verify_spillslots_env_t *env, ir_node *node, ir_n
 	spill.ent = spillent;
 	res = set_insert(spill_t, env->spills, &spill, sizeof(spill), hash);
 
-	for (i = 0, arity = be_get_MemPerm_entity_arity(memperm); i < arity; ++i) {
+	int arity = be_get_MemPerm_entity_arity(memperm);
+	for (int i = 0; i < arity; ++i) {
 		ir_node* arg = get_irn_n(memperm, i + 1);
 		ir_entity* argent = be_get_MemPerm_in_entity(memperm, i);
 
@@ -441,14 +423,12 @@ static void collect_memperm(be_verify_spillslots_env_t *env, ir_node *node, ir_n
 
 static void collect_memphi(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity *ent)
 {
-	int i, arity;
-	spill_t spill, *res;
-	int hash = hash_ptr(node);
-
 	assert(is_Phi(node));
 
+	int hash = hash_ptr(node);
+	spill_t spill;
 	spill.spill = node;
-	res = set_find(spill_t, env->spills, &spill, sizeof(spill), hash);
+	spill_t *res = set_find(spill_t, env->spills, &spill, sizeof(spill), hash);
 	if (res != NULL) {
 		return;
 	}
@@ -457,7 +437,8 @@ static void collect_memphi(be_verify_spillslots_env_t *env, ir_node *node, ir_no
 	res = set_insert(spill_t, env->spills, &spill, sizeof(spill), hash);
 
 	/* is 1 of the arguments a spill? */
-	for (i = 0, arity = get_irn_arity(node); i < arity; ++i) {
+	int arity = get_irn_arity(node);
+	for (int i = 0; i < arity; ++i) {
 		ir_node* arg = get_irn_n(node, i);
 		collect(env, arg, reload, ent);
 	}
@@ -491,15 +472,13 @@ static void collect_spills_walker(ir_node *node, void *data)
 
 	if (be_is_Reload(node)) {
 		ir_node *spill = get_memory_edge(node);
-		ir_entity *ent;
-
 		if (spill == NULL) {
 			ir_fprintf(stderr, "Verify warning: No spill attached to reload %+F in block %+F(%s)\n",
 			           node, get_nodes_block(node), get_irg_name(env->irg));
 			env->problem_found = 1;
 			return;
 		}
-		ent = arch_get_frame_entity(node);
+		ir_entity *ent = arch_get_frame_entity(node);
 		be_check_entity(env, node, ent);
 
 		collect(env, spill, node, ent);
@@ -511,18 +490,16 @@ static void check_spillslot_interference(be_verify_spillslots_env_t *env)
 {
 	int       spillcount = set_count(env->spills);
 	spill_t **spills     = ALLOCAN(spill_t*, spillcount);
-	int       i;
 
-	i = 0;
+	int s = 0;
 	foreach_set(env->spills, spill_t, spill) {
-		spills[i++] = spill;
+		spills[s++] = spill;
 	}
 
-	for (i = 0; i < spillcount; ++i) {
+	for (int i = 0; i < spillcount; ++i) {
 		spill_t *sp1 = spills[i];
-		int i2;
 
-		for (i2 = i+1; i2 < spillcount; ++i2) {
+		for (int i2 = i+1; i2 < spillcount; ++i2) {
 			spill_t *sp2 = spills[i2];
 
 			if (sp1->ent != sp2->ent)
@@ -577,11 +554,7 @@ int be_verify_spillslots(ir_graph *irg)
 	return ! env.problem_found;
 }
 
-
-
 /*--------------------------------------------------------------------------- */
-
-
 
 /**
  * Check, if two values interfere.
@@ -589,15 +562,14 @@ int be_verify_spillslots(ir_graph *irg)
  * @param b The second value.
  * @return 1, if a and b interfere, 0 if not.
  */
-static int my_values_interfere(const ir_node *a, const ir_node *b)
+static bool my_values_interfere(const ir_node *a, const ir_node *b)
 {
-	ir_node *bb;
 	int a2b = value_dominates(a, b);
 	int b2a = value_dominates(b, a);
 
 	/* If there is no dominance relation, they do not interfere. */
 	if (!a2b && !b2a)
-		return 0;
+		return false;
 
 	/*
 	 * Adjust a and b so, that a dominates b if
@@ -609,7 +581,7 @@ static int my_values_interfere(const ir_node *a, const ir_node *b)
 		b = t;
 	}
 
-	bb = get_nodes_block(b);
+	ir_node *bb = get_nodes_block(b);
 
 	/*
 	 * Look at all usages of a.
@@ -639,21 +611,19 @@ static int my_values_interfere(const ir_node *a, const ir_node *b)
 		}
 
 		if (value_dominates(b, user))
-			return 1;
+			return true;
 	}
 
-	return 0;
+	return false;
 }
-
-
 
 /*--------------------------------------------------------------------------- */
 
-static const arch_env_t            *arch_env;
-static ir_graph                    *irg;
-static be_lv_t                     *lv;
-static bool                         problem_found;
-static const ir_node              **registers;
+static const arch_env_t  *arch_env;
+static ir_graph          *irg;
+static be_lv_t           *lv;
+static bool               problem_found;
+static const ir_node    **registers;
 
 static void check_output_constraints(const ir_node *node)
 {
@@ -676,40 +646,29 @@ static void check_output_constraints(const ir_node *node)
 
 static void check_input_constraints(ir_node *node)
 {
-	const arch_register_t *reg;
-	int                    i, arity;
-
 	/* verify input register */
-	arity = get_irn_arity(node);
-	for (i = 0; i < arity; ++i) {
-		const arch_register_req_t *req      = arch_get_irn_register_req_in(node, i);
-		ir_node                   *pred     = get_irn_n(node, i);
-		const arch_register_req_t *pred_req = arch_get_irn_register_req(pred);
-
+	int arity = get_irn_arity(node);
+	for (int i = 0; i < arity; ++i) {
+		ir_node *pred = get_irn_n(node, i);
 		if (is_Bad(pred)) {
 			ir_fprintf(stderr, "Verify warning: %+F in block %+F(%s) has Bad as input %d\n",
 				node, get_nodes_block(node), get_irg_name(irg), i);
 			problem_found = 1;
 			continue;
 		}
+
+		const arch_register_req_t *req = arch_get_irn_register_req_in(node, i);
 		if (req->cls == NULL)
 			continue;
 
+		const arch_register_req_t *pred_req = arch_get_irn_register_req(pred);
 		if (req->width > pred_req->width) {
 			ir_fprintf(stderr, "Verify warning: %+F in block %+F(%s) register width of value at input %d too small\n",
 			           node, get_nodes_block(node), get_irg_name(irg), i);
 			problem_found = 1;
 		}
 
-		reg = arch_get_irn_register(pred);
-		if (req->type & arch_register_req_type_aligned) {
-			if (reg->index % req->width != 0) {
-				ir_fprintf(stderr, "Verify warning: %+F in block %+F(%s) register allignment not fulfilled\n",
-				           node, get_nodes_block(node), get_irg_name(irg), i);
-				problem_found = 1;
-			}
-		}
-
+		const arch_register_t *reg = arch_get_irn_register(pred);
 		if (reg == NULL) {
 			ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have a register assigned (%+F input constraint)\n",
 			           pred, get_nodes_block(pred), get_irg_name(irg), node);
@@ -725,10 +684,10 @@ static void check_input_constraints(ir_node *node)
 	/* phis should be NOPs at this point, which means all input regs
 	 * must be the same as the output reg */
 	if (is_Phi(node)) {
-		reg = arch_get_irn_register(node);
+		const arch_register_t *reg = arch_get_irn_register(node);
 
-		arity = get_irn_arity(node);
-		for (i = 0; i < arity; ++i) {
+		int arity = get_irn_arity(node);
+		for (int i = 0; i < arity; ++i) {
 			ir_node               *pred     = get_Phi_pred(node, i);
 			const arch_register_t *pred_reg = arch_get_irn_register(pred);
 
@@ -746,18 +705,14 @@ static void check_input_constraints(ir_node *node)
 
 static void value_used(const ir_node *block, const ir_node *node)
 {
-	const arch_register_t     *reg = arch_get_irn_register(node);
-	const arch_register_req_t *req;
-	unsigned                   i;
-	unsigned                   idx;
-
+	const arch_register_t *reg = arch_get_irn_register(node);
 	if (reg == NULL || reg->type & arch_register_type_virtual)
 		return;
 
-	req = arch_get_irn_register_req(node);
+	const arch_register_req_t *req = arch_get_irn_register_req(node);
 	assert(req->width > 0);
-	idx = reg->global_index;
-	for (i = 0; i < req->width; ++i) {
+	unsigned idx = reg->global_index;
+	for (unsigned i = 0; i < req->width; ++i) {
 		const ir_node *reg_node = registers[idx+i];
 		if (reg_node != NULL && reg_node != node) {
 			const arch_register_t *realreg = &arch_env->registers[idx+i];
@@ -772,18 +727,15 @@ static void value_used(const ir_node *block, const ir_node *node)
 
 static void value_def(const ir_node *node)
 {
-	const arch_register_t     *reg = arch_get_irn_register(node);
-	const arch_register_req_t *req;
-	unsigned                   idx;
-	unsigned                   i;
+	const arch_register_t *reg = arch_get_irn_register(node);
 
 	if (reg == NULL || reg->type & arch_register_type_virtual)
 		return;
 
-	req = arch_get_irn_register_req(node);
+	const arch_register_req_t *req = arch_get_irn_register_req(node);
 	assert(req->width > 0);
-	idx = reg->global_index;
-	for (i = 0; i < req->width; ++i) {
+	unsigned idx = reg->global_index;
+	for (unsigned i = 0; i < req->width; ++i) {
 		const ir_node *reg_node = registers[idx+i];
 
 		/* a little cheat, since its so hard to remove all outedges to dead code
@@ -804,14 +756,11 @@ static void value_def(const ir_node *node)
 
 static void verify_block_register_allocation(ir_node *block, void *data)
 {
-	unsigned i;
-	unsigned n_regs;
-
 	(void) data;
 
 	assert(lv->sets_valid && "live sets must be computed");
 
-	n_regs    = arch_env->n_registers;
+	unsigned n_regs = arch_env->n_registers;
 	registers = ALLOCANZ(const ir_node*, n_regs);
 
 	be_lv_foreach(lv, block, be_lv_state_end, lv_node) {
@@ -819,7 +768,6 @@ static void verify_block_register_allocation(ir_node *block, void *data)
 	}
 
 	sched_foreach_reverse(block, node) {
-		int arity;
 
 		if (get_irn_mode(node) == mode_T) {
 			foreach_out_edge(node, edge) {
@@ -836,9 +784,8 @@ static void verify_block_register_allocation(ir_node *block, void *data)
 
 		/* process uses. (Phi inputs are no real uses) */
 		if (!is_Phi(node)) {
-			int in;
-			arity = get_irn_arity(node);
-			for (in = 0; in < arity; ++in) {
+			int arity = get_irn_arity(node);
+			for (int in = 0; in < arity; ++in) {
 				ir_node *use = get_irn_n(node, in);
 				value_used(block, use);
 			}
@@ -850,7 +797,7 @@ static void verify_block_register_allocation(ir_node *block, void *data)
 	}
 
 	/* set must be empty now */
-	for (i = 0; i < n_regs; ++i) {
+	for (unsigned i = 0; i < n_regs; ++i) {
 		if (registers[i] == NULL)
 			continue;
 
@@ -884,10 +831,10 @@ static void dom_check(ir_node *irn, void *data)
 	bool *problem_found = (bool*)data;
 
 	if (!is_Block(irn) && irn != get_irg_end(get_irn_irg(irn))) {
-		int i, n;
 		ir_node *bl = get_nodes_block(irn);
 
-		for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
+		int n = get_irn_arity(irn);
+		for (int i = 0; i < n; ++i) {
 			ir_node *op     = get_irn_n(irn, i);
 			ir_node *def_bl = get_nodes_block(op);
 			ir_node *use_bl = bl;
@@ -941,18 +888,16 @@ static const char *lv_flags_to_str(unsigned flags)
 
 static void lv_check_walker(ir_node *bl, void *data)
 {
-	lv_walker_t *w = (lv_walker_t*)data;
-	be_lv_t *lv    = w->lv;
-	be_lv_t *fresh = (be_lv_t*)w->data;
+	lv_walker_t *w     = (lv_walker_t*)data;
+	be_lv_t     *lv    = w->lv;
+	be_lv_t     *fresh = (be_lv_t*)w->data;
 
 	be_lv_info_t *curr = ir_nodehashmap_get(be_lv_info_t, &fresh->map, bl);
 	be_lv_info_t *fr   = ir_nodehashmap_get(be_lv_info_t, &fresh->map, bl);
 
 	if (!fr && curr && curr[0].head.n_members > 0) {
-		unsigned i;
-
 		ir_fprintf(stderr, "%+F liveness should be empty but current liveness contains:\n", bl);
-		for (i = 0; i < curr[0].head.n_members; ++i) {
+		for (unsigned i = 0; i < curr[0].head.n_members; ++i) {
 			ir_fprintf(stderr, "\t%+F\n", get_idx_irn(lv->irg, curr[1 + i].node.idx));
 		}
 	}
@@ -961,19 +906,17 @@ static void lv_check_walker(ir_node *bl, void *data)
 		unsigned n_curr  = curr[0].head.n_members;
 		unsigned n_fresh = fr[0].head.n_members;
 
-		unsigned i;
-
 		if (n_curr != n_fresh) {
 			ir_fprintf(stderr, "%+F: liveness set sizes differ. curr %d, correct %d\n", bl, n_curr, n_fresh);
 
 			ir_fprintf(stderr, "current:\n");
-			for (i = 0; i < n_curr; ++i) {
+			for (unsigned i = 0; i < n_curr; ++i) {
 				be_lv_info_node_t *n = &curr[1 + i].node;
 				ir_fprintf(stderr, "%+F %u %+F %s\n", bl, i, get_idx_irn(lv->irg, n->idx), lv_flags_to_str(n->flags));
 			}
 
 			ir_fprintf(stderr, "correct:\n");
-			for (i = 0; i < n_fresh; ++i) {
+			for (unsigned i = 0; i < n_fresh; ++i) {
 				be_lv_info_node_t *n = &fr[1 + i].node;
 				ir_fprintf(stderr, "%+F %u %+F %s\n", bl, i, get_idx_irn(lv->irg, n->idx), lv_flags_to_str(n->flags));
 			}
