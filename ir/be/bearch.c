@@ -164,11 +164,11 @@ static reg_out_info_t *get_out_info(const ir_node *node)
 	return &info->out_infos[pos];
 }
 
-static reg_out_info_t *get_out_info_n(const ir_node *node, int pos)
+static reg_out_info_t *get_out_info_n(const ir_node *node, unsigned pos)
 {
 	const backend_info_t *info = be_get_info(node);
 	assert(!is_Proj(node));
-	assert(pos >= 0 && pos < (int)ARR_LEN(info->out_infos));
+	assert(pos < (unsigned)ARR_LEN(info->out_infos));
 	return &info->out_infos[pos];
 }
 
@@ -179,7 +179,8 @@ const arch_register_t *arch_get_irn_register(const ir_node *node)
 	return out->reg;
 }
 
-const arch_register_t *arch_get_irn_register_out(const ir_node *node, int pos)
+const arch_register_t *arch_get_irn_register_out(const ir_node *node,
+                                                 unsigned pos)
 {
 	const reg_out_info_t *out = get_out_info_n(node, pos);
 	return out->reg;
@@ -191,7 +192,7 @@ const arch_register_t *arch_get_irn_register_in(const ir_node *node, int pos)
 	return arch_get_irn_register(op);
 }
 
-void arch_set_irn_register_out(ir_node *node, int pos,
+void arch_set_irn_register_out(ir_node *node, unsigned pos,
                                const arch_register_t *reg)
 {
 	reg_out_info_t *out = get_out_info_n(node, pos);
@@ -318,32 +319,30 @@ void arch_dump_register_req(FILE *F, const arch_register_req_t *req,
 
 void arch_dump_reqs_and_registers(FILE *F, const ir_node *node)
 {
-	int              n_ins  = get_irn_arity(node);
-	int              n_outs = arch_get_irn_n_outs(node);
-	arch_irn_flags_t flags  = arch_get_irn_flags(node);
-	int              i;
-
-	for (i = 0; i < n_ins; ++i) {
+	int n_ins  = get_irn_arity(node);
+	for (int i = 0; i < n_ins; ++i) {
 		const arch_register_req_t *req = arch_get_irn_register_req_in(node, i);
 		fprintf(F, "inreq #%d = ", i);
 		arch_dump_register_req(F, req, node);
 		fputs("\n", F);
 	}
-	for (i = 0; i < n_outs; ++i) {
-		const arch_register_req_t *req = arch_get_irn_register_req_out(node, i);
-		fprintf(F, "outreq #%d = ", i);
+	unsigned n_outs = arch_get_irn_n_outs(node);
+	for (unsigned o = 0; o < n_outs; ++o) {
+		const arch_register_req_t *req = arch_get_irn_register_req_out(node, o);
+		fprintf(F, "outreq #%u = ", o);
 		arch_dump_register_req(F, req, node);
 		fputs("\n", F);
 	}
-	for (i = 0; i < n_outs; ++i) {
-		const arch_register_t     *reg = arch_get_irn_register_out(node, i);
-		const arch_register_req_t *req = arch_get_irn_register_req_out(node, i);
+	for (unsigned o = 0; o < n_outs; ++o) {
+		const arch_register_t     *reg = arch_get_irn_register_out(node, o);
+		const arch_register_req_t *req = arch_get_irn_register_req_out(node, o);
 		if (req->cls == NULL)
 			continue;
-		fprintf(F, "reg #%d = %s\n", i, reg != NULL ? reg->name : "n/a");
+		fprintf(F, "reg #%u = %s\n", o, reg != NULL ? reg->name : "n/a");
 	}
 
 	fprintf(F, "flags =");
+	arch_irn_flags_t flags = arch_get_irn_flags(node);
 	if (flags == arch_irn_flags_none) {
 		fprintf(F, " none");
 	} else {
@@ -363,5 +362,5 @@ void arch_dump_reqs_and_registers(FILE *F, const ir_node *node)
 			fprintf(F, " not_scheduled");
 		}
 	}
-	fprintf(F, " (%d)\n", (int)flags);
+	fprintf(F, " (0x%x)\n", (unsigned)flags);
 }

@@ -137,9 +137,9 @@ void arch_set_irn_register(ir_node *irn, const arch_register_t *reg);
 /**
  * Set the register for a certain output operand.
  */
-void arch_set_irn_register_out(ir_node *irn, int pos, const arch_register_t *r);
+void arch_set_irn_register_out(ir_node *irn, unsigned pos, const arch_register_t *r);
 
-const arch_register_t *arch_get_irn_register_out(const ir_node *irn, int pos);
+const arch_register_t *arch_get_irn_register_out(const ir_node *irn, unsigned pos);
 const arch_register_t *arch_get_irn_register_in(const ir_node *irn, int pos);
 
 /**
@@ -158,7 +158,7 @@ static inline const arch_register_req_t *arch_get_irn_register_req_in(
  * Get register constraint for a produced result (the @p pos result)
  */
 static inline const arch_register_req_t *arch_get_irn_register_req_out(
-		const ir_node *node, int pos)
+		const ir_node *node, unsigned pos)
 {
 	const backend_info_t *info = be_get_info(node);
 	if (info->out_infos == NULL)
@@ -166,11 +166,11 @@ static inline const arch_register_req_t *arch_get_irn_register_req_out(
 	return info->out_infos[pos].req;
 }
 
-static inline void arch_set_irn_register_req_out(ir_node *node, int pos,
+static inline void arch_set_irn_register_req_out(ir_node *node, unsigned pos,
 		const arch_register_req_t *req)
 {
 	backend_info_t *info = be_get_info(node);
-	assert(pos < (int)ARR_LEN(info->out_infos));
+	assert(pos < (unsigned)ARR_LEN(info->out_infos));
 	info->out_infos[pos].req = req;
 }
 
