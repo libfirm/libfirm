@@ -95,16 +95,6 @@ static unsigned                    *normal_regs;
 static int                         *congruence_classes;
 static ir_node                    **block_order;
 static size_t                       n_block_order;
-static int                          create_preferences        = true;
-static int                          create_congruence_classes = true;
-static int                          propagate_phi_registers   = true;
-
-static const lc_opt_table_entry_t options[] = {
-	LC_OPT_ENT_BOOL("prefs", "use preference based coloring", &create_preferences),
-	LC_OPT_ENT_BOOL("congruences", "create congruence classes", &create_congruence_classes),
-	LC_OPT_ENT_BOOL("prop_phi", "propagate phi registers", &propagate_phi_registers),
-	LC_OPT_LAST
-};
 
 /** currently active assignments (while processing a basic block)
  * maps registers to values(their current copies) */
@@ -316,12 +306,10 @@ static void analyze_block(ir_node *block, void *data)
 		if (is_Phi(node))
 			break;
 
-		if (create_preferences) {
-			ir_node *value;
-			be_foreach_definition(node, cls, value,
-				check_defs(&live_nodes, weight, value);
-			);
-		}
+		ir_node *value;
+		be_foreach_definition(node, cls, value,
+			check_defs(&live_nodes, weight, value);
+		);
 
 		/* mark last uses */
 		int arity = get_irn_arity(node);
@@ -349,22 +337,20 @@ static void analyze_block(ir_node *block, void *data)
 
 		be_liveness_transfer(cls, node, &live_nodes);
 
-		if (create_preferences) {
-			/* update weights based on usage constraints */
-			for (int i = 0; i < arity; ++i) {
-				ir_node *op = get_irn_n(node, i);
-				if (!arch_irn_consider_in_reg_alloc(cls, op))
-					continue;
+		/* update weights based on usage constraints */
+		for (int i = 0; i < arity; ++i) {
+			ir_node *op = get_irn_n(node, i);
+			if (!arch_irn_consider_in_reg_alloc(cls, op))
+				continue;
 
-				const arch_register_req_t *req
-					= arch_get_irn_register_req_in(node, i);
-				if (!(req->type & arch_register_req_type_limited))
-					continue;
+			const arch_register_req_t *req
+				= arch_get_irn_register_req_in(node, i);
+			if (!(req->type & arch_register_req_type_limited))
+				continue;
 
-				const unsigned *limited = req->limited;
-				give_penalties_for_limits(&live_nodes, weight * USE_FACTOR,
-				                          limited, op);
-			}
+			const unsigned *limited = req->limited;
+			give_penalties_for_limits(&live_nodes, weight * USE_FACTOR,
+									  limited, op);
 		}
 	}
 
@@ -1545,8 +1531,7 @@ static void assign_phi_registers(ir_node *block)
 		use_reg(node, reg, req->width);
 
 		/* adapt preferences for phi inputs */
-		if (propagate_phi_registers)
-			propagate_phi_register(node, r);
+		propagate_phi_register(node, r);
 	}
 }
 
@@ -1878,8 +1863,7 @@ static void be_pref_alloc_cls(void)
 	be_clear_links(irg);
 
 	irg_block_walk_graph(irg, NULL, analyze_block, NULL);
-	if (create_congruence_classes)
-		combine_congruence_classes();
+	combine_congruence_classes();
 
 	for (size_t i = 0; i < n_block_order; ++i) {
 		ir_node *block = block_order[i];
@@ -1991,13 +1975,7 @@ static void be_pref_alloc(ir_graph *new_irg)
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_pref_alloc)
 void be_init_pref_alloc(void)
 {
-	static be_ra_t be_ra_pref = {
-		be_pref_alloc,
-	};
-	lc_opt_entry_t *be_grp              = lc_opt_get_grp(firm_opt_get_root(), "be");
-	lc_opt_entry_t *prefalloc_group = lc_opt_get_grp(be_grp, "prefalloc");
-	lc_opt_add_table(prefalloc_group, options);
-
+	static be_ra_t be_ra_pref = { be_pref_alloc };
 	be_register_allocator("pref", &be_ra_pref);
 	FIRM_DBG_REGISTER(dbg, "firm.be.prefalloc");
 }
