@@ -95,57 +95,17 @@ ir_relation get_inversed_relation(ir_relation relation)
 	return code;
 }
 
-/**
- * Indicates, whether additional data can be registered to ir nodes.
- * If set to 1, this is not possible anymore.
- */
-static int forbid_new_data = 0;
-
-unsigned firm_add_node_size = 0;
-
-
-unsigned firm_register_additional_node_data(unsigned size)
-{
-	assert(!forbid_new_data && "Too late to register additional node data");
-
-	if (forbid_new_data)
-		return 0;
-
-	return firm_add_node_size += size;
-}
-
-
-void init_irnode(void)
-{
-	/* Forbid the addition of new data to an ir node. */
-	forbid_new_data = 1;
-}
-
-struct struct_align {
-	char c;
-	struct s {
-		int i;
-		float f;
-		double d;
-	} s;
-};
-
 ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
                      ir_mode *mode, int arity, ir_node *const *in)
 {
-	ir_node *res;
-	unsigned align = offsetof(struct struct_align, s) - 1;
-	unsigned add_node_size = (firm_add_node_size + align) & ~align;
-	size_t node_size = offsetof(ir_node, attr) + op->attr_size + add_node_size;
-	char *p;
 	int i;
 
 	assert(irg);
 	assert(op);
 	assert(mode);
-	p = (char*)obstack_alloc(irg->obst, node_size);
-	memset(p, 0, node_size);
-	res = (ir_node *)(p + add_node_size);
+
+	size_t   const node_size = offsetof(ir_node, attr) + op->attr_size;
+	ir_node *const res       = (ir_node*)OALLOCNZ(irg->obst, char, node_size);
 
 	res->kind     = k_ir_node;
 	res->op       = op;

@@ -42,11 +42,6 @@
 ir_node **get_irn_in(const ir_node *node);
 
 /**
- * The amount of additional space for custom data to be allocated upon creating a new node.
- */
-extern unsigned firm_add_node_size;
-
-/**
  * Returns an array with the predecessors of the Block. Depending on
  * the implementation of the graph data structure this can be a copy of
  * the internal representation of predecessors as well as the internal
@@ -559,9 +554,6 @@ static inline const ir_switch_table_entry *ir_switch_table_get_entry_const(
 }
 
 void ir_register_getter_ops(void);
-
-/** initialize ir_node module */
-void init_irnode(void);
 
 /**
  * because firm keepalive edges are a broken concept, we have to make sure that
