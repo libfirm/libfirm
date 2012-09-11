@@ -1329,7 +1329,6 @@ static void dump_const_expression(FILE *F, ir_node *value)
 static void dump_whole_block(FILE *F, const ir_node *block)
 {
 	ir_node *node;
-	ird_color_t color = ird_color_block_background;
 
 	assert(is_Block(block));
 
@@ -1338,11 +1337,11 @@ static void dump_whole_block(FILE *F, const ir_node *block)
 	fprintf(F, " label: \"");
 	dump_node_label(F, block);
 
-	/* colorize blocks */
-	if (! get_Block_matured(block))
-		color = ird_color_block_background;
-
 	fprintf(F, "\" status:clustered ");
+	/* colorize blocks */
+	ird_color_t const color =
+		!get_Block_matured(block) ? ird_color_error :
+		ird_color_block_background;
 	print_vcg_color(F, color);
 	fprintf(F, "\n");
 
