@@ -546,16 +546,11 @@ static const backend_params *sparc_get_backend_params(void)
 	p.type_long_long          = type_long_long;
 	p.type_unsigned_long_long = type_unsigned_long_long;
 
-	if (sparc_isa_template.fpu_arch == SPARC_FPU_ARCH_SOFTFLOAT) {
-		p.mode_float_arithmetic = NULL;
-		p.type_long_double      = NULL;
-	} else {
-		ir_type *type_long_double = new_type_primitive(mode_Q);
+	ir_type *type_long_double = new_type_primitive(mode_Q);
 
-		set_type_alignment_bytes(type_long_double, 8);
-		set_type_size_bytes(type_long_double, 16);
-		p.type_long_double = type_long_double;
-	}
+	set_type_alignment_bytes(type_long_double, 8);
+	set_type_size_bytes(type_long_double, 16);
+	p.type_long_double = type_long_double;
 	return &p;
 }
 
