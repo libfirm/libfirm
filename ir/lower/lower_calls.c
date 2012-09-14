@@ -228,7 +228,6 @@ typedef struct wlk_env_t {
 	size_t               arg_shift;        /**< The Argument index shift for parameters. */
 	struct obstack       obst;             /**< An obstack to allocate the data on. */
 	cl_entry             *cl_list;         /**< The call list. */
-	pmap                 *dummy_map;       /**< A map for finding the dummy arguments. */
 	compound_call_lowering_flags flags;
 	ir_type              *lowered_mtp;     /**< The lowered method type of the current irg if any. */
 	bool                  only_local_mem:1;/**< Set if only local memory access was found. */
@@ -494,32 +493,22 @@ static void do_copy_return_opt(ir_node *n, void *ctx)
 
 /**
  * Return a Sel node that selects a dummy argument of type tp.
- * Dummy arguments are only needed once and we use a map
- * to store them.
- * We could even assign all dummy arguments the same offset
- * in the frame type ...
  *
  * @param irg    the graph
  * @param block  the block where a newly create Sel should be placed
  * @param tp     the type of the dummy entity that should be create
- * @param env    the environment
  */
-static ir_node *get_dummy_sel(ir_graph *irg, ir_node *block, ir_type *tp,
-                              wlk_env *env)
+static ir_node *get_dummy_sel(ir_graph *irg, ir_node *block, ir_type *tp)
 {
-	/* use a map the check if we already create such an entity */
-	ir_entity *ent = pmap_get(ir_entity, env->dummy_map, tp);
-	if (ent == NULL) {
-		ir_type *ft = get_irg_frame_type(irg);
-		ident   *dummy_id = id_unique("dummy.%u");
-		ent = new_entity(ft, dummy_id, tp);
-		pmap_insert(env->dummy_map, tp, ent);
+	ir_type   *ft       = get_irg_frame_type(irg);
+	ident     *dummy_id = id_unique("dummy.%u");
+	ir_entity *ent      = new_entity(ft, dummy_id, tp);
 
-		if (get_type_state(ft) == layout_fixed) {
-			/* Fix the layout again */
-			panic("Fixed layout not implemented");
-		}
+	if (get_type_state(ft) == layout_fixed) {
+		/* Fix the layout again */
+		panic("Fixed layout not implemented");
 	}
+
 	return new_r_simpleSel(block, get_irg_no_mem(irg), get_irg_frame(irg), ent);
 }
 
@@ -527,8 +516,7 @@ static ir_node *get_dummy_sel(ir_graph *irg, ir_node *block, ir_type *tp,
  * Add the hidden parameter from the CopyB node to the Call node.
  */
 static void add_hidden_param(ir_graph *irg, size_t n_com, ir_node **ins,
-                             cl_entry *entry, wlk_env *env,
-                             ir_type *ctp)
+                             cl_entry *entry, ir_type *ctp)
 {
 	ir_node *p, *n;
 	size_t n_args;
@@ -567,21 +555,21 @@ static void add_hidden_param(ir_graph *irg, size_t n_com, ir_node **ins,
 
 	/* now create dummy entities for function with ignored return value */
 	if (n_args < n_com) {
-		size_t   i;
-		size_t   j;
+		size_t i;
+		size_t j;
 
 		for (j = i = 0; i < get_method_n_ress(ctp); ++i) {
 			ir_type *rtp = get_method_res_type(ctp, i);
 			if (is_compound_type(rtp)) {
 				if (ins[j] == NULL)
-					ins[j] = get_dummy_sel(irg, get_nodes_block(entry->call), rtp, env);
+					ins[j] = get_dummy_sel(irg, get_nodes_block(entry->call), rtp);
 				++j;
 			}
 		}
 	}
 }
 
-static void fix_compound_ret(wlk_env *env, cl_entry *entry, ir_type *ctp)
+static void fix_compound_ret(cl_entry *entry, ir_type *ctp)
 {
 	ir_node  *call     = entry->call;
 	ir_graph *irg      = get_irn_irg(call);
@@ -602,7 +590,7 @@ static void fix_compound_ret(wlk_env *env, cl_entry *entry, ir_type *ctp)
 	new_in[pos++] = get_Call_mem(call);
 	new_in[pos++] = get_Call_ptr(call);
 	assert(pos == n_Call_max+1);
-	add_hidden_param(irg, n_com, &new_in[pos], entry, env, ctp);
+	add_hidden_param(irg, n_com, &new_in[pos], entry, ctp);
 	pos += n_com;
 
 	/* copy all other parameters */
@@ -670,7 +658,7 @@ static void fix_calls(wlk_env *env)
 			fix_compound_params(entry, ctp);
 		}
 		if (entry->has_compound_ret) {
-			fix_compound_ret(env, entry, ctp);
+			fix_compound_ret(entry, ctp);
 		}
 	}
 }
@@ -731,7 +719,6 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 	}
 	obstack_init(&env.obst);
 	env.cl_list        = NULL;
-	env.dummy_map      = pmap_create_ex(8);
 	env.flags          = flags;
 	env.lowered_mtp    = lowered_mtp;
 	env.only_local_mem = true;
@@ -846,7 +833,6 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 		}
 	}
 
-	pmap_destroy(env.dummy_map);
 	obstack_free(&env.obst, NULL);
 }
 
