@@ -61,7 +61,7 @@
 /* Attempt to reduce register pressure and reduce code size
    for hoisted nodes. */
 #define HOIST_HIGH 0
-#define COMMON_DOM 0
+#define COMMON_DOM 1
 
 /* Seamless implementation of handling loads and generally memory
    dependent nodes with GVN-PRE. */
@@ -69,7 +69,7 @@
 #define DIVMODS 0
 
 /* Experimental */
-#define MIN_CUT 1
+#define MIN_CUT 0
 
 #define OLD_DIVMODS 0
 #define NO_INF_LOOPS2 0
@@ -259,9 +259,7 @@ static int compare_gvn_identities(const void *elt, const void *key)
 	if (is_memop(a) || is_memop(b)) {
 		/* Loads with the same predecessors are the same value;
 		   this should only happen after phi translation. */
-		if ((! is_Load(a) || ! is_Load(b))
-		    && (! is_Div(a) || ! is_Div(b))
-		    && (! is_Mod(a) || ! is_Mod(b)))
+		if (! is_Load(a) || ! is_Load(b))
 			return 1;
 	}
 
