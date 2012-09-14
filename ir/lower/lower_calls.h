@@ -34,7 +34,7 @@ typedef enum compound_call_lowering_flags {
 	LF_NONE                 = 0,      /**< no additional flags */
 	LF_RETURN_HIDDEN        = 1 << 0, /**< return the hidden address instead of void */
 	LF_DONT_LOWER_ARGUMENTS = 1 << 1, /**< don't lower compound call arguments
-	                                       (some backends can handle them themselfes) */
+	                                       (some backends can handle them themselves) */
 } compound_call_lowering_flags;
 ENUM_BITSET(compound_call_lowering_flags)
 

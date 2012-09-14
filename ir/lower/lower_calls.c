@@ -47,7 +47,7 @@ static pmap *lowered_mtps;
 
 /**
  * Default implementation for finding a pointer type for a given element type.
- * Simple create a new one.
+ * Simply create a new one.
  */
 static ir_type *get_pointer_type(ir_type *dest_type)
 {
@@ -602,7 +602,7 @@ static void fix_compound_ret(cl_entry *entry, ir_type *ctp)
 	set_irn_in(call, pos, new_in);
 }
 
-static ir_entity *create_compound_arg_entitiy(ir_graph *irg, ir_type *type)
+static ir_entity *create_compound_arg_entity(ir_graph *irg, ir_type *type)
 {
 	ir_type   *frame  = get_irg_frame_type(irg);
 	ident     *id     = id_unique("$compound_param.%u");
@@ -635,7 +635,7 @@ static void fix_compound_params(cl_entry *entry, ir_type *ctp)
 			continue;
 
 		arg        = get_Call_param(call, i);
-		arg_entity = create_compound_arg_entitiy(irg, type);
+		arg_entity = create_compound_arg_entity(irg, type);
 		block      = get_nodes_block(call);
 		sel        = new_rd_simpleSel(dbgi, block, nomem, frame, arg_entity);
 		copyb      = new_rd_CopyB(dbgi, block, mem, sel, arg, type);
