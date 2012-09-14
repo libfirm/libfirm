@@ -52,16 +52,32 @@
 #define MAX_ANTIC_ITER 10
 #define MAX_INSERT_ITER 3
 
-#define HOIST_HIGH 0
-#define LOADS 0
-#define DIVMODS 0
+/* Infinite loops will be unrolled during antic iteration and
+   will iterate until otherwise stopped.
+   This also leaves every possible values of iteration variables in antic_in.
+*/
 #define NO_INF_LOOPS 0
 
-/* testing */
-#define PARTLY_ONLY 0
-/* not working */
+/* Attempt to reduce register pressure and reduce code size
+   for hoisted nodes. */
+#define HOIST_HIGH 0
+#define COMMON_DOM 0
+
+/* Seamless implementation of handling loads and generally memory
+   dependent nodes with GVN-PRE. */
+#define LOADS 0
+#define DIVMODS 0
+
+/* Experimental */
+#define MIN_CUT 1
+
+#define OLD_DIVMODS 0
 #define NO_INF_LOOPS2 0
+
+/* NIY Choose to be optimized nodes in a more sophisticated way
+   to reduce number of newly introduced phi nodes. */
 #define BETTER_GREED 0
+
 
 /** Additional info we need for every block. */
 typedef struct block_info {
@@ -70,8 +86,7 @@ typedef struct block_info {
 	ir_valueset_t     *antic_in;   /* clean anticipated values at block entry */
 	ir_valueset_t     *antic_done; /* keeps elements of antic_in after insert nodes phase */
 	ir_valueset_t     *new_set;    /* new by hoisting made available values */
-	ir_nodehashmap_t  *trans;      /* contains translated nodes translated into block
-								      TODO might be omitted if antic_out is used */
+	ir_nodehashmap_t  *trans;      /* contains translated nodes translated into block */
 	ir_node           *avail;      /* saves available node for insert node phase */
 	int                found;      /* saves kind of availability for insert_node phase */
 	ir_node           *block;      /* block of the block_info */
@@ -80,8 +95,8 @@ typedef struct block_info {
 
 /**
  * A pair of nodes to be exchanged.
- * We have to defer the exchange because our hash-sets cannot
- * find an already replaced node.
+ * We have to defer the exchange because there are still needed references
+ * to certain nodes.
  */
 typedef struct elim_pair {
 	ir_node *old_node;      /* node that will be replaced */
@@ -103,9 +118,11 @@ typedef struct pre_env {
 	unsigned        last_idx;     /* last node index of input graph */
 	char            changes;      /* flag for fixed point iterations - non-zero if changes occurred */
 	char            first_iter;   /* non-zero for first fixed point iteration */
+	int             iteration;    /* iteration counter */
 } pre_env;
 
 static pre_env *environ;
+
 /* custom GVN value map */
 static ir_nodehashmap_t value_map;
 
@@ -237,12 +254,14 @@ static int compare_gvn_identities(const void *elt, const void *key)
 	if (is_Phi(a) || is_Phi(b))
 		return 1;
 
-	/* memops are not the same, even if we want optimize them
+	/* memops are not the same, even if we want to optimize them
 	   we have to take the order in account */
 	if (is_memop(a) || is_memop(b)) {
 		/* Loads with the same predecessors are the same value;
 		   this should only happen after phi translation. */
-		if (! is_Load(a) || ! is_Load(b))
+		if ((! is_Load(a) || ! is_Load(b))
+		    && (! is_Div(a) || ! is_Div(b))
+		    && (! is_Mod(a) || ! is_Mod(b)))
 			return 1;
 	}
 
@@ -366,8 +385,9 @@ static ir_node *remember(ir_node *irn)
 	return value;
 }
 
-/** When the value map has been built we may lookup expressions
- *  and remember them if new.
+/**
+ * When the value map has been built we may lookup expressions
+ * and remember them if new.
  */
 static ir_node *identify_or_remember(ir_node *irn)
 {
@@ -613,7 +633,7 @@ static unsigned is_nice_value(ir_node *n)
 	if (is_Phi(n))
 		return 1;
 
-#if LOADS || DIVMODS
+#if LOADS || OLD_DIVMODS || DIVMODS
 	if (is_Proj(n) && mode != mode_X && mode != mode_T)
 		return 1;
 #else
@@ -653,9 +673,25 @@ static unsigned is_clean_in_block(ir_node *n, ir_node *block, ir_valueset_t *val
 	if (! is_nice_value(n))
 		return 0;
 
+#if LOADS
 	/* filter loads with no phi predecessor from antic_in */
 	if (is_Load(n) && ! is_Phi(get_Load_mem(n)))
 		return 0;
+#endif
+
+#if DIVMODS
+	if (is_Div(n)) {
+		ir_node *mem = get_Div_mem(n);
+
+		mem = skip_Pin(mem);
+
+		if (! is_Phi(mem) && ! is_NoMem(mem))
+			return 0;
+	}
+
+	if (is_Mod(n) && ! is_Phi(get_Mod_mem(n)))
+		return 0;
+#endif
 
 	arity = get_irn_arity(n);
 	for (i = 0; i < arity; ++i) {
@@ -758,7 +794,7 @@ static void set_translated(ir_nodehashmap_t *map, ir_node *node, ir_node *trans)
 	ir_nodehashmap_insert(map, node, trans);
 }
 
-#if DIVMODS
+#if OLD_DIVMODS
 /* Helper function to compare the values of pred and avail_pred. */
 static unsigned match_pred(ir_node *pred, ir_node *avail_pred, ir_node *block, int pos)
 {
@@ -848,7 +884,7 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, ir_valuese
 	}
 	arity = get_irn_arity(node);
 
-#if DIVMODS
+#if OLD_DIVMODS
 	if (is_Div(node) || is_Mod(node)) {
 		ir_node *avail_op = phi_translate_divmod(node, block, pos);
 		if (avail_op)
@@ -873,9 +909,22 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, ir_valuese
 
 		if (! leader)
 			leader = pred;
+
 		/* we cannot find this value in antic_in, because the value
 		   has (possibly) changed! */
 		pred_trans  = get_translated(pred_block, leader);
+
+
+#if DIVMODS
+		if (is_Div(node)) {
+			ir_node *mem = get_Div_mem(node);
+
+			mem = skip_Pin(mem);
+
+			if (! is_Phi(mem))
+				pred_trans = get_Div_mem(node);
+		}
+#endif
 
 		DB((dbg, LEVEL_3, "trans %+F of %+F is  %+F\n", leader, pred_block, pred_trans));
 		if (pred_trans == NULL) {
@@ -887,6 +936,7 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, ir_valuese
 			   another phi. In case of projection and a load predecessor,
 			   skip them and use the loads memory. */
 			if (is_Proj(pred_trans) && get_irn_mode(pred_trans) == mode_M) {
+#if LOADS || DIVMODS
 				ir_node *load = get_Proj_pred(pred_trans);
 				/* If we do not translate this node, we will get its value wrong. */
 				needed |= 1;
@@ -896,6 +946,7 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, ir_valuese
 					   such that GVN may compare them. */
 					new_pred = get_Load_mem(load);
 				}
+#endif
 			} else {
 				/* predecessor value changed, so translation is needed */
 				if (identify(new_pred) != identify(pred))
@@ -1020,8 +1071,8 @@ static void compute_antic(ir_node *block, void *ctx)
 
 			if (is_clean_in_block(expr, block, info->antic_in)) {
 #if NO_INF_LOOPS2
-				/* TODO to be determined why nearly every spec benchmark fails */
-				if (! is_in_infinite_loop(succ) || ! is_backedge(succ, pos)) {
+				/* no flow over the backedge of endless loops */
+				if (env->iteration <= 2 || ! (! is_in_infinite_loop(succ) || ! is_backedge(succ, pos))) {
 					ir_valueset_replace(info->antic_in, trans_value, represent);
 				}
 #else
@@ -1148,7 +1199,6 @@ static ir_mode *is_partially_redundant(ir_node *block, ir_node *expr, ir_node *v
 		else
 			avail_expr = (ir_node*)ir_valueset_lookup(pred_info->avail_out, trans_value);
 
-#if 0
 		/* value might be available through a not yet existing constant */
 		if (avail_expr == NULL && is_Const(trans_expr)) {
 			/* limit range of new constants */
@@ -1165,7 +1215,6 @@ static ir_mode *is_partially_redundant(ir_node *block, ir_node *expr, ir_node *v
 				avail_expr = NULL;
 			}
 	    }
-#endif
 
 		DB((dbg, LEVEL_3, "avail_expr %+F  trans_expr %+F\n", avail_expr, trans_expr));
 
@@ -1275,10 +1324,9 @@ static unsigned is_hoisting_greedy(ir_node *irn, ir_node *block)
 			ir_node *trans_val;
 			ir_node *avail;
 
-#if 0
-			/* TODO With critical edges removed,
-			   this should have no effect but it has. */
-			if (get_loop_depth(get_irn_loop(pred_block)) > get_loop_depth(get_irn_loop(get_nodes_block(irn))))
+#if MIN_CUT
+			/* Very conservative min cut. Phi might only have 1 user. */
+			if (is_Phi(pred) && get_irn_n_edges(pred) != 1)
 				return 1;
 #endif
 
@@ -1328,17 +1376,9 @@ static unsigned is_hoisting_greedy(ir_node *irn, ir_node *block)
 
 			if (! avail)
 				return 1;
-#if 0
+#if MIN_CUT
 			/* only optimize if predecessors have been optimized */
 			if (ir_valueset_lookup(info->antic_done, value) == NULL)
-				return 1;
-#endif
-
-#if 0
-			/* Try to reduce cut.
-			   Turned out to be not very effective in this simple form. */
-			/* TODO Use out edges. */
-			if (get_irn_outs_computed(irn) && get_irn_n_outs(irn) > 1)
 				return 1;
 #endif
 		}
@@ -1431,9 +1471,7 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 			DB((dbg, LEVEL_2, "Fully redundant expr %+F value %+F\n", expr, value));
 			DEBUG_ONLY(inc_stats(gvnpre_stats->fully);)
 
-#if ! PARTLY_ONLY
 			ir_valueset_insert(info->antic_done, value, expr);
-#endif
 			continue;
 		}
 
@@ -1455,7 +1493,7 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 		}
 #endif
 
-#if LOADS || DIVMODS
+#if LOADS || OLD_DIVMODS || DIVMODS
 		/* save old mode_M phis to remove keepalive edges later */
 		if (is_memop(expr)) {
 			ir_node *mem = get_memop_mem(expr);
@@ -1611,7 +1649,7 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 	   for each block: flag redundant nodes,
 	   use heuristic to adjust these flags (also consider antic_done),
 	   do insert nodes.
-	   This way we could decide if we hoist a non redundant node,
+	   This way we could decide if we should hoist a non redundant node,
 	   if all its successors are redundant.
 	   Or we might try to minimize the cut along hoisted nodes and their
 	   non redundant successors.
@@ -1733,19 +1771,28 @@ static void hoist_high(ir_node *block, void *ctx)
 			/* anticipation border */
 			new_target  = NULL;
 			nest_depth  = get_loop_depth(get_irn_loop(target));
+
+			/* Either push the hoisted nodes up their path,
+			   or try to put them directly into their common dominator. */
+#if COMMON_DOM
 			/* By using block (instead of target) as initial block,
 			   we only allow hoisting into a common block of
 			   both predecessor blocks. */
 			dom         = block;
+#else
+			dom         = target;
+#endif
 
-			while (dom && dom != environ->start_block) {
+			while (dom && dom != get_Block_idom(block)) {
 
 				dom = get_Block_idom(dom);
 				dom_info = get_block_info(dom);
 				DB((dbg, LEVEL_4, "testing dom %+F\n", dom));
 
-				/* TODO antic_in means hoistable above block,
-				   but we need 'hoistable into block'. */
+				/* TODO Being in antic_in means hoistable above block,
+				   but we need 'hoistable into block'.
+				   This could be achieved by a flag for each valueset pair,
+				   being set during antic computation. */
 
 				/* check if available node ist still anticipated and clean */
 				if (! ir_valueset_lookup(dom_info->antic_in, value)) {
@@ -1792,7 +1839,7 @@ static void hoist_high(ir_node *block, void *ctx)
 							/* Do we have another user than avail?
 							   Then predecessor is not dead after removal of avail. */
 							if (succ_value != value) {
-								DB((dbg, LEVEL_4, "fail: still used in %+F\n", succ));
+								DB((dbg, LEVEL_4, "still used in %+F\n", succ));
 								dom = NULL;
 								break;
 							}
@@ -1802,10 +1849,13 @@ static void hoist_high(ir_node *block, void *ctx)
 				if (dom)
 					new_target = dom;
 
-				/* only try direct dominator */
+#if COMMON_DOM
+				/* only try common dominator */
 				break;
+#endif
 			}
 
+			/* put node into new target block */
 			if (new_target) {
 				block_info *target_info = get_block_info(new_target);
 				int         nn_arity    = get_irn_arity(avail);
@@ -1833,7 +1883,7 @@ static void hoist_high(ir_node *block, void *ctx)
 				free(in);
 
 				identify_or_remember(nn);
-				/* NOTE: Nodes are inserted into a dominating block and should
+				/* TODO Nodes are inserted into a dominating block and should
 				   be available from this point on. Currently we do not push
 				   the availability information through during the walk. */
 				ir_valueset_insert(target_info->new_set, value, nn);
@@ -1870,10 +1920,6 @@ static void eliminate(ir_node *irn, void *ctx)
 			ir_node *expr = (ir_node*)ir_valueset_lookup(info->avail_out, value);
 			DB((dbg, LEVEL_3, "Elim %+F(%+F) avail %+F\n", irn, value, expr));
 
-#if ! PARTLY_ONLY
-			if (expr && get_irn_idx(expr) <= env->last_idx)
-				return;
-#endif
 			if (expr != NULL && expr != irn) {
 				elim_pair *p = OALLOC(env->obst, elim_pair);
 
@@ -1943,6 +1989,7 @@ static void eliminate_nodes(elim_pair *pairs, ir_nodeset_t *keeps)
 	}
 }  /* eliminate_nodes */
 
+
 /* --------------------------------------------------------
  * GVN PRE pass
  * --------------------------------------------------------
@@ -1952,6 +1999,7 @@ static void eliminate_nodes(elim_pair *pairs, ir_nodeset_t *keeps)
  * Gvn_Pre algorithm.
  *
  * @param irg   the graph
+ * @param env   the environment
  */
 static void gvn_pre(ir_graph *irg, pre_env *env)
 {
@@ -1976,6 +2024,7 @@ static void gvn_pre(ir_graph *irg, pre_env *env)
 	antic_iter      = 0;
 	env->first_iter = 1;
 
+	env->iteration = 1;
 	/* antic_in passes */
 	do {
 		++antic_iter;
@@ -1984,6 +2033,7 @@ static void gvn_pre(ir_graph *irg, pre_env *env)
 		irg_walk_blkwise_graph(irg, compute_antic, NULL, env);
 		env->first_iter = 0;
 		DB((dbg, LEVEL_2, "----------------------------------------------\n"));
+		env->iteration ++;
 	} while (env->changes != 0 && antic_iter < MAX_ANTIC_ITER);
 
 	DEBUG_ONLY(set_stats(gvnpre_stats->antic_iterations, antic_iter);)
@@ -2012,7 +2062,7 @@ static void gvn_pre(ir_graph *irg, pre_env *env)
 #endif
 
 	/* Deactivate edges to prevent intelligent removal of nodes,
-	   else we will get deleted nodes which we try to exchange. */
+	   or else we will get deleted nodes which we try to exchange. */
 	edges_deactivate(environ->graph);
 
 	/* eliminate nodes */
@@ -2035,9 +2085,9 @@ void do_gvn_pre(ir_graph *irg)
 	optimization_state_t  state;
 	block_info           *block_info;
 
-	/* bads and unreachables cause too much trouble with dominance
-	   loop info for endless loop detection
-	   no critical edges is GVN-PRE precondition
+	/* bads and unreachables cause too much trouble with dominance,
+	   loop info for endless loop detection,
+	   no critical edges is PRE precondition
 	 */
 	assure_irg_properties(irg,
 		IR_GRAPH_PROPERTY_NO_BADS
@@ -2068,8 +2118,7 @@ void do_gvn_pre(ir_graph *irg)
 	env.end_node     = get_irg_end(irg);
 	env.pairs        = NULL;
 	env.keeps        = &keeps;
-	/* last index is no node */
-	env.last_idx     = get_irg_last_idx(irg) - 1;
+	env.last_idx     = get_irg_last_idx(irg);
 
 	/* Detect and set links of infinite loops to non-zero. */
 	analyse_loops(irg);
@@ -2107,6 +2156,10 @@ void do_gvn_pre(ir_graph *irg)
 	/* TODO There seem to be optimizations that try to use the existing
 	   value_table. */
 	new_identities(irg);
+
+	/* TODO assure nothing else breaks. */
+	set_opt_global_cse(0);
+	edges_activate(irg);
 }
 
 /* Creates an ir_graph pass for do_gvn_pre. */
