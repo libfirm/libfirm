@@ -178,6 +178,35 @@ typedef struct backend_params {
 FIRM_API int be_parse_arg(const char *arg);
 
 /**
+ * Returns 1 if the backend uses big-endian byte ordering
+ * and 0 for little-endian.
+ */
+FIRM_API int be_is_big_endian(void);
+
+/**
+ * Returns size of machine words. This is usually the size
+ * of the general purpose integer registers.
+ */
+FIRM_API unsigned be_get_machine_size(void);
+
+/**
+ * Returns supported float arithmetic mode or NULL if mode_D and mode_F
+ * are supported natively.
+ * Some backends like x87 can only do arithmetic in a specific float
+ * mode (load/store are still done in the "normal" float/double modes).
+ */
+FIRM_API ir_mode *be_get_mode_float_arithmetic(void);
+
+/** Returns type used for long long or NULL if none available. */
+FIRM_API ir_type *be_get_type_long_long(void);
+
+/** Returns type used for unsigned long long or NULL if none available. */
+FIRM_API ir_type *be_get_type_unsigned_long_long(void);
+
+/** Returns type used for long double or NULL if none available. */
+FIRM_API ir_type *be_get_type_long_double(void);
+
+/**
  * Returns the backend configuration parameter.
  *
  * @return libFirm configuration parameters for the selected

@@ -362,6 +362,36 @@ const backend_params *be_get_backend_param(void)
 	return isa_if->get_params();
 }
 
+int be_is_big_endian(void)
+{
+	return be_get_backend_param()->byte_order_big_endian;
+}
+
+unsigned be_get_machine_size(void)
+{
+	return be_get_backend_param()->machine_size;
+}
+
+ir_mode *be_get_mode_float_arithmetic(void)
+{
+	return be_get_backend_param()->mode_float_arithmetic;
+}
+
+ir_type *be_get_type_long_long(void)
+{
+	return be_get_backend_param()->type_long_long;
+}
+
+ir_type *be_get_type_unsigned_long_long(void)
+{
+	return be_get_backend_param()->type_unsigned_long_long;
+}
+
+ir_type *be_get_type_long_double(void)
+{
+	return be_get_backend_param()->type_long_double;
+}
+
 /**
  * Initializes the main environment for the backend.
  *
