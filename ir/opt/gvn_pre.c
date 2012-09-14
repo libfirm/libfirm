@@ -1946,8 +1946,6 @@ static void eliminate(ir_node *irn, void *ctx)
 static void eliminate_nodes(elim_pair *pairs, ir_nodeset_t *keeps)
 {
 	elim_pair             *p;
-	ir_nodeset_iterator_t  iter;
-	ir_node               *m_phi;
 	ir_node               *end    = environ->end_node;
 
 	for (p = pairs; p != NULL; p = p->next) {
