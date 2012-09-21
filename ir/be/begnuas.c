@@ -95,8 +95,6 @@ static void emit_section_macho(be_gas_section_t section)
 		case GAS_SECTION_DEBUG_FRAME:     name = "section __DWARF,__debug_frame,regular,debug"; break;
 		default: panic("unsupported scetion type 0x%X", section);
 		}
-		be_emit_irprintf("\t.%s\n", name);
-		be_emit_write_line();
 	} else if (flags & GAS_SECTION_FLAG_COMDAT) {
 		switch (base) {
 		case GAS_SECTION_TEXT:            name = "section __TEXT,__textcoal_nt,coalesced,pure_instructions"; break;
@@ -111,6 +109,8 @@ static void emit_section_macho(be_gas_section_t section)
 	} else {
 		panic("unsupported section type 0x%X", section);
 	}
+	be_emit_irprintf("\t.%s\n", name);
+	be_emit_write_line();
 }
 
 static void emit_section_sparc(be_gas_section_t section, const ir_entity *entity)
