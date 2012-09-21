@@ -537,10 +537,9 @@ static void propagate_blocks(partition_t *part, environment_t *env)
 			for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
 				ir_node *pred  = get_irn_n(irn, i);
 				ir_node *block = get_nodes_block(skip_Proj(pred));
-				node_t *p_node;
 
 				if (block != bl->block) {
-					p_node = create_node(pred, bl, env);
+					node_t *p_node = create_node(pred, bl, env);
 					if (is_input_node(pred, irn, i)) {
 						/* is a block live input */
 						p_node->is_input = 1;
@@ -552,7 +551,7 @@ static void propagate_blocks(partition_t *part, environment_t *env)
 					}
 				} else if (! irn_visited_else_mark(pred)) {
 					/* not yet visited, ok */
-					p_node = create_node(pred, bl, env);
+					create_node(pred, bl, env);
 
 					if (is_Phi(pred)) {
 						/* update the Phi list */

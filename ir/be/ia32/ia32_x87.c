@@ -1050,7 +1050,6 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl)
  */
 static int sim_unop(x87_state *state, ir_node *n, ir_op *op)
 {
-	int op1_idx;
 	x87_simulator         *sim = state->sim;
 	const arch_register_t *op1 = x87_get_irn_register(get_irn_n(n, 0));
 	const arch_register_t *out = x87_get_irn_register(n);
@@ -1060,18 +1059,16 @@ static int sim_unop(x87_state *state, ir_node *n, ir_op *op)
 	DB((dbg, LEVEL_1, ">>> %+F -> %s\n", n, out->name));
 	DEBUG_ONLY(vfp_dump_live(live);)
 
-	op1_idx = x87_on_stack(state, arch_register_get_index(op1));
+	int op1_idx = x87_on_stack(state, arch_register_get_index(op1));
 
 	if (is_vfp_live(arch_register_get_index(op1), live)) {
 		/* push the operand here */
 		x87_create_fpush(state, n, op1_idx, 0);
 		op1_idx = 0;
-	}
-	else {
+	} else {
 		/* operand is dead, bring it to tos */
 		if (op1_idx != 0) {
 			x87_create_fxch(state, n, op1_idx);
-			op1_idx = 0;
 		}
 	}
 

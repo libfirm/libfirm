@@ -205,6 +205,8 @@ int ir_timer_enter_high_priority(void)
 
 	if (!std_sched_param_init) {
 		res = sched_getparam(pid, &std_sched_param);
+		if (res != 0)
+			return res;
 		std_sched_param_init = 1;
 	}
 

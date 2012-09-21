@@ -1824,19 +1824,15 @@ static int insert_Load(block_t *bl)
 			if (! rbitset_is_set(env.curr_set, pos))
 				env.curr_id_2_memop[pos] = NULL;
 			else {
-				ir_node *pred    = get_Block_cfgpred_block(bl->block, 0);
-				block_t *pred_bl = get_block_entry(pred);
-				int     need_phi = 0;
-				memop_t *first   = NULL;
-				ir_mode *mode    = NULL;
+				int      need_phi = 0;
+				memop_t *first    = NULL;
+				ir_mode *mode     = NULL;
 
 				for (i = 0; i < n; ++i) {
-					memop_t *mop;
+					ir_node *pred    = get_Block_cfgpred_block(bl->block, i);
+					block_t *pred_bl = get_block_entry(pred);
 
-					pred    = get_Block_cfgpred_block(bl->block, i);
-					pred_bl = get_block_entry(pred);
-
-					mop = pred_bl->id_2_memop_avail[pos];
+					memop_t *mop = pred_bl->id_2_memop_avail[pos];
 					if (first == NULL) {
 						first = mop;
 						ins[0] = first->value.value;

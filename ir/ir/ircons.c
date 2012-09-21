@@ -362,7 +362,7 @@ void mature_immBlock(ir_node *block)
 	   We can call optimize_in_place_2(), as global cse has no effect on blocks.
 	 */
 	irn_verify_irg(block, irg);
-	block = optimize_in_place_2(block);
+	optimize_in_place_2(block);
 }
 
 ir_node *new_d_Const_long(dbg_info *db, ir_mode *mode, long value)

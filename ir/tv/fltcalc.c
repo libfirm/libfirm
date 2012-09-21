@@ -1500,9 +1500,8 @@ fp_value *fc_int(const fp_value *a, fp_value *result)
 
 fp_value *fc_rnd(const fp_value *a, fp_value *result)
 {
-	if (result == NULL) result = calc_buffer;
-
-	(void) a;
+	(void)a;
+	(void)result;
 	TRACEPRINTF(("%s ", fc_print(a, buffer, sizeof(buffer), FC_PACKED)));
 	TRACEPRINTF(("rounded to integer "));
 

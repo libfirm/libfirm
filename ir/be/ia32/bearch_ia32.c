@@ -1245,7 +1245,6 @@ static void introduce_prolog_epilog(ir_graph *irg)
 		ir_node *incsp;
 
 		curr_sp = new_r_Proj(push, mode_gp, pn_ia32_Push_stack);
-		mem     = new_r_Proj(push, mode_M, pn_ia32_Push_M);
 		arch_set_irn_register(curr_sp, sp);
 		sched_add_after(start, push);
 
@@ -1676,7 +1675,6 @@ static ir_node *ia32_create_trampoline_fkt(ir_node *block, ir_node *mem, ir_node
 	p   = new_r_Add(block, p, one, mode);
 	st  = new_r_Store(block, mem, p, callee, cons_none);
 	mem = new_r_Proj(st, mode_M, pn_Store_M);
-	p   = new_r_Add(block, p, four, mode);
 
 	return mem;
 }

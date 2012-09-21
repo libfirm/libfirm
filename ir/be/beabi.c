@@ -595,7 +595,6 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	for (i = 0; i < n_res; ++i) {
 		ir_node           *proj = res_projs[i];
 		be_abi_call_arg_t *arg  = get_call_arg(call, 1, i, 0);
-		long               pn   = i + pn_be_Call_first_res;
 
 		/* returns values on stack not supported yet */
 		assert(arg->in_reg);
@@ -605,7 +604,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			unspeakable Proj_T from the Call. Therefore, all real argument
 			Proj numbers must be increased by pn_be_Call_first_res
 		*/
-		pn = i + pn_be_Call_first_res;
+		long pn = i + pn_be_Call_first_res;
 
 		if (proj == NULL) {
 			ir_type *res_type = get_method_res_type(call_tp, i);

@@ -1039,7 +1039,6 @@ static int is_am_minus_one(const ir_node *node)
  */
 static void peephole_ia32_Lea(ir_node *node)
 {
-	ir_graph              *irg;
 	ir_node               *base;
 	ir_node               *index;
 	const arch_register_t *base_reg;
@@ -1052,8 +1051,6 @@ static void peephole_ia32_Lea(ir_node *node)
 	dbg_info              *dbgi;
 	ir_node               *block;
 	ir_node               *res;
-	ir_node               *noreg;
-	ir_node               *nomem;
 
 	assert(is_ia32_Lea(node));
 
@@ -1165,9 +1162,9 @@ make_add_immediate:
 make_add:
 	dbgi  = get_irn_dbg_info(node);
 	block = get_nodes_block(node);
-	irg   = get_irn_irg(node);
-	noreg = ia32_new_NoReg_gp(irg);
-	nomem = get_irg_no_mem(irg);
+	ir_graph *irg   = get_irn_irg(node);
+	ir_node  *noreg = ia32_new_NoReg_gp(irg);
+	ir_node  *nomem = get_irg_no_mem(irg);
 	res   = new_bd_ia32_Add(dbgi, block, noreg, noreg, nomem, op1, op2);
 	arch_set_irn_register(res, out_reg);
 	set_ia32_commutative(res);
@@ -1176,9 +1173,6 @@ make_add:
 make_shl:
 	dbgi  = get_irn_dbg_info(node);
 	block = get_nodes_block(node);
-	irg   = get_irn_irg(node);
-	noreg = ia32_new_NoReg_gp(irg);
-	nomem = get_irg_no_mem(irg);
 	res   = new_bd_ia32_Shl(dbgi, block, op1, op2);
 	arch_set_irn_register(res, out_reg);
 	goto exchange;

@@ -872,11 +872,11 @@ int i_mapper_strcmp(ir_node *call, void *ctx)
 		return 0;
 	char_tp = get_pointer_points_to_type(char_tp);
 
+	ir_node *mem = get_Call_mem(call);
 	if (left == right) {
 		/* a strcmp(s, s) ==> 0 */
-		ir_graph *irg  = get_irn_irg(call);
-		ir_node *mem   = get_Call_mem(call);
-		ir_mode *mode  = get_type_mode(res_tp);
+		ir_graph *irg = get_irn_irg(call);
+		ir_mode *mode = get_type_mode(res_tp);
 
 		irn = new_r_Const(irg, get_mode_null(mode));
 		DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_STRCMP);
@@ -898,7 +898,7 @@ int i_mapper_strcmp(ir_node *call, void *ctx)
 	} else if (ent_r != NULL) {
 		if (is_empty_string(ent_r)) {
 			/* s strcmp(s, "") ==> (*s) */
-			ir_node  *mem, *block;
+			ir_node  *block;
 			dbg_info *dbg;
 			ir_mode  *mode;
 
@@ -934,7 +934,6 @@ replace_by_call:
 	}
 
 	if (irn != NULL) {
-		ir_node *mem = get_Call_mem(call);
 		DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_STRCMP);
 		replace_call(irn, call, mem, reg, exc);
 		return 1;

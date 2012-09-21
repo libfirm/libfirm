@@ -754,7 +754,6 @@ static void csv_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 		ir_graph *const_irg = get_const_code_irg();
 
 		if (entry->irg == const_irg) {
-			name = "<Const code Irg>";
 			return;
 		} else {
 			if (entry->ent)

@@ -404,7 +404,7 @@ static void congruence_def(ir_nodeset_t *live_nodes, const ir_node *node)
 			if (interferes)
 				continue;
 
-			node_idx = uf_union(congruence_classes, node_idx, op_idx);
+			uf_union(congruence_classes, node_idx, op_idx);
 			DB((dbg, LEVEL_3, "Merge %+F and %+F congruence classes\n",
 			    node, op));
 			/* one should_be_same is enough... */

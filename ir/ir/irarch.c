@@ -281,14 +281,10 @@ static unsigned char *complement_condensed(mul_env *env, unsigned char *R, int r
  */
 static ir_tarval *condensed_to_value(mul_env *env, unsigned char *R, int r)
 {
-	ir_tarval *res, *tv;
-	int i, j;
-
-	j = 0;
-	tv = get_mode_one(env->mode);
-	res = NULL;
-	for (i = 0; i < r; ++i) {
-		j = R[i];
+	ir_tarval *tv  = get_mode_one(env->mode);
+	ir_tarval *res = NULL;
+	for (int i = 0; i < r; ++i) {
+		int j = R[i];
 		if (j) {
 			ir_tarval *t = new_tarval_from_long(j, mode_Iu);
 			tv = tarval_shl(tv, t);

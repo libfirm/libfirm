@@ -1838,9 +1838,6 @@ static ir_type *lower_mtp(ir_type *mtp)
  */
 static void lower_Return(ir_node *node, ir_mode *mode)
 {
-	ir_graph  *irg = get_irn_irg(node);
-	ir_entity *ent = get_irg_entity(irg);
-	ir_type   *mtp = get_entity_type(ent);
 	ir_node  **in;
 	size_t     i, j, n;
 	int        need_conv = 0;
@@ -1857,8 +1854,9 @@ static void lower_Return(ir_node *node, ir_mode *mode)
 	if (! need_conv)
 		return;
 
-	ent = get_irg_entity(irg);
-	mtp = get_entity_type(ent);
+	ir_graph  *irg = get_irn_irg(node);
+	ir_entity *ent = get_irg_entity(irg);
+	ir_type   *mtp = get_entity_type(ent);
 
 	/* create a new in array */
 	NEW_ARR_A(ir_node *, in, get_method_n_ress(mtp) + 1);

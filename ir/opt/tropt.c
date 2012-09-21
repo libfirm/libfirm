@@ -296,18 +296,14 @@ static int cancel_out_casts(ir_node *cast)
  */
 static int concretize_selected_entity(ir_node *sel)
 {
-	ir_node   *cast, *ptr = get_Sel_ptr(sel);
-	ir_type   *orig_tp, *cast_tp;
-	ir_entity *new_ent, *sel_ent;
-	int       res = 0;
+	int res = 0;
 
-	sel_ent = get_Sel_entity(sel);
-	cast    = get_Sel_ptr(sel);
-
+	ir_entity *sel_ent = get_Sel_entity(sel);
+	ir_node   *cast    = get_Sel_ptr(sel);
 	while (is_Cast(cast)) {
-		cast_tp = get_Cast_type(cast);
-		ptr     = get_Cast_op(cast);
-		orig_tp = get_irn_typeinfo_type(ptr);
+		ir_type *cast_tp = get_Cast_type(cast);
+		ir_node *ptr     = get_Cast_op(cast);
+		ir_type *orig_tp = get_irn_typeinfo_type(ptr);
 
 		/* we handle only classes */
 		if (!is_Pointer_type(orig_tp)|| !is_Pointer_type(cast_tp))
@@ -326,7 +322,7 @@ static int concretize_selected_entity(ir_node *sel)
 		if (get_class_member_index(cast_tp, sel_ent) == (size_t)-1)
 			return res;
 
-		new_ent = resolve_ent_polymorphy(orig_tp, sel_ent);
+		ir_entity *new_ent = resolve_ent_polymorphy(orig_tp, sel_ent);
 
 		/* New ent must be member of orig_tp. */
 		if (get_class_member_index(orig_tp, new_ent) == (size_t)-1)

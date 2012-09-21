@@ -306,46 +306,28 @@ static void copy_frame_entities(ir_graph *from, ir_graph *to)
 /* Inlines a method at the given call site. */
 int inline_method(ir_node *call, ir_graph *called_graph)
 {
-	ir_node       *pre_call;
-	ir_node       *post_call, *post_bl;
-	ir_node       *in[pn_Start_max+1];
-	ir_node       *end, *end_bl, *block;
-	ir_node       **res_pred;
-	ir_node       **cf_pred;
-	ir_node       **args_in;
-	ir_node       *ret, *phi;
-	int           arity, n_ret, n_exc, n_res, i, j, rem_opt;
-	int           irn_arity, n_params;
-	int           n_mem_phi;
-	enum exc_mode exc_handling;
-	ir_type       *mtp;
-	ir_type       *ctp;
-	ir_entity     *ent;
-	ir_graph      *rem;
-	ir_graph      *irg = get_irn_irg(call);
-
 	/* we cannot inline some types of calls */
 	if (! can_inline(call, called_graph))
 		return 0;
 
 	/* We cannot inline a recursive call. The graph must be copied before
 	 * the call the inline_method() using create_irg_copy(). */
+	ir_graph *irg = get_irn_irg(call);
 	if (called_graph == irg)
 		return 0;
 
-	ent      = get_irg_entity(called_graph);
-	mtp      = get_entity_type(ent);
-	ctp      = get_Call_type(call);
-	n_params = get_method_n_params(mtp);
-	n_res    = get_method_n_ress(mtp);
+	ir_entity *ent      = get_irg_entity(called_graph);
+	ir_type   *mtp      = get_entity_type(ent);
+	ir_type   *ctp      = get_Call_type(call);
+	int        n_params = get_method_n_params(mtp);
 
-	rem = current_ir_graph;
+	ir_graph *rem = current_ir_graph;
 	current_ir_graph = irg;
 
 	DB((dbg, LEVEL_1, "Inlining %+F(%+F) into %+F\n", call, called_graph, irg));
 
 	/* optimizations can cause problems when allocating new nodes */
-	rem_opt = get_opt_optimize();
+	int rem_opt = get_opt_optimize();
 	set_optimize(0);
 
 	/* Handle graph state */
@@ -366,22 +348,19 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 	   exc_handling:
 	   0 There is a handler.
 	   2 Exception handling not represented in Firm. -- */
-	{
-		ir_node *Xproj = NULL;
-		ir_node *proj;
-		for (proj = (ir_node*)get_irn_link(call); proj != NULL;
-		     proj = (ir_node*)get_irn_link(proj)) {
-			long proj_nr = get_Proj_proj(proj);
-			if (proj_nr == pn_Call_X_except) Xproj = proj;
-		}
-		exc_handling = Xproj != NULL ? exc_handler : exc_no_handler;
+	ir_node *Xproj = NULL;
+	for (ir_node *proj = (ir_node*)get_irn_link(call); proj != NULL;
+		 proj = (ir_node*)get_irn_link(proj)) {
+		long proj_nr = get_Proj_proj(proj);
+		if (proj_nr == pn_Call_X_except) Xproj = proj;
 	}
+	enum exc_mode exc_handling = Xproj != NULL ? exc_handler : exc_no_handler;
 
 	/* create the argument tuple */
-	args_in = ALLOCAN(ir_node*, n_params);
+	ir_node **args_in = ALLOCAN(ir_node*, n_params);
 
-	block = get_nodes_block(call);
-	for (i = n_params - 1; i >= 0; --i) {
+	ir_node *block = get_nodes_block(call);
+	for (int i = n_params - 1; i >= 0; --i) {
 		ir_node *arg      = get_Call_param(call, i);
 		ir_type *param_tp = get_method_param_type(mtp, i);
 		ir_mode *mode     = get_type_mode(param_tp);
@@ -395,14 +374,15 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 	/* the procedure and later replaces the Start node of the called graph.
 	 * Post_call is the old Call node and collects the results of the called
 	 * graph. Both will end up being a tuple. */
-	post_bl = get_nodes_block(call);
+	ir_node *post_bl = get_nodes_block(call);
 	/* XxMxPxPxPxT of Start + parameter of Call */
+	ir_node *in[pn_Start_max+1];
 	in[pn_Start_M]              = get_Call_mem(call);
 	in[pn_Start_X_initial_exec] = new_r_Jmp(post_bl);
 	in[pn_Start_P_frame_base]   = get_irg_frame(irg);
 	in[pn_Start_T_args]         = new_r_Tuple(post_bl, n_params, args_in);
-	pre_call = new_r_Tuple(post_bl, pn_Start_max+1, in);
-	post_call = call;
+	ir_node *pre_call = new_r_Tuple(post_bl, pn_Start_max+1, in);
+	ir_node *post_call = call;
 
 	/* --
 	   The new block gets the ins of the old block, pre_call and all its
@@ -418,23 +398,17 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 	 * node, similar for singleton nodes like NoMem and Bad.
 	 * Note: this will prohibit predecessors to be copied - only do it for
 	 *       nodes without predecessors */
-	{
-		ir_node *start_block;
-		ir_node *start;
-		ir_node *nomem;
+	ir_node *start_block = get_irg_start_block(called_graph);
+	set_new_node(start_block, get_nodes_block(pre_call));
+	mark_irn_visited(start_block);
 
-		start_block = get_irg_start_block(called_graph);
-		set_new_node(start_block, get_nodes_block(pre_call));
-		mark_irn_visited(start_block);
+	ir_node *start = get_irg_start(called_graph);
+	set_new_node(start, pre_call);
+	mark_irn_visited(start);
 
-		start = get_irg_start(called_graph);
-		set_new_node(start, pre_call);
-		mark_irn_visited(start);
-
-		nomem = get_irg_no_mem(called_graph);
-		set_new_node(nomem, get_irg_no_mem(irg));
-		mark_irn_visited(nomem);
-	}
+	ir_node *nomem = get_irg_no_mem(called_graph);
+	set_new_node(nomem, get_irg_no_mem(irg));
+	mark_irn_visited(nomem);
 
 	/* entitiy link is used to link entities on old stackframe to the
 	 * new stackframe */
@@ -463,27 +437,26 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 	*/
 
 	/* Precompute some values */
-	end_bl = get_new_node(get_irg_end_block(called_graph));
-	end    = get_new_node(get_irg_end(called_graph));
-	arity  = get_Block_n_cfgpreds(end_bl);    /* arity = n_exc + n_ret  */
-	n_res  = get_method_n_ress(get_Call_type(call));
+	ir_node *end_bl = get_new_node(get_irg_end_block(called_graph));
+	ir_node *end    = get_new_node(get_irg_end(called_graph));
+	int      arity  = get_Block_n_cfgpreds(end_bl); /* arity = n_exc + n_ret  */
+	int      n_res  = get_method_n_ress(get_Call_type(call));
 
-	res_pred = XMALLOCN(ir_node*, n_res);
-	cf_pred  = XMALLOCN(ir_node*, arity);
+	ir_node **res_pred = XMALLOCN(ir_node*, n_res);
+	ir_node **cf_pred  = XMALLOCN(ir_node*, arity);
 
 	/* archive keepalives */
-	irn_arity = get_irn_arity(end);
-	for (i = 0; i < irn_arity; i++) {
+	int irn_arity = get_irn_arity(end);
+	for (int i = 0; i < irn_arity; i++) {
 		ir_node *ka = get_End_keepalive(end, i);
 		if (! is_Bad(ka))
 			add_End_keepalive(get_irg_end(irg), ka);
 	}
 
 	/* replace Return nodes by Jump nodes */
-	n_ret = 0;
-	for (i = 0; i < arity; i++) {
-		ir_node *ret;
-		ret = get_Block_cfgpred(end_bl, i);
+	int n_ret = 0;
+	for (int i = 0; i < arity; i++) {
+		ir_node *ret = get_Block_cfgpred(end_bl, i);
 		if (is_Return(ret)) {
 			ir_node *block = get_nodes_block(ret);
 			cf_pred[n_ret] = new_r_Jmp(block);
@@ -496,9 +469,9 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 	 * add Phi node if there was more than one Return. */
 	turn_into_tuple(post_call, pn_Call_max+1);
 	/* First the Memory-Phi */
-	n_mem_phi = 0;
-	for (i = 0; i < arity; i++) {
-		ret = get_Block_cfgpred(end_bl, i);
+	int n_mem_phi = 0;
+	for (int i = 0; i < arity; i++) {
+		ir_node *ret = get_Block_cfgpred(end_bl, i);
 		if (is_Return(ret)) {
 			cf_pred[n_mem_phi++] = get_Return_mem(ret);
 		}
@@ -512,7 +485,7 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 			cf_pred[n_mem_phi++] = new_r_Proj(ret, mode_M, 1);
 		}
 	}
-	phi = new_r_Phi(post_bl, n_mem_phi, cf_pred, mode_M);
+	ir_node *phi = new_r_Phi(post_bl, n_mem_phi, cf_pred, mode_M);
 	set_Tuple_pred(call, pn_Call_M, phi);
 	/* Conserve Phi-list for further inlinings -- but might be optimized */
 	if (get_nodes_block(phi) == post_bl) {
@@ -521,13 +494,12 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 	}
 	/* Now the real results */
 	if (n_res > 0) {
-		ir_node *result_tuple;
-		for (j = 0; j < n_res; j++) {
+		for (int j = 0; j < n_res; j++) {
 			ir_type *res_type = get_method_res_type(ctp, j);
 			ir_mode *res_mode = get_type_mode(res_type);
-			n_ret = 0;
-			for (i = 0; i < arity; i++) {
-				ret = get_Block_cfgpred(end_bl, i);
+			int n_ret = 0;
+			for (int i = 0; i < arity; i++) {
+				ir_node *ret = get_Block_cfgpred(end_bl, i);
 				if (is_Return(ret)) {
 					ir_node *res = get_Return_res(ret, j);
 					if (get_irn_mode(res) != res_mode) {
@@ -550,7 +522,7 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 				set_Block_phis(post_bl, phi);
 			}
 		}
-		result_tuple = new_r_Tuple(post_bl, n_res, res_pred);
+		ir_node *result_tuple = new_r_Tuple(post_bl, n_res, res_pred);
 		set_Tuple_pred(call, pn_Call_T_result, result_tuple);
 	} else {
 		set_Tuple_pred(call, pn_Call_T_result, new_r_Bad(irg, mode_T));
@@ -570,11 +542,10 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 	   branches to the End node.
 	 */
 	if (exc_handling == exc_handler) {
-		n_exc = 0;
-		for (i = 0; i < arity; i++) {
-			ir_node *ret, *irn;
-			ret = get_Block_cfgpred(end_bl, i);
-			irn = skip_Proj(ret);
+		int n_exc = 0;
+		for (int i = 0; i < arity; i++) {
+			ir_node *ret = get_Block_cfgpred(end_bl, i);
+			ir_node *irn = skip_Proj(ret);
 			if (is_fragile_op(irn) || is_Raise(irn)) {
 				cf_pred[n_exc] = ret;
 				++n_exc;
@@ -592,13 +563,9 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 			set_Tuple_pred(call, pn_Call_X_except, new_r_Bad(irg, mode_X));
 		}
 	} else {
-		ir_node *main_end_bl;
-		int main_end_bl_arity;
-		ir_node **end_preds;
-
 		/* assert(exc_handling == 1 || no exceptions. ) */
-		n_exc = 0;
-		for (i = 0; i < arity; i++) {
+		int n_exc = 0;
+		for (int i = 0; i < arity; i++) {
 			ir_node *ret = get_Block_cfgpred(end_bl, i);
 			ir_node *irn = skip_Proj(ret);
 
@@ -607,13 +574,13 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 				n_exc++;
 			}
 		}
-		main_end_bl       = get_irg_end_block(irg);
-		main_end_bl_arity = get_irn_arity(main_end_bl);
-		end_preds         = XMALLOCN(ir_node*, n_exc + main_end_bl_arity);
+		ir_node  *main_end_bl       = get_irg_end_block(irg);
+		int       main_end_bl_arity = get_irn_arity(main_end_bl);
+		ir_node **end_preds         = XMALLOCN(ir_node*, n_exc+main_end_bl_arity);
 
-		for (i = 0; i < main_end_bl_arity; ++i)
+		for (int i = 0; i < main_end_bl_arity; ++i)
 			end_preds[i] = get_irn_n(main_end_bl, i);
-		for (i = 0; i < n_exc; ++i)
+		for (int i = 0; i < n_exc; ++i)
 			end_preds[main_end_bl_arity + i] = cf_pred[i];
 		set_irn_in(main_end_bl, n_exc + main_end_bl_arity, end_preds);
 		set_Tuple_pred(call, pn_Call_X_except, new_r_Bad(irg, mode_X));

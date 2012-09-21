@@ -420,9 +420,8 @@ static void amd64_get_call_abi(ir_type *method_type, be_abi_call_t *abi)
 		tp   = get_method_res_type(method_type, 0);
 		mode = get_type_mode(tp);
 
-		/* FIXME: No floating point yet */
-		/* be_abi_call_res_reg(abi, 0,
-			mode_is_float(mode) ? &amd64_fp_regs[REG_F0] : &amd64_registers[REG_R0], ABI_CONTEXT_BOTH); */
+		if (mode_is_float(mode))
+			panic("float not supported yet");
 
 		be_abi_call_res_reg(abi, 0,
 			&amd64_registers[REG_RAX], ABI_CONTEXT_BOTH);

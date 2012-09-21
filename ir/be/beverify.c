@@ -410,7 +410,7 @@ static void collect_memperm(be_verify_spillslots_env_t *env, ir_node *node, ir_n
 	}
 
 	spill.ent = spillent;
-	res = set_insert(spill_t, env->spills, &spill, sizeof(spill), hash);
+	(void)set_insert(spill_t, env->spills, &spill, sizeof(spill), hash);
 
 	int arity = be_get_MemPerm_entity_arity(memperm);
 	for (int i = 0; i < arity; ++i) {
@@ -434,7 +434,7 @@ static void collect_memphi(be_verify_spillslots_env_t *env, ir_node *node, ir_no
 	}
 
 	spill.ent = ent;
-	res = set_insert(spill_t, env->spills, &spill, sizeof(spill), hash);
+	(void)set_insert(spill_t, env->spills, &spill, sizeof(spill), hash);
 
 	/* is 1 of the arguments a spill? */
 	int arity = get_irn_arity(node);
@@ -495,6 +495,7 @@ static void check_spillslot_interference(be_verify_spillslots_env_t *env)
 	foreach_set(env->spills, spill_t, spill) {
 		spills[s++] = spill;
 	}
+	assert(s == spillcount);
 
 	for (int i = 0; i < spillcount; ++i) {
 		spill_t *sp1 = spills[i];

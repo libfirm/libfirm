@@ -169,13 +169,11 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 			 * Register allocation is copied from the former phi
 			 * arguments to the projs (new phi arguments).
 			 */
-			insert_after = perm;
 			foreach_set(arg_set, perm_proj_t, pp) {
 				ir_node *proj = new_r_Proj(perm, get_irn_mode(pp->arg), pp->pos);
 				pp->proj = proj;
 				assert(arch_get_irn_register(pp->arg));
 				arch_set_irn_register(proj, arch_get_irn_register(pp->arg));
-				insert_after = proj;
 				DBG((dbg, LEVEL_2, "Copy register assignment %s from %+F to %+F\n", arch_get_irn_register(pp->arg)->name, pp->arg, pp->proj));
 			}
 

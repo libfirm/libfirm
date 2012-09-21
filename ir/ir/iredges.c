@@ -790,33 +790,26 @@ static void count_user(ir_node *irn, void *env)
  */
 static void verify_edge_counter(ir_node *irn, void *env)
 {
-	build_walker           *w = (build_walker*)env;
-	bitset_t               *bs;
-	int                    list_cnt;
-	int                    ref_cnt;
-	int                    edge_cnt;
-	const struct list_head *head;
-	const struct list_head *pos;
-	ir_graph               *irg;
-
+	build_walker *w = (build_walker*)env;
 	if (IGNORE_NODE(irn))
 		return;
 
-	bs       = (bitset_t*)get_irn_link(irn);
-	list_cnt = 0;
-	ref_cnt  = 0;
-	edge_cnt = get_irn_edge_info(irn, EDGE_KIND_NORMAL)->out_count;
-	head     = &get_irn_edge_info(irn, EDGE_KIND_NORMAL)->outs_head;
+	bitset_t *bs       = (bitset_t*)get_irn_link(irn);
+	int       list_cnt = 0;
+	int       edge_cnt = get_irn_edge_info(irn, EDGE_KIND_NORMAL)->out_count;
+	const struct list_head *head
+		= &get_irn_edge_info(irn, EDGE_KIND_NORMAL)->outs_head;
 
 	/* We can iterate safely here, list heads have already been verified. */
+	const struct list_head *pos;
 	list_for_each(pos, head) {
 		++list_cnt;
 	}
 
 	/* check all nodes that reference us and count edges that point number
 	 * of ins that actually point to us */
-	irg = get_irn_irg(irn);
-	ref_cnt = 0;
+	ir_graph *irg     = get_irn_irg(irn);
+	int       ref_cnt = 0;
 	bitset_foreach(bs, idx) {
 		int i, arity;
 		ir_node *src = get_idx_irn(irg, idx);
