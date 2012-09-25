@@ -63,13 +63,6 @@ static unsigned *ready_set;
 static unsigned *busy_set;
 
 /**
- * We misuse the mtp_property_inherited flag as temporary here.
- * The is ok, as we cannot set or get it anyway using the
- * get_addtional_properties API.
- */
-#define mtp_temporary  mtp_property_inherited
-
-/**
  * Walker: Collect all calls to const and pure functions
  * to lists. Collect all Proj(Call) nodes into a Proj list.
  */
@@ -441,7 +434,7 @@ static mtp_additional_properties check_const_or_pure_function(ir_graph *irg, boo
 	ir_type   *type     = get_entity_type(entity);
 	size_t     n_params = get_method_n_params(type);
 	mtp_additional_properties may_be_const = mtp_property_const;
-	mtp_additional_properties prop = get_irg_additional_properties(irg);
+	mtp_additional_properties prop = get_entity_additional_properties(entity);
 
 	/* libfirm handles aggregate parameters by passing around pointers to
 	 * stuff in memory, so if we have compound parameters we are never const */
@@ -531,7 +524,7 @@ static mtp_additional_properties check_const_or_pure_function(ir_graph *irg, boo
 	if (top) {
 		/* Set the property only if we are at top-level. */
 		if (prop != mtp_no_property) {
-			add_irg_additional_properties(irg, prop);
+			add_entity_additional_properties(entity, prop);
 		}
 		SET_IRG_READY(irg);
 	}
@@ -718,9 +711,10 @@ static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, bool top
 	mtp_additional_properties curr_prop
 		= mtp_property_malloc | mtp_property_nothrow;
 
+	ir_entity *ent = get_irg_entity(irg);
 	if (IS_IRG_READY(irg)) {
 		/* already checked */
-		return get_irg_additional_properties(irg);
+		return get_entity_additional_properties(ent);
 	}
 	if (IS_IRG_BUSY(irg)) {
 		/* we are still evaluate this method. Be optimistic,
@@ -729,9 +723,7 @@ static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, bool top
 	}
 	SET_IRG_BUSY(irg);
 
-	ir_entity *ent = get_irg_entity(irg);
-	ir_type   *mtp = get_entity_type(ent);
-
+	ir_type *mtp = get_entity_type(ent);
 	if (get_method_n_ress(mtp) <= 0)
 		curr_prop &= ~mtp_property_malloc;
 
@@ -828,7 +820,7 @@ static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, bool top
 		/* We use the temporary flag here to mark an optimistic result.
 		 * Set the property only if we are sure that it does NOT base on
 		 * temporary results OR if we are at top-level. */
-		add_irg_additional_properties(irg, curr_prop & ~mtp_temporary);
+		add_entity_additional_properties(ent, curr_prop & ~mtp_temporary);
 		SET_IRG_READY(irg);
 	}
 	if (top)
@@ -846,8 +838,10 @@ static void check_for_possible_endless_loops(ir_graph *irg)
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 
 	ir_loop *root_loop = get_irg_loop(irg);
-	if (root_loop->flags & loop_outer_loop)
-		add_irg_additional_properties(irg, mtp_property_has_loop);
+	if (root_loop->flags & loop_outer_loop) {
+		ir_entity *ent = get_irg_entity(irg);
+		add_entity_additional_properties(ent, mtp_property_has_loop);
+	}
 
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_ALL);
 }

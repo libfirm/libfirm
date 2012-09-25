@@ -201,11 +201,11 @@ static bool can_inline(ir_node *call, ir_graph *called_graph)
 	size_t              n_params    = get_method_n_params(called_type);
 	size_t              n_arguments = get_method_n_params(call_type);
 	size_t              n_res       = get_method_n_ress(called_type);
-	irg_inline_property prop        = get_irg_inline_property(called_graph);
+	mtp_additional_properties props = get_entity_additional_properties(called);
 	size_t              i;
 	bool                res;
 
-	if (prop == irg_inline_forbidden)
+	if (props & mtp_property_noinline)
 		return false;
 
 	if (n_arguments != n_params) {
@@ -702,14 +702,15 @@ void inline_small_irgs(ir_graph *irg, int size)
 		collect_phiprojs(irg);
 
 		list_for_each_entry(call_entry, entry, &env.calls, list) {
-			ir_graph            *callee = entry->callee;
-			irg_inline_property prop    = get_irg_inline_property(callee);
+			ir_graph  *callee = entry->callee;
+			ir_entity *called = get_irg_entity(callee);
+			mtp_additional_properties props
+				= get_entity_additional_properties(called);
 
-			if (prop == irg_inline_forbidden) {
+			if (props & mtp_property_noinline)
 				continue;
-			}
 
-			if (prop >= irg_inline_forced ||
+			if ((props & mtp_property_always_inline) ||
 			    _obstack_memory_used(callee->obst) - (int)obstack_room(callee->obst) < size) {
 				inline_method(entry->call, callee);
 			}
@@ -972,7 +973,6 @@ void inline_leaf_functions(unsigned maxsize, unsigned leafsize,
 		did_inline = 0;
 
 		for (i = 0; i < n_irgs; ++i) {
-			ir_node *call;
 			int phiproj_computed = 0;
 
 			current_ir_graph = get_irp_irg(i);
@@ -980,22 +980,19 @@ void inline_leaf_functions(unsigned maxsize, unsigned leafsize,
 
 			ir_reserve_resources(current_ir_graph, IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST);
 			list_for_each_entry_safe(call_entry, entry, next, &env->calls, list) {
-				ir_graph            *callee;
-				irg_inline_property  prop;
-
 				if (env->n_nodes > maxsize)
 					break;
 
-				call   = entry->call;
-				callee = entry->callee;
-
-				prop = get_irg_inline_property(callee);
-				if (prop == irg_inline_forbidden) {
+				ir_node   *call   = entry->call;
+				ir_graph  *callee = entry->callee;
+				ir_entity *called = get_irg_entity(callee);
+				mtp_additional_properties props
+					= get_entity_additional_properties(called);
+				if (props & mtp_property_noinline)
 					continue;
-				}
 
 				if (is_leaf(callee) && (
-				    is_smaller(callee, leafsize) || prop >= irg_inline_forced)) {
+				    is_smaller(callee, leafsize) || (props & mtp_property_always_inline))) {
 					if (!phiproj_computed) {
 						phiproj_computed = 1;
 						collect_phiprojs(current_ir_graph);
@@ -1026,7 +1023,6 @@ void inline_leaf_functions(unsigned maxsize, unsigned leafsize,
 
 	/* inline other small functions. */
 	for (i = 0; i < n_irgs; ++i) {
-		ir_node *call;
 		int phiproj_computed = 0;
 
 		current_ir_graph = get_irp_irg(i);
@@ -1036,19 +1032,15 @@ void inline_leaf_functions(unsigned maxsize, unsigned leafsize,
 
 		/* note that the list of possible calls is updated during the process */
 		list_for_each_entry_safe(call_entry, entry, next, &env->calls, list) {
-			irg_inline_property prop;
-			ir_graph            *callee;
-			ir_graph            *calleee;
+			ir_node   *call   = entry->call;
+			ir_graph  *callee = entry->callee;
+			ir_entity *called = get_irg_entity(callee);
 
-			call   = entry->call;
-			callee = entry->callee;
-
-			prop = get_irg_inline_property(callee);
-			if (prop == irg_inline_forbidden) {
+			mtp_additional_properties props = get_entity_additional_properties(called);
+			if (props & mtp_property_noinline)
 				continue;
-			}
 
-			calleee = pmap_get(ir_graph, copied_graphs, callee);
+			ir_graph *calleee = pmap_get(ir_graph, copied_graphs, callee);
 			if (calleee != NULL) {
 				/*
 				 * Remap callee if we have a copy.
@@ -1057,7 +1049,7 @@ void inline_leaf_functions(unsigned maxsize, unsigned leafsize,
 				callee = calleee;
 			}
 
-			if (prop >= irg_inline_forced ||
+			if ((props & mtp_property_always_inline) ||
 			    (is_smaller(callee, size) && env->n_nodes < maxsize) /* small function */) {
 				if (current_ir_graph == callee) {
 					/*
@@ -1339,12 +1331,11 @@ static int calc_inline_benefice(call_entry *entry, ir_graph *callee)
 	int       weight = 0;
 	int       all_const;
 	unsigned  cc, v;
-	irg_inline_property prop;
 
 	inline_irg_env *callee_env;
 
-	prop = get_irg_inline_property(callee);
-	if (prop == irg_inline_forbidden) {
+	mtp_additional_properties props = get_entity_additional_properties(ent);
+	if (props & mtp_property_noinline) {
 		DB((dbg, LEVEL_2, "In %+F Call to %+F: inlining forbidden\n",
 		    call, callee));
 		return entry->benefice = INT_MIN;
@@ -1357,12 +1348,12 @@ static int calc_inline_benefice(call_entry *entry, ir_graph *callee)
 		if (is_parameter_entity(frame_ent)) {
 			// TODO inliner should handle parameter entities by inserting Store operations
 			DB((dbg, LEVEL_2, "In %+F Call to %+F: inlining forbidden due to parameter entity\n", call, callee));
-			set_irg_inline_property(callee, irg_inline_forbidden);
+			add_entity_additional_properties(ent, mtp_property_noinline);
 			return entry->benefice = INT_MIN;
 		}
 	}
 
-	if (get_irg_additional_properties(callee) & mtp_property_noreturn) {
+	if (props & mtp_property_noreturn) {
 		DB((dbg, LEVEL_2, "In %+F Call to %+F: not inlining noreturn or weak\n",
 		    call, callee));
 		return entry->benefice = INT_MIN;
@@ -1499,14 +1490,15 @@ static ir_graph **create_irg_list(void)
 static void maybe_push_call(pqueue_t *pqueue, call_entry *call,
                             int inline_threshold)
 {
-	ir_graph            *callee  = call->callee;
-	irg_inline_property prop     = get_irg_inline_property(callee);
-	int                 benefice = calc_inline_benefice(call, callee);
+	ir_graph *callee   = call->callee;
+	int       benefice = calc_inline_benefice(call, callee);
 
 	DB((dbg, LEVEL_2, "In %+F Call %+F to %+F has benefice %d\n",
 	    get_irn_irg(call->call), call->call, callee, benefice));
 
-	if (prop < irg_inline_forced && benefice < inline_threshold) {
+	ir_entity                *ent   = get_irg_entity(callee);
+	mtp_additional_properties props = get_entity_additional_properties(ent);
+	if (!(props & mtp_property_always_inline) && benefice < inline_threshold) {
 		return;
 	}
 
@@ -1558,11 +1550,14 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 		ir_graph            *callee     = curr_call->callee;
 		ir_node             *call_node  = curr_call->call;
 		inline_irg_env      *callee_env = (inline_irg_env*)get_irg_link(callee);
-		irg_inline_property prop        = get_irg_inline_property(callee);
+		ir_entity           *ent        = get_irg_entity(callee);
+		mtp_additional_properties props
+			= get_entity_additional_properties(ent);
 		ir_graph            *calleee;
 		int                 loop_depth;
 
-		if ((prop < irg_inline_forced) && env->n_nodes + callee_env->n_nodes > maxsize) {
+		if (!(props & mtp_property_always_inline)
+		    && env->n_nodes + callee_env->n_nodes > maxsize) {
 			DB((dbg, LEVEL_2, "%+F: too big (%d) + %+F (%d)\n", irg,
 						env->n_nodes, callee, callee_env->n_nodes));
 			continue;

@@ -259,37 +259,6 @@ static inline void set_irg_callee_info_state_(ir_graph *irg, irg_callee_info_sta
 		set_irp_callee_info_state(s);
 }
 
-static inline irg_inline_property get_irg_inline_property_(const ir_graph *irg)
-{
-	return irg->inline_property;
-}
-
-static inline void set_irg_inline_property_(ir_graph *irg, irg_inline_property s)
-{
-	irg->inline_property = s;
-}
-
-static inline mtp_additional_properties get_irg_additional_properties_(const ir_graph *irg)
-{
-	if (irg->additional_properties & mtp_property_inherited)
-		return get_method_additional_properties(get_entity_type(irg->ent));
-	return irg->additional_properties;
-}
-
-static inline void set_irg_additional_properties_(ir_graph *irg, mtp_additional_properties mask)
-{
-	irg->additional_properties = mask & ~mtp_property_inherited;
-}
-
-static inline void add_irg_additional_properties_(ir_graph *irg, mtp_additional_properties flag)
-{
-	mtp_additional_properties prop = irg->additional_properties;
-
-	if (prop & mtp_property_inherited)
-		prop = get_method_additional_properties(get_entity_type(irg->ent));
-	irg->additional_properties = prop | flag;
-}
-
 static inline void set_irg_link_(ir_graph *irg, void *thing)
 {
 	irg->link = thing;
@@ -459,8 +428,6 @@ static inline void set_irg_anchor(ir_graph *irg, int idx, ir_node *irn)
 #define set_irg_pinned(irg, p)                set_irg_pinned_(irg, p)
 #define get_irg_callee_info_state(irg)        get_irg_callee_info_state_(irg)
 #define set_irg_callee_info_state(irg, s)     set_irg_callee_info_state_(irg, s)
-#define get_irg_inline_property(irg)          get_irg_inline_property_(irg)
-#define set_irg_inline_property(irg, s)       set_irg_inline_property_(irg, s)
 #define get_irg_additional_properties(irg)    get_irg_additional_properties_(irg)
 #define set_irg_additional_properties(irg, m) set_irg_additional_properties_(irg, m)
 #define set_irg_additional_property(irg, f)   set_irg_additional_property_(irg, f)

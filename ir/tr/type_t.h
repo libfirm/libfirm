@@ -72,7 +72,7 @@ typedef struct {
 	size_t       n_res;             /**< Number of results. */
 	tp_ent_pair *res_type;          /**< Array of result type/value ir_entity pairs. */
 	ir_variadicity variadicity;     /**< The variadicity of the method. */
-	mtp_additional_properties additional_properties; /**< Set of additional method properties. */
+	mtp_additional_properties properties; /**< Set of additional method properties. */
 	unsigned irg_calling_conv;      /**< A set of calling convention flags. */
 } mtd_attr;
 
@@ -502,25 +502,19 @@ static inline size_t _get_method_n_ress(const ir_type *method)
 static inline mtp_additional_properties _get_method_additional_properties(const ir_type *method)
 {
 	assert(method->type_op == type_method);
-	return method->attr.ma.additional_properties;
+	return method->attr.ma.properties;
 }
 
-static inline void _set_method_additional_properties(ir_type *method, mtp_additional_properties mask)
+static inline void _set_method_additional_properties(ir_type *method, mtp_additional_properties properties)
 {
 	assert(method->type_op == type_method);
-
-	/* do not allow to set the mtp_property_inherited flag or
-	 * the automatic inheritance of flags will not work */
-	method->attr.ma.additional_properties = mask & ~mtp_property_inherited;
+	method->attr.ma.properties = properties;
 }
 
-static inline void _add_method_additional_properties(ir_type *method, mtp_additional_properties flag)
+static inline void _add_method_additional_properties(ir_type *method, mtp_additional_properties properties)
 {
 	assert(method->type_op == type_method);
-
-	/* do not allow to set the mtp_property_inherited flag or
-	 * the automatic inheritance of flags will not work */
-	method->attr.ma.additional_properties |= flag & ~mtp_property_inherited;
+	method->attr.ma.properties |= properties;
 }
 
 static inline unsigned _get_method_calling_convention(const ir_type *method)

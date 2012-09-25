@@ -164,9 +164,6 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 
 	new_identities(res);
 
-	res->inline_property       = irg_inline_any;
-	res->additional_properties = mtp_property_inherited;  /* inherited from type */
-
 	res->irg_pinned_state    = op_pin_state_pinned;
 	res->typeinfo_state      = ir_typeinfo_none;
 	set_irp_typeinfo_inconsistent();           /* there is a new graph with typeinfo_none. */
@@ -608,31 +605,6 @@ irg_callee_info_state (get_irg_callee_info_state)(const ir_graph *irg)
 void (set_irg_callee_info_state)(ir_graph *irg, irg_callee_info_state s)
 {
 	set_irg_callee_info_state_(irg, s);
-}
-
-irg_inline_property (get_irg_inline_property)(const ir_graph *irg)
-{
-	return get_irg_inline_property_(irg);
-}
-
-void (set_irg_inline_property)(ir_graph *irg, irg_inline_property s)
-{
-	set_irg_inline_property_(irg, s);
-}
-
-mtp_additional_properties (get_irg_additional_properties)(const ir_graph *irg)
-{
-	return get_irg_additional_properties_(irg);
-}
-
-void (set_irg_additional_properties)(ir_graph *irg, mtp_additional_properties property_mask)
-{
-	set_irg_additional_properties_(irg, property_mask);
-}
-
-void (add_irg_additional_properties)(ir_graph *irg, mtp_additional_properties flag)
-{
-	add_irg_additional_properties_(irg, flag);
 }
 
 void (set_irg_link)(ir_graph *irg, void *thing)

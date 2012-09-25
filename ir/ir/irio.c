@@ -91,7 +91,6 @@ typedef enum typetag_t {
 	tt_builtin_kind,
 	tt_cond_jmp_predicate,
 	tt_initializer,
-	tt_irg_inline_property,
 	tt_keyword,
 	tt_linkage,
 	tt_mode_arithmetic,
@@ -281,12 +280,6 @@ static void symtbl_init(void)
 	INSERT(tt_mode_arithmetic, "ieee754",            irma_ieee754);
 	INSERT(tt_mode_arithmetic, "x86_extended_float", irma_x86_extended_float);
 
-	INSERT(tt_irg_inline_property, "any",            irg_inline_any);
-	INSERT(tt_irg_inline_property, "recommended",    irg_inline_recomended);
-	INSERT(tt_irg_inline_property, "forbidden",      irg_inline_forbidden);
-	INSERT(tt_irg_inline_property, "forced",         irg_inline_forced);
-	INSERT(tt_irg_inline_property, "forced_no_body", irg_inline_forced_no_body);
-
 	INSERTENUM(tt_pin_state, op_pin_state_floats);
 	INSERTENUM(tt_pin_state, op_pin_state_pinned);
 	INSERTENUM(tt_pin_state, op_pin_state_exc_pinned);
@@ -336,18 +329,6 @@ static const char *get_mode_arithmetic_name(ir_mode_arithmetic arithmetic)
 	case irma_x86_extended_float: return "x86_extended_float";
 	}
 	panic("invalid mode_arithmetic");
-}
-
-static const char *get_irg_inline_property_name(irg_inline_property prop)
-{
-	switch (prop) {
-	case irg_inline_any:            return "any";
-	case irg_inline_recomended:     return "recommended";
-	case irg_inline_forbidden:      return "forbidden";
-	case irg_inline_forced:         return "forced";
-	case irg_inline_forced_no_body: return "forced_no_body";
-	}
-	panic("invalid irg_inline_property");
 }
 
 /** Returns the according symbol value for the given string and tag, or SYMERROR if none was found. */
@@ -568,12 +549,6 @@ static void write_pin_state(write_env_t *env, op_pin_state state)
 static void write_volatility(write_env_t *env, ir_volatility vol)
 {
 	fputs(get_volatility_name(vol), env->file);
-	fputc(' ', env->file);
-}
-
-static void write_inline_property(write_env_t *env, irg_inline_property prop)
-{
-	fputs(get_irg_inline_property_name(prop), env->file);
 	fputc(' ', env->file);
 }
 
@@ -1168,8 +1143,6 @@ static void write_irg(write_env_t *env, ir_graph *irg)
 	write_symbol(env, "irg");
 	write_entity_ref(env, get_irg_entity(irg));
 	write_type_ref(env, get_irg_frame_type(irg));
-	write_inline_property(env, get_irg_inline_property(irg));
-	write_unsigned(env, get_irg_additional_properties(irg));
 	write_scope_begin(env);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 	inc_irg_visited(irg);
@@ -1563,7 +1536,6 @@ static const char *get_typetag_name(typetag_t typetag)
 	case tt_builtin_kind:        return "builtin kind";
 	case tt_cond_jmp_predicate:  return "cond_jmp_predicate";
 	case tt_initializer:         return "initializer kind";
-	case tt_irg_inline_property: return "irg_inline_property";
 	case tt_keyword:             return "keyword";
 	case tt_linkage:             return "linkage";
 	case tt_mode_arithmetic:     return "mode_arithmetic";
@@ -1659,11 +1631,6 @@ static bool read_throws(read_env_t *env)
 static keyword_t read_keyword(read_env_t *env)
 {
 	return (keyword_t)read_enum(env, tt_keyword);
-}
-
-static irg_inline_property read_inline_property(read_env_t *env)
-{
-	return (irg_inline_property)read_enum(env, tt_irg_inline_property);
 }
 
 static ir_relation read_relation(read_env_t *env)
@@ -2275,14 +2242,10 @@ next_delayed_pred: ;
 
 static ir_graph *read_irg(read_env_t *env)
 {
-	ir_entity          *irgent = get_entity(env, read_long(env));
-	ir_graph           *irg    = new_ir_graph(irgent, 0);
-	ir_type            *frame  = read_type_ref(env);
-	irg_inline_property prop   = read_inline_property(env);
-	unsigned            props  = read_unsigned(env);
+	ir_entity *irgent = get_entity(env, read_long(env));
+	ir_graph  *irg    = new_ir_graph(irgent, 0);
+	ir_type   *frame  = read_type_ref(env);
 	set_irg_frame_type(irg, frame);
-	set_irg_inline_property(irg, prop);
-	set_irg_additional_properties(irg, (mtp_additional_properties)props);
 	read_graph(env, irg);
 	irg_finalize_cons(irg);
 	return irg;

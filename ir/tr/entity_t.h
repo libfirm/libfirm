@@ -73,7 +73,7 @@ union ir_initializer_t {
 typedef struct method_ent_attr {
 	ir_graph *irg;                 /**< The corresponding irg if known.
 	                                    The ir_graph constructor automatically sets this field. */
-	mtp_additional_properties irg_add_properties;   /**< Additional graph properties can be
+	mtp_additional_properties properties;   /**< Additional graph properties can be
 	                                    stored in a entity if no irg is available. */
 
 	unsigned vtable_number;        /**< For a dynamically called method, the number assigned

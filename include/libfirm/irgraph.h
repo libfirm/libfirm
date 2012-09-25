@@ -308,41 +308,6 @@ FIRM_API irg_callee_info_state get_irg_callee_info_state(const ir_graph *irg);
 /** Sets the callee_info_state of an IR graph. */
 FIRM_API void set_irg_callee_info_state(ir_graph *irg, irg_callee_info_state s);
 
-/** property:
- *  Tells how to handle an ir graph in inlining.
- */
-typedef enum {
-	irg_inline_any,            /**< No restriction on inlining. Default. */
-	irg_inline_forbidden,      /**< The graph must not be inlined. */
-	irg_inline_recomended,     /**< The graph should be inlined. */
-	irg_inline_forced,         /**< The graph must be inlined. */
-	irg_inline_forced_no_body  /**< The graph must be inlined. No body is allowed
-	                                to be emitted. */
-} irg_inline_property;
-
-/** Returns the inline property of a graph. */
-FIRM_API irg_inline_property get_irg_inline_property(const ir_graph *irg);
-/** Sets the inline property of a graph. */
-FIRM_API void set_irg_inline_property(ir_graph *irg, irg_inline_property s);
-
-/**
- * Returns the mask of the additional graph properties.
- * The properties are automatically inherited from the method type
- * if they were not set using set_irg_additional_properties() or
- * set_irg_additional_properties().
- *
- * @return a bitset of mtp_additional_properties values
- */
-FIRM_API mtp_additional_properties get_irg_additional_properties(const ir_graph *irg);
-
-/** Sets the mask of the additional graph properties. */
-FIRM_API void set_irg_additional_properties(ir_graph *irg,
-                                            mtp_additional_properties property_mask);
-
-/** Sets one additional graph property. */
-FIRM_API void add_irg_additional_properties(ir_graph *irg,
-                                            mtp_additional_properties flag);
-
 /** A void * field to link arbitrary information to the node. */
 FIRM_API void set_irg_link(ir_graph *irg, void *thing);
 /** Return void* field previously set by set_irg_link() */

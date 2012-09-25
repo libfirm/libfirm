@@ -514,10 +514,6 @@ struct ir_graph {
 	struct obstack *obst;          /**< The obstack where all of the ir_nodes live. */
 	ir_node *current_block;        /**< Current block for newly gen_*()-erated ir_nodes. */
 
-	/* -- Fields for graph properties -- */
-	irg_inline_property        inline_property;       /**< How to handle inlineing. */
-	mtp_additional_properties  additional_properties; /**< Additional graph properties. */
-
 	/* -- Fields indicating different states of irgraph -- */
 	ir_graph_properties_t  properties;
 	ir_graph_constraints_t constraints;
