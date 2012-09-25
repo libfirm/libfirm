@@ -81,7 +81,7 @@ static void collect_const_and_pure_calls(ir_node *node, void *env)
 	ir_node   *call;
 	ir_node   *ptr;
 	ir_entity *ent;
-	unsigned  and_prop, or_prop, prop;
+	unsigned   prop;
 
 	if (is_Call(node)) {
 		call = node;
@@ -96,37 +96,9 @@ static void collect_const_and_pure_calls(ir_node *node, void *env)
 			if ((prop & (mtp_property_const|mtp_property_pure)) == 0)
 				return;
 			++ctx->n_calls_SymConst;
-		} else if (get_opt_closed_world() &&
-		           is_Sel(ptr) &&
-		           get_irg_callee_info_state(get_irn_irg(node)) == irg_callee_info_consistent) {
-			/* If all possible callees are const functions, we can remove the memory edge. */
-			size_t i, n_callees = get_Call_n_callees(call);
-			if (n_callees == 0) {
-				/* This is kind of strange:  dying code or a Call that will raise an exception
-				   when executed as there is no implementation to call.  So better not
-				   optimize. */
-				return;
-			}
-
-			/* note that const function are a subset of pure ones */
-			and_prop = mtp_property_const | mtp_property_pure;
-			or_prop  = 0;
-			for (i = 0; i < n_callees; ++i) {
-				ent = get_Call_callee(call, i);
-				if (is_unknown_entity(ent)) {
-					/* we don't know which entity is called here */
-					return;
-				}
-				prop      = get_entity_additional_properties(ent);
-				and_prop &= prop;
-				or_prop  &= prop;
-				if (and_prop == mtp_no_property)
-					return;
-			}
-			prop = and_prop | (or_prop & mtp_property_has_loop);
-			++ctx->n_calls_Sel;
-		} else
+		} else {
 			return;
+		}
 
 		/* ok, if we get here we found a call to a const or a pure function */
 		if (prop & mtp_property_pure) {
@@ -269,33 +241,9 @@ static void collect_nothrow_calls(ir_node *node, void *env)
 			if ((prop & mtp_property_nothrow) == 0)
 				return;
 			++ctx->n_calls_SymConst;
-		} else if (get_opt_closed_world() &&
-		           is_Sel(ptr) &&
-		           get_irg_callee_info_state(get_irn_irg(node)) == irg_callee_info_consistent) {
-			/* If all possible callees are nothrow functions, we can remove the exception edge. */
-			size_t i, n_callees = get_Call_n_callees(call);
-			if (n_callees == 0) {
-				/* This is kind of strange:  dying code or a Call that will raise an exception
-				   when executed as there is no implementation to call.  So better not
-				   optimize. */
-				return;
-			}
-
-			/* note that const function are a subset of pure ones */
-			prop = mtp_property_nothrow;
-			for (i = 0; i < n_callees; ++i) {
-				ent = get_Call_callee(call, i);
-				if (is_unknown_entity(ent)) {
-					/* we don't know which entity is called here */
-					return;
-				}
-				prop &= get_entity_additional_properties(ent);
-				if (prop == mtp_no_property)
-					return;
-			}
-			++ctx->n_calls_Sel;
-		} else
+		} else {
 			return;
+		}
 
 		/* ok, if we get here we found a call to a nothrow function */
 		set_irn_link(call, ctx->nothrow_call_list);
@@ -855,32 +803,6 @@ static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, int top)
 							} else {
 								curr_prop = update_property(curr_prop, get_entity_additional_properties(ent));
 							}
-						} else if (get_opt_closed_world() &&
-						           is_Sel(ptr) &&
-						           get_irg_callee_info_state(irg) == irg_callee_info_consistent) {
-							/* check if all possible callees are malloc functions. */
-							size_t i, n_callees = get_Call_n_callees(res);
-							if (n_callees == 0) {
-								/* This is kind of strange:  dying code or a Call that will raise an exception
-								   when executed as there is no implementation to call.  So better not
-								   optimize. */
-								curr_prop &= ~mtp_property_malloc;
-								continue;
-							}
-
-							for (i = 0; i < n_callees; ++i) {
-								ir_entity *ent = get_Call_callee(res, i);
-								if (is_unknown_entity(ent)) {
-									/* we don't know which entity is called here */
-									curr_prop &= ~mtp_property_malloc;
-									break;
-								}
-								if ((get_entity_additional_properties(ent) & mtp_property_malloc) == 0) {
-									curr_prop &= ~mtp_property_malloc;
-									break;
-								}
-							}
-							/* if we pass the for cycle, malloc is still ok */
 						} else {
 							/* unknown call */
 							curr_prop &= ~mtp_property_malloc;
@@ -913,32 +835,6 @@ static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, int top)
 						if ((get_entity_additional_properties(ent) & mtp_property_nothrow) == 0)
 							curr_prop &= ~mtp_property_nothrow;
 					}
-				} else if (get_opt_closed_world() &&
-				           is_Sel(ptr) &&
-				           get_irg_callee_info_state(irg) == irg_callee_info_consistent) {
-					/* check if all possible callees are nothrow functions. */
-					size_t i, n_callees = get_Call_n_callees(pred);
-					if (n_callees == 0) {
-						/* This is kind of strange:  dying code or a Call that will raise an exception
-						   when executed as there is no implementation to call.  So better not
-						   optimize. */
-						curr_prop &= ~mtp_property_nothrow;
-						continue;
-					}
-
-					for (i = 0; i < n_callees; ++i) {
-						ir_entity *ent = get_Call_callee(pred, i);
-						if (is_unknown_entity(ent)) {
-							/* we don't know which entity is called here */
-							curr_prop &= ~mtp_property_nothrow;
-							break;
-						}
-						if ((get_entity_additional_properties(ent) & mtp_property_nothrow) == 0) {
-							curr_prop &= ~mtp_property_nothrow;
-							break;
-						}
-					}
-					/* if we pass the for cycle, nothrow is still ok */
 				} else {
 					/* unknown call */
 					curr_prop &= ~mtp_property_nothrow;
