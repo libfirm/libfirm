@@ -711,28 +711,44 @@ static bool is_sameconv(ir_node *node)
 /** Skip all signedness convs */
 static ir_node *ia32_skip_sameconv(ir_node *node)
 {
-	while (is_sameconv(node))
+	while (is_sameconv(node)) {
 		node = get_Conv_op(node);
+	}
 
 	return node;
 }
 
-static ir_node *create_upconv(ir_node *node, ir_node *orig_node)
+static ir_node *transform_sext(ir_node *node, ir_node *orig_node)
 {
-	ir_mode  *mode = get_irn_mode(node);
-	ir_node  *block;
-	ir_mode  *tgt_mode;
-	dbg_info *dbgi;
+	ir_mode  *mode  = get_irn_mode(node);
+	ir_node  *block = get_nodes_block(node);
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	return create_I2I_Conv(mode, mode_Is, dbgi, block, node, orig_node);
+}
 
-	if (mode_is_signed(mode)) {
-		tgt_mode = mode_Is;
-	} else {
-		tgt_mode = mode_Iu;
+static ir_node *transform_zext(ir_node *node, ir_node *orig_node)
+{
+	ir_mode  *mode  = get_irn_mode(node);
+	ir_node  *block = get_nodes_block(node);
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	/* normalize to an unsigned mode */
+	switch (get_mode_size_bits(mode)) {
+	case 8:  mode = mode_Bu; break;
+	case 16: mode = mode_Hu; break;
+	default:
+		panic("ia32: invalid mode in zest: %+F", node);
 	}
-	block = get_nodes_block(node);
-	dbgi  = get_irn_dbg_info(node);
+	return create_I2I_Conv(mode, mode_Iu, dbgi, block, node, orig_node);
+}
 
-	return create_I2I_Conv(mode, tgt_mode, dbgi, block, node, orig_node);
+static ir_node *transform_upconv(ir_node *node, ir_node *orig_node)
+{
+	ir_mode *mode = get_irn_mode(node);
+	if (mode_is_signed(mode)) {
+		return transform_sext(node, orig_node);
+	} else {
+		return transform_zext(node, orig_node);
+	}
 }
 
 /**
@@ -838,17 +854,29 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 		}
 
 		mode = get_irn_mode(op2);
-		if (flags & match_upconv_32 && get_mode_size_bits(mode) != 32) {
-			new_op1 = (op1 == NULL ? NULL : create_upconv(op1, NULL));
-			if (new_op2 == NULL)
-				new_op2 = create_upconv(op2, NULL);
-			am->ls_mode = mode_Iu;
+		if (get_mode_size_bits(mode) != 32
+			&& (flags & (match_mode_neutral | match_upconv | match_zero_ext))) {
+			if (flags & match_upconv) {
+				new_op1 = (op1 == NULL ? NULL : transform_upconv(op1, op1));
+				if (new_op2 == NULL)
+					new_op2 = transform_upconv(op2, op2);
+			} else if (flags & match_zero_ext) {
+				new_op1 = (op1 == NULL ? NULL : transform_zext(op1, op1));
+				if (new_op2 == NULL)
+					new_op2 = transform_zext(op2, op2);
+			} else {
+				new_op1 = (op1 == NULL ? NULL : be_transform_node(op1));
+				if (new_op2 == NULL)
+					new_op2 = be_transform_node(op2);
+				assert(flags & match_mode_neutral);
+			}
+			mode = mode_Iu;
 		} else {
 			new_op1 = (op1 == NULL ? NULL : be_transform_node(op1));
 			if (new_op2 == NULL)
 				new_op2 = be_transform_node(op2);
-			am->ls_mode = (flags & match_mode_neutral) ? mode_Iu : mode;
 		}
+		am->ls_mode = mode;
 	}
 	if (addr->base == NULL)
 		addr->base = noreg_GP;
@@ -1084,24 +1112,37 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
                                 construct_shift_func *func,
                                 match_flags_t flags)
 {
-	dbg_info *dbgi;
-	ir_node  *block, *new_block, *new_op1, *new_op2, *new_node;
-	ir_mode  *mode = get_irn_mode(node);
+	ir_mode *mode = get_irn_mode(node);
 
 	assert(! mode_is_float(mode));
 	assert(flags & match_immediate);
-	assert((flags & ~(match_mode_neutral | match_immediate)) == 0);
+	assert((flags & ~(match_mode_neutral | match_zero_ext | match_upconv | match_immediate)) == 0);
 
-	if (get_mode_modulo_shift(mode) != 32)
+	if (get_mode_modulo_shift(mode) != 32) {
+		/* TODO: implement special cases for non-modulo shifts */
 		panic("modulo shift!=32 not supported by ia32 backend");
+	}
 
+	ir_node *new_op1;
+	ir_node *new_op2;
 	if (flags & match_mode_neutral) {
 		op1     = ia32_skip_downconv(op1);
 		new_op1 = be_transform_node(op1);
-	} else if (get_mode_size_bits(mode) != 32) {
-		new_op1 = create_upconv(op1, node);
 	} else {
-		new_op1 = be_transform_node(op1);
+		op1 = ia32_skip_sameconv(op1);
+		if (get_mode_size_bits(mode) != 32) {
+			if (flags & match_upconv) {
+				new_op1 = transform_upconv(op1, node);
+			} else if (flags & match_zero_ext) {
+				new_op1 = transform_zext(op1, node);
+			} else {
+				/* match_mode_neutral not handled here because it makes no
+				 * sense for shift operations */
+				panic("ia32 code selection failed for %+F", node);
+			}
+		} else {
+			new_op1 = be_transform_node(op1);
+		}
 	}
 
 	/* the shift amount can be any mode that is bigger than 5 bits, since all
@@ -1115,10 +1156,10 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	}
 	new_op2 = create_immediate_or_transform(op2, 0);
 
-	dbgi      = get_irn_dbg_info(node);
-	block     = get_nodes_block(node);
-	new_block = be_transform_node(block);
-	new_node  = func(dbgi, new_block, new_op1, new_op2);
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_node  = func(dbgi, new_block, new_op1, new_op2);
 	SET_IA32_ORIG_NODE(new_node, node);
 
 	/* lowered shift instruction may have a dependency operand, handle it here */
@@ -1691,7 +1732,7 @@ static ir_node *create_Div(ir_node *node)
 		panic("invalid divmod node %+F", node);
 	}
 
-	match_arguments(&am, block, op1, op2, NULL, match_am | match_upconv_32);
+	match_arguments(&am, block, op1, op2, NULL, match_am | match_upconv);
 
 	/* Beware: We don't need a Sync, if the memory predecessor of the Div node
 	   is the memory of the consumed address. We can have only the second op as address
@@ -1773,10 +1814,9 @@ static ir_node *gen_Shr(ir_node *node)
 	ir_node *left  = get_Shr_left(node);
 	ir_node *right = get_Shr_right(node);
 
-	return gen_shift_binop(node, left, right, new_bd_ia32_Shr, match_immediate);
+	return gen_shift_binop(node, left, right, new_bd_ia32_Shr,
+	                       match_immediate | match_zero_ext);
 }
-
-
 
 /**
  * Creates an ia32 Sar.
@@ -1831,7 +1871,8 @@ static ir_node *gen_Shrs(ir_node *node)
 		}
 	}
 
-	return gen_shift_binop(node, left, right, new_bd_ia32_Sar, match_immediate);
+	return gen_shift_binop(node, left, right, new_bd_ia32_Sar,
+	                       match_immediate | match_upconv);
 }
 
 
@@ -2786,9 +2827,11 @@ static ir_node *gen_Switch(ir_node *node)
 	ir_node               *new_node;
 	ir_entity             *entity;
 
-	assert(get_mode_size_bits(get_irn_mode(sel)) <= 32);
-	if (get_mode_size_bits(sel_mode) != 32)
-		new_sel = create_upconv(new_sel, sel);
+	assert(get_mode_size_bits(sel_mode) <= 32);
+	assert(!mode_is_float(sel_mode));
+	sel = ia32_skip_sameconv(sel);
+	if (get_mode_size_bits(sel_mode) < 32)
+		new_sel = transform_upconv(sel, node);
 
 	entity = new_entity(NULL, id_unique("TBL%u"), get_unknown_type());
 	set_entity_visibility(entity, ir_visibility_private);
@@ -2986,9 +3029,9 @@ static ir_node *gen_Cmp(ir_node *node)
 	} else {
 		/* Cmp(left, right) */
 		match_arguments(&am, block, left, right, NULL,
-		                match_commutative | match_am | match_8bit_am |
-		                match_16bit_am | match_am_and_immediates |
-		                match_immediate);
+		                match_commutative |
+		                match_am | match_8bit_am | match_16bit_am |
+		                match_am_and_immediates | match_immediate);
 		/* use 32bit compare mode if possible since the opcode is smaller */
 		if (am.op_type == ia32_Normal &&
 			be_upper_bits_clean(left, cmp_mode) &&
@@ -3645,7 +3688,7 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode)
 	if (possible_int_mode_for_fp(src_mode)) {
 		ia32_address_mode_t am;
 
-		match_arguments(&am, src_block, NULL, op, NULL, match_am | match_try_am | match_16bit_am);
+		match_arguments(&am, src_block, NULL, op, NULL, match_am | match_try_am | match_16bit_am | match_upconv);
 		if (am.op_type == ia32_AddrModeS) {
 			ia32_address_t *addr = &am.addr;
 
@@ -3752,7 +3795,7 @@ static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
 	                match_am | match_8bit_am | match_16bit_am);
 
 	new_node = create_Conv_I2I(dbgi, new_block, addr->base, addr->index,
-			addr->mem, am.new_op2, src_mode);
+	                           addr->mem, am.new_op2, src_mode);
 	set_am_attributes(new_node, &am);
 	/* match_arguments assume that out-mode = in-mode, this isn't true here
 	 * so fix it */
@@ -4087,7 +4130,8 @@ static ir_node *gen_IJmp(ir_node *node)
 
 	assert(get_irn_mode(op) == mode_P);
 
-	match_arguments(&am, block, NULL, op, NULL, match_am | match_immediate);
+	match_arguments(&am, block, NULL, op, NULL,
+	                match_am | match_immediate | match_upconv);
 
 	new_node = new_bd_ia32_IJmp(dbgi, new_block, addr->base, addr->index,
 			addr->mem, am.new_op2);
@@ -4687,7 +4731,7 @@ static ir_node *gen_be_Call(ir_node *node)
 	ia32_no_pic_adjust = be_options.pic;
 
 	match_arguments(&am, src_block, NULL, src_ptr, src_mem,
-	                match_am | match_immediate);
+	                match_am | match_immediate | match_upconv);
 
 	ia32_no_pic_adjust = old_no_pic_adjust;
 
@@ -5083,7 +5127,7 @@ static ir_node *gen_popcount(ir_node *node)
 		ia32_address_t      *addr = &am.addr;
 		ir_node             *cnt;
 
-		match_arguments(&am, block, NULL, param, NULL, match_am | match_16bit_am);
+		match_arguments(&am, block, NULL, param, NULL, match_am | match_16bit_am | match_upconv);
 
 		cnt = new_bd_ia32_Popcnt(dbgi, new_block, addr->base, addr->index, addr->mem, am.new_op2);
 		set_am_attributes(cnt, &am);

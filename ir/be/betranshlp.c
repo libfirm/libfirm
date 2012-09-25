@@ -417,7 +417,6 @@ static bool and_upper_bits_clean(const ir_node *node, ir_mode *mode)
 static bool shr_upper_bits_clean(const ir_node *node, ir_mode *mode)
 {
 	if (mode_is_signed(mode)) {
-		/* TODO */
 		return false;
 	} else {
 		const ir_node *right = get_Shr_right(node);
