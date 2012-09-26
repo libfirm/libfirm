@@ -52,10 +52,9 @@
 #define MAX_ANTIC_ITER 10
 #define MAX_INSERT_ITER 3
 
-/* Infinite loops will be unrolled during antic iteration and
-   will iterate until otherwise stopped.
-   This also leaves every possible values of iteration variables in antic_in.
-*/
+/* Stops antic iteration from processing endless loops. */
+#define IGNORE_INF_LOOPS 1
+/* Stops antic information to flow over infinite loop backedge */
 #define NO_INF_LOOPS 0
 
 /* Attempt to reduce register pressure and reduce code size
@@ -65,14 +64,20 @@
 
 /* Seamless implementation of handling loads and generally memory
    dependent nodes with GVN-PRE. */
-#define LOADS 0
+#define LOADS 1
 #define DIVMODS 0
 
 /* Experimental */
+
+/* Only optimize node directly after phi node if node is only successor. */
 #define MIN_CUT 0
 
+/* GVN is very limited. This enables optimize_node during value recognition.
+   GVN ist still very limited, since a+1+b+1 doesn't equal a+b+2.
+   TODO Broken for yet unknown reasons. */
+#define OPTIMIZE_NODES 0
+
 #define OLD_DIVMODS 0
-#define NO_INF_LOOPS2 0
 
 /* NIY Choose to be optimized nodes in a more sophisticated way
    to reduce number of newly introduced phi nodes. */
@@ -119,6 +124,10 @@ typedef struct pre_env {
 	char            changes;      /* flag for fixed point iterations - non-zero if changes occurred */
 	char            first_iter;   /* non-zero for first fixed point iteration */
 	int             iteration;    /* iteration counter */
+#if OPTIMIZE_NODES
+	pset           *value_table;   /* standard value table*/
+	pset           *gvnpre_values; /* gvnpre value table */
+#endif
 } pre_env;
 
 static pre_env *environ;
@@ -259,7 +268,7 @@ static int compare_gvn_identities(const void *elt, const void *key)
 	if (is_memop(a) || is_memop(b)) {
 		/* Loads with the same predecessors are the same value;
 		   this should only happen after phi translation. */
-		if (! is_Load(a) || ! is_Load(b))
+		if ((! is_Load(a) || ! is_Load(b)) && (! is_Store(a) || ! is_Store(b)))
 			return 1;
 	}
 
@@ -357,7 +366,7 @@ static ir_node *remember(ir_node *irn)
 		in[i] = pred_value;
 	}
 
-	if (changed) {
+	if (changed && !is_memop(irn) && get_irn_mode(irn) != mode_X) {
 		/* create representative for */
 		ir_node *nn = new_ir_node(
 			get_irn_dbg_info(irn),
@@ -368,6 +377,14 @@ static ir_node *remember(ir_node *irn)
 			get_irn_arity(irn),
 			in);
 		copy_node_attr(environ->graph, irn, nn);
+
+#if OPTIMIZE_NODES
+		/* TODO optimize_node() uses the valuetable and thus the custom
+		   identify_cmp() and will fail trying. */
+		environ->graph->value_table = environ->value_table;
+		nn = optimize_node(nn);
+		environ->graph->value_table = environ->gvnpre_values;
+#endif
 
 		/* now the value can be determined because the
 		   predecessors are the leaders */
@@ -596,7 +613,7 @@ static void analyse_loops(ir_graph *irg)
 	ir_free_resources(irg, IR_RESOURCE_BLOCK_MARK);
 }
 
-#if NO_INF_LOOPS || NO_INF_LOOPS2
+#if IGNORE_INF_LOOPS || NO_INF_LOOPS
 /**
  * Returns non-zero if block is part of an infinite loop.
  */
@@ -642,6 +659,8 @@ static unsigned is_nice_value(ir_node *n)
 #if LOADS
 	if (is_Load(n))
 		return get_Load_volatility(n) == volatility_non_volatile;
+	if (is_Store(n))
+		return get_Store_volatility(n) == volatility_non_volatile;
 #endif
 
 	if (get_irn_pinned(n) == op_pin_state_pinned)
@@ -674,6 +693,8 @@ static unsigned is_clean_in_block(ir_node *n, ir_node *block, ir_valueset_t *val
 #if LOADS
 	/* filter loads with no phi predecessor from antic_in */
 	if (is_Load(n) && ! is_Phi(get_Load_mem(n)))
+		return 0;
+	if (is_Store(n) && ! is_Phi(get_Store_mem(n)))
 		return 0;
 #endif
 
@@ -731,12 +752,14 @@ static void topo_walker(ir_node *irn, void *ctx)
 	if (is_Block(irn))
 		return;
 
+#if OPTIMIZE_NODES
+	environ->graph->value_table = environ->value_table;
+	identify_remember(irn);
+	environ->graph->value_table = environ->gvnpre_values;
+#endif
+
 	/* GVN step: remember the value. */
 	value = remember(irn);
-
-	/* values that are not in antic_in also dont't need to be in any other set */
-	if (! is_nice_value(irn))
-		return;
 
 	if (is_irn_constlike(irn))
 		return;
@@ -744,7 +767,13 @@ static void topo_walker(ir_node *irn, void *ctx)
 	block = get_nodes_block(irn);
 	info  = get_block_info(block);
 
-	ir_valueset_insert(info->avail_out, value, irn);
+	if (get_irn_mode(irn) != mode_X)
+		ir_valueset_insert(info->avail_out, value, irn);
+
+	/* values that are not in antic_in also dont't need to be in any other set */
+
+	if (! is_nice_value(irn))
+		return;
 
 	if (is_clean_in_block(irn, block, info->exp_gen)) {
 		DB((dbg, LEVEL_3, "%+F clean in block %+F\n", irn, block));
@@ -935,14 +964,16 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, ir_valuese
 			   skip them and use the loads memory. */
 			if (is_Proj(pred_trans) && get_irn_mode(pred_trans) == mode_M) {
 #if LOADS || DIVMODS
-				ir_node *load = get_Proj_pred(pred_trans);
+				ir_node *loadstore = get_Proj_pred(pred_trans);
 				/* If we do not translate this node, we will get its value wrong. */
 				needed |= 1;
 
-				if (is_Load(load)) {
+				if (is_Load(loadstore)) {
 					/* Put new load under the adjacent loads memory edge
 					   such that GVN may compare them. */
-					new_pred = get_Load_mem(load);
+					new_pred = get_Load_mem(loadstore);
+				} else if (is_Store(loadstore)) {
+					new_pred = get_Store_mem(loadstore);
 				}
 #endif
 			} else {
@@ -1022,7 +1053,7 @@ static void compute_antic(ir_node *block, void *ctx)
 
 	/* add exp_gen */
 	if (env->first_iter) {
-#if NO_INF_LOOPS
+#if IGNORE_INF_LOOPS
 		/* keep antic_in of infinite loops empty */
 		if (! is_in_infinite_loop(block)) {
 			foreach_valueset(info->exp_gen, value, expr, iter) {
@@ -1055,6 +1086,7 @@ static void compute_antic(ir_node *block, void *ctx)
 
 			if (trans == NULL)
 				trans = phi_translate(expr, succ, pos, get_block_info(succ)->antic_in);
+
 			/* create new value if necessary */
 			trans_value = identify_or_remember(trans);
 
@@ -1068,9 +1100,9 @@ static void compute_antic(ir_node *block, void *ctx)
 				represent = expr;
 
 			if (is_clean_in_block(expr, block, info->antic_in)) {
-#if NO_INF_LOOPS2
-				/* no flow over the backedge of endless loops */
-				if (env->iteration <= 2 || ! (! is_in_infinite_loop(succ) || ! is_backedge(succ, pos))) {
+#if NO_INF_LOOPS
+				/* Prevent information flow over the backedge of endless loops. */
+				if (env->iteration <= 2 || (is_backedge(succ, pos) && !is_in_infinite_loop(succ))) {
 					ir_valueset_replace(info->antic_in, trans_value, represent);
 				}
 #else
@@ -1372,6 +1404,7 @@ static unsigned is_hoisting_greedy(ir_node *irn, ir_node *block)
 
 			avail = ir_valueset_lookup(pred_info->avail_out, trans_val);
 
+			DB((dbg, LEVEL_3, "avail %+F\n", avail));
 			if (! avail)
 				return 1;
 #if MIN_CUT
@@ -1507,7 +1540,7 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 				inc_stats(gvnpre_stats->first_iter_found);
 			inc_stats(gvnpre_stats->partially);
 		}
-		if (is_Load(expr))
+		if (is_Load(expr) || is_Store(expr))
 			inc_stats(gvnpre_stats->loads);
 		else if (is_Div(expr) || is_Mod(expr))
 			inc_stats(gvnpre_stats->divmods);
@@ -1885,6 +1918,7 @@ static void hoist_high(ir_node *block, void *ctx)
 				   be available from this point on. Currently we do not push
 				   the availability information through during the walk. */
 				ir_valueset_insert(target_info->new_set, value, nn);
+				ir_valueset_insert(target_info->avail_out, value, nn);
 			}
 		}
 	}
@@ -2119,15 +2153,24 @@ void do_gvn_pre(ir_graph *irg)
 	/* Detect and set links of infinite loops to non-zero. */
 	analyse_loops(irg);
 
+#if OPTIMIZE_NODES
+	new_identities(irg);
+	env.value_table = irg->value_table;
+	irg->value_table = NULL;
+#endif
+
 	/* Switch on GCSE. We need it to correctly compute
 	   the value of a node, which is independent from
 	   its block. */
 	set_opt_global_cse(1);
-	/* new_identities */
+	/* new_identities() */
 	if (irg->value_table != NULL)
 		del_pset(irg->value_table);
 	/* initially assumed nodes in pset are 512 */
 	irg->value_table = new_pset(compare_gvn_identities, 512);
+#if OPTIMIZE_NODES
+	env.gvnpre_values = irg->value_table;
+#endif
 
 	/* do GVN-PRE pass */
 	gvn_pre(irg, &env);
@@ -2148,6 +2191,12 @@ void do_gvn_pre(ir_graph *irg)
 	set_irg_pinned(irg, op_pin_state_pinned);
 	restore_optimization_state(&state);
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
+
+#if OPTIMIZE_NODES
+	irg->value_table = env.value_table;
+	del_pset(irg->value_table);
+	irg->value_table = env.gvnpre_values;
+#endif
 
 	/* TODO There seem to be optimizations that try to use the existing
 	   value_table. */
