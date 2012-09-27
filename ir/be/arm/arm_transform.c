@@ -1991,18 +1991,10 @@ static ir_node *gen_Sel(ir_node *node)
 	return new_bd_arm_FrameAddr(dbgi, new_block, new_ptr, entity, 0);
 }
 
-/**
- * Change some phi modes
- */
 static ir_node *gen_Phi(ir_node *node)
 {
+	ir_mode                   *mode = get_irn_mode(node);
 	const arch_register_req_t *req;
-	ir_node  *block = be_transform_node(get_nodes_block(node));
-	ir_graph *irg   = current_ir_graph;
-	dbg_info *dbgi  = get_irn_dbg_info(node);
-	ir_mode  *mode  = get_irn_mode(node);
-	ir_node  *phi;
-
 	if (mode_needs_gp_reg(mode)) {
 		/* we shouldn't have any 64bit stuff around anymore */
 		assert(get_mode_size_bits(mode) <= 32);
@@ -2013,20 +2005,8 @@ static ir_node *gen_Phi(ir_node *node)
 		req = arch_no_register_req;
 	}
 
-	/* phi nodes allow loops, so we use the old arguments for now
-	 * and fix this later */
-	phi = new_ir_node(dbgi, irg, block, op_Phi, mode, get_irn_arity(node),
-	                  get_irn_in(node) + 1);
-	copy_node_attr(irg, node, phi);
-	be_duplicate_deps(node, phi);
-
-	arch_set_irn_register_req_out(phi, 0, req);
-
-	be_enqueue_preds(node);
-
-	return phi;
+	return be_transform_phi(node, req);
 }
-
 
 /**
  * Enters all transform functions into the generic pointer
