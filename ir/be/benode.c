@@ -265,14 +265,6 @@ ir_node *be_new_Spill(const arch_register_class_t *cls,
 
 	be_node_set_reg_class_in(res, n_be_Spill_frame, cls_frame);
 	be_node_set_reg_class_in(res, n_be_Spill_val, cls);
-	/*
-	 * For spills and reloads, we return "none" as requirement for frame
-	 * pointer, so every input is ok. Some backends need this (STA).
-	 * Matze: we should investigate if this is really needed, this solution
-	 *        looks very hacky to me
-	 */
-	be_set_constr_in(res, n_be_Spill_frame, arch_no_register_req);
-
 	arch_set_irn_register_req_out(res, 0, arch_no_register_req);
 
 	return res;
@@ -301,14 +293,6 @@ ir_node *be_new_Reload(const arch_register_class_t *cls,
 	a->ent    = NULL;
 	a->offset = 0;
 	a->base.exc.pin_state = op_pin_state_pinned;
-
-	/*
-	 * For spills and reloads, we return "none" as requirement for frame
-	 * pointer, so every input is ok. Some backends need this (e.g. STA).
-	 * Matze: we should investigate if this is really needed, this solution
-	 *        looks very hacky to me
-	 */
-	be_set_constr_in(res, n_be_Reload_frame, arch_no_register_req);
 
 	return res;
 }
