@@ -265,7 +265,9 @@ static int compare_gvn_identities(const void *elt, const void *key)
 
 	/* memops are not the same, even if we want to optimize them
 	   we have to take the order in account */
-	if (is_memop(a) || is_memop(b)) {
+	if (is_memop(a) || is_memop(b) ||
+	    get_irn_mode(a) == mode_T ||
+	    get_irn_mode(b) == mode_T) {
 		/* Loads with the same predecessors are the same value;
 		   this should only happen after phi translation. */
 		if ((! is_Load(a) || ! is_Load(b)) && (! is_Store(a) || ! is_Store(b)))
