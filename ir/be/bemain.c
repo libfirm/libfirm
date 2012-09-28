@@ -652,10 +652,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_timer_push(T_VERIFY);
 		if (be_options.verify_option == BE_VERIFY_WARN) {
 			irg_verify(irg, VERIFY_ENFORCE_SSA);
-			be_check_dominance(irg);
 		} else if (be_options.verify_option == BE_VERIFY_ASSERT) {
 			assert(irg_verify(irg, VERIFY_ENFORCE_SSA) && "irg verification failed");
-			assert(be_check_dominance(irg) && "Dominance verification failed");
 		}
 		be_timer_pop(T_VERIFY);
 
@@ -688,23 +686,11 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		dump(DUMP_PREPARED, irg, "before-code-selection");
 
-		if (be_options.verify_option == BE_VERIFY_WARN) {
-			be_check_dominance(irg);
-		} else if (be_options.verify_option == BE_VERIFY_ASSERT) {
-			assert(be_check_dominance(irg) && "Dominance verification failed");
-		}
-
 		/* perform codeselection */
 		be_timer_push(T_CODEGEN);
 		if (arch_env->impl->prepare_graph != NULL)
 			arch_env->impl->prepare_graph(irg);
 		be_timer_pop(T_CODEGEN);
-
-		if (be_options.verify_option == BE_VERIFY_WARN) {
-			be_check_dominance(irg);
-		} else if (be_options.verify_option == BE_VERIFY_ASSERT) {
-			assert(be_check_dominance(irg) && "Dominance verification failed");
-		}
 
 		dump(DUMP_PREPARED, irg, "code-selection");
 
@@ -784,12 +770,10 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_timer_push(T_VERIFY);
 		if (be_options.verify_option == BE_VERIFY_WARN) {
 			irg_verify(irg, VERIFY_ENFORCE_SSA);
-			be_check_dominance(irg);
 			be_verify_schedule(irg);
 			be_verify_register_allocation(irg);
 		} else if (be_options.verify_option == BE_VERIFY_ASSERT) {
 			assert(irg_verify(irg, VERIFY_ENFORCE_SSA) && "irg verification failed");
-			assert(be_check_dominance(irg) && "Dominance verification failed");
 			assert(be_verify_schedule(irg) && "Schedule verification failed");
 			assert(be_verify_register_allocation(irg)
 			       && "register allocation verification failed");

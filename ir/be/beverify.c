@@ -824,48 +824,6 @@ bool be_verify_register_allocation(ir_graph *new_irg)
 
 /*--------------------------------------------------------------------------- */
 
-/**
- * Walker: checks that every predecessors of a node dominates the node.
- */
-static void dom_check(ir_node *irn, void *data)
-{
-	bool *problem_found = (bool*)data;
-
-	if (!is_Block(irn) && irn != get_irg_end(get_irn_irg(irn))) {
-		ir_node *bl = get_nodes_block(irn);
-
-		int n = get_irn_arity(irn);
-		for (int i = 0; i < n; ++i) {
-			ir_node *op     = get_irn_n(irn, i);
-			ir_node *def_bl = get_nodes_block(op);
-			ir_node *use_bl = bl;
-
-			if (is_Phi(irn))
-				use_bl = get_Block_cfgpred_block(bl, i);
-
-			if (get_irn_opcode(use_bl) != iro_Bad
-			     && get_irn_opcode(def_bl) != iro_Bad
-			     && !block_dominates(def_bl, use_bl)) {
-				ir_fprintf(stderr, "Verify warning: %+F in %+F must dominate %+F for user %+F (%s)\n", op, def_bl, use_bl, irn, get_irg_name(get_irn_irg(op)));
-				*problem_found = true;
-			}
-		}
-	}
-}
-
-/* Check, if the SSA dominance property is fulfilled. */
-bool be_check_dominance(ir_graph *irg)
-{
-	bool problem_found = false;
-
-	assure_doms(irg);
-	irg_walk_graph(irg, dom_check, NULL, &problem_found);
-
-	return !problem_found;
-}
-
-/*--------------------------------------------------------------------------- */
-
 typedef struct lv_walker_t {
 	be_lv_t *lv;
 	void *data;

@@ -70,13 +70,6 @@ int be_verify_spillslots(ir_graph *irg);
 bool be_verify_register_allocation(ir_graph *irg);
 
 /**
- * Check, if the SSA dominance property is fulfilled.
- * @param irg The graph.
- * @return   true if dominance property is fulfilled, false otherwise
- */
-bool be_check_dominance(ir_graph *irg);
-
-/**
  * Check the given liveness information against a freshly computed one.
  */
 void be_liveness_check(be_lv_t *lv);
