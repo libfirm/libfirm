@@ -48,6 +48,8 @@
 #include "irprintf.h"
 #include "irgwalk.h"
 #include "iropt_t.h"
+#include "irbackedge_t.h"
+#include "irverify_t.h"
 
 #include "be_t.h"
 #include "belive_t.h"
@@ -478,8 +480,9 @@ void be_Keep_add_node(ir_node *keep, const arch_register_class_t *cls, ir_node *
 }
 
 ir_node *be_new_Call(dbg_info *dbg, ir_graph *irg, ir_node *bl, ir_node *mem,
-		ir_node *sp, ir_node *ptr, int n_outs, int n, ir_node *in[],
-		ir_type *call_tp)
+		const arch_register_req_t *sp_req, ir_node *sp,
+		const arch_register_req_t *ptr_req, ir_node *ptr,
+		int n_outs, int n, ir_node *in[], ir_type *call_tp)
 {
 	be_call_attr_t *a;
 	int real_n = n_be_Call_first_arg + n;
@@ -499,6 +502,8 @@ ir_node *be_new_Call(dbg_info *dbg, ir_graph *irg, ir_node *bl, ir_node *mem,
 	a->call_tp            = call_tp;
 	a->pop                = 0;
 	a->base.exc.pin_state = op_pin_state_pinned;
+	be_set_constr_in(irn, n_be_Call_sp, sp_req);
+	be_set_constr_in(irn, n_be_Call_ptr, ptr_req);
 	return irn;
 }
 
@@ -1065,7 +1070,8 @@ ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
 	backend_info_t *info;
 	int             i;
 
-	ir_node *phi = new_r_Phi(block, n_ins, ins, mode);
+	ir_node *phi = new_ir_node(NULL, irg, block, op_Phi, mode, n_ins, ins);
+	phi->attr.phi.u.backedge = new_backedge_arr(irg->obst, n_ins);
 	info = be_get_info(phi);
 	info->out_infos = NEW_ARR_D(reg_out_info_t, obst, 1);
 	memset(info->out_infos, 0, 1 * sizeof(info->out_infos[0]));
@@ -1075,7 +1081,8 @@ ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
 	for (i = 0; i < n_ins; ++i) {
 		info->in_reqs[i] = req;
 	}
-
+	irn_verify_irg(phi, irg);
+	phi = optimize_node(phi);
 	return phi;
 }
 
