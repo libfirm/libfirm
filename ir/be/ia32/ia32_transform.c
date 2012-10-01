@@ -4115,7 +4115,7 @@ static ir_node *gen_IJmp(ir_node *node)
 	                match_am | match_immediate | match_upconv);
 
 	new_node = new_bd_ia32_IJmp(dbgi, new_block, addr->base, addr->index,
-			addr->mem, am.new_op2);
+	                            addr->mem, am.new_op2);
 	set_am_attributes(new_node, &am);
 	SET_IA32_ORIG_NODE(new_node, node);
 

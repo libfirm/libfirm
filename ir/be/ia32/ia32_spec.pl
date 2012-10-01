@@ -1026,14 +1026,15 @@ Jmp => {
 IJmp => {
 	state     => "pinned",
 	op_flags  => [ "cfopcode", "unknown_jump" ],
-	reg_req   => { in => [ "gp", "gp", "none", "gp" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "gp" ],
+	               out => [ "none", "flags", "none" ] },
 	ins       => [ "base", "index", "mem", "target" ],
+	outs      => [ "jmp", "flags", "M" ],
 	am        => "source,unary",
 	emit      => 'jmp %*AS3',
 	latency   => 1,
 	units     => [ "BRANCH" ],
 	mode      => "mode_X",
-	init_attr => "info->out_infos = NULL;", # XXX ugly hack for out requirements
 },
 
 Const => {
