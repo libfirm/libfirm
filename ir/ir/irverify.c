@@ -38,15 +38,7 @@
 #include "irnodeset.h"
 #include "ircons.h"
 
-/** if this flag is set, verify entity types in Load & Store nodes */
-static int verify_entities = 0;
-
 const char *firm_verify_failure_msg;
-
-void verify_enable_entity_tests(int enable)
-{
-	verify_entities = enable;
-}
 
 #ifndef NDEBUG
 
@@ -201,26 +193,6 @@ static void show_proj_mode_failure(const ir_node *n, ir_type *ty)
 }
 
 /**
- * Prints a failure message for a proj
- */
-static void show_proj_failure_ent(const ir_node *n, ir_entity *ent)
-{
-	ir_node *op  = get_Proj_pred(n);
-	int proj     = get_Proj_proj(n);
-	ir_mode *m   = get_type_mode(get_entity_type(ent));
-	char type_name[256];
-	ir_print_type(type_name, sizeof(type_name), get_entity_type(ent));
-
-	show_entity_failure(n);
-	fprintf(stderr, "  node %ld %s%s %d(%s%s) entity %s(type %s mode %s)failed\n" ,
-		get_irn_node_nr(n),
-		get_irn_opname(n), get_irn_modename(n), proj,
-		get_irn_opname(op), get_irn_modename(op),
-		get_entity_name(ent), type_name,
-		get_mode_name_ex(m));
-}
-
-/**
  * Show a node and a graph
  */
 static void show_node_on_graph(const ir_graph *irg, const ir_node *n)
@@ -305,21 +277,6 @@ static void show_phi_inputs(const ir_node *phi, const ir_node *block)
 }
 
 #endif /* #ifndef NDEBUG */
-
-/**
- * If the address is Sel or SymConst, return the entity.
- *
- * @param ptr  the node representing the address
- */
-static ir_entity *get_ptr_entity(const ir_node *ptr)
-{
-	if (is_Sel(ptr)) {
-		return get_Sel_entity(ptr);
-	} else if (is_SymConst_addr_ent(ptr)) {
-		return get_SymConst_entity(ptr);
-	}
-	return NULL;
-}
 
 /**
  * verify a Proj(Start) node
@@ -517,27 +474,12 @@ static int verify_node_Proj_Load(const ir_node *p)
 	long proj     = get_Proj_proj(p);
 
 	if (proj == pn_Load_res) {
-		ir_node   *ptr = get_Load_ptr(n);
-		ir_entity *ent = get_ptr_entity(ptr);
-		ir_graph  *irg = get_irn_irg(n);
-
-		if (verify_entities && ent && get_irg_phase_state(irg) == phase_high) {
-			/* do NOT check this for lowered phases, see comment on Store */
-			ASSERT_AND_RET_DBG(
-				(mode == get_type_mode(get_entity_type(ent))),
-				"wrong data Proj from Load, entity type_mode failed", 0,
-				show_proj_failure_ent(p, ent);
-			);
-		}
-		else {
-			ASSERT_AND_RET_DBG(
-				mode_is_data(mode) && mode == get_Load_mode(n),
-				"wrong data Proj from Load", 0,
-				show_proj_failure(p);
-			);
-		}
-	}
-	else {
+		ASSERT_AND_RET_DBG(
+			mode_is_data(mode) && mode == get_Load_mode(n),
+			"wrong data Proj from Load", 0,
+			show_proj_failure(p);
+		);
+	} else {
 		ASSERT_AND_RET_DBG(
 			(
 				(proj == pn_Load_M         && mode == mode_M) ||
@@ -1536,7 +1478,6 @@ static int verify_node_Load(const ir_node *n)
 static int verify_node_Store(const ir_node *n)
 {
 	ir_graph  *irg = get_irn_irg(n);
-	ir_entity *target;
 
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Store_mem(n));
@@ -1548,17 +1489,6 @@ static int verify_node_Store(const ir_node *n)
 		ASSERT_AND_RET(mode_is_reference(op2mode), "Store node", 0 );
 	}
 	ASSERT_AND_RET(mymode == mode_T, "Store node", 0);
-
-	target = get_ptr_entity(get_Store_ptr(n));
-	if (verify_entities && target && get_irg_phase_state(irg) == phase_high) {
-		/*
-		 * If lowered code, any Sels that add 0 may be removed, causing
-		 * an direct access to entities of array or compound type.
-		 * Prevent this by checking the phase.
-		 */
-		ASSERT_AND_RET( op3mode == get_type_mode(get_entity_type(target)),
-			"Store node", 0);
-	}
 
 	return 1;
 }
