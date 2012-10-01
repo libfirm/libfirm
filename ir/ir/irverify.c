@@ -1456,21 +1456,6 @@ static int verify_node_Load(const ir_node *n)
 	}
 	ASSERT_AND_RET( mymode == mode_T, "Load node", 0 );
 
-	/*
-	 * jack's gen_add_firm_code:simpleSel seems to build Load (Load
-	 * (Proj (Proj))) sometimes ...
-
-	 * interprete.c:ai_eval seems to assume that this happens, too
-
-	 * obset.c:get_abstval_any can't deal with this if the load has
-	 * mode_T
-	 *
-	  {
-	  ir_entity *ent = hunt_for_entity (get_Load_ptr (n), n);
-	  assert ((NULL != ent) || (mymode != mode_T));
-	  }
-	 */
-
 	return 1;
 }
 
