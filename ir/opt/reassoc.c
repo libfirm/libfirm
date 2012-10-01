@@ -783,7 +783,6 @@ static void reverse_rules(ir_node *node, void *env)
  */
 void optimize_reassociation(ir_graph *irg)
 {
-	assert(get_irg_phase_state(irg) != phase_building);
 	assert(get_irg_pinned(irg) != op_pin_state_floats &&
 		"Reassociation needs pinned graph to work properly");
 

@@ -99,7 +99,6 @@ static void complete_ir_prog(ir_prog *irp, const char *module_name)
 	set_class_final(irp->segment_types[IR_SEGMENT_GLOBAL], 1);
 
 	irp->const_code_irg             = new_const_code_irg();
-	irp->phase_state                = phase_building;
 	irp->class_cast_state           = ir_class_casts_transitive;
 	irp->globals_entity_usage_state = ir_entity_usage_not_computed;
 #undef IDENT
@@ -304,57 +303,6 @@ const char  *get_irp_name(void)
 ir_graph *(get_const_code_irg)(void)
 {
 	return get_const_code_irg_();
-}
-
-irg_phase_state get_irp_phase_state(void)
-{
-	return irp->phase_state;
-}
-
-void set_irp_phase_state(irg_phase_state s)
-{
-	irp->phase_state = s;
-}
-
-typedef struct pass_t {
-	ir_prog_pass_t  pass;
-	irg_phase_state state;
-} pass_t;
-
-/**
- * Wrapper for setting the state of a whole ir_prog.
- */
-static int set_irp_phase_state_wrapper(ir_prog *irp, void *context)
-{
-	pass_t         *pass  = (pass_t *)context;
-	irg_phase_state state = pass->state;
-	size_t          i, n;
-
-	(void)irp;
-
-	/* set the phase of all graphs */
-	for (i = 0, n = get_irp_n_irgs(); i < n; ++i)
-		set_irg_phase_state(get_irp_irg(i), state);
-
-	/* set the irp phase */
-	set_irp_phase_state(state);
-
-	return 0;
-}
-
-ir_prog_pass_t *set_irp_phase_state_pass(const char *name, irg_phase_state state)
-{
-	struct pass_t *pass = XMALLOCZ(struct pass_t);
-
-	def_prog_pass_constructor(
-		&pass->pass, name ? name : "set_irp_phase", set_irp_phase_state_wrapper);
-	pass->state = state;
-
-	/* no dump/verify */
-	pass->pass.verify_irprog = ir_prog_no_verify;
-	pass->pass.dump_irprog   = ir_prog_no_dump;
-
-	return &pass->pass;
 }
 
 void set_irp_ip_outedges(ir_node ** ip_outedges)

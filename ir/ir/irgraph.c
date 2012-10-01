@@ -122,7 +122,7 @@ static void free_graph(ir_graph *irg)
 
 void irg_set_nloc(ir_graph *res, int n_loc)
 {
-	assert(res->phase_state == phase_building);
+	assert(irg_is_constrained(res, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
 
 	res->n_loc = n_loc + 1;     /* number of local variables that are never
 	                               dereferenced in this graph plus one for
@@ -151,7 +151,8 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 	res->obst = XMALLOC(struct obstack);
 	obstack_init(res->obst);
 
-	res->phase_state = phase_building;
+	/* graphs are in construction mode by default */
+	add_irg_constraints(res, IR_GRAPH_CONSTRAINT_CONSTRUCTION);
 	irg_set_nloc(res, n_loc);
 
 	/* descriptions will be allocated on demand */
@@ -247,7 +248,6 @@ ir_graph *new_const_code_irg(void)
 
 	res->last_node_idx = 0;
 
-	res->phase_state      = phase_building;
 	res->irg_pinned_state = op_pin_state_pinned;
 	res->fp_model         = fp_model_precise;
 
@@ -255,6 +255,8 @@ ir_graph *new_const_code_irg(void)
 	new_identities(res);
 	res->ent         = NULL;
 	res->frame_type  = NULL;
+
+	add_irg_constraints(res, IR_GRAPH_CONSTRAINT_CONSTRUCTION);
 
 	/* the Anchor node must be created first */
 	res->anchor = new_r_Anchor(res);
@@ -350,7 +352,6 @@ ir_graph *create_irg_copy(ir_graph *irg)
 
 	res->last_node_idx = 0;
 
-	res->phase_state      = irg->phase_state;
 	res->irg_pinned_state = irg->irg_pinned_state;
 	res->fp_model         = irg->fp_model;
 
@@ -359,8 +360,6 @@ ir_graph *create_irg_copy(ir_graph *irg)
 	/* clone the frame type here for safety */
 	irp_reserve_resources(irp, IRP_RESOURCE_ENTITY_LINK);
 	res->frame_type  = clone_frame_type(irg->frame_type);
-
-	res->phase_state = irg->phase_state;
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
@@ -575,16 +574,6 @@ int node_is_in_irgs_storage(const ir_graph *irg, const ir_node *n)
 	}
 
 	return 0;
-}
-
-irg_phase_state (get_irg_phase_state)(const ir_graph *irg)
-{
-	return get_irg_phase_state_(irg);
-}
-
-void (set_irg_phase_state)(ir_graph *irg, irg_phase_state state)
-{
-	set_irg_phase_state_(irg, state);
 }
 
 op_pin_state (get_irg_pinned)(const ir_graph *irg)

@@ -834,8 +834,6 @@ void optimize_cf(ir_graph *irg)
 	env.changed    = false;
 	env.phis_moved = false;
 
-	assert(get_irg_phase_state(irg) != phase_building);
-
 	/* if the graph is not pinned, we cannot determine empty blocks */
 	assert(get_irg_pinned(irg) != op_pin_state_floats &&
 	       "Control flow optimization need a pinned graph");

@@ -143,7 +143,7 @@ ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
 		edges_notify_edge(res, i - 1, res->in[i], NULL, irg);
 
 	hook_new_node(irg, res);
-	if (get_irg_phase_state(irg) == phase_backend) {
+	if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
 		be_info_new_node(irg, res);
 	}
 

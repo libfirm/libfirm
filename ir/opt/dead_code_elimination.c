@@ -103,8 +103,6 @@ void dead_node_elimination(ir_graph *irg)
 	/* inform statistics that we started a dead-node elimination run */
 	hook_dead_node_elim(irg, 1);
 
-	assert(get_irg_phase_state(irg) != phase_building);
-
 	/* Handle graph state */
 	free_callee_info(irg);
 	free_irg_outs(irg);

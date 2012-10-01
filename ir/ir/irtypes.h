@@ -517,7 +517,6 @@ struct ir_graph {
 	/* -- Fields indicating different states of irgraph -- */
 	ir_graph_properties_t  properties;
 	ir_graph_constraints_t constraints;
-	irg_phase_state        phase_state;       /**< Compiler phase. */
 	op_pin_state           irg_pinned_state;  /**< Flag for status of nodes. */
 	ir_typeinfo_state      typeinfo_state;    /**< Validity of type information. */
 	irg_callee_info_state  callee_info_state; /**< Validity of callee information. */
@@ -616,8 +615,6 @@ struct ir_prog {
 	ident    **global_asms;         /**< An array of global ASM insertions. */
 
 	/* -- states of and access to generated information -- */
-	irg_phase_state phase_state;    /**< The state of construction. */
-
 	ir_node **ip_outedges;          /**< A huge Array that contains all out edges
 	                                     in interprocedural view. */
 

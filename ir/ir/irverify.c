@@ -582,7 +582,7 @@ static int verify_node_Proj_Proj(const ir_node *p)
 			if ((mode_is_reference(mode)) && is_compound_type(get_method_param_type(mt, proj)))
 				/* value argument */ break;
 
-			if (get_irg_phase_state(get_irn_irg(pred)) != phase_backend) {
+			if (!irg_is_constrained(get_irn_irg(pred), IR_GRAPH_CONSTRAINT_BACKEND)) {
 				ASSERT_AND_RET_DBG(
 						(mode == get_type_mode(get_method_param_type(mt, proj))),
 						"Mode of Proj from Start doesn't match mode of param type.", 0,
@@ -742,7 +742,7 @@ static int verify_node_Block(const ir_node *n)
 		ASSERT_AND_RET(get_Block_n_cfgpreds(n) == 0, "Start Block node", 0);
 	}
 
-	if (n == get_irg_end_block(irg) && get_irg_phase_state(irg) != phase_backend) {
+	if (n == get_irg_end_block(irg) && !irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
 		/* End block may only have Return, Raise or fragile ops as preds. */
 		for (i = get_Block_n_cfgpreds(n) - 1; i >= 0; --i) {
 			ir_node *pred =  skip_Proj(get_Block_cfgpred(n, i));
@@ -888,7 +888,7 @@ static int verify_node_Return(const ir_node *n)
 	for (i = get_Return_n_ress(n) - 1; i >= 0; --i) {
 		ir_type *res_type = get_method_res_type(mt, i);
 
-		if (get_irg_phase_state(irg) != phase_backend) {
+		if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
 			if (is_atomic_type(res_type)) {
 				ASSERT_AND_RET_DBG(
 					get_irn_mode(get_Return_res(n, i)) == get_type_mode(res_type),
@@ -1070,7 +1070,7 @@ static int verify_node_Call(const ir_node *n)
 	for (i = 0; i < get_method_n_params(mt); i++) {
 		ir_type *t = get_method_param_type(mt, i);
 
-		if (get_irg_phase_state(irg) != phase_backend) {
+		if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
 			if (is_atomic_type(t)) {
 				ASSERT_AND_RET_DBG(
 					get_irn_mode(get_Call_param(n, i)) == get_type_mode(t),
@@ -1418,7 +1418,9 @@ static int verify_node_Phi(const ir_node *n)
 	/* a Phi node MUST have the same number of inputs as its block
 	 * Exception is a phi with 0 inputs which is used when (re)constructing the
 	 * SSA form */
-	if (! is_Bad(block) && get_irg_phase_state(get_irn_irg(n)) != phase_building && get_irn_arity(n) > 0) {
+	if (! is_Bad(block)
+	    && !irg_is_constrained(get_irn_irg(n), IR_GRAPH_CONSTRAINT_CONSTRUCTION)
+	    && get_irn_arity(n) > 0) {
 		ASSERT_AND_RET_DBG(
 			get_irn_arity(n) == get_irn_arity(block),
 			"wrong number of inputs in Phi node", 0,
@@ -1449,7 +1451,7 @@ static int verify_node_Load(const ir_node *n)
 	ir_mode  *op2mode = get_irn_mode(get_Load_ptr(n));
 
 	ASSERT_AND_RET(op1mode == mode_M, "Load node", 0);
-	if (get_irg_phase_state(irg) != phase_backend) {
+	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
 		ASSERT_AND_RET(mode_is_reference(op2mode), "Load node", 0 );
 	}
 	ASSERT_AND_RET( mymode == mode_T, "Load node", 0 );
@@ -1485,7 +1487,7 @@ static int verify_node_Store(const ir_node *n)
 	ir_mode *op3mode = get_irn_mode(get_Store_value(n));
 
 	ASSERT_AND_RET(op1mode == mode_M && mode_is_datab(op3mode), "Store node", 0 );
-	if (get_irg_phase_state(irg) != phase_backend) {
+	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
 		ASSERT_AND_RET(mode_is_reference(op2mode), "Store node", 0 );
 	}
 	ASSERT_AND_RET(mymode == mode_T, "Store node", 0);
@@ -1606,7 +1608,7 @@ static int verify_node_CopyB(const ir_node *n)
 
 	/* CopyB: BB x M x ref x ref --> M x X */
 	ASSERT_AND_RET(mymode == mode_T && op1mode == mode_M, "CopyB node", 0);
-	if (get_irg_phase_state(irg) != phase_backend) {
+	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
 		ASSERT_AND_RET(mode_is_reference(op2mode) && mode_is_reference(op3mode),
 			"CopyB node", 0 );
 	}

@@ -481,7 +481,7 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 	/* Ensure, that the ir_edges are computed. */
 	assure_edges(irg);
 
-	set_irg_phase_state(irg, phase_backend);
+	add_irg_constraints(irg, IR_GRAPH_CONSTRAINT_BACKEND);
 	be_info_init_irg(irg);
 
 	dump(DUMP_INITIAL, irg, "prepared");
@@ -527,16 +527,13 @@ void be_lower_for_target(void)
 
 	initialize_isa();
 
-	/* shouldn't lower program twice */
-	assert(get_irp_phase_state() != phase_low);
-
 	isa_if->lower_for_target();
 	/* set the phase to low */
 	for (i = get_irp_n_irgs(); i > 0;) {
 		ir_graph *irg = get_irp_irg(--i);
-		set_irg_phase_state(irg, phase_low);
+		assert(!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_TARGET_LOWERED));
+		add_irg_constraints(irg, IR_GRAPH_CONSTRAINT_TARGET_LOWERED);
 	}
-	set_irp_phase_state(phase_low);
 }
 
 /**
@@ -562,7 +559,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	be_timing = (be_options.timing == BE_TIME_ON);
 
 	/* perform target lowering if it didn't happen yet */
-	if (get_irp_phase_state() != phase_low)
+	if (get_irp_n_irgs() > 0 && !irg_is_constrained(get_irp_irg(0), IR_GRAPH_CONSTRAINT_TARGET_LOWERED))
 		be_lower_for_target();
 
 	if (be_timing) {

@@ -221,17 +221,6 @@ static inline struct obstack *get_irg_obstack_(const ir_graph *irg)
 	return irg->obst;
 }
 
-
-static inline irg_phase_state get_irg_phase_state_(const ir_graph *irg)
-{
-	return irg->phase_state;
-}
-
-static inline void set_irg_phase_state_(ir_graph *irg, irg_phase_state state)
-{
-	irg->phase_state = state;
-}
-
 static inline op_pin_state get_irg_pinned_(const ir_graph *irg)
 {
 	return irg->irg_pinned_state;
@@ -422,8 +411,6 @@ static inline void set_irg_anchor(ir_graph *irg, int idx, ir_node *irn)
 #define get_irg_frame_type(irg)               get_irg_frame_type_(irg)
 #define set_irg_frame_type(irg, ftp)          set_irg_frame_type_(irg, ftp)
 #define get_irg_obstack(irg)                  get_irg_obstack_(irg)
-#define get_irg_phase_state(irg)              get_irg_phase_state_(irg)
-#define set_irg_phase_state(irg, state)       set_irg_phase_state_(irg, state)
 #define get_irg_pinned(irg)                   get_irg_pinned_(irg)
 #define set_irg_pinned(irg, p)                set_irg_pinned_(irg, p)
 #define get_irg_callee_info_state(irg)        get_irg_callee_info_state_(irg)

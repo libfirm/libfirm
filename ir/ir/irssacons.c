@@ -51,11 +51,7 @@ static void prepare_blocks(ir_node *block, void *env)
 
 void ssa_cons_start(ir_graph *irg, int n_loc)
 {
-	/* for now we support only phase_high graphs */
-	assert(irg->phase_state == phase_high);
-
-	/* reset the phase to phase building: some optimization might depend on it */
-	set_irg_phase_state(irg, phase_building);
+	add_irg_constraints(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION);
 
 	irg_set_nloc(irg, n_loc);
 

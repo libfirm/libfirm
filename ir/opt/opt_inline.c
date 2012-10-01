@@ -331,7 +331,6 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 	set_optimize(0);
 
 	/* Handle graph state */
-	assert(get_irg_phase_state(irg) != phase_building);
 	assert(get_irg_pinned(irg) == op_pin_state_pinned);
 	assert(get_irg_pinned(called_graph) == op_pin_state_pinned);
 	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
@@ -683,8 +682,6 @@ void inline_small_irgs(ir_graph *irg, int size)
 	inline_env_t env;
 
 	current_ir_graph = irg;
-	/* Handle graph state */
-	assert(get_irg_phase_state(irg) != phase_building);
 	free_callee_info(irg);
 
 	/* Find Call nodes to inline.
@@ -956,7 +953,6 @@ void inline_leaf_functions(unsigned maxsize, unsigned leafsize,
 	for (i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 
-		assert(get_irg_phase_state(irg) != phase_building);
 		free_callee_info(irg);
 
 		assure_irg_properties(irg,

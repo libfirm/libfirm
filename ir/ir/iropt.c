@@ -1131,7 +1131,7 @@ static ir_node *equivalent_node_Phi(ir_node *n)
 	ir_node *first_val = NULL; /* to shutup gcc */
 
 	if (!get_opt_optimize() &&
-			get_irg_phase_state(get_irn_irg(n)) != phase_building)
+	    !irg_is_constrained(get_irn_irg(n), IR_GRAPH_CONSTRAINT_CONSTRUCTION))
 		return n;
 
 	n_preds = get_Phi_n_preds(n);
@@ -6752,8 +6752,6 @@ ir_node *optimize_in_place_2(ir_node *n)
 ir_node *optimize_in_place(ir_node *n)
 {
 	ir_graph *irg = get_irn_irg(n);
-	/* Handle graph state */
-	assert(get_irg_phase_state(irg) != phase_building);
 
 	if (get_opt_global_cse())
 		set_irg_pinned(irg, op_pin_state_floats);

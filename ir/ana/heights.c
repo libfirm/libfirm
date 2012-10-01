@@ -224,7 +224,7 @@ unsigned heights_recompute_block(ir_heights_t *h, ir_node *block)
 
 	assure_edges(irg);
 
-	/* reset phase data for all nodes in the block */
+	/* reset data for all nodes in the block */
 	foreach_out_edge(block, edge) {
 		ir_node      *irn = get_edge_src_irn(edge);
 		irn_height_t *ih  = get_height_data(h, irn);

@@ -336,7 +336,7 @@ ir_node *new_d_{{node.name}}(
 		{% endfilter %})
 {
 	ir_node *res;
-	assert(get_irg_phase_state(current_ir_graph) == phase_building);
+	assert(irg_is_constrained(current_ir_graph, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
 	res = new_rd_{{node.name}}(
 		{%- filter parameters %}
 			dbgi

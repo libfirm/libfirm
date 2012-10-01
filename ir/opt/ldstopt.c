@@ -2148,7 +2148,6 @@ void optimize_load_store(ir_graph *irg)
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.ldstopt");
 
-	assert(get_irg_phase_state(irg) != phase_building);
 	assert(get_irg_pinned(irg) != op_pin_state_floats &&
 		"LoadStore optimization needs pinned graph");
 

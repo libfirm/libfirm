@@ -69,9 +69,6 @@ static inline void do_local_optimize(ir_node *n)
 {
 	ir_graph *irg = get_irn_irg(n);
 
-	/* Handle graph state */
-	assert(get_irg_phase_state(irg) != phase_building);
-
 	if (get_opt_global_cse())
 		set_irg_pinned(irg, op_pin_state_floats);
 	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);

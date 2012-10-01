@@ -248,38 +248,6 @@ FIRM_API size_t get_irg_idx(const ir_graph *irg);
  */
 FIRM_API ir_node *get_idx_irn(const ir_graph *irg, unsigned idx);
 
-
-/** The states of an ir graph.
- *
- * state phase values: phase_building, phase_high, phase_low, phase_backend.
- *
- * The graph is in phase_building during construction of the irgraph.
- * The construction is finished by a call to finalize_cons().
- *
- * Finalize_cons() sets the state to phase_high.  All standard Firm nodes are
- * allowed.
- *
- * To get the irgraph into phase_low all Sel nodes must be removed and
- * replaced by explicit address computations.  SymConst size and
- * type tag nodes must be removed (@@@ really?).  Initialization of
- * memory allocated by Alloc must be explicit.  @@@ More conditions?
- *
- * phase_backend is set if architecture specific machine nodes are inserted
- * (and probably most standard Firm are removed).
- */
-typedef enum {
-	phase_building,  /**< The graph is still being constructed. */
-	phase_high,      /**< The construction of the graph is finish, high level nodes may be present. */
-	phase_low,       /**< High level nodes are removed. */
-	phase_backend    /**< The graph is taken by the backend.  Machine specific nodes may be present. */
-} irg_phase_state;
-
-/** Returns the phase_state of an IR graph. */
-FIRM_API irg_phase_state get_irg_phase_state(const ir_graph *irg);
-
-/** Sets the phase state of an IR graph. */
-FIRM_API void set_irg_phase_state(ir_graph *irg, irg_phase_state state);
-
 /** state: op_pin_state_pinned
    The graph is "op_pin_state_pinned" if all nodes are associated with a basic block.
    It is in state "op_pin_state_floats" if nodes are in arbitrary blocks.  In state
@@ -404,7 +372,23 @@ typedef enum ir_graph_constraints_t {
 	 * Warning: It is only safe to enable this when you are sure that you
 	 * apply all localopts to the fixpunkt. (=in optimize_graph_df)
 	 */
-	IR_GRAPH_CONSTRAINT_OPTIMIZE_UNREACHABLE_CODE = 1U << 4,
+	IR_GRAPH_CONSTRAINT_OPTIMIZE_UNREACHABLE_CODE = 1U << 3,
+	/**
+	 * The graph is being constructed: We have a current_block set,
+	 * and blocks contain mapping of variable numbers to current
+	 * values.
+	 */
+	IR_GRAPH_CONSTRAINT_CONSTRUCTION              = 1U << 4,
+	/**
+	 * Intermediate language constructs not supported by the backend have
+	 * been lowered.
+	 */
+	IR_GRAPH_CONSTRAINT_TARGET_LOWERED            = 1U << 5,
+	/**
+	 * We have a backend graph: all data values have register constraints
+	 * annotated.
+	 */
+	IR_GRAPH_CONSTRAINT_BACKEND                   = 1U << 6,
 } ir_graph_constraints_t;
 ENUM_BITSET(ir_graph_constraints_t)
 
