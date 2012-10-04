@@ -59,7 +59,7 @@
 
 /* Attempt to reduce register pressure and reduce code size
    for hoisted nodes. */
-#define HOIST_HIGH 0
+#define HOIST_HIGH 1
 #define COMMON_DOM 1
 
 /* Seamless implementation of handling loads and generally memory
@@ -78,10 +78,6 @@
 #define OPTIMIZE_NODES 0
 
 #define OLD_DIVMODS 0
-
-/* NIY Choose to be optimized nodes in a more sophisticated way
-   to reduce number of newly introduced phi nodes. */
-#define BETTER_GREED 0
 
 
 /** Additional info we need for every block. */
@@ -1272,13 +1268,6 @@ static ir_mode *is_partially_redundant(ir_node *block, ir_node *expr, ir_node *v
 		}
 	}
 
-#if BETTER_GREED
-	/* value is redundant from last iteration,
-	   but has not been removed from antic_in (is not optimized) */
-	if (! environ->first_iter && is_redundant(block, expr))
-		return mode;
-#endif
-
 	/* If it is not the same value already existing along every predecessor
        and it is defined by some predecessor then it is partially redundant. */
 	if (! partially_redundant || fully_redundant)
@@ -1313,21 +1302,6 @@ static void update_new_set(ir_node *block, ir_node *idom)
 		dump_value_set(curr_info->avail_out, "Updated [Avail_out]", block);
 #endif
 } /* update_new_set */
-
-#if BETTER_GREED
-/*
- * Returns redundant flag of node irn in block block.
- */
-static unsigned is_redundant(ir_node *block, ir_node *irn)
-{
-	(void) block;
-	(void) irn;
-
-	/* TODO Needs to use a flag, because antic_done should only be used
-	   if node is finally processed by insert_nodes. */
-	return 0;
-}
-#endif
 
 /**
  * Checks if hoisting irn is greedy.
@@ -1445,9 +1419,6 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 	ir_node                *idom;
 	int                     pos;
 	ir_valueset_iterator_t  iter;
-#if BETTER_GREED
-	plist_t *stack;
-#endif
 
 	/* only blocks */
 	if (! is_Block(block))
@@ -1471,14 +1442,6 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 	if (arity < 2) {
 		return;
 	}
-
-#if BETTER_GREED
-	stack = plist_new();
-	foreach_valueset(info->antic_in, value, expr, iter) {
-		/* inverse topologic */
-		plist_insert_front(stack, expr);
-	}
-#endif
 
 	/* This is the main reason antic_in is preverred over antic_out;
 	   we may iterate over every anticipated value first and not
@@ -1508,23 +1471,14 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 			continue;
 		}
 
-#if !BETTER_GREED
 		if (is_hoisting_greedy(expr, block)) {
 			DB((dbg, LEVEL_2, "greedy\n"));
 			continue;
 		}
-#endif
 
 		mode = is_partially_redundant(block, expr, value);
 		if (mode == NULL)
 			continue;
-
-#if BETTER_GREED
-		if (is_hoisting_greedy(expr, block)) {
-			DB((dbg, LEVEL_2, "Better greed: greedy\n"));
-			continue;
-		}
-#endif
 
 #if LOADS || OLD_DIVMODS || DIVMODS
 		/* save old mode_M phis to remove keepalive edges later */
@@ -1673,50 +1627,6 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 		ir_valueset_insert(info->antic_done, value, expr);
 		env->changes |= 1;
 	}
-
-#if BETTER_GREED
-	/* TODO Unfinished
-	   Better greed first determines which values are redundant
-	   and decides then which to take.
-	   insert_nodes needs to be split up for that. The cycle could be
-	   for each block: flag redundant nodes,
-	   use heuristic to adjust these flags (also consider antic_done),
-	   do insert nodes.
-	   This way we could decide if we should hoist a non redundant node,
-	   if all its successors are redundant.
-	   Or we might try to minimize the cut along hoisted nodes and their
-	   non redundant successors.
-	 */
-	if (env->changes) {
-		plist_element_t *it;
-		/* iterate in inverse topological order */
-		foreach_plist(stack, it) {
-			ir_node *irn   = (ir_node *)plist_element_get_value(it);
-			ir_node *block = get_nodes_block(irn);
-			int      j;
-			char     redundant = 1;
-
-			/* does irn only have redundant successors? */
-
-			foreach_out_edge(irn, edge) {
-				ir_node *succ = get_edge_src_irn(edge);
-
-				/* if succ and irn are in the same block */
-				if (get_nodes_block(succ) == block && is_redundant(block, succ)) {
-					continue;
-				} else {
-					redundant = 0;
-					break;
-				}
-			}
-
-			if (redundant)
-				flag_redundant(irn, 1);
-		}
-	}
-	plist_free(stack);
-#endif
-
 }
 
 #if HOIST_HIGH
