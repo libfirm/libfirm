@@ -185,7 +185,7 @@ $(docdir)/libfirm.tag: $(IR_SPEC_GENERATED_FILES) Doxyfile $(wildcard include/li
 DOCU_GENERATOR := scripts/gen_docu.py
 $(docdir)/html/nodes.html: $(docdir)/libfirm.tag $(DOCU_GENERATOR) $(IR_SPEC) scripts/spec_util.py scripts/style.css
 	@echo gen_docu.py $@
-	$(Q)$(DOCU_GENERATOR) $(docdir)/libfirm.tag "" $@
+	$(Q)$(DOCU_GENERATOR) $(IR_SPEC) $(docdir)/libfirm.tag "" $@
 	$(Q)cp scripts/style.css $(docdir)/html
 
 .PHONY: doc

@@ -138,6 +138,11 @@ ir_node *ir_get_abs_op(const ir_node *sel, ir_node *mux_false,
 bool ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
                            const ir_node *mux_true);
 
+/**
+ * Returns true if Conv_m0(Conv_m1( x_m2)) is equivalent to Conv_m0(x_m2)
+ */
+bool may_leave_out_middle_conv(ir_mode *m0, ir_mode *m1, ir_mode *m2);
+
 void ir_register_opt_node_ops(void);
 
 #endif

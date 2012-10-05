@@ -59,30 +59,16 @@
 
 #define MAX_INT_FREQ 1000000
 
-typedef struct freq_t {
-	double freq;
-} freq_t;
-
-static ir_nodehashmap_t freq_map;
-static struct obstack   obst;
-static hook_entry_t     hook;
+static hook_entry_t hook;
 
 double get_block_execfreq(const ir_node *block)
 {
-	const freq_t *freq = ir_nodehashmap_get(freq_t, &freq_map, block);
-	if (freq == NULL)
-		return 0.0;
-	return freq->freq;
+	return block->attr.block.execfreq;
 }
 
 void set_block_execfreq(ir_node *block, double newfreq)
 {
-	freq_t *freq = ir_nodehashmap_get(freq_t, &freq_map, block);
-	if (freq == NULL) {
-		freq = OALLOC(&obst, freq_t);
-		ir_nodehashmap_insert(&freq_map, block, freq);
-	}
-	freq->freq = newfreq;
+	block->attr.block.execfreq = newfreq;
 }
 
 static void exec_freq_node_info(void *ctx, FILE *f, const ir_node *irn)
@@ -90,16 +76,13 @@ static void exec_freq_node_info(void *ctx, FILE *f, const ir_node *irn)
 	(void)ctx;
 	if (!is_Block(irn))
 		return;
-	const freq_t *freq = ir_nodehashmap_get(freq_t, &freq_map, irn);
-	if (freq != NULL)
-		fprintf(f, "execution frequency: %g\n", get_block_execfreq(irn));
+	double freq = get_block_execfreq(irn);
+	if (freq != 0.0)
+		fprintf(f, "execution frequency: %g\n", freq);
 }
 
 void init_execfreq(void)
 {
-	ir_nodehashmap_init(&freq_map);
-	obstack_init(&obst);
-
 	memset(&hook, 0, sizeof(hook));
 	hook.hook._hook_node_info = exec_freq_node_info;
 	register_hook(hook_node_info, &hook);
@@ -108,9 +91,6 @@ void init_execfreq(void)
 void exit_execfreq(void)
 {
 	unregister_hook(hook_node_info, &hook);
-
-	obstack_free(&obst, NULL);
-	ir_nodehashmap_destroy(&freq_map);
 }
 
 
@@ -260,7 +240,8 @@ void ir_estimate_execfreq(ir_graph *irg)
 
 	assure_irg_properties(irg,
 		IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
-		| IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
+		| IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO
+		| IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE);
 
 	/* compute a DFS.
 	 * using a toposort on the CFG (without back edges) will propagate

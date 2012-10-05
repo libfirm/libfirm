@@ -74,8 +74,7 @@ static void finish_block(ir_node *block, void *env)
 {
 	(void)env;
 
-	if (!get_Block_matured(block))
-		mature_immBlock(block);
+	mature_immBlock(block);
 }
 
 void ssa_cons_finish(ir_graph *irg)

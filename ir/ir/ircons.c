@@ -230,8 +230,6 @@ static ir_node *set_phi_arguments(ir_node *phi, int pos)
 		if (is_Bad(cfgpred)) {
 			value = new_r_Bad(irg, mode);
 		} else {
-			inc_irg_visited(irg);
-
 			value = get_r_value_internal(cfgpred, pos, mode);
 		}
 		in[i] = value;
@@ -267,12 +265,6 @@ static ir_node *get_r_value_internal(ir_node *block, int pos, ir_mode *mode)
 	ir_graph *irg = get_irn_irg(block);
 	if (res != NULL)
 		return res;
-
-	/* We ran into a cycle. This may happen in unreachable loops. */
-	if (irn_visited_else_mark(block)) {
-		/* Since the loop is unreachable, return a Bad. */
-		return new_r_Bad(irg, mode);
-	}
 
 	/* in a matured block we can immediately determine the phi arguments */
 	if (get_Block_matured(block)) {
@@ -404,39 +396,6 @@ ir_node *new_d_ASM(dbg_info *db, ir_node *mem, int arity, ir_node *in[],
 	                  inputs, n_outs, outputs, n_clobber, clobber, text);
 }
 
-ir_node *new_rd_strictConv(dbg_info *dbgi, ir_node *block, ir_node * irn_op, ir_mode * mode)
-{
-	ir_node *res;
-	ir_graph *irg = get_Block_irg(block);
-
-	ir_node *in[1];
-	in[0] = irn_op;
-
-	res = new_ir_node(dbgi, irg, block, op_Conv, mode, 1, in);
-	res->attr.conv.strict = 1;
-	irn_verify_irg(res, irg);
-	res = optimize_node(res);
-	return res;
-}
-
-ir_node *new_r_strictConv(ir_node *block, ir_node * irn_op, ir_mode * mode)
-{
-	return new_rd_strictConv(NULL, block, irn_op, mode);
-}
-
-ir_node *new_d_strictConv(dbg_info *dbgi, ir_node * irn_op, ir_mode * mode)
-{
-	ir_node *res;
-	assert(get_irg_phase_state(current_ir_graph) == phase_building);
-	res = new_rd_strictConv(dbgi, current_ir_graph->current_block, irn_op, mode);
-	return res;
-}
-
-ir_node *new_strictConv(ir_node * irn_op, ir_mode * mode)
-{
-	return new_d_strictConv(NULL, irn_op, mode);
-}
-
 ir_node *new_rd_DivRL(dbg_info *dbgi, ir_node *block, ir_node * irn_mem, ir_node * irn_left, ir_node * irn_right, ir_mode* resmode, op_pin_state pin_state)
 {
 	ir_node *res;
@@ -556,7 +515,6 @@ ir_node *get_r_value(ir_graph *irg, int pos, ir_mode *mode)
 {
 	assert(get_irg_phase_state(irg) == phase_building);
 	assert(pos >= 0);
-	inc_irg_visited(irg);
 
 	return get_r_value_internal(irg->current_block, pos + 1, mode);
 }
@@ -637,7 +595,6 @@ void set_value(int pos, ir_node *value)
 ir_node *get_r_store(ir_graph *irg)
 {
 	assert(get_irg_phase_state(irg) == phase_building);
-	inc_irg_visited(irg);
 	return get_r_value_internal(irg->current_block, 0, mode_M);
 }
 

@@ -151,95 +151,6 @@ static ir_node *gen_sign_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
 }
 
 /**
- * returns true if it is assured, that the upper bits of a node are "clean"
- * which means for a 16 or 8 bit value, that the upper bits in the register
- * are 0 for unsigned and a copy of the last significant bit for signed
- * numbers.
- */
-static bool upper_bits_clean(ir_node *node, ir_mode *mode)
-{
-	switch ((ir_opcode)get_irn_opcode(node)) {
-	case iro_And:
-		if (!mode_is_signed(mode)) {
-			return upper_bits_clean(get_And_left(node), mode)
-			    || upper_bits_clean(get_And_right(node), mode);
-		}
-		/* FALLTHROUGH */
-	case iro_Or:
-	case iro_Eor:
-		return upper_bits_clean(get_binop_left(node), mode)
-		    && upper_bits_clean(get_binop_right(node), mode);
-
-	case iro_Shr:
-		if (mode_is_signed(mode)) {
-			return false; /* TODO */
-		} else {
-			ir_node *right = get_Shr_right(node);
-			if (is_Const(right)) {
-				ir_tarval *tv  = get_Const_tarval(right);
-				long       val = get_tarval_long(tv);
-				if (val >= 32 - (long)get_mode_size_bits(mode))
-					return true;
-			}
-			return upper_bits_clean(get_Shr_left(node), mode);
-		}
-
-	case iro_Shrs:
-		return upper_bits_clean(get_Shrs_left(node), mode);
-
-	case iro_Const: {
-		ir_tarval *tv  = get_Const_tarval(node);
-		long       val = get_tarval_long(tv);
-		if (mode_is_signed(mode)) {
-			long    shifted = val >> (get_mode_size_bits(mode)-1);
-			return shifted == 0 || shifted == -1;
-		} else {
-			unsigned long shifted = (unsigned long)val;
-			shifted >>= get_mode_size_bits(mode)-1;
-			shifted >>= 1;
-			return shifted == 0;
-		}
-	}
-
-	case iro_Conv: {
-		ir_mode *dest_mode = get_irn_mode(node);
-		ir_node *op        = get_Conv_op(node);
-		ir_mode *src_mode  = get_irn_mode(op);
-		unsigned src_bits  = get_mode_size_bits(src_mode);
-		unsigned dest_bits = get_mode_size_bits(dest_mode);
-		/* downconvs are a nop */
-		if (src_bits <= dest_bits)
-			return upper_bits_clean(op, mode);
-		if (dest_bits <= get_mode_size_bits(mode)
-		    && mode_is_signed(dest_mode) == mode_is_signed(mode))
-			return true;
-		return false;
-	}
-
-	case iro_Proj: {
-		ir_node *pred = get_Proj_pred(node);
-		switch (get_irn_opcode(pred)) {
-		case iro_Load: {
-			ir_mode *load_mode = get_Load_mode(pred);
-			unsigned load_bits = get_mode_size_bits(load_mode);
-			unsigned bits      = get_mode_size_bits(mode);
-			if (load_bits > bits)
-				return false;
-			if (mode_is_signed(mode) != mode_is_signed(load_mode))
-				return false;
-			return true;
-		}
-		default:
-			break;
-		}
-	}
-	default:
-		break;
-	}
-	return false;
-}
-
-/**
  * Extend a value to 32 bit signed/unsigned depending on its mode.
  *
  * @param dbgi      debug info
@@ -290,9 +201,10 @@ static bool is_imm_encodeable(const ir_node *node)
 static bool needs_extension(ir_node *op)
 {
 	ir_mode *mode = get_irn_mode(op);
-	if (get_mode_size_bits(mode) >= get_mode_size_bits(mode_gp))
+	unsigned gp_bits = get_mode_size_bits(mode_gp);
+	if (get_mode_size_bits(mode) >= gp_bits)
 		return false;
-	return !upper_bits_clean(op, mode);
+	return !be_upper_bits_clean(op, mode);
 }
 
 /**
@@ -1451,31 +1363,20 @@ static ir_node *gen_Conv(ir_node *node)
 			return create_itof(dbgi, block, new_op, dst_mode);
 		}
 	} else { /* complete in gp registers */
-		int min_bits;
-		ir_mode *min_mode;
-
-		if (src_bits == dst_bits || dst_mode == mode_b) {
+		if (src_bits >= dst_bits || dst_mode == mode_b) {
 			/* kill unnecessary conv */
 			return be_transform_node(op);
 		}
 
-		if (src_bits < dst_bits) {
-			min_bits = src_bits;
-			min_mode = src_mode;
-		} else {
-			min_bits = dst_bits;
-			min_mode = dst_mode;
-		}
-
-		if (upper_bits_clean(op, min_mode)) {
+		if (be_upper_bits_clean(op, src_mode)) {
 			return be_transform_node(op);
 		}
 		new_op = be_transform_node(op);
 
-		if (mode_is_signed(min_mode)) {
-			return gen_sign_extension(dbgi, block, new_op, min_bits);
+		if (mode_is_signed(src_mode)) {
+			return gen_sign_extension(dbgi, block, new_op, src_bits);
 		} else {
-			return gen_zero_extension(dbgi, block, new_op, min_bits);
+			return gen_zero_extension(dbgi, block, new_op, src_bits);
 		}
 	}
 }

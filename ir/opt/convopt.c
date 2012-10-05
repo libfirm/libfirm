@@ -109,7 +109,6 @@ static int get_conv_costs(const ir_node *node, ir_mode *dest_mode)
 		return 0;
 
 	if (is_Const(node)) {
-		/* TODO tarval module is incomplete and can't convert floats to ints */
 		return conv_const_tv(node, dest_mode) == tarval_bad ? 1 : 0;
 	}
 
@@ -155,10 +154,14 @@ static int get_conv_costs(const ir_node *node, ir_mode *dest_mode)
 		ir_node *pred      = get_Conv_op(node);
 		ir_mode *pred_mode = get_irn_mode(pred);
 
-		if (!values_in_mode(dest_mode, pred_mode)) {
+		if (smaller_mode(pred_mode, dest_mode)) {
+			return get_conv_costs(get_Conv_op(node), dest_mode) - 1;
+		}
+		if (may_leave_out_middle_conv(pred_mode, mode, dest_mode)) {
+			return 0;
+		} else {
 			return 1;
 		}
-		return get_conv_costs(get_Conv_op(node), dest_mode) - 1;
 	}
 
 	if (!is_optimizable_node(node, dest_mode)) {
@@ -197,7 +200,6 @@ static ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 		return node;
 
 	if (is_Const(node)) {
-		/* TODO tarval module is incomplete and can't convert floats to ints */
 		ir_tarval *tv = conv_const_tv(node, dest_mode);
 		if (tv == tarval_bad) {
 			return place_conv(node, dest_mode);
@@ -224,10 +226,10 @@ static ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 		ir_node *pred      = get_Conv_op(node);
 		ir_mode *pred_mode = get_irn_mode(pred);
 
-		if (!values_in_mode(dest_mode, pred_mode)) {
-			return place_conv(node, dest_mode);
+		if (smaller_mode(pred_mode, dest_mode)) {
+			return conv_transform(get_Conv_op(node), dest_mode);
 		}
-		return conv_transform(get_Conv_op(node), dest_mode);
+		return place_conv(node, dest_mode);
 	}
 
 	if (!is_optimizable_node(node, dest_mode)) {

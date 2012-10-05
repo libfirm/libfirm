@@ -163,7 +163,6 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 	res->last_node_idx = 0;
 
 	new_identities(res);
-	res->outs = NULL;
 
 	res->inline_property       = irg_inline_any;
 	res->additional_properties = mtp_property_inherited;  /* inherited from type */

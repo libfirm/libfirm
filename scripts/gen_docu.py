@@ -1,13 +1,10 @@
 #!/usr/bin/env python
 import sys
-import re
 import docutils.core
 import docutils.writers.html4css1
 from datetime import datetime
 from jinja2 import Environment, Template
-from jinja2.filters import do_dictsort
-from spec_util import is_dynamic_pinned, verify_node, isAbstract, setdefault, trim_docstring
-from ir_spec import nodes
+from spec_util import isAbstract, load_spec
 
 tags = None
 linkbase = None
@@ -135,13 +132,9 @@ docu_template = env.from_string(
 
 #############################
 
-def preprocess_node(node):
-	node.doc = trim_docstring(node.__doc__)
-
-def prepare_nodes():
+def prepare_nodes(nodes):
 	real_nodes = []
 	for node in nodes:
-		preprocess_node(node)
 		if isAbstract(node):
 			continue
 		real_nodes.append(node)
@@ -151,9 +144,10 @@ def prepare_nodes():
 def main(argv):
 	global tags
 	output = sys.stdout
-	if len(argv) > 1:
+	specfile = argv[1]
+	if len(argv) > 2:
 		output = open(argv[-1], "w")
-	if len(argv) > 3:
+	if len(argv) > 4:
 		tagfile = open(argv[-3], "r")
 		global linkbase
 		linkbase = argv[-2]
@@ -165,7 +159,8 @@ def main(argv):
 		except:
 			tags = None
 
-	real_nodes = prepare_nodes()
+	spec = load_spec(specfile)
+	real_nodes = prepare_nodes(spec.nodes)
 	time = datetime.now().replace(microsecond=0).isoformat(' ')
 	output.write(docu_template.render(nodes=real_nodes, time=time))
 	if output != sys.stdout:

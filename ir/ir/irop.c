@@ -112,8 +112,11 @@ void ir_clear_opcodes_generic_func(void)
 
 	for (i = 0; i < n; ++i) {
 		ir_op *op = ir_get_opcode(i);
-		if (op != NULL)
-			op->ops.generic = (op_func)NULL;
+		if (op == NULL)
+			continue;
+		op->ops.generic  = (op_func)NULL;
+		op->ops.generic1 = (op_func)NULL;
+		op->ops.generic2 = (op_func)NULL;
 	}
 }
 
@@ -341,12 +344,6 @@ static int node_cmp_attr_Phi(const ir_node *a, const ir_node *b)
 	return 0;
 }
 
-/** Compares the attributes of two Conv nodes. */
-static int node_cmp_attr_Conv(const ir_node *a, const ir_node *b)
-{
-	return get_Conv_strict(a) != get_Conv_strict(b);
-}
-
 /** Compares the attributes of two Cast nodes. */
 static int node_cmp_attr_Cast(const ir_node *a, const ir_node *b)
 {
@@ -504,16 +501,10 @@ static int node_cmp_attr_InstOf(const ir_node *a, const ir_node *b)
 static void default_copy_attr(ir_graph *irg, const ir_node *old_node,
                               ir_node *new_node)
 {
-	unsigned size = firm_add_node_size;
 	(void) irg;
 
 	assert(get_irn_op(old_node) == get_irn_op(new_node));
 	memcpy(&new_node->attr, &old_node->attr, get_op_attr_size(get_irn_op(old_node)));
-
-	if (size > 0) {
-		/* copy additional node data */
-		memcpy(get_irn_data(new_node, void, size), get_irn_data(old_node, void, size), size);
-	}
 }
 
 /**
@@ -610,7 +601,6 @@ void firm_init_op(void)
 	register_node_cmp_func(op_Cmp,      node_cmp_attr_Cmp);
 	register_node_cmp_func(op_Confirm,  node_cmp_attr_Confirm);
 	register_node_cmp_func(op_Const,    node_cmp_attr_Const);
-	register_node_cmp_func(op_Conv,     node_cmp_attr_Conv);
 	register_node_cmp_func(op_CopyB,    node_cmp_attr_CopyB);
 	register_node_cmp_func(op_Div,      node_cmp_attr_Div);
 	register_node_cmp_func(op_Dummy,    node_cmp_attr_Dummy);

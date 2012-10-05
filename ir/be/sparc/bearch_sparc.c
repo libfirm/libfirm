@@ -144,12 +144,24 @@ static void sparc_prepare_graph(ir_graph *irg)
 
 static bool sparc_modifies_flags(const ir_node *node)
 {
-	return arch_get_irn_flags(node) & sparc_arch_irn_flag_modifies_flags;
+	unsigned n_outs = arch_get_irn_n_outs(node);
+	for (unsigned o = 0; o < n_outs; ++o) {
+		const arch_register_req_t *req = arch_get_irn_register_req_out(node, o);
+		if (req->cls == &sparc_reg_classes[CLASS_sparc_flags_class])
+			return true;
+	}
+	return false;
 }
 
 static bool sparc_modifies_fp_flags(const ir_node *node)
 {
-	return arch_get_irn_flags(node) & sparc_arch_irn_flag_modifies_fp_flags;
+	unsigned n_outs = arch_get_irn_n_outs(node);
+	for (unsigned o = 0; o < n_outs; ++o) {
+		const arch_register_req_t *req = arch_get_irn_register_req_out(node, o);
+		if (req->cls == &sparc_reg_classes[CLASS_sparc_fpflags_class])
+			return true;
+	}
+	return false;
 }
 
 static void sparc_before_ra(ir_graph *irg)
@@ -538,16 +550,11 @@ static const backend_params *sparc_get_backend_params(void)
 	p.type_long_long          = type_long_long;
 	p.type_unsigned_long_long = type_unsigned_long_long;
 
-	if (sparc_isa_template.fpu_arch == SPARC_FPU_ARCH_SOFTFLOAT) {
-		p.mode_float_arithmetic = NULL;
-		p.type_long_double      = NULL;
-	} else {
-		ir_type *type_long_double = new_type_primitive(mode_Q);
+	ir_type *type_long_double = new_type_primitive(mode_Q);
 
-		set_type_alignment_bytes(type_long_double, 8);
-		set_type_size_bytes(type_long_double, 16);
-		p.type_long_double = type_long_double;
-	}
+	set_type_alignment_bytes(type_long_double, 8);
+	set_type_size_bytes(type_long_double, 16);
+	p.type_long_double = type_long_double;
 	return &p;
 }
 

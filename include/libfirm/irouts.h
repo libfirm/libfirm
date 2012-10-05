@@ -38,16 +38,16 @@
  */
 
 /** Returns the number of successors of the node: */
-FIRM_API int get_irn_n_outs(const ir_node *node);
+FIRM_API unsigned get_irn_n_outs(const ir_node *node);
 
 /** Returns the User of a node from the Def-Use edge at position pos. */
-FIRM_API ir_node *get_irn_out(const ir_node *def, int pos);
+FIRM_API ir_node *get_irn_out(const ir_node *def, unsigned pos);
 
 /**
  * Returns the User and its input position from the Def-Use edge of def
  * at position pos.
  */
-FIRM_API ir_node *get_irn_out_ex(const ir_node *def, int pos, int *in_pos);
+FIRM_API ir_node *get_irn_out_ex(const ir_node *def, unsigned pos, int *in_pos);
 
 /**
  * Sets the User at position pos.
@@ -57,19 +57,19 @@ FIRM_API ir_node *get_irn_out_ex(const ir_node *def, int pos, int *in_pos);
  * @param use     the Use node
  * @param in_pos  the number of the corresponding Use-Def edge in the use node in array
  */
-FIRM_API void set_irn_out(ir_node *def, int pos, ir_node *use, int in_pos);
+FIRM_API void set_irn_out(ir_node *def, unsigned pos, ir_node *use, int in_pos);
 
 /** Returns the number of control flow successors, ignore keep-alives. */
-FIRM_API int get_Block_n_cfg_outs(const ir_node *node);
+FIRM_API unsigned get_Block_n_cfg_outs(const ir_node *node);
 
 /** Returns the number of control flow successors, honor keep-alives. */
-FIRM_API int get_Block_n_cfg_outs_ka(const ir_node *node);
+FIRM_API unsigned get_Block_n_cfg_outs_ka(const ir_node *node);
 
 /** Access predecessor n, ignore keep-alives. */
-FIRM_API ir_node *get_Block_cfg_out(const ir_node *node, int pos);
+FIRM_API ir_node *get_Block_cfg_out(const ir_node *node, unsigned pos);
 
 /** Access predecessor n, honor keep-alives. */
-FIRM_API ir_node *get_Block_cfg_out_ka(const ir_node *node, int pos);
+FIRM_API ir_node *get_Block_cfg_out_ka(const ir_node *node, unsigned pos);
 
 /**
  * Walks over the graph starting at node.  Walks also if graph is in state
@@ -87,29 +87,18 @@ FIRM_API void irg_out_block_walk(ir_node *node, irg_walk_func *pre,
                                  irg_walk_func *post, void *env);
 
 /**
- * Returns 1 if outs have been computed for a node, 0 otherwise.
- *
- * this is useful to detect newly created nodes that have no outs set yet
- */
-FIRM_API int get_irn_outs_computed(const ir_node *node);
-
-/**
  * Computes the out edges.  Sets a flag in irg to "outs_consistent".  If the
  * graph is changed this flag must be set to "outs_inconsistent".  Computes
  * out edges from block to floating nodes even if graph is in state
  * "op_pin_state_floats".   Optimizes Tuple nodes.
  */
 FIRM_API void compute_irg_outs(ir_graph *irg);
-/** Recomputes out edges for each graph where it is necessary */
-FIRM_API void compute_irp_outs(void);
 
 /** Recomputes out edges if necessary */
 FIRM_API void assure_irg_outs(ir_graph *irg);
 
 /** Frees memory occupied by out edges datastructures */
 FIRM_API void free_irg_outs(ir_graph *irg);
-/** Frees memory occupied by out edges datastructures in the whole program */
-FIRM_API void free_irp_outs(void);
 
 /** @} */
 

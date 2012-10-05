@@ -506,28 +506,34 @@ int smaller_mode(const ir_mode *sm, const ir_mode *lm)
 
 int values_in_mode(const ir_mode *sm, const ir_mode *lm)
 {
-	ir_mode_arithmetic arith;
-
-	assert(sm);
-	assert(lm);
-
-	if (sm == lm) return 1;
+	if (sm == lm)
+		return true;
 
 	if (sm == mode_b)
-		return mode_is_int(lm);
+		return mode_is_int(lm) || mode_is_float(lm);
 
-	arith = get_mode_arithmetic(sm);
-	if (arith != get_mode_arithmetic(lm))
-		return 0;
-
-	switch (arith) {
-		case irma_twos_complement:
-		case irma_ieee754:
+	ir_mode_arithmetic larith = get_mode_arithmetic(lm);
+	ir_mode_arithmetic sarith = get_mode_arithmetic(sm);
+	switch (larith) {
+	case irma_x86_extended_float:
+	case irma_ieee754:
+		if (sarith == irma_ieee754 || sarith == irma_x86_extended_float) {
 			return get_mode_size_bits(sm) <= get_mode_size_bits(lm);
-
-		default:
-			return 0;
+		} else if (sarith == irma_twos_complement) {
+			unsigned int_mantissa   = get_mode_size_bits(sm) - (mode_is_signed(sm) ? 1 : 0);
+			unsigned float_mantissa = get_mode_mantissa_size(lm) + 1;
+			return int_mantissa <= float_mantissa;
+		}
+		break;
+	case irma_twos_complement:
+		if (sarith == irma_twos_complement) {
+			return get_mode_size_bits(sm) <= get_mode_size_bits(lm);
+		}
+		break;
+	case irma_none:
+		break;
 	}
+	return false;
 }
 
 ir_mode *get_reference_mode_signed_eq(ir_mode *mode)

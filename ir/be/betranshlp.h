@@ -84,4 +84,20 @@ void be_enqueue_preds(ir_node *node);
  */
 void be_transform_graph(ir_graph *irg, arch_pretrans_nodes *func);
 
+typedef bool (*upper_bits_clean_func)(const ir_node *node, ir_mode *mode);
+
+/**
+ * register a test function for be_upper_bits_clean for a specific node
+ * type.
+ */
+void be_set_upper_bits_clean_function(ir_op *op, upper_bits_clean_func func);
+
+/**
+ * returns true if it is assured, that the upper bits of a node are "clean"
+ * which means for a 16 or 8 bit value, that the upper bits in the register
+ * are 0 for unsigned and a copy of the last significant bit for signed
+ * numbers.
+ */
+bool be_upper_bits_clean(const ir_node *node, ir_mode *mode);
+
 #endif

@@ -674,11 +674,6 @@ void dump_node_opcode(FILE *F, const ir_node *n)
 		fprintf(F, "%s%s", get_irn_opname(n),
 			(flags & ir_dump_flag_show_marks) ? (get_Block_mark(n) ? "*" : "") : "");
 		break;
-	case iro_Conv:
-		if (get_Conv_strict(n))
-			fprintf(F, "strict");
-		fprintf(F, "%s", get_irn_opname(n));
-		break;
 	case iro_Div:
 		fprintf(F, "%s", get_irn_opname(n));
 		if (get_Div_no_remainder(n))
@@ -1334,7 +1329,6 @@ static void dump_const_expression(FILE *F, ir_node *value)
 static void dump_whole_block(FILE *F, const ir_node *block)
 {
 	ir_node *node;
-	ird_color_t color = ird_color_block_background;
 
 	assert(is_Block(block));
 
@@ -1343,11 +1337,11 @@ static void dump_whole_block(FILE *F, const ir_node *block)
 	fprintf(F, " label: \"");
 	dump_node_label(F, block);
 
-	/* colorize blocks */
-	if (! get_Block_matured(block))
-		color = ird_color_block_background;
-
 	fprintf(F, "\" status:clustered ");
+	/* colorize blocks */
+	ird_color_t const color =
+		!get_Block_matured(block) ? ird_color_error :
+		ird_color_block_background;
 	print_vcg_color(F, color);
 	fprintf(F, "\n");
 

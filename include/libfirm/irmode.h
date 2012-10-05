@@ -48,7 +48,6 @@
  * mode.
  */
 typedef enum ir_mode_arithmetic {
-	irma_uninitialized = 0,
 	irma_none = 1,            /**< For modes for which no representation is
 	                               specified. These are modes of sort auxiliary,
 	                               internal_boolean and character. */
@@ -100,7 +99,8 @@ FIRM_API ir_mode *new_reference_mode(const char *name,
  * @param name          the name of the mode to be created
  * @param arithmetic    arithmetic/representation of the mode
  * @param exponent_size size of exponent in bits
- * @param mantissa_size size of mantissa in bits
+ * @param mantissa_size size of mantissa in bits (number of bits after the
+ *                      leading one).
  */
 FIRM_API ir_mode *new_float_mode(const char *name,
                                  ir_mode_arithmetic arithmetic,
@@ -330,20 +330,25 @@ FIRM_API int mode_is_datab (const ir_mode *mode);
 FIRM_API int mode_is_dataM (const ir_mode *mode);
 
 /**
- * Returns true if sm can be converted to lm without loss
- * according to firm definition.
+ * Returns true if a value of mode @p sm can be converted to mode @p lm without
+ * loss.
  *
- * Note that mode_Iu is NOT smaller than mode_Is here.
+ * That is the interpretation of the numbers does not changes, so you a signed
+ * integer mode is never smaller than an unsigned integer mode since the
+ * unsigned mode can't represent negative numbers in a way that they are
+ * interpreted as negative numbers.
  *
  * @see values_in_mode()
  */
 FIRM_API int smaller_mode(const ir_mode *sm, const ir_mode *lm);
 
 /**
- * Returns true if a value of mode sm can be converted into mode lm
- * and backwards without loss.
+ * Returns true if no information is lost when converting a value of mode @p sm
+ * into mode @p lm (and back to mode @p sm).
  *
- * Note that mode_Iu values CAN be converted in mode_Is and back.
+ * So the interpretation of the values may change in the intermediate mode @p sm
+ * (for example when converting negative signed integer numbers into unsigned
+ * integers) but after a conversion back they are exactly the same value.
  *
  * @see smaller_mode()
  */
@@ -407,7 +412,11 @@ FIRM_API ir_mode *get_reference_mode_unsigned_eq(ir_mode *mode);
 FIRM_API void set_reference_mode_unsigned_eq(ir_mode *ref_mode, ir_mode *int_mode);
 
 /**
- * Returns size of mantissa in bits (for float modes)
+ * Returns size of mantissa in bits (for float modes).
+ * Note: This is the number of bits used after the leading one. So the actual
+ * accuracy of the significand is get_mode_mantissa_size()+1. The number of bits
+ * used in the encoding depends on wether the floatingpoint mode has an implicit
+ * (ieee754) or explicit (x86_extended) encoding of the leading one.
  */
 FIRM_API unsigned get_mode_mantissa_size(const ir_mode *mode);
 

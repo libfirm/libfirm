@@ -35,7 +35,7 @@
 #include "iroptimize.h"
 #include "adt/pdeq.h"
 #include "irnode_t.h"
-#include "irouts.h"
+#include "iredges_t.h"
 #include "irgopt.h"
 #include "irpass.h"
 
@@ -81,7 +81,7 @@ static void place_floats_early(ir_node *n, waitq *worklist)
 	 * This works because in firm each cycle contains a Phi or Block node
 	 * (which are pinned)
 	 */
-	if (get_irn_pinned(n) != op_pin_state_floats) {
+	if (get_irn_pinned(n) != op_pin_state_floats || only_used_by_keepalive(n)) {
 		/* we can't move pinned nodes */
 		arity = get_irn_arity(n);
 		for (i = 0; i < arity; ++i) {
@@ -121,8 +121,9 @@ static void place_floats_early(ir_node *n, waitq *worklist)
 	start_block = get_irg_start_block(irg);
 	if (new_block == start_block && block != start_block &&
 	    get_irg_phase_state(irg) != phase_backend) {
-		assert(get_Block_n_cfg_outs(start_block) == 1);
-		new_block = get_Block_cfg_out(start_block, 0);
+		assert(get_irn_n_edges_kind(start_block, EDGE_KIND_BLOCK) == 1);
+		const ir_edge_t *edge = get_block_succ_first(start_block);
+		new_block = get_edge_src_irn(edge);
 	}
 
 	/* Set the new block */
@@ -266,10 +267,8 @@ static void move_out_of_loops(ir_node *n, ir_node *early)
  */
 static ir_node *get_deepest_common_dom_ancestor(ir_node *node, ir_node *dca)
 {
-	int i;
-
-	for (i = get_irn_n_outs(node) - 1; i >= 0; --i) {
-		ir_node *succ = get_irn_out(node, i);
+	foreach_out_edge(node, edge) {
+		ir_node *succ = get_edge_src_irn(edge);
 
 		/* keepalive edges are special and don't respect the dominance */
 		if (is_End(succ))
@@ -284,6 +283,18 @@ static ir_node *get_deepest_common_dom_ancestor(ir_node *node, ir_node *dca)
 			dca = consumer_dom_dca(dca, succ, node);
 		}
 	}
+	/* respect the keepalive rule: if our only user is a keepalive, then we must
+	 * not move the node any further */
+	if (dca == NULL) {
+		assert(only_used_by_keepalive(node));
+		return get_nodes_block(node);
+	}
+
+	foreach_out_edge_kind(node, edge, EDGE_KIND_DEP) {
+		ir_node *succ = get_edge_src_irn(edge);
+		assert(is_block_reachable(get_nodes_block(succ)));
+		dca = consumer_dom_dca(dca, succ, node);
+	}
 	return dca;
 }
 
@@ -295,17 +306,16 @@ static ir_node *get_deepest_common_dom_ancestor(ir_node *node, ir_node *dca)
  */
 static void set_projs_block(ir_node *node, ir_node *block)
 {
-	int i;
+	foreach_out_edge(node, edge) {
+		ir_node *succ = get_edge_src_irn(edge);
 
-	for (i = get_irn_n_outs(node) - 1; i >= 0; --i) {
-		ir_node *succ = get_irn_out(node, i);
+		if (!is_Proj(succ))
+			continue;
 
-		assert(is_Proj(succ));
-
+		set_nodes_block(succ, block);
 		if (get_irn_mode(succ) == mode_T) {
 			set_projs_block(succ, block);
 		}
-		set_nodes_block(succ, block);
 	}
 }
 
@@ -319,27 +329,24 @@ static void set_projs_block(ir_node *node, ir_node *block)
  */
 static void place_floats_late(ir_node *n, pdeq *worklist)
 {
-	int      n_outs;
-	int      i;
 	ir_node *block;
 	ir_node *dca;
 
 	if (irn_visited_else_mark(n))
 		return;
 
-	n_outs = get_irn_n_outs(n);
 	/* break cycles at pinned nodes (see place place_floats_early) as to why */
 	if (get_irn_pinned(n) != op_pin_state_floats) {
-		for (i = 0; i < n_outs; ++i) {
-			ir_node *succ = get_irn_out(n, i);
+		foreach_out_edge(n, edge) {
+			ir_node *succ = get_edge_src_irn(edge);
 			pdeq_putr(worklist, succ);
 		}
 		return;
 	}
 
 	/* place our users */
-	for (i = 0; i < n_outs; ++i) {
-		ir_node *succ = get_irn_out(n, i);
+	foreach_out_edge(n, edge) {
+		ir_node *succ = get_edge_src_irn(edge);
 		place_floats_late(succ, worklist);
 	}
 
@@ -400,7 +407,7 @@ void place_code(ir_graph *irg)
 	assure_irg_properties(irg,
 		IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES |
 		IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE |
-		IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
+		IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES |
 		IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
 		IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 
@@ -420,7 +427,7 @@ void place_code(ir_graph *irg)
 	place_late(irg, worklist);
 
 	del_waitq(worklist);
-	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW);
 }
 
 /**

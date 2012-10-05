@@ -621,28 +621,28 @@ static inline bool arch_irn_consider_in_reg_alloc(
  * are not marked as ignore.
  * Executes @p code for each definition.
  */
-#define be_foreach_definition_(node, cls, value, code)                     \
+#define be_foreach_definition_(node, ccls, value, code)                    \
 	do {                                                                   \
 	if (get_irn_mode(node) == mode_T) {                                    \
 		foreach_out_edge(node, edge_) {                                    \
 			const arch_register_req_t *req_;                               \
 			value = get_edge_src_irn(edge_);                               \
 			req_  = arch_get_irn_register_req(value);                      \
-			if (req_->cls != cls)                                          \
+			if (req_->cls != ccls)                                         \
 				continue;                                                  \
 			code                                                           \
 		}                                                                  \
 	} else {                                                               \
 		const arch_register_req_t *req_ = arch_get_irn_register_req(node); \
 		value = node;                                                      \
-		if (req_->cls == cls) {                                            \
+		if (req_->cls == ccls) {                                           \
 			code                                                           \
 		}                                                                  \
 	}                                                                      \
 	} while (0)
 
-#define be_foreach_definition(node, cls, value, code)                      \
-	be_foreach_definition_(node, cls, value,                               \
+#define be_foreach_definition(node, ccls, value, code)                     \
+	be_foreach_definition_(node, ccls, value,                              \
 		if (req_->type & arch_register_req_type_ignore)                    \
 			continue;                                                      \
 		code                                                               \

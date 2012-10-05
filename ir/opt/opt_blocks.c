@@ -421,9 +421,6 @@ static opcode_key_t *opcode(const node_t *node, environment_t *env)
 	case iro_Const:
 		key.u.tv  = get_Const_tarval(irn);
 		break;
-	case iro_Conv:
-		key.u.intVal = get_Conv_strict(irn);
-		break;
 	case iro_Load:
 		key.mode = get_Load_mode(irn);
 		break;

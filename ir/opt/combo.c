@@ -144,8 +144,8 @@ struct node_t {
 	node_t          *race_next;     /**< Next node on race list. */
 	lattice_elem_t  type;           /**< The associated lattice element "type". */
 	int             max_user_input; /**< Maximum input number of Def-Use edges. */
-	int             next_edge;      /**< Index of the next Def-Use edge to use. */
-	int             n_followers;    /**< Number of Follower in the outs set. */
+	unsigned        next_edge;      /**< Index of the next Def-Use edge to use. */
+	unsigned        n_followers;    /**< Number of Follower in the outs set. */
 	unsigned        on_touched:1;   /**< Set, if this node is on the partition.touched set. */
 	unsigned        on_cprop:1;     /**< Set, if this node is on the partition.cprop list. */
 	unsigned        on_fallen:1;    /**< Set, if this node is on the fallen list. */
@@ -603,12 +603,10 @@ static int cmp_def_use_edge(const void *a, const void *b)
 static void sort_irn_outs(node_t *node)
 {
 	ir_node *irn = node->node;
-	int n_outs = get_irn_n_outs(irn);
-
-	if (n_outs > 1) {
-		qsort(&irn->out[1], n_outs, sizeof(irn->out[0]), cmp_def_use_edge);
-	}
-	node->max_user_input = irn->out[n_outs].pos;
+	unsigned n_outs = get_irn_n_outs(irn);
+	qsort(irn->o.out->edges, n_outs, sizeof(irn->o.out->edges[0]),
+		  cmp_def_use_edge);
+	node->max_user_input = n_outs > 0 ? irn->o.out->edges[n_outs-1].pos : -1;
 }  /* sort_irn_outs */
 
 /**
@@ -843,9 +841,7 @@ static void add_to_cprop(node_t *y, environment_t *env)
 	if (get_irn_mode(irn) == mode_T) {
 		/* mode_T nodes always produce tarval_bottom, so we must explicitly
 		 * add its Projs to get constant evaluation to work */
-		int i;
-
-		for (i = get_irn_n_outs(irn) - 1; i >= 0; --i) {
+		for (unsigned i = get_irn_n_outs(irn); i-- > 0; ) {
 			node_t *proj = get_irn_node(get_irn_out(irn, i));
 
 			add_to_cprop(proj, env);
@@ -886,33 +882,28 @@ static void update_worklist(partition_t *Z, partition_t *Z_prime, environment_t 
  */
 static void move_edges_to_leader(node_t *x)
 {
-	ir_node     *irn = x->node;
-	int         i, j, k;
-
-	for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
+	ir_node *irn = x->node;
+	for (int i = get_irn_arity(irn) - 1; i >= 0; --i) {
 		node_t  *pred = get_irn_node(get_irn_n(irn, i));
-		ir_node *p;
-		int     n;
-
-		p = pred->node;
-		n = get_irn_n_outs(p);
-		for (j = 1; j <= pred->n_followers; ++j) {
-			if (p->out[j].pos == i && p->out[j].use == irn) {
+		ir_node *p    = pred->node;
+		unsigned n    = get_irn_n_outs(p);
+		for (unsigned j = 0; j < pred->n_followers; ++j) {
+			ir_def_use_edge edge = p->o.out->edges[j];
+			if (edge.pos == i && edge.use == irn) {
 				/* found a follower edge to x, move it to the Leader */
-				ir_def_use_edge edge = p->out[j];
-
 				/* remove this edge from the Follower set */
-				p->out[j] = p->out[pred->n_followers];
 				--pred->n_followers;
+				p->o.out->edges[j] = p->o.out->edges[pred->n_followers];
 
 				/* sort it into the leader set */
-				for (k = pred->n_followers + 2; k <= n; ++k) {
-					if (p->out[k].pos >= edge.pos)
+				unsigned k;
+				for (k = pred->n_followers+1; k < n; ++k) {
+					if (p->o.out->edges[k].pos >= edge.pos)
 						break;
-					p->out[k - 1] = p->out[k];
+					p->o.out->edges[k-1] = p->o.out->edges[k];
 				}
 				/* place the new edge here */
-				p->out[k - 1] = edge;
+				p->o.out->edges[k-1] = edge;
 
 				/* edge found and moved */
 				break;
@@ -1000,7 +991,7 @@ typedef struct step_env {
 	node_t   *initial;    /**< The initial node list. */
 	node_t   *unwalked;   /**< The unwalked node list. */
 	node_t   *walked;     /**< The walked node list. */
-	int      index;       /**< Next index of Follower use_def edge. */
+	unsigned index;       /**< Next index of Follower use_def edge. */
 	unsigned side;        /**< side number. */
 } step_env;
 
@@ -1092,7 +1083,7 @@ static int step(step_env *env)
 		/* let n be the first node in unwalked */
 		n = env->unwalked;
 		while (env->index < n->n_followers) {
-			const ir_def_use_edge *edge = &n->node->out[1 + env->index];
+			const ir_def_use_edge *edge = &n->node->o.out->edges[env->index];
 
 			/* let m be n.F.def_use[index] */
 			node_t *m = get_irn_node(edge->use);
@@ -1397,17 +1388,15 @@ static void collect_touched(list_head *list, int idx, environment_t *env)
 	int     end_idx = env->end_idx;
 
 	list_for_each_entry(node_t, x, list, node_list) {
-		int num_edges;
-
 		if (idx == -1) {
 			/* leader edges start AFTER follower edges */
-			x->next_edge = x->n_followers + 1;
+			x->next_edge = x->n_followers;
 		}
-		num_edges = get_irn_n_outs(x->node);
+		unsigned num_edges = get_irn_n_outs(x->node);
 
 		/* for all edges in x.L.def_use_{idx} */
-		while (x->next_edge <= num_edges) {
-			const ir_def_use_edge *edge = &x->node->out[x->next_edge];
+		while (x->next_edge < num_edges) {
+			const ir_def_use_edge *edge = &x->node->o.out->edges[x->next_edge];
 			ir_node               *succ;
 
 			/* check if we have necessary edges */
@@ -1462,15 +1451,13 @@ static void collect_commutative_touched(list_head *list, environment_t *env)
 	node_t *y;
 
 	list_for_each_entry(node_t, x, list, node_list) {
-		int num_edges;
+		unsigned num_edges = get_irn_n_outs(x->node);
 
-		num_edges = get_irn_n_outs(x->node);
-
-		x->next_edge = x->n_followers + 1;
+		x->next_edge = x->n_followers;
 
 		/* for all edges in x.L.def_use_{idx} */
-		while (x->next_edge <= num_edges) {
-			const ir_def_use_edge *edge = &x->node->out[x->next_edge];
+		while (x->next_edge < num_edges) {
+			const ir_def_use_edge *edge = &x->node->o.out->edges[x->next_edge];
 			ir_node               *succ;
 
 			/* check if we have necessary edges */
@@ -2756,20 +2743,19 @@ static node_t *identity(node_t *node)
  */
 static void segregate_def_use_chain_1(const ir_node *follower, node_t *leader)
 {
-	ir_node *l   = leader->node;
-	int     j, i, n = get_irn_n_outs(l);
-
 	DB((dbg, LEVEL_2, "%+F is a follower of %+F\n", follower, leader->node));
 	/* The leader edges must remain sorted, but follower edges can
 	   be unsorted. */
-	for (i = leader->n_followers + 1; i <= n; ++i) {
-		if (l->out[i].use == follower) {
-			ir_def_use_edge t = l->out[i];
+	ir_node *l = leader->node;
+	unsigned n = get_irn_n_outs(l);
+	for (unsigned i = leader->n_followers; i < n; ++i) {
+		if (l->o.out->edges[i].use == follower) {
+			ir_def_use_edge t = l->o.out->edges[i];
 
-			for (j = i - 1; j >= leader->n_followers + 1; --j)
-				l->out[j + 1] = l->out[j];
+			for (unsigned j = i; j-- > leader->n_followers; )
+				l->o.out->edges[j+1] = l->o.out->edges[j];
+			l->o.out->edges[leader->n_followers] = t;
 			++leader->n_followers;
-			l->out[leader->n_followers] = t;
 			break;
 		}
 	}
@@ -2804,7 +2790,6 @@ static void propagate(environment_t *env)
 	lattice_elem_t old_type;
 	node_t         *fallen;
 	unsigned       n_fallen, old_type_was_T_or_C;
-	int            i;
 
 	while (env->cprop != NULL) {
 		void *oldopcode = NULL;
@@ -2881,7 +2866,7 @@ static void propagate(environment_t *env)
 					++n_fallen;
 					DB((dbg, LEVEL_2, "Add node %+F to fallen\n", x->node));
 				}
-				for (i = get_irn_n_outs(x->node) - 1; i >= 0; --i) {
+				for (unsigned i = get_irn_n_outs(x->node); i-- > 0; ) {
 					ir_node *succ = get_irn_out(x->node, i);
 					node_t  *y    = get_irn_node(succ);
 
@@ -2955,9 +2940,9 @@ static ir_node *get_leader(node_t *node)
  */
 static int only_one_reachable_proj(ir_node *n)
 {
-	int i, k = 0;
+	int k = 0;
 
-	for (i = get_irn_n_outs(n) - 1; i >= 0; --i) {
+	for (unsigned i = get_irn_n_outs(n); i-- > 0; ) {
 		ir_node *proj = get_irn_out(n, i);
 		node_t  *node;
 
@@ -3201,10 +3186,9 @@ static void exchange_leader(ir_node *irn, ir_node *leader)
  */
 static int all_users_are_dead(const ir_node *irn)
 {
-	int i, n = get_irn_n_outs(irn);
-
-	for (i = 1; i <= n; ++i) {
-		const ir_node *succ  = irn->out[i].use;
+	unsigned n = get_irn_n_outs(irn);
+	for (unsigned i = 0; i < n; ++i) {
+		const ir_node *succ  = get_irn_out(irn, i);
 		const node_t  *block = get_irn_node(get_nodes_block(succ));
 		const node_t  *node;
 

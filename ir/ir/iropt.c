@@ -50,6 +50,7 @@
 #include "firm_types.h"
 #include "bitfiddle.h"
 #include "be.h"
+#include "error.h"
 
 #include "entity_t.h"
 
@@ -1101,121 +1102,18 @@ static ir_node *equivalent_node_Conv(ir_node *n)
 	ir_mode *n_mode = get_irn_mode(n);
 	ir_mode *a_mode = get_irn_mode(a);
 
-restart:
 	if (n_mode == a_mode) { /* No Conv necessary */
-		if (get_Conv_strict(n)) {
-			ir_node *p = a;
-
-			/* neither Minus nor Confirm change the precision,
-			   so we can "look-through" */
-			for (;;) {
-				if (is_Minus(p)) {
-					p = get_Minus_op(p);
-				} else if (is_Confirm(p)) {
-					p = get_Confirm_value(p);
-				} else {
-					/* stop here */
-					break;
-				}
-			}
-			if (is_Conv(p) && get_Conv_strict(p)) {
-				/* we known already, that a_mode == n_mode, and neither
-				   Minus change the mode, so the second Conv
-				   can be kicked */
-				assert(get_irn_mode(p) == n_mode);
-				n = a;
-				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CONV);
-				return n;
-			}
-			if (is_Proj(p)) {
-				ir_node *pred = get_Proj_pred(p);
-				if (is_Load(pred)) {
-					/* Loads always return with the exact precision of n_mode */
-					assert(get_Load_mode(pred) == n_mode);
-					n = a;
-					DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CONV);
-					return n;
-				}
-				if (is_Proj(pred) && get_Proj_proj(pred) == pn_Start_T_args) {
-					pred = get_Proj_pred(pred);
-					if (is_Start(pred)) {
-						/* Arguments always return with the exact precision,
-						   as strictConv's are place before Call -- if the
-						   caller was compiled with the same setting.
-						   Otherwise, the semantics is probably still right. */
-						assert(get_irn_mode(p) == n_mode);
-						n = a;
-						DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CONV);
-						return n;
-					}
-				}
-			}
-			if (is_Conv(a)) {
-				/* special case: the immediate predecessor is also a Conv */
-				if (! get_Conv_strict(a)) {
-					/* first one is not strict, kick it */
-					a = get_Conv_op(a);
-					a_mode = get_irn_mode(a);
-					set_Conv_op(n, a);
-					goto restart;
-				}
-				/* else both are strict conv, second is superfluous */
-				n = a;
-				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CONV);
-				return n;
-			}
-		} else {
-			n = a;
-			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CONV);
-			return n;
-		}
+		n = a;
+		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CONV);
+		return n;
 	} else if (is_Conv(a)) { /* Conv(Conv(b)) */
 		ir_node *b      = get_Conv_op(a);
 		ir_mode *b_mode = get_irn_mode(b);
 
-		if (get_Conv_strict(n) && get_Conv_strict(a)) {
-			/* both are strict conv */
-			if (smaller_mode(a_mode, n_mode)) {
-				/* both are strict, but the first is smaller, so
-				   the second cannot remove more precision, remove the
-				   strict bit */
-				set_Conv_strict(n, 0);
-			}
-		}
-		if (n_mode == b_mode) {
-			if (! get_Conv_strict(n) && ! get_Conv_strict(a)) {
-				if (n_mode == mode_b) {
-					n = b; /* Convb(Conv*(xxxb(...))) == xxxb(...) */
-					DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
-					return n;
-				} else if (get_mode_arithmetic(n_mode) == get_mode_arithmetic(a_mode)) {
-					if (values_in_mode(b_mode, a_mode)) {
-						n = b;        /* ConvS(ConvL(xxxS(...))) == xxxS(...) */
-						DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
-						return n;
-					}
-				}
-			}
-			if (mode_is_int(n_mode) && get_mode_arithmetic(a_mode) == irma_ieee754) {
-				/* ConvI(ConvF(I)) -> I, iff float mantissa >= int mode */
-				unsigned int_mantissa   = get_mode_size_bits(n_mode) - (mode_is_signed(n_mode) ? 1 : 0);
-				unsigned float_mantissa = get_mode_mantissa_size(a_mode);
-
-				if (float_mantissa >= int_mantissa) {
-					n = b;
-					DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
-					return n;
-				}
-			}
-			if (is_Conv(b)) {
-				if (smaller_mode(b_mode, a_mode)) {
-					if (get_Conv_strict(n))
-						set_Conv_strict(b, 1);
-					n = b; /* ConvA(ConvB(ConvA(...))) == ConvA(...) */
-					DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
-					return n;
-				}
-			}
+		if (n_mode == b_mode && values_in_mode(b_mode, a_mode)) {
+			n = b;
+			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
+			return n;
 		}
 	}
 	return n;
@@ -4213,53 +4111,56 @@ static ir_node *transform_node_Cmp(ir_node *n)
 	}
 
 	/* Remove unnecessary conversions */
-	if (is_Conv(left) && is_Conv(right)) {
-		ir_node *op_left    = get_Conv_op(left);
-		ir_node *op_right   = get_Conv_op(right);
-		ir_mode *mode_left  = get_irn_mode(op_left);
-		ir_mode *mode_right = get_irn_mode(op_right);
+	if (!mode_is_float(mode)
+	    || be_get_backend_param()->mode_float_arithmetic == NULL) {
+		if (is_Conv(left) && is_Conv(right)) {
+			ir_node *op_left    = get_Conv_op(left);
+			ir_node *op_right   = get_Conv_op(right);
+			ir_mode *mode_left  = get_irn_mode(op_left);
+			ir_mode *mode_right = get_irn_mode(op_right);
 
-		if (smaller_mode(mode_left, mode) && smaller_mode(mode_right, mode)
-				&& mode_left != mode_b && mode_right != mode_b) {
-			ir_node *block = get_nodes_block(n);
+			if (smaller_mode(mode_left, mode) && smaller_mode(mode_right, mode)
+					&& mode_left != mode_b && mode_right != mode_b) {
+				ir_node *block = get_nodes_block(n);
 
-			if (mode_left == mode_right) {
-				left    = op_left;
-				right   = op_right;
-				changed = true;
-				DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CONV_CONV);
-			} else if (smaller_mode(mode_left, mode_right)) {
-				left    = new_r_Conv(block, op_left, mode_right);
-				right   = op_right;
-				changed = true;
-				DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CONV);
-			} else if (smaller_mode(mode_right, mode_left)) {
-				left    = op_left;
-				right   = new_r_Conv(block, op_right, mode_left);
-				changed = true;
-				DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CONV);
+				if (mode_left == mode_right) {
+					left    = op_left;
+					right   = op_right;
+					changed = true;
+					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CONV_CONV);
+				} else if (smaller_mode(mode_left, mode_right)) {
+					left    = new_r_Conv(block, op_left, mode_right);
+					right   = op_right;
+					changed = true;
+					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CONV);
+				} else if (smaller_mode(mode_right, mode_left)) {
+					left    = op_left;
+					right   = new_r_Conv(block, op_right, mode_left);
+					changed = true;
+					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CONV);
+				}
+				mode = get_irn_mode(left);
 			}
-			mode = get_irn_mode(left);
 		}
-	}
-	if (is_Conv(left) && is_Const(right)) {
-		ir_node   *op_left   = get_Conv_op(left);
-		ir_mode   *mode_left = get_irn_mode(op_left);
-		if (smaller_mode(mode_left, mode) && mode_left != mode_b) {
-			ir_tarval *tv        = get_Const_tarval(right);
-			tarval_int_overflow_mode_t last_mode
-				= tarval_get_integer_overflow_mode();
-			ir_tarval *new_tv;
-			tarval_set_integer_overflow_mode(TV_OVERFLOW_BAD);
-			new_tv = tarval_convert_to(tv, mode_left);
-			tarval_set_integer_overflow_mode(last_mode);
-			if (new_tv != tarval_bad) {
-				ir_graph *irg = get_irn_irg(n);
-				left    = op_left;
-				right   = new_r_Const(irg, new_tv);
-				mode    = get_irn_mode(left);
-				changed = true;
-				DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CONV);
+		if (is_Conv(left) && is_Const(right)) {
+			ir_node   *op_left   = get_Conv_op(left);
+			ir_mode   *mode_left = get_irn_mode(op_left);
+			if (smaller_mode(mode_left, mode) && mode_left != mode_b) {
+				ir_tarval *tv        = get_Const_tarval(right);
+				tarval_int_overflow_mode_t last_mode
+					= tarval_get_integer_overflow_mode();
+				ir_tarval *new_tv;
+				tarval_set_integer_overflow_mode(TV_OVERFLOW_BAD);
+				new_tv = tarval_convert_to(tv, mode_left);
+				tarval_set_integer_overflow_mode(last_mode);
+				if (new_tv != tarval_bad) {
+					ir_graph *irg = get_irn_irg(n);
+					left    = op_left;
+					right   = new_r_Const(irg, new_tv);
+					mode    = get_irn_mode(left);
+					changed = true;
+					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CONV);
+				}
 			}
 		}
 	}
@@ -5564,6 +5465,77 @@ static ir_node *transform_node_Rotl(ir_node *n)
 }
 
 /**
+ * returns mode size for may_leave_out_middle_mode
+ */
+static unsigned get_significand_size(ir_mode *mode)
+{
+	const ir_mode_arithmetic arithmetic = get_mode_arithmetic(mode);
+	switch (arithmetic) {
+	case irma_ieee754:
+	case irma_x86_extended_float:
+		return get_mode_mantissa_size(mode) + 1;
+	case irma_twos_complement:
+		return get_mode_size_bits(mode);
+	case irma_none:
+		panic("Conv node with irma_none mode?");
+	}
+	panic("unexpected mode_arithmetic in get_significand_size");
+}
+
+/**
+ * Returns true if a conversion from mode @p m0 to @p m1 has the same effect
+ * as converting from @p m0 to @p m1 and then to @p m2.
+ * Classifying the 3 modes as the big(b), middle(m) and small(s) mode this
+ * gives the following truth table:
+ * s -> b -> m  : true
+ * s -> m -> b  : !signed(s) || signed(m)
+ * m -> b -> s  : true
+ * m -> s -> b  : false
+ * b -> s -> m  : false
+ * b -> m -> s  : true
+ *
+ * s -> b -> b  : true
+ * s -> s -> b  : false
+ *
+ * additional float constraints:
+ * F -> F -> F: fine
+ * F -> I -> I: signedness of Is must match
+ * I -> F -> I: signedness of Is must match
+ * I -> I -> F: signedness of Is must match
+ * F -> I -> F: bad
+ * I -> F -> F: fine
+ * F -> F -> I: fine
+ * at least 1 float involved: signedness must match
+ */
+bool may_leave_out_middle_conv(ir_mode *m0, ir_mode *m1, ir_mode *m2)
+{
+	int n_floats = mode_is_float(m0) + mode_is_float(m1) + mode_is_float(m2);
+	if (n_floats == 1) {
+#if 0
+		int n_signed = mode_is_signed(m0) + mode_is_signed(m1)
+		             + mode_is_signed(m2);
+		/* we assume that float modes are always signed */
+		if ((n_signed & 1) != 1)
+			return false;
+#else
+		/* because overflow gives strange results we don't touch this case */
+		return false;
+#endif
+	} else if (n_floats == 2 && !mode_is_float(m1)) {
+		return false;
+	}
+
+	unsigned size0 = get_significand_size(m0);
+	unsigned size1 = get_significand_size(m1);
+	unsigned size2 = get_significand_size(m2);
+	if (size1 < size2 && size0 >= size1)
+		return false;
+	if (size1 >= size2)
+		return true;
+	return !mode_is_signed(m0) || mode_is_signed(m1);
+}
+
+/**
  * Transform a Conv.
  */
 static ir_node *transform_node_Conv(ir_node *n)
@@ -5571,6 +5543,17 @@ static ir_node *transform_node_Conv(ir_node *n)
 	ir_node *c, *oldn = n;
 	ir_mode *mode = get_irn_mode(n);
 	ir_node *a    = get_Conv_op(n);
+
+	if (is_Conv(a)) {
+		ir_mode *a_mode = get_irn_mode(a);
+		ir_node *b      = get_Conv_op(a);
+		ir_mode *b_mode = get_irn_mode(b);
+		if (may_leave_out_middle_conv(b_mode, a_mode, mode)) {
+			dbg_info *dbgi  = get_irn_dbg_info(n);
+			ir_node  *block = get_nodes_block(n);
+			return new_rd_Conv(dbgi, block, b, mode);
+		}
+	}
 
 	if (mode != mode_b && is_const_Phi(a)) {
 		/* Do NOT optimize mode_b Conv's, this leads to remaining
@@ -6116,23 +6099,28 @@ static ir_node *transform_node_Sync(ir_node *n)
 
 static ir_node *transform_node_Load(ir_node *n)
 {
-	/* if our memory predecessor is a load from the same address, then reuse the
-	 * previous result */
-	ir_node *mem = get_Load_mem(n);
-	ir_node *mem_pred;
-
-	if (!is_Proj(mem))
-		return n;
 	/* don't touch volatile loads */
 	if (get_Load_volatility(n) == volatility_is_volatile)
 		return n;
-	mem_pred = get_Proj_pred(mem);
+
+	ir_node *ptr = get_Load_ptr(n);
+	const ir_node *confirm;
+	if (value_not_zero(ptr, &confirm) && confirm == NULL) {
+		set_irn_pinned(n, op_pin_state_floats);
+	}
+
+	/* if our memory predecessor is a load from the same address, then reuse the
+	 * previous result */
+	ir_node *mem = get_Load_mem(n);
+	if (!is_Proj(mem))
+		return n;
+	ir_node *mem_pred = get_Proj_pred(mem);
 	if (is_Load(mem_pred)) {
 		ir_node *pred_load = mem_pred;
 
 		/* conservatively compare the 2 loads. TODO: This could be less strict
 		 * with fixup code in some situations (like smaller/bigger modes) */
-		if (get_Load_ptr(pred_load) != get_Load_ptr(n))
+		if (get_Load_ptr(pred_load) != ptr)
 			return n;
 		if (get_Load_mode(pred_load) != get_Load_mode(n))
 			return n;
@@ -6153,7 +6141,7 @@ static ir_node *transform_node_Load(ir_node *n)
 		ir_node *pred_store = mem_pred;
 		ir_node *value      = get_Store_value(pred_store);
 
-		if (get_Store_ptr(pred_store) != get_Load_ptr(n))
+		if (get_Store_ptr(pred_store) != ptr)
 			return n;
 		if (get_irn_mode(value) != get_Load_mode(n))
 			return n;
@@ -6171,6 +6159,20 @@ static ir_node *transform_node_Load(ir_node *n)
 		}
 	}
 
+	return n;
+}
+
+static ir_node *transform_node_Store(ir_node *n)
+{
+	/* don't touch volatile stores */
+	if (get_Store_volatility(n) == volatility_is_volatile)
+		return n;
+
+	ir_node *ptr = get_Store_ptr(n);
+	const ir_node *confirm;
+	if (value_not_zero(ptr, &confirm) && confirm == NULL) {
+		set_irn_pinned(n, op_pin_state_floats);
+	}
 	return n;
 }
 
@@ -6415,6 +6417,7 @@ void ir_register_opt_node_ops(void)
 	register_transform_node_func(op_Shl,    transform_node_Shl);
 	register_transform_node_func(op_Shrs,   transform_node_Shrs);
 	register_transform_node_func(op_Shr,    transform_node_Shr);
+	register_transform_node_func(op_Store,  transform_node_Store);
 	register_transform_node_func(op_Sub,    transform_node_Sub);
 	register_transform_node_func(op_Switch, transform_node_Switch);
 	register_transform_node_func(op_Sync,   transform_node_Sync);
@@ -6472,6 +6475,10 @@ int identities_cmp(const void *elt, const void *key)
 			if (!block_dominates(block_a, block_b)
 			    && !block_dominates(block_b, block_a))
 			    return 1;
+			/* respect the workaround rule: do not move nodes which are only
+			 * held by keepalive edges */
+			if (only_used_by_keepalive(a) || only_used_by_keepalive(b))
+				return 1;
 		}
 	}
 

@@ -509,30 +509,21 @@ void be_liveness_update(be_lv_t *lv, ir_node *irn)
 void be_liveness_transfer(const arch_register_class_t *cls,
                           ir_node *node, ir_nodeset_t *nodeset)
 {
-	int i, arity;
-
 	/* You should better break out of your loop when hitting the first phi
 	 * function. */
 	assert(!is_Phi(node) && "liveness_transfer produces invalid results for phi nodes");
 
-	if (get_irn_mode(node) == mode_T) {
-		foreach_out_edge(node, edge) {
-			ir_node *proj = get_edge_src_irn(edge);
+	ir_node *value;
+	be_foreach_definition(node, cls, value,
+		ir_nodeset_remove(nodeset, value);
+	);
 
-			if (arch_irn_consider_in_reg_alloc(cls, proj)) {
-				ir_nodeset_remove(nodeset, proj);
-			}
-		}
-	} else if (arch_irn_consider_in_reg_alloc(cls, node)) {
-		ir_nodeset_remove(nodeset, node);
-	}
-
-	arity = get_irn_arity(node);
-	for (i = 0; i < arity; ++i) {
+	int arity = get_irn_arity(node);
+	for (int i = 0; i < arity; ++i) {
 		ir_node *op = get_irn_n(node, i);
-
-		if (arch_irn_consider_in_reg_alloc(cls, op))
-			ir_nodeset_insert(nodeset, op);
+		if (!arch_irn_consider_in_reg_alloc(cls, op))
+			continue;
+		ir_nodeset_insert(nodeset, op);
 	}
 }
 

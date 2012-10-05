@@ -185,7 +185,7 @@ static bool check_load_store_mode(ir_mode *mode, ir_mode *ent_mode)
  */
 bool is_address_taken(ir_node *sel)
 {
-	int       i, input_nr, k;
+	int       input_nr;
 	ir_mode   *emode, *mode;
 	ir_node   *value;
 	ir_entity *ent;
@@ -193,7 +193,7 @@ bool is_address_taken(ir_node *sel)
 	if (! is_const_sel(sel))
 		return true;
 
-	for (i = get_irn_n_outs(sel) - 1; i >= 0; --i) {
+	for (unsigned i = get_irn_n_outs(sel); i-- > 0; ) {
 		ir_node *succ = get_irn_out(sel, i);
 
 		switch (get_irn_opcode(succ)) {
@@ -262,7 +262,7 @@ bool is_address_taken(ir_node *sel)
 
 				if (pred == sel) {
 					/* we found one input */
-					for (k = get_irn_n_outs(succ) - 1; k >= 0; --k) {
+					for (unsigned k = get_irn_n_outs(succ); k-- > 0; ) {
 						ir_node *proj = get_irn_out(succ, k);
 
 						if (is_Proj(proj) && get_Proj_proj(proj) == input_nr) {
@@ -291,10 +291,9 @@ bool is_address_taken(ir_node *sel)
  */
 static bool link_all_leave_sels(ir_entity *ent, ir_node *sel)
 {
-	int i;
 	bool is_leave = true;
 
-	for (i = get_irn_n_outs(sel) - 1; i >= 0; --i) {
+	for (unsigned i = get_irn_n_outs(sel); i-- > 0; ) {
 		ir_node *succ = get_irn_out(sel, i);
 
 		if (is_Sel(succ)) {
@@ -343,7 +342,6 @@ static int find_possible_replacements(ir_graph *irg)
 	ir_node *irg_frame;
 	ir_type *frame_tp;
 	size_t  mem_idx;
-	int     i;
 	long    static_link_arg;
 	int     res = 0;
 
@@ -364,16 +362,14 @@ static int find_possible_replacements(ir_graph *irg)
 		if (is_method_entity(ent)) {
 			ir_graph *inner_irg = get_entity_irg(ent);
 			ir_node  *args;
-			int      j;
 
 			assure_irg_properties(inner_irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 			args = get_irg_args(inner_irg);
-			for (j = get_irn_n_outs(args) - 1; j >= 0; --j) {
+			for (unsigned j = get_irn_n_outs(args); j-- > 0; ) {
 				ir_node *arg = get_irn_out(args, j);
 
 				if (get_Proj_proj(arg) == static_link_arg) {
-					int k;
-					for (k = get_irn_n_outs(arg) - 1; k >= 0; --k) {
+					for (unsigned k = get_irn_n_outs(arg); k-- > 0; ) {
 						ir_node *succ = get_irn_out(arg, k);
 
 						if (is_Sel(succ)) {
@@ -396,7 +392,7 @@ static int find_possible_replacements(ir_graph *irg)
 	 * equal ADDRESS_TAKEN.
 	 */
 	irg_frame = get_irg_frame(irg);
-	for (i = get_irn_n_outs(irg_frame) - 1; i >= 0; --i) {
+	for (unsigned i = get_irn_n_outs(irg_frame); i-- > 0; ) {
 		ir_node *succ = get_irn_out(irg_frame, i);
 
 		if (is_Sel(succ)) {
@@ -679,7 +675,6 @@ static void do_scalar_replacements(ir_graph *irg, pset *sels, unsigned nvals,
 void scalar_replacement_opt(ir_graph *irg)
 {
 	unsigned  nvals;
-	int       i;
 	scalars_t key;
 	ir_node   *irg_frame;
 	ir_mode   **modes;
@@ -707,7 +702,7 @@ void scalar_replacement_opt(ir_graph *irg)
 		sels      = pset_new_ptr(8);
 		frame_tp  = get_irg_frame_type(irg);
 
-		for (i = get_irn_n_outs(irg_frame) - 1; i >= 0; --i) {
+		for (unsigned i = get_irn_n_outs(irg_frame); i-- > 0; ) {
 			ir_node *succ = get_irn_out(irg_frame, i);
 
 			if (is_Sel(succ)) {

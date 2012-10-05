@@ -412,20 +412,35 @@ void lpp_dump_plain(lpp_t *lpp, FILE *f)
 {
 	int i;
 
+	fprintf(f, lpp->opt_type == lpp_minimize ? "Minimize\n" : "Maximize\n");
 	for(i = 0; i < lpp->cst_next; ++i) {
 		lpp_name_t *cst = lpp->csts[i];
+
 
 		fprintf(f, "%16s: ", cst->name);
 		matrix_foreach_in_row(lpp->m, cst->nr, elm) {
 			lpp_name_t *var = lpp->vars[elm->col];
 			/* TODO Perhaps better a define LPP_COL_RHS */
 			if(elm->col > 0)
-				fprintf(f, "%+4.1f*%-16s ", elm->val, var->name);
+				fprintf(f, "%+4.1f %-16s ", elm->val, var->name);
+		}
+
+		if (i == 0) {
+			fprintf(f, "\nSubject To\n");
+			continue;
 		}
 
 		fprintf(f, "%3s %+4.1f\n",
 				lpp_cst_op_to_str(cst->type.cst_type), matrix_get(lpp->m, cst->nr, 0));
 	}
+
+	fprintf(f, "Binary\n");
+	for(i = 0; i < lpp->var_next; ++i) {
+		lpp_name_t *var = lpp->vars[i];
+		if (var->type.var_type == lpp_binary)
+			fprintf(f, "%16s\n", var->name);
+	}
+	fprintf(f, "End\n");
 }
 
 /**

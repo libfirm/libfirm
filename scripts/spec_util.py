@@ -1,4 +1,5 @@
 import sys
+import imp
 
 abstracts = set()
 def abstract(cls):
@@ -6,6 +7,12 @@ def abstract(cls):
 	return cls
 def isAbstract(nodetype):
 	return nodetype in abstracts
+
+def op(cls):
+	cls.__is_firm_op = True
+	return cls
+def isOp(nodetype):
+	return hasattr(nodetype, "__is_firm_op")
 
 def is_dynamic_pinned(node):
 	return node.pinned in ["memory", "exception"]
@@ -21,28 +28,30 @@ def inout_contains(l, name):
 
 def verify_node(node):
 	if not hasattr(node, "pinned"):
-		print "%s: NO PINNED SET" % node.__name__
+		print "%s: NO PINNED SET" % node.name
 	elif node.pinned not in ["yes", "no", "memory", "exception"]:
-		print "%s: UNKNOWN PINNED MODE: %s" % (node.__name__, node.pinned)
+		print "%s: UNKNOWN PINNED MODE: %s" % (node.name, node.pinned)
 
-	if not hasattr(node, "flags") and not isAbstract(node):
-		print "WARNING: no flags specified for %s\n" % node.__name__
+	if not hasattr(node, "flags"):
+		if not isAbstract(node):
+			print "WARNING: no flags specified for %s\n" % node.name
 	elif type(node.flags) != list:
-	 	print "ERROR: flags of %s not a list" % node.__name__
+		print "ERROR: flags of %s not a list" % node.name
+
 	if hasattr(node, "pinned_init") and not is_dynamic_pinned(node):
-		print "ERROR: node %s has pinned_init attribute but is not marked as dynamically pinned" % node.__name__
+		print "ERROR: node %s has pinned_init attribute but is not marked as dynamically pinned" % node.name
 	if hasattr(node, "flags") and "uses_memory" in node.flags:
 		if not inout_contains(node.ins, "mem"):
-			print "ERROR: memory op %s needs an input named 'mem'" % node.__name__
+			print "ERROR: memory op %s needs an input named 'mem'" % node.name
 	if is_fragile(node):
 		if not is_dynamic_pinned(node):
-			print "ERROR: fragile node %s must be dynamically pinned" % node.__name__
+			print "ERROR: fragile node %s must be dynamically pinned" % node.name
 		if not hasattr(node, "throws_init"):
-			print "ERROR: fragile node %s needs a throws_init attribute" % node.__name__
+			print "ERROR: fragile node %s needs a throws_init attribute" % node.name
 		if not inout_contains(node.outs, "X_regular"):
-			print "ERROR: fragile node %s needs an output named 'X_regular'" % node.__name__
+			print "ERROR: fragile node %s needs an output named 'X_regular'" % node.name
 		if not inout_contains(node.outs, "X_except"):
-			print "ERROR: fragile node %s needs an output named 'X_except'" % node.__name__
+			print "ERROR: fragile node %s needs an output named 'X_except'" % node.name
 	else:
 		if hasattr(node, "throws_init"):
 			print "ERROR: throws_init only makes sense for fragile nodes"
@@ -68,8 +77,29 @@ def setnodedefaults(node):
 	setdefault(node, "attrs", [])
 	setdefault(node, "constructor_args", [])
 	setdefault(node, "customSerializer", False)
+	if hasattr(node, "__doc__"):
+		node.doc = trim_docstring(node.__doc__)
+	else:
+		node.doc = ""
 	if hasattr(node, "outs"):
 		node.mode = "mode_T"
+
+def load_spec(filename):
+	module = imp.load_source('spec', filename)
+	nodes = []
+	for x in module.__dict__.values():
+		if not isOp(x):
+			continue
+		setnodedefaults(x)
+		verify_node(x)
+		nodes.append(x)
+	nodes.sort(key=lambda x: x.name)
+	module.nodes = nodes
+	if len(nodes) == 0:
+		print "Warning: No nodes found in spec file '%s'" % filename
+	if not hasattr(module, "name"):
+		print "Warning: No name specified in file '%s'" % filename
+	return module
 
 def trim_docstring(docstring):
     if not docstring:

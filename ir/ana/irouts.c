@@ -38,124 +38,117 @@
 #include "error.h"
 #include "ircons.h"
 
-int get_irn_outs_computed(const ir_node *node)
+unsigned get_irn_n_outs(const ir_node *node)
 {
-	return node->out != NULL;
+	return node->o.out->n_edges;
 }
 
-int get_irn_n_outs(const ir_node *node)
+ir_node *get_irn_out(const ir_node *def, unsigned pos)
 {
-	assert(node->kind == k_ir_node);
-	assert(node->out_valid);
-	/* we misuse the first for the size info of the out array */
-	return node->out[0].pos;
+	assert(pos < get_irn_n_outs(def));
+	return def->o.out->edges[pos].use;
 }
 
-ir_node *get_irn_out(const ir_node *def, int pos)
+ir_node *get_irn_out_ex(const ir_node *def, unsigned pos, int *in_pos)
 {
-	assert(pos >= 0 && pos < get_irn_n_outs(def));
-	assert(def->out_valid);
-	return def->out[pos+1].use;
+	assert(pos < get_irn_n_outs(def));
+	*in_pos = def->o.out->edges[pos].pos;
+	return def->o.out->edges[pos].use;
 }
 
-ir_node *get_irn_out_ex(const ir_node *def, int pos, int *in_pos)
+void set_irn_out(ir_node *def, unsigned pos, ir_node *use, int in_pos)
 {
-	assert(pos >= 0 && pos < get_irn_n_outs(def));
-	assert(def->out_valid);
-	*in_pos = def->out[pos+1].pos;
-	return def->out[pos+1].use;
+	assert(use != NULL);
+	assert(pos < get_irn_n_outs(def));
+	def->o.out->edges[pos].use = use;
+	def->o.out->edges[pos].pos = in_pos;
 }
 
-void set_irn_out(ir_node *def, int pos, ir_node *use, int in_pos)
-{
-	assert(use);
-	assert(pos >= 0 && pos < get_irn_n_outs(def));
-	assert(def->out_valid);
-	def->out[pos+1].use = use;
-	def->out[pos+1].pos = in_pos;
-}
-
-int get_Block_n_cfg_outs(const ir_node *bl)
+unsigned get_Block_n_cfg_outs(const ir_node *bl)
 {
 	assert(is_Block(bl));
-	assert(bl->out_valid);
-	int n_cfg_outs = 0;
-	for (int i = 1; i <= bl->out[0].pos; ++i) {
-		const ir_node *succ = bl->out[i].use;
-		if (get_irn_mode(succ) == mode_X && !is_End(succ) && !is_Bad(succ))
-			n_cfg_outs += succ->out[0].pos;
+	unsigned n_cfg_outs = 0;
+	for (unsigned i = 0; i < get_irn_n_outs(bl); ++i) {
+		const ir_node *succ = get_irn_out(bl, i);
+		if (get_irn_mode(succ) != mode_X)
+			continue;
+		if (is_End(succ) || is_Bad(succ))
+			continue;
+		n_cfg_outs += get_irn_n_outs(succ);
 	}
 	return n_cfg_outs;
 }
 
-int get_Block_n_cfg_outs_ka(const ir_node *bl)
+unsigned get_Block_n_cfg_outs_ka(const ir_node *bl)
 {
 	assert(is_Block(bl));
-	assert(bl->out_valid);
-	int n_cfg_outs = 0;
-	for (int i = 1; i <= bl->out[0].pos; ++i) {
-		const ir_node *succ = bl->out[i].use;
-		if (get_irn_mode(succ) == mode_X) {
-			if (is_Bad(succ))
+	unsigned n_cfg_outs = 0;
+	for (unsigned i = 0; i < get_irn_n_outs(bl); ++i) {
+		const ir_node *succ = get_irn_out(bl, i);
+		if (get_irn_mode(succ) != mode_X)
+			continue;
+		if (is_Bad(succ))
+			continue;
+		if (is_End(succ)) {
+			ir_node *end_bl = get_nodes_block(succ);
+			if (end_bl == bl)
 				continue;
-			if (is_End(succ)) {
-				/* ignore End if we are in the Endblock */
-				if (get_nodes_block(succ) == bl)
-					continue;
-				else /* count Keep-alive as one */
-					n_cfg_outs += 1;
-			} else
-				n_cfg_outs += succ->out[0].pos;
+			++n_cfg_outs;
+			continue;
 		}
+		n_cfg_outs += get_irn_n_outs(succ);
 	}
 	return n_cfg_outs;
 }
 
-ir_node *get_Block_cfg_out(const ir_node *bl, int pos)
+ir_node *get_Block_cfg_out(const ir_node *bl, unsigned pos)
 {
 	assert(is_Block(bl));
-	assert(bl->out_valid);
-	for (int i = 1; i <= bl->out[0].pos; ++i) {
-		const ir_node *succ = bl->out[i].use;
-		if (get_irn_mode(succ) == mode_X && !is_End(succ) && !is_Bad(succ)) {
-			int n_outs = succ->out[0].pos;
-			if (pos < n_outs)
-				return succ->out[pos + 1].use;
-			else
-				pos -= n_outs;
-		}
+	for (unsigned i = 0; i < get_irn_n_outs(bl); ++i) {
+		const ir_node *succ = get_irn_out(bl, i);
+		if (get_irn_mode(succ) != mode_X)
+			continue;
+		if (is_End(succ) || is_Bad(succ))
+			continue;
+
+		unsigned n_outs = get_irn_n_outs(succ);
+		if (pos < n_outs)
+			return get_irn_out(succ, pos);
+		else
+			pos -= n_outs;
 	}
 	return NULL;
 }
 
-ir_node *get_Block_cfg_out_ka(const ir_node *bl, int pos)
+ir_node *get_Block_cfg_out_ka(const ir_node *bl, unsigned pos)
 {
 	assert(is_Block(bl));
-	assert(bl->out_valid);
-	for (int i = 1; i <= bl->out[0].pos; ++i) {
-		const ir_node *succ = bl->out[i].use;
-		if (get_irn_mode(succ) == mode_X) {
-			if (is_Bad(succ))
+	for (unsigned i = 0; i < get_irn_n_outs(bl); ++i) {
+		const ir_node *succ = get_irn_out(bl, i);
+		if (get_irn_mode(succ) != mode_X)
+			continue;
+		if (is_Bad(succ))
+			continue;
+
+		if (is_End(succ)) {
+			ir_node *end_bl = get_nodes_block(succ);
+			if (end_bl == bl) {
+				/* ignore End if we are in the Endblock */
 				continue;
-			if (is_End(succ)) {
-				ir_node *end_bl = get_nodes_block(succ);
-				if (end_bl == bl) {
-					/* ignore End if we are in the Endblock */
-					continue;
-				}
-				if (pos == 0) {
-					/* handle keep-alive here: return the Endblock instead of the End node */
-					return end_bl;
-				} else
-					--pos;
+			}
+			if (pos == 0) {
+				/* handle keep-alive here: return the Endblock instead of the End node */
+				return end_bl;
 			} else {
-				int n_outs = succ->out[0].pos;
-				if (pos < n_outs)
-					return succ->out[pos + 1].use;
-				else
-					pos -= n_outs;
+				--pos;
+				continue;
 			}
 		}
+		unsigned n_outs = get_irn_n_outs(succ);
+		if (pos < n_outs)
+			return get_irn_out(succ, pos);
+		else
+			pos -= n_outs;
 	}
 	return NULL;
 }
@@ -258,177 +251,107 @@ void irg_out_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
 
 
 /** Returns the amount of out edges for not yet visited successors. */
-static int _count_outs(ir_node *n)
+static void count_outs_node(ir_node *n)
 {
-	mark_irn_visited(n);
-	n->out = (ir_def_use_edge*) INT_TO_PTR(1);     /* Space for array size. */
+	if (irn_visited_else_mark(n))
+		return;
+
+	/* initialize our counter */
+	n->o.n_outs = 0;
 
 	int start     = is_Block(n) ? 0 : -1;
 	int irn_arity = get_irn_arity(n);
-	int res       = irn_arity - start + 1;  /* --1 or --0; 1 for array size. */
-
 	for (int i = start; i < irn_arity; ++i) {
-		/* Optimize Tuples.  They annoy if walking the cfg. */
-		ir_node *pred         = get_irn_n(n, i);
-		ir_node *skipped_pred = skip_Tuple(pred);
+		ir_node *def = get_irn_n(n, i);
+		/* optimize Tuples */
+		ir_node *skipped = skip_Tuple(def);
+		if (skipped != def)
+			set_irn_n(n, i, skipped);
 
-		if (skipped_pred != pred) {
-			set_irn_n(n, i, skipped_pred);
-		}
-
-		/* count Def-Use edges for predecessors */
-		if (!irn_visited(skipped_pred))
-			res += _count_outs(skipped_pred);
-
-		/*count my Def-Use edges */
-		skipped_pred->out = (ir_def_use_edge*) INT_TO_PTR(PTR_TO_INT(skipped_pred->out) + 1);
+		count_outs_node(skipped);
+		++skipped->o.n_outs;
 	}
-	return res;
 }
 
 
 /** Returns the amount of out edges for not yet visited successors.
- *  This version handles some special nodes like irg_frame, irg_args etc.
- */
-static int count_outs(ir_graph *irg)
+ *  This version handles some special nodes like irg_frame, irg_args etc. */
+static void count_outs(ir_graph *irg)
 {
 	inc_irg_visited(irg);
-	int res = _count_outs(get_irg_end(irg));
-
-	/* Now handle anchored nodes. We need the out count of those
-	   even if they are not visible. */
-	for (int i = anchor_last; i >= anchor_first; --i) {
+	count_outs_node(get_irg_end(irg));
+	for (int i = anchor_first; i <= anchor_last; ++i) {
 		ir_node *n = get_irg_anchor(irg, i);
-		if (!irn_visited_else_mark(n)) {
-			n->out = (ir_def_use_edge*) INT_TO_PTR(1);
-			++res;
-		}
+		if (irn_visited_else_mark(n))
+			continue;
+		n->o.n_outs = 0;
 	}
-	return res;
 }
 
-/**
- * Enter memory for the outs to a node.
- *
- * @param use    current node
- * @param free   current free address in the chunk allocated for the outs
- *
- * @return The next free address
- */
-static ir_def_use_edge *_set_out_edges(ir_node *use, ir_def_use_edge *free)
+static void set_out_edges_node(ir_node *node, struct obstack *obst)
 {
-	mark_irn_visited(use);
+	if (irn_visited_else_mark(node))
+		return;
 
 	/* Allocate my array */
-	size_t n_outs = PTR_TO_INT(use->out);
-	use->out = free;
-#ifdef DEBUG_libfirm
-	use->out_valid = 1;
-#endif /* defined DEBUG_libfirm */
-	free += n_outs;
-	/* We count the successors again, the space will be sufficient.
-	   We use this counter to remember the position for the next back
-	   edge. */
-	use->out[0].pos = 0;
+	unsigned n_outs = node->o.n_outs;
+	node->o.out          = OALLOCF(obst, ir_def_use_edges, edges, n_outs);
+	node->o.out->n_edges = 0;
 
-	int start     = is_Block(use) ? 0 : -1;
-	int irn_arity = get_irn_arity(use);
-
+	/* add def->use edges from my predecessors to me */
+	int start     = is_Block(node) ? 0 : -1;
+	int irn_arity = get_irn_arity(node);
 	for (int i = start; i < irn_arity; ++i) {
-		ir_node *def = get_irn_n(use, i);
+		ir_node *def = get_irn_n(node, i);
 
-		/* Recursion */
-		if (!irn_visited(def))
-			free = _set_out_edges(def, free);
+		/* recurse, ensures that out array of pred is already allocated */
+		set_out_edges_node(def, obst);
 
 		/* Remember this Def-Use edge */
-		int pos = def->out[0].pos + 1;
-		def->out[pos].use = use;
-		def->out[pos].pos = i;
-
-		/* increase the number of Def-Use edges so far */
-		def->out[0].pos = pos;
+		unsigned pos = def->o.out->n_edges++;
+		def->o.out->edges[pos].use = node;
+		def->o.out->edges[pos].pos = i;
 	}
-	return free;
 }
 
-/**
- * Enter memory for the outs to a node. Handles special nodes
- *
- * @param irg    the graph
- * @param free   current free address in the chunk allocated for the outs
- *
- * @return The next free address
- */
-static ir_def_use_edge *set_out_edges(ir_graph *irg, ir_def_use_edge *free)
+static void set_out_edges(ir_graph *irg)
 {
+	struct obstack *obst = &irg->out_obst;
+
+	obstack_init(obst);
+	irg->out_obst_allocated = true;
+
 	inc_irg_visited(irg);
-	free = _set_out_edges(get_irg_end(irg), free);
-
-	/* handle anchored nodes */
-	for (int i = anchor_last; i >= anchor_first; --i) {
+	set_out_edges_node(get_irg_end(irg), obst);
+	for (int i = anchor_first; i <= anchor_last; ++i) {
 		ir_node *n = get_irg_anchor(irg, i);
-		if (!irn_visited_else_mark(n)) {
-			size_t n_outs = PTR_TO_INT(n->out);
-			n->out = free;
-#ifdef DEBUG_libfirm
-			n->out_valid = 1;
-#endif
-			free += n_outs;
-		}
+		if (irn_visited_else_mark(n))
+			continue;
+		n->o.out          = OALLOCF(obst, ir_def_use_edges, edges, 0);
+		n->o.out->n_edges = 0;
 	}
-
-	return free;
 }
 
 void compute_irg_outs(ir_graph *irg)
 {
-	int             n_out_edges = 0;
-	ir_def_use_edge *end = NULL;         /* Only for debugging */
-
-	/* Update graph state */
-	assert(get_irg_phase_state(irg) != phase_building);
-
 	free_irg_outs(irg);
 
 	/* This first iteration counts the overall number of out edges and the
 	   number of out edges for each node. */
-	n_out_edges = count_outs(irg);
-
-	/* allocate memory for all out edges. */
-	irg->outs = XMALLOCNZ(ir_def_use_edge, n_out_edges);
-#ifdef DEBUG_libfirm
-	irg->n_outs = n_out_edges;
-#endif
+	count_outs(irg);
 
 	/* The second iteration splits the irg->outs array into smaller arrays
 	   for each node and writes the back edges into this array. */
-	end = set_out_edges(irg, irg->outs);
+	set_out_edges(irg);
 
-	/* Check how much memory we have used */
-	assert (end == (irg->outs + n_out_edges));
-
-	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
+	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS
+	                      | IR_GRAPH_PROPERTY_NO_TUPLES);
 }
 
 void assure_irg_outs(ir_graph *irg)
 {
-	if (! irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS))
+	if (!irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS))
 		compute_irg_outs(irg);
-}
-
-void compute_irp_outs(void)
-{
-	size_t n = get_irp_n_irgs();
-	for (size_t i = 0; i < n; ++i)
-		compute_irg_outs(get_irp_irg(i));
-}
-
-void free_irp_outs(void)
-{
-	size_t n = get_irp_n_irgs();
-	for (size_t i = 0; i < n; ++i)
-		free_irg_outs(get_irp_irg(i));
 }
 
 #ifdef DEBUG_libfirm
@@ -436,20 +359,15 @@ void free_irp_outs(void)
 static void reset_outs(ir_node *node, void *unused)
 {
 	(void) unused;
-	node->out       = NULL;
-	node->out_valid = 0;
+	node->o.out = NULL;
 }
 #endif
 
 void free_irg_outs(ir_graph *irg)
 {
-	if (irg->outs != NULL) {
-#ifdef DEBUG_libfirm
-		memset(irg->outs, 0, irg->n_outs);
-		irg->n_outs = 0;
-#endif
-		free(irg->outs);
-		irg->outs = NULL;
+	if (irg->out_obst_allocated) {
+		obstack_free(&irg->out_obst, NULL);
+		irg->out_obst_allocated = false;
 	}
 
 #ifdef DEBUG_libfirm

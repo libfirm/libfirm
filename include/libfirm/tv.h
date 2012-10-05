@@ -567,6 +567,12 @@ FIRM_API ir_tarval *tarval_eor(ir_tarval *a, ir_tarval *b);
 FIRM_API ir_tarval *tarval_shl(ir_tarval *a, ir_tarval *b);
 
 /**
+ * logical left shift (variant with unsigned argument).
+ * @see tarval_shl()
+ */
+FIRM_API ir_tarval *tarval_shl_unsigned(ir_tarval *a, unsigned b);
+
+/**
  * Unsigned (logical) right shift.
  *
  * @param a  the first tarval
@@ -577,6 +583,12 @@ FIRM_API ir_tarval *tarval_shl(ir_tarval *a, ir_tarval *b);
 FIRM_API ir_tarval *tarval_shr(ir_tarval *a, ir_tarval *b);
 
 /**
+ * unsigned (logical) right shift (variant with unsigned argument).
+ * @see tarval_shr()
+ */
+FIRM_API ir_tarval *tarval_shr_unsigned(ir_tarval *a, unsigned b);
+
+/**
  * Signed (arithmetic) right shift.
  *
  * @param a  the first tarval
@@ -585,6 +597,12 @@ FIRM_API ir_tarval *tarval_shr(ir_tarval *a, ir_tarval *b);
  * @return a >>s b or tarval_bad
  */
 FIRM_API ir_tarval *tarval_shrs(ir_tarval *a, ir_tarval *b);
+
+/**
+ * signed (arithmetic) right shift (variant with unsigned argument).
+ * @see tarval_shrs()
+ */
+FIRM_API ir_tarval *tarval_shrs_unsigned(ir_tarval *a, unsigned b);
 
 /**
  * Rotation to left.

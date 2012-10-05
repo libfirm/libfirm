@@ -333,7 +333,11 @@ restart:
 						mux_true  = get_Phi_pred(p, i);
 						mux_false = get_Phi_pred(p, j);
 					}
-					if (!env->allow_ifconv(sel, mux_false, mux_true)) {
+					if (mux_true == mux_false)
+						continue;
+					ir_mode *mode = get_irn_mode(mux_true);
+					if (mode == mode_M
+						|| !env->allow_ifconv(sel, mux_false, mux_true)) {
 						supported = false;
 						break;
 					}

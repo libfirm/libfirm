@@ -112,8 +112,6 @@ void ir_init(void)
 	/* Init architecture dependent optimizations. */
 	arch_dep_set_opts(arch_dep_none);
 
-	init_irnode();
-
 	init_execfreq();
 
 #ifdef DEBUG_libfirm

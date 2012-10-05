@@ -1344,6 +1344,7 @@ static void optimize_conv_store(ir_node *node)
 	if (get_mode_size_bits(conv_mode) < get_mode_size_bits(store_mode))
 		return;
 
+	ir_fprintf(stderr, "Optimisation warning: unoptimized ia32 Store(Conv) (%+F, %+F)\n", node, pred);
 	set_irn_n(node, n_ia32_Store_val, get_irn_n(pred, n_ia32_Conv_I2I_val));
 	if (get_irn_n_edges(pred_proj) == 0) {
 		kill_node(pred_proj);
@@ -1395,6 +1396,7 @@ static void optimize_load_conv(ir_node *node)
 	}
 
 	/* kill the conv */
+	ir_fprintf(stderr, "Optimisation warning: unoptimized ia32 Conv(Load) (%+F, %+F)\n", node, predpred);
 	exchange(node, pred);
 }
 
@@ -1471,6 +1473,7 @@ static void optimize_conv_conv(ir_node *node)
 		}
 	}
 
+	ir_fprintf(stderr, "Optimisation warning: unoptimized ia32 Conv(Conv) (%+F, %+F)\n", node, pred);
 	/* Some user (like Phis) won't be happy if we change the mode. */
 	set_irn_mode(result_conv, get_irn_mode(node));
 

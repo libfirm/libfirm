@@ -57,14 +57,12 @@ static void rewire_inputs(ir_node *node, void *env)
 static void copy_node_dce(ir_node *node, void *env)
 {
 	ir_node  *new_node = exact_copy(node);
-	ir_graph *irg      = get_irn_irg(new_node);
 	(void) env;
 
 	/* preserve the node numbers for easier debugging */
 	new_node->node_nr = node->node_nr;
 
 	set_irn_link(node, new_node);
-	hook_dead_node_elim_subst(irg, node, new_node);
 }
 
 /**

@@ -42,11 +42,6 @@
 ir_node **get_irn_in(const ir_node *node);
 
 /**
- * The amount of additional space for custom data to be allocated upon creating a new node.
- */
-extern unsigned firm_add_node_size;
-
-/**
  * Returns an array with the predecessors of the Block. Depending on
  * the implementation of the graph data structure this can be a copy of
  * the internal representation of predecessors as well as the internal
@@ -311,11 +306,6 @@ static inline int is_binop_(const ir_node *node)
 	return (node->op->opar == oparity_binary);
 }
 
-static inline int is_strictConv_(const ir_node *node)
-{
-	return is_Conv_(node) && get_Conv_strict(node);
-}
-
 static inline int is_SymConst_addr_ent_(const ir_node *node)
 {
 	return is_SymConst(node) && get_SymConst_kind(node) == symconst_addr_ent;
@@ -565,8 +555,12 @@ static inline const ir_switch_table_entry *ir_switch_table_get_entry_const(
 
 void ir_register_getter_ops(void);
 
-/** initialize ir_node module */
-void init_irnode(void);
+/**
+ * because firm keepalive edges are a broken concept, we have to make sure that
+ * nodes which are only held by a keepalive edges are never moved again.
+ * This function returns true in this case.
+ */
+bool only_used_by_keepalive(const ir_node *node);
 
 /* this section MUST contain all inline functions */
 #define is_ir_node(thing)                     is_ir_node_(thing)
@@ -592,7 +586,6 @@ void init_irnode(void);
 #define is_binop(node)                        is_binop_(node)
 #define is_Proj(node)                         is_Proj_(node)
 #define is_Phi(node)                          is_Phi_(node)
-#define is_strictConv(node)                   is_strictConv_(node)
 #define is_SymConst_addr_ent(node)            is_SymConst_addr_ent_(node)
 #define get_Block_n_cfgpreds(node)            get_Block_n_cfgpreds_(node)
 #define get_Block_cfgpred(node, pos)          get_Block_cfgpred_(node, pos)

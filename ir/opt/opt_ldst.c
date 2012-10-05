@@ -236,7 +236,6 @@ static memop_t *get_irn_memop(const ir_node *irn)
  */
 static void walk_memory(ir_node *irn, irg_walk_func *pre, irg_walk_func *post, void *ctx)
 {
-	int     i;
 	ir_mode *mode;
 
 	mark_irn_visited(irn);
@@ -247,7 +246,7 @@ static void walk_memory(ir_node *irn, irg_walk_func *pre, irg_walk_func *post, v
 	mode = get_irn_mode(irn);
 	if (mode == mode_M) {
 		/* every successor uses memory */
-		for (i = get_irn_n_outs(irn) - 1; i >= 0; --i) {
+		for (unsigned i = get_irn_n_outs(irn); i-- > 0; ) {
 			ir_node *succ = get_irn_out(irn, i);
 
 			if (! irn_visited(succ))
@@ -255,7 +254,7 @@ static void walk_memory(ir_node *irn, irg_walk_func *pre, irg_walk_func *post, v
 		}
 	} else if (mode == mode_T) {
 		/* only some Proj's uses memory */
-		for (i = get_irn_n_outs(irn) - 1; i >= 0; --i) {
+		for (unsigned i = get_irn_n_outs(irn); i-- > 0; ) {
 			ir_node *proj = get_irn_out(irn, i);
 
 			if (get_irn_mode(proj) == mode_M && ! irn_visited(proj))
@@ -849,7 +848,6 @@ static void mark_remove_store(memop_t *op)
  */
 static void update_Load_memop(memop_t *m)
 {
-	int       i;
 	ir_node   *load = m->node;
 	ir_node   *ptr;
 	ir_entity *ent;
@@ -861,7 +859,7 @@ static void update_Load_memop(memop_t *m)
 
 	m->value.address = ptr;
 
-	for (i = get_irn_n_outs(load) - 1; i >= 0; --i) {
+	for (unsigned i = get_irn_n_outs(load); i-- > 0; ) {
 		ir_node *proj = get_irn_out(load, i);
 		long    pn;
 
@@ -945,7 +943,6 @@ static void update_Load_memop(memop_t *m)
  */
 static void update_Store_memop(memop_t *m)
 {
-	int     i;
 	ir_node *store = m->node;
 	ir_node *adr   = get_Store_ptr(store);
 
@@ -959,7 +956,7 @@ static void update_Store_memop(memop_t *m)
 
 	m->value.address = adr;
 
-	for (i = get_irn_n_outs(store) - 1; i >= 0; --i) {
+	for (unsigned i = get_irn_n_outs(store); i-- > 0; ) {
 		ir_node *proj = get_irn_out(store, i);
 		long    pn;
 
@@ -995,7 +992,6 @@ static void update_Call_memop(memop_t *m)
 {
 	ir_node  *call = m->node;
 	unsigned prop  = get_Call_memory_properties(call);
-	int      i;
 
 	if (prop & mtp_property_const) {
 		/* A constant call did NOT use memory at all, we
@@ -1006,7 +1002,7 @@ static void update_Call_memop(memop_t *m)
 	} else
 		m->flags = FLAG_KILL_ALL;
 
-	for (i = get_irn_n_outs(call) - 1; i >= 0; --i) {
+	for (unsigned i = get_irn_n_outs(call); i-- > 0; ) {
 		ir_node *proj = get_irn_out(call, i);
 
 		/* beware of keep edges */
@@ -1032,9 +1028,8 @@ static void update_Call_memop(memop_t *m)
 static void update_Div_memop(memop_t *m)
 {
 	ir_node *div = m->node;
-	int     i;
 
-	for (i = get_irn_n_outs(div) - 1; i >= 0; --i) {
+	for (unsigned i = get_irn_n_outs(div); i-- > 0; ) {
 		ir_node *proj = get_irn_out(div, i);
 
 		/* beware of keep edges */
@@ -1055,9 +1050,8 @@ static void update_Div_memop(memop_t *m)
 static void update_Mod_memop(memop_t *m)
 {
 	ir_node *div = m->node;
-	int     i;
 
-	for (i = get_irn_n_outs(div) - 1; i >= 0; --i) {
+	for (unsigned i = get_irn_n_outs(div); i-- > 0; ) {
 		ir_node *proj = get_irn_out(div, i);
 
 		/* beware of keep edges */
@@ -1727,9 +1721,7 @@ static ir_node *find_last_memory(block_t *bl)
  */
 static void reroute_all_mem_users(ir_node *omem, ir_node *nmem)
 {
-	int i;
-
-	for (i = get_irn_n_outs(omem) - 1; i >= 0; --i) {
+	for (unsigned i = get_irn_n_outs(omem); i-- > 0; ) {
 		int     n_pos;
 		ir_node *user = get_irn_out_ex(omem, i, &n_pos);
 
@@ -1737,7 +1729,7 @@ static void reroute_all_mem_users(ir_node *omem, ir_node *nmem)
 	}
 
 	/* all edges previously point to omem now point to nmem */
-	nmem->out = omem->out;
+	nmem->o.out = omem->o.out;
 }  /* reroute_all_mem_users */
 
 /**
@@ -1750,10 +1742,11 @@ static void reroute_all_mem_users(ir_node *omem, ir_node *nmem)
  */
 static void reroute_mem_through(ir_node *omem, ir_node *nmem, ir_node *pass_bl)
 {
-	int             i, j, n = get_irn_n_outs(omem);
-	ir_def_use_edge *edges = NEW_ARR_D(ir_def_use_edge, &env.obst, n + 1);
+	unsigned n = get_irn_n_outs(omem);
+	ir_def_use_edges *new_out = OALLOCF(&env.obst, ir_def_use_edges, edges, n);
 
-	for (i = j = 0; i < n; ++i) {
+	unsigned j = 0;
+	for (unsigned i = 0; i < n; ++i) {
 		int     n_pos;
 		ir_node *user   = get_irn_out_ex(omem, i, &n_pos);
 		ir_node *use_bl = get_nodes_block(user);
@@ -1764,20 +1757,20 @@ static void reroute_mem_through(ir_node *omem, ir_node *nmem, ir_node *pass_bl)
 		}
 		if (block_dominates(pass_bl, use_bl)) {
 			/* found an user that is dominated */
+			new_out->edges[j].pos = n_pos;
+			new_out->edges[j].use = user;
 			++j;
-			edges[j].pos = n_pos;
-			edges[j].use = user;
 
 			set_irn_n(user, n_pos, nmem);
 		}
 	}
+	new_out->n_edges = j;
 
 	/* Modify the out structure: we create a new out edge array on our
-	   temporary obstack here. This should be no problem, as we invalidate the edges
-	   at the end either. */
+	   temporary obstack here. This should be no problem, as we invalidate the
+	   edges at the end either. */
 	/* first entry is used for the length */
-	edges[0].pos = j;
-	nmem->out = edges;
+	nmem->o.out = new_out;
 }  /* reroute_mem_through */
 
 /**

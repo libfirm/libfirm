@@ -209,6 +209,7 @@ typedef struct block_attr {
 	bitset_t *backedge;         /**< Bitfield n set to true if pred n is backedge.*/
 	ir_entity *entity;          /**< entitiy representing this block */
 	ir_node  *phis;             /**< The list of Phi nodes in this block. */
+	double    execfreq;         /**< block execution frequency */
 } block_attr;
 
 /** Cond attributes. */
@@ -329,11 +330,6 @@ typedef struct bound_attr {
 	except_attr exc;              /**< The exception attribute. MUST be the first one. */
 } bound_attr;
 
-/** Conv attribute. */
-typedef struct conv_attr {
-	char           strict;        /**< If set, this is a strict Conv that cannot be removed. */
-} conv_attr;
-
 /** Div attribute. */
 typedef struct div_attr {
 	except_attr    exc;           /**< The exception attribute. MUST be the first one. */
@@ -392,7 +388,6 @@ typedef union ir_attr {
 	except_attr    except;        /**< For Phi node construction in case of exceptions */
 	copyb_attr     copyb;         /**< For CopyB operation */
 	bound_attr     bound;         /**< For Bound operation */
-	conv_attr      conv;          /**< For Conv operation */
 	div_attr       div;           /**< For Div operation */
 	mod_attr       mod;           /**< For Mod operation */
 	asm_attr       assem;         /**< For ASM operation. */
@@ -418,6 +413,11 @@ typedef struct ir_def_use_edge {
 	int     pos;             /** The position of this edge in use's input array. */
 } ir_def_use_edge;
 
+typedef struct ir_def_use_edges {
+	unsigned        n_edges;
+	ir_def_use_edge edges[];
+} ir_def_use_edges;
+
 /**
  * The common structure of an irnode.
  * If the node has some attributes, they are stored in the attr field.
@@ -435,13 +435,12 @@ struct ir_node {
 	                              shall replace a node. */
 	long node_nr;            /**< A globally unique node number for each node. */
 	/* ------- Fields for optimizations / analysis information ------- */
-	ir_def_use_edge *out;    /**< array of def-use edges. */
-	struct dbg_info *dbi;    /**< A pointer to information for debug support. */
-	/* ------- For debugging ------- */
-#ifdef DEBUG_libfirm
-	unsigned out_valid : 1;
-	unsigned flags     : 31;
-#endif
+	union {
+		ir_def_use_edges *out;    /**< array of def-use edges. */
+		unsigned          n_outs; /**< number of def-use edges (temporarily used
+		                               during construction of datastructure ) */
+	} o;
+	struct dbg_info  *dbi;   /**< A pointer to information for debug support. */
 	/* ------- For analyses -------- */
 	ir_loop *loop;           /**< the loop the node is in. Access routines in irloop.h */
 	struct ir_node **deps;   /**< Additional dependencies induced by state. */
@@ -538,7 +537,8 @@ struct ir_graph {
 	/* -- Fields for optimizations / analysis information -- */
 	pset *value_table;                 /**< Hash table for global value numbering (cse)
 	                                        for optimizing use in iropt.c */
-	ir_def_use_edge *outs;             /**< Space for the Def-Use arrays. */
+	struct obstack   out_obst;         /**< Space for the Def-Use arrays. */
+	bool             out_obst_allocated;
 	ir_vrp_info      vrp;              /**< vrp info */
 
 	ir_loop *loop;                     /**< The outermost loop for this graph. */
@@ -576,7 +576,6 @@ struct ir_graph {
 
 	unsigned  dump_nr;                 /**< number of graph dumps */
 #ifdef DEBUG_libfirm
-	int   n_outs;                      /**< Size wasted for outs */
 	long graph_nr;                     /**< a unique graph number for each
 	                                        graph to make output readable. */
 #endif

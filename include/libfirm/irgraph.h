@@ -495,7 +495,7 @@ typedef enum ir_graph_properties_t {
 	IR_GRAPH_PROPERTY_MANY_RETURNS                   = 1U << 12,
 
 	/**
-	 * List of all graph properties that are only affected byt control flow
+	 * List of all graph properties that are only affected by control flow
 	 * changes.
 	 */
 	IR_GRAPH_PROPERTIES_CONTROL_FLOW =

@@ -384,12 +384,6 @@ FIRM_API int is_Const_all_one(const ir_node *node);
 /** @} */
 
 /**
- * @ingroup Conv
- * Returns true if a node is a Conv node with strict attribute set.
- */
-FIRM_API int is_strictConv(const ir_node *node);
-
-/**
  * @addtogroup SymConst
  * @{
  */
@@ -777,36 +771,6 @@ FIRM_API int is_irn_cse_neutral(const ir_node *node);
 
 /** Returns the string representation of the jump prediction. */
 FIRM_API const char *get_cond_jmp_predicate_name(cond_jmp_predicate pred);
-
-/**
- * Access custom node data.
- * The data must have been registered with
- * register_additional_node_data() before.
- * @param node The ir node to get the data from.
- * @param type The type of the data you registered.
- * @param off The value returned by register_additional_node_data().
- * @return A pointer of type @p type.
- */
-#define get_irn_data(node,type,off) \
-  (assert(off > 0 && "Invalid node data offset"), (type *) ((char *) (node) - (off)))
-
-/**
- * Returns the pointer to the node some custom data belongs to.
- * @param data The pointer to the custom data.
- * @param off The number as returned by register_additional_node_data().
- * @return A pointer to the ir node the custom data belongs to.
- */
-#define get_irn_data_base(data,off) \
-  (assert(off > 0 && "Invalid node data offset"), (ir_node *) ((char *) (data) + (off)))
-
-/**
- * Request additional data to be allocated with an ir node.
- * @param size The size of the additional data required.
- * @return A positive number, if the operation was successful, which
- * must be passed to the access macro get_irn_data(), 0 if the
- * registration failed.
- */
-FIRM_API unsigned firm_register_additional_node_data(unsigned size);
 
 /**
  * Returns a pointer to the node attributes.

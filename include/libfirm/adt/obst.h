@@ -33,8 +33,4 @@
 #define obstack_chunk_free  free
 /** @endcond */
 
-/** An obstack initializer containing zero values. Can be used to initialize
- * obstacks in an initializer. */
-#define NULL_OBST     { 0, NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, 0, 0, 0 }
-
 #endif
