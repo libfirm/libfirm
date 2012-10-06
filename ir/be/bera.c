@@ -55,9 +55,7 @@ void be_register_allocator(const char *name, be_ra_t *allocator)
 void be_allocate_registers(ir_graph *irg)
 {
 	assert(selected_allocator != NULL);
-	if (selected_allocator != NULL) {
-		selected_allocator->allocate(irg);
-	}
+	selected_allocator->allocate(irg);
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_ra)
