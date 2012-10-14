@@ -29,7 +29,7 @@
 #include "debug.h"
 #include "iredges_t.h"
 #include "raw_bitset.h"
-#include "statev.h"
+#include "statev_t.h"
 #include "irgwalk.h"
 
 #include "bespill.h"

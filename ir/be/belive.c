@@ -35,7 +35,7 @@
 #include "irnodeset.h"
 
 #include "absgraph.h"
-#include "statev.h"
+#include "statev_t.h"
 
 #include "beutil.h"
 #include "belive_t.h"

@@ -15,7 +15,7 @@
 #include "irgraph_t.h"
 #include "iredges_t.h"
 
-#include "statev.h"
+#include "statev_t.h"
 
 #include "beirg.h"
 #include "besched.h"

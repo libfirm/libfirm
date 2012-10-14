@@ -33,8 +33,8 @@
 #include "execfreq.h"
 #include "firmstat_t.h"
 #include "irtools.h"
-#include "statev.h"
 #include "error.h"
+#include "statev_t.h"
 
 #include "bearch.h"
 #include "beirg.h"
@@ -112,8 +112,8 @@ void be_do_stat_reg_pressure(ir_graph *irg, const arch_register_class_t *cls)
 	irg_block_walk_graph(irg, stat_reg_pressure_block, NULL, &env);
 
 	average_pressure = env.regpressure / env.insn_count;
-	stat_ev_emit("bechordal_average_register_pressure", average_pressure);
-	stat_ev_emit("bechordal_maximum_register_pressure", env.max_pressure);
+	stat_ev_dbl("bechordal_average_register_pressure", average_pressure);
+	stat_ev_dbl("bechordal_maximum_register_pressure", env.max_pressure);
 }
 
 

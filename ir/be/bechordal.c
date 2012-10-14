@@ -54,7 +54,7 @@
 #include "beirgmod.h"
 #include "beifg.h"
 #include "beinsn_t.h"
-#include "bestatevent.h"
+#include "statev_t.h"
 #include "beirg.h"
 #include "beintlive_t.h"
 #include "bera.h"

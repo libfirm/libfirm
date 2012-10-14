@@ -58,7 +58,7 @@
 
 #include "irlivechk.h"
 
-#include "statev.h"
+#include "statev_t.h"
 
 typedef struct bl_info_t {
 	const ir_node *block;      /**< The block. */

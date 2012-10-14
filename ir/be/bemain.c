@@ -640,9 +640,9 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		current_ir_graph = irg;
 
 		if (stat_ev_enabled) {
-			stat_ev_ctx_push_fobj("bemain_irg", irg);
-			be_stat_ev("bemain_insns_start", be_count_insns(irg));
-			be_stat_ev("bemain_blocks_start", be_count_blocks(irg));
+			stat_ev_ctx_push_fmt("bemain_irg", "%+F", irg);
+			stat_ev_ull("bemain_insns_start", be_count_insns(irg));
+			stat_ev_ull("bemain_blocks_start", be_count_blocks(irg));
 		}
 
 		/* stop and reset timers */
@@ -757,8 +757,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		if (stat_ev_enabled) {
 			stat_ev_dbl("bemain_costs_before_ra", be_estimate_irg_costs(irg));
-			be_stat_ev("bemain_insns_before_ra", be_count_insns(irg));
-			be_stat_ev("bemain_blocks_before_ra", be_count_blocks(irg));
+			stat_ev_ull("bemain_insns_before_ra", be_count_insns(irg));
+			stat_ev_ull("bemain_blocks_before_ra", be_count_blocks(irg));
 		}
 
 		/* Do register allocation */
@@ -776,8 +776,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		dump(DUMP_FINAL, irg, "finish");
 
 		if (stat_ev_enabled) {
-			be_stat_ev("bemain_insns_finish", be_count_insns(irg));
-			be_stat_ev("bemain_blocks_finish", be_count_blocks(irg));
+			stat_ev_ull("bemain_insns_finish", be_count_insns(irg));
+			stat_ev_ull("bemain_blocks_finish", be_count_blocks(irg));
 		}
 
 		/* check schedule and register allocation */

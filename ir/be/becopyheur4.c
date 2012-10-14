@@ -47,7 +47,7 @@
 #include "irtools.h"
 #include "error.h"
 #include "list.h"
-#include "statev.h"
+#include "statev_t.h"
 
 #include "bearch.h"
 #include "beifg.h"

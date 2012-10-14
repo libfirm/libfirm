@@ -29,7 +29,6 @@
 #include "irnodeset.h"
 
 #include "beirg.h"
-#include "bestatevent.h"
 #include "bearch.h"
 
 typedef enum be_stat_tag_t {

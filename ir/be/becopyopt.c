@@ -59,7 +59,7 @@
 #include "bemodule.h"
 #include "benode.h"
 #include "besched.h"
-#include "bestatevent.h"
+#include "statev_t.h"
 #include "beutil.h"
 
 #include "lc_opts.h"
@@ -1029,14 +1029,14 @@ void co_driver(be_chordal_env_t *cenv)
 
 	co_complete_stats(co, &before);
 
-	be_stat_ev_ull("co_aff_nodes",    before.aff_nodes);
-	be_stat_ev_ull("co_aff_edges",    before.aff_edges);
-	be_stat_ev_ull("co_max_costs",    before.max_costs);
-	be_stat_ev_ull("co_inevit_costs", before.inevit_costs);
-	be_stat_ev_ull("co_aff_int",      before.aff_int);
+	stat_ev_ull("co_aff_nodes",    before.aff_nodes);
+	stat_ev_ull("co_aff_edges",    before.aff_edges);
+	stat_ev_ull("co_max_costs",    before.max_costs);
+	stat_ev_ull("co_inevit_costs", before.inevit_costs);
+	stat_ev_ull("co_aff_int",      before.aff_int);
 
-	be_stat_ev_ull("co_init_costs",   before.costs);
-	be_stat_ev_ull("co_init_unsat",   before.unsatisfied_edges);
+	stat_ev_ull("co_init_costs",   before.costs);
+	stat_ev_ull("co_init_unsat",   before.unsatisfied_edges);
 
 	if (dump_flags & DUMP_BEFORE) {
 		FILE *f = my_open(cenv, "", "-before.vcg");
@@ -1053,7 +1053,7 @@ void co_driver(be_chordal_env_t *cenv)
 
 		/* do the stats and provide the current costs */
 		co_complete_stats(co, &stats);
-		be_stat_ev_ull("co_prepare_costs", stats.costs);
+		stat_ev_ull("co_prepare_costs", stats.costs);
 	}
 
 	/* perform actual copy minimization */
@@ -1061,8 +1061,8 @@ void co_driver(be_chordal_env_t *cenv)
 	was_optimal = selected_copyopt->copyopt(co);
 	ir_timer_stop(timer);
 
-	be_stat_ev("co_time", ir_timer_elapsed_msec(timer));
-	be_stat_ev_ull("co_optimal", was_optimal);
+	stat_ev_dbl("co_time", ir_timer_elapsed_msec(timer));
+	stat_ev_ull("co_optimal", was_optimal);
 	ir_timer_free(timer);
 
 	if (dump_flags & DUMP_AFTER) {
@@ -1094,8 +1094,8 @@ void co_driver(be_chordal_env_t *cenv)
 		fclose(f);
 	}
 
-	be_stat_ev_ull("co_after_costs", after.costs);
-	be_stat_ev_ull("co_after_unsat", after.unsatisfied_edges);
+	stat_ev_ull("co_after_costs", after.costs);
+	stat_ev_ull("co_after_unsat", after.unsatisfied_edges);
 
 	co_free_graph_structure(co);
 	co_free_ou_structure(co);

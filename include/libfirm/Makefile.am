@@ -46,6 +46,7 @@ libfirminclude_HEADERS = \
 	lowering.h \
 	nodeops.h \
 	opcodes.h \
+	statev.h \
 	timing.h \
 	trouts.h \
 	tv.h \

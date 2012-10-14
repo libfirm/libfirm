@@ -45,7 +45,7 @@
 #include "belive_t.h"
 #include "benode.h"
 #include "besched.h"
-#include "bestatevent.h"
+#include "statev_t.h"
 #include "beirg.h"
 #include "beintlive_t.h"
 
@@ -156,7 +156,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 			}
 
 			perm = be_new_Perm(chordal_env->cls, pred_bl, n_projs, in);
-			be_stat_ev("phi_perm", n_projs);
+			stat_ev_int("phi_perm", n_projs);
 
 			insert_after = pred_bl;
 			do {

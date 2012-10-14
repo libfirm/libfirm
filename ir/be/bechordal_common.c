@@ -37,7 +37,7 @@
 #include "beirgmod.h"
 #include "beinsn_t.h"
 #include "besched.h"
-#include "bestatevent.h"
+#include "statev_t.h"
 #include "benode.h"
 #include "bemodule.h"
 #include "belive.h"
@@ -252,7 +252,7 @@ ir_node *pre_process_constraints(be_chordal_env_t *env, be_insn_t **the_insn)
 	if (perm == NULL)
 		return NULL;
 
-	be_stat_ev("constr_perm", get_irn_arity(perm));
+	stat_ev_int("constr_perm", get_irn_arity(perm));
 	foreach_out_edge(perm, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
 		arch_set_irn_register(proj, NULL);

@@ -62,7 +62,7 @@
 #include "bearch.h"
 #include "beifg.h"
 #include "benode.h"
-#include "bestatevent.h"
+#include "statev_t.h"
 #include "bestat.h"
 #include "bemodule.h"
 #include "be_t.h"
