@@ -97,20 +97,25 @@ FIRM_API void ir_timer_reset(ir_timer_t *timer);
 FIRM_API void ir_timer_stop(ir_timer_t *timer);
 
 /**
+ * Set currently running timer as parent to @p timer
+ */
+FIRM_API void ir_timer_init_parent(ir_timer_t *timer);
+
+/**
  * Push a timer of the timer stack. This automatically
  * stop the previous timer on tos and start the new one.
  *
  * @param timer   The timer to push on stack.
  * @return non-zero on succes, zero if the timer is already on the stack.
  */
-FIRM_API int ir_timer_push(ir_timer_t *timer);
+FIRM_API void ir_timer_push(ir_timer_t *timer);
 
 /**
  * Pop the current timer. This automatically stops it and
  * start the timer that is now on the stack.
  * @return the popped timer
  */
-FIRM_API ir_timer_t *ir_timer_pop(void);
+FIRM_API void ir_timer_pop(ir_timer_t *timer);
 
 /**
  * Returns the number of milliseconds, the timer has elapsed.
@@ -125,6 +130,11 @@ FIRM_API unsigned long ir_timer_elapsed_msec(const ir_timer_t *timer);
  * @return The number of milliseconds the timer is (was) running.
  */
 FIRM_API unsigned long ir_timer_elapsed_usec(const ir_timer_t *timer);
+
+/**
+ * Returns the number of seconds, the timer has elapsed.
+ */
+FIRM_API double ir_timer_elapsed_sec(const ir_timer_t *timer);
 
 #include "end.h"
 

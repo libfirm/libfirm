@@ -40,6 +40,9 @@
 
 #include <stdio.h>
 
+/* statev is expensive here, only enable when needed */
+#define DISABLE_STATEV
+
 #include "irgraph_t.h"
 #include "irnode_t.h"
 #include "irnodemap.h"

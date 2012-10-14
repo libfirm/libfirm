@@ -196,12 +196,12 @@ void lpp_solve_net(lpp_t *lpp, const char *host, const char *solver)
 	t_send = ir_timer_new();
 	t_recv = ir_timer_new();
 
-	ir_timer_push(t_send);
+	ir_timer_start(t_send);
 	lpp_writel(comm, LPP_CMD_PROBLEM);
 	lpp_serialize(comm, lpp, 1);
 	lpp_serialize_values(comm, lpp, lpp_value_start);
 	lpp_flush(comm);
-	ir_timer_pop();
+	ir_timer_stop(t_send);
 	lpp->send_time = ir_timer_elapsed_usec(t_send);
 
 	ready = 0;
@@ -212,7 +212,7 @@ void lpp_solve_net(lpp_t *lpp, const char *host, const char *solver)
 				ir_timer_push(t_recv);
 				lpp_deserialize_stats(comm, lpp);
 				lpp_deserialize_values(comm, lpp, lpp_value_solution);
-				ir_timer_pop();
+				ir_timer_stop(t_recv);
 				lpp->recv_time = ir_timer_elapsed_usec(t_recv);
 				ready = 1;
 				break;

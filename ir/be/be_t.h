@@ -139,26 +139,18 @@ extern ir_timer_t *be_timers[T_LAST+1];
 
 static inline void be_timer_push(be_timer_id_t id)
 {
-	int res;
+	assert(id <= T_LAST);
 	if (!be_timing)
 		return;
-
-	assert(id <= T_LAST);
-	res = ir_timer_push(be_timers[id]);
-	(void) res;
-	assert(res && "Timer already on stack, cannot be pushed twice.");
+	ir_timer_push(be_timers[id]);
 }
 
 static inline void be_timer_pop(be_timer_id_t id)
 {
-	ir_timer_t *tmp;
+	assert(id <= T_LAST);
 	if (!be_timing)
 		return;
-
-	tmp = ir_timer_pop();
-	(void) tmp;
-	(void) id;
-	assert(tmp == be_timers[id] && "Attempt to pop wrong timer.");
+	ir_timer_pop(be_timers[id]);
 }
 
 #endif

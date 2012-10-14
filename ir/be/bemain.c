@@ -621,6 +621,9 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		assert(num_irgs == get_irp_n_irgs());
 	}
 
+	for (be_timer_id_t t = T_FIRST; t < T_LAST+1; ++t) {
+		ir_timer_init_parent(be_timers[t]);
+	}
 	if (!have_profile) {
 		be_timer_push(T_EXECFREQ);
 		for (i = 0; i < num_irgs; ++i) {
@@ -833,7 +836,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 				}
 			}
 			for (t = T_FIRST; t < T_LAST+1; ++t) {
-				ir_timer_stop(be_timers[t]);
 				ir_timer_reset(be_timers[t]);
 			}
 		}
