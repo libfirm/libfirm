@@ -243,6 +243,15 @@ int optimize_graph_df(ir_graph *irg)
 	return true;
 }
 
+void local_opts_const_code(void)
+{
+	ir_graph *irg = get_const_code_irg();
+	/* Clean the value_table in irg for the CSE. */
+	new_identities(irg);
+
+	walk_const_code(firm_clear_link, optimize_in_place_wrapper, NULL);
+}
+
 ir_graph_pass_t *optimize_graph_df_pass(const char *name)
 {
 	return def_graph_pass_ret(name ? name : "optimize_graph_df", optimize_graph_df);
