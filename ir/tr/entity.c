@@ -583,10 +583,18 @@ ir_node *copy_const_value(dbg_info *dbg, ir_node *n, ir_node *block)
 		nn = new_rd_Conv(dbg, block,
 		                 copy_const_value(dbg, get_Conv_op(n), block), m);
 		break;
+	case iro_Minus:
+		nn = new_rd_Minus(dbg, block,
+		                  copy_const_value(dbg, get_Minus_op(n), block), m);
+		break;
+	case iro_Not:
+		nn = new_rd_Not(dbg, block,
+		                copy_const_value(dbg, get_Not_op(n), block), m);
+		break;
 	case iro_Unknown:
 		nn = new_r_Unknown(irg, m); break;
 	default:
-		panic("opcode invalid or not implemented");
+		panic("opcode invalid or not implemented %+F", n);
 	}
 	return nn;
 }
