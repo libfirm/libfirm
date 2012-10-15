@@ -686,7 +686,7 @@ class Load:
 
 @op
 class Minus(Unop):
-	"""returns the difference between its operands"""
+	"""returns the additive inverse of its operand"""
 	flags = []
 
 @op
