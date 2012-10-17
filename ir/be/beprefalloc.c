@@ -966,6 +966,12 @@ static void permute_values_direct(ir_nodeset_t *live_nodes, ir_node *before,
 #endif
 }
 
+static bool is_perm_okay(ir_node *src, unsigned *n_used, unsigned reg)
+{
+	allocation_info_t *info = get_allocation_info(src);
+	return src == info->current_value && src == info->original_value && n_used[reg] == 1;
+}
+
 static void permute_values_perms(ir_nodeset_t *live_nodes, ir_node *before,
                                  unsigned *permutation)
 {
@@ -1000,19 +1006,40 @@ static void permute_values_perms(ir_nodeset_t *live_nodes, ir_node *before,
 			continue;
 		}
 
-		/* create a copy */
-		ir_node *src  = assignments[old_r];
-		ir_node *copy = be_new_Copy(block, src);
-		sched_add_before(before, copy);
-		const arch_register_t *reg = arch_register_for_index(cls, r);
-		DB((dbg, LEVEL_2, "Copy %+F (from %+F, before %+F) -> %s\n",
-		    copy, src, before, reg->name));
-		mark_as_copy_of(copy, src);
-		unsigned width = 1; /* TODO */
-		use_reg(copy, reg, width);
+		ir_node *src = assignments[old_r];
+		if (is_perm_okay(src, n_used, old_r)) {
+			/* create a copying Perm */
+			ir_node *ins[1] = { src };
+			ir_node *perm   = be_new_Perm(cls, block, 1, ins);
+			sched_add_before(before, perm);
 
-		if (live_nodes != NULL) {
-			ir_nodeset_insert(live_nodes, copy);
+			const arch_register_t *reg_src = arch_register_for_index(cls, old_r);
+			const arch_register_t *reg     = arch_register_for_index(cls, r);
+			DB((dbg, LEVEL_2, "CopyPerm %+F (src %+F, before %+F) %s -> %s\n",
+				perm, src, before, reg_src->name, reg->name));
+
+			ir_node *proj = new_r_Proj(perm, get_irn_mode(ins[0]), 0);
+			mark_as_copy_of(proj, ins[0]);
+			unsigned width = 1; /* TODO */
+			use_reg(proj, reg, width);
+
+			if (live_nodes != NULL)
+				ir_nodeset_insert(live_nodes, proj);
+		} else {
+			/* create a copy. */
+			ir_node *copy = be_new_Copy(block, src);
+			sched_add_before(before, copy);
+
+			const arch_register_t *reg = arch_register_for_index(cls, r);
+			DB((dbg, LEVEL_2, "Copy %+F (from %+F, before %+F) -> %s\n",
+				copy, src, before, reg->name));
+
+			mark_as_copy_of(copy, src);
+			unsigned width = 1; /* TODO */
+			use_reg(copy, reg, width);
+
+			if (live_nodes != NULL)
+				ir_nodeset_insert(live_nodes, copy);
 		}
 
 		/* old register has 1 user less, permutation is resolved */
