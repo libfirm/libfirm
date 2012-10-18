@@ -139,7 +139,7 @@ typedef struct ir_switch_table  ir_switch_table;
  *
  * @note
  *      Do not return NULL!
- *      If this function is not set, FIRM will create a const node with tarval BAD.
+ *      If this function is not set, FIRM will create an Unknown node.
  *      Use set_irg_loc_description()/get_irg_loc_description() to assign additional
  *      informations to local variables.
  */
