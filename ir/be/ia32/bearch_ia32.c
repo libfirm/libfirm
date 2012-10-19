@@ -2053,6 +2053,12 @@ static void ia32_lower_for_target(void)
 		lower_floating_point();
 	}
 
+	for (i = 0; i < n_irgs; ++i) {
+		ir_graph *irg = get_irp_irg(i);
+		/* break up switches with wide ranges */
+		lower_switch(irg, 4, 256, false);
+	}
+
 	ir_prepare_dw_lowering(&lower_dw_params);
 	ir_lower_dw_ops();
 
@@ -2060,8 +2066,6 @@ static void ia32_lower_for_target(void)
 		ir_graph *irg = get_irp_irg(i);
 		/* lower for mode_b stuff */
 		ir_lower_mode_b(irg, mode_Iu);
-		/* break up switches with wide ranges */
-		lower_switch(irg, 4, 256, false);
 	}
 
 	for (i = 0; i < n_irgs; ++i) {
