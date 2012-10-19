@@ -966,10 +966,126 @@ static void permute_values_direct(ir_nodeset_t *live_nodes, ir_node *before,
 #endif
 }
 
+static const char *get_reg_name(unsigned reg_index)
+{
+	return arch_register_get_name(arch_register_for_index(cls, reg_index));
+}
+
+static void print_permutation(unsigned *permutation_orig, unsigned *n_used_orig)
+{
+	unsigned permutation[n_regs];
+	unsigned n_used[n_regs];
+	memcpy(permutation, permutation_orig, sizeof(unsigned) * n_regs);
+	memcpy(n_used, n_used_orig, sizeof(unsigned) * n_regs);
+
+	unsigned comp[n_regs];
+	for (unsigned r = 0; r < n_regs; ) {
+		if (permutation[r] == r || n_used[r] > 0) {
+			++r;
+			continue;
+		}
+
+		/* Perfect, end of a chain. */
+		unsigned len = 0;
+		comp[len++] = r;
+		unsigned s = r;
+		while (n_used[s] == 0 && permutation[s] != s) {
+			unsigned src = permutation[s];
+			permutation[s] = s;
+			comp[len++] = src;
+			assert(n_used[src] > 0);
+			--n_used[src];
+			s = src;
+		}
+
+		/* Reverse. */
+		for (unsigned i = 0; i < len / 2; ++i) {
+			unsigned t = comp[i];
+			comp[i] = comp[len - i - 1];
+			comp[len - i - 1] = t;
+		}
+
+		for (unsigned i = 0; i + 1 < len; ++i)
+			printf("%s -> ", get_reg_name(comp[i]));
+		printf("%s\n", get_reg_name(comp[len - 1]));
+	}
+
+	/* Only cycles left. */
+	for (unsigned r = 0; r < n_regs; ) {
+		if (permutation[r] == r) {
+			++r;
+			continue;
+		}
+
+		assert(n_used[r] == 1);
+
+		unsigned len = 0;
+		unsigned s = r;
+		while (permutation[s] != s) {
+			unsigned src = permutation[s];
+			comp[len++] = s;
+			permutation[s] = s;
+			s = src;
+		}
+
+		for (unsigned i = 0; i < len / 2; ++i) {
+			unsigned t = comp[i];
+			comp[i] = comp[len - i - 1];
+			comp[len - i - 1] = t;
+		}
+
+		for (unsigned i = 0; i < len; ++i)
+			printf("%s -> ", get_reg_name(comp[i]));
+		printf("%s\n", get_reg_name(comp[0]));
+	}
+}
+
+static void handle_chain(ir_nodeset_t *live_nodes, ir_node *before,
+                         unsigned *permutation, unsigned *n_used,
+                         unsigned first_reg, unsigned last_reg)
+{
+	assert(n_used[last_reg] == 0);
+	const unsigned width = 1; /* TODO */
+
+	printf("Handling chain %s -> ... -> %s\n", get_reg_name(first_reg), get_reg_name(last_reg));
+	ir_node *block = get_nodes_block(before);
+	for (unsigned r = last_reg; r != first_reg; r = permutation[r]) {
+		unsigned src_reg = permutation[r];
+		ir_node *src     = assignments[src_reg];
+		ir_node *copy    = be_new_Copy(block, src);
+		sched_add_before(before, copy);
+
+		printf("Inserted copy %s -> %s\n", get_reg_name(src_reg), get_reg_name(r));
+		mark_as_copy_of(copy, src);
+		const arch_register_t *reg = arch_register_for_index(cls, r);
+		use_reg(copy, reg, width);
+
+		if (live_nodes != NULL)
+			ir_nodeset_insert(live_nodes, copy);
+
+		assert(n_used[src_reg] > 0);
+		--n_used[src_reg];
+		if (n_used[src_reg] == 0) {
+			if (live_nodes != NULL)
+				ir_nodeset_remove(live_nodes, src);
+			free_reg_of_value(src);
+		}
+	}
+
+	/* Mark fix points. */
+	for (unsigned r = last_reg; r != first_reg; /* empty */) {
+		unsigned src = permutation[r];
+		permutation[r] = r;
+		r = src;
+	}
+}
+
 static bool is_perm_okay(ir_node *src, unsigned *n_used, unsigned reg)
 {
 	allocation_info_t *info = get_allocation_info(src);
-	return src == info->current_value && src == info->original_value && n_used[reg] == 1;
+	return src == info->current_value
+	       && src == info->original_value
+	       && n_used[reg] == 1;
 }
 
 static void permute_values_perms(ir_nodeset_t *live_nodes, ir_node *before,
@@ -977,15 +1093,15 @@ static void permute_values_perms(ir_nodeset_t *live_nodes, ir_node *before,
 {
 	unsigned *n_used = ALLOCANZ(unsigned, n_regs);
 
-	/* determine how often each source register needs to be read */
+	/* Determine how often each source register needs to be read */
 	for (unsigned r = 0; r < n_regs; ++r) {
 		unsigned  old_reg = permutation[r];
 		ir_node  *value;
 
 		value = assignments[old_reg];
 		if (value == NULL) {
-			/* nothing to do here, reg is not live. Mark it as fixpoint
-			 * so we ignore it in the next steps */
+			/* Nothing to do here, reg is not live. Mark it as fixpoint,
+			 * so we ignore it in the next steps. */
 			permutation[r] = r;
 			continue;
 		}
@@ -993,9 +1109,38 @@ static void permute_values_perms(ir_nodeset_t *live_nodes, ir_node *before,
 		++n_used[old_reg];
 	}
 
+	puts("");
+	print_permutation(permutation, n_used);
 	ir_node *block = get_nodes_block(before);
 
-	/* step1: create copies where immediately possible */
+	printf("Searching for forks.\n");
+	for (unsigned to_reg = 0; to_reg < n_regs; ) {
+		unsigned from_reg = permutation[to_reg];
+
+		if (from_reg == to_reg || n_used[to_reg] > 0) {
+			++to_reg;
+			continue;
+		}
+
+		/* Found the end of a chain, follow until end or fork. */
+		unsigned r = to_reg;
+		while (r != permutation[r]) {
+			r = permutation[r];
+
+			if (n_used[r] > 1 && permutation[r] != r) {
+				printf("Found a fork, eliminating branch.\n");
+				/* Found a fork, eliminate one branch. */
+				handle_chain(live_nodes, before, permutation, n_used, r, to_reg);
+				break;
+			}
+		}
+
+		++to_reg;
+	}
+	printf("Finished searching for forks.\n");
+
+	/* Step 2: Handle all chains. */
+	/* TODO: Keep track of "backup" movs to insert after Perm. */
 	for (unsigned r = 0; r < n_regs; /* empty */) {
 		unsigned old_r = permutation[r];
 
@@ -1063,10 +1208,9 @@ static void permute_values_perms(ir_nodeset_t *live_nodes, ir_node *before,
 		}
 	}
 
-	/* at this point we only have "cycles" left which we have to resolve with
+	/* Step 3: Handle all cycles. */
+	/* At this point we only have cycles left which we have to resolve with
 	 * perm instructions. */
-
-	/* create perms with the rest */
 	for (unsigned r = 0; r < n_regs; /* empty */) {
 		unsigned old_r = permutation[r];
 
