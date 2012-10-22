@@ -1029,7 +1029,7 @@ IJmp => {
 	reg_req   => { in => [ "gp", "gp", "none", "gp" ] },
 	ins       => [ "base", "index", "mem", "target" ],
 	am        => "source,unary",
-	emit      => 'jmp *%AS3',
+	emit      => 'jmp %*AS3',
 	latency   => 1,
 	units     => [ "BRANCH" ],
 	mode      => "mode_X",
