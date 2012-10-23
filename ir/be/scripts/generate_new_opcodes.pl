@@ -685,9 +685,8 @@ EOF
 	}
 	my $copy_attr_func = $copy_attr{$attr_type};
 	if (!defined($copy_attr_func)) {
-		if ($attr_type eq "") {
-			$copy_attr_func = "NULL";
-		} else {
+		# don't set a copy_attr function if the node has no additional attributes.
+		if ($attr_type ne "") {
 			$copy_attr_func = $default_copy_attr;
 		}
 	}
