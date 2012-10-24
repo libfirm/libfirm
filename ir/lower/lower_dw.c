@@ -2756,6 +2756,7 @@ static bool always_lower(unsigned code)
 	case iro_Call:
 	case iro_Return:
 	case iro_Cond:
+	case iro_Switch:
 	case iro_Conv:
 	case iro_Sel:
 		return true;
