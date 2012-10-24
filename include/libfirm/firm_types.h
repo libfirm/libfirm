@@ -292,7 +292,7 @@ typedef enum mtp_additional_properties {
 	/** the programmer recommends to inline the function */
 	mtp_property_inline_recommended = 1u << 13,
 	/** stupid hack used by opt_funccall... */
-	mtp_temporary                   = 1u << 31,
+	mtp_temporary                   = 1u << 14,
 } mtp_additional_properties;
 ENUM_BITSET(mtp_additional_properties)
 
