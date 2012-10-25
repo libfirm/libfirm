@@ -468,6 +468,7 @@ static void sparc_end_codegeneration(void *self)
 
 static void sparc_lower_for_target(void)
 {
+	ir_mode *mode_gp = sparc_reg_classes[CLASS_sparc_gp].mode;
 	size_t i, n_irgs = get_irp_n_irgs();
 
 	lower_calls_with_compounds(LF_RETURN_HIDDEN);
@@ -489,7 +490,7 @@ static void sparc_lower_for_target(void)
 	for (i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		ir_lower_mode_b(irg, mode_Iu);
-		lower_switch(irg, 4, 256);
+		lower_switch(irg, 4, 256, mode_gp);
 		/* TODO: Pass SPARC_MIN_STACKSIZE as addr_delta as soon as
 		 * Alloc nodes are implemented more efficiently. */
 		lower_alloc(irg, SPARC_STACK_ALIGNMENT, true, 0);

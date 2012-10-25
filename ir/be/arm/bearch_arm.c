@@ -492,6 +492,7 @@ static int arm_is_valid_clobber(const char *clobber)
 
 static void arm_lower_for_target(void)
 {
+	ir_mode *mode_gp = arm_reg_classes[CLASS_arm_gp].mode;
 	size_t i, n_irgs = get_irp_n_irgs();
 
 	/* lower compound param handling */
@@ -499,7 +500,7 @@ static void arm_lower_for_target(void)
 
 	for (i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
-		lower_switch(irg, 4, 256);
+		lower_switch(irg, 4, 256, mode_gp);
 	}
 
 	for (i = 0; i < n_irgs; ++i) {

@@ -70,9 +70,10 @@ FIRM_API void lower_CopyB(ir_graph *irg, unsigned max_small_size,
  * @param small_switch  If switch has <= cases then change it to an if-cascade.
  * @param spare_size Allowed spare size for table switches in machine words.
  *                   (Default in edgfe: 128)
+ * @param selector_mode mode which must be used for Switch selector
  */
 FIRM_API void lower_switch(ir_graph *irg, unsigned small_switch,
-                           unsigned spare_size);
+                           unsigned spare_size, ir_mode *selector_mode);
 
 /**
  * Replaces SymConsts by a real constant if possible.

@@ -1174,7 +1174,7 @@ static void introduce_epilog(ir_node *ret)
 	ir_node               *block      = get_nodes_block(ret);
 	ir_node               *first_sp   = get_irn_n(ret, n_be_Return_sp);
 	ir_node               *curr_sp    = first_sp;
-	ir_mode               *mode_gp    = mode_Iu;
+	ir_mode               *mode_gp    = ia32_reg_classes[CLASS_ia32_gp].mode;
 
 	if (!layout->sp_relative) {
 		int      n_ebp   = determine_ebp_input(ret);
@@ -2027,6 +2027,7 @@ static int ia32_is_valid_clobber(const char *clobber)
 
 static void ia32_lower_for_target(void)
 {
+	ir_mode *mode_gp = ia32_reg_classes[CLASS_ia32_gp].mode;
 	size_t i, n_irgs = get_irp_n_irgs();
 
 	/* perform doubleword lowering */
@@ -2054,7 +2055,7 @@ static void ia32_lower_for_target(void)
 	for (i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		/* break up switches with wide ranges */
-		lower_switch(irg, 4, 256);
+		lower_switch(irg, 4, 256, mode_gp);
 	}
 
 	ir_prepare_dw_lowering(&lower_dw_params);
