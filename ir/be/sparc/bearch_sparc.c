@@ -489,7 +489,7 @@ static void sparc_lower_for_target(void)
 	for (i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		ir_lower_mode_b(irg, mode_Iu);
-		lower_switch(irg, 4, 256, false);
+		lower_switch(irg, 4, 256);
 		/* TODO: Pass SPARC_MIN_STACKSIZE as addr_delta as soon as
 		 * Alloc nodes are implemented more efficiently. */
 		lower_alloc(irg, SPARC_STACK_ALIGNMENT, true, 0);

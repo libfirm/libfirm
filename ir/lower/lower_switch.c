@@ -44,7 +44,6 @@
 typedef struct walk_env_t {
 	unsigned      spare_size; /**< the allowed spare size for table switches */
 	unsigned      small_switch;
-	bool          allow_out_of_bounds;
 	bool          changed;    /**< indicates whether a change was performed */
 	ir_nodeset_t  processed;
 } walk_env_t;
@@ -443,12 +442,10 @@ static void find_switch_nodes(ir_node *block, void *ctx)
 	 || (tarval_cmp(spare, spare_size) & ir_relation_greater_equal));
 
 	if (!lower_switch) {
-		/* we won't decompose the switch. But we might have to add
-		 * out-of-bounds checking */
-		if (!env->allow_out_of_bounds) {
-			normalize_switch(&info);
-			create_out_of_bounds_check(&info);
-		}
+		/* we won't decompose the switch. But we must add an out-of-bounds
+		 * check */
+		normalize_switch(&info);
+		create_out_of_bounds_check(&info);
 		return;
 	}
 
@@ -470,14 +467,12 @@ static void find_switch_nodes(ir_node *block, void *ctx)
 	                                  | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 }
 
-void lower_switch(ir_graph *irg, unsigned small_switch, unsigned spare_size,
-                  int allow_out_of_bounds)
+void lower_switch(ir_graph *irg, unsigned small_switch, unsigned spare_size)
 {
 	walk_env_t env;
 	env.changed             = false;
 	env.spare_size          = spare_size;
 	env.small_switch        = small_switch;
-	env.allow_out_of_bounds = allow_out_of_bounds;
 	ir_nodeset_init(&env.processed);
 
 	remove_critical_cf_edges(irg);

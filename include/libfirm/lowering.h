@@ -70,12 +70,9 @@ FIRM_API void lower_CopyB(ir_graph *irg, unsigned max_small_size,
  * @param small_switch  If switch has <= cases then change it to an if-cascade.
  * @param spare_size Allowed spare size for table switches in machine words.
  *                   (Default in edgfe: 128)
- * @param allow_out_of_bounds   backend can handle out-of-bounds values
- *                              (values bigger than minimum and maximum proj
- *                               number)
  */
 FIRM_API void lower_switch(ir_graph *irg, unsigned small_switch,
-                           unsigned spare_size, int allow_out_of_bounds);
+                           unsigned spare_size);
 
 /**
  * Replaces SymConsts by a real constant if possible.

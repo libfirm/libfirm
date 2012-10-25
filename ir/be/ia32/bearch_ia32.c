@@ -2054,7 +2054,7 @@ static void ia32_lower_for_target(void)
 	for (i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		/* break up switches with wide ranges */
-		lower_switch(irg, 4, 256, false);
+		lower_switch(irg, 4, 256);
 	}
 
 	ir_prepare_dw_lowering(&lower_dw_params);
