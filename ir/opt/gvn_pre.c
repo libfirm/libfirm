@@ -77,8 +77,6 @@
    TODO Broken for yet unknown reasons. */
 #define OPTIMIZE_NODES 0
 
-#define OLD_DIVMODS 0
-
 
 /** Additional info we need for every block. */
 typedef struct block_info {
@@ -646,7 +644,7 @@ static unsigned is_nice_value(ir_node *n)
 	if (is_Phi(n))
 		return 1;
 
-#if LOADS || OLD_DIVMODS || DIVMODS
+#if LOADS || DIVMODS
 	if (is_Proj(n) && mode != mode_X && mode != mode_T)
 		return 1;
 #else
@@ -819,70 +817,6 @@ static void set_translated(ir_nodehashmap_t *map, ir_node *node, ir_node *trans)
 	ir_nodehashmap_insert(map, node, trans);
 }
 
-#if OLD_DIVMODS
-/* Helper function to compare the values of pred and avail_pred. */
-static unsigned match_pred(ir_node *pred, ir_node *avail_pred, ir_node *block, int pos)
-{
-	ir_node *avail_value = identify(avail_pred);
-	ir_node *pred_block  = get_Block_cfgpred_block(block, pos);
-	ir_node *trans_pred  = get_translated(pred_block, pred);
-	ir_node *value;
-
-	if (trans_pred == NULL)
-		trans_pred = pred;
-	value = identify(trans_pred);
-
-	DB((dbg, LEVEL_3, "manual compare %+F  %+F\n", pred, avail_pred));
-
-	return (value == avail_value);
-}
-
-/**
- * Does phi translation for redundant Div/Mod nodes only.
- * Returns NULL for non-redundant node, which needs to be phi translated.
- */
-static ir_node *phi_translate_divmod(ir_node *divmod, ir_node *block, int pos)
-{
-	ir_node *mem   = get_memop_mem(divmod);
-	ir_node *trans = get_translated_pred(block, pos, mem);
-
-	if (trans == NULL)
-		trans = mem;
-
-	/* no partial redundancy if this is a mode_M phi */
-	if (is_Proj(trans)) {
-		/* The last memory operation in predecessor block */
-		ir_node *avail_op = get_Proj_pred(trans);
-
-		if (get_irn_op(divmod) == get_irn_op(avail_op)) {
-			unsigned left, right;
-
-			if (is_Div(avail_op)) {
-				if (get_Div_resmode(divmod) == get_Div_resmode(avail_op) &&
-				    get_Div_no_remainder(divmod) == get_Div_no_remainder(avail_op)) {
-
-					left  = match_pred(get_Div_left(divmod), get_Div_left(avail_op), block, pos);
-					right = match_pred(get_Div_right(divmod), get_Div_right(avail_op), block, pos);
-
-					if (left && right)
-						return avail_op;
-				}
-			} else if (is_Mod(avail_op)) {
-			    if (get_Mod_resmode(divmod) == get_Mod_resmode(avail_op)) {
-
-					left  = match_pred(get_Mod_left(divmod), get_Mod_left(avail_op), block, pos);
-					right = match_pred(get_Mod_right(divmod), get_Mod_right(avail_op), block, pos);
-
-					if (left && right)
-						return avail_op;
-				}
-			}
-		}
-	}
-	return NULL;
-}
-#endif
-
 /**
  * Translates an expression above a Phi.
  *
@@ -908,14 +842,6 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, ir_valuese
 		return node;
 	}
 	arity = get_irn_arity(node);
-
-#if OLD_DIVMODS
-	if (is_Div(node) || is_Mod(node)) {
-		ir_node *avail_op = phi_translate_divmod(node, block, pos);
-		if (avail_op)
-			return avail_op;
-	}
-#endif
 
 	needed = 0;
 	in = ALLOCANZ(ir_node *, arity);
@@ -1480,7 +1406,7 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 		if (mode == NULL)
 			continue;
 
-#if LOADS || OLD_DIVMODS || DIVMODS
+#if LOADS || DIVMODS
 		/* save old mode_M phis to remove keepalive edges later */
 		if (is_memop(expr)) {
 			ir_node *mem = get_memop_mem(expr);
