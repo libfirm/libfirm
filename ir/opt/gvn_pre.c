@@ -154,18 +154,18 @@ typedef struct gvnpre_statistics {
 
 gvnpre_statistics *gvnpre_stats = NULL;
 
-static void init_stats()
+static void init_stats(void)
 {
 	gvnpre_stats = XMALLOCZ(gvnpre_statistics);
 }
 
-static void free_stats()
+static void free_stats(void)
 {
 	free(gvnpre_stats);
 	gvnpre_stats = NULL;
 }
 
-static void print_stats()
+static void print_stats(void)
 {
 	gvnpre_statistics *stats = gvnpre_stats;
 	DB((dbg, LEVEL_1, "replaced             : %d\n", stats->replaced));
