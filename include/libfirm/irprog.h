@@ -163,16 +163,6 @@ FIRM_API ir_graph *get_irp_main_irg(void);
 /** Sets the main routine of the compiled program. */
 FIRM_API void set_irp_main_irg(ir_graph *main_irg);
 
-/** Adds irg to the list of ir graphs in the current irp. */
-FIRM_API void add_irp_irg(ir_graph *irg);
-
-/** Removes irg from the list of irgs and
-    shrinks the list by one. */
-FIRM_API void remove_irp_irg_from_list(ir_graph *irg);
-/** Removes irg from the list of irgs, deallocates it and
-    shrinks the list by one. */
-FIRM_API void remove_irp_irg(ir_graph *irg);
-
 /** returns the biggest not used irg index number */
 FIRM_API size_t get_irp_last_idx(void);
 

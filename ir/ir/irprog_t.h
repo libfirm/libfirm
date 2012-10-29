@@ -119,6 +119,13 @@ void add_irp_type(ir_type *typ);
     shrinks the list by one. */
 void remove_irp_type(ir_type *typ);
 
+/** Adds irg to the list of ir graphs in the current irp. */
+FIRM_API void add_irp_irg(ir_graph *irg);
+
+/** Removes irg from the list of irgs and
+    shrinks the list by one. */
+FIRM_API void remove_irp_irg(ir_graph *irg);
+
 /* Inline functions. */
 #define get_irp_n_irgs()                 get_irp_n_irgs_()
 #define get_irp_irg(pos)                 get_irp_irg_(pos)

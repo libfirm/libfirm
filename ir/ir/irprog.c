@@ -125,6 +125,9 @@ ir_prog *new_ir_prog(const char *name)
 
 void free_ir_prog(void)
 {
+	if (irp == NULL)
+		return;
+
 	size_t i;
 	/* must iterate backwards here */
 	for (i = get_irp_n_irgs(); i > 0;)
@@ -196,7 +199,7 @@ void add_irp_irg(ir_graph *irg)
 	ARR_APP1(ir_graph *, irp->graphs, irg);
 }
 
-void remove_irp_irg_from_list(ir_graph *irg)
+void remove_irp_irg(ir_graph *irg)
 {
 	size_t i, l;
 
@@ -211,12 +214,6 @@ void remove_irp_irg_from_list(ir_graph *irg)
 			break;
 		}
 	}
-}
-
-void remove_irp_irg(ir_graph *irg)
-{
-	free_ir_graph(irg);
-	remove_irp_irg_from_list(irg);
 }
 
 size_t (get_irp_n_irgs)(void)
