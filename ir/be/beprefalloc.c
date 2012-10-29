@@ -435,8 +435,10 @@ static void create_congruence_class(ir_node *block, void *data)
 		);
 		be_liveness_transfer(cls, node, &live_nodes);
 	}
-	if (!last_phi)
+	if (!last_phi) {
+		ir_nodeset_destroy(&live_nodes);
 		return;
+	}
 
 	/* check phi congruence classes */
 	sched_foreach_reverse_from(last_phi, phi) {
@@ -504,6 +506,7 @@ static void create_congruence_class(ir_node *block, void *data)
 			}
 		}
 	}
+	ir_nodeset_destroy(&live_nodes);
 }
 
 static void set_congruence_prefs(ir_node *node, void *data)
@@ -1855,6 +1858,11 @@ static void determine_block_order(void)
 	n_block_order = n_blocks;
 }
 
+static void free_block_order(void)
+{
+	xfree(block_order);
+}
+
 /**
  * Run the register allocator for the current register class.
  */
@@ -1961,6 +1969,8 @@ static void be_pref_alloc(ir_graph *new_irg)
 
 		stat_ev_ctx_pop("regcls");
 	}
+
+	free_block_order();
 
 	be_timer_push(T_RA_SPILL_APPLY);
 	be_abi_fix_stack_nodes(irg);
