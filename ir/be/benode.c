@@ -241,10 +241,10 @@ static void init_node_attr(ir_node *node, int n_inputs, int n_outputs)
 	}
 }
 
-static void add_register_req_in(ir_node *node)
+static void add_register_req_in(ir_node *node, const arch_register_req_t *req)
 {
 	backend_info_t *info = be_get_info(node);
-	ARR_APP1(const arch_register_req_t*, info->in_reqs, arch_no_register_req);
+	ARR_APP1(const arch_register_req_t*, info->in_reqs, req);
 }
 
 ir_node *be_new_Spill(const arch_register_class_t *cls,
@@ -461,8 +461,11 @@ ir_node *be_new_Keep(ir_node *block, int n, ir_node *in[])
 	attr->exc.pin_state = op_pin_state_pinned;
 
 	for (i = 0; i < n; ++i) {
-		add_irn_n(res, in[i]);
-		add_register_req_in(res);
+		ir_node *pred = in[i];
+		add_irn_n(res, pred);
+		const arch_register_req_t *req = arch_get_irn_register_req(pred);
+		req = req->cls != NULL ? req->cls->class_req : arch_no_register_req;
+		add_register_req_in(res, req);
 	}
 	keep_alive(res);
 
@@ -471,12 +474,9 @@ ir_node *be_new_Keep(ir_node *block, int n, ir_node *in[])
 
 void be_Keep_add_node(ir_node *keep, const arch_register_class_t *cls, ir_node *node)
 {
-	int n;
-
 	assert(be_is_Keep(keep));
-	n = add_irn_n(keep, node);
-	add_register_req_in(keep);
-	be_node_set_reg_class_in(keep, n, cls);
+	add_irn_n(keep, node);
+	add_register_req_in(keep, cls->class_req);
 }
 
 ir_node *be_new_Call(dbg_info *dbg, ir_graph *irg, ir_node *bl, ir_node *mem,
@@ -730,6 +730,12 @@ ir_node *be_new_CopyKeep(ir_node *bl, ir_node *src, int n, ir_node *in_keep[])
 	attr->exc.pin_state = op_pin_state_floats;
 	be_node_set_reg_class_in(irn, 0, cls);
 	be_node_set_reg_class_out(irn, 0, cls);
+	for (int i = 0; i < n; ++i) {
+		ir_node *pred = in_keep[i];
+		const arch_register_req_t *req = arch_get_irn_register_req(pred);
+		req = req->cls != NULL ? req->cls->class_req : arch_no_register_req;
+		be_set_constr_in(irn, i+1, req);
+	}
 
 	return irn;
 }

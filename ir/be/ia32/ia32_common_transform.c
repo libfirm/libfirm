@@ -536,6 +536,7 @@ ir_node *ia32_gen_ASM(ir_node *node)
 			if (parsed_constraint.cls == NULL
 					&& parsed_constraint.same_as < 0) {
 				is_memory_op = 1;
+				in_reg_reqs[i] = ia32_reg_classes[CLASS_ia32_gp].class_req;
 			} else if (parsed_constraint.memory_possible) {
 				/* TODO: match Load or Load/Store if memory possible is set */
 			}
