@@ -152,7 +152,7 @@ typedef struct gvnpre_statistics {
 	int infinite_loops;
 } gvnpre_statistics;
 
-gvnpre_statistics *gvnpre_stats = NULL;
+static gvnpre_statistics *gvnpre_stats = NULL;
 
 static void init_stats(void)
 {
