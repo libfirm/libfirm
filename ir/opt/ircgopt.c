@@ -121,7 +121,7 @@ void gc_irgs(size_t n_keep, ir_entity ** keep_arr)
 	}
 
 	/* clean */
-	for (size_t i = get_irp_n_irgs()-1; i-- > 0; ) {
+	for (size_t i = get_irp_n_irgs(); i-- != 0;) {
 		ir_graph  *irg = get_irp_irg(i);
 		ir_entity *ent = get_irg_entity(irg);
 
