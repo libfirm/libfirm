@@ -885,7 +885,7 @@ found_front:
 	n_moved = 0;
 	for (;;) {
 		ir_node *const node = sched_prev(perm);
-		if (sched_is_begin(node))
+		if (node == frontier)
 			break;
 
 		const arch_register_req_t *req;
@@ -905,8 +905,6 @@ found_front:
 		}
 		/* it wasn't an input to the perm, we can't do anything more */
 		if (input < 0)
-			break;
-		if (!sched_comes_after(frontier, node))
 			break;
 		if (arch_irn_is(node, modify_flags))
 			break;
