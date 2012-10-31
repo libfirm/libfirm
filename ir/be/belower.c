@@ -843,7 +843,6 @@ static int push_through_perm(ir_node *perm)
 {
 	ir_graph *irg     = get_irn_irg(perm);
 	ir_node *bl       = get_nodes_block(perm);
-	ir_node *node;
 	int  arity        = get_irn_arity(perm);
 	int *map;
 	int *proj_map;
@@ -883,9 +882,12 @@ found_front:
 
 	DB((dbg_permmove, LEVEL_2, "\tfrontier: %+F\n", frontier));
 
-	node = sched_prev(perm);
 	n_moved = 0;
-	while (!sched_is_begin(node)) {
+	for (;;) {
+		ir_node *const node = sched_prev(perm);
+		if (sched_is_begin(node))
+			break;
+
 		const arch_register_req_t *req;
 		int                        input = -1;
 		ir_node                   *proj  = NULL;
@@ -934,8 +936,6 @@ found_front:
 
 		bitset_set(moved, input);
 		n_moved++;
-
-		node = sched_prev(node);
 	}
 
 	/* well, we could not push anything through the perm */
