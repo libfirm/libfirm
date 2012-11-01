@@ -1990,15 +1990,12 @@ static int sim_Perm(x87_state *state, ir_node *irn)
 /**
  * Kill any dead registers at block start by popping them from the stack.
  *
- * @param sim          the simulator handle
- * @param block        the current block
- * @param start_state  the x87 state at the begin of the block
- *
- * @return the x87 state after dead register killed
+ * @param sim    the simulator handle
+ * @param block  the current block
+ * @param state  the x87 state at the begin of the block
  */
-static x87_state *x87_kill_deads(x87_simulator *sim, ir_node *block, x87_state *start_state)
+static void x87_kill_deads(x87_simulator *const sim, ir_node *const block, x87_state *const state)
 {
-	x87_state *state = start_state;
 	ir_node *first_insn = sched_first(block);
 	ir_node *keep = NULL;
 	unsigned live = vfp_live_args_after(sim, block, 0);
@@ -2015,9 +2012,6 @@ static x87_state *x87_kill_deads(x87_simulator *sim, ir_node *block, x87_state *
 	}
 
 	if (kill_mask) {
-		/* create a new state, will be changed */
-		state = x87_clone_state(sim, state);
-
 		DB((dbg, LEVEL_1, "Killing deads:\n"));
 		DEBUG_ONLY(vfp_dump_live(live);)
 		DEBUG_ONLY(x87_dump_stack(state);)
@@ -2035,7 +2029,7 @@ static x87_state *x87_kill_deads(x87_simulator *sim, ir_node *block, x87_state *
 				sched_add_before(first_insn, keep);
 				keep_alive(keep);
 				x87_emms(state);
-				return state;
+				return;
 			}
 		}
 		/* now kill registers */
@@ -2071,7 +2065,6 @@ static x87_state *x87_kill_deads(x87_simulator *sim, ir_node *block, x87_state *
 		}
 		keep_alive(keep);
 	}
-	return state;
 }
 
 /**
@@ -2096,10 +2089,10 @@ static void x87_simulate_block(x87_simulator *sim, ir_node *block)
 	DB((dbg, LEVEL_2, "State at Block begin:\n "));
 	DEBUG_ONLY(x87_dump_stack(state);)
 
-	/* at block begin, kill all dead registers */
-	state = x87_kill_deads(sim, block, state);
 	/* create a new state, will be changed */
 	state = x87_clone_state(sim, state);
+	/* at block begin, kill all dead registers */
+	x87_kill_deads(sim, block, state);
 
 	/* beware, n might change */
 	for (n = sched_first(block); !sched_is_end(n); n = next) {
