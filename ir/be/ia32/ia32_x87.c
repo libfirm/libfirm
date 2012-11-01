@@ -138,7 +138,6 @@ struct x87_simulator {
 	vfp_liveness *live;         /**< Liveness information. */
 	unsigned n_idx;             /**< The cached get_irg_last_idx() result. */
 	waitq *worklist;            /**< Worklist of blocks that must be processed. */
-	ia32_isa_t *isa;            /**< the ISA object */
 };
 
 /**
@@ -292,7 +291,6 @@ static void x87_push_dbl(x87_state *state, int reg_idx, ir_node *node)
  * @param state     the x87 state
  * @param reg_idx   the register vfp index
  * @param node      the node that produces the value of the vfp register
- * @param dbl_push  if != 0 double pushes are allowed
  */
 static void x87_push(x87_state *state, int reg_idx, ir_node *node)
 {
@@ -496,24 +494,18 @@ static ir_node *x87_fxch_shuffle(x87_state *state, int pos, ir_node *block)
  * Note that critical edges are removed here, so we need only
  * a shuffle if the current block has only one successor.
  *
- * @param sim        the simulator handle
  * @param block      the current block
  * @param state      the current x87 stack state, might be modified
- * @param dst_block  the destination block
  * @param dst_state  destination state
  *
  * @return state
  */
-static x87_state *x87_shuffle(x87_simulator *sim, ir_node *block,
-                              x87_state *state, ir_node *dst_block,
-                              const x87_state *dst_state)
+static x87_state *x87_shuffle(ir_node *block, x87_state *state, const x87_state *dst_state)
 {
 	int      i, n_cycles, k, ri;
 	unsigned cycles[4], all_mask;
 	char     cycle_idx[4][8];
 	ir_node  *fxch, *before, *after;
-	(void) sim;
-	(void) dst_block;
 
 	assert(state->depth == dst_state->depth);
 
@@ -765,7 +757,6 @@ static vfp_liveness vfp_liveness_transfer(ir_node *irn, vfp_liveness live)
  * Put all live virtual registers at the end of a block into a bitset.
  *
  * @param sim      the simulator handle
- * @param lv       the liveness information
  * @param bl       the block
  *
  * @return The live bitset at the end of this block
@@ -812,7 +803,6 @@ static unsigned vfp_live_args_after(x87_simulator *sim, const ir_node *pos, unsi
  * Calculate the liveness for a whole block and cache it.
  *
  * @param sim   the simulator handle
- * @param lv    the liveness handle
  * @param block the block
  */
 static void update_liveness(x87_simulator *sim, ir_node *block)
@@ -1949,11 +1939,6 @@ static int sim_Return(x87_state *state, ir_node *n)
 	return NO_NODE_ADDED;
 }
 
-typedef struct perm_data_t {
-	const arch_register_t *in;
-	const arch_register_t *out;
-} perm_data_t;
-
 /**
  * Simulate a be_Perm.
  *
@@ -2174,7 +2159,7 @@ static void x87_simulate_block(x87_simulator *sim, ir_node *block)
 			   If the successor has more than one possible input, then it must
 			   be the only one.
 			 */
-			x87_shuffle(sim, block, state, succ, succ_state->begin);
+			x87_shuffle(block, state, succ_state->begin);
 		}
 	}
 	bl_state->end = state;
