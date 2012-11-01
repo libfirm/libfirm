@@ -1920,22 +1920,20 @@ end_call:
  */
 static int sim_Return(x87_state *state, ir_node *n)
 {
-	int n_res = be_Return_get_n_rets(n);
-	int i, n_float_res = 0;
-
+#ifdef DEBUG_libfirm
 	/* only floating point return values must reside on stack */
-	for (i = 0; i < n_res; ++i) {
-		ir_node *res = get_irn_n(n, n_be_Return_val + i);
-
+	int       n_float_res = 0;
+	int const n_res       = be_Return_get_n_rets(n);
+	for (int i = 0; i < n_res; ++i) {
+		ir_node *const res = get_irn_n(n, n_be_Return_val + i);
 		if (mode_is_float(get_irn_mode(res)))
 			++n_float_res;
 	}
 	assert(x87_get_depth(state) == n_float_res);
+#endif
 
 	/* pop them virtually */
-	for (i = n_float_res - 1; i >= 0; --i)
-		x87_pop(state);
-
+	x87_emms(state);
 	return NO_NODE_ADDED;
 }
 
