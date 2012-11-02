@@ -52,8 +52,6 @@
 #include "ia32_x87.h"
 #include "ia32_architecture.h"
 
-#define MASK_TOS(x)    ((x) & (N_ia32_st_REGS - 1))
-
 /** the debug handle */
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -88,12 +86,11 @@ typedef struct st_entry {
 typedef struct x87_state {
 	st_entry st[N_ia32_st_REGS]; /**< the register stack */
 	int depth;                   /**< the current stack depth */
-	int tos;                     /**< position of the tos */
 	x87_simulator *sim;          /**< The simulator. */
 } x87_state;
 
 /** An empty state, used for blocks without fp instructions. */
-static x87_state _empty = { { {0, NULL}, }, 0, 0, NULL };
+static x87_state _empty = { { {0, NULL}, }, 0, NULL };
 static x87_state *empty = (x87_state *)&_empty;
 
 /**
@@ -155,7 +152,7 @@ static int x87_get_depth(const x87_state *state)
 static st_entry *x87_get_entry(x87_state *const state, int const pos)
 {
 	assert(0 <= pos && pos < state->depth);
-	return &state->st[MASK_TOS(state->tos + pos)];
+	return &state->st[N_ia32_st_REGS - state->depth + pos];
 }
 
 /**
@@ -265,7 +262,6 @@ static void x87_push_dbl(x87_state *state, int reg_idx, ir_node *node)
 	assert(state->depth < N_ia32_st_REGS && "stack overrun");
 
 	++state->depth;
-	state->tos = MASK_TOS(state->tos - 1);
 	st_entry *const entry = x87_get_entry(state, 0);
 	entry->reg_idx = reg_idx;
 	entry->node    = node;
@@ -297,7 +293,6 @@ static void x87_pop(x87_state *state)
 	assert(state->depth > 0 && "stack underrun");
 
 	--state->depth;
-	state->tos = MASK_TOS(state->tos + 1);
 
 	DB((dbg, LEVEL_2, "After POP: ")); DEBUG_ONLY(x87_dump_stack(state);)
 }
@@ -310,7 +305,6 @@ static void x87_pop(x87_state *state)
 static void x87_emms(x87_state *state)
 {
 	state->depth = 0;
-	state->tos   = 0;
 }
 
 /**
