@@ -90,8 +90,7 @@ typedef struct x87_state {
 } x87_state;
 
 /** An empty state, used for blocks without fp instructions. */
-static x87_state _empty = { { {0, NULL}, }, 0, NULL };
-static x87_state *empty = (x87_state *)&_empty;
+static x87_state empty = { { {0, NULL}, }, 0, NULL };
 
 /**
  * Return values of the instruction simulator functions.
@@ -2236,8 +2235,8 @@ void ia32_x87_simulate_graph(ir_graph *irg)
 	bl_state    = x87_get_bl_state(&sim, start_block);
 
 	/* start with the empty state */
-	bl_state->begin = empty;
-	empty->sim      = &sim;
+	empty.sim       = &sim;
+	bl_state->begin = &empty;
 
 	sim.worklist = new_waitq();
 	waitq_put(sim.worklist, start_block);
