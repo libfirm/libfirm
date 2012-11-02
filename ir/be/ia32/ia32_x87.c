@@ -173,30 +173,15 @@ static int x87_get_st_reg(const x87_state *state, int pos)
 
 #ifdef DEBUG_libfirm
 /**
- * Return the node at st(pos).
- *
- * @param state  the x87 state
- * @param pos    a stack position
- *
- * @return the IR node that produced the value at st(pos)
- */
-static ir_node *x87_get_st_node(const x87_state *state, int pos)
-{
-	return x87_get_entry((x87_state*)state, pos)->node;
-}
-
-/**
  * Dump the stack for debugging.
  *
  * @param state  the x87 state
  */
 static void x87_dump_stack(const x87_state *state)
 {
-	int i;
-
-	for (i = state->depth - 1; i >= 0; --i) {
-		DB((dbg, LEVEL_2, "vf%d(%+F) ", x87_get_st_reg(state, i),
-		    x87_get_st_node(state, i)));
+	for (int i = state->depth; i-- != 0;) {
+		st_entry const *const entry = x87_get_entry((x87_state*)state, i);
+		DB((dbg, LEVEL_2, "vf%d(%+F) ", entry->reg_idx, entry->node));
 	}
 	DB((dbg, LEVEL_2, "<-- TOS\n"));
 }
