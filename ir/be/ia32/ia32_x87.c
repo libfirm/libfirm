@@ -152,6 +152,12 @@ static int x87_get_depth(const x87_state *state)
 	return state->depth;
 }
 
+static st_entry *x87_get_entry(x87_state *const state, int const pos)
+{
+	assert(0 <= pos && pos < state->depth);
+	return &state->st[MASK_TOS(state->tos + pos)];
+}
+
 /**
  * Return the virtual register index at st(pos).
  *
@@ -162,8 +168,7 @@ static int x87_get_depth(const x87_state *state)
  */
 static int x87_get_st_reg(const x87_state *state, int pos)
 {
-	assert(pos < state->depth);
-	return state->st[MASK_TOS(state->tos + pos)].reg_idx;
+	return x87_get_entry((x87_state*)state, pos)->reg_idx;
 }
 
 #ifdef DEBUG_libfirm
@@ -177,8 +182,7 @@ static int x87_get_st_reg(const x87_state *state, int pos)
  */
 static ir_node *x87_get_st_node(const x87_state *state, int pos)
 {
-	assert(pos < state->depth);
-	return state->st[MASK_TOS(state->tos + pos)].node;
+	return x87_get_entry((x87_state*)state, pos)->node;
 }
 
 /**
@@ -208,9 +212,9 @@ static void x87_dump_stack(const x87_state *state)
  */
 static void x87_set_st(x87_state *state, int reg_idx, ir_node *node, int pos)
 {
-	assert(0 < state->depth);
-	state->st[MASK_TOS(state->tos + pos)].reg_idx = reg_idx;
-	state->st[MASK_TOS(state->tos + pos)].node    = node;
+	st_entry *const entry = x87_get_entry(state, pos);
+	entry->reg_idx = reg_idx;
+	entry->node    = node;
 
 	DB((dbg, LEVEL_2, "After SET_REG: "));
 	DEBUG_ONLY(x87_dump_stack(state);)
@@ -236,12 +240,11 @@ static void x87_set_tos(x87_state *state, int reg_idx, ir_node *node)
  */
 static void x87_fxch(x87_state *state, int pos)
 {
-	st_entry entry;
-	assert(pos < state->depth);
-
-	entry = state->st[MASK_TOS(state->tos + pos)];
-	state->st[MASK_TOS(state->tos + pos)] = state->st[MASK_TOS(state->tos)];
-	state->st[MASK_TOS(state->tos)] = entry;
+	st_entry *const a = x87_get_entry(state, pos);
+	st_entry *const b = x87_get_entry(state, 0);
+	st_entry  const t = *a;
+	*a = *b;
+	*b = t;
 
 	DB((dbg, LEVEL_2, "After FXCH: "));
 	DEBUG_ONLY(x87_dump_stack(state);)
@@ -258,11 +261,10 @@ static void x87_fxch(x87_state *state, int pos)
  */
 static int x87_on_stack(const x87_state *state, int reg_idx)
 {
-	int i, tos = state->tos;
-
-	for (i = 0; i < state->depth; ++i)
-		if (state->st[MASK_TOS(tos + i)].reg_idx == reg_idx)
+	for (int i = 0; i < state->depth; ++i) {
+		if (x87_get_st_reg(state, i) == reg_idx)
 			return i;
+	}
 	return -1;
 }
 
@@ -279,8 +281,9 @@ static void x87_push_dbl(x87_state *state, int reg_idx, ir_node *node)
 
 	++state->depth;
 	state->tos = MASK_TOS(state->tos - 1);
-	state->st[state->tos].reg_idx = reg_idx;
-	state->st[state->tos].node    = node;
+	st_entry *const entry = x87_get_entry(state, 0);
+	entry->reg_idx = reg_idx;
+	entry->node    = node;
 
 	DB((dbg, LEVEL_2, "After PUSH: ")); DEBUG_ONLY(x87_dump_stack(state);)
 }
