@@ -1024,12 +1024,7 @@ static void collect_and_rewire_users(ir_node *store, ir_node *old_val, ir_node *
 
 		/* if the user is scheduled after the store: rewire */
 		if (sched_is_scheduled(user) && sched_comes_after(store, user)) {
-			int i;
-			/* find the input of the user pointing to the old value */
-			for (i = get_irn_arity(user) - 1; i >= 0; i--) {
-				if (get_irn_n(user, i) == old_val)
-					set_irn_n(user, i, new_val);
-			}
+			set_irn_n(user, get_edge_src_pos(edge), new_val);
 		}
 	}
 }
