@@ -1018,10 +1018,6 @@ static void collect_and_rewire_users(ir_node *store, ir_node *old_val, ir_node *
 {
 	foreach_out_edge_safe(old_val, edge) {
 		ir_node *user = get_edge_src_irn(edge);
-
-		if (! user || user == store)
-			continue;
-
 		/* if the user is scheduled after the store: rewire */
 		if (sched_is_scheduled(user) && sched_comes_after(store, user)) {
 			set_irn_n(user, get_edge_src_pos(edge), new_val);
