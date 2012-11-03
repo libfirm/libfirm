@@ -248,6 +248,7 @@ static void register_generated_node_writers(void)
 	register_node_writer(op_{{node.name}}, write_{{node.name}});
 	{%- endfor %}
 }
+
 ''')
 
 def main(argv):

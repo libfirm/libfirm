@@ -439,6 +439,7 @@ static const proj_lookup_t proj_lut[] = {
 	{%- endif %}
 	{%- endfor %}
 };
+
 ''')
 
 irop_template = env.from_string(
