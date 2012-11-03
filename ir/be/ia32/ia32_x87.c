@@ -413,10 +413,8 @@ static inline const arch_register_t *get_st_reg(int index)
  * @param state   the x87 state
  * @param n       the node after the fxch
  * @param pos     exchange st(pos) with st(0)
- *
- * @return the fxch
  */
-static ir_node *x87_create_fxch(x87_state *state, ir_node *n, int pos)
+static void x87_create_fxch(x87_state *state, ir_node *n, int pos)
 {
 	x87_fxch(state, pos);
 
@@ -430,7 +428,6 @@ static ir_node *x87_create_fxch(x87_state *state, ir_node *n, int pos)
 
 	sched_add_before(n, fxch);
 	DB((dbg, LEVEL_1, "<<< %s %s, %s\n", get_irn_opname(fxch), attr->x87[0]->name, attr->x87[2]->name));
-	return fxch;
 }
 
 /* -------------- x87 perm --------------- */
