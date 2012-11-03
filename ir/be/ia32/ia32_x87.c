@@ -1064,10 +1064,9 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p)
 				x87_pop(state);
 				x87_patch_insn(n, op_p);
 
-				ir_node  *const block = get_nodes_block(n);
-				ir_graph *const irg   = get_irn_irg(n);
-				ir_node  *const nomem = get_irg_no_mem(irg);
-				ir_node  *const vfld  = new_bd_ia32_vfld(NULL, block, get_irn_n(n, 0), get_irn_n(n, 1), nomem, mode);
+				ir_node *const block = get_nodes_block(n);
+				ir_node *const mem   = get_irn_Proj_for_mode(n, mode_M);
+				ir_node *const vfld  = new_bd_ia32_vfld(NULL, block, get_irn_n(n, 0), get_irn_n(n, 1), mem, mode);
 
 				/* copy all attributes */
 				set_ia32_frame_ent(vfld, get_ia32_frame_ent(n));
@@ -1080,14 +1079,11 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p)
 
 				ir_node *const rproj = new_r_Proj(vfld, mode, pn_ia32_vfld_res);
 				ir_node *const mproj = new_r_Proj(vfld, mode_M, pn_ia32_vfld_M);
-				ir_node *const mem   = get_irn_Proj_for_mode(n, mode_M);
 
 				arch_set_irn_register(rproj, op2);
 
 				/* reroute all former users of the store memory to the load memory */
-				edges_reroute(mem, mproj);
-				/* set the memory input of the load to the store memory */
-				set_irn_n(vfld, n_ia32_vfld_mem, mem);
+				edges_reroute_except(mem, mproj, vfld);
 
 				sched_add_after(n, vfld);
 				sched_add_after(vfld, rproj);
