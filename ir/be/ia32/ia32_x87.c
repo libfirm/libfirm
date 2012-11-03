@@ -1086,7 +1086,6 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p)
 				edges_reroute_except(mem, mproj, vfld);
 
 				sched_add_after(n, vfld);
-				sched_add_after(vfld, rproj);
 
 				/* rewire all users, scheduled after the store, to the loaded value */
 				collect_and_rewire_users(n, val, rproj);
