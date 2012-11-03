@@ -420,35 +420,33 @@ static inline const arch_register_t *get_st_reg(int index)
 	return &ia32_registers[REG_ST0 + index];
 }
 
-/* -------------- x87 perm --------------- */
-
 /**
- * Creates a fxch for shuffle.
+ * Create a fxch node before another node.
  *
- * @param state     the x87 state
- * @param pos       parameter for fxch
- * @param block     the block were fxch is inserted
+ * @param state   the x87 state
+ * @param n       the node after the fxch
+ * @param pos     exchange st(pos) with st(0)
  *
- * Creates a new fxch node and reroute the user of the old node
- * to the fxch.
- *
- * @return the fxch node
+ * @return the fxch
  */
-static ir_node *x87_fxch_shuffle(x87_state *state, int pos, ir_node *block)
+static ir_node *x87_create_fxch(x87_state *state, ir_node *n, int pos)
 {
-	ir_node         *fxch;
-	ia32_x87_attr_t *attr;
+	x87_fxch(state, pos);
 
-	fxch = new_bd_ia32_fxch(NULL, block);
-	attr = get_ia32_x87_attr(fxch);
+	ir_node         *const block = get_nodes_block(n);
+	ir_node         *const fxch  = new_bd_ia32_fxch(NULL, block);
+	ia32_x87_attr_t *const attr  = get_ia32_x87_attr(fxch);
 	attr->x87[0] = get_st_reg(pos);
 	attr->x87[2] = get_st_reg(0);
 
 	keep_alive(fxch);
 
-	x87_fxch(state, pos);
+	sched_add_before(n, fxch);
+	DB((dbg, LEVEL_1, "<<< %s %s, %s\n", get_irn_opname(fxch), attr->x87[0]->name, attr->x87[2]->name));
 	return fxch;
 }
+
+/* -------------- x87 perm --------------- */
 
 /**
  * Calculate the necessary permutations to reach dst_state.
@@ -557,49 +555,17 @@ static x87_state *x87_shuffle(ir_node *block, x87_state *state, const x87_state 
 	for (ri = 0; ri < n_cycles; ++ri) {
 		if ((cycles[ri] & 1) == 0) {
 			/* this cycle does not include the tos */
-			ir_node *const fxch = x87_fxch_shuffle(state, cycle_idx[ri][0], block);
-			sched_add_before(before, fxch);
+			x87_create_fxch(state, before, cycle_idx[ri][0]);
 		}
 		for (k = 1; cycle_idx[ri][k] != -1; ++k) {
-			ir_node *const fxch = x87_fxch_shuffle(state, cycle_idx[ri][k], block);
-			sched_add_before(before, fxch);
+			x87_create_fxch(state, before, cycle_idx[ri][k]);
 		}
 		if ((cycles[ri] & 1) == 0) {
 			/* this cycle does not include the tos */
-			ir_node *const fxch = x87_fxch_shuffle(state, cycle_idx[ri][0], block);
-			sched_add_before(before, fxch);
+			x87_create_fxch(state, before, cycle_idx[ri][0]);
 		}
 	}
 	return state;
-}
-
-/**
- * Create a fxch node before another node.
- *
- * @param state   the x87 state
- * @param n       the node after the fxch
- * @param pos     exchange st(pos) with st(0)
- *
- * @return the fxch
- */
-static ir_node *x87_create_fxch(x87_state *state, ir_node *n, int pos)
-{
-	ir_node         *fxch;
-	ia32_x87_attr_t *attr;
-	ir_node         *block = get_nodes_block(n);
-
-	x87_fxch(state, pos);
-
-	fxch = new_bd_ia32_fxch(NULL, block);
-	attr = get_ia32_x87_attr(fxch);
-	attr->x87[0] = get_st_reg(pos);
-	attr->x87[2] = get_st_reg(0);
-
-	keep_alive(fxch);
-
-	sched_add_before(n, fxch);
-	DB((dbg, LEVEL_1, "<<< %s %s, %s\n", get_irn_opname(fxch), attr->x87[0]->name, attr->x87[2]->name));
-	return fxch;
 }
 
 /**
