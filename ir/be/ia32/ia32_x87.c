@@ -330,21 +330,6 @@ static blk_state *x87_get_bl_state(x87_simulator *sim, ir_node *block)
 }
 
 /**
- * Creates a new x87 state.
- *
- * @param sim    the x87 simulator handle
- *
- * @return a new x87 state
- */
-static x87_state *x87_alloc_state(x87_simulator *sim)
-{
-	x87_state *res = OALLOC(&sim->obst, x87_state);
-
-	res->sim = sim;
-	return res;
-}
-
-/**
  * Clone a x87 state.
  *
  * @param sim    the x87 simulator handle
@@ -354,8 +339,7 @@ static x87_state *x87_alloc_state(x87_simulator *sim)
  */
 static x87_state *x87_clone_state(x87_simulator *sim, const x87_state *src)
 {
-	x87_state *res = x87_alloc_state(sim);
-
+	x87_state *const res = OALLOC(&sim->obst, x87_state);
 	*res = *src;
 	return res;
 }
