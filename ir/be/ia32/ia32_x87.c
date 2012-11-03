@@ -76,17 +76,17 @@ typedef struct exchange_tmpl {
  * An entry on the simulated x87 stack.
  */
 typedef struct st_entry {
-	int     reg_idx;        /**< the virtual register index of this stack value */
-	ir_node *node;          /**< the node that produced this value */
+	int      reg_idx; /**< the virtual register index of this stack value */
+	ir_node *node;    /**< the node that produced this value */
 } st_entry;
 
 /**
  * The x87 state.
  */
 typedef struct x87_state {
-	st_entry st[N_ia32_st_REGS]; /**< the register stack */
-	int depth;                   /**< the current stack depth */
-	x87_simulator *sim;          /**< The simulator. */
+	st_entry       st[N_ia32_st_REGS]; /**< the register stack */
+	int            depth;              /**< the current stack depth */
+	x87_simulator *sim;                /**< The simulator. */
 } x87_state;
 
 /** An empty state, used for blocks without fp instructions. */
@@ -128,12 +128,12 @@ typedef unsigned char vfp_liveness;
  * The x87 simulator.
  */
 struct x87_simulator {
-	struct obstack obst;        /**< An obstack for fast allocating. */
-	pmap *blk_states;           /**< Map blocks to states. */
-	be_lv_t *lv;                /**< intrablock liveness. */
-	vfp_liveness *live;         /**< Liveness information. */
-	unsigned n_idx;             /**< The cached get_irg_last_idx() result. */
-	waitq *worklist;            /**< Worklist of blocks that must be processed. */
+	struct obstack obst;       /**< An obstack for fast allocating. */
+	pmap          *blk_states; /**< Map blocks to states. */
+	be_lv_t       *lv;         /**< intrablock liveness. */
+	vfp_liveness  *live;       /**< Liveness information. */
+	unsigned       n_idx;      /**< The cached get_irg_last_idx() result. */
+	waitq         *worklist;   /**< Worklist of blocks that must be processed. */
 };
 
 /**
@@ -475,19 +475,18 @@ static x87_state *x87_shuffle(ir_node *block, x87_state *state, const x87_state 
 	assert(state->depth == dst_state->depth);
 
 	/* Some mathematics here:
-	   If we have a cycle of length n that includes the tos,
-	   we need n-1 exchange operations.
-	   We can always add the tos and restore it, so we need
-	   n+1 exchange operations for a cycle not containing the tos.
-	   So, the maximum of needed operations is for a cycle of 7
-	   not including the tos == 8.
-	   This is the same number of ops we would need for using stores,
-	   so exchange is cheaper (we save the loads).
-	   On the other hand, we might need an additional exchange
-	   in the next block to bring one operand on top, so the
-	   number of ops in the first case is identical.
-	   Further, no more than 4 cycles can exists (4 x 2).
-	*/
+	 * If we have a cycle of length n that includes the tos,
+	 * we need n-1 exchange operations.
+	 * We can always add the tos and restore it, so we need
+	 * n+1 exchange operations for a cycle not containing the tos.
+	 * So, the maximum of needed operations is for a cycle of 7
+	 * not including the tos == 8.
+	 * This is the same number of ops we would need for using stores,
+	 * so exchange is cheaper (we save the loads).
+	 * On the other hand, we might need an additional exchange
+	 * in the next block to bring one operand on top, so the
+	 * number of ops in the first case is identical.
+	 * Further, no more than 4 cycles can exists (4 x 2). */
 	all_mask = (1 << (state->depth)) - 1;
 
 	for (n_cycles = 0; all_mask; ++n_cycles) {
@@ -624,14 +623,12 @@ static ir_node *x87_create_fxch(x87_state *state, ir_node *n, int pos)
  */
 static void x87_create_fpush(x87_state *state, ir_node *n, int pos, int op_idx)
 {
-	ir_node               *fpush, *pred = get_irn_n(n, op_idx);
-	ia32_x87_attr_t       *attr;
-	const arch_register_t *out = x87_get_irn_register(pred);
+	ir_node               *const val = get_irn_n(n, op_idx);
+	arch_register_t const *const out = x87_get_irn_register(val);
+	x87_push_dbl(state, arch_register_get_index(out), val);
 
-	x87_push_dbl(state, arch_register_get_index(out), pred);
-
-	fpush = new_bd_ia32_fpush(NULL, get_nodes_block(n));
-	attr  = get_ia32_x87_attr(fpush);
+	ir_node         *const fpush = new_bd_ia32_fpush(NULL, get_nodes_block(n));
+	ia32_x87_attr_t *const attr  = get_ia32_x87_attr(fpush);
 	attr->x87[0] = get_st_reg(pos);
 	attr->x87[2] = get_st_reg(0);
 
@@ -1005,21 +1002,17 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl)
  */
 static int sim_unop(x87_state *state, ir_node *n, ir_op *op)
 {
-	x87_simulator         *sim = state->sim;
-	const arch_register_t *op1 = x87_get_irn_register(get_irn_n(n, 0));
-	const arch_register_t *out = x87_get_irn_register(n);
-	ia32_x87_attr_t *attr;
-	unsigned live = vfp_live_args_after(sim, n, REGMASK(out));
-
+	arch_register_t const *const out  = x87_get_irn_register(n);
+	unsigned               const live = vfp_live_args_after(state->sim, n, REGMASK(out));
 	DB((dbg, LEVEL_1, ">>> %+F -> %s\n", n, out->name));
 	DEBUG_ONLY(vfp_dump_live(live);)
 
-	int op1_idx = x87_on_stack(state, arch_register_get_index(op1));
-
-	if (is_vfp_live(arch_register_get_index(op1), live)) {
+	arch_register_t const *const op1_reg     = x87_get_irn_register(get_irn_n(n, 0));
+	int                    const op1_reg_idx = arch_register_get_index(op1_reg);
+	int                    const op1_idx     = x87_on_stack(state, op1_reg_idx);
+	if (is_vfp_live(op1_reg_idx, live)) {
 		/* push the operand here */
 		x87_create_fpush(state, n, op1_idx, 0);
-		op1_idx = 0;
 	} else {
 		/* operand is dead, bring it to tos */
 		if (op1_idx != 0) {
@@ -1028,10 +1021,9 @@ static int sim_unop(x87_state *state, ir_node *n, ir_op *op)
 	}
 
 	x87_set_tos(state, arch_register_get_index(out), x87_patch_insn(n, op));
-	attr = get_ia32_x87_attr(n);
-	attr->x87[0] = op1 = get_st_reg(0);
-	attr->x87[2] = out = get_st_reg(0);
-	DB((dbg, LEVEL_1, "<<< %s -> %s\n", get_irn_opname(n), out->name));
+	ia32_x87_attr_t *const attr = get_ia32_x87_attr(n);
+	attr->x87[2] = attr->x87[0] = get_st_reg(0);
+	DB((dbg, LEVEL_1, "<<< %s -> %s\n", get_irn_opname(n), attr->x87[2]->name));
 
 	return NO_NODE_ADDED;
 }
@@ -1097,50 +1089,39 @@ static void collect_and_rewire_users(ir_node *store, ir_node *old_val, ir_node *
  */
 static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p)
 {
-	ir_node               *val = get_irn_n(n, n_ia32_vfst_val);
-	const arch_register_t *op2 = x87_get_irn_register(val);
-	unsigned              live = vfp_live_args_after(state->sim, n, 0);
-	int                   insn = NO_NODE_ADDED;
-	ia32_x87_attr_t *attr;
-	int op2_reg_idx, op2_idx, depth;
-	int live_after_node;
-	ir_mode *mode;
-
-	op2_reg_idx = arch_register_get_index(op2);
-	op2_idx = x87_on_stack(state, op2_reg_idx);
-	live_after_node = is_vfp_live(arch_register_get_index(op2), live);
+	ir_node               *const val = get_irn_n(n, n_ia32_vfst_val);
+	arch_register_t const *const op2 = x87_get_irn_register(val);
 	DB((dbg, LEVEL_1, ">>> %+F %s ->\n", n, arch_register_get_name(op2)));
+
+	int            insn            = NO_NODE_ADDED;
+	int      const op2_reg_idx     = arch_register_get_index(op2);
+	int      const op2_idx         = x87_on_stack(state, op2_reg_idx);
+	unsigned const live            = vfp_live_args_after(state->sim, n, 0);
+	int      const live_after_node = is_vfp_live(op2_reg_idx, live);
 	assert(op2_idx >= 0);
-
-	mode  = get_ia32_ls_mode(n);
-	depth = x87_get_depth(state);
-
 	if (live_after_node) {
-		/*
-			Problem: fst doesn't support 96bit modes (spills), only fstp does
-			         fist doesn't support 64bit mode, only fistp
-			Solution:
-				- stack not full: push value and fstp
-				- stack full: fstp value and load again
-			Note that we cannot test on mode_E, because floats might be 96bit ...
-		*/
-		if (get_mode_size_bits(mode) > 64 || (mode_is_int(mode) && get_mode_size_bits(mode) > 32)) {
-			if (depth < N_ia32_st_REGS) {
+		/* Problem: fst doesn't support 80bit modes (spills), only fstp does
+		 *          fist doesn't support 64bit mode, only fistp
+		 * Solution:
+		 *   - stack not full: push value and fstp
+		 *   - stack full: fstp value and load again
+		 * Note that we cannot test on mode_E, because floats might be 80bit ... */
+		ir_mode *const mode = get_ia32_ls_mode(n);
+		if (get_mode_size_bits(mode) > (mode_is_int(mode) ? 32 : 64)) {
+			if (x87_get_depth(state) < N_ia32_st_REGS) {
 				/* ok, we have a free register: push + fstp */
 				x87_create_fpush(state, n, op2_idx, n_ia32_vfst_val);
 				x87_pop(state);
 				x87_patch_insn(n, op_p);
 			} else {
-				ir_node  *vfld, *mem, *block, *rproj, *mproj;
-				ir_graph *irg   = get_irn_irg(n);
-				ir_node  *nomem = get_irg_no_mem(irg);
-
 				/* stack full here: need fstp + load */
 				x87_pop(state);
 				x87_patch_insn(n, op_p);
 
-				block = get_nodes_block(n);
-				vfld  = new_bd_ia32_vfld(NULL, block, get_irn_n(n, 0), get_irn_n(n, 1), nomem, get_ia32_ls_mode(n));
+				ir_node  *const block = get_nodes_block(n);
+				ir_graph *const irg   = get_irn_irg(n);
+				ir_node  *const nomem = get_irg_no_mem(irg);
+				ir_node  *const vfld  = new_bd_ia32_vfld(NULL, block, get_irn_n(n, 0), get_irn_n(n, 1), nomem, mode);
 
 				/* copy all attributes */
 				set_ia32_frame_ent(vfld, get_ia32_frame_ent(n));
@@ -1149,11 +1130,11 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p)
 				set_ia32_op_type(vfld, ia32_AddrModeS);
 				add_ia32_am_offs_int(vfld, get_ia32_am_offs_int(n));
 				set_ia32_am_sc(vfld, get_ia32_am_sc(n));
-				set_ia32_ls_mode(vfld, get_ia32_ls_mode(n));
+				set_ia32_ls_mode(vfld, mode);
 
-				rproj = new_r_Proj(vfld, get_ia32_ls_mode(vfld), pn_ia32_vfld_res);
-				mproj = new_r_Proj(vfld, mode_M, pn_ia32_vfld_M);
-				mem   = get_irn_Proj_for_mode(n, mode_M);
+				ir_node *const rproj = new_r_Proj(vfld, mode, pn_ia32_vfld_res);
+				ir_node *const mproj = new_r_Proj(vfld, mode_M, pn_ia32_vfld_M);
+				ir_node *const mem   = get_irn_Proj_for_mode(n, mode_M);
 
 				assert(mem && "Store memory not found");
 
@@ -1189,9 +1170,9 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p)
 		x87_patch_insn(n, op_p);
 	}
 
-	attr = get_ia32_x87_attr(n);
-	attr->x87[1] = op2 = get_st_reg(0);
-	DB((dbg, LEVEL_1, "<<< %s %s ->\n", get_irn_opname(n), arch_register_get_name(op2)));
+	ia32_x87_attr_t *const attr = get_ia32_x87_attr(n);
+	attr->x87[1] = get_st_reg(0);
+	DB((dbg, LEVEL_1, "<<< %s %s ->\n", get_irn_opname(n), arch_register_get_name(attr->x87[1])));
 
 	return insn;
 }
@@ -1696,33 +1677,23 @@ static ir_node *create_Copy(x87_state *state, ir_node *n)
  */
 static int sim_Copy(x87_state *state, ir_node *n)
 {
-	ir_node                     *pred;
-	const arch_register_t       *out;
-	const arch_register_t       *op1;
-	const arch_register_class_t *cls;
-	ir_node                     *node, *next;
-	int                         op1_idx, out_idx;
-	unsigned                    live;
-
-	cls = arch_get_irn_reg_class(n);
+	arch_register_class_t const *const cls = arch_get_irn_reg_class(n);
 	if (cls != &ia32_reg_classes[CLASS_ia32_vfp])
-		return 0;
+		return NO_NODE_ADDED;
 
-	pred = be_get_Copy_op(n);
-	out  = x87_get_irn_register(n);
-	op1  = x87_get_irn_register(pred);
-	live = vfp_live_args_after(state->sim, n, REGMASK(out));
+	ir_node               *const pred = be_get_Copy_op(n);
+	arch_register_t const *const op1  = x87_get_irn_register(pred);
+	arch_register_t const *const out  = x87_get_irn_register(n);
+	unsigned               const live = vfp_live_args_after(state->sim, n, REGMASK(out));
 
 	DB((dbg, LEVEL_1, ">>> %+F %s -> %s\n", n,
 		arch_register_get_name(op1), arch_register_get_name(out)));
 	DEBUG_ONLY(vfp_dump_live(live);)
 
-	op1_idx = x87_on_stack(state, arch_register_get_index(op1));
-
 	if (is_vfp_live(arch_register_get_index(op1), live)) {
 		/* Operand is still live, a real copy. We need here an fpush that can
 		   hold a a register, so use the fpushCopy or recreate constants */
-		node = create_Copy(state, n);
+		ir_node *const node = create_Copy(state, n);
 
 		/* We have to make sure the old value doesn't go dead (which can happen
 		 * when we recreate constants). As the simulator expected that value in
@@ -1730,7 +1701,7 @@ static int sim_Copy(x87_state *state, ir_node *n)
 		 * instruction, but we would have to rerun all the simulation to get
 		 * this correct...
 		 */
-		next = sched_next(n);
+		ir_node *const next = sched_next(n);
 		sched_remove(n);
 		exchange(n, node);
 		sched_add_before(next, node);
@@ -1741,8 +1712,8 @@ static int sim_Copy(x87_state *state, ir_node *n)
 
 		DB((dbg, LEVEL_1, "<<< %+F %s -> ?\n", node, op1->name));
 	} else {
-		out_idx = x87_on_stack(state, arch_register_get_index(out));
-
+		int const op1_idx = x87_on_stack(state, arch_register_get_index(op1));
+		int const out_idx = x87_on_stack(state, arch_register_get_index(out));
 		if (out_idx >= 0 && out_idx != op1_idx) {
 			/* Matze: out already on stack? how can this happen? */
 			panic("invalid stack state");
@@ -1837,37 +1808,24 @@ static int sim_Asm(x87_state *const state, ir_node *const n)
  */
 static int sim_Call(x87_state *state, ir_node *n)
 {
-	ir_type *call_tp = get_ia32_call_attr_const(n)->call_tp;
-	ir_type *res_type;
-	ir_mode *mode;
-	ir_node *resproj;
-	const arch_register_t *reg;
-
 	DB((dbg, LEVEL_1, ">>> %+F\n", n));
 
 	/* at the begin of a call the x87 state should be empty */
 	assert(state->depth == 0 && "stack not empty before call");
 
-	if (get_method_n_ress(call_tp) <= 0)
-		goto end_call;
-
-	/*
-	 * If the called function returns a float, it is returned in st(0).
-	 * This even happens if the return value is NOT used.
-	 * Moreover, only one return result is supported.
-	 */
-	res_type = get_method_res_type(call_tp, 0);
-	mode     = get_type_mode(res_type);
-
-	if (mode == NULL || !mode_is_float(mode))
-		goto end_call;
-
-	resproj = get_call_result_proj(n);
-
-	reg = x87_get_irn_register(resproj);
-	x87_push(state, arch_register_get_index(reg), resproj);
-
-end_call:
+	ir_type *const call_tp = get_ia32_call_attr_const(n)->call_tp;
+	if (get_method_n_ress(call_tp) != 0) {
+		/* If the called function returns a float, it is returned in st(0).
+		 * This even happens if the return value is NOT used.
+		 * Moreover, only one return result is supported. */
+		ir_type *const res_type = get_method_res_type(call_tp, 0);
+		ir_mode *const mode     = get_type_mode(res_type);
+		if (mode && mode_is_float(mode)) {
+			ir_node               *const resproj = get_call_result_proj(n);
+			arch_register_t const *const reg     = x87_get_irn_register(resproj);
+			x87_push(state, arch_register_get_index(reg), resproj);
+		}
+	}
 	DB((dbg, LEVEL_1, "Stack after: "));
 	DEBUG_ONLY(x87_dump_stack(state);)
 
