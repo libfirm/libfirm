@@ -380,7 +380,7 @@ static ir_node *x87_patch_insn(ir_node *n, ir_op *op)
  *
  * @param n  the mode_T node
  * @param m  the desired mode of the Proj
- * @return The first Proj of mode @p m found or NULL.
+ * @return The first Proj of mode @p m found.
  */
 static ir_node *get_irn_Proj_for_mode(ir_node *n, ir_mode *m)
 {
@@ -392,7 +392,7 @@ static ir_node *get_irn_Proj_for_mode(ir_node *n, ir_mode *m)
 			return proj;
 	}
 
-	return NULL;
+	panic("Proj not found");
 }
 
 /**
@@ -1081,8 +1081,6 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p)
 				ir_node *const rproj = new_r_Proj(vfld, mode, pn_ia32_vfld_res);
 				ir_node *const mproj = new_r_Proj(vfld, mode_M, pn_ia32_vfld_M);
 				ir_node *const mem   = get_irn_Proj_for_mode(n, mode_M);
-
-				assert(mem && "Store memory not found");
 
 				arch_set_irn_register(rproj, op2);
 
