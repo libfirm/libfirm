@@ -470,7 +470,6 @@ static x87_state *x87_shuffle(ir_node *block, x87_state *state, const x87_state 
 	int      i, n_cycles, k, ri;
 	unsigned cycles[4], all_mask;
 	char     cycle_idx[4][8];
-	ir_node  *fxch, *before, *after;
 
 	assert(state->depth == dst_state->depth);
 
@@ -546,39 +545,29 @@ static x87_state *x87_shuffle(ir_node *block, x87_state *state, const x87_state 
 	}
 #endif
 
-	after = NULL;
-
 	/*
 	 * Find the place node must be insert.
 	 * We have only one successor block, so the last instruction should
 	 * be a jump.
 	 */
-	before = sched_last(block);
+	ir_node *const before = sched_last(block);
 	assert(is_cfop(before));
 
 	/* now do the permutations */
 	for (ri = 0; ri < n_cycles; ++ri) {
 		if ((cycles[ri] & 1) == 0) {
 			/* this cycle does not include the tos */
-			fxch = x87_fxch_shuffle(state, cycle_idx[ri][0], block);
-			if (after)
-				sched_add_after(after, fxch);
-			else
-				sched_add_before(before, fxch);
-			after = fxch;
+			ir_node *const fxch = x87_fxch_shuffle(state, cycle_idx[ri][0], block);
+			sched_add_before(before, fxch);
 		}
 		for (k = 1; cycle_idx[ri][k] != -1; ++k) {
-			fxch = x87_fxch_shuffle(state, cycle_idx[ri][k], block);
-			if (after)
-				sched_add_after(after, fxch);
-			else
-				sched_add_before(before, fxch);
-			after = fxch;
+			ir_node *const fxch = x87_fxch_shuffle(state, cycle_idx[ri][k], block);
+			sched_add_before(before, fxch);
 		}
 		if ((cycles[ri] & 1) == 0) {
 			/* this cycle does not include the tos */
-			fxch = x87_fxch_shuffle(state, cycle_idx[ri][0], block);
-			sched_add_after(after, fxch);
+			ir_node *const fxch = x87_fxch_shuffle(state, cycle_idx[ri][0], block);
+			sched_add_before(before, fxch);
 		}
 	}
 	return state;
