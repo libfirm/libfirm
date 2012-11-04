@@ -1805,7 +1805,7 @@ static ir_node *get_call_result_proj(ir_node *call)
 			return proj;
 	}
 
-	return NULL;
+	panic("result Proj missing");
 }
 
 static int sim_Asm(x87_state *const state, ir_node *const n)
@@ -1863,7 +1863,6 @@ static int sim_Call(x87_state *state, ir_node *n)
 		goto end_call;
 
 	resproj = get_call_result_proj(n);
-	assert(resproj != NULL);
 
 	reg = x87_get_irn_register(resproj);
 	x87_push(state, arch_register_get_index(reg), resproj);
