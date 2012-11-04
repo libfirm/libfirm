@@ -108,8 +108,6 @@ enum {
 ir_node *be_new_Copy(ir_node *block, ir_node *in);
 /** Returns the Copy Argument. */
 ir_node *be_get_Copy_op(const ir_node *cpy);
-/** Sets the Copy Argument. */
-void be_set_Copy_op(ir_node *cpy, ir_node *op);
 
 /**
  * Make a new Perm node.

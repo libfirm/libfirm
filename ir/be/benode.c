@@ -443,11 +443,6 @@ ir_node *be_get_Copy_op(const ir_node *cpy)
 	return get_irn_n(cpy, n_be_Copy_op);
 }
 
-void be_set_Copy_op(ir_node *cpy, ir_node *op)
-{
-	set_irn_n(cpy, n_be_Copy_op, op);
-}
-
 ir_node *be_new_Keep(ir_node *block, int n, ir_node *in[])
 {
 	int i;
