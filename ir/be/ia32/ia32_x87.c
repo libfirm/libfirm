@@ -1512,8 +1512,6 @@ static void keep_float_node_alive(ir_node *node)
 {
 	ir_node *block = get_nodes_block(node);
 	ir_node *keep  = be_new_Keep(block, 1, &node);
-
-	assert(sched_is_scheduled(node));
 	sched_add_after(node, keep);
 }
 
