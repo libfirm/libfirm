@@ -543,7 +543,7 @@ static void peephole_sparc_RestoreZero(ir_node *node)
 			continue;
 
 		if (be_is_Copy(schedpoint) && be_can_move_down(heights, schedpoint, node)) {
-			ir_node *op = get_irn_n(schedpoint, n_be_Copy_op);
+			ir_node *const op = be_get_Copy_op(schedpoint);
 			replace_with_restore_imm(node, schedpoint, op, NULL, 0);
 		} else if (is_sparc_Or(schedpoint) &&
 		           arch_get_irn_flags(schedpoint) & ((arch_irn_flags_t)sparc_arch_irn_flag_immediate_form) &&
