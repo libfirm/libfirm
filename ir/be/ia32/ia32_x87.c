@@ -1634,50 +1634,9 @@ static int sim_Copy(x87_state *state, ir_node *n)
 
 		DB((dbg, LEVEL_1, "<<< %+F %s -> ?\n", node, op1->name));
 	} else {
+		/* Just a virtual copy. */
 		int const op1_idx = x87_on_stack(state, arch_register_get_index(op1));
-		int const out_idx = x87_on_stack(state, arch_register_get_index(out));
-		if (out_idx >= 0 && out_idx != op1_idx) {
-			/* Matze: out already on stack? how can this happen? */
-			panic("invalid stack state");
-
-#if 0
-			/* op1 must be killed and placed where out is */
-			if (out_idx == 0) {
-				ia32_x87_attr_t *attr;
-				/* best case, simple remove and rename */
-				x87_patch_insn(n, op_ia32_Pop);
-				attr = get_ia32_x87_attr(n);
-				attr->x87[0] = op1 = get_st_reg(0);
-
-				x87_pop(state);
-				x87_set_st(state, arch_register_get_index(out), n, op1_idx - 1);
-			} else {
-				ia32_x87_attr_t *attr;
-				/* move op1 to tos, store and pop it */
-				if (op1_idx != 0) {
-					x87_create_fxch(state, n, op1_idx);
-					op1_idx = 0;
-				}
-				x87_patch_insn(n, op_ia32_Pop);
-				attr = get_ia32_x87_attr(n);
-				attr->x87[0] = op1 = get_st_reg(out_idx);
-
-				x87_pop(state);
-				x87_set_st(state, arch_register_get_index(out), n, out_idx - 1);
-			}
-			DB((dbg, LEVEL_1, "<<< %+F %s\n", n, op1->name));
-#endif
-		} else {
-			/* just a virtual copy */
-			x87_set_st(state, arch_register_get_index(out), pred, op1_idx);
-			/* don't remove the node to keep the verifier quiet :),
-			   the emitter won't emit any code for the node */
-#if 0
-			sched_remove(n);
-			DB((dbg, LEVEL_1, "<<< KILLED %s\n", get_irn_opname(n)));
-			exchange(n, pred);
-#endif
-		}
+		x87_set_st(state, arch_register_get_index(out), n, op1_idx);
 	}
 	return NO_NODE_ADDED;
 }
