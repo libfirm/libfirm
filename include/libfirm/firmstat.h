@@ -95,7 +95,7 @@ enum firmstat_optimizations_t {
 	FS_OPT_MUX_TO_MIN,                        /**< Mux(a < b, a, b) = Min(a,b) */
 	FS_OPT_MUX_TO_MAX,                        /**< Mux(a > b, a, b) = Max(a,b) */
 	FS_OPT_MUX_TO_BITOP,                      /**< Mux((a & 2^x) ==/!= 0, 2^x, 0) = (a & 2^x) (xor 2^x) */
-	FS_OPT_IDEM_UNARY,                        /**< Idempotent unary operation */
+	FS_OPT_INVOLUTION,                        /**< OP(OP(x)) = x */
 	FS_OPT_MINUS_NOT,                         /**< -(~x) = x + 1 */
 	FS_OPT_NOT_MINUS_1,                       /**< ~(x - 1) = -x */
 	FS_OPT_NOT_PLUS_1,                        /**< ~x + 1 = -x */
