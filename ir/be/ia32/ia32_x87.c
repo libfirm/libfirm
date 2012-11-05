@@ -202,18 +202,6 @@ static void x87_set_st(x87_state *state, int reg_idx, ir_node *node, int pos)
 }
 
 /**
- * Set the tos virtual register.
- *
- * @param state    the x87 state
- * @param reg_idx  the vfp register index that should be set
- * @param node     the IR node that produces the value of the vfp register
- */
-static void x87_set_tos(x87_state *state, int reg_idx, ir_node *node)
-{
-	x87_set_st(state, reg_idx, node, 0);
-}
-
-/**
  * Swap st(0) with st(pos).
  *
  * @param state    the x87 state
@@ -960,7 +948,7 @@ static int sim_unop(x87_state *state, ir_node *n, ir_op *op)
 		}
 	}
 
-	x87_set_tos(state, out_reg_idx, x87_patch_insn(n, op));
+	x87_set_st(state, out_reg_idx, x87_patch_insn(n, op), 0);
 	ia32_x87_attr_t *const attr = get_ia32_x87_attr(n);
 	attr->x87[2] = attr->x87[0] = get_st_reg(0);
 	DB((dbg, LEVEL_1, "<<< %s -> %s\n", get_irn_opname(n), attr->x87[2]->name));
