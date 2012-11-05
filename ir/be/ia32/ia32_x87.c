@@ -1853,6 +1853,25 @@ static ir_node *get_call_result_proj(ir_node *call)
 	return NULL;
 }
 
+static int sim_Asm(x87_state *const state, ir_node *const n)
+{
+	(void)state;
+
+	for (size_t i = get_irn_arity(n); i-- != 0;) {
+		arch_register_req_t const *const req = arch_get_irn_register_req_in(n, i);
+		if (req->cls == &ia32_reg_classes[CLASS_ia32_vfp])
+			panic("cannot handle %+F with x87 constraints", n);
+	}
+
+	for (size_t i = arch_get_irn_n_outs(n); i-- != 0;) {
+		arch_register_req_t const *const req = arch_get_irn_register_req_out(n, i);
+		if (req->cls == &ia32_reg_classes[CLASS_ia32_vfp])
+			panic("cannot handle %+F with x87 constraints", n);
+	}
+
+	return NO_NODE_ADDED;
+}
+
 /**
  * Simulate a ia32_Call.
  *
@@ -2192,6 +2211,7 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg)
 	/* set the generic function pointer of instruction we must simulate */
 	ir_clear_opcodes_generic_func();
 
+	register_sim(op_ia32_Asm,          sim_Asm);
 	register_sim(op_ia32_Call,         sim_Call);
 	register_sim(op_ia32_vfld,         sim_fld);
 	register_sim(op_ia32_vfild,        sim_fild);
