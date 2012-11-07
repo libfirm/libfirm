@@ -278,14 +278,10 @@ ir_node *new_rd_{{node.name}}(
 		{{node|nodeparameters}}
 	{% endfilter %})
 {
-	ir_node *res;
-	{%- if node.arity == "dynamic" %}
-	int      i;
-	{%- endif %}
 	{{node|irgassign}}
 	{{node|insdecl}}
 
-	res = new_ir_node(
+	ir_node *res = new_ir_node(
 		{%- filter arguments %}
 			dbgi
 			irg
@@ -295,7 +291,7 @@ ir_node *new_rd_{{node.name}}(
 			{{node|arity_and_ins}}
 		{% endfilter %});
 	{%- if node.arity == "dynamic" %}
-	for (i = 0; i < arity; ++i) {
+	for (int i = 0; i < arity; ++i) {
 		add_irn_n(res, in[i]);
 	}
 	{%- endif %}
@@ -335,9 +331,8 @@ ir_node *new_d_{{node.name}}(
 			{{node|nodeparameters}}
 		{% endfilter %})
 {
-	ir_node *res;
 	assert(irg_is_constrained(current_ir_graph, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
-	res = new_rd_{{node.name}}(
+	ir_node *res = new_rd_{{node.name}}(
 		{%- filter parameters %}
 			dbgi
 			{{node|curblock}}
