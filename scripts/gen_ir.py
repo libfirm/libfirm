@@ -367,7 +367,6 @@ irnode_h_template = env.from_string(
 {%- for node in nodes|isnot('custom_is') %}
 static inline int is_{{node.name}}_(const ir_node *node)
 {
-	assert(node != NULL);
 	return get_irn_op_(node) == op_{{node.name}};
 }
 {%- endfor -%}
