@@ -708,7 +708,7 @@ ir_node *new_r_Anchor(ir_graph *irg)
 	 * get_Block_irg for anchor */
 	res->in[0] = res;
 
-	/* we can't have NULL inputs so reference ourselfes for now */
+	/* we can't have NULL inputs so reference ourselves for now */
 	for (i = 0; i <= (size_t)anchor_last; ++i) {
 		set_irn_n(res, i, res);
 	}

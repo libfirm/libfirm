@@ -181,7 +181,7 @@ class Bad:
 	that a control flow edge can never be executed.
 
 	The gigo optimisations ensures that nodes with Bad as their block, get
-	replaced by Bad themselfes. Nodes with at least 1 Bad input get exchanged
+	replaced by Bad themselves. Nodes with at least 1 Bad input get exchanged
 	with Bad too. Exception to this rule are Block, Phi, Tuple and End node;
 	This is because removing inputs from a Block is hairy operation (requiring,
 	Phis to be shortened too for example). So instead of removing block inputs
