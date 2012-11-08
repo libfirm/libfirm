@@ -777,11 +777,6 @@ class Phi:
 	attr_struct   = "phi_attr"
 	init          = '''
 	res->attr.phi.u.backedge = new_backedge_arr(irg->obst, arity);'''
-	init_after_opt = '''
-	/* Memory Phis in endless loops must be kept alive.
-	   As we can't distinguish these easily we keep all of them alive. */
-	if (is_Phi(res) && mode == mode_M)
-		add_End_keepalive(get_irg_end(irg), res);'''
 	customSerializer = True
 
 @op

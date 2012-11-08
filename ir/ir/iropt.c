@@ -3346,8 +3346,6 @@ static ir_node *transform_node_Cond(ir_node *n)
 			set_Tuple_pred(n, pn_Cond_false, jmp);
 			set_Tuple_pred(n, pn_Cond_true, new_r_Bad(irg, mode_X));
 		}
-		/* We might generate an endless loop, so keep it alive. */
-		add_End_keepalive(get_irg_end(irg), blk);
 		clear_irg_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE);
 	}
 	return n;
