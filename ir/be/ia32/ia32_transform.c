@@ -1978,7 +1978,6 @@ static ir_node *gen_Minus(ir_node *node)
 			set_ia32_op_type(new_node, ia32_AddrModeS);
 			set_ia32_ls_mode(new_node, mode);
 		} else {
-			check_x87_floatmode(mode);
 			new_node = new_bd_ia32_vfchs(dbgi, block, new_op);
 		}
 	} else {
@@ -2000,7 +1999,7 @@ static ir_node *gen_Not(ir_node *node)
 	ir_node *op = get_Not_op(node);
 
 	assert(get_irn_mode(node) != mode_b); /* should be lowered already */
-	assert (! mode_is_float(get_irn_mode(node)));
+	assert(!mode_is_float(get_irn_mode(node)));
 
 	return gen_unop(node, op, new_bd_ia32_Not, match_mode_neutral);
 }
