@@ -61,15 +61,18 @@ static inline int imin(int a, int b) { return a < b ? a : b; }
 static bool is_optimizable_node(const ir_node *node, ir_mode *dest_mode)
 {
 	switch (get_irn_opcode(node)) {
-	case iro_Add:
+	case iro_Minus:
+	case iro_Phi:
 	case iro_And:
 	case iro_Eor:
-	case iro_Minus:
-	case iro_Mul:
-	case iro_Not:
 	case iro_Or:
-	case iro_Phi:
+	case iro_Not:
+		return true;
+	case iro_Add:
+	case iro_Mul:
 	case iro_Sub:
+		if (mode_is_float(get_irn_mode(node)))
+			return false;
 		return true;
 	case iro_Shl: {
 		int modulo_shift = get_mode_modulo_shift(dest_mode);
@@ -90,12 +93,11 @@ static ir_tarval* conv_const_tv(const ir_node* cnst, ir_mode* dest_mode)
 	return tarval_convert_to(get_Const_tarval(cnst), dest_mode);
 }
 
-static int is_downconv(ir_mode *src_mode, ir_mode *dest_mode)
+static bool is_downconv(ir_mode *src_mode, ir_mode *dest_mode)
 {
-	return
-		mode_is_int(src_mode) &&
-		mode_is_int(dest_mode) &&
-		get_mode_size_bits(dest_mode) <= get_mode_size_bits(src_mode);
+	return ((mode_is_int(src_mode) && mode_is_int(dest_mode))
+		|| (mode_is_float(src_mode) && mode_is_float(dest_mode)))
+		&& get_mode_size_bits(dest_mode) <= get_mode_size_bits(src_mode);
 }
 
 static int get_conv_costs(const ir_node *node, ir_mode *dest_mode)
