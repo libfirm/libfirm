@@ -686,6 +686,25 @@ ir_node *ia32_skip_downconv(ir_node *node)
 	return node;
 }
 
+static bool is_float_downconv(const ir_node *node)
+{
+	if (!is_Conv(node))
+		return false;
+	ir_node *pred      = get_Conv_op(node);
+	ir_mode *pred_mode = get_irn_mode(pred);
+	ir_mode *mode      = get_irn_mode(node);
+	return mode_is_float(pred_mode)
+	    && get_mode_size_bits(mode) <= get_mode_size_bits(pred_mode);
+}
+
+static ir_node *ia32_skip_float_downconv(ir_node *node)
+{
+	while (is_float_downconv(node)) {
+		node = get_Conv_op(node);
+	}
+	return node;
+}
+
 static bool is_sameconv(ir_node *node)
 {
 	ir_mode *src_mode;
@@ -2747,11 +2766,13 @@ static ir_node *gen_general_Store(ir_node *node)
 	addr.mem = be_transform_node(mem);
 
 	if (mode_is_float(mode)) {
-		new_val = be_transform_node(val);
 		if (ia32_cg_config.use_sse2) {
+			new_val  = be_transform_node(val);
 			new_node = new_bd_ia32_xStore(dbgi, new_block, addr.base,
 			                              addr.index, addr.mem, new_val);
 		} else {
+			val      = ia32_skip_float_downconv(val);
+			new_val  = be_transform_node(val);
 			new_node = new_bd_ia32_vfst(dbgi, new_block, addr.base,
 			                            addr.index, addr.mem, new_val, mode);
 		}
