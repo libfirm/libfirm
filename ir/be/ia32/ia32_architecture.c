@@ -713,6 +713,9 @@ static cpu_arch_features auto_detect_AMD(x86_cpu_info_t const *info)
 		break;
 	case 0x10:
 	case 0x11: /* AMD Family 11h */
+	case 0x12: /* AMD Family 12h */
+	case 0x14: /* AMD Family 14h */
+	case 0x15: /* AMD Family 15h */
 		auto_arch = cpu_k10_generic;
 		break;
 	default:
