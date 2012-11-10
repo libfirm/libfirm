@@ -289,10 +289,7 @@ static void peephole_ia32_Test(ir_node *node)
 			/* If there are other users, reroute them to result proj */
 			if (get_irn_n_edges(op) != 2) {
 				ir_node *res = new_r_Proj(op, mode_Iu, pn_ia32_res);
-
-				edges_reroute(op, res);
-				/* Reattach the result proj to left */
-				set_Proj_pred(res, op);
+				edges_reroute_except(op, res, res);
 			}
 		} else {
 			if (get_irn_n_edges(left) == 2)

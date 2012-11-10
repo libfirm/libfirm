@@ -1240,8 +1240,7 @@ static void introduce_prolog_epilog(ir_graph *irg)
 		ir_node *mem        = get_irg_initial_mem(irg);
 		ir_node *noreg      = ia32_new_NoReg_gp(irg);
 		ir_node *initial_bp = be_get_initial_reg_value(irg, bp);
-		ir_node *curr_bp    = initial_bp;
-		ir_node *push       = new_bd_ia32_Push(NULL, block, noreg, noreg, mem, curr_bp, curr_sp);
+		ir_node *push       = new_bd_ia32_Push(NULL, block, noreg, noreg, mem, initial_bp, initial_sp);
 		ir_node *incsp;
 
 		curr_sp = new_r_Proj(push, mode_gp, pn_ia32_Push_stack);
@@ -1249,18 +1248,16 @@ static void introduce_prolog_epilog(ir_graph *irg)
 		sched_add_after(start, push);
 
 		/* move esp to ebp */
-		curr_bp = be_new_Copy(block, curr_sp);
+		ir_node *const curr_bp = be_new_Copy(block, curr_sp);
 		sched_add_after(push, curr_bp);
 		be_set_constr_single_reg_out(curr_bp, 0, bp, arch_register_req_type_ignore);
 		curr_sp = be_new_CopyKeep_single(block, curr_sp, curr_bp);
 		sched_add_after(curr_bp, curr_sp);
 		be_set_constr_single_reg_out(curr_sp, 0, sp, arch_register_req_type_produces_sp);
-		edges_reroute(initial_bp, curr_bp);
-		set_irn_n(push, n_ia32_Push_val, initial_bp);
+		edges_reroute_except(initial_bp, curr_bp, push);
 
 		incsp = be_new_IncSP(sp, block, curr_sp, frame_size, 0);
-		edges_reroute(initial_sp, incsp);
-		set_irn_n(push, n_ia32_Push_stack, initial_sp);
+		edges_reroute_except(initial_sp, incsp, push);
 		sched_add_after(curr_sp, incsp);
 
 		/* make sure the initial IncSP is really used by someone */
@@ -1272,9 +1269,8 @@ static void introduce_prolog_epilog(ir_graph *irg)
 
 		layout->initial_bias = -4;
 	} else {
-		ir_node *incsp = be_new_IncSP(sp, block, curr_sp, frame_size, 0);
-		edges_reroute(initial_sp, incsp);
-		be_set_IncSP_pred(incsp, curr_sp);
+		ir_node *const incsp = be_new_IncSP(sp, block, initial_sp, frame_size, 0);
+		edges_reroute_except(initial_sp, incsp, incsp);
 		sched_add_after(start, incsp);
 	}
 
