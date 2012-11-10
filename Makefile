@@ -29,7 +29,9 @@ DLLEXT ?= .so
 CFLAGS_all        = -std=c99 -fPIC -DHAVE_FIRM_REVISION_H
 CFLAGS_debug      = $(CFLAGS_all) -O0 -g3 -DDEBUG_libfirm
 CFLAGS_profile    = $(CFLAGS_all) -O3 -pg -DNDEBUG -fno-inline
-LINKFLAGS_profile = -pg
+CFLAGS_coverage   = $(CFLAGS_all) -O0 -fprofile-arcs -ftest-coverage -DDEBUG_libfirm
+LINKFLAGS_profile  = -pg
+LINKFLAGS_coverage = -fprofile-arcs -ftest-coverage
 CFLAGS_optimize   = $(CFLAGS_all) -O3 -DNDEBUG
 
 # General flags
