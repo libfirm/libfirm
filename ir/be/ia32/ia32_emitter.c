@@ -507,14 +507,10 @@ end_of_mods:
 						} else {
 							assert(get_ia32_op_type(node) == ia32_Normal);
 							ia32_x87_attr_t const *const x87_attr = get_ia32_x87_attr_const(node);
-							arch_register_t const *const in1      = x87_attr->x87[0];
+							arch_register_t const *const out      = x87_attr->x87[2];
 							arch_register_t const *      in       = x87_attr->x87[1];
-							arch_register_t const *      out      = x87_attr->x87[2];
-							if (out == NULL) {
-								out = in1;
-							} else if (out == in) {
-								in = in1;
-							}
+							if (out == in)
+								in = x87_attr->x87[0];
 							be_emit_irprintf("%%%s, %%%s", arch_register_get_name(in), arch_register_get_name(out));
 							break;
 						}
@@ -3241,16 +3237,11 @@ static void bemit_copybi(const ir_node *node)
 static void bemit_fbinop(const ir_node *node, unsigned code, unsigned code_to)
 {
 	if (get_ia32_op_type(node) == ia32_Normal) {
-		const ia32_x87_attr_t *x87_attr = get_ia32_x87_attr_const(node);
-		const arch_register_t *in1      = x87_attr->x87[0];
-		const arch_register_t *in       = x87_attr->x87[1];
-		const arch_register_t *out      = x87_attr->x87[2];
-
-		if (out == NULL) {
-			out = in1;
-		} else if (out == in) {
-			in = in1;
-		}
+		ia32_x87_attr_t const *const x87_attr = get_ia32_x87_attr_const(node);
+		arch_register_t const *const out      = x87_attr->x87[2];
+		arch_register_t const *      in       = x87_attr->x87[1];
+		if (out == in)
+			in = x87_attr->x87[0];
 
 		if (out->index == 0) {
 			bemit8(0xD8);
