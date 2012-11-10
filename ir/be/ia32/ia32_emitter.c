@@ -575,7 +575,7 @@ emit_AM:
 				break;
 
 			case 'D':
-				if (*fmt < '0' || '9' <= *fmt)
+				if (*fmt < '0' || '9' < *fmt)
 					goto unknown;
 				reg = arch_get_irn_register_out(node, *fmt++ - '0');
 				goto emit_R;
@@ -587,7 +587,7 @@ emit_AM:
 				} else if (*fmt == 'X') {
 					++fmt;
 					ia32_emit_xmm_mode_suffix(node);
-				} else if ('0' <= *fmt && *fmt <= '3') {
+				} else if ('0' <= *fmt && *fmt <= '2') {
 					const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
 					be_emit_char('%');
 					be_emit_string(attr->x87[*fmt++ - '0']->name);
@@ -657,7 +657,7 @@ emit_S:
 			case 'S': {
 				unsigned pos;
 
-				if (*fmt < '0' || '9' <= *fmt)
+				if (*fmt < '0' || '9' < *fmt)
 					goto unknown;
 
 				pos = *fmt++ - '0';
