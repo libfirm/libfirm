@@ -3690,6 +3690,7 @@ static void ia32_register_binary_emitters(void)
 
 	/* ignore the following nodes */
 	register_emitter(op_ia32_ProduceVal,   emit_Nothing);
+	register_emitter(op_ia32_Unknown,      emit_Nothing);
 	register_emitter(op_be_Keep,           emit_Nothing);
 	register_emitter(op_be_Start,          emit_Nothing);
 	register_emitter(op_Phi,               emit_Nothing);
