@@ -2986,6 +2986,12 @@ static void bemit_conv_i2i(const ir_node *node)
 	bemit_0f_unop_reg(node, opcode, n_ia32_Conv_I2I_val);
 }
 
+static void bemit_popcnt(ir_node const *const node)
+{
+	bemit8(0xF3);
+	bemit_0f_unop_reg(node, 0xB8, n_ia32_Popcnt_operand);
+}
+
 /**
  * Emit a Push.
  */
@@ -3648,6 +3654,7 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_Pop,           bemit_pop);
 	register_emitter(op_ia32_PopEbp,        bemit_pop);
 	register_emitter(op_ia32_PopMem,        bemit_popmem);
+	register_emitter(op_ia32_Popcnt,        bemit_popcnt);
 	register_emitter(op_ia32_Push,          bemit_push);
 	register_emitter(op_ia32_RepPrefix,     bemit_rep);
 	register_emitter(op_ia32_Rol,           bemit_rol);
