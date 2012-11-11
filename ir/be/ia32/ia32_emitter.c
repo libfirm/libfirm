@@ -2449,6 +2449,14 @@ static void bemit_shrd(const ir_node *node)
 	}
 }
 
+static void bemit_sbb0(ir_node const *const node)
+{
+	arch_register_t const *const out = arch_get_irn_register_out(node, pn_ia32_Sbb0_res);
+	unsigned char          const reg = reg_gp_map[out->index];
+	bemit8(0x1B);
+	bemit8(MOD_REG | ENC_REG(reg) | ENC_RM(reg));
+}
+
 /**
  * binary emitter for setcc.
  */
@@ -3643,6 +3651,7 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_Sar,           bemit_sar);
 	register_emitter(op_ia32_SarMem,        bemit_sarmem);
 	register_emitter(op_ia32_Sbb,           bemit_sbb);
+	register_emitter(op_ia32_Sbb0,          bemit_sbb0);
 	register_emitter(op_ia32_Setcc,         bemit_setcc);
 	register_emitter(op_ia32_Shl,           bemit_shl);
 	register_emitter(op_ia32_ShlD,          bemit_shld);
