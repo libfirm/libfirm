@@ -794,13 +794,11 @@ static ia32_condition_code_t determine_final_cc(const ir_node *node,
 
 	if (is_ia32_Sahf(flags)) {
 		ir_node *cmp = get_irn_n(flags, n_ia32_Sahf_val);
-		if (!(is_ia32_FucomFnstsw(cmp) || is_ia32_FucompFnstsw(cmp)
-				|| is_ia32_FucomppFnstsw(cmp) || is_ia32_FtstFnstsw(cmp))) {
+		if (!(is_ia32_FucomFnstsw(cmp) || is_ia32_FucomppFnstsw(cmp) || is_ia32_FtstFnstsw(cmp))) {
 			inc_irg_visited(current_ir_graph);
 			cmp = find_original_value(cmp);
 			assert(cmp != NULL);
-			assert(is_ia32_FucomFnstsw(cmp) || is_ia32_FucompFnstsw(cmp)
-			       || is_ia32_FucomppFnstsw(cmp) || is_ia32_FtstFnstsw(cmp));
+			assert(is_ia32_FucomFnstsw(cmp) || is_ia32_FucomppFnstsw(cmp) || is_ia32_FtstFnstsw(cmp));
 		}
 
 		flags_attr = get_ia32_attr_const(cmp);
@@ -3490,30 +3488,15 @@ static void bemit_ftstfnstsw(const ir_node *node)
 static void bemit_fucomi(const ir_node *node)
 {
 	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
-	bemit8(0xDB); // fucomi
-	bemit8(0xE8 + attr->x87[1]->index);
-}
-
-static void bemit_fucomip(const ir_node *node)
-{
-	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
-	bemit8(0xDF); // fucomip
+	bemit8(attr->pop ? 0xDF : 0xDB); // fucom[p]i
 	bemit8(0xE8 + attr->x87[1]->index);
 }
 
 static void bemit_fucomfnstsw(const ir_node *node)
 {
 	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
-	bemit8(0xDD); // fucom
-	bemit8(0xE0 + attr->x87[1]->index);
-	bemit_fnstsw();
-}
-
-static void bemit_fucompfnstsw(const ir_node *node)
-{
-	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
-	bemit8(0xDD); // fucomp
-	bemit8(0xE8 + attr->x87[1]->index);
+	bemit8(0xDD); // fucom[p]
+	bemit8((attr->pop ? 0xE8 : 0xE0) + attr->x87[1]->index);
 	bemit_fnstsw();
 }
 
@@ -3587,8 +3570,6 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_FtstFnstsw,    bemit_ftstfnstsw);
 	register_emitter(op_ia32_FucomFnstsw,   bemit_fucomfnstsw);
 	register_emitter(op_ia32_Fucomi,        bemit_fucomi);
-	register_emitter(op_ia32_FucompFnstsw,  bemit_fucompfnstsw);
-	register_emitter(op_ia32_Fucompi,       bemit_fucomip);
 	register_emitter(op_ia32_FucomppFnstsw, bemit_fucomppfnstsw);
 	register_emitter(op_ia32_IDiv,          bemit_idiv);
 	register_emitter(op_ia32_IJmp,          bemit_ijmp);

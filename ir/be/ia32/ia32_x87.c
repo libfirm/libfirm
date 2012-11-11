@@ -1383,8 +1383,8 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 		int i;
 
 		switch (pops) {
+		case 1: attr->pop = true; /* FALLTHROUGH */
 		case 0: dst = op_ia32_FucomFnstsw;   break;
-		case 1: dst = op_ia32_FucompFnstsw;  break;
 		case 2: dst = op_ia32_FucomppFnstsw; break;
 		default: panic("invalid popcount");
 		}
@@ -1393,11 +1393,12 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 			x87_pop(state);
 		}
 	} else if (is_ia32_vFucomi(n)) {
+		dst = op_ia32_Fucomi;
 		switch (pops) {
-		case 0: dst = op_ia32_Fucomi;                  break;
-		case 1: dst = op_ia32_Fucompi; x87_pop(state); break;
+		case 0: break;
+		case 1: attr->pop = true; x87_pop(state); break;
 		case 2:
-			dst = op_ia32_Fucompi;
+			attr->pop = true;
 			x87_pop(state);
 			x87_create_fpop(state, sched_next(n), 1);
 			break;
