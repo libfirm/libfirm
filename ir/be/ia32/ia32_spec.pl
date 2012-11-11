@@ -2305,38 +2305,15 @@ fmulp => {
 
 fsub => {
 	state     => "exc_pinned",
-	emit      => 'fsub%FM %AF',
+	emit      => 'fsub%FR%FM %AF',
 	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
 	constructors => {},
 },
-
-# Note: gas is strangely buggy: fdivrp and fdivp as well as fsubrp and fsubp
-#       are swapped, we work this around in the emitter...
 
 fsubp => {
 	state     => "exc_pinned",
-# see note about gas bugs
-	emit      => 'fsubrp%FM %AF',
-	latency   => 4,
-	attr_type => "ia32_x87_attr_t",
-	constructors => {},
-},
-
-fsubr => {
-	state     => "exc_pinned",
-	irn_flags => [ "rematerializable" ],
-	emit      => 'fsubr%FM %AF',
-	latency   => 4,
-	attr_type => "ia32_x87_attr_t",
-	constructors => {},
-},
-
-fsubrp => {
-	state     => "exc_pinned",
-	irn_flags => [ "rematerializable" ],
-# see note about gas bugs before fsubp
-	emit      => 'fsubp%FM %AF',
+	emit      => 'fsub%FRp%FM %AF',
 	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
 	constructors => {},
@@ -2351,7 +2328,7 @@ fprem => {
 
 fdiv => {
 	state     => "exc_pinned",
-	emit      => 'fdiv%FM %AF',
+	emit      => 'fdiv%FR%FM %AF',
 	latency   => 20,
 	attr_type => "ia32_x87_attr_t",
 	constructors => {},
@@ -2359,25 +2336,7 @@ fdiv => {
 
 fdivp => {
 	state     => "exc_pinned",
-# see note about gas bugs before fsubp
-	emit      => 'fdivrp%FM %AF',
-	latency   => 20,
-	attr_type => "ia32_x87_attr_t",
-	constructors => {},
-},
-
-fdivr => {
-	state     => "exc_pinned",
-	emit      => 'fdivr%FM %AF',
-	latency   => 20,
-	attr_type => "ia32_x87_attr_t",
-	constructors => {},
-},
-
-fdivrp => {
-	state     => "exc_pinned",
-# see note about gas bugs before fsubp
-	emit      => 'fdivp%FM %AF',
+	emit      => 'fdiv%FRp%FM %AF',
 	latency   => 20,
 	attr_type => "ia32_x87_attr_t",
 	constructors => {},

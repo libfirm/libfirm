@@ -59,20 +59,6 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 typedef struct x87_simulator x87_simulator;
 
 /**
- * An exchange template.
- * Note that our virtual functions have the same inputs
- * and attributes as the real ones, so we can simple exchange
- * their opcodes!
- * Further, x87 supports inverse instructions, so we can handle them.
- */
-typedef struct exchange_tmpl {
-	ir_op *normal_op;       /**< the normal one */
-	ir_op *reverse_op;      /**< the reverse one if exists */
-	ir_op *normal_pop_op;   /**< the normal one with tos pop */
-	ir_op *reverse_pop_op;  /**< the reverse one with tos pop */
-} exchange_tmpl;
-
-/**
  * An entry on the simulated x87 stack.
  */
 typedef struct st_entry {
@@ -747,11 +733,10 @@ static void vfp_dump_live(vfp_liveness live)
  *
  * @param state  the x87 state
  * @param n      the node that should be simulated (and patched)
- * @param tmpl   the template containing the 4 possible x87 opcodes
  *
  * @return NO_NODE_ADDED
  */
-static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl)
+static int sim_binop(x87_state *const state, ir_node *const n, ir_op *const normal_op, ir_op *const normal_pop_op)
 {
 	int op2_idx = 0, op1_idx;
 	int out_idx, do_pop = 0;
@@ -805,7 +790,7 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl)
 				op1_idx = 0;
 				op2_idx += 1;
 				out_idx = 0;
-				dst = tmpl->normal_op;
+				dst = normal_op;
 			} else {
 				/* Second live, first operand is dead here, bring it to tos. */
 				if (op1_idx != 0) {
@@ -816,7 +801,7 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl)
 				}
 				/* now do fxxx (tos=tos X op) */
 				out_idx = 0;
-				dst = tmpl->normal_op;
+				dst = normal_op;
 			}
 		} else {
 			/* Second operand is dead. */
@@ -830,25 +815,25 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl)
 				}
 				/* now do fxxxr (tos = op X tos) */
 				out_idx = 0;
-				dst = tmpl->reverse_op;
+				dst = normal_op;
 			} else {
 				/* Both operands are dead here, pop them from the stack. */
 				if (op2_idx == 0) {
 					if (op1_idx == 0) {
 						/* Both are identically and on tos, no pop needed. */
 						/* here fxxx (tos = tos X tos) */
-						dst = tmpl->normal_op;
+						dst = normal_op;
 						out_idx = 0;
 					} else {
 						/* now do fxxxp (op = op X tos, pop) */
-						dst = tmpl->normal_pop_op;
+						dst = normal_pop_op;
 						do_pop = 1;
 						out_idx = op1_idx;
 					}
 				} else if (op1_idx == 0) {
 					assert(op1_idx != op2_idx);
 					/* now do fxxxrp (op = tos X op, pop) */
-					dst = tmpl->reverse_pop_op;
+					dst = normal_pop_op;
 					do_pop = 1;
 					out_idx = op2_idx;
 				} else {
@@ -859,13 +844,13 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl)
 						op1_idx = 0;
 						op2_idx = 0;
 						/* use fxxx (tos = tos X tos) */
-						dst = tmpl->normal_op;
+						dst = normal_op;
 						out_idx = 0;
 					} else {
 						/* op2 is on tos now */
 						op2_idx = 0;
 						/* use fxxxp (op = op X tos, pop) */
-						dst = tmpl->normal_pop_op;
+						dst = normal_pop_op;
 						out_idx = op1_idx;
 						do_pop = 1;
 					}
@@ -887,7 +872,7 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl)
 		}
 
 		/* use fxxx (tos = tos X mem) */
-		dst = permuted ? tmpl->reverse_op : tmpl->normal_op;
+		dst = normal_op;
 		out_idx = 0;
 	}
 
@@ -1089,14 +1074,10 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p)
 	return insn;
 }
 
-#define _GEN_BINOP(op, rev) \
+#define GEN_BINOP(op) \
 static int sim_##op(x87_state *state, ir_node *n) { \
-	exchange_tmpl tmpl = { op_ia32_##op, op_ia32_##rev, op_ia32_##op##p, op_ia32_##rev##p }; \
-	return sim_binop(state, n, &tmpl); \
+	return sim_binop(state, n, op_ia32_##op, op_ia32_##op##p); \
 }
-
-#define GEN_BINOP(op)   _GEN_BINOP(op, op)
-#define GEN_BINOPR(op)  _GEN_BINOP(op, op##r)
 
 #define GEN_LOAD(op)                                              \
 static int sim_##op(x87_state *state, ir_node *n) {               \
@@ -1115,9 +1096,9 @@ static int sim_##op(x87_state *state, ir_node *n) { \
 
 /* all stubs */
 GEN_BINOP(fadd)
-GEN_BINOPR(fsub)
+GEN_BINOP(fsub)
 GEN_BINOP(fmul)
-GEN_BINOPR(fdiv)
+GEN_BINOP(fdiv)
 
 GEN_UNOP(fabs)
 GEN_UNOP(fchs)
