@@ -2273,15 +2273,7 @@ Sahf => {
 
 fadd => {
 	state     => "exc_pinned",
-	emit      => 'fadd%FM %AF',
-	latency   => 4,
-	attr_type => "ia32_x87_attr_t",
-	constructors => {},
-},
-
-faddp => {
-	state     => "exc_pinned",
-	emit      => 'faddp%FM %AF',
+	emit      => 'fadd%FP%FM %AF',
 	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
 	constructors => {},
@@ -2289,15 +2281,7 @@ faddp => {
 
 fmul => {
 	state     => "exc_pinned",
-	emit      => 'fmul%FM %AF',
-	latency   => 4,
-	attr_type => "ia32_x87_attr_t",
-	constructors => {},
-},
-
-fmulp => {
-	state     => "exc_pinned",
-	emit      => 'fmulp%FM %AF',,
+	emit      => 'fmul%FP%FM %AF',
 	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
 	constructors => {},
@@ -2305,15 +2289,7 @@ fmulp => {
 
 fsub => {
 	state     => "exc_pinned",
-	emit      => 'fsub%FR%FM %AF',
-	latency   => 4,
-	attr_type => "ia32_x87_attr_t",
-	constructors => {},
-},
-
-fsubp => {
-	state     => "exc_pinned",
-	emit      => 'fsub%FRp%FM %AF',
+	emit      => 'fsub%FR%FP%FM %AF',
 	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
 	constructors => {},
@@ -2328,15 +2304,7 @@ fprem => {
 
 fdiv => {
 	state     => "exc_pinned",
-	emit      => 'fdiv%FR%FM %AF',
-	latency   => 20,
-	attr_type => "ia32_x87_attr_t",
-	constructors => {},
-},
-
-fdivp => {
-	state     => "exc_pinned",
-	emit      => 'fdiv%FRp%FM %AF',
+	emit      => 'fdiv%FR%FP%FM %AF',
 	latency   => 20,
 	attr_type => "ia32_x87_attr_t",
 	constructors => {},

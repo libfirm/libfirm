@@ -580,6 +580,11 @@ emit_AM:
 				if (*fmt == 'M') {
 					++fmt;
 					ia32_emit_x87_mode_suffix(node);
+				} else if (*fmt == 'P') {
+					++fmt;
+					ia32_x87_attr_t const *const attr = get_ia32_x87_attr_const(node);
+					if (attr->pop)
+						be_emit_char('p');
 				} else if (*fmt == 'R') {
 					++fmt;
 					/* NOTE: Work around a gas quirk for non-commutative operations if the
@@ -3266,6 +3271,7 @@ static void bemit_fbinop(ir_node const *const node, unsigned const op_fwd, unsig
 
 		unsigned char op0 = 0xD8;
 		if (out != st0) op0 |= 0x04;
+		if (attr->pop)  op0 |= 0x02;
 		bemit8(op0);
 
 		unsigned               op  = op_rev;
@@ -3277,18 +3283,12 @@ static void bemit_fbinop(ir_node const *const node, unsigned const op_fwd, unsig
 		bemit8(MOD_REG | ENC_REG(op) | ENC_RM(reg->index));
 	} else {
 		assert(attr->x87[2] == st0);
+		assert(!attr->pop);
 
 		unsigned const size = get_mode_size_bits(get_ia32_ls_mode(node));
 		bemit8(size == 32 ? 0xD8 : 0xDC);
 		bemit_mod_am(attr->attr.data.ins_permuted ? op_rev : op_fwd, node);
 	}
-}
-
-static void bemit_fbinopp(const ir_node *node, unsigned const op_fwd, unsigned const op_rev)
-{
-	ia32_x87_attr_t const *const attr = get_ia32_x87_attr_const(node);
-	bemit8(0xDE);
-	bemit8((attr->x87[0] == &ia32_registers[REG_ST0] ? op_fwd : op_rev) + attr->x87[2]->index);
 }
 
 static void bemit_fop_reg(ir_node const *const node, unsigned char const op0, unsigned char const op1)
@@ -3310,11 +3310,6 @@ static void bemit_fadd(const ir_node *node)
 	bemit_fbinop(node, 0, 0);
 }
 
-static void bemit_faddp(const ir_node *node)
-{
-	bemit_fbinopp(node, 0xC0, 0xC0);
-}
-
 static void bemit_fchs(const ir_node *node)
 {
 	(void)node;
@@ -3326,11 +3321,6 @@ static void bemit_fchs(const ir_node *node)
 static void bemit_fdiv(const ir_node *node)
 {
 	bemit_fbinop(node, 6, 7);
-}
-
-static void bemit_fdivp(const ir_node *node)
-{
-	bemit_fbinopp(node, 0xF0, 0xF8);
 }
 
 static void bemit_ffreep(ir_node const *const node)
@@ -3461,11 +3451,6 @@ static void bemit_fmul(const ir_node *node)
 	bemit_fbinop(node, 1, 1);
 }
 
-static void bemit_fmulp(const ir_node *node)
-{
-	bemit_fbinopp(node, 0xC8, 0xC8);
-}
-
 static void bemit_fpop(const ir_node *node)
 {
 	bemit_fop_reg(node, 0xDD, 0xD8);
@@ -3525,11 +3510,6 @@ static void bemit_fstp(const ir_node *node)
 static void bemit_fsub(const ir_node *node)
 {
 	bemit_fbinop(node, 4, 5);
-}
-
-static void bemit_fsubp(const ir_node *node)
-{
-	bemit_fbinopp(node, 0xE0, 0xE8);
 }
 
 static void bemit_fnstcw(const ir_node *node)
@@ -3715,10 +3695,8 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_XorMem8Bit,    bemit_xormem8bit);
 	register_emitter(op_ia32_fabs,          bemit_fabs);
 	register_emitter(op_ia32_fadd,          bemit_fadd);
-	register_emitter(op_ia32_faddp,         bemit_faddp);
 	register_emitter(op_ia32_fchs,          bemit_fchs);
 	register_emitter(op_ia32_fdiv,          bemit_fdiv);
-	register_emitter(op_ia32_fdivp,         bemit_fdivp);
 	register_emitter(op_ia32_ffreep,        bemit_ffreep);
 	register_emitter(op_ia32_fild,          bemit_fild);
 	register_emitter(op_ia32_fist,          bemit_fist);
@@ -3728,14 +3706,12 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_fld1,          bemit_fld1);
 	register_emitter(op_ia32_fldz,          bemit_fldz);
 	register_emitter(op_ia32_fmul,          bemit_fmul);
-	register_emitter(op_ia32_fmulp,         bemit_fmulp);
 	register_emitter(op_ia32_fpop,          bemit_fpop);
 	register_emitter(op_ia32_fpush,         bemit_fpush);
 	register_emitter(op_ia32_fpushCopy,     bemit_fpushcopy);
 	register_emitter(op_ia32_fst,           bemit_fst);
 	register_emitter(op_ia32_fstp,          bemit_fstp);
 	register_emitter(op_ia32_fsub,          bemit_fsub);
-	register_emitter(op_ia32_fsubp,         bemit_fsubp);
 	register_emitter(op_ia32_fxch,          bemit_fxch);
 
 	/* ignore the following nodes */

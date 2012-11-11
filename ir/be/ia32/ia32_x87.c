@@ -736,14 +736,13 @@ static void vfp_dump_live(vfp_liveness live)
  *
  * @return NO_NODE_ADDED
  */
-static int sim_binop(x87_state *const state, ir_node *const n, ir_op *const normal_op, ir_op *const normal_pop_op)
+static int sim_binop(x87_state *const state, ir_node *const n, ir_op *const op)
 {
 	int op2_idx = 0, op1_idx;
 	int out_idx, do_pop = 0;
 	ia32_x87_attr_t *attr;
 	int permuted;
 	ir_node *patched_insn;
-	ir_op *dst;
 	x87_simulator         *sim     = state->sim;
 	ir_node               *op1     = get_irn_n(n, n_ia32_binary_left);
 	ir_node               *op2     = get_irn_n(n, n_ia32_binary_right);
@@ -790,7 +789,6 @@ static int sim_binop(x87_state *const state, ir_node *const n, ir_op *const norm
 				op1_idx = 0;
 				op2_idx += 1;
 				out_idx = 0;
-				dst = normal_op;
 			} else {
 				/* Second live, first operand is dead here, bring it to tos. */
 				if (op1_idx != 0) {
@@ -801,7 +799,6 @@ static int sim_binop(x87_state *const state, ir_node *const n, ir_op *const norm
 				}
 				/* now do fxxx (tos=tos X op) */
 				out_idx = 0;
-				dst = normal_op;
 			}
 		} else {
 			/* Second operand is dead. */
@@ -815,25 +812,21 @@ static int sim_binop(x87_state *const state, ir_node *const n, ir_op *const norm
 				}
 				/* now do fxxxr (tos = op X tos) */
 				out_idx = 0;
-				dst = normal_op;
 			} else {
 				/* Both operands are dead here, pop them from the stack. */
 				if (op2_idx == 0) {
 					if (op1_idx == 0) {
 						/* Both are identically and on tos, no pop needed. */
 						/* here fxxx (tos = tos X tos) */
-						dst = normal_op;
 						out_idx = 0;
 					} else {
 						/* now do fxxxp (op = op X tos, pop) */
-						dst = normal_pop_op;
 						do_pop = 1;
 						out_idx = op1_idx;
 					}
 				} else if (op1_idx == 0) {
 					assert(op1_idx != op2_idx);
 					/* now do fxxxrp (op = tos X op, pop) */
-					dst = normal_pop_op;
 					do_pop = 1;
 					out_idx = op2_idx;
 				} else {
@@ -844,13 +837,11 @@ static int sim_binop(x87_state *const state, ir_node *const n, ir_op *const norm
 						op1_idx = 0;
 						op2_idx = 0;
 						/* use fxxx (tos = tos X tos) */
-						dst = normal_op;
 						out_idx = 0;
 					} else {
 						/* op2 is on tos now */
 						op2_idx = 0;
 						/* use fxxxp (op = op X tos, pop) */
-						dst = normal_pop_op;
 						out_idx = op1_idx;
 						do_pop = 1;
 					}
@@ -872,17 +863,17 @@ static int sim_binop(x87_state *const state, ir_node *const n, ir_op *const norm
 		}
 
 		/* use fxxx (tos = tos X mem) */
-		dst = normal_op;
 		out_idx = 0;
 	}
 
-	patched_insn = x87_patch_insn(n, dst);
+	patched_insn = x87_patch_insn(n, op);
 	x87_set_st(state, out_reg_idx, patched_insn, out_idx);
 	if (do_pop) {
 		x87_pop(state);
 	}
 
 	/* patch the operation */
+	attr->pop    = do_pop;
 	attr->x87[0] = op1_reg = get_st_reg(op1_idx);
 	if (reg_index_2 != REG_VFP_VFP_NOREG) {
 		attr->x87[1] = op2_reg = get_st_reg(op2_idx);
@@ -1076,7 +1067,7 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p)
 
 #define GEN_BINOP(op) \
 static int sim_##op(x87_state *state, ir_node *n) { \
-	return sim_binop(state, n, op_ia32_##op, op_ia32_##op##p); \
+	return sim_binop(state, n, op_ia32_##op); \
 }
 
 #define GEN_LOAD(op)                                              \

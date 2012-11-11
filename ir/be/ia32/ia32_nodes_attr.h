@@ -271,6 +271,7 @@ typedef struct ia32_x87_attr_t ia32_x87_attr_t;
 struct ia32_x87_attr_t {
 	ia32_attr_t            attr;      /**< the generic attribute */
 	const arch_register_t *x87[3];    /**< register slots for x87 register */
+	bool                   pop;       /**< Emit a pop suffix. */
 };
 
 typedef struct ia32_asm_reg_t ia32_asm_reg_t;
