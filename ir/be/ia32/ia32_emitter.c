@@ -3615,6 +3615,7 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_And,           bemit_and);
 	register_emitter(op_ia32_AndMem,        bemit_andmem);
 	register_emitter(op_ia32_AndMem8Bit,    bemit_andmem8bit);
+	register_emitter(op_ia32_Asm,           emit_ia32_Asm); // TODO implement binary emitter
 	register_emitter(op_ia32_Breakpoint,    bemit_int3);
 	register_emitter(op_ia32_Bsf,           bemit_bsf);
 	register_emitter(op_ia32_Bsr,           bemit_bsr);
