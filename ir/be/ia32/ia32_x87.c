@@ -1118,7 +1118,6 @@ GEN_BINOP(fadd)
 GEN_BINOPR(fsub)
 GEN_BINOP(fmul)
 GEN_BINOPR(fdiv)
-GEN_BINOP(fprem)
 
 GEN_UNOP(fabs)
 GEN_UNOP(fchs)
@@ -1130,6 +1129,14 @@ GEN_LOAD(fld1)
 
 GEN_STORE(fst)
 GEN_STORE(fist)
+
+static int sim_fprem(x87_state *const state, ir_node *const n)
+{
+	(void)state;
+	(void)n;
+	panic("TODO implement");
+	return NO_NODE_ADDED;
+}
 
 /**
  * Simulate a virtual fisttp.

@@ -2349,16 +2349,6 @@ fprem => {
 	constructors => {},
 },
 
-# this node is just here, to keep the simulator running
-# we can omit this when a fprem simulation function exists
-fpremp => {
-	emit      => 'fprem1\n'.
-	             'fstp %F0',
-	latency   => 20,
-	attr_type => "ia32_x87_attr_t",
-	constructors => {},
-},
-
 fdiv => {
 	state     => "exc_pinned",
 	emit      => 'fdiv%FM %AF',
