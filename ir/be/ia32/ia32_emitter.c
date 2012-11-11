@@ -3378,6 +3378,17 @@ static void bemit_fistp(const ir_node *node)
 	}
 }
 
+static void bemit_fisttp(ir_node const *const node)
+{
+	switch (get_mode_size_bits(get_ia32_ls_mode(node))) {
+	case 16: bemit8(0xDF); break; // fisttps
+	case 32: bemit8(0xDB); break; // fisttpl
+	case 64: bemit8(0xDD); break; // fisttpll
+	default: panic("Invalid mode size");
+	}
+	bemit_mod_am(1, node);
+}
+
 static void bemit_fld(const ir_node *node)
 {
 	switch (get_mode_size_bits(get_ia32_ls_mode(node))) {
@@ -3699,6 +3710,7 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_fild,          bemit_fild);
 	register_emitter(op_ia32_fist,          bemit_fist);
 	register_emitter(op_ia32_fistp,         bemit_fistp);
+	register_emitter(op_ia32_fisttp,        bemit_fisttp);
 	register_emitter(op_ia32_fld,           bemit_fld);
 	register_emitter(op_ia32_fld1,          bemit_fld1);
 	register_emitter(op_ia32_fldz,          bemit_fldz);
