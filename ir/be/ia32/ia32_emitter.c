@@ -2207,6 +2207,12 @@ static void bemit_unop_mem(const ir_node *node, unsigned char code, unsigned cha
 	bemit_mod_am(ext, node);
 }
 
+static void bemit_0f_unop_reg(ir_node const *const node, unsigned char const code, int const input)
+{
+	bemit8(0x0F);
+	bemit_unop_reg(node, code, input);
+}
+
 static void bemit_immediate(const ir_node *node, bool relative)
 {
 	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(node);
@@ -2673,8 +2679,7 @@ static void bemit_imul(const ir_node *node)
 			bemit32(imm);
 		}
 	} else {
-		bemit8(0x0F);
-		bemit_unop_reg(node, 0xAF, n_ia32_IMul_right);
+		bemit_0f_unop_reg(node, 0xAF, n_ia32_IMul_right);
 	}
 }
 
@@ -2947,18 +2952,14 @@ static void bemit_store(const ir_node *node)
 
 static void bemit_conv_i2i(const ir_node *node)
 {
-	ir_mode  *smaller_mode = get_ia32_ls_mode(node);
-	unsigned  opcode;
-
-	bemit8(0x0F);
 	/*        8 16 bit source
 	 * movzx B6 B7
-	 * movsx BE BF
-	 */
-	opcode = 0xB6;
+	 * movsx BE BF */
+	ir_mode *const smaller_mode = get_ia32_ls_mode(node);
+	unsigned       opcode       = 0xB6;
 	if (mode_is_signed(smaller_mode))           opcode |= 0x08;
 	if (get_mode_size_bits(smaller_mode) == 16) opcode |= 0x01;
-	bemit_unop_reg(node, opcode, n_ia32_Conv_I2I_val);
+	bemit_0f_unop_reg(node, opcode, n_ia32_Conv_I2I_val);
 }
 
 /**
