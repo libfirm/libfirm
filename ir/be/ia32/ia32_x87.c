@@ -980,14 +980,14 @@ static void collect_and_rewire_users(ir_node *store, ir_node *old_val, ir_node *
  * @param state  the x87 state
  * @param n      the node that should be simulated (and patched)
  * @param op     the x87 store opcode
- * @param op_p   the x87 store and pop opcode
  */
-static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p)
+static int sim_store(x87_state *state, ir_node *n, ir_op *op)
 {
 	ir_node               *const val = get_irn_n(n, n_ia32_vfst_val);
 	arch_register_t const *const op2 = x87_get_irn_register(val);
 	DB((dbg, LEVEL_1, ">>> %+F %s ->\n", n, arch_register_get_name(op2)));
 
+	bool           do_pop          = false;
 	int            insn            = NO_NODE_ADDED;
 	int      const op2_reg_idx     = arch_register_get_index(op2);
 	int      const op2_idx         = x87_on_stack(state, op2_reg_idx);
@@ -1006,12 +1006,12 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p)
 			if (x87_get_depth(state) < N_ia32_st_REGS) {
 				/* ok, we have a free register: push + fstp */
 				x87_create_fpush(state, n, op2_idx, REG_VFP_VFP_NOREG, val);
-				x87_pop(state);
-				x87_patch_insn(n, op_p);
+				x87_patch_insn(n, op);
+				do_pop = true;
 			} else {
 				/* stack full here: need fstp + load */
-				x87_pop(state);
-				x87_patch_insn(n, op_p);
+				x87_patch_insn(n, op);
+				do_pop = true;
 
 				ir_node *const block = get_nodes_block(n);
 				ir_node *const mem   = get_irn_Proj_for_mode(n, mode_M);
@@ -1054,11 +1054,15 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p)
 		if (op2_idx != 0)
 			x87_create_fxch(state, n, op2_idx);
 
-		x87_pop(state);
-		x87_patch_insn(n, op_p);
+		x87_patch_insn(n, op);
+		do_pop = true;
 	}
 
+	if (do_pop)
+		x87_pop(state);
+
 	ia32_x87_attr_t *const attr = get_ia32_x87_attr(n);
+	attr->pop    = do_pop;
 	attr->x87[1] = get_st_reg(0);
 	DB((dbg, LEVEL_1, "<<< %s %s ->\n", get_irn_opname(n), arch_register_get_name(attr->x87[1])));
 
@@ -1082,7 +1086,7 @@ static int sim_##op(x87_state *state, ir_node *n) { \
 
 #define GEN_STORE(op) \
 static int sim_##op(x87_state *state, ir_node *n) { \
-	return sim_store(state, n, op_ia32_##op, op_ia32_##op##p); \
+	return sim_store(state, n, op_ia32_##op); \
 }
 
 /* all stubs */

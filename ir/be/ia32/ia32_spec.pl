@@ -2338,17 +2338,7 @@ fld => {
 fst => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	emit      => 'fst%FM %AM',
-	mode      => "mode_M",
-	attr_type => "ia32_x87_attr_t",
-	latency   => 2,
-	constructors => {},
-},
-
-fstp => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	emit      => 'fstp%FM %AM',
+	emit      => 'fst%FP%FM %AM',
 	mode      => "mode_M",
 	attr_type => "ia32_x87_attr_t",
 	latency   => 2,
@@ -2365,16 +2355,7 @@ fild => {
 
 fist => {
 	state     => "exc_pinned",
-	emit      => 'fist%FM %AM',
-	mode      => "mode_M",
-	attr_type => "ia32_x87_attr_t",
-	latency   => 2,
-	constructors => {},
-},
-
-fistp => {
-	state     => "exc_pinned",
-	emit      => 'fistp%FM %AM',
+	emit      => 'fist%FP%FM %AM',
 	mode      => "mode_M",
 	attr_type => "ia32_x87_attr_t",
 	latency   => 2,

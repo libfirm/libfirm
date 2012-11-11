@@ -3353,42 +3353,19 @@ static void bemit_fild(const ir_node *node)
 
 static void bemit_fist(const ir_node *node)
 {
-	switch (get_mode_size_bits(get_ia32_ls_mode(node))) {
-		case 16:
-			bemit8(0xDF); // fists
-			break;
-
-		case 32:
-			bemit8(0xDB); // fistl
-			break;
-
-		default:
-			panic("invalid mode size");
+	unsigned       op;
+	unsigned const size = get_mode_size_bits(get_ia32_ls_mode(node));
+	switch (size) {
+	case 16: bemit8(0xDF); op = 2; break; // fist[p]s
+	case 32: bemit8(0xDB); op = 2; break; // fist[p]l
+	case 64: bemit8(0xDF); op = 6; break; // fistpll
+	default: panic("invalid mode size");
 	}
-	bemit_mod_am(2, node);
-}
-
-static void bemit_fistp(const ir_node *node)
-{
-	switch (get_mode_size_bits(get_ia32_ls_mode(node))) {
-		case 16:
-			bemit8(0xDF); // fistps
-			bemit_mod_am(3, node);
-			return;
-
-		case 32:
-			bemit8(0xDB); // fistpl
-			bemit_mod_am(3, node);
-			return;
-
-		case 64:
-			bemit8(0xDF); // fistpll
-			bemit_mod_am(7, node);
-			return;
-
-		default:
-			panic("invalid mode size");
-	}
+	if (get_ia32_x87_attr_const(node)->pop)
+		++op;
+	// There is only a pop variant for 64 bit integer store.
+	assert(size < 64 || get_ia32_x87_attr_const(node)->pop);
+	bemit_mod_am(op, node);
 }
 
 static void bemit_fisttp(ir_node const *const node)
@@ -3468,43 +3445,20 @@ static void bemit_fpushcopy(const ir_node *node)
 
 static void bemit_fst(const ir_node *node)
 {
-	switch (get_mode_size_bits(get_ia32_ls_mode(node))) {
-		case 32:
-			bemit8(0xD9); // fsts
-			break;
-
-		case 64:
-			bemit8(0xDD); // fstl
-			break;
-
-		default:
-			panic("invalid mode size");
+	unsigned       op;
+	unsigned const size = get_mode_size_bits(get_ia32_ls_mode(node));
+	switch (size) {
+	case 32: bemit8(0xD9); op = 2; break; // fst[p]s
+	case 64: bemit8(0xDD); op = 2; break; // fst[p]l
+	case 80:
+	case 96: bemit8(0xDB); op = 6; break; // fstpt
+	default: panic("invalid mode size");
 	}
-	bemit_mod_am(2, node);
-}
-
-static void bemit_fstp(const ir_node *node)
-{
-	switch (get_mode_size_bits(get_ia32_ls_mode(node))) {
-		case 32:
-			bemit8(0xD9); // fstps
-			bemit_mod_am(3, node);
-			return;
-
-		case 64:
-			bemit8(0xDD); // fstpl
-			bemit_mod_am(3, node);
-			return;
-
-		case 80:
-		case 96:
-			bemit8(0xDB); // fstpt
-			bemit_mod_am(7, node);
-			return;
-
-		default:
-			panic("invalid mode size");
-	}
+	if (get_ia32_x87_attr_const(node)->pop)
+		++op;
+	// There is only a pop variant for long double store.
+	assert(size < 80 || get_ia32_x87_attr_const(node)->pop);
+	bemit_mod_am(op, node);
 }
 
 static void bemit_fsub(const ir_node *node)
@@ -3700,7 +3654,6 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_ffreep,        bemit_ffreep);
 	register_emitter(op_ia32_fild,          bemit_fild);
 	register_emitter(op_ia32_fist,          bemit_fist);
-	register_emitter(op_ia32_fistp,         bemit_fistp);
 	register_emitter(op_ia32_fisttp,        bemit_fisttp);
 	register_emitter(op_ia32_fld,           bemit_fld);
 	register_emitter(op_ia32_fld1,          bemit_fld1);
@@ -3710,7 +3663,6 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_fpush,         bemit_fpush);
 	register_emitter(op_ia32_fpushCopy,     bemit_fpushcopy);
 	register_emitter(op_ia32_fst,           bemit_fst);
-	register_emitter(op_ia32_fstp,          bemit_fstp);
 	register_emitter(op_ia32_fsub,          bemit_fsub);
 	register_emitter(op_ia32_fxch,          bemit_fxch);
 

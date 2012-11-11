@@ -1134,7 +1134,6 @@ need_stackent:
 			case iro_ia32_Store8Bit:
 			case iro_ia32_Store:
 			case iro_ia32_fst:
-			case iro_ia32_fstp:
 			case iro_ia32_vfist:
 			case iro_ia32_vfisttp:
 			case iro_ia32_vfst:
