@@ -1435,6 +1435,7 @@ Bswap => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp" ],
 	               out => [ "in_r1" ] },
+	outs      => [ "res" ],
 	emit      => 'bswap%M %S0',
 	ins       => [ "val" ],
 	units     => [ "GP" ],
