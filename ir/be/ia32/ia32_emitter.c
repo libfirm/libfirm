@@ -2496,6 +2496,16 @@ static void bemit_setcc(const ir_node *node)
 	}
 }
 
+static void bemit_bsf(ir_node const *const node)
+{
+	bemit_0f_unop_reg(node, 0xBC, n_ia32_Bsf_operand);
+}
+
+static void bemit_bsr(ir_node const *const node)
+{
+	bemit_0f_unop_reg(node, 0xBD, n_ia32_Bsr_operand);
+}
+
 static void bemit_cmovcc(const ir_node *node)
 {
 	const ia32_attr_t     *attr         = get_ia32_attr_const(node);
@@ -3572,6 +3582,8 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_AndMem,        bemit_andmem);
 	register_emitter(op_ia32_AndMem8Bit,    bemit_andmem8bit);
 	register_emitter(op_ia32_Breakpoint,    bemit_int3);
+	register_emitter(op_ia32_Bsf,           bemit_bsf);
+	register_emitter(op_ia32_Bsr,           bemit_bsr);
 	register_emitter(op_ia32_CMovcc,        bemit_cmovcc);
 	register_emitter(op_ia32_Call,          bemit_call);
 	register_emitter(op_ia32_Cltd,          bemit_cltd);
