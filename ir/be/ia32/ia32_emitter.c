@@ -3238,6 +3238,12 @@ static void bemit_fbinopp(const ir_node *node, unsigned const code)
 	bemit8(code + out->index);
 }
 
+static void bemit_fop_reg(ir_node const *const node, unsigned char const op0, unsigned char const op1)
+{
+	bemit8(op0);
+	bemit8(op1 + get_ia32_x87_attr_const(node)->x87[0]->index);
+}
+
 static void bemit_fabs(const ir_node *node)
 {
 	(void)node;
@@ -3403,23 +3409,17 @@ static void bemit_fmulp(const ir_node *node)
 
 static void bemit_fpop(const ir_node *node)
 {
-	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
-	bemit8(0xDD);
-	bemit8(0xD8 + attr->x87[0]->index);
+	bemit_fop_reg(node, 0xDD, 0xD8);
 }
 
 static void bemit_fpush(const ir_node *node)
 {
-	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
-	bemit8(0xD9);
-	bemit8(0xC0 + attr->x87[0]->index);
+	bemit_fop_reg(node, 0xD9, 0xC0);
 }
 
 static void bemit_fpushcopy(const ir_node *node)
 {
-	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
-	bemit8(0xD9);
-	bemit8(0xC0 + attr->x87[0]->index);
+	bemit_fop_reg(node, 0xD9, 0xC0);
 }
 
 static void bemit_fst(const ir_node *node)
@@ -3545,9 +3545,7 @@ static void bemit_fucomppfnstsw(const ir_node *node)
 
 static void bemit_fxch(const ir_node *node)
 {
-	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
-	bemit8(0xD9);
-	bemit8(0xC8 + attr->x87[0]->index);
+	bemit_fop_reg(node, 0xD9, 0xC8);
 }
 
 /**
