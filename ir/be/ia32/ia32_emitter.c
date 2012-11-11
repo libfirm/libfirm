@@ -2520,6 +2520,25 @@ static void bemit_bswap(ir_node const *const node)
 	bemit_modru(arch_get_irn_register_out(node, pn_ia32_Bswap_res), 1);
 }
 
+static void bemit_bt(ir_node const *const node)
+{
+	bemit8(0x0F);
+	arch_register_t const *const lreg  = arch_get_irn_register_in(node, n_ia32_Bt_left);
+	ir_node         const *const right = get_irn_n(node, n_ia32_Bt_right);
+	if (is_ia32_Immediate(right)) {
+		ia32_immediate_attr_t const *const attr   = get_ia32_immediate_attr_const(right);
+		int                          const offset = attr->offset;
+		assert(!attr->symconst);
+		assert(get_signed_imm_size(offset) == 1);
+		bemit8(0xBA);
+		bemit_modru(lreg, 4);
+		bemit8(offset);
+	} else {
+		bemit8(0xA3);
+		bemit_modrr(lreg, arch_get_irn_register(right));
+	}
+}
+
 static void bemit_cmovcc(const ir_node *node)
 {
 	const ia32_attr_t     *attr         = get_ia32_attr_const(node);
@@ -3620,6 +3639,7 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_Bsf,           bemit_bsf);
 	register_emitter(op_ia32_Bsr,           bemit_bsr);
 	register_emitter(op_ia32_Bswap,         bemit_bswap);
+	register_emitter(op_ia32_Bt,            bemit_bt);
 	register_emitter(op_ia32_CMovcc,        bemit_cmovcc);
 	register_emitter(op_ia32_Call,          bemit_call);
 	register_emitter(op_ia32_Cltd,          bemit_cltd);
