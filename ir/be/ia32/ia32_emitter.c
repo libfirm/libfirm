@@ -2319,7 +2319,7 @@ static void bemit_##op(const ir_node *node) \
 		} \
 	} else { \
 		bemit8(ext << 3 | 1); \
-		bemit_mod_am(reg_gp_map[arch_get_irn_register_out(val, 0)->index], node); \
+		bemit_mod_am(reg_gp_map[arch_get_irn_register(val)->index], node); \
 	} \
 } \
  \
@@ -2332,7 +2332,7 @@ static void bemit_##op##8bit(const ir_node *node) \
 		bemit8(get_ia32_immediate_attr_const(val)->offset); \
 	} else { \
 		bemit8(ext << 3); \
-		bemit_mod_am(reg_gp_map[arch_get_irn_register_out(val, 0)->index], node); \
+		bemit_mod_am(reg_gp_map[arch_get_irn_register(val)->index], node); \
 	} \
 }
 
