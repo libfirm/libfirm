@@ -467,7 +467,7 @@ static ir_node *find_const_or_confirm(jumpthreading_env_t *env, ir_node *jump,
 		DB((
 			dbg, LEVEL_1,
 			"> Found jump threading candidate %+F->%+F\n",
-			env->true_block, block
+			block, env->true_block
 		));
 
 		/* adjust true_block to point directly towards our jump */
@@ -532,7 +532,7 @@ static ir_node *find_candidate(jumpthreading_env_t *env, ir_node *jump,
 		DB((
 			dbg, LEVEL_1,
 			"> Found jump threading candidate %+F->%+F\n",
-			env->true_block, block
+			block, env->true_block
 		));
 
 		/* adjust true_block to point directly towards our jump */
