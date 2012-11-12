@@ -6074,6 +6074,25 @@ static ir_node *transform_node_Sync(ir_node *n)
 	return n;
 }
 
+static ir_node *create_load_replacement_tuple(ir_node *n, ir_node *mem,
+                                              ir_node *res)
+{
+	ir_node  *block = get_nodes_block(n);
+	ir_graph *irg   = get_irn_irg(n);
+	ir_node  *in[pn_Load_max+1];
+	size_t    n_in  = 2;
+	in[pn_Load_M]   = mem;
+	in[pn_Load_res] = res;
+	if (ir_throws_exception(n)) {
+		in[pn_Load_X_regular] = new_r_Jmp(block);
+		in[pn_Load_X_except]  = new_r_Bad(irg, mode_X);
+		n_in                  = 4;
+		assert(pn_Load_max == 4);
+	}
+	ir_node  *tuple = new_r_Tuple(block, n_in, in);
+	return tuple;
+}
+
 static ir_node *transform_node_Load(ir_node *n)
 {
 	/* don't touch volatile loads */
@@ -6103,17 +6122,9 @@ static ir_node *transform_node_Load(ir_node *n)
 			return n;
 		/* all combinations of aligned/unaligned pred/n should be fine so we do
 		 * not compare the unaligned attribute */
-		{
-			ir_node  *block = get_nodes_block(n);
-			ir_node  *jmp   = new_r_Jmp(block);
-			ir_graph *irg   = get_irn_irg(n);
-			ir_node  *bad   = new_r_Bad(irg, mode_X);
-			ir_mode  *mode  = get_Load_mode(n);
-			ir_node  *res   = new_r_Proj(pred_load, mode, pn_Load_res);
-			ir_node  *in[]  = { mem, res, jmp, bad };
-			ir_node  *tuple = new_r_Tuple(block, ARRAY_SIZE(in), in);
-			return tuple;
-		}
+		ir_mode  *mode  = get_Load_mode(n);
+		ir_node  *res   = new_r_Proj(pred_load, mode, pn_Load_res);
+		return create_load_replacement_tuple(n, mem, res);
 	} else if (is_Store(mem_pred)) {
 		ir_node *pred_store = mem_pred;
 		ir_node *value      = get_Store_value(pred_store);
@@ -6124,16 +6135,7 @@ static ir_node *transform_node_Load(ir_node *n)
 			return n;
 		/* all combinations of aligned/unaligned pred/n should be fine so we do
 		 * not compare the unaligned attribute */
-		{
-			ir_node  *block = get_nodes_block(n);
-			ir_node  *jmp   = new_r_Jmp(block);
-			ir_graph *irg   = get_irn_irg(n);
-			ir_node  *bad   = new_r_Bad(irg, mode_X);
-			ir_node  *res   = value;
-			ir_node  *in[]  = { mem, res, jmp, bad };
-			ir_node  *tuple = new_r_Tuple(block, ARRAY_SIZE(in), in);
-			return tuple;
-		}
+		return create_load_replacement_tuple(n, mem, value);
 	}
 
 	return n;
