@@ -282,8 +282,8 @@ static void copy_and_fix(const jumpthreading_env_t *env, ir_node *block,
 		ir_mode *mode;
 
 		if (is_End(node)) {
-			/* edge is a Keep edge. If the end block is unreachable via normal control flow,
-			 * we must maintain end's reachability with Keeps.
+			/* edge is a Keep edge. If the end block is unreachable via normal
+			 * control flow, we must maintain end's reachability with Keeps.
 			 */
 			keep_alive(copy_block);
 			continue;
@@ -353,6 +353,17 @@ static void copy_and_fix(const jumpthreading_env_t *env, ir_node *block,
 
 		copy_node = (ir_node*)get_irn_link(node);
 		construct_ssa(block, node, copy_block, copy_node);
+	}
+
+	/* make sure new nodes are kept alive if old nodes were */
+	ir_graph *irg = get_irn_irg(block);
+	ir_node  *end = get_irg_end(irg);
+	for (int i = 0, arity = get_End_n_keepalives(end); i < arity; ++i) {
+		ir_node *keep = get_End_keepalive(end, i);
+		if (get_irn_visited(keep) < env->visited_nr || is_Block(keep))
+			continue;
+		ir_node *copy = get_irn_link(keep);
+		add_End_keepalive(end, copy);
 	}
 }
 
