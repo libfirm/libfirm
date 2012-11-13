@@ -153,12 +153,11 @@ static char *get_unique_label(char *buf, size_t buflen, const char *prefix)
  */
 static void emit_8bit_register(const arch_register_t *reg)
 {
-	const char *reg_name = arch_register_get_name(reg);
 	assert(reg->index == REG_GP_EAX || reg->index == REG_GP_EBX
 			|| reg->index == REG_GP_ECX || reg->index == REG_GP_EDX);
 
 	be_emit_char('%');
-	be_emit_char(reg_name[1]); /* get the basic name of the register */
+	be_emit_char(reg->name[1]); /* get the basic name of the register */
 	be_emit_char('l');
 }
 
@@ -167,21 +166,18 @@ static void emit_8bit_register(const arch_register_t *reg)
  */
 static void emit_8bit_register_high(const arch_register_t *reg)
 {
-	const char *reg_name = arch_register_get_name(reg);
 	assert(reg->index == REG_GP_EAX || reg->index == REG_GP_EBX
 			|| reg->index == REG_GP_ECX || reg->index == REG_GP_EDX);
 
 	be_emit_char('%');
-	be_emit_char(reg_name[1]); /* get the basic name of the register */
+	be_emit_char(reg->name[1]); /* get the basic name of the register */
 	be_emit_char('h');
 }
 
 static void emit_16bit_register(const arch_register_t *reg)
 {
-	const char *reg_name = arch_register_get_name(reg);
-
 	be_emit_char('%');
-	be_emit_string(reg_name+1); /* skip the 'e' prefix of the 32bit names */
+	be_emit_string(reg->name + 1); /* skip the 'e' prefix of the 32bit names */
 }
 
 /**
@@ -192,8 +188,6 @@ static void emit_16bit_register(const arch_register_t *reg)
  */
 static void emit_register(const arch_register_t *reg, const ir_mode *mode)
 {
-	const char *reg_name;
-
 	if (mode != NULL) {
 		int size = get_mode_size_bits(mode);
 		switch (size) {
@@ -203,10 +197,8 @@ static void emit_register(const arch_register_t *reg, const ir_mode *mode)
 		assert(mode_is_float(mode) || size == 32);
 	}
 
-	reg_name = arch_register_get_name(reg);
-
 	be_emit_char('%');
-	be_emit_string(reg_name);
+	be_emit_string(reg->name);
 }
 
 static void ia32_emit_entity(ir_entity *entity, int no_pic_adjust)
@@ -511,7 +503,7 @@ end_of_mods:
 							arch_register_t const *      in       = x87_attr->x87[1];
 							if (out == in)
 								in = x87_attr->x87[0];
-							be_emit_irprintf("%%%s, %%%s", arch_register_get_name(in), arch_register_get_name(out));
+							be_emit_irprintf("%%%s, %%%s", in->name, out->name);
 							break;
 						}
 

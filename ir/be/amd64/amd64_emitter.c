@@ -136,7 +136,7 @@ void amd64_emitf(ir_node const *const node, char const *fmt, ...)
 				reg = va_arg(ap, arch_register_t const*);
 emit_R:
 				be_emit_char('%');
-				be_emit_string(arch_register_get_name(reg));
+				be_emit_string(reg->name);
 				break;
 
 			case 'S': {

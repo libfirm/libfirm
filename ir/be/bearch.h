@@ -250,11 +250,6 @@ static inline unsigned arch_register_get_index(const arch_register_t *reg)
 	return reg->index;
 }
 
-static inline const char *arch_register_get_name(const arch_register_t *reg)
-{
-	return reg->name;
-}
-
 /**
  * A class of registers.
  * Like general purpose or floating point.

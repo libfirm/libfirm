@@ -470,7 +470,7 @@ static void assign(ir_node *block, void *env_ptr)
 			bitset_set(colors, col);
 			arch_set_irn_register(irn, reg);
 
-			DBG((dbg, LEVEL_1, "\tassigning register %s(%d) to %+F\n", arch_register_get_name(reg), col, irn));
+			DBG((dbg, LEVEL_1, "\tassigning register %s(%d) to %+F\n", reg->name, col, irn));
 
 			assert(!bitset_is_set(live, nr) && "Value's definition must not have been encountered");
 			bitset_set(live, nr);
