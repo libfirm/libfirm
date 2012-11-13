@@ -705,7 +705,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		keep = be_new_Keep(bl, n, in);
 		for (i = 0; i < n; ++i) {
 			const arch_register_t *reg = (const arch_register_t*)get_irn_link(in[i]);
-			be_node_set_reg_class_in(keep, i, arch_register_get_class(reg));
+			be_node_set_reg_class_in(keep, i, reg->reg_class);
 		}
 	}
 

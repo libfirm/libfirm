@@ -239,12 +239,6 @@ struct arch_register_t {
 	unsigned short               dwarf_number;
 };
 
-static inline const arch_register_class_t *arch_register_get_class(
-		const arch_register_t *reg)
-{
-	return reg->reg_class;
-}
-
 /**
  * A class of registers.
  * Like general purpose or floating point.

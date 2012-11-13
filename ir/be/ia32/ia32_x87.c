@@ -1447,7 +1447,7 @@ static int sim_Keep(x87_state *state, ir_node *node)
 	for (i = 0; i < arity; ++i) {
 		op      = get_irn_n(node, i);
 		op_reg  = arch_get_irn_register(op);
-		if (arch_register_get_class(op_reg) != &ia32_reg_classes[CLASS_ia32_vfp])
+		if (op_reg->reg_class != &ia32_reg_classes[CLASS_ia32_vfp])
 			continue;
 
 		reg_id = op_reg->index;

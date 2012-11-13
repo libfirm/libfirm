@@ -376,15 +376,12 @@ static void emit_be_Copy(const ir_node *irn)
 static void emit_be_Perm(const ir_node *node)
 {
 	const arch_register_t *in0, *in1;
-	const arch_register_class_t *cls0, *cls1;
 
 	in0 = arch_get_irn_register(get_irn_n(node, 0));
 	in1 = arch_get_irn_register(get_irn_n(node, 1));
 
-	cls0 = arch_register_get_class(in0);
-	cls1 = arch_register_get_class(in1);
-
-	assert(cls0 == cls1 && "Register class mismatch at Perm");
+	arch_register_class_t const* const cls0 = in0->reg_class;
+	assert(cls0 == in1->reg_class && "Register class mismatch at Perm");
 
 	amd64_emitf(node, "xchg %R, %R", in0, in1);
 

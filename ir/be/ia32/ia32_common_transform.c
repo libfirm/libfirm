@@ -840,7 +840,7 @@ const arch_register_req_t *ia32_parse_clobber(const char *clobber)
 
 	req          = OALLOCZ(obst, arch_register_req_t);
 	req->type    = arch_register_req_type_limited;
-	req->cls     = arch_register_get_class(reg);
+	req->cls     = reg->reg_class;
 	req->limited = limited;
 	req->width   = 1;
 

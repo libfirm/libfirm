@@ -1246,7 +1246,7 @@ static void Copy_emitter(const ir_node *node, const ir_node *op)
 		return;
 	}
 	/* copies of vf nodes aren't real... */
-	if (arch_register_get_class(in) == &ia32_reg_classes[CLASS_ia32_vfp])
+	if (in->reg_class == &ia32_reg_classes[CLASS_ia32_vfp])
 		return;
 
 	ia32_emitf(node, "movl %R, %R", in, out);
@@ -1268,15 +1268,12 @@ static void emit_be_CopyKeep(const ir_node *node)
 static void emit_be_Perm(const ir_node *node)
 {
 	const arch_register_t *in0, *in1;
-	const arch_register_class_t *cls0, *cls1;
 
 	in0 = arch_get_irn_register(get_irn_n(node, 0));
 	in1 = arch_get_irn_register(get_irn_n(node, 1));
 
-	cls0 = arch_register_get_class(in0);
-	cls1 = arch_register_get_class(in1);
-
-	assert(cls0 == cls1 && "Register class mismatch at Perm");
+	arch_register_class_t const *const cls0 = in0->reg_class;
+	assert(cls0 == in1->reg_class && "Register class mismatch at Perm");
 
 	if (cls0 == &ia32_reg_classes[CLASS_ia32_gp]) {
 		ia32_emitf(node, "xchg %R, %R", in1, in0);
@@ -2239,10 +2236,10 @@ static void bemit_copy(const ir_node *copy)
 	if (in == out)
 		return;
 	/* copies of vf nodes aren't real... */
-	if (arch_register_get_class(in) == &ia32_reg_classes[CLASS_ia32_vfp])
+	if (in->reg_class == &ia32_reg_classes[CLASS_ia32_vfp])
 		return;
 
-	assert(arch_register_get_class(in) == &ia32_reg_classes[CLASS_ia32_gp]);
+	assert(in->reg_class == &ia32_reg_classes[CLASS_ia32_gp]);
 	bemit8(0x8B);
 	bemit_modrr(in, out);
 }
@@ -2251,9 +2248,9 @@ static void bemit_perm(const ir_node *node)
 {
 	const arch_register_t       *in0  = arch_get_irn_register(get_irn_n(node, 0));
 	const arch_register_t       *in1  = arch_get_irn_register(get_irn_n(node, 1));
-	const arch_register_class_t *cls0 = arch_register_get_class(in0);
+	const arch_register_class_t *cls0 = in0->reg_class;
 
-	assert(cls0 == arch_register_get_class(in1) && "Register class mismatch at Perm");
+	assert(cls0 == in1->reg_class && "Register class mismatch at Perm");
 
 	if (cls0 == &ia32_reg_classes[CLASS_ia32_gp]) {
 		if (in0->index == REG_GP_EAX) {

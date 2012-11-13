@@ -249,11 +249,11 @@ bool arch_reg_is_allocatable(const arch_register_req_t *req,
 	if (req->type == arch_register_req_type_none)
 		return false;
 	if (req->type & arch_register_req_type_limited) {
-		if (arch_register_get_class(reg) != req->cls)
+		if (reg->reg_class != req->cls)
 			return false;
 		return rbitset_is_set(req->limited, reg->index);
 	}
-	return req->cls == arch_register_get_class(reg);
+	return req->cls == reg->reg_class;
 }
 
 void arch_dump_register_req(FILE *F, const arch_register_req_t *req,

@@ -256,7 +256,6 @@ static void assure_should_be_same_requirements(ir_node *node)
 		int                          same_pos;
 		ir_node                     *uses_out_reg;
 		const arch_register_req_t   *req = arch_get_irn_register_req_out(node, i);
-		const arch_register_class_t *cls;
 		int                         uses_out_reg_pos;
 
 		if (!arch_register_req_is(req, should_be_same))
@@ -272,8 +271,7 @@ static void assure_should_be_same_requirements(ir_node *node)
 		/* requirement already fulfilled? */
 		if (in_reg == out_reg)
 			continue;
-		cls = arch_register_get_class(in_reg);
-		assert(cls == arch_register_get_class(out_reg));
+		assert(in_reg->reg_class == out_reg->reg_class);
 
 		/* check if any other input operands uses the out register */
 		arity = get_irn_arity(node);

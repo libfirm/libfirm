@@ -313,7 +313,7 @@ void be_abi_fix_stack_nodes(ir_graph *irg)
 		new_sp_req        = OALLOCZ(obst, arch_register_req_t);
 		new_sp_req->type  = arch_register_req_type_limited
 		                  | arch_register_req_type_produces_sp;
-		new_sp_req->cls   = arch_register_get_class(arch_env->sp);
+		new_sp_req->cls   = arch_env->sp->reg_class;
 		new_sp_req->width = 1;
 
 		limited_bitset = rbitset_obstack_alloc(obst, new_sp_req->cls->n_regs);

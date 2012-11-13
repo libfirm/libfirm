@@ -830,7 +830,7 @@ const arch_register_req_t *be_create_reg_req(struct obstack *obst,
 		const arch_register_t *reg, arch_register_req_type_t additional_types)
 {
 	arch_register_req_t         *req = OALLOC(obst, arch_register_req_t);
-	const arch_register_class_t *cls = arch_register_get_class(reg);
+	const arch_register_class_t *cls = reg->reg_class;
 	unsigned                    *limited_bitset;
 
 	limited_bitset = rbitset_obstack_alloc(obst, arch_register_class_n_regs(cls));
@@ -987,7 +987,7 @@ static int get_start_reg_index(ir_graph *irg, const arch_register_t *reg)
 			= arch_get_irn_register_req_out(start, i);
 		if (! (out_req->type & arch_register_req_type_limited))
 			continue;
-		if (out_req->cls != arch_register_get_class(reg))
+		if (out_req->cls != reg->reg_class)
 			continue;
 		if (!rbitset_is_set(out_req->limited, reg->index))
 			continue;
@@ -1000,7 +1000,7 @@ ir_node *be_get_initial_reg_value(ir_graph *irg, const arch_register_t *reg)
 {
 	int      i     = get_start_reg_index(irg, reg);
 	ir_node *start = get_irg_start(irg);
-	ir_mode *mode  = arch_register_class_mode(arch_register_get_class(reg));
+	ir_mode *mode  = arch_register_class_mode(reg->reg_class);
 
 	foreach_out_edge(start, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
@@ -1022,7 +1022,7 @@ int be_find_return_reg_input(ir_node *ret, const arch_register_t *reg)
 		const arch_register_req_t *req = arch_get_irn_register_req_in(ret, i);
 		if (! (req->type & arch_register_req_type_limited))
 			continue;
-		if (req->cls != arch_register_get_class(reg))
+		if (req->cls != reg->reg_class)
 			continue;
 		if (!rbitset_is_set(req->limited, reg->index))
 			continue;
