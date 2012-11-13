@@ -423,14 +423,12 @@ static void assign(ir_node *block, void *env_ptr)
 	be_lv_foreach(lv, block, be_lv_state_in, irn) {
 		if (has_reg_class(env, irn)) {
 			const arch_register_t *reg = arch_get_irn_register(irn);
-			int col;
 
 			assert(reg && "Node must have been assigned a register");
-			col = arch_register_get_index(reg);
-
 			DBG((dbg, LEVEL_4, "%+F has reg %s\n", irn, reg->name));
 
 			/* Mark the color of the live in value as used. */
+			int const col = reg->index;
 			bitset_set(colors, col);
 			bitset_set(in_colors, col);
 
@@ -477,13 +475,10 @@ static void assign(ir_node *block, void *env_ptr)
 		} else if (!b->is_def) {
 			/* Clear the color upon a use. */
 			const arch_register_t *reg = arch_get_irn_register(irn);
-			int col;
 
 			assert(reg && "Register must have been assigned");
 
-			col = arch_register_get_index(reg);
-
-			bitset_clear(colors, col);
+			bitset_clear(colors, reg->index);
 			bitset_clear(live, nr);
 		}
 	}

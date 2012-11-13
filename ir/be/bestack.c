@@ -317,7 +317,7 @@ void be_abi_fix_stack_nodes(ir_graph *irg)
 		new_sp_req->width = 1;
 
 		limited_bitset = rbitset_obstack_alloc(obst, new_sp_req->cls->n_regs);
-		rbitset_set(limited_bitset, arch_register_get_index(sp));
+		rbitset_set(limited_bitset, sp->index);
 		new_sp_req->limited = limited_bitset;
 
 		if (!rbitset_is_set(birg->allocatable_regs, sp->global_index)) {

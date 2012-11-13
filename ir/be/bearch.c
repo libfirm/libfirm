@@ -251,7 +251,7 @@ bool arch_reg_is_allocatable(const arch_register_req_t *req,
 	if (req->type & arch_register_req_type_limited) {
 		if (arch_register_get_class(reg) != req->cls)
 			return false;
-		return rbitset_is_set(req->limited, arch_register_get_index(reg));
+		return rbitset_is_set(req->limited, reg->index);
 	}
 	return req->cls == arch_register_get_class(reg);
 }

@@ -834,7 +834,7 @@ const arch_register_req_t *be_create_reg_req(struct obstack *obst,
 	unsigned                    *limited_bitset;
 
 	limited_bitset = rbitset_obstack_alloc(obst, arch_register_class_n_regs(cls));
-	rbitset_set(limited_bitset, arch_register_get_index(reg));
+	rbitset_set(limited_bitset, reg->index);
 
 	req->type    = arch_register_req_type_limited | additional_types;
 	req->cls     = cls;
