@@ -609,16 +609,15 @@ static inline bool arch_irn_consider_in_reg_alloc(
 	do {                                                                   \
 	if (get_irn_mode(node) == mode_T) {                                    \
 		foreach_out_edge(node, edge_) {                                    \
-			const arch_register_req_t *req_;                               \
-			value = get_edge_src_irn(edge_);                               \
-			req_  = arch_get_irn_register_req(value);                      \
+			ir_node                   *const value = get_edge_src_irn(edge_); \
+			arch_register_req_t const *const req_  = arch_get_irn_register_req(value); \
 			if (req_->cls != ccls)                                         \
 				continue;                                                  \
 			code                                                           \
 		}                                                                  \
 	} else {                                                               \
-		const arch_register_req_t *req_ = arch_get_irn_register_req(node); \
-		value = node;                                                      \
+		arch_register_req_t const *const req_  = arch_get_irn_register_req(node); \
+		ir_node                   *const value = node; \
 		if (req_->cls == ccls) {                                           \
 			code                                                           \
 		}                                                                  \

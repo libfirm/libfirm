@@ -63,7 +63,6 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 	unsigned *tmp        = NULL;
 	unsigned *def_constr = NULL;
 	int       arity      = get_irn_arity(node);
-	ir_node  *def;
 
 	int i, i2;
 
@@ -153,6 +152,7 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 
 	/* collect all registers occurring in out constraints. */
 	be_foreach_definition(node, cls, def,
+		(void)def;
 		if (! (req_->type & arch_register_req_type_limited))
 			continue;
 		if (def_constr == NULL) {

@@ -306,7 +306,6 @@ static void analyze_block(ir_node *block, void *data)
 		if (is_Phi(node))
 			break;
 
-		ir_node *value;
 		be_foreach_definition(node, cls, value,
 			check_defs(&live_nodes, weight, value);
 		);
@@ -410,7 +409,6 @@ static void create_congruence_class(ir_node *block, void *data)
 	/* check should be same constraints */
 	ir_node *last_phi = NULL;
 	sched_foreach_reverse(block, node) {
-		ir_node *value;
 		if (is_Phi(node)) {
 			last_phi = node;
 			break;
@@ -1200,9 +1198,9 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 	}
 
 	/* is any of the live-throughs using a constrained output register? */
-	ir_node  *value;
 	unsigned *live_through_regs = NULL;
 	be_foreach_definition(node, cls, value,
+		(void)value;
 		if (req_->width > 1)
 			double_width = true;
 		if (! (req_->type & arch_register_req_type_limited))
@@ -1696,7 +1694,6 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		free_last_uses(&live_nodes, node);
 
 		/* assign output registers */
-		ir_node *value;
 		be_foreach_definition_(node, cls, value,
 			assign_reg(block, value, forbidden_regs);
 		);
