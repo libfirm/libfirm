@@ -85,6 +85,7 @@
 #define MAX_OPTIMISTIC_SPLIT_RECURSION 0
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
+DEBUG_ONLY(static firm_dbg_module_t *dbg_icore = NULL;)
 
 static struct obstack               obst;
 static ir_graph                    *irg;
@@ -971,7 +972,7 @@ static const char *get_reg_name(unsigned reg_index)
 	return arch_register_get_name(arch_register_for_index(cls, reg_index));
 }
 
-static void print_permutation(unsigned *permutation_orig, unsigned *n_used_orig)
+static void print_parcopy(unsigned *permutation_orig, unsigned *n_used_orig)
 {
 	unsigned permutation[n_regs];
 	unsigned n_used[n_regs];
@@ -980,7 +981,7 @@ static void print_permutation(unsigned *permutation_orig, unsigned *n_used_orig)
 
 	for (unsigned i = 0; i < n_regs; ++i)
 		if (n_used_orig[i] != 0)
-			printf("#users[%s(%u)] = %u\n", get_reg_name(i), i, n_used_orig[i]);
+			DB((dbg_icore, LEVEL_2, "#users[%s(%u)] = %u\n", get_reg_name(i), i, n_used_orig[i]));
 
 	unsigned comp[n_regs];
 	for (unsigned r = 0; r < n_regs; ) {
@@ -1010,8 +1011,8 @@ static void print_permutation(unsigned *permutation_orig, unsigned *n_used_orig)
 		}
 
 		for (unsigned i = 0; i + 1 < len; ++i)
-			printf("%s(%u) -> ", get_reg_name(comp[i]), comp[i]);
-		printf("%s(%i)\n", get_reg_name(comp[len - 1]), comp[len - 1]);
+			DB((dbg_icore, LEVEL_2, "%s(%u) -> ", get_reg_name(comp[i]), comp[i]));
+		DB((dbg_icore, LEVEL_2, "%s(%i)\n", get_reg_name(comp[len - 1]), comp[len - 1]));
 	}
 
 	/* Only cycles left. */
@@ -1039,167 +1040,233 @@ static void print_permutation(unsigned *permutation_orig, unsigned *n_used_orig)
 		}
 
 		for (unsigned i = 0; i < len; ++i)
-			printf("%s(%u) -> ", get_reg_name(comp[i]), comp[i]);
-		printf("%s(%u)\n", get_reg_name(comp[0]), comp[0]);
+			DB((dbg_icore, LEVEL_2, "%s(%u) -> ", get_reg_name(comp[i]), comp[i]));
+		DB((dbg_icore, LEVEL_2, "%s(%u)\n", get_reg_name(comp[0]), comp[0]));
 	}
 }
 
-static void handle_chain(ir_nodeset_t *live_nodes, ir_node *before,
-                         unsigned *permutation, unsigned *n_used,
-                         unsigned first_reg, unsigned last_reg)
+/* TODO: Are self-loops correctly handled? */
+static void mark_cycle_parts(bool *part_of_cycle, unsigned *permutation_orig,
+                             unsigned *n_used_orig)
 {
-	assert(n_used[last_reg] == 0);
-	const unsigned width = 1; /* TODO */
+	unsigned permutation[n_regs];
+	unsigned n_used[n_regs];
+	memcpy(permutation, permutation_orig, sizeof(unsigned) * n_regs);
+	memcpy(n_used, n_used_orig, sizeof(unsigned) * n_regs);
+	memset(part_of_cycle, 0, sizeof(bool) * n_regs);
 
-	printf("Handling chain %s -> ... -> %s\n", get_reg_name(first_reg), get_reg_name(last_reg));
-	ir_node *block = get_nodes_block(before);
-	for (unsigned r = last_reg; r != first_reg; r = permutation[r]) {
-		unsigned src_reg = permutation[r];
-		ir_node *src     = assignments[src_reg];
-		ir_node *copy    = be_new_Copy(block, src);
-		sched_add_before(before, copy);
+	for (unsigned r = 0; r < n_regs; ) {
+		if (permutation[r] == r || n_used[r] > 0) {
+			++r;
+			continue;
+		}
 
-		printf("Inserted copy %s -> %s\n", get_reg_name(src_reg), get_reg_name(r));
-		mark_as_copy_of(copy, src);
-		const arch_register_t *reg = arch_register_for_index(cls, r);
-		use_reg(copy, reg, width);
+		/* Perfect, end of a chain. */
+		unsigned s = r;
+		while (n_used[s] == 0 && permutation[s] != s) {
+			part_of_cycle[s] = false;
 
-		if (live_nodes != NULL)
-			ir_nodeset_insert(live_nodes, copy);
-
-		assert(n_used[src_reg] > 0);
-		--n_used[src_reg];
-		if (n_used[src_reg] == 0) {
-			if (live_nodes != NULL)
-				ir_nodeset_remove(live_nodes, src);
-			free_reg_of_value(src);
+			unsigned src = permutation[s];
+			permutation[s] = s;
+			assert(n_used[src] > 0);
+			--n_used[src];
+			s = src;
 		}
 	}
 
-	/* Mark fix points. */
-	for (unsigned r = last_reg; r != first_reg; /* empty */) {
-		unsigned src = permutation[r];
-		permutation[r] = r;
-		r = src;
+	/* Only cycles left. */
+	for (unsigned r = 0; r < n_regs; ) {
+		if (permutation[r] == r) {
+			if (n_used[r] > 0)
+				part_of_cycle[r] = true;
+			++r;
+			continue;
+		}
+
+		assert(n_used[r] == 1);
+
+		unsigned s = r;
+		while (permutation[s] != s) {
+			part_of_cycle[s] = true;
+			unsigned src = permutation[s];
+			permutation[s] = s;
+			s = src;
+		}
 	}
 }
 
+static unsigned find_longest_chain(unsigned *parcopy, unsigned *n_used,
+                                   unsigned fork_reg)
+{
+	/* fork_reg must be a fork. */
+	assert(n_used[fork_reg] > 1);
+
+	DB((dbg_icore, LEVEL_2, "  Searching for longest chain starting at %s\n", get_reg_name(fork_reg)));
+
+	/* Search the longest chain starting from r. */
+	unsigned max_len = 0;
+	unsigned max_dst = (unsigned) -1;
+
+	for (unsigned to_reg = 0; to_reg < n_regs; /* empty */) {
+		unsigned from_reg = parcopy[to_reg];
+
+		if (from_reg == to_reg || n_used[to_reg] > 0) {
+			++to_reg;
+			continue;
+		}
+
+		DB((dbg_icore, LEVEL_2, "  Found candidate ending in %s\n", get_reg_name(to_reg)));
+		unsigned r   = to_reg;
+		unsigned len = 0;
+		while (r != parcopy[r]) {
+			unsigned src = parcopy[r];
+			++len;
+			if (src == fork_reg && len > max_len) {
+				DB((dbg_icore, LEVEL_2, "  Chain starts in %s, continues via %s, length %u\n", get_reg_name(fork_reg), get_reg_name(r), len));
+				max_len = len;
+				max_dst = r;
+				break;
+			}
+			r = src;
+		}
+
+		++to_reg;
+	}
+
+	return max_dst;
+}
+
 static void permute_values_perms(ir_nodeset_t *live_nodes, ir_node *before,
-                                 unsigned *permutation)
+                                 unsigned *parcopy)
 {
 	unsigned *n_used = ALLOCANZ(unsigned, n_regs);
 
 	/* Determine how often each source register needs to be read */
 	for (unsigned r = 0; r < n_regs; ++r) {
-		unsigned  old_reg = permutation[r];
+		unsigned  old_reg = parcopy[r];
 		ir_node  *value;
 
 		value = assignments[old_reg];
 		if (value == NULL) {
 			/* Nothing to do here, reg is not live. Mark it as fixpoint,
 			 * so we ignore it in the next steps. */
-			permutation[r] = r;
+			parcopy[r] = r;
 			continue;
 		}
 
 		++n_used[old_reg];
 	}
 
-	puts("");
-	print_permutation(permutation, n_used);
+	print_parcopy(parcopy, n_used);
 	ir_node *block = get_nodes_block(before);
-
-	printf("Searching for forks.\n");
-	for (unsigned to_reg = 0; to_reg < n_regs; ) {
-		unsigned from_reg = permutation[to_reg];
-
-		if (from_reg == to_reg || n_used[to_reg] > 0) {
-			++to_reg;
-			continue;
-		}
-
-		/* Found the end of a chain, follow until start or fork. */
-		unsigned r = to_reg;
-		while (r != permutation[r]) {
-			r = permutation[r];
-
-			if ((n_used[r] > 1 && permutation[r] != r) || (n_used[r] > 2 && permutation[r] == r)) {
-				printf("Found a fork, eliminating branch.\n");
-				/* Found a fork, eliminate one branch. */
-				handle_chain(live_nodes, before, permutation, n_used, r, to_reg);
-				break;
-			}
-		}
-
-		++to_reg;
-	}
-	printf("Finished searching for forks.\n");
 
 	unsigned restore_srcs[n_regs];
 	unsigned restore_dsts[n_regs];
 	unsigned num_restores = 0;
 
-	printf("Determining restores.\n");
-	/* Step 2: Scan all chains for loops at the start and record necessary restores. */
-	for (unsigned to_reg = 0; to_reg < n_regs; ) {
-		unsigned from_reg = permutation[to_reg];
+	DB((dbg_icore, LEVEL_2, "Searching for out-of-cycle propagations.\n"));
+	bool is_part_of_cycle[n_regs];
+	mark_cycle_parts(is_part_of_cycle, parcopy, n_used);
+	for (unsigned to_reg = 0; to_reg < n_regs; /* empty */) {
+		unsigned from_reg = parcopy[to_reg];
+
+		if (from_reg == to_reg) {
+			++to_reg;
+			continue;
+		}
+
+		if (is_part_of_cycle[from_reg] && !is_part_of_cycle[to_reg]) {
+			DB((dbg_icore, LEVEL_2, "  Found out-of-cycle propagation %s -> %s\n", get_reg_name(from_reg), get_reg_name(to_reg)));
+			unsigned new_src = (unsigned) -1;
+			for (unsigned src = 0; src < n_regs; ++src) {
+				if (parcopy[src] == from_reg && is_part_of_cycle[src]) {
+					/* new_src must be unambiguous. */
+					new_src = src;
+					break;
+				}
+			}
+			assert((new_src != ((unsigned) -1)) && "Could not find new source for out-of-cycle propagation");
+
+			restore_srcs[num_restores] = new_src;
+			restore_dsts[num_restores] = to_reg;
+			++num_restores;
+			DB((dbg_icore, LEVEL_2, "  Added restore %s -> %s\n", get_reg_name(new_src), get_reg_name(to_reg)));
+			--n_used[from_reg];
+			parcopy[to_reg] = to_reg;
+		}
+
+		++to_reg;
+	}
+	DB((dbg_icore, LEVEL_2, "Finished search for out-of-cycle propagation.\n"));
+
+	DB((dbg_icore, LEVEL_2, "Searching for forks.\n"));
+	for (unsigned to_reg = 0; to_reg < n_regs; /* empty */) {
+		unsigned from_reg = parcopy[to_reg];
 
 		if (from_reg == to_reg || n_used[to_reg] > 0) {
 			++to_reg;
 			continue;
 		}
 
+		/* Found the end of a chain, follow it. */
 		unsigned r = to_reg;
-		while (r != permutation[r]) {
-			unsigned src = permutation[r];
+		while (r != parcopy[r]) {
+			r = parcopy[r];
+			if (n_used[r] > 1) {
+				/* Found a fork. */
+				DB((dbg_icore, LEVEL_2, "  Found a fork at %s\n", get_reg_name(r)));
+				unsigned longest_next = find_longest_chain(parcopy, n_used, r);
+				DB((dbg_icore, LEVEL_2, "  Longest chain from %s via %s\n", get_reg_name(r), get_reg_name(longest_next)));
 
-			if (src == permutation[src] && n_used[src] > 1) {
-				restore_srcs[num_restores] = src;
-				restore_dsts[num_restores] = r;
-				++num_restores;
-				--n_used[src];
-				permutation[r] = r;
-				break;
+				/* Reroute all others. */
+				for (unsigned dst = 0; dst < n_regs; ++dst) {
+					if (dst != longest_next && dst != r && parcopy[dst] == r) {
+						restore_srcs[num_restores] = longest_next;
+						restore_dsts[num_restores] = dst;
+						++num_restores;
+						DB((dbg_icore, LEVEL_2, "  Added restore %s -> %s\n", get_reg_name(longest_next), get_reg_name(dst)));
+						--n_used[r];
+						parcopy[dst] = dst;
+					}
+				}
 			}
-
-			r = src;
 		}
 
 		++to_reg;
 	}
-	printf("Finished: %u restores needed.\n", num_restores);
+	DB((dbg_icore, LEVEL_2, "Finished searching for forks.\n"));
 
-	printf("Current permutation:\n");
-	print_permutation(permutation, n_used);
+	DB((dbg_icore, LEVEL_2, "Current parallel copy:\n"));
+	print_parcopy(parcopy, n_used);
 
 	/* Step 3: The remaining permutation must be suitable for a Perm. */
 	unsigned perm_size = 0;
 	ir_node *ins[n_regs];
 	for (unsigned r = 0; r < n_regs; ++r) {
-		unsigned src = permutation[r];
+		unsigned src = parcopy[r];
 		if (src != r)
 			ins[perm_size++] = assignments[src];
 	}
+
 	if (perm_size > 0) {
-		printf("Creating Perm using permutation.\n");
+		DB((dbg_icore, LEVEL_2, "Creating Perm using permutation.\n"));
 
 		ir_node *perm = be_new_Perm(cls, block, perm_size, ins);
 		sched_add_before(before, perm);
 		unsigned input = 0;
 		for (unsigned r = 0; r < n_regs; ++r) {
-			unsigned src = permutation[r];
+			unsigned src = parcopy[r];
 			if (src != r) {
 				ir_node *proj = new_r_Proj(perm, get_irn_mode(ins[input]), input);
 				mark_as_copy_of(proj, ins[input]);
 
 				const arch_register_t *reg = arch_register_for_index(cls, r);
 				use_reg(proj, reg, /* width = */ 1);
-//				permutation[r] = r;
 
 				assert(n_used[src] == 1);
 				// TODO: When to do?
-				if (permutation[src] == src) {
-					ir_printf("Freeing register %s of value %+F\n", get_reg_name(src), ins[input]);
+				if (parcopy[src] == src) {
+					DB((dbg_icore, LEVEL_2, "Perm: Freeing register %s of value %+F\n", get_reg_name(src), ins[input]));
 					free_reg_of_value(assignments[src]);
 				}
 
@@ -1212,19 +1279,19 @@ static void permute_values_perms(ir_nodeset_t *live_nodes, ir_node *before,
 		}
 
 		for (unsigned r = 0; r < n_regs; ++r)
-			permutation[r] = r;
+			parcopy[r] = r;
 	}
 
 #ifndef NDEBUG
 	/* now we should only have fixpoints left */
 	for (unsigned r = 0; r < n_regs; ++r) {
-		assert(permutation[r] == r);
+		assert(parcopy[r] == r);
 	}
 #endif
 
 	if (num_restores > 0) {
 		/* Step 4: Place restore movs. */
-		printf("Placing restore movs.\n");
+		DB((dbg_icore, LEVEL_2, "Placing restore movs.\n"));
 		for (unsigned i = 0; i < num_restores; ++i) {
 			unsigned src_reg = restore_srcs[i];
 			unsigned dst_reg = restore_dsts[i];
@@ -1232,38 +1299,35 @@ static void permute_values_perms(ir_nodeset_t *live_nodes, ir_node *before,
 			ir_node *copy    = be_new_Copy(block, src);
 			sched_add_before(before, copy);
 
-			ir_printf("Inserted restore copy %+F %s -> %s\n", copy, get_reg_name(src_reg), get_reg_name(dst_reg));
+			DB((dbg_icore, LEVEL_2, "Inserted restore copy %+F %s -> %s\n", copy, get_reg_name(src_reg), get_reg_name(dst_reg)));
 			mark_as_copy_of(copy, src);
 			const arch_register_t *reg = arch_register_for_index(cls, dst_reg);
 			use_reg(copy, reg, /* width = */ 1);
-
-			if (n_used[src_reg] == 0)
-				free_reg_of_value(assignments[src_reg]);
 
 			if (live_nodes != NULL) {
 				ir_nodeset_remove(live_nodes, src);
 				ir_nodeset_insert(live_nodes, copy);
 			}
 		}
-		printf("Finished placing restore movs.\n");
+		DB((dbg_icore, LEVEL_2, "Finished placing restore movs.\n"));
 	}
 }
 
 static void permute_values(ir_nodeset_t *live_nodes, ir_node *before,
                            unsigned *permutation)
 {
-	ir_printf("permute_values: before:\n");
+	DB((dbg_icore, LEVEL_2, "permute_values: before:\n"));
 	for (unsigned i = 0; i < n_regs; ++i)
-		ir_printf("  %u -> %+F\n", i, assignments[i]);
+		DB((dbg_icore, LEVEL_2, "  %u -> %+F\n", i, assignments[i]));
 
 	if (create_big_perms)
 		permute_values_perms(live_nodes, before, permutation);
 	else
 		permute_values_direct(live_nodes, before, permutation);
 
-	ir_printf("permute_values: after:\n");
+	DB((dbg_icore, LEVEL_2, "permute_values: after:\n"));
 	for (unsigned i = 0; i < n_regs; ++i)
-		ir_printf("  %u -> %+F\n", i, assignments[i]);
+		DB((dbg_icore, LEVEL_2, "  %u -> %+F\n", i, assignments[i]));
 }
 
 /**
@@ -2292,4 +2356,5 @@ void be_init_pref_alloc(void)
 
 	be_register_allocator("pref", &be_ra_pref);
 	FIRM_DBG_REGISTER(dbg, "firm.be.prefalloc");
+	FIRM_DBG_REGISTER(dbg_icore, "firm.be.prefalloc.icore");
 }
