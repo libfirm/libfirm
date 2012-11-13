@@ -498,12 +498,9 @@ end_of_mods:
 							goto emit_AM;
 						} else {
 							assert(get_ia32_op_type(node) == ia32_Normal);
-							ia32_x87_attr_t const *const x87_attr = get_ia32_x87_attr_const(node);
-							arch_register_t const *const out      = x87_attr->x87[2];
-							arch_register_t const *      in       = x87_attr->x87[1];
-							if (out == in)
-								in = x87_attr->x87[0];
-							be_emit_irprintf("%%%s, %%%s", in->name, out->name);
+							ia32_x87_attr_t const *const attr = get_ia32_x87_attr_const(node);
+							char            const *const fmt  = attr->res_in_reg ? "%%st, %%%s" : "%%%s, %%st";
+							be_emit_irprintf(fmt, attr->reg->name);
 							break;
 						}
 
@@ -570,15 +567,12 @@ emit_AM:
 
 			case 'F':
 				if (*fmt == 'M') {
-					++fmt;
 					ia32_emit_x87_mode_suffix(node);
 				} else if (*fmt == 'P') {
-					++fmt;
 					ia32_x87_attr_t const *const attr = get_ia32_x87_attr_const(node);
 					if (attr->pop)
 						be_emit_char('p');
 				} else if (*fmt == 'R') {
-					++fmt;
 					/* NOTE: Work around a gas quirk for non-commutative operations if the
 					 * destination register is not %st0.  In this case r/non-r is swapped.
 					 * %st0 = %st0 - %st1 -> fsub  %st1, %st0 (as expected)
@@ -590,24 +584,20 @@ emit_AM:
 					 *   right (r) side of the executed operation.
 					 * - The placement of %st0 selects whether the result is written to
 					 *   %st0 (right) or the other register (left).
-					 * This results in testing whether the left operand register is %st0
-					 * instead of the expected test whether the output register equals the
-					 * left operand register. */
-					ia32_x87_attr_t const *const attr = get_ia32_x87_attr_const(node);
-					if (get_ia32_op_type(node) == ia32_Normal ?
-					    attr->x87[0] != &ia32_registers[REG_ST0] :
-					    attr->attr.data.ins_permuted)
+					 * This means that it is sufficient to test whether the operands are
+					 * permuted.  In particular it is not necessary to consider wether the
+					 * result is to be placed into the explicit register operand. */
+					if (get_ia32_x87_attr_const(node)->attr.data.ins_permuted)
 						be_emit_char('r');
 				} else if (*fmt == 'X') {
-					++fmt;
 					ia32_emit_xmm_mode_suffix(node);
-				} else if ('0' <= *fmt && *fmt <= '2') {
-					const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
+				} else if (*fmt == '0') {
 					be_emit_char('%');
-					be_emit_string(attr->x87[*fmt++ - '0']->name);
+					be_emit_string(get_ia32_x87_attr_const(node)->reg->name);
 				} else {
 					goto unknown;
 				}
+				++fmt;
 				break;
 
 			case 'I':
@@ -3250,38 +3240,30 @@ static void bemit_copybi(const ir_node *node)
 static void bemit_fbinop(ir_node const *const node, unsigned const op_fwd, unsigned const op_rev)
 {
 	ia32_x87_attr_t const *const attr = get_ia32_x87_attr_const(node);
-	arch_register_t const *const st0  = &ia32_registers[REG_ST0];
+	unsigned               const op   = attr->attr.data.ins_permuted ? op_rev : op_fwd;
 	if (get_ia32_op_type(node) == ia32_Normal) {
-		arch_register_t const *const out = attr->x87[2];
-		assert(out == attr->x87[0] || out == attr->x87[1]);
-		assert(!attr->attr.data.ins_permuted);
+		assert(!attr->pop || attr->res_in_reg);
 
 		unsigned char op0 = 0xD8;
-		if (out != st0) op0 |= 0x04;
-		if (attr->pop)  op0 |= 0x02;
+		if (attr->res_in_reg) op0 |= 0x04;
+		if (attr->pop)        op0 |= 0x02;
 		bemit8(op0);
 
-		unsigned               op  = op_rev;
-		arch_register_t const *reg = attr->x87[0];
-		if (reg == st0) {
-			op  = op_fwd;
-			reg = attr->x87[1];
-		}
-		bemit8(MOD_REG | ENC_REG(op) | ENC_RM(reg->index));
+		bemit8(MOD_REG | ENC_REG(op) | ENC_RM(attr->reg->index));
 	} else {
-		assert(attr->x87[2] == st0);
+		assert(!attr->reg);
 		assert(!attr->pop);
 
 		unsigned const size = get_mode_size_bits(get_ia32_ls_mode(node));
 		bemit8(size == 32 ? 0xD8 : 0xDC);
-		bemit_mod_am(attr->attr.data.ins_permuted ? op_rev : op_fwd, node);
+		bemit_mod_am(op, node);
 	}
 }
 
 static void bemit_fop_reg(ir_node const *const node, unsigned char const op0, unsigned char const op1)
 {
 	bemit8(op0);
-	bemit8(op1 + get_ia32_x87_attr_const(node)->x87[0]->index);
+	bemit8(op1 + get_ia32_x87_attr_const(node)->reg->index);
 }
 
 static void bemit_fabs(const ir_node *node)
@@ -3478,14 +3460,14 @@ static void bemit_fucomi(const ir_node *node)
 {
 	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
 	bemit8(attr->pop ? 0xDF : 0xDB); // fucom[p]i
-	bemit8(0xE8 + attr->x87[1]->index);
+	bemit8(0xE8 + attr->reg->index);
 }
 
 static void bemit_fucomfnstsw(const ir_node *node)
 {
 	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
 	bemit8(0xDD); // fucom[p]
-	bemit8((attr->pop ? 0xE8 : 0xE0) + attr->x87[1]->index);
+	bemit8((attr->pop ? 0xE8 : 0xE0) + attr->reg->index);
 	bemit_fnstsw();
 }
 

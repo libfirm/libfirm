@@ -395,12 +395,12 @@ static void x87_create_fxch(x87_state *state, ir_node *n, int pos)
 	ir_node         *const block = get_nodes_block(n);
 	ir_node         *const fxch  = new_bd_ia32_fxch(NULL, block);
 	ia32_x87_attr_t *const attr  = get_ia32_x87_attr(fxch);
-	attr->x87[0] = get_st_reg(pos);
+	attr->reg = get_st_reg(pos);
 
 	keep_alive(fxch);
 
 	sched_add_before(n, fxch);
-	DB((dbg, LEVEL_1, "<<< %s %s, %s\n", get_irn_opname(fxch), attr->x87[0]->name, get_st_reg(0)->name));
+	DB((dbg, LEVEL_1, "<<< %s %s\n", get_irn_opname(fxch), attr->reg->name));
 }
 
 /* -------------- x87 perm --------------- */
@@ -539,12 +539,12 @@ static void x87_create_fpush(x87_state *state, ir_node *n, int pos, int const ou
 
 	ir_node         *const fpush = new_bd_ia32_fpush(NULL, get_nodes_block(n));
 	ia32_x87_attr_t *const attr  = get_ia32_x87_attr(fpush);
-	attr->x87[0] = get_st_reg(pos);
+	attr->reg = get_st_reg(pos);
 
 	keep_alive(fpush);
 	sched_add_before(n, fpush);
 
-	DB((dbg, LEVEL_1, "<<< %s %s, %s\n", get_irn_opname(fpush), attr->x87[0]->name, get_st_reg(0)->name));
+	DB((dbg, LEVEL_1, "<<< %s %s\n", get_irn_opname(fpush), attr->reg->name));
 }
 
 /**
@@ -569,11 +569,11 @@ static ir_node *x87_create_fpop(x87_state *state, ir_node *n, int num)
 		else
 			fpop = new_bd_ia32_fpop(NULL, get_nodes_block(n));
 		attr = get_ia32_x87_attr(fpop);
-		attr->x87[0] = get_st_reg(0);
+		attr->reg = get_st_reg(0);
 
 		keep_alive(fpop);
 		sched_add_before(n, fpop);
-		DB((dbg, LEVEL_1, "<<< %s %s\n", get_irn_opname(fpop), attr->x87[0]->name));
+		DB((dbg, LEVEL_1, "<<< %s %s\n", get_irn_opname(fpop), attr->reg->name));
 	} while (--num > 0);
 	return fpop;
 }
@@ -734,10 +734,6 @@ static void vfp_dump_live(vfp_liveness live)
  */
 static int sim_binop(x87_state *const state, ir_node *const n, ir_op *const op)
 {
-	int op2_idx = 0, op1_idx;
-	int out_idx, do_pop = 0;
-	ia32_x87_attr_t *attr;
-	int permuted;
 	ir_node *patched_insn;
 	x87_simulator         *sim     = state->sim;
 	ir_node               *op1     = get_irn_n(n, n_ia32_binary_left);
@@ -756,17 +752,16 @@ static int sim_binop(x87_state *const state, ir_node *const n, ir_op *const op)
 	DB((dbg, LEVEL_1, "Stack before: "));
 	DEBUG_ONLY(x87_dump_stack(state);)
 
-	op1_idx = x87_on_stack(state, reg_index_1);
+	int op1_idx = x87_on_stack(state, reg_index_1);
 	assert(op1_idx >= 0);
 	op1_live_after = is_vfp_live(reg_index_1, live);
 
-	attr     = get_ia32_x87_attr(n);
-	permuted = attr->attr.data.ins_permuted;
-
-	int const out_reg_idx = out->index;
+	int                    op2_idx;
+	int                    out_idx;
+	bool                   pop         = false;
+	int              const out_reg_idx = out->index;
+	ia32_x87_attr_t *const attr        = get_ia32_x87_attr(n);
 	if (reg_index_2 != REG_VFP_VFP_NOREG) {
-		assert(!permuted);
-
 		/* second operand is a vfp register */
 		op2_idx = x87_on_stack(state, reg_index_2);
 		assert(op2_idx >= 0);
@@ -815,14 +810,14 @@ static int sim_binop(x87_state *const state, ir_node *const n, ir_op *const op)
 						out_idx = 0;
 					} else {
 						/* now do fxxxp (op = op X tos, pop) */
-						do_pop = 1;
 						out_idx = op1_idx;
+						pop     = true;
 					}
 				} else if (op1_idx == 0) {
 					assert(op1_idx != op2_idx);
 					/* now do fxxxrp (op = tos X op, pop) */
-					do_pop = 1;
 					out_idx = op2_idx;
+					pop     = true;
 				} else {
 					/* Bring the second on top. */
 					x87_create_fxch(state, n, op2_idx);
@@ -837,7 +832,7 @@ static int sim_binop(x87_state *const state, ir_node *const n, ir_op *const op)
 						op2_idx = 0;
 						/* use fxxxp (op = op X tos, pop) */
 						out_idx = op1_idx;
-						do_pop = 1;
+						pop     = true;
 					}
 				}
 			}
@@ -847,38 +842,37 @@ static int sim_binop(x87_state *const state, ir_node *const n, ir_op *const op)
 		if (op1_live_after) {
 			/* first operand is live: push it here */
 			x87_create_fpush(state, n, op1_idx, out_reg_idx, op1);
-			op1_idx = 0;
 		} else {
 			/* first operand is dead: bring it to tos */
-			if (op1_idx != 0) {
+			if (op1_idx != 0)
 				x87_create_fxch(state, n, op1_idx);
-				op1_idx = 0;
-			}
 		}
 
-		/* use fxxx (tos = tos X mem) */
+		op1_idx = attr->attr.data.ins_permuted ? -1 :  0;
+		op2_idx = attr->attr.data.ins_permuted ?  0 : -1;
 		out_idx = 0;
 	}
+	assert(op1_idx == 0       || op2_idx == 0);
+	assert(out_idx == op1_idx || out_idx == op2_idx);
 
 	patched_insn = x87_patch_insn(n, op);
 	x87_set_st(state, out_reg_idx, patched_insn, out_idx);
-	if (do_pop) {
+	if (pop)
 		x87_pop(state);
-	}
 
 	/* patch the operation */
-	attr->pop    = do_pop;
-	attr->x87[0] = op1_reg = get_st_reg(op1_idx);
-	if (reg_index_2 != REG_VFP_VFP_NOREG) {
-		attr->x87[1] = op2_reg = get_st_reg(op2_idx);
-	}
-	attr->x87[2] = out = get_st_reg(out_idx);
+	int const reg_idx = op1_idx != 0 ? op1_idx : op2_idx;
+	attr->reg                    = reg_idx >= 0 ? get_st_reg(reg_idx) : NULL;
+	attr->attr.data.ins_permuted = op1_idx != 0;
+	attr->res_in_reg             = out_idx != 0;
+	attr->pop                    = pop;
 
-	if (reg_index_2 != REG_VFP_VFP_NOREG) {
-		DB((dbg, LEVEL_1, "<<< %s %s, %s -> %s\n", get_irn_opname(n), op1_reg->name, op2_reg->name, out->name));
-	} else {
-		DB((dbg, LEVEL_1, "<<< %s %s, [AM] -> %s\n", get_irn_opname(n), op1_reg->name, out->name));
-	}
+	DEBUG_ONLY(
+		char const *const l = op1_idx >= 0 ? get_st_reg(op1_idx)->name : "[AM]";
+		char const *const r = op2_idx >= 0 ? get_st_reg(op2_idx)->name : "[AM]";
+		char const *const o = get_st_reg(out_idx)->name;
+		DB((dbg, LEVEL_1, "<<< %s %s, %s -> %s\n", get_irn_opname(n), l, r, o));
+	);
 
 	return NO_NODE_ADDED;
 }
@@ -1178,8 +1172,6 @@ static int sim_FtstFnstsw(x87_state *state, ir_node *n)
  */
 static int sim_Fucom(x87_state *state, ir_node *n)
 {
-	int op1_idx;
-	int op2_idx = -1;
 	ia32_x87_attr_t *attr = get_ia32_x87_attr(n);
 	ir_op *dst;
 	x87_simulator         *sim        = state->sim;
@@ -1190,16 +1182,17 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 	int                    reg_index_1 = op1->index;
 	int                    reg_index_2 = op2->index;
 	unsigned               live       = vfp_live_args_after(sim, n, 0);
-	int                    pops       = 0;
 
 	DB((dbg, LEVEL_1, ">>> %+F %s, %s\n", n, op1->name, op2->name));
 	DEBUG_ONLY(vfp_dump_live(live);)
 	DB((dbg, LEVEL_1, "Stack before: "));
 	DEBUG_ONLY(x87_dump_stack(state);)
 
-	op1_idx = x87_on_stack(state, reg_index_1);
+	int op1_idx = x87_on_stack(state, reg_index_1);
 	assert(op1_idx >= 0);
 
+	int op2_idx;
+	int pops = 0;
 	/* BEWARE: check for comp a,a cases, they might happen */
 	if (reg_index_2 != REG_VFP_VFP_NOREG) {
 		/* second operand is a vfp register */
@@ -1316,21 +1309,16 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 		}
 	} else {
 		/* second operand is an address mode */
-		if (is_vfp_live(reg_index_1, live)) {
-			/* first operand is live: bring it to TOS */
-			if (op1_idx != 0) {
-				x87_create_fxch(state, n, op1_idx);
-				op1_idx = 0;
-			}
-		} else {
-			/* first operand is dead: bring it to tos */
-			if (op1_idx != 0) {
-				x87_create_fxch(state, n, op1_idx);
-				op1_idx = 0;
-			}
+		if (op1_idx != 0)
+			x87_create_fxch(state, n, op1_idx);
+		/* Pop first operand, if it is dead. */
+		if (!is_vfp_live(reg_index_1, live))
 			pops = 1;
-		}
+
+		op1_idx = attr->attr.data.ins_permuted ? -1 :  0;
+		op2_idx = attr->attr.data.ins_permuted ?  0 : -1;
 	}
+	assert(op1_idx == 0 || op2_idx == 0);
 
 	/* patch the operation */
 	if (is_ia32_vFucomFnstsw(n)) {
@@ -1348,26 +1336,17 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 	}
 
 	x87_patch_insn(n, dst);
-	if (op1_idx != 0) {
-		int tmp = op1_idx;
-		op1_idx = op2_idx;
-		op2_idx = tmp;
-		attr->attr.data.ins_permuted ^= true;
-	}
 
-	op1 = get_st_reg(op1_idx);
-	attr->x87[0] = op1;
-	if (op2_idx >= 0) {
-		op2 = get_st_reg(op2_idx);
-		attr->x87[1] = op2;
-	}
+	int const reg_idx = op1_idx != 0 ? op1_idx : op2_idx;
+	attr->reg                    = reg_idx >= 0 ? get_st_reg(reg_idx) : NULL;
+	attr->attr.data.ins_permuted = op1_idx != 0;
 	attr->pop                    = pops != 0;
 
-	if (op2_idx >= 0) {
-		DB((dbg, LEVEL_1, "<<< %s %s, %s\n", get_irn_opname(n), op1->name, op2->name));
-	} else {
-		DB((dbg, LEVEL_1, "<<< %s %s, [AM]\n", get_irn_opname(n), op1->name));
-	}
+	DEBUG_ONLY(
+		char const *const l = op1_idx >= 0 ? get_st_reg(op1_idx)->name : "[AM]";
+		char const *const r = op2_idx >= 0 ? get_st_reg(op2_idx)->name : "[AM]";
+		DB((dbg, LEVEL_1, "<<< %s %s, %s\n", get_irn_opname(n), l, r));
+	);
 
 	return NO_NODE_ADDED;
 }
@@ -1486,7 +1465,7 @@ static ir_node *create_Copy(x87_state *state, ir_node *n)
 		x87_push(state, out->index, res);
 
 		ia32_x87_attr_t *const attr = get_ia32_x87_attr(res);
-		attr->x87[0] = get_st_reg(op1_idx);
+		attr->reg = get_st_reg(op1_idx);
 	}
 	arch_set_irn_register(res, out);
 
