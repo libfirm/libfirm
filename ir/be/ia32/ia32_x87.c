@@ -779,28 +779,24 @@ static int sim_binop(x87_state *const state, ir_node *const n, ir_op *const op)
 				op2_idx += 1;
 				out_idx = 0;
 			} else {
-				/* Second live, first operand is dead here, bring it to tos. */
-				if (op1_idx != 0) {
+				/* Second live, first operand is dead: Overwrite first. */
+				if (op1_idx != 0 && op2_idx != 0) {
+					/* Bring one operand to tos. */
 					x87_create_fxch(state, n, op1_idx);
-					if (op2_idx == 0)
-						op2_idx = op1_idx;
 					op1_idx = 0;
 				}
-				/* now do fxxx (tos=tos X op) */
-				out_idx = 0;
+				out_idx = op1_idx;
 			}
 		} else {
 			/* Second operand is dead. */
 			if (op1_live_after) {
-				/* First operand is live: bring second to tos. */
-				if (op2_idx != 0) {
+				/* First operand is live, second is dead: Overwrite second. */
+				if (op1_idx != 0 && op2_idx != 0) {
+					/* Bring one operand to tos. */
 					x87_create_fxch(state, n, op2_idx);
-					if (op1_idx == 0)
-						op1_idx = op2_idx;
 					op2_idx = 0;
 				}
-				/* now do fxxxr (tos = op X tos) */
-				out_idx = 0;
+				out_idx = op2_idx;
 			} else {
 				/* Both operands are dead. */
 				if (op1_idx != 0 && op2_idx != 0) {
