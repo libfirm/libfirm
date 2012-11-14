@@ -1352,30 +1352,15 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 
 	/* patch the operation */
 	if (is_ia32_vFucomFnstsw(n)) {
-		int i;
-
-		switch (pops) {
-		case 1: attr->pop = true; /* FALLTHROUGH */
-		case 0: dst = op_ia32_FucomFnstsw;   break;
-		case 2: dst = op_ia32_FucomppFnstsw; break;
-		default: panic("invalid popcount");
-		}
-
-		for (i = 0; i < pops; ++i) {
+		dst = pops == 2 ? op_ia32_FucomppFnstsw : op_ia32_FucomFnstsw;
+		for (int i = 0; i < pops; ++i)
 			x87_pop(state);
-		}
 	} else if (is_ia32_vFucomi(n)) {
 		dst = op_ia32_Fucomi;
-		switch (pops) {
-		case 0: break;
-		case 1: attr->pop = true; x87_pop(state); break;
-		case 2:
-			attr->pop = true;
+		if (pops != 0)
 			x87_pop(state);
+		if (pops == 2)
 			x87_create_fpop(state, sched_next(n), 1);
-			break;
-		default: panic("invalid popcount");
-		}
 	} else {
 		panic("invalid operation %+F", n);
 	}
@@ -1394,6 +1379,7 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 		attr->x87[1] = op2;
 	}
 	attr->attr.data.ins_permuted = permuted;
+	attr->pop                    = pops != 0;
 
 	if (op2_idx >= 0) {
 		DB((dbg, LEVEL_1, "<<< %s %s, %s\n", get_irn_opname(n), op1->name, op2->name));
