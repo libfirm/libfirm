@@ -802,39 +802,16 @@ static int sim_binop(x87_state *const state, ir_node *const n, ir_op *const op)
 				/* now do fxxxr (tos = op X tos) */
 				out_idx = 0;
 			} else {
-				/* Both operands are dead here, pop them from the stack. */
-				if (op2_idx == 0) {
-					if (op1_idx == 0) {
-						/* Both are identically and on tos, no pop needed. */
-						/* here fxxx (tos = tos X tos) */
-						out_idx = 0;
-					} else {
-						/* now do fxxxp (op = op X tos, pop) */
-						out_idx = op1_idx;
-						pop     = true;
-					}
-				} else if (op1_idx == 0) {
-					assert(op1_idx != op2_idx);
-					/* now do fxxxrp (op = tos X op, pop) */
-					out_idx = op2_idx;
-					pop     = true;
-				} else {
-					/* Bring the second on top. */
-					x87_create_fxch(state, n, op2_idx);
-					if (op1_idx == op2_idx) {
-						/* Both are identically and on tos now, no pop needed. */
-						op1_idx = 0;
-						op2_idx = 0;
-						/* use fxxx (tos = tos X tos) */
-						out_idx = 0;
-					} else {
-						/* op2 is on tos now */
-						op2_idx = 0;
-						/* use fxxxp (op = op X tos, pop) */
-						out_idx = op1_idx;
-						pop     = true;
-					}
+				/* Both operands are dead. */
+				if (op1_idx != 0 && op2_idx != 0) {
+					/* Bring one operand to tos. */
+					x87_create_fxch(state, n, op1_idx);
+					if (op2_idx == op1_idx) op2_idx = 0;
+					op1_idx = 0;
 				}
+				out_idx = op1_idx != 0 ? op1_idx : op2_idx;
+				/* Only pop if the operands are differnt. */
+				pop     = op1_idx != op2_idx;
 			}
 		}
 	} else {
