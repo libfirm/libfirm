@@ -772,8 +772,8 @@ static int sim_binop(x87_state *const state, ir_node *const n, ir_op *const op)
 
 			if (op1_live_after) {
 				/* Both operands are live: push the first one.
-				   This works even for op1 == op2. */
-				x87_create_fpush(state, n, op1_idx, out_reg_idx, op2);
+				 * This works even for op1 == op2. */
+				x87_create_fpush(state, n, op1_idx, out_reg_idx, op1);
 				/* now do fxxx (tos=tos X op) */
 				op1_idx = 0;
 				op2_idx += 1;
