@@ -549,21 +549,28 @@ static void x87_create_fpush(x87_state *state, ir_node *n, int pos, int const ou
 
 /**
  * Create a fpop before node n.
+ * This overwrites st(pos) with st(0) and pops st(0).
  *
  * @param state   the x87 state
  * @param n       the node after the fpop
+ * @param pos     the index of the entry to remove the register stack
  *
  * @return the fpop node
  */
-static ir_node *x87_create_fpop(x87_state *const state, ir_node *const n)
+static ir_node *x87_create_fpop(x87_state *const state, ir_node *const n, int const pos)
 {
+	if (pos != 0) {
+		st_entry *const dst = x87_get_entry(state, pos);
+		st_entry *const src = x87_get_entry(state, 0);
+		*dst = *src;
+	}
 	x87_pop(state);
 	ir_node *const block = get_nodes_block(n);
-	ir_node *const fpop  = ia32_cg_config.use_ffreep ?
+	ir_node *const fpop  = pos == 0 && ia32_cg_config.use_ffreep ?
 		new_bd_ia32_ffreep(NULL, block) :
 		new_bd_ia32_fpop(  NULL, block);
 	ia32_x87_attr_t *const attr = get_ia32_x87_attr(fpop);
-	attr->reg = get_st_reg(0);
+	attr->reg = get_st_reg(pos);
 
 	keep_alive(fpop);
 	sched_add_before(n, fpop);
@@ -1123,7 +1130,7 @@ static int sim_FtstFnstsw(x87_state *state, ir_node *n)
 	x87_patch_insn(n, op_ia32_FtstFnstsw);
 
 	if (!is_vfp_live(reg_index_1, live))
-		x87_create_fpop(state, sched_next(n));
+		x87_create_fpop(state, sched_next(n), 0);
 
 	return NO_NODE_ADDED;
 }
@@ -1296,7 +1303,7 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 		if (pops != 0)
 			x87_pop(state);
 		if (pops == 2)
-			x87_create_fpop(state, sched_next(n));
+			x87_create_fpop(state, sched_next(n), 0);
 	} else {
 		panic("invalid operation %+F", n);
 	}
@@ -1348,7 +1355,7 @@ static int sim_Keep(x87_state *state, ir_node *node)
 
 		op_stack_idx = x87_on_stack(state, reg_id);
 		if (op_stack_idx >= 0 && !is_vfp_live(reg_id, live))
-			x87_create_fpop(state, sched_next(node));
+			x87_create_fpop(state, sched_next(node), 0);
 	}
 
 	DB((dbg, LEVEL_1, "Stack after: "));
@@ -1703,7 +1710,7 @@ static void x87_kill_deads(x87_simulator *const sim, ir_node *const block, x87_s
 
 			depth      -= 1;
 			kill_mask >>= 1;
-			keep        = x87_create_fpop(state, first_insn);
+			keep        = x87_create_fpop(state, first_insn, 0);
 		}
 		keep_alive(keep);
 	}
