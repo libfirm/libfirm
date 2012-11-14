@@ -1223,60 +1223,19 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 					}
 					/* res = tos X op, pop */
 					pops    = 1;
-				}
-				/* different, move them to st and st(1) and pop both.
-				   The tricky part is to get one into st(1).*/
-				else if (op2_idx == 1) {
-					/* good, second operand is already in the right place, move the first */
-					if (op1_idx != 0) {
-						/* bring the first on top */
-						x87_create_fxch(state, n, op1_idx);
-						assert(op2_idx != 0);
-						op1_idx = 0;
-					}
-					/* res = tos X op, pop, pop */
-					pops = 2;
-				} else if (op1_idx == 1) {
-					/* good, first operand is already in the right place, move the second */
-					if (op2_idx != 0) {
-						/* bring the first on top */
-						x87_create_fxch(state, n, op2_idx);
-						assert(op1_idx != 0);
-						op2_idx = 0;
-					}
-					/* res = op X tos, pop, pop */
-					pops = 2;
 				} else {
-					/* if one is already the TOS, we need two fxch */
-					if (op1_idx == 0) {
-						/* first one is TOS, move to st(1) */
-						x87_create_fxch(state, n, 1);
-						assert(op2_idx != 1);
-						op1_idx = 1;
-						x87_create_fxch(state, n, op2_idx);
-						op2_idx = 0;
-						/* res = op X tos, pop, pop */
-						pops    = 2;
-					} else if (op2_idx == 0) {
-						/* second one is TOS, move to st(1) */
-						x87_create_fxch(state, n, 1);
-						assert(op1_idx != 1);
-						op2_idx = 1;
-						x87_create_fxch(state, n, op1_idx);
-						op1_idx = 0;
-						/* res = tos X op, pop, pop */
-						pops    = 2;
-					} else {
-						/* none of them is either TOS or st(1), 3 fxch needed */
-						x87_create_fxch(state, n, op2_idx);
-						assert(op1_idx != 0);
-						x87_create_fxch(state, n, 1);
-						op2_idx = 1;
-						x87_create_fxch(state, n, op1_idx);
-						op1_idx = 0;
-						/* res = tos X op, pop, pop */
-						pops    = 2;
+					if (op1_idx != 0 && op2_idx != 0) {
+						/* Both not at tos: Move one operand to tos. Move the one not at
+						 * pos 1, so we get a chance to use fucompp. */
+						if (op1_idx != 1) {
+							x87_create_fxch(state, n, op1_idx);
+							op1_idx = 0;
+						} else {
+							x87_create_fxch(state, n, op2_idx);
+							op2_idx = 0;
+						}
 					}
+					pops = 2;
 				}
 			}
 		}
@@ -1295,15 +1254,23 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 
 	/* patch the operation */
 	if (is_ia32_vFucomFnstsw(n)) {
-		dst = pops == 2 ? op_ia32_FucomppFnstsw : op_ia32_FucomFnstsw;
-		for (int i = 0; i < pops; ++i)
+		if (pops == 2 && (op1_idx == 1 || op2_idx == 1)) {
+			dst = op_ia32_FucomppFnstsw;
 			x87_pop(state);
+			x87_pop(state);
+		} else {
+			dst = op_ia32_FucomFnstsw;
+			goto pop;
+		}
 	} else if (is_ia32_vFucomi(n)) {
 		dst = op_ia32_Fucomi;
+pop:
 		if (pops != 0)
 			x87_pop(state);
-		if (pops == 2)
-			x87_create_fpop(state, sched_next(n), 0);
+		if (pops == 2) {
+			int const idx = (op1_idx != 0 ? op1_idx : op2_idx) - 1 /* Due to prior pop. */;
+			x87_create_fpop(state, sched_next(n), idx);
+		}
 	} else {
 		panic("invalid operation %+F", n);
 	}
