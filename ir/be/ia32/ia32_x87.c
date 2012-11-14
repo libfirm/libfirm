@@ -552,29 +552,22 @@ static void x87_create_fpush(x87_state *state, ir_node *n, int pos, int const ou
  *
  * @param state   the x87 state
  * @param n       the node after the fpop
- * @param num     pop 1 or 2 values
  *
  * @return the fpop node
  */
-static ir_node *x87_create_fpop(x87_state *state, ir_node *n, int num)
+static ir_node *x87_create_fpop(x87_state *const state, ir_node *const n)
 {
-	ir_node         *fpop = NULL;
-	ia32_x87_attr_t *attr;
+	x87_pop(state);
+	ir_node *const block = get_nodes_block(n);
+	ir_node *const fpop  = ia32_cg_config.use_ffreep ?
+		new_bd_ia32_ffreep(NULL, block) :
+		new_bd_ia32_fpop(  NULL, block);
+	ia32_x87_attr_t *const attr = get_ia32_x87_attr(fpop);
+	attr->reg = get_st_reg(0);
 
-	assert(num > 0);
-	do {
-		x87_pop(state);
-		if (ia32_cg_config.use_ffreep)
-			fpop = new_bd_ia32_ffreep(NULL, get_nodes_block(n));
-		else
-			fpop = new_bd_ia32_fpop(NULL, get_nodes_block(n));
-		attr = get_ia32_x87_attr(fpop);
-		attr->reg = get_st_reg(0);
-
-		keep_alive(fpop);
-		sched_add_before(n, fpop);
-		DB((dbg, LEVEL_1, "<<< %s %s\n", get_irn_opname(fpop), attr->reg->name));
-	} while (--num > 0);
+	keep_alive(fpop);
+	sched_add_before(n, fpop);
+	DB((dbg, LEVEL_1, "<<< %s %s\n", get_irn_opname(fpop), attr->reg->name));
 	return fpop;
 }
 
@@ -1130,7 +1123,7 @@ static int sim_FtstFnstsw(x87_state *state, ir_node *n)
 	x87_patch_insn(n, op_ia32_FtstFnstsw);
 
 	if (!is_vfp_live(reg_index_1, live))
-		x87_create_fpop(state, sched_next(n), 1);
+		x87_create_fpop(state, sched_next(n));
 
 	return NO_NODE_ADDED;
 }
@@ -1303,7 +1296,7 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 		if (pops != 0)
 			x87_pop(state);
 		if (pops == 2)
-			x87_create_fpop(state, sched_next(n), 1);
+			x87_create_fpop(state, sched_next(n));
 	} else {
 		panic("invalid operation %+F", n);
 	}
@@ -1355,7 +1348,7 @@ static int sim_Keep(x87_state *state, ir_node *node)
 
 		op_stack_idx = x87_on_stack(state, reg_id);
 		if (op_stack_idx >= 0 && !is_vfp_live(reg_id, live))
-			x87_create_fpop(state, sched_next(node), 1);
+			x87_create_fpop(state, sched_next(node));
 	}
 
 	DB((dbg, LEVEL_1, "Stack after: "));
@@ -1658,7 +1651,7 @@ static void x87_kill_deads(x87_simulator *const sim, ir_node *const block, x87_s
 	ir_node *keep = NULL;
 	unsigned live = vfp_live_args_after(sim, block, 0);
 	unsigned kill_mask;
-	int i, depth, num_pop;
+	int i, depth;
 
 	kill_mask = 0;
 	depth = x87_get_depth(state);
@@ -1708,18 +1701,9 @@ static void x87_kill_deads(x87_simulator *const sim, ir_node *const block, x87_s
 				x87_create_fxch(state, first_insn, i);
 			}
 
-			if ((kill_mask & 3) == 3) {
-				/* we can do a double-pop */
-				num_pop = 2;
-			}
-			else {
-				/* only a single pop */
-				num_pop = 1;
-			}
-
-			depth -= num_pop;
-			kill_mask >>= num_pop;
-			keep = x87_create_fpop(state, first_insn, num_pop);
+			depth      -= 1;
+			kill_mask >>= 1;
+			keep        = x87_create_fpop(state, first_insn);
 		}
 		keep_alive(keep);
 	}
