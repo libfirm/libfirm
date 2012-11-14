@@ -1190,8 +1190,6 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 	int                    reg_index_1 = op1->index;
 	int                    reg_index_2 = op2->index;
 	unsigned               live       = vfp_live_args_after(sim, n, 0);
-	bool                   permuted   = attr->attr.data.ins_permuted;
-	bool                   xchg       = false;
 	int                    pops       = 0;
 
 	DB((dbg, LEVEL_1, ">>> %+F %s, %s\n", n, op1->name, op2->name));
@@ -1213,21 +1211,11 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 
 			if (is_vfp_live(reg_index_1, live)) {
 				/* both operands are live */
-
-				if (op1_idx == 0) {
-					/* res = tos X op */
-				} else if (op2_idx == 0) {
-					/* res = op X tos */
-					permuted = !permuted;
-					xchg     = true;
-				} else {
+				if (op1_idx != 0 && op2_idx != 0) {
 					/* bring the first one to tos */
 					x87_create_fxch(state, n, op1_idx);
-					if (op1_idx == op2_idx) {
+					if (op1_idx == op2_idx)
 						op2_idx = 0;
-					} else if (op2_idx == 0) {
-						op2_idx = op1_idx;
-					}
 					op1_idx = 0;
 					/* res = tos X op */
 				}
@@ -1257,9 +1245,7 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 					op2_idx = 0;
 				}
 				/* res = op X tos, pop */
-				pops     = 1;
-				permuted = !permuted;
-				xchg     = true;
+				pops = 1;
 			} else {
 				/* both operands are dead here, check first for identity. */
 				if (op1_idx == op2_idx) {
@@ -1293,9 +1279,7 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 						op2_idx = 0;
 					}
 					/* res = op X tos, pop, pop */
-					permuted = !permuted;
-					xchg     = true;
-					pops     = 2;
+					pops = 2;
 				} else {
 					/* if one is already the TOS, we need two fxch */
 					if (op1_idx == 0) {
@@ -1306,9 +1290,7 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 						x87_create_fxch(state, n, op2_idx);
 						op2_idx = 0;
 						/* res = op X tos, pop, pop */
-						pops     = 2;
-						permuted = !permuted;
-						xchg     = true;
+						pops    = 2;
 					} else if (op2_idx == 0) {
 						/* second one is TOS, move to st(1) */
 						x87_create_fxch(state, n, 1);
@@ -1366,10 +1348,11 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 	}
 
 	x87_patch_insn(n, dst);
-	if (xchg) {
+	if (op1_idx != 0) {
 		int tmp = op1_idx;
 		op1_idx = op2_idx;
 		op2_idx = tmp;
+		attr->attr.data.ins_permuted ^= true;
 	}
 
 	op1 = get_st_reg(op1_idx);
@@ -1378,7 +1361,6 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 		op2 = get_st_reg(op2_idx);
 		attr->x87[1] = op2;
 	}
-	attr->attr.data.ins_permuted = permuted;
 	attr->pop                    = pops != 0;
 
 	if (op2_idx >= 0) {
