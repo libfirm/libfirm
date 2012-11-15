@@ -755,43 +755,50 @@ static void emit_size_type(size_t size)
 	}
 }
 
+static void emit_string_char(int c)
+{
+	switch (c) {
+	case '"' : be_emit_cstring("\\\""); break;
+	case '\n': be_emit_cstring("\\n"); break;
+	case '\r': be_emit_cstring("\\r"); break;
+	case '\t': be_emit_cstring("\\t"); break;
+	case '\\': be_emit_cstring("\\\\"); break;
+	default  :
+		if (isprint(c))
+			be_emit_char(c);
+		else
+			be_emit_irprintf("\\%03o", c);
+		break;
+	}
+}
+
 static size_t emit_string_initializer(const ir_initializer_t *initializer)
 {
-	size_t i, len;
+	be_emit_cstring("\t.asciz \"");
 
-	len = initializer->compound.n_initializers;
-	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
-		be_emit_cstring("\t.ascii \"");
-	} else {
-		be_emit_cstring("\t.string \"");
-		len -= 1;
-	}
-
-	for (i = 0; i < len; ++i) {
+	size_t len = initializer->compound.n_initializers;
+	for (size_t i = 0; i < len-1; ++i) {
 		const ir_initializer_t *sub_initializer
 			= get_initializer_compound_value(initializer, i);
 
 		ir_tarval *tv = get_initializer_tarval(sub_initializer);
 		int        c  = get_tarval_long(tv);
-
-		switch (c) {
-		case '"' : be_emit_cstring("\\\""); break;
-		case '\n': be_emit_cstring("\\n"); break;
-		case '\r': be_emit_cstring("\\r"); break;
-		case '\t': be_emit_cstring("\\t"); break;
-		case '\\': be_emit_cstring("\\\\"); break;
-		default  :
-			if (isprint(c))
-				be_emit_char(c);
-			else
-				be_emit_irprintf("\\%03o", c);
-			break;
-		}
+		emit_string_char(c);
 	}
 	be_emit_cstring("\"\n");
 	be_emit_write_line();
 
 	return initializer->compound.n_initializers;
+}
+
+void be_gas_emit_cstring(const char *string)
+{
+	be_emit_cstring("\t.asciz \"");
+	for (const char *c = string; *c != '\0'; ++c) {
+		emit_string_char(*c);
+	}
+	be_emit_cstring("\"\n");
+	be_emit_write_line();
 }
 
 typedef enum normal_or_bitfield_kind {
