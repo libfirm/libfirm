@@ -915,19 +915,20 @@ void be_dwarf_unit_begin(const char *filename)
 	emit_label("info_section_begin");
 	emit_label("info_begin");
 
+	const backend_params *be_params = be_get_backend_param();
+
 	/* length of compilation unit info */
 	emit_size("compile_unit_begin", "compile_unit_end");
 	emit_label("compile_unit_begin");
 	emit_int16(3);   /* dwarf version */
 	emit_address("abbrev_begin");
-	emit_int8(4);    /* pointer size, TODO: query backend */
+	emit_int8(be_params->machine_size / 8); /* pointer size */
 
 	/* compile_unit die */
 	emit_uleb128(abbrev_compile_unit);
 	emit_address("line_section_begin");
 	emit_string_printf("libFirm (%u.%u %s)", ir_get_version_major(),
-	                   ir_get_version_minor(),
-	                   ir_get_version_revision());
+	                   ir_get_version_minor(), ir_get_version_revision());
 	emit_string(filename);
 	if (language != 0)
 		emit_int16(language);

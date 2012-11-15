@@ -134,8 +134,8 @@ typedef struct backend_params {
 	/** Backend settings for if-conversion. */
 	arch_allow_ifconv_func allow_ifconv;
 
-	/** size of machine words. This is usually the size of the general purpose
-	 * integer registers. */
+	/** size of machine word in bits. This is usually the size of the general
+	 * purpose integer/address registers. */
 	unsigned machine_size;
 
 	/**
