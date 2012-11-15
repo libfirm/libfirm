@@ -50,6 +50,135 @@
 #include "beintlive_t.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
+DEBUG_ONLY(static firm_dbg_module_t *dbg_icore = NULL;)
+
+static const char *get_reg_name(unsigned index, const be_chordal_env_t *env)
+{
+	return arch_register_get_name(arch_register_for_index(env->cls, index));
+}
+
+static void print_parcopy(unsigned *permutation_orig, unsigned *n_used_orig,
+                          const be_chordal_env_t *env)
+{
+	const unsigned n_regs = env->cls->n_regs;
+	unsigned permutation[n_regs];
+	unsigned n_used[n_regs];
+	memcpy(permutation, permutation_orig, sizeof(unsigned) * n_regs);
+	memcpy(n_used, n_used_orig, sizeof(unsigned) * n_regs);
+
+	for (unsigned i = 0; i < n_regs; ++i)
+		if (n_used_orig[i] != 0)
+			DB((dbg_icore, LEVEL_2, "#users[%s(%u)] = %u\n", get_reg_name(i, env), i, n_used_orig[i]));
+
+	unsigned comp[n_regs];
+	for (unsigned r = 0; r < n_regs; ) {
+		if (permutation[r] == r || n_used[r] > 0) {
+			++r;
+			continue;
+		}
+
+		/* Perfect, end of a chain. */
+		unsigned len = 0;
+		comp[len++] = r;
+		unsigned s = r;
+		while (n_used[s] == 0 && permutation[s] != s) {
+			unsigned src = permutation[s];
+			permutation[s] = s;
+			comp[len++] = src;
+			assert(n_used[src] > 0);
+			--n_used[src];
+			s = src;
+		}
+
+		/* Reverse. */
+		for (unsigned i = 0; i < len / 2; ++i) {
+			unsigned t = comp[i];
+			comp[i] = comp[len - i - 1];
+			comp[len - i - 1] = t;
+		}
+
+		for (unsigned i = 0; i + 1 < len; ++i)
+			DB((dbg_icore, LEVEL_2, "%s(%u) -> ", get_reg_name(comp[i], env), comp[i]));
+		DB((dbg_icore, LEVEL_2, "%s(%i)\n", get_reg_name(comp[len - 1], env), comp[len - 1]));
+	}
+
+	/* Only cycles left. */
+	for (unsigned r = 0; r < n_regs; ) {
+		if (permutation[r] == r) {
+			++r;
+			continue;
+		}
+
+		assert(n_used[r] == 1);
+
+		unsigned len = 0;
+		unsigned s = r;
+		while (permutation[s] != s) {
+			unsigned src = permutation[s];
+			comp[len++] = s;
+			permutation[s] = s;
+			s = src;
+		}
+
+		for (unsigned i = 0; i < len / 2; ++i) {
+			unsigned t = comp[i];
+			comp[i] = comp[len - i - 1];
+			comp[len - i - 1] = t;
+		}
+
+		for (unsigned i = 0; i < len; ++i)
+			DB((dbg_icore, LEVEL_2, "%s(%u) -> ", get_reg_name(comp[i], env), comp[i]));
+		DB((dbg_icore, LEVEL_2, "%s(%u)\n", get_reg_name(comp[0], env), comp[0]));
+	}
+}
+
+static void analyze_parallel_copies_walker(ir_node *block, void *data)
+{
+	be_chordal_env_t *chordal_env = (be_chordal_env_t*) data;
+	be_lv_t *lv = be_get_irg_liveness(chordal_env->irg);
+
+	assert(is_Block(block));
+
+	if (!get_irn_link(block))
+		return;
+
+	const unsigned n_regs = chordal_env->cls->n_regs;
+	unsigned parcopy[n_regs];
+	unsigned n_used[n_regs];
+	for (unsigned i = 0; i < n_regs; ++i) {
+		parcopy[i] = i;
+		n_used[i] = 0;
+	}
+
+	for (int i = 0; i < get_irn_arity(block); ++i) {
+		for (ir_node *phi = (ir_node *) get_irn_link(block); phi != NULL;
+		     phi = (ir_node *) get_irn_link(phi)) {
+
+			const arch_register_t *phi_reg = arch_get_irn_register(phi);
+			ir_node *arg = get_irn_n(phi, i);
+			const arch_register_t *arg_reg = arch_get_irn_register(arg);
+
+			if (phi_reg == arg_reg
+				|| (arg_reg->type & arch_register_type_joker)
+				|| (arg_reg->type & arch_register_type_virtual)) {
+				continue;
+			}
+
+			assert(parcopy[phi_reg->index] == phi_reg->index);
+			parcopy[phi_reg->index] = arg_reg->index;
+			DB((dbg_icore, LEVEL_2, "copy %s -> %s\n", arg_reg->name, phi_reg->name));
+			++n_used[arg_reg->index];
+
+			if (be_is_live_in(lv, block, arg)) {
+				++n_used[arg_reg->index];
+				DB((dbg_icore, LEVEL_2, "new user of %s\n", arg_reg->name));
+			}
+		}
+	}
+
+	print_parcopy(parcopy, n_used, chordal_env);
+}
+
 
 static void clear_link(ir_node *irn, void *data)
 {
@@ -352,28 +481,38 @@ void be_ssa_destruction(be_chordal_env_t *chordal_env)
 	ir_graph *irg = chordal_env->irg;
 
 	FIRM_DBG_REGISTER(dbg, "ir.be.ssadestr");
+	FIRM_DBG_REGISTER(dbg_icore, "ir.be.ssadestr.icore");
 
 	be_invalidate_live_sets(irg);
 
 	/* create a map for fast lookup of perms: block --> perm */
 	irg_walk_graph(irg, clear_link, collect_phis_walker, chordal_env);
 
-	DBG((dbg, LEVEL_1, "Placing perms...\n"));
-	irg_block_walk_graph(irg, insert_all_perms_walker, NULL, chordal_env);
+	bool use_paper_method = true;
 
-	if (chordal_env->opts->dump_flags & BE_CH_DUMP_SSADESTR)
-		dump_ir_graph(irg, "ssa_destr_perms_placed");
+	if (use_paper_method) {
+		DBG((dbg, LEVEL_1, "Analyzing parallel copies...\n"));
+		irg_block_walk_graph(irg, analyze_parallel_copies_walker, NULL, chordal_env);
+	}
 
-	be_assure_live_chk(irg);
+	{
+		DBG((dbg, LEVEL_1, "Placing perms...\n"));
+		irg_block_walk_graph(irg, insert_all_perms_walker, NULL, chordal_env);
 
-	DBG((dbg, LEVEL_1, "Setting regs and placing dupls...\n"));
-	irg_block_walk_graph(irg, set_regs_or_place_dupls_walker, NULL, chordal_env);
+		if (chordal_env->opts->dump_flags & BE_CH_DUMP_SSADESTR)
+			dump_ir_graph(irg, "ssa_destr_perms_placed");
 
-	/* unfortunately updating doesn't work yet. */
-	be_invalidate_live_chk(irg);
+		be_assure_live_chk(irg);
 
-	if (chordal_env->opts->dump_flags & BE_CH_DUMP_SSADESTR)
-		dump_ir_graph(irg, "ssa_destr_regs_set");
+		DBG((dbg, LEVEL_1, "Setting regs and placing dupls...\n"));
+		irg_block_walk_graph(irg, set_regs_or_place_dupls_walker, NULL, chordal_env);
+
+		/* unfortunately updating doesn't work yet. */
+		be_invalidate_live_chk(irg);
+
+		if (chordal_env->opts->dump_flags & BE_CH_DUMP_SSADESTR)
+			dump_ir_graph(irg, "ssa_destr_regs_set");
+	}
 }
 
 static void ssa_destruction_check_walker(ir_node *bl, void *data)
