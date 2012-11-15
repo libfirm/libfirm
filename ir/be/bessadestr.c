@@ -45,6 +45,7 @@
 #include "belive_t.h"
 #include "benode.h"
 #include "besched.h"
+#include "bespillutil.h"
 #include "bestatevent.h"
 #include "beirg.h"
 #include "beintlive_t.h"
@@ -52,15 +53,16 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 DEBUG_ONLY(static firm_dbg_module_t *dbg_icore = NULL;)
 
-static const char *get_reg_name(unsigned index, const be_chordal_env_t *env)
+static be_chordal_env_t *the_env = NULL;
+
+static const char *get_reg_name(unsigned index)
 {
-	return arch_register_get_name(arch_register_for_index(env->cls, index));
+	return arch_register_get_name(arch_register_for_index(the_env->cls, index));
 }
 
-static void print_parcopy(unsigned *permutation_orig, unsigned *n_used_orig,
-                          const be_chordal_env_t *env)
+static void print_parcopy(unsigned *permutation_orig, unsigned *n_used_orig)
 {
-	const unsigned n_regs = env->cls->n_regs;
+	const unsigned n_regs = the_env->cls->n_regs;
 	unsigned permutation[n_regs];
 	unsigned n_used[n_regs];
 	memcpy(permutation, permutation_orig, sizeof(unsigned) * n_regs);
@@ -68,7 +70,7 @@ static void print_parcopy(unsigned *permutation_orig, unsigned *n_used_orig,
 
 	for (unsigned i = 0; i < n_regs; ++i)
 		if (n_used_orig[i] != 0)
-			DB((dbg_icore, LEVEL_2, "#users[%s(%u)] = %u\n", get_reg_name(i, env), i, n_used_orig[i]));
+			DB((dbg_icore, LEVEL_2, "#users[%s(%u)] = %u\n", get_reg_name(i), i, n_used_orig[i]));
 
 	unsigned comp[n_regs];
 	for (unsigned r = 0; r < n_regs; ) {
@@ -98,8 +100,8 @@ static void print_parcopy(unsigned *permutation_orig, unsigned *n_used_orig,
 		}
 
 		for (unsigned i = 0; i + 1 < len; ++i)
-			DB((dbg_icore, LEVEL_2, "%s(%u) -> ", get_reg_name(comp[i], env), comp[i]));
-		DB((dbg_icore, LEVEL_2, "%s(%i)\n", get_reg_name(comp[len - 1], env), comp[len - 1]));
+			DB((dbg_icore, LEVEL_2, "%s(%u) -> ", get_reg_name(comp[i]), comp[i]));
+		DB((dbg_icore, LEVEL_2, "%s(%i)\n", get_reg_name(comp[len - 1]), comp[len - 1]));
 	}
 
 	/* Only cycles left. */
@@ -127,9 +129,261 @@ static void print_parcopy(unsigned *permutation_orig, unsigned *n_used_orig,
 		}
 
 		for (unsigned i = 0; i < len; ++i)
-			DB((dbg_icore, LEVEL_2, "%s(%u) -> ", get_reg_name(comp[i], env), comp[i]));
-		DB((dbg_icore, LEVEL_2, "%s(%u)\n", get_reg_name(comp[0], env), comp[0]));
+			DB((dbg_icore, LEVEL_2, "%s(%u) -> ", get_reg_name(comp[i]), comp[i]));
+		DB((dbg_icore, LEVEL_2, "%s(%u)\n", get_reg_name(comp[0]), comp[0]));
 	}
+}
+
+static void mark_cycle_parts(bool *part_of_cycle, unsigned *permutation_orig,
+                             unsigned *n_used_orig)
+{
+	const unsigned n_regs = the_env->cls->n_regs;
+	unsigned permutation[n_regs];
+	unsigned n_used[n_regs];
+	memcpy(permutation, permutation_orig, sizeof(unsigned) * n_regs);
+	memcpy(n_used, n_used_orig, sizeof(unsigned) * n_regs);
+	memset(part_of_cycle, 0, sizeof(bool) * n_regs);
+
+	for (unsigned r = 0; r < n_regs; ) {
+		if (permutation[r] == r || n_used[r] > 0) {
+			++r;
+			continue;
+		}
+
+		/* Perfect, end of a chain. */
+		unsigned s = r;
+		while (n_used[s] == 0 && permutation[s] != s) {
+			part_of_cycle[s] = false;
+
+			unsigned src = permutation[s];
+			permutation[s] = s;
+			assert(n_used[src] > 0);
+			--n_used[src];
+			s = src;
+		}
+	}
+
+	/* Only cycles left. */
+	for (unsigned r = 0; r < n_regs; ) {
+		if (permutation[r] == r) {
+			if (n_used[r] > 0)
+				part_of_cycle[r] = true;
+			++r;
+			continue;
+		}
+
+		assert(n_used[r] == 1);
+
+		unsigned s = r;
+		while (permutation[s] != s) {
+			part_of_cycle[s] = true;
+			unsigned src = permutation[s];
+			permutation[s] = s;
+			s = src;
+		}
+	}
+}
+
+static unsigned find_longest_chain(unsigned *parcopy, unsigned *n_used,
+                                   unsigned fork_reg)
+{
+	/* fork_reg must be a fork. */
+	assert(n_used[fork_reg] > 1);
+	const unsigned n_regs = the_env->cls->n_regs;
+
+	DB((dbg_icore, LEVEL_2, "  Searching for longest chain starting at %s\n", get_reg_name(fork_reg)));
+
+	/* Search the longest chain starting from r. */
+	unsigned max_len = 0;
+	unsigned max_dst = (unsigned) -1;
+
+	for (unsigned to_reg = 0; to_reg < n_regs; /* empty */) {
+		unsigned from_reg = parcopy[to_reg];
+
+		if (from_reg == to_reg || n_used[to_reg] > 0) {
+			++to_reg;
+			continue;
+		}
+
+		DB((dbg_icore, LEVEL_2, "  Found candidate ending in %s\n", get_reg_name(to_reg)));
+		unsigned r   = to_reg;
+		unsigned len = 0;
+		while (r != parcopy[r]) {
+			unsigned src = parcopy[r];
+			++len;
+			if (src == fork_reg && len > max_len) {
+				DB((dbg_icore, LEVEL_2, "  Chain starts in %s, continues via %s, length %u\n", get_reg_name(fork_reg), get_reg_name(r), len));
+				max_len = len;
+				max_dst = r;
+				break;
+			}
+			r = src;
+		}
+
+		++to_reg;
+	}
+
+	return max_dst;
+}
+
+static void impl_parallel_copy(ir_node *before, unsigned *parcopy, unsigned *n_used)
+{
+	ir_node *block = get_nodes_block(before);
+	const unsigned n_regs = the_env->cls->n_regs;
+
+	unsigned restore_srcs[n_regs];
+	unsigned restore_dsts[n_regs];
+	unsigned num_restores = 0;
+
+	DB((dbg_icore, LEVEL_2, "Searching for out-of-cycle propagations.\n"));
+	bool is_part_of_cycle[n_regs];
+	mark_cycle_parts(is_part_of_cycle, parcopy, n_used);
+	for (unsigned to_reg = 0; to_reg < n_regs; /* empty */) {
+		unsigned from_reg = parcopy[to_reg];
+
+		if (from_reg == to_reg) {
+			++to_reg;
+			continue;
+		}
+
+		if (is_part_of_cycle[from_reg] && !is_part_of_cycle[to_reg]) {
+			DB((dbg_icore, LEVEL_2, "  Found out-of-cycle propagation %s -> %s\n", get_reg_name(from_reg), get_reg_name(to_reg)));
+			unsigned new_src = (unsigned) -1;
+			for (unsigned src = 0; src < n_regs; ++src) {
+				if (parcopy[src] == from_reg && is_part_of_cycle[src]) {
+					/* new_src must be unambiguous. */
+					new_src = src;
+					break;
+				}
+			}
+			assert((new_src != ((unsigned) -1)) && "Could not find new source for out-of-cycle propagation");
+
+			restore_srcs[num_restores] = new_src;
+			restore_dsts[num_restores] = to_reg;
+			++num_restores;
+			DB((dbg_icore, LEVEL_2, "  Added restore %s -> %s\n", get_reg_name(new_src), get_reg_name(to_reg)));
+			--n_used[from_reg];
+			parcopy[to_reg] = to_reg;
+		}
+
+		++to_reg;
+	}
+	DB((dbg_icore, LEVEL_2, "Finished search for out-of-cycle propagation.\n"));
+
+	DB((dbg_icore, LEVEL_2, "Searching for forks.\n"));
+	for (unsigned to_reg = 0; to_reg < n_regs; /* empty */) {
+		unsigned from_reg = parcopy[to_reg];
+
+		if (from_reg == to_reg || n_used[to_reg] > 0) {
+			++to_reg;
+			continue;
+		}
+
+		/* Found the end of a chain, follow it. */
+		unsigned r = to_reg;
+		while (r != parcopy[r]) {
+			r = parcopy[r];
+			if (n_used[r] > 1) {
+				/* Found a fork. */
+				DB((dbg_icore, LEVEL_2, "  Found a fork at %s\n", get_reg_name(r)));
+				unsigned longest_next = find_longest_chain(parcopy, n_used, r);
+				DB((dbg_icore, LEVEL_2, "  Longest chain from %s via %s\n", get_reg_name(r), get_reg_name(longest_next)));
+
+				/* Reroute all others. */
+				for (unsigned dst = 0; dst < n_regs; ++dst) {
+					if (dst != longest_next && dst != r && parcopy[dst] == r) {
+						restore_srcs[num_restores] = longest_next;
+						restore_dsts[num_restores] = dst;
+						++num_restores;
+						DB((dbg_icore, LEVEL_2, "  Added restore %s -> %s\n", get_reg_name(longest_next), get_reg_name(dst)));
+						--n_used[r];
+						parcopy[dst] = dst;
+					}
+				}
+			}
+		}
+
+		++to_reg;
+	}
+	DB((dbg_icore, LEVEL_2, "Finished searching for forks.\n"));
+
+	DB((dbg_icore, LEVEL_2, "Current parallel copy:\n"));
+	print_parcopy(parcopy, n_used);
+
+#if 0
+	/* Step 3: The remaining parallel copy must be suitable for a Perm. */
+	unsigned perm_size = 0;
+	ir_node *ins[n_regs];
+	for (unsigned r = 0; r < n_regs; ++r) {
+		unsigned src = parcopy[r];
+		if (src != r)
+			ins[perm_size++] = assignments[src];
+	}
+
+	if (perm_size > 0) {
+		DB((dbg_icore, LEVEL_2, "Creating Perm using permutation.\n"));
+
+		ir_node *perm = be_new_Perm(cls, block, perm_size, ins);
+		sched_add_before(before, perm);
+		unsigned input = 0;
+		for (unsigned r = 0; r < n_regs; ++r) {
+			unsigned src = parcopy[r];
+			if (src != r) {
+				ir_node *proj = new_r_Proj(perm, get_irn_mode(ins[input]), input);
+				mark_as_copy_of(proj, ins[input]);
+
+				const arch_register_t *reg = arch_register_for_index(cls, r);
+				use_reg(proj, reg, /* width = */ 1);
+
+				assert(n_used[src] == 1);
+				// TODO: When to do?
+				if (parcopy[src] == src) {
+					DB((dbg_icore, LEVEL_2, "Perm: Freeing register %s of value %+F\n", get_reg_name(src), ins[input]));
+					free_reg_of_value(assignments[src]);
+				}
+
+				if (live_nodes != NULL) {
+					ir_nodeset_remove(live_nodes, ins[input]);
+					ir_nodeset_insert(live_nodes, proj);
+				}
+				++input;
+			}
+		}
+
+		for (unsigned r = 0; r < n_regs; ++r)
+			parcopy[r] = r;
+	}
+
+#ifndef NDEBUG
+	/* now we should only have fixpoints left */
+	for (unsigned r = 0; r < n_regs; ++r) {
+		assert(parcopy[r] == r);
+	}
+#endif
+
+	if (num_restores > 0) {
+		/* Step 4: Place restore movs. */
+		DB((dbg_icore, LEVEL_2, "Placing restore movs.\n"));
+		for (unsigned i = 0; i < num_restores; ++i) {
+			unsigned src_reg = restore_srcs[i];
+			unsigned dst_reg = restore_dsts[i];
+			ir_node *src     = assignments[src_reg];
+			ir_node *copy    = be_new_Copy(block, src);
+			sched_add_before(before, copy);
+
+			DB((dbg_icore, LEVEL_2, "Inserted restore copy %+F %s -> %s\n", copy, get_reg_name(src_reg), get_reg_name(dst_reg)));
+			mark_as_copy_of(copy, src);
+			const arch_register_t *reg = arch_register_for_index(cls, dst_reg);
+			use_reg(copy, reg, /* width = */ 1);
+
+			if (live_nodes != NULL) {
+				ir_nodeset_remove(live_nodes, src);
+				ir_nodeset_insert(live_nodes, copy);
+			}
+		}
+		DB((dbg_icore, LEVEL_2, "Finished placing restore movs.\n"));
+	}
+#endif
 }
 
 static void analyze_parallel_copies_walker(ir_node *block, void *data)
@@ -142,15 +396,18 @@ static void analyze_parallel_copies_walker(ir_node *block, void *data)
 	if (!get_irn_link(block))
 		return;
 
+	the_env = chordal_env;
+
 	const unsigned n_regs = chordal_env->cls->n_regs;
-	unsigned parcopy[n_regs];
-	unsigned n_used[n_regs];
-	for (unsigned i = 0; i < n_regs; ++i) {
-		parcopy[i] = i;
-		n_used[i] = 0;
-	}
 
 	for (int i = 0; i < get_irn_arity(block); ++i) {
+		unsigned parcopy[n_regs];
+		unsigned n_used[n_regs];
+		for (unsigned i = 0; i < n_regs; ++i) {
+			parcopy[i] = i;
+			n_used[i] = 0;
+		}
+
 		for (ir_node *phi = (ir_node *) get_irn_link(block); phi != NULL;
 		     phi = (ir_node *) get_irn_link(phi)) {
 
@@ -169,16 +426,17 @@ static void analyze_parallel_copies_walker(ir_node *block, void *data)
 			DB((dbg_icore, LEVEL_2, "copy %s -> %s\n", arg_reg->name, phi_reg->name));
 			++n_used[arg_reg->index];
 
-			if (be_is_live_in(lv, block, arg)) {
+			if (be_is_live_in(lv, block, arg))
 				++n_used[arg_reg->index];
-				DB((dbg_icore, LEVEL_2, "new user of %s\n", arg_reg->name));
-			}
 		}
+
+		ir_node *pred   = get_Block_cfgpred_block(block, i);
+		ir_node *before = be_get_end_of_block_insertion_point(pred);
+		DB((dbg_icore, LEVEL_2, "copies for %+F:\n", pred));
+		print_parcopy(parcopy, n_used);
+		impl_parallel_copy(before, parcopy, n_used);
 	}
-
-	print_parcopy(parcopy, n_used, chordal_env);
 }
-
 
 static void clear_link(ir_node *irn, void *data)
 {
