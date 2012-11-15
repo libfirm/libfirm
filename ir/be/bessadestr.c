@@ -226,7 +226,8 @@ static unsigned find_longest_chain(unsigned *parcopy, unsigned *n_used,
 	return max_dst;
 }
 
-static void impl_parallel_copy(ir_node *before, unsigned *parcopy, unsigned *n_used)
+static void impl_parallel_copy(ir_node *before, unsigned *parcopy, unsigned *n_used,
+                               ir_node **phis, ir_node **phi_args, unsigned prednr)
 {
 	ir_node *block = get_nodes_block(before);
 	const unsigned n_regs = the_env->cls->n_regs;
@@ -310,42 +311,45 @@ static void impl_parallel_copy(ir_node *before, unsigned *parcopy, unsigned *n_u
 	DB((dbg_icore, LEVEL_2, "Current parallel copy:\n"));
 	print_parcopy(parcopy, n_used);
 
-#if 0
 	/* Step 3: The remaining parallel copy must be suitable for a Perm. */
 	unsigned perm_size = 0;
 	ir_node *ins[n_regs];
 	for (unsigned r = 0; r < n_regs; ++r) {
 		unsigned src = parcopy[r];
-		if (src != r)
-			ins[perm_size++] = assignments[src];
+		if (src != r) {
+			assert(phi_args[src] != NULL);
+			ins[perm_size++] = phi_args[src];
+		}
 	}
 
 	if (perm_size > 0) {
-		DB((dbg_icore, LEVEL_2, "Creating Perm using permutation.\n"));
-
-		ir_node *perm = be_new_Perm(cls, block, perm_size, ins);
+		ir_node *perm = be_new_Perm(the_env->cls, block, perm_size, ins);
+		DB((dbg_icore, LEVEL_2, "Created %+F using permutation.\n", perm));
 		sched_add_before(before, perm);
 		unsigned input = 0;
 		for (unsigned r = 0; r < n_regs; ++r) {
 			unsigned src = parcopy[r];
 			if (src != r) {
 				ir_node *proj = new_r_Proj(perm, get_irn_mode(ins[input]), input);
-				mark_as_copy_of(proj, ins[input]);
 
-				const arch_register_t *reg = arch_register_for_index(cls, r);
-				use_reg(proj, reg, /* width = */ 1);
+				const arch_register_t *reg = arch_register_for_index(the_env->cls, r);
+				arch_set_irn_register(proj, reg);
 
 				assert(n_used[src] == 1);
-				// TODO: When to do?
 				if (parcopy[src] == src) {
 					DB((dbg_icore, LEVEL_2, "Perm: Freeing register %s of value %+F\n", get_reg_name(src), ins[input]));
-					free_reg_of_value(assignments[src]);
+					// TODO: What to do here?
+					// free_reg_of_value(assignments[src]);
 				}
 
-				if (live_nodes != NULL) {
-					ir_nodeset_remove(live_nodes, ins[input]);
-					ir_nodeset_insert(live_nodes, proj);
-				}
+				ir_node *phi = phis[r];
+				assert(phi != NULL);
+				set_irn_n(phi, prednr, proj);
+
+//				if (live_nodes != NULL) {
+//					ir_nodeset_remove(live_nodes, ins[input]);
+//					ir_nodeset_insert(live_nodes, proj);
+//				}
 				++input;
 			}
 		}
@@ -361,25 +365,27 @@ static void impl_parallel_copy(ir_node *before, unsigned *parcopy, unsigned *n_u
 	}
 #endif
 
+#if 1
 	if (num_restores > 0) {
 		/* Step 4: Place restore movs. */
 		DB((dbg_icore, LEVEL_2, "Placing restore movs.\n"));
 		for (unsigned i = 0; i < num_restores; ++i) {
 			unsigned src_reg = restore_srcs[i];
 			unsigned dst_reg = restore_dsts[i];
-			ir_node *src     = assignments[src_reg];
+			ir_node *src     = phi_args[src_reg];
 			ir_node *copy    = be_new_Copy(block, src);
 			sched_add_before(before, copy);
 
 			DB((dbg_icore, LEVEL_2, "Inserted restore copy %+F %s -> %s\n", copy, get_reg_name(src_reg), get_reg_name(dst_reg)));
-			mark_as_copy_of(copy, src);
-			const arch_register_t *reg = arch_register_for_index(cls, dst_reg);
-			use_reg(copy, reg, /* width = */ 1);
+//			mark_as_copy_of(copy, src);
+			const arch_register_t *reg = arch_register_for_index(the_env->cls, dst_reg);
+			arch_set_irn_register(copy, reg);
+//			use_reg(copy, reg, /* width = */ 1);
 
-			if (live_nodes != NULL) {
-				ir_nodeset_remove(live_nodes, src);
-				ir_nodeset_insert(live_nodes, copy);
-			}
+//			if (live_nodes != NULL) {
+//				ir_nodeset_remove(live_nodes, src);
+//				ir_nodeset_insert(live_nodes, copy);
+//			}
 		}
 		DB((dbg_icore, LEVEL_2, "Finished placing restore movs.\n"));
 	}
@@ -403,9 +409,13 @@ static void analyze_parallel_copies_walker(ir_node *block, void *data)
 	for (int i = 0; i < get_irn_arity(block); ++i) {
 		unsigned parcopy[n_regs];
 		unsigned n_used[n_regs];
+		ir_node *phi_args[n_regs];
+		ir_node *phis[n_regs];
 		for (unsigned i = 0; i < n_regs; ++i) {
 			parcopy[i] = i;
 			n_used[i] = 0;
+			phi_args[i] = NULL;
+			phis[i] = NULL;
 		}
 
 		for (ir_node *phi = (ir_node *) get_irn_link(block); phi != NULL;
@@ -428,13 +438,19 @@ static void analyze_parallel_copies_walker(ir_node *block, void *data)
 
 			if (be_is_live_in(lv, block, arg))
 				++n_used[arg_reg->index];
+
+			assert(phis[phi_reg->index] == NULL);
+			phis[phi_reg->index] = phi;
+			if (phi_args[arg_reg->index] != NULL)
+				assert(phi_args[arg_reg->index] == arg);
+			phi_args[arg_reg->index] = arg;
 		}
 
 		ir_node *pred   = get_Block_cfgpred_block(block, i);
 		ir_node *before = be_get_end_of_block_insertion_point(pred);
 		DB((dbg_icore, LEVEL_2, "copies for %+F:\n", pred));
 		print_parcopy(parcopy, n_used);
-		impl_parallel_copy(before, parcopy, n_used);
+		impl_parallel_copy(before, parcopy, n_used, phis, phi_args, i);
 	}
 }
 
@@ -751,9 +767,7 @@ void be_ssa_destruction(be_chordal_env_t *chordal_env)
 	if (use_paper_method) {
 		DBG((dbg, LEVEL_1, "Analyzing parallel copies...\n"));
 		irg_block_walk_graph(irg, analyze_parallel_copies_walker, NULL, chordal_env);
-	}
-
-	{
+	} else {
 		DBG((dbg, LEVEL_1, "Placing perms...\n"));
 		irg_block_walk_graph(irg, insert_all_perms_walker, NULL, chordal_env);
 
@@ -809,5 +823,5 @@ static void ssa_destruction_check_walker(ir_node *bl, void *data)
 
 void be_ssa_destruction_check(be_chordal_env_t *chordal_env)
 {
-	irg_block_walk_graph(chordal_env->irg, ssa_destruction_check_walker, NULL, NULL);
+//	irg_block_walk_graph(chordal_env->irg, ssa_destruction_check_walker, NULL, NULL);
 }
