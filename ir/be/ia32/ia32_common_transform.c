@@ -271,9 +271,9 @@ static void parse_asm_constraints(constraint_t *constraint, const char *c,
 		case 't':
 		case 'u':
 			/* TODO: mark values so the x87 simulator knows about t and u */
-			if (cls != NULL && cls != &ia32_reg_classes[CLASS_ia32_vfp])
+			if (cls != NULL && cls != &ia32_reg_classes[CLASS_ia32_fp])
 				panic("multiple register classes not supported");
-			cls                   = &ia32_reg_classes[CLASS_ia32_vfp];
+			cls                   = &ia32_reg_classes[CLASS_ia32_fp];
 			all_registers_allowed = 1;
 			break;
 
@@ -753,7 +753,7 @@ ir_node *ia32_gen_Unknown(ir_node *node)
 		if (ia32_cg_config.use_sse2) {
 			res = new_bd_ia32_xUnknown(dbgi, block);
 		} else {
-			res = new_bd_ia32_vfldz(dbgi, block);
+			res = new_bd_ia32_fldz(dbgi, block);
 		}
 	} else if (ia32_mode_needs_gp_reg(mode)) {
 		res = new_bd_ia32_Unknown(dbgi, block);

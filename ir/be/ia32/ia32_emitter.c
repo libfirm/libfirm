@@ -1235,8 +1235,8 @@ static void Copy_emitter(const ir_node *node, const ir_node *op)
 	if (in == out) {
 		return;
 	}
-	/* copies of vf nodes aren't real... */
-	if (in->reg_class == &ia32_reg_classes[CLASS_ia32_vfp])
+	/* copies of fp nodes aren't real... */
+	if (in->reg_class == &ia32_reg_classes[CLASS_ia32_fp])
 		return;
 
 	ia32_emitf(node, "movl %R, %R", in, out);
@@ -1271,9 +1271,7 @@ static void emit_be_Perm(const ir_node *node)
 		ia32_emitf(NULL, "xorpd %R, %R", in1, in0);
 		ia32_emitf(NULL, "xorpd %R, %R", in0, in1);
 		ia32_emitf(node, "xorpd %R, %R", in1, in0);
-	} else if (cls0 == &ia32_reg_classes[CLASS_ia32_vfp]) {
-		/* is a NOP */
-	} else if (cls0 == &ia32_reg_classes[CLASS_ia32_st]) {
+	} else if (cls0 == &ia32_reg_classes[CLASS_ia32_fp]) {
 		/* is a NOP */
 	} else {
 		panic("unexpected register class in be_Perm (%+F)", node);
@@ -2225,8 +2223,8 @@ static void bemit_copy(const ir_node *copy)
 
 	if (in == out)
 		return;
-	/* copies of vf nodes aren't real... */
-	if (in->reg_class == &ia32_reg_classes[CLASS_ia32_vfp])
+	/* copies of fp nodes aren't real... */
+	if (in->reg_class == &ia32_reg_classes[CLASS_ia32_fp])
 		return;
 
 	assert(in->reg_class == &ia32_reg_classes[CLASS_ia32_gp]);
@@ -2256,9 +2254,7 @@ static void bemit_perm(const ir_node *node)
 		//ia32_emitf(NULL, "xorpd %R, %R", in1, in0);
 		//ia32_emitf(NULL, "xorpd %R, %R", in0, in1);
 		//ia32_emitf(node, "xorpd %R, %R", in1, in0);
-	} else if (cls0 == &ia32_reg_classes[CLASS_ia32_vfp]) {
-		/* is a NOP */
-	} else if (cls0 == &ia32_reg_classes[CLASS_ia32_st]) {
+	} else if (cls0 == &ia32_reg_classes[CLASS_ia32_fp]) {
 		/* is a NOP */
 	} else {
 		panic("unexpected register class in be_Perm (%+F)", node);

@@ -148,11 +148,11 @@ ir_node *ia32_new_NoReg_gp(ir_graph *irg)
 	                    &ia32_registers[REG_GP_NOREG]);
 }
 
-ir_node *ia32_new_NoReg_vfp(ir_graph *irg)
+ir_node *ia32_new_NoReg_fp(ir_graph *irg)
 {
 	ia32_irg_data_t *irg_data = ia32_get_irg_data(irg);
-	return create_const(irg, &irg_data->noreg_vfp, new_bd_ia32_NoReg_VFP,
-	                    &ia32_registers[REG_VFP_NOREG]);
+	return create_const(irg, &irg_data->noreg_fp, new_bd_ia32_NoReg_FP,
+	                    &ia32_registers[REG_FP_NOREG]);
 }
 
 ir_node *ia32_new_NoReg_xmm(ir_graph *irg)
@@ -185,7 +185,7 @@ static ir_node *ia32_get_admissible_noreg(ir_node *irn, int pos)
 	if (ia32_cg_config.use_sse2) {
 		return ia32_new_NoReg_xmm(irg);
 	} else {
-		return ia32_new_NoReg_vfp(irg);
+		return ia32_new_NoReg_fp(irg);
 	}
 }
 
@@ -816,7 +816,7 @@ static void transform_to_Load(ir_node *node)
 		if (ia32_cg_config.use_sse2)
 			new_op = new_bd_ia32_xLoad(dbgi, block, ptr, noreg, mem, spillmode);
 		else
-			new_op = new_bd_ia32_vfld(dbgi, block, ptr, noreg, mem, spillmode);
+			new_op = new_bd_ia32_fld(dbgi, block, ptr, noreg, mem, spillmode);
 	}
 	else if (get_mode_size_bits(spillmode) == 128) {
 		/* Reload 128 bit SSE registers */
@@ -877,8 +877,8 @@ static void transform_to_Store(ir_node *node)
 			store = new_bd_ia32_xStore(dbgi, block, ptr, noreg, nomem, val);
 			res   = new_r_Proj(store, mode_M, pn_ia32_xStore_M);
 		} else {
-			store = new_bd_ia32_vfst(dbgi, block, ptr, noreg, nomem, val, mode);
-			res   = new_r_Proj(store, mode_M, pn_ia32_vfst_M);
+			store = new_bd_ia32_fst(dbgi, block, ptr, noreg, nomem, val, mode);
+			res   = new_r_Proj(store, mode_M, pn_ia32_fst_M);
 		}
 	} else if (get_mode_size_bits(mode) == 128) {
 		/* Spill 128 bit SSE registers */
@@ -1111,8 +1111,8 @@ need_stackent:
 				break;
 			}
 
-			case iro_ia32_vfild:
-			case iro_ia32_vfld:
+			case iro_ia32_fild:
+			case iro_ia32_fld:
 			case iro_ia32_xLoad: {
 				mode  = get_ia32_ls_mode(node);
 				align = 4;
@@ -1134,9 +1134,8 @@ need_stackent:
 			case iro_ia32_Store8Bit:
 			case iro_ia32_Store:
 			case iro_ia32_fst:
-			case iro_ia32_vfist:
-			case iro_ia32_vfisttp:
-			case iro_ia32_vfst:
+			case iro_ia32_fist:
+			case iro_ia32_fisttp:
 			case iro_ia32_xStore:
 			case iro_ia32_xStoreSimple:
 #endif
@@ -1993,7 +1992,7 @@ static void ia32_get_call_abi(ir_type *method_type, be_abi_call_t *abi)
 		const arch_register_t *reg;
 		assert(is_atomic_type(tp));
 
-		reg = mode_is_float(mode) ? &ia32_registers[REG_VF0] : &ia32_registers[REG_EAX];
+		reg = mode_is_float(mode) ? &ia32_registers[REG_ST0] : &ia32_registers[REG_EAX];
 
 		be_abi_call_res_reg(abi, 0, reg, ABI_CONTEXT_BOTH);
 	}
@@ -2111,9 +2110,9 @@ static int ia32_register_saved_by(const arch_register_t *reg, int callee)
 		} else if (reg->reg_class == &ia32_reg_classes[CLASS_ia32_xmm]) {
 			/* all XMM registers are caller save */
 			return reg->index != REG_XMM_NOREG;
-		} else if (reg->reg_class == &ia32_reg_classes[CLASS_ia32_vfp]) {
-			/* all VFP registers are caller save */
-			return reg->index != REG_VFP_NOREG;
+		} else if (reg->reg_class == &ia32_reg_classes[CLASS_ia32_fp]) {
+			/* all FP registers are caller save */
+			return reg->index != REG_FP_NOREG;
 		}
 	}
 	return 0;
