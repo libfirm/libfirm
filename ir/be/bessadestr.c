@@ -37,21 +37,33 @@
 #include "irgmod.h"
 #include "irdump.h"
 #include "irprintf.h"
+#include "irtools.h"
 
 #include "be_t.h"
 #include "beutil.h"
 #include "bechordal_t.h"
 #include "bearch.h"
 #include "belive_t.h"
+#include "bemodule.h"
 #include "benode.h"
 #include "besched.h"
 #include "bespillutil.h"
+#include "bessadestr.h"
 #include "bestatevent.h"
 #include "beirg.h"
 #include "beintlive_t.h"
 
+#include "lc_opts.h"
+
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 DEBUG_ONLY(static firm_dbg_module_t *dbg_icore = NULL;)
+
+static int build_icore_perms = 0;
+
+static const lc_opt_table_entry_t options[] = {
+	LC_OPT_ENT_BOOL("build_icore_perms", "build Perm nodes suited for iCore", &build_icore_perms),
+	LC_OPT_LAST
+};
 
 static be_chordal_env_t *the_env = NULL;
 
@@ -762,11 +774,14 @@ void be_ssa_destruction(be_chordal_env_t *chordal_env)
 	/* create a map for fast lookup of perms: block --> perm */
 	irg_walk_graph(irg, clear_link, collect_phis_walker, chordal_env);
 
-	bool use_paper_method = true;
-
-	if (use_paper_method) {
+	if (build_icore_perms) {
 		DBG((dbg, LEVEL_1, "Analyzing parallel copies...\n"));
 		irg_block_walk_graph(irg, analyze_parallel_copies_walker, NULL, chordal_env);
+
+		if (chordal_env->opts->dump_flags & BE_CH_DUMP_SSADESTR)
+			dump_ir_graph(irg, "ssa_destr_icore_perms_places");
+
+		be_invalidate_live_chk(irg);
 	} else {
 		DBG((dbg, LEVEL_1, "Placing perms...\n"));
 		irg_block_walk_graph(irg, insert_all_perms_walker, NULL, chordal_env);
@@ -813,7 +828,7 @@ static void ssa_destruction_check_walker(ir_node *bl, void *data)
 				assert(0);
 			}
 
-			if (! is_pinned(arg)) {
+			if (!build_icore_perms && !is_pinned(arg)) {
 				DBG((dbg, 0, "Warning: Phi argument %+F is not pinned.\n", arg));
 				assert(0);
 			}
@@ -823,5 +838,13 @@ static void ssa_destruction_check_walker(ir_node *bl, void *data)
 
 void be_ssa_destruction_check(be_chordal_env_t *chordal_env)
 {
-//	irg_block_walk_graph(chordal_env->irg, ssa_destruction_check_walker, NULL, NULL);
+	irg_block_walk_graph(chordal_env->irg, ssa_destruction_check_walker, NULL, NULL);
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_ssa_destruction)
+void be_init_ssa_destruction(void)
+{
+	lc_opt_entry_t *be_grp         = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *ssadestr_group = lc_opt_get_grp(be_grp, "ssadestr");
+	lc_opt_add_table(ssadestr_group, options);
 }

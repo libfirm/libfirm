@@ -74,6 +74,7 @@ void be_init_live(void);
 void be_init_state(void);
 void be_init_pbqp(void);
 void be_init_lower(void);
+void be_init_ssa_destruction(void);
 
 void be_quit_copystat(void);
 void be_quit_pbqp(void);
@@ -135,6 +136,7 @@ void be_init_modules(void)
 
 	be_init_copyilp();
 	be_init_lower();
+	be_init_ssa_destruction();
 
 #if PLUGIN_IR_BE_STA
 	be_init_arch_sta();

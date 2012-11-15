@@ -33,5 +33,6 @@
  */
 void be_ssa_destruction(be_chordal_env_t *chordal_env);
 void be_ssa_destruction_check(be_chordal_env_t *chordal_env);
+void be_init_ssa_destruction(void);
 
 #endif /* FIRM_BE_BESSADESTR_H */
