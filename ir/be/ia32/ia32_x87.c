@@ -799,15 +799,30 @@ static int sim_binop(x87_state *const state, ir_node *const n, ir_op *const op)
 				out_idx = op2_idx;
 			} else {
 				/* Both operands are dead. */
-				if (op1_idx != 0 && op2_idx != 0) {
-					/* Bring one operand to tos. */
-					x87_create_fxch(state, n, op1_idx);
-					if (op2_idx == op1_idx) op2_idx = 0;
-					op1_idx = 0;
+				if (op1_idx == op2_idx) {
+					/* Operands are identical: no pop. */
+					if (op1_idx != 0) {
+						x87_create_fxch(state, n, op1_idx);
+						op1_idx = 0;
+						op2_idx = 0;
+					}
+				} else {
+					if (op1_idx != 0 && op2_idx != 0) {
+						/* Bring one operand to tos. Heuristically swap the operand not at
+						 * st(1) to tos. This way, if any operand was at st(1), the result
+						 * will end up in the new st(0) after the implicit pop. If the next
+						 * operation uses the result, then no fxch will be necessary. */
+						if (op1_idx != 1) {
+							x87_create_fxch(state, n, op1_idx);
+							op1_idx = 0;
+						} else {
+							x87_create_fxch(state, n, op2_idx);
+							op2_idx = 0;
+						}
+					}
+					pop = true;
 				}
 				out_idx = op1_idx != 0 ? op1_idx : op2_idx;
-				/* Only pop if the operands are differnt. */
-				pop     = op1_idx != op2_idx;
 			}
 		}
 	} else {
