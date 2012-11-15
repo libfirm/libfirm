@@ -243,6 +243,7 @@ static void impl_parallel_copy(ir_node *before, unsigned *parcopy, unsigned *n_u
 {
 	ir_node *block = get_nodes_block(before);
 	const unsigned n_regs = the_env->cls->n_regs;
+	be_lv_t *lv = be_get_irg_liveness(the_env->irg);
 
 	unsigned restore_srcs[n_regs];
 	unsigned restore_dsts[n_regs];
@@ -352,19 +353,21 @@ static void impl_parallel_copy(ir_node *before, unsigned *parcopy, unsigned *n_u
 					DB((dbg_icore, LEVEL_2, "Perm: Freeing register %s of value %+F\n", get_reg_name(src), ins[input]));
 					// TODO: What to do here?
 					// free_reg_of_value(assignments[src]);
+					be_liveness_update(lv, phi_args[src]);
 				}
 
 				ir_node *phi = phis[r];
 				assert(phi != NULL);
 				set_irn_n(phi, prednr, proj);
+				phi_args[r] = proj;
 
-//				if (live_nodes != NULL) {
-//					ir_nodeset_remove(live_nodes, ins[input]);
-//					ir_nodeset_insert(live_nodes, proj);
-//				}
+				be_liveness_introduce(lv, proj);
+				be_liveness_update(lv, ins[input]);
+
 				++input;
 			}
 		}
+		be_liveness_introduce(lv, perm);
 
 		for (unsigned r = 0; r < n_regs; ++r)
 			parcopy[r] = r;
@@ -377,7 +380,6 @@ static void impl_parallel_copy(ir_node *before, unsigned *parcopy, unsigned *n_u
 	}
 #endif
 
-#if 1
 	if (num_restores > 0) {
 		/* Step 4: Place restore movs. */
 		DB((dbg_icore, LEVEL_2, "Placing restore movs.\n"));
@@ -389,19 +391,19 @@ static void impl_parallel_copy(ir_node *before, unsigned *parcopy, unsigned *n_u
 			sched_add_before(before, copy);
 
 			DB((dbg_icore, LEVEL_2, "Inserted restore copy %+F %s -> %s\n", copy, get_reg_name(src_reg), get_reg_name(dst_reg)));
-//			mark_as_copy_of(copy, src);
 			const arch_register_t *reg = arch_register_for_index(the_env->cls, dst_reg);
 			arch_set_irn_register(copy, reg);
-//			use_reg(copy, reg, /* width = */ 1);
 
-//			if (live_nodes != NULL) {
-//				ir_nodeset_remove(live_nodes, src);
-//				ir_nodeset_insert(live_nodes, copy);
-//			}
+			ir_node *phi = phis[dst_reg];
+			assert(phi != NULL);
+			set_irn_n(phi, prednr, copy);
+			phi_args[src_reg] = copy;
+
+			be_liveness_introduce(lv, copy);
+			be_liveness_update(lv, src);
 		}
 		DB((dbg_icore, LEVEL_2, "Finished placing restore movs.\n"));
 	}
-#endif
 }
 
 static void analyze_parallel_copies_walker(ir_node *block, void *data)
