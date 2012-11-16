@@ -57,11 +57,9 @@ libfirminclude_adtdir=$(includedir)/libfirm/adt
 libfirminclude_adt_HEADERS = \
 	adt/array.h \
 	adt/bipartite.h \
-	adt/cpset.h \
 	adt/gaussjordan.h \
 	adt/gaussseidel.h \
 	adt/hashptr.h \
-	adt/hashset.h \
 	adt/hungarian.h \
 	adt/list.h \
 	adt/obstack.h \
@@ -71,7 +69,6 @@ libfirminclude_adt_HEADERS = \
 	adt/pmap.h \
 	adt/pqueue.h \
 	adt/pset.h \
-	adt/pset_new.h \
 	adt/set.h \
 	adt/unionfind.h \
 	adt/xmalloc.h

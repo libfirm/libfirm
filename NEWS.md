@@ -1,3 +1,11 @@
+libFirm 1.21.0 (2012-11-16)
+---------------------------
+* Improvements of x86 backend (esp. x87 floatingpoint code)
+* Improvements to sparc backend (better use of delay slots)
+* Improved local optimisation rules (esp. conversions)
+* Make compiler more deterministic
+* Bugfixes
+
 libFirm 1.20.0 (2011-12-07)
 ---------------------------
 

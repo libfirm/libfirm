@@ -65,7 +65,7 @@ $(srcdir)config.h:
 	$(Q)rm -f $@
 	$(Q)echo "#define libfirm_VERSION_MAJOR 1" >> $@
 	$(Q)echo "#define libfirm_VERSION_MICRO 0" >> $@
-	$(Q)echo "#define libfirm_VERSION_MINOR 20" >> $@
+	$(Q)echo "#define libfirm_VERSION_MINOR 21" >> $@
 
 # libFirm
 libfirm_DIRS := \

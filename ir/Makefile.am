@@ -1,7 +1,6 @@
 lib_LTLIBRARIES = libfirm.la
 
-INCLUDES = $(LIBCORE_CFLAGS) \
-	-I$(top_srcdir)/include/libfirm \
+INCLUDES = -I$(top_srcdir)/include/libfirm \
 	-I$(top_srcdir)/include/libfirm/adt \
 	-I$(top_builddir)
 
@@ -25,6 +24,7 @@ INCLUDES += \
 	-I$(top_srcdir)/ir/tv
 
 libfirm_la_LDFLAGS = -no-undefined -version-info $(LT_VERSION) -lm
+libfirm_la_CFLAGS = -std=c99
 libfirm_la_SOURCES = \
 	adt/array.c \
 	adt/bipartite.c \
@@ -32,7 +32,6 @@ libfirm_la_SOURCES = \
 	adt/gaussjordan.c \
 	adt/gaussseidel.c \
 	adt/hungarian.c \
-	adt/iterator.c \
 	adt/pdeq.c \
 	adt/plist.c \
 	adt/pmap.c \
@@ -47,6 +46,7 @@ libfirm_la_SOURCES = \
 	ana/cdep.c \
 	ana/cgana.c \
 	ana/dfs.c \
+	ana/domfront.c \
 	ana/execfreq.c \
 	ana/heights.c \
 	ana/irbackedge.c \
@@ -76,8 +76,6 @@ libfirm_la_SOURCES = \
 	be/becopyilp.c \
 	be/becopyopt.c \
 	be/becopystat.c \
-	be/bedbgout.c \
-	be/bedomfront.c \
 	be/bedump.c \
 	be/bedwarf.c \
 	be/beemitter_binary.c \
@@ -113,7 +111,6 @@ libfirm_la_SOURCES = \
 	be/bespillutil.c \
 	be/bessaconstr.c \
 	be/bessadestr.c \
-	be/bestabs.c \
 	be/bestack.c \
 	be/bestat.c \
 	be/bestate.c \
@@ -211,7 +208,6 @@ libfirm_la_SOURCES = \
 	opt/opt_frame.c \
 	opt/opt_inline.c \
 	opt/opt_ldst.c \
-	opt/opt_manage.c \
 	opt/opt_osr.c \
 	opt/parallelize_mem.c \
 	opt/proc_cloning.c \
@@ -256,37 +252,40 @@ EXTRA_DIST = \
 	adt/array_t.h \
 	adt/bitfiddle.h \
 	adt/bitset.h \
-	adt/compiler.h \
-	adt/fourcc.h \
-	adt/hashset.c.inl \
-	adt/raw_bitset.h \
 	adt/util.h \
+	adt/compiler.h \
+	adt/cpset.h \
+	adt/fourcc.h \
+	adt/raw_bitset.h \
+	adt/hashset.h \
+	adt/pset_new.h \
 	ana/absgraph.h \
-	ana/cdep_t.h \
 	ana/dfs.h \
 	ana/dfs_t.h \
 	ana/irbackedge_t.h \
 	ana/irdom_t.h \
+	ana/cdep_t.h \
 	ana/irlivechk.h \
 	ana/irloop_t.h \
 	ana/irmemory_t.h \
+	ana/execfreq_t.h \
 	ana/trouts_t.h \
-	be/be_dbgout.h \
 	be/be_t.h \
-	be/beabi.h \
-	be/be_dbgout_t.h \
-	be/bearch.h \
 	be/be_types.h \
+	be/beabi.h \
+	be/bearch.h \
 	be/beblocksched.h \
 	be/bechordal.h \
 	be/bechordal_draw.h \
 	be/bechordal_t.h \
+	be/becopyopt_t.h \
+	be/beabihelper.h \
 	be/becopyilp_t.h \
 	be/becopyopt.h \
-	be/becopyopt_t.h \
 	be/becopystat.h \
-	be/beabihelper.h \
-	be/bedomfront.h \
+	be/bedump.h \
+	be/belive.h \
+	be/beintlive_t.h \
 	be/beemitter.h \
 	be/begnuas.h \
 	be/beifg.h \
@@ -297,33 +296,31 @@ EXTRA_DIST = \
 	be/beirgmod.h \
 	be/beemitter_binary.h \
 	be/belistsched.h \
-	be/belive.h \
 	be/belive_t.h \
 	be/beloopana.h \
 	be/belower.h \
 	be/beinfo.h \
+	be/bessaconstr.h \
 	be/bemodule.h \
 	be/bemodule_t.h \
-	be/beintlive_t.h \
 	be/benode.h \
+	be/bepeephole.h \
 	be/bepbqpcoloring.h \
 	be/bera.h \
 	be/besched.h \
-	be/bepeephole.h \
 	be/bespill.h \
 	be/bespillslots.h \
-	be/bessaconstr.h \
+	be/beutil.h \
 	be/bessadestr.h \
 	be/bespillutil.h \
 	be/bestat.h \
+	be/betranshlp.h \
 	be/bestack.h \
 	be/bestate.h \
-	be/bestatevent.h \
-	be/betranshlp.h \
-	be/beuses.h \
-	be/beutil.h \
 	be/beverify.h \
-	be/bedump.h \
+	be/bedwarf.h \
+	be/beuses.h \
+	be/bedwarf_t.h \
 	common/debug.h \
 	common/error.h \
 	common/irtools.h \
@@ -347,12 +344,12 @@ EXTRA_DIST = \
 	ir/iropt_t.h \
 	ir/irprintf_t.h \
 	ir/irprog_t.h \
-	ir/irnodehashmap.h \
 	ir/irnodemap.h \
-	ir/irtypes.h \
 	ir/irpass_t.h \
-	ir/irprofile.h \
+	ir/irnodehashmap.h \
+	ir/irtypes.h \
 	ir/irverify_t.h \
+	ir/irprofile.h \
 	ir/valueset.h \
 	libcore/lc_appendable.h \
 	libcore/lc_opts.h \
@@ -360,10 +357,10 @@ EXTRA_DIST = \
 	libcore/lc_opts_t.h \
 	libcore/lc_printf.h \
 	libcore/lc_printf_arg_types.def \
-	lower/lower_calls.h \
-	lower/lower_dw.h \
 	lower/lower_alloc.h \
 	lower/lower_builtins.h \
+	lower/lower_calls.h \
+	lower/lower_dw.h \
 	lower/lower_mode_b.h \
 	lower/lower_softfloat.h \
 	lpp/lpp.h \
@@ -379,7 +376,6 @@ EXTRA_DIST = \
 	opt/reassoc_t.h \
 	opt/scalar_replace.h \
 	opt/opt_init.h \
-	opt/opt_manage.h \
 	stat/counter.h \
 	stat/dags.h \
 	stat/firmstat_t.h \
@@ -388,7 +384,6 @@ EXTRA_DIST = \
 	stat/stat_dmp.h \
 	stat/stat_timing.h \
 	stat/statev_t.h \
-	tr/compound_path_t.h \
 	tr/entity_t.h \
 	tr/tpop_t.h \
 	tr/type_t.h \
@@ -415,9 +410,10 @@ EXTRA_DIST = \
 	kaps/vector_t.h \
 	ir/gen_ir_cons.c.inl \
 	ir/gen_irop.c.inl \
-	ir/gen_irnode.c.inl \
 	ir/gen_irio.inl \
+	ir/gen_irnode.c.inl \
 	ir/gen_irdump.c.inl \
+	adt/hashset.c.inl \
 	be/scripts/generate_emitter_new.pl \
 	be/scripts/generate_emitter.pl \
 	be/scripts/generate_new_opcodes.pl \
