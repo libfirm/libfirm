@@ -423,11 +423,13 @@ static void analyze_parallel_copies_walker(ir_node *block, void *data)
 	for (int i = 0; i < get_irn_arity(block); ++i) {
 		unsigned parcopy[n_regs];
 		unsigned n_used[n_regs];
+		unsigned keep_val[n_regs];
 		ir_node *phi_args[n_regs];
 		ir_node *phis[n_regs];
 		for (unsigned i = 0; i < n_regs; ++i) {
 			parcopy[i] = i;
 			n_used[i] = 0;
+			keep_val[i] = 0;
 			phi_args[i] = NULL;
 			phis[i] = NULL;
 		}
@@ -442,6 +444,8 @@ static void analyze_parallel_copies_walker(ir_node *block, void *data)
 			if (phi_reg == arg_reg
 				|| (arg_reg->type & arch_register_type_joker)
 				|| (arg_reg->type & arch_register_type_virtual)) {
+
+				keep_val[arg_reg->index] = 1;
 				continue;
 			}
 
@@ -451,7 +455,7 @@ static void analyze_parallel_copies_walker(ir_node *block, void *data)
 			++n_used[arg_reg->index];
 
 			if (be_is_live_in(lv, block, arg))
-				++n_used[arg_reg->index];
+				keep_val[arg_reg->index] = 1;
 
 			assert(phis[phi_reg->index] == NULL);
 			phis[phi_reg->index] = phi;
@@ -459,6 +463,9 @@ static void analyze_parallel_copies_walker(ir_node *block, void *data)
 				assert(phi_args[arg_reg->index] == arg);
 			phi_args[arg_reg->index] = arg;
 		}
+
+		for (unsigned i = 0; i < n_regs; ++i)
+			n_used[i] += keep_val[i];
 
 		ir_node *pred   = get_Block_cfgpred_block(block, i);
 		ir_node *before = be_get_end_of_block_insertion_point(pred);
@@ -777,13 +784,15 @@ void be_ssa_destruction(be_chordal_env_t *chordal_env)
 	irg_walk_graph(irg, clear_link, collect_phis_walker, chordal_env);
 
 	if (build_icore_perms) {
+		be_assure_live_chk(irg);
+
 		DBG((dbg, LEVEL_1, "Analyzing parallel copies...\n"));
 		irg_block_walk_graph(irg, analyze_parallel_copies_walker, NULL, chordal_env);
 
-		if (chordal_env->opts->dump_flags & BE_CH_DUMP_SSADESTR)
-			dump_ir_graph(irg, "ssa_destr_icore_perms_places");
-
 		be_invalidate_live_chk(irg);
+
+		if (chordal_env->opts->dump_flags & BE_CH_DUMP_SSADESTR)
+			dump_ir_graph(irg, "ssa_destr_icore_perms_placed");
 	} else {
 		DBG((dbg, LEVEL_1, "Placing perms...\n"));
 		irg_block_walk_graph(irg, insert_all_perms_walker, NULL, chordal_env);
