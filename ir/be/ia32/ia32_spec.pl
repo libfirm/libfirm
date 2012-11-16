@@ -2251,7 +2251,7 @@ FucomppFnstsw => {
 	reg_req   => { in => [ "fp", "fp" ], out => [ "eax" ] },
 	ins       => [ "left", "right" ],
 	outs      => [ "flags" ],
-	emit      => "fucom%FP %F0\n".
+	emit      => "fucompp\n".
 	             "fnstsw %%ax",
 	attr      => "bool ins_permuted",
 	init_attr => "attr->attr.data.ins_permuted = ins_permuted;",
