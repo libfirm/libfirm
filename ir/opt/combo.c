@@ -27,9 +27,9 @@
  * - supports all Firm direct (by a data edge) identities except Mux
  *   (Mux can be a 2-input or 1-input identity, only 2-input is implemented yet)
  * - supports Confirm nodes (handle them like Copies but do NOT remove them)
- * - let Cmp nodes calculate Top like all othe data nodes: this would let
+ * - let Cmp nodes calculate Top like all other data nodes: this would let
  *   Mux nodes to calculate Unknown instead of taking the true result
- * - let Cond(Top) always select FALSE/default: This is tricky. Nodes are only reavaluated
+ * - let Cond(Top) always select FALSE/default: This is tricky. Nodes are only reevaluated
  *   IFF the predecessor changed its type. Because nodes are initialized with Top
  *   this never happens, let all Proj(Cond) be unreachable.
  *   We avoid this condition by the same way we work around Phi: whenever a Block
@@ -1218,7 +1218,7 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env)
 	 * Some informations on the race that are not stated clearly in Click's
 	 * thesis.
 	 * 1) A follower stays on the side that reach him first.
-	 * 2) If the other side reches a follower, if will be converted to
+	 * 2) If the other side reaches a follower, if will be converted to
 	 *    a leader. /This must be done after the race is over, else the
 	 *    edges we are iterating on are renumbered./
 	 * 3) /New leader might end up on both sides./
