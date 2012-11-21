@@ -139,7 +139,7 @@ typedef struct ir_switch_table  ir_switch_table;
  *
  * @note
  *      Do not return NULL!
- *      If this function is not set, FIRM will create a const node with tarval BAD.
+ *      If this function is not set, FIRM will create an Unknown node.
  *      Use set_irg_loc_description()/get_irg_loc_description() to assign additional
  *      informations to local variables.
  */
@@ -247,40 +247,52 @@ typedef enum cond_jmp_predicate {
  * of these may be discovered by analyses.
  */
 typedef enum mtp_additional_properties {
-	mtp_no_property            = 0x00000000, /**< no additional properties, default */
-	mtp_property_const         = 0x00000001, /**< This method did not access memory and calculates
-	                                              its return values solely from its parameters.
-	                                              The only observable effect of a const function must be its
-	                                              return value. So they must not exhibit infinite loops or wait
-	                                              for user input. The return value must not depend on any
-	                                              global variables/state.
-	                                              GCC: __attribute__((const)). */
-	mtp_property_pure          = 0x00000002, /**< This method did NOT write to memory and calculates
-	                                              its return values solely from its parameters and
-	                                              the memory they points to (or global vars).
-	                                              The only observable effect of a const function must be its
-	                                              return value. So they must not exhibit infinite loops or wait
-	                                              for user input.
-	                                              GCC: __attribute__((pure)). */
-	mtp_property_noreturn      = 0x00000004, /**< This method did not return due to an aborting system
-	                                              call.
-	                                              GCC: __attribute__((noreturn)). */
-	mtp_property_nothrow       = 0x00000008, /**< This method cannot throw an exception.
-	                                              GCC: __attribute__((nothrow)). */
-	mtp_property_naked         = 0x00000010, /**< This method is naked.
-	                                              GCC: __attribute__((naked)). */
-	mtp_property_malloc        = 0x00000020, /**< This method returns newly allocate memory.
-	                                              GCC: __attribute__((malloc)). */
-	mtp_property_returns_twice = 0x00000040, /**< This method can return more than one (typically setjmp).
-                                                  GCC: __attribute__((returns_twice)). */
-	mtp_property_intrinsic     = 0x00000080, /**< This method is intrinsic. It is expected that
-	                                              a lowering phase will remove all calls to it. */
-	mtp_property_runtime       = 0x00000100, /**< This method represents a runtime routine. */
-	mtp_property_private       = 0x00000200, /**< All method invocations are known, the backend is free to
-	                                              optimize the call in any possible way. */
-	mtp_property_has_loop      = 0x00000400, /**< Set, if this method contains one possible endless loop. */
-	mtp_property_inherited     = (1<<31)     /**< Internal. Used only in irg's, means property is
-	                                              inherited from type. */
+	/** no additional properties */
+	mtp_no_property                 = 0,
+	/** This method did not access memory and calculates its return values
+	 * solely from its parameters. The only observable effect of a const
+	 * function must be its return value. So they must not exhibit infinite
+	 * loops or wait for user input. The return value must not depend on any
+	 * global variables/state.
+	 * GCC: __attribute__((const)). */
+	mtp_property_const              = 1u << 0,
+	/** This method did NOT write to memory and calculates its return values
+	 * solely from its parameters and the memory they points to (or global
+	 * vars). The only observable effect of a const function must be its return
+	 * value. So they must not exhibit infinite loops or wait for user input.
+	 * GCC: __attribute__((pure)). */
+	mtp_property_pure               = 1u << 1,
+	/** This method did not return due to an aborting system call.
+	 * GCC: __attribute__((noreturn)). */
+	mtp_property_noreturn           = 1u << 2,
+	/** This method cannot throw an exception. GCC: __attribute__((nothrow)). */
+	mtp_property_nothrow            = 1u << 3,
+	/** This method is naked. GCC: __attribute__((naked)). */
+	mtp_property_naked              = 1u << 4,
+	/** This method returns newly allocate memory.
+	 * GCC: __attribute__((malloc)). */
+	mtp_property_malloc             = 1u << 5,
+	/** This method can return more than one (typically setjmp).
+	 * GCC: __attribute__((returns_twice)). */
+	mtp_property_returns_twice      = 1u << 6,
+	/** This method is intrinsic. It is expected that a lowering phase will
+	 * remove all calls to it. */
+	mtp_property_intrinsic          = 1u << 7,
+	/** This method represents a runtime routine. */
+	mtp_property_runtime            = 1u << 8,
+	/** All method invocations are known, the backend is free to optimize the
+	 * call in any possible way. */
+	mtp_property_private            = 1u << 9,
+	/** Set, if this method contains one possibly endless loop. */
+	mtp_property_has_loop           = 1u << 10,
+	/** try to always inline this function, even if it seems nonprofitable */
+	mtp_property_always_inline      = 1u << 11,
+	/** the function should not be inlined */
+	mtp_property_noinline           = 1u << 12,
+	/** the programmer recommends to inline the function */
+	mtp_property_inline_recommended = 1u << 13,
+	/** stupid hack used by opt_funccall... */
+	mtp_temporary                   = 1u << 14,
 } mtp_additional_properties;
 ENUM_BITSET(mtp_additional_properties)
 

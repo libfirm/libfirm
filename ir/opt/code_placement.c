@@ -120,7 +120,7 @@ static void place_floats_early(ir_node *n, waitq *worklist)
 	irg         = get_irn_irg(n);
 	start_block = get_irg_start_block(irg);
 	if (new_block == start_block && block != start_block &&
-	    get_irg_phase_state(irg) != phase_backend) {
+		!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
 		assert(get_irn_n_edges_kind(start_block, EDGE_KIND_BLOCK) == 1);
 		const ir_edge_t *edge = get_block_succ_first(start_block);
 		new_block = get_edge_src_irn(edge);
@@ -403,7 +403,6 @@ void place_code(ir_graph *irg)
 	waitq *worklist;
 
 	/* Handle graph state */
-	assert(get_irg_phase_state(irg) != phase_building);
 	assure_irg_properties(irg,
 		IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES |
 		IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE |

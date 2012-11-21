@@ -47,11 +47,10 @@ be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 {
 	struct obstack *obst = env->obst;
 	be_operand_t o;
-	be_insn_t *insn;
 	int i, n;
 	int pre_colored = 0;
 
-	insn = OALLOCZ(obst, be_insn_t);
+	be_insn_t *insn = OALLOCZ(obst, be_insn_t);
 
 	insn->irn       = irn;
 	insn->next_insn = sched_next(irn);

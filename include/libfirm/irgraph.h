@@ -248,38 +248,6 @@ FIRM_API size_t get_irg_idx(const ir_graph *irg);
  */
 FIRM_API ir_node *get_idx_irn(const ir_graph *irg, unsigned idx);
 
-
-/** The states of an ir graph.
- *
- * state phase values: phase_building, phase_high, phase_low, phase_backend.
- *
- * The graph is in phase_building during construction of the irgraph.
- * The construction is finished by a call to finalize_cons().
- *
- * Finalize_cons() sets the state to phase_high.  All standard Firm nodes are
- * allowed.
- *
- * To get the irgraph into phase_low all Sel nodes must be removed and
- * replaced by explicit address computations.  SymConst size and
- * type tag nodes must be removed (@@@ really?).  Initialization of
- * memory allocated by Alloc must be explicit.  @@@ More conditions?
- *
- * phase_backend is set if architecture specific machine nodes are inserted
- * (and probably most standard Firm are removed).
- */
-typedef enum {
-	phase_building,  /**< The graph is still being constructed. */
-	phase_high,      /**< The construction of the graph is finish, high level nodes may be present. */
-	phase_low,       /**< High level nodes are removed. */
-	phase_backend    /**< The graph is taken by the backend.  Machine specific nodes may be present. */
-} irg_phase_state;
-
-/** Returns the phase_state of an IR graph. */
-FIRM_API irg_phase_state get_irg_phase_state(const ir_graph *irg);
-
-/** Sets the phase state of an IR graph. */
-FIRM_API void set_irg_phase_state(ir_graph *irg, irg_phase_state state);
-
 /** state: op_pin_state_pinned
    The graph is "op_pin_state_pinned" if all nodes are associated with a basic block.
    It is in state "op_pin_state_floats" if nodes are in arbitrary blocks.  In state
@@ -307,41 +275,6 @@ FIRM_API irg_callee_info_state get_irg_callee_info_state(const ir_graph *irg);
 
 /** Sets the callee_info_state of an IR graph. */
 FIRM_API void set_irg_callee_info_state(ir_graph *irg, irg_callee_info_state s);
-
-/** property:
- *  Tells how to handle an ir graph in inlining.
- */
-typedef enum {
-	irg_inline_any,            /**< No restriction on inlining. Default. */
-	irg_inline_forbidden,      /**< The graph must not be inlined. */
-	irg_inline_recomended,     /**< The graph should be inlined. */
-	irg_inline_forced,         /**< The graph must be inlined. */
-	irg_inline_forced_no_body  /**< The graph must be inlined. No body is allowed
-	                                to be emitted. */
-} irg_inline_property;
-
-/** Returns the inline property of a graph. */
-FIRM_API irg_inline_property get_irg_inline_property(const ir_graph *irg);
-/** Sets the inline property of a graph. */
-FIRM_API void set_irg_inline_property(ir_graph *irg, irg_inline_property s);
-
-/**
- * Returns the mask of the additional graph properties.
- * The properties are automatically inherited from the method type
- * if they were not set using set_irg_additional_properties() or
- * set_irg_additional_properties().
- *
- * @return a bitset of mtp_additional_properties values
- */
-FIRM_API mtp_additional_properties get_irg_additional_properties(const ir_graph *irg);
-
-/** Sets the mask of the additional graph properties. */
-FIRM_API void set_irg_additional_properties(ir_graph *irg,
-                                            mtp_additional_properties property_mask);
-
-/** Sets one additional graph property. */
-FIRM_API void add_irg_additional_properties(ir_graph *irg,
-                                            mtp_additional_properties flag);
 
 /** A void * field to link arbitrary information to the node. */
 FIRM_API void set_irg_link(ir_graph *irg, void *thing);
@@ -439,7 +372,23 @@ typedef enum ir_graph_constraints_t {
 	 * Warning: It is only safe to enable this when you are sure that you
 	 * apply all localopts to the fixpunkt. (=in optimize_graph_df)
 	 */
-	IR_GRAPH_CONSTRAINT_OPTIMIZE_UNREACHABLE_CODE = 1U << 4,
+	IR_GRAPH_CONSTRAINT_OPTIMIZE_UNREACHABLE_CODE = 1U << 3,
+	/**
+	 * The graph is being constructed: We have a current_block set,
+	 * and blocks contain mapping of variable numbers to current
+	 * values.
+	 */
+	IR_GRAPH_CONSTRAINT_CONSTRUCTION              = 1U << 4,
+	/**
+	 * Intermediate language constructs not supported by the backend have
+	 * been lowered.
+	 */
+	IR_GRAPH_CONSTRAINT_TARGET_LOWERED            = 1U << 5,
+	/**
+	 * We have a backend graph: all data values have register constraints
+	 * annotated.
+	 */
+	IR_GRAPH_CONSTRAINT_BACKEND                   = 1U << 6,
 } ir_graph_constraints_t;
 ENUM_BITSET(ir_graph_constraints_t)
 

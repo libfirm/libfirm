@@ -248,11 +248,11 @@ static sched_timestep_t latency(trace_env_t *env, ir_node *pred, int pred_cycle,
 	if (is_Proj(curr))
 		return 0;
 
+#if 0
 	/* predecessors Proj's must be skipped */
 	if (is_Proj(pred))
 		pred = get_Proj_pred(pred);
 
-#if 0
 	if (env->selector->latency)
 		return env->selector->latency(env->selector_env, pred, pred_cycle, curr, curr_cycle);
 #endif

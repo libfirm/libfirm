@@ -271,9 +271,9 @@ static void parse_asm_constraints(constraint_t *constraint, const char *c,
 		case 't':
 		case 'u':
 			/* TODO: mark values so the x87 simulator knows about t and u */
-			if (cls != NULL && cls != &ia32_reg_classes[CLASS_ia32_vfp])
+			if (cls != NULL && cls != &ia32_reg_classes[CLASS_ia32_fp])
 				panic("multiple register classes not supported");
-			cls                   = &ia32_reg_classes[CLASS_ia32_vfp];
+			cls                   = &ia32_reg_classes[CLASS_ia32_fp];
 			all_registers_allowed = 1;
 			break;
 
@@ -536,6 +536,7 @@ ir_node *ia32_gen_ASM(ir_node *node)
 			if (parsed_constraint.cls == NULL
 					&& parsed_constraint.same_as < 0) {
 				is_memory_op = 1;
+				in_reg_reqs[i] = ia32_reg_classes[CLASS_ia32_gp].class_req;
 			} else if (parsed_constraint.memory_possible) {
 				/* TODO: match Load or Load/Store if memory possible is set */
 			}
@@ -752,7 +753,7 @@ ir_node *ia32_gen_Unknown(ir_node *node)
 		if (ia32_cg_config.use_sse2) {
 			res = new_bd_ia32_xUnknown(dbgi, block);
 		} else {
-			res = new_bd_ia32_vfldz(dbgi, block);
+			res = new_bd_ia32_fldz(dbgi, block);
 		}
 	} else if (ia32_mode_needs_gp_reg(mode)) {
 		res = new_bd_ia32_Unknown(dbgi, block);
@@ -839,7 +840,7 @@ const arch_register_req_t *ia32_parse_clobber(const char *clobber)
 
 	req          = OALLOCZ(obst, arch_register_req_t);
 	req->type    = arch_register_req_type_limited;
-	req->cls     = arch_register_get_class(reg);
+	req->cls     = reg->reg_class;
 	req->limited = limited;
 	req->width   = 1;
 

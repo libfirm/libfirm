@@ -947,15 +947,13 @@ static ir_node *equivalent_node_Sub(ir_node *n)
  *   We handle it anyway here but the better way would be a
  *   flag. This would be needed for Pascal for instance.
  */
-static ir_node *equivalent_node_idempotent_unop(ir_node *n)
+static ir_node *equivalent_node_involution(ir_node *n)
 {
 	ir_node *oldn = n;
 	ir_node *pred = get_unop_op(n);
-
-	/* optimize symmetric unop */
 	if (get_irn_op(pred) == get_irn_op(n)) {
 		n = get_unop_op(pred);
-		DBG_OPT_ALGSIM2(oldn, pred, n, FS_OPT_IDEM_UNARY);
+		DBG_OPT_ALGSIM2(oldn, pred, n, FS_OPT_INVOLUTION);
 	}
 	return n;
 }
@@ -1131,7 +1129,7 @@ static ir_node *equivalent_node_Phi(ir_node *n)
 	ir_node *first_val = NULL; /* to shutup gcc */
 
 	if (!get_opt_optimize() &&
-			get_irg_phase_state(get_irn_irg(n)) != phase_building)
+	    !irg_is_constrained(get_irn_irg(n), IR_GRAPH_CONSTRAINT_CONSTRUCTION))
 		return n;
 
 	n_preds = get_Phi_n_preds(n);
@@ -1511,44 +1509,40 @@ static ir_tarval *do_eval(eval_func eval, ir_tarval *a, ir_tarval *b, ir_mode *m
  */
 static ir_node *apply_binop_on_phi(ir_node *phi, ir_tarval *other, eval_func eval, ir_mode *mode, int left)
 {
-	ir_tarval *tv;
-	void      **res;
-	ir_node   *pred;
-	ir_graph  *irg;
-	int       i, n = get_irn_arity(phi);
-
-	NEW_ARR_A(void *, res, n);
+	int         n   = get_irn_arity(phi);
+	ir_tarval **tvs = ALLOCAN(ir_tarval*, n);
 	if (left) {
-		for (i = 0; i < n; ++i) {
-			pred = get_irn_n(phi, i);
-			tv   = get_Const_tarval(pred);
-			tv   = do_eval(eval, other, tv, mode);
+		for (int i = 0; i < n; ++i) {
+			ir_node   *pred = get_irn_n(phi, i);
+			ir_tarval *tv   = get_Const_tarval(pred);
+			tv = do_eval(eval, other, tv, mode);
 
 			if (tv == tarval_bad) {
 				/* folding failed, bad */
 				return NULL;
 			}
-			res[i] = tv;
+			tvs[i] = tv;
 		}
 	} else {
-		for (i = 0; i < n; ++i) {
-			pred = get_irn_n(phi, i);
-			tv   = get_Const_tarval(pred);
-			tv   = do_eval(eval, tv, other, mode);
+		for (int i = 0; i < n; ++i) {
+			ir_node   *pred = get_irn_n(phi, i);
+			ir_tarval *tv   = get_Const_tarval(pred);
+			tv = do_eval(eval, tv, other, mode);
 
 			if (tv == tarval_bad) {
 				/* folding failed, bad */
 				return 0;
 			}
-			res[i] = tv;
+			tvs[i] = tv;
 		}
 	}
-	irg = get_irn_irg(phi);
-	for (i = 0; i < n; ++i) {
-		pred = get_irn_n(phi, i);
-		res[i] = new_r_Const(irg, (ir_tarval*)res[i]);
+	ir_graph *irg = get_irn_irg(phi);
+	ir_node **res = ALLOCAN(ir_node*, n);
+	for (int i = 0; i < n; ++i) {
+		res[i] = new_r_Const(irg, tvs[i]);
 	}
-	return new_r_Phi(get_nodes_block(phi), n, (ir_node **)res, mode);
+	ir_node *block = get_nodes_block(phi);
+	return new_r_Phi(block, n, res, mode);
 }
 
 /**
@@ -1563,37 +1557,31 @@ static ir_node *apply_binop_on_phi(ir_node *phi, ir_tarval *other, eval_func eva
  */
 static ir_node *apply_binop_on_2_phis(ir_node *a, ir_node *b, eval_func eval, ir_mode *mode)
 {
-	ir_tarval *tv_l, *tv_r, *tv;
-	void     **res;
-	ir_node  *pred;
-	ir_graph *irg;
-	int      i, n;
-
 	if (get_nodes_block(a) != get_nodes_block(b))
 		return NULL;
 
-	n = get_irn_arity(a);
-	NEW_ARR_A(void *, res, n);
-
-	for (i = 0; i < n; ++i) {
-		pred = get_irn_n(a, i);
-		tv_l = get_Const_tarval(pred);
-		pred = get_irn_n(b, i);
-		tv_r = get_Const_tarval(pred);
-		tv   = do_eval(eval, tv_l, tv_r, mode);
+	int         n   = get_irn_arity(a);
+	ir_tarval **tvs = ALLOCAN(ir_tarval*, n);
+	for (int i = 0; i < n; ++i) {
+		ir_node   *pred_a = get_irn_n(a, i);
+		ir_tarval *tv_l   = get_Const_tarval(pred_a);
+		ir_node   *pred_b = get_irn_n(b, i);
+		ir_tarval *tv_r   = get_Const_tarval(pred_b);
+		ir_tarval *tv     = do_eval(eval, tv_l, tv_r, mode);
 
 		if (tv == tarval_bad) {
 			/* folding failed, bad */
 			return NULL;
 		}
-		res[i] = tv;
+		tvs[i] = tv;
 	}
-	irg = get_irn_irg(a);
-	for (i = 0; i < n; ++i) {
-		pred = get_irn_n(a, i);
-		res[i] = new_r_Const(irg, (ir_tarval*)res[i]);
+	ir_graph *irg = get_irn_irg(a);
+	ir_node **res = ALLOCAN(ir_node*, n);
+	for (int i = 0; i < n; ++i) {
+		res[i] = new_r_Const(irg, tvs[i]);
 	}
-	return new_r_Phi(get_nodes_block(a), n, (ir_node **)res, mode);
+	ir_node *block = get_nodes_block(a);
+	return new_r_Phi(block, n, res, mode);
 }
 
 /**
@@ -1606,32 +1594,27 @@ static ir_node *apply_binop_on_2_phis(ir_node *a, ir_node *b, eval_func eval, ir
  */
 static ir_node *apply_unop_on_phi(ir_node *phi, ir_tarval *(*eval)(ir_tarval *))
 {
-	ir_tarval *tv;
-	void     **res;
-	ir_node  *pred;
-	ir_mode  *mode;
-	ir_graph *irg;
-	int      i, n = get_irn_arity(phi);
-
-	NEW_ARR_A(void *, res, n);
-	for (i = 0; i < n; ++i) {
-		pred = get_irn_n(phi, i);
-		tv   = get_Const_tarval(pred);
-		tv   = eval(tv);
+	int         n   = get_irn_arity(phi);
+	ir_tarval **tvs = ALLOCAN(ir_tarval*, n);
+	for (int i = 0; i < n; ++i) {
+		ir_node   *pred = get_irn_n(phi, i);
+		ir_tarval *tv   = get_Const_tarval(pred);
+		tv = eval(tv);
 
 		if (tv == tarval_bad) {
 			/* folding failed, bad */
 			return 0;
 		}
-		res[i] = tv;
+		tvs[i] = tv;
 	}
-	mode = get_irn_mode(phi);
-	irg  = get_irn_irg(phi);
-	for (i = 0; i < n; ++i) {
-		pred = get_irn_n(phi, i);
-		res[i] = new_r_Const(irg, (ir_tarval*)res[i]);
+	ir_graph *irg  = get_irn_irg(phi);
+	ir_node **res  = ALLOCAN(ir_node*, n);
+	for (int i = 0; i < n; ++i) {
+		res[i] = new_r_Const(irg, tvs[i]);
 	}
-	return new_r_Phi(get_nodes_block(phi), n, (ir_node **)res, mode);
+	ir_node *block = get_nodes_block(phi);
+	ir_mode *mode  = get_irn_mode(phi);
+	return new_r_Phi(block, n, res, mode);
 }
 
 /**
@@ -1643,30 +1626,26 @@ static ir_node *apply_unop_on_phi(ir_node *phi, ir_tarval *(*eval)(ir_tarval *))
  */
 static ir_node *apply_conv_on_phi(ir_node *phi, ir_mode *mode)
 {
-	ir_tarval *tv;
-	void     **res;
-	ir_node  *pred;
-	ir_graph *irg;
-	int      i, n = get_irn_arity(phi);
-
-	NEW_ARR_A(void *, res, n);
-	for (i = 0; i < n; ++i) {
-		pred = get_irn_n(phi, i);
-		tv   = get_Const_tarval(pred);
-		tv   = tarval_convert_to(tv, mode);
+	int         n   = get_irn_arity(phi);
+	ir_tarval **tvs = ALLOCAN(ir_tarval*, n);
+	for (int i = 0; i < n; ++i) {
+		ir_node   *pred = get_irn_n(phi, i);
+		ir_tarval *tv   = get_Const_tarval(pred);
+		tv = tarval_convert_to(tv, mode);
 
 		if (tv == tarval_bad) {
 			/* folding failed, bad */
 			return 0;
 		}
-		res[i] = tv;
+		tvs[i] = tv;
 	}
-	irg = get_irn_irg(phi);
-	for (i = 0; i < n; ++i) {
-		pred = get_irn_n(phi, i);
-		res[i] = new_r_Const(irg, (ir_tarval*)res[i]);
+	ir_graph *irg = get_irn_irg(phi);
+	ir_node **res = ALLOCAN(ir_node*, n);
+	for (int i = 0; i < n; ++i) {
+		res[i] = new_r_Const(irg, tvs[i]);
 	}
-	return new_r_Phi(get_nodes_block(phi), n, (ir_node **)res, mode);
+	ir_node *block = get_nodes_block(phi);
+	return new_r_Phi(block, n, res, mode);
 }
 
 /**
@@ -3367,8 +3346,6 @@ static ir_node *transform_node_Cond(ir_node *n)
 			set_Tuple_pred(n, pn_Cond_false, jmp);
 			set_Tuple_pred(n, pn_Cond_true, new_r_Bad(irg, mode_X));
 		}
-		/* We might generate an endless loop, so keep it alive. */
-		add_End_keepalive(get_irg_end(irg), blk);
 		clear_irg_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE);
 	}
 	return n;
@@ -6097,6 +6074,25 @@ static ir_node *transform_node_Sync(ir_node *n)
 	return n;
 }
 
+static ir_node *create_load_replacement_tuple(ir_node *n, ir_node *mem,
+                                              ir_node *res)
+{
+	ir_node  *block = get_nodes_block(n);
+	ir_graph *irg   = get_irn_irg(n);
+	ir_node  *in[pn_Load_max+1];
+	size_t    n_in  = 2;
+	in[pn_Load_M]   = mem;
+	in[pn_Load_res] = res;
+	if (ir_throws_exception(n)) {
+		in[pn_Load_X_regular] = new_r_Jmp(block);
+		in[pn_Load_X_except]  = new_r_Bad(irg, mode_X);
+		n_in                  = 4;
+		assert(pn_Load_max == 4);
+	}
+	ir_node  *tuple = new_r_Tuple(block, n_in, in);
+	return tuple;
+}
+
 static ir_node *transform_node_Load(ir_node *n)
 {
 	/* don't touch volatile loads */
@@ -6126,17 +6122,9 @@ static ir_node *transform_node_Load(ir_node *n)
 			return n;
 		/* all combinations of aligned/unaligned pred/n should be fine so we do
 		 * not compare the unaligned attribute */
-		{
-			ir_node  *block = get_nodes_block(n);
-			ir_node  *jmp   = new_r_Jmp(block);
-			ir_graph *irg   = get_irn_irg(n);
-			ir_node  *bad   = new_r_Bad(irg, mode_X);
-			ir_mode  *mode  = get_Load_mode(n);
-			ir_node  *res   = new_r_Proj(pred_load, mode, pn_Load_res);
-			ir_node  *in[]  = { mem, res, jmp, bad };
-			ir_node  *tuple = new_r_Tuple(block, ARRAY_SIZE(in), in);
-			return tuple;
-		}
+		ir_mode  *mode  = get_Load_mode(n);
+		ir_node  *res   = new_r_Proj(pred_load, mode, pn_Load_res);
+		return create_load_replacement_tuple(n, mem, res);
 	} else if (is_Store(mem_pred)) {
 		ir_node *pred_store = mem_pred;
 		ir_node *value      = get_Store_value(pred_store);
@@ -6147,16 +6135,7 @@ static ir_node *transform_node_Load(ir_node *n)
 			return n;
 		/* all combinations of aligned/unaligned pred/n should be fine so we do
 		 * not compare the unaligned attribute */
-		{
-			ir_node  *block = get_nodes_block(n);
-			ir_node  *jmp   = new_r_Jmp(block);
-			ir_graph *irg   = get_irn_irg(n);
-			ir_node  *bad   = new_r_Bad(irg, mode_X);
-			ir_node  *res   = value;
-			ir_node  *in[]  = { mem, res, jmp, bad };
-			ir_node  *tuple = new_r_Tuple(block, ARRAY_SIZE(in), in);
-			return tuple;
-		}
+		return create_load_replacement_tuple(n, mem, value);
 	}
 
 	return n;
@@ -6377,10 +6356,10 @@ void ir_register_opt_node_ops(void)
 	register_equivalent_node_func(op_Conv,    equivalent_node_Conv);
 	register_equivalent_node_func(op_Eor,     equivalent_node_Eor);
 	register_equivalent_node_func(op_Id,      equivalent_node_Id);
-	register_equivalent_node_func(op_Minus,   equivalent_node_idempotent_unop);
+	register_equivalent_node_func(op_Minus,   equivalent_node_involution);
 	register_equivalent_node_func(op_Mul,     equivalent_node_Mul);
 	register_equivalent_node_func(op_Mux,     equivalent_node_Mux);
-	register_equivalent_node_func(op_Not,     equivalent_node_idempotent_unop);
+	register_equivalent_node_func(op_Not,     equivalent_node_involution);
 	register_equivalent_node_func(op_Or,      equivalent_node_Or);
 	register_equivalent_node_func(op_Phi,     equivalent_node_Phi);
 	register_equivalent_node_func(op_Proj,    equivalent_node_Proj);
@@ -6771,8 +6750,6 @@ ir_node *optimize_in_place_2(ir_node *n)
 ir_node *optimize_in_place(ir_node *n)
 {
 	ir_graph *irg = get_irn_irg(n);
-	/* Handle graph state */
-	assert(get_irg_phase_state(irg) != phase_building);
 
 	if (get_opt_global_cse())
 		set_irg_pinned(irg, op_pin_state_floats);

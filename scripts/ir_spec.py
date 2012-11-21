@@ -181,7 +181,7 @@ class Bad:
 	that a control flow edge can never be executed.
 
 	The gigo optimisations ensures that nodes with Bad as their block, get
-	replaced by Bad themselfes. Nodes with at least 1 Bad input get exchanged
+	replaced by Bad themselves. Nodes with at least 1 Bad input get exchanged
 	with Bad too. Exception to this rule are Block, Phi, Tuple and End node;
 	This is because removing inputs from a Block is hairy operation (requiring,
 	Phis to be shortened too for example). So instead of removing block inputs
@@ -233,7 +233,7 @@ class Block:
 	set_Block_matured(res, 1);
 
 	/* Create and initialize array for Phi-node construction. */
-	if (get_irg_phase_state(irg) == phase_building) {
+	if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION)) {
 		res->attr.block.graph_arr = NEW_ARR_D(ir_node *, irg->obst, irg->n_loc);
 		memset(res->attr.block.graph_arr, 0, irg->n_loc * sizeof(ir_node*));
 	}
@@ -686,7 +686,7 @@ class Load:
 
 @op
 class Minus(Unop):
-	"""returns the difference between its operands"""
+	"""returns the additive inverse of its operand"""
 	flags = []
 
 @op
@@ -777,11 +777,6 @@ class Phi:
 	attr_struct   = "phi_attr"
 	init          = '''
 	res->attr.phi.u.backedge = new_backedge_arr(irg->obst, arity);'''
-	init_after_opt = '''
-	/* Memory Phis in endless loops must be kept alive.
-	   As we can't distinguish these easily we keep all of them alive. */
-	if (is_Phi(res) && mode == mode_M)
-		add_End_keepalive(get_irg_end(irg), res);'''
 	customSerializer = True
 
 @op

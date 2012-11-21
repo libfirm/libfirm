@@ -583,8 +583,8 @@ static cpu_arch_features auto_detect_Intel(x86_cpu_info_t const *info)
 {
 	cpu_arch_features auto_arch = cpu_generic;
 
-	unsigned family = (info->cpu_ext_family << 4) | info->cpu_family;
-	unsigned model  = (info->cpu_ext_model  << 4) | info->cpu_model;
+	unsigned family = info->cpu_ext_family + info->cpu_family;
+	unsigned model  = (info->cpu_ext_model << 4) | info->cpu_model;
 
 	switch (family) {
 	case 4:
@@ -658,8 +658,8 @@ static cpu_arch_features auto_detect_AMD(x86_cpu_info_t const *info)
 	unsigned family, model;
 
 	if (info->cpu_family == 0x0F) {
-		family = (info->cpu_ext_family << 4) | info->cpu_family;
-		model  = (info->cpu_ext_model  << 4) | info->cpu_model;
+		family = info->cpu_ext_family + info->cpu_family;
+		model  = (info->cpu_ext_model << 4) | info->cpu_model;
 	} else {
 		family = info->cpu_family;
 		model  = info->cpu_model;
@@ -711,8 +711,11 @@ static cpu_arch_features auto_detect_AMD(x86_cpu_info_t const *info)
 	case 0x0F:
 		auto_arch = cpu_k8_generic;
 		break;
-	case 0x1F:
-	case 0x2F: /* AMD Family 11h */
+	case 0x10:
+	case 0x11: /* AMD Family 11h */
+	case 0x12: /* AMD Family 12h */
+	case 0x14: /* AMD Family 14h */
+	case 0x15: /* AMD Family 15h */
 		auto_arch = cpu_k10_generic;
 		break;
 	default:

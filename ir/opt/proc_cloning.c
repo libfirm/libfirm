@@ -570,7 +570,6 @@ restart:
 		hmap->heavy_uses = entry->next;
 		entry->next      = *adr;
 		*adr             = entry;
-		entry            = hmap->heavy_uses;
 
 		/* we have changed the list, check the next one */
 		goto restart;

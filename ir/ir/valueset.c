@@ -147,6 +147,20 @@ void *ir_valueset_lookup(const ir_valueset_t *valueset, const ir_node *value)
 	return NULL;
 }
 
+void ir_valueset_set_link(const ir_valueset_t *valueset, const ir_node *value, void *link)
+{
+	ir_valueset_entry_t *entry = ir_valueset_find_(valueset, value);
+	assert(entry);
+	entry->link = link;
+}
+
+void *ir_valueset_get_link(const ir_valueset_t *valueset, const ir_node *value)
+{
+	ir_valueset_entry_t *entry = ir_valueset_find_(valueset, value);
+	assert(entry);
+	return entry->link;
+}
+
 void ir_valueset_iterator_init(ir_valueset_iterator_t *iterator,
                                const ir_valueset_t *valueset)
 {

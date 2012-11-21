@@ -569,13 +569,15 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	throws_exception = ir_throws_exception(irn);
 	if (env->call->flags.bits.call_has_imm && is_SymConst(call_ptr)) {
 		/* direct call */
-		low_call = be_new_Call(dbgi, irg, bl, curr_mem, curr_sp, curr_sp,
+		low_call = be_new_Call(dbgi, irg, bl, curr_mem, sp->single_req, curr_sp,
+		                       sp->single_req, curr_sp,
 		                       n_reg_results + pn_be_Call_first_res + ARR_LEN(destroyed_regs),
 		                       n_ins, in, get_Call_type(irn));
 		be_Call_set_entity(low_call, get_SymConst_entity(call_ptr));
 	} else {
 		/* indirect call */
-		low_call = be_new_Call(dbgi, irg, bl, curr_mem, curr_sp, call_ptr,
+		low_call = be_new_Call(dbgi, irg, bl, curr_mem, sp->single_req, curr_sp,
+		                       call->cls_addr->class_req, call_ptr,
 		                       n_reg_results + pn_be_Call_first_res + ARR_LEN(destroyed_regs),
 		                       n_ins, in, get_Call_type(irn));
 	}
@@ -595,7 +597,6 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	for (i = 0; i < n_res; ++i) {
 		ir_node           *proj = res_projs[i];
 		be_abi_call_arg_t *arg  = get_call_arg(call, 1, i, 0);
-		long               pn   = i + pn_be_Call_first_res;
 
 		/* returns values on stack not supported yet */
 		assert(arg->in_reg);
@@ -605,7 +606,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			unspeakable Proj_T from the Call. Therefore, all real argument
 			Proj numbers must be increased by pn_be_Call_first_res
 		*/
-		pn = i + pn_be_Call_first_res;
+		long pn = i + pn_be_Call_first_res;
 
 		if (proj == NULL) {
 			ir_type *res_type = get_method_res_type(call_tp, i);
@@ -630,12 +631,6 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			}
 		}
 	}
-
-	/*
-		Set the register class of the call address to
-		the backend provided class (default: stack pointer class)
-	*/
-	be_node_set_reg_class_in(low_call, n_be_Call_ptr, call->cls_addr);
 
 	DBG((dbg, LEVEL_3, "\tcreated backend call %+F\n", low_call));
 
@@ -710,7 +705,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		keep = be_new_Keep(bl, n, in);
 		for (i = 0; i < n; ++i) {
 			const arch_register_t *reg = (const arch_register_t*)get_irn_link(in[i]);
-			be_node_set_reg_class_in(keep, i, arch_register_get_class(reg));
+			be_node_set_reg_class_in(keep, i, reg->reg_class);
 		}
 	}
 

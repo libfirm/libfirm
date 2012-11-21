@@ -63,6 +63,11 @@ FIRM_API void local_optimize_graph(ir_graph *irg);
  */
 FIRM_API void local_opts(ir_graph *irg);
 
+/**
+ * Perform local optimizations on nodes on const code irg
+ */
+FIRM_API void local_opts_const_code(void);
+
 /** Same functionality as local_opts above, but without framework wrapper
  * @deprecated
  */

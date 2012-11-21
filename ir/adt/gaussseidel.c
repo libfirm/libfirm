@@ -173,7 +173,7 @@ void gs_matrix_set(gs_matrix_t *m, int row, int col, double val)
 	cols = the_row->cols;
 	min  = 0;
 	max  = the_row->n_cols;
-	c    = (max+min)/2;
+	c    = max/2;
 	while (min < max) {
 		int idx = cols[c].col_idx;
 		if (idx < col)

@@ -677,7 +677,6 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 	ir_type   *mtp         = get_entity_type(ent);
 	size_t     n_ress      = get_method_n_ress(mtp);
 	size_t     n_params    = get_method_n_params(mtp);
-	size_t     n_ret_com   = 0;
 	size_t     n_param_com = 0;
 
 	ir_type   *lowered_mtp, *tp, *ft;
@@ -688,7 +687,8 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 	wlk_env   env;
 
 	/* calculate the number of compound returns */
-	for (n_ret_com = i = 0; i < n_ress; ++i) {
+	size_t n_ret_com = 0;
+	for (i = 0; i < n_ress; ++i) {
 		ir_type *type = get_method_res_type(mtp, i);
 		if (is_compound_type(type))
 			++n_ret_com;

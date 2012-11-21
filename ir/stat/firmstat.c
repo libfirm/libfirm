@@ -2063,10 +2063,10 @@ void stat_dump_snapshot(const char *name, const char *phase)
 			fname[0] = '\0';
 			p = name;
 		}  /* if */
-		strncat(fname, "firmstat-", sizeof(fname)-1);
-		strncat(fname, phase, sizeof(fname)-1);
-		strncat(fname, "-", sizeof(fname)-1);
-		strncat(fname, p, sizeof(fname)-1);
+		strncat(fname, "firmstat-", sizeof(fname)-strlen(fname)-1);
+		strncat(fname, phase,       sizeof(fname)-strlen(fname)-1);
+		strncat(fname, "-",         sizeof(fname)-strlen(fname)-1);
+		strncat(fname, p,           sizeof(fname)-strlen(fname)-1);
 
 		stat_dump_init(fname);
 

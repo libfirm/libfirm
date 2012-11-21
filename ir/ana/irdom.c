@@ -567,7 +567,7 @@ void compute_doms(ir_graph *irg)
 	current_ir_graph = irg;
 
 	/* Update graph state */
-	assert(get_irg_phase_state(irg) != phase_building);
+	assert(!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
 
 	/* Count the number of blocks in the graph. */
 	n_blocks = 0;
@@ -696,7 +696,6 @@ void assure_doms(ir_graph *irg)
 void free_dom(ir_graph *irg)
 {
 	/* Update graph state */
-	assert(get_irg_phase_state(irg) != phase_building);
 	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
 	/* With the implementation right now there is nothing to free */
@@ -714,7 +713,7 @@ void compute_postdoms(ir_graph *irg)
 	current_ir_graph = irg;
 
 	/* Update graph state */
-	assert(get_irg_phase_state(irg) != phase_building);
+	assert(!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
 
 	/* Count the number of blocks in the graph. */
 	n_blocks = 0;
@@ -810,9 +809,5 @@ void assure_postdoms(ir_graph *irg)
 void free_postdom(ir_graph *irg)
 {
 	/* Update graph state */
-	assert(get_irg_phase_state(irg) != phase_building);
 	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE);
-
-	/* With the implementation right now there is nothing to free,
-	   but better call it anyways... */
 }

@@ -148,11 +148,11 @@ ir_node *ia32_new_NoReg_gp(ir_graph *irg)
 	                    &ia32_registers[REG_GP_NOREG]);
 }
 
-ir_node *ia32_new_NoReg_vfp(ir_graph *irg)
+ir_node *ia32_new_NoReg_fp(ir_graph *irg)
 {
 	ia32_irg_data_t *irg_data = ia32_get_irg_data(irg);
-	return create_const(irg, &irg_data->noreg_vfp, new_bd_ia32_NoReg_VFP,
-	                    &ia32_registers[REG_VFP_NOREG]);
+	return create_const(irg, &irg_data->noreg_fp, new_bd_ia32_NoReg_FP,
+	                    &ia32_registers[REG_FP_NOREG]);
 }
 
 ir_node *ia32_new_NoReg_xmm(ir_graph *irg)
@@ -185,7 +185,7 @@ static ir_node *ia32_get_admissible_noreg(ir_node *irn, int pos)
 	if (ia32_cg_config.use_sse2) {
 		return ia32_new_NoReg_xmm(irg);
 	} else {
-		return ia32_new_NoReg_vfp(irg);
+		return ia32_new_NoReg_fp(irg);
 	}
 }
 
@@ -816,7 +816,7 @@ static void transform_to_Load(ir_node *node)
 		if (ia32_cg_config.use_sse2)
 			new_op = new_bd_ia32_xLoad(dbgi, block, ptr, noreg, mem, spillmode);
 		else
-			new_op = new_bd_ia32_vfld(dbgi, block, ptr, noreg, mem, spillmode);
+			new_op = new_bd_ia32_fld(dbgi, block, ptr, noreg, mem, spillmode);
 	}
 	else if (get_mode_size_bits(spillmode) == 128) {
 		/* Reload 128 bit SSE registers */
@@ -877,8 +877,8 @@ static void transform_to_Store(ir_node *node)
 			store = new_bd_ia32_xStore(dbgi, block, ptr, noreg, nomem, val);
 			res   = new_r_Proj(store, mode_M, pn_ia32_xStore_M);
 		} else {
-			store = new_bd_ia32_vfst(dbgi, block, ptr, noreg, nomem, val, mode);
-			res   = new_r_Proj(store, mode_M, pn_ia32_vfst_M);
+			store = new_bd_ia32_fst(dbgi, block, ptr, noreg, nomem, val, mode);
+			res   = new_r_Proj(store, mode_M, pn_ia32_fst_M);
 		}
 	} else if (get_mode_size_bits(mode) == 128) {
 		/* Spill 128 bit SSE registers */
@@ -1111,8 +1111,8 @@ need_stackent:
 				break;
 			}
 
-			case iro_ia32_vfild:
-			case iro_ia32_vfld:
+			case iro_ia32_fild:
+			case iro_ia32_fld:
 			case iro_ia32_xLoad: {
 				mode  = get_ia32_ls_mode(node);
 				align = 4;
@@ -1134,10 +1134,8 @@ need_stackent:
 			case iro_ia32_Store8Bit:
 			case iro_ia32_Store:
 			case iro_ia32_fst:
-			case iro_ia32_fstp:
-			case iro_ia32_vfist:
-			case iro_ia32_vfisttp:
-			case iro_ia32_vfst:
+			case iro_ia32_fist:
+			case iro_ia32_fisttp:
 			case iro_ia32_xStore:
 			case iro_ia32_xStoreSimple:
 #endif
@@ -1174,7 +1172,7 @@ static void introduce_epilog(ir_node *ret)
 	ir_node               *block      = get_nodes_block(ret);
 	ir_node               *first_sp   = get_irn_n(ret, n_be_Return_sp);
 	ir_node               *curr_sp    = first_sp;
-	ir_mode               *mode_gp    = mode_Iu;
+	ir_mode               *mode_gp    = ia32_reg_classes[CLASS_ia32_gp].mode;
 
 	if (!layout->sp_relative) {
 		int      n_ebp   = determine_ebp_input(ret);
@@ -1240,28 +1238,24 @@ static void introduce_prolog_epilog(ir_graph *irg)
 		ir_node *mem        = get_irg_initial_mem(irg);
 		ir_node *noreg      = ia32_new_NoReg_gp(irg);
 		ir_node *initial_bp = be_get_initial_reg_value(irg, bp);
-		ir_node *curr_bp    = initial_bp;
-		ir_node *push       = new_bd_ia32_Push(NULL, block, noreg, noreg, mem, curr_bp, curr_sp);
+		ir_node *push       = new_bd_ia32_Push(NULL, block, noreg, noreg, mem, initial_bp, initial_sp);
 		ir_node *incsp;
 
 		curr_sp = new_r_Proj(push, mode_gp, pn_ia32_Push_stack);
-		mem     = new_r_Proj(push, mode_M, pn_ia32_Push_M);
 		arch_set_irn_register(curr_sp, sp);
 		sched_add_after(start, push);
 
 		/* move esp to ebp */
-		curr_bp = be_new_Copy(block, curr_sp);
+		ir_node *const curr_bp = be_new_Copy(block, curr_sp);
 		sched_add_after(push, curr_bp);
 		be_set_constr_single_reg_out(curr_bp, 0, bp, arch_register_req_type_ignore);
 		curr_sp = be_new_CopyKeep_single(block, curr_sp, curr_bp);
 		sched_add_after(curr_bp, curr_sp);
 		be_set_constr_single_reg_out(curr_sp, 0, sp, arch_register_req_type_produces_sp);
-		edges_reroute(initial_bp, curr_bp);
-		set_irn_n(push, n_ia32_Push_val, initial_bp);
+		edges_reroute_except(initial_bp, curr_bp, push);
 
 		incsp = be_new_IncSP(sp, block, curr_sp, frame_size, 0);
-		edges_reroute(initial_sp, incsp);
-		set_irn_n(push, n_ia32_Push_stack, initial_sp);
+		edges_reroute_except(initial_sp, incsp, push);
 		sched_add_after(curr_sp, incsp);
 
 		/* make sure the initial IncSP is really used by someone */
@@ -1273,9 +1267,8 @@ static void introduce_prolog_epilog(ir_graph *irg)
 
 		layout->initial_bias = -4;
 	} else {
-		ir_node *incsp = be_new_IncSP(sp, block, curr_sp, frame_size, 0);
-		edges_reroute(initial_sp, incsp);
-		be_set_IncSP_pred(incsp, curr_sp);
+		ir_node *const incsp = be_new_IncSP(sp, block, initial_sp, frame_size, 0);
+		edges_reroute_except(initial_sp, incsp, incsp);
 		sched_add_after(start, incsp);
 	}
 
@@ -1678,7 +1671,6 @@ static ir_node *ia32_create_trampoline_fkt(ir_node *block, ir_node *mem, ir_node
 	p   = new_r_Add(block, p, one, mode);
 	st  = new_r_Store(block, mem, p, callee, cons_none);
 	mem = new_r_Proj(st, mode_M, pn_Store_M);
-	p   = new_r_Add(block, p, four, mode);
 
 	return mem;
 }
@@ -2002,7 +1994,7 @@ static void ia32_get_call_abi(ir_type *method_type, be_abi_call_t *abi)
 		const arch_register_t *reg;
 		assert(is_atomic_type(tp));
 
-		reg = mode_is_float(mode) ? &ia32_registers[REG_VF0] : &ia32_registers[REG_EAX];
+		reg = mode_is_float(mode) ? &ia32_registers[REG_ST0] : &ia32_registers[REG_EAX];
 
 		be_abi_call_res_reg(abi, 0, reg, ABI_CONTEXT_BOTH);
 	}
@@ -2031,6 +2023,7 @@ static int ia32_is_valid_clobber(const char *clobber)
 
 static void ia32_lower_for_target(void)
 {
+	ir_mode *mode_gp = ia32_reg_classes[CLASS_ia32_gp].mode;
 	size_t i, n_irgs = get_irp_n_irgs();
 
 	/* perform doubleword lowering */
@@ -2055,6 +2048,12 @@ static void ia32_lower_for_target(void)
 		lower_floating_point();
 	}
 
+	for (i = 0; i < n_irgs; ++i) {
+		ir_graph *irg = get_irp_irg(i);
+		/* break up switches with wide ranges */
+		lower_switch(irg, 4, 256, mode_gp);
+	}
+
 	ir_prepare_dw_lowering(&lower_dw_params);
 	ir_lower_dw_ops();
 
@@ -2062,8 +2061,6 @@ static void ia32_lower_for_target(void)
 		ir_graph *irg = get_irp_irg(i);
 		/* lower for mode_b stuff */
 		ir_lower_mode_b(irg, mode_Iu);
-		/* break up switches with wide ranges */
-		lower_switch(irg, 4, 256, false);
 	}
 
 	for (i = 0; i < n_irgs; ++i) {
@@ -2115,9 +2112,9 @@ static int ia32_register_saved_by(const arch_register_t *reg, int callee)
 		} else if (reg->reg_class == &ia32_reg_classes[CLASS_ia32_xmm]) {
 			/* all XMM registers are caller save */
 			return reg->index != REG_XMM_NOREG;
-		} else if (reg->reg_class == &ia32_reg_classes[CLASS_ia32_vfp]) {
-			/* all VFP registers are caller save */
-			return reg->index != REG_VFP_NOREG;
+		} else if (reg->reg_class == &ia32_reg_classes[CLASS_ia32_fp]) {
+			/* all FP registers are caller save */
+			return reg->index != REG_FP_NOREG;
 		}
 	}
 	return 0;

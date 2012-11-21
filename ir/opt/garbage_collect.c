@@ -160,8 +160,8 @@ void garbage_collect_entities(void)
 	}
 
 	/* remove graphs of non-visited functions
-	 * (we have to count backwards so we can safely call remove_irp_irg
-	 *  while iterating) */
+	 * (we have to count backwards, because freeing the graph moves the last
+	 *  graph in the list to the free position) */
 	for (i = get_irp_n_irgs(); i > 0;) {
 		ir_graph  *irg    = get_irp_irg(--i);
 		ir_entity *entity = get_irg_entity(irg);
@@ -170,7 +170,7 @@ void garbage_collect_entities(void)
 			continue;
 
 		DB((dbg, LEVEL_1, "  freeing method %+F\n", entity));
-		remove_irp_irg(irg);
+		free_ir_graph(irg);
 	}
 
 	/* we can now remove all non-visited (global) entities */

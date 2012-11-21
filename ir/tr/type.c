@@ -1141,14 +1141,14 @@ ir_type *new_d_type_method(size_t n_param, size_t n_res, type_dbg_info *db)
 
 	assert((get_mode_size_bits(mode_P_code) % 8 == 0) && "unorthodox modes not implemented");
 	res = new_type(type_method, mode_P_code, db);
-	res->flags                       |= tf_layout_fixed;
-	res->size                         = get_mode_size_bytes(mode_P_code);
-	res->attr.ma.n_params             = n_param;
-	res->attr.ma.params               = XMALLOCNZ(tp_ent_pair, n_param);
-	res->attr.ma.n_res                = n_res;
-	res->attr.ma.res_type             = XMALLOCNZ(tp_ent_pair, n_res);
-	res->attr.ma.variadicity          = variadicity_non_variadic;
-	res->attr.ma.additional_properties = mtp_no_property;
+	res->flags               |= tf_layout_fixed;
+	res->size                 = get_mode_size_bytes(mode_P_code);
+	res->attr.ma.n_params     = n_param;
+	res->attr.ma.params       = XMALLOCNZ(tp_ent_pair, n_param);
+	res->attr.ma.n_res        = n_res;
+	res->attr.ma.res_type     = XMALLOCNZ(tp_ent_pair, n_res);
+	res->attr.ma.variadicity  = variadicity_non_variadic;
+	res->attr.ma.properties   = mtp_no_property;
 	hook_new_type(res);
 	return res;
 }
@@ -1175,18 +1175,18 @@ ir_type *clone_type_method(ir_type *tp)
 
 	res = new_type(type_method, mode, db);
 
-	res->flags                         = tp->flags;
-	res->higher_type                   = tp->higher_type;
-	res->size                          = tp->size;
-	res->attr.ma.n_params              = n_params;
-	res->attr.ma.params                = XMALLOCN(tp_ent_pair, n_params);
+	res->flags                    = tp->flags;
+	res->higher_type              = tp->higher_type;
+	res->size                     = tp->size;
+	res->attr.ma.n_params         = n_params;
+	res->attr.ma.params           = XMALLOCN(tp_ent_pair, n_params);
 	memcpy(res->attr.ma.params, tp->attr.ma.params, n_params * sizeof(res->attr.ma.params[0]));
-	res->attr.ma.n_res                 = n_res;
-	res->attr.ma.res_type              = XMALLOCN(tp_ent_pair, n_res);
+	res->attr.ma.n_res            = n_res;
+	res->attr.ma.res_type         = XMALLOCN(tp_ent_pair, n_res);
 	memcpy(res->attr.ma.res_type, tp->attr.ma.res_type, n_res * sizeof(res->attr.ma.res_type[0]));
-	res->attr.ma.variadicity           = tp->attr.ma.variadicity;
-	res->attr.ma.additional_properties = tp->attr.ma.additional_properties;
-	res->attr.ma.irg_calling_conv      = tp->attr.ma.irg_calling_conv;
+	res->attr.ma.variadicity      = tp->attr.ma.variadicity;
+	res->attr.ma.properties       = tp->attr.ma.properties;
+	res->attr.ma.irg_calling_conv = tp->attr.ma.irg_calling_conv;
 	hook_new_type(res);
 	return res;
 }

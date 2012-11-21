@@ -690,8 +690,6 @@ static void apply_result(ir_node* const irn, void* ctx)
 		} else if (m == mode_X) {
 			ir_graph* const irg = get_Block_irg(block);
 			if (z == get_tarval_b_true()) {
-				// Might produce an endless loop, so keep the block.
-				add_End_keepalive(get_irg_end(irg), block);
 				n = new_r_Jmp(block);
 			} else {
 				n = new_r_Bad(irg, mode_X);

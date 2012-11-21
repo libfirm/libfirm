@@ -2195,7 +2195,6 @@ static void dump_loops_standalone(FILE *F, ir_loop *loop)
 		        (unsigned long) first,
 		        (unsigned long) first,
 		        (unsigned long) i-1);
-		loop_node_started = false;
 	}
 }
 

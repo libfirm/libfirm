@@ -49,8 +49,6 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
  * The walker environment for updating function calls.
  */
 typedef struct env_t {
-	size_t   n_calls_SymConst;
-	size_t   n_calls_Sel;
 	ir_node  *float_const_call_list;    /**< The list of all floating const function calls that will be changed. */
 	ir_node  *nonfloat_const_call_list; /**< The list of all non-floating const function calls that will be changed. */
 	ir_node  *pure_call_list;           /**< The list of all pure function calls that will be changed. */
@@ -65,67 +63,26 @@ static unsigned *ready_set;
 static unsigned *busy_set;
 
 /**
- * We misuse the mtp_property_inherited flag as temporary here.
- * The is ok, as we cannot set or get it anyway using the
- * get_addtional_properties API.
- */
-#define mtp_temporary  mtp_property_inherited
-
-/**
  * Walker: Collect all calls to const and pure functions
  * to lists. Collect all Proj(Call) nodes into a Proj list.
  */
 static void collect_const_and_pure_calls(ir_node *node, void *env)
 {
-	env_t     *ctx = (env_t*)env;
-	ir_node   *call;
-	ir_node   *ptr;
-	ir_entity *ent;
-	unsigned  and_prop, or_prop, prop;
+	env_t *ctx = (env_t*)env;
 
 	if (is_Call(node)) {
-		call = node;
+		ir_node *call = node;
 
 		/* set the link to NULL for all non-const/pure calls */
 		set_irn_link(call, NULL);
-		ptr = get_Call_ptr(call);
-		if (is_SymConst_addr_ent(ptr)) {
-			ent = get_SymConst_entity(ptr);
+		ir_node *ptr = get_Call_ptr(call);
+		if (!is_SymConst_addr_ent(ptr))
+			return;
 
-			prop = get_entity_additional_properties(ent);
-			if ((prop & (mtp_property_const|mtp_property_pure)) == 0)
-				return;
-			++ctx->n_calls_SymConst;
-		} else if (get_opt_closed_world() &&
-		           is_Sel(ptr) &&
-		           get_irg_callee_info_state(get_irn_irg(node)) == irg_callee_info_consistent) {
-			/* If all possible callees are const functions, we can remove the memory edge. */
-			size_t i, n_callees = get_Call_n_callees(call);
-			if (n_callees == 0) {
-				/* This is kind of strange:  dying code or a Call that will raise an exception
-				   when executed as there is no implementation to call.  So better not
-				   optimize. */
-				return;
-			}
+		ir_entity *ent = get_SymConst_entity(ptr);
 
-			/* note that const function are a subset of pure ones */
-			and_prop = mtp_property_const | mtp_property_pure;
-			or_prop  = 0;
-			for (i = 0; i < n_callees; ++i) {
-				ent = get_Call_callee(call, i);
-				if (is_unknown_entity(ent)) {
-					/* we don't know which entity is called here */
-					return;
-				}
-				prop      = get_entity_additional_properties(ent);
-				and_prop &= prop;
-				or_prop  &= prop;
-				if (and_prop == mtp_no_property)
-					return;
-			}
-			prop = and_prop | (or_prop & mtp_property_has_loop);
-			++ctx->n_calls_Sel;
-		} else
+		unsigned prop = get_entity_additional_properties(ent);
+		if ((prop & (mtp_property_const|mtp_property_pure)) == 0)
 			return;
 
 		/* ok, if we get here we found a call to a const or a pure function */
@@ -146,8 +103,8 @@ static void collect_const_and_pure_calls(ir_node *node, void *env)
 		 * Collect all memory and exception Proj's from
 		 * calls.
 		 */
-		call = get_Proj_pred(node);
-		if (! is_Call(call))
+		ir_node *call = get_Proj_pred(node);
+		if (!is_Call(call))
 			return;
 
 		/* collect the Proj's in the Proj list */
@@ -162,7 +119,7 @@ static void collect_const_and_pure_calls(ir_node *node, void *env)
 			break;
 		}
 	}
-}  /* collect_const_and_pure_calls */
+}
 
 /**
  * Fix the list of collected Calls.
@@ -172,15 +129,15 @@ static void collect_const_and_pure_calls(ir_node *node, void *env)
  */
 static void fix_const_call_lists(ir_graph *irg, env_t *ctx)
 {
-	ir_node *call, *next, *mem, *proj;
-	int exc_changed = 0;
+	bool exc_changed = false;
 
 	/* First step: fix all calls by removing their memory input and let
 	 * them floating.
 	 * The original memory input is preserved in their link fields. */
-	for (call = ctx->float_const_call_list; call != NULL; call = next) {
+	ir_node *next;
+	for (ir_node *call = ctx->float_const_call_list; call != NULL; call = next) {
 		next = (ir_node*)get_irn_link(call);
-		mem  = get_Call_mem(call);
+		ir_node *mem = get_Call_mem(call);
 
 		set_irn_link(call, mem);
 		set_Call_mem(call, get_irg_no_mem(irg));
@@ -206,10 +163,10 @@ static void fix_const_call_lists(ir_graph *irg, env_t *ctx)
 	}
 
 	/* Last step: fix all Proj's */
-	for (proj = ctx->proj_list; proj != NULL; proj = next) {
+	for (ir_node *proj = ctx->proj_list; proj != NULL; proj = next) {
 		next = (ir_node*)get_irn_link(proj);
-		call = get_Proj_pred(proj);
-		mem  = (ir_node*)get_irn_link(call);
+		ir_node *call = get_Proj_pred(proj);
+		ir_node *mem  = (ir_node*)get_irn_link(call);
 
 		/* beware of calls in the pure call list */
 		if (!mem || is_Call(mem))
@@ -224,12 +181,12 @@ static void fix_const_call_lists(ir_graph *irg, env_t *ctx)
 			 break;
 		}
 		case pn_Call_X_except:
-			exc_changed = 1;
+			exc_changed = true;
 			exchange(proj, new_r_Bad(irg, mode_X));
 			break;
 		case pn_Call_X_regular: {
 			ir_node *block = get_nodes_block(call);
-			exc_changed = 1;
+			exc_changed = true;
 			exchange(proj, new_r_Jmp(block));
 			break;
 		}
@@ -243,7 +200,7 @@ static void fix_const_call_lists(ir_graph *irg, env_t *ctx)
 		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
 		                   | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 	}
-}  /* fix_const_call_list */
+}
 
 /**
  * Walker: Collect all calls to nothrow functions
@@ -252,49 +209,20 @@ static void fix_const_call_lists(ir_graph *irg, env_t *ctx)
 static void collect_nothrow_calls(ir_node *node, void *env)
 {
 	env_t *ctx = (env_t*)env;
-	ir_node *call, *ptr;
-	ir_entity *ent;
-	unsigned prop;
 
 	if (is_Call(node)) {
-		call = node;
+		ir_node *call = node;
 
 		/* set the link to NULL for all non-const/pure calls */
 		set_irn_link(call, NULL);
-		ptr = get_Call_ptr(call);
-		if (is_SymConst_addr_ent(ptr)) {
-			ent = get_SymConst_entity(ptr);
+		ir_node *ptr = get_Call_ptr(call);
+		if (!is_SymConst_addr_ent(ptr))
+			return;
 
-			prop = get_entity_additional_properties(ent);
-			if ((prop & mtp_property_nothrow) == 0)
-				return;
-			++ctx->n_calls_SymConst;
-		} else if (get_opt_closed_world() &&
-		           is_Sel(ptr) &&
-		           get_irg_callee_info_state(get_irn_irg(node)) == irg_callee_info_consistent) {
-			/* If all possible callees are nothrow functions, we can remove the exception edge. */
-			size_t i, n_callees = get_Call_n_callees(call);
-			if (n_callees == 0) {
-				/* This is kind of strange:  dying code or a Call that will raise an exception
-				   when executed as there is no implementation to call.  So better not
-				   optimize. */
-				return;
-			}
+		ir_entity *ent = get_SymConst_entity(ptr);
 
-			/* note that const function are a subset of pure ones */
-			prop = mtp_property_nothrow;
-			for (i = 0; i < n_callees; ++i) {
-				ent = get_Call_callee(call, i);
-				if (is_unknown_entity(ent)) {
-					/* we don't know which entity is called here */
-					return;
-				}
-				prop &= get_entity_additional_properties(ent);
-				if (prop == mtp_no_property)
-					return;
-			}
-			++ctx->n_calls_Sel;
-		} else
+		unsigned prop = get_entity_additional_properties(ent);
+		if ((prop & mtp_property_nothrow) == 0)
 			return;
 
 		/* ok, if we get here we found a call to a nothrow function */
@@ -305,7 +233,7 @@ static void collect_nothrow_calls(ir_node *node, void *env)
 		 * Collect all memory and exception Proj's from
 		 * calls.
 		 */
-		call = get_Proj_pred(node);
+		ir_node *call = get_Proj_pred(node);
 		if (! is_Call(call))
 			return;
 
@@ -321,7 +249,7 @@ static void collect_nothrow_calls(ir_node *node, void *env)
 			break;
 		}
 	}
-}  /* collect_nothrow_calls */
+}
 
 /**
  * Fix the list of collected nothrow Calls.
@@ -330,13 +258,14 @@ static void collect_nothrow_calls(ir_node *node, void *env)
  * @param call_list  the list of all call sites of const functions
  * @param proj_list  the list of all memory/exception Proj's of this call sites
  */
-static void fix_nothrow_call_list(ir_graph *irg, ir_node *call_list, ir_node *proj_list)
+static void fix_nothrow_call_list(ir_graph *irg, ir_node *call_list,
+                                  ir_node *proj_list)
 {
-	ir_node *call, *next, *proj;
-	int exc_changed = 0;
+	bool exc_changed = false;
 
 	/* First step: go through the list of calls and mark them. */
-	for (call = call_list; call; call = next) {
+	ir_node *next;
+	for (ir_node *call = call_list; call; call = next) {
 		next = (ir_node*)get_irn_link(call);
 
 		/* current_ir_graph is in memory anyway, so it's a good marker */
@@ -345,9 +274,9 @@ static void fix_nothrow_call_list(ir_graph *irg, ir_node *call_list, ir_node *pr
 	}
 
 	/* Second step: Remove all exception Proj's */
-	for (proj = proj_list; proj; proj = next) {
+	for (ir_node *proj = proj_list; proj; proj = next) {
 		next = (ir_node*)get_irn_link(proj);
-		call = get_Proj_pred(proj);
+		ir_node *call = get_Proj_pred(proj);
 
 		/* handle only marked calls */
 		if (get_irn_link(call) != &current_ir_graph)
@@ -356,12 +285,12 @@ static void fix_nothrow_call_list(ir_graph *irg, ir_node *call_list, ir_node *pr
 		/* kill any exception flow */
 		switch (get_Proj_proj(proj)) {
 		case pn_Call_X_except:
-			exc_changed = 1;
+			exc_changed = true;
 			exchange(proj, new_r_Bad(irg, mode_X));
 			break;
 		case pn_Call_X_regular: {
 			ir_node *block = get_nodes_block(call);
-			exc_changed = 1;
+			exc_changed = true;
 			exchange(proj, new_r_Jmp(block));
 			break;
 		}
@@ -376,7 +305,7 @@ static void fix_nothrow_call_list(ir_graph *irg, ir_node *call_list, ir_node *pr
 		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
 		                   | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 	}
-}  /* fix_nothrow_call_list */
+}
 
 /* marking */
 #define SET_IRG_READY(irg)  rbitset_set(ready_set, get_irg_idx(irg))
@@ -386,7 +315,7 @@ static void fix_nothrow_call_list(ir_graph *irg, ir_node *call_list, ir_node *pr
 #define IS_IRG_BUSY(irg)    rbitset_is_set(busy_set, get_irg_idx(irg))
 
 /* forward */
-static mtp_additional_properties check_const_or_pure_function(ir_graph *irg, int top);
+static mtp_additional_properties check_const_or_pure_function(ir_graph *irg, bool top);
 
 /**
  * Calculate the bigger property of two. Handle the temporary flag right.
@@ -394,16 +323,15 @@ static mtp_additional_properties check_const_or_pure_function(ir_graph *irg, int
 static mtp_additional_properties max_property(mtp_additional_properties a,
                                               mtp_additional_properties b)
 {
-	mtp_additional_properties r;
 	mtp_additional_properties t = (a | b) & mtp_temporary;
 	a &= ~mtp_temporary;
 	b &= ~mtp_temporary;
 
 	if (a == mtp_no_property || b == mtp_no_property)
 		return mtp_no_property;
-	r = a > b ? a : b;
+	mtp_additional_properties r = a > b ? a : b;
 	return r | t;
-}  /* max_property */
+}
 
 /**
  * Follow the memory chain starting at node and determine
@@ -416,9 +344,6 @@ static mtp_additional_properties max_property(mtp_additional_properties a,
 static mtp_additional_properties follow_mem_(ir_node *node)
 {
 	mtp_additional_properties mode = mtp_property_const;
-	mtp_additional_properties m;
-	ir_node  *ptr;
-	int i;
 
 	for (;;) {
 		if (mode == mtp_no_property)
@@ -439,8 +364,8 @@ static mtp_additional_properties follow_mem_(ir_node *node)
 		case iro_Phi:
 		case iro_Sync:
 			/* do a dfs search */
-			for (i = get_irn_arity(node) - 1; i >= 0; --i) {
-				m    = follow_mem_(get_irn_n(node, i));
+			for (int i = get_irn_arity(node) - 1; i >= 0; --i) {
+				mtp_additional_properties m = follow_mem_(get_irn_n(node, i));
 				mode = max_property(mode, m);
 				if (mode == mtp_no_property)
 					return mtp_no_property;
@@ -455,25 +380,27 @@ static mtp_additional_properties follow_mem_(ir_node *node)
 			node = get_Load_mem(node);
 			break;
 
-		case iro_Call:
+		case iro_Call: {
 			/* A call is only tolerable if its either constant or pure. */
-			ptr = get_Call_ptr(node);
-			if (is_SymConst_addr_ent(ptr)) {
-				ir_entity *ent = get_SymConst_entity(ptr);
-				ir_graph  *irg = get_entity_irg(ent);
-
-				if (irg == NULL) {
-					m = get_entity_additional_properties(ent) & (mtp_property_const|mtp_property_pure);
-					mode = max_property(mode, m);
-				} else {
-					/* we have a graph, analyze it. */
-					m = check_const_or_pure_function(irg, /*top=*/0);
-					mode = max_property(mode, m);
-				}
-			} else
+			ir_node *ptr = get_Call_ptr(node);
+			if (!is_SymConst_addr_ent(ptr))
 				return mtp_no_property;
+
+			ir_entity *ent = get_SymConst_entity(ptr);
+			ir_graph  *irg = get_entity_irg(ent);
+
+			mtp_additional_properties m;
+			if (irg == NULL) {
+				m = get_entity_additional_properties(ent) & (mtp_property_const|mtp_property_pure);
+				mode = max_property(mode, m);
+			} else {
+				/* we have a graph, analyze it. */
+				m = check_const_or_pure_function(irg, false);
+				mode = max_property(mode, m);
+			}
 			node = get_Call_mem(node);
 			break;
+		}
 
 		default:
 			return mtp_no_property;
@@ -501,20 +428,17 @@ static mtp_additional_properties follow_mem(ir_node *node, mtp_additional_proper
  * @param irg  the graph to check
  * @param top  if set, this is the top call
  */
-static mtp_additional_properties check_const_or_pure_function(ir_graph *irg, int top)
+static mtp_additional_properties check_const_or_pure_function(ir_graph *irg, bool top)
 {
-	ir_node *end, *endbl;
-	int j;
 	ir_entity *entity   = get_irg_entity(irg);
 	ir_type   *type     = get_entity_type(entity);
 	size_t     n_params = get_method_n_params(type);
-	size_t     i;
 	mtp_additional_properties may_be_const = mtp_property_const;
-	mtp_additional_properties prop = get_irg_additional_properties(irg);
+	mtp_additional_properties prop = get_entity_additional_properties(entity);
 
 	/* libfirm handles aggregate parameters by passing around pointers to
 	 * stuff in memory, so if we have compound parameters we are never const */
-	for (i = 0; i < n_params; ++i) {
+	for (size_t i = 0; i < n_params; ++i) {
 		ir_type *param = get_method_param_type(type, i);
 		if (is_compound_type(param)) {
 			prop        &= ~mtp_property_const;
@@ -537,15 +461,14 @@ static mtp_additional_properties check_const_or_pure_function(ir_graph *irg, int
 	}
 	if (IS_IRG_BUSY(irg)) {
 		/* We are still evaluate this method.
-		 * The function (indirectly) calls itself and thus may not terminate.
-		 */
+		 * The function (indirectly) calls itself and thus may not terminate. */
 		return mtp_no_property;
 	}
 	SET_IRG_BUSY(irg);
 
-	end   = get_irg_end(irg);
-	endbl = get_nodes_block(end);
-	prop  = may_be_const;
+	ir_node *end   = get_irg_end(irg);
+	ir_node *endbl = get_nodes_block(end);
+	prop = may_be_const;
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 	inc_irg_visited(irg);
@@ -553,17 +476,16 @@ static mtp_additional_properties check_const_or_pure_function(ir_graph *irg, int
 	mark_irn_visited(get_irg_initial_mem(irg));
 
 	/* visit every Return */
-	for (j = get_Block_n_cfgpreds(endbl) - 1; j >= 0; --j) {
-		ir_node   *node = get_Block_cfgpred(endbl, j);
-		unsigned   code = get_irn_opcode(node);
-		ir_node   *mem;
+	for (int j = get_Block_n_cfgpreds(endbl) - 1; j >= 0; --j) {
+		ir_node  *node = get_Block_cfgpred(endbl, j);
+		unsigned  code = get_irn_opcode(node);
 
 		/* Bad nodes usually do NOT produce anything, so it's ok */
 		if (code == iro_Bad)
 			continue;
 
 		if (code == iro_Return) {
-			mem = get_Return_mem(node);
+			ir_node *mem = get_Return_mem(node);
 
 			/* Bad nodes usually do NOT produce anything, so it's ok */
 			if (is_Bad(mem))
@@ -582,7 +504,7 @@ static mtp_additional_properties check_const_or_pure_function(ir_graph *irg, int
 
 	if (prop != mtp_no_property) {
 		/* check, if a keep-alive exists */
-		for (j = get_End_n_keepalives(end) - 1; j >= 0; --j) {
+		for (int j = get_End_n_keepalives(end) - 1; j >= 0; --j) {
 			ir_node *kept = get_End_keepalive(end, j);
 
 			if (is_Block(kept)) {
@@ -602,14 +524,14 @@ static mtp_additional_properties check_const_or_pure_function(ir_graph *irg, int
 	if (top) {
 		/* Set the property only if we are at top-level. */
 		if (prop != mtp_no_property) {
-			add_irg_additional_properties(irg, prop);
+			add_entity_additional_properties(entity, prop);
 		}
 		SET_IRG_READY(irg);
 	}
 	CLEAR_IRG_BUSY(irg);
 	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
 	return prop;
-}  /* check_const_or_pure_function */
+}
 
 /**
  * Handle calls to const functions.
@@ -618,14 +540,10 @@ static mtp_additional_properties check_const_or_pure_function(ir_graph *irg, int
  */
 static void handle_const_Calls(env_t *ctx)
 {
-	size_t i, n;
-
-	ctx->n_calls_SymConst = 0;
-	ctx->n_calls_Sel      = 0;
-
 	/* all calls of const functions can be transformed */
-	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
-		ir_graph *irg  = get_irp_irg(i);
+	size_t n = get_irp_n_irgs();
+	for (size_t i = 0; i < n; ++i) {
+		ir_graph *irg = get_irp_irg(i);
 
 		ctx->float_const_call_list    = NULL;
 		ctx->nonfloat_const_call_list = NULL;
@@ -634,9 +552,7 @@ static void handle_const_Calls(env_t *ctx)
 
 		ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 		irg_walk_graph(irg, NULL, collect_const_and_pure_calls, ctx);
-
-		if (ctx->float_const_call_list != NULL)
-			fix_const_call_lists(irg, ctx);
+		fix_const_call_lists(irg, ctx);
 		ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 		confirm_irg_properties(irg,
@@ -653,13 +569,9 @@ static void handle_const_Calls(env_t *ctx)
  */
 static void handle_nothrow_Calls(env_t *ctx)
 {
-	size_t i, n;
-
-	ctx->n_calls_SymConst = 0;
-	ctx->n_calls_Sel      = 0;
-
 	/* all calls of const functions can be transformed */
-	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
+	size_t n = get_irp_n_irgs();
+	for (size_t i = 0; i < n; ++i) {
 		ir_graph *irg  = get_irp_irg(i);
 
 		ctx->nothrow_call_list = NULL;
@@ -680,14 +592,14 @@ static void handle_nothrow_Calls(env_t *ctx)
  *
  * @param node  the node to check
  */
-static int is_malloc_call_result(const ir_node *node)
+static bool is_malloc_call_result(const ir_node *node)
 {
 	if (is_Alloc(node) && get_Alloc_where(node) == heap_alloc) {
 		/* Firm style high-level allocation */
-		return 1;
+		return true;
 	}
 	/* TODO: check mtp_malloc */
-	return 0;
+	return false;
 }
 
 /**
@@ -763,19 +675,17 @@ static bool is_stored(const ir_node *n)
  */
 static mtp_additional_properties check_stored_result(ir_graph *irg)
 {
-	ir_node  *end_blk = get_irg_end_block(irg);
-	int      i;
+	ir_node *end_blk = get_irg_end_block(irg);
 	mtp_additional_properties res = ~mtp_no_property;
 
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 
-	for (i = get_Block_n_cfgpreds(end_blk) - 1; i >= 0; --i) {
+	for (int i = get_Block_n_cfgpreds(end_blk) - 1; i >= 0; --i) {
 		ir_node *pred = get_Block_cfgpred(end_blk, i);
-		size_t  j;
 
 		if (! is_Return(pred))
 			continue;
-		for (j = get_Return_n_ress(pred); j > 0;) {
+		for (size_t j = get_Return_n_ress(pred); j > 0;) {
 			const ir_node *irn = get_Return_res(pred, --j);
 
 			if (is_stored(irn)) {
@@ -796,17 +706,15 @@ finish:
  * @param irg  the graph to check
  * @param top  if set, this is the top call
  */
-static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, int top)
+static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, bool top)
 {
-	mtp_additional_properties curr_prop = mtp_property_malloc | mtp_property_nothrow;
-	ir_node                  *end_blk   = get_irg_end_block(irg);
-	ir_entity *ent;
-	ir_type   *mtp;
-	int       i;
+	mtp_additional_properties curr_prop
+		= mtp_property_malloc | mtp_property_nothrow;
 
+	ir_entity *ent = get_irg_entity(irg);
 	if (IS_IRG_READY(irg)) {
 		/* already checked */
-		return get_irg_additional_properties(irg);
+		return get_entity_additional_properties(ent);
 	}
 	if (IS_IRG_BUSY(irg)) {
 		/* we are still evaluate this method. Be optimistic,
@@ -815,21 +723,18 @@ static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, int top)
 	}
 	SET_IRG_BUSY(irg);
 
-	ent = get_irg_entity(irg);
-	mtp = get_entity_type(ent);
-
+	ir_type *mtp = get_entity_type(ent);
 	if (get_method_n_ress(mtp) <= 0)
 		curr_prop &= ~mtp_property_malloc;
 
-	for (i = get_Block_n_cfgpreds(end_blk) - 1; i >= 0; --i) {
+	ir_node *end_blk = get_irg_end_block(irg);
+	for (int i = get_Block_n_cfgpreds(end_blk) - 1; i >= 0; --i) {
 		ir_node *pred = get_Block_cfgpred(end_blk, i);
 
 		if (is_Return(pred)) {
 			if (curr_prop & mtp_property_malloc) {
-				size_t j;
-
 				/* check, if malloc is called here */
-				for (j = get_Return_n_ress(pred); j > 0;) {
+				for (size_t j = get_Return_n_ress(pred); j > 0;) {
 					ir_node *res = get_Return_res(pred, --j);
 
 					/* skip Confirms and Casts */
@@ -850,37 +755,11 @@ static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, int top)
 							if (callee == irg) {
 								/* A self-recursive call. The property did not depend on this call. */
 							} else if (callee != NULL) {
-								mtp_additional_properties prop = check_nothrow_or_malloc(callee, /*top=*/0);
+								mtp_additional_properties prop = check_nothrow_or_malloc(callee, false);
 								curr_prop = update_property(curr_prop, prop);
 							} else {
 								curr_prop = update_property(curr_prop, get_entity_additional_properties(ent));
 							}
-						} else if (get_opt_closed_world() &&
-						           is_Sel(ptr) &&
-						           get_irg_callee_info_state(irg) == irg_callee_info_consistent) {
-							/* check if all possible callees are malloc functions. */
-							size_t i, n_callees = get_Call_n_callees(res);
-							if (n_callees == 0) {
-								/* This is kind of strange:  dying code or a Call that will raise an exception
-								   when executed as there is no implementation to call.  So better not
-								   optimize. */
-								curr_prop &= ~mtp_property_malloc;
-								continue;
-							}
-
-							for (i = 0; i < n_callees; ++i) {
-								ir_entity *ent = get_Call_callee(res, i);
-								if (is_unknown_entity(ent)) {
-									/* we don't know which entity is called here */
-									curr_prop &= ~mtp_property_malloc;
-									break;
-								}
-								if ((get_entity_additional_properties(ent) & mtp_property_malloc) == 0) {
-									curr_prop &= ~mtp_property_malloc;
-									break;
-								}
-							}
-							/* if we pass the for cycle, malloc is still ok */
 						} else {
 							/* unknown call */
 							curr_prop &= ~mtp_property_malloc;
@@ -907,38 +786,12 @@ static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, int top)
 						/* A self-recursive call. The property did not depend on this call. */
 					} else if (callee != NULL) {
 						/* Note: we check here for nothrow only, so do NOT reset the malloc property */
-						mtp_additional_properties prop = check_nothrow_or_malloc(callee, /*top=*/0) | mtp_property_malloc;
+						mtp_additional_properties prop = check_nothrow_or_malloc(callee, false) | mtp_property_malloc;
 						curr_prop = update_property(curr_prop, prop);
 					} else {
 						if ((get_entity_additional_properties(ent) & mtp_property_nothrow) == 0)
 							curr_prop &= ~mtp_property_nothrow;
 					}
-				} else if (get_opt_closed_world() &&
-				           is_Sel(ptr) &&
-				           get_irg_callee_info_state(irg) == irg_callee_info_consistent) {
-					/* check if all possible callees are nothrow functions. */
-					size_t i, n_callees = get_Call_n_callees(pred);
-					if (n_callees == 0) {
-						/* This is kind of strange:  dying code or a Call that will raise an exception
-						   when executed as there is no implementation to call.  So better not
-						   optimize. */
-						curr_prop &= ~mtp_property_nothrow;
-						continue;
-					}
-
-					for (i = 0; i < n_callees; ++i) {
-						ir_entity *ent = get_Call_callee(pred, i);
-						if (is_unknown_entity(ent)) {
-							/* we don't know which entity is called here */
-							curr_prop &= ~mtp_property_nothrow;
-							break;
-						}
-						if ((get_entity_additional_properties(ent) & mtp_property_nothrow) == 0) {
-							curr_prop &= ~mtp_property_nothrow;
-							break;
-						}
-					}
-					/* if we pass the for cycle, nothrow is still ok */
 				} else {
 					/* unknown call */
 					curr_prop &= ~mtp_property_nothrow;
@@ -955,29 +808,26 @@ static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, int top)
 	}
 
 	if (curr_prop & mtp_property_malloc) {
-		/*
-		 * Note that the malloc property means not only return newly allocated
+		/* Note that the malloc property means not only return newly allocated
 		 * memory, but also that this memory is ALIAS FREE.
 		 * To ensure that, we do NOT allow that the returned memory is somewhere
-		 * stored.
-	     */
+		 * stored. */
 		curr_prop &= check_stored_result(irg);
 	}
 
-	if (curr_prop != mtp_no_property) {
-		if (top || (curr_prop & mtp_temporary) == 0) {
-			/* We use the temporary flag here to mark an optimistic result.
-			   Set the property only if we are sure that it does NOT base on
-			   temporary results OR if we are at top-level. */
-			add_irg_additional_properties(irg, curr_prop & ~mtp_temporary);
-			SET_IRG_READY(irg);
-		}
+	if (curr_prop != mtp_no_property
+	    && (top || (curr_prop & mtp_temporary) == 0)) {
+		/* We use the temporary flag here to mark an optimistic result.
+		 * Set the property only if we are sure that it does NOT base on
+		 * temporary results OR if we are at top-level. */
+		add_entity_additional_properties(ent, curr_prop & ~mtp_temporary);
+		SET_IRG_READY(irg);
 	}
 	if (top)
 		SET_IRG_READY(irg);
 	CLEAR_IRG_BUSY(irg);
 	return curr_prop;
-}  /* check_nothrow_or_malloc */
+}
 
 /**
  * When a function was detected as "const", it might be moved out of loops.
@@ -985,92 +835,70 @@ static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, int top)
  */
 static void check_for_possible_endless_loops(ir_graph *irg)
 {
-	ir_loop *root_loop;
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 
-	root_loop = get_irg_loop(irg);
-	if (root_loop->flags & loop_outer_loop)
-		add_irg_additional_properties(irg, mtp_property_has_loop);
+	ir_loop *root_loop = get_irg_loop(irg);
+	if (root_loop->flags & loop_outer_loop) {
+		ir_entity *ent = get_irg_entity(irg);
+		add_entity_additional_properties(ent, mtp_property_has_loop);
+	}
 
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_ALL);
 }
 
-/*
- * optimize function calls by handling const functions
- */
 void optimize_funccalls(void)
 {
-	size_t i, n;
-	size_t last_idx;
-	env_t  ctx;
-	size_t num_const   = 0;
-	size_t num_pure    = 0;
-	size_t num_nothrow = 0;
-	size_t num_malloc  = 0;
-
 	/* prepare: mark all graphs as not analyzed */
-	last_idx  = get_irp_last_idx();
+	size_t last_idx = get_irp_last_idx();
 	ready_set = rbitset_malloc(last_idx);
 	busy_set  = rbitset_malloc(last_idx);
 
 	/* first step: detect, which functions are nothrow or malloc */
 	DB((dbg, LEVEL_2, "Detecting nothrow and malloc properties ...\n"));
-	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
-		ir_graph *irg = get_irp_irg(i);
-		unsigned prop = check_nothrow_or_malloc(irg, /*top=*/1);
+	for (size_t i = 0, n = get_irp_n_irgs(); i < n; ++i) {
+		ir_graph *irg  = get_irp_irg(i);
+		unsigned  prop = check_nothrow_or_malloc(irg, true);
 
 		if (prop & mtp_property_nothrow) {
-			++num_nothrow;
 			DB((dbg, LEVEL_2, "%+F has the nothrow property\n", irg));
 		} else if (prop & mtp_property_malloc) {
-			++num_malloc;
 			DB((dbg, LEVEL_2, "%+F has the malloc property\n", irg));
 		}
 	}
 
 	/* second step: remove exception edges: this must be done before the
 	   detection of const and pure functions take place. */
+	env_t ctx;
 	handle_nothrow_Calls(&ctx);
-	DB((dbg, LEVEL_1, "Detected %zu nothrow graphs, %zu malloc graphs.\n", num_nothrow, num_malloc));
-	DB((dbg, LEVEL_1, "Optimizes %zu(SymConst) + %zu(Sel) calls to nothrow functions.\n",
-		ctx.n_calls_SymConst, ctx.n_calls_Sel));
 
 	rbitset_clear_all(ready_set, last_idx);
 	rbitset_clear_all(busy_set, last_idx);
 
 	/* third step: detect, which functions are const or pure */
 	DB((dbg, LEVEL_2, "Detecting const and pure properties ...\n"));
-	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
-		ir_graph *irg = get_irp_irg(i);
-		unsigned prop = check_const_or_pure_function(irg, /*top=*/1);
+	for (size_t i = 0, n = get_irp_n_irgs(); i < n; ++i) {
+		ir_graph *irg  = get_irp_irg(i);
+		unsigned  prop = check_const_or_pure_function(irg, true);
 
 		if (prop & mtp_property_const) {
-			++num_const;
 			DB((dbg, LEVEL_2, "%+F has the const property\n", irg));
 			check_for_possible_endless_loops(irg);
 		} else if (prop & mtp_property_pure) {
-			++num_pure;
 			DB((dbg, LEVEL_2, "%+F has the pure property\n", irg));
 		}
 	}
 
 	handle_const_Calls(&ctx);
-	DB((dbg, LEVEL_1, "Detected %zu const graphs, %zu pure graphs.\n",
-	    num_const, num_pure));
-	DB((dbg, LEVEL_1, "Optimizes %u(SymConst) + %u(Sel) calls to const functions.\n",
-	    ctx.n_calls_SymConst, ctx.n_calls_Sel));
 
 	xfree(busy_set);
 	xfree(ready_set);
 }
 
-/* initialize the funccall optimization */
 void firm_init_funccalls(void)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.opt.funccalls");
 }
 
-/* Creates an ir_prog pass for optimize_funccalls. */
 ir_prog_pass_t *optimize_funccalls_pass(const char *name)
 {
 	return def_prog_pass(name ? name : "funccall", optimize_funccalls);

@@ -135,14 +135,14 @@ static void sparc_emit_source_register(ir_node const *node, int const pos)
 {
 	const arch_register_t *reg = arch_get_irn_register_in(node, pos);
 	be_emit_char('%');
-	be_emit_string(arch_register_get_name(reg));
+	be_emit_string(reg->name);
 }
 
 static void sparc_emit_dest_register(ir_node const *const node, int const pos)
 {
 	const arch_register_t *reg = arch_get_irn_register_out(node, pos);
 	be_emit_char('%');
-	be_emit_string(arch_register_get_name(reg));
+	be_emit_string(reg->name);
 }
 
 /**
@@ -675,7 +675,7 @@ void sparc_emitf(ir_node const *const node, char const *fmt, ...)
 		case 'R': {
 			arch_register_t const *const reg = va_arg(ap, const arch_register_t*);
 			be_emit_char('%');
-			be_emit_string(arch_register_get_name(reg));
+			be_emit_string(reg->name);
 			break;
 		}
 
@@ -920,7 +920,7 @@ static void emit_permi(const ir_node *irn, unsigned *regs)
 
 static unsigned get_permi_register_index(const arch_register_t *reg)
 {
-	switch (arch_register_get_index(reg)) {
+	switch (reg->index) {
 	case REG_GP_G0:            return  0;
 	case REG_GP_G1:            return  1;
 	case REG_GP_G2:            return  2;

@@ -109,9 +109,9 @@ static void set_reg_in_use(ir_node *node, const arch_register_class_t *reg_class
 		return;
 	if (reg->reg_class != reg_class)
 		return;
-	reg_idx = arch_register_get_index(reg);
+	reg_idx = reg->index;
 
-	DB((dbg, LEVEL_3, "    Register %s is now %s\n", arch_register_get_name(reg), in_use ? "not free" : "free"));
+	DB((dbg, LEVEL_3, "    Register %s is now %s\n", reg->name, in_use ? "not free" : "free"));
 	regs_in_use[reg_idx] = in_use;
 }
 
@@ -177,7 +177,7 @@ static void find_free_register(const ir_node *irn, const arch_register_class_t *
 		if (!registers_in_use[i] && okay_to_use) {
 			DB((dbg, LEVEL_1,
 				"Free reg for %+F: register %s is free and okay to use.\n",
-				irn, arch_register_get_name(reg)));
+				irn, reg->name));
 
 			ir_nodehashmap_insert(&free_register_map,
 				(ir_node*) irn, (arch_register_t*) reg);
@@ -591,7 +591,7 @@ static void reduce_perm_size(ir_node *irn, const perm_move_t *move, reg_pair_t *
 			split_cycle_into_swaps(irn, move, pairs, n_pairs);
 		else {
 			DBG((dbg, LEVEL_1, "Using register %s to implement cycle of %+F\n",
-				arch_register_get_name(free_reg), irn));
+				free_reg->name, irn));
 			split_cycle_into_copies(irn, move, pairs, n_pairs, free_reg);
 		}
 	} else {
@@ -1019,7 +1019,6 @@ int push_through_perm(ir_node *perm)
 {
 	ir_graph *irg     = get_irn_irg(perm);
 	ir_node *bl       = get_nodes_block(perm);
-	ir_node *node;
 	int  arity        = get_irn_arity(perm);
 	int *map;
 	int *proj_map;
@@ -1059,9 +1058,12 @@ found_front:
 
 	DB((dbg_permmove, LEVEL_2, "\tfrontier: %+F\n", frontier));
 
-	node = sched_prev(perm);
 	n_moved = 0;
-	while (!sched_is_begin(node)) {
+	for (;;) {
+		ir_node *const node = sched_prev(perm);
+		if (node == frontier)
+			break;
+
 		const arch_register_req_t *req;
 		int                        input = -1;
 		ir_node                   *proj  = NULL;
@@ -1079,8 +1081,6 @@ found_front:
 		}
 		/* it wasn't an input to the perm, we can't do anything more */
 		if (input < 0)
-			break;
-		if (!sched_comes_after(frontier, node))
 			break;
 		if (arch_irn_is(node, modify_flags))
 			break;
@@ -1110,8 +1110,6 @@ found_front:
 
 		bitset_set(moved, input);
 		n_moved++;
-
-		node = sched_prev(node);
 	}
 
 	/* well, we could not push anything through the perm */

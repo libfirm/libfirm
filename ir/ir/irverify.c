@@ -38,15 +38,7 @@
 #include "irnodeset.h"
 #include "ircons.h"
 
-/** if this flag is set, verify entity types in Load & Store nodes */
-static int verify_entities = 0;
-
 const char *firm_verify_failure_msg;
-
-void verify_enable_entity_tests(int enable)
-{
-	verify_entities = enable;
-}
 
 #ifndef NDEBUG
 
@@ -201,26 +193,6 @@ static void show_proj_mode_failure(const ir_node *n, ir_type *ty)
 }
 
 /**
- * Prints a failure message for a proj
- */
-static void show_proj_failure_ent(const ir_node *n, ir_entity *ent)
-{
-	ir_node *op  = get_Proj_pred(n);
-	int proj     = get_Proj_proj(n);
-	ir_mode *m   = get_type_mode(get_entity_type(ent));
-	char type_name[256];
-	ir_print_type(type_name, sizeof(type_name), get_entity_type(ent));
-
-	show_entity_failure(n);
-	fprintf(stderr, "  node %ld %s%s %d(%s%s) entity %s(type %s mode %s)failed\n" ,
-		get_irn_node_nr(n),
-		get_irn_opname(n), get_irn_modename(n), proj,
-		get_irn_opname(op), get_irn_modename(op),
-		get_entity_name(ent), type_name,
-		get_mode_name_ex(m));
-}
-
-/**
  * Show a node and a graph
  */
 static void show_node_on_graph(const ir_graph *irg, const ir_node *n)
@@ -305,21 +277,6 @@ static void show_phi_inputs(const ir_node *phi, const ir_node *block)
 }
 
 #endif /* #ifndef NDEBUG */
-
-/**
- * If the address is Sel or SymConst, return the entity.
- *
- * @param ptr  the node representing the address
- */
-static ir_entity *get_ptr_entity(const ir_node *ptr)
-{
-	if (is_Sel(ptr)) {
-		return get_Sel_entity(ptr);
-	} else if (is_SymConst_addr_ent(ptr)) {
-		return get_SymConst_entity(ptr);
-	}
-	return NULL;
-}
 
 /**
  * verify a Proj(Start) node
@@ -517,27 +474,12 @@ static int verify_node_Proj_Load(const ir_node *p)
 	long proj     = get_Proj_proj(p);
 
 	if (proj == pn_Load_res) {
-		ir_node   *ptr = get_Load_ptr(n);
-		ir_entity *ent = get_ptr_entity(ptr);
-		ir_graph  *irg = get_irn_irg(n);
-
-		if (verify_entities && ent && get_irg_phase_state(irg) == phase_high) {
-			/* do NOT check this for lowered phases, see comment on Store */
-			ASSERT_AND_RET_DBG(
-				(mode == get_type_mode(get_entity_type(ent))),
-				"wrong data Proj from Load, entity type_mode failed", 0,
-				show_proj_failure_ent(p, ent);
-			);
-		}
-		else {
-			ASSERT_AND_RET_DBG(
-				mode_is_data(mode) && mode == get_Load_mode(n),
-				"wrong data Proj from Load", 0,
-				show_proj_failure(p);
-			);
-		}
-	}
-	else {
+		ASSERT_AND_RET_DBG(
+			mode_is_data(mode) && mode == get_Load_mode(n),
+			"wrong data Proj from Load", 0,
+			show_proj_failure(p);
+		);
+	} else {
 		ASSERT_AND_RET_DBG(
 			(
 				(proj == pn_Load_M         && mode == mode_M) ||
@@ -640,7 +582,7 @@ static int verify_node_Proj_Proj(const ir_node *p)
 			if ((mode_is_reference(mode)) && is_compound_type(get_method_param_type(mt, proj)))
 				/* value argument */ break;
 
-			if (get_irg_phase_state(get_irn_irg(pred)) != phase_backend) {
+			if (!irg_is_constrained(get_irn_irg(pred), IR_GRAPH_CONSTRAINT_BACKEND)) {
 				ASSERT_AND_RET_DBG(
 						(mode == get_type_mode(get_method_param_type(mt, proj))),
 						"Mode of Proj from Start doesn't match mode of param type.", 0,
@@ -800,7 +742,7 @@ static int verify_node_Block(const ir_node *n)
 		ASSERT_AND_RET(get_Block_n_cfgpreds(n) == 0, "Start Block node", 0);
 	}
 
-	if (n == get_irg_end_block(irg) && get_irg_phase_state(irg) != phase_backend) {
+	if (n == get_irg_end_block(irg) && !irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
 		/* End block may only have Return, Raise or fragile ops as preds. */
 		for (i = get_Block_n_cfgpreds(n) - 1; i >= 0; --i) {
 			ir_node *pred =  skip_Proj(get_Block_cfgpred(n, i));
@@ -946,7 +888,7 @@ static int verify_node_Return(const ir_node *n)
 	for (i = get_Return_n_ress(n) - 1; i >= 0; --i) {
 		ir_type *res_type = get_method_res_type(mt, i);
 
-		if (get_irg_phase_state(irg) != phase_backend) {
+		if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
 			if (is_atomic_type(res_type)) {
 				ASSERT_AND_RET_DBG(
 					get_irn_mode(get_Return_res(n, i)) == get_type_mode(res_type),
@@ -1128,7 +1070,7 @@ static int verify_node_Call(const ir_node *n)
 	for (i = 0; i < get_method_n_params(mt); i++) {
 		ir_type *t = get_method_param_type(mt, i);
 
-		if (get_irg_phase_state(irg) != phase_backend) {
+		if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
 			if (is_atomic_type(t)) {
 				ASSERT_AND_RET_DBG(
 					get_irn_mode(get_Call_param(n, i)) == get_type_mode(t),
@@ -1476,7 +1418,9 @@ static int verify_node_Phi(const ir_node *n)
 	/* a Phi node MUST have the same number of inputs as its block
 	 * Exception is a phi with 0 inputs which is used when (re)constructing the
 	 * SSA form */
-	if (! is_Bad(block) && get_irg_phase_state(get_irn_irg(n)) != phase_building && get_irn_arity(n) > 0) {
+	if (! is_Bad(block)
+	    && !irg_is_constrained(get_irn_irg(n), IR_GRAPH_CONSTRAINT_CONSTRUCTION)
+	    && get_irn_arity(n) > 0) {
 		ASSERT_AND_RET_DBG(
 			get_irn_arity(n) == get_irn_arity(block),
 			"wrong number of inputs in Phi node", 0,
@@ -1507,25 +1451,10 @@ static int verify_node_Load(const ir_node *n)
 	ir_mode  *op2mode = get_irn_mode(get_Load_ptr(n));
 
 	ASSERT_AND_RET(op1mode == mode_M, "Load node", 0);
-	if (get_irg_phase_state(irg) != phase_backend) {
+	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
 		ASSERT_AND_RET(mode_is_reference(op2mode), "Load node", 0 );
 	}
 	ASSERT_AND_RET( mymode == mode_T, "Load node", 0 );
-
-	/*
-	 * jack's gen_add_firm_code:simpleSel seems to build Load (Load
-	 * (Proj (Proj))) sometimes ...
-
-	 * interprete.c:ai_eval seems to assume that this happens, too
-
-	 * obset.c:get_abstval_any can't deal with this if the load has
-	 * mode_T
-	 *
-	  {
-	  ir_entity *ent = hunt_for_entity (get_Load_ptr (n), n);
-	  assert ((NULL != ent) || (mymode != mode_T));
-	  }
-	 */
 
 	return 1;
 }
@@ -1536,7 +1465,6 @@ static int verify_node_Load(const ir_node *n)
 static int verify_node_Store(const ir_node *n)
 {
 	ir_graph  *irg = get_irn_irg(n);
-	ir_entity *target;
 
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Store_mem(n));
@@ -1544,21 +1472,10 @@ static int verify_node_Store(const ir_node *n)
 	ir_mode *op3mode = get_irn_mode(get_Store_value(n));
 
 	ASSERT_AND_RET(op1mode == mode_M && mode_is_datab(op3mode), "Store node", 0 );
-	if (get_irg_phase_state(irg) != phase_backend) {
+	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
 		ASSERT_AND_RET(mode_is_reference(op2mode), "Store node", 0 );
 	}
 	ASSERT_AND_RET(mymode == mode_T, "Store node", 0);
-
-	target = get_ptr_entity(get_Store_ptr(n));
-	if (verify_entities && target && get_irg_phase_state(irg) == phase_high) {
-		/*
-		 * If lowered code, any Sels that add 0 may be removed, causing
-		 * an direct access to entities of array or compound type.
-		 * Prevent this by checking the phase.
-		 */
-		ASSERT_AND_RET( op3mode == get_type_mode(get_entity_type(target)),
-			"Store node", 0);
-	}
 
 	return 1;
 }
@@ -1676,7 +1593,7 @@ static int verify_node_CopyB(const ir_node *n)
 
 	/* CopyB: BB x M x ref x ref --> M x X */
 	ASSERT_AND_RET(mymode == mode_T && op1mode == mode_M, "CopyB node", 0);
-	if (get_irg_phase_state(irg) != phase_backend) {
+	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
 		ASSERT_AND_RET(mode_is_reference(op2mode) && mode_is_reference(op3mode),
 			"CopyB node", 0 );
 	}

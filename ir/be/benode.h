@@ -108,8 +108,6 @@ enum {
 ir_node *be_new_Copy(ir_node *block, ir_node *in);
 /** Returns the Copy Argument. */
 ir_node *be_get_Copy_op(const ir_node *cpy);
-/** Sets the Copy Argument. */
-void be_set_Copy_op(ir_node *cpy, ir_node *op);
 
 /**
  * Make a new Perm node.
@@ -308,8 +306,9 @@ typedef enum {
  * @param call_tp  the call type of this call
  */
 ir_node *be_new_Call(dbg_info *dbg, ir_graph *irg, ir_node *block, ir_node *mem,
-                     ir_node *sp, ir_node *ptr, int n_outs,
-                     int n, ir_node *in[], ir_type *call_tp);
+                     const arch_register_req_t *sp_req, ir_node *sp,
+                     const arch_register_req_t *ptr_req, ir_node *ptr,
+                     int n_outs, int n, ir_node *in[], ir_type *call_tp);
 
 /**
  * Position numbers for the be_Return inputs.

@@ -699,14 +699,14 @@ int lc_opt_from_single_arg(const lc_opt_entry_t *root,
 {
 	const lc_opt_entry_t *grp = root;
 	size_t n                  = strlen(arg);
-	size_t n_prefix           = opt_prefix ? strlen(opt_prefix) : 0;
+	size_t n_prefix           = opt_prefix != NULL ? strlen(opt_prefix) : 0;
 	int error                 = 0;
 	int ret                   = 0;
 
 	lc_opt_err_info_t err;
 	const char *end, *eqsign;
 
-	if (n >= n_prefix && strncmp(opt_prefix, arg, n_prefix) == 0) {
+	if (n >= n_prefix && (n_prefix == 0 || strncmp(opt_prefix, arg, n_prefix) == 0)) {
 		arg = arg + n_prefix;
 
 		/* find the next delimiter (the -) and extract the string up to

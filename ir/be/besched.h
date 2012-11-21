@@ -147,7 +147,6 @@ static inline ir_node *sched_last(const ir_node *block)
 
 /**
  * Add a node to a block schedule.
- * @param block The block to whose schedule the node shall be added to.
  * @param irn The node to add.
  * @return The given node.
  */
@@ -156,7 +155,6 @@ void sched_add_before(ir_node *before, ir_node *irn);
 
 /**
  * Add a node to a block schedule.
- * @param block The block to whose schedule the node shall be added to.
  * @param irn The node to add.
  * @return The given node.
  */

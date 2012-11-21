@@ -125,7 +125,7 @@ void add_edge_costs(pbqp_t *pbqp, unsigned src_index, unsigned tgt_index,
 	}
 
 	if (edge == NULL) {
-		edge = alloc_edge(pbqp, src_index, tgt_index, costs);
+		alloc_edge(pbqp, src_index, tgt_index, costs);
 	} else {
 		pbqp_matrix_add(edge->costs, costs);
 	}

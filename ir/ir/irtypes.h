@@ -514,14 +514,9 @@ struct ir_graph {
 	struct obstack *obst;          /**< The obstack where all of the ir_nodes live. */
 	ir_node *current_block;        /**< Current block for newly gen_*()-erated ir_nodes. */
 
-	/* -- Fields for graph properties -- */
-	irg_inline_property        inline_property;       /**< How to handle inlineing. */
-	mtp_additional_properties  additional_properties; /**< Additional graph properties. */
-
 	/* -- Fields indicating different states of irgraph -- */
 	ir_graph_properties_t  properties;
 	ir_graph_constraints_t constraints;
-	irg_phase_state        phase_state;       /**< Compiler phase. */
 	op_pin_state           irg_pinned_state;  /**< Flag for status of nodes. */
 	ir_typeinfo_state      typeinfo_state;    /**< Validity of type information. */
 	irg_callee_info_state  callee_info_state; /**< Validity of callee information. */
@@ -620,8 +615,6 @@ struct ir_prog {
 	ident    **global_asms;         /**< An array of global ASM insertions. */
 
 	/* -- states of and access to generated information -- */
-	irg_phase_state phase_state;    /**< The state of construction. */
-
 	ir_node **ip_outedges;          /**< A huge Array that contains all out edges
 	                                     in interprocedural view. */
 

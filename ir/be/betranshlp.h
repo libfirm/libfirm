@@ -48,6 +48,12 @@ ir_node *be_pre_transform_node(ir_node *place);
 ir_node *be_transform_node(ir_node *node);
 
 /**
+ * Creates a new phi (needs some special handling since we can't transform
+ * all predecessors yet).
+ */
+ir_node *be_transform_phi(ir_node *node, const arch_register_req_t *req);
+
+/**
  * Duplicate all dependency edges of a node.
  */
 void be_duplicate_deps(ir_node *old_node, ir_node *new_node);

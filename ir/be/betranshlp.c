@@ -87,6 +87,34 @@ void be_duplicate_deps(ir_node *old_node, ir_node *new_node)
 	}
 }
 
+ir_node *be_transform_phi(ir_node *node, const arch_register_req_t *req)
+{
+	ir_node  *block = be_transform_node(get_nodes_block(node));
+	ir_graph *irg   = current_ir_graph;
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+
+	/* phi nodes allow loops, so we use the old arguments for now
+	 * and fix this later */
+	ir_node **ins   = get_irn_in(node)+1;
+	int       arity = get_irn_arity(node);
+	ir_mode  *mode  = req->cls != NULL ? req->cls->mode : get_irn_mode(node);
+	ir_node  *phi   = new_ir_node(dbgi, irg, block, op_Phi, mode, arity, ins);
+	copy_node_attr(irg, node, phi);
+	be_duplicate_deps(node, phi);
+
+	backend_info_t *info = be_get_info(phi);
+	struct obstack *obst = be_get_be_obst(irg);
+	info->in_reqs = OALLOCN(obst, const arch_register_req_t*, arity);
+	for (int i = 0; i < arity; ++i) {
+		info->in_reqs[i] = req;
+	}
+
+	arch_set_irn_register_req_out(phi, 0, req);
+	be_enqueue_preds(node);
+
+	return phi;
+}
+
 void be_set_transform_function(ir_op *op, be_transform_func func)
 {
 	/* shouldn't be assigned twice (except for exchanging the default
@@ -417,7 +445,6 @@ static bool and_upper_bits_clean(const ir_node *node, ir_mode *mode)
 static bool shr_upper_bits_clean(const ir_node *node, ir_mode *mode)
 {
 	if (mode_is_signed(mode)) {
-		/* TODO */
 		return false;
 	} else {
 		const ir_node *right = get_Shr_right(node);

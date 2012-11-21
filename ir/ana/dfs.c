@@ -35,7 +35,7 @@
 #include "irprintf.h"
 #include "irdom_t.h"
 #include "set.h"
-#include "statev.h"
+#include "statev_t.h"
 #include "dfs_t.h"
 #include "util.h"
 

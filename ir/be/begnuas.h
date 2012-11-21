@@ -114,6 +114,11 @@ void be_gas_emit_block_name(const ir_node *block);
 void be_gas_begin_block(const ir_node *block, bool needs_label);
 
 /**
+ * emit a string (takes care of escaping special chars)
+ */
+void be_gas_emit_cstring(const char *string);
+
+/**
  * Starts emitting a compilation unit. This emits:
  *  - global assembler snippets
  *  - debug info

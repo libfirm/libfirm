@@ -47,11 +47,11 @@ typedef struct ia32_irn_ops_t        ia32_irn_ops_t;
 typedef struct ia32_intrinsic_env_t  ia32_intrinsic_env_t;
 
 typedef struct ia32_irg_data_t {
-	ir_node  **blk_sched;    /**< an array containing the scheduled blocks */
-	unsigned do_x87_sim:1;   /**< set to 1 if x87 simulation should be enforced */
-	unsigned dump:1;         /**< set to 1 if graphs should be dumped */
+	ir_node  **blk_sched;     /**< an array containing the scheduled blocks */
+	unsigned do_x87_sim:1;    /**< set to 1 if x87 simulation should be enforced */
+	unsigned dump:1;          /**< set to 1 if graphs should be dumped */
 	ir_node  *noreg_gp;       /**< unique NoReg_GP node */
-	ir_node  *noreg_vfp;      /**< unique NoReg_VFP node */
+	ir_node  *noreg_fp;       /**< unique NoReg_FP node */
 	ir_node  *noreg_xmm;      /**< unique NoReg_XMM node */
 
 	ir_node  *fpu_trunc_mode; /**< truncate fpu mode */
@@ -111,7 +111,7 @@ static inline ia32_irg_data_t *ia32_get_irg_data(const ir_graph *irg)
  */
 ir_node *ia32_new_NoReg_gp(ir_graph *irg);
 ir_node *ia32_new_NoReg_xmm(ir_graph *irg);
-ir_node *ia32_new_NoReg_vfp(ir_graph *irg);
+ir_node *ia32_new_NoReg_fp(ir_graph *irg);
 
 /**
  * Returns the unique per irg FPU truncation mode node.

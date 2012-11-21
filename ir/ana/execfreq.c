@@ -35,7 +35,7 @@
 #include "set.h"
 #include "hashptr.h"
 #include "debug.h"
-#include "statev.h"
+#include "statev_t.h"
 #include "dfs_t.h"
 #include "absgraph.h"
 

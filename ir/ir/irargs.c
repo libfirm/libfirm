@@ -229,7 +229,7 @@ static int firm_emit(lc_appendable_t *app,
 	}
 
 	if (occ->flag_plus)
-		strncat(buf, add, sizeof(buf)-1);
+		strncat(buf, add, sizeof(buf)-strlen(buf)-1);
 
 	return lc_arg_append(app, occ, buf, strlen(buf));
 #undef A

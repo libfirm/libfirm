@@ -350,58 +350,6 @@ static int map_Minus(ir_node *call, void *ctx)
 	return 1;
 }
 
-#if 0
-/**
- * Map a Abs (a_l, a_h)
- */
-static int map_Abs(ir_node *call, void *ctx)
-{
-	dbg_info *dbg        = get_irn_dbg_info(call);
-	ir_node  *block      = get_nodes_block(call);
-	ir_node  **params    = get_Call_param_arr(call);
-	ir_type  *method     = get_Call_type(call);
-	ir_node  *a_l        = params[BINOP_Left_Low];
-	ir_node  *a_h        = params[BINOP_Left_High];
-	ir_mode  *l_mode     = get_type_mode(get_method_res_type(method, 0));
-	ir_mode  *h_mode     = get_type_mode(get_method_res_type(method, 1));
-	ir_mode  *mode_flags = ia32_reg_classes[CLASS_ia32_flags].mode;
-	ir_node  *l_res, *h_res, *sign, *sub_l, *sub_h;
-	ir_node  *sign_l;
-	ir_node  *l_sub;
-	ir_node  *flags;
-	(void) ctx;
-
-	/*
-		Code inspired by gcc output :) (although gcc doubles the
-		operation for t1 as t2 and uses t1 for operations with low part
-		and t2 for operations with high part which is actually unnecessary
-		because t1 and t2 represent the same value)
-
-		t1    = SHRS a_h, 31
-		t2    = a_l ^ t1
-		t3    = a_h ^ t1
-		l_res = t2 - t1
-		h_res = t3 - t1 - carry
-
-	*/
-
-	/* TODO: give a hint to the backend somehow to not create a cltd here... */
-	sign   = new_rd_Shrs(dbg, block, a_h, new_r_Const_long(irg, l_mode, 31), h_mode);
-	sign_l = new_rd_Conv(dbg, block, sign, l_mode);
-	sub_l  = new_rd_Eor(dbg, block, a_l, sign_l, l_mode);
-	sub_h  = new_rd_Eor(dbg, block, a_h, sign,   h_mode);
-
-	l_sub  = new_bd_ia32_l_Sub(dbg, block, sub_l, sign_l, mode_T);
-	l_res  = new_r_Proj(l_sub, l_mode,     pn_ia32_res);
-	flags  = new_r_Proj(l_sub, mode_flags, pn_ia32_flags);
-	h_res  = new_bd_ia32_l_Sbb(dbg, block, sub_h, sign, flags, h_mode);
-
-	resolve_call(call, l_res, h_res, current_ir_graph, block);
-
-	return 1;
-}
-#endif
-
 #define ID(x) new_id_from_chars(x, sizeof(x)-1)
 
 /**
@@ -642,9 +590,7 @@ ir_entity *ia32_create_intrinsic_fkt(ir_type *method, const ir_op *op,
 	}
 
 	if (ent && ! *ent) {
-#define IDENT(s)  new_id_from_chars(s, sizeof(s)-1)
-
-		ident *id = id_mangle(IDENT("L"), get_op_ident(op));
+		ident *id = id_mangle(ID("L"), get_op_ident(op));
 		*ent = new_entity(get_glob_type(), id, method);
 		set_entity_visibility(*ent, ir_visibility_private);
 	}

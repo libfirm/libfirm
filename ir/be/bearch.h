@@ -137,9 +137,9 @@ void arch_set_irn_register(ir_node *irn, const arch_register_t *reg);
 /**
  * Set the register for a certain output operand.
  */
-void arch_set_irn_register_out(ir_node *irn, int pos, const arch_register_t *r);
+void arch_set_irn_register_out(ir_node *irn, unsigned pos, const arch_register_t *r);
 
-const arch_register_t *arch_get_irn_register_out(const ir_node *irn, int pos);
+const arch_register_t *arch_get_irn_register_out(const ir_node *irn, unsigned pos);
 const arch_register_t *arch_get_irn_register_in(const ir_node *irn, int pos);
 
 /**
@@ -158,7 +158,7 @@ static inline const arch_register_req_t *arch_get_irn_register_req_in(
  * Get register constraint for a produced result (the @p pos result)
  */
 static inline const arch_register_req_t *arch_get_irn_register_req_out(
-		const ir_node *node, int pos)
+		const ir_node *node, unsigned pos)
 {
 	const backend_info_t *info = be_get_info(node);
 	if (info->out_infos == NULL)
@@ -166,11 +166,11 @@ static inline const arch_register_req_t *arch_get_irn_register_req_out(
 	return info->out_infos[pos].req;
 }
 
-static inline void arch_set_irn_register_req_out(ir_node *node, int pos,
+static inline void arch_set_irn_register_req_out(ir_node *node, unsigned pos,
 		const arch_register_req_t *req)
 {
 	backend_info_t *info = be_get_info(node);
-	assert(pos < (int)ARR_LEN(info->out_infos));
+	assert(pos < (unsigned)ARR_LEN(info->out_infos));
 	info->out_infos[pos].req = req;
 }
 
@@ -238,22 +238,6 @@ struct arch_register_t {
 	/** register number in dwarf debugging format */
 	unsigned short               dwarf_number;
 };
-
-static inline const arch_register_class_t *arch_register_get_class(
-		const arch_register_t *reg)
-{
-	return reg->reg_class;
-}
-
-static inline unsigned arch_register_get_index(const arch_register_t *reg)
-{
-	return reg->index;
-}
-
-static inline const char *arch_register_get_name(const arch_register_t *reg)
-{
-	return reg->name;
-}
 
 /**
  * A class of registers.
@@ -625,16 +609,15 @@ static inline bool arch_irn_consider_in_reg_alloc(
 	do {                                                                   \
 	if (get_irn_mode(node) == mode_T) {                                    \
 		foreach_out_edge(node, edge_) {                                    \
-			const arch_register_req_t *req_;                               \
-			value = get_edge_src_irn(edge_);                               \
-			req_  = arch_get_irn_register_req(value);                      \
+			ir_node                   *const value = get_edge_src_irn(edge_); \
+			arch_register_req_t const *const req_  = arch_get_irn_register_req(value); \
 			if (req_->cls != ccls)                                         \
 				continue;                                                  \
 			code                                                           \
 		}                                                                  \
 	} else {                                                               \
-		const arch_register_req_t *req_ = arch_get_irn_register_req(node); \
-		value = node;                                                      \
+		arch_register_req_t const *const req_  = arch_get_irn_register_req(node); \
+		ir_node                   *const value = node; \
 		if (req_->cls == ccls) {                                           \
 			code                                                           \
 		}                                                                  \

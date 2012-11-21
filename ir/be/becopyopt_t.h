@@ -59,7 +59,7 @@ struct copy_opt_t {
 
 static inline unsigned get_irn_col(const ir_node *node)
 {
-	return arch_register_get_index(arch_get_irn_register(node));
+	return arch_get_irn_register(node)->index;
 }
 
 static inline void set_irn_col(const arch_register_class_t *cls, ir_node *node,

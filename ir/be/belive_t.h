@@ -32,7 +32,7 @@
 #include "irnodehashmap.h"
 #include "irhooks.h"
 #include "irlivechk.h"
-#include "statev.h"
+#include "statev_t.h"
 
 #include "pset.h"
 #include "bitset.h"

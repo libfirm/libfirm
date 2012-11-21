@@ -117,7 +117,6 @@ void sparc_introduce_prolog_epilog(ir_graph *irg)
 	be_stack_layout_t     *layout     = be_get_irg_stack_layout(irg);
 	ir_node               *block      = get_nodes_block(start);
 	ir_node               *initial_sp = be_get_initial_reg_value(irg, sp_reg);
-	ir_node               *sp         = initial_sp;
 	ir_node               *schedpoint = start;
 	ir_type               *frame_type = get_irg_frame_type(irg);
 	unsigned               frame_size = get_type_size_bytes(frame_type);
@@ -139,14 +138,12 @@ void sparc_introduce_prolog_epilog(ir_graph *irg)
 		schedpoint = sched_next(schedpoint);
 
 	if (!layout->sp_relative) {
-		ir_node *save = new_bd_sparc_Save_imm(NULL, block, sp, NULL,
-		                                      -SPARC_MIN_STACKSIZE-frame_size);
+		ir_node *const save = new_bd_sparc_Save_imm(NULL, block, initial_sp, NULL, -(SPARC_MIN_STACKSIZE + frame_size));
 		arch_set_irn_register(save, sp_reg);
 		sched_add_after(schedpoint, save);
 		schedpoint = save;
 
-		edges_reroute(initial_sp, save);
-		set_irn_n(save, n_sparc_Save_stack, initial_sp);
+		edges_reroute_except(initial_sp, save, save);
 
 		/* we still need the Save even if noone is explicitely using the
 		 * value. (TODO: this isn't 100% correct yet, something at the end of
@@ -159,9 +156,8 @@ void sparc_introduce_prolog_epilog(ir_graph *irg)
 			sched_add_after(schedpoint, keep);
 		}
 	} else {
-		ir_node *incsp = be_new_IncSP(sp_reg, block, sp, frame_size, 0);
-		edges_reroute(initial_sp, incsp);
-		be_set_IncSP_pred(incsp, sp);
+		ir_node *const incsp = be_new_IncSP(sp_reg, block, initial_sp, frame_size, 0);
+		edges_reroute_except(initial_sp, incsp, incsp);
 		sched_add_after(schedpoint, incsp);
 	}
 }
@@ -546,7 +542,7 @@ static void peephole_sparc_RestoreZero(ir_node *node)
 			continue;
 
 		if (be_is_Copy(schedpoint) && be_can_move_down(heights, schedpoint, node)) {
-			ir_node *op = get_irn_n(schedpoint, n_be_Copy_op);
+			ir_node *const op = be_get_Copy_op(schedpoint);
 			replace_with_restore_imm(node, schedpoint, op, NULL, 0);
 		} else if (is_sparc_Or(schedpoint) &&
 		           arch_get_irn_flags(schedpoint) & ((arch_irn_flags_t)sparc_arch_irn_flag_immediate_form) &&

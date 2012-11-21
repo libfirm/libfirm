@@ -87,7 +87,7 @@ static void save_perm_info(void)
 		ir_node               *in  = get_irn_n(perm, 0);
 		const arch_register_t *reg = arch_get_irn_register(in);
 
-		reg_class = arch_register_get_class(reg);
+		reg_class = reg->reg_class;
 		perm_mode = get_irn_mode(in);
 	}
 }
@@ -113,14 +113,14 @@ static void analyze_regs(void)
 		if (in_reg == out_reg) {
 			DB((dbg, LEVEL_3,
 				"%+F removing equal perm register pair (%+F, %+F, %s)\n",
-				perm, in, out, arch_register_get_name(out_reg)));
+				perm, in, out, out_reg->name));
 
 			exchange(out, in);
 			continue;
 		}
 
-		oidx = arch_register_get_index(out_reg);
-		iidx = arch_register_get_index(in_reg);
+		oidx = out_reg->index;
+		iidx = in_reg->index;
 		out_nodes[oidx] = out;
 		in_nodes[iidx]  = in;
 	}

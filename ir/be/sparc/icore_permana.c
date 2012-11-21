@@ -51,7 +51,7 @@ static const arch_register_t *get_arch_register_from_index(unsigned index)
 
 static const char *get_register_name_from_index(unsigned index)
 {
-	return arch_register_get_name(get_arch_register_from_index(index));
+	return get_arch_register_from_index(index)->name;
 }
 
 void print_perm_op(const perm_op_t *op)
@@ -193,8 +193,8 @@ static void analyze_regs(void)
 		assert(in_reg != out_reg
 		       && "Self loops should have been removed earlier");
 
-		oidx = arch_register_get_index(out_reg);
-		iidx = arch_register_get_index(in_reg);
+		oidx = out_reg->index;
+		iidx = in_reg->index;
 
 		sourceof[oidx] = iidx;
 		++usecount[iidx]; /* Increment usecount of source register.*/
@@ -217,7 +217,7 @@ static void init_state(const ir_node *perm_, perm_op_t *ops_)
 		ir_node               *in  = get_irn_n(perm, 0);
 		const arch_register_t *reg = arch_get_irn_register(in);
 
-		reg_class = arch_register_get_class(reg);
+		reg_class = reg->reg_class;
 	}
 }
 

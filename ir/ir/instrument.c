@@ -34,9 +34,7 @@
 void instrument_initcall(ir_graph *irg, ir_entity *ent)
 {
 	ir_node        *initial_exec;
-	ir_node        *initial_mem;
 	ir_node        *start_block;
-	ir_node        *adr, *call, *new_mem;
 	ir_node        *first_block = NULL;
 	int             i, idx, need_new_block;
 	symconst_symbol sym;
@@ -82,14 +80,12 @@ void instrument_initcall(ir_graph *irg, ir_entity *ent)
 
 	/* place the call */
 	sym.entity_p = ent;
-	adr = new_r_SymConst(irg, mode_P_code, sym, symconst_addr_ent);
+	ir_node *const adr         = new_r_SymConst(irg, mode_P_code, sym, symconst_addr_ent);
+	ir_node *const initial_mem = get_irg_initial_mem(irg);
+	ir_node *const call        = new_r_Call(first_block, initial_mem, adr, 0, NULL, get_entity_type(ent));
+	ir_node *const new_mem     = new_r_Proj(call, mode_M, pn_Call_M);
 
-	call    = new_r_Call(first_block, get_irg_no_mem(irg), adr, 0, NULL, get_entity_type(ent));
-	new_mem = new_r_Proj(call, mode_M, pn_Call_M);
-
-	initial_mem = get_irg_initial_mem(irg);
-	edges_reroute(initial_mem, new_mem);
+	edges_reroute_except(initial_mem, new_mem, call);
 	/* beware: reroute routes anchor edges also, revert this */
 	set_irg_initial_mem(irg, initial_mem);
-	set_Call_mem(call, initial_mem);
 }

@@ -141,7 +141,6 @@ static ir_type *get_softfloat_type(const ir_node *n)
 
 	switch (opcode) {
 	case iro_Div:
-		mode         = get_Div_resmode(n);
 		operand_mode = get_irn_mode(get_Div_left(n));
 		/* fall through */
 	case iro_Add:
@@ -601,23 +600,19 @@ static const tarval_mode_info hex_output = {
  */
 static void lower_Const(ir_node *n)
 {
-	ir_mode   *lowered_mode;
-	ir_mode   *mode         = get_irn_mode(n);
-	ir_tarval *tv = get_Const_tarval(n);
-	char       buf[100];
-	size_t     len;
-
-	if (! mode_is_float(mode))
+	ir_mode *mode = get_irn_mode(n);
+	if (!mode_is_float(mode))
 		return;
 
-	lowered_mode = get_lowered_mode(mode);
+	ir_mode *lowered_mode = get_lowered_mode(mode);
 	set_irn_mode(n, lowered_mode);
 
 	set_tarval_mode_output_option(mode, &hex_output);
-	tarval_snprintf(buf, 100, get_Const_tarval(n));
+	char buf[100];
+	tarval_snprintf(buf, sizeof(buf), get_Const_tarval(n));
 
-	len = strlen(buf);
-	tv  = new_tarval_from_str(buf, len, lowered_mode);
+	size_t     len = strlen(buf);
+	ir_tarval *tv  = new_tarval_from_str(buf, len, lowered_mode);
 	set_Const_tarval(n, tv);
 }
 

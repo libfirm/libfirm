@@ -240,11 +240,6 @@ static ir_node *set_phi_arguments(ir_node *phi, int pos)
 
 	irn_verify_irg(phi, irg);
 
-	/* Memory Phis in endless loops must be kept alive.
-	   As we can't distinguish these easily we keep all of them alive. */
-	if (mode == mode_M)
-		add_End_keepalive(get_irg_end(irg), phi);
-
 	try_remove_unnecessary_phi(phi);
 	return phi;
 }
@@ -362,19 +357,19 @@ void mature_immBlock(ir_node *block)
 	   We can call optimize_in_place_2(), as global cse has no effect on blocks.
 	 */
 	irn_verify_irg(block, irg);
-	block = optimize_in_place_2(block);
+	optimize_in_place_2(block);
 }
 
 ir_node *new_d_Const_long(dbg_info *db, ir_mode *mode, long value)
 {
-	assert(get_irg_phase_state(current_ir_graph) == phase_building);
+	assert(irg_is_constrained(current_ir_graph, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
 	return new_rd_Const_long(db, current_ir_graph, mode, value);
 }
 
 ir_node *new_d_simpleSel(dbg_info *db, ir_node *store, ir_node *objptr,
                          ir_entity *ent)
 {
-	assert(get_irg_phase_state(current_ir_graph) == phase_building);
+	assert(irg_is_constrained(current_ir_graph, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
 	return new_rd_Sel(db, current_ir_graph->current_block,
 	                  store, objptr, 0, NULL, ent);
 }
@@ -382,7 +377,7 @@ ir_node *new_d_simpleSel(dbg_info *db, ir_node *store, ir_node *objptr,
 ir_node *new_d_SymConst(dbg_info *db, ir_mode *mode, symconst_symbol value,
                         symconst_kind kind)
 {
-	assert(get_irg_phase_state(current_ir_graph) == phase_building);
+	assert(irg_is_constrained(current_ir_graph, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
 	return new_rd_SymConst(db, current_ir_graph, mode, value, kind);
 }
 
@@ -391,7 +386,7 @@ ir_node *new_d_ASM(dbg_info *db, ir_node *mem, int arity, ir_node *in[],
                    size_t n_outs, ir_asm_constraint *outputs,
                    size_t n_clobber, ident *clobber[], ident *text)
 {
-	assert(get_irg_phase_state(current_ir_graph) == phase_building);
+	assert(irg_is_constrained(current_ir_graph, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
 	return new_rd_ASM(db, current_ir_graph->current_block, mem, arity, in,
 	                  inputs, n_outs, outputs, n_clobber, clobber, text);
 }
@@ -423,7 +418,7 @@ ir_node *new_r_DivRL(ir_node *block, ir_node * irn_mem, ir_node * irn_left, ir_n
 ir_node *new_d_DivRL(dbg_info *dbgi, ir_node * irn_mem, ir_node * irn_left, ir_node * irn_right, ir_mode* resmode, op_pin_state pin_state)
 {
 	ir_node *res;
-	assert(get_irg_phase_state(current_ir_graph) == phase_building);
+	assert(irg_is_constrained(current_ir_graph, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
 	res = new_rd_DivRL(dbgi, current_ir_graph->current_block, irn_mem, irn_left, irn_right, resmode, pin_state);
 	return res;
 }
@@ -437,7 +432,7 @@ ir_node *new_rd_immBlock(dbg_info *dbgi, ir_graph *irg)
 {
 	ir_node *res;
 
-	assert(get_irg_phase_state(irg) == phase_building);
+	assert(irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
 	/* creates a new dynamic in-array as length of in is -1 */
 	res = new_ir_node(dbgi, irg, NULL, op_Block, mode_BB, -1, NULL);
 
@@ -494,7 +489,7 @@ void set_cur_block(ir_node *target)
 
 void set_r_cur_block(ir_graph *irg, ir_node *target)
 {
-	assert(get_irg_phase_state(irg) == phase_building);
+	assert(irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
 	assert(target == NULL || is_Block(target));
 	assert(target == NULL || get_irn_irg(target) == irg);
 	irg->current_block = target;
@@ -502,7 +497,7 @@ void set_r_cur_block(ir_graph *irg, ir_node *target)
 
 ir_node *get_r_cur_block(ir_graph *irg)
 {
-	assert(get_irg_phase_state(irg) == phase_building);
+	assert(irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
 	return irg->current_block;
 }
 
@@ -513,7 +508,7 @@ ir_node *get_cur_block(void)
 
 ir_node *get_r_value(ir_graph *irg, int pos, ir_mode *mode)
 {
-	assert(get_irg_phase_state(irg) == phase_building);
+	assert(irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
 	assert(pos >= 0);
 
 	return get_r_value_internal(irg->current_block, pos + 1, mode);
@@ -580,7 +575,7 @@ ir_mode *ir_guess_mode(int pos)
 
 void set_r_value(ir_graph *irg, int pos, ir_node *value)
 {
-	assert(get_irg_phase_state(irg) == phase_building);
+	assert(irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
 	assert(pos >= 0);
 	assert(pos+1 < irg->n_loc);
 	assert(is_ir_node(value));
@@ -594,7 +589,7 @@ void set_value(int pos, ir_node *value)
 
 ir_node *get_r_store(ir_graph *irg)
 {
-	assert(get_irg_phase_state(irg) == phase_building);
+	assert(irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
 	return get_r_value_internal(irg->current_block, 0, mode_M);
 }
 
@@ -607,7 +602,7 @@ void set_r_store(ir_graph *irg, ir_node *store)
 {
 	ir_node *load, *pload, *pred, *in[2];
 
-	assert(get_irg_phase_state(irg) == phase_building);
+	assert(irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
 	/* Beware: due to dead code elimination, a store might become a Bad node even in
 	   the construction phase. */
 	assert((get_irn_mode(store) == mode_M || is_Bad(store)) && "storing non-memory node");
@@ -663,7 +658,7 @@ void irg_finalize_cons(ir_graph *irg)
 	ir_node *end_block = get_irg_end_block(irg);
 	mature_immBlock(end_block);
 
-	set_irg_phase_state(irg, phase_high);
+	clear_irg_constraints(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION);
 }
 
 void irp_finalize_cons(void)
@@ -672,7 +667,6 @@ void irp_finalize_cons(void)
 	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		irg_finalize_cons(get_irp_irg(i));
 	}
-	irp->phase_state = phase_high;
 }
 
 ir_node *new_Const_long(ir_mode *mode, long value)
@@ -709,7 +703,7 @@ ir_node *new_r_Anchor(ir_graph *irg)
 	 * get_Block_irg for anchor */
 	res->in[0] = res;
 
-	/* we can't have NULL inputs so reference ourselfes for now */
+	/* we can't have NULL inputs so reference ourselves for now */
 	for (i = 0; i <= (size_t)anchor_last; ++i) {
 		set_irn_n(res, i, res);
 	}
@@ -724,7 +718,7 @@ ir_node *new_r_Block_noopt(ir_graph *irg, int arity, ir_node *in[])
 	res->attr.block.backedge = new_backedge_arr(irg->obst, arity);
 	set_Block_matured(res, 1);
 	/* Create and initialize array for Phi-node construction. */
-	if (get_irg_phase_state(irg) == phase_building) {
+	if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION)) {
 		res->attr.block.graph_arr = NEW_ARR_D(ir_node *, irg->obst, irg->n_loc);
 		memset(res->attr.block.graph_arr, 0, irg->n_loc * sizeof(ir_node*));
 	}

@@ -153,12 +153,11 @@ static char *get_unique_label(char *buf, size_t buflen, const char *prefix)
  */
 static void emit_8bit_register(const arch_register_t *reg)
 {
-	const char *reg_name = arch_register_get_name(reg);
 	assert(reg->index == REG_GP_EAX || reg->index == REG_GP_EBX
 			|| reg->index == REG_GP_ECX || reg->index == REG_GP_EDX);
 
 	be_emit_char('%');
-	be_emit_char(reg_name[1]); /* get the basic name of the register */
+	be_emit_char(reg->name[1]); /* get the basic name of the register */
 	be_emit_char('l');
 }
 
@@ -167,21 +166,18 @@ static void emit_8bit_register(const arch_register_t *reg)
  */
 static void emit_8bit_register_high(const arch_register_t *reg)
 {
-	const char *reg_name = arch_register_get_name(reg);
 	assert(reg->index == REG_GP_EAX || reg->index == REG_GP_EBX
 			|| reg->index == REG_GP_ECX || reg->index == REG_GP_EDX);
 
 	be_emit_char('%');
-	be_emit_char(reg_name[1]); /* get the basic name of the register */
+	be_emit_char(reg->name[1]); /* get the basic name of the register */
 	be_emit_char('h');
 }
 
 static void emit_16bit_register(const arch_register_t *reg)
 {
-	const char *reg_name = arch_register_get_name(reg);
-
 	be_emit_char('%');
-	be_emit_string(reg_name+1); /* skip the 'e' prefix of the 32bit names */
+	be_emit_string(reg->name + 1); /* skip the 'e' prefix of the 32bit names */
 }
 
 /**
@@ -192,8 +188,6 @@ static void emit_16bit_register(const arch_register_t *reg)
  */
 static void emit_register(const arch_register_t *reg, const ir_mode *mode)
 {
-	const char *reg_name;
-
 	if (mode != NULL) {
 		int size = get_mode_size_bits(mode);
 		switch (size) {
@@ -203,10 +197,8 @@ static void emit_register(const arch_register_t *reg, const ir_mode *mode)
 		assert(mode_is_float(mode) || size == 32);
 	}
 
-	reg_name = arch_register_get_name(reg);
-
 	be_emit_char('%');
-	be_emit_string(reg_name);
+	be_emit_string(reg->name);
 }
 
 static void ia32_emit_entity(ir_entity *entity, int no_pic_adjust)
@@ -506,16 +498,9 @@ end_of_mods:
 							goto emit_AM;
 						} else {
 							assert(get_ia32_op_type(node) == ia32_Normal);
-							ia32_x87_attr_t const *const x87_attr = get_ia32_x87_attr_const(node);
-							arch_register_t const *const in1      = x87_attr->x87[0];
-							arch_register_t const *      in       = x87_attr->x87[1];
-							arch_register_t const *      out      = x87_attr->x87[2];
-							if (out == NULL) {
-								out = in1;
-							} else if (out == in) {
-								in = in1;
-							}
-							be_emit_irprintf("%%%s, %%%s", arch_register_get_name(in), arch_register_get_name(out));
+							ia32_x87_attr_t const *const attr = get_ia32_x87_attr_const(node);
+							char            const *const fmt  = attr->res_in_reg ? "%%st, %%%s" : "%%%s, %%st";
+							be_emit_irprintf(fmt, attr->reg->name);
 							break;
 						}
 
@@ -575,25 +560,44 @@ emit_AM:
 				break;
 
 			case 'D':
-				if (*fmt < '0' || '9' <= *fmt)
+				if (*fmt < '0' || '9' < *fmt)
 					goto unknown;
 				reg = arch_get_irn_register_out(node, *fmt++ - '0');
 				goto emit_R;
 
 			case 'F':
 				if (*fmt == 'M') {
-					++fmt;
 					ia32_emit_x87_mode_suffix(node);
+				} else if (*fmt == 'P') {
+					ia32_x87_attr_t const *const attr = get_ia32_x87_attr_const(node);
+					if (attr->pop)
+						be_emit_char('p');
+				} else if (*fmt == 'R') {
+					/* NOTE: Work around a gas quirk for non-commutative operations if the
+					 * destination register is not %st0.  In this case r/non-r is swapped.
+					 * %st0 = %st0 - %st1 -> fsub  %st1, %st0 (as expected)
+					 * %st0 = %st1 - %st0 -> fsubr %st1, %st0 (as expected)
+					 * %st1 = %st0 - %st1 -> fsub  %st0, %st1 (expected: fsubr)
+					 * %st1 = %st1 - %st0 -> fsubr %st0, %st1 (expected: fsub)
+					 * In fact this corresponds to the encoding of the instruction:
+					 * - The r suffix selects whether %st0 is on the left (no r) or on the
+					 *   right (r) side of the executed operation.
+					 * - The placement of %st0 selects whether the result is written to
+					 *   %st0 (right) or the other register (left).
+					 * This means that it is sufficient to test whether the operands are
+					 * permuted.  In particular it is not necessary to consider wether the
+					 * result is to be placed into the explicit register operand. */
+					if (get_ia32_x87_attr_const(node)->attr.data.ins_permuted)
+						be_emit_char('r');
 				} else if (*fmt == 'X') {
-					++fmt;
 					ia32_emit_xmm_mode_suffix(node);
-				} else if ('0' <= *fmt && *fmt <= '3') {
-					const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
+				} else if (*fmt == '0') {
 					be_emit_char('%');
-					be_emit_string(attr->x87[*fmt++ - '0']->name);
+					be_emit_string(get_ia32_x87_attr_const(node)->reg->name);
 				} else {
 					goto unknown;
 				}
+				++fmt;
 				break;
 
 			case 'I':
@@ -657,7 +661,7 @@ emit_S:
 			case 'S': {
 				unsigned pos;
 
-				if (*fmt < '0' || '9' <= *fmt)
+				if (*fmt < '0' || '9' < *fmt)
 					goto unknown;
 
 				pos = *fmt++ - '0';
@@ -772,13 +776,11 @@ static ia32_condition_code_t determine_final_cc(const ir_node *node,
 
 	if (is_ia32_Sahf(flags)) {
 		ir_node *cmp = get_irn_n(flags, n_ia32_Sahf_val);
-		if (!(is_ia32_FucomFnstsw(cmp) || is_ia32_FucompFnstsw(cmp)
-				|| is_ia32_FucomppFnstsw(cmp) || is_ia32_FtstFnstsw(cmp))) {
+		if (!(is_ia32_FucomFnstsw(cmp) || is_ia32_FucomppFnstsw(cmp) || is_ia32_FtstFnstsw(cmp))) {
 			inc_irg_visited(current_ir_graph);
 			cmp = find_original_value(cmp);
 			assert(cmp != NULL);
-			assert(is_ia32_FucomFnstsw(cmp) || is_ia32_FucompFnstsw(cmp)
-			       || is_ia32_FucomppFnstsw(cmp) || is_ia32_FtstFnstsw(cmp));
+			assert(is_ia32_FucomFnstsw(cmp) || is_ia32_FucomppFnstsw(cmp) || is_ia32_FtstFnstsw(cmp));
 		}
 
 		flags_attr = get_ia32_attr_const(cmp);
@@ -1233,8 +1235,8 @@ static void Copy_emitter(const ir_node *node, const ir_node *op)
 	if (in == out) {
 		return;
 	}
-	/* copies of vf nodes aren't real... */
-	if (arch_register_get_class(in) == &ia32_reg_classes[CLASS_ia32_vfp])
+	/* copies of fp nodes aren't real... */
+	if (in->reg_class == &ia32_reg_classes[CLASS_ia32_fp])
 		return;
 
 	ia32_emitf(node, "movl %R, %R", in, out);
@@ -1256,15 +1258,12 @@ static void emit_be_CopyKeep(const ir_node *node)
 static void emit_be_Perm(const ir_node *node)
 {
 	const arch_register_t *in0, *in1;
-	const arch_register_class_t *cls0, *cls1;
 
 	in0 = arch_get_irn_register(get_irn_n(node, 0));
 	in1 = arch_get_irn_register(get_irn_n(node, 1));
 
-	cls0 = arch_register_get_class(in0);
-	cls1 = arch_register_get_class(in1);
-
-	assert(cls0 == cls1 && "Register class mismatch at Perm");
+	arch_register_class_t const *const cls0 = in0->reg_class;
+	assert(cls0 == in1->reg_class && "Register class mismatch at Perm");
 
 	if (cls0 == &ia32_reg_classes[CLASS_ia32_gp]) {
 		ia32_emitf(node, "xchg %R, %R", in1, in0);
@@ -1272,9 +1271,7 @@ static void emit_be_Perm(const ir_node *node)
 		ia32_emitf(NULL, "xorpd %R, %R", in1, in0);
 		ia32_emitf(NULL, "xorpd %R, %R", in0, in1);
 		ia32_emitf(node, "xorpd %R, %R", in1, in0);
-	} else if (cls0 == &ia32_reg_classes[CLASS_ia32_vfp]) {
-		/* is a NOP */
-	} else if (cls0 == &ia32_reg_classes[CLASS_ia32_st]) {
+	} else if (cls0 == &ia32_reg_classes[CLASS_ia32_fp]) {
 		/* is a NOP */
 	} else {
 		panic("unexpected register class in be_Perm (%+F)", node);
@@ -2207,6 +2204,12 @@ static void bemit_unop_mem(const ir_node *node, unsigned char code, unsigned cha
 	bemit_mod_am(ext, node);
 }
 
+static void bemit_0f_unop_reg(ir_node const *const node, unsigned char const code, int const input)
+{
+	bemit8(0x0F);
+	bemit_unop_reg(node, code, input);
+}
+
 static void bemit_immediate(const ir_node *node, bool relative)
 {
 	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(node);
@@ -2220,11 +2223,11 @@ static void bemit_copy(const ir_node *copy)
 
 	if (in == out)
 		return;
-	/* copies of vf nodes aren't real... */
-	if (arch_register_get_class(in) == &ia32_reg_classes[CLASS_ia32_vfp])
+	/* copies of fp nodes aren't real... */
+	if (in->reg_class == &ia32_reg_classes[CLASS_ia32_fp])
 		return;
 
-	assert(arch_register_get_class(in) == &ia32_reg_classes[CLASS_ia32_gp]);
+	assert(in->reg_class == &ia32_reg_classes[CLASS_ia32_gp]);
 	bemit8(0x8B);
 	bemit_modrr(in, out);
 }
@@ -2233,9 +2236,9 @@ static void bemit_perm(const ir_node *node)
 {
 	const arch_register_t       *in0  = arch_get_irn_register(get_irn_n(node, 0));
 	const arch_register_t       *in1  = arch_get_irn_register(get_irn_n(node, 1));
-	const arch_register_class_t *cls0 = arch_register_get_class(in0);
+	const arch_register_class_t *cls0 = in0->reg_class;
 
-	assert(cls0 == arch_register_get_class(in1) && "Register class mismatch at Perm");
+	assert(cls0 == in1->reg_class && "Register class mismatch at Perm");
 
 	if (cls0 == &ia32_reg_classes[CLASS_ia32_gp]) {
 		if (in0->index == REG_GP_EAX) {
@@ -2251,9 +2254,7 @@ static void bemit_perm(const ir_node *node)
 		//ia32_emitf(NULL, "xorpd %R, %R", in1, in0);
 		//ia32_emitf(NULL, "xorpd %R, %R", in0, in1);
 		//ia32_emitf(node, "xorpd %R, %R", in1, in0);
-	} else if (cls0 == &ia32_reg_classes[CLASS_ia32_vfp]) {
-		/* is a NOP */
-	} else if (cls0 == &ia32_reg_classes[CLASS_ia32_st]) {
+	} else if (cls0 == &ia32_reg_classes[CLASS_ia32_fp]) {
 		/* is a NOP */
 	} else {
 		panic("unexpected register class in be_Perm (%+F)", node);
@@ -2319,7 +2320,7 @@ static void bemit_##op(const ir_node *node) \
 		} \
 	} else { \
 		bemit8(ext << 3 | 1); \
-		bemit_mod_am(reg_gp_map[arch_get_irn_register_out(val, 0)->index], node); \
+		bemit_mod_am(reg_gp_map[arch_get_irn_register(val)->index], node); \
 	} \
 } \
  \
@@ -2332,7 +2333,7 @@ static void bemit_##op##8bit(const ir_node *node) \
 		bemit8(get_ia32_immediate_attr_const(val)->offset); \
 	} else { \
 		bemit8(ext << 3); \
-		bemit_mod_am(reg_gp_map[arch_get_irn_register_out(val, 0)->index], node); \
+		bemit_mod_am(reg_gp_map[arch_get_irn_register(val)->index], node); \
 	} \
 }
 
@@ -2443,6 +2444,14 @@ static void bemit_shrd(const ir_node *node)
 	}
 }
 
+static void bemit_sbb0(ir_node const *const node)
+{
+	arch_register_t const *const out = arch_get_irn_register_out(node, pn_ia32_Sbb0_res);
+	unsigned char          const reg = reg_gp_map[out->index];
+	bemit8(0x1B);
+	bemit8(MOD_REG | ENC_REG(reg) | ENC_RM(reg));
+}
+
 /**
  * binary emitter for setcc.
  */
@@ -2487,6 +2496,41 @@ static void bemit_setcc(const ir_node *node)
 		bemit8(0x0F);
 		bemit8(0x90 | pnc2cc(cc));
 		bemit_modrm8(REG_LOW, dreg);
+	}
+}
+
+static void bemit_bsf(ir_node const *const node)
+{
+	bemit_0f_unop_reg(node, 0xBC, n_ia32_Bsf_operand);
+}
+
+static void bemit_bsr(ir_node const *const node)
+{
+	bemit_0f_unop_reg(node, 0xBD, n_ia32_Bsr_operand);
+}
+
+static void bemit_bswap(ir_node const *const node)
+{
+	bemit8(0x0F);
+	bemit_modru(arch_get_irn_register_out(node, pn_ia32_Bswap_res), 1);
+}
+
+static void bemit_bt(ir_node const *const node)
+{
+	bemit8(0x0F);
+	arch_register_t const *const lreg  = arch_get_irn_register_in(node, n_ia32_Bt_left);
+	ir_node         const *const right = get_irn_n(node, n_ia32_Bt_right);
+	if (is_ia32_Immediate(right)) {
+		ia32_immediate_attr_t const *const attr   = get_ia32_immediate_attr_const(right);
+		int                          const offset = attr->offset;
+		assert(!attr->symconst);
+		assert(get_signed_imm_size(offset) == 1);
+		bemit8(0xBA);
+		bemit_modru(lreg, 4);
+		bemit8(offset);
+	} else {
+		bemit8(0xA3);
+		bemit_modrr(lreg, arch_get_irn_register(right));
 	}
 }
 
@@ -2673,8 +2717,7 @@ static void bemit_imul(const ir_node *node)
 			bemit32(imm);
 		}
 	} else {
-		bemit8(0x0F);
-		bemit_unop_reg(node, 0xAF, n_ia32_IMul_right);
+		bemit_0f_unop_reg(node, 0xAF, n_ia32_IMul_right);
 	}
 }
 
@@ -2947,18 +2990,20 @@ static void bemit_store(const ir_node *node)
 
 static void bemit_conv_i2i(const ir_node *node)
 {
-	ir_mode  *smaller_mode = get_ia32_ls_mode(node);
-	unsigned  opcode;
-
-	bemit8(0x0F);
 	/*        8 16 bit source
 	 * movzx B6 B7
-	 * movsx BE BF
-	 */
-	opcode = 0xB6;
+	 * movsx BE BF */
+	ir_mode *const smaller_mode = get_ia32_ls_mode(node);
+	unsigned       opcode       = 0xB6;
 	if (mode_is_signed(smaller_mode))           opcode |= 0x08;
 	if (get_mode_size_bits(smaller_mode) == 16) opcode |= 0x01;
-	bemit_unop_reg(node, opcode, n_ia32_Conv_I2I_val);
+	bemit_0f_unop_reg(node, opcode, n_ia32_Conv_I2I_val);
+}
+
+static void bemit_popcnt(ir_node const *const node)
+{
+	bemit8(0xF3);
+	bemit_0f_unop_reg(node, 0xB8, n_ia32_Popcnt_operand);
 }
 
 /**
@@ -3188,43 +3233,33 @@ static void bemit_copybi(const ir_node *node)
 	}
 }
 
-static void bemit_fbinop(const ir_node *node, unsigned code, unsigned code_to)
+static void bemit_fbinop(ir_node const *const node, unsigned const op_fwd, unsigned const op_rev)
 {
+	ia32_x87_attr_t const *const attr = get_ia32_x87_attr_const(node);
+	unsigned               const op   = attr->attr.data.ins_permuted ? op_rev : op_fwd;
 	if (get_ia32_op_type(node) == ia32_Normal) {
-		const ia32_x87_attr_t *x87_attr = get_ia32_x87_attr_const(node);
-		const arch_register_t *in1      = x87_attr->x87[0];
-		const arch_register_t *in       = x87_attr->x87[1];
-		const arch_register_t *out      = x87_attr->x87[2];
+		assert(!attr->pop || attr->res_in_reg);
 
-		if (out == NULL) {
-			out = in1;
-		} else if (out == in) {
-			in = in1;
-		}
+		unsigned char op0 = 0xD8;
+		if (attr->res_in_reg) op0 |= 0x04;
+		if (attr->pop)        op0 |= 0x02;
+		bemit8(op0);
 
-		if (out->index == 0) {
-			bemit8(0xD8);
-			bemit8(MOD_REG | ENC_REG(code) | ENC_RM(in->index));
-		} else {
-			bemit8(0xDC);
-			bemit8(MOD_REG | ENC_REG(code_to) | ENC_RM(out->index));
-		}
+		bemit8(MOD_REG | ENC_REG(op) | ENC_RM(attr->reg->index));
 	} else {
-		if (get_mode_size_bits(get_ia32_ls_mode(node)) == 32) {
-			bemit8(0xD8);
-		} else {
-			bemit8(0xDC);
-		}
-		bemit_mod_am(code, node);
+		assert(!attr->reg);
+		assert(!attr->pop);
+
+		unsigned const size = get_mode_size_bits(get_ia32_ls_mode(node));
+		bemit8(size == 32 ? 0xD8 : 0xDC);
+		bemit_mod_am(op, node);
 	}
 }
 
-static void bemit_fbinopp(const ir_node *node, unsigned const code)
+static void bemit_fop_reg(ir_node const *const node, unsigned char const op0, unsigned char const op1)
 {
-	const ia32_x87_attr_t *x87_attr = get_ia32_x87_attr_const(node);
-	const arch_register_t *out      = x87_attr->x87[2];
-	bemit8(0xDE);
-	bemit8(code + out->index);
+	bemit8(op0);
+	bemit8(op1 + get_ia32_x87_attr_const(node)->reg->index);
 }
 
 static void bemit_fabs(const ir_node *node)
@@ -3240,11 +3275,6 @@ static void bemit_fadd(const ir_node *node)
 	bemit_fbinop(node, 0, 0);
 }
 
-static void bemit_faddp(const ir_node *node)
-{
-	bemit_fbinopp(node, 0xC0);
-}
-
 static void bemit_fchs(const ir_node *node)
 {
 	(void)node;
@@ -3258,19 +3288,9 @@ static void bemit_fdiv(const ir_node *node)
 	bemit_fbinop(node, 6, 7);
 }
 
-static void bemit_fdivp(const ir_node *node)
+static void bemit_ffreep(ir_node const *const node)
 {
-	bemit_fbinopp(node, 0xF8);
-}
-
-static void bemit_fdivr(const ir_node *node)
-{
-	bemit_fbinop(node, 7, 6);
-}
-
-static void bemit_fdivrp(const ir_node *node)
-{
-	bemit_fbinopp(node, 0xF0);
+	bemit_fop_reg(node, 0xDF, 0xC0);
 }
 
 static void bemit_fild(const ir_node *node)
@@ -3298,42 +3318,30 @@ static void bemit_fild(const ir_node *node)
 
 static void bemit_fist(const ir_node *node)
 {
-	switch (get_mode_size_bits(get_ia32_ls_mode(node))) {
-		case 16:
-			bemit8(0xDF); // fists
-			break;
-
-		case 32:
-			bemit8(0xDB); // fistl
-			break;
-
-		default:
-			panic("invalid mode size");
+	unsigned       op;
+	unsigned const size = get_mode_size_bits(get_ia32_ls_mode(node));
+	switch (size) {
+	case 16: bemit8(0xDF); op = 2; break; // fist[p]s
+	case 32: bemit8(0xDB); op = 2; break; // fist[p]l
+	case 64: bemit8(0xDF); op = 6; break; // fistpll
+	default: panic("invalid mode size");
 	}
-	bemit_mod_am(2, node);
+	if (get_ia32_x87_attr_const(node)->pop)
+		++op;
+	// There is only a pop variant for 64 bit integer store.
+	assert(size < 64 || get_ia32_x87_attr_const(node)->pop);
+	bemit_mod_am(op, node);
 }
 
-static void bemit_fistp(const ir_node *node)
+static void bemit_fisttp(ir_node const *const node)
 {
 	switch (get_mode_size_bits(get_ia32_ls_mode(node))) {
-		case 16:
-			bemit8(0xDF); // fistps
-			bemit_mod_am(3, node);
-			return;
-
-		case 32:
-			bemit8(0xDB); // fistpl
-			bemit_mod_am(3, node);
-			return;
-
-		case 64:
-			bemit8(0xDF); // fistpll
-			bemit_mod_am(7, node);
-			return;
-
-		default:
-			panic("invalid mode size");
+	case 16: bemit8(0xDF); break; // fisttps
+	case 32: bemit8(0xDB); break; // fisttpl
+	case 64: bemit8(0xDD); break; // fisttpll
+	default: panic("Invalid mode size");
 	}
+	bemit_mod_am(1, node);
 }
 
 static void bemit_fld(const ir_node *node)
@@ -3385,91 +3393,42 @@ static void bemit_fmul(const ir_node *node)
 	bemit_fbinop(node, 1, 1);
 }
 
-static void bemit_fmulp(const ir_node *node)
-{
-	bemit_fbinopp(node, 0xC8);
-}
-
 static void bemit_fpop(const ir_node *node)
 {
-	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
-	bemit8(0xDD);
-	bemit8(0xD8 + attr->x87[0]->index);
+	bemit_fop_reg(node, 0xDD, 0xD8);
 }
 
 static void bemit_fpush(const ir_node *node)
 {
-	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
-	bemit8(0xD9);
-	bemit8(0xC0 + attr->x87[0]->index);
+	bemit_fop_reg(node, 0xD9, 0xC0);
 }
 
 static void bemit_fpushcopy(const ir_node *node)
 {
-	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
-	bemit8(0xD9);
-	bemit8(0xC0 + attr->x87[0]->index);
+	bemit_fop_reg(node, 0xD9, 0xC0);
 }
 
 static void bemit_fst(const ir_node *node)
 {
-	switch (get_mode_size_bits(get_ia32_ls_mode(node))) {
-		case 32:
-			bemit8(0xD9); // fsts
-			break;
-
-		case 64:
-			bemit8(0xDD); // fstl
-			break;
-
-		default:
-			panic("invalid mode size");
+	unsigned       op;
+	unsigned const size = get_mode_size_bits(get_ia32_ls_mode(node));
+	switch (size) {
+	case 32: bemit8(0xD9); op = 2; break; // fst[p]s
+	case 64: bemit8(0xDD); op = 2; break; // fst[p]l
+	case 80:
+	case 96: bemit8(0xDB); op = 6; break; // fstpt
+	default: panic("invalid mode size");
 	}
-	bemit_mod_am(2, node);
-}
-
-static void bemit_fstp(const ir_node *node)
-{
-	switch (get_mode_size_bits(get_ia32_ls_mode(node))) {
-		case 32:
-			bemit8(0xD9); // fstps
-			bemit_mod_am(3, node);
-			return;
-
-		case 64:
-			bemit8(0xDD); // fstpl
-			bemit_mod_am(3, node);
-			return;
-
-		case 80:
-		case 96:
-			bemit8(0xDB); // fstpt
-			bemit_mod_am(7, node);
-			return;
-
-		default:
-			panic("invalid mode size");
-	}
+	if (get_ia32_x87_attr_const(node)->pop)
+		++op;
+	// There is only a pop variant for long double store.
+	assert(size < 80 || get_ia32_x87_attr_const(node)->pop);
+	bemit_mod_am(op, node);
 }
 
 static void bemit_fsub(const ir_node *node)
 {
 	bemit_fbinop(node, 4, 5);
-}
-
-static void bemit_fsubp(const ir_node *node)
-{
-	bemit_fbinopp(node, 0xE8);
-}
-
-static void bemit_fsubr(const ir_node *node)
-{
-	bemit_fbinop(node, 5, 4);
-}
-
-static void bemit_fsubrp(const ir_node *node)
-{
-	bemit_fbinopp(node, 0xE0);
 }
 
 static void bemit_fnstcw(const ir_node *node)
@@ -3496,30 +3455,15 @@ static void bemit_ftstfnstsw(const ir_node *node)
 static void bemit_fucomi(const ir_node *node)
 {
 	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
-	bemit8(0xDB); // fucomi
-	bemit8(0xE8 + attr->x87[1]->index);
-}
-
-static void bemit_fucomip(const ir_node *node)
-{
-	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
-	bemit8(0xDF); // fucomip
-	bemit8(0xE8 + attr->x87[1]->index);
+	bemit8(attr->pop ? 0xDF : 0xDB); // fucom[p]i
+	bemit8(0xE8 + attr->reg->index);
 }
 
 static void bemit_fucomfnstsw(const ir_node *node)
 {
 	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
-	bemit8(0xDD); // fucom
-	bemit8(0xE0 + attr->x87[1]->index);
-	bemit_fnstsw();
-}
-
-static void bemit_fucompfnstsw(const ir_node *node)
-{
-	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
-	bemit8(0xDD); // fucomp
-	bemit8(0xE8 + attr->x87[1]->index);
+	bemit8(0xDD); // fucom[p]
+	bemit8((attr->pop ? 0xE8 : 0xE0) + attr->reg->index);
 	bemit_fnstsw();
 }
 
@@ -3534,9 +3478,7 @@ static void bemit_fucomppfnstsw(const ir_node *node)
 
 static void bemit_fxch(const ir_node *node)
 {
-	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
-	bemit8(0xD9);
-	bemit8(0xC8 + attr->x87[0]->index);
+	bemit_fop_reg(node, 0xD9, 0xC8);
 }
 
 /**
@@ -3570,7 +3512,12 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_And,           bemit_and);
 	register_emitter(op_ia32_AndMem,        bemit_andmem);
 	register_emitter(op_ia32_AndMem8Bit,    bemit_andmem8bit);
+	register_emitter(op_ia32_Asm,           emit_ia32_Asm); // TODO implement binary emitter
 	register_emitter(op_ia32_Breakpoint,    bemit_int3);
+	register_emitter(op_ia32_Bsf,           bemit_bsf);
+	register_emitter(op_ia32_Bsr,           bemit_bsr);
+	register_emitter(op_ia32_Bswap,         bemit_bswap);
+	register_emitter(op_ia32_Bt,            bemit_bt);
 	register_emitter(op_ia32_CMovcc,        bemit_cmovcc);
 	register_emitter(op_ia32_Call,          bemit_call);
 	register_emitter(op_ia32_Cltd,          bemit_cltd);
@@ -3590,8 +3537,6 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_FtstFnstsw,    bemit_ftstfnstsw);
 	register_emitter(op_ia32_FucomFnstsw,   bemit_fucomfnstsw);
 	register_emitter(op_ia32_Fucomi,        bemit_fucomi);
-	register_emitter(op_ia32_FucompFnstsw,  bemit_fucompfnstsw);
-	register_emitter(op_ia32_Fucompi,       bemit_fucomip);
 	register_emitter(op_ia32_FucomppFnstsw, bemit_fucomppfnstsw);
 	register_emitter(op_ia32_IDiv,          bemit_idiv);
 	register_emitter(op_ia32_IJmp,          bemit_ijmp);
@@ -3617,6 +3562,7 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_Pop,           bemit_pop);
 	register_emitter(op_ia32_PopEbp,        bemit_pop);
 	register_emitter(op_ia32_PopMem,        bemit_popmem);
+	register_emitter(op_ia32_Popcnt,        bemit_popcnt);
 	register_emitter(op_ia32_Push,          bemit_push);
 	register_emitter(op_ia32_RepPrefix,     bemit_rep);
 	register_emitter(op_ia32_Rol,           bemit_rol);
@@ -3627,6 +3573,7 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_Sar,           bemit_sar);
 	register_emitter(op_ia32_SarMem,        bemit_sarmem);
 	register_emitter(op_ia32_Sbb,           bemit_sbb);
+	register_emitter(op_ia32_Sbb0,          bemit_sbb0);
 	register_emitter(op_ia32_Setcc,         bemit_setcc);
 	register_emitter(op_ia32_Shl,           bemit_shl);
 	register_emitter(op_ia32_ShlD,          bemit_shld);
@@ -3650,33 +3597,26 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_XorMem8Bit,    bemit_xormem8bit);
 	register_emitter(op_ia32_fabs,          bemit_fabs);
 	register_emitter(op_ia32_fadd,          bemit_fadd);
-	register_emitter(op_ia32_faddp,         bemit_faddp);
 	register_emitter(op_ia32_fchs,          bemit_fchs);
 	register_emitter(op_ia32_fdiv,          bemit_fdiv);
-	register_emitter(op_ia32_fdivp,         bemit_fdivp);
-	register_emitter(op_ia32_fdivr,         bemit_fdivr);
-	register_emitter(op_ia32_fdivrp,        bemit_fdivrp);
+	register_emitter(op_ia32_ffreep,        bemit_ffreep);
 	register_emitter(op_ia32_fild,          bemit_fild);
 	register_emitter(op_ia32_fist,          bemit_fist);
-	register_emitter(op_ia32_fistp,         bemit_fistp);
+	register_emitter(op_ia32_fisttp,        bemit_fisttp);
 	register_emitter(op_ia32_fld,           bemit_fld);
 	register_emitter(op_ia32_fld1,          bemit_fld1);
 	register_emitter(op_ia32_fldz,          bemit_fldz);
 	register_emitter(op_ia32_fmul,          bemit_fmul);
-	register_emitter(op_ia32_fmulp,         bemit_fmulp);
 	register_emitter(op_ia32_fpop,          bemit_fpop);
 	register_emitter(op_ia32_fpush,         bemit_fpush);
 	register_emitter(op_ia32_fpushCopy,     bemit_fpushcopy);
 	register_emitter(op_ia32_fst,           bemit_fst);
-	register_emitter(op_ia32_fstp,          bemit_fstp);
 	register_emitter(op_ia32_fsub,          bemit_fsub);
-	register_emitter(op_ia32_fsubp,         bemit_fsubp);
-	register_emitter(op_ia32_fsubr,         bemit_fsubr);
-	register_emitter(op_ia32_fsubrp,        bemit_fsubrp);
 	register_emitter(op_ia32_fxch,          bemit_fxch);
 
 	/* ignore the following nodes */
 	register_emitter(op_ia32_ProduceVal,   emit_Nothing);
+	register_emitter(op_ia32_Unknown,      emit_Nothing);
 	register_emitter(op_be_Keep,           emit_Nothing);
 	register_emitter(op_be_Start,          emit_Nothing);
 	register_emitter(op_Phi,               emit_Nothing);

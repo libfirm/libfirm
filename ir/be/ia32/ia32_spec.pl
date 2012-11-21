@@ -52,28 +52,17 @@ $state       =  8; # register represents a state
 		{ name => "xmm_NOREG", type => $ignore | $virtual },     # we need a dummy register for NoReg nodes
 		{ mode => $mode_xmm }
 	],
-	vfp => [
-		{ name => "vf0" },
-		{ name => "vf1" },
-		{ name => "vf2" },
-		{ name => "vf3" },
-		{ name => "vf4" },
-		{ name => "vf5" },
-		{ name => "vf6" },
-		{ name => "vf7" },
-		{ name => "vfp_NOREG", type => $ignore | $arbitrary | $virtual }, # we need a dummy register for NoReg nodes
+	fp => [
+		{ name => "st0", realname => "st",    dwarf => 11 },
+		{ name => "st1", realname => "st(1)", dwarf => 12 },
+		{ name => "st2", realname => "st(2)", dwarf => 13 },
+		{ name => "st3", realname => "st(3)", dwarf => 14 },
+		{ name => "st4", realname => "st(4)", dwarf => 15 },
+		{ name => "st5", realname => "st(5)", dwarf => 16 },
+		{ name => "st6", realname => "st(6)", dwarf => 17 },
+		{ name => "st7", realname => "st(7)", dwarf => 18 },
+		{ name => "fp_NOREG", type => $ignore | $arbitrary | $virtual }, # we need a dummy register for NoReg nodes
 		{ mode => $mode_fp87 }
-	],
-	st => [
-		{ name => "st0", realname => "st",    dwarf => 11, type => $ignore },
-		{ name => "st1", realname => "st(1)", dwarf => 12, type => $ignore },
-		{ name => "st2", realname => "st(2)", dwarf => 13, type => $ignore },
-		{ name => "st3", realname => "st(3)", dwarf => 14, type => $ignore },
-		{ name => "st4", realname => "st(4)", dwarf => 15, type => $ignore },
-		{ name => "st5", realname => "st(5)", dwarf => 16, type => $ignore },
-		{ name => "st6", realname => "st(6)", dwarf => 17, type => $ignore },
-		{ name => "st7", realname => "st(7)", dwarf => 18, type => $ignore },
-		{ mode => $mode_fp87, flags => "manual_ra" }
 	],
 	fp_cw => [	# the floating point control word
 		{ name => "fpcw", dwarf => 37, type => $ignore | $state },
@@ -1026,14 +1015,15 @@ Jmp => {
 IJmp => {
 	state     => "pinned",
 	op_flags  => [ "cfopcode", "unknown_jump" ],
-	reg_req   => { in => [ "gp", "gp", "none", "gp" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "gp" ],
+	               out => [ "none", "flags", "none" ] },
 	ins       => [ "base", "index", "mem", "target" ],
+	outs      => [ "jmp", "flags", "M" ],
 	am        => "source,unary",
-	emit      => 'jmp *%AS3',
+	emit      => 'jmp %*AS3',
 	latency   => 1,
 	units     => [ "BRANCH" ],
 	mode      => "mode_X",
-	init_attr => "info->out_infos = NULL;", # XXX ugly hack for out requirements
 },
 
 Const => {
@@ -1077,11 +1067,11 @@ NoReg_GP => {
 	mode      => $mode_gp
 },
 
-NoReg_VFP => {
+NoReg_FP => {
 	state     => "pinned",
 	op_flags  => [ "constlike", "dump_noblock" ],
 	irn_flags => [ "not_scheduled" ],
-	reg_req   => { out => [ "vfp_NOREG:I" ] },
+	reg_req   => { out => [ "fp_NOREG:I" ] },
 	units     => [],
 	emit      => "",
 	mode      => $mode_fp87,
@@ -1398,10 +1388,10 @@ Call => {
 	state     => "exc_pinned",
 	reg_req   => {
 		in  => [ "gp", "gp", "none", "gp", "esp", "fpcw", "eax", "ecx", "edx" ],
-		out => [ "esp:I|S", "fpcw:I", "none", "eax", "ecx", "edx", "vf0", "vf1", "vf2", "vf3", "vf4", "vf5", "vf6", "vf7", "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7", "none", "none" ]
+		out => [ "esp:I|S", "fpcw:I", "none", "eax", "ecx", "edx", "st0", "st1", "st2", "st3", "st4", "st5", "st6", "st7", "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7", "none", "none" ]
 	},
 	ins       => [ "base", "index", "mem", "addr", "stack", "fpcw", "eax", "ecx", "edx" ],
-	outs      => [ "stack", "fpcw", "M", "eax", "ecx", "edx", "vf0", "vf1", "vf2", "vf3", "vf4", "vf5", "vf6", "vf7", "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7", "X_regular", "X_except" ],
+	outs      => [ "stack", "fpcw", "M", "eax", "ecx", "edx", "st0", "st1", "st2", "st3", "st4", "st5", "st6", "st7", "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7", "X_regular", "X_except" ],
 	emit      => "call %*AS3",
 	attr_type => "ia32_call_attr_t",
 	attr      => "unsigned pop, ir_type *call_tp",
@@ -1434,6 +1424,7 @@ Bswap => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp" ],
 	               out => [ "in_r1" ] },
+	outs      => [ "res" ],
 	emit      => 'bswap%M %S0',
 	ins       => [ "val" ],
 	units     => [ "GP" ],
@@ -1998,13 +1989,14 @@ Conv_FP2FP => {
 # rematerialisation disabled for all float nodes for now, because the fpcw
 # handler runs before spilling and we might end up with wrong fpcw then
 
-vfadd => {
+fadd => {
 #	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "vfp", "vfp", "fpcw" ],
-	               out => [ "vfp", "none", "none" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "fp", "fp", "fpcw" ],
+	               out => [ "fp", "none", "none" ] },
 	ins       => [ "base", "index", "mem", "left", "right", "fpcw" ],
 	outs      => [ "res", "dummy", "M" ],
+	emit      => 'fadd%FP%FM %AF',
 	am        => "source,binary",
 	latency   => 4,
 	units     => [ "VFP" ],
@@ -2012,13 +2004,14 @@ vfadd => {
 	attr_type => "ia32_x87_attr_t",
 },
 
-vfmul => {
+fmul => {
 #	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "vfp", "vfp", "fpcw" ],
-	               out => [ "vfp", "none", "none" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "fp", "fp", "fpcw" ],
+	               out => [ "fp", "none", "none" ] },
 	ins       => [ "base", "index", "mem", "left", "right", "fpcw" ],
 	outs      => [ "res", "dummy", "M" ],
+	emit      => 'fmul%FP%FM %AF',
 	am        => "source,binary",
 	latency   => 4,
 	units     => [ "VFP" ],
@@ -2026,13 +2019,14 @@ vfmul => {
 	attr_type => "ia32_x87_attr_t",
 },
 
-vfsub => {
+fsub => {
 #	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "vfp", "vfp", "fpcw" ],
-	               out => [ "vfp", "none", "none" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "fp", "fp", "fpcw" ],
+	               out => [ "fp", "none", "none" ] },
 	ins       => [ "base", "index", "mem", "minuend", "subtrahend", "fpcw" ],
 	outs      => [ "res", "dummy", "M" ],
+	emit      => 'fsub%FR%FP%FM %AF',
 	am        => "source,binary",
 	latency   => 4,
 	units     => [ "VFP" ],
@@ -2040,30 +2034,44 @@ vfsub => {
 	attr_type => "ia32_x87_attr_t",
 },
 
-vfdiv => {
+fdiv => {
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "vfp", "vfp", "fpcw" ],
-	               out => [ "vfp", "none", "none" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "fp", "fp", "fpcw" ],
+	               out => [ "fp", "none", "none" ] },
 	ins       => [ "base", "index", "mem", "dividend", "divisor", "fpcw" ],
 	outs      => [ "res", "dummy", "M" ],
+	emit      => 'fdiv%FR%FP%FM %AF',
 	am        => "source,binary",
 	latency   => 20,
 	units     => [ "VFP" ],
 	attr_type => "ia32_x87_attr_t",
 },
 
-vfprem => {
-	reg_req   => { in => [ "vfp", "vfp", "fpcw" ], out => [ "vfp" ] },
+fprem => {
+	reg_req   => { in => [ "fp", "fp", "fpcw" ], out => [ "fp" ] },
 	ins       => [ "left", "right", "fpcw" ],
+	emit      => 'fprem1',
 	latency   => 20,
 	units     => [ "VFP" ],
 	mode      => $mode_fp87,
 	attr_type => "ia32_x87_attr_t",
 },
 
-vfabs => {
+fabs => {
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "vfp"], out => [ "vfp" ] },
+	reg_req   => { in => [ "fp"], out => [ "fp" ] },
+	ins       => [ "value" ],
+	emit      => 'fabs',
+	latency   => 2,
+	units     => [ "VFP" ],
+	mode      => $mode_fp87,
+	attr_type => "ia32_x87_attr_t",
+},
+
+fchs => {
+	irn_flags => [ "rematerializable" ],
+	reg_req   => { in => [ "fp"], out => [ "fp" ] },
+	emit      => 'fchs',
 	ins       => [ "value" ],
 	latency   => 2,
 	units     => [ "VFP" ],
@@ -2071,24 +2079,15 @@ vfabs => {
 	attr_type => "ia32_x87_attr_t",
 },
 
-vfchs => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "vfp"], out => [ "vfp" ] },
-	ins       => [ "value" ],
-	latency   => 2,
-	units     => [ "VFP" ],
-	mode      => $mode_fp87,
-	attr_type => "ia32_x87_attr_t",
-},
-
-vfld => {
+fld => {
 	irn_flags => [ "rematerializable" ],
 	op_flags  => [ "uses_memory", "fragile" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ],
-	               out => [ "vfp", "none", "none", "none", "none" ] },
+	               out => [ "fp", "none", "none", "none", "none" ] },
 	ins       => [ "base", "index", "mem" ],
 	outs      => [ "res", "unused", "M", "X_regular", "X_except" ],
+	emit      => 'fld%FM %AM',
 	attr      => "ir_mode *load_mode",
 	init_attr => "attr->attr.ls_mode = load_mode;",
 	latency   => 2,
@@ -2096,14 +2095,15 @@ vfld => {
 	attr_type => "ia32_x87_attr_t",
 },
 
-vfst => {
+fst => {
 	irn_flags => [ "rematerializable" ],
 	op_flags  => [ "uses_memory", "fragile" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "vfp" ],
+	reg_req   => { in => [ "gp", "gp", "none", "fp" ],
 	               out => [ "none", "none", "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
 	outs      => [ "M", "X_regular", "X_except" ],
+	emit      => 'fst%FP%FM %AM',
 	attr      => "ir_mode *store_mode",
 	init_attr => "attr->attr.ls_mode = store_mode;",
 	latency   => 2,
@@ -2111,45 +2111,93 @@ vfst => {
 	attr_type => "ia32_x87_attr_t",
 },
 
-vfild => {
+fild => {
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ],
-	               out => [ "vfp", "none", "none" ] },
+	               out => [ "fp", "none", "none" ] },
 	outs      => [ "res", "unused", "M" ],
 	ins       => [ "base", "index", "mem" ],
+	emit      => 'fild%FM %AM',
 	latency   => 4,
 	units     => [ "VFP" ],
 	attr_type => "ia32_x87_attr_t",
 },
 
-vfist => {
+fist => {
 	op_flags  => [ "uses_memory", "fragile" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "vfp", "fpcw" ],
+	reg_req   => { in => [ "gp", "gp", "none", "fp", "fpcw" ],
 	               out => [ "none", "none", "none", "none" ] },
 	ins       => [ "base", "index", "mem", "val", "fpcw" ],
 	outs      => [ "dummy", "M", "X_regular", "X_except" ],
+	emit      => 'fist%FP%FM %AM',
 	latency   => 4,
 	units     => [ "VFP" ],
 	attr_type => "ia32_x87_attr_t",
 },
 
 # SSE3 fisttp instruction
-vfisttp => {
+fisttp => {
 	op_flags  => [ "uses_memory", "fragile" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "vfp" ],
+	reg_req   => { in => [ "gp", "gp", "none", "fp" ],
 	               out => [ "in_r4", "none", "none", "none" ]},
 	ins       => [ "base", "index", "mem", "val" ],
 	outs      => [ "res", "M", "X_regular", "X_except" ],
+	emit      => 'fisttp%FM %AM',
 	latency   => 4,
 	units     => [ "VFP" ],
 	attr_type => "ia32_x87_attr_t",
 },
 
-vfldz => {
+fldz => {
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "vfp" ] },
+	reg_req   => { out => [ "fp" ] },
+	outs      => [ "res" ],
+	emit      => 'fldz',
+	latency   => 4,
+	units     => [ "VFP" ],
+	mode      => $mode_fp87,
+	attr_type => "ia32_x87_attr_t",
+},
+
+fld1 => {
+	irn_flags => [ "rematerializable" ],
+	reg_req   => { out => [ "fp" ] },
+	outs      => [ "res" ],
+	emit      => 'fld1',
+	latency   => 4,
+	units     => [ "VFP" ],
+	mode      => $mode_fp87,
+	attr_type => "ia32_x87_attr_t",
+},
+
+fldpi => {
+	irn_flags => [ "rematerializable" ],
+	reg_req   => { out => [ "fp" ] },
+	outs      => [ "res" ],
+	emit      => 'fldpi',
+	latency   => 4,
+	units     => [ "VFP" ],
+	mode      => $mode_fp87,
+	attr_type => "ia32_x87_attr_t",
+},
+
+fldln2 => {
+	irn_flags => [ "rematerializable" ],
+	reg_req   => { out => [ "fp" ] },
+	outs      => [ "res" ],
+	emit      => 'fldln2',
+	latency   => 4,
+	units     => [ "VFP" ],
+	mode      => $mode_fp87,
+	attr_type => "ia32_x87_attr_t",
+},
+
+fldlg2 => {
+	irn_flags => [ "rematerializable" ],
+	reg_req   => { out => [ "fp" ] },
+	emit      => 'fldlg2',
 	outs      => [ "res" ],
 	latency   => 4,
 	units     => [ "VFP" ],
@@ -2157,9 +2205,10 @@ vfldz => {
 	attr_type => "ia32_x87_attr_t",
 },
 
-vfld1 => {
+fldl2t => {
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "vfp" ] },
+	reg_req   => { out => [ "fp" ] },
+	emit      => 'fldll2t',
 	outs      => [ "res" ],
 	latency   => 4,
 	units     => [ "VFP" ],
@@ -2167,9 +2216,10 @@ vfld1 => {
 	attr_type => "ia32_x87_attr_t",
 },
 
-vfldpi => {
+fldl2e => {
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "vfp" ] },
+	reg_req   => { out => [ "fp" ] },
+	emit      => 'fldl2e',
 	outs      => [ "res" ],
 	latency   => 4,
 	units     => [ "VFP" ],
@@ -2177,53 +2227,15 @@ vfldpi => {
 	attr_type => "ia32_x87_attr_t",
 },
 
-vfldln2 => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "vfp" ] },
-	outs      => [ "res" ],
-	latency   => 4,
-	units     => [ "VFP" ],
-	mode      => $mode_fp87,
-	attr_type => "ia32_x87_attr_t",
-},
-
-vfldlg2 => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "vfp" ] },
-	outs      => [ "res" ],
-	latency   => 4,
-	units     => [ "VFP" ],
-	mode      => $mode_fp87,
-	attr_type => "ia32_x87_attr_t",
-},
-
-vfldl2t => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "vfp" ] },
-	outs      => [ "res" ],
-	latency   => 4,
-	units     => [ "VFP" ],
-	mode      => $mode_fp87,
-	attr_type => "ia32_x87_attr_t",
-},
-
-vfldl2e => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "vfp" ] },
-	outs      => [ "res" ],
-	latency   => 4,
-	units     => [ "VFP" ],
-	mode      => $mode_fp87,
-	attr_type => "ia32_x87_attr_t",
-},
-
-vFucomFnstsw => {
+FucomFnstsw => {
 # we can't allow to rematerialize this node so we don't
 #  accidently produce Phi(Fucom, Fucom(ins_permuted))
 #	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "vfp", "vfp" ], out => [ "eax" ] },
+	reg_req   => { in => [ "fp", "fp" ], out => [ "eax" ] },
 	ins       => [ "left", "right" ],
 	outs      => [ "flags" ],
+	emit      => "fucom%FP %F0\n".
+	             "fnstsw %%ax",
 	attr      => "bool ins_permuted",
 	init_attr => "attr->attr.data.ins_permuted = ins_permuted;",
 	latency   => 3,
@@ -2232,24 +2244,44 @@ vFucomFnstsw => {
 	mode      => $mode_gp
 },
 
-vFucomi => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "vfp", "vfp" ], out => [ "eflags" ] },
-	ins       => [ "left", "right" ],
-	outs      => [ "flags" ],
-	attr      => "bool ins_permuted",
-	init_attr => "attr->attr.data.ins_permuted = ins_permuted;",
-	latency   => 3,
-	units     => [ "VFP" ],
-	attr_type => "ia32_x87_attr_t",
-	mode      => $mode_gp
-},
-
-vFtstFnstsw => {
+FucomppFnstsw => {
+# we can't allow to rematerialize this node so we don't
+#  accidently produce Phi(Fucom, Fucom(ins_permuted))
 #	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "vfp" ], out => [ "eax" ] },
+	reg_req   => { in => [ "fp", "fp" ], out => [ "eax" ] },
+	ins       => [ "left", "right" ],
+	outs      => [ "flags" ],
+	emit      => "fucompp\n".
+	             "fnstsw %%ax",
+	attr      => "bool ins_permuted",
+	init_attr => "attr->attr.data.ins_permuted = ins_permuted;",
+	latency   => 3,
+	units     => [ "VFP" ],
+	attr_type => "ia32_x87_attr_t",
+	mode      => $mode_gp
+},
+
+Fucomi => {
+	irn_flags => [ "rematerializable" ],
+	reg_req   => { in => [ "fp", "fp" ], out => [ "eflags" ] },
+	ins       => [ "left", "right" ],
+	outs      => [ "flags" ],
+	emit      => 'fucom%FPi %F0',
+	attr      => "bool ins_permuted",
+	init_attr => "attr->attr.data.ins_permuted = ins_permuted;",
+	latency   => 3,
+	units     => [ "VFP" ],
+	attr_type => "ia32_x87_attr_t",
+	mode      => $mode_gp
+},
+
+FtstFnstsw => {
+#	irn_flags => [ "rematerializable" ],
+	reg_req   => { in => [ "fp" ], out => [ "eax" ] },
 	ins       => [ "left" ],
 	outs      => [ "flags" ],
+	emit      => "ftst\n".
+	             "fnstsw %%ax",
 	attr      => "bool ins_permuted",
 	init_attr => "attr->attr.data.ins_permuted = ins_permuted;",
 	latency   => 3,
@@ -2267,272 +2299,6 @@ Sahf => {
 	latency   => 1,
 	units     => [ "GP" ],
 	mode      => $mode_flags,
-},
-
-fadd => {
-	state     => "exc_pinned",
-	emit      => 'fadd%FM %AF',
-	latency   => 4,
-	attr_type => "ia32_x87_attr_t",
-	constructors => {},
-},
-
-faddp => {
-	state     => "exc_pinned",
-	emit      => 'faddp%FM %AF',
-	latency   => 4,
-	attr_type => "ia32_x87_attr_t",
-	constructors => {},
-},
-
-fmul => {
-	state     => "exc_pinned",
-	emit      => 'fmul%FM %AF',
-	latency   => 4,
-	attr_type => "ia32_x87_attr_t",
-	constructors => {},
-},
-
-fmulp => {
-	state     => "exc_pinned",
-	emit      => 'fmulp%FM %AF',,
-	latency   => 4,
-	attr_type => "ia32_x87_attr_t",
-	constructors => {},
-},
-
-fsub => {
-	state     => "exc_pinned",
-	emit      => 'fsub%FM %AF',
-	latency   => 4,
-	attr_type => "ia32_x87_attr_t",
-	constructors => {},
-},
-
-# Note: gas is strangely buggy: fdivrp and fdivp as well as fsubrp and fsubp
-#       are swapped, we work this around in the emitter...
-
-fsubp => {
-	state     => "exc_pinned",
-# see note about gas bugs
-	emit      => 'fsubrp%FM %AF',
-	latency   => 4,
-	attr_type => "ia32_x87_attr_t",
-	constructors => {},
-},
-
-fsubr => {
-	state     => "exc_pinned",
-	irn_flags => [ "rematerializable" ],
-	emit      => 'fsubr%FM %AF',
-	latency   => 4,
-	attr_type => "ia32_x87_attr_t",
-	constructors => {},
-},
-
-fsubrp => {
-	state     => "exc_pinned",
-	irn_flags => [ "rematerializable" ],
-# see note about gas bugs before fsubp
-	emit      => 'fsubp%FM %AF',
-	latency   => 4,
-	attr_type => "ia32_x87_attr_t",
-	constructors => {},
-},
-
-fprem => {
-	emit      => 'fprem1',
-	latency   => 20,
-	attr_type => "ia32_x87_attr_t",
-	constructors => {},
-},
-
-# this node is just here, to keep the simulator running
-# we can omit this when a fprem simulation function exists
-fpremp => {
-	emit      => 'fprem1\n'.
-	             'fstp %F0',
-	latency   => 20,
-	attr_type => "ia32_x87_attr_t",
-	constructors => {},
-},
-
-fdiv => {
-	state     => "exc_pinned",
-	emit      => 'fdiv%FM %AF',
-	latency   => 20,
-	attr_type => "ia32_x87_attr_t",
-	constructors => {},
-},
-
-fdivp => {
-	state     => "exc_pinned",
-# see note about gas bugs before fsubp
-	emit      => 'fdivrp%FM %AF',
-	latency   => 20,
-	attr_type => "ia32_x87_attr_t",
-	constructors => {},
-},
-
-fdivr => {
-	state     => "exc_pinned",
-	emit      => 'fdivr%FM %AF',
-	latency   => 20,
-	attr_type => "ia32_x87_attr_t",
-	constructors => {},
-},
-
-fdivrp => {
-	state     => "exc_pinned",
-# see note about gas bugs before fsubp
-	emit      => 'fdivp%FM %AF',
-	latency   => 20,
-	attr_type => "ia32_x87_attr_t",
-	constructors => {},
-},
-
-fabs => {
-	emit      => 'fabs',
-	latency   => 4,
-	attr_type => "ia32_x87_attr_t",
-	constructors => {},
-},
-
-fchs => {
-	op_flags  => [ "keep" ],
-	irn_flags => [ "rematerializable" ],
-	emit      => 'fchs',
-	latency   => 4,
-	attr_type => "ia32_x87_attr_t",
-	constructors => {},
-},
-
-fld => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	emit      => 'fld%FM %AM',
-	attr_type => "ia32_x87_attr_t",
-	latency   => 2,
-	constructors => {},
-},
-
-fst => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	emit      => 'fst%FM %AM',
-	mode      => "mode_M",
-	attr_type => "ia32_x87_attr_t",
-	latency   => 2,
-	constructors => {},
-},
-
-fstp => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	emit      => 'fstp%FM %AM',
-	mode      => "mode_M",
-	attr_type => "ia32_x87_attr_t",
-	latency   => 2,
-	constructors => {},
-},
-
-fild => {
-	state     => "exc_pinned",
-	emit      => 'fild%FM %AM',
-	attr_type => "ia32_x87_attr_t",
-	latency   => 2,
-	constructors => {},
-},
-
-fist => {
-	state     => "exc_pinned",
-	emit      => 'fist%FM %AM',
-	mode      => "mode_M",
-	attr_type => "ia32_x87_attr_t",
-	latency   => 2,
-	constructors => {},
-},
-
-fistp => {
-	state     => "exc_pinned",
-	emit      => 'fistp%FM %AM',
-	mode      => "mode_M",
-	attr_type => "ia32_x87_attr_t",
-	latency   => 2,
-	constructors => {},
-},
-
-# SSE3 fisttp instruction
-fisttp => {
-	state     => "exc_pinned",
-	emit      => 'fisttp%FM %AM',
-	mode      => "mode_M",
-	attr_type => "ia32_x87_attr_t",
-	latency   => 2,
-	constructors => {},
-},
-
-fldz => {
-	op_flags  =>  [ "constlike", "keep" ],
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "vfp" ] },
-	emit      => 'fldz',
-	attr_type => "ia32_x87_attr_t",
-	latency   => 2,
-},
-
-fld1 => {
-	op_flags  => [ "constlike", "keep" ],
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "vfp" ] },
-	emit      => 'fld1',
-	attr_type => "ia32_x87_attr_t",
-	latency   => 2,
-},
-
-fldpi => {
-	op_flags  => [ "constlike", "keep" ],
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "vfp" ] },
-	emit      => 'fldpi',
-	attr_type => "ia32_x87_attr_t",
-	latency   => 2,
-},
-
-fldln2 => {
-	op_flags  => [ "constlike", "keep" ],
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "vfp" ] },
-	emit      => 'fldln2',
-	attr_type => "ia32_x87_attr_t",
-	latency   => 2,
-},
-
-fldlg2 => {
-	op_flags  => [ "constlike", "keep" ],
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "vfp" ] },
-	emit      => 'fldlg2',
-	attr_type => "ia32_x87_attr_t",
-	latency   => 2,
-},
-
-fldl2t => {
-	op_flags  => [ "constlike", "keep" ],
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "vfp" ] },
-	emit      => 'fldll2t',
-	attr_type => "ia32_x87_attr_t",
-	latency   => 2,
-},
-
-fldl2e => {
-	op_flags  => [ "constlike", "keep" ],
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { out => [ "vfp" ] },
-	emit      => 'fldl2e',
-	attr_type => "ia32_x87_attr_t",
-	latency   => 2,
 },
 
 # fxch, fpush, fpop
@@ -2560,7 +2326,7 @@ fpush => {
 },
 
 fpushCopy => {
-	reg_req   => { in => [ "vfp"], out => [ "vfp" ] },
+	reg_req   => { in => [ "fp"], out => [ "fp" ] },
 	cmp_attr  => "return 1;",
 	emit      => 'fld %F0',
 	attr_type => "ia32_x87_attr_t",
@@ -2605,52 +2371,6 @@ femms => {
 	attr_type => "ia32_x87_attr_t",
 	mode      => "mode_ANY",
 	latency   => 3,
-},
-
-FucomFnstsw => {
-	reg_req   => { },
-	emit      => "fucom %F1\n".
-	             "fnstsw %%ax",
-	attr_type => "ia32_x87_attr_t",
-	latency   => 2,
-},
-
-FucompFnstsw => {
-	reg_req   => { },
-	emit      => "fucomp %F1\n".
-	             "fnstsw %%ax",
-	attr_type => "ia32_x87_attr_t",
-	latency   => 2,
-},
-
-FucomppFnstsw => {
-	reg_req   => { },
-	emit      => "fucompp\n".
-	             "fnstsw %%ax",
-	attr_type => "ia32_x87_attr_t",
-	latency   => 2,
-},
-
-Fucomi => {
-	reg_req   => { },
-	emit      => 'fucomi %F1',
-	attr_type => "ia32_x87_attr_t",
-	latency   => 1,
-},
-
-Fucompi => {
-	reg_req   => { },
-	emit      => 'fucompi %F1',
-	attr_type => "ia32_x87_attr_t",
-	latency   => 1,
-},
-
-FtstFnstsw => {
-	reg_req   => { },
-	emit      => "ftst\n".
-	             "fnstsw %%ax",
-	attr_type => "ia32_x87_attr_t",
-	latency   => 2,
 },
 
 # Spilling and reloading of SSE registers, hardcoded, not generated #

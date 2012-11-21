@@ -47,7 +47,7 @@
 #include "irtools.h"
 #include "error.h"
 #include "list.h"
-#include "statev.h"
+#include "statev_t.h"
 
 #include "bearch.h"
 #include "beifg.h"
@@ -160,7 +160,7 @@ static co_mst_irn_t *co_mst_irn_init(co_mst_env_t *env, const ir_node *irn)
 	res->tmp_col       = -1;
 	res->int_neighs    = NULL;
 	res->int_aff_neigh = 0;
-	res->col           = arch_register_get_index(arch_get_irn_register(irn));
+	res->col           = arch_get_irn_register(irn)->index;
 	res->init_col      = res->col;
 	INIT_LIST_HEAD(&res->list);
 

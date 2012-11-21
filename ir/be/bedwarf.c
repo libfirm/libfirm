@@ -171,13 +171,6 @@ static unsigned get_sleb128_size(long value)
 	return size;
 }
 
-static void emit_string(const char *string)
-{
-	/* TODO: quote special chars */
-	be_emit_irprintf("\t.asciz \"%s\"\n", string);
-	be_emit_write_line();
-}
-
 static void emit_ref(const ir_entity *entity)
 {
 	be_emit_cstring("\t.long ");
@@ -279,12 +272,12 @@ static void emit_line_info(void)
 		emit_uleb128(1);
 
 		/* include directory list */
-		emit_string("/foo/bar");
+		be_gas_emit_cstring("/foo/bar");
 		emit_int8(0);
 
 		/* file list */
 		for (i = 0; i < ARR_LEN(env.file_list); ++i) {
-			emit_string(env.file_list[i]);
+			be_gas_emit_cstring(env.file_list[i]);
 			emit_uleb128(1); /* directory */
 			emit_uleb128(0); /* modification time */
 			emit_uleb128(0); /* file length */
@@ -317,7 +310,7 @@ static void emit_pubnames(void)
 		be_emit_irprintf("\t.long %sE%ld - %sinfo_begin\n",
 		                 be_gas_get_private_prefix(),
 		                 get_entity_nr(entity), be_gas_get_private_prefix());
-		emit_string(get_entity_name(entity));
+		be_gas_emit_cstring(get_entity_name(entity));
 	}
 	emit_int32(0);
 
@@ -505,7 +498,7 @@ void be_dwarf_method_before(const ir_entity *entity,
 
 	emit_entity_label(entity);
 	emit_uleb128(n_ress == 0 ? abbrev_void_subprogram : abbrev_subprogram);
-	emit_string(get_entity_ld_name(entity));
+	be_gas_emit_cstring(get_entity_ld_name(entity));
 	emit_dbginfo(get_entity_dbg_info(entity));
 	if (n_ress > 0) {
 		ir_type *res = get_method_res_type(type, 0);
@@ -588,7 +581,7 @@ static void emit_base_type(const ir_type *type)
 		panic("mode not implemented yet");
 	}
 	emit_int8(get_mode_size_bytes(mode));
-	emit_string(buf);
+	be_gas_emit_cstring(buf);
 }
 
 static void emit_pointer_type_abbrev(void)
@@ -748,7 +741,7 @@ static void emit_compound_type(const ir_type *type)
 		}
 
 		emit_type_address(member_type);
-		emit_string(get_entity_name(member));
+		be_gas_emit_cstring(get_entity_name(member));
 		emit_dbginfo(get_entity_dbg_info(member));
 		assert(offset >= 0);
 		emit_int8(1 + get_uleb128_size(offset));
@@ -863,7 +856,7 @@ void be_dwarf_variable(const ir_entity *entity)
 
 	emit_entity_label(entity);
 	emit_uleb128(abbrev_variable);
-	emit_string(get_entity_ld_name(entity));
+	be_gas_emit_cstring(get_entity_ld_name(entity));
 	emit_type_address(type);
 	emit_int8(is_extern_entity(entity));
 	emit_dbginfo(get_entity_dbg_info(entity));
@@ -915,24 +908,25 @@ void be_dwarf_unit_begin(const char *filename)
 	emit_label("info_section_begin");
 	emit_label("info_begin");
 
+	const backend_params *be_params = be_get_backend_param();
+
 	/* length of compilation unit info */
 	emit_size("compile_unit_begin", "compile_unit_end");
 	emit_label("compile_unit_begin");
 	emit_int16(3);   /* dwarf version */
 	emit_address("abbrev_begin");
-	emit_int8(4);    /* pointer size, TODO: query backend */
+	emit_int8(be_params->machine_size / 8); /* pointer size */
 
 	/* compile_unit die */
 	emit_uleb128(abbrev_compile_unit);
 	emit_address("line_section_begin");
 	emit_string_printf("libFirm (%u.%u %s)", ir_get_version_major(),
-	                   ir_get_version_minor(),
-	                   ir_get_version_revision());
-	emit_string(filename);
+	                   ir_get_version_minor(), ir_get_version_revision());
+	be_gas_emit_cstring(filename);
 	if (language != 0)
 		emit_int16(language);
 	if (comp_dir != NULL)
-		emit_string(comp_dir);
+		be_gas_emit_cstring(comp_dir);
 
 	/* tell gas to emit cfi in debug_frame
 	 * TODO: if we produce exception handling code then this should be

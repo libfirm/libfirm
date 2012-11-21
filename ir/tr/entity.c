@@ -99,16 +99,15 @@ ir_entity *new_d_entity(ir_type *owner, ident *name, ir_type *type,
 	if (is_Method_type(type)) {
 		ir_graph *irg = get_const_code_irg();
 		symconst_symbol sym;
-		ir_mode *mode = is_Method_type(type) ? mode_P_code : mode_P_data;
 		res = intern_new_entity(owner, IR_ENTITY_METHOD, name, type, db);
 		sym.entity_p            = res;
-		set_atomic_ent_value(res, new_r_SymConst(irg, mode, sym, symconst_addr_ent));
-		res->linkage            = IR_LINKAGE_CONSTANT;
-		res->attr.mtd_attr.irg_add_properties = mtp_property_inherited;
-		res->attr.mtd_attr.vtable_number      = IR_VTABLE_NUM_NOT_SET;
-		res->attr.mtd_attr.param_access       = NULL;
-		res->attr.mtd_attr.param_weight       = NULL;
-		res->attr.mtd_attr.irg                = NULL;
+		set_atomic_ent_value(res, new_r_SymConst(irg, mode_P_code, sym, symconst_addr_ent));
+		res->linkage                     = IR_LINKAGE_CONSTANT;
+		res->attr.mtd_attr.properties    = get_method_additional_properties(type);
+		res->attr.mtd_attr.vtable_number = IR_VTABLE_NUM_NOT_SET;
+		res->attr.mtd_attr.param_access  = NULL;
+		res->attr.mtd_attr.param_weight  = NULL;
+		res->attr.mtd_attr.irg           = NULL;
 	} else if (owner != NULL
 	           && (is_compound_type(owner) && !(owner->flags & tf_segment))) {
 		res = intern_new_entity(owner, IR_ENTITY_COMPOUND_MEMBER, name, type, db);
@@ -583,10 +582,18 @@ ir_node *copy_const_value(dbg_info *dbg, ir_node *n, ir_node *block)
 		nn = new_rd_Conv(dbg, block,
 		                 copy_const_value(dbg, get_Conv_op(n), block), m);
 		break;
+	case iro_Minus:
+		nn = new_rd_Minus(dbg, block,
+		                  copy_const_value(dbg, get_Minus_op(n), block), m);
+		break;
+	case iro_Not:
+		nn = new_rd_Not(dbg, block,
+		                copy_const_value(dbg, get_Not_op(n), block), m);
+		break;
 	case iro_Unknown:
 		nn = new_r_Unknown(irg, m); break;
 	default:
-		panic("opcode invalid or not implemented");
+		panic("opcode invalid or not implemented %+F", n);
 	}
 	return nn;
 }
@@ -966,59 +973,28 @@ int (entity_not_visited)(const ir_entity *ent)
 
 mtp_additional_properties get_entity_additional_properties(const ir_entity *ent)
 {
-	ir_graph *irg;
-
 	assert(is_method_entity(ent));
-
-	/* first check, if the graph has additional properties */
-	irg = get_entity_irg(ent);
-
-	if (irg)
-		return get_irg_additional_properties(irg);
-
-	if (ent->attr.mtd_attr.irg_add_properties & mtp_property_inherited)
-		return get_method_additional_properties(get_entity_type(ent));
-
-	return ent->attr.mtd_attr.irg_add_properties;
+	return ent->attr.mtd_attr.properties;
 }
 
 void set_entity_additional_properties(ir_entity *ent, mtp_additional_properties property_mask)
 {
-	ir_graph *irg;
-
 	assert(is_method_entity(ent));
+	/* you mustn't set less properties than the entities type */
+	assert((get_method_additional_properties(get_entity_type(ent)) & ~property_mask) == 0);
 
-	/* first check, if the graph exists */
-	irg = get_entity_irg(ent);
-	if (irg)
-		set_irg_additional_properties(irg, property_mask);
-	else {
-		/* do not allow to set the mtp_property_inherited flag or
-		 * the automatic inheritance of flags will not work */
-		ent->attr.mtd_attr.irg_add_properties = property_mask & ~mtp_property_inherited;
-	}
+	/* do not allow to set the mtp_property_inherited flag or
+	 * the automatic inheritance of flags will not work */
+	ent->attr.mtd_attr.properties = property_mask;
 }
 
 void add_entity_additional_properties(ir_entity *ent, mtp_additional_properties properties)
 {
-	ir_graph *irg;
-
 	assert(is_method_entity(ent));
 
-	/* first check, if the graph exists */
-	irg = get_entity_irg(ent);
-	if (irg)
-		add_irg_additional_properties(irg, properties);
-	else {
-		mtp_additional_properties mask = ent->attr.mtd_attr.irg_add_properties;
-
-		if (mask & mtp_property_inherited)
-			mask = get_method_additional_properties(get_entity_type(ent));
-
-		/* do not allow to set the mtp_property_inherited flag or
-		 * the automatic inheritance of flags will not work */
-		ent->attr.mtd_attr.irg_add_properties = mask | (properties & ~mtp_property_inherited);
-	}
+	/* do not allow to set the mtp_property_inherited flag or
+	 * the automatic inheritance of flags will not work */
+	ent->attr.mtd_attr.properties |= properties;
 }
 
 ir_type *(get_entity_repr_class)(const ir_entity *ent)

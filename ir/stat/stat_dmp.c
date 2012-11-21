@@ -114,7 +114,7 @@ static const struct {
 	{ (hook_opt_kind)FS_OPT_MUX_TO_MIN,     "algebraic simplification: Mux(a < b, a, b) = Min(a,b)" },
 	{ (hook_opt_kind)FS_OPT_MUX_TO_MAX,     "algebraic simplification: Mux(a > b, a, b) = Max(a,b)" },
 	{ (hook_opt_kind)FS_OPT_MUX_TO_BITOP,   "algebraic simplification: Mux((a & 2^x) ==/!= 0, 2^x, 0) = (a & 2^x) (xor 2^x)" },
-	{ (hook_opt_kind)FS_OPT_IDEM_UNARY,     "algebraic simplification: Idempotent unary operation" },
+	{ (hook_opt_kind)FS_OPT_INVOLUTION,     "algebraic simplification: OP(OP(x)) = x" },
 	{ (hook_opt_kind)FS_OPT_MINUS_NOT,      "algebraic simplification: -(~x) = x + 1" },
 	{ (hook_opt_kind)FS_OPT_NOT_MINUS_1,    "algebraic simplification: ~(x - 1) = -x" },
 	{ (hook_opt_kind)FS_OPT_NOT_PLUS_1,     "algebraic simplification: ~x + 1 = -x" },
@@ -754,7 +754,6 @@ static void csv_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 		ir_graph *const_irg = get_const_code_irg();
 
 		if (entry->irg == const_irg) {
-			name = "<Const code Irg>";
 			return;
 		} else {
 			if (entry->ent)

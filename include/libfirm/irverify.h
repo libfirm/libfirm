@@ -106,13 +106,6 @@ enum verify_bad_flags_t {
  */
 FIRM_API int irg_verify_bads(ir_graph *irg, int flags);
 
-/**
- *  Enable/disable verification of Load/Store nodes with
- *  its entities. If disabled, Store(SymConst(array)) will be allowed
- *  (C-frontend builds this :-)
- */
-FIRM_API void verify_enable_entity_tests(int enable);
-
 /** @} */
 
 #include "end.h"

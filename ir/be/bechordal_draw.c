@@ -215,7 +215,7 @@ static void block_dims_walker(ir_node *block, void *data)
 	list_for_each_entry_reverse(border_t, b, head, list) {
 		ir_node               *irn = b->irn;
 		const arch_register_t *reg = arch_get_irn_register(irn);
-		int                   col  = arch_register_get_index(reg);
+		int                    col = reg->index;
 
 		dims->max_step  = MAX(dims->max_step, b->step);
 		dims->max_color = MAX(dims->max_color, col);
@@ -335,9 +335,8 @@ static void draw_block(ir_node *bl, void *data)
 	list_for_each_entry(border_t, b, head, list) {
 		if (b->is_def) {
 			const arch_register_t *reg = arch_get_irn_register(b->irn);
-			int col      = arch_register_get_index(reg);
 			int live_out = be_is_live_out(lv, bl, b->irn);
-			int x        = (col + 1) * opts->h_inter_gap;
+			int x        = (reg->index + 1) * opts->h_inter_gap;
 			int ystart   = (b->step) * opts->v_inter_gap;
 			int ystop    = (b->other_end->step) * opts->v_inter_gap + (live_out ? 0 : opts->v_inter_gap / 2);
 
@@ -362,9 +361,8 @@ static void draw_block(ir_node *bl, void *data)
 		be_lv_foreach(lv, bl, be_lv_state_in, irn) {
 			if (arch_irn_consider_in_reg_alloc(env->cls, irn)) {
 				const arch_register_t *reg = arch_get_irn_register(irn);
-				int     col = arch_register_get_index(reg);
-				int     x   = (col + 1) * opts->h_inter_gap;
-				color_t color;
+				int                    x   = (reg->index + 1) * opts->h_inter_gap;
+				color_t                color;
 
 				reg_to_color(env, bl, irn, &color);
 

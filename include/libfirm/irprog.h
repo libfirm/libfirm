@@ -163,16 +163,6 @@ FIRM_API ir_graph *get_irp_main_irg(void);
 /** Sets the main routine of the compiled program. */
 FIRM_API void set_irp_main_irg(ir_graph *main_irg);
 
-/** Adds irg to the list of ir graphs in the current irp. */
-FIRM_API void add_irp_irg(ir_graph *irg);
-
-/** Removes irg from the list of irgs and
-    shrinks the list by one. */
-FIRM_API void remove_irp_irg_from_list(ir_graph *irg);
-/** Removes irg from the list of irgs, deallocates it and
-    shrinks the list by one. */
-FIRM_API void remove_irp_irg(ir_graph *irg);
-
 /** returns the biggest not used irg index number */
 FIRM_API size_t get_irp_last_idx(void);
 
@@ -242,29 +232,6 @@ FIRM_API void set_irp_type(size_t pos, ir_type *typ);
  *   See also copy_const_code() in entity.h.
  */
 FIRM_API ir_graph *get_const_code_irg(void);
-
-/** The phase state for the program.
- *
- *  The phase state of the whole program is
- *   building:  if at least one graph is state_building
- *              or one type is incomplete.
- *   high:      all graphs are in state high or low, all types are constructed.
- *   low:       all graphs are in state low, all types are in state layout fixed.
- */
-FIRM_API irg_phase_state get_irp_phase_state(void);
-/** Sets the phase state of the program */
-FIRM_API void set_irp_phase_state(irg_phase_state s);
-
-/**
- * Creates an ir_prog pass for set_irp_phase_state().
- *
- * @param name   the name of this pass or NULL
- * @param state  the state to set
- *
- * @return  the newly created ir_prog pass
- */
-FIRM_API ir_prog_pass_t *set_irp_phase_state_pass(const char *name,
-                                                  irg_phase_state state);
 
 /** Returns callee info state for the whole program.
  * @see get_irg_callee_info_state() */

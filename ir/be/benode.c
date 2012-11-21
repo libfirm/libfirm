@@ -48,6 +48,8 @@
 #include "irprintf.h"
 #include "irgwalk.h"
 #include "iropt_t.h"
+#include "irbackedge_t.h"
+#include "irverify_t.h"
 
 #include "be_t.h"
 #include "belive_t.h"
@@ -239,10 +241,10 @@ static void init_node_attr(ir_node *node, int n_inputs, int n_outputs)
 	}
 }
 
-static void add_register_req_in(ir_node *node)
+static void add_register_req_in(ir_node *node, const arch_register_req_t *req)
 {
 	backend_info_t *info = be_get_info(node);
-	ARR_APP1(const arch_register_req_t*, info->in_reqs, arch_no_register_req);
+	ARR_APP1(const arch_register_req_t*, info->in_reqs, req);
 }
 
 ir_node *be_new_Spill(const arch_register_class_t *cls,
@@ -265,14 +267,6 @@ ir_node *be_new_Spill(const arch_register_class_t *cls,
 
 	be_node_set_reg_class_in(res, n_be_Spill_frame, cls_frame);
 	be_node_set_reg_class_in(res, n_be_Spill_val, cls);
-	/*
-	 * For spills and reloads, we return "none" as requirement for frame
-	 * pointer, so every input is ok. Some backends need this (STA).
-	 * Matze: we should investigate if this is really needed, this solution
-	 *        looks very hacky to me
-	 */
-	be_set_constr_in(res, n_be_Spill_frame, arch_no_register_req);
-
 	arch_set_irn_register_req_out(res, 0, arch_no_register_req);
 
 	return res;
@@ -301,14 +295,6 @@ ir_node *be_new_Reload(const arch_register_class_t *cls,
 	a->ent    = NULL;
 	a->offset = 0;
 	a->base.exc.pin_state = op_pin_state_pinned;
-
-	/*
-	 * For spills and reloads, we return "none" as requirement for frame
-	 * pointer, so every input is ok. Some backends need this (e.g. STA).
-	 * Matze: we should investigate if this is really needed, this solution
-	 *        looks very hacky to me
-	 */
-	be_set_constr_in(res, n_be_Reload_frame, arch_no_register_req);
 
 	return res;
 }
@@ -457,11 +443,6 @@ ir_node *be_get_Copy_op(const ir_node *cpy)
 	return get_irn_n(cpy, n_be_Copy_op);
 }
 
-void be_set_Copy_op(ir_node *cpy, ir_node *op)
-{
-	set_irn_n(cpy, n_be_Copy_op, op);
-}
-
 ir_node *be_new_Keep(ir_node *block, int n, ir_node *in[])
 {
 	int i;
@@ -475,8 +456,11 @@ ir_node *be_new_Keep(ir_node *block, int n, ir_node *in[])
 	attr->exc.pin_state = op_pin_state_pinned;
 
 	for (i = 0; i < n; ++i) {
-		add_irn_n(res, in[i]);
-		add_register_req_in(res);
+		ir_node *pred = in[i];
+		add_irn_n(res, pred);
+		const arch_register_req_t *req = arch_get_irn_register_req(pred);
+		req = req->cls != NULL ? req->cls->class_req : arch_no_register_req;
+		add_register_req_in(res, req);
 	}
 	keep_alive(res);
 
@@ -485,17 +469,15 @@ ir_node *be_new_Keep(ir_node *block, int n, ir_node *in[])
 
 void be_Keep_add_node(ir_node *keep, const arch_register_class_t *cls, ir_node *node)
 {
-	int n;
-
 	assert(be_is_Keep(keep));
-	n = add_irn_n(keep, node);
-	add_register_req_in(keep);
-	be_node_set_reg_class_in(keep, n, cls);
+	add_irn_n(keep, node);
+	add_register_req_in(keep, cls->class_req);
 }
 
 ir_node *be_new_Call(dbg_info *dbg, ir_graph *irg, ir_node *bl, ir_node *mem,
-		ir_node *sp, ir_node *ptr, int n_outs, int n, ir_node *in[],
-		ir_type *call_tp)
+		const arch_register_req_t *sp_req, ir_node *sp,
+		const arch_register_req_t *ptr_req, ir_node *ptr,
+		int n_outs, int n, ir_node *in[], ir_type *call_tp)
 {
 	be_call_attr_t *a;
 	int real_n = n_be_Call_first_arg + n;
@@ -515,6 +497,8 @@ ir_node *be_new_Call(dbg_info *dbg, ir_graph *irg, ir_node *bl, ir_node *mem,
 	a->call_tp            = call_tp;
 	a->pop                = 0;
 	a->base.exc.pin_state = op_pin_state_pinned;
+	be_set_constr_in(irn, n_be_Call_sp, sp_req);
+	be_set_constr_in(irn, n_be_Call_ptr, ptr_req);
 	return irn;
 }
 
@@ -741,6 +725,12 @@ ir_node *be_new_CopyKeep(ir_node *bl, ir_node *src, int n, ir_node *in_keep[])
 	attr->exc.pin_state = op_pin_state_floats;
 	be_node_set_reg_class_in(irn, 0, cls);
 	be_node_set_reg_class_out(irn, 0, cls);
+	for (int i = 0; i < n; ++i) {
+		ir_node *pred = in_keep[i];
+		const arch_register_req_t *req = arch_get_irn_register_req(pred);
+		req = req->cls != NULL ? req->cls->class_req : arch_no_register_req;
+		be_set_constr_in(irn, i+1, req);
+	}
 
 	return irn;
 }
@@ -840,11 +830,11 @@ const arch_register_req_t *be_create_reg_req(struct obstack *obst,
 		const arch_register_t *reg, arch_register_req_type_t additional_types)
 {
 	arch_register_req_t         *req = OALLOC(obst, arch_register_req_t);
-	const arch_register_class_t *cls = arch_register_get_class(reg);
+	const arch_register_class_t *cls = reg->reg_class;
 	unsigned                    *limited_bitset;
 
 	limited_bitset = rbitset_obstack_alloc(obst, arch_register_class_n_regs(cls));
-	rbitset_set(limited_bitset, arch_register_get_index(reg));
+	rbitset_set(limited_bitset, reg->index);
 
 	req->type    = arch_register_req_type_limited | additional_types;
 	req->cls     = cls;
@@ -997,7 +987,7 @@ static int get_start_reg_index(ir_graph *irg, const arch_register_t *reg)
 			= arch_get_irn_register_req_out(start, i);
 		if (! (out_req->type & arch_register_req_type_limited))
 			continue;
-		if (out_req->cls != arch_register_get_class(reg))
+		if (out_req->cls != reg->reg_class)
 			continue;
 		if (!rbitset_is_set(out_req->limited, reg->index))
 			continue;
@@ -1010,7 +1000,7 @@ ir_node *be_get_initial_reg_value(ir_graph *irg, const arch_register_t *reg)
 {
 	int      i     = get_start_reg_index(irg, reg);
 	ir_node *start = get_irg_start(irg);
-	ir_mode *mode  = arch_register_class_mode(arch_register_get_class(reg));
+	ir_mode *mode  = arch_register_class_mode(reg->reg_class);
 
 	foreach_out_edge(start, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
@@ -1032,7 +1022,7 @@ int be_find_return_reg_input(ir_node *ret, const arch_register_t *reg)
 		const arch_register_req_t *req = arch_get_irn_register_req_in(ret, i);
 		if (! (req->type & arch_register_req_type_limited))
 			continue;
-		if (req->cls != arch_register_get_class(reg))
+		if (req->cls != reg->reg_class)
 			continue;
 		if (!rbitset_is_set(req->limited, reg->index))
 			continue;
@@ -1081,7 +1071,8 @@ ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
 	backend_info_t *info;
 	int             i;
 
-	ir_node *phi = new_r_Phi(block, n_ins, ins, mode);
+	ir_node *phi = new_ir_node(NULL, irg, block, op_Phi, mode, n_ins, ins);
+	phi->attr.phi.u.backedge = new_backedge_arr(irg->obst, n_ins);
 	info = be_get_info(phi);
 	info->out_infos = NEW_ARR_D(reg_out_info_t, obst, 1);
 	memset(info->out_infos, 0, 1 * sizeof(info->out_infos[0]));
@@ -1091,7 +1082,8 @@ ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
 	for (i = 0; i < n_ins; ++i) {
 		info->in_reqs[i] = req;
 	}
-
+	irn_verify_irg(phi, irg);
+	phi = optimize_node(phi);
 	return phi;
 }
 

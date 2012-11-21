@@ -30,7 +30,7 @@
 #include "irtools.h"
 #include "irprintf.h"
 
-#include "bestatevent.h"
+#include "statev_t.h"
 #include "beirg.h"
 #include "bemodule.h"
 #include "error.h"
@@ -280,10 +280,10 @@ lpp_sol_state_t ilp_go(ilp_env_t *ienv)
 
 	lpp_solve(ienv->lp, be_options.ilp_server, be_options.ilp_solver);
 
-	//be_stat_ev_dbl("co_ilp_objval",     ienv->lp->objval);
-	//be_stat_ev_dbl("co_ilp_best_bound", ienv->lp->best_bound);
-	be_stat_ev    ("co_ilp_iter",       lpp_get_iter_cnt(ienv->lp));
-	be_stat_ev_dbl("co_ilp_sol_time",   lpp_get_sol_time(ienv->lp));
+	//stat_ev_dbl("co_ilp_objval",     ienv->lp->objval);
+	//stat_ev_dbl("co_ilp_best_bound", ienv->lp->best_bound);
+	stat_ev_int("co_ilp_iter",       lpp_get_iter_cnt(ienv->lp));
+	stat_ev_dbl("co_ilp_sol_time",   lpp_get_sol_time(ienv->lp));
 
 	ienv->apply(ienv);
 

@@ -53,7 +53,7 @@
 #include "belive_t.h"
 #include "benode.h"
 #include "bechordal_t.h"
-#include "bestatevent.h"
+#include "statev_t.h"
 #include "bessaconstr.h"
 #include "beirg.h"
 #include "beirgmod.h"

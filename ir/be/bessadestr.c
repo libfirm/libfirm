@@ -48,8 +48,7 @@
 #include "benode.h"
 #include "besched.h"
 #include "bespillutil.h"
-#include "bessadestr.h"
-#include "bestatevent.h"
+#include "statev_t.h"
 #include "beirg.h"
 #include "beintlive_t.h"
 
@@ -69,7 +68,7 @@ static be_chordal_env_t *the_env = NULL;
 
 static const char *get_reg_name(unsigned index)
 {
-	return arch_register_get_name(arch_register_for_index(the_env->cls, index));
+	return arch_register_for_index(the_env->cls, index)->name;
 }
 
 static void print_parcopy(unsigned *permutation_orig, unsigned *n_used_orig)
@@ -580,7 +579,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 			}
 
 			perm = be_new_Perm(chordal_env->cls, pred_bl, n_projs, in);
-			be_stat_ev("phi_perm", n_projs);
+			stat_ev_int("phi_perm", n_projs);
 
 			insert_after = pred_bl;
 			do {
@@ -593,13 +592,11 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 			 * Register allocation is copied from the former phi
 			 * arguments to the projs (new phi arguments).
 			 */
-			insert_after = perm;
 			foreach_set(arg_set, perm_proj_t, pp) {
 				ir_node *proj = new_r_Proj(perm, get_irn_mode(pp->arg), pp->pos);
 				pp->proj = proj;
 				assert(arch_get_irn_register(pp->arg));
 				arch_set_irn_register(proj, arch_get_irn_register(pp->arg));
-				insert_after = proj;
 				DBG((dbg, LEVEL_2, "Copy register assignment %s from %+F to %+F\n", arch_get_irn_register(pp->arg)->name, pp->arg, pp->proj));
 			}
 

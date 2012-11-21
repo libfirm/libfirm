@@ -387,7 +387,7 @@ EXTRA_DIST = \
 	stat/pattern_dmp.h \
 	stat/stat_dmp.h \
 	stat/stat_timing.h \
-	stat/statev.h \
+	stat/statev_t.h \
 	tr/compound_path_t.h \
 	tr/entity_t.h \
 	tr/tpop_t.h \

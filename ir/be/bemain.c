@@ -481,7 +481,7 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 	/* Ensure, that the ir_edges are computed. */
 	assure_edges(irg);
 
-	set_irg_phase_state(irg, phase_backend);
+	add_irg_constraints(irg, IR_GRAPH_CONSTRAINT_BACKEND);
 	be_info_init_irg(irg);
 
 	dump(DUMP_INITIAL, irg, "prepared");
@@ -527,16 +527,13 @@ void be_lower_for_target(void)
 
 	initialize_isa();
 
-	/* shouldn't lower program twice */
-	assert(get_irp_phase_state() != phase_low);
-
 	isa_if->lower_for_target();
 	/* set the phase to low */
 	for (i = get_irp_n_irgs(); i > 0;) {
 		ir_graph *irg = get_irp_irg(--i);
-		set_irg_phase_state(irg, phase_low);
+		assert(!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_TARGET_LOWERED));
+		add_irg_constraints(irg, IR_GRAPH_CONSTRAINT_TARGET_LOWERED);
 	}
-	set_irp_phase_state(phase_low);
 }
 
 /**
@@ -562,7 +559,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	be_timing = (be_options.timing == BE_TIME_ON);
 
 	/* perform target lowering if it didn't happen yet */
-	if (get_irp_phase_state() != phase_low)
+	if (get_irp_n_irgs() > 0 && !irg_is_constrained(get_irp_irg(0), IR_GRAPH_CONSTRAINT_TARGET_LOWERED))
 		be_lower_for_target();
 
 	if (be_timing) {
@@ -621,6 +618,9 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		assert(num_irgs == get_irp_n_irgs());
 	}
 
+	for (be_timer_id_t t = T_FIRST; t < T_LAST+1; ++t) {
+		ir_timer_init_parent(be_timers[t]);
+	}
 	if (!have_profile) {
 		be_timer_push(T_EXECFREQ);
 		for (i = 0; i < num_irgs; ++i) {
@@ -640,9 +640,9 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		current_ir_graph = irg;
 
 		if (stat_ev_enabled) {
-			stat_ev_ctx_push_fobj("bemain_irg", irg);
-			be_stat_ev("bemain_insns_start", be_count_insns(irg));
-			be_stat_ev("bemain_blocks_start", be_count_blocks(irg));
+			stat_ev_ctx_push_fmt("bemain_irg", "%+F", irg);
+			stat_ev_ull("bemain_insns_start", be_count_insns(irg));
+			stat_ev_ull("bemain_blocks_start", be_count_blocks(irg));
 		}
 
 		/* stop and reset timers */
@@ -652,10 +652,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_timer_push(T_VERIFY);
 		if (be_options.verify_option == BE_VERIFY_WARN) {
 			irg_verify(irg, VERIFY_ENFORCE_SSA);
-			be_check_dominance(irg);
 		} else if (be_options.verify_option == BE_VERIFY_ASSERT) {
 			assert(irg_verify(irg, VERIFY_ENFORCE_SSA) && "irg verification failed");
-			assert(be_check_dominance(irg) && "Dominance verification failed");
 		}
 		be_timer_pop(T_VERIFY);
 
@@ -688,23 +686,11 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		dump(DUMP_PREPARED, irg, "before-code-selection");
 
-		if (be_options.verify_option == BE_VERIFY_WARN) {
-			be_check_dominance(irg);
-		} else if (be_options.verify_option == BE_VERIFY_ASSERT) {
-			assert(be_check_dominance(irg) && "Dominance verification failed");
-		}
-
 		/* perform codeselection */
 		be_timer_push(T_CODEGEN);
 		if (arch_env->impl->prepare_graph != NULL)
 			arch_env->impl->prepare_graph(irg);
 		be_timer_pop(T_CODEGEN);
-
-		if (be_options.verify_option == BE_VERIFY_WARN) {
-			be_check_dominance(irg);
-		} else if (be_options.verify_option == BE_VERIFY_ASSERT) {
-			assert(be_check_dominance(irg) && "Dominance verification failed");
-		}
 
 		dump(DUMP_PREPARED, irg, "code-selection");
 
@@ -757,8 +743,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		if (stat_ev_enabled) {
 			stat_ev_dbl("bemain_costs_before_ra", be_estimate_irg_costs(irg));
-			be_stat_ev("bemain_insns_before_ra", be_count_insns(irg));
-			be_stat_ev("bemain_blocks_before_ra", be_count_blocks(irg));
+			stat_ev_ull("bemain_insns_before_ra", be_count_insns(irg));
+			stat_ev_ull("bemain_blocks_before_ra", be_count_blocks(irg));
 		}
 
 		/* Do register allocation */
@@ -776,20 +762,18 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		dump(DUMP_FINAL, irg, "finish");
 
 		if (stat_ev_enabled) {
-			be_stat_ev("bemain_insns_finish", be_count_insns(irg));
-			be_stat_ev("bemain_blocks_finish", be_count_blocks(irg));
+			stat_ev_ull("bemain_insns_finish", be_count_insns(irg));
+			stat_ev_ull("bemain_blocks_finish", be_count_blocks(irg));
 		}
 
 		/* check schedule and register allocation */
 		be_timer_push(T_VERIFY);
 		if (be_options.verify_option == BE_VERIFY_WARN) {
 			irg_verify(irg, VERIFY_ENFORCE_SSA);
-			be_check_dominance(irg);
 			be_verify_schedule(irg);
 			be_verify_register_allocation(irg);
 		} else if (be_options.verify_option == BE_VERIFY_ASSERT) {
 			assert(irg_verify(irg, VERIFY_ENFORCE_SSA) && "irg verification failed");
-			assert(be_check_dominance(irg) && "Dominance verification failed");
 			assert(be_verify_schedule(irg) && "Schedule verification failed");
 			assert(be_verify_register_allocation(irg)
 			       && "register allocation verification failed");
@@ -833,7 +817,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 				}
 			}
 			for (t = T_FIRST; t < T_LAST+1; ++t) {
-				ir_timer_stop(be_timers[t]);
 				ir_timer_reset(be_timers[t]);
 			}
 		}

@@ -250,14 +250,8 @@ static inline bool mode_needs_gp_reg(ir_mode *mode)
 
 static ir_node *gen_Phi(ir_node *node)
 {
+	ir_mode                   *mode = get_irn_mode(node);
 	const arch_register_req_t *req;
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
-	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_mode  *mode      = get_irn_mode(node);
-	ir_graph *irg       = get_irn_irg(node);
-	ir_node  *phi;
-
 	if (mode_needs_gp_reg(mode)) {
 		mode = mode_Iu;
 		req  = TEMPLATE_reg_classes[CLASS_TEMPLATE_gp].class_req;
@@ -265,14 +259,7 @@ static ir_node *gen_Phi(ir_node *node)
 		req = arch_no_register_req;
 	}
 
-	phi = new_ir_node(dbgi, irg, new_block, op_Phi, mode, get_irn_arity(node),
-	                  get_irn_in(node)+1);
-	copy_node_attr(irg, node, phi);
-	be_duplicate_deps(node, phi);
-
-	arch_set_irn_register_req_out(phi, 0, req);
-	be_enqueue_preds(node);
-	return phi;
+	return be_transform_phi(node, req);
 }
 
 static ir_node *gen_Proj_Start(ir_node *node)

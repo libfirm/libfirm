@@ -143,7 +143,7 @@ ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
 		edges_notify_edge(res, i - 1, res->in[i], NULL, irg);
 
 	hook_new_node(irg, res);
-	if (get_irg_phase_state(irg) == phase_backend) {
+	if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
 		be_info_new_node(irg, res);
 	}
 
@@ -434,16 +434,6 @@ unsigned (get_irn_idx)(const ir_node *node)
 {
 	assert(is_ir_node(node));
 	return get_irn_idx_(node);
-}
-
-int get_irn_pred_pos(ir_node *node, ir_node *arg)
-{
-	int i;
-	for (i = get_irn_arity(node) - 1; i >= 0; i--) {
-		if (get_irn_n(node, i) == arg)
-			return i;
-	}
-	return -1;
 }
 
 ir_node *(get_nodes_block)(const ir_node *node)

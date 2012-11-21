@@ -54,7 +54,7 @@
 #include "beirgmod.h"
 #include "beifg.h"
 #include "beinsn_t.h"
-#include "bestatevent.h"
+#include "statev_t.h"
 #include "beirg.h"
 #include "beintlive_t.h"
 #include "bera.h"
@@ -423,14 +423,12 @@ static void assign(ir_node *block, void *env_ptr)
 	be_lv_foreach(lv, block, be_lv_state_in, irn) {
 		if (has_reg_class(env, irn)) {
 			const arch_register_t *reg = arch_get_irn_register(irn);
-			int col;
 
 			assert(reg && "Node must have been assigned a register");
-			col = arch_register_get_index(reg);
-
 			DBG((dbg, LEVEL_4, "%+F has reg %s\n", irn, reg->name));
 
 			/* Mark the color of the live in value as used. */
+			int const col = reg->index;
 			bitset_set(colors, col);
 			bitset_set(in_colors, col);
 
@@ -470,20 +468,17 @@ static void assign(ir_node *block, void *env_ptr)
 			bitset_set(colors, col);
 			arch_set_irn_register(irn, reg);
 
-			DBG((dbg, LEVEL_1, "\tassigning register %s(%d) to %+F\n", arch_register_get_name(reg), col, irn));
+			DBG((dbg, LEVEL_1, "\tassigning register %s(%d) to %+F\n", reg->name, col, irn));
 
 			assert(!bitset_is_set(live, nr) && "Value's definition must not have been encountered");
 			bitset_set(live, nr);
 		} else if (!b->is_def) {
 			/* Clear the color upon a use. */
 			const arch_register_t *reg = arch_get_irn_register(irn);
-			int col;
 
 			assert(reg && "Register must have been assigned");
 
-			col = arch_register_get_index(reg);
-
-			bitset_clear(colors, col);
+			bitset_clear(colors, reg->index);
 			bitset_clear(live, nr);
 		}
 	}

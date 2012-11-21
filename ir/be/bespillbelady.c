@@ -805,7 +805,6 @@ static void process_block(ir_node *block)
 
 	sched_foreach(block, irn) {
 		int i, arity;
-		ir_node *value;
 		assert(workset_get_length(ws) <= n_regs);
 
 		/* Phis are no real instr (see insert_starters()) */

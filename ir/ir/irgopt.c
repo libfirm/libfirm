@@ -69,9 +69,6 @@ static inline void do_local_optimize(ir_node *n)
 {
 	ir_graph *irg = get_irn_irg(n);
 
-	/* Handle graph state */
-	assert(get_irg_phase_state(irg) != phase_building);
-
 	if (get_opt_global_cse())
 		set_irg_pinned(irg, op_pin_state_floats);
 	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
@@ -241,6 +238,15 @@ int optimize_graph_df(ir_graph *irg)
 	 * localopt rules change the inputs of a node and do not return a new
 	 * node, so we conservatively say true here */
 	return true;
+}
+
+void local_opts_const_code(void)
+{
+	ir_graph *irg = get_const_code_irg();
+	/* Clean the value_table in irg for the CSE. */
+	new_identities(irg);
+
+	walk_const_code(firm_clear_link, optimize_in_place_wrapper, NULL);
 }
 
 ir_graph_pass_t *optimize_graph_df_pass(const char *name)

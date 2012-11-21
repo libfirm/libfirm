@@ -54,7 +54,7 @@ static void TEMPLATE_emit_immediate(const ir_node *node)
 
 static void emit_register(const arch_register_t *reg)
 {
-	be_emit_string(arch_register_get_name(reg));
+	be_emit_string(reg->name);
 }
 
 static void TEMPLATE_emit_source_register(const ir_node *node, int pos)

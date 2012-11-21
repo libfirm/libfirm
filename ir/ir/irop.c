@@ -338,7 +338,7 @@ static int node_cmp_attr_Phi(const ir_node *a, const ir_node *b)
 	(void) b;
 	/* do not CSE Phi-nodes without any inputs when building new graphs */
 	if (get_irn_arity(a) == 0 &&
-	    get_irg_phase_state(get_irn_irg(a)) == phase_building) {
+		irg_is_constrained(get_irn_irg(a), IR_GRAPH_CONSTRAINT_CONSTRUCTION)) {
 	    return 1;
 	}
 	return 0;

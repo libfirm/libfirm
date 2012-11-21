@@ -38,26 +38,26 @@
  *
  * @param irg        The irg to check.
  * @param cls        The register class to check.
- * @return           1 if the pressure is valid, 0 otherwise.
+ * @return           true if the pressure is valid, false otherwise.
  */
-int be_verify_register_pressure(ir_graph *irg,
-                                const arch_register_class_t* cls);
+bool be_verify_register_pressure(ir_graph *irg,
+                                 const arch_register_class_t* cls);
 
 /**
  * Does some sanity checks on the schedule.
  *
  * @param irg   The irg to check
- * @return      1 if the schedule is valid, 0 otherwise
+ * @return      true if the schedule is valid, false otherwise
  */
-int be_verify_schedule(ir_graph *irg);
+bool be_verify_schedule(ir_graph *irg);
 
 /**
  * Verify spillslots
  *
  * @param irg   The irg to check
- * @return      1 if spillslots are valid, 0 otherwise
+ * @return      true if spillslots are valid, false otherwise
  */
-int be_verify_spillslots(ir_graph *irg);
+bool be_verify_spillslots(ir_graph *irg);
 
 /**
  * Verify register allocation: Checks that no 2 live nodes have the same
@@ -68,13 +68,6 @@ int be_verify_spillslots(ir_graph *irg);
  * @return      true if verify succeeded, false otherwise
  */
 bool be_verify_register_allocation(ir_graph *irg);
-
-/**
- * Check, if the SSA dominance property is fulfilled.
- * @param irg The graph.
- * @return   true if dominance property is fulfilled, false otherwise
- */
-bool be_check_dominance(ir_graph *irg);
 
 /**
  * Check the given liveness information against a freshly computed one.

@@ -109,17 +109,6 @@ FIRM_API ir_node *get_edge_src_irn(const ir_edge_t *edge);
 FIRM_API int get_edge_src_pos(const ir_edge_t *edge);
 
 /**
- * Returns the edge object of an outgoing edge at a node.
- * @param  irn  The node at which the edge originates.
- * @param  pos  The position of the edge.
- * @param  kind The kind of the edge.
- * @return      The corresponding edge object or NULL,
- *              if no such edge exists.
- */
-FIRM_API const ir_edge_t *get_irn_edge_kind(const ir_node *irn,
-                                            int pos, ir_edge_kind_t kind);
-
-/**
  * Returns the number of registered out edges for a specific kind.
  * @param irn The node.
  * @param kind The kind.

@@ -35,7 +35,7 @@
 #include "irnodeset.h"
 
 #include "absgraph.h"
-#include "statev.h"
+#include "statev_t.h"
 
 #include "beutil.h"
 #include "belive_t.h"
@@ -513,7 +513,6 @@ void be_liveness_transfer(const arch_register_class_t *cls,
 	 * function. */
 	assert(!is_Phi(node) && "liveness_transfer produces invalid results for phi nodes");
 
-	ir_node *value;
 	be_foreach_definition(node, cls, value,
 		ir_nodeset_remove(nodeset, value);
 	);

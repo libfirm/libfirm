@@ -278,14 +278,10 @@ ir_node *new_rd_{{node.name}}(
 		{{node|nodeparameters}}
 	{% endfilter %})
 {
-	ir_node *res;
-	{%- if node.arity == "dynamic" %}
-	int      i;
-	{%- endif %}
 	{{node|irgassign}}
 	{{node|insdecl}}
 
-	res = new_ir_node(
+	ir_node *res = new_ir_node(
 		{%- filter arguments %}
 			dbgi
 			irg
@@ -295,7 +291,7 @@ ir_node *new_rd_{{node.name}}(
 			{{node|arity_and_ins}}
 		{% endfilter %});
 	{%- if node.arity == "dynamic" %}
-	for (i = 0; i < arity; ++i) {
+	for (int i = 0; i < arity; ++i) {
 		add_irn_n(res, in[i]);
 	}
 	{%- endif %}
@@ -335,9 +331,8 @@ ir_node *new_d_{{node.name}}(
 			{{node|nodeparameters}}
 		{% endfilter %})
 {
-	ir_node *res;
-	assert(get_irg_phase_state(current_ir_graph) == phase_building);
-	res = new_rd_{{node.name}}(
+	assert(irg_is_constrained(current_ir_graph, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
+	ir_node *res = new_rd_{{node.name}}(
 		{%- filter parameters %}
 			dbgi
 			{{node|curblock}}
@@ -367,7 +362,6 @@ irnode_h_template = env.from_string(
 {%- for node in nodes|isnot('custom_is') %}
 static inline int is_{{node.name}}_(const ir_node *node)
 {
-	assert(node != NULL);
 	return get_irn_op_(node) == op_{{node.name}};
 }
 {%- endfor -%}
@@ -439,6 +433,7 @@ static const proj_lookup_t proj_lut[] = {
 	{%- endif %}
 	{%- endfor %}
 };
+
 ''')
 
 irop_template = env.from_string(
