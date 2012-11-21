@@ -944,7 +944,7 @@ static void emit_ir_initializer(normal_or_bitfield *vals,
                                 const ir_initializer_t *initializer,
                                 ir_type *type)
 {
-	assert((size_t) (vals - glob_vals) < max_vals);
+	assert((size_t) (vals - glob_vals) <= max_vals);
 
 	if (initializer_is_string_const(initializer)) {
 		assert(vals->kind != BITFIELD);
