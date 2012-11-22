@@ -960,10 +960,11 @@ static partition_t *split_no_followers(partition_t *Z, node_t *g, environment_t 
 	/* for now, copy the type info tag, it will be adjusted in split_by(). */
 	Z_prime->type_is_T_or_C = Z->type_is_T_or_C;
 
-	update_worklist(Z, Z_prime, env);
-
 	dump_partition("Now ", Z);
 	dump_partition("Created new ", Z_prime);
+
+	update_worklist(Z, Z_prime, env);
+
 	return Z_prime;
 }  /* split_no_followers */
 
@@ -1288,6 +1289,9 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env)
 	check_partition(X);
 	check_partition(X_prime);
 
+	dump_partition("Now ", X);
+	dump_partition("Created new ", X_prime);
+
 	/* X' is the smaller part */
 	add_to_worklist(X_prime, env);
 
@@ -1311,9 +1315,6 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env)
 			X->on_cprop   = 1;
 		}
 	}
-
-	dump_partition("Now ", X);
-	dump_partition("Created new ", X_prime);
 
 	/* we have to ensure that the partition containing g is returned */
 	if (winner != 0) {
