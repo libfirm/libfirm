@@ -410,7 +410,7 @@ static int verify_node_Proj_Div(const ir_node *p)
 			(proj == pn_Div_M         && mode == mode_M) ||
 			(proj == pn_Div_X_regular && mode == mode_X) ||
 			(proj == pn_Div_X_except  && mode == mode_X) ||
-			(proj == pn_Div_res       && mode_is_data(mode) && mode == get_Div_resmode(n))
+			(proj == pn_Div_res       && mode == get_Div_resmode(n))
 		),
 		"wrong Proj from Div", 0,
 		show_proj_failure(p);
@@ -1212,12 +1212,14 @@ static int verify_node_Div(const ir_node *n)
 	ir_mode *op1mode = get_irn_mode(get_Div_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_Div_left(n));
 	ir_mode *op3mode = get_irn_mode(get_Div_right(n));
+	ir_mode *resmode = get_Div_resmode(n);
 
 	ASSERT_AND_RET(
 		/* Div: BB x M x num x num --> M x X x num */
-		op1mode == mode_M &&
-		op2mode == op3mode &&
-		mode_is_num(op2mode) &&
+		op1mode == mode_M    &&
+		op2mode == resmode   &&
+		op3mode == resmode   &&
+		mode_is_num(resmode) &&
 		mymode == mode_T,
 		"Div node", 0
 		);
@@ -1233,12 +1235,14 @@ static int verify_node_Mod(const ir_node *n)
 	ir_mode *op1mode = get_irn_mode(get_Mod_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_Mod_left(n));
 	ir_mode *op3mode = get_irn_mode(get_Mod_right(n));
+	ir_mode *resmode = get_Mod_resmode(n);
 
 	ASSERT_AND_RET(
 		/* Mod: BB x M x int x int --> M x X x int */
-		op1mode == mode_M &&
-		op2mode == op3mode &&
-		mode_is_int(op2mode) &&
+		op1mode == mode_M    &&
+		op2mode == resmode   &&
+		op3mode == resmode   &&
+		mode_is_int(resmode) &&
 		mymode == mode_T,
 		"Mod node", 0
 		);
