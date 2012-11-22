@@ -1214,10 +1214,10 @@ static int verify_node_Div(const ir_node *n)
 	ir_mode *op3mode = get_irn_mode(get_Div_right(n));
 
 	ASSERT_AND_RET(
-		/* Div: BB x M x data x data --> M x X x data */
+		/* Div: BB x M x num x num --> M x X x num */
 		op1mode == mode_M &&
 		op2mode == op3mode &&
-		mode_is_data(op2mode) &&
+		mode_is_num(op2mode) &&
 		mymode == mode_T,
 		"Div node", 0
 		);
