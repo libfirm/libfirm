@@ -439,10 +439,13 @@ static void dump_all_partitions(const environment_t *env)
 static void dump_split_list(const partition_t *list)
 {
 	const partition_t *p;
+	char               split = ' ';
 
 	DB((dbg, LEVEL_2, "Split by %s produced = {\n", what_reason));
-	for (p = list; p != NULL; p = p->split_next)
-		DB((dbg, LEVEL_2, "part%u, ", p->nr));
+	for (p = list; p != NULL; p = p->split_next) {
+		DB((dbg, LEVEL_2, "%c part%u", split, p->nr));
+		split = ',';
+	}
 	DB((dbg, LEVEL_2, "\n}\n"));
 }  /* dump_split_list */
 
