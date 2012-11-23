@@ -813,7 +813,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 				       get_entity_name(get_irg_entity(irg)));
 				for (t = T_FIRST; t < T_LAST+1; ++t) {
 					double val = ir_timer_elapsed_usec(be_timers[t]) / 1000.0;
-					printf("%-20s: %8.3lf msec\n", get_timer_name(t), val);
+					printf("%-20s: %10.3f msec\n", get_timer_name(t), val);
 				}
 			}
 			for (t = T_FIRST; t < T_LAST+1; ++t) {
@@ -868,7 +868,7 @@ void be_main(FILE *file_handle, const char *cup_name)
 			stat_ev_dbl("bemain_backend_time", ir_timer_elapsed_msec(t));
 		} else {
 			double val = ir_timer_elapsed_usec(t) / 1000.0;
-			printf("%-20s: %8.3lf msec\n", "BEMAINLOOP", val);
+			printf("%-20s: %10.3f msec\n", "BEMAINLOOP", val);
 		}
 	}
 
