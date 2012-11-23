@@ -143,28 +143,6 @@ void edges_node_revival(ir_node *node);
 
 void edges_invalidate_kind(ir_node *irn, ir_edge_kind_t kind);
 
-/**
- * Register additional memory in an edge.
- * This must be called before Firm is initialized.
- * @param  n Number of bytes you need.
- * @return A number you have to keep and to pass
- *         edges_get_private_data()
- *         to get a pointer to your data.
- */
-size_t edges_register_private_data(size_t n);
-
-/**
- * Get a pointer to the private data you registered.
- * @param  edge The edge.
- * @param  ofs  The number, you obtained with
- *              edges_register_private_data().
- * @return A pointer to the private data.
- */
-static inline void *get_edge_private_data_(const ir_edge_t *edge, int ofs)
-{
-	return (void *) ((char *) edge + sizeof(edge[0]) + ofs);
-}
-
 static inline ir_node *get_edge_src_irn_(const ir_edge_t *edge)
 {
 	return edge->src;
@@ -209,7 +187,6 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt,
 #define get_irn_n_edges_kind(irn, kind)   get_irn_n_edges_kind_(irn, kind)
 #define get_edge_src_irn(edge)            get_edge_src_irn_(edge)
 #define get_edge_src_pos(edge)            get_edge_src_pos_(edge)
-#define get_edge_private_data(edge, ofs)  get_edge_private_data_(edge,ofs)
 #define get_irn_out_edge_next(irn, last)  get_irn_out_edge_next_(irn, last)
 
 #ifndef get_irn_n_edges

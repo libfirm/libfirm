@@ -258,18 +258,6 @@ FIRM_API void irg_block_edges_walk(ir_node *block, irg_walk_func *pre,
 FIRM_API void irg_walk_edges(ir_node *start, irg_walk_func *pre,
                              irg_walk_func *post, void *env);
 
-/**
- * Reset the user's private data at offset 'offset'
- * The user has to remember his offset and the size of his data!
- * Caution: Using wrong values here can destroy other users private data!
- *
- * @param irg     the IR graph to operate on
- * @param offset  offset of the private data inside the edge
- * @param size    length of the private data inside the edge
- */
-FIRM_API void edges_reset_private_data(ir_graph *irg, int offset,
-                                       unsigned size);
-
 /** @} */
 
 #include "end.h"

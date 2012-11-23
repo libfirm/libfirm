@@ -137,13 +137,6 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 static int edges_used = 0;
 
 /**
- * Summed size of all users private data
- */
-
-static size_t edges_private_size = 0;
-#define EDGE_SIZE (sizeof(ir_edge_t) + edges_private_size)
-
-/**
  * If set to 1, the list heads are checked every time an edge is changed.
  */
 static int edges_dbg = 0;
@@ -154,27 +147,6 @@ static int edges_dbg = 0;
 static inline long edge_get_id(const ir_edge_t *e)
 {
 	return (long)e;
-}
-
-size_t edges_register_private_data(size_t n)
-{
-	size_t res = edges_private_size;
-
-	assert(!edges_used && "you cannot register private edge data, if edges have been initialized");
-
-	edges_private_size += n;
-	return res;
-}
-
-void edges_reset_private_data(ir_graph *irg, int offset, unsigned size)
-{
-	irg_edge_info_t       *info = get_irg_edge_info(irg, EDGE_KIND_NORMAL);
-	ir_edge_t             *edge;
-	ir_edgeset_iterator_t  iter;
-
-	foreach_ir_edgeset(&info->edges, edge, iter) {
-		memset(edge + sizeof(*edge) + offset, 0, size);
-	}
 }
 
 void edges_init_graph_kind(ir_graph *irg, ir_edge_kind_t kind)
@@ -348,7 +320,7 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
 			ir_edge_t *edge;
 
 			if (list_empty(&info->free_edges)) {
-				edge = (ir_edge_t*)obstack_alloc(&info->edges_obst, EDGE_SIZE);
+				edge = OALLOC(&info->edges_obst, ir_edge_t);
 			} else {
 				edge = list_entry(info->free_edges.next, ir_edge_t, list);
 				list_del(&edge->list);
@@ -361,7 +333,6 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
 			edge->kind      = kind;
 			edge->list.next = NULL;
 			edge->list.prev = NULL;
-			memset(edge + 1, 0, edges_private_size);
 
 			new_edge = ir_edgeset_insert(edges, edge);
 			if (new_edge != edge) {
