@@ -2851,6 +2851,17 @@ static void propagate(environment_t *env)
 
 				/* x will make the follower -> leader transition */
 				follower_to_leader(x);
+
+				/* In case of a follower -> leader transition of a Phi node
+				 * we have to ensure that the current partition will be split
+				 * by lambda n.(n[i].partition).
+				 *
+				 * This split may already happened before when some predecessors
+				 * of the Phi's Block are unreachable. Thus, we have to put the
+				 * current partition in the worklist to repeat the check.
+				 */
+				if (is_Phi(x->node) && ! x->part->on_worklist)
+					add_to_worklist(x->part, env);
 			}
 
 			/* compute a new type for x */
