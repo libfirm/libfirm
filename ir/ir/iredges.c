@@ -177,12 +177,6 @@ void edges_reset_private_data(ir_graph *irg, int offset, unsigned size)
 	}
 }
 
-#define TIMES37(x) (((x) << 5) + ((x) << 2) + (x))
-
-#define get_irn_out_list_head(irn) (&get_irn_out_info(irn)->outs)
-
-#define edge_hash(edge) (TIMES37((edge)->pos) + hash_ptr((edge)->src))
-
 void edges_init_graph_kind(ir_graph *irg, ir_edge_kind_t kind)
 {
 	if (edges_activated_kind(irg, kind)) {
