@@ -73,7 +73,6 @@ typedef struct be_chordal_alloc_env_t {
 	bitset_t *live;        /**< A liveness bitset. */
 	bitset_t *tmp_colors;  /**< An auxiliary bitset which is as long as the number of colors in the class. */
 	bitset_t *colors;      /**< The color mask. */
-	bitset_t *in_colors;   /**< Colors used by live in values. */
 	int colors_n;          /**< The number of colors. */
 } be_chordal_alloc_env_t;
 
@@ -383,13 +382,11 @@ static void assign(ir_node *block, void *env_ptr)
 	be_chordal_env_t *env       = alloc_env->chordal_env;
 	bitset_t *live              = alloc_env->live;
 	bitset_t *colors            = alloc_env->colors;
-	bitset_t *in_colors         = alloc_env->in_colors;
 	struct list_head *head      = get_block_border_head(env, block);
 	be_lv_t *lv                 = be_get_irg_liveness(env->irg);
 
 	bitset_clear_all(colors);
 	bitset_clear_all(live);
-	bitset_clear_all(in_colors);
 
 	DBG((dbg, LEVEL_4, "Assigning colors for block %+F\n", block));
 	DBG((dbg, LEVEL_4, "\tusedef chain for block\n"));
@@ -413,7 +410,6 @@ static void assign(ir_node *block, void *env_ptr)
 			/* Mark the color of the live in value as used. */
 			int const col = reg->index;
 			bitset_set(colors, col);
-			bitset_set(in_colors, col);
 
 			/* Mark the value live in. */
 			bitset_set(live, get_irn_idx(irn));
@@ -483,7 +479,6 @@ static void be_ra_chordal_color(be_chordal_env_t *const chordal_env)
 	env.colors_n      = colors_n;
 	env.colors        = bitset_alloca(colors_n);
 	env.tmp_colors    = bitset_alloca(colors_n);
-	env.in_colors     = bitset_alloca(colors_n);
 	env.pre_colored   = pset_new_ptr_default();
 
 	be_timer_push(T_SPLIT);
