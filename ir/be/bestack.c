@@ -140,9 +140,8 @@ static void lower_outer_frame_sels(ir_node *sel, void *ctx)
  * A helper struct for the bias walker.
  */
 typedef struct bias_walk {
-	int           start_block_bias;  /**< The bias at the end of the start block. */
-	int           between_size;
-	ir_node      *start_block;  /**< The start block of the current graph. */
+	int      start_block_bias; /**< The bias at the end of the start block. */
+	ir_node *start_block;      /**< The start block of the current graph. */
 } bias_walk;
 
 /**
@@ -245,7 +244,6 @@ void be_abi_fix_stack_bias(ir_graph *irg)
 	/* Determine the stack bias at the end of the start block. */
 	bw.start_block_bias = process_stack_bias(get_irg_start_block(irg),
 	                                         stack_layout->initial_bias);
-	bw.between_size     = get_type_size_bytes(stack_layout->between_type);
 
 	/* fix the bias is all other blocks */
 	bw.start_block = get_irg_start_block(irg);
