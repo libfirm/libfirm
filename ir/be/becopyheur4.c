@@ -56,11 +56,6 @@
 #include "bemodule.h"
 
 
-#define COL_COST_INFEASIBLE       DBL_MAX
-#define AFF_NEIGHBOUR_FIX_BENEFIT 128.0
-#define NEIGHBOUR_CONSTR_COSTS    64.0
-
-
 #ifdef DEBUG_libfirm
 
 #define DBG_AFF_CHUNK(env, level, chunk) do { if (firm_dbg_get_mask(dbg) & (level)) dbg_aff_chunk((env), (chunk)); } while (0)
