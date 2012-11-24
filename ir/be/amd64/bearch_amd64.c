@@ -253,29 +253,6 @@ static void amd64_init_graph(ir_graph *irg)
 	be_birg_from_irg(irg)->isa_link = irg_data;
 }
 
-
-typedef ir_node *(*create_const_node_func) (dbg_info *dbg, ir_node *block);
-
-/**
- * Used to create per-graph unique pseudo nodes.
- */
-static inline ir_node *create_const(ir_graph *irg, ir_node **place,
-                                    create_const_node_func func,
-                                    const arch_register_t* reg)
-{
-	ir_node *block, *res;
-
-	if (*place != NULL)
-		return *place;
-
-	block = get_irg_start_block(irg);
-	res = func(NULL, block);
-	arch_set_irn_register(res, reg);
-	*place = res;
-
-	return res;
-}
-
 extern const arch_isa_if_t amd64_isa_if;
 static amd64_isa_t amd64_isa_template = {
 	{
