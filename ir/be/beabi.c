@@ -1394,7 +1394,6 @@ static void modify_irg(ir_graph *const irg, be_abi_irg_t *const env)
 	int n_params;
 	int i, n;
 	unsigned j;
-	unsigned frame_size;
 
 	reg_node_map_t *rm;
 	const arch_register_t *fp_reg;
@@ -1423,11 +1422,10 @@ static void modify_irg(ir_graph *const irg, be_abi_irg_t *const env)
 		default_layout_compound_type(frame_tp);
 	}
 
-	/* align stackframe to 4 byte */
-	frame_size = get_type_size_bytes(frame_tp);
-	if (frame_size % 4 != 0) {
-		set_type_size_bytes(frame_tp, frame_size + 4 - (frame_size % 4));
-	}
+	/* align stackframe */
+	unsigned const alignment  = 1U << arch_env->stack_alignment;
+	unsigned const frame_size = round_up2(get_type_size_bytes(frame_tp), alignment);
+	set_type_size_bytes(frame_tp, frame_size);
 
 	env->regs  = pmap_create();
 
