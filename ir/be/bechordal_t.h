@@ -117,7 +117,6 @@ struct be_ra_chordal_opts_t {
 	int      vrfy_option;
 
 	char ilp_server[128];
-	char ilp_solver[128];
 };
 
 void check_for_memory_operands(ir_graph *irg);
