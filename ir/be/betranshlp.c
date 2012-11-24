@@ -214,9 +214,6 @@ ir_node *be_transform_node(ir_node *node)
 	DEBUG_ONLY(be_set_transformed_node(node, NULL);)
 
 	ir_op *op = get_irn_op(node);
-	if (op->ops.generic == NULL) {
-		panic("No transform function registered for node %+F.", node);
-	}
 	be_transform_func *transform = (be_transform_func *)op->ops.generic;
 
 	new_node = transform(node);
