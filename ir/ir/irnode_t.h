@@ -33,6 +33,79 @@
 #include "array.h"
 #include "iredges_t.h"
 
+/* This section MUST come first, so the inline functions get used in this header. */
+#define is_ir_node(thing)                     is_ir_node_(thing)
+#define get_irn_arity(node)                   get_irn_arity_(node)
+#define get_irn_n(node, n)                    get_irn_n_(node, n)
+#define get_irn_mode(node)                    get_irn_mode_(node)
+#define set_irn_mode(node, mode)              set_irn_mode_(node, mode)
+#define get_irn_irg(node)                     get_irn_irg_(node)
+#define get_nodes_block(node)                 get_nodes_block_(node)
+#define get_irn_op(node)                      get_irn_op_(node)
+#define set_irn_op(node, op)                  set_irn_op_(node, op)
+#define get_irn_opcode(node)                  get_irn_opcode_(node)
+#define get_irn_visited(node)                 get_irn_visited_(node)
+#define set_irn_visited(node, v)              set_irn_visited_(node, v)
+#define mark_irn_visited(node)                mark_irn_visited_(node)
+#define irn_visited(node)                     irn_visited_(node)
+#define irn_visited_else_mark(node)           irn_visited_else_mark_(node)
+#define set_irn_link(node, link)              set_irn_link_(node, link)
+#define get_irn_link(node)                    get_irn_link_(node)
+#define get_irn_pinned(node)                  get_irn_pinned_(node)
+#define is_irn_pinned_in_irg(node)            is_irn_pinned_in_irg_(node)
+#define is_unop(node)                         is_unop_(node)
+#define is_binop(node)                        is_binop_(node)
+#define is_Proj(node)                         is_Proj_(node)
+#define is_Phi(node)                          is_Phi_(node)
+#define is_SymConst_addr_ent(node)            is_SymConst_addr_ent_(node)
+#define get_Block_n_cfgpreds(node)            get_Block_n_cfgpreds_(node)
+#define get_Block_cfgpred(node, pos)          get_Block_cfgpred_(node, pos)
+#define get_Block_cfgpred_block(node, pos)    get_Block_cfgpred_block_(node, pos)
+#define get_Block_block_visited(node)         get_Block_block_visited_(node)
+#define set_Block_block_visited(node, visit)  set_Block_block_visited_(node, visit)
+#define mark_Block_block_visited(node)        mark_Block_block_visited_(node)
+#define Block_block_visited(node)             Block_block_visited_(node)
+#define get_Block_irg(block)                  get_Block_irg_(block)
+#define get_Const_tarval(node)                get_Const_tarval_(node)
+#define is_Const_null(node)                   is_Const_null_(node)
+#define is_Const_one(node)                    is_Const_one_(node)
+#define is_Const_all_one(node)                is_Const_all_one_(node)
+#define is_irn_forking(node)                  is_irn_forking_(node)
+#define copy_node_attr(irg,oldn,newn)         copy_node_attr_(irg,oldn,newn)
+#define get_irn_type(node)                    get_irn_type_(node)
+#define get_irn_type_attr(node)               get_irn_type_attr_(node)
+#define get_irn_entity_attr(node)             get_irn_entity_attr_(node)
+#define is_irn_constlike(node)                is_irn_constlike_(node)
+#define is_irn_keep(node)                     is_irn_keep_(node)
+#define is_irn_start_block_placed(node)       is_irn_start_block_placed_(node)
+#define is_irn_cse_neutral(node)              is_irn_cse_neutral_(node)
+#define get_Cond_jmp_pred(node)               get_Cond_jmp_pred_(node)
+#define set_Cond_jmp_pred(node, pred)         set_Cond_jmp_pred_(node, pred)
+#define get_irn_generic_attr(node)            get_irn_generic_attr_(node)
+#define get_irn_generic_attr_const(node)      get_irn_generic_attr_const_(node)
+#define get_irn_idx(node)                     get_irn_idx_(node)
+
+#define get_irn_deps(node)                    get_irn_deps_(node)
+#define get_irn_dep(node, pos)                get_irn_dep_(node, pos)
+
+#define get_irn_ins_or_deps(node)             get_irn_ins_or_deps_(node)
+#define get_irn_in_or_dep(node, pos)          get_irn_in_or_dep_(node, pos)
+
+#define get_irn_dbg_info(node)                get_irn_dbg_info_(node)
+#define set_irn_dbg_info(node, db)            set_irn_dbg_info_(node, db)
+
+#define set_Block_phis(block, phi)            set_Block_phis_(block, phi)
+#define get_Block_phis(block)                 get_Block_phis_(block)
+#define add_Block_phi(block, phi)             add_Block_phi_(block, phi)
+#define get_Block_mark(block)                 get_Block_mark_(block)
+#define set_Block_mark(block, mark)           set_Block_mark_(block, mark)
+
+#define set_Phi_next(node, phi)               set_Phi_next_(node, phi)
+#define get_Phi_next(node)                    get_Phi_next_(node)
+
+#define is_arg_Proj(node)                     is_arg_Proj_(node)
+#define ir_switch_table_get_n_entries(table)  ir_switch_table_get_n_entries_(table)
+
 /**
  * Returns the array with the ins.  The content of the array may not be
  * changed.
@@ -63,6 +136,11 @@ static inline int is_ir_node_(const void *thing)
 	return (get_kind(thing) == k_ir_node);
 }
 
+static inline unsigned get_irn_idx_(const ir_node *node)
+{
+	return node->node_idx;
+}
+
 /**
  * Gets the op of a node.
  * Intern version for libFirm.
@@ -72,6 +150,9 @@ static inline ir_op *get_irn_op_(const ir_node *node)
 	assert(node);
 	return node->op;
 }
+
+/* include generated code */
+#include "gen_irnode.h"
 
 static inline void set_irn_op_(ir_node *node, ir_op *op)
 {
@@ -184,18 +265,18 @@ static inline int ir_has_irg_ref(const ir_node *node)
 	return is_Block(node) || is_Bad(node) || is_Anchor(node);
 }
 
+static inline ir_node *get_nodes_block_(const ir_node *node)
+{
+	assert(!is_Block(node));
+	return get_irn_n(node, -1);
+}
+
 static inline ir_graph *get_irn_irg_(const ir_node *node)
 {
 	if (! is_Block(node))
 		node = get_nodes_block(node);
 	assert(ir_has_irg_ref(node));
 	return node->attr.irg.irg;
-}
-
-static inline ir_node *get_nodes_block_(const ir_node *node)
-{
-	assert(!is_Block(node));
-	return get_irn_n(node, -1);
 }
 
 /**
@@ -291,9 +372,6 @@ static inline op_pin_state is_irn_pinned_in_irg_(const ir_node *node)
 	return op_pin_state_pinned;
 }
 
-/* include generated code */
-#include "gen_irnode.h"
-
 static inline int is_unop_(const ir_node *node)
 {
 	assert(node && is_ir_node_(node));
@@ -358,6 +436,12 @@ static inline void set_Block_block_visited_(ir_node *node, ir_visited_t visit)
 	node->attr.block.block_visited = visit;
 }
 
+static inline ir_graph *get_Block_irg_(const ir_node *block)
+{
+	assert(is_Block(block));
+	return block->attr.irg.irg;
+}
+
 static inline void mark_Block_block_visited_(ir_node *node)
 {
 	ir_graph *irg = get_Block_irg(node);
@@ -368,12 +452,6 @@ static inline int Block_block_visited_(const ir_node *node)
 {
 	ir_graph *irg = get_Block_irg(node);
 	return node->attr.block.block_visited >= get_irg_block_visited(irg);
-}
-
-static inline ir_graph *get_Block_irg_(const ir_node *block)
-{
-	assert(is_Block(block));
-	return block->attr.irg.irg;
 }
 
 static inline ir_tarval *get_Const_tarval_(const ir_node *node)
@@ -452,11 +530,6 @@ static inline void *get_irn_generic_attr_(ir_node *node)
 static inline const void *get_irn_generic_attr_const_(const ir_node *node)
 {
 	return &node->attr;
-}
-
-static inline unsigned get_irn_idx_(const ir_node *node)
-{
-	return node->node_idx;
 }
 
 static inline dbg_info *get_irn_dbg_info_(const ir_node *n)
@@ -561,78 +634,5 @@ void ir_register_getter_ops(void);
  * This function returns true in this case.
  */
 bool only_used_by_keepalive(const ir_node *node);
-
-/* this section MUST contain all inline functions */
-#define is_ir_node(thing)                     is_ir_node_(thing)
-#define get_irn_arity(node)                   get_irn_arity_(node)
-#define get_irn_n(node, n)                    get_irn_n_(node, n)
-#define get_irn_mode(node)                    get_irn_mode_(node)
-#define set_irn_mode(node, mode)              set_irn_mode_(node, mode)
-#define get_irn_irg(node)                     get_irn_irg_(node)
-#define get_nodes_block(node)                 get_nodes_block_(node)
-#define get_irn_op(node)                      get_irn_op_(node)
-#define set_irn_op(node, op)                  set_irn_op_(node, op)
-#define get_irn_opcode(node)                  get_irn_opcode_(node)
-#define get_irn_visited(node)                 get_irn_visited_(node)
-#define set_irn_visited(node, v)              set_irn_visited_(node, v)
-#define mark_irn_visited(node)                mark_irn_visited_(node)
-#define irn_visited(node)                     irn_visited_(node)
-#define irn_visited_else_mark(node)           irn_visited_else_mark_(node)
-#define set_irn_link(node, link)              set_irn_link_(node, link)
-#define get_irn_link(node)                    get_irn_link_(node)
-#define get_irn_pinned(node)                  get_irn_pinned_(node)
-#define is_irn_pinned_in_irg(node)            is_irn_pinned_in_irg_(node)
-#define is_unop(node)                         is_unop_(node)
-#define is_binop(node)                        is_binop_(node)
-#define is_Proj(node)                         is_Proj_(node)
-#define is_Phi(node)                          is_Phi_(node)
-#define is_SymConst_addr_ent(node)            is_SymConst_addr_ent_(node)
-#define get_Block_n_cfgpreds(node)            get_Block_n_cfgpreds_(node)
-#define get_Block_cfgpred(node, pos)          get_Block_cfgpred_(node, pos)
-#define get_Block_cfgpred_block(node, pos)    get_Block_cfgpred_block_(node, pos)
-#define get_Block_block_visited(node)         get_Block_block_visited_(node)
-#define set_Block_block_visited(node, visit)  set_Block_block_visited_(node, visit)
-#define mark_Block_block_visited(node)        mark_Block_block_visited_(node)
-#define Block_block_visited(node)             Block_block_visited_(node)
-#define get_Block_irg(block)                  get_Block_irg_(block)
-#define get_Const_tarval(node)                get_Const_tarval_(node)
-#define is_Const_null(node)                   is_Const_null_(node)
-#define is_Const_one(node)                    is_Const_one_(node)
-#define is_Const_all_one(node)                is_Const_all_one_(node)
-#define is_irn_forking(node)                  is_irn_forking_(node)
-#define copy_node_attr(irg,oldn,newn)         copy_node_attr_(irg,oldn,newn)
-#define get_irn_type(node)                    get_irn_type_(node)
-#define get_irn_type_attr(node)               get_irn_type_attr_(node)
-#define get_irn_entity_attr(node)             get_irn_entity_attr_(node)
-#define is_irn_constlike(node)                is_irn_constlike_(node)
-#define is_irn_keep(node)                     is_irn_keep_(node)
-#define is_irn_start_block_placed(node)       is_irn_start_block_placed_(node)
-#define is_irn_cse_neutral(node)              is_irn_cse_neutral_(node)
-#define get_Cond_jmp_pred(node)               get_Cond_jmp_pred_(node)
-#define set_Cond_jmp_pred(node, pred)         set_Cond_jmp_pred_(node, pred)
-#define get_irn_generic_attr(node)            get_irn_generic_attr_(node)
-#define get_irn_generic_attr_const(node)      get_irn_generic_attr_const_(node)
-#define get_irn_idx(node)                     get_irn_idx_(node)
-
-#define get_irn_deps(node)                    get_irn_deps_(node)
-#define get_irn_dep(node, pos)                get_irn_dep_(node, pos)
-
-#define get_irn_ins_or_deps(node)             get_irn_ins_or_deps_(node)
-#define get_irn_in_or_dep(node, pos)          get_irn_in_or_dep_(node, pos)
-
-#define get_irn_dbg_info(node)                get_irn_dbg_info_(node)
-#define set_irn_dbg_info(node, db)            set_irn_dbg_info_(node, db)
-
-#define set_Block_phis(block, phi)            set_Block_phis_(block, phi)
-#define get_Block_phis(block)                 get_Block_phis_(block)
-#define add_Block_phi(block, phi)             add_Block_phi_(block, phi)
-#define get_Block_mark(block)                 get_Block_mark_(block)
-#define set_Block_mark(block, mark)           set_Block_mark_(block, mark)
-
-#define set_Phi_next(node, phi)               set_Phi_next_(node, phi)
-#define get_Phi_next(node)                    get_Phi_next_(node)
-
-#define is_arg_Proj(node)                     is_arg_Proj_(node)
-#define ir_switch_table_get_n_entries(table)  ir_switch_table_get_n_entries_(table)
 
 #endif
