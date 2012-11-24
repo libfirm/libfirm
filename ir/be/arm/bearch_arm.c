@@ -400,21 +400,20 @@ static void arm_handle_intrinsics(void)
 extern const arch_isa_if_t arm_isa_if;
 static arm_isa_t arm_isa_template = {
 	{
-		&arm_isa_if,           /* isa interface */
+		&arm_isa_if,             /* isa interface */
 		N_ARM_REGISTERS,
 		arm_registers,
 		N_ARM_CLASSES,
 		arm_reg_classes,
 		&arm_registers[REG_SP],  /* stack pointer */
 		&arm_registers[REG_R11], /* base pointer */
-		&arm_reg_classes[CLASS_arm_gp],  /* static link pointer class */
-		2,                     /* power of two stack alignment for calls, 2^2 == 4 */
-		NULL,                  /* main environment */
-		7,                     /* spill costs */
-		5,                     /* reload costs */
-		true,                  /* we do have custom abi handling */
+		2,                       /* power of two stack alignment for calls, 2^2 == 4 */
+		NULL,                    /* main environment */
+		7,                       /* spill costs */
+		5,                       /* reload costs */
+		true,                    /* we do have custom abi handling */
 	},
-	ARM_FPU_ARCH_FPE,      /* FPU architecture */
+	ARM_FPU_ARCH_FPE,          /* FPU architecture */
 };
 
 static void arm_init(void)

@@ -132,14 +132,13 @@ static void TEMPLATE_init_graph(ir_graph *irg)
 extern const arch_isa_if_t TEMPLATE_isa_if;
 static TEMPLATE_isa_t TEMPLATE_isa_template = {
 	{
-		&TEMPLATE_isa_if,             /* isa interface implementation */
+		&TEMPLATE_isa_if,            /* isa interface implementation */
 		N_TEMPLATE_REGISTERS,
 		TEMPLATE_registers,
 		N_TEMPLATE_CLASSES,
 		TEMPLATE_reg_classes,
-		&TEMPLATE_registers[REG_SP],  /* stack pointer register */
-		&TEMPLATE_registers[REG_BP],  /* base pointer register */
-		&TEMPLATE_reg_classes[CLASS_TEMPLATE_gp],  /* link pointer register class */
+		&TEMPLATE_registers[REG_SP], /* stack pointer register */
+		&TEMPLATE_registers[REG_BP], /* base pointer register */
 		2,                           /* power of two stack alignment for calls, 2^2 == 4 */
 		NULL,                        /* main environment */
 		7,                           /* costs for a spill instruction */

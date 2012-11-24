@@ -174,23 +174,22 @@ static void sparc_before_ra(ir_graph *irg)
 extern const arch_isa_if_t sparc_isa_if;
 static sparc_isa_t sparc_isa_template = {
 	{
-		&sparc_isa_if,                      /* isa interface implementation */
+		&sparc_isa_if,                       /* isa interface implementation */
 		N_SPARC_REGISTERS,
 		sparc_registers,
 		N_SPARC_CLASSES,
 		sparc_reg_classes,
-		&sparc_registers[REG_SP],           /* stack pointer register */
-		&sparc_registers[REG_FRAME_POINTER],/* base pointer register */
-		&sparc_reg_classes[CLASS_sparc_gp], /* link pointer register class */
-		3,                                  /* power of two stack alignment
-		                                       for calls */
-		NULL,                               /* main environment */
-		7,                                  /* costs for a spill instruction */
-		5,                                  /* costs for a reload instruction */
-		true,                               /* custom abi handling */
+		&sparc_registers[REG_SP],            /* stack pointer register */
+		&sparc_registers[REG_FRAME_POINTER], /* base pointer register */
+		3,                                   /* power of two stack alignment
+		                                        for calls */
+		NULL,                                /* main environment */
+		7,                                   /* costs for a spill instruction */
+		5,                                   /* costs for a reload instruction */
+		true,                                /* custom abi handling */
 	},
-	NULL,               /* constants */
-	SPARC_FPU_ARCH_FPU, /* FPU architecture */
+	NULL,                                  /* constants */
+	SPARC_FPU_ARCH_FPU,                    /* FPU architecture */
 };
 
 /**

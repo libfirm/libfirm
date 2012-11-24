@@ -1764,22 +1764,21 @@ static void ia32_finish(void)
  */
 static ia32_isa_t ia32_isa_template = {
 	{
-		&ia32_isa_if,            /* isa interface implementation */
+		&ia32_isa_if,             /* isa interface implementation */
 		N_IA32_REGISTERS,
 		ia32_registers,
 		N_IA32_CLASSES,
 		ia32_reg_classes,
-		&ia32_registers[REG_ESP],  /* stack pointer register */
-		&ia32_registers[REG_EBP],  /* base pointer register */
-		&ia32_reg_classes[CLASS_ia32_gp],  /* static link pointer register class */
-		2,                       /* power of two stack alignment, 2^2 == 4 */
-		NULL,                    /* main environment */
-		7,                       /* costs for a spill instruction */
-		5,                       /* costs for a reload instruction */
-		false,                   /* no custom abi handling */
+		&ia32_registers[REG_ESP], /* stack pointer register */
+		&ia32_registers[REG_EBP], /* base pointer register */
+		2,                        /* power of two stack alignment, 2^2 == 4 */
+		NULL,                     /* main environment */
+		7,                        /* costs for a spill instruction */
+		5,                        /* costs for a reload instruction */
+		false,                    /* no custom abi handling */
 	},
-	NULL,                    /* tv_ents */
-	IA32_FPU_ARCH_X87,       /* FPU architecture */
+	NULL,                       /* tv_ents */
+	IA32_FPU_ARCH_X87,          /* FPU architecture */
 };
 
 static arch_env_t *ia32_begin_codegeneration(const be_main_env_t *env)
