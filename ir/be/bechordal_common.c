@@ -207,30 +207,14 @@ void create_borders(ir_node *block, void *env_ptr)
 
 ir_node *pre_process_constraints(be_chordal_env_t *env, be_insn_t **the_insn)
 {
-	be_insn_t *insn       = *the_insn;
-	ir_node   *perm       = NULL;
-	bitset_t  *out_constr = bitset_alloca(env->cls->n_regs);
-	int        i;
-
+	be_insn_t *insn = *the_insn;
 	assert(insn->has_constraints && "only do this for constrained nodes");
-
-	/*
-	 * Collect all registers that occur in output constraints.
-	 * This is necessary, since if the insn has one of these as an input constraint
-	 * and the corresponding operand interferes with the insn, the operand must
-	 * be copied.
-	 */
-	for (i = 0; i < insn->use_start; ++i) {
-		be_operand_t *op = &insn->ops[i];
-		if (op->has_constraints)
-			bitset_or(out_constr, op->regs);
-	}
 
 	/*
 	 * Make the Perm, recompute liveness and re-scan the insn since the
 	 * in operands are now the Projs of the Perm.
 	 */
-	perm = insert_Perm_before(env->irg, env->cls, insn->irn);
+	ir_node *const perm = insert_Perm_before(env->irg, env->cls, insn->irn);
 
 	/* Registers are propagated by insert_Perm_before(). Clean them here! */
 	if (perm == NULL)
@@ -254,7 +238,7 @@ ir_node *pre_process_constraints(be_chordal_env_t *env, be_insn_t **the_insn)
 	 * Copy the input constraints of the insn to the Perm as output
 	 * constraints. Succeeding phases (coalescing) will need that.
 	 */
-	for (i = insn->use_start; i < insn->n_ops; ++i) {
+	for (int i = insn->use_start; i < insn->n_ops; ++i) {
 		be_operand_t *op = &insn->ops[i];
 		ir_node *proj = op->carrier;
 		/*
