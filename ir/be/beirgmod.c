@@ -99,7 +99,7 @@ ir_node *insert_Perm_before(ir_graph *irg, const arch_register_class_t *cls,
 	DBG((dbg, LEVEL_1, "Insert Perm before: %+F\n", pos));
 
 	ir_nodeset_init(&live);
-	be_liveness_nodes_live_at(lv, cls, sched_prev(pos), &live);
+	be_liveness_nodes_live_before(lv, cls, pos, &live);
 
 	n = ir_nodeset_size(&live);
 	if (n == 0) {
