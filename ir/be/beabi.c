@@ -1319,7 +1319,6 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 typedef struct lower_frame_sels_env_t {
 	ir_node      *frame;                     /**< the current frame */
 	const arch_register_class_t *sp_class;   /**< register class of the stack pointer */
-	ir_type      *frame_tp;                  /**< the frame type */
 } lower_frame_sels_env_t;
 
 /**
@@ -1417,17 +1416,17 @@ static void modify_irg(ir_graph *const irg, be_abi_irg_t *const env)
 	/* Convert the Sel nodes in the irg to frame addr nodes: */
 	ctx.frame    = get_irg_frame(irg);
 	ctx.sp_class = arch_env->sp->reg_class;
-	ctx.frame_tp = get_irg_frame_type(irg);
 
+	ir_type *const frame_tp = get_irg_frame_type(irg);
 	/* layout the stackframe now */
-	if (get_type_state(ctx.frame_tp) == layout_undefined) {
-		default_layout_compound_type(ctx.frame_tp);
+	if (get_type_state(frame_tp) == layout_undefined) {
+		default_layout_compound_type(frame_tp);
 	}
 
 	/* align stackframe to 4 byte */
-	frame_size = get_type_size_bytes(ctx.frame_tp);
+	frame_size = get_type_size_bytes(frame_tp);
 	if (frame_size % 4 != 0) {
-		set_type_size_bytes(ctx.frame_tp, frame_size + 4 - (frame_size % 4));
+		set_type_size_bytes(frame_tp, frame_size + 4 - (frame_size % 4));
 	}
 
 	env->regs  = pmap_create();
