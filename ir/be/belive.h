@@ -26,15 +26,7 @@
 #ifndef FIRM_BE_BELIVE_H
 #define FIRM_BE_BELIVE_H
 
-#include <stdio.h>
-
 #include "be_types.h"
-
-#include "firm_types.h"
-#include "pset.h"
-
-#include "irlivechk.h"
-#include "bearch.h"
 #include "irnodeset.h"
 
 typedef enum {

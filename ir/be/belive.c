@@ -37,6 +37,7 @@
 #include "absgraph.h"
 #include "statev_t.h"
 
+#include "bearch.h"
 #include "beutil.h"
 #include "belive_t.h"
 #include "beirg.h"

@@ -35,6 +35,7 @@
 #include "iredges_t.h"
 #include "util.h"
 
+#include "bearch.h"
 #include "belive_t.h"
 #include "bechordal_t.h"
 #include "besched.h"
