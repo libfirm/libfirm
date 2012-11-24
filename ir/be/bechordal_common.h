@@ -41,14 +41,6 @@
 void create_borders(ir_node *block, void *env_ptr);
 
 /**
- * Check, if an irn is of the register class currently under processing.
- * @param env The chordal environment.
- * @param irn The node.
- * @return 1, if the node is of that register class, 0 if not.
- */
-int has_reg_class(const be_chordal_env_t *env, const ir_node *irn);
-
-/**
  * Insert perm nodes
  * @param env The chordal environment.
  * @param the_insn The current be_insn node.

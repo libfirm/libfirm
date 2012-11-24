@@ -49,11 +49,6 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 /* Make a fourcc for border checking. */
 #define BORDER_FOURCC   FOURCC('B', 'O', 'R', 'D')
 
-int has_reg_class(const be_chordal_env_t *env, const ir_node *irn)
-{
-	return arch_irn_consider_in_reg_alloc(env->cls, irn);
-}
-
 static inline border_t *border_add(be_chordal_env_t *env, struct list_head *head,
 			ir_node *irn, unsigned step, unsigned pressure,
 			unsigned is_def, unsigned is_real)

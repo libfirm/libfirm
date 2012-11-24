@@ -66,7 +66,7 @@ static void clear_link(ir_node *irn, void *data)
 static void collect_phis_walker(ir_node *irn, void *data)
 {
 	be_chordal_env_t *env = (be_chordal_env_t*)data;
-	if (is_Phi(irn) && chordal_has_class(env, irn)) {
+	if (is_Phi(irn) && has_reg_class(env, irn)) {
 		ir_node *bl = get_nodes_block(irn);
 		set_irn_link(irn, get_irn_link(bl));
 		set_irn_link(bl, irn);
