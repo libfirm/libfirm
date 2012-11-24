@@ -352,13 +352,11 @@ static void amd64_get_call_abi(ir_type *method_type, be_abi_call_t *abi)
 	ir_type  *tp;
 	ir_mode  *mode;
 	int       i, n = get_method_n_params(method_type);
-	be_abi_call_flags_t call_flags;
 	int no_reg = 0;
 
 	/* set abi flags for calls */
+	be_abi_call_flags_t call_flags = be_abi_call_get_flags(abi);
 	call_flags.call_has_imm = true;
-
-	/* set stack parameter passing style */
 	be_abi_call_set_flags(abi, call_flags, &amd64_abi_callbacks);
 
 	for (i = 0; i < n; i++) {
