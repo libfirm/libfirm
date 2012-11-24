@@ -142,6 +142,4 @@ ir_type *be_abi_call_get_method_type(const be_abi_call_t *call);
 
 void be_abi_introduce(ir_graph *irg);
 
-void be_abi_free(ir_graph *irg);
-
 #endif

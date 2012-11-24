@@ -790,12 +790,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		dump(DUMP_FINAL, irg, "end");
 
-		if (!arch_env->custom_abi) {
-			be_timer_push(T_ABI);
-			be_abi_free(irg);
-			be_timer_pop(T_ABI);
-		}
-
 		restore_optimization_state(&state);
 
 		be_timer_pop(T_OTHER);

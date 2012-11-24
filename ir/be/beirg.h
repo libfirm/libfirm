@@ -81,7 +81,6 @@ struct be_stack_layout_t {
  */
 typedef struct be_irg_t {
 	be_main_env_t         *main_env;
-	be_abi_irg_t          *abi;
 	be_lv_t               *lv;
 	be_stack_layout_t      stack_layout;
 	unsigned              *allocatable_regs; /**< registers available for the
@@ -108,16 +107,6 @@ static inline be_main_env_t *be_get_irg_main_env(const ir_graph *irg)
 static inline be_lv_t *be_get_irg_liveness(const ir_graph *irg)
 {
 	return be_birg_from_irg(irg)->lv;
-}
-
-static inline be_abi_irg_t *be_get_irg_abi(const ir_graph *irg)
-{
-	return be_birg_from_irg(irg)->abi;
-}
-
-static inline void be_set_irg_abi(ir_graph *irg, be_abi_irg_t *abi)
-{
-	be_birg_from_irg(irg)->abi = abi;
 }
 
 static inline const arch_env_t *be_get_irg_arch_env(const ir_graph *irg)

@@ -1075,10 +1075,8 @@ static void process_ops_in_block(ir_node *bl, void *data)
 /**
  * Adjust all call nodes in the graph to the ABI conventions.
  */
-static void process_calls(ir_graph *irg)
+static void process_calls(ir_graph *const irg, be_abi_irg_t *const abi)
 {
-	be_abi_irg_t *abi = be_get_irg_abi(irg);
-
 	irg_walk_graph(irg, firm_clear_link, link_ops_in_block_walker, abi);
 
 	ir_heights = heights_new(irg);
@@ -1382,9 +1380,8 @@ static void fix_start_block(ir_graph *irg)
 /**
  * Modify the irg itself and the frame type.
  */
-static void modify_irg(ir_graph *irg)
+static void modify_irg(ir_graph *const irg, be_abi_irg_t *const env)
 {
-	be_abi_irg_t          *env          = be_get_irg_abi(irg);
 	be_abi_call_t         *call         = env->call;
 	const arch_env_t      *arch_env     = be_get_irg_arch_env(irg);
 	const arch_register_t *sp           = arch_env->sp;
@@ -1626,9 +1623,8 @@ static void modify_irg(ir_graph *irg)
 }
 
 /** Fix the state inputs of calls that still hang on unknowns */
-static void fix_call_state_inputs(ir_graph *irg)
+static void fix_call_state_inputs(ir_graph *const irg, be_abi_irg_t *const env)
 {
-	be_abi_irg_t     *env      = be_get_irg_abi(irg);
 	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
 	int i, n, n_states;
 	arch_register_t **stateregs = NEW_ARR_F(arch_register_t*, 0);
@@ -1819,7 +1815,6 @@ static void fix_pic_symconsts(ir_node *node, void *data)
 
 void be_abi_introduce(ir_graph *irg)
 {
-	be_abi_irg_t     *env         = XMALLOCZ(be_abi_irg_t);
 	ir_node          *old_frame   = get_irg_frame(irg);
 	const arch_env_t *arch_env    = be_get_irg_arch_env(irg);
 	ir_entity        *entity      = get_irg_entity(irg);
@@ -1840,20 +1835,17 @@ void be_abi_introduce(ir_graph *irg)
 		}
 	}
 
-	/* break here if backend provides a custom API.
-	 * Note: we shouldn't have to setup any be_abi_irg_t* stuff at all,
-	 * but need more cleanup to make this work
-	 */
-	be_set_irg_abi(irg, env);
+	/* Break here if backend provides a custom API. */
 
 	be_omit_fp        = be_options.omit_fp;
 
-	env->keep_map     = pmap_create();
-	env->call         = be_abi_call_new(arch_env->sp->reg_class);
-	arch_env_get_call_abi(arch_env, method_type, env->call);
+	be_abi_irg_t env;
+	env.keep_map     = pmap_create();
+	env.call         = be_abi_call_new(arch_env->sp->reg_class);
+	arch_env_get_call_abi(arch_env, method_type, env.call);
 
-	env->init_sp = dummy;
-	env->calls   = NEW_ARR_F(ir_node*, 0);
+	env.init_sp = dummy;
+	env.calls   = NEW_ARR_F(ir_node*, 0);
 
 	assure_edges(irg);
 
@@ -1862,40 +1854,27 @@ void be_abi_introduce(ir_graph *irg)
 	}
 
 	/* Lower all call nodes in the IRG. */
-	process_calls(irg);
+	process_calls(irg, &env);
 
 	/* Process the IRG */
-	modify_irg(irg);
+	modify_irg(irg, &env);
 
 	/* fix call inputs for state registers */
-	fix_call_state_inputs(irg);
+	fix_call_state_inputs(irg, &env);
+
+	be_abi_call_free(env.call);
 
 	/* We don't need the keep map anymore. */
-	pmap_destroy(env->keep_map);
-	env->keep_map = NULL;
+	pmap_destroy(env.keep_map);
 
 	/* calls array is not needed anymore */
-	DEL_ARR_F(env->calls);
-	env->calls = NULL;
+	DEL_ARR_F(env.calls);
 
 	/* reroute the stack origin of the calls to the true stack origin. */
-	exchange(dummy, env->init_sp);
+	exchange(dummy, env.init_sp);
 	exchange(old_frame, get_irg_frame(irg));
 
-	pmap_destroy(env->regs);
-	env->regs = NULL;
-}
-
-void be_abi_free(ir_graph *irg)
-{
-	be_abi_irg_t *env = be_get_irg_abi(irg);
-
-	if (env->call != NULL)
-		be_abi_call_free(env->call);
-	assert(env->regs == NULL);
-	free(env);
-
-	be_set_irg_abi(irg, NULL);
+	pmap_destroy(env.regs);
 }
 
 void be_put_allocatable_regs(const ir_graph *irg,
