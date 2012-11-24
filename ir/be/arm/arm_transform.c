@@ -1592,24 +1592,6 @@ static ir_node *gen_Proj(ir_node *node)
 	}
 }
 
-typedef ir_node *(*create_const_node_func)(dbg_info *db, ir_node *block);
-
-static inline ir_node *create_const(ir_graph *irg, ir_node **place,
-                                    create_const_node_func func,
-                                    const arch_register_t* reg)
-{
-	ir_node *block, *res;
-
-	if (*place != NULL)
-		return *place;
-
-	block = get_irg_start_block(irg);
-	res = func(NULL, block);
-	arch_set_irn_register(res, reg);
-	*place = res;
-	return res;
-}
-
 static ir_node *gen_Unknown(ir_node *node)
 {
 	ir_node  *block     = get_nodes_block(node);
