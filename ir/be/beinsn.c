@@ -114,20 +114,11 @@ be_insn_t *be_scan_insn(be_chordal_env_t const *const env, ir_node *const irn)
 
 	/* Compute the admissible registers bitsets. */
 	for (i = 0; i < insn->n_ops; ++i) {
-		be_operand_t *op = &insn->ops[i];
-		const arch_register_req_t   *req = op->req;
-		const arch_register_class_t *cls = req->cls;
-		arch_register_req_type_t    type = req->type;
+		be_operand_t              *const op  = &insn->ops[i];
+		arch_register_req_t const *const req = op->req;
+		assert(req->cls == env->cls);
 
-		/* If there is no special requirement, we allow current class here */
-		if (cls == NULL && req->type == arch_register_req_type_none) {
-			cls  = env->cls;
-			type = arch_register_req_type_normal;
-		}
-
-		assert(cls == env->cls);
-
-		if (type & arch_register_req_type_limited) {
+		if (req->type & arch_register_req_type_limited) {
 			bitset_t *regs = bitset_obstack_alloc(obst, env->cls->n_regs);
 			rbitset_copy_to_bitset(req->limited, regs);
 			op->regs = regs;
