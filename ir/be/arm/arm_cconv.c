@@ -25,6 +25,7 @@
 #include "config.h"
 
 #include "arm_cconv.h"
+#include "beirg.h"
 #include "irmode.h"
 #include "typerep.h"
 #include "xmalloc.h"

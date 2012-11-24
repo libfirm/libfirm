@@ -24,6 +24,8 @@
  */
 #include "config.h"
 
+#include "be_t.h"
+#include "beirg.h"
 #include "sparc_cconv.h"
 #include "irmode.h"
 #include "irgwalk.h"

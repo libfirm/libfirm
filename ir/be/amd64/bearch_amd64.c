@@ -33,6 +33,7 @@
 
 #include "bitset.h"
 #include "debug.h"
+#include "error.h"
 
 #include "be.h"
 #include "bearch.h"

@@ -28,16 +28,12 @@
 #include <stdbool.h>
 
 #include "firm_types.h"
-#include "bitset.h"
 #include "obst.h"
 #include "raw_bitset.h"
-#include "irop_t.h"
 
 #include "be_types.h"
 #include "beinfo.h"
 #include "be.h"
-#include "beirg.h"
-#include "error.h"
 
 /**
  * this constant is returned by the get_sp_bias functions if the stack

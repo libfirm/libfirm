@@ -26,6 +26,7 @@
 
 #include <string.h>
 
+#include "error.h"
 #include "irop_t.h"
 #include "irnode_t.h"
 #include "irhooks.h"

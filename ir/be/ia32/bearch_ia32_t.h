@@ -34,6 +34,7 @@
 
 #include "be.h"
 #include "beemitter.h"
+#include "beirg.h"
 #include "gen_ia32_regalloc_if.h"
 
 #ifdef NDEBUG

@@ -25,6 +25,7 @@
 #include "config.h"
 
 #include "bearch_sparc_t.h"
+#include "error.h"
 #include "gen_sparc_new_nodes.h"
 #include "lower_dw.h"
 #include "ircons_t.h"

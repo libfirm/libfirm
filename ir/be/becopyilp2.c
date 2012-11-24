@@ -46,6 +46,7 @@
 #include "config.h"
 
 #include "bitset.h"
+#include "error.h"
 #include "raw_bitset.h"
 #include "pdeq.h"
 

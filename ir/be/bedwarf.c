@@ -30,6 +30,7 @@
 
 #include "bearch.h"
 #include "bedwarf_t.h"
+#include "error.h"
 #include "obst.h"
 #include "irprog.h"
 #include "irgraph.h"
