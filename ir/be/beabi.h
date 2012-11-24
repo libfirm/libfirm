@@ -121,13 +121,6 @@ void be_abi_call_res_reg(be_abi_call_t *call, int pos,
  */
 be_abi_call_flags_t be_abi_call_get_flags(const be_abi_call_t *call);
 
-/**
- * Get the method type of an ABI call object.
- * @param call The call object.
- * @return The method type for that call object.
- */
-ir_type *be_abi_call_get_method_type(const be_abi_call_t *call);
-
 void be_abi_introduce(ir_graph *irg);
 
 #endif
