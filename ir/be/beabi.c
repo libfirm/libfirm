@@ -94,8 +94,6 @@ struct be_abi_irg_t {
 	ir_node              *start;        /**< The be_Start params node. */
 	pmap                 *regs;         /**< A map of all callee-save and ignore regs to
 	                                         their Projs to the RegParams node. */
-	int                  start_block_bias; /**< The stack bias at the end of the start block. */
-
 	pmap                 *keep_map;     /**< mapping blocks to keep nodes. */
 
 	ir_node              **calls;       /**< flexible array containing all be_Call nodes */
