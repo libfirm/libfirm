@@ -31,13 +31,10 @@
 #ifndef FIRM_BE_BECOPYOPT_H
 #define FIRM_BE_BECOPYOPT_H
 
-#include <stdio.h>
 #include <stdbool.h>
 
 #include "firm_types.h"
-#include "be_types.h"
 #include "bechordal.h"
-#include "beutil.h"
 
 typedef int(*cost_fct_t)(const ir_node *node, int input);
 
