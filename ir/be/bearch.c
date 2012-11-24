@@ -221,10 +221,9 @@ void arch_add_irn_flags(ir_node *node, arch_irn_flags_t flags)
 bool arch_reg_is_allocatable(const arch_register_req_t *req,
                              const arch_register_t *reg)
 {
+	assert(req->type != arch_register_req_type_none);
 	if (reg->type & arch_register_type_joker)
 		return true;
-	if (req->type == arch_register_req_type_none)
-		return false;
 	if (req->type & arch_register_req_type_limited) {
 		if (reg->reg_class != req->cls)
 			return false;
