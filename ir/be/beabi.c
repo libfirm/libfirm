@@ -1858,7 +1858,7 @@ void be_abi_introduce(ir_graph *irg)
 	assure_edges(irg);
 
 	if (be_options.pic) {
-		irg_walk_graph(irg, fix_pic_symconsts, NULL, env);
+		irg_walk_graph(irg, fix_pic_symconsts, NULL, NULL);
 	}
 
 	/* Lower all call nodes in the IRG. */
