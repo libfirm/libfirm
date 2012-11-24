@@ -519,11 +519,12 @@ static void peephole_sparc_RestoreZero(ir_node *node)
 	 * (and therefore after code selection).
 	 */
 	int n_tries = 10; /* limit our search */
-	ir_node *schedpoint = node;
 
-	while (sched_has_prev(schedpoint)) {
+	for (ir_node *schedpoint = node;;) {
 		const arch_register_t *reg;
 		schedpoint = sched_prev(schedpoint);
+		if (sched_is_begin(schedpoint))
+			break;
 
 		if (--n_tries == 0)
 			break;
@@ -591,9 +592,9 @@ static void finish_sparc_Return(ir_node *node)
 	/* see that there is no code between Return and restore, if there is move
 	 * it in front of the restore */
 	while (true) {
-		if (!sched_has_prev(schedpoint))
-			return;
 		schedpoint = sched_prev(schedpoint);
+		if (sched_is_begin(schedpoint))
+			return;
 		if (is_sparc_Restore(schedpoint) || is_sparc_RestoreZero(schedpoint))
 			break;
 	}

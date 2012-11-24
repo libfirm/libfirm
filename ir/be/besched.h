@@ -75,30 +75,6 @@ static inline bool sched_is_begin(const ir_node *node)
 }
 
 /**
- * Check, if an ir_node has a scheduling successor.
- * @param irn The ir node.
- * @return 1, if the node has a scheduling successor, 0 if not.
- */
-static inline bool sched_has_next(const ir_node *irn)
-{
-	const sched_info_t *info  = get_irn_sched_info(irn);
-	const ir_node      *block = is_Block(irn) ? irn : get_nodes_block(irn);
-	return info->next != block;
-}
-
-/**
- * Check, if an ir_node has a scheduling predecessor.
- * @param irn The ir node.
- * @return 1, if the node has a scheduling predecessor, 0 if not.
- */
-static inline bool sched_has_prev(const ir_node *irn)
-{
-	const sched_info_t *info  = get_irn_sched_info(irn);
-	const ir_node      *block = is_Block(irn) ? irn : get_nodes_block(irn);
-	return info->prev != block;
-}
-
-/**
  * Get the scheduling successor of a node.
  * @param irn The node.
  * @return The next ir node in the schedule or the block, if the node has no next node.
