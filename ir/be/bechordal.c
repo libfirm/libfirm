@@ -88,14 +88,12 @@ static int get_next_free_reg(const be_chordal_alloc_env_t *alloc_env, bitset_t *
 	return bitset_next_set(tmp, 0);
 }
 
-static bitset_t const *get_decisive_partner_regs(const be_operand_t *o1, const be_operand_t *o2)
+static bitset_t const *get_decisive_partner_regs(be_operand_t const *const o1)
 {
-	if (!o2)
-		return o1->regs;
+	be_operand_t const *const o2 = o1->partner;
+	assert(!o2 || o1->req->cls == o2->req->cls);
 
-	assert(o1->req->cls == o2->req->cls);
-
-	if (bitset_contains(o1->regs, o2->regs)) {
+	if (!o2 || bitset_contains(o1->regs, o2->regs)) {
 		return o1->regs;
 	} else if (bitset_contains(o2->regs, o1->regs)) {
 		return o2->regs;
@@ -235,7 +233,7 @@ static void handle_constraints(be_chordal_alloc_env_t *alloc_env,
 			DBG((dbg, LEVEL_2, "\tassociating %+F and %+F\n", op->carrier,
 			     partner));
 
-			bitset_t const *const bs = get_decisive_partner_regs(op, op->partner);
+			bitset_t const *const bs = get_decisive_partner_regs(op);
 			if (bs) {
 				DBG((dbg, LEVEL_2, "\tallowed registers for %+F: %B\n", op->carrier, bs));
 
