@@ -74,17 +74,6 @@ static inline struct list_head *get_block_border_head(be_chordal_env_t const *co
 
 #define foreach_border_head(head, pos)      list_for_each_entry_reverse(border_t, pos, head, list)
 
-/**
- * Check, if an irn is of the register class currently under processing.
- * @param env The chordal environment.
- * @param irn The node.
- * @return whether the node is of that register class.
- */
-static inline bool has_reg_class(be_chordal_env_t const *const env, ir_node const *const irn)
-{
-	return arch_irn_consider_in_reg_alloc(env->cls, irn);
-}
-
 enum {
 	/* Dump flags */
 	BE_CH_DUMP_NONE       = (1 << 0),

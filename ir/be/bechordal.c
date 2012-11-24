@@ -400,7 +400,7 @@ static void assign(ir_node *block, void *env_ptr)
 	 * allocated before), we have to mark their colors as used also.
 	 */
 	be_lv_foreach(lv, block, be_lv_state_in, irn) {
-		if (has_reg_class(env, irn)) {
+		if (arch_irn_consider_in_reg_alloc(env->cls, irn)) {
 			const arch_register_t *reg = arch_get_irn_register(irn);
 
 			assert(reg && "Node must have been assigned a register");

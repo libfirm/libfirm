@@ -128,7 +128,7 @@ void create_borders(ir_node *block, void *env_ptr)
 	 * They are necessary to build up real intervals.
 	 */
 	be_lv_foreach(lv, block, be_lv_state_end, irn) {
-		if (has_reg_class(env, irn)) {
+		if (arch_irn_consider_in_reg_alloc(env->cls, irn)) {
 			DBG((dbg, LEVEL_3, "\tMaking live: %+F/%d\n", irn, get_irn_idx(irn)));
 			bitset_set(live, get_irn_idx(irn));
 			border_use(irn, step, 0);
@@ -152,7 +152,7 @@ void create_borders(ir_node *block, void *env_ptr)
 				 * If the node defines some value, which can put into a
 				 * register of the current class, make a border for it.
 				 */
-				if (has_reg_class(env, proj)) {
+				if (arch_irn_consider_in_reg_alloc(env->cls, proj)) {
 					int nr = get_irn_idx(proj);
 
 					bitset_clear(live, nr);
@@ -164,7 +164,7 @@ void create_borders(ir_node *block, void *env_ptr)
 			 * If the node defines some value, which can put into a
 			 * register of the current class, make a border for it.
 			 */
-			if (has_reg_class(env, irn)) {
+			if (arch_irn_consider_in_reg_alloc(env->cls, irn)) {
 				int nr = get_irn_idx(irn);
 
 				bitset_clear(live, nr);
@@ -179,7 +179,7 @@ void create_borders(ir_node *block, void *env_ptr)
 			for (int i = 0, n = get_irn_arity(irn); i < n; ++i) {
 				ir_node *op = get_irn_n(irn, i);
 
-				if (has_reg_class(env, op)) {
+				if (arch_irn_consider_in_reg_alloc(env->cls, op)) {
 					int nr = get_irn_idx(op);
 					const char *msg = "-";
 
