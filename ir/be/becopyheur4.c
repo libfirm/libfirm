@@ -173,12 +173,11 @@ static co_mst_irn_t *co_mst_irn_init(co_mst_env_t *env, const ir_node *irn)
 	req = arch_get_irn_register_req(irn);
 	if (arch_register_req_is(req, limited)) {
 		rbitset_copy_to_bitset(req->limited, res->adm_colors);
+		/* exclude global ignore registers as well */
+		bitset_and(res->adm_colors, env->allocatable_regs);
 	} else {
-		bitset_set_all(res->adm_colors);
+		bitset_copy(res->adm_colors, env->allocatable_regs);
 	}
-
-	/* exclude global ignore registers as well */
-	bitset_and(res->adm_colors, env->allocatable_regs);
 
 	/* compute the constraint factor */
 	res->constr_factor = (real_t) (1 + env->n_regs - bitset_popcount(res->adm_colors)) / env->n_regs;
