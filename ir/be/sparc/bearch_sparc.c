@@ -171,11 +171,6 @@ static void sparc_before_ra(ir_graph *irg)
 	                   NULL, sparc_modifies_fp_flags);
 }
 
-static void sparc_init_graph(ir_graph *irg)
-{
-	(void) irg;
-}
-
 extern const arch_isa_if_t sparc_isa_if;
 static sparc_isa_t sparc_isa_template = {
 	{
@@ -635,7 +630,7 @@ const arch_isa_if_t sparc_isa_if = {
 
 	sparc_begin_codegeneration,
 	sparc_end_codegeneration,
-	sparc_init_graph,
+	NULL,
 	NULL,                /* get call abi */
 	NULL,                /* mark remat */
 	NULL,                /* get_pic_base */

@@ -274,15 +274,6 @@ static void arm_before_ra(ir_graph *irg)
 }
 
 /**
- * Initializes the code generator.
- */
-static void arm_init_graph(ir_graph *irg)
-{
-	(void) irg;
-}
-
-
-/**
  * Maps all intrinsic calls that the backend support
  * and map all instructions the backend did not support
  * to runtime calls.
@@ -578,7 +569,7 @@ const arch_isa_if_t arm_isa_if = {
 
 	arm_begin_codegeneration,
 	arm_end_codegeneration,
-	arm_init_graph,
+	NULL,
 	NULL,  /* get call abi */
 	NULL,  /* mark remat */
 	NULL,  /* get_pic_base */

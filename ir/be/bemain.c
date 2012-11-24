@@ -658,7 +658,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_timer_pop(T_VERIFY);
 
 		/* get a code generator for this graph. */
-		arch_env->impl->init_graph(irg);
+		if (arch_env->impl->init_graph)
+			arch_env->impl->init_graph(irg);
 
 		/* some transformations need to be done before abi introduce */
 		if (arch_env->impl->before_abi != NULL)
