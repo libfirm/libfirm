@@ -73,7 +73,6 @@ typedef struct be_chordal_alloc_env_t {
 	bitset_t *live;        /**< A liveness bitset. */
 	bitset_t *tmp_colors;  /**< An auxiliary bitset which is as long as the number of colors in the class. */
 	bitset_t *colors;      /**< The color mask. */
-	int colors_n;          /**< The number of colors. */
 } be_chordal_alloc_env_t;
 
 static int get_next_free_reg(const be_chordal_alloc_env_t *alloc_env, bitset_t *colors)
@@ -476,7 +475,6 @@ static void be_ra_chordal_color(be_chordal_env_t *const chordal_env)
 	assure_doms(irg);
 
 	env.chordal_env   = chordal_env;
-	env.colors_n      = colors_n;
 	env.colors        = bitset_alloca(colors_n);
 	env.tmp_colors    = bitset_alloca(colors_n);
 	env.pre_colored   = pset_new_ptr_default();
