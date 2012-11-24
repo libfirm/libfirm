@@ -58,9 +58,8 @@ $mode_fp  = "mode_F";  # mode used by floatingpoint registers
 # register types:
 #   0 - no special type
 #   1 - ignore (do not assign this register)
-#   2 - emitter can choose an arbitrary register of this class
-#   4 - the register is a virtual one
-#   8 - register represents a state
+#   2 - the register is a virtual one
+#   4 - register represents a state
 # NOTE: Last entry of each class is the largest Firm-Mode a register can hold
 %reg_classes = (
 	gp => [

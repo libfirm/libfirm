@@ -53,9 +53,8 @@ $arch = "amd64";
 # register types:
 $normal      =  0; # no special type
 $ignore      =  1; # ignore (do not assign this register)
-$arbitrary   =  2; # emitter can choose an arbitrary register of this class
-$virtual     =  4; # the register is a virtual one
-$state       =  8; # register represents a state
+$virtual     =  2; # the register is a virtual one
+$state       =  4; # register represents a state
 # NOTE: Last entry of each class is the largest Firm-Mode a register can hold
 %reg_classes = (
 	gp => [

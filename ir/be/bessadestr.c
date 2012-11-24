@@ -245,7 +245,6 @@ static void set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 			DBG((dbg, LEVEL_1, "  for %+F(%s) -- %+F(%s)\n", phi, phi_reg->name, arg, arg_reg->name));
 
 			if (phi_reg == arg_reg
-					|| (arg_reg->type & arch_register_type_joker)
 					|| (arg_reg->type & arch_register_type_virtual)) {
 				/* Phi and arg have the same register, so pin and continue */
 				pin_irn(arg, phi_block);

@@ -84,9 +84,8 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 		if (reg == NULL)
 			continue;
 
-		/* precolored with an ignore register (which is not a joker like
-		   unknown/noreg) */
-		if ((reg->type & arch_register_type_joker) ||
+		/* Precolored with an ignore register (which is not virtual). */
+		if (reg->type & arch_register_type_virtual ||
 		    rbitset_is_set(birg->allocatable_regs, reg->global_index))
 			continue;
 

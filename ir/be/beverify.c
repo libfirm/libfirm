@@ -680,7 +680,7 @@ static void check_input_constraints(ir_node *node)
 			ir_node               *pred     = get_Phi_pred(node, i);
 			const arch_register_t *pred_reg = arch_get_irn_register(pred);
 
-			if (reg != pred_reg && !(pred_reg->type & arch_register_type_joker)) {
+			if (reg != pred_reg && !(pred_reg->type & arch_register_type_virtual)) {
 				const char *pred_name = pred_reg != NULL ? pred_reg->name : "(null)";
 				const char *reg_name  = reg != NULL ? reg->name : "(null)";
 				ir_fprintf(stderr, "Verify warning: Input %d of %+F in block %+F(%s) uses register %s instead of %s\n",

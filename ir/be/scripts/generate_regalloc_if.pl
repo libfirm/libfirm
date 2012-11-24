@@ -64,14 +64,10 @@ sub translate_reg_type {
 		}
 
 		if ($t & 2) {
-			push(@types, "arch_register_type_joker");
-		}
-
-		if ($t & 4) {
 			push(@types, "arch_register_type_virtual");
 		}
 
-		if ($t & 8) {
+		if ($t & 4) {
 			push(@types, "arch_register_type_state");
 		}
 

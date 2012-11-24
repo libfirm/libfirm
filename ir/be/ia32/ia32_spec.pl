@@ -12,9 +12,8 @@ $mode_fpcw          = "ia32_mode_fpcw";
 # register types:
 $normal      =  0; # no special type
 $ignore      =  1; # ignore (do not assign this register)
-$arbitrary   =  2; # emitter can choose an arbitrary register of this class
-$virtual     =  4; # the register is a virtual one
-$state       =  8; # register represents a state
+$virtual     =  2; # the register is a virtual one
+$state       =  4; # register represents a state
 # NOTE: Last entry of each class is the largest Firm-Mode a register can hold
 %reg_classes = (
 	gp => [
@@ -26,7 +25,7 @@ $state       =  8; # register represents a state
 		{ name => "edi", dwarf => 7 },
 		{ name => "ebp", dwarf => 5 },
 		{ name => "esp", dwarf => 4, type => $ignore },
-		{ name => "gp_NOREG", type => $ignore | $arbitrary | $virtual }, # we need a dummy register for NoReg nodes
+		{ name => "gp_NOREG", type => $ignore | $virtual }, # we need a dummy register for NoReg nodes
 		{ mode => $mode_gp }
 	],
 	mmx => [
@@ -61,7 +60,7 @@ $state       =  8; # register represents a state
 		{ name => "st5", realname => "st(5)", dwarf => 16 },
 		{ name => "st6", realname => "st(6)", dwarf => 17 },
 		{ name => "st7", realname => "st(7)", dwarf => 18 },
-		{ name => "fp_NOREG", type => $ignore | $arbitrary | $virtual }, # we need a dummy register for NoReg nodes
+		{ name => "fp_NOREG", type => $ignore | $virtual }, # we need a dummy register for NoReg nodes
 		{ mode => $mode_fp87 }
 	],
 	fp_cw => [	# the floating point control word
