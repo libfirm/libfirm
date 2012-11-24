@@ -151,8 +151,6 @@ void be_info_init(void)
  */
 static void sched_edge_hook(FILE *F, const ir_node *irn)
 {
-	if (is_Proj(irn))
-		return;
 	if (get_irn_irg(irn)->be_data == NULL)
 		return;
 
