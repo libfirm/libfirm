@@ -12,14 +12,9 @@
 #ifndef _BELIVECHK_T_H
 #define _BELIVECHK_T_H
 
-#include "irgraph_t.h"
-#include "iredges_t.h"
-
-#include "statev_t.h"
-
-#include "beirg.h"
 #include "besched.h"
 #include "belive_t.h"
+#include "iredges_t.h"
 
 /**
  * Check dominance of two nodes in the same block.
@@ -162,31 +157,6 @@ end:
 	return res;
 }
 
-
-
-/**
- * Check if a node dominates a use.
- * Note that the use of a phi is in its corresponding predecessor.
- * @param irn  The node.
- * @param edge The use.
- * @return     1, if @p irn dominates the use @p edge.
- */
-static inline int _dominates_use(const ir_node *irn, const ir_edge_t *edge)
-{
-	ir_node *use = get_edge_src_irn(edge);
-
-	if (is_Phi(use)) {
-		int pos         = get_edge_src_pos(edge);
-		ir_node *phi_bl = get_nodes_block(use);
-		ir_node *use_bl = get_Block_cfgpred_block(phi_bl, pos);
-		ir_node *irn_bl = get_nodes_block(irn);
-		return block_dominates(irn_bl, use_bl);
-	}
-
-	return _value_dominates(irn, use);
-}
-
-#define value_dominates(a, b)                    _value_dominates(a, b)
-#define dominates_use(a, e)                      _dominates_use(a, e)
+#define value_dominates(a, b) _value_dominates(a, b)
 
 #endif
