@@ -76,7 +76,6 @@ struct be_abi_call_t {
 	be_abi_call_flags_t          flags;  /**< Flags describing the ABI behavior on calls */
 	int                          pop;    /**< number of bytes the stack frame is shrinked by the callee on return. */
 	const be_abi_callbacks_t    *cb;
-	ir_type                     *between_type;
 	set                         *params;
 	const arch_register_class_t *cls_addr; /**< register class of the call address */
 };
