@@ -268,11 +268,7 @@ void set_type_visibility(ir_type *tp, ir_visibility v)
 void set_type_size_bytes(ir_type *tp, unsigned size)
 {
 	const tp_op *tpop = get_type_tpop(tp);
-
-	if (tpop->ops.set_type_size)
-		tpop->ops.set_type_size(tp, size);
-	else
-		assert(0 && "Cannot set size for this type");
+	tpop->ops.set_type_size(tp, size);
 }
 
 unsigned get_type_alignment_bytes(ir_type *tp)
