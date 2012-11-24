@@ -99,9 +99,6 @@ struct be_abi_irg_t {
 
 static ir_heights_t *ir_heights;
 
-/** Flag: if set, try to omit the frame pointer in all routines. */
-static int be_omit_fp = 1;
-
 static ir_node *be_abi_reg_map_get(pmap *map, const arch_register_t *reg)
 {
 	return pmap_get(ir_node, map, reg);
@@ -285,7 +282,7 @@ static be_abi_call_t *be_abi_call_new(const arch_register_class_t *cls_addr)
 	call->params            = new_set(cmp_call_arg, 16);
 	call->cb                = NULL;
 	call->cls_addr          = cls_addr;
-	call->flags.try_omit_fp = be_omit_fp;
+	call->flags.try_omit_fp = be_options.omit_fp;
 
 	return call;
 }
@@ -1821,8 +1818,6 @@ void be_abi_introduce(ir_graph *irg)
 	}
 
 	/* Break here if backend provides a custom API. */
-
-	be_omit_fp        = be_options.omit_fp;
 
 	be_abi_irg_t env;
 	env.keep_map     = pmap_create();
