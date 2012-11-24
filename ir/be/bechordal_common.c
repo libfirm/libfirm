@@ -230,9 +230,9 @@ ir_node *pre_process_constraints(be_chordal_env_t *env, be_insn_t **the_insn)
 	 * Make the Perm, recompute liveness and re-scan the insn since the
 	 * in operands are now the Projs of the Perm.
 	 */
-	perm = insert_Perm_after(env->irg, env->cls, sched_prev(insn->irn));
+	perm = insert_Perm_before(env->irg, env->cls, insn->irn);
 
-	/* Registers are propagated by insert_Perm_after(). Clean them here! */
+	/* Registers are propagated by insert_Perm_before(). Clean them here! */
 	if (perm == NULL)
 		return NULL;
 

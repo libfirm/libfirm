@@ -87,20 +87,19 @@ static int cmp_node_nr(const void *a, const void *b)
 
 */
 
-ir_node *insert_Perm_after(ir_graph *irg, const arch_register_class_t *cls,
+ir_node *insert_Perm_before(ir_graph *irg, const arch_register_class_t *cls,
 						   ir_node *pos)
 {
 	be_lv_t     *lv = be_get_irg_liveness(irg);
-	ir_node     *bl = is_Block(pos) ? pos : get_nodes_block(pos);
 	ir_nodeset_t live;
 
 	ir_node *perm, **nodes;
 	size_t i, n;
 
-	DBG((dbg, LEVEL_1, "Insert Perm after: %+F\n", pos));
+	DBG((dbg, LEVEL_1, "Insert Perm before: %+F\n", pos));
 
 	ir_nodeset_init(&live);
-	be_liveness_nodes_live_at(lv, cls, pos, &live);
+	be_liveness_nodes_live_at(lv, cls, sched_prev(pos), &live);
 
 	n = ir_nodeset_size(&live);
 	if (n == 0) {
@@ -121,8 +120,9 @@ ir_node *insert_Perm_after(ir_graph *irg, const arch_register_class_t *cls,
 	/* make the input order deterministic */
 	qsort(nodes, n, sizeof(nodes[0]), cmp_node_nr);
 
+	ir_node *const bl = get_nodes_block(pos);
 	perm = be_new_Perm(cls, bl, n, nodes);
-	sched_add_after(pos, perm);
+	sched_add_before(pos, perm);
 	free(nodes);
 
 	for (i = 0; i < n; ++i) {

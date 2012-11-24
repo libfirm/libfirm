@@ -38,10 +38,10 @@
  * Insert a Perm which permutes all (non-ignore) live values of a given register class
  * after a certain instruction.
  * @param lv        Liveness Information.
- * @param irn       The node to insert the Perm after.
- * @return          The Perm or NULL if nothing was live before @p irn.
+ * @param irn       The node to insert the Perm before.
+ * @return          The Perm or NULL if nothing was live after @p irn.
  */
-ir_node *insert_Perm_after(ir_graph *irg, const arch_register_class_t *cls,
+ir_node *insert_Perm_before(ir_graph *irg, const arch_register_class_t *cls,
 						   ir_node *irn);
 
 /**
