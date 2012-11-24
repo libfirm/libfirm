@@ -114,7 +114,6 @@ typedef struct aff_edge_t {
 /* main coalescing environment */
 typedef struct co_mst_env_t {
 	int              n_regs;         /**< number of regs in class */
-	int              k;              /**< number of non-ignore registers in class */
 	bitset_t         *allocatable_regs; /**< set containing all global ignore registers */
 	ir_nodemap        map;           /**< phase object holding data for nodes */
 	struct obstack    obst;
@@ -1236,7 +1235,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 	 * TODO Sebastian: Perhaps we should at all nodes and figure out
 	 * a suitable color using costs as done above (determine_color_costs).
 	 */
-	for (i = 0; i < env->k; ++i) {
+	for (i = 0; i < env->n_regs; ++i) {
 		int         col = order[i].col;
 		waitq       *good_starts;
 		aff_chunk_t *local_best;
@@ -1431,7 +1430,6 @@ static int co_solve_heuristic_mst(copy_opt_t *co)
 	unsigned     n_regs            = co->cls->n_regs;
 	bitset_t     *allocatable_regs = bitset_alloca(n_regs);
 	unsigned     i, j;
-	size_t       k;
 	size_t       pn;
 	ir_node      *irn;
 	co_mst_env_t mst_env;
@@ -1445,10 +1443,8 @@ static int co_solve_heuristic_mst(copy_opt_t *co)
 	obstack_init(&mst_env.obst);
 
 	be_put_allocatable_regs(co->cenv->irg, co->cls, allocatable_regs);
-	k = bitset_popcount(allocatable_regs);
 
 	mst_env.n_regs           = n_regs;
-	mst_env.k                = k;
 	mst_env.chunks           = new_pqueue();
 	mst_env.co               = co;
 	mst_env.allocatable_regs = allocatable_regs;
