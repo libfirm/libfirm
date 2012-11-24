@@ -1180,13 +1180,10 @@ static void reg_map_to_arr(reg_node_map_t *res, pmap *reg_map)
  *
  * @param @env  the abi environment
  * @param irn   the Return node
- * @param bl    the block where the be_Retun should be placed
- * @param mem   the current memory
- * @param n_res number of return results
  */
-static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
-		ir_node *mem, int n_res)
+static ir_node *create_be_return(be_abi_irg_t *const env, ir_node *const irn)
 {
+	ir_node          *const bl = get_nodes_block(irn);
 	be_abi_call_t    *call     = env->call;
 	ir_graph         *irg      = get_Block_irg(bl);
 	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
@@ -1215,6 +1212,7 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 		remove_End_keepalive(get_irg_end(irg), keep);
 	}
 
+	int const n_res = get_Return_n_ress(irn);
 	/* Insert results for Return into the register map. */
 	for (i = 0; i < n_res; ++i) {
 		ir_node *res           = get_Return_res(irn, i);
@@ -1241,7 +1239,7 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 	in   = ALLOCAN(ir_node*,               in_max);
 	regs = ALLOCAN(arch_register_t const*, in_max);
 
-	in[0]   = mem;
+	in[0]   = get_Return_mem(irn);
 	in[1]   = be_abi_reg_map_get(reg_map, arch_env->sp);
 	regs[0] = NULL;
 	regs[1] = arch_env->sp;
@@ -1576,9 +1574,7 @@ static void modify_irg(ir_graph *const irg, be_abi_irg_t *const env)
 		ir_node *irn = get_Block_cfgpred(end, i);
 
 		if (is_Return(irn)) {
-			ir_node *blk = get_nodes_block(irn);
-			ir_node *mem = get_Return_mem(irn);
-			ir_node *ret = create_be_return(env, irn, blk, mem, get_Return_n_ress(irn));
+			ir_node *const ret = create_be_return(env, irn);
 			exchange(irn, ret);
 		}
 	}
