@@ -49,11 +49,6 @@ static const arch_register_req_t no_requirement = {
 };
 const arch_register_req_t *arch_no_register_req = &no_requirement;
 
-static reg_out_info_t dummy_info = {
-	NULL,
-	&no_requirement
-};
-
 /* Initialize the architecture environment struct. */
 arch_env_t *arch_env_begin_codegeneration(const arch_isa_if_t *isa_if,
                                           be_main_env_t *main_env)
@@ -154,12 +149,6 @@ static reg_out_info_t *get_out_info(const ir_node *node)
 	}
 
 	info = be_get_info(node);
-	/* We have a problem with the switch-node where there can be arbitrary
-	 * Proj-numbers, so we can't easily allocate an array big-enough to hold
-	 * all of them. So until we rewrite Switch-nodes we need this special case
-	 */
-	if (info->out_infos == NULL)
-		return &dummy_info;
 	assert(pos < ARR_LEN(info->out_infos));
 	return &info->out_infos[pos];
 }
