@@ -334,7 +334,6 @@ static void determine_color_costs(co2_t *env, co2_irn_t *ci, col_cost_pair_t *co
 	const ir_node *irn = ci->irn;
 	be_ifg_t *ifg      = env->co->cenv->ifg;
 	int n_regs         = env->co->cls->n_regs;
-	bitset_t *forb     = bitset_alloca(n_regs);
 	affinity_node_t *a = ci->aff;
 
 	const ir_node *pos;
@@ -342,8 +341,8 @@ static void determine_color_costs(co2_t *env, co2_irn_t *ci, col_cost_pair_t *co
 	int i;
 
 	/* Put all forbidden colors into the aux bitset. */
-	admissible_colors(env, ci, forb);
-	bitset_flip_all(forb);
+	bitset_t *const admissible = bitset_alloca(n_regs);
+	admissible_colors(env, ci, admissible);
 
 	for (i = 0; i < n_regs; ++i) {
 		col_costs[i].col   = i;
@@ -374,7 +373,7 @@ static void determine_color_costs(co2_t *env, co2_irn_t *ci, col_cost_pair_t *co
 	be_ifg_neighbours_break(&it);
 
 	/* Set the costs to infinity for each color which is not allowed at this node. */
-	bitset_foreach(forb, elm) {
+	bitset_foreach_clear(admissible, elm) {
 		col_costs[elm].costs  = INT_MAX;
 	}
 
@@ -619,8 +618,7 @@ static void node_color_badness(co2_cloud_irn_t *ci, int *badness)
 	neighbours_iter_t it;
 
 	admissible_colors(env, &ci->inh, bs);
-	bitset_flip_all(bs);
-	bitset_foreach(bs, elm)
+	bitset_foreach_clear(bs, elm)
 		badness[elm] = ci->costs;
 
 	/* Use constrained/fixed interfering neighbors to influence the color badness */
