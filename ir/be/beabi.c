@@ -1319,7 +1319,6 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 typedef struct lower_frame_sels_env_t {
 	ir_node      *frame;                     /**< the current frame */
 	const arch_register_class_t *sp_class;   /**< register class of the stack pointer */
-	const arch_register_class_t *link_class; /**< register class of the link pointer */
 	ir_type      *frame_tp;                  /**< the frame type */
 	int          static_link_pos;            /**< argument number of the hidden static link */
 } lower_frame_sels_env_t;
@@ -1417,10 +1416,9 @@ static void modify_irg(ir_graph *const irg, be_abi_irg_t *const env)
 	arg_type = compute_arg_type(irg, call, method_type);
 
 	/* Convert the Sel nodes in the irg to frame addr nodes: */
-	ctx.frame            = get_irg_frame(irg);
-	ctx.sp_class         = arch_env->sp->reg_class;
-	ctx.link_class       = arch_env->link_class;
-	ctx.frame_tp         = get_irg_frame_type(irg);
+	ctx.frame    = get_irg_frame(irg);
+	ctx.sp_class = arch_env->sp->reg_class;
+	ctx.frame_tp = get_irg_frame_type(irg);
 
 	/* layout the stackframe now */
 	if (get_type_state(ctx.frame_tp) == layout_undefined) {
