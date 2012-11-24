@@ -27,6 +27,7 @@
 
 #include "beabihelper.h"
 #include "bearch.h"
+#include "beirg.h"
 #include "benode.h"
 #include "besched.h"
 #include "ircons.h"

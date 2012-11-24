@@ -25,14 +25,9 @@
 #ifndef FIRM_BE_BESCHED_H
 #define FIRM_BE_BESCHED_H
 
-#include <stdio.h>
 #include <stdbool.h>
 
-#include "irgraph.h"
-#include "irnode.h"
-#include "beirg.h"
 #include "beinfo.h"
-#include "beutil.h"
 
 static sched_info_t *get_irn_sched_info(const ir_node *node)
 {

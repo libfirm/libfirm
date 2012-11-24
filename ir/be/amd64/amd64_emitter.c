@@ -25,6 +25,7 @@
 
 #include <limits.h>
 
+#include "be_t.h"
 #include "error.h"
 #include "xmalloc.h"
 #include "tv.h"

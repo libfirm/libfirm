@@ -24,6 +24,7 @@
  */
 #include "config.h"
 
+#include "beirg.h"
 #include "error.h"
 #include "firm_types.h"
 #include "irnode_t.h"

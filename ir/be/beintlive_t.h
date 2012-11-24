@@ -14,6 +14,7 @@
 
 #include "besched.h"
 #include "belive_t.h"
+#include "beutil.h"
 #include "iredges_t.h"
 
 /**

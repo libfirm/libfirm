@@ -26,10 +26,7 @@
 
 #include <stdlib.h>
 
-#include "irprintf.h"
-#include "irgwalk.h"
 #include "firm_types.h"
-#include "irgraph_t.h"
 #include "iredges_t.h"
 #include "ircons.h"
 #include "irgmod.h"

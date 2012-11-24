@@ -26,6 +26,7 @@
 #include <stdbool.h>
 
 #include "beinfo.h"
+#include "beirg.h"
 #include "bearch.h"
 #include "benode.h"
 #include "besched.h"
