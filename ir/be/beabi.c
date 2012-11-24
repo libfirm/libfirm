@@ -1190,9 +1190,7 @@ static ir_node *create_be_return(be_abi_irg_t *const env, ir_node *const irn)
 	pmap *reg_map  = pmap_create();
 	ir_node *keep  = pmap_get(ir_node, env->keep_map, bl);
 	size_t in_max;
-	ir_node *ret;
 	int i, n;
-	unsigned pop;
 	ir_node **in;
 	ir_node *stack;
 	const arch_register_t **regs;
@@ -1267,9 +1265,7 @@ static ir_node *create_be_return(be_abi_irg_t *const env, ir_node *const irn)
 
 	/* The in array for the new back end return is now ready. */
 	dbg_info *const dbgi = get_irn_dbg_info(irn);
-	/* we have to pop the shadow parameter in in case of struct returns */
-	pop = call->pop;
-	ret = be_new_Return(dbgi, irg, bl, n_res, pop, n, in);
+	ir_node  *const ret  = be_new_Return(dbgi, irg, bl, n_res, call->pop, n, in);
 
 	/* Set the register classes of the return's parameter accordingly. */
 	for (i = 0; i < n; ++i) {
