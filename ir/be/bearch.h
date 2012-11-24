@@ -97,7 +97,8 @@ typedef enum arch_register_req_type_t {
 } arch_register_req_type_t;
 ENUM_BITSET(arch_register_req_type_t)
 
-extern const arch_register_req_t *arch_no_register_req;
+extern arch_register_req_t const arch_no_requirement;
+#define arch_no_register_req (&arch_no_requirement)
 
 /**
  * Print information about a register requirement in human readable form

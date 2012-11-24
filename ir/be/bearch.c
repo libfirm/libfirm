@@ -39,7 +39,7 @@
 
 #include "irprintf.h"
 
-static const arch_register_req_t no_requirement = {
+arch_register_req_t const arch_no_requirement = {
 	arch_register_req_type_none,
 	NULL,
 	NULL,
@@ -47,7 +47,6 @@ static const arch_register_req_t no_requirement = {
 	0,
 	0
 };
-const arch_register_req_t *arch_no_register_req = &no_requirement;
 
 /* Initialize the architecture environment struct. */
 arch_env_t *arch_env_begin_codegeneration(const arch_isa_if_t *isa_if,
