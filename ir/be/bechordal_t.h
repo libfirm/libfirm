@@ -74,8 +74,6 @@ static inline struct list_head *_get_block_border_head(const be_chordal_env_t *i
 #define get_block_border_head(info, bl)     _get_block_border_head(info, bl)
 
 #define foreach_border_head(head, pos)      list_for_each_entry_reverse(border_t, pos, head, list)
-#define border_next(b)                      (list_entry((b)->list.next, border_t, list))
-#define border_prev(b)                      (list_entry((b)->list.prev, border_t, list))
 
 /**
  * Check, if an irn is of the register class currently under processing.
