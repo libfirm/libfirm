@@ -67,13 +67,6 @@ void be_abi_call_set_flags(be_abi_call_t *call, be_abi_call_flags_t flags, const
 void be_abi_call_set_pop(be_abi_call_t *call, int pop);
 
 /**
- * Set register class for call address.
- * @param call      The call.
- * @param cls       The register class for call address.
- */
-void be_abi_call_set_call_address_reg_class(be_abi_call_t *call, const arch_register_class_t *cls);
-
-/**
  * The ABI can change when we call a function vs. when we have
  * been called.
  */

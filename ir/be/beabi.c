@@ -210,13 +210,6 @@ void be_abi_call_set_pop(be_abi_call_t *call, int pop)
 	call->pop = pop;
 }
 
-/* Set register class for call address */
-void be_abi_call_set_call_address_reg_class(be_abi_call_t *call, const arch_register_class_t *cls)
-{
-	call->cls_addr = cls;
-}
-
-
 void be_abi_call_param_stack(be_abi_call_t *call, int arg_pos,
                              ir_mode *load_mode, unsigned alignment,
                              unsigned space_before, unsigned space_after,
