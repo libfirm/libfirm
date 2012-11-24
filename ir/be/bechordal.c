@@ -66,8 +66,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-#define DUMP_INTERVALS
-
 typedef struct be_chordal_alloc_env_t {
 	be_chordal_env_t *chordal_env;
 
