@@ -80,7 +80,6 @@ struct be_stack_layout_t {
  * backend structures
  */
 typedef struct be_irg_t {
-	ir_graph              *irg;
 	be_main_env_t         *main_env;
 	be_abi_irg_t          *abi;
 	be_lv_t               *lv;
@@ -119,12 +118,6 @@ static inline be_abi_irg_t *be_get_irg_abi(const ir_graph *irg)
 static inline void be_set_irg_abi(ir_graph *irg, be_abi_irg_t *abi)
 {
 	be_birg_from_irg(irg)->abi = abi;
-}
-
-/** deprecated */
-static inline ir_graph *be_get_birg_irg(const be_irg_t *birg)
-{
-	return birg->irg;
 }
 
 static inline const arch_env_t *be_get_irg_arch_env(const ir_graph *irg)

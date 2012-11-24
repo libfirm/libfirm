@@ -456,7 +456,6 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 	irg->be_data = birg;
 
 	memset(birg, 0, sizeof(*birg));
-	birg->irg = irg;
 	birg->main_env = env;
 	obstack_init(&birg->obst);
 	birg->lv = be_liveness_new(irg);
@@ -631,10 +630,11 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	}
 
 	/* For all graphs */
-	for (i = 0; i < num_birgs; ++i) {
-		be_irg_t *birg = &birgs[i];
-		ir_graph *irg  = birg->irg;
-		optimization_state_t state;
+	for (i = 0; i < num_irgs; ++i) {
+		ir_graph  *const irg    = get_irp_irg(i);
+		ir_entity *const entity = get_irg_entity(irg);
+		if (get_entity_linkage(entity) & IR_LINKAGE_NO_CODEGEN)
+			continue;
 
 		/* set the current graph (this is important for several firm functions) */
 		current_ir_graph = irg;
@@ -712,6 +712,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		/* introduce patterns to assure constraints */
 		be_timer_push(T_CONSTR);
 		/* we switch off optimizations here, because they might cause trouble */
+		optimization_state_t state;
 		save_optimization_state(&state);
 		set_optimize(0);
 		set_opt_cse(0);
