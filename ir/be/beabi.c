@@ -73,11 +73,10 @@ typedef struct be_abi_call_arg_t {
 } be_abi_call_arg_t;
 
 struct be_abi_call_t {
-	be_abi_call_flags_t          flags;  /**< Flags describing the ABI behavior on calls */
-	int                          pop;    /**< number of bytes the stack frame is shrinked by the callee on return. */
-	const be_abi_callbacks_t    *cb;
-	set                         *params;
-	const arch_register_class_t *cls_addr; /**< register class of the call address */
+	be_abi_call_flags_t       flags;  /**< Flags describing the ABI behavior on calls */
+	int                       pop;    /**< number of bytes the stack frame is shrinked by the callee on return. */
+	const be_abi_callbacks_t *cb;
+	set                      *params;
 };
 
 /**
@@ -263,17 +262,14 @@ be_abi_call_flags_t be_abi_call_get_flags(const be_abi_call_t *call)
 /**
  * Constructor for a new ABI call object.
  *
- * @param cls_addr  register class of the call address
- *
  * @return the new ABI call object
  */
-static be_abi_call_t *be_abi_call_new(const arch_register_class_t *cls_addr)
+static be_abi_call_t *be_abi_call_new(void)
 {
 	be_abi_call_t *call = XMALLOCZ(be_abi_call_t);
 
 	call->params            = new_set(cmp_call_arg, 16);
 	call->cb                = NULL;
-	call->cls_addr          = cls_addr;
 	call->flags.try_omit_fp = be_options.omit_fp;
 
 	return call;
@@ -345,7 +341,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	ir_node *bl                = get_nodes_block(irn);
 	int stack_size             = 0;
 	const arch_register_t *sp  = arch_env->sp;
-	be_abi_call_t *call        = be_abi_call_new(sp->reg_class);
+	be_abi_call_t *call        = be_abi_call_new();
 	ir_mode *mach_mode         = sp->reg_class->mode;
 	int n_res                  = get_method_n_ress(call_tp);
 
@@ -559,7 +555,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	} else {
 		/* indirect call */
 		low_call = be_new_Call(dbgi, irg, bl, curr_mem, sp->single_req, curr_sp,
-		                       call->cls_addr->class_req, call_ptr,
+		                       sp->reg_class->class_req, call_ptr,
 		                       n_reg_results + pn_be_Call_first_res + ARR_LEN(destroyed_regs),
 		                       n_ins, in, get_Call_type(irn));
 	}
@@ -1813,7 +1809,7 @@ void be_abi_introduce(ir_graph *irg)
 
 	be_abi_irg_t env;
 	env.keep_map     = pmap_create();
-	env.call         = be_abi_call_new(arch_env->sp->reg_class);
+	env.call         = be_abi_call_new();
 	arch_env_get_call_abi(arch_env, method_type, env.call);
 
 	env.init_sp = dummy;
