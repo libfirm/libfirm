@@ -47,6 +47,7 @@
 
 #include "be.h"
 #include "beabi.h"
+#include "beabihelper.h"
 #include "bearch.h"
 #include "benode.h"
 #include "belive_t.h"

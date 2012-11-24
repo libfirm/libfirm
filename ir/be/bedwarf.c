@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
+#include "bearch.h"
 #include "bedwarf_t.h"
 #include "obst.h"
 #include "irprog.h"
@@ -48,6 +49,7 @@
 #include "beemitter.h"
 #include "dbginfo.h"
 #include "begnuas.h"
+#include "typerep.h"
 
 enum {
 	LEVEL_NONE,

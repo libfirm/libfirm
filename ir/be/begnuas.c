@@ -42,6 +42,7 @@
 #include "execfreq.h"
 
 #include "be_t.h"
+#include "bearch.h"
 #include "beemitter.h"
 #include "bedwarf.h"
 

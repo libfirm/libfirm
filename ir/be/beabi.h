@@ -25,17 +25,10 @@
 #ifndef FIRM_BE_BEABI_H
 #define FIRM_BE_BEABI_H
 
+#include <stdbool.h>
+
+#include "be_types.h"
 #include "firm_types.h"
-
-#include "pset.h"
-#include "pmap.h"
-#include "bitset.h"
-
-#include "be.h"
-#include "beirg.h"
-#include "bearch.h"
-#include "beabi.h"
-#include "beabihelper.h"
 
 struct be_abi_call_flags_t {
 	bool try_omit_fp   : 1; /**< Try to omit the frame pointer. */
