@@ -91,7 +91,6 @@ struct be_abi_irg_t {
 	ir_node              *init_sp;      /**< The node representing the stack pointer
 	                                         at the start of the function. */
 
-	ir_node              *start;        /**< The be_Start params node. */
 	pmap                 *regs;         /**< A map of all callee-save and ignore regs to
 	                                         their Projs to the RegParams node. */
 	pmap                 *keep_map;     /**< mapping blocks to keep nodes. */
@@ -1497,8 +1496,8 @@ static void modify_irg(ir_graph *irg)
 	pmap_insert(env->regs, (void *) sp, NULL);
 	pmap_insert(env->regs, (void *) arch_env->bp, NULL);
 	start_bl   = get_irg_start_block(irg);
-	env->start = be_new_Start(NULL, start_bl, pmap_count(env->regs) + 1);
-	set_irg_start(irg, env->start);
+	ir_node *const start = be_new_Start(NULL, start_bl, pmap_count(env->regs) + 1);
+	set_irg_start(irg, start);
 
 	/*
 	 * make proj nodes for the callee save registers.
@@ -1523,9 +1522,9 @@ static void modify_irg(ir_graph *irg)
 		}
 
 		assert(nr >= 0);
-		proj = new_r_Proj(env->start, mode, nr + 1);
+		proj = new_r_Proj(start, mode, nr + 1);
 		pmap_insert(env->regs, (void *) reg, proj);
-		be_set_constr_single_reg_out(env->start, nr + 1, reg, add_type);
+		be_set_constr_single_reg_out(start, nr + 1, reg, add_type);
 		arch_set_irn_register(proj, reg);
 
 		DBG((dbg, LEVEL_2, "\tregister save proj #%d -> reg %s\n", nr, reg->name));
@@ -1533,8 +1532,8 @@ static void modify_irg(ir_graph *irg)
 
 	/* create a new initial memory proj */
 	assert(is_Proj(old_mem));
-	arch_set_irn_register_req_out(env->start, 0, arch_no_register_req);
-	new_mem_proj = new_r_Proj(env->start, mode_M, 0);
+	arch_set_irn_register_req_out(start, 0, arch_no_register_req);
+	new_mem_proj = new_r_Proj(start, mode_M, 0);
 	mem = new_mem_proj;
 	set_irg_initial_mem(irg, mem);
 
