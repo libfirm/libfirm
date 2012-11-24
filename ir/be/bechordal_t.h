@@ -85,8 +85,6 @@ static inline bool has_reg_class(be_chordal_env_t const *const env, ir_node cons
 	return arch_irn_consider_in_reg_alloc(env->cls, irn);
 }
 
-void be_ra_chordal_color(be_chordal_env_t *chordal_env);
-
 enum {
 	/* Dump flags */
 	BE_CH_DUMP_NONE       = (1 << 0),

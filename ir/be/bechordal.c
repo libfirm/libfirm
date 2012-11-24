@@ -484,7 +484,7 @@ static void assign(ir_node *block, void *env_ptr)
 	}
 }
 
-void be_ra_chordal_color(be_chordal_env_t *chordal_env)
+static void be_ra_chordal_color(be_chordal_env_t *const chordal_env)
 {
 	be_chordal_alloc_env_t env;
 	char buf[256];
