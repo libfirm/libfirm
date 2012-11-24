@@ -51,7 +51,6 @@ struct be_insn_t {
 	int n_ops;                     /**< length of the ops array */
 	int use_start;                 /**< entries [0-use_start) in ops are defs,
 	                                    [use_start-n_ops) uses */
-	ir_node *next_insn;            /**< next instruction in schedule */
 	ir_node *irn;                  /**< ir_node of the instruction */
 	unsigned has_constraints : 1;  /**< in_constraints or out_constraints true */
 	unsigned pre_colored     : 1;  /**< all defined values already have a register assigned */

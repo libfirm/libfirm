@@ -165,7 +165,7 @@ static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t 
 	}
 }
 
-static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
+static void handle_constraints(be_chordal_alloc_env_t *alloc_env,
                                    ir_node *irn)
 {
 	int n_regs;
@@ -180,7 +180,6 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 	be_chordal_env_t *env  = alloc_env->chordal_env;
 	void *base             = obstack_base(env->obst);
 	be_insn_t *insn        = be_scan_insn(env, irn);
-	ir_node *res           = insn->next_insn;
 	bipartite_t *bp;
 
 	if (insn->pre_colored) {
@@ -374,7 +373,6 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 
 end:
 	obstack_free(env->obst, base);
-	return res;
 }
 
 /**
@@ -390,7 +388,9 @@ static void constraints(ir_node *bl, void *data)
 	ir_node                *irn;
 
 	for (irn = sched_first(bl); !sched_is_end(irn);) {
-		irn = handle_constraints(env, irn);
+		ir_node *const next = sched_next(irn);
+		handle_constraints(env, irn);
+		irn = next;
 	}
 }
 

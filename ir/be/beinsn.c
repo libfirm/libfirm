@@ -45,8 +45,7 @@ be_insn_t *be_scan_insn(be_chordal_env_t const *const env, ir_node *const irn)
 
 	be_insn_t *insn = OALLOCZ(obst, be_insn_t);
 
-	insn->irn       = irn;
-	insn->next_insn = sched_next(irn);
+	insn->irn = irn;
 	if (get_irn_mode(irn) == mode_T) {
 		ir_node *p;
 
