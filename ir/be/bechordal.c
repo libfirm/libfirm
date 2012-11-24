@@ -410,7 +410,7 @@ static void assign(ir_node *block, void *env_ptr)
 
 	DBG((dbg, LEVEL_4, "Assigning colors for block %+F\n", block));
 	DBG((dbg, LEVEL_4, "\tusedef chain for block\n"));
-	list_for_each_entry(border_t, b, head, list) {
+	foreach_border_head(head, b) {
 		DBG((dbg, LEVEL_4, "\t%s %+F/%d\n", b->is_def ? "def" : "use",
 					b->irn, get_irn_idx(b->irn)));
 	}
@@ -442,7 +442,7 @@ static void assign(ir_node *block, void *env_ptr)
 	 * elimination order. So, coloring the definitions from first to last
 	 * will work.
 	 */
-	list_for_each_entry_reverse(border_t, b, head, list) {
+	foreach_border_head(head, b) {
 		ir_node *irn = b->irn;
 		int nr       = get_irn_idx(irn);
 		int ignore   = arch_irn_is_ignore(irn);

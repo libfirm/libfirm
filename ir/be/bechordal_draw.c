@@ -212,7 +212,7 @@ static void block_dims_walker(ir_node *block, void *data)
 
 	dims->min_step = INT_MAX;
 
-	list_for_each_entry_reverse(border_t, b, head, list) {
+	foreach_border_head(head, b) {
 		ir_node               *irn = b->irn;
 		const arch_register_t *reg = arch_get_irn_register(irn);
 		int                    col = reg->index;
@@ -332,7 +332,7 @@ static void draw_block(ir_node *bl, void *data)
 	env->plotter->vtab->text(env->plotter, dims->box.x, dims->box.y, buf);
 #endif
 
-	list_for_each_entry(border_t, b, head, list) {
+	foreach_border_head(head, b) {
 		if (b->is_def) {
 			const arch_register_t *reg = arch_get_irn_register(b->irn);
 			int live_out = be_is_live_out(lv, bl, b->irn);
