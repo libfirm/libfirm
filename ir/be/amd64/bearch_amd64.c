@@ -124,10 +124,9 @@ static const arch_irn_ops_t amd64_irn_ops = {
  */
 static void amd64_prepare_graph(ir_graph *irg)
 {
-	amd64_irg_data_t *irg_data = amd64_get_irg_data(irg);
 	amd64_transform_graph(irg);
 
-	if (irg_data->dump)
+	if (be_options.dump_flags & DUMP_BE)
 		dump_ir_graph(irg, "transformed");
 }
 
@@ -239,18 +238,6 @@ static void amd64_finish_irg(ir_graph *irg)
 	/* fix stack entity offsets */
 	be_abi_fix_stack_nodes(irg);
 	be_abi_fix_stack_bias(irg);
-}
-
-/**
- * Initializes the code generator.
- */
-static void amd64_init_graph(ir_graph *irg)
-{
-	struct obstack   *obst     = be_get_be_obst(irg);
-	amd64_irg_data_t *irg_data = OALLOCZ(obst, amd64_irg_data_t);
-	irg_data->dump = (be_options.dump_flags & DUMP_BE) ? 1 : 0;
-
-	be_birg_from_irg(irg)->isa_link = irg_data;
 }
 
 extern const arch_isa_if_t amd64_isa_if;
@@ -517,7 +504,7 @@ const arch_isa_if_t amd64_isa_if = {
 
 	amd64_begin_codegeneration,
 	amd64_end_codegeneration,
-	amd64_init_graph,
+	NULL,
 	amd64_get_call_abi,
 	NULL,              /* mark remat */
 	NULL,              /* get_pic_base */

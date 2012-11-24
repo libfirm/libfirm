@@ -32,21 +32,9 @@
 
 typedef struct amd64_isa_t            amd64_isa_t;
 
-typedef struct amd64_irg_data_t {
-	ir_graph    *irg;            /**< current irg */
-	amd64_isa_t *isa;            /**< the isa instance */
-	char         dump;           /**< set to 1 if graphs should be dumped */
-	ir_node     *noreg_gp;       /**< unique NoReg_GP node */
-} amd64_irg_data_t;
-
 struct amd64_isa_t {
 	arch_env_t  base;      /**< must be derived from arch_isa */
 };
-
-static inline amd64_irg_data_t *amd64_get_irg_data(const ir_graph *irg)
-{
-	return (amd64_irg_data_t*) be_birg_from_irg(irg)->isa_link;
-}
 
 ir_node *amd64_new_NoReg_gp(ir_graph *irg);
 
