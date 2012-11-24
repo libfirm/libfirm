@@ -88,31 +88,23 @@ static int get_next_free_reg(const be_chordal_alloc_env_t *alloc_env, bitset_t *
 	return bitset_next_set(tmp, 0);
 }
 
-static bitset_t *get_decisive_partner_regs(bitset_t *bs, const be_operand_t *o1, const be_operand_t *o2)
+static bitset_t const *get_decisive_partner_regs(const be_operand_t *o1, const be_operand_t *o2)
 {
-	bitset_t *res = bs;
+	if (!o1)
+		return o2->regs;
 
-	if (!o1) {
-		bitset_copy(bs, o2->regs);
-		return bs;
-	}
-
-	if (!o2) {
-		bitset_copy(bs, o1->regs);
-		return bs;
-	}
+	if (!o2)
+		return o1->regs;
 
 	assert(o1->req->cls == o2->req->cls);
 
 	if (bitset_contains(o1->regs, o2->regs)) {
-		bitset_copy(bs, o1->regs);
+		return o1->regs;
 	} else if (bitset_contains(o2->regs, o1->regs)) {
-		bitset_copy(bs, o2->regs);
+		return o2->regs;
 	} else {
-		res = NULL;
+		return NULL;
 	}
-
-	return res;
 }
 
 static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t *insn)
@@ -169,7 +161,6 @@ static void handle_constraints(be_chordal_alloc_env_t *alloc_env,
                                    ir_node *irn)
 {
 	int n_regs;
-	bitset_t *bs;
 	ir_node **alloc_nodes;
 	//hungarian_problem_t *bp;
 	int *assignment;
@@ -196,7 +187,6 @@ static void handle_constraints(be_chordal_alloc_env_t *alloc_env,
 		goto end;
 
 	n_regs      = env->cls->n_regs;
-	bs          = bitset_alloca(n_regs);
 	alloc_nodes = ALLOCAN(ir_node*, n_regs);
 	//bp          = hungarian_new(n_regs, n_regs, 2, HUNGARIAN_MATCH_PERFECT);
 	bp          = bipartite_new(n_regs, n_regs);
@@ -248,15 +238,16 @@ static void handle_constraints(be_chordal_alloc_env_t *alloc_env,
 			DBG((dbg, LEVEL_2, "\tassociating %+F and %+F\n", op->carrier,
 			     partner));
 
-			bitset_clear_all(bs);
-			get_decisive_partner_regs(bs, op, op->partner);
+			bitset_t const *const bs = get_decisive_partner_regs(op, op->partner);
+			if (bs) {
+				DBG((dbg, LEVEL_2, "\tallowed registers for %+F: %B\n", op->carrier, bs));
 
-			DBG((dbg, LEVEL_2, "\tallowed registers for %+F: %B\n", op->carrier,
-			     bs));
-
-			bitset_foreach(bs, col) {
-				//hungarian_add(bp, n_alloc, col, 1);
-				bipartite_add(bp, n_alloc, col);
+				bitset_foreach(bs, col) {
+					//hungarian_add(bp, n_alloc, col, 1);
+					bipartite_add(bp, n_alloc, col);
+				}
+			} else {
+				DBG((dbg, LEVEL_2, "\tallowed registers for %+F: none\n", op->carrier));
 			}
 
 			n_alloc++;
@@ -338,9 +329,8 @@ static void handle_constraints(be_chordal_alloc_env_t *alloc_env,
 
 	/* Allocate the non-constrained Projs of the Perm. */
 	if (perm != NULL) {
-		bitset_clear_all(bs);
-
 		/* Put the colors of all Projs in a bitset. */
+		bitset_t *const bs = bitset_alloca(n_regs);
 		foreach_out_edge(perm, edge) {
 			ir_node *proj              = get_edge_src_irn(edge);
 			const arch_register_t *reg = arch_get_irn_register(proj);
