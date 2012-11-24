@@ -37,15 +37,10 @@
 #include "beabi.h"
 #include "beabihelper.h"
 
-struct be_abi_call_flags_bits_t {
+struct be_abi_call_flags_t {
 	bool try_omit_fp   : 1; /**< Try to omit the frame pointer. */
 	bool call_has_imm  : 1; /**< A call can take the callee's address as an
 	                             immediate. */
-};
-
-union be_abi_call_flags_t {
-	be_abi_call_flags_bits_t bits;
-	unsigned val;
 };
 
 struct be_abi_callbacks_t {

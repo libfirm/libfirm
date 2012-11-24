@@ -1908,8 +1908,8 @@ static void ia32_get_call_abi(ir_type *method_type, be_abi_call_t *abi)
 	be_abi_call_flags_t call_flags = be_abi_call_get_flags(abi);
 
 	/* set abi flags for calls */
-	/* call_flags.bits.try_omit_fp                 not changed: can handle both settings */
-	call_flags.bits.call_has_imm = false;  /* No call immediate, we handle this by ourselves */
+	/* call_flags.try_omit_fp                 not changed: can handle both settings */
+	call_flags.call_has_imm = false;  /* No call immediate, we handle this by ourselves */
 
 	/* set parameter passing style */
 	be_abi_call_set_flags(abi, call_flags, &ia32_abi_callbacks);

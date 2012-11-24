@@ -282,12 +282,10 @@ static be_abi_call_t *be_abi_call_new(const arch_register_class_t *cls_addr)
 {
 	be_abi_call_t *call = XMALLOCZ(be_abi_call_t);
 
-	call->flags.val  = 0;
-	call->params     = new_set(cmp_call_arg, 16);
-	call->cb         = NULL;
-	call->cls_addr   = cls_addr;
-
-	call->flags.bits.try_omit_fp = be_omit_fp;
+	call->params            = new_set(cmp_call_arg, 16);
+	call->cb                = NULL;
+	call->cls_addr          = cls_addr;
+	call->flags.try_omit_fp = be_omit_fp;
 
 	return call;
 }
@@ -562,7 +560,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 	/* ins collected, build the call */
 	throws_exception = ir_throws_exception(irn);
-	if (env->call->flags.bits.call_has_imm && is_SymConst(call_ptr)) {
+	if (env->call->flags.call_has_imm && is_SymConst(call_ptr)) {
 		/* direct call */
 		low_call = be_new_Call(dbgi, irg, bl, curr_mem, sp->single_req, curr_sp,
 		                       sp->single_req, curr_sp,
@@ -831,7 +829,7 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 
 	/* The stack pointer will be modified in an unknown manner.
 	   We cannot omit it. */
-	env->call->flags.bits.try_omit_fp = 0;
+	env->call->flags.try_omit_fp = 0;
 
 	stack_alignment = 1 << arch_env->stack_alignment;
 	size            = adjust_alloc_size(stack_alignment, size, block, dbg);
@@ -899,7 +897,7 @@ static ir_node *adjust_free(be_abi_irg_t *env, ir_node *free, ir_node *curr_sp)
 
 	/* The stack pointer will be modified in an unknown manner.
 	   We cannot omit it. */
-	env->call->flags.bits.try_omit_fp = 0;
+	env->call->flags.try_omit_fp = 0;
 	subsp = be_new_SubSP(arch_env->sp, block, curr_sp, size);
 	set_irn_dbg_info(subsp, dbg);
 
@@ -991,7 +989,7 @@ static void link_ops_in_block_walker(ir_node *irn, void *data)
 		unsigned long  value = get_tarval_long(tv);
 		/* use ebp, so the climbframe algo works... */
 		if (value > 0) {
-			env->call->flags.bits.try_omit_fp = 0;
+			env->call->flags.try_omit_fp = 0;
 		}
 	}
 }
@@ -1040,7 +1038,7 @@ static void process_ops_in_block(ir_node *bl, void *data)
 			case iro_Call:
 				if (! be_omit_fp) {
 					/* The stack pointer will be modified due to a call. */
-					env->call->flags.bits.try_omit_fp = 0;
+					env->call->flags.try_omit_fp = 0;
 				}
 				curr_sp = adjust_call(env, irn, curr_sp);
 				break;
@@ -1446,7 +1444,7 @@ static void modify_irg(ir_graph *const irg, be_abi_irg_t *const env)
 		}
 	}
 
-	stack_layout->sp_relative = call->flags.bits.try_omit_fp;
+	stack_layout->sp_relative = call->flags.try_omit_fp;
 	bet_type = call->cb->get_between_type(irg);
 	stack_frame_init(stack_layout, arg_type, bet_type,
 	                 get_irg_frame_type(irg));
@@ -1475,7 +1473,7 @@ static void modify_irg(ir_graph *const irg, be_abi_irg_t *const env)
 		}
 	}
 
-	fp_reg = call->flags.bits.try_omit_fp ? arch_env->sp : arch_env->bp;
+	fp_reg = call->flags.try_omit_fp ? arch_env->sp : arch_env->bp;
 	rbitset_clear(birg->allocatable_regs, fp_reg->global_index);
 
 	/* handle start block here (place a jump in the block) */
