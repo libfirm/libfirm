@@ -679,7 +679,6 @@ static void melt_copykeeps(constraint_env_t *cenv)
 			if (ck_arr[idx]) {
 				int j, n_melt;
 				ir_node **new_ck_in;
-				ir_node *new_ck;
 				ir_node *sched_pt = NULL;
 
 				n_melt     = 1;
@@ -725,11 +724,9 @@ static void melt_copykeeps(constraint_env_t *cenv)
 						kill_node(melt_arr[j]);
 				}
 
+				ir_node *const new_ck = be_new_CopyKeep(get_nodes_block(ref), be_get_CopyKeep_op(ref), n_melt, new_ck_in);
 #ifdef KEEP_ALIVE_COPYKEEP_HACK
-				new_ck = be_new_CopyKeep(get_nodes_block(ref), be_get_CopyKeep_op(ref), n_melt, new_ck_in);
 				keep_alive(new_ck);
-#else
-				new_ck = be_new_CopyKeep(get_nodes_block(ref), be_get_CopyKeep_op(ref), n_melt, new_ck_in);
 #endif /* KEEP_ALIVE_COPYKEEP_HACK */
 
 				/* set register class for all kept inputs */
