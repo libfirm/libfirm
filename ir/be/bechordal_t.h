@@ -67,11 +67,10 @@ struct be_chordal_env_t {
 	bitset_t             *allocatable_regs; /**< set of allocatable registers */
 };
 
-static inline struct list_head *_get_block_border_head(const be_chordal_env_t *inf, ir_node *bl) {
+static inline struct list_head *get_block_border_head(be_chordal_env_t const *const inf, ir_node *const bl)
+{
   return pmap_get(list_head, inf->border_heads, bl);
 }
-
-#define get_block_border_head(info, bl)     _get_block_border_head(info, bl)
 
 #define foreach_border_head(head, pos)      list_for_each_entry_reverse(border_t, pos, head, list)
 
