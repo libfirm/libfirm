@@ -115,8 +115,6 @@ struct be_ra_chordal_opts_t {
 	unsigned dump_flags;
 	int      lower_perm_opt;
 	int      vrfy_option;
-
-	char ilp_server[128];
 };
 
 void check_for_memory_operands(ir_graph *irg);

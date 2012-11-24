@@ -85,8 +85,7 @@
 static be_ra_chordal_opts_t options = {
 	BE_CH_DUMP_NONE,
 	BE_CH_LOWER_PERM_SWAP,
-	BE_CH_VRFY_WARN,
-	""
+	BE_CH_VRFY_WARN
 };
 
 typedef struct post_spill_env_t {
