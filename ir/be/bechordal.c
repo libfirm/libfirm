@@ -90,9 +90,6 @@ static int get_next_free_reg(const be_chordal_alloc_env_t *alloc_env, bitset_t *
 
 static bitset_t const *get_decisive_partner_regs(const be_operand_t *o1, const be_operand_t *o2)
 {
-	if (!o1)
-		return o2->regs;
-
 	if (!o2)
 		return o1->regs;
 
