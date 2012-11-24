@@ -48,12 +48,4 @@ void create_borders(ir_node *block, void *env_ptr);
  */
 ir_node *pre_process_constraints(be_chordal_env_t *_env, be_insn_t **the_insn);
 
-/**
- * Create a be_insn_t for an IR node.
- * @param env The chordal environment.
- * @param irn The node.
- * @return the be_insn for the IR node
- */
-be_insn_t *chordal_scan_insn(be_chordal_env_t *env, ir_node *irn);
-
 #endif /* BECHORDAL_COMMON_H_ */

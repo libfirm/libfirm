@@ -30,11 +30,11 @@
 #include "obst.h"
 
 #include "bearch.h"
+#include "bechordal.h"
 #include "beirg.h"
 
 typedef struct be_operand_t  be_operand_t;
 typedef struct be_insn_t     be_insn_t;
-typedef struct be_insn_env_t be_insn_env_t;
 
 struct be_operand_t {
 	ir_node *irn;                   /**< Firm node of the insn this operand belongs to */
@@ -59,15 +59,14 @@ struct be_insn_t {
 	unsigned pre_colored     : 1;  /**< all defined values already have a register assigned */
 };
 
-struct be_insn_env_t {
-	struct obstack              *obst;
-	const arch_register_class_t *cls;
-	bitset_t                    *allocatable_regs;
-};
-
-#define be_insn_n_defs(insn) ((insn)->use_start)
-#define be_insn_n_uses(insn) ((insn)->n_ops - (insn)->use_start)
-
-be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn);
+/**
+ * Create a be_insn_t for an IR node.
+ *
+ * @param env      the insn construction environment
+ * @param irn      the irn for which the be_insn should be build
+ *
+ * @return the be_insn for the IR node
+ */
+be_insn_t *be_scan_insn(be_chordal_env_t const *env, ir_node *irn);
 
 #endif /* FIRM_BE_BEINSN_T_H */

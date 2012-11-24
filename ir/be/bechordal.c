@@ -179,7 +179,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 	//int match_res, cost;
 	be_chordal_env_t *env  = alloc_env->chordal_env;
 	void *base             = obstack_base(env->obst);
-	be_insn_t *insn        = chordal_scan_insn(env, irn);
+	be_insn_t *insn        = be_scan_insn(env, irn);
 	ir_node *res           = insn->next_insn;
 	bipartite_t *bp;
 

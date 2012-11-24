@@ -29,21 +29,14 @@
 #include "irnode_t.h"
 #include "iredges.h"
 
+#include "bechordal_t.h"
 #include "besched.h"
 #include "beinsn_t.h"
 #include "beirg.h"
 #include "beabi.h"
 #include "raw_bitset.h"
 
-/**
- * Create a be_insn_t for an IR node.
- *
- * @param env      the insn construction environment
- * @param irn      the irn for which the be_insn should be build
- *
- * @return the be_insn for the IR node
- */
-be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
+be_insn_t *be_scan_insn(be_chordal_env_t const *const env, ir_node *const irn)
 {
 	struct obstack *obst = env->obst;
 	be_operand_t o;

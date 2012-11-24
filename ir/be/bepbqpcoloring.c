@@ -595,7 +595,7 @@ static void insert_perms(ir_node *block, void *data)
 	ir_node          *irn;
 
 	for (irn = sched_first(block); !sched_is_end(irn);) {
-		be_insn_t *insn = chordal_scan_insn(env, irn);
+		be_insn_t *insn = be_scan_insn(env, irn);
 		irn             = insn->next_insn;
 
 		if (!insn->has_constraints)

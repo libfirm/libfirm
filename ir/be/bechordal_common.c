@@ -205,17 +205,6 @@ void create_borders(ir_node *block, void *env_ptr)
 	bitset_free(live);
 }
 
-
-be_insn_t *chordal_scan_insn(be_chordal_env_t *env, ir_node *irn)
-{
-	be_insn_env_t ie;
-
-	ie.allocatable_regs = env->allocatable_regs;
-	ie.obst             = env->obst;
-	ie.cls              = env->cls;
-	return be_scan_insn(&ie, irn);
-}
-
 ir_node *pre_process_constraints(be_chordal_env_t *env, be_insn_t **the_insn)
 {
 	be_insn_t *insn       = *the_insn;
@@ -259,7 +248,7 @@ ir_node *pre_process_constraints(be_chordal_env_t *env, be_insn_t **the_insn)
 	 * the live sets may change.
 	 */
 	obstack_free(env->obst, insn);
-	*the_insn = insn = chordal_scan_insn(env, insn->irn);
+	*the_insn = insn = be_scan_insn(env, insn->irn);
 
 	/*
 	 * Copy the input constraints of the insn to the Perm as output
