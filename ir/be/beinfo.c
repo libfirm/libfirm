@@ -185,9 +185,3 @@ void be_info_free(void)
 	assert(op_Phi->ops.dump_node == be_dump_phi_reg_reqs);
 	op_Phi->ops.dump_node = NULL;
 }
-
-int be_info_initialized(const ir_graph *irg)
-{
-	(void) irg;
-	return initialized;
-}

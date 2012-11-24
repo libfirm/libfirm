@@ -61,7 +61,6 @@ void be_info_init(void);
 void be_info_free(void);
 void be_info_init_irg(ir_graph *irg);
 void be_info_new_node(ir_graph *irg, ir_node *node);
-int be_info_initialized(const ir_graph *irg);
 
 int be_nodes_equal(const ir_node *node1, const ir_node *node2);
 
