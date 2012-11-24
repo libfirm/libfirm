@@ -146,8 +146,6 @@ static inline const arch_register_req_t *arch_get_irn_register_req_in(
 		const ir_node *node, int pos)
 {
 	const backend_info_t *info = be_get_info(node);
-	if (info->in_reqs == NULL)
-		return arch_no_register_req;
 	return info->in_reqs[pos];
 }
 
@@ -158,8 +156,6 @@ static inline const arch_register_req_t *arch_get_irn_register_req_out(
 		const ir_node *node, unsigned pos)
 {
 	const backend_info_t *info = be_get_info(node);
-	if (info->out_infos == NULL)
-		return arch_no_register_req;
 	return info->out_infos[pos].req;
 }
 
