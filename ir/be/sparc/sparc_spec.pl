@@ -48,7 +48,7 @@ $mode_fp4     = "mode_Q";
 		{ name => "i4", dwarf => 28 },
 		{ name => "i5", dwarf => 29 },
 		{ name => "frame_pointer", dwarf => 30, realname => "fp" },
-		{ name => "i7", dwarf => 30 },
+		{ name => "i7", dwarf => 31 },
 		{ mode => $mode_gp }
 	],
 	fpflags_class => [
