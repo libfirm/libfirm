@@ -1179,7 +1179,7 @@ static void reg_map_to_arr(reg_node_map_t *res, pmap *reg_map)
  * Creates a be_Return for a Return node.
  *
  * @param @env  the abi environment
- * @param irn   the Return node or NULL if there was none
+ * @param irn   the Return node
  * @param bl    the block where the be_Retun should be placed
  * @param mem   the current memory
  * @param n_res number of return results
@@ -1190,7 +1190,6 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 	be_abi_call_t    *call     = env->call;
 	ir_graph         *irg      = get_Block_irg(bl);
 	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
-	dbg_info *dbgi;
 	pmap *reg_map  = pmap_create();
 	ir_node *keep  = pmap_get(ir_node, env->keep_map, bl);
 	size_t in_max;
@@ -1269,11 +1268,7 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 	}
 
 	/* The in array for the new back end return is now ready. */
-	if (irn != NULL) {
-		dbgi = get_irn_dbg_info(irn);
-	} else {
-		dbgi = NULL;
-	}
+	dbg_info *const dbgi = get_irn_dbg_info(irn);
 	/* we have to pop the shadow parameter in in case of struct returns */
 	pop = call->pop;
 	ret = be_new_Return(dbgi, irg, bl, n_res, pop, n, in);
