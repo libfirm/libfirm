@@ -33,7 +33,6 @@ typedef struct arch_register_class_t     arch_register_class_t;
 typedef struct arch_register_req_t       arch_register_req_t;
 typedef struct arch_register_t           arch_register_t;
 typedef struct arch_flag_t               arch_flag_t;
-typedef struct arch_inverse_t            arch_inverse_t;
 typedef struct arch_isa_if_t             arch_isa_if_t;
 typedef struct arch_env_t                arch_env_t;
 

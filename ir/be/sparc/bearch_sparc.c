@@ -125,7 +125,6 @@ const arch_irn_ops_t sparc_irn_ops = {
 	sparc_get_frame_entity,
 	sparc_set_frame_offset,
 	sparc_get_sp_bias,
-	NULL,    /* get_inverse             */
 	NULL,    /* get_op_estimated_cost   */
 	NULL,    /* possible_memory_operand */
 	NULL,    /* perform_memory_operand  */

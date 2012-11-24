@@ -85,7 +85,6 @@ static const arch_irn_ops_t TEMPLATE_irn_ops = {
 	TEMPLATE_get_frame_entity,
 	TEMPLATE_set_frame_offset,
 	TEMPLATE_get_sp_bias,
-	NULL,    /* get_inverse             */
 	NULL,    /* get_op_estimated_cost   */
 	NULL,    /* possible_memory_operand */
 	NULL,    /* perform_memory_operand  */

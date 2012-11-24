@@ -111,7 +111,6 @@ static const arch_irn_ops_t amd64_irn_ops = {
 	amd64_get_frame_entity,
 	amd64_set_frame_offset,
 	amd64_get_sp_bias,
-	NULL,    /* get_inverse             */
 	NULL,    /* get_op_estimated_cost   */
 	NULL,    /* possible_memory_operand */
 	NULL,    /* perform_memory_operand  */

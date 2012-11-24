@@ -113,9 +113,6 @@ ir_entity *arch_get_frame_entity(const ir_node *irn);
 int        arch_get_sp_bias(ir_node *irn);
 
 int             arch_get_op_estimated_cost(const ir_node *irn);
-arch_inverse_t *arch_get_inverse(const ir_node *irn, int i,
-                                 arch_inverse_t *inverse,
-                                 struct obstack *obstack);
 int             arch_possible_memory_operand(const ir_node *irn,
                                              unsigned int i);
 void            arch_perform_memory_operand(ir_node *irn, ir_node *spill,
@@ -320,18 +317,6 @@ static inline bool reg_reqs_equal(const arch_register_req_t *req1,
 	return true;
 }
 
-/**
- * An inverse operation returned by the backend
- */
-struct arch_inverse_t {
-	int      n;       /**< count of nodes returned in nodes array */
-	int      costs;   /**< costs of this remat */
-
-	/** nodes for this inverse operation. shall be in schedule order.
-	 * last element is the target value */
-	ir_node  **nodes;
-};
-
 struct arch_irn_ops_t {
 
 	/**
@@ -361,22 +346,6 @@ struct arch_irn_ops_t {
 	 *                  value, otherwise the increment/decrement value
 	 */
 	int (*get_sp_bias)(const ir_node *irn);
-
-	/**
-	 * Returns an inverse operation which yields the i-th argument
-	 * of the given node as result.
-	 *
-	 * @param irn       The original operation
-	 * @param i         Index of the argument we want the inverse operation to
-	 *                  yield
-	 * @param inverse   struct to be filled with the resulting inverse op
-	 * @param obstack   The obstack to use for allocation of the returned nodes
-	 *                  array
-	 * @return          The inverse operation or NULL if operation invertible
-	 */
-	arch_inverse_t *(*get_inverse)(const ir_node *irn, int i,
-	                               arch_inverse_t *inverse,
-	                               struct obstack *obstack);
 
 	/**
 	 * Get the estimated cycle count for @p irn.

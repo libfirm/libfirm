@@ -93,17 +93,6 @@ int arch_get_sp_bias(ir_node *irn)
 	return ops->get_sp_bias(irn);
 }
 
-arch_inverse_t *arch_get_inverse(const ir_node *irn, int i, arch_inverse_t *inverse, struct obstack *obstack)
-{
-	const arch_irn_ops_t *ops = get_irn_ops(irn);
-
-	if (ops->get_inverse) {
-		return ops->get_inverse(irn, i, inverse, obstack);
-	} else {
-		return NULL;
-	}
-}
-
 int arch_possible_memory_operand(const ir_node *irn, unsigned int i)
 {
 	const arch_irn_ops_t *ops = get_irn_ops(irn);

@@ -114,7 +114,6 @@ static const arch_irn_ops_t arm_irn_ops = {
 	arm_get_frame_entity,
 	arm_set_stack_bias,
 	arm_get_sp_bias,
-	NULL,    /* get_inverse             */
 	NULL,    /* get_op_estimated_cost   */
 	NULL,    /* possible_memory_operand */
 	NULL,    /* perform_memory_operand  */
