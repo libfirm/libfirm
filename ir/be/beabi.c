@@ -1320,7 +1320,6 @@ typedef struct lower_frame_sels_env_t {
 	ir_node      *frame;                     /**< the current frame */
 	const arch_register_class_t *sp_class;   /**< register class of the stack pointer */
 	ir_type      *frame_tp;                  /**< the frame type */
-	int          static_link_pos;            /**< argument number of the hidden static link */
 } lower_frame_sels_env_t;
 
 /**
