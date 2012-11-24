@@ -24,6 +24,7 @@
  */
 #include "config.h"
 
+#include "irnode_t.h"
 #include "irprog.h"
 #include "irop_t.h"
 #include "irgraph_t.h"

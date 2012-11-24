@@ -26,6 +26,8 @@
 #ifndef FIRM_ANA_IRBACKEDGE_T_H
 #define FIRM_ANA_IRBACKEDGE_T_H
 
+#include "bitset.h"
+
 /**
  * Allocate a new backedge array on the obstack for given size.
  *

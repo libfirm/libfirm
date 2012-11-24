@@ -25,12 +25,7 @@
 #ifndef FIRM_BE_BEUTIL_H
 #define FIRM_BE_BEUTIL_H
 
-#include <stdio.h>
-
 #include "firm_types.h"
-#include "pset.h"
-
-#include "bearch.h"
 
 /**
  * Convenient block getter.
