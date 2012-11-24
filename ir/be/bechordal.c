@@ -102,7 +102,7 @@ static bitset_t *get_decisive_partner_regs(bitset_t *bs, const be_operand_t *o1,
 		return bs;
 	}
 
-	assert(o1->req->cls == o2->req->cls || ! o1->req->cls || ! o2->req->cls);
+	assert(o1->req->cls == o2->req->cls);
 
 	if (bitset_contains(o1->regs, o2->regs)) {
 		bitset_copy(bs, o1->regs);
