@@ -60,8 +60,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 typedef struct be_abi_call_arg_t {
 	unsigned is_res   : 1;  /**< 1: the call argument is a return value. 0: it's a call parameter. */
-	unsigned in_reg   : 1;  /**< 1: this argument is transmitted in registers. */
-	unsigned on_stack : 1;  /**< 1: this argument is transmitted on the stack. */
+	unsigned in_reg   : 1;  /**< 1: this argument is transmitted 1: in registers, 0: on stack. */
 	unsigned callee   : 1;  /**< 1: someone called us. 0: We call another function */
 
 	int                    pos;
@@ -230,7 +229,6 @@ void be_abi_call_param_stack(be_abi_call_t *call, int arg_pos,
 	be_abi_call_arg_t arg;
 	memset(&arg, 0, sizeof(arg));
 	assert(alignment > 0 && "Alignment must be greater than 0");
-	arg.on_stack     = 1;
 	arg.load_mode    = load_mode;
 	arg.alignment    = alignment;
 	arg.space_before = space_before;
@@ -392,7 +390,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	for (p = 0; p < n_params; ++p) {
 		be_abi_call_arg_t *arg = get_call_arg(call, 0, p, 0);
 		assert(arg);
-		if (arg->on_stack) {
+		if (!arg->in_reg) {
 			int arg_size = get_type_size_bytes(get_method_param_type(call_tp, p));
 
 			stack_size += round_up2(arg->space_before, arg->alignment);
@@ -1129,7 +1127,7 @@ static ir_type *compute_arg_type(ir_graph *irg, be_abi_call_t *call,
 		if (map[num] != NULL)
 			panic("multiple entities for parameter %u in %+F found", f, irg);
 
-		if (num != n_params && !get_call_arg(call, 0, num, 1)->on_stack) {
+		if (num != n_params && get_call_arg(call, 0, num, 1)->in_reg) {
 			/* don't move this entity */
 			continue;
 		}
@@ -1144,9 +1142,8 @@ static ir_type *compute_arg_type(ir_graph *irg, be_abi_call_t *call,
 		ir_type           *param_type = get_method_param_type(method_type, i);
 		ir_entity         *entity;
 
-		if (!arg->on_stack) {
+		if (arg->in_reg)
 			continue;
-		}
 		entity = map[i];
 		if (entity == NULL) {
 			/* create a new entity */
@@ -1559,7 +1556,7 @@ static void modify_irg(ir_graph *const irg, be_abi_irg_t *const env)
 
 			if (arg->in_reg) {
 				repl = pmap_get(ir_node, env->regs, arg->reg);
-			} else if (arg->on_stack) {
+			} else {
 				ir_node *addr = be_new_FrameAddr(sp->reg_class, start_bl, frame_pointer, arg->stack_ent);
 
 				/* For atomic parameters which are actually used, we create a Load node. */
