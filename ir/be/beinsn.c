@@ -69,7 +69,7 @@ be_insn_t *be_scan_insn(be_chordal_env_t const *const env, ir_node *const irn)
 				o.has_constraints = arch_register_req_is(o.req, limited) | (o.req->width > 1);
 				obstack_grow(obst, &o, sizeof(o));
 				insn->n_ops++;
-				insn->out_constraints |= o.has_constraints;
+				insn->has_constraints |= o.has_constraints;
 				pre_colored += arch_get_irn_register(p) != NULL;
 			}
 		}
@@ -83,7 +83,7 @@ be_insn_t *be_scan_insn(be_chordal_env_t const *const env, ir_node *const irn)
 		o.has_constraints = arch_register_req_is(o.req, limited) | (o.req->width > 1);
 		obstack_grow(obst, &o, sizeof(o));
 		insn->n_ops++;
-		insn->out_constraints |= o.has_constraints;
+		insn->has_constraints |= o.has_constraints;
 		pre_colored += arch_get_irn_register(irn) != NULL;
 	}
 
@@ -107,11 +107,10 @@ be_insn_t *be_scan_insn(be_chordal_env_t const *const env, ir_node *const irn)
 			o.has_constraints = arch_register_req_is(o.req, limited);
 			obstack_grow(obst, &o, sizeof(o));
 			insn->n_ops++;
-			insn->in_constraints |= o.has_constraints;
+			insn->has_constraints |= o.has_constraints;
 		}
 	}
 
-	insn->has_constraints = insn->in_constraints | insn->out_constraints;
 	insn->ops = (be_operand_t*)obstack_finish(obst);
 
 	/* Compute the admissible registers bitsets. */
