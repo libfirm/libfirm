@@ -1036,10 +1036,6 @@ static void process_ops_in_block(ir_node *bl, void *data)
 			DBG((dbg, LEVEL_3, "\tprocessing call %+F\n", irn));
 			switch (get_irn_opcode(irn)) {
 			case iro_Call:
-				if (! be_omit_fp) {
-					/* The stack pointer will be modified due to a call. */
-					env->call->flags.try_omit_fp = 0;
-				}
 				curr_sp = adjust_call(env, irn, curr_sp);
 				break;
 			case iro_Alloc:
