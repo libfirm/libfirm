@@ -35,9 +35,9 @@
 #include "beabi.h"
 #include "raw_bitset.h"
 
-be_insn_t *be_scan_insn(be_chordal_env_t const *const env, ir_node *const irn)
+be_insn_t *be_scan_insn(be_chordal_env_t *const env, ir_node *const irn)
 {
-	struct obstack *obst = env->obst;
+	struct obstack *const obst = &env->obst;
 	be_operand_t o;
 	int i, n;
 

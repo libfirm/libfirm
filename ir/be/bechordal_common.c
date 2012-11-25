@@ -59,10 +59,10 @@ static inline border_t *border_add(be_chordal_env_t *env, struct list_head *head
 	if (!is_def) {
 		border_t *def;
 
-		b = OALLOC(env->obst, border_t);
+		b = OALLOC(&env->obst, border_t);
 
 		/* also allocate the def and tie it to the use. */
-		def = OALLOCZ(env->obst, border_t);
+		def = OALLOCZ(&env->obst, border_t);
 		b->other_end = def;
 		def->other_end = b;
 
@@ -119,7 +119,7 @@ void create_borders(ir_node *block, void *env_ptr)
 	bitset_clear_all(live);
 
 	/* Set up the border list in the block info */
-	head = OALLOC(env->obst, struct list_head);
+	head = OALLOC(&env->obst, struct list_head);
 	INIT_LIST_HEAD(head);
 	assert(pmap_get(struct list_head, env->border_heads, block) == NULL);
 	pmap_insert(env->border_heads, block, head);
@@ -228,7 +228,7 @@ ir_node *pre_process_constraints(be_chordal_env_t *env, be_insn_t **the_insn)
 	 * the Perm. Recomputing liveness is also a good idea if a Perm is inserted, since
 	 * the live sets may change.
 	 */
-	obstack_free(env->obst, insn);
+	obstack_free(&env->obst, insn);
 	*the_insn = insn = be_scan_insn(env, irn);
 
 	/* Copy the input constraints of the irn to the Perm as output

@@ -344,21 +344,19 @@ static void be_ra_chordal_main(ir_graph *irg)
 	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
 	int               j;
 	int               m;
-	be_chordal_env_t  chordal_env;
-	struct obstack    obst;
 
 	be_timer_push(T_RA_OTHER);
 
 	be_timer_push(T_RA_PROLOG);
 
-	chordal_env.obst             = &obst;
+	be_chordal_env_t chordal_env;
+	obstack_init(&chordal_env.obst);
 	chordal_env.opts             = &options;
 	chordal_env.irg              = irg;
 	chordal_env.border_heads     = NULL;
 	chordal_env.ifg              = NULL;
 	chordal_env.allocatable_regs = NULL;
 
-	obstack_init(&obst);
 
 	be_timer_pop(T_RA_PROLOG);
 
@@ -421,7 +419,7 @@ static void be_ra_chordal_main(ir_graph *irg)
 	lower_nodes_after_ra(irg, options.lower_perm_opt == BE_CH_LOWER_PERM_COPY);
 	dump(BE_CH_DUMP_LOWER, irg, NULL, "belower-after-ra");
 
-	obstack_free(&obst, NULL);
+	obstack_free(&chordal_env.obst, NULL);
 	be_invalidate_live_sets(irg);
 	be_timer_pop(T_RA_EPILOG);
 

@@ -57,6 +57,6 @@ struct be_insn_t {
  *
  * @return the be_insn for the IR node
  */
-be_insn_t *be_scan_insn(be_chordal_env_t const *env, ir_node *irn);
+be_insn_t *be_scan_insn(be_chordal_env_t *env, ir_node *irn);
 
 #endif /* FIRM_BE_BEINSN_T_H */

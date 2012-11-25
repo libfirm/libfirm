@@ -111,7 +111,7 @@ static bool list_contains_irn(ir_node *const *const list, size_t const n, ir_nod
 
 static void handle_constraints(be_chordal_env_t *const env, ir_node *const irn)
 {
-	void *const base = obstack_base(env->obst);
+	void *const base = obstack_base(&env->obst);
 	be_insn_t  *insn = be_scan_insn(env, irn);
 
 	/* Perms inserted before the constraint handling phase are considered to be
@@ -276,7 +276,7 @@ static void handle_constraints(be_chordal_env_t *const env, ir_node *const irn)
 	pmap_destroy(partners);
 
 end:
-	obstack_free(env->obst, base);
+	obstack_free(&env->obst, base);
 }
 
 /**

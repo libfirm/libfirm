@@ -57,7 +57,7 @@ struct border_t {
  * Environment for each of the chordal register allocator phases
  */
 struct be_chordal_env_t {
-	struct obstack       *obst;         /**< An obstack for temporary storage. */
+	struct obstack        obst;         /**< An obstack for temporary storage. */
 	be_ra_chordal_opts_t *opts;         /**< A pointer to the chordal ra options. */
 	ir_graph             *irg;          /**< The graph under examination. */
 	const arch_register_class_t *cls;   /**< The current register class. */
