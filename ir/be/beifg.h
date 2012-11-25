@@ -29,6 +29,7 @@
 #include "be_types.h"
 #include "bechordal.h"
 #include "irnodeset.h"
+#include "pset.h"
 
 struct be_ifg_t {
 	const be_chordal_env_t *env;

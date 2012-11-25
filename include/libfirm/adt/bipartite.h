@@ -26,6 +26,8 @@
 #ifndef FIRM_ADT_BIPARTITE_H
 #define FIRM_ADT_BIPARTITE_H
 
+#include <stdio.h>
+
 #include "../begin.h"
 
 /**
