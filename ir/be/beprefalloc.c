@@ -1206,7 +1206,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 		if (! (req_->type & arch_register_req_type_limited))
 			continue;
 		if (live_through_regs == NULL) {
-			rbitset_alloca(live_through_regs, n_regs);
+			live_through_regs = rbitset_alloca(n_regs);
 			determine_live_through_regs(live_through_regs, node);
 		}
 		rbitset_or(forbidden_regs, req_->limited, n_regs);
@@ -1219,7 +1219,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 
 	/* create these arrays if we haven't yet */
 	if (live_through_regs == NULL) {
-		rbitset_alloca(live_through_regs, n_regs);
+		live_through_regs = rbitset_alloca(n_regs);
 	}
 
 	if (double_width) {
@@ -1649,9 +1649,8 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		ir_nodeset_insert(&live_nodes, node);
 	}
 
-	unsigned *forbidden_regs; /**< collects registers which must
-	                               not be used for optimistic splits */
-	rbitset_alloca(forbidden_regs, n_regs);
+	/** Collects registers which must not be used for optimistic splits. */
+	unsigned *const forbidden_regs = rbitset_alloca(n_regs);
 
 	/* handle phis... */
 	assign_phi_registers(block);

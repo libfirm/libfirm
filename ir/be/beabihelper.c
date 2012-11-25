@@ -414,10 +414,8 @@ static ir_node *add_to_keep(ir_node *last_keep,
 void be_add_missing_keeps_node(ir_node *node)
 {
 	int       n_outs, i;
-	unsigned *found_projs;
 	ir_mode  *mode = get_irn_mode(node);
 	ir_node  *last_keep;
-	ir_node **existing_projs;
 
 	if (mode != mode_T) {
 		if (!has_real_user(node)) {
@@ -437,8 +435,8 @@ void be_add_missing_keeps_node(ir_node *node)
 	if (n_outs <= 0)
 		return;
 
-	rbitset_alloca(found_projs, n_outs);
-	existing_projs = ALLOCANZ(ir_node*, n_outs);
+	unsigned *const found_projs    = rbitset_alloca(n_outs);
+	ir_node **const existing_projs = ALLOCANZ(ir_node*, n_outs);
 	foreach_out_edge(node, edge) {
 		ir_node *succ = get_edge_src_irn(edge);
 		ir_mode *mode = get_irn_mode(succ);

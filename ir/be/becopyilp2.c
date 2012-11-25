@@ -91,12 +91,10 @@ static void build_coloring_cstr(ilp_env_t *ienv)
 	unsigned        n_regs = arch_register_class_n_regs(ienv->co->cls);
 	const unsigned *allocatable_colors = lenv->allocatable_colors;
 	nodes_iter_t    iter;
-	unsigned       *colors;
 	ir_node        *irn;
 	char            buf[32];
 
-	rbitset_alloca(colors, n_regs);
-
+	unsigned *const colors = rbitset_alloca(n_regs);
 	be_ifg_foreach_node(ifg, &iter, irn) {
 		const arch_register_req_t *req;
 		unsigned                   col;
@@ -617,7 +615,6 @@ static void ilp2_apply(ilp_env_t *ienv)
  */
 static int co_solve_ilp2(copy_opt_t *co)
 {
-	unsigned       *allocatable_colors;
 	unsigned        n_regs = arch_register_class_n_regs(co->cls);
 	lpp_sol_state_t sol_state;
 	ilp_env_t      *ienv;
@@ -630,7 +627,7 @@ static int co_solve_ilp2(copy_opt_t *co)
 	my.last_x_var  = -1;
 	FIRM_DBG_REGISTER(dbg, "firm.be.coilp2");
 
-	rbitset_alloca(allocatable_colors, n_regs);
+	unsigned *const allocatable_colors = rbitset_alloca(n_regs);
 	be_set_allocatable_regs(co->irg, co->cls, allocatable_colors);
 	my.allocatable_colors = allocatable_colors;
 

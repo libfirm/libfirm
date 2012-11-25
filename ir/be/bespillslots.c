@@ -677,11 +677,9 @@ static unsigned count_spillslots(const be_fec_env_t *env)
 {
 	size_t         spillcount = ARR_LEN(env->spills);
 	unsigned       slotcount  = 0;
-	unsigned      *counted;
 	size_t         s;
 
-	rbitset_alloca(counted, spillcount);
-
+	unsigned *const counted = rbitset_alloca(spillcount);
 	for (s = 0; s < spillcount; ++s) {
 		spill_t *spill     = env->spills[s];
 		int      spillslot = spill->spillslot;

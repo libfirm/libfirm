@@ -64,7 +64,6 @@ void normalize_one_return(ir_graph *irg)
 	int        n_rets        = 0;
 	bool       filter_dbgi   = false;
 	dbg_info  *combined_dbgi = NULL;
-	unsigned  *returns;
 	int i, j, k, n, last_idx;
 	ir_node **in, **retvals, **endbl_in;
 	ir_node *block;
@@ -79,8 +78,7 @@ void normalize_one_return(ir_graph *irg)
 		return;
 	}
 
-	rbitset_alloca(returns, n);
-
+	unsigned *const returns = rbitset_alloca(n);
 	for (i = 0; i < n; ++i) {
 		ir_node *node = get_Block_cfgpred(endbl, i);
 

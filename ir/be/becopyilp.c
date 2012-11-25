@@ -168,13 +168,11 @@ void sr_reinsert(size_red_t *sr)
 	ir_graph *irg        = sr->co->irg;
 	be_ifg_t *ifg        = sr->co->cenv->ifg;
 	unsigned  n_regs     = arch_register_class_n_regs(sr->co->cls);
-	unsigned *possible_cols;
-	unsigned *allocatable_cols;
 
-	rbitset_alloca(allocatable_cols, n_regs);
+	unsigned *const allocatable_cols = rbitset_alloca(n_regs);
 	be_set_allocatable_regs(irg, sr->co->cls, allocatable_cols);
 
-	rbitset_alloca(possible_cols, n_regs);
+	unsigned *const possible_cols = rbitset_alloca(n_regs);
 	neighbours_iter_t iter;
 
 	/* color the removed nodes in right order */

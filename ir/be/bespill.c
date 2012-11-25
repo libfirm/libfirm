@@ -60,7 +60,6 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 	const ir_graph *irg  = env->irg;
 	be_irg_t       *birg = be_birg_from_irg(irg);
 	be_lv_t *lv          = be_get_irg_liveness(irg);
-	unsigned *tmp        = NULL;
 	unsigned *def_constr = NULL;
 	int       arity      = get_irn_arity(node);
 
@@ -155,7 +154,7 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 		if (! (req_->type & arch_register_req_type_limited))
 			continue;
 		if (def_constr == NULL) {
-			rbitset_alloca(def_constr, cls->n_regs);
+			def_constr = rbitset_alloca(cls->n_regs);
 		}
 		rbitset_or(def_constr, req_->limited, cls->n_regs);
 	);
@@ -169,7 +168,7 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 	 * insert copies for all constrained arguments living through the node
 	 * and being constrained to a register which also occurs in out constraints.
 	 */
-	rbitset_alloca(tmp, cls->n_regs);
+	unsigned *const tmp = rbitset_alloca(cls->n_regs);
 	for (i = 0; i < arity; ++i) {
 		const arch_register_req_t *req;
 		ir_node                   *in;

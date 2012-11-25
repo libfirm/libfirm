@@ -63,15 +63,10 @@ static inline unsigned *rbitset_malloc(size_t size)
 /**
  * Allocate an empty raw bitset on the stack.
  *
- * @param res   will contain the newly allocated bitset
  * @param size  number of bits in the bitset
  */
-#define rbitset_alloca(res, size) \
-do { \
-	size_t size_bytes = BITSET_SIZE_BYTES(size); \
-	res = (unsigned*)alloca(size_bytes); \
-	memset(res, 0, size_bytes); \
-} while(0)
+#define rbitset_alloca(size) \
+	((unsigned*)memset(alloca(BITSET_SIZE_BYTES(size)), 0, BITSET_SIZE_BYTES(size)))
 
 /**
  * Allocate an empty raw bitset on an obstack.
