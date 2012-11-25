@@ -25,15 +25,12 @@
 #ifndef FIRM_BE_BE_T_H
 #define FIRM_BE_BE_T_H
 
-#include "firm_types.h"
-#include "obst.h"
-#include "debug.h"
-#include "bitset.h"
-#include "timing.h"
-#include "pmap.h"
-
 #include "be.h"
 #include "be_types.h"
+#include "bitset.h"
+#include "firm_types.h"
+#include "pmap.h"
+#include "timing.h"
 
 enum {
 	DUMP_NONE     = 0,
