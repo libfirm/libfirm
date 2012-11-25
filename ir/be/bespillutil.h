@@ -31,7 +31,6 @@
 #include "debug.h"
 
 #include "bearch.h"
-#include "beirg.h"
 
 typedef struct spill_env_t spill_env_t;
 

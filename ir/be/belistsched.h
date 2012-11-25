@@ -32,7 +32,6 @@
 #include "be.h"
 #include "be_types.h"
 #include "bearch.h"
-#include "beirg.h"
 
 /**
  * A selector interface which is used by the list schedule framework.

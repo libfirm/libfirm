@@ -29,7 +29,6 @@
 #include "irloop.h"
 
 #include "bearch.h"
-#include "beirg.h"
 
 typedef struct be_loopana_t be_loopana_t;
 

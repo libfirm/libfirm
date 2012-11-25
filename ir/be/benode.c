@@ -30,6 +30,7 @@
 
 #include <stdlib.h>
 
+#include "beirg.h"
 #include "obst.h"
 #include "set.h"
 #include "pmap.h"

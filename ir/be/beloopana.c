@@ -34,6 +34,7 @@
 #include "debug.h"
 
 #include "bearch.h"
+#include "beirg.h"
 #include "belive.h"
 #include "besched.h"
 #include "beloopana.h"

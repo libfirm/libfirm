@@ -28,7 +28,6 @@
 #define FIRM_BE_BESTATE_H
 
 #include "firm_types.h"
-#include "beirg.h"
 #include "bearch.h"
 
 /**

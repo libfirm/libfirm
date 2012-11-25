@@ -34,7 +34,6 @@
 #include "debug.h"
 
 #include "bechordal.h"
-#include "beirg.h"
 #include "beifg.h"
 
 /**

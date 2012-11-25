@@ -47,7 +47,6 @@
 #include "bestate.h"
 #include "beutil.h"
 #include "bessaconstr.h"
-#include "beirg.h"
 
 static ir_entity *fpcw_round    = NULL;
 static ir_entity *fpcw_truncate = NULL;

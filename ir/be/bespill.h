@@ -27,7 +27,6 @@
 #define FIRM_BE_BESPILL_H
 
 #include "bearch.h"
-#include "beirg.h"
 
 extern int be_coalesce_spill_slots;
 extern int be_do_remats;

@@ -31,7 +31,6 @@
 
 #include "bearch.h"
 #include "bechordal.h"
-#include "beirg.h"
 
 typedef struct be_operand_t  be_operand_t;
 typedef struct be_insn_t     be_insn_t;

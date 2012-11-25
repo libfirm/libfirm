@@ -53,7 +53,6 @@
 #include "irnodeset.h"
 #include "belive.h"
 #include "bitset.h"
-#include "beirg.h"
 #include "pdeq.h"
 #include "irnodemap.h"
 #include "obst.h"

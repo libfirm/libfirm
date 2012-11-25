@@ -45,6 +45,7 @@
  */
 #include "config.h"
 
+#include "be_t.h"
 #include "bitset.h"
 #include "error.h"
 #include "raw_bitset.h"

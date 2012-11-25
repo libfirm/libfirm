@@ -31,8 +31,8 @@
 #ifndef FIRM_BE_BEIRGMOD_H
 #define FIRM_BE_BEIRGMOD_H
 
+#include "be_types.h"
 #include "firm_types.h"
-#include "beirg.h"
 
 /**
  * Insert a Perm which permutes all (non-ignore) live values of a given register class

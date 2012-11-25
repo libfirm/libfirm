@@ -28,7 +28,7 @@
 #include <stdlib.h>
 
 #include "iredges_t.h"
-
+#include "beirg.h"
 #include "besched.h"
 #include "belistsched.h"
 #include "benode.h"

@@ -26,10 +26,7 @@
 #ifndef FIRM_BE_BERA_H
 #define FIRM_BE_BERA_H
 
-#include "irnode.h"
-
-#include "belive.h"
-#include "beirg.h"
+#include "firm_types.h"
 
 typedef struct be_ra_t {
 	void (*allocate)(ir_graph *irg);   /**< allocate registers on a graph */

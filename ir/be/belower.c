@@ -39,6 +39,7 @@
 #include "array_t.h"
 
 #include "bearch.h"
+#include "beirg.h"
 #include "belower.h"
 #include "benode.h"
 #include "besched.h"

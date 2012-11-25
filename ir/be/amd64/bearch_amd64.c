@@ -35,8 +35,9 @@
 #include "debug.h"
 #include "error.h"
 
-#include "be.h"
+#include "be_t.h"
 #include "bearch.h"
+#include "beirg.h"
 #include "benode.h"
 #include "belower.h"
 #include "besched.h"

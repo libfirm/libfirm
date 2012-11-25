@@ -27,11 +27,11 @@
 
 #include <stdbool.h>
 
+#include "be_t.h"
 #include "irtools.h"
 #include "irprintf.h"
 
 #include "statev_t.h"
-#include "beirg.h"
 #include "bemodule.h"
 #include "error.h"
 

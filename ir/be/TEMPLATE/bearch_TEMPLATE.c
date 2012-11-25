@@ -36,7 +36,7 @@
 #include "bitset.h"
 #include "debug.h"
 
-#include "be.h"
+#include "be_t.h"
 #include "bearch.h"
 #include "benode.h"
 #include "belower.h"

@@ -27,7 +27,6 @@
 #define FIRM_BE_BESPILLSLOTS_H
 
 #include <stdbool.h>
-#include "beirg.h"
 
 typedef struct be_fec_env_t be_fec_env_t;
 

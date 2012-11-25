@@ -34,6 +34,7 @@
 
 #include "bechordal.h"
 #include "bechordal_t.h"
+#include "beirg.h"
 #include "beirgmod.h"
 #include "beinsn_t.h"
 #include "besched.h"

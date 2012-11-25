@@ -27,7 +27,7 @@
 #ifndef FIRM_BE_BELOWER_H
 #define FIRM_BE_BELOWER_H
 
-#include "beirg.h"
+#include "firm_types.h"
 
 /**
  * Walks over all nodes to assure register constraints.

@@ -39,7 +39,6 @@
 #include "beutil.h"
 #include "becopyopt_t.h"
 #include "becopystat.h"
-#include "beirg.h"
 #include "bemodule.h"
 #include "beintlive_t.h"
 

@@ -28,7 +28,6 @@
 #include "firm_types.h"
 #include "irnodeset.h"
 
-#include "beirg.h"
 #include "bearch.h"
 
 typedef enum be_stat_tag_t {

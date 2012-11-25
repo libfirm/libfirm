@@ -47,7 +47,7 @@
 #include "ircons.h"
 #include "irgwalk.h"
 #include "heights.h"
-
+#include "beirg.h"
 #include "bepeephole.h"
 #include "benode.h"
 #include "besched.h"

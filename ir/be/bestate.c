@@ -41,6 +41,7 @@
 #include "cpset.h"
 
 #include "bearch.h"
+#include "beirg.h"
 #include "beuses.h"
 #include "besched.h"
 #include "belive_t.h"

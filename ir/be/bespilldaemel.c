@@ -50,7 +50,6 @@
 #include "bearch.h"
 #include "be_t.h"
 #include "benode.h"
-#include "beirg.h"
 #include "belive.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)

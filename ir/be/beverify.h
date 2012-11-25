@@ -29,7 +29,6 @@
 #include <stdbool.h>
 #include "irgraph.h"
 
-#include "beirg.h"
 #include "bearch.h"
 
 /**

@@ -45,14 +45,13 @@
 #include "util.h"
 #include "irtools.h"
 #include "irnodemap.h"
-
+#include "be_t.h"
 #include "bemodule.h"
 #include "beabi.h"
 #include "benode.h"
 #include "becopyopt.h"
 #include "becopyopt_t.h"
 #include "bechordal_t.h"
-#include "beirg.h"
 
 #define DUMP_BEFORE 1
 #define DUMP_AFTER  2

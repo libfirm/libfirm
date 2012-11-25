@@ -26,7 +26,6 @@
 #define FIRM_BE_BEFLAGS_H
 
 #include "bearch.h"
-#include "beirg.h"
 
 /**
  * Callback which rematerializes (=duplicates) a machine node.

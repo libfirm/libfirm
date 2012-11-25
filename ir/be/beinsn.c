@@ -32,7 +32,6 @@
 #include "bechordal_t.h"
 #include "besched.h"
 #include "beinsn_t.h"
-#include "beirg.h"
 #include "beabi.h"
 #include "raw_bitset.h"
 

@@ -54,7 +54,6 @@
 #include "belistsched.h"
 #include "bearch.h"
 #include "bestat.h"
-#include "beirg.h"
 
 #include "lc_opts.h"
 #include "lc_opts_enum.h"

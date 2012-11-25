@@ -36,11 +36,10 @@
 
 #include "absgraph.h"
 #include "statev_t.h"
-
+#include "be_t.h"
 #include "bearch.h"
 #include "beutil.h"
 #include "belive_t.h"
-#include "beirg.h"
 #include "besched.h"
 #include "bemodule.h"
 #include "bedump.h"
