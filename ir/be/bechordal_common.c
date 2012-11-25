@@ -221,10 +221,6 @@ ir_node *pre_process_constraints(be_chordal_env_t *env, be_insn_t **the_insn)
 		return NULL;
 
 	stat_ev_int("constr_perm", get_irn_arity(perm));
-	foreach_out_edge(perm, edge) {
-		ir_node *proj = get_edge_src_irn(edge);
-		arch_set_irn_register(proj, NULL);
-	}
 
 	/*
 	 * We also have to re-build the insn since the input operands are now the Projs of
