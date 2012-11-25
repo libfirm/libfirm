@@ -368,13 +368,6 @@ static void be_ra_chordal_color(be_chordal_env_t *const chordal_env)
 	be_assure_live_sets(irg);
 	assure_doms(irg);
 
-	be_timer_push(T_SPLIT);
-	if (chordal_env->opts->dump_flags & BE_CH_DUMP_SPLIT) {
-		snprintf(buf, sizeof(buf), "%s-split", chordal_env->cls->name);
-		dump_ir_graph(irg, buf);
-	}
-	be_timer_pop(T_SPLIT);
-
 	be_timer_push(T_CONSTR);
 
 	/* Handle register targeting constraints */

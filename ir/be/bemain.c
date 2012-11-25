@@ -495,7 +495,6 @@ static const char *get_timer_name(be_timer_id_t id)
 	case T_CODEGEN:        return "codegen";
 	case T_RA_PREPARATION: return "ra_preparation";
 	case T_SCHED:          return "sched";
-	case T_SPLIT:          return "split";
 	case T_CONSTR:         return "constr";
 	case T_FINISH:         return "finish";
 	case T_EMIT:           return "emit";

@@ -110,7 +110,6 @@ typedef enum {
 	T_RA_PREPARATION,
 	T_SCHED,
 	T_CONSTR,
-	T_SPLIT,
 	T_FINISH,
 	T_EMIT,
 	T_VERIFY,
