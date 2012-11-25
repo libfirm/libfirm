@@ -90,7 +90,6 @@ static be_ra_chordal_opts_t options = {
 
 typedef struct post_spill_env_t {
 	be_chordal_env_t            cenv;
-	const arch_register_class_t *cls;
 } post_spill_env_t;
 
 static const lc_opt_enum_int_items_t lower_perm_items[] = {
@@ -234,7 +233,6 @@ static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls, i
 {
 	be_chordal_env_t *chordal_env = &pse->cenv;
 
-	pse->cls                      = cls;
 	chordal_env->cls              = cls;
 	chordal_env->border_heads     = pmap_create();
 	chordal_env->allocatable_regs = bitset_malloc(chordal_env->cls->n_regs);
@@ -242,13 +240,13 @@ static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls, i
 	be_assure_live_chk(irg);
 
 	/* put all ignore registers into the ignore register set. */
-	be_put_allocatable_regs(irg, pse->cls, chordal_env->allocatable_regs);
+	be_put_allocatable_regs(irg, cls, chordal_env->allocatable_regs);
 
 	be_timer_push(T_RA_CONSTR);
 	be_pre_spill_prepare_constr(irg, chordal_env->cls);
 	be_timer_pop(T_RA_CONSTR);
 
-	dump(BE_CH_DUMP_CONSTR, irg, pse->cls, "constr-pre");
+	dump(BE_CH_DUMP_CONSTR, irg, cls, "constr-pre");
 }
 
 /**
@@ -276,10 +274,10 @@ static void post_spill(post_spill_env_t *const pse, ir_graph *const irg)
 		be_timer_push(T_VERIFY);
 		if (chordal_env->opts->vrfy_option == BE_CH_VRFY_WARN) {
 			be_verify_schedule(irg);
-			be_verify_register_pressure(irg, pse->cls);
+			be_verify_register_pressure(irg, chordal_env->cls);
 		} else if (chordal_env->opts->vrfy_option == BE_CH_VRFY_ASSERT) {
 			assert(be_verify_schedule(irg) && "Schedule verification failed");
-			assert(be_verify_register_pressure(irg, pse->cls)
+			assert(be_verify_register_pressure(irg, chordal_env->cls)
 				&& "Register pressure verification failed");
 		}
 		be_timer_pop(T_VERIFY);
@@ -289,7 +287,7 @@ static void post_spill(post_spill_env_t *const pse, ir_graph *const irg)
 		be_ra_chordal_coloring(chordal_env);
 		be_timer_pop(T_RA_COLOR);
 
-		dump(BE_CH_DUMP_CONSTR, irg, pse->cls, "color");
+		dump(BE_CH_DUMP_CONSTR, irg, chordal_env->cls, "color");
 
 		/* Create the ifg with the selected flavor */
 		be_timer_push(T_RA_IFG);
@@ -318,14 +316,14 @@ static void post_spill(post_spill_env_t *const pse, ir_graph *const irg)
 		co_driver(chordal_env);
 		be_timer_pop(T_RA_COPYMIN);
 
-		dump(BE_CH_DUMP_COPYMIN, irg, pse->cls, "copymin");
+		dump(BE_CH_DUMP_COPYMIN, irg, chordal_env->cls, "copymin");
 
 		/* ssa destruction */
 		be_timer_push(T_RA_SSA);
 		be_ssa_destruction(chordal_env);
 		be_timer_pop(T_RA_SSA);
 
-		dump(BE_CH_DUMP_SSADESTR, irg, pse->cls, "ssadestr");
+		dump(BE_CH_DUMP_SSADESTR, irg, chordal_env->cls, "ssadestr");
 
 		if (chordal_env->opts->vrfy_option != BE_CH_VRFY_OFF) {
 			be_timer_push(T_VERIFY);
@@ -402,7 +400,7 @@ static void be_ra_chordal_main(ir_graph *irg)
 		be_do_spill(irg, cls);
 		be_timer_pop(T_RA_SPILL);
 
-		dump(BE_CH_DUMP_SPILL, irg, pse.cls, "spill");
+		dump(BE_CH_DUMP_SPILL, irg, cls, "spill");
 
 		stat_ev_dbl("bechordal_spillcosts", be_estimate_irg_costs(irg) - pre_spill_cost);
 
