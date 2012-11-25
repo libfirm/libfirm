@@ -42,7 +42,6 @@ struct be_operand_t {
 	const bitset_t *regs;           /**< admissible register bitset */
 	int pos;                        /**< pos of the operand (0 to n are inputs, -1 to -n are outputs) */
 	const arch_register_req_t *req; /**< register constraints for the carrier node */
-	unsigned has_constraints : 1;   /**< the carrier node has register constraints (the constraint type is limited) */
 };
 
 struct be_insn_t {

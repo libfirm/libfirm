@@ -238,11 +238,12 @@ ir_node *pre_process_constraints(be_chordal_env_t *env, be_insn_t **the_insn)
 	for (int i = insn->use_start; i < insn->n_ops; ++i) {
 		be_operand_t *op = &insn->ops[i];
 		ir_node *proj = op->carrier;
-		/*
-		 * Note that the predecessor must not be a Proj of the Perm,
-		 * since ignore-nodes are not Perm'ed.
-		 */
-		if (op->has_constraints &&  is_Proj(proj) && get_Proj_pred(proj) == perm) {
+		/* Note that the predecessor is not necessarily a Proj of the Perm,
+		 * since ignore-nodes are not Perm'ed. */
+		/* FIXME: Only setting the constraints, when the register requirement is
+		 * limited, is a hack.  It will break when multiple differently constrained
+		 * inputs use the same value. */
+		if (arch_register_req_is(op->req, limited) && is_Proj(proj) && get_Proj_pred(proj) == perm) {
 			be_set_constr_out(perm, get_Proj_proj(proj), op->req);
 		}
 	}

@@ -63,10 +63,9 @@ be_insn_t *be_scan_insn(be_chordal_env_t const *const env, ir_node *const irn)
 				o.irn             = irn;
 				o.pos             = -(get_Proj_proj(p) + 1);
 				o.partner         = NULL;
-				o.has_constraints = arch_register_req_is(o.req, limited) | (o.req->width > 1);
 				obstack_grow(obst, &o, sizeof(o));
 				insn->n_ops++;
-				insn->has_constraints |= o.has_constraints;
+				insn->has_constraints |= arch_register_req_is(o.req, limited) | (o.req->width > 1);
 			}
 		}
 	} else if (arch_irn_consider_in_reg_alloc(env->cls, irn)) {
@@ -76,10 +75,9 @@ be_insn_t *be_scan_insn(be_chordal_env_t const *const env, ir_node *const irn)
 		o.irn     = irn;
 		o.pos     = -1;
 		o.partner = NULL;
-		o.has_constraints = arch_register_req_is(o.req, limited) | (o.req->width > 1);
 		obstack_grow(obst, &o, sizeof(o));
 		insn->n_ops++;
-		insn->has_constraints |= o.has_constraints;
+		insn->has_constraints |= arch_register_req_is(o.req, limited) | (o.req->width > 1);
 	}
 
 	insn->use_start = insn->n_ops;
@@ -95,10 +93,9 @@ be_insn_t *be_scan_insn(be_chordal_env_t const *const env, ir_node *const irn)
 			o.irn     = irn;
 			o.pos     = i;
 			o.partner = NULL;
-			o.has_constraints = arch_register_req_is(o.req, limited);
 			obstack_grow(obst, &o, sizeof(o));
 			insn->n_ops++;
-			insn->has_constraints |= o.has_constraints;
+			insn->has_constraints |= arch_register_req_is(o.req, limited);
 		}
 	}
 
