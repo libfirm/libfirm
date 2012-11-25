@@ -1515,7 +1515,7 @@ static void ia32_emit_node(ir_node *node)
 		(*func) (node);
 	} else {
 		emit_Nothing(node);
-		ir_fprintf(stderr, "Error: No emit handler for node %+F (%+G, graph %+F)\n", node, node, current_ir_graph);
+		ir_fprintf(stderr, "Error: No emit handler for node %+F (%+G, graph %+F)\n", node, node, get_irn_irg(node));
 		abort();
 	}
 
@@ -1597,9 +1597,7 @@ static int should_align_block(const ir_node *block)
  */
 static void ia32_emit_block_header(ir_node *block)
 {
-	ir_graph     *irg        = current_ir_graph;
-	int           need_label = block_needs_label(block);
-
+	ir_graph *const irg = get_Block_irg(block);
 	if (block == get_irg_end_block(irg))
 		return;
 
@@ -1629,6 +1627,7 @@ static void ia32_emit_block_header(ir_node *block)
 		}
 	}
 
+	int const need_label = block_needs_label(block);
 	be_gas_begin_block(block, need_label);
 }
 

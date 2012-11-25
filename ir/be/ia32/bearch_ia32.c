@@ -585,7 +585,7 @@ ir_node *ia32_turn_back_am(ir_node *node)
 		default:
 			panic("Unknown AM type");
 	}
-	noreg = ia32_new_NoReg_gp(current_ir_graph);
+	noreg = ia32_new_NoReg_gp(irg);
 	set_irn_n(node, n_ia32_base,  noreg);
 	set_irn_n(node, n_ia32_index, noreg);
 	set_ia32_am_offs_int(node, 0);

@@ -259,7 +259,8 @@ int i_mapper_bswap(ir_node *call, void *ctx)
 	ir_node *irn;
 	(void) ctx;
 
-	irn = new_rd_Builtin(dbg, block, get_irg_no_mem(current_ir_graph), 1, &op, ir_bk_bswap, tp);
+	ir_graph *const irg = get_Block_irg(block);
+	irn = new_rd_Builtin(dbg, block, get_irg_no_mem(irg), 1, &op, ir_bk_bswap, tp);
 	set_irn_pinned(irn, op_pin_state_floats);
 	irn = new_r_Proj(irn, get_irn_mode(op), pn_Builtin_max+1);
 	replace_call(irn, call, mem, NULL, NULL);
@@ -1110,11 +1111,10 @@ int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt)
 	int i, j, arity, first, n_param, n_res;
 	long n_proj;
 	ir_type *mtp;
-	ir_node *mem, *bl, *call, *addr, *res_proj;
+	ir_node *mem, *call, *addr, *res_proj;
 	ir_node **in;
 	bool     throws_exception;
 	ir_op   *op;
-	ir_graph *irg;
 	symconst_symbol sym;
 	ir_mode *mode = get_irn_mode(node);
 
@@ -1133,7 +1133,8 @@ int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt)
 
 	mtp     = get_entity_type(rt->ent);
 	n_param = get_method_n_params(mtp);
-	irg     = current_ir_graph;
+	ir_node  *const bl  = get_nodes_block(node);
+	ir_graph *const irg = get_Block_irg(bl);
 
 	mem = get_irn_n(node, 0);
 	if (get_irn_mode(mem) != mode_M) {
@@ -1177,7 +1178,6 @@ int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt)
 	}
 
 	/* ok, when we are here, the number of predecessors match as well as the parameter modes */
-	bl = get_nodes_block(node);
 	op = get_irn_op(node);
 
 	in = NULL;

@@ -128,7 +128,7 @@ static void lower_outer_frame_sels(ir_node *sel, void *ctx)
 			dbg_info *dbgi = get_irn_dbg_info(sel);
 			ir_mode  *mode = get_irn_mode(sel);
 			ir_mode  *mode_UInt = get_reference_mode_unsigned_eq(mode);
-			ir_node  *cnst = new_r_Const_long(current_ir_graph, mode_UInt, offset);
+			ir_node  *cnst = new_r_Const_long(irg, mode_UInt, offset);
 
 			ptr = new_rd_Add(dbgi, bl, ptr, cnst, mode);
 		}

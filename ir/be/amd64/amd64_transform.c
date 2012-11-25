@@ -470,12 +470,10 @@ static ir_node *gen_Proj_Load(ir_node *node)
  */
 static ir_node *gen_Proj(ir_node *node)
 {
-	ir_graph *irg  = current_ir_graph;
 	dbg_info *dbgi = get_irn_dbg_info(node);
 	ir_node  *pred = get_Proj_pred(node);
 	long     proj  = get_Proj_proj(node);
 
-	(void) irg;
     (void) dbgi;
 
 	if (is_Store(pred)) {
@@ -498,6 +496,7 @@ static ir_node *gen_Proj(ir_node *node)
 #endif
 	} else if (is_Start(pred)) {
 #if 0
+		ir_graph *const irg = get_irn_irg(node);
 		if (node == get_irg_anchor(irg, anchor_tls)) {
 			return gen_Proj_tls(node);
 		}

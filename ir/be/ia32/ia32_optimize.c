@@ -166,10 +166,10 @@ static void peephole_ia32_Cmp(ir_node *const node)
 		return;
 
 	dbgi         = get_irn_dbg_info(node);
-	irg          = get_irn_irg(node);
 	block        = get_nodes_block(node);
+	irg          = get_Block_irg(block);
 	noreg        = ia32_new_NoReg_gp(irg);
-	nomem        = get_irg_no_mem(current_ir_graph);
+	nomem        = get_irg_no_mem(irg);
 	op           = get_irn_n(node, n_ia32_Cmp_left);
 	attr         = get_ia32_attr(node);
 	ins_permuted = attr->data.ins_permuted;
@@ -647,7 +647,7 @@ static void peephole_store_incsp(ir_node *store)
 
 	push  = new_bd_ia32_Push(dbgi, block, noreg, noreg, mem,
 
-	create_push(dbgi, current_ir_graph, block, am_base, store);
+	create_push(dbgi, block, am_base, store);
 }
 #endif
 

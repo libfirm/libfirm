@@ -1915,7 +1915,8 @@ static void compute_Block(node_t *node)
 	int     i;
 	ir_node *block = node->node;
 
-	if (block == get_irg_start_block(current_ir_graph) || get_Block_entity(block) != NULL) {
+	ir_graph *const irg = get_Block_irg(block);
+	if (block == get_irg_start_block(irg) || get_Block_entity(block) != NULL) {
 		/* start block and labelled blocks are always reachable */
 		node->type.tv = tarval_reachable;
 		return;
@@ -3041,7 +3042,8 @@ static void apply_cf(ir_node *block, void *ctx)
 			}
 		}
 
-		if (block == get_irg_end_block(current_ir_graph)) {
+		ir_graph *const irg = get_Block_irg(block);
+		if (block == get_irg_end_block(irg)) {
 			/* Analysis found out that the end block is unreachable,
 			 * hence we remove all its control flow predecessors. */
 			set_irn_in(block, 0, NULL);

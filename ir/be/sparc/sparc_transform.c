@@ -1014,9 +1014,9 @@ static ir_node *gen_Minus(ir_node *node)
 /**
  * Create an entity for a given (floating point) tarval
  */
-static ir_entity *create_float_const_entity(ir_tarval *tv)
+static ir_entity *create_float_const_entity(ir_graph *const irg, ir_tarval *const tv)
 {
-	const arch_env_t *arch_env = be_get_irg_arch_env(current_ir_graph);
+	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
 	sparc_isa_t      *isa      = (sparc_isa_t*) arch_env;
 	ir_entity        *entity   = pmap_get(ir_entity, isa->constants, tv);
 	ir_initializer_t *initializer;
@@ -1043,9 +1043,10 @@ static ir_entity *create_float_const_entity(ir_tarval *tv)
 
 static ir_node *gen_float_const(dbg_info *dbgi, ir_node *block, ir_tarval *tv)
 {
-	ir_entity *entity = create_float_const_entity(tv);
+	ir_graph  *irg    = get_Block_irg(block);
+	ir_entity *entity = create_float_const_entity(irg, tv);
 	ir_node   *hi     = new_bd_sparc_SetHi(dbgi, block, entity, 0);
-	ir_node   *mem    = get_irg_no_mem(current_ir_graph);
+	ir_node   *mem    = get_irg_no_mem(irg);
 	ir_mode   *mode   = get_tarval_mode(tv);
 	ir_node   *new_op
 		= create_ldf(dbgi, block, hi, mem, mode, entity, 0, false);
@@ -1121,7 +1122,7 @@ static ir_node *gen_Switch(ir_node *node)
 	idx = new_bd_sparc_Sll_imm(dbgi, new_block, new_selector, NULL, 2);
 	/* load from jumptable */
 	load = new_bd_sparc_Ld_reg(dbgi, new_block, table_address, idx,
-	                           get_irg_no_mem(current_ir_graph),
+	                           get_irg_no_mem(irg),
 	                           mode_gp);
 	address = new_r_Proj(load, mode_gp, pn_sparc_Ld_res);
 
@@ -1602,7 +1603,7 @@ static ir_node *gen_Return(ir_node *node)
 static ir_node *bitcast_int_to_float(dbg_info *dbgi, ir_node *block,
                                      ir_node *value0, ir_node *value1)
 {
-	ir_graph *irg   = current_ir_graph;
+	ir_graph *irg   = get_Block_irg(block);
 	ir_node  *sp    = get_irg_frame(irg);
 	ir_node  *nomem = get_irg_no_mem(irg);
 	ir_node  *st    = new_bd_sparc_St_imm(dbgi, block, value0, sp, nomem,
@@ -1657,7 +1658,7 @@ static void bitcast_float_to_int(dbg_info *dbgi, ir_node *block,
 			result[1] = NULL;
 		}
 	} else {
-		ir_graph *irg   = current_ir_graph;
+		ir_graph *irg   = get_Block_irg(block);
 		ir_node  *stack = get_irg_frame(irg);
 		ir_node  *nomem = get_irg_no_mem(irg);
 		ir_node  *new_value = be_transform_node(value);

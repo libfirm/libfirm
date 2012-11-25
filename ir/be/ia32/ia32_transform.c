@@ -3967,15 +3967,15 @@ static ir_node *gen_be_FrameAddr(ir_node *node)
  */
 static ir_node *gen_be_Return(ir_node *node)
 {
-	ir_graph  *irg         = current_ir_graph;
 	ir_node   *ret_val     = get_irn_n(node, n_be_Return_val);
 	ir_node   *ret_mem     = get_irn_n(node, n_be_Return_mem);
 	ir_node   *new_ret_val = be_transform_node(ret_val);
 	ir_node   *new_ret_mem = be_transform_node(ret_mem);
-	ir_entity *ent         = get_irg_entity(irg);
-	ir_type   *tp          = get_entity_type(ent);
 	dbg_info  *dbgi        = get_irn_dbg_info(node);
 	ir_node   *block       = be_transform_node(get_nodes_block(node));
+	ir_graph  *irg         = get_Block_irg(block);
+	ir_entity *ent         = get_irg_entity(irg);
+	ir_type   *tp          = get_entity_type(ent);
 	ir_type   *res_type;
 	ir_mode   *mode;
 	ir_node   *frame;
@@ -4223,7 +4223,7 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 {
 	ir_node  *src_block    = get_nodes_block(node);
 	ir_node  *block        = be_transform_node(src_block);
-	ir_graph *irg          = current_ir_graph;
+	ir_graph *irg          = get_Block_irg(block);
 	dbg_info *dbgi         = get_irn_dbg_info(node);
 	ir_node  *frame        = get_irg_frame(irg);
 	ir_node  *val_low      = get_irn_n(node, n_ia32_l_LLtoFloat_val_low);
@@ -4295,7 +4295,7 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 		am.mem_proj           = nomem;
 		am.op_type            = ia32_AddrModeS;
 		am.new_op1            = res;
-		am.new_op2            = ia32_new_NoReg_fp(current_ir_graph);
+		am.new_op2            = ia32_new_NoReg_fp(irg);
 		am.pinned             = op_pin_state_floats;
 		am.commutative        = 1;
 		am.ins_permuted       = false;
@@ -4717,7 +4717,7 @@ static ir_node *gen_be_Call(ir_node *node)
 		ir_mode *const res_mode = get_type_mode(res_type);
 
 		if (res_mode != NULL && mode_is_float(res_mode)) {
-			ir_graph        *irg      = current_ir_graph;
+			ir_graph        *irg      = get_Block_irg(block);
 			ia32_irg_data_t *irg_data = ia32_get_irg_data(irg);
 			irg_data->do_x87_sim = 1;
 		}
@@ -5703,7 +5703,7 @@ static void register_transformers(void)
 static void ia32_pretransform_node(void)
 {
 	ir_graph        *irg      = current_ir_graph;
-	ia32_irg_data_t *irg_data = ia32_get_irg_data(current_ir_graph);
+	ia32_irg_data_t *irg_data = ia32_get_irg_data(irg);
 
 	irg_data->noreg_gp       = be_pre_transform_node(irg_data->noreg_gp);
 	irg_data->noreg_fp       = be_pre_transform_node(irg_data->noreg_fp);

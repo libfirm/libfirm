@@ -39,8 +39,9 @@ static void (*ssa_cons_walker)(ir_graph *, irg_walk_func *, irg_walk_func *, voi
  */
 static void prepare_blocks(ir_node *block, void *env)
 {
-	unsigned        n_loc = current_ir_graph->n_loc;
-	struct obstack *obst  = current_ir_graph->obst;
+	ir_graph       *const irg   = get_Block_irg(block);
+	unsigned        const n_loc = irg->n_loc;
+	struct obstack *const obst  = irg->obst;
 	(void)env;
 	/* reset mature flag */
 	set_Block_matured(block, 0);

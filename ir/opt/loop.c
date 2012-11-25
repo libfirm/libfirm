@@ -672,12 +672,11 @@ static void copy_walk(ir_node *node, walker_condition *walk_condition,
 	int arity;
 	ir_node *cp;
 	ir_node **cpin;
-	ir_graph *irg = current_ir_graph;
 
 	/**
 	 * break condition and cycle resolver, creating temporary node copies
 	 */
-	if (get_irn_visited(node) >= get_irg_visited(irg)) {
+	if (irn_visited(node)) {
 		/* Here we rely on nodestate's copy being initialized with NULL */
 		DB((dbg, LEVEL_5, "copy_walk: We have already visited %N\n", node));
 		if (get_inversion_copy(node) == NULL) {

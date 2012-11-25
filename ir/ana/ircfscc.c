@@ -618,7 +618,6 @@ static void cfscc(ir_node *n)
 
 int construct_cf_backedges(ir_graph *irg)
 {
-	ir_graph *rem = current_ir_graph;
 	ir_loop *head_rem;
 	ir_node *end = get_irg_end(irg);
 	struct obstack temp;
@@ -626,7 +625,6 @@ int construct_cf_backedges(ir_graph *irg)
 
 	max_loop_depth = 0;
 
-	current_ir_graph   = irg;
 	outermost_ir_graph = irg;
 
 	obstack_init(&temp);
@@ -653,7 +651,6 @@ int construct_cf_backedges(ir_graph *irg)
 	set_irg_loop(irg, current_loop);
 	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 
-	current_ir_graph = rem;
 	return max_loop_depth;
 }
 

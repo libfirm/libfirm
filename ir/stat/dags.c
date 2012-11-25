@@ -146,10 +146,9 @@ static void find_dag_roots(ir_node *node, void *env)
 	block = get_nodes_block(node);
 
 	/* ignore start end end blocks */
-	if (block == get_irg_start_block(current_ir_graph) ||
-		block == get_irg_end_block(current_ir_graph)) {
+	ir_graph *const irg = get_Block_irg(block);
+	if (block == get_irg_start_block(irg) || block == get_irg_end_block(irg))
 		return;
-	}  /* if */
 
 	/* Phi nodes always references nodes from "other" block */
 	if (is_Phi(node)) {
@@ -222,10 +221,9 @@ static void connect_dags(ir_node *node, void *env)
 	block = get_nodes_block(node);
 
 	/* ignore start end end blocks */
-	if (block == get_irg_start_block(current_ir_graph) ||
-		block == get_irg_end_block(current_ir_graph)) {
+	ir_graph *const irg = get_Block_irg(block);
+	if (block == get_irg_start_block(irg) || block == get_irg_end_block(irg))
 		return;
-	}  /* if */
 
 	/* ignore Phi nodes */
 	if (is_Phi(node))

@@ -1158,7 +1158,7 @@ static ir_node *ints_to_double(dbg_info *dbgi, ir_node *block, ir_node *node0,
 	/* the good way to do this would be to use the stm (store multiple)
 	 * instructions, since our input is nearly always 2 consecutive 32bit
 	 * registers... */
-	ir_graph *irg   = current_ir_graph;
+	ir_graph *irg   = get_Block_irg(block);
 	ir_node  *stack = get_irg_frame(irg);
 	ir_node  *nomem = get_irg_no_mem(irg);
 	ir_node  *str0  = new_bd_arm_Str(dbgi, block, stack, node0, nomem, mode_gp,
@@ -1179,7 +1179,7 @@ static ir_node *ints_to_double(dbg_info *dbgi, ir_node *block, ir_node *node0,
 
 static ir_node *int_to_float(dbg_info *dbgi, ir_node *block, ir_node *node)
 {
-	ir_graph *irg   = current_ir_graph;
+	ir_graph *irg   = get_Block_irg(block);
 	ir_node  *stack = get_irg_frame(irg);
 	ir_node  *nomem = get_irg_no_mem(irg);
 	ir_node  *str   = new_bd_arm_Str(dbgi, block, stack, node, nomem, mode_gp,
@@ -1195,7 +1195,7 @@ static ir_node *int_to_float(dbg_info *dbgi, ir_node *block, ir_node *node)
 
 static ir_node *float_to_int(dbg_info *dbgi, ir_node *block, ir_node *node)
 {
-	ir_graph *irg   = current_ir_graph;
+	ir_graph *irg   = get_Block_irg(block);
 	ir_node  *stack = get_irg_frame(irg);
 	ir_node  *nomem = get_irg_no_mem(irg);
 	ir_node  *stf   = new_bd_arm_Stf(dbgi, block, stack, node, nomem, mode_F,
@@ -1212,7 +1212,7 @@ static ir_node *float_to_int(dbg_info *dbgi, ir_node *block, ir_node *node)
 static void double_to_ints(dbg_info *dbgi, ir_node *block, ir_node *node,
                            ir_node **out_value0, ir_node **out_value1)
 {
-	ir_graph *irg   = current_ir_graph;
+	ir_graph *irg   = get_Block_irg(block);
 	ir_node  *stack = get_irg_frame(irg);
 	ir_node  *nomem = get_irg_no_mem(irg);
 	ir_node  *stf   = new_bd_arm_Stf(dbgi, block, stack, node, nomem, mode_D,
@@ -1426,7 +1426,8 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 	long       pn          = get_Proj_proj(node);
 	ir_node   *block       = get_nodes_block(node);
 	ir_node   *new_block   = be_transform_node(block);
-	ir_entity *entity      = get_irg_entity(current_ir_graph);
+	ir_graph  *irg         = get_Block_irg(new_block);
+	ir_entity *entity      = get_irg_entity(irg);
 	ir_type   *method_type = get_entity_type(entity);
 	ir_type   *param_type  = get_method_param_type(method_type, pn);
 	const reg_or_stackslot_t *param;
@@ -1447,12 +1448,9 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 			if (param->reg1 != NULL) {
 				value1 = be_prolog_get_reg_value(abihelper, param->reg1);
 			} else if (param->entity != NULL) {
-				ir_graph *irg = get_irn_irg(node);
-				ir_node  *fp  = get_irg_frame(irg);
-				ir_node  *mem = be_prolog_get_memory(abihelper);
-				ir_node  *ldr = new_bd_arm_Ldr(NULL, new_block, fp, mem,
-				                               mode_gp, param->entity,
-				                               0, 0, true);
+				ir_node *const fp  = get_irg_frame(irg);
+				ir_node *const mem = be_prolog_get_memory(abihelper);
+				ir_node *const ldr = new_bd_arm_Ldr(NULL, new_block, fp, mem, mode_gp, param->entity, 0, 0, true);
 				value1 = new_r_Proj(ldr, mode_gp, pn_arm_Ldr_res);
 			}
 
@@ -1466,12 +1464,11 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 		return value;
 	} else {
 		/* argument transmitted on stack */
-		ir_graph *irg  = get_irn_irg(node);
-		ir_node  *fp   = get_irg_frame(irg);
-		ir_node  *mem  = be_prolog_get_memory(abihelper);
-		ir_mode  *mode = get_type_mode(param->type);
-		ir_node  *load;
-		ir_node  *value;
+		ir_node *const fp   = get_irg_frame(irg);
+		ir_node *const mem  = be_prolog_get_memory(abihelper);
+		ir_mode *const mode = get_type_mode(param->type);
+		ir_node       *load;
+		ir_node       *value;
 
 		if (mode_is_float(mode)) {
 			load  = new_bd_arm_Ldf(NULL, new_block, fp, mem, mode,

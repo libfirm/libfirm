@@ -111,7 +111,6 @@ static void lower_sel(ir_node *sel)
 				lb = get_array_lower_bound(arr_ty, dim);
 				ub = get_array_upper_bound(arr_ty, dim);
 
-				assert(irg == current_ir_graph);
 				if (! is_Unknown(lb))
 					lb = new_rd_Conv(dbg, bl, copy_const_value(get_irn_dbg_info(sel), lb, bl), mode_Int);
 				else
