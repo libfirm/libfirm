@@ -222,14 +222,13 @@ bool arch_reg_is_allocatable(const arch_register_req_t *req,
                              const arch_register_t *reg)
 {
 	assert(req->type != arch_register_req_type_none);
+	if (req->cls != reg->reg_class)
+		return false;
 	if (reg->type & arch_register_type_joker)
 		return true;
-	if (req->type & arch_register_req_type_limited) {
-		if (reg->reg_class != req->cls)
-			return false;
+	if (req->type & arch_register_req_type_limited)
 		return rbitset_is_set(req->limited, reg->index);
-	}
-	return req->cls == reg->reg_class;
+	return true;
 }
 
 void arch_dump_register_req(FILE *F, const arch_register_req_t *req,
