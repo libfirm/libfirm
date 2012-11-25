@@ -596,11 +596,10 @@ static void extend_ins_by_copy(ir_node *block, int pos)
 {
 	ir_node *new_in;
 	ir_node *phi;
-	ir_node *pred;
 	assert(is_Block(block));
 
 	/* Extend block by copy of definition at pos */
-	pred = get_irn_n(block, pos);
+	ir_node *const pred = get_Block_cfgpred(block, pos);
 	new_in = get_inversion_copy(pred);
 	DB((dbg, LEVEL_5, "Extend block %N by %N cp of %N\n", block, new_in, pred));
 	extend_irn(block, new_in, false);
@@ -626,14 +625,10 @@ static void extend_ins_by_copy(ir_node *block, int pos)
 /* Returns the number of blocks backedges. With or without alien bes. */
 static int get_backedge_n(ir_node *block, bool with_alien)
 {
-	int i;
-	int be_n = 0;
-	int arity = get_irn_arity(block);
-
-	assert(is_Block(block));
-
-	for (i = 0; i < arity; ++i) {
-		ir_node *pred = get_irn_n(block, i);
+	int       be_n  = 0;
+	int const arity = get_Block_n_cfgpreds(block);
+	for (int i = 0; i < arity; ++i) {
+		ir_node *const pred = get_Block_cfgpred(block, i);
 		if (is_backedge(block, i) && (with_alien || is_in_loop(pred)))
 			++be_n;
 	}
@@ -833,15 +828,14 @@ static void unmark_not_allowed_cc_blocks(void)
 
 	for(i = 0; i < blocks; ++i) {
 		ir_node *block = cc_blocks[i];
-		int a;
-		int arity = get_irn_arity(block);
 
 		/* Head is an exception. */
 		if (block == loop_head)
 			continue;
 
-		for(a = 0; a < arity; ++a) {
-			if (! is_nodes_block_marked(get_irn_n(block, a))) {
+		int const arity = get_Block_n_cfgpreds(block);
+		for (int a = 0; a < arity; ++a) {
+			if (!is_nodes_block_marked(get_Block_cfgpred(block, a))) {
 				set_Block_mark(block, 0);
 				--inversion_blocks_in_cc;
 				DB((dbg, LEVEL_5, "Removed %N from cc (blocks in cc %d)\n",

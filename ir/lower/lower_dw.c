@@ -200,14 +200,14 @@ static ir_type *get_conv_type(ir_mode *imode, ir_mode *omode)
  */
 static void add_block_cf_input_nr(ir_node *block, int nr, ir_node *cf)
 {
-	int i, arity = get_irn_arity(block);
+	int i, arity = get_Block_n_cfgpreds(block);
 	ir_node **in;
 
 	assert(nr < arity);
 
 	NEW_ARR_A(ir_node *, in, arity + 1);
 	for (i = 0; i < arity; ++i)
-		in[i] = get_irn_n(block, i);
+		in[i] = get_Block_cfgpred(block, i);
 	in[i] = cf;
 
 	set_irn_in(block, i + 1, in);
@@ -231,11 +231,11 @@ static void add_block_cf_input_nr(ir_node *block, int nr, ir_node *cf)
  */
 static void add_block_cf_input(ir_node *block, ir_node *tmpl, ir_node *cf)
 {
-	int i, arity = get_irn_arity(block);
+	int i, arity = get_Block_n_cfgpreds(block);
 	int nr = 0;
 
 	for (i = 0; i < arity; ++i) {
-		if (get_irn_n(block, i) == tmpl) {
+		if (get_Block_cfgpred(block, i) == tmpl) {
 			nr = i;
 			break;
 		}

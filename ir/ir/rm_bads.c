@@ -38,7 +38,7 @@
  */
 static int count_non_bads(ir_node *node)
 {
-	int arity = get_irn_arity(node);
+	int arity = get_Block_n_cfgpreds(node);
 	int count = 0;
 	int i;
 	for (i = 0; i < arity; ++i) {
@@ -55,7 +55,7 @@ static int count_non_bads(ir_node *node)
 static void block_remove_bads(ir_node *block)
 {
 	ir_graph  *irg     = get_irn_irg(block);
-	const int  max     = get_irn_arity(block);
+	const int  max     = get_Block_n_cfgpreds(block);
 	const int  new_max = count_non_bads(block);
 	ir_node  **new_in  = ALLOCAN(ir_node*, new_max);
 	int        i;
@@ -68,7 +68,7 @@ static void block_remove_bads(ir_node *block)
 
 	/* 1. Create a new block without Bad inputs */
 	for (i = j = 0; i < max; ++i) {
-		ir_node *block_pred = get_irn_n(block, i);
+		ir_node *const block_pred = get_Block_cfgpred(block, i);
 		if (!is_Bad(block_pred)) {
 			new_in[j++] = block_pred;
 		}
@@ -97,8 +97,7 @@ static void block_remove_bads(ir_node *block)
 		assert(get_irn_arity(phi) == max);
 
 		for (i = j = 0; i < max; ++i) {
-			ir_node *block_pred = get_irn_n(block, i);
-
+			ir_node *const block_pred = get_Block_cfgpred(block, i);
 			if (!is_Bad(block_pred)) {
 				ir_node *pred = get_irn_n(phi, i);
 				new_in[j++] = pred;
@@ -118,7 +117,7 @@ static void collect(ir_node *node, void *env)
 	firm_collect_block_phis(node, NULL);
 	if (is_Block(node)) {
 		ir_node ***blocks_to_process = (ir_node***)env;
-		int        arity    = get_irn_arity(node);
+		int        arity    = get_Block_n_cfgpreds(node);
 		int        non_bads = count_non_bads(node);
 		if (arity != non_bads)
 			ARR_APP1(ir_node*, *blocks_to_process, node);

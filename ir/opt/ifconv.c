@@ -192,8 +192,8 @@ static void rewire(ir_node* node, int i, int j, ir_node* new_pred)
  */
 static void split_block(ir_node* block, int i, int j)
 {
-	ir_node  *pred_block = get_nodes_block(get_irn_n(block, i));
-	int       arity      = get_irn_arity(block);
+	ir_node  *pred_block = get_nodes_block(get_Block_cfgpred(block, i));
+	int       arity      = get_Block_n_cfgpreds(block);
 	ir_node **ins        = ALLOCAN(ir_node*, arity + 1);
 	int       new_pred_arity;
 	ir_node  *phi;
@@ -213,10 +213,10 @@ static void split_block(ir_node* block, int i, int j)
 		set_irn_in(phi, k, ins);
 	}
 
-	for (k = 0; k < i; ++k) ins[k] = get_irn_n(block, k);
+	for (k = 0; k < i; ++k) ins[k] = get_Block_cfgpred(block, k);
 	ins[k++] = get_irn_n(pred_block, j);
-	for (; k < arity; ++k) ins[k] = get_irn_n(block, k);
-	ins[k++] = get_irn_n(block, i);
+	for (; k < arity; ++k) ins[k] = get_Block_cfgpred(block, k);
+	ins[k++] = get_Block_cfgpred(block, i);
 	set_irn_in(block, k, ins);
 
 	new_pred_arity = get_irn_arity(pred_block) - 1;
@@ -245,7 +245,7 @@ static void split_block(ir_node* block, int i, int j)
 
 static void prepare_path(ir_node* block, int i, const ir_node* dependency)
 {
-	ir_node* pred = get_nodes_block(get_irn_n(block, i));
+	ir_node* pred = get_nodes_block(get_Block_cfgpred(block, i));
 	int pred_arity;
 	int j;
 
@@ -396,8 +396,8 @@ restart:
 				} while (phi != NULL);
 
 				/* move mux operands into mux_block */
-				exchange(get_nodes_block(get_irn_n(block, i)), mux_block);
-				exchange(get_nodes_block(get_irn_n(block, j)), mux_block);
+				exchange(get_nodes_block(get_Block_cfgpred(block, i)), mux_block);
+				exchange(get_nodes_block(get_Block_cfgpred(block, j)), mux_block);
 
 				if (arity == 2) {
 					unsigned mark;
