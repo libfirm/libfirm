@@ -261,7 +261,7 @@ static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls)
 /**
  * Perform things which need to be done per register class after spilling.
  */
-static void post_spill(post_spill_env_t *pse, int iteration)
+static void post_spill(post_spill_env_t *const pse)
 {
 	be_chordal_env_t *chordal_env = &pse->cenv;
 	ir_graph         *irg         = pse->irg;
@@ -278,9 +278,7 @@ static void post_spill(post_spill_env_t *pse, int iteration)
 		*/
 		be_timer_push(T_RA_SPILL_APPLY);
 		check_for_memory_operands(irg);
-		if (iteration == 0) {
-			be_abi_fix_stack_nodes(irg);
-		}
+		be_abi_fix_stack_nodes(irg);
 		be_timer_pop(T_RA_SPILL_APPLY);
 
 
@@ -415,7 +413,7 @@ static void be_ra_chordal_main(ir_graph *irg)
 
 		dump(BE_CH_DUMP_SPILL, irg, pse.cls, "spill");
 
-		post_spill(&pse, 0);
+		post_spill(&pse);
 
 		if (stat_ev_enabled) {
 			be_node_stats_t node_stats;
