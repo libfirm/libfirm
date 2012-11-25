@@ -61,7 +61,6 @@ be_insn_t *be_scan_insn(be_chordal_env_t const *const env, ir_node *const irn)
 				o.req             = arch_get_irn_register_req(p);
 				o.carrier         = p;
 				o.irn             = irn;
-				o.pos             = -(get_Proj_proj(p) + 1);
 				o.partner         = NULL;
 				obstack_grow(obst, &o, sizeof(o));
 				insn->n_ops++;
@@ -73,7 +72,6 @@ be_insn_t *be_scan_insn(be_chordal_env_t const *const env, ir_node *const irn)
 		o.req     = arch_get_irn_register_req(irn);
 		o.carrier = irn;
 		o.irn     = irn;
-		o.pos     = -1;
 		o.partner = NULL;
 		obstack_grow(obst, &o, sizeof(o));
 		insn->n_ops++;
@@ -91,7 +89,6 @@ be_insn_t *be_scan_insn(be_chordal_env_t const *const env, ir_node *const irn)
 			o.req     = arch_get_irn_register_req_in(irn, i);
 			o.carrier = op;
 			o.irn     = irn;
-			o.pos     = i;
 			o.partner = NULL;
 			obstack_grow(obst, &o, sizeof(o));
 			insn->n_ops++;
