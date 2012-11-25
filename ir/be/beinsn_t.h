@@ -27,7 +27,6 @@
 
 #include "firm_types.h"
 #include "bitset.h"
-#include "obst.h"
 
 #include "bearch.h"
 #include "bechordal.h"

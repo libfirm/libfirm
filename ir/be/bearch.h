@@ -28,7 +28,6 @@
 #include <stdbool.h>
 
 #include "firm_types.h"
-#include "obst.h"
 #include "raw_bitset.h"
 
 #include "be_types.h"
