@@ -83,7 +83,6 @@ FIRM_API ir_node *get_irn_n(const ir_node *node, int n);
  * Replaces the old in array by a new one that will contain the ins given in
  * the parameters. Conserves the block predecessor. It copies the array passed.
  * This function is necessary to adjust in arrays of blocks, calls and phis.
- * Assumes that current_ir_graph is set to the graph containing "node".
  * "in" must contain all predecessors except the block that are required for
  * the nodes opcode. */
 FIRM_API void set_irn_in(ir_node *node, int arity, ir_node *in[]);
@@ -163,11 +162,11 @@ FIRM_API ident *get_irn_opident(const ir_node *node);
 FIRM_API ir_visited_t get_irn_visited(const ir_node *node);
 /** Sets the visited counter of a node. */
 FIRM_API void set_irn_visited(ir_node *node, ir_visited_t visited);
-/** Sets visited to get_irg_visited(current_ir_graph). */
+/** Sets visited to get_irg_visited(get_irn_irg(node)). */
 FIRM_API void mark_irn_visited(ir_node *node);
-/** Returns 1 if visited >= get_irg_visited(current_ir_graph). */
+/** Returns 1 if visited >= get_irg_visited(get_irn_irg(node)). */
 FIRM_API int irn_visited(const ir_node *node);
-/** Returns 1 if visited >= get_irg_visited(current_ir_graph). Marks the node
+/** Returns 1 if visited >= get_irg_visited(get_irn_irg(node)). Marks the node
  * visited, if it was not. */
 FIRM_API int irn_visited_else_mark(ir_node *node);
 
@@ -486,7 +485,7 @@ FIRM_API ir_entity *get_Call_callee(const ir_node *node, size_t pos);
 
 /** Sets the full callee array.
  *
- *  The passed array is copied. Assumes current_ir_graph set properly! */
+ *  The passed array is copied. */
 FIRM_API void set_Call_callee_arr(ir_node *node, size_t n, ir_entity **arr);
 /** Frees callee array of call node @p node */
 FIRM_API void remove_Call_callee_arr(ir_node *node);

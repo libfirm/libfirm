@@ -94,8 +94,7 @@ FIRM_API void set_irp_typeinfo_inconsistent(void);
 /** Accessing the type information.
  *
  * These routines only work properly if the ir_graph is in state
- * ir_typeinfo_consistent or ir_typeinfo_inconsistent.  They
- * assume current_ir_graph set properly.
+ * ir_typeinfo_consistent or ir_typeinfo_inconsistent.
  */
 FIRM_API ir_type *get_irn_typeinfo_type(const ir_node *n);
 /** Sets type information of procedure graph node @p node to type @p type. */

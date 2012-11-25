@@ -35,7 +35,6 @@
 
 /**
  * Tests the modes of checknode and its predecessors.
- * checknode must be in current_ir_graph.
  *
  * @return NON-zero on success
  */

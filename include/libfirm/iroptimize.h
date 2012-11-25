@@ -253,9 +253,9 @@ FIRM_API ir_graph_pass_t *opt_parallelize_mem_pass(const char *name);
  * @param load   the load to replace
  * @param c      the constant
  *
- * @return in the modes match or can be transformed using a reinterpret cast
- *         returns a copy of the constant (possibly Conv'ed) on the
- *         current_ir_graph
+ * @return if the modes match or can be transformed using a reinterpret cast
+ *         returns a copy of the constant (possibly Conv'ed) in the graph where
+ *         the load is.
  */
 FIRM_API ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c);
 

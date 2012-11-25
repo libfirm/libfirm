@@ -207,8 +207,6 @@ typedef union i_record {
  * Every call or instruction is reported to its mapper function,
  * which is responsible for rebuilding the graph.
  *
- * current_ir_graph is always set.
- *
  * @param list             an array of intrinsic map records
  * @param length           the length of the array
  * @param part_block_used  set to true if part_block() must be using during lowering

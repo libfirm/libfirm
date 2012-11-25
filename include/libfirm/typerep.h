@@ -1767,7 +1767,7 @@ FIRM_API const tp_op *get_tpop_method(void);
  *
  * The array type represents rectangular multi dimensional arrays.
  * The constants representing the bounds must be allocated to
- * get_const_code_irg() by setting current_ir_graph accordingly.
+ * get_const_code_irg().
  *
  * - n_dimensions:    Number of array dimensions.
  * - *lower_bound:    Lower bounds of dimensions.  Usually all 0.

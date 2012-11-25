@@ -73,7 +73,7 @@ FIRM_API ir_node *get_Block_cfg_out_ka(const ir_node *node, unsigned pos);
 
 /**
  * Walks over the graph starting at node.  Walks also if graph is in state
- * "outs_inconsistent".  Assumes current_ir_graph is set properly.
+ * "outs_inconsistent".
  */
 FIRM_API void irg_out_walk(ir_node *node, irg_walk_func *pre,
                            irg_walk_func *post, void *env);
