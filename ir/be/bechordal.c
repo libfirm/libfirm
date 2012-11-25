@@ -47,17 +47,12 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 typedef struct be_chordal_alloc_env_t {
 	be_chordal_env_t *chordal_env;
-	bitset_t         *tmp_colors;  /**< An auxiliary bitset which is as long as the number of colors in the class. */
 	bitset_t         *colors;      /**< The color mask. */
 } be_chordal_alloc_env_t;
 
-static int get_next_free_reg(be_chordal_alloc_env_t const *const alloc_env, bitset_t *const colors)
+static int get_next_free_reg(bitset_t *const available)
 {
-	bitset_t *tmp = alloc_env->tmp_colors;
-	bitset_copy(tmp, colors);
-	bitset_flip_all(tmp);
-	bitset_and(tmp, alloc_env->chordal_env->allocatable_regs);
-	return bitset_next_set(tmp, 0);
+	return bitset_next_set(available, 0);
 }
 
 static bitset_t const *get_decisive_partner_regs(be_operand_t const *const o1)
@@ -121,11 +116,10 @@ static bool list_contains_irn(ir_node *const *const list, size_t const n, ir_nod
 	return false;
 }
 
-static void handle_constraints(be_chordal_alloc_env_t *const alloc_env, ir_node *const irn)
+static void handle_constraints(be_chordal_env_t *const env, ir_node *const irn)
 {
-	be_chordal_env_t *const env  = alloc_env->chordal_env;
-	void             *const base = obstack_base(env->obst);
-	be_insn_t              *insn = be_scan_insn(env, irn);
+	void *const base = obstack_base(env->obst);
+	be_insn_t  *insn = be_scan_insn(env, irn);
 
 	/* Perms inserted before the constraint handling phase are considered to be
 	 * correctly precolored. These Perms arise during the ABI handling phase. */
@@ -253,14 +247,15 @@ static void handle_constraints(be_chordal_alloc_env_t *const alloc_env, ir_node 
 
 	/* Allocate the non-constrained Projs of the Perm. */
 	if (perm != NULL) {
-		bitset_t *const bs = bitset_alloca(n_regs);
+		bitset_t *const available = bitset_alloca(n_regs);
+		bitset_copy(available, env->allocatable_regs);
 
 		/* Put the colors of all Projs in a bitset. */
 		foreach_out_edge(perm, edge) {
 			ir_node               *const proj = get_edge_src_irn(edge);
 			arch_register_t const *const reg  = arch_get_irn_register(proj);
 			if (reg != NULL)
-				bitset_set(bs, reg->index);
+				bitset_clear(available, reg->index);
 		}
 
 		/* Assign the not yet assigned Projs of the Perm a suitable color. */
@@ -271,9 +266,9 @@ static void handle_constraints(be_chordal_alloc_env_t *const alloc_env, ir_node 
 			DBG((dbg, LEVEL_2, "\tchecking reg of %+F: %s\n", proj, reg ? reg->name : "<none>"));
 
 			if (reg == NULL) {
-				size_t const col = get_next_free_reg(alloc_env, bs);
+				size_t const col = get_next_free_reg(available);
 				arch_register_t const *const new_reg = arch_register_for_index(env->cls, col);
-				bitset_set(bs, new_reg->index);
+				bitset_clear(available, new_reg->index);
 				arch_set_irn_register(proj, new_reg);
 				DBG((dbg, LEVEL_2, "\tsetting %+F to register %s\n", proj, new_reg->name));
 			}
@@ -300,7 +295,7 @@ end:
  */
 static void constraints(ir_node *const bl, void *const data)
 {
-	be_chordal_alloc_env_t *const env = (be_chordal_alloc_env_t*)data;
+	be_chordal_env_t *const env = (be_chordal_env_t*)data;
 	for (ir_node *irn = sched_first(bl); !sched_is_end(irn);) {
 		ir_node *const next = sched_next(irn);
 		handle_constraints(env, irn);
@@ -312,11 +307,8 @@ static void assign(ir_node *const block, void *const env_ptr)
 {
 	be_chordal_alloc_env_t *const alloc_env = (be_chordal_alloc_env_t*)env_ptr;
 	be_chordal_env_t       *const env       = alloc_env->chordal_env;
-	bitset_t               *const colors    = alloc_env->colors;
 	struct list_head       *const head      = get_block_border_head(env, block);
 	be_lv_t                *const lv        = be_get_irg_liveness(env->irg);
-
-	bitset_clear_all(colors);
 
 	DBG((dbg, LEVEL_4, "Assigning colors for block %+F\n", block));
 	DBG((dbg, LEVEL_4, "\tusedef chain for block\n"));
@@ -324,6 +316,9 @@ static void assign(ir_node *const block, void *const env_ptr)
 		DBG((dbg, LEVEL_4, "\t%s %+F/%d\n", b->is_def ? "def" : "use",
 					b->irn, get_irn_idx(b->irn)));
 	}
+
+	bitset_t *const available = alloc_env->colors;
+	bitset_copy(available, env->allocatable_regs);
 
 	/* Add initial defs for all values live in.
 	 * Since their colors have already been assigned (The dominators were
@@ -336,7 +331,7 @@ static void assign(ir_node *const block, void *const env_ptr)
 			DBG((dbg, LEVEL_4, "%+F has reg %s\n", irn, reg->name));
 
 			/* Mark the color of the live in value as used. */
-			bitset_set(colors, reg->index);
+			bitset_clear(available, reg->index);
 		}
 	}
 
@@ -349,23 +344,23 @@ static void assign(ir_node *const block, void *const env_ptr)
 		/* Assign a color, if it is a local def. Global defs already have a
 		 * color. */
 		if (!b->is_def) {
-			/* Clear the color upon a use. */
+			/* Make the color available upon a use. */
 			arch_register_t const *const reg = arch_get_irn_register(irn);
 			assert(reg && "Register must have been assigned");
-			bitset_clear(colors, reg->index);
+			bitset_set(available, reg->index);
 		} else if (!be_is_live_in(lv, block, irn)) {
 			int                    col;
 			arch_register_t const *reg = arch_get_irn_register(irn);
 			if (reg) {
 				col = reg->index;
-				assert(!bitset_is_set(colors, col) && "pre-colored register must be free");
+				assert(bitset_is_set(available, col) && "pre-colored register must be free");
 			} else {
 				assert(!arch_irn_is_ignore(irn));
-				col = get_next_free_reg(alloc_env, colors);
+				col = get_next_free_reg(available);
 				reg = arch_register_for_index(env->cls, col);
 				arch_set_irn_register(irn, reg);
 			}
-			bitset_set(colors, col);
+			bitset_clear(available, col);
 
 			DBG((dbg, LEVEL_1, "\tassigning register %s(%d) to %+F\n", reg->name, col, irn));
 		}
@@ -384,7 +379,6 @@ static void be_ra_chordal_color(be_chordal_env_t *const chordal_env)
 	be_chordal_alloc_env_t             env;
 	env.chordal_env = chordal_env;
 	env.colors      = bitset_alloca(colors_n);
-	env.tmp_colors  = bitset_alloca(colors_n);
 
 	be_timer_push(T_SPLIT);
 	if (chordal_env->opts->dump_flags & BE_CH_DUMP_SPLIT) {
@@ -396,7 +390,7 @@ static void be_ra_chordal_color(be_chordal_env_t *const chordal_env)
 	be_timer_push(T_CONSTR);
 
 	/* Handle register targeting constraints */
-	dom_tree_walk_irg(irg, constraints, NULL, &env);
+	dom_tree_walk_irg(irg, constraints, NULL, chordal_env);
 
 	if (chordal_env->opts->dump_flags & BE_CH_DUMP_CONSTR) {
 		snprintf(buf, sizeof(buf), "%s-constr", cls->name);
