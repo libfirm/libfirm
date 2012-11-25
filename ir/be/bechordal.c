@@ -45,11 +45,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-typedef struct be_chordal_alloc_env_t {
-	be_chordal_env_t *chordal_env;
-	bitset_t         *colors;      /**< The color mask. */
-} be_chordal_alloc_env_t;
-
 static int get_next_free_reg(bitset_t *const available)
 {
 	return bitset_next_set(available, 0);
@@ -305,10 +300,9 @@ static void constraints(ir_node *const bl, void *const data)
 
 static void assign(ir_node *const block, void *const env_ptr)
 {
-	be_chordal_alloc_env_t *const alloc_env = (be_chordal_alloc_env_t*)env_ptr;
-	be_chordal_env_t       *const env       = alloc_env->chordal_env;
-	struct list_head       *const head      = get_block_border_head(env, block);
-	be_lv_t                *const lv        = be_get_irg_liveness(env->irg);
+	be_chordal_env_t *const env  = (be_chordal_env_t*)env_ptr;
+	struct list_head *const head = get_block_border_head(env, block);
+	be_lv_t          *const lv   = be_get_irg_liveness(env->irg);
 
 	DBG((dbg, LEVEL_4, "Assigning colors for block %+F\n", block));
 	DBG((dbg, LEVEL_4, "\tusedef chain for block\n"));
@@ -317,7 +311,7 @@ static void assign(ir_node *const block, void *const env_ptr)
 					b->irn, get_irn_idx(b->irn)));
 	}
 
-	bitset_t *const available = alloc_env->colors;
+	bitset_t *const available = bitset_alloca(env->allocatable_regs->size);
 	bitset_copy(available, env->allocatable_regs);
 
 	/* Add initial defs for all values live in.
@@ -374,15 +368,9 @@ static void be_ra_chordal_color(be_chordal_env_t *const chordal_env)
 	be_assure_live_sets(irg);
 	assure_doms(irg);
 
-	arch_register_class_t const *const cls      = chordal_env->cls;
-	int                          const colors_n = arch_register_class_n_regs(cls);
-	be_chordal_alloc_env_t             env;
-	env.chordal_env = chordal_env;
-	env.colors      = bitset_alloca(colors_n);
-
 	be_timer_push(T_SPLIT);
 	if (chordal_env->opts->dump_flags & BE_CH_DUMP_SPLIT) {
-		snprintf(buf, sizeof(buf), "%s-split", cls->name);
+		snprintf(buf, sizeof(buf), "%s-split", chordal_env->cls->name);
 		dump_ir_graph(irg, buf);
 	}
 	be_timer_pop(T_SPLIT);
@@ -393,7 +381,7 @@ static void be_ra_chordal_color(be_chordal_env_t *const chordal_env)
 	dom_tree_walk_irg(irg, constraints, NULL, chordal_env);
 
 	if (chordal_env->opts->dump_flags & BE_CH_DUMP_CONSTR) {
-		snprintf(buf, sizeof(buf), "%s-constr", cls->name);
+		snprintf(buf, sizeof(buf), "%s-constr", chordal_env->cls->name);
 		dump_ir_graph(irg, buf);
 	}
 
@@ -403,10 +391,10 @@ static void be_ra_chordal_color(be_chordal_env_t *const chordal_env)
 	dom_tree_walk_irg(irg, create_borders, NULL, chordal_env);
 
 	/* Assign the colors */
-	dom_tree_walk_irg(irg, assign, NULL, &env);
+	dom_tree_walk_irg(irg, assign, NULL, chordal_env);
 
 	if (chordal_env->opts->dump_flags & BE_CH_DUMP_TREE_INTV) {
-		ir_snprintf(buf, sizeof(buf), "ifg_%s_%F.eps", cls->name, irg);
+		ir_snprintf(buf, sizeof(buf), "ifg_%s_%F.eps", chordal_env->cls->name, irg);
 		plotter_t *const plotter = new_plotter_ps(buf);
 		draw_interval_tree(&draw_chordal_def_opts, chordal_env, plotter);
 		plotter_free(plotter);
