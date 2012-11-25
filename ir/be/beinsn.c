@@ -106,13 +106,8 @@ be_insn_t *be_scan_insn(be_chordal_env_t const *const env, ir_node *const irn)
 		arch_register_req_t const *const req = op->req;
 		assert(req->cls == env->cls);
 
-		if (req->type & arch_register_req_type_limited) {
-			bitset_t *regs = bitset_obstack_alloc(obst, env->cls->n_regs);
-			rbitset_copy_to_bitset(req->limited, regs);
-			op->regs = regs;
-		} else {
-			op->regs = env->allocatable_regs;
-		}
+		op->regs = arch_register_req_is(req, limited) ?
+			req->limited : env->allocatable_regs->data;
 	}
 
 	return insn;

@@ -50,14 +50,14 @@ static int get_next_free_reg(bitset_t *const available)
 	return bitset_next_set(available, 0);
 }
 
-static bitset_t const *get_decisive_partner_regs(be_operand_t const *const o1)
+static unsigned const *get_decisive_partner_regs(be_operand_t const *const o1, size_t const n_regs)
 {
 	be_operand_t const *const o2 = o1->partner;
 	assert(!o2 || o1->req->cls == o2->req->cls);
 
-	if (!o2 || bitset_contains(o1->regs, o2->regs)) {
+	if (!o2 || rbitset_contains(o1->regs, o2->regs, n_regs)) {
 		return o1->regs;
-	} else if (bitset_contains(o2->regs, o1->regs)) {
+	} else if (rbitset_contains(o2->regs, o1->regs, n_regs)) {
 		return o2->regs;
 	} else {
 		return NULL;
@@ -69,7 +69,7 @@ static void pair_up_operands(be_chordal_env_t const *const env, be_insn_t *const
 	/* For each out operand, try to find an in operand which can be assigned the
 	 * same register as the out operand. */
 	int       const n_regs = env->cls->n_regs;
-	bitset_t *const bs     = bitset_alloca(n_regs);
+	unsigned *const bs     = rbitset_alloca(n_regs);
 	be_lv_t  *const lv     = be_get_irg_liveness(env->irg);
 	for (int j = 0; j < insn->use_start; ++j) {
 		/* Try to find an in operand which has ... */
@@ -81,10 +81,10 @@ static void pair_up_operands(be_chordal_env_t const *const env, be_insn_t *const
 			if (op->partner || be_values_interfere(lv, insn->irn, op->carrier))
 				continue;
 
-			bitset_copy(bs, op->regs);
-			bitset_and(bs, out_op->regs);
-			int const n_total = bitset_popcount(op->regs);
-			if (!bitset_is_empty(bs) && n_total < smallest_n_regs) {
+			rbitset_copy(bs, op->regs, n_regs);
+			rbitset_and(bs, out_op->regs, n_regs);
+			int const n_total = rbitset_popcount(op->regs, n_regs);
+			if (!rbitset_is_empty(bs, n_regs) && n_total < smallest_n_regs) {
 				smallest        = op;
 				smallest_n_regs = n_total;
 			}
@@ -162,11 +162,11 @@ static void handle_constraints(be_chordal_env_t *const env, ir_node *const irn)
 
 		DBG((dbg, LEVEL_2, "\tassociating %+F and %+F\n", op->carrier, partner));
 
-		bitset_t const *const bs = get_decisive_partner_regs(op);
+		unsigned const *const bs = get_decisive_partner_regs(op, n_regs);
 		if (bs) {
 			DBG((dbg, LEVEL_2, "\tallowed registers for %+F: %B\n", op->carrier, bs));
 
-			bitset_foreach(bs, col) {
+			rbitset_foreach(bs, n_regs, col) {
 #if USE_HUNGARIAN
 				hungarian_add(bp, n_alloc, col, 1);
 #else
