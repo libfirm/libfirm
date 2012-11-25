@@ -304,6 +304,10 @@ static inline size_t rbitset_next(const unsigned *bitset, size_t pos,
 static inline size_t rbitset_next_max(const unsigned *bitset, size_t pos,
                                       size_t last, bool set)
 {
+	assert(pos <= last);
+	if (pos == last)
+		return (size_t)-1;
+
 	size_t p;
 	size_t elem_pos = pos / BITS_PER_ELEM;
 	size_t bit_pos  = pos % BITS_PER_ELEM;
@@ -317,8 +321,6 @@ static inline size_t rbitset_next_max(const unsigned *bitset, size_t pos,
 	 * We are only interested in bits set higher than pos.
 	 */
 	unsigned in_elem_mask = (1u << bit_pos) - 1;
-
-	assert(pos < last);
 
 	elem ^= mask;
 	p = ntz(elem & ~in_elem_mask);

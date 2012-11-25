@@ -200,8 +200,6 @@ static inline void bitset_copy_into(bitset_t *tgt, const bitset_t *src)
  */
 static inline size_t bitset_next_clear(const bitset_t *bs, size_t pos)
 {
-	if (pos >= bs->size)
-		return (size_t)-1;
 	return rbitset_next_max(bs->data, pos, bs->size, false);
 }
 
@@ -215,8 +213,6 @@ static inline size_t bitset_next_clear(const bitset_t *bs, size_t pos)
  */
 static inline size_t bitset_next_set(const bitset_t *bs, size_t pos)
 {
-	if (pos >= bs->size)
-		return (size_t)-1;
 	return rbitset_next_max(bs->data, pos, bs->size, true);
 }
 
