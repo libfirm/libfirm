@@ -91,7 +91,6 @@ static be_ra_chordal_opts_t options = {
 typedef struct post_spill_env_t {
 	be_chordal_env_t            cenv;
 	const arch_register_class_t *cls;
-	double                      pre_spill_cost;
 } post_spill_env_t;
 
 static const lc_opt_enum_int_items_t lower_perm_items[] = {
@@ -242,10 +241,6 @@ static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls, i
 
 	be_assure_live_chk(irg);
 
-	if (stat_ev_enabled) {
-		pse->pre_spill_cost = be_estimate_irg_costs(irg);
-	}
-
 	/* put all ignore registers into the ignore register set. */
 	be_put_allocatable_regs(irg, pse->cls, chordal_env->allocatable_regs);
 
@@ -266,8 +261,6 @@ static void post_spill(post_spill_env_t *const pse, ir_graph *const irg)
 
 	/* some special classes contain only ignore regs, no work to be done */
 	if (allocatable_regs > 0) {
-		stat_ev_dbl("bechordal_spillcosts", be_estimate_irg_costs(irg) - pse->pre_spill_cost);
-
 		/*
 			If we have a backend provided spiller, post spill is
 			called in a loop after spilling for each register class.
@@ -396,8 +389,10 @@ static void be_ra_chordal_main(ir_graph *irg)
 
 		stat_ev_ctx_push_str("bechordal_cls", cls->name);
 
+		double pre_spill_cost = 0;
 		if (stat_ev_enabled) {
 			be_do_stat_reg_pressure(irg, cls);
+			pre_spill_cost = be_estimate_irg_costs(irg);
 		}
 
 		pse.cenv = chordal_env;
@@ -408,6 +403,8 @@ static void be_ra_chordal_main(ir_graph *irg)
 		be_timer_pop(T_RA_SPILL);
 
 		dump(BE_CH_DUMP_SPILL, irg, pse.cls, "spill");
+
+		stat_ev_dbl("bechordal_spillcosts", be_estimate_irg_costs(irg) - pre_spill_cost);
 
 		post_spill(&pse, irg);
 
