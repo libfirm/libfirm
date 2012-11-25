@@ -47,7 +47,6 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 typedef struct be_chordal_alloc_env_t {
 	be_chordal_env_t *chordal_env;
-	bitset_t         *live;        /**< A liveness bitset. */
 	bitset_t         *tmp_colors;  /**< An auxiliary bitset which is as long as the number of colors in the class. */
 	bitset_t         *colors;      /**< The color mask. */
 } be_chordal_alloc_env_t;
@@ -313,13 +312,11 @@ static void assign(ir_node *const block, void *const env_ptr)
 {
 	be_chordal_alloc_env_t *const alloc_env = (be_chordal_alloc_env_t*)env_ptr;
 	be_chordal_env_t       *const env       = alloc_env->chordal_env;
-	bitset_t               *const live      = alloc_env->live;
 	bitset_t               *const colors    = alloc_env->colors;
 	struct list_head       *const head      = get_block_border_head(env, block);
 	be_lv_t                *const lv        = be_get_irg_liveness(env->irg);
 
 	bitset_clear_all(colors);
-	bitset_clear_all(live);
 
 	DBG((dbg, LEVEL_4, "Assigning colors for block %+F\n", block));
 	DBG((dbg, LEVEL_4, "\tusedef chain for block\n"));
@@ -340,9 +337,6 @@ static void assign(ir_node *const block, void *const env_ptr)
 
 			/* Mark the color of the live in value as used. */
 			bitset_set(colors, reg->index);
-
-			/* Mark the value live in. */
-			bitset_set(live, get_irn_idx(irn));
 		}
 	}
 
@@ -351,7 +345,6 @@ static void assign(ir_node *const block, void *const env_ptr)
 	 * will work. */
 	foreach_border_head(head, b) {
 		ir_node *const irn = b->irn;
-		int      const nr  = get_irn_idx(irn);
 
 		/* Assign a color, if it is a local def. Global defs already have a
 		 * color. */
@@ -360,7 +353,6 @@ static void assign(ir_node *const block, void *const env_ptr)
 			arch_register_t const *const reg = arch_get_irn_register(irn);
 			assert(reg && "Register must have been assigned");
 			bitset_clear(colors, reg->index);
-			bitset_clear(live, nr);
 		} else if (!be_is_live_in(lv, block, irn)) {
 			int                    col;
 			arch_register_t const *reg = arch_get_irn_register(irn);
@@ -376,9 +368,6 @@ static void assign(ir_node *const block, void *const env_ptr)
 			bitset_set(colors, col);
 
 			DBG((dbg, LEVEL_1, "\tassigning register %s(%d) to %+F\n", reg->name, col, irn));
-
-			assert(!bitset_is_set(live, nr) && "Value's definition must not have been encountered");
-			bitset_set(live, nr);
 		}
 	}
 }
@@ -416,8 +405,6 @@ static void be_ra_chordal_color(be_chordal_env_t *const chordal_env)
 
 	be_timer_pop(T_CONSTR);
 
-	env.live = bitset_malloc(get_irg_last_idx(irg));
-
 	/* First, determine the pressure */
 	dom_tree_walk_irg(irg, create_borders, NULL, chordal_env);
 
@@ -430,8 +417,6 @@ static void be_ra_chordal_color(be_chordal_env_t *const chordal_env)
 		draw_interval_tree(&draw_chordal_def_opts, chordal_env, plotter);
 		plotter_free(plotter);
 	}
-
-	bitset_free(env.live);
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_chordal)
