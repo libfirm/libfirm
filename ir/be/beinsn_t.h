@@ -36,10 +36,9 @@ typedef struct be_operand_t  be_operand_t;
 typedef struct be_insn_t     be_insn_t;
 
 struct be_operand_t {
-	ir_node *carrier;               /**< node representing the operand value (Proj or the node itself for defs, the used value for uses) */
-	be_operand_t *partner;          /**< used in bechordal later... (TODO what does it do?) */
-	unsigned const *regs;           /**< admissible register bitset */
-	const arch_register_req_t *req; /**< register constraints for the carrier node */
+	ir_node        *carrier; /**< node representing the operand value (Proj or the node itself for defs, the used value for uses) */
+	be_operand_t   *partner; /**< used in bechordal later... (TODO what does it do?) */
+	unsigned const *regs;    /**< admissible register bitset */
 };
 
 struct be_insn_t {

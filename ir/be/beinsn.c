@@ -60,22 +60,34 @@ be_insn_t *be_scan_insn(be_chordal_env_t const *const env, ir_node *const irn)
 
 			if (arch_irn_consider_in_reg_alloc(env->cls, p)) {
 				/* found a def: create a new operand */
-				o.req             = arch_get_irn_register_req(p);
+				arch_register_req_t const *const req = arch_get_irn_register_req(p);
+				if (arch_register_req_is(req, limited)) {
+					o.regs          = req->limited;
+					has_constraints = true;
+				} else {
+					o.regs           = env->allocatable_regs->data;
+					has_constraints |= req->width > 1;
+				}
 				o.carrier         = p;
 				o.partner         = NULL;
 				obstack_grow(obst, &o, sizeof(o));
 				insn->n_ops++;
-				has_constraints |= arch_register_req_is(o.req, limited) | (o.req->width > 1);
 			}
 		}
 	} else if (arch_irn_consider_in_reg_alloc(env->cls, irn)) {
 		/* only one def, create one operand */
-		o.req     = arch_get_irn_register_req(irn);
+		arch_register_req_t const *const req = arch_get_irn_register_req(irn);
+		if (arch_register_req_is(req, limited)) {
+			o.regs          = req->limited;
+			has_constraints = true;
+		} else {
+			o.regs           = env->allocatable_regs->data;
+			has_constraints |= req->width > 1;
+		}
 		o.carrier = irn;
 		o.partner = NULL;
 		obstack_grow(obst, &o, sizeof(o));
 		insn->n_ops++;
-		has_constraints |= arch_register_req_is(o.req, limited) | (o.req->width > 1);
 	}
 
 	insn->use_start = insn->n_ops;
@@ -86,12 +98,17 @@ be_insn_t *be_scan_insn(be_chordal_env_t const *const env, ir_node *const irn)
 
 		if (arch_irn_consider_in_reg_alloc(env->cls, op)) {
 			/* found a register use, create an operand */
-			o.req     = arch_get_irn_register_req_in(irn, i);
+			arch_register_req_t const *const req = arch_get_irn_register_req_in(irn, i);
+			if (arch_register_req_is(req, limited)) {
+				o.regs          = req->limited;
+				has_constraints = true;
+			} else {
+				o.regs = env->allocatable_regs->data;
+			}
 			o.carrier = op;
 			o.partner = NULL;
 			obstack_grow(obst, &o, sizeof(o));
 			insn->n_ops++;
-			has_constraints |= arch_register_req_is(o.req, limited);
 		}
 	}
 
@@ -99,16 +116,5 @@ be_insn_t *be_scan_insn(be_chordal_env_t const *const env, ir_node *const irn)
 		return NULL;
 
 	insn->ops = (be_operand_t*)obstack_finish(obst);
-
-	/* Compute the admissible registers bitsets. */
-	for (i = 0; i < insn->n_ops; ++i) {
-		be_operand_t              *const op  = &insn->ops[i];
-		arch_register_req_t const *const req = op->req;
-		assert(req->cls == env->cls);
-
-		op->regs = arch_register_req_is(req, limited) ?
-			req->limited : env->allocatable_regs->data;
-	}
-
 	return insn;
 }

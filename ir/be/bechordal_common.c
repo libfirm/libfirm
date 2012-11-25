@@ -214,7 +214,8 @@ ir_node *pre_process_constraints(be_chordal_env_t *env, be_insn_t **the_insn)
 	 * Make the Perm, recompute liveness and re-scan the insn since the
 	 * in operands are now the Projs of the Perm.
 	 */
-	ir_node *const perm = insert_Perm_before(env->irg, env->cls, insn->irn);
+	ir_node *const irn  = insn->irn;
+	ir_node *const perm = insert_Perm_before(env->irg, env->cls, irn);
 
 	/* Registers are propagated by insert_Perm_before(). Clean them here! */
 	if (perm == NULL)
@@ -228,23 +229,23 @@ ir_node *pre_process_constraints(be_chordal_env_t *env, be_insn_t **the_insn)
 	 * the live sets may change.
 	 */
 	obstack_free(env->obst, insn);
-	*the_insn = insn = be_scan_insn(env, insn->irn);
+	*the_insn = insn = be_scan_insn(env, irn);
 
-	/*
-	 * Copy the input constraints of the insn to the Perm as output
-	 * constraints. Succeeding phases (coalescing) will need that.
-	 */
-	for (int i = insn->use_start; i < insn->n_ops; ++i) {
-		be_operand_t *op = &insn->ops[i];
-		ir_node *proj = op->carrier;
+	/* Copy the input constraints of the irn to the Perm as output
+	 * constraints. Succeeding phases (coalescing) will need that. */
+	for (int i = 0, n = get_irn_arity(irn); i != n; ++i) {
+		ir_node *const proj = get_irn_n(irn, i);
 		/* Note that the predecessor is not necessarily a Proj of the Perm,
 		 * since ignore-nodes are not Perm'ed. */
+		if (!is_Proj(proj) || get_Proj_pred(proj) != perm)
+			continue;
 		/* FIXME: Only setting the constraints, when the register requirement is
 		 * limited, is a hack.  It will break when multiple differently constrained
 		 * inputs use the same value. */
-		if (arch_register_req_is(op->req, limited) && is_Proj(proj) && get_Proj_pred(proj) == perm) {
-			be_set_constr_out(perm, get_Proj_proj(proj), op->req);
-		}
+		arch_register_req_t const *const req = arch_get_irn_register_req_in(irn, i);
+		if (!arch_register_req_is(req, limited))
+			continue;
+		be_set_constr_out(perm, get_Proj_proj(proj), req);
 	}
 
 	return perm;

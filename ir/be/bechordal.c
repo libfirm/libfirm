@@ -53,8 +53,6 @@ static int get_next_free_reg(bitset_t *const available)
 static unsigned const *get_decisive_partner_regs(be_operand_t const *const o1, size_t const n_regs)
 {
 	be_operand_t const *const o2 = o1->partner;
-	assert(!o2 || o1->req->cls == o2->req->cls);
-
 	if (!o2 || rbitset_contains(o1->regs, o2->regs, n_regs)) {
 		return o1->regs;
 	} else if (rbitset_contains(o2->regs, o1->regs, n_regs)) {
