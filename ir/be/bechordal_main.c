@@ -90,7 +90,6 @@ static be_ra_chordal_opts_t options = {
 
 typedef struct post_spill_env_t {
 	be_chordal_env_t            cenv;
-	ir_graph                    *irg;
 	const arch_register_class_t *cls;
 	double                      pre_spill_cost;
 } post_spill_env_t;
@@ -232,10 +231,9 @@ static be_node_stats_t last_node_stats;
 /**
  * Perform things which need to be done per register class before spilling.
  */
-static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls)
+static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls, ir_graph *const irg)
 {
 	be_chordal_env_t *chordal_env = &pse->cenv;
-	ir_graph         *irg         = pse->irg;
 
 	pse->cls                      = cls;
 	chordal_env->cls              = cls;
@@ -261,10 +259,9 @@ static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls)
 /**
  * Perform things which need to be done per register class after spilling.
  */
-static void post_spill(post_spill_env_t *const pse)
+static void post_spill(post_spill_env_t *const pse, ir_graph *const irg)
 {
 	be_chordal_env_t *chordal_env = &pse->cenv;
-	ir_graph         *irg         = pse->irg;
 	int               allocatable_regs = be_get_n_allocatable_regs(irg, chordal_env->cls);
 
 	/* some special classes contain only ignore regs, no work to be done */
@@ -404,8 +401,7 @@ static void be_ra_chordal_main(ir_graph *irg)
 		}
 
 		pse.cenv = chordal_env;
-		pse.irg = irg;
-		pre_spill(&pse, cls);
+		pre_spill(&pse, cls, irg);
 
 		be_timer_push(T_RA_SPILL);
 		be_do_spill(irg, cls);
@@ -413,7 +409,7 @@ static void be_ra_chordal_main(ir_graph *irg)
 
 		dump(BE_CH_DUMP_SPILL, irg, pse.cls, "spill");
 
-		post_spill(&pse);
+		post_spill(&pse, irg);
 
 		if (stat_ev_enabled) {
 			be_node_stats_t node_stats;
