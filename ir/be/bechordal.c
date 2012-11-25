@@ -69,7 +69,6 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 typedef struct be_chordal_alloc_env_t {
 	be_chordal_env_t *chordal_env;
 
-	pset *pre_colored;     /**< Set of precolored nodes. */
 	bitset_t *live;        /**< A liveness bitset. */
 	bitset_t *tmp_colors;  /**< An auxiliary bitset which is as long as the number of colors in the class. */
 	bitset_t *colors;      /**< The color mask. */
@@ -163,12 +162,6 @@ static void handle_constraints(be_chordal_alloc_env_t *alloc_env,
 	void *base             = obstack_base(env->obst);
 	be_insn_t *insn        = be_scan_insn(env, irn);
 	bipartite_t *bp;
-
-	if (insn->pre_colored) {
-		int i;
-		for (i = 0; i < insn->use_start; ++i)
-			pset_insert_ptr(alloc_env->pre_colored, insn->ops[i].carrier);
-	}
 
 	/*
 	 * Perms inserted before the constraint handling phase are considered to be
@@ -306,14 +299,12 @@ static void handle_constraints(be_chordal_alloc_env_t *alloc_env,
 		irn = alloc_nodes[i];
 		if (irn != NULL) {
 			arch_set_irn_register(irn, reg);
-			(void) pset_hinsert_ptr(alloc_env->pre_colored, irn);
 			DBG((dbg, LEVEL_2, "\tsetting %+F to register %s\n", irn, reg->name));
 		}
 
 		irn = pmap_get(ir_node, partners, alloc_nodes[i]);
 		if (irn != NULL) {
 			arch_set_irn_register(irn, reg);
-			(void) pset_hinsert_ptr(alloc_env->pre_colored, irn);
 			DBG((dbg, LEVEL_2, "\tsetting %+F to register %s\n", irn, reg->name));
 		}
 	}
@@ -342,7 +333,6 @@ static void handle_constraints(be_chordal_alloc_env_t *alloc_env,
 				reg = arch_register_for_index(env->cls, col);
 				bitset_set(bs, reg->index);
 				arch_set_irn_register(proj, reg);
-				pset_insert_ptr(alloc_env->pre_colored, proj);
 				DBG((dbg, LEVEL_2, "\tsetting %+F to register %s\n", proj, reg->name));
 			}
 		}
@@ -423,28 +413,24 @@ static void assign(ir_node *block, void *env_ptr)
 	foreach_border_head(head, b) {
 		ir_node *irn = b->irn;
 		int nr       = get_irn_idx(irn);
-		int ignore   = arch_irn_is_ignore(irn);
 
 		/*
 		 * Assign a color, if it is a local def. Global defs already have a
 		 * color.
 		 */
 		if (b->is_def && !be_is_live_in(lv, block, irn)) {
-			const arch_register_t *reg;
-			int col;
-
-			if (ignore || pset_find_ptr(alloc_env->pre_colored, irn)) {
-				reg = arch_get_irn_register(irn);
+			int                    col;
+			arch_register_t const *reg = arch_get_irn_register(irn);
+			if (reg) {
 				col = reg->index;
 				assert(!bitset_is_set(colors, col) && "pre-colored register must be free");
 			} else {
+				assert(!arch_irn_is_ignore(irn));
 				col = get_next_free_reg(alloc_env, colors);
 				reg = arch_register_for_index(env->cls, col);
-				assert(arch_get_irn_register(irn) == NULL && "This node must not have been assigned a register yet");
+				arch_set_irn_register(irn, reg);
 			}
-
 			bitset_set(colors, col);
-			arch_set_irn_register(irn, reg);
 
 			DBG((dbg, LEVEL_1, "\tassigning register %s(%d) to %+F\n", reg->name, col, irn));
 
@@ -477,7 +463,6 @@ static void be_ra_chordal_color(be_chordal_env_t *const chordal_env)
 	env.chordal_env   = chordal_env;
 	env.colors        = bitset_alloca(colors_n);
 	env.tmp_colors    = bitset_alloca(colors_n);
-	env.pre_colored   = pset_new_ptr_default();
 
 	be_timer_push(T_SPLIT);
 
@@ -517,7 +502,6 @@ static void be_ra_chordal_color(be_chordal_env_t *const chordal_env)
 	}
 
 	bitset_free(env.live);
-	del_pset(env.pre_colored);
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_chordal)

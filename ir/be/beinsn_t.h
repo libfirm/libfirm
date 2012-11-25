@@ -53,7 +53,6 @@ struct be_insn_t {
 	                                    [use_start-n_ops) uses */
 	ir_node *irn;                  /**< ir_node of the instruction */
 	unsigned has_constraints : 1;  /**< in_constraints or out_constraints true */
-	unsigned pre_colored     : 1;  /**< all defined values already have a register assigned */
 };
 
 /**

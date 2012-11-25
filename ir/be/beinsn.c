@@ -41,7 +41,6 @@ be_insn_t *be_scan_insn(be_chordal_env_t const *const env, ir_node *const irn)
 	struct obstack *obst = env->obst;
 	be_operand_t o;
 	int i, n;
-	int pre_colored = 0;
 
 	be_insn_t *insn = OALLOCZ(obst, be_insn_t);
 
@@ -69,7 +68,6 @@ be_insn_t *be_scan_insn(be_chordal_env_t const *const env, ir_node *const irn)
 				obstack_grow(obst, &o, sizeof(o));
 				insn->n_ops++;
 				insn->has_constraints |= o.has_constraints;
-				pre_colored += arch_get_irn_register(p) != NULL;
 			}
 		}
 	} else if (arch_irn_consider_in_reg_alloc(env->cls, irn)) {
@@ -83,14 +81,9 @@ be_insn_t *be_scan_insn(be_chordal_env_t const *const env, ir_node *const irn)
 		obstack_grow(obst, &o, sizeof(o));
 		insn->n_ops++;
 		insn->has_constraints |= o.has_constraints;
-		pre_colored += arch_get_irn_register(irn) != NULL;
 	}
 
-	if (pre_colored > 0) {
-		assert(pre_colored == insn->n_ops && "partly pre-colored nodes not supported");
-		insn->pre_colored = 1;
-	}
-	insn->use_start   = insn->n_ops;
+	insn->use_start = insn->n_ops;
 
 	/* now collect the uses for this node */
 	for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
