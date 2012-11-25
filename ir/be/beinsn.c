@@ -62,7 +62,6 @@ be_insn_t *be_scan_insn(be_chordal_env_t const *const env, ir_node *const irn)
 				/* found a def: create a new operand */
 				o.req             = arch_get_irn_register_req(p);
 				o.carrier         = p;
-				o.irn             = irn;
 				o.partner         = NULL;
 				obstack_grow(obst, &o, sizeof(o));
 				insn->n_ops++;
@@ -73,7 +72,6 @@ be_insn_t *be_scan_insn(be_chordal_env_t const *const env, ir_node *const irn)
 		/* only one def, create one operand */
 		o.req     = arch_get_irn_register_req(irn);
 		o.carrier = irn;
-		o.irn     = irn;
 		o.partner = NULL;
 		obstack_grow(obst, &o, sizeof(o));
 		insn->n_ops++;
@@ -90,7 +88,6 @@ be_insn_t *be_scan_insn(be_chordal_env_t const *const env, ir_node *const irn)
 			/* found a register use, create an operand */
 			o.req     = arch_get_irn_register_req_in(irn, i);
 			o.carrier = op;
-			o.irn     = irn;
 			o.partner = NULL;
 			obstack_grow(obst, &o, sizeof(o));
 			insn->n_ops++;

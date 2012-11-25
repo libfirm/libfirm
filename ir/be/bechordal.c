@@ -78,7 +78,7 @@ static void pair_up_operands(be_chordal_env_t const *const env, be_insn_t *const
 		be_operand_t *const out_op          = &insn->ops[j];
 		for (int i = insn->use_start; i < insn->n_ops; ++i) {
 			be_operand_t *const op = &insn->ops[i];
-			if (op->partner || be_values_interfere(lv, op->irn, op->carrier))
+			if (op->partner || be_values_interfere(lv, insn->irn, op->carrier))
 				continue;
 
 			bitset_copy(bs, op->regs);
