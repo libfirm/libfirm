@@ -504,7 +504,6 @@ static const char *get_timer_name(be_timer_id_t id)
 	case T_LIVE:           return "live";
 	case T_EXECFREQ:       return "execfreq";
 	case T_SSA_CONSTR:     return "ssa_constr";
-	case T_RA_PROLOG:      return "ra_prolog";
 	case T_RA_EPILOG:      return "ra_epilog";
 	case T_RA_CONSTR:      return "ra_constr";
 	case T_RA_SPILL:       return "ra_spill";

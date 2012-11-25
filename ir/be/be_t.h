@@ -118,7 +118,6 @@ typedef enum {
 	T_LIVE,
 	T_EXECFREQ,
 	T_SSA_CONSTR,
-	T_RA_PROLOG,
 	T_RA_EPILOG,
 	T_RA_CONSTR,
 	T_RA_SPILL,

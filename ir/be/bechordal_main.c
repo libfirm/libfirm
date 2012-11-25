@@ -347,8 +347,6 @@ static void be_ra_chordal_main(ir_graph *irg)
 
 	be_timer_push(T_RA_OTHER);
 
-	be_timer_push(T_RA_PROLOG);
-
 	be_chordal_env_t chordal_env;
 	obstack_init(&chordal_env.obst);
 	chordal_env.opts             = &options;
@@ -356,9 +354,6 @@ static void be_ra_chordal_main(ir_graph *irg)
 	chordal_env.border_heads     = NULL;
 	chordal_env.ifg              = NULL;
 	chordal_env.allocatable_regs = NULL;
-
-
-	be_timer_pop(T_RA_PROLOG);
 
 	if (stat_ev_enabled) {
 		be_collect_node_stats(&last_node_stats, irg);
