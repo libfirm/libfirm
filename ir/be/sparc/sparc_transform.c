@@ -1943,13 +1943,9 @@ static ir_node *gen_Proj_Alloc(ir_node *node)
 	long     pn        = get_Proj_proj(node);
 
 	switch ((pn_Alloc)pn) {
-	case pn_Alloc_M:
-		return new_r_Proj(new_alloc, mode_M, pn_sparc_SubSP_M);
-	case pn_Alloc_res: {
-		ir_node *addr_proj = new_r_Proj(new_alloc, mode_gp, pn_sparc_SubSP_addr);
-		arch_set_irn_register(addr_proj, arch_get_irn_register(node));
-		return addr_proj;
-	}
+	case pn_Alloc_M:   return new_r_Proj(new_alloc, mode_M,  pn_sparc_SubSP_M);
+	case pn_Alloc_res: return new_r_Proj(new_alloc, mode_gp, pn_sparc_SubSP_addr);
+
 	case pn_Alloc_X_regular:
 	case pn_Alloc_X_except:
 		panic("exception output of alloc not supported (at %+F)",
