@@ -44,12 +44,11 @@ struct be_operand_t {
 };
 
 struct be_insn_t {
-	be_operand_t *ops;             /**< the values used and defined by the insn */
-	int n_ops;                     /**< length of the ops array */
-	int use_start;                 /**< entries [0-use_start) in ops are defs,
-	                                    [use_start-n_ops) uses */
-	ir_node *irn;                  /**< ir_node of the instruction */
-	unsigned has_constraints : 1;  /**< in_constraints or out_constraints true */
+	be_operand_t *ops;       /**< the values used and defined by the insn */
+	int           n_ops;     /**< length of the ops array */
+	int           use_start; /**< entries [0-use_start) in ops are defs,
+	                              [use_start-n_ops) uses */
+	ir_node      *irn;       /**< ir_node of the instruction */
 };
 
 /**

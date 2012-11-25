@@ -209,7 +209,6 @@ void create_borders(ir_node *block, void *env_ptr)
 ir_node *pre_process_constraints(be_chordal_env_t *env, be_insn_t **the_insn)
 {
 	be_insn_t *insn = *the_insn;
-	assert(insn->has_constraints && "only do this for constrained nodes");
 
 	/*
 	 * Make the Perm, recompute liveness and re-scan the insn since the

@@ -118,7 +118,7 @@ static void handle_constraints(be_chordal_env_t *const env, ir_node *const irn)
 
 	/* Perms inserted before the constraint handling phase are considered to be
 	 * correctly precolored. These Perms arise during the ABI handling phase. */
-	if (!insn->has_constraints || is_Phi(irn))
+	if (!insn || is_Phi(irn))
 		goto end;
 
 	/* Prepare the constraint handling of this node.

@@ -43,6 +43,8 @@ be_insn_t *be_scan_insn(be_chordal_env_t const *const env, ir_node *const irn)
 
 	be_insn_t *insn = OALLOCZ(obst, be_insn_t);
 
+	bool has_constraints = false;
+
 	insn->irn = irn;
 	if (get_irn_mode(irn) == mode_T) {
 		ir_node *p;
@@ -64,7 +66,7 @@ be_insn_t *be_scan_insn(be_chordal_env_t const *const env, ir_node *const irn)
 				o.partner         = NULL;
 				obstack_grow(obst, &o, sizeof(o));
 				insn->n_ops++;
-				insn->has_constraints |= arch_register_req_is(o.req, limited) | (o.req->width > 1);
+				has_constraints |= arch_register_req_is(o.req, limited) | (o.req->width > 1);
 			}
 		}
 	} else if (arch_irn_consider_in_reg_alloc(env->cls, irn)) {
@@ -75,7 +77,7 @@ be_insn_t *be_scan_insn(be_chordal_env_t const *const env, ir_node *const irn)
 		o.partner = NULL;
 		obstack_grow(obst, &o, sizeof(o));
 		insn->n_ops++;
-		insn->has_constraints |= arch_register_req_is(o.req, limited) | (o.req->width > 1);
+		has_constraints |= arch_register_req_is(o.req, limited) | (o.req->width > 1);
 	}
 
 	insn->use_start = insn->n_ops;
@@ -92,9 +94,12 @@ be_insn_t *be_scan_insn(be_chordal_env_t const *const env, ir_node *const irn)
 			o.partner = NULL;
 			obstack_grow(obst, &o, sizeof(o));
 			insn->n_ops++;
-			insn->has_constraints |= arch_register_req_is(o.req, limited);
+			has_constraints |= arch_register_req_is(o.req, limited);
 		}
 	}
+
+	if (!has_constraints)
+		return NULL;
 
 	insn->ops = (be_operand_t*)obstack_finish(obst);
 

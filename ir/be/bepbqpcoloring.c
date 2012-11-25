@@ -597,7 +597,7 @@ static void insert_perms(ir_node *block, void *data)
 	for (irn = sched_first(block); !sched_is_end(irn);) {
 		ir_node   *const next = sched_next(irn);
 		be_insn_t *      insn = be_scan_insn(env, irn);
-		if (insn->has_constraints)
+		if (insn)
 			pre_process_constraints(env, &insn);
 
 		irn = next;
