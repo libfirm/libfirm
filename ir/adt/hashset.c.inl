@@ -346,13 +346,20 @@ static inline void resize(HashSet *self, size_t new_size);
  */
 static inline void maybe_grow(HashSet *self)
 {
-	size_t resize_to;
-
 	if (LIKELY(self->num_elements + 1 <= self->enlarge_threshold))
 		return;
 
-	/* double table size */
-	resize_to = self->num_buckets * 2;
+	size_t resize_to;
+	if (self->num_elements - self->num_deleted + 2 > self->enlarge_threshold) {
+		/* double table size */
+		resize_to = self->num_buckets * 2;
+		if (resize_to <= self->num_buckets) {
+			abort();
+		}
+	} else {
+		/* no need to resize, we just clean up the deleted entries */
+		resize_to = self->num_buckets;
+	}
 	resize(self, resize_to);
 }
 
