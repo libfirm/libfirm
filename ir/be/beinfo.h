@@ -54,6 +54,7 @@ struct backend_info_t {
 
 static inline backend_info_t *be_get_info(const ir_node *node)
 {
+	assert(!is_Proj(node));
 	return (backend_info_t*) node->backend_info;
 }
 

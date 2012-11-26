@@ -154,7 +154,7 @@ static void sched_edge_hook(FILE *F, const ir_node *irn)
 	if (get_irn_irg(irn)->be_data == NULL)
 		return;
 
-	if (sched_is_scheduled(irn) && !is_Block(irn)) {
+	if (!is_Proj(irn) && sched_is_scheduled(irn) && !is_Block(irn)) {
 		ir_node *const prev = sched_prev(irn);
 		if (!sched_is_begin(prev)) {
 			fprintf(F, "edge:{sourcename: ");

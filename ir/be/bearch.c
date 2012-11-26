@@ -129,7 +129,6 @@ int arch_get_op_estimated_cost(const ir_node *irn)
 static reg_out_info_t *get_out_info_n(const ir_node *node, unsigned pos)
 {
 	const backend_info_t *info = be_get_info(node);
-	assert(!is_Proj(node));
 	assert(pos < (unsigned)ARR_LEN(info->out_infos));
 	return &info->out_infos[pos];
 }
@@ -169,21 +168,13 @@ void arch_set_irn_register(ir_node *node, const arch_register_t *reg)
 
 void arch_set_irn_flags(ir_node *node, arch_irn_flags_t flags)
 {
-	backend_info_t *info;
-
-	/* setting flags is only supported for instructions currently.
-	 * (mainly because we found no use for it yet and saved the space for
-	 * be_infos for them */
-	assert(!is_Proj(node));
-	info = be_get_info(node);
+	backend_info_t *const info = be_get_info(node);
 	info->flags = flags;
 }
 
 void arch_add_irn_flags(ir_node *node, arch_irn_flags_t flags)
 {
-	backend_info_t *info;
-	assert(!is_Proj(node));
-	info = be_get_info(node);
+	backend_info_t *const info = be_get_info(node);
 	info->flags |= flags;
 }
 
