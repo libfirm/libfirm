@@ -46,6 +46,7 @@
 #include "iropt_dbg.h"
 #include "irpass.h"
 #include "vrp.h"
+#include "firmstat_t.h"
 
 #undef AVOID_PHIB
 

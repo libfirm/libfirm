@@ -37,6 +37,7 @@
 #include "irprintf.h"
 #include "irdump.h"
 #include "error.h"
+#include "firmstat_t.h"
 
 #include "be_t.h"
 #include "beabi.h"

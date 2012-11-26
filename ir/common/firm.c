@@ -55,6 +55,7 @@
 #include "be_t.h"
 #include "irtools.h"
 #include "execfreq_t.h"
+#include "firmstat_t.h"
 
 /* returns the firm root */
 lc_opt_entry_t *firm_opt_get_root(void)
@@ -113,6 +114,8 @@ void ir_init(void)
 	arch_dep_set_opts(arch_dep_none);
 
 	init_execfreq();
+
+	init_stat();
 
 #ifdef DEBUG_libfirm
 	/* integrated debugger extension */

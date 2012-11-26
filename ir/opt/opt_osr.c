@@ -49,7 +49,7 @@
 #include "irtools.h"
 #include "irloop_t.h"
 #include "array.h"
-#include "firmstat.h"
+#include "firmstat_t.h"
 #include "error.h"
 #include "irpass_t.h"
 

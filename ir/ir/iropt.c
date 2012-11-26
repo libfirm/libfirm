@@ -51,6 +51,7 @@
 #include "bitfiddle.h"
 #include "be.h"
 #include "error.h"
+#include "firmstat_t.h"
 
 #include "entity_t.h"
 

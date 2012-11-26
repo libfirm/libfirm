@@ -40,6 +40,10 @@
 #include "irhooks.h"
 #include "util.h"
 #include "ircons.h"
+#include "irtools.h"
+
+#include "lc_opts.h"
+#include "lc_opts_enum.h"
 
 /*
  * need this to be static:
@@ -71,6 +75,8 @@ static ir_op _op_SelSel;
 
 /** A Sel of a Sel of a Sel */
 static ir_op _op_SelSelSel;
+
+static unsigned stat_options;
 
 /* ---------------------------------------------------------------------------------- */
 
@@ -2195,20 +2201,20 @@ ir_prog_pass_t *stat_dump_snapshot_pass(
 static hook_entry_t stat_hooks[hook_last];
 
 /* initialize the statistics module. */
-void firm_init_stat(unsigned enable_options)
+void firm_init_stat(void)
 {
 #define X(a)  a, sizeof(a)-1
 #define HOOK(h, fkt) \
 	stat_hooks[h].hook._##h = fkt; register_hook(h, &stat_hooks[h])
 	unsigned num = 0;
 
-	if (! (enable_options & FIRMSTAT_ENABLED))
+	if (! (stat_options & FIRMSTAT_ENABLED))
 		return;
 
 	status = XMALLOCZ(stat_info_t);
 
 	/* enable statistics */
-	status->stat_options = enable_options & FIRMSTAT_ENABLED ? enable_options : 0;
+	status->stat_options = stat_options & FIRMSTAT_ENABLED ? stat_options : 0;
 
 	/* register all hooks */
 	HOOK(hook_new_ir_op,                          stat_new_ir_op);
@@ -2243,7 +2249,7 @@ void firm_init_stat(unsigned enable_options)
 	/* create the wait queue */
 	status->wait_q     = new_pdeq();
 
-	if (enable_options & FIRMSTAT_COUNT_STRONG_OP) {
+	if (stat_options & FIRMSTAT_COUNT_STRONG_OP) {
 		/* build the pseudo-ops */
 
 		_op_Phi0.code    = --num;
@@ -2280,7 +2286,7 @@ void firm_init_stat(unsigned enable_options)
 	}  /* if */
 
 	/* for Florian: count the Sel depth */
-	if (enable_options & FIRMSTAT_COUNT_SELS) {
+	if (stat_options & FIRMSTAT_COUNT_SELS) {
 		_op_SelSel.code    = --num;
 		_op_SelSel.name    = new_id_from_chars(X("Sel(Sel)"));
 
@@ -2297,14 +2303,14 @@ void firm_init_stat(unsigned enable_options)
 	/* register the dumper */
 	stat_register_dumper(&simple_dumper);
 
-	if (enable_options & FIRMSTAT_CSV_OUTPUT)
+	if (stat_options & FIRMSTAT_CSV_OUTPUT)
 		stat_register_dumper(&csv_dumper);
 
 	/* initialize the pattern hash */
-	stat_init_pattern_history(enable_options & FIRMSTAT_PATTERN_ENABLED);
+	stat_init_pattern_history(stat_options & FIRMSTAT_PATTERN_ENABLED);
 
 	/* initialize the Const options */
-	if (enable_options & FIRMSTAT_COUNT_CONSTS)
+	if (stat_options & FIRMSTAT_COUNT_CONSTS)
 		stat_init_const_cnt(status);
 
 	/* distribution table for parameter counts */
@@ -2353,3 +2359,27 @@ int stat_is_active(void)
 {
 	return status != (stat_info_t *)&status_disable;
 }  /* stat_is_active */
+
+void init_stat(void)
+{
+	lc_opt_entry_t *root_grp = firm_opt_get_root();
+	lc_opt_entry_t *be_grp   = lc_opt_get_grp(root_grp, "be");
+
+	static const lc_opt_enum_mask_items_t stat_items[] = {
+		{ "enabled",         FIRMSTAT_ENABLED         },
+		{ "pattern",         FIRMSTAT_PATTERN_ENABLED },
+		{ "count_strong_op", FIRMSTAT_COUNT_STRONG_OP },
+		{ "count_dag",       FIRMSTAT_COUNT_DAG       },
+		{ "count_deleted",   FIRMSTAT_COUNT_DELETED   },
+		{ "count_sels",      FIRMSTAT_COUNT_SELS      },
+		{ "count_consts",    FIRMSTAT_COUNT_CONSTS    },
+		{ "csv_output",      FIRMSTAT_CSV_OUTPUT      },
+		{ NULL,              0 }
+	};
+	static lc_opt_enum_mask_var_t statmask = { &stat_options, stat_items };
+	static const lc_opt_table_entry_t stat_optionstable[] = {
+		LC_OPT_ENT_ENUM_MASK("statistics", "enable statistics",   &statmask),
+		LC_OPT_LAST
+	};
+	lc_opt_add_table(be_grp, stat_optionstable);
+}

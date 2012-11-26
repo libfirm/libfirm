@@ -32,6 +32,7 @@
 #include "irprintf.h"
 #include "pdeq.h"
 #include "error.h"
+#include "firmstat_t.h"
 
 #include "bearch.h"
 #include "besched.h"

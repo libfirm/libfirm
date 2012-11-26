@@ -53,6 +53,7 @@
 #include "lower_calls.h"
 #include "lower_mode_b.h"
 #include "lower_softfloat.h"
+#include "firmstat_t.h"
 
 #include "beabi.h"
 #include "benode.h"

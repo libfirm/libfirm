@@ -44,6 +44,7 @@
 #include "error.h"
 #include "be.h"
 #include "util.h"
+#include "firmstat_t.h"
 
 /** Walker environment. */
 typedef struct walker_env {

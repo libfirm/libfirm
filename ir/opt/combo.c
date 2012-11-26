@@ -83,6 +83,7 @@
 #include "irpass.h"
 #include "tv_t.h"
 #include "irtools.h"
+#include "firmstat_t.h"
 
 #include "irprintf.h"
 #include "irdump.h"
