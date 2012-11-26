@@ -231,7 +231,7 @@ void register_hook(hook_type_t hook, hook_entry_t *entry);
 void unregister_hook(hook_type_t hook, hook_entry_t *entry);
 
 /** Global list of registerd hooks. */
-hook_entry_t *hooks[hook_last];
+extern hook_entry_t *hooks[hook_last];
 
 /**
  * Executes the hook @p what with the args @p args
