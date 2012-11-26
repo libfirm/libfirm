@@ -270,21 +270,13 @@ typedef struct fix_stack_walker_env_t {
  */
 static void collect_stack_nodes_walker(ir_node *node, void *data)
 {
-	ir_node                   *insn = node;
-	fix_stack_walker_env_t    *env  = (fix_stack_walker_env_t*)data;
-	const arch_register_req_t *req;
+	fix_stack_walker_env_t *const env = (fix_stack_walker_env_t*)data;
 
-	if (is_Proj(node)) {
-		insn = get_Proj_pred(node);
-	}
-
-	if (arch_get_irn_n_outs(insn) == 0)
-		return;
 	if (get_irn_mode(node) == mode_T)
 		return;
 
-	req = arch_get_irn_register_req(node);
-	if (! (req->type & arch_register_req_type_produces_sp))
+	arch_register_req_t const *const req = arch_get_irn_register_req(node);
+	if (!arch_register_req_is(req, produces_sp))
 		return;
 
 	ARR_APP1(ir_node*, env->sp_nodes, node);
