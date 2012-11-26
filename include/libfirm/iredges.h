@@ -95,9 +95,8 @@ FIRM_API const ir_edge_t *get_irn_out_edge_next(const ir_node *irn,
  * @param kind The kind of the edge.
  */
 #define foreach_out_edge_kind_safe(irn, edge, kind) \
-	for (ir_edge_t const *edge = get_irn_out_edge_first_kind((irn), (kind)), *edge##__next; \
-	     edge ? edge##__next = get_irn_out_edge_next((irn), edge, (kind)), 1 : (edge##__next = NULL, 0); \
-	     edge = edge##__next)
+	for (ir_edge_t const *edge = get_irn_out_edge_first_kind((irn), (kind)), *edge##__next; edge; edge = edge##__next) \
+		if (edge##__next = get_irn_out_edge_next((irn), edge, (kind)), 0) {} else
 
 /**
  * Convenience macro for normal out edges.
