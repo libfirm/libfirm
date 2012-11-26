@@ -83,7 +83,7 @@ static ir_entity *search_ent_with_offset(ir_type *t, int offset)
 	return NULL;
 }
 
-static int stack_frame_compute_initial_offset(be_stack_layout_t *frame)
+static void stack_frame_compute_initial_offset(be_stack_layout_t *frame)
 {
 	ir_type  *base = frame->between_type;
 	ir_entity *ent = search_ent_with_offset(base, 0);
@@ -93,8 +93,6 @@ static int stack_frame_compute_initial_offset(be_stack_layout_t *frame)
 	} else {
 		frame->initial_offset = be_get_stack_entity_offset(frame, ent, 0);
 	}
-
-	return frame->initial_offset;
 }
 
 /**
