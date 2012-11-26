@@ -138,7 +138,8 @@ ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
 	}
 
 	/* don't put this into the for loop, arity is -1 for some nodes! */
-	edges_notify_edge(res, -1, res->in[0], NULL, irg);
+	if (block != NULL)
+		edges_notify_edge(res, -1, block, NULL, irg);
 	for (i = 1; i <= arity; ++i)
 		edges_notify_edge(res, i - 1, res->in[i], NULL, irg);
 
@@ -242,16 +243,37 @@ int add_irn_n(ir_node *node, ir_node *in)
 	/* Call the hook */
 	hook_set_irn_n(node, pos, node->in[pos + 1], NULL);
 
+	/* update irg flags */
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
+
 	return pos;
+}
+
+static void del_irn_n(ir_node *node, int n)
+{
+	ir_graph *irg = get_irn_irg(node);
+
+	/* remove the edge */
+	ir_node *pred = node->in[n+1];
+	edges_notify_edge(node, n, NULL, pred, irg);
+
+	int arity = get_irn_arity(node);
+	if (n != arity-1) {
+		/* exchange with the last one */
+		ir_node *old = node->in[arity];
+		edges_notify_edge(node, arity-1, NULL, old, irg);
+		node->in[n+1] = old;
+		edges_notify_edge(node, n, old, NULL, irg);
+	}
+	ARR_SHRINKLEN(node->in, arity);
+
+	/* update irg flags */
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 }
 
 void del_Sync_n(ir_node *n, int i)
 {
-	int      arity     = get_Sync_n_preds(n);
-	ir_node *last_pred = get_Sync_pred(n, arity - 1);
-	set_Sync_pred(n, i, last_pred);
-	edges_notify_edge(n, arity - 1, NULL, last_pred, get_irn_irg(n));
-	ARR_SHRINKLEN(get_irn_in(n), arity);
+	del_irn_n(n, i);
 }
 
 int (get_irn_deps)(const ir_node *node)
@@ -623,9 +645,7 @@ void set_End_keepalives(ir_node *end, int n, ir_node *in[])
 
 void remove_End_keepalive(ir_node *end, ir_node *irn)
 {
-	int      n = get_End_n_keepalives(end);
-	ir_graph *irg;
-
+	int n = get_End_n_keepalives(end);
 	int idx = -1;
 	for (int i = n;;) {
 		if (i-- == 0)
@@ -635,27 +655,12 @@ void remove_End_keepalive(ir_node *end, ir_node *irn)
 
 		/* find irn */
 		if (old_ka == irn) {
-			idx = i;
+			idx = END_KEEPALIVE_OFFSET + i;
 			break;
 		}
 	}
-	irg = get_irn_irg(end);
-
-	/* remove the edge */
-	edges_notify_edge(end, idx, NULL, irn, irg);
-
-	if (idx != n - 1) {
-		/* exchange with the last one */
-		ir_node *old = end->in[1 + END_KEEPALIVE_OFFSET + n - 1];
-		edges_notify_edge(end, n - 1, NULL, old, irg);
-		end->in[1 + END_KEEPALIVE_OFFSET + idx] = old;
-		edges_notify_edge(end, idx, old, NULL, irg);
-	}
-	/* now n - 1 keeps, 1 block input */
-	ARR_RESIZE(ir_node *, end->in, (n - 1) + 1 + END_KEEPALIVE_OFFSET);
-
-	/* update irg flags */
-	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
+	assert(idx != -1);
+	del_irn_n(end, idx);
 }
 
 void remove_End_Bads_and_doublets(ir_node *end)
@@ -676,24 +681,12 @@ void remove_End_Bads_and_doublets(ir_node *end)
 
 		if (is_Bad(ka) || is_NoMem(ka) || pset_new_contains(&keeps, ka)) {
 			changed = true;
-			/* remove the edge */
-			edges_notify_edge(end, idx, NULL, ka, irg);
-
-			if (idx != n - 1) {
-				/* exchange with the last one */
-				ir_node *old = end->in[1 + END_KEEPALIVE_OFFSET + n - 1];
-				edges_notify_edge(end, n - 1, NULL, old, irg);
-				end->in[1 + END_KEEPALIVE_OFFSET + idx] = old;
-				edges_notify_edge(end, idx, old, NULL, irg);
-			}
+			del_irn_n(end, idx - END_KEEPALIVE_OFFSET);
 			--n;
 		} else {
 			pset_new_insert(&keeps, ka);
 		}
 	}
-	/* n keeps, 1 block input */
-	ARR_RESIZE(ir_node *, end->in, n + 1 + END_KEEPALIVE_OFFSET);
-
 	pset_new_destroy(&keeps);
 
 	if (changed) {

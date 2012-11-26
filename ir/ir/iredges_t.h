@@ -40,11 +40,11 @@
 #define get_irn_n_edges_kind(irn, kind)   get_irn_n_edges_kind_(irn, kind)
 #define get_edge_src_irn(edge)            get_edge_src_irn_(edge)
 #define get_edge_src_pos(edge)            get_edge_src_pos_(edge)
-#define get_irn_out_edge_next(irn, last)  get_irn_out_edge_next_(irn, last)
+#define get_irn_out_edge_next(irn, last, kind)  get_irn_out_edge_next_(irn, last, kind)
 #define get_irn_n_edges(irn)              get_irn_n_edges_kind_(irn, EDGE_KIND_NORMAL)
 #define get_irn_out_edge_first(irn)       get_irn_out_edge_first_kind_(irn, EDGE_KIND_NORMAL)
 #define get_block_succ_first(irn)         get_irn_out_edge_first_kind_(irn, EDGE_KIND_BLOCK)
-#define get_block_succ_next(irn, last)    get_irn_out_edge_next_(irn, last)
+#define get_block_succ_next(irn, last)    get_irn_out_edge_next_(irn, last, EDGE_KIND_BLOCK)
 
 /**
  * An edge.
@@ -52,9 +52,9 @@
 struct ir_edge_t {
 	ir_node  *src;          /**< The source node of the edge. */
 	int      pos;           /**< The position of the edge at @p src. */
-	unsigned invalid : 1;   /**< edges that are removed are marked invalid. */
+#ifdef DEBUG_libfirm
 	unsigned present : 1;   /**< Used by the verifier. Don't rely on its content. */
-	unsigned kind    : 4;   /**< The kind of the edge. */
+#endif
 	struct list_head list;  /**< The list head to queue all out edges at a node. */
 };
 
@@ -106,11 +106,11 @@ static inline const ir_edge_t *get_irn_out_edge_first_kind_(const ir_node *irn, 
  * @param last The last out edge you have seen.
  * @return The next out edge in @p irn 's out list after @p last.
  */
-static inline const ir_edge_t *get_irn_out_edge_next_(const ir_node *irn, const ir_edge_t *last)
+static inline const ir_edge_t *get_irn_out_edge_next_(const ir_node *irn, const ir_edge_t *last, ir_edge_kind_t kind)
 {
 	struct list_head *next = last->list.next;
 	const struct list_head *head
-		= &get_irn_edge_info_const(irn, (ir_edge_kind_t)last->kind)->outs_head;
+		= &get_irn_edge_info_const(irn, kind)->outs_head;
 	return next == head ? NULL : list_entry(next, ir_edge_t, list);
 }
 
@@ -191,10 +191,7 @@ void edges_invalidate_all(ir_node *irn);
  */
 void edges_dump_kind(ir_graph *irg, ir_edge_kind_t kind);
 
-/**
- * Notify normal and block edges.
- */
-void edges_notify_edge(ir_node *src, int pos, ir_node *tgt,
-                       ir_node *old_tgt, ir_graph *irg);
+void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt,
+                       ir_graph *irg);
 
 #endif

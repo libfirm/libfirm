@@ -696,17 +696,17 @@ ir_node *new_r_Anchor(ir_graph *irg)
 	ir_node *res;
 	size_t   i;
 	memset(in, 0, sizeof(in));
-	res = new_ir_node(NULL, irg, NULL, op_Anchor, mode_ANY, anchor_last+1, in);
+	res = new_ir_node(NULL, irg, NULL, op_Anchor, mode_ANY, 0, NULL);
 	res->attr.anchor.irg.irg = irg;
 
-	/* hack to get get_irn_irg working: set block to ourself and allow
-	 * get_Block_irg for anchor */
+	/* hack to get get_irn_irg in set_irn_in() working */
 	res->in[0] = res;
 
 	/* we can't have NULL inputs so reference ourselves for now */
 	for (i = 0; i <= (size_t)anchor_last; ++i) {
-		set_irn_n(res, i, res);
+		in[i] = res;
 	}
+	set_irn_in(res, anchor_last+1, in);
 
 	return res;
 }

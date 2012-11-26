@@ -214,8 +214,6 @@ static inline void verify_list_head(ir_node *irn, ir_edge_kind_t kind)
 
 			ir_fprintf(stderr, "EDGE Verifier: edge list broken (self loop not to head) for %+F:\n", irn);
 			fprintf(stderr, "- at list entry %d\n", num);
-			if (edge->invalid)
-				fprintf(stderr, "- edge(%ld) is invalid\n", edge_get_id(edge));
 			if (edge->src)
 				ir_fprintf(stderr, "- edge(%ld) %+F(%d)\n", edge_get_id(edge), edge->src, edge->pos);
 			err = 1;
@@ -243,108 +241,115 @@ void edges_dump_kind(ir_graph *irg, ir_edge_kind_t kind)
 	info  = get_irg_edge_info(irg, kind);
 	edges = &info->edges;
 	foreach_ir_edgeset(edges, e, iter) {
-		ir_printf("%+F %d %d\n", e->src, e->pos, e->invalid);
+		ir_printf("%+F %d\n", e->src, e->pos);
 	}
+}
+
+static void add_edge(ir_node *src, int pos, ir_node *tgt, ir_edge_kind_t kind,
+                     ir_graph *irg)
+{
+	assert(edges_activated_kind(irg, kind));
+	irg_edge_info_t *info  = get_irg_edge_info(irg, kind);
+	ir_edgeset_t    *edges = &info->edges;
+
+	struct list_head *head = &get_irn_edge_info(tgt, kind)->outs_head;
+	assert(head->next && head->prev &&
+		   "target list head must have been initialized");
+
+	/* The old target was NULL, thus, the edge is newly created. */
+	ir_edge_t *edge;
+	if (list_empty(&info->free_edges)) {
+		edge = OALLOC(&info->edges_obst, ir_edge_t);
+	} else {
+		edge = list_entry(info->free_edges.next, ir_edge_t, list);
+		list_del(&edge->list);
+	}
+
+	edge->src       = src;
+	edge->pos       = pos;
+#ifdef DEBUG_libfirm
+	edge->present   = 0;
+#endif
+
+	ir_edge_t *new_edge = ir_edgeset_insert(edges, edge);
+	assert(new_edge == edge);
+	(void)new_edge;
+
+	list_add(&edge->list, head);
+
+	edge_change_cnt(tgt, kind, +1);
+}
+
+static void delete_edge(ir_node *src, int pos, ir_node *old_tgt,
+                        ir_edge_kind_t kind, ir_graph *irg)
+{
+	assert(edges_activated_kind(irg, kind));
+
+	irg_edge_info_t *info  = get_irg_edge_info(irg, kind);
+	ir_edgeset_t    *edges = &info->edges;
+
+	/* Initialize the edge template to search in the set. */
+	ir_edge_t templ;
+	templ.src = src;
+	templ.pos = pos;
+
+	/* search the edge in the set. */
+	ir_edge_t *edge = ir_edgeset_find(edges, &templ);
+
+	/* mark the edge invalid if it was found */
+	if (edge == NULL)
+		return;
+
+	list_del(&edge->list);
+	ir_edgeset_remove(edges, edge);
+	list_add(&edge->list, &info->free_edges);
+	edge->pos = -2;
+	edge->src = NULL;
+	edge_change_cnt(old_tgt, kind, -1);
 }
 
 void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
                             ir_node *old_tgt, ir_edge_kind_t kind,
                             ir_graph *irg)
 {
-	const char      *msg = "";
-	irg_edge_info_t *info;
-	ir_edgeset_t    *edges;
-	ir_edge_t        templ;
+	if (old_tgt == NULL) {
+		add_edge(src, pos, tgt, kind, irg);
+		return;
+	} else if (tgt == NULL) {
+		delete_edge(src, pos, old_tgt, kind, irg);
+		return;
+	}
 
-	assert(edges_activated_kind(irg, kind));
-
-	/*
-	 * Only do something, if the old and new target differ.
-	 */
+	/* Only do something, if the old and new target differ. */
 	if (tgt == old_tgt)
 		return;
 
-	info  = get_irg_edge_info(irg, kind);
-	edges = &info->edges;
+	assert(edges_activated_kind(irg, kind));
+	irg_edge_info_t *info  = get_irg_edge_info(irg, kind);
+	ir_edgeset_t    *edges = &info->edges;
+
+	/*
+	 * The target is not NULL and the old target differs
+	 * from the new target, the edge shall be moved (if the
+	 * old target was != NULL) or added (if the old target was
+	 * NULL).
+	 */
+	struct list_head *head = &get_irn_edge_info(tgt, kind)->outs_head;
+
+	assert(head->next && head->prev &&
+			"target list head must have been initialized");
 
 	/* Initialize the edge template to search in the set. */
+	ir_edge_t templ;
 	templ.src = src;
 	templ.pos = pos;
 
-	/*
-	 * If the target is NULL, the edge shall be deleted.
-	 */
-	if (tgt == NULL) {
-		/* search the edge in the set. */
-		ir_edge_t *edge = ir_edgeset_find(edges, &templ);
+	ir_edge_t *edge = ir_edgeset_find(edges, &templ);
+	assert(edge && "edge to redirect not found!");
 
-		/* mark the edge invalid if it was found */
-		if (edge) {
-			msg = "deleting";
-			list_del(&edge->list);
-			ir_edgeset_remove(edges, edge);
-			list_add(&edge->list, &info->free_edges);
-			edge->invalid = 1;
-			edge->pos = -2;
-			edge->src = NULL;
-			edge_change_cnt(old_tgt, kind, -1);
-		} else {
-			/* If the edge was not found issue a warning on the debug stream */
-			msg = "edge to delete not found!\n";
-		}
-	} else {
-		/*
-		 * The target is not NULL and the old target differs
-		 * from the new target, the edge shall be moved (if the
-		 * old target was != NULL) or added (if the old target was
-		 * NULL).
-		 */
-		struct list_head *head = &get_irn_edge_info(tgt, kind)->outs_head;
-
-		assert(head->next && head->prev &&
-				"target list head must have been initialized");
-
-		/* If the old target is not null, the edge is moved. */
-		if (old_tgt) {
-			ir_edge_t *edge = ir_edgeset_find(edges, &templ);
-			assert(edge && "edge to redirect not found!");
-			assert(! edge->invalid && "Invalid edge encountered");
-
-			msg = "redirecting";
-
-			list_move(&edge->list, head);
-			edge_change_cnt(old_tgt, kind, -1);
-		} else {
-			/* The old target was NULL, thus, the edge is newly created. */
-			ir_edge_t *new_edge;
-			ir_edge_t *edge;
-
-			if (list_empty(&info->free_edges)) {
-				edge = OALLOC(&info->edges_obst, ir_edge_t);
-			} else {
-				edge = list_entry(info->free_edges.next, ir_edge_t, list);
-				list_del(&edge->list);
-			}
-
-			edge->src       = src;
-			edge->pos       = pos;
-			edge->invalid   = 0;
-			edge->present   = 0;
-			edge->kind      = kind;
-			edge->list.next = NULL;
-			edge->list.prev = NULL;
-
-			new_edge = ir_edgeset_insert(edges, edge);
-			if (new_edge != edge) {
-				panic("new edge exists already");
-			}
-
-			msg = "adding";
-			list_add(&edge->list, head);
-		}
-
-		edge_change_cnt(tgt, kind, +1);
-	}
+	list_move(&edge->list, head);
+	edge_change_cnt(old_tgt, kind, -1);
+	edge_change_cnt(tgt, kind, +1);
 
 #ifndef DEBUG_libfirm
 	/* verify list heads */
@@ -355,8 +360,6 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
 			verify_list_head(old_tgt, kind);
 	}
 #endif
-
-	DBG((dbg, LEVEL_5, "announce out edge: %+F %d-> %+F(%+F): %s\n", src, pos, tgt, old_tgt, msg));
 }
 
 void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt,
@@ -409,7 +412,7 @@ static void edges_node_deleted_kind(ir_node *old, ir_edge_kind_t kind)
 
 	foreach_tgt(old, i, n, kind) {
 		ir_node *old_tgt = get_n(old, i, kind);
-		edges_notify_edge_kind(old, i, NULL, old_tgt, kind, irg);
+		delete_edge(old, i, old_tgt, kind, irg);
 	}
 }
 
@@ -437,7 +440,7 @@ static void edges_node_revival_kind(ir_node *irn, ir_edge_kind_t kind)
 
 	foreach_tgt(irn, i, n, kind) {
 		ir_node *tgt = get_n(irn, i, kind);
-		edges_notify_edge_kind(irn, i, tgt, NULL, kind, irg);
+		add_edge(irn, i, tgt, kind, irg);
 	}
 	info->edges_built = 1;
 }
@@ -460,7 +463,8 @@ static void build_edges_walker(ir_node *irn, void *data)
 
 	foreach_tgt(irn, i, n, kind) {
 		ir_node *pred = get_n(irn, i, kind);
-		edges_notify_edge_kind(irn, i, pred, NULL, kind, irg);
+		if (pred != NULL)
+			add_edge(irn, i, pred, kind, irg);
 	}
 	get_irn_edge_info(irn, kind)->edges_built = 1;
 }
@@ -640,6 +644,7 @@ void edges_reroute_except(ir_node *from, ir_node *to, ir_node *exception)
 	}
 }
 
+#ifdef DEBUG_libfirm
 static void verify_set_presence(ir_node *irn, void *data)
 {
 	build_walker *w     = (build_walker*)data;
@@ -686,9 +691,11 @@ static void verify_list_presence(ir_node *irn, void *data)
 		}
 	}
 }
+#endif
 
 int edges_verify_kind(ir_graph *irg, ir_edge_kind_t kind)
 {
+#ifdef DEBUG_libfirm
 	struct build_walker w;
 	ir_edgeset_t        *edges = &get_irg_edge_info(irg, kind)->edges;
 	ir_edge_t           *e;
@@ -711,13 +718,18 @@ int edges_verify_kind(ir_graph *irg, ir_edge_kind_t kind)
 	 * edge set is wrong.
 	 */
 	foreach_ir_edgeset(edges, e, iter) {
-		if (! e->invalid && ! e->present && bitset_is_set(w.reachable, get_irn_idx(e->src))) {
+		if (! e->present && bitset_is_set(w.reachable, get_irn_idx(e->src))) {
 			w.problem_found = 1;
 			ir_fprintf(stderr, "Edge Verifier: edge(%ld) %+F,%d is superfluous\n", edge_get_id(e), e->src, e->pos);
 		}
 	}
 
 	return w.problem_found;
+#else
+	(void)irg;
+	(void)kind;
+	return 0;
+#endif
 }
 
 #define IGNORE_NODE(irn) (is_Bad((irn)) || is_Block((irn)))
@@ -928,9 +940,9 @@ const ir_edge_t *(get_block_succ_first)(const ir_node *block)
 	return get_irn_out_edge_first_kind_(block, EDGE_KIND_BLOCK);
 }
 
-const ir_edge_t *(get_irn_out_edge_next)(const ir_node *irn, const ir_edge_t *last)
+const ir_edge_t *(get_irn_out_edge_next)(const ir_node *irn, const ir_edge_t *last, ir_edge_kind_t kind)
 {
-	return get_irn_out_edge_next_(irn, last);
+	return get_irn_out_edge_next_(irn, last, kind);
 }
 
 ir_node *(get_edge_src_irn)(const ir_edge_t *edge)

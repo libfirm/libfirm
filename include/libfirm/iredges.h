@@ -72,7 +72,8 @@ FIRM_API const ir_edge_t *get_block_succ_first(const ir_node *block);
  * @return The next out edge in @p irn 's out list after @p last.
  */
 FIRM_API const ir_edge_t *get_irn_out_edge_next(const ir_node *irn,
-                                                const ir_edge_t *last);
+                                                const ir_edge_t *last,
+                                                ir_edge_kind_t kind);
 
 /**
  * A convenience iteration macro over all out edges of a node.
@@ -82,7 +83,7 @@ FIRM_API const ir_edge_t *get_irn_out_edge_next(const ir_node *irn,
  * edge.
  */
 #define foreach_out_edge_kind(irn, edge, kind) \
-	for (ir_edge_t const *edge = get_irn_out_edge_first_kind(irn, kind); edge; edge = get_irn_out_edge_next(irn, edge))
+	for (ir_edge_t const *edge = get_irn_out_edge_first_kind(irn, kind); edge; edge = get_irn_out_edge_next(irn, edge, kind))
 
 /**
  * A convenience iteration macro over all out edges of a node, which is safe
@@ -94,7 +95,7 @@ FIRM_API const ir_edge_t *get_irn_out_edge_next(const ir_node *irn,
  */
 #define foreach_out_edge_kind_safe(irn, edge, kind) \
 	for (ir_edge_t const *edge = get_irn_out_edge_first_kind((irn), (kind)), *edge##__next; \
-	     edge ? edge##__next = get_irn_out_edge_next((irn), edge), 1 : (edge##__next = NULL, 0); \
+	     edge ? edge##__next = get_irn_out_edge_next((irn), edge, (kind)), 1 : (edge##__next = NULL, 0); \
 	     edge = edge##__next)
 
 /**
