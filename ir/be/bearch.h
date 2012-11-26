@@ -174,14 +174,41 @@ static inline const arch_register_req_t **arch_get_irn_register_reqs_in(
 	return info->in_reqs;
 }
 
-const arch_register_req_t *arch_get_irn_register_req(const ir_node *node);
+static inline reg_out_info_t *get_out_info(const ir_node *node)
+{
+	size_t                pos = 0;
+	const backend_info_t *info;
+	assert(get_irn_mode(node) != mode_T);
+	if (is_Proj(node)) {
+		pos  = get_Proj_proj(node);
+		node = get_Proj_pred(node);
+	}
+
+	info = be_get_info(node);
+	assert(pos < ARR_LEN(info->out_infos));
+	return &info->out_infos[pos];
+}
+
+static inline const arch_register_req_t *arch_get_irn_register_req(const ir_node *node)
+{
+	reg_out_info_t *out = get_out_info(node);
+	return out->req;
+}
 
 /**
  * Get the flags of a node.
  * @param irn The node.
  * @return The flags.
  */
-arch_irn_flags_t arch_get_irn_flags(const ir_node *irn);
+static inline arch_irn_flags_t arch_get_irn_flags(const ir_node *node)
+{
+	backend_info_t *info;
+	if (is_Proj(node))
+		return arch_irn_flags_not_scheduled;
+
+	info = be_get_info(node);
+	return info->flags;
+}
 
 void arch_set_irn_flags(ir_node *node, arch_irn_flags_t flags);
 void arch_add_irn_flags(ir_node *node, arch_irn_flags_t flags);
