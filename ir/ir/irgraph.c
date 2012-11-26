@@ -50,6 +50,8 @@
 #include "irgopt.h"
 
 #define INITIAL_IDX_IRN_MAP_SIZE 1024
+/** Suffix that is added to every frame type. */
+#define FRAME_TP_SUFFIX "frame_tp"
 
 /**
  * Indicates, whether additional data can be registered to graphs.

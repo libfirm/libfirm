@@ -40,8 +40,6 @@
 #include "pset.h"
 #include "set.h"
 
-/** Suffix that is added to every frame type. */
-#define FRAME_TP_SUFFIX "frame_tp"
 #define is_ir_graph(thing)                    is_ir_graph_(thing)
 #define get_irg_start_block(irg)              get_irg_start_block_(irg)
 #define set_irg_start_block(irg, node)        set_irg_start_block_(irg, node)
