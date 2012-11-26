@@ -83,7 +83,7 @@ int (be_is_live_end)(const be_lv_t *lv, const ir_node *block, const ir_node *irn
 	return _be_is_live_xxx(lv, block, irn, be_lv_state_end);
 }
 
-static inline unsigned _be_liveness_bsearch(be_lv_info_t *arr, unsigned idx)
+static inline unsigned _be_liveness_bsearch(be_lv_info_t *arr, const ir_node *node)
 {
 	be_lv_info_t *payload = arr + 1;
 
@@ -96,16 +96,15 @@ static inline unsigned _be_liveness_bsearch(be_lv_info_t *arr, unsigned idx)
 		return 0;
 
 	do {
-		int md          = lo + ((hi - lo) >> 1);
-		unsigned md_idx = payload[md].node.idx;
+		int md           = lo + ((hi - lo) >> 1);
+		ir_node *md_node = payload[md].node.node;
 
-		if (idx > md_idx)
+		if (node > md_node)
 			lo = md + 1;
-		else if (idx < md_idx)
+		else if (node < md_node)
 			hi = md;
 		else {
 			res = md;
-			assert(payload[res].node.idx == idx);
 			break;
 		}
 
@@ -124,16 +123,14 @@ be_lv_info_node_t *be_lv_get(const be_lv_t *li, const ir_node *bl,
 	stat_ev_tim_push();
 	irn_live = ir_nodehashmap_get(be_lv_info_t, &li->map, bl);
 	if (irn_live != NULL) {
-		unsigned idx = get_irn_idx(irn);
-
 		/* Get the position of the index in the array. */
-		int pos = _be_liveness_bsearch(irn_live, idx);
+		int pos = _be_liveness_bsearch(irn_live, irn);
 
 		/* Get the record in question. 1 must be added, since the first record contains information about the array and must be skipped. */
 		be_lv_info_node_t *rec = &irn_live[pos + 1].node;
 
 		/* Check, if the irn is in deed in the array. */
-		if (rec->idx == idx)
+		if (rec->node == irn)
 			res = rec;
 	}
 	stat_ev_tim_pop("be_lv_get");
@@ -151,16 +148,14 @@ static be_lv_info_node_t *be_lv_get_or_set(be_lv_t *li, ir_node *bl,
 		ir_nodehashmap_insert(&li->map, bl, irn_live);
 	}
 
-	unsigned idx = get_irn_idx(irn);
-
 	/* Get the position of the index in the array. */
-	unsigned pos = _be_liveness_bsearch(irn_live, idx);
+	unsigned pos = _be_liveness_bsearch(irn_live, irn);
 
 	/* Get the record in question. 1 must be added, since the first record contains information about the array and must be skipped. */
 	be_lv_info_node_t *res = &irn_live[pos + 1].node;
 
 	/* Check, if the irn is in deed in the array. */
-	if (res->idx != idx) {
+	if (res->node != irn) {
 		be_lv_info_t *payload;
 		unsigned n_members = irn_live[0].head.n_members;
 		unsigned n_size    = irn_live[0].head.n_size;
@@ -188,9 +183,9 @@ static be_lv_info_node_t *be_lv_get_or_set(be_lv_t *li, ir_node *bl,
 
 		++irn_live[0].head.n_members;
 
-		res = &payload[pos].node;
-		res->idx    = idx;
-		res->flags  = 0;
+		res        = &payload[pos].node;
+		res->node  = irn;
+		res->flags = 0;
 	}
 
 	return res;
@@ -207,19 +202,18 @@ static int be_lv_remove(be_lv_t *li, const ir_node *bl,
 
 	if (irn_live != NULL) {
 		unsigned n   = irn_live[0].head.n_members;
-		unsigned idx = get_irn_idx(irn);
-		unsigned pos = _be_liveness_bsearch(irn_live, idx);
+		unsigned pos = _be_liveness_bsearch(irn_live, irn);
 		be_lv_info_t *payload  = irn_live + 1;
 		be_lv_info_node_t *res = &payload[pos].node;
 
 		/* The node is in deed in the block's array. Let's remove it. */
-		if (res->idx == idx) {
+		if (res->node == irn) {
 			unsigned i;
 
 			for (i = pos + 1; i < n; ++i)
 				payload[i - 1] = payload[i];
 
-			payload[n - 1].node.idx   = 0;
+			payload[n - 1].node.node  = NULL;
 			payload[n - 1].node.flags = 0;
 
 			--irn_live[0].head.n_members;
@@ -519,8 +513,12 @@ void be_liveness_transfer(const arch_register_class_t *cls,
 
 	int arity = get_irn_arity(node);
 	for (int i = 0; i < arity; ++i) {
-		ir_node *op = get_irn_n(node, i);
-		if (!arch_irn_consider_in_reg_alloc(cls, op))
+		const arch_register_req_t *in_req = arch_get_irn_register_req_in(node, i);
+		if (in_req->cls != cls)
+			continue;
+		ir_node                   *op     = get_irn_n(node, i);
+		const arch_register_req_t *op_req = arch_get_irn_register_req(op);
+		if (op_req->type & arch_register_req_type_ignore)
 			continue;
 		ir_nodeset_insert(nodeset, op);
 	}

@@ -47,7 +47,7 @@ struct be_lv_t {
 
 typedef struct be_lv_info_node_t be_lv_info_node_t;
 struct be_lv_info_node_t {
-	unsigned idx;
+	ir_node *node;
 	unsigned flags;
 };
 
@@ -82,35 +82,31 @@ static inline unsigned _be_is_live_xxx(const be_lv_t *li, const ir_node *block,
 typedef struct lv_iterator_t
 {
 	be_lv_info_t *info;
-	ir_graph     *irg;
-	be_lv_state_t flags;
 	size_t        i;
 } lv_iterator_t;
 
 static inline lv_iterator_t be_lv_iteration_begin(const be_lv_t *lv,
-	const ir_node *block, be_lv_state_t flags)
+	const ir_node *block)
 {
 	lv_iterator_t res;
 	res.info  = ir_nodehashmap_get(be_lv_info_t, &lv->map, block);
-	res.irg   = get_Block_irg(block);
-	res.flags = flags;
 	res.i     = res.info != NULL ? res.info[0].head.n_members : 0;
 	return res;
 }
 
-static inline ir_node *be_lv_iteration_next(lv_iterator_t *iterator)
+static inline ir_node *be_lv_iteration_next(lv_iterator_t *iterator, be_lv_state_t flags)
 {
 	while (iterator->i != 0) {
 		const be_lv_info_t *info = iterator->info + iterator->i--;
-		if (info->node.flags & iterator->flags)
-			return get_idx_irn(iterator->irg, info->node.idx);
+		if (info->node.flags & flags)
+			return info->node.node;
 	}
 	return NULL;
 }
 
 #define be_lv_foreach(lv, block, flags, node) \
 	for (bool once = true; once;) \
-		for (lv_iterator_t iter = be_lv_iteration_begin((lv), (block), (flags)); once; once = false) \
-			for (ir_node *node; (node = be_lv_iteration_next(&iter)) != NULL;)
+		for (lv_iterator_t iter = be_lv_iteration_begin((lv), (block)); once; once = false) \
+			for (ir_node *node; (node = be_lv_iteration_next(&iter, (flags))) != NULL;)
 
 #endif

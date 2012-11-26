@@ -836,7 +836,6 @@ static const char *lv_flags_to_str(unsigned flags)
 static void lv_check_walker(ir_node *bl, void *data)
 {
 	lv_walker_t *w     = (lv_walker_t*)data;
-	be_lv_t     *lv    = w->lv;
 	be_lv_t     *fresh = (be_lv_t*)w->data;
 
 	be_lv_info_t *curr = ir_nodehashmap_get(be_lv_info_t, &fresh->map, bl);
@@ -845,7 +844,7 @@ static void lv_check_walker(ir_node *bl, void *data)
 	if (!fr && curr && curr[0].head.n_members > 0) {
 		ir_fprintf(stderr, "%+F liveness should be empty but current liveness contains:\n", bl);
 		for (unsigned i = 0; i < curr[0].head.n_members; ++i) {
-			ir_fprintf(stderr, "\t%+F\n", get_idx_irn(lv->irg, curr[1 + i].node.idx));
+			ir_fprintf(stderr, "\t%+F\n", curr[1 + i].node.node);
 		}
 	} else if (curr) {
 		unsigned n_curr  = curr[0].head.n_members;
@@ -857,13 +856,13 @@ static void lv_check_walker(ir_node *bl, void *data)
 			ir_fprintf(stderr, "current:\n");
 			for (unsigned i = 0; i < n_curr; ++i) {
 				be_lv_info_node_t *n = &curr[1 + i].node;
-				ir_fprintf(stderr, "%+F %u %+F %s\n", bl, i, get_idx_irn(lv->irg, n->idx), lv_flags_to_str(n->flags));
+				ir_fprintf(stderr, "%+F %u %+F %s\n", bl, i, n->node, lv_flags_to_str(n->flags));
 			}
 
 			ir_fprintf(stderr, "correct:\n");
 			for (unsigned i = 0; i < n_fresh; ++i) {
 				be_lv_info_node_t *n = &fr[1 + i].node;
-				ir_fprintf(stderr, "%+F %u %+F %s\n", bl, i, get_idx_irn(lv->irg, n->idx), lv_flags_to_str(n->flags));
+				ir_fprintf(stderr, "%+F %u %+F %s\n", bl, i, n->node, lv_flags_to_str(n->flags));
 			}
 		}
 	}

@@ -161,7 +161,7 @@ void be_dump_liveness_block(void *context, FILE *F, const ir_node *bl)
 
 			for (i = 0; i < n; ++i) {
 				be_lv_info_node_t *n = &info[i+1].node;
-				ir_fprintf(F, "%s %+F\n", lv_flags_to_str(n->flags), get_idx_irn(lv->irg, n->idx));
+				ir_fprintf(F, "%s %+F\n", lv_flags_to_str(n->flags), n->node);
 			}
 		}
 	}
