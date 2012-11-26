@@ -359,17 +359,16 @@ ir_node *new_{{node.name}}(
 irnode_h_template = env.from_string(
 '''/* Warning: automatically generated code */
 
-{%- for node in nodes|isnot('custom_is') %}
-static inline int is_{{node.name}}_(const ir_node *node)
-{
-	return get_irn_op_(node) == op_{{node.name}};
-}
-{%- endfor -%}
-
 {% for node in nodes %}
 #define is_{{node.name}}(node)    is_{{node.name}}_(node)
 {%- endfor %}
 
+{%- for node in nodes|isnot('custom_is') %}
+static inline int is_{{node.name}}_(const ir_node *node)
+{
+	return get_irn_op(node) == op_{{node.name}};
+}
+{%- endfor %}
 ''')
 
 irnode_template = env.from_string(

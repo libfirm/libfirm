@@ -31,6 +31,9 @@
 #include "typerep.h"
 #include "irmode.h"
 
+#define get_tpop_code(op)      _get_tpop_code(op)
+#define get_tpop_ident(op)     _get_tpop_ident(op)
+
 /** A function called to free attributes of a type. */
 typedef void (*free_attrs_func)(ir_type *tp);
 
@@ -134,8 +137,10 @@ void finish_tpop(void);
  * @param op  The type opcode to get the size for.
  * @return The size of the attribute of types with this opcode.
  */
-size_t get_tpop_attr_size(const tp_op *op);
-
+static inline size_t get_tpop_attr_size(const tp_op *op)
+{
+	return op->attr_size;
+}
 
 /* ---------------- *
  * inline functions *
@@ -150,14 +155,5 @@ static inline ident *_get_tpop_ident(const tp_op *op)
 {
 	return op->name;
 }
-
-static inline size_t _get_tpop_attr_size(const tp_op *op)
-{
-	return op->attr_size;
-}
-
-#define get_tpop_code(op)      _get_tpop_code(op)
-#define get_tpop_ident(op)     _get_tpop_ident(op)
-#define get_tpop_attr_size(op) _get_tpop_attr_size(op)
 
 #endif /* FIRM_TR_TPOP_T_H */

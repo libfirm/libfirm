@@ -32,6 +32,15 @@
 #include "irtypes.h"
 #include "tv.h"
 
+#define get_op_code(op)         get_op_code_(op)
+#define get_op_ident(op)        get_op_ident_(op)
+#define get_op_pinned(op)       get_op_pinned_(op)
+#define get_op_ops(op)          get_op_ops_(op)
+#define set_op_tag(op, tag)     set_op_tag_((op), (tag))
+#define get_op_tag(op)          get_op_tag_(op)
+#define set_op_attr(op, attr)   set_op_attr_((op), (attr))
+#define get_op_attr(op)         get_op_attr_(op)
+
 /**
  * Frees a newly created ir operation.
  */
@@ -168,14 +177,5 @@ static inline void *get_op_attr_(const ir_op *op)
 {
 	return op->attr;
 }
-
-#define get_op_code(op)         get_op_code_(op)
-#define get_op_ident(op)        get_op_ident_(op)
-#define get_op_pinned(op)       get_op_pinned_(op)
-#define get_op_ops(op)          get_op_ops_(op)
-#define set_op_tag(op, tag)     set_op_tag_((op), (tag))
-#define get_op_tag(op)          get_op_tag_(op)
-#define set_op_attr(op, attr)   set_op_attr_((op), (attr))
-#define get_op_attr(op)         get_op_attr_(op)
 
 #endif

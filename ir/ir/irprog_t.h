@@ -35,6 +35,17 @@
 
 #include "array.h"
 
+/* Inline functions. */
+#define get_irp_n_irgs()                 get_irp_n_irgs_()
+#define get_irp_irg(pos)                 get_irp_irg_(pos)
+#define get_irp_n_types()                get_irp_n_types_()
+#define get_irp_type(pos)                get_irp_type_(pos)
+#define get_const_code_irg()             get_const_code_irg_()
+#define get_segment_type(s)              get_segment_type_(s)
+#define get_glob_type()                  get_glob_type_()
+#define get_tls_type()                   get_tls_type_()
+#define get_irp_next_label_nr()          get_irp_next_label_nr_()
+
 /* inline functions */
 static inline ir_type *get_segment_type_(ir_segment_t segment)
 {
@@ -125,16 +136,5 @@ FIRM_API void add_irp_irg(ir_graph *irg);
 /** Removes irg from the list of irgs and
     shrinks the list by one. */
 FIRM_API void remove_irp_irg(ir_graph *irg);
-
-/* Inline functions. */
-#define get_irp_n_irgs()                 get_irp_n_irgs_()
-#define get_irp_irg(pos)                 get_irp_irg_(pos)
-#define get_irp_n_types()                get_irp_n_types_()
-#define get_irp_type(pos)                get_irp_type_(pos)
-#define get_const_code_irg()             get_const_code_irg_()
-#define get_segment_type(s)              get_segment_type_(s)
-#define get_glob_type()                  get_glob_type_()
-#define get_tls_type()                   get_tls_type_()
-#define get_irp_next_label_nr()          get_irp_next_label_nr_()
 
 #endif

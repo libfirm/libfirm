@@ -30,9 +30,29 @@
 #include "irtypes.h"
 #include "irmode.h"
 
-/* ------------------------------- *
- * inline functions                *
- * ------------------------------- */
+#define get_modeP_code()               get_modeP_code_()
+#define get_modeP_data()               get_modeP_data_()
+#define get_mode_ident(mode)           get_mode_ident_(mode)
+#define get_mode_sort(mode)            get_mode_sort_(mode)
+#define get_mode_size_bits(mode)       get_mode_size_bits_(mode)
+#define get_mode_size_bytes(mode)      get_mode_size_bytes_(mode)
+#define get_mode_sign(mode)            get_mode_sign_(mode)
+#define get_mode_arithmetic(mode)      get_mode_arithmetic_(mode)
+#define get_mode_modulo_shift(mode)    get_mode_modulo_shift_(mode)
+#define get_mode_link(mode)            get_mode_link_(mode)
+#define set_mode_link(mode, l)         set_mode_link_(mode, l)
+#define mode_is_signed(mode)           mode_is_signed_(mode)
+#define mode_is_float(mode)            mode_is_float_(mode)
+#define mode_is_int(mode)              mode_is_int_(mode)
+#define mode_is_reference(mode)        mode_is_reference_(mode)
+#define mode_is_num(mode)              mode_is_num_(mode)
+#define mode_is_data(mode)             mode_is_data_(mode)
+#define mode_is_datab(mode)            mode_is_datab_(mode)
+#define mode_is_dataM(mode)            mode_is_dataM_(mode)
+#define get_type_for_mode(mode)        get_type_for_mode_(mode)
+#define get_mode_mantissa_size(mode)   get_mode_mantissa_size_(mode)
+#define get_mode_exponent_size(mode)   get_mode_exponent_size_(mode)
+
 static inline ir_mode *get_modeP_code_(void) { return mode_P_code; }
 
 static inline ir_mode *get_modeP_data_(void) { return mode_P_data; }
@@ -104,37 +124,37 @@ static inline int mode_is_signed_(const ir_mode *mode)
 
 static inline int mode_is_float_(const ir_mode *mode)
 {
-	return (get_mode_sort_(mode) == irms_float_number);
+	return (get_mode_sort(mode) == irms_float_number);
 }
 
 static inline int mode_is_int_(const ir_mode *mode)
 {
-	return (get_mode_sort_(mode) == irms_int_number);
+	return (get_mode_sort(mode) == irms_int_number);
 }
 
 static inline int mode_is_reference_(const ir_mode *mode)
 {
-	return (get_mode_sort_(mode) == irms_reference);
+	return (get_mode_sort(mode) == irms_reference);
 }
 
 static inline int mode_is_num_(const ir_mode *mode)
 {
-	return (get_mode_sort_(mode) & irmsh_is_num);
+	return (get_mode_sort(mode) & irmsh_is_num);
 }
 
 static inline int mode_is_data_(const ir_mode *mode)
 {
-	return (get_mode_sort_(mode) & irmsh_is_data);
+	return (get_mode_sort(mode) & irmsh_is_data);
 }
 
 static inline int mode_is_datab_(const ir_mode *mode)
 {
-	return (get_mode_sort_(mode) & irmsh_is_datab);
+	return (get_mode_sort(mode) & irmsh_is_datab);
 }
 
 static inline int mode_is_dataM_(const ir_mode *mode)
 {
-	return (get_mode_sort_(mode) & irmsh_is_dataM);
+	return (get_mode_sort(mode) & irmsh_is_dataM);
 }
 
 static inline ir_type *get_type_for_mode_(const ir_mode *mode)
@@ -157,28 +177,5 @@ void init_mode(void);
 
 /** mode module finalization. frees all memory.  */
 void finish_mode(void);
-
-#define get_modeP_code()               get_modeP_code_()
-#define get_modeP_data()               get_modeP_data_()
-#define get_mode_ident(mode)           get_mode_ident_(mode)
-#define get_mode_sort(mode)            get_mode_sort_(mode)
-#define get_mode_size_bits(mode)       get_mode_size_bits_(mode)
-#define get_mode_size_bytes(mode)      get_mode_size_bytes_(mode)
-#define get_mode_sign(mode)            get_mode_sign_(mode)
-#define get_mode_arithmetic(mode)      get_mode_arithmetic_(mode)
-#define get_mode_modulo_shift(mode)    get_mode_modulo_shift_(mode)
-#define get_mode_link(mode)            get_mode_link_(mode)
-#define set_mode_link(mode, l)         set_mode_link_(mode, l)
-#define mode_is_signed(mode)           mode_is_signed_(mode)
-#define mode_is_float(mode)            mode_is_float_(mode)
-#define mode_is_int(mode)              mode_is_int_(mode)
-#define mode_is_reference(mode)        mode_is_reference_(mode)
-#define mode_is_num(mode)              mode_is_num_(mode)
-#define mode_is_data(mode)             mode_is_data_(mode)
-#define mode_is_datab(mode)            mode_is_datab_(mode)
-#define mode_is_dataM(mode)            mode_is_dataM_(mode)
-#define get_type_for_mode(mode)        get_type_for_mode_(mode)
-#define get_mode_mantissa_size(mode)   get_mode_mantissa_size_(mode)
-#define get_mode_exponent_size(mode)   get_mode_exponent_size_(mode)
 
 #endif

@@ -205,8 +205,3 @@ tp_opcode (get_tpop_code)(const tp_op *op)
 {
 	return _get_tpop_code(op);
 }
-
-size_t (get_tpop_attr_size)(const tp_op *op)
-{
-	return _get_tpop_attr_size(op);
-}

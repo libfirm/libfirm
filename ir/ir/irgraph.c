@@ -556,11 +556,6 @@ int get_irg_n_locs(ir_graph *irg)
 	return irg->n_loc - 1;
 }
 
-struct obstack *(get_irg_obstack)(const ir_graph *irg)
-{
-	return get_irg_obstack_(irg);
-}
-
 int node_is_in_irgs_storage(const ir_graph *irg, const ir_node *n)
 {
 	struct _obstack_chunk *p;
@@ -580,11 +575,6 @@ int node_is_in_irgs_storage(const ir_graph *irg, const ir_node *n)
 op_pin_state (get_irg_pinned)(const ir_graph *irg)
 {
 	return get_irg_pinned_(irg);
-}
-
-void (set_irg_pinned)(ir_graph *irg, op_pin_state p)
-{
-	set_irg_pinned_(irg, p);
 }
 
 irg_callee_info_state (get_irg_callee_info_state)(const ir_graph *irg)

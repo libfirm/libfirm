@@ -17,6 +17,8 @@
 #include "beutil.h"
 #include "iredges_t.h"
 
+#define value_dominates(a, b) _value_dominates(a, b)
+
 /**
  * Check dominance of two nodes in the same block.
  * @param a The first node.
@@ -159,7 +161,5 @@ static inline int be_values_interfere(const be_lv_t *lv, const ir_node *a, const
 end:
 	return res;
 }
-
-#define value_dominates(a, b) _value_dominates(a, b)
 
 #endif

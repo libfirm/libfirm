@@ -32,6 +32,10 @@
 #include "irlivechk.h"
 #include "belive.h"
 
+#define be_is_live_in(lv, bl, irn)    _be_is_live_xxx(lv, bl, irn, be_lv_state_in)
+#define be_is_live_end(lv, bl, irn)   _be_is_live_xxx(lv, bl, irn, be_lv_state_end)
+#define be_is_live_out(lv, bl, irn)   _be_is_live_xxx(lv, bl, irn, be_lv_state_out)
+
 struct be_lv_t {
 	ir_nodehashmap_t map;
 	struct obstack   obst;
@@ -108,9 +112,5 @@ static inline ir_node *be_lv_iteration_next(lv_iterator_t *iterator)
 	for (bool once = true; once;) \
 		for (lv_iterator_t iter = be_lv_iteration_begin((lv), (block), (flags)); once; once = false) \
 			for (ir_node *node; (node = be_lv_iteration_next(&iter)) != NULL;)
-
-#define be_is_live_in(lv, bl, irn)    _be_is_live_xxx(lv, bl, irn, be_lv_state_in)
-#define be_is_live_end(lv, bl, irn)   _be_is_live_xxx(lv, bl, irn, be_lv_state_end)
-#define be_is_live_out(lv, bl, irn)   _be_is_live_xxx(lv, bl, irn, be_lv_state_out)
 
 #endif

@@ -32,6 +32,44 @@
 #include "type_t.h"
 #include "ident.h"
 
+#define is_entity(thing)                         _is_entity(thing)
+#define get_entity_name(ent)                     _get_entity_name(ent)
+#define get_entity_ident(ent)                    _get_entity_ident(ent)
+#define set_entity_ident(ent, id)                _set_entity_ident(ent, id)
+#define get_entity_owner(ent)                    _get_entity_owner(ent)
+#define get_entity_ld_ident(ent)                 _get_entity_ld_ident(ent)
+#define set_entity_ld_ident(ent, ld_ident)       _set_entity_ld_ident(ent, ld_ident)
+#define get_entity_ld_name(ent)                  _get_entity_ld_name(ent)
+#define get_entity_type(ent)                     _get_entity_type(ent)
+#define get_entity_linkage(ent)                  _get_entity_linkage(ent)
+#define get_entity_volatility(ent)               _get_entity_volatility(ent)
+#define set_entity_volatility(ent, vol)          _set_entity_volatility(ent, vol)
+#define set_entity_alignment(ent, alignment)     _set_entity_alignment(ent, alignment)
+#define get_entity_alignment(ent)                _get_entity_alignment(ent)
+#define get_entity_align(ent)                    _get_entity_align(ent)
+#define set_entity_align(ent, a)                 _set_entity_align(ent, a)
+#define is_entity_compiler_generated(ent)        _is_entity_compiler_generated(ent)
+#define set_entity_compiler_generated(ent, flag) _set_entity_compiler_generated(ent, flag)
+#define get_entity_usage(ent)                    _get_entity_usage(ent)
+#define set_entity_usage(ent, flags)             _set_entity_usage(ent, flags)
+#define get_entity_offset(ent)                   _get_entity_offset(ent)
+#define set_entity_offset(ent, offset)           _set_entity_offset(ent, offset)
+#define get_entity_offset_bits_remainder(ent)    _get_entity_offset_bits_remainder(ent)
+#define set_entity_offset_bits_remainder(ent, o) _set_entity_offset_bits_remainder(ent, o)
+#define get_entity_link(ent)                     _get_entity_link(ent)
+#define set_entity_link(ent, l)                  _set_entity_link(ent, l)
+#define get_entity_irg(ent)                      _get_entity_irg(ent)
+#define is_parameter_entity(ent)                 _is_parameter_entity(ent)
+#define get_entity_parameter_number(ent)         _get_entity_parameter_number(ent)
+#define get_entity_visited(ent)                  _get_entity_visited(ent)
+#define set_entity_visited(ent, num)             _set_entity_visited(ent, num)
+#define mark_entity_visited(ent)                 _mark_entity_visited(ent)
+#define entity_visited(ent)                      _entity_visited(ent)
+#define entity_not_visited(ent)                  _entity_not_visited(ent)
+#define get_entity_repr_class(ent)               _get_entity_repr_class(ent)
+#define get_entity_dbg_info(ent)                 _get_entity_dbg_info(ent)
+#define set_entity_dbg_info(ent, db)             _set_entity_dbg_info(ent, db)
+
 typedef struct ir_initializer_base_t {
 	ir_initializer_kind_t kind;
 } ir_initializer_base_t;
@@ -191,16 +229,16 @@ static inline int _is_entity(const void *thing)
 	return get_kind(thing) == k_entity;
 }
 
-static inline const char *_get_entity_name(const ir_entity *ent)
-{
-	assert(ent && ent->kind == k_entity);
-	return get_id_str(get_entity_ident(ent));
-}
-
 static inline ident *_get_entity_ident(const ir_entity *ent)
 {
 	assert(ent && ent->kind == k_entity);
 	return ent->name;
+}
+
+static inline const char *_get_entity_name(const ir_entity *ent)
+{
+	assert(ent && ent->kind == k_entity);
+	return get_id_str(get_entity_ident(ent));
 }
 
 static inline void _set_entity_ident(ir_entity *ent, ident *id)
@@ -407,43 +445,5 @@ static inline void _set_entity_dbg_info(ir_entity *ent, dbg_info *db)
 {
 	ent->dbi = db;
 }
-
-#define is_entity(thing)                         _is_entity(thing)
-#define get_entity_name(ent)                     _get_entity_name(ent)
-#define get_entity_ident(ent)                    _get_entity_ident(ent)
-#define set_entity_ident(ent, id)                _set_entity_ident(ent, id)
-#define get_entity_owner(ent)                    _get_entity_owner(ent)
-#define get_entity_ld_ident(ent)                 _get_entity_ld_ident(ent)
-#define set_entity_ld_ident(ent, ld_ident)       _set_entity_ld_ident(ent, ld_ident)
-#define get_entity_ld_name(ent)                  _get_entity_ld_name(ent)
-#define get_entity_type(ent)                     _get_entity_type(ent)
-#define get_entity_linkage(ent)                  _get_entity_linkage(ent)
-#define get_entity_volatility(ent)               _get_entity_volatility(ent)
-#define set_entity_volatility(ent, vol)          _set_entity_volatility(ent, vol)
-#define set_entity_alignment(ent, alignment)     _set_entity_alignment(ent, alignment)
-#define get_entity_alignment(ent)                _get_entity_alignment(ent)
-#define get_entity_align(ent)                    _get_entity_align(ent)
-#define set_entity_align(ent, a)                 _set_entity_align(ent, a)
-#define is_entity_compiler_generated(ent)        _is_entity_compiler_generated(ent)
-#define set_entity_compiler_generated(ent, flag) _set_entity_compiler_generated(ent, flag)
-#define get_entity_usage(ent)                    _get_entity_usage(ent)
-#define set_entity_usage(ent, flags)             _set_entity_usage(ent, flags)
-#define get_entity_offset(ent)                   _get_entity_offset(ent)
-#define set_entity_offset(ent, offset)           _set_entity_offset(ent, offset)
-#define get_entity_offset_bits_remainder(ent)    _get_entity_offset_bits_remainder(ent)
-#define set_entity_offset_bits_remainder(ent, o) _set_entity_offset_bits_remainder(ent, o)
-#define get_entity_link(ent)                     _get_entity_link(ent)
-#define set_entity_link(ent, l)                  _set_entity_link(ent, l)
-#define get_entity_irg(ent)                      _get_entity_irg(ent)
-#define is_parameter_entity(ent)                 _is_parameter_entity(ent)
-#define get_entity_parameter_number(ent)         _get_entity_parameter_number(ent)
-#define get_entity_visited(ent)                  _get_entity_visited(ent)
-#define set_entity_visited(ent, num)             _set_entity_visited(ent, num)
-#define mark_entity_visited(ent)                 _mark_entity_visited(ent)
-#define entity_visited(ent)                      _entity_visited(ent)
-#define entity_not_visited(ent)                  _entity_not_visited(ent)
-#define get_entity_repr_class(ent)               _get_entity_repr_class(ent)
-#define get_entity_dbg_info(ent)                 _get_entity_dbg_info(ent)
-#define set_entity_dbg_info(ent, db)             _set_entity_dbg_info(ent, db)
 
 #endif
