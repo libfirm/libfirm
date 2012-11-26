@@ -27,12 +27,9 @@
 #define FIRM_BE_BELIVE_T_H
 
 #include <stdbool.h>
-#include "be_types.h"
-#include "irgraph_t.h"
 #include "irnodehashmap.h"
 #include "irhooks.h"
 #include "irlivechk.h"
-#include "statev_t.h"
 #include "belive.h"
 
 struct be_lv_t {

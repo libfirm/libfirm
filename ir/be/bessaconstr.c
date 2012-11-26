@@ -68,6 +68,7 @@
 
 #include "ircons.h"
 #include "iredges_t.h"
+#include "statev_t.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 

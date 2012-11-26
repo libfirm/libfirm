@@ -39,6 +39,7 @@
 #include "irprintf.h"
 #include "irnodeset.h"
 #include "irtools.h"
+#include "statev_t.h"
 #include "util.h"
 
 #include "beutil.h"
