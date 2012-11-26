@@ -52,7 +52,6 @@ FIRM_API const ir_edge_t *get_irn_out_edge_first_kind(const ir_node *irn,
  * @note There is no order on out edges. First in this context only
  * means, that you get some starting point into the list of edges.
  * @param irn The node.
- * @param kind The kind of the edge.
  * @return The first out edge that points to this node.
  */
 FIRM_API const ir_edge_t *get_irn_out_edge_first(const ir_node *irn);
@@ -137,7 +136,6 @@ FIRM_API int get_irn_n_edges_kind(const ir_node *irn, ir_edge_kind_t kind);
 /**
  * Returns the number of registered out edges with EDGE_KIND_NORMAL
  * @param irn The node.
- * @param kind The kind.
  */
 FIRM_API int get_irn_n_edges(const ir_node *irn);
 
