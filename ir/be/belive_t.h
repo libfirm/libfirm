@@ -33,10 +33,6 @@
 #include "irhooks.h"
 #include "irlivechk.h"
 #include "statev_t.h"
-
-#include "pset.h"
-#include "bitset.h"
-
 #include "belive.h"
 
 struct be_lv_t {
@@ -116,23 +112,8 @@ static inline ir_node *be_lv_iteration_next(lv_iterator_t *iterator)
 		for (lv_iterator_t iter = be_lv_iteration_begin((lv), (block), (flags)); once; once = false) \
 			for (ir_node *node; (node = be_lv_iteration_next(&iter)) != NULL;)
 
-static inline pset *_be_lv_pset_put(const be_lv_t *lv, const ir_node *block,
-                                    int state, pset *s)
-{
-	be_lv_foreach(lv, block, state, node)
-		pset_insert_ptr(s, node);
-	return s;
-}
-
-#define be_lv_get_irn(lv, bl, i)      _be_lv_get_irn(lv, bl, i)
-#define be_lv_pset_put_in(lv, bl, s)  _be_lv_pset_put(lv, bl, be_lv_state_in, s)
-#define be_lv_pset_put_out(lv, bl, s) _be_lv_pset_put(lv, bl, be_lv_state_out, s)
-#define be_lv_pset_put_end(lv, bl, s) _be_lv_pset_put(lv, bl, be_lv_state_end, s)
-
 #define be_is_live_in(lv, bl, irn)    _be_is_live_xxx(lv, bl, irn, be_lv_state_in)
 #define be_is_live_end(lv, bl, irn)   _be_is_live_xxx(lv, bl, irn, be_lv_state_end)
 #define be_is_live_out(lv, bl, irn)   _be_is_live_xxx(lv, bl, irn, be_lv_state_out)
-
-#define be_lv_has_info_about(lv, irn) bitset_is_set((lv)->nodes, get_irn_idx(irn))
 
 #endif
