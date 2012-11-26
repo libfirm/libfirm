@@ -27,8 +27,6 @@
  */
 static inline int _value_dominates_intrablock(const ir_node *a, const ir_node *b)
 {
-	assert(sched_is_scheduled(a));
-	assert(sched_is_scheduled(b));
 	sched_timestep_t const as = sched_get_time_step(a);
 	sched_timestep_t const bs = sched_get_time_step(b);
 	return as <= bs;
@@ -42,8 +40,6 @@ static inline int _value_dominates_intrablock(const ir_node *a, const ir_node *b
  */
 static inline int _value_strictly_dominates_intrablock(const ir_node *a, const ir_node *b)
 {
-	assert(sched_is_scheduled(a));
-	assert(sched_is_scheduled(b));
 	sched_timestep_t const as = sched_get_time_step(a);
 	sched_timestep_t const bs = sched_get_time_step(b);
 	return as < bs;
