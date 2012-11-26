@@ -69,6 +69,7 @@ FIRM_API const ir_edge_t *get_block_succ_first(const ir_node *block);
  * Returns the next edge in the out list of some node.
  * @param irn The node.
  * @param last The last out edge you have seen.
+ * @param kind the kind of edge that are iterated
  * @return The next out edge in @p irn 's out list after @p last.
  */
 FIRM_API const ir_edge_t *get_irn_out_edge_next(const ir_node *irn,
