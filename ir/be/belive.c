@@ -30,7 +30,7 @@
 
 #include "iredges_t.h"
 #include "irgwalk.h"
-#include "irprintf_t.h"
+#include "irprintf.h"
 #include "irdump_t.h"
 #include "irnodeset.h"
 

@@ -34,7 +34,7 @@
 #include "iredges_t.h"
 #include "irgmod.h"
 #include "irgwalk.h"
-#include "irprintf_t.h"
+#include "irprintf.h"
 #include "irgopt.h"
 #include "iropt_t.h"
 #include "irtools.h"

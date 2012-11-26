@@ -51,7 +51,7 @@
 #include "irgraph_t.h"
 #include "irgopt.h"
 #include "irgmod.h"
-#include "irprintf_t.h"
+#include "irprintf.h"
 #include "irgwalk.h"
 
 #include "be_t.h"

@@ -342,7 +342,6 @@ EXTRA_DIST = \
 	ir/gen_irnode.h \
 	ir/irop_t.h \
 	ir/iropt_t.h \
-	ir/irprintf_t.h \
 	ir/irprog_t.h \
 	ir/irnodemap.h \
 	ir/irpass_t.h \

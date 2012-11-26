@@ -28,7 +28,6 @@
 #include <stdbool.h>
 
 #include "obst.h"
-#include "irprintf_t.h"
 #include "irgraph.h"
 #include "irnode.h"
 #include "irmode.h"

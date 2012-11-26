@@ -39,7 +39,7 @@
 #include "ircons_t.h"
 #include "irmode_t.h"
 #include "irgraph_t.h"
-#include "irprintf_t.h"
+#include "irprintf.h"
 #include "irgwalk.h"
 #include "ircons.h"
 #include "irdump.h"

@@ -42,7 +42,7 @@
 #include "irnode_t.h"
 #include "irmode_t.h"
 #include "irdump.h"
-#include "irprintf_t.h"
+#include "irprintf.h"
 #include "array.h"
 #include "debug.h"
 #include "irtools.h"
