@@ -322,80 +322,80 @@ static inline void set_higher_type(ir_type *tp, ir_type *higher_type)
 
 static inline void *_get_type_link(const ir_type *tp)
 {
-	assert(tp && tp->kind == k_type);
+	assert(tp->kind == k_type);
 	return(tp -> link);
 }
 
 static inline void _set_type_link(ir_type *tp, void *l)
 {
-	assert(tp && tp->kind == k_type);
+	assert(tp->kind == k_type);
 	tp -> link = l;
 }
 
 static inline const tp_op *_get_type_tpop(const ir_type *tp)
 {
-	assert(tp && tp->kind == k_type);
+	assert(tp->kind == k_type);
 	return tp->type_op;
 }
 
 static inline ident *_get_type_tpop_nameid(const ir_type *tp)
 {
-	assert(tp && tp->kind == k_type);
+	assert(tp->kind == k_type);
 	return get_tpop_ident(tp->type_op);
 }
 
 static inline tp_opcode _get_type_tpop_code(const ir_type *tp)
 {
-	assert(tp && tp->kind == k_type);
+	assert(tp->kind == k_type);
 	return get_tpop_code(tp->type_op);
 }
 
 static inline ir_mode *_get_type_mode(const ir_type *tp)
 {
-	assert(tp && tp->kind == k_type);
+	assert(tp->kind == k_type);
 	return tp->mode;
 }
 
 static inline unsigned _get_type_size_bytes(const ir_type *tp)
 {
-	assert(tp && tp->kind == k_type);
+	assert(tp->kind == k_type);
 	return tp->size;
 }
 
 static inline ir_type_state _get_type_state(const ir_type *tp)
 {
-	assert(tp && tp->kind == k_type);
+	assert(tp->kind == k_type);
 	return tp->flags & tf_layout_fixed ? layout_fixed : layout_undefined;
 }
 
 static inline ir_visited_t _get_type_visited(const ir_type *tp)
 {
-	assert(tp && tp->kind == k_type);
+	assert(tp->kind == k_type);
 	return tp->visit;
 }
 
 static inline void _set_type_visited(ir_type *tp, ir_visited_t num)
 {
-	assert(tp && tp->kind == k_type);
+	assert(tp->kind == k_type);
 	tp->visit = num;
 }
 
 static inline void _mark_type_visited(ir_type *tp)
 {
-	assert(tp && tp->kind == k_type);
+	assert(tp->kind == k_type);
 	assert(tp->visit < firm_type_visited);
 	tp->visit = firm_type_visited;
 }
 
 static inline int _type_visited(const ir_type *tp)
 {
-	assert(tp && tp->kind == k_type);
+	assert(tp->kind == k_type);
 	return tp->visit >= firm_type_visited;
 }
 
 static inline int _type_not_visited(const ir_type *tp)
 {
-	assert(tp && tp->kind == k_type);
+	assert(tp->kind == k_type);
 	return tp->visit  < firm_type_visited;
 }
 

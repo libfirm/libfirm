@@ -147,7 +147,6 @@ static inline unsigned get_irn_idx_(const ir_node *node)
  */
 static inline ir_op *get_irn_op_(const ir_node *node)
 {
-	assert(node);
 	return node->op;
 }
 
@@ -156,7 +155,6 @@ static inline ir_op *get_irn_op_(const ir_node *node)
 
 static inline void set_irn_op_(ir_node *node, ir_op *op)
 {
-	assert(node);
 	node->op = op;
 }
 
@@ -178,7 +176,6 @@ static inline void copy_node_attr_(ir_graph *irg, const ir_node *old_node,
 static inline unsigned get_irn_opcode_(const ir_node *node)
 {
 	assert(k_ir_node == get_kind(node));
-	assert(node->op);
 	return node->op->code;
 }
 
@@ -221,7 +218,6 @@ static inline int get_irn_deps_(const ir_node *node)
 
 static inline ir_node *get_irn_dep_(const ir_node *node, int pos)
 {
-	assert(node->deps && "dependency array node yet allocated. use add_irn_dep()");
 	assert(pos >= 0 && pos < (int)ARR_LEN(node->deps) && "dependency index out of range");
 	return node->deps[pos];
 }
@@ -246,7 +242,6 @@ static inline ir_node *get_irn_in_or_dep_(const ir_node *irn, int pos)
  */
 static inline ir_mode *get_irn_mode_(const ir_node *node)
 {
-	assert(node);
 	return node->mode;
 }
 
@@ -256,7 +251,6 @@ static inline ir_mode *get_irn_mode_(const ir_node *node)
  */
 static inline void set_irn_mode_(ir_node *node, ir_mode *mode)
 {
-	assert(node);
 	node->mode = mode;
 }
 
@@ -285,7 +279,6 @@ static inline ir_graph *get_irn_irg_(const ir_node *node)
  */
 static inline ir_visited_t get_irn_visited_(const ir_node *node)
 {
-	assert(node);
 	return node->visited;
 }
 
@@ -295,7 +288,6 @@ static inline ir_visited_t get_irn_visited_(const ir_node *node)
  */
 static inline void set_irn_visited_(ir_node *node, ir_visited_t visited)
 {
-	assert(node);
 	node->visited = visited;
 }
 
@@ -332,7 +324,6 @@ static inline int irn_visited_else_mark_(ir_node *node)
  */
 static inline void set_irn_link_(ir_node *node, void *link)
 {
-	assert(node);
 	node->link = link;
 }
 
@@ -342,7 +333,7 @@ static inline void set_irn_link_(ir_node *node, void *link)
  */
 static inline void *get_irn_link_(const ir_node *node)
 {
-	assert(node && is_ir_node_(node));
+	assert(is_ir_node_(node));
 	return node->link;
 }
 
@@ -355,7 +346,7 @@ static inline void *get_irn_link_(const ir_node *node)
 static inline op_pin_state get_irn_pinned_(const ir_node *node)
 {
 	op_pin_state state;
-	assert(node && is_ir_node_(node));
+	assert(is_ir_node_(node));
 	/* Check opcode */
 	state = get_op_pinned_(get_irn_op_(node));
 
@@ -374,13 +365,13 @@ static inline op_pin_state is_irn_pinned_in_irg_(const ir_node *node)
 
 static inline int is_unop_(const ir_node *node)
 {
-	assert(node && is_ir_node_(node));
+	assert(is_ir_node_(node));
 	return (node->op->opar == oparity_unary);
 }
 
 static inline int is_binop_(const ir_node *node)
 {
-	assert(node && is_ir_node_(node));
+	assert(is_ir_node_(node));
 	return (node->op->opar == oparity_binary);
 }
 

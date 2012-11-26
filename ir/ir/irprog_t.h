@@ -65,7 +65,6 @@ static inline ir_type *get_tls_type_(void)
 
 static inline size_t get_irp_n_irgs_(void)
 {
-	assert(irp && irp->graphs);
 	return ARR_LEN(irp->graphs);
 }
 
@@ -77,13 +76,11 @@ static inline ir_graph *get_irp_irg_(size_t pos)
 
 static inline size_t get_irp_n_types_(void)
 {
-	assert(irp && irp->types);
 	return ARR_LEN(irp->types);
 }
 
 static inline ir_type *get_irp_type_(size_t pos)
 {
-	assert(irp->types);
 	assert(pos < ARR_LEN(irp->types));
 	/* Don't set the skip_tid result so that no double entries are generated. */
 	return irp->types[pos];
@@ -92,13 +89,11 @@ static inline ir_type *get_irp_type_(size_t pos)
 /** Returns a new, unique number to number nodes or the like. */
 static inline long get_irp_new_node_nr(void)
 {
-	assert(irp);
 	return irp->max_node_nr++;
 }
 
 static inline size_t get_irp_new_irg_idx(void)
 {
-	assert(irp);
 	return irp->max_irg_idx++;
 }
 
@@ -110,7 +105,6 @@ static inline ir_graph *get_const_code_irg_(void)
 /** Returns a new, unique label number. */
 static inline ir_label_t get_irp_next_label_nr_(void)
 {
-	assert(irp);
 	return ++irp->last_label_nr;
 }
 
