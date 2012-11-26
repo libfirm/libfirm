@@ -48,6 +48,25 @@ FIRM_API const ir_edge_t *get_irn_out_edge_first_kind(const ir_node *irn,
                                                       ir_edge_kind_t kind);
 
 /**
+ * Returns the first edge pointing to some node.
+ * @note There is no order on out edges. First in this context only
+ * means, that you get some starting point into the list of edges.
+ * @param irn The node.
+ * @param kind The kind of the edge.
+ * @return The first out edge that points to this node.
+ */
+FIRM_API const ir_edge_t *get_irn_out_edge_first(const ir_node *irn);
+
+/**
+ * Returns the first edge pointing to a successor block.
+ *
+ * You can navigate the list with the usual get_irn_out_edge_next().
+ * @param block  the Block
+ * @return first block successor edge
+ */
+FIRM_API const ir_edge_t *get_block_succ_first(const ir_node *block);
+
+/**
  * Returns the next edge in the out list of some node.
  * @param irn The node.
  * @param last The last out edge you have seen.
@@ -116,6 +135,13 @@ FIRM_API int get_edge_src_pos(const ir_edge_t *edge);
 FIRM_API int get_irn_n_edges_kind(const ir_node *irn, ir_edge_kind_t kind);
 
 /**
+ * Returns the number of registered out edges with EDGE_KIND_NORMAL
+ * @param irn The node.
+ * @param kind The kind.
+ */
+FIRM_API int get_irn_n_edges(const ir_node *irn);
+
+/**
  * Checks if the out edges are activated.
  *
  * @param irg   The graph.
@@ -124,6 +150,13 @@ FIRM_API int get_irn_n_edges_kind(const ir_node *irn, ir_edge_kind_t kind);
  * @return 1, if the edges are present for the given irg, 0 if not.
  */
 FIRM_API int edges_activated_kind(const ir_graph *irg, ir_edge_kind_t kind);
+
+/**
+ * Checks if out edges with EDG_KIND_NORMAL and EDGE_KIND_BLOCK are activated.
+ * @param irg   The graph.
+ * @return 1, if the edges are present for the given irg, 0 if not.
+ */
+FIRM_API int edges_activated(const ir_graph *irg);
 
 /**
  * Activates the edges for an irg.
@@ -149,6 +182,14 @@ FIRM_API void edges_deactivate_kind(ir_graph *irg, ir_edge_kind_t kind);
  * @param kind  the edge kind
  */
 FIRM_API void edges_reroute_kind(ir_node *old, ir_node *nw, ir_edge_kind_t kind);
+
+/**
+ * Reroutes edges of EDGE_KIND_NORMAL from an old node to a new one.
+ *
+ * @param old   the old node
+ * @param nw    the new node
+ */
+FIRM_API void edges_reroute(ir_node *old, ir_node *nw);
 
 /**
  * reroutes (normal) edges from an old node to a new node, except for the
@@ -184,31 +225,6 @@ FIRM_API void edges_init_dbg(int do_dbg);
  */
 FIRM_API ir_graph_pass_t *irg_verify_edges_pass(const char *name,
                                                 unsigned assert_on_problem);
-
-/** Convenience version of edges_reroute_kind() with #EDGE_KIND_NORMAL */
-#define edges_reroute(old, nw)                      edges_reroute_kind(old, nw, EDGE_KIND_NORMAL)
-/** Conventience version of edges_activated_kind() for #EDGE_KIND_NORMAL and #EDGE_KIND_BLOCK */
-#define edges_activated(irg)                            (edges_activated_kind(irg, EDGE_KIND_NORMAL) && edges_activated_kind(irg, EDGE_KIND_BLOCK))
-
-#ifndef get_irn_n_edges
-/** Conventience version of get_irn_n_edges_kind() with #EDGE_KIND_NORMAL. */
-#define get_irn_n_edges(irn)                            get_irn_n_edges_kind(irn, EDGE_KIND_NORMAL)
-#endif
-
-#ifndef get_irn_out_edge_first
-/** Convenience version of get_irn_out_edge_first_kind() with #EDGE_KIND_NORMAL */
-#define get_irn_out_edge_first(irn)                     get_irn_out_edge_first_kind(irn, EDGE_KIND_NORMAL)
-#endif
-
-#ifndef get_block_succ_first
-/** Convenience version of get_irn_out_edge_first_kind() with #EDGE_KIND_BLOCK */
-#define get_block_succ_first(irn)                       get_irn_out_edge_first_kind(irn, EDGE_KIND_BLOCK)
-#endif
-
-#ifndef get_block_succ_next
-/** Convenience version of get_irn_out_edge_next() with #EDGE_KIND_BLOCK */
-#define get_block_succ_next(irn, last)                  get_irn_out_edge_next(irn, last)
-#endif
 
 /**
  * Activates data and block edges for an irg.

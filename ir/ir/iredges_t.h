@@ -37,7 +37,14 @@
 #include "iredgekinds.h"
 #include "iredges.h"
 
-#define DBG_EDGES  "firm.ir.edges"
+#define get_irn_n_edges_kind(irn, kind)   get_irn_n_edges_kind_(irn, kind)
+#define get_edge_src_irn(edge)            get_edge_src_irn_(edge)
+#define get_edge_src_pos(edge)            get_edge_src_pos_(edge)
+#define get_irn_out_edge_next(irn, last)  get_irn_out_edge_next_(irn, last)
+#define get_irn_n_edges(irn)              get_irn_n_edges_kind_(irn, EDGE_KIND_NORMAL)
+#define get_irn_out_edge_first(irn)       get_irn_out_edge_first_kind_(irn, EDGE_KIND_NORMAL)
+#define get_block_succ_first(irn)         get_irn_out_edge_first_kind_(irn, EDGE_KIND_BLOCK)
+#define get_block_succ_next(irn, last)    get_irn_out_edge_next_(irn, last)
 
 /**
  * An edge.
@@ -122,6 +129,12 @@ static inline int edges_activated_kind_(const ir_graph *irg, ir_edge_kind_t kind
 	return get_irg_edge_info_const(irg, kind)->activated;
 }
 
+static inline int edges_activated_(const ir_graph *irg)
+{
+	return edges_activated_kind(irg, EDGE_KIND_NORMAL)
+	    && edges_activated_kind(irg, EDGE_KIND_BLOCK);
+}
+
 /**
  * Assure, that the edges information is present for a certain graph.
  * @param irg The graph.
@@ -183,26 +196,5 @@ void edges_dump_kind(ir_graph *irg, ir_edge_kind_t kind);
  */
 void edges_notify_edge(ir_node *src, int pos, ir_node *tgt,
                        ir_node *old_tgt, ir_graph *irg);
-
-#define get_irn_n_edges_kind(irn, kind)   get_irn_n_edges_kind_(irn, kind)
-#define get_edge_src_irn(edge)            get_edge_src_irn_(edge)
-#define get_edge_src_pos(edge)            get_edge_src_pos_(edge)
-#define get_irn_out_edge_next(irn, last)  get_irn_out_edge_next_(irn, last)
-
-#ifndef get_irn_n_edges
-#define get_irn_n_edges(irn)              get_irn_n_edges_kind_(irn, EDGE_KIND_NORMAL)
-#endif
-
-#ifndef get_irn_out_edge_first
-#define get_irn_out_edge_first(irn)       get_irn_out_edge_first_kind_(irn, EDGE_KIND_NORMAL)
-#endif
-
-#ifndef get_block_succ_first
-#define get_block_succ_first(irn)         get_irn_out_edge_first_kind_(irn, EDGE_KIND_BLOCK)
-#endif
-
-#ifndef get_block_succ_next
-#define get_block_succ_next(irn, last)    get_irn_out_edge_next_(irn, last)
-#endif
 
 #endif

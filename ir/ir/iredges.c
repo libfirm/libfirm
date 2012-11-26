@@ -602,6 +602,11 @@ int (edges_activated_kind)(const ir_graph *irg, ir_edge_kind_t kind)
 	return edges_activated_kind_(irg, kind);
 }
 
+int (edges_activated)(const ir_graph *irg)
+{
+	return edges_activated_(irg);
+}
+
 void edges_reroute_kind(ir_node *from, ir_node *to, ir_edge_kind_t kind)
 {
 	ir_graph *irg = get_irn_irg(from);
@@ -618,6 +623,11 @@ void edges_reroute_kind(ir_node *from, ir_node *to, ir_edge_kind_t kind)
 			set_edge(edge->src, edge->pos, to);
 		}
 	}
+}
+
+void edges_reroute(ir_node *from, ir_node *to)
+{
+	edges_reroute_kind(from, to, EDGE_KIND_NORMAL);
 }
 
 void edges_reroute_except(ir_node *from, ir_node *to, ir_node *exception)
@@ -854,7 +864,7 @@ ir_graph_pass_t *irg_verify_edges_pass(const char *name, unsigned assert_on_prob
 
 void init_edges(void)
 {
-	FIRM_DBG_REGISTER(dbg, DBG_EDGES);
+	FIRM_DBG_REGISTER(dbg, "firm.ir.edges");
 }
 
 void edges_init_dbg(int do_dbg)
@@ -906,6 +916,16 @@ void edges_node_revival(ir_node *irn)
 const ir_edge_t *(get_irn_out_edge_first_kind)(const ir_node *irn, ir_edge_kind_t kind)
 {
 	return get_irn_out_edge_first_kind_(irn, kind);
+}
+
+const ir_edge_t *(get_irn_out_edge_first)(const ir_node *irn)
+{
+	return get_irn_out_edge_first_kind_(irn, EDGE_KIND_NORMAL);
+}
+
+const ir_edge_t *(get_block_succ_first)(const ir_node *block)
+{
+	return get_irn_out_edge_first_kind_(block, EDGE_KIND_BLOCK);
 }
 
 const ir_edge_t *(get_irn_out_edge_next)(const ir_node *irn, const ir_edge_t *last)
