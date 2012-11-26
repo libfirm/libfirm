@@ -485,12 +485,12 @@ static const arch_irn_ops_t ia32_irn_ops = {
 	ia32_perform_memory_operand,
 };
 
-static ir_entity *mcount = NULL;
 static int gprof = 0;
 
 static void ia32_before_abi(ir_graph *irg)
 {
 	if (gprof) {
+		static ir_entity *mcount = NULL;
 		if (mcount == NULL) {
 			ir_type *tp = new_type_method(0, 0);
 			ident   *id = new_id_from_str("mcount");
