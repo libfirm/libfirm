@@ -101,7 +101,6 @@
 #include "irgopt.h"
 #include "irgraph.h"
 #include "irgwalk.h"
-#include "irhooks.h"
 #include "irio.h"
 #include "irloop.h"
 #include "irmemory.h"

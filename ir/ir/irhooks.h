@@ -28,7 +28,6 @@
 #include "irop.h"
 #include "irnode.h"
 #include "irgraph.h"
-#include "begin.h"
 
 /**
  * options for the hook_merge_nodes hook
@@ -221,7 +220,7 @@ typedef enum {
  * @param hook   the hook type
  * @param entry  the hook entry
  */
-FIRM_API void register_hook(hook_type_t hook, hook_entry_t *entry);
+void register_hook(hook_type_t hook, hook_entry_t *entry);
 
 /**
  * unregister a hook entry.
@@ -229,10 +228,10 @@ FIRM_API void register_hook(hook_type_t hook, hook_entry_t *entry);
  * @param hook   the hook type
  * @param entry  the hook entry
  */
-FIRM_API void unregister_hook(hook_type_t hook, hook_entry_t *entry);
+void unregister_hook(hook_type_t hook, hook_entry_t *entry);
 
 /** Global list of registerd hooks. */
-FIRM_API hook_entry_t *hooks[hook_last];
+hook_entry_t *hooks[hook_last];
 
 /**
  * Executes the hook @p what with the args @p args
@@ -309,7 +308,5 @@ FIRM_API hook_entry_t *hooks[hook_last];
 #define hook_new_type(tp)                 hook_exec(hook_new_type, (hook_ctx_, tp))
 /** Called at the end of the node info dumper to dump additional node info. */
 #define hook_node_info(F, node)           hook_exec(hook_node_info, (hook_ctx_, F, node))
-
-#include "end.h"
 
 #endif
