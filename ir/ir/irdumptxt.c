@@ -542,7 +542,6 @@ static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, const char *pref
 			ir_graph *irg = get_entity_irg(ent);
 
 			if (irg) {
-				fprintf(F, "%s  estimated node count: %u\n", prefix, get_irg_estimated_node_cnt(irg));
 				fprintf(F, "%s  maximum node index:   %u\n", prefix, get_irg_last_idx(irg));
 			}
 

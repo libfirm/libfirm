@@ -153,7 +153,7 @@ void edges_init_graph_kind(ir_graph *irg, ir_edge_kind_t kind)
 {
 	if (edges_activated_kind(irg, kind)) {
 		irg_edge_info_t *info = get_irg_edge_info(irg, kind);
-		size_t amount = irg->estimated_node_count * 2;
+		size_t amount = get_irg_last_idx(irg) * 5 / 4;
 
 		edges_used = 1;
 		if (info->allocated) {

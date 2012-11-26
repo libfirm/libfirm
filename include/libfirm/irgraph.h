@@ -485,11 +485,6 @@ FIRM_API void set_irg_loc_description(ir_graph *irg, int n, void *description);
 /** Returns the description for local value n. */
 FIRM_API void *get_irg_loc_description(ir_graph *irg, int n);
 
-/** Returns a estimated node count of the irg. This count is updated
- * after every irg_walk_graph().
- */
-FIRM_API unsigned get_irg_estimated_node_cnt(const ir_graph *irg);
-
 /** Returns the last irn index for this graph. */
 FIRM_API unsigned get_irg_last_idx(const ir_graph *irg);
 

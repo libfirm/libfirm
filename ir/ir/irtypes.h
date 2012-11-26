@@ -560,8 +560,6 @@ struct ir_graph {
 
 	ir_visited_t self_visited;         /**< visited flag of the irg */
 
-	unsigned estimated_node_count;     /**< estimated number of nodes in this graph,
-	                                        updated after every walk */
 	irg_edges_info_t edge_info;        /**< edge info for automatic outs */
 	ir_node **idx_irn_map;             /**< Array mapping node indexes to nodes. */
 

@@ -216,7 +216,6 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 	set_r_cur_block(res, first_block);
 
 	res->method_execution_frequency = -1.0;
-	res->estimated_node_count       = 0;
 
 	return res;
 }
@@ -382,10 +381,6 @@ ir_graph *create_irg_copy(ir_graph *irg)
 
 	/* Proj results of start node */
 	set_irg_initial_mem(res, get_new_node(get_irg_initial_mem(irg)));
-
-	/* Copy the node count estimation. Would be strange if this
-	   is different from the original one. */
-	res->estimated_node_count = irg->estimated_node_count;
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	irp_free_resources(irp, IRP_RESOURCE_ENTITY_LINK);
@@ -702,11 +697,6 @@ ir_resources_t ir_resources_reserved(const ir_graph *irg)
 	return irg->reserved_resources;
 }
 #endif
-
-unsigned (get_irg_estimated_node_cnt)(const ir_graph *irg)
-{
-	return get_irg_estimated_node_cnt_(irg);
-}
 
 unsigned get_irg_last_idx(const ir_graph *irg)
 {

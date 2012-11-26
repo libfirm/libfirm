@@ -251,8 +251,8 @@ FIRM_API void irg_walk_anchors(ir_graph *irg, irg_walk_func *pre,
  * Walker function which does not increase the visited flag before walking.
  * Do not use this unless you know what you are doing.
  */
-unsigned irg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
-                    void *env);
+FIRM_API void irg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
+                         void *env);
 
 /** @} */
 
