@@ -213,6 +213,8 @@ void be_set_constr_out(ir_node *node, int pos, const arch_register_req_t *req)
  */
 static void init_node_attr(ir_node *node, int n_inputs, int n_outputs)
 {
+	assert(n_outputs >= 0);
+
 	ir_graph       *irg  = get_irn_irg(node);
 	struct obstack *obst = be_get_be_obst(irg);
 	backend_info_t *info = be_get_info(node);
@@ -230,15 +232,10 @@ static void init_node_attr(ir_node *node, int n_inputs, int n_outputs)
 	}
 	info->in_reqs = in_reqs;
 
-	if (n_outputs >= 0) {
-		int i;
-		info->out_infos = NEW_ARR_D(reg_out_info_t, obst, n_outputs);
-		memset(info->out_infos, 0, n_outputs * sizeof(info->out_infos[0]));
-		for (i = 0; i < n_outputs; ++i) {
-			info->out_infos[i].req = arch_no_register_req;
-		}
-	} else {
-		info->out_infos = NEW_ARR_F(reg_out_info_t, 0);
+	info->out_infos = NEW_ARR_D(reg_out_info_t, obst, n_outputs);
+	memset(info->out_infos, 0, n_outputs * sizeof(info->out_infos[0]));
+	for (int i = 0; i < n_outputs; ++i) {
+		info->out_infos[i].req = arch_no_register_req;
 	}
 }
 
@@ -1228,20 +1225,8 @@ static void copy_attr(ir_graph *irg, const ir_node *old_node, ir_node *new_node)
 
 	memcpy(new_attr, old_attr, get_op_attr_size(get_irn_op(old_node)));
 
-	new_info->flags = old_info->flags;
-	if (old_info->out_infos != NULL) {
-		size_t n_outs = ARR_LEN(old_info->out_infos);
-		/* need dyanmic out infos? */
-		if (be_is_Perm(new_node)) {
-			new_info->out_infos = NEW_ARR_F(reg_out_info_t, n_outs);
-		} else {
-			new_info->out_infos = NEW_ARR_D(reg_out_info_t, obst, n_outs);
-		}
-		memcpy(new_info->out_infos, old_info->out_infos,
-			   n_outs * sizeof(new_info->out_infos[0]));
-	} else {
-		new_info->out_infos = NULL;
-	}
+	new_info->flags     = old_info->flags;
+	new_info->out_infos = old_info->out_infos ? DUP_ARR_D(reg_out_info_t, obst, old_info->out_infos) : NULL;
 
 	/* input infos */
 	if (old_info->in_reqs != NULL) {
