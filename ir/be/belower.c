@@ -507,7 +507,8 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	ir_node                     *keep, *cpy;
 	op_copy_assoc_t             *entry;
 
-	if (arch_irn_is_ignore(other_different) ||
+	arch_register_req_t const *const req = arch_get_irn_register_req(other_different);
+	if (arch_register_req_is(req, ignore) ||
 			!mode_is_datab(get_irn_mode(other_different))) {
 		DB((dbg_constr, LEVEL_1, "ignore constraint for %+F because other_irn is ignore or not a datab node\n", irn));
 		return;
@@ -515,7 +516,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 
 	op_set = &env->op_set;
 	block  = get_nodes_block(irn);
-	cls    = arch_get_irn_reg_class(other_different);
+	cls    = req->cls;
 
 	/* Make a not spillable copy of the different node   */
 	/* this is needed because the different irn could be */

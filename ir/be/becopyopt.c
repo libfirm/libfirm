@@ -241,15 +241,13 @@ void free_copy_opt(copy_opt_t *co)
  */
 static int co_is_optimizable_root(ir_node *irn)
 {
-	const arch_register_req_t *req;
-
-	if (arch_irn_is_ignore(irn))
+	arch_register_req_t const *const req = arch_get_irn_register_req(irn);
+	if (arch_register_req_is(req, ignore))
 		return 0;
 
 	if (is_Reg_Phi(irn) || is_Perm_Proj(irn))
 		return 1;
 
-	req = arch_get_irn_register_req(irn);
 	if (arch_register_req_is(req, should_be_same))
 		return 1;
 
@@ -817,7 +815,7 @@ static void build_graph_walker(ir_node *irn, void *env)
 	if (get_irn_mode(irn) == mode_T)
 		return;
 	req = arch_get_irn_register_req(irn);
-	if (req->cls != co->cls || arch_irn_is_ignore(irn))
+	if (req->cls != co->cls || arch_register_req_is(req, ignore))
 		return;
 
 	if (is_Reg_Phi(irn)) { /* Phis */
@@ -940,35 +938,36 @@ static void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 	fprintf(f, "%d %d\n", n, n_regs);
 
 	be_ifg_foreach_node(ifg, &it, irn) {
-		if (!arch_irn_is_ignore(irn)) {
-			int idx                        = node_map[get_irn_idx(irn)];
-			affinity_node_t           *a   = get_affinity_info(co, irn);
-			const arch_register_req_t *req = arch_get_irn_register_req(irn);
-			ir_node                   *adj;
+		arch_register_req_t const *const req = arch_get_irn_register_req(irn);
+		if (arch_register_req_is(req, ignore))
+			continue;
 
-			if (arch_register_req_is(req, limited)) {
-				for (i = 0; i < co->cls->n_regs; ++i) {
-					if (!rbitset_is_set(req->limited, i) && color_map[i] >= 0)
-						fprintf(f, "%d %d -1\n", color_map[i], idx);
-				}
+		int              idx = node_map[get_irn_idx(irn)];
+		affinity_node_t *a   = get_affinity_info(co, irn);
+		ir_node         *adj;
+
+		if (arch_register_req_is(req, limited)) {
+			for (i = 0; i < co->cls->n_regs; ++i) {
+				if (!rbitset_is_set(req->limited, i) && color_map[i] >= 0)
+					fprintf(f, "%d %d -1\n", color_map[i], idx);
 			}
+		}
 
-			be_ifg_foreach_neighbour(ifg, &nit, irn, adj) {
-				if (!arch_irn_is_ignore(adj) &&
-						!co_dump_appel_disjoint_constraints(co, irn, adj)) {
-					int adj_idx = node_map[get_irn_idx(adj)];
-					if (idx < adj_idx)
-						fprintf(f, "%d %d -1\n", idx, adj_idx);
-				}
+		be_ifg_foreach_neighbour(ifg, &nit, irn, adj) {
+			if (!arch_irn_is_ignore(adj) &&
+					!co_dump_appel_disjoint_constraints(co, irn, adj)) {
+				int adj_idx = node_map[get_irn_idx(adj)];
+				if (idx < adj_idx)
+					fprintf(f, "%d %d -1\n", idx, adj_idx);
 			}
+		}
 
-			if (a) {
-				co_gs_foreach_neighb(a, n) {
-					if (!arch_irn_is_ignore(n->irn)) {
-						int n_idx = node_map[get_irn_idx(n->irn)];
-						if (idx < n_idx)
-							fprintf(f, "%d %d %d\n", idx, n_idx, (int) n->costs);
-					}
+		if (a) {
+			co_gs_foreach_neighb(a, n) {
+				if (!arch_irn_is_ignore(n->irn)) {
+					int n_idx = node_map[get_irn_idx(n->irn)];
+					if (idx < n_idx)
+						fprintf(f, "%d %d %d\n", idx, n_idx, (int) n->costs);
 				}
 			}
 		}
