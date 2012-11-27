@@ -195,8 +195,6 @@ static int normal_tree_cost(ir_node* irn, instance_t *inst)
 		mode = get_irn_mode(op);
 		if (mode == mode_M)
 			continue;
-		if (arch_get_irn_flags(op) & arch_irn_flags_not_scheduled)
-			continue;
 		if (mode != mode_T && arch_irn_is_ignore(op))
 			continue;
 		cost = MAX(fc->costs[i].cost + n_op_res, cost);
