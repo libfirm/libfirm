@@ -186,9 +186,8 @@ static int Call_cmp_attr(const ir_node *a, const ir_node *b)
 	return be_nodes_equal(a, b);
 }
 
-static arch_register_req_t *allocate_reg_req(const ir_node *node)
+static arch_register_req_t *allocate_reg_req(ir_graph *const irg)
 {
-	ir_graph       *irg  = get_irn_irg(node);
 	struct obstack *obst = be_get_be_obst(irg);
 
 	arch_register_req_t *req = OALLOCZ(obst, arch_register_req_t);
@@ -339,7 +338,7 @@ ir_node *be_new_Perm(const arch_register_class_t *cls, ir_node *block,
 			be_set_constr_in(irn, i, cls->class_req);
 			be_set_constr_out(irn, i, cls->class_req);
 		} else {
-			arch_register_req_t *new_req = allocate_reg_req(irn);
+			arch_register_req_t *const new_req = allocate_reg_req(irg);
 			new_req->cls   = cls;
 			new_req->type  = (req->type & arch_register_req_type_aligned);
 			new_req->width = req->width;
@@ -411,7 +410,6 @@ ir_node *be_new_Copy(ir_node *bl, ir_node *op)
 {
 	ir_node *in[1];
 	ir_node *res;
-	arch_register_req_t *req;
 	be_node_attr_t *attr;
 	ir_graph *irg = get_Block_irg(bl);
 	const arch_register_req_t   *in_req = arch_get_irn_register_req(op);
@@ -425,7 +423,7 @@ ir_node *be_new_Copy(ir_node *bl, ir_node *op)
 	be_node_set_reg_class_in(res, 0, cls);
 	be_node_set_reg_class_out(res, 0, cls);
 
-	req = allocate_reg_req(res);
+	arch_register_req_t *const req = allocate_reg_req(irg);
 	req->cls        = cls;
 	req->type       = arch_register_req_type_should_be_same
 		| (in_req->type & arch_register_req_type_aligned);
