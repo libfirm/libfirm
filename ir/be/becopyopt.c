@@ -250,7 +250,7 @@ static int co_is_optimizable_root(ir_node *irn)
 		return 1;
 
 	req = arch_get_irn_register_req(irn);
-	if (is_2addr_code(req))
+	if (arch_register_req_is(req, should_be_same))
 		return 1;
 
 	return 0;
@@ -488,47 +488,45 @@ static void co_collect_units(ir_node *irn, void *env)
 		unit->nodes[0] = irn;
 		unit->nodes[1] = get_Perm_src(irn);
 		unit->costs[1] = co->get_costs(irn, -1);
-	} else {
+	} else if (arch_register_req_is(req, should_be_same)) {
 		/* Src == Tgt of a 2-addr-code instruction */
-		if (is_2addr_code(req)) {
-			const unsigned other = req->other_same;
-			int            count = 0;
-			int            i;
+		const unsigned other = req->other_same;
+		int            count = 0;
+		int            i;
 
-			for (i = 0; (1U << i) <= other; ++i) {
+		for (i = 0; (1U << i) <= other; ++i) {
+			if (other & (1U << i)) {
+				ir_node *o  = get_irn_n(skip_Proj(irn), i);
+				if (arch_irn_is_ignore(o))
+					continue;
+				if (nodes_interfere(co->cenv, irn, o))
+					continue;
+				++count;
+			}
+		}
+
+		if (count != 0) {
+			int k = 0;
+			++count;
+			unit->nodes = XMALLOCN(ir_node*, count);
+			unit->costs = XMALLOCN(int,      count);
+			unit->node_count = count;
+			unit->nodes[k++] = irn;
+
+			for (i = 0; 1U << i <= other; ++i) {
 				if (other & (1U << i)) {
 					ir_node *o  = get_irn_n(skip_Proj(irn), i);
-					if (arch_irn_is_ignore(o))
-						continue;
-					if (nodes_interfere(co->cenv, irn, o))
-						continue;
-					++count;
-				}
-			}
-
-			if (count != 0) {
-				int k = 0;
-				++count;
-				unit->nodes = XMALLOCN(ir_node*, count);
-				unit->costs = XMALLOCN(int,      count);
-				unit->node_count = count;
-				unit->nodes[k++] = irn;
-
-				for (i = 0; 1U << i <= other; ++i) {
-					if (other & (1U << i)) {
-						ir_node *o  = get_irn_n(skip_Proj(irn), i);
-						if (!arch_irn_is_ignore(o) &&
-								!nodes_interfere(co->cenv, irn, o)) {
-							unit->nodes[k] = o;
-							unit->costs[k] = co->get_costs(irn, -1);
-							++k;
-						}
+					if (!arch_irn_is_ignore(o) &&
+							!nodes_interfere(co->cenv, irn, o)) {
+						unit->nodes[k] = o;
+						unit->costs[k] = co->get_costs(irn, -1);
+						++k;
 					}
 				}
 			}
-		} else {
-			assert(0 && "This is not an optimizable node!");
 		}
+	} else {
+		assert(0 && "This is not an optimizable node!");
 	}
 
 	/* Insert the new unit at a position according to its costs */
@@ -830,17 +828,15 @@ static void build_graph_walker(ir_node *irn, void *env)
 	} else if (is_Perm_Proj(irn)) { /* Perms */
 		ir_node *arg = get_Perm_src(irn);
 		add_edges(co, irn, arg, co->get_costs(irn, -1));
-	} else { /* 2-address code */
-		if (is_2addr_code(req)) {
-			const unsigned other = req->other_same;
-			int i;
+	} else if (arch_register_req_is(req, should_be_same)) {
+		const unsigned other = req->other_same;
+		int i;
 
-			for (i = 0; 1U << i <= other; ++i) {
-				if (other & (1U << i)) {
-					ir_node *other = get_irn_n(skip_Proj(irn), i);
-					if (!arch_irn_is_ignore(other))
-						add_edges(co, irn, other, co->get_costs(irn, -1));
-				}
+		for (i = 0; 1U << i <= other; ++i) {
+			if (other & (1U << i)) {
+				ir_node *other = get_irn_n(skip_Proj(irn), i);
+				if (!arch_irn_is_ignore(other))
+					add_edges(co, irn, other, co->get_costs(irn, -1));
 			}
 		}
 	}

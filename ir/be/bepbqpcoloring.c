@@ -101,11 +101,6 @@ typedef struct be_pbqp_alloc_env_t {
 #define insert_edge(pbqp, src_node, trg_node, template_matrix) (add_edge_costs(pbqp, get_irn_idx(src_node), get_irn_idx(trg_node), pbqp_matrix_copy(pbqp, template_matrix)))
 #define get_free_regs(restr_nodes, cls, irn)                   (arch_register_class_n_regs(cls) - restr_nodes[get_irn_idx(irn)])
 
-static inline int is_2addr_code(const arch_register_req_t *req)
-{
-	return (req->type & arch_register_req_type_should_be_same) != 0;
-}
-
 static const lc_opt_table_entry_t options[] = {
 	LC_OPT_ENT_BOOL("exec_freq", "use exec_freq",  &use_exec_freq),
 	LC_OPT_ENT_BOOL("late_decision", "use late decision for register allocation",  &use_late_decision),
@@ -286,25 +281,22 @@ static void create_affinity_edges(ir_node *irn, void *env)
 			return;
 
 		insert_afe_edge(pbqp_alloc_env, irn, arg, -1);
-	}
-	else { /* 2-address code */
-		if (is_2addr_code(req)) {
-			const unsigned other = req->other_same;
-			int            i;
+	} else if (arch_register_req_is(req, should_be_same)) {
+		const unsigned other = req->other_same;
+		int            i;
 
-			for (i = 0; 1U << i <= other; ++i) {
-				if (other & (1U << i)) {
-					ir_node *other = get_irn_n(skip_Proj(irn), i);
-					if (!arch_irn_consider_in_reg_alloc(cls, other))
-						continue;
+		for (i = 0; 1U << i <= other; ++i) {
+			if (other & (1U << i)) {
+				ir_node *other = get_irn_n(skip_Proj(irn), i);
+				if (!arch_irn_consider_in_reg_alloc(cls, other))
+					continue;
 
-					/* no edges to itself */
-					if (irn == other) {
-						continue;
-					}
-
-					insert_afe_edge(pbqp_alloc_env, irn, other, i);
+				/* no edges to itself */
+				if (irn == other) {
+					continue;
 				}
+
+				insert_afe_edge(pbqp_alloc_env, irn, other, i);
 			}
 		}
 	}

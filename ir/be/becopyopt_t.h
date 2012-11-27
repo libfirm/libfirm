@@ -76,11 +76,6 @@ static inline void set_irn_col(const arch_register_class_t *cls, ir_node *node,
 #define get_Perm_src(irn) (get_irn_n(get_Proj_pred(irn), get_Proj_proj(irn)))
 #define is_Perm_Proj(irn) (is_Proj(irn) && be_is_Perm(get_Proj_pred(irn)))
 
-static inline int is_2addr_code(const arch_register_req_t *req)
-{
-	return (req->type & arch_register_req_type_should_be_same) != 0;
-}
-
 /******************************************************************************
    ____        _   _    _       _ _          _____ _
   / __ \      | | | |  | |     (_) |        / ____| |
