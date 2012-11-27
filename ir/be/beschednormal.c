@@ -49,7 +49,7 @@ typedef struct instance_t {
 
 static int must_be_scheduled(const ir_node* const irn)
 {
-	return !is_Proj(irn) && !is_Sync(irn);
+	return !is_Proj(irn) && !arch_irn_is(irn, not_scheduled);
 }
 
 
@@ -158,7 +158,7 @@ static int normal_tree_cost(ir_node* irn, instance_t *inst)
 		for (i = 0; i < arity; ++i) {
 			ir_node* pred = get_irn_n(irn, i);
 
-			if (is_Phi(irn) || get_irn_mode(pred) == mode_M || is_Block(pred)) {
+			if (is_Phi(irn) || get_irn_mode(pred) == mode_M) {
 				cost = 0;
 			} else if (get_nodes_block(pred) != block) {
 				cost = 1;
@@ -195,7 +195,7 @@ static int normal_tree_cost(ir_node* irn, instance_t *inst)
 		mode = get_irn_mode(op);
 		if (mode == mode_M)
 			continue;
-		if (mode != mode_T && arch_irn_is_ignore(op))
+		if (arch_irn_is_ignore(op))
 			continue;
 		cost = MAX(fc->costs[i].cost + n_op_res, cost);
 		last = op;
@@ -219,7 +219,11 @@ static void normal_cost_walker(ir_node* irn, void* env)
 #if defined NORMAL_DBG
 	ir_fprintf(stderr, "cost walking node %+F\n", irn);
 #endif
-	if (is_Block(irn)) return;
+	if (is_Block(irn)) {
+		ir_node **const roots = NEW_ARR_F(ir_node*, 0);
+		set_irn_link(irn, roots);
+		return;
+	}
 	if (!must_be_scheduled(irn)) return;
 	normal_tree_cost(irn, inst);
 }
@@ -231,7 +235,6 @@ static void collect_roots(ir_node* irn, void* env)
 
 	(void)env;
 
-	if (is_Block(irn)) return;
 	if (!must_be_scheduled(irn)) return;
 
 	is_root = be_is_Keep(irn) || !get_irn_fc(irn)->no_root;
@@ -243,9 +246,6 @@ static void collect_roots(ir_node* irn, void* env)
 	if (is_root) {
 		ir_node* block = get_nodes_block(irn);
 		ir_node** roots = (ir_node**)get_irn_link(block);
-		if (roots == NULL) {
-			roots = NEW_ARR_F(ir_node*, 0);
-		}
 		ARR_APP1(ir_node*, roots, irn);
 		set_irn_link(block, roots);
 	}
@@ -255,7 +255,6 @@ static void collect_roots(ir_node* irn, void* env)
 static ir_node** sched_node(ir_node** sched, ir_node* irn)
 {
 	if (irn_visited_else_mark(irn)) return sched;
-	if (is_End(irn))                return sched;
 
 	if (!is_Phi(irn) && !be_is_Keep(irn)) {
 		ir_node*       block = get_nodes_block(irn);
@@ -309,7 +308,6 @@ static void normal_sched_block(ir_node* block, void* env)
 {
 	ir_node**      roots = (ir_node**)get_irn_link(block);
 	ir_heights_t*  heights = (ir_heights_t*)env;
-	int            root_count;
 	irn_cost_pair* root_costs;
 	int i;
 	ir_node**      sched;
@@ -318,14 +316,14 @@ static void normal_sched_block(ir_node* block, void* env)
 	ir_fprintf(stderr, "sched walking block %+F\n", block);
 #endif
 
-	if (roots == NULL) {
+	int const root_count = ARR_LEN(roots);
+	if (root_count == 0) {
 #if defined NORMAL_DBG
 		fprintf(stderr, "has no roots\n");
 #endif
 		return;
 	}
 
-	root_count = ARR_LEN(roots);
 	NEW_ARR_A(irn_cost_pair, root_costs, root_count);
 	for (i = 0; i < root_count; ++i) {
 		root_costs[i].irn  = roots[i];
