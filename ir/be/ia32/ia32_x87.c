@@ -607,12 +607,8 @@ static fp_liveness fp_liveness_end_of_block(x87_simulator *sim, const ir_node *b
 	const arch_register_class_t *cls = &ia32_reg_classes[CLASS_ia32_fp];
 	const be_lv_t *lv = sim->lv;
 
-	be_lv_foreach(lv, block, be_lv_state_end, node) {
-		const arch_register_t *reg;
-		if (!arch_irn_consider_in_reg_alloc(cls, node))
-			continue;
-
-		reg = x87_get_irn_register(node);
+	be_lv_foreach_cls(lv, block, be_lv_state_end, cls, node) {
+		const arch_register_t *reg = x87_get_irn_register(node);
 		live |= 1 << reg->index;
 	}
 

@@ -603,9 +603,8 @@ static void decide_start_workset(const ir_node *block)
 	}
 
 	/* check all Live-Ins */
-	be_lv_foreach(lv, block, be_lv_state_in, node) {
+	be_lv_foreach_cls(lv, block, be_lv_state_in, cls, node) {
 		unsigned available;
-
 		if (all_preds_known) {
 			available = available_in_all_preds(pred_worksets, arity, node, false);
 		} else {

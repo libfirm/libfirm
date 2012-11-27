@@ -128,12 +128,10 @@ void create_borders(ir_node *block, void *env_ptr)
 	 * Make final uses of all values live out of the block.
 	 * They are necessary to build up real intervals.
 	 */
-	be_lv_foreach(lv, block, be_lv_state_end, irn) {
-		if (arch_irn_consider_in_reg_alloc(env->cls, irn)) {
-			DBG((dbg, LEVEL_3, "\tMaking live: %+F/%d\n", irn, get_irn_idx(irn)));
-			bitset_set(live, get_irn_idx(irn));
-			border_use(irn, step, 0);
-		}
+	be_lv_foreach_cls(lv, block, be_lv_state_end, env->cls, irn) {
+		DB((dbg, LEVEL_3, "\tMaking live: %+F/%d\n", irn, get_irn_idx(irn)));
+		bitset_set(live, get_irn_idx(irn));
+		border_use(irn, step, 0);
 	}
 	++step;
 

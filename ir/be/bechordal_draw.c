@@ -359,21 +359,19 @@ static void draw_block(ir_node *bl, void *data)
 	if (dom) {
 		struct block_dims *dom_dims = pmap_get(struct block_dims, env->block_dims, dom);
 
-		be_lv_foreach(lv, bl, be_lv_state_in, irn) {
-			if (arch_irn_consider_in_reg_alloc(env->cls, irn)) {
-				const arch_register_t *reg = arch_get_irn_register(irn);
-				int                    x   = (reg->index + 1) * opts->h_inter_gap;
-				color_t                color;
+		be_lv_foreach_cls(lv, bl, be_lv_state_in, env->cls, irn) {
+			const arch_register_t *reg = arch_get_irn_register(irn);
+			int                    x   = (reg->index + 1) * opts->h_inter_gap;
+			color_t                color;
 
-				reg_to_color(env, bl, irn, &color);
+			reg_to_color(env, bl, irn, &color);
 
-				env->plotter->vtab->set_color(env->plotter, &color);
-				env->plotter->vtab->line(env->plotter,
-					dims->box.x + x,
-					dims->box.y + dims->box.h,
-					dom_dims->box.x + x,
-					dom_dims->box.y);
-			}
+			env->plotter->vtab->set_color(env->plotter, &color);
+			env->plotter->vtab->line(env->plotter,
+				dims->box.x + x,
+				dims->box.y + dims->box.h,
+				dom_dims->box.x + x,
+				dom_dims->box.y);
 		}
 	}
 }

@@ -315,16 +315,14 @@ static void assign(ir_node *const block, void *const env_ptr)
 	/* Add initial defs for all values live in.
 	 * Since their colors have already been assigned (The dominators were
 	 * allocated before), we have to mark their colors as used also. */
-	be_lv_foreach(lv, block, be_lv_state_in, irn) {
-		if (arch_irn_consider_in_reg_alloc(env->cls, irn)) {
-			arch_register_t const *const reg = arch_get_irn_register(irn);
+	be_lv_foreach_cls(lv, block, be_lv_state_in, env->cls, irn) {
+		arch_register_t const *const reg = arch_get_irn_register(irn);
 
-			assert(reg && "Node must have been assigned a register");
-			DBG((dbg, LEVEL_4, "%+F has reg %s\n", irn, reg->name));
+		assert(reg && "Node must have been assigned a register");
+		DBG((dbg, LEVEL_4, "%+F has reg %s\n", irn, reg->name));
 
-			/* Mark the color of the live in value as used. */
-			bitset_clear(available, reg->index);
-		}
+		/* Mark the color of the live in value as used. */
+		bitset_clear(available, reg->index);
 	}
 
 	/* Mind that the sequence of defs from back to front defines a perfect
