@@ -704,9 +704,8 @@ static void value_used(const ir_node *block, const ir_node *node)
 	for (unsigned i = 0; i < req->width; ++i) {
 		const ir_node *reg_node = registers[idx+i];
 		if (reg_node != NULL && reg_node != node) {
-			const arch_register_t *realreg = &arch_env->registers[idx+i];
 			ir_fprintf(stderr, "Verify warning: Register %s assigned more than once in block %+F(%s) (nodes %+F %+F)\n",
-					   realreg->name, block, get_irg_name(irg),
+					   reg->name, block, get_irg_name(irg),
 					   node, reg_node);
 			problem_found = true;
 		}
@@ -733,9 +732,8 @@ static void value_def(const ir_node *node)
 			return;
 
 		if (reg_node != node) {
-			const arch_register_t *realreg = &arch_env->registers[idx+i];
 			ir_fprintf(stderr, "Verify warning: Node %+F not registered as value for Register %s (but %+F) in block %+F(%s)\n",
-			           node, realreg->name, reg_node, get_nodes_block(node),
+			           node, reg->name, reg_node, get_nodes_block(node),
 			           get_irg_name(irg));
 			problem_found = true;
 		}
