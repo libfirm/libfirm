@@ -765,55 +765,45 @@ ir_node *ia32_gen_Unknown(ir_node *node)
 	return res;
 }
 
-static arch_register_req_t const *ia32_make_register_req(constraint_t const *const constraint, int const n_outs, arch_register_req_t const **const out_reqs, int const pos)
+static arch_register_req_t const *ia32_make_register_req(constraint_t const *const c, int const n_outs, arch_register_req_t const **const out_reqs, int const pos)
 {
-	struct obstack      *obst    = get_irg_obstack(current_ir_graph);
-	int                  same_as = constraint->same_as;
-	arch_register_req_t *req;
-
+	int const same_as = c->same_as;
 	if (same_as >= 0) {
-		const arch_register_req_t *other_constr;
-
 		if (same_as >= n_outs)
 			panic("invalid output number in same_as constraint");
 
-		other_constr     = out_reqs[same_as];
+		struct obstack            *const obst  = get_irg_obstack(current_ir_graph);
+		arch_register_req_t       *const req   = OALLOC(obst, arch_register_req_t);
+		arch_register_req_t const *const other = out_reqs[same_as];
+		*req            = *other;
+		req->type      |= arch_register_req_type_should_be_same;
+		req->other_same = 1U << pos;
 
-		req              = OALLOC(obst, arch_register_req_t);
-		*req             = *other_constr;
-		req->type       |= arch_register_req_type_should_be_same;
-		req->other_same  = 1U << pos;
-		req->width       = 1;
-
-		/* switch constraints. This is because in firm we have same_as
+		/* Switch constraints. This is because in firm we have same_as
 		 * constraints on the output constraints while in the gcc asm syntax
-		 * they are specified on the input constraints */
+		 * they are specified on the input constraints. */
 		out_reqs[same_as] = req;
-		return other_constr;
+		return other;
 	}
 
-	/* pure memory ops */
-	if (constraint->cls == NULL) {
+	/* Pure memory ops. */
+	if (!c->cls)
 		return arch_no_register_req;
-	}
 
-	if (constraint->allowed_registers != 0
-			&& !constraint->all_registers_allowed) {
-		unsigned *limited_ptr;
+	if (c->allowed_registers == 0 || c->all_registers_allowed)
+		return c->cls->class_req;
 
-		req         = (arch_register_req_t*)obstack_alloc(obst, sizeof(req[0]) + sizeof(unsigned));
-		memset(req, 0, sizeof(req[0]));
-		limited_ptr = (unsigned*) (req+1);
+	struct obstack      *const obst    = get_irg_obstack(current_ir_graph);
+	arch_register_req_t *const req     = (arch_register_req_t*)obstack_alloc(obst, sizeof(req[0]) + sizeof(unsigned));
+	unsigned            *const limited = (unsigned*)(req + 1);
+	*limited = c->allowed_registers;
 
-		req->type    = arch_register_req_type_limited;
-		*limited_ptr = constraint->allowed_registers;
-		req->limited = limited_ptr;
-		req->cls     = constraint->cls;
-		req->width   = 1;
-		return req;
-	} else {
-		return constraint->cls->class_req;
-	}
+	memset(req, 0, sizeof(req[0]));
+	req->type    = arch_register_req_type_limited;
+	req->cls     = c->cls;
+	req->limited = limited;
+	req->width   = 1;
+	return req;
 }
 
 const arch_register_req_t *ia32_parse_clobber(const char *clobber)
