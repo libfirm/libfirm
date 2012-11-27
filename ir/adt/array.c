@@ -46,7 +46,7 @@
 /**
  * An empty dynamic array descriptor.
  */
-ir_arr_descr arr_mt_descr = { ARR_D_MAGIC, 0, { 0 }, 0,  { { 0 } } };
+ir_arr_descr arr_mt_descr = { ARR_D_MAGIC, 0, 0, 0,  { { 0 } } };
 
 void ir_verify_arr(const void *arr)
 {
@@ -54,7 +54,7 @@ void ir_verify_arr(const void *arr)
 	ir_arr_descr *descr = ARR_DESCR(arr);
 	assert(descr->magic == ARR_D_MAGIC || descr->magic == ARR_A_MAGIC
 			 || descr->magic == ARR_F_MAGIC);
-	assert(descr->magic != ARR_F_MAGIC || descr->u.allocated >= descr->nelts);
+	assert(descr->magic != ARR_F_MAGIC || descr->allocated >= descr->nelts);
 #else
 	(void) arr;
 #endif
@@ -80,8 +80,7 @@ void *ir_new_arr_d(struct obstack *obstack, size_t nelts, size_t elts_size)
 
 	dp = (ir_arr_descr*)obstack_alloc(obstack, ARR_ELTS_OFFS + elts_size);
 	ARR_SET_DBGINF(dp, ARR_D_MAGIC, elts_size/nelts);
-	dp->u.obstack = obstack;
-	dp->nelts = nelts;
+	dp->allocated = dp->nelts = nelts;
 	return dp->elts;
 }
 
@@ -102,7 +101,7 @@ void *ir_new_arr_f(size_t nelts, size_t elts_size)
 
 	newa = (ir_arr_descr*)xmalloc(ARR_ELTS_OFFS+elts_size);
 	ARR_SET_DBGINF(newa, ARR_F_MAGIC, nelts ? elts_size/nelts : 0);
-	newa->u.allocated = newa->nelts = nelts;
+	newa->allocated = newa->nelts = nelts;
 	return newa->elts;
 }
 
@@ -147,7 +146,7 @@ void *ir_arr_setlen (void *elts, size_t nelts, size_t elts_size)
 	assert(!dp->eltsize || !nelts || (dp->eltsize == elts_size/nelts));
 
 	dp = (ir_arr_descr*) xrealloc(dp, ARR_ELTS_OFFS+elts_size);
-	dp->u.allocated = dp->nelts = nelts;
+	dp->allocated = dp->nelts = nelts;
 
 	return dp->elts;
 }
@@ -175,14 +174,14 @@ void *ir_arr_resize(void *elts, size_t nelts, size_t eltsize)
 	assert(dp->eltsize ? dp->eltsize == eltsize : (dp->eltsize = eltsize, 1));
 
 	/* @@@ lots of resizes for small nelts */
-	n = MAX(1, dp->u.allocated);
+	n = MAX(1, dp->allocated);
 	while (nelts > n) n <<= 1;
 	while (3*nelts < n) n >>= 1;
 	assert(n >= nelts);
 
-	if (n != dp->u.allocated) {
+	if (n != dp->allocated) {
 		dp = (ir_arr_descr*) xrealloc(dp, ARR_ELTS_OFFS+eltsize*n);
-		dp->u.allocated = n;
+		dp->allocated = n;
 	}
 	dp->nelts = nelts;
 

@@ -237,10 +237,7 @@ typedef union {
 typedef struct {
 	int magic;                    /**< array magic. */
 	size_t eltsize;               /**< size of array elements. */
-	union {
-		struct obstack *obstack;  /**< for obstack array: the obstack. */
-		size_t allocated;         /**< number of allocated elements. */
-	} u;
+	size_t allocated;         /**< number of allocated elements. */
 	size_t nelts;                 /**< current length of the array. */
 	aligned_type elts[1];         /**< start of the array data. */
 } ir_arr_descr;
