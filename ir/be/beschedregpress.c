@@ -185,12 +185,7 @@ static void *reg_pressure_block_init(void *graph_env, ir_node *bl)
 	* Collect usage statistics.
 	*/
 	sched_foreach(bl, irn) {
-		int i, n;
-		if (is_Proj(irn)
-				|| (arch_get_irn_flags(irn) & arch_irn_flags_not_scheduled))
-			continue;
-
-		for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
+		for (int i = 0, n = get_irn_arity(irn); i < n; ++i) {
 			usage_stats_t *us = get_or_set_usage_stats(env, irn);
 #if 0 /* Liveness is not computed here! */
 			if (is_live_end(bl, op))
