@@ -56,31 +56,6 @@ sub map_flags {
 	return join(" | ", map { "$prefix$_" } split(/\s*\|\s*/, $flags));
 }
 
-sub translate_reg_type {
-	my $t = shift;
-
-	if ($t == 0) {
-		return "arch_register_type_none";
-	}
-	else {
-		my @types;
-
-		if ($t & 1) {
-			push(@types, "arch_register_type_ignore");
-		}
-
-		if ($t & 2) {
-			push(@types, "arch_register_type_virtual");
-		}
-
-		if ($t & 4) {
-			push(@types, "arch_register_type_state");
-		}
-
-		return join(" | ", @types);
-	}
-}
-
 # stacks for output
 my $regtypes_def; # stack for the register type variables definitions
 my $regtypes_decl;# stack for the register type variables declarations
@@ -184,8 +159,7 @@ EOF
 	foreach (@class) {
 		my $name   = $_->{"name"};
 		my $ucname = uc($name);
-		my $type   = "arch_register_type_none";
-		$type = translate_reg_type($_->{"type"}) if (exists($_->{"type"}));
+		my $type   = map_flags("arch_register_type_", $_->{"type"});
 		# realname is name if not set by user
 		$_->{"realname"} = $_->{"name"} if (! exists($_->{"realname"}));
 		my $realname = $_->{realname};

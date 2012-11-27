@@ -9,7 +9,7 @@ $arch = "amd64";
 		{ name => "rdi", dwarf => 5 },
 		{ name => "rbx", dwarf => 3 },
 		{ name => "rbp", dwarf => 6 },
-		{ name => "rsp", dwarf => 7, type => $ignore }, # stackpointer?
+		{ name => "rsp", dwarf => 7, type => "ignore" }, # stackpointer
 		{ name => "r8",  dwarf => 8 },
 		{ name => "r9",  dwarf => 9 },
 		{ name => "r10", dwarf => 10 },
@@ -18,7 +18,7 @@ $arch = "amd64";
 		{ name => "r13", dwarf => 13 },
 		{ name => "r14", dwarf => 14 },
 		{ name => "r15", dwarf => 15 },
-#		{ name => "gp_NOREG", type => $ignore }, # we need a dummy register for NoReg nodes
+#		{ name => "gp_NOREG", type => "ignore" }, # we need a dummy register for NoReg nodes
 		{ mode => "mode_Lu" }
 	],
 #	fp => [
