@@ -127,13 +127,12 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 
 		case dump_node_nodeattr_txt:
 			if (! is_ia32_Lea(n)) {
-				if (is_ia32_AddrModeS(n)) {
-					fprintf(F, "[AM S] ");
-				} else if (is_ia32_AddrModeD(n)) {
-					fprintf(F, "[AM D] ");
+				switch (get_ia32_op_type(n)) {
+				case ia32_Normal:    break;
+				case ia32_AddrModeS: fprintf(F, "[AM S] "); break;
+				case ia32_AddrModeD: fprintf(F, "[AM D] "); break;
 				}
 			}
-
 			break;
 
 		case dump_node_info_txt:
@@ -773,25 +772,6 @@ void set_ia32_orig_node(ir_node *node, const ir_node *old)
 }
 
 #endif /* NDEBUG */
-
-
-/**
- * Returns whether or not the node is an AddrModeS node.
- */
-int is_ia32_AddrModeS(const ir_node *node)
-{
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return (attr->data.tp == ia32_AddrModeS);
-}
-
-/**
- * Returns whether or not the node is an AddrModeD node.
- */
-int is_ia32_AddrModeD(const ir_node *node)
-{
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return (attr->data.tp == ia32_AddrModeD);
-}
 
 void ia32_swap_left_right(ir_node *node)
 {

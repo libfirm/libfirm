@@ -315,16 +315,6 @@ void set_ia32_Const_attr(ir_node *ia32_cnst, ir_node *cnst);
 void set_ia32_Const_tarval(ir_node *node, ir_tarval *tv);
 
 /**
- * Returns whether or not the node is an AddrModeS node.
- */
-int is_ia32_AddrModeS(const ir_node *node);
-
-/**
- * Returns whether or not the node is an AddrModeD node.
- */
-int is_ia32_AddrModeD(const ir_node *node);
-
-/**
  * Swaps left/right input of a node (and sets ins_permuted accordingly)
  */
 void ia32_swap_left_right(ir_node *node);
