@@ -564,23 +564,16 @@ static ir_node *x87_create_fpop(x87_state *const state, ir_node *const n, int co
  */
 static fp_liveness fp_liveness_transfer(ir_node *irn, fp_liveness live)
 {
-	int i, n;
 	const arch_register_class_t *cls = &ia32_reg_classes[CLASS_ia32_fp];
 
 	be_foreach_definition(irn, cls, def,
 		const arch_register_t *reg = x87_get_irn_register(def);
 		live &= ~(1 << reg->index);
 	);
-
-	for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
-		ir_node *op = get_irn_n(irn, i);
-
-		if (mode_is_float(get_irn_mode(op)) &&
-				arch_irn_consider_in_reg_alloc(cls, op)) {
-			const arch_register_t *reg = x87_get_irn_register(op);
-			live |= 1 << reg->index;
-		}
-	}
+	be_foreach_use(irn, cls, in_req_, op, op_req_,
+		const arch_register_t *reg = x87_get_irn_register(op);
+		live |= 1 << reg->index;
+	);
 	return live;
 }
 

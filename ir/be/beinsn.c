@@ -39,7 +39,6 @@ be_insn_t *be_scan_insn(be_chordal_env_t *const env, ir_node *const irn)
 {
 	struct obstack *const obst = &env->obst;
 	be_operand_t o;
-	int i, n;
 
 	be_insn_t *insn = OALLOCZ(obst, be_insn_t);
 
@@ -66,24 +65,19 @@ be_insn_t *be_scan_insn(be_chordal_env_t *const env, ir_node *const irn)
 	insn->use_start = insn->n_ops;
 
 	/* now collect the uses for this node */
-	for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
-		ir_node *op = get_irn_n(irn, i);
-
-		if (arch_irn_consider_in_reg_alloc(env->cls, op)) {
-			/* found a register use, create an operand */
-			arch_register_req_t const *const req = arch_get_irn_register_req_in(irn, i);
-			if (arch_register_req_is(req, limited)) {
-				o.regs          = req->limited;
-				has_constraints = true;
-			} else {
-				o.regs = env->allocatable_regs->data;
-			}
-			o.carrier = op;
-			o.partner = NULL;
-			obstack_grow(obst, &o, sizeof(o));
-			insn->n_ops++;
+	be_foreach_use(irn, cls, in_req, op, op_req,
+		/* found a register use, create an operand */
+		if (arch_register_req_is(in_req, limited)) {
+			o.regs          = in_req->limited;
+			has_constraints = true;
+		} else {
+			o.regs = env->allocatable_regs->data;
 		}
-	}
+		o.carrier = op;
+		o.partner = NULL;
+		obstack_grow(obst, &o, sizeof(o));
+		insn->n_ops++;
+	);
 
 	if (!has_constraints)
 		return NULL;

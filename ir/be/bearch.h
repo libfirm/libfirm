@@ -600,6 +600,20 @@ static inline bool arch_irn_consider_in_reg_alloc(
 		code \
 	)
 
+#define be_foreach_use(node, ccls, in_req, value, value_req, code)           \
+	do {                                                                     \
+	for (int i_ = 0, n_ = get_irn_arity(node); i_ < n_; ++i_) {              \
+		const arch_register_req_t *in_req = arch_get_irn_register_req_in(node, i_); \
+		if (in_req->cls != ccls)                                             \
+			continue;                                                        \
+		ir_node                   *value     = get_irn_n(node, i_);              \
+		const arch_register_req_t *value_req = arch_get_irn_register_req(value); \
+		if (value_req->type & arch_register_req_type_ignore)                 \
+			continue;                                                        \
+		code                                                                 \
+	}                                                                        \
+	} while (0)
+
 static inline const arch_register_class_t *arch_get_irn_reg_class(
 		const ir_node *node)
 {

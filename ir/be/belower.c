@@ -850,6 +850,7 @@ static int push_through_perm(ir_node *perm)
 	int new_size;
 	ir_node *frontier = bl;
 	int i, n;
+	be_lv_t *lv = be_get_irg_liveness(irg);
 
 	/* get some Proj and find out the register class of that Proj. */
 	ir_node                     *one_proj = get_edge_src_irn(get_irn_out_edge_first_kind(perm, EDGE_KIND_NORMAL));
@@ -867,15 +868,12 @@ static int push_through_perm(ir_node *perm)
 	 * the Perm, increasing the register pressure by one.
 	 */
 	sched_foreach_reverse_from(sched_prev(perm), irn) {
-		for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
-			ir_node *op = get_irn_n(irn, i);
-			be_lv_t *lv = be_get_irg_liveness(irg);
-			if (arch_irn_consider_in_reg_alloc(cls, op) &&
-			    !be_values_interfere(lv, op, one_proj)) {
+		be_foreach_use(irn, cls, in_req_, op, op_req_,
+			if (!be_values_interfere(lv, op, one_proj)) {
 				frontier = irn;
 				goto found_front;
 			}
-		}
+		);
 	}
 found_front:
 

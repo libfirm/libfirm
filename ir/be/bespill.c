@@ -63,15 +63,13 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 	unsigned *def_constr = NULL;
 	int       arity      = get_irn_arity(node);
 
-	int i, i2;
-
 	/* Insert a copy for constraint inputs attached to a value which can't
 	 * fulfill the constraint
 	 * (typical example: stack pointer as input to copyb)
 	 * TODO: This really just checks precolored registers at the moment and
 	 *       ignores the general case of not matching in/out constraints
 	 */
-	for (i = 0; i < arity; ++i) {
+	for (int i = 0; i < arity; ++i) {
 		ir_node                   *op  = get_irn_n(node, i);
 		const arch_register_req_t *req = arch_get_irn_register_req_in(node, i);
 		const arch_register_t     *reg;
@@ -102,23 +100,11 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 	}
 
 	/* insert copies for nodes that occur constrained more than once. */
-	for (i = 0; i < arity; ++i) {
-		ir_node                   *in;
-		ir_node                   *copy;
-		const arch_register_req_t *req;
-
-		req = arch_get_irn_register_req_in(node, i);
-		if (req->cls != cls)
-			continue;
-
+	be_foreach_use(node, cls, req, in, in_req_,
 		if (!arch_register_req_is(req, limited))
 			continue;
 
-		in = get_irn_n(node, i);
-		if (!arch_irn_consider_in_reg_alloc(cls, in))
-			continue;
-
-		for (i2 = i + 1; i2 < arity; ++i2) {
+		for (int i2 = i_ + 1; i2 < arity; ++i2) {
 			ir_node *in2;
 			const arch_register_req_t *req2;
 
@@ -137,7 +123,7 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 			if (rbitsets_equal(req->limited, req2->limited, cls->n_regs))
 				continue;
 
-			copy = be_new_Copy(block, in);
+			ir_node *copy = be_new_Copy(block, in);
 			stat_ev_int("constr_copy", 1);
 
 			sched_add_before(node, copy);
@@ -146,7 +132,7 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 			     "inserting multiple constr copy %+F for %+F pos %d\n",
 			     copy, node, i2));
 		}
-	}
+	);
 
 	/* collect all registers occurring in out constraints. */
 	be_foreach_definition(node, cls, def,
@@ -169,25 +155,13 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 	 * and being constrained to a register which also occurs in out constraints.
 	 */
 	unsigned *const tmp = rbitset_alloca(cls->n_regs);
-	for (i = 0; i < arity; ++i) {
-		const arch_register_req_t *req;
-		ir_node                   *in;
-		ir_node                   *copy;
-
-		/*
-		 * Check, if
+	be_foreach_use(node, cls, req, in, in_req_,
+		/* Check, if
 		 * 1) the operand is constrained.
 		 * 2) lives through the node.
 		 * 3) is constrained to a register occurring in out constraints.
 		 */
-		req = arch_get_irn_register_req_in(node, i);
-		if (req->cls != cls)
-			continue;
 		if (!arch_register_req_is(req, limited))
-			continue;
-
-		in = get_irn_n(node, i);
-		if (!arch_irn_consider_in_reg_alloc(cls, in))
 			continue;
 		if (!be_values_interfere(lv, node, in))
 			continue;
@@ -207,13 +181,13 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 		if (be_is_Copy(in))
 			continue;
 
-		copy = be_new_Copy(block, in);
+		ir_node *copy = be_new_Copy(block, in);
 		sched_add_before(node, copy);
-		set_irn_n(node, i, copy);
+		set_irn_n(node, i_, copy);
 		DBG((dbg, LEVEL_3, "inserting constr copy %+F for %+F pos %d\n",
-		     copy, node, i));
+		     copy, node, i_));
 		be_liveness_update(lv, in);
-	}
+	);
 }
 
 static void pre_spill_prepare_constr_walker(ir_node *block, void *data)

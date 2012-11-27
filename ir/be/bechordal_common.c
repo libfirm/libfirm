@@ -157,22 +157,18 @@ void create_borders(ir_node *block, void *env_ptr)
 		 * If the node is no phi node we can examine the uses.
 		 */
 		if (!is_Phi(irn)) {
-			for (int i = 0, n = get_irn_arity(irn); i < n; ++i) {
-				ir_node *op = get_irn_n(irn, i);
+			be_foreach_use(irn, env->cls, in_req_, op, op_req_,
+				unsigned idx = get_irn_idx(op);
+				const char *msg = "-";
 
-				if (arch_irn_consider_in_reg_alloc(env->cls, op)) {
-					int nr = get_irn_idx(op);
-					const char *msg = "-";
-
-					if (!bitset_is_set(live, nr)) {
-						border_use(op, step, 1);
-						bitset_set(live, nr);
-						msg = "X";
-					}
-
-					DBG((dbg, LEVEL_4, "\t\t%s pos: %d, use: %+F\n", msg, i, op));
+				if (!bitset_is_set(live, idx)) {
+					border_use(op, step, 1);
+					bitset_set(live, idx);
+					msg = "X";
 				}
-			}
+
+				DB((dbg, LEVEL_4, "\t\t%s pos: %d, use: %+F\n", msg, i_, op));
+			);
 		}
 		++step;
 	}

@@ -803,7 +803,6 @@ static void process_block(ir_node *block)
 	new_vals = new_workset();
 
 	sched_foreach(block, irn) {
-		int i, arity;
 		assert(workset_get_length(ws) <= n_regs);
 
 		/* Phis are no real instr (see insert_starters()) */
@@ -817,14 +816,10 @@ static void process_block(ir_node *block)
 
 		/* allocate all values _used_ by this instruction */
 		workset_clear(new_vals);
-		for (i = 0, arity = get_irn_arity(irn); i < arity; ++i) {
-			ir_node *in = get_irn_n(irn, i);
-			if (!arch_irn_consider_in_reg_alloc(cls, in))
-				continue;
-
+		be_foreach_use(irn, cls, in_req_, in, in_req,
 			/* (note that "spilled" is irrelevant here) */
 			workset_insert(new_vals, in, false);
-		}
+		);
 		displace(new_vals, 1);
 
 		/* allocate all values _defined_ by this instruction */

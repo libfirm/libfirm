@@ -148,14 +148,11 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 
 	/* we need registers for the non-live argument values */
 	size_t free_regs_needed = 0;
-	int arity = get_irn_arity(node);
-	for (int i = 0; i < arity; ++i) {
-		ir_node *pred = get_irn_n(node, i);
-		if (arch_irn_consider_in_reg_alloc(cls, pred)
-				&& !ir_nodeset_contains(live_nodes, pred)) {
-			free_regs_needed += get_value_width(pred);
+	be_foreach_use(node, cls, in_req_, use, pred_req_,
+		if (!ir_nodeset_contains(live_nodes, use)) {
+			free_regs_needed += get_value_width(use);
 		}
-	}
+	);
 
 	/* we can reuse all reloaded values for the defined values, but we might
 	 * need even more registers */
@@ -203,6 +200,7 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 
 		/* make sure the node is not an argument of the instruction */
 		bool is_use = false;
+		int arity = get_irn_arity(node);
 		for (int i = 0; i < arity; ++i) {
 			ir_node *in = get_irn_n(node, i);
 			if (in == cand_node) {
