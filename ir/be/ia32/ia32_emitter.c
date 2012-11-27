@@ -493,14 +493,13 @@ end_of_mods:
 			case 'A': {
 				switch (*fmt++) {
 					case 'F':
-						if (get_ia32_op_type(node) == ia32_AddrModeS) {
-							goto emit_AM;
-						} else {
-							assert(get_ia32_op_type(node) == ia32_Normal);
+						if (get_ia32_op_type(node) == ia32_Normal) {
 							ia32_x87_attr_t const *const attr = get_ia32_x87_attr_const(node);
 							char            const *const fmt  = attr->res_in_reg ? "%%st, %%%s" : "%%%s, %%st";
 							be_emit_irprintf(fmt, attr->reg->name);
 							break;
+						} else {
+							goto emit_AM;
 						}
 
 emit_AM:
@@ -512,19 +511,18 @@ emit_AM:
 
 					case 'R':
 						reg = va_arg(ap, const arch_register_t*);
-						if (get_ia32_op_type(node) == ia32_AddrModeS) {
-							goto emit_AM;
-						} else {
+						if (get_ia32_op_type(node) == ia32_Normal) {
 							goto emit_R;
+						} else {
+							goto emit_AM;
 						}
 
 					case 'S':
-						if (get_ia32_op_type(node) == ia32_AddrModeS) {
+						if (get_ia32_op_type(node) == ia32_Normal) {
+							goto emit_S;
+						} else {
 							++fmt;
 							goto emit_AM;
-						} else {
-							assert(get_ia32_op_type(node) == ia32_Normal);
-							goto emit_S;
 						}
 
 					default: goto unknown;
@@ -537,22 +535,20 @@ emit_AM:
 				if (is_ia32_Immediate(imm)) {
 					emit_ia32_Immediate(imm);
 					be_emit_cstring(", ");
-					if (get_ia32_op_type(node) == ia32_AddrModeS) {
-						ia32_emit_am(node);
+					if (get_ia32_op_type(node) == ia32_Normal) {
+						goto destination_operand;
 					} else {
-						assert(get_ia32_op_type(node) == ia32_Normal);
-						reg = arch_get_irn_register_in(node, n_ia32_binary_left);
-						emit_register(reg, get_ia32_ls_mode(node));
+						ia32_emit_am(node);
 					}
 				} else {
-					if (get_ia32_op_type(node) == ia32_AddrModeS) {
-						ia32_emit_am(node);
-					} else {
-						assert(get_ia32_op_type(node) == ia32_Normal);
+					if (get_ia32_op_type(node) == ia32_Normal) {
 						reg = arch_get_irn_register_in(node, n_ia32_binary_right);
 						emit_register(reg, get_ia32_ls_mode(node));
+					} else {
+						ia32_emit_am(node);
 					}
 					be_emit_cstring(", ");
+destination_operand:
 					reg = arch_get_irn_register_in(node, n_ia32_binary_left);
 					emit_register(reg, get_ia32_ls_mode(node));
 				}
@@ -2116,21 +2112,18 @@ static void bemit_binop_with_imm(
 	case 1:
 		bemit8(opcode | SIGNEXT_IMM);
 		/* cmp has this special mode */
-		if (get_ia32_op_type(node) == ia32_AddrModeS) {
-			bemit_mod_am(ruval, node);
-		} else {
+		if (get_ia32_op_type(node) == ia32_Normal) {
 			const arch_register_t *reg = arch_get_irn_register_in(node, n_ia32_binary_left);
 			bemit_modru(reg, ruval);
+		} else {
+			bemit_mod_am(ruval, node);
 		}
 		bemit8((unsigned char)attr->offset);
 		return;
 	case 2:
 	case 4:
-		/* check for eax variant: this variant is shorter for 32bit immediates only */
-		if (get_ia32_op_type(node) == ia32_AddrModeS) {
-			bemit8(opcode);
-			bemit_mod_am(ruval, node);
-		} else {
+		if (get_ia32_op_type(node) == ia32_Normal) {
+			/* check for eax variant: this variant is shorter for 32bit immediates only */
 			const arch_register_t *reg = arch_get_irn_register_in(node, n_ia32_binary_left);
 			if (reg->index == REG_GP_EAX) {
 				bemit8(opcode_ax);
@@ -2138,6 +2131,9 @@ static void bemit_binop_with_imm(
 				bemit8(opcode);
 				bemit_modru(reg, ruval);
 			}
+		} else {
+			bemit8(opcode);
+			bemit_mod_am(ruval, node);
 		}
 		bemit_entity(attr->symconst, attr->sc_sign, attr->offset, false);
 		return;
@@ -2600,21 +2596,18 @@ static void bemit_cmp(const ir_node *node)
 			case 1:
 				bemit8(0x81 | SIGNEXT_IMM);
 				/* cmp has this special mode */
-				if (get_ia32_op_type(node) == ia32_AddrModeS) {
-					bemit_mod_am(7, node);
-				} else {
+				if (get_ia32_op_type(node) == ia32_Normal) {
 					const arch_register_t *reg = arch_get_irn_register_in(node, n_ia32_binary_left);
 					bemit_modru(reg, 7);
+				} else {
+					bemit_mod_am(7, node);
 				}
 				bemit8((unsigned char)attr->offset);
 				return;
 			case 2:
 			case 4:
 				/* check for eax variant: this variant is shorter for 32bit immediates only */
-				if (get_ia32_op_type(node) == ia32_AddrModeS) {
-					bemit8(0x81);
-					bemit_mod_am(7, node);
-				} else {
+				if (get_ia32_op_type(node) == ia32_Normal) {
 					const arch_register_t *reg = arch_get_irn_register_in(node, n_ia32_binary_left);
 					if (reg->index == REG_GP_EAX) {
 						bemit8(0x3D);
@@ -2622,6 +2615,9 @@ static void bemit_cmp(const ir_node *node)
 						bemit8(0x81);
 						bemit_modru(reg, 7);
 					}
+				} else {
+					bemit8(0x81);
+					bemit_mod_am(7, node);
 				}
 				if (ls_size == 16) {
 					bemit16(attr->offset);
