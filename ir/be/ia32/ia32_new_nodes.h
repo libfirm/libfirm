@@ -51,11 +51,6 @@ enum {
 extern struct obstack opcodes_obst;
 
 /**
- * returns true if a node has x87 registers
- */
-int ia32_has_x87_register(const ir_node *n);
-
-/**
  * Returns the attributes of an ia32 node.
  */
 ia32_attr_t *get_ia32_attr(ir_node *node);
@@ -298,21 +293,6 @@ const char *get_ia32_orig_node(const ir_node *node);
 void set_ia32_orig_node(ir_node *node, const ir_node *old);
 
 #endif /* NDEBUG */
-
-
-/**
- * Returns the ident of an entity
- * @param ent The entity
- * @return The ident of the entity
- */
-ident *ia32_get_ent_ident(ir_entity *ent);
-
-/**
- * Copy the attributes from a Const to an ia32_Const
- */
-void set_ia32_Const_attr(ir_node *ia32_cnst, ir_node *cnst);
-
-void set_ia32_Const_tarval(ir_node *node, ir_tarval *tv);
 
 /**
  * Swaps left/right input of a node (and sets ins_permuted accordingly)
