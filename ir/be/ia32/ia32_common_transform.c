@@ -808,14 +808,12 @@ static arch_register_req_t const *ia32_make_register_req(constraint_t const *con
 		req->type    = arch_register_req_type_limited;
 		*limited_ptr = constraint->allowed_registers;
 		req->limited = limited_ptr;
+		req->cls     = constraint->cls;
+		req->width   = 1;
+		return req;
 	} else {
-		req       = OALLOCZ(obst, arch_register_req_t);
-		req->type = arch_register_req_type_normal;
+		return constraint->cls->class_req;
 	}
-	req->cls   = constraint->cls;
-	req->width = 1;
-
-	return req;
 }
 
 const arch_register_req_t *ia32_parse_clobber(const char *clobber)
