@@ -148,28 +148,25 @@ static const char *lv_flags_to_str(unsigned flags)
 	return states[flags & 7];
 }
 
-void be_dump_liveness_block(void *context, FILE *F, const ir_node *bl)
+void be_dump_liveness_block(be_lv_t *lv, FILE *F, const ir_node *bl)
 {
-	if (is_Block(bl)) {
-		be_lv_t *lv = (be_lv_t*)context;
-		be_lv_info_t *info = ir_nodehashmap_get(be_lv_info_t, &lv->map, bl);
+	be_lv_info_t *info = ir_nodehashmap_get(be_lv_info_t, &lv->map, bl);
 
-		fprintf(F, "liveness:\n");
-		if (info != NULL) {
-			unsigned n = info[0].head.n_members;
-			unsigned i;
+	fprintf(F, "liveness:\n");
+	if (info != NULL) {
+		unsigned n = info[0].head.n_members;
+		unsigned i;
 
-			for (i = 0; i < n; ++i) {
-				be_lv_info_node_t *n = &info[i+1].node;
-				ir_fprintf(F, "%s %+F\n", lv_flags_to_str(n->flags), n->node);
-			}
+		for (i = 0; i < n; ++i) {
+			be_lv_info_node_t *n = &info[i+1].node;
+			ir_fprintf(F, "%s %+F\n", lv_flags_to_str(n->flags), n->node);
 		}
 	}
 }
 
 typedef struct lv_walker_t {
 	be_lv_t *lv;
-	void *data;
+	FILE    *out;
 } lv_walker_t;
 
 static void lv_dump_block_walker(ir_node *irn, void *data)
@@ -177,14 +174,14 @@ static void lv_dump_block_walker(ir_node *irn, void *data)
 	lv_walker_t *w = (lv_walker_t*)data;
 	if (!is_Block(irn))
 		return;
-	be_dump_liveness_block(w->lv, (FILE*)w->data, irn);
+	be_dump_liveness_block(w->lv, w->out, irn);
 }
 
 void be_liveness_dump(FILE *F, const be_lv_t *lv)
 {
 	lv_walker_t w;
 
-	w.lv   = (be_lv_t *) lv;
-	w.data = F;
+	w.lv  = (be_lv_t *) lv;
+	w.out = F;
 	irg_block_walk_graph(lv->irg, lv_dump_block_walker, NULL, &w);
 }

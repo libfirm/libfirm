@@ -30,9 +30,12 @@
 #include "bearch.h"
 #include "benode.h"
 #include "besched.h"
+#include "bedump.h"
+#include "belive_t.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "irdump_t.h"
+#include "irhooks.h"
 #include "error.h"
 
 static copy_attr_func old_phi_copy_attr;
@@ -130,7 +133,26 @@ static void init_walker(ir_node *node, void *data)
 	be_info_new_node(irg, node);
 }
 
-static bool initialized = false;
+static bool         initialized = false;
+static hook_entry_t hook_liveness_info;
+
+static void dump_liveness_info_hook(void *context, FILE *F, const ir_node *node)
+{
+	(void)context;
+	if (!is_Block(node))
+		return;
+	ir_graph *irg = get_irn_irg(node);
+	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND))
+		return;
+
+	be_lv_t *lv = be_get_irg_liveness(irg);
+	if (lv == NULL)
+		return;
+	if (!lv->sets_valid)
+		return;
+
+	be_dump_liveness_block(lv, F, node);
+}
 
 void be_info_init(void)
 {
@@ -144,6 +166,9 @@ void be_info_init(void)
 	/* phis have register and register requirements now which we want to dump */
 	assert(op_Phi->ops.dump_node == NULL);
 	op_Phi->ops.dump_node = be_dump_phi_reg_reqs;
+
+	hook_liveness_info.hook._hook_node_info = dump_liveness_info_hook;
+	register_hook(hook_node_info, &hook_liveness_info);
 }
 
 /**
@@ -184,4 +209,6 @@ void be_info_free(void)
 
 	assert(op_Phi->ops.dump_node == be_dump_phi_reg_reqs);
 	op_Phi->ops.dump_node = NULL;
+
+	unregister_hook(hook_node_info, &hook_liveness_info);
 }

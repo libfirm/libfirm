@@ -42,7 +42,6 @@
 #include "belive_t.h"
 #include "besched.h"
 #include "bemodule.h"
-#include "bedump.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -414,7 +413,6 @@ void be_liveness_compute_sets(be_lv_t *lv)
 
 	DEL_ARR_F(nodes);
 	free(re.visited);
-	register_hook(hook_node_info, &lv->hook_info);
 
 	be_timer_pop(T_LIVE);
 
@@ -432,7 +430,6 @@ void be_liveness_invalidate_sets(be_lv_t *lv)
 {
 	if (!lv->sets_valid)
 		return;
-	unregister_hook(hook_node_info, &lv->hook_info);
 	obstack_free(&lv->obst, NULL);
 	ir_nodehashmap_destroy(&lv->map);
 	lv->sets_valid = false;
@@ -453,8 +450,6 @@ be_lv_t *be_liveness_new(ir_graph *irg)
 	be_lv_t *lv = XMALLOCZ(be_lv_t);
 
 	lv->irg = irg;
-	lv->hook_info.context = lv;
-	lv->hook_info.hook._hook_node_info = be_dump_liveness_block;
 
 	return lv;
 }

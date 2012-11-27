@@ -52,6 +52,6 @@ void be_liveness_dump(FILE *F, const be_lv_t *lv);
 /**
  * node_info hook that dumps liveness for blocks
  */
-void be_dump_liveness_block(void *context, FILE *F, const ir_node *block);
+void be_dump_liveness_block(be_lv_t *lv, FILE *F, const ir_node *block);
 
 #endif
