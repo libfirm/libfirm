@@ -252,9 +252,9 @@ static void irg_walk_in_or_dep_2(ir_node *node, irg_walk_func *pre, irg_walk_fun
 	if (irn_visited(node))
 		return;
 
-	if      (! post) return irg_walk_in_or_dep_2_pre (node, pre, env);
-	else if (! pre)  return irg_walk_in_or_dep_2_post(node, post, env);
-	else             return irg_walk_in_or_dep_2_both(node, pre, post, env);
+	if      (! post) irg_walk_in_or_dep_2_pre (node, pre, env);
+	else if (! pre)  irg_walk_in_or_dep_2_post(node, post, env);
+	else             irg_walk_in_or_dep_2_both(node, pre, post, env);
 }
 
 void irg_walk_in_or_dep(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
