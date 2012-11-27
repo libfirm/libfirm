@@ -161,8 +161,6 @@ void sched_remove(ir_node *irn);
  */
 static inline bool sched_comes_after(const ir_node *n1, const ir_node *n2)
 {
-	assert(sched_is_scheduled(n1));
-	assert(sched_is_scheduled(n2));
 	assert((is_Block(n1) ? n1 : get_nodes_block(n1)) == (is_Block(n2) ? n2 : get_nodes_block(n2)));
 	return sched_get_time_step(n1) < sched_get_time_step(n2);
 }
