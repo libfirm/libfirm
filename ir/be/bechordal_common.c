@@ -140,36 +140,18 @@ void create_borders(ir_node *block, void *env_ptr)
 	 * relevant for the interval borders.
 	 */
 	sched_foreach_reverse(block, irn) {
-		DBG((dbg, LEVEL_1, "\tinsn: %+F, pressure: %d\n", irn, pressure));
-		DBG((dbg, LEVEL_2, "\tlive: %B\n", live));
+		DB((dbg, LEVEL_1, "\tinsn: %+F, pressure: %d\n", irn, pressure));
+		DB((dbg, LEVEL_2, "\tlive: %B\n", live));
 
-		if (get_irn_mode(irn) == mode_T) {
-			foreach_out_edge(irn, edge) {
-				ir_node *proj = get_edge_src_irn(edge);
-
-				/*
-				 * If the node defines some value, which can put into a
-				 * register of the current class, make a border for it.
-				 */
-				if (arch_irn_consider_in_reg_alloc(env->cls, proj)) {
-					int nr = get_irn_idx(proj);
-
-					bitset_clear(live, nr);
-					border_def(proj, step, 1);
-				}
-			}
-		} else {
+		be_foreach_definition(irn, env->cls, def,
 			/*
 			 * If the node defines some value, which can put into a
 			 * register of the current class, make a border for it.
 			 */
-			if (arch_irn_consider_in_reg_alloc(env->cls, irn)) {
-				int nr = get_irn_idx(irn);
-
-				bitset_clear(live, nr);
-				border_def(irn, step, 1);
-			}
-		}
+			unsigned idx = get_irn_idx(def);
+			bitset_clear(live, idx);
+			border_def(def, step, 1);
+		);
 
 		/*
 		 * If the node is no phi node we can examine the uses.

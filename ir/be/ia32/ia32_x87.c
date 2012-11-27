@@ -567,19 +567,10 @@ static fp_liveness fp_liveness_transfer(ir_node *irn, fp_liveness live)
 	int i, n;
 	const arch_register_class_t *cls = &ia32_reg_classes[CLASS_ia32_fp];
 
-	if (get_irn_mode(irn) == mode_T) {
-		foreach_out_edge(irn, edge) {
-			ir_node *proj = get_edge_src_irn(edge);
-
-			if (arch_irn_consider_in_reg_alloc(cls, proj)) {
-				const arch_register_t *reg = x87_get_irn_register(proj);
-				live &= ~(1 << reg->index);
-			}
-		}
-	} else if (arch_irn_consider_in_reg_alloc(cls, irn)) {
-		const arch_register_t *reg = x87_get_irn_register(irn);
+	be_foreach_definition(irn, cls, def,
+		const arch_register_t *reg = x87_get_irn_register(def);
 		live &= ~(1 << reg->index);
-	}
+	);
 
 	for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
 		ir_node *op = get_irn_n(irn, i);

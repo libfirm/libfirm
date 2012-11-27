@@ -45,38 +45,11 @@ be_insn_t *be_scan_insn(be_chordal_env_t *const env, ir_node *const irn)
 
 	bool has_constraints = false;
 
+	const arch_register_class_t *cls = env->cls;
 	insn->irn = irn;
-	if (get_irn_mode(irn) == mode_T) {
-		ir_node *p;
-
-		/* This instruction might create more than one def. These are handled
-		   by Proj's, find them. */
-		foreach_out_edge(irn, edge) {
-			p = get_edge_src_irn(edge);
-
-			/* did not work if the result is a ProjT. This should NOT happen
-			   in the backend, but check it for now. */
-			assert(get_irn_mode(p) != mode_T);
-
-			if (arch_irn_consider_in_reg_alloc(env->cls, p)) {
-				/* found a def: create a new operand */
-				arch_register_req_t const *const req = arch_get_irn_register_req(p);
-				if (arch_register_req_is(req, limited)) {
-					o.regs          = req->limited;
-					has_constraints = true;
-				} else {
-					o.regs           = env->allocatable_regs->data;
-					has_constraints |= req->width > 1;
-				}
-				o.carrier         = p;
-				o.partner         = NULL;
-				obstack_grow(obst, &o, sizeof(o));
-				insn->n_ops++;
-			}
-		}
-	} else if (arch_irn_consider_in_reg_alloc(env->cls, irn)) {
-		/* only one def, create one operand */
-		arch_register_req_t const *const req = arch_get_irn_register_req(irn);
+	be_foreach_definition(irn, cls, p,
+		/* found a def: create a new operand */
+		arch_register_req_t const *const req = arch_get_irn_register_req(p);
 		if (arch_register_req_is(req, limited)) {
 			o.regs          = req->limited;
 			has_constraints = true;
@@ -84,11 +57,11 @@ be_insn_t *be_scan_insn(be_chordal_env_t *const env, ir_node *const irn)
 			o.regs           = env->allocatable_regs->data;
 			has_constraints |= req->width > 1;
 		}
-		o.carrier = irn;
+		o.carrier = p;
 		o.partner = NULL;
 		obstack_grow(obst, &o, sizeof(o));
 		insn->n_ops++;
-	}
+	);
 
 	insn->use_start = insn->n_ops;
 
