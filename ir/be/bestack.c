@@ -285,34 +285,20 @@ void be_abi_fix_stack_nodes(ir_graph *irg)
 	be_lv_t                   *lv       = be_get_irg_liveness(irg);
 	const arch_env_t          *arch_env = be_get_irg_arch_env(irg);
 	be_irg_t                  *birg     = be_birg_from_irg(irg);
-	const arch_register_req_t *sp_req   = birg->sp_req;
 	const arch_register_t     *sp       = arch_env->sp;
 	be_ssa_construction_env_t  senv;
 	int i, len;
 	ir_node **phis;
 	fix_stack_walker_env_t walker_env;
 
+	arch_register_req_t const *sp_req = birg->sp_req;
 	if (sp_req == NULL) {
-		struct obstack      *obst = be_get_be_obst(irg);
-		arch_register_req_t *new_sp_req;
-		unsigned            *limited_bitset;
+		arch_register_req_type_t type = arch_register_req_type_produces_sp;
+		if (!rbitset_is_set(birg->allocatable_regs, sp->global_index))
+			type |= arch_register_req_type_ignore;
 
-		new_sp_req        = OALLOCZ(obst, arch_register_req_t);
-		new_sp_req->type  = arch_register_req_type_limited
-		                  | arch_register_req_type_produces_sp;
-		new_sp_req->cls   = arch_env->sp->reg_class;
-		new_sp_req->width = 1;
-
-		limited_bitset = rbitset_obstack_alloc(obst, new_sp_req->cls->n_regs);
-		rbitset_set(limited_bitset, sp->index);
-		new_sp_req->limited = limited_bitset;
-
-		if (!rbitset_is_set(birg->allocatable_regs, sp->global_index)) {
-			new_sp_req->type |= arch_register_req_type_ignore;
-		}
-
-		sp_req = new_sp_req;
-		birg->sp_req = new_sp_req;
+		struct obstack *const obst = be_get_be_obst(irg);
+		birg->sp_req = sp_req = be_create_reg_req(obst, sp, type);
 	}
 
 	walker_env.sp_nodes = NEW_ARR_F(ir_node*, 0);

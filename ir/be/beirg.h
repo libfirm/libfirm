@@ -80,18 +80,18 @@ struct be_stack_layout_t {
  * backend structures
  */
 typedef struct be_irg_t {
-	be_main_env_t         *main_env;
-	be_lv_t               *lv;
-	be_stack_layout_t      stack_layout;
-	unsigned              *allocatable_regs; /**< registers available for the
-											      allocator */
-	arch_register_req_t   *sp_req; /**< requirements for stackpointer producing
-	                                    nodes. */
-	struct obstack         obst; /**< birg obstack (mainly used to keep
-	                                  register constraints which we can't keep
-	                                  in the irg obst, because it gets replaced
-	                                  during code selection) */
-	void                  *isa_link; /**< architecture specific per-graph data*/
+	be_main_env_t             *main_env;
+	be_lv_t                   *lv;
+	be_stack_layout_t          stack_layout;
+	unsigned                  *allocatable_regs; /**< registers available for the
+	                                                  allocator */
+	arch_register_req_t const *sp_req;           /**< requirements for stackpointer producing
+	                                                  nodes. */
+	struct obstack             obst;             /**< birg obstack (mainly used to keep
+	                                                  register constraints which we can't keep
+	                                                  in the irg obst, because it gets replaced
+	                                                  during code selection) */
+	void                      *isa_link;         /**< architecture specific per-graph data*/
 } be_irg_t;
 
 static inline be_irg_t *be_birg_from_irg(const ir_graph *irg)
