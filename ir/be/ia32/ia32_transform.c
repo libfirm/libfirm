@@ -5511,15 +5511,13 @@ static ir_node *gen_Proj_be_Call(ir_node *node)
 		int                        const n_outs = arch_get_irn_n_outs(new_call);
 		int                              i;
 
-		assert(proj      >= pn_be_Call_first_res);
-		assert(req->type & arch_register_req_type_limited);
+		assert(proj >= pn_be_Call_first_res);
+		assert(arch_register_req_is(req, limited));
 
 		for (i = 0; i < n_outs; ++i) {
-			arch_register_req_t const *const new_req
-				= arch_get_irn_register_req_out(new_call, i);
-
-			if (!(new_req->type & arch_register_req_type_limited) ||
-			    new_req->cls      != req->cls                     ||
+			arch_register_req_t const *const new_req = arch_get_irn_register_req_out(new_call, i);
+			if (!arch_register_req_is(new_req, limited) ||
+			    new_req->cls      != req->cls           ||
 			    *new_req->limited != *req->limited)
 				continue;
 

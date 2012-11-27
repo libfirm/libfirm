@@ -323,7 +323,8 @@ static void int_comp_rec(be_ifg_t *ifg, ir_node *n, bitset_t *seen)
 		if (bitset_is_set(seen, get_irn_idx(m)))
 			continue;
 
-		if (arch_get_irn_register_req(m)->type & arch_register_req_type_ignore)
+		arch_register_req_t const *const req = arch_get_irn_register_req(m);
+		if (arch_register_req_is(req, ignore))
 			continue;
 
 		bitset_set(seen, get_irn_idx(m));
@@ -344,7 +345,8 @@ static int int_component_stat(ir_graph *irg, be_ifg_t *ifg)
 		if (bitset_is_set(seen, get_irn_idx(n)))
 			continue;
 
-		if (arch_get_irn_register_req(n)->type & arch_register_req_type_ignore)
+		arch_register_req_t const *const req = arch_get_irn_register_req(n);
+		if (arch_register_req_is(req, ignore))
 			continue;
 
 		++n_comp;

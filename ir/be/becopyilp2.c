@@ -70,11 +70,8 @@ static unsigned check_alignment_constraints(ir_node *node)
 {
 	const arch_register_req_t *req = arch_get_irn_register_req(node);
 	// For larger than 1 variables, support only aligned constraints
-	assert(((!(req->type & arch_register_req_type_aligned)
-			 && req->width == 1)
-			|| (req->type & arch_register_req_type_aligned))
-		   && "Unaligned large (width > 1) variables not supported");
-	return (req->type & arch_register_req_type_aligned) && req->width > 1;
+	assert((arch_register_req_is(req, aligned) || req->width == 1) && "Unaligned large (width > 1) variables not supported");
+	return arch_register_req_is(req, aligned) && req->width > 1;
 }
 
 static void make_color_var_name(char *buf, size_t buf_size,

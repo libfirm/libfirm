@@ -518,7 +518,7 @@ void be_liveness_transfer(const arch_register_class_t *cls,
 			continue;
 		ir_node                   *op     = get_irn_n(node, i);
 		const arch_register_req_t *op_req = arch_get_irn_register_req(op);
-		if (op_req->type & arch_register_req_type_ignore)
+		if (arch_register_req_is(op_req, ignore))
 			continue;
 		ir_nodeset_insert(nodeset, op);
 	}

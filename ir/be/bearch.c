@@ -186,7 +186,7 @@ bool arch_reg_is_allocatable(const arch_register_req_t *req,
 		return false;
 	if (reg->type & arch_register_type_virtual)
 		return true;
-	if (req->type & arch_register_req_type_limited)
+	if (arch_register_req_is(req, limited))
 		return rbitset_is_set(req->limited, reg->index);
 	return true;
 }

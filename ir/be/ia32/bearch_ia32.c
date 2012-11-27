@@ -405,15 +405,13 @@ static int ia32_possible_memory_operand(const ir_node *irn, unsigned int i)
 		case ia32_am_binary:
 			switch (i) {
 				case n_ia32_binary_left: {
-					const arch_register_req_t *req;
 					if (!is_ia32_commutative(irn))
 						return 0;
 
 					/* we can't swap left/right for limited registers
-					 * (As this (currently) breaks constraint handling copies)
-					 */
-					req = arch_get_irn_register_req_in(irn, n_ia32_binary_left);
-					if (req->type & arch_register_req_type_limited)
+					 * (As this (currently) breaks constraint handling copies) */
+					arch_register_req_t const *const req = arch_get_irn_register_req_in(irn, n_ia32_binary_left);
+					if (arch_register_req_is(req, limited))
 						return 0;
 					break;
 				}

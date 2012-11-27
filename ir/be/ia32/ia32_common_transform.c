@@ -393,8 +393,8 @@ static bool can_match(const arch_register_req_t *in,
 {
 	if (in->cls != out->cls)
 		return false;
-	if ( (in->type & arch_register_req_type_limited) == 0
-		|| (out->type & arch_register_req_type_limited) == 0 )
+	if (!arch_register_req_is(in,  limited) ||
+	    !arch_register_req_is(out, limited))
 		return true;
 
 	return (*in->limited & *out->limited) != 0;
@@ -617,7 +617,7 @@ ir_node *ia32_gen_ASM(ir_node *node)
 			}
 
 			/* add a new (dummy) input which occupies the register */
-			assert(outreq->type & arch_register_req_type_limited);
+			assert(arch_register_req_is(outreq, limited));
 			in_reg_reqs[n_ins] = outreq;
 			in[n_ins]          = new_bd_ia32_ProduceVal(NULL, block);
 			++n_ins;
@@ -659,7 +659,7 @@ ir_node *ia32_gen_ASM(ir_node *node)
 			}
 
 			/* add a new (dummy) output which occupies the register */
-			assert(inreq->type & arch_register_req_type_limited);
+			assert(arch_register_req_is(inreq, limited));
 			out_reg_reqs[out_arity] = inreq;
 			++out_arity;
 		}

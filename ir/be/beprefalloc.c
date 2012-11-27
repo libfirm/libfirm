@@ -257,13 +257,13 @@ static void check_defs(const ir_nodeset_t *live_nodes, float weight,
                        ir_node *node)
 {
 	const arch_register_req_t *req = arch_get_irn_register_req(node);
-	if (req->type & arch_register_req_type_limited) {
+	if (arch_register_req_is(req, limited)) {
 		const unsigned *limited = req->limited;
 		float           penalty = weight * DEF_FACTOR;
 		give_penalties_for_limits(live_nodes, penalty, limited, node);
 	}
 
-	if (req->type & arch_register_req_type_should_be_same) {
+	if (arch_register_req_is(req, should_be_same)) {
 		ir_node           *insn  = skip_Proj(node);
 		allocation_info_t *info  = get_allocation_info(node);
 		int                arity = get_irn_arity(insn);
@@ -344,7 +344,7 @@ static void analyze_block(ir_node *block, void *data)
 
 			const arch_register_req_t *req
 				= arch_get_irn_register_req_in(node, i);
-			if (!(req->type & arch_register_req_type_limited))
+			if (!arch_register_req_is(req, limited))
 				continue;
 
 			const unsigned *limited = req->limited;
@@ -361,7 +361,7 @@ static void congruence_def(ir_nodeset_t *live_nodes, const ir_node *node)
 	const arch_register_req_t *req = arch_get_irn_register_req(node);
 
 	/* should be same constraint? */
-	if (req->type & arch_register_req_type_should_be_same) {
+	if (arch_register_req_is(req, should_be_same)) {
 		const ir_node *insn     = skip_Proj_const(node);
 		int            arity    = get_irn_arity(insn);
 		unsigned       node_idx = get_irn_idx(node);
@@ -697,12 +697,12 @@ static void assign_reg(const ir_node *block, ir_node *node,
 	}
 
 	/* ignore reqs must be preassigned */
-	assert (! (req->type & arch_register_req_type_ignore));
+	assert(!arch_register_req_is(req, ignore));
 
 	/* give should_be_same boni */
 	allocation_info_t *info    = get_allocation_info(node);
 	ir_node           *in_node = skip_Proj(node);
-	if (req->type & arch_register_req_type_should_be_same) {
+	if (arch_register_req_is(req, should_be_same)) {
 		float weight = (float)get_block_execfreq(block);
 		int   arity  = get_irn_arity(in_node);
 
@@ -738,7 +738,7 @@ static void assign_reg(const ir_node *block, ir_node *node,
 	DB((dbg, LEVEL_2, "\n"));
 
 	const unsigned *allowed_regs = normal_regs;
-	if (req->type & arch_register_req_type_limited) {
+	if (arch_register_req_is(req, limited)) {
 		allowed_regs = req->limited;
 	}
 
@@ -750,8 +750,7 @@ static void assign_reg(const ir_node *block, ir_node *node,
 			continue;
 		/* alignment constraint? */
 		if (width > 1) {
-			if ((req->type & arch_register_req_type_aligned)
-				&& (final_reg_index % width) != 0)
+			if (arch_register_req_is(req, aligned) && (final_reg_index % width) != 0)
 				continue;
 			bool fine = true;
 			for (unsigned r0 = r+1; r0 < r+width; ++r0) {
@@ -1042,7 +1041,7 @@ static void solve_lpp(ir_nodeset_t *live_nodes, ir_node *node,
 			continue;
 
 		const arch_register_req_t *req = arch_get_irn_register_req_in(node, i);
-		if (!(req->type & arch_register_req_type_limited))
+		if (!arch_register_req_is(req, limited))
 			continue;
 
 		const unsigned        *limited     = req->limited;
@@ -1180,13 +1179,13 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 			double_width = true;
 		const arch_register_t *reg       = arch_get_irn_register(op);
 		unsigned               reg_index = reg->index;
-		if (req->type & arch_register_req_type_aligned) {
+		if (arch_register_req_is(req, aligned)) {
 			if (!is_aligned(reg_index, req->width)) {
 				good = false;
 				continue;
 			}
 		}
-		if (!(req->type & arch_register_req_type_limited))
+		if (!arch_register_req_is(req, limited))
 			continue;
 
 		const unsigned *limited = req->limited;
@@ -1203,7 +1202,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 		(void)value;
 		if (req_->width > 1)
 			double_width = true;
-		if (! (req_->type & arch_register_req_type_limited))
+		if (!arch_register_req_is(req_, limited))
 			continue;
 		if (live_through_regs == NULL) {
 			live_through_regs = rbitset_alloca(n_regs);
@@ -1262,7 +1261,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 			continue;
 
 		const arch_register_req_t *req = arch_get_irn_register_req_in(node, i);
-		if (!(req->type & arch_register_req_type_limited))
+		if (!arch_register_req_is(req, limited))
 			continue;
 
 		const unsigned        *limited     = req->limited;
@@ -1571,7 +1570,7 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		if (req->cls != cls)
 			continue;
 
-		if (req->type & arch_register_req_type_ignore) {
+		if (arch_register_req_is(req, limited)) {
 			allocation_info_t *info = get_allocation_info(node);
 			info->current_value = node;
 

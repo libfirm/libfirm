@@ -388,8 +388,7 @@ static void ssa_destruction_check_walker(ir_node *bl, void *data)
 		for (i = 0, max = get_irn_arity(phi); i < max; ++i) {
 			ir_node                   *arg = get_irn_n(phi, i);
 			const arch_register_req_t *req = arch_get_irn_register_req(arg);
-
-			if (req->type & arch_register_req_type_ignore)
+			if (arch_register_req_is(req, ignore))
 				continue;
 
 			arg_reg = arch_get_irn_register(arg);

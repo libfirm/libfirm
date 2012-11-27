@@ -983,9 +983,8 @@ static int get_start_reg_index(ir_graph *irg, const arch_register_t *reg)
 
 	/* do a naive linear search... */
 	for (i = 0; i < (int)n_outs; ++i) {
-		const arch_register_req_t *out_req
-			= arch_get_irn_register_req_out(start, i);
-		if (! (out_req->type & arch_register_req_type_limited))
+		arch_register_req_t const *const out_req = arch_get_irn_register_req_out(start, i);
+		if (!arch_register_req_is(out_req, limited))
 			continue;
 		if (out_req->cls != reg->reg_class)
 			continue;
@@ -1020,7 +1019,7 @@ int be_find_return_reg_input(ir_node *ret, const arch_register_t *reg)
 	/* do a naive linear search... */
 	for (i = 0; i < arity; ++i) {
 		const arch_register_req_t *req = arch_get_irn_register_req_in(ret, i);
-		if (! (req->type & arch_register_req_type_limited))
+		if (!arch_register_req_is(req, limited))
 			continue;
 		if (req->cls != reg->reg_class)
 			continue;

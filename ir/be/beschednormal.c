@@ -116,7 +116,8 @@ static int count_result(const ir_node* irn)
 	if (mode == mode_T)
 		return 1;
 
-	if (arch_get_irn_register_req(irn)->type & arch_register_req_type_ignore)
+	arch_register_req_t const *const req = arch_get_irn_register_req(irn);
+	if (arch_register_req_is(req, ignore))
 		return 0;
 
 	return 1;

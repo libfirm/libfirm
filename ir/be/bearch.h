@@ -570,16 +570,14 @@ struct arch_env_t {
 static inline bool arch_irn_is_ignore(const ir_node *irn)
 {
 	const arch_register_req_t *req = arch_get_irn_register_req(irn);
-	return req->type & arch_register_req_type_ignore;
+	return arch_register_req_is(req, ignore);
 }
 
 static inline bool arch_irn_consider_in_reg_alloc(
 		const arch_register_class_t *cls, const ir_node *node)
 {
 	const arch_register_req_t *req = arch_get_irn_register_req(node);
-	return
-		req->cls == cls &&
-		!(req->type & arch_register_req_type_ignore);
+	return req->cls == cls && !arch_register_req_is(req, ignore);
 }
 
 /**
@@ -607,11 +605,11 @@ static inline bool arch_irn_consider_in_reg_alloc(
 	}                                                                      \
 	} while (0)
 
-#define be_foreach_definition(node, ccls, value, code)                     \
-	be_foreach_definition_(node, ccls, value,                              \
-		if (req_->type & arch_register_req_type_ignore)                    \
-			continue;                                                      \
-		code                                                               \
+#define be_foreach_definition(node, ccls, value, code) \
+	be_foreach_definition_(node, ccls, value, \
+		if (arch_register_req_is(req_, ignore)) \
+			continue; \
+		code \
 	)
 
 static inline const arch_register_class_t *arch_get_irn_reg_class(
