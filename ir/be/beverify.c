@@ -179,6 +179,11 @@ static void verify_schedule_walker(ir_node *block, void *data)
 		}
 		last_timestep = timestep;
 
+		if (arch_get_irn_flags(node) & arch_irn_flags_not_scheduled) {
+			ir_fprintf(stderr, "Verify warning: flags_not_scheduled node %+F scheduled anyway\n", node);
+			env->problem_found = true;
+		}
+
 		/* Check that phis come before any other node */
 		if (is_Phi(node)) {
 			if (non_phi_found != NULL) {
