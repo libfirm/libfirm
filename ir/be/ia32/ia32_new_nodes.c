@@ -221,14 +221,8 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 
 #ifndef NDEBUG
 			/* dump original ir node name */
-			fprintf(F, "orig node = ");
-			if (get_ia32_orig_node(n)) {
-				fprintf(F, "%s", get_ia32_orig_node(n));
-			}
-			else {
-				fprintf(F, "n/a");
-			}
-			fprintf(F, "\n");
+			char const *orig = get_ia32_attr_const(n)->orig_node;
+			fprintf(F, "orig node = %s\n", orig ? orig : "n/a");
 #endif /* NDEBUG */
 
 			break;
@@ -741,15 +735,6 @@ void set_ia32_exc_label_id(ir_node *node, ir_label_t id)
 }
 
 #ifndef NDEBUG
-
-/**
- * Returns the name of the original ir node.
- */
-const char *get_ia32_orig_node(const ir_node *node)
-{
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->orig_node;
-}
 
 static const char *ia32_get_old_node_name(const ir_node *irn)
 {

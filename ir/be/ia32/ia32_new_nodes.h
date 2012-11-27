@@ -283,11 +283,6 @@ void set_ia32_exc_label_id(ir_node *node, ir_label_t id);
 #ifndef NDEBUG
 
 /**
- * Returns the name of the original ir node.
- */
-const char *get_ia32_orig_node(const ir_node *node);
-
-/**
  * Sets the name of the original ir node.
  */
 void set_ia32_orig_node(ir_node *node, const ir_node *old);
