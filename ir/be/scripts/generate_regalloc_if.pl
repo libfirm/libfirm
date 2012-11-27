@@ -76,8 +76,6 @@ my %reg2class = ();
 
 $classdef .= "enum reg_classes {\n";
 
-my $class_mode;
-
 foreach my $class_name (keys(%reg_classes)) {
 	my @class = @{ $reg_classes{"$class_name"} };
 
@@ -134,7 +132,7 @@ foreach my $class_name (keys(%reg_classes)) {
 	$class_name = $arch."_".$class_name;
 	$class_ptr  = "&".$arch."_reg_classes[CLASS_".$class_name."]";
 	my $flags = pop(@class);
-	$class_mode  = $flags->{"mode"};
+	my $class_mode = $flags->{"mode"};
 	my $flags_prepared = map_flags("arch_register_class_flag_", $flags->{"flags"});
 
 	$single_constraints .= <<EOF;
