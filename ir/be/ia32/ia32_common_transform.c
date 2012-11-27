@@ -811,27 +811,11 @@ const arch_register_req_t *ia32_parse_clobber(const char *clobber)
 	if (strcmp(clobber, "memory") == 0 || strcmp(clobber, "cc") == 0)
 		return NULL;
 
-	struct obstack        *obst = get_irg_obstack(current_ir_graph);
-	const arch_register_t *reg  = ia32_get_clobber_register(clobber);
-	arch_register_req_t   *req;
-	unsigned              *limited;
-
-	if (reg == NULL) {
+	arch_register_t const *const reg = ia32_get_clobber_register(clobber);
+	if (!reg)
 		panic("Register '%s' mentioned in asm clobber is unknown", clobber);
-	}
 
-	assert(reg->index < 32);
-
-	limited  = OALLOC(obst, unsigned);
-	*limited = 1 << reg->index;
-
-	req          = OALLOCZ(obst, arch_register_req_t);
-	req->type    = arch_register_req_type_limited;
-	req->cls     = reg->reg_class;
-	req->limited = limited;
-	req->width   = 1;
-
-	return req;
+	return reg->single_req;
 }
 
 
