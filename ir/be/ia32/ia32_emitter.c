@@ -1009,7 +1009,8 @@ static const char* emit_asm_operand(const ir_node *node, const char *s)
 	case 0:
 		ir_fprintf(stderr, "Warning: asm text (%+F) ends with %%\n", node);
 		be_emit_char('%');
-		return s + 1;
+		return s;
+
 	case '%':
 		be_emit_char('%');
 		return s + 1;
