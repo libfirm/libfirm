@@ -205,12 +205,12 @@ void arch_add_irn_flags(ir_node *node, arch_irn_flags_t flags);
 
 static inline unsigned arch_get_irn_n_outs(const ir_node *node)
 {
-	backend_info_t *info = be_get_info(node);
-	if (info->out_infos == NULL)
-		return 0;
-
+	backend_info_t *const info = be_get_info(node);
 	return (unsigned)ARR_LEN(info->out_infos);
 }
+
+#define be_foreach_out(node, i) \
+	for (unsigned i = 0, i##__n = arch_get_irn_n_outs(node); i != i##__n; ++i)
 
 /**
  * Start codegeneration

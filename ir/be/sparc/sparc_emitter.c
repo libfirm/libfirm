@@ -320,8 +320,7 @@ static bool uses_reg(const ir_node *node, unsigned reg_index, unsigned width)
 
 static bool writes_reg(const ir_node *node, unsigned reg_index, unsigned width)
 {
-	unsigned n_outs = arch_get_irn_n_outs(node);
-	for (unsigned o = 0; o < n_outs; ++o) {
+	be_foreach_out(node, o) {
 		const arch_register_t     *out_reg = arch_get_irn_register_out(node, o);
 		if (out_reg == NULL)
 			continue;
@@ -423,8 +422,7 @@ static bool can_move_up_into_delayslot(const ir_node *node, const ir_node *to)
 		}
 
 		/* node must not write to one of the call outputs */
-		unsigned n_call_outs = arch_get_irn_n_outs(to);
-		for (unsigned o = 0; o < n_call_outs; ++o) {
+		be_foreach_out(to, o) {
 			const arch_register_t *reg = arch_get_irn_register_out(to, o);
 			if (reg == NULL)
 				continue;

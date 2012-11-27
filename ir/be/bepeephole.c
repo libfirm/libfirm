@@ -269,7 +269,6 @@ bool be_can_move_down(ir_heights_t *heights, const ir_node *node,
 			return false;
 
 		/* schedpoint must not overwrite registers of our inputs */
-		unsigned n_outs = arch_get_irn_n_outs(schedpoint);
 		for (int i = 0; i < node_arity; ++i) {
 			ir_node                   *in  = get_irn_n(node, i);
 			const arch_register_t     *reg = arch_get_irn_register(in);
@@ -277,7 +276,7 @@ bool be_can_move_down(ir_heights_t *heights, const ir_node *node,
 				continue;
 			const arch_register_req_t *in_req
 				= arch_get_irn_register_req_in(node, i);
-			for (unsigned o = 0; o < n_outs; ++o) {
+			be_foreach_out(schedpoint, o) {
 				const arch_register_t *outreg
 					= arch_get_irn_register_out(schedpoint, o);
 				const arch_register_req_t *outreq
@@ -295,7 +294,6 @@ bool be_can_move_down(ir_heights_t *heights, const ir_node *node,
 bool be_can_move_up(ir_heights_t *heights, const ir_node *node,
                     const ir_node *after)
 {
-	unsigned       n_outs      = arch_get_irn_n_outs(node);
 	const ir_node *node_block  = get_nodes_block(node);
 	const ir_node *after_block = get_block_const(after);
 	const ir_node *schedpoint;
@@ -326,7 +324,7 @@ bool be_can_move_up(ir_heights_t *heights, const ir_node *node,
 			be_lv_foreach(lv, succ, be_lv_state_in, live_node) {
 				const arch_register_t     *reg = arch_get_irn_register(live_node);
 				const arch_register_req_t *req = arch_get_irn_register_req(live_node);
-				for (unsigned o = 0; o < n_outs; ++o) {
+				be_foreach_out(node, o) {
 					const arch_register_t *outreg
 						= arch_get_irn_register_out(node, o);
 					const arch_register_req_t *outreq
@@ -340,7 +338,7 @@ bool be_can_move_up(ir_heights_t *heights, const ir_node *node,
 					break;
 				const arch_register_t     *reg = arch_get_irn_register(phi);
 				const arch_register_req_t *req = arch_get_irn_register_req(phi);
-				for (unsigned o = 0; o < n_outs; ++o) {
+				be_foreach_out(node, o) {
 					const arch_register_t *outreg
 						= arch_get_irn_register_out(node, o);
 					const arch_register_req_t *outreq
@@ -374,7 +372,7 @@ bool be_can_move_up(ir_heights_t *heights, const ir_node *node,
 				continue;
 			const arch_register_req_t *in_req
 				= arch_get_irn_register_req_in(schedpoint, i);
-			for (unsigned o = 0; o < n_outs; ++o) {
+			be_foreach_out(node, o) {
 				const arch_register_t *outreg
 					= arch_get_irn_register_out(node, o);
 				const arch_register_req_t *outreq

@@ -273,8 +273,7 @@ void arch_dump_reqs_and_registers(FILE *F, const ir_node *node)
 		arch_dump_register_req(F, req, node);
 		fputs("\n", F);
 	}
-	unsigned n_outs = arch_get_irn_n_outs(node);
-	for (unsigned o = 0; o < n_outs; ++o) {
+	be_foreach_out(node, o) {
 		const arch_register_req_t *req = arch_get_irn_register_req_out(node, o);
 		fprintf(F, "outreq #%u = ", o);
 		arch_dump_register_req(F, req, node);

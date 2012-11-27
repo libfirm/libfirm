@@ -270,14 +270,11 @@ static void init_sparc_switch_jmp_attributes(ir_node *node,
                                              const ir_switch_table *table,
                                              ir_entity *table_entity)
 {
-	unsigned n_outs = arch_get_irn_n_outs(node);
-	unsigned o;
-
 	sparc_switch_jmp_attr_t *attr = get_sparc_switch_jmp_attr(node);
 	attr->table        = table;
 	attr->table_entity = table_entity;
 
-	for (o = 0; o < n_outs; ++o) {
+	be_foreach_out(node, o) {
 		arch_set_irn_register_req_out(node, o, arch_no_register_req);
 	}
 }

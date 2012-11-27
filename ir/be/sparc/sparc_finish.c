@@ -269,14 +269,12 @@ static void finish_sparc_Ld(ir_node *node)
 		ir_node                 *constant        = create_constant_from_immediate(node, offset);
 		ir_node                 *new_load        = new_bd_sparc_Ld_reg(dbgi, block, ptr, constant, mem, load_store_mode);
 		sparc_load_store_attr_t *new_load_attr   = get_sparc_load_store_attr(new_load);
-		unsigned                 n_outs          = arch_get_irn_n_outs(node);
-		unsigned                 i;
 
 		new_load_attr->is_frame_entity = load_store_attr->is_frame_entity;
 		new_load_attr->is_reg_reg      = load_store_attr->is_reg_reg;
 
 		sched_add_before(node, new_load);
-		for (i = 0; i < n_outs; i++) {
+		be_foreach_out(node, i) {
 			arch_set_irn_register_out(new_load, i, arch_get_irn_register_out(node, i));
 		}
 		be_peephole_exchange(node, new_load);
@@ -333,14 +331,12 @@ static void finish_sparc_Ldf(ir_node *node)
 		ir_node                 *new_ptr         = new_bd_sparc_Add_reg(dbgi, block, ptr, constant);
 		ir_node                 *new_load        = new_bd_sparc_Ldf_s(dbgi, block, new_ptr, mem, load_store_mode, NULL, 0, true);
 		sparc_load_store_attr_t *new_load_attr   = get_sparc_load_store_attr(new_load);
-		unsigned                 n_outs          = arch_get_irn_n_outs(node);
-		unsigned                 i;
 
 		new_load_attr->is_frame_entity = load_store_attr->is_frame_entity;
 		new_load_attr->is_reg_reg      = load_store_attr->is_reg_reg;
 
 		sched_add_before(node, new_load);
-		for (i = 0; i < n_outs; i++) {
+		be_foreach_out(node, i) {
 			arch_set_irn_register_out(new_load, i, arch_get_irn_register_out(node, i));
 		}
 		be_peephole_exchange(node, new_load);
@@ -367,14 +363,12 @@ static void finish_sparc_St(ir_node *node)
 		ir_node                 *constant        = create_constant_from_immediate(node, offset);
 		ir_node                 *new_load        = new_bd_sparc_St_reg(dbgi, block, value, ptr, constant, mem, load_store_mode);
 		sparc_load_store_attr_t *new_load_attr   = get_sparc_load_store_attr(new_load);
-		unsigned                 n_outs          = arch_get_irn_n_outs(node);
-		unsigned                 i;
 
 		new_load_attr->is_frame_entity = load_store_attr->is_frame_entity;
 		new_load_attr->is_reg_reg      = load_store_attr->is_reg_reg;
 
 		sched_add_before(node, new_load);
-		for (i = 0; i < n_outs; i++) {
+		be_foreach_out(node, i) {
 			arch_set_irn_register_out(new_load, i, arch_get_irn_register_out(node, i));
 		}
 		be_peephole_exchange(node, new_load);
@@ -402,14 +396,12 @@ static void finish_sparc_Stf(ir_node *node)
 		ir_node                 *new_ptr         = new_bd_sparc_Add_reg(dbgi, block, ptr, constant);
 		ir_node                 *new_load        = new_bd_sparc_Stf_s(dbgi, block, value, new_ptr, mem, load_store_mode, NULL, 0, true);
 		sparc_load_store_attr_t *new_load_attr   = get_sparc_load_store_attr(new_load);
-		unsigned                 n_outs          = arch_get_irn_n_outs(node);
-		unsigned                 i;
 
 		new_load_attr->is_frame_entity = load_store_attr->is_frame_entity;
 		new_load_attr->is_reg_reg      = load_store_attr->is_reg_reg;
 
 		sched_add_before(node, new_load);
-		for (i = 0; i < n_outs; i++) {
+		be_foreach_out(node, i) {
 			arch_set_irn_register_out(new_load, i, arch_get_irn_register_out(node, i));
 		}
 		be_peephole_exchange(node, new_load);

@@ -5512,13 +5512,11 @@ static ir_node *gen_Proj_be_Call(ir_node *node)
 		proj = pn_ia32_Call_X_regular;
 	} else {
 		arch_register_req_t const *const req    = arch_get_irn_register_req(node);
-		int                        const n_outs = arch_get_irn_n_outs(new_call);
-		int                              i;
 
 		assert(proj >= pn_be_Call_first_res);
 		assert(arch_register_req_is(req, limited));
 
-		for (i = 0; i < n_outs; ++i) {
+		be_foreach_out(new_call, i) {
 			arch_register_req_t const *const new_req = arch_get_irn_register_req_out(new_call, i);
 			if (!arch_register_req_is(new_req, limited) ||
 			    new_req->cls      != req->cls           ||
@@ -5526,9 +5524,10 @@ static ir_node *gen_Proj_be_Call(ir_node *node)
 				continue;
 
 			proj = i;
-			break;
+			goto found;
 		}
-		assert(i < n_outs);
+		panic("no matching out requirement found");
+found:;
 	}
 
 	res = new_rd_Proj(dbgi, new_call, mode, proj);

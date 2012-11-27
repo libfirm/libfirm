@@ -245,14 +245,12 @@ static int get_first_same(const arch_register_req_t* req)
 static void assure_should_be_same_requirements(ir_node *node)
 {
 	const arch_register_t      *out_reg, *in_reg;
-	int                         n_res, i;
 	ir_node                    *in_node, *block;
 
-	n_res = arch_get_irn_n_outs(node);
 	block = get_nodes_block(node);
 
 	/* check all OUT requirements, if there is a should_be_same */
-	for (i = 0; i < n_res; i++) {
+	be_foreach_out(node, i) {
 		int                          i2, arity;
 		int                          same_pos;
 		ir_node                     *uses_out_reg;
@@ -345,8 +343,6 @@ static void assure_should_be_same_requirements(ir_node *node)
  */
 static void fix_am_source(ir_node *irn)
 {
-	int                         n_res, i;
-
 	/* check only ia32 nodes with source address mode */
 	if (!is_ia32_irn(irn) || get_ia32_op_type(irn) != ia32_AddrModeS)
 		return;
@@ -354,9 +350,7 @@ static void fix_am_source(ir_node *irn)
 	if (get_ia32_am_support(irn) != ia32_am_binary)
 		return;
 
-	n_res = arch_get_irn_n_outs(irn);
-
-	for (i = 0; i < n_res; i++) {
+	be_foreach_out(irn, i) {
 		const arch_register_req_t *req = arch_get_irn_register_req_out(irn, i);
 		const arch_register_t     *out_reg;
 		int                        same_pos;

@@ -1491,10 +1491,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
  */
 static int find_out_for_reg(ir_node *node, const arch_register_t *reg)
 {
-	int n_outs = arch_get_irn_n_outs(node);
-	int o;
-
-	for (o = 0; o < n_outs; ++o) {
+	be_foreach_out(node, o) {
 		const arch_register_req_t *req = arch_get_irn_register_req_out(node, o);
 		if (req == reg->single_req)
 			return o;

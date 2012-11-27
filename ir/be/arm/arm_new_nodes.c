@@ -381,13 +381,10 @@ static void init_arm_CopyB_attributes(ir_node *res, unsigned size)
 static void init_arm_SwitchJmp_attributes(ir_node *res,
                                           const ir_switch_table *table)
 {
-	unsigned n_outs = arch_get_irn_n_outs(res);
-	unsigned o;
-
 	arm_SwitchJmp_attr_t *attr = get_arm_SwitchJmp_attr(res);
 	attr->table = table;
 
-	for (o = 0; o < n_outs; ++o) {
+	be_foreach_out(res, o) {
 		arch_set_irn_register_req_out(res, o, arch_no_register_req);
 	}
 }

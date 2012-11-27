@@ -878,16 +878,13 @@ static void init_ia32_climbframe_attributes(ir_node *res, unsigned count)
 static void init_ia32_switch_attributes(ir_node *node,
                                         const ir_switch_table *table)
 {
-	unsigned n_outs = arch_get_irn_n_outs(node);
-	unsigned o;
-
 	ia32_switch_attr_t *attr = (ia32_switch_attr_t*) get_irn_generic_attr(node);
 #ifndef NDEBUG
 	attr->attr.attr_type |= IA32_ATTR_ia32_switch_attr_t;
 #endif
 	attr->table = table;
 
-	for (o = 0; o < n_outs; ++o) {
+	be_foreach_out(node, o) {
 		arch_set_irn_register_req_out(node, o, arch_no_register_req);
 	}
 }

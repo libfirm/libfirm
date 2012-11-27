@@ -1418,7 +1418,7 @@ static int sim_Asm(x87_state *const state, ir_node *const n)
 			panic("cannot handle %+F with x87 constraints", n);
 	}
 
-	for (size_t i = arch_get_irn_n_outs(n); i-- != 0;) {
+	be_foreach_out(n, i) {
 		arch_register_req_t const *const req = arch_get_irn_register_req_out(n, i);
 		if (req->cls == &ia32_reg_classes[CLASS_ia32_fp])
 			panic("cannot handle %+F with x87 constraints", n);

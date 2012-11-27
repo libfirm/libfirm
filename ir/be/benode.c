@@ -973,11 +973,9 @@ static const arch_irn_ops_t be_node_irn_ops = {
 static int get_start_reg_index(ir_graph *irg, const arch_register_t *reg)
 {
 	ir_node *start  = get_irg_start(irg);
-	unsigned n_outs = arch_get_irn_n_outs(start);
-	int      i;
 
 	/* do a naive linear search... */
-	for (i = 0; i < (int)n_outs; ++i) {
+	be_foreach_out(start, i) {
 		arch_register_req_t const *const out_req = arch_get_irn_register_req_out(start, i);
 		if (!arch_register_req_is(out_req, limited))
 			continue;
