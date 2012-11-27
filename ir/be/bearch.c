@@ -226,7 +226,7 @@ static void arch_dump_register_req(FILE *F, const arch_register_req_t *req,
 		fprintf(F, " same as");
 		for (i = 0; 1U << i <= other; ++i) {
 			if (other & (1U << i)) {
-				ir_fprintf(F, " %+F", get_irn_n(skip_Proj_const(node), i));
+				ir_fprintf(F, " #%d (%+F)", i, get_irn_n(skip_Proj_const(node), i));
 			}
 		}
 	}
@@ -238,7 +238,7 @@ static void arch_dump_register_req(FILE *F, const arch_register_req_t *req,
 		fprintf(F, " different from");
 		for (i = 0; 1U << i <= other; ++i) {
 			if (other & (1U << i)) {
-				ir_fprintf(F, " %+F", get_irn_n(skip_Proj_const(node), i));
+				ir_fprintf(F, " #%d (%+F)", i, get_irn_n(skip_Proj_const(node), i));
 			}
 		}
 	}
