@@ -33,6 +33,7 @@
 
 #include "irgraph.h"
 #include "irnode.h"
+#include <stdbool.h>
 
 typedef enum {
 	lv_chk_state_in  = 1,
@@ -42,6 +43,26 @@ typedef enum {
 } lv_chk_state_t;
 
 typedef struct lv_chk_t lv_chk_t;
+
+/**
+ * Filter out some nodes for which we never need liveness.
+ *
+ * @param irn  the node t check
+ * @return 0 if no liveness info is needed, 1 else
+ */
+static inline bool is_liveness_node(const ir_node *irn)
+{
+	switch (get_irn_opcode(irn)) {
+	case iro_Block:
+	case iro_Bad:
+	case iro_End:
+	case iro_Anchor:
+	case iro_NoMem:
+		return 0;
+	default:
+		return 1;
+	}
+}
 
 /**
  * Make a new liveness check environment.

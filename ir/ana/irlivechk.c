@@ -102,26 +102,6 @@ static bl_info_t *get_block_info(lv_chk_t *lv, const ir_node *block)
 }
 
 /**
- * Filter function to select all nodes for which liveness is computed.
- * @param irn A node.
- * @return    1 if the node shall be considered in liveness, 0 if not.
- */
-static inline int is_liveness_node(const ir_node *irn)
-{
-	switch (get_irn_opcode(irn)) {
-	case iro_Block:
-	case iro_Bad:
-	case iro_End:
-	case iro_Anchor:
-		return 0;
-	default:
-		break;
-	}
-
-	return 1;
-}
-
-/**
  * Compute the transitive closure on the reduced graph.
  * The reduced graph is the original graph without back edges.
  * Since that is a DAG, a reverse post order of the graph gives a toposort

@@ -47,26 +47,6 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 #define LV_STD_SIZE             64
 
-/**
- * Filter out some nodes for which we never need liveness.
- *
- * @param irn  the node t check
- * @return 0 if no liveness info is needed, 1 else
- */
-static inline int is_liveness_node(const ir_node *irn)
-{
-	switch (get_irn_opcode(irn)) {
-	case iro_Block:
-	case iro_Bad:
-	case iro_End:
-	case iro_Anchor:
-	case iro_NoMem:
-		return 0;
-	default:
-		return 1;
-	}
-}
-
 int (be_is_live_in)(const be_lv_t *lv, const ir_node *block, const ir_node *irn)
 {
 	return _be_is_live_xxx(lv, block, irn, be_lv_state_in);
