@@ -46,7 +46,7 @@
 /**
  * An empty dynamic array descriptor.
  */
-ir_arr_descr arr_mt_descr = { ARR_D_MAGIC, 0, 0, 0,  { { 0 } } };
+ir_arr_descr arr_mt_descr = { ARR_D_MAGIC, 0, 0, { { 0 } } };
 
 void ir_verify_arr(const void *arr)
 {
@@ -79,7 +79,7 @@ void *ir_new_arr_d(struct obstack *obstack, size_t nelts, size_t elts_size)
 	assert(obstack);
 
 	dp = (ir_arr_descr*)obstack_alloc(obstack, ARR_ELTS_OFFS + elts_size);
-	ARR_SET_DBGINF(dp, ARR_D_MAGIC, elts_size/nelts);
+	ARR_SET_DBGINF(dp, ARR_D_MAGIC);
 	dp->allocated = dp->nelts = nelts;
 	return dp->elts;
 }
@@ -100,7 +100,7 @@ void *ir_new_arr_f(size_t nelts, size_t elts_size)
 	ir_arr_descr *newa;
 
 	newa = (ir_arr_descr*)xmalloc(ARR_ELTS_OFFS+elts_size);
-	ARR_SET_DBGINF(newa, ARR_F_MAGIC, nelts ? elts_size/nelts : 0);
+	ARR_SET_DBGINF(newa, ARR_F_MAGIC);
 	newa->allocated = newa->nelts = nelts;
 	return newa->elts;
 }
@@ -143,7 +143,6 @@ void *ir_arr_setlen (void *elts, size_t nelts, size_t elts_size)
 
 	assert(dp->magic == ARR_F_MAGIC);
 	ARR_VRFY(elts);
-	assert(!dp->eltsize || !nelts || (dp->eltsize == elts_size/nelts));
 
 	dp = (ir_arr_descr*) xrealloc(dp, ARR_ELTS_OFFS+elts_size);
 	dp->allocated = dp->nelts = nelts;
@@ -171,7 +170,6 @@ void *ir_arr_resize(void *elts, size_t nelts, size_t eltsize)
 
 	assert(dp->magic == ARR_F_MAGIC);
 	ARR_VRFY(elts);
-	assert(dp->eltsize ? dp->eltsize == eltsize : (dp->eltsize = eltsize, 1));
 
 	/* @@@ lots of resizes for small nelts */
 	n = MAX(1, dp->allocated);

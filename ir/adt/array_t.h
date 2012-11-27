@@ -32,10 +32,10 @@
 #define ARR_F_MAGIC FOURCC('A','R','R','F')
 
 #ifdef NDEBUG
-# define ARR_SET_DBGINF(descr, co, es)
+# define ARR_SET_DBGINF(descr, co)
 #else
-# define ARR_SET_DBGINF(descr, co, es) \
-    ( (descr)->magic = (co), (descr)->eltsize = (es) )
+# define ARR_SET_DBGINF(descr, co) \
+    ((descr)->magic = (co))
 #endif
 
 /**
@@ -53,7 +53,7 @@
   do {                                                             \
     size_t nelts = (n);                                            \
     (var) = (type *)((ir_arr_descr *)alloca(ARR_ELTS_OFFS + sizeof(type) * nelts))->elts; \
-    ARR_SET_DBGINF(ARR_DESCR ((var)), ARR_A_MAGIC, sizeof (type)); \
+    ARR_SET_DBGINF(ARR_DESCR ((var)), ARR_A_MAGIC); \
     (void)(ARR_DESCR((var))->nelts = nelts);                       \
   } while (0)
 
