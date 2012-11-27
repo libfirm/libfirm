@@ -315,19 +315,20 @@ static void peephole_ia32_Test(ir_node *node)
 		offset = imm->offset;
 		if (get_ia32_op_type(node) == ia32_AddrModeS) {
 			ia32_attr_t *const attr = get_ia32_attr(node);
+			ir_graph    *const irg  = get_irn_irg(node);
 
 			if ((offset & 0xFFFFFF00) == 0) {
 				/* attr->am_offs += 0; */
 			} else if ((offset & 0xFFFF00FF) == 0) {
-				ir_node *imm_node = ia32_create_Immediate(NULL, 0, offset>>8);
+				ir_node *imm_node = ia32_create_Immediate(irg, NULL, 0, offset >>  8);
 				set_irn_n(node, n_ia32_Test_right, imm_node);
 				attr->am_offs += 1;
 			} else if ((offset & 0xFF00FFFF) == 0) {
-				ir_node *imm_node = ia32_create_Immediate(NULL, 0, offset>>16);
+				ir_node *imm_node = ia32_create_Immediate(irg, NULL, 0, offset >> 16);
 				set_irn_n(node, n_ia32_Test_right, imm_node);
 				attr->am_offs += 2;
 			} else if ((offset & 0x00FFFFFF) == 0) {
-				ir_node *imm_node = ia32_create_Immediate(NULL, 0, offset>>24);
+				ir_node *imm_node = ia32_create_Immediate(irg, NULL, 0, offset >> 24);
 				set_irn_n(node, n_ia32_Test_right, imm_node);
 				attr->am_offs += 3;
 			} else {
