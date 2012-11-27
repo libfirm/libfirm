@@ -191,7 +191,12 @@ bool arch_reg_is_allocatable(const arch_register_req_t *req,
 	return true;
 }
 
-void arch_dump_register_req(FILE *F, const arch_register_req_t *req,
+/**
+ * Print information about a register requirement in human readable form
+ * @param F   output stream/file
+ * @param req The requirements structure to format.
+ */
+static void arch_dump_register_req(FILE *F, const arch_register_req_t *req,
                             const ir_node *node)
 {
 	if (req == NULL || req->type == arch_register_req_type_none) {

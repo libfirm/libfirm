@@ -92,14 +92,6 @@ ENUM_BITSET(arch_register_req_type_t)
 extern arch_register_req_t const arch_no_requirement;
 #define arch_no_register_req (&arch_no_requirement)
 
-/**
- * Print information about a register requirement in human readable form
- * @param F   output stream/file
- * @param req The requirements structure to format.
- */
-void arch_dump_register_req(FILE *F, const arch_register_req_t *req,
-                            const ir_node *node);
-
 void arch_dump_register_reqs(FILE *F, const ir_node *node);
 void arch_dump_reqs_and_registers(FILE *F, const ir_node *node);
 
