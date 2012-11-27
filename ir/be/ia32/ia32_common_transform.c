@@ -411,7 +411,7 @@ static inline ir_node *get_new_node(ir_node *node)
 #endif
 }
 
-static arch_register_req_t const *ia32_make_register_req(constraint_t const *constraint, int n_outs, arch_register_req_t const **out_reqs, int pos);
+static arch_register_req_t const *ia32_make_register_req(ir_graph *irg, constraint_t const *constraint, int n_outs, arch_register_req_t const **out_reqs, int pos);
 
 ir_node *ia32_gen_ASM(ir_node *node)
 {
@@ -473,9 +473,7 @@ ir_node *ia32_gen_ASM(ir_node *node)
 		const char              *c          = get_id_str(constraint->constraint);
 		unsigned                 pos        = constraint->pos;
 		parse_asm_constraints(&parsed_constraint, c, true);
-		const arch_register_req_t *req
-			= ia32_make_register_req(&parsed_constraint, n_out_constraints,
-		                             out_reg_reqs, out_idx);
+		arch_register_req_t const *const req = ia32_make_register_req(irg, &parsed_constraint, n_out_constraints, out_reg_reqs, out_idx);
 		out_reg_reqs[out_idx] = req;
 
 		/* multiple constraints for same pos. This can happen for example when
@@ -519,9 +517,7 @@ ir_node *ia32_gen_ASM(ir_node *node)
 			}
 		}
 
-		const arch_register_req_t *req
-			= ia32_make_register_req(&parsed_constraint, n_out_constraints,
-		                             out_reg_reqs, i);
+		arch_register_req_t const *const req = ia32_make_register_req(irg, &parsed_constraint, n_out_constraints, out_reg_reqs, i);
 		in_reg_reqs[i] = req;
 
 		if (parsed_constraint.immediate_type != '\0') {
@@ -763,14 +759,14 @@ ir_node *ia32_gen_Unknown(ir_node *node)
 	return res;
 }
 
-static arch_register_req_t const *ia32_make_register_req(constraint_t const *const c, int const n_outs, arch_register_req_t const **const out_reqs, int const pos)
+static arch_register_req_t const *ia32_make_register_req(ir_graph *const irg, constraint_t const *const c, int const n_outs, arch_register_req_t const **const out_reqs, int const pos)
 {
 	int const same_as = c->same_as;
 	if (same_as >= 0) {
 		if (same_as >= n_outs)
 			panic("invalid output number in same_as constraint");
 
-		struct obstack            *const obst  = get_irg_obstack(current_ir_graph);
+		struct obstack            *const obst  = get_irg_obstack(irg);
 		arch_register_req_t       *const req   = OALLOC(obst, arch_register_req_t);
 		arch_register_req_t const *const other = out_reqs[same_as];
 		*req            = *other;
@@ -791,7 +787,7 @@ static arch_register_req_t const *ia32_make_register_req(constraint_t const *con
 	if (c->allowed_registers == 0 || c->all_registers_allowed)
 		return c->cls->class_req;
 
-	struct obstack      *const obst    = get_irg_obstack(current_ir_graph);
+	struct obstack      *const obst    = get_irg_obstack(irg);
 	arch_register_req_t *const req     = (arch_register_req_t*)obstack_alloc(obst, sizeof(req[0]) + sizeof(unsigned));
 	unsigned            *const limited = (unsigned*)(req + 1);
 	*limited = c->allowed_registers;
