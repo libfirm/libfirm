@@ -98,9 +98,6 @@ ir_node *ia32_gen_Proj_tls(ir_node *node);
  */
 ir_node *ia32_gen_Unknown(ir_node *node);
 
-const arch_register_req_t *ia32_make_register_req(const constraint_t *constraint,
-		int n_outs, const arch_register_req_t **out_reqs, int pos);
-
 const arch_register_req_t *ia32_parse_clobber(const char *clobber);
 
 /**

@@ -413,6 +413,8 @@ static inline ir_node *get_new_node(ir_node *node)
 #endif
 }
 
+static arch_register_req_t const *ia32_make_register_req(constraint_t const *constraint, int n_outs, arch_register_req_t const **out_reqs, int pos);
+
 ir_node *ia32_gen_ASM(ir_node *node)
 {
 	ir_node        *block        = get_nodes_block(node);
@@ -763,9 +765,7 @@ ir_node *ia32_gen_Unknown(ir_node *node)
 	return res;
 }
 
-const arch_register_req_t *ia32_make_register_req(
-		const constraint_t *constraint,  int n_outs,
-		const arch_register_req_t **out_reqs, int pos)
+static arch_register_req_t const *ia32_make_register_req(constraint_t const *const constraint, int const n_outs, arch_register_req_t const **const out_reqs, int const pos)
 {
 	struct obstack      *obst    = get_irg_obstack(current_ir_graph);
 	int                  same_as = constraint->same_as;
