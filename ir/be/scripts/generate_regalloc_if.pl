@@ -50,6 +50,12 @@ my $target_c   = $target_dir."/gen_".$arch."_regalloc_if.c";
 my $target_h   = $target_dir."/gen_".$arch."_regalloc_if.h";
 
 # helper function
+sub map_flags {
+	my $prefix = shift;
+	my $flags  = shift || "none";
+	return join(" | ", map { "$prefix$_" } split(/\s*\|\s*/, $flags));
+}
+
 sub translate_reg_type {
 	my $t = shift;
 
@@ -154,22 +160,7 @@ foreach my $class_name (keys(%reg_classes)) {
 	$class_ptr  = "&".$arch."_reg_classes[CLASS_".$class_name."]";
 	my $flags = pop(@class);
 	$class_mode  = $flags->{"mode"};
-	my $class_flags = $flags->{"flags"};
-	my $flags_prepared = "";
-
-	if(defined($class_flags)) {
-		my $first = 1;
-		foreach my $flag (split(/\|/, $class_flags)) {
-			if(!$first) {
-				$flags_prepared .= "|";
-			} else {
-				$first = 0;
-			}
-			$flags_prepared .= "arch_register_class_flag_$flag";
-		}
-	} else {
-		$flags_prepared = "arch_register_class_flag_none";
-	}
+	my $flags_prepared = map_flags("arch_register_class_flag_", $flags->{"flags"});
 
 	$single_constraints .= <<EOF;
 static const arch_register_req_t ${arch}_class_reg_req_${old_classname} = {
