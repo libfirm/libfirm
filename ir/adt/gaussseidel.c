@@ -7,9 +7,6 @@
 #include "gaussseidel.h"
 #include "util.h"
 
-#define MAX(x,y)   ((x) > (y) ? (x) : (y))
-#define MIN(x,y)   ((x) < (y) ? (x) : (y))
-
 /**
  * The number of newly allocated rows (realloc)
  * when there is no more room. Must be >= 1.

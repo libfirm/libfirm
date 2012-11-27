@@ -28,6 +28,7 @@
 #include <stdlib.h>
 
 #include "array_t.h"
+#include "util.h"
 #include "xmalloc.h"
 
 /* Undefine the macros to get the functions instead, cf tmalloc.c.  */
@@ -35,13 +36,6 @@
 #undef xrealloc
 #undef xstrdup
 #undef xfree
-
-#ifndef MAX
-# define MAX(a,b) ((a) > (b) ? (a) : (b))
-#endif
-#ifndef MIN
-# define MIN(a,b) ((a) > (b) ? (b) : (a))
-#endif
 
 /**
  * An empty dynamic array descriptor.
