@@ -858,18 +858,12 @@ int ia32_prevents_AM(ir_node *const block, ir_node *const am_candidate,
 
 ir_node *ia32_try_create_Immediate(ir_node *node, char immediate_constraint_type)
 {
-	long       val = 0;
-	ir_entity *symconst_ent  = NULL;
-	ir_mode   *mode;
-	ir_node   *cnst          = NULL;
-	ir_node   *symconst      = NULL;
-	ir_node   *new_node;
-
-	mode = get_irn_mode(node);
-	if (!mode_is_int(mode) && !mode_is_reference(mode)) {
+	ir_mode *const mode = get_irn_mode(node);
+	if (!mode_is_int(mode) && !mode_is_reference(mode))
 		return NULL;
-	}
 
+	ir_node *cnst;
+	ir_node *symconst;
 	if (is_Const(node)) {
 		cnst     = node;
 		symconst = NULL;
@@ -886,11 +880,14 @@ ir_node *ia32_try_create_Immediate(ir_node *node, char immediate_constraint_type
 		} else if (is_SymConst_addr_ent(left) && is_Const(right)) {
 			cnst     = right;
 			symconst = left;
+		} else {
+			return NULL;
 		}
 	} else {
 		return NULL;
 	}
 
+	long val = 0;
 	if (cnst != NULL) {
 		ir_tarval *offset = get_Const_tarval(cnst);
 		if (!tarval_is_long(offset)) {
@@ -902,17 +899,15 @@ ir_node *ia32_try_create_Immediate(ir_node *node, char immediate_constraint_type
 		if (!check_immediate_constraint(val, immediate_constraint_type))
 			return NULL;
 	}
+
+	ir_entity *symconst_ent = NULL;
 	if (symconst != NULL) {
-		if (immediate_constraint_type != 'i') {
-			/* we need full 32bits for symconsts */
+		/* we need full 32bits for symconsts */
+		if (immediate_constraint_type != 'i')
 			return NULL;
-		}
 
 		symconst_ent = get_SymConst_entity(symconst);
 	}
-	if (cnst == NULL && symconst == NULL)
-		return NULL;
 
-	new_node = ia32_create_Immediate(symconst_ent, 0, val);
-	return new_node;
+	return ia32_create_Immediate(symconst_ent, 0, val);
 }
