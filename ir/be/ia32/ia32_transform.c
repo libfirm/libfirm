@@ -101,8 +101,7 @@ typedef ir_node *construct_binop_float_func(dbg_info *db, ir_node *block,
 
 typedef ir_node *construct_unop_func(dbg_info *db, ir_node *block, ir_node *op);
 
-static ir_node *create_immediate_or_transform(ir_node *node,
-                                              char immediate_constraint_type);
+static ir_node *create_immediate_or_transform(ir_node *node);
 
 static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
                                 dbg_info *dbgi, ir_node *block,
@@ -1172,7 +1171,7 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 		op2 = op;
 		assert(get_mode_size_bits(get_irn_mode(op2)) >= 5);
 	}
-	new_op2 = create_immediate_or_transform(op2, 0);
+	new_op2 = create_immediate_or_transform(op2);
 
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *block     = get_nodes_block(node);
@@ -1302,7 +1301,7 @@ static ir_node *gen_64bit_shifts(dbg_info *dbgi, ir_node *block,
 		assert(get_mode_size_bits(get_irn_mode(count)) >= 5);
 		count = get_Conv_op(count);
 	}
-	new_count = create_immediate_or_transform(count, 0);
+	new_count = create_immediate_or_transform(count);
 
 	new_node = func(dbgi, new_block, new_high, new_low, new_count);
 	return new_node;
@@ -2332,10 +2331,10 @@ static ir_node *dest_am_binop(ir_node *node, ir_node *op1, ir_node *op2,
 
 	if (use_dest_am(src_block, op1, mem, ptr, op2)) {
 		build_address(&am, op1, ia32_create_am_double_use);
-		new_op = create_immediate_or_transform(op2, 0);
+		new_op = create_immediate_or_transform(op2);
 	} else if (commutative && use_dest_am(src_block, op2, mem, ptr, op1)) {
 		build_address(&am, op2, ia32_create_am_double_use);
-		new_op = create_immediate_or_transform(op1, 0);
+		new_op = create_immediate_or_transform(op1);
 	} else {
 		return NULL;
 	}
@@ -2784,7 +2783,7 @@ static ir_node *gen_general_Store(ir_node *node)
 		       && get_mode_size_bits(get_irn_mode(val)) >= dest_bits) {
 		    val = get_Conv_op(val);
 		}
-		new_val = create_immediate_or_transform(val, 0);
+		new_val = create_immediate_or_transform(val);
 		assert(mode != mode_b);
 
 		if (dest_bits == 8) {
@@ -3932,10 +3931,9 @@ static ir_node *gen_Conv(ir_node *node)
 	return res;
 }
 
-static ir_node *create_immediate_or_transform(ir_node *node,
-                                              char immediate_constraint_type)
+static ir_node *create_immediate_or_transform(ir_node *const node)
 {
-	ir_node *new_node = ia32_try_create_Immediate(node, immediate_constraint_type);
+	ir_node *new_node = ia32_try_create_Immediate(node, 0);
 	if (new_node == NULL) {
 		new_node = be_transform_node(node);
 	}
@@ -5260,7 +5258,7 @@ static ir_node *gen_bswap(ir_node *node)
  */
 static ir_node *gen_outport(ir_node *node)
 {
-	ir_node *port  = create_immediate_or_transform(get_Builtin_param(node, 0), 0);
+	ir_node *port  = create_immediate_or_transform(get_Builtin_param(node, 0));
 	ir_node *oldv  = get_Builtin_param(node, 1);
 	ir_mode *mode  = get_irn_mode(oldv);
 	ir_node *value = be_transform_node(oldv);
@@ -5281,7 +5279,7 @@ static ir_node *gen_inport(ir_node *node)
 	ir_type *tp    = get_Builtin_type(node);
 	ir_type *rstp  = get_method_res_type(tp, 0);
 	ir_mode *mode  = get_type_mode(rstp);
-	ir_node *port  = create_immediate_or_transform(get_Builtin_param(node, 0), 0);
+	ir_node *port  = create_immediate_or_transform(get_Builtin_param(node, 0));
 	ir_node *block = be_transform_node(get_nodes_block(node));
 	ir_node *mem   = be_transform_node(get_Builtin_mem(node));
 	dbg_info *dbgi = get_irn_dbg_info(node);
