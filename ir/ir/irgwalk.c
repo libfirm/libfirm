@@ -281,7 +281,6 @@ void irg_walk_in_or_dep_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *
 static ir_node *get_cf_op(ir_node *n)
 {
 	while (!is_cfop(n) && !is_fragile_op(n) && !is_Bad(n)) {
-		n = skip_Id(n);
 		n = skip_Tuple(n);
 		n = skip_Proj(n);
 	}
