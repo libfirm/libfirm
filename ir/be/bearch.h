@@ -202,11 +202,7 @@ static inline const arch_register_req_t *arch_get_irn_register_req(const ir_node
  */
 static inline arch_irn_flags_t arch_get_irn_flags(const ir_node *node)
 {
-	backend_info_t *info;
-	if (is_Proj(node))
-		return arch_irn_flags_not_scheduled;
-
-	info = be_get_info(node);
+	backend_info_t const *const info = be_get_info(node);
 	return info->flags;
 }
 
