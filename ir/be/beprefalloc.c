@@ -593,7 +593,7 @@ static bool try_optimistic_split(ir_node *to_split, ir_node *before,
 	allocation_info_t *info = get_allocation_info(to_split);
 	float              delta = 0;
 
-	/* stupid hack: don't optimisticallt split don't spill nodes...
+	/* stupid hack: don't optimistically split don't spill nodes...
 	 * (so we don't split away the values produced because of
 	 *  must_be_different constraints) */
 	ir_node *original_insn = skip_Proj(info->original_value);
