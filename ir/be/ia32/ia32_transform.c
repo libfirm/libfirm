@@ -828,7 +828,7 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 	 * op2 input */
 	new_op2 = NULL;
 	if (!(flags & match_try_am) && use_immediate) {
-		new_op2 = ia32_try_create_Immediate(op2, 0);
+		new_op2 = ia32_try_create_Immediate(op2, 'i');
 	}
 
 	if (new_op2 == NULL &&
@@ -3933,7 +3933,7 @@ static ir_node *gen_Conv(ir_node *node)
 
 static ir_node *create_immediate_or_transform(ir_node *const node)
 {
-	ir_node *new_node = ia32_try_create_Immediate(node, 0);
+	ir_node *new_node = ia32_try_create_Immediate(node, 'i');
 	if (new_node == NULL) {
 		new_node = be_transform_node(node);
 	}

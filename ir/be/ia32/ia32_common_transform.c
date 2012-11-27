@@ -47,7 +47,6 @@ ir_heights_t *ia32_heights = NULL;
 static int check_immediate_constraint(long val, char immediate_constraint_type)
 {
 	switch (immediate_constraint_type) {
-		case 0:
 		case 'i': return 1;
 
 		case 'I': return    0 <= val && val <=  31;
@@ -904,7 +903,7 @@ ir_node *ia32_try_create_Immediate(ir_node *node, char immediate_constraint_type
 			return NULL;
 	}
 	if (symconst != NULL) {
-		if (immediate_constraint_type != 0) {
+		if (immediate_constraint_type != 'i') {
 			/* we need full 32bits for symconsts */
 			return NULL;
 		}
