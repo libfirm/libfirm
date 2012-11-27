@@ -176,23 +176,26 @@ void be_info_init(void)
  */
 static void sched_edge_hook(FILE *F, const ir_node *irn)
 {
-	if (get_irn_irg(irn)->be_data == NULL)
+	ir_graph *irg = get_irn_irg(irn);
+	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND))
 		return;
 
-	if (!is_Proj(irn) && sched_is_scheduled(irn) && !is_Block(irn)) {
-		ir_node *const prev = sched_prev(irn);
-		if (!sched_is_begin(prev)) {
-			fprintf(F, "edge:{sourcename: ");
-			print_nodeid(F, irn);
-			fprintf(F, " targetname: ");
-			print_nodeid(F, prev);
-			fprintf(F, " color:magenta}\n");
-		}
+	if (is_Proj(irn) || is_Block(irn) || !sched_is_scheduled(irn))
+		return;
+
+	ir_node *const prev = sched_prev(irn);
+	if (!sched_is_begin(prev)) {
+		fprintf(F, "edge:{sourcename: ");
+		print_nodeid(F, irn);
+		fprintf(F, " targetname: ");
+		print_nodeid(F, prev);
+		fprintf(F, " color:magenta}\n");
 	}
 }
 
 void be_info_init_irg(ir_graph *irg)
 {
+	add_irg_constraints(irg, IR_GRAPH_CONSTRAINT_BACKEND);
 	irg_walk_anchors(irg, init_walker, NULL, NULL);
 
 	set_dump_node_edge_hook(sched_edge_hook);

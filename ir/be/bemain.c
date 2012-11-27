@@ -480,7 +480,6 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 	/* Ensure, that the ir_edges are computed. */
 	assure_edges(irg);
 
-	add_irg_constraints(irg, IR_GRAPH_CONSTRAINT_BACKEND);
 	be_info_init_irg(irg);
 
 	dump(DUMP_INITIAL, irg, "prepared");
