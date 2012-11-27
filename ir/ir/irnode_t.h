@@ -392,16 +392,13 @@ static inline ir_node *get_Block_cfgpred_(const ir_node *node, int pos)
 	return get_irn_n_(node, pos);
 }
 
-/* Get the predecessor block.
+/**
+ * Get the predecessor block.
  *
- *  Returns the block corresponding to the predecessor pos.
+ * Returns the block corresponding to the predecessor pos.
  *
- *  There are several ambiguities we resolve with this function:
- *  - The direct predecessor can be a Proj, which is not pinned.
- *    We walk from the predecessor to the next pinned node
- *    (skip_Proj) and return the block that node is in.
- *  - If we encounter the Bad node, this function does not return
- *    the Start block, but the Bad node.
+ * If we encounter the Bad node, this function does not return the Start block,
+ * but the Bad node.
  */
 static inline ir_node *get_Block_cfgpred_block_(const ir_node *node, int pos)
 {
@@ -411,7 +408,7 @@ static inline ir_node *get_Block_cfgpred_block_(const ir_node *node, int pos)
 		ir_graph *irg = get_irn_irg(node);
 		return new_r_Bad(irg, mode_BB);
 	} else {
-		return get_nodes_block(skip_Proj(res));
+		return get_nodes_block(res);
 	}
 }
 
