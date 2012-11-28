@@ -68,6 +68,7 @@
 #include "bedwarf.h"
 #include "beemitter.h"
 #include "begnuas.h"
+#include "beutil.h"
 
 #include "ia32_emitter.h"
 #include "ia32_common_transform.h"
@@ -797,28 +798,6 @@ static void ia32_emit_exc_label(const ir_node *node)
 	be_emit_irprintf("%lu", get_ia32_exc_label_id(node));
 }
 
-/**
- * Returns the Proj with projection number proj and NOT mode_M
- */
-static ir_node *get_proj(const ir_node *node, long proj)
-{
-	ir_node *src;
-
-	assert(get_irn_mode(node) == mode_T && "expected mode_T node");
-
-	foreach_out_edge(node, edge) {
-		src = get_edge_src_irn(edge);
-
-		assert(is_Proj(src) && "Proj expected");
-		if (get_irn_mode(src) == mode_M)
-			continue;
-
-		if (get_Proj_proj(src) == proj)
-			return src;
-	}
-	return NULL;
-}
-
 static int can_be_fallthrough(const ir_node *node)
 {
 	ir_node *target_block = get_cfop_target_block(node);
@@ -833,16 +812,14 @@ static void emit_ia32_Jcc(const ir_node *node)
 {
 	int                   need_parity_label = 0;
 	ia32_condition_code_t cc                = get_ia32_condcode(node);
-	const ir_node        *proj_true;
-	const ir_node        *proj_false;
 
 	cc = determine_final_cc(node, 0, cc);
 
 	/* get both Projs */
-	proj_true = get_proj(node, pn_ia32_Jcc_true);
+	ir_node const *proj_true = be_get_Proj_for_pn(node, pn_ia32_Jcc_true);
 	assert(proj_true && "Jcc without true Proj");
 
-	proj_false = get_proj(node, pn_ia32_Jcc_false);
+	ir_node const *proj_false = be_get_Proj_for_pn(node, pn_ia32_Jcc_false);
 	assert(proj_false && "Jcc without false Proj");
 
 	if (can_be_fallthrough(proj_true)) {
@@ -3093,18 +3070,16 @@ static void bemit_jp(bool odd, const ir_node *dest_block)
 static void bemit_ia32_jcc(const ir_node *node)
 {
 	ia32_condition_code_t cc = get_ia32_condcode(node);
-	const ir_node        *proj_true;
-	const ir_node        *proj_false;
 	const ir_node        *dest_true;
 	const ir_node        *dest_false;
 
 	cc = determine_final_cc(node, 0, cc);
 
 	/* get both Projs */
-	proj_true = get_proj(node, pn_ia32_Jcc_true);
+	ir_node const *proj_true = be_get_Proj_for_pn(node, pn_ia32_Jcc_true);
 	assert(proj_true && "Jcc without true Proj");
 
-	proj_false = get_proj(node, pn_ia32_Jcc_false);
+	ir_node const *proj_false = be_get_Proj_for_pn(node, pn_ia32_Jcc_false);
 	assert(proj_false && "Jcc without false Proj");
 
 	if (can_be_fallthrough(proj_true)) {
