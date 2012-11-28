@@ -482,11 +482,6 @@ static loc_t to_take_or_not_to_take(ir_node* first, ir_node *node,
 	loc.node    = node;
 	loc.spilled = false;
 
-	if (!arch_irn_consider_in_reg_alloc(cls, node)) {
-		loc.time = USES_INFINITY;
-		return loc;
-	}
-
 	/* We have to keep nonspillable nodes in the workingset */
 	if (arch_get_irn_flags(skip_Proj_const(node)) & arch_irn_flags_dont_spill) {
 		loc.time = 0;
