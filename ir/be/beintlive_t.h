@@ -17,8 +17,6 @@
 #include "beutil.h"
 #include "iredges_t.h"
 
-#define value_dominates(a, b) _value_dominates(a, b)
-
 /**
  * Check dominance of two nodes in the same block.
  * @param a The first node.
@@ -52,7 +50,7 @@ static inline int _value_strictly_dominates_intrablock(const ir_node *a, const i
  * @param b The second node.
  * @return 1 if a dominates b or if a == b, 0 else.
  */
-static inline int _value_dominates(const ir_node *a, const ir_node *b)
+static inline int value_dominates(const ir_node *a, const ir_node *b)
 {
 	const ir_node *block_a = get_block_const(a);
 	const ir_node *block_b = get_block_const(b);
@@ -76,60 +74,44 @@ static inline int _value_dominates(const ir_node *a, const ir_node *b)
  * @param lv Liveness information
  * @param a The first value.
  * @param b The second value.
- * @return 1, if a and b interfere, 0 if not.
+ * @return true, if a and b interfere, false if not.
  */
-static inline int be_values_interfere(const be_lv_t *lv, const ir_node *a, const ir_node *b)
+static inline bool be_values_interfere(be_lv_t const *lv, ir_node const *a, ir_node const *b)
 {
-	int a2b = _value_dominates(a, b);
-	int b2a = _value_dominates(b, a);
-	int res = 0;
-
-	/*
-	 * Adjust a and b so, that a dominates b if
-	 * a dominates b or vice versa.
-	 */
-	if(b2a) {
-		const ir_node *t = a;
+	if (value_dominates(b, a)) {
+		/* Adjust a and b so, that a dominates b if
+		 * a dominates b or vice versa. */
+		ir_node const *const t = a;
 		a = b;
 		b = t;
-		a2b = 1;
+	} else if (!value_dominates(a, b)) {
+		/* If there is no dominance relation, they do not interfere. */
+		return false;
 	}
 
-	/* If there is no dominance relation, they do not interfere. */
-	if(a2b) {
-		ir_node *bb = get_nodes_block(b);
+	ir_node *const bb = get_nodes_block(b);
 
-		/*
-		 * If a is live end in b's block it is
-		 * live at b's definition (a dominates b)
-		 */
-		if(be_is_live_end(lv, bb, a)) {
-			res = 1;
-			goto end;
-		}
+	/* If a is live end in b's block it is
+	 * live at b's definition (a dominates b) */
+	if (be_is_live_end(lv, bb, a))
+		return true;
 
-		/*
-		 * Look at all usages of a.
-		 * If there's one usage of a in the block of b, then
-		 * we check, if this use is dominated by b, if that's true
-		 * a and b interfere. Note that b must strictly dominate the user,
-		 * since if b is the last user of in the block, b and a do not
-		 * interfere.
-		 * Uses of a not in b's block can be disobeyed, because the
-		 * check for a being live at the end of b's block is already
-		 * performed.
-		 */
-		foreach_out_edge(a, edge) {
-			const ir_node *user = get_edge_src_irn(edge);
-			if (get_nodes_block(user) == bb && !is_Phi(user) && _value_strictly_dominates_intrablock(b, user)) {
-				res = 1;
-				goto end;
-			}
-		}
+	/* Look at all usages of a.
+	 * If there's one usage of a in the block of b, then
+	 * we check, if this use is dominated by b, if that's true
+	 * a and b interfere. Note that b must strictly dominate the user,
+	 * since if b is the last user of in the block, b and a do not
+	 * interfere.
+	 * Uses of a not in b's block can be disobeyed, because the
+	 * check for a being live at the end of b's block is already
+	 * performed. */
+	foreach_out_edge(a, edge) {
+		ir_node const *const user = get_edge_src_irn(edge);
+		if (get_nodes_block(user) == bb && !is_Phi(user) && _value_strictly_dominates_intrablock(b, user))
+			return true;
 	}
 
-end:
-	return res;
+	return false;
 }
 
 #endif
