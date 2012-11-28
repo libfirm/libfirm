@@ -768,6 +768,17 @@ static ir_node *transform_upconv(ir_node *node, ir_node *orig_node)
 	}
 }
 
+static ir_node *get_noreg(ir_mode *const mode)
+{
+	if (!mode_is_float(mode)) {
+		return noreg_GP;
+	} else if (ia32_cg_config.use_sse2) {
+		return ia32_new_NoReg_xmm(current_ir_graph);
+	} else {
+		return ia32_new_NoReg_fp(current_ir_graph);
+	}
+}
+
 /**
  * matches operands of a node into ia32 addressing/operand modes. This covers
  * usage of source address mode, immediates, operations with non 32-bit modes,
@@ -835,24 +846,14 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 	    use_am && ia32_use_source_address_mode(block, op2, op1, other_op, flags)) {
 		build_address(am, op2, ia32_create_am_normal);
 		new_op1     = (op1 == NULL ? NULL : be_transform_node(op1));
-		if (mode_is_float(mode)) {
-			new_op2 = ia32_new_NoReg_fp(current_ir_graph);
-		} else {
-			new_op2 = noreg_GP;
-		}
+		new_op2     = get_noreg(mode);
 		am->op_type = ia32_AddrModeS;
 	} else if (commutative && (new_op2 == NULL || use_am_and_immediates) &&
 		       use_am &&
 		       ia32_use_source_address_mode(block, op1, op2, other_op, flags)) {
-		ir_node *noreg;
 		build_address(am, op1, ia32_create_am_normal);
 
-		if (mode_is_float(mode)) {
-			noreg = ia32_new_NoReg_fp(current_ir_graph);
-		} else {
-			noreg = noreg_GP;
-		}
-
+		ir_node *const noreg = get_noreg(mode);
 		if (new_op2 != NULL) {
 			new_op1 = noreg;
 		} else {
