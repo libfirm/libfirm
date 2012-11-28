@@ -760,17 +760,10 @@ static void verify_block_register_allocation(ir_node *block, void *data)
 	}
 
 	sched_foreach_reverse(block, node) {
-
-		if (get_irn_mode(node) == mode_T) {
-			foreach_out_edge(node, edge) {
-				ir_node *def = get_edge_src_irn(edge);
-				value_def(def);
-				check_output_constraints(def);
-			}
-		} else {
-			value_def(node);
-			check_output_constraints(node);
-		}
+		be_foreach_value(node, value,
+			value_def(value);
+			check_output_constraints(value);
+		);
 
 		check_input_constraints(node);
 

@@ -614,19 +614,10 @@ static void assure_constraints_walker(ir_node *block, void *walk_env)
 	constraint_env_t *env = (constraint_env_t*)walk_env;
 
 	sched_foreach_reverse(block, irn) {
-		ir_mode *mode = get_irn_mode(irn);
-
-		if (mode == mode_T) {
-			foreach_out_edge(irn, edge) {
-				ir_node *proj = get_edge_src_irn(edge);
-
-				mode = get_irn_mode(proj);
-				if (mode_is_datab(mode))
-					assure_different_constraints(proj, irn, env);
-			}
-		} else if (mode_is_datab(mode)) {
-			assure_different_constraints(irn, irn, env);
-		}
+		be_foreach_value(irn, value,
+			if (mode_is_datab(get_irn_mode(value)))
+				assure_different_constraints(value, irn, env);
+		);
 	}
 }
 

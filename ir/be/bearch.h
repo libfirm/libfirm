@@ -568,6 +568,21 @@ static inline bool arch_irn_consider_in_reg_alloc(
 	return req->cls == cls && !arch_register_req_is(req, ignore);
 }
 
+#define be_foreach_value(node, value, code) \
+	do { \
+		if (get_irn_mode(node) == mode_T) { \
+			foreach_out_edge(node, node##__edge) { \
+				ir_node *const value = get_edge_src_irn(node##__edge); \
+				if (!is_Proj(value)) \
+					continue; \
+				code \
+			} \
+		} else { \
+			ir_node *const value = node; \
+			code \
+		} \
+	} while (0)
+
 /**
  * Iterate over all values defined by an instruction.
  * Only looks at values in a certain register class where the requirements
@@ -575,26 +590,12 @@ static inline bool arch_irn_consider_in_reg_alloc(
  * Executes @p code for each definition.
  */
 #define be_foreach_definition_(node, ccls, value, req, code) \
-	do {                                                                   \
-	if (get_irn_mode(node) == mode_T) {                                    \
-		foreach_out_edge(node, edge_) {                                    \
-			ir_node                   *const value = get_edge_src_irn(edge_); \
-			if (!is_Proj(value))                                           \
-				continue;                                                  \
-			long                             pn  = get_Proj_proj(value); \
-			arch_register_req_t const *const req = arch_get_irn_register_req_out(node, pn); \
-			if (req->cls != ccls) \
-				continue;                                                  \
-			code                                                           \
-		}                                                                  \
-	} else {                                                               \
-		ir_node                   *const value = node; \
-		arch_register_req_t const *const req   = arch_get_irn_register_req(node); \
-		if (req->cls == ccls) { \
-			code                                                           \
-		}                                                                  \
-	}                                                                      \
-	} while (0)
+	be_foreach_value(node, value, \
+		arch_register_req_t const *const req = arch_get_irn_register_req(value); \
+		if (req->cls != ccls) \
+			continue; \
+		code \
+	)
 
 #define be_foreach_definition(node, ccls, value, req, code) \
 	be_foreach_definition_(node, ccls, value, req, \

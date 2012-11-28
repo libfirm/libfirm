@@ -93,14 +93,9 @@ static void set_reg_value(ir_node *node)
 static void clear_defs(ir_node *node)
 {
 	/* clear values defined */
-	if (get_irn_mode(node) == mode_T) {
-		foreach_out_edge(node, edge) {
-			ir_node *proj = get_edge_src_irn(edge);
-			clear_reg_value(proj);
-		}
-	} else {
-		clear_reg_value(node);
-	}
+	be_foreach_value(node, value,
+		clear_reg_value(value);
+	);
 }
 
 static void set_uses(ir_node *node)

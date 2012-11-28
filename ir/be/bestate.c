@@ -408,29 +408,15 @@ static void belady(minibelady_env_t *env, ir_node *block)
 		DBG((dbg, LEVEL_3, "  ...%+F\n", node));
 
 		/* record state changes by the node */
-		if (get_irn_mode(node) == mode_T) {
-			foreach_out_edge(node, edge) {
-				const arch_register_t *reg;
-				ir_node *proj = get_edge_src_irn(edge);
-
-				if (!mode_is_data(get_irn_mode(proj)))
-					continue;
-
-				reg = arch_get_irn_register(proj);
-				if (reg == env->reg) {
-					current_state = proj;
-					DBG((dbg, LEVEL_3, "\t... current_state <- %+F\n", current_state));
-				}
-			}
-		} else {
-			if (mode_is_data(get_irn_mode(node))) {
-				const arch_register_t *reg = arch_get_irn_register(node);
-				if (reg == env->reg) {
-					current_state = node;
-					DBG((dbg, LEVEL_3, "\t... current_state <- %+F\n", current_state));
-				}
-			}
-		}
+		be_foreach_value(node, value,
+			if (!mode_is_data(get_irn_mode(value)))
+				continue;
+			arch_register_t const *const reg = arch_get_irn_register(value);
+			if (reg != env->reg)
+				continue;
+			current_state = value;
+			DBG((dbg, LEVEL_3, "\t... current_state <- %+F\n", current_state));
+		);
 	}
 
 	/* Remember end-workset for this block */

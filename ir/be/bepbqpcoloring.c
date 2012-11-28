@@ -332,57 +332,27 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 
 	/* create pbqp nodes, interference edges and reverse perfect elimination order */
 	sched_foreach_reverse(block, irn) {
-		if (get_irn_mode(irn) == mode_T) {
-			foreach_out_edge(irn, edge) {
-				ir_node *proj = get_edge_src_irn(edge);
-				if (!arch_irn_consider_in_reg_alloc(cls, proj))
+		be_foreach_value(irn, value,
+			if (!arch_irn_consider_in_reg_alloc(cls, value))
+				continue;
+
+			/* create pbqp source node if it dosn't exist */
+			if (!get_node(pbqp_inst, get_irn_idx(value)))
+				create_pbqp_node(pbqp_alloc_env, value);
+
+			/* create nodes and interference edges */
+			foreach_ir_nodeset(&live_nodes, live, iter) {
+				/* create pbqp source node if it dosn't exist */
+				if (!get_node(pbqp_inst, get_irn_idx(live)))
+					create_pbqp_node(pbqp_alloc_env, live);
+
+				/* no edges to itself */
+				if (value == live)
 					continue;
 
-				/* create pbqp source node if it dosn't exist */
-				if (get_node(pbqp_inst, get_irn_idx(proj)) == NULL) {
-					create_pbqp_node(pbqp_alloc_env, proj);
-				}
-
-				/* create nodes and interference edges */
-				foreach_ir_nodeset(&live_nodes, live, iter) {
-					/* create pbqp source node if it dosn't exist */
-					if (get_node(pbqp_inst, get_irn_idx(live)) == NULL) {
-						create_pbqp_node(pbqp_alloc_env, live);
-					}
-
-					/* no edges to itself */
-					if (proj == live) {
-						continue;
-					}
-
-					insert_ife_edge(pbqp_alloc_env, proj, live);
-				}
+				insert_ife_edge(pbqp_alloc_env, value, live);
 			}
-		}
-		else {
-			if (arch_irn_consider_in_reg_alloc(cls, irn)) {
-				/* create pbqp source node if it dosn't exist */
-				if (get_node(pbqp_inst, get_irn_idx(irn)) == NULL) {
-					create_pbqp_node(pbqp_alloc_env, irn);
-				}
-
-				/* create nodes and interference edges */
-				foreach_ir_nodeset(&live_nodes, live, iter) {
-					/* create pbqp source node if it dosn't exist */
-					if (get_node(pbqp_inst, get_irn_idx(live)) == NULL) {
-						create_pbqp_node(pbqp_alloc_env, live);
-					}
-
-					/* no edges to itself */
-					if (irn == live) {
-						continue;
-					}
-
-					/* insert interference edge */
-					insert_ife_edge(pbqp_alloc_env, irn, live);
-				}
-			}
-		}
+		);
 
 		/* get living nodes for next step */
 		if (!is_Phi(irn)) {
