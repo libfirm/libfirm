@@ -134,7 +134,7 @@ static spill_info_t *create_spill(minibelady_env_t *env, ir_node *state, int for
 		do {
 			after = next;
 			next = sched_next(after);
-		} while (is_Proj(next) || is_Phi(next) || be_is_Keep(next));
+		} while (is_Phi(next) || be_is_Keep(next));
 	} else {
 		after = state;
 	}
