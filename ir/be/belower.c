@@ -442,12 +442,12 @@ static void lower_perm_node(ir_node *irn, lower_env_t *env)
 					arch_set_irn_register(res1, cycle.elems[i]);
 
 					/* insert the copy/exchange node in schedule after the magic schedule node (see above) */
-					sched_add_after(skip_Proj(sched_point), cpyxchg);
+					sched_add_after(sched_point, cpyxchg);
 
 					DB((dbg, LEVEL_1, "replacing %+F with %+F, placed new node after %+F\n", irn, cpyxchg, sched_point));
 
 					/* set the new scheduling point */
-					sched_point = res1;
+					sched_point = cpyxchg;
 				} else {
 					ir_node *cpyxchg;
 
@@ -461,7 +461,7 @@ static void lower_perm_node(ir_node *irn, lower_env_t *env)
 					exchange(res2, cpyxchg);
 
 					/* insert the copy/exchange node in schedule after the magic schedule node (see above) */
-					sched_add_after(skip_Proj(sched_point), cpyxchg);
+					sched_add_after(sched_point, cpyxchg);
 
 					/* set the new scheduling point */
 					sched_point = cpyxchg;
