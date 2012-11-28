@@ -335,20 +335,12 @@ static void analyze_block(ir_node *block, void *data)
 		be_liveness_transfer(cls, node, &live_nodes);
 
 		/* update weights based on usage constraints */
-		for (int i = 0; i < arity; ++i) {
-			ir_node *op = get_irn_n(node, i);
-			if (!arch_irn_consider_in_reg_alloc(cls, op))
-				continue;
-
-			const arch_register_req_t *req
-				= arch_get_irn_register_req_in(node, i);
+		be_foreach_use(node, cls, req, op, op_req,
 			if (!arch_register_req_is(req, limited))
 				continue;
 
-			const unsigned *limited = req->limited;
-			give_penalties_for_limits(&live_nodes, weight * USE_FACTOR,
-									  limited, op);
-		}
+			give_penalties_for_limits(&live_nodes, weight * USE_FACTOR, req->limited, op);
+		);
 	}
 
 	ir_nodeset_destroy(&live_nodes);
@@ -1028,13 +1020,7 @@ static void solve_lpp(ir_nodeset_t *live_nodes, ir_node *node,
 	lpp_set_log(lpp, stdout);
 
 	/** mark some edges as forbidden */
-	int arity = get_irn_arity(node);
-	for (int i = 0; i < arity; ++i) {
-		ir_node *op = get_irn_n(node, i);
-		if (!arch_irn_consider_in_reg_alloc(cls, op))
-			continue;
-
-		const arch_register_req_t *req = arch_get_irn_register_req_in(node, i);
+	be_foreach_use(node, cls, req, op, op_req,
 		if (!arch_register_req_is(req, limited))
 			continue;
 
@@ -1047,7 +1033,7 @@ static void solve_lpp(ir_nodeset_t *live_nodes, ir_node *node,
 
 			rbitset_set(forbidden_edges, current_reg*n_regs + r);
 		}
-	}
+	);
 
 	/* add all combinations, except for not allowed ones */
 	for (unsigned l = 0; l < n_regs; ++l) {
@@ -1161,14 +1147,8 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 	 * values are involved */
 	bool double_width = false;
 	bool good = true;
-	int  arity = get_irn_arity(node);
-	for (int i = 0; i < arity; ++i) {
-		ir_node *op = get_irn_n(node, i);
-		if (!arch_irn_consider_in_reg_alloc(cls, op))
-			continue;
-
+	be_foreach_use(node, cls, req, op, op_req,
 		/* are there any limitations for the i'th operand? */
-		const arch_register_req_t *req = arch_get_irn_register_req_in(node, i);
 		if (req->width > 1)
 			double_width = true;
 		const arch_register_t *reg       = arch_get_irn_register(op);
@@ -1188,7 +1168,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 			good = false;
 			continue;
 		}
-	}
+	);
 
 	/* is any of the live-throughs using a constrained output register? */
 	unsigned *live_through_regs = NULL;
@@ -1249,12 +1229,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 		}
 	}
 
-	for (int i = 0; i < arity; ++i) {
-		ir_node *op = get_irn_n(node, i);
-		if (!arch_irn_consider_in_reg_alloc(cls, op))
-			continue;
-
-		const arch_register_req_t *req = arch_get_irn_register_req_in(node, i);
+	be_foreach_use(node, cls, req, op, op_req,
 		if (!arch_register_req_is(req, limited))
 			continue;
 
@@ -1266,7 +1241,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 				continue;
 			hungarian_remove(bp, r, current_reg);
 		}
-	}
+	);
 
 	//hungarian_print_cost_matrix(bp, 1);
 	hungarian_prepare_cost_matrix(bp, HUNGARIAN_MODE_MAXIMIZE_UTIL);
@@ -1671,15 +1646,10 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		rewire_inputs(node);
 
 		/* we may not use registers used for inputs for optimistic splits */
-		int arity = get_irn_arity(node);
-		for (int i = 0; i < arity; ++i) {
-			ir_node *op = get_irn_n(node, i);
-			if (!arch_irn_consider_in_reg_alloc(cls, op))
-				continue;
-
+		be_foreach_use(node, cls, in_req, op, op_req,
 			const arch_register_t *reg = arch_get_irn_register(op);
 			rbitset_set(forbidden_regs, reg->index);
-		}
+		);
 
 		/* free registers of values last used at this instruction */
 		free_last_uses(&live_nodes, node);

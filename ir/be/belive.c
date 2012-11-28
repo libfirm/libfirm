@@ -486,17 +486,9 @@ void be_liveness_transfer(const arch_register_class_t *cls,
 		ir_nodeset_remove(nodeset, value);
 	);
 
-	int arity = get_irn_arity(node);
-	for (int i = 0; i < arity; ++i) {
-		const arch_register_req_t *in_req = arch_get_irn_register_req_in(node, i);
-		if (in_req->cls != cls)
-			continue;
-		ir_node                   *op     = get_irn_n(node, i);
-		const arch_register_req_t *op_req = arch_get_irn_register_req(op);
-		if (arch_register_req_is(op_req, ignore))
-			continue;
+	be_foreach_use(node, cls, in_req, op, op_req,
 		ir_nodeset_insert(nodeset, op);
-	}
+	);
 }
 
 
