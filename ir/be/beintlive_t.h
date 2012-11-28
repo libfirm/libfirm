@@ -72,32 +72,6 @@ static inline int _value_dominates(const ir_node *a, const ir_node *b)
 }
 
 /**
- * Check, if one value dominates the other.
- * The dominance is strict here.
- * @param a The first node.
- * @param b The second node.
- * @return 1 if a dominates b, 0 else.
- */
-static inline int _value_strictly_dominates(const ir_node *a, const ir_node *b)
-{
-	const ir_node *block_a = get_block_const(a);
-	const ir_node *block_b = get_block_const(b);
-
-	/*
-	 * a and b are not in the same block,
-	 * so dominance is determined by the dominance of the blocks.
-	 */
-	if(block_a != block_b) {
-		return block_dominates(block_a, block_b);
-	}
-
-	/*
-	 * Dominance is determined by the time steps of the schedule.
-	 */
-	return _value_strictly_dominates_intrablock(a, b);
-}
-
-/**
  * Check, if two values interfere.
  * @param lv Liveness information
  * @param a The first value.
@@ -147,7 +121,7 @@ static inline int be_values_interfere(const be_lv_t *lv, const ir_node *a, const
 		 */
 		foreach_out_edge(a, edge) {
 			const ir_node *user = get_edge_src_irn(edge);
-			if(get_nodes_block(user) == bb && !is_Phi(user) && _value_strictly_dominates(b, user)) {
+			if (get_nodes_block(user) == bb && !is_Phi(user) && _value_strictly_dominates_intrablock(b, user)) {
 				res = 1;
 				goto end;
 			}

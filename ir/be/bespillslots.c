@@ -262,12 +262,12 @@ static int my_values_interfere2(ir_graph *irg, const ir_node *a,
 					const ir_node *user2 = get_edge_src_irn(edge2);
 					assert(!is_Sync(user2));
 					if (get_nodes_block(user2) == bb && !is_Phi(user2) &&
-					   _value_strictly_dominates(b, user2))
+					    _value_strictly_dominates_intrablock(b, user2))
 						return 1;
 				}
 			} else {
 				if (get_nodes_block(user) == bb && !is_Phi(user) &&
-						_value_strictly_dominates(b, user))
+				    _value_strictly_dominates_intrablock(b, user))
 					return 1;
 			}
 		}
