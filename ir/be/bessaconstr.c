@@ -135,15 +135,6 @@ static bool is_definition(be_ssa_construction_env_t *env, ir_node *node)
 }
 
 /**
- * @return Whether the node is a use.
- */
-static bool is_use(const be_ssa_construction_env_t *env, ir_node *node)
-{
-	constr_info *info = get_info(env, node);
-	return info != NULL && info->is_use;
-}
-
-/**
  * Introduces a definition at the corresponding block.
  */
 static void introduce_definition(be_ssa_construction_env_t *env, ir_node *def)
@@ -275,13 +266,10 @@ static ir_node *get_def_at_idom(be_ssa_construction_env_t *env, ir_node *block)
  * If an operand of the use is a (original) definition,
  * it will be replaced by the given definition.
  */
-static void set_operands(be_ssa_construction_env_t *env, ir_node *use, ir_node *def)
+static void set_operands(be_ssa_construction_env_t *env, ir_node *use, ir_node *def, constr_info *const use_info)
 {
-	constr_info *info  = get_info(env, use);
-	int          arity = get_irn_arity(use);
-	int          i;
-
-	for (i = 0; i < arity; ++i) {
+	int arity = get_irn_arity(use);
+	for (int i = 0; i < arity; ++i) {
 		ir_node *op = get_irn_n(use, i);
 
 		if (is_definition(env, op)) {
@@ -290,7 +278,7 @@ static void set_operands(be_ssa_construction_env_t *env, ir_node *use, ir_node *
 		}
 	}
 
-	info->already_processed = true;
+	use_info->already_processed = true;
 }
 
 /**
@@ -307,7 +295,11 @@ static void process_block(be_ssa_construction_env_t *env, ir_node *block)
 	DBG((dbg, LEVEL_3, "\tprocessing block  %+F\n", block));
 
 	sched_foreach(block, node) {
-		if (is_use(env, node) && !is_Phi(node)) {
+		constr_info *const info = get_info(env, node);
+		if (!info)
+			continue;
+
+		if (info->is_use && !is_Phi(node)) {
 			DBG((dbg, LEVEL_3, "\t...found use %+F\n", node));
 
 			if (def == NULL) {
@@ -320,11 +312,10 @@ static void process_block(be_ssa_construction_env_t *env, ir_node *block)
 				}
 			}
 
-			set_operands(env, node, def);
+			set_operands(env, node, def, info);
 		}
 
-		if (is_definition(env, node)) {
-			constr_info *info = get_info(env, node);
+		if (info->is_definition) {
 			def = info->u.definition;
 			DBG((dbg, LEVEL_3, "\t...found definition %+F\n", def));
 		}
@@ -355,8 +346,8 @@ static ir_node *search_def_end_of_block(be_ssa_construction_env_t *env,
 		else {
 			/* Search the last definition of the block. */
 			sched_foreach_reverse(block, def) {
-				if (is_definition(env, def)) {
-					constr_info *info = get_info(env, def);
+				constr_info const *const info = get_info(env, def);
+				if (info && info->is_definition) {
 					DBG((dbg, LEVEL_3, "\t...found definition %+F\n", info->u.definition));
 					block_info->u.last_definition = info->u.definition;
 					break;
@@ -385,7 +376,7 @@ static ir_node *search_def_end_of_block(be_ssa_construction_env_t *env,
 /**
  * Fixes all operands of the given use.
  */
-static void search_def_at_block(be_ssa_construction_env_t *env, ir_node *use)
+static void search_def_at_block(be_ssa_construction_env_t *const env, ir_node *const use, constr_info *const info)
 {
 	ir_node     *block      = get_nodes_block(use);
 	constr_info *block_info = get_or_set_info(env, block);
@@ -398,11 +389,11 @@ static void search_def_at_block(be_ssa_construction_env_t *env, ir_node *use)
 	} else if (Block_block_visited(block)) {
 		ir_node *phi = insert_dummy_phi(env, block);
 
-		set_operands(env, use, phi);
+		set_operands(env, use, phi, info);
 	} else {
 		ir_node *def = get_def_at_idom(env, block);
 
-		set_operands(env, use, def);
+		set_operands(env, use, def, info);
 	}
 }
 
@@ -526,16 +517,14 @@ ir_node **be_ssa_construction_get_new_phis(be_ssa_construction_env_t *env)
  *
  * @see insert_dummy_phi
  */
-static void fix_phi_arguments(be_ssa_construction_env_t *env, ir_node *phi)
+static void fix_phi_arguments(be_ssa_construction_env_t *const env, ir_node *const phi, constr_info *const info)
 {
-	constr_info *info    = get_info(env, phi);
-	ir_node     *block   = get_nodes_block(phi);
-	int          i;
-	int          n_preds = get_Block_n_cfgpreds(block);
+	ir_node *block   = get_nodes_block(phi);
+	int      n_preds = get_Block_n_cfgpreds(block);
 
 	DBG((dbg, LEVEL_3, "\tfixing phi arguments  %+F\n", phi));
 
-	for (i = 0; i < n_preds; ++i) {
+	for (int i = 0; i < n_preds; ++i) {
 		ir_node *op = get_irn_n(phi, i);
 
 		if (is_definition(env, op) || is_Dummy(op)) {
@@ -593,11 +582,11 @@ void be_ssa_construction_fix_users_array(be_ssa_construction_env_t *env,
 			continue;
 
 		if (is_Phi(use)) {
-			fix_phi_arguments(env, use);
+			fix_phi_arguments(env, use, info);
 		}
 		else {
 			DBG((dbg, LEVEL_3, "\tsearching def for %+F at %+F\n", use, get_nodes_block(use)));
-			search_def_at_block(env, use);
+			search_def_at_block(env, use, info);
 		}
 
 		stat_ev_cnt_inc(uses);
