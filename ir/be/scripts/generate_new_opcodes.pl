@@ -36,7 +36,6 @@ my $line_nr    = 0;
 our $arch;
 our $additional_opcodes;
 our %nodes;
-our %operands;
 our %cpu;
 our $default_op_attr_type;
 our $default_attr_type;
@@ -80,33 +79,6 @@ if(! %compare_attr) {
 		"${default_attr_type}" => "${default_cmp_attr}",
 	);
 }
-
-# Operands are really just nodes with some special constraints, we check
-# these and create new entries in the nodes hashmap
-foreach my $op (keys(%operands)) {
-	my %operand = %{ $operands{"$op"} };
-	my %op_node;
-
-	# constraints
-	if(defined($operand{op_flags})) { die "Fatal error: operands can't have op_flags ($op)"; }
-	if(defined($operand{cmp_attr})) { die "Fatal error: cmp_attr not allowed for operands ($op)"; }
-	if(defined($operand{mode})) { die "Operand must not have a mode defined ($op)"; }
-	if(defined($operand{out_arity})) { die "operand must not have out_arity defined ($op)"; }
-	if(defined($nodes{$op})) { die "$op defined as operand and as node"; };
-
-
-	foreach my $flag (keys(%operand)) {
-		$op_node{$flag} = $operand{$flag};
-	}
-	$op_node{op_flags} = "O";
-	$op_node{cmp_attr} = 'return 1;';
-	$op_node{mode}     = 'mode_ANY';
-
-	$nodes{$op} = \%op_node;
-}
-
-#print Dumper(%nodes);
-#print Dumper(%operands);
 
 # create c code file from specs
 

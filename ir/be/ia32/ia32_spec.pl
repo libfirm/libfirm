@@ -156,9 +156,6 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 	ia32_climbframe_attr_t => "ia32_compare_climbframe_attr",
 );
 
-%operands = (
-);
-
 $status_flags       = [ "CF", "PF", "AF", "ZF", "SF", "OF" ];
 $status_flags_wo_cf = [       "PF", "AF", "ZF", "SF", "OF" ];
 $fpcw_flags         = [ "FP_IM", "FP_DM", "FP_ZM", "FP_OM", "FP_UM", "FP_PM",
