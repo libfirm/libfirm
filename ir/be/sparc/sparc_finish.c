@@ -80,29 +80,26 @@ static void kill_unused_stacknodes(ir_node *node)
 
 static void introduce_epilog(ir_node *ret)
 {
-	const arch_register_t *sp_reg     = &sparc_registers[REG_SP];
-	ir_graph              *irg        = get_irn_irg(ret);
-	be_stack_layout_t     *layout     = be_get_irg_stack_layout(irg);
-	ir_node               *block      = get_nodes_block(ret);
-	ir_type               *frame_type = get_irg_frame_type(irg);
-	unsigned               frame_size = get_type_size_bytes(frame_type);
-
+	arch_register_t const *const sp_reg = &sparc_registers[REG_SP];
 	assert(arch_get_irn_register_req_in(ret, n_sparc_Return_sp) == sp_reg->single_req);
-	ir_node *const sp = get_irn_n(ret, n_sparc_Return_sp);
 
+	ir_node           *const sp     = get_irn_n(ret, n_sparc_Return_sp);
+	ir_node           *const block  = get_nodes_block(ret);
+	ir_graph          *const irg    = get_irn_irg(ret);
+	be_stack_layout_t *const layout = be_get_irg_stack_layout(irg);
 	if (!layout->sp_relative) {
-		const arch_register_t *fp_reg = &sparc_registers[REG_FRAME_POINTER];
-		const arch_register_t *sp_reg = &sparc_registers[REG_SP];
-		ir_node *fp      = be_get_initial_reg_value(irg, fp_reg);
-		ir_node *new_sp  = be_get_initial_reg_value(irg, sp_reg);
-		ir_node *restore = new_bd_sparc_RestoreZero(NULL, block, new_sp, fp);
+		arch_register_t const *const fp_reg  = &sparc_registers[REG_FRAME_POINTER];
+		ir_node               *const fp      = be_get_initial_reg_value(irg, fp_reg);
+		ir_node               *const new_sp  = be_get_initial_reg_value(irg, sp_reg);
+		ir_node               *const restore = new_bd_sparc_RestoreZero(NULL, block, new_sp, fp);
 		sched_add_before(ret, restore);
 		arch_set_irn_register(restore, sp_reg);
 		set_irn_n(ret, n_sparc_Return_sp, restore);
-
 		kill_unused_stacknodes(sp);
 	} else {
-		ir_node *incsp  = be_new_IncSP(sp_reg, block, sp, -frame_size, 0);
+		ir_type *const frame_type = get_irg_frame_type(irg);
+		unsigned const frame_size = get_type_size_bytes(frame_type);
+		ir_node *const incsp      = be_new_IncSP(sp_reg, block, sp, -frame_size, 0);
 		set_irn_n(ret, n_sparc_Return_sp, incsp);
 		sched_add_before(ret, incsp);
 	}
