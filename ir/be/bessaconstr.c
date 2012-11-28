@@ -260,6 +260,16 @@ static ir_node *get_def_at_idom(be_ssa_construction_env_t *env, ir_node *block)
 	return search_def_end_of_block(env, dom);
 }
 
+static ir_node *get_def_from_preds(be_ssa_construction_env_t *const env, ir_node *const block)
+{
+	/* Create a phi if the block is in the dominance frontier. */
+	if (Block_block_visited(block)) {
+		return insert_dummy_phi(env, block);
+	} else {
+		return get_def_at_idom(env, block);
+	}
+}
+
 /**
  * Fixes all operands of a use.
  *
@@ -304,12 +314,7 @@ static void process_block(be_ssa_construction_env_t *env, ir_node *block)
 
 			if (def == NULL) {
 				/* Create a phi if the block is in the dominance frontier. */
-				if (Block_block_visited(block)) {
-					def = insert_dummy_phi(env, block);
-				}
-				else {
-					def = get_def_at_idom(env, block);
-				}
+				def = get_def_from_preds(env, block);
 			}
 
 			set_operands(env, node, def, info);
@@ -358,17 +363,9 @@ static ir_node *search_def_end_of_block(be_ssa_construction_env_t *env,
 		}
 
 		return block_info->u.last_definition;
-	} else if (Block_block_visited(block)) {
-		ir_node *phi = insert_dummy_phi(env, block);
-
-		block_info->u.last_definition = phi;
-
-		return phi;
 	} else {
-		ir_node *def = get_def_at_idom(env, block);
-
+		ir_node *const def = get_def_from_preds(env, block);
 		block_info->u.last_definition = def;
-
 		return def;
 	}
 }
@@ -386,13 +383,8 @@ static void search_def_at_block(be_ssa_construction_env_t *const env, ir_node *c
 
 	if (has_definition(block)) {
 		process_block(env, block);
-	} else if (Block_block_visited(block)) {
-		ir_node *phi = insert_dummy_phi(env, block);
-
-		set_operands(env, use, phi, info);
 	} else {
-		ir_node *def = get_def_at_idom(env, block);
-
+		ir_node *const def = get_def_from_preds(env, block);
 		set_operands(env, use, def, info);
 	}
 }
