@@ -516,12 +516,6 @@ void be_ssa_construction_add_copies(be_ssa_construction_env_t *env,
 	}
 }
 
-void be_ssa_construction_set_ignore_uses(be_ssa_construction_env_t *env,
-                                         const ir_nodeset_t *ignore_uses)
-{
-	env->ignore_uses = ignore_uses;
-}
-
 ir_node **be_ssa_construction_get_new_phis(be_ssa_construction_env_t *env)
 {
 	return env->new_phis;
@@ -581,12 +575,7 @@ void be_ssa_construction_fix_users_array(be_ssa_construction_env_t *env,
 		introduce_definition(env, value);
 
 		foreach_out_edge_safe(value, edge) {
-			ir_node *use   = get_edge_src_irn(edge);
-
-			if (env->ignore_uses != NULL &&
-					ir_nodeset_contains(env->ignore_uses, use))
-				continue;
-
+			ir_node *const use = get_edge_src_irn(edge);
 			if (is_Anchor(use) || is_End(use))
 				continue;
 

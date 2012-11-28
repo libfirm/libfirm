@@ -62,7 +62,6 @@ typedef struct be_ssa_construction_env_t {
 	ir_mode                     *mode;
 	const arch_register_req_t   *phi_req;
 	waitq                       *worklist;
-	const ir_nodeset_t          *ignore_uses;
 	ir_node                    **new_phis;
 	bool                         iterated_domfront_calculated;
 	ir_nodemap                   infos;
@@ -82,9 +81,6 @@ void be_ssa_construction_add_copy(be_ssa_construction_env_t *env,
 
 void be_ssa_construction_add_copies(be_ssa_construction_env_t *env,
                                     ir_node **copies, size_t copies_len);
-
-void be_ssa_construction_set_ignore_uses(be_ssa_construction_env_t *env,
-                                         const ir_nodeset_t *ignore_uses);
 
 /**
  * Reconstructs the SSA form for all users of node @p node
