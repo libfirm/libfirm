@@ -135,14 +135,14 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 	);
 
 	/* collect all registers occurring in out constraints. */
-	be_foreach_definition(node, cls, def,
+	be_foreach_definition(node, cls, def, req,
 		(void)def;
-		if (!arch_register_req_is(req_, limited))
+		if (!arch_register_req_is(req, limited))
 			continue;
 		if (def_constr == NULL) {
 			def_constr = rbitset_alloca(cls->n_regs);
 		}
-		rbitset_or(def_constr, req_->limited, cls->n_regs);
+		rbitset_or(def_constr, req->limited, cls->n_regs);
 	);
 
 	/* no output constraints => we're good */

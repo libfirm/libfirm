@@ -46,9 +46,8 @@ be_insn_t *be_scan_insn(be_chordal_env_t *const env, ir_node *const irn)
 
 	const arch_register_class_t *cls = env->cls;
 	insn->irn = irn;
-	be_foreach_definition(irn, cls, p,
+	be_foreach_definition(irn, cls, p, req,
 		/* found a def: create a new operand */
-		arch_register_req_t const *const req = arch_get_irn_register_req(p);
 		if (arch_register_req_is(req, limited)) {
 			o.regs          = req->limited;
 			has_constraints = true;

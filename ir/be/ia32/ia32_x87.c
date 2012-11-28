@@ -566,7 +566,7 @@ static fp_liveness fp_liveness_transfer(ir_node *irn, fp_liveness live)
 {
 	const arch_register_class_t *cls = &ia32_reg_classes[CLASS_ia32_fp];
 
-	be_foreach_definition(irn, cls, def,
+	be_foreach_definition(irn, cls, def, req,
 		const arch_register_t *reg = x87_get_irn_register(def);
 		live &= ~(1 << reg->index);
 	);

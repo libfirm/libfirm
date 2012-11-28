@@ -140,10 +140,10 @@ static unsigned get_value_width(const ir_node *node)
 static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 {
 	size_t values_defined = 0;
-	be_foreach_definition(node, cls, value,
+	be_foreach_definition(node, cls, value, req,
 		(void)value;
-		assert(req_->width >= 1);
-		values_defined += req_->width;
+		assert(req->width >= 1);
+		values_defined += req->width;
 	);
 
 	/* we need registers for the non-live argument values */
@@ -225,7 +225,7 @@ static void remove_defs(ir_node *node, ir_nodeset_t *nodeset)
 	/* You must break out of your loop when hitting the first phi function. */
 	assert(!is_Phi(node));
 
-	be_foreach_definition(node, cls, value,
+	be_foreach_definition(node, cls, value, req,
 		ir_nodeset_remove(nodeset, value);
 	);
 }

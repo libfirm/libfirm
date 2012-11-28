@@ -574,31 +574,31 @@ static inline bool arch_irn_consider_in_reg_alloc(
  * are not marked as ignore.
  * Executes @p code for each definition.
  */
-#define be_foreach_definition_(node, ccls, value, code)                    \
+#define be_foreach_definition_(node, ccls, value, req, code) \
 	do {                                                                   \
 	if (get_irn_mode(node) == mode_T) {                                    \
 		foreach_out_edge(node, edge_) {                                    \
 			ir_node                   *const value = get_edge_src_irn(edge_); \
 			if (!is_Proj(value))                                           \
 				continue;                                                  \
-			long                             pn    = get_Proj_proj(value); \
-			arch_register_req_t const *const req_  = arch_get_irn_register_req_out(node, pn); \
-			if (req_->cls != ccls)                                         \
+			long                             pn  = get_Proj_proj(value); \
+			arch_register_req_t const *const req = arch_get_irn_register_req_out(node, pn); \
+			if (req->cls != ccls) \
 				continue;                                                  \
 			code                                                           \
 		}                                                                  \
 	} else {                                                               \
-		arch_register_req_t const *const req_  = arch_get_irn_register_req(node); \
 		ir_node                   *const value = node; \
-		if (req_->cls == ccls) {                                           \
+		arch_register_req_t const *const req   = arch_get_irn_register_req(node); \
+		if (req->cls == ccls) { \
 			code                                                           \
 		}                                                                  \
 	}                                                                      \
 	} while (0)
 
-#define be_foreach_definition(node, ccls, value, code) \
-	be_foreach_definition_(node, ccls, value, \
-		if (arch_register_req_is(req_, ignore)) \
+#define be_foreach_definition(node, ccls, value, req, code) \
+	be_foreach_definition_(node, ccls, value, req, \
+		if (arch_register_req_is(req, ignore)) \
 			continue; \
 		code \
 	)

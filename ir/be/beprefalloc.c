@@ -253,10 +253,8 @@ static void give_penalties_for_limits(const ir_nodeset_t *live_nodes,
  * @param weight      the weight
  * @param node        the current node
  */
-static void check_defs(const ir_nodeset_t *live_nodes, float weight,
-                       ir_node *node)
+static void check_defs(ir_nodeset_t const *const live_nodes, float const weight, ir_node *const node, arch_register_req_t const *const req)
 {
-	const arch_register_req_t *req = arch_get_irn_register_req(node);
 	if (arch_register_req_is(req, limited)) {
 		const unsigned *limited = req->limited;
 		float           penalty = weight * DEF_FACTOR;
@@ -306,8 +304,8 @@ static void analyze_block(ir_node *block, void *data)
 		if (is_Phi(node))
 			break;
 
-		be_foreach_definition(node, cls, value,
-			check_defs(&live_nodes, weight, value);
+		be_foreach_definition(node, cls, value, req,
+			check_defs(&live_nodes, weight, value, req);
 		);
 
 		/* mark last uses */
@@ -356,10 +354,8 @@ static void analyze_block(ir_node *block, void *data)
 	ir_nodeset_destroy(&live_nodes);
 }
 
-static void congruence_def(ir_nodeset_t *live_nodes, const ir_node *node)
+static void congruence_def(ir_nodeset_t *const live_nodes, ir_node const *const node, arch_register_req_t const *const req)
 {
-	const arch_register_req_t *req = arch_get_irn_register_req(node);
-
 	/* should be same constraint? */
 	if (arch_register_req_is(req, should_be_same)) {
 		const ir_node *insn     = skip_Proj_const(node);
@@ -414,8 +410,8 @@ static void create_congruence_class(ir_node *block, void *data)
 			break;
 		}
 
-		be_foreach_definition(node, cls, value,
-			congruence_def(&live_nodes, value);
+		be_foreach_definition(node, cls, value, req,
+			congruence_def(&live_nodes, value, req);
 		);
 		be_liveness_transfer(cls, node, &live_nodes);
 	}
@@ -682,14 +678,12 @@ static bool try_optimistic_split(ir_node *to_split, ir_node *before,
 /**
  * Determine and assign a register for node @p node
  */
-static void assign_reg(const ir_node *block, ir_node *node,
-                       unsigned *forbidden_regs)
+static void assign_reg(ir_node const *const block, ir_node *const node, arch_register_req_t const *const req, unsigned *const forbidden_regs)
 {
 	assert(!is_Phi(node));
 	/* preassigned register? */
-	const arch_register_t     *final_reg = arch_get_irn_register(node);
-	const arch_register_req_t *req       = arch_get_irn_register_req(node);
-	unsigned                   width     = req->width;
+	arch_register_t const *final_reg = arch_get_irn_register(node);
+	unsigned         const width     = req->width;
 	if (final_reg != NULL) {
 		DB((dbg, LEVEL_2, "Preassignment %+F -> %s\n", node, final_reg->name));
 		use_reg(node, final_reg, width);
@@ -1198,18 +1192,18 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 
 	/* is any of the live-throughs using a constrained output register? */
 	unsigned *live_through_regs = NULL;
-	be_foreach_definition(node, cls, value,
+	be_foreach_definition(node, cls, value, req,
 		(void)value;
-		if (req_->width > 1)
+		if (req->width > 1)
 			double_width = true;
-		if (!arch_register_req_is(req_, limited))
+		if (!arch_register_req_is(req, limited))
 			continue;
 		if (live_through_regs == NULL) {
 			live_through_regs = rbitset_alloca(n_regs);
 			determine_live_through_regs(live_through_regs, node);
 		}
-		rbitset_or(forbidden_regs, req_->limited, n_regs);
-		if (rbitsets_have_common(req_->limited, live_through_regs, n_regs))
+		rbitset_or(forbidden_regs, req->limited, n_regs);
+		if (rbitsets_have_common(req->limited, live_through_regs, n_regs))
 			good = false;
 	);
 
@@ -1691,8 +1685,8 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		free_last_uses(&live_nodes, node);
 
 		/* assign output registers */
-		be_foreach_definition_(node, cls, value,
-			assign_reg(block, value, forbidden_regs);
+		be_foreach_definition_(node, cls, value, req,
+			assign_reg(block, value, req, forbidden_regs);
 		);
 	}
 

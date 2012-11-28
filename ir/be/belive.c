@@ -482,7 +482,7 @@ void be_liveness_transfer(const arch_register_class_t *cls,
 	 * function. */
 	assert(!is_Phi(node) && "liveness_transfer produces invalid results for phi nodes");
 
-	be_foreach_definition(node, cls, value,
+	be_foreach_definition(node, cls, value, req,
 		ir_nodeset_remove(nodeset, value);
 	);
 

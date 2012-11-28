@@ -143,7 +143,7 @@ void create_borders(ir_node *block, void *env_ptr)
 		DB((dbg, LEVEL_1, "\tinsn: %+F, pressure: %d\n", irn, pressure));
 		DB((dbg, LEVEL_2, "\tlive: %B\n", live));
 
-		be_foreach_definition(irn, env->cls, def,
+		be_foreach_definition(irn, env->cls, def, req,
 			/*
 			 * If the node defines some value, which can put into a
 			 * register of the current class, make a border for it.
