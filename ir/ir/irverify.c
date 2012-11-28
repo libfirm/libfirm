@@ -604,10 +604,13 @@ static int verify_node_Proj_Proj(const ir_node *p)
 			ASSERT_AND_RET(
 				(proj < (int)get_method_n_ress(mt)),
 				"More Projs for results than results in type.", 0);
-			if ((mode_is_reference(mode)) && is_compound_type(get_method_res_type(mt, proj)))
-				/* value result */ break;
+			ir_type *res_type = get_method_res_type(mt, proj);
+			/* value result */
+			if ((mode_is_reference(mode)) &&
+				(is_compound_type(res_type) || is_Array_type(res_type)))
+				break;
 
-				ASSERT_AND_RET(
+			ASSERT_AND_RET(
 				(mode == get_type_mode(get_method_res_type(mt, proj))),
 				"Mode of Proj from Call doesn't match mode of result type.", 0);
 		}
