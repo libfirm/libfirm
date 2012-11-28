@@ -94,8 +94,8 @@ static void introduce_epilog(ir_node *ret)
 		const arch_register_t *fp_reg = &sparc_registers[REG_FRAME_POINTER];
 		const arch_register_t *sp_reg = &sparc_registers[REG_SP];
 		ir_node *fp      = be_get_initial_reg_value(irg, fp_reg);
-		ir_node *sp      = be_get_initial_reg_value(irg, sp_reg);
-		ir_node *restore = new_bd_sparc_RestoreZero(NULL, block, sp, fp);
+		ir_node *new_sp  = be_get_initial_reg_value(irg, sp_reg);
+		ir_node *restore = new_bd_sparc_RestoreZero(NULL, block, new_sp, fp);
 		sched_add_before(ret, restore);
 		arch_set_irn_register(restore, sp_reg);
 		set_irn_n(ret, n_sparc_Return_sp, restore);
