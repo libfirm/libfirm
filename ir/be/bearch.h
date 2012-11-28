@@ -579,7 +579,10 @@ static inline bool arch_irn_consider_in_reg_alloc(
 	if (get_irn_mode(node) == mode_T) {                                    \
 		foreach_out_edge(node, edge_) {                                    \
 			ir_node                   *const value = get_edge_src_irn(edge_); \
-			arch_register_req_t const *const req_  = arch_get_irn_register_req(value); \
+			if (!is_Proj(value))                                           \
+				continue;                                                  \
+			long                             pn    = get_Proj_proj(value); \
+			arch_register_req_t const *const req_  = arch_get_irn_register_req_out(node, pn); \
 			if (req_->cls != ccls)                                         \
 				continue;                                                  \
 			code                                                           \
