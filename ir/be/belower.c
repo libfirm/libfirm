@@ -86,8 +86,6 @@ typedef struct reg_pair_t {
 typedef enum perm_type_t {
 	PERM_CYCLE,
 	PERM_CHAIN,
-	PERM_SWAP,
-	PERM_COPY
 } perm_type_t;
 
 /** Structure to represent cycles or chains in a Perm. */
