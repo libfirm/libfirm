@@ -95,4 +95,9 @@ struct sparc_switch_jmp_attr_t {
 	ir_entity             *table_entity;
 };
 
+enum n_sparc_Return {
+	n_sparc_Return_mem = 0,
+	n_sparc_Return_sp  = 1,
+};
+
 #endif

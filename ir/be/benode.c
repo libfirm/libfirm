@@ -1005,24 +1005,6 @@ ir_node *be_get_initial_reg_value(ir_graph *irg, const arch_register_t *reg)
 	return new_r_Proj(start, mode, i);
 }
 
-int be_find_return_reg_input(ir_node *ret, const arch_register_t *reg)
-{
-	int arity = get_irn_arity(ret);
-	int i;
-	/* do a naive linear search... */
-	for (i = 0; i < arity; ++i) {
-		const arch_register_req_t *req = arch_get_irn_register_req_in(ret, i);
-		if (!arch_register_req_is(req, limited))
-			continue;
-		if (req->cls != reg->reg_class)
-			continue;
-		if (!rbitset_is_set(req->limited, reg->index))
-			continue;
-		return i;
-	}
-	panic("Tried querying undefined register '%s' at Return", reg->name);
-}
-
 static ir_entity* dummy_get_frame_entity(const ir_node *node)
 {
 	(void) node;

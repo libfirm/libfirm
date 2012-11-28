@@ -86,8 +86,9 @@ static void introduce_epilog(ir_node *ret)
 	ir_node               *block      = get_nodes_block(ret);
 	ir_type               *frame_type = get_irg_frame_type(irg);
 	unsigned               frame_size = get_type_size_bytes(frame_type);
-	int                    sp_idx     = be_find_return_reg_input(ret, sp_reg);
-	ir_node               *sp         = get_irn_n(ret, sp_idx);
+
+	assert(arch_get_irn_register_req_in(ret, n_sparc_Return_sp) == sp_reg->single_req);
+	ir_node *const sp = get_irn_n(ret, n_sparc_Return_sp);
 
 	if (!layout->sp_relative) {
 		const arch_register_t *fp_reg = &sparc_registers[REG_FRAME_POINTER];
@@ -97,12 +98,12 @@ static void introduce_epilog(ir_node *ret)
 		ir_node *restore = new_bd_sparc_RestoreZero(NULL, block, sp, fp);
 		sched_add_before(ret, restore);
 		arch_set_irn_register(restore, sp_reg);
-		set_irn_n(ret, sp_idx, restore);
+		set_irn_n(ret, n_sparc_Return_sp, restore);
 
 		kill_unused_stacknodes(sp);
 	} else {
 		ir_node *incsp  = be_new_IncSP(sp_reg, block, sp, -frame_size, 0);
-		set_irn_n(ret, sp_idx, incsp);
+		set_irn_n(ret, n_sparc_Return_sp, incsp);
 		sched_add_before(ret, incsp);
 	}
 }
