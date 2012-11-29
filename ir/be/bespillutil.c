@@ -328,15 +328,6 @@ static ir_node *get_block_insertion_point(ir_node *block, int pos)
 	return be_get_end_of_block_insertion_point(predblock);
 }
 
-void be_add_reload_at_end(spill_env_t *env, ir_node *to_spill,
-                          const ir_node *block,
-                          const arch_register_class_t *reload_cls,
-                          int allow_remat)
-{
-	ir_node *before = be_get_end_of_block_insertion_point(block);
-	be_add_reload(env, to_spill, before, reload_cls, allow_remat);
-}
-
 void be_add_reload_on_edge(spill_env_t *env, ir_node *to_spill, ir_node *block,
                            int pos, const arch_register_class_t *reload_cls,
                            int allow_remat)
