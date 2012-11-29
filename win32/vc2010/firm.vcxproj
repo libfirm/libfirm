@@ -717,7 +717,6 @@ $(FirmRoot)\ir\be\scripts\generate_machine.pl %(FullPath) $(FirmRoot)\ir\be\TEMP
     </CustomBuild>
     <None Include="$(FirmRoot)\ir\ir\irflag_t.def"/>
     <None Include="$(FirmRoot)\ir\libcore\lc_printf_arg_types.def"/>
-    <None Include="$(FirmRoot)\scripts\gen_init.py"/>
     <None Include="$(FirmRoot)\scripts\ir_spec.py"/>
     <None Include="$(FirmRoot)\scripts\spec_util.py"/>
     <None Include="$(FirmRoot)\scripts\statev_sql.py"/>

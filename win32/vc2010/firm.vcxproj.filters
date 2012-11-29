@@ -1857,9 +1857,6 @@
     <ClInclude Include="$(FirmRoot)\ir\be\TEMPLATE\TEMPLATE_transform.h">
       <Filter>ir\be\TEMPLATE</Filter>
     </ClInclude>
-    <None Include="$(FirmRoot)\scripts\gen_init.py">
-      <Filter>scripts</Filter>
-    </None>
     <None Include="$(FirmRoot)\scripts\gen_ir.py">
       <Filter>scripts</Filter>
     </None>
@@ -3555,9 +3552,6 @@
     <None Include="$(FirmRoot)\ir\libcore\lc_printf_arg_types.def">
       <Filter>ir\libcore</Filter>
     </None>
-    <None Include="$(FirmRoot)\scripts\gen_init.py">
-      <Filter>scripts</Filter>
-    </None>
     <None Include="$(FirmRoot)\scripts\gen_ir.py">
       <Filter>scripts</Filter>
     </None>
@@ -5229,9 +5223,6 @@
     <None Include="$(FirmRoot)\ir\libcore\lc_printf_arg_types.def">
       <Filter>ir\libcore</Filter>
     </None>
-    <None Include="$(FirmRoot)\scripts\gen_init.py">
-      <Filter>scripts</Filter>
-    </None>
     <None Include="$(FirmRoot)\scripts\ir_spec.py">
       <Filter>scripts</Filter>
     </None>
@@ -6893,9 +6884,6 @@
     </None>
     <None Include="$(FirmRoot)\ir\libcore\lc_printf_arg_types.def">
       <Filter>ir\libcore</Filter>
-    </None>
-    <None Include="$(FirmRoot)\scripts\gen_init.py">
-      <Filter>scripts</Filter>
     </None>
     <None Include="$(FirmRoot)\scripts\ir_spec.py">
       <Filter>scripts</Filter>
