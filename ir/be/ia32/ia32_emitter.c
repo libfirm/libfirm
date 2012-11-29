@@ -3555,7 +3555,6 @@ static void ia32_register_binary_emitters(void)
 
 	/* ignore the following nodes */
 	be_set_emitter(op_Phi,             be_emit_nothing);
-	be_set_emitter(op_Start,           be_emit_nothing);
 	be_set_emitter(op_be_Keep,         be_emit_nothing);
 	be_set_emitter(op_be_Start,        be_emit_nothing);
 	be_set_emitter(op_ia32_ProduceVal, be_emit_nothing);
