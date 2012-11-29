@@ -707,32 +707,28 @@ static int try_load_after_store(ir_node *load,
 	delta          = load_offset - store_offset;
 	store_value    = get_Store_value(store);
 
-	if (delta != 0 || store_mode != load_mode) {
-		/* TODO: implement for big-endian */
-		if (delta < 0 || delta + load_mode_len > store_mode_len
-				|| (be_get_backend_param()->byte_order_big_endian
-				    && load_mode_len != store_mode_len))
-			return 0;
+	if (delta < 0 || delta+load_mode_len > store_mode_len)
+		return 0;
 
-		if (get_mode_arithmetic(store_mode) != irma_twos_complement ||
-			get_mode_arithmetic(load_mode)  != irma_twos_complement)
-			return 0;
-
+	if (store_mode != load_mode &&
+	    get_mode_arithmetic(store_mode) == irma_twos_complement &&
+	    get_mode_arithmetic(load_mode)  == irma_twos_complement) {
 
 		/* produce a shift to adjust offset delta */
-		if (delta > 0) {
-			ir_node *cnst;
-			ir_graph *irg = get_irn_irg(load);
-
-			cnst        = new_r_Const_long(irg, mode_Iu, delta * 8);
+		unsigned const shift = be_get_backend_param()->byte_order_big_endian
+			? store_mode_len - load_mode_len - delta
+			: delta;
+		if (shift != 0) {
+			ir_graph *const irg  = get_irn_irg(load);
+			ir_node  *const cnst = new_r_Const_long(irg, mode_Iu, shift * 8);
 			store_value = new_r_Shr(get_nodes_block(load),
 									store_value, cnst, store_mode);
 		}
 
-		/* add an convert if needed */
-		if (store_mode != load_mode) {
-			store_value = new_r_Conv(get_nodes_block(load), store_value, load_mode);
-		}
+		store_value = new_r_Conv(get_nodes_block(load), store_value, load_mode);
+	} else {
+		/* we would need some kind of bitcast node here */
+		return 0;
 	}
 
 	DBG_OPT_RAW(load, store_value);
