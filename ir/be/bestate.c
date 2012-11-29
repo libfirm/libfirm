@@ -48,6 +48,7 @@
 #include "bemodule.h"
 #include "benode.h"
 #include "beirgmod.h"
+#include "bespillutil.h"
 #include "bessaconstr.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
@@ -429,24 +430,6 @@ static void belady_walker(ir_node *block, void *data)
 	belady((minibelady_env_t*) data, block);
 }
 
-static ir_node *get_end_of_block_insertion_point(ir_node *block)
-{
-	ir_node *last = sched_last(block);
-
-	/* skip Projs and Keep-alikes behind the jump... */
-	while (is_Proj(last) || be_is_Keep(last)) {
-		last = sched_prev(last);
-	}
-
-	if (!is_cfop(last)) {
-		last = sched_next(last);
-		/* last node must be a cfop, only exception is the start block */
-		assert(last == get_irg_start_block(get_irn_irg(block)));
-	}
-
-	return last;
-}
-
 /**
  * We must adapt the live-outs to the live-ins at each block-border.
  */
@@ -487,10 +470,8 @@ static void fix_block_borders(ir_node *block, void *data)
 		     pred_info->end_state, need_state));
 
 		if (pred_info->end_state != need_state) {
-			ir_node *insert_point = get_end_of_block_insertion_point(pred);
-
-
 			DBG((dbg, LEVEL_3, "  Creating reload for %+F\n", need_state));
+			ir_node *const insert_point = be_get_end_of_block_insertion_point(pred);
 			create_reload(env, need_state, insert_point, pred_info->end_state);
 		}
 	}
