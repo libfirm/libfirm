@@ -802,12 +802,9 @@ static void arm_emit_block_header(ir_node *block, ir_node *prev)
 
 		/* we don't need labels for fallthrough blocks, however switch-jmps
 		 * are no fallthroughs */
-		if (pred_block == prev &&
-				!(is_Proj(pred) && is_arm_SwitchJmp(get_Proj_pred(pred)))) {
-			need_label = false;
-		} else {
-			need_label = true;
-		}
+		need_label =
+			pred_block != prev ||
+			(is_Proj(pred) && is_arm_SwitchJmp(get_Proj_pred(pred)));
 	} else {
 		need_label = true;
 	}
