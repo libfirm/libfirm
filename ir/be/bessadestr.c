@@ -319,14 +319,10 @@ static void set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 				*/
 				ir_node *perm = get_Proj_pred(arg);
 				ir_node *dupl = be_new_Copy(arg_block, arg);
-				ir_node *ins;
 
 				set_irn_n(phi, i, dupl);
 				arch_set_irn_register(dupl, phi_reg);
-				/* skip the Perm's Projs and insert the copies behind. */
-				for (ins = sched_next(perm); is_Proj(ins); ins = sched_next(ins)) {
-				}
-				sched_add_before(ins, dupl);
+				sched_add_after(perm, dupl);
 				pin_irn(dupl, phi_block);
 				be_liveness_introduce(lv, dupl);
 				be_liveness_update(lv, arg);

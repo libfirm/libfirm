@@ -206,8 +206,8 @@ static void verify_schedule_walker(ir_node *block, void *data)
 				cfchange_found = node;
 			}
 		} else if (cfchange_found != NULL) {
-			/* proj and keepany aren't real instructions... */
-			if (!is_Proj(node) && !be_is_Keep(node)) {
+			/* keepany isn't a real instruction. */
+			if (!be_is_Keep(node)) {
 				ir_fprintf(stderr, "Verify Warning: Node %+F scheduled after control flow changing node in block %+F (%s)\n",
 				           node, block, get_irg_name(env->irg));
 				env->problem_found = true;

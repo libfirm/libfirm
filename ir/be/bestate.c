@@ -376,11 +376,9 @@ static void belady(minibelady_env_t *env, ir_node *block)
 		int i, arity;
 		ir_node *need_val = NULL;
 
-		/* projs are handled with the tuple value.
-		 * Phis are no real instr (see insert_starters()) */
-		if (is_Proj(node) || is_Phi(node)) {
+		/* Phis are no real instr (see insert_starters()) */
+		if (is_Phi(node))
 			continue;
-		}
 
 		/* check which state is desired for the node */
 		arity = get_irn_arity(node);

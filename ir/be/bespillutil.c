@@ -250,7 +250,7 @@ void be_add_reload2(spill_env_t *env, ir_node *to_spill, ir_node *before,
 		}
 	}
 
-	assert(!is_Proj(before) && !be_is_Keep(before));
+	assert(!be_is_Keep(before));
 
 	/* put reload into list */
 	rel                   = OALLOC(&env->obst, reloader_t);
