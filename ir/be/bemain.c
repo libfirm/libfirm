@@ -407,11 +407,11 @@ static be_main_env_t *be_init_env(be_main_env_t *const env, char const *const co
 	env->ent_pic_symbol_map   = pmap_create();
 	env->pic_symbols_type     = new_type_struct(NEW_ID("$PIC_SYMBOLS_TYPE"));
 	env->cup_name             = compilation_unit_name;
+	env->arch_env             = isa_if->begin_codegeneration();
 
 	set_class_final(env->pic_trampolines_type, 1);
 
 	memset(asm_constraint_flags, 0, sizeof(asm_constraint_flags));
-	env->arch_env = arch_env_begin_codegeneration(isa_if);
 
 	return env;
 }

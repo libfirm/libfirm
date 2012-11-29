@@ -213,11 +213,6 @@ static inline unsigned arch_get_irn_n_outs(const ir_node *node)
 	for (unsigned i = 0, i##__n = arch_get_irn_n_outs(node); i != i##__n; ++i)
 
 /**
- * Start codegeneration
- */
-arch_env_t *arch_env_begin_codegeneration(const arch_isa_if_t *isa);
-
-/**
  * Register an instruction set architecture
  */
 void be_register_isa_if(const char *name, const arch_isa_if_t *isa);

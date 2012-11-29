@@ -48,13 +48,6 @@ arch_register_req_t const arch_no_requirement = {
 	0
 };
 
-/* Initialize the architecture environment struct. */
-arch_env_t *arch_env_begin_codegeneration(const arch_isa_if_t *isa_if)
-{
-	arch_env_t *arch_env = isa_if->begin_codegeneration();
-	return arch_env;
-}
-
 /**
  * Get the isa responsible for a node.
  * @param irn The node to get the responsible isa for.
