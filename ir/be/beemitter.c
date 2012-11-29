@@ -108,3 +108,8 @@ void be_emit_finish_line_gas(const ir_node *node)
 	be_emit_cstring(" */\n");
 	be_emit_write_line();
 }
+
+void be_emit_nothing(ir_node const *const node)
+{
+	(void)node;
+}

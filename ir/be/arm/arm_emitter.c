@@ -719,24 +719,6 @@ static void emit_arm_Jmp(const ir_node *node)
 	}
 }
 
-static void emit_nothing(const ir_node *irn)
-{
-	(void) irn;
-}
-
-/**
- * The type of a emitter function.
- */
-typedef void (emit_func)(const ir_node *irn);
-
-/**
- * Set a node emitter. Make it a bit more type safe.
- */
-static inline void set_emitter(ir_op *op, emit_func arm_emit_node)
-{
-	op->ops.generic = (op_func)arm_emit_node;
-}
-
 /**
  * Enters the emitter functions for handled nodes into the generic
  * pointer of an opcode.
@@ -750,24 +732,24 @@ static void arm_register_emitters(void)
 	arm_register_spec_emitters();
 
 	/* custom emitter */
-	set_emitter(op_arm_B,         emit_arm_B);
-	set_emitter(op_arm_CopyB,     emit_arm_CopyB);
-	set_emitter(op_arm_fConst,    emit_arm_fConst);
-	set_emitter(op_arm_FrameAddr, emit_arm_FrameAddr);
-	set_emitter(op_arm_Jmp,       emit_arm_Jmp);
-	set_emitter(op_arm_SwitchJmp, emit_arm_SwitchJmp);
-	set_emitter(op_arm_SymConst,  emit_arm_SymConst);
-	set_emitter(op_be_Copy,       emit_be_Copy);
-	set_emitter(op_be_CopyKeep,   emit_be_Copy);
-	set_emitter(op_be_IncSP,      emit_be_IncSP);
-	set_emitter(op_be_MemPerm,    emit_be_MemPerm);
-	set_emitter(op_be_Perm,       emit_be_Perm);
-	set_emitter(op_be_Return,     emit_be_Return);
-	set_emitter(op_be_Start,      emit_be_Start);
+	be_set_emitter(op_arm_B,         emit_arm_B);
+	be_set_emitter(op_arm_CopyB,     emit_arm_CopyB);
+	be_set_emitter(op_arm_FrameAddr, emit_arm_FrameAddr);
+	be_set_emitter(op_arm_Jmp,       emit_arm_Jmp);
+	be_set_emitter(op_arm_SwitchJmp, emit_arm_SwitchJmp);
+	be_set_emitter(op_arm_SymConst,  emit_arm_SymConst);
+	be_set_emitter(op_arm_fConst,    emit_arm_fConst);
+	be_set_emitter(op_be_Copy,       emit_be_Copy);
+	be_set_emitter(op_be_CopyKeep,   emit_be_Copy);
+	be_set_emitter(op_be_IncSP,      emit_be_IncSP);
+	be_set_emitter(op_be_MemPerm,    emit_be_MemPerm);
+	be_set_emitter(op_be_Perm,       emit_be_Perm);
+	be_set_emitter(op_be_Return,     emit_be_Return);
+	be_set_emitter(op_be_Start,      emit_be_Start);
 
 	/* no need to emit anything for the following nodes */
-	set_emitter(op_Phi,           emit_nothing);
-	set_emitter(op_be_Keep,       emit_nothing);
+	be_set_emitter(op_Phi,     be_emit_nothing);
+	be_set_emitter(op_be_Keep, be_emit_nothing);
 }
 
 /**

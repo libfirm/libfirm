@@ -100,7 +100,7 @@ foreach my $op (keys(%nodes)) {
 
 	$line = "static void emit_${arch}_${op}(const ir_node *node)";
 
-	push(@obst_register, "  ${arch}_register_emitter(op_${arch}_${op}, emit_${arch}_${op});\n");
+	push(@obst_register, "\tbe_set_emitter(op_${arch}_${op}, emit_${arch}_${op});\n");
 
 	if($n{"emit"} eq "") {
 		push(@obst_func, $line."\n");
@@ -191,14 +191,6 @@ EOF
 print OUT @obst_func;
 
 print OUT<<EOF;
-
-typedef void (*emit_func)(const ir_node *node);
-
-static void ${arch}_register_emitter(ir_op *op, emit_func func)
-{
-	assert(op->ops.generic == NULL);
-	op->ops.generic = (op_func)func;
-}
 
 /**
  * Enters the emitter functions for handled nodes into the generic

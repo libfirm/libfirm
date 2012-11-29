@@ -33,6 +33,7 @@
 #include "firm_types.h"
 #include "obst.h"
 #include "be.h"
+#include "irop_t.h"
 
 /* don't use the following vars directly, they're only here for the inlines */
 extern FILE           *emit_file;
@@ -119,5 +120,17 @@ void be_emit_finish_line_gas(const ir_node *node);
  * Emit spaces until the comment position is reached.
  */
 void be_emit_pad_comment(void);
+
+/**
+ * The type of a emitter function.
+ */
+typedef void emit_func(ir_node const *node);
+
+static inline void be_set_emitter(ir_op *const op, emit_func *const func)
+{
+	set_generic_function_ptr(op, func);
+}
+
+void be_emit_nothing(ir_node const *node);
 
 #endif

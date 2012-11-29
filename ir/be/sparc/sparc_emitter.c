@@ -1266,18 +1266,6 @@ static void emit_be_Copy(const ir_node *node)
 	}
 }
 
-static void emit_nothing(const ir_node *irn)
-{
-	(void) irn;
-}
-
-typedef void (*emit_func) (const ir_node *);
-
-static inline void set_emitter(ir_op *op, emit_func sparc_emit_node)
-{
-	op->ops.generic = (op_func)sparc_emit_node;
-}
-
 /**
  * Enters the emitter functions for handled nodes into the generic
  * pointer of an opcode.
@@ -1290,27 +1278,27 @@ static void sparc_register_emitters(void)
 	sparc_register_spec_emitters();
 
 	/* custom emitter */
-	set_emitter(op_be_Copy,         emit_be_Copy);
-	set_emitter(op_be_CopyKeep,     emit_be_Copy);
-	set_emitter(op_be_IncSP,        emit_be_IncSP);
-	set_emitter(op_be_MemPerm,      emit_be_MemPerm);
-	set_emitter(op_be_Perm,         emit_be_Perm);
-	set_emitter(op_sparc_Ba,        emit_sparc_Ba);
-	set_emitter(op_sparc_Bicc,      emit_sparc_Bicc);
-	set_emitter(op_sparc_Call,      emit_sparc_Call);
-	set_emitter(op_sparc_fbfcc,     emit_sparc_fbfcc);
-	set_emitter(op_sparc_FrameAddr, emit_sparc_FrameAddr);
-	set_emitter(op_sparc_SubSP,     emit_sparc_SubSP);
-	set_emitter(op_sparc_Restore,   emit_sparc_Restore);
-	set_emitter(op_sparc_Return,    emit_sparc_Return);
-	set_emitter(op_sparc_SDiv,      emit_sparc_SDiv);
-	set_emitter(op_sparc_SwitchJmp, emit_sparc_SwitchJmp);
-	set_emitter(op_sparc_UDiv,      emit_sparc_UDiv);
+	be_set_emitter(op_be_Copy,         emit_be_Copy);
+	be_set_emitter(op_be_CopyKeep,     emit_be_Copy);
+	be_set_emitter(op_be_IncSP,        emit_be_IncSP);
+	be_set_emitter(op_be_MemPerm,      emit_be_MemPerm);
+	be_set_emitter(op_be_Perm,         emit_be_Perm);
+	be_set_emitter(op_sparc_Ba,        emit_sparc_Ba);
+	be_set_emitter(op_sparc_Bicc,      emit_sparc_Bicc);
+	be_set_emitter(op_sparc_Call,      emit_sparc_Call);
+	be_set_emitter(op_sparc_FrameAddr, emit_sparc_FrameAddr);
+	be_set_emitter(op_sparc_Restore,   emit_sparc_Restore);
+	be_set_emitter(op_sparc_Return,    emit_sparc_Return);
+	be_set_emitter(op_sparc_SDiv,      emit_sparc_SDiv);
+	be_set_emitter(op_sparc_SubSP,     emit_sparc_SubSP);
+	be_set_emitter(op_sparc_SwitchJmp, emit_sparc_SwitchJmp);
+	be_set_emitter(op_sparc_UDiv,      emit_sparc_UDiv);
+	be_set_emitter(op_sparc_fbfcc,     emit_sparc_fbfcc);
 
 	/* no need to emit anything for the following nodes */
-	set_emitter(op_be_Keep,     emit_nothing);
-	set_emitter(op_sparc_Start, emit_nothing);
-	set_emitter(op_Phi,         emit_nothing);
+	be_set_emitter(op_Phi,         be_emit_nothing);
+	be_set_emitter(op_be_Keep,     be_emit_nothing);
+	be_set_emitter(op_sparc_Start, be_emit_nothing);
 }
 
 /**
@@ -1321,7 +1309,7 @@ static void sparc_emit_node(const ir_node *node)
 	ir_op *op = get_irn_op(node);
 
 	if (op->ops.generic) {
-		emit_func func = (emit_func) op->ops.generic;
+		emit_func *func = (emit_func*)op->ops.generic;
 		be_dwarf_location(get_irn_dbg_info(node));
 		(*func) (node);
 	} else {

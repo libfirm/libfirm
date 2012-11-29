@@ -219,21 +219,6 @@ static void emit_be_Return(const ir_node *node)
 	TEMPLATE_emitf(node, "ret");
 }
 
-static void emit_nothing(const ir_node *node)
-{
-	(void) node;
-}
-
-/**
- * The type of a emitter function.
- */
-typedef void (emit_func)(const ir_node *node);
-
-static inline void set_emitter(ir_op *op, emit_func func)
-{
-	op->ops.generic = (op_func)func;
-}
-
 /**
  * Enters the emitter functions for handled nodes into the generic
  * pointer of an opcode.
@@ -247,14 +232,14 @@ static void TEMPLATE_register_emitters(void)
 	TEMPLATE_register_spec_emitters();
 
 	/* custom emitters not provided by the spec */
-	set_emitter(op_TEMPLATE_Jmp,   emit_TEMPLATE_Jmp);
-	set_emitter(op_be_IncSP,       emit_be_IncSP);
-	set_emitter(op_be_Return,      emit_be_Return);
-	set_emitter(op_be_Start,       emit_be_Start);
+	be_set_emitter(op_TEMPLATE_Jmp, emit_TEMPLATE_Jmp);
+	be_set_emitter(op_be_IncSP,     emit_be_IncSP);
+	be_set_emitter(op_be_Return,    emit_be_Return);
+	be_set_emitter(op_be_Start,     emit_be_Start);
 
 	/* no need to emit anything for the following nodes */
-	set_emitter(op_Phi,            emit_nothing);
-	set_emitter(op_be_Keep,        emit_nothing);
+	be_set_emitter(op_Phi,     be_emit_nothing);
+	be_set_emitter(op_be_Keep, be_emit_nothing);
 }
 
 typedef void (*emit_func_ptr) (const ir_node *);

@@ -194,14 +194,6 @@ unknown:
  ***********************************************************************************/
 
 /**
- * Default emitter for anything that we don't want to generate code for.
- */
-static void emit_nothing(const ir_node *node)
-{
-	(void) node;
-}
-
-/**
  * Emit a SymConst.
  */
 static void emit_amd64_SymConst(const ir_node *irn)
@@ -462,19 +454,6 @@ static void emit_amd64_binop(const ir_node *irn)
 }
 
 /**
- * The type of a emitter function.
- */
-typedef void (emit_func)(const ir_node *irn);
-
-/**
- * Set a node emitter. Make it a bit more type safe.
- */
-static inline void set_emitter(ir_op *op, emit_func arm_emit_node)
-{
-	op->ops.generic = (op_func)arm_emit_node;
-}
-
-/**
  * Enters the emitter functions for handled nodes into the generic
  * pointer of an opcode.
  */
@@ -486,23 +465,22 @@ static void amd64_register_emitters(void)
 	/* register all emitter functions defined in spec */
 	amd64_register_spec_emitters();
 
-	set_emitter(op_amd64_SymConst,   emit_amd64_SymConst);
-	set_emitter(op_amd64_Jmp,        emit_amd64_Jmp);
-	set_emitter(op_amd64_Jcc,        emit_amd64_Jcc);
-	set_emitter(op_amd64_Conv,       emit_amd64_Conv);
-	set_emitter(op_amd64_FrameAddr,  emit_amd64_FrameAddr);
-	set_emitter(op_be_Return,        emit_be_Return);
-	set_emitter(op_be_Call,          emit_be_Call);
-	set_emitter(op_be_Copy,          emit_be_Copy);
-	set_emitter(op_be_IncSP,         emit_be_IncSP);
-	set_emitter(op_be_Perm,          emit_be_Perm);
+	be_set_emitter(op_amd64_Add,        emit_amd64_binop);
+	be_set_emitter(op_amd64_Conv,       emit_amd64_Conv);
+	be_set_emitter(op_amd64_FrameAddr,  emit_amd64_FrameAddr);
+	be_set_emitter(op_amd64_Jcc,        emit_amd64_Jcc);
+	be_set_emitter(op_amd64_Jmp,        emit_amd64_Jmp);
+	be_set_emitter(op_amd64_Sub,        emit_amd64_binop);
+	be_set_emitter(op_amd64_SymConst,   emit_amd64_SymConst);
+	be_set_emitter(op_be_Call,          emit_be_Call);
+	be_set_emitter(op_be_Copy,          emit_be_Copy);
+	be_set_emitter(op_be_IncSP,         emit_be_IncSP);
+	be_set_emitter(op_be_Perm,          emit_be_Perm);
+	be_set_emitter(op_be_Return,        emit_be_Return);
 
-	set_emitter(op_amd64_Add,        emit_amd64_binop);
-	set_emitter(op_amd64_Sub,        emit_amd64_binop);
-
-	set_emitter(op_be_Start,         emit_nothing);
-	set_emitter(op_be_Keep,          emit_nothing);
-	set_emitter(op_Phi,              emit_nothing);
+	be_set_emitter(op_Phi,      be_emit_nothing);
+	be_set_emitter(op_be_Keep,  be_emit_nothing);
+	be_set_emitter(op_be_Start, be_emit_nothing);
 }
 
 typedef void (*emit_func_ptr) (const ir_node *);
