@@ -46,6 +46,7 @@
 #include "beintlive_t.h"
 #include "beirg.h"
 #include "bearch.h"
+#include "bespillutil.h"
 
 #define DBG_COALESCING      1
 #define DBG_INTERFERENCES   2
@@ -599,35 +600,11 @@ static void assign_spillslots(be_fec_env_t *env)
 	}
 }
 
-/**
- * Returns the last node in a block which is no control flow changing node
- */
-static ir_node *get_end_of_block_insertion_point(ir_node* block)
-{
-	ir_node* ins = sched_last(block);
-	while (is_Proj(ins) && get_irn_mode(ins) == mode_X) {
-		ins = sched_prev(ins);
-		assert(ins != NULL);
-	}
-
-	if (is_cfop(ins)) {
-		for (;;) {
-			ir_node *prev = sched_prev(ins);
-			if (!is_cfop(prev))
-				break;
-			ins = prev;
-		}
-	}
-
-	return ins;
-}
-
 static void create_memperms(be_fec_env_t *env)
 {
 	foreach_set(env->memperms, memperm_t, memperm) {
 		ir_node         **nodes = ALLOCAN(ir_node*, memperm->entrycount);
 		memperm_entry_t  *entry;
-		ir_node          *blockend;
 		ir_node          *mempermnode;
 		int               i;
 
@@ -642,7 +619,7 @@ static void create_memperms(be_fec_env_t *env)
 		                             nodes);
 
 		/* insert node into schedule */
-		blockend = get_end_of_block_insertion_point(memperm->block);
+		ir_node *const blockend = be_get_end_of_block_insertion_point(memperm->block);
 		sched_add_before(blockend, mempermnode);
 		stat_ev_dbl("mem_perm", memperm->entrycount);
 
