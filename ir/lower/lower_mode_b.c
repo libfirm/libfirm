@@ -275,9 +275,8 @@ void ir_lower_mode_b(ir_graph *const irg, ir_mode *const nlowered_mode)
 	lowered_mode = nlowered_mode;
 
 	/* edges are used by part_block_edges in the ir_create_cond_set variant. */
-	assure_edges(irg);
-	/* part_block_edges can go wrong with tuples present */
-	remove_tuples(irg);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
+	                         | IR_GRAPH_PROPERTY_NO_TUPLES);
 
 	add_irg_constraints(irg, IR_GRAPH_CONSTRAINT_MODEB_LOWERED);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
@@ -303,9 +302,5 @@ void ir_lower_mode_b(ir_graph *const irg, ir_mode *const nlowered_mode)
 
 	DEL_ARR_F(needs_lowering);
 
-	if (n > 0) {
-		/* lowering might create new blocks, so be sure to handle this */
-		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
-		edges_deactivate(irg);
-	}
+	confirm_irg_properties(irg, n > 0 ? IR_GRAPH_PROPERTIES_NONE : IR_GRAPH_PROPERTIES_ALL);
 }
