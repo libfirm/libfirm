@@ -242,23 +242,6 @@ static void TEMPLATE_register_emitters(void)
 	be_set_emitter(op_be_Keep, be_emit_nothing);
 }
 
-typedef void (*emit_func_ptr) (const ir_node *);
-
-/**
- * Emits code for a node.
- */
-static void TEMPLATE_emit_node(const ir_node *node)
-{
-	ir_op               *op       = get_irn_op(node);
-
-	if (op->ops.generic) {
-		emit_func_ptr func = (emit_func_ptr) op->ops.generic;
-		(*func) (node);
-	} else {
-		ir_fprintf(stderr, "No emitter for node %+F\n", node);
-	}
-}
-
 /**
  * Walks over the nodes in a block connected by scheduling edges
  * and emits code for each node.
@@ -268,7 +251,7 @@ static void TEMPLATE_emit_block(ir_node *block)
 	be_gas_begin_block(block, true);
 
 	sched_foreach(block, node) {
-		TEMPLATE_emit_node(node);
+		be_emit_node(node);
 	}
 }
 

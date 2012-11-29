@@ -65,7 +65,6 @@ static ir_heights_t *heights;
 static unsigned     *delay_slot_fillers;
 static pmap         *delay_slots;
 
-static void sparc_emit_node(const ir_node *node);
 static bool emitting_delay_slot;
 
 /**
@@ -741,7 +740,7 @@ static void fill_delay_slot(const ir_node *node)
 	if (filler != NULL) {
 		assert(!is_no_instruction(filler));
 		assert(!emits_multiple_instructions(filler));
-		sparc_emit_node(filler);
+		be_emit_node(filler);
 	} else {
 		sparc_emitf(NULL, "nop");
 	}
@@ -1301,23 +1300,6 @@ static void sparc_register_emitters(void)
 	be_set_emitter(op_sparc_Start, be_emit_nothing);
 }
 
-/**
- * Emits code for a node.
- */
-static void sparc_emit_node(const ir_node *node)
-{
-	ir_op *op = get_irn_op(node);
-
-	if (op->ops.generic) {
-		emit_func *func = (emit_func*)op->ops.generic;
-		be_dwarf_location(get_irn_dbg_info(node));
-		(*func) (node);
-	} else {
-		panic("No emit handler for node %+F (graph %+F)\n", node,
-		      get_irn_irg(node));
-	}
-}
-
 static bool block_needs_label(const ir_node *block, const ir_node *sched_prev)
 {
 	if (get_Block_entity(block) != NULL)
@@ -1349,7 +1331,7 @@ static void sparc_emit_block(ir_node *block, ir_node *prev)
 	sched_foreach(block, node) {
 		if (rbitset_is_set(delay_slot_fillers, get_irn_idx(node)))
 			continue;
-		sparc_emit_node(node);
+		be_emit_node(node);
 	}
 }
 

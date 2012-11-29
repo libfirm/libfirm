@@ -133,4 +133,9 @@ static inline void be_set_emitter(ir_op *const op, emit_func *const func)
 
 void be_emit_nothing(ir_node const *node);
 
+/**
+ * Emit code for a node.
+ */
+void be_emit_node(ir_node const *node);
+
 #endif

@@ -25,8 +25,10 @@
  */
 #include "config.h"
 
+#include "bedwarf.h"
 #include "beemitter.h"
 #include "be_t.h"
+#include "error.h"
 #include "irnode_t.h"
 #include "irprintf.h"
 #include "ident.h"
@@ -112,4 +114,13 @@ void be_emit_finish_line_gas(const ir_node *node)
 void be_emit_nothing(ir_node const *const node)
 {
 	(void)node;
+}
+
+void be_emit_node(ir_node const *const node)
+{
+	be_dwarf_location(get_irn_dbg_info(node));
+	ir_op     *const op   = get_irn_op(node);
+	emit_func *const emit = get_generic_function_ptr(emit_func, op);
+	DEBUG_ONLY(if (!emit) panic("no emit handler for node %+F (%+G, graph %+F)\n", node, node, get_irn_irg(node));)
+	emit(node);
 }

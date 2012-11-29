@@ -753,23 +753,6 @@ static void arm_register_emitters(void)
 }
 
 /**
- * Emits code for a node.
- */
-static void arm_emit_node(const ir_node *irn)
-{
-	ir_op *op = get_irn_op(irn);
-
-	if (op->ops.generic) {
-		emit_func *emit = (emit_func *)op->ops.generic;
-		be_dwarf_location(get_irn_dbg_info(irn));
-		(*emit)(irn);
-	} else {
-		panic("Error: No emit handler for node %+F (graph %+F)\n",
-		      irn, get_irn_irg(irn));
-	}
-}
-
-/**
  * emit the block label if needed.
  */
 static void arm_emit_block_header(ir_node *block, ir_node *prev)
@@ -803,7 +786,7 @@ static void arm_gen_block(ir_node *block, ir_node *prev_block)
 	arm_emit_block_header(block, prev_block);
 	be_dwarf_location(get_irn_dbg_info(block));
 	sched_foreach(block, irn) {
-		arm_emit_node(irn);
+		be_emit_node(irn);
 	}
 }
 

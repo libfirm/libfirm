@@ -1431,8 +1431,6 @@ static void ia32_register_emitters(void)
 #undef IA32_EMIT
 }
 
-typedef void (*emit_func_ptr) (const ir_node *);
-
 /**
  * Assign and emit an exception label if the current instruction can fail.
  */
@@ -1455,8 +1453,6 @@ static void ia32_assign_exc_label(ir_node *node)
  */
 static void ia32_emit_node(ir_node *node)
 {
-	ir_op *op = get_irn_op(node);
-
 	DBG((dbg, LEVEL_1, "emitting code for %+F\n", node));
 
 	if (is_ia32_irn(node)) {
@@ -1476,15 +1472,8 @@ static void ia32_emit_node(ir_node *node)
 			}
 		}
 	}
-	if (op->ops.generic) {
-		emit_func_ptr func = (emit_func_ptr) op->ops.generic;
 
-		be_dwarf_location(get_irn_dbg_info(node));
-
-		(*func) (node);
-	} else {
-		panic("no emit handler for node %+F (%+G, graph %+F)\n", node, node, get_irn_irg(node));
-	}
+	be_emit_node(node);
 
 	if (sp_relative) {
 		int sp_change = arch_get_sp_bias(node);
