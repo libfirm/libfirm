@@ -722,7 +722,6 @@ $(FirmRoot)\ir\be\scripts\generate_machine.pl %(FullPath) $(FirmRoot)\ir\be\TEMP
     <None Include="$(FirmRoot)\scripts\spec_util.py"/>
     <None Include="$(FirmRoot)\scripts\statev_sql.py"/>
     <None Include="$(FirmRoot)\ir\be\scripts\generate_emitter.pl"/>
-    <None Include="$(FirmRoot)\ir\be\scripts\generate_emitter_new.pl"/>
     <None Include="$(FirmRoot)\ir\be\scripts\generate_machine.pl"/>
     <None Include="$(FirmRoot)\ir\be\scripts\generate_new_opcodes.pl"/>
     <None Include="$(FirmRoot)\ir\be\scripts\generate_regalloc_if.pl"/>

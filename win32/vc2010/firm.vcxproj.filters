@@ -1869,9 +1869,6 @@
     <None Include="$(FirmRoot)\scripts\statev_sql.py">
       <Filter>scripts</Filter>
     </None>
-    <None Include="$(FirmRoot)\ir\be\scripts\generate_emitter_new.pl">
-      <Filter>ir\be\scripts</Filter>
-    </None>
     <None Include="$(FirmRoot)\ir\be\scripts\generate_emitter.pl">
       <Filter>ir\be\scripts</Filter>
     </None>
@@ -3579,9 +3576,6 @@
     <None Include="$(FirmRoot)\ir\be\scripts\generate_emitter.pl">
       <Filter>ir\be\scripts</Filter>
     </None>
-    <None Include="$(FirmRoot)\ir\be\scripts\generate_emitter_new.pl">
-      <Filter>ir\be\scripts</Filter>
-    </None>
     <None Include="$(FirmRoot)\ir\be\scripts\generate_machine.pl">
       <Filter>ir\be\scripts</Filter>
     </None>
@@ -5250,9 +5244,6 @@
     <None Include="$(FirmRoot)\ir\be\scripts\generate_emitter.pl">
       <Filter>ir\be\scripts</Filter>
     </None>
-    <None Include="$(FirmRoot)\ir\be\scripts\generate_emitter_new.pl">
-      <Filter>ir\be\scripts</Filter>
-    </None>
     <None Include="$(FirmRoot)\ir\be\scripts\generate_machine.pl">
       <Filter>ir\be\scripts</Filter>
     </None>
@@ -6916,9 +6907,6 @@
       <Filter>scripts</Filter>
     </None>
     <None Include="$(FirmRoot)\ir\be\scripts\generate_emitter.pl">
-      <Filter>ir\be\scripts</Filter>
-    </None>
-    <None Include="$(FirmRoot)\ir\be\scripts\generate_emitter_new.pl">
       <Filter>ir\be\scripts</Filter>
     </None>
     <None Include="$(FirmRoot)\ir\be\scripts\generate_machine.pl">

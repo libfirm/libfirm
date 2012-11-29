@@ -1879,10 +1879,6 @@
 						>
 					</File>
 					<File
-						RelativePath="..\ir\be\scripts\generate_emitter_new.pl"
-						>
-					</File>
-					<File
 						RelativePath="..\ir\be\scripts\generate_machine.pl"
 						>
 					</File>

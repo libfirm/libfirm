@@ -413,7 +413,6 @@ EXTRA_DIST = \
 	ir/gen_irnode.c.inl \
 	ir/gen_irdump.c.inl \
 	adt/hashset.c.inl \
-	be/scripts/generate_emitter_new.pl \
 	be/scripts/generate_emitter.pl \
 	be/scripts/generate_new_opcodes.pl \
 	be/scripts/generate_regalloc_if.pl
