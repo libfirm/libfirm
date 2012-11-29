@@ -72,8 +72,6 @@ struct ia32_isa_t {
  * A helper type collecting needed info for IA32 intrinsic lowering.
  */
 struct ia32_intrinsic_env_t {
-	ia32_isa_t *isa;     /**< the isa object */
-	ir_graph   *irg;     /**< the irg, these entities belong to */
 	ir_entity  *divdi3;  /**< entity for __divdi3 library call */
 	ir_entity  *moddi3;  /**< entity for __moddi3 library call */
 	ir_entity  *udivdi3; /**< entity for __udivdi3 library call */

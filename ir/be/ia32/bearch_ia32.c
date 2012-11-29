@@ -109,8 +109,6 @@ static ir_entity *omit_fp_ret_addr_ent = NULL;
  * The environment for the intrinsic mapping.
  */
 static ia32_intrinsic_env_t intrinsic_env = {
-	NULL,    /* the isa */
-	NULL,    /* the irg, these entities belong to */
 	NULL,    /* entity for __divdi3 library call */
 	NULL,    /* entity for __moddi3 library call */
 	NULL,    /* entity for __udivdi3 library call */
@@ -1659,9 +1657,6 @@ static arch_env_t *ia32_begin_codegeneration(const be_main_env_t *env)
 
 	*isa        = ia32_isa_template;
 	isa->tv_ent = pmap_create();
-
-	/* enter the ISA object into the intrinsic environment */
-	intrinsic_env.isa = isa;
 
 	be_emit_init(env->file_handle);
 	be_gas_begin_compilation_unit(env);
