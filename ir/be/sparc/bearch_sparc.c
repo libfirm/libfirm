@@ -430,9 +430,8 @@ static arch_env_t *sparc_begin_codegeneration(const be_main_env_t *env)
 	*isa = sparc_isa_template;
 	isa->constants = pmap_create();
 
-	be_gas_elf_type_char      = '#';
-	be_gas_object_file_format = OBJECT_FILE_FORMAT_ELF;
-	be_gas_elf_variant        = ELF_VARIANT_SPARC;
+	be_gas_elf_type_char = '#';
+	be_gas_elf_variant   = ELF_VARIANT_SPARC;
 
 	be_emit_init(env->file_handle);
 	be_gas_begin_compilation_unit(env);
