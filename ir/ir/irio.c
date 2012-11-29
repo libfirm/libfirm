@@ -938,11 +938,11 @@ static void write_SymConst(write_env_t *env, const ir_node *node)
 	write_entity_ref(env, get_SymConst_entity(node));
 }
 
-typedef void (*write_node_func)(write_env_t *env, const ir_node *node);
+typedef void write_node_func(write_env_t *env, ir_node const *node);
 
-static void register_node_writer(ir_op *op, write_node_func func)
+static void register_node_writer(ir_op *op, write_node_func *func)
 {
-	set_generic_function_ptr(op, (op_func)func);
+	set_generic_function_ptr(op, func);
 }
 
 static void writers_init(void)
@@ -958,8 +958,8 @@ static void writers_init(void)
 
 static void write_node(const ir_node *node, write_env_t *env)
 {
-	ir_op          *op   = get_irn_op(node);
-	write_node_func func = (write_node_func) get_generic_function_ptr(op);
+	ir_op           *const op   = get_irn_op(node);
+	write_node_func *const func = get_generic_function_ptr(write_node_func, op);
 
 	fputc('\t', env->file);
 	if (func == NULL)

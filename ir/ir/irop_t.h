@@ -41,6 +41,9 @@
 #define set_op_attr(op, attr)   set_op_attr_((op), (attr))
 #define get_op_attr(op)         get_op_attr_(op)
 
+#define set_generic_function_ptr(op, func) set_generic_function_ptr_((op), (op_func)(func))
+#define get_generic_function_ptr(type, op) ((type*)get_generic_function_ptr_((op)))
+
 /**
  * Frees a newly created ir operation.
  */
