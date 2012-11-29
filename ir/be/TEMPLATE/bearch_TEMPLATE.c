@@ -157,13 +157,10 @@ static void TEMPLATE_finish(void)
 	TEMPLATE_free_opcodes();
 }
 
-static arch_env_t *TEMPLATE_begin_codegeneration(const be_main_env_t *env)
+static arch_env_t *TEMPLATE_begin_codegeneration(void)
 {
 	TEMPLATE_isa_t *isa = XMALLOC(TEMPLATE_isa_t);
 	*isa = TEMPLATE_isa_template;
-
-	be_emit_init(env->file_handle);
-	be_gas_begin_compilation_unit(env);
 
 	return &isa->base;
 }

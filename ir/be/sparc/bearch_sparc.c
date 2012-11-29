@@ -424,7 +424,7 @@ static void sparc_finish(void)
 	sparc_free_opcodes();
 }
 
-static arch_env_t *sparc_begin_codegeneration(const be_main_env_t *env)
+static arch_env_t *sparc_begin_codegeneration(void)
 {
 	sparc_isa_t *isa = XMALLOC(sparc_isa_t);
 	*isa = sparc_isa_template;
@@ -432,9 +432,6 @@ static arch_env_t *sparc_begin_codegeneration(const be_main_env_t *env)
 
 	be_gas_elf_type_char = '#';
 	be_gas_elf_variant   = ELF_VARIANT_SPARC;
-
-	be_emit_init(env->file_handle);
-	be_gas_begin_compilation_unit(env);
 
 	return &isa->base;
 }

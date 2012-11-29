@@ -431,7 +431,7 @@ struct arch_isa_if_t {
 	 * Start codegeneration
 	 * @return a new isa instance
 	 */
-	arch_env_t *(*begin_codegeneration)(const be_main_env_t *env);
+	arch_env_t *(*begin_codegeneration)(void);
 
 	/**
 	 * Free the isa instance.

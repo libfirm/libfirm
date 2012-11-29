@@ -73,7 +73,6 @@ extern be_options_t be_options;
 
 struct be_main_env_t {
 	arch_env_t   *arch_env;
-	FILE         *file_handle;
 	const char   *cup_name;             /**< name of the compilation unit */
 	pmap         *ent_trampoline_map;   /**< A map containing PIC trampolines for methods. */
 	ir_type      *pic_trampolines_type; /**< Class type containing all trampolines */

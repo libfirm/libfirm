@@ -427,15 +427,12 @@ static void arm_finish(void)
 	arm_free_opcodes();
 }
 
-static arch_env_t *arm_begin_codegeneration(const be_main_env_t *env)
+static arch_env_t *arm_begin_codegeneration(void)
 {
 	arm_isa_t *isa = XMALLOC(arm_isa_t);
 	*isa = arm_isa_template;
 
 	be_gas_emit_types = false;
-
-	be_emit_init(env->file_handle);
-	be_gas_begin_compilation_unit(env);
 
 	return &isa->base;
 }

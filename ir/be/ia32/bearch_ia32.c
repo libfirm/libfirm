@@ -1649,7 +1649,7 @@ static ia32_isa_t ia32_isa_template = {
 	IA32_FPU_ARCH_X87,          /* FPU architecture */
 };
 
-static arch_env_t *ia32_begin_codegeneration(const be_main_env_t *env)
+static arch_env_t *ia32_begin_codegeneration(void)
 {
 	ia32_isa_t *isa = XMALLOC(ia32_isa_t);
 
@@ -1657,9 +1657,6 @@ static arch_env_t *ia32_begin_codegeneration(const be_main_env_t *env)
 
 	*isa        = ia32_isa_template;
 	isa->tv_ent = pmap_create();
-
-	be_emit_init(env->file_handle);
-	be_gas_begin_compilation_unit(env);
 
 	return &isa->base;
 }

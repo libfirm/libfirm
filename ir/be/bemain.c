@@ -53,6 +53,7 @@
 
 #include "bearch.h"
 #include "be_t.h"
+#include "begnuas.h"
 #include "bemodule.h"
 #include "beutil.h"
 #include "benode.h"
@@ -398,11 +399,9 @@ ir_type *be_get_type_long_double(void)
  * @param env          an empty environment
  * @param file_handle  the file handle where the output will be written to
  */
-static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle,
-                                  const char *compilation_unit_name)
+static be_main_env_t *be_init_env(be_main_env_t *const env, char const *const compilation_unit_name)
 {
 	memset(env, 0, sizeof(*env));
-	env->file_handle          = file_handle;
 	env->ent_trampoline_map   = pmap_create();
 	env->pic_trampolines_type = new_type_class(NEW_ID("$PIC_TRAMPOLINE_TYPE"));
 	env->ent_pic_symbol_map   = pmap_create();
@@ -564,7 +563,10 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		}
 	}
 
-	be_init_env(&env, file_handle, cup_name);
+	be_init_env(&env, cup_name);
+
+	be_emit_init(file_handle);
+	be_gas_begin_compilation_unit(&env);
 
 	arch_env = env.arch_env;
 

@@ -270,13 +270,10 @@ static void amd64_finish(void)
 	amd64_free_opcodes();
 }
 
-static arch_env_t *amd64_begin_codegeneration(const be_main_env_t *env)
+static arch_env_t *amd64_begin_codegeneration(void)
 {
 	amd64_isa_t *isa = XMALLOC(amd64_isa_t);
 	*isa = amd64_isa_template;
-
-	be_emit_init(env->file_handle);
-	be_gas_begin_compilation_unit(env);
 
 	return &isa->base;
 }
