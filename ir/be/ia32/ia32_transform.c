@@ -4718,9 +4718,8 @@ static ir_node *gen_be_Call(ir_node *node)
 		ir_mode *const res_mode = get_type_mode(res_type);
 
 		if (res_mode != NULL && mode_is_float(res_mode)) {
-			ir_graph        *irg      = get_Block_irg(block);
-			ia32_irg_data_t *irg_data = ia32_get_irg_data(irg);
-			irg_data->do_x87_sim = 1;
+			ir_graph *const irg = get_Block_irg(block);
+			ia32_request_x87_sim(irg);
 		}
 	}
 

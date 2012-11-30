@@ -796,15 +796,12 @@ static void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
 
 static void init_ia32_x87_attributes(ir_node *res)
 {
-	ir_graph        *irg      = get_irn_irg(res);
-	ia32_irg_data_t *irg_data = ia32_get_irg_data(irg);
 #ifndef NDEBUG
 	ia32_attr_t *attr  = get_ia32_attr(res);
 	attr->attr_type   |= IA32_ATTR_ia32_x87_attr_t;
-#else
-	(void) res;
 #endif
-	irg_data->do_x87_sim = 1;
+	ir_graph *const irg = get_irn_irg(res);
+	ia32_request_x87_sim(irg);
 }
 
 static void init_ia32_asm_attributes(ir_node *res)

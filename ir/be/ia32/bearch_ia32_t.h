@@ -105,6 +105,12 @@ static inline ia32_irg_data_t *ia32_get_irg_data(const ir_graph *irg)
 	return (ia32_irg_data_t*) be_birg_from_irg(irg)->isa_link;
 }
 
+static inline void ia32_request_x87_sim(ir_graph const *const irg)
+{
+	ia32_irg_data_t *const d = ia32_get_irg_data(irg);
+	d->do_x87_sim = true;
+}
+
 /**
  * Returns the unique per irg GP NoReg node.
  */
