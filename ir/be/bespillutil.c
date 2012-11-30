@@ -68,7 +68,6 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 typedef struct reloader_t reloader_t;
 struct reloader_t {
 	reloader_t *next;
-	ir_node    *can_spill_after;
 	ir_node    *reloader;
 	ir_node    *rematted_node;
 	int         remat_cost_delta; /** costs needed for rematerialization,
@@ -230,8 +229,7 @@ void be_add_spill(spill_env_t *env, ir_node *to_spill, ir_node *after)
 }
 
 void be_add_reload2(spill_env_t *env, ir_node *to_spill, ir_node *before,
-		ir_node *can_spill_after, const arch_register_class_t *reload_cls,
-		int allow_remat)
+		const arch_register_class_t *reload_cls, int allow_remat)
 {
 	spill_info_t  *info;
 	reloader_t    *rel;
@@ -257,7 +255,6 @@ void be_add_reload2(spill_env_t *env, ir_node *to_spill, ir_node *before,
 	rel->next             = info->reloaders;
 	rel->reloader         = before;
 	rel->rematted_node    = NULL;
-	rel->can_spill_after  = can_spill_after;
 	rel->remat_cost_delta = allow_remat ? 0 : REMAT_COST_INFINITE;
 
 	info->reloaders  = rel;
@@ -271,7 +268,7 @@ void be_add_reload2(spill_env_t *env, ir_node *to_spill, ir_node *before,
 void be_add_reload(spill_env_t *senv, ir_node *to_spill, ir_node *before,
                    const arch_register_class_t *reload_cls, int allow_remat)
 {
-	be_add_reload2(senv, to_spill, before, to_spill, reload_cls, allow_remat);
+	be_add_reload2(senv, to_spill, before, reload_cls, allow_remat);
 
 }
 

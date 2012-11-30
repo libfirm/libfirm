@@ -71,7 +71,7 @@ void be_add_spill(spill_env_t *senv, ir_node *to_spill, ir_node *after);
 void be_add_reload(spill_env_t *senv, ir_node *to_spill, ir_node *before,
                    const arch_register_class_t *reload_cls, int allow_remat);
 
-void be_add_reload2(spill_env_t *senv, ir_node *to_spill, ir_node *before, ir_node *can_spill_after,
+void be_add_reload2(spill_env_t *senv, ir_node *to_spill, ir_node *before,
                    const arch_register_class_t *reload_cls, int allow_remat);
 
 /**
