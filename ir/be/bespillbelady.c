@@ -89,7 +89,6 @@ static unsigned                     n_regs;
 static workset_t                   *ws;     /**< the main workset used while
 	                                             processing a block. */
 static be_uses_t                   *uses;   /**< env for the next-use magic */
-static ir_node                     *instr;  /**< current instruction */
 static spill_env_t                 *senv;   /**< see bespill.h */
 static ir_node                    **blocklist;
 
@@ -324,7 +323,7 @@ static unsigned get_distance(ir_node *from, const ir_node *def, int skip_from_us
  * @p is_usage indicates that the values in new_vals are used (not defined)
  * In this case reloads must be performed
  */
-static void displace(workset_t *new_vals, int is_usage)
+static void displace(workset_t *const new_vals, int const is_usage, ir_node *const instr)
 {
 	ir_node **to_insert = ALLOCAN(ir_node*, n_regs);
 	bool     *spilled   = ALLOCAN(bool,     n_regs);
@@ -806,16 +805,13 @@ static void process_block(ir_node *block)
 		}
 		DB((dbg, DBG_DECIDE, "  ...%+F\n", irn));
 
-		/* set instruction in the workset */
-		instr = irn;
-
 		/* allocate all values _used_ by this instruction */
 		workset_clear(new_vals);
 		be_foreach_use(irn, cls, in_req_, in, in_req,
 			/* (note that "spilled" is irrelevant here) */
 			workset_insert(new_vals, in, false);
 		);
-		displace(new_vals, 1);
+		displace(new_vals, 1, irn);
 
 		/* allocate all values _defined_ by this instruction */
 		workset_clear(new_vals);
@@ -823,7 +819,7 @@ static void process_block(ir_node *block)
 			assert(req->width == 1);
 			workset_insert(new_vals, value, false);
 		);
-		displace(new_vals, 0);
+		displace(new_vals, 0, irn);
 	}
 
 	/* Remember end-workset for this block */
