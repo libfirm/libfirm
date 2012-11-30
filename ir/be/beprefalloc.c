@@ -1539,7 +1539,7 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		if (req->cls != cls)
 			continue;
 
-		if (arch_register_req_is(req, limited)) {
+		if (arch_register_req_is(req, ignore)) {
 			allocation_info_t *info = get_allocation_info(node);
 			info->current_value = node;
 
