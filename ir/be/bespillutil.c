@@ -599,14 +599,7 @@ static ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader)
 {
 	int i, arity;
 	ir_node *res;
-	ir_node *bl;
 	ir_node **ins;
-
-	if (is_Block(reloader)) {
-		bl = reloader;
-	} else {
-		bl = get_nodes_block(reloader);
-	}
 
 	ins = ALLOCAN(ir_node*, get_irn_arity(spilled));
 	for (i = 0, arity = get_irn_arity(spilled); i < arity; ++i) {
@@ -622,6 +615,7 @@ static ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader)
 	}
 
 	/* create a copy of the node */
+	ir_node *const bl = get_nodes_block(reloader);
 	res = new_ir_node(get_irn_dbg_info(spilled), env->irg, bl,
 	                  get_irn_op(spilled), get_irn_mode(spilled),
 	                  get_irn_arity(spilled), ins);
