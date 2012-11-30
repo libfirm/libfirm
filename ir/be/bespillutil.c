@@ -228,8 +228,7 @@ void be_add_spill(spill_env_t *env, ir_node *to_spill, ir_node *after)
 	spill_info->spills = spill;
 }
 
-void be_add_reload2(spill_env_t *env, ir_node *to_spill, ir_node *before,
-		const arch_register_class_t *reload_cls, int allow_remat)
+void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before, const arch_register_class_t *reload_cls, int allow_remat)
 {
 	spill_info_t  *info;
 	reloader_t    *rel;
@@ -263,13 +262,6 @@ void be_add_reload2(spill_env_t *env, ir_node *to_spill, ir_node *before,
 
 	DBG((dbg, LEVEL_1, "creating spillinfo for %+F, will be reloaded before %+F, may%s be rematerialized\n",
 		to_spill, before, allow_remat ? "" : " not"));
-}
-
-void be_add_reload(spill_env_t *senv, ir_node *to_spill, ir_node *before,
-                   const arch_register_class_t *reload_cls, int allow_remat)
-{
-	be_add_reload2(senv, to_spill, before, reload_cls, allow_remat);
-
 }
 
 ir_node *be_get_end_of_block_insertion_point(const ir_node *block)
