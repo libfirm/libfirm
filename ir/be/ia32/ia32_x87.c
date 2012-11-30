@@ -809,7 +809,7 @@ static int sim_binop(x87_state *const state, ir_node *const n)
 		char const *const r = op2_idx >= 0 ? get_st_reg(op2_idx)->name : "[AM]";
 		char const *const o = get_st_reg(out_idx)->name;
 		DB((dbg, LEVEL_1, "<<< %s %s, %s -> %s\n", get_irn_opname(n), l, r, o));
-	);
+	)
 
 	return NO_NODE_ADDED;
 }
@@ -918,7 +918,7 @@ static int sim_store(x87_state *state, ir_node *n)
 		 *   - stack full: fstp value and load again
 		 * Note that we cannot test on mode_E, because floats might be 80bit ... */
 		ir_mode *const mode = get_ia32_ls_mode(n);
-		if (get_mode_size_bits(mode) > (mode_is_int(mode) ? 32 : 64)) {
+		if (get_mode_size_bits(mode) > (mode_is_int(mode) ? 32U : 64U)) {
 			if (x87_get_depth(state) < N_FLOAT_REGS) {
 				/* ok, we have a free register: push + fstp */
 				x87_create_fpush(state, n, op2_idx, REG_FP_FP_NOREG, val);
@@ -983,7 +983,6 @@ static int sim_fprem(x87_state *const state, ir_node *const n)
 	(void)state;
 	(void)n;
 	panic("TODO implement");
-	return NO_NODE_ADDED;
 }
 
 /**
@@ -1192,7 +1191,7 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 		char const *const l = op1_idx >= 0 ? get_st_reg(op1_idx)->name : "[AM]";
 		char const *const r = op2_idx >= 0 ? get_st_reg(op2_idx)->name : "[AM]";
 		DB((dbg, LEVEL_1, "<<< %s %s, %s\n", get_irn_opname(n), l, r));
-	);
+	)
 
 	return NO_NODE_ADDED;
 }
