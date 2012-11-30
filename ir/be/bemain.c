@@ -411,7 +411,7 @@ static be_main_env_t *be_init_env(be_main_env_t *const env, char const *const co
 	set_class_final(env->pic_trampolines_type, 1);
 
 	memset(asm_constraint_flags, 0, sizeof(asm_constraint_flags));
-	env->arch_env = arch_env_begin_codegeneration(isa_if, env);
+	env->arch_env = arch_env_begin_codegeneration(isa_if);
 
 	return env;
 }
@@ -819,6 +819,9 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_free_birg(irg);
 		stat_ev_ctx_pop("bemain_irg");
 	}
+
+	be_gas_end_compilation_unit(&env);
+	be_emit_exit();
 
 	arch_env_end_codegeneration(arch_env);
 

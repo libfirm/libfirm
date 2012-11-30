@@ -139,7 +139,6 @@ static TEMPLATE_isa_t TEMPLATE_isa_template = {
 		&TEMPLATE_registers[REG_SP], /* stack pointer register */
 		&TEMPLATE_registers[REG_BP], /* base pointer register */
 		2,                           /* power of two stack alignment for calls, 2^2 == 4 */
-		NULL,                        /* main environment */
 		7,                           /* costs for a spill instruction */
 		5,                           /* costs for a reload instruction */
 		true,                        /* no custom abi handling */
@@ -170,12 +169,6 @@ static arch_env_t *TEMPLATE_begin_codegeneration(void)
  */
 static void TEMPLATE_end_codegeneration(void *self)
 {
-	TEMPLATE_isa_t *isa = (TEMPLATE_isa_t*)self;
-
-	/* emit now all global declarations */
-	be_gas_end_compilation_unit(isa->base.main_env);
-
-	be_emit_exit();
 	free(self);
 }
 

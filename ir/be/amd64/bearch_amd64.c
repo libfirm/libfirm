@@ -252,7 +252,6 @@ static amd64_isa_t amd64_isa_template = {
 		&amd64_registers[REG_RSP], /* stack pointer register */
 		&amd64_registers[REG_RBP], /* base pointer register */
 		3,                         /* power of two stack alignment for calls, 2^2 == 4 */
-		NULL,                      /* main environment */
 		7,                         /* costs for a spill instruction */
 		5,                         /* costs for a reload instruction */
 		false,                     /* no custom abi handling */
@@ -283,12 +282,6 @@ static arch_env_t *amd64_begin_codegeneration(void)
  */
 static void amd64_end_codegeneration(void *self)
 {
-	amd64_isa_t *isa = (amd64_isa_t*)self;
-
-	/* emit now all global declarations */
-	be_gas_end_compilation_unit(isa->base.main_env);
-
-	be_emit_exit();
 	free(self);
 }
 

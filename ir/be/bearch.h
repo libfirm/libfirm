@@ -215,8 +215,7 @@ static inline unsigned arch_get_irn_n_outs(const ir_node *node)
 /**
  * Start codegeneration
  */
-arch_env_t *arch_env_begin_codegeneration(const arch_isa_if_t *isa,
-                                          be_main_env_t *main_env);
+arch_env_t *arch_env_begin_codegeneration(const arch_isa_if_t *isa);
 
 /**
  * Register an instruction set architecture
@@ -547,7 +546,6 @@ struct arch_env_t {
 	const arch_register_t *sp;               /**< The stack pointer register. */
 	const arch_register_t *bp;               /**< The base pointer register. */
 	int                    stack_alignment;  /**< power of 2 stack alignment */
-	const be_main_env_t   *main_env;         /**< the be main environment */
 	int                    spill_cost;       /**< cost for a be_Spill node */
 	int                    reload_cost;      /**< cost for a be_Reload node */
 	bool                   custom_abi : 1;   /**< backend does all abi handling

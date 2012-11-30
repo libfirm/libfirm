@@ -1640,7 +1640,6 @@ static ia32_isa_t ia32_isa_template = {
 		&ia32_registers[REG_ESP], /* stack pointer register */
 		&ia32_registers[REG_EBP], /* base pointer register */
 		2,                        /* power of two stack alignment, 2^2 == 4 */
-		NULL,                     /* main environment */
 		7,                        /* costs for a spill instruction */
 		5,                        /* costs for a reload instruction */
 		false,                    /* no custom abi handling */
@@ -1667,12 +1666,6 @@ static arch_env_t *ia32_begin_codegeneration(void)
 static void ia32_end_codegeneration(void *self)
 {
 	ia32_isa_t *isa = (ia32_isa_t*)self;
-
-	/* emit now all global declarations */
-	be_gas_end_compilation_unit(isa->base.main_env);
-
-	be_emit_exit();
-
 	pmap_destroy(isa->tv_ent);
 	free(self);
 }

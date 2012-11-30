@@ -49,11 +49,9 @@ arch_register_req_t const arch_no_requirement = {
 };
 
 /* Initialize the architecture environment struct. */
-arch_env_t *arch_env_begin_codegeneration(const arch_isa_if_t *isa_if,
-                                          be_main_env_t *main_env)
+arch_env_t *arch_env_begin_codegeneration(const arch_isa_if_t *isa_if)
 {
 	arch_env_t *arch_env = isa_if->begin_codegeneration();
-	arch_env->main_env   = main_env;
 	return arch_env;
 }
 

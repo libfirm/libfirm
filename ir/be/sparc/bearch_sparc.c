@@ -178,7 +178,6 @@ static sparc_isa_t sparc_isa_template = {
 		&sparc_registers[REG_FRAME_POINTER], /* base pointer register */
 		3,                                   /* power of two stack alignment
 		                                        for calls */
-		NULL,                                /* main environment */
 		7,                                   /* costs for a spill instruction */
 		5,                                   /* costs for a reload instruction */
 		true,                                /* custom abi handling */
@@ -442,12 +441,7 @@ static arch_env_t *sparc_begin_codegeneration(void)
 static void sparc_end_codegeneration(void *self)
 {
 	sparc_isa_t *isa = (sparc_isa_t*)self;
-
-	/* emit now all global declarations */
-	be_gas_end_compilation_unit(isa->base.main_env);
-
 	pmap_destroy(isa->constants);
-	be_emit_exit();
 	free(isa);
 }
 

@@ -407,7 +407,6 @@ static arm_isa_t arm_isa_template = {
 		&arm_registers[REG_SP],  /* stack pointer */
 		&arm_registers[REG_R11], /* base pointer */
 		2,                       /* power of two stack alignment for calls, 2^2 == 4 */
-		NULL,                    /* main environment */
 		7,                       /* spill costs */
 		5,                       /* reload costs */
 		true,                    /* we do have custom abi handling */
@@ -442,11 +441,6 @@ static arch_env_t *arm_begin_codegeneration(void)
  */
 static void arm_end_codegeneration(void *self)
 {
-	arm_isa_t *isa = (arm_isa_t*)self;
-
-	be_gas_end_compilation_unit(isa->base.main_env);
-
-	be_emit_exit();
 	free(self);
 }
 
