@@ -520,9 +520,6 @@ struct arch_isa_if_t {
 #define arch_env_handle_intrinsics(env)                \
 	do { if((env)->impl->handle_intrinsics != NULL) (env)->impl->handle_intrinsics(); } while(0)
 #define arch_env_get_call_abi(env,tp,abi)              ((env)->impl->get_call_abi((tp), (abi)))
-#define arch_env_get_params(env)                       ((env)->impl->get_params())
-#define arch_env_parse_asm_constraint(env,c)           ((env)->impl->parse_asm_constraint((c))
-#define arch_env_is_valid_clobber(env,clobber)         ((env)->impl->is_valid_clobber((clobber))
 #define arch_env_mark_remat(env,node) \
 	do { if ((env)->impl->mark_remat != NULL) (env)->impl->mark_remat((node)); } while(0)
 
