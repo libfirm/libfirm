@@ -70,10 +70,7 @@ void be_info_new_node(ir_graph *irg, ir_node *node)
 	case iro_End:
 	case iro_Unknown:
 		info->flags |= arch_irn_flags_not_scheduled;
-		info->out_infos = NEW_ARR_D(reg_out_info_t, obst, 1);
-		memset(info->out_infos, 0, 1 * sizeof(info->out_infos[0]));
-		info->out_infos[0].req = arch_no_register_req;
-		break;
+		/* FALLTHROUGH */
 	case iro_Phi:
 		info->out_infos = NEW_ARR_D(reg_out_info_t, obst, 1);
 		memset(info->out_infos, 0, 1 * sizeof(info->out_infos[0]));
