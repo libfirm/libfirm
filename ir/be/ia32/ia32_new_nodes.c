@@ -809,9 +809,10 @@ static void init_ia32_asm_attributes(ir_node *res)
 #ifndef NDEBUG
 	ia32_attr_t *attr  = get_ia32_attr(res);
 	attr->attr_type   |= IA32_ATTR_ia32_asm_attr_t;
-#else
-	(void) res;
 #endif
+
+	ir_graph *const irg = get_irn_irg(res);
+	ia32_request_x87_sim(irg); /* asm might have fp operands. */
 }
 
 static void init_ia32_immediate_attributes(ir_node *res, ir_entity *symconst,

@@ -117,7 +117,6 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 %init_attr = (
 	ia32_asm_attr_t =>
 		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, n_res);\n".
-		"\tinit_ia32_x87_attributes(res);".
 		"\tinit_ia32_asm_attributes(res);",
 	ia32_attr_t     =>
 		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, n_res);",

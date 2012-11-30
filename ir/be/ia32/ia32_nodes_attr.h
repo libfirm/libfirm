@@ -291,7 +291,7 @@ struct ia32_asm_reg_t {
  */
 typedef struct ia32_asm_attr_t ia32_asm_attr_t;
 struct ia32_asm_attr_t {
-	ia32_x87_attr_t       x87_attr;
+	ia32_attr_t           attr;         /**< the generic attribute */
 	ident                *asm_text;
 	const ia32_asm_reg_t *register_map;
 };
