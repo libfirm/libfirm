@@ -1054,31 +1054,19 @@ static const char* emit_asm_operand(const ir_node *node, const char *s)
 		return s;
 	}
 
+	/* Emit the register. */
 	if (asm_reg->memory) {
 		be_emit_char('(');
-	}
-
-	/* emit it */
-	if (modifier != 0) {
-		switch (modifier) {
-		case 'b':
-			emit_8bit_register(reg);
-			break;
-		case 'h':
-			emit_8bit_register_high(reg);
-			break;
-		case 'w':
-			emit_16bit_register(reg);
-			break;
-		default:
-			panic("Invalid asm op modifier");
-		}
-	} else {
-		emit_register(reg, asm_reg->memory ? mode_Iu : asm_reg->mode);
-	}
-
-	if (asm_reg->memory) {
+		emit_register(reg, NULL);
 		be_emit_char(')');
+	} else {
+		switch (modifier) {
+		case '\0': emit_register(reg, asm_reg->mode); break;
+		case  'b': emit_8bit_register(reg);           break;
+		case  'h': emit_8bit_register_high(reg);      break;
+		case  'w': emit_16bit_register(reg);          break;
+		default:   panic("Invalid asm op modifier");
+		}
 	}
 
 	return s;
