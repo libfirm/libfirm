@@ -490,11 +490,8 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 				 * checking */
 				continue;
 			}
-			if (arch_register_is_caller_save(arch_env, reg)) {
-				if (!(reg->type & arch_register_type_ignore)) {
-					ARR_APP1(const arch_register_t*, destroyed_regs, reg);
-				}
-			}
+			if (arch_register_is_caller_save(arch_env, reg))
+				ARR_APP1(const arch_register_t*, destroyed_regs, reg);
 		}
 	}
 
@@ -1223,7 +1220,7 @@ static ir_node *create_be_return(be_abi_irg_t *const env, ir_node *const irn)
 	/* Add uses of the callee save registers. */
 	foreach_pmap(env->regs, ent) {
 		const arch_register_t *reg = (const arch_register_t*)ent->key;
-		if ((reg->type & arch_register_type_ignore) || arch_register_is_callee_save(arch_env, reg))
+		if (arch_register_is_callee_save(arch_env, reg))
 			pmap_insert(reg_map, ent->key, ent->value);
 	}
 
