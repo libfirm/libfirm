@@ -790,8 +790,7 @@ static void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
 #endif
 
 	info            = be_get_info(node);
-	info->out_infos = NEW_ARR_D(reg_out_info_t, obst, n_res);
-	memset(info->out_infos, 0, n_res * sizeof(info->out_infos[0]));
+	info->out_infos = NEW_ARR_DZ(reg_out_info_t, obst, n_res);
 }
 
 static void init_ia32_x87_attributes(ir_node *res)

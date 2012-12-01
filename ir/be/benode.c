@@ -231,8 +231,7 @@ static void init_node_attr(ir_node *node, int n_inputs, int n_outputs)
 	}
 	info->in_reqs = in_reqs;
 
-	info->out_infos = NEW_ARR_D(reg_out_info_t, obst, n_outputs);
-	memset(info->out_infos, 0, n_outputs * sizeof(info->out_infos[0]));
+	info->out_infos = NEW_ARR_DZ(reg_out_info_t, obst, n_outputs);
 	for (int i = 0; i < n_outputs; ++i) {
 		info->out_infos[i].req = arch_no_register_req;
 	}
@@ -1047,9 +1046,8 @@ ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
 	ir_node *phi = new_ir_node(NULL, irg, block, op_Phi, mode, n_ins, ins);
 	phi->attr.phi.u.backedge = new_backedge_arr(get_irg_obstack(irg), n_ins);
 	info = be_get_info(phi);
-	info->out_infos = NEW_ARR_D(reg_out_info_t, obst, 1);
-	memset(info->out_infos, 0, 1 * sizeof(info->out_infos[0]));
-	info->in_reqs = OALLOCN(obst, const arch_register_req_t*, n_ins);
+	info->out_infos = NEW_ARR_DZ(reg_out_info_t, obst, 1);
+	info->in_reqs   = OALLOCN(obst, const arch_register_req_t*, n_ins);
 
 	info->out_infos[0].req = req;
 	for (i = 0; i < n_ins; ++i) {

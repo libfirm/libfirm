@@ -493,8 +493,7 @@ static void set_unroll_copy(ir_node *n, int nr, ir_node *cp)
 
 	info = ir_nodemap_get(unrolling_node_info, &map, n);
 	if (! info) {
-		ir_node **arr = NEW_ARR_D(ir_node*, &obst, unroll_nr);
-		memset(arr, 0, unroll_nr * sizeof(ir_node*));
+		ir_node **const arr = NEW_ARR_DZ(ir_node*, &obst, unroll_nr);
 
 		info = OALLOCZ(&obst, unrolling_node_info);
 		info->copies = arr;

@@ -110,6 +110,12 @@
    : (type *)arr_mt_descr.elts)
 
 /**
+ * Create a dynamic array on an obstack and null its contents.
+ */
+#define NEW_ARR_DZ(type, obstack, nelts) \
+	((type*)memset(NEW_ARR_D(type, (obstack), (nelts)), 0, sizeof(type) * (nelts)))
+
+/**
  * Creates a new dynamic array with the same number of elements as a
  * given one.
  *

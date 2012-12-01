@@ -444,8 +444,7 @@ ir_node *new_rd_immBlock(dbg_info *dbgi, ir_graph *irg)
 	set_Block_block_visited(res, 0);
 
 	/* Create and initialize array for Phi-node construction. */
-	res->attr.block.graph_arr = NEW_ARR_D(ir_node*, get_irg_obstack(irg), irg->n_loc);
-	memset(res->attr.block.graph_arr, 0, sizeof(ir_node*) * irg->n_loc);
+	res->attr.block.graph_arr = NEW_ARR_DZ(ir_node*, get_irg_obstack(irg), irg->n_loc);
 
 	/* Immature block may not be optimized! */
 	irn_verify_irg(res, irg);
@@ -718,8 +717,7 @@ ir_node *new_r_Block_noopt(ir_graph *irg, int arity, ir_node *in[])
 	set_Block_matured(res, 1);
 	/* Create and initialize array for Phi-node construction. */
 	if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION)) {
-		res->attr.block.graph_arr = NEW_ARR_D(ir_node*, get_irg_obstack(irg), irg->n_loc);
-		memset(res->attr.block.graph_arr, 0, irg->n_loc * sizeof(ir_node*));
+		res->attr.block.graph_arr = NEW_ARR_DZ(ir_node*, get_irg_obstack(irg), irg->n_loc);
 	}
 	irn_verify_irg(res, irg);
 	return res;

@@ -457,9 +457,7 @@ ir_node *ia32_gen_ASM(ir_node *node)
 			reg_map_size = constraint->pos+1;
 	}
 
-	ia32_asm_reg_t *register_map
-		= NEW_ARR_D(ia32_asm_reg_t, obst, reg_map_size);
-	memset(register_map, 0, reg_map_size * sizeof(register_map[0]));
+	ia32_asm_reg_t *const register_map = NEW_ARR_DZ(ia32_asm_reg_t, obst, reg_map_size);
 
 	/* construct output constraints */
 	size_t                      out_size = out_arity + 1;

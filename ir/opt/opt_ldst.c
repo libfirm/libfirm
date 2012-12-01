@@ -2138,22 +2138,19 @@ void opt_ldst(ir_graph *irg)
 	/* create the current set */
 	env.curr_set = rbitset_obstack_alloc(&env.obst, env.rbs_size);
 	rbitset_set(env.curr_set, env.rbs_size - 1);
-	env.curr_id_2_memop = NEW_ARR_D(memop_t *, &env.obst, env.rbs_size);
-	memset(env.curr_id_2_memop, 0, env.rbs_size * sizeof(env.curr_id_2_memop[0]));
+	env.curr_id_2_memop = NEW_ARR_DZ(memop_t*, &env.obst, env.rbs_size);
 
 	for (bl = env.forward; bl != NULL; bl = bl->forward_next) {
 		/* set sentinel bits */
 		bl->avail_out  = rbitset_obstack_alloc(&env.obst, env.rbs_size);
 		rbitset_set(bl->avail_out, env.rbs_size - 1);
 
-		bl->id_2_memop_avail = NEW_ARR_D(memop_t *, &env.obst, env.rbs_size);
-		memset(bl->id_2_memop_avail, 0, env.rbs_size * sizeof(bl->id_2_memop_avail[0]));
+		bl->id_2_memop_avail = NEW_ARR_DZ(memop_t*, &env.obst, env.rbs_size);
 
 		bl->anticL_in  = rbitset_obstack_alloc(&env.obst, env.rbs_size);
 		rbitset_set(bl->anticL_in, env.rbs_size - 1);
 
-		bl->id_2_memop_antic = NEW_ARR_D(memop_t *, &env.obst, env.rbs_size);
-		memset(bl->id_2_memop_antic, 0, env.rbs_size * sizeof(bl->id_2_memop_antic[0]));
+		bl->id_2_memop_antic = NEW_ARR_DZ(memop_t*, &env.obst, env.rbs_size);
 	}
 
 	(void) dump_block_list;

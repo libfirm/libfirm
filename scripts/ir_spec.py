@@ -234,8 +234,7 @@ class Block:
 
 	/* Create and initialize array for Phi-node construction. */
 	if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION)) {
-		res->attr.block.graph_arr = NEW_ARR_D(ir_node *, get_irg_obstack(irg), irg->n_loc);
-		memset(res->attr.block.graph_arr, 0, irg->n_loc * sizeof(ir_node*));
+		res->attr.block.graph_arr = NEW_ARR_DZ(ir_node*, get_irg_obstack(irg), irg->n_loc);
 	}
 	'''
 
