@@ -127,10 +127,10 @@ static inline void set_irg_pinned(ir_graph *irg, op_pin_state p)
 }
 
 /** Returns the obstack associated with the graph. */
-static inline struct obstack *get_irg_obstack(const ir_graph *irg)
+static inline struct obstack *get_irg_obstack(ir_graph *const irg)
 {
-	assert(obstack_object_size(irg->obst) == 0);
-	return irg->obst;
+	assert(obstack_object_size(&irg->obst) == 0);
+	return &irg->obst;
 }
 
 
@@ -380,7 +380,7 @@ static inline void irg_kill_node(ir_graph *irg, ir_node *n)
 	if (idx + 1 == irg->last_node_idx)
 		--irg->last_node_idx;
 	irg->idx_irn_map[idx] = NULL;
-	obstack_free(irg->obst, n);
+	obstack_free(&irg->obst, n);
 }
 
 /**

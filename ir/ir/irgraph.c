@@ -150,8 +150,7 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 
 	/*-- initialized for each graph. --*/
 	res->kind = k_ir_graph;
-	res->obst = XMALLOC(struct obstack);
-	obstack_init(res->obst);
+	obstack_init(&res->obst);
 
 	/* graphs are in construction mode by default */
 	add_irg_constraints(res, IR_GRAPH_CONSTRAINT_CONSTRUCTION);
@@ -244,8 +243,7 @@ ir_graph *new_const_code_irg(void)
 	res->n_loc         = 1; /* Only the memory. */
 	res->visited       = 0; /* visited flag, for the ir walker */
 	res->block_visited = 0; /* visited flag, for the 'block'-walker */
-	res->obst          = XMALLOC(struct obstack);
-	obstack_init(res->obst);
+	obstack_init(&res->obst);
 
 	res->last_node_idx = 0;
 
@@ -348,8 +346,7 @@ ir_graph *create_irg_copy(ir_graph *irg)
 	res->n_loc = 0;
 	res->visited = 0;       /* visited flag, for the ir walker */
 	res->block_visited = 0; /* visited flag, for the 'block'-walker */
-	res->obst       = XMALLOC(struct obstack);
-	obstack_init(res->obst);
+	obstack_init(&res->obst);
 
 	res->last_node_idx = 0;
 
@@ -403,8 +400,7 @@ void free_ir_graph(ir_graph *irg)
 	}
 
 	free_End(get_irg_end(irg));
-	obstack_free(irg->obst, NULL);
-	free(irg->obst);
+	obstack_free(&irg->obst, NULL);
 	if (irg->loc_descriptions)
 		free(irg->loc_descriptions);
 	irg->kind = k_BAD;
@@ -555,11 +551,9 @@ int get_irg_n_locs(ir_graph *irg)
 
 int node_is_in_irgs_storage(const ir_graph *irg, const ir_node *n)
 {
-	struct _obstack_chunk *p;
-
 	/* Check whether the ir_node pointer is on the obstack.
 	 * A more sophisticated check would test the "whole" ir_node. */
-	for (p = irg->obst->chunk; p; p = p->prev) {
+	for (struct _obstack_chunk const *p = irg->obst.chunk; p; p = p->prev) {
 		if (((char *)p->contents <= (char *)n) && ((char *)n < (char *)p->limit))
 			return 1;
 	}

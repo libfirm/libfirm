@@ -95,9 +95,6 @@ static void copy_graph_env(ir_graph *irg)
  */
 void dead_node_elimination(ir_graph *irg)
 {
-	struct obstack *graveyard_obst = NULL;
-	struct obstack *rebirth_obst   = NULL;
-
 	edges_deactivate(irg);
 
 	/* inform statistics that we started a dead-node elimination run */
@@ -113,12 +110,10 @@ void dead_node_elimination(ir_graph *irg)
 
 	/* A quiet place, where the old obstack can rest in peace,
 	   until it will be cremated. */
-	graveyard_obst = irg->obst;
+	struct obstack graveyard_obst = irg->obst;
 
 	/* A new obstack, where the reachable nodes will be copied to. */
-	rebirth_obst = XMALLOC(struct obstack);
-	irg->obst = rebirth_obst;
-	obstack_init(irg->obst);
+	obstack_init(&irg->obst);
 	irg->last_node_idx = 0;
 
 	/* We also need a new value table for CSE */
@@ -128,8 +123,7 @@ void dead_node_elimination(ir_graph *irg)
 	copy_graph_env(irg);
 
 	/* Free memory from old unoptimized obstack */
-	obstack_free(graveyard_obst, 0);  /* First empty the obstack ... */
-	xfree(graveyard_obst);            /* ... then free it.           */
+	obstack_free(&graveyard_obst, 0);  /* First empty the obstack ... */
 
 	/* inform statistics that the run is over */
 	hook_dead_node_elim(irg, 0);

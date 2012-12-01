@@ -379,10 +379,8 @@ void be_transform_graph(ir_graph *irg, arch_pretrans_nodes *func)
 	current_ir_graph = irg;
 
 	/* create a new obstack */
-	struct obstack *old_obst = irg->obst;
-	struct obstack *new_obst = XMALLOC(struct obstack);
-	obstack_init(new_obst);
-	irg->obst = new_obst;
+	struct obstack old_obst = irg->obst;
+	obstack_init(&irg->obst);
 	irg->last_node_idx = 0;
 
 	free_vrp_data(irg);
@@ -394,8 +392,7 @@ void be_transform_graph(ir_graph *irg, arch_pretrans_nodes *func)
 	transform_nodes(irg, func);
 
 	/* free the old obstack */
-	obstack_free(old_obst, 0);
-	xfree(old_obst);
+	obstack_free(&old_obst, 0);
 
 	/* restore state */
 	current_ir_graph = old_current_ir_graph;

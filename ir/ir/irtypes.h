@@ -511,7 +511,7 @@ struct ir_graph {
 	ir_type *frame_type;           /**< A class type representing the stack frame.
 	                                    Can include "inner" methods. */
 	ir_node *anchor;               /**< Pointer to the anchor node of this graph. */
-	struct obstack *obst;          /**< The obstack where all of the ir_nodes live. */
+	struct obstack obst;           /**< The obstack where all of the ir_nodes live. */
 	ir_node *current_block;        /**< Current block for newly gen_*()-erated ir_nodes. */
 
 	/* -- Fields indicating different states of irgraph -- */
