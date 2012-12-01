@@ -141,7 +141,7 @@ static TEMPLATE_isa_t TEMPLATE_isa_template = {
 		2,                           /* power of two stack alignment for calls, 2^2 == 4 */
 		7,                           /* costs for a spill instruction */
 		5,                           /* costs for a reload instruction */
-		true,                        /* no custom abi handling */
+		true,                        /* custom abi handling */
 	},
 };
 
