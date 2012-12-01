@@ -250,14 +250,14 @@ static void arch_dump_register_req(FILE *F, const arch_register_req_t *req,
 
 void arch_dump_reqs_and_registers(FILE *F, const ir_node *node)
 {
-	backend_info_t *info = be_get_info(node);
+	backend_info_t *const info  = be_get_info(node);
+	int             const n_ins = get_irn_arity(node);
 	/* don't fail on invalid graphs */
-	if (info == NULL || info->in_reqs == NULL || info->out_infos == NULL) {
+	if (!info || (!info->in_reqs && n_ins != 0) || !info->out_infos) {
 		fprintf(F, "invalid register requirements!!!\n");
 		return;
 	}
 
-	int n_ins  = get_irn_arity(node);
 	for (int i = 0; i < n_ins; ++i) {
 		const arch_register_req_t *req = arch_get_irn_register_req_in(node, i);
 		fprintf(F, "inreq #%d = ", i);
