@@ -1051,7 +1051,6 @@ NoReg_GP => {
 	irn_flags => [ "not_scheduled" ],
 	reg_req   => { out => [ "gp_NOREG:I" ] },
 	units     => [],
-	emit      => "",
 	latency   => 0,
 	mode      => $mode_gp
 },
@@ -1062,7 +1061,6 @@ NoReg_FP => {
 	irn_flags => [ "not_scheduled" ],
 	reg_req   => { out => [ "fp_NOREG:I" ] },
 	units     => [],
-	emit      => "",
 	mode      => $mode_fp87,
 	latency   => 0,
 	attr_type => "ia32_x87_attr_t",
@@ -1074,7 +1072,6 @@ NoReg_XMM => {
 	irn_flags => [ "not_scheduled" ],
 	reg_req   => { out => [ "xmm_NOREG:I" ] },
 	units     => [],
-	emit      => "",
 	latency   => 0,
 	mode      => $mode_xmm,
 },
