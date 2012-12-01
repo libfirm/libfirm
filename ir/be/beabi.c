@@ -1142,32 +1142,25 @@ static ir_type *compute_arg_type(ir_graph *irg, be_abi_call_t *call,
 	return res;
 }
 
-typedef struct {
-	const arch_register_t *reg;
-	ir_node *irn;
-} reg_node_map_t;
-
 static int cmp_regs(const void *a, const void *b)
 {
-	const reg_node_map_t *p = (const reg_node_map_t*)a;
-	const reg_node_map_t *q = (const reg_node_map_t*)b;
+	arch_register_t const *const p = *(arch_register_t const**)a;
+	arch_register_t const *const q = *(arch_register_t const**)b;
 
-	if (p->reg->reg_class == q->reg->reg_class)
-		return p->reg->index - q->reg->index;
+	if (p->reg_class == q->reg_class)
+		return p->index - q->index;
 	else
-		return p->reg->reg_class < q->reg->reg_class ? -1 : +1;
+		return p->reg_class < q->reg_class ? -1 : +1;
 }
 
-static void reg_map_to_arr(reg_node_map_t *res, pmap *reg_map)
+static void reg_map_to_arr(arch_register_t const **const res, pmap *const reg_map)
 {
 	pmap_entry *ent;
 	size_t n = pmap_count(reg_map);
 	size_t i = 0;
 
 	foreach_pmap(reg_map, ent) {
-		res[i].reg = (const arch_register_t*)ent->key;
-		res[i].irn = (ir_node*)ent->value;
-		i++;
+		res[i++] = (arch_register_t const*)ent->key;
 	}
 
 	qsort(res, n, sizeof(res[0]), cmp_regs);
@@ -1358,7 +1351,6 @@ static void modify_irg(ir_graph *const irg, be_abi_irg_t *const env)
 	int i, n;
 	unsigned j;
 
-	reg_node_map_t *rm;
 	const arch_register_t *fp_reg;
 	ir_node *frame_pointer;
 	ir_node *start_bl;
@@ -1460,10 +1452,10 @@ static void modify_irg(ir_graph *const irg, be_abi_irg_t *const env)
 	 * Note, that if a register corresponds to an argument, the regs map
 	 * contains the old Proj from start for that argument.
 	 */
-	rm = ALLOCAN(reg_node_map_t, pmap_count(env->regs));
-	reg_map_to_arr(rm, env->regs);
+	arch_register_t const **const regs = ALLOCAN(arch_register_t const*, pmap_count(env->regs));
+	reg_map_to_arr(regs, env->regs);
 	for (i = 0, n = pmap_count(env->regs); i < n; ++i) {
-		const arch_register_t    *reg      = rm[i].reg;
+		const arch_register_t    *reg      = regs[i];
 		ir_mode                  *mode     = reg->reg_class->mode;
 		long                      nr       = i;
 		arch_register_req_type_t  add_type = arch_register_req_type_none;
