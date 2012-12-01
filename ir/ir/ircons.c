@@ -311,7 +311,6 @@ void mature_immBlock(ir_node *block)
 	size_t   n_preds;
 	ir_node  *next;
 	ir_node  *phi;
-	ir_node **new_in;
 	ir_graph *irg;
 
 	assert(is_Block(block));
@@ -340,8 +339,7 @@ void mature_immBlock(ir_node *block)
 
 	/* create final in-array for the block */
 	if (block->attr.block.dynamic_ins) {
-		new_in = NEW_ARR_D(ir_node*, get_irg_obstack(irg), n_preds + 1);
-		memcpy(new_in, block->in, (n_preds+1) * sizeof(new_in[0]));
+		ir_node **const new_in = DUP_ARR_D(ir_node*, get_irg_obstack(irg), block->in);
 		DEL_ARR_F(block->in);
 		block->in = new_in;
 		block->attr.block.dynamic_ins = false;

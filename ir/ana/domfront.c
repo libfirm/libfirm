@@ -59,8 +59,6 @@ static ir_node **compute_df(ir_node *blk, ir_dom_front_info_t *info)
 {
 	ir_node *c;
 	ir_node **df_list = NEW_ARR_F(ir_node *, 0);
-	ir_node **df;
-	size_t len;
 
 	/* Add local dominance frontiers */
 	foreach_block_succ(blk, edge) {
@@ -88,9 +86,7 @@ static ir_node **compute_df(ir_node *blk, ir_dom_front_info_t *info)
 	}
 
 	/* now copy the flexible array to the obstack */
-	len = ARR_LEN(df_list);
-	df = NEW_ARR_D(ir_node *, &info->obst, len);
-	memcpy(df, df_list, len * sizeof(df[0]));
+	ir_node **const df = DUP_ARR_D(ir_node*, &info->obst, df_list);
 	DEL_ARR_F(df_list);
 
 	pmap_insert(info->df_map, blk, df);
