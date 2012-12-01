@@ -108,7 +108,7 @@ typedef struct elim_pair {
 /** environment for the GVN-PRE algorithm */
 typedef struct pre_env {
 	ir_graph       *graph;        /* current graph */
-	struct obstack *obst;         /* obstack to allocate on */
+	struct obstack  obst;         /* obstack to allocate on */
 	ir_node        *start_block;  /* start block of the current graph */
 	ir_node        *end_block;    /* end block of the current graph */
 	ir_node        *end_node;     /* end node of the current graph */
@@ -423,7 +423,7 @@ static ir_node *identify_or_remember(ir_node *irn)
  */
 static void alloc_block_info(ir_node *block, pre_env *env)
 {
-	block_info *info = OALLOC(env->obst, block_info);
+	block_info *info = OALLOC(&env->obst, block_info);
 
 	set_irn_link(block, info);
 	info->exp_gen    = ir_valueset_new(16);
@@ -1792,7 +1792,7 @@ static void eliminate(ir_node *irn, void *ctx)
 			DB((dbg, LEVEL_3, "Elim %+F(%+F) avail %+F\n", irn, value, expr));
 
 			if (expr != NULL && expr != irn) {
-				elim_pair *p = OALLOC(env->obst, elim_pair);
+				elim_pair *p = OALLOC(&env->obst, elim_pair);
 
 				p->old_node = irn;
 				p->new_node = expr;
@@ -1948,7 +1948,6 @@ static void gvn_pre(ir_graph *irg, pre_env *env)
  */
 void do_gvn_pre(ir_graph *irg)
 {
-	struct obstack        obst;
 	pre_env               env;
 	ir_nodeset_t          keeps;
 	optimization_state_t  state;
@@ -1978,9 +1977,7 @@ void do_gvn_pre(ir_graph *irg)
 	DEBUG_ONLY(init_stats();)
 
 	/* setup environment */
-	obstack_init(&obst);
 	env.graph        = irg;
-	env.obst         = &obst;
 	env.list         = NULL;
 	env.start_block  = get_irg_start_block(irg);
 	env.end_block    = get_irg_end_block(irg);
@@ -1988,6 +1985,7 @@ void do_gvn_pre(ir_graph *irg)
 	env.pairs        = NULL;
 	env.keeps        = &keeps;
 	env.last_idx     = get_irg_last_idx(irg);
+	obstack_init(&env.obst);
 
 	/* Detect and set links of infinite loops to non-zero. */
 	analyse_loops(irg);
@@ -2022,7 +2020,7 @@ void do_gvn_pre(ir_graph *irg)
 
 	DEBUG_ONLY(free_stats();)
 	ir_nodehashmap_destroy(&value_map);
-	obstack_free(&obst, NULL);
+	obstack_free(&env.obst, NULL);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_LOOP_LINK);
 
 	/* Pin the graph again.
