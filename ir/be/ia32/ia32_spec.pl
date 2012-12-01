@@ -74,14 +74,8 @@ $mode_fpcw          = "ia32_mode_fpcw";
 	BRANCH => [ 1, "BRANCH1", "BRANCH2" ],
 ); # %cpu
 
-%vliw = (
-	bundle_size       => 1,
-	bundels_per_cycle => 1
-); # vliw
-
-$default_op_attr_type = "ia32_op_attr_t";
-$default_attr_type    = "ia32_attr_t";
-$default_copy_attr    = "ia32_copy_attr";
+$default_attr_type = "ia32_attr_t";
+$default_copy_attr = "ia32_copy_attr";
 
 sub ia32_custom_init_attr {
 	my $constr = shift;

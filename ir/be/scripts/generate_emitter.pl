@@ -33,7 +33,6 @@ our $arch;
 our %nodes;
 our %emit_templates;
 our $finish_line_template = "be_emit_finish_line_gas(node);";
-our $indent_line_func;
 
 my $return;
 
@@ -60,11 +59,7 @@ sub create_emitter {
 	our %emit_templates;
 	our $arch;
 
-	if (!defined($indent_line_func)) {
-		$template = "\\t" . $template;
-	} else {
-		push(@{$result}, "${indent}${indent_line_func};\n");
-	}
+	$template = "\\t" . $template;
 
 	my @tokens = ($template =~ m/(?:[^%]|%%)+|\%[a-zA-Z_][a-zA-Z0-9_]*|%\./g);
 	for (@tokens) {

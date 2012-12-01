@@ -32,7 +32,6 @@ my $target_dir = $ARGV[1];
 
 our $arch;
 our %reg_classes;
-our %cpu;
 
 # include spec file
 
@@ -58,14 +57,12 @@ sub map_flags {
 
 # stacks for output
 my $regtypes_def; # stack for the register type variables definitions
-my $regtypes_decl;# stack for the register type variables declarations
 my @regclasses;   # stack for the register class variables
 my $classdef;     # stack to define a name for a class index
 my $regdef;       # stack to define a name for a register index
 my $regdef2;
 my $regcounts;
 my $reginit;      # stack for the register type inits
-my $single_constraints_decls;
 my $single_constraints;
 
 my $class_ptr;

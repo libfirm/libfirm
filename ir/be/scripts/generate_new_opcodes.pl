@@ -29,15 +29,9 @@ use Data::Dumper;
 
 my $specfile   = $ARGV[0];
 my $target_dir = $ARGV[1];
-my $state      = 1;
-my $cur_op     = "";
-my $line_nr    = 0;
 
 our $arch;
-our $additional_opcodes;
 our %nodes;
-our %cpu;
-our $default_op_attr_type;
 our $default_attr_type;
 our $default_cmp_attr;
 our $default_copy_attr;
@@ -91,7 +85,6 @@ my @obst_new_irop;    # stack for the new_ir_op calls
 my @obst_free_irop;   # stack for free_ir_op calls
 my @obst_enum_op;     # stack for creating the <arch>_opcode enum
 my $obst_header;      # stack for function prototypes
-my @obst_is_archirn;  # stack for the is_$arch_irn() function
 my @obst_cmp_attr;    # stack for the compare attribute functions
 my $obst_proj = "";   # stack for the pn_ numbers
 my $orig_op;
@@ -127,9 +120,6 @@ foreach my $class_name (keys(%reg_classes)) {
 	$regclass2len{$old_classname} = $idx;
 }
 
-
-# for registering additional opcodes
-$n_opcodes += $additional_opcodes if (defined($additional_opcodes));
 
 $obst_header .= "void ${arch}_create_opcodes(const arch_irn_ops_t *be_ops);\n";
 $obst_header .= "void ${arch}_free_opcodes(void);\n";
@@ -540,8 +530,6 @@ foreach my $op (keys(%nodes)) {
 	push(@obst_get_opvar, "ir_op *get_op_$op(void)         { return op_$op; }\n");
 	push(@obst_get_opvar, "int    is_$op(const ir_node *n) { return get_$arch\_irn_opcode(n) == iro_$op; }\n\n");
 
-	push(@obst_is_archirn, "is_$op(node)");
-
 	$obst_header .= <<EOF;
 extern ir_op *op_${op};
 ir_op *get_op_${op}(void);
@@ -685,10 +673,8 @@ EOF
 
 	$obst_header .= "\n";
 }
-push(@obst_enum_op, "\tiro_$arch\_last_generated,\n");
-push(@obst_enum_op, "\tiro_$arch\_last = iro_$arch\_last_generated");
-push(@obst_enum_op, " + $additional_opcodes") if (defined($additional_opcodes));
-push(@obst_enum_op, "\n} $arch\_opcodes;\n\n");
+push(@obst_enum_op, "\tiro_$arch\_last\n");
+push(@obst_enum_op, "} $arch\_opcodes;\n\n");
 
 # emit the code
 
@@ -796,10 +782,7 @@ ENDOFMAIN
 
 print OUT @obst_new_irop;
 print OUT "\n";
-print OUT "\t$arch\_register_additional_opcodes(cur_opcode);\n" if (defined($additional_opcodes));
-print OUT "\t$arch\_opcode_end = cur_opcode + iro_$arch\_last";
-print OUT " + $additional_opcodes" if (defined($additional_opcodes));
-print OUT ";\n";
+print OUT "\t$arch\_opcode_end = cur_opcode + iro_$arch\_last;\n";
 print OUT <<ENDOFMAIN;
 }
 
