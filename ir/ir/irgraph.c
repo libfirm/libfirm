@@ -53,18 +53,6 @@
 /** Suffix that is added to every frame type. */
 #define FRAME_TP_SUFFIX "frame_tp"
 
-/**
- * Indicates, whether additional data can be registered to graphs.
- * If set to 1, this is not possible anymore.
- */
-static int forbid_new_data = 0;
-
-/**
- * The amount of additional space for custom data to be allocated upon
- * creating a new graph.
- */
-static size_t additional_graph_data_size = 0;
-
 ir_graph *current_ir_graph;
 ir_graph *get_current_ir_graph(void)
 {
@@ -82,7 +70,6 @@ static ident *frame_type_suffix = NULL;
 void firm_init_irgraph(void)
 {
 	frame_type_suffix = new_id_from_str(FRAME_TP_SUFFIX);
-	forbid_new_data   = 1;
 }
 
 /**
@@ -94,11 +81,7 @@ void firm_init_irgraph(void)
  */
 static ir_graph *alloc_graph(void)
 {
-	ir_graph *res;
-	size_t   size = sizeof(ir_graph) + additional_graph_data_size;
-	char     *ptr = XMALLOCNZ(char, size);
-
-	res = (ir_graph *)(ptr + additional_graph_data_size);
+	ir_graph *const res = XMALLOCZ(ir_graph);
 	res->kind = k_ir_graph;
 
 	/* initialize the idx->node map. */
@@ -113,13 +96,10 @@ static ir_graph *alloc_graph(void)
  */
 static void free_graph(ir_graph *irg)
 {
-	char           *ptr = (char *)irg;
-	ir_edge_kind_t  i;
-
-	for (i = EDGE_KIND_FIRST; i < EDGE_KIND_LAST; ++i)
+	for (ir_edge_kind_t i = EDGE_KIND_FIRST; i < EDGE_KIND_LAST; ++i)
 		edges_deactivate_kind(irg, i);
 	DEL_ARR_F(irg->idx_irn_map);
-	free(ptr - additional_graph_data_size);
+	free(irg);
 }
 
 void irg_set_nloc(ir_graph *res, int n_loc)
@@ -693,16 +673,6 @@ ir_resources_t ir_resources_reserved(const ir_graph *irg)
 unsigned get_irg_last_idx(const ir_graph *irg)
 {
 	return irg->last_node_idx;
-}
-
-size_t register_additional_graph_data(size_t size)
-{
-	assert(!forbid_new_data && "Too late to register additional node data");
-
-	if (forbid_new_data)
-		return 0;
-
-	return additional_graph_data_size += size;
 }
 
 void add_irg_constraints(ir_graph *irg, ir_graph_constraints_t constraints)

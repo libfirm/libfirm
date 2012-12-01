@@ -507,36 +507,6 @@ FIRM_API void assure_irg_properties(ir_graph *irg, ir_graph_properties_t props);
  */
 FIRM_API void confirm_irg_properties(ir_graph *irg, ir_graph_properties_t props);
 
-/**
- * Accesses custom graph data.
- * The data must have been registered with
- * register_additional_graph_data() before.
- * @param graph The graph to get the data from.
- * @param type The type of the data you registered.
- * @param off The value returned by register_additional_graph_data().
- * @return A pointer of type @p type.
- */
-#define get_irg_data(graph,type,off) \
-	(assert(off > 0 && "Invalid graph data offset"), (type *) ((char *) (graph) - (off)))
-
-/**
- * Returns the pointer to the node some custom data belongs to.
- * @param data The pointer to the custom data.
- * @param off The number as returned by register_additional_graph_data().
- * @return A pointer to the ir node the custom data belongs to.
- */
-#define get_irg_data_base(data,off) \
-	(assert(off > 0 && "Invalid graph data offset"), (ir_graph *) ((char *) (data) + (off)))
-
-/**
- * Requests additional data to be allocated with an ir graph.
- * @param size The size of the additional data required.
- * @return A positive number, if the operation was successful, which
- * must be passed to the access macro get_irg_data(), 0 if the
- * registration failed.
- */
-FIRM_API size_t register_additional_graph_data(size_t size);
-
 /** @} */
 
 #include "end.h"
