@@ -1942,6 +1942,7 @@ static int ia32_register_saved_by(const arch_register_t *reg, int callee)
 	case REG_EBP:
 	case REG_ESI:
 	case REG_EDI:
+	case REG_FPCW:
 		return callee;
 
 	case REG_EAX:

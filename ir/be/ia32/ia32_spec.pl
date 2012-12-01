@@ -58,7 +58,7 @@ $mode_fpcw          = "ia32_mode_fpcw";
 		{ mode => $mode_fp87 }
 	],
 	fp_cw => [	# the floating point control word
-		{ name => "fpcw", dwarf => 37, type => "ignore | state" },
+		{ name => "fpcw", dwarf => 37, type => "state" },
 		{ mode => $mode_fpcw, flags => "manual_ra | state" }
 	],
 	flags => [
@@ -1083,7 +1083,7 @@ ChangeCW => {
 	state     => "pinned",
 	op_flags  => [ "constlike" ],
 	irn_flags => [ "not_scheduled" ],
-	reg_req   => { out => [ "fpcw:I" ] },
+	reg_req   => { out => [ "fpcw" ] },
 	mode      => $mode_fpcw,
 	latency   => 3,
 	units     => [ "GP" ],
@@ -1093,7 +1093,7 @@ ChangeCW => {
 FldCW => {
 	op_flags  => [ "uses_memory" ],
 	state     => "pinned",
-	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "fpcw:I" ] },
+	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "fpcw" ] },
 	ins       => [ "base", "index", "mem" ],
 	latency   => 5,
 	emit      => "fldcw %AM",
@@ -1377,7 +1377,7 @@ Call => {
 	state     => "exc_pinned",
 	reg_req   => {
 		in  => [ "gp", "gp", "none", "gp", "esp", "fpcw", "eax", "ecx", "edx" ],
-		out => [ "esp:I|S", "fpcw:I", "none", "eax", "ecx", "edx", "st0", "st1", "st2", "st3", "st4", "st5", "st6", "st7", "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7", "none", "none" ]
+		out => [ "esp:I|S", "fpcw", "none", "eax", "ecx", "edx", "st0", "st1", "st2", "st3", "st4", "st5", "st6", "st7", "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7", "none", "none" ]
 	},
 	ins       => [ "base", "index", "mem", "addr", "stack", "fpcw", "eax", "ecx", "edx" ],
 	outs      => [ "stack", "fpcw", "M", "eax", "ecx", "edx", "st0", "st1", "st2", "st3", "st4", "st5", "st6", "st7", "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7", "X_regular", "X_except" ],
