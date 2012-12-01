@@ -88,6 +88,11 @@ static ir_graph *alloc_graph(void)
 	res->idx_irn_map = NEW_ARR_F(ir_node *, INITIAL_IDX_IRN_MAP_SIZE);
 	memset(res->idx_irn_map, 0, INITIAL_IDX_IRN_MAP_SIZE * sizeof(res->idx_irn_map[0]));
 
+	obstack_init(&res->obst);
+
+	/* value table for global value numbering for optimizing use in iropt.c */
+	new_identities(res);
+
 	return res;
 }
 
@@ -128,23 +133,9 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 	/* inform statistics here, as blocks will be already build on this graph */
 	hook_new_graph(res, ent);
 
-	/*-- initialized for each graph. --*/
-	res->kind = k_ir_graph;
-	obstack_init(&res->obst);
-
 	/* graphs are in construction mode by default */
 	add_irg_constraints(res, IR_GRAPH_CONSTRAINT_CONSTRUCTION);
 	irg_set_nloc(res, n_loc);
-
-	/* descriptions will be allocated on demand */
-	res->loc_descriptions = NULL;
-
-	res->visited       = 0; /* visited flag, for the ir walker */
-	res->block_visited = 0; /* visited flag, for the 'block'-walker */
-
-	res->last_node_idx = 0;
-
-	new_identities(res);
 
 	res->irg_pinned_state    = op_pin_state_pinned;
 	res->typeinfo_state      = ir_typeinfo_none;
@@ -220,20 +211,9 @@ ir_graph *new_const_code_irg(void)
 	/* inform statistics here, as blocks will be already build on this graph */
 	hook_new_graph(res, NULL);
 
-	res->n_loc         = 1; /* Only the memory. */
-	res->visited       = 0; /* visited flag, for the ir walker */
-	res->block_visited = 0; /* visited flag, for the 'block'-walker */
-	obstack_init(&res->obst);
-
-	res->last_node_idx = 0;
-
+	res->n_loc            = 1; /* Only the memory. */
 	res->irg_pinned_state = op_pin_state_pinned;
 	res->fp_model         = fp_model_precise;
-
-	/* value table for global value numbering for optimizing use in iropt.c */
-	new_identities(res);
-	res->ent         = NULL;
-	res->frame_type  = NULL;
 
 	add_irg_constraints(res, IR_GRAPH_CONSTRAINT_CONSTRUCTION);
 
@@ -323,17 +303,8 @@ ir_graph *create_irg_copy(ir_graph *irg)
 
 	res = alloc_graph();
 
-	res->n_loc = 0;
-	res->visited = 0;       /* visited flag, for the ir walker */
-	res->block_visited = 0; /* visited flag, for the 'block'-walker */
-	obstack_init(&res->obst);
-
-	res->last_node_idx = 0;
-
 	res->irg_pinned_state = irg->irg_pinned_state;
 	res->fp_model         = irg->fp_model;
-
-	new_identities(res);
 
 	/* clone the frame type here for safety */
 	irp_reserve_resources(irp, IRP_RESOURCE_ENTITY_LINK);
