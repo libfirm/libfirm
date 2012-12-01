@@ -129,6 +129,7 @@ static inline void set_irg_pinned(ir_graph *irg, op_pin_state p)
 /** Returns the obstack associated with the graph. */
 static inline struct obstack *get_irg_obstack(const ir_graph *irg)
 {
+	assert(obstack_object_size(irg->obst) == 0);
 	return irg->obst;
 }
 
