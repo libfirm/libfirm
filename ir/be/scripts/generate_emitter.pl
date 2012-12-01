@@ -31,8 +31,6 @@ our $target_dir = $ARGV[1];
 
 our $arch;
 our %nodes;
-our %emit_templates;
-our $finish_line_template = "be_emit_finish_line_gas(node);";
 
 my $return;
 
@@ -51,40 +49,6 @@ my $target_h = $target_dir."/gen_".$arch."_emitter.h";
 my @obst_func;   # stack for the emit functions
 my @obst_register;  # stack for emitter register code
 my $line;
-
-sub create_emitter {
-	my $result = shift;
-	my $indent = shift;
-	my $template = shift;
-	our %emit_templates;
-	our $arch;
-
-	$template = "\\t" . $template;
-
-	my @tokens = ($template =~ m/(?:[^%]|%%)+|\%[a-zA-Z_][a-zA-Z0-9_]*|%\./g);
-	for (@tokens) {
-		SWITCH: {
-			if (/%\./)       { last SWITCH; }
-			if (/^%([^%]+)/) {
-				if(defined($emit_templates{$1})) {
-					push(@{$result}, "${indent}$emit_templates{$1}\n");
-				} else {
-					print "Warning: No emit_template defined for '$1'\n";
-					push(@{$result}, "${indent}$1(node);\n");
-				}
-				last SWITCH;
-			}
-			$_ =~ s/%%/%/g;
-			if (length($_) == 1) {
-				push(@{$result}, "${indent}be_emit_char('$_');\n");
-			} else {
-				push(@{$result}, "${indent}be_emit_cstring(\"$_\");\n");
-			}
-		}
-	}
-	push(@{$result}, "${indent}${finish_line_template}\n");
-}
-
 
 
 foreach my $op (keys(%nodes)) {
@@ -111,13 +75,7 @@ foreach my $op (keys(%nodes)) {
 	my @emit = split(/\n/, $n{"emit"});
 
 	foreach my $template (@emit) {
-		# substitute only lines, starting with a '.'
-		if ($template eq '') {
-			# nothing
-		} elsif ($template =~ /^(\s*)\.\s*(.*)/) {
-			my $indent = "\t$1";
-			create_emitter(\@obst_func, $indent, $2);
-		} else {
+		if ($template ne '') {
 			push(@obst_func, "\t${arch}_emitf(node, \"$template\");\n");
 		}
 	}
