@@ -105,7 +105,7 @@ ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
 	assert(mode);
 
 	size_t   const node_size = offsetof(ir_node, attr) + op->attr_size;
-	ir_node *const res       = (ir_node*)OALLOCNZ(irg->obst, char, node_size);
+	ir_node *const res       = (ir_node*)OALLOCNZ(get_irg_obstack(irg), char, node_size);
 
 	res->kind     = k_ir_node;
 	res->op       = op;
@@ -122,7 +122,7 @@ ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
 		if (op == op_End || op == op_Sync)
 			res->in = NEW_ARR_F(ir_node *, (arity+1));
 		else
-			res->in = NEW_ARR_D(ir_node *, irg->obst, (arity+1));
+			res->in = NEW_ARR_D(ir_node*, get_irg_obstack(irg), arity + 1);
 		memcpy(&res->in[1], in, sizeof(ir_node *) * arity);
 	}
 
@@ -194,10 +194,10 @@ void set_irn_in(ir_node *node, int arity, ir_node **in)
 
 	if (arity != (int)ARR_LEN(*pOld_in) - 1) {
 		ir_node * block = (*pOld_in)[0];
-		*pOld_in = NEW_ARR_D(ir_node *, irg->obst, arity + 1);
+		*pOld_in = NEW_ARR_D(ir_node*, get_irg_obstack(irg), arity + 1);
 		(*pOld_in)[0] = block;
 	}
-	fix_backedges(irg->obst, node);
+	fix_backedges(get_irg_obstack(irg), node);
 
 	memcpy((*pOld_in) + 1, in, sizeof(ir_node *) * arity);
 
@@ -935,11 +935,10 @@ ir_entity *get_Call_callee(const ir_node *node, size_t pos)
 
 void set_Call_callee_arr(ir_node *node, size_t n, ir_entity ** arr)
 {
-	ir_graph *irg = get_irn_irg(node);
-
 	assert(is_Call(node));
 	if (node->attr.call.callee_arr == NULL || get_Call_n_callees(node) != n) {
-		node->attr.call.callee_arr = NEW_ARR_D(ir_entity *, irg->obst, n);
+		ir_graph *const irg = get_irn_irg(node);
+		node->attr.call.callee_arr = NEW_ARR_D(ir_entity*, get_irg_obstack(irg), n);
 	}
 	memcpy(node->attr.call.callee_arr, arr, n * sizeof(ir_entity *));
 }

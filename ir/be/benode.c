@@ -400,8 +400,8 @@ ir_node *be_new_MemPerm(ir_node *block, int n, ir_node *in[])
 	be_node_set_reg_class_in(irn, 0, sp->reg_class);
 
 	attr               = (be_memperm_attr_t*)get_irn_generic_attr(irn);
-	attr->in_entities  = OALLOCNZ(irg->obst, ir_entity*, n);
-	attr->out_entities = OALLOCNZ(irg->obst, ir_entity*, n);
+	attr->in_entities  = OALLOCNZ(get_irg_obstack(irg), ir_entity*, n);
+	attr->out_entities = OALLOCNZ(get_irg_obstack(irg), ir_entity*, n);
 
 	return irn;
 }
@@ -1045,7 +1045,7 @@ ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
 	int             i;
 
 	ir_node *phi = new_ir_node(NULL, irg, block, op_Phi, mode, n_ins, ins);
-	phi->attr.phi.u.backedge = new_backedge_arr(irg->obst, n_ins);
+	phi->attr.phi.u.backedge = new_backedge_arr(get_irg_obstack(irg), n_ins);
 	info = be_get_info(phi);
 	info->out_infos = NEW_ARR_D(reg_out_info_t, obst, 1);
 	memset(info->out_infos, 0, 1 * sizeof(info->out_infos[0]));

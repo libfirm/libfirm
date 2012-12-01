@@ -707,8 +707,9 @@ void inline_small_irgs(ir_graph *irg, int size)
 			if (props & mtp_property_noinline)
 				continue;
 
+			struct obstack *const obst = get_irg_obstack(callee);
 			if ((props & mtp_property_always_inline) ||
-			    _obstack_memory_used(callee->obst) - (int)obstack_room(callee->obst) < size) {
+			    _obstack_memory_used(obst) - (int)obstack_room(obst) < size) {
 				inline_method(entry->call, callee);
 			}
 		}

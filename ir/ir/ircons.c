@@ -71,13 +71,12 @@ ir_node *new_rd_ASM(dbg_info *db, ir_node *block, ir_node *mem,
 
 	ir_node *res = new_ir_node(db, irg, block, op_ASM, mode_T, r_arity, r_in);
 
-	res->attr.assem.pin_state = op_pin_state_pinned;
-	res->attr.assem.input_constraints
-		= NEW_ARR_D(ir_asm_constraint, irg->obst, arity);
-	res->attr.assem.output_constraints
-		= NEW_ARR_D(ir_asm_constraint, irg->obst, n_outs);
-	res->attr.assem.clobbers = NEW_ARR_D(ident *, irg->obst, n_clobber);
-	res->attr.assem.text     = text;
+	struct obstack *const obst = get_irg_obstack(irg);
+	res->attr.assem.pin_state          = op_pin_state_pinned;
+	res->attr.assem.input_constraints  = NEW_ARR_D(ir_asm_constraint, obst, arity);
+	res->attr.assem.output_constraints = NEW_ARR_D(ir_asm_constraint, obst, n_outs);
+	res->attr.assem.clobbers           = NEW_ARR_D(ident*,            obst, n_clobber);
+	res->attr.assem.text               = text;
 
 	memcpy(res->attr.assem.input_constraints,  inputs,  sizeof(inputs[0]) * arity);
 	memcpy(res->attr.assem.output_constraints, outputs, sizeof(outputs[0]) * n_outs);
@@ -235,7 +234,7 @@ static ir_node *set_phi_arguments(ir_node *phi, int pos)
 		in[i] = value;
 	}
 
-	phi->attr.phi.u.backedge = new_backedge_arr(irg->obst, arity);
+	phi->attr.phi.u.backedge = new_backedge_arr(get_irg_obstack(irg), arity);
 	set_irn_in(phi, arity, in);
 
 	irn_verify_irg(phi, irg);
@@ -322,7 +321,7 @@ void mature_immBlock(ir_node *block)
 	irg     = get_irn_irg(block);
 	n_preds = ARR_LEN(block->in) - 1;
 	/* Fix block parameters */
-	block->attr.block.backedge = new_backedge_arr(irg->obst, n_preds);
+	block->attr.block.backedge = new_backedge_arr(get_irg_obstack(irg), n_preds);
 
 	/* Traverse a chain of Phi nodes attached to this block and mature
 	these, too. */
@@ -341,7 +340,7 @@ void mature_immBlock(ir_node *block)
 
 	/* create final in-array for the block */
 	if (block->attr.block.dynamic_ins) {
-		new_in = NEW_ARR_D(ir_node*, irg->obst, n_preds+1);
+		new_in = NEW_ARR_D(ir_node*, get_irg_obstack(irg), n_preds + 1);
 		memcpy(new_in, block->in, (n_preds+1) * sizeof(new_in[0]));
 		DEL_ARR_F(block->in);
 		block->in = new_in;
@@ -445,7 +444,7 @@ ir_node *new_rd_immBlock(dbg_info *dbgi, ir_graph *irg)
 	set_Block_block_visited(res, 0);
 
 	/* Create and initialize array for Phi-node construction. */
-	res->attr.block.graph_arr = NEW_ARR_D(ir_node *, irg->obst, irg->n_loc);
+	res->attr.block.graph_arr = NEW_ARR_D(ir_node*, get_irg_obstack(irg), irg->n_loc);
 	memset(res->attr.block.graph_arr, 0, sizeof(ir_node*) * irg->n_loc);
 
 	/* Immature block may not be optimized! */
@@ -715,11 +714,11 @@ ir_node *new_r_Block_noopt(ir_graph *irg, int arity, ir_node *in[])
 {
 	ir_node *res = new_ir_node(NULL, irg, NULL, op_Block, mode_BB, arity, in);
 	res->attr.block.irg.irg = irg;
-	res->attr.block.backedge = new_backedge_arr(irg->obst, arity);
+	res->attr.block.backedge = new_backedge_arr(get_irg_obstack(irg), arity);
 	set_Block_matured(res, 1);
 	/* Create and initialize array for Phi-node construction. */
 	if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION)) {
-		res->attr.block.graph_arr = NEW_ARR_D(ir_node *, irg->obst, irg->n_loc);
+		res->attr.block.graph_arr = NEW_ARR_D(ir_node*, get_irg_obstack(irg), irg->n_loc);
 		memset(res->attr.block.graph_arr, 0, irg->n_loc * sizeof(ir_node*));
 	}
 	irn_verify_irg(res, irg);

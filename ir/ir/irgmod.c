@@ -96,7 +96,7 @@ void exchange(ir_node *old, ir_node *nw)
 		}
 
 		old->op    = op_Id;
-		old->in    = NEW_ARR_D (ir_node *, irg->obst, 2);
+		old->in    = NEW_ARR_D(ir_node*, get_irg_obstack(irg), 2);
 		old->in[0] = block;
 		old->in[1] = nw;
 	}

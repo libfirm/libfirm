@@ -268,7 +268,7 @@ static inline void pop_scc_unmark_visit(ir_node *n)
 static ir_loop *new_loop(void)
 {
 	ir_loop *father = current_loop;
-	ir_loop *son    = alloc_loop(father, outermost_ir_graph->obst);
+	ir_loop *son    = alloc_loop(father, get_irg_obstack(outermost_ir_graph));
 
 	if (son->depth > max_loop_depth) max_loop_depth = son->depth;
 	current_loop = son;
@@ -647,7 +647,7 @@ int construct_cf_backedges(ir_graph *irg)
 	obstack_free(&temp, NULL);
 
 	assert(head_rem == current_loop);
-	mature_loops(current_loop, irg->obst);
+	mature_loops(current_loop, get_irg_obstack(irg));
 	set_irg_loop(irg, current_loop);
 	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 

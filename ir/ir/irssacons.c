@@ -39,13 +39,12 @@ static void (*ssa_cons_walker)(ir_graph *, irg_walk_func *, irg_walk_func *, voi
  */
 static void prepare_blocks(ir_node *block, void *env)
 {
-	ir_graph       *const irg   = get_Block_irg(block);
-	unsigned        const n_loc = irg->n_loc;
-	struct obstack *const obst  = irg->obst;
+	ir_graph *const irg   = get_Block_irg(block);
+	unsigned  const n_loc = irg->n_loc;
 	(void)env;
 	/* reset mature flag */
 	set_Block_matured(block, 0);
-	block->attr.block.graph_arr = NEW_ARR_D(ir_node *, obst, n_loc);
+	block->attr.block.graph_arr = NEW_ARR_D(ir_node*, get_irg_obstack(irg), n_loc);
 	memset(block->attr.block.graph_arr, 0, sizeof(ir_node*) * n_loc);
 	set_Block_phis(block, NULL);
 }

@@ -527,7 +527,7 @@ static void block_copy_attr(ir_graph *irg, const ir_node *old_node,
 	default_copy_attr(irg, old_node, new_node);
 	new_node->attr.block.irg.irg       = irg;
 	new_node->attr.block.phis          = NULL;
-	new_node->attr.block.backedge      = new_backedge_arr(irg->obst, get_irn_arity(new_node));
+	new_node->attr.block.backedge      = new_backedge_arr(get_irg_obstack(irg), get_irn_arity(new_node));
 	new_node->attr.block.block_visited = 0;
 	memset(&new_node->attr.block.dom, 0, sizeof(new_node->attr.block.dom));
 	memset(&new_node->attr.block.pdom, 0, sizeof(new_node->attr.block.pdom));
@@ -546,7 +546,7 @@ static void phi_copy_attr(ir_graph *irg, const ir_node *old_node,
 {
 	default_copy_attr(irg, old_node, new_node);
 	new_node->attr.phi.next       = NULL;
-	new_node->attr.phi.u.backedge = new_backedge_arr(irg->obst, get_irn_arity(new_node));
+	new_node->attr.phi.u.backedge = new_backedge_arr(get_irg_obstack(irg), get_irn_arity(new_node));
 }
 
 /**
@@ -556,9 +556,10 @@ static void ASM_copy_attr(ir_graph *irg, const ir_node *old_node,
                           ir_node *new_node)
 {
 	default_copy_attr(irg, old_node, new_node);
-	new_node->attr.assem.input_constraints  = DUP_ARR_D(ir_asm_constraint, irg->obst, old_node->attr.assem.input_constraints);
-	new_node->attr.assem.output_constraints = DUP_ARR_D(ir_asm_constraint, irg->obst, old_node->attr.assem.output_constraints);
-	new_node->attr.assem.clobbers = DUP_ARR_D(ident*, irg->obst, old_node->attr.assem.clobbers);
+	struct obstack *const obst = get_irg_obstack(irg);
+	new_node->attr.assem.input_constraints  = DUP_ARR_D(ir_asm_constraint, obst, old_node->attr.assem.input_constraints);
+	new_node->attr.assem.output_constraints = DUP_ARR_D(ir_asm_constraint, obst, old_node->attr.assem.output_constraints);
+	new_node->attr.assem.clobbers           = DUP_ARR_D(ident*,            obst, old_node->attr.assem.clobbers);
 }
 
 static void switch_copy_attr(ir_graph *irg, const ir_node *old_node,

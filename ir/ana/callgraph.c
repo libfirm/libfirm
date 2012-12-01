@@ -215,7 +215,7 @@ static void ana_Call(ir_node *n, void *env)
 				ARR_APP1(ir_node *, arr, n);
 				found->call_list = arr;
 			} else { /* New node, add Call node and init nesting. */
-				found = OALLOC(irg->obst, cg_callee_entry);
+				found = OALLOC(get_irg_obstack(irg), cg_callee_entry);
 				found->irg = callee;
 				found->call_list = NEW_ARR_F(ir_node *, 1);
 				found->call_list[0] = n;
@@ -571,7 +571,7 @@ static inline void pop_scc_unmark_visit(ir_graph *n)
 static ir_loop *new_loop(void)
 {
 	ir_loop *father = current_loop;
-	ir_loop *son    = alloc_loop(father, outermost_ir_graph->obst);
+	ir_loop *son    = alloc_loop(father, get_irg_obstack(outermost_ir_graph));
 
 	current_loop = son;
 	return father;
@@ -889,7 +889,7 @@ void find_callgraph_recursions(void)
 	obstack_free(&temp, NULL);
 
 	irp->outermost_cg_loop = current_loop;
-	mature_loops(current_loop, outermost_ir_graph->obst);
+	mature_loops(current_loop, get_irg_obstack(outermost_ir_graph));
 
 	/* -- Reverse the backedge information. -- */
 	for (i = 0; i < n_irgs; ++i) {

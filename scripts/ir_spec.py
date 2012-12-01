@@ -229,12 +229,12 @@ class Block:
 
 	init = '''
 	res->attr.block.irg.irg     = irg;
-	res->attr.block.backedge    = new_backedge_arr(irg->obst, arity);
+	res->attr.block.backedge    = new_backedge_arr(get_irg_obstack(irg), arity);
 	set_Block_matured(res, 1);
 
 	/* Create and initialize array for Phi-node construction. */
 	if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION)) {
-		res->attr.block.graph_arr = NEW_ARR_D(ir_node *, irg->obst, irg->n_loc);
+		res->attr.block.graph_arr = NEW_ARR_D(ir_node *, get_irg_obstack(irg), irg->n_loc);
 		memset(res->attr.block.graph_arr, 0, irg->n_loc * sizeof(ir_node*));
 	}
 	'''
@@ -776,7 +776,7 @@ class Phi:
 	flags         = []
 	attr_struct   = "phi_attr"
 	init          = '''
-	res->attr.phi.u.backedge = new_backedge_arr(irg->obst, arity);'''
+	res->attr.phi.u.backedge = new_backedge_arr(get_irg_obstack(irg), arity);'''
 	customSerializer = True
 
 @op
