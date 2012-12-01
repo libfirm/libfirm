@@ -48,7 +48,6 @@ my $target_h = $target_dir."/gen_".$arch."_emitter.h";
 # stacks for output
 my @obst_func;   # stack for the emit functions
 my @obst_register;  # stack for emitter register code
-my $line;
 
 
 foreach my $op (keys(%nodes)) {
@@ -57,19 +56,14 @@ foreach my $op (keys(%nodes)) {
 	# skip this node description if no emit information is available
 	next if (!defined($n{"emit"}));
 
-	$line = "static void emit_${arch}_${op}(const ir_node *node)";
-
-	push(@obst_register, "\tbe_set_emitter(op_${arch}_${op}, emit_${arch}_${op});\n");
-
-	if($n{"emit"} eq "") {
-		push(@obst_func, $line."\n");
-		push(@obst_func, "{\n");
-		push(@obst_func, "\t(void) node;\n");
-		push(@obst_func, "}\n\n");
+	if ($n{"emit"} eq "") {
+		push(@obst_register, "\tbe_set_emitter(op_${arch}_${op}, be_emit_nothing);\n");
 		next;
 	}
 
-	push(@obst_func, $line."\n");
+	push(@obst_register, "\tbe_set_emitter(op_${arch}_${op}, emit_${arch}_${op});\n");
+
+	push(@obst_func, "static void emit_${arch}_${op}(const ir_node *node)\n");
 	push(@obst_func, "{\n");
 
 	my @emit = split(/\n/, $n{"emit"});
