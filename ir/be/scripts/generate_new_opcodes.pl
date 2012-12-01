@@ -76,17 +76,17 @@ if(! %compare_attr) {
 
 # create c code file from specs
 
-my @obst_limit_func;
-my @obst_reg_reqs;
-my @obst_opvar;       # stack for the "ir_op *op_<arch>_<op-name> = NULL;" statements
-my @obst_get_opvar;   # stack for the get_op_<arch>_<op-name>() functions
-my $obst_constructor; # stack for node constructor functions
-my @obst_new_irop;    # stack for the new_ir_op calls
-my @obst_free_irop;   # stack for free_ir_op calls
-my @obst_enum_op;     # stack for creating the <arch>_opcode enum
-my $obst_header;      # stack for function prototypes
-my @obst_cmp_attr;    # stack for the compare attribute functions
-my $obst_proj = "";   # stack for the pn_ numbers
+my $obst_limit_func  = ""; #
+my $obst_reg_reqs    = ""; #
+my $obst_opvar       = ""; # buffer for the "ir_op *op_<arch>_<op-name> = NULL;" statements
+my $obst_get_opvar   = ""; # buffer for the get_op_<arch>_<op-name>() functions
+my $obst_constructor = ""; # buffer for node constructor functions
+my $obst_new_irop    = ""; # buffer for the new_ir_op calls
+my $obst_free_irop   = ""; # buffer for free_ir_op calls
+my $obst_enum_op     = ""; # buffer for creating the <arch>_opcode enum
+my $obst_header      = ""; # buffer for function prototypes
+my $obst_cmp_attr    = ""; # buffer for the compare attribute functions
+my $obst_proj        = ""; # buffer for the pn_ numbers
 my $orig_op;
 my $arity;
 my $cmp_attr_func;
@@ -436,7 +436,7 @@ EOF
 	$obst_constructor .= "}\n\n";
 }
 
-push(@obst_enum_op, "typedef enum ${arch}_opcodes {\n");
+$obst_enum_op .= "typedef enum ${arch}_opcodes {\n";
 foreach my $op (keys(%nodes)) {
 	my %n        = %{ $nodes{"$op"} };
 	my $known_mode;
@@ -526,9 +526,9 @@ foreach my $op (keys(%nodes)) {
 	}
 
 	# Create opcode
-	push(@obst_opvar, "ir_op *op_$op = NULL;\n");
-	push(@obst_get_opvar, "ir_op *get_op_$op(void)         { return op_$op; }\n");
-	push(@obst_get_opvar, "int    is_$op(const ir_node *n) { return get_$arch\_irn_opcode(n) == iro_$op; }\n\n");
+	$obst_opvar     .= "ir_op *op_$op = NULL;\n";
+	$obst_get_opvar .= "ir_op *get_op_$op(void)         { return op_$op; }\n";
+	$obst_get_opvar .= "int    is_$op(const ir_node *n) { return get_$arch\_irn_opcode(n) == iro_$op; }\n\n";
 
 	$obst_header .= <<EOF;
 extern ir_op *op_${op};
@@ -553,19 +553,19 @@ EOF
 	if (exists($n{"cmp_attr"})) {
 		my $cmpcode = $n{"cmp_attr"};
 
-		push(@obst_cmp_attr, "static int cmp_attr_$op(const ir_node *a, const ir_node *b) {\n");
+		$obst_cmp_attr .= "static int cmp_attr_$op(const ir_node *a, const ir_node *b) {\n";
 		if($cmpcode =~ m/attr_a/) {
-			push(@obst_cmp_attr, "\tconst ${attr_type} *attr_a = get_irn_generic_attr_const(a);\n");
+			$obst_cmp_attr .= "\tconst ${attr_type} *attr_a = get_irn_generic_attr_const(a);\n";
 		} else {
-			push(@obst_cmp_attr, "\t(void) a;\n");
+			$obst_cmp_attr .= "\t(void) a;\n";
 		}
 		if($cmpcode =~ m/attr_b/) {
-			push(@obst_cmp_attr, "\tconst ${attr_type} *attr_b = get_irn_generic_attr_const(b);\n");
+			$obst_cmp_attr .= "\tconst ${attr_type} *attr_b = get_irn_generic_attr_const(b);\n";
 		} else {
-			push(@obst_cmp_attr, "\t(void) b;\n");
+			$obst_cmp_attr .= "\t(void) b;\n";
 		}
-		push(@obst_cmp_attr, "\t${cmpcode}\n");
-		push(@obst_cmp_attr, "}\n\n");
+		$obst_cmp_attr .= "\t${cmpcode}\n";
+		$obst_cmp_attr .= "}\n\n";
 
 		$cmp_attr_func = "cmp_attr_${op}";
 	} elsif ($attr_type eq "") {
@@ -637,11 +637,11 @@ EOF
 	$n_opcodes++;
 	$temp  = "\top = new_ir_op(cur_opcode + iro_$op, \"$op\", op_pin_state_".$n{"state"}.", $op_flags";
 	$temp .= ", ".translate_arity($arity).", 0, ${attr_size});\n";
-	push(@obst_new_irop, $temp);
-	push(@obst_new_irop, "\top->ops.be_ops        = be_ops;\n");
-	push(@obst_new_irop, "\top->ops.dump_node     = ${dump_func};\n");
+	$obst_new_irop .= $temp;
+	$obst_new_irop .= "\top->ops.be_ops        = be_ops;\n";
+	$obst_new_irop .= "\top->ops.dump_node     = ${dump_func};\n";
 	if (defined($cmp_attr_func)) {
-		push(@obst_new_irop, "\top->ops.node_cmp_attr = ${cmp_attr_func};\n");
+		$obst_new_irop .= "\top->ops.node_cmp_attr = ${cmp_attr_func};\n";
 	}
 	my $copy_attr_func = $copy_attr{$attr_type};
 	if (!defined($copy_attr_func)) {
@@ -651,47 +651,43 @@ EOF
 		}
 	}
 	if (defined($copy_attr_func)) {
-		push(@obst_new_irop, "\top->ops.copy_attr     = ${copy_attr_func};\n");
+		$obst_new_irop .= "\top->ops.copy_attr     = ${copy_attr_func};\n";
 	}
 	if (defined($hash_func)) {
-		push(@obst_new_irop, "\top->ops.hash          = ${hash_func};\n");
+		$obst_new_irop .= "\top->ops.hash          = ${hash_func};\n";
 	}
 
 	if ($is_fragile) {
-		push(@obst_new_irop, "\tir_op_set_memory_index(op, n_${op}_mem);\n");
-		push(@obst_new_irop, "\tir_op_set_fragile_indices(op, pn_${op}_X_regular, pn_${op}_X_except);\n");
+		$obst_new_irop .= "\tir_op_set_memory_index(op, n_${op}_mem);\n";
+		$obst_new_irop .= "\tir_op_set_fragile_indices(op, pn_${op}_X_regular, pn_${op}_X_except);\n";
 	}
-	push(@obst_new_irop, "\tset_op_tag(op, $arch\_op_tag);\n");
+	$obst_new_irop .= "\tset_op_tag(op, $arch\_op_tag);\n";
 	if(defined($n{op_attr_init})) {
-		push(@obst_new_irop, "\t".$n{op_attr_init}."\n");
+		$obst_new_irop .= "\t".$n{op_attr_init}."\n";
 	}
-	push(@obst_new_irop, "\top_${op} = op;\n");
+	$obst_new_irop .= "\top_${op} = op;\n";
 
-	push(@obst_free_irop, "\tfree_ir_op(op_$op); op_$op = NULL;\n");
+	$obst_free_irop .= "\tfree_ir_op(op_$op); op_$op = NULL;\n";
 
-	push(@obst_enum_op, "\tiro_$op,\n");
+	$obst_enum_op .= "\tiro_$op,\n";
 
 	$obst_header .= "\n";
 }
-push(@obst_enum_op, "\tiro_$arch\_last\n");
-push(@obst_enum_op, "} $arch\_opcodes;\n\n");
+$obst_enum_op .= "\tiro_$arch\_last\n";
+$obst_enum_op .= "} $arch\_opcodes;\n\n";
 
 # emit the code
 
 open(OUT, ">$target_c") || die("Fatal error: Could not open $target_c, reason: $!\n");
 
-print OUT "#include \"gen_$arch\_regalloc_if.h\"\n";
-print OUT "#include \"irverify_t.h\"\n";
-print OUT "#include \"fourcc.h\"\n";
-print OUT "\n";
-print OUT @obst_cmp_attr;
-print OUT "\n";
-print OUT @obst_opvar;
-print OUT "\n";
-print OUT @obst_get_opvar;
-print OUT "\n";
-
 print OUT<<EOF;
+#include "gen_$arch\_regalloc_if.h"
+#include "irverify_t.h"
+#include "fourcc.h"
+
+$obst_cmp_attr
+$obst_opvar
+$obst_get_opvar
 
 static int $arch\_opcode_start = -1;
 static int $arch\_opcode_end   = -1;
@@ -718,7 +714,7 @@ if (length($arch) >= 4) {
 	$d = uc(substr($arch, 3, 1));
 }
 
-print OUT<<ENDOFISIRN;
+print OUT <<END;
 
 /** A tag for the $arch opcodes. Note that the address is used as a tag value, NOT the FOURCC code. */
 #define $arch\_op_tag FOURCC('$a', '$b', '$c', '$d')
@@ -749,23 +745,13 @@ int get_$arch\_irn_opcode(const ir_node *node) {
 	return -1;
 }
 
-ENDOFISIRN
-
-print OUT <<END;
 #ifdef BIT
 #undef BIT
 #endif
 #define BIT(x)  (1 << (x))
 
-END
-
-print OUT @obst_limit_func;
-print OUT "\n";
-
-print OUT @obst_reg_reqs;
-print OUT "\n";
-
-print OUT<<ENDOFMAIN;
+$obst_limit_func
+$obst_reg_reqs
 $obst_constructor
 
 /**
@@ -778,23 +764,15 @@ void $arch\_create_opcodes(const arch_irn_ops_t *be_ops)
 	int    cur_opcode = get_next_ir_opcodes(iro_$arch\_last);
 
 	$arch\_opcode_start = cur_opcode;
-ENDOFMAIN
-
-print OUT @obst_new_irop;
-print OUT "\n";
-print OUT "\t$arch\_opcode_end = cur_opcode + iro_$arch\_last;\n";
-print OUT <<ENDOFMAIN;
+$obst_new_irop
+	$arch\_opcode_end = cur_opcode + iro_$arch\_last;
 }
 
 void $arch\_free_opcodes(void)
 {
-ENDOFMAIN
-
-print OUT @obst_free_irop;
-
-print OUT <<ENDOFMAIN;
+$obst_free_irop
 }
-ENDOFMAIN
+END
 
 close(OUT);
 
@@ -815,10 +793,7 @@ print OUT<<EOF;
 #ifndef FIRM_BE_${tmp}_GEN_${tmp}_NEW_NODES_H
 #define FIRM_BE_${tmp}_GEN_${tmp}_NEW_NODES_H
 
-EOF
-
-print OUT @obst_enum_op;
-print OUT <<EOF;
+$obst_enum_op
 int is_${arch}_irn(const ir_node *node);
 int is_${arch}_op(const ir_op *op);
 
@@ -1100,7 +1075,7 @@ CHECK_REQS: foreach (@regs) {
 
 		$limit_bitsets{$limit_name} = $limit_name;
 
-		push(@obst_limit_func, "static const unsigned " . $limit_name . "[] = { ");
+		$obst_limit_func .= "static const unsigned $limit_name\[] = { ";
 		my $first = 1;
 		my $limitbitsetlen = $regclass2len{$class};
 		my $limitarraylen = ($limitbitsetlen+31) / 32;
@@ -1110,7 +1085,7 @@ CHECK_REQS: foreach (@regs) {
 			if($first) {
 				$first = 0;
 			} else {
-				push(@obst_limit_func, ", ");
+				$obst_limit_func .= ", ";
 			}
 			my $temp;
 			if($neg) {
@@ -1127,13 +1102,9 @@ CHECK_REQS: foreach (@regs) {
 				my $reguc = uc($reg);
 				$temp .= "BIT(REG_${classuc}_${reguc})";
 			}
-			if(defined($temp)) {
-				push(@obst_limit_func, "${temp}");
-			} else {
-				push(@obst_limit_func, "0");
-			}
+			$obst_limit_func .= $temp || "0";
 		}
-		push(@obst_limit_func, " };\n");
+		$obst_limit_func .= " };\n";
 	}
 
 	return ($class, $limit_name, $same_pos, $different_pos);
@@ -1238,9 +1209,7 @@ EOF
 		return $name;
 	}
 	$requirements{$name} = $name;
-	push(@obst_reg_reqs, <<EOF);
-static const arch_register_req_t ${name} = ${result}
-EOF
+	$obst_reg_reqs .= "static const arch_register_req_t ${name} = ${result}\n";
 
 	return $name;
 }

@@ -45,9 +45,9 @@ use strict "subs";
 my $target_c = $target_dir."/gen_".$arch."_emitter.c";
 my $target_h = $target_dir."/gen_".$arch."_emitter.h";
 
-# stacks for output
-my @obst_func;   # stack for the emit functions
-my @obst_register;  # stack for emitter register code
+# buffers for output
+my $obst_func     = ""; # buffer for the emit functions
+my $obst_register = ""; # buffer for emitter register code
 
 
 foreach my $op (keys(%nodes)) {
@@ -57,24 +57,24 @@ foreach my $op (keys(%nodes)) {
 	next if (!defined($n{"emit"}));
 
 	if ($n{"emit"} eq "") {
-		push(@obst_register, "\tbe_set_emitter(op_${arch}_${op}, be_emit_nothing);\n");
+		$obst_register .= "\tbe_set_emitter(op_${arch}_${op}, be_emit_nothing);\n";
 		next;
 	}
 
-	push(@obst_register, "\tbe_set_emitter(op_${arch}_${op}, emit_${arch}_${op});\n");
+	$obst_register .= "\tbe_set_emitter(op_${arch}_${op}, emit_${arch}_${op});\n";
 
-	push(@obst_func, "static void emit_${arch}_${op}(const ir_node *node)\n");
-	push(@obst_func, "{\n");
+	$obst_func .= "static void emit_${arch}_${op}(ir_node const *const node)\n";
+	$obst_func .= "{\n";
 
 	my @emit = split(/\n/, $n{"emit"});
 
 	foreach my $template (@emit) {
 		if ($template ne '') {
-			push(@obst_func, "\t${arch}_emitf(node, \"$template\");\n");
+			$obst_func .= "\t${arch}_emitf(node, \"$template\");\n";
 		}
 	}
 
-	push(@obst_func, "}\n\n");
+	$obst_func .= "}\n\n";
 }
 
 open(OUT, ">$target_h") || die("Could not open $target_h, reason: $!\n");
@@ -133,11 +133,7 @@ print OUT<<EOF;
 #include "${arch}_new_nodes.h"
 #include "${arch}_emitter.h"
 
-EOF
-
-print OUT @obst_func;
-
-print OUT<<EOF;
+$obst_func
 
 /**
  * Enters the emitter functions for handled nodes into the generic
@@ -145,11 +141,7 @@ print OUT<<EOF;
  */
 void $arch\_register_spec_emitters(void)
 {
-EOF
-
-print OUT @obst_register;
-
-print OUT<<EOF;
+$obst_register
 }
 
 EOF
