@@ -120,7 +120,7 @@ struct edge_t {
 typedef struct blocksched_env_t blocksched_env_t;
 struct blocksched_env_t {
 	ir_graph       *irg;
-	struct obstack *obst;
+	struct obstack  obst;
 	edge_t         *edges;
 	pdeq           *worklist;
 	int            blockcount;
@@ -145,7 +145,7 @@ static void collect_egde_frequency(ir_node *block, void *data)
 
 	memset(&edge, 0, sizeof(edge));
 
-	entry = OALLOCZ(env->obst, blocksched_entry_t);
+	entry = OALLOCZ(&env->obst, blocksched_entry_t);
 	entry->block = block;
 	set_irn_link(block, entry);
 
@@ -520,17 +520,14 @@ static ir_node **create_blocksched_array(blocksched_env_t *env, blocksched_entry
 static ir_node **create_block_schedule_greedy(ir_graph *irg)
 {
 	blocksched_env_t   env;
-	struct obstack     obst;
 	blocksched_entry_t *start_entry;
 	ir_node            **block_list;
 
-	obstack_init(&obst);
-
 	env.irg        = irg;
-	env.obst       = &obst;
 	env.edges      = NEW_ARR_F(edge_t, 0);
 	env.worklist   = NULL;
 	env.blockcount = 0;
+	obstack_init(&env.obst);
 
 	assure_loopinfo(irg);
 
@@ -547,7 +544,7 @@ static ir_node **create_block_schedule_greedy(ir_graph *irg)
 	                                      be_get_be_obst(irg));
 
 	DEL_ARR_F(env.edges);
-	obstack_free(&obst, NULL);
+	obstack_free(&env.obst, NULL);
 
 	return block_list;
 }
@@ -610,7 +607,7 @@ static void collect_egde_frequency_ilp(ir_node *block, void *data)
 	snprintf(name, sizeof(name), "block_out_constr_%ld", get_irn_node_nr(block));
 	out_count = get_irn_n_edges_kind(block, EDGE_KIND_BLOCK);
 
-	entry          = OALLOC(env->env.obst, blocksched_ilp_entry_t);
+	entry          = OALLOC(&env->env.obst, blocksched_ilp_entry_t);
 	entry->block   = block;
 	entry->next    = NULL;
 	entry->prev    = NULL;
@@ -708,17 +705,14 @@ static void coalesce_blocks_ilp(blocksched_ilp_env_t *env)
 static ir_node **create_block_schedule_ilp(ir_graph *irg)
 {
 	blocksched_ilp_env_t env;
-	struct obstack       obst;
 	blocksched_entry_t   *start_entry;
 	ir_node              **block_list;
 
-	obstack_init(&obst);
-
 	env.env.irg        = irg;
-	env.env.obst       = &obst;
 	env.env.worklist   = NULL;
 	env.env.blockcount = 0;
 	env.ilpedges       = NEW_ARR_F(ilp_edge_t, 0);
+	obstack_init(&env.env.obst);
 
 	env.lpp = lpp_new("blockschedule", lpp_minimize);
 	lpp_set_time_limit(env.lpp, 20);
@@ -736,7 +730,7 @@ static ir_node **create_block_schedule_ilp(ir_graph *irg)
 
 	DEL_ARR_F(env.ilpedges);
 	lpp_free(env.lpp);
-	obstack_free(&obst, NULL);
+	obstack_free(&env.env.obst, NULL);
 
 	return block_list;
 }
