@@ -445,41 +445,29 @@ static int amd64_is_valid_clobber(const char *clobber)
 
 static int amd64_register_saved_by(const arch_register_t *reg, int callee)
 {
-	if (callee) {
-		/* check for callee saved */
-		if (reg->reg_class == &amd64_reg_classes[CLASS_amd64_gp]) {
-			switch (reg->index) {
-			case REG_GP_RBX:
-			case REG_GP_RBP:
-			case REG_GP_R12:
-			case REG_GP_R13:
-			case REG_GP_R14:
-			case REG_GP_R15:
-				return 1;
-			default:
-				return 0;
-			}
-		}
-	} else {
-		/* check for caller saved */
-		if (reg->reg_class == &amd64_reg_classes[CLASS_amd64_gp]) {
-			switch (reg->index) {
-			case REG_GP_RAX:
-			case REG_GP_RCX:
-			case REG_GP_RDX:
-			case REG_GP_RSI:
-			case REG_GP_RDI:
-			case REG_GP_R8:
-			case REG_GP_R9:
-			case REG_GP_R10:
-			case REG_GP_R11:
-				return 1;
-			default:
-				return 0;
-			}
-		}
+	switch (reg->global_index) {
+	case REG_RBX:
+	case REG_RBP:
+	case REG_R12:
+	case REG_R13:
+	case REG_R14:
+	case REG_R15:
+		return callee;
+
+	case REG_RAX:
+	case REG_RCX:
+	case REG_RDX:
+	case REG_RSI:
+	case REG_RDI:
+	case REG_R8:
+	case REG_R9:
+	case REG_R10:
+	case REG_R11:
+		return !callee;
+
+	default:
+		return 0;
 	}
-	return 0;
 }
 
 const arch_isa_if_t amd64_isa_if = {
