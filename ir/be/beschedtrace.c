@@ -515,12 +515,11 @@ static trace_env_t *trace_init(ir_graph *irg)
 	int         nn   = get_irg_last_idx(irg);
 
 	env->curr_time  = 0;
-	env->sched_info = NEW_ARR_F(trace_irn_t, nn);
+	env->sched_info = NEW_ARR_FZ(trace_irn_t, nn);
 	env->liveness   = be_get_irg_liveness(irg);
 	FIRM_DBG_REGISTER(env->dbg, "firm.be.sched.trace");
 
 	be_assure_live_chk(irg);
-	memset(env->sched_info, 0, nn * sizeof(*(env->sched_info)));
 
 	return env;
 }

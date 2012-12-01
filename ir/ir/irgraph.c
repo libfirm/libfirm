@@ -85,8 +85,7 @@ static ir_graph *alloc_graph(void)
 	res->kind = k_ir_graph;
 
 	/* initialize the idx->node map. */
-	res->idx_irn_map = NEW_ARR_F(ir_node *, INITIAL_IDX_IRN_MAP_SIZE);
-	memset(res->idx_irn_map, 0, INITIAL_IDX_IRN_MAP_SIZE * sizeof(res->idx_irn_map[0]));
+	res->idx_irn_map = NEW_ARR_FZ(ir_node*, INITIAL_IDX_IRN_MAP_SIZE);
 
 	obstack_init(&res->obst);
 

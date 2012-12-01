@@ -54,6 +54,12 @@
   ((type *)ir_new_arr_f((nelts), sizeof(type) * (nelts)))
 
 /**
+ * Create a flexible array and null its contents.
+ */
+#define NEW_ARR_FZ(type, nelts) \
+	((type*)memset(NEW_ARR_F(type, (nelts)), 0, sizeof(type) * (nelts)))
+
+/**
  * Creates a new flexible array with the same number of elements as a
  * given one.
  *

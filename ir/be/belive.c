@@ -363,7 +363,6 @@ static void collect_liveness_nodes(ir_node *irn, void *data)
 
 void be_liveness_compute_sets(be_lv_t *lv)
 {
-	ir_node **nodes;
 	int       i;
 	int       n;
 
@@ -375,8 +374,7 @@ void be_liveness_compute_sets(be_lv_t *lv)
 	obstack_init(&lv->obst);
 
 	n = get_irg_last_idx(lv->irg);
-	nodes = NEW_ARR_F(ir_node *, n);
-	memset(nodes, 0, sizeof(nodes[0]) * n);
+	ir_node **const nodes = NEW_ARR_FZ(ir_node*, n);
 
 	/* inserting the variables sorted by their ID is probably
 	 * more efficient since the binary sorted set insertion

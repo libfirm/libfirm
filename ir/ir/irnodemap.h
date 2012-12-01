@@ -43,8 +43,7 @@ typedef struct ir_nodemap ir_nodemap;
 static inline void ir_nodemap_init(ir_nodemap *nodemap, const ir_graph *irg)
 {
 	unsigned max_idx = get_irg_last_idx(irg) + 32;
-	nodemap->data = NEW_ARR_F(void*, max_idx);
-	memset(nodemap->data, 0, max_idx * sizeof(nodemap->data[0]));
+	nodemap->data = NEW_ARR_FZ(void*, max_idx);
 }
 
 /**

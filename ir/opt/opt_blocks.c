@@ -1201,8 +1201,7 @@ void shape_blocks(ir_graph *irg)
 	env.opcode2id_map  = new_set(cmp_opcode, iro_Last * 4);
 
 	n             = get_irg_last_idx(irg);
-	env.live_outs = NEW_ARR_F(ir_node *, n);
-	memset(env.live_outs, 0, sizeof(*env.live_outs) * n);
+	env.live_outs = NEW_ARR_FZ(ir_node*, n);
 
 	env.all_blocks = NULL;
 
