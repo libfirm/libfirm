@@ -360,7 +360,7 @@ static inline void finish_scc(void)
 }
 
 /**
- * Check weather a given node represents the outer most Start
+ * Check whether a given node represents the outermost Start
  * block. In intra-procedural view this is the start block of the
  * current graph, in interprocedural view it is the start block
  * of the outer most graph.

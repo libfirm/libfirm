@@ -557,10 +557,8 @@ int node_is_in_irgs_storage(const ir_graph *irg, const ir_node *n)
 {
 	struct _obstack_chunk *p;
 
-	/*
-	 * checks weather the ir_node pointer is on the obstack.
-	 * A more sophisticated check would test the "whole" ir_node
-	 */
+	/* Check whether the ir_node pointer is on the obstack.
+	 * A more sophisticated check would test the "whole" ir_node. */
 	for (p = irg->obst->chunk; p; p = p->prev) {
 		if (((char *)p->contents <= (char *)n) && ((char *)n < (char *)p->limit))
 			return 1;
