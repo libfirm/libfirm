@@ -1937,39 +1937,37 @@ static const backend_params *ia32_get_libfirm_params(void)
  */
 static int ia32_register_saved_by(const arch_register_t *reg, int callee)
 {
-	if (callee) {
-		/* check for callee saved */
-		if (reg->reg_class == &ia32_reg_classes[CLASS_ia32_gp]) {
-			switch (reg->index) {
-			case REG_GP_EBX:
-			case REG_GP_ESI:
-			case REG_GP_EDI:
-			case REG_GP_EBP:
-				return 1;
-			default:
-				return 0;
-			}
-		}
-	} else {
-		/* check for caller saved */
-		if (reg->reg_class == &ia32_reg_classes[CLASS_ia32_gp]) {
-			switch (reg->index) {
-			case REG_GP_EDX:
-			case REG_GP_ECX:
-			case REG_GP_EAX:
-				return 1;
-			default:
-				return 0;
-			}
-		} else if (reg->reg_class == &ia32_reg_classes[CLASS_ia32_xmm]) {
-			/* all XMM registers are caller save */
-			return reg->index != REG_XMM_NOREG;
-		} else if (reg->reg_class == &ia32_reg_classes[CLASS_ia32_fp]) {
-			/* all FP registers are caller save */
-			return reg->index != REG_FP_NOREG;
-		}
+	switch (reg->global_index) {
+	case REG_EBX:
+	case REG_EBP:
+	case REG_ESI:
+	case REG_EDI:
+		return callee;
+
+	case REG_EAX:
+	case REG_ECX:
+	case REG_EDX:
+	case REG_ST0:
+	case REG_ST1:
+	case REG_ST2:
+	case REG_ST3:
+	case REG_ST4:
+	case REG_ST5:
+	case REG_ST6:
+	case REG_ST7:
+	case REG_XMM0:
+	case REG_XMM1:
+	case REG_XMM2:
+	case REG_XMM3:
+	case REG_XMM4:
+	case REG_XMM5:
+	case REG_XMM6:
+	case REG_XMM7:
+		return !callee;
+
+	default:
+		return 0;
 	}
-	return 0;
 }
 
 static const lc_opt_enum_int_items_t gas_items[] = {
