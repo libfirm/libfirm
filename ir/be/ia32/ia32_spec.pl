@@ -67,13 +67,6 @@ $mode_fpcw          = "ia32_mode_fpcw";
 	],
 ); # %reg_classes
 
-%cpu = (
-	GP     => [ 1, "GP_EAX", "GP_EBX", "GP_ECX", "GP_EDX", "GP_ESI", "GP_EDI", "GP_EBP" ],
-	SSE    => [ 1, "SSE_XMM0", "SSE_XMM1", "SSE_XMM2", "SSE_XMM3", "SSE_XMM4", "SSE_XMM5", "SSE_XMM6", "SSE_XMM7" ],
-	VFP    => [ 1, "VFP_VF0", "VFP_VF1", "VFP_VF2", "VFP_VF3", "VFP_VF4", "VFP_VF5", "VFP_VF6", "VFP_VF7" ],
-	BRANCH => [ 1, "BRANCH1", "BRANCH2" ],
-); # %cpu
-
 $default_attr_type = "ia32_attr_t";
 $default_copy_attr = "ia32_copy_attr";
 
@@ -186,7 +179,6 @@ ProduceVal => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { out => [ "gp" ] },
 	emit      => "",
-	units     => [ ],
 	latency   => 0,
 	mode      => $mode_gp,
 	cmp_attr  => "return 1;",
@@ -201,7 +193,6 @@ Add => {
 	outs      => [ "res", "flags", "M" ],
 	emit      => 'add%M %B',
 	am        => "source,binary",
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -213,7 +204,6 @@ AddMem => {
 	reg_req   => { in => [ "gp", "gp", "none", "gp" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => "add%M %#S3, %AM",
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => "mode_M",
 	modified_flags => $status_flags
@@ -225,7 +215,6 @@ AddMem8Bit => {
 	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => "add%M %#S3, %AM",
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => "mode_M",
 	modified_flags => $status_flags
@@ -239,7 +228,6 @@ Adc => {
 	outs      => [ "res", "flags", "M" ],
 	emit      => 'adc%M %B',
 	am        => "source,binary",
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -268,7 +256,6 @@ Mul => {
 	outs      => [ "res_low", "flags", "M", "res_high" ],
 	am        => "source,binary",
 	latency   => 10,
-	units     => [ "GP" ],
 	modified_flags => $status_flags
 },
 
@@ -290,7 +277,6 @@ IMul => {
 	outs      => [ "res", "flags", "M" ],
 	am        => "source,binary",
 	latency   => 5,
-	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
@@ -305,7 +291,6 @@ IMul1OP => {
 	outs      => [ "res_low", "flags", "M", "res_high" ],
 	am        => "source,binary",
 	latency   => 5,
-	units     => [ "GP" ],
 	modified_flags => $status_flags
 },
 
@@ -325,7 +310,6 @@ And => {
 	outs      => [ "res", "flags", "M" ],
 	am        => "source,binary",
 	emit      => 'and%M %B',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -337,7 +321,6 @@ AndMem => {
 	reg_req   => { in => [ "gp", "gp", "none", "gp" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => 'and%M %#S3, %AM',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => "mode_M",
 	modified_flags => $status_flags
@@ -349,7 +332,6 @@ AndMem8Bit => {
 	reg_req   => { in => [ "gp", "gp", "none",  "eax ebx ecx edx" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => 'and%M %#S3, %AM',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => "mode_M",
 	modified_flags => $status_flags
@@ -364,7 +346,6 @@ Or => {
 	outs      => [ "res", "flags", "M" ],
 	am        => "source,binary",
 	emit      => 'or%M %B',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -376,7 +357,6 @@ OrMem => {
 	reg_req   => { in => [ "gp", "gp", "none", "gp" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => 'or%M %#S3, %AM',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => "mode_M",
 	modified_flags => $status_flags
@@ -388,7 +368,6 @@ OrMem8Bit => {
 	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => 'or%M %#S3, %AM',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => "mode_M",
 	modified_flags => $status_flags
@@ -403,7 +382,6 @@ Xor => {
 	outs      => [ "res", "flags", "M" ],
 	am        => "source,binary",
 	emit      => 'xor%M %B',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -415,7 +393,6 @@ Xor0 => {
 	reg_req   => { out => [ "gp", "flags" ] },
 	outs      => [ "res", "flags" ],
 	emit      => "xor%M %D0, %D0",
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -427,7 +404,6 @@ XorMem => {
 	reg_req   => { in => [ "gp", "gp", "none", "gp" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => 'xor%M %#S3, %AM',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => "mode_M",
 	modified_flags => $status_flags
@@ -439,7 +415,6 @@ XorMem8Bit => {
 	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => 'xor%M %#S3, %AM',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => "mode_M",
 	modified_flags => $status_flags
@@ -454,7 +429,6 @@ Sub => {
 	outs      => [ "res", "flags", "M" ],
 	am        => "source,binary",
 	emit      => 'sub%M %B',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -466,7 +440,6 @@ SubMem => {
 	reg_req   => { in => [ "gp", "gp", "none", "gp" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "subtrahend" ],
 	emit      => 'sub%M %#S3, %AM',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => 'mode_M',
 	modified_flags => $status_flags
@@ -478,7 +451,6 @@ SubMem8Bit => {
 	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "subtrahend" ],
 	emit      => 'sub%M %#S3, %AM',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => 'mode_M',
 	modified_flags => $status_flags
@@ -492,7 +464,6 @@ Sbb => {
 	outs      => [ "res", "flags", "M" ],
 	am        => "source,binary",
 	emit      => 'sbb%M %B',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -504,7 +475,6 @@ Sbb0 => {
 	reg_req   => { in => [ "flags" ], out => [ "gp", "flags" ] },
 	outs      => [ "res", "flags" ],
 	emit      => "sbb%M %D0, %D0",
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -532,7 +502,6 @@ IDiv => {
 	am        => "source,unary",
 	emit      => "idiv%M %AS3",
 	latency   => 25,
-	units     => [ "GP" ],
 	modified_flags => $status_flags
 },
 
@@ -546,7 +515,6 @@ Div => {
 	am        => "source,unary",
 	emit      => "div%M %AS3",
 	latency   => 25,
-	units     => [ "GP" ],
 	modified_flags => $status_flags
 },
 
@@ -557,7 +525,6 @@ Shl => {
 	ins       => [ "val", "count" ],
 	outs      => [ "res", "flags" ],
 	emit      => 'shl%M %<S1, %S0',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -569,7 +536,6 @@ ShlMem => {
 	reg_req   => { in => [ "gp", "gp", "none", "ecx" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "count" ],
 	emit      => 'shl%M %<S3, %AM',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => "mode_M",
 	modified_flags => $status_flags
@@ -583,7 +549,6 @@ ShlD => {
 	outs      => [ "res", "flags" ],
 	emit      => "shld%M %<S2, %S1, %D0",
 	latency   => 6,
-	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
@@ -595,7 +560,6 @@ Shr => {
 	ins       => [ "val", "count" ],
 	outs      => [ "res", "flags" ],
 	emit      => 'shr%M %<S1, %S0',
-	units     => [ "GP" ],
 	mode      => $mode_gp,
 	latency   => 1,
 	modified_flags => $status_flags
@@ -607,7 +571,6 @@ ShrMem => {
 	reg_req   => { in => [ "gp", "gp", "none", "ecx" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "count" ],
 	emit      => 'shr%M %<S3, %AM',
-	units     => [ "GP" ],
 	mode      => "mode_M",
 	latency   => 1,
 	modified_flags => $status_flags
@@ -621,7 +584,6 @@ ShrD => {
 	outs      => [ "res", "flags" ],
 	emit      => "shrd%M %<S2, %S1, %D0",
 	latency   => 6,
-	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
@@ -633,7 +595,6 @@ Sar => {
 	ins       => [ "val", "count" ],
 	outs      => [ "res", "flags" ],
 	emit      => 'sar%M %<S1, %S0',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -645,7 +606,6 @@ SarMem => {
 	reg_req   => { in => [ "gp", "gp", "none", "ecx" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "count" ],
 	emit      => 'sar%M %<S3, %AM',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => "mode_M",
 	modified_flags => $status_flags
@@ -658,7 +618,6 @@ Ror => {
 	ins       => [ "val", "count" ],
 	outs      => [ "res", "flags" ],
 	emit      => 'ror%M %<S1, %S0',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -670,7 +629,6 @@ RorMem => {
 	reg_req   => { in => [ "gp", "gp", "none", "ecx" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "count" ],
 	emit      => 'ror%M %<S3, %AM',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => "mode_M",
 	modified_flags => $status_flags
@@ -683,7 +641,6 @@ Rol => {
 	ins       => [ "val", "count" ],
 	outs      => [ "res", "flags" ],
 	emit      => 'rol%M %<S1, %D0',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -695,7 +652,6 @@ RolMem => {
 	reg_req   => { in => [ "gp", "gp", "none", "ecx" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "count" ],
 	emit      => 'rol%M %<S3, %AM',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => "mode_M",
 	modified_flags => $status_flags
@@ -708,7 +664,6 @@ Neg => {
 	emit      => 'neg%M %S0',
 	ins       => [ "val" ],
 	outs      => [ "res", "flags" ],
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -720,7 +675,6 @@ NegMem => {
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
 	emit      => 'neg%M %AM',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => "mode_M",
 	modified_flags => $status_flags
@@ -730,7 +684,6 @@ Minus64Bit => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "in_r1", "in_r2" ] },
 	outs      => [ "low_res", "high_res" ],
-	units     => [ "GP" ],
 	latency   => 3,
 	modified_flags => $status_flags
 },
@@ -743,7 +696,6 @@ Inc => {
 	ins       => [ "val" ],
 	outs      => [ "res", "flags" ],
 	emit      => 'inc%M %S0',
-	units     => [ "GP" ],
 	mode      => $mode_gp,
 	latency   => 1,
 	modified_flags => $status_flags_wo_cf
@@ -755,7 +707,6 @@ IncMem => {
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
 	emit      => 'inc%M %AM',
-	units     => [ "GP" ],
 	mode      => "mode_M",
 	latency   => 1,
 	modified_flags => $status_flags_wo_cf
@@ -768,7 +719,6 @@ Dec => {
 	ins       => [ "val" ],
 	outs      => [ "res", "flags" ],
 	emit      => 'dec%M %S0',
-	units     => [ "GP" ],
 	mode      => $mode_gp,
 	latency   => 1,
 	modified_flags => $status_flags_wo_cf
@@ -780,7 +730,6 @@ DecMem => {
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
 	emit      => 'dec%M %AM',
-	units     => [ "GP" ],
 	mode      => "mode_M",
 	latency   => 1,
 	modified_flags => $status_flags_wo_cf
@@ -793,7 +742,6 @@ Not => {
 	ins       => [ "val" ],
 	outs      => [ "res" ],
 	emit      => 'not%M %S0',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_gp,
 	# no flags modified
@@ -805,7 +753,6 @@ NotMem => {
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
 	emit      => 'not%M %AM',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => "mode_M",
 	# no flags modified
@@ -814,7 +761,6 @@ NotMem => {
 Cmc => {
 	reg_req   => { in => [ "flags" ], out => [ "flags" ] },
 	emit      => 'cmc',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_flags,
 	modified_flags => $status_flags
@@ -823,7 +769,6 @@ Cmc => {
 Stc => {
 	reg_req   => { out => [ "flags" ] },
 	emit      => 'stc',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_flags,
 	modified_flags => $status_flags
@@ -841,7 +786,6 @@ Cmp => {
 	attr      => "bool ins_permuted",
 	init_attr => "attr->data.ins_permuted   = ins_permuted;",
 	latency   => 1,
-	units     => [ "GP" ],
 	mode      => $mode_flags,
 	modified_flags => $status_flags
 },
@@ -858,7 +802,6 @@ Cmp8Bit => {
 	attr      => "bool ins_permuted",
 	init_attr => "attr->data.ins_permuted   = ins_permuted;",
 	latency   => 1,
-	units     => [ "GP" ],
 	mode      => $mode_flags,
 	modified_flags => $status_flags
 },
@@ -871,7 +814,6 @@ XorHighLow => {
 	emit      => 'xorb %>S0, %<S0',
 	ins       => [ "value" ],
 	outs      => [ "res", "flags" ],
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_gp,
 	modified_flags => $status_flags,
@@ -889,7 +831,6 @@ Test => {
 	attr      => "bool ins_permuted",
 	init_attr => "attr->data.ins_permuted = ins_permuted;",
 	latency   => 1,
-	units     => [ "GP" ],
 	mode      => $mode_flags,
 	modified_flags => $status_flags
 },
@@ -906,7 +847,6 @@ Test8Bit => {
 	attr      => "bool ins_permuted",
 	init_attr => "attr->data.ins_permuted = ins_permuted;",
 	latency   => 1,
-	units     => [ "GP" ],
 	mode      => $mode_flags,
 	modified_flags => $status_flags
 },
@@ -926,7 +866,6 @@ Setcc => {
 		. "\t\t/* attr->latency = 3; */\n"
 		. "\t}\n",
 	latency   => 1,
-	units     => [ "GP" ],
 	mode      => $mode_gp,
 },
 
@@ -940,7 +879,6 @@ SetccMem => {
 	init_attr => "set_ia32_ls_mode(res, mode_Bu);\n",
 	emit      => 'set%P3 %AM',
 	latency   => 1,
-	units     => [ "GP" ],
 	mode      => 'mode_M',
 },
 
@@ -957,7 +895,6 @@ CMovcc => {
 	attr_type => "ia32_condcode_attr_t",
 	attr      => "ia32_condition_code_t condition_code",
 	latency   => 1,
-	units     => [ "GP" ],
 	mode      => $mode_gp,
 },
 
@@ -970,7 +907,6 @@ Jcc => {
 	attr_type => "ia32_condcode_attr_t",
 	attr      => "ia32_condition_code_t condition_code",
 	latency   => 2,
-	units     => [ "BRANCH" ],
 },
 
 SwitchJmp => {
@@ -982,7 +918,6 @@ SwitchJmp => {
 	attr_type => "ia32_switch_attr_t",
 	attr      => "const ir_switch_table *switch_table",
 	latency   => 2,
-	units     => [ "BRANCH" ],
 },
 
 Jmp => {
@@ -991,7 +926,6 @@ Jmp => {
 	op_flags  => [ "cfopcode" ],
 	reg_req   => { out => [ "none" ] },
 	latency   => 1,
-	units     => [ "BRANCH" ],
 	mode      => "mode_X",
 },
 
@@ -1005,7 +939,6 @@ IJmp => {
 	am        => "source,unary",
 	emit      => 'jmp %*AS3',
 	latency   => 1,
-	units     => [ "BRANCH" ],
 	mode      => "mode_X",
 },
 
@@ -1014,7 +947,6 @@ Const => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { out => [ "gp" ] },
 	emit      => "movl %I, %D0",
-	units     => [ "GP" ],
 	attr      => "ir_entity *symconst, int symconst_sign, int no_pic_adjust, long offset",
 	attr_type => "ia32_immediate_attr_t",
 	latency   => 1,
@@ -1033,7 +965,6 @@ Unknown => {
 GetEIP => {
 	op_flags => [ "constlike" ],
 	reg_req  => { out => [ "gp" ] },
-	units    => [ "GP" ],
 	latency  => 5,
 	mode     => $mode_gp,
 	modified_flags => $status_flags,
@@ -1044,7 +975,6 @@ NoReg_GP => {
 	op_flags  => [ "constlike", "dump_noblock" ],
 	irn_flags => [ "not_scheduled" ],
 	reg_req   => { out => [ "gp_NOREG:I" ] },
-	units     => [],
 	latency   => 0,
 	mode      => $mode_gp
 },
@@ -1054,7 +984,6 @@ NoReg_FP => {
 	op_flags  => [ "constlike", "dump_noblock" ],
 	irn_flags => [ "not_scheduled" ],
 	reg_req   => { out => [ "fp_NOREG:I" ] },
-	units     => [],
 	mode      => $mode_fp87,
 	latency   => 0,
 	attr_type => "ia32_x87_attr_t",
@@ -1065,7 +994,6 @@ NoReg_XMM => {
 	op_flags  => [ "constlike", "dump_noblock" ],
 	irn_flags => [ "not_scheduled" ],
 	reg_req   => { out => [ "xmm_NOREG:I" ] },
-	units     => [],
 	latency   => 0,
 	mode      => $mode_xmm,
 },
@@ -1077,7 +1005,6 @@ ChangeCW => {
 	reg_req   => { out => [ "fpcw" ] },
 	mode      => $mode_fpcw,
 	latency   => 3,
-	units     => [ "GP" ],
 	modified_flags => $fpcw_flags
 },
 
@@ -1089,7 +1016,6 @@ FldCW => {
 	latency   => 5,
 	emit      => "fldcw %AM",
 	mode      => $mode_fpcw,
-	units     => [ "GP" ],
 	modified_flags => $fpcw_flags
 },
 
@@ -1101,7 +1027,6 @@ FnstCW => {
 	latency   => 5,
 	emit      => "fnstcw %AM",
 	mode      => "mode_M",
-	units     => [ "GP" ],
 },
 
 FnstCWNOP => {
@@ -1121,7 +1046,6 @@ Cltd => {
 	emit      => 'cltd',
 	latency   => 1,
 	mode      => $mode_gp,
-	units     => [ "GP" ],
 },
 
 # Load / Store
@@ -1138,7 +1062,6 @@ Load => {
 	outs      => [ "res", "unused", "M", "X_regular", "X_except" ],
 	latency   => 0,
 	emit      => "mov%#Ml %AM, %D0",
-	units     => [ "GP" ],
 },
 
 Store => {
@@ -1150,7 +1073,6 @@ Store => {
 	outs      => [ "M", "X_regular", "X_except" ],
 	emit      => 'mov%M %#S3, %AM',
 	latency   => 2,
-	units     => [ "GP" ],
 },
 
 Store8Bit => {
@@ -1162,7 +1084,6 @@ Store8Bit => {
 	outs      => [ "M", "X_regular", "X_except" ],
 	emit      => 'mov%M %#S3, %AM',
 	latency   => 2,
-	units     => [ "GP" ],
 },
 
 Lea => {
@@ -1171,7 +1092,6 @@ Lea => {
 	ins       => [ "base", "index" ],
 	emit      => 'leal %AM, %D0',
 	latency   => 2,
-	units     => [ "GP" ],
 	mode      => $mode_gp,
 # lea doesn't modify the flags, but setting this seems advantageous since it
 # increases chances that the Lea is transformed back to an Add
@@ -1186,7 +1106,6 @@ Push => {
 	outs      => [ "stack", "M" ],
 	am        => "source,unary",
 	latency   => 2,
-	units     => [ "GP" ],
 },
 
 PushEax => {
@@ -1196,7 +1115,6 @@ PushEax => {
 	outs    => [ "stack" ],
 	emit    => 'pushl %%eax',
 	latency => 2,
-	units   => [ "GP" ],
 	mode    => $mode_gp,
 },
 
@@ -1207,7 +1125,6 @@ Pop => {
 	outs      => [ "res", "M", "unused", "stack" ],
 	emit      => 'pop%M %D0',
 	latency   => 3, # Pop is more expensive than Push on Athlon
-	units     => [ "GP" ],
 },
 
 PopEbp => {
@@ -1217,7 +1134,6 @@ PopEbp => {
 	outs      => [ "res", "M", "unused", "stack" ],
 	emit      => 'pop%M %D0',
 	latency   => 3, # Pop is more expensive than Push on Athlon
-	units     => [ "GP" ],
 },
 
 CopyEbpEsp => {
@@ -1227,7 +1143,6 @@ CopyEbpEsp => {
 	outs      => [ "esp" ],
 	emit      => 'movl %S0, %D0',
 	latency   => 1,
-	units     => [ "GP" ],
 	mode      => $mode_gp,
 },
 
@@ -1238,7 +1153,6 @@ PopMem => {
 	outs      => [ "unused0", "M", "unused1", "stack" ],
 	emit      => 'pop%M %AM',
 	latency   => 3, # Pop is more expensive than Push on Athlon
-	units     => [ "GP" ],
 },
 
 Enter => {
@@ -1246,7 +1160,6 @@ Enter => {
 	emit      => 'enter',
 	outs      => [ "frame", "stack", "M" ],
 	latency   => 15,
-	units     => [ "GP" ],
 },
 
 Leave => {
@@ -1254,7 +1167,6 @@ Leave => {
 	emit      => 'leave',
 	outs      => [ "frame", "stack" ],
 	latency   => 3,
-	units     => [ "GP" ],
 	state     => "exc_pinned",
 },
 
@@ -1266,7 +1178,6 @@ AddSP => {
 	emit      => 'addl %B',
 	latency   => 1,
 	outs      => [ "stack", "M" ],
-	units     => [ "GP" ],
 	modified_flags => $status_flags
 },
 
@@ -1279,7 +1190,6 @@ SubSP => {
 	             "movl %%esp, %D1",
 	latency   => 2,
 	outs      => [ "stack", "addr", "M" ],
-	units     => [ "GP" ],
 	modified_flags => $status_flags
 },
 
@@ -1294,7 +1204,6 @@ RepPrefix => {
 LdTls => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { out => [ "gp" ] },
-	units     => [ "GP" ],
 	emit      => "movl %%gs:0, %D0",
 	mode      => $mode_gp,
 	latency   => 1,
@@ -1309,7 +1218,6 @@ Bt => {
 	reg_req   => { in => [ "gp", "gp" ], out => [ "flags" ] },
 	ins       => [ "left", "right" ],
 	emit      => 'bt%M %S1, %S0',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_flags,
 	modified_flags => $status_flags  # only CF is set, but the other flags are undefined
@@ -1324,7 +1232,6 @@ Bsf => {
 	outs      => [ "res", "flags", "M" ],
 	am        => "source,binary",
 	emit      => 'bsf%M %AS3, %D0',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -1339,7 +1246,6 @@ Bsr => {
 	outs      => [ "res", "flags", "M" ],
 	am        => "source,binary",
 	emit      => 'bsr%M %AS3, %D0',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -1357,7 +1263,6 @@ Popcnt => {
 	outs      => [ "res", "flags", "M" ],
 	am        => "source,binary",
 	emit      => 'popcnt%M %AS3, %D0',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -1376,7 +1281,6 @@ Call => {
 	attr_type => "ia32_call_attr_t",
 	attr      => "unsigned pop, ir_type *call_tp",
 	am        => "source,unary",
-	units     => [ "BRANCH" ],
 	latency   => 4, # random number
 	modified_flags => $status_flags
 },
@@ -1393,7 +1297,6 @@ ClimbFrame => {
 	latency   => 4, # random number
 	attr_type => "ia32_climbframe_attr_t",
 	attr      => "unsigned count",
-	units     => [ "GP" ],
 	mode      => $mode_gp
 },
 
@@ -1407,7 +1310,6 @@ Bswap => {
 	outs      => [ "res" ],
 	emit      => 'bswap%M %S0',
 	ins       => [ "val" ],
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_gp,
 },
@@ -1421,7 +1323,6 @@ Bswap16 => {
 	               out => [ "in_r1" ] },
 	emit      => 'xchg %<S0, %>S0',
 	ins       => [ "val" ],
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_gp,
 },
@@ -1435,7 +1336,6 @@ Breakpoint => {
 	ins       => [ "mem" ],
 	latency   => 0,
 	emit      => "int3",
-	units     => [ "GP" ],
 	mode      => mode_M,
 },
 
@@ -1448,7 +1348,6 @@ UD2 => {
 	ins       => [ "mem" ],
 	latency   => 0,
 	emit      => "ud2",
-	units     => [ "GP" ],
 	mode      => mode_M,
 },
 
@@ -1461,7 +1360,6 @@ Outport => {
 	reg_req   => { in => [ "edx", "eax", "none" ], out => [ "none" ] },
 	ins       => [ "port", "value", "mem" ],
 	emit      => 'out%M %^S0, %#S1',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => mode_M,
 	modified_flags => $status_flags
@@ -1477,7 +1375,6 @@ Inport => {
 	ins       => [ "port", "mem" ],
 	outs      => [ "res", "M" ],
 	emit      => 'in%M %#D0, %^S0',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => mode_T,
 	modified_flags => $status_flags
@@ -1494,7 +1391,6 @@ Prefetch0 => {
 	outs      => [ "M" ],
 	latency   => 0,
 	emit      => "prefetcht0 %AM",
-	units     => [ "GP" ],
 },
 
 Prefetch1 => {
@@ -1505,7 +1401,6 @@ Prefetch1 => {
 	outs      => [ "M" ],
 	latency   => 0,
 	emit      => "prefetcht1 %AM",
-	units     => [ "GP" ],
 },
 
 Prefetch2 => {
@@ -1516,7 +1411,6 @@ Prefetch2 => {
 	outs      => [ "M" ],
 	latency   => 0,
 	emit      => "prefetcht2 %AM",
-	units     => [ "GP" ],
 },
 
 PrefetchNTA => {
@@ -1527,7 +1421,6 @@ PrefetchNTA => {
 	outs      => [ "M" ],
 	latency   => 0,
 	emit      => "prefetchnta %AM",
-	units     => [ "GP" ],
 },
 
 #
@@ -1541,7 +1434,6 @@ Prefetch => {
 	outs      => [ "M" ],
 	latency   => 0,
 	emit      => "prefetch %AM",
-	units     => [ "GP" ],
 },
 
 PrefetchW => {
@@ -1552,7 +1444,6 @@ PrefetchW => {
 	outs      => [ "M" ],
 	latency   => 0,
 	emit      => "prefetchw %AM",
-	units     => [ "GP" ],
 },
 
 # produces a 0/+0.0
@@ -1561,7 +1452,6 @@ xZero => {
 	reg_req   => { out => [ "xmm" ] },
 	emit      => 'xorp%FX %D0, %D0',
 	latency   => 3,
-	units     => [ "SSE" ],
 	mode      => $mode_xmm
 },
 
@@ -1579,7 +1469,6 @@ xPzero => {
 	reg_req   => { out => [ "xmm" ] },
 	emit      => 'pxor %D0, %D0',
 	latency   => 3,
-	units     => [ "SSE" ],
 	mode      => $mode_xmm
 },
 
@@ -1589,7 +1478,6 @@ xAllOnes => {
 	reg_req   => { out => [ "xmm" ] },
 	emit      => 'pcmpeqb %D0, %D0',
 	latency   => 3,
-	units     => [ "SSE" ],
 	mode      => $mode_xmm
 },
 
@@ -1599,7 +1487,6 @@ xPslld => {
 	reg_req   => { in => [ "xmm", "xmm" ], out => [ "in_r1 !in_r2" ] },
 	emit      => 'pslld %#S1, %D0',
 	latency   => 3,
-	units     => [ "SSE" ],
 	mode      => $mode_xmm
 },
 
@@ -1609,7 +1496,6 @@ xPsllq => {
 	reg_req   => { in => [ "xmm", "xmm" ], out => [ "in_r1 !in_r2" ] },
 	emit      => 'psllq %#S1, %D0',
 	latency   => 3,
-	units     => [ "SSE" ],
 	mode      => $mode_xmm
 },
 
@@ -1619,7 +1505,6 @@ xPsrld => {
 	reg_req   => { in => [ "xmm", "xmm" ], out => [ "in_r1 !in_r2" ] },
 	emit      => 'psrld %#S1, %D0',
 	latency   => 1,
-	units     => [ "SSE" ],
 	mode      => $mode_xmm
 },
 
@@ -1629,7 +1514,6 @@ xMovd  => {
 	reg_req   => { in => [ "gp" ], out => [ "xmm" ] },
 	emit      => 'movd %S0, %D0',
 	latency   => 1,
-	units     => [ "SSE" ],
 	mode      => $mode_xmm
 },
 
@@ -1643,7 +1527,6 @@ xAdd => {
 	am        => "source,binary",
 	emit      => 'adds%FX %B',
 	latency   => 4,
-	units     => [ "SSE" ],
 	mode      => $mode_xmm
 },
 
@@ -1657,7 +1540,6 @@ xMul => {
 	am        => "source,binary",
 	emit      => 'muls%FX %B',
 	latency   => 4,
-	units     => [ "SSE" ],
 	mode      => $mode_xmm
 },
 
@@ -1671,7 +1553,6 @@ xMax => {
 	am        => "source,binary",
 	emit      => 'maxs%FX %B',
 	latency   => 2,
-	units     => [ "SSE" ],
 	mode      => $mode_xmm
 },
 
@@ -1685,7 +1566,6 @@ xMin => {
 	am        => "source,binary",
 	emit      => 'mins%FX %B',
 	latency   => 2,
-	units     => [ "SSE" ],
 	mode      => $mode_xmm
 },
 
@@ -1699,7 +1579,6 @@ xAnd => {
 	am        => "source,binary",
 	emit      => 'andp%FX %B',
 	latency   => 3,
-	units     => [ "SSE" ],
 	mode      => $mode_xmm
 },
 
@@ -1713,7 +1592,6 @@ xOr => {
 	am        => "source,binary",
 	emit      => 'orp%FX %B',
 	latency   => 3,
-	units     => [ "SSE" ],
 	mode      => $mode_xmm
 },
 
@@ -1727,7 +1605,6 @@ xXor => {
 	am        => "source,binary",
 	emit      => 'xorp%FX %B',
 	latency   => 3,
-	units     => [ "SSE" ],
 	mode      => $mode_xmm
 },
 
@@ -1741,7 +1618,6 @@ xAndNot => {
 	am        => "source,binary",
 	emit      => 'andnp%FX %B',
 	latency   => 3,
-	units     => [ "SSE" ],
 	mode      => $mode_xmm
 },
 
@@ -1755,7 +1631,6 @@ xSub => {
 	am        => "source,binary",
 	emit      => 'subs%FX %B',
 	latency   => 4,
-	units     => [ "SSE" ],
 	mode      => $mode_xmm
 },
 
@@ -1769,7 +1644,6 @@ xDiv => {
 	am        => "source,binary",
 	emit      => 'divs%FX %B',
 	latency   => 16,
-	units     => [ "SSE" ],
 },
 
 Ucomi => {
@@ -1784,7 +1658,6 @@ Ucomi => {
 	init_attr => "attr->data.ins_permuted = ins_permuted;",
 	emit      => 'ucomis%FX %B',
 	latency   => 3,
-	units     => [ "SSE" ],
 	mode      => $mode_flags,
 	modified_flags => 1,
 },
@@ -1800,7 +1673,6 @@ xLoad => {
 	attr      => "ir_mode *load_mode",
 	init_attr => "attr->ls_mode = load_mode;",
 	latency   => 0,
-	units     => [ "SSE" ],
 },
 
 xStore => {
@@ -1812,7 +1684,6 @@ xStore => {
 	outs      => [ "M", "X_regular", "X_except" ],
 	emit     => 'movs%FX %S3, %AM',
 	latency  => 0,
-	units    => [ "SSE" ],
 },
 
 xStoreSimple => {
@@ -1824,7 +1695,6 @@ xStoreSimple => {
 	outs     => [ "M", "X_regular", "X_except" ],
 	emit     => 'movs%FX %S3, %AM',
 	latency  => 0,
-	units    => [ "SSE" ],
 },
 
 CvtSI2SS => {
@@ -1834,7 +1704,6 @@ CvtSI2SS => {
 	am       => "source,unary",
 	emit     => 'cvtsi2ss %AS3, %D0',
 	latency  => 2,
-	units    => [ "SSE" ],
 	mode     => $mode_xmm
 },
 
@@ -1845,7 +1714,6 @@ CvtSI2SD => {
 	am       => "source,unary",
 	emit     => 'cvtsi2sd %AS3, %D0',
 	latency  => 2,
-	units    => [ "SSE" ],
 	mode     => $mode_xmm
 },
 
@@ -1872,7 +1740,6 @@ CopyB => {
 	outs      => [ "dest", "source", "count", "M", "X_regular", "X_except" ],
 	attr_type => "ia32_copyb_attr_t",
 	attr      => "unsigned size",
-	units     => [ "GP" ],
 	latency   => 3,
 # we don't care about this flag, so no need to mark this node
 #	modified_flags => [ "DF" ]
@@ -1887,7 +1754,6 @@ CopyB_i => {
 	outs      => [ "dest", "source", "M", "X_regular", "X_except" ],
 	attr_type => "ia32_copyb_attr_t",
 	attr      => "unsigned size",
-	units     => [ "GP" ],
 	latency   => 3,
 # we don't care about this flag, so no need to mark this node
 #	modified_flags => [ "DF" ]
@@ -1899,7 +1765,6 @@ Cwtl => {
 	ins       => [ "val" ],
 	outs      => [ "res" ],
 	emit      => 'cwtl',
-	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_gp,
 },
@@ -1913,7 +1778,6 @@ Conv_I2I => {
 	outs      => [ "res", "flags", "M", "X_regular", "X_except" ],
 	emit      => "mov%#Ml %#AS3, %D0",
 	am        => "source,unary",
-	units     => [ "GP" ],
 	latency   => 1,
 	attr      => "ir_mode *smaller_mode",
 	init_attr => "attr->ls_mode = smaller_mode;",
@@ -1929,7 +1793,6 @@ Conv_I2I8Bit => {
 	outs      => [ "res", "flags", "M", "X_regular", "X_except" ],
 	emit      => "mov%#Ml %#AS3, %D0",
 	am        => "source,unary",
-	units     => [ "GP" ],
 	latency   => 1,
 	attr      => "ir_mode *smaller_mode",
 	init_attr => "attr->ls_mode = smaller_mode;",
@@ -1942,7 +1805,6 @@ Conv_I2FP => {
 	ins       => [ "base", "index", "mem", "val" ],
 	am        => "source,unary",
 	latency   => 10,
-	units     => [ "SSE" ],
 	mode      => $mode_xmm,
 },
 
@@ -1952,7 +1814,6 @@ Conv_FP2I => {
 	ins       => [ "base", "index", "mem", "val" ],
 	am        => "source,unary",
 	latency   => 10,
-	units     => [ "SSE" ],
 	mode      => $mode_gp,
 },
 
@@ -1962,7 +1823,6 @@ Conv_FP2FP => {
 	ins       => [ "base", "index", "mem", "val" ],
 	am        => "source,unary",
 	latency   => 8,
-	units     => [ "SSE" ],
 	mode      => $mode_xmm,
 },
 
@@ -1979,7 +1839,6 @@ fadd => {
 	emit      => 'fadd%FP%FM %AF',
 	am        => "source,binary",
 	latency   => 4,
-	units     => [ "VFP" ],
 	mode      => $mode_fp87,
 	attr_type => "ia32_x87_attr_t",
 },
@@ -1994,7 +1853,6 @@ fmul => {
 	emit      => 'fmul%FP%FM %AF',
 	am        => "source,binary",
 	latency   => 4,
-	units     => [ "VFP" ],
 	mode      => $mode_fp87,
 	attr_type => "ia32_x87_attr_t",
 },
@@ -2009,7 +1867,6 @@ fsub => {
 	emit      => 'fsub%FR%FP%FM %AF',
 	am        => "source,binary",
 	latency   => 4,
-	units     => [ "VFP" ],
 	mode      => $mode_fp87,
 	attr_type => "ia32_x87_attr_t",
 },
@@ -2023,7 +1880,6 @@ fdiv => {
 	emit      => 'fdiv%FR%FP%FM %AF',
 	am        => "source,binary",
 	latency   => 20,
-	units     => [ "VFP" ],
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -2032,7 +1888,6 @@ fprem => {
 	ins       => [ "left", "right", "fpcw" ],
 	emit      => 'fprem1',
 	latency   => 20,
-	units     => [ "VFP" ],
 	mode      => $mode_fp87,
 	attr_type => "ia32_x87_attr_t",
 },
@@ -2043,7 +1898,6 @@ fabs => {
 	ins       => [ "value" ],
 	emit      => 'fabs',
 	latency   => 2,
-	units     => [ "VFP" ],
 	mode      => $mode_fp87,
 	attr_type => "ia32_x87_attr_t",
 },
@@ -2054,7 +1908,6 @@ fchs => {
 	emit      => 'fchs',
 	ins       => [ "value" ],
 	latency   => 2,
-	units     => [ "VFP" ],
 	mode      => $mode_fp87,
 	attr_type => "ia32_x87_attr_t",
 },
@@ -2071,7 +1924,6 @@ fld => {
 	attr      => "ir_mode *load_mode",
 	init_attr => "attr->attr.ls_mode = load_mode;",
 	latency   => 2,
-	units     => [ "VFP" ],
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -2087,7 +1939,6 @@ fst => {
 	attr      => "ir_mode *store_mode",
 	init_attr => "attr->attr.ls_mode = store_mode;",
 	latency   => 2,
-	units     => [ "VFP" ],
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -2099,7 +1950,6 @@ fild => {
 	ins       => [ "base", "index", "mem" ],
 	emit      => 'fild%FM %AM',
 	latency   => 4,
-	units     => [ "VFP" ],
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -2112,7 +1962,6 @@ fist => {
 	outs      => [ "dummy", "M", "X_regular", "X_except" ],
 	emit      => 'fist%FP%FM %AM',
 	latency   => 4,
-	units     => [ "VFP" ],
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -2126,7 +1975,6 @@ fisttp => {
 	outs      => [ "res", "M", "X_regular", "X_except" ],
 	emit      => 'fisttp%FM %AM',
 	latency   => 4,
-	units     => [ "VFP" ],
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -2136,7 +1984,6 @@ fldz => {
 	outs      => [ "res" ],
 	emit      => 'fldz',
 	latency   => 4,
-	units     => [ "VFP" ],
 	mode      => $mode_fp87,
 	attr_type => "ia32_x87_attr_t",
 },
@@ -2147,7 +1994,6 @@ fld1 => {
 	outs      => [ "res" ],
 	emit      => 'fld1',
 	latency   => 4,
-	units     => [ "VFP" ],
 	mode      => $mode_fp87,
 	attr_type => "ia32_x87_attr_t",
 },
@@ -2158,7 +2004,6 @@ fldpi => {
 	outs      => [ "res" ],
 	emit      => 'fldpi',
 	latency   => 4,
-	units     => [ "VFP" ],
 	mode      => $mode_fp87,
 	attr_type => "ia32_x87_attr_t",
 },
@@ -2169,7 +2014,6 @@ fldln2 => {
 	outs      => [ "res" ],
 	emit      => 'fldln2',
 	latency   => 4,
-	units     => [ "VFP" ],
 	mode      => $mode_fp87,
 	attr_type => "ia32_x87_attr_t",
 },
@@ -2180,7 +2024,6 @@ fldlg2 => {
 	emit      => 'fldlg2',
 	outs      => [ "res" ],
 	latency   => 4,
-	units     => [ "VFP" ],
 	mode      => $mode_fp87,
 	attr_type => "ia32_x87_attr_t",
 },
@@ -2191,7 +2034,6 @@ fldl2t => {
 	emit      => 'fldll2t',
 	outs      => [ "res" ],
 	latency   => 4,
-	units     => [ "VFP" ],
 	mode      => $mode_fp87,
 	attr_type => "ia32_x87_attr_t",
 },
@@ -2202,7 +2044,6 @@ fldl2e => {
 	emit      => 'fldl2e',
 	outs      => [ "res" ],
 	latency   => 4,
-	units     => [ "VFP" ],
 	mode      => $mode_fp87,
 	attr_type => "ia32_x87_attr_t",
 },
@@ -2219,7 +2060,6 @@ FucomFnstsw => {
 	attr      => "bool ins_permuted",
 	init_attr => "attr->attr.data.ins_permuted = ins_permuted;",
 	latency   => 3,
-	units     => [ "VFP" ],
 	attr_type => "ia32_x87_attr_t",
 	mode      => $mode_gp
 },
@@ -2236,7 +2076,6 @@ FucomppFnstsw => {
 	attr      => "bool ins_permuted",
 	init_attr => "attr->attr.data.ins_permuted = ins_permuted;",
 	latency   => 3,
-	units     => [ "VFP" ],
 	attr_type => "ia32_x87_attr_t",
 	mode      => $mode_gp
 },
@@ -2250,7 +2089,6 @@ Fucomi => {
 	attr      => "bool ins_permuted",
 	init_attr => "attr->attr.data.ins_permuted = ins_permuted;",
 	latency   => 3,
-	units     => [ "VFP" ],
 	attr_type => "ia32_x87_attr_t",
 	mode      => $mode_gp
 },
@@ -2265,7 +2103,6 @@ FtstFnstsw => {
 	attr      => "bool ins_permuted",
 	init_attr => "attr->attr.data.ins_permuted = ins_permuted;",
 	latency   => 3,
-	units     => [ "VFP" ],
 	attr_type => "ia32_x87_attr_t",
 	mode      => $mode_gp
 },
@@ -2277,7 +2114,6 @@ Sahf => {
 	outs      => [ "flags" ],
 	emit      => 'sahf',
 	latency   => 1,
-	units     => [ "GP" ],
 	mode      => $mode_flags,
 },
 
@@ -2363,7 +2199,6 @@ xxLoad => {
 	emit      => 'movdqu %D0, %AM',
 	ins       => [ "base", "index", "mem" ],
 	outs      => [ "res", "M", "X_regular", "X_except" ],
-	units     => [ "SSE" ],
 	latency   => 1,
 },
 
@@ -2375,7 +2210,6 @@ xxStore => {
 	ins      => [ "base", "index", "mem", "val" ],
 	outs     => [ "M", "X_regular", "X_except" ],
 	emit     => 'movdqu %B',
-	units    => [ "SSE" ],
 	latency  => 1,
 },
 

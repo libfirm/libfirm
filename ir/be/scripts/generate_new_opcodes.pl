@@ -584,7 +584,7 @@ EOF
 	} else {
 		# Create 1 default constructor
 		my %constructor = ();
-		foreach my $a ("comment", "ins", "outs", "args", "attr", "units",
+		foreach my $a ("comment", "ins", "outs", "args", "attr",
 				"reg_req", "init_attr", "irn_flags", "mode", "arity",
 				"out_arity", "custominit") {
 			if (defined($n{$a})) {

@@ -90,8 +90,6 @@ Push => {
 	emit      => 'push %S0',
 	outs      => [ "stack", "M" ],
 	am        => "source,unary",
-	latency   => 2,
-#	units     => [ "GP" ],
 },
 
 Add => {
@@ -237,14 +235,4 @@ Store => {
 	mode      => "mode_M",
 	emit      => "mov %S1, %O(%S0)"
 },
-
-#NoReg_GP => {
-#	state     => "pinned",
-#	op_flags  => [ "constlike", "dump_noblcok" ],
-#	reg_req   => { out => [ "gp_NOREG:I" ] },
-#	units     => [],
-#	emit      => "",
-#	latency   => 0,
-#	mode      => $mode_gp,
-#},
 );
