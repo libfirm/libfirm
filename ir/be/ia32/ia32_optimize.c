@@ -142,49 +142,34 @@ check_shift_amount:
  */
 static void peephole_ia32_Cmp(ir_node *const node)
 {
-	ir_node                     *right;
-	ir_graph                    *irg;
-	ia32_immediate_attr_t const *imm;
-	dbg_info                    *dbgi;
-	ir_node                     *block;
-	ir_node                     *noreg;
-	ir_node                     *nomem;
-	ir_node                     *op;
-	ia32_attr_t           const *attr;
-	int                          ins_permuted;
-	ir_node                     *test;
-	arch_register_t       const *reg;
-
 	if (get_ia32_op_type(node) != ia32_Normal)
 		return;
 
-	right = get_irn_n(node, n_ia32_Cmp_right);
+	ir_node *const right = get_irn_n(node, n_ia32_Cmp_right);
 	if (!is_ia32_Immediate(right))
 		return;
 
-	imm = get_ia32_immediate_attr_const(right);
+	ia32_immediate_attr_t const *const imm = get_ia32_immediate_attr_const(right);
 	if (imm->symconst != NULL || imm->offset != 0)
 		return;
 
-	dbgi         = get_irn_dbg_info(node);
-	block        = get_nodes_block(node);
-	irg          = get_Block_irg(block);
-	noreg        = ia32_new_NoReg_gp(irg);
-	nomem        = get_irg_no_mem(irg);
-	op           = get_irn_n(node, n_ia32_Cmp_left);
-	attr         = get_ia32_attr(node);
-	ins_permuted = attr->data.ins_permuted;
+	dbg_info *const dbgi         = get_irn_dbg_info(node);
+	ir_node  *const block        = get_nodes_block(node);
+	ir_graph *const irg          = get_Block_irg(block);
+	ir_node  *const noreg        = ia32_new_NoReg_gp(irg);
+	ir_node  *const nomem        = get_irg_no_mem(irg);
+	ir_node  *const op           = get_irn_n(node, n_ia32_Cmp_left);
+	int       const ins_permuted = get_ia32_attr(node)->data.ins_permuted;
 
+	ir_node *test;
 	if (is_ia32_Cmp(node)) {
-		test = new_bd_ia32_Test(dbgi, block, noreg, noreg, nomem,
-		                        op, op, ins_permuted);
+		test = new_bd_ia32_Test(dbgi, block, noreg, noreg, nomem, op, op, ins_permuted);
 	} else {
-		test = new_bd_ia32_Test8Bit(dbgi, block, noreg, noreg, nomem,
-		                            op, op, ins_permuted);
+		test = new_bd_ia32_Test8Bit(dbgi, block, noreg, noreg, nomem, op, op, ins_permuted);
 	}
 	set_ia32_ls_mode(test, get_ia32_ls_mode(node));
 
-	reg = arch_get_irn_register_out(node, pn_ia32_Cmp_eflags);
+	arch_register_t const *const reg = arch_get_irn_register_out(node, pn_ia32_Cmp_eflags);
 	arch_set_irn_register_out(test, pn_ia32_Test_eflags, reg);
 
 	foreach_out_edge_safe(node, edge) {
