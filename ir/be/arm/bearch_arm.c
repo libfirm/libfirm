@@ -192,8 +192,7 @@ static void transform_Reload(ir_node *node)
 	ir_node   *load;
 
 	load = new_bd_arm_Ldr(dbgi, block, ptr, mem, mode, entity, false, 0, true);
-	sched_add_before(node, load);
-	sched_remove(node);
+	sched_replace(node, load);
 
 	proj = new_rd_Proj(dbgi, load, mode, pn_arm_Ldr_res);
 
@@ -217,8 +216,7 @@ static void transform_Spill(ir_node *node)
 
 	store = new_bd_arm_Str(dbgi, block, ptr, val, mem, mode, entity, false, 0,
 	                       true);
-	sched_add_before(node, store);
-	sched_remove(node);
+	sched_replace(node, store);
 
 	exchange(node, store);
 }

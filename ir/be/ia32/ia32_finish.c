@@ -187,14 +187,13 @@ carry:
 
 	/* exchange the add and the sub */
 	edges_reroute(irn, res);
-	sched_add_before(irn, res);
+	sched_replace(irn, res);
 
 	set_irn_mode(res, get_irn_mode(irn));
 
 	SET_IA32_ORIG_NODE(res, irn);
 
 	/* remove the old sub */
-	sched_remove(irn);
 	kill_node(irn);
 
 	DBG_OPT_SUB2NEGADD(irn, res);

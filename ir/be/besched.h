@@ -153,6 +153,11 @@ static inline void sched_reset(ir_node *node)
 void sched_remove(ir_node *irn);
 
 /**
+ * Remove @p old from the schedule and put @p irn in its place.
+ */
+void sched_replace(ir_node *old, ir_node *irn);
+
+/**
  * Checks, if one node is scheduled before another.
  * @param n1   A node.
  * @param n2   Another node.

@@ -698,8 +698,7 @@ static void transform_to_Load(ir_node *node)
 
 	proj = new_rd_Proj(dbgi, new_op, mode, pn_ia32_Load_res);
 
-	sched_add_before(node, new_op);
-	sched_remove(node);
+	sched_replace(node, new_op);
 
 	/* copy the register from the old node to the new Load */
 	reg = arch_get_irn_register(node);
@@ -756,9 +755,7 @@ static void transform_to_Store(ir_node *node)
 	SET_IA32_ORIG_NODE(store, node);
 	DBG_OPT_SPILL2ST(node, store);
 
-	sched_add_before(node, store);
-	sched_remove(node);
-
+	sched_replace(node, store);
 	exchange(node, res);
 }
 
@@ -889,7 +886,7 @@ static void transform_MemPerm(ir_node *node)
 
 	in[0] = sp;
 	keep  = be_new_Keep(block, 1, in);
-	sched_add_before(node, keep);
+	sched_replace(node, keep);
 
 	/* exchange memprojs */
 	foreach_out_edge_safe(node, edge) {
@@ -903,7 +900,6 @@ static void transform_MemPerm(ir_node *node)
 	}
 
 	/* remove memperm */
-	sched_remove(node);
 	kill_node(node);
 }
 

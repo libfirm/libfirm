@@ -1350,10 +1350,8 @@ static int sim_Copy(x87_state *state, ir_node *n)
 		 * instruction, but we would have to rerun all the simulation to get
 		 * this correct...
 		 */
-		ir_node *const next = sched_next(n);
-		sched_remove(n);
+		sched_replace(n, node);
 		exchange(n, node);
-		sched_add_before(next, node);
 
 		if (get_irn_n_edges(pred) == 0) {
 			keep_float_node_alive(pred);

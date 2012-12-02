@@ -143,7 +143,23 @@ void sched_remove(ir_node *irn)
 	info->prev      = NULL;
 }
 
+void sched_replace(ir_node *const old, ir_node *const irn)
+{
+	assert(sched_is_scheduled(old));
+	assert(!sched_is_scheduled(irn));
 
+	sched_info_t *const old_info = get_irn_sched_info(old);
+	sched_info_t *const irn_info = get_irn_sched_info(irn);
+	*irn_info = *old_info;
+
+	old_info->prev = NULL;
+	old_info->next = NULL;
+
+	ir_node *const prev = irn_info->prev;
+	ir_node *const next = irn_info->next;
+	get_irn_sched_info(prev)->next = irn;
+	get_irn_sched_info(next)->prev = irn;
+}
 
 static be_module_list_entry_t *schedulers;
 static schedule_func           scheduler;

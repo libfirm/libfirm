@@ -790,10 +790,9 @@ void assure_constraints(ir_graph *irg)
 				ir_node *keep;
 
 				keep = be_new_Keep(get_nodes_block(cp), n, get_irn_in(cp) + 1);
-				sched_add_before(cp, keep);
+				sched_replace(cp, keep);
 
 				/* Set all ins (including the block) of the CopyKeep BAD to keep the verifier happy. */
-				sched_remove(cp);
 				kill_node(cp);
 			}
 		}
