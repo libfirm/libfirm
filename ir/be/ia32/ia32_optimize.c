@@ -1293,10 +1293,9 @@ static void optimize_conv_store(ir_node *node)
 	ir_mode *conv_mode;
 	ir_mode *store_mode;
 
-	if (!is_ia32_Store(node) && !is_ia32_Store8Bit(node))
+	if (!is_ia32_Store(node))
 		return;
 
-	assert((int)n_ia32_Store_val == (int)n_ia32_Store8Bit_val);
 	pred_proj = get_irn_n(node, n_ia32_Store_val);
 	if (is_Proj(pred_proj)) {
 		pred = get_Proj_pred(pred_proj);

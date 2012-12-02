@@ -994,19 +994,16 @@ Load => {
 Store => {
 	op_flags  => [ "uses_memory", "fragile" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "gp" ],
-	               out => [ "none", "none", "none" ] },
-	ins       => [ "base", "index", "mem", "val" ],
-	outs      => [ "M", "X_regular", "X_except" ],
-	emit      => 'mov%M %#S3, %AM',
-	latency   => 2,
-},
-
-Store8Bit => {
-	op_flags  => [ "uses_memory", "fragile" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ],
-	               out => ["none", "none", "none" ] },
+	constructors => {
+		""     => {
+			reg_req => { in => [ "gp", "gp", "none", "gp" ],
+			            out => [ "none", "none", "none" ] }
+		},
+		"8bit" => {
+			reg_req => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ],
+			            out => [ "none", "none", "none" ] }
+		}
+	},
 	ins       => [ "base", "index", "mem", "val" ],
 	outs      => [ "M", "X_regular", "X_except" ],
 	emit      => 'mov%M %#S3, %AM',

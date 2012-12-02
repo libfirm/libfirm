@@ -3384,7 +3384,6 @@ static void ia32_register_binary_emitters(void)
 	be_set_emitter(op_ia32_ShrMem,        bemit_shrmem);
 	be_set_emitter(op_ia32_Stc,           bemit_stc);
 	be_set_emitter(op_ia32_Store,         bemit_store);
-	be_set_emitter(op_ia32_Store8Bit,     bemit_store);
 	be_set_emitter(op_ia32_Sub,           bemit_sub);
 	be_set_emitter(op_ia32_SubMem,        bemit_submem);
 	be_set_emitter(op_ia32_SubSP,         bemit_subsp);

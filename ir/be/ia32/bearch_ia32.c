@@ -739,11 +739,10 @@ static void transform_to_Store(ir_node *node)
 		/* Spill 128 bit SSE registers */
 		store = new_bd_ia32_xxStore(dbgi, block, ptr, noreg, nomem, val);
 		res   = new_r_Proj(store, mode_M, pn_ia32_xxStore_M);
-	} else if (get_mode_size_bits(mode) == 8) {
-		store = new_bd_ia32_Store8Bit(dbgi, block, ptr, noreg, nomem, val);
-		res   = new_r_Proj(store, mode_M, pn_ia32_Store8Bit_M);
 	} else {
-		store = new_bd_ia32_Store(dbgi, block, ptr, noreg, nomem, val);
+		store = get_mode_size_bits(mode) == 8
+			? new_bd_ia32_Store_8bit(dbgi, block, ptr, noreg, nomem, val)
+			: new_bd_ia32_Store     (dbgi, block, ptr, noreg, nomem, val);
 		res   = new_r_Proj(store, mode_M, pn_ia32_Store_M);
 	}
 
@@ -981,7 +980,6 @@ need_stackent:
 				panic("unexpected frame user while collection frame entity nodes");
 
 			case iro_ia32_FnstCW:
-			case iro_ia32_Store8Bit:
 			case iro_ia32_Store:
 			case iro_ia32_fst:
 			case iro_ia32_fist:

@@ -2789,13 +2789,9 @@ static ir_node *gen_general_Store(ir_node *node)
 		new_val = create_immediate_or_transform(val);
 		assert(mode != mode_b);
 
-		if (dest_bits == 8) {
-			new_node = new_bd_ia32_Store8Bit(dbgi, new_block, addr.base,
-			                                 addr.index, addr.mem, new_val);
-		} else {
-			new_node = new_bd_ia32_Store(dbgi, new_block, addr.base,
-			                             addr.index, addr.mem, new_val);
-		}
+		new_node = dest_bits == 8
+			? new_bd_ia32_Store_8bit(dbgi, new_block, addr.base, addr.index, addr.mem, new_val)
+			: new_bd_ia32_Store     (dbgi, new_block, addr.base, addr.index, addr.mem, new_val);
 	}
 	ir_set_throws_exception(new_node, throws_exception);
 
@@ -4503,7 +4499,7 @@ static ir_node *gen_Proj_Store(ir_node *node)
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	long      pn       = get_Proj_proj(node);
 
-	if (is_ia32_Store(new_pred) || is_ia32_Store8Bit(new_pred)) {
+	if (is_ia32_Store(new_pred)) {
 		switch ((pn_Store)pn) {
 		case pn_Store_M:
 			return new_rd_Proj(dbgi, new_pred, mode_M, pn_ia32_Store_M);
@@ -5319,8 +5315,7 @@ static ir_node *gen_inner_trampoline(ir_node *node)
 	ir_graph *const irg = get_Block_irg(new_block);
 	/* mov  ecx, <env> */
 	val   = ia32_create_Immediate(irg, NULL, 0, 0xB9);
-	store = new_bd_ia32_Store8Bit(dbgi, new_block, addr.base,
-	                              addr.index, addr.mem, val);
+	store = new_bd_ia32_Store_8bit(dbgi, new_block, addr.base, addr.index, addr.mem, val);
 	set_irn_pinned(store, get_irn_pinned(node));
 	set_ia32_op_type(store, ia32_AddrModeD);
 	set_ia32_ls_mode(store, mode_Bu);
@@ -5339,8 +5334,7 @@ static ir_node *gen_inner_trampoline(ir_node *node)
 
 	/* jmp rel <callee> */
 	val   = ia32_create_Immediate(irg, NULL, 0, 0xE9);
-	store = new_bd_ia32_Store8Bit(dbgi, new_block, addr.base,
-	                             addr.index, addr.mem, val);
+	store = new_bd_ia32_Store_8bit(dbgi, new_block, addr.base, addr.index, addr.mem, val);
 	set_irn_pinned(store, get_irn_pinned(node));
 	set_ia32_op_type(store, ia32_AddrModeD);
 	set_ia32_ls_mode(store, mode_Bu);
