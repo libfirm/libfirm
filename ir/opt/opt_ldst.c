@@ -1406,8 +1406,6 @@ static void calc_gen_kill_avail(block_t *bl)
 	}
 }
 
-#define BYTE_SIZE(x)  (((x) + 7) >> 3)
-
 /**
  * Do forward dataflow analysis on a given block to calculate the avail_out set
  * for this block only.
