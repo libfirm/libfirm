@@ -2506,7 +2506,7 @@ static ir_node *try_create_dest_am(ir_node *node)
 			}
 		}
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
-		                         new_bd_ia32_AddMem, new_bd_ia32_AddMem8Bit,
+		                         new_bd_ia32_AddMem, new_bd_ia32_AddMem_8bit,
 		                         match_commutative | match_immediate);
 		break;
 	case iro_Sub:
@@ -2516,28 +2516,28 @@ static ir_node *try_create_dest_am(ir_node *node)
 			ir_fprintf(stderr, "Optimisation warning: not-normalized sub ,C found\n");
 		}
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
-		                         new_bd_ia32_SubMem, new_bd_ia32_SubMem8Bit,
+		                         new_bd_ia32_SubMem, new_bd_ia32_SubMem_8bit,
 		                         match_immediate);
 		break;
 	case iro_And:
 		op1      = get_And_left(val);
 		op2      = get_And_right(val);
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
-		                         new_bd_ia32_AndMem, new_bd_ia32_AndMem8Bit,
+		                         new_bd_ia32_AndMem, new_bd_ia32_AndMem_8bit,
 		                         match_commutative | match_immediate);
 		break;
 	case iro_Or:
 		op1      = get_Or_left(val);
 		op2      = get_Or_right(val);
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
-		                         new_bd_ia32_OrMem, new_bd_ia32_OrMem8Bit,
+		                         new_bd_ia32_OrMem, new_bd_ia32_OrMem_8bit,
 		                         match_commutative | match_immediate);
 		break;
 	case iro_Eor:
 		op1      = get_Eor_left(val);
 		op2      = get_Eor_right(val);
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
-		                         new_bd_ia32_XorMem, new_bd_ia32_XorMem8Bit,
+		                         new_bd_ia32_XorMem, new_bd_ia32_XorMem_8bit,
 		                         match_commutative | match_immediate);
 		break;
 	case iro_Shl:

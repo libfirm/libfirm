@@ -158,6 +158,11 @@ my %binop_flags_constructors = (
 	}
 );
 
+my %binop_mem_constructors = (
+	""     => { reg_req   => { in => [ "gp", "gp", "none", "gp" ],              out => [ "none" ] } },
+	"8bit" => { reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ], out => [ "none" ] } },
+);
+
 %nodes = (
 
 Immediate => {
@@ -212,18 +217,7 @@ Add => {
 AddMem => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "gp" ], out => [ "none" ] },
-	ins       => [ "base", "index", "mem", "val" ],
-	emit      => "add%M %#S3, %AM",
-	latency   => 1,
-	mode      => "mode_M",
-	modified_flags => $status_flags
-},
-
-AddMem8Bit => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ], out => [ "none" ] },
+	constructors => \%binop_mem_constructors,
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => "add%M %#S3, %AM",
 	latency   => 1,
@@ -329,18 +323,7 @@ And => {
 AndMem => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "gp" ], out => [ "none" ] },
-	ins       => [ "base", "index", "mem", "val" ],
-	emit      => 'and%M %#S3, %AM',
-	latency   => 1,
-	mode      => "mode_M",
-	modified_flags => $status_flags
-},
-
-AndMem8Bit => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none",  "eax ebx ecx edx" ], out => [ "none" ] },
+	constructors => \%binop_mem_constructors,
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => 'and%M %#S3, %AM',
 	latency   => 1,
@@ -365,18 +348,7 @@ Or => {
 OrMem => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "gp" ], out => [ "none" ] },
-	ins       => [ "base", "index", "mem", "val" ],
-	emit      => 'or%M %#S3, %AM',
-	latency   => 1,
-	mode      => "mode_M",
-	modified_flags => $status_flags
-},
-
-OrMem8Bit => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ], out => [ "none" ] },
+	constructors => \%binop_mem_constructors,
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => 'or%M %#S3, %AM',
 	latency   => 1,
@@ -412,18 +384,7 @@ Xor0 => {
 XorMem => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "gp" ], out => [ "none" ] },
-	ins       => [ "base", "index", "mem", "val" ],
-	emit      => 'xor%M %#S3, %AM',
-	latency   => 1,
-	mode      => "mode_M",
-	modified_flags => $status_flags
-},
-
-XorMem8Bit => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ], out => [ "none" ] },
+	constructors => \%binop_mem_constructors,
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => 'xor%M %#S3, %AM',
 	latency   => 1,
@@ -448,18 +409,7 @@ Sub => {
 SubMem => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "gp" ], out => [ "none" ] },
-	ins       => [ "base", "index", "mem", "subtrahend" ],
-	emit      => 'sub%M %#S3, %AM',
-	latency   => 1,
-	mode      => 'mode_M',
-	modified_flags => $status_flags
-},
-
-SubMem8Bit => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ], out => [ "none" ] },
+	constructors => \%binop_mem_constructors,
 	ins       => [ "base", "index", "mem", "subtrahend" ],
 	emit      => 'sub%M %#S3, %AM',
 	latency   => 1,

@@ -2204,48 +2204,43 @@ BINOP(sub, 5)
 BINOP(xor, 6)
 BINOP(cmp, 7)
 
-#define BINOPMEM(op, ext) \
-static void bemit_##op(const ir_node *node) \
-{ \
-	ir_node *val; \
-	unsigned size = get_mode_size_bits(get_ia32_ls_mode(node)); \
-	if (size == 16) \
-		bemit8(0x66); \
-	val = get_irn_n(node, n_ia32_unary_op); \
-	if (is_ia32_Immediate(val)) { \
-		const ia32_immediate_attr_t *attr   = get_ia32_immediate_attr_const(val); \
-		int                          offset = attr->offset; \
-		if (attr->symconst == NULL && get_signed_imm_size(offset) == 1) { \
-			bemit8(0x83); \
-			bemit_mod_am(ext, node); \
-			bemit8(offset); \
-		} else { \
-			bemit8(0x81); \
-			bemit_mod_am(ext, node); \
-			if (size == 16) { \
-				bemit16(offset); \
-			} else { \
-				bemit_entity(attr->symconst, attr->sc_sign, offset, false); \
-			} \
-		} \
-	} else { \
-		bemit8(ext << 3 | 1); \
-		bemit_mod_am(reg_gp_map[arch_get_irn_register(val)->index], node); \
-	} \
-} \
- \
-static void bemit_##op##8bit(const ir_node *node) \
-{ \
-	ir_node *val = get_irn_n(node, n_ia32_unary_op); \
-	if (is_ia32_Immediate(val)) { \
-		bemit8(0x80); \
-		bemit_mod_am(ext, node); \
-		bemit8(get_ia32_immediate_attr_const(val)->offset); \
-	} else { \
-		bemit8(ext << 3); \
-		bemit_mod_am(reg_gp_map[arch_get_irn_register(val)->index], node); \
-	} \
+static void bemit_binop_mem(ir_node const *const node, unsigned const code)
+{
+	unsigned size = get_mode_size_bits(get_ia32_ls_mode(node));
+	if (size == 16)
+		bemit8(0x66);
+
+	unsigned       op  = size == 8 ? OP_8 : OP_16_32;
+	ir_node *const val = get_irn_n(node, n_ia32_unary_op);
+	if (is_ia32_Immediate(val)) {
+		ia32_immediate_attr_t const *const attr = get_ia32_immediate_attr_const(val);
+		/* Try to use the short form with 8bit sign extended immediate. */
+		if (op != OP_8 && !attr->symconst && get_signed_imm_size(attr->offset) == 1) {
+			op   = OP_16_32_IMM8;
+			size = 8;
+		}
+
+		/* Emit the main opcode. */
+		bemit8(0x80 | op);
+		bemit_mod_am(code, node);
+
+		/* Emit the immediate. */
+		switch (size) {
+		case  8: bemit8(attr->offset);  break;
+		case 16: bemit16(attr->offset); break;
+		case 32: bemit_entity(attr->symconst, attr->sc_sign, attr->offset, false); break;
+		}
+	} else {
+		bemit8(code << 3 | op);
+		bemit_mod_am(reg_gp_map[arch_get_irn_register(val)->index], node);
+	}
 }
+
+#define BINOPMEM(op, code) \
+	static void bemit_##op(ir_node const *const node) \
+	{ \
+		bemit_binop_mem(node, code); \
+	}
 
 BINOPMEM(addmem,  0)
 BINOPMEM(ormem,   1)
@@ -3319,10 +3314,8 @@ static void ia32_register_binary_emitters(void)
 	be_set_emitter(op_ia32_Adc,           bemit_adc);
 	be_set_emitter(op_ia32_Add,           bemit_add);
 	be_set_emitter(op_ia32_AddMem,        bemit_addmem);
-	be_set_emitter(op_ia32_AddMem8Bit,    bemit_addmem8bit);
 	be_set_emitter(op_ia32_And,           bemit_and);
 	be_set_emitter(op_ia32_AndMem,        bemit_andmem);
-	be_set_emitter(op_ia32_AndMem8Bit,    bemit_andmem8bit);
 	be_set_emitter(op_ia32_Asm,           emit_ia32_Asm); // TODO implement binary emitter
 	be_set_emitter(op_ia32_Breakpoint,    bemit_int3);
 	be_set_emitter(op_ia32_Bsf,           bemit_bsf);
@@ -3368,7 +3361,6 @@ static void ia32_register_binary_emitters(void)
 	be_set_emitter(op_ia32_NotMem,        bemit_notmem);
 	be_set_emitter(op_ia32_Or,            bemit_or);
 	be_set_emitter(op_ia32_OrMem,         bemit_ormem);
-	be_set_emitter(op_ia32_OrMem8Bit,     bemit_ormem8bit);
 	be_set_emitter(op_ia32_Pop,           bemit_pop);
 	be_set_emitter(op_ia32_PopEbp,        bemit_pop);
 	be_set_emitter(op_ia32_PopMem,        bemit_popmem);
@@ -3396,14 +3388,12 @@ static void ia32_register_binary_emitters(void)
 	be_set_emitter(op_ia32_Store8Bit,     bemit_store);
 	be_set_emitter(op_ia32_Sub,           bemit_sub);
 	be_set_emitter(op_ia32_SubMem,        bemit_submem);
-	be_set_emitter(op_ia32_SubMem8Bit,    bemit_submem8bit);
 	be_set_emitter(op_ia32_SubSP,         bemit_subsp);
 	be_set_emitter(op_ia32_SwitchJmp,     bemit_switchjmp);
 	be_set_emitter(op_ia32_Test,          bemit_test);
 	be_set_emitter(op_ia32_Xor,           bemit_xor);
 	be_set_emitter(op_ia32_Xor0,          bemit_xor0);
 	be_set_emitter(op_ia32_XorMem,        bemit_xormem);
-	be_set_emitter(op_ia32_XorMem8Bit,    bemit_xormem8bit);
 	be_set_emitter(op_ia32_fabs,          bemit_fabs);
 	be_set_emitter(op_ia32_fadd,          bemit_fadd);
 	be_set_emitter(op_ia32_fchs,          bemit_fchs);
