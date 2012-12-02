@@ -48,6 +48,7 @@
 #include "statev_t.h"
 #include "beirg.h"
 #include "beintlive_t.h"
+#include "bespillutil.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -112,7 +113,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 
 	/* Look at all predecessors of the phi block */
 	for (i = 0, n = get_irn_arity(bl); i < n; ++i) {
-		ir_node *phi, *perm, *insert_after, **in;
+		ir_node *phi, *perm, **in;
 		set *arg_set     = new_set(cmp_perm_proj, chordal_env->cls->n_regs);
 		ir_node *pred_bl = get_Block_cfgpred_block(bl, i);
 		int n_projs      = 0;
@@ -158,11 +159,8 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 			perm = be_new_Perm(chordal_env->cls, pred_bl, n_projs, in);
 			stat_ev_int("phi_perm", n_projs);
 
-			insert_after = pred_bl;
-			do {
-				insert_after = sched_prev(insert_after);
-			} while (is_cfop(insert_after));
-			sched_add_after(insert_after, perm);
+			ir_node *const schedpoint = be_get_end_of_block_insertion_point(pred_bl);
+			sched_add_before(schedpoint, perm);
 
 			/*
 			 * Make the Projs for the Perm and insert into schedule.
@@ -253,8 +251,6 @@ static void set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 			}
 
 			if (be_values_interfere(lv, phi, arg)) {
-				ir_node *schedpoint;
-
 				/*
 					Insert a duplicate in arguments block,
 					make it the new phi arg,
@@ -266,11 +262,8 @@ static void set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 
 				set_irn_n(phi, i, dupl);
 				arch_set_irn_register(dupl, phi_reg);
-				schedpoint = arg_block;
-				do {
-					schedpoint = sched_prev(schedpoint);
-				} while (is_cfop(schedpoint));
-				sched_add_after(schedpoint, dupl);
+				ir_node *const schedpoint = be_get_end_of_block_insertion_point(arg_block);
+				sched_add_before(schedpoint, dupl);
 				pin_irn(dupl, phi_block);
 				be_liveness_introduce(lv, dupl);
 				be_liveness_update(lv, arg);
