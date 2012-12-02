@@ -436,6 +436,21 @@ EOF
 	$obst_constructor .= "}\n\n";
 }
 
+my @node_attrs = (
+	"args",
+	"arity",
+	"attr",
+	"comment",
+	"custominit",
+	"init_attr",
+	"ins",
+	"irn_flags",
+	"mode",
+	"out_arity",
+	"outs",
+	"reg_req",
+);
+
 $obst_enum_op .= "typedef enum ${arch}_opcodes {\n";
 foreach my $op (keys(%nodes)) {
 	my %n        = %{ $nodes{"$op"} };
@@ -584,9 +599,7 @@ EOF
 	} else {
 		# Create 1 default constructor
 		my %constructor = ();
-		foreach my $a ("comment", "ins", "outs", "args", "attr",
-				"reg_req", "init_attr", "irn_flags", "mode", "arity",
-				"out_arity", "custominit") {
+		foreach my $a (@node_attrs) {
 			if (defined($n{$a})) {
 				$constructor{$a} = $n{$a};
 			}
@@ -597,8 +610,7 @@ EOF
 	foreach my $constr (keys(%constructors)) {
 		my %cstr = %{ $constructors{$constr} };
 		# Copy some values from outer node if they don't exists in the constr
-		foreach my $a ("ins", "outs", "irn_flags", "mode", "args", "attr",
-		               "custominit") {
+		foreach my $a (@node_attrs) {
 			if (!defined($cstr{$a}) && defined($n{$a})) {
 				$cstr{$a} = $n{$a};
 			}
