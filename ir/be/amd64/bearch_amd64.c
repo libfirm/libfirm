@@ -149,10 +149,8 @@ static void transform_Reload(ir_node *node)
 	ir_node   *proj;
 	ir_node   *load;
 
-	ir_node  *sched_point = sched_prev(node);
-
 	load = new_bd_amd64_Load(dbgi, block, ptr, mem, entity);
-	sched_add_after(sched_point, load);
+	sched_add_before(node, load);
 	sched_remove(node);
 
 	proj = new_rd_Proj(dbgi, load, mode, pn_amd64_Load_res);
@@ -173,14 +171,11 @@ static void transform_Spill(ir_node *node)
 	ir_node   *val    = get_irn_n(node, n_be_Spill_val);
 	//ir_mode   *mode   = get_irn_mode(val);
 	ir_entity *entity = be_get_frame_entity(node);
-	ir_node   *sched_point;
 	ir_node   *store;
 
-	sched_point = sched_prev(node);
 	store = new_bd_amd64_Store(dbgi, block, ptr, val, mem, entity);
-
+	sched_add_before(node, store);
 	sched_remove(node);
-	sched_add_after(sched_point, store);
 
 	exchange(node, store);
 }

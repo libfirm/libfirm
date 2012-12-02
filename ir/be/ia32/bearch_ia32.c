@@ -675,8 +675,6 @@ static void transform_to_Load(ir_node *node)
 	ir_node *new_op, *proj;
 	const arch_register_t *reg;
 
-	ir_node *const sched_point = sched_prev(node);
-
 	if (mode_is_float(spillmode)) {
 		if (ia32_cg_config.use_sse2)
 			new_op = new_bd_ia32_xLoad(dbgi, block, ptr, noreg, mem, spillmode);
@@ -700,7 +698,7 @@ static void transform_to_Load(ir_node *node)
 
 	proj = new_rd_Proj(dbgi, new_op, mode, pn_ia32_Load_res);
 
-	sched_add_after(sched_point, new_op);
+	sched_add_before(node, new_op);
 	sched_remove(node);
 
 	/* copy the register from the old node to the new Load */
@@ -730,8 +728,6 @@ static void transform_to_Store(ir_node *node)
 	ir_node *res;
 	ir_node *store;
 
-	ir_node *const sched_point = sched_prev(node);
-
 	if (mode_is_float(mode)) {
 		if (ia32_cg_config.use_sse2) {
 			store = new_bd_ia32_xStore(dbgi, block, ptr, noreg, nomem, val);
@@ -760,7 +756,7 @@ static void transform_to_Store(ir_node *node)
 	SET_IA32_ORIG_NODE(store, node);
 	DBG_OPT_SPILL2ST(node, store);
 
-	sched_add_after(sched_point, store);
+	sched_add_before(node, store);
 	sched_remove(node);
 
 	exchange(node, res);
