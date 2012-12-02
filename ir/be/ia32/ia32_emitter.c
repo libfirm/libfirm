@@ -2202,6 +2202,7 @@ BINOP(sbb, 3)
 BINOP(and, 4)
 BINOP(sub, 5)
 BINOP(xor, 6)
+BINOP(cmp, 7)
 
 #define BINOPMEM(op, ext) \
 static void bemit_##op(const ir_node *node) \
@@ -2482,104 +2483,6 @@ static void bemit_cmovcc(const ir_node *node)
 		bemit_modrr(in_true, out);
 	} else {
 		bemit_mod_am(reg_gp_map[out->index], node);
-	}
-}
-
-static void bemit_cmp(const ir_node *node)
-{
-	unsigned  ls_size = get_mode_size_bits(get_ia32_ls_mode(node));
-	ir_node  *right;
-
-	if (ls_size == 16)
-		bemit8(0x66);
-
-	right = get_irn_n(node, n_ia32_binary_right);
-	if (is_ia32_Immediate(right)) {
-		/* Use in-reg, because some instructions (cmp, test) have no out-reg. */
-		const ir_node               *op   = get_irn_n(node, n_ia32_binary_right);
-		const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(op);
-		unsigned                     size;
-
-		if (attr->symconst != NULL) {
-			size = 4;
-		} else {
-			/* check for sign extension */
-			size = get_signed_imm_size(attr->offset);
-		}
-
-		switch (size) {
-			case 1:
-				bemit8(0x80 | OP_16_32_IMM8);
-				/* cmp has this special mode */
-				if (get_ia32_op_type(node) == ia32_Normal) {
-					const arch_register_t *reg = arch_get_irn_register_in(node, n_ia32_binary_left);
-					bemit_modru(reg, 7);
-				} else {
-					bemit_mod_am(7, node);
-				}
-				bemit8((unsigned char)attr->offset);
-				return;
-			case 2:
-			case 4:
-				/* check for eax variant: this variant is shorter for 32bit immediates only */
-				if (get_ia32_op_type(node) == ia32_Normal) {
-					const arch_register_t *reg = arch_get_irn_register_in(node, n_ia32_binary_left);
-					if (reg->index == REG_GP_EAX) {
-						bemit8(0x3D);
-					} else {
-						bemit8(0x81);
-						bemit_modru(reg, 7);
-					}
-				} else {
-					bemit8(0x81);
-					bemit_mod_am(7, node);
-				}
-				if (ls_size == 16) {
-					bemit16(attr->offset);
-				} else {
-					bemit_entity(attr->symconst, attr->sc_sign, attr->offset, false);
-				}
-				return;
-		}
-		panic("invalid imm size?!?");
-	} else {
-		const arch_register_t *out = arch_get_irn_register_in(node, n_ia32_binary_left);
-		bemit8(0x3B);
-		if (get_ia32_op_type(node) == ia32_Normal) {
-			const arch_register_t *op2 = arch_get_irn_register_in(node, n_ia32_binary_right);
-			bemit_modrr(op2, out);
-		} else {
-			bemit_mod_am(reg_gp_map[out->index], node);
-		}
-	}
-}
-
-static void bemit_cmp8bit(const ir_node *node)
-{
-	ir_node *right = get_irn_n(node, n_ia32_binary_right);
-	if (is_ia32_Immediate(right)) {
-		if (get_ia32_op_type(node) == ia32_Normal) {
-			const arch_register_t *out = arch_get_irn_register_in(node, n_ia32_Cmp_left);
-			if (out->index == REG_GP_EAX) {
-				bemit8(0x3C);
-			} else {
-				bemit8(0x80);
-				bemit_modru(out, 7);
-			}
-		} else {
-			bemit8(0x80);
-			bemit_mod_am(7, node);
-		}
-		bemit8(get_ia32_immediate_attr_const(right)->offset);
-	} else {
-		const arch_register_t *out = arch_get_irn_register_in(node, n_ia32_Cmp_left);
-		bemit8(0x3A);
-		if (get_ia32_op_type(node) == ia32_Normal) {
-			const arch_register_t *in = arch_get_irn_register_in(node, n_ia32_Cmp_right);
-			bemit_modrr(out, in);
-		} else {
-			bemit_mod_am(reg_gp_map[out->index], node);
-		}
 	}
 }
 
@@ -3431,7 +3334,6 @@ static void ia32_register_binary_emitters(void)
 	be_set_emitter(op_ia32_Cltd,          bemit_cltd);
 	be_set_emitter(op_ia32_Cmc,           bemit_cmc);
 	be_set_emitter(op_ia32_Cmp,           bemit_cmp);
-	be_set_emitter(op_ia32_Cmp8Bit,       bemit_cmp8bit);
 	be_set_emitter(op_ia32_Const,         bemit_mov_const);
 	be_set_emitter(op_ia32_Conv_I2I,      bemit_conv_i2i);
 	be_set_emitter(op_ia32_Conv_I2I8Bit,  bemit_conv_i2i);

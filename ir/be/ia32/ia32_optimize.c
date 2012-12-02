@@ -161,13 +161,11 @@ static void peephole_ia32_Cmp(ir_node *const node)
 	ir_node  *const op           = get_irn_n(node, n_ia32_Cmp_left);
 	int       const ins_permuted = get_ia32_attr(node)->data.ins_permuted;
 
-	ir_node *test;
-	if (is_ia32_Cmp(node)) {
-		test = new_bd_ia32_Test(dbgi, block, noreg, noreg, nomem, op, op, ins_permuted);
-	} else {
-		test = new_bd_ia32_Test_8bit(dbgi, block, noreg, noreg, nomem, op, op, ins_permuted);
-	}
-	set_ia32_ls_mode(test, get_ia32_ls_mode(node));
+	ir_mode *const ls_mode = get_ia32_ls_mode(node);
+	ir_node *const test    = get_mode_size_bits(ls_mode) == 8
+		? new_bd_ia32_Test_8bit(dbgi, block, noreg, noreg, nomem, op, op, ins_permuted)
+		: new_bd_ia32_Test     (dbgi, block, noreg, noreg, nomem, op, op, ins_permuted);
+	set_ia32_ls_mode(test, ls_mode);
 
 	arch_register_t const *const reg = arch_get_irn_register_out(node, pn_ia32_Cmp_eflags);
 	arch_set_irn_register_out(test, pn_ia32_Test_eflags, reg);
@@ -1246,7 +1244,6 @@ void ia32_peephole_optimization(ir_graph *irg)
 	/* pass 1 */
 	ir_clear_opcodes_generic_func();
 	register_peephole_optimisation(op_ia32_Cmp,      peephole_ia32_Cmp);
-	register_peephole_optimisation(op_ia32_Cmp8Bit,  peephole_ia32_Cmp);
 	register_peephole_optimisation(op_ia32_Lea,      peephole_ia32_Lea);
 	if (ia32_cg_config.use_short_sex_eax)
 		register_peephole_optimisation(op_ia32_Conv_I2I, peephole_ia32_Conv_I2I);
