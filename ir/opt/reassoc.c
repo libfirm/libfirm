@@ -351,11 +351,6 @@ static int reassoc_commutative(ir_node **node)
 	return 0;
 }
 
-#define reassoc_Add  reassoc_commutative
-#define reassoc_And  reassoc_commutative
-#define reassoc_Or   reassoc_commutative
-#define reassoc_Eor  reassoc_commutative
-
 /**
  * Reassociate using commutative law for Mul and distributive law for Mul and Add/Sub:
  */
@@ -822,12 +817,12 @@ static void register_node_reassoc_func(ir_op *op, reassociate_func func)
 
 void ir_register_reassoc_node_ops(void)
 {
+	register_node_reassoc_func(op_Add, reassoc_commutative);
+	register_node_reassoc_func(op_And, reassoc_commutative);
+	register_node_reassoc_func(op_Eor, reassoc_commutative);
 	register_node_reassoc_func(op_Mul, reassoc_Mul);
-	register_node_reassoc_func(op_Add, reassoc_Add);
+	register_node_reassoc_func(op_Or,  reassoc_commutative);
 	register_node_reassoc_func(op_Sub, reassoc_Sub);
-	register_node_reassoc_func(op_And, reassoc_And);
-	register_node_reassoc_func(op_Or,  reassoc_Or);
-	register_node_reassoc_func(op_Eor, reassoc_Eor);
 	register_node_reassoc_func(op_Shl, reassoc_Shl);
 }
 
