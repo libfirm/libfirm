@@ -147,6 +147,17 @@ $status_flags_wo_cf = [       "PF", "AF", "ZF", "SF", "OF" ];
 $fpcw_flags         = [ "FP_IM", "FP_DM", "FP_ZM", "FP_OM", "FP_UM", "FP_PM",
                         "FP_PC0", "FP_PC1", "FP_RC0", "FP_RC1", "FP_X" ];
 
+my %binop_flags_constructors = (
+	"" => {
+	  reg_req => { in => [ "gp", "gp", "none", "gp", "gp" ],
+	              out => [ "flags", "none", "none" ] },
+	},
+	"8bit" => {
+	  reg_req => { in => [ "gp", "gp", "none", "eax ebx ecx edx", "eax ebx ecx edx" ],
+	              out => [ "flags", "none", "none" ] },
+	}
+);
+
 %nodes = (
 
 Immediate => {
@@ -822,28 +833,11 @@ XorHighLow => {
 Test => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ] ,
-	               out => [ "flags", "none", "none" ] },
+	constructors => \%binop_flags_constructors,
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	outs      => [ "eflags", "unused", "M" ],
 	am        => "source,binary",
 	emit      => 'test%M %B',
-	attr      => "bool ins_permuted",
-	init_attr => "attr->data.ins_permuted = ins_permuted;",
-	latency   => 1,
-	mode      => $mode_flags,
-	modified_flags => $status_flags
-},
-
-Test8Bit => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx", "eax ebx ecx edx" ] ,
-	               out => [ "flags", "none", "none" ] },
-	ins       => [ "base", "index", "mem", "left", "right" ],
-	outs      => [ "eflags", "unused", "M" ],
-	am        => "source,binary",
-	emit      => 'testb %B',
 	attr      => "bool ins_permuted",
 	init_attr => "attr->data.ins_permuted = ins_permuted;",
 	latency   => 1,

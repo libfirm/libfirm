@@ -3037,16 +3037,9 @@ static ir_node *gen_Cmp(ir_node *node)
 			cmp_mode = mode_is_signed(cmp_mode) ? mode_Is : mode_Iu;
 		}
 
-		if (get_mode_size_bits(cmp_mode) == 8) {
-			new_node = new_bd_ia32_Test8Bit(dbgi, new_block, addr->base,
-			                                addr->index, addr->mem,
-			                                am.new_op1, am.new_op2,
-			                                am.ins_permuted);
-		} else {
-			new_node = new_bd_ia32_Test(dbgi, new_block, addr->base,
-			                            addr->index, addr->mem, am.new_op1,
-			                            am.new_op2, am.ins_permuted);
-		}
+		new_node = get_mode_size_bits(cmp_mode) == 8
+			? new_bd_ia32_Test_8bit(dbgi, new_block, addr->base, addr->index, addr->mem, am.new_op1, am.new_op2, am.ins_permuted)
+			: new_bd_ia32_Test     (dbgi, new_block, addr->base, addr->index, addr->mem, am.new_op1, am.new_op2, am.ins_permuted);
 	} else {
 		/* Cmp(left, right) */
 		match_arguments(&am, block, left, right, NULL,
