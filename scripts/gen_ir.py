@@ -361,14 +361,49 @@ irnode_h_template = env.from_string(
 
 {% for node in nodes %}
 #define is_{{node.name}}(node)    is_{{node.name}}_(node)
+{%- for attr in node.attrs|hasnot("noprop") %}
+#define get_{{node.name}}_{{attr.name}}(node) get_{{node.name}}_{{attr.name}}_(node)
+#define set_{{node.name}}_{{attr.name}}(node, {{attr.name}}) set_{{node.name}}_{{attr.name}}_(node, {{attr.name}})
+{%- endfor -%}
+{%- for input in node.ins %}
+#define get_{{node.name}}_{{input[0]}}(node) get_{{node.name}}_{{input[0]}}_(node)
+#define set_{{node.name}}_{{input[0]}}(node, {{input[0]|escape_keywords}}) set_{{node.name}}_{{input[0]}}_(node, {{input[0]|escape_keywords}})
+{% endfor %}
 {%- endfor %}
 
-{%- for node in nodes|isnot('custom_is') %}
+{%- for node in nodes %}
 static inline int is_{{node.name}}_(const ir_node *node)
 {
 	return get_irn_op(node) == op_{{node.name}};
 }
-{%- endfor %}
+{%- for attr in node.attrs|hasnot("noprop") %}
+static inline {{attr.type}} get_{{node.name}}_{{attr.name}}_(const ir_node *node)
+{
+	assert(is_{{node.name}}(node));
+	return node->attr.{{node.attrs_name}}.{{attr.name}};
+}
+
+static inline void set_{{node.name}}_{{attr.name}}_(ir_node *node, {{attr.type}} {{attr.name}})
+{
+	assert(is_{{node.name}}(node));
+	node->attr.{{node.attrs_name}}.{{attr.name}} = {{attr.name}};
+}
+{% endfor -%}
+
+{%- for input in node.ins %}
+static inline ir_node *get_{{node.name}}_{{input[0]}}_(const ir_node *node)
+{
+	assert(is_{{node.name}}(node));
+	return get_irn_n(node, n_{{node.name}}_{{input[0]}});
+}
+
+static inline void set_{{node.name}}_{{input[0]}}_(ir_node *node, ir_node *{{input[0]|escape_keywords}})
+{
+	assert(is_{{node.name}}(node));
+	set_irn_n(node, n_{{node.name}}_{{input[0]}}, {{input[0]|escape_keywords}});
+}
+{% endfor %}
+{% endfor -%}
 ''')
 
 irnode_template = env.from_string(
@@ -378,36 +413,26 @@ int (is_{{node.name}})(const ir_node *node)
 {
 	return is_{{node.name}}_(node);
 }
-{% endfor %}
-
-{%- for node in nodes %}
 {%- for attr in node.attrs|hasnot("noprop") %}
 {{attr.type}} (get_{{node.name}}_{{attr.name}})(const ir_node *node)
 {
-	assert(is_{{node.name}}(node));
-	return node->attr.{{node.attrs_name}}.{{attr.name}};
+	return get_{{node.name}}_{{attr.name}}_(node);
 }
 
 void (set_{{node.name}}_{{attr.name}})(ir_node *node, {{attr.type}} {{attr.name}})
 {
-	assert(is_{{node.name}}(node));
-	node->attr.{{node.attrs_name}}.{{attr.name}} = {{attr.name}};
+	set_{{node.name}}_{{attr.name}}_(node, {{attr.name}});
 }
 {% endfor -%}
-{% endfor -%}
-
-{%- for node in nodes %}
 {%- for input in node.ins %}
 ir_node *(get_{{node.name}}_{{input[0]}})(const ir_node *node)
 {
-	assert(is_{{node.name}}(node));
-	return get_irn_n(node, n_{{node.name}}_{{input[0]}});
+	return get_{{node.name}}_{{input[0]}}(node);
 }
 
 void (set_{{node.name}}_{{input[0]}})(ir_node *node, ir_node *{{input[0]|escape_keywords}})
 {
-	assert(is_{{node.name}}(node));
-	set_irn_n(node, n_{{node.name}}_{{input[0]}}, {{input[0]|escape_keywords}});
+	set_{{node.name}}_{{input[0]}}_(node, {{input[0]|escape_keywords}});
 }
 {% endfor %}
 {% endfor %}

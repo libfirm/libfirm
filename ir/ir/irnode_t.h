@@ -64,7 +64,6 @@
 #define mark_Block_block_visited(node)        mark_Block_block_visited_(node)
 #define Block_block_visited(node)             Block_block_visited_(node)
 #define get_Block_irg(block)                  get_Block_irg_(block)
-#define get_Const_tarval(node)                get_Const_tarval_(node)
 #define is_Const_null(node)                   is_Const_null_(node)
 #define is_Const_one(node)                    is_Const_one_(node)
 #define is_Const_all_one(node)                is_Const_all_one_(node)
@@ -77,8 +76,6 @@
 #define is_irn_keep(node)                     is_irn_keep_(node)
 #define is_irn_start_block_placed(node)       is_irn_start_block_placed_(node)
 #define is_irn_cse_neutral(node)              is_irn_cse_neutral_(node)
-#define get_Cond_jmp_pred(node)               get_Cond_jmp_pred_(node)
-#define set_Cond_jmp_pred(node, pred)         set_Cond_jmp_pred_(node, pred)
 #define get_irn_generic_attr(node)            get_irn_generic_attr_(node)
 #define get_irn_generic_attr_const(node)      get_irn_generic_attr_const_(node)
 #define get_irn_idx(node)                     get_irn_idx_(node)
@@ -148,9 +145,6 @@ static inline ir_op *get_irn_op_(const ir_node *node)
 	return node->op;
 }
 
-/* include generated code */
-#include "gen_irnode.h"
-
 static inline void set_irn_op_(ir_node *node, ir_op *op)
 {
 	node->op = op;
@@ -186,6 +180,10 @@ static inline int get_irn_arity_(const ir_node *node)
 	return (int)(ARR_LEN(node->in) - 1);
 }
 
+/* forward decl... */
+#define is_Id(node) is_Id_(node)
+static inline int is_Id_(const ir_node *node);
+
 /**
  * Intern version for libFirm.
  */
@@ -200,6 +198,9 @@ static inline ir_node *get_irn_n_(const ir_node *node, int n)
 
 	return (node->in[n + 1] = skip_Id(nn));
 }
+
+/* include generated code */
+#include "gen_irnode.h"
 
 /**
  * returns a hash value for a node
@@ -440,12 +441,6 @@ static inline int Block_block_visited_(const ir_node *node)
 	return node->attr.block.block_visited >= get_irg_block_visited(irg);
 }
 
-static inline ir_tarval *get_Const_tarval_(const ir_node *node)
-{
-	assert(is_Const(node));
-	return node->attr.con.tarval;
-}
-
 static inline int is_Const_null_(const ir_node *node)
 {
 	return tarval_is_null(get_Const_tarval_(node));
@@ -494,18 +489,6 @@ static inline int is_irn_start_block_placed_(const ir_node *node)
 static inline int is_irn_cse_neutral_(const ir_node *node)
 {
 	return is_op_cse_neutral(get_irn_op_(node));
-}
-
-static inline cond_jmp_predicate get_Cond_jmp_pred_(const ir_node *node)
-{
-	assert(is_Cond(node));
-	return node->attr.cond.jmp_pred;
-}
-
-static inline void set_Cond_jmp_pred_(ir_node *node, cond_jmp_predicate pred)
-{
-	assert(is_Cond(node));
-	node->attr.cond.jmp_pred = pred;
 }
 
 static inline void *get_irn_generic_attr_(ir_node *node)
