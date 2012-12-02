@@ -55,8 +55,6 @@
 #define is_irn_pinned_in_irg(node)            is_irn_pinned_in_irg_(node)
 #define is_unop(node)                         is_unop_(node)
 #define is_binop(node)                        is_binop_(node)
-#define is_Proj(node)                         is_Proj_(node)
-#define is_Phi(node)                          is_Phi_(node)
 #define is_SymConst_addr_ent(node)            is_SymConst_addr_ent_(node)
 #define get_Block_n_cfgpreds(node)            get_Block_n_cfgpreds_(node)
 #define get_Block_cfgpred(node, pos)          get_Block_cfgpred_(node, pos)
