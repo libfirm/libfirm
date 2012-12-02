@@ -1784,10 +1784,11 @@ static unsigned char pnc2cc(ia32_condition_code_t cc)
 	return cc & 0xf;
 }
 
-/** Sign extension bit values for binops */
-enum SignExt {
-	UNSIGNED_IMM = 0,  /**< unsigned immediate */
-	SIGNEXT_IMM  = 2,  /**< sign extended immediate */
+enum OpSize {
+	OP_8          = 0x00, /* 8bit operation. */
+	OP_16_32      = 0x01, /* 16/32bit operation. */
+	OP_IMM8       = 0x02, /* 8bit immediate, which gets sign extended for 16/32bit operation. */
+	OP_16_32_IMM8 = 0x03, /* 16/32bit operation with sign extended 8bit immediate. */
 };
 
 /** The mod encoding of the ModR/M */
@@ -2049,7 +2050,7 @@ static void bemit_binop_with_imm(
 
 	/* Some instructions (test) have no short form with 32bit value + 8bit
 	 * immediate. */
-	if (attr->symconst != NULL || opcode & SIGNEXT_IMM) {
+	if (attr->symconst != NULL || opcode & OP_IMM8) {
 		size = 4;
 	} else {
 		/* check for sign extension */
@@ -2058,7 +2059,7 @@ static void bemit_binop_with_imm(
 
 	switch (size) {
 	case 1:
-		bemit8(opcode | SIGNEXT_IMM);
+		bemit8(opcode | OP_16_32_IMM8);
 		/* cmp has this special mode */
 		if (get_ia32_op_type(node) == ia32_Normal) {
 			const arch_register_t *reg = arch_get_irn_register_in(node, n_ia32_binary_left);
@@ -2542,7 +2543,7 @@ static void bemit_cmp(const ir_node *node)
 
 		switch (size) {
 			case 1:
-				bemit8(0x81 | SIGNEXT_IMM);
+				bemit8(0x80 | OP_16_32_IMM8);
 				/* cmp has this special mode */
 				if (get_ia32_op_type(node) == ia32_Normal) {
 					const arch_register_t *reg = arch_get_irn_register_in(node, n_ia32_binary_left);
