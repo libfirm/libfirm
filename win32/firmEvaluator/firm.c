@@ -53,7 +53,7 @@ static void debug(char *fmt, ...)
 
   OutputDebugString(buf);
   va_end(ap);
-}  /* debug */
+}
 
 /**
  * return the size of a firm object
@@ -82,7 +82,7 @@ int get_firm_object_size(firm_kind kind)
   default:
     return 0;
   }
-}  /* get_firm_object_size */
+}
 
 /**
  * returns the string length of a string in debuggee space
@@ -103,7 +103,7 @@ static int strlen_debuggee(DEBUGHELPER *pHelper, const void *address, size_t max
       return i;
   }
   return i;
-}  /* strlen_debuggee */
+}
 
 /**
  * Format an ident
@@ -131,7 +131,7 @@ HRESULT format_ident(DEBUGHELPER *pHelper, const void *address, char *pResult, s
 
   _tcsncpy(pResult, (const char *)data->dptr, max);
   return S_OK;
-}  /* format_ident */
+}
 
 /**
  * Format a tp_op
@@ -163,7 +163,7 @@ static HRESULT format_tp_op(DEBUGHELPER *pHelper, const void *addr, char *pResul
   }
 #undef X
 #undef Y
-}  /* format_tp_op */
+}
 
 /**
  * Checks whether a type is the global type
@@ -180,7 +180,7 @@ static HRESULT is_global_type(DEBUGHELPER *pHelper, const void *type, int *flag)
 
   *flag = tp.flags & tf_global_type;
   return S_OK;
-}  /* is_global_type */
+}
 
 /**
  * format an entity
@@ -228,7 +228,7 @@ static HRESULT format_entity(DEBUGHELPER *pHelper, int nBase, const void *addr, 
   _tcsncat(pResult, name, max);
 
   return S_OK;
-}  /* format_entity */
+}
 
 /**
  * format an ir_mode
@@ -242,7 +242,7 @@ static HRESULT format_mode(DEBUGHELPER *pHelper, const void *addr, char *pResult
   if (format_ident(pHelper, mode.name, pResult, max) != S_OK)
     return E_FAIL;
   return S_OK;
-}  /* format_mode */
+}
 
 /**
  * format a type
@@ -286,7 +286,7 @@ static HRESULT format_type(DEBUGHELPER *pHelper, int nBase, const void *addr, ch
   _tcsncat(pResult, name, max);
 
   return S_OK;
-}  /* format_type */
+}
 
 /**
  * format an irg
@@ -339,7 +339,7 @@ static HRESULT format_irg(DEBUGHELPER *pHelper, int nBase, const void *addr, cha
   }
   _tcsncat(pResult, name, max);
   return S_OK;
-}  /* format_irg */
+}
 
 /**
  * format an ir_op
@@ -353,7 +353,7 @@ HRESULT format_op(DEBUGHELPER *pHelper, const void *addr, char *pResult, size_t 
   if (format_ident(pHelper, op.name, pResult, max) != S_OK)
     return E_FAIL;
   return S_OK;
-}  /* format_op */
+}
 
 /** get a temporary string */
 #define get_string(str)                                         \
@@ -473,7 +473,7 @@ static HRESULT format_tarval(DEBUGHELPER *pHelper, int nBase, const void *addr, 
     }
   }
   return S_OK;
-}  /* format_tarval */
+}
 
 /**
  * format an ir_node
@@ -589,7 +589,7 @@ static HRESULT format_node(DEBUGHELPER *pHelper, int nBase, const void *addr, ch
   _tcsncat(pResult, name, max);
 
   return S_OK;
-}  /* format_node */
+}
 
 /**
  * format a loop
@@ -601,7 +601,7 @@ static HRESULT format_loop(DEBUGHELPER *pHelper, const void *addr, char *pResult
   if (copy_from_debuggee(addr, pHelper, &loop, sizeof(loop)) != S_OK)
     return E_FAIL;
   return E_FAIL;
-}  /* format_loop */
+}
 
 /**
  * Get an array descriptor
@@ -613,7 +613,7 @@ static HRESULT get_array_desc(DEBUGHELPER *pHelper, const void *address, ir_arr_
     return E_FAIL;
 
   return S_OK;
-}  /* get_array_desc */
+}
 
 /**
  * format a ir_prog
@@ -653,7 +653,7 @@ static HRESULT format_prog(DEBUGHELPER *pHelper, int nBase, const void *addr, ch
   _tcsncpy(pResult, name, max);
 
   return S_OK;
-}  /* format_prog */
+}
 
 /*
  * Format an array descriptor
@@ -690,7 +690,7 @@ HRESULT format_arr_descr(DEBUGHELPER *pHelper, int nBase, const void *addr, char
   _tcsncat(pResult, name, max);
 
   return S_OK;
-}  /* format_arr_descr */
+}
 
 /*
  * format a firm object
@@ -719,7 +719,7 @@ HRESULT FormatFirmObject(DEBUGHELPER *pHelper, int nBase, firm_kind kind, const 
   default:
     return E_FAIL;
   }
-}  /* FormatFirmObject */
+}
 
 #define SEGMENT_SIZE_SHIFT	8
 #define SEGMENT_SIZE		(1 << SEGMENT_SIZE_SHIFT)
@@ -803,7 +803,7 @@ static HRESULT find_longest_pset_chain(DEBUGHELPER *pHelper, pset *set,
   *lenght = max_len;
   *size   = dyns;
   return S_OK;
-}  /* find_longest_pset_chain */
+}
 
 /**
  * Find the longest chain of a set
@@ -844,7 +844,7 @@ static HRESULT find_longest_set_chain(DEBUGHELPER *pHelper, set *set,
   *lenght = max_len;
   *size   = dyns;
   return S_OK;
-}  /* find_longest_set_chain */
+}
 
 /*
  * Format a pset
@@ -875,7 +875,7 @@ HRESULT format_pset(DEBUGHELPER *pHelper, int nBase, const void *address, char *
   _tcsncpy(pResult, name, max);
 
   return S_OK;
-}  /* format_pset */
+}
 
 /*
  * Format a set
@@ -906,7 +906,7 @@ HRESULT format_set(DEBUGHELPER *pHelper, int nBase, const void *address, char *p
   _tcsncpy(pResult, name, max);
 
   return S_OK;
-}  /* format_set */
+}
 
 struct pdeq {
   unsigned magic;       /**< debug magic, only available in DEBUG builds */
@@ -943,7 +943,7 @@ static int get_pdeq_len(DEBUGHELPER *pHelper, pdeq *dq)
   };
 
   return n;
-}  /* get_pdeq_len */
+}
 
 /*
  * Format a pdeq
@@ -974,7 +974,7 @@ HRESULT format_pdeq(DEBUGHELPER *pHelper, int nBase, const void *address, char *
   _tcsncpy(pResult, name, max);
 
   return S_OK;
-}  /* format_pdeq */
+}
 
 /** show the first 2 units */
 static HRESULT fill_bits(DEBUGHELPER *pHelper, bitset_t *bs, char *pResult)
@@ -1008,7 +1008,7 @@ end:
   }
   sprintf(pResult + l, "}");
   return S_OK;
-}  /* fill_bits */
+}
 
 /*
  * Format a bitset
@@ -1041,4 +1041,4 @@ HRESULT format_bitset(DEBUGHELPER *pHelper, int nBase, const void *address, char
   _tcsncpy(pResult, name, max);
 
   return S_OK;
-}  /* format_bitset */
+}

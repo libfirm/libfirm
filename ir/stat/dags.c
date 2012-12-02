@@ -84,9 +84,9 @@ static dag_entry_t *get_irn_dag_entry(const ir_node *n)
 			/* hacky cast to ir_node* */
 			set_irn_link((ir_node*)n, p);
 		}
-	}  /* if */
+	}
 	return p;
-}  /* get_irn_dag_entry */
+}
 
 #define set_irn_dag_entry(n, e) set_irn_link(n, e)
 
@@ -104,7 +104,7 @@ static int is_arg(ir_node *node)
 
 	node = get_Proj_pred(node);
 	return is_Start(node);
-}  /* is_arg */
+}
 
 /**
  * Allocate a new DAG entry.
@@ -128,7 +128,7 @@ static dag_entry_t *new_dag_entry(dag_env_t *dag_env, ir_node *node)
 
 	set_irn_dag_entry(node, entry);
 	return entry;
-}  /* new_dag_entry */
+}
 
 /**
  * Post-walker to detect DAG roots that are referenced form other blocks
@@ -162,7 +162,7 @@ static void find_dag_roots(ir_node *node, void *env)
 				if (dag_env->options & FIRMSTAT_COPY_CONSTANTS) {
 					if (is_irn_constlike(prev))
 						continue;
-				}  /* if */
+				}
 
 				entry = get_irn_dag_entry(prev);
 
@@ -170,9 +170,9 @@ static void find_dag_roots(ir_node *node, void *env)
 					/* found an unassigned node, a new root */
 					entry = new_dag_entry(dag_env, node);
 					entry->is_ext_ref = 1;
-				}  /* if */
-			}  /* for */
-		}  /* if */
+				}
+			}
+		}
 	} else {
 
 		for (i = 0, arity = get_irn_arity(node); i < arity; ++i) {
@@ -188,7 +188,7 @@ static void find_dag_roots(ir_node *node, void *env)
 				if (dag_env->options & FIRMSTAT_COPY_CONSTANTS) {
 					if (is_irn_constlike(prev))
 						continue;
-				}  /* if */
+				}
 
 				if (get_nodes_block(prev) != block) {
 					/* The predecessor is from another block. It forms
@@ -198,11 +198,11 @@ static void find_dag_roots(ir_node *node, void *env)
 						/* found an unassigned node, a new root */
 						entry = new_dag_entry(dag_env, node);
 						entry->is_ext_ref = 1;
-					}  /* if */
-				}  /* if */
-			}  /* for */
-	}  /* if */
-}  /* find_dag_roots */
+					}
+				}
+			}
+	}
+}
 
 /**
  * Pre-walker for connecting DAGs and counting.
@@ -236,7 +236,7 @@ static void connect_dags(ir_node *node, void *env)
 	if (mode == mode_X || mode == mode_M) {
 		/* do NOT count mode_X and mode_M nodes */
 		return;
-	}  /* if */
+	}
 
 	/* if this option is set, Loads are always leaves */
 	if (dag_env->options & FIRMSTAT_LOAD_IS_LEAVE && is_Load(node))
@@ -250,7 +250,7 @@ static void connect_dags(ir_node *node, void *env)
 	if (! entry) {
 		/* found an unassigned node, maybe a new root */
 		entry = new_dag_entry(dag_env, node);
-	}  /* if */
+	}
 
 	/* put the predecessors into the same DAG as the current */
 	for (i = 0, arity = get_irn_arity(node); i < arity; ++i) {
@@ -272,8 +272,8 @@ static void connect_dags(ir_node *node, void *env)
 			if (is_irn_constlike(prev)) {
 				++entry->num_nodes;
 				++entry->num_inner_nodes;
-			}  /* if */
-		}  /* if */
+			}
+		}
 
 		/* only nodes from the same block goes into the DAG */
 		if (get_nodes_block(prev) == block) {
@@ -301,11 +301,11 @@ static void connect_dags(ir_node *node, void *env)
 
 					prev_entry->is_dead = 1;
 					prev_entry->link    = entry;
-				}  /* if */
-			}  /* if */
-		}  /* if */
-	}  /* for */
-}  /* connect_dags */
+				}
+			}
+		}
+	}
+}
 
 #define DEFAULT_RET     1
 #define COLOR_RET       1
@@ -331,7 +331,7 @@ static int stat_dag_mark_hook(FILE *F, const ir_node *n, const ir_node *l)
 
 		if (mark_options & FIRMSTAT_CALL_IS_LEAVE && is_Call(n))
 			return DEFAULT_RET;
-	}  /* if */
+	}
 
 	entry = get_irn_dag_entry(n);
 	if (! entry)
@@ -341,7 +341,7 @@ static int stat_dag_mark_hook(FILE *F, const ir_node *n, const ir_node *l)
 
 	/* I know the color! */
 	return COLOR_RET;
-}  /* stat_dag_mark_hook */
+}
 
 /**
  * count the DAG's size of a graph
@@ -388,7 +388,7 @@ void count_dags_in_graph(graph_entry_t *global, graph_entry_t *graph)
 			entry->num_inner_nodes,
 			(unsigned)entry->is_tree,
 			get_irn_node_nr(entry->root));
-	}  /* for */
+	}
 
 #if 1
 	/* dump for test */
@@ -401,4 +401,4 @@ void count_dags_in_graph(graph_entry_t *global, graph_entry_t *graph)
 	assert(id == root_env.num_of_dags);
 
 	obstack_free(&root_env.obst, NULL);
-}  /* count_dags_in_graph */
+}

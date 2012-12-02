@@ -84,7 +84,7 @@ static void vcg_dump_start(pattern_dumper_t *self)
 		"  port_sharing: no\n"
 		"  orientation: bottom_to_top\n"
 		);
-}  /* vcg_dump_start */
+}
 
 /**
  * Ends a new VCG graph.
@@ -95,7 +95,7 @@ static void vcg_dump_end(pattern_dumper_t *self)
 
 	fprintf(priv->f, "}\n");
 	fclose(priv->f);
-}  /* vcg_dump_end */
+}
 
 /**
  * Starts a new pattern.
@@ -117,7 +117,7 @@ static void vcg_dump_new_pattern(pattern_dumper_t *self, counter_t *cnt)
 		"    node: {title: \"c%u\" label: \"cnt: %u\" color:red }\n",
 		++nr, cnt_to_uint(cnt)
 	);
-}  /* vcg_dump_new_pattern */
+}
 
 /**
  * Finish the current pattern.
@@ -137,7 +137,7 @@ static void vcg_dump_finish_pattern(pattern_dumper_t *self)
 			priv->pattern_id - 1);
 
 	++priv->pattern_id;
-}  /* vcg_dump_finish_pattern */
+}
 
 /**
  * Dumps a node.
@@ -159,8 +159,8 @@ static void vcg_dump_node(pattern_dumper_t *self, unsigned id,
 	} else {
 		fprintf(priv->f, "    node: {title: \"n%u_%u\" label: \"%s%s n%u\" }\n",
 			priv->pattern_id, id, get_id_str(op->name), mode ? get_mode_name(mode) : "", id);
-	}  /* if */
-}  /* vcg_dump_node */
+	}
+}
 
 /**
  * Dumps an edge.
@@ -178,7 +178,7 @@ static void vcg_dump_edge(pattern_dumper_t *self, unsigned tgt, unsigned src, un
 		priv->pattern_id, tgt,
 		pos
 	);
-}  /* vcg_dump_edge */
+}
 
 /**
  * The VCG dumper.
@@ -204,7 +204,7 @@ static void stdout_dump_new_pattern(pattern_dumper_t *self, counter_t *cnt)
 	FILE *f = (FILE*)self->data;
 
 	fprintf(f, "%8u ", cnt_to_uint(cnt));
-}  /* stdout_dump_new_pattern */
+}
 
 
 /**
@@ -215,7 +215,7 @@ static void stdout_dump_finish_pattern(pattern_dumper_t *self)
 	FILE *f = (FILE*)self->data;
 
 	fprintf(f, "\n");
-}  /* stdout_dump_finish_pattern */
+}
 
 /**
  * Dumps a node.
@@ -234,7 +234,7 @@ static void stdout_dump_node(pattern_dumper_t *self, unsigned id, unsigned op_co
 
 	if (mode)
 		fprintf(f, "%s", get_mode_name(mode));
-}  /* stdout_dump_node */
+}
 
 /**
  * Dump a ref
@@ -244,7 +244,7 @@ static void stdout_dump_ref(pattern_dumper_t *self, unsigned id)
 	FILE *f = (FILE*)self->data;
 
 	fprintf(f, "REF:%u", id);
-}  /* stdout_dump_ref */
+}
 
 /**
  * Dump an edge.
@@ -259,7 +259,7 @@ static void stdout_dump_edge(pattern_dumper_t *self, unsigned tgt, unsigned src,
 
 	if (pos > 0)
 		fprintf(f, ", ");
-}  /* stdout_dump_edge */
+}
 
 /**
  * Start the children dumper.
@@ -270,7 +270,7 @@ static void stdout_start_children(pattern_dumper_t *self, unsigned id)
 	(void) id;
 
 	fprintf(f, "(");
-}  /* stdout_start_children */
+}
 
 /**
  * Finish the children dumper.
@@ -281,7 +281,7 @@ static void stdout_finish_children(pattern_dumper_t *self, unsigned id)
 	(void) id;
 
 	fprintf(f, ")");
-}  /* stdout_finish_children */
+}
 
 /**
  * The stdout dumper.
@@ -308,7 +308,7 @@ void pattern_dump_new_pattern(pattern_dumper_t *self, counter_t *cnt)
 {
 	if (self->dump_new_pattern)
 		self->dump_new_pattern(self, cnt);
-}  /* pattern_dump_new_pattern */
+}
 
 
 /*
@@ -318,7 +318,7 @@ void pattern_dump_finish_pattern(pattern_dumper_t *self)
 {
 	if (self->dump_finish_pattern)
 		self->dump_finish_pattern(self);
-}  /* pattern_dump_finish_pattern */
+}
 
 
 /*
@@ -328,7 +328,7 @@ void pattern_dump_node(pattern_dumper_t *self, unsigned id, unsigned op_code, un
 {
 	if (self->dump_node)
 		self->dump_node(self, id, op_code, mode_code, attr);
-}  /* pattern_dump_node */
+}
 
 /*
  * Dump a ref.
@@ -337,7 +337,7 @@ void pattern_dump_ref(pattern_dumper_t *self, unsigned id)
 {
 	if (self->dump_ref)
 		self->dump_ref(self, id);
-}  /* pattern_dump_ref */
+}
 
 /*
  * Dump an edge.
@@ -346,7 +346,7 @@ void pattern_dump_edge(pattern_dumper_t *self, unsigned tgt, unsigned src, unsig
 {
 	if (self->dump_edge)
 		self->dump_edge(self, tgt, src, pos, mode_code);
-}  /* pattern_dump_edge */
+}
 
 /*
  * Start the children dumper.
@@ -355,7 +355,7 @@ void pattern_start_children(pattern_dumper_t *self, unsigned id)
 {
 	if (self->dump_start_children)
 		self->dump_start_children(self, id);
-}  /* pattern_start_children */
+}
 
 /*
  * Finish the the children dumper.
@@ -364,7 +364,7 @@ void pattern_finish_children(pattern_dumper_t *self, unsigned id)
 {
 	if (self->dump_finish_children)
 		self->dump_finish_children(self, id);
-}  /* pattern_finish_children */
+}
 
 /*
  * Finish the the dumper.
@@ -375,7 +375,7 @@ void pattern_end(pattern_dumper_t *self)
 		self->dump_end(self);
 
 	free(self);
-}  /* pattern_end */
+}
 
 /**
  * pattern dumper factory for text dumper
@@ -390,7 +390,7 @@ pattern_dumper_t *new_text_dumper(void)
 	if (res->dump_start)
 		res->dump_start(res);
 	return res;
-}  /* new_text_dumper */
+}
 
 /**
  * pattern dumper factory for vcg dumper
@@ -416,7 +416,7 @@ pattern_dumper_t *new_vcg_dumper(const char *vcg_name, unsigned max_pattern)
 
 		if (res->dump_start)
 			res->dump_start(res);
-	}  /* if */
+	}
 
 	return res;
-}  /* new_vcg_dumper */
+}

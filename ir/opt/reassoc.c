@@ -76,7 +76,7 @@ static const_class_t get_const_class(const ir_node *n, const ir_node *block)
 		return REGION_CONST;
 
 	return NO_CONSTANT;
-}  /* get_const_class */
+}
 
 /**
  * returns the operands of a commutative bin-op, if one operand is
@@ -119,7 +119,7 @@ static void get_comm_Binop_ops(ir_node *binop, ir_node **a, ir_node **c)
 		*c = op_b;
 		break;
 	}
-}  /* get_comm_Binop_ops */
+}
 
 /**
  * reassociate a Sub: x - c = x + (-c)
@@ -181,7 +181,7 @@ static int reassoc_Sub(ir_node **in)
 		return 1;
 	}
 	return 0;
-}  /* reassoc_Sub */
+}
 
 /** Retrieve a mode from the operands. We need this, because
  * Add and Sub are allowed to operate on (P, Is)
@@ -201,7 +201,7 @@ static ir_mode *get_mode_from_ops(ir_node *op1, ir_node *op2)
 	assert(m1 == m2);
 
 	return m1;
-}  /* get_mode_from_ops */
+}
 
 /**
  * reassociate a commutative Binop
@@ -349,7 +349,7 @@ static int reassoc_commutative(ir_node **node)
 		}
 	}
 	return 0;
-}  /* reassoc_commutative */
+}
 
 #define reassoc_Add  reassoc_commutative
 #define reassoc_And  reassoc_commutative
@@ -408,7 +408,7 @@ static int reassoc_Mul(ir_node **node)
 		}
 	}
 	return 0;
-}  /* reassoc_Mul */
+}
 
 /**
  * Reassociate Shl. We transform Shl(x, const) into Mul's if possible.
@@ -445,7 +445,7 @@ static int reassoc_Shl(ir_node **node)
 		return 1;
 	}
 	return 0;
-}  /* reassoc_Shl */
+}
 
 /**
  * The walker for the reassociation.
@@ -459,7 +459,7 @@ static void wq_walker(ir_node *n, void *env)
 		waitq_put(wq, n);
 		set_irn_link(n, wq);
 	}
-}  /* wq_walker */
+}
 
 /**
  * The walker for the reassociation.
@@ -506,7 +506,7 @@ static void do_reassociation(waitq *const wq)
 			}
 		}
 	}
-}  /* do_reassociation */
+}
 
 /**
  * Returns the earliest were a,b are available.
@@ -529,7 +529,7 @@ static ir_node *earliest_block(ir_node *a, ir_node *b, ir_node *curr_blk)
 	if (res == get_irg_start_block(get_irn_irg(curr_blk)))
 		return curr_blk;
 	return res;
-}  /* earliest_block */
+}
 
 /**
  * Checks whether a node is a Constant expression.
@@ -560,7 +560,7 @@ static int is_constant_expr(ir_node *irn)
 	default:
 		return 0;
 	}
-}  /* is_constant_expr */
+}
 
 /**
  * Apply distributive Law for Mul and Add/Sub
@@ -643,7 +643,7 @@ transform:
 	exchange(n, irn);
 	*node = irn;
 	return 1;
-}  /* reverse_rule_distributive */
+}
 
 /**
  * Move Constants towards the root.
@@ -747,7 +747,7 @@ transform:
 	exchange(n, irn);
 	*node = irn;
 	return 1;
-}  /* move_consts_up */
+}
 
 /**
  * Apply the rules in reverse order, removing code that was not collapsed
@@ -807,13 +807,13 @@ void optimize_reassociation(ir_graph *irg)
 	del_waitq(wq);
 
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW);
-}  /* optimize_reassociation */
+}
 
 /* create a pass for the reassociation */
 ir_graph_pass_t *optimize_reassociation_pass(const char *name)
 {
 	return def_graph_pass(name ? name : "reassoc", optimize_reassociation);
-}  /* optimize_reassociation_pass */
+}
 
 static void register_node_reassoc_func(ir_op *op, reassociate_func func)
 {
@@ -835,4 +835,4 @@ void ir_register_reassoc_node_ops(void)
 void firm_init_reassociation(void)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.opt.reassoc");
-}  /* firm_init_reassociation */
+}

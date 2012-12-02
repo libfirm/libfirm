@@ -169,7 +169,7 @@ static void dump_block_list(ldst_env *env)
 		}
 		DB((dbg, LEVEL_2, "\n}\n\n"));
 	}
-}  /* dump_block_list */
+}
 
 /**
  * Dumps the current set.
@@ -196,7 +196,7 @@ static void dump_curr(block_t *bl, const char *s)
 		i = (i + 1) & 3;
 	}
 	DB((dbg, LEVEL_2, "\n}\n"));
-}  /* dump_curr */
+}
 
 #else
 static void dump_block_list(ldst_env *env)
@@ -216,14 +216,14 @@ static block_t *get_block_entry(const ir_node *block)
 	assert(is_Block(block));
 
 	return (block_t*)get_irn_link(block);
-}  /* get_block_entry */
+}
 
 /** Get the memop entry for a memory operation node */
 static memop_t *get_irn_memop(const ir_node *irn)
 {
 	assert(! is_Block(irn));
 	return (memop_t*)get_irn_link(irn);
-}  /* get_irn_memop */
+}
 
 /**
  * Walk over the memory edges from definition to users.
@@ -263,7 +263,7 @@ static void walk_memory(ir_node *irn, irg_walk_func *pre, irg_walk_func *post, v
 	}
 	if (post)
 		post(irn, ctx);
-}  /* walk_memory */
+}
 
 /**
  * Walks over all memory nodes of a graph.
@@ -286,7 +286,7 @@ static void walk_memory_irg(ir_graph *irg, irg_walk_func pre, irg_walk_func post
 	walk_memory(get_irg_initial_mem(irg), pre, post, ctx);
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
-}  /* walk_memory_irg */
+}
 
 /**
  * Register an address and allocate a (sparse, 0..n) ID for it.
@@ -325,7 +325,7 @@ restart:
 #endif
 	}
 	return entry->id;
-}  /* register_address */
+}
 
 
 /**
@@ -341,7 +341,7 @@ static ir_node *phi_translate(ir_node *address, const ir_node *block, int pos)
 	if (is_Phi(address) && get_nodes_block(address) == block)
 		address = get_Phi_pred(address, pos);
 	return address;
-}  /* phi_translate */
+}
 
 /**
  * Walker: allocate an block entry for every block
@@ -388,7 +388,7 @@ static void prepare_blocks(ir_node *irn, void *ctx)
 			(void)register_address(irn);
 		}
 	}
-}  /* prepare_blocks */
+}
 
 /**
  * Post-Walker, link in all Phi's
@@ -401,7 +401,7 @@ static void link_phis(ir_node *irn, void *ctx)
 		ir_node *block = get_nodes_block(irn);
 		add_Block_phi(block, irn);
 	}
-}  /* link_phis */
+}
 
 /**
  * Block walker: creates the inverse post-order list for the CFG.
@@ -422,7 +422,7 @@ static void inverse_post_order(ir_node *block, void *ctx)
 	/* remember the first visited (last in list) entry, needed for later */
 	if (env.backward == NULL)
 		env.backward = entry;
-}  /* inverse_post_order */
+}
 
 /**
  * Block walker: create backward links for the memops of a block.
@@ -453,7 +453,7 @@ static void collect_backward(ir_node *block, void *ctx)
 		last     = op;
 	}
 	entry->memop_backward = last;
-}  /* collect_backward */
+}
 
 /**
  * Allocate a memop.
@@ -482,7 +482,7 @@ static memop_t *alloc_memop(ir_node *irn)
 	if (irn != NULL)
 		set_irn_link(irn, m);
 	return m;
-}  /* alloc_memop */
+}
 
 /**
  * Create a memop for a Phi-replacement.
@@ -504,7 +504,7 @@ static memop_t *clone_memop_phi(memop_t *op, ir_node *phi)
 
 	set_irn_link(phi, m);
 	return m;
-}  /* clone_memop_phi */
+}
 
 /**
  * Return the memory properties of a call node.
@@ -530,7 +530,7 @@ static unsigned get_Call_memory_properties(ir_node *call)
 		}
 	}
 	return prop & (mtp_property_const|mtp_property_pure);
-}  /* get_Call_memory_properties */
+}
 
 /**
  * Returns an entity if the address ptr points to a constant one.
@@ -618,7 +618,7 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 		} else
 			return NULL;
 	}
-}  /* find_constant_entity */
+}
 
 /**
  * Return the Selection index of a Sel node from dimension n
@@ -628,7 +628,7 @@ static long get_Sel_array_index_long(ir_node *n, int dim)
 	ir_node *index = get_Sel_index(n, dim);
 	assert(is_Const(index));
 	return get_tarval_long(get_Const_tarval(index));
-}  /* get_Sel_array_index_long */
+}
 
 typedef struct path_entry {
 	ir_entity         *ent;
@@ -811,12 +811,12 @@ ptr_arith:
 		goto ptr_arith;
 	}
 	return NULL;
-}  /* rec_find_compound_ent_value */
+}
 
 static ir_node *find_compound_ent_value(ir_node *ptr)
 {
 	return rec_find_compound_ent_value(ptr, NULL);
-}  /* find_compound_ent_value */
+}
 
 /**
  * Mark a Load memop to be replace by a definition
@@ -828,7 +828,7 @@ static void mark_replace_load(memop_t *op, ir_node *def)
 	op->replace = def;
 	op->flags |= FLAG_KILLED_NODE;
 	env.changed = 1;
-}  /* mark_replace_load */
+}
 
 /**
  * Mark a Store memop to be removed.
@@ -839,7 +839,7 @@ static void mark_remove_store(memop_t *op)
 {
 	op->flags |= FLAG_KILLED_NODE;
 	env.changed = 1;
-}  /* mark_remove_store */
+}
 
 /**
  * Update a memop for a Load.
@@ -934,7 +934,7 @@ static void update_Load_memop(memop_t *m)
 		/* no user, KILL it */
 		mark_replace_load(m, NULL);
 	}
-}  /* update_Load_memop */
+}
 
 /**
  * Update a memop for a Store.
@@ -981,7 +981,7 @@ static void update_Store_memop(memop_t *m)
 	}
 	m->value.value = get_Store_value(store);
 	m->value.mode  = get_irn_mode(m->value.value);
-}  /* update_Store_memop */
+}
 
 /**
  * Update a memop for a Call.
@@ -1018,7 +1018,7 @@ static void update_Call_memop(memop_t *m)
 			break;
 		}
 	}
-}  /* update_Call_memop */
+}
 
 /**
  * Update a memop for a Div/Mod.
@@ -1078,7 +1078,7 @@ static void update_Phi_memop(memop_t *m)
 {
 	/* the Phi is its own mem */
 	m->mem = m->node;
-}  /* update_Phi_memop */
+}
 
 /**
  * Memory walker: collect all memory ops and build topological lists.
@@ -1154,7 +1154,7 @@ static void collect_memops(ir_node *irn, void *ctx)
 			entry->memop_backward       = op;
 		}
 	}
-}  /* collect_memops */
+}
 
 /**
  * Find an address in the current set.
@@ -1179,7 +1179,7 @@ static memop_t *find_address(const value_t *value)
 			return res;
 	}
 	return NULL;
-}  /* find_address */
+}
 
 /**
  * Find an address in the avail_out set.
@@ -1200,7 +1200,7 @@ static memop_t *find_address_avail(const block_t *bl, unsigned id, const ir_mode
 			return res;
 	}
 	return NULL;
-}  /* find_address_avail */
+}
 
 /**
  * Kill all addresses from the current set.
@@ -1211,7 +1211,7 @@ static void kill_all(void)
 
 	/* set sentinel */
 	rbitset_set(env.curr_set, env.rbs_size - 1);
-}  /* kill_all */
+}
 
 /**
  * Kill memops that are not alias free due to a Store value from the current set.
@@ -1233,7 +1233,7 @@ static void kill_memops(const value_t *value)
 			DB((dbg, LEVEL_2, "KILLING %+F because of possible alias address %+F\n", op->node, value->address));
 		}
 	}
-}  /* kill_memops */
+}
 
 /**
  * Add the value of a memop to the current set.
@@ -1244,7 +1244,7 @@ static void add_memop(memop_t *op)
 {
 	rbitset_set(env.curr_set, op->value.id);
 	env.curr_id_2_memop[op->value.id] = op;
-}  /* add_memop */
+}
 
 /**
  * Add the value of a memop to the avail_out set.
@@ -1256,7 +1256,7 @@ static void add_memop_avail(block_t *bl, memop_t *op)
 {
 	rbitset_set(bl->avail_out, op->value.id);
 	bl->id_2_memop_avail[op->value.id] = op;
-}  /* add_memop_avail */
+}
 
 /**
  * Check, if we can convert a value of one mode to another mode
@@ -1272,7 +1272,7 @@ static int can_convert_to(const ir_mode *from, const ir_mode *to)
 	    get_mode_size_bits(from) == get_mode_size_bits(to))
 		return 1;
 	return 0;
-}  /* can_convert_to */
+}
 
 /**
  * Add a Conv to the requested mode if needed.
@@ -1296,7 +1296,7 @@ static ir_node *conv_to(ir_node *irn, ir_mode *mode)
 		return NULL;
 	}
 	return irn;
-}  /* conv_to */
+}
 
 /**
  * Update the address of an value if this address was a load result
@@ -1316,7 +1316,7 @@ static void update_address(value_t *value)
 				value->address = op->replace;
 		}
 	}
-}  /* update_address */
+}
 
 /**
  * Do forward dataflow analysis on the given block and calculate the
@@ -1404,7 +1404,7 @@ static void calc_gen_kill_avail(block_t *bl)
 				kill_all();
 		}
 	}
-}  /* calc_gen_kill_avail */
+}
 
 #define BYTE_SIZE(x)  (((x) + 7) >> 3)
 
@@ -1422,7 +1422,7 @@ static void forward_avail(block_t *bl)
 
 	calc_gen_kill_avail(bl);
 	dump_curr(bl, "Avail_out");
-}  /* forward_avail */
+}
 
 /**
  * Do backward dataflow analysis on a given block to calculate the antic set
@@ -1546,7 +1546,7 @@ static int backward_antic(block_t *bl)
 	}
 	dump_curr(bl, "AnticL_in");
 	return 0;
-}  /* backward_antic */
+}
 
 /**
  * Replace a Load memop by a already known value.
@@ -1595,7 +1595,7 @@ static void replace_load(memop_t *op)
 	if (proj != NULL) {
 		exchange(proj, new_r_Jmp(get_nodes_block(load)));
 	}
-}  /* replace_load */
+}
 
 /**
  * Remove a Store memop.
@@ -1622,7 +1622,7 @@ static void remove_store(memop_t *op)
 	if (proj != NULL) {
 		exchange(proj, new_r_Jmp(get_nodes_block(store)));
 	}
-}  /* remove_store */
+}
 
 
 /**
@@ -1646,7 +1646,7 @@ static void do_replacements(block_t *bl)
 			}
 		}
 	}
-}  /* do_replacements */
+}
 
 /**
  * Calculate the Avail_out sets for all basic blocks.
@@ -1668,7 +1668,7 @@ static void calcAvail(void)
 	/* restore the current sets */
 	env.curr_id_2_memop = tmp_memop;
 	env.curr_set        = tmp_set;
-}  /* calcAvail */
+}
 
 /**
  * Calculate the Antic_in sets for all basic blocks.
@@ -1694,7 +1694,7 @@ static void calcAntic(void)
 		++i;
 	} while (need_iter);
 	DB((dbg, LEVEL_2, "Get anticipated Load set after %d iterations\n", i));
-}  /* calcAntic */
+}
 
 /**
  * Return the node representing the last memory in a block.
@@ -1710,7 +1710,7 @@ static ir_node *find_last_memory(block_t *bl)
 		/* if there is NO memory in this block, go to the dominator */
 		bl = get_block_entry(get_Block_idom(bl->block));
 	}
-}  /* find_last_memory */
+}
 
 /**
  * Reroute all memory users of old memory
@@ -1730,7 +1730,7 @@ static void reroute_all_mem_users(ir_node *omem, ir_node *nmem)
 
 	/* all edges previously point to omem now point to nmem */
 	nmem->o.out = omem->o.out;
-}  /* reroute_all_mem_users */
+}
 
 /**
  * Reroute memory users of old memory that are dominated by a given block
@@ -1771,7 +1771,7 @@ static void reroute_mem_through(ir_node *omem, ir_node *nmem, ir_node *pass_bl)
 	   edges at the end either. */
 	/* first entry is used for the length */
 	nmem->o.out = new_out;
-}  /* reroute_mem_through */
+}
 
 /**
  * insert Loads, making partly redundant Loads fully redundant
@@ -2020,7 +2020,7 @@ static int insert_Load(block_t *bl)
 	}
 	dump_curr(bl, "Avail_out");
 	return 0;
-}  /* insert_Load */
+}
 
 /**
  * Insert Loads upwards.
@@ -2047,7 +2047,7 @@ static void insert_Loads_upwards(void)
 	} while (need_iter);
 
 	DB((dbg, LEVEL_2, "Finished Load inserting after %d iterations\n", i));
-}  /* insert_Loads_upwards */
+}
 
 void opt_ldst(ir_graph *irg)
 {
@@ -2181,9 +2181,9 @@ no_changes:
 #ifdef DEBUG_libfirm
 	DEL_ARR_F(env.id_2_address);
 #endif
-}  /* opt_ldst */
+}
 
 ir_graph_pass_t *opt_ldst_pass(const char *name)
 {
 	return def_graph_pass(name ? name : "ldst_df", opt_ldst);
-}  /* opt_ldst_pass */
+}

@@ -170,7 +170,7 @@ static void dump_partition(const char *msg, const partition_t *part)
 		first = 0;
 	}
 	DB((dbg, LEVEL_2, "\n }\n"));
-}  /* dump_partition */
+}
 
 /**
  * Dumps a list.
@@ -186,7 +186,7 @@ static void dump_list(const char *msg, const block_t *block)
 		first = 0;
 	}
 	DB((dbg, LEVEL_3, "\n  }\n"));
-}  /* do_dump_list */
+}
 #else
 #define dump_partition(msg, part)
 #define dump_list(msg, block)
@@ -202,7 +202,7 @@ static int listmap_cmp_ptr(const void *elt, const void *key, size_t size)
 
 	(void) size;
 	return e1->id != e2->id;
-}  /* listmap_cmp_ptr */
+}
 
 /**
  * Initializes a listmap.
@@ -213,7 +213,7 @@ static void listmap_init(listmap_t *map)
 {
 	map->map    = new_set(listmap_cmp_ptr, 16);
 	map->values = NULL;
-}  /* listmap_init */
+}
 
 /**
  * Terminates a listmap.
@@ -223,7 +223,7 @@ static void listmap_init(listmap_t *map)
 static void listmap_term(listmap_t *map)
 {
 	del_set(map->map);
-}  /* listmap_term */
+}
 
 /**
  * Return the associated listmap entry for a given id.
@@ -248,7 +248,7 @@ static listmap_entry_t *listmap_find(listmap_t *map, void *id)
 		map->values = entry;
 	}
 	return entry;
-}  /* listmap_find */
+}
 
 /**
  * Calculate the hash value for an opcode map entry.
@@ -261,7 +261,7 @@ static unsigned opcode_hash(const opcode_key_t *entry)
 {
 	/* assume long >= int */
 	return (unsigned)(PTR_TO_INT(entry->mode) * 9 + entry->code + entry->u.proj * 3 + hash_ptr(entry->u.addr) + entry->arity);
-}  /* opcode_hash */
+}
 
 /**
  * Compare two entries in the opcode map.
@@ -275,7 +275,7 @@ static int cmp_opcode(const void *elt, const void *key, size_t size)
 	return o1->code != o2->code || o1->mode != o2->mode ||
 	       o1->arity != o2->arity ||
 	       o1->u.proj != o2->u.proj || o1->u.addr != o2->u.addr;
-}  /* cmp_opcode */
+}
 
 /**
  * Creates a new empty partition and put in on the
@@ -294,7 +294,7 @@ static partition_t *create_partition(ir_node *meet_block, environment_t *env)
 	DEBUG_ONLY(part->nr = part_nr++;)
 	list_add_tail(&part->part_list, &env->partitions);
 	return part;
-}  /* create_partition */
+}
 
 /**
  * Allocate a new block in the given partition.
@@ -328,7 +328,7 @@ static block_t *create_block(ir_node *block, int meet_input, partition_t *partit
 	env->all_blocks = bl;
 
 	return bl;
-}  /* create_block */
+}
 
 /**
  * Allocate a new node and add it to a blocks wait queue.
@@ -347,7 +347,7 @@ static node_t *create_node(ir_node *irn, block_t *block, environment_t *env)
 	list_add_tail(&node->node_list, &block->nodes);
 
 	return node;
-}  /* create_node */
+}
 
 /**
  * Add an input pair to a block.
@@ -367,7 +367,7 @@ static void add_pair(block_t *block, ir_node *irn, int idx, environment_t *env)
 	pair->ins   = NULL;
 
 	block->input_pairs = pair;
-}  /* add_pair */
+}
 
 /**
  * Add a Phi to a block.
@@ -385,7 +385,7 @@ static void add_phi(block_t *block, ir_node *phi, environment_t *env)
 	node->ins  = NULL;
 
 	block->phis = node;
-}  /** add_phi */
+}
 
 /**
  * Creates an opcode from a node.
@@ -436,7 +436,7 @@ static opcode_key_t *opcode(const node_t *node, environment_t *env)
 
 	entry = set_insert(opcode_key_t, env->opcode2id_map, &key, sizeof(key), opcode_hash(&key));
 	return entry;
-}  /* opcode */
+}
 
 /**
  * Split a partition by a local list.
@@ -476,7 +476,7 @@ static partition_t *split(partition_t *Z, block_t *g, environment_t *env)
 	dump_partition("Now ", Z);
 	dump_partition("Created new ", Z_prime);
 	return Z_prime;
-}  /* split */
+}
 
 /**
  * Return non-zero if pred should be tread as a input node.
@@ -491,7 +491,7 @@ static int is_input_node(ir_node *pred, ir_node *irn, int index)
 	if (! is_Call(irn))
 		return 1;
 	return 0;
-}  /* is_input_node */
+}
 
 /**
  * Propagate nodes on all wait queues of the given partition.
@@ -602,7 +602,7 @@ static void propagate_blocks(partition_t *part, environment_t *env)
 		split(part, S, env);
 	}
 	listmap_term(&map);
-}  /* propagate_blocks */
+}
 
 /**
  * Propagate nodes on all wait queues.
@@ -619,7 +619,7 @@ static void propagate(environment_t *env)
 		} else
 			propagate_blocks(part, env);
 	}
-}  /* propagate */
+}
 
 /**
  * Map a block to the phi[block->input] live-trough.
@@ -635,7 +635,7 @@ static void *live_throughs(const block_t *bl, const ir_node *phi)
 	if (get_nodes_block(input) == bl->block)
 		return NULL;
 	return input;
-}  /* live_throughs */
+}
 
 /**
  * Split partition by live-outs and live-troughs.
@@ -690,7 +690,7 @@ static void propagate_blocks_live_troughs(partition_t *part, environment_t *env)
 		}
 		listmap_term(&map);
 	}
-}  /* propagate_blocks_live_troughs */
+}
 
 /**
  * Propagate live-troughs on all partitions on the partition list.
@@ -702,7 +702,7 @@ static void propagate_live_troughs(environment_t *env)
 	list_for_each_entry_safe(partition_t, part, next, &env->partitions, part_list) {
 		propagate_blocks_live_troughs(part, env);
 	}
-}  /* propagate_live_troughs */
+}
 
 /**
  * Apply analysis results by replacing all blocks of a partition
@@ -917,7 +917,7 @@ continue_outer:
 	/* fix inputs of the meet block */
 	set_irn_in(meet_block, j, ins);
 	DEL_ARR_F(ins);
-}  /* apply */
+}
 
 /**
  * Create a partition for a the end block.
@@ -968,7 +968,7 @@ static void partition_for_end_block(ir_node *end_block, environment_t *env)
 	}
 
 	dump_partition("Created", part);
-}  /* partition_for_end_block */
+}
 
 #ifdef GENERAL_SHAPE
 /**
@@ -1000,7 +1000,7 @@ static void partition_for_block(ir_node *block, pred_t preds[], int n_preds, env
 	}
 
 	dump_partition("Created", part);
-}  /* partition_for_block */
+}
 
 /**
  * Walker: clear the links of all block phi lists and normal
@@ -1013,7 +1013,7 @@ static void clear_phi_links(ir_node *irn, void *env)
 		set_Block_phis(irn, NULL);
 		set_irn_link(irn, NULL);
 	}
-}  /* clear_phi_links */
+}
 
 /**
  * Walker, detect live-out nodes.
@@ -1056,7 +1056,7 @@ static void find_liveouts(ir_node *irn, void *ctx)
 			live_outs[idx] = pred_block;
 		}
 	}
-}  /* find_liveouts */
+}
 
 /**
  * Check if the current block is the meet block of its predecessors.
@@ -1095,7 +1095,7 @@ static void check_for_cf_meet(ir_node *block, void *ctx)
 
 	if (k > 1)
 		partition_for_block(block, preds, k, env);
-}  /* check_for_cf_meet */
+}
 
 /**
  * Compare two nodes for root ordering.
@@ -1127,7 +1127,7 @@ static int cmp_nodes(const void *a, const void *b)
 	idx_b = get_irn_idx(irn_b);
 
 	return (idx_a > idx_b) - (idx_a < idx_b);
-}  /* cmp_nodes */
+}
 
 /**
  * Add the roots to all blocks.
@@ -1176,7 +1176,7 @@ static void add_roots(ir_graph *irg, environment_t *env)
 		DEL_ARR_F(bl->roots);
 		bl->roots = NULL;
 	}
-}  /* add_roots */
+}
 #endif /* GENERAL_SHAPE */
 
 /* Combines congruent end blocks into one. */
@@ -1256,9 +1256,9 @@ void shape_blocks(ir_graph *irg)
 	DEL_ARR_F(env.live_outs);
 	del_set(env.opcode2id_map);
 	obstack_free(&env.obst, NULL);
-}  /* shape_blocks */
+}
 
 ir_graph_pass_t *shape_blocks_pass(const char *name)
 {
 	return def_graph_pass(name ? name : "shape_blocks", shape_blocks);
-}  /* shape_blocks_pass */
+}

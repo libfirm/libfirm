@@ -113,7 +113,7 @@ static ldst_info_t *get_ldst_info(ir_node *node, struct obstack *obst)
 		set_irn_link(node, info);
 	}
 	return info;
-}  /* get_ldst_info */
+}
 
 /**
  * get the Block info of a node
@@ -127,7 +127,7 @@ static block_info_t *get_block_info(ir_node *node, struct obstack *obst)
 		set_irn_link(node, info);
 	}
 	return info;
-}  /* get_block_info */
+}
 
 /**
  * update the projection info for a Load/Store
@@ -147,7 +147,7 @@ static unsigned update_projs(ldst_info_t *info, ir_node *proj)
 		info->projs[nr] = proj;
 		return 0;
 	}
-}  /* update_projs */
+}
 
 /**
  * update the exception block info for a Load/Store node.
@@ -163,7 +163,7 @@ static unsigned update_exc(ldst_info_t *info, ir_node *block, int pos)
 	info->exc_block = block;
 	info->exc_idx   = pos;
 	return 0;
-}  /* update_exc */
+}
 
 /**
  * walker, collects all Load/Store/Proj nodes
@@ -234,7 +234,7 @@ static void collect_nodes(ir_node *node, void *env)
 			}
 		}
 	}
-}  /* collect_nodes */
+}
 
 /**
  * Returns an entity if the address ptr points to a constant one.
@@ -322,7 +322,7 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 		} else
 			return NULL;
 	}
-}  /* find_constant_entity */
+}
 
 /**
  * Return the Selection index of a Sel node from dimension n
@@ -332,7 +332,7 @@ static long get_Sel_array_index_long(ir_node *n, int dim)
 	ir_node *index = get_Sel_index(n, dim);
 	assert(is_Const(index));
 	return get_tarval_long(get_Const_tarval(index));
-}  /* get_Sel_array_index_long */
+}
 
 typedef struct path_entry {
 	ir_entity         *ent;
@@ -547,7 +547,7 @@ static void handle_load_update(ir_node *load)
 		kill_node(load);
 		reduce_adr_usage(ptr);
 	}
-}  /* handle_load_update */
+}
 
 /**
  * A use of an address node has vanished. Check if this was a Proj
@@ -570,7 +570,7 @@ static void reduce_adr_usage(ir_node *ptr)
 		/* this node lost its result proj, handle that */
 		handle_load_update(pred);
 	}
-}  /* reduce_adr_usage */
+}
 
 /**
  * Check, if an already existing value of mode old_mode can be converted
@@ -619,7 +619,7 @@ static unsigned is_Call_pure(ir_node *call)
 		}
 	}
 	return (prop & (mtp_property_const|mtp_property_pure)) != 0;
-}  /* is_Call_pure */
+}
 
 static ir_node *get_base_and_offset(ir_node *ptr, long *pOffset)
 {
@@ -909,7 +909,7 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr)
 	}
 
 	return res;
-}  /* follow_Mem_chain */
+}
 
 ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c)
 {
@@ -1058,7 +1058,7 @@ static unsigned optimize_load(ir_node *load)
 	INC_MASTER();
 	res = follow_Mem_chain(load, skip_Proj(mem));
 	return res;
-}  /* optimize_load */
+}
 
 /**
  * Check whether a value of mode new_mode would completely overwrite a value
@@ -1067,7 +1067,7 @@ static unsigned optimize_load(ir_node *load)
 static int is_completely_overwritten(ir_mode *old_mode, ir_mode *new_mode)
 {
 	return get_mode_size_bits(new_mode) >= get_mode_size_bits(old_mode);
-}  /* is_completely_overwritten */
+}
 
 /**
  * Check whether small is a part of large (starting at same address).
@@ -1082,7 +1082,7 @@ static int is_partially_same(ir_node *small, ir_node *large)
 	    && get_mode_size_bytes(sm) < get_mode_size_bytes(lm)
 	    && get_mode_arithmetic(sm) == irma_twos_complement
 	    && get_mode_arithmetic(lm) == irma_twos_complement;
-}  /* is_partially_same */
+}
 
 /**
  * follow the memory chain as long as there are only Loads and alias free Stores.
@@ -1215,7 +1215,7 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr)
 		}
 	}
 	return res;
-}  /* follow_Mem_chain_for_Store */
+}
 
 /** find entity used as base for an address calculation */
 static ir_entity *find_entity(ir_node *ptr)
@@ -1286,7 +1286,7 @@ static unsigned optimize_store(ir_node *store)
 	INC_MASTER();
 
 	return follow_Mem_chain_for_Store(store, skip_Proj(mem));
-}  /* optimize_store */
+}
 
 /* check if a node has more than one real user. Keepalive edges do not count as
  * real users */
@@ -1500,7 +1500,7 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 	exchange(phi, projM);
 
 	return res | DF_CHANGED;
-}  /* optimize_phi */
+}
 
 static int optimize_conv_load(ir_node *conv)
 {
@@ -1568,7 +1568,7 @@ static void do_load_store_optimize(ir_node *n, void *env)
 	default:
 		break;
 	}
-}  /* do_load_store_optimize */
+}
 
 /** A scc. */
 typedef struct scc {
@@ -1610,7 +1610,7 @@ static node_entry *get_irn_ne(ir_node *irn, loop_env *env)
 		ir_nodehashmap_insert(&env->map, irn, e);
 	}
 	return e;
-}  /* get_irn_ne */
+}
 
 /**
  * Push a node onto the stack.
@@ -1629,7 +1629,7 @@ static void push(loop_env *env, ir_node *n)
 	env->stack[env->tos++] = n;
 	e = get_irn_ne(n, env);
 	e->in_stack = 1;
-}  /* push */
+}
 
 /**
  * pop a node from the stack
@@ -1645,7 +1645,7 @@ static ir_node *pop(loop_env *env)
 
 	e->in_stack = 0;
 	return n;
-}  /* pop */
+}
 
 /**
  * Check if irn is a region constant.
@@ -1659,7 +1659,7 @@ static int is_rc(ir_node *irn, ir_node *header_block)
 	ir_node *block = get_nodes_block(irn);
 
 	return (block != header_block) && block_dominates(block, header_block);
-}  /* is_rc */
+}
 
 typedef struct phi_entry phi_entry;
 struct phi_entry {
@@ -1688,7 +1688,7 @@ static int cmp_avail_entry(const void *elt, const void *key, size_t size)
 	(void) size;
 
 	return a->ptr != b->ptr || a->mode != b->mode;
-}  /* cmp_avail_entry */
+}
 
 /**
  * Calculate the hash value of an avail entry.
@@ -1696,7 +1696,7 @@ static int cmp_avail_entry(const void *elt, const void *key, size_t size)
 static unsigned hash_cache_entry(const avail_entry_t *entry)
 {
 	return get_irn_idx(entry->ptr) * 9 + hash_ptr(entry->mode);
-}  /* hash_cache_entry */
+}
 
 /**
  * Move loops out of loops if possible.
@@ -1829,7 +1829,7 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 		}
 	}
 	del_set(avail);
-}  /* move_loads_out_of_loops */
+}
 
 /**
  * Process a loop SCC.
@@ -1955,7 +1955,7 @@ static void process_loop(scc *pscc, loop_env *env)
 
 fail:
 	;
-}  /* process_loop */
+}
 
 /**
  * Process a SCC.
@@ -1988,7 +1988,7 @@ static void process_scc(scc *pscc, loop_env *env)
 		/* this SCC has more than one member */
 		process_loop(pscc, env);
 	}
-}  /* process_scc */
+}
 
 /**
  * Do Tarjan's SCC algorithm and drive load/store optimization.
@@ -2063,7 +2063,7 @@ static void dfs(ir_node *irn, loop_env *env)
 
 		process_scc(pscc, env);
 	}
-}  /* dfs */
+}
 
 /**
  * Do the DFS on the memory edges a graph.
@@ -2105,7 +2105,7 @@ static void do_dfs(ir_graph *irg, loop_env *env)
 		if (is_Phi(ka) && !irn_visited(ka))
 			dfs(ka, env);
 	}
-}  /* do_dfs */
+}
 
 /**
  * Optimize Loads/Stores in loops.
@@ -2132,7 +2132,7 @@ static int optimize_loops(ir_graph *irg)
 	ir_nodehashmap_destroy(&env.map);
 
 	return env.changes;
-}  /* optimize_loops */
+}
 
 void optimize_load_store(ir_graph *irg)
 {
@@ -2179,4 +2179,4 @@ void optimize_load_store(ir_graph *irg)
 ir_graph_pass_t *optimize_load_store_pass(const char *name)
 {
 	return def_graph_pass(name ? name : "ldst", optimize_load_store);
-}  /* optimize_load_store_pass */
+}

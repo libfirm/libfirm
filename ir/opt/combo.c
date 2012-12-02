@@ -260,7 +260,7 @@ static int cmp_irn_opcode(const ir_node *a, const ir_node *b)
 		return a->op->ops.node_cmp_attr(a, b);
 
 	return 0;
-}  /* cmp_irn_opcode */
+}
 
 #ifdef CHECK_PARTITIONS
 /**
@@ -283,7 +283,7 @@ static void check_partition(const partition_t *T)
 		assert(node->flagged == 0);
 		assert(node->part == T);
 	}
-}  /* check_partition */
+}
 
 /**
  * check that all leader nodes in the partition have the same opcode.
@@ -301,7 +301,7 @@ static void check_opcode(const partition_t *Z)
 			assert(cmp_irn_opcode(repr, irn) == 0);
 		}
 	}
-}  /* check_opcode */
+}
 
 static void check_all_partitions(environment_t *env)
 {
@@ -341,7 +341,7 @@ static void do_check_list(const node_t *list, int ofs, const partition_t *Z)
 	(void) ofs;
 	(void) Z;
 #endif
-}  /* ido_check_list */
+}
 
 /**
  * Check a local list.
@@ -349,7 +349,7 @@ static void do_check_list(const node_t *list, int ofs, const partition_t *Z)
 static void check_list(const node_t *list, const partition_t *Z)
 {
 	do_check_list(list, offsetof(node_t, next), Z);
-}  /* check_list */
+}
 
 #else
 #define check_partition(T)
@@ -384,7 +384,7 @@ static void dump_partition(const char *msg, const partition_t *part)
 		}
 	}
 	DB((dbg, LEVEL_2, "\n}\n"));
-}  /* dump_partition */
+}
 
 /**
  * Dumps a list.
@@ -404,7 +404,7 @@ static void do_dump_list(const char *msg, const node_t *node, int ofs)
 	DB((dbg, LEVEL_3, "\n}\n"));
 
 #undef GET_LINK
-}  /* do_dump_list */
+}
 
 /**
  * Dumps a race list.
@@ -412,7 +412,7 @@ static void do_dump_list(const char *msg, const node_t *node, int ofs)
 static void dump_race_list(const char *msg, const node_t *list)
 {
 	do_dump_list(msg, list, offsetof(node_t, race_next));
-}  /* dump_race_list */
+}
 
 /**
  * Dumps a local list.
@@ -420,7 +420,7 @@ static void dump_race_list(const char *msg, const node_t *list)
 static void dump_list(const char *msg, const node_t *list)
 {
 	do_dump_list(msg, list, offsetof(node_t, next));
-}  /* dump_list */
+}
 
 /**
  * Dump all partitions.
@@ -432,7 +432,7 @@ static void dump_all_partitions(const environment_t *env)
 	DB((dbg, LEVEL_2, "All partitions\n===============\n"));
 	for (P = env->dbg_list; P != NULL; P = P->dbg_next)
 		dump_partition("", P);
-}  /* dump_all_partitions */
+}
 
 /**
  * Sump a split list.
@@ -448,7 +448,7 @@ static void dump_split_list(const partition_t *list)
 		split = ',';
 	}
 	DB((dbg, LEVEL_2, "\n}\n"));
-}  /* dump_split_list */
+}
 
 /**
  * Dump partition and type for a node.
@@ -460,7 +460,7 @@ static int dump_partition_hook(FILE *F, const ir_node *n, const ir_node *local)
 
 	ir_fprintf(F, "info2 : \"partition %u type %+F\"\n", node->part->nr, node->type);
 	return 1;
-}  /* dump_partition_hook */
+}
 
 #else
 #define dump_partition(msg, part)
@@ -489,7 +489,7 @@ static void verify_type(const lattice_elem_t old_type, node_t *node)
 		return;
 	}
 	panic("wrong translation from %+F to %+F on node %+F", old_type, node->type, node->node);
-}  /* verify_type */
+}
 
 #else
 #define verify_type(old_type, node)
@@ -505,7 +505,7 @@ static int listmap_cmp_ptr(const void *elt, const void *key, size_t size)
 
 	(void) size;
 	return e1->id != e2->id;
-}  /* listmap_cmp_ptr */
+}
 
 /**
  * Initializes a listmap.
@@ -516,7 +516,7 @@ static void listmap_init(listmap_t *map)
 {
 	map->map    = new_set(listmap_cmp_ptr, 16);
 	map->values = NULL;
-}  /* listmap_init */
+}
 
 /**
  * Terminates a listmap.
@@ -526,7 +526,7 @@ static void listmap_init(listmap_t *map)
 static void listmap_term(listmap_t *map)
 {
 	del_set(map->map);
-}  /* listmap_term */
+}
 
 /**
  * Return the associated listmap entry for a given id.
@@ -551,7 +551,7 @@ static listmap_entry_t *listmap_find(listmap_t *map, void *id)
 		map->values = entry;
 	}
 	return entry;
-}  /* listmap_find */
+}
 
 /**
  * Calculate the hash value for an opcode map entry.
@@ -574,7 +574,7 @@ static unsigned opcode_hash(const opcode_key_t *entry)
 	else if (code == iro_Proj)
 		hash += (unsigned)get_Proj_proj(n);
 	return hash;
-}  /* opcode_hash */
+}
 
 /**
  * Compare two entries in the opcode map.
@@ -587,7 +587,7 @@ static int cmp_opcode(const void *elt, const void *key, size_t size)
 	(void) size;
 
 	return cmp_irn_opcode(o1->irn, o2->irn);
-}  /* cmp_opcode */
+}
 
 /**
  * Compare two Def-Use edges for input position.
@@ -599,7 +599,7 @@ static int cmp_def_use_edge(const void *a, const void *b)
 
 	/* no overrun, because range is [-1, MAXINT] */
 	return ea->pos - eb->pos;
-}  /* cmp_def_use_edge */
+}
 
 /**
  * We need the Def-Use edges sorted.
@@ -611,7 +611,7 @@ static void sort_irn_outs(node_t *node)
 	qsort(irn->o.out->edges, n_outs, sizeof(irn->o.out->edges[0]),
 		  cmp_def_use_edge);
 	node->max_user_input = n_outs > 0 ? irn->o.out->edges[n_outs-1].pos : -1;
-}  /* sort_irn_outs */
+}
 
 /**
  * Return the type of a node.
@@ -623,7 +623,7 @@ static void sort_irn_outs(node_t *node)
 static inline lattice_elem_t get_node_type(const ir_node *irn)
 {
 	return get_irn_node(irn)->type;
-}  /* get_node_type */
+}
 
 /**
  * Return the tarval of a node.
@@ -639,7 +639,7 @@ static inline ir_tarval *get_node_tarval(const ir_node *irn)
 	if (is_tarval(type.tv))
 		return type.tv;
 	return tarval_bottom;
-}  /* get_node_type */
+}
 
 /**
  * Add a partition to the worklist.
@@ -651,7 +651,7 @@ static inline void add_to_worklist(partition_t *X, environment_t *env)
 	X->wl_next     = env->worklist;
 	X->on_worklist = 1;
 	env->worklist  = X;
-}  /* add_to_worklist */
+}
 
 /**
  * Create a new empty partition.
@@ -687,7 +687,7 @@ static inline partition_t *new_partition(environment_t *env)
 #endif
 
 	return part;
-}  /* new_partition */
+}
 
 /**
  * Get the first node from a partition.
@@ -695,7 +695,7 @@ static inline partition_t *new_partition(environment_t *env)
 static inline node_t *get_first_node(const partition_t *X)
 {
 	return list_entry(X->Leader.next, node_t, node_list);
-}  /* get_first_node */
+}
 
 /**
  * Return the type of a partition (assuming partition is non-empty and
@@ -709,7 +709,7 @@ static inline lattice_elem_t get_partition_type(const partition_t *X)
 {
 	const node_t *first = get_first_node(X);
 	return first->type;
-}  /* get_partition_type */
+}
 
 /**
  * Creates a partition node for the given IR-node and place it
@@ -747,7 +747,7 @@ static node_t *create_partition_node(ir_node *irn, partition_t *part, environmen
 	++part->n_leader;
 
 	return node;
-}  /* create_partition_node */
+}
 
 /**
  * Pre-Walker, initialize all Nodes' type to U or top and place
@@ -767,7 +767,7 @@ static void create_initial_partitions(ir_node *irn, void *ctx)
 	if (is_Block(irn)) {
 		set_Block_phis(irn, NULL);
 	}
-}  /* create_initial_partitions */
+}
 
 /**
  * Post-Walker, collect  all Block-Phi lists, set Cond.
@@ -780,7 +780,7 @@ static void init_block_phis(ir_node *irn, void *ctx)
 		ir_node *block = get_nodes_block(irn);
 		add_Block_phi(block, irn);
 	}
-}  /* init_block_phis */
+}
 
 /**
  * Add a node to the entry.partition.touched set and
@@ -807,7 +807,7 @@ static inline void add_to_touched(node_t *y, environment_t *env)
 
 		check_list(part->touched, part);
 	}
-}  /* add_to_touched */
+}
 
 /**
  * Place a node on the cprop list.
@@ -860,7 +860,7 @@ static void add_to_cprop(node_t *y, environment_t *env)
 			add_to_cprop(p, env);
 		}
 	}
-}  /* add_to_cprop */
+}
 
 /**
  * Update the worklist: If Z is on worklist then add Z' to worklist.
@@ -877,7 +877,7 @@ static void update_worklist(partition_t *Z, partition_t *Z_prime, environment_t 
 	} else {
 		add_to_worklist(Z, env);
 	}
-}  /* update_worklist */
+}
 
 /**
  * Make all inputs to x no longer be F.def_use edges.
@@ -914,7 +914,7 @@ static void move_edges_to_leader(node_t *x)
 			}
 		}
 	}
-}  /* move_edges_to_leader */
+}
 
 /**
  * Split a partition that has NO followers by a local list.
@@ -970,7 +970,7 @@ static partition_t *split_no_followers(partition_t *Z, node_t *g, environment_t 
 	update_worklist(Z, Z_prime, env);
 
 	return Z_prime;
-}  /* split_no_followers */
+}
 
 /**
  * Make the Follower -> Leader transition for a node.
@@ -987,7 +987,7 @@ static void follower_to_leader(node_t *n)
 	list_del(&n->node_list);
 	list_add_tail(&n->node_list, &n->part->Leader);
 	++n->part->n_leader;
-}  /* follower_to_leader */
+}
 
 /**
  * The environment for one race step.
@@ -1064,7 +1064,7 @@ static int is_real_follower(const ir_node *irn, int input)
 		break;
 	}
 	return 1;
-}  /* is_real_follower */
+}
 
 /**
  * Do one step in the race.
@@ -1129,7 +1129,7 @@ static int step(step_env *env)
 		env->index    = 0;
 	}
 	return 1;
-}  /* step */
+}
 
 /**
  * Clear the flags from a list and check for
@@ -1152,7 +1152,7 @@ static int clear_flags(node_t *list)
 		n->flagged = 0;
 	}
 	return res;
-}  /* clear_flags */
+}
 
 /**
  * Split a partition by a local list using the race.
@@ -1327,7 +1327,7 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env)
 	}
 
 	return X_prime;
-}  /* split */
+}
 
 /**
  * Returns non-zero if the i'th input of a Phi node is live.
@@ -1348,7 +1348,7 @@ static int is_live_input(ir_node *phi, int i)
 	}
 	/* else it's the control input, always live */
 	return 1;
-}  /* is_live_input */
+}
 
 /**
  * Return non-zero if a type is a constant.
@@ -1358,7 +1358,7 @@ static int is_constant_type(lattice_elem_t type)
 	if (type.tv != tarval_bottom && type.tv != tarval_top)
 		return 1;
 	return 0;
-}  /* is_constant_type */
+}
 
 /**
  * Check whether a type is neither Top or a constant.
@@ -1378,7 +1378,7 @@ static int type_is_neither_top_nor_const(const lattice_elem_t type)
 		return 0;
 	}
 	return 1;
-}  /* type_is_neither_top_nor_const */
+}
 
 /**
  * Collect nodes to the touched list.
@@ -1443,7 +1443,7 @@ static void collect_touched(list_head *list, int idx, environment_t *env)
 			}
 		}
 	}
-}  /* collect_touched */
+}
 
 /**
  * Collect commutative nodes to the touched list.
@@ -1493,7 +1493,7 @@ static void collect_commutative_touched(list_head *list, environment_t *env)
 			}
 		}
 	}
-}  /* collect_commutative_touched */
+}
 
 /**
  * Split the partitions if caused by the first entry on the worklist.
@@ -1616,7 +1616,7 @@ static void cause_splits(environment_t *env)
 				assert(n_touched <= Z->n_leader);
 		}
 	}
-}  /* cause_splits */
+}
 
 /**
  * Implements split_by_what(): Split a partition by characteristics given
@@ -1674,14 +1674,14 @@ static partition_t *split_by_what(partition_t *X, what_func What,
 
 	listmap_term(&map);
 	return *P;
-}  /* split_by_what */
+}
 
 /** lambda n.(n.type) */
 static void *lambda_type(const node_t *node, environment_t *env)
 {
 	(void)env;
 	return node->type.tv;
-}  /* lambda_type */
+}
 
 /** lambda n.(n.opcode) */
 static void *lambda_opcode(const node_t *node, environment_t *env)
@@ -1692,7 +1692,7 @@ static void *lambda_opcode(const node_t *node, environment_t *env)
 
 	entry = set_insert(opcode_key_t, env->opcode2id_map, &key, sizeof(key), opcode_hash(&key));
 	return entry;
-}  /* lambda_opcode */
+}
 
 /** lambda n.(n[i].partition) */
 static void *lambda_partition(const node_t *node, environment_t *env)
@@ -1721,7 +1721,7 @@ static void *lambda_partition(const node_t *node, environment_t *env)
 	pred = i == -1 ? get_irn_n(skipped, i) : get_irn_n(node->node, i);
 	p    = get_irn_node(pred);
 	return p->part;
-}  /* lambda_partition */
+}
 
 /** lambda n.(n[i].partition) for commutative nodes */
 static void *lambda_commutative_partition(const node_t *node, environment_t *env)
@@ -1774,7 +1774,7 @@ static void *lambda_commutative_partition(const node_t *node, environment_t *env
 
 		return p->part;
 	}
-}  /* lambda_commutative_partition */
+}
 
 /**
  * Returns true if a type is a constant (and NOT Top
@@ -1786,7 +1786,7 @@ static int is_con(const lattice_elem_t type)
 	if (is_tarval(type.tv))
 		return tarval_is_constant(type.tv);
 	return is_entity(type.sym.entity_p);
-}  /* is_con */
+}
 
 /**
  * Implements split_by().
@@ -1877,7 +1877,7 @@ static void split_by(partition_t *X, environment_t *env)
 			}
 		}
 	} while (P != NULL);
-}  /* split_by */
+}
 
 /**
  * (Re-)compute the type for a given node.
@@ -1904,7 +1904,7 @@ static void default_compute(node_t *node)
 		node->type.tv = tarval_reachable;
 	else
 		node->type.tv = computed_value(irn);
-}  /* default_compute */
+}
 
 /**
  * (Re-)compute the type for a Block node.
@@ -1933,7 +1933,7 @@ static void compute_Block(node_t *node)
 		}
 	}
 	node->type.tv = tarval_top;
-}  /* compute_Block */
+}
 
 /**
  * (Re-)compute the type for a Bad node.
@@ -1944,7 +1944,7 @@ static void compute_Bad(node_t *node)
 {
 	/* Bad nodes ALWAYS compute Top */
 	node->type.tv = tarval_top;
-}  /* compute_Bad */
+}
 
 /**
  * (Re-)compute the type for an Unknown node.
@@ -1964,7 +1964,7 @@ static void compute_Unknown(node_t *node)
 	 * (jump threading for instance) might replace them by Phib's...
 	 */
 	node->type.tv = tarval_UNKNOWN;
-}  /* compute_Unknown */
+}
 
 /**
  * (Re-)compute the type for a Jmp node.
@@ -1976,7 +1976,7 @@ static void compute_Jmp(node_t *node)
 	node_t *block = get_irn_node(get_nodes_block(node->node));
 
 	node->type = block->type;
-}  /* compute_Jmp */
+}
 
 /**
  * (Re-)compute the type for the Return node.
@@ -1989,7 +1989,7 @@ static void compute_Return(node_t *node)
 	 * This is already checked in compute(). so we can return
 	 * Reachable here. */
 	node->type.tv = tarval_reachable;
-}  /* compute_Return */
+}
 
 /**
  * (Re-)compute the type for the End node.
@@ -2000,7 +2000,7 @@ static void compute_End(node_t *node)
 {
 	/* the End node is NOT dead of course */
 	node->type.tv = tarval_reachable;
-}  /* compute_End */
+}
 
 /**
  * (Re-)compute the type for a Call.
@@ -2014,7 +2014,7 @@ static void compute_Call(node_t *node)
 	 * predecessors.
 	 */
 	node->type.tv = tarval_bottom;
-}  /* compute_Call */
+}
 
 /**
  * (Re-)compute the type for a SymConst node.
@@ -2037,7 +2037,7 @@ static void compute_SymConst(node_t *node)
 	default:
 		node->type.tv = computed_value(irn);
 	}
-}  /* compute_SymConst */
+}
 
 /**
  * (Re-)compute the type for a Phi node.
@@ -2085,7 +2085,7 @@ static void compute_Phi(node_t *node)
 		/* else nothing, constants are the same */
 	}
 	node->type = type;
-}  /* compute_Phi */
+}
 
 /**
  * (Re-)compute the type for an Add. Special case: one nodes is a Zero Const.
@@ -2127,7 +2127,7 @@ static void compute_Add(node_t *node)
 		}
 		node->type.tv = tarval_bottom;
 	}
-}  /* compute_Add */
+}
 
 /**
  * (Re-)compute the type for a Sub. Special case: both nodes are congruent.
@@ -2174,7 +2174,7 @@ static void compute_Sub(node_t *node)
 	} else {
 		node->type.tv = tarval_bottom;
 	}
-}  /* compute_Sub */
+}
 
 /**
  * (Re-)compute the type for an Eor. Special case: both nodes are congruent.
@@ -2216,7 +2216,7 @@ static void compute_Eor(node_t *node)
 	} else {
 		node->type.tv = tarval_bottom;
 	}
-}  /* compute_Eor */
+}
 
 /**
  * (Re-)compute the type for Cmp.
@@ -2361,7 +2361,7 @@ static void compute_Proj_Cond(node_t *node, ir_node *cond)
 			}
 		}
 	}
-}  /* compute_Proj_Cond */
+}
 
 static void compute_Proj_Switch(node_t *node, ir_node *switchn)
 {
@@ -2464,7 +2464,7 @@ ir_node *proj = node->node;
 	}
 
 	default_compute(node);
-}  /* compute_Proj */
+}
 
 /**
  * (Re-)compute the type for a Confirm.
@@ -2487,7 +2487,7 @@ static void compute_Confirm(node_t *node)
 	}
 	/* a Confirm is a copy OR a Const */
 	node->type = pred->type;
-}  /* compute_Confirm */
+}
 
 /**
  * (Re-)compute the type for a given node.
@@ -2525,7 +2525,7 @@ static void compute(node_t *node)
 	func = (compute_func)node->node->op->ops.generic;
 	if (func != NULL)
 		func(node);
-}  /* compute */
+}
 
 /*
  * Identity functions: Note that one might think that identity() is just a
@@ -2563,7 +2563,7 @@ static node_t *identity_Phi(node_t *node)
 	 * tarval_top, is in the TOP partition and should NOT being split! */
 	assert(n_part != NULL);
 	return n_part;
-}  /* identity_Phi */
+}
 
 /**
  * Calculates the Identity for commutative 0 neutral nodes.
@@ -2588,7 +2588,7 @@ static node_t *identity_comm_zero_binop(node_t *node)
 	if (b->type.tv == zero)
 		return a;
 	return node;
-}  /* identity_comm_zero_binop */
+}
 
 /**
  * Calculates the Identity for Shift nodes.
@@ -2606,7 +2606,7 @@ static node_t *identity_shift(node_t *node)
 	if (b->type.tv == zero)
 		return get_irn_node(get_binop_left(op));
 	return node;
-}  /* identity_shift */
+}
 
 /**
  * Calculates the Identity for Mul nodes.
@@ -2631,7 +2631,7 @@ static node_t *identity_Mul(node_t *node)
 	if (b->type.tv == one)
 		return a;
 	return node;
-}  /* identity_Mul */
+}
 
 /**
  * Calculates the Identity for Sub nodes.
@@ -2651,7 +2651,7 @@ static node_t *identity_Sub(node_t *node)
 	if (b->type.tv == get_mode_null(mode))
 		return get_irn_node(get_Sub_left(sub));
 	return node;
-}  /* identity_Sub */
+}
 
 /**
  * Calculates the Identity for And nodes.
@@ -2670,7 +2670,7 @@ static node_t *identity_And(node_t *node)
 	if (b->type.tv == neutral)
 		return a;
 	return node;
-}  /* identity_And */
+}
 
 /**
  * Calculates the Identity for Confirm nodes.
@@ -2681,7 +2681,7 @@ static node_t *identity_Confirm(node_t *node)
 
 	/* a Confirm is always a Copy */
 	return get_irn_node(get_Confirm_value(confirm));
-}  /* identity_Confirm */
+}
 
 /**
  * Calculates the Identity for Mux nodes.
@@ -2707,7 +2707,7 @@ static node_t *identity_Mux(node_t *node)
 		return f;
 #endif
 	return node;
-}  /* identity_Mux */
+}
 
 /**
  * Calculates the Identity for nodes.
@@ -2741,7 +2741,7 @@ static node_t *identity(node_t *node)
 	default:
 		return node;
 	}
-}  /* identity */
+}
 
 /**
  * Node follower is a (new) follower of leader, segregate Leader
@@ -2765,7 +2765,7 @@ static void segregate_def_use_chain_1(const ir_node *follower, node_t *leader)
 			break;
 		}
 	}
-}  /* segregate_def_use_chain_1 */
+}
 
 /**
  * Node follower is a (new) follower segregate its Leader
@@ -2782,7 +2782,7 @@ static void segregate_def_use_chain(const ir_node *follower)
 
 		segregate_def_use_chain_1(follower, pred);
 	}
-}  /* segregate_def_use_chain */
+}
 
 /**
  * Propagate constant evaluation.
@@ -2929,7 +2929,7 @@ static void propagate(environment_t *env)
 		}
 		split_by(Y, env);
 	}
-}  /* propagate */
+}
 
 /**
  * Get the leader for a given node from its congruence class.
@@ -2950,7 +2950,7 @@ static ir_node *get_leader(node_t *node)
 		return get_first_node(part)->node;
 	}
 	return node->node;
-}  /* get_leader */
+}
 
 /**
  * Returns non-zero if a mode_T node has only one reachable output.
@@ -2974,7 +2974,7 @@ static int only_one_reachable_proj(ir_node *n)
 		}
 	}
 	return 1;
-}  /* only_one_reachable_proj */
+}
 
 /**
  * Return non-zero if the control flow predecessor node pred
@@ -3000,7 +3000,7 @@ static int can_exchange(ir_node *pred, ir_node *block)
 		return only_one_reachable_proj(pred);
 	}
 	return 0;
-}  /* can_exchange */
+}
 
 /**
  * Block Post-Walker, apply the analysis results on control flow by
@@ -3161,7 +3161,7 @@ static void apply_cf(ir_node *block, void *ctx)
 	}
 	set_irn_in(block, k, in_X);
 	env->modified = 1;
-}  /* apply_cf */
+}
 
 /**
  * Exchange a node by its leader.
@@ -3195,7 +3195,7 @@ static void exchange_leader(ir_node *irn, ir_node *leader)
 		}
 	}
 	exchange(irn, leader);
-}  /* exchange_leader */
+}
 
 /**
  * Check, if all users of a mode_M node are dead. Use
@@ -3222,7 +3222,7 @@ static int all_users_are_dead(const ir_node *irn)
 	}
 	/* all users are unreachable */
 	return 1;
-}  /* all_user_are_dead */
+}
 
 /**
  * Walker: Find reachable mode_M nodes that have only
@@ -3249,7 +3249,7 @@ static void find_kept_memory(ir_node *irn, void *ctx)
 		DB((dbg, LEVEL_1, "%+F must be kept\n", irn));
 		ARR_APP1(ir_node *, env->kept_memory, irn);
 	}
-}  /* find_kept_memory */
+}
 
 /**
  * Post-Walker, apply the analysis results;
@@ -3409,7 +3409,7 @@ static void apply_result(ir_node *irn, void *ctx)
 			}
 		}
 	}
-}  /* apply_result */
+}
 
 /**
  * Fix the keep-alives by deleting unreachable ones.
@@ -3446,7 +3446,7 @@ static void apply_end(ir_node *end, environment_t *env)
 		set_End_keepalives(end, j, in);
 		env->modified = 1;
 	}
-}  /* apply_end */
+}
 
 #define SET(code) op_##code->ops.generic = (op_func)compute_##code
 
@@ -3479,7 +3479,7 @@ static void set_compute_functions(void)
 	SET(Return);
 	SET(End);
 	SET(Call);
-}  /* set_compute_functions */
+}
 
 /**
  * Add memory keeps.
@@ -3505,7 +3505,7 @@ static void add_memory_keeps(ir_node **kept_memory, size_t len)
 		}
 	}
 	ir_nodeset_destroy(&set);
-}  /* add_memory_keeps */
+}
 
 void combo(ir_graph *irg)
 {
@@ -3623,10 +3623,10 @@ void combo(ir_graph *irg)
 	current_ir_graph = rem;
 
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
-}  /* combo */
+}
 
 /* Creates an ir_graph pass for combo. */
 ir_graph_pass_t *combo_pass(const char *name)
 {
 	return def_graph_pass(name ? name : "combo", combo);
-}  /* combo_pass */
+}

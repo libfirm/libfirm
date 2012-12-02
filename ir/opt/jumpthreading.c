@@ -789,4 +789,4 @@ void opt_jumpthreading(ir_graph* irg)
 ir_graph_pass_t *opt_jumpthreading_pass(const char *name)
 {
 	return def_graph_pass(name ? name : "jumpthreading", opt_jumpthreading);
-}  /* opt_jumpthreading_pass */
+}

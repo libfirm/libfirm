@@ -167,7 +167,7 @@ int value_not_zero(const ir_node *n, const ir_node **confirm)
 	return (relation != ir_relation_equal) && (relation != ir_relation_unordered);
 
 #undef RET_ON
-}  /* value_not_zero */
+}
 
 /*
  * Check, if the value of a node cannot represent a NULL pointer.
@@ -222,7 +222,7 @@ int value_not_null(const ir_node *n, const ir_node **confirm)
 		}
 	}
 	return 0;
-}  /* value_not_null */
+}
 
 #ifdef __cplusplus
 extern "C++" {
@@ -337,7 +337,7 @@ ir_value_classify_sign classify_value_sign(ir_node *n)
 	default:
 		return value_classified_unknown;
 	}
-}  /* classify_value_sign */
+}
 
 /**
  * construct an interval from a value
@@ -381,7 +381,7 @@ static interval_t *get_interval_from_tv(interval_t *iv, ir_tarval *tv)
 	iv->flags = MIN_INCLUDED | MAX_INCLUDED;
 
 	return iv;
-}  /* get_interval_from_tv */
+}
 
 /**
  * construct an interval from a Confirm
@@ -483,7 +483,7 @@ static interval_t *get_interval(interval_t *iv, ir_node *bound, ir_relation rela
 	if (iv->min != tarval_bad && iv->max != tarval_bad)
 		return iv;
 	return NULL;
-}  /* get_interval */
+}
 
 /**
  * Try to evaluate l_iv relation r_iv.
@@ -616,7 +616,7 @@ static ir_tarval *(compare_iv)(const interval_t *l_iv, const interval_t *r_iv, i
 		return tarval_bad;
 	}
 	return tarval_bad;
-}  /* compare_iv */
+}
 
 /**
  * Returns non-zero, if a given relation is transitive.
@@ -624,7 +624,7 @@ static ir_tarval *(compare_iv)(const interval_t *l_iv, const interval_t *r_iv, i
 static int is_transitive(ir_relation relation)
 {
 	return (ir_relation_false < relation && relation < ir_relation_less_greater);
-}  /* is_transitive */
+}
 
 /**
  * Return the value of a Cmp if one or both predecessors
@@ -807,7 +807,7 @@ check_null_case:
 		DBG_EVAL_CONFIRM(cmp);
 
 	return tv;
-}  /* computed_value_Cmp_Confirm */
+}
 
 #ifdef DEBUG_CONFIRM
 /**
@@ -836,7 +836,7 @@ static int iv_snprintf(char *buf, size_t len, const interval_t *iv)
 			return snprintf(buf, len, "%s", smin);
 	}
 	return snprintf(buf, len, "<UNKNOWN>");
-}  /* iv_snprintf */
+}
 
 /**
  * For debugging. Prints an interval compare.
@@ -853,7 +853,7 @@ static void print_iv_cmp(const interval_t *l_iv, const interval_t *r_iv, ir_rela
 	iv_snprintf(sr, sizeof(sr), r_iv);
 
 	ir_printf("%s %= %s", sl, relation, sr);
-}  /* print_iv_cmp */
+}
 
 /**
  * For debugging. call *compare_iv() and prints inputs and result.
@@ -873,6 +873,6 @@ static tarval *compare_iv_dbg(const interval_t *l_iv, const interval_t *r_iv, ir
 	print_iv_cmp(l_iv, r_iv, relation);
 	ir_printf(" = %T\n", tv);
 	return tv;
-}  /* compare_iv_dbg */
+}
 
 #endif /* DEBUG_CONFIRM */

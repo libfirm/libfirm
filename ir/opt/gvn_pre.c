@@ -214,7 +214,7 @@ static void dump_value_set(ir_valueset_t *set, const char *txt, ir_node *block)
 		++i;
 	}
 	DB((dbg, LEVEL_2, "\n}\n"));
-}  /* dump_value_set */
+}
 
 /**
  * Dump all exp_gen value sets.
@@ -440,7 +440,7 @@ static void alloc_block_info(ir_node *block, pre_env *env)
 
 	info->next = env->list;
 	env->list  = info;
-}  /* alloc_block_info */
+}
 
 static void free_block_info(block_info *block_info)
 {
@@ -1228,7 +1228,7 @@ static void update_new_set(ir_node *block, ir_node *idom)
 	if (updated)
 		dump_value_set(curr_info->avail_out, "Updated [Avail_out]", block);
 #endif
-} /* update_new_set */
+}
 
 /**
  * Checks if hoisting irn is greedy.
@@ -1806,7 +1806,7 @@ static void eliminate(ir_node *irn, void *ctx)
 			}
 		}
 	}
-}  /* eliminate */
+}
 
 /**
  * Do all the recorded changes and optimize
@@ -1856,7 +1856,7 @@ static void eliminate_nodes(elim_pair *pairs, ir_nodeset_t *keeps)
 	foreach_ir_nodeset(keeps, m_phi, iter) {
 		remove_End_keepalive(end, m_phi);
 	}
-}  /* eliminate_nodes */
+}
 
 
 /* --------------------------------------------------------
