@@ -260,7 +260,6 @@ Rsb => {
 
 Mov => {
 	irn_flags => [ "rematerializable" ],
-	arity     => "variable",
 	emit      => 'mov %D0, %O',
 	mode      => $mode_gp,
 	attr_type => "arm_shifter_operand_t",
@@ -270,7 +269,6 @@ Mov => {
 Mvn => {
 	irn_flags => [ "rematerializable" ],
 	attr_type => "arm_shifter_operand_t",
-	arity     => "variable",
 	emit      => 'mvn %D0, %O',
 	mode      => $mode_gp,
 	constructors => \%unop_shifter_operand_constructors,
