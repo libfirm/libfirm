@@ -577,25 +577,13 @@ static void peephole_sparc_RestoreZero(ir_node *node)
 
 static void finish_sparc_Return(ir_node *node)
 {
-	ir_node *schedpoint = node;
-	ir_node *restore;
-	/* see that there is no code between Return and restore, if there is move
-	 * it in front of the restore */
-	while (true) {
-		schedpoint = sched_prev(schedpoint);
-		if (sched_is_begin(schedpoint))
-			return;
-		if (is_sparc_Restore(schedpoint) || is_sparc_RestoreZero(schedpoint))
+	/* Ensure that the restore is directly before the return. */
+	sched_foreach_reverse_from(sched_prev(node), restore) {
+		if (is_sparc_Restore(restore) || is_sparc_RestoreZero(restore)) {
+			sched_remove(restore);
+			sched_add_before(node, restore);
 			break;
-	}
-	restore = schedpoint;
-	schedpoint = sched_prev(node);
-	/* move all code between return and restore up */
-	while (schedpoint != restore) {
-		ir_node *next_schedpoint = sched_prev(schedpoint);
-		sched_remove(schedpoint);
-		sched_add_before(restore, schedpoint);
-		schedpoint = next_schedpoint;
+		}
 	}
 }
 
