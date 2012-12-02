@@ -911,10 +911,6 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr)
 	return res;
 }  /* follow_Mem_chain */
 
-/*
- * Check if we can replace the load by a given const from
- * the const code irg.
- */
 ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c)
 {
 	ir_mode  *c_mode = get_irn_mode(c);
@@ -2138,9 +2134,6 @@ static int optimize_loops(ir_graph *irg)
 	return env.changes;
 }  /* optimize_loops */
 
-/*
- * do the load store optimization
- */
 void optimize_load_store(ir_graph *irg)
 {
 	walk_env_t env;
