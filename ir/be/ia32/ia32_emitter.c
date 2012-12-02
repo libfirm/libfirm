@@ -1787,8 +1787,10 @@ static unsigned char pnc2cc(ia32_condition_code_t cc)
 enum OpSize {
 	OP_8          = 0x00, /* 8bit operation. */
 	OP_16_32      = 0x01, /* 16/32bit operation. */
+	OP_MEM_SRC    = 0x02, /* The memory operand is in the soruce position. */
 	OP_IMM8       = 0x02, /* 8bit immediate, which gets sign extended for 16/32bit operation. */
 	OP_16_32_IMM8 = 0x03, /* 16/32bit operation with sign extended 8bit immediate. */
+	OP_EAX        = 0x04, /* Short form of instruction with al/ax/eax as operand. */
 };
 
 /** The mod encoding of the ModR/M */
@@ -2031,85 +2033,6 @@ static void bemit_mod_am(unsigned reg, const ir_node *node)
 }
 
 /**
- * Emit a binop with a immediate operand.
- *
- * @param node        the node to emit
- * @param opcode_eax  the opcode for the op eax, imm variant
- * @param opcode      the opcode for the reg, imm variant
- * @param ruval       the opcode extension for opcode
- */
-static void bemit_binop_with_imm(
-	const ir_node *node,
-	unsigned char opcode_ax,
-	unsigned char opcode, unsigned char ruval)
-{
-	/* Use in-reg, because some instructions (cmp, test) have no out-reg. */
-	const ir_node               *op   = get_irn_n(node, n_ia32_binary_right);
-	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(op);
-
-	unsigned const size = attr->symconst ? 4 : get_signed_imm_size(attr->offset);
-	switch (size) {
-	case 1:
-		bemit8(opcode | OP_16_32_IMM8);
-		/* cmp has this special mode */
-		if (get_ia32_op_type(node) == ia32_Normal) {
-			const arch_register_t *reg = arch_get_irn_register_in(node, n_ia32_binary_left);
-			bemit_modru(reg, ruval);
-		} else {
-			bemit_mod_am(ruval, node);
-		}
-		bemit8((unsigned char)attr->offset);
-		return;
-	case 2:
-	case 4:
-		if (get_ia32_op_type(node) == ia32_Normal) {
-			/* check for eax variant: this variant is shorter for 32bit immediates only */
-			const arch_register_t *reg = arch_get_irn_register_in(node, n_ia32_binary_left);
-			if (reg->index == REG_GP_EAX) {
-				bemit8(opcode_ax);
-			} else {
-				bemit8(opcode);
-				bemit_modru(reg, ruval);
-			}
-		} else {
-			bemit8(opcode);
-			bemit_mod_am(ruval, node);
-		}
-		bemit_entity(attr->symconst, attr->sc_sign, attr->offset, false);
-		return;
-	}
-	panic("invalid imm size?!?");
-}
-
-/**
- * Emits a binop.
- */
-static void bemit_binop_2(const ir_node *node, unsigned code)
-{
-	const arch_register_t *out = arch_get_irn_register_in(node, n_ia32_binary_left);
-	bemit8(code);
-	if (get_ia32_op_type(node) == ia32_Normal) {
-		const arch_register_t *op2 = arch_get_irn_register_in(node, n_ia32_binary_right);
-		bemit_modrr(op2, out);
-	} else {
-		bemit_mod_am(reg_gp_map[out->index], node);
-	}
-}
-
-/**
- * Emit a binop.
- */
-static void bemit_binop(const ir_node *node, const unsigned char opcodes[4])
-{
-	ir_node *right = get_irn_n(node, n_ia32_binary_right);
-	if (is_ia32_Immediate(right)) {
-		bemit_binop_with_imm(node, opcodes[1], opcodes[2], opcodes[3]);
-	} else {
-		bemit_binop_2(node, opcodes[0]);
-	}
-}
-
-/**
  * Emit an unop.
  */
 static void bemit_unop(const ir_node *node, unsigned char code, unsigned char ext, int input)
@@ -2210,22 +2133,75 @@ static void bemit_mov_const(const ir_node *node)
 }
 
 /**
- * Creates a function for a Binop with 3 possible encodings.
+ * Emit a binop.
  */
-#define BINOP(op, op0, op1, op2, op2_ext)                                 \
-static void bemit_ ## op(const ir_node *node) {                           \
-	static const unsigned char op ## _codes[] = {op0, op1, op2, op2_ext}; \
-	bemit_binop(node, op ## _codes);                                      \
+static void bemit_binop(ir_node const *const node, unsigned const code)
+{
+	ir_mode *const ls_mode = get_ia32_ls_mode(node);
+	unsigned       size    = ls_mode ? get_mode_size_bits(ls_mode) : 32;
+	if (size == 16)
+		bemit8(0x66);
+
+	unsigned       op    = size == 8 ? OP_8 : OP_16_32;
+	ir_node *const right = get_irn_n(node, n_ia32_binary_right);
+	if (is_ia32_Immediate(right)) {
+		ia32_immediate_attr_t const *const attr = get_ia32_immediate_attr_const(right);
+		/* Try to use the short form with 8bit sign extended immediate. */
+		if (op != OP_8 && !attr->symconst && get_signed_imm_size(attr->offset) == 1) {
+			op   = OP_16_32_IMM8;
+			size = 8;
+		}
+
+		/* Emit the main opcode. */
+		if (get_ia32_op_type(node) == ia32_Normal) {
+			arch_register_t const *const dst = arch_get_irn_register_in(node, n_ia32_binary_left);
+			/* Try to use the shorter al/ax/eax form. */
+			if (dst->index == REG_GP_EAX && op != OP_16_32_IMM8) {
+				bemit8(code << 3 | OP_EAX | op);
+			} else {
+				bemit8(0x80 | op);
+				bemit_modru(dst, code);
+			}
+		} else {
+			bemit8(0x80 | op);
+			bemit_mod_am(code, node);
+		}
+
+		/* Emit the immediate. */
+		switch (size) {
+		case  8: bemit8(attr->offset);  break;
+		case 16: bemit16(attr->offset); break;
+		case 32: bemit_entity(attr->symconst, attr->sc_sign, attr->offset, false); break;
+		}
+	} else {
+		bemit8(code << 3 | OP_MEM_SRC | op);
+		arch_register_t const *const dst = arch_get_irn_register_in(node, n_ia32_binary_left);
+		if (get_ia32_op_type(node) == ia32_Normal) {
+			arch_register_t const *const src = arch_get_irn_register(right);
+			bemit_modrr(src, dst);
+		} else {
+			bemit_mod_am(reg_gp_map[dst->index], node);
+		}
+	}
 }
 
-/*    insn  def  eax,imm   imm */
-BINOP(add,  0x03, 0x05, 0x81, 0)
-BINOP(or,   0x0B, 0x0D, 0x81, 1)
-BINOP(adc,  0x13, 0x15, 0x81, 2)
-BINOP(sbb,  0x1B, 0x1D, 0x81, 3)
-BINOP(and,  0x23, 0x25, 0x81, 4)
-BINOP(sub,  0x2B, 0x2D, 0x81, 5)
-BINOP(xor,  0x33, 0x35, 0x81, 6)
+/**
+ * Create a function for a binop.
+ */
+#define BINOP(op, code) \
+	static void bemit_##op(ir_node const *const node) \
+	{ \
+		bemit_binop(node, code); \
+	}
+
+/*    insn opcode */
+BINOP(add, 0)
+BINOP(or,  1)
+BINOP(adc, 2)
+BINOP(sbb, 3)
+BINOP(and, 4)
+BINOP(sub, 5)
+BINOP(xor, 6)
 
 #define BINOPMEM(op, ext) \
 static void bemit_##op(const ir_node *node) \
