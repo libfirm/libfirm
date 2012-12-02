@@ -670,15 +670,12 @@ static void transform_to_Load(ir_node *node)
 	ir_mode *mode        = get_irn_mode(node);
 	ir_mode *spillmode   = get_spill_mode(node);
 	ir_node *noreg       = ia32_new_NoReg_gp(irg);
-	ir_node *sched_point = NULL;
 	ir_node *ptr         = get_irg_frame(irg);
 	ir_node *mem         = get_irn_n(node, n_be_Reload_mem);
 	ir_node *new_op, *proj;
 	const arch_register_t *reg;
 
-	if (sched_is_scheduled(node)) {
-		sched_point = sched_prev(node);
-	}
+	ir_node *const sched_point = sched_prev(node);
 
 	if (mode_is_float(spillmode)) {
 		if (ia32_cg_config.use_sse2)
@@ -703,10 +700,8 @@ static void transform_to_Load(ir_node *node)
 
 	proj = new_rd_Proj(dbgi, new_op, mode, pn_ia32_Load_res);
 
-	if (sched_point) {
-		sched_add_after(sched_point, new_op);
-		sched_remove(node);
-	}
+	sched_add_after(sched_point, new_op);
+	sched_remove(node);
 
 	/* copy the register from the old node to the new Load */
 	reg = arch_get_irn_register(node);
@@ -734,11 +729,8 @@ static void transform_to_Store(ir_node *node)
 	ir_node *val   = get_irn_n(node, n_be_Spill_val);
 	ir_node *res;
 	ir_node *store;
-	ir_node *sched_point = NULL;
 
-	if (sched_is_scheduled(node)) {
-		sched_point = sched_prev(node);
-	}
+	ir_node *const sched_point = sched_prev(node);
 
 	if (mode_is_float(mode)) {
 		if (ia32_cg_config.use_sse2) {
@@ -768,10 +760,8 @@ static void transform_to_Store(ir_node *node)
 	SET_IA32_ORIG_NODE(store, node);
 	DBG_OPT_SPILL2ST(node, store);
 
-	if (sched_point) {
-		sched_add_after(sched_point, store);
-		sched_remove(node);
-	}
+	sched_add_after(sched_point, store);
+	sched_remove(node);
 
 	exchange(node, res);
 }
