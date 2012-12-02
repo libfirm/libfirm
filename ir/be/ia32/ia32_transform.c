@@ -3117,8 +3117,7 @@ static ir_node *create_set_32bit(dbg_info *dbgi, ir_node *new_block,
 
 	/* we might need to conv the result up */
 	if (get_mode_size_bits(mode) > 8) {
-		new_node = new_bd_ia32_Conv_I2I8Bit(dbgi, new_block, noreg_GP, noreg_GP,
-		                                    nomem, new_node, mode_Bu);
+		new_node = new_bd_ia32_Conv_I2I_8bit(dbgi, new_block, noreg_GP, noreg_GP, nomem, new_node, mode_Bu);
 		SET_IA32_ORIG_NODE(new_node, orig_node);
 	}
 
@@ -3670,7 +3669,7 @@ static ir_node *create_Conv_I2I(dbg_info *dbgi, ir_node *block, ir_node *base,
 	ir_node *(*func)(dbg_info*, ir_node*, ir_node*, ir_node*, ir_node*, ir_node*, ir_mode*);
 
 	func = get_mode_size_bits(mode) == 8 ?
-		new_bd_ia32_Conv_I2I8Bit : new_bd_ia32_Conv_I2I;
+		new_bd_ia32_Conv_I2I_8bit : new_bd_ia32_Conv_I2I;
 	return func(dbgi, block, base, index, mem, val, mode);
 }
 
@@ -4441,8 +4440,7 @@ static ir_node *gen_Proj_Load(ir_node *node)
 		case pn_Load_X_regular:
 			return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_Load_X_regular);
 		}
-	} else if (is_ia32_Conv_I2I(new_pred) ||
-	           is_ia32_Conv_I2I8Bit(new_pred)) {
+	} else if (is_ia32_Conv_I2I(new_pred)) {
 		set_irn_mode(new_pred, mode_T);
 		switch ((pn_Load)proj) {
 		case pn_Load_res:
@@ -5013,7 +5011,7 @@ static ir_node *gen_ffs(ir_node *node)
 	SET_IA32_ORIG_NODE(set, node);
 
 	/* conv to 32bit */
-	conv = new_bd_ia32_Conv_I2I8Bit(dbgi, block, noreg_GP, noreg_GP, nomem, set, mode_Bu);
+	conv = new_bd_ia32_Conv_I2I_8bit(dbgi, block, noreg_GP, noreg_GP, nomem, set, mode_Bu);
 	SET_IA32_ORIG_NODE(conv, node);
 
 	/* neg */
@@ -5089,8 +5087,7 @@ static ir_node *gen_parity(ir_node *node)
 	SET_IA32_ORIG_NODE(new_node, node);
 
 	/* conv to 32bit */
-	new_node = new_bd_ia32_Conv_I2I8Bit(dbgi, new_block, noreg_GP, noreg_GP,
-	                                    nomem, new_node, mode_Bu);
+	new_node = new_bd_ia32_Conv_I2I_8bit(dbgi, new_block, noreg_GP, noreg_GP, nomem, new_node, mode_Bu);
 	SET_IA32_ORIG_NODE(new_node, node);
 	return new_node;
 }

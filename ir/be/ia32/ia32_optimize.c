@@ -1303,7 +1303,7 @@ static void optimize_conv_store(ir_node *node)
 	} else {
 		pred = pred_proj;
 	}
-	if (!is_ia32_Conv_I2I(pred) && !is_ia32_Conv_I2I8Bit(pred))
+	if (!is_ia32_Conv_I2I(pred))
 		return;
 	if (get_ia32_op_type(pred) != ia32_Normal)
 		return;
@@ -1330,10 +1330,9 @@ static void optimize_load_conv(ir_node *node)
 	ir_mode *load_mode;
 	ir_mode *conv_mode;
 
-	if (!is_ia32_Conv_I2I(node) && !is_ia32_Conv_I2I8Bit(node))
+	if (!is_ia32_Conv_I2I(node))
 		return;
 
-	assert((int)n_ia32_Conv_I2I_val == (int)n_ia32_Conv_I2I8Bit_val);
 	pred = get_irn_n(node, n_ia32_Conv_I2I_val);
 	if (!is_Proj(pred))
 		return;
@@ -1378,17 +1377,16 @@ static void optimize_conv_conv(ir_node *node)
 	int      conv_mode_bits;
 	int      pred_mode_bits;
 
-	if (!is_ia32_Conv_I2I(node) && !is_ia32_Conv_I2I8Bit(node))
+	if (!is_ia32_Conv_I2I(node))
 		return;
 
-	assert((int)n_ia32_Conv_I2I_val == (int)n_ia32_Conv_I2I8Bit_val);
 	pred_proj = get_irn_n(node, n_ia32_Conv_I2I_val);
 	if (is_Proj(pred_proj))
 		pred = get_Proj_pred(pred_proj);
 	else
 		pred = pred_proj;
 
-	if (!is_ia32_Conv_I2I(pred) && !is_ia32_Conv_I2I8Bit(pred))
+	if (!is_ia32_Conv_I2I(pred))
 		return;
 
 	/* we know that after a conv, the upper bits are sign extended
@@ -1411,7 +1409,7 @@ static void optimize_conv_conv(ir_node *node)
 			/* Argh:We must change the opcode to 8bit AND copy the register constraints */
 			if (get_mode_size_bits(conv_mode) == 8) {
 				const arch_register_req_t **reqs = arch_get_irn_register_reqs_in(node);
-				set_irn_op(pred, op_ia32_Conv_I2I8Bit);
+				set_irn_op(pred, op_ia32_Conv_I2I);
 				arch_set_irn_register_reqs_in(pred, reqs);
 			}
 		} else {
@@ -1426,7 +1424,7 @@ static void optimize_conv_conv(ir_node *node)
 			/* Argh:We must change the opcode to 8bit AND copy the register constraints */
 			if (get_mode_size_bits(conv_mode) == 8) {
 				const arch_register_req_t **reqs = arch_get_irn_register_reqs_in(node);
-				set_irn_op(result_conv, op_ia32_Conv_I2I8Bit);
+				set_irn_op(result_conv, op_ia32_Conv_I2I);
 				arch_set_irn_register_reqs_in(result_conv, reqs);
 			}
 		}

@@ -3329,7 +3329,6 @@ static void ia32_register_binary_emitters(void)
 	be_set_emitter(op_ia32_Cmp,           bemit_cmp);
 	be_set_emitter(op_ia32_Const,         bemit_mov_const);
 	be_set_emitter(op_ia32_Conv_I2I,      bemit_conv_i2i);
-	be_set_emitter(op_ia32_Conv_I2I8Bit,  bemit_conv_i2i);
 	be_set_emitter(op_ia32_CopyB_i,       bemit_copybi);
 	be_set_emitter(op_ia32_Cwtl,          bemit_cwtl);
 	be_set_emitter(op_ia32_Dec,           bemit_dec);

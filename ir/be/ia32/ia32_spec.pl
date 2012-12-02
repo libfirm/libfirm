@@ -1699,23 +1699,16 @@ Cwtl => {
 Conv_I2I => {
 	op_flags  => [ "uses_memory", "fragile" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "gp" ],
-	               out => [ "gp", "none", "none", "none", "none" ] },
-	ins       => [ "base", "index", "mem", "val" ],
-	outs      => [ "res", "flags", "M", "X_regular", "X_except" ],
-	emit      => "mov%#Ml %#AS3, %D0",
-	am        => "source,unary",
-	latency   => 1,
-	attr      => "ir_mode *smaller_mode",
-	init_attr => "attr->ls_mode = smaller_mode;",
-	mode      => $mode_gp,
-},
-
-Conv_I2I8Bit => {
-	op_flags  => [ "uses_memory", "fragile" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ],
-	               out => [ "gp", "none", "none", "none", "none" ] },
+	constructors => {
+		"" => {
+			reg_req => { in => [ "gp", "gp", "none", "gp" ],
+			            out => [ "gp", "none", "none", "none", "none" ] }
+		},
+		"8bit" => {
+			reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ],
+			              out => [ "gp", "none", "none", "none", "none" ] }
+		}
+	},
 	ins       => [ "base", "index", "mem", "val" ],
 	outs      => [ "res", "flags", "M", "X_regular", "X_except" ],
 	emit      => "mov%#Ml %#AS3, %D0",
