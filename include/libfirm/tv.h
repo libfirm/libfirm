@@ -271,7 +271,7 @@ FIRM_API int tarval_is_minus_one(ir_tarval *tv);
 FIRM_API int tarval_is_all_one(ir_tarval *tv);
 
 /**
- * Returns non-zero if the tarval is a constant (ie. NOT
+ * Returns non-zero if the tarval is a constant (i.e. NOT
  * a reserved tarval like bad, undef, reachable etc.)
  */
 FIRM_API int tarval_is_constant(ir_tarval *tv);

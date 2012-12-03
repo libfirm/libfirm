@@ -73,7 +73,7 @@ bool be_has_only_one_user(ir_node *node);
 
 /**
  * In a scheduled program with registers assigned,
- * checks wether @p node can be moved before @p before without changing program
+ * checks whether @p node can be moved before @p before without changing program
  * semantics.
  *
  * Note: It is allowed to use this function without being in a peephole

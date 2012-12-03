@@ -110,7 +110,7 @@ static void be_abi_reg_map_set(pmap *map, const arch_register_t* reg,
 }
 
 /**
- * Check if the given register is callee save, ie. will be saved by the callee.
+ * Check if the given register is callee save, i.e. will be saved by the callee.
  */
 static bool arch_register_is_callee_save(
 	const arch_env_t      *arch_env,
@@ -122,7 +122,7 @@ static bool arch_register_is_callee_save(
 }
 
 /**
- * Check if the given register is caller save, ie. must be saved by the caller.
+ * Check if the given register is caller save, i.e. must be saved by the caller.
  */
 static bool arch_register_is_caller_save(
 	const arch_env_t      *arch_env,

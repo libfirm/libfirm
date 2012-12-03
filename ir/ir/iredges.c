@@ -197,7 +197,7 @@ static inline void edge_change_cnt(ir_node *tgt, ir_edge_kind_t kind, int ofs)
 }
 
 /**
- * Verify the edge list of a node, ie. ensure it's a loop:
+ * Verify the edge list of a node, i.e. ensure it's a loop:
  * head -> e_1 -> ... -> e_n -> head
  */
 static inline void verify_list_head(ir_node *irn, ir_edge_kind_t kind)

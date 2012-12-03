@@ -415,7 +415,7 @@ FIRM_API void set_reference_mode_unsigned_eq(ir_mode *ref_mode, ir_mode *int_mod
  * Returns size of mantissa in bits (for float modes).
  * Note: This is the number of bits used after the leading one. So the actual
  * accuracy of the significand is get_mode_mantissa_size()+1. The number of bits
- * used in the encoding depends on wether the floatingpoint mode has an implicit
+ * used in the encoding depends on whether the floatingpoint mode has an implicit
  * (ieee754) or explicit (x86_extended) encoding of the leading one.
  */
 FIRM_API unsigned get_mode_mantissa_size(const ir_mode *mode);
@@ -427,7 +427,7 @@ FIRM_API unsigned get_mode_exponent_size(const ir_mode *mode);
 
 /**
  * Returns non-zero if the cast from mode src to mode dst is a
- * reinterpret cast (ie. only the bit pattern is reinterpreted,
+ * reinterpret cast (i.e. only the bit pattern is reinterpreted,
  * no conversion is done)
  */
 FIRM_API int is_reinterpret_cast(const ir_mode *src, const ir_mode *dst);

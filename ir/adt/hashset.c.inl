@@ -44,7 +44,7 @@
  *                             Defining this implies, that a data value contains
  *                             more than just the key.</li>
  *  <li><b>GetKey(value)</b>   Extracts the key from a data value</li>
- *  <li><b>KeysEqual(hashset,key1,key2)</b>  Tests wether 2 keys are equal</li>
+ *  <li><b>KeysEqual(hashset,key1,key2)</b>  Tests whether 2 keys are equal</li>
  *  <li><b>DO_REHASH</b>       Instead of storing the hash-values, recalculate
  *                             them on demand from the datavalues. (useful if
  *                             calculating the hash-values takes less time than

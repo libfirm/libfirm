@@ -645,7 +645,7 @@ static void set_am_attributes(ir_node *node, const ia32_address_mode_t *am)
 }
 
 /**
- * Check, if a given node is a Down-Conv, ie. a integer Conv
+ * Check, if a given node is a Down-Conv, i.e. a integer Conv
  * from a mode with a mode with more bits to a mode with lesser bits.
  * Moreover, we return only true if the node has not more than 1 user.
  *
@@ -1309,7 +1309,7 @@ static ir_node *gen_64bit_shifts(dbg_info *dbgi, ir_node *block,
 }
 
 /**
- * test wether 2 values result in 'x' and '32-x' when interpreted as a shift
+ * Tests whether 2 values result in 'x' and '32-x' when interpreted as a shift
  * value.
  */
 static bool is_complementary_shifts(ir_node *value1, ir_node *value2)

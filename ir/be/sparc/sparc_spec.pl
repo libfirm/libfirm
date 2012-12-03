@@ -485,7 +485,7 @@ fbfcc => {
 },
 
 Ba => {
-	# Note: has_delay_slot depends on wether it is a fallthrough or not, so we
+	# Note: has_delay_slot depends on whether it is a fallthrough or not, so we
 	# have special code for this in sparc_emitter
 	state     => "pinned",
 	op_flags  => [ "cfopcode" ],

@@ -229,7 +229,7 @@ ir_node *be_new_SubSP(const arch_register_t *sp, ir_node *block,
  *               (negative offset). Note that the offset is independent of the
  *               natural stack direction of the architecture but just specifies
  *               abstract expanding/shrinking of the stack area.
- * @param align  force stack alignment to this power of 2. (ie. specifying 3
+ * @param align  force stack alignment to this power of 2. (i.e. specifying 3
  *               results in a 2^3 = 8byte stack alignment)
  * @return       A new stack pointer increment/decrement node.
  * @note         This node sets a register constraint to the @p sp register on

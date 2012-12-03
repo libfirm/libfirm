@@ -645,7 +645,7 @@ restart:
 				continue;
 
 			/* normalize pncs: we need the true case to jump into the
-			 * common block (ie. conjunctive normal form) */
+			 * common block (i.e. conjunctive normal form) */
 			if (get_Proj_proj(lower_cf) == pn_Cond_false) {
 				if (cpair.cmp_lo == cond_selector) {
 					ir_node  *cmp   = cpair.cmp_lo;

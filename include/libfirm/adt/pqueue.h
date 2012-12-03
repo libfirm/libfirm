@@ -61,7 +61,7 @@ FIRM_API void del_pqueue(pqueue_t *q);
 FIRM_API void pqueue_put(pqueue_t *q, void *data, int priority);
 
 /**
- * Returns and removes the first element, ie. that one with the highest priority, from the queue.
+ * Returns and removes the first element, i.e. that one with the highest priority, from the queue.
  * @param q   The priority queue.
  * @return The first element of the queue. Asserts if queue is empty.
  */
