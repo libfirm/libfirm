@@ -360,7 +360,7 @@ irnode_h_template = env.from_string(
 '''/* Warning: automatically generated code */
 
 {% for node in nodes %}
-#define is_{{node.name}}(node)    is_{{node.name}}_(node)
+#define is_{{node.name}}(node) is_{{node.name}}_(node)
 {%- for attr in node.attrs|hasnot("noprop") %}
 #define get_{{node.name}}_{{attr.name}}(node) get_{{node.name}}_{{attr.name}}_(node)
 #define set_{{node.name}}_{{attr.name}}(node, {{attr.name}}) set_{{node.name}}_{{attr.name}}_(node, {{attr.name}})
@@ -376,7 +376,7 @@ static inline int is_{{node.name}}_(const ir_node *node)
 {
 	return get_irn_op(node) == op_{{node.name}};
 }
-{%- for attr in node.attrs|hasnot("noprop") %}
+{%  for attr in node.attrs|hasnot("noprop") %}
 static inline {{attr.type}} get_{{node.name}}_{{attr.name}}_(const ir_node *node)
 {
 	assert(is_{{node.name}}(node));
@@ -413,7 +413,7 @@ int (is_{{node.name}})(const ir_node *node)
 {
 	return is_{{node.name}}_(node);
 }
-{%- for attr in node.attrs|hasnot("noprop") %}
+{%  for attr in node.attrs|hasnot("noprop") %}
 {{attr.type}} (get_{{node.name}}_{{attr.name}})(const ir_node *node)
 {
 	return get_{{node.name}}_{{attr.name}}_(node);
@@ -529,7 +529,7 @@ typedef enum {
 	{%- endfor %}
 	n_{{node.name}}_max = n_{{node.name}}_{{node.ins[-1][0]}}
 } n_{{node.name}};
-{% endif %}
+{% endif -%}
 {% if node.outs %}
 /**
  * Projection numbers for result of {{node.name}} node (use for Proj nodes)
@@ -591,6 +591,7 @@ FIRM_API ir_node *new_{{node.name}}(
 		{{node|nodeparameters}}
 	{% endfilter %});
 {%- endif %}
+
 /**
  * Test if node is a {{node.name}}
  * @returns 1 if the node is a {{node.name}} node, 0 otherwise
