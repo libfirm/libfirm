@@ -144,9 +144,6 @@ static void find_addr(ir_node *node, void *env)
 				/* access to value_type */
 				*allow_inline = false;
 			}
-			if (is_parameter_entity(ent)) {
-				*allow_inline = false;
-			}
 		}
 	} else if (is_Alloc(node) && get_Alloc_where(node) == stack_alloc) {
 		/* From GCC:
@@ -240,14 +237,6 @@ static bool can_inline(ir_node *call, ir_graph *called_graph)
 		}
 	}
 
-	/* check parameters for compound arguments */
-	for (i = 0; i < n_params; ++i) {
-		ir_type *p_type = get_method_param_type(call_type, i);
-
-		if (is_compound_type(p_type) || is_Array_type(p_type))
-			return false;
-	}
-
 	/* check results for compound arguments */
 	for (i = 0; i < n_res; ++i) {
 		ir_type *r_type = get_method_res_type(call_type, i);
@@ -281,10 +270,65 @@ static void copy_frame_entities(ir_graph *from, ir_graph *to)
 
 	for (i = 0; i < n_members; ++i) {
 		ir_entity *old_ent = get_class_member(from_frame, i);
-		ir_entity *new_ent = copy_entity_own(old_ent, to_frame);
-		set_entity_link(old_ent, new_ent);
-		assert (!is_parameter_entity(old_ent));
+
+		// parameter entities are already copied and the link has been set
+		if (!is_parameter_entity(old_ent)) {
+			ir_entity *new_ent = copy_entity_own(old_ent, to_frame);
+			set_entity_link(old_ent, new_ent);
+		}
 	}
+}
+
+/* Copies compound parameters from the given call. */
+static void copy_compound_params(ir_node *call, ir_type *ctp, ir_graph *called_irg)
+{
+	dbg_info *dbgi          = get_irn_dbg_info(call);
+	ir_graph *irg           = get_irn_irg(call);
+	ir_node *mem            = get_Call_mem(call);
+	ir_node *nomem          = new_r_NoMem(irg);
+	ir_node *frame          = get_irg_frame(irg);
+	ir_node *block          = get_nodes_block(call);
+	ir_type *called_frame   = get_irg_frame_type(called_irg);
+	size_t n_params         = get_method_n_params(ctp);
+	size_t n_entities       = get_class_n_members(called_frame);
+	size_t i, n_ent = 0;
+
+	ir_entity **entities = ALLOCAN(ir_entity*, n_params);
+	for (i = 0; i < n_entities; ++i) {
+		assert(n_ent < n_params);
+
+		ir_entity *entity = get_class_member(called_frame, i);
+		if (is_parameter_entity(entity)) {
+			entities[n_ent] = entity;
+			++n_ent;
+		}
+	}
+
+	// Loop over all parameters and copy their entities
+	for (i = 0; i < n_params; ++i) {
+		ir_type *type = get_method_param_type(ctp, i);
+		ir_node *arg;
+		ir_node *sel;
+		ir_node *copyb;
+		ir_entity *new_entity, *old_entity;
+
+		if (! is_compound_type(type))
+			continue;
+
+		mem        = get_Call_mem(call);
+		arg        = get_Call_param(call, i);
+		old_entity = entities[i];
+		new_entity = copy_entity_own(old_entity, get_irg_frame_type(irg));
+
+		new_entity->entity_kind = IR_ENTITY_COMPOUND_MEMBER;
+		set_entity_link(old_entity, new_entity);
+
+		sel         = new_rd_simpleSel(dbgi, block, nomem, frame, new_entity);
+		copyb       = new_rd_CopyB(dbgi, block, mem, sel, arg, type);
+		mem         = new_r_Proj(copyb, mode_M, pn_CopyB_M);
+		set_Call_param(call, i, sel);
+	}
+	set_Call_mem(call, mem);
 }
 
 /* Inlines a method at the given call site. */
@@ -339,6 +383,12 @@ int inline_method(ir_node *const call, ir_graph *called_graph)
 	}
 	enum exc_mode exc_handling = Xproj != NULL ? exc_handler : exc_no_handler;
 
+	/* entitiy link is used to link entities on old stackframe to the
+	 * new stackframe */
+	irp_reserve_resources(irp, IRP_RESOURCE_ENTITY_LINK);
+
+	copy_compound_params(call, ctp, called_graph);
+
 	/* create the argument tuple */
 	ir_node **args_in = ALLOCAN(ir_node*, n_params);
 
@@ -348,7 +398,7 @@ int inline_method(ir_node *const call, ir_graph *called_graph)
 		ir_type *param_tp = get_method_param_type(mtp, i);
 		ir_mode *mode     = get_type_mode(param_tp);
 
-		if (mode != get_irn_mode(arg)) {
+		if (mode != 0 && mode != get_irn_mode(arg)) {
 			arg = new_r_Conv(block, arg, mode);
 		}
 		args_in[i] = arg;
@@ -391,10 +441,6 @@ int inline_method(ir_node *const call, ir_graph *called_graph)
 	ir_node *nomem = get_irg_no_mem(called_graph);
 	set_new_node(nomem, get_irg_no_mem(irg));
 	mark_irn_visited(nomem);
-
-	/* entitiy link is used to link entities on old stackframe to the
-	 * new stackframe */
-	irp_reserve_resources(irp, IRP_RESOURCE_ENTITY_LINK);
 
 	/* copy entities and nodes */
 	assert(!irn_visited(get_irg_end(called_graph)));
@@ -582,10 +628,6 @@ int inline_method(ir_node *const call, ir_graph *called_graph)
 
 	return 1;
 }
-
-/********************************************************************/
-/* Apply inlining to small methods.                                 */
-/********************************************************************/
 
 static struct obstack  temp_obst;
 
@@ -874,8 +916,7 @@ static int calc_inline_benefice(call_entry *entry, ir_graph *callee)
 {
 	ir_node   *call = entry->call;
 	ir_entity *ent  = get_irg_entity(callee);
-	ir_type   *callee_frame;
-	size_t    i, n_members, n_params;
+	size_t    i, n_params;
 	ir_node   *frame_ptr;
 	ir_type   *mtp;
 	int       weight = 0;
@@ -889,18 +930,6 @@ static int calc_inline_benefice(call_entry *entry, ir_graph *callee)
 		DB((dbg, LEVEL_2, "In %+F Call to %+F: inlining forbidden\n",
 		    call, callee));
 		return entry->benefice = INT_MIN;
-	}
-
-	callee_frame = get_irg_frame_type(callee);
-	n_members = get_class_n_members(callee_frame);
-	for (i = 0; i < n_members; ++i) {
-		ir_entity *frame_ent = get_class_member(callee_frame, i);
-		if (is_parameter_entity(frame_ent)) {
-			// TODO inliner should handle parameter entities by inserting Store operations
-			DB((dbg, LEVEL_2, "In %+F Call to %+F: inlining forbidden due to parameter entity\n", call, callee));
-			add_entity_additional_properties(ent, mtp_property_noinline);
-			return entry->benefice = INT_MIN;
-		}
 	}
 
 	if (props & mtp_property_noreturn) {
