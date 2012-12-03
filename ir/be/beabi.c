@@ -505,12 +505,8 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			continue;
 
 		foreach_out_edge(irn, res_edge) {
-			int proj;
-			ir_node *res = get_edge_src_irn(res_edge);
-
-			assert(is_Proj(res));
-
-			proj = get_Proj_proj(res);
+			ir_node *const res  = get_edge_src_irn(res_edge);
+			long     const proj = get_Proj_proj(res);
 			assert(proj < n_res);
 			assert(res_projs[proj] == NULL);
 			res_projs[proj] = res;
@@ -775,7 +771,6 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 	foreach_out_edge(alloc, edge) {
 		ir_node *irn = get_edge_src_irn(edge);
 
-		assert(is_Proj(irn));
 		switch (get_Proj_proj(irn)) {
 		case pn_Alloc_M:
 			alloc_mem = irn;

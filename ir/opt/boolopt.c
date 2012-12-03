@@ -612,8 +612,6 @@ restart:
 		for (up_idx = 0; up_idx < n_cfgpreds; ++up_idx) {
 			ir_node   *upper_block;
 			ir_node   *upper_cf;
-			ir_node   *upper_cond;
-			ir_node   *upper_cond_selector;
 			ir_node   *replacement;
 			cond_pair  cpair;
 
@@ -627,10 +625,8 @@ restart:
 			if (!block_dominates(upper_block, block))
 				continue;
 
-			assert(is_Proj(upper_cf));
-			upper_cond = get_Proj_pred(upper_cf);
-			assert(is_Cond(upper_cond));
-			upper_cond_selector = get_Cond_selector(upper_cond);
+			ir_node *const upper_cond          = get_Proj_pred(upper_cf);
+			ir_node *const upper_cond_selector = get_Cond_selector(upper_cond);
 			if (get_irn_mode(upper_cond_selector) != mode_b)
 				continue;
 

@@ -204,8 +204,6 @@ static ir_node *gen_Const(ir_node *node)
 	ir_mode   *mode      = get_irn_mode(node);
 	ir_tarval *tv        = get_Const_tarval(node);
 
-	assert(is_Const(node));
-
 	if (mode_is_float(mode)) {
 		ir_graph         *irg      = get_irn_irg(node);
 		const arch_env_t *arch_env = be_get_irg_arch_env(irg);

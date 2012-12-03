@@ -100,10 +100,7 @@ void gc_irgs(size_t n_keep, ir_entity ** keep_arr)
 			/* iterate calls */
 			for (node = (ir_node*)get_irn_link(node); node != NULL;
 			     node = (ir_node*)get_irn_link(node)) {
-				size_t i;
-				assert(is_Call(node));
-
-				for (i = get_Call_n_callees(node); i > 0;) {
+				for (size_t i = get_Call_n_callees(node); i > 0;) {
 					ir_entity *ent = get_Call_callee(node, --i);
 
 					if (get_entity_irg(ent) && get_entity_link(ent) != MARK) {

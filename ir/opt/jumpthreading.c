@@ -58,14 +58,10 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 static void add_pred(ir_node* node, ir_node* x)
 {
 	ir_node** ins;
-	int n;
-	int i;
 
-	assert(is_Block(node));
-
-	n = get_irn_arity(node);
+	int const n = get_Block_n_cfgpreds(node);
 	NEW_ARR_A(ir_node*, ins, n + 1);
-	for (i = 0; i < n; i++)
+	for (int i = 0; i < n; i++)
 		ins[i] = get_irn_n(node, i);
 	ins[n] = x;
 	set_irn_in(node, n + 1, ins);
@@ -298,13 +294,8 @@ static void copy_and_fix(const jumpthreading_env_t *env, ir_node *block,
 		 * mode_bs which can't be handled in all backends. Instead we duplicate
 		 * the node and move it to its users */
 		if (mode == mode_b) {
-			ir_node *pred;
-			int      pn;
-
-			assert(is_Proj(node));
-
-			pred = get_Proj_pred(node);
-			pn   = get_Proj_proj(node);
+			ir_node *const pred = get_Proj_pred(node);
+			long     const pn   = get_Proj_proj(node);
 
 			foreach_out_edge_safe(node, edge) {
 				ir_node *cmp_copy;

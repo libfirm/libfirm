@@ -142,10 +142,9 @@ static inline int was_edge_critical(const ir_node *bl, int pos)
 {
 	const ir_edge_t *edge;
 	const ir_node *bl_at_pos, *bl_before;
-	assert(is_Block(bl));
 
 	/* Does bl have several predecessors ?*/
-	if (get_irn_arity(bl) <= 1)
+	if (get_Block_n_cfgpreds(bl) <= 1)
 		return 0;
 
 	/* Does the pred have exactly one predecessor */

@@ -327,14 +327,11 @@ static inline void finish_scc(void)
  */
 static int is_head(ir_node *n, ir_node *root)
 {
-	int i, arity;
 	int some_outof_loop = 0, some_in_loop = 0;
 	(void) root;
 
-	assert(is_Block(n));
-
-	arity = get_Block_n_cfgpreds(n);
-	for (i = 0; i < arity; i++) {
+	int const arity = get_Block_n_cfgpreds(n);
+	for (int i = 0; i < arity; i++) {
 		ir_node *pred = get_Block_cfgpred_block(n, i);
 		/* ignore Bad control flow: it cannot happen */
 		if (is_Bad(pred))
@@ -362,14 +359,12 @@ static int is_head(ir_node *n, ir_node *root)
  */
 static int is_endless_head(ir_node *n, ir_node *root)
 {
-	int i, arity;
 	int none_outof_loop = 1, some_in_loop = 0;
 	(void) root;
 
-	assert(is_Block(n));
 	/* Test for legal loop header: Block, Phi, ... */
-	arity = get_Block_n_cfgpreds(n);
-	for (i = 0; i < arity; i++) {
+	int const arity = get_Block_n_cfgpreds(n);
+	for (int i = 0; i < arity; i++) {
 		ir_node *pred = get_Block_cfgpred_block(n, i);
 		/* ignore Bad control flow: it cannot happen */
 		if (is_Bad(pred))

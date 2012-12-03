@@ -426,20 +426,16 @@ static void spill_phi(spill_env_t *env, spill_info_t *spillinfo)
 	ir_graph *irg   = env->irg;
 	ir_node  *phi   = spillinfo->to_spill;
 	ir_node  *block = get_nodes_block(phi);
-	ir_node  *unknown;
-	ir_node **ins;
 	spill_t  *spill;
 	int       i;
-	int       arity;
 
-	assert(is_Phi(phi));
 	assert(!get_opt_cse());
 	DBG((dbg, LEVEL_1, "spilling Phi %+F:\n", phi));
 
 	/* build a new PhiM */
-	arity   = get_irn_arity(phi);
-	ins     = ALLOCAN(ir_node*, arity);
-	unknown = new_r_Unknown(irg, mode_M);
+	int       const arity   = get_Phi_n_preds(phi);
+	ir_node **const ins     = ALLOCAN(ir_node*, arity);
+	ir_node  *const unknown = new_r_Unknown(irg, mode_M);
 	for (i = 0; i < arity; ++i) {
 		ins[i] = unknown;
 	}

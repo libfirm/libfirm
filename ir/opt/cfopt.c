@@ -355,8 +355,6 @@ static void optimize_blocks(ir_node *b, void *ctx)
 
 					if (get_nodes_block(phi_pred) == pred) {
 						/* case Phi 2a: */
-						assert(is_Phi(phi_pred));  /* Block is empty!! */
-
 						in[p_preds++] = get_Phi_pred(phi_pred, j);
 					} else {
 						/* case Phi 2b: */

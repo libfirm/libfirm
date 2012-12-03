@@ -514,7 +514,6 @@ static void reorder_weights(q_set *hmap, float threshold)
 {
 	entry_t **adr, *p, *entry;
 	size_t i, len;
-	ir_entity *callee;
 
 restart:
 	entry = hmap->heavy_uses;
@@ -530,9 +529,8 @@ restart:
 
 		/* we know, that a SymConst is here */
 		ptr = get_Call_ptr(call);
-		assert(is_SymConst(ptr));
 
-		callee = get_SymConst_entity(ptr);
+		ir_entity *const callee = get_SymConst_entity(ptr);
 		if (callee != entry->q.ent) {
 			/*
 			 * This call is already changed because of a previous

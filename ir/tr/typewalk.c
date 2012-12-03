@@ -494,7 +494,6 @@ static void class_walk_s2s_2(ir_type *tp, class_walk_func *pre,
 	/* marked? */
 	if (type_visited(tp)) return;
 
-	assert(is_Class_type(tp));
 	/* Assure all supertypes are visited before */
 	n = get_class_n_supertypes(tp);
 	for (i = 0; i < n; ++i) {

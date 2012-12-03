@@ -313,7 +313,6 @@ void mature_immBlock(ir_node *block)
 	ir_node  *phi;
 	ir_graph *irg;
 
-	assert(is_Block(block));
 	if (get_Block_matured(block))
 		return;
 

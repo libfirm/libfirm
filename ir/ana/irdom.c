@@ -44,7 +44,6 @@
 
 ir_node *get_Block_idom(const ir_node *bl)
 {
-	assert(is_Block(bl));
 	if (get_Block_dom_depth(bl) == -1) {
 		/* This block is not reachable from Start */
 		ir_graph *irg = get_irn_irg(bl);
@@ -76,7 +75,6 @@ void set_Block_idom(ir_node *bl, ir_node *n)
 
 ir_node *get_Block_ipostdom(const ir_node *bl)
 {
-	assert(is_Block(bl));
 	if (get_Block_postdom_depth(bl) == -1) {
 		/* This block is not reachable from Start */
 		ir_graph *irg = get_irn_irg(bl);
@@ -432,7 +430,6 @@ static void init_tmp_dom_info(ir_node *bl, tmp_dom_info *parent,
 	tmp_dom_info *tdi;
 	int i;
 
-	assert(is_Block(bl));
 	if (Block_block_visited(bl))
 	  return;
 	mark_Block_block_visited(bl);
@@ -471,7 +468,6 @@ static void init_tmp_pdom_info(ir_node *bl, tmp_dom_info *parent,
 	tmp_dom_info *tdi;
 	int i;
 
-	assert(is_Block(bl));
 	if (get_irg_block_visited(current_ir_graph) == get_Block_block_visited(bl))
 	  return;
 	mark_Block_block_visited(bl);
@@ -493,7 +489,6 @@ static void init_tmp_pdom_info(ir_node *bl, tmp_dom_info *parent,
 		ir_node *pred = get_Block_cfgpred_block(bl, i);
 		if (is_Bad(pred))
 			continue;
-		assert(is_Block(pred));
 		init_tmp_pdom_info(pred, tdi, tdi_list, used, n_blocks);
 	}
 

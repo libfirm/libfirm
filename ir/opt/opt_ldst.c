@@ -626,7 +626,6 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 static long get_Sel_array_index_long(ir_node *n, int dim)
 {
 	ir_node *index = get_Sel_index(n, dim);
-	assert(is_Const(index));
 	return get_tarval_long(get_Const_tarval(index));
 }
 

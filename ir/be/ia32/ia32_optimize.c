@@ -381,7 +381,6 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 {
 	int       i;
 	int       maxslot;
-	int       inc_ofs;
 	ir_node  *node;
 	ir_node  *stores[MAXPUSH_OPTIMIZE];
 	ir_node  *block;
@@ -392,9 +391,7 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 
 	memset(stores, 0, sizeof(stores));
 
-	assert(be_is_IncSP(irn));
-
-	inc_ofs = be_get_IncSP_offset(irn);
+	int inc_ofs = be_get_IncSP_offset(irn);
 	if (inc_ofs < 4)
 		return;
 
@@ -653,16 +650,15 @@ static inline int mode_needs_gp_reg(ir_mode *mode)
 static void peephole_Load_IncSP_to_pop(ir_node *irn)
 {
 	const arch_register_t *esp = &ia32_registers[REG_ESP];
-	int      i, maxslot, inc_ofs, ofs;
+	int      i, maxslot, ofs;
 	ir_node  *node, *pred_sp, *block;
 	ir_node  *loads[MAXPUSH_OPTIMIZE];
 	unsigned regmask = 0;
 	unsigned copymask = ~0;
 
 	memset(loads, 0, sizeof(loads));
-	assert(be_is_IncSP(irn));
 
-	inc_ofs = -be_get_IncSP_offset(irn);
+	int inc_ofs = -be_get_IncSP_offset(irn);
 	if (inc_ofs < 4)
 		return;
 

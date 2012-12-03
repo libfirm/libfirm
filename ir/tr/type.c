@@ -1547,7 +1547,6 @@ long get_array_lower_bound_int(const ir_type *array, size_t dimension)
 	ir_node *node;
 	assert(array->type_op == type_array);
 	node = array->attr.aa.lower_bound[dimension];
-	assert(is_Const(node));
 	return get_tarval_long(get_Const_tarval(node));
 }
 
@@ -1568,7 +1567,6 @@ long get_array_upper_bound_int(const ir_type *array, size_t dimension)
 	ir_node *node;
 	assert(array->type_op == type_array);
 	node = array->attr.aa.upper_bound[dimension];
-	assert(is_Const(node));
 	return get_tarval_long(get_Const_tarval(node));
 }
 

@@ -304,15 +304,13 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 		/* no: we can kill all returns */
 		for (p = env->rets; p; p = n) {
 			ir_node *block = get_nodes_block(p);
-			ir_node *call, *mem, *jmp, *tuple;
+			ir_node *jmp, *tuple;
 
 			set_r_cur_block(irg, block);
 			n = (ir_node*)get_irn_link(p);
 
-			call = skip_Proj(get_Return_mem(p));
-			assert(is_Call(call));
-
-			mem = get_Call_mem(call);
+			ir_node *const call = skip_Proj(get_Return_mem(p));
+			ir_node *const mem  = get_Call_mem(call);
 
 			/* create a new jump, free of CSE */
 			set_optimize(0);

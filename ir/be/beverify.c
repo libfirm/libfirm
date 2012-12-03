@@ -381,8 +381,6 @@ static void collect_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_nod
 
 static void collect_memperm(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity* ent)
 {
-	assert(is_Proj(node));
-
 	ir_node *memperm = get_Proj_pred(node);
 	int      out     = get_Proj_proj(node);
 

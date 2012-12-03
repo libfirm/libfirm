@@ -249,14 +249,11 @@ static void sel_methods_init(void)
 static ir_entity ** get_Sel_arr(ir_node * sel)
 {
 	static ir_entity ** NULL_ARRAY = NULL;
-	ir_entity * ent;
-	ir_entity ** arr;
 
-	assert(is_Sel(sel));
-	ent = get_Sel_entity(sel);
-
+	ir_entity *const ent = get_Sel_entity(sel);
 	assert(is_Method_type(get_entity_type(ent))); /* what else? */
-	arr = (ir_entity**) get_entity_link(ent);
+
+	ir_entity **const arr = (ir_entity**)get_entity_link(ent);
 	if (arr) {
 		return arr;
 	} else {

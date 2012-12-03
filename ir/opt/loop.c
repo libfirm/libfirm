@@ -595,7 +595,6 @@ static void extend_ins_by_copy(ir_node *block, int pos)
 {
 	ir_node *new_in;
 	ir_node *phi;
-	assert(is_Block(block));
 
 	/* Extend block by copy of definition at pos */
 	ir_node *const pred = get_Block_cfgpred(block, pos);
@@ -1554,12 +1553,11 @@ static void copy_loop(entry_edge *cur_loop_outs, int copies)
 static ir_node *clone_phis_sans_bes(ir_node *phi, ir_node *be_block, ir_node *dest_block)
 {
 	ir_node **ins;
-	int arity = get_irn_arity(phi);
 	int i, c = 0;
 	ir_node *newphi;
 
-	assert(get_irn_arity(phi) == get_irn_arity(be_block));
-	assert(is_Phi(phi));
+	int const arity = get_Phi_n_preds(phi);
+	assert(arity == get_Block_n_cfgpreds(be_block));
 
 	ins = NEW_ARR_F(ir_node *, arity);
 	for (i = 0; i < arity; ++i) {
@@ -1581,12 +1579,11 @@ static ir_node *clone_phis_sans_bes(ir_node *phi, ir_node *be_block, ir_node *de
  * using be_block as supplier of backedge informations. */
 static ir_node *clone_block_sans_bes(ir_node *node, ir_node *be_block)
 {
-	int arity = get_irn_arity(node);
 	int i, c = 0;
 	ir_node **ins;
 
-	assert(get_irn_arity(node) == get_irn_arity(be_block));
-	assert(is_Block(node));
+	int const arity = get_Block_n_cfgpreds(node);
+	assert(arity == get_irn_arity(be_block));
 
 	NEW_ARR_A(ir_node *, ins, arity);
 	for (i = 0; i < arity; ++i) {

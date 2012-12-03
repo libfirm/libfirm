@@ -58,7 +58,6 @@ static void copy_entities_from_superclass(ir_type *clss, void *env)
 
 	for (i = 0; i < get_class_n_supertypes(clss); i++) {
 		super = get_class_supertype(clss, i);
-		assert(is_Class_type(super) && "not a class");
 		for (j = 0; j < get_class_n_members(super); j++) {
 			inhent = get_class_member(super, j);
 			/* check whether inhent is already overwritten */
@@ -231,8 +230,6 @@ static void compute_down_closure(ir_type *tp)
 	size_t i, n_subtypes, n_members, n_supertypes;
 	ir_visited_t master_visited = get_master_type_visited();
 
-	assert(is_Class_type(tp));
-
 	set_type_visited(tp, master_visited-1);
 
 	/* Recursive descend. */
@@ -285,8 +282,6 @@ static void compute_up_closure(ir_type *tp)
 	pset *myset, *subset;
 	size_t i, n_subtypes, n_members, n_supertypes;
 	ir_visited_t master_visited = get_master_type_visited();
-
-	assert(is_Class_type(tp));
 
 	set_type_visited(tp, master_visited-1);
 
