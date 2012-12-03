@@ -583,8 +583,6 @@ restart:
 		ir_node      *lower_block;
 		ir_node      *lower_cf;
 		ir_node      *cond;
-		ir_node      *cond_selector;
-		ir_node      *lower_pred;
 
 		lower_cf = get_Block_cfgpred(block, low_idx);
 		lower_cf = skip_empty_blocks(lower_cf);
@@ -603,12 +601,8 @@ restart:
 		if (get_Block_mark(lower_block))
 			continue;
 
-		cond_selector = get_Cond_selector(cond);
-		if (get_irn_mode(cond_selector) != mode_b)
-			continue;
-
-		lower_pred = get_Block_cfgpred_block(lower_block, 0);
-
+		ir_node *const cond_selector = get_Cond_selector(cond);
+		ir_node *const lower_pred    = get_Block_cfgpred_block(lower_block, 0);
 		for (up_idx = 0; up_idx < n_cfgpreds; ++up_idx) {
 			ir_node   *upper_block;
 			ir_node   *upper_cf;
@@ -625,11 +619,6 @@ restart:
 			if (!block_dominates(upper_block, block))
 				continue;
 
-			ir_node *const upper_cond          = get_Proj_pred(upper_cf);
-			ir_node *const upper_cond_selector = get_Cond_selector(upper_cond);
-			if (get_irn_mode(upper_cond_selector) != mode_b)
-				continue;
-
 			/* we have found the structure */
 			/* check Phis: There must be NO Phi in block that
 			   depends on the existence of low block */
@@ -637,6 +626,8 @@ restart:
 				continue;
 
 			/* all fine, try it */
+			ir_node *const upper_cond          = get_Proj_pred(upper_cf);
+			ir_node *const upper_cond_selector = get_Cond_selector(upper_cond);
 			if (!find_cond_pair(cond_selector, upper_cond_selector, &cpair))
 				continue;
 

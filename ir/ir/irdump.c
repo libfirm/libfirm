@@ -880,11 +880,9 @@ static void dump_node_nodeattr(FILE *F, const ir_node *n)
 		proj_nr = get_Proj_proj(n);
 		code    = get_irn_opcode(pred);
 
-		if (code == iro_Proj && get_irn_opcode(get_Proj_pred(pred)) == iro_Start)
+		if (code == iro_Proj && get_irn_opcode(get_Proj_pred(pred)) == iro_Start) {
 			fprintf(F, "Arg %ld ", proj_nr);
-		else if (code == iro_Cond && get_irn_mode(get_Cond_selector(pred)) != mode_b)
-			fprintf(F, "%ld ", proj_nr);
-		else {
+		} else {
 			unsigned i, j, f = 0;
 
 			for (i = 0; i < ARRAY_SIZE(proj_lut); ++i) {

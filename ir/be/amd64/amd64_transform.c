@@ -217,16 +217,9 @@ static ir_node *gen_Cmp(ir_node *node)
  */
 static ir_node *gen_Cond(ir_node *node)
 {
-	ir_node    *selector = get_Cond_selector(node);
-	ir_mode    *mode     = get_irn_mode(selector);
-
-	if (mode != mode_b) {
-		panic ("create_Switch not implemented yet!");
-		// return gen_SwitchJmp(node);
-	}
-
 	ir_node    *const block     = be_transform_node(get_nodes_block(node));
 	dbg_info   *const dbgi      = get_irn_dbg_info(node);
+	ir_node    *const selector  = get_Cond_selector(node);
 	ir_node    *const flag_node = be_transform_node(selector);
 	ir_relation const relation  = get_Cmp_relation(selector);
 	return new_bd_amd64_Jcc(dbgi, block, flag_node, relation);

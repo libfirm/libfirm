@@ -78,13 +78,6 @@ static bool is_Block_removable(const ir_node *block)
 	return get_Block_mark(block);
 }
 
-/** checks if a given Cond node is a switch Cond. */
-static bool is_switch_Cond(const ir_node *cond)
-{
-	ir_node *sel = get_Cond_selector(cond);
-	return get_irn_mode(sel) != mode_b;
-}
-
 /** Walker: clear link fields and mark all blocks as removable. */
 static void clear_link_and_mark_blocks_removable(ir_node *node, void *ctx)
 {
@@ -548,7 +541,6 @@ static bool optimize_pred_cond(ir_node *block, int i, int j)
 	if (!is_Cond(cond))  return false;
 
 	if (cond != get_Proj_pred(projB)) return false;
-	if (is_switch_Cond(cond)) return false;
 
 	/* cond should actually be a Jmp */
 	pred_block = get_nodes_block(cond);

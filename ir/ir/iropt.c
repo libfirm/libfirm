@@ -3332,8 +3332,8 @@ static ir_node *transform_node_Cond(ir_node *n)
 		ta = compute_cmp_ext(a);
 	}
 
-	if (ta != tarval_bad && get_irn_mode(a) == mode_b) {
-		/* It's a boolean Cond, branching on a boolean constant.
+	if (ta != tarval_bad) {
+		/* It's branching on a boolean constant.
 		   Replace it by a tuple (Bad, Jmp) or (Jmp, Bad) */
 		ir_node *blk = get_nodes_block(n);
 		jmp = new_r_Jmp(blk);

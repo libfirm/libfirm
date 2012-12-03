@@ -296,9 +296,6 @@ restart:
 			if (! is_Cond(cond))
 				continue;
 
-			/* We only handle boolean decisions, no switches */
-			if (get_irn_mode(get_Cond_selector(cond)) != mode_b) continue;
-
 			for (j = i + 1; j < arity; ++j) {
 				ir_node* projx1;
 				ir_node* sel;
