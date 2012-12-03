@@ -122,6 +122,7 @@ class ASM:
 	"""
 	mode             = "mode_T"
 	arity            = "variable"
+	input_name       = "input"
 	flags            = [ "keep", "uses_memory" ]
 	pinned           = "memory"
 	pinned_init      = "op_pin_state_pinned"
@@ -215,6 +216,7 @@ class Block:
 	block            = "NULL"
 	pinned           = "yes"
 	arity            = "variable"
+	input_name       = "cfgpred"
 	flags            = []
 	attr_struct      = "block_attr"
 	attrs            = [
@@ -268,16 +270,17 @@ class Bound:
 @op
 class Builtin:
 	"""performs a backend-specific builtin."""
-	ins      = [
+	ins         = [
 		("mem", "memory dependency"),
 	]
-	arity    = "variable"
-	outs     = [
+	arity       = "variable"
+	input_name  = "param"
+	outs        = [
 		("M", "memory result"),
 		# results follow here
 	]
-	flags    = [ "uses_memory" ]
-	attrs    = [
+	flags       = [ "uses_memory" ]
+	attrs       = [
 		dict(
 			type    = "ir_builtin_kind",
 			name    = "kind",
@@ -292,7 +295,7 @@ class Builtin:
 	pinned      = "memory"
 	pinned_init = "op_pin_state_pinned"
 	attr_struct = "builtin_attr"
-	init   = '''
+	init        = '''
 	assert((get_unknown_type() == type) || is_Method_type(type));
 	'''
 
@@ -302,19 +305,20 @@ class Call:
 	operands are passed to the called code. Called code usually performs a
 	return operation. The operands of this return operation are the result
 	of the Call node."""
-	ins      = [
+	ins         = [
 		("mem",   "memory dependency"),
 		("ptr",   "pointer to called code"),
 	]
-	arity    = "variable"
-	outs     = [
+	arity       = "variable"
+	input_name  = "param"
+	outs        = [
 		("M",                "memory result"),
 		("T_result",         "tuple containing all results"),
 		("X_regular",        "control flow when no exception occurs"),
 		("X_except",         "control flow when exception occured"),
 	]
-	flags    = [ "fragile", "uses_memory" ]
-	attrs    = [
+	flags       = [ "fragile", "uses_memory" ]
+	attrs       = [
 		dict(
 			type    = "ir_type*",
 			name    = "type",
@@ -542,6 +546,7 @@ class End:
 	mode             = "mode_X"
 	pinned           = "yes"
 	arity            = "dynamic"
+	input_name       = "keepalive"
 	flags            = [ "cfopcode" ]
 	knownBlock       = True
 	block            = "get_irg_end_block(irg)"
@@ -772,6 +777,7 @@ class Phi:
 	all phi nodes produce their nth input as result."""
 	pinned        = "yes"
 	arity         = "variable"
+	input_name    = "pred"
 	flags         = []
 	attr_struct   = "phi_attr"
 	init          = '''
@@ -831,13 +837,14 @@ class Raise:
 class Return:
 	"""Returns from the current function. Takes memory and return values as
 	operands."""
-	ins      = [
+	ins        = [
 		("mem", "memory dependency"),
 	]
-	arity    = "variable"
-	mode     = "mode_X"
-	flags    = [ "cfopcode" ]
-	pinned   = "yes"
+	arity      = "variable"
+	input_name = "res"
+	mode       = "mode_X"
+	flags      = [ "cfopcode" ]
+	pinned     = "yes"
 
 class Rotl(Binop):
 	"""Returns its first operand bits rotated left by the amount in the 2nd
@@ -851,15 +858,16 @@ class Sel:
 
 	Optimisations assume that a Sel node can only produce a NULL pointer if the
 	ptr input was NULL."""
-	ins    = [
+	ins         = [
 		("mem", "memory dependency"),
 		("ptr", "pointer to object to select from"),
 	]
-	arity  = "variable"
-	flags  = []
-	mode   = "is_Method_type(get_entity_type(entity)) ? mode_P_code : mode_P_data"
-	pinned = "no"
-	attrs  = [
+	arity       = "variable"
+	input_name  = "index"
+	flags       = []
+	mode        = "is_Method_type(get_entity_type(entity)) ? mode_P_code : mode_P_data"
+	pinned      = "no"
+	attrs       = [
 		dict(
 			type    = "ir_entity*",
 			name    = "entity",
@@ -1001,10 +1009,11 @@ class Sync:
 	be identical.  This operation allows to specify all operations that
 	eventually need several partial memory blocks as input with a single
 	entrance by unifying the memories with a preceding Sync operation."""
-	mode     = "mode_M"
-	flags    = []
-	pinned   = "no"
-	arity    = "dynamic"
+	mode       = "mode_M"
+	flags      = []
+	pinned     = "no"
+	arity      = "dynamic"
+	input_name = "pred"
 
 @op
 class Tuple:
@@ -1016,10 +1025,11 @@ class Tuple:
 	the implementation with pointers in only one direction.) The Tuple node is
 	smaller than any other node, so that a node can be changed into a Tuple by
 	just changing its opcode and giving it a new in array."""
-	arity  = "variable"
-	mode   = "mode_T"
-	pinned = "no"
-	flags  = []
+	arity      = "variable"
+	input_name = "pred"
+	mode       = "mode_T"
+	pinned     = "no"
+	flags      = []
 
 @op
 class Unknown:

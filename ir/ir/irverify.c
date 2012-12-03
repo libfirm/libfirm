@@ -883,7 +883,7 @@ static int verify_node_Return(const ir_node *n)
 	ASSERT_AND_RET( mymode == mode_X, "Result X", 0 );   /* result X */
 	/* Compare returned results with result types of method type */
 	mt = get_entity_type(get_irg_entity(irg));
-	ASSERT_AND_RET_DBG(get_Return_n_ress(n) == get_method_n_ress(mt),
+	ASSERT_AND_RET_DBG((size_t)get_Return_n_ress(n) == get_method_n_ress(mt),
 		"Number of results for Return doesn't match number of results in type.", 0,
 		show_return_nres(irg, n, mt););
 	for (i = get_Return_n_ress(n) - 1; i >= 0; --i) {

@@ -246,13 +246,6 @@ FIRM_API ir_node *get_nodes_block(const ir_node *node);
 /** Sets the Block of a node. */
 FIRM_API void set_nodes_block(ir_node *node, ir_node *block);
 
-/** Returns the number of control flow predecessors of a block. */
-FIRM_API int get_Block_n_cfgpreds(const ir_node *block);
-/** Returns the control flow predecessor of a block at a given position. */
-FIRM_API ir_node *get_Block_cfgpred(const ir_node *block, int pos);
-/** Sets the control flow predecessor of a block at a given position. */
-FIRM_API void set_Block_cfgpred(ir_node *block, int pos, ir_node *pred);
-
 /**
  * Returns the position of the predecessor block pred in the inputs
  * of the block block.
@@ -317,14 +310,8 @@ FIRM_API ir_type *is_frame_pointer(const ir_node *n);
  * @{
  */
 
-/** Returns the number of Keep alive node. */
-FIRM_API int get_End_n_keepalives(const ir_node *end);
-/** Returns the Keep alive node a position pos. */
-FIRM_API ir_node *get_End_keepalive(const ir_node *end, int pos);
 /** Keep alive dedicated nodes.  These must be either PhiM or Block nodes. */
 FIRM_API void add_End_keepalive(ir_node *end, ir_node *ka);
-/** Sets the Keep alive node at position pos. */
-FIRM_API void set_End_keepalive(ir_node *end, int pos, ir_node *ka);
 
 /**
  * Sets new keep-alives.
@@ -344,21 +331,6 @@ FIRM_API void remove_End_Bads_and_doublets(ir_node *end);
  * free_End() frees these data structures.
  */
 FIRM_API void free_End(ir_node *end);
-
-/** @} */
-
-/** @addtogroup Return
- * @{
- */
-
-/** Returns return value inputs of Return node @p node as array. */
-FIRM_API ir_node **get_Return_res_arr(ir_node *node);
-/** Returns number of return value inputs of Return node @p node. */
-FIRM_API size_t get_Return_n_ress(const ir_node *node);
-/** Returns return value input @p pos of Return node @p node. */
-FIRM_API ir_node *get_Return_res(const ir_node *node, int pos);
-/** Sets return value input @p pos of Return node @p node to value @p res. */
-FIRM_API void set_Return_res(ir_node *node, int pos, ir_node *res);
 
 /** @} */
 
@@ -429,33 +401,9 @@ FIRM_API void set_SymConst_symbol(ir_node *node, union symconst_symbol sym);
 
 /** @} */
 
-/** @addtogroup Sel
- * @{
- */
-
-/** Returns index inputs of Sel node @p node as array. */
-FIRM_API ir_node **get_Sel_index_arr(ir_node *node);
-/** Returns number of index inputs of Sel node @p node. */
-FIRM_API int get_Sel_n_indexs(const ir_node *node);
-/** Returns value of index input @p pos of Sel node @p node. */
-FIRM_API ir_node *get_Sel_index(const ir_node *node, int pos);
-/** Sets @p index as index input @p pos of Sel node @p node. */
-FIRM_API void set_Sel_index(ir_node *node, int pos, ir_node *index);
-
-/** @} */
-
 /** @addtogroup Call
  * @{
  */
-
-/** Returns parameter inputs of Call node @p node as array. */
-FIRM_API ir_node **get_Call_param_arr(ir_node *node);
-/** Returns the number of parameters of a call. */
-FIRM_API int get_Call_n_params(const ir_node *node);
-/** Returns the call parameter at position pos. */
-FIRM_API ir_node *get_Call_param(const ir_node *node, int pos);
-/** Sets the call parameter at position pos. */
-FIRM_API void set_Call_param(ir_node *node, int pos, ir_node *param);
 
 /** Sets, get and remove the callee information for a Call node.
  *
@@ -486,21 +434,6 @@ FIRM_API ir_entity *get_Call_callee(const ir_node *node, size_t pos);
 FIRM_API void set_Call_callee_arr(ir_node *node, size_t n, ir_entity **arr);
 /** Frees callee array of call node @p node */
 FIRM_API void remove_Call_callee_arr(ir_node *node);
-
-/** @} */
-
-/** @addtogroup Builtin
- * @{
- */
-
-/** Returns the parameter inputs of Builtin node @p node as array. */
-FIRM_API ir_node **get_Builtin_param_arr(ir_node *node);
-/** Returns the number of parameters of a Builtin. */
-FIRM_API int get_Builtin_n_params(const ir_node *node);
-/** Returns the Builtin parameter at position pos. */
-FIRM_API ir_node *get_Builtin_param(const ir_node *node, int pos);
-/** Sets the Builtin parameter at position pos. */
-FIRM_API void set_Builtin_param(ir_node *node, int pos, ir_node *param);
 
 /** @} */
 
@@ -588,24 +521,6 @@ FIRM_API int is_Cast_downcast(ir_node *node);
  */
 
 /**
- * Returns all phi predecessors as array
- */
-FIRM_API ir_node **get_Phi_preds_arr(ir_node *node);
-/**
- * Returns number of predecessors of phi node @p node
- */
-FIRM_API int get_Phi_n_preds(const ir_node *node);
-/**
- * Returns the predecessor with number @p pos of phi node @p node.
- * This is the value selected when control flow comes from predecessor @p pos
- * of the containing basic block.
- */
-FIRM_API ir_node *get_Phi_pred(const ir_node *node, int pos);
-/**
- * Sets value @p pred as predecessor number @p pos of phi node @p node.
- */
-FIRM_API void set_Phi_pred(ir_node *node, int pos, ir_node *pred);
-/**
  * Returns the next element of a block phi list.
  */
 FIRM_API ir_node *get_Phi_next(const ir_node *phi);
@@ -635,14 +550,6 @@ FIRM_API void set_memop_mem(ir_node *node, ir_node *mem);
  * @{
  */
 
-/** Returns all predecessors of Sync node @p node as array */
-FIRM_API ir_node **get_Sync_preds_arr(ir_node *node);
-/** Returns number of predecessors of Sync node @p node. */
-FIRM_API int get_Sync_n_preds(const ir_node *node);
-/** Returns predecessor number @p pos of Sync node @p node. */
-FIRM_API ir_node *get_Sync_pred(const ir_node *node, int pos);
-/** Sets value @p pred as predecessor number @p pos of Sync node @p node. */
-FIRM_API void set_Sync_pred(ir_node *node, int pos, ir_node *pred);
 /** Adds @p pred to predecessor list of Sync node @p node. */
 FIRM_API void add_Sync_pred(ir_node *node, ir_node *pred);
 /** Removes predecessor i from Sync n */
@@ -657,29 +564,10 @@ FIRM_API void del_Sync_n(ir_node *n, int i);
  */
 FIRM_API int is_arg_Proj(const ir_node *node);
 
-/** @addtogroup Tuple
- * @{
- */
-
-/** Returns all predecessors of Tuple node @p node as array. */
-FIRM_API ir_node **get_Tuple_preds_arr(ir_node *node);
-/** Returns number of predecessors of Tuple node @p node. */
-FIRM_API int get_Tuple_n_preds(const ir_node *node);
-/** Returns predecessor number @p pos of Tuple node @p node. */
-FIRM_API ir_node  *get_Tuple_pred(const ir_node *node, int pos);
-/** Sets value @p pred as predecessor number @p pos of Tuple node @p node. */
-FIRM_API void set_Tuple_pred(ir_node *node, int pos, ir_node *pred);
-
-/** @} */
-
 /** @addtogroup ASM
  * @{
  */
 
-/** Returns the number of input constraints for an ASM node. */
-FIRM_API int get_ASM_n_inputs(const ir_node *node);
-/** Returns input number @p pos of an ASM node. */
-FIRM_API ir_node *get_ASM_input(const ir_node *node, int pos);
 /** Returns the number of output constraints for an ASM node.  */
 FIRM_API size_t get_ASM_n_output_constraints(const ir_node *node);
 /** Returns the number of clobbered registers for an ASM node.  */

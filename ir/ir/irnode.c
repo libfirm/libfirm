@@ -48,11 +48,6 @@
 
 /* some constants fixing the positions of nodes predecessors
    in the in array */
-#define CALL_PARAM_OFFSET     (n_Call_max+1)
-#define BUILTIN_PARAM_OFFSET  (n_Builtin_max+1)
-#define ASM_PARAM_OFFSET      (n_ASM_max+1)
-#define SEL_INDEX_OFFSET      (n_Sel_max+1)
-#define RETURN_RESULT_OFFSET  (n_Return_max+1)
 #define END_KEEPALIVE_OFFSET  0
 
 static const char *relation_names [] = {
@@ -480,28 +475,6 @@ ir_type *is_frame_pointer(const ir_node *n)
 	return NULL;
 }
 
-ir_node **get_Block_cfgpred_arr(ir_node *node)
-{
-	assert(is_Block(node));
-	return (ir_node **)&(get_irn_in(node)[1]);
-}
-
-int (get_Block_n_cfgpreds)(const ir_node *node)
-{
-	return get_Block_n_cfgpreds_(node);
-}
-
-ir_node *(get_Block_cfgpred)(const ir_node *node, int pos)
-{
-	return get_Block_cfgpred_(node, pos);
-}
-
-void set_Block_cfgpred(ir_node *node, int pos, ir_node *pred)
-{
-	assert(is_Block(node));
-	set_irn_n(node, pos, pred);
-}
-
 int get_Block_cfgpred_pos(const ir_node *block, const ir_node *pred)
 {
 	int i;
@@ -598,28 +571,10 @@ void (set_Block_mark)(ir_node *block, unsigned mark)
 	set_Block_mark_(block, mark);
 }
 
-int get_End_n_keepalives(const ir_node *end)
-{
-	assert(is_End(end));
-	return (get_irn_arity(end) - END_KEEPALIVE_OFFSET);
-}
-
-ir_node *get_End_keepalive(const ir_node *end, int pos)
-{
-	assert(is_End(end));
-	return get_irn_n(end, pos + END_KEEPALIVE_OFFSET);
-}
-
 void add_End_keepalive(ir_node *end, ir_node *ka)
 {
 	assert(is_End(end));
 	add_irn_n(end, ka);
-}
-
-void set_End_keepalive(ir_node *end, int pos, ir_node *ka)
-{
-	assert(is_End(end));
-	set_irn_n(end, pos + END_KEEPALIVE_OFFSET, ka);
 }
 
 void set_End_keepalives(ir_node *end, int n, ir_node *in[])
@@ -703,35 +658,6 @@ void free_End(ir_node *end)
 	                     in array afterwards ... */
 }
 
-size_t get_Return_n_ress(const ir_node *node)
-{
-	assert(is_Return(node));
-	return (size_t)(get_irn_arity(node) - RETURN_RESULT_OFFSET);
-}
-
-ir_node **get_Return_res_arr(ir_node *node)
-{
-	assert(is_Return(node));
-	if (get_Return_n_ress(node) > 0)
-		return (ir_node **)&(get_irn_in(node)[1 + RETURN_RESULT_OFFSET]);
-	else
-		return NULL;
-}
-
-ir_node *get_Return_res(const ir_node *node, int pos)
-{
-	assert(is_Return(node));
-	assert(pos >= 0);
-	assert(get_Return_n_ress(node) > (size_t)pos);
-	return get_irn_n(node, pos + RETURN_RESULT_OFFSET);
-}
-
-void set_Return_res(ir_node *node, int pos, ir_node *res)
-{
-	assert(is_Return(node));
-	set_irn_n(node, pos + RETURN_RESULT_OFFSET, res);
-}
-
 int (is_Const_null)(const ir_node *node)
 {
 	return is_Const_null_(node);
@@ -813,81 +739,6 @@ void set_SymConst_symbol(ir_node *node, union symconst_symbol sym)
 {
 	assert(is_SymConst(node));
 	node->attr.symc.sym = sym;
-}
-
-int get_Sel_n_indexs(const ir_node *node)
-{
-	assert(is_Sel(node));
-	return (get_irn_arity(node) - SEL_INDEX_OFFSET);
-}
-
-ir_node **get_Sel_index_arr(ir_node *node)
-{
-	assert(is_Sel(node));
-	if (get_Sel_n_indexs(node) > 0)
-		return (ir_node **)& get_irn_in(node)[SEL_INDEX_OFFSET + 1];
-	else
-		return NULL;
-}
-
-ir_node *get_Sel_index(const ir_node *node, int pos)
-{
-	assert(is_Sel(node));
-	return get_irn_n(node, pos + SEL_INDEX_OFFSET);
-}
-
-void set_Sel_index(ir_node *node, int pos, ir_node *index)
-{
-	assert(is_Sel(node));
-	set_irn_n(node, pos + SEL_INDEX_OFFSET, index);
-}
-
-ir_node **get_Call_param_arr(ir_node *node)
-{
-	assert(is_Call(node));
-	return &get_irn_in(node)[CALL_PARAM_OFFSET + 1];
-}
-
-int get_Call_n_params(const ir_node *node)
-{
-	assert(is_Call(node));
-	return get_irn_arity(node) - CALL_PARAM_OFFSET;
-}
-
-ir_node *get_Call_param(const ir_node *node, int pos)
-{
-	assert(is_Call(node));
-	return get_irn_n(node, pos + CALL_PARAM_OFFSET);
-}
-
-void set_Call_param(ir_node *node, int pos, ir_node *param)
-{
-	assert(is_Call(node));
-	set_irn_n(node, pos + CALL_PARAM_OFFSET, param);
-}
-
-ir_node **get_Builtin_param_arr(ir_node *node)
-{
-	assert(is_Builtin(node));
-	return &get_irn_in(node)[BUILTIN_PARAM_OFFSET + 1];
-}
-
-int get_Builtin_n_params(const ir_node *node)
-{
-	assert(is_Builtin(node));
-	return (get_irn_arity(node) - BUILTIN_PARAM_OFFSET);
-}
-
-ir_node *get_Builtin_param(const ir_node *node, int pos)
-{
-	assert(is_Builtin(node));
-	return get_irn_n(node, pos + BUILTIN_PARAM_OFFSET);
-}
-
-void set_Builtin_param(ir_node *node, int pos, ir_node *param)
-{
-	assert(is_Builtin(node));
-	set_irn_n(node, pos + BUILTIN_PARAM_OFFSET, param);
 }
 
 const char *get_builtin_kind_name(ir_builtin_kind kind)
@@ -1038,30 +889,6 @@ void set_binop_right(ir_node *node, ir_node *right)
 	set_irn_n(node, node->op->op_index + 1, right);
 }
 
-ir_node **get_Phi_preds_arr(ir_node *node)
-{
-  assert(is_Phi(node));
-  return (ir_node **)&(get_irn_in(node)[1]);
-}
-
-int get_Phi_n_preds(const ir_node *node)
-{
-	assert(is_Phi(node));
-	return get_irn_arity(node);
-}
-
-ir_node *get_Phi_pred(const ir_node *node, int pos)
-{
-	assert(is_Phi(node));
-	return get_irn_n(node, pos);
-}
-
-void set_Phi_pred(ir_node *node, int pos, ir_node *pred)
-{
-	assert(is_Phi(node));
-	set_irn_n(node, pos, pred);
-}
-
 ir_node *(get_Phi_next)(const ir_node *phi)
 {
 	return get_Phi_next_(phi);
@@ -1089,30 +916,6 @@ void set_memop_mem(ir_node *node, ir_node *mem)
 	const ir_op *op = get_irn_op(node);
 	assert(is_memop(node));
 	set_irn_n(node, op->memory_index, mem);
-}
-
-ir_node **get_Sync_preds_arr(ir_node *node)
-{
-	assert(is_Sync(node));
-	return (ir_node **)&(get_irn_in(node)[1]);
-}
-
-int get_Sync_n_preds(const ir_node *node)
-{
-	assert(is_Sync(node));
-	return (get_irn_arity(node));
-}
-
-ir_node *get_Sync_pred(const ir_node *node, int pos)
-{
-	assert(is_Sync(node));
-	return get_irn_n(node, pos);
-}
-
-void set_Sync_pred(ir_node *node, int pos, ir_node *pred)
-{
-	assert(is_Sync(node));
-	set_irn_n(node, pos, pred);
 }
 
 void add_Sync_pred(ir_node *node, ir_node *pred)
@@ -1160,41 +963,6 @@ int ir_throws_exception(const ir_node *node)
 	const except_attr *attr = &node->attr.except;
 	assert(is_fragile_op(node));
 	return attr->throws_exception;
-}
-
-ir_node **get_Tuple_preds_arr(ir_node *node)
-{
-	assert(is_Tuple(node));
-	return (ir_node **)&(get_irn_in(node)[1]);
-}
-
-int get_Tuple_n_preds(const ir_node *node)
-{
-	assert(is_Tuple(node));
-	return get_irn_arity(node);
-}
-
-ir_node *get_Tuple_pred(const ir_node *node, int pos)
-{
-  assert(is_Tuple(node));
-  return get_irn_n(node, pos);
-}
-
-void set_Tuple_pred(ir_node *node, int pos, ir_node *pred)
-{
-	assert(is_Tuple(node));
-	set_irn_n(node, pos, pred);
-}
-
-int get_ASM_n_inputs(const ir_node *node)
-{
-	assert(is_ASM(node));
-	return get_irn_arity(node) - ASM_PARAM_OFFSET;
-}
-
-ir_node *get_ASM_input(const ir_node *node, int pos)
-{
-	return get_irn_n(node, ASM_PARAM_OFFSET + pos);
 }
 
 size_t get_ASM_n_output_constraints(const ir_node *node)

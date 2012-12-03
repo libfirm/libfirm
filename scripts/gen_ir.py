@@ -368,8 +368,14 @@ irnode_h_template = env.from_string(
 {%- for input in node.ins %}
 #define get_{{node.name}}_{{input[0]}}(node) get_{{node.name}}_{{input[0]}}_(node)
 #define set_{{node.name}}_{{input[0]}}(node, {{input[0]|escape_keywords}}) set_{{node.name}}_{{input[0]}}_(node, {{input[0]|escape_keywords}})
+{%- endfor -%}
+{%- if node.input_name %}
+#define get_{{node.name}}_n_{{node.input_name}}s(node) get_{{node.name}}_n_{{node.input_name}}s_(node)
+#define get_{{node.name}}_{{node.input_name}}(node, pos) get_{{node.name}}_{{node.input_name}}_(node, pos)
+#define set_{{node.name}}_{{node.input_name}}(node, pos, {{node.input_name}}) set_{{node.name}}_{{node.input_name}}_(node, pos, {{node.input_name}})
+#define get_{{node.name}}_{{node.input_name}}_arr(node) get_{{node.name}}_{{node.input_name}}_arr_(node)
+{%- endif %}
 {% endfor %}
-{%- endfor %}
 
 {%- for node in nodes %}
 static inline int is_{{node.name}}_(const ir_node *node)
@@ -403,6 +409,32 @@ static inline void set_{{node.name}}_{{input[0]}}_(ir_node *node, ir_node *{{inp
 	set_irn_n(node, n_{{node.name}}_{{input[0]}}, {{input[0]|escape_keywords}});
 }
 {% endfor %}
+
+{%- if node.input_name %}
+static inline int get_{{node.name}}_n_{{node.input_name}}s_(ir_node const *node)
+{
+	assert(is_{{node.name}}(node));
+	return get_irn_arity(node){% if node.ins %} - (n_{{node.name}}_max + 1){% endif %};
+}
+
+static inline ir_node *get_{{node.name}}_{{node.input_name}}_(ir_node const *node, int pos)
+{
+	assert(0 <= pos && pos < get_{{node.name}}_n_{{node.input_name}}s(node));
+	return get_irn_n(node, pos{% if node.ins %} + (n_{{node.name}}_max + 1){% endif %});
+}
+
+static inline void set_{{node.name}}_{{node.input_name}}_(ir_node *node, int pos, ir_node *{{node.input_name}})
+{
+	assert(0 <= pos && pos < get_{{node.name}}_n_{{node.input_name}}s(node));
+	set_irn_n(node, pos{% if node.ins %} + (n_{{node.name}}_max + 1){% endif %}, {{node.input_name}});
+}
+
+static inline ir_node **get_{{node.name}}_{{node.input_name}}_arr_(ir_node *node)
+{
+	assert(is_{{node.name}}(node));
+	return get_irn_in(node) + 1{% if node.ins %}+ (n_{{node.name}}_max + 1){% endif %};
+}
+{% endif -%}
 {% endfor -%}
 ''')
 
@@ -435,6 +467,28 @@ void (set_{{node.name}}_{{input[0]}})(ir_node *node, ir_node *{{input[0]|escape_
 	set_{{node.name}}_{{input[0]}}_(node, {{input[0]|escape_keywords}});
 }
 {% endfor %}
+
+{%- if node.input_name %}
+int (get_{{node.name}}_n_{{node.input_name}}s)(ir_node const *node)
+{
+	return get_{{node.name}}_n_{{node.input_name}}s_(node);
+}
+
+ir_node *(get_{{node.name}}_{{node.input_name}})(ir_node const *node, int pos)
+{
+	return get_{{node.name}}_{{node.input_name}}_(node, pos);
+}
+
+void (set_{{node.name}}_{{node.input_name}})(ir_node *node, int pos, ir_node *{{node.input_name}})
+{
+	set_{{node.name}}_{{node.input_name}}_(node, pos, {{node.input_name}});
+}
+
+ir_node **(get_{{node.name}}_{{node.input_name}}_arr)(ir_node *node)
+{
+	return get_{{node.name}}_{{node.input_name}}_arr_(node);
+}
+{% endif -%}
 {% endfor %}
 ''')
 
@@ -604,7 +658,18 @@ FIRM_API ir_node *get_{{node.name}}_{{input[0]}}(const ir_node *node);
 /** Sets {{input[0]}} input of {{node.name|a_an}} node. */
 FIRM_API void set_{{node.name}}_{{input[0]}}(ir_node *node, ir_node *{{input[0]|escape_keywords}});
 {% endfor -%}
-{% for attr in node.attrs|hasnot("noprop") -%}
+{%- if node.input_name -%}
+/** Get the number of {{node.name}} {{node.input_name}}s. */
+FIRM_API int get_{{node.name}}_n_{{node.input_name}}s(ir_node const *node);
+/** Get the {{node.name}} {{node.input_name}} with index @p pos. */
+FIRM_API ir_node *get_{{node.name}}_{{node.input_name}}(ir_node const *node, int pos);
+/** Set the {{node.name}} {{node.input_name}} with index @p pos. */
+FIRM_API void set_{{node.name}}_{{node.input_name}}(ir_node *node, int pos, ir_node *{{node.input_name}});
+/** Get an array of all {{node.name}} {{node.input_name}}s. */
+ir_node **get_{{node.name}}_{{node.input_name}}_arr(ir_node *node);
+{% endif -%}
+
+{%- for attr in node.attrs|hasnot("noprop") %}
 /** Returns {{attr.name}} attribute of {{node.name|a_an}} node. */
 FIRM_API {{attr.type}} get_{{node.name}}_{{attr.name}}(const ir_node *node);
 /** Sets {{attr.name}} attribute of {{node.name|a_an}} node. */

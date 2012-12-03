@@ -109,14 +109,6 @@
  */
 ir_node **get_irn_in(const ir_node *node);
 
-/**
- * Returns an array with the predecessors of the Block. Depending on
- * the implementation of the graph data structure this can be a copy of
- * the internal representation of predecessors as well as the internal
- * array itself. Therefore writing to this array might obstruct the IR.
- */
-ir_node **get_Block_cfgpred_arr(ir_node *node);
-
 /*-------------------------------------------------------------------*/
 /*  These function are most used in libfirm.  Give them as static    */
 /*  functions so they can be inlined.                                */
@@ -377,18 +369,6 @@ static inline int is_binop_(const ir_node *node)
 static inline int is_SymConst_addr_ent_(const ir_node *node)
 {
 	return is_SymConst(node) && get_SymConst_kind(node) == symconst_addr_ent;
-}
-
-static inline int get_Block_n_cfgpreds_(const ir_node *node)
-{
-	assert(is_Block_(node));
-	return get_irn_arity_(node);
-}
-
-static inline ir_node *get_Block_cfgpred_(const ir_node *node, int pos)
-{
-	assert(is_Block_(node));
-	return get_irn_n_(node, pos);
 }
 
 /**
