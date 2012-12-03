@@ -506,7 +506,7 @@ static int is_value_available(spill_env_t *env, const ir_node *arg,
 	if (is_Unknown(arg) || is_NoMem(arg))
 		return 1;
 
-	if (be_is_Spill(skip_Proj_const(arg)))
+	if (arch_irn_is(skip_Proj_const(arg), spill))
 		return 1;
 
 	if (arg == get_irg_frame(env->irg))

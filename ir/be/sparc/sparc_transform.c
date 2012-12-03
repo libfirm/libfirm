@@ -1288,6 +1288,7 @@ static ir_node *create_ftoi(dbg_info *dbgi, ir_node *block, ir_node *op,
 	ir_node  *nomem = get_irg_no_mem(irg);
 	ir_node  *stf   = create_stf(dbgi, block, ftoi, sp, nomem, mode_fp,
 	                             NULL, 0, true);
+	arch_add_irn_flags(stf, arch_irn_flags_spill);
 	ir_node  *ld    = new_bd_sparc_Ld_imm(dbgi, block, sp, stf, mode_gp,
 	                                      NULL, 0, true);
 	ir_node  *res   = new_r_Proj(ld, mode_gp, pn_sparc_Ld_res);
@@ -1305,6 +1306,7 @@ static ir_node *create_itof(dbg_info *dbgi, ir_node *block, ir_node *op,
 	ir_node  *nomem = get_irg_no_mem(irg);
 	ir_node  *st    = new_bd_sparc_St_imm(dbgi, block, op, sp, nomem,
 	                                      mode_gp, NULL, 0, true);
+	arch_add_irn_flags(st, arch_irn_flags_spill);
 	ir_node  *ldf   = new_bd_sparc_Ldf_s(dbgi, block, sp, st, mode_fp,
 	                                     NULL, 0, true);
 	ir_node  *res   = new_r_Proj(ldf, mode_fp, pn_sparc_Ldf_res);
@@ -1611,11 +1613,13 @@ static ir_node *bitcast_int_to_float(dbg_info *dbgi, ir_node *block,
 	ir_mode  *mode;
 	ir_node  *ldf;
 	ir_node  *mem;
+	arch_add_irn_flags(st, arch_irn_flags_spill);
 	set_irn_pinned(st, op_pin_state_floats);
 
 	if (value1 != NULL) {
 		ir_node *st1 = new_bd_sparc_St_imm(dbgi, block, value1, sp, nomem,
 		                                   mode_gp, NULL, 4, true);
+		arch_add_irn_flags(st1, arch_irn_flags_spill);
 		ir_node *in[2] = { st, st1 };
 		ir_node *sync  = new_r_Sync(block, 2, in);
 		set_irn_pinned(st1, op_pin_state_floats);
@@ -1665,6 +1669,7 @@ static void bitcast_float_to_int(dbg_info *dbgi, ir_node *block,
 		ir_node  *stf   = create_stf(dbgi, block, new_value, stack, nomem,
 		                             float_mode, NULL, 0, true);
 		ir_node  *ld;
+		arch_add_irn_flags(stf, arch_irn_flags_spill);
 		set_irn_pinned(stf, op_pin_state_floats);
 
 		ld = new_bd_sparc_Ld_imm(dbgi, block, stack, stf, mode_gp, NULL, 0, true);
