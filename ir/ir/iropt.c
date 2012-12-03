@@ -3165,34 +3165,32 @@ static ir_node *transform_node_Div(ir_node *n)
 		assert(mode_is_float(mode));
 
 		/* Optimize x/c to x*(1/c) */
-		if (get_mode_arithmetic(mode) == irma_ieee754) {
-			ir_tarval *tv = value_of(b);
+		ir_tarval *tv = value_of(b);
 
-			if (tv != tarval_bad) {
-				int rem = tarval_fp_ops_enabled();
+		if (tv != tarval_bad) {
+			int rem = tarval_fp_ops_enabled();
 
-				/*
-				 * Floating point constant folding might be disabled here to
-				 * prevent rounding.
-				 * However, as we check for exact result, doing it is safe.
-				 * Switch it on.
-				 */
-				tarval_enable_fp_ops(1);
-				tv = tarval_div(get_mode_one(mode), tv);
-				tarval_enable_fp_ops(rem);
+			/*
+			 * Floating point constant folding might be disabled here to
+			 * prevent rounding.
+			 * However, as we check for exact result, doing it is safe.
+			 * Switch it on.
+			 */
+			tarval_enable_fp_ops(1);
+			tv = tarval_div(get_mode_one(mode), tv);
+			tarval_enable_fp_ops(rem);
 
-				/* Do the transformation if the result is either exact or we are
-				   not using strict rules. */
-				if (tv != tarval_bad &&
-					(tarval_ieee754_get_exact() || (get_irg_fp_model(get_irn_irg(n)) & fp_strict_algebraic) == 0)) {
-					ir_node  *block = get_nodes_block(n);
-					ir_graph *irg   = get_irn_irg(block);
-					ir_node  *c     = new_r_Const(irg, tv);
-					dbg_info *dbgi  = get_irn_dbg_info(n);
-					value = new_rd_Mul(dbgi, block, a, c, mode);
+			/* Do the transformation if the result is either exact or we are
+			   not using strict rules. */
+			if (tv != tarval_bad &&
+				(tarval_ieee754_get_exact() || (get_irg_fp_model(get_irn_irg(n)) & fp_strict_algebraic) == 0)) {
+				ir_node  *block = get_nodes_block(n);
+				ir_graph *irg   = get_irn_irg(block);
+				ir_node  *c     = new_r_Const(irg, tv);
+				dbg_info *dbgi  = get_irn_dbg_info(n);
+				value = new_rd_Mul(dbgi, block, a, c, mode);
 
-					goto make_tuple;
-				}
+				goto make_tuple;
 			}
 		}
 	}
