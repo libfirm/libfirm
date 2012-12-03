@@ -204,36 +204,6 @@ static int be_lv_remove(be_lv_t *li, const ir_node *bl,
 	return 0;
 }
 
-/**
- * Mark a node as live-in in a block.
- */
-static inline void mark_live_in(be_lv_t *lv, ir_node *block, ir_node *irn)
-{
-	be_lv_info_node_t *n = be_lv_get_or_set(lv, block, irn);
-	DBG((dbg, LEVEL_2, "marking %+F live in at %+F\n", irn, block));
-	n->flags |= be_lv_state_in;
-}
-
-/**
- * Mark a node as live-out in a block.
- */
-static inline void mark_live_out(be_lv_t *lv, ir_node *block, ir_node *irn)
-{
-	be_lv_info_node_t *n = be_lv_get_or_set(lv, block, irn);
-	DBG((dbg, LEVEL_2, "marking %+F live out at %+F\n", irn, block));
-	n->flags |= be_lv_state_out | be_lv_state_end;
-}
-
-/**
- * Mark a node as live-end in a block.
- */
-static inline void mark_live_end(be_lv_t *lv, ir_node *block, ir_node *irn)
-{
-	be_lv_info_node_t *n = be_lv_get_or_set(lv, block, irn);
-	DBG((dbg, LEVEL_2, "marking %+F live end at %+F\n", irn, block));
-	n->flags |= be_lv_state_end;
-}
-
 static struct {
 	be_lv_t  *lv;         /**< The liveness object. */
 	ir_node  *def;        /**< The node (value). */
@@ -251,15 +221,12 @@ static struct {
  */
 static void live_end_at_block(ir_node *block, int is_true_out)
 {
-	be_lv_t *lv  = re.lv;
-	ir_node *def = re.def;
-	bitset_t *visited;
+	be_lv_info_node_t *const n = be_lv_get_or_set(re.lv, block, re.def);
 
-	mark_live_end(lv, block, def);
-	if (is_true_out)
-		mark_live_out(lv, block, def);
+	DBG((dbg, LEVEL_2, "marking %+F live %s at %+F\n", re.def, is_true_out ? "end+out" : "end", block));
+	n->flags |= is_true_out ? be_lv_state_out | be_lv_state_end : be_lv_state_out;
 
-	visited = re.visited;
+	bitset_t *const visited = re.visited;
 	if (!bitset_is_set(visited, get_irn_idx(block))) {
 		bitset_set(visited, get_irn_idx(block));
 
@@ -270,7 +237,8 @@ static void live_end_at_block(ir_node *block, int is_true_out)
 		if (re.def_block != block) {
 			int i;
 
-			mark_live_in(lv, block, def);
+			DBG((dbg, LEVEL_2, "marking %+F live in at %+F\n", re.def, block));
+			n->flags |= be_lv_state_in;
 
 			for (i = get_Block_n_cfgpreds(block) - 1; i >= 0; --i)
 				live_end_at_block(get_Block_cfgpred_block(block, i), 1);
@@ -334,7 +302,9 @@ static void liveness_for_node(ir_node *irn)
 		else if (def_block != use_block) {
 			int i;
 
-			mark_live_in(re.lv, use_block, irn);
+			be_lv_info_node_t *const n = be_lv_get_or_set(re.lv, use_block, irn);
+			DBG((dbg, LEVEL_2, "marking %+F live in at %+F\n", irn, use_block));
+			n->flags |= be_lv_state_in;
 
 			for (i = get_Block_n_cfgpreds(use_block) - 1; i >= 0; --i) {
 				ir_node *pred_block = get_Block_cfgpred_block(use_block, i);
