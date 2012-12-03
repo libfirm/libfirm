@@ -216,15 +216,15 @@ static struct {
  * transitively, i.e. if the block is not the block of the value's
  * definition, all predecessors are also marked live.
  * @param block The block to mark the value live out of.
- * @param is_true_out Is the node real out there or only live at the end
- * of the block.
+ * @param state The liveness bits to set, either end or end+out.
  */
-static void live_end_at_block(ir_node *block, int is_true_out)
+static void live_end_at_block(ir_node *const block, be_lv_state_t const state)
 {
 	be_lv_info_node_t *const n = be_lv_get_or_set(re.lv, block, re.def);
 
-	DBG((dbg, LEVEL_2, "marking %+F live %s at %+F\n", re.def, is_true_out ? "end+out" : "end", block));
-	n->flags |= is_true_out ? be_lv_state_out | be_lv_state_end : be_lv_state_out;
+	assert(state == be_lv_state_end || state == (be_lv_state_end | be_lv_state_out));
+	DBG((dbg, LEVEL_2, "marking %+F live %s at %+F\n", re.def, state & be_lv_state_out ? "end+out" : "end", block));
+	n->flags |= state;
 
 	bitset_t *const visited = re.visited;
 	if (!bitset_is_set(visited, get_irn_idx(block))) {
@@ -241,7 +241,7 @@ static void live_end_at_block(ir_node *block, int is_true_out)
 			n->flags |= be_lv_state_in;
 
 			for (i = get_Block_n_cfgpreds(block) - 1; i >= 0; --i)
-				live_end_at_block(get_Block_cfgpred_block(block, i), 1);
+				live_end_at_block(get_Block_cfgpred_block(block, i), be_lv_state_end | be_lv_state_out);
 		}
 	}
 }
@@ -292,7 +292,7 @@ static void liveness_for_node(ir_node *irn)
 		 */
 		if (is_Phi(use)) {
 			ir_node *pred_block = get_Block_cfgpred_block(use_block, edge->pos);
-			live_end_at_block(pred_block, 0);
+			live_end_at_block(pred_block, be_lv_state_end);
 		}
 
 		/*
@@ -308,7 +308,7 @@ static void liveness_for_node(ir_node *irn)
 
 			for (i = get_Block_n_cfgpreds(use_block) - 1; i >= 0; --i) {
 				ir_node *pred_block = get_Block_cfgpred_block(use_block, i);
-				live_end_at_block(pred_block, 1);
+				live_end_at_block(pred_block, be_lv_state_end | be_lv_state_out);
 			}
 		}
 	}
