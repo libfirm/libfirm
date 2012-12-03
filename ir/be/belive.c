@@ -208,7 +208,6 @@ static struct {
 	be_lv_t  *lv;         /**< The liveness object. */
 	ir_node  *def;        /**< The node (value). */
 	ir_node  *def_block;  /**< The block of def. */
-	bitset_t *visited;    /**< A set were all visited blocks are recorded. */
 } re;
 
 /**
@@ -220,29 +219,28 @@ static struct {
  */
 static void live_end_at_block(ir_node *const block, be_lv_state_t const state)
 {
-	be_lv_info_node_t *const n = be_lv_get_or_set(re.lv, block, re.def);
+	be_lv_info_node_t *const n      = be_lv_get_or_set(re.lv, block, re.def);
+	be_lv_state_t      const before = n->flags;
 
 	assert(state == be_lv_state_end || state == (be_lv_state_end | be_lv_state_out));
 	DBG((dbg, LEVEL_2, "marking %+F live %s at %+F\n", re.def, state & be_lv_state_out ? "end+out" : "end", block));
 	n->flags |= state;
 
-	bitset_t *const visited = re.visited;
-	if (!bitset_is_set(visited, get_irn_idx(block))) {
-		bitset_set(visited, get_irn_idx(block));
+	/* There is no need to recurse further, if we where here before (i.e., any
+	 * live state bits were set before). */
+	if (before != be_lv_state_none)
+		return;
 
-		/*
-		 * If this block is not the definition block, we have to go up
-		 * further.
-		 */
-		if (re.def_block != block) {
-			int i;
+	/* Stop going up further, if this is the block of the definition. */
+	if (re.def_block == block)
+		return;
 
-			DBG((dbg, LEVEL_2, "marking %+F live in at %+F\n", re.def, block));
-			n->flags |= be_lv_state_in;
+	DBG((dbg, LEVEL_2, "marking %+F live in at %+F\n", re.def, block));
+	n->flags |= be_lv_state_in;
 
-			for (i = get_Block_n_cfgpreds(block) - 1; i >= 0; --i)
-				live_end_at_block(get_Block_cfgpred_block(block, i), be_lv_state_end | be_lv_state_out);
-		}
+	for (int i = get_Block_n_cfgpreds(block); i-- != 0;) {
+		ir_node *const pred_block = get_Block_cfgpred_block(block, i);
+		live_end_at_block(pred_block, be_lv_state_end | be_lv_state_out);
 	}
 }
 
@@ -259,10 +257,7 @@ typedef struct lv_remove_walker_t {
  */
 static void liveness_for_node(ir_node *irn)
 {
-	ir_node *def_block;
-
-	bitset_clear_all(re.visited);
-	def_block = get_nodes_block(irn);
+	ir_node *const def_block = get_nodes_block(irn);
 
 	re.def       = irn;
 	re.def_block = def_block;
@@ -351,8 +346,7 @@ void be_liveness_compute_sets(be_lv_t *lv)
 	 * will not need to move around the data. */
 	irg_walk_graph(lv->irg, NULL, collect_liveness_nodes, nodes);
 
-	re.lv      = lv;
-	re.visited = bitset_malloc(n);
+	re.lv = lv;
 
 	for (i = 0; i < n; ++i) {
 		if (nodes[i] != NULL)
@@ -360,7 +354,6 @@ void be_liveness_compute_sets(be_lv_t *lv)
 	}
 
 	DEL_ARR_F(nodes);
-	free(re.visited);
 
 	be_timer_pop(T_LIVE);
 
@@ -430,10 +423,8 @@ void be_liveness_introduce(be_lv_t *lv, ir_node *irn)
 {
 	/* Don't compute liveness information for non-data nodes. */
 	if (lv->sets_valid && is_liveness_node(irn)) {
-		re.lv      = lv;
-		re.visited = bitset_malloc(get_irg_last_idx(lv->irg));
+		re.lv = lv;
 		liveness_for_node(irn);
-		bitset_free(re.visited);
 	}
 }
 

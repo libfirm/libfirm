@@ -30,9 +30,10 @@
 #include "irnodeset.h"
 
 typedef enum {
-	be_lv_state_in  = 1,
-	be_lv_state_end = 2,
-	be_lv_state_out = 4,
+	be_lv_state_none = 0,
+	be_lv_state_in   = 1,
+	be_lv_state_end  = 2,
+	be_lv_state_out  = 4,
 } be_lv_state_t;
 ENUM_BITSET(be_lv_state_t)
 
