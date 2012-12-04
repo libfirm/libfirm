@@ -42,10 +42,6 @@
 #include "pmap.h"
 #include "ircons.h"
 
-/* A variant of the loop tree that avoids loops without head.
-   This reduces the depth of the loop tree. */
-#define NO_LOOPS_WITHOUT_HEAD 1
-
 /** The outermost graph the scc is computed for. */
 static ir_graph *outermost_ir_graph;
 /** Current loop construction is working on. */
@@ -701,7 +697,6 @@ static void scc(ir_node *n)
 			   Next actions: Open a new loop on the loop tree and
 			                 try to find inner loops */
 
-#if NO_LOOPS_WITHOUT_HEAD
 			/* This is an adaption of the algorithm from fiasco / optscc to
 			 * avoid loops without Block or Phi as first node.  This should
 			 * severely reduce the number of evaluations of nodes to detect
@@ -721,9 +716,6 @@ static void scc(ir_node *n)
 				l = current_loop;
 				close = 0;
 			}
-#else
-			ir_loop *l = new_loop();
-#endif
 
 			/* Remove the loop from the stack ... */
 			pop_scc_unmark_visit(n);
@@ -735,9 +727,7 @@ static void scc(ir_node *n)
 			scc(tail);
 
 			assert(irn_visited(n));
-#if NO_LOOPS_WITHOUT_HEAD
 			if (close)
-#endif
 				close_loop(l);
 		} else {
 			/* No loop head was found, that is we have straight line code.

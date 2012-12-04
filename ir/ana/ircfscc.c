@@ -39,8 +39,6 @@
 #include "irdump.h"
 #include "ircons_t.h"
 
-#define NO_CFLOOPS_WITHOUT_HEAD 1
-
 /** The outermost graph the scc is computed for */
 static ir_graph *outermost_ir_graph;
 /** Current cfloop construction is working on. */
@@ -557,8 +555,6 @@ static void cfscc(ir_node *n)
 			   Next actions: Open a new cfloop on the cfloop tree and
 			   try to find inner cfloops */
 
-#if NO_CFLOOPS_WITHOUT_HEAD
-
 			/* This is an adaption of the algorithm from fiasco / optscc to
 			 * avoid cfloops without Block or Phi as first node.  This should
 			 * severely reduce the number of evaluations of nodes to detect
@@ -576,12 +572,6 @@ static void cfscc(ir_node *n)
 				close = 0;
 			}
 
-#else
-
-			ir_loop *l = new_loop();
-
-#endif
-
 			/* Remove the cfloop from the stack ... */
 			pop_scc_unmark_visit(n);
 
@@ -593,9 +583,7 @@ static void cfscc(ir_node *n)
 			cfscc(tail);
 
 			assert(irn_visited(n));
-#if NO_CFLOOPS_WITHOUT_HEAD
 			if (close)
-#endif
 				close_loop(l);
 		} else {
 			/* AS: No cfloop head was found, that is we have straight line code.
