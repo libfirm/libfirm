@@ -56,14 +56,6 @@ static int current_dfn = 1;
 
 static unsigned max_loop_depth = 0;
 
-void link_to_reg_end(ir_node *n, void *env);
-void set_projx_link(ir_node *cb_projx, ir_node *end_projx);
-ir_node *get_projx_link(ir_node *cb_projx);
-
-/**********************************************************************/
-/* Node attributes                                                   **/
-/**********************************************************************/
-
 /**********************************************************************/
 /* Node attributes needed for the construction.                      **/
 /**********************************************************************/
@@ -345,9 +337,6 @@ static inline void init_scc(ir_graph *irg, struct obstack *obst)
 {
 	init_scc_common();
 	irg_walk_graph(irg, init_node, NULL, obst);
-	/*
-	irg_walk (irg, link_to_reg_end, NULL, NULL);
-	*/
 }
 
 static inline void finish_scc(void)
