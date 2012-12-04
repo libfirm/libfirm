@@ -98,7 +98,6 @@ static const struct {
 	{ (hook_opt_kind)FS_OPT_SHIFT_OR,       "algebraic simplification: (a SHF c) OR (b SHF c) = (a OR b) SHF c" },
 	{ (hook_opt_kind)FS_OPT_SHIFT_EOR,      "algebraic simplification: (a SHF c) XOR (b SHF c) = (a XOR b) SHF c" },
 	{ (hook_opt_kind)FS_OPT_CONV,           "algebraic simplification: Conv could be removed" },
-	{ (hook_opt_kind)FS_OPT_CAST,           "algebraic simplification: a Cast could be removed" },
 	{ (hook_opt_kind)FS_OPT_MIN_MAX_EQ,     "algebraic simplification: Min(a,a) = Max(a,a) = a" },
 	{ (hook_opt_kind)FS_OPT_MUX_COMBINE,    "boolean simplification: two Mux nodes where combined into one" },
 	{ (hook_opt_kind)FS_OPT_MUX_CONV,       "boolean simplification: MuxI(sel, 1, 0) = (I)sel" },

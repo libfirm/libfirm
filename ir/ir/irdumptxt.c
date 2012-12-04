@@ -221,9 +221,6 @@ void dump_irnode_to_file(FILE *F, const ir_node *n)
 			}
 		}
 	} break;
-	case iro_Cast: {
-		ir_fprintf(F, "  cast to type: %+F\n", get_Cast_type(n));
-	} break;
 	case iro_Cmp: {
 		ir_relation relation = get_Cmp_relation(n);
 		ir_fprintf(F, "  relation: %s\n", get_relation_string(relation));

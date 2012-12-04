@@ -1373,23 +1373,6 @@ static int verify_node_Conv(const ir_node *n)
 }
 
 /**
- * verify a Cast node
- */
-static int verify_node_Cast(const ir_node *n)
-{
-	ir_mode *mymode  = get_irn_mode(n);
-	ir_mode *op1mode = get_irn_mode(get_Cast_op(n));
-
-	ASSERT_AND_RET_DBG(
-		/* Conv: BB x datab1 --> datab2 */
-		mode_is_data(op1mode) && op1mode == mymode,
-		"Cast node", 0,
-		show_unop_failure(n, "/* Conv: BB x datab1 --> datab2 */");
-	);
-	return 1;
-}
-
-/**
  * verify a Phi node
  */
 static int verify_node_Phi(const ir_node *n)
@@ -2130,7 +2113,6 @@ void ir_register_verify_node_ops(void)
 	register_verify_node_func(op_And,      verify_node_And);
 	register_verify_node_func(op_Block,    verify_node_Block);
 	register_verify_node_func(op_Call,     verify_node_Call);
-	register_verify_node_func(op_Cast,     verify_node_Cast);
 	register_verify_node_func(op_Cmp,      verify_node_Cmp);
 	register_verify_node_func(op_Cond,     verify_node_Cond);
 	register_verify_node_func(op_Confirm,  verify_node_Confirm);

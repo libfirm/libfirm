@@ -995,48 +995,6 @@ FIRM_API ir_entity *get_entity_trans_overwrites_first(const ir_entity *ent);
 FIRM_API ir_entity *get_entity_trans_overwrites_next(const ir_entity *ent);
 
 
-/** The state of Cast operations that cast class types or pointers to class
- *  types.
- *
- * The state expresses, how far Cast operations conform with the class
- * hierarchy.
- *
- *   class A {}
- *   class B1 extends A {}
- *   class B2 extends A {}
- *   class C  extends B1 {}
- * normalized:  Cast operations conform with the inheritance relation.
- *   I.e., the type of the operand of a Cast is either a super= or a sub-
- *   type of the type casted to. Example: (A)((B2) (new C())).
- * transitive:  Cast operations conform with the transitive inheritance
- *   relation. Example: (A)(new C()).
- * any:  Cast operations do not conform with the transitive inheritance
- *   relation.  Example: (B2)(new B1())
- *
- * Flags for class cast state.
- *
- * The state in irp is always smaller or equal to the state of any
- * irg.
- *
- * We rely on the ordering of the enum. */
-typedef enum {
-	ir_class_casts_any        = 0, /**< There are class casts that do not cast in conformance with
-	                                    the class hierarchy.  @@@ So far this does not happen in Firm. */
-	ir_class_casts_transitive = 1, /**< Class casts conform to transitive inheritance edges. Default. */
-	ir_class_casts_normalized = 2, /**< Class casts conform to inheritance edges. */
-	ir_class_casts_state_max
-} ir_class_cast_state;
-
-/** Sets class cast state for graph @p irg to @p state. */
-FIRM_API void set_irg_class_cast_state(ir_graph *irg,
-                                       ir_class_cast_state state);
-/** Returns class cast state for graph @p irg. */
-FIRM_API ir_class_cast_state get_irg_class_cast_state(const ir_graph *irg);
-/** Sets class cast state for the whole program to @p state. */
-FIRM_API void set_irp_class_cast_state(ir_class_cast_state state);
-/** Returns class cast state for the whole program. */
-FIRM_API ir_class_cast_state get_irp_class_cast_state(void);
-
 /**
  * Checks a type.
  *

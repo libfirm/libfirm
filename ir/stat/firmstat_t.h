@@ -105,7 +105,6 @@ enum firmstat_optimizations_t {
 	FS_OPT_SHIFT_OR,                          /**< (a SHF c) OR (b SHF c) = (a OR b) SHF c */
 	FS_OPT_SHIFT_EOR,                         /**< (a SHF c) XOR (b SHF c) = (a XOR b) SHF c */
 	FS_OPT_CONV,                              /**< a Conv could be removed */
-	FS_OPT_CAST,                              /**< a Cast could be removed */
 	FS_OPT_MIN_MAX_EQ,                        /**< Min(a,a) = Max(a,a) = a */
 	FS_OPT_MUX_COMBINE,                       /**< two Mux nodes where combined into one */
 	FS_OPT_MUX_CONV,                          /**< MuxI(sel, 1, 0) = (I)sel */

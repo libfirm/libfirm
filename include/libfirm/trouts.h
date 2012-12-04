@@ -59,15 +59,6 @@ FIRM_API size_t get_type_n_allocs(const ir_type *type);
 /** Returns Alloc node number @p pos that create an instance of type @p type. */
 FIRM_API ir_node *get_type_alloc(const ir_type *type, size_t pos);
 
-/** Returns number of Cast nodes that cast a pointer to type @p type. */
-FIRM_API size_t get_type_n_casts(const ir_type *type);
-/** Cast node that cast a pointer to this type. */
-FIRM_API ir_node *get_type_cast(const ir_type *type, size_t pos);
-/** Returns number of upcasts. O(\#casts). */
-FIRM_API size_t get_class_n_upcasts(const ir_type *clss);
-/** Returns number of downcasts. O(\#casts). */
-FIRM_API size_t get_class_n_downcasts(const ir_type *clss);
-
 /** Returns number of pointertypes that point to type @p type. */
 FIRM_API size_t get_type_n_pointertypes_to(const ir_type *type);
 /** Returns pointer type number @p pos that points to type @p type. */

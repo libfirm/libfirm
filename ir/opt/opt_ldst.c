@@ -299,14 +299,10 @@ static unsigned register_address(ir_node *adr)
 {
 	address_entry *entry;
 
-	/* skip Confirms and Casts */
+	/* skip Confirms */
 restart:
 	if (is_Confirm(adr)) {
 		adr = get_Confirm_value(adr);
-		goto restart;
-	}
-	if (is_Cast(adr)) {
-		adr = get_Cast_op(adr);
 		goto restart;
 	}
 

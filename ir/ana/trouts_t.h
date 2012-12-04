@@ -28,7 +28,6 @@
 
 #include "trouts.h"
 
-void add_type_cast(const ir_type *tp, ir_node *cast);
 void add_type_pointertype_to(const ir_type *tp, ir_type *ptp);
 void add_type_arraytype_of(const ir_type *tp, ir_type *atp);
 

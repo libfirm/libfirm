@@ -634,7 +634,6 @@ static bool is_stored(const ir_node *n)
 			/* ok if its only the address input */
 			break;
 		case iro_Sel:
-		case iro_Cast:
 		case iro_Confirm:
 			if (is_stored(succ))
 				return true;
@@ -737,7 +736,7 @@ static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, bool top
 				for (size_t j = get_Return_n_ress(pred); j > 0;) {
 					ir_node *res = get_Return_res(pred, --j);
 
-					/* skip Confirms and Casts */
+					/* skip Confirms */
 					res = skip_HighLevel_ops(res);
 					/* skip Proj's */
 					while (is_Proj(res))

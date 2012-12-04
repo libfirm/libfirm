@@ -908,9 +908,6 @@ static void dump_node_nodeattr(FILE *F, const ir_node *n)
 	case iro_Sel:
 		fprintf(F, "%s ", get_ent_dump_name(get_Sel_entity(n)));
 		break;
-	case iro_Cast:
-		ir_fprintf(F, "(%+F)", get_Cast_type(n));
-		break;
 	case iro_Cmp:
 		fprintf(F, "%s ", get_relation_string(get_Cmp_relation(n)));
 		break;
@@ -1592,9 +1589,6 @@ static void dump_node2type_edges(ir_node *n, void *env)
 		break;
 	case iro_Free:
 		print_node_type_edge(F,n,get_Free_type(n),NODE2TYPE_EDGE_ATTR);
-		break;
-	case iro_Cast:
-		print_node_type_edge(F,n,get_Cast_type(n),NODE2TYPE_EDGE_ATTR);
 		break;
 	default:
 		break;

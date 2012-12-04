@@ -657,10 +657,6 @@ static void emit_init_expression(be_gas_decl_env_t *env, ir_node *init)
 	init = skip_Id(init);
 
 	switch (get_irn_opcode(init)) {
-	case iro_Cast:
-		emit_init_expression(env, get_Cast_op(init));
-		return;
-
 	case iro_Conv:
 		emit_init_expression(env, get_Conv_op(init));
 		return;

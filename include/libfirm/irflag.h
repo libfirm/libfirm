@@ -103,17 +103,6 @@ FIRM_API int get_opt_cse(void);
  */
 FIRM_API void set_opt_global_cse(int value);
 
-/** Restricts the behavior of cast optimization.
- *
- *  If set, downcast are not optimized if they might be
- *  illegal as in (Super)(Sub) (new Super()).  Default:
- *  0 == not suppressed.
- */
-FIRM_API void set_opt_suppress_downcast_optimization(int value);
-/** Returns suppred_downcast flag.
- * @see set_opt_suppress_downcast_optimization() */
-FIRM_API int get_opt_suppress_downcast_optimization(void);
-
 /**
  * Enable/Disable Global Null Pointer Test Elimination.
  *

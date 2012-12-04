@@ -282,9 +282,6 @@ static void lower_irnode(ir_node *irn, void *env)
 	case iro_SymConst:
 		lower_symconst(irn);
 		break;
-	case iro_Cast:
-		exchange(irn, get_Cast_op(irn));
-		break;
 	default:
 		break;
 	}
@@ -297,7 +294,7 @@ static void lower_irnode(ir_node *irn, void *env)
  */
 void lower_highlevel_graph(ir_graph *irg)
 {
-	/* Finally: lower SymConst-Size and Sel nodes, Casts, unaligned Load/Stores. */
+	/* Finally: lower SymConst-Size and Sel nodes, unaligned Load/Stores. */
 	irg_walk_graph(irg, NULL, lower_irnode, NULL);
 }
 

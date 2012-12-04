@@ -345,12 +345,6 @@ static int node_cmp_attr_Phi(const ir_node *a, const ir_node *b)
 	return 0;
 }
 
-/** Compares the attributes of two Cast nodes. */
-static int node_cmp_attr_Cast(const ir_node *a, const ir_node *b)
-{
-	return get_Cast_type(a) != get_Cast_type(b);
-}
-
 /** Compares the attributes of two Load nodes. */
 static int node_cmp_attr_Load(const ir_node *a, const ir_node *b)
 {
@@ -593,7 +587,6 @@ void firm_init_op(void)
 	register_node_cmp_func(op_Alloc,    node_cmp_attr_Alloc);
 	register_node_cmp_func(op_Builtin,  node_cmp_attr_Builtin);
 	register_node_cmp_func(op_Call,     node_cmp_attr_Call);
-	register_node_cmp_func(op_Cast,     node_cmp_attr_Cast);
 	register_node_cmp_func(op_Cmp,      node_cmp_attr_Cmp);
 	register_node_cmp_func(op_Confirm,  node_cmp_attr_Confirm);
 	register_node_cmp_func(op_Const,    node_cmp_attr_Const);

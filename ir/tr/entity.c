@@ -518,7 +518,6 @@ int is_irn_const_expression(ir_node *n)
 	case iro_Unknown:
 		return 1;
 	case iro_Conv:
-	case iro_Cast:
 		return is_irn_const_expression(get_irn_n(n, 0));
 	default:
 		break;
@@ -572,11 +571,6 @@ ir_node *copy_const_value(dbg_info *dbg, ir_node *n, ir_node *block)
 		nn = new_rd_Eor(dbg, block,
 		                copy_const_value(dbg, get_Eor_left(n), block),
 		                copy_const_value(dbg, get_Eor_right(n), block), m);
-		break;
-	case iro_Cast:
-		nn = new_rd_Cast(dbg, block,
-		                 copy_const_value(dbg, get_Cast_op(n), block),
-		                 get_Cast_type(n));
 		break;
 	case iro_Conv:
 		nn = new_rd_Conv(dbg, block,

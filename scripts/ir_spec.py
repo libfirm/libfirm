@@ -307,21 +307,6 @@ class Call:
 	'''
 
 @op
-class Cast(Unop):
-	"""perform a high-level type cast"""
-	mode     = "get_irn_mode(irn_op)"
-	flags    = [ "highlevel" ]
-	attrs    = [
-		dict(
-			type    = "ir_type*",
-			name    = "type",
-			comment = "target type of the case",
-		)
-	]
-	attr_struct = "cast_attr"
-	init     = "assert(is_atomic_type(type));"
-
-@op
 class Cmp(Binop):
 	"""Compares its two operands and checks whether a specified
 	   relation (like less or equal) is fulfilled."""

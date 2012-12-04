@@ -492,31 +492,6 @@ FIRM_API ir_relation get_negated_relation(ir_relation relation);
 FIRM_API ir_relation get_inversed_relation(ir_relation relation);
 
 /**
- * @addtogroup Cast
- * @{
- */
-
-/** Checks for upcast.
- *
- * Returns true if the Cast node casts a class type to a super type.
- * Works also for pointers to classes (recursively).
- *
- * Needs typeinfo calculated.
- */
-FIRM_API int is_Cast_upcast(ir_node *node);
-
-/** Checks for downcast.
- *
- * Returns true if the Cast node casts a class type to a sub type.
- * Works also for pointers to classes (recursively).
- *
- * Needs typeinfo calculated.
- */
-FIRM_API int is_Cast_downcast(ir_node *node);
-
-/** @} */
-
-/**
  * @addtogroup Phi
  * @{
  */
@@ -584,15 +559,11 @@ FIRM_API const ir_node *skip_Proj_const(const ir_node *node);
 FIRM_API ir_node *skip_Id(ir_node *node);
 /** Returns corresponding operand of Tuple if node is a Proj from a Tuple. */
 FIRM_API ir_node *skip_Tuple(ir_node *node);
-/** Returns operand of node if node is a Cast. */
-FIRM_API ir_node *skip_Cast(ir_node *node);
-/** Returns operand of node if node is a Cast. */
-FIRM_API const ir_node *skip_Cast_const(const ir_node *node);
 /** Returns operand of node if node is a Pin. */
 FIRM_API ir_node *skip_Pin(ir_node *node);
 /** Returns operand of node if node is a Confirm */
 FIRM_API ir_node *skip_Confirm(ir_node *node);
-/** Skip all high-level Operations (including Cast, Confirm). */
+/** Skip all high-level Operations (including Confirm). */
 FIRM_API ir_node *skip_HighLevel_ops(ir_node *node);
 /** Returns true if the operation manipulates control flow */
 FIRM_API int is_cfop(const ir_node *node);
@@ -626,8 +597,8 @@ FIRM_API int is_irn_forking(const ir_node *node);
  */
 FIRM_API void copy_node_attr(ir_graph *irg, const ir_node *old_node, ir_node *new_node);
 
-/** Returns the type attribute of a node n (SymConst, Call, Alloc, Free,
- *  Cast) or NULL.*/
+/** Returns the type attribute of a node n (SymConst, Call, Alloc, Free)
+ *  or NULL.*/
 FIRM_API ir_type *get_irn_type_attr(ir_node *n);
 
 /** Returns the entity attribute of a node n (SymConst, Sel) or NULL. */

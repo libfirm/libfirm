@@ -172,7 +172,7 @@ int value_not_zero(const ir_node *n, const ir_node **confirm)
 /*
  * Check, if the value of a node cannot represent a NULL pointer.
  *
- * - Casts are skipped, Sels are skipped
+ * - Sels are skipped
  * - A SymConst(entity) is NEVER a NULL pointer
  * - Confirms are evaluated
  */
@@ -181,19 +181,17 @@ int value_not_null(const ir_node *n, const ir_node **confirm)
 	ir_tarval *tv;
 
 	*confirm = NULL;
-	n  = skip_Cast_const(n);
 
 	tv = value_of(n);
 	if (tarval_is_constant(tv) && ! tarval_is_null(tv))
 		return 1;
 
 	assert(mode_is_reference(get_irn_mode(n)));
-	/* skip all Sel nodes and Cast's */
+	/* skip all Sel nodes */
 	while (is_Sel(n)) {
-		n = skip_Cast(get_Sel_ptr(n));
+		n = get_Sel_ptr(n);
 	}
 	while (1) {
-		if (is_Cast(n)) { n = get_Cast_op(n); continue; }
 		if (is_Proj(n)) { n = get_Proj_pred(n); continue; }
 		break;
 	}
@@ -209,7 +207,7 @@ int value_not_null(const ir_node *n, const ir_node **confirm)
 		return 1;
 	} else {
 		/* check for more Confirms */
-		for (; is_Confirm(n); n = skip_Cast(get_Confirm_value(n))) {
+		for (; is_Confirm(n); n = get_Confirm_value(n)) {
 			if (get_Confirm_relation(n) == ir_relation_less_greater) {
 				ir_node   *bound = get_Confirm_bound(n);
 				ir_tarval *tv    = value_of(bound);

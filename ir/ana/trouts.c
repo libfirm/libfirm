@@ -43,7 +43,6 @@
 static pmap *entity_access_map = NULL;
 static pmap *entity_reference_map = NULL;
 static pmap *type_alloc_map = NULL;
-static pmap *type_cast_map = NULL;
 static pmap *type_pointertype_map = NULL;
 static pmap *type_arraytype_map = NULL;
 
@@ -111,27 +110,6 @@ static ir_node **get_type_alloc_array(const ir_type *tp)
 static void set_type_alloc_array(const ir_type *tp, ir_node **alls)
 {
 	pmap_insert(type_alloc_map, tp, (void *)alls);
-}
-
-/**
- * Return a flexible array containing all Cast-nodes
- * that "create" a given type.
- */
-static ir_node **get_type_cast_array(const ir_type *tp)
-{
-	if (!type_cast_map) type_cast_map = pmap_create();
-
-	ir_node **res = pmap_get(ir_node*, type_cast_map, tp);
-	if (!res) {
-		res = NEW_ARR_F(ir_node *, 0);
-		pmap_insert(type_cast_map, tp, (void *)res);
-	}
-	return res;
-}
-
-static void set_type_cast_array(const ir_type *tp, ir_node **alls)
-{
-	pmap_insert(type_cast_map, tp, (void *)alls);
 }
 
 /**
@@ -291,63 +269,6 @@ static void add_type_alloc(const ir_type *tp, ir_node *n)
 	set_type_alloc_array(tp, allocs);
 }
 
-/* Number of Cast nodes that create an instance of this type */
-size_t get_type_n_casts(const ir_type *tp)
-{
-	ir_node **casts;
-
-	assert(tp && is_type(tp));
-
-	casts = get_type_cast_array(tp);
-	return ARR_LEN(casts);
-}
-
-
-size_t get_class_n_upcasts(const ir_type *clss)
-{
-	size_t i, n_casts = get_type_n_casts(clss);
-	size_t n_instances = 0;
-	for (i = 0; i < n_casts; ++i) {
-		ir_node *cast = get_type_cast(clss, i);
-		if (is_Cast_upcast(cast))
-			++n_instances;
-	}
-	return n_instances;
-}
-
-size_t get_class_n_downcasts(const ir_type *clss)
-{
-	size_t i, n_casts = get_type_n_casts(clss);
-	size_t n_instances = 0;
-	for (i = 0; i < n_casts; ++i) {
-		ir_node *cast = get_type_cast(clss, i);
-		if (is_Cast_downcast(cast))
-			++n_instances;
-	}
-	return n_instances;
-}
-
-ir_node *get_type_cast(const ir_type *tp, size_t pos)
-{
-	ir_node **casts;
-	assert(pos < get_type_n_casts(tp));
-
-	casts = get_type_cast_array(tp);
-	return casts[pos];
-}
-
-void add_type_cast(const ir_type *tp, ir_node *n)
-{
-	ir_node **casts;
-
-	assert(tp && is_type(tp));
-	assert(n && is_ir_node(n));
-
-	casts = get_type_cast_array(tp);
-	ARR_APP1(ir_node *, casts, n);
-	set_type_cast_array(tp, casts);
-}
-
 /*------------------------------------------------------------------*/
 
 size_t get_type_n_pointertypes_to(const ir_type *tp)
@@ -491,9 +412,6 @@ static void chain_accesses(ir_node *n, void *env)
 	if (is_Alloc(n)) {
 		add_type_alloc(get_Alloc_type(n), n);
 		return;
-	} else if (is_Cast(n)) {
-		add_type_cast(get_Cast_type(n), n);
-		return;
 	} else if (is_Sel(n)) {
 		add_entity_reference(get_Sel_entity(n), n);
 		return;
@@ -588,17 +506,6 @@ void free_trouts(void)
 		}
 		pmap_destroy(type_alloc_map);
 		type_alloc_map = NULL;
-	}
-
-	if (type_cast_map) {
-		ir_node **casts;
-		for (casts = (ir_node **)pmap_first(type_cast_map);
-			casts;
-			casts = (ir_node **)pmap_next(type_cast_map)) {
-			/* DEL_ARR_F(alls); */
-		}
-		pmap_destroy(type_cast_map);
-		type_cast_map = NULL;
 	}
 
 	if (type_pointertype_map) {

@@ -276,11 +276,6 @@ typedef struct io_attr {
 	ir_type *type;                /**< the type of which the object pointer must be */
 } io_attr;
 
-/** Cast attributes. */
-typedef struct cast_attr {
-	ir_type *type;                /**< Type of the casted node. */
-} cast_attr;
-
 /** Load attributes. */
 typedef struct load_attr {
 	except_attr   exc;            /**< The exception attribute. MUST be the first one. */
@@ -374,7 +369,6 @@ typedef union ir_attr {
 	alloc_attr     alloc;         /**< For Alloc. */
 	free_attr      free;          /**< For Free. */
 	io_attr        instof;        /**< For InstOf */
-	cast_attr      cast;          /**< For Cast. */
 	load_attr      load;          /**< For Load. */
 	store_attr     store;         /**< For Store. */
 	phi_attr       phi;           /**< For Phi. */

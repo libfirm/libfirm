@@ -800,44 +800,6 @@ void remove_Call_callee_arr(ir_node *node)
 	node->attr.call.callee_arr = NULL;
 }
 
-int is_Cast_upcast(ir_node *node)
-{
-	ir_type *totype   = get_Cast_type(node);
-	ir_type *fromtype = get_irn_typeinfo_type(get_Cast_op(node));
-
-	assert(get_irg_typeinfo_state(get_irn_irg(node)) == ir_typeinfo_consistent);
-	assert(fromtype);
-
-	while (is_Pointer_type(totype) && is_Pointer_type(fromtype)) {
-		totype   = get_pointer_points_to_type(totype);
-		fromtype = get_pointer_points_to_type(fromtype);
-	}
-
-	assert(fromtype);
-
-	if (!is_Class_type(totype)) return 0;
-	return is_SubClass_of(fromtype, totype);
-}
-
-int is_Cast_downcast(ir_node *node)
-{
-	ir_type *totype   = get_Cast_type(node);
-	ir_type *fromtype = get_irn_typeinfo_type(get_Cast_op(node));
-
-	assert(get_irg_typeinfo_state(get_irn_irg(node)) == ir_typeinfo_consistent);
-	assert(fromtype);
-
-	while (is_Pointer_type(totype) && is_Pointer_type(fromtype)) {
-		totype   = get_pointer_points_to_type(totype);
-		fromtype = get_pointer_points_to_type(fromtype);
-	}
-
-	assert(fromtype);
-
-	if (!is_Class_type(totype)) return 0;
-	return is_SubClass_of(totype, fromtype);
-}
-
 int (is_unop)(const ir_node *node)
 {
 	return is_unop_(node);
@@ -1030,20 +992,6 @@ restart:
 	return node;
 }
 
-ir_node *skip_Cast(ir_node *node)
-{
-	if (is_Cast(node))
-		return get_Cast_op(node);
-	return node;
-}
-
-const ir_node *skip_Cast_const(const ir_node *node)
-{
-	if (is_Cast(node))
-		return get_Cast_op(node);
-	return node;
-}
-
 ir_node *skip_Pin(ir_node *node)
 {
 	if (is_Pin(node))
@@ -1214,7 +1162,6 @@ void ir_register_getter_ops(void)
 	register_get_type_func(op_Alloc,    get_Alloc_type);
 	register_get_type_func(op_Builtin,  get_Builtin_type);
 	register_get_type_func(op_Call,     get_Call_type);
-	register_get_type_func(op_Cast,     get_Cast_type);
 	register_get_type_func(op_CopyB,    get_CopyB_type);
 	register_get_type_func(op_Free,     get_Free_type);
 	register_get_type_func(op_InstOf,   get_InstOf_type);
