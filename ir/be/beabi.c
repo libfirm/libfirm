@@ -541,14 +541,14 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	throws_exception = ir_throws_exception(irn);
 	if (env->call->flags.call_has_imm && is_SymConst(call_ptr)) {
 		/* direct call */
-		low_call = be_new_Call(dbgi, irg, bl, curr_mem, sp->single_req, curr_sp,
+		low_call = be_new_Call(dbgi, bl, curr_mem, sp->single_req, curr_sp,
 		                       sp->single_req, curr_sp,
 		                       n_reg_results + pn_be_Call_first_res + ARR_LEN(destroyed_regs),
 		                       n_ins, in, get_Call_type(irn));
 		be_Call_set_entity(low_call, get_SymConst_entity(call_ptr));
 	} else {
 		/* indirect call */
-		low_call = be_new_Call(dbgi, irg, bl, curr_mem, sp->single_req, curr_sp,
+		low_call = be_new_Call(dbgi, bl, curr_mem, sp->single_req, curr_sp,
 		                       sp->reg_class->class_req, call_ptr,
 		                       n_reg_results + pn_be_Call_first_res + ARR_LEN(destroyed_regs),
 		                       n_ins, in, get_Call_type(irn));

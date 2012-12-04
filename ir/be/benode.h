@@ -294,7 +294,6 @@ typedef enum {
  * Construct a new be_Call.
  *
  * @param dbg      debug info
- * @param irg      the graph where the call is placed
  * @param block    the block where the call is placed
  * @param mem      the memory input of the call
  * @param sp       the stack pointer input of the call
@@ -305,7 +304,7 @@ typedef enum {
  * @param in       the (register) inputs of this call
  * @param call_tp  the call type of this call
  */
-ir_node *be_new_Call(dbg_info *dbg, ir_graph *irg, ir_node *block, ir_node *mem,
+ir_node *be_new_Call(dbg_info *dbg, ir_node *block, ir_node *mem,
                      const arch_register_req_t *sp_req, ir_node *sp,
                      const arch_register_req_t *ptr_req, ir_node *ptr,
                      int n_outs, int n, ir_node *in[], ir_type *call_tp);

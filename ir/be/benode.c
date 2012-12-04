@@ -470,14 +470,13 @@ void be_Keep_add_node(ir_node *keep, const arch_register_class_t *cls, ir_node *
 	add_register_req_in(keep, cls->class_req);
 }
 
-ir_node *be_new_Call(dbg_info *dbg, ir_graph *irg, ir_node *bl, ir_node *mem,
+ir_node *be_new_Call(dbg_info *dbg, ir_node *bl, ir_node *mem,
 		const arch_register_req_t *sp_req, ir_node *sp,
 		const arch_register_req_t *ptr_req, ir_node *ptr,
 		int n_outs, int n, ir_node *in[], ir_type *call_tp)
 {
 	be_call_attr_t *a;
 	int real_n = n_be_Call_first_arg + n;
-	ir_node *irn;
 	ir_node **real_in;
 
 	NEW_ARR_A(ir_node *, real_in, real_n);
@@ -486,7 +485,8 @@ ir_node *be_new_Call(dbg_info *dbg, ir_graph *irg, ir_node *bl, ir_node *mem,
 	real_in[n_be_Call_ptr] = ptr;
 	memcpy(&real_in[n_be_Call_first_arg], in, n * sizeof(in[0]));
 
-	irn = new_ir_node(dbg, irg, bl, op_be_Call, mode_T, real_n, real_in);
+	ir_graph *const irg = get_Block_irg(bl);
+	ir_node  *const irn = new_ir_node(dbg, irg, bl, op_be_Call, mode_T, real_n, real_in);
 	init_node_attr(irn, real_n, n_outs);
 	a                     = (be_call_attr_t*)get_irn_generic_attr(irn);
 	a->ent                = NULL;
