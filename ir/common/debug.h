@@ -93,21 +93,7 @@ void firm_dbg_set_file(firm_dbg_module_t *module, FILE *file);
 #define _DBG_MAIN(func,args) \
   _firm_dbg_print_msg(__FILE__, __LINE__, func, _firm_dbg_make_msg args)
 
-/* If we have C99 use the __func__ variable for calling functions name. */
-#if defined(__STD_VERSION__) && __STD_VERSION >= 199901L
 #define _DBG(args)  _DBG_MAIN(__func__, args)
-#else
-
-/* Else, check for gcc and use the proprietary __FUNCTION__ macro. */
-#ifdef __GNUC__
-#define _DBG(args)  _DBG_MAIN(__FUNCTION__, args)
-#else
-
-/* Else go without the name of the calling function. */
-#define _DBG(args)  _DBG_MAIN("", args)
-#endif  /* __GNUC__ */
-#endif /* __STD_VERSION__ ... */
-
 #define _DB(args) _firm_dbg_print args
 
 /**
