@@ -241,28 +241,6 @@ class Block:
 	'''
 
 @op
-class Bound:
-	"""Performs a bounds-check: if lower <= index < upper then return index,
-	otherwise throw an exception."""
-	ins    = [
-		("mem",    "memory dependency"),
-		("index",  "value to test"),
-		("lower",  "lower bound (inclusive)"),
-		("upper",  "upper bound (exclusive)"),
-	]
-	outs  = [
-		("M",         "memory result"),
-		("res",       "the checked index"),
-		("X_regular", "control flow when no exception occurs"),
-		("X_except",  "control flow when exception occured"),
-	]
- 	flags  = [ "fragile", "highlevel" ]
-	pinned = "exception"
-	pinned_init = "op_pin_state_pinned"
-	throws_init = "false"
-	attr_struct = "bound_attr"
-
-@op
 class Builtin:
 	"""performs a backend-specific builtin."""
 	ins         = [

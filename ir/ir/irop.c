@@ -387,11 +387,6 @@ static int node_cmp_attr_CopyB(const ir_node *a, const ir_node *b)
 	return node_cmp_exception(a, b);
 }
 
-static int node_cmp_attr_Bound(const ir_node *a, const ir_node *b)
-{
-	return node_cmp_exception(a, b);
-}
-
 /** Compares the attributes of two Div nodes. */
 static int node_cmp_attr_Div(const ir_node *a, const ir_node *b)
 {
@@ -596,7 +591,6 @@ void firm_init_op(void)
 
 	register_node_cmp_func(op_ASM,      node_cmp_attr_ASM);
 	register_node_cmp_func(op_Alloc,    node_cmp_attr_Alloc);
-	register_node_cmp_func(op_Bound,    node_cmp_attr_Bound);
 	register_node_cmp_func(op_Builtin,  node_cmp_attr_Builtin);
 	register_node_cmp_func(op_Call,     node_cmp_attr_Call);
 	register_node_cmp_func(op_Cast,     node_cmp_attr_Cast);

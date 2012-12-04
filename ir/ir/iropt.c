@@ -1194,56 +1194,6 @@ static ir_node *equivalent_node_Proj_CopyB(ir_node *proj)
 }
 
 /**
- * Optimize Bounds(idx, idx, upper) into idx.
- */
-static ir_node *equivalent_node_Proj_Bound(ir_node *proj)
-{
-	ir_node *oldn  = proj;
-	ir_node *bound = get_Proj_pred(proj);
-	ir_node *idx   = get_Bound_index(bound);
-	ir_node *pred  = skip_Proj(idx);
-	int ret_tuple  = 0;
-
-	if (idx == get_Bound_lower(bound))
-		ret_tuple = 1;
-	else if (is_Bound(pred)) {
-		/*
-		 * idx was Bounds checked previously, it is still valid if
-		 * lower <= pred_lower && pred_upper <= upper.
-		 */
-		ir_node *lower = get_Bound_lower(bound);
-		ir_node *upper = get_Bound_upper(bound);
-		if (get_Bound_lower(pred) == lower &&
-			get_Bound_upper(pred) == upper) {
-			/*
-			 * One could expect that we simply return the previous
-			 * Bound here. However, this would be wrong, as we could
-			 * add an exception Proj to a new location then.
-			 * So, we must turn in into a tuple.
-			 */
-			ret_tuple = 1;
-		}
-	}
-	if (ret_tuple) {
-		/* Turn Bound into a tuple (mem, jmp, bad, idx) */
-		switch (get_Proj_proj(proj)) {
-		case pn_Bound_M:
-			DBG_OPT_EXC_REM(proj);
-			proj = get_Bound_mem(bound);
-			break;
-		case pn_Bound_res:
-			proj = idx;
-			DBG_OPT_ALGSIM0(oldn, proj, FS_OPT_NOP);
-			break;
-		default:
-			/* cannot optimize pn_Bound_X_regular, handled in transform ... */
-			break;
-		}
-	}
-	return proj;
-}
-
-/**
  * Does all optimizations on nodes that must be done on its Projs
  * because of creating new nodes.
  */
@@ -4764,63 +4714,6 @@ static ir_node *transform_node_Proj_CopyB(ir_node *proj)
 }
 
 /**
- * Optimize Bounds(idx, idx, upper) into idx.
- */
-static ir_node *transform_node_Proj_Bound(ir_node *proj)
-{
-	ir_node *oldn  = proj;
-	ir_node *bound = get_Proj_pred(proj);
-	ir_node *idx   = get_Bound_index(bound);
-	ir_node *pred  = skip_Proj(idx);
-	int ret_tuple  = 0;
-
-	if (idx == get_Bound_lower(bound))
-		ret_tuple = 1;
-	else if (is_Bound(pred)) {
-		/*
-		* idx was Bounds checked previously, it is still valid if
-		* lower <= pred_lower && pred_upper <= upper.
-		*/
-		ir_node *lower = get_Bound_lower(bound);
-		ir_node *upper = get_Bound_upper(bound);
-		if (get_Bound_lower(pred) == lower &&
-			get_Bound_upper(pred) == upper) {
-			/*
-			 * One could expect that we simply return the previous
-			 * Bound here. However, this would be wrong, as we could
-			 * add an exception Proj to a new location then.
-			 * So, we must turn in into a tuple.
-			 */
-			ret_tuple = 1;
-		}
-	}
-	if (ret_tuple) {
-		/* Turn Bound into a tuple (mem, jmp, bad, idx) */
-		switch (get_Proj_proj(proj)) {
-		case pn_Bound_M:
-			DBG_OPT_EXC_REM(proj);
-			proj = get_Bound_mem(bound);
-			break;
-		case pn_Bound_X_except:
-			DBG_OPT_EXC_REM(proj);
-			proj = new_r_Bad(get_irn_irg(proj), mode_X);
-			break;
-		case pn_Bound_res:
-			proj = idx;
-			DBG_OPT_ALGSIM0(oldn, proj, FS_OPT_NOP);
-			break;
-		case pn_Bound_X_regular:
-			DBG_OPT_EXC_REM(proj);
-			proj = new_r_Jmp(get_nodes_block(bound));
-			break;
-		default:
-			break;
-		}
-	}
-	return proj;
-}
-
-/**
  * Does all optimizations on nodes that must be done on its Projs
  * because of creating new nodes.
  */
@@ -6285,7 +6178,6 @@ void ir_register_opt_node_ops(void)
 	register_equivalent_node_func(op_Shr,     equivalent_node_left_zero);
 	register_equivalent_node_func(op_Shrs,    equivalent_node_left_zero);
 	register_equivalent_node_func(op_Sub,     equivalent_node_Sub);
-	register_equivalent_node_func_proj(op_Bound, equivalent_node_Proj_Bound);
 	register_equivalent_node_func_proj(op_CopyB, equivalent_node_Proj_CopyB);
 	register_equivalent_node_func_proj(op_Div,   equivalent_node_Proj_Div);
 	register_equivalent_node_func_proj(op_Tuple, equivalent_node_Proj_Tuple);
@@ -6317,7 +6209,6 @@ void ir_register_opt_node_ops(void)
 	register_transform_node_func(op_Sub,    transform_node_Sub);
 	register_transform_node_func(op_Switch, transform_node_Switch);
 	register_transform_node_func(op_Sync,   transform_node_Sync);
-	register_transform_node_func_proj(op_Bound, transform_node_Proj_Bound);
 	register_transform_node_func_proj(op_CopyB, transform_node_Proj_CopyB);
 	register_transform_node_func_proj(op_Div,   transform_node_Proj_Div);
 	register_transform_node_func_proj(op_Load,  transform_node_Proj_Load);

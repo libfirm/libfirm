@@ -663,28 +663,6 @@ static int verify_node_Proj_CopyB(const ir_node *p)
 	return 1;
 }
 
-/**
- * verify a Proj(Bound) node
- */
-static int verify_node_Proj_Bound(const ir_node *p)
-{
-	ir_mode *mode = get_irn_mode(p);
-	ir_node *n    = get_Proj_pred(p);
-	long proj     = get_Proj_proj(p);
-
-	ASSERT_AND_RET_DBG(
-		(
-			(proj == pn_Bound_M         && mode == mode_M) ||
-			(proj == pn_Bound_X_regular && mode == mode_X) ||
-			(proj == pn_Bound_X_except  && mode == mode_X) ||
-			(proj == pn_Bound_res       && mode == get_irn_mode(get_Bound_index(n)))
-		),
-		"wrong Proj from Bound", 0,
-		show_proj_failure(p);
-	);
-	return 1;
-}
-
 static int verify_node_Proj_fragile(const ir_node *node)
 {
 	ir_node *pred             = get_Proj_pred(node);
@@ -1614,28 +1592,6 @@ static int verify_node_CopyB(const ir_node *n)
 }
 
 /**
- * verify a Bound node
- */
-static int verify_node_Bound(const ir_node *n)
-{
-	ir_mode *mymode  = get_irn_mode(n);
-	ir_mode *op1mode = get_irn_mode(get_Bound_mem(n));
-	ir_mode *op2mode = get_irn_mode(get_Bound_index(n));
-	ir_mode *op3mode = get_irn_mode(get_Bound_lower(n));
-	ir_mode *op4mode = get_irn_mode(get_Bound_upper(n));
-
-	/* Bound: BB x M x int x int x int --> M x X */
-	ASSERT_AND_RET(
-		mymode == mode_T &&
-		op1mode == mode_M &&
-		op2mode == op3mode &&
-		op3mode == op4mode &&
-		mode_is_int(op3mode),
-		"Bound node", 0 );
-	return 1;
-}
-
-/**
  * Check dominance.
  * For each usage of a node, it is checked, if the block of the
  * node dominates the block of the usage (for phis: the predecessor
@@ -2173,7 +2129,6 @@ void ir_register_verify_node_ops(void)
 	register_verify_node_func(op_Alloc,    verify_node_Alloc);
 	register_verify_node_func(op_And,      verify_node_And);
 	register_verify_node_func(op_Block,    verify_node_Block);
-	register_verify_node_func(op_Bound,    verify_node_Bound);
 	register_verify_node_func(op_Call,     verify_node_Call);
 	register_verify_node_func(op_Cast,     verify_node_Cast);
 	register_verify_node_func(op_Cmp,      verify_node_Cmp);
@@ -2213,7 +2168,6 @@ void ir_register_verify_node_ops(void)
 	register_verify_node_func(op_Sync,     verify_node_Sync);
 
 	register_verify_node_func_proj(op_Alloc,  verify_node_Proj_Alloc);
-	register_verify_node_func_proj(op_Bound,  verify_node_Proj_Bound);
 	register_verify_node_func_proj(op_Call,   verify_node_Proj_Call);
 	register_verify_node_func_proj(op_Cond,   verify_node_Proj_Cond);
 	register_verify_node_func_proj(op_CopyB,  verify_node_Proj_CopyB);
