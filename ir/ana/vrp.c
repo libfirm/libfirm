@@ -119,33 +119,34 @@ static int vrp_update_node(ir_vrp_info *info, ir_node *node)
 	}
 
 	case iro_Add: {
-		int overflow_top, overflow_bottom;
-		ir_tarval *new_top, *new_bottom;
-		const vrp_attr *vrp_left, *vrp_right;
-		vrp_left = vrp_get_or_set_info(info, get_Add_left(node));
-		vrp_right = vrp_get_or_set_info(info, get_Add_right(node));
+		const vrp_attr *vrp_left  = vrp_get_or_set_info(info, get_Add_left(node));
+		const vrp_attr *vrp_right = vrp_get_or_set_info(info, get_Add_right(node));
 
-		if (vrp_left->range_type == VRP_UNDEFINED || vrp_right->range_type ==
-				VRP_UNDEFINED || vrp_left->range_type == VRP_VARYING ||
-				vrp_right->range_type == VRP_VARYING) {
+		if (vrp_left->range_type == VRP_UNDEFINED
+		 || vrp_right->range_type == VRP_UNDEFINED
+		 || vrp_left->range_type == VRP_VARYING
+		 || vrp_right->range_type == VRP_VARYING) {
 			return 0;
 		}
 
-		new_top = tarval_add(vrp_left->range_top, vrp_right->range_top);
-		overflow_top = tarval_carry();
-		new_bottom = tarval_add(vrp_left->range_bottom, vrp_right->range_bottom);
-		overflow_bottom = tarval_carry();
+		if (vrp_left->range_type == VRP_RANGE
+		 && vrp_right->range_type == VRP_RANGE) {
+			tarval_int_overflow_mode_t rem = tarval_get_integer_overflow_mode();
+			tarval_set_integer_overflow_mode(TV_OVERFLOW_BAD);
+			ir_tarval *new_top
+				= tarval_add(vrp_left->range_top, vrp_right->range_top);
+			ir_tarval *new_bottom
+				= tarval_add(vrp_left->range_bottom, vrp_right->range_bottom);
+			tarval_set_integer_overflow_mode(rem);
 
-		if (!overflow_top && !overflow_bottom && vrp_left->range_type == VRP_RANGE
-				&&vrp_right->range_type == VRP_RANGE) {
-			new_range_bottom = new_bottom;
-			new_range_top = new_top;
-			new_range_type = VRP_RANGE;
-		}
-
-		if (overflow_top || overflow_bottom) {
-			/* TODO Implement overflow handling*/
-			new_range_type = VRP_UNDEFINED;
+			if (new_top != tarval_bad && new_bottom != tarval_bad) {
+				new_range_bottom = new_bottom;
+				new_range_top    = new_top;
+				new_range_type   = VRP_RANGE;
+			} else {
+				/* TODO Implement overflow handling*/
+				new_range_type = VRP_UNDEFINED;
+			}
 		}
 		break;
 	}
@@ -153,36 +154,36 @@ static int vrp_update_node(ir_vrp_info *info, ir_node *node)
 	case iro_Sub: {
 		ir_node *left  = get_Sub_left(node);
 		ir_node *right = get_Sub_right(node);
-		int overflow_top, overflow_bottom;
-		ir_tarval *new_top, *new_bottom;
-		const vrp_attr *vrp_left, *vrp_right;
 
 		if (!mode_is_int(get_irn_mode(left)))
 			return 0;
 
-		vrp_left  = vrp_get_or_set_info(info, left);
-		vrp_right = vrp_get_or_set_info(info, right);
+		const vrp_attr *vrp_left  = vrp_get_or_set_info(info, left);
+		const vrp_attr *vrp_right = vrp_get_or_set_info(info, right);
 
-		if (vrp_left->range_type == VRP_UNDEFINED || vrp_right->range_type ==
-				VRP_UNDEFINED || vrp_left->range_type == VRP_VARYING ||
-				vrp_right->range_type == VRP_VARYING) {
+		if (vrp_left->range_type == VRP_UNDEFINED
+		 || vrp_right->range_type == VRP_UNDEFINED
+		 || vrp_left->range_type == VRP_VARYING
+		 || vrp_right->range_type == VRP_VARYING) {
 			return 0;
 		}
 
-		new_top = tarval_sub(vrp_left->range_top, vrp_right->range_top, NULL);
-		overflow_top = tarval_carry();
-		new_bottom = tarval_sub(vrp_left->range_bottom, vrp_right->range_bottom, NULL);
-		overflow_bottom = tarval_carry();
+		if (vrp_left->range_type == VRP_RANGE
+		 && vrp_right->range_type == VRP_RANGE) {
+			tarval_int_overflow_mode_t rem = tarval_get_integer_overflow_mode();
+			tarval_set_integer_overflow_mode(TV_OVERFLOW_BAD);
+			ir_tarval *new_top = tarval_sub(vrp_left->range_top, vrp_right->range_top, NULL);
+			ir_tarval *new_bottom = tarval_sub(vrp_left->range_bottom, vrp_right->range_bottom, NULL);
+			tarval_set_integer_overflow_mode(rem);
 
-		if (!overflow_top && !overflow_bottom && vrp_left->range_type == VRP_RANGE
-				&&vrp_right->range_type == VRP_RANGE) {
-			new_range_bottom = new_bottom;
-			new_range_top = new_top;
-			new_range_type = VRP_RANGE;
-		}
-
-		if (overflow_top || overflow_bottom) {
-			/* TODO Implement overflow handling*/
+			if (new_top != tarval_bad && new_bottom != tarval_bad) {
+				new_range_bottom = new_bottom;
+				new_range_top = new_top;
+				new_range_type = VRP_RANGE;
+			} else {
+				/* TODO Implement overflow handling*/
+				new_range_type = VRP_UNDEFINED;
+			}
 		}
 		break;
 	}
