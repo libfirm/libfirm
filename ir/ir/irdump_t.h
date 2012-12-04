@@ -39,9 +39,8 @@ const char *get_ent_dump_name(const ir_entity *ent);
 
 /**
  * returns the name of a mode or "<ERROR>" if mode is NOT a mode object.
- * in the later case, sets bad.
  */
-const char *get_mode_name_ex(const ir_mode *mode, int *bad);
+char const *get_mode_name_ex(ir_mode const *mode);
 /** dump the name of a node n to the File F. */
 void dump_node_opcode(FILE *out, const ir_node *n);
 
