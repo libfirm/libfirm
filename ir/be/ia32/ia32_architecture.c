@@ -894,14 +894,8 @@ void ia32_setup_cg_config(void)
 	c->use_softfloat        = (fpu_arch & IA32_FPU_ARCH_SOFTFLOAT) != 0;
 	c->use_sse2             = (fpu_arch & IA32_FPU_ARCH_SSE2) != 0 && flags(arch, arch_feature_sse2);
 	c->use_ffreep           = flags(opt_arch, arch_athlon_plus);
-	/* valgrind can't cope with femms yet and the usefulness of the optimization
-	 * is questionable anyway */
-#if 0
 	c->use_femms            = flags(opt_arch, arch_athlon_plus) &&
 		flags(arch, arch_feature_mmx | arch_all_amd);
-#else
-	c->use_femms            = 0;
-#endif
 	c->use_fucomi           = flags(arch, arch_feature_p6_insn);
 	c->use_cmov             = flags(arch, arch_feature_cmov);
 	c->use_modeD_moves      = flags(opt_arch, arch_generic32 | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2 | arch_ppro | arch_geode);
