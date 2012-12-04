@@ -865,8 +865,6 @@ ir_tarval *tarval_not(ir_tarval *a)
 {
 	char *buffer;
 
-	/* works for vector mode without changes */
-
 	switch (get_mode_sort(a->mode)) {
 	case irms_reference:
 	case irms_int_number:
@@ -1099,7 +1097,6 @@ ir_tarval *tarval_and(ir_tarval *a, ir_tarval *b)
 {
 	assert(a->mode == b->mode);
 
-	/* works even for vector modes */
 	switch (get_mode_sort(a->mode)) {
 	case irms_internal_boolean:
 		return (a == tarval_b_false) ? a : b;
@@ -1118,7 +1115,6 @@ ir_tarval *tarval_andnot(ir_tarval *a, ir_tarval *b)
 {
 	assert(a->mode == b->mode);
 
-	/* works even for vector modes */
 	switch (get_mode_sort(a->mode)) {
 	case irms_internal_boolean:
 		return a == tarval_b_true && b == tarval_b_false ? tarval_b_true : tarval_b_false;
@@ -1140,7 +1136,6 @@ ir_tarval *tarval_or(ir_tarval *a, ir_tarval *b)
 {
 	assert(a->mode == b->mode);
 
-	/* works even for vector modes */
 	switch (get_mode_sort(a->mode)) {
 	case irms_internal_boolean:
 		return (a == tarval_b_true) ? a : b;
@@ -1162,7 +1157,6 @@ ir_tarval *tarval_eor(ir_tarval *a, ir_tarval *b)
 {
 	assert((a->mode == b->mode));
 
-	/* works even for vector modes */
 	switch (get_mode_sort(a->mode)) {
 	case irms_internal_boolean:
 		return (a == b)? tarval_b_false : tarval_b_true;
