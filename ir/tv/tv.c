@@ -256,17 +256,15 @@ static ir_tarval *get_tarval_overflow(const void *value, size_t length, ir_mode 
 	return get_tarval(value, length, mode);
 }
 
-/*
- *   public variables declared in tv.h
- */
-static ir_tarval reserved_tv[6];
+static ir_tarval reserved_tv[2];
+static ir_tarval nonconst_tvs[4];
 
 ir_tarval *tarval_b_false     = &reserved_tv[0];
 ir_tarval *tarval_b_true      = &reserved_tv[1];
-ir_tarval *tarval_bad         = &reserved_tv[2];
-ir_tarval *tarval_undefined   = &reserved_tv[3];
-ir_tarval *tarval_reachable   = &reserved_tv[4];
-ir_tarval *tarval_unreachable = &reserved_tv[5];
+ir_tarval *tarval_bad         = &nonconst_tvs[0];
+ir_tarval *tarval_undefined   = &nonconst_tvs[1];
+ir_tarval *tarval_reachable   = &nonconst_tvs[2];
+ir_tarval *tarval_unreachable = &nonconst_tvs[3];
 
 /**
  * get the float descriptor for given mode.
@@ -620,11 +618,8 @@ ir_tarval *get_tarval_all_one(ir_mode *mode)
 
 int tarval_is_constant(ir_tarval *tv)
 {
-	size_t const num_res = ARRAY_SIZE(reserved_tv);
-
-	/* reserved tarvals are NOT constants. Note that although
-	   tarval_b_true and tarval_b_false are reserved, they are constants of course. */
-	return (tv < &reserved_tv[2] || tv > &reserved_tv[num_res - 1]);
+	size_t const num_res = ARRAY_SIZE(nonconst_tvs);
+	return tv < &nonconst_tvs[0] || &nonconst_tvs[num_res] <= tv;
 }
 
 ir_tarval *get_tarval_minus_one(ir_mode *mode)
@@ -1696,10 +1691,6 @@ static const tarval_mode_info hex_output = {
  */
 void init_tarval_1(long null_value, int support_quad_precision)
 {
-	/* if these assertion fail, tarval_is_constant() will follow ... */
-	assert(tarval_b_false == &reserved_tv[0] && "b_false MUST be the first reserved tarval!");
-	assert(tarval_b_true  == &reserved_tv[1] && "b_true MUST be the second reserved tarval!");
-
 	_null_value = null_value;
 
 	/* initialize the sets holding the tarvals with a comparison function and
