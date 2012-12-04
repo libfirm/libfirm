@@ -33,8 +33,6 @@ void firm_init_reassociation(void);
 
 void firm_init_scalar_replace(void);
 
-void firm_init_class_casts_opt(void);
-
 void firm_init_loop_opt(void);
 
 #endif

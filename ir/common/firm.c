@@ -104,8 +104,6 @@ void ir_init(void)
 	/* Builds a construct allowing to access all information to be constructed
 	   later. */
 	init_irprog_2();
-	/* class cast optimization */
-	firm_init_class_casts_opt();
 	/* memory disambiguation */
 	firm_init_memory_disambiguator();
 	firm_init_loop_opt();

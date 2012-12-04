@@ -571,38 +571,3 @@ ir_entity *resolve_ent_polymorphy(ir_type *dynamic_class, ir_entity *static_ent)
 
 	return res;
 }
-
-
-
-/* ----------------------------------------------------------------------- */
-/* Class cast state handling.                                              */
-/* ----------------------------------------------------------------------- */
-
-/* - State handling. ----------------------------------------- */
-
-void set_irg_class_cast_state(ir_graph *irg, ir_class_cast_state s)
-{
-	if (get_irp_class_cast_state() > s)
-		set_irp_class_cast_state(s);
-	irg->class_cast_state = s;
-}
-
-ir_class_cast_state get_irg_class_cast_state(const ir_graph *irg)
-{
-	return irg->class_cast_state;
-}
-
-void set_irp_class_cast_state(ir_class_cast_state s)
-{
-#ifndef NDEBUG
-	size_t i, n;
-	for (i = 0, n = get_irp_n_irgs(); i < n; ++i)
-		assert(get_irg_class_cast_state(get_irp_irg(i)) >= s);
-#endif
-	irp->class_cast_state = s;
-}
-
-ir_class_cast_state get_irp_class_cast_state(void)
-{
-	return irp->class_cast_state;
-}

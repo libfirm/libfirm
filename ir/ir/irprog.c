@@ -99,7 +99,6 @@ static void complete_ir_prog(ir_prog *irp, const char *module_name)
 	set_class_final(irp->segment_types[IR_SEGMENT_GLOBAL], 1);
 
 	irp->const_code_irg             = new_const_code_irg();
-	irp->class_cast_state           = ir_class_casts_transitive;
 	irp->globals_entity_usage_state = ir_entity_usage_not_computed;
 #undef IDENT
 }

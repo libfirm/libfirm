@@ -514,7 +514,6 @@ struct ir_graph {
 	op_pin_state           irg_pinned_state;  /**< Flag for status of nodes. */
 	ir_typeinfo_state      typeinfo_state;    /**< Validity of type information. */
 	irg_callee_info_state  callee_info_state; /**< Validity of callee information. */
-	ir_class_cast_state    class_cast_state;  /**< Kind of cast operations in code. */
 	unsigned mem_disambig_opt;               /**< Options for the memory disambiguator. */
 	unsigned fp_model;                       /**< floating point model of the graph. */
 
@@ -623,7 +622,6 @@ struct ir_prog {
 	size_t max_callgraph_recursion_depth;   /**< needed in callgraph. */
 	double max_method_execution_frequency;  /**< needed in callgraph. */
 	loop_nesting_depth_state lnd_state;  /**< The state of loop nesting depth information. */
-	ir_class_cast_state class_cast_state;    /**< The state of cast operations in code. */
 	ir_entity_usage_computed_state globals_entity_usage_state;
 
 	ir_label_t last_label_nr;            /**< The highest label number for generating unique labels. */
