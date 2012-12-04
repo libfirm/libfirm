@@ -134,10 +134,6 @@ void be_init_modules(void)
 
 	be_init_copyilp();
 
-#if PLUGIN_IR_BE_STA
-	be_init_arch_sta();
-#endif /* PLUGIN_IR_BE_STA */
-
 #ifdef FIRM_GRGEN_BE
 	be_init_pbqp();
 #endif
