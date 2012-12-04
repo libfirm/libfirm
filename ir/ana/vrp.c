@@ -515,7 +515,6 @@ static void vrp_first_pass(ir_node *n, void *e)
 
 	vrp_update_node(env->info, n);
 
-	assure_irg_outs(get_irn_irg(n));
 	for (i = get_irn_n_outs(n) - 1; i >=0; --i) {
 		ir_node *succ = get_irn_out(n, i);
 		if (bitset_is_set(env->visited, get_irn_idx(succ))) {
