@@ -33,16 +33,6 @@
 #include "irmode.h"
 #include "tv.h"
 
-/** Debugging aid for the firmEvaluator: Marks for reserved tarvals values. */
-enum reserved_id {
-	resid_tarval_bad         = 1,  /**< tarval_bad marker. */
-	resid_tarval_undefined   = 2,  /**< tarval_undefined marker. */
-	resid_tarval_b_false     = 3,  /**< tarval_b_false marker. */
-	resid_tarval_b_true      = 4,  /**< tarval_b_true marker. */
-	resid_tarval_unreachable = 5,  /**< tarval_unreachable marker. */
-	resid_tarval_reachable   = 6   /**< tarval_reachable marker. */
-};
-
 /**
  * Initialization of the tarval module.
  *

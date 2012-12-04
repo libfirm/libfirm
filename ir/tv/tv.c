@@ -1708,27 +1708,21 @@ void init_tarval_2(void)
 {
 	tarval_bad->kind          = k_tarval;
 	tarval_bad->mode          = mode_BAD;
-	tarval_bad->value         = INT_TO_PTR(resid_tarval_bad);
 
 	tarval_undefined->kind    = k_tarval;
 	tarval_undefined->mode    = mode_ANY;
-	tarval_undefined->value   = INT_TO_PTR(resid_tarval_undefined);
 
 	tarval_b_true->kind       = k_tarval;
 	tarval_b_true->mode       = mode_b;
-	tarval_b_true->value      = INT_TO_PTR(resid_tarval_b_true);
 
 	tarval_b_false->kind      = k_tarval;
 	tarval_b_false->mode      = mode_b;
-	tarval_b_false->value     = INT_TO_PTR(resid_tarval_b_false);
 
 	tarval_unreachable->kind  = k_tarval;
 	tarval_unreachable->mode  = mode_X;
-	tarval_unreachable->value = INT_TO_PTR(resid_tarval_unreachable);
 
 	tarval_reachable->kind    = k_tarval;
 	tarval_reachable->mode    = mode_X;
-	tarval_reachable->value   = INT_TO_PTR(resid_tarval_reachable);
 
 	/*
 	 * assign output modes that are compatible with the
