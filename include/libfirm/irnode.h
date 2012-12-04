@@ -211,7 +211,8 @@ FIRM_API op_pin_state is_irn_pinned_in_irg(const ir_node *node);
  * IR node constructor.
  * Create a new IR node in irg, with an op, mode, arity and
  * some incoming IR nodes.
- * This constructor is used in every specific IR node constructor.
+ * Normally you should not use this constructor directly unless you registered
+ * custom opcodes. For the default opcodes firm provides specific constructors.
  *
  * @param db    Debug info.
  * @param irg   IR-graph on with this new node should be constructed.
@@ -224,11 +225,6 @@ FIRM_API op_pin_state is_irn_pinned_in_irg(const ir_node *node);
 FIRM_API ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block,
                               ir_op *op, ir_mode *mode,
                               int arity, ir_node *const *in);
-
-/**
- * @addtogroup Block
- * @{
- */
 
 /**
  * Returns the block the node belongs to.  This is only
@@ -245,6 +241,11 @@ FIRM_API ir_node *get_nodes_block(const ir_node *node);
 
 /** Sets the Block of a node. */
 FIRM_API void set_nodes_block(ir_node *node, ir_node *block);
+
+/**
+ * @addtogroup Block
+ * @{
+ */
 
 /**
  * Returns the position of the predecessor block pred in the inputs
