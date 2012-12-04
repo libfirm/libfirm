@@ -38,6 +38,10 @@
 /*
  * local definitions and macros
  */
+#define SC_BITS      4
+#define SC_RESULT(x) ((x) & ((1U << SC_BITS) - 1U))
+#define SC_CARRY(x)  ((unsigned)(x) >> SC_BITS)
+
 #define CLEAR_BUFFER(b) assert(b); memset(b, SC_0, calc_buffer_size)
 #define SHIFT(count) (SC_1 << (count))
 #define _val(a) ((a)-SC_0)
@@ -81,88 +85,6 @@ static const char sex_digit[4] = { SC_E, SC_C, SC_8, SC_0 };
 static const char zex_digit[4] = { SC_1, SC_3, SC_7, SC_F };
 static const char max_digit[4] = { SC_0, SC_1, SC_3, SC_7 };
 static const char min_digit[4] = { SC_F, SC_E, SC_C, SC_8 };
-
-static char const add_table[16][16][2] = {
-                       { {SC_0, SC_0}, {SC_1, SC_0}, {SC_2, SC_0}, {SC_3, SC_0},
-                         {SC_4, SC_0}, {SC_5, SC_0}, {SC_6, SC_0}, {SC_7, SC_0},
-                         {SC_8, SC_0}, {SC_9, SC_0}, {SC_A, SC_0}, {SC_B, SC_0},
-                         {SC_C, SC_0}, {SC_D, SC_0}, {SC_E, SC_0}, {SC_F, SC_0} },
-
-                       { {SC_1, SC_0}, {SC_2, SC_0}, {SC_3, SC_0}, {SC_4, SC_0},
-                         {SC_5, SC_0}, {SC_6, SC_0}, {SC_7, SC_0}, {SC_8, SC_0},
-                         {SC_9, SC_0}, {SC_A, SC_0}, {SC_B, SC_0}, {SC_C, SC_0},
-                         {SC_D, SC_0}, {SC_E, SC_0}, {SC_F, SC_0}, {SC_0, SC_1} },
-
-                       { {SC_2, SC_0}, {SC_3, SC_0}, {SC_4, SC_0}, {SC_5, SC_0},
-                         {SC_6, SC_0}, {SC_7, SC_0}, {SC_8, SC_0}, {SC_9, SC_0},
-                         {SC_A, SC_0}, {SC_B, SC_0}, {SC_C, SC_0}, {SC_D, SC_0},
-                         {SC_E, SC_0}, {SC_F, SC_0}, {SC_0, SC_1}, {SC_1, SC_1} },
-
-                       { {SC_3, SC_0}, {SC_4, SC_0}, {SC_5, SC_0}, {SC_6, SC_0},
-                         {SC_7, SC_0}, {SC_8, SC_0}, {SC_9, SC_0}, {SC_A, SC_0},
-                         {SC_B, SC_0}, {SC_C, SC_0}, {SC_D, SC_0}, {SC_E, SC_0},
-                         {SC_F, SC_0}, {SC_0, SC_1}, {SC_1, SC_1}, {SC_2, SC_1} },
-
-                       { {SC_4, SC_0}, {SC_5, SC_0}, {SC_6, SC_0}, {SC_7, SC_0},
-                         {SC_8, SC_0}, {SC_9, SC_0}, {SC_A, SC_0}, {SC_B, SC_0},
-                         {SC_C, SC_0}, {SC_D, SC_0}, {SC_E, SC_0}, {SC_F, SC_0},
-                         {SC_0, SC_1}, {SC_1, SC_1}, {SC_2, SC_1}, {SC_3, SC_1} },
-
-                       { {SC_5, SC_0}, {SC_6, SC_0}, {SC_7, SC_0}, {SC_8, SC_0},
-                         {SC_9, SC_0}, {SC_A, SC_0}, {SC_B, SC_0}, {SC_C, SC_0},
-                         {SC_D, SC_0}, {SC_E, SC_0}, {SC_F, SC_0}, {SC_0, SC_1},
-                         {SC_1, SC_1}, {SC_2, SC_1}, {SC_3, SC_1}, {SC_4, SC_1} },
-
-                       { {SC_6, SC_0}, {SC_7, SC_0}, {SC_8, SC_0}, {SC_9, SC_0},
-                         {SC_A, SC_0}, {SC_B, SC_0}, {SC_C, SC_0}, {SC_D, SC_0},
-                         {SC_E, SC_0}, {SC_F, SC_0}, {SC_0, SC_1}, {SC_1, SC_1},
-                         {SC_2, SC_1}, {SC_3, SC_1}, {SC_4, SC_1}, {SC_5, SC_1} },
-
-                       { {SC_7, SC_0}, {SC_8, SC_0}, {SC_9, SC_0}, {SC_A, SC_0},
-                         {SC_B, SC_0}, {SC_C, SC_0}, {SC_D, SC_0}, {SC_E, SC_0},
-                         {SC_F, SC_0}, {SC_0, SC_1}, {SC_1, SC_1}, {SC_2, SC_1},
-                         {SC_3, SC_1}, {SC_4, SC_1}, {SC_5, SC_1}, {SC_6, SC_1} },
-
-                       { {SC_8, SC_0}, {SC_9, SC_0}, {SC_A, SC_0}, {SC_B, SC_0},
-                         {SC_C, SC_0}, {SC_D, SC_0}, {SC_E, SC_0}, {SC_F, SC_0},
-                         {SC_0, SC_1}, {SC_1, SC_1}, {SC_2, SC_1}, {SC_3, SC_1},
-                         {SC_4, SC_1}, {SC_5, SC_1}, {SC_6, SC_1}, {SC_7, SC_1} },
-
-                       { {SC_9, SC_0}, {SC_A, SC_0}, {SC_B, SC_0}, {SC_C, SC_0},
-                         {SC_D, SC_0}, {SC_E, SC_0}, {SC_F, SC_0}, {SC_0, SC_1},
-                         {SC_1, SC_1}, {SC_2, SC_1}, {SC_3, SC_1}, {SC_4, SC_1},
-                         {SC_5, SC_1}, {SC_6, SC_1}, {SC_7, SC_1}, {SC_8, SC_1} },
-
-                       { {SC_A, SC_0}, {SC_B, SC_0}, {SC_C, SC_0}, {SC_D, SC_0},
-                         {SC_E, SC_0}, {SC_F, SC_0}, {SC_0, SC_1}, {SC_1, SC_1},
-                         {SC_2, SC_1}, {SC_3, SC_1}, {SC_4, SC_1}, {SC_5, SC_1},
-                         {SC_6, SC_1}, {SC_7, SC_1}, {SC_8, SC_1}, {SC_9, SC_1} },
-
-                       { {SC_B, SC_0}, {SC_C, SC_0}, {SC_D, SC_0}, {SC_E, SC_0},
-                         {SC_F, SC_0}, {SC_0, SC_1}, {SC_1, SC_1}, {SC_2, SC_1},
-                         {SC_3, SC_1}, {SC_4, SC_1}, {SC_5, SC_1}, {SC_6, SC_1},
-                         {SC_7, SC_1}, {SC_8, SC_1}, {SC_9, SC_1}, {SC_A, SC_1} },
-
-                       { {SC_C, SC_0}, {SC_D, SC_0}, {SC_E, SC_0}, {SC_F, SC_0},
-                         {SC_0, SC_1}, {SC_1, SC_1}, {SC_2, SC_1}, {SC_3, SC_1},
-                         {SC_4, SC_1}, {SC_5, SC_1}, {SC_6, SC_1}, {SC_7, SC_1},
-                         {SC_8, SC_1}, {SC_9, SC_1}, {SC_A, SC_1}, {SC_B, SC_1} },
-
-                       { {SC_D, SC_0}, {SC_E, SC_0}, {SC_F, SC_0}, {SC_0, SC_1},
-                         {SC_1, SC_1}, {SC_2, SC_1}, {SC_3, SC_1}, {SC_4, SC_1},
-                         {SC_5, SC_1}, {SC_6, SC_1}, {SC_7, SC_1}, {SC_8, SC_1},
-                         {SC_9, SC_1}, {SC_A, SC_1}, {SC_B, SC_1}, {SC_C, SC_1} },
-
-                       { {SC_E, SC_0}, {SC_F, SC_0}, {SC_0, SC_1}, {SC_1, SC_1},
-                         {SC_2, SC_1}, {SC_3, SC_1}, {SC_4, SC_1}, {SC_5, SC_1},
-                         {SC_6, SC_1}, {SC_7, SC_1}, {SC_8, SC_1}, {SC_9, SC_1},
-                         {SC_A, SC_1}, {SC_B, SC_1}, {SC_C, SC_1}, {SC_D, SC_1} },
-
-                       { {SC_F, SC_0}, {SC_0, SC_1}, {SC_1, SC_1}, {SC_2, SC_1},
-                         {SC_3, SC_1}, {SC_4, SC_1}, {SC_5, SC_1}, {SC_6, SC_1},
-                         {SC_7, SC_1}, {SC_8, SC_1}, {SC_9, SC_1}, {SC_A, SC_1},
-                         {SC_B, SC_1}, {SC_C, SC_1}, {SC_D, SC_1}, {SC_E, SC_1} }
-                             };
 
 static char const mul_table[16][16][2] = {
                        { {SC_0, SC_0}, {SC_0, SC_0}, {SC_0, SC_0}, {SC_0, SC_0},
@@ -365,7 +287,7 @@ static void do_inc(const char *val, char *buffer)
 			val++;
 		} else {
 			/* No carry here, *val != SC_F */
-			*buffer = add_table[_val(*val)][SC_1][0];
+			*buffer = *val + SC_1;
 			return;
 		}
 	}
@@ -390,16 +312,11 @@ static void do_negate(const char *val, char *buffer)
  */
 static void do_add(const char *val1, const char *val2, char *buffer)
 {
-	int counter;
-	const char *add1, *add2;
-	char carry = SC_0;
-
-	for (counter = 0; counter < calc_buffer_size; counter++)   {
-		add1 = add_table[_val(val1[counter])][_val(val2[counter])];
-		add2 = add_table[_val(add1[0])][_val(carry)];
-		/* carry might be zero */
-		buffer[counter] = add2[0];
-		carry = add_table[_val(add1[1])][_val(add2[1])][0];
+	unsigned carry = SC_0;
+	for (int counter = 0; counter < calc_buffer_size; ++counter) {
+		unsigned const sum = val1[counter] + val2[counter] + carry;
+		buffer[counter] = SC_RESULT(sum);
+		carry           = SC_CARRY(sum);
 	}
 	carry_flag = carry != SC_0;
 }
@@ -424,8 +341,6 @@ static void do_mul(const char *val1, const char *val2, char *buffer)
 	char *neg_val1;    /* abs of val1 */
 	char *neg_val2;    /* abs of val2 */
 
-	const char *mul, *add1, *add2;      /* intermediate result containers */
-	char carry = SC_0;                  /* container for carries */
 	char sign = 0;                      /* marks result sign */
 	int c_inner, c_outer;               /* loop counters */
 
@@ -451,6 +366,7 @@ static void do_mul(const char *val1, const char *val2, char *buffer)
 
 	for (c_outer = 0; c_outer < max_value_size; c_outer++) {
 		if (val2[c_outer] != SC_0) {
+			unsigned carry = SC_0; /* container for carries */
 			for (c_inner = 0; c_inner < max_value_size; c_inner++) {
 				/* do the following calculation:                                    *
 				 * Add the current carry, the value at position c_outer+c_inner     *
@@ -458,11 +374,9 @@ static void do_mul(const char *val1, const char *val2, char *buffer)
 				 * val2[c_outer]. This is the usual pen-and-paper multiplication.   */
 
 				/* multiplicate the two digits */
-				mul = mul_table[_val(val1[c_inner])][_val(val2[c_outer])];
-				/* add old value to result of multiplication */
-				add1 = add_table[_val(temp_buffer[c_inner + c_outer])][_val(mul[0])];
-				/* add carry to the sum */
-				add2 = add_table[_val(add1[0])][_val(carry)];
+				char const *const mul = mul_table[_val(val1[c_inner])][_val(val2[c_outer])];
+				/* add old value to result of multiplication and the carry */
+				unsigned const sum = temp_buffer[c_inner + c_outer] + (mul[1] << SC_BITS) + mul[0] + carry;
 
 				/* all carries together result in new carry. This is always smaller *
 				 * than the base b:                                                 *
@@ -473,16 +387,13 @@ static void do_mul(const char *val1, const char *val2, char *buffer)
 				 * (b-1)(b-1)+(b-1)+(b-1) = b*b-1                                   *
 				 * The tables list all operations rem b, so the carry is at most    *
 				 * (b*b-1)rem b = -1rem b = b-1                                     */
-				carry = add_table[_val(mul[1])][_val(add1[1])][0];
-				carry = add_table[_val(carry)][_val(add2[1])][0];
-
-				temp_buffer[c_inner + c_outer] = add2[0];
+				temp_buffer[c_inner + c_outer] = SC_RESULT(sum);
+				carry                          = SC_CARRY(sum);
 			}
 
 			/* A carry may hang over */
 			/* c_outer is always smaller than max_value_size! */
 			temp_buffer[max_value_size + c_outer] = carry;
-			carry = SC_0;
 		}
 	}
 
@@ -576,7 +487,7 @@ static void do_divmod(const char *rDividend, const char *divisor, char *quot, ch
 			do_add(rem, minus_divisor, rem);
 
 			while (do_sign(rem) == 1) {
-				quot[0] = add_table[_val(quot[0])][SC_1][0];
+				quot[0] = SC_RESULT(quot[0] + SC_1); /* TODO can this generate carry or is masking redundant? */
 				do_add(rem, minus_divisor, rem);
 			}
 
