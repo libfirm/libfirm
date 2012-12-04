@@ -77,9 +77,6 @@ static struct set *tarvals = NULL;
 /** A set containing all existing values. */
 static struct set *values = NULL;
 
-/** The carry flag for SOME operations. -1 means UNDEFINED here */
-static int carry_flag = -1;
-
 /** The integer overflow mode. */
 static tarval_int_overflow_mode_t int_overflow_mode = TV_OVERFLOW_WRAP;
 
@@ -728,8 +725,6 @@ int tarval_is_minus_one(ir_tarval *a)
  */
 ir_relation tarval_cmp(ir_tarval *a, ir_tarval *b)
 {
-	carry_flag = -1;
-
 	if (a == tarval_bad || b == tarval_bad) {
 		panic("Comparison with tarval_bad");
 	}
@@ -779,8 +774,6 @@ ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *dst_mode)
 	fp_value                *res = NULL;
 	const float_descriptor_t *desc;
 	int                      len;
-
-	carry_flag = -1;
 
 	assert(src);
 	assert(dst_mode);
@@ -872,8 +865,6 @@ ir_tarval *tarval_not(ir_tarval *a)
 {
 	char *buffer;
 
-	carry_flag = -1;
-
 	/* works for vector mode without changes */
 
 	switch (get_mode_sort(a->mode)) {
@@ -904,8 +895,6 @@ ir_tarval *tarval_neg(ir_tarval *a)
 
 	assert(mode_is_num(a->mode)); /* negation only for numerical values */
 
-	carry_flag = -1;
-
 	/* note: negation is allowed even for unsigned modes. */
 
 	switch (get_mode_sort(a->mode)) {
@@ -930,8 +919,6 @@ ir_tarval *tarval_add(ir_tarval *a, ir_tarval *b)
 {
 	char *buffer;
 
-	carry_flag = -1;
-
 	if (mode_is_reference(a->mode) && a->mode != b->mode) {
 		b = tarval_convert_to(b, a->mode);
 	} else if (mode_is_reference(b->mode) && b->mode != a->mode) {
@@ -946,7 +933,6 @@ ir_tarval *tarval_add(ir_tarval *a, ir_tarval *b)
 		/* modes of a,b are equal, so result has mode of a as this might be the character */
 		buffer = (char*) alloca(sc_get_buffer_length());
 		sc_add(a->value, b->value, buffer);
-		carry_flag = sc_get_bit_at(buffer, get_mode_size_bits(a->mode));
 		return get_tarval_overflow(buffer, a->length, a->mode);
 
 	case irms_float_number:
@@ -965,8 +951,6 @@ ir_tarval *tarval_sub(ir_tarval *a, ir_tarval *b, ir_mode *dst_mode)
 {
 	char    *buffer;
 
-	carry_flag = -1;
-
 	if (dst_mode != NULL) {
 		if (a->mode != dst_mode)
 			a = tarval_convert_to(a, dst_mode);
@@ -981,7 +965,6 @@ ir_tarval *tarval_sub(ir_tarval *a, ir_tarval *b, ir_mode *dst_mode)
 		/* modes of a,b are equal, so result has mode of a as this might be the character */
 		buffer = (char*) alloca(sc_get_buffer_length());
 		sc_sub(a->value, b->value, buffer);
-		carry_flag = sc_get_bit_at(buffer, get_mode_size_bits(a->mode));
 		return get_tarval_overflow(buffer, a->length, a->mode);
 
 	case irms_float_number:
@@ -1001,8 +984,6 @@ ir_tarval *tarval_mul(ir_tarval *a, ir_tarval *b)
 	char *buffer;
 
 	assert(a->mode == b->mode);
-
-	carry_flag = -1;
 
 	switch (get_mode_sort(a->mode)) {
 	case irms_int_number:
@@ -1029,8 +1010,6 @@ ir_tarval *tarval_div(ir_tarval *a, ir_tarval *b)
 	ir_mode *mode = a->mode;
 	assert(mode == b->mode);
 
-	carry_flag = -1;
-
 	if (mode_is_int(mode)) {
 		/* x/0 error */
 		if (b == get_mode_null(mode))
@@ -1054,8 +1033,6 @@ ir_tarval *tarval_mod(ir_tarval *a, ir_tarval *b)
 {
 	assert((a->mode == b->mode) && mode_is_int(a->mode));
 
-	carry_flag = -1;
-
 	/* x/0 error */
 	if (b == get_mode_null(b->mode)) return tarval_bad;
 	/* modes of a,b are equal */
@@ -1075,8 +1052,6 @@ ir_tarval *tarval_divmod(ir_tarval *a, ir_tarval *b, ir_tarval **mod)
 
 	assert((a->mode == b->mode) && mode_is_int(a->mode));
 
-	carry_flag = -1;
-
 	/* x/0 error */
 	if (b == get_mode_null(b->mode)) return tarval_bad;
 	/* modes of a,b are equal */
@@ -1092,7 +1067,6 @@ ir_tarval *tarval_abs(ir_tarval *a)
 {
 	char *buffer;
 
-	carry_flag = -1;
 	assert(mode_is_num(a->mode));
 
 	switch (get_mode_sort(a->mode)) {
@@ -1126,8 +1100,6 @@ ir_tarval *tarval_and(ir_tarval *a, ir_tarval *b)
 	assert(a->mode == b->mode);
 
 	/* works even for vector modes */
-	carry_flag = 0;
-
 	switch (get_mode_sort(a->mode)) {
 	case irms_internal_boolean:
 		return (a == tarval_b_false) ? a : b;
@@ -1147,8 +1119,6 @@ ir_tarval *tarval_andnot(ir_tarval *a, ir_tarval *b)
 	assert(a->mode == b->mode);
 
 	/* works even for vector modes */
-	carry_flag = 0;
-
 	switch (get_mode_sort(a->mode)) {
 	case irms_internal_boolean:
 		return a == tarval_b_true && b == tarval_b_false ? tarval_b_true : tarval_b_false;
@@ -1171,8 +1141,6 @@ ir_tarval *tarval_or(ir_tarval *a, ir_tarval *b)
 	assert(a->mode == b->mode);
 
 	/* works even for vector modes */
-	carry_flag = 0;
-
 	switch (get_mode_sort(a->mode)) {
 	case irms_internal_boolean:
 		return (a == tarval_b_true) ? a : b;
@@ -1195,8 +1163,6 @@ ir_tarval *tarval_eor(ir_tarval *a, ir_tarval *b)
 	assert((a->mode == b->mode));
 
 	/* works even for vector modes */
-	carry_flag = 0;
-
 	switch (get_mode_sort(a->mode)) {
 	case irms_internal_boolean:
 		return (a == b)? tarval_b_false : tarval_b_true;
@@ -1219,8 +1185,6 @@ ir_tarval *tarval_shl(ir_tarval *a, ir_tarval *b)
 	char *temp_val = NULL;
 
 	assert(mode_is_int(a->mode) && mode_is_int(b->mode));
-
-	carry_flag = -1;
 
 	if (get_mode_modulo_shift(a->mode) != 0) {
 		temp_val = (char*) alloca(sc_get_buffer_length());
@@ -1254,8 +1218,6 @@ ir_tarval *tarval_shr(ir_tarval *a, ir_tarval *b)
 
 	assert(mode_is_int(a->mode) && mode_is_int(b->mode));
 
-	carry_flag = -1;
-
 	if (get_mode_modulo_shift(a->mode) != 0) {
 		temp_val = (char*) alloca(sc_get_buffer_length());
 
@@ -1287,8 +1249,6 @@ ir_tarval *tarval_shrs(ir_tarval *a, ir_tarval *b)
 	char *temp_val = NULL;
 
 	assert(mode_is_int(a->mode) && mode_is_int(b->mode));
-
-	carry_flag = -1;
 
 	if (get_mode_modulo_shift(a->mode) != 0) {
 		temp_val = (char*) alloca(sc_get_buffer_length());
@@ -1322,8 +1282,6 @@ ir_tarval *tarval_rotl(ir_tarval *a, ir_tarval *b)
 
 	assert(mode_is_int(a->mode) && mode_is_int(b->mode));
 
-	carry_flag = -1;
-
 	if (get_mode_modulo_shift(a->mode) != 0) {
 		temp_val = (char*) alloca(sc_get_buffer_length());
 
@@ -1334,16 +1292,6 @@ ir_tarval *tarval_rotl(ir_tarval *a, ir_tarval *b)
 
 	sc_rotl(a->value, temp_val, get_mode_size_bits(a->mode), mode_is_signed(a->mode), NULL);
 	return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
-}
-
-/*
- * carry flag of the last operation
- */
-int tarval_carry(void)
-{
-	if (carry_flag == -1)
-		panic("Carry undefined for the last operation");
-	return carry_flag;
 }
 
 /*

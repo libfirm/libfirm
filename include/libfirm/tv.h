@@ -615,11 +615,6 @@ FIRM_API ir_tarval *tarval_shrs_unsigned(ir_tarval *a, unsigned b);
 FIRM_API ir_tarval *tarval_rotl(ir_tarval *a, ir_tarval *b);
 
 /**
- * Returns the carry flag of the last operation.
- */
-FIRM_API int tarval_carry(void);
-
-/**
  * The output mode for tarval values.
  *
  * Some modes allow more that one representation, for instance integers
