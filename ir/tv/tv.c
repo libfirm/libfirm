@@ -55,14 +55,6 @@
     target values */
 #define N_CONSTANTS 2048
 
-/* unused, float to int doesn't work yet */
-typedef enum float_to_int_mode {
-	TRUNCATE,
-	ROUND
-} float_to_int_mode;
-
-static float_to_int_mode current_float_to_int_mode = TRUNCATE;
-
 /****************************************************************************
  *   local definitions and macros
  ****************************************************************************/
@@ -806,14 +798,7 @@ ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *dst_mode)
 			return get_tarval(fc_get_buffer(), fc_get_buffer_length(), dst_mode);
 
 		case irms_int_number:
-			switch (current_float_to_int_mode) {
-			case TRUNCATE:
-				res = fc_int((const fp_value*) src->value, NULL);
-				break;
-			case ROUND:
-				res = fc_rnd((const fp_value*) src->value, NULL);
-				break;
-			}
+			res     = fc_int((const fp_value*) src->value, NULL);
 			buffer = (char*) alloca(sc_get_buffer_length());
 			if (! fc_flt2int(res, buffer, dst_mode))
 				return tarval_bad;
