@@ -62,12 +62,6 @@ typedef struct scc_info {
 	int in_stack;          /**< Marks whether node is on the stack. */
 	int dfn;               /**< Depth first search number. */
 	int uplink;            /**< dfn number of ancestor. */
-	/*  ir_loop *loop;         *//* Refers to the containing loop. */
-	/*
-	    struct section *section;
-	    xset def;
-	    xset use;
-	*/
 } scc_info;
 
 /**
@@ -335,11 +329,6 @@ static int is_outermost_Start(ir_node *n)
 /* When to walk from nodes to blocks. Only for Control flow operations? */
 static inline int get_start_index(ir_node *n)
 {
-#undef BLOCK_BEFORE_NODE
-#define BLOCK_BEFORE_NODE 1
-
-#if BLOCK_BEFORE_NODE
-
 	/* This version assures, that all nodes are ordered absolutely.  This allows
 	   to undef all nodes in the heap analysis if the block is false, which
 	   means not reachable.
@@ -353,20 +342,6 @@ static inline int get_start_index(ir_node *n)
 		return 0;
 	else
 		return -1;
-
-#else
-
-	/* This version causes deeper loop trees (at least we verified this
-	   for Polymor).
-	   But it guarantees that Blocks are analysed before nodes contained in the
-	   block.  If so, we can set the value to undef if the block is not \
-	   executed. */
-	if (is_cfop(n) || is_fragile_op(n) || is_Start(n))
-		return -1;
-	else
-		return 0;
-
-#endif
 }
 
 /**
