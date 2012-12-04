@@ -48,24 +48,6 @@
 #define _digit(a) ((a)+SC_0)
 #define _bitisset(digit, pos) (((digit) & SHIFT(pos)) != SC_0)
 
-/* shortcut output for debugging */
-#  define sc_print_hex(a) sc_print((a), 0, SC_HEX, 0)
-#  define sc_print_dec(a) sc_print((a), 0, SC_DEC, 1)
-#  define sc_print_oct(a) sc_print((a), 0, SC_OCT, 0)
-#  define sc_print_bin(a) sc_print((a), 0, SC_BIN, 0)
-
-#ifdef STRCALC_DEBUG_PRINTCOMP
-#  define DEBUGPRINTF_COMPUTATION(x) printf x
-#else
-#  define DEBUGPRINTF_COMPUTATION(x) ((void)0)
-#endif
-#ifdef STRCALC_DEBUG
-#  define DEBUGPRINTF(x) printf x
-#else
-#  define DEBUGPRINTF(x) ((void)0)
-#endif
-
-
 /*
  * private variables
  */
@@ -996,9 +978,6 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 	/* special case */
 	if (bits == 0) {
 		bits = bit_pattern_size;
-#ifdef STRCALC_DEBUG_FULLPRINT
-		bits <<= 1;
-#endif
 	}
 	nibbles = bits >> 2;
 	switch (base) {
@@ -1008,10 +987,6 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 	case SC_hex:
 		for (counter = 0; counter < nibbles; ++counter) {
 			*(--pos) = digits[_val(val[counter])];
-#ifdef STRCALC_DEBUG_GROUPPRINT
-			if ((counter+1)%8 == 0)
-				*(--pos) = ' ';
-#endif
 		}
 
 		/* last nibble must be masked */
@@ -1023,9 +998,6 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 
 		/* now kill zeros */
 		for (; counter > 1; --counter, ++pos) {
-#ifdef STRCALC_DEBUG_GROUPPRINT
-			if (pos[0] == ' ') ++pos;
-#endif
 			if (pos[0] != '0')
 				break;
 		}
@@ -1128,8 +1100,6 @@ void init_strcalc(int precision)
 
 		calc_buffer   = XMALLOCN(char, calc_buffer_size + 1);
 		output_buffer = XMALLOCN(char, bit_pattern_size + 1);
-
-		DEBUGPRINTF(("init strcalc: \n\tPRECISION: %d\n\tCALC_BUFFER_SIZE = %d\n\tMAX_VALUE_SIZE = %d\n\tbuffer pointer: %p\n", precision, calc_buffer_size, max_value_size, calc_buffer));
 	}
 }
 
@@ -1151,12 +1121,7 @@ void sc_add(const void *value1, const void *value2, void *buffer)
 	CLEAR_BUFFER(calc_buffer);
 	carry_flag = 0;
 
-	DEBUGPRINTF_COMPUTATION(("%s + ", sc_print_hex(value1)));
-	DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
-
 	do_add((const char*) value1, (const char*) value2, (char*) calc_buffer);
-
-	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
 
 	if ((buffer != NULL) && (buffer != calc_buffer)) {
 		memcpy(buffer, calc_buffer, calc_buffer_size);
@@ -1168,12 +1133,7 @@ void sc_sub(const void *value1, const void *value2, void *buffer)
 	CLEAR_BUFFER(calc_buffer);
 	carry_flag = 0;
 
-	DEBUGPRINTF_COMPUTATION(("%s - ", sc_print_hex(value1)));
-	DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
-
 	do_sub((const char*) value1, (const char*) value2, calc_buffer);
-
-	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
 
 	if ((buffer != NULL) && (buffer != calc_buffer)) {
 		memcpy(buffer, calc_buffer, calc_buffer_size);
@@ -1184,11 +1144,7 @@ void sc_neg(const void *value1, void *buffer)
 {
 	carry_flag = 0;
 
-	DEBUGPRINTF_COMPUTATION(("- %s ->", sc_print_hex(value1)));
-
 	do_negate((const char*) value1, calc_buffer);
-
-	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
 
 	if ((buffer != NULL) && (buffer != calc_buffer)) {
 		memcpy(buffer, calc_buffer, calc_buffer_size);
@@ -1200,12 +1156,7 @@ void sc_and(const void *value1, const void *value2, void *buffer)
 	CLEAR_BUFFER(calc_buffer);
 	carry_flag = 0;
 
-	DEBUGPRINTF_COMPUTATION(("%s & ", sc_print_hex(value1)));
-	DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
-
 	do_bitand((const char*) value1, (const char*) value2, calc_buffer);
-
-	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
 
 	if ((buffer != NULL) && (buffer != calc_buffer)) {
 		memcpy(buffer, calc_buffer, calc_buffer_size);
@@ -1217,12 +1168,7 @@ void sc_andnot(const void *value1, const void *value2, void *buffer)
 	CLEAR_BUFFER(calc_buffer);
 	carry_flag = 0;
 
-	DEBUGPRINTF_COMPUTATION(("%s & ", sc_print_hex(value1)));
-	DEBUGPRINTF_COMPUTATION(("~%s -> ", sc_print_hex(value2)));
-
 	do_bitandnot((const char*) value1, (const char*) value2, calc_buffer);
-
-	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
 
 	if (buffer != NULL && buffer != calc_buffer) {
 		memcpy(buffer, calc_buffer, calc_buffer_size);
@@ -1234,12 +1180,7 @@ void sc_or(const void *value1, const void *value2, void *buffer)
 	CLEAR_BUFFER(calc_buffer);
 	carry_flag = 0;
 
-	DEBUGPRINTF_COMPUTATION(("%s | ", sc_print_hex(value1)));
-	DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
-
 	do_bitor((const char*) value1, (const char*) value2, calc_buffer);
-
-	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
 
 	if ((buffer != NULL) && (buffer != calc_buffer)) {
 		memcpy(buffer, calc_buffer, calc_buffer_size);
@@ -1251,12 +1192,7 @@ void sc_xor(const void *value1, const void *value2, void *buffer)
 	CLEAR_BUFFER(calc_buffer);
 	carry_flag = 0;
 
-	DEBUGPRINTF_COMPUTATION(("%s ^ ", sc_print_hex(value1)));
-	DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
-
 	do_bitxor((const char*) value1, (const char*) value2, calc_buffer);
-
-	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
 
 	if ((buffer != NULL) && (buffer != calc_buffer)) {
 		memcpy(buffer, calc_buffer, calc_buffer_size);
@@ -1268,11 +1204,7 @@ void sc_not(const void *value1, void *buffer)
 	CLEAR_BUFFER(calc_buffer);
 	carry_flag = 0;
 
-	DEBUGPRINTF_COMPUTATION(("~ %s ->", sc_print_hex(value1)));
-
 	do_bitnot((const char*) value1, calc_buffer);
-
-	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
 
 	if ((buffer != NULL) && (buffer != calc_buffer)) {
 		memcpy(buffer, calc_buffer, calc_buffer_size);
@@ -1284,12 +1216,7 @@ void sc_mul(const void *value1, const void *value2, void *buffer)
 	CLEAR_BUFFER(calc_buffer);
 	carry_flag = 0;
 
-	DEBUGPRINTF_COMPUTATION(("%s * ", sc_print_hex(value1)));
-	DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
-
 	do_mul((const char*) value1, (const char*) value2, calc_buffer);
-
-	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
 
 	if ((buffer != NULL) && (buffer != calc_buffer)) {
 		memcpy(buffer, calc_buffer, calc_buffer_size);
@@ -1304,12 +1231,7 @@ void sc_div(const void *value1, const void *value2, void *buffer)
 	CLEAR_BUFFER(calc_buffer);
 	carry_flag = 0;
 
-	DEBUGPRINTF_COMPUTATION(("%s / ", sc_print_hex(value1)));
-	DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
-
 	do_divmod((const char*) value1, (const char*) value2, calc_buffer, unused_res);
-
-	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
 
 	if ((buffer != NULL) && (buffer != calc_buffer)) {
 		memcpy(buffer, calc_buffer, calc_buffer_size);
@@ -1324,12 +1246,7 @@ void sc_mod(const void *value1, const void *value2, void *buffer)
 	CLEAR_BUFFER(calc_buffer);
 	carry_flag = 0;
 
-	DEBUGPRINTF_COMPUTATION(("%s %% ", sc_print_hex(value1)));
-	DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
-
 	do_divmod((const char*) value1, (const char*) value2, unused_res, calc_buffer);
-
-	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
 
 	if ((buffer != NULL) && (buffer != calc_buffer)) {
 		memcpy(buffer, calc_buffer, calc_buffer_size);
@@ -1341,12 +1258,7 @@ void sc_divmod(const void *value1, const void *value2, void *div_buffer, void *m
 	CLEAR_BUFFER(calc_buffer);
 	carry_flag = 0;
 
-	DEBUGPRINTF_COMPUTATION(("%s %% ", sc_print_hex(value1)));
-	DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
-
 	do_divmod((const char*) value1, (const char*) value2, (char*) div_buffer, (char*) mod_buffer);
-
-	DEBUGPRINTF_COMPUTATION(("%s:%s\n", sc_print_hex(div_buffer), sc_print_hex(mod_buffer)));
 }
 
 
@@ -1354,10 +1266,7 @@ void sc_shlI(const void *val1, long shift_cnt, int bitsize, int sign, void *buff
 {
 	carry_flag = 0;
 
-	DEBUGPRINTF_COMPUTATION(("%s << %ld ", sc_print_hex(value1), shift_cnt));
 	do_shl((const char*) val1, calc_buffer, shift_cnt, bitsize, sign);
-
-	DEBUGPRINTF_COMPUTATION(("-> %s\n", sc_print_hex(calc_buffer)));
 
 	if ((buffer != NULL) && (buffer != calc_buffer)) {
 		memmove(buffer, calc_buffer, calc_buffer_size);
@@ -1375,10 +1284,7 @@ void sc_shrI(const void *val1, long shift_cnt, int bitsize, int sign, void *buff
 {
 	carry_flag = 0;
 
-	DEBUGPRINTF_COMPUTATION(("%s >>u %ld ", sc_print_hex(value1), shift_cnt));
 	do_shr((const char*) val1, calc_buffer, shift_cnt, bitsize, sign, 0);
-
-	DEBUGPRINTF_COMPUTATION(("-> %s\n", sc_print_hex(calc_buffer)));
 
 	if ((buffer != NULL) && (buffer != calc_buffer)) {
 		memmove(buffer, calc_buffer, calc_buffer_size);
@@ -1396,10 +1302,7 @@ void sc_shrsI(const void *val1, long shift_cnt, int bitsize, int sign, void *buf
 {
 	carry_flag = 0;
 
-	DEBUGPRINTF_COMPUTATION(("%s >>s %ld ", sc_print_hex(value1), shift_cnt));
 	do_shr((const char*) val1, calc_buffer, shift_cnt, bitsize, sign, 1);
-
-	DEBUGPRINTF_COMPUTATION(("-> %s\n", sc_print_hex(calc_buffer)));
 
 	if ((buffer != NULL) && (buffer != calc_buffer)) {
 		memmove(buffer, calc_buffer, calc_buffer_size);
@@ -1412,10 +1315,7 @@ void sc_shrs(const void *val1, const void *val2, int bitsize, int sign, void *bu
 
 	carry_flag = 0;
 
-	DEBUGPRINTF_COMPUTATION(("%s >>s %ld ", sc_print_hex(value1), offset));
 	do_shr((const char*) val1, calc_buffer, offset, bitsize, sign, 1);
-
-	DEBUGPRINTF_COMPUTATION(("-> %s\n", sc_print_hex(calc_buffer)));
 
 	if ((buffer != NULL) && (buffer != calc_buffer)) {
 		memmove(buffer, calc_buffer, calc_buffer_size);
@@ -1428,10 +1328,7 @@ void sc_rotl(const void *val1, const void *val2, int bitsize, int sign, void *bu
 
 	carry_flag = 0;
 
-	DEBUGPRINTF_COMPUTATION(("%s <<>> %ld ", sc_print_hex(value1), offset));
 	do_rotl((const char*) val1, calc_buffer, offset, bitsize, sign);
-
-	DEBUGPRINTF_COMPUTATION(("-> %s\n", sc_print_hex(calc_buffer)));
 
 	if ((buffer != NULL) && (buffer != calc_buffer)) {
 		memmove(buffer, calc_buffer, calc_buffer_size);
