@@ -323,15 +323,13 @@ enum {
  * Construct a new be_Return.
  *
  * @param dbg    debug info
- * @param irg    the graph where the new node will be placed
  * @param block  the block where the new node will be placed
  * @param n_res  number of "real" results
  * @param pop    pop number of bytes on return
  * @param n      number of inputs
  * @param in     input array
  */
-ir_node *be_new_Return(dbg_info *dbg, ir_graph *irg, ir_node *block, int n_res,
-                       unsigned pop, int n, ir_node *in[]);
+ir_node *be_new_Return(dbg_info *dbg, ir_node *block, int n_res, unsigned pop, int n, ir_node *in[]);
 
 /** Returns the number of real returns values */
 int be_Return_get_n_rets(const ir_node *ret);

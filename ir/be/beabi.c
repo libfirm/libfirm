@@ -1251,7 +1251,7 @@ static ir_node *create_be_return(be_abi_irg_t *const env, ir_node *const irn)
 
 	/* The in array for the new back end return is now ready. */
 	dbg_info *const dbgi = get_irn_dbg_info(irn);
-	ir_node  *const ret  = be_new_Return(dbgi, irg, bl, n_res, call->pop, n, in);
+	ir_node  *const ret  = be_new_Return(dbgi, bl, n_res, call->pop, n, in);
 
 	/* Set the register classes of the return's parameter accordingly. */
 	for (i = 0; i < n; ++i) {

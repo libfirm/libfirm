@@ -358,12 +358,10 @@ ir_node *be_epilog_create_return(beabi_helper_env_t *env, dbg_info *dbgi,
 	int       n_res       = 1; /* TODO */
 	unsigned  pop         = 0; /* TODO */
 	size_t    i;
-	ir_node  *ret;
 
 	assert(ARR_LEN(env->epilog.value_map) == n_return_in);
 
-	ret = be_new_Return(dbgi, get_irn_irg(block), block, n_res, pop,
-	                    n_return_in, in);
+	ir_node *const ret = be_new_Return(dbgi, block, n_res, pop, n_return_in, in);
 	for (i = 0; i < n_return_in; ++i) {
 		const reg_flag_t      *regflag = &env->epilog.regs[i];
 		const arch_register_t *reg     = regflag->reg;

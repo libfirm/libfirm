@@ -538,17 +538,14 @@ unsigned be_Call_get_pop(const ir_node *call)
 	return a->pop;
 }
 
-ir_node *be_new_Return(dbg_info *dbg, ir_graph *irg, ir_node *block, int n_res,
-                       unsigned pop, int n, ir_node *in[])
+ir_node *be_new_Return(dbg_info *const dbg, ir_node *const block, int const n_res, unsigned const pop, int const n, ir_node **const in)
 {
-	be_return_attr_t *a;
-	ir_node *res;
-
-	res = new_ir_node(dbg, irg, block, op_be_Return, mode_X, n, in);
+	ir_graph *const irg = get_Block_irg(block);
+	ir_node  *const res = new_ir_node(dbg, irg, block, op_be_Return, mode_X, n, in);
 	init_node_attr(res, n, 1);
 	be_set_constr_out(res, 0, arch_no_register_req);
 
-	a = (be_return_attr_t*)get_irn_generic_attr(res);
+	be_return_attr_t *const a = (be_return_attr_t*)get_irn_generic_attr(res);
 	a->num_ret_vals       = n_res;
 	a->pop                = pop;
 	a->emit_pop           = 0;

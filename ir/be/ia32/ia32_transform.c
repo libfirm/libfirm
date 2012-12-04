@@ -3972,7 +3972,6 @@ static ir_node *gen_be_Return(ir_node *node)
 	int        arity;
 	unsigned   pop;
 	ir_node  **in;
-	ir_node   *new_node;
 
 	assert(ret_val != NULL);
 	if (be_Return_get_n_rets(node) < 1 || ! ia32_cg_config.use_sse2) {
@@ -4025,7 +4024,7 @@ static ir_node *gen_be_Return(ir_node *node)
 			in[i] = be_transform_node(op);
 		}
 	}
-	new_node = be_new_Return(dbgi, irg, block, arity, pop, arity, in);
+	ir_node *const new_node = be_new_Return(dbgi, block, arity, pop, arity, in);
 	copy_node_attr(irg, node, new_node);
 
 	return new_node;
