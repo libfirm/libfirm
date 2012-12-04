@@ -71,15 +71,10 @@ static gurobi_t *new_gurobi(lpp_t *lpp)
 	 * The only thing gurobi sanely supports is giving a string with a filename
 	 * :-( ...so we use /tmp/firm_gurobi.log as a temporary measure...
 	 */
-#if 0
-	error = GRBsetlogfile(grb->env, lpp->log);
-	check_gurobi_error(grb, error);
-#else
 	if (lpp->log != stdout && lpp->log != stderr) {
 		error = GRBsetintparam(grb->env, GRB_INT_PAR_OUTPUTFLAG, 0);
 		check_gurobi_error(grb, error);
 	}
-#endif
 
 	return grb;
 }
@@ -142,14 +137,6 @@ static void gurobi_construct(gurobi_t *grb)
 		colname[i] = (char*) curr_var->name;
 		vartype[i] = gurobi_var_encoding[curr_var->type.var_type];
 
-#if 0
-		if (curr_var->value_kind == lpp_value_start) {
-			panic("start values not supported in gurobi yet");
-			indices[sv_cnt]  = i;
-			startv[sv_cnt++] = curr_var->value;
-		}
-#endif
-
 		matbeg[i] = o;
 		matcnt[i] = 0;
 		matrix_foreach_in_col(lpp->m, 1 + i, elem) {
@@ -196,16 +183,6 @@ static void gurobi_solve(gurobi_t *grb)
 		error = GRBsetdblparam(grb->modelenv, GRB_DBL_PAR_TIMELIMIT, lpp->time_limit_secs);
 		check_gurobi_error(grb, error);
 	}
-
-#if 0
-	/*
-	 * If a bound of the objective function is supplied,
-	 * set it accordingly, dependign on minimization or maximization.
-	 */
-	if(lpp->set_bound) {
-		fprintf(stderr, "Warning: gurobi bound not implemented yet\n");
-	}
-#endif
 
 	/* solve */
 	error = GRBoptimize(grb->model);

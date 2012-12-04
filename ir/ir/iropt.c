@@ -2727,26 +2727,6 @@ restart:
 		}
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_TO_ADD);
 		return n;
-#if 0
-	} else if (is_Mul(b)) { /* a - (b * C) -> a + (b * -C) */
-		ir_node *m_right = get_Mul_right(b);
-		if (is_Const(m_right)) {
-			ir_node *cnst2 = const_negate(m_right);
-			if (cnst2 != NULL) {
-				dbg_info *m_dbg   = get_irn_dbg_info(b);
-				ir_node  *m_block = get_nodes_block(b);
-				ir_node  *m_left  = get_Mul_left(b);
-				ir_mode  *m_mode  = get_irn_mode(b);
-				ir_node  *mul     = new_rd_Mul(m_dbg, m_block, m_left, cnst2, m_mode);
-				dbg_info *a_dbg   = get_irn_dbg_info(n);
-				ir_node  *a_block = get_nodes_block(n);
-
-				n = new_rd_Add(a_dbg, a_block, a, mul, mode);
-				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_TO_ADD);
-				return n;
-			}
-		}
-#endif
 	}
 
 	/* Beware of Sub(P, P) which cannot be optimized into a simple Minus ... */
@@ -5487,16 +5467,8 @@ bool may_leave_out_middle_conv(ir_mode *m0, ir_mode *m1, ir_mode *m2)
 {
 	int n_floats = mode_is_float(m0) + mode_is_float(m1) + mode_is_float(m2);
 	if (n_floats == 1) {
-#if 0
-		int n_signed = mode_is_signed(m0) + mode_is_signed(m1)
-		             + mode_is_signed(m2);
-		/* we assume that float modes are always signed */
-		if ((n_signed & 1) != 1)
-			return false;
-#else
 		/* because overflow gives strange results we don't touch this case */
 		return false;
-#endif
 	} else if (n_floats == 2 && !mode_is_float(m1)) {
 		return false;
 	}

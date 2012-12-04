@@ -105,10 +105,6 @@ static void ps_begin(plotter_t *_self, const rect_t *vis)
 	f = self->f = fopen(self->filename, "wt");
 	fprintf(f, "%%!PS-Adobe-2.0\n");
 	fprintf(f, "%%%%BoundingBox: %d %d %d %d\n", vis->x, vis->y, vis->w, vis->h);
-#if 0
-	fprintf(f, "/mainfont /Courier findfont %f scalefont def\n", 10.0);
-	fprintf(f, "mainfont setfont\n");
-#endif /* if 0 */
 }
 
 static void ps_setcolor(plotter_t *_self, const color_t *color)

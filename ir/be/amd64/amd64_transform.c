@@ -72,7 +72,6 @@ static ir_node *create_const_graph(ir_node *irn, ir_node *block)
 	}
 
 	value = get_tarval_long(tv);
-	//d// printf ("TEST GENERATE %d\n", value);
 
 	return new_bd_amd64_Immediate(dbgi, block, value);
 }
@@ -116,7 +115,6 @@ static ir_node *gen_SymConst(ir_node *node)
  */
 static ir_node *gen_Add(ir_node *node) {
 	ir_node  *block = be_transform_node(get_nodes_block(node));
-	/* ir_mode  *mode  = get_irn_mode(node); */
 	ir_node  *op1   = get_Add_left(node);
 	ir_node  *op2   = get_Add_right(node);
 	dbg_info *dbgi  = get_irn_dbg_info(node);
@@ -134,7 +132,6 @@ static ir_node *gen_Add(ir_node *node) {
  */
 static ir_node *gen_Sub(ir_node *node) {
 	ir_node  *block = be_transform_node(get_nodes_block(node));
-	/* ir_mode  *mode  = get_irn_mode(node); */
 	ir_node  *op1   = get_Sub_left(node);
 	ir_node  *op2   = get_Sub_right(node);
 	dbg_info *dbgi  = get_irn_dbg_info(node);
@@ -147,7 +144,6 @@ static ir_node *gen_Sub(ir_node *node) {
 
 static ir_node *gen_Mul(ir_node *node) {
 	ir_node  *block = be_transform_node(get_nodes_block(node));
-	/* ir_mode  *mode  = get_irn_mode(node); */
 	ir_node  *op1   = get_Mul_left(node);
 	ir_node  *op2   = get_Mul_right(node);
 	dbg_info *dbgi  = get_irn_dbg_info(node);
@@ -225,70 +221,6 @@ static ir_node *gen_Cond(ir_node *node)
 	return new_bd_amd64_Jcc(dbgi, block, flag_node, relation);
 }
 
-#if 0
-/**
- * Create an And that will zero out upper bits.
- *
- * @param dbgi     debug info
- * @param block    the basic block
- * @param op       the original node
- * param src_bits  number of lower bits that will remain
- */
-static ir_node *gen_zero_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
-                                   int src_bits)
-{
-	if (src_bits == 8) {
-		return new_bd_arm_And_imm(dbgi, block, op, 0xFF, 0);
-	} else if (src_bits == 16) {
-		ir_node *lshift = new_bd_arm_Mov_reg_shift_imm(dbgi, block, op, ARM_SHF_LSL_IMM, 16);
-		ir_node *rshift = new_bd_arm_Mov_reg_shift_imm(dbgi, block, lshift, ARM_SHF_LSR_IMM, 16);
-		return rshift;
-	} else {
-		panic("zero extension only supported for 8 and 16 bits");
-	}
-}
-
-/**
- * Generate code for a sign extension.
- */
-static ir_node *gen_sign_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
-                                   int src_bits)
-{
-	int shift_width = 32 - src_bits;
-	ir_node *lshift_node = new_bd_arm_Mov_reg_shift_imm(dbgi, block, op, ARM_SHF_LSL_IMM, shift_width);
-	ir_node *rshift_node = new_bd_arm_Mov_reg_shift_imm(dbgi, block, lshift_node, ARM_SHF_ASR_IMM, shift_width);
-	return rshift_node;
-}
-
-static ir_node *gen_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
-                              ir_mode *orig_mode)
-{
-	int bits = get_mode_size_bits(orig_mode);
-	if (bits == 32)
-		return op;
-
-	if (mode_is_signed(orig_mode)) {
-		return gen_sign_extension(dbgi, block, op, bits);
-	} else {
-		return gen_zero_extension(dbgi, block, op, bits);
-	}
-}
-
-/**
- * returns true if it is assured, that the upper bits of a node are "clean"
- * which means for a 16 or 8 bit value, that the upper bits in the register
- * are 0 for unsigned and a copy of the last significant bit for signed
- * numbers.
- */
-static bool upper_bits_clean(ir_node *transformed_node, ir_mode *mode)
-{
-	(void) transformed_node;
-	(void) mode;
-	/* TODO */
-	return false;
-}
-#endif
-
 static ir_node *gen_Phi(ir_node *node)
 {
 	ir_mode                   *mode = get_irn_mode(node);
@@ -341,18 +273,6 @@ static ir_node *gen_Conv(ir_node *node)
 
 
 		return new_bd_amd64_Conv(dbgi, block, new_op, min_mode);
-
-#if 0
-		if (upper_bits_clean(new_op, min_mode)) {
-			return new_op;
-		}
-
-		if (mode_is_signed(min_mode)) {
-			return gen_sign_extension(dbg, block, new_op, min_bits);
-		} else {
-			return gen_zero_extension(dbg, block, new_op, min_bits);
-		}
-#endif
 	}
 }
 
@@ -408,15 +328,6 @@ static ir_node *gen_Load(ir_node *node)
 	}
 	set_irn_pinned(new_load, get_irn_pinned(node));
 
-#if 0
-	/* check for special case: the loaded value might not be used */
-	if (be_get_Proj_for_pn(node, pn_Load_res) == NULL) {
-		/* add a result proj and a Keep to produce a pseudo use */
-		ir_node *proj = new_r_Proj(new_load, mode_Iu, pn_amd64_Load_res);
-		be_new_Keep(block, 1, &proj);
-	}
-#endif
-
 	return new_load;
 }
 
@@ -440,11 +351,6 @@ static ir_node *gen_Proj_Load(ir_node *node)
 				return new_rd_Proj(dbgi, new_load, mode_M, pn_amd64_Load_M);
 			}
 		break;
-	/*
-		case iro_sparc_fpaLoad:
-			panic("FP not implemented yet");
-		break;
-	*/
 		default:
 			panic("Unsupported Proj from Load");
 	}
@@ -471,31 +377,7 @@ static ir_node *gen_Proj(ir_node *node)
 		}
 	} else if (is_Load(pred)) {
 		return gen_Proj_Load(node);
-#if 0
-	} else if (be_is_SubSP(pred)) {
-		//panic("gen_Proj not implemented for SubSP");
-		return gen_Proj_be_SubSP(node);
-	} else if (be_is_AddSP(pred)) {
-		//panic("gen_Proj not implemented for AddSP");
-		return gen_Proj_be_AddSP(node);
-	} else if (is_Div(pred)) {
-		return gen_Proj_Div(node);
-#endif
 	} else if (is_Start(pred)) {
-#if 0
-		ir_graph *const irg = get_irn_irg(node);
-		if (node == get_irg_anchor(irg, anchor_tls)) {
-			return gen_Proj_tls(node);
-		}
-	} else {
-		ir_node *new_pred = be_transform_node(pred);
-		ir_mode *mode     = get_irn_mode(node);
-		if (mode_needs_gp_reg(mode)) {
-			ir_node *new_proj = new_r_Proj(new_pred, mode_Iu, get_Proj_proj(node));
-			new_proj->node_nr = node->node_nr;
-			return new_proj;
-		}
-#endif
 	}
 
     return be_duplicate_node(node);

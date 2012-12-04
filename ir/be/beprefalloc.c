@@ -1250,14 +1250,6 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 	int res = hungarian_solve(bp, assignment, NULL, 0);
 	assert(res == 0);
 
-#if 0
-	fprintf(stderr, "Swap result:");
-	for (i = 0; i < (int) n_regs; ++i) {
-		fprintf(stderr, " %d", assignment[i]);
-	}
-	fprintf(stderr, "\n");
-#endif
-
 	hungarian_free(bp);
 
 	permute_values(live_nodes, node, assignment);

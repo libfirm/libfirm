@@ -54,34 +54,6 @@ typedef struct {
 } reg_pressure_selector_env_t;
 
 
-#if 0
-/*
-* Ugly global variable for the compare function
-* since qsort(3) does not pass an extra pointer.
-*/
-static ir_node *curr_bl = NULL;
-
-static int cmp_usage(const void *a, const void *b)
-{
-	struct trivial_sched_env *env;
-	const ir_node *p = a;
-	const ir_node *q = b;
-	int res = 0;
-
-	res = is_live_end(env->curr_bl, a) - is_live_end(env->curr_bl, b);
-
-	/*
-	* One of them is live at the end of the block.
-	* Then, that one shall be scheduled at after the other
-	*/
-	if (res != 0)
-		return res;
-
-
-	return res;
-}
-#endif
-
 static inline usage_stats_t *get_or_set_usage_stats(reg_pressure_selector_env_t *env, ir_node *irn)
 {
 	usage_stats_t *us = (usage_stats_t*)get_irn_link(irn);
@@ -187,12 +159,7 @@ static void *reg_pressure_block_init(void *graph_env, ir_node *bl)
 	sched_foreach(bl, irn) {
 		for (int i = 0, n = get_irn_arity(irn); i < n; ++i) {
 			usage_stats_t *us = get_or_set_usage_stats(env, irn);
-#if 0 /* Liveness is not computed here! */
-			if (is_live_end(bl, op))
-				us->uses_in_block = 99999;
-			else
-#endif
-				us->uses_in_block++;
+			us->uses_in_block++;
 		}
 	}
 

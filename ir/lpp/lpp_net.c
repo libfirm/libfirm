@@ -188,11 +188,6 @@ void lpp_solve_net(lpp_t *lpp, const char *host, const char *solver)
 	lpp_writes(comm, solver);
 	lpp_flush(comm);
 
-#if 0
-	ERR_CHECK_RETURN_VOID(lpp_ack(fd, sizeof(buf), buf), == 0,
-		("could not set solver: %s", solver));
-#endif
-
 	t_send = ir_timer_new();
 	t_recv = ir_timer_new();
 

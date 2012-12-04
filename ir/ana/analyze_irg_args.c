@@ -234,23 +234,6 @@ static void analyze_ent_args(ir_entity *ent)
 	/* copy the temporary info */
 	memcpy(ent->attr.mtd_attr.param_access, rw_info,
 		nparams * sizeof(ent->attr.mtd_attr.param_access[0]));
-
-#if 0
-	printf("\n%s:\n", get_entity_name(ent));
-	for (i = 0; i < nparams; ++i) {
-		if (is_Pointer_type(get_method_param_type(mtp, i)))
-			if (ent->attr.mtd_attr.param_access[i] != ptr_access_none) {
-				printf("  Pointer Arg %d access: ", i);
-				if (ent->attr.mtd_attr.param_access[i] & ptr_access_read)
-					printf("READ ");
-				if (ent->attr.mtd_attr.param_access[i] & ptr_access_write)
-					printf("WRITE ");
-				if (ent->attr.mtd_attr.param_access[i] & ptr_access_store)
-					printf("STORE ");
-				printf("\n");
-			}
-	}
-#endif
 }
 
 void analyze_irg_args(ir_graph *irg)

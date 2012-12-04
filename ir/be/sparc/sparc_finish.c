@@ -427,13 +427,6 @@ static void peephole_sparc_FrameAddr(ir_node *node)
 {
 	/* the peephole code currently doesn't allow this since it changes
 	 * the register. Find out why and how to workaround this... */
-#if 0
-	const sparc_attr_t *attr = get_sparc_attr_const(node);
-	if (attr->immediate_value == 0) {
-		ir_node *base = get_irn_n(node, n_sparc_FrameAddr_base);
-		be_peephole_exchange(node, base);
-	}
-#endif
 	(void) node;
 }
 

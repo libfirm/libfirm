@@ -398,24 +398,11 @@ restart:
 
 				if (arity == 2) {
 					unsigned mark;
-#if 0
-					DB((dbg, LEVEL_1,  "Welding block %+F and %+F\n", block, mux_block));
-					/* copy the block-info from the Mux-block to the block before merging */
-
-					mark =  get_Block_mark(mux_block) | get_Block_mark(block);
-					set_Block_mark(block, mark);
-					set_Block_phis(block, get_Block_phis(mux_block));
-
-					set_irn_in(block, get_irn_arity(mux_block), get_irn_in(mux_block) + 1);
-					exchange_cdep(mux_block, block);
-					exchange(mux_block, block);
-#else
 					DB((dbg, LEVEL_1,  "Welding block %+F to %+F\n", block, mux_block));
 					mark =  get_Block_mark(mux_block) | get_Block_mark(block);
 					/* mark both block just to be sure, should be enough to mark mux_block */
 					set_Block_mark(mux_block, mark);
 					exchange(block, mux_block);
-#endif
 					return;
 				} else {
 					rewire(block, i, j, new_r_Jmp(mux_block));

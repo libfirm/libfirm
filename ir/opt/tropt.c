@@ -205,11 +205,6 @@ void normalize_irp_class_casts(gen_pointer_type_to_func gppt_fct)
 	size_t i, n;
 	if (gppt_fct) gen_pointer_type_to = gppt_fct;
 
-#if 0
-	if (get_irp_typeinfo_state() != ir_typeinfo_consistent)
-		simple_analyse_types();
-#endif
-
 	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		pure_normalize_irg_class_casts(irg);
@@ -460,11 +455,6 @@ static void irn_optimize_class_cast(ir_node *n, void *env)
 void optimize_class_casts(void)
 {
 	int changed;
-
-#if 0
-	if (get_irp_typeinfo_state() != ir_typeinfo_consistent)
-		simple_analyse_types();
-#endif
 
 	changed = 0;
 	all_irg_walk(NULL, irn_optimize_class_cast, &changed);

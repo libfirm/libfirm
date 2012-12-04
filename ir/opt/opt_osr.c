@@ -500,35 +500,6 @@ static int replace(ir_node *irn, ir_node *iv, ir_node *rc, iv_env *env)
 	return 0;
 }
 
-#if 0
-/**
- * check if a given node is a mul with 2, 4, 8
- */
-static int is_x86_shift_const(ir_node *mul)
-{
-	ir_node *rc;
-
-	if (! is_Mul(mul))
-		return 0;
-
-	/* normalization put constants on the right side */
-	rc = get_Mul_right(mul);
-	if (is_Const(rc)) {
-		ir_tarval *tv = get_Const_tarval(rc);
-
-		if (tarval_is_long(tv)) {
-			long value = get_tarval_long(tv);
-
-			if (value == 2 || value == 4 || value == 8) {
-				/* do not reduce multiplications by 2, 4, 8 */
-				return 1;
-			}
-		}
-	}
-	return 0;
-}
-#endif
-
 /**
  * Check if an IV represents a counter with constant limits.
  *

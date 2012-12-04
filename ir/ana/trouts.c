@@ -220,19 +220,6 @@ static void add_entity_access(const ir_entity *ent, ir_node *n)
 	set_entity_access_array(ent, accs);
 }
 
-#if 0
-void set_entity_access(const ir_entity *ent, int pos, ir_node *n)
-{
-	ir_node ** accs;
-
-	assert(0 <= pos && pos < get_entity_n_accesses(ent));
-	assert(n && is_ir_node(n));
-
-	accs = get_entity_access_array(ent);
-	accs[pos] = n;
-}
-#endif
-
 /*------------------------------------------------------------------*/
 
 size_t get_entity_n_references(const ir_entity *ent)
@@ -266,19 +253,6 @@ static void add_entity_reference(const ir_entity *ent, ir_node *n)
 	ARR_APP1(ir_node *, refs, n);
 	set_entity_reference_array(ent, refs);
 }
-
-#if 0
-void set_entity_reference(const ir_entity *ent, int pos, ir_node *n)
-{
-	ir_node ** refs;
-
-	assert(0 <= pos && pos < get_entity_n_references(ent));
-	assert(n && is_ir_node(n));
-
-	refs = get_entity_reference_array(ent);
-	refs[pos] = n;
-}
-#endif
 
 /**------------------------------------------------------------------*/
 /*   Access routines for types                                       */
@@ -316,19 +290,6 @@ static void add_type_alloc(const ir_type *tp, ir_node *n)
 	ARR_APP1(ir_node *, allocs, n);
 	set_type_alloc_array(tp, allocs);
 }
-
-#if 0
-void set_type_alloc(const ir_type *tp, int pos, ir_node *n)
-{
-	ir_node **allocs;
-
-	assert(0 <= pos && pos < get_type_n_allocs(tp));
-	assert(n && is_ir_node(n));
-
-	allocs = get_type_alloc_array(tp);
-	allocs[pos] = n;
-}
-#endif
 
 /* Number of Cast nodes that create an instance of this type */
 size_t get_type_n_casts(const ir_type *tp)
@@ -387,19 +348,6 @@ void add_type_cast(const ir_type *tp, ir_node *n)
 	set_type_cast_array(tp, casts);
 }
 
-#if 0
-void set_type_cast(const ir_type *tp, size_t pos, ir_node *n)
-{
-	ir_node **casts;
-
-	assert(pos < get_type_n_casts(tp));
-	assert(n && is_ir_node(n));
-
-	casts = get_type_cast_array(tp);
-	casts[pos] = n;
-}
-#endif
-
 /*------------------------------------------------------------------*/
 
 size_t get_type_n_pointertypes_to(const ir_type *tp)
@@ -434,19 +382,6 @@ void add_type_pointertype_to(const ir_type *tp, ir_type *ptp)
 	set_type_pointertype_array(tp, pts);
 }
 
-#if 0
-void set_type_pointertype_to(const ir_type *tp, int pos, ir_type *ptp)
-{
-	ir_type ** pts;
-
-	assert(0 <= pos && pos < get_type_n_pointertypes_to(tp));
-	assert(ptp && is_Pointer_type(ptp));
-
-	pts = get_type_pointertype_array(tp);
-	pts[pos] = ptp;
-}
-#endif
-
 /*------------------------------------------------------------------*/
 
 size_t get_type_n_arraytypes_of(const ir_type *tp)
@@ -480,19 +415,6 @@ void  add_type_arraytype_of(const ir_type *tp, ir_type *atp)
 	ARR_APP1(ir_type*, pts, atp);
 	set_type_arraytype_array(tp, pts);
 }
-
-#if 0
-void  set_type_arraytype_of(const ir_type *tp, int pos, ir_type *atp)
-{
-	ir_type ** pts;
-
-	assert(0 <= pos && pos < get_type_n_arraytypes_of(tp));
-	assert(atp && is_Array_type(atp));
-
-	pts = get_type_arraytype_array(tp);
-	pts[pos] = atp;
-}
-#endif
 
 /*------------------------------------------------------------------*/
 /* Building and Removing the out datastructure                      */

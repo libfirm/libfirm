@@ -272,11 +272,6 @@ void dfs_dump(const dfs_t *dfs, FILE *file)
 	for (i = 0; i < n; ++i) {
 		dfs_node_t *const node = nodes[i];
 		ir_fprintf(file, "\tn%d [label=\"%d\"]\n", node->pre_num, get_Block_dom_tree_pre_num((ir_node*) node->node));
-#if 0
-		ir_fprintf(file, "\tn%d [shape=box,label=\"%+F\\l%d %d/%d %d\"];\n",
-				node->pre_num, node->node, get_Block_dom_tree_pre_num(node->node),
-				node->pre_num, node->post_num, node->max_pre_num);
-#endif
 	}
 
 	foreach_set (dfs->edges, dfs_edge_t, edge)

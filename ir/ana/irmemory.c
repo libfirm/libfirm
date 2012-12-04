@@ -303,7 +303,7 @@ static ir_alias_relation different_index(const ir_node *idx1, const ir_node *idx
  */
 static ir_alias_relation different_sel_offsets(const ir_node *sel1, const ir_node *sel2)
 {
-	/* seems to be broken */
+	/* TODO: fix */
 	(void) sel1;
 	(void) sel2;
 #if 0

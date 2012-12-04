@@ -581,14 +581,6 @@ static int compare_ous(const void *k1, const void *k2)
 	if (u1_has_constr != u2_has_constr)
 		return u2_has_constr - u1_has_constr;
 
-	/* Now check, whether the two units are connected */
-#if 0
-	for (i=0; i<u1->node_count; ++i)
-		for (o=0; o<u2->node_count; ++o)
-			if (u1->nodes[i] == u2->nodes[o])
-				return 0;
-#endif
-
 	/* After all, the sort key decides. Greater keys come first. */
 	return u2->sort_key - u1->sort_key;
 

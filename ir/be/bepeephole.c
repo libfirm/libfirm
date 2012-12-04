@@ -412,11 +412,6 @@ ir_node *be_peephole_IncSP_IncSP(ir_node *node)
 
 void be_peephole_opt(ir_graph *irg)
 {
-#if 0
-	/* we sometimes find BadE nodes in float apps like optest_float.c or
-	 * kahansum.c for example... */
-	be_invalidate_live_sets(irg);
-#endif
 	be_assure_live_sets(irg);
 
 	arch_env = be_get_irg_arch_env(irg);

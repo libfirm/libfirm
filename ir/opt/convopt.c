@@ -129,24 +129,7 @@ static int get_conv_costs(const ir_node *node, ir_mode *dest_mode)
 		return -1;
 	}
 
-#if 0 // TODO
-	/* Take the minimum of the conversion costs for Phi predecessors as only one
-	 * branch is actually executed at a time */
-	if (is_Phi(node)) {
-		int i;
-		int arity = get_Phi_n_preds(node);
-		int costs;
-
-		costs = get_conv_costs(get_Phi_pred(node, 0), dest_mode);
-		for (i = 1; i < arity; ++i) {
-			ir_node *pred = get_Phi_pred(node, i);
-			int c = get_conv_costs(pred, dest_mode);
-			if (c < costs) costs = c;
-		}
-
-		return costs;
-	}
-#endif
+	/* TODO: Phi nodes */
 
 	if (!is_downconv(mode, dest_mode)) {
 		return 1;

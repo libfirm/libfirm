@@ -184,22 +184,6 @@ static void sel_methods_walker(ir_node *node, void *env)
 			 */
 			assert(get_entity_irg(ent) == NULL);
 		}
-#if 0
-		else if (get_opt_closed_world() && get_opt_dyn_meth_dispatch() &&
-			(ARR_LEN(arr) == 1 && arr[0] != NULL)) {
-			ir_node *new_node;
-
-			/*
-			 * The Sel node returns only one possible method.
-			 * So we could replace the Sel node by a SymConst.
-			 * This method must exists.
-			 */
-			assert(get_entity_irg(arr[0]) != NULL);
-			new_node = copy_const_value(get_irn_dbg_info(node), get_atomic_ent_value(arr[0]), get_nodes_block(node));
-			DBG_OPT_POLY(node, new_node);
-			exchange(node, new_node);
-		}
-#endif
 	}
 }
 

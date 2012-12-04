@@ -173,13 +173,7 @@ void compute_cdep(ir_graph *irg)
 
 	irg_block_walk_graph(irg, cdep_pre, NULL, &env);
 
-#if 0
-	set_dump_block_edge_hook(cdep_edge_hook);
-	dump_ir_block_graph(irg, "_cdep");
-	set_dump_block_edge_hook(NULL);
-#else
 	(void) cdep_edge_hook;
-#endif
 
 	/* restore the post dominator relation */
 	set_Block_ipostdom(env.start_block, rem);

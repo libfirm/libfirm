@@ -381,35 +381,6 @@ static int eval_cmp_tv(ir_relation relation, ir_tarval *tv_left,
 	return 0;
 }
 
-#if 0
-/* Matze: disabled, check first if the compare still is correct */
-
-/**
- * returns whether the cmp evaluates to true or false according to vrp
- * information , or can't be evaluated!
- * 1: true, 0: false, -1: can't evaluate
- *
- * @param relation  the compare mode of the Compare
- * @param left      the left node
- * @param right     the right node
- */
-static int eval_cmp_vrp(ir_relation relation, ir_node *left, ir_node *right)
-{
-	ir_relation cmp_result = vrp_cmp(left, right);
-	/* does the compare evaluate to true? */
-	if (cmp_result == ir_relation_false)
-		return -1;
-
-	if ((cmp_result & relation) != cmp_result) {
-		if ((cmp_result & relation) != 0) {
-			return -1;
-		}
-		return 0;
-	}
-	return 1;
-}
-#endif
-
 /**
  * returns whether the cmp evaluates to true or false, or can't be evaluated!
  * 1: true, 0: false, -1: can't evaluate
@@ -668,15 +639,6 @@ static void thread_jumps(ir_node* block, void* data)
 
 			selector_evaluated = eval_cmp_tv(relation, tv_left, tv_right);
 		}
-#if 0
-		if (selector_evaluated < 0) {
-			/* This is only the case if the predecessor nodes are not
-			 * constant or the comparison could not be evaluated.
-			 * Try with VRP information now.
-			 */
-			selector_evaluated = eval_cmp_vrp(relation, left, right);
-		}
-#endif
 	} else if (is_Const_or_Confirm(selector)) {
 		ir_tarval *tv = get_Const_or_Confirm_tarval(selector);
 		if (tv == tarval_b_true) {

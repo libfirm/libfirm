@@ -1131,15 +1131,6 @@ static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
 	/* count the nodes in the graph */
 	irg_walk_graph(graph->irg, update_node_stat, NULL, graph);
 
-#if 0
-	/* Uncomment this code if chain-call means call exact one. */
-	entry = opcode_get_entry(op_Call, graph->opcode_hash);
-
-	/* check if we have more than 1 call */
-	if (cnt_gt(entry->cnt_alive, 1))
-		graph->is_chain_call = 0;
-#endif
-
 	/* recursive functions are never chain calls, leafs don't have calls */
 	if (graph->is_recursive || graph->is_leaf)
 		graph->is_chain_call = 0;

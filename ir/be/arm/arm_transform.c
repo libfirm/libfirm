@@ -544,24 +544,7 @@ static ir_node *gen_Add(ir_node *node)
 			panic("Softfloat not supported yet");
 		}
 	} else {
-#if 0
-		/* check for MLA */
-		if (is_arm_Mul(new_op1) && get_irn_n_edges(op1) == 1) {
-			new_op3 = new_op2;
-			new_op2 = get_irn_n(new_op1, 1);
-			new_op1 = get_irn_n(new_op1, 0);
-
-			return new_bd_arm_Mla(dbgi, block, new_op1, new_op2, new_op3);
-		}
-		if (is_arm_Mul(new_op2) && get_irn_n_edges(op2) == 1) {
-			new_op3 = new_op1;
-			new_op1 = get_irn_n(new_op2, 0);
-			new_op2 = get_irn_n(new_op2, 1);
-
-			return new_bd_arm_Mla(dbgi, block, new_op1, new_op2, new_op3);
-		}
-#endif
-
+		/* TODO: check for MLA */
 		return gen_int_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, &add_factory);
 	}
 }
@@ -1080,38 +1063,6 @@ enum fpa_imm_mode {
 };
 
 static ir_tarval *fpa_imm[FPA_IMM_MAX + 1][fpa_max];
-
-#if 0
-/**
- * Check, if a floating point tarval is an fpa immediate, i.e.
- * one of 0, 1, 2, 3, 4, 5, 10, or 0.5.
- */
-static int is_fpa_immediate(tarval *tv)
-{
-	ir_mode *mode = get_tarval_mode(tv);
-	int i, j, res = 1;
-
-	switch (get_mode_size_bits(mode)) {
-	case 32:
-		i = FPA_IMM_FLOAT;
-		break;
-	case 64:
-		i = FPA_IMM_DOUBLE;
-		break;
-	}
-
-	if (tarval_is_negative(tv)) {
-		tv = tarval_neg(tv);
-		res = -1;
-	}
-
-	for (j = 0; j < fpa_max; ++j) {
-		if (tv == fpa_imm[i][j])
-			return res * j;
-	}
-	return fpa_max;
-}
-#endif
 
 static ir_node *gen_Const(ir_node *node)
 {
@@ -1877,22 +1828,9 @@ static ir_node *gen_Call(ir_node *node)
 		entity = get_SymConst_entity(callee);
 	} else {
 		/* TODO: finish load matcher here */
-#if 0
-		/* callee */
-		if (is_Proj(callee) && is_Load(get_Proj_pred(callee))) {
-			ir_node *load    = get_Proj_pred(callee);
-			ir_node *ptr     = get_Load_ptr(load);
-			ir_node *new_ptr = be_transform_node(ptr);
-			ir_node *mem     = get_Load_mem(load);
-			ir_node *new_mem = be_transform_node(mem);
-			ir_mode *mode    = get_Load_mode(node);
-
-		} else {
-#endif
-			in[in_arity]     = be_transform_node(callee);
-			in_req[in_arity] = arm_reg_classes[CLASS_arm_gp].class_req;
-			++in_arity;
-		//}
+		in[in_arity]     = be_transform_node(callee);
+		in_req[in_arity] = arm_reg_classes[CLASS_arm_gp].class_req;
+		++in_arity;
 	}
 
 	/* outputs:

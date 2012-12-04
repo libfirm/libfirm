@@ -148,36 +148,6 @@ static int get_irn_dfn(ir_node *n)
 	return scc->dfn;
 }
 
-#if 0
-static ir_loop *find_nodes_loop(ir_node *n, ir_loop *l)
-{
-	int i;
-	ir_loop *res = NULL;
-
-	/* Test whether n is contained in this loop. */
-	for (i = 0; i < get_loop_n_nodes(l); i++)
-		if (n == get_loop_node(l, i)) return l;
-
-	/* Is this a leave in the loop tree? If so loop not found. */
-	if (get_loop_n_sons(l) == 0) return NULL;
-
-	/* Else descend in the loop tree. */
-	for (i = 0; i < get_loop_n_sons(l); i++) {
-		res = find_nodes_loop(n, get_loop_son(l, i));
-		if (res) break;
-	}
-	return res;
-}
-
-/* @@@ temporary implementation, costly!!! */
-ir_loop * get_irn_loop(ir_node *n)
-{
-	ir_loop *l = get_irg_loop(current_ir_graph);
-	l = find_nodes_loop(n, l);
-	return l;
-}
-#endif
-
 /**********************************************************************/
 /* A stack.                                                          **/
 /**********************************************************************/
@@ -546,9 +516,6 @@ static ir_node *find_tail(ir_node *n)
 	ir_node *m;
 	int i, res_index = -2;
 
-	/*
-	if (!icfg && rm_cyclic_phis && remove_cyclic_phis (n)) return NULL;
-	 */
 	m = stack[tos-1];  /* tos = top of stack */
 	if (is_head(m, n)) {
 		res_index = smallest_dfn_pred(m, 0);
@@ -761,19 +728,6 @@ static void reset_backedges(ir_node *n)
 	}
 }
 
-/*
-static void loop_reset_backedges(ir_loop *l)
-{
-	int i;
-	reset_backedges(get_loop_node(l, 0));
-	for (i = 0; i < get_loop_n_nodes(l); ++i)
-		set_irn_loop(get_loop_node(l, i), NULL);
-	for (i = 0; i < get_loop_n_sons(l); ++i) {
-		loop_reset_backedges(get_loop_son(l, i));
-	}
-}
-*/
-
 static void loop_reset_node(ir_node *n, void *env)
 {
 	(void) env;
@@ -783,11 +737,6 @@ static void loop_reset_node(ir_node *n, void *env)
 
 void free_loop_information(ir_graph *irg)
 {
-	/* We can not use this recursion, as the loop might contain
-	   illegal nodes by now.  Why else would we throw away the
-	   representation?
-	if (get_irg_loop(irg)) loop_reset_backedges(get_irg_loop(irg));
-	*/
 	irg_walk_graph(irg, loop_reset_node, NULL, NULL);
 	set_irg_loop(irg, NULL);
 	clear_irg_properties(current_ir_graph, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);

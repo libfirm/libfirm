@@ -720,45 +720,6 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result)
 	fc_exact &= normalize(result, result, sticky);
 }
 
-#if 0
-static void _power_of_ten(int exp, float_descriptor_t *desc, char *result)
-{
-	char *build;
-	char *temp;
-
-	/* positive sign */
-	result->sign = 0;
-
-	/* set new descriptor (else result is supposed to already have one) */
-	if (desc != NULL)
-		result->desc = *desc;
-
-	build = alloca(value_size);
-	temp = alloca(value_size);
-
-	sc_val_from_ulong((1 << (result->desc.exponent_size - 1)) - 1, _exp(result));
-
-	if (exp > 0) {
-		/* temp is value of ten now */
-		sc_val_from_ulong(10, NULL);
-		_save_result(temp);
-
-		for (exp--; exp > 0; exp--) {
-			_save_result(build);
-			sc_mul(build, temp, NULL);
-		}
-		_save_result(build);
-
-		/* temp is amount of left shift needed to put the value left of the radix point */
-		sc_val_from_ulong(result->desc.mantissa_size + ROUNDING_BITS, temp);
-
-		_shift_left(build, temp, _mant(result));
-
-		_normalize(result, result, 0);
-	}
-}
-#endif
-
 /**
  * Truncate the fractional part away.
  *

@@ -2697,15 +2697,6 @@ static node_t *identity_Mux(node_t *node)
 		return t;
 
 	/* for now, the 1-input identity is not supported */
-#if 0
-	sel = get_irn_node(get_Mux_sel(mux));
-
-	/* Mux sel input is mode_b, so it is always a tarval */
-	if (sel->type.tv == tarval_b_true)
-		return t;
-	if (sel->type.tv == tarval_b_false)
-		return f;
-#endif
 	return node;
 }
 
@@ -3583,10 +3574,6 @@ void combo(ir_graph *irg)
 
 	dump_all_partitions(&env);
 	check_all_partitions(&env);
-
-#if 0
-	dump_ir_block_graph(irg, "-partition");
-#endif
 
 	/* apply the result */
 

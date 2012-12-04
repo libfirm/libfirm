@@ -237,14 +237,7 @@ void copystat_dump(ir_graph *irg)
 
 	fprintf(out, "%d\n", (int)ASIZE);
 	for (i = 0; i < ASIZE; i++) {
-#if 0
-		if (i >= I_PHI_ARITY_S && i <= I_PHI_ARITY_E)
-			fprintf(out, "%i %i\n", curr_vals[i], curr_vals[I_PHI_CNT]);
-		else if (i >= I_CLS_SIZE_S && i <= I_CLS_SIZE_E)
-			fprintf(out, "%i %i\n", curr_vals[i], curr_vals[I_CLS_CNT]);
-		else
-#endif
-			fprintf(out, "%i\n", curr_vals[i]);
+		fprintf(out, "%i\n", curr_vals[i]);
 	}
 
 	fclose(out);

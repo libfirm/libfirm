@@ -963,16 +963,6 @@ void be_insert_spills_reloads(spill_env_t *env)
 			be_ssa_construction_add_copies(&senv, copies, ARR_LEN(copies));
 			be_ssa_construction_fix_users(&senv, to_spill);
 
-#if 0
-			/* no need to enable this as long as we invalidate liveness
-			   after this function... */
-			be_ssa_construction_update_liveness_phis(&senv);
-			be_liveness_update(to_spill);
-			len = ARR_LEN(copies);
-			for (i = 0; i < len; ++i) {
-				be_liveness_update(lv, copies[i]);
-			}
-#endif
 			be_ssa_construction_destroy(&senv);
 		}
 		/* need to reconstruct SSA form if we had multiple spills */
