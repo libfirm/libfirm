@@ -275,8 +275,6 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 	unsigned  loopdepth     = get_loop_depth(loop);
 	int       found_visited = 0;
 	int       found_use     = 0;
-	ir_graph *irg           = get_irn_irg(block);
-	ir_node  *startblock    = get_irg_start_block(irg);
 
 	result.before  = NULL;
 	outermost_loop = loopdepth;
@@ -285,9 +283,6 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 		const ir_node *succ_block = get_edge_src_irn(edge);
 		ir_loop *succ_loop;
 		unsigned use_dist;
-
-		if (succ_block == startblock)
-			continue;
 
 		DBG((env->dbg, LEVEL_5, "Checking succ of block %+F: %+F (for use of %+F)\n", block, succ_block, def));
 		if (!be_is_live_in(env->lv, succ_block, def)) {
