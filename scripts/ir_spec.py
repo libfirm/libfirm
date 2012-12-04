@@ -241,11 +241,6 @@ class Block:
 	'''
 
 @op
-class Borrow(Binop):
-	"""Returns the borrow bit from and implied subtractions of its 2 operands"""
-	flags = []
-
-@op
 class Bound:
 	"""Performs a bounds-check: if lower <= index < upper then return index,
 	otherwise throw an exception."""
@@ -332,12 +327,6 @@ class Call:
 	init = '''
 	assert((get_unknown_type() == type) || is_Method_type(type));
 	'''
-
-@op
-class Carry(Binop):
-	"""Computes the value of the carry-bit that would result when adding the 2
-	operands"""
-	flags = [ "commutative" ]
 
 @op
 class Cast(Unop):

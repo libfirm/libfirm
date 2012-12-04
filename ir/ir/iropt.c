@@ -183,48 +183,6 @@ static ir_tarval *computed_value_Sub(const ir_node *n)
 }
 
 /**
- * Return the value of a Carry.
- * Special : a op 0, 0 op b
- */
-static ir_tarval *computed_value_Carry(const ir_node *n)
-{
-	ir_node   *a  = get_binop_left(n);
-	ir_node   *b  = get_binop_right(n);
-	ir_mode   *m  = get_irn_mode(n);
-	ir_tarval *ta = value_of(a);
-	ir_tarval *tb = value_of(b);
-
-	if ((ta != tarval_bad) && (tb != tarval_bad)) {
-		tarval_add(ta, tb);
-		return tarval_carry() ? get_mode_one(m) : get_mode_null(m);
-	} else {
-		if (tarval_is_null(ta) || tarval_is_null(tb))
-			return get_mode_null(m);
-	}
-	return tarval_bad;
-}
-
-/**
- * Return the value of a Borrow.
- * Special : a op 0
- */
-static ir_tarval *computed_value_Borrow(const ir_node *n)
-{
-	ir_node   *a  = get_binop_left(n);
-	ir_node   *b  = get_binop_right(n);
-	ir_mode   *m  = get_irn_mode(n);
-	ir_tarval *ta = value_of(a);
-	ir_tarval *tb = value_of(b);
-
-	if ((ta != tarval_bad) && (tb != tarval_bad)) {
-		return tarval_cmp(ta, tb) == ir_relation_less ? get_mode_one(m) : get_mode_null(m);
-	} else if (tarval_is_null(ta)) {
-		return get_mode_null(m);
-	}
-	return tarval_bad;
-}
-
-/**
  * Return the value of an unary Minus.
  */
 static ir_tarval *computed_value_Minus(const ir_node *n)
@@ -6289,8 +6247,6 @@ void ir_register_opt_node_ops(void)
 {
 	register_computed_value_func(op_Add,      computed_value_Add);
 	register_computed_value_func(op_And,      computed_value_And);
-	register_computed_value_func(op_Borrow,   computed_value_Borrow);
-	register_computed_value_func(op_Carry,    computed_value_Carry);
 	register_computed_value_func(op_Cmp,      computed_value_Cmp);
 	register_computed_value_func(op_Confirm,  computed_value_Confirm);
 	register_computed_value_func(op_Const,    computed_value_Const);
