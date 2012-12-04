@@ -39,7 +39,6 @@ void add_loop_son(ir_loop *loop, ir_loop *son)
 	assert(get_kind(son) == k_ir_loop);
 	lson.son = son;
 	ARR_APP1(loop_element, loop->children, lson);
-	loop->flags |= loop_outer_loop;
 }
 
 void add_loop_node(ir_loop *loop, ir_node *n)

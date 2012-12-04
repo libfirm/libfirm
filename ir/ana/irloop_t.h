@@ -32,21 +32,6 @@
 #include "irloop.h"
 
 /**
- * Possible loop flags, can be or'ed.
- */
-typedef enum loop_flags {
-	loop_is_count_loop = 0x00000001,  /**< if set it's a counting loop */
-	loop_downto_loop   = 0x00000002,  /**< if set, it's a downto loop, else an upto loop */
-	loop_is_endless    = 0x00000004,  /**< if set, this is an endless loop */
-	loop_is_dead       = 0x00000008,  /**< if set, it's a dead loop ie will never be entered */
-	loop_wrap_around   = 0x00000010,  /**< this loop is NOT endless, because of wrap around */
-	loop_end_false     = 0x00000020,  /**< this loop end can't be computed "from compute_loop_info.c" */
-	do_loop            = 0x00000040,  /**< this is a do loop */
-	once               = 0x00000080,  /**< this is a do loop, with a false condition. It iterate exactly once. */
-	loop_outer_loop    = 0x00000100   /**< if set, this loop has child loops (is a no leaf). */
-} loop_flags_t;
-
-/**
  * The loops data structure.
  *
  * The loops data structure represents circles in the intermediate
@@ -62,7 +47,6 @@ typedef enum loop_flags {
 struct ir_loop {
 	firm_kind       kind;             /**< A type tag, set to k_ir_loop. */
 	unsigned        depth;            /**< Nesting depth */
-	unsigned        flags;            /**< a set of loop_flags_t */
 	struct ir_loop *outer_loop;       /**< The outer loop */
 	loop_element   *children;         /**< Mixed flexible array: Contains sons and loop_nodes */
 	ir_tarval      *loop_iter_start;  /**< counting loop: the start value */

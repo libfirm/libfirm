@@ -837,10 +837,14 @@ static void check_for_possible_endless_loops(ir_graph *irg)
 {
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 
-	ir_loop *root_loop = get_irg_loop(irg);
-	if (root_loop->flags & loop_outer_loop) {
-		ir_entity *ent = get_irg_entity(irg);
-		add_entity_additional_properties(ent, mtp_property_has_loop);
+	ir_loop *loop = get_irg_loop(irg);
+	for (size_t i = 0, n_elems = get_loop_n_elements(loop); i < n_elems; ++i) {
+		loop_element e = get_loop_element(loop, i);
+		if (*e.kind == k_ir_loop) {
+			ir_entity *ent = get_irg_entity(irg);
+			add_entity_additional_properties(ent, mtp_property_has_loop);
+			break;
+		}
 	}
 
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_ALL);
