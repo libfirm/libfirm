@@ -54,8 +54,6 @@ static int loop_node_cnt = 0;
 /** Counter to generate depth first numbering of visited nodes. */
 static int current_dfn = 1;
 
-static unsigned max_loop_depth = 0;
-
 /**********************************************************************/
 /* Node attributes needed for the construction.                      **/
 /**********************************************************************/
@@ -308,7 +306,6 @@ static ir_loop *new_loop(void)
 	ir_loop *father = current_loop;
 	ir_loop *son    = alloc_loop(father, get_irg_obstack(outermost_ir_graph));
 
-	if (son->depth > max_loop_depth) max_loop_depth = son->depth;
 	current_loop = son;
 	return father;
 }
@@ -726,13 +723,12 @@ static void scc(ir_node *n)
 	}
 }
 
-int construct_backedges(ir_graph *irg)
+void construct_backedges(ir_graph *irg)
 {
 	ir_graph *rem = current_ir_graph;
 	ir_loop *head_rem;
 	struct obstack temp;
 
-	max_loop_depth = 0;
 	current_ir_graph   = irg;
 	outermost_ir_graph = irg;
 
@@ -756,7 +752,6 @@ int construct_backedges(ir_graph *irg)
 	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 	assert(get_irg_loop(irg)->kind == k_ir_loop);
 	current_ir_graph = rem;
-	return max_loop_depth;
 }
 
 static void reset_backedges(ir_node *n)

@@ -106,8 +106,6 @@ FIRM_API void *get_loop_link(const ir_loop *loop);
  *
  *  This algorithm destoyes the link field of block nodes.
  *
- *  @returns Maximal depth of loop tree.
- *
  *  @remark
  *  One assumes, the Phi nodes in a block with a backedge have backedges
  *  at the same positions as the block.  This is not the case, as
@@ -117,7 +115,7 @@ FIRM_API void *get_loop_link(const ir_loop *loop);
  *  edges, the cycle is removed.  The second Phi node does not get a
  *  backedge!
  */
-FIRM_API int construct_backedges(ir_graph *irg);
+FIRM_API void construct_backedges(ir_graph *irg);
 
 /**
  * Construct Intra-procedural control flow loop tree for a IR-graph.
@@ -132,10 +130,8 @@ FIRM_API int construct_backedges(ir_graph *irg);
  * This algorithm destroyes the link field of block nodes.
  *
  * @param irg  the graph
- *
- * @returns Maximal depth of loop tree.
  */
-FIRM_API int construct_cf_backedges(ir_graph *irg);
+FIRM_API void construct_cf_backedges(ir_graph *irg);
 
 /**
  * Computes Intra-procedural control flow loop tree on demand.
