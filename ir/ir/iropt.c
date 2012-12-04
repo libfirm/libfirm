@@ -3148,17 +3148,7 @@ static ir_node *transform_node_Div(ir_node *n)
 		ir_tarval *tv = value_of(b);
 
 		if (tv != tarval_bad) {
-			int rem = tarval_fp_ops_enabled();
-
-			/*
-			 * Floating point constant folding might be disabled here to
-			 * prevent rounding.
-			 * However, as we check for exact result, doing it is safe.
-			 * Switch it on.
-			 */
-			tarval_enable_fp_ops(1);
 			tv = tarval_div(get_mode_one(mode), tv);
-			tarval_enable_fp_ops(rem);
 
 			/* Do the transformation if the result is either exact or we are
 			   not using strict rules. */

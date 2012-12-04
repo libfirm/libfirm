@@ -91,9 +91,6 @@ static int carry_flag = -1;
 /** The integer overflow mode. */
 static tarval_int_overflow_mode_t int_overflow_mode = TV_OVERFLOW_WRAP;
 
-/** if this is set non-zero, the constant folding for floating point is OFF */
-static int no_float = 0;
-
 /****************************************************************************
  *   private functions
  ****************************************************************************/
@@ -938,10 +935,6 @@ ir_tarval *tarval_neg(ir_tarval *a)
 		return get_tarval_overflow(buffer, a->length, a->mode);
 
 	case irms_float_number:
-		/* it should be safe to enable this even if other arithmetic is disabled */
-		/*if (no_float)
-			return tarval_bad;*/
-
 		fc_neg((const fp_value*) a->value, NULL);
 		return get_tarval_overflow(fc_get_buffer(), fc_get_buffer_length(), a->mode);
 
@@ -977,9 +970,6 @@ ir_tarval *tarval_add(ir_tarval *a, ir_tarval *b)
 		return get_tarval_overflow(buffer, a->length, a->mode);
 
 	case irms_float_number:
-		if (no_float)
-			return tarval_bad;
-
 		fc_add((const fp_value*) a->value, (const fp_value*) b->value, NULL);
 		return get_tarval_overflow(fc_get_buffer(), fc_get_buffer_length(), a->mode);
 
@@ -1015,9 +1005,6 @@ ir_tarval *tarval_sub(ir_tarval *a, ir_tarval *b, ir_mode *dst_mode)
 		return get_tarval_overflow(buffer, a->length, a->mode);
 
 	case irms_float_number:
-		if (no_float)
-			return tarval_bad;
-
 		fc_sub((const fp_value*) a->value, (const fp_value*) b->value, NULL);
 		return get_tarval_overflow(fc_get_buffer(), fc_get_buffer_length(), a->mode);
 
@@ -1045,9 +1032,6 @@ ir_tarval *tarval_mul(ir_tarval *a, ir_tarval *b)
 		return get_tarval_overflow(buffer, a->length, a->mode);
 
 	case irms_float_number:
-		if (no_float)
-			return tarval_bad;
-
 		fc_mul((const fp_value*) a->value, (const fp_value*) b->value, NULL);
 		return get_tarval_overflow(fc_get_buffer(), fc_get_buffer_length(), a->mode);
 
@@ -1141,10 +1125,6 @@ ir_tarval *tarval_abs(ir_tarval *a)
 		return a;
 
 	case irms_float_number:
-		/* it should be safe to enable this even if other arithmetic is disabled */
-		/*if (no_float)
-			return tarval_bad;*/
-
 		if (fc_comp((const fp_value*) a->value,
 		    (const fp_value*) get_mode_null(a->mode)->value) == -1) {
 			fc_neg((const fp_value*) a->value, NULL);
@@ -1700,17 +1680,6 @@ void tarval_set_integer_overflow_mode(tarval_int_overflow_mode_t ov_mode)
 tarval_int_overflow_mode_t tarval_get_integer_overflow_mode(void)
 {
 	return int_overflow_mode;
-}
-
-/* Enable/Disable floating point constant folding. */
-void tarval_enable_fp_ops(int enable)
-{
-	no_float = !enable;
-}
-
-int tarval_fp_ops_enabled(void)
-{
-	return !no_float;
 }
 
 /**

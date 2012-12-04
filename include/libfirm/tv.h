@@ -800,14 +800,6 @@ FIRM_API int tarval_ieee754_can_conv_lossless(ir_tarval *tv, ir_mode *mode);
 FIRM_API unsigned tarval_ieee754_get_exact(void);
 
 /**
- * Enable/Disable floating point constant folding.
- */
-FIRM_API void tarval_enable_fp_ops(int enable);
-
-/** returns 0/1 if floating point folding is enable/disabled */
-FIRM_API int tarval_fp_ops_enabled(void);
-
-/**
  * Check if its the a floating point NaN.
  *
  * @param tv    the tarval
