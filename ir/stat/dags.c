@@ -390,13 +390,11 @@ void count_dags_in_graph(graph_entry_t *global, graph_entry_t *graph)
 			get_irn_node_nr(entry->root));
 	}
 
-#if 1
 	/* dump for test */
 	mark_options = root_env.options;
 	set_dump_node_vcgattr_hook(stat_dag_mark_hook);
 	dump_ir_graph(graph->irg, "-dag");
 	set_dump_node_vcgattr_hook(NULL);
-#endif
 
 	assert(id == root_env.num_of_dags);
 

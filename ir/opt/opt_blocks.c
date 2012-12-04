@@ -1160,11 +1160,9 @@ static void add_roots(ir_graph *irg, environment_t *env)
 	for (bl = env->all_blocks; bl != NULL; bl = bl->all_next) {
 		size_t i, n = ARR_LEN(bl->roots);
 
-#if 1
 		/* TODO: is this really needed? The roots are already in
 		   idx-order by construction, which might be good enough. */
 		qsort(bl->roots, n, sizeof(bl->roots[0]), cmp_nodes);
-#endif
 
 		DB((dbg, LEVEL_2, " Adding Roots for block %+F\n  ", bl->block));
 		/* ok, add them sorted */

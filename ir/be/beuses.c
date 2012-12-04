@@ -143,11 +143,7 @@ static const be_use_t *get_or_set_use_block(be_uses_t *env,
  */
 static int be_is_phi_argument(const ir_node *block, const ir_node *def)
 {
-#if 1
 	if (get_irn_n_edges_kind(block, EDGE_KIND_BLOCK) < 1)
-#else
-	if (get_irn_n_edges_kind(block, EDGE_KIND_BLOCK) != 1)
-#endif
 		return 0;
 
 	ir_node *const succ_block = get_first_block_succ(block);

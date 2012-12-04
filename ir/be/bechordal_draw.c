@@ -221,12 +221,8 @@ static void block_dims_walker(ir_node *block, void *data)
 
 	dims->min_step = 1;
 
-#if 1
 	dims->box.w = (dims->max_color + 2) * opts->h_inter_gap;
 	dims->box.h = dims->max_step * opts->v_inter_gap;
-#else /* ! if 1 */
-	dims->box.w = dims->box.h = 10;
-#endif /* if 1 */
 
 	pmap_insert(env->block_dims, block, dims);
 }
@@ -291,21 +287,9 @@ static color_t *reg_to_color(const draw_chordal_env_t *env,
 	foreach_out_edge(irn, edge)
 		phi_arg |= is_Phi(edge->src);
 
-#if 1
 	color->r = is_Phi(irn) ? 0.5 : 0.0;
 	color->g = phi_arg ? 0.5 : 0.0;
 	color->b = 0.0;
-#else /* ! if 1 */
-	{
-		int live_in  = is_live_in(rel_bl, irn);
-		int live_out = is_live_out(rel_bl, irn);
-
-		color->r = live_in;
-		color->g = live_out;
-		color->b = 0.0;
-	}
-#endif /* if 1 */
-
 	return color;
 }
 
@@ -325,9 +309,7 @@ static void draw_block(ir_node *bl, void *data)
 	env->plotter->vtab->set_color(env->plotter, &black);
 	env->plotter->vtab->box(env->plotter, &dims->box);
 
-#if 1
 	env->plotter->vtab->text(env->plotter, dims->box.x, dims->box.y, buf);
-#endif
 
 	foreach_border_head(head, b) {
 		if (b->is_def) {
