@@ -36,6 +36,12 @@
 
 #include "../begin.h"
 
+/**
+ * @ingroup adt
+ * @defgroup plist     pointer lists (deprecated)
+ * @{
+ */
+
 typedef struct plist_element plist_element_t;
 typedef struct plist plist_t;
 
@@ -233,6 +239,8 @@ FIRM_API void plist_clear(plist_t *list);
  */
 #define foreach_plist(list, el) \
 	for (el = plist_first(list); el; el = plist_element_get_next(el))
+
+/** @} */
 
 #include "../end.h"
 

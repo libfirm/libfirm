@@ -191,7 +191,7 @@ FIRM_API void *pset_first(pset *pset);
 
 /**
  * Returns the first element of a pset.
- * This is a wrapper for pset_first(pmap *map); It allows to express the
+ * This is a wrapper for pset_first(set); It allows to express the
  * intended type of the set elements (instead of weakly typed void*).
  *
  * @param type  destination type of the pointers in the set
@@ -213,7 +213,7 @@ FIRM_API void *pset_next(pset *pset);
 
 /**
  * Returns the next element of a pset.
- * This is a wrapper for pset_next(pmap *map); It allows to express the
+ * This is a wrapper for pset_next(set); It allows to express the
  * intended type of the set elements (instead of weakly typed void*).
  *
  * @param type  destination type of the pointers in the set

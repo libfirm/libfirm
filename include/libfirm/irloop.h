@@ -61,7 +61,7 @@ typedef union {
 } loop_element;
 
 /** Tests whether a given pointer points to a loop.
- * @note only works reliably if @p thing points to something with a #firm_kind
+ * @note only works reliably if @p thing points to something with a ::firm_kind
  * header */
 FIRM_API int is_ir_loop(const void *thing);
 

@@ -29,6 +29,13 @@
 #include "begin.h"
 
 /**
+ * @defgroup initalization  Library Initialization
+ * The functions in this section deal with initialization and deinitalization
+ * of the libFirm library.
+ * @{
+ */
+
+/**
  * Initializes the firm library.  Allocates default data structures.
  */
 FIRM_API void ir_init(void);
@@ -48,13 +55,13 @@ FIRM_API const char *ir_get_version_revision(void);
 FIRM_API const char *ir_get_version_build(void);
 
 /**
- * a list of firm kinds
+ * A list of firm kinds.
  * Most important datastructures in firm contain a firm_kind field at the
  * beginning so given void* pointer you can usually still guess the kind
  * of thing the pointer points to.
  * This is used in debug helper functions and printers.
  */
-typedef enum {
+typedef enum firm_kind {
 	k_BAD = 0,                /**< An invalid firm node. */
 	k_entity,                 /**< An entity. */
 	k_type,                   /**< A type. */
@@ -78,6 +85,8 @@ typedef enum {
  * @param firm_thing  pointer representing a firm object
  */
 FIRM_API firm_kind get_kind(const void *firm_thing);
+
+/** @} */
 
 #include "end.h"
 

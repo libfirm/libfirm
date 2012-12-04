@@ -786,7 +786,7 @@ ENUM_BITSET(ptr_access_kind)
  *  An enum for the type kinds.
  *  For each type kind exists a typecode to identify it.
  */
-typedef enum {
+typedef enum tp_opcode {
 	tpo_uninitialized = 0,   /* not a type opcode */
 	tpo_class,               /**< A class type. */
 	tpo_struct,              /**< A struct type. */

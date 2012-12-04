@@ -30,9 +30,14 @@
 #include "begin.h"
 
 /**
+ * @addtogroup iroptimize
+ * @{
+ */
+
+/**
  * The Multiplication replacement can consist of the following instructions.
  */
-typedef enum instr {
+typedef enum insn_kind {
 	LEA,   /**< the LEA instruction */
 	SHIFT, /**< the SHIFT instruction */
 	SUB,   /**< the SUB instruction */
@@ -82,17 +87,17 @@ typedef const ir_settings_arch_dep_t *(*arch_dep_params_factory_t)(void);
 /**
  * Optimization flags.
  */
-typedef enum {
+typedef enum arch_dep_opts_t {
 	arch_dep_none         = 0,
-	arch_dep_mul_to_shift = 1,  /**< optimize Mul into Shift/Add/Sub */
-	arch_dep_div_by_const = 2,  /**< optimize Div into Shift/Add/Mulh */
-	arch_dep_mod_by_const = 4   /**< optimize Mod into Shift/Add/Mulh */
+	arch_dep_mul_to_shift = 1u << 0,  /**< optimize Mul into Shift/Add/Sub */
+	arch_dep_div_by_const = 1u << 1,  /**< optimize Div into Shift/Add/Mulh */
+	arch_dep_mod_by_const = 1u << 2   /**< optimize Mod into Shift/Add/Mulh */
 } arch_dep_opts_t;
 ENUM_BITSET(arch_dep_opts_t)
 
 /**
  * Sets the optimizations that shall be applied.
- * @param opts An optimization bit mask.
+ * @param opts  An optimization bit mask.
  */
 FIRM_API void arch_dep_set_opts(arch_dep_opts_t opts);
 
@@ -138,6 +143,8 @@ FIRM_API ir_node *arch_dep_replace_div_by_const(ir_node *irn);
  * @return          A replacement expression for irn.
  */
 FIRM_API ir_node *arch_dep_replace_mod_by_const(ir_node *irn);
+
+/** @} */
 
 #include "end.h"
 

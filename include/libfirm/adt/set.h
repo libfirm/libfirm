@@ -173,7 +173,7 @@ FIRM_API void *set_first(set *set);
 
 /**
  * Returns the first element of a set.
- * This is a wrapper for set_first(set *set); It allows to express the
+ * This is a wrapper for set_first(set); It allows to express the
  * intended type of the set elements (instead of weakly typed void*).
  *
  * @param set  the set to iterate
@@ -195,7 +195,7 @@ FIRM_API void *set_next(set *set);
 
 /**
  * Returns the next element of a set.
- * This is a wrapper for set_next(set *set); It allows to express the
+ * This is a wrapper for set_next(set); It allows to express the
  * intended type of the set elements (instead of weakly typed void*).
  *
  * @param set  the set to iterate
