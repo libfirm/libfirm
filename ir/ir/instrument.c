@@ -34,7 +34,6 @@
 void instrument_initcall(ir_graph *irg, ir_entity *ent)
 {
 	ir_node        *initial_exec;
-	ir_node        *start_block;
 	ir_node        *first_block = NULL;
 	int             i, idx, need_new_block;
 	symconst_symbol sym;
@@ -43,12 +42,11 @@ void instrument_initcall(ir_graph *irg, ir_entity *ent)
 
 	/* find the first block */
 	initial_exec = get_irg_initial_exec(irg);
-	start_block  = get_irg_start_block(irg);
 
 	foreach_out_edge(initial_exec, edge) {
 		ir_node *succ = get_edge_src_irn(edge);
 
-		if (succ != start_block && is_Block(succ)) {
+		if (is_Block(succ)) {
 			/* found the first block */
 			first_block = succ;
 			break;
