@@ -1595,7 +1595,6 @@ static void x87_simulate_block(x87_simulator *sim, ir_node *block)
 	ir_node *n, *next;
 	blk_state *bl_state = x87_get_bl_state(sim, block);
 	x87_state *state = bl_state->begin;
-	ir_node *start_block;
 
 	assert(state != NULL);
 	/* already processed? */
@@ -1639,17 +1638,12 @@ static void x87_simulate_block(x87_simulator *sim, ir_node *block)
 		}
 	}
 
-	start_block = get_irg_start_block(get_irn_irg(block));
-
 	DB((dbg, LEVEL_2, "State at Block end:\n ")); DEBUG_ONLY(x87_dump_stack(state);)
 
 	/* check if the state must be shuffled */
 	foreach_block_succ(block, edge) {
 		ir_node *succ = get_edge_src_irn(edge);
 		blk_state *succ_state;
-
-		if (succ == start_block)
-			continue;
 
 		succ_state = x87_get_bl_state(sim, succ);
 
