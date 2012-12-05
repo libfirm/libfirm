@@ -239,11 +239,10 @@ void be_abi_fix_stack_bias(ir_graph *irg)
 	stack_frame_compute_initial_offset(stack_layout);
 
 	/* Determine the stack bias at the end of the start block. */
-	bw.start_block_bias = process_stack_bias(get_irg_start_block(irg),
-	                                         stack_layout->initial_bias);
+	bw.start_block      = get_irg_start_block(irg);
+	bw.start_block_bias = process_stack_bias(bw.start_block, stack_layout->initial_bias);
 
 	/* fix the bias is all other blocks */
-	bw.start_block = get_irg_start_block(irg);
 	irg_block_walk_graph(irg, stack_bias_walker, NULL, &bw);
 
 	/* fix now inner functions: these still have Sel node to outer
