@@ -717,8 +717,6 @@ static void remove_empty_blocks(ir_node *block, void *x)
 			ir_node *pred        = get_Block_cfgpred(jmp_block, 0);
 			ir_node *pred_block  = get_nodes_block(pred);
 			if (has_operations(&env->block_infos,jmp_block)) {
-				if (get_irg_start_block(get_irn_irg(pred_block)) == pred_block)
-					continue; /* must not merge operations into start block */
 				if (!is_Jmp(pred))
 					continue; /* must not create partially dead code, especially when it is mode_M */
 			}
