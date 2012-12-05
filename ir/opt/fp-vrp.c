@@ -755,7 +755,7 @@ exchange_only:
 				bitinfo   const *const b   = get_bitinfo(op);
 				ir_tarval       *const min = get_mode_min(mode);
 
-				if (tarval_is_all_one(tarval_or(min, tarval_not(b->z)))) {
+				if (b->z == min) {
 					DB((dbg, LEVEL_2, "%+F(%+F) is superfluous\n", irn, op));
 					exchange(irn, op);
 					env->modified = 1;
