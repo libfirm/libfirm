@@ -92,17 +92,11 @@ static void collect_data(ir_node *node, void *env)
 		break;
 	case iro_Block: {
 		int i, n_pred = get_Block_n_cfgpreds(node);
-
-		/*
-		 * the first block has the initial exec as cfg predecessor
-		 */
-		if (node != get_irg_start_block(get_irn_irg(node))) {
-			for (i = 0; i < n_pred; ++i) {
-				if (get_Block_cfgpred(node, i) == data->proj_X) {
-					data->block   = node;
-					data->blk_idx = i;
-					break;
-				}
+		for (i = 0; i < n_pred; ++i) {
+			if (get_Block_cfgpred(node, i) == data->proj_X) {
+				data->block   = node;
+				data->blk_idx = i;
+				break;
 			}
 		}
 		break;
