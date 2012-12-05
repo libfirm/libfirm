@@ -434,14 +434,9 @@ static void belady_walker(ir_node *block, void *data)
 static void fix_block_borders(ir_node *block, void *data)
 {
 	minibelady_env_t *env = (minibelady_env_t*)data;
-	ir_graph *irg = get_irn_irg(block);
-	ir_node *startblock = get_irg_start_block(irg);
 	int i;
 	int arity;
 	block_info_t *block_info;
-
-	if (block == startblock)
-		return;
 
 	DBG((dbg, LEVEL_3, "\n"));
 
