@@ -253,7 +253,8 @@ void ir_estimate_execfreq(ir_graph *irg)
 	int          size = dfs_get_n_nodes(dfs);
 	gs_matrix_t *mat  = gs_new_matrix(size, size);
 
-	ir_node *end_block = get_irg_end_block(irg);
+	ir_node *const start_block = get_irg_start_block(irg);
+	ir_node *const end_block   = get_irg_end_block(irg);
 
 	for (int idx = size - 1; idx >= 0; --idx) {
 		const ir_node *bb = (ir_node*)dfs_get_post_num_node(dfs, size-idx-1);
@@ -273,8 +274,7 @@ void ir_estimate_execfreq(ir_graph *irg)
 		 * Solve A*x = 1*x => (A-I)x = 0
 		 */
 		if (bb == end_block) {
-			const ir_node *start_block = get_irg_start_block(irg);
-			int            s_idx = size - dfs_get_post_num(dfs, start_block)-1;
+			int const s_idx = size - dfs_get_post_num(dfs, start_block) - 1;
 			gs_matrix_set(mat, s_idx, idx, 1.0);
 		}
 	}
@@ -285,7 +285,6 @@ void ir_estimate_execfreq(ir_graph *irg)
 	 * This avoid strange results for e.g. an irg containing a exit()-call
 	 * which block has no cfg successor.
 	 */
-	ir_node       *start_block  = get_irg_start_block(irg);
 	int            s_idx        = size - dfs_get_post_num(dfs, start_block)-1;
 	const ir_node *end          = get_irg_end(irg);
 	int            n_keepalives = get_End_n_keepalives(end);
@@ -309,7 +308,7 @@ void ir_estimate_execfreq(ir_graph *irg)
 	 * (note: start_idx is != 0 in strange cases involving endless loops,
 	 *  probably a misfeature/bug)
 	 */
-	int    start_idx  = size-dfs_get_post_num(dfs, get_irg_start_block(irg))-1;
+	int    start_idx  = size - dfs_get_post_num(dfs, start_block) - 1;
 	double start_freq = x[start_idx];
 	double norm       = start_freq != 0.0 ? 1.0 / start_freq : 1.0;
 
