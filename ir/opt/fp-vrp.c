@@ -746,6 +746,24 @@ exchange_only:
 			break;
 		}
 
+		case iro_Minus: {
+			ir_mode *mode = get_irn_mode(irn);
+
+			/* If all bits except the highest bit are zero the Minus is superfluous. */
+			if (get_mode_arithmetic(mode) == irma_twos_complement) {
+				ir_node         *const op  = get_Minus_op(irn);
+				bitinfo   const *const b   = get_bitinfo(op);
+				ir_tarval       *const min = get_mode_min(mode);
+
+				if (tarval_is_all_one(tarval_or(min, tarval_not(b->z)))) {
+					DB((dbg, LEVEL_2, "%+F(%+F) is superfluous\n", irn, op));
+					exchange(irn, op);
+					env->modified = 1;
+				}
+			}
+			break;
+		}
+
 		case iro_Or: {
 			ir_node*       const l  = get_Or_left(irn);
 			ir_node*       const r  = get_Or_right(irn);
