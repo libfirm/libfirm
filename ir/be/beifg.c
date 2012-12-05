@@ -270,10 +270,8 @@ static inline int get_next_clique(cliques_iter_t *it)
 int be_ifg_cliques_begin(const be_ifg_t *ifg, cliques_iter_t *it,
                          ir_node **buf)
 {
-	ir_node *start_bl = get_irg_start_block(ifg->env->irg);
-
 	obstack_init(&it->ob);
-	dom_tree_walk(start_bl, get_blocks_dom_order, NULL, it);
+	dom_tree_walk_irg(ifg->env->irg, get_blocks_dom_order, NULL, it);
 
 	it->cenv     = ifg->env;
 	it->buf      = buf;
