@@ -1672,6 +1672,12 @@ int irn_verify_irg(const ir_node *n, ir_graph *irg)
 		);
 	}
 
+	ASSERT_AND_RET_DBG(
+		!is_irn_start_block_placed(n) || get_nodes_block(n) == get_irg_start_block(irg),
+		"node should be in start block", 0,
+		ir_printf("node %+F", n);
+	);
+
 	if (op->ops.verify_node)
 		return op->ops.verify_node(n);
 
