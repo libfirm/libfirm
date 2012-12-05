@@ -99,13 +99,9 @@ static void add_cdep(ir_node *node, ir_node *dep_on)
  */
 static void cdep_pre(ir_node *node, void *ctx)
 {
-	ir_node *const end_block = (ir_node*)ctx;
-	int i;
+	(void)ctx;
 
-	/* Special case: The end block has no control dependency. */
-	if (node == end_block) return;
-
-	for (i = get_Block_n_cfgpreds(node) - 1; i >= 0; --i) {
+	for (int i = get_Block_n_cfgpreds(node); i-- != 0;) {
 		ir_node *pred = get_Block_cfgpred_block(node, i);
 		ir_node *pdom;
 		ir_node *dependee;
@@ -159,7 +155,7 @@ void compute_cdep(ir_graph *irg)
 	ir_node *const rem         = get_Block_ipostdom(start_block);
 	set_Block_ipostdom(start_block, end_block);
 
-	irg_block_walk_graph(irg, cdep_pre, NULL, end_block);
+	irg_block_walk_graph(irg, cdep_pre, NULL, NULL);
 
 	(void) cdep_edge_hook;
 
