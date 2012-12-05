@@ -32,7 +32,6 @@
 typedef struct ir_valueset_entry_t {
 	ir_node     *value;  /**< the represented value */
 	ir_node     *expr;   /**< the leader expression for the value in the current set */
-	void        *link;   /**< additional attached information */
 	list_head   list;    /**< link field for the list iterator */
 } ir_valueset_entry_t;
 
@@ -107,24 +106,6 @@ static inline void ir_valueset_del(ir_valueset_t *valueset) {
  *                  0 if it was already there
  */
 int ir_valueset_insert(ir_valueset_t *valueset, ir_node *value, ir_node *expr);
-
-/**
- * Sets link of the element associated with specified value.
- *
- * @param valueset  Pointer to the value set.
- * @param value     Value of the element.
- * @param link      Link to be set in element.
- */
-void ir_valueset_set_link(const ir_valueset_t *valueset, const ir_node *value, void *link);
-
-/**
- * Get the link of the element associated with specified value.
- *
- * @param valueset  Pointer to the value set.
- * @param value     Value of the element.
- * @returns         Link of the element associated to the value.
- */
-void *ir_valueset_get_link(const ir_valueset_t *valueset, const ir_node *value);
 
 /**
  * Inserts a (value, expression) pair into a valueset if the value is not already
