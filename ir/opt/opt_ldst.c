@@ -118,7 +118,6 @@ typedef struct ldst_env_t {
 	ir_nodehashmap_t adr_map;          /**< Map addresses to */
 	block_t         *forward;          /**< Inverse post-order list of all blocks Start->End */
 	block_t         *backward;         /**< Inverse post-order list of all blocks End->Start */
-	ir_node         *start_bl;         /**< start block of the current graph */
 	ir_node         *end_bl;           /**< end block of the current graph */
 	unsigned        *curr_set;         /**< current set of addresses */
 	memop_t         **curr_id_2_memop; /**< current map of address ids to memops */
@@ -2070,7 +2069,6 @@ void opt_ldst(ir_graph *irg)
 	env.n_mem_ops     = 0;
 	env.max_cfg_preds = 0;
 	env.changed       = 0;
-	env.start_bl      = get_irg_start_block(irg);
 	env.end_bl        = get_irg_end_block(irg);
 #ifdef DEBUG_libfirm
 	env.id_2_address  = NEW_ARR_F(ir_node *, 0);
@@ -2084,7 +2082,8 @@ void opt_ldst(ir_graph *irg)
 
 	/* produce an inverse post-order list for the CFG: this links only reachable
 	   blocks */
-	irg_out_block_walk(get_irg_start_block(irg), NULL, inverse_post_order, NULL);
+	ir_node *const start_block = get_irg_start_block(irg);
+	irg_out_block_walk(start_block, NULL, inverse_post_order, NULL);
 
 	if (! get_Block_mark(env.end_bl)) {
 		/*
@@ -2121,7 +2120,7 @@ void opt_ldst(ir_graph *irg)
 	env.backward      = bl;
 
 	/* check that we really start with the start / end block */
-	assert(env.forward->block  == env.start_bl);
+	assert(env.forward->block  == start_block);
 	assert(env.backward->block == env.end_bl);
 
 	/* create address sets: for now, only the existing addresses are allowed plus one
