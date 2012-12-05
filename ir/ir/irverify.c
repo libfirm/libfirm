@@ -937,6 +937,14 @@ static int verify_node_SymConst(const ir_node *n)
 		/* SymConst: BB --> ref */
 		mode_is_reference(mymode))
 		,"SymConst node", 0);
+	if (SYMCONST_HAS_ENT(get_SymConst_kind(n))) {
+		ir_entity *ent = get_SymConst_entity(n);
+		/* the is_method_entity(ent) exception is for nested functions... */
+		ASSERT_AND_RET_DBG((get_entity_owner(ent)->flags & tf_segment)
+		                   || is_method_entity(ent),
+		                   "SymConst node with frame entity", 0,
+		                   show_node_failure(n););
+	}
 	return 1;
 }
 
@@ -962,6 +970,8 @@ static int verify_node_Sel(const ir_node *n)
 	}
 	ent = get_Sel_entity(n);
 	ASSERT_AND_RET_DBG(ent, "Sel node with empty entity", 0, show_node_failure(n););
+	ASSERT_AND_RET_DBG(!(get_entity_owner(ent)->flags & tf_segment),
+	                   "Sel node with global entity", 0, show_node_failure(n););
 	return 1;
 }
 
