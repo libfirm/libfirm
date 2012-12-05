@@ -94,24 +94,16 @@ static void add_cdep(ir_node *node, ir_node *dep_on)
 	}
 }
 
-typedef struct cdep_env {
-	ir_node *start_block;
-	ir_node *end_block;
-} cdep_env;
-
 /**
  * Pre-block-walker: calculate the control dependence
  */
 static void cdep_pre(ir_node *node, void *ctx)
 {
-	cdep_env *env = (cdep_env*) ctx;
+	ir_node *const end_block = (ir_node*)ctx;
 	int i;
 
-	/* special case:
-	 * start and end block have no control dependency
-	 */
-	if (node == env->start_block) return;
-	if (node == env->end_block) return;
+	/* Special case: The end block has no control dependency. */
+	if (node == end_block) return;
 
 	for (i = get_Block_n_cfgpreds(node) - 1; i >= 0; --i) {
 		ir_node *pred = get_Block_cfgpred_block(node, i);
@@ -150,9 +142,6 @@ static int cdep_edge_hook(FILE *F, ir_node *block)
 
 void compute_cdep(ir_graph *irg)
 {
-	ir_node *rem;
-	cdep_env env;
-
 	free_cdep(irg);
 	cdep_data = XMALLOC(cdep_info);
 	obstack_init(&cdep_data->obst);
@@ -165,18 +154,17 @@ void compute_cdep(ir_graph *irg)
 	   the ipdom of the startblock is the end block.
 	   Firm does NOT add the phantom edge from Start to End.
 	 */
-	env.start_block = get_irg_start_block(irg);
-	env.end_block   = get_irg_end_block(irg);
+	ir_node *const start_block = get_irg_start_block(irg);
+	ir_node *const end_block   = get_irg_end_block(irg);
+	ir_node *const rem         = get_Block_ipostdom(start_block);
+	set_Block_ipostdom(start_block, end_block);
 
-	rem = get_Block_ipostdom(env.start_block);
-	set_Block_ipostdom(env.start_block, env.end_block);
-
-	irg_block_walk_graph(irg, cdep_pre, NULL, &env);
+	irg_block_walk_graph(irg, cdep_pre, NULL, end_block);
 
 	(void) cdep_edge_hook;
 
 	/* restore the post dominator relation */
-	set_Block_ipostdom(env.start_block, rem);
+	set_Block_ipostdom(start_block, rem);
 }
 
 void free_cdep(ir_graph *irg)
