@@ -176,8 +176,6 @@ ir_node *ir_valueset_iterator_next(ir_valueset_iterator_t *iterator, ir_node **e
 void ir_valueset_remove_iterator(ir_valueset_t *valueset, ir_valueset_iterator_t *iterator);
 
 #define foreach_valueset(valueset, value, expr, iter) \
-	for (ir_valueset_iterator_init(&iter, valueset), \
-        value = ir_valueset_iterator_next(&iter, &expr);    \
-		value != NULL; value = ir_valueset_iterator_next(&iter, &expr))
+	for (ir_valueset_iterator_init(&iter, valueset); (value = ir_valueset_iterator_next(&iter, &expr));)
 
 #endif
