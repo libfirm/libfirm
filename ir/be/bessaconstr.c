@@ -391,14 +391,10 @@ static void search_def_at_block(be_ssa_construction_env_t *const env, ir_node *c
 
 void be_ssa_construction_init(be_ssa_construction_env_t *env, ir_graph *irg)
 {
-	ir_node *sb   = get_irg_start_block(irg);
-	int n_blocks  = get_Block_dom_max_subtree_pre_num(sb);
-
 	stat_ev_ctx_push_fmt("bessaconstr", "%+F", irg);
 	stat_ev_tim_push();
 
-	(void) n_blocks;
-	stat_ev_dbl("bessaconstr_n_blocks", n_blocks);
+	stat_ev_dbl("bessaconstr_n_blocks", get_Block_dom_max_subtree_pre_num(get_irg_start_block(irg)));
 
 	memset(env, 0, sizeof(env[0]));
 
