@@ -1575,7 +1575,8 @@ static void update_new_set_walker(ir_node *block, void *ctx)
  */
 static void hoist_high(ir_node *block, void *ctx)
 {
-	pre_env                *env        = (pre_env*)ctx;
+	(void)ctx;
+
 	block_info             *curr_info;
 	ir_valueset_iterator_t  iter;
 	ir_node                *expr;
@@ -1590,9 +1591,6 @@ static void hoist_high(ir_node *block, void *ctx)
 	if (curr_info->new_set)
 		ir_valueset_del(curr_info->new_set);
 	curr_info->new_set = ir_valueset_new(16);
-
-	if (block == env->start_block)
-		return;
 
 	if (arity < 2)
 		return;
@@ -1925,7 +1923,7 @@ static void gvn_pre(ir_graph *irg, pre_env *env)
 #if HOIST_HIGH
 	/* An attempt to reduce lifetimes by hoisting already hoisted values
 	   even higher if their operands die. */
-	dom_tree_walk_irg(irg, hoist_high, NULL, env);
+	dom_tree_walk_irg(irg, hoist_high, NULL, NULL);
 	/* update avail_out for elimination */
 	dom_tree_walk_irg(irg, update_new_set_walker, NULL, env);
 #endif
