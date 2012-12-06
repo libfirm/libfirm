@@ -2076,7 +2076,6 @@ static ir_node *transform_node_bitop_shift(ir_node *n)
 		return n;
 	}
 
-	irg       = get_irn_irg(n);
 	block     = get_nodes_block(n);
 	dbg_bitop = get_irn_dbg_info(n);
 	dbg_shift = get_irn_dbg_info(left);
