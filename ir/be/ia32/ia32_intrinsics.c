@@ -35,6 +35,7 @@
 #include "lower_dw.h"
 #include "array.h"
 #include "error.h"
+#include "util.h"
 
 #include "ia32_new_nodes.h"
 #include "bearch_ia32_t.h"
@@ -162,11 +163,13 @@ static void resolve_call(ir_node *call, ir_node *l_res, ir_node *h_res, ir_graph
 		jmp = new_r_Jmp(block);
 		set_opt_cse(old_cse);
 
-		turn_into_tuple(call, pn_Call_max+1);
-		set_Tuple_pred(call, pn_Call_M,         nomem);
-		set_Tuple_pred(call, pn_Call_X_regular, jmp);
-		set_Tuple_pred(call, pn_Call_X_except,  new_r_Bad(irg, mode_X));
-		set_Tuple_pred(call, pn_Call_T_result,  res);
+		ir_node *const in[] = {
+			[pn_Call_M]         = nomem,
+			[pn_Call_T_result]  = res,
+			[pn_Call_X_regular] = jmp,
+			[pn_Call_X_except]  = new_r_Bad(irg, mode_X),
+		};
+		turn_into_tuple(call, ARRAY_SIZE(in), in);
 	}
 }
 

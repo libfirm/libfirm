@@ -34,6 +34,7 @@
 #include "irgwalk.h"
 #include "iroptimize.h"
 #include "error.h"
+#include "util.h"
 
 static pmap *entities;
 static bool dont_lower[ir_bk_last+1];
@@ -112,9 +113,11 @@ static void replace_with_call(ir_node *node)
 	call_ress = new_r_Proj(call, mode_T, pn_Call_T_result);
 	call_res  = new_r_Proj(call_ress, res_mode, 0);
 
-	turn_into_tuple(node, 2);
-	set_irn_n(node, pn_Builtin_M, call_mem);
-	set_irn_n(node, pn_Builtin_max+1, call_res);
+	ir_node *const in[] = {
+		[pn_Builtin_M]       = call_mem,
+		[pn_Builtin_max + 1] = call_res,
+	};
+	turn_into_tuple(node, ARRAY_SIZE(in), in);
 }
 
 static void lower_builtin(ir_node *node, void *env)
@@ -132,10 +135,11 @@ static void lower_builtin(ir_node *node, void *env)
 	case ir_bk_prefetch: {
 		/* just remove it */
 		ir_node *mem = get_Builtin_mem(node);
-		turn_into_tuple(node, 1);
-		set_irn_n(node, pn_Builtin_M, mem);
+		ir_node *const in[] = { mem };
+		turn_into_tuple(node, ARRAY_SIZE(in), in);
 		break;
 	}
+
 	case ir_bk_ffs:
 	case ir_bk_clz:
 	case ir_bk_ctz:

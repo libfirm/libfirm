@@ -594,11 +594,13 @@ static void walker(ir_node *node, void *ctx)
 			val = new_rd_Conv(get_irn_dbg_info(node), block, val, mode);
 
 		mem = get_Load_mem(node);
-		turn_into_tuple(node, pn_Load_max+1);
-		set_Tuple_pred(node, pn_Load_M,         mem);
-		set_Tuple_pred(node, pn_Load_res,       val);
-		set_Tuple_pred(node, pn_Load_X_regular, new_r_Jmp(block));
-		set_Tuple_pred(node, pn_Load_X_except,  new_r_Bad(irg, mode_X));
+		ir_node *const in[] = {
+			[pn_Load_M]         = mem,
+			[pn_Load_res]       = val,
+			[pn_Load_X_regular] = new_r_Jmp(block),
+			[pn_Load_X_except]  = new_r_Bad(irg, mode_X),
+		};
+		turn_into_tuple(node, ARRAY_SIZE(in), in);
 	} else if (is_Store(node)) {
 		DB((dbg, SET_LEVEL_3, "  checking %+F for replacement ", node));
 
@@ -631,10 +633,12 @@ static void walker(ir_node *node, void *ctx)
 		set_value(vnum, val);
 
 		mem = get_Store_mem(node);
-		turn_into_tuple(node, pn_Store_max+1);
-		set_Tuple_pred(node, pn_Store_M,         mem);
-		set_Tuple_pred(node, pn_Store_X_regular, new_r_Jmp(block));
-		set_Tuple_pred(node, pn_Store_X_except,  new_r_Bad(irg, mode_X));
+		ir_node *const in[] = {
+			[pn_Store_M]         = mem,
+			[pn_Store_X_regular] = new_r_Jmp(block),
+			[pn_Store_X_except]  = new_r_Bad(irg, mode_X),
+		};
+		turn_into_tuple(node, ARRAY_SIZE(in), in);
 	}
 }
 

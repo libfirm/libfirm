@@ -161,7 +161,7 @@ ir_node **get_irn_in(const ir_node *node)
 	return node->in;
 }
 
-void set_irn_in(ir_node *node, int arity, ir_node **in)
+void set_irn_in(ir_node *const node, int const arity, ir_node *const *const in)
 {
 	int i;
 	ir_node *** pOld_in;

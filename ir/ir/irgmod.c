@@ -36,17 +36,8 @@
 #include "irtools.h"
 #include "error.h"
 
-void turn_into_tuple(ir_node *node, int arity)
+void turn_into_tuple(ir_node *const node, int const arity, ir_node *const *const in)
 {
-	ir_graph *irg = get_irn_irg(node);
-	ir_node **in  = ALLOCAN(ir_node*, arity);
-	ir_node  *bad = new_r_Bad(irg, mode_ANY);
-	int       i;
-
-	/* construct a new in array, with every input being bad */
-	for (i = 0; i < arity; ++i) {
-		in[i] = bad;
-	}
 	set_irn_in(node, arity, in);
 	set_irn_op(node, op_Tuple);
 }

@@ -203,25 +203,31 @@ static void replace_call(ir_node *irn, ir_node *call, ir_node *mem,
 	ir_node  *rest  = new_r_Tuple(block, 1, &irn);
 
 	if (ir_throws_exception(call)) {
-		turn_into_tuple(call, pn_Call_max+1);
 		if (reg_jmp == NULL) {
 			reg_jmp = new_r_Jmp(block);
 		}
 		if (exc_jmp == NULL) {
 			exc_jmp = new_r_Bad(irg, mode_X);
 		}
-		set_Tuple_pred(call, pn_Call_X_regular, reg_jmp);
-		set_Tuple_pred(call, pn_Call_X_except, exc_jmp);
+		ir_node *const in[] = {
+			[pn_Call_M]         = mem,
+			[pn_Call_T_result]  = rest,
+			[pn_Call_X_regular] = reg_jmp,
+			[pn_Call_X_except]  = exc_jmp,
+		};
+		turn_into_tuple(call, ARRAY_SIZE(in), in);
 	} else {
 		assert(reg_jmp == NULL);
 		assert(exc_jmp == NULL);
-		turn_into_tuple(call, pn_Call_T_result+1);
 		assert(pn_Call_M <= pn_Call_T_result);
 		assert(pn_Call_X_regular > pn_Call_T_result);
 		assert(pn_Call_X_except > pn_Call_T_result);
+		ir_node *const in[] = {
+			[pn_Call_M]         = mem,
+			[pn_Call_T_result]  = rest,
+		};
+		turn_into_tuple(call, ARRAY_SIZE(in), in);
 	}
-	set_Tuple_pred(call, pn_Call_M, mem);
-	set_Tuple_pred(call, pn_Call_T_result, rest);
 }
 
 int i_mapper_abs(ir_node *call, void *ctx)
@@ -1202,23 +1208,28 @@ int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt)
 	if (n_proj > 0) {
 		n_proj += n_res - 1;
 
-		/* we are ready */
-		turn_into_tuple(node, n_proj);
+		ir_node **const in  = ALLOCAN(ir_node*, n_proj);
+		ir_node  *const bad = new_r_Bad(irg, mode_ANY);
+		for (i = 0; i != n_proj; ++i) {
+			in[i] = bad;
+		}
 
 		if (rt->mem_proj_nr >= 0)
-			set_Tuple_pred(node, rt->mem_proj_nr, new_r_Proj(call, mode_M, pn_Call_M));
+			in[rt->mem_proj_nr] = new_r_Proj(call, mode_M, pn_Call_M);
 		if (throws_exception) {
-			set_Tuple_pred(node, op->pn_x_regular, new_r_Proj(call, mode_X, pn_Call_X_regular));
-			set_Tuple_pred(node, op->pn_x_except, new_r_Proj(call, mode_X, pn_Call_X_except));
+			in[op->pn_x_regular] = new_r_Proj(call, mode_X, pn_Call_X_regular);
+			in[op->pn_x_except]  = new_r_Proj(call, mode_X, pn_Call_X_except);
 		}
 
 		if (rt->res_proj_nr >= 0) {
 			for (i = 0; i < n_res; ++i) {
 				ir_mode *mode = get_type_mode(get_method_res_type(mtp, i));
 				ir_node *proj = new_r_Proj(res_proj, mode, i);
-				set_Tuple_pred(node, rt->res_proj_nr + i, proj);
+				in[rt->res_proj_nr + i] = proj;
 			}
 		}
+
+		turn_into_tuple(node, n_proj, in);
 		return 1;
 	} else {
 		/* only one return value supported */

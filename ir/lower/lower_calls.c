@@ -41,6 +41,7 @@
 #include "array_t.h"
 #include "pmap.h"
 #include "error.h"
+#include "util.h"
 
 static pmap *pointer_types;
 static pmap *lowered_mtps;
@@ -541,13 +542,15 @@ static void add_hidden_param(ir_graph *irg, size_t n_com, ir_node **ins,
 
 			/* get rid of the CopyB */
 			if (ir_throws_exception(p)) {
-				turn_into_tuple(p, pn_CopyB_max+1);
-				set_Tuple_pred(p, pn_CopyB_M,         mem);
-				set_Tuple_pred(p, pn_CopyB_X_regular, new_r_Jmp(block));
-				set_Tuple_pred(p, pn_CopyB_X_except,  new_r_Bad(irg, mode_X));
+				ir_node *const in[] = {
+					[pn_CopyB_M]         = mem,
+					[pn_CopyB_X_regular] = new_r_Jmp(block),
+					[pn_CopyB_X_except]  = new_r_Bad(irg, mode_X),
+				};
+				turn_into_tuple(p, ARRAY_SIZE(in), in);
 			} else {
-				turn_into_tuple(p, pn_CopyB_M+1);
-				set_Tuple_pred(p, pn_CopyB_M, mem);
+				ir_node *const in[] = { mem };
+				turn_into_tuple(p, ARRAY_SIZE(in), in);
 			}
 			++n_args;
 		}

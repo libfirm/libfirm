@@ -2647,9 +2647,11 @@ static void lower_reduce_builtin(ir_node *builtin, ir_mode *mode)
 		panic("unexpected builtin");
 	}
 
-	turn_into_tuple(builtin, 2);
-	set_irn_n(builtin, pn_Builtin_M, mem);
-	set_irn_n(builtin, pn_Builtin_max+1, res);
+	ir_node *const in[] = {
+		[pn_Builtin_M]       = mem,
+		[pn_Builtin_max + 1] = res,
+	};
+	turn_into_tuple(builtin, ARRAY_SIZE(in), in);
 	}
 }
 

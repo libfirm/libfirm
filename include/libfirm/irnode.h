@@ -85,7 +85,7 @@ FIRM_API ir_node *get_irn_n(const ir_node *node, int n);
  * This function is necessary to adjust in arrays of blocks, calls and phis.
  * "in" must contain all predecessors except the block that are required for
  * the nodes opcode. */
-FIRM_API void set_irn_in(ir_node *node, int arity, ir_node *in[]);
+FIRM_API void set_irn_in(ir_node *node, int arity, ir_node *const in[]);
 
 /**
  * Add an artificial dependency to the node.

@@ -47,7 +47,7 @@ FIRM_API void exchange(ir_node *old, ir_node *nw);
  *  @param node The node to be turned into a tuple.
  *  @param arity The number of values formed into a Tuple.
  */
-FIRM_API void turn_into_tuple(ir_node *node, int arity);
+FIRM_API void turn_into_tuple(ir_node *node, int arity, ir_node *const in[]);
 
 /** Walks over the passed IR graph and collects all Phi nodes as a
   * list in their corresponding block (using get_Block_phis() API).

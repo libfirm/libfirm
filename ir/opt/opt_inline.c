@@ -304,7 +304,7 @@ static void copy_frame_entities(ir_graph *from, ir_graph *to)
 }
 
 /* Inlines a method at the given call site. */
-int inline_method(ir_node *call, ir_graph *called_graph)
+int inline_method(ir_node *const call, ir_graph *called_graph)
 {
 	/* we cannot inline some types of calls */
 	if (! can_inline(call, called_graph))
@@ -381,7 +381,6 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 	in[pn_Start_P_frame_base]   = get_irg_frame(irg);
 	in[pn_Start_T_args]         = new_r_Tuple(post_bl, n_params, args_in);
 	ir_node *pre_call = new_r_Tuple(post_bl, pn_Start_max+1, in);
-	ir_node *post_call = call;
 
 	/* --
 	   The new block gets the ins of the old block, pre_call and all its
@@ -466,7 +465,6 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 
 	/* build a Tuple for all results of the method.
 	 * add Phi node if there was more than one Return. */
-	turn_into_tuple(post_call, pn_Call_max+1);
 	/* First the Memory-Phi */
 	int n_mem_phi = 0;
 	for (int i = 0; i < arity; i++) {
@@ -484,14 +482,14 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 			cf_pred[n_mem_phi++] = new_r_Proj(ret, mode_M, 1);
 		}
 	}
-	ir_node *phi = new_r_Phi(post_bl, n_mem_phi, cf_pred, mode_M);
-	set_Tuple_pred(call, pn_Call_M, phi);
+	ir_node *const call_mem = new_r_Phi(post_bl, n_mem_phi, cf_pred, mode_M);
 	/* Conserve Phi-list for further inlinings -- but might be optimized */
-	if (get_nodes_block(phi) == post_bl) {
-		set_irn_link(phi, get_irn_link(post_bl));
-		set_irn_link(post_bl, phi);
+	if (get_nodes_block(call_mem) == post_bl) {
+		set_irn_link(call_mem, get_irn_link(post_bl));
+		set_irn_link(post_bl, call_mem);
 	}
 	/* Now the real results */
+	ir_node *call_res;
 	if (n_res > 0) {
 		for (int j = 0; j < n_res; j++) {
 			ir_type *res_type = get_method_res_type(ctp, j);
@@ -509,11 +507,9 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 					n_ret++;
 				}
 			}
-			if (n_ret > 0) {
-				phi = new_r_Phi(post_bl, n_ret, cf_pred, res_mode);
-			} else {
-				phi = new_r_Bad(irg, res_mode);
-			}
+			ir_node *const phi = n_ret > 0
+				? new_r_Phi(post_bl, n_ret, cf_pred, res_mode)
+				: new_r_Bad(irg, res_mode);
 			res_pred[j] = phi;
 			/* Conserve Phi-list for further inlinings -- but might be optimized */
 			if (get_nodes_block(phi) == post_bl) {
@@ -521,13 +517,12 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 				set_Block_phis(post_bl, phi);
 			}
 		}
-		ir_node *result_tuple = new_r_Tuple(post_bl, n_res, res_pred);
-		set_Tuple_pred(call, pn_Call_T_result, result_tuple);
+		call_res = new_r_Tuple(post_bl, n_res, res_pred);
 	} else {
-		set_Tuple_pred(call, pn_Call_T_result, new_r_Bad(irg, mode_T));
+		call_res = new_r_Bad(irg, mode_T);
 	}
 	/* handle the regular call */
-	set_Tuple_pred(call, pn_Call_X_regular, new_r_Jmp(post_bl));
+	ir_node *const call_x_reg = new_r_Jmp(post_bl);
 
 	/* Finally the exception control flow.
 	   We have two possible situations:
@@ -540,6 +535,7 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 	   Second: There is no exception edge. Just add all inlined exception
 	   branches to the End node.
 	 */
+	ir_node *call_x_exc;
 	if (exc_handling == exc_handler) {
 		int n_exc = 0;
 		for (int i = 0; i < arity; i++) {
@@ -553,13 +549,13 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 		if (n_exc > 0) {
 			if (n_exc == 1) {
 				/* simple fix */
-				set_Tuple_pred(call, pn_Call_X_except, cf_pred[0]);
+				call_x_exc = cf_pred[0];
 			} else {
 				ir_node *block = new_r_Block(irg, n_exc, cf_pred);
-				set_Tuple_pred(call, pn_Call_X_except, new_r_Jmp(block));
+				call_x_exc = new_r_Jmp(block);
 			}
 		} else {
-			set_Tuple_pred(call, pn_Call_X_except, new_r_Bad(irg, mode_X));
+			call_x_exc = new_r_Bad(irg, mode_X);
 		}
 	} else {
 		/* assert(exc_handling == 1 || no exceptions. ) */
@@ -582,11 +578,19 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 		for (int i = 0; i < n_exc; ++i)
 			end_preds[main_end_bl_arity + i] = cf_pred[i];
 		set_irn_in(main_end_bl, n_exc + main_end_bl_arity, end_preds);
-		set_Tuple_pred(call, pn_Call_X_except, new_r_Bad(irg, mode_X));
+		call_x_exc = new_r_Bad(irg, mode_X);
 		free(end_preds);
 	}
 	free(res_pred);
 	free(cf_pred);
+
+	ir_node *const call_in[] = {
+		[pn_Call_M]         = call_mem,
+		[pn_Call_T_result]  = call_res,
+		[pn_Call_X_regular] = call_x_reg,
+		[pn_Call_X_except]  = call_x_exc,
+	};
+	turn_into_tuple(call, ARRAY_SIZE(call_in), call_in);
 
 	/* --  Turn CSE back on. -- */
 	set_optimize(rem_opt);

@@ -3085,11 +3085,13 @@ make_tuple:
 
 		/* skip a potential Pin */
 		mem = skip_Pin(mem);
-		turn_into_tuple(n, pn_Div_max+1);
-		set_Tuple_pred(n, pn_Div_M,         mem);
-		set_Tuple_pred(n, pn_Div_X_regular, new_r_Jmp(blk));
-		set_Tuple_pred(n, pn_Div_X_except,  new_r_Bad(irg, mode_X));
-		set_Tuple_pred(n, pn_Div_res,       value);
+		ir_node *const in[] = {
+			[pn_Div_M]         = mem,
+			[pn_Div_res]       = value,
+			[pn_Div_X_regular] = new_r_Jmp(blk),
+			[pn_Div_X_except]  = new_r_Bad(irg, mode_X),
+		};
+		turn_into_tuple(n, ARRAY_SIZE(in), in);
 	}
 	return n;
 }
@@ -3177,11 +3179,13 @@ make_tuple:
 
 		/* skip a potential Pin */
 		mem = skip_Pin(mem);
-		turn_into_tuple(n, pn_Mod_max+1);
-		set_Tuple_pred(n, pn_Mod_M,         mem);
-		set_Tuple_pred(n, pn_Mod_X_regular, new_r_Jmp(blk));
-		set_Tuple_pred(n, pn_Mod_X_except,  new_r_Bad(irg, mode_X));
-		set_Tuple_pred(n, pn_Mod_res,       value);
+		ir_node *const in[] = {
+			[pn_Mod_M]         = mem,
+			[pn_Mod_res]       = value,
+			[pn_Mod_X_regular] = new_r_Jmp(blk),
+			[pn_Mod_X_except]  = new_r_Bad(irg, mode_X),
+		};
+		turn_into_tuple(n, ARRAY_SIZE(in), in);
 	}
 	return n;
 }
@@ -3197,7 +3201,6 @@ static ir_node *transform_node_Cond(ir_node *n)
 	ir_node   *a   = get_Cond_selector(n);
 	ir_graph  *irg = get_irn_irg(n);
 	ir_tarval *ta;
-	ir_node   *jmp;
 
 	/* we need block info which is not available in floating irgs */
 	if (get_irg_pinned(irg) == op_pin_state_floats)
@@ -3213,16 +3216,15 @@ static ir_node *transform_node_Cond(ir_node *n)
 	if (ta != tarval_bad) {
 		/* It's branching on a boolean constant.
 		   Replace it by a tuple (Bad, Jmp) or (Jmp, Bad) */
-		ir_node *blk = get_nodes_block(n);
-		jmp = new_r_Jmp(blk);
-		turn_into_tuple(n, pn_Cond_max+1);
-		if (ta == tarval_b_true) {
-			set_Tuple_pred(n, pn_Cond_false, new_r_Bad(irg, mode_X));
-			set_Tuple_pred(n, pn_Cond_true, jmp);
-		} else {
-			set_Tuple_pred(n, pn_Cond_false, jmp);
-			set_Tuple_pred(n, pn_Cond_true, new_r_Bad(irg, mode_X));
-		}
+		ir_node *const blk  = get_nodes_block(n);
+		ir_node *const jmp  = new_r_Jmp(blk);
+		ir_node *const bad  = new_r_Bad(irg, mode_X);
+		bool     const cond = ta == tarval_b_true;
+		ir_node *const in[] = {
+			[pn_Cond_false] = cond ? bad : jmp,
+			[pn_Cond_true]  = cond ? jmp : bad,
+		};
+		turn_into_tuple(n, ARRAY_SIZE(in), in);
 		clear_irg_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE);
 	}
 	return n;

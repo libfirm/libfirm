@@ -35,6 +35,7 @@
 #include "irgmod.h"
 #include "error.h"
 #include "be.h"
+#include "util.h"
 
 typedef struct entry entry_t;
 struct entry {
@@ -155,10 +156,13 @@ static void lower_small_copyb_node(ir_node *irn)
 		mode_bytes /= 2;
 	}
 
-	turn_into_tuple(irn, pn_CopyB_max+1);
-	set_Tuple_pred(irn, pn_CopyB_M,         mem);
-	set_Tuple_pred(irn, pn_CopyB_X_regular, new_r_Bad(irg, mode_X));
-	set_Tuple_pred(irn, pn_CopyB_X_except,  new_r_Bad(irg, mode_X));
+	ir_node *const bad = new_r_Bad(irg, mode_X);
+	ir_node *const in[] = {
+		[pn_CopyB_M]         = mem,
+		[pn_CopyB_X_regular] = bad,
+		[pn_CopyB_X_except]  = bad,
+	};
+	turn_into_tuple(irn, ARRAY_SIZE(in), in);
 }
 
 static ir_type *get_memcpy_methodtype(void)
@@ -212,8 +216,8 @@ static void lower_large_copyb_node(ir_node *irn)
 	call     = new_rd_Call(dbgi, block, mem, symconst, 3, in, call_tp);
 	call_mem = new_r_Proj(call, mode_M, pn_Call_M);
 
-	turn_into_tuple(irn, 1);
-	set_irn_n(irn, pn_CopyB_M, call_mem);
+	ir_node *const tuple_in[] = { call_mem };
+	turn_into_tuple(irn, ARRAY_SIZE(tuple_in), tuple_in);
 }
 
 static void lower_copyb_node(ir_node *irn)

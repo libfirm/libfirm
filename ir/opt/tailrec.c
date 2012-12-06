@@ -45,6 +45,7 @@
 #include "irhooks.h"
 #include "ircons_t.h"
 #include "irpass.h"
+#include "util.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
@@ -322,11 +323,13 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 			/* create a new tuple for the return values */
 			tuple = new_r_Tuple(block, env->n_ress, in);
 
-			turn_into_tuple(call, pn_Call_max+1);
-			set_Tuple_pred(call, pn_Call_M,         mem);
-			set_Tuple_pred(call, pn_Call_X_regular, jmp);
-			set_Tuple_pred(call, pn_Call_X_except,  new_r_Bad(irg, mode_X));
-			set_Tuple_pred(call, pn_Call_T_result,  tuple);
+			ir_node *const in[] = {
+				[pn_Call_M]         = mem,
+				[pn_Call_T_result]  = tuple,
+				[pn_Call_X_regular] = jmp,
+				[pn_Call_X_except]  = new_r_Bad(irg, mode_X),
+			};
+			turn_into_tuple(call, ARRAY_SIZE(in), in);
 
 			for (i = 0; i < env->n_ress; ++i) {
 				ir_node *res = get_Return_res(p, i);
