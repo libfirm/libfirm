@@ -123,8 +123,9 @@ typedef struct {
 #define LC_OPT_ENT_NEGBOOL(name, desc, addr) \
 	_LC_OPT_ENT(name, desc, lc_opt_type_negboolean, int, addr, 0, lc_opt_std_cb, lc_opt_std_dump, lc_opt_bool_dump_vals)
 
+typedef char lc_opt_str_t[];
 #define LC_OPT_ENT_STR(name, desc, buf) \
-	_LC_OPT_ENT(name, desc, lc_opt_type_string, char, buf, sizeof(buf), lc_opt_std_cb, lc_opt_std_dump, NULL)
+	_LC_OPT_ENT(name, desc, lc_opt_type_string, lc_opt_str_t, buf, sizeof(*buf), lc_opt_std_cb, lc_opt_std_dump, NULL)
 
 #define LC_OPT_LAST \
 	_LC_OPT_ENT(NULL, NULL, lc_opt_type_invalid, void, NULL, 0, NULL, NULL, NULL)
