@@ -37,9 +37,7 @@ typedef enum {
 	lc_opt_type_invalid,
 	lc_opt_type_enum,
 	lc_opt_type_bit,
-	lc_opt_type_negbit,
 	lc_opt_type_boolean,
-	lc_opt_type_negboolean,
 	lc_opt_type_string,
 	lc_opt_type_int,
 	lc_opt_type_double
@@ -114,14 +112,8 @@ typedef struct {
 #define LC_OPT_ENT_BIT(name, desc, addr, mask) \
 	_LC_OPT_ENT(name, desc, lc_opt_type_bit, unsigned, addr, mask, lc_opt_std_cb, lc_opt_std_dump, NULL)
 
-#define LC_OPT_ENT_NEGBIT(name, desc, addr, mask) \
-	_LC_OPT_ENT(name, desc, lc_opt_type_negbit, unsigned, addr, mask, lc_opt_std_cb, lc_opt_std_dump, NULL)
-
 #define LC_OPT_ENT_BOOL(name, desc, addr) \
 	_LC_OPT_ENT(name, desc, lc_opt_type_boolean, int, addr, 0, lc_opt_std_cb, lc_opt_std_dump, lc_opt_bool_dump_vals)
-
-#define LC_OPT_ENT_NEGBOOL(name, desc, addr) \
-	_LC_OPT_ENT(name, desc, lc_opt_type_negboolean, int, addr, 0, lc_opt_std_cb, lc_opt_std_dump, lc_opt_bool_dump_vals)
 
 typedef char lc_opt_str_t[];
 #define LC_OPT_ENT_STR(name, desc, buf) \

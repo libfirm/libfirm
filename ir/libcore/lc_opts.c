@@ -176,8 +176,6 @@ static const char *get_type_name(lc_opt_type_t type)
 		XXX(double);
 		XXX(boolean);
 		XXX(string);
-		case lc_opt_type_negbit:     res = "bit";     break;
-		case lc_opt_type_negboolean: res = "boolean"; break;
 		default:
 		res = "<none>";
 	}
@@ -360,20 +358,8 @@ int lc_opt_std_cb(const char *name, lc_opt_type_t type, void *data, size_t lengt
 				*(unsigned*)data &= ~length;
 			break;
 
-		case lc_opt_type_negbit:
-			integer = va_arg(args, int);
-			if (integer)
-				*(unsigned*)data &= ~length;
-			else
-				*(unsigned*)data |= length;
-			break;
-
 		case lc_opt_type_boolean:
 			*((int *) data) = va_arg(args, int);
-			break;
-
-		case lc_opt_type_negboolean:
-			*((int *) data) = !va_arg(args, int);
 			break;
 
 		case lc_opt_type_string:
@@ -405,11 +391,9 @@ int lc_opt_std_dump(char *buf, size_t n, const char *name, lc_opt_type_t type, v
 	if (data) {
 		switch (type) {
 		case lc_opt_type_bit:
-		case lc_opt_type_negbit:
 			res = snprintf(buf, n, "%x", *((unsigned *) data));
 			break;
 		case lc_opt_type_boolean:
-		case lc_opt_type_negboolean:
 			res = snprintf(buf, n, "%s", *((int *) data) ? "true" : "false");
 			break;
 		case lc_opt_type_string:
@@ -501,9 +485,7 @@ int lc_opt_occurs(lc_opt_entry_t *opt, const char *value, lc_opt_err_info_t *err
 			break;
 
 		case lc_opt_type_boolean:
-		case lc_opt_type_negboolean:
 		case lc_opt_type_bit:
-		case lc_opt_type_negbit:
 				strtolower(buf, sizeof(buf), value);
 				for (i = 0; i < ARRAY_SIZE(bool_strings); ++i) {
 					if (strcmp(buf, bool_strings[i].str) == 0) {
