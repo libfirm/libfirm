@@ -168,22 +168,6 @@ void edges_init_graph_kind(ir_graph *irg, ir_edge_kind_t kind)
 	}
 }
 
-const ir_edge_t *get_irn_edge_kind(const ir_node *src, int pos, ir_edge_kind_t kind)
-{
-	ir_graph *irg = get_irn_irg(src);
-	if (edges_activated_kind(irg, kind)) {
-		irg_edge_info_t *info = get_irg_edge_info(irg, kind);
-		ir_edge_t       key;
-
-		key.src = (ir_node *)src;
-		key.pos = pos;
-
-		return ir_edgeset_find(&info->edges, &key);
-	}
-
-	return NULL;
-}
-
 /**
  * Change the out count
  *
