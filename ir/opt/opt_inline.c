@@ -131,7 +131,7 @@ static void set_preds_inline(ir_node *node, void *env)
 
 	/* move constants into start block */
 	new_node = get_new_node(node);
-	if (is_irn_constlike(new_node)) {
+	if (is_irn_start_block_placed(new_node)) {
 		ir_graph *new_irg     = (ir_graph *) env;
 		ir_node  *start_block = get_irg_start_block(new_irg);
 		set_nodes_block(new_node, start_block);
