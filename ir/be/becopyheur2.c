@@ -335,7 +335,6 @@ static void determine_color_costs(co2_t *env, co2_irn_t *ci, col_cost_pair_t *co
 	int n_regs         = env->co->cls->n_regs;
 	affinity_node_t *a = ci->aff;
 
-	const ir_node *pos;
 	neighbours_iter_t it;
 	int i;
 
@@ -429,7 +428,6 @@ static int recolor(co2_t *env, const ir_node *irn, col_cost_pair_t *col_list, st
 		int neigh_ok   = 1;
 
 		struct list_head changed;
-		const ir_node *n;
 		neighbours_iter_t it;
 
 		DBG((env->dbg, LEVEL_3, "\t\t%2{firm:indent}trying color %d(%d) on %+F\n", depth, tgt_col, costs, irn));
@@ -613,7 +611,6 @@ static void node_color_badness(co2_cloud_irn_t *ci, int *badness)
 	be_ifg_t *ifg  = env->co->cenv->ifg;
 	bitset_t *bs   = bitset_alloca(n_regs);
 
-	const ir_node *irn;
 	neighbours_iter_t it;
 
 	admissible_colors(env, &ci->inh, bs);

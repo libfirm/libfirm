@@ -315,7 +315,6 @@ be_ifg_t *be_create_ifg(const be_chordal_env_t *env)
 static void int_comp_rec(be_ifg_t *ifg, ir_node *n, bitset_t *seen)
 {
 	neighbours_iter_t neigh_it;
-	ir_node *m;
 
 	be_ifg_foreach_neighbour(ifg, &neigh_it, n, m) {
 		if (bitset_is_set(seen, get_irn_idx(m)))
@@ -361,7 +360,7 @@ void be_ifg_stat(ir_graph *irg, be_ifg_t *ifg, be_ifg_stat_t *stat)
 	nodes_iter_t      nodes_it;
 	neighbours_iter_t neigh_it;
 	bitset_t         *nodes    = bitset_malloc(get_irg_last_idx(irg));
-	ir_node          *n, *m;
+	ir_node          *n;
 
 	memset(stat, 0, sizeof(stat[0]));
 

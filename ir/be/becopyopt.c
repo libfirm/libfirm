@@ -936,7 +936,6 @@ static void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 
 		int              idx = node_map[get_irn_idx(irn)];
 		affinity_node_t *a   = get_affinity_info(co, irn);
-		ir_node         *adj;
 
 		if (arch_register_req_is(req, limited)) {
 			for (i = 0; i < co->cls->n_regs; ++i) {

@@ -48,7 +48,6 @@ static void dump_ifg_edges(FILE *F, const be_ifg_t *ifg)
 
 	be_ifg_foreach_node(ifg, &ifg_iter, node) {
 		neighbours_iter_t neigh_iter;
-		ir_node          *neighbour;
 
 		be_ifg_foreach_neighbour(ifg, &neigh_iter, node, neighbour) {
 			/* interference is bidirectional, but it's enough to dump 1

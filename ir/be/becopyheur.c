@@ -257,7 +257,6 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 	const be_chordal_env_t *chordal_env = co->cenv;
 	const arch_register_class_t *cls = co->cls;
 	int irn_col = qnode_get_new_color(qn, irn);
-	ir_node *sub_res, *curr;
 	be_ifg_t *ifg = chordal_env->ifg;
 	neighbours_iter_t iter;
 	const arch_register_req_t *req;
@@ -283,7 +282,6 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 	 */
 	if (irn != trigger) {
 		bitset_t *free_cols = bitset_alloca(cls->n_regs);
-		ir_node *curr;
 		int free_col;
 
 		/* Get all possible colors */
@@ -325,7 +323,7 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 	be_ifg_foreach_neighbour(ifg, &iter, irn, curr) {
 		DBG((dbg, LEVEL_3, "\t      Confl %+F(%d)\n", curr, qnode_get_new_color(qn, curr)));
 		if (qnode_get_new_color(qn, curr) == col && curr != trigger) {
-			sub_res = qnode_color_irn(qn, curr, irn_col, irn);
+			ir_node *const sub_res = qnode_color_irn(qn, curr, irn_col, irn);
 			if (sub_res != CHANGE_SAVE) {
 				be_ifg_neighbours_break(&iter);
 				return sub_res;

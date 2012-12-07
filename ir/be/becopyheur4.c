@@ -145,7 +145,6 @@ static co_mst_irn_t *co_mst_irn_init(co_mst_env_t *env, const ir_node *irn)
 
 	const arch_register_req_t *req;
 	neighbours_iter_t nodes_it;
-	ir_node  *neigh;
 	unsigned len;
 
 	res->irn           = irn;

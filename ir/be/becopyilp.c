@@ -110,7 +110,6 @@ static inline bool sr_is_simplicial(size_red_t *sr, const ir_node *ifn)
 	be_ifg_t *ifg  = sr->co->cenv->ifg;
 	neighbours_iter_t iter;
 	ir_node **all  = ALLOCAN(ir_node*, be_ifg_degree(ifg, ifn));
-	ir_node  *curr;
 	int       size = 0;
 	int       i;
 	int       o;
@@ -178,7 +177,6 @@ void sr_reinsert(size_red_t *sr)
 	/* color the removed nodes in right order */
 	for (cs = sr->col_suff; cs; cs = cs->next) {
 		unsigned free_col;
-		ir_node *other;
 		ir_node *irn = cs->irn;
 
 		rbitset_copy(possible_cols, allocatable_cols, n_regs);
