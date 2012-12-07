@@ -900,7 +900,7 @@ void ia32_setup_cg_config(void)
 	c->use_imul_mem_imm32   = !flags(opt_arch, arch_k8 | arch_k10) || opt_size;
 	c->use_pxor             = flags(opt_arch, arch_netburst);
 	c->use_mov_0            = flags(opt_arch, arch_k6) && !opt_size;
-	c->use_short_sex_eax    = !flags(opt_arch, arch_k6) && !opt_size;
+	c->use_short_sex_eax    = !flags(opt_arch, arch_k6) || opt_size;
 	c->use_pad_return       = flags(opt_arch, arch_athlon_plus) && !opt_size;
 	c->use_bt               = flags(opt_arch, arch_core2 | arch_athlon_plus) || opt_size;
 	c->use_fisttp           = flags(opt_arch & arch, arch_feature_sse3);
