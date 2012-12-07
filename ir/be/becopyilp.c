@@ -131,7 +131,6 @@ static inline bool sr_is_simplicial(size_red_t *sr, const ir_node *ifn)
 
 void sr_remove(size_red_t *sr)
 {
-	ir_node *irn;
 	bool redo = true;
 	const be_ifg_t *ifg = sr->co->cenv->ifg;
 	nodes_iter_t iter;

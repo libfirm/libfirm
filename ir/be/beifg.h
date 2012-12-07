@@ -81,7 +81,7 @@ int      be_ifg_degree(const be_ifg_t *ifg, const ir_node *irn);
 	for (ir_node *pos = be_ifg_neighbours_begin(ifg, iter, irn); pos; pos = be_ifg_neighbours_next(iter))
 
 #define be_ifg_foreach_node(ifg, iter, pos) \
-	for(pos = be_ifg_nodes_begin(ifg, iter); pos != NULL; pos = be_ifg_nodes_next(iter))
+	for (ir_node *pos = be_ifg_nodes_begin(ifg, iter); pos; pos = be_ifg_nodes_next(iter))
 
 #define be_ifg_foreach_clique(ifg, iter, buf, count) \
 	for(*(count) = be_ifg_cliques_begin(ifg, iter, buf); \

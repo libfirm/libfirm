@@ -899,7 +899,6 @@ static void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 	ir_graph *irg       = co->irg;
 	be_irg_t *birg      = be_birg_from_irg(irg);
 
-	ir_node *irn;
 	nodes_iter_t it;
 	neighbours_iter_t nit;
 	int n, n_regs;

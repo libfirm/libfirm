@@ -35,7 +35,6 @@
 static void dump_ifg_nodes(FILE *F, const be_ifg_t *ifg)
 {
 	nodes_iter_t ifg_iter;
-	ir_node     *node;
 	be_ifg_foreach_node(ifg, &ifg_iter, node) {
 		dump_node(F, node);
 	}
@@ -44,7 +43,6 @@ static void dump_ifg_nodes(FILE *F, const be_ifg_t *ifg)
 static void dump_ifg_edges(FILE *F, const be_ifg_t *ifg)
 {
 	nodes_iter_t ifg_iter;
-	ir_node     *node;
 
 	be_ifg_foreach_node(ifg, &ifg_iter, node) {
 		neighbours_iter_t neigh_iter;

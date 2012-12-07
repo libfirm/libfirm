@@ -638,7 +638,6 @@ static void build_affinity_chunks(co_mst_env_t *env)
 {
 	nodes_iter_t nodes_it;
 	aff_edge_t  *edges    = NEW_ARR_F(aff_edge_t, 0);
-	ir_node     *n;
 	int         i, len;
 	size_t      pn;
 

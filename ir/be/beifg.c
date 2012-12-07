@@ -336,8 +336,6 @@ static int int_component_stat(ir_graph *irg, be_ifg_t *ifg)
 	nodes_iter_t nodes_it;
 	bitset_t *seen     = bitset_malloc(get_irg_last_idx(irg));
 
-	ir_node *n;
-
 	be_ifg_foreach_node(ifg, &nodes_it, n) {
 		if (bitset_is_set(seen, get_irn_idx(n)))
 			continue;
@@ -360,7 +358,6 @@ void be_ifg_stat(ir_graph *irg, be_ifg_t *ifg, be_ifg_stat_t *stat)
 	nodes_iter_t      nodes_it;
 	neighbours_iter_t neigh_it;
 	bitset_t         *nodes    = bitset_malloc(get_irg_last_idx(irg));
-	ir_node          *n;
 
 	memset(stat, 0, sizeof(stat[0]));
 
