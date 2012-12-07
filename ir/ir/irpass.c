@@ -156,11 +156,6 @@ void ir_prog_pass_mgr_add_graph_mgr(
 	ir_prog_pass_mgr_add(mgr, pass);
 }
 
-static void create_suffix(char *suffix, size_t n, const char *pass_name)
-{
-	snprintf(suffix, n, "%s.svg", pass_name);
-}
-
 int ir_graph_pass_mgr_run(ir_graph_pass_manager_t *mgr)
 {
 	size_t    i;
@@ -189,9 +184,7 @@ int ir_graph_pass_mgr_run(ir_graph_pass_manager_t *mgr)
 				if (pass->dump_irg) {
 					pass->dump_irg(irg, pass->context, idx);
 				} else {
-					char buf[1024];
-					create_suffix(buf, sizeof(buf), pass->name);
-					dump_ir_graph(irg, buf);
+					dump_ir_graph(irg, pass->name);
 				}
 			}
 			++idx;
@@ -238,9 +231,7 @@ int ir_prog_pass_mgr_run(ir_prog_pass_manager_t *mgr)
 			if (pass->dump_irprog) {
 				pass->dump_irprog(irp, pass->context, idx);
 			} else {
-				char buf[1024];
-				create_suffix(buf, sizeof(buf), pass->name);
-				dump_all_ir_graphs(buf);
+				dump_all_ir_graphs(pass->name);
 			}
 		}
 		if (pass->is_wrapper) {
