@@ -598,7 +598,7 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 	/* dump graph after inserting perms */
 	if (env->opts->dump_flags & BE_CH_DUMP_CONSTR) {
 		char buf[256];
-		snprintf(buf, sizeof(buf), "-%s-constr", cls->name);
+		snprintf(buf, sizeof(buf), "%s-constr", cls->name);
 		dump_ir_graph(irg, buf);
 	}
 
