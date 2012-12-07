@@ -229,7 +229,7 @@ static void pre_spill(be_chordal_env_t *const chordal_env, arch_register_class_t
 {
 	chordal_env->cls              = cls;
 	chordal_env->border_heads     = pmap_create();
-	chordal_env->allocatable_regs = bitset_malloc(chordal_env->cls->n_regs);
+	chordal_env->allocatable_regs = bitset_malloc(cls->n_regs);
 
 	be_assure_live_chk(irg);
 
@@ -237,7 +237,7 @@ static void pre_spill(be_chordal_env_t *const chordal_env, arch_register_class_t
 	be_put_allocatable_regs(irg, cls, chordal_env->allocatable_regs);
 
 	be_timer_push(T_RA_CONSTR);
-	be_pre_spill_prepare_constr(irg, chordal_env->cls);
+	be_pre_spill_prepare_constr(irg, cls);
 	be_timer_pop(T_RA_CONSTR);
 
 	dump(BE_CH_DUMP_CONSTR, irg, cls, "constr-pre");
