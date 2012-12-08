@@ -122,7 +122,7 @@ struct fp_value {
 #define _shift_right(x, y, res) sc_shr((x), (y), value_size*4, 0, (res))
 #define _shift_left(x, y, res) sc_shl((x), (y), value_size*4, 0, (res))
 
-/** A temporal buffer. */
+/** A temporary buffer. */
 static fp_value *calc_buffer = NULL;
 
 /** Current rounding mode.*/

@@ -592,8 +592,8 @@ FIRM_API int is_irn_forking(const ir_node *node);
  * @param new_node  node the attributes get copies to.
  *
  * This copies all essential information to the new node. It does not copy
- * temporal or calculated information like visited flags or results of dominance
- * or loop calculations
+ * temporary or calculated information like visited flags or results of
+ * dominance or loop calculations.
  */
 FIRM_API void copy_node_attr(ir_graph *irg, const ir_node *old_node, ir_node *new_node);
 
