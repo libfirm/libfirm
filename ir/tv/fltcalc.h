@@ -165,13 +165,10 @@ char *fc_print(const fp_value *a, char *buf, int buflen, unsigned base);
  *
  * @param a Value No. 1
  * @param b Value No. 2
- * @result The returned value will be one of
- *          -1  if a < b
- *           0  if a == b
- *           1  if a > b
- *           2  if either value is NaN
+ * @result The relation between a and b; either less, equal, greater or
+ *         unordered.
  */
-int fc_comp(const fp_value *a, const fp_value *b);
+ir_relation fc_comp(const fp_value *a, const fp_value *b);
 
 /**
  * Converts an floating point value into an integer value.

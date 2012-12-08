@@ -1119,51 +1119,49 @@ fp_value *fc_get_minusinf(const float_descriptor_t *desc, fp_value *result)
 	return result;
 }
 
-int fc_comp(const fp_value *val_a, const fp_value *val_b)
+ir_relation fc_comp(fp_value const *const val_a, fp_value const *const val_b)
 {
-	int mul = 1;
-
 	/*
 	 * shortcut: if both values are identical, they are either
 	 * Unordered if NaN or equal
 	 */
 	if (val_a == val_b)
-		return val_a->clss == FC_NAN ? 2 : 0;
+		return val_a->clss == FC_NAN ? ir_relation_unordered : ir_relation_equal;
 
 	/* unordered if one is a NaN */
 	if (val_a->clss == FC_NAN || val_b->clss == FC_NAN)
-		return 2;
+		return ir_relation_unordered;
 
 	/* zero is equal independent of sign */
 	if ((val_a->clss == FC_ZERO) && (val_b->clss == FC_ZERO))
-		return 0;
+		return ir_relation_equal;
 
 	/* different signs make compare easy */
 	if (val_a->sign != val_b->sign)
-		return (val_a->sign == 0) ? (1) : (-1);
+		return val_a->sign == 0 ? ir_relation_greater : ir_relation_less;
 
-	mul = val_a->sign ? -1 : 1;
+	ir_relation const mul = val_a->sign ? ir_relation_less_greater : ir_relation_false;
 
 	/* both infinity means equality */
 	if ((val_a->clss == FC_INF) && (val_b->clss == FC_INF))
-		return 0;
+		return ir_relation_equal;
 
 	/* infinity is bigger than the rest */
 	if (val_a->clss == FC_INF)
-		return  1 * mul;
+		return ir_relation_greater ^ mul;
 	if (val_b->clss == FC_INF)
-		return -1 * mul;
+		return ir_relation_less ^ mul;
 
 	/* check first exponent, that mantissa if equal */
-	switch (sc_comp(_exp(val_a), _exp(val_b))) {
-	case -1:
-		return -1 * mul;
-	case  1:
-		return  1 * mul;
-	case  0:
-		return sc_comp(_mant(val_a), _mant(val_b)) * mul;
-	default:
-		return 2;
+	int rel = sc_comp(_exp(val_a), _exp(val_b));
+	if (rel == 0)
+		rel = sc_comp(_mant(val_a), _mant(val_b));
+
+	switch (rel) {
+	case -1: return ir_relation_less    ^ mul;
+	case  0: return ir_relation_equal;
+	case  1: return ir_relation_greater ^ mul;
+	default: panic("invalid comparison result");
 	}
 }
 

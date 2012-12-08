@@ -712,13 +712,8 @@ ir_relation tarval_cmp(ir_tarval *a, ir_tarval *b)
 		 * BEWARE: we cannot compare a == b here, because
 		 * a NaN is always Unordered to any other value, even to itself!
 		 */
-		switch (fc_comp((const fp_value*) a->value, (const fp_value*) b->value)) {
-		case -1: return ir_relation_less;
-		case  0: return ir_relation_equal;
-		case  1: return ir_relation_greater;
-		case  2: return ir_relation_unordered;
-		default: return ir_relation_false;
-		}
+		return fc_comp((fp_value const*)a->value, (fp_value const*)b->value);
+
 	case irms_reference:
 	case irms_int_number:
 		if (a == b)
