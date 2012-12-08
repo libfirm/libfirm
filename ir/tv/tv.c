@@ -1014,8 +1014,7 @@ ir_tarval *tarval_abs(ir_tarval *a)
 		return a;
 
 	case irms_float_number:
-		if (fc_comp((const fp_value*) a->value,
-		    (const fp_value*) get_mode_null(a->mode)->value) == -1) {
+		if (fc_is_negative((fp_value const*)a)) {
 			fc_neg((const fp_value*) a->value, NULL);
 			return get_tarval_overflow(fc_get_buffer(), fc_get_buffer_length(), a->mode);
 		}
