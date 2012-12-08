@@ -219,7 +219,7 @@ void sc_truncate(unsigned num_bits, void *buffer);
 /**
  * Compares val1 and val2
  */
-int  sc_comp(const void *val1, const void *val2);
+ir_relation sc_comp(void const *val1, void const *val2);
 
 int sc_get_highest_set_bit(const void *value);
 int sc_get_lowest_set_bit(const void *value);

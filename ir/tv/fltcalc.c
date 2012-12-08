@@ -331,7 +331,7 @@ static int normalize(const fp_value *in_val, fp_value *out_val, int sticky)
 
 	/* check for exponent overflow */
 	sc_val_from_ulong((1 << out_val->desc.exponent_size) - 1, temp);
-	if (sc_comp(_exp(out_val), temp) != -1) {
+	if (sc_comp(_exp(out_val), temp) != ir_relation_less) {
 		/* exponent overflow, reaction depends on rounding method:
 		 *
 		 * mode        | sign of value |  result
@@ -437,19 +437,17 @@ static void _fadd(const fp_value *a, const fp_value *b, fp_value *result)
 	 * (+/- 0 ?) */
 	if (sign && sc_val_to_long(exp_diff) == 0) {
 		switch (sc_comp(_mant(a), _mant(b))) {
-		case 1:  /* a > b */
+		case ir_relation_greater:  /* a > b */
 			res_sign = a->sign;  /* abs(a) is bigger and a is negative */
 			break;
-		case 0:  /* a == b */
+		case ir_relation_equal:  /* a == b */
 			res_sign = (rounding_mode == FC_TONEGATIVE);
 			break;
-		case -1: /* a < b */
+		case ir_relation_less: /* a < b */
 			res_sign = b->sign; /* abs(b) is bigger and b is negative */
 			break;
 		default:
-			/* can't be reached */
-			res_sign = 0;
-			break;
+			panic("invalid comparison result");
 		}
 	}
 	else
@@ -494,7 +492,7 @@ static void _fadd(const fp_value *a, const fp_value *b, fp_value *result)
 	}
 
 	if (sign) {
-		if (sc_comp(_mant(a), temp) == -1)
+		if (sc_comp(_mant(a), temp) == ir_relation_less)
 			sc_sub(temp, _mant(a), _mant(result));
 		else
 			sc_sub(_mant(a), temp, _mant(result));
@@ -1153,16 +1151,12 @@ ir_relation fc_comp(fp_value const *const val_a, fp_value const *const val_b)
 		return ir_relation_less ^ mul;
 
 	/* check first exponent, that mantissa if equal */
-	int rel = sc_comp(_exp(val_a), _exp(val_b));
-	if (rel == 0)
+	ir_relation rel = sc_comp(_exp(val_a), _exp(val_b));
+	if (rel == ir_relation_equal)
 		rel = sc_comp(_mant(val_a), _mant(val_b));
-
-	switch (rel) {
-	case -1: return ir_relation_less    ^ mul;
-	case  0: return ir_relation_equal;
-	case  1: return ir_relation_greater ^ mul;
-	default: panic("invalid comparison result");
-	}
+	if (rel != ir_relation_equal)
+		rel ^= mul;
+	return rel;
 }
 
 int fc_is_zero(const fp_value *a)
@@ -1343,7 +1337,7 @@ fp_value *fc_add(const fp_value *a, const fp_value *b, fp_value *result)
 	if (result == NULL) result = calc_buffer;
 
 	/* make the value with the bigger exponent the first one */
-	if (sc_comp(_exp(a), _exp(b)) == -1)
+	if (sc_comp(_exp(a), _exp(b)) == ir_relation_less)
 		_fadd(b, a, result);
 	else
 		_fadd(a, b, result);
@@ -1360,7 +1354,7 @@ fp_value *fc_sub(const fp_value *a, const fp_value *b, fp_value *result)
 	temp = (fp_value*) alloca(calc_buffer_size);
 	memcpy(temp, b, calc_buffer_size);
 	temp->sign = !b->sign;
-	if (sc_comp(_exp(a), _exp(temp)) == -1)
+	if (sc_comp(_exp(a), _exp(temp)) == ir_relation_less)
 		_fadd(temp, a, result);
 	else
 		_fadd(a, temp, result);

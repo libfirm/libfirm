@@ -341,10 +341,10 @@ static void do_divmod(const char *rDividend, const char *divisor, char *quot, ch
 	memset(rem, SC_0, calc_buffer_size);
 
 	/* if the divisor is zero this won't work (quot is zero) */
-	if (sc_comp(divisor, quot) == 0) assert(0 && "division by zero!");
+	assert(sc_comp(divisor, quot) != ir_relation_equal && "division by zero!");
 
 	/* if the dividend is zero result is zero (quot is zero) */
-	if (sc_comp(dividend, quot) == 0)
+	if (sc_comp(dividend, quot) == ir_relation_equal)
 		return;
 
 	if (do_sign(dividend) == -1) {
@@ -365,11 +365,11 @@ static void do_divmod(const char *rDividend, const char *divisor, char *quot, ch
 	/* if divisor >= dividend division is easy
 	 * (remember these are absolute values) */
 	switch (sc_comp(dividend, divisor)) {
-	case 0: /* dividend == divisor */
+	case ir_relation_equal: /* dividend == divisor */
 		quot[0] = SC_1;
 		goto end;
 
-	case -1: /* dividend < divisor */
+	case ir_relation_less: /* dividend < divisor */
 		memcpy(rem, dividend, calc_buffer_size);
 		goto end;
 
@@ -381,7 +381,7 @@ static void do_divmod(const char *rDividend, const char *divisor, char *quot, ch
 		do_push(dividend[c_dividend], rem);
 		do_push(SC_0, quot);
 
-		if (sc_comp(rem, divisor) != -1) {  /* remainder >= divisor */
+		if (sc_comp(rem, divisor) != ir_relation_less) {  /* remainder >= divisor */
 			/* subtract until the remainder becomes negative, this should
 			 * be faster than comparing remainder with divisor  */
 			do_add(rem, minus_divisor, rem);
@@ -811,7 +811,7 @@ void sc_truncate(unsigned int num_bits, void *buffer)
 		*pos = SC_0;
 }
 
-int sc_comp(const void* value1, const void* value2)
+ir_relation sc_comp(void const* const value1, void const* const value2)
 {
 	int counter = calc_buffer_size - 1;
 	const char *val1 = (const char *)value1;
@@ -820,19 +820,19 @@ int sc_comp(const void* value1, const void* value2)
 	/* compare signs first:
 	 * the loop below can only compare values of the same sign! */
 	if (do_sign(val1) != do_sign(val2))
-		return (do_sign(val1) == 1)?(1):(-1);
+		return do_sign(val1) == 1 ? ir_relation_greater : ir_relation_less;
 
 	/* loop until two digits differ, the values are equal if there
 	 * are no such two digits */
 	while (val1[counter] == val2[counter]) {
 		counter--;
-		if (counter < 0) return 0;
+		if (counter < 0) return ir_relation_equal;
 	}
 
 	/* the leftmost digit is the most significant, so this returns
 	 * the correct result.
 	 * This implies the digit enum is ordered */
-	return (val1[counter] > val2[counter]) ? (1) : (-1);
+	return val1[counter] > val2[counter] ? ir_relation_greater : ir_relation_less;
 }
 
 int sc_get_highest_set_bit(const void *value)

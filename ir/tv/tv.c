@@ -201,7 +201,7 @@ static ir_tarval *get_tarval_overflow(const void *value, size_t length, ir_mode 
 		return get_tarval(temp, length, mode);
 
 	case irms_int_number:
-		if (sc_comp(value, get_mode_max(mode)->value) == 1) {
+		if (sc_comp(value, get_mode_max(mode)->value) == ir_relation_greater) {
 			switch (tarval_get_integer_overflow_mode()) {
 			case TV_OVERFLOW_SATURATE:
 				return get_mode_max(mode);
@@ -218,7 +218,7 @@ static ir_tarval *get_tarval_overflow(const void *value, size_t length, ir_mode 
 				return get_tarval(value, length, mode);
 			}
 		}
-		if (sc_comp(value, get_mode_min(mode)->value) == -1) {
+		if (sc_comp(value, get_mode_min(mode)->value) == ir_relation_less) {
 			switch (tarval_get_integer_overflow_mode()) {
 			case TV_OVERFLOW_SATURATE:
 				return get_mode_min(mode);
@@ -399,7 +399,7 @@ int tarval_is_long(ir_tarval *tv)
 	if (get_mode_size_bits(tv->mode) > (int) (sizeof(long) << 3)) {
 		/* the value might be too big to fit in a long */
 		sc_max_from_bits(sizeof(long) << 3, 0, NULL);
-		if (sc_comp(sc_get_buffer(), tv->value) == -1) {
+		if (sc_comp(sc_get_buffer(), tv->value) == ir_relation_less) {
 			/* really doesn't fit */
 			return 0;
 		}
@@ -655,7 +655,7 @@ int tarval_is_negative(ir_tarval *a)
 	case irms_int_number:
 		if (!mode_is_signed(a->mode)) return 0;
 		else
-			return sc_comp(a->value, get_mode_null(a->mode)->value) == -1 ? 1 : 0;
+			return sc_comp(a->value, get_mode_null(a->mode)->value) == ir_relation_less ? 1 : 0;
 
 	case irms_float_number:
 		return fc_is_negative((const fp_value*) a->value);
@@ -718,7 +718,7 @@ ir_relation tarval_cmp(ir_tarval *a, ir_tarval *b)
 	case irms_int_number:
 		if (a == b)
 			return ir_relation_equal;
-		return sc_comp(a->value, b->value) == 1 ? ir_relation_greater : ir_relation_less;
+		return sc_comp(a->value, b->value);
 
 	case irms_internal_boolean:
 		if (a == b)
@@ -1001,7 +1001,7 @@ ir_tarval *tarval_abs(ir_tarval *a)
 
 	switch (get_mode_sort(a->mode)) {
 	case irms_int_number:
-		if (sc_comp(a->value, get_mode_null(a->mode)->value) == -1) {
+		if (sc_comp(a->value, get_mode_null(a->mode)->value) == ir_relation_less) {
 			buffer = (char*) alloca(sc_get_buffer_length());
 			sc_neg(a->value, buffer);
 			return get_tarval_overflow(buffer, a->length, a->mode);
