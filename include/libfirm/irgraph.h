@@ -40,6 +40,10 @@
  *
  * - ent             The entity describing this procedure.
  *
+ * - anchor          A node having several important nodes of the graph as its
+ *                   operands.  The operands of the anchor are described in the
+ *                   following.
+ *
  * The beginning and end of a graph:
  *
  * - start_block     This ir_node is the block that contains the unique
@@ -53,7 +57,7 @@
  *                   further nodes.
  * - end             This ir_node is the unique end node of the procedure.
  *
- * The following nodes are Projs from the Start node, held in ir_graph for
+ * The following nodes are Projs from the Start node, held by the anchor for
  * simple access:
  *
  * - frame           The ir_node producing the pointer to the stack frame of
@@ -65,20 +69,12 @@
  *                   edges. Therefore FIRM has to represent them in the stack
  *                   frame.
  *
- * - globals         This models a pointer to a space in the memory where
- *                   _all_ global things are held.  Select from this pointer
- *                   with a Sel node the pointer to a global variable /
- *                   procedure / compiler known function... .
- *
- * - tls             This models a pointer to a space in the memory where
- *                   thread local things are held.  Select from this pointer
- *                   with a Sel node the pointer to a thread local variable.
+ * - initial_mem     The memory monad passed to the function when calling it.
+ *                   This is Proj pn_Start_M of the Start node.
  *
  * - args            The ir_node that produces the arguments of the method as
- *                   its result.  This is a Proj node on the fourth output of
- *                   the start node.  This output is tagged as pn_Start_T_args.
- *
- * - proj_args       The proj nodes of the args node.
+ *                   its result.  This is Proj pn_Start_T_args of the Start
+ *                   node.
  *
  * - no_mem          The NoMem node is an auxiliary node. It is needed only once,
  *                   so there is this globally reachable node.
@@ -92,15 +88,11 @@
  *                   to this block.  It can be set with set_cur_block(block).
  *                   Only needed for ir construction.
  *
- * - params/n_loc    An int giving the number of local variables in this
- *                  procedure.  This is needed for ir construction. Name will
- *                   be changed.
+ * - n_loc           An int giving the number of local variables in this
+ *                   procedure.  This is needed for ir construction.
  *
  * - value_table     This hash table (pset) is used for global value numbering
  *                   for optimizing use in iropt.c.
- *
- * - Phi_in_stack;   a stack needed for automatic Phi construction, needed only
- *                   during ir construction.
  *
  * - visited         A int used as flag to traverse the ir_graph.
  *
@@ -125,8 +117,7 @@
  * to point to this graph. Further it allocates the following nodes needed
  * for every procedure:
  *
- * - The start block containing a start node and Proj nodes for its
- *   seven results (X, M, P, P, P, T, P).
+ * - The start block containing a start node and Proj nodes for its results.
  * - The end block containing an end node. This block is not matured
  *   after executing new_ir_graph() as predecessors need to be added to it.
  *   (Maturing a block means fixing its number of predecessors.)
@@ -136,7 +127,7 @@
  * block that contains all valid values in this block (set_store()).  This
  * data structure is used to build the Phi nodes and removed after
  * completion of the graph.  There is no path from end to start in the
- * graph after calling ir_graph.
+ * graph after calling new_ir_graph().
  *
  * The op_pin_state of the graph is set to "op_pin_state_pinned"
  * if no global cse was performed on the graph.
@@ -151,8 +142,7 @@ FIRM_API ir_graph *new_ir_graph(ir_entity *ent, int n_loc);
 /** Frees the passed irgraph.
  * Deallocates all nodes in this graph and the ir_graph structure.
  * Sets the field irgraph in the corresponding entity to NULL.
- * Does not remove the irgraph from the list in irprog (requires
- * inefficient search, call remove_irp_irg by hand).
+ * Removes the irgraph from the list in irprog.
  * Does not free types, entities or modes that are used only by this
  * graph, nor the entity standing for this graph.
  */
