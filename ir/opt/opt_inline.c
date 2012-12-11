@@ -260,7 +260,7 @@ static bool can_inline(ir_node *call, ir_graph *called_graph)
 	for (i = 0; i < n_params; ++i) {
 		ir_type *p_type = get_method_param_type(call_type, i);
 
-		if (is_compound_type(p_type))
+		if (is_compound_type(p_type) || is_Array_type(p_type))
 			return false;
 	}
 
@@ -268,7 +268,7 @@ static bool can_inline(ir_node *call, ir_graph *called_graph)
 	for (i = 0; i < n_res; ++i) {
 		ir_type *r_type = get_method_res_type(call_type, i);
 
-		if (is_compound_type(r_type))
+		if (is_compound_type(r_type) || is_Array_type(r_type))
 			return false;
 	}
 
