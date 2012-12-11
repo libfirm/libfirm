@@ -574,12 +574,13 @@ static int verify_node_Proj_Proj(const ir_node *p)
 				(proj < (int)get_method_n_params(mt)),
 				"More Projs for args than args in type", 0
 				);
-			if ((mode_is_reference(mode)) && is_compound_type(get_method_param_type(mt, proj)))
+			ir_type *param_type = get_method_param_type(mt, proj);
+			if (mode_is_reference(mode) && (is_compound_type(param_type) || is_Array_type(param_type)))
 				/* value argument */ break;
 
 			if (!irg_is_constrained(get_irn_irg(pred), IR_GRAPH_CONSTRAINT_BACKEND)) {
 				ASSERT_AND_RET_DBG(
-						(mode == get_type_mode(get_method_param_type(mt, proj))),
+						(mode == get_type_mode(param_type)),
 						"Mode of Proj from Start doesn't match mode of param type.", 0,
 						show_proj_mode_failure(p, get_method_param_type(mt, proj));
 						);
