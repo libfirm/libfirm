@@ -78,7 +78,6 @@ static ir_entity *intern_new_entity(ir_type *owner, ir_entity_kind kind,
 	res->offset_bit_remainder = 0;
 	res->alignment            = 0;
 	res->link                 = NULL;
-	res->repr_class           = NULL;
 #ifdef DEBUG_libfirm
 	res->nr = get_irp_new_node_nr();
 #endif
@@ -990,11 +989,6 @@ void add_entity_additional_properties(ir_entity *ent, mtp_additional_properties 
 	/* do not allow to set the mtp_property_inherited flag or
 	 * the automatic inheritance of flags will not work */
 	ent->attr.mtd_attr.properties |= properties;
-}
-
-ir_type *(get_entity_repr_class)(const ir_entity *ent)
-{
-	return _get_entity_repr_class(ent);
 }
 
 dbg_info *(get_entity_dbg_info)(const ir_entity *ent)

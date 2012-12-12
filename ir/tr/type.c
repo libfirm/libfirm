@@ -713,7 +713,6 @@ ir_type *new_d_type_class(ident *name, type_dbg_info *db)
 	res->attr.ca.subtypes    = NEW_ARR_F (ir_type *, 0);
 	res->attr.ca.supertypes  = NEW_ARR_F (ir_type *, 0);
 	res->attr.ca.peculiarity = peculiarity_existent;
-	res->attr.ca.type_info   = NULL;
 	res->attr.ca.vtable_size = 0;
 	res->attr.ca.clss_flags  = cf_none;
 	res->attr.ca.dfn         = 0;
@@ -733,7 +732,6 @@ void free_class_entities(ir_type *clss)
 	/* we must iterate backward here */
 	for (i = get_class_n_members(clss); i > 0;)
 		free_entity(get_class_member(clss, --i));
-	/* do NOT free the type info here. It belongs to another class */
 }
 
 void free_class_attrs(ir_type *clss)
@@ -928,18 +926,6 @@ void remove_class_supertype(ir_type *clss, ir_type *supertype)
 			break;
 		}
 	}
-}
-
-ir_entity *get_class_type_info(const ir_type *clss)
-{
-	return clss->attr.ca.type_info;
-}
-
-void set_class_type_info(ir_type *clss, ir_entity *ent)
-{
-	clss->attr.ca.type_info = ent;
-	if (ent)
-		ent->repr_class = clss;
 }
 
 ir_peculiarity get_class_peculiarity(const ir_type *clss)

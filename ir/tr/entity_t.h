@@ -66,7 +66,6 @@
 #define mark_entity_visited(ent)                 _mark_entity_visited(ent)
 #define entity_visited(ent)                      _entity_visited(ent)
 #define entity_not_visited(ent)                  _entity_not_visited(ent)
-#define get_entity_repr_class(ent)               _get_entity_repr_class(ent)
 #define get_entity_dbg_info(ent)                 _get_entity_dbg_info(ent)
 #define set_entity_dbg_info(ent, db)             _set_entity_dbg_info(ent, db)
 
@@ -182,8 +181,6 @@ struct ir_entity {
 	                              information. */
 	struct dbg_info *dbi;    /**< A pointer to information for debug support. */
 	void *link;              /**< To store some intermediate information. */
-	ir_type *repr_class;     /**< If this entity represents a class info, the
-	                              associated class. */
 
 	ir_entity **overwrites;  /**< A list of entities this entity overwrites. */
 	ir_entity **overwrittenby; /**< A list of entities that overwrite this
@@ -428,12 +425,6 @@ static inline size_t _get_entity_parameter_number(const ir_entity *entity)
 {
 	assert(entity->entity_kind == IR_ENTITY_PARAMETER);
 	return entity->attr.parameter.number;
-}
-
-static inline ir_type *_get_entity_repr_class(const ir_entity *ent)
-{
-	assert(ent->kind == k_entity);
-	return ent->repr_class;
 }
 
 static inline dbg_info *_get_entity_dbg_info(const ir_entity *ent)

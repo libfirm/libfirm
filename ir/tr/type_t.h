@@ -94,7 +94,6 @@ typedef struct {
 	ir_type **subtypes;          /**< Array containing the direct subtypes. */
 	ir_type **supertypes;        /**< Array containing the direct supertypes */
 	ir_peculiarity peculiarity;  /**< The peculiarity of this class. */
-	ir_entity *type_info;        /**< An ir_entity representing this class, used for type info. */
 	int      dfn;                /**< A number that can be used for 'instanceof' operator. */
 	unsigned vtable_size;        /**< The size of the vtable for this class. */
 	unsigned clss_flags;         /**< Additional class flags. */

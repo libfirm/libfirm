@@ -657,10 +657,6 @@ FIRM_API void set_entity_additional_properties(ir_entity *ent,
 FIRM_API void add_entity_additional_properties(ir_entity *ent,
                                                mtp_additional_properties flag);
 
-/** Returns the class type that this type info entity represents or NULL
-    if ent is no type info entity. */
-FIRM_API ir_type *get_entity_repr_class(const ir_entity *ent);
-
 /**
  * @page unknown_entity  The Unknown entity
  *
@@ -1266,12 +1262,6 @@ FIRM_API int smaller_type(ir_type *st, ir_type *lt);
  *
  *  - supertypes:  A list of direct superclasses.
  *
- *  - type_info:   An entity representing the type information of this class.
- *                 This entity can be of arbitrari type, Firm did not use it yet.
- *                 It allows to express the coupling of a type with an entity
- *                 representing this type.  This information is useful for lowering
- *                 of InstOf and TypeChk nodes.  Default: NULL
- *
  *  - vtable_size: The size of this class virtual function table.
  *                 Default:  0
  *
@@ -1377,12 +1367,6 @@ FIRM_API void set_class_supertype(ir_type *clss, ir_type *supertype, size_t pos)
 
 /** Finds supertype in the list of supertypes and removes it */
 FIRM_API void remove_class_supertype(ir_type *clss, ir_type *supertype);
-
-/** Returns the type info entity of a class. */
-FIRM_API ir_entity *get_class_type_info(const ir_type *clss);
-
-/** Sets a type info entity for the class. */
-FIRM_API void set_class_type_info(ir_type *clss, ir_entity *ent);
 
 /** Returns the size of the virtual function table. */
 FIRM_API unsigned get_class_vtable_size(const ir_type *clss);

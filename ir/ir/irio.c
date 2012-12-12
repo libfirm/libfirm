@@ -606,8 +606,7 @@ static void write_type_compound(write_env_t *env, ir_type *tp)
 	size_t i;
 
 	if (is_Class_type(tp)) {
-		if (get_class_n_subtypes(tp) > 0 || get_class_n_supertypes(tp) > 0
-		    || get_class_type_info(tp) != NULL || get_class_vtable_size(tp) > 0) {
+		if (get_class_n_subtypes(tp) > 0 || get_class_n_supertypes(tp) > 0 || get_class_vtable_size(tp) > 0) {
 			/* sub/superclass export not implemented yet, it's unclear whether
 			 * class types will stay in libfirm anyway */
 			panic("can't export class types yet");
