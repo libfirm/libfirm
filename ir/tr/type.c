@@ -1417,6 +1417,14 @@ void set_union_size(ir_type *tp, unsigned size)
 }
 
 
+ir_type *new_type_segment(ident *const name, type_flags const flags)
+{
+	ir_type *const seg = new_type_class(name);
+	seg->flags |= tf_segment | flags;
+	set_class_final(seg, true);
+	return seg;
+}
+
 
 ir_type *new_d_type_array(size_t n_dimensions, ir_type *element_type,
                           type_dbg_info *db)

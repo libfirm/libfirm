@@ -403,9 +403,9 @@ static be_main_env_t *be_init_env(be_main_env_t *const env, char const *const co
 {
 	memset(env, 0, sizeof(*env));
 	env->ent_trampoline_map   = pmap_create();
-	env->pic_trampolines_type = new_type_class(NEW_ID("$PIC_TRAMPOLINE_TYPE"));
+	env->pic_trampolines_type = new_type_segment(NEW_ID("$PIC_TRAMPOLINE_TYPE"), tf_none);
 	env->ent_pic_symbol_map   = pmap_create();
-	env->pic_symbols_type     = new_type_struct(NEW_ID("$PIC_SYMBOLS_TYPE"));
+	env->pic_symbols_type     = new_type_segment(NEW_ID("$PIC_SYMBOLS_TYPE"), tf_none);
 	env->cup_name             = compilation_unit_name;
 	env->arch_env             = isa_if->begin_codegeneration();
 

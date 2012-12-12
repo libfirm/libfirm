@@ -174,7 +174,7 @@ typedef union {
 } tp_attr;
 
 /** Additional type flags. */
-enum type_flags {
+typedef enum type_flags {
 	tf_none             = 0, /**< No flags. */
 	tf_lowered_type     = 1U << 0, /**< Set if this is a lowered type. */
 	tf_layout_fixed     = 1U << 1, /**< Set if the layout of a type is fixed */
@@ -186,7 +186,7 @@ enum type_flags {
 	tf_constructors     = 1U << 6, /**< Set only for the constructors segment type */
 	tf_destructors      = 1U << 7, /**< Set only for the destructors segment type */
 	tf_variable_size    = 1U << 8, /**< compound or array type may have variable size last element */
-};
+} type_flags;
 ENUM_BITSET(type_flags)
 
 /**
@@ -574,5 +574,7 @@ static inline void _set_method_calling_convention(ir_type *method, unsigned cc_m
 	assert(method->type_op == type_method);
 	method->attr.ma.irg_calling_conv = cc_mask;
 }
+
+ir_type *new_type_segment(ident *name, type_flags flags);
 
 #endif /* FIRM_TR_TYPE_T_H */
