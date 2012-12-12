@@ -40,7 +40,7 @@ static void do_finalization(type_or_ent tore, void *env)
 	if (is_type(tore.typ)) {
 		ir_type *cls = tore.typ;
 
-		if (! is_Class_type(cls) || cls == glob_tp)
+		if (!is_Class_type(cls))
 			return;
 
 		if (is_class_final(cls))
