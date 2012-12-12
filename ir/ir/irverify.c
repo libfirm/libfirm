@@ -539,18 +539,16 @@ static int verify_node_Proj_Alloc(const ir_node *p)
  */
 static int verify_node_Proj_Proj(const ir_node *p)
 {
-	ir_mode *mode = get_irn_mode(p);
-	ir_node *pred = get_Proj_pred(p);
-	long proj     = get_Proj_proj(p);
-	long nr       = get_Proj_proj(pred);
-	ir_type *mt; /* A method type */
+	ir_mode *mode     = get_irn_mode(p);
+	ir_node *pred     = get_Proj_pred(p);
+	ir_node *predpred = get_Proj_pred(pred);
+	long     proj     = get_Proj_proj(p);
+	long     nr       = get_Proj_proj(pred);
 
-	pred = skip_Id(get_Proj_pred(pred));
-	ASSERT_AND_RET((get_irn_mode(pred) == mode_T), "Proj from something not a tuple", 0);
-
-	switch (get_irn_opcode(pred)) {
-	case iro_Start:
-		mt = get_entity_type(get_irg_entity(get_irn_irg(pred)));
+	switch (get_irn_opcode(predpred)) {
+	case iro_Start:;
+		ir_graph *irg = get_irn_irg(p);
+		ir_type  *mt  = get_entity_type(get_irg_entity(irg));
 
 		if (nr == pn_Start_T_args) {
 			ASSERT_AND_RET(
@@ -561,10 +559,7 @@ static int verify_node_Proj_Proj(const ir_node *p)
 				"More Projs for args than args in type", 0
 				);
 			ir_type *param_type = get_method_param_type(mt, proj);
-			if (mode_is_reference(mode) && (is_compound_type(param_type) || is_Array_type(param_type)))
-				/* value argument */ break;
-
-			if (!irg_is_constrained(get_irn_irg(pred), IR_GRAPH_CONSTRAINT_BACKEND)) {
+			if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
 				ASSERT_AND_RET_DBG(
 						(mode == get_type_mode(param_type)),
 						"Mode of Proj from Start doesn't match mode of param type.", 0,
@@ -579,7 +574,7 @@ static int verify_node_Proj_Proj(const ir_node *p)
 			ASSERT_AND_RET(
 				(proj >= 0 && mode_is_datab(mode)),
 				"wrong Proj from Proj from Call", 0);
-			mt = get_Call_type(pred);
+			mt = get_Call_type(predpred);
 			ASSERT_AND_RET(is_unknown_type(mt) || is_Method_type(mt),
 					"wrong call type on call", 0);
 			ASSERT_AND_RET(

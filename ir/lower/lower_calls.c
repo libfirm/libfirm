@@ -699,10 +699,6 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 		/* much easier if we have only one return */
 		normalize_one_return(irg);
 
-		/* This graph has a compound argument. Create a new type */
-		lowered_mtp = lower_mtp(flags, mtp);
-		set_entity_type(ent, lowered_mtp);
-
 		/* hidden arguments are added first */
 		env.arg_shift = n_ret_com;
 	} else {
@@ -710,6 +706,10 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 		env.arg_shift = 0;
 		lowered_mtp   = NULL;
 	}
+
+	lowered_mtp = lower_mtp(flags, mtp);
+	set_entity_type(ent, lowered_mtp);
+
 	obstack_init(&env.obst);
 	env.cl_list        = NULL;
 	env.flags          = flags;
