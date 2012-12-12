@@ -2840,7 +2840,6 @@ static ir_node *gen_Switch(ir_node *node)
 	const ir_switch_table *table    = get_Switch_table(node);
 	unsigned               n_outs   = get_Switch_n_outs(node);
 	ir_node               *new_node;
-	ir_entity             *entity;
 
 	assert(get_mode_size_bits(sel_mode) <= 32);
 	assert(!mode_is_float(sel_mode));
@@ -2848,7 +2847,8 @@ static ir_node *gen_Switch(ir_node *node)
 	if (get_mode_size_bits(sel_mode) < 32)
 		new_sel = transform_upconv(sel, node);
 
-	entity = new_entity(NULL, id_unique("TBL%u"), get_unknown_type());
+	ir_type   *const utype  = get_unknown_type();
+	ir_entity *const entity = new_entity(utype, id_unique("TBL%u"), utype);
 	set_entity_visibility(entity, ir_visibility_private);
 	add_entity_linkage(entity, IR_LINKAGE_CONSTANT);
 

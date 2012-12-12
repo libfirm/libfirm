@@ -58,6 +58,8 @@ ir_entity *get_unknown_entity(void)
 static ir_entity *intern_new_entity(ir_type *owner, ir_entity_kind kind,
                                     ident *name, ir_type *type, dbg_info *dbgi)
 {
+	assert(owner);
+
 	ir_entity *res = XMALLOCZ(ir_entity);
 
 	res->kind    = k_entity;
@@ -82,7 +84,7 @@ static ir_entity *intern_new_entity(ir_type *owner, ir_entity_kind kind,
 #endif
 
 	/* Remember entity in its owner. */
-	if (owner != NULL)
+	if (is_compound_type(owner))
 		add_compound_member(owner, res);
 
 	res->visit = 0;
@@ -108,8 +110,7 @@ ir_entity *new_d_entity(ir_type *owner, ident *name, ir_type *type,
 		res->attr.mtd_attr.param_access  = NULL;
 		res->attr.mtd_attr.param_weight  = NULL;
 		res->attr.mtd_attr.irg           = NULL;
-	} else if (owner != NULL
-	           && (is_compound_type(owner) && !(owner->flags & tf_segment))) {
+	} else if (is_compound_type(owner) && !(owner->flags & tf_segment)) {
 		res = intern_new_entity(owner, IR_ENTITY_COMPOUND_MEMBER, name, type, db);
 	} else {
 		res = intern_new_entity(owner, IR_ENTITY_NORMAL, name, type, db);
@@ -256,7 +257,7 @@ ir_entity *copy_entity_name(ir_entity *old, ident *new_name)
 
 void free_entity(ir_entity *ent)
 {
-	if (ent->owner != NULL && !is_Array_type(ent->owner))
+	if (is_compound_type(ent->owner))
 		remove_compound_member(ent->owner, ent);
 
 	assert(ent && ent->kind == k_entity);
@@ -1024,9 +1025,9 @@ int entity_has_definition(const ir_entity *entity)
 
 void ir_init_entity(ir_prog *irp)
 {
-	ident *id = new_id_from_str(UNKNOWN_ENTITY_NAME);
-	irp->unknown_entity = intern_new_entity(NULL, IR_ENTITY_UNKNOWN, id,
-	                                        irp->unknown_type, NULL);
+	ident   *const id    = new_id_from_str(UNKNOWN_ENTITY_NAME);
+	ir_type *const utype = get_unknown_type();
+	irp->unknown_entity = intern_new_entity(utype, IR_ENTITY_UNKNOWN, id, utype, NULL);
 	set_entity_visibility(irp->unknown_entity, ir_visibility_external);
 	set_entity_ld_ident(irp->unknown_entity, id);
 	hook_new_entity(irp->unknown_entity);

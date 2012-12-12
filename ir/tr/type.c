@@ -1449,10 +1449,9 @@ ir_type *new_d_type_array(size_t n_dimensions, ir_type *element_type,
 		res->attr.aa.order[i]       = i;
 	}
 
+	ident *const id = new_id_from_chars("elem_ent", 8);
 	res->attr.aa.element_type = element_type;
-	res->attr.aa.element_ent
-		= new_entity(NULL, new_id_from_chars("elem_ent", 8), element_type);
-	res->attr.aa.element_ent->owner = res;
+	res->attr.aa.element_ent  = new_entity(res, id, element_type);
 
 	hook_new_type(res);
 	return res;

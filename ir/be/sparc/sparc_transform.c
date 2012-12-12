@@ -1101,7 +1101,6 @@ static ir_node *gen_Switch(ir_node *node)
 	ir_node               *new_selector = be_transform_node(selector);
 	const ir_switch_table *table        = get_Switch_table(node);
 	unsigned               n_outs       = get_Switch_n_outs(node);
-	ir_entity             *entity;
 	ir_node               *table_address;
 	ir_node               *idx;
 	ir_node               *load;
@@ -1112,7 +1111,8 @@ static ir_node *gen_Switch(ir_node *node)
 	/* switch with smaller mode not implemented yet */
 	assert(get_mode_size_bits(get_irn_mode(selector)) == 32);
 
-	entity = new_entity(NULL, id_unique("TBL%u"), get_unknown_type());
+	ir_type   *const utype  = get_unknown_type();
+	ir_entity *const entity = new_entity(utype, id_unique("TBL%u"), utype);
 	set_entity_visibility(entity, ir_visibility_private);
 	add_entity_linkage(entity, IR_LINKAGE_CONSTANT);
 

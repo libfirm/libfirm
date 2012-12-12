@@ -77,13 +77,7 @@ static void show_entity_failure(const ir_node *node)
 
 		if (ent) {
 			ir_type *ent_type = get_entity_owner(ent);
-
-			if (ent_type) {
-				ir_fprintf(stderr, "\nFIRM: irn_verify_irg() %+F::%s failed\n",
-				           ent_type, get_entity_name(ent));
-			} else {
-				fprintf(stderr, "\nFIRM: irn_verify_irg() <NULL>::%s failed\n", get_entity_name(ent));
-			}
+			ir_fprintf(stderr, "\nFIRM: irn_verify_irg() %+F::%s failed\n", ent_type, get_entity_name(ent));
 		} else {
 			fprintf(stderr, "\nFIRM: irn_verify_irg() <IRG %p> failed\n", (void *)irg);
 		}
