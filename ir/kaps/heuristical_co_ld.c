@@ -1,10 +1,7 @@
 /*
- * heuristical_co_ld.c
- *
- *  Created on: 06.05.2010
- *      Author: berschth
+ * This file is part of libFirm.
+ * Copyright (C) 2012 Karlsruhe Institute of Technology.
  */
-
 #include "config.h"
 
 #include "adt/array.h"

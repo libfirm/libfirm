@@ -1,12 +1,6 @@
-/**
- * @file
- * @date   19.07.2005
- * @author Sebastian Hack
- *
- * lpp_solving server.
- *
- * Copyright (C) 2005 Universitaet Karlsruhe
- * Released under the GPL
+/*
+ * This file is part of libFirm.
+ * Copyright (C) 2012 Universitaet Karlsruhe
  */
 
 #ifdef _WIN32

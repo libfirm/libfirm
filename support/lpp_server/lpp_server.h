@@ -1,10 +1,6 @@
-/**
- * @file
- * @date   19.07.2005
- * @author Sebastian Hack
- *
- * Copyright (C) 2005 Universitaet Karlsruhe
- * Released under the GPL
+/*
+ * This file is part of libFirm.
+ * Copyright (C) 2012 Universitaet Karlsruhe
  */
 
 #ifndef LPP_SERVER_H

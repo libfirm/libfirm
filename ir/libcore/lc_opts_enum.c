@@ -1,12 +1,6 @@
-/**
- * @file
- * @date   24.11.2005
- * @author Sebastian Hack
- *
- * Copyright (C) 2005 Universitaet Karlsruhe
- * Released under the GPL
- *
- * Enum callback and dump implementation.
+/*
+ * This file is part of libFirm.
+ * Copyright (C) 2012 Universitaet Karlsruhe
  */
 #include "config.h"
 

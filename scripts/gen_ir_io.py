@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+#
+# This file is part of libFirm.
+# Copyright (C) 2012 Karlsruhe Institute of Technology.
 import sys
 from jinja2 import Environment, Template
 from spec_util import is_dynamic_pinned, isAbstract, load_spec

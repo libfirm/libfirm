@@ -1,3 +1,5 @@
+# This file is part of libFirm.
+# Copyright (C) 2012 Karlsruhe Institute of Technology.
 import sys
 import imp
 

@@ -1,3 +1,6 @@
+# This file is part of libFirm.
+# Copyright (C) 2012 Karlsruhe Institute of Technology.
+#
 # Firm node specifications
 # The comments are in (standard python) restructured text format and are used
 # to generate documentation.

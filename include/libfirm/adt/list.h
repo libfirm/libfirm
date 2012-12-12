@@ -1,3 +1,7 @@
+/*
+ * This file is part of libFirm.
+ * Copyright (C) 2012 Karlsruhe Institute of Technology.
+ */
 #ifndef FIRM_ADT_LIST_H
 #define FIRM_ADT_LIST_H
 

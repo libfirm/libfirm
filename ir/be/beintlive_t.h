@@ -1,14 +1,7 @@
-/**
- * @file
- * @date   10.05.2007
- * @author Sebastian Hack
- *
- * Principal routines for liveness and interference checks.
- *
- * Copyright (C) 2007 Universitaet Karlsruhe
- * Released under the GPL
+/*
+ * This file is part of libFirm.
+ * Copyright (C) 2012 Universitaet Karlsruhe
  */
-
 #ifndef _BELIVECHK_T_H
 #define _BELIVECHK_T_H
 

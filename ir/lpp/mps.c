@@ -1,8 +1,11 @@
+/*
+ * This file is part of libFirm.
+ * Copyright (C) 2012 Universitaet Karlsruhe
+ */
+
 /**
- * Author:      Daniel Grund
- * Date:        02.06.2005
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * @file
+ * @author Daniel Grund
  */
 #include "config.h"
 #include <stdarg.h>

@@ -1,5 +1,6 @@
 /**
- * Helper code to output instrumentation results
+ * Helper code to output instrumentation results.
+ * This file is a supplement to libFirm. It is public domain.
  *  @author Matthias Braun, Steven Schaefer
  */
 #include <stdio.h>
