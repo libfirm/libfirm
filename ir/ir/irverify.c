@@ -940,7 +940,7 @@ static int verify_node_SymConst(const ir_node *n)
 		/* the is_method_entity(ent) exception is for nested functions... */
 		ASSERT_AND_RET_DBG((get_entity_owner(ent)->flags & tf_segment)
 		                   || is_method_entity(ent),
-		                   "SymConst node with frame entity", 0,
+		                   "SymConst node with non-segment entity", 0,
 		                   show_node_failure(n););
 	}
 	return 1;
