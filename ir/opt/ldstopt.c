@@ -253,7 +253,7 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 			ir_type   *tp  = get_entity_owner(ent);
 
 			/* Do not fiddle with polymorphism. */
-			if (is_Class_type(get_entity_owner(ent)) &&
+			if (is_Class_type(tp) &&
 				((get_entity_n_overwrites(ent)    != 0) ||
 				(get_entity_n_overwrittenby(ent) != 0)   ) )
 				return NULL;
