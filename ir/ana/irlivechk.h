@@ -18,7 +18,7 @@
  */
 
 /**
- * @file    irlivechk.h
+ * @file
  * @author  Sebastian Hack
  * @date    22.04.2007
  * @brief

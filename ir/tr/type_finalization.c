@@ -18,7 +18,7 @@
  */
 
 /**
- * @file    type_finalization.c
+ * @file
  * @brief   Calculate finalization of classes and entities by
  *          inspecting the class hierarchy.
  * @author  Michael Beck

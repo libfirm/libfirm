@@ -18,7 +18,7 @@
  */
 
 /**
- * @file    dfs_t.h
+ * @file
  * @author  Sebastian Hack
  * @date    21.04.2007
  * @brief

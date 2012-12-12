@@ -1,5 +1,5 @@
 /**
- * @file   lc_opts_enum.c
+ * @file
  * @date   24.11.2005
  * @author Sebastian Hack
  *

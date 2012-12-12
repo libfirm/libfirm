@@ -1,5 +1,5 @@
 /**
- * @file   beintlive_t.h
+ * @file
  * @date   10.05.2007
  * @author Sebastian Hack
  *

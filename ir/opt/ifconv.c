@@ -17,8 +17,8 @@
  * PURPOSE.
  */
 
-/*
- * @file    ir/opt/ifconv.c
+/**
+ * @file
  * @brief   If conversion
  * @author  Christoph Mallon
  */

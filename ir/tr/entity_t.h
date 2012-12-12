@@ -17,7 +17,7 @@
  * PURPOSE.
  */
 
-/*
+/**
  * @file
  * @brief   Representation of all program known entities -- private header.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck

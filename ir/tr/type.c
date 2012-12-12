@@ -18,7 +18,7 @@
  */
 
 /**
- * @file    type.c
+ * @file
  * @brief   Representation of types.
  * @author  Goetz Lindenmaier, Michael Beck
  * @brief

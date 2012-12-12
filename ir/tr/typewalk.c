@@ -18,7 +18,7 @@
  */
 
 /**
- * @file    typewalk.c
+ * @file
  * @brief   Functionality to modify the type graph.
  * @author  Goetz Lindenmaier
  * @brief

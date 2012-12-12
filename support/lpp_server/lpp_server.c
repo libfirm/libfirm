@@ -1,5 +1,5 @@
 /**
- * @file   lpp_server.c
+ * @file
  * @date   19.07.2005
  * @author Sebastian Hack
  *

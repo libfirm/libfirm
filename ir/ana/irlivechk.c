@@ -18,7 +18,7 @@
  */
 
 /**
- * @file    livechk.c
+ * @file
  * @date    21.04.2007
  * @author  Sebastian Hack
  * @brief

@@ -26,7 +26,7 @@
 #define FIRM_COMMON_ERROR_H
 
 /**
- * @file error.h
+ * @file
  *
  * Error handling for libFirm.
  *

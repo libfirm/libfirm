@@ -18,7 +18,7 @@
  */
 
 /**
- * @file    tr_inheritance.c
+ * @file
  * @brief   Utility routines for inheritance representation
  * @author  Goetz Lindenmaier
  */
