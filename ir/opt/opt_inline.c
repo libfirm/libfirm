@@ -295,9 +295,9 @@ static void copy_compound_params(ir_node *call, ir_type *ctp, ir_graph *called_i
 
 	ir_entity **entities = ALLOCAN(ir_entity*, n_params);
 	for (i = 0; i < n_entities; ++i) {
-		assert(n_ent < n_params);
-
+		assert(n_ent <= n_params);
 		ir_entity *entity = get_class_member(called_frame, i);
+
 		if (is_parameter_entity(entity)) {
 			entities[n_ent] = entity;
 			++n_ent;
@@ -312,7 +312,7 @@ static void copy_compound_params(ir_node *call, ir_type *ctp, ir_graph *called_i
 		ir_node *copyb;
 		ir_entity *new_entity, *old_entity;
 
-		if (! is_compound_type(type))
+		if (!is_compound_type(type))
 			continue;
 
 		mem        = get_Call_mem(call);
@@ -398,7 +398,7 @@ int inline_method(ir_node *const call, ir_graph *called_graph)
 		ir_type *param_tp = get_method_param_type(mtp, i);
 		ir_mode *mode     = get_type_mode(param_tp);
 
-		if (mode != 0 && mode != get_irn_mode(arg)) {
+		if (!is_compound_type(param_tp) && mode != get_irn_mode(arg)) {
 			arg = new_r_Conv(block, arg, mode);
 		}
 		args_in[i] = arg;
