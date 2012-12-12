@@ -322,9 +322,7 @@
  *
  * Adds the node to the start block.
  *
- * Constructor for a Const node. The constant represents a target
- * value.  Sets the type information to type_unknown.  (No more
- * supported: If tv is entity derives a somehow useful type.)
+ * The constant represents a target value.
  *
  * @param *db    A pointer for debug information.
  * @param *irg   The IR graph the node  belongs to.
@@ -338,9 +336,7 @@ FIRM_API ir_node *new_rd_Const_long(dbg_info *db, ir_graph *irg,
  *
  * Adds the node to the start block.
  *
- * Constructor for a Const node. The constant represents a target
- * value.  Sets the type information to type_unknown.  (No more
- * supported: If tv is entity derives a somehow useful type.)
+ * The constant represents a target value.
  *
  * @param *irg   The IR graph the node  belongs to.
  * @param *mode  The mode of the operands and the results.
