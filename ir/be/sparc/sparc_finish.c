@@ -557,7 +557,7 @@ static void peephole_sparc_RestoreZero(ir_node *node)
 static void finish_sparc_Return(ir_node *node)
 {
 	/* Ensure that the restore is directly before the return. */
-	sched_foreach_reverse_from(sched_prev(node), restore) {
+	sched_foreach_reverse_before(node, restore) {
 		if (is_sparc_Restore(restore) || is_sparc_RestoreZero(restore)) {
 			sched_remove(restore);
 			sched_add_before(node, restore);

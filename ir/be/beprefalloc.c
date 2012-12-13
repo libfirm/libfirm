@@ -381,26 +381,20 @@ static void create_congruence_class(ir_node *block, void *data)
 	be_liveness_end_of_block(lv, cls, block, &live_nodes);
 
 	/* check should be same constraints */
-	ir_node *last_phi = NULL;
 	sched_foreach_reverse(block, node) {
-		if (is_Phi(node)) {
-			last_phi = node;
+		if (is_Phi(node))
 			break;
-		}
 
 		be_foreach_definition(node, cls, value, req,
 			congruence_def(&live_nodes, value, req);
 		);
 		be_liveness_transfer(cls, node, &live_nodes);
 	}
-	if (!last_phi) {
-		ir_nodeset_destroy(&live_nodes);
-		return;
-	}
 
 	/* check phi congruence classes */
-	sched_foreach_reverse_from(last_phi, phi) {
-		assert(is_Phi(phi));
+	sched_foreach(block, phi) {
+		if (!is_Phi(phi))
+			break;
 
 		if (!arch_irn_consider_in_reg_alloc(cls, phi))
 			continue;

@@ -482,7 +482,7 @@ static ir_node *pick_delay_slot_for(ir_node *node)
 	}
 
 	unsigned tries = 0;
-	sched_foreach_reverse_from(sched_prev(node), schedpoint) {
+	sched_foreach_reverse_before(node, schedpoint) {
 		if (has_delay_slot(schedpoint))
 			break;
 		if (tries++ >= PICK_DELAY_SLOT_MAX_DISTANCE)

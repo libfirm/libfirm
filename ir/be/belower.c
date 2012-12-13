@@ -833,7 +833,7 @@ static int push_through_perm(ir_node *perm)
 	 * the former dead operand would be live now at the point of
 	 * the Perm, increasing the register pressure by one.
 	 */
-	sched_foreach_reverse_from(sched_prev(perm), irn) {
+	sched_foreach_reverse_before(perm, irn) {
 		be_foreach_use(irn, cls, in_req_, op, op_req_,
 			if (!be_values_interfere(lv, op, one_proj)) {
 				frontier = irn;

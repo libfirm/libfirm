@@ -330,11 +330,8 @@ static void peephole_ia32_Return(ir_node *node)
 		return;
 
 	/* check if this return is the first on the block */
-	sched_foreach_reverse_from(node, irn) {
+	sched_foreach_reverse_before(node, irn) {
 		switch (get_irn_opcode(irn)) {
-		case beo_Return:
-			/* the return node itself, ignore */
-			continue;
 		case iro_Start:
 		case beo_Start:
 			/* ignore no code generated */

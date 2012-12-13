@@ -452,7 +452,7 @@ void be_liveness_end_of_block(const be_lv_t *lv,
 
 void be_liveness_nodes_live_before(be_lv_t const *const lv, arch_register_class_t const *const cls, ir_node const *const pos, ir_nodeset_t *const live)
 {
-	ir_node const *const bl = get_nodes_block(pos);
+	ir_node *const bl = get_nodes_block(pos);
 	be_liveness_end_of_block(lv, cls, bl, live);
 	sched_foreach_reverse(bl, irn) {
 		be_liveness_transfer(cls, irn, live);
