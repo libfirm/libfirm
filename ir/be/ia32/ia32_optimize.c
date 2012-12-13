@@ -363,7 +363,6 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 {
 	int       i;
 	int       maxslot;
-	ir_node  *node;
 	ir_node  *stores[MAXPUSH_OPTIMIZE];
 	ir_node  *block;
 	ir_graph *irg;
@@ -384,7 +383,7 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 	 * attached to the node
 	 */
 	maxslot = -1;
-	for (node = sched_next(irn); !sched_is_end(node); node = sched_next(node)) {
+	sched_foreach_after(irn, node) {
 		ir_node *mem;
 		int offset;
 		int storeslot;
@@ -519,7 +518,6 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 {
 	const arch_register_t *esp = &ia32_registers[REG_ESP];
 	int      i, maxslot, ofs;
-	ir_node  *node, *pred_sp, *block;
 	ir_node  *loads[MAXPUSH_OPTIMIZE];
 	unsigned regmask = 0;
 	unsigned copymask = ~0;
@@ -537,8 +535,8 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 	 * attached to the node
 	 */
 	maxslot = -1;
-	pred_sp = be_get_IncSP_pred(irn);
-	for (node = sched_prev(irn); !sched_is_end(node); node = sched_prev(node)) {
+	ir_node *pred_sp = be_get_IncSP_pred(irn);
+	sched_foreach_reverse_before(irn, node) {
 		int offset;
 		int loadslot;
 		const arch_register_t *sreg, *dreg;
@@ -628,7 +626,7 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 	inc_ofs = (i+1) * 4;
 
 	/* create a new IncSP if needed */
-	block = get_nodes_block(irn);
+	ir_node *const block = get_nodes_block(irn);
 	if (inc_ofs > 0) {
 		pred_sp = be_new_IncSP(esp, block, pred_sp, -inc_ofs, be_get_IncSP_align(irn));
 		sched_add_before(irn, pred_sp);

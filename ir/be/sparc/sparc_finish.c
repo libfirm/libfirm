@@ -489,12 +489,7 @@ static void peephole_sparc_RestoreZero(ir_node *node)
 	 */
 	int n_tries = 10; /* limit our search */
 
-	for (ir_node *schedpoint = node;;) {
-		const arch_register_t *reg;
-		schedpoint = sched_prev(schedpoint);
-		if (sched_is_begin(schedpoint))
-			break;
-
+	sched_foreach_reverse_before(node, schedpoint) {
 		if (--n_tries == 0)
 			break;
 
@@ -504,7 +499,7 @@ static void peephole_sparc_RestoreZero(ir_node *node)
 		if (!mode_is_data(get_irn_mode(schedpoint)))
 			return;
 
-		reg = arch_get_irn_register(schedpoint);
+		arch_register_t const *const reg = arch_get_irn_register(schedpoint);
 		if (!is_restorezeroopt_reg(reg))
 			continue;
 
