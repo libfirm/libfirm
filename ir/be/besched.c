@@ -31,7 +31,7 @@
 
 #define SCHED_INITIAL_GRANULARITY (1 << 14)
 
-static void sched_renumber(const ir_node *block)
+static void sched_renumber(ir_node *const block)
 {
 	sched_info_t *inf;
 	sched_timestep_t step = SCHED_INITIAL_GRANULARITY;

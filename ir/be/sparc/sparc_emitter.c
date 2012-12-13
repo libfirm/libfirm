@@ -497,7 +497,7 @@ static ir_node *pick_delay_slot_for(ir_node *node)
 
 	/* search after the current position */
 	tries = 0;
-	sched_foreach_from(sched_next(node), schedpoint) {
+	sched_foreach_after(node, schedpoint) {
 		if (has_delay_slot(schedpoint))
 			break;
 		if (tries++ >= PICK_DELAY_SLOT_MAX_DISTANCE)
@@ -1372,8 +1372,7 @@ static void pick_delay_slots(size_t n_blocks, ir_node **blocks)
 	      cmp_block_execfreqs);
 
 	for (size_t i = 0; i < n_blocks; ++i) {
-		const ir_node *block = sorted_blocks[i];
-		sched_foreach(block, node) {
+		sched_foreach(sorted_blocks[i], node) {
 			if (!has_delay_slot(node))
 				continue;
 			ir_node *filler = pick_delay_slot_for(node);

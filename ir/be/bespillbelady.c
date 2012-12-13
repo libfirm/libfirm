@@ -516,7 +516,7 @@ static loc_t to_take_or_not_to_take(ir_node* first, ir_node *node,
  * beginning of a loop. We try to reload as much values as possible now so they
  * don't get reloaded inside the loop.
  */
-static void decide_start_workset(const ir_node *block)
+static void decide_start_workset(ir_node *const block)
 {
 	ir_loop    *loop = get_irn_loop(block);
 	ir_node    *first;

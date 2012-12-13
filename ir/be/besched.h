@@ -156,8 +156,8 @@ static inline bool sched_comes_after(const ir_node *n1, const ir_node *n2)
 	return sched_get_time_step(n1) < sched_get_time_step(n2);
 }
 
-#define sched_foreach_from(from, irn) \
-  for (ir_node *irn = from; !sched_is_end(irn); irn = sched_next(irn))
+#define sched_foreach_after(after, irn) \
+	for (ir_node *irn = (after); !sched_is_end(irn = sched_next(irn));)
 
 #define sched_foreach_reverse_from(from, irn) \
   for (ir_node *irn = from; !sched_is_begin(irn); irn = sched_prev(irn))
@@ -168,7 +168,7 @@ static inline bool sched_comes_after(const ir_node *n1, const ir_node *n2)
  * @param irn A ir node pointer used as an iterator.
  */
 #define sched_foreach(block,irn) \
-	sched_foreach_from(sched_first(block), irn)
+	sched_foreach_after((assert(is_Block(block)), block), irn)
 
 /**
  * A shorthand macro for reversely iterating over a schedule.
