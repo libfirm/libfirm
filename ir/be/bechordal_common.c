@@ -157,8 +157,8 @@ void create_borders(ir_node *block, void *env_ptr)
 	}
 
 	foreach_ir_nodeset(&live, irn, iter) {
-		if (be_is_live_in(lv, block, irn))
-			border_def(irn, step, 0);
+		assert(be_is_live_in(lv, block, irn));
+		border_def(irn, step, 0);
 	}
 
 	ir_nodeset_destroy(&live);
