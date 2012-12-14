@@ -166,12 +166,9 @@ static void transform_Spill(ir_node *node)
 
 static void amd64_after_ra_walker(ir_node *block, void *data)
 {
-	ir_node *node, *prev;
 	(void) data;
 
-	for (node = sched_last(block); !sched_is_begin(node); node = prev) {
-		prev = sched_prev(node);
-
+	sched_foreach_reverse_safe(block, node) {
 		if (be_is_Reload(node)) {
 			transform_Reload(node);
 		} else if (be_is_Spill(node)) {

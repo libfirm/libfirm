@@ -893,13 +893,10 @@ static void transform_MemPerm(ir_node *node)
  */
 static void ia32_after_ra_walker(ir_node *block, void *env)
 {
-	ir_node *node, *prev;
 	(void) env;
 
 	/* beware: the schedule is changed here */
-	for (node = sched_last(block); !sched_is_begin(node); node = prev) {
-		prev = sched_prev(node);
-
+	sched_foreach_reverse_safe(block, node) {
 		if (be_is_Reload(node)) {
 			transform_to_Load(node);
 		} else if (be_is_Spill(node)) {

@@ -189,6 +189,16 @@ static inline bool sched_comes_after(const ir_node *n1, const ir_node *n2)
 	for (ir_node *irn, *irn##__next = sched_first(block); !sched_is_end(irn = irn##__next) ? irn##__next = sched_next(irn), 1 : 0;)
 
 /**
+ * A shorthand macro for reversely iterating over a schedule while the current
+ * node may be removed or replaced.
+ *
+ * @param block  The block.
+ * @param irn    A ir node pointer used as an iterator.
+ */
+#define sched_foreach_reverse_safe(block, irn) \
+	for (ir_node *irn, *irn##__prev = sched_last(block); !sched_is_begin(irn = irn##__prev) ? irn##__prev = sched_prev(irn), 1 : 0;)
+
+/**
  * Type for a function scheduling a graph
  */
 typedef void (*schedule_func) (ir_graph *irg);
