@@ -285,12 +285,8 @@ static void mark_dead_nodes_walker(ir_node *node, void *data)
 static void remove_dead_nodes_walker(ir_node *block, void *data)
 {
 	remove_dead_nodes_env_t *env = (remove_dead_nodes_env_t*) data;
-	ir_node                 *node, *next;
 
-	for (node = sched_first(block); ! sched_is_end(node); node = next) {
-		/* get next node now, as after calling sched_remove it will be invalid */
-		next = sched_next(node);
-
+	sched_foreach_safe(block, node) {
 		if (bitset_is_set(env->reachable, get_irn_idx(node)))
 			continue;
 

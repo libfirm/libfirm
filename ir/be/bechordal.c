@@ -275,10 +275,8 @@ end:
 static void constraints(ir_node *const bl, void *const data)
 {
 	be_chordal_env_t *const env = (be_chordal_env_t*)data;
-	for (ir_node *irn = sched_first(bl); !sched_is_end(irn);) {
-		ir_node *const next = sched_next(irn);
+	sched_foreach_safe(bl, irn) {
 		handle_constraints(env, irn);
-		irn = next;
 	}
 }
 

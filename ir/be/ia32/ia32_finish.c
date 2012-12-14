@@ -376,18 +376,14 @@ static void fix_am_source(ir_node *irn)
  */
 static void ia32_finish_irg_walker(ir_node *block, void *env)
 {
-	ir_node *irn, *next;
 	(void) env;
 
 	/* first: turn back AM source if necessary */
-	for (irn = sched_first(block); ! sched_is_end(irn); irn = next) {
-		next = sched_next(irn);
+	sched_foreach_safe(block, irn) {
 		fix_am_source(irn);
 	}
 
-	for (irn = sched_first(block); ! sched_is_end(irn); irn = next) {
-		next = sched_next(irn);
-
+	sched_foreach_safe(block, irn) {
 		/* check if there is a sub which need to be transformed */
 		if (is_ia32_Sub(irn) || is_ia32_Sbb(irn) || is_ia32_xSub(irn)) {
 			ia32_transform_sub_to_neg_add(irn);
@@ -395,8 +391,7 @@ static void ia32_finish_irg_walker(ir_node *block, void *env)
 	}
 
 	/* second: insert copies and finish irg */
-	for (irn = sched_first(block); ! sched_is_end(irn); irn = next) {
-		next = sched_next(irn);
+	sched_foreach_safe(block, irn) {
 		if (is_ia32_irn(irn)) {
 			/* some nodes are just a bit less efficient, but need no fixing if the
 			 * should be same requirement is not fulfilled */

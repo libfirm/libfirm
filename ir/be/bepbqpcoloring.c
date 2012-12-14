@@ -540,15 +540,11 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 static void insert_perms(ir_node *block, void *data)
 {
 	be_chordal_env_t *env    = (be_chordal_env_t*)data;
-	ir_node          *irn;
 
-	for (irn = sched_first(block); !sched_is_end(irn);) {
-		ir_node   *const next = sched_next(irn);
-		be_insn_t *      insn = be_scan_insn(env, irn);
+	sched_foreach_safe(block, irn) {
+		be_insn_t *insn = be_scan_insn(env, irn);
 		if (insn)
 			pre_process_constraints(env, &insn);
-
-		irn = next;
 	}
 }
 
