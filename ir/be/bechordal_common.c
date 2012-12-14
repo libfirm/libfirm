@@ -94,15 +94,11 @@ void create_borders(ir_node *block, void *env_ptr)
 #define border_use(irn, step, real) \
 	border_add(env, head, irn, step, ++pressure, 0, real)
 
-	be_chordal_env_t *env  = (be_chordal_env_t*)env_ptr;
-	bitset_t         *live = bitset_malloc(get_irg_last_idx(env->irg));
-	be_lv_t          *lv   = be_get_irg_liveness(env->irg);
+	be_chordal_env_t *const env = (be_chordal_env_t*)env_ptr;
 
 	unsigned step = 0;
 	unsigned pressure = 0;
 	struct list_head *head;
-
-	bitset_clear_all(live);
 
 	/* Set up the border list in the block info */
 	head = OALLOC(&env->obst, struct list_head);
@@ -110,13 +106,18 @@ void create_borders(ir_node *block, void *env_ptr)
 	assert(pmap_get(struct list_head, env->border_heads, block) == NULL);
 	pmap_insert(env->border_heads, block, head);
 
+	ir_nodeset_t live;
+	ir_nodeset_init(&live);
+
+	be_lv_t *const lv = be_get_irg_liveness(env->irg);
+
 	/*
 	 * Make final uses of all values live out of the block.
 	 * They are necessary to build up real intervals.
 	 */
 	be_lv_foreach_cls(lv, block, be_lv_state_end, env->cls, irn) {
-		DB((dbg, LEVEL_3, "\tMaking live: %+F/%d\n", irn, get_irn_idx(irn)));
-		bitset_set(live, get_irn_idx(irn));
+		DB((dbg, LEVEL_3, "\tMaking live: %+F\n", irn));
+		ir_nodeset_insert(&live, irn);
 		border_use(irn, step, 0);
 	}
 	++step;
@@ -127,15 +128,13 @@ void create_borders(ir_node *block, void *env_ptr)
 	 */
 	sched_foreach_reverse(block, irn) {
 		DB((dbg, LEVEL_1, "\tinsn: %+F, pressure: %d\n", irn, pressure));
-		DB((dbg, LEVEL_2, "\tlive: %B\n", live));
 
 		be_foreach_definition(irn, env->cls, def, req,
 			/*
 			 * If the node defines some value, which can put into a
 			 * register of the current class, make a border for it.
 			 */
-			unsigned idx = get_irn_idx(def);
-			bitset_clear(live, idx);
+			ir_nodeset_remove(&live, def);
 			border_def(def, step, 1);
 		);
 
@@ -144,12 +143,10 @@ void create_borders(ir_node *block, void *env_ptr)
 		 */
 		if (!is_Phi(irn)) {
 			be_foreach_use(irn, env->cls, in_req_, op, op_req_,
-				unsigned idx = get_irn_idx(op);
 				const char *msg = "-";
 
-				if (!bitset_is_set(live, idx)) {
+				if (ir_nodeset_insert(&live, op)) {
 					border_use(op, step, 1);
-					bitset_set(live, idx);
 					msg = "X";
 				}
 
@@ -159,13 +156,12 @@ void create_borders(ir_node *block, void *env_ptr)
 		++step;
 	}
 
-	bitset_foreach(live, elm) {
-		ir_node *irn = get_idx_irn(env->irg, elm);
+	foreach_ir_nodeset(&live, irn, iter) {
 		if (be_is_live_in(lv, block, irn))
 			border_def(irn, step, 0);
 	}
 
-	bitset_free(live);
+	ir_nodeset_destroy(&live);
 }
 
 ir_node *pre_process_constraints(be_chordal_env_t *env, be_insn_t **the_insn)
