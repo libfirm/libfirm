@@ -96,11 +96,6 @@ static void set_uses(ir_node *node)
 	}
 }
 
-void be_peephole_new_node(ir_node * nw)
-{
-	be_liveness_introduce(lv, nw);
-}
-
 /**
  * must be called from peephole optimisations before a node will be killed
  * and its users will be redirected to new_node.
@@ -157,7 +152,7 @@ void be_peephole_exchange(ir_node *old, ir_node *nw)
 	be_peephole_before_exchange(old, nw);
 	sched_remove(old);
 	exchange(old, nw);
-	be_peephole_new_node(nw);
+	be_liveness_introduce(lv, nw);
 }
 
 /**
