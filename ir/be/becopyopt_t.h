@@ -112,7 +112,6 @@ struct neighb_t {
 
 struct affinity_node_t {
 	const ir_node  *irn;          /** a node with affinity edges */
-	int      degree;        /** number of affinity edges in the linked list below */
 	neighb_t *neighbours;   /** a linked list of all affinity neighbours */
 };
 

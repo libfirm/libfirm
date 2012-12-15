@@ -727,7 +727,6 @@ static void add_edge(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs)
 	int             allocnew = 1;
 
 	new_node.irn        = n1;
-	new_node.degree     = 0;
 	new_node.neighbours = NULL;
 	node = set_insert(affinity_node_t, co->nodes, &new_node, sizeof(new_node), hash_irn(new_node.irn));
 
@@ -745,7 +744,6 @@ static void add_edge(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs)
 		nbr->next  = node->neighbours;
 
 		node->neighbours = nbr;
-		node->degree++;
 	}
 
 	/* now nbr points to n1's neighbour-entry of n2 */
@@ -820,10 +818,7 @@ int co_gs_is_optimizable(copy_opt_t *co, ir_node *irn)
 
 	new_node.irn = irn;
 	n = set_find(affinity_node_t, co->nodes, &new_node, sizeof(new_node), hash_irn(new_node.irn));
-	if (n) {
-		return (n->degree > 0);
-	} else
-		return 0;
+	return n && n->neighbours;
 }
 
 static int co_dump_appel_disjoint_constraints(const copy_opt_t *co, ir_node *a, ir_node *b)
