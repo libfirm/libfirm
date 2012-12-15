@@ -77,12 +77,6 @@ typedef struct qnode_t {
 
 static pset *pinned_global;  /**< optimized nodes should not be altered any more */
 
-static inline int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const ir_node *b)
-{
-	be_lv_t *const lv = be_get_irg_liveness(env->irg);
-	return be_values_interfere(lv, a, b);
-}
-
 static int set_cmp_conflict_t(const void *x, const void *y, size_t size)
 {
 	const conflict_t *xx = (const conflict_t*)x;
@@ -118,8 +112,11 @@ static inline int qnode_are_conflicting(const qnode_t *qn, const ir_node *n1, co
 {
 	conflict_t c;
 	/* search for live range interference */
-	if (n1!=n2 && nodes_interfere(qn->ou->co->cenv, n1, n2))
-		return 1;
+	if (n1 != n2) {
+		be_lv_t *const lv = be_get_irg_liveness(qn->ou->co->irg);
+		if (be_values_interfere(lv, n1, n2))
+			return 1;
+	}
 	/* search for recoloring conflicts */
 	if (get_irn_idx(n1) < get_irn_idx(n2)) {
 		c.n1 = n1;
