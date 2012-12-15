@@ -94,13 +94,13 @@ typedef struct {
 } col_cost_pair_t;
 
 typedef struct {
-	ir_nodemap     map;
-	struct obstack obst;
-	copy_opt_t *co;
-	bitset_t   *allocatable_regs;
-	co2_irn_t  *touched;
-	int         visited;
-	int         n_regs;
+	ir_nodemap       map;
+	struct obstack   obst;
+	copy_opt_t      *co;
+	unsigned const  *allocatable_regs;
+	co2_irn_t       *touched;
+	int              visited;
+	int              n_regs;
 	struct list_head cloud_head;
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 } co2_t;
@@ -173,7 +173,7 @@ static co2_irn_t *get_co2_irn(co2_t *env, const ir_node *node)
 		ci->aff          = NULL;
 
 		arch_register_req_t const *const req = arch_get_irn_register_req(node);
-		ci->admissible = arch_register_req_is(req, limited) ? req->limited : env->allocatable_regs->data;
+		ci->admissible = arch_register_req_is(req, limited) ? req->limited : env->allocatable_regs;
 
 		ir_nodemap_insert(&env->map, node, ci);
 	}
@@ -1000,12 +1000,11 @@ static int co_solve_heuristic_new(copy_opt_t *co)
 
 	ir_nodemap_init(&env.map, co->irg);
 	obstack_init(&env.obst);
-	env.touched     = NULL;
-	env.visited     = 0;
-	env.co          = co;
-	env.n_regs      = co->cls->n_regs;
-	env.allocatable_regs = bitset_alloca(co->cls->n_regs);
-	be_put_allocatable_regs(co->irg, co->cls, env.allocatable_regs);
+	env.touched          = NULL;
+	env.visited          = 0;
+	env.co               = co;
+	env.n_regs           = co->cls->n_regs;
+	env.allocatable_regs = co->cenv->allocatable_regs->data;
 	FIRM_DBG_REGISTER(env.dbg, "firm.be.co2");
 	INIT_LIST_HEAD(&env.cloud_head);
 

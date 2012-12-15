@@ -95,7 +95,7 @@ typedef struct aff_edge_t {
 /* main coalescing environment */
 typedef struct co_mst_env_t {
 	int              n_regs;         /**< number of regs in class */
-	bitset_t         *allocatable_regs; /**< set containing all global ignore registers */
+	bitset_t const   *allocatable_regs; /**< set containing all global ignore registers */
 	ir_nodemap        map;           /**< phase object holding data for nodes */
 	struct obstack    obst;
 	pqueue_t         *chunks;        /**< priority queue for chunks */
@@ -1403,37 +1403,31 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
  */
 static int co_solve_heuristic_mst(copy_opt_t *co)
 {
-	unsigned     n_regs            = co->cls->n_regs;
-	bitset_t     *allocatable_regs = bitset_alloca(n_regs);
-	unsigned     i, j;
-	size_t       pn;
-	ir_node      *irn;
-	co_mst_env_t mst_env;
-
 	last_chunk_id = 0;
 
 	stat_ev_tim_push();
 
 	/* init phase */
+	co_mst_env_t mst_env;
 	ir_nodemap_init(&mst_env.map, co->irg);
 	obstack_init(&mst_env.obst);
 
-	be_put_allocatable_regs(co->irg, co->cls, allocatable_regs);
+	unsigned const n_regs = co->cls->n_regs;
 
 	mst_env.n_regs           = n_regs;
 	mst_env.chunks           = new_pqueue();
 	mst_env.co               = co;
-	mst_env.allocatable_regs = allocatable_regs;
+	mst_env.allocatable_regs = co->cenv->allocatable_regs;
 	mst_env.ifg              = co->cenv->ifg;
 	INIT_LIST_HEAD(&mst_env.chunklist);
 	mst_env.chunk_visited    = 0;
 	mst_env.single_cols      = OALLOCN(&mst_env.obst, col_cost_t*, n_regs);
 
-	for (i = 0; i < n_regs; ++i) {
+	for (unsigned i = 0; i < n_regs; ++i) {
 		col_cost_t *vec = OALLOCN(&mst_env.obst, col_cost_t, n_regs);
 
 		mst_env.single_cols[i] = vec;
-		for (j = 0; j < n_regs; ++j) {
+		for (unsigned j = 0; j < n_regs; ++j) {
 			vec[j].col  = j;
 			vec[j].cost = REAL(0.0);
 		}
@@ -1459,12 +1453,12 @@ static int co_solve_heuristic_mst(copy_opt_t *co)
 	}
 
 	/* apply coloring */
-	for (pn = 0; pn < ARR_LEN(mst_env.map.data); ++pn) {
+	for (size_t pn = 0; pn < ARR_LEN(mst_env.map.data); ++pn) {
 		co_mst_irn_t *mirn = (co_mst_irn_t*)mst_env.map.data[pn];
 		const arch_register_t *reg;
 		if (mirn == NULL)
 			continue;
-		irn = get_idx_irn(co->irg, pn);
+		ir_node *const irn = get_idx_irn(co->irg, pn);
 		if (arch_irn_is_ignore(irn))
 			continue;
 
