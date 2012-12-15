@@ -66,7 +66,6 @@ typedef struct node_stat_t {
  */
 typedef struct qnode_t {
 	struct list_head queue;            /**< chaining of unit_t->queue */
-	const unit_t     *ou;              /**< the opt unit this node belongs to */
 	int              color;            /**< target color */
 	set              *conflicts;       /**< contains conflict_t's. All internal conflicts */
 	int              mis_costs;        /**< costs of nodes/copies in the mis. */
@@ -341,7 +340,7 @@ static int qnode_try_color(qnode_t const *const qn, bitset_t const *const alloca
 		} else {
 			if (qnode_is_pinned_local(qn, confl_node)) {
 				/* changing test_node would change back a node of current ou */
-				if (confl_node == qn->ou->nodes[0]) {
+				if (confl_node == qn->mis[0]) {
 					/* Adding a conflict edge between testnode and conflnode
 					 * would introduce a root -- arg interference.
 					 * So remove the arg of the qn */
@@ -467,7 +466,6 @@ no_stable_set:
 static inline qnode_t *new_qnode(const unit_t *ou, int color)
 {
 	qnode_t *qn = XMALLOC(qnode_t);
-	qn->ou            = ou;
 	qn->color         = color;
 	qn->mis           = XMALLOCN(ir_node*, ou->node_count);
 	qn->conflicts     = new_set(set_cmp_conflict_t, SLOTS_CONFLICTS);
