@@ -167,13 +167,6 @@ void be_init_copynone(void)
 
 #undef QUICK_AND_DIRTY_HACK
 
-static int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const ir_node *b)
-{
-	be_lv_t *const lv = be_get_irg_liveness(env->irg);
-	return be_values_interfere(lv, a, b);
-}
-
-
 /******************************************************************************
     _____                           _
    / ____|                         | |
@@ -307,7 +300,7 @@ static int co_get_costs_all_one(const ir_node *root, int pos)
  */
 static int ou_max_ind_set_costs(unit_t *ou)
 {
-	be_chordal_env_t *chordal_env = ou->co->cenv;
+	be_lv_t *const lv = be_get_irg_liveness(ou->co->irg);
 	ir_node **safe, **unsafe;
 	int i, o, safe_count, safe_costs, unsafe_count, *unsafe_costs;
 	bitset_t *curr;
@@ -328,7 +321,7 @@ static int ou_max_ind_set_costs(unit_t *ou)
 		for (o=1; o<ou->node_count; ++o) {
 			if (i==o)
 				continue;
-			if (nodes_interfere(chordal_env, ou->nodes[i], ou->nodes[o])) {
+			if (be_values_interfere(lv, ou->nodes[i], ou->nodes[o])) {
 				unsafe_costs[unsafe_count] = ou->costs[i];
 				unsafe[unsafe_count] = ou->nodes[i];
 				++unsafe_count;
@@ -351,7 +344,7 @@ static int ou_max_ind_set_costs(unit_t *ou)
 			bitset_set(best, i);
 			/* check if it is a stable set */
 			for (o=bitset_next_set(best, 0); o!=-1 && o<i; o=bitset_next_set(best, o+1))
-				if (nodes_interfere(chordal_env, unsafe[i], unsafe[o])) {
+				if (be_values_interfere(lv, unsafe[i], unsafe[o])) {
 					bitset_clear(best, i); /* clear the bit and try next one */
 					break;
 				}
@@ -367,7 +360,7 @@ static int ou_max_ind_set_costs(unit_t *ou)
 			/* check if curr is a stable set */
 			for (i=bitset_next_set(curr, 0); i!=-1; i=bitset_next_set(curr, i+1))
 				for (o=bitset_next_set(curr, i+1); o!=-1; o=bitset_next_set(curr, o+1)) /* !!!!! difference to qnode_max_ind_set(): NOT (curr, i) */
-						if (nodes_interfere(chordal_env, unsafe[i], unsafe[o]))
+						if (be_values_interfere(lv, unsafe[i], unsafe[o]))
 							goto no_stable_set;
 
 			/* if we arrive here, we have a stable set */
@@ -409,6 +402,7 @@ static void co_collect_units(ir_node *irn, void *env)
 	unit->node_count = 1;
 	INIT_LIST_HEAD(&unit->queue);
 
+	be_lv_t *const lv = be_get_irg_liveness(co->irg);
 	/* Phi with some/all of its arguments */
 	if (is_Reg_Phi(irn)) {
 		int i, arity;
@@ -427,7 +421,7 @@ static void co_collect_units(ir_node *irn, void *env)
 			assert(arch_get_irn_reg_class(arg) == co->cls && "Argument not in same register class.");
 			if (arg == irn)
 				continue;
-			if (nodes_interfere(co->cenv, irn, arg)) {
+			if (be_values_interfere(lv, irn, arg)) {
 				unit->inevitable_costs += co->get_costs(irn, i);
 				continue;
 			}
@@ -461,7 +455,7 @@ static void co_collect_units(ir_node *irn, void *env)
 		unit->costs = XREALLOC(unit->costs, int,      unit->node_count);
 	} else if (is_Perm_Proj(irn)) {
 		/* Proj of a perm with corresponding arg */
-		assert(!nodes_interfere(co->cenv, irn, get_Perm_src(irn)));
+		assert(!be_values_interfere(lv, irn, get_Perm_src(irn)));
 		unit->nodes = XMALLOCN(ir_node*, 2);
 		unit->costs = XMALLOCN(int,      2);
 		unit->node_count = 2;
@@ -479,7 +473,7 @@ static void co_collect_units(ir_node *irn, void *env)
 				ir_node *o  = get_irn_n(skip_Proj(irn), i);
 				if (arch_irn_is_ignore(o))
 					continue;
-				if (nodes_interfere(co->cenv, irn, o))
+				if (be_values_interfere(lv, irn, o))
 					continue;
 				++count;
 			}
@@ -497,7 +491,7 @@ static void co_collect_units(ir_node *irn, void *env)
 				if (other & (1U << i)) {
 					ir_node *o  = get_irn_n(skip_Proj(irn), i);
 					if (!arch_irn_is_ignore(o) &&
-							!nodes_interfere(co->cenv, irn, o)) {
+							!be_values_interfere(lv, irn, o)) {
 						unit->nodes[k] = o;
 						unit->costs[k] = co->get_costs(irn, -1);
 						++k;
@@ -695,6 +689,7 @@ void co_complete_stats(const copy_opt_t *co, co_complete_stats_t *stat)
 	memset(stat, 0, sizeof(stat[0]));
 
 	/* count affinity edges. */
+	be_lv_t *const lv = be_get_irg_liveness(co->irg);
 	co_gs_foreach_aff_node(co, an) {
 		stat->aff_nodes += 1;
 		bitset_set(seen, get_irn_idx(an->irn));
@@ -708,7 +703,7 @@ void co_complete_stats(const copy_opt_t *co, co_complete_stats_t *stat)
 					stat->unsatisfied_edges += 1;
 				}
 
-				if (nodes_interfere(co->cenv, an->irn, neigh->irn)) {
+				if (be_values_interfere(lv, an->irn, neigh->irn)) {
 					stat->aff_int += 1;
 					stat->inevit_costs += neigh->costs;
 				}
