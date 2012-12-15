@@ -176,8 +176,6 @@ typedef struct draw_chordal_env_t {
 } draw_chordal_env_t;
 
 struct block_dims {
-	unsigned max_step;
-	int      max_color;
 	rect_t   box;
 	rect_t   subtree_box;
 };
@@ -191,17 +189,16 @@ static void block_dims_walker(ir_node *block, void *data)
 	const draw_chordal_opts_t *opts = env->opts;
 	struct block_dims         *dims = OALLOCZ(&env->obst, struct block_dims);
 
+	unsigned max_color = 0;
+	unsigned max_step  = 0;
 	foreach_border_head(head, b) {
-		ir_node               *irn = b->irn;
-		const arch_register_t *reg = arch_get_irn_register(irn);
-		int                    col = reg->index;
-
-		dims->max_step  = MAX(dims->max_step, b->step);
-		dims->max_color = MAX(dims->max_color, col);
+		unsigned const col = arch_get_irn_register(b->irn)->index;
+		max_color = MAX(max_color, col);
+		max_step  = MAX(max_step,  b->step);
 	}
 
-	dims->box.w = (dims->max_color + 2) * opts->h_inter_gap;
-	dims->box.h = dims->max_step * opts->v_inter_gap;
+	dims->box.w = (max_color + 2) * opts->h_inter_gap;
+	dims->box.h =  max_step       * opts->v_inter_gap;
 
 	pmap_insert(env->block_dims, block, dims);
 }
