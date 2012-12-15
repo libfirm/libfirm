@@ -344,16 +344,16 @@ void be_ifg_stat(ir_graph *irg, be_ifg_t *ifg, be_ifg_stat_t *stat)
 	nodes_iter_t      nodes_it;
 	neighbours_iter_t neigh_it;
 
-	memset(stat, 0, sizeof(stat[0]));
-
+	size_t n_nodes = 0;
 	size_t n_edges = 0;
 	be_ifg_foreach_node(ifg, &nodes_it, n) {
-		stat->n_nodes += 1;
+		++n_nodes;
 		be_ifg_foreach_neighbour(ifg, &neigh_it, n, m) {
 			++n_edges;
 		}
 	}
 
+	stat->n_nodes = n_nodes;
 	/* Every interference edge was counted twice, once for each end. */
 	stat->n_edges = n_edges / 2;
 	stat->n_comps = int_component_stat(irg, ifg);
