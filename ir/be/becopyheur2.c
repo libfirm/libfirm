@@ -111,7 +111,7 @@ struct co2_irn_t {
 	co2_irn_t       *touched_next;
 	col_t            tmp_col;
 	col_t            orig_col;
-	bitset_t        *adm_cache;
+	unsigned const  *adm_cache;
 	unsigned         fixed          : 1;
 	unsigned         tmp_fixed      : 1;
 	struct list_head changed_list;
@@ -241,18 +241,12 @@ static inline int color_is_fix(co2_t *env, const ir_node *irn)
 	return ci->fixed || ci->tmp_fixed;
 }
 
-static inline bitset_t const *admissible_colors(co2_t *const env, co2_irn_t *const ci)
+static inline unsigned const *admissible_colors(co2_t *const env, co2_irn_t *const ci)
 {
 	if (ci->adm_cache == NULL) {
-		const arch_register_req_t *req;
-		ci->adm_cache = bitset_obstack_alloc(&env->obst, env->n_regs);
-		req = arch_get_irn_register_req(ci->irn);
-
-		if (arch_register_req_is(req, limited)) {
-			rbitset_copy_to_bitset(req->limited, ci->adm_cache);
-		} else {
-			bitset_copy(ci->adm_cache, env->allocatable_regs);
-		}
+		arch_register_req_t const *const req = arch_get_irn_register_req(ci->irn);
+		ci->adm_cache = arch_register_req_is(req, limited)
+			? req->limited : env->allocatable_regs->data;
 	}
 
 	return ci->adm_cache;
@@ -260,8 +254,8 @@ static inline bitset_t const *admissible_colors(co2_t *const env, co2_irn_t *con
 
 static inline int is_color_admissible(co2_t *env, co2_irn_t *ci, col_t col)
 {
-	bitset_t const *const bs = admissible_colors(env, ci);
-	return bitset_is_set(bs, col);
+	unsigned const *const bs = admissible_colors(env, ci);
+	return rbitset_is_set(bs, col);
 }
 
 static void incur_constraint_costs(ir_node const *const irn, col_cost_pair_t *const col_costs, int const costs)
@@ -328,8 +322,8 @@ static void determine_color_costs(co2_t *env, co2_irn_t *ci, col_cost_pair_t *co
 	be_ifg_neighbours_break(&it);
 
 	/* Set the costs to infinity for each color which is not allowed at this node. */
-	bitset_t const *const admissible = admissible_colors(env, ci);
-	bitset_foreach_clear(admissible, elm) {
+	unsigned const *const admissible = admissible_colors(env, ci);
+	rbitset_foreach_clear(admissible, n_regs, elm) {
 		col_costs[elm].costs  = INT_MAX;
 	}
 }
@@ -562,29 +556,26 @@ static int examine_subtree_coloring(co2_cloud_irn_t *ci, col_t col)
  */
 static void node_color_badness(co2_cloud_irn_t *ci, int *badness)
 {
-	co2_t *env     = ci->cloud->env;
-	co2_irn_t *ir  = &ci->inh;
-	be_ifg_t *ifg  = env->co->cenv->ifg;
+	co2_t *const env    = ci->cloud->env;
+	size_t const n_regs = env->n_regs;
 
 	neighbours_iter_t it;
 
 	{
-		bitset_t const *const bs = admissible_colors(env, &ci->inh);
-		bitset_foreach_clear(bs, elm)
+		unsigned const *const bs = admissible_colors(env, &ci->inh);
+		rbitset_foreach_clear(bs, n_regs, elm)
 			badness[elm] = ci->costs;
 	}
 
 	/* Use constrained/fixed interfering neighbors to influence the color badness */
-	be_ifg_foreach_neighbour(ifg, &it, ir->irn, irn) {
+	be_ifg_foreach_neighbour(env->co->cenv->ifg, &it, ci->inh.irn, irn) {
 		co2_irn_t *ni = get_co2_irn(env, irn);
 
-		bitset_t const *const bs = admissible_colors(env, ni);
-		if (bitset_popcount(bs) == 1) {
-			size_t c = bitset_next_set(bs, 0);
+		unsigned const *const bs = admissible_colors(env, ni);
+		if (rbitset_popcount(bs, n_regs) == 1) {
+			size_t const c = rbitset_next_max(bs, 0, n_regs, true);
 			badness[c] += ci->costs;
-		}
-
-		else if (ni->fixed) {
+		} else if (ni->fixed) {
 			col_t c = get_col(env, ni->irn);
 			badness[c] += ci->costs;
 		}
@@ -744,7 +735,7 @@ static void populate_cloud(co2_t *env, co2_cloud_t *cloud, affinity_node_t *a, i
 	/* add the node's cost to the total costs of the cloud. */
 	ci->costs        = costs;
 	cloud->costs    += costs;
-	cloud->freedom  += bitset_popcount(admissible_colors(env, &ci->inh));
+	cloud->freedom  += rbitset_popcount(admissible_colors(env, &ci->inh), env->n_regs);
 	cloud->n_memb   += 1;
 
 	/* If this is the heaviest node in the cloud, set it as the cloud's master. */

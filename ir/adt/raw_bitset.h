@@ -559,4 +559,13 @@ static inline void rbitset_copy_into(unsigned *dst, const unsigned *src,
 #define rbitset_foreach(bitset, size, elm) \
 	for (size_t elm = 0; (elm = rbitset_next_max((bitset), elm, size, 1)) != (size_t)-1; ++elm)
 
+/**
+ * Convenience macro for raw bitset iteration.
+ * @param bitset The bitset.
+ * @param size   Size of the bitset.
+ * @param elm    A size_t variable.
+ */
+#define rbitset_foreach_clear(bitset, size, elm) \
+	for (size_t elm = 0; (elm = rbitset_next_max((bitset), elm, size, 0)) != (size_t)-1; ++elm)
+
 #endif
