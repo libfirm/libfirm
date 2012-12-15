@@ -270,17 +270,14 @@ static inline int is_color_admissible(co2_t *env, co2_irn_t *ci, col_t col)
 	return bitset_is_set(bs, col);
 }
 
-static void incur_constraint_costs(co2_t *env, const ir_node *irn, col_cost_pair_t *col_costs, int costs)
+static void incur_constraint_costs(ir_node const *const irn, col_cost_pair_t *const col_costs, int const costs)
 {
 	const arch_register_req_t *req = arch_get_irn_register_req(irn);
 
 	if (arch_register_req_is(req, limited)) {
-		unsigned n_regs   = env->co->cls->n_regs;
-		unsigned n_constr = 0;
-		unsigned i;
-
-		n_constr = rbitset_popcount(req->limited, n_regs);
-		for (i = 0; i < n_regs; ++i) {
+		unsigned const n_regs   = req->cls->n_regs;
+		unsigned const n_constr = rbitset_popcount(req->limited, n_regs);
+		for (unsigned i = 0; i < n_regs; ++i) {
 			if (rbitset_is_set(req->limited, i)) {
 				col_costs[i].costs = add_saturated(col_costs[i].costs, costs / n_constr);
 			}
@@ -324,7 +321,7 @@ static void determine_color_costs(co2_t *env, co2_irn_t *ci, col_cost_pair_t *co
 				col_costs[col].costs = add_saturated(col_costs[col].costs, -n->costs * 128);
 			}
 
-			incur_constraint_costs(env, n->irn, col_costs, -n->costs);
+			incur_constraint_costs(n->irn, col_costs, -n->costs);
 		}
 	}
 
@@ -334,7 +331,7 @@ static void determine_color_costs(co2_t *env, co2_irn_t *ci, col_cost_pair_t *co
 			col_costs[col].costs  = INT_MAX;
 		}
 		else {
-			incur_constraint_costs(env, pos, col_costs, INT_MAX);
+			incur_constraint_costs(pos, col_costs, INT_MAX);
 			col_costs[col].costs = add_saturated(col_costs[col].costs, 8 * be_ifg_degree(ifg, pos));
 		}
 	}
