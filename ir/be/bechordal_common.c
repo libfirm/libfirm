@@ -36,9 +36,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 /* Make a fourcc for border checking. */
 #define BORDER_FOURCC   FOURCC('B', 'O', 'R', 'D')
 
-static inline border_t *border_add(be_chordal_env_t *env, struct list_head *head,
-			ir_node *irn, unsigned step, unsigned pressure,
-			unsigned is_def, unsigned is_real)
+static inline border_t *border_add(be_chordal_env_t *const env, struct list_head *const head, ir_node *const irn, unsigned const step, unsigned const is_def, unsigned const is_real)
 {
 	border_t *b;
 
@@ -72,7 +70,6 @@ static inline border_t *border_add(be_chordal_env_t *env, struct list_head *head
 		DEBUG_ONLY(assert(b && b->magic == BORDER_FOURCC && "Illegal border encountered");)
 	}
 
-	b->pressure = pressure;
 	b->is_def = is_def;
 	b->is_real = is_real;
 	b->irn = irn;
@@ -88,16 +85,15 @@ void create_borders(ir_node *block, void *env_ptr)
 {
 /* Convenience macro for a def */
 #define border_def(irn, step, real) \
-	border_add(env, head, irn, step, pressure--, 1, real)
+	border_add(env, head, irn, step, 1, real)
 
 /* Convenience macro for a use */
 #define border_use(irn, step, real) \
-	border_add(env, head, irn, step, ++pressure, 0, real)
+	border_add(env, head, irn, step, 0, real)
 
 	be_chordal_env_t *const env = (be_chordal_env_t*)env_ptr;
 
 	unsigned step = 0;
-	unsigned pressure = 0;
 	struct list_head *head;
 
 	/* Set up the border list in the block info */
@@ -130,7 +126,7 @@ void create_borders(ir_node *block, void *env_ptr)
 		if (is_Phi(irn))
 			break;
 
-		DB((dbg, LEVEL_1, "\tinsn: %+F, pressure: %d\n", irn, pressure));
+		DB((dbg, LEVEL_1, "\tinsn: %+F\n", irn));
 
 		be_foreach_definition(irn, env->cls, def, req,
 			/*
