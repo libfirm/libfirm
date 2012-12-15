@@ -531,7 +531,7 @@ static void ilp2_build(ilp_env_t *ienv)
 {
 	int lower_bound;
 
-	ienv->lp = lpp_new(ienv->co->name, lpp_minimize);
+	ienv->lp = lpp_new("copyilp", lpp_minimize);
 	build_coloring_cstr(ienv);
 	build_interference_cstr(ienv);
 	build_affinity_cstr(ienv);
@@ -555,8 +555,7 @@ static void ilp2_apply(ilp_env_t *ienv)
 		int              i;
 
 		if (state != lpp_optimal) {
-			printf("WARNING %s: Solution state is not 'optimal': %d\n",
-			       ienv->co->name, (int)state);
+			ir_printf("WARNING: Solution state of %F register class %s is not 'optimal': %d\n", ienv->co->irg, ienv->co->cls->name, (int)state);
 			if (state < lpp_feasible) {
 				panic("Copy coalescing solution not feasible!");
 			}

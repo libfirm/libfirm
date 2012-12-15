@@ -28,7 +28,6 @@ struct copy_opt_t {
 	be_chordal_env_t            *cenv;
 	const arch_register_class_t *cls;
 	ir_graph                    *irg;
-	char                        *name;       /**< ProgName__IrgName__RegClassName */
 	cost_fct_t                  get_costs;   /**< function ptr used to get costs for copies */
 
 	/** Representation as optimization units */

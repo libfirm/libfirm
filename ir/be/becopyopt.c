@@ -182,31 +182,18 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, cost_fct_t get_costs)
 {
-	const char *s1, *s2, *s3;
-	size_t len;
-	copy_opt_t *co;
-
 	FIRM_DBG_REGISTER(dbg, "ir.be.copyopt");
 
-	co = XMALLOCZ(copy_opt_t);
+	copy_opt_t *const co = XMALLOCZ(copy_opt_t);
 	co->cenv      = chordal_env;
 	co->irg       = chordal_env->irg;
 	co->cls       = chordal_env->cls;
 	co->get_costs = get_costs;
-
-	s1 = get_irp_name();
-	s2 = get_entity_name(get_irg_entity(co->irg));
-	s3 = chordal_env->cls->name;
-	len = strlen(s1) + strlen(s2) + strlen(s3) + 5;
-	co->name = XMALLOCN(char, len);
-	snprintf(co->name, len, "%s__%s__%s", s1, s2, s3);
-
 	return co;
 }
 
 void free_copy_opt(copy_opt_t *co)
 {
-	xfree(co->name);
 	free(co);
 }
 
