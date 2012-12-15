@@ -1418,7 +1418,7 @@ static int co_solve_heuristic_mst(copy_opt_t *co)
 	ir_nodemap_init(&mst_env.map, co->irg);
 	obstack_init(&mst_env.obst);
 
-	be_put_allocatable_regs(co->cenv->irg, co->cls, allocatable_regs);
+	be_put_allocatable_regs(co->irg, co->cls, allocatable_regs);
 
 	mst_env.n_regs           = n_regs;
 	mst_env.chunks           = new_pqueue();

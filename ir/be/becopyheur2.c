@@ -1041,7 +1041,7 @@ static int co_solve_heuristic_new(copy_opt_t *co)
 	env.co          = co;
 	env.n_regs      = co->cls->n_regs;
 	env.allocatable_regs = bitset_alloca(co->cls->n_regs);
-	be_put_allocatable_regs(co->cenv->irg, co->cls, env.allocatable_regs);
+	be_put_allocatable_regs(co->irg, co->cls, env.allocatable_regs);
 	FIRM_DBG_REGISTER(env.dbg, "firm.be.co2");
 	INIT_LIST_HEAD(&env.cloud_head);
 
