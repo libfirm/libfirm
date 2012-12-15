@@ -54,7 +54,7 @@ ir_node *be_ifg_neighbours_begin(const be_ifg_t *ifg, neighbours_iter_t *iter,
                                  const ir_node *irn);
 ir_node *be_ifg_neighbours_next(neighbours_iter_t *iter);
 void     be_ifg_neighbours_break(neighbours_iter_t *iter);
-ir_node *be_ifg_nodes_begin(const be_ifg_t *ifg, nodes_iter_t *iter);
+nodes_iter_t be_ifg_nodes_begin(be_ifg_t const *ifg);
 ir_node *be_ifg_nodes_next(nodes_iter_t *iter);
 int      be_ifg_cliques_begin(const be_ifg_t *ifg, cliques_iter_t *iter,
                               ir_node **buf);
@@ -67,8 +67,8 @@ int      be_ifg_degree(const be_ifg_t *ifg, const ir_node *irn);
 
 #define be_ifg_foreach_node(ifg, pos) \
 	for (bool pos##__once = true; pos##__once;) \
-		for (nodes_iter_t pos##__iter; pos##__once; pos##__once = false) \
-			for (ir_node *pos = be_ifg_nodes_begin(ifg, &pos##__iter); pos; pos = be_ifg_nodes_next(&pos##__iter))
+		for (nodes_iter_t pos##__iter = be_ifg_nodes_begin(ifg); pos##__once; pos##__once = false) \
+			for (ir_node *pos; (pos = be_ifg_nodes_next(&pos##__iter));)
 
 #define be_ifg_foreach_clique(ifg, iter, buf, count) \
 	for(*(count) = be_ifg_cliques_begin(ifg, iter, buf); \
