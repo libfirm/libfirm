@@ -32,6 +32,8 @@
 #include "config.h"
 
 #include "be_t.h"
+#include "beintlive_t.h"
+#include "beirg.h"
 #include "bitset.h"
 #include "error.h"
 #include "raw_bitset.h"
@@ -338,6 +340,7 @@ static inline void remove_edge(set *edges, ir_node *n1, ir_node *n2, size_t *cou
 static void build_clique_star_cstr(ilp_env_t *ienv)
 {
 	/* for each node with affinity edges */
+	be_lv_t *const lv = be_get_irg_liveness(ienv->co->irg);
 	co_gs_foreach_aff_node(ienv->co, aff) {
 		struct obstack ob;
 		const ir_node *center = aff->irn;
@@ -366,7 +369,7 @@ static void build_clique_star_cstr(ilp_env_t *ienv)
 		n_edges = 0;
 		for (i=0; i<n_nodes; ++i) {
 			for (o=0; o<i; ++o) {
-				if (be_ifg_connected(ienv->co->cenv->ifg, nodes[i], nodes[o]))
+				if (be_values_interfere(lv, nodes[i], nodes[o]))
 					add_edge(edges, nodes[i], nodes[o], &n_edges);
 			}
 		}
@@ -449,7 +452,6 @@ static void build_clique_star_cstr(ilp_env_t *ienv)
 
 static void extend_path(ilp_env_t *ienv, pdeq *path, const ir_node *irn)
 {
-	be_ifg_t *ifg = ienv->co->cenv->ifg;
 	int i, len;
 	ir_node **curr_path;
 	affinity_node_t *aff;
@@ -469,13 +471,14 @@ static void extend_path(ilp_env_t *ienv, pdeq *path, const ir_node *irn)
 	curr_path = ALLOCAN(ir_node*, len);
 	pdeq_copyl(path, (const void **)curr_path);
 
+	be_lv_t *const lv = be_get_irg_liveness(ienv->co->irg);
 	for (i=1; i<len; ++i) {
-		if (be_ifg_connected(ifg, irn, curr_path[i]))
+		if (be_values_interfere(lv, irn, curr_path[i]))
 			goto end;
 	}
 
 	/* check for terminating interference */
-	if (be_ifg_connected(ifg, irn, curr_path[0])) {
+	if (be_values_interfere(lv, irn, curr_path[0])) {
 		/* One node is not a path. */
 		/* And a path of length 2 is covered by a clique star constraint. */
 		if (len > 2) {

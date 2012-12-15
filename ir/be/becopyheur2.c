@@ -17,6 +17,8 @@
 #include <stdlib.h>
 #include <limits.h>
 
+#include "beintlive_t.h"
+#include "beirg.h"
 #include "list.h"
 #include "pdeq.h"
 #include "bitset.h"
@@ -749,7 +751,6 @@ static int coalesce_top_down(co2_cloud_irn_t *ci, int child_nr, int depth)
 
 static void populate_cloud(co2_t *env, co2_cloud_t *cloud, affinity_node_t *a, int curr_costs)
 {
-	be_ifg_t *ifg       = env->co->cenv->ifg;
 	co2_cloud_irn_t *ci = get_co2_cloud_irn(env, a->irn);
 	int costs           = 0;
 
@@ -763,10 +764,11 @@ static void populate_cloud(co2_t *env, co2_cloud_t *cloud, affinity_node_t *a, i
 	DB((env->dbg, LEVEL_2, "\t%+F\n", ci->inh.irn));
 
 	/* determine the nodes costs */
+	be_lv_t *const lv = be_get_irg_liveness(env->co->irg);
 	co_gs_foreach_neighb(a, n) {
 		costs += n->costs;
 		DB((env->dbg, LEVEL_3, "\t\tneigh %+F cost %d\n", n->irn, n->costs));
-		if (be_ifg_connected(ifg, a->irn, n->irn))
+		if (be_values_interfere(lv, a->irn, n->irn))
 			cloud->inevit += n->costs;
 	}
 

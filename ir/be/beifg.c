@@ -37,12 +37,6 @@ void be_ifg_free(be_ifg_t *self)
 	free(self);
 }
 
-int be_ifg_connected(const be_ifg_t *ifg, const ir_node *a, const ir_node *b)
-{
-	be_lv_t *lv = be_get_irg_liveness(ifg->env->irg);
-	return be_values_interfere(lv, a, b);
-}
-
 static void nodes_walker(ir_node *bl, void *data)
 {
 	nodes_iter_t     *it   = (nodes_iter_t*)data;

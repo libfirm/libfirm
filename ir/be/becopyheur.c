@@ -79,12 +79,8 @@ static pset *pinned_global;  /**< optimized nodes should not be altered any more
 
 static inline int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const ir_node *b)
 {
-	if (env->ifg)
-		return be_ifg_connected(env->ifg, a, b);
-	else {
-		be_lv_t *lv = be_get_irg_liveness(env->irg);
-		return be_values_interfere(lv, a, b);
-	}
+	be_lv_t *const lv = be_get_irg_liveness(env->irg);
+	return be_values_interfere(lv, a, b);
 }
 
 static int set_cmp_conflict_t(const void *x, const void *y, size_t size)

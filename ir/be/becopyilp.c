@@ -14,6 +14,8 @@
 #include <stdbool.h>
 
 #include "be_t.h"
+#include "beintlive_t.h"
+#include "beirg.h"
 #include "irtools.h"
 #include "irprintf.h"
 
@@ -106,10 +108,13 @@ static inline bool sr_is_simplicial(size_red_t *sr, const ir_node *ifn)
 			all[size++] = curr;
 
 	/* check if these form a clique */
-	for (i=0; i<size; ++i)
-		for (o=i+1; o<size; ++o)
-			if (!be_ifg_connected(ifg, all[i], all[o]))
+	be_lv_t *const lv = be_get_irg_liveness(sr->co->irg);
+	for (i = 0; i < size; ++i) {
+		for (o = i + 1; o < size; ++o) {
+			if (!be_values_interfere(lv, all[i], all[o]))
 				return false;
+		}
+	}
 
 	/* all edges exist so this is a clique */
 	return true;

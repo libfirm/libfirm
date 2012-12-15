@@ -169,12 +169,8 @@ void be_init_copynone(void)
 
 static int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const ir_node *b)
 {
-	if (env->ifg)
-		return be_ifg_connected(env->ifg, a, b);
-	else {
-		be_lv_t *lv = be_get_irg_liveness(env->irg);
-		return be_values_interfere(lv, a, b);
-	}
+	be_lv_t *const lv = be_get_irg_liveness(env->irg);
+	return be_values_interfere(lv, a, b);
 }
 
 
@@ -778,7 +774,8 @@ static void add_edge(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs)
 
 static inline void add_edges(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs)
 {
-	if (! be_ifg_connected(co->cenv->ifg, n1, n2)) {
+	be_lv_t *const lv = be_get_irg_liveness(co->irg);
+	if (!be_values_interfere(lv, n1, n2)) {
 		add_edge(co, n1, n2, costs);
 		add_edge(co, n2, n1, costs);
 	}

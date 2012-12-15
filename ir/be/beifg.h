@@ -48,8 +48,6 @@ typedef struct cliques_iter_t {
 } cliques_iter_t;
 
 void     be_ifg_free(be_ifg_t *ifg);
-int      be_ifg_connected(const be_ifg_t *ifg, const ir_node *a,
-                          const ir_node *b);
 ir_node *be_ifg_neighbours_begin(const be_ifg_t *ifg, neighbours_iter_t *iter,
                                  const ir_node *irn);
 ir_node *be_ifg_neighbours_next(neighbours_iter_t *iter);
