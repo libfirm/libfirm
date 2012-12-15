@@ -343,18 +343,18 @@ void be_ifg_stat(ir_graph *irg, be_ifg_t *ifg, be_ifg_stat_t *stat)
 {
 	nodes_iter_t      nodes_it;
 	neighbours_iter_t neigh_it;
-	bitset_t         *nodes    = bitset_malloc(get_irg_last_idx(irg));
 
 	memset(stat, 0, sizeof(stat[0]));
 
+	size_t n_edges = 0;
 	be_ifg_foreach_node(ifg, &nodes_it, n) {
 		stat->n_nodes += 1;
 		be_ifg_foreach_neighbour(ifg, &neigh_it, n, m) {
-			bitset_set(nodes, get_irn_idx(n));
-			stat->n_edges += !bitset_is_set(nodes, get_irn_idx(m));
+			++n_edges;
 		}
 	}
 
+	/* Every interference edge was counted twice, once for each end. */
+	stat->n_edges = n_edges / 2;
 	stat->n_comps = int_component_stat(irg, ifg);
-	bitset_free(nodes);
 }
