@@ -178,7 +178,6 @@ typedef struct draw_chordal_env_t {
 
 struct block_dims {
 	unsigned max_step;
-	int      min_step;
 	int      max_color;
 	rect_t   box;
 	rect_t   subtree_box;
@@ -193,8 +192,6 @@ static void block_dims_walker(ir_node *block, void *data)
 	const draw_chordal_opts_t *opts = env->opts;
 	struct block_dims         *dims = OALLOCZ(&env->obst, struct block_dims);
 
-	dims->min_step = INT_MAX;
-
 	foreach_border_head(head, b) {
 		ir_node               *irn = b->irn;
 		const arch_register_t *reg = arch_get_irn_register(irn);
@@ -204,8 +201,6 @@ static void block_dims_walker(ir_node *block, void *data)
 		dims->max_color = MAX(dims->max_color, col);
 		env->max_color  = MAX(env->max_color, col);
 	}
-
-	dims->min_step = 1;
 
 	dims->box.w = (dims->max_color + 2) * opts->h_inter_gap;
 	dims->box.h = dims->max_step * opts->v_inter_gap;
