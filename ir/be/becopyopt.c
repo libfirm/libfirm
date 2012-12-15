@@ -285,9 +285,8 @@ static int co_get_costs_all_one(const ir_node *root, int pos)
  * Determines a maximum weighted independent set with respect to
  * the interference and conflict edges of all nodes in a qnode.
  */
-static int ou_max_ind_set_costs(unit_t *ou)
+static int ou_max_ind_set_costs(unit_t *const ou, be_lv_t const *const lv)
 {
-	be_lv_t *const lv = be_get_irg_liveness(ou->co->irg);
 	ir_node **safe, **unsafe;
 	int i, o, safe_count, safe_costs, unsafe_count, *unsafe_costs;
 	bitset_t *curr;
@@ -385,7 +384,6 @@ static void co_collect_units(ir_node *irn, void *env)
 
 	/* Init a new unit */
 	unit = XMALLOCZ(unit_t);
-	unit->co = co;
 	unit->node_count = 1;
 	INIT_LIST_HEAD(&unit->queue);
 
@@ -502,7 +500,7 @@ static void co_collect_units(ir_node *irn, void *env)
 		}
 
 		/* Determine the minimal costs this unit will cause: min_nodes_costs */
-		unit->min_nodes_costs += unit->all_nodes_costs - ou_max_ind_set_costs(unit);
+		unit->min_nodes_costs += unit->all_nodes_costs - ou_max_ind_set_costs(unit, lv);
 		/* Insert the new ou according to its sort_key */
 		tmp = &co->units;
 		while (tmp->next != &co->units && list_entry_units(tmp->next)->sort_key > unit->sort_key)

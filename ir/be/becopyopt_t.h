@@ -76,7 +76,6 @@ static inline void set_irn_col(const arch_register_class_t *cls, ir_node *node,
 
 typedef struct unit_t {
 	struct list_head units;              /**< chain for all units */
-	copy_opt_t       *co;                /**< the copy opt this unit belongs to */
 	int              node_count;         /**< size of the nodes array */
 	ir_node          **nodes;            /**< [0] is the root-node, others are non interfering args of it. */
 	int              *costs;             /**< costs[i] are incurred, if nodes[i] has a different color */
