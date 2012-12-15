@@ -111,11 +111,9 @@ struct co2_irn_t {
 	co2_irn_t       *touched_next;
 	col_t            tmp_col;
 	col_t            orig_col;
-	int              last_color_change;
 	bitset_t        *adm_cache;
 	unsigned         fixed          : 1;
 	unsigned         tmp_fixed      : 1;
-	unsigned         is_constrained : 1;
 	struct list_head changed_list;
 };
 
@@ -145,8 +143,6 @@ struct co2_cloud_t {
 	int               inevit;
 	int               best_costs;
 	int               n_memb;
-	int               n_constr;
-	int               max_degree;
 	int               ticks;
 	double            freedom;
 	co2_cloud_irn_t  *master;
@@ -260,7 +256,6 @@ static inline bitset_t *get_adm(co2_t *env, co2_irn_t *ci)
 				if (rbitset_is_set(req->limited, i))
 					bitset_set(ci->adm_cache, i);
 			}
-			ci->is_constrained = 1;
 		} else {
 			bitset_copy(ci->adm_cache, env->allocatable_regs);
 		}
@@ -279,13 +274,6 @@ static inline int is_color_admissible(co2_t *env, co2_irn_t *ci, col_t col)
 {
 	bitset_t *bs = get_adm(env, ci);
 	return bitset_is_set(bs, col);
-}
-
-static inline int is_constrained(co2_t *env, co2_irn_t *ci)
-{
-	if (!ci->adm_cache)
-		get_adm(env, ci);
-	return ci->is_constrained;
 }
 
 static void incur_constraint_costs(co2_t *env, const ir_node *irn, col_cost_pair_t *col_costs, int costs)
@@ -773,12 +761,10 @@ static void populate_cloud(co2_t *env, co2_cloud_t *cloud, affinity_node_t *a, i
 	}
 
 	/* add the node's cost to the total costs of the cloud. */
-	ci->costs          = costs;
-	cloud->costs      += costs;
-	cloud->n_constr   += is_constrained(env, &ci->inh);
-	cloud->freedom    += bitset_popcount(get_adm(env, &ci->inh));
-	cloud->max_degree  = MAX(cloud->max_degree, ci->inh.aff->degree);
-	cloud->n_memb++;
+	ci->costs        = costs;
+	cloud->costs    += costs;
+	cloud->freedom  += bitset_popcount(get_adm(env, &ci->inh));
+	cloud->n_memb   += 1;
 
 	/* If this is the heaviest node in the cloud, set it as the cloud's master. */
 	if (costs >= curr_costs) {
