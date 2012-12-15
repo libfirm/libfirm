@@ -39,8 +39,8 @@ struct copy_opt_t {
 };
 
 /* Helpers */
-#define ASSERT_OU_AVAIL(co)     assert((co)->units.next && "Representation as optimization-units not build")
-#define ASSERT_GS_AVAIL(co)     assert((co)->nodes && "Representation as graph not build")
+#define ASSERT_OU_AVAIL(co)     assert((co)->units.next && "Representation as optimization-units not built")
+#define ASSERT_GS_AVAIL(co)     assert((co)->nodes && "Representation as graph not built")
 
 static inline unsigned get_irn_col(const ir_node *node)
 {
