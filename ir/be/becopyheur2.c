@@ -249,13 +249,7 @@ static inline bitset_t *get_adm(co2_t *env, co2_irn_t *ci)
 		req = arch_get_irn_register_req(ci->irn);
 
 		if (arch_register_req_is(req, limited)) {
-			int i, n;
-
-			n = env->n_regs;
-			for (i = 0; i < n; ++i) {
-				if (rbitset_is_set(req->limited, i))
-					bitset_set(ci->adm_cache, i);
-			}
+			rbitset_copy_to_bitset(req->limited, ci->adm_cache);
 		} else {
 			bitset_copy(ci->adm_cache, env->allocatable_regs);
 		}
