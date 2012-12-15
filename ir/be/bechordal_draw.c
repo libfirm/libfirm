@@ -173,7 +173,6 @@ typedef struct draw_chordal_env_t {
 	plotter_t                   *plotter;
 	const draw_chordal_opts_t   *opts;
 	struct obstack              obst;
-	int                         max_color;
 } draw_chordal_env_t;
 
 struct block_dims {
@@ -199,7 +198,6 @@ static void block_dims_walker(ir_node *block, void *data)
 
 		dims->max_step  = MAX(dims->max_step, b->step);
 		dims->max_color = MAX(dims->max_color, col);
-		env->max_color  = MAX(env->max_color, col);
 	}
 
 	dims->box.w = (dims->max_color + 2) * opts->h_inter_gap;
@@ -372,7 +370,6 @@ void draw_interval_tree(const draw_chordal_opts_t *opts,
 	env.block_dims  = pmap_create();
 	env.plotter     = plotter;
 	env.cls         = chordal_env->cls;
-	env.max_color   = 0;
 	env.chordal_env = chordal_env;
 	obstack_init(&env.obst);
 
