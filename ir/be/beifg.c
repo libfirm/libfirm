@@ -304,10 +304,9 @@ static void int_comp_rec(be_ifg_t *ifg, ir_node *n, bitset_t *seen)
 static int int_component_stat(ir_graph *irg, be_ifg_t *ifg)
 {
 	int      n_comp    = 0;
-	nodes_iter_t nodes_it;
 	bitset_t *seen     = bitset_malloc(get_irg_last_idx(irg));
 
-	be_ifg_foreach_node(ifg, &nodes_it, n) {
+	be_ifg_foreach_node(ifg, n) {
 		if (bitset_is_set(seen, get_irn_idx(n)))
 			continue;
 
@@ -326,12 +325,11 @@ static int int_component_stat(ir_graph *irg, be_ifg_t *ifg)
 
 void be_ifg_stat(ir_graph *irg, be_ifg_t *ifg, be_ifg_stat_t *stat)
 {
-	nodes_iter_t      nodes_it;
 	neighbours_iter_t neigh_it;
 
 	size_t n_nodes = 0;
 	size_t n_edges = 0;
-	be_ifg_foreach_node(ifg, &nodes_it, n) {
+	be_ifg_foreach_node(ifg, n) {
 		++n_nodes;
 		be_ifg_foreach_neighbour(ifg, &neigh_it, n, m) {
 			++n_edges;

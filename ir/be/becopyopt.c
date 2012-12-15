@@ -885,7 +885,6 @@ static void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 	ir_graph *irg       = co->irg;
 	be_irg_t *birg      = be_birg_from_irg(irg);
 
-	nodes_iter_t it;
 	neighbours_iter_t nit;
 	int n, n_regs;
 	unsigned i;
@@ -906,7 +905,7 @@ static void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 	 */
 
 	n = n_regs;
-	be_ifg_foreach_node(ifg, &it, irn) {
+	be_ifg_foreach_node(ifg, irn) {
 		if (arch_irn_is_ignore(irn))
 			continue;
 		node_map[get_irn_idx(irn)] = n++;
@@ -914,7 +913,7 @@ static void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 
 	fprintf(f, "%d %d\n", n, n_regs);
 
-	be_ifg_foreach_node(ifg, &it, irn) {
+	be_ifg_foreach_node(ifg, irn) {
 		arch_register_req_t const *const req = arch_get_irn_register_req(irn);
 		if (arch_register_req_is(req, ignore))
 			continue;

@@ -622,13 +622,10 @@ static int count_interfering_aff_neighs(co_mst_env_t *env, const affinity_node_t
  */
 static void build_affinity_chunks(co_mst_env_t *env)
 {
-	nodes_iter_t nodes_it;
-	aff_edge_t  *edges    = NEW_ARR_F(aff_edge_t, 0);
-	int         i, len;
-	size_t      pn;
+	aff_edge_t *edges = NEW_ARR_F(aff_edge_t, 0);
 
 	/* at first we create the affinity edge objects */
-	be_ifg_foreach_node(env->ifg, &nodes_it, n) {
+	be_ifg_foreach_node(env->ifg, n) {
 		int             n_idx = get_irn_idx(n);
 		co_mst_irn_t    *n1;
 		affinity_node_t *an;
@@ -677,9 +674,9 @@ static void build_affinity_chunks(co_mst_env_t *env)
 	}
 
 	/* now: sort edges and build the affinity chunks */
-	len = ARR_LEN(edges);
+	size_t const len = ARR_LEN(edges);
 	qsort(edges, len, sizeof(edges[0]), cmp_aff_edge);
-	for (i = 0; i < len; ++i) {
+	for (size_t i = 0; i < len; ++i) {
 		DBG((dbg, LEVEL_1, "edge (%u,%u) %f\n", edges[i].src->node_idx, edges[i].tgt->node_idx, edges[i].weight));
 
 		(void)aff_chunk_absorb(env, edges[i].src, edges[i].tgt);
@@ -696,7 +693,7 @@ static void build_affinity_chunks(co_mst_env_t *env)
 		pqueue_put(env->chunks, curr_chunk, curr_chunk->weight);
 	}
 
-	for (pn = 0; pn < ARR_LEN(env->map.data); ++pn) {
+	for (size_t pn = 0; pn < ARR_LEN(env->map.data); ++pn) {
 		co_mst_irn_t *mirn = (co_mst_irn_t*)env->map.data[pn];
 		if (mirn == NULL)
 			continue;

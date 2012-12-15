@@ -119,11 +119,10 @@ void sr_remove(size_red_t *sr)
 {
 	bool redo = true;
 	const be_ifg_t *ifg = sr->co->cenv->ifg;
-	nodes_iter_t iter;
 
 	while (redo) {
 		redo = false;
-		be_ifg_foreach_node(ifg, &iter, irn) {
+		be_ifg_foreach_node(ifg, irn) {
 			const arch_register_req_t *req = arch_get_irn_register_req(irn);
 			coloring_suffix_t *cs;
 

@@ -20,17 +20,14 @@
 
 static void dump_ifg_nodes(FILE *F, const be_ifg_t *ifg)
 {
-	nodes_iter_t ifg_iter;
-	be_ifg_foreach_node(ifg, &ifg_iter, node) {
+	be_ifg_foreach_node(ifg, node) {
 		dump_node(F, node);
 	}
 }
 
 static void dump_ifg_edges(FILE *F, const be_ifg_t *ifg)
 {
-	nodes_iter_t ifg_iter;
-
-	be_ifg_foreach_node(ifg, &ifg_iter, node) {
+	be_ifg_foreach_node(ifg, node) {
 		neighbours_iter_t neigh_iter;
 
 		be_ifg_foreach_neighbour(ifg, &neigh_iter, node, neighbour) {

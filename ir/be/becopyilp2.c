@@ -73,11 +73,10 @@ static void build_coloring_cstr(ilp_env_t *ienv)
 	be_ifg_t       *ifg    = ienv->co->cenv->ifg;
 	unsigned        n_regs = arch_register_class_n_regs(ienv->co->cls);
 	const unsigned *allocatable_colors = lenv->allocatable_colors;
-	nodes_iter_t    iter;
 	char            buf[32];
 
 	unsigned *const colors = rbitset_alloca(n_regs);
-	be_ifg_foreach_node(ifg, &iter, irn) {
+	be_ifg_foreach_node(ifg, irn) {
 		const arch_register_req_t *req;
 		unsigned                   col;
 		int                        cst_idx;
