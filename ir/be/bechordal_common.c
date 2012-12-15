@@ -127,6 +127,9 @@ void create_borders(ir_node *block, void *env_ptr)
 	 * relevant for the interval borders.
 	 */
 	sched_foreach_reverse(block, irn) {
+		if (is_Phi(irn))
+			break;
+
 		DB((dbg, LEVEL_1, "\tinsn: %+F, pressure: %d\n", irn, pressure));
 
 		be_foreach_definition(irn, env->cls, def, req,
@@ -138,27 +141,23 @@ void create_borders(ir_node *block, void *env_ptr)
 			border_def(def, step, 1);
 		);
 
-		/*
-		 * If the node is no phi node we can examine the uses.
-		 */
-		if (!is_Phi(irn)) {
-			be_foreach_use(irn, env->cls, in_req_, op, op_req_,
-				const char *msg = "-";
+		/* Examine the uses. */
+		be_foreach_use(irn, env->cls, in_req_, op, op_req_,
+			const char *msg = "-";
 
-				if (ir_nodeset_insert(&live, op)) {
-					border_use(op, step, 1);
-					msg = "X";
-				}
+			if (ir_nodeset_insert(&live, op)) {
+				border_use(op, step, 1);
+				msg = "X";
+			}
 
-				DB((dbg, LEVEL_4, "\t\t%s pos: %d, use: %+F\n", msg, i_, op));
-			);
-		}
+			DB((dbg, LEVEL_4, "\t\t%s pos: %d, use: %+F\n", msg, i_, op));
+		);
 		++step;
 	}
 
 	foreach_ir_nodeset(&live, irn, iter) {
-		assert(be_is_live_in(lv, block, irn));
-		border_def(irn, step, 0);
+		assert(be_is_live_in(lv, block, irn) ^ (is_Phi(irn) && get_nodes_block(irn) == block));
+		border_def(irn, step, get_nodes_block(irn) == block);
 	}
 
 	ir_nodeset_destroy(&live);
