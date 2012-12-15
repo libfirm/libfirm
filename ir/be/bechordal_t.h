@@ -26,9 +26,7 @@
  * A liveness interval border.
  */
 struct border_t {
-	DEBUG_ONLY(unsigned magic;)     /**< A magic number for checking. */
 	struct list_head  list;         /**< list head for queuing. */
-	border_t         *other_end;    /**< The other end of the border. */
 	ir_node          *irn;          /**< The node. */
 	unsigned         step;          /**< The number equal to the interval border. */
 	unsigned         is_def  : 1;   /**< Does this border denote a use or a def. */

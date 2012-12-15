@@ -299,14 +299,20 @@ static void draw_block(ir_node *bl, void *data)
 
 	foreach_border_head(head, b) {
 		if (b->is_def) {
-			const arch_register_t *reg = arch_get_irn_register(b->irn);
-			int live_out = be_is_live_out(lv, bl, b->irn);
+			/* Walk from def to use, so the link is set before retrieved. */
+			set_irn_link(b->irn, b);
+		} else {
+			ir_node               *const irn = b->irn;
+			border_t        const *const def = (border_t const*)get_irn_link(irn);
+			arch_register_t const *const reg = arch_get_irn_register(irn);
+
+			int live_out = be_is_live_out(lv, bl, irn);
 			int x        = (reg->index + 1) * opts->h_inter_gap;
-			int ystart   = (b->step) * opts->v_inter_gap;
-			int ystop    = (b->other_end->step) * opts->v_inter_gap + (live_out ? 0 : opts->v_inter_gap / 2);
+			int ystart   = def->step * opts->v_inter_gap;
+			int ystop    =   b->step * opts->v_inter_gap + (live_out ? 0 : opts->v_inter_gap / 2);
 
 			color_t color;
-			reg_to_color(env, bl, b->irn, &color);
+			reg_to_color(env, bl, irn, &color);
 
 			x      += dims->box.x;
 			ystart += dims->box.y;
@@ -354,7 +360,9 @@ static void draw(draw_chordal_env_t *env, const rect_t *start_box)
 	be_assure_live_chk(irg);
 
 	p->vtab->begin(p, &bbox);
-	irg_block_walk_graph(env->chordal_env->irg, draw_block, NULL, env);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
+	irg_block_walk_graph(irg, draw_block, NULL, env);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	p->vtab->finish(p);
 }
 

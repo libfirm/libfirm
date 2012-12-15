@@ -29,54 +29,18 @@
 #include "bemodule.h"
 #include "belive.h"
 #include "belive_t.h"
-#include "fourcc.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-/* Make a fourcc for border checking. */
-#define BORDER_FOURCC   FOURCC('B', 'O', 'R', 'D')
-
 static inline border_t *border_add(be_chordal_env_t *const env, struct list_head *const head, ir_node *const irn, unsigned const step, unsigned const is_def, unsigned const is_real)
 {
-	border_t *b;
-
-	if (!is_def) {
-		border_t *def;
-
-		b = OALLOC(&env->obst, border_t);
-
-		/* also allocate the def and tie it to the use. */
-		def = OALLOCZ(&env->obst, border_t);
-		b->other_end = def;
-		def->other_end = b;
-
-		/*
-		 * Set the link field of the irn to the def.
-		 * This strongly relies on the fact, that the use is always
-		 * made before the def.
-		 */
-		set_irn_link(irn, def);
-
-		DEBUG_ONLY(b->magic = BORDER_FOURCC;)
-		DEBUG_ONLY(def->magic = BORDER_FOURCC;)
-	} else {
-		/*
-		 * If the def is encountered, the use was made and so was the
-		 * the def node (see the code above). It was placed into the
-		 * link field of the irn, so we can get it there.
-		 */
-		b = (border_t*)get_irn_link(irn);
-
-		DEBUG_ONLY(assert(b && b->magic == BORDER_FOURCC && "Illegal border encountered");)
-	}
-
-	b->is_def = is_def;
+	border_t *const b = OALLOC(&env->obst, border_t);
+	b->is_def  = is_def;
 	b->is_real = is_real;
-	b->irn = irn;
-	b->step = step;
+	b->irn     = irn;
+	b->step    = step;
 	list_add_tail(&b->list, head);
 	DBG((dbg, LEVEL_5, "\t\t%s adding %+F, step: %d\n", is_def ? "def" : "use", irn, step));
-
 
 	return b;
 }
