@@ -56,7 +56,6 @@ ir_node *be_ifg_neighbours_next(neighbours_iter_t *iter);
 void     be_ifg_neighbours_break(neighbours_iter_t *iter);
 ir_node *be_ifg_nodes_begin(const be_ifg_t *ifg, nodes_iter_t *iter);
 ir_node *be_ifg_nodes_next(nodes_iter_t *iter);
-void     be_ifg_nodes_break(nodes_iter_t *iter);
 int      be_ifg_cliques_begin(const be_ifg_t *ifg, cliques_iter_t *iter,
                               ir_node **buf);
 int      be_ifg_cliques_next(cliques_iter_t *iter);

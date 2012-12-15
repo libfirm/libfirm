@@ -68,24 +68,14 @@ static void find_nodes(const be_ifg_t *ifg, nodes_iter_t *iter)
 	iter->nodes = (ir_node**)obstack_finish(&iter->obst);
 }
 
-static inline void node_break(nodes_iter_t *it, int force)
-{
-	if ((it->curr >= it->n || force) && it->nodes) {
-		obstack_free(&it->obst, NULL);
-		it->nodes = NULL;
-	}
-}
-
 static ir_node *get_next_node(nodes_iter_t *it)
 {
-	ir_node *res = NULL;
-
-	if (it->curr < it->n)
-		res = it->nodes[it->curr++];
-
-	node_break(it, 0);
-
-	return res;
+	if (it->curr < it->n) {
+		return it->nodes[it->curr++];
+	} else {
+		obstack_free(&it->obst, NULL);
+		return NULL;
+	}
 }
 
 ir_node *be_ifg_nodes_begin(const be_ifg_t *ifg, nodes_iter_t *iter)
@@ -97,11 +87,6 @@ ir_node *be_ifg_nodes_begin(const be_ifg_t *ifg, nodes_iter_t *iter)
 ir_node *be_ifg_nodes_next(nodes_iter_t *iter)
 {
 	return get_next_node(iter);
-}
-
-void be_ifg_nodes_break(nodes_iter_t *iter)
-{
-	node_break(iter, 1);
 }
 
 static void find_neighbour_walker(ir_node *block, void *data)
