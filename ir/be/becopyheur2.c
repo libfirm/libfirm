@@ -111,7 +111,7 @@ struct co2_irn_t {
 	co2_irn_t       *touched_next;
 	col_t            tmp_col;
 	col_t            orig_col;
-	unsigned const  *adm_cache;
+	unsigned const  *admissible;
 	unsigned         fixed          : 1;
 	unsigned         tmp_fixed      : 1;
 	struct list_head changed_list;
@@ -171,6 +171,9 @@ static co2_irn_t *get_co2_irn(co2_t *env, const ir_node *node)
 		env->touched     = ci;
 		ci->irn          = node;
 		ci->aff          = NULL;
+
+		arch_register_req_t const *const req = arch_get_irn_register_req(node);
+		ci->admissible = arch_register_req_is(req, limited) ? req->limited : env->allocatable_regs->data;
 
 		ir_nodemap_insert(&env->map, node, ci);
 	}
@@ -241,20 +244,9 @@ static inline int color_is_fix(co2_t *env, const ir_node *irn)
 	return ci->fixed || ci->tmp_fixed;
 }
 
-static inline unsigned const *admissible_colors(co2_t *const env, co2_irn_t *const ci)
+static inline int is_color_admissible(co2_irn_t *const ci, col_t const col)
 {
-	if (ci->adm_cache == NULL) {
-		arch_register_req_t const *const req = arch_get_irn_register_req(ci->irn);
-		ci->adm_cache = arch_register_req_is(req, limited)
-			? req->limited : env->allocatable_regs->data;
-	}
-
-	return ci->adm_cache;
-}
-
-static inline int is_color_admissible(co2_t *env, co2_irn_t *ci, col_t col)
-{
-	unsigned const *const bs = admissible_colors(env, ci);
+	unsigned const *const bs = ci->admissible;
 	return rbitset_is_set(bs, col);
 }
 
@@ -322,7 +314,7 @@ static void determine_color_costs(co2_t *env, co2_irn_t *ci, col_cost_pair_t *co
 	be_ifg_neighbours_break(&it);
 
 	/* Set the costs to infinity for each color which is not allowed at this node. */
-	unsigned const *const admissible = admissible_colors(env, ci);
+	unsigned const *const admissible = ci->admissible;
 	rbitset_foreach_clear(admissible, n_regs, elm) {
 		col_costs[elm].costs  = INT_MAX;
 	}
@@ -339,7 +331,7 @@ static void single_color_cost(co2_t *env, co2_irn_t *ci, col_t col, col_cost_pai
 	}
 
 	(void) ci;
-	assert(is_color_admissible(env, ci, col));
+	assert(is_color_admissible(ci, col));
 	seq[col].col = 0;
 	seq[0].col   = col;
 	seq[0].costs = 0;
@@ -505,7 +497,7 @@ static int change_color_single(co2_t *env, const ir_node *irn, col_t tgt_col, st
 		goto end;
 	}
 
-	if (!color_is_fix(env, irn) && is_color_admissible(env, ci, tgt_col)) {
+	if (!color_is_fix(env, irn) && is_color_admissible(ci, tgt_col)) {
 		int n_regs           = env->co->cls->n_regs;
 		col_cost_pair_t *seq = ALLOCAN(col_cost_pair_t, n_regs);
 
@@ -562,7 +554,7 @@ static void node_color_badness(co2_cloud_irn_t *ci, int *badness)
 	neighbours_iter_t it;
 
 	{
-		unsigned const *const bs = admissible_colors(env, &ci->inh);
+		unsigned const *const bs = ci->inh.admissible;
 		rbitset_foreach_clear(bs, n_regs, elm)
 			badness[elm] = ci->costs;
 	}
@@ -571,7 +563,7 @@ static void node_color_badness(co2_cloud_irn_t *ci, int *badness)
 	be_ifg_foreach_neighbour(env->co->cenv->ifg, &it, ci->inh.irn, irn) {
 		co2_irn_t *ni = get_co2_irn(env, irn);
 
-		unsigned const *const bs = admissible_colors(env, ni);
+		unsigned const *const bs = ni->admissible;
 		if (rbitset_popcount(bs, n_regs) == 1) {
 			size_t const c = rbitset_next_max(bs, 0, n_regs, true);
 			badness[c] += ci->costs;
@@ -641,13 +633,13 @@ static int coalesce_top_down(co2_cloud_irn_t *ci, int child_nr, int depth)
 		int badness = ci->color_badness[i];
 
 		seq[i].col   = i;
-		seq[i].costs = is_color_admissible(env, &ci->inh, i) ? badness : INT_MAX;
+		seq[i].costs = is_color_admissible(&ci->inh, i) ? badness : INT_MAX;
 
 		min_badness = MIN(min_badness, badness);
 	}
 
 	/* If we are not the root and the parent's color is allowed for this node give it top prio. */
-	if (!is_root && is_color_admissible(env, &ci->inh, parent_col))
+	if (!is_root && is_color_admissible(&ci->inh, parent_col))
 		seq[parent_col].costs = min_badness - 1;
 
 	/* Sort the colors. The will be processed in that ordering. */
@@ -735,7 +727,7 @@ static void populate_cloud(co2_t *env, co2_cloud_t *cloud, affinity_node_t *a, i
 	/* add the node's cost to the total costs of the cloud. */
 	ci->costs        = costs;
 	cloud->costs    += costs;
-	cloud->freedom  += rbitset_popcount(admissible_colors(env, &ci->inh), env->n_regs);
+	cloud->freedom  += rbitset_popcount(ci->inh.admissible, env->n_regs);
 	cloud->n_memb   += 1;
 
 	/* If this is the heaviest node in the cloud, set it as the cloud's master. */
