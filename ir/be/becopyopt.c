@@ -810,7 +810,7 @@ void co_free_graph_structure(copy_opt_t *co)
 	co->nodes = NULL;
 }
 
-int co_gs_is_optimizable(copy_opt_t *co, ir_node *irn)
+int co_gs_is_optimizable(copy_opt_t const *const co, ir_node *const irn)
 {
 	affinity_node_t new_node, *n;
 

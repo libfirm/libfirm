@@ -135,6 +135,6 @@ void co_free_graph_structure(copy_opt_t *co);
  * Checks if a node is optimizable, viz has something to do with coalescing.
  * Uses the GRAPH data structure
  */
-int co_gs_is_optimizable(copy_opt_t *co, ir_node *irn);
+int co_gs_is_optimizable(copy_opt_t const *co, ir_node *irn);
 
 #endif

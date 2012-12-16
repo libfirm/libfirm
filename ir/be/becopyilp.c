@@ -79,31 +79,17 @@ void be_init_copyilp(void)
 
 
 /**
- * Just prepare. Do nothing yet.
- */
-static size_red_t *new_size_red(copy_opt_t *co)
-{
-	size_red_t *res = XMALLOC(size_red_t);
-
-	res->co       = co;
-	res->col_suff = NEW_ARR_F(ir_node*, 0);
-	ir_nodeset_init(&res->all_removed);
-
-	return res;
-}
-
-/**
  * Checks if a node is simplicial in the graph heeding the already removed nodes.
  */
-static inline bool sr_is_simplicial(size_red_t *sr, const ir_node *ifn)
+static inline bool sr_is_simplicial(ilp_env_t *const ienv, ir_node const *const ifn)
 {
 	bool              res = true;
 	ir_node         **all = NEW_ARR_F(ir_node*, 0);
-	be_lv_t    *const lv  = be_get_irg_liveness(sr->co->irg);
+	be_lv_t    *const lv  = be_get_irg_liveness(ienv->co->irg);
 	neighbours_iter_t iter;
-	be_ifg_foreach_neighbour(sr->co->cenv->ifg, &iter, ifn, curr) {
+	be_ifg_foreach_neighbour(ienv->co->cenv->ifg, &iter, ifn, curr) {
 		/* Only consider non-removed neighbours. */
-		if (sr_is_removed(sr, curr))
+		if (sr_is_removed(ienv, curr))
 			continue;
 
 		/* Check whether the current node forms a clique with all previous nodes. */
@@ -126,24 +112,24 @@ end:
  * Virtually remove all nodes not related to the problem
  * (simplicial AND not adjacent to a equal-color-edge)
  */
-static void sr_remove(size_red_t *const sr)
+static void sr_remove(ilp_env_t *const ienv)
 {
 	bool redo = true;
-	const be_ifg_t *ifg = sr->co->cenv->ifg;
+	const be_ifg_t *ifg = ienv->co->cenv->ifg;
 
 	while (redo) {
 		redo = false;
 		be_ifg_foreach_node(ifg, irn) {
 			const arch_register_req_t *req = arch_get_irn_register_req(irn);
-			if (arch_register_req_is(req, limited) || sr_is_removed(sr, irn))
+			if (arch_register_req_is(req, limited) || sr_is_removed(ienv, irn))
 				continue;
-			if (co_gs_is_optimizable(sr->co, irn))
+			if (co_gs_is_optimizable(ienv->co, irn))
 				continue;
-			if (!sr_is_simplicial(sr, irn))
+			if (!sr_is_simplicial(ienv, irn))
 				continue;
 
-			ARR_APP1(ir_node*, sr->col_suff, irn);
-			ir_nodeset_insert(&sr->all_removed, irn);
+			ARR_APP1(ir_node*, ienv->col_suff, irn);
+			ir_nodeset_insert(&ienv->all_removed, irn);
 
 			redo = true;
 		}
@@ -153,21 +139,21 @@ static void sr_remove(size_red_t *const sr)
 /**
  * Virtually reinsert the nodes removed before and color them
  */
-static void sr_reinsert(size_red_t *const sr)
+static void sr_reinsert(ilp_env_t *const ienv)
 {
-	ir_graph *irg        = sr->co->irg;
-	be_ifg_t *ifg        = sr->co->cenv->ifg;
-	unsigned  n_regs     = arch_register_class_n_regs(sr->co->cls);
+	ir_graph *irg        = ienv->co->irg;
+	be_ifg_t *ifg        = ienv->co->cenv->ifg;
+	unsigned  n_regs     = arch_register_class_n_regs(ienv->co->cls);
 
 	unsigned *const allocatable_cols = rbitset_alloca(n_regs);
-	be_set_allocatable_regs(irg, sr->co->cls, allocatable_cols);
+	be_set_allocatable_regs(irg, ienv->co->cls, allocatable_cols);
 
 	unsigned *const possible_cols = rbitset_alloca(n_regs);
 	neighbours_iter_t iter;
 
 	/* color the removed nodes in right order */
-	for (size_t i = ARR_LEN(sr->col_suff); i-- != 0;) {
-		ir_node *const irn = sr->col_suff[i];
+	for (size_t i = ARR_LEN(ienv->col_suff); i-- != 0;) {
+		ir_node *const irn = ienv->col_suff[i];
 
 		rbitset_copy(possible_cols, allocatable_cols, n_regs);
 
@@ -177,7 +163,7 @@ static void sr_reinsert(size_red_t *const sr)
 			unsigned cur_col;
 
 			/* only inspect nodes which are in graph right now */
-			if (sr_is_removed(sr, other))
+			if (sr_is_removed(ienv, other))
 				continue;
 
 			cur_req = arch_get_irn_register_req(other);
@@ -201,19 +187,9 @@ static void sr_reinsert(size_red_t *const sr)
 			++free_col;
 			assert(free_col < n_regs);
 		}
-		set_irn_col(sr->co->cls, irn, free_col);
-		ir_nodeset_remove(&sr->all_removed, irn); /* irn is back in graph again */
+		set_irn_col(ienv->co->cls, irn, free_col);
+		ir_nodeset_remove(&ienv->all_removed, irn); /* irn is back in graph again */
 	}
-}
-
-/**
- * Free all space.
- */
-static void free_size_red(size_red_t *const sr)
-{
-	ir_nodeset_destroy(&sr->all_removed);
-	DEL_ARR_F(sr->col_suff);
-	free(sr);
 }
 
 /******************************************************************************
@@ -236,7 +212,8 @@ ilp_env_t *new_ilp_env(copy_opt_t *co, ilp_callback build, ilp_callback apply, v
 	res->build      = build;
 	res->apply      = apply;
 	res->env        = env;
-	res->sr         = new_size_red(co);
+	res->col_suff   = NEW_ARR_F(ir_node*, 0);
+	ir_nodeset_init(&res->all_removed);
 
 	return res;
 }
@@ -245,7 +222,7 @@ lpp_sol_state_t ilp_go(ilp_env_t *ienv)
 {
 	ir_graph *irg = ienv->co->irg;
 
-	sr_remove(ienv->sr);
+	sr_remove(ienv);
 
 	ienv->build(ienv);
 
@@ -276,14 +253,15 @@ lpp_sol_state_t ilp_go(ilp_env_t *ienv)
 
 	ienv->apply(ienv);
 
-	sr_reinsert(ienv->sr);
+	sr_reinsert(ienv);
 
 	return lpp_get_sol_state(ienv->lp);
 }
 
 void free_ilp_env(ilp_env_t *ienv)
 {
-	free_size_red(ienv->sr);
+	ir_nodeset_destroy(&ienv->all_removed);
+	DEL_ARR_F(ienv->col_suff);
 	lpp_free(ienv->lp);
 	free(ienv);
 }

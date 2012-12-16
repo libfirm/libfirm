@@ -85,7 +85,7 @@ static void build_coloring_cstr(ilp_env_t *ienv)
 		unsigned                   curr_node_color;
 		unsigned                   has_alignment_cstr;
 
-		if (sr_is_removed(ienv->sr, irn))
+		if (sr_is_removed(ienv, irn))
 			continue;
 
 		has_alignment_cstr = check_alignment_constraints(irn);
@@ -160,7 +160,7 @@ static void build_interference_cstr(ilp_env_t *ienv)
 		unsigned realsize = 0;
 
 		for (i=0; i<size; ++i) {
-			if (!sr_is_removed(ienv->sr, clique[i]))
+			if (!sr_is_removed(ienv, clique[i]))
 				++realsize;
 		}
 
@@ -182,7 +182,7 @@ static void build_interference_cstr(ilp_env_t *ienv)
 				int      var_idx;
 				unsigned aligment_offset = 0;
 
-				if (sr_is_removed(ienv->sr, irn))
+				if (sr_is_removed(ienv, irn))
 					continue;
 
 				// Use the first part of the large registers for all
