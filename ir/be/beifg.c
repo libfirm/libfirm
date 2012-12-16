@@ -268,22 +268,27 @@ be_ifg_t *be_create_ifg(const be_chordal_env_t *env)
 	return ifg;
 }
 
+static bool consider_component_node(bitset_t *const seen, ir_node *const irn)
+{
+	if (bitset_is_set(seen, get_irn_idx(irn)))
+		return false;
+	bitset_set(seen, get_irn_idx(irn));
+
+	arch_register_req_t const *const req = arch_get_irn_register_req(irn);
+	if (arch_register_req_is(req, ignore))
+		return false;
+
+	return true;
+}
+
 static void int_comp_rec(be_ifg_t *ifg, ir_node *n, bitset_t *seen)
 {
 	neighbours_iter_t neigh_it;
 
 	be_ifg_foreach_neighbour(ifg, &neigh_it, n, m) {
-		if (bitset_is_set(seen, get_irn_idx(m)))
-			continue;
-
-		arch_register_req_t const *const req = arch_get_irn_register_req(m);
-		if (arch_register_req_is(req, ignore))
-			continue;
-
-		bitset_set(seen, get_irn_idx(m));
-		int_comp_rec(ifg, m, seen);
+		if (consider_component_node(seen, m))
+			int_comp_rec(ifg, m, seen);
 	}
-
 }
 
 static int int_component_stat(ir_graph *irg, be_ifg_t *ifg)
@@ -292,16 +297,10 @@ static int int_component_stat(ir_graph *irg, be_ifg_t *ifg)
 	bitset_t *seen     = bitset_malloc(get_irg_last_idx(irg));
 
 	be_ifg_foreach_node(ifg, n) {
-		if (bitset_is_set(seen, get_irn_idx(n)))
-			continue;
-
-		arch_register_req_t const *const req = arch_get_irn_register_req(n);
-		if (arch_register_req_is(req, ignore))
-			continue;
-
-		++n_comp;
-		bitset_set(seen, get_irn_idx(n));
-		int_comp_rec(ifg, n, seen);
+		if (consider_component_node(seen, n)) {
+			++n_comp;
+			int_comp_rec(ifg, n, seen);
+		}
 	}
 
 	free(seen);
