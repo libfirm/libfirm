@@ -78,7 +78,10 @@ void be_init_copyilp(void)
  *****************************************************************************/
 
 
-size_red_t *new_size_red(copy_opt_t *co)
+/**
+ * Just prepare. Do nothing yet.
+ */
+static size_red_t *new_size_red(copy_opt_t *co)
 {
 	size_red_t *res = XMALLOC(size_red_t);
 
@@ -120,7 +123,11 @@ end:
 	return res;
 }
 
-void sr_remove(size_red_t *sr)
+/**
+ * Virtually remove all nodes not related to the problem
+ * (simplicial AND not adjacent to a equal-color-edge)
+ */
+static void sr_remove(size_red_t *const sr)
 {
 	bool redo = true;
 	const be_ifg_t *ifg = sr->co->cenv->ifg;
@@ -150,7 +157,10 @@ void sr_remove(size_red_t *sr)
 	}
 }
 
-void sr_reinsert(size_red_t *sr)
+/**
+ * Virtually reinsert the nodes removed before and color them
+ */
+static void sr_reinsert(size_red_t *const sr)
 {
 	coloring_suffix_t *cs;
 	ir_graph *irg        = sr->co->irg;
@@ -205,7 +215,10 @@ void sr_reinsert(size_red_t *sr)
 	}
 }
 
-void free_size_red(size_red_t *sr)
+/**
+ * Free all space.
+ */
+static void free_size_red(size_red_t *const sr)
 {
 	del_pset(sr->all_removed);
 	obstack_free(&sr->ob, NULL);

@@ -41,30 +41,9 @@ typedef struct size_red_t {
 } size_red_t;
 
 /**
- * Just prepare. Do nothing yet.
- */
-size_red_t *new_size_red(copy_opt_t *co);
-
-/**
  * Checks if a node has already been removed
  */
 #define sr_is_removed(sr, irn)   pset_find_ptr((sr)->all_removed, irn)
-
-/**
- * Virtually remove all nodes not related to the problem
- * (simplicial AND not adjacent to a equal-color-edge)
- */
-void sr_remove(size_red_t *sr);
-
-/**
- * Virtually reinsert the nodes removed before and color them
- */
-void sr_reinsert(size_red_t *sr);
-
-/**
- * Free all space...
- */
-void free_size_red(size_red_t *sr);
 
 /**
  * TODO: This search is necessary because during the construction of the
