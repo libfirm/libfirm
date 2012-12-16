@@ -423,9 +423,8 @@ static void find_switch_nodes(ir_node *block, void *ctx)
 	if (!is_Switch(switchn))
 		return;
 
-	if (ir_nodeset_contains(&env->processed, switchn))
+	if (!ir_nodeset_insert(&env->processed, switchn))
 		return;
-	ir_nodeset_insert(&env->processed, switchn);
 
 	analyse_switch0(&info, switchn);
 

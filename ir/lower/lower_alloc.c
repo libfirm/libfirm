@@ -121,10 +121,9 @@ static void lower_alloca_free(ir_node *node, void *data)
 	} else {
 		return;
 	}
-	if (ir_nodeset_contains(&transformed, node))
+	if (!ir_nodeset_insert(&transformed, node))
 		return;
 
-	ir_nodeset_insert(&transformed, node);
 	size = get_type_size_bytes(type);
 	if (is_unknown_type(type))
 		size = 1;
