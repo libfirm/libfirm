@@ -39,29 +39,6 @@ static inline bool sr_is_removed(size_red_t const *const sr, ir_node const *cons
 	return ir_nodeset_contains(&sr->all_removed, irn);
 }
 
-/**
- * TODO: This search is necessary because during the construction of the
- *       units (ou's) args could be merged and weights are accumulated.
- *       Is this necessary?
- */
-static inline int co_ilp_get_costs(copy_opt_t *co, ir_node *root, ir_node *arg) {
-	int i;
-
-	/* search optimization unit for phi */
-	list_for_each_entry(unit_t, curr, &co->units, units)
-		if (curr->nodes[0] == root) {
-
-			for (i = 1; i < curr->node_count; ++i)
-				if (curr->nodes[i] == arg)
-					return curr->costs[i];
-
-				assert(0 && "irn must occur in this ou");
-		}
-
-	assert(0 && "phi must be found in a ou");
-	return 0;
-}
-
 /******************************************************************************
     _____                      _        _____ _      _____
    / ____|                    (_)      |_   _| |    |  __ \
