@@ -95,29 +95,29 @@ size_red_t *new_size_red(copy_opt_t *co)
  */
 static inline bool sr_is_simplicial(size_red_t *sr, const ir_node *ifn)
 {
-	be_ifg_t *ifg  = sr->co->cenv->ifg;
+	bool              res = true;
+	ir_node         **all = NEW_ARR_F(ir_node*, 0);
+	be_lv_t    *const lv  = be_get_irg_liveness(sr->co->irg);
 	neighbours_iter_t iter;
-	ir_node **all  = ALLOCAN(ir_node*, be_ifg_degree(ifg, ifn));
-	int       size = 0;
-	int       i;
-	int       o;
+	be_ifg_foreach_neighbour(sr->co->cenv->ifg, &iter, ifn, curr) {
+		/* Only consider non-removed neighbours. */
+		if (sr_is_removed(sr, curr))
+			continue;
 
-	/* get all non-removed neighbors */
-	be_ifg_foreach_neighbour(ifg, &iter, ifn, curr)
-		if (!sr_is_removed(sr, curr))
-			all[size++] = curr;
-
-	/* check if these form a clique */
-	be_lv_t *const lv = be_get_irg_liveness(sr->co->irg);
-	for (i = 0; i < size; ++i) {
-		for (o = i + 1; o < size; ++o) {
-			if (!be_values_interfere(lv, all[i], all[o]))
-				return false;
+		/* Check whether the current node forms a clique with all previous nodes. */
+		for (size_t i = ARR_LEN(all); i-- != 0;) {
+			if (!be_values_interfere(lv, curr, all[i])) {
+				res = false;
+				goto end;
+			}
 		}
+
+		ARR_APP1(ir_node*, all, curr);
 	}
 
-	/* all edges exist so this is a clique */
-	return true;
+end:
+	DEL_ARR_F(all);
+	return res;
 }
 
 void sr_remove(size_red_t *sr)
