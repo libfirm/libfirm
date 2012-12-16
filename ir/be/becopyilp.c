@@ -86,7 +86,7 @@ static size_red_t *new_size_red(copy_opt_t *co)
 	size_red_t *res = XMALLOC(size_red_t);
 
 	res->co = co;
-	res->all_removed = pset_new_ptr_default();
+	ir_nodeset_init(&res->all_removed);
 	res->col_suff = NULL;
 	obstack_init(&res->ob);
 
@@ -150,7 +150,7 @@ static void sr_remove(size_red_t *const sr)
 			cs->next = sr->col_suff;
 			sr->col_suff = cs;
 
-			pset_insert_ptr(sr->all_removed, irn);
+			ir_nodeset_insert(&sr->all_removed, irn);
 
 			redo = true;
 		}
@@ -211,7 +211,7 @@ static void sr_reinsert(size_red_t *const sr)
 			assert(free_col < n_regs);
 		}
 		set_irn_col(sr->co->cls, irn, free_col);
-		pset_remove_ptr(sr->all_removed, irn); /* irn is back in graph again */
+		ir_nodeset_remove(&sr->all_removed, irn); /* irn is back in graph again */
 	}
 }
 
@@ -220,8 +220,8 @@ static void sr_reinsert(size_red_t *const sr)
  */
 static void free_size_red(size_red_t *const sr)
 {
-	del_pset(sr->all_removed);
 	obstack_free(&sr->ob, NULL);
+	ir_nodeset_destroy(&sr->all_removed);
 	free(sr);
 }
 

@@ -13,7 +13,6 @@
 #define FIRM_BE_BECOPYILP_T_H
 
 #include "firm_types.h"
-#include "pset.h"
 #include "becopyopt_t.h"
 
 /******************************************************************************
@@ -35,7 +34,7 @@ struct coloring_suffix_t {
 
 typedef struct size_red_t {
 	copy_opt_t        *co;
-	pset              *all_removed;   /**< All nodes removed during problem size reduction */
+	ir_nodeset_t       all_removed;   /**< All nodes removed during problem size reduction */
 	coloring_suffix_t *col_suff;      /**< Coloring suffix. Reverse would be a PEO prefix */
 	struct obstack    ob;
 } size_red_t;
@@ -43,7 +42,10 @@ typedef struct size_red_t {
 /**
  * Checks if a node has already been removed
  */
-#define sr_is_removed(sr, irn)   pset_find_ptr((sr)->all_removed, irn)
+static inline bool sr_is_removed(size_red_t const *const sr, ir_node const *const irn)
+{
+	return ir_nodeset_contains(&sr->all_removed, irn);
+}
 
 /**
  * TODO: This search is necessary because during the construction of the
