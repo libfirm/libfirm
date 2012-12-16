@@ -25,18 +25,10 @@
 
  *****************************************************************************/
 
-typedef struct coloring_suffix_t coloring_suffix_t;
-
-struct coloring_suffix_t {
-	coloring_suffix_t *next;
-	ir_node           *irn;
-};
-
 typedef struct size_red_t {
-	copy_opt_t        *co;
-	ir_nodeset_t       all_removed;   /**< All nodes removed during problem size reduction */
-	coloring_suffix_t *col_suff;      /**< Coloring suffix. Reverse would be a PEO prefix */
-	struct obstack    ob;
+	copy_opt_t    *co;
+	ir_node      **col_suff;    /**< Coloring suffix. A PEO prefix. */
+	ir_nodeset_t   all_removed; /**< All nodes removed during problem size reduction */
 } size_red_t;
 
 /**

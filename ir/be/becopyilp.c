@@ -85,10 +85,9 @@ static size_red_t *new_size_red(copy_opt_t *co)
 {
 	size_red_t *res = XMALLOC(size_red_t);
 
-	res->co = co;
+	res->co       = co;
+	res->col_suff = NEW_ARR_F(ir_node*, 0);
 	ir_nodeset_init(&res->all_removed);
-	res->col_suff = NULL;
-	obstack_init(&res->ob);
 
 	return res;
 }
@@ -136,8 +135,6 @@ static void sr_remove(size_red_t *const sr)
 		redo = false;
 		be_ifg_foreach_node(ifg, irn) {
 			const arch_register_req_t *req = arch_get_irn_register_req(irn);
-			coloring_suffix_t *cs;
-
 			if (arch_register_req_is(req, limited) || sr_is_removed(sr, irn))
 				continue;
 			if (co_gs_is_optimizable(sr->co, irn))
@@ -145,11 +142,7 @@ static void sr_remove(size_red_t *const sr)
 			if (!sr_is_simplicial(sr, irn))
 				continue;
 
-			cs = OALLOC(&sr->ob, coloring_suffix_t);
-			cs->irn = irn;
-			cs->next = sr->col_suff;
-			sr->col_suff = cs;
-
+			ARR_APP1(ir_node*, sr->col_suff, irn);
 			ir_nodeset_insert(&sr->all_removed, irn);
 
 			redo = true;
@@ -162,7 +155,6 @@ static void sr_remove(size_red_t *const sr)
  */
 static void sr_reinsert(size_red_t *const sr)
 {
-	coloring_suffix_t *cs;
 	ir_graph *irg        = sr->co->irg;
 	be_ifg_t *ifg        = sr->co->cenv->ifg;
 	unsigned  n_regs     = arch_register_class_n_regs(sr->co->cls);
@@ -174,9 +166,8 @@ static void sr_reinsert(size_red_t *const sr)
 	neighbours_iter_t iter;
 
 	/* color the removed nodes in right order */
-	for (cs = sr->col_suff; cs; cs = cs->next) {
-		unsigned free_col;
-		ir_node *irn = cs->irn;
+	for (size_t i = ARR_LEN(sr->col_suff); i-- != 0;) {
+		ir_node *const irn = sr->col_suff[i];
 
 		rbitset_copy(possible_cols, allocatable_cols, n_regs);
 
@@ -201,9 +192,9 @@ static void sr_reinsert(size_red_t *const sr)
 
 		/* now all bits not set are possible colors */
 		/* take one that matches the alignment constraint */
-		free_col = 0;
+		unsigned free_col;
 		assert(!rbitset_is_empty(possible_cols, n_regs) && "No free color found. This can not be.");
-		while (true) {
+		for (;;) {
 			free_col = (unsigned)rbitset_next(possible_cols, free_col, true);
 			if (free_col % arch_get_irn_register_req(irn)->width == 0)
 				break;
@@ -220,8 +211,8 @@ static void sr_reinsert(size_red_t *const sr)
  */
 static void free_size_red(size_red_t *const sr)
 {
-	obstack_free(&sr->ob, NULL);
 	ir_nodeset_destroy(&sr->all_removed);
+	DEL_ARR_F(sr->col_suff);
 	free(sr);
 }
 
