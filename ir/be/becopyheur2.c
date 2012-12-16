@@ -311,7 +311,6 @@ static void determine_color_costs(co2_t *env, co2_irn_t *ci, col_cost_pair_t *co
 			col_costs[col].costs = add_saturated(col_costs[col].costs, 8 * be_ifg_degree(ifg, pos));
 		}
 	}
-	be_ifg_neighbours_break(&it);
 
 	/* Set the costs to infinity for each color which is not allowed at this node. */
 	unsigned const *const admissible = ci->admissible;
@@ -408,11 +407,12 @@ static int recolor(co2_t *env, const ir_node *irn, col_cost_pair_t *col_list, st
 				INIT_LIST_HEAD(&tmp);
 				neigh_ok = change_color_not(env, n, tgt_col, &tmp, depth + 1);
 				list_splice(&tmp, &changed);
-				if (!neigh_ok)
+				if (!neigh_ok) {
+					be_ifg_neighbours_break(&it);
 					break;
+				}
 			}
 		}
-		be_ifg_neighbours_break(&it);
 
 		/*
 		We managed to assign the target color to all neighbors, so from the perspective
@@ -572,7 +572,6 @@ static void node_color_badness(co2_cloud_irn_t *ci, int *badness)
 			badness[c] += ci->costs;
 		}
 	}
-	be_ifg_neighbours_break(&it);
 }
 
 /**
