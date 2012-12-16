@@ -284,7 +284,6 @@ static void assign(ir_node *const block, void *const env_ptr)
 {
 	be_chordal_env_t *const env  = (be_chordal_env_t*)env_ptr;
 	struct list_head *const head = get_block_border_head(env, block);
-	be_lv_t          *const lv   = be_get_irg_liveness(env->irg);
 
 	DBG((dbg, LEVEL_4, "Assigning colors for block %+F\n", block));
 	DBG((dbg, LEVEL_4, "\tusedef chain for block\n"));
@@ -295,19 +294,6 @@ static void assign(ir_node *const block, void *const env_ptr)
 
 	bitset_t *const available = bitset_alloca(env->allocatable_regs->size);
 	bitset_copy(available, env->allocatable_regs);
-
-	/* Add initial defs for all values live in.
-	 * Since their colors have already been assigned (The dominators were
-	 * allocated before), we have to mark their colors as used also. */
-	be_lv_foreach_cls(lv, block, be_lv_state_in, env->cls, irn) {
-		arch_register_t const *const reg = arch_get_irn_register(irn);
-
-		assert(reg && "Node must have been assigned a register");
-		DBG((dbg, LEVEL_4, "%+F has reg %s\n", irn, reg->name));
-
-		/* Mark the color of the live in value as used. */
-		bitset_clear(available, reg->index);
-	}
 
 	/* Mind that the sequence of defs from back to front defines a perfect
 	 * elimination order. So, coloring the definitions from first to last
@@ -322,10 +308,14 @@ static void assign(ir_node *const block, void *const env_ptr)
 			arch_register_t const *const reg = arch_get_irn_register(irn);
 			assert(reg && "Register must have been assigned");
 			bitset_set(available, reg->index);
-		} else if (!be_is_live_in(lv, block, irn)) {
+		} else {
 			int                    col;
 			arch_register_t const *reg = arch_get_irn_register(irn);
+			/* All live-ins must have a register assigned. (The dominators were
+			 * allocated before.) */
+			assert(b->is_real || reg);
 			if (reg) {
+				DBG((dbg, LEVEL_4, "%+F has reg %s\n", irn, reg->name));
 				col = reg->index;
 				assert(bitset_is_set(available, col) && "pre-colored register must be free");
 			} else {
