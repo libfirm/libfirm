@@ -29,16 +29,14 @@
 #include "lc_opts_enum.h"
 
 #define DUMP_ILP 1
-#define DUMP_SOL 2
 
 static int time_limit = 60;
 static int solve_log  = 0;
 static unsigned dump_flags = 0;
 
 static const lc_opt_enum_mask_items_t dump_items[] = {
-	{ "ilp",   DUMP_ILP },
-	{ "sol",   DUMP_SOL },
-	{ NULL,    0 }
+	{ "ilp", DUMP_ILP },
+	{ NULL, 0 }
 };
 
 static lc_opt_enum_mask_var_t dump_var = {
