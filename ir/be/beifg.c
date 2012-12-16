@@ -291,37 +291,29 @@ static void int_comp_rec(be_ifg_t *ifg, ir_node *n, bitset_t *seen)
 	}
 }
 
-static int int_component_stat(ir_graph *irg, be_ifg_t *ifg)
-{
-	int      n_comp    = 0;
-	bitset_t *seen     = bitset_malloc(get_irg_last_idx(irg));
-
-	be_ifg_foreach_node(ifg, n) {
-		if (consider_component_node(seen, n)) {
-			++n_comp;
-			int_comp_rec(ifg, n, seen);
-		}
-	}
-
-	free(seen);
-	return n_comp;
-}
-
 void be_ifg_stat(ir_graph *irg, be_ifg_t *ifg, be_ifg_stat_t *stat)
 {
-	neighbours_iter_t neigh_it;
-
-	size_t n_nodes = 0;
-	size_t n_edges = 0;
+	size_t          n_nodes = 0;
+	size_t          n_edges = 0;
+	size_t          n_comps = 0;
+	bitset_t *const seen    = bitset_malloc(get_irg_last_idx(irg));
 	be_ifg_foreach_node(ifg, n) {
 		++n_nodes;
+
+		neighbours_iter_t neigh_it;
 		be_ifg_foreach_neighbour(ifg, &neigh_it, n, m) {
 			++n_edges;
 		}
+
+		if (consider_component_node(seen, n)) {
+			++n_comps;
+			int_comp_rec(ifg, n, seen);
+		}
 	}
+	free(seen);
 
 	stat->n_nodes = n_nodes;
 	/* Every interference edge was counted twice, once for each end. */
 	stat->n_edges = n_edges / 2;
-	stat->n_comps = int_component_stat(irg, ifg);
+	stat->n_comps = n_comps;
 }
