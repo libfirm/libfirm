@@ -34,6 +34,7 @@
 #include "bechordal_common.h"
 #include "bechordal.h"
 #include "bechordal_t.h"
+#include "becopyopt_t.h"
 #include "beinsn_t.h"
 #include "benode.h"
 #include "belive.h"
@@ -41,7 +42,6 @@
 #include "beutil.h"
 #include "plist.h"
 #include "pqueue.h"
-#include "becopyopt.h"
 
 /* pbqp includes */
 #include "kaps.h"
@@ -81,9 +81,6 @@ typedef struct be_pbqp_alloc_env_t {
 } be_pbqp_alloc_env_t;
 
 
-#define is_Reg_Phi(irn)                                        (is_Phi(irn) && mode_is_data(get_irn_mode(irn)))
-#define get_Perm_src(irn)                                      (get_irn_n(get_Proj_pred(irn), get_Proj_proj(irn)))
-#define is_Perm_Proj(irn)                                      (is_Proj(irn) && be_is_Perm(get_Proj_pred(irn)))
 #define insert_edge(pbqp, src_node, trg_node, template_matrix) (add_edge_costs(pbqp, get_irn_idx(src_node), get_irn_idx(trg_node), pbqp_matrix_copy(pbqp, template_matrix)))
 #define get_free_regs(restr_nodes, cls, irn)                   (arch_register_class_n_regs(cls) - restr_nodes[get_irn_idx(irn)])
 
