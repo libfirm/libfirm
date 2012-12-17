@@ -67,10 +67,10 @@ int arch_possible_memory_operand(const ir_node *irn, unsigned int i)
 	}
 }
 
-void arch_perform_memory_operand(ir_node *irn, ir_node *spill, unsigned int i)
+void arch_perform_memory_operand(ir_node *irn, unsigned int i)
 {
 	const arch_irn_ops_t *ops = get_irn_ops(irn);
-	ops->perform_memory_operand(irn, spill, i);
+	ops->perform_memory_operand(irn, i);
 }
 
 int arch_get_op_estimated_cost(const ir_node *irn)

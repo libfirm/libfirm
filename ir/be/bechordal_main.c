@@ -138,45 +138,25 @@ static void dump(unsigned mask, ir_graph *irg,
 }
 
 /**
- * Post-Walker: Checks for the given reload if has only one user that can perform the
- * reload as part of its address mode.
+ * Post-Walker: Checks for the given reload if has only one user that can
+ * perform the reload as part of its address mode.
  * Fold the reload into the user it that is possible.
  */
 static void memory_operand_walker(ir_node *irn, void *env)
 {
-	ir_node *block;
-	ir_node *spill;
-
 	(void)env;
-
-	if (! be_is_Reload(irn))
-		return;
-
-	/* only use memory operands, if the reload is only used by 1 node */
-	if (get_irn_n_edges(irn) > 1)
-		return;
-
-	spill = be_get_Reload_mem(irn);
-	block = get_nodes_block(irn);
-
-	foreach_out_edge_safe(irn, edge) {
-		ir_node *src = get_edge_src_irn(edge);
-		int     pos  = get_edge_src_pos(edge);
-
-		assert(src && "outedges broken!");
-
-		if (get_nodes_block(src) == block && arch_possible_memory_operand(src, pos)) {
-			arch_perform_memory_operand(src, spill, pos);
+	for (int i = 0, arity = get_irn_arity(irn); i < arity; ++i) {
+		ir_node *in = get_irn_n(irn, i);
+		if (!arch_irn_is(skip_Proj(in), reload))
+			continue;
+		if (get_nodes_block(in) != get_nodes_block(irn))
+			continue;
+		/* only use memory operands, if the reload is only used by 1 node */
+		if (get_irn_n_edges(in) > 1)
+			continue;
+		if (arch_possible_memory_operand(irn, i)) {
+			arch_perform_memory_operand(irn, i);
 		}
-	}
-
-	/* kill the Reload if it was folded */
-	if (get_irn_n_edges(irn) == 0) {
-		ir_graph *irg = get_irn_irg(irn);
-		ir_mode  *frame_mode = get_irn_mode(get_irn_n(irn, n_be_Reload_frame));
-		sched_remove(irn);
-		set_irn_n(irn, n_be_Reload_mem, new_r_Bad(irg, mode_X));
-		set_irn_n(irn, n_be_Reload_frame, new_r_Bad(irg, frame_mode));
 	}
 }
 

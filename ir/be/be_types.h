@@ -36,7 +36,9 @@ typedef enum arch_irn_flags_t {
 	/** node writes to a spillslot, this means we can load from the spillslot
 	 * anytime (important when deciding wether we can rematerialize) */
 	arch_irn_flag_spill            = 1U << 5,
-	arch_irn_flag_backend          = 1U << 6, /**< begin of custom backend
+	/** node performs a reload like operation */
+	arch_irn_flag_reload           = 1U << 6,
+	arch_irn_flag_backend          = 1U << 7, /**< begin of custom backend
 	                                               flags */
 } arch_irn_flags_t;
 ENUM_BITSET(arch_irn_flags_t)

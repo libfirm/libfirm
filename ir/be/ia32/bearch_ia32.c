@@ -52,6 +52,7 @@
 #include "belistsched.h"
 #include "beabihelper.h"
 #include "bestack.h"
+#include "beutil.h"
 
 #include "bearch_ia32_t.h"
 
@@ -304,21 +305,11 @@ static int ia32_get_op_estimated_cost(ir_node const *const irn)
 	return cost;
 }
 
-static ir_mode *get_spill_mode_mode(const ir_mode *mode)
+static ir_mode *get_spill_mode(const ir_mode *mode)
 {
 	if (mode_is_float(mode))
 		return precise_x87_spills ? ia32_mode_E : ia32_mode_float64;
-
 	return ia32_mode_gp;
-}
-
-/**
- * Get the mode that should be used for spilling value node
- */
-static ir_mode *get_spill_mode(const ir_node *node)
-{
-	ir_mode *mode = get_irn_mode(node);
-	return get_spill_mode_mode(mode);
 }
 
 /**
@@ -329,16 +320,17 @@ static ir_mode *get_spill_mode(const ir_node *node)
  */
 static int ia32_possible_memory_operand(const ir_node *irn, unsigned int i)
 {
-	ir_node       *op        = get_irn_n(irn, i);
-	const ir_mode *mode      = get_irn_mode(op);
-
-	if (!is_ia32_irn(irn)                              ||  /* must be an ia32 irn */
-	    get_ia32_op_type(irn) != ia32_Normal           ||  /* must not already be a addressmode irn */
-	    is_ia32_use_frame(irn))                            /* must not already use frame */
+	if (!is_ia32_irn(irn)                    || /* must be an ia32 irn */
+	    get_ia32_op_type(irn) != ia32_Normal || /* must not already be a addressmode irn */
+	    is_ia32_use_frame(irn))                 /* must not already use frame */
 		return 0;
+
+	ir_node *op   = get_irn_n(irn, i);
+	ir_node *load = get_Proj_pred(op);
+	assert(is_ia32_irn(load));
+	const ir_mode *mode = get_ia32_ls_mode(load);
 	if (mode_is_float(mode)) {
-		ir_mode *spillmode = get_spill_mode_mode(mode);
-		if (spillmode != ia32_mode_float64 && spillmode != mode_F)
+		if (mode != ia32_mode_float64 && mode != mode_F)
 			return 0;
 	}
 
@@ -385,19 +377,19 @@ static int ia32_possible_memory_operand(const ir_node *irn, unsigned int i)
 	return 1;
 }
 
-static void ia32_perform_memory_operand(ir_node *irn, ir_node *spill,
-                                        unsigned int i)
+static void ia32_perform_memory_operand(ir_node *irn, unsigned int i)
 {
-	assert(ia32_possible_memory_operand(irn, i) && "Cannot perform memory operand change");
+	assert(ia32_possible_memory_operand(irn, i));
 
-	set_ia32_op_type(irn, ia32_AddrModeS);
-
-	ir_mode *op_mode      = get_irn_mode(get_irn_n(irn, i));
-	ir_mode *load_mode    = get_spill_mode_mode(op_mode);
+	ir_node *op           = get_irn_n(irn, i);
+	ir_node *load         = get_Proj_pred(op);
+	ir_mode *load_mode    = get_ia32_ls_mode(load);
+	ir_node *spill        = get_irn_n(load, n_ia32_mem);
 	ir_mode *dest_op_mode = get_ia32_ls_mode(irn);
 	if (get_mode_size_bits(load_mode) <= get_mode_size_bits(dest_op_mode)) {
 		set_ia32_ls_mode(irn, load_mode);
 	}
+	set_ia32_op_type(irn, ia32_AddrModeS);
 	set_ia32_use_frame(irn);
 	set_ia32_need_stackent(irn);
 
@@ -415,6 +407,13 @@ static void ia32_perform_memory_operand(ir_node *irn, ir_node *spill,
 	set_irn_n(irn, n_ia32_mem,  spill);
 	set_irn_n(irn, i,           ia32_get_admissible_noreg(irn, i));
 	set_ia32_is_reload(irn);
+
+	/* kill the reload */
+	assert(get_irn_n_edges(op) == 0);
+	assert(get_irn_n_edges(load) == 1);
+	sched_remove(load);
+	kill_node(op);
+	kill_node(load);
 }
 
 static const be_abi_callbacks_t ia32_abi_callbacks = {
@@ -543,104 +542,76 @@ static void ia32_before_ra(ir_graph *irg)
 	be_add_missing_keeps(irg);
 }
 
-
-/**
- * Transforms a be_Reload into a ia32 Load.
- */
-static void transform_to_Load(ir_node *node)
+static ir_node *ia32_new_spill(ir_node *value, ir_node *after)
 {
-	ir_graph *irg        = get_irn_irg(node);
-	dbg_info *dbgi       = get_irn_dbg_info(node);
-	ir_node *block       = get_nodes_block(node);
-	ir_entity *ent       = be_get_frame_entity(node);
-	ir_mode *mode        = get_irn_mode(node);
-	ir_mode *spillmode   = get_spill_mode(node);
-	ir_node *noreg       = ia32_new_NoReg_gp(irg);
-	ir_node *ptr         = get_irg_frame(irg);
-	ir_node *mem         = get_irn_n(node, n_be_Reload_mem);
-	ir_node *new_op, *proj;
-	const arch_register_t *reg;
+	ir_graph *irg        = get_irn_irg(value);
+	ir_node  *block      = get_block(after);
+	ir_node  *frame      = get_irg_frame(irg);
+	ir_mode  *value_mode = get_irn_mode(value);
+	ir_mode  *mode       = get_spill_mode(value_mode);
+	ir_node  *noreg      = ia32_new_NoReg_gp(irg);
+	ir_node  *nomem      = get_irg_no_mem(irg);
 
-	if (mode_is_float(spillmode)) {
-		if (ia32_cg_config.use_sse2)
-			new_op = new_bd_ia32_xLoad(dbgi, block, ptr, noreg, mem, spillmode);
-		else
-			new_op = new_bd_ia32_fld(dbgi, block, ptr, noreg, mem, spillmode);
-	} else if (get_mode_size_bits(spillmode) == 128) {
-		/* Reload 128 bit SSE registers */
-		new_op = new_bd_ia32_xxLoad(dbgi, block, ptr, noreg, mem);
-	} else {
-		new_op = new_bd_ia32_Load(dbgi, block, ptr, noreg, mem);
-	}
-
-	set_ia32_op_type(new_op, ia32_AddrModeS);
-	set_ia32_ls_mode(new_op, spillmode);
-	set_ia32_frame_ent(new_op, ent);
-	set_ia32_use_frame(new_op);
-	set_ia32_is_reload(new_op);
-
-	DBG_OPT_RELOAD2LD(node, new_op);
-
-	proj = new_rd_Proj(dbgi, new_op, mode, pn_ia32_Load_res);
-
-	sched_replace(node, new_op);
-
-	/* copy the register from the old node to the new Load */
-	reg = arch_get_irn_register(node);
-	arch_set_irn_register(proj, reg);
-
-	SET_IA32_ORIG_NODE(new_op, node);
-
-	exchange(node, proj);
-}
-
-/**
- * Transforms a be_Spill node into a ia32 Store.
- */
-static void transform_to_Store(ir_node *node)
-{
-	ir_graph *irg  = get_irn_irg(node);
-	dbg_info *dbgi = get_irn_dbg_info(node);
-	ir_node *block = get_nodes_block(node);
-	ir_entity *ent = be_get_frame_entity(node);
-	const ir_node *spillval = get_irn_n(node, n_be_Spill_val);
-	ir_mode *mode  = get_spill_mode(spillval);
-	ir_node *noreg = ia32_new_NoReg_gp(irg);
-	ir_node *nomem = get_irg_no_mem(irg);
-	ir_node *ptr   = get_irg_frame(irg);
-	ir_node *val   = get_irn_n(node, n_be_Spill_val);
 	ir_node *res;
 	ir_node *store;
-
 	if (mode_is_float(mode)) {
 		if (ia32_cg_config.use_sse2) {
-			store = new_bd_ia32_xStore(dbgi, block, ptr, noreg, nomem, val);
+			store = new_bd_ia32_xStore(NULL, block, frame, noreg, nomem, value);
 			res   = new_r_Proj(store, mode_M, pn_ia32_xStore_M);
 		} else {
-			store = new_bd_ia32_fst(dbgi, block, ptr, noreg, nomem, val, mode);
+			store = new_bd_ia32_fst(NULL, block, frame, noreg, nomem, value, mode);
 			res   = new_r_Proj(store, mode_M, pn_ia32_fst_M);
 		}
 	} else if (get_mode_size_bits(mode) == 128) {
 		/* Spill 128 bit SSE registers */
-		store = new_bd_ia32_xxStore(dbgi, block, ptr, noreg, nomem, val);
+		store = new_bd_ia32_xxStore(NULL, block, frame, noreg, nomem, value);
 		res   = new_r_Proj(store, mode_M, pn_ia32_xxStore_M);
 	} else {
 		store = get_mode_size_bits(mode) == 8
-			? new_bd_ia32_Store_8bit(dbgi, block, ptr, noreg, nomem, val)
-			: new_bd_ia32_Store     (dbgi, block, ptr, noreg, nomem, val);
+			? new_bd_ia32_Store_8bit(NULL, block, frame, noreg, nomem, value)
+			: new_bd_ia32_Store     (NULL, block, frame, noreg, nomem, value);
 		res   = new_r_Proj(store, mode_M, pn_ia32_Store_M);
 	}
-
 	set_ia32_op_type(store, ia32_AddrModeD);
 	set_ia32_ls_mode(store, mode);
-	set_ia32_frame_ent(store, ent);
 	set_ia32_use_frame(store);
 	set_ia32_is_spill(store);
-	SET_IA32_ORIG_NODE(store, node);
-	DBG_OPT_SPILL2ST(node, store);
+	sched_add_after(after, store);
 
-	sched_replace(node, store);
-	exchange(node, res);
+	return res;
+}
+
+static ir_node *ia32_new_reload(ir_node *value, ir_node *spill, ir_node *before)
+{
+	ir_graph *irg       = get_irn_irg(before);
+	ir_node  *block     = get_block(before);
+	ir_mode  *mode      = get_irn_mode(value);
+	ir_mode  *spillmode = get_spill_mode(mode);
+	ir_node  *noreg     = ia32_new_NoReg_gp(irg);
+	ir_node  *frame     = get_irg_frame(irg);
+
+	ir_node  *load;
+	if (mode_is_float(spillmode)) {
+		if (ia32_cg_config.use_sse2)
+			load = new_bd_ia32_xLoad(NULL, block, frame, noreg, spill, spillmode);
+		else
+			load = new_bd_ia32_fld(NULL, block, frame, noreg, spill, spillmode);
+	} else if (get_mode_size_bits(spillmode) == 128) {
+		/* Reload 128 bit SSE registers */
+		load = new_bd_ia32_xxLoad(NULL, block, frame, noreg, spill);
+	} else {
+		load = new_bd_ia32_Load(NULL, block, frame, noreg, spill);
+	}
+	set_ia32_op_type(load, ia32_AddrModeS);
+	set_ia32_ls_mode(load, spillmode);
+	set_ia32_use_frame(load);
+	set_ia32_is_reload(load);
+	arch_add_irn_flags(load, arch_irn_flag_reload);
+	sched_add_before(before, load);
+
+	ir_node *proj = new_r_Proj(load, mode, pn_ia32_res);
+
+	return proj;
 }
 
 static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp, ir_node *mem, ir_entity *ent)
@@ -796,11 +767,7 @@ static void ia32_after_ra_walker(ir_node *block, void *env)
 
 	/* beware: the schedule is changed here */
 	sched_foreach_reverse_safe(block, node) {
-		if (be_is_Reload(node)) {
-			transform_to_Load(node);
-		} else if (be_is_Spill(node)) {
-			transform_to_Store(node);
-		} else if (be_is_MemPerm(node)) {
+		if (be_is_MemPerm(node)) {
 			transform_MemPerm(node);
 		}
 	}
@@ -811,80 +778,71 @@ static void ia32_after_ra_walker(ir_node *block, void *env)
  */
 static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 {
-	be_fec_env_t  *env = (be_fec_env_t*)data;
-	const ir_mode *mode;
-	int            align;
-
+	be_fec_env_t *env = (be_fec_env_t*)data;
 	/* Disable coalescing for "returns twice" calls: In case of setjmp/longjmp
 	 * our control flow graph isn't completely correct: There are no backedges
 	 * from longjmp to the setjmp => coalescing would produce wrong results. */
 	if (is_ia32_Call(node)) {
 		const ia32_call_attr_t    *attrs = get_ia32_call_attr_const(node);
 		const ir_type             *type  = attrs->call_tp;
-		mtp_additional_properties  mtp   = get_method_additional_properties(type);
+		mtp_additional_properties  mtp
+			= get_method_additional_properties(type);
 		if (mtp & mtp_property_returns_twice)
 			be_forbid_coalescing(env);
 	}
 
-	if (be_is_Reload(node) && be_get_frame_entity(node) == NULL) {
-		mode  = get_spill_mode_mode(get_irn_mode(node));
-		align = get_mode_size_bytes(mode);
-	} else if (is_ia32_irn(node)         &&
-			get_ia32_frame_ent(node) == NULL &&
-			is_ia32_use_frame(node)) {
-		if (is_ia32_need_stackent(node))
-			goto need_stackent;
+	if (!is_ia32_irn(node) || get_ia32_frame_ent(node) != NULL
+	 || !is_ia32_use_frame(node))
+		return;
 
-		switch (get_ia32_irn_opcode(node)) {
+	const ir_mode *mode;
+	if (is_ia32_need_stackent(node))
+		goto need_stackent;
+	switch (get_ia32_irn_opcode(node)) {
 need_stackent:
-		case iro_ia32_Load: {
-			const ia32_attr_t *attr = get_ia32_attr_const(node);
+	case iro_ia32_Load: {
+		const ia32_attr_t *attr = get_ia32_attr_const(node);
 
-			if (attr->data.need_32bit_stackent) {
-				mode = ia32_mode_gp;
-			} else if (attr->data.need_64bit_stackent) {
-				mode = mode_Ls;
-			} else {
-				mode = get_ia32_ls_mode(node);
-				if (is_ia32_is_reload(node))
-					mode = get_spill_mode_mode(mode);
-			}
-			align = get_mode_size_bytes(mode);
-			break;
+		if (attr->data.need_32bit_stackent) {
+			mode = ia32_mode_gp;
+		} else if (attr->data.need_64bit_stackent) {
+			mode = mode_Ls;
+		} else {
+			mode = get_ia32_ls_mode(node);
+			if (is_ia32_is_reload(node))
+				mode = get_spill_mode(mode);
 		}
+		break;
+	}
 
-		case iro_ia32_fild:
-		case iro_ia32_fld:
-		case iro_ia32_xLoad: {
-			mode  = get_ia32_ls_mode(node);
-			align = 4;
-			break;
-		}
+	case iro_ia32_fild:
+	case iro_ia32_fld:
+	case iro_ia32_xLoad: {
+		mode  = get_ia32_ls_mode(node);
+		break;
+	}
 
-		case iro_ia32_FldCW: {
-			/* although 2 byte would be enough 4 byte performs best */
-			mode  = ia32_mode_gp;
-			align = 4;
-			break;
-		}
+	case iro_ia32_FldCW: {
+		/* although 2 byte would be enough 4 byte performs best */
+		mode  = ia32_mode_gp;
+		break;
+	}
 
-		default:
+	default:
 #ifndef NDEBUG
-			panic("unexpected frame user while collection frame entity nodes");
+		panic("unexpected frame user while collection frame entity nodes");
 
-		case iro_ia32_FnstCW:
-		case iro_ia32_Store:
-		case iro_ia32_fst:
-		case iro_ia32_fist:
-		case iro_ia32_fisttp:
-		case iro_ia32_xStore:
-		case iro_ia32_xStoreSimple:
+	case iro_ia32_FnstCW:
+	case iro_ia32_Store:
+	case iro_ia32_fst:
+	case iro_ia32_fist:
+	case iro_ia32_fisttp:
+	case iro_ia32_xStore:
+	case iro_ia32_xStoreSimple:
 #endif
-			return;
-		}
-	} else {
 		return;
 	}
+	int align = mode == ia32_mode_E ? 4 : get_mode_size_bytes(mode);
 	be_node_needs_frame_entity(env, node, mode, align);
 }
 
@@ -1885,8 +1843,8 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_end_codegeneration,
 	ia32_get_call_abi,
 	ia32_mark_remat,
-	be_new_spill,
-	be_new_reload,
+	ia32_new_spill,
+	ia32_new_reload,
 	ia32_register_saved_by,
 
 	NULL,

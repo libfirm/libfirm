@@ -89,8 +89,7 @@ int        arch_get_sp_bias(ir_node *irn);
 int             arch_get_op_estimated_cost(const ir_node *irn);
 int             arch_possible_memory_operand(const ir_node *irn,
                                              unsigned int i);
-void            arch_perform_memory_operand(ir_node *irn, ir_node *spill,
-                                            unsigned int i);
+void            arch_perform_memory_operand(ir_node *irn, unsigned int i);
 
 /**
  * Get the register allocated for a value.
@@ -363,11 +362,9 @@ struct arch_irn_ops_t {
 	 * Ask the backend to assimilate @p reload of operand @p i into @p irn.
 	 *
 	 * @param irn    The node.
-	 * @param spill  The spill.
 	 * @param i      The position of the reload.
 	 */
-	void (*perform_memory_operand)(ir_node *irn, ir_node *spill,
-	                               unsigned int i);
+	void (*perform_memory_operand)(ir_node *irn, unsigned int i);
 };
 
 /**
