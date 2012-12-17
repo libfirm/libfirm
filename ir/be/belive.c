@@ -156,15 +156,19 @@ static be_lv_info_node_t *be_lv_get_or_set(be_lv_t *li, ir_node *bl,
 	return res;
 }
 
+typedef struct lv_remove_walker_t {
+	be_lv_t       *lv;
+	ir_node const *irn;
+} lv_remove_walker_t;
+
 /**
  * Removes a node from the list of live variables of a block.
- * @return 1 if the node was live at that block, 0 if not.
  */
-static int be_lv_remove(be_lv_t *li, const ir_node *bl,
-                        const ir_node *irn)
+static void lv_remove_irn_walker(ir_node *const bl, void *const data)
 {
-	be_lv_info_t *irn_live = ir_nodehashmap_get(be_lv_info_t, &li->map, bl);
-
+	lv_remove_walker_t *const w        = (lv_remove_walker_t*)data;
+	ir_node      const *const irn      = w->irn;
+	be_lv_info_t       *const irn_live = ir_nodehashmap_get(be_lv_info_t, &w->lv->map, bl);
 	if (irn_live != NULL) {
 		unsigned n   = irn_live[0].head.n_members;
 		unsigned pos = _be_liveness_bsearch(irn_live, irn);
@@ -183,11 +187,8 @@ static int be_lv_remove(be_lv_t *li, const ir_node *bl,
 
 			--irn_live[0].head.n_members;
 			DBG((dbg, LEVEL_3, "\tdeleting %+F from %+F at pos %d\n", irn, bl, pos));
-			return 1;
 		}
 	}
-
-	return 0;
 }
 
 static struct {
@@ -229,12 +230,6 @@ static void live_end_at_block(ir_node *const block, be_lv_state_t const state)
 		live_end_at_block(pred_block, be_lv_state_end | be_lv_state_out);
 	}
 }
-
-typedef struct lv_remove_walker_t {
-	be_lv_t       *lv;
-	const ir_node *irn;
-} lv_remove_walker_t;
-
 
 /**
  * Liveness analysis for a value.
@@ -293,12 +288,6 @@ static void liveness_for_node(ir_node *irn)
 			}
 		}
 	}
-}
-
-static void lv_remove_irn_walker(ir_node *bl, void *data)
-{
-	lv_remove_walker_t *w = (lv_remove_walker_t*)data;
-	be_lv_remove(w->lv, bl, w->irn);
 }
 
 /**
