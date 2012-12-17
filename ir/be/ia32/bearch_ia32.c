@@ -90,6 +90,7 @@ static ir_type *between_type           = NULL;
 static ir_entity *old_bp_ent           = NULL;
 static ir_entity *ret_addr_ent         = NULL;
 static ir_entity *omit_fp_ret_addr_ent = NULL;
+static int        precise_x87_spills;
 
 /**
  * The environment for the intrinsic mapping.
@@ -336,7 +337,7 @@ static int ia32_get_op_estimated_cost(const ir_node *irn)
 static ir_mode *get_spill_mode_mode(const ir_mode *mode)
 {
 	if (mode_is_float(mode))
-		return mode_D;
+		return precise_x87_spills ? ia32_mode_E : mode_D;
 
 	return mode_Iu;
 }
@@ -1960,6 +1961,7 @@ static const lc_opt_table_entry_t ia32_options[] = {
 	LC_OPT_ENT_INT ("stackalign", "set power of two stack alignment for calls",
 	                &ia32_isa_template.base.stack_alignment),
 	LC_OPT_ENT_BOOL("gprof",      "create gprof profiling code",                                    &gprof),
+	LC_OPT_ENT_BOOL("precise_float_spill", "Spill floatingpoint values precisely (the whole 80 bits)", &precise_x87_spills),
 	LC_OPT_LAST
 };
 
