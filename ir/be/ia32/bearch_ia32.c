@@ -418,15 +418,13 @@ static int ia32_possible_memory_operand(const ir_node *irn, unsigned int i)
 static void ia32_perform_memory_operand(ir_node *irn, ir_node *spill,
                                         unsigned int i)
 {
-	ir_mode *load_mode;
-	ir_mode *dest_op_mode;
-
 	assert(ia32_possible_memory_operand(irn, i) && "Cannot perform memory operand change");
 
 	set_ia32_op_type(irn, ia32_AddrModeS);
 
-	load_mode    = get_irn_mode(get_irn_n(irn, i));
-	dest_op_mode = get_ia32_ls_mode(irn);
+	ir_mode *op_mode      = get_irn_mode(get_irn_n(irn, i));
+	ir_mode *load_mode    = get_spill_mode_mode(op_mode);
+	ir_mode *dest_op_mode = get_ia32_ls_mode(irn);
 	if (get_mode_size_bits(load_mode) <= get_mode_size_bits(dest_op_mode)) {
 		set_ia32_ls_mode(irn, load_mode);
 	}
