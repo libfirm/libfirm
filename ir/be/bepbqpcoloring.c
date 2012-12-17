@@ -243,7 +243,7 @@ static void create_affinity_edges(ir_node *irn, void *env)
 	unsigned                     pos;
 	unsigned                     max;
 
-	if (is_Reg_Phi(irn)) { /* Phis */
+	if (is_Phi(irn)) { /* Phis */
 		for (pos = 0, max = get_irn_arity(irn); pos < max; ++pos) {
 			ir_node *arg = get_irn_n(irn, pos);
 

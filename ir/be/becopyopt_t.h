@@ -56,8 +56,6 @@ static inline void set_irn_col(const arch_register_class_t *cls, ir_node *node,
 
 #define list_entry_units(lh) list_entry(lh, unit_t, units)
 
-#define is_Reg_Phi(irn)        (is_Phi(irn) && mode_is_data(get_irn_mode(irn)))
-
 #define get_Perm_src(irn) (get_irn_n(get_Proj_pred(irn), get_Proj_proj(irn)))
 #define is_Perm_Proj(irn) (is_Proj(irn) && be_is_Perm(get_Proj_pred(irn)))
 

@@ -207,7 +207,7 @@ static int co_is_optimizable_root(ir_node *irn)
 	if (arch_register_req_is(req, ignore))
 		return 0;
 
-	if (is_Reg_Phi(irn) || is_Perm_Proj(irn))
+	if (is_Phi(irn) || is_Perm_Proj(irn))
 		return 1;
 
 	if (arch_register_req_is(req, should_be_same))
@@ -389,7 +389,7 @@ static void co_collect_units(ir_node *irn, void *env)
 
 	be_lv_t *const lv = be_get_irg_liveness(co->irg);
 	/* Phi with some/all of its arguments */
-	if (is_Reg_Phi(irn)) {
+	if (is_Phi(irn)) {
 		int i, arity;
 
 		/* init */
@@ -771,7 +771,7 @@ static void build_graph_walker(ir_node *irn, void *env)
 	if (req->cls != co->cls || arch_register_req_is(req, ignore))
 		return;
 
-	if (is_Reg_Phi(irn)) { /* Phis */
+	if (is_Phi(irn)) { /* Phis */
 		for (pos=0, max=get_irn_arity(irn); pos<max; ++pos) {
 			ir_node *arg = get_irn_n(irn, pos);
 			add_edges(co, irn, arg, co->get_costs(irn, pos));
