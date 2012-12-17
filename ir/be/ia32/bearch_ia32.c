@@ -351,15 +351,6 @@ static ir_mode *get_spill_mode(const ir_node *node)
 }
 
 /**
- * Checks whether an addressmode reload for a node with mode mode is compatible
- * with a spillslot of mode spill_mode
- */
-static int ia32_is_spillmode_compatible(const ir_mode *mode, const ir_mode *spillmode)
-{
-	return !mode_is_float(mode) || mode == spillmode;
-}
-
-/**
  * Check if irn can load its operand at position i from memory (source addressmode).
  * @param irn    The irn to be checked
  * @param i      The operands position
@@ -369,13 +360,16 @@ static int ia32_possible_memory_operand(const ir_node *irn, unsigned int i)
 {
 	ir_node       *op        = get_irn_n(irn, i);
 	const ir_mode *mode      = get_irn_mode(op);
-	const ir_mode *spillmode = get_spill_mode(op);
 
 	if (!is_ia32_irn(irn)                              ||  /* must be an ia32 irn */
 	    get_ia32_op_type(irn) != ia32_Normal           ||  /* must not already be a addressmode irn */
-	    !ia32_is_spillmode_compatible(mode, spillmode) ||
 	    is_ia32_use_frame(irn))                            /* must not already use frame */
 		return 0;
+	if (mode_is_float(mode)) {
+		ir_mode *spillmode = get_spill_mode_mode(mode);
+		if (spillmode != mode_D && spillmode != mode_F)
+			return 0;
+	}
 
 	switch (get_ia32_am_support(irn)) {
 		case ia32_am_none:
