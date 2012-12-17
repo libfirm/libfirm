@@ -57,8 +57,8 @@ typedef struct conflict_t {
  */
 typedef struct node_stat_t {
 	ir_node *irn;
-	int     new_color;
-	int     pinned_local :1;
+	int      new_color;
+	unsigned pinned_local :1;
 } node_stat_t;
 
 /**

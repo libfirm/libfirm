@@ -9,8 +9,10 @@
  */
 #include "config.h"
 
-#ifdef WITH_GUROBI
 #include "lpp_gurobi.h"
+#include "error.h"
+
+#ifdef WITH_GUROBI
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,7 +22,6 @@
 
 #include <gurobi_c.h>
 
-#include "error.h"
 #include "sp_matrix.h"
 
 static char gurobi_cst_encoding[4] = { 0, GRB_EQUAL, GRB_LESS_EQUAL, GRB_GREATER_EQUAL };
@@ -223,6 +224,13 @@ void lpp_solve_gurobi(lpp_t *lpp)
 	gurobi_construct(grb);
 	gurobi_solve(grb);
 	free_gurobi(grb);
+}
+
+#else
+
+void lpp_solve_gurobi(lpp_t *lpp)
+{
+	(void)lpp;
 }
 
 #endif

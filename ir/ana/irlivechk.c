@@ -49,8 +49,8 @@
 typedef struct bl_info_t {
 	const ir_node *block;      /**< The block. */
 
-	int be_tgt_calc : 1;
-	int id : 31;               /**< a tight number for the block.
+	unsigned be_tgt_calc : 1;
+	unsigned id : 31;          /**< a tight number for the block.
 								 we're just reusing the pre num from
 								 the DFS. */
 	bitset_t *red_reachable;   /**< Holds all id's if blocks reachable

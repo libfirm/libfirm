@@ -9,8 +9,10 @@
  */
 #include "config.h"
 
-#ifdef WITH_CPLEX
 #include "lpp_cplex.h"
+#include "error.h"
+
+#ifdef WITH_CPLEX
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -260,6 +262,14 @@ void lpp_solve_cplex(lpp_t *lpp)
 	cpx_construct(cpx);
 	cpx_solve(cpx);
 	free_cpx(cpx);
+}
+
+#else
+
+void lpp_solve_cplex(lpp_t *lpp)
+{
+	(void)lpp;
+	panic("libfirm compiled without cplex support");
 }
 
 #endif

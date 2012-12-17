@@ -73,12 +73,12 @@ enum arm_architectures {
 
 /** Floating point instruction set. */
 enum arm_fp_architectures {
-	ARM_FPU_FPA_EXT_V1     = 0x80000000, /**< Base FPA instruction set. */
-	ARM_FPU_FPA_EXT_V2     = 0x40000000, /**< LFM/SFM. */
-	ARM_FPU_VFP_EXT_NONE   = 0x20000000, /**< Use VFP word-ordering. */
-	ARM_FPU_VFP_EXT_V1xD   = 0x10000000, /**< Base VFP instruction set. */
-	ARM_FPU_VFP_EXT_V1     = 0x08000000, /**< Double-precision insns. */
-	ARM_FPU_VFP_EXT_V2     = 0x04000000, /**< ARM10E VFPr1. */
+	ARM_FPU_FPA_EXT_V1     = 0x40000000, /**< Base FPA instruction set. */
+	ARM_FPU_FPA_EXT_V2     = 0x20000000, /**< LFM/SFM. */
+	ARM_FPU_VFP_EXT_NONE   = 0x10000000, /**< Use VFP word-ordering. */
+	ARM_FPU_VFP_EXT_V1xD   = 0x08000000, /**< Base VFP instruction set. */
+	ARM_FPU_VFP_EXT_V1     = 0x04000000, /**< Double-precision insns. */
+	ARM_FPU_VFP_EXT_V2     = 0x02000000, /**< ARM10E VFPr1. */
 
 	ARM_FPU_SOFTFLOAT      = 0x01000000, /**< soft float library */
 	ARM_FPU_NONE           = 0,
@@ -93,7 +93,7 @@ enum arm_fp_architectures {
 
 	ARM_FPU_ARCH_SOFTFLOAT = ARM_FPU_SOFTFLOAT,
 
-	ARM_FPU_MASK           = 0xff000000,
+	ARM_FPU_MASK           = 0x7f000000,
 };
 
 /** Returns non-zero if FPA instructions should be issued. */

@@ -265,16 +265,16 @@ typedef struct io_attr {
 /** Load attributes. */
 typedef struct load_attr {
 	except_attr   exc;            /**< The exception attribute. MUST be the first one. */
-    ir_volatility volatility:1;   /**< The volatility of this Load operation. */
-    ir_align      unaligned:1;    /**< The align attribute of this Load operation. */
+	__extension__ ir_volatility volatility:1;   /**< The volatility of this Load operation. */
+	__extension__ ir_align      unaligned:1;    /**< The align attribute of this Load operation. */
 	ir_mode       *mode;          /**< The mode of this Load operation. */
 } load_attr;
 
 /** Store attributes. */
 typedef struct store_attr {
 	except_attr   exc;            /**< the exception attribute. MUST be the first one. */
-	ir_volatility volatility:1;   /**< The volatility of this Store operation. */
-	ir_align      unaligned:1;    /**< The align attribute of this Store operation. */
+	__extension__ ir_volatility volatility:1;   /**< The volatility of this Store operation. */
+	__extension__ ir_align      unaligned:1;    /**< The align attribute of this Store operation. */
 } store_attr;
 
 typedef struct phi_attr {

@@ -807,7 +807,7 @@ static void show_by_name(type_or_ent tore, void *env)
 					printf("%s", get_id_str(id));
 				}
 				if (irg)
-					printf("[%ld] (%p)\n", get_irg_graph_nr(irg), irg);
+					printf("[%ld] (%p)\n", get_irg_graph_nr(irg), (void*)irg);
 				else
 					printf(" NULL\n");
 			}
@@ -836,7 +836,7 @@ static void show_by_ldname(type_or_ent tore, void *env)
 					printf("%s", get_id_str(id));
 				}
 				if (irg)
-					printf("[%ld] (%p)\n", get_irg_graph_nr(irg), irg);
+					printf("[%ld] (%p)\n", get_irg_graph_nr(irg), (void*)irg);
 				else
 					printf(" NULL\n");
 			}

@@ -12,8 +12,6 @@
 
 #include "lpp.h"
 
-#ifdef WITH_CPLEX
 void lpp_solve_cplex(lpp_t *lpp);
-#endif
 
 #endif

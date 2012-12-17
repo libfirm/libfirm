@@ -12,8 +12,6 @@
 
 #include "lpp.h"
 
-#ifdef WITH_GUROBI
 void lpp_solve_gurobi(lpp_t *lpp);
-#endif
 
 #endif
