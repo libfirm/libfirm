@@ -1664,7 +1664,7 @@ CopyB => {
 	outs      => [ "dest", "source", "count", "M", "X_regular", "X_except" ],
 	attr_type => "ia32_copyb_attr_t",
 	attr      => "unsigned size",
-	latency   => 3,
+	latency   => 250,
 # we don't care about this flag, so no need to mark this node
 #	modified_flags => [ "DF" ]
 },

@@ -307,10 +307,7 @@ static int ia32_get_op_estimated_cost(const ir_node *irn)
 	cost  = get_ia32_latency(irn);
 	op_tp = get_ia32_op_type(irn);
 
-	if (is_ia32_CopyB(irn)) {
-		cost = 250;
-	}
-	else if (is_ia32_CopyB_i(irn)) {
+	if (is_ia32_CopyB_i(irn)) {
 		int size = get_ia32_copyb_size(irn);
 		cost     = 20 + (int)ceil((4/3) * size);
 	}
