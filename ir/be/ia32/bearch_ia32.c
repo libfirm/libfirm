@@ -12,9 +12,6 @@
 
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
-
-#include <math.h>
-
 #include "irarch.h"
 #include "irgwalk.h"
 #include "irprog.h"
@@ -309,7 +306,7 @@ static int ia32_get_op_estimated_cost(const ir_node *irn)
 
 	if (is_ia32_CopyB_i(irn)) {
 		int size = get_ia32_copyb_size(irn);
-		cost     = 20 + (int)ceil((4/3) * size);
+		cost     = 20 + size * 4 / 3;
 	}
 	/* in case of address mode operations add additional cycles */
 	else if (op_tp == ia32_AddrModeD || op_tp == ia32_AddrModeS) {
