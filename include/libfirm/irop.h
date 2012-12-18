@@ -295,7 +295,7 @@ FIRM_API void ir_op_set_fragile_indices(ir_op *op, int pn_x_regular,
                                         int pn_x_except);
 
 /** Returns the ir_op_ops of an ir_op. */
-FIRM_API ir_op_ops *get_op_ops(ir_op *op);
+FIRM_API ir_op_ops const *get_op_ops(ir_op const *op);
 
 /** @} */
 

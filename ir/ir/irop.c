@@ -181,7 +181,7 @@ void (set_generic_function_ptr)(ir_op *op, op_func func)
 	set_generic_function_ptr_(op, func);
 }
 
-ir_op_ops *(get_op_ops)(ir_op *op)
+ir_op_ops const *(get_op_ops)(ir_op const *const op)
 {
 	return get_op_ops_(op);
 }
