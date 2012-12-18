@@ -284,43 +284,29 @@ ir_entity *ia32_get_frame_address_entity(ir_graph *irg)
 /**
  * Get the estimated cycle count for @p irn.
  *
- * @param self The this pointer.
  * @param irn  The node.
  *
  * @return     The estimated cycle count for this operation
  */
-static int ia32_get_op_estimated_cost(const ir_node *irn)
+static int ia32_get_op_estimated_cost(ir_node const *const irn)
 {
-	int            cost;
-	ia32_op_type_t op_tp;
-
-	if (is_Proj(irn))
-		return 0;
-	if (!is_ia32_irn(irn))
-		return 0;
-
-	assert(is_ia32_irn(irn));
-
-	cost  = get_ia32_latency(irn);
-	op_tp = get_ia32_op_type(irn);
-
 	if (is_ia32_CopyB_i(irn)) {
-		int size = get_ia32_copyb_size(irn);
-		cost     = 20 + size * 4 / 3;
+		unsigned const size = get_ia32_copyb_size(irn);
+		return 20 + size * 4 / 3;
 	}
+
+	unsigned cost = get_ia32_latency(irn);
+
 	/* in case of address mode operations add additional cycles */
-	else if (op_tp == ia32_AddrModeD || op_tp == ia32_AddrModeS) {
-		/*
-			In case of stack access and access to fixed addresses add 5 cycles
-			(we assume they are in cache), other memory operations cost 20
-			cycles.
-		*/
+	if (get_ia32_op_type(irn) != ia32_Normal) {
 		if (is_ia32_use_frame(irn) || (
-		    is_ia32_NoReg_GP(get_irn_n(irn, n_ia32_base)) &&
-		    is_ia32_NoReg_GP(get_irn_n(irn, n_ia32_index))
+		      is_ia32_NoReg_GP(get_irn_n(irn, n_ia32_base)) &&
+		      is_ia32_NoReg_GP(get_irn_n(irn, n_ia32_index))
 		    )) {
+			/* Stack access, assume it is cached. */
 			cost += 5;
 		} else {
+			/* Access probably elsewhere. */
 			cost += 20;
 		}
 	}
