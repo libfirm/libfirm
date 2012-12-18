@@ -41,14 +41,9 @@ arch_register_req_t const arch_no_requirement = {
  */
 static const arch_irn_ops_t *get_irn_ops(const ir_node *irn)
 {
-	if (is_Proj(irn)) {
-		irn = get_Proj_pred(irn);
-		assert(!is_Proj(irn));
-	}
-
-	ir_op                *ops    = get_irn_op(irn);
-	const arch_irn_ops_t *be_ops = get_op_ops(ops)->be_ops;
-
+	ir_op          const *const op     = get_irn_op(irn);
+	arch_irn_ops_t const *const be_ops = get_op_ops(op)->be_ops;
+	assert(be_ops);
 	return be_ops;
 }
 
