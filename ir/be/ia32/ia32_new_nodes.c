@@ -645,6 +645,7 @@ void set_ia32_frame_ent(ir_node *node, ir_entity *ent)
  */
 unsigned get_ia32_latency(const ir_node *node)
 {
+	assert(is_ia32_irn(node));
 	const ir_op *op               = get_irn_op(node);
 	const ia32_op_attr_t *op_attr = (ia32_op_attr_t*) get_op_attr(op);
 	return op_attr->latency;
