@@ -27,12 +27,14 @@
 #include "sparc_cconv.h"
 #include "irmode.h"
 #include "irgwalk.h"
+#include "irtools.h"
 #include "typerep.h"
 #include "xmalloc.h"
 #include "util.h"
 #include "error.h"
 #include "gen_sparc_regalloc_if.h"
 #include "bitfiddle.h"
+#include "lc_opts.h"
 
 static const unsigned ignore_regs[] = {
 	REG_G0,
@@ -131,6 +133,8 @@ static const unsigned returns_twice_saved[] = {
 	REG_I7
 };
 static unsigned default_returns_twice_saves[BITSET_SIZE_ELEMS(N_SPARC_REGISTERS)];
+
+static int num_forbidden_regs = 0;
 
 /**
  * Maps an input register representing the i'th register input
@@ -348,6 +352,17 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 		for (r = 0; r < n_ignores; ++r) {
 			rbitset_clear(birg->allocatable_regs, ignore_regs[r]);
 		}
+
+		if (num_forbidden_regs > 0) {
+			if (num_forbidden_regs > 8) {
+				num_forbidden_regs = 8;
+				fprintf(stderr, "warning: can only ignore up to 8 locals.\n");
+			}
+
+			for (int i = 0; i < num_forbidden_regs; ++i) {
+				rbitset_clear(birg->allocatable_regs, REG_L0 + i);
+			}
+		}
 	}
 
 	return cconv;
@@ -359,6 +374,20 @@ void sparc_free_calling_convention(calling_convention_t *cconv)
 	free(cconv->results);
 	free(cconv->caller_saves);
 	free(cconv);
+}
+
+static const lc_opt_table_entry_t sparc_cconv_options[] = {
+	LC_OPT_ENT_INT("num_forbidden_regs", "number of forbidden registers for allocator", &num_forbidden_regs),
+	LC_OPT_LAST
+};
+
+void sparc_init_cconv_args(void)
+{
+	lc_opt_entry_t *be_grp    = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *sparc_grp = lc_opt_get_grp(be_grp, "sparc");
+	lc_opt_entry_t *cconv_grp = lc_opt_get_grp(sparc_grp, "cconv");
+
+	lc_opt_add_table(cconv_grp, sparc_cconv_options);
 }
 
 void sparc_cconv_init(void)

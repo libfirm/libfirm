@@ -80,5 +80,6 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 void sparc_free_calling_convention(calling_convention_t *cconv);
 
 void sparc_cconv_init(void);
+void sparc_init_cconv_args(void);
 
 #endif

@@ -665,8 +665,10 @@ void be_init_arch_sparc(void)
 
 	be_register_isa_if("sparc", &sparc_isa_if);
 	FIRM_DBG_REGISTER(dbg, "firm.be.sparc.cg");
+
 	sparc_init_transform();
 	sparc_init_emitter();
 	sparc_init_architecture();
+	sparc_init_cconv_args();
 	icore_init_lowerperm();
 }
