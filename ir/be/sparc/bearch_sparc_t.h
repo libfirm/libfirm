@@ -12,8 +12,7 @@
 #define FIRM_BE_SPARC_BEARCH_SPARC_T_H
 
 #include <stdbool.h>
-#include "sparc_nodes_attr.h"
-#include "be.h"
+#include "bearch.h"
 
 typedef struct sparc_isa_t            sparc_isa_t;
 typedef struct calling_convention_t   calling_convention_t;

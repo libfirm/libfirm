@@ -13,8 +13,7 @@
 
 #include <stdio.h>
 
-#include "arm_nodes_attr.h"
-#include "be.h"
+#include "bearch.h"
 
 typedef struct arm_isa_t arm_isa_t;
 

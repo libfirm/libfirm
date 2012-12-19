@@ -12,16 +12,10 @@
 #define FIRM_BE_IA32_BEARCH_IA32_T_H
 
 #include "config.h"
-#include "pmap.h"
-#include "debug.h"
-#include "ia32_nodes_attr.h"
-#include "set.h"
-#include "pdeq.h"
 
-#include "be.h"
-#include "beemitter.h"
+#include "bearch.h"
 #include "beirg.h"
-#include "gen_ia32_regalloc_if.h"
+#include "pmap.h"
 
 #ifdef NDEBUG
 #define SET_IA32_ORIG_NODE(n, o)
@@ -30,7 +24,6 @@
 #endif /* NDEBUG */
 
 typedef struct ia32_isa_t            ia32_isa_t;
-typedef struct ia32_irn_ops_t        ia32_irn_ops_t;
 typedef struct ia32_intrinsic_env_t  ia32_intrinsic_env_t;
 
 typedef struct ia32_irg_data_t {
