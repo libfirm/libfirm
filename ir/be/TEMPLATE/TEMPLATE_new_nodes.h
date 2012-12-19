@@ -7,7 +7,7 @@
  * @file
  * @brief   Function prototypes for the assembler ir node constructors.
  */
-#ifndef FIRM_BE_TEMPALTE_TEMPLATE_NEW_NODES_H
+#ifndef FIRM_BE_TEMPLATE_TEMPLATE_NEW_NODES_H
 #define FIRM_BE_TEMPLATE_TEMPLATE_NEW_NODES_H
 
 #include "TEMPLATE_nodes_attr.h"
