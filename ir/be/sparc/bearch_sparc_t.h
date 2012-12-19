@@ -12,6 +12,8 @@
 #define FIRM_BE_SPARC_BEARCH_SPARC_T_H
 
 #include <stdbool.h>
+#include <stdint.h>
+
 #include "bearch.h"
 
 typedef struct sparc_isa_t            sparc_isa_t;
