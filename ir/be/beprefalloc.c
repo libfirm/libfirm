@@ -1855,7 +1855,7 @@ static void be_pref_alloc(ir_graph *new_irg)
 
 		n_regs      = arch_register_class_n_regs(cls);
 		normal_regs = rbitset_malloc(n_regs);
-		be_set_allocatable_regs(irg, cls, normal_regs);
+		be_get_allocatable_regs(irg, cls, normal_regs);
 
 		spill();
 

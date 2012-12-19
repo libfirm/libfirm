@@ -73,9 +73,7 @@ void be_init_default_asm_constraint_flags(void);
 void be_put_allocatable_regs(const ir_graph *irg,
                              const arch_register_class_t *cls, bitset_t *bs);
 
-void be_set_allocatable_regs(const ir_graph *irg,
-                             const arch_register_class_t *cls,
-                             unsigned *raw_bitset);
+void be_get_allocatable_regs(ir_graph const *irg, arch_register_class_t const *cls, unsigned *raw_bitset);
 
 unsigned be_get_n_allocatable_regs(const ir_graph *irg,
                                    const arch_register_class_t *cls);

@@ -493,9 +493,7 @@ ir_node *ia32_gen_ASM(ir_node *node)
 			if (r_clobber_bits != 0) {
 				if (parsed_constraint.all_registers_allowed) {
 					parsed_constraint.all_registers_allowed = 0;
-					be_set_allocatable_regs(irg,
-							parsed_constraint.cls,
-							&parsed_constraint.allowed_registers);
+					be_get_allocatable_regs(irg, parsed_constraint.cls, &parsed_constraint.allowed_registers);
 				}
 				parsed_constraint.allowed_registers &= ~r_clobber_bits;
 			}

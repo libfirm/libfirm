@@ -1827,9 +1827,7 @@ unsigned be_get_n_allocatable_regs(const ir_graph *irg,
 	return bitset_popcount(bs);
 }
 
-void be_set_allocatable_regs(const ir_graph *irg,
-                             const arch_register_class_t *cls,
-                             unsigned *raw_bitset)
+void be_get_allocatable_regs(ir_graph const *const irg, arch_register_class_t const *const cls, unsigned *const raw_bitset)
 {
 	be_irg_t *birg             = be_birg_from_irg(irg);
 	unsigned *allocatable_regs = birg->allocatable_regs;
