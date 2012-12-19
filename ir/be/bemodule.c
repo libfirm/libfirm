@@ -44,7 +44,6 @@ void be_init_dwarf(void);
 void be_init_arch_ia32(void);
 void be_init_arch_arm(void);
 void be_init_arch_amd64(void);
-void be_init_arch_sta(void);
 void be_init_arch_sparc(void);
 void be_init_arch_TEMPLATE(void);
 void be_init_copyilp(void);
