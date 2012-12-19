@@ -262,11 +262,8 @@ static ir_node *qnode_color_irn(qnode_t const *const qn, ir_node *const irn, int
 		bitset_copy(free_cols, allocatable_regs);
 
 		/* Exclude colors not assignable to the irn */
-		if (arch_register_req_is(req, limited)) {
-			bitset_t *limited = bitset_alloca(cls->n_regs);
-			rbitset_copy_to_bitset(req->limited, limited);
-			bitset_and(free_cols, limited);
-		}
+		if (arch_register_req_is(req, limited))
+			rbitset_and(free_cols->data, req->limited, free_cols->size);
 
 		/* Exclude the color of the irn, because it must _change_ its color */
 		bitset_clear(free_cols, irn_col);
