@@ -821,25 +821,17 @@ int co_gs_is_optimizable(copy_opt_t const *const co, ir_node *const irn)
 	return n && n->neighbours;
 }
 
-static int co_dump_appel_disjoint_constraints(const copy_opt_t *co, ir_node *a, ir_node *b)
+static bool co_dump_appel_disjoint_constraints(ir_node *const a, ir_node *const b)
 {
-	ir_node *nodes[]  = { a, b };
-	bitset_t *constr[] = { NULL, NULL };
-	int j;
+	arch_register_req_t const *const reqa = arch_get_irn_register_req(a);
+	if (!arch_register_req_is(reqa, limited))
+		return false;
 
-	constr[0] = bitset_alloca(co->cls->n_regs);
-	constr[1] = bitset_alloca(co->cls->n_regs);
+	arch_register_req_t const *const reqb = arch_get_irn_register_req(b);
+	if (!arch_register_req_is(reqb, limited))
+		return false;
 
-	for (j = 0; j < 2; ++j) {
-		const arch_register_req_t *req = arch_get_irn_register_req(nodes[j]);
-		if (arch_register_req_is(req, limited))
-			rbitset_copy_to_bitset(req->limited, constr[j]);
-		else
-			bitset_set_all(constr[j]);
-
-	}
-
-	return !bitset_intersect(constr[0], constr[1]);
+	return !rbitsets_have_common(reqa->limited, reqb->limited, reqa->cls->n_regs);
 }
 
 /**
@@ -902,7 +894,7 @@ static void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 
 		be_ifg_foreach_neighbour(ifg, &nit, irn, adj) {
 			if (!arch_irn_is_ignore(adj) &&
-					!co_dump_appel_disjoint_constraints(co, irn, adj)) {
+					!co_dump_appel_disjoint_constraints(irn, adj)) {
 				int adj_idx = node_map[get_irn_idx(adj)];
 				if (idx < adj_idx)
 					fprintf(f, "%d %d -1\n", idx, adj_idx);
