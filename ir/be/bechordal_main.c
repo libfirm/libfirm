@@ -234,84 +234,76 @@ static void pre_spill(be_chordal_env_t *const chordal_env, arch_register_class_t
  */
 static void post_spill(be_chordal_env_t *const chordal_env, ir_graph *const irg)
 {
-	/* some special classes contain only ignore regs, no work to be done */
-	int const allocatable_regs = be_get_n_allocatable_regs(irg, chordal_env->cls);
-	if (allocatable_regs > 0) {
-		/*
-			If we have a backend provided spiller, post spill is
-			called in a loop after spilling for each register class.
-			But we only need to fix stack nodes once in this case.
-		*/
-		be_timer_push(T_RA_SPILL_APPLY);
-		check_for_memory_operands(irg);
-		be_abi_fix_stack_nodes(irg);
-		be_timer_pop(T_RA_SPILL_APPLY);
+	/*
+		If we have a backend provided spiller, post spill is
+		called in a loop after spilling for each register class.
+		But we only need to fix stack nodes once in this case.
+	*/
+	be_timer_push(T_RA_SPILL_APPLY);
+	check_for_memory_operands(irg);
+	be_abi_fix_stack_nodes(irg);
+	be_timer_pop(T_RA_SPILL_APPLY);
 
-
-		/* verify schedule and register pressure */
-		be_timer_push(T_VERIFY);
-		if (chordal_env->opts->vrfy_option == BE_CH_VRFY_WARN) {
-			be_verify_schedule(irg);
-			be_verify_register_pressure(irg, chordal_env->cls);
-		} else if (chordal_env->opts->vrfy_option == BE_CH_VRFY_ASSERT) {
-			assert(be_verify_schedule(irg) && "Schedule verification failed");
-			assert(be_verify_register_pressure(irg, chordal_env->cls)
-				&& "Register pressure verification failed");
-		}
-		be_timer_pop(T_VERIFY);
-
-		/* Color the graph. */
-		be_timer_push(T_RA_COLOR);
-		be_ra_chordal_coloring(chordal_env);
-		be_timer_pop(T_RA_COLOR);
-
-		dump(BE_CH_DUMP_CONSTR, irg, chordal_env->cls, "color");
-
-		/* Create the ifg with the selected flavor */
-		be_timer_push(T_RA_IFG);
-		chordal_env->ifg = be_create_ifg(chordal_env);
-		be_timer_pop(T_RA_IFG);
-
-		if (stat_ev_enabled) {
-			be_ifg_stat_t   stat;
-			be_node_stats_t node_stats;
-
-			be_ifg_stat(irg, chordal_env->ifg, &stat);
-			stat_ev_dbl("bechordal_ifg_nodes", stat.n_nodes);
-			stat_ev_dbl("bechordal_ifg_edges", stat.n_edges);
-			stat_ev_dbl("bechordal_ifg_comps", stat.n_comps);
-
-			be_collect_node_stats(&node_stats, irg);
-			be_subtract_node_stats(&node_stats, &last_node_stats);
-
-			stat_ev_dbl("bechordal_perms_before_coal",
-					node_stats[BE_STAT_PERMS]);
-			stat_ev_dbl("bechordal_copies_before_coal",
-					node_stats[BE_STAT_COPIES]);
-		}
-
-		be_timer_push(T_RA_COPYMIN);
-		co_driver(chordal_env);
-		be_timer_pop(T_RA_COPYMIN);
-
-		dump(BE_CH_DUMP_COPYMIN, irg, chordal_env->cls, "copymin");
-
-		/* ssa destruction */
-		be_timer_push(T_RA_SSA);
-		be_ssa_destruction(chordal_env);
-		be_timer_pop(T_RA_SSA);
-
-		dump(BE_CH_DUMP_SSADESTR, irg, chordal_env->cls, "ssadestr");
-
-		if (chordal_env->opts->vrfy_option != BE_CH_VRFY_OFF) {
-			be_timer_push(T_VERIFY);
-			be_ssa_destruction_check(chordal_env);
-			be_timer_pop(T_VERIFY);
-		}
-
-		/* the ifg exists only if there are allocatable regs */
-		be_ifg_free(chordal_env->ifg);
+	/* verify schedule and register pressure */
+	be_timer_push(T_VERIFY);
+	if (chordal_env->opts->vrfy_option == BE_CH_VRFY_WARN) {
+		be_verify_schedule(irg);
+		be_verify_register_pressure(irg, chordal_env->cls);
+	} else if (chordal_env->opts->vrfy_option == BE_CH_VRFY_ASSERT) {
+		assert(be_verify_schedule(irg) && "Schedule verification failed");
+		assert(be_verify_register_pressure(irg, chordal_env->cls) && "Register pressure verification failed");
 	}
+	be_timer_pop(T_VERIFY);
+
+	/* Color the graph. */
+	be_timer_push(T_RA_COLOR);
+	be_ra_chordal_coloring(chordal_env);
+	be_timer_pop(T_RA_COLOR);
+
+	dump(BE_CH_DUMP_CONSTR, irg, chordal_env->cls, "color");
+
+	/* Create the ifg with the selected flavor */
+	be_timer_push(T_RA_IFG);
+	chordal_env->ifg = be_create_ifg(chordal_env);
+	be_timer_pop(T_RA_IFG);
+
+	if (stat_ev_enabled) {
+		be_ifg_stat_t   stat;
+		be_node_stats_t node_stats;
+
+		be_ifg_stat(irg, chordal_env->ifg, &stat);
+		stat_ev_dbl("bechordal_ifg_nodes", stat.n_nodes);
+		stat_ev_dbl("bechordal_ifg_edges", stat.n_edges);
+		stat_ev_dbl("bechordal_ifg_comps", stat.n_comps);
+
+		be_collect_node_stats(&node_stats, irg);
+		be_subtract_node_stats(&node_stats, &last_node_stats);
+
+		stat_ev_dbl("bechordal_perms_before_coal",  node_stats[BE_STAT_PERMS]);
+		stat_ev_dbl("bechordal_copies_before_coal", node_stats[BE_STAT_COPIES]);
+	}
+
+	be_timer_push(T_RA_COPYMIN);
+	co_driver(chordal_env);
+	be_timer_pop(T_RA_COPYMIN);
+
+	dump(BE_CH_DUMP_COPYMIN, irg, chordal_env->cls, "copymin");
+
+	/* ssa destruction */
+	be_timer_push(T_RA_SSA);
+	be_ssa_destruction(chordal_env);
+	be_timer_pop(T_RA_SSA);
+
+	dump(BE_CH_DUMP_SSADESTR, irg, chordal_env->cls, "ssadestr");
+
+	if (chordal_env->opts->vrfy_option != BE_CH_VRFY_OFF) {
+		be_timer_push(T_VERIFY);
+		be_ssa_destruction_check(chordal_env);
+		be_timer_pop(T_VERIFY);
+	}
+
+	/* the ifg exists only if there are allocatable regs */
+	be_ifg_free(chordal_env->ifg);
 
 	/* free some always allocated data structures */
 	pmap_destroy(chordal_env->border_heads);
