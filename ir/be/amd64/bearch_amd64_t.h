@@ -5,10 +5,10 @@
 
 /**
  * @file
- * @brief   declarations for TEMPALTE backend -- private header
+ * @brief   declarations for AMD64 backend -- private header
  */
-#ifndef FIRM_BE_amd64_BEARCH_amd64_T_H
-#define FIRM_BE_amd64_BEARCH_amd64_T_H
+#ifndef FIRM_BE_AMD64_BEARCH_AMD64_T_H
+#define FIRM_BE_AMD64_BEARCH_AMD64_T_H
 
 #include "debug.h"
 #include "amd64_nodes_attr.h"

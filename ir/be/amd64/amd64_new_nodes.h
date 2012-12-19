@@ -7,8 +7,8 @@
  * @file
  * @brief   Function prototypes for the assembler ir node constructors.
  */
-#ifndef FIRM_BE_TEMPALTE_amd64_NEW_NODES_H
-#define FIRM_BE_amd64_amd64_NEW_NODES_H
+#ifndef FIRM_BE_AMD64_AMD64_NEW_NODES_H
+#define FIRM_BE_AMD64_AMD64_NEW_NODES_H
 
 #include "amd64_nodes_attr.h"
 

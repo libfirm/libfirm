@@ -7,8 +7,8 @@
  * @file
  * @brief   declaration for the transform function (code selection)
  */
-#ifndef FIRM_BE_amd64_amd64_TRANSFORM_H
-#define FIRM_BE_amd64_amd64_TRANSFORM_H
+#ifndef FIRM_BE_AMD64_AMD64_TRANSFORM_H
+#define FIRM_BE_AMD64_AMD64_TRANSFORM_H
 
 void amd64_init_transform(void);
 

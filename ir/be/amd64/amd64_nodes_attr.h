@@ -7,8 +7,8 @@
  * @file
  * @brief   attributes attached to all amd64 nodes
  */
-#ifndef FIRM_BE_amd64_amd64_NODES_ATTR_H
-#define FIRM_BE_amd64_amd64_NODES_ATTR_H
+#ifndef FIRM_BE_AMD64_AMD64_NODES_ATTR_H
+#define FIRM_BE_AMD64_AMD64_NODES_ATTR_H
 
 #include "bearch.h"
 

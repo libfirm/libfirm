@@ -7,8 +7,8 @@
  * @file
  * @brief    declarations for emit functions
  */
-#ifndef FIRM_BE_amd64_amd64_EMITTER_H
-#define FIRM_BE_amd64_amd64_EMITTER_H
+#ifndef FIRM_BE_AMD64_AMD64_EMITTER_H
+#define FIRM_BE_AMD64_AMD64_EMITTER_H
 
 #include "irargs_t.h"
 #include "irnode.h"
