@@ -483,7 +483,6 @@ static const backend_params *sparc_get_backend_params(void)
 		32,    /* max_bits_for_mulh */
 	};
 	static backend_params p = {
-		0,     /* no inline assembly */
 		0,     /* no support for RotL nodes */
 		1,     /* big endian */
 		1,     /* modulo shift efficient */

@@ -387,7 +387,6 @@ static int amd64_is_mux_allowed(ir_node *sel, ir_node *mux_false,
  */
 static const backend_params *amd64_get_backend_params(void) {
 	static backend_params p = {
-		0,     /* no inline assembly */
 		1,     /* support Rotl nodes */
 		0,     /* little endian */
 		1,     /* modulo shift is efficient */

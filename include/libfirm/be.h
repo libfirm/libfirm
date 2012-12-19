@@ -97,8 +97,6 @@ typedef ir_node *(create_trampoline_fkt)(ir_node *block, ir_node *mem, ir_node *
  * propagated to the libFirm parameter set.
  */
 typedef struct backend_params {
-	/** If set, the backend supports inline assembly. */
-	unsigned support_inline_asm:1;
 	/** If set, the backend supports Rotl nodes */
 	unsigned support_rotl:1;
 	/** the backend uses big-endian byte ordering if set, else little endian */
