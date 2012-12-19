@@ -139,23 +139,18 @@ static void sr_remove(ilp_env_t *const ienv)
  */
 static void sr_reinsert(ilp_env_t *const ienv)
 {
-	ir_graph *irg        = ienv->co->irg;
-	be_ifg_t *ifg        = ienv->co->cenv->ifg;
-	unsigned  n_regs     = arch_register_class_n_regs(ienv->co->cls);
-
-	unsigned *const allocatable_cols = rbitset_alloca(n_regs);
-	be_set_allocatable_regs(irg, ienv->co->cls, allocatable_cols);
-
-	unsigned *const possible_cols = rbitset_alloca(n_regs);
-	neighbours_iter_t iter;
-
 	/* color the removed nodes in right order */
+	unsigned        const n_regs           = arch_register_class_n_regs(ienv->co->cls);
+	unsigned       *const possible_cols    = rbitset_alloca(n_regs);
+	unsigned const *const allocatable_cols = ienv->co->cenv->allocatable_regs->data;
+	be_ifg_t const *const ifg              = ienv->co->cenv->ifg;
 	for (size_t i = ARR_LEN(ienv->col_suff); i-- != 0;) {
 		ir_node *const irn = ienv->col_suff[i];
 
 		rbitset_copy(possible_cols, allocatable_cols, n_regs);
 
 		/* get free color by inspecting all neighbors */
+		neighbours_iter_t iter;
 		be_ifg_foreach_neighbour(ifg, &iter, irn, other) {
 			const arch_register_req_t *cur_req;
 			unsigned cur_col;

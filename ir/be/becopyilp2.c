@@ -598,26 +598,18 @@ static void ilp2_apply(ilp_env_t *ienv)
  */
 static int co_solve_ilp2(copy_opt_t *co)
 {
-	unsigned        n_regs = arch_register_class_n_regs(co->cls);
-	lpp_sol_state_t sol_state;
-	ilp_env_t      *ienv;
-	local_env_t     my;
-
 	ASSERT_OU_AVAIL(co); //See build_clique_st
 	ASSERT_GS_AVAIL(co);
 
-	my.first_x_var = -1;
-	my.last_x_var  = -1;
 	FIRM_DBG_REGISTER(dbg, "firm.be.coilp2");
 
-	unsigned *const allocatable_colors = rbitset_alloca(n_regs);
-	be_set_allocatable_regs(co->irg, co->cls, allocatable_colors);
-	my.allocatable_colors = allocatable_colors;
+	local_env_t my;
+	my.first_x_var        = -1;
+	my.last_x_var         = -1;
+	my.allocatable_colors = co->cenv->allocatable_regs->data;
 
-	ienv = new_ilp_env(co, ilp2_build, ilp2_apply, &my);
-
-	sol_state = ilp_go(ienv);
-
+	ilp_env_t      *const ienv      = new_ilp_env(co, ilp2_build, ilp2_apply, &my);
+	lpp_sol_state_t const sol_state = ilp_go(ienv);
 	free_ilp_env(ienv);
 
 	return sol_state == lpp_optimal;
