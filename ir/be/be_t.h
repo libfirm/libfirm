@@ -11,9 +11,10 @@
 #ifndef FIRM_BE_BE_T_H
 #define FIRM_BE_BE_T_H
 
+#include <assert.h>
+
 #include "be.h"
 #include "be_types.h"
-#include "bitset.h"
 #include "firm_types.h"
 #include "pmap.h"
 #include "timing.h"
@@ -69,9 +70,6 @@ struct be_main_env_t {
 extern asm_constraint_flags_t asm_constraint_flags[256];
 
 void be_init_default_asm_constraint_flags(void);
-
-void be_put_allocatable_regs(const ir_graph *irg,
-                             const arch_register_class_t *cls, bitset_t *bs);
 
 void be_get_allocatable_regs(ir_graph const *irg, arch_register_class_t const *cls, unsigned *raw_bitset);
 

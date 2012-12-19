@@ -1803,28 +1803,12 @@ void be_abi_introduce(ir_graph *irg)
 	pmap_destroy(env.regs);
 }
 
-void be_put_allocatable_regs(const ir_graph *irg,
-                             const arch_register_class_t *cls, bitset_t *bs)
-{
-	be_irg_t *birg             = be_birg_from_irg(irg);
-	unsigned *allocatable_regs = birg->allocatable_regs;
-	unsigned  i;
-
-	assert(bitset_size(bs) == cls->n_regs);
-	bitset_clear_all(bs);
-	for (i = 0; i < cls->n_regs; ++i) {
-		const arch_register_t *reg = &cls->regs[i];
-		if (rbitset_is_set(allocatable_regs, reg->global_index))
-			bitset_set(bs, i);
-	}
-}
-
 unsigned be_get_n_allocatable_regs(const ir_graph *irg,
                                    const arch_register_class_t *cls)
 {
-	bitset_t *bs = bitset_alloca(cls->n_regs);
-	be_put_allocatable_regs(irg, cls, bs);
-	return bitset_popcount(bs);
+	unsigned *const bs = rbitset_alloca(cls->n_regs);
+	be_get_allocatable_regs(irg, cls, bs);
+	return rbitset_popcount(bs, cls->n_regs);
 }
 
 void be_get_allocatable_regs(ir_graph const *const irg, arch_register_class_t const *const cls, unsigned *const raw_bitset)
