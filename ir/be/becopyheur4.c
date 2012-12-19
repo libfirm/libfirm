@@ -127,18 +127,14 @@ typedef struct co_mst_irn_t {
  */
 static co_mst_irn_t *co_mst_irn_init(co_mst_env_t *env, const ir_node *irn)
 {
-	co_mst_irn_t *res = OALLOC(&env->obst, co_mst_irn_t);
-
-	const arch_register_req_t *req;
-	neighbours_iter_t nodes_it;
-	unsigned len;
-
+	co_mst_irn_t *const res = OALLOC(&env->obst, co_mst_irn_t);
 	res->irn           = irn;
 	res->chunk         = NULL;
 	res->fixed         = 0;
 	res->tmp_col       = -1;
 	res->int_neighs    = NULL;
-	res->int_aff_neigh = 0;
+	/* set the number of interfering affinity neighbours to -1, they are calculated later */
+	res->int_aff_neigh = -1;
 	res->col           = arch_get_irn_register(irn)->index;
 	res->init_col      = res->col;
 	INIT_LIST_HEAD(&res->list);
@@ -146,26 +142,22 @@ static co_mst_irn_t *co_mst_irn_init(co_mst_env_t *env, const ir_node *irn)
 	DB((dbg, LEVEL_4, "Creating phase info for %+F\n", irn));
 
 	/* set admissible registers */
-	res->adm_colors = bitset_obstack_alloc(&env->obst, env->n_regs);
+	unsigned  const n_regs = env->n_regs;
+	bitset_t *const adm    = bitset_obstack_alloc(&env->obst, n_regs);
+	res->adm_colors = adm;
+	bitset_copy(adm, env->allocatable_regs);
 
 	/* Exclude colors not assignable to the irn */
-	req = arch_get_irn_register_req(irn);
-	if (arch_register_req_is(req, limited)) {
-		rbitset_copy_to_bitset(req->limited, res->adm_colors);
-		/* exclude global ignore registers as well */
-		bitset_and(res->adm_colors, env->allocatable_regs);
-	} else {
-		bitset_copy(res->adm_colors, env->allocatable_regs);
-	}
+	arch_register_req_t const *const req = arch_get_irn_register_req(irn);
+	if (arch_register_req_is(req, limited))
+		rbitset_and(adm->data, req->limited, n_regs);
 
 	/* compute the constraint factor */
-	res->constr_factor = (real_t) (1 + env->n_regs - bitset_popcount(res->adm_colors)) / env->n_regs;
-
-	/* set the number of interfering affinity neighbours to -1, they are calculated later */
-	res->int_aff_neigh = -1;
+	res->constr_factor = (real_t)(1 + n_regs - bitset_popcount(adm)) / n_regs;
 
 	/* build list of interfering neighbours */
-	len = 0;
+	unsigned          len = 0;
+	neighbours_iter_t nodes_it;
 	be_ifg_foreach_neighbour(env->ifg, &nodes_it, irn, neigh) {
 		if (!arch_irn_is_ignore(neigh)) {
 			obstack_ptr_grow(&env->obst, neigh);
