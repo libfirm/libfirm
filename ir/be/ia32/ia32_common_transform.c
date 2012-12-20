@@ -362,6 +362,21 @@ static bool can_match(const arch_register_req_t *in,
 	return (*in->limited & *out->limited) != 0;
 }
 
+static bool match_requirement(arch_register_req_t const **reqs, size_t const n_reqs, bitset_t *const used, arch_register_req_t const *const req)
+{
+	if (!req->cls)
+		return true;
+	for (size_t i = 0; i != n_reqs; ++i) {
+		if (bitset_is_set(used, i))
+			continue;
+		if (!can_match(req, reqs[i]))
+			continue;
+		bitset_set(used, i);
+		return true;
+	}
+	return false;
+}
+
 static inline ir_node *get_new_node(ir_node *node)
 {
 #ifdef FIRM_GRGEN_BE
@@ -535,23 +550,7 @@ ir_node *ia32_gen_ASM(ir_node *node)
 		bitset_t *used_ins    = bitset_alloca(n_ins);
 		for (size_t o = 0; o < out_arity; ++o) {
 			const arch_register_req_t *outreq = out_reg_reqs[o];
-
-			if (outreq->cls == NULL) {
-				continue;
-			}
-
-			int i;
-			for (i = 0; i < orig_inputs; ++i) {
-				if (bitset_is_set(used_ins, i))
-					continue;
-				const arch_register_req_t *inreq = in_reg_reqs[i];
-				if (!can_match(outreq, inreq))
-					continue;
-				bitset_set(used_ins, i);
-				break;
-			}
-			/* did we find any match? */
-			if (i < orig_inputs)
+			if (match_requirement(in_reg_reqs, orig_inputs, used_ins, outreq))
 				continue;
 
 			/* we might need more space in the input arrays */
@@ -580,23 +579,7 @@ ir_node *ia32_gen_ASM(ir_node *node)
 		size_t    orig_out_arity = out_arity;
 		for (int i = 0; i < n_inputs; ++i) {
 			const arch_register_req_t *inreq = in_reg_reqs[i];
-
-			if (inreq->cls == NULL)
-				continue;
-
-			size_t o;
-			for (o = 0; o < orig_out_arity; ++o) {
-				const arch_register_req_t *outreq;
-				if (bitset_is_set(used_outs, o))
-					continue;
-				outreq = out_reg_reqs[o];
-				if (!can_match(outreq, inreq))
-					continue;
-				bitset_set(used_outs, i);
-				break;
-			}
-			/* did we find any match? */
-			if (o < orig_out_arity)
+			if (match_requirement(out_reg_reqs, orig_out_arity, used_outs, inreq))
 				continue;
 
 			/* we might need more space in the output arrays */
