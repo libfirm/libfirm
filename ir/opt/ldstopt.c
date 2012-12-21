@@ -39,10 +39,7 @@
 /** The debug handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
-#undef IMAX
-#define IMAX(a,b)   ((a) > (b) ? (a) : (b))
-
-#define MAX_PROJ    IMAX(IMAX((long)pn_Load_max, (long)pn_Store_max), (long)pn_Call_max)
+#define MAX_PROJ MAX(MAX((long)pn_Load_max, (long)pn_Store_max), (long)pn_Call_max)
 
 enum changes_t {
 	DF_CHANGED = 1,       /**< data flow changed */
