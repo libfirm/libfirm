@@ -546,7 +546,7 @@ static int verify_node_Proj_Proj(const ir_node *p)
 	long     nr       = get_Proj_proj(pred);
 
 	switch (get_irn_opcode(predpred)) {
-	case iro_Start:;
+	case iro_Start: {
 		ir_graph *irg = get_irn_irg(p);
 		ir_type  *mt  = get_entity_type(get_irg_entity(irg));
 
@@ -568,6 +568,7 @@ static int verify_node_Proj_Proj(const ir_node *p)
 			}
 		}
 		break;
+	}
 
 	case iro_Call:
 		{
