@@ -15,7 +15,6 @@
 #include "irgraph_t.h"
 #include "array.h"
 #include "irbackedge_t.h"
-#include "raw_bitset.h"
 
 /*--------------------------------------------------------------------*/
 /* Backedge information.                                              */

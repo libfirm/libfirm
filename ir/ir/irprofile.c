@@ -19,8 +19,6 @@
 #include "obst.h"
 #include "xmalloc.h"
 #include "set.h"
-#include "irtools.h"
-
 #include "irgwalk.h"
 #include "irdump_t.h"
 #include "irnode_t.h"

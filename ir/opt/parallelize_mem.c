@@ -25,7 +25,6 @@
 #include "obst.h"
 #include "irdump.h"
 #include "irflag_t.h"
-#include "irprintf.h"
 #include "irpass.h"
 #include "iredges.h"
 
@@ -87,7 +86,6 @@ static void parallelize_store(parallelize_info *pi, ir_node *irn)
 	if (ir_nodeset_contains(&pi->user_mem, irn))
 		return;
 
-	//ir_fprintf(stderr, "considering %+F\n", irn);
 	if (get_nodes_block(irn) == pi->origin_block) {
 		if (is_Proj(irn)) {
 			ir_node *pred = get_Proj_pred(irn);

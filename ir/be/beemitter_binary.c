@@ -16,7 +16,6 @@
 
 #include "beemitter_binary.h"
 #include "obst.h"
-#include "pdeq.h"
 #include "error.h"
 
 static code_fragment_t *first_fragment;

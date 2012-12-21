@@ -15,7 +15,6 @@
 
 #include "irgwalk.h"
 #include "irprog.h"
-#include "irprintf.h"
 #include "ircons.h"
 #include "irgmod.h"
 #include "irgopt.h"
@@ -23,8 +22,6 @@
 #include "irdump.h"
 #include "lower_calls.h"
 #include "error.h"
-
-#include "bitset.h"
 #include "debug.h"
 #include "array_t.h"
 #include "irtools.h"

@@ -19,8 +19,6 @@
 #include "irgraph_t.h"
 #include "irprog_t.h"
 #include "irgwalk.h"
-#include "util.h"
-#include "irprintf.h"
 #include "error.h"
 #include "ircons.h"
 

@@ -12,17 +12,13 @@
 
 #include <stdio.h>
 
-#include "pset.h"
-
 #include "irgraph.h"
 #include "irgwalk.h"
-#include "irdump_t.h"
 #include "irdom_t.h"
 #include "ircons.h"
 #include "iropt.h"
 #include "irgopt.h"
 #include "irtools.h"
-#include "irprintf.h"
 #include "iredges_t.h"
 
 #include "beutil.h"

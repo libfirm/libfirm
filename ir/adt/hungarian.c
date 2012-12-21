@@ -37,10 +37,9 @@
 #include "util.h"
 #include "xmalloc.h"
 #include "debug.h"
-#include "bitset.h"
 #include "error.h"
-
 #include "hungarian.h"
+#include "raw_bitset.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 

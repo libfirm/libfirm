@@ -25,7 +25,6 @@
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "iroptimize.h"
-#include "irtools.h"
 #include "tv.h"
 #include "irpass.h"
 #include "irmemory.h"

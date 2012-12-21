@@ -12,10 +12,9 @@
 #define FIRM_BE_BEINSN_T_H
 
 #include "firm_types.h"
-#include "bitset.h"
-
 #include "bearch.h"
 #include "bechordal.h"
+#include "raw_bitset.h"
 
 typedef struct be_operand_t  be_operand_t;
 typedef struct be_insn_t     be_insn_t;

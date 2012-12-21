@@ -17,9 +17,6 @@
 #include <stdbool.h>
 #include <errno.h>
 
-#include "list.h"
-#include "pset.h"
-
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "irprog_t.h"
@@ -38,7 +35,6 @@
 #include "callgraph.h"
 #include "irhooks.h"
 #include "dbginfo_t.h"
-#include "irtools.h"
 #include "irprintf.h"
 
 #include "irverify.h"

@@ -14,7 +14,6 @@
 
 #include "ident_t.h"
 #include "obst.h"
-#include "irprintf.h"
 
 /* Make types visible to allow most efficient access */
 #include "entity_t.h"

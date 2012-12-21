@@ -19,7 +19,6 @@
 #include "irgmod.h"
 #include "iredges.h"
 #include "ircons.h"
-#include "irprintf.h"
 #include "iroptimize.h"
 #include "dbginfo.h"
 #include "iropt_t.h"

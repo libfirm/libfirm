@@ -22,7 +22,6 @@
 #include "iredges_t.h"
 #include "ircons_t.h"
 #include "irgmod.h"
-#include "irnodeset.h"
 #include "irnodehashmap.h"
 #include "cpset.h"
 

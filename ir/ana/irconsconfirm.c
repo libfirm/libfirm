@@ -20,7 +20,6 @@
 #include "iropt_dbg.h"
 #include "iredges_t.h"
 #include "irgwalk.h"
-#include "irprintf.h"
 #include "irgopt.h"
 #include "irpass.h"
 #include "irtools.h"

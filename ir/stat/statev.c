@@ -18,7 +18,6 @@
 #include <stdarg.h>
 #include <regex.h>
 
-#include "util.h"
 #include "stat_timing.h"
 #include "irprintf.h"
 #include "statev_t.h"

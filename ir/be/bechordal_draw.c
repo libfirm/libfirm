@@ -14,8 +14,6 @@
 #include <limits.h>
 
 #include "pmap.h"
-#include "pset.h"
-
 #include "irgwalk.h"
 #include "irprintf.h"
 #include "iredges_t.h"

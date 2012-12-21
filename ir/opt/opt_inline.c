@@ -27,9 +27,7 @@
 
 #include "array_t.h"
 #include "list.h"
-#include "pset.h"
 #include "pmap.h"
-#include "pdeq.h"
 #include "xmalloc.h"
 #include "pqueue.h"
 

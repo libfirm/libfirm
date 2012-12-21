@@ -10,8 +10,6 @@
  */
 #include "config.h"
 
-#include "pset.h"
-
 #include <stdlib.h>
 #include "irnode_t.h"
 #include "irbackedge_t.h"

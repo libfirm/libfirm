@@ -20,8 +20,6 @@
 #include "bitset.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
-#include "irprintf.h"
-#include "irtools.h"
 #include "beifg.h"
 #include "error.h"
 #include "xmalloc.h"

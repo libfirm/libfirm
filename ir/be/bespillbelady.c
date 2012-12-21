@@ -21,8 +21,6 @@
 #include "irloop.h"
 #include "iredges_t.h"
 #include "ircons_t.h"
-#include "irprintf.h"
-#include "irnodeset.h"
 #include "irtools.h"
 #include "statev_t.h"
 #include "util.h"

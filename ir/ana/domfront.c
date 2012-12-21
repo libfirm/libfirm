@@ -13,12 +13,10 @@
 
 #include "obst.h"
 #include "pmap.h"
-#include "pdeq.h"
 #include "irdom.h"
 #include "array.h"
 #include "irgraph.h"
 #include "iredges_t.h"
-#include "irnodeset.h"
 
 /**
  * A wrapper for get_Block_idom.

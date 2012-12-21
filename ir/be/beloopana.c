@@ -12,7 +12,6 @@
 #include "config.h"
 
 #include "set.h"
-#include "pset.h"
 #include "irnode.h"
 #include "util.h"
 #include "irloop_t.h"

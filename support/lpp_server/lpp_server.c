@@ -33,7 +33,6 @@
 
 #include "debug.h"
 #include "list.h"
-#include "irtools.h"
 #include "util.h"
 
 #include "lpp_t.h"

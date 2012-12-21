@@ -43,7 +43,6 @@
 #include "irtools.h"
 #include "execfreq.h"
 #include "error.h"
-#include "raw_bitset.h"
 #include "dbginfo.h"
 #include "lc_opts.h"
 #include "ircons.h"

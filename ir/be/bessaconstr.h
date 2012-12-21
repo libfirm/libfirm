@@ -36,9 +36,7 @@
 
 #include <stdbool.h>
 #include "firm_types.h"
-#include "irnodeset.h"
 #include "belive.h"
-#include "bitset.h"
 #include "pdeq.h"
 #include "irnodemap.h"
 #include "obst.h"

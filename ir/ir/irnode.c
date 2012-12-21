@@ -27,7 +27,6 @@
 #include "error.h"
 
 #include "irhooks.h"
-#include "irtools.h"
 #include "util.h"
 
 #include "beinfo.h"

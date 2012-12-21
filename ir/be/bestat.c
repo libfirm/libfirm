@@ -13,12 +13,10 @@
 #include <time.h>
 
 #include "irnode_t.h"
-#include "irprintf.h"
 #include "irgwalk.h"
 #include "irhooks.h"
 #include "execfreq.h"
 #include "firmstat_t.h"
-#include "irtools.h"
 #include "error.h"
 #include "statev_t.h"
 

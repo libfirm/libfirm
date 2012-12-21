@@ -69,7 +69,6 @@
 #include <assert.h>
 
 #include "bitfiddle.h"
-#include "util.h"
 
 /* quadratic probing */
 #ifndef JUMP

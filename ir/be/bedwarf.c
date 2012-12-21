@@ -23,7 +23,6 @@
 #include "tv.h"
 #include "xmalloc.h"
 #include "pmap.h"
-#include "pdeq.h"
 #include "pset_new.h"
 #include "util.h"
 #include "obst.h"

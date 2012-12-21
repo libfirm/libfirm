@@ -18,7 +18,6 @@
 #include "lc_opts_enum.h"
 
 #include "obst.h"
-#include "bitset.h"
 #include "statev.h"
 #include "irprog.h"
 #include "irgopt.h"
@@ -29,7 +28,6 @@
 #include "irloop_t.h"
 #include "irtools.h"
 #include "irverify.h"
-#include "irprintf.h"
 #include "iroptimize.h"
 #include "firmstat.h"
 #include "execfreq_t.h"

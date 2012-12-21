@@ -19,7 +19,6 @@
 #include "ircons.h"
 #include "irgmod.h"
 #include "irgwalk.h"
-#include "irprintf.h"
 #include "irnode_t.h"
 #include "tv.h"
 #include "irpass.h"

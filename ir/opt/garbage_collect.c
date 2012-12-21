@@ -15,7 +15,6 @@
 #include "type_t.h"
 #include "entity_t.h"
 #include "irprog_t.h"
-#include "irprintf.h"
 #include "irpass.h"
 #include "irgwalk.h"
 #include "error.h"

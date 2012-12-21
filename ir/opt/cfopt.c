@@ -42,8 +42,6 @@
 #include "firmstat.h"
 #include "irpass.h"
 #include "irnodehashmap.h"
-#include "irtools.h"
-
 #include "iropt_dbg.h"
 
 /** An environment for merge_blocks and collect nodes. */

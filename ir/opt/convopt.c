@@ -35,7 +35,6 @@
 #include "iropt_t.h"
 #include "iredges_t.h"
 #include "irgwalk.h"
-#include "irprintf.h"
 #include "irpass_t.h"
 #include "tv.h"
 #include "vrp.h"

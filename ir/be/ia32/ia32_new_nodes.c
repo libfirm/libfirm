@@ -28,7 +28,6 @@
 #include "irprintf.h"
 #include "iredges.h"
 #include "error.h"
-#include "raw_bitset.h"
 #include "xmalloc.h"
 
 #include "bearch.h"

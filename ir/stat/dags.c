@@ -12,7 +12,6 @@
 
 #include <assert.h>
 
-#include "irprintf.h"
 #include "irdump.h"
 #include "dags.h"
 #include "irtools.h"

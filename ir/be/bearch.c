@@ -18,12 +18,7 @@
 #include "ircons_t.h"
 #include "irnode_t.h"
 #include "irop_t.h"
-
-#include "bitset.h"
-#include "pset.h"
 #include "raw_bitset.h"
-
-#include "irprintf.h"
 
 arch_register_req_t const arch_no_requirement = {
 	arch_register_req_type_none,

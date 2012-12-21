@@ -11,16 +11,12 @@
 
 #include "irgwalk.h"
 #include "irprog.h"
-#include "irprintf.h"
 #include "ircons.h"
 #include "irgmod.h"
 #include "irdump.h"
 #include "lower_calls.h"
-
-#include "bitset.h"
 #include "debug.h"
 #include "error.h"
-
 #include "be_t.h"
 #include "bearch.h"
 #include "beirg.h"

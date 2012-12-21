@@ -17,7 +17,6 @@
 #include "array.h"
 #include "irgwalk.h"
 #include "ircons.h"
-#include "irprintf.h"
 #include "execfreq.h"
 #include "unionfind.h"
 #include "irdump_t.h"

@@ -14,23 +14,18 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include "pset.h"
 #include "irnode_t.h"
 #include "ircons_t.h"
 #include "iredges_t.h"
 #include "irbackedge_t.h"
-#include "irprintf.h"
 #include "ident_t.h"
 #include "type_t.h"
 #include "entity_t.h"
 #include "debug.h"
 #include "irgwalk.h"
 #include "array.h"
-#include "pdeq.h"
 #include "execfreq.h"
-#include "irnodeset.h"
 #include "error.h"
-
 #include "bearch.h"
 #include "belive_t.h"
 #include "besched.h"

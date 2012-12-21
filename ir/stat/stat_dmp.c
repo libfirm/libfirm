@@ -11,7 +11,6 @@
 #include "config.h"
 
 #include "stat_dmp.h"
-#include "irtools.h"
 #include "irhooks.h"
 #include "util.h"
 #include "fourcc.h"

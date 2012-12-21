@@ -15,7 +15,6 @@
 
 #include "iredges_t.h"
 #include "irgwalk.h"
-#include "irprintf.h"
 #include "ircons.h"
 #include "irgmod.h"
 #include "heights.h"

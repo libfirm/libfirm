@@ -15,7 +15,6 @@
 #include "irop_t.h"
 #include "iropt.h"
 #include "irnode_t.h"
-#include "pset.h"
 #include "tv.h"
 
 /**

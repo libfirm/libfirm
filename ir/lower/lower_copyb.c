@@ -17,7 +17,6 @@
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "type_t.h"
-#include "irtools.h"
 #include "irgmod.h"
 #include "error.h"
 #include "be.h"

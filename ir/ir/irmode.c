@@ -21,7 +21,6 @@
 #include "tv_t.h"
 #include "obst.h"
 #include "irhooks.h"
-#include "irtools.h"
 #include "array.h"
 #include "error.h"
 #include "pattern_dmp.h"

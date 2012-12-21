@@ -24,7 +24,6 @@
 #include "pmap.h"
 #include "array_t.h"
 #include "pdeq.h"
-#include "irprintf.h"
 #include "debug.h"
 #include "error.h"
 

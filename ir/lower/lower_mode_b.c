@@ -26,7 +26,6 @@
 #include "tv.h"
 #include "error.h"
 #include "lowering.h"
-#include "pdeq.h"
 #include "irpass_t.h"
 #include "util.h"
 #include "array.h"

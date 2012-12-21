@@ -17,7 +17,6 @@
 #include "iredges.h"
 #include "debug.h"
 #include "irgwalk.h"
-#include "irprintf.h"
 #include "irop_t.h"
 #include "irargs_t.h"
 #include "irprog.h"

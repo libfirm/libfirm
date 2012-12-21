@@ -13,7 +13,6 @@
 #include "irgopt.h"
 #include "irgmod.h"
 #include "irgwalk.h"
-#include "irtools.h"
 #include "irgopt.h"
 
 /** Transforms:

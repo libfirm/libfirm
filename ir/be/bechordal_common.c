@@ -16,8 +16,6 @@
 #include "debug.h"
 
 #include "iredges.h"
-#include "bitset.h"
-
 #include "bechordal.h"
 #include "bechordal_t.h"
 #include "beirg.h"

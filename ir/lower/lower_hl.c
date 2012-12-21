@@ -20,7 +20,6 @@
 #include "irhooks.h"
 #include "irgmod.h"
 #include "irgwalk.h"
-#include "irtools.h"
 #include "irpass_t.h"
 
 /**

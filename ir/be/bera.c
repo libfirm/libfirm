@@ -13,8 +13,6 @@
 
 #include <stdlib.h>
 
-#include "pset.h"
-
 #include "irnode.h"
 #include "irmode.h"
 #include "irdom.h"

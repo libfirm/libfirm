@@ -19,10 +19,6 @@
 #include <stdlib.h>
 
 #include "hashptr.h"
-#include "pdeq.h"
-#include "pset.h"
-#include "pmap.h"
-#include "util.h"
 #include "debug.h"
 #include "error.h"
 #include "xmalloc.h"
@@ -37,7 +33,6 @@
 #include "irgraph_t.h"
 #include "irgopt.h"
 #include "irgmod.h"
-#include "irprintf.h"
 #include "irgwalk.h"
 
 #include "be_t.h"

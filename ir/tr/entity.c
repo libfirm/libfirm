@@ -19,8 +19,6 @@
 #include "array.h"
 #include "util.h"
 #include "irhooks.h"
-#include "irprintf.h"
-
 #include "irprog_t.h"
 #include "ircons.h"
 #include "tv_t.h"

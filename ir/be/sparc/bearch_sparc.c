@@ -15,7 +15,6 @@
 
 #include "irgwalk.h"
 #include "irprog.h"
-#include "irprintf.h"
 #include "ircons.h"
 #include "irgmod.h"
 #include "irgopt.h"
@@ -30,8 +29,6 @@
 #include "lower_calls.h"
 #include "lower_mode_b.h"
 #include "lower_softfloat.h"
-
-#include "bitset.h"
 #include "debug.h"
 #include "array_t.h"
 #include "error.h"

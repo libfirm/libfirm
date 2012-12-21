@@ -34,7 +34,6 @@
 #include "ircons.h"
 #include "irflag.h"
 #include "iroptimize.h"
-#include "irtools.h"
 #include "debug.h"
 #include "set.h"
 #include "pmap.h"

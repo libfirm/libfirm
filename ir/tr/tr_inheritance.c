@@ -14,7 +14,6 @@
 #include "typerep.h"
 #include "irgraph_t.h"
 #include "irprog_t.h"
-#include "irprintf.h"
 #include "pset.h"
 #include "set.h"
 #include "irgwalk.h"

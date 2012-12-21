@@ -33,15 +33,11 @@
 #include "irnode_t.h"
 #include "irnodemap.h"
 #include "iredges_t.h"
-
-#include "irprintf.h"
 #include "irdom.h"
 #include "irdump.h"
 
 #include "dfs_t.h"
 #include "bitset.h"
-#include "util.h"
-
 #include "irlivechk.h"
 
 #include "statev_t.h"

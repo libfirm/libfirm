@@ -26,7 +26,6 @@
 #include "bitset.h"
 
 #include "pset.h"
-#include "set.h"
 #include "list.h"
 #include "obst.h"
 #include "vrp.h"

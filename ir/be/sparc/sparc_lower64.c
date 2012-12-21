@@ -15,7 +15,6 @@
 #include "gen_sparc_new_nodes.h"
 #include "lower_dw.h"
 #include "ircons_t.h"
-#include "util.h"
 
 static void lower64_add(ir_node *node, ir_mode *mode)
 {

@@ -47,11 +47,8 @@
 
 #include "debug.h"
 #include "error.h"
-#include "pdeq.h"
 #include "array.h"
 #include "irdom.h"
-#include "irnodeset.h"
-
 #include "ircons.h"
 #include "iredges_t.h"
 #include "statev_t.h"

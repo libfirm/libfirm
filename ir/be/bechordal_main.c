@@ -1,4 +1,5 @@
 /*
+#include "irdump_t.h"
  * This file is part of libFirm.
  * Copyright (C) 2012 University of Karlsruhe.
  */
@@ -15,8 +16,6 @@
 #include <time.h>
 
 #include "obst.h"
-#include "pset.h"
-#include "list.h"
 #include "bitset.h"
 
 #include "lc_opts.h"
@@ -25,7 +24,6 @@
 #include "ircons_t.h"
 #include "irmode_t.h"
 #include "irgraph_t.h"
-#include "irprintf.h"
 #include "irgwalk.h"
 #include "ircons.h"
 #include "irdump.h"

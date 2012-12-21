@@ -15,7 +15,6 @@
 #include "irgmod.h"
 #include "irgwalk.h"
 #include "iredges.h"
-#include "irprintf.h"
 #include "pdeq.h"
 #include "error.h"
 #include "firmstat_t.h"

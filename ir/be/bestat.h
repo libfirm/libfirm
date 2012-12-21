@@ -12,8 +12,6 @@
 #define FIRM_BE_BESTAT_H
 
 #include "firm_types.h"
-#include "irnodeset.h"
-
 #include "bearch.h"
 
 typedef enum be_stat_tag_t {

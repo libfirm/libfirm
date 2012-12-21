@@ -22,8 +22,6 @@
 #include "irgwalk.h"
 #include "irgmod.h"
 #include "irdump.h"
-#include "irprintf.h"
-
 #include "be_t.h"
 #include "beutil.h"
 #include "bechordal_t.h"

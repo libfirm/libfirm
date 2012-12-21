@@ -18,13 +18,10 @@
 #include "iredges.h"
 #include "debug.h"
 #include "irgwalk.h"
-#include "irtools.h"
-#include "irprintf.h"
 #include "irop_t.h"
 #include "irprog_t.h"
 #include "irargs_t.h"
 #include "error.h"
-#include "raw_bitset.h"
 #include "dbginfo.h"
 
 #include "besched.h"

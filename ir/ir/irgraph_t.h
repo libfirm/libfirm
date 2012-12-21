@@ -19,12 +19,8 @@
 #include "type_t.h"
 #include "entity_t.h"
 #include "iredgekinds.h"
-
 #include "irloop.h"
-
 #include "obst.h"
-#include "pset.h"
-#include "set.h"
 
 #define is_ir_graph(thing)                    is_ir_graph_(thing)
 #define get_irg_start_block(irg)              get_irg_start_block_(irg)

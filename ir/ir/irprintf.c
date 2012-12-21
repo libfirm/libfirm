@@ -27,8 +27,6 @@
 #include "tv_t.h"
 #include "irprintf.h"
 #include "obst.h"
-#include "pset.h"
-#include "bitset.h"
 #include "dbginfo_t.h"
 #include "irargs_t.h"
 
