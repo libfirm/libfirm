@@ -37,8 +37,7 @@ typedef struct be_loop_info_t {
 } be_loop_info_t;
 
 struct be_loopana_t {
-	set      *data;
-	ir_graph *irg;
+	set *data;
 };
 
 static int cmp_loop_info(const void *a, const void *b, size_t size)
@@ -52,16 +51,12 @@ static int cmp_loop_info(const void *a, const void *b, size_t size)
 
 /**
  * Compute the highest register pressure in a block.
- * @param irg       The graph.
  * @param block     The block to compute pressure for.
  * @param cls       The register class to compute pressure for.
  * @return The highest register pressure in the given block.
  */
-static unsigned be_compute_block_pressure(const ir_graph *irg,
-                                          ir_node *block,
-                                          const arch_register_class_t *cls)
+static unsigned be_compute_block_pressure(ir_node *const block, arch_register_class_t const *const cls)
 {
-	be_lv_t     *lv = be_get_irg_liveness(irg);
 	ir_nodeset_t live_nodes;
 	size_t       max_live;
 
@@ -69,6 +64,7 @@ static unsigned be_compute_block_pressure(const ir_graph *irg,
 
 	/* determine largest pressure with this block */
 	ir_nodeset_init(&live_nodes);
+	be_lv_t *const lv = be_get_irg_liveness(get_Block_irg(block));
 	be_liveness_end_of_block(lv, cls, block, &live_nodes);
 	max_live   = ir_nodeset_size(&live_nodes);
 
@@ -113,7 +109,7 @@ static unsigned be_compute_loop_pressure(be_loopana_t *loop_ana, ir_loop *loop,
 		loop_element elem = get_loop_element(loop, i);
 
 		if (*elem.kind == k_ir_node)
-			son_pressure = be_compute_block_pressure(loop_ana->irg, elem.node, cls);
+			son_pressure = be_compute_block_pressure(elem.node, cls);
 		else {
 			assert(*elem.kind == k_ir_loop);
 			son_pressure = be_compute_loop_pressure(loop_ana, elem.son, cls);
@@ -138,7 +134,6 @@ be_loopana_t *be_new_loop_pressure(ir_graph *const irg, arch_register_class_t co
 	be_loopana_t *loop_ana = XMALLOC(be_loopana_t);
 
 	loop_ana->data = new_set(cmp_loop_info, 16);
-	loop_ana->irg  = irg;
 
 	DBG((dbg, LEVEL_1, "\n=====================================================\n", cls->name));
 	DBG((dbg, LEVEL_1, " Computing register pressure for class %s:\n", cls->name));
