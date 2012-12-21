@@ -5582,11 +5582,7 @@ static ir_node *gen_Proj(ir_node *node)
 	default:
 		if (is_ia32_l_FloattoLL(pred)) {
 			return gen_Proj_l_FloattoLL(node);
-#ifdef FIRM_EXT_GRS
-		} else if (!is_ia32_irn(pred)) { // Quick hack for SIMD optimization
-#else
 		} else {
-#endif
 			ir_mode *mode = get_irn_mode(node);
 			if (ia32_mode_needs_gp_reg(mode)) {
 				ir_node *new_pred = be_transform_node(pred);
