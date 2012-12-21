@@ -15,19 +15,6 @@
 #include "firm_types.h"
 #include "bearch_ia32_t.h"
 
-/**
- * An assembler constraint.
- */
-typedef struct constraint_t constraint_t;
-struct constraint_t {
-	const arch_register_class_t *cls;
-	unsigned                     allowed_registers;
-	char                         all_registers_allowed;
-	char                         memory_possible;
-	char                         immediate_type;
-	int                          same_as;
-};
-
 extern ir_heights_t *ia32_heights;
 extern int           ia32_no_pic_adjust;
 

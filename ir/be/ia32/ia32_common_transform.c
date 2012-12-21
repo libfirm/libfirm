@@ -145,6 +145,18 @@ int ia32_mode_needs_gp_reg(ir_mode *mode)
 	return mode_is_int(mode) || mode_is_reference(mode) || mode == mode_b;
 }
 
+/**
+ * An assembler constraint.
+ */
+typedef struct constraint_t {
+	const arch_register_class_t *cls;
+	unsigned                     allowed_registers;
+	char                         all_registers_allowed;
+	char                         memory_possible;
+	char                         immediate_type;
+	int                          same_as;
+} constraint_t;
+
 static void parse_asm_constraints(constraint_t *const constraint, ident *const constraint_text, bool const is_output)
 {
 	memset(constraint, 0, sizeof(constraint[0]));
