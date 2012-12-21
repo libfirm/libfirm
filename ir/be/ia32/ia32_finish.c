@@ -40,25 +40,19 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
  */
 static void ia32_transform_sub_to_neg_add(ir_node *irn)
 {
-	ir_graph *irg;
-	ir_node *in1, *in2, *noreg, *nomem, *res;
-	ir_node *noreg_fp, *block;
-	dbg_info *dbgi;
-	const arch_register_t *in1_reg, *in2_reg, *out_reg;
-
 	/* fix_am will solve this for AddressMode variants */
 	if (get_ia32_op_type(irn) != ia32_Normal)
 		return;
 
-	irg      = get_irn_irg(irn);
-	noreg    = ia32_new_NoReg_gp(irg);
-	noreg_fp = ia32_new_NoReg_xmm(irg);
-	nomem    = get_irg_no_mem(irg);
-	in1      = get_irn_n(irn, n_ia32_binary_left);
-	in2      = get_irn_n(irn, n_ia32_binary_right);
-	in1_reg  = arch_get_irn_register(in1);
-	in2_reg  = arch_get_irn_register(in2);
-	out_reg  = arch_get_irn_register_out(irn, 0);
+	ir_graph              *irg      = get_irn_irg(irn);
+	ir_node               *noreg    = ia32_new_NoReg_gp(irg);
+	ir_node               *noreg_fp = ia32_new_NoReg_xmm(irg);
+	ir_node               *nomem    = get_irg_no_mem(irg);
+	ir_node               *in1      = get_irn_n(irn, n_ia32_binary_left);
+	ir_node               *in2      = get_irn_n(irn, n_ia32_binary_right);
+	const arch_register_t *in1_reg  = arch_get_irn_register(in1);
+	const arch_register_t *in2_reg  = arch_get_irn_register(in2);
+	const arch_register_t *out_reg  = arch_get_irn_register_out(irn, 0);
 
 	if (out_reg == in1_reg)
 		return;
@@ -67,20 +61,18 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 	if (out_reg != in2_reg)
 		return;
 
-	block = get_nodes_block(irn);
-	dbgi   = get_irn_dbg_info(irn);
+	ir_node  *block = get_nodes_block(irn);
+	dbg_info *dbgi  = get_irn_dbg_info(irn);
 
 	/* generate the neg src2 */
+	ir_node *res;
 	if (is_ia32_xSub(irn)) {
-		int size;
-		ir_entity *entity;
 		ir_mode *op_mode = get_ia32_ls_mode(irn);
-
 		assert(get_irn_mode(irn) != mode_T);
 
 		res = new_bd_ia32_xXor(dbgi, block, noreg, noreg, nomem, in2, noreg_fp);
-		size = get_mode_size_bits(op_mode);
-		entity = ia32_gen_fp_known_const(size == 32 ? ia32_SSIGN : ia32_DSIGN);
+		int        size   = get_mode_size_bits(op_mode);
+		ir_entity *entity = ia32_gen_fp_known_const(size == 32 ? ia32_SSIGN : ia32_DSIGN);
 		set_ia32_am_sc(res, entity);
 		set_ia32_op_type(res, ia32_AddrModeS);
 		set_ia32_ls_mode(res, op_mode);
@@ -95,8 +87,6 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 		set_ia32_ls_mode(res, get_ia32_ls_mode(irn));
 	} else {
 		ir_node *flags_proj = NULL;
-		ir_node *carry;
-
 		if (get_irn_mode(irn) == mode_T) {
 			/* collect the Proj uses */
 			foreach_out_edge(irn, edge) {
@@ -110,6 +100,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 			}
 		}
 
+		ir_node *carry;
 		if (is_ia32_Sbb(irn)) {
 			/* Feed borrow (in CF) as carry (via CMC) into NOT+ADC. */
 			carry = get_irn_n(irn, n_ia32_Sbb_eflags);
@@ -125,31 +116,26 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 			 *
 			 * a + -b = a + (~b + 1)  would set the carry flag wrong IFF both a and b are zero.
 			 */
-			ir_node *cmc;
-			ir_node *nnot;
-			ir_node *adc;
-			ir_node *adc_flags;
-
 			carry = new_bd_ia32_Stc(dbgi, block);
 
-carry:
-			nnot = new_bd_ia32_Not(dbgi, block, in2);
+carry:;
+			ir_node *nnot = new_bd_ia32_Not(dbgi, block, in2);
 			arch_set_irn_register(nnot, in2_reg);
 			sched_add_before(irn, nnot);
 
 			arch_set_irn_register(carry, &ia32_registers[REG_EFLAGS]);
 			sched_add_before(irn, carry);
 
-			adc = new_bd_ia32_Adc(dbgi, block, noreg, noreg, nomem, nnot, in1, carry);
+			ir_node *adc = new_bd_ia32_Adc(dbgi, block, noreg, noreg, nomem, nnot, in1, carry);
 			arch_set_irn_register(adc, out_reg);
 			set_ia32_commutative(adc);
 
 			if (flags_proj != NULL) {
 				set_irn_mode(adc, mode_T);
-				adc_flags = new_r_Proj(adc, mode_Iu, pn_ia32_Adc_flags);
+				ir_node *adc_flags = new_r_Proj(adc, mode_Iu, pn_ia32_Adc_flags);
 				arch_set_irn_register(adc_flags, &ia32_registers[REG_EFLAGS]);
 
-				cmc = new_bd_ia32_Cmc(dbgi, block, adc_flags);
+				ir_node *cmc = new_bd_ia32_Cmc(dbgi, block, adc_flags);
 				arch_set_irn_register(cmc, &ia32_registers[REG_EFLAGS]);
 				sched_add_after(irn, cmc);
 				exchange(flags_proj, cmc);
@@ -212,10 +198,9 @@ static inline int need_constraint_copy(ir_node *irn)
 static int get_first_same(const arch_register_req_t* req)
 {
 	const unsigned other = req->other_same;
-	int i;
-
-	for (i = 0; i < 32; ++i) {
-		if (other & (1U << i)) return i;
+	for (int i = 0; i < 32; ++i) {
+		if (other & (1U << i))
+			return i;
 	}
 	panic("same position not found");
 }
@@ -227,28 +212,20 @@ static int get_first_same(const arch_register_req_t* req)
  */
 static void assure_should_be_same_requirements(ir_node *node)
 {
-	const arch_register_t      *out_reg, *in_reg;
-	ir_node                    *in_node, *block;
-
-	block = get_nodes_block(node);
+	ir_node *block = get_nodes_block(node);
 
 	/* check all OUT requirements, if there is a should_be_same */
 	be_foreach_out(node, i) {
-		int                          i2, arity;
-		int                          same_pos;
-		ir_node                     *uses_out_reg;
-		const arch_register_req_t   *req = arch_get_irn_register_req_out(node, i);
-		int                         uses_out_reg_pos;
-
+		const arch_register_req_t *req = arch_get_irn_register_req_out(node, i);
 		if (!arch_register_req_is(req, should_be_same))
 			continue;
 
-		same_pos = get_first_same(req);
+		int same_pos = get_first_same(req);
 
 		/* get in and out register */
-		out_reg = arch_get_irn_register_out(node, i);
-		in_node = get_irn_n(node, same_pos);
-		in_reg  = arch_get_irn_register(in_node);
+		const arch_register_t *out_reg = arch_get_irn_register_out(node, i);
+		ir_node               *in_node = get_irn_n(node, same_pos);
+		const arch_register_t *in_reg  = arch_get_irn_register(in_node);
 
 		/* requirement already fulfilled? */
 		if (in_reg == out_reg)
@@ -256,18 +233,14 @@ static void assure_should_be_same_requirements(ir_node *node)
 		assert(in_reg->reg_class == out_reg->reg_class);
 
 		/* check if any other input operands uses the out register */
-		arity = get_irn_arity(node);
-		uses_out_reg     = NULL;
-		uses_out_reg_pos = -1;
-		for (i2 = 0; i2 < arity; ++i2) {
-			ir_node               *in     = get_irn_n(node, i2);
-			const arch_register_t *other_in_reg;
-
+		ir_node *uses_out_reg     = NULL;
+		int      uses_out_reg_pos = -1;
+		for (int i2 = 0, arity = get_irn_arity(node); i2 < arity; ++i2) {
+			ir_node *in = get_irn_n(node, i2);
 			if (!mode_is_data(get_irn_mode(in)))
 				continue;
 
-			other_in_reg = arch_get_irn_register(in);
-
+			const arch_register_t *other_in_reg = arch_get_irn_register(in);
 			if (other_in_reg != out_reg)
 				continue;
 
@@ -335,20 +308,14 @@ static void fix_am_source(ir_node *irn)
 
 	be_foreach_out(irn, i) {
 		const arch_register_req_t *req = arch_get_irn_register_req_out(irn, i);
-		const arch_register_t     *out_reg;
-		int                        same_pos;
-		ir_node                   *same_node;
-		const arch_register_t     *same_reg;
-		ir_node                   *load_res;
-
 		if (!arch_register_req_is(req, should_be_same))
 			continue;
 
 		/* get in and out register */
-		out_reg   = arch_get_irn_register_out(irn, i);
-		same_pos  = get_first_same(req);
-		same_node = get_irn_n(irn, same_pos);
-		same_reg  = arch_get_irn_register(same_node);
+		const arch_register_t *out_reg   = arch_get_irn_register_out(irn, i);
+		int                    same_pos  = get_first_same(req);
+		ir_node               *same_node = get_irn_n(irn, same_pos);
+		const arch_register_t *same_reg  = arch_get_irn_register(same_node);
 
 		/* should_be same constraint is fullfilled, nothing to do */
 		if (out_reg == same_reg)
@@ -360,7 +327,7 @@ static void fix_am_source(ir_node *irn)
 				out_reg != arch_get_irn_register(get_irn_n(irn, n_ia32_index)))
 			continue;
 
-		load_res = ia32_turn_back_am(irn);
+		ir_node *load_res = ia32_turn_back_am(irn);
 		arch_set_irn_register(load_res, out_reg);
 
 		DBG((dbg, LEVEL_3,
@@ -417,7 +384,8 @@ void ia32_finish_irg(ir_graph *irg)
 {
 	waitq *wq = new_waitq();
 
-	/* Push the blocks on the waitq because ia32_finish_irg_walker starts more walks ... */
+	/* Push the blocks on the waitq because ia32_finish_irg_walker starts more
+	 * walks ... */
 	irg_block_walk_graph(irg, NULL, ia32_push_on_queue_walker, wq);
 
 	while (! waitq_empty(wq)) {
