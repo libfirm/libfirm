@@ -347,17 +347,14 @@ int (is_ir_graph)(const void *thing)
 	return is_ir_graph_(thing);
 }
 
+long get_irg_graph_nr(const ir_graph *irg)
+{
 #ifdef DEBUG_libfirm
-long get_irg_graph_nr(const ir_graph *irg)
-{
 	return irg->graph_nr;
-}
 #else
-long get_irg_graph_nr(const ir_graph *irg)
-{
 	return PTR_TO_INT(irg);
-}
 #endif
+}
 
 size_t get_irg_idx(const ir_graph *irg)
 {
