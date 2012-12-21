@@ -171,7 +171,7 @@ static void sr_reinsert(ilp_env_t *const ienv)
 
 		/* now all bits not set are possible colors */
 		/* take one that matches the alignment constraint */
-		unsigned free_col;
+		unsigned free_col = 0;
 		assert(!rbitset_is_empty(possible_cols, n_regs) && "No free color found. This can not be.");
 		for (;;) {
 			free_col = (unsigned)rbitset_next(possible_cols, free_col, true);
