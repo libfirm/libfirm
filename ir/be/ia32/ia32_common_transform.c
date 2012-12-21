@@ -112,28 +112,17 @@ ir_node *ia32_create_Immediate(ir_graph *const irg, ir_entity *const symconst, i
 
 const arch_register_t *ia32_get_clobber_register(const char *clobber)
 {
-	const arch_register_t       *reg = NULL;
-	int                          c;
-	size_t                       r;
-	const arch_register_class_t *cls;
-
 	/* TODO: construct a hashmap instead of doing linear search for clobber
 	 * register */
-	for (c = 0; c < N_IA32_CLASSES; ++c) {
-		cls = & ia32_reg_classes[c];
-		for (r = 0; r < cls->n_regs; ++r) {
-			const arch_register_t *temp_reg = arch_register_for_index(cls, r);
-			if (strcmp(temp_reg->name, clobber) == 0
-					|| (c == CLASS_ia32_gp && strcmp(temp_reg->name+1, clobber) == 0)) {
-				reg = temp_reg;
-				break;
-			}
+	for (size_t i = 0; i != N_IA32_REGISTERS; ++i) {
+		arch_register_t const *const reg = &ia32_registers[i];
+		if (strcmp(reg->name, clobber) == 0 ||
+		    (reg->reg_class == &ia32_reg_classes[CLASS_ia32_gp] && strcmp(reg->name + 1, clobber) == 0)) {
+			return reg;
 		}
-		if (reg != NULL)
-			break;
 	}
 
-	return reg;
+	return NULL;
 }
 
 int ia32_mode_needs_gp_reg(ir_mode *mode)
