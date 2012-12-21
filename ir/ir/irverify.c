@@ -570,28 +570,27 @@ static int verify_node_Proj_Proj(const ir_node *p)
 		break;
 	}
 
-	case iro_Call:
-		{
-			ASSERT_AND_RET(
-				(proj >= 0 && mode_is_datab(mode)),
-				"wrong Proj from Proj from Call", 0);
-			mt = get_Call_type(predpred);
-			ASSERT_AND_RET(is_unknown_type(mt) || is_Method_type(mt),
-					"wrong call type on call", 0);
-			ASSERT_AND_RET(
-				(proj < (int)get_method_n_ress(mt)),
-				"More Projs for results than results in type.", 0);
-			ir_type *res_type = get_method_res_type(mt, proj);
-			/* value result */
-			if ((mode_is_reference(mode)) &&
-				(is_compound_type(res_type) || is_Array_type(res_type)))
-				break;
+	case iro_Call: {
+		ASSERT_AND_RET(
+			(proj >= 0 && mode_is_datab(mode)),
+			"wrong Proj from Proj from Call", 0);
+		ir_type *mt = get_Call_type(predpred);
+		ASSERT_AND_RET(is_unknown_type(mt) || is_Method_type(mt),
+				"wrong call type on call", 0);
+		ASSERT_AND_RET(
+			(proj < (int)get_method_n_ress(mt)),
+			"More Projs for results than results in type.", 0);
+		ir_type *res_type = get_method_res_type(mt, proj);
+		/* value result */
+		if ((mode_is_reference(mode)) &&
+			(is_compound_type(res_type) || is_Array_type(res_type)))
+			break;
 
-			ASSERT_AND_RET(
-				(mode == get_type_mode(get_method_res_type(mt, proj))),
-				"Mode of Proj from Call doesn't match mode of result type.", 0);
-		}
+		ASSERT_AND_RET(
+			(mode == get_type_mode(get_method_res_type(mt, proj))),
+			"Mode of Proj from Call doesn't match mode of result type.", 0);
 		break;
+	}
 
 	case iro_Tuple:
 		/* We don't test */
