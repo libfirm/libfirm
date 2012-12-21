@@ -24,18 +24,7 @@ typedef struct be_loopana_t be_loopana_t;
  * @param cls   The register class to compute the pressure for
  * @return The loop analysis object.
  */
-be_loopana_t *be_new_loop_pressure_cls(ir_graph *irg,
-                                       const arch_register_class_t *cls);
-
-/**
- * Compute the register pressure of all loops in the irg.
- * @param irg   The graph
- * @param cls   register class to compute loop pressure for,
- *              if NULL computes for all classes
- * @return The loop analysis object.
- */
-be_loopana_t *be_new_loop_pressure(ir_graph *irg,
-                                   const arch_register_class_t *cls);
+be_loopana_t *be_new_loop_pressure(ir_graph *irg, arch_register_class_t const *cls);
 
 /**
  * Returns the computed register pressure for the given class and loop.

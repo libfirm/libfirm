@@ -133,14 +133,7 @@ static unsigned be_compute_loop_pressure(be_loopana_t *loop_ana, ir_loop *loop,
 	return pressure;
 }
 
-/**
- * Compute the register pressure for a class of all loops in a graph
- * @param irg   The graph
- * @param cls   The register class to compute the pressure for
- * @return The loop analysis object.
- */
-be_loopana_t *be_new_loop_pressure_cls(ir_graph *irg,
-                                       const arch_register_class_t *cls)
+be_loopana_t *be_new_loop_pressure(ir_graph *const irg, arch_register_class_t const *const cls)
 {
 	be_loopana_t *loop_ana = XMALLOC(be_loopana_t);
 
@@ -154,39 +147,6 @@ be_loopana_t *be_new_loop_pressure_cls(ir_graph *irg,
 	assure_loopinfo(irg);
 
 	be_compute_loop_pressure(loop_ana, get_irg_loop(irg), cls);
-
-	return loop_ana;
-}
-
-/**
- * Compute the register pressure for all classes of all loops in the irg.
- * @param irg  The graph
- * @return The loop analysis object.
- */
-be_loopana_t *be_new_loop_pressure(ir_graph *irg,
-                                   const arch_register_class_t *cls)
-{
-	be_loopana_t     *loop_ana = XMALLOC(be_loopana_t);
-	ir_loop          *irg_loop = get_irg_loop(irg);
-	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
-	int               i;
-
-	loop_ana->data = new_set(cmp_loop_info, 16);
-	loop_ana->irg  = irg;
-
-	assure_loopinfo(irg);
-
-	if (cls != NULL) {
-		be_compute_loop_pressure(loop_ana, irg_loop, cls);
-	} else {
-		for (i = arch_env->n_register_classes - 1; i >= 0; --i) {
-			const arch_register_class_t *cls = &arch_env->register_classes[i];
-			DBG((dbg, LEVEL_1, "\n=====================================================\n", cls->name));
-			DBG((dbg, LEVEL_1, " Computing register pressure for class %s:\n", cls->name));
-			DBG((dbg, LEVEL_1, "=====================================================\n", cls->name));
-			be_compute_loop_pressure(loop_ana, irg_loop, cls);
-		}
-	}
 
 	return loop_ana;
 }
