@@ -151,10 +151,6 @@ be_loopana_t *be_new_loop_pressure(ir_graph *const irg, arch_register_class_t co
 	return loop_ana;
 }
 
-/**
- * Returns the computed register pressure for the given class and loop.
- * @return The pressure or INT_MAX if not found
- */
 unsigned be_get_loop_pressure(be_loopana_t *loop_ana, const arch_register_class_t *cls, ir_loop *loop)
 {
 	unsigned pressure = INT_MAX;
@@ -174,9 +170,6 @@ unsigned be_get_loop_pressure(be_loopana_t *loop_ana, const arch_register_class_
 	return pressure;
 }
 
-/**
- * Frees the loop analysis object.
- */
 void be_free_loop_pressure(be_loopana_t *loop_ana)
 {
 	del_set(loop_ana->data);
