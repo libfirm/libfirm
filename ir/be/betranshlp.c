@@ -224,10 +224,10 @@ void be_enqueue_preds(ir_node *node)
  */
 static void fix_loops(ir_node *node)
 {
-	assert(node_is_in_irgs_storage(env.irg, node));
-
 	if (irn_visited_else_mark(node))
 		return;
+
+	assert(node_is_in_irgs_storage(env.irg, node));
 
 	bool changed = false;
 	if (! is_Block(node)) {
