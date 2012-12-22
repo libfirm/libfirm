@@ -605,7 +605,7 @@ static void callee_ana_node(ir_node *node, pset *methods)
 
 	switch (get_irn_opcode(node)) {
 	case iro_Const:
-		/* A direct address call. We tread this as an external
+		/* A direct address call. We treat this as an external
 		   call and ignore it completely. */
 		pset_insert_ptr(methods, get_unknown_entity()); /* free method -> unknown */
 		break;

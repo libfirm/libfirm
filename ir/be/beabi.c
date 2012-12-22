@@ -1379,7 +1379,7 @@ static void modify_irg(ir_graph *const irg, be_abi_irg_t *const env)
 		if (! is_Anchor(irn)) {
 			int nr       = get_Proj_proj(irn);
 			args[nr]     = irn;
-			DBG((dbg, LEVEL_2, "\treading arg: %d -> %+F\n", nr, irn));
+			DBG((dbg, LEVEL_2, "\treating arg: %d -> %+F\n", nr, irn));
 		}
 	}
 

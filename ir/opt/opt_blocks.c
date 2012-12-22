@@ -465,7 +465,7 @@ static partition_t *split(partition_t *Z, block_t *g, environment_t *env)
 }
 
 /**
- * Return non-zero if pred should be tread as a input node.
+ * Return non-zero if pred should be treated as a input node.
  */
 static int is_input_node(ir_node *pred, ir_node *irn, int index)
 {
