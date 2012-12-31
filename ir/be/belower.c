@@ -869,10 +869,9 @@ found_front:
 		/* it wasn't an input to the perm, we can't do anything more */
 		if (input < 0)
 			break;
-		if (arch_irn_is(node, modify_flags))
-			break;
 		req = arch_get_irn_register_req(node);
-		if (req->type != arch_register_req_type_normal)
+		if (req->type != arch_register_req_type_normal &&
+		    req->type != arch_register_req_type_should_be_same)
 			break;
 		for (i = get_irn_arity(node) - 1; i >= 0; --i) {
 			ir_node *opop = get_irn_n(node, i);
