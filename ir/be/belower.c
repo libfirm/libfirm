@@ -855,43 +855,32 @@ found_front:
 			goto done;
 		);
 
-		const arch_register_req_t *req;
-		int                        input = -1;
-		ir_node                   *proj  = NULL;
+		be_foreach_definition(node, cls, value, req,
+			if (req->type != arch_register_req_type_normal &&
+			    req->type != arch_register_req_type_should_be_same)
+				goto done;
+		);
 
-		/* search if node is a INPUT of Perm */
-		foreach_out_edge(perm, edge) {
-			ir_node *out = get_edge_src_irn(edge);
-			int      pn  = get_Proj_proj(out);
-			ir_node *in  = get_irn_n(perm, pn);
-			if (node == in) {
-				proj  = out;
-				input = pn;
-				break;
-			}
-		}
-		/* it wasn't an input to the perm, we can't do anything more */
-		if (input < 0)
-			break;
-		req = arch_get_irn_register_req(node);
-		if (req->type != arch_register_req_type_normal &&
-		    req->type != arch_register_req_type_should_be_same)
-			break;
-
-		DBG((dbg_permmove, LEVEL_2, "\tmoving %+F after %+F, killing %+F\n", node, perm, proj));
+		DBG((dbg_permmove, LEVEL_2, "\tmoving %+F after %+F\n", node, perm));
 
 		/* move the movable node in front of the Perm */
 		sched_remove(node);
 		sched_add_after(perm, node);
 
-		/* give it the proj's register */
-		arch_set_irn_register(node, arch_get_irn_register(proj));
-
-		/* reroute all users of the proj to the moved node. */
-		exchange(proj, node);
-
-		bitset_set(moved, input);
-		n_moved++;
+		/* Rewire Perm results to pushed through instruction. */
+		foreach_out_edge_safe(perm, edge) {
+			ir_node *const proj = get_edge_src_irn(edge);
+			int      const pn   = get_Proj_proj(proj);
+			ir_node *const in   = get_irn_n(perm, pn);
+			if (in == node || (is_Proj(in) && get_Proj_pred(in) == node)) {
+				/* Give it the proj's register. */
+				arch_set_irn_register(in, arch_get_irn_register_out(perm, pn));
+				/* Reroute all users of the proj to the moved node. */
+				exchange(proj, in);
+				bitset_set(moved, pn);
+				++n_moved;
+			}
+		}
 	}
 done:
 
