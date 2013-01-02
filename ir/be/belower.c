@@ -851,6 +851,10 @@ found_front:
 		if (node == frontier)
 			break;
 
+		be_foreach_use(node, cls, in_req, value, value_req,
+			goto done;
+		);
+
 		const arch_register_req_t *req;
 		int                        input = -1;
 		ir_node                   *proj  = NULL;
@@ -873,14 +877,6 @@ found_front:
 		if (req->type != arch_register_req_type_normal &&
 		    req->type != arch_register_req_type_should_be_same)
 			break;
-		for (i = get_irn_arity(node) - 1; i >= 0; --i) {
-			ir_node *opop = get_irn_n(node, i);
-			if (arch_irn_consider_in_reg_alloc(cls, opop)) {
-				break;
-			}
-		}
-		if (i >= 0)
-			break;
 
 		DBG((dbg_permmove, LEVEL_2, "\tmoving %+F after %+F, killing %+F\n", node, perm, proj));
 
@@ -897,6 +893,7 @@ found_front:
 		bitset_set(moved, input);
 		n_moved++;
 	}
+done:
 
 	/* well, we could not push anything through the perm */
 	if (n_moved == 0)
