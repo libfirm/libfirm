@@ -54,8 +54,7 @@ typedef struct {
 
 /** Lowering walker environment. */
 typedef struct lower_env_t {
-	ir_graph *irg;
-	unsigned  do_copy : 1;
+	bool do_copy;
 } lower_env_t;
 
 /** Holds a Perm register pair. */
@@ -944,7 +943,6 @@ void lower_nodes_after_ra(ir_graph *irg, int do_copy)
 	FIRM_DBG_REGISTER(dbg, "firm.be.lower");
 	FIRM_DBG_REGISTER(dbg_permmove, "firm.be.lower.permmove");
 
-	env.irg     = irg;
 	env.do_copy = do_copy;
 
 	/* we will need interference */
