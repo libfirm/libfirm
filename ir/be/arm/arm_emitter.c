@@ -618,9 +618,9 @@ static void emit_be_Copy(const ir_node *irn)
 static void emit_be_Perm(const ir_node *irn)
 {
 	arm_emitf(irn,
-		"eor %S0, %S0, %S1\n"
-		"eor %S1, %S0, %S1\n"
-		"eor %S0, %S0, %S1");
+		"eor %D0, %D0, %D1\n"
+		"eor %D1, %D0, %D1\n"
+		"eor %D0, %D0, %D1");
 }
 
 static void emit_be_MemPerm(const ir_node *node)

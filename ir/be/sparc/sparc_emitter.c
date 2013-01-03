@@ -782,11 +782,11 @@ static void emit_be_Perm(const ir_node *irn)
 {
 	ir_mode *mode = get_irn_mode(get_irn_n(irn, 0));
 	if (mode_is_float(mode)) {
-		const arch_register_t *reg0 = arch_get_irn_register_in(irn, 0);
-		const arch_register_t *reg1 = arch_get_irn_register_in(irn, 1);
+		arch_register_t const *const reg0 = arch_get_irn_register_out(irn, 0);
+		arch_register_t const *const reg1 = arch_get_irn_register_out(irn, 1);
 		unsigned reg_idx0 = reg0->global_index;
 		unsigned reg_idx1 = reg1->global_index;
-		unsigned width    = arch_get_irn_register_req_in(irn, 0)->width;
+		unsigned width    = arch_get_irn_register_req_out(irn, 0)->width;
 		for (unsigned i = 0; i < width; ++i) {
 			const arch_register_t *r0 = &sparc_registers[reg_idx0+i];
 			const arch_register_t *r1 = &sparc_registers[reg_idx1+i];
@@ -795,9 +795,9 @@ static void emit_be_Perm(const ir_node *irn)
 			sparc_emitf(irn, "fmovs %%f31, %R", r1);
 		}
 	} else {
-		sparc_emitf(irn, "xor %S1, %S0, %S0");
-		sparc_emitf(irn, "xor %S1, %S0, %S1");
-		sparc_emitf(irn, "xor %S1, %S0, %S0");
+		sparc_emitf(irn, "xor %D1, %D0, %D0");
+		sparc_emitf(irn, "xor %D1, %D0, %D1");
+		sparc_emitf(irn, "xor %D1, %D0, %D0");
 	}
 }
 

@@ -1203,20 +1203,18 @@ static void emit_be_CopyKeep(const ir_node *node)
  */
 static void emit_be_Perm(const ir_node *node)
 {
-	const arch_register_t *in0, *in1;
+	arch_register_t const *const reg0 = arch_get_irn_register_out(node, 0);
+	arch_register_t const *const reg1 = arch_get_irn_register_out(node, 1);
 
-	in0 = arch_get_irn_register(get_irn_n(node, 0));
-	in1 = arch_get_irn_register(get_irn_n(node, 1));
-
-	arch_register_class_t const *const cls0 = in0->reg_class;
-	assert(cls0 == in1->reg_class && "Register class mismatch at Perm");
+	arch_register_class_t const *const cls0 = reg0->reg_class;
+	assert(cls0 == reg1->reg_class && "Register class mismatch at Perm");
 
 	if (cls0 == &ia32_reg_classes[CLASS_ia32_gp]) {
-		ia32_emitf(node, "xchg %R, %R", in1, in0);
+		ia32_emitf(node, "xchg %R, %R", reg1, reg0);
 	} else if (cls0 == &ia32_reg_classes[CLASS_ia32_xmm]) {
-		ia32_emitf(NULL, "xorpd %R, %R", in1, in0);
-		ia32_emitf(NULL, "xorpd %R, %R", in0, in1);
-		ia32_emitf(node, "xorpd %R, %R", in1, in0);
+		ia32_emitf(NULL, "xorpd %R, %R", reg1, reg0);
+		ia32_emitf(NULL, "xorpd %R, %R", reg0, reg1);
+		ia32_emitf(node, "xorpd %R, %R", reg1, reg0);
 	} else if (cls0 == &ia32_reg_classes[CLASS_ia32_fp]) {
 		/* is a NOP */
 	} else {
@@ -2076,26 +2074,26 @@ static void bemit_copy(const ir_node *copy)
 
 static void bemit_perm(const ir_node *node)
 {
-	const arch_register_t       *in0  = arch_get_irn_register(get_irn_n(node, 0));
-	const arch_register_t       *in1  = arch_get_irn_register(get_irn_n(node, 1));
-	const arch_register_class_t *cls0 = in0->reg_class;
+	arch_register_t       const *const reg0 = arch_get_irn_register_out(node, 0);
+	arch_register_t       const *const reg1 = arch_get_irn_register_out(node, 1);
+	arch_register_class_t const *const cls0 = reg0->reg_class;
 
-	assert(cls0 == in1->reg_class && "Register class mismatch at Perm");
+	assert(cls0 == reg1->reg_class && "Register class mismatch at Perm");
 
 	if (cls0 == &ia32_reg_classes[CLASS_ia32_gp]) {
-		if (in0->index == REG_GP_EAX) {
-			bemit8(0x90 + reg_gp_map[in1->index]);
-		} else if (in1->index == REG_GP_EAX) {
-			bemit8(0x90 + reg_gp_map[in0->index]);
+		if (reg0->index == REG_GP_EAX) {
+			bemit8(0x90 + reg_gp_map[reg1->index]);
+		} else if (reg1->index == REG_GP_EAX) {
+			bemit8(0x90 + reg_gp_map[reg0->index]);
 		} else {
 			bemit8(0x87);
-			bemit_modrr(in0, in1);
+			bemit_modrr(reg0, reg1);
 		}
 	} else if (cls0 == &ia32_reg_classes[CLASS_ia32_xmm]) {
 		panic("unimplemented"); // TODO implement
-		//ia32_emitf(NULL, "xorpd %R, %R", in1, in0);
-		//ia32_emitf(NULL, "xorpd %R, %R", in0, in1);
-		//ia32_emitf(node, "xorpd %R, %R", in1, in0);
+		//ia32_emitf(NULL, "xorpd %R, %R", reg1, reg0);
+		//ia32_emitf(NULL, "xorpd %R, %R", reg0, reg1);
+		//ia32_emitf(node, "xorpd %R, %R", reg1, reg0);
 	} else if (cls0 == &ia32_reg_classes[CLASS_ia32_fp]) {
 		/* is a NOP */
 	} else {
