@@ -565,10 +565,6 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 			break;
 		}
 
-		/* we can handle only GP loads */
-		if (!mode_needs_gp_reg(get_ia32_ls_mode(node)))
-			continue;
-
 		/* it has to use our predecessor sp value */
 		if (get_irn_n(node, n_ia32_base) != pred_sp) {
 			/* it would be ok if this load does not use a Pop result,
