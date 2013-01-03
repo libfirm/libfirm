@@ -498,18 +498,6 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 }
 
 /**
- * Return true if a mode can be stored in the GP register set
- */
-static inline int mode_needs_gp_reg(ir_mode *mode)
-{
-        if (mode == ia32_mode_fpcw)
-                return 0;
-        if (get_mode_size_bits(mode) > 32)
-                return 0;
-        return mode_is_int(mode) || mode_is_reference(mode) || mode == mode_b;
-}
-
-/**
  * Tries to create Pops from Load, IncSP combinations.
  * The Loads are replaced by Pops, the IncSP is modified
  * (possibly into IncSP 0, but not removed).
@@ -544,11 +532,11 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 		/* it has to be a Load */
 		if (!is_ia32_Load(node)) {
 			if (be_is_Copy(node)) {
-				if (!mode_needs_gp_reg(get_irn_mode(node))) {
+				dreg = arch_get_irn_register(node);
+				if (dreg->reg_class != &ia32_reg_classes[CLASS_ia32_gp]) {
 					/* not a GP copy, ignore */
 					continue;
 				}
-				dreg = arch_get_irn_register(node);
 				sreg = arch_get_irn_register(be_get_Copy_op(node));
 				if (regmask & copymask & (1 << sreg->index)) {
 					break;
