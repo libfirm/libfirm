@@ -507,7 +507,6 @@ void be_start_transform_setup(void)
 	ir_clear_opcodes_generic_func();
 
 	be_set_transform_function(op_Bad,         be_duplicate_node);
-	be_set_transform_function(op_be_Copy,     be_duplicate_node);
 	be_set_transform_function(op_be_CopyKeep, be_duplicate_node);
 	be_set_transform_function(op_be_IncSP,    be_duplicate_node);
 	be_set_transform_function(op_be_Keep,     be_duplicate_node);

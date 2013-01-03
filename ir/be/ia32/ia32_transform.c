@@ -2874,21 +2874,6 @@ static ir_node *gen_Cond(ir_node *node)
 	return new_node;
 }
 
-/**
- * Transform a be_Copy.
- */
-static ir_node *gen_be_Copy(ir_node *node)
-{
-	ir_node *new_node = be_duplicate_node(node);
-	ir_mode *mode     = get_irn_mode(new_node);
-
-	if (ia32_mode_needs_gp_reg(mode)) {
-		set_irn_mode(new_node, mode_Iu);
-	}
-
-	return new_node;
-}
-
 static ir_node *create_Fucom(ir_node *node)
 {
 	dbg_info *dbgi      = get_irn_dbg_info(node);
@@ -5609,7 +5594,6 @@ static void register_transformers(void)
 	be_set_transform_function(op_ASM,              ia32_gen_ASM);
 	be_set_transform_function(op_be_AddSP,         gen_be_AddSP);
 	be_set_transform_function(op_be_Call,          gen_be_Call);
-	be_set_transform_function(op_be_Copy,          gen_be_Copy);
 	be_set_transform_function(op_be_FrameAddr,     gen_be_FrameAddr);
 	be_set_transform_function(op_be_IncSP,         gen_be_IncSP);
 	be_set_transform_function(op_be_Return,        gen_be_Return);
