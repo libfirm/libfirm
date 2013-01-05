@@ -17,7 +17,6 @@
 #ifndef FIRM_ADT_PLIST_H
 #define FIRM_ADT_PLIST_H
 
-#include <stddef.h>
 #include "obst.h"
 
 #include "../begin.h"

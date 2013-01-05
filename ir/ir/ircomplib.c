@@ -15,7 +15,6 @@
 #include "iroptimize.h"
 #include "typerep.h"
 
-#include <stddef.h>
 #include <assert.h>
 
 /* The default implementation does not set a different ld name. */
