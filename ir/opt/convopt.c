@@ -25,7 +25,6 @@
 
 #include "iroptimize.h"
 
-#include <assert.h>
 #include <stdbool.h>
 #include "debug.h"
 #include "ircons.h"

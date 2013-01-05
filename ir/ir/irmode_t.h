@@ -12,7 +12,6 @@
 #ifndef FIRM_IR_IRMODE_T_H
 #define FIRM_IR_IRMODE_T_H
 
-#include <assert.h>
 #include "irtypes.h"
 #include "irmode.h"
 

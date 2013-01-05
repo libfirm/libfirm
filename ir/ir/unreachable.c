@@ -14,7 +14,6 @@
 
 #include "irgopt.h"
 
-#include <assert.h>
 #include <stdbool.h>
 
 #include "irnode_t.h"

@@ -12,8 +12,6 @@
 #include "config.h"
 
 #include "pmap.h"
-
-#include <assert.h>
 #include "set.h"
 #include "hashptr.h"
 
