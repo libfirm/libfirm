@@ -15,6 +15,7 @@
  */
 #include "config.h"
 
+#include "bearch_ia32_t.h"
 #include "ia32_fpu.h"
 #include "ia32_new_nodes.h"
 #include "ia32_architecture.h"

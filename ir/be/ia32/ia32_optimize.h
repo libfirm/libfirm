@@ -12,7 +12,6 @@
 #define FIRM_BE_IA32_IA32_OPTIMIZE_H
 
 #include "irgraph.h"
-#include "bearch_ia32_t.h"
 
 /**
  * Prepares irg for codegeneration. Places consts and transform reference mode

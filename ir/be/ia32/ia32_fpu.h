@@ -11,7 +11,7 @@
 #ifndef FIRM_BE_IA32_IA32_FPU_H
 #define FIRM_BE_IA32_IA32_FPU_H
 
-#include "bearch_ia32_t.h"
+#include "firm_types.h"
 
 /**
  * Handle switching of fpu mode

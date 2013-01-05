@@ -11,7 +11,7 @@
 #ifndef FIRM_BE_IA32_IA32_TRANSFORM_H
 #define FIRM_BE_IA32_IA32_TRANSFORM_H
 
-#include "bearch_ia32_t.h"
+#include "firm_types.h"
 
 /**
  * Transform firm nodes to x86 assembler nodes, ie

@@ -11,13 +11,13 @@
 #include "config.h"
 
 #include <stdbool.h>
+
+#include "irmode_t.h"
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
-
 #include "irtools.h"
-
-#include "bearch_ia32_t.h"
 #include "ia32_architecture.h"
+#include "tv.h"
 
 #undef NATIVE_X86
 

@@ -11,6 +11,7 @@
  */
 #include "config.h"
 
+#include "bearch_ia32_t.h"
 #include "error.h"
 #include "ircons.h"
 #include "irprintf.h"

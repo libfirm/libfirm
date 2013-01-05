@@ -13,6 +13,7 @@
 
 #include <assert.h>
 
+#include "beirg.h"
 #include "irnode_t.h"
 #include "irop_t.h"
 #include "irprog.h"
@@ -30,7 +31,6 @@
 #include "belive_t.h"
 #include "besched.h"
 #include "benode.h"
-#include "bearch_ia32_t.h"
 #include "ia32_new_nodes.h"
 #include "gen_ia32_new_nodes.h"
 #include "gen_ia32_regalloc_if.h"

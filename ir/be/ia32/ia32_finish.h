@@ -12,7 +12,6 @@
 #define FIRM_BE_IA32_IA32_FINISH_H
 
 #include "irgraph.h"
-#include "bearch_ia32_t.h"
 
 /**
  * Check 2-Addresscode constraints and call peephole optimizations.
