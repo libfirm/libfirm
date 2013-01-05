@@ -14,8 +14,6 @@
 #define FIRM_TV_TV_T_H
 
 #include "firm_common.h"
-
-#include <assert.h>
 #include "irmode.h"
 #include "tv.h"
 
@@ -69,7 +67,6 @@ struct ir_tarval {
  */
 static inline ir_mode *_get_tarval_mode(const ir_tarval *tv)
 {
-	assert(tv);
 	return tv->mode;
 }
 
