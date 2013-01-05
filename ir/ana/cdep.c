@@ -11,7 +11,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include "irdom_t.h"
-#include "irgraph.h"
+#include "irgraph_t.h"
 #include "irgwalk.h"
 #include "irnode.h"
 #include "pmap.h"

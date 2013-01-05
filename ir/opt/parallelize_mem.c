@@ -15,7 +15,7 @@
 #include "array_t.h"
 #include "debug.h"
 #include "ircons.h"
-#include "irgraph.h"
+#include "irgraph_t.h"
 #include "irgmod.h"
 #include "irgopt.h"
 #include "irgwalk.h"
