@@ -15,7 +15,6 @@
 #include "pmap.h"
 #include "irdom.h"
 #include "array.h"
-#include "irgraph.h"
 #include "iredges_t.h"
 
 /**

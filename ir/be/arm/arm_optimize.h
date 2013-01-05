@@ -11,7 +11,7 @@
 #ifndef FIRM_BE_ARM_ARM_OPTIMIZE_H
 #define FIRM_BE_ARM_ARM_OPTIMIZE_H
 
-#include "irgraph.h"
+#include "firm_types.h"
 
 typedef struct arm_vals {
 	int ops;

@@ -17,7 +17,6 @@
 #include "irdom_t.h"
 #include "irmode.h"
 #include "irnode.h"
-#include "irgraph.h"
 #include "iredgekinds.h"
 #include "irtypeinfo.h"
 #include "irmemory.h"

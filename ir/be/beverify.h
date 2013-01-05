@@ -13,9 +13,9 @@
 #define FIRM_BE_BEVERIFY_H
 
 #include <stdbool.h>
-#include "irgraph.h"
 
 #include "bearch.h"
+#include "firm_types.h"
 
 /**
  * Verifies, that the register pressure for a given register class doesn't

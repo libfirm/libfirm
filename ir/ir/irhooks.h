@@ -13,7 +13,6 @@
 
 #include "irop.h"
 #include "irnode.h"
-#include "irgraph.h"
 
 /**
  * options for the hook_merge_nodes hook

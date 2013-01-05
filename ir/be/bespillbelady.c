@@ -14,7 +14,6 @@
 #include <stdbool.h>
 
 #include "obst.h"
-#include "irgraph.h"
 #include "irnode.h"
 #include "irmode.h"
 #include "irgwalk.h"

@@ -19,7 +19,6 @@
 #include "error.h"
 #include "obst.h"
 #include "irprog.h"
-#include "irgraph.h"
 #include "tv.h"
 #include "xmalloc.h"
 #include "pmap.h"

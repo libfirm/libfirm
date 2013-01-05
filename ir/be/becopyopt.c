@@ -21,7 +21,6 @@
 #include "execfreq_t.h"
 #include "irdump_t.h"
 #include "iredges_t.h"
-#include "irgraph.h"
 #include "irgwalk.h"
 #include "irloop_t.h"
 #include "irnode.h"

@@ -11,7 +11,6 @@
 #ifndef FIRM_ANA_ANALYZE_IRG_ARGS_H
 #define FIRM_ANA_ANALYZE_IRG_ARGS_H
 
-#include "irgraph.h"
 #include "firm_types.h"
 #include "typerep.h"
 #include "begin.h"

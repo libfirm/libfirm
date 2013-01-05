@@ -26,7 +26,6 @@
 #include "iredges.h"
 #include "iredges_t.h"
 #include "irtools.h"
-#include "irgraph.h"
 #include "tv.h"
 #include "iroptimize.h"
 #include "iropt_dbg.h"

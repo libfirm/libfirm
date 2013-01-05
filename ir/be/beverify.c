@@ -19,7 +19,6 @@
 #include "array.h"
 
 #include "irnode.h"
-#include "irgraph.h"
 #include "irgwalk.h"
 #include "irprintf.h"
 #include "irdump_t.h"

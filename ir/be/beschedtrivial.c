@@ -13,7 +13,6 @@
 
 #include <stdlib.h>
 
-#include "irgraph.h"
 #include "irnode.h"
 #include "irnodeset.h"
 

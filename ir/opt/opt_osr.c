@@ -17,7 +17,6 @@
 
 #include "adt/pdeq.h"
 #include "iroptimize.h"
-#include "irgraph.h"
 #include "ircons.h"
 #include "irop_t.h"
 #include "irdom.h"

@@ -14,7 +14,8 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "irgraph.h"
+
+#include "firm_types.h"
 #include "irnode.h"
 
 /**

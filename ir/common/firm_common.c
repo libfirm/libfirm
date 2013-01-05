@@ -9,7 +9,6 @@
  */
 #include "config.h"
 
-#include "irgraph.h"
 #include "irloop.h"
 #include "tv.h"
 

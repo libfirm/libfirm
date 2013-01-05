@@ -17,7 +17,6 @@
 #ifndef FIRM_ANA_IRLIVECHK_H
 #define FIRM_ANA_IRLIVECHK_H
 
-#include "irgraph.h"
 #include "irnode.h"
 #include <stdbool.h>
 

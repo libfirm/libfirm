@@ -19,7 +19,6 @@
 #include "irgmod.h"
 #include "irgwalk.h"
 #include "irouts.h"
-#include "irgraph.h"
 #include "irgopt.h"
 #include "iropt.h"
 #include "iroptimize.h"

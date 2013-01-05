@@ -12,8 +12,9 @@
 #ifndef FIRM_ANA_TROUTS_H
 #define FIRM_ANA_TROUTS_H
 
+#include <stddef.h>
+
 #include "firm_types.h"
-#include "irgraph.h"
 
 #include "begin.h"
 

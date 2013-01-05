@@ -15,8 +15,8 @@
 #define FIRM_IRNODEMAP_H
 
 #include "firm_types.h"
-#include "irgraph_t.h"
 #include "array.h"
+#include "irtypes.h"
 
 typedef struct ir_nodemap ir_nodemap;
 

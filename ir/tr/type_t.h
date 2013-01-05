@@ -15,7 +15,6 @@
 #include <stdbool.h>
 #include "typerep.h"
 #include "tpop_t.h"
-#include "irgraph.h"
 #include "firm_common.h"
 
 #include "array.h"

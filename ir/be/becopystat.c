@@ -14,7 +14,6 @@
 #include <string.h>
 
 #include "timing.h"
-#include "irgraph.h"
 #include "irgwalk.h"
 #include "irprog.h"
 #include "iredges_t.h"

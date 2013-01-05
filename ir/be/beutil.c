@@ -12,7 +12,6 @@
 
 #include <stdio.h>
 
-#include "irgraph.h"
 #include "irgwalk.h"
 #include "irdom_t.h"
 #include "ircons.h"

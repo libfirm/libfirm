@@ -21,7 +21,6 @@
 #include "statev.h"
 #include "irprog.h"
 #include "irgopt.h"
-#include "irgraph.h"
 #include "irdump.h"
 #include "irdom_t.h"
 #include "iredges_t.h"
