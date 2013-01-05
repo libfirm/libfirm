@@ -13,6 +13,7 @@
 #include <limits.h>
 #include <stdbool.h>
 
+#include "bearch_arm_t.h"
 #include "xmalloc.h"
 #include "tv.h"
 #include "iredges.h"

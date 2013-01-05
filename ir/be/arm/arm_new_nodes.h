@@ -12,7 +12,6 @@
 #define FIRM_BE_ARM_ARM_NEW_NODES_H
 
 #include "arm_nodes_attr.h"
-#include "bearch_arm_t.h"
 
 /**
  * Returns the attributes of a generic Arm node.

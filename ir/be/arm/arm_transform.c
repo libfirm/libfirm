@@ -10,6 +10,7 @@
  */
 #include "config.h"
 
+#include "bearch_arm_t.h"
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "irmode_t.h"
@@ -29,7 +30,6 @@
 #include "beabihelper.h"
 #include "beabi.h"
 
-#include "bearch_arm_t.h"
 #include "arm_nodes_attr.h"
 #include "arm_transform.h"
 #include "arm_optimize.h"

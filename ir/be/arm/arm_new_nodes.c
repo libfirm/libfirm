@@ -32,7 +32,6 @@
 #include "arm_optimize.h"
 
 #include "beabi.h"
-#include "bearch_arm_t.h"
 
 static bool arm_has_symconst_attr(const ir_node *node)
 {

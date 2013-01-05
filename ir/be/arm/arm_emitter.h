@@ -18,8 +18,6 @@
 
 #include "bearch.h"
 
-#include "bearch_arm_t.h"
-
 /**
  * emit assembler instructions with format string. Automatically indents
  * instructions and adds debug comments at the end (in verbose-asm mode).

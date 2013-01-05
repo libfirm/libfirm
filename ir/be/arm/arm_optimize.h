@@ -12,7 +12,6 @@
 #define FIRM_BE_ARM_ARM_OPTIMIZE_H
 
 #include "irgraph.h"
-#include "bearch_arm_t.h"
 
 typedef struct arm_vals {
 	int ops;
