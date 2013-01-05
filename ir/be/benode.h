@@ -98,8 +98,7 @@ ir_node *be_get_Copy_op(const ir_node *cpy);
 /**
  * Make a new Perm node.
  */
-ir_node *be_new_Perm(const arch_register_class_t *cls, ir_node *block,
-                     int n, ir_node *in[]);
+ir_node *be_new_Perm(arch_register_class_t const *cls, ir_node *block, int n, ir_node *const *in);
 
 /**
  * Reduce a Perm.
@@ -123,8 +122,9 @@ void be_Perm_reduce(ir_node *perm, int new_size, int *map);
  * used as spillslots). MemPerm nodes perform this operation without modifying
  * any register values.
  */
-ir_node *be_new_MemPerm(ir_node *block, int n, ir_node *in[]);
-ir_node *be_new_Keep(ir_node *block, int arity, ir_node *in[]);
+ir_node *be_new_MemPerm(ir_node *block, int n, ir_node *const *in);
+
+ir_node *be_new_Keep(ir_node *block, int arity, ir_node *const *in);
 
 void be_Keep_add_node(ir_node *keep, const arch_register_class_t *cls,
                       ir_node *node);
@@ -290,10 +290,7 @@ typedef enum {
  * @param in       the (register) inputs of this call
  * @param call_tp  the call type of this call
  */
-ir_node *be_new_Call(dbg_info *dbg, ir_node *block, ir_node *mem,
-                     const arch_register_req_t *sp_req, ir_node *sp,
-                     const arch_register_req_t *ptr_req, ir_node *ptr,
-                     int n_outs, int n, ir_node *in[], ir_type *call_tp);
+ir_node *be_new_Call(dbg_info *dbg, ir_node *block, ir_node *mem, arch_register_req_t const *sp_req, ir_node *sp, arch_register_req_t const *ptr_req, ir_node *ptr, int n_outs, int n, ir_node *const *in, ir_type *call_tp);
 
 /**
  * Position numbers for the be_Return inputs.
@@ -314,7 +311,7 @@ enum {
  * @param n      number of inputs
  * @param in     input array
  */
-ir_node *be_new_Return(dbg_info *dbg, ir_node *block, int n_res, unsigned pop, int n, ir_node *in[]);
+ir_node *be_new_Return(dbg_info *dbg, ir_node *block, int n_res, unsigned pop, int n, ir_node *const *in);
 
 /** Returns the number of real returns values */
 int be_Return_get_n_rets(const ir_node *ret);

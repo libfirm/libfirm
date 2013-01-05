@@ -306,8 +306,7 @@ ir_node *be_get_Spill_frame(const ir_node *irn)
 	return get_irn_n(irn, n_be_Spill_frame);
 }
 
-ir_node *be_new_Perm(const arch_register_class_t *cls, ir_node *block,
-                     int n, ir_node *in[])
+ir_node *be_new_Perm(arch_register_class_t const *const cls, ir_node *const block, int const n, ir_node *const *const in)
 {
 	int            i;
 	ir_graph       *irg = get_Block_irg(block);
@@ -366,7 +365,7 @@ void be_Perm_reduce(ir_node *perm, int new_size, int *map)
 	set_irn_in(perm, new_size, new_in);
 }
 
-ir_node *be_new_MemPerm(ir_node *block, int n, ir_node *in[])
+ir_node *be_new_MemPerm(ir_node *const block, int n, ir_node *const *const in)
 {
 	ir_graph                     *irg       = get_Block_irg(block);
 	const arch_env_t             *arch_env  = be_get_irg_arch_env(irg);
@@ -425,7 +424,7 @@ ir_node *be_get_Copy_op(const ir_node *cpy)
 	return get_irn_n(cpy, n_be_Copy_op);
 }
 
-ir_node *be_new_Keep(ir_node *block, int n, ir_node *in[])
+ir_node *be_new_Keep(ir_node *const block, int const n, ir_node *const *const in)
 {
 	int i;
 	ir_node *res;
@@ -456,10 +455,7 @@ void be_Keep_add_node(ir_node *keep, const arch_register_class_t *cls, ir_node *
 	add_register_req_in(keep, cls->class_req);
 }
 
-ir_node *be_new_Call(dbg_info *dbg, ir_node *bl, ir_node *mem,
-		const arch_register_req_t *sp_req, ir_node *sp,
-		const arch_register_req_t *ptr_req, ir_node *ptr,
-		int n_outs, int n, ir_node *in[], ir_type *call_tp)
+ir_node *be_new_Call(dbg_info *const dbg, ir_node *const bl, ir_node *const mem, arch_register_req_t const *const sp_req, ir_node *const sp, arch_register_req_t const *const ptr_req, ir_node *const ptr, int const n_outs, int const n, ir_node *const *const in, ir_type *const call_tp)
 {
 	be_call_attr_t *a;
 	int real_n = n_be_Call_first_arg + n;
@@ -524,7 +520,7 @@ unsigned be_Call_get_pop(const ir_node *call)
 	return a->pop;
 }
 
-ir_node *be_new_Return(dbg_info *const dbg, ir_node *const block, int const n_res, unsigned const pop, int const n, ir_node **const in)
+ir_node *be_new_Return(dbg_info *const dbg, ir_node *const block, int const n_res, unsigned const pop, int const n, ir_node *const *const in)
 {
 	ir_graph *const irg = get_Block_irg(block);
 	ir_node  *const res = new_ir_node(dbg, irg, block, op_be_Return, mode_X, n, in);
