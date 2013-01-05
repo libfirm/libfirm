@@ -11,8 +11,6 @@
  */
 #include "config.h"
 
-#include <string.h>
-
 #include "irprog_t.h"
 #include "irgraph_t.h"
 #include "irpass_t.h"

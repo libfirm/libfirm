@@ -19,6 +19,8 @@
 #ifndef FIRM_ANA_CGANA_H
 #define FIRM_ANA_CGANA_H
 
+#include <stddef.h>
+
 #include "firm_types.h"
 #include "begin.h"
 

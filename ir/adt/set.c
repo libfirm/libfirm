@@ -48,7 +48,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
+
 #include "xmalloc.h"
 #include "lc_printf.h"
 #ifdef PSET

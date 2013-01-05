@@ -18,8 +18,6 @@
  */
 #include "config.h"
 
-#include <string.h>
-
 #include "iroptimize.h"
 #include "tv.h"
 #include "set.h"

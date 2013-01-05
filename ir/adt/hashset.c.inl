@@ -65,7 +65,6 @@
 #ifdef HashSet
 
 #include <stdlib.h>
-#include <string.h>
 #include <assert.h>
 
 #include "bitfiddle.h"

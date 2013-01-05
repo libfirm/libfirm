@@ -11,8 +11,6 @@
  */
 #include "config.h"
 
-#include <string.h>
-
 #include "xmalloc.h"
 #include "irouts.h"
 #include "irnode_t.h"

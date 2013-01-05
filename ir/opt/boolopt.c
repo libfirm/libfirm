@@ -11,7 +11,6 @@
 #include "config.h"
 
 #include <assert.h>
-#include <string.h>
 
 #include "adt/obst.h"
 #include "../adt/array_t.h"

@@ -14,7 +14,6 @@
  */
 #include "config.h"
 
-#include <string.h>
 #include <stdlib.h>
 
 #include "irloop_t.h"

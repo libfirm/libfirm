@@ -18,10 +18,7 @@
  */
 #include "config.h"
 
-#include <string.h>
-
 #include "cgana.h"
-
 #include "xmalloc.h"
 #include "irnode_t.h"
 #include "irmode_t.h"

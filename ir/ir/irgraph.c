@@ -10,7 +10,6 @@
  */
 #include "config.h"
 
-#include <string.h>
 #include <stddef.h>
 
 #include "xmalloc.h"

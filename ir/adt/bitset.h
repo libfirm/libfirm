@@ -15,9 +15,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-#include <string.h>
-#include "irprintf.h"
 
+#include "irprintf.h"
 #include "xmalloc.h"
 #include "bitfiddle.h"
 #include "raw_bitset.h"

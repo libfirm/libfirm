@@ -4,7 +4,6 @@
  *  @author Matthias Braun, Steven Schaefer
  */
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
 
 /* Prevent the compiler from mangling the name of this function. */

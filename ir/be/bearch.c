@@ -10,8 +10,6 @@
  */
 #include "config.h"
 
-#include <string.h>
-
 #include "bearch.h"
 #include "benode.h"
 #include "beinfo.h"

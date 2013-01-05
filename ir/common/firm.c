@@ -14,7 +14,6 @@
 # include "firm_revision.h"
 #endif
 
-#include <string.h>
 #include <stdio.h>
 
 #include "lc_opts.h"
