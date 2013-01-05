@@ -158,8 +158,7 @@ bool arch_reg_is_allocatable(const arch_register_req_t *req,
  * @param F   output stream/file
  * @param req The requirements structure to format.
  */
-static void arch_dump_register_req(FILE *F, const arch_register_req_t *req,
-                            const ir_node *node)
+static void arch_dump_register_req(FILE *const F, arch_register_req_t const *const req)
 {
 	if (req == NULL || req->type == arch_register_req_type_none) {
 		fprintf(F, "n/a");
@@ -188,7 +187,7 @@ static void arch_dump_register_req(FILE *F, const arch_register_req_t *req,
 		fprintf(F, " same as");
 		for (i = 0; 1U << i <= other; ++i) {
 			if (other & (1U << i)) {
-				ir_fprintf(F, " #%d (%+F)", i, get_irn_n(skip_Proj_const(node), i));
+				ir_fprintf(F, " #%d", i);
 			}
 		}
 	}
@@ -200,7 +199,7 @@ static void arch_dump_register_req(FILE *F, const arch_register_req_t *req,
 		fprintf(F, " different from");
 		for (i = 0; 1U << i <= other; ++i) {
 			if (other & (1U << i)) {
-				ir_fprintf(F, " #%d (%+F)", i, get_irn_n(skip_Proj_const(node), i));
+				ir_fprintf(F, " #%d", i);
 			}
 		}
 	}
@@ -232,7 +231,7 @@ void arch_dump_reqs_and_registers(FILE *F, const ir_node *node)
 	for (int i = 0; i < n_ins; ++i) {
 		const arch_register_req_t *req = arch_get_irn_register_req_in(node, i);
 		fprintf(F, "inreq #%d = ", i);
-		arch_dump_register_req(F, req, node);
+		arch_dump_register_req(F, req);
 		ir_node               *const op  = get_irn_n(node, i);
 		arch_register_t const *const reg = be_get_info(skip_Proj_const(op))->out_infos ? arch_get_irn_register(op) : NULL;
 		fprintf(F, " [%s]\n", reg ? reg->name : "n/a");
@@ -240,7 +239,7 @@ void arch_dump_reqs_and_registers(FILE *F, const ir_node *node)
 	be_foreach_out(node, o) {
 		const arch_register_req_t *req = arch_get_irn_register_req_out(node, o);
 		fprintf(F, "outreq #%u = ", o);
-		arch_dump_register_req(F, req, node);
+		arch_dump_register_req(F, req);
 		const arch_register_t *reg = arch_get_irn_register_out(node, o);
 		fprintf(F, " [%s]\n", reg != NULL ? reg->name : "n/a");
 	}
