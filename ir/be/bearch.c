@@ -233,7 +233,9 @@ void arch_dump_reqs_and_registers(FILE *F, const ir_node *node)
 		const arch_register_req_t *req = arch_get_irn_register_req_in(node, i);
 		fprintf(F, "inreq #%d = ", i);
 		arch_dump_register_req(F, req, node);
-		fputs("\n", F);
+		ir_node               *const op  = get_irn_n(node, i);
+		arch_register_t const *const reg = be_get_info(skip_Proj_const(op))->out_infos ? arch_get_irn_register(op) : NULL;
+		fprintf(F, " [%s]\n", reg ? reg->name : "n/a");
 	}
 	be_foreach_out(node, o) {
 		const arch_register_req_t *req = arch_get_irn_register_req_out(node, o);
