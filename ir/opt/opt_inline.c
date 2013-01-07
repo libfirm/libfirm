@@ -291,7 +291,7 @@ static void copy_compound_params(ir_node *call, ir_type *ctp, ir_graph *called_i
 	ir_type *called_frame   = get_irg_frame_type(called_irg);
 	size_t n_params         = get_method_n_params(ctp);
 	size_t n_entities       = get_class_n_members(called_frame);
-	size_t i, n_ent = 0;
+	size_t i, n_ent = 0, n_cur = 0;
 
 	ir_entity **entities = ALLOCAN(ir_entity*, n_params);
 	for (i = 0; i < n_entities; ++i) {
@@ -317,7 +317,7 @@ static void copy_compound_params(ir_node *call, ir_type *ctp, ir_graph *called_i
 
 		mem        = get_Call_mem(call);
 		arg        = get_Call_param(call, i);
-		old_entity = entities[i];
+		old_entity = entities[n_cur];
 		new_entity = copy_entity_own(old_entity, get_irg_frame_type(irg));
 
 		new_entity->entity_kind = IR_ENTITY_COMPOUND_MEMBER;
@@ -327,7 +327,9 @@ static void copy_compound_params(ir_node *call, ir_type *ctp, ir_graph *called_i
 		copyb       = new_rd_CopyB(dbgi, block, mem, sel, arg, type);
 		mem         = new_r_Proj(copyb, mode_M, pn_CopyB_M);
 		set_Call_param(call, i, sel);
+		++n_cur;
 	}
+	assert(n_ent == n_cur);
 	set_Call_mem(call, mem);
 }
 
@@ -933,6 +935,19 @@ static int calc_inline_benefice(call_entry *entry, ir_graph *callee)
 		DB((dbg, LEVEL_2, "In %+F Call to %+F: inlining forbidden\n",
 		    call, callee));
 		return entry->benefice = INT_MIN;
+	}
+
+	ir_type *callee_frame = get_irg_frame_type(callee);
+	size_t n_members = get_class_n_members(callee_frame);
+	for (i=0; i < n_members; ++i) {
+		ir_entity *frame_ent = get_class_member(callee_frame, i);
+		if (is_parameter_entity(frame_ent) && !is_compound_entity(frame_ent)) {
+			// TODO inliner should handle parameter entities by inserting Store operations
+			// compound entities are already handled
+			DB((dbg, LEVEL_2, "In %+F Call to %+F: inlining forbidden due to parameter entity\n", call, callee));
+			add_entity_additional_properties(ent, mtp_property_noinline);
+			return entry->benefice = INT_MIN;
+		}
 	}
 
 	if (props & mtp_property_noreturn) {
