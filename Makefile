@@ -68,28 +68,8 @@ $(srcdir)config.h:
 	$(Q)echo "#define libfirm_VERSION_MINOR 21" >> $@
 
 # libFirm
-libfirm_DIRS := \
-	ir         \
-	ir/adt     \
-	ir/ana     \
-	ir/arch    \
-	ir/common  \
-	ir/debug   \
-	ir/obstack \
-	ir/ident   \
-	ir/net     \
-	ir/ir      \
-	ir/lower   \
-	ir/libcore \
-	ir/lpp     \
-	ir/opt     \
-	ir/st      \
-	ir/stat    \
-	ir/tr      \
-	ir/tv      \
-	ir/kaps    \
-	ir/be
-libfirm_SOURCES  = $(foreach dir,$(libfirm_DIRS),$(wildcard $(dir)/*.c))
+libfirm_SOURCES  = $(wildcard ir/*/*.c)
+libfirm_DIRS     = $(sort $(dir $(libfirm_SOURCES)))
 libfirm_a        = $(builddir)/libfirm.a
 libfirm_dll      = $(builddir)/libfirm$(DLLEXT)
 libfirm_CPPFLAGS = -Iinclude/libfirm -Iinclude/libfirm/adt -I. $(foreach dir,$(libfirm_DIRS),-I$(dir))
