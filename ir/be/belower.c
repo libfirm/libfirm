@@ -14,7 +14,6 @@
 
 #include <stdlib.h>
 
-#include "adt/util.h"
 #include "ircons.h"
 #include "debug.h"
 #include "xmalloc.h"
@@ -24,6 +23,7 @@
 #include "iredges_t.h"
 #include "irgwalk.h"
 #include "array_t.h"
+#include "util.h"
 
 #include "bearch.h"
 #include "beirg.h"
