@@ -15,10 +15,12 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <regex.h>
+#include <assert.h>
 
 #include "stat_timing.h"
 #include "irprintf.h"
 #include "statev_t.h"
+#include "util.h"
 
 #include "config.h"
 
@@ -66,33 +68,33 @@ static void stat_ev_printf(char ev, const char *key, const char *fmt, ...)
 
 void stat_ev_tim_push(void)
 {
-	timing_ticks_t temp;
-	int sp = stat_ev_timer_sp++;
-	timing_ticks(temp);
+	int            sp   = stat_ev_timer_sp++;
+	assert((size_t)sp < ARRAY_SIZE(stat_ev_timer_start));
+	timing_ticks_t temp = timing_ticks();
 	if (sp == 0) {
 		timing_enter_max_prio();
 	} else {
-		timing_ticks_sub(temp, stat_ev_timer_start[sp - 1]);
-		timing_ticks_add(stat_ev_timer_elapsed[sp - 1], temp);
+		temp -= stat_ev_timer_start[sp-1];
+		stat_ev_timer_elapsed[sp-1] += temp;
 	}
-	timing_ticks_init(stat_ev_timer_elapsed[sp]);
-	timing_ticks(stat_ev_timer_start[sp]);
+	stat_ev_timer_elapsed[sp] = 0;
+	stat_ev_timer_start[sp]   = temp;
 }
 
 void stat_ev_tim_pop(const char *name)
 {
-	int sp;
-	timing_ticks_t temp;
-	timing_ticks(temp);
-	sp = --stat_ev_timer_sp;
-	timing_ticks_sub(temp, stat_ev_timer_start[sp]);
-	timing_ticks_add(stat_ev_timer_elapsed[sp], temp);
+	int sp = --stat_ev_timer_sp;
+	assert(sp >= 0);
+	timing_ticks_t temp = timing_ticks();
+	temp -= stat_ev_timer_start[sp];
+	stat_ev_timer_elapsed[sp] += temp;
 	if (name != NULL && stat_ev_enabled)
-		stat_ev_printf('E', name, "%g", timing_ticks_dbl(stat_ev_timer_elapsed[sp]));
+		stat_ev_ull(name, stat_ev_timer_elapsed[sp]);
+
 	if (sp == 0) {
 		timing_leave_max_prio();
 	} else {
-		timing_ticks(stat_ev_timer_start[sp - 1]);
+		stat_ev_timer_start[sp-1] = timing_ticks();
 	}
 }
 

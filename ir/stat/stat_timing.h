@@ -11,76 +11,29 @@
 #ifndef FIRM_STAT_TIMING_H
 #define FIRM_STAT_TIMING_H
 
-#if defined(__i386__) || defined(_M_IX86) || defined(_M_X64)
+#include <stddef.h>
+#include <sys/time.h>
 
-#if defined(__GNUC__)
 typedef unsigned long long timing_ticks_t;
-static inline timing_ticks_t __timing_ticks(void)
+
+/**
+ * returns time in micro seconds.
+ * The time is relative to an unspecified start, so it can only be used to
+ * measure relative time/timespans.
+ */
+static inline timing_ticks_t timing_ticks(void)
 {
+#if defined(__i386__) || defined(_M_IX86) || defined(_M_X64)
 	unsigned h;
 	unsigned l;
 	__asm__ volatile("rdtsc" : "=a" (l), "=d" (h));
 	return (timing_ticks_t)h << 32 | l;
-}
-
-#elif defined(_MSC_VER)
-#include <intrin.h>
-
-typedef unsigned __int64 timing_ticks_t;
-static __inline timing_ticks_t __timing_ticks(void) { return __rdtsc(); }
 #else
-#error need a 64bit int type
+	struct timeval tval;
+	gettimeofday(&tval, NULL);
+	return (unsigned long) (tval.tv_usec + 1000000 * tval.tv_sec);
 #endif
-
-#define timing_ticks(t)              ((t) = __timing_ticks())
-#define timing_ticks_init(t)         ((t) = 0)
-#define timing_ticks_cmp(a, b, cmp)  ((a) cmp (b))
-#define timing_ticks_sub(r, a)       ((r) = (r) - (a))
-#define timing_ticks_add(r, a)       ((r) = (r) + (a))
-#define timing_ticks_ulong(t)        ((unsigned long) (t))
-#define timing_ticks_dbl(t)          ((double) (t))
-
-#else /* !__i386__ && !__x86_64 */
-
-#include <sys/time.h>
-
-typedef struct timeval timing_ticks_t;
-#define timing_ticks(t)              (gettimeofday(&(t), NULL))
-#define timing_ticks_init(t)         memset(&(t), 0, sizeof(t))
-
-/*
- * This shamelessly stolen and modified from glibc's
- * /usr/include/sys/time.h
- */
-#define timing_ticks_cmp(a, b, CMP)   \
-  (((a).tv_sec == (b).tv_sec) ?       \
-   ((a).tv_usec CMP (b).tv_usec) :    \
-   ((a).tv_sec CMP (b).tv_sec))
-
-#define timing_ticks_add(r, a)                       \
-	do {                                             \
-		(r).tv_sec = (r).tv_sec + (a).tv_sec;        \
-		(r).tv_usec = (r).tv_usec + (a).tv_usec;     \
-		if ((r).tv_usec >= 1000000) {                \
-			++(r).tv_sec;                            \
-			(r).tv_usec -= 1000000;                  \
-		}                                            \
-	} while (0)
-
-#define timing_ticks_sub(r, a)                        \
-	do {                                              \
-		(r).tv_sec = (r).tv_sec - (a).tv_sec;         \
-		(r).tv_usec = (r).tv_usec - (a).tv_usec;      \
-		if ((r).tv_usec < 0) {                        \
-			--(r).tv_sec;                             \
-			(r).tv_usec += 1000000;                   \
-		}                                             \
-	} while (0)
-
-#define timing_ticks_ulong(t)        ((unsigned long) ((t).tv_usec + 1000000 * (t).tv_sec))
-#define timing_ticks_dbl(t)          (((t).tv_usec + 1000000.0 * (t).tv_sec))
-
-#endif
+}
 
 void timing_enter_max_prio(void);
 void timing_leave_max_prio(void);
