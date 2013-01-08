@@ -258,7 +258,9 @@ class Conv:
 					idstack.append(self.curr_id)
 
 					keyidx = self.ctxcols[key]
-					assert self.ctxvals[keyidx] == None
+					if self.ctxvals[keyidx] != None:
+						print "Error: context key '%s' pushed multiple times" % key
+						sys.exit(1)
 					self.ctxvals[keyidx] = val
 				self.pushpending = True
 
@@ -281,7 +283,9 @@ class Conv:
 						print "unmatched pop in line %d, push key %s, pop key: %s" % (lineno, key, popkey)
 
 					keyidx = self.ctxcols[key]
-					assert self.ctxvals[keyidx] != None
+					if self.ctxvals[keyidx] == None:
+						print "Error: context key '%s' popped before it was pushed" % popkey
+						sys.exit(1)
 					self.ctxvals[keyidx] = None
 
 			elif op == 'E':
