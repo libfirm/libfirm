@@ -214,7 +214,7 @@ Xor => {
 	modified_flags => 1,
 },
 
-Immediate => {
+Const => {
 	op_flags  => [ "constlike" ],
 	attr      => "unsigned imm_value",
 	init_attr => "attr->ext.imm_value = imm_value;",

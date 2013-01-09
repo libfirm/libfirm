@@ -59,7 +59,7 @@ static ir_node *create_const_graph(ir_node *irn, ir_node *block)
 
 	value = get_tarval_long(tv);
 
-	return new_bd_amd64_Immediate(dbgi, block, value);
+	return new_bd_amd64_Const(dbgi, block, value);
 }
 
 /* Op transformers: */
