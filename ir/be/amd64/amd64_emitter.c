@@ -82,24 +82,73 @@ static void amd64_emit_mode_suffix(const ir_mode *mode)
 	be_emit_char(c);
 }
 
-static void emit_8bit_register(const arch_register_t *reg)
+static const char *get_8bit_name(const arch_register_t *reg)
 {
-	be_emit_char('%');
-	be_emit_char(reg->name[1]);
-	be_emit_char('l');
+	switch (reg->index) {
+	case REG_GP_RAX: return "al";
+	case REG_GP_RBX: return "bl";
+	case REG_GP_RCX: return "cl";
+	case REG_GP_RDX: return "dl";
+	case REG_GP_RSP: return "spl";
+	case REG_GP_RBP: return "bpl";
+	case REG_GP_RSI: return "sil";
+	case REG_GP_RDI: return "dil";
+	case REG_GP_R8:  return "r8b";
+	case REG_GP_R9:  return "r9b";
+	case REG_GP_R10: return "r10b";
+	case REG_GP_R11: return "r11b";
+	case REG_GP_R12: return "r12b";
+	case REG_GP_R13: return "r13b";
+	case REG_GP_R14: return "r14b";
+	case REG_GP_R15: return "r15b";
+	}
+	panic("unexpected register number");
 }
 
-static void emit_16bit_register(const arch_register_t *reg)
+static const char *get_16bit_name(const arch_register_t *reg)
 {
-	be_emit_char('%');
-	be_emit_string(reg->name + 1);
+	switch (reg->index) {
+	case REG_GP_RAX: return "ax";
+	case REG_GP_RBX: return "bx";
+	case REG_GP_RCX: return "cx";
+	case REG_GP_RDX: return "dx";
+	case REG_GP_RSP: return "sp";
+	case REG_GP_RBP: return "bp";
+	case REG_GP_RSI: return "si";
+	case REG_GP_RDI: return "di";
+	case REG_GP_R8:  return "r8w";
+	case REG_GP_R9:  return "r9w";
+	case REG_GP_R10: return "r10w";
+	case REG_GP_R11: return "r11w";
+	case REG_GP_R12: return "r12w";
+	case REG_GP_R13: return "r13w";
+	case REG_GP_R14: return "r14w";
+	case REG_GP_R15: return "r15w";
+	}
+	panic("unexpected register number");
 }
 
-static void emit_32bit_register(const arch_register_t *reg)
+static const char *get_32bit_name(const arch_register_t *reg)
 {
-	be_emit_char('%');
-	be_emit_char('e');
-	be_emit_string(reg->name + 1);
+	switch (reg->index) {
+	case REG_GP_RAX: return "eax";
+	case REG_GP_RBX: return "ebx";
+	case REG_GP_RCX: return "ecx";
+	case REG_GP_RDX: return "edx";
+	case REG_GP_RSP: return "esp";
+	case REG_GP_RBP: return "ebp";
+	case REG_GP_RSI: return "esi";
+	case REG_GP_RDI: return "edi";
+	case REG_GP_R8:  return "r8d";
+	case REG_GP_R9:  return "r9d";
+	case REG_GP_R10: return "r10d";
+	case REG_GP_R11: return "r11d";
+	case REG_GP_R12: return "r12d";
+	case REG_GP_R13: return "r13d";
+	case REG_GP_R14: return "r14d";
+	case REG_GP_R15: return "r15d";
+	}
+	panic("unexpected register number");
 }
 
 static void emit_register(const arch_register_t *reg)
@@ -110,24 +159,33 @@ static void emit_register(const arch_register_t *reg)
 
 static void emit_register_mode(const arch_register_t *reg, const ir_mode *mode)
 {
+	const char *name;
 	switch (get_mode_size_bits(mode)) {
-	case 8:  emit_8bit_register(reg);  return;
-	case 16: emit_16bit_register(reg); return;
-	case 32: emit_32bit_register(reg); return;
-	case 64: emit_register(reg);       return;
+	case 8:  name = get_8bit_name(reg);  break;
+	case 16: name = get_16bit_name(reg); break;
+	case 32: name = get_32bit_name(reg); break;
+	case 64: name = reg->name;           break;
+	default:
+		panic("invalid mode");
 	}
-	panic("invalid mode");
+	be_emit_char('%');
+	be_emit_string(name);
 }
 
 static void emit_register_insn_mode(const arch_register_t *reg,
                                     amd64_insn_mode_t mode)
 {
+	const char *name;
 	switch (mode) {
-	case INSN_MODE_8:  emit_8bit_register(reg);  return;
-	case INSN_MODE_16: emit_16bit_register(reg); return;
-	case INSN_MODE_32: emit_32bit_register(reg); return;
-	case INSN_MODE_64: emit_register(reg);       return;
+	case INSN_MODE_8:  name = get_8bit_name(reg);  break;
+	case INSN_MODE_16: name = get_16bit_name(reg); break;
+	case INSN_MODE_32: name = get_32bit_name(reg); break;
+	case INSN_MODE_64: name = reg->name;           break;
+	default:
+		panic("invalid mode");
 	}
+	be_emit_char('%');
+	be_emit_string(name);
 }
 
 typedef enum amd64_emit_mod_t {
@@ -242,7 +300,11 @@ emit_R:
 
 			case 'M': {
 				amd64_attr_t const *const attr = get_amd64_attr_const(node);
-				amd64_emit_insn_mode_suffix(attr->data.insn_mode);
+				if (mod & EMIT_RESPECT_LS) {
+					amd64_emit_mode_suffix(attr->ls_mode);
+				} else {
+					amd64_emit_insn_mode_suffix(attr->data.insn_mode);
+				}
 				break;
 			}
 
@@ -412,6 +474,19 @@ static void emit_amd64_Jcc(const ir_node *irn)
 	}
 }
 
+static void emit_amd64_LoadZ(const ir_node *node)
+{
+	const amd64_attr_t *attr = get_amd64_attr_const(node);
+	switch (attr->data.insn_mode) {
+	case INSN_MODE_8:  amd64_emitf(node, "movzbq %O(%^S0), %^D0"); break;
+	case INSN_MODE_16: amd64_emitf(node, "movzwq %O(%^S0), %^D0"); break;
+	case INSN_MODE_32:
+	case INSN_MODE_64: amd64_emitf(node, "mov%M %O(%^S0), %D0");   break;
+	default:
+		panic("invalid insn mode");
+	}
+}
+
 /**
  * Emits code for a call.
  */
@@ -520,6 +595,7 @@ static void amd64_register_emitters(void)
 	be_set_emitter(op_amd64_FrameAddr,  emit_amd64_FrameAddr);
 	be_set_emitter(op_amd64_Jcc,        emit_amd64_Jcc);
 	be_set_emitter(op_amd64_Jmp,        emit_amd64_Jmp);
+	be_set_emitter(op_amd64_LoadZ,      emit_amd64_LoadZ);
 	be_set_emitter(op_amd64_SwitchJmp,  emit_amd64_SwitchJmp);
 	be_set_emitter(op_amd64_SymConst,   emit_amd64_SymConst);
 	be_set_emitter(op_be_Call,          emit_be_Call);

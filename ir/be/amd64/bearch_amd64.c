@@ -52,7 +52,7 @@ static ir_entity *amd64_get_frame_entity(const ir_node *node)
 		const amd64_SymConst_attr_t *attr = get_amd64_SymConst_attr_const(node);
 		return attr->entity;
 
-	} else if (is_amd64_Load(node)) {
+	} else if (is_amd64_LoadS(node) || is_amd64_LoadZ(node)) {
 		const amd64_SymConst_attr_t *attr = get_amd64_SymConst_attr_const(node);
 		return attr->entity;
 	}
@@ -76,7 +76,7 @@ static void amd64_set_frame_offset(ir_node *irn, int offset)
 		amd64_SymConst_attr_t *attr = get_amd64_SymConst_attr(irn);
 		attr->fp_offset += offset;
 
-	} else if (is_amd64_Load(irn)) {
+	} else if (is_amd64_LoadS(irn) || is_amd64_LoadZ(irn)) {
 		amd64_SymConst_attr_t *attr = get_amd64_SymConst_attr(irn);
 		attr->fp_offset += offset;
 
@@ -128,16 +128,13 @@ static void transform_Reload(ir_node *node)
 	ir_node   *mem    = get_irn_n(node, n_be_Reload_mem);
 	ir_mode   *mode   = get_irn_mode(node);
 	ir_entity *entity = be_get_frame_entity(node);
-	const arch_register_t *reg;
-	ir_node   *proj;
-	ir_node   *load;
 
-	load = new_bd_amd64_Load(dbgi, block, ptr, mem, entity);
+	ir_node *load = new_bd_amd64_LoadZ(dbgi, block, ptr, mem, INSN_MODE_64, entity);
 	sched_replace(node, load);
 
-	proj = new_rd_Proj(dbgi, load, mode, pn_amd64_Load_res);
+	ir_node *proj = new_rd_Proj(dbgi, load, mode, pn_amd64_LoadZ_res);
 
-	reg = arch_get_irn_register(node);
+	const arch_register_t *reg = arch_get_irn_register(node);
 	arch_set_irn_register(proj, reg);
 
 	exchange(node, proj);
@@ -151,11 +148,9 @@ static void transform_Spill(ir_node *node)
 	ir_node   *ptr    = get_irg_frame(irg);
 	ir_node   *mem    = get_irg_no_mem(irg);
 	ir_node   *val    = get_irn_n(node, n_be_Spill_val);
-	//ir_mode   *mode   = get_irn_mode(val);
 	ir_entity *entity = be_get_frame_entity(node);
-	ir_node   *store;
 
-	store = new_bd_amd64_Store(dbgi, block, ptr, val, mem, entity);
+	ir_node *store = new_bd_amd64_Store(dbgi, block, ptr, val, mem, INSN_MODE_64, entity);
 	sched_replace(node, store);
 
 	exchange(node, store);

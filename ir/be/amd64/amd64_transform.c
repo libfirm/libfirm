@@ -269,6 +269,17 @@ static ir_node *gen_Conv(ir_node *node)
 	}
 }
 
+static amd64_insn_mode_t get_insn_mode_from_mode(const ir_mode *mode)
+{
+	switch (get_mode_size_bits(mode)) {
+	case  8: return INSN_MODE_8;
+	case 16: return INSN_MODE_16;
+	case 32: return INSN_MODE_32;
+	case 64: return INSN_MODE_64;
+	}
+	panic("unexpected mode");
+}
+
 /**
  * Transforms a Store.
  *
@@ -285,13 +296,14 @@ static ir_node *gen_Store(ir_node *node)
 	ir_node  *new_val  = be_transform_node(val);
 	ir_mode  *mode     = get_irn_mode(val);
 	dbg_info *dbgi     = get_irn_dbg_info(node);
-	ir_node *new_store = NULL;
+	ir_node *new_store;
 
 	if (mode_is_float(mode)) {
 		panic("Float not supported yet");
 	} else {
-		assert(mode_is_data(mode) && "unsupported mode for Store");
-		new_store = new_bd_amd64_Store(dbgi, block, new_ptr, new_val, new_mem, 0);
+		assert(mode_needs_gp_reg(mode) && "unsupported mode for Store");
+		amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(mode);
+		new_store = new_bd_amd64_Store(dbgi, block, new_ptr, new_val, new_mem, insn_mode, NULL);
 	}
 	set_irn_pinned(new_store, get_irn_pinned(node));
 	return new_store;
@@ -311,13 +323,18 @@ static ir_node *gen_Load(ir_node *node)
 	ir_node  *new_mem  = be_transform_node(mem);
 	ir_mode  *mode     = get_Load_mode(node);
 	dbg_info *dbgi     = get_irn_dbg_info(node);
-	ir_node  *new_load = NULL;
+	ir_node  *new_load;
 
 	if (mode_is_float(mode)) {
 		panic("Float not supported yet");
 	} else {
-		assert(mode_is_data(mode) && "unsupported mode for Load");
-		new_load = new_bd_amd64_Load(dbgi, block, new_ptr, new_mem, 0);
+		assert(mode_needs_gp_reg(mode) && "unsupported mode for Load");
+		amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(mode);
+		if (get_mode_size_bits(mode) < 64 && mode_is_signed(mode)) {
+			new_load = new_bd_amd64_LoadS(dbgi, block, new_ptr, new_mem, insn_mode, NULL);
+		} else {
+			new_load = new_bd_amd64_LoadZ(dbgi, block, new_ptr, new_mem, insn_mode, NULL);
+		}
 	}
 	set_irn_pinned(new_load, get_irn_pinned(node));
 
@@ -336,12 +353,20 @@ static ir_node *gen_Proj_Load(ir_node *node)
 
 	/* renumber the proj */
 	switch (get_amd64_irn_opcode(new_load)) {
-		case iro_amd64_Load:
+		case iro_amd64_LoadS:
 			/* handle all gp loads equal: they have the same proj numbers. */
 			if (proj == pn_Load_res) {
-				return new_rd_Proj(dbgi, new_load, mode_Lu, pn_amd64_Load_res);
+				return new_rd_Proj(dbgi, new_load, mode_Lu, pn_amd64_LoadS_res);
 			} else if (proj == pn_Load_M) {
-				return new_rd_Proj(dbgi, new_load, mode_M, pn_amd64_Load_M);
+				return new_rd_Proj(dbgi, new_load, mode_M, pn_amd64_LoadS_M);
+			}
+		break;
+		case iro_amd64_LoadZ:
+			/* handle all gp loads equal: they have the same proj numbers. */
+			if (proj == pn_Load_res) {
+				return new_rd_Proj(dbgi, new_load, mode_Lu, pn_amd64_LoadZ_res);
+			} else if (proj == pn_Load_M) {
+				return new_rd_Proj(dbgi, new_load, mode_M, pn_amd64_LoadZ_M);
 			}
 		break;
 		default:

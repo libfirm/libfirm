@@ -29,6 +29,7 @@
 #include "besched.h"
 #include "debug.h"
 #include "error.h"
+#include "amd64_nodes_attr.h"
 #include "gen_amd64_new_nodes.h"
 #include "irgwalk.h"
 

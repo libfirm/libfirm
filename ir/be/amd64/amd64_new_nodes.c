@@ -13,6 +13,7 @@
 
 #include <stdlib.h>
 
+#include "error.h"
 #include "irprog_t.h"
 #include "irgraph_t.h"
 #include "irnode_t.h"

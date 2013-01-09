@@ -277,16 +277,30 @@ Jcc => {
 	mode      => "mode_T",
 },
 
-Load => {
+LoadZ => {
 	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "none" ],
 	               out => [ "gp", "none" ] },
 	ins       => [ "ptr", "mem" ],
 	outs      => [ "res",  "M" ],
-	attr      => "ir_entity *entity",
+	attr      => "amd64_insn_mode_t insn_mode, ir_entity *entity",
 	attr_type => "amd64_SymConst_attr_t",
-	emit      => "mov %O(%S0), %D0"
+	init_attr => "attr->base.data.insn_mode = insn_mode;",
+	emit      => "mov%M %O(%^S0), %D0"
+},
+
+LoadS => {
+	op_flags  => [ "uses_memory" ],
+	state     => "exc_pinned",
+	reg_req   => { in => [ "gp", "none" ],
+	               out => [ "gp", "none" ] },
+	ins       => [ "ptr", "mem" ],
+	outs      => [ "res",  "M" ],
+	attr      => "amd64_insn_mode_t insn_mode, ir_entity *entity",
+	attr_type => "amd64_SymConst_attr_t",
+	init_attr => "attr->base.data.insn_mode = insn_mode;",
+	emit      => "movs%Mq %O(%^S0), %^D0"
 },
 
 FrameAddr => {
@@ -305,10 +319,11 @@ Store => {
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "ptr", "val", "mem" ],
 	outs      => [ "M" ],
-	attr      => "ir_entity *entity",
+	attr      => "amd64_insn_mode_t insn_mode, ir_entity *entity",
 	attr_type => "amd64_SymConst_attr_t",
+	init_attr => "attr->base.data.insn_mode = insn_mode;",
 	mode      => "mode_M",
-	emit      => "mov %S1, %O(%S0)"
+	emit      => "mov%M %S1, %O(%^S0)"
 },
 
 SwitchJmp => {
