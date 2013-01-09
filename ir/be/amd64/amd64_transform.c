@@ -425,6 +425,20 @@ static ir_node *gen_be_FrameAddr(ir_node *node)
 	return new_node;
 }
 
+static ir_node *gen_be_Start(ir_node *node)
+{
+	ir_node *new_node = be_duplicate_node(node);
+	be_start_set_setup_stackframe(new_node, true);
+	return new_node;
+}
+
+static ir_node *gen_be_Return(ir_node *node)
+{
+	ir_node *new_node = be_duplicate_node(node);
+	be_return_set_destroy_stackframe(new_node, true);
+	return new_node;
+}
+
 /* Boilerplate code for transformation: */
 
 static void amd64_register_transformers(void)
@@ -445,6 +459,8 @@ static void amd64_register_transformers(void)
 	be_set_transform_function(op_Shrs,         gen_Shrs);
 	be_set_transform_function(op_be_Call,      gen_be_Call);
 	be_set_transform_function(op_be_FrameAddr, gen_be_FrameAddr);
+	be_set_transform_function(op_be_Return,    gen_be_Return);
+	be_set_transform_function(op_be_Start,     gen_be_Start);
 	be_set_transform_function(op_Conv,         gen_Conv);
 	be_set_transform_function(op_Jmp,          gen_Jmp);
 	be_set_transform_function(op_Switch,       gen_Switch);
