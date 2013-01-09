@@ -619,6 +619,7 @@ static void amd64_register_emitters(void)
 	be_set_emitter(op_amd64_SymConst,   emit_amd64_SymConst);
 	be_set_emitter(op_be_Call,          emit_be_Call);
 	be_set_emitter(op_be_Copy,          emit_be_Copy);
+	be_set_emitter(op_be_CopyKeep,      emit_be_Copy);
 	be_set_emitter(op_be_IncSP,         emit_be_IncSP);
 	be_set_emitter(op_be_Perm,          emit_be_Perm);
 	be_set_emitter(op_be_Return,        emit_be_Return);
