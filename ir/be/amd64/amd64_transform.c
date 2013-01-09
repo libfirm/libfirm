@@ -259,8 +259,13 @@ static ir_node *gen_Conv(ir_node *node)
 			min_mode = dst_mode;
 		}
 
+		ir_node *res = new_bd_amd64_Conv(dbgi, block, new_op, min_mode);
+		if (!mode_is_signed(min_mode) && get_mode_size_bits(min_mode) == 32) {
+			amd64_attr_t *const attr = get_amd64_attr(res);
+			attr->data.insn_mode = INSN_MODE_32;
+		}
 
-		return new_bd_amd64_Conv(dbgi, block, new_op, min_mode);
+		return res;
 	}
 }
 

@@ -240,6 +240,7 @@ Conv => {
 	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
 	ins       => [ "val" ],
 	outs      => [ "res" ],
+	emit      => "mov%c%M %#S0, %D0",
 	mode      => $mode_gp,
 },
 
