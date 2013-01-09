@@ -366,6 +366,14 @@ static ir_node *gen_Proj(ir_node *node)
 	} else if (is_Load(pred)) {
 		return gen_Proj_Load(node);
 	} else if (is_Start(pred)) {
+	} else if (be_is_Call(pred)) {
+		ir_mode *mode = get_irn_mode(node);
+		if (mode_needs_gp_reg(mode)) {
+			ir_node *new_pred = be_transform_node(pred);
+			long     pn       = get_Proj_proj(node);
+			ir_node *new_proj = new_r_Proj(new_pred, mode_Lu, pn);
+			return new_proj;
+		}
 	}
 
     return be_duplicate_node(node);
