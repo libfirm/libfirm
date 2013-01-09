@@ -85,6 +85,12 @@ static size_t                 start_params_offset;
 static size_t                 start_callee_saves_offset;
 
 static const arch_register_t *const omit_fp_callee_saves[] = {
+	&sparc_registers[REG_I0],
+	&sparc_registers[REG_I1],
+	&sparc_registers[REG_I2],
+	&sparc_registers[REG_I3],
+	&sparc_registers[REG_I4],
+	&sparc_registers[REG_I5],
 	&sparc_registers[REG_L0],
 	&sparc_registers[REG_L1],
 	&sparc_registers[REG_L2],
@@ -93,13 +99,9 @@ static const arch_register_t *const omit_fp_callee_saves[] = {
 	&sparc_registers[REG_L5],
 	&sparc_registers[REG_L6],
 	&sparc_registers[REG_L7],
-	&sparc_registers[REG_I0],
-	&sparc_registers[REG_I1],
-	&sparc_registers[REG_I2],
-	&sparc_registers[REG_I3],
-	&sparc_registers[REG_I4],
-	&sparc_registers[REG_I5],
 };
+
+static unsigned num_omit_fp_callee_saves = ARRAY_SIZE(omit_fp_callee_saves);
 
 static inline bool mode_needs_gp_reg(ir_mode *mode)
 {
@@ -1431,7 +1433,7 @@ static ir_node *gen_Start(ir_node *node)
 	n_outs += current_cconv->n_param_regs;
 	/* callee saves */
 	if (current_cconv->omit_fp) {
-		n_outs += ARRAY_SIZE(omit_fp_callee_saves);
+		n_outs += num_omit_fp_callee_saves;
 	}
 
 	start = new_bd_sparc_Start(dbgi, new_block, n_outs);
@@ -1478,7 +1480,7 @@ static ir_node *gen_Start(ir_node *node)
 	 * callee saves) */
 	start_callee_saves_offset = o;
 	if (current_cconv->omit_fp) {
-		size_t n_callee_saves = ARRAY_SIZE(omit_fp_callee_saves);
+		size_t n_callee_saves = num_omit_fp_callee_saves;
 		size_t c;
 		for (c = 0; c < n_callee_saves; ++c) {
 			const arch_register_t *reg = omit_fp_callee_saves[c];
@@ -1553,7 +1555,7 @@ static ir_node *gen_Return(ir_node *node)
 	/* estimate number of return values */
 	n_ins = 2 + n_res; /* memory + stackpointer, return values */
 	if (current_cconv->omit_fp)
-		n_ins += ARRAY_SIZE(omit_fp_callee_saves);
+		n_ins += num_omit_fp_callee_saves;
 
 	in   = ALLOCAN(ir_node*, n_ins);
 	reqs = OALLOCN(be_obst, const arch_register_req_t*, n_ins);
@@ -1580,7 +1582,7 @@ static ir_node *gen_Return(ir_node *node)
 	/* callee saves */
 	if (current_cconv->omit_fp) {
 		ir_node  *start          = get_irg_start(irg);
-		size_t    n_callee_saves = ARRAY_SIZE(omit_fp_callee_saves);
+		size_t    n_callee_saves = num_omit_fp_callee_saves;
 		for (i = 0; i < n_callee_saves; ++i) {
 			const arch_register_t *reg   = omit_fp_callee_saves[i];
 			ir_mode               *mode  = reg->reg_class->mode;
@@ -2403,6 +2405,9 @@ void sparc_transform_graph(ir_graph *irg)
 {
 	ir_entity *entity = get_irg_entity(irg);
 	ir_type   *frame_type;
+
+	const int num_forbidden_regs = sparc_cconv_get_num_forbidden_regs();
+	num_omit_fp_callee_saves = ARRAY_SIZE(omit_fp_callee_saves) - num_forbidden_regs;
 
 	sparc_register_transformers();
 

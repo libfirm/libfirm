@@ -82,4 +82,6 @@ void sparc_free_calling_convention(calling_convention_t *cconv);
 void sparc_cconv_init(void);
 void sparc_init_cconv_args(void);
 
+int sparc_cconv_get_num_forbidden_regs(void);
+
 #endif

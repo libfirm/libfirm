@@ -360,7 +360,7 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 			}
 
 			for (int i = 0; i < num_forbidden_regs; ++i) {
-				rbitset_clear(birg->allocatable_regs, REG_L0 + i);
+				rbitset_clear(birg->allocatable_regs, REG_L7 - i);
 			}
 		}
 	}
@@ -388,6 +388,11 @@ void sparc_init_cconv_args(void)
 	lc_opt_entry_t *cconv_grp = lc_opt_get_grp(sparc_grp, "cconv");
 
 	lc_opt_add_table(cconv_grp, sparc_cconv_options);
+}
+
+int sparc_cconv_get_num_forbidden_regs(void)
+{
+	return num_forbidden_regs;
 }
 
 void sparc_cconv_init(void)
