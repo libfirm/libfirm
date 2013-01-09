@@ -553,7 +553,7 @@ static int push_through_perm(ir_node *perm)
 	 */
 	sched_foreach_reverse_before(perm, irn) {
 		be_foreach_use(irn, cls, in_req_, op, op_req_,
-			if (!be_values_interfere(lv, op, one_proj)) {
+			if (is_Phi(irn) || !be_values_interfere(lv, op, one_proj)) {
 				frontier = irn;
 				goto found_front;
 			}
