@@ -258,7 +258,7 @@ Cmp => {
 	               out => [ "flags" ] },
 	ins       => [ "left", "right" ],
 	outs      => [ "eflags" ],
-	emit      => 'cmp %S0, %S1',
+	emit      => 'cmp %S1, %S0',
 	attr      => "int ins_permuted, int cmp_unsigned",
 	init_attr => "attr->data.ins_permuted   = ins_permuted;\n".
 	             "\tattr->data.cmp_unsigned = cmp_unsigned;\n",
