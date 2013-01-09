@@ -243,7 +243,9 @@ end_of_mods:
 
 			case 'C': {
 				amd64_attr_t const *const attr = get_amd64_attr_const(node);
-				be_emit_irprintf("$0x%X", attr->ext.imm_value);
+				/* FIXME: %d is a hack... we must emit 64bit constants, or sign
+				 * extended 32bit constants... */
+				be_emit_irprintf("$%d", attr->ext.imm_value);
 				break;
 			}
 
