@@ -2686,25 +2686,20 @@ static ir_node *gen_float_const_Store(ir_node *node, ir_node *cns)
 }
 
 /**
- * Generate a vfist or vfisttp instruction.
+ * Generate a fist or fisttp instruction.
  */
-static ir_node *gen_vfist(dbg_info *dbgi, ir_node *block, ir_node *base,
+static ir_node *gen_fist(dbg_info *dbgi, ir_node *block, ir_node *base,
                           ir_node *index, ir_node *mem,  ir_node *val)
 {
 	if (ia32_cg_config.use_fisttp) {
-		/* Note: fisttp ALWAYS pop the tos. We have to ensure here that the value is copied
-		if other users exists */
-		ir_node *vfisttp = new_bd_ia32_fisttp(dbgi, block, base, index, mem, val);
-		ir_node *value   = new_r_Proj(vfisttp, ia32_mode_E, pn_ia32_fisttp_res);
-		be_new_Keep(block, 1, &value);
-
-		return vfisttp;
+		/* Note: fisttp ALWAYS pop the tos. We have to ensure here that the
+		 * value is copied if other users exists */
+		return new_bd_ia32_fisttp(dbgi, block, base, index, mem, val);
 	} else {
 		ir_node *trunc_mode = ia32_new_Fpu_truncate(current_ir_graph);
 
 		/* do a fist */
-		ir_node *vfist = new_bd_ia32_fist(dbgi, block, base, index, mem, val, trunc_mode);
-		return vfist;
+		return new_bd_ia32_fist(dbgi, block, base, index, mem, val, trunc_mode);
 	}
 }
 
@@ -2763,7 +2758,7 @@ static ir_node *gen_general_Store(ir_node *node)
 	} else if (!ia32_cg_config.use_sse2 && is_float_to_int_conv(val)) {
 		val      = get_Conv_op(val);
 		new_val  = be_transform_node(val);
-		new_node = gen_vfist(dbgi, new_block, addr.base, addr.index, addr.mem, new_val);
+		new_node = gen_fist(dbgi, new_block, addr.base, addr.index, addr.mem, new_val);
 	} else {
 		unsigned dest_bits = get_mode_size_bits(mode);
 		while (is_downconv(val)
@@ -3562,7 +3557,7 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node)
 	ir_node         *frame      = get_irg_frame(irg);
 	ir_node         *fist, *load, *mem;
 
-	fist = gen_vfist(dbgi, block, frame, noreg_GP, nomem, new_op);
+	fist = gen_fist(dbgi, block, frame, noreg_GP, nomem, new_op);
 	set_irn_pinned(fist, op_pin_state_floats);
 	set_ia32_use_frame(fist);
 	set_ia32_op_type(fist, ia32_AddrModeD);
@@ -4279,7 +4274,7 @@ static ir_node *gen_ia32_l_FloattoLL(ir_node *node)
 	ir_node  *new_val    = be_transform_node(val);
 	ir_node  *fist;
 
-	fist = gen_vfist(dbgi, block, frame, noreg_GP, nomem, new_val);
+	fist = gen_fist(dbgi, block, frame, noreg_GP, nomem, new_val);
 	SET_IA32_ORIG_NODE(fist, node);
 	set_ia32_use_frame(fist);
 	set_ia32_op_type(fist, ia32_AddrModeD);
