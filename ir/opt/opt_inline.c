@@ -662,7 +662,6 @@ static inline_irg_env *alloc_inline_irg_env(void)
 
 typedef struct walker_env {
 	inline_irg_env *x;     /**< the inline environment */
-	char ignore_runtime;   /**< the ignore runtime flag */
 	char ignore_callers;   /**< if set, do change callers data */
 } wenv_t;
 
@@ -689,18 +688,6 @@ static void collect_calls2(ir_node *call, void *ctx)
 	}
 
 	if (code != iro_Call) return;
-
-	/* check, if it's a runtime call */
-	if (env->ignore_runtime) {
-		ir_node *symc = get_Call_ptr(call);
-
-		if (is_SymConst_addr_ent(symc)) {
-			ir_entity *ent = get_SymConst_entity(symc);
-
-			if (get_entity_additional_properties(ent) & mtp_property_runtime)
-				return;
-		}
-	}
 
 	/* collect all call nodes */
 	++x->n_call_nodes;
@@ -1272,7 +1259,6 @@ void inline_functions(unsigned maxsize, int inline_threshold,
 		set_irg_link(irgs[i], alloc_inline_irg_env());
 
 	/* Pre-compute information in temporary data structure. */
-	wenv.ignore_runtime = 0;
 	wenv.ignore_callers = 0;
 	for (i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = irgs[i];

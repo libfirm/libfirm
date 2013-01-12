@@ -261,21 +261,19 @@ typedef enum mtp_additional_properties {
 	/** This method is intrinsic. It is expected that a lowering phase will
 	 * remove all calls to it. */
 	mtp_property_intrinsic          = 1u << 7,
-	/** This method represents a runtime routine. */
-	mtp_property_runtime            = 1u << 8,
 	/** All method invocations are known, the backend is free to optimize the
 	 * call in any possible way. */
-	mtp_property_private            = 1u << 9,
+	mtp_property_private            = 1u << 8,
 	/** Set, if this method contains one possibly endless loop. */
-	mtp_property_has_loop           = 1u << 10,
+	mtp_property_has_loop           = 1u << 9,
 	/** try to always inline this function, even if it seems nonprofitable */
-	mtp_property_always_inline      = 1u << 11,
+	mtp_property_always_inline      = 1u << 10,
 	/** the function should not be inlined */
-	mtp_property_noinline           = 1u << 12,
+	mtp_property_noinline           = 1u << 11,
 	/** the programmer recommends to inline the function */
-	mtp_property_inline_recommended = 1u << 13,
+	mtp_property_inline_recommended = 1u << 12,
 	/** stupid hack used by opt_funccall... */
-	mtp_temporary                   = 1u << 14,
+	mtp_temporary                   = 1u << 13,
 } mtp_additional_properties;
 ENUM_BITSET(mtp_additional_properties)
 
