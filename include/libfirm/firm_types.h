@@ -258,22 +258,19 @@ typedef enum mtp_additional_properties {
 	/** This method can return more than one (typically setjmp).
 	 * GCC: __attribute__((returns_twice)). */
 	mtp_property_returns_twice      = 1u << 6,
-	/** This method is intrinsic. It is expected that a lowering phase will
-	 * remove all calls to it. */
-	mtp_property_intrinsic          = 1u << 7,
 	/** All method invocations are known, the backend is free to optimize the
 	 * call in any possible way. */
-	mtp_property_private            = 1u << 8,
+	mtp_property_private            = 1u << 7,
 	/** Set, if this method contains one possibly endless loop. */
-	mtp_property_has_loop           = 1u << 9,
+	mtp_property_has_loop           = 1u << 8,
 	/** try to always inline this function, even if it seems nonprofitable */
-	mtp_property_always_inline      = 1u << 10,
+	mtp_property_always_inline      = 1u << 9,
 	/** the function should not be inlined */
-	mtp_property_noinline           = 1u << 11,
+	mtp_property_noinline           = 1u << 10,
 	/** the programmer recommends to inline the function */
-	mtp_property_inline_recommended = 1u << 12,
+	mtp_property_inline_recommended = 1u << 11,
 	/** stupid hack used by opt_funccall... */
-	mtp_temporary                   = 1u << 13,
+	mtp_temporary                   = 1u << 12,
 } mtp_additional_properties;
 ENUM_BITSET(mtp_additional_properties)
 

@@ -535,7 +535,6 @@ static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, const char *pref
 			if (mask & mtp_property_naked)         fputs("naked_function, ", F);
 			if (mask & mtp_property_malloc)        fputs("malloc_function, ", F);
 			if (mask & mtp_property_returns_twice) fputs("weak_function, ", F);
-			if (mask & mtp_property_intrinsic)     fputs("intrinsic_function, ", F);
 			if (mask & mtp_property_private)       fputs("private_function, ", F);
 			if (mask & mtp_property_has_loop)      fputs("has_loop_function, ", F);
 			fputc('\n', F);
@@ -769,8 +768,6 @@ void dump_type_to_file(FILE *F, ir_type *tp)
 				fputs(" malloc", F);
 			if (mtp & mtp_property_returns_twice)
 				fputs(" returns_twice", F);
-			if (mtp & mtp_property_intrinsic)
-				fputs(" intrinsic", F);
 			if (mtp & mtp_property_private)
 				fputs(" private", F);
 			if (mtp & mtp_property_has_loop)
