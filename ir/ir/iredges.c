@@ -930,6 +930,11 @@ int (get_irn_n_edges_kind)(const ir_node *irn, ir_edge_kind_t kind)
 	return get_irn_n_edges_kind_(irn, kind);
 }
 
+int (get_irn_n_edges)(const ir_node *irn)
+{
+	return get_irn_n_edges_kind_(irn, EDGE_KIND_NORMAL);
+}
+
 static void irg_walk_edges2(ir_node *node, irg_walk_func *pre,
                             irg_walk_func *post, void *env)
 {
