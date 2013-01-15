@@ -18,6 +18,7 @@
 #include "irmode.h"
 #include "irnode.h"
 #include "iredgekinds.h"
+#include "irop.h"
 #include "irtypeinfo.h"
 #include "irmemory.h"
 #include "callgraph.h"
@@ -32,6 +33,33 @@
 struct ir_nodemap {
 	void **data;  /**< maps node indices to void* */
 };
+
+typedef struct arch_irn_ops_t arch_irn_ops_t;
+
+/**
+ * Operation specific callbacks.
+ */
+typedef struct {
+	hash_func             hash;                 /**< Calculate a hash value for an IR node. */
+	computed_value_func   computed_value;       /**< Evaluates a node into a tarval if possible. */
+	computed_value_func   computed_value_Proj;  /**< Evaluates a Proj node into a tarval if possible. */
+	equivalent_node_func  equivalent_node;      /**< Optimizes the node by returning an equivalent one. */
+	equivalent_node_func  equivalent_node_Proj; /**< Optimizes the Proj node by returning an equivalent one. */
+	transform_node_func   transform_node;       /**< Optimizes the node by transforming it. */
+	transform_node_func   transform_node_Proj;  /**< Optimizes the Proj node by transforming it. */
+	node_cmp_attr_func    node_cmp_attr;        /**< Compares two node attributes. */
+	reassociate_func      reassociate;          /**< Reassociate a tree. */
+	copy_attr_func        copy_attr;            /**< Copy node attributes. */
+	get_type_attr_func    get_type_attr;        /**< Returns the type attribute of a node. */
+	get_entity_attr_func  get_entity_attr;      /**< Returns the entity attribute of a node. */
+	verify_node_func      verify_node;          /**< Verify the node. */
+	verify_proj_node_func verify_proj_node;     /**< Verify the Proj node. */
+	dump_node_func        dump_node;            /**< Dump a node. */
+	op_func               generic;              /**< A generic function pointer. */
+	op_func               generic1;             /**< A generic function pointer. */
+	op_func               generic2;             /**< A generic function pointer. */
+	const arch_irn_ops_t *be_ops;               /**< callbacks used by the backend. */
+} ir_op_ops;
 
 /** The type of an ir_op. */
 struct ir_op {

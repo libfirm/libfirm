@@ -83,9 +83,6 @@ typedef struct ir_entity            ir_entity;
 /** @ingroup ir_cdep
  * Control Dependence Analysis Results */
 typedef struct ir_cdep              ir_cdep;
-/** @ingroup be
- * Target Architecture specific node operations */
-typedef struct arch_irn_ops_t       arch_irn_ops_t;
 /** A graph transformation pass */
 typedef struct ir_graph_pass_t      ir_graph_pass_t;
 /** A whole program transformation pass */

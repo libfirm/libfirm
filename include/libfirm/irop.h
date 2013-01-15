@@ -218,30 +218,36 @@ typedef enum {
  */
 typedef void (*dump_node_func)(FILE *out, const ir_node *self, dump_reason_t reason);
 
-/**
- * io_op Operations.
- */
-typedef struct {
-	hash_func             hash;                 /**< Calculate a hash value for an IR node. */
-	computed_value_func   computed_value;       /**< Evaluates a node into a tarval if possible. */
-	computed_value_func   computed_value_Proj;  /**< Evaluates a Proj node into a tarval if possible. */
-	equivalent_node_func  equivalent_node;      /**< Optimizes the node by returning an equivalent one. */
-	equivalent_node_func  equivalent_node_Proj; /**< Optimizes the Proj node by returning an equivalent one. */
-	transform_node_func   transform_node;       /**< Optimizes the node by transforming it. */
-	transform_node_func   transform_node_Proj;  /**< Optimizes the Proj node by transforming it. */
-	node_cmp_attr_func    node_cmp_attr;        /**< Compares two node attributes. */
-	reassociate_func      reassociate;          /**< Reassociate a tree. */
-	copy_attr_func        copy_attr;            /**< Copy node attributes. */
-	get_type_attr_func    get_type_attr;        /**< Returns the type attribute of a node. */
-	get_entity_attr_func  get_entity_attr;      /**< Returns the entity attribute of a node. */
-	verify_node_func      verify_node;          /**< Verify the node. */
-	verify_proj_node_func verify_proj_node;     /**< Verify the Proj node. */
-	dump_node_func        dump_node;            /**< Dump a node. */
-	op_func               generic;              /**< A generic function pointer. */
-	op_func               generic1;             /**< A generic function pointer. */
-	op_func               generic2;             /**< A generic function pointer. */
-	const arch_irn_ops_t *be_ops;               /**< callbacks used by the backend. */
-} ir_op_ops;
+/** Sets hash callback @p func for operation @p op */
+FIRM_API void set_op_hash(ir_op *op, hash_func func);
+/** Sets computed_value callback @p func for operation @p op */
+FIRM_API void set_op_computed_value(ir_op *op, computed_value_func func);
+/** Sets compute_value for Proj callback @p func for operation @p op */
+FIRM_API void set_op_computed_value_proj(ir_op *op, computed_value_func func);
+/** Sets equivalent node callback @p func for operation @p op */
+FIRM_API void set_op_equivalent_node(ir_op *op, equivalent_node_func func);
+/** Sets equivalent Proj node callback @p func for operation @p op */
+FIRM_API void set_op_equivalent_node_proj(ir_op *op, equivalent_node_func func);
+/** Sets transform node callback @p func for operation @p op */
+FIRM_API void set_op_transform_node(ir_op *op, transform_node_func func);
+/** Sets transform Proj node callback @p func for operation @p op */
+FIRM_API void set_op_transform_node_proj(ir_op *op, transform_node_func func);
+/** Sets cmp_attr callback @p func for operation @p op */
+FIRM_API void set_op_cmp_attr(ir_op *op, node_cmp_attr_func func);
+/** Sets reassociation callback @p func for operation @p op */
+FIRM_API void set_op_reassociate(ir_op *op, reassociate_func func);
+/** Sets attribute copy callback @p func for operation @p op */
+FIRM_API void set_op_copy_attr(ir_op *op, copy_attr_func func);
+/** Sets get type callback @p func for operation @p op */
+FIRM_API void set_op_get_type_attr(ir_op *op, get_type_attr_func func);
+/** Sets get entity callback @p func for operation @p op */
+FIRM_API void set_op_get_entity_attr(ir_op *op, get_entity_attr_func func);
+/** Sets verify callback @p func for operation @p op */
+FIRM_API void set_op_verify(ir_op *op, verify_node_func func);
+/** Sets proj verify callback @p func for operation @p op */
+FIRM_API void set_op_verify_proj(ir_op *op, verify_proj_node_func func);
+/** Sets dump callback @p func for operation @p op */
+FIRM_API void set_op_dump(ir_op *op, dump_node_func func);
 
 /**
  * Creates a new IR operation.
@@ -289,9 +295,6 @@ FIRM_API void ir_op_set_memory_index(ir_op *op, int memory_index);
  */
 FIRM_API void ir_op_set_fragile_indices(ir_op *op, int pn_x_regular,
                                         int pn_x_except);
-
-/** Returns the ir_op_ops of an ir_op. */
-FIRM_API ir_op_ops const *get_op_ops(ir_op const *op);
 
 /** @} */
 

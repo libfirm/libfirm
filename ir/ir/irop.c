@@ -175,11 +175,6 @@ void (set_generic_function_ptr)(ir_op *op, op_func func)
 	set_generic_function_ptr_(op, func);
 }
 
-ir_op_ops const *(get_op_ops)(ir_op const *const op)
-{
-	return get_op_ops_(op);
-}
-
 irop_flags get_op_flags(const ir_op *op)
 {
 	return (irop_flags)op->flags;
@@ -539,19 +534,79 @@ static void switch_copy_attr(ir_graph *irg, const ir_node *old_node,
 	new_node->attr.switcha.n_outs = old_node->attr.switcha.n_outs;
 }
 
-static void register_node_cmp_func(ir_op *op, node_cmp_attr_func func)
-{
-	op->ops.node_cmp_attr = func;
-}
-
-static void register_node_hash_func(ir_op *op, hash_func func)
+void set_op_hash(ir_op *op, hash_func func)
 {
 	op->ops.hash = func;
 }
 
-static void register_node_copy_attr_func(ir_op *op, copy_attr_func func)
+void set_op_computed_value(ir_op *op, computed_value_func func)
+{
+	op->ops.computed_value = func;
+}
+
+void set_op_computed_value_proj(ir_op *op, computed_value_func func)
+{
+	op->ops.computed_value_Proj = func;
+}
+
+void set_op_equivalent_node(ir_op *op, equivalent_node_func func)
+{
+	op->ops.equivalent_node = func;
+}
+
+void set_op_equivalent_node_proj(ir_op *op, equivalent_node_func func)
+{
+	op->ops.equivalent_node_Proj = func;
+}
+
+void set_op_transform_node(ir_op *op, transform_node_func func)
+{
+	op->ops.transform_node = func;
+}
+
+void set_op_transform_node_proj(ir_op *op, transform_node_func func)
+{
+	op->ops.transform_node_Proj = func;
+}
+
+void set_op_cmp_attr(ir_op *op, node_cmp_attr_func func)
+{
+	op->ops.node_cmp_attr = func;
+}
+
+void set_op_reassociate(ir_op *op, reassociate_func func)
+{
+	op->ops.reassociate = func;
+}
+
+void set_op_copy_attr(ir_op *op, copy_attr_func func)
 {
 	op->ops.copy_attr = func;
+}
+
+void set_op_get_type_attr(ir_op *op, get_type_attr_func func)
+{
+	op->ops.get_type_attr = func;
+}
+
+void set_op_get_entity_attr(ir_op *op, get_entity_attr_func func)
+{
+	op->ops.get_entity_attr = func;
+}
+
+void set_op_verify(ir_op *op, verify_node_func func)
+{
+	op->ops.verify_node = func;
+}
+
+void set_op_verify_proj(ir_op *op, verify_proj_node_func func)
+{
+	op->ops.verify_proj_node = func;
+}
+
+void set_op_dump(ir_op *op, dump_node_func func)
+{
+	op->ops.dump_node = func;
 }
 
 static void generated_init_op(void);
@@ -563,34 +618,34 @@ void firm_init_op(void)
 	generated_init_op();
 	be_init_op();
 
-	register_node_cmp_func(op_ASM,      node_cmp_attr_ASM);
-	register_node_cmp_func(op_Alloc,    node_cmp_attr_Alloc);
-	register_node_cmp_func(op_Builtin,  node_cmp_attr_Builtin);
-	register_node_cmp_func(op_Call,     node_cmp_attr_Call);
-	register_node_cmp_func(op_Cmp,      node_cmp_attr_Cmp);
-	register_node_cmp_func(op_Confirm,  node_cmp_attr_Confirm);
-	register_node_cmp_func(op_Const,    node_cmp_attr_Const);
-	register_node_cmp_func(op_CopyB,    node_cmp_attr_CopyB);
-	register_node_cmp_func(op_Div,      node_cmp_attr_Div);
-	register_node_cmp_func(op_Dummy,    node_cmp_attr_Dummy);
-	register_node_cmp_func(op_Free,     node_cmp_attr_Free);
-	register_node_cmp_func(op_InstOf,   node_cmp_attr_InstOf);
-	register_node_cmp_func(op_Load,     node_cmp_attr_Load);
-	register_node_cmp_func(op_Mod,      node_cmp_attr_Mod);
-	register_node_cmp_func(op_Phi,      node_cmp_attr_Phi);
-	register_node_cmp_func(op_Proj,     node_cmp_attr_Proj);
-	register_node_cmp_func(op_Sel,      node_cmp_attr_Sel);
-	register_node_cmp_func(op_Store,    node_cmp_attr_Store);
-	register_node_cmp_func(op_SymConst, node_cmp_attr_SymConst);
+	set_op_cmp_attr(op_ASM,      node_cmp_attr_ASM);
+	set_op_cmp_attr(op_Alloc,    node_cmp_attr_Alloc);
+	set_op_cmp_attr(op_Builtin,  node_cmp_attr_Builtin);
+	set_op_cmp_attr(op_Call,     node_cmp_attr_Call);
+	set_op_cmp_attr(op_Cmp,      node_cmp_attr_Cmp);
+	set_op_cmp_attr(op_Confirm,  node_cmp_attr_Confirm);
+	set_op_cmp_attr(op_Const,    node_cmp_attr_Const);
+	set_op_cmp_attr(op_CopyB,    node_cmp_attr_CopyB);
+	set_op_cmp_attr(op_Div,      node_cmp_attr_Div);
+	set_op_cmp_attr(op_Dummy,    node_cmp_attr_Dummy);
+	set_op_cmp_attr(op_Free,     node_cmp_attr_Free);
+	set_op_cmp_attr(op_InstOf,   node_cmp_attr_InstOf);
+	set_op_cmp_attr(op_Load,     node_cmp_attr_Load);
+	set_op_cmp_attr(op_Mod,      node_cmp_attr_Mod);
+	set_op_cmp_attr(op_Phi,      node_cmp_attr_Phi);
+	set_op_cmp_attr(op_Proj,     node_cmp_attr_Proj);
+	set_op_cmp_attr(op_Sel,      node_cmp_attr_Sel);
+	set_op_cmp_attr(op_Store,    node_cmp_attr_Store);
+	set_op_cmp_attr(op_SymConst, node_cmp_attr_SymConst);
 
-	register_node_hash_func(op_Const,    hash_Const);
-	register_node_hash_func(op_SymConst, hash_SymConst);
+	set_op_hash(op_Const,    hash_Const);
+	set_op_hash(op_SymConst, hash_SymConst);
 
-	register_node_copy_attr_func(op_Call,   call_copy_attr);
-	register_node_copy_attr_func(op_Block,  block_copy_attr);
-	register_node_copy_attr_func(op_Phi,    phi_copy_attr);
-	register_node_copy_attr_func(op_ASM,    ASM_copy_attr);
-	register_node_copy_attr_func(op_Switch, switch_copy_attr);
+	set_op_copy_attr(op_Call,   call_copy_attr);
+	set_op_copy_attr(op_Block,  block_copy_attr);
+	set_op_copy_attr(op_Phi,    phi_copy_attr);
+	set_op_copy_attr(op_ASM,    ASM_copy_attr);
+	set_op_copy_attr(op_Switch, switch_copy_attr);
 
 	ir_register_opt_node_ops();
 	ir_register_reassoc_node_ops();

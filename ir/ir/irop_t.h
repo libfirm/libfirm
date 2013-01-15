@@ -21,7 +21,6 @@
 #define get_op_code(op)         get_op_code_(op)
 #define get_op_ident(op)        get_op_ident_(op)
 #define get_op_pinned(op)       get_op_pinned_(op)
-#define get_op_ops(op)          get_op_ops_(op)
 #define set_op_tag(op, tag)     set_op_tag_((op), (tag))
 #define get_op_tag(op)          get_op_tag_(op)
 #define set_op_attr(op, attr)   set_op_attr_((op), (attr))
@@ -45,7 +44,7 @@ void firm_finish_op(void);
  * Returns the attribute size of nodes of this opcode.
  * @note Use not encouraged, internal feature.
  */
-static inline size_t get_op_attr_size (const ir_op *op)
+static inline size_t get_op_attr_size(const ir_op *op)
 {
 	return op->attr_size;
 }
@@ -142,7 +141,7 @@ static inline op_func get_generic_function_ptr_(const ir_op *op)
 	return op->ops.generic;
 }
 
-static inline ir_op_ops const *get_op_ops_(ir_op const *const op)
+static inline ir_op_ops const *get_op_ops(ir_op const *const op)
 {
 	return &op->ops;
 }
