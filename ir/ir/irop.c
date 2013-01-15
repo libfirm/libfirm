@@ -153,12 +153,6 @@ op_pin_state (get_op_pinned)(const ir_op *op)
 	return get_op_pinned_(op);
 }
 
-void set_op_pinned(ir_op *op, op_pin_state pinned)
-{
-	if (op == op_Block || op == op_Phi || is_op_cfopcode(op)) return;
-	op->pin_state = pinned;
-}
-
 unsigned get_next_ir_opcode(void)
 {
 	return next_iro++;

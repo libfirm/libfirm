@@ -85,10 +85,6 @@ FIRM_API const char *get_op_pin_state_name(op_pin_state s);
 /** Returns pinned state of an opcode. */
 FIRM_API op_pin_state get_op_pinned(const ir_op *op);
 
-/** Sets pinned in the opcode.  Setting it to floating has no effect
-    for Block, Phi and control flow nodes. */
-FIRM_API void set_op_pinned(ir_op *op, op_pin_state pinned);
-
 /** Returns the next free IR opcode number, allows to register user ops. */
 FIRM_API unsigned get_next_ir_opcode(void);
 
