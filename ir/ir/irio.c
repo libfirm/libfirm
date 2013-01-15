@@ -70,6 +70,7 @@ typedef struct read_env_t {
 typedef struct write_env_t {
 	FILE *file;
 	pdeq *write_queue;
+	pdeq *entity_queue;
 } write_env_t;
 
 typedef enum typetag_t {
@@ -604,7 +605,7 @@ static void write_type_compound(write_env_t *env, ir_type *tp)
 
 	for (i = 0; i < n_members; ++i) {
 		ir_entity *member = get_compound_member(tp, i);
-		write_entity(env, member);
+		pdeq_putr(env->entity_queue, member);
 	}
 }
 
@@ -1119,6 +1120,12 @@ static void write_typegraph(write_env_t *env)
 		ir_type *type = get_irp_type(i);
 		write_type(env, type);
 	}
+
+	while (!pdeq_empty(env->entity_queue)) {
+		ir_entity *entity = pdeq_getl(env->entity_queue);
+		write_entity(env, entity);
+	}
+
 	irp_free_resources(irp, IRP_RESOURCE_TYPE_VISITED);
 	write_scope_end(env);
 }
@@ -1149,8 +1156,9 @@ void ir_export_file(FILE *file)
 	size_t i, n_irgs = get_irp_n_irgs();
 
 	memset(env, 0, sizeof(*env));
-	env->file        = file;
-	env->write_queue = new_pdeq();
+	env->file         = file;
+	env->write_queue  = new_pdeq();
+	env->entity_queue = new_pdeq();
 
 	writers_init();
 	write_modes(env);
@@ -1170,6 +1178,7 @@ void ir_export_file(FILE *file)
 
 	write_program(env);
 
+	del_pdeq(env->entity_queue);
 	del_pdeq(env->write_queue);
 }
 
