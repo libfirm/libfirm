@@ -20,8 +20,8 @@
 /**
  * @defgroup ir_mode Value Modes
  *  This module specifies the modes that type the firm nodes.  It defines
- *  a datasturcture that describes a mode and implements constructors and
- *  access routines to this datastructure. Further it defines a set of
+ *  a data structure that describes a mode and implements constructors and
+ *  access routines to this data structure. Further it defines a set of
  *  predefined modes.
  *
  *  SEE ALSO:
@@ -43,7 +43,7 @@ typedef enum ir_mode_arithmetic {
 	irma_ieee754 = 256,       /**< Values of the mode are represented according
 	                               to ieee754 floating point standard.  Only
 	                               legal for modes of sort float_number. */
-	irma_x86_extended_float,  /**< x86 extended floatingpoint values */
+	irma_x86_extended_float,  /**< x86 extended floating point values */
 	irma_last = irma_x86_extended_float,
 } ir_mode_arithmetic;
 
@@ -116,9 +116,9 @@ FIRM_API unsigned get_mode_size_bits(const ir_mode *mode);
  *  If the size is not dividable by 8 returns -1. */
 FIRM_API unsigned get_mode_size_bytes(const ir_mode *mode);
 
-/** Returns the signess of a mode.
+/** Returns the signedness of a mode.
  *
- * Returns the signess of a mode: 1 if mode is signed. */
+ * Returns the signedness of a mode: 1 if mode is signed. */
 FIRM_API int get_mode_sign(const ir_mode *mode);
 
 /** Returns the arithmetic of a mode */
@@ -147,7 +147,7 @@ FIRM_API void set_mode_link(ir_mode *mode, void *l);
 FIRM_API ir_tarval *get_mode_min(ir_mode *mode);
 
 /**
- * Returns the biggest representable value o f a given mode.
+ * Returns the biggest representable value of a given mode.
  *
  * For modes of the sort float_number this is the largest value lower
  * than infinite.
@@ -300,7 +300,7 @@ FIRM_API void set_modeP_data(ir_mode *p);
 
 /** Returns 1 if @p mode is signed, 0 otherwise */
 FIRM_API int mode_is_signed (const ir_mode *mode);
-/** Returns 1 if @p mode is for floatingpoint numbers, 0 otherwise */
+/** Returns 1 if @p mode is for floating point numbers, 0 otherwise */
 FIRM_API int mode_is_float (const ir_mode *mode);
 /** Returns 1 if @p mode is for integer numbers, 0 otherwise */
 FIRM_API int mode_is_int (const ir_mode *mode);
@@ -401,7 +401,7 @@ FIRM_API void set_reference_mode_unsigned_eq(ir_mode *ref_mode, ir_mode *int_mod
  * Returns size of mantissa in bits (for float modes).
  * Note: This is the number of bits used after the leading one. So the actual
  * accuracy of the significand is get_mode_mantissa_size()+1. The number of bits
- * used in the encoding depends on whether the floatingpoint mode has an implicit
+ * used in the encoding depends on whether the floating point mode has an implicit
  * (ieee754) or explicit (x86_extended) encoding of the leading one.
  */
 FIRM_API unsigned get_mode_mantissa_size(const ir_mode *mode);
