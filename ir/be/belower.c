@@ -552,8 +552,12 @@ static int push_through_perm(ir_node *perm)
 	 * the Perm, increasing the register pressure by one.
 	 */
 	sched_foreach_reverse_before(perm, irn) {
+		if (is_Phi(irn)) {
+			frontier = irn;
+			goto found_front;
+		}
 		be_foreach_use(irn, cls, in_req_, op, op_req_,
-			if (is_Phi(irn) || !be_values_interfere(lv, op, one_proj)) {
+			if (!be_values_interfere(lv, op, one_proj)) {
 				frontier = irn;
 				goto found_front;
 			}
