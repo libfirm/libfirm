@@ -973,11 +973,11 @@ static const char *get_reg_name(unsigned reg_index)
 	return arch_register_for_index(cls, reg_index)->name;
 }
 
-static void print_parcopy(unsigned *permutation_orig, unsigned *n_used_orig)
+static void print_parcopy(unsigned *parcopy_orig, unsigned *n_used_orig)
 {
-	unsigned permutation[n_regs];
+	unsigned parcopy[n_regs];
 	unsigned n_used[n_regs];
-	memcpy(permutation, permutation_orig, sizeof(unsigned) * n_regs);
+	memcpy(parcopy, parcopy_orig, sizeof(unsigned) * n_regs);
 	memcpy(n_used, n_used_orig, sizeof(unsigned) * n_regs);
 
 	for (unsigned i = 0; i < n_regs; ++i)
@@ -986,7 +986,7 @@ static void print_parcopy(unsigned *permutation_orig, unsigned *n_used_orig)
 
 	unsigned comp[n_regs];
 	for (unsigned r = 0; r < n_regs; ) {
-		if (permutation[r] == r || n_used[r] > 0) {
+		if (parcopy[r] == r || n_used[r] > 0) {
 			++r;
 			continue;
 		}
@@ -995,9 +995,9 @@ static void print_parcopy(unsigned *permutation_orig, unsigned *n_used_orig)
 		unsigned len = 0;
 		comp[len++] = r;
 		unsigned s = r;
-		while (n_used[s] == 0 && permutation[s] != s) {
-			unsigned src = permutation[s];
-			permutation[s] = s;
+		while (n_used[s] == 0 && parcopy[s] != s) {
+			unsigned src = parcopy[s];
+			parcopy[s] = s;
 			comp[len++] = src;
 			assert(n_used[src] > 0);
 			--n_used[src];
@@ -1018,7 +1018,7 @@ static void print_parcopy(unsigned *permutation_orig, unsigned *n_used_orig)
 
 	/* Only cycles left. */
 	for (unsigned r = 0; r < n_regs; ) {
-		if (permutation[r] == r) {
+		if (parcopy[r] == r) {
 			++r;
 			continue;
 		}
@@ -1027,10 +1027,10 @@ static void print_parcopy(unsigned *permutation_orig, unsigned *n_used_orig)
 
 		unsigned len = 0;
 		unsigned s = r;
-		while (permutation[s] != s) {
-			unsigned src = permutation[s];
+		while (parcopy[s] != s) {
+			unsigned src = parcopy[s];
 			comp[len++] = s;
-			permutation[s] = s;
+			parcopy[s] = s;
 			s = src;
 		}
 
@@ -1046,29 +1046,28 @@ static void print_parcopy(unsigned *permutation_orig, unsigned *n_used_orig)
 	}
 }
 
-/* TODO: Are self-loops correctly handled? */
-static void mark_cycle_parts(bool *part_of_cycle, unsigned *permutation_orig,
+static void mark_cycle_parts(bool *part_of_cycle, unsigned *parcopy_orig,
                              unsigned *n_used_orig)
 {
-	unsigned permutation[n_regs];
+	unsigned parcopy[n_regs];
 	unsigned n_used[n_regs];
-	memcpy(permutation, permutation_orig, sizeof(unsigned) * n_regs);
+	memcpy(parcopy, parcopy_orig, sizeof(unsigned) * n_regs);
 	memcpy(n_used, n_used_orig, sizeof(unsigned) * n_regs);
 	memset(part_of_cycle, 0, sizeof(bool) * n_regs);
 
 	for (unsigned r = 0; r < n_regs; ) {
-		if (permutation[r] == r || n_used[r] > 0) {
+		if (parcopy[r] == r || n_used[r] > 0) {
 			++r;
 			continue;
 		}
 
 		/* Perfect, end of a chain. */
 		unsigned s = r;
-		while (n_used[s] == 0 && permutation[s] != s) {
+		while (n_used[s] == 0 && parcopy[s] != s) {
 			part_of_cycle[s] = false;
 
-			unsigned src = permutation[s];
-			permutation[s] = s;
+			unsigned src = parcopy[s];
+			parcopy[s] = s;
 			assert(n_used[src] > 0);
 			--n_used[src];
 			s = src;
@@ -1077,7 +1076,7 @@ static void mark_cycle_parts(bool *part_of_cycle, unsigned *permutation_orig,
 
 	/* Only cycles left. */
 	for (unsigned r = 0; r < n_regs; ) {
-		if (permutation[r] == r) {
+		if (parcopy[r] == r) {
 			if (n_used[r] > 0)
 				part_of_cycle[r] = true;
 			++r;
@@ -1087,10 +1086,10 @@ static void mark_cycle_parts(bool *part_of_cycle, unsigned *permutation_orig,
 		assert(n_used[r] == 1);
 
 		unsigned s = r;
-		while (permutation[s] != s) {
+		while (parcopy[s] != s) {
 			part_of_cycle[s] = true;
-			unsigned src = permutation[s];
-			permutation[s] = s;
+			unsigned src = parcopy[s];
+			parcopy[s] = s;
 			s = src;
 		}
 	}
@@ -1240,7 +1239,7 @@ static void permute_values_perms(ir_nodeset_t *live_nodes, ir_node *before,
 	DB((dbg_icore, LEVEL_2, "Current parallel copy:\n"));
 	print_parcopy(parcopy, n_used);
 
-	/* Step 3: The remaining permutation must be suitable for a Perm. */
+	/* Step 3: The remaining parcopy must be suitable for a Perm. */
 	unsigned perm_size = 0;
 	ir_node *ins[n_regs];
 	for (unsigned r = 0; r < n_regs; ++r) {
@@ -1250,7 +1249,7 @@ static void permute_values_perms(ir_nodeset_t *live_nodes, ir_node *before,
 	}
 
 	if (perm_size > 0) {
-		DB((dbg_icore, LEVEL_2, "Creating Perm using permutation.\n"));
+		DB((dbg_icore, LEVEL_2, "Creating Perm using parcopy.\n"));
 
 		ir_node *perm = be_new_Perm(cls, block, perm_size, ins);
 		sched_add_before(before, perm);
@@ -1265,7 +1264,6 @@ static void permute_values_perms(ir_nodeset_t *live_nodes, ir_node *before,
 				use_reg(proj, reg, /* width = */ 1);
 
 				assert(n_used[src] == 1);
-				// TODO: When to do?
 				if (parcopy[src] == src) {
 					DB((dbg_icore, LEVEL_2, "Perm: Freeing register %s of value %+F\n", get_reg_name(src), ins[input]));
 					free_reg_of_value(assignments[src]);

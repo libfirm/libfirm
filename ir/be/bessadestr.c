@@ -71,12 +71,12 @@ static const char *get_reg_name(unsigned index)
 	return arch_register_for_index(the_env->cls, index)->name;
 }
 
-static void print_parcopy(unsigned *permutation_orig, unsigned *n_used_orig)
+static void print_parcopy(unsigned *parcopy_orig, unsigned *n_used_orig)
 {
 	const unsigned n_regs = the_env->cls->n_regs;
-	unsigned permutation[n_regs];
+	unsigned parcopy[n_regs];
 	unsigned n_used[n_regs];
-	memcpy(permutation, permutation_orig, sizeof(unsigned) * n_regs);
+	memcpy(parcopy, parcopy_orig, sizeof(unsigned) * n_regs);
 	memcpy(n_used, n_used_orig, sizeof(unsigned) * n_regs);
 
 	for (unsigned i = 0; i < n_regs; ++i)
@@ -85,7 +85,7 @@ static void print_parcopy(unsigned *permutation_orig, unsigned *n_used_orig)
 
 	unsigned comp[n_regs];
 	for (unsigned r = 0; r < n_regs; ) {
-		if (permutation[r] == r || n_used[r] > 0) {
+		if (parcopy[r] == r || n_used[r] > 0) {
 			++r;
 			continue;
 		}
@@ -94,9 +94,9 @@ static void print_parcopy(unsigned *permutation_orig, unsigned *n_used_orig)
 		unsigned len = 0;
 		comp[len++] = r;
 		unsigned s = r;
-		while (n_used[s] == 0 && permutation[s] != s) {
-			unsigned src = permutation[s];
-			permutation[s] = s;
+		while (n_used[s] == 0 && parcopy[s] != s) {
+			unsigned src = parcopy[s];
+			parcopy[s] = s;
 			comp[len++] = src;
 			assert(n_used[src] > 0);
 			--n_used[src];
@@ -117,7 +117,7 @@ static void print_parcopy(unsigned *permutation_orig, unsigned *n_used_orig)
 
 	/* Only cycles left. */
 	for (unsigned r = 0; r < n_regs; ) {
-		if (permutation[r] == r) {
+		if (parcopy[r] == r) {
 			++r;
 			continue;
 		}
@@ -126,10 +126,10 @@ static void print_parcopy(unsigned *permutation_orig, unsigned *n_used_orig)
 
 		unsigned len = 0;
 		unsigned s = r;
-		while (permutation[s] != s) {
-			unsigned src = permutation[s];
+		while (parcopy[s] != s) {
+			unsigned src = parcopy[s];
 			comp[len++] = s;
-			permutation[s] = s;
+			parcopy[s] = s;
 			s = src;
 		}
 
@@ -145,29 +145,29 @@ static void print_parcopy(unsigned *permutation_orig, unsigned *n_used_orig)
 	}
 }
 
-static void mark_cycle_parts(bool *part_of_cycle, unsigned *permutation_orig,
+static void mark_cycle_parts(bool *part_of_cycle, unsigned *parcopy_orig,
                              unsigned *n_used_orig)
 {
 	const unsigned n_regs = the_env->cls->n_regs;
-	unsigned permutation[n_regs];
+	unsigned parcopy[n_regs];
 	unsigned n_used[n_regs];
-	memcpy(permutation, permutation_orig, sizeof(unsigned) * n_regs);
+	memcpy(parcopy, parcopy_orig, sizeof(unsigned) * n_regs);
 	memcpy(n_used, n_used_orig, sizeof(unsigned) * n_regs);
 	memset(part_of_cycle, 0, sizeof(bool) * n_regs);
 
 	for (unsigned r = 0; r < n_regs; ) {
-		if (permutation[r] == r || n_used[r] > 0) {
+		if (parcopy[r] == r || n_used[r] > 0) {
 			++r;
 			continue;
 		}
 
 		/* Perfect, end of a chain. */
 		unsigned s = r;
-		while (n_used[s] == 0 && permutation[s] != s) {
+		while (n_used[s] == 0 && parcopy[s] != s) {
 			part_of_cycle[s] = false;
 
-			unsigned src = permutation[s];
-			permutation[s] = s;
+			unsigned src = parcopy[s];
+			parcopy[s] = s;
 			assert(n_used[src] > 0);
 			--n_used[src];
 			s = src;
@@ -176,7 +176,7 @@ static void mark_cycle_parts(bool *part_of_cycle, unsigned *permutation_orig,
 
 	/* Only cycles left. */
 	for (unsigned r = 0; r < n_regs; ) {
-		if (permutation[r] == r) {
+		if (parcopy[r] == r) {
 			if (n_used[r] > 0)
 				part_of_cycle[r] = true;
 			++r;
@@ -186,10 +186,10 @@ static void mark_cycle_parts(bool *part_of_cycle, unsigned *permutation_orig,
 		assert(n_used[r] == 1);
 
 		unsigned s = r;
-		while (permutation[s] != s) {
+		while (parcopy[s] != s) {
 			part_of_cycle[s] = true;
-			unsigned src = permutation[s];
-			permutation[s] = s;
+			unsigned src = parcopy[s];
+			parcopy[s] = s;
 			s = src;
 		}
 	}
@@ -240,9 +240,9 @@ static unsigned find_longest_chain(unsigned *parcopy, unsigned *n_used,
 static void impl_parallel_copy(ir_node *before, unsigned *parcopy, unsigned *n_used,
                                ir_node **phis, ir_node **phi_args, unsigned prednr)
 {
-	ir_node *block = get_nodes_block(before);
-	const unsigned n_regs = the_env->cls->n_regs;
-	be_lv_t *lv = be_get_irg_liveness(the_env->irg);
+	ir_node        *block  = get_nodes_block(before);
+	const unsigned  n_regs = the_env->cls->n_regs;
+	be_lv_t        *lv     = be_get_irg_liveness(the_env->irg);
 
 	unsigned restore_srcs[n_regs];
 	unsigned restore_dsts[n_regs];
@@ -321,7 +321,9 @@ static void impl_parallel_copy(ir_node *before, unsigned *parcopy, unsigned *n_u
 	DB((dbg_icore, LEVEL_2, "Finished searching for forks.\n"));
 
 	DB((dbg_icore, LEVEL_2, "Current parallel copy:\n"));
+#ifndef NDEBUG
 	print_parcopy(parcopy, n_used);
+#endif
 
 	/* Step 3: The remaining parallel copy must be suitable for a Perm. */
 	unsigned perm_size = 0;
@@ -350,8 +352,6 @@ static void impl_parallel_copy(ir_node *before, unsigned *parcopy, unsigned *n_u
 				assert(n_used[src] == 1);
 				if (parcopy[src] == src) {
 					DB((dbg_icore, LEVEL_2, "Perm: Freeing register %s of value %+F\n", get_reg_name(src), ins[input]));
-					// TODO: What to do here?
-					// free_reg_of_value(assignments[src]);
 					be_liveness_update(lv, phi_args[src]);
 				}
 
@@ -425,19 +425,20 @@ static void analyze_parallel_copies_walker(ir_node *block, void *data)
 		unsigned keep_val[n_regs];
 		ir_node *phi_args[n_regs];
 		ir_node *phis[n_regs];
+
 		for (unsigned i = 0; i < n_regs; ++i) {
 			parcopy[i] = i;
-			n_used[i] = 0;
-			keep_val[i] = 0;
-			phi_args[i] = NULL;
-			phis[i] = NULL;
 		}
+		memset(n_used, 0, n_regs * sizeof(unsigned));
+		memset(keep_val, 0, n_regs * sizeof(unsigned));
+		memset(phi_args, 0, n_regs * sizeof(ir_node*));
+		memset(phis, 0, n_regs * sizeof(ir_node*));
 
 		for (ir_node *phi = (ir_node *) get_irn_link(block); phi != NULL;
 		     phi = (ir_node *) get_irn_link(phi)) {
 
 			const arch_register_t *phi_reg = arch_get_irn_register(phi);
-			ir_node *arg = get_irn_n(phi, i);
+			ir_node               *arg     = get_irn_n(phi, i);
 			const arch_register_t *arg_reg = arch_get_irn_register(arg);
 
 			if (phi_reg == arg_reg
@@ -469,7 +470,9 @@ static void analyze_parallel_copies_walker(ir_node *block, void *data)
 		ir_node *pred   = get_Block_cfgpred_block(block, i);
 		ir_node *before = be_get_end_of_block_insertion_point(pred);
 		DB((dbg_icore, LEVEL_2, "copies for %+F:\n", pred));
+#ifndef NDEBUG
 		print_parcopy(parcopy, n_used);
+#endif
 		impl_parallel_copy(before, parcopy, n_used, phis, phi_args, i);
 	}
 }
