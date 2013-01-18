@@ -26,6 +26,7 @@
 #include "bitset.h"
 
 #include "pset.h"
+#include "pmap.h"
 #include "list.h"
 #include "obst.h"
 #include "vrp.h"
@@ -634,6 +635,7 @@ struct ir_prog {
 	size_t max_irg_idx;                  /**< highest unused irg index */
 	long max_node_nr;                    /**< to generate unique numbers for nodes. */
 	unsigned dump_nr;                    /**< number of program info dumps */
+	pmap *compilerlib_entities;          /**< maps ident* to ir_entity* of the compilerlib */
 #ifndef NDEBUG
 	irp_resources_t reserved_resources;  /**< Bitset for tracking used global resources. */
 #endif

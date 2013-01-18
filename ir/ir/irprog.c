@@ -48,6 +48,7 @@ static ir_prog *new_incomplete_ir_prog(void)
 #ifndef NDEBUG
 	res->reserved_resources = IRP_RESOURCE_NONE;
 #endif
+	res->compilerlib_entities = pmap_create();
 
 	return res;
 }
@@ -125,6 +126,7 @@ void free_ir_prog(void)
 
 	DEL_ARR_F(irp->global_asms);
 
+	pmap_destroy(irp->compilerlib_entities);
 	irp->name           = NULL;
 	irp->const_code_irg = NULL;
 	irp->kind           = k_BAD;

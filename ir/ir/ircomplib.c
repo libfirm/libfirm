@@ -14,30 +14,54 @@
 #include "irprog.h"
 #include "iroptimize.h"
 #include "typerep.h"
+#include "irtypes.h"
 
 #include <assert.h>
 
 /* The default implementation does not set a different ld name. */
-static ir_entity *compilerlib_entity_def_creator(ident *id, ir_type *mt)
+static ident *compilerlib_name_mangle_default(ident *id, ir_type *mt)
 {
-	return new_entity(get_glob_type(), id, mt);
+	(void)mt;
+	return id;
 }
 
-static compilerlib_entity_creator_t creator = compilerlib_entity_def_creator;
+static compilerlib_name_mangle_t compilerlib_mangler
+	= compilerlib_name_mangle_default;
 
-void set_compilerlib_entity_creator(compilerlib_entity_creator_t c)
+void set_compilerlib_name_mangle(compilerlib_name_mangle_t mangler)
 {
-	assert(c != NULL);
-
-	creator = c;
+	assert(mangler != NULL);
+	compilerlib_mangler = mangler;
 }
 
-compilerlib_entity_creator_t get_compilerlib_entity_creator()
+compilerlib_name_mangle_t get_compilerlib_name_mangle(void)
 {
-	return creator;
+	return compilerlib_mangler;
 }
 
 ir_entity *create_compilerlib_entity(ident *id, ir_type *mt)
 {
-	return creator(id, mt);
+	ir_entity *entity = pmap_get(ir_entity, irp->compilerlib_entities, id);
+	if (entity != NULL)
+		return entity;
+
+	/* let frontend mangle the name */
+	ident *ld_name = compilerlib_mangler(id, mt);
+	/* search for an existing entity */
+	ir_type *glob = get_glob_type();
+	for (size_t n_members = get_compound_n_members(glob), i = 0;
+	     i < n_members; ++i) {
+	    ir_entity *member = get_compound_member(glob, i);
+	    if (get_entity_ld_ident(member) == ld_name) {
+			entity = member;
+			goto found;
+		}
+	}
+	entity = new_entity(glob, id, mt);
+	set_entity_ld_ident(entity, ld_name);
+	set_entity_visibility(entity, ir_visibility_external);
+
+found:
+	pmap_insert(irp->compilerlib_entities, id, entity);
+	return entity;
 }
