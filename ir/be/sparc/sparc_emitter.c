@@ -573,7 +573,8 @@ static ir_node *pick_delay_slot_for(ir_node *node)
 				ir_node *proj = get_Block_cfgpred(succ, 0);
 				long     nr   = get_Proj_proj(proj);
 				if ((nr == pn_sparc_Bicc_true || nr == pn_sparc_fbfcc_true)
-					&& be_can_move_up(heights, schedpoint, succ)) {
+					&& be_can_move_up(heights, schedpoint, succ)
+					&& !is_sparc_Permi(schedpoint) && !is_sparc_Permi23(schedpoint)) {
 					/* we can use it with the annul flag */
 					sparc_jmp_cond_attr_t *attr = get_sparc_jmp_cond_attr(node);
 					attr->annul_delay_slot = true;
