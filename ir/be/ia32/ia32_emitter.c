@@ -198,7 +198,7 @@ static void ia32_emit_entity(ir_entity *entity, int no_pic_adjust)
 		}
 	}
 
-	if (do_pic && !no_pic_adjust) {
+	if (do_pic && !no_pic_adjust && get_entity_type(entity) != get_code_type()) {
 		be_emit_char('-');
 		be_emit_string(pic_base_label);
 	}

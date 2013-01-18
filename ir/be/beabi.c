@@ -1705,6 +1705,9 @@ static void fix_pic_symconsts(ir_node *node, void *data)
 			                                            trampoline);
 			set_irn_n(node, i, trampoline_const);
 			continue;
+		} else if (get_entity_type(entity) == get_code_type()) {
+			/* block labels can always be addressed directly */
+			continue;
 		}
 
 		/* everything else is accessed relative to EIP */
