@@ -8,6 +8,22 @@
  * @brief       Compute an estimate of basic block executions.
  * @author      Adam M. Szalkowski
  * @date        28.05.2006
+ *
+ * Estimate execution frequencies. We do this by creating a system of linear
+ * equations with the following observations:
+ *   - Each edge leaving a block (block successors, not block_cfgpreds) has
+ *     a probabilty between 0 and 1.0 that it is taken.
+ *   - The execution frequencies of a basic block is the sum of all execution
+ *     frequencies of its predecessor blocks scaled by the probability factors
+ *     of the edges to the predecessors.
+ *   - All outgoing probabilities have a sum of 1.0.
+ * We then assign equaly distributed probablilities for normal controlflow
+ * splits, and higher probabilities for backedges.
+ *
+ * Special case: In case of endless loops or "noreturn" calls some blocks have
+ * no path to the end node, which produces undesired results (0, infinite
+ * execution frequencies). We aleviate that by adding artificial edges from kept
+ * blocks with a path to end.
  */
 #include "config.h"
 
@@ -42,6 +58,7 @@
 #define EPSILON          1e-5
 #define UNDEF(x)         (fabs(x) < EPSILON)
 #define SEIDEL_TOLERANCE 1e-7
+#define KEEP_FAC         0.1
 
 #define MAX_INT_FREQ 1000000
 
@@ -102,44 +119,62 @@ static double *solve_lgs(gs_matrix_t *mat, double *x, int size)
 	return x;
 }
 
-/*
- * Determine probability that predecessor pos takes this cf edge.
- */
-static double get_cf_probability(const ir_node *bb, int pos, double loop_weight)
+static bool has_path_to_end(const ir_node *block)
 {
-	double         sum = 0.0;
-	double         cur = 1.0;
-	double         inv_loop_weight = 1./loop_weight;
-	const ir_node *pred = get_Block_cfgpred_block(bb, pos);
-	const ir_loop *pred_loop;
-	int            pred_depth;
-	const ir_loop *loop;
-	int            depth;
-	int            d;
+	return Block_block_visited(block);
+}
 
-	if (is_Bad(pred))
-		return 0;
+static bool is_kept_block(const ir_node *block)
+{
+	return irn_visited(block);
+}
 
-	loop       = get_irn_loop(bb);
-	depth      = get_loop_depth(loop);
-	pred_loop  = get_irn_loop(pred);
-	pred_depth = get_loop_depth(pred_loop);
+static double get_sum_succ_factors(const ir_node *block, double inv_loop_weight)
+{
+	const ir_loop *loop  = get_irn_loop(block);
+	const int      depth = get_loop_depth(loop);
 
-	for (d = depth; d < pred_depth; ++d) {
-		cur *= inv_loop_weight;
-	}
-
-	foreach_block_succ(pred, edge) {
+	double sum = 0.0;
+	foreach_block_succ(block, edge) {
 		const ir_node *succ       = get_edge_src_irn(edge);
 		const ir_loop *succ_loop  = get_irn_loop(succ);
 		int            succ_depth = get_loop_depth(succ_loop);
 
-		double         fac = 1.0;
-		for (d = succ_depth; d < pred_depth; ++d) {
+		double fac = 1.0;
+		for (int d = succ_depth; d < depth; ++d) {
 			fac *= inv_loop_weight;
 		}
 		sum += fac;
 	}
+
+	/* we add an artifical edge from each kept block which has no path to the
+	 * end node */
+	if (is_kept_block(block) && !has_path_to_end(block))
+		sum += KEEP_FAC;
+
+	return sum;
+}
+
+/*
+ * Determine probability that predecessor pos takes this cf edge.
+ */
+static double get_cf_probability(const ir_node *bb, int pos,
+                                 double inv_loop_weight)
+{
+	const ir_node *pred = get_Block_cfgpred_block(bb, pos);
+	if (is_Bad(pred))
+		return 0;
+
+	const ir_loop *loop       = get_irn_loop(bb);
+	const int      depth      = get_loop_depth(loop);
+	const ir_loop *pred_loop  = get_irn_loop(pred);
+	const int      pred_depth = get_loop_depth(pred_loop);
+
+	double cur = 1.0;
+	for (int d = depth; d < pred_depth; ++d) {
+		cur *= inv_loop_weight;
+	}
+	double sum = get_sum_succ_factors(pred, inv_loop_weight);
 
 	return cur/sum;
 }
@@ -220,6 +255,19 @@ int get_block_execfreq_int(const ir_execfreq_int_factors *factors,
 	return res;
 }
 
+static void block_walk_no_keeps(ir_node *block)
+{
+	if (Block_block_visited(block))
+		return;
+	mark_Block_block_visited(block);
+
+	for (int n_block_cfgspreds = get_Block_n_cfgpreds(block), i = 0;
+	     i < n_block_cfgspreds; ++i) {
+	    ir_node *cfgpred_block = get_Block_cfgpred_block(block, i);
+	    block_walk_no_keeps(cfgpred_block);
+	}
+}
+
 void ir_estimate_execfreq(ir_graph *irg)
 {
 	double loop_weight = 10.0;
@@ -232,8 +280,7 @@ void ir_estimate_execfreq(ir_graph *irg)
 	/* compute a DFS.
 	 * using a toposort on the CFG (without back edges) will propagate
 	 * the values better for the gauss/seidel iteration.
-	 * => they can "flow" from start to end.
-	 */
+	 * => they can "flow" from start to end. */
 	dfs_t *dfs = dfs_new(&absgraph_irg_cfg_succ, irg);
 
 	int          size = dfs_get_n_nodes(dfs);
@@ -241,7 +288,25 @@ void ir_estimate_execfreq(ir_graph *irg)
 
 	ir_node *const start_block = get_irg_start_block(irg);
 	ir_node *const end_block   = get_irg_end_block(irg);
+	const int      start_idx   = size - dfs_get_post_num(dfs, start_block) - 1;
 
+	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_VISITED
+	                     | IR_RESOURCE_IRN_VISITED);
+	inc_irg_block_visited(irg);
+	/* mark all blocks reachable from end_block as (block)visited
+	 * (so we can detect places which like endless-loops/noreturn calls which
+	 *  do not reach the End block) */
+	block_walk_no_keeps(end_block);
+	/* mark al kept blocks as (node)visited */
+	const ir_node *end          = get_irg_end(irg);
+	int const      n_keepalives = get_End_n_keepalives(end);
+	for (int k = n_keepalives - 1; k >= 0; --k) {
+		ir_node *keep = get_End_keepalive(end, k);
+		if (is_Block(keep))
+			mark_irn_visited(keep);
+	}
+
+	double const inv_loop_weight = 1.0 / loop_weight;
 	for (int idx = size - 1; idx >= 0; --idx) {
 		const ir_node *bb = (ir_node*)dfs_get_post_num_node(dfs, size-idx-1);
 
@@ -249,43 +314,40 @@ void ir_estimate_execfreq(ir_graph *irg)
 		for (int i = get_Block_n_cfgpreds(bb) - 1; i >= 0; --i) {
 			const ir_node *pred           = get_Block_cfgpred_block(bb, i);
 			int            pred_idx       = size - dfs_get_post_num(dfs, pred)-1;
-			double         cf_probability = get_cf_probability(bb, i, loop_weight);
+			double         cf_probability = get_cf_probability(bb, i, inv_loop_weight);
 			gs_matrix_set(mat, idx, pred_idx, cf_probability);
 		}
 		/* ... equals my execution frequency */
 		gs_matrix_set(mat, idx, idx, -1.0);
 
-		/* Add an edge from end to start.
-		 * The problem is then an eigenvalue problem:
-		 * Solve A*x = 1*x => (A-I)x = 0
-		 */
 		if (bb == end_block) {
-			int const s_idx = size - dfs_get_post_num(dfs, start_block) - 1;
-			gs_matrix_set(mat, s_idx, idx, 1.0);
+			/* Add an edge from end to start.
+			 * The problem is then an eigenvalue problem:
+			 * Solve A*x = 1*x => (A-I)x = 0
+			 */
+			gs_matrix_set(mat, start_idx, idx, 1.0);
+
+			/* add artifical edges from "kept blocks without a path to end"
+			 * to end */
+			for (int k = n_keepalives - 1; k >= 0; --k) {
+				ir_node *keep = get_End_keepalive(end, k);
+				if (!is_Block(keep) || has_path_to_end(keep))
+					continue;
+
+				double sum      = get_sum_succ_factors(keep, inv_loop_weight);
+				double fac      = KEEP_FAC/sum;
+				int    keep_idx = size - dfs_get_post_num(dfs, keep)-1;
+				//ir_printf("SEdge %+F -> %+F, fak: %f\n", keep, end_block, fac);
+				//gs_matrix_set(mat, idx, keep_idx, fac);
+				gs_matrix_set(mat, start_idx, keep_idx, fac);
+			}
 		}
-	}
-
-	/*
-	 * Also add an edge for each kept block to start.
-	 *
-	 * This avoid strange results for e.g. an irg containing a exit()-call
-	 * which block has no cfg successor.
-	 */
-	int            s_idx        = size - dfs_get_post_num(dfs, start_block)-1;
-	const ir_node *end          = get_irg_end(irg);
-	int            n_keepalives = get_End_n_keepalives(end);
-	for (int idx = n_keepalives - 1; idx >= 0; --idx) {
-		ir_node *keep = get_End_keepalive(end, idx);
-		if (!is_Block(keep) || get_irn_n_edges_kind(keep, EDGE_KIND_BLOCK) > 0)
-			continue;
-
-		int k_idx = size-dfs_get_post_num(dfs, keep)-1;
-		if (k_idx > 0)
-			gs_matrix_set(mat, s_idx, k_idx, 1.0);
 	}
 
 	/* solve the system and delete the matrix */
 	double *x = XMALLOCN(double, size);
+	//ir_fprintf(stderr, "%+F:\n", irg);
+	//gs_matrix_dump(mat, 100, 100, stderr);
 	solve_lgs(mat, x, size);
 	gs_delete_matrix(mat);
 
@@ -294,10 +356,8 @@ void ir_estimate_execfreq(ir_graph *irg)
 	 * (note: start_idx is != 0 in strange cases involving endless loops,
 	 *  probably a misfeature/bug)
 	 */
-	int    start_idx  = size - dfs_get_post_num(dfs, start_block) - 1;
 	double start_freq = x[start_idx];
 	double norm       = start_freq != 0.0 ? 1.0 / start_freq : 1.0;
-
 	for (int idx = size - 1; idx >= 0; --idx) {
 		ir_node *bb = (ir_node *) dfs_get_post_num_node(dfs, size - idx - 1);
 
@@ -305,6 +365,8 @@ void ir_estimate_execfreq(ir_graph *irg)
 		double freq = fabs(x[idx]) * norm;
 		set_block_execfreq(bb, freq);
 	}
+
+	ir_free_resources(irg, IR_RESOURCE_BLOCK_VISITED | IR_RESOURCE_IRN_VISITED);
 
 	dfs_free(dfs);
 
