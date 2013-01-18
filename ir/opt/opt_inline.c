@@ -413,7 +413,9 @@ int inline_method(ir_node *const call, ir_graph *called_graph)
 		ir_type *param_tp = get_method_param_type(mtp, i);
 		ir_mode *mode     = get_type_mode(param_tp);
 
-		if (!is_compound_type(param_tp) && mode != get_irn_mode(arg)) {
+		if (!is_compound_type(param_tp)
+		    && !is_Array_type(param_tp)
+		    && mode != get_irn_mode(arg)) {
 			arg = new_r_Conv(block, arg, mode);
 		}
 		args_in[i] = arg;
