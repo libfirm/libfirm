@@ -144,30 +144,60 @@ static void lower_perm_node(ir_node *const perm, lower_env_t *const env)
 		return;
 	}
 
-	/* Decompose cycles into transpositions. */
-	for (unsigned i = 0; i != n_regs; ++i) {
-		if (!rbitset_is_set(inregs, i))
+	/* Decompose cycles into transpositions.
+	 *
+	 * Use as many independent transpositions as possible and do not thread one
+	 * value through all transpositions.
+	 * I.e., for the first level of decomposition of a n-Perm do floor(n/2)
+	 * transpositions. This puts floor(n/2) values into the right registers.
+	 * Repeat this for all remaining values until all have the right register.
+	 * This way no value is threaded through more than ceil(ld(n/2))
+	 * transpositions (compared to one value being threaded through all
+	 * transpositions using a naive decomposition).
+	 *
+	 * good:            bad:
+	 * r1 r2 r3 r4 r5   r1 r2 r3 r4 r5
+	 * +---+ +---+      +---+
+	 *    +------+         +---+
+	 *          +---+         +---+
+	 * r2 r3 r4 r5 r1            +---+
+	 *                  r2 r3 r4 r5 r1
+	 */
+	for (unsigned i = 0; i != n_regs;) {
+		if (!rbitset_is_set(inregs, i)) {
+			++i;
 			continue;
-		rbitset_clear(inregs, i);
-		reg_pair_t const *const  p    = oregmap[i];
-		reg_pair_t        const *q    = oregmap[p->in_reg->index];
-		ir_node                 *t    = p->in_node;
-		ir_mode          *const  mode = get_irn_mode(p->out_node);
-		do {
+		}
+		reg_pair_t             *p     = oregmap[i];
+		reg_pair_t const *const start = p;
+		ir_mode          *const mode  = get_irn_mode(p->out_node);
+		for (;;) {
+			reg_pair_t const *const q = oregmap[p->in_reg->index];
+			if (q == start)
+				break;
+
 			rbitset_clear(inregs, q->out_reg->index);
-			ir_node *const in[]  = { t, q->in_node };
+			p->in_reg = q->in_reg;
+
+			ir_node *const in[]  = { p->in_node, q->in_node };
 			ir_node *const xchg  = be_new_Perm(cls, block, ARRAY_SIZE(in), in);
 			DBG((dbg, LEVEL_2, "%+F: inserting %+F for %+F (%s) and %+F (%s)\n", perm, xchg, in[0], arch_get_irn_register(in[0]), in[1], arch_get_irn_register(in[1])));
-			ir_node *const projp = new_r_Proj(xchg, mode, 0);
+			p->in_node = new_r_Proj(xchg, mode, 0);
 			ir_node *const projq = new_r_Proj(xchg, mode, 1);
 			arch_set_irn_register_out(xchg, 0, q->in_reg);
 			arch_set_irn_register_out(xchg, 1, q->out_reg);
 			exchange(q->out_node, projq);
 			sched_add_before(perm, xchg);
-			t = projp;
-			q = oregmap[q->in_reg->index];
-		} while (p != q);
-		exchange(q->out_node, t);
+
+			p = oregmap[q->in_reg->index];
+			if (p == start) {
+				if (start->in_reg == start->out_reg) {
+					rbitset_clear(inregs, q->in_reg->index);
+					exchange(start->out_node, start->in_node);
+				}
+				break;
+			}
+		}
 	}
 
 done:
