@@ -557,9 +557,6 @@ static void write_mode_arithmetic(write_env_t *env, ir_mode_arithmetic arithmeti
 	fputc(' ', env->file);
 }
 
-static void write_type(write_env_t *env, ir_type *tp);
-static void write_entity(write_env_t *env, ir_entity *entity);
-
 static void write_type_common(write_env_t *env, ir_type *tp)
 {
 	fputc('\t', env->file);
@@ -571,6 +568,8 @@ static void write_type_common(write_env_t *env, ir_type *tp)
 	write_type_state(env, get_type_state(tp));
 	write_unsigned(env, tp->flags);
 }
+
+static void write_type(write_env_t *env, ir_type *tp);
 
 static void write_type_primitive(write_env_t *env, ir_type *tp)
 {

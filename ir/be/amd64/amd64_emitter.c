@@ -193,7 +193,7 @@ typedef enum amd64_emit_mod_t {
 	EMIT_RESPECT_LS  = 1U << 0,
 	EMIT_IGNORE_MODE = 1U << 1,
 } amd64_emit_mod_t;
-ENUM_BITSET(amd64_emit_mod_t);
+ENUM_BITSET(amd64_emit_mod_t)
 
 void amd64_emitf(ir_node const *const node, char const *fmt, ...)
 {
