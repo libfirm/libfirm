@@ -639,6 +639,7 @@ static int tv_ld2(ir_tarval *tv, int bits)
 #define CNV(a, m) tarval_convert_to(a, m)
 #define ONE(m)    get_mode_one(m)
 #define ZERO(m)   get_mode_null(m)
+#define AND(a, b) tarval_and(a, b)
 
 /** The result of a the magic() function. */
 struct ms {
@@ -727,80 +728,122 @@ static struct ms magic(ir_tarval *d)
 	return mag;
 }
 
-/** The result of the magicu() function. */
-struct mu {
-	ir_tarval *M;     /**< magic add constant */
-	int s;            /**< shift amount */
-	int need_add;     /**< add indicator */
-};
-
 /**
  * Unsigned division by constant d: calculate the Magic multiplier M and the shift amount s
  *
- * see Hacker's Delight: 10-10 Integer Division by Constants: Incorporation into a Compiler (Unsigned)
+ * see Faster Unsigned Division by Constants (http://ridiculousfish.com/blog/posts/labor-of-division-episode-iii.html)
  */
-static struct mu magicu(ir_tarval *d)
+struct magicu_info
 {
-	ir_mode *mode   = get_tarval_mode(d);
-	int bits        = get_mode_size_bits(mode);
-	int p;
-	ir_tarval *nc, *delta, *q1, *r1, *q2, *r2;
-	ir_tarval *bits_minus_1, *two_bits_1, *seven_ff;
+	ir_tarval *multiplier; /* the "magic number" multiplier */
+	unsigned   pre_shift;  /* shift for the dividend before multiplying */
+	unsigned   post_shift; /* shift for the dividend after multiplying */
+	int        increment;  /* 0 or 1; if set then increment the numerator, using one of the two strategies */
+};
 
-	struct mu magu;
+static struct magicu_info compute_unsigned_magic_info(ir_tarval *divisor, unsigned num_bits)
+{
+	ir_mode *mode = get_tarval_mode(divisor);
 
-	tarval_int_overflow_mode_t rem = tarval_get_integer_overflow_mode();
+	/* divisor must be larger than zero and not a power of 2
+	 * D & (D-1) > 0 */
+	assert(get_tarval_long(AND(divisor, SUB(divisor, ONE(mode)))));
 
-	/* we need overflow mode to work correctly */
-	tarval_set_integer_overflow_mode(TV_OVERFLOW_WRAP);
+	/* The eventual result */
+	struct magicu_info result;
 
-	bits_minus_1 = new_tarval_from_long(bits - 1, mode);
-	two_bits_1   = SHL(get_mode_one(mode), bits_minus_1);
-	seven_ff     = SUB(two_bits_1, ONE(mode));
+	/* Bits in ir_tarval */
+	const unsigned UINT_BITS = get_mode_size_bits(mode);
 
-	magu.need_add = 0;                            /* initialize the add indicator */
-	nc = SUB(NEG(ONE(mode)), MOD(NEG(d), d));
-	p  = bits - 1;                                /* Init: p */
-	q1 = DIV(two_bits_1, nc);                     /* Init: q1 = 2^p/nc */
-	r1 = SUB(two_bits_1, MUL(q1, nc));            /* Init: r1 = rem(2^p, nc) */
-	q2 = DIV(seven_ff, d);                        /* Init: q2 = (2^p - 1)/d */
-	r2 = SUB(seven_ff, MUL(q2, d));               /* Init: r2 = rem(2^p - 1, d) */
+	/* The extra shift implicit in the difference between UINT_BITS and num_bits */
+	const unsigned extra_shift = UINT_BITS - num_bits;
 
-	do {
-		++p;
-		if (CMP(r1, SUB(nc, r1)) & ir_relation_greater_equal) {
-			q1 = ADD(ADD(q1, q1), ONE(mode));
-			r1 = SUB(ADD(r1, r1), nc);
+	/* The initial power of 2 is one less than the first one that can possibly work */
+	ir_tarval *initial_power_of_2 = SHL(ONE(mode), new_tarval_from_long(UINT_BITS - 1, mode));
+
+	/* The remainder and quotient of our power of 2 divided by divisor */
+	ir_tarval *quotient  = DIV(initial_power_of_2, divisor);
+	ir_tarval *remainder = MOD(initial_power_of_2, divisor);
+
+	/* ceil(log_2 D) */
+	unsigned ceil_log_2_D;
+
+	/* The magic info for the variant "round down" algorithm */
+	ir_tarval *down_multiplier = ZERO(mode);
+	unsigned   down_exponent   = 0;
+	int        has_magic_down  = 0;
+
+	/* Compute ceil(log_2 D) */
+	ceil_log_2_D = 0;
+	for (ir_tarval *tmp = divisor; CMP(tmp, ZERO(mode)) & ir_relation_greater; tmp = SHR(tmp, ONE(mode)))
+		ceil_log_2_D++;
+
+	/* Begin a loop that increments the exponent, until we find a power of 2 that works. */
+	unsigned exponent;
+	for (exponent = 0; ; exponent++) {
+		/* Quotient and remainder is from previous exponent; compute it for this exponent. */
+		ir_tarval *two = new_tarval_from_long(2, mode);
+		if (CMP(remainder, SUB(divisor, remainder)) & ir_relation_greater_equal) {
+			/* Doubling remainder will wrap around divisor */
+			quotient  = ADD(MUL(quotient, two), ONE(mode));
+			remainder = SUB(MUL(remainder, two), divisor);
+		} else {
+			/* Remainder will not wrap */
+			quotient  = MUL(quotient, two);
+			remainder = MUL(remainder, two);
 		}
-		else {
-			q1 = ADD(q1, q1);
-			r1 = ADD(r1, r1);
+
+		/* We are done if this exponent works for the round_up algorithm.
+		 * Note that exponent may be larger than the maximum shift supported,
+		 * so the check for >= ceil_log_2_D is critical. */
+		if ((exponent + extra_shift >= ceil_log_2_D) ||
+				/* (divisor - remainder) <= (1 << exponent + extra_shift) */
+				(CMP(SUB(divisor, remainder), SHL(ONE(mode), new_tarval_from_long(exponent + extra_shift, mode))) & ir_relation_less_equal))
+			break;
+
+		/* Set magic_down if we have not set it yet and this exponent works for the round_down algorithm */
+		if (! has_magic_down &&
+				(CMP(remainder, SHL(ONE(mode), new_tarval_from_long(exponent + extra_shift, mode))) &
+				ir_relation_less_equal)) {
+			has_magic_down  = 1;
+			down_multiplier = quotient;
+			down_exponent   = exponent;
 		}
+	}
 
-		if (CMP(ADD(r2, ONE(mode)), SUB(d, r2)) & ir_relation_greater_equal) {
-			if (CMP(q2, seven_ff) & ir_relation_greater_equal)
-				magu.need_add = 1;
-
-			q2 = ADD(ADD(q2, q2), ONE(mode));
-			r2 = SUB(ADD(ADD(r2, r2), ONE(mode)), d);
+	if (exponent < ceil_log_2_D) {
+		/* magic_up is efficient */
+		result.multiplier = ADD(quotient, ONE(mode));
+		result.pre_shift  = 0;
+		result.post_shift = exponent;
+		result.increment  = 0;
+	} else if (CMP(AND(divisor, ONE(mode)), ZERO(mode)) & ir_relation_greater) {
+		/* Odd divisor, so use magic_down, which must have been set */
+		assert(has_magic_down);
+		result.multiplier = down_multiplier;
+		result.pre_shift  = 0;
+		result.post_shift = down_exponent;
+		result.increment  = 1;
+	} else {
+		/* Even divisor, so use a prefix-shifted dividend */
+		unsigned pre_shift   = 0;
+		ir_tarval *shifted_D = divisor;
+		while (CMP(AND(shifted_D, ONE(mode)), ZERO(mode)) & ir_relation_equal) {
+			shifted_D  = SHR(shifted_D, ONE(mode));
+			pre_shift += 1;
 		}
-		else {
-			if (CMP(q2, two_bits_1) & ir_relation_greater_equal)
-				magu.need_add = 1;
+		result = compute_unsigned_magic_info(shifted_D, num_bits - pre_shift);
+		/* expect no increment or pre_shift in this path */
+		assert(result.increment == 0 && result.pre_shift == 0);
+		result.pre_shift = pre_shift;
+	}
+	return result;
+}
 
-			q2 = ADD(q2, q2);
-			r2 = ADD(ADD(r2, r2), ONE(mode));
-		}
-		delta = SUB(SUB(d, ONE(mode)), r2);
-	} while (p < 2*bits &&
-		(CMP(q1, delta) & ir_relation_less || (CMP(q1, delta) & ir_relation_equal && CMP(r1, ZERO(mode)) & ir_relation_equal)));
-
-	magu.M = ADD(q2, ONE(mode));                       /* Magic number */
-	magu.s = p - bits;                                 /* and shift amount */
-
-	tarval_set_integer_overflow_mode(rem);
-
-	return magu;
+static struct magicu_info get_magic_info(ir_tarval *d)
+{
+	unsigned num_bits = get_mode_size_bits(get_tarval_mode(d));
+	return compute_unsigned_magic_info(d, num_bits);
 }
 
 /**
@@ -848,31 +891,32 @@ static ir_node *replace_div_by_mulh(ir_node *div, ir_tarval *tv)
 
 		q = new_rd_Add(dbg, block, q, t, mode);
 	} else {
-		struct mu mag = magicu(tv);
+		struct magicu_info mafo = get_magic_info(tv);
 		ir_graph *irg = get_irn_irg(div);
+		ir_node *c;
+
+		if (mafo.pre_shift > 0) {
+			c = new_r_Const_long(irg, mode_Iu, mafo.pre_shift);
+			n = new_rd_Shr(dbg, block, n, c, mode);
+		}
+
+		if (mafo.increment) {
+			ir_node *no_mem    = new_rd_NoMem(dbg, irg);
+			ir_node *in[1]     = {n};
+			ir_type *utype     = get_unknown_type();
+			ir_node *increment = new_rd_Builtin(dbg, block, no_mem, 1, in, ir_bk_saturating_increment, utype);
+
+			n = new_r_Proj(increment, mode_Iu, pn_Builtin_max + 1);
+		}
 
 		/* generate the Mulh instruction */
-		ir_node *c = new_r_Const(irg, mag.M);
+		c = new_r_Const(irg, mafo.multiplier);
 		q = new_rd_Mulh(dbg, block, n, c, mode);
+		c = new_r_Const_long(irg, mode_Iu, get_mode_size_bits(get_tarval_mode(tv)));
+		q = new_rd_Shr(dbg, block, q, c, mode);
 
-		if (mag.need_add) {
-			if (mag.s > 0) {
-				/* use the GM scheme */
-				ir_node *t = new_rd_Sub(dbg, block, n, q, mode);
-
-				c = new_r_Const(irg, get_mode_one(mode_Iu));
-				t = new_rd_Shr(dbg, block, t, c, mode);
-
-				t = new_rd_Add(dbg, block, t, q, mode);
-
-				c = new_r_Const_long(irg, mode_Iu, mag.s - 1);
-				q = new_rd_Shr(dbg, block, t, c, mode);
-			} else {
-				/* use the default scheme */
-				q = new_rd_Add(dbg, block, q, n, mode);
-			}
-		} else if (mag.s > 0) { /* default scheme, shift needed */
-			c = new_r_Const_long(irg, mode_Iu, mag.s);
+		if (mafo.post_shift > 0) {
+			c = new_r_Const_long(irg, mode_Iu, mafo.post_shift);
 			q = new_rd_Shr(dbg, block, q, c, mode);
 		}
 	}
