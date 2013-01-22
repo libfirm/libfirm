@@ -636,6 +636,10 @@ void reorder_node_after_edge_insertion(pbqp_node_t *node)
 
 void simplify_edge(pbqp_t *pbqp, pbqp_edge_t *edge)
 {
+	/* If edge are already deleted, we have nothing to do. */
+	if (is_deleted(edge))
+		return;
+
 	pbqp_matrix_t *mat;
 	pbqp_node_t   *src_node;
 	pbqp_node_t   *tgt_node;
@@ -650,10 +654,6 @@ void simplify_edge(pbqp_t *pbqp, pbqp_edge_t *edge)
 	tgt_node = edge->tgt;
 	assert(src_node);
 	assert(tgt_node);
-
-	/* If edge are already deleted, we have nothing to do. */
-	if (is_deleted(edge))
-		return;
 
 #if KAPS_DUMP
 	if (pbqp->dump_file) {
