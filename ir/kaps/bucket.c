@@ -48,12 +48,11 @@ void edge_bucket_insert(pbqp_edge_bucket_t *bucket, pbqp_edge_t *edge)
 
 pbqp_edge_t *edge_bucket_pop(pbqp_edge_bucket_t *bucket)
 {
-	unsigned     bucket_len = edge_bucket_get_length(*bucket);
-	pbqp_edge_t *edge;
+	unsigned bucket_len = edge_bucket_get_length(*bucket);
 
 	assert(bucket_len > 0);
 
-	edge = (*bucket)[bucket_len - 1];
+	pbqp_edge_t *edge = (*bucket)[bucket_len - 1];
 
 	ARR_SHRINKLEN(*bucket, (int)bucket_len - 1);
 	edge->bucket_index = UINT_MAX;
@@ -74,20 +73,18 @@ int node_bucket_contains(pbqp_node_bucket_t bucket, pbqp_node_t *node)
 
 void node_bucket_copy(pbqp_node_bucket_t *dst, pbqp_node_bucket_t src)
 {
-	unsigned src_index;
 	unsigned src_length = node_bucket_get_length(src);
 
-	for (src_index = 0; src_index < src_length; ++src_index) {
+	for (unsigned src_index = 0; src_index < src_length; ++src_index) {
 		node_bucket_insert(dst, src[src_index]);
 	}
 }
 
 void node_bucket_update(pbqp_t *pbqp, pbqp_node_bucket_t bucket)
 {
-	unsigned index;
 	unsigned length = node_bucket_get_length(bucket);
 
-	for (index = 0; index < length; ++index) {
+	for (unsigned index = 0; index < length; ++index) {
 		pbqp->nodes[bucket[index]->index] = bucket[index];
 	}
 }
@@ -116,12 +113,11 @@ void node_bucket_insert(pbqp_node_bucket_t *bucket, pbqp_node_t *node)
 
 pbqp_node_t *node_bucket_pop(pbqp_node_bucket_t *bucket)
 {
-	unsigned     bucket_len = node_bucket_get_length(*bucket);
-	pbqp_node_t *node;
+	unsigned bucket_len = node_bucket_get_length(*bucket);
 
 	assert(bucket_len > 0);
 
-	node = (*bucket)[bucket_len - 1];
+	pbqp_node_t *node = (*bucket)[bucket_len - 1];
 
 	ARR_SHRINKLEN(*bucket, (int)bucket_len - 1);
 	node->bucket_index = UINT_MAX;
@@ -131,14 +127,12 @@ pbqp_node_t *node_bucket_pop(pbqp_node_bucket_t *bucket)
 
 void node_bucket_remove(pbqp_node_bucket_t *bucket, pbqp_node_t *node)
 {
-	unsigned     bucket_len = node_bucket_get_length(*bucket);
-	unsigned     node_index;
-	pbqp_node_t *other;
-
 	assert(node_bucket_contains(*bucket, node));
 
-	node_index            = node->bucket_index;
-	other                 = (*bucket)[bucket_len - 1];
+	unsigned     bucket_len = node_bucket_get_length(*bucket);
+	unsigned     node_index = node->bucket_index;
+	pbqp_node_t *other      = (*bucket)[bucket_len - 1];
+
 	other->bucket_index   = node_index;
 	(*bucket)[node_index] = other;
 
@@ -146,15 +140,11 @@ void node_bucket_remove(pbqp_node_bucket_t *bucket, pbqp_node_t *node)
 	node->bucket_index = UINT_MAX;
 }
 
-void node_bucket_deep_copy(pbqp_t *pbqp, pbqp_node_bucket_t *dst,
-                           pbqp_node_bucket_t src)
+void node_bucket_deep_copy(pbqp_t *pbqp, pbqp_node_bucket_t *dst, pbqp_node_bucket_t src)
 {
-	unsigned bucket_index;
-	unsigned bucket_length;
+	unsigned bucket_length = node_bucket_get_length(src);
 
-	bucket_length = node_bucket_get_length(src);
-
-	for (bucket_index = 0; bucket_index < bucket_length; ++bucket_index) {
+	for (unsigned bucket_index = 0; bucket_index < bucket_length; ++bucket_index) {
 		node_bucket_insert(dst, pbqp_node_deep_copy(pbqp, *dst, src[bucket_index]));
 	}
 }

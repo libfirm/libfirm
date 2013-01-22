@@ -17,7 +17,7 @@
 /**
  * Create an empty PBQP instance with the given number of nodes.
  */
-pbqp_t* alloc_pbqp(unsigned number_nodes);
+pbqp_t *alloc_pbqp(unsigned number_nodes);
 
 /**
  * Free the given PBQP.

@@ -26,10 +26,8 @@
 pbqp_edge_t *alloc_edge(pbqp_t *pbqp, int src_index, int tgt_index,
                         pbqp_matrix_t *costs)
 {
-	int transpose = 0;
-	pbqp_edge_t *edge = OALLOC(&pbqp->obstack, pbqp_edge_t);
-	pbqp_node_t *src_node;
-	pbqp_node_t *tgt_node;
+	int          transpose = 0;
+	pbqp_edge_t *edge      = OALLOC(&pbqp->obstack, pbqp_edge_t);
 
 	if (tgt_index < src_index) {
 		int tmp = src_index;
@@ -39,9 +37,8 @@ pbqp_edge_t *alloc_edge(pbqp_t *pbqp, int src_index, int tgt_index,
 		transpose = 1;
 	}
 
-	src_node = get_node(pbqp, src_index);
-
-	tgt_node = get_node(pbqp, tgt_index);
+	pbqp_node_t *src_node = get_node(pbqp, src_index);
+	pbqp_node_t *tgt_node = get_node(pbqp, tgt_index);
 
 	if (transpose) {
 		edge->costs = pbqp_matrix_copy_and_transpose(pbqp, costs);
@@ -64,11 +61,8 @@ pbqp_edge_t *alloc_edge(pbqp_t *pbqp, int src_index, int tgt_index,
 
 void delete_edge(pbqp_edge_t *edge)
 {
-	pbqp_node_t  *src_node;
-	pbqp_node_t  *tgt_node;
-
-	src_node = edge->src;
-	tgt_node = edge->tgt;
+	pbqp_node_t *src_node = edge->src;
+	pbqp_node_t *tgt_node = edge->tgt;
 
 	disconnect_edge(src_node, edge);
 	disconnect_edge(tgt_node, edge);
@@ -82,19 +76,17 @@ void delete_edge(pbqp_edge_t *edge)
 
 unsigned is_deleted(pbqp_edge_t *edge)
 {
-	unsigned deleted;
 
-	deleted = (edge->src == NULL) && (edge-> tgt == NULL);
-
-	return deleted;
+	return edge->src == NULL && edge->tgt == NULL;
 }
 
 pbqp_edge_t *pbqp_edge_deep_copy(pbqp_t *pbqp, pbqp_edge_t *edge,
                                  pbqp_node_t *src_node, pbqp_node_t *tgt_node)
 {
-	pbqp_edge_t *copy = OALLOC(&pbqp->obstack, pbqp_edge_t);
 	assert(src_node);
 	assert(tgt_node);
+
+	pbqp_edge_t *copy = OALLOC(&pbqp->obstack, pbqp_edge_t);
 
 	copy->costs = pbqp_matrix_copy(pbqp, edge->costs);
 

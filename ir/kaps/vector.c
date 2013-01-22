@@ -19,11 +19,10 @@
 
 num pbqp_add(num x, num y)
 {
-	num res;
+	if (x == INF_COSTS || y == INF_COSTS)
+		return INF_COSTS;
 
-	if (x == INF_COSTS || y == INF_COSTS) return INF_COSTS;
-
-	res = x + y;
+	num res = x + y;
 
 #if !KAPS_USE_UNSIGNED
 	/* No positive overflow. */
@@ -43,7 +42,7 @@ num pbqp_add(num x, num y)
 
 vector_t *vector_alloc(pbqp_t *pbqp, unsigned length)
 {
-	vector_t *vec = (vector_t*)obstack_alloc(&pbqp->obstack, sizeof(*vec) + sizeof(*vec->entries) * length);
+	vector_t *vec = (vector_t *)obstack_alloc(&pbqp->obstack, sizeof(*vec) + sizeof(*vec->entries) * length);
 	assert(length > 0);
 
 	vec->len = length;
@@ -55,7 +54,7 @@ vector_t *vector_alloc(pbqp_t *pbqp, unsigned length)
 vector_t *vector_copy(pbqp_t *pbqp, vector_t *v)
 {
 	unsigned  len  = v->len;
-	vector_t *copy = (vector_t*)obstack_copy(&pbqp->obstack, v, sizeof(*copy) + sizeof(*copy->entries) * len);
+	vector_t *copy = (vector_t *)obstack_copy(&pbqp->obstack, v, sizeof(*copy) + sizeof(*copy->entries) * len);
 	assert(copy);
 
 	return copy;
@@ -63,16 +62,12 @@ vector_t *vector_copy(pbqp_t *pbqp, vector_t *v)
 
 void vector_add(vector_t *sum, vector_t *summand)
 {
-	int i;
-	int len;
+	unsigned len = sum->len;
 
-	assert(sum->len == summand->len);
+	assert(len == summand->len);
 
-	len = sum->len;
-
-	for (i = 0; i < len; ++i) {
-		sum->entries[i].data = pbqp_add(sum->entries[i].data,
-				summand->entries[i].data);
+	for (unsigned i = 0; i < len; ++i) {
+		sum->entries[i].data = pbqp_add(sum->entries[i].data, summand->entries[i].data);
 	}
 }
 
@@ -92,57 +87,46 @@ void vector_set_description(vector_t *vec, unsigned index, const char *name)
 
 void vector_add_value(vector_t *vec, num value)
 {
-	unsigned index;
-	unsigned len;
+	unsigned len = vec->len;
 
-	len = vec->len;
-
-	for (index = 0; index < len; ++index) {
+	for (unsigned index = 0; index < len; ++index) {
 		vec->entries[index].data = pbqp_add(vec->entries[index].data, value);
 	}
 }
 
 void vector_add_matrix_col(vector_t *vec, pbqp_matrix_t *mat, unsigned col_index)
 {
-	unsigned index;
-	unsigned len;
+	unsigned len = vec->len;
 
-	assert(vec->len == mat->rows);
+	assert(len == mat->rows);
 	assert(col_index < mat->cols);
 
-	len = vec->len;
-
-	for (index = 0; index < len; ++index) {
+	for (unsigned index = 0; index < len; ++index) {
 		vec->entries[index].data = pbqp_add(vec->entries[index].data, mat->entries[index * mat->cols + col_index]);
 	}
 }
 
 void vector_add_matrix_row(vector_t *vec, pbqp_matrix_t *mat, unsigned row_index)
 {
-	unsigned index;
-	unsigned len;
+	unsigned len = vec->len;
 
-	assert(vec->len == mat->cols);
+	assert(len == mat->cols);
 	assert(row_index < mat->rows);
 
-	len = vec->len;
 
-	for (index = 0; index < len; ++index) {
-		vec->entries[index].data = pbqp_add(vec->entries[index].data,
-				mat->entries[row_index * mat->cols + index]);
+	for (unsigned index = 0; index < len; ++index) {
+		vec->entries[index].data = pbqp_add(vec->entries[index].data, mat->entries[row_index * mat->cols + index]);
 	}
 }
 
 num vector_get_min(vector_t *vec)
 {
-	unsigned index;
-	unsigned len;
+	unsigned len = vec->len;
 	num      min = INF_COSTS;
 
-	len = vec->len;
 	assert(len > 0);
 
-	for (index = 0; index < len; ++index) {
+	for (unsigned index = 0; index < len; ++index) {
 		num elem = vec->entries[index].data;
 
 		if (elem < min) {
@@ -155,15 +139,13 @@ num vector_get_min(vector_t *vec)
 
 unsigned vector_get_min_index(vector_t *vec)
 {
-	unsigned index;
-	unsigned len;
+	unsigned len       = vec->len;
 	unsigned min_index = 0;
 	num      min       = INF_COSTS;
 
-	len = vec->len;
 	assert(len > 0);
 
-	for (index = 0; index < len; ++index) {
+	for (unsigned index = 0; index < len; ++index) {
 		num elem = vec->entries[index].data;
 
 		if (elem < min) {

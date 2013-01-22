@@ -29,25 +29,21 @@ pbqp_node_t *get_node(pbqp_t *pbqp, unsigned index)
 
 pbqp_edge_t *get_edge(pbqp_t *pbqp, unsigned src_index, unsigned tgt_index)
 {
-	size_t i;
-	size_t len;
-	pbqp_node_t *src_node;
-	pbqp_node_t *tgt_node;
-
 	if (tgt_index < src_index) {
 		unsigned tmp = src_index;
 		src_index    = tgt_index;
 		tgt_index    = tmp;
 	}
 
-	src_node = get_node(pbqp, src_index);
-	tgt_node = get_node(pbqp, tgt_index);
+	pbqp_node_t *src_node = get_node(pbqp, src_index);
+	pbqp_node_t *tgt_node = get_node(pbqp, tgt_index);
 	assert(tgt_node);
 
-	len = ARR_LEN(src_node->edges);
+	size_t len = ARR_LEN(src_node->edges);
 
-	for (i = 0; i < len; ++i) {
+	for (size_t i = 0; i < len; ++i) {
 		pbqp_edge_t *cur_edge = src_node->edges[i];
+
 		if (cur_edge->tgt == tgt_node) {
 			return cur_edge;
 		}
@@ -62,20 +58,20 @@ pbqp_t *alloc_pbqp(unsigned number_nodes)
 
 	obstack_init(&pbqp->obstack);
 
-	pbqp->solution = 0;
-	pbqp->num_nodes = number_nodes;
+	pbqp->solution     = 0;
+	pbqp->num_nodes    = number_nodes;
 #if KAPS_DUMP
-	pbqp->dump_file = NULL;
+	pbqp->dump_file    = NULL;
 #endif
-	pbqp->nodes = OALLOCNZ(&pbqp->obstack, pbqp_node_t*, number_nodes);
+	pbqp->nodes        = OALLOCNZ(&pbqp->obstack, pbqp_node_t*, number_nodes);
 #if KAPS_STATISTIC
-	pbqp->num_bf = 0;
-	pbqp->num_edges = 0;
-	pbqp->num_r0 = 0;
-	pbqp->num_r1 = 0;
-	pbqp->num_r2 = 0;
-	pbqp->num_rm = 0;
-	pbqp->num_rn = 0;
+	pbqp->num_bf       = 0;
+	pbqp->num_edges    = 0;
+	pbqp->num_r0       = 0;
+	pbqp->num_r1       = 0;
+	pbqp->num_r2       = 0;
+	pbqp->num_rm       = 0;
+	pbqp->num_rn       = 0;
 #endif
 
 	return pbqp;

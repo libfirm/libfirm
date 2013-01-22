@@ -33,13 +33,8 @@
 
 static void apply_RN(pbqp_t *pbqp)
 {
-	pbqp_node_t *node      = NULL;
-	unsigned     min_index = 0;
-
-	assert(pbqp);
-
 	/* We want to reduce a node with maximum degree. */
-	node = get_node_with_max_degree();
+	pbqp_node_t *node = get_node_with_max_degree();
 	assert(pbqp_node_get_degree(node) > 2);
 
 #if KAPS_DUMP
@@ -51,7 +46,7 @@ static void apply_RN(pbqp_t *pbqp)
 	}
 #endif
 
-	min_index = get_local_minimal_alternative(pbqp, node);
+	unsigned min_index = get_local_minimal_alternative(pbqp, node);
 
 #if KAPS_DUMP
 	if (pbqp->dump_file) {
@@ -90,6 +85,8 @@ static void apply_heuristic_reductions(pbqp_t *pbqp)
 
 void solve_pbqp_heuristical(pbqp_t *pbqp)
 {
+	assert(pbqp);
+
 	/* Reduce nodes degree ... */
 	initial_simplify_edges(pbqp);
 

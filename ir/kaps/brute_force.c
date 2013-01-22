@@ -11,6 +11,8 @@
  */
 #include "config.h"
 
+#include <stdbool.h>
+
 #include "assert.h"
 #include "error.h"
 
@@ -54,25 +56,19 @@ static void apply_brute_force_reductions(pbqp_t *pbqp)
 
 static unsigned get_minimal_alternative(pbqp_t *pbqp, pbqp_node_t *node)
 {
-	vector_t *node_vec;
-	unsigned  node_index;
-	unsigned  node_len;
+	vector_t *node_vec     = node->costs;
+	unsigned  node_len     = node_vec->len;
 	unsigned  min_index    = 0;
 	num       min          = INF_COSTS;
-	unsigned  bucket_index;
+	unsigned  bucket_index = node->bucket_index;
 
-	assert(pbqp);
-	node_vec     = node->costs;
-	node_len     = node_vec->len;
-	bucket_index = node->bucket_index;
-
-	for (node_index = 0; node_index < node_len; ++node_index) {
+	for (unsigned node_index = 0; node_index < node_len; ++node_index) {
 		pbqp_node_bucket_t bucket_deg3;
 		num                value;
 		unsigned           bucket_0_length;
 		unsigned           bucket_red_length;
 
-		char *tmp = (char*)obstack_finish(&pbqp->obstack);
+		char *tmp = (char *)obstack_finish(&pbqp->obstack);
 
 		node_bucket_init(&bucket_deg3);
 
@@ -128,13 +124,8 @@ static unsigned get_minimal_alternative(pbqp_t *pbqp, pbqp_node_t *node)
 
 static void apply_Brute_Force(pbqp_t *pbqp)
 {
-	pbqp_node_t *node         = NULL;
-	unsigned     min_index    = 0;
-
-	assert(pbqp);
-
 	/* We want to reduce a node with maximum degree. */
-	node = get_node_with_max_degree();
+	pbqp_node_t *node = get_node_with_max_degree();
 	assert(pbqp_node_get_degree(node) > 2);
 
 #if KAPS_DUMP
@@ -150,13 +141,12 @@ static void apply_Brute_Force(pbqp_t *pbqp)
 	dump++;
 #endif
 
-	min_index = get_minimal_alternative(pbqp, node);
+	unsigned min_index = get_minimal_alternative(pbqp, node);
 	node = pbqp->nodes[node->index];
 
 #if KAPS_DUMP
 	if (pbqp->dump_file) {
-		fprintf(pbqp->dump_file, "node n%d is set to %d<br><br>\n",
-					node->index, min_index);
+		fprintf(pbqp->dump_file, "node n%d is set to %d<br><br>\n", node->index, min_index);
 	}
 #endif
 
@@ -174,22 +164,13 @@ static void apply_Brute_Force(pbqp_t *pbqp)
 	select_alternative(node, min_index);
 }
 
-
-
 static void back_propagate_RI(pbqp_t *pbqp, pbqp_node_t *node)
 {
-	pbqp_edge_t   *edge;
+	pbqp_edge_t   *edge   = node->edges[0];
 	pbqp_node_t   *other;
-	pbqp_matrix_t *mat;
-	vector_t      *vec;
-	int            is_src;
-
-	assert(pbqp);
-
-	edge = node->edges[0];
-	mat = edge->costs;
-	is_src = edge->src == node;
-	vec = node->costs;
+	pbqp_matrix_t *mat    = edge->costs;
+	vector_t      *vec    = node->costs;
+	bool           is_src = edge->src == node;
 
 	if (is_src) {
 		other = edge->tgt;
@@ -218,18 +199,10 @@ static void back_propagate_RII(pbqp_t *pbqp, pbqp_node_t *node)
 {
 	pbqp_edge_t   *src_edge   = node->edges[0];
 	pbqp_edge_t   *tgt_edge   = node->edges[1];
-	int            src_is_src = src_edge->src == node;
-	int            tgt_is_src = tgt_edge->src == node;
-	pbqp_matrix_t *src_mat;
-	pbqp_matrix_t *tgt_mat;
+	bool           src_is_src = src_edge->src == node;
+	bool           tgt_is_src = tgt_edge->src == node;
 	pbqp_node_t   *src_node;
 	pbqp_node_t   *tgt_node;
-	vector_t      *vec;
-	vector_t      *node_vec;
-	unsigned       col_index;
-	unsigned       row_index;
-
-	assert(pbqp);
 
 	if (src_is_src) {
 		src_node = src_edge->tgt;
@@ -245,14 +218,11 @@ static void back_propagate_RII(pbqp_t *pbqp, pbqp_node_t *node)
 
 	/* Swap nodes if necessary. */
 	if (tgt_node->index < src_node->index) {
-		pbqp_node_t *tmp_node;
-		pbqp_edge_t *tmp_edge;
-
-		tmp_node = src_node;
+		pbqp_node_t *tmp_node = src_node;
 		src_node = tgt_node;
 		tgt_node = tmp_node;
 
-		tmp_edge = src_edge;
+		pbqp_edge_t *tmp_edge = src_edge;
 		src_edge = tgt_edge;
 		tgt_edge = tmp_edge;
 
@@ -264,15 +234,12 @@ static void back_propagate_RII(pbqp_t *pbqp, pbqp_node_t *node)
 	src_node = pbqp->nodes[src_node->index];
 	tgt_node = pbqp->nodes[tgt_node->index];
 
-	src_mat = src_edge->costs;
-	tgt_mat = tgt_edge->costs;
-
-	node_vec = node->costs;
-
-	row_index = src_node->solution;
-	col_index = tgt_node->solution;
-
-	vec = vector_copy(pbqp, node_vec);
+	pbqp_matrix_t *src_mat   = src_edge->costs;
+	pbqp_matrix_t *tgt_mat   = tgt_edge->costs;
+	vector_t      *node_vec  = node->costs;
+	unsigned       col_index = tgt_node->solution;
+	unsigned       row_index = src_node->solution;
+	vector_t      *vec       = vector_copy(pbqp, node_vec);
 
 	if (src_is_src) {
 		vector_add_matrix_col(vec, src_mat, row_index);
@@ -299,19 +266,16 @@ static void back_propagate_RII(pbqp_t *pbqp, pbqp_node_t *node)
 
 static void back_propagate_brute_force(pbqp_t *pbqp)
 {
-	unsigned node_index;
-	unsigned node_len = node_bucket_get_length(reduced_bucket);
-
-	assert(pbqp);
-
 #if KAPS_DUMP
 	if (pbqp->dump_file) {
 		pbqp_dump_section(pbqp->dump_file, 2, "Back Propagation");
 	}
 #endif
 
-	for (node_index = node_len; node_index > 0; --node_index) {
-		pbqp_node_t *node = reduced_bucket[node_index - 1];
+	unsigned node_len = node_bucket_get_length(reduced_bucket);
+
+	for (unsigned node_index = node_len; node_index-- != 0;) {
+		pbqp_node_t *node = reduced_bucket[node_index];
 
 		switch (pbqp_node_get_degree(node)) {
 			case 1:
@@ -328,6 +292,8 @@ static void back_propagate_brute_force(pbqp_t *pbqp)
 
 void solve_pbqp_brute_force(pbqp_t *pbqp)
 {
+	assert(pbqp);
+
 	/* Reduce nodes degree ... */
 	initial_simplify_edges(pbqp);
 

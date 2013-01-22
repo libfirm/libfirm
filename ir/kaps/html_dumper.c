@@ -23,26 +23,29 @@
 /* Caution: Due to static buffer use only once per statement */
 static const char *cost2a(num const cost)
 {
+	if (cost == INF_COSTS)
+		return "inf";
+
 	static char buf[10];
 
-	if (cost == INF_COSTS) return "inf";
 #if KAPS_USE_UNSIGNED
 	sprintf(buf, "%u", cost);
 #else
 	sprintf(buf, "%10lld", cost);
 #endif
+
 	return buf;
 }
 
 /* print vector */
 static void dump_vector(FILE *f, vector_t *vec)
 {
-	unsigned index;
 	unsigned len = vec->len;
+	assert(len > 0);
 
 	fprintf(f, "<span class=\"vector\">( ");
-	assert(len > 0);
-	for (index = 0; index < len; ++index) {
+
+	for (unsigned index = 0; index < len; ++index) {
 #if KAPS_ENABLE_VECTOR_NAMES
 		fprintf(f, "<span title=\"%s\">%s</span> ",
 				vec->entries[index].name, cost2a(vec->entries[index].data));
@@ -50,25 +53,29 @@ static void dump_vector(FILE *f, vector_t *vec)
 		fprintf(f, "%s ", cost2a(vec->entries[index].data));
 #endif
 	}
+
 	fprintf(f, " )</span>\n");
 }
 
 static void dump_matrix(FILE *f, pbqp_matrix_t *mat)
 {
-	unsigned row, col;
-	num *p = mat->entries;
-
 	assert(mat->cols > 0);
 	assert(mat->rows > 0);
+
+	num *p = mat->entries;
+
 	fprintf(f, "\t\\begin{pmatrix}\n");
-	for (row = 0; row < mat->rows; ++row) {
+
+	for (unsigned row = 0; row < mat->rows; ++row) {
 		fprintf(f, "\t %s", cost2a(*p++));
 
-		for (col = 1; col < mat->cols; ++col) {
+		for (unsigned col = 1; col < mat->cols; ++col) {
 			fprintf(f, "& %s", cost2a(*p++));
 		}
+
 		fprintf(f, "\\\\\n");
 	}
+
 	fprintf(f, "\t\\end{pmatrix}\n");
 }
 
@@ -83,10 +90,9 @@ void pbqp_dump_edge(FILE *file, pbqp_edge_t *edge)
 
 static void dump_edge_costs(pbqp_t *pbqp)
 {
-	unsigned src_index;
-
 	fputs("<p>", pbqp->dump_file);
-	for (src_index = 0; src_index < pbqp->num_nodes; ++src_index) {
+
+	for (unsigned src_index = 0; src_index < pbqp->num_nodes; ++src_index) {
 		pbqp_node_t *src_node = get_node(pbqp, src_index);
 		size_t edge_index;
 		size_t len;
@@ -103,6 +109,7 @@ static void dump_edge_costs(pbqp_t *pbqp)
 			}
 		}
 	}
+
 	fputs("</p>", pbqp->dump_file);
 }
 
@@ -117,13 +124,13 @@ void pbqp_dump_node(FILE *file, pbqp_node_t *node)
 
 static void dump_node_costs(pbqp_t *pbqp)
 {
-	unsigned index;
-
 	/* dump node costs */
 	fputs("<p>", pbqp->dump_file);
-	for (index = 0; index < pbqp->num_nodes; ++index) {
+
+	for (unsigned index = 0; index < pbqp->num_nodes; ++index) {
 		pbqp_dump_node(pbqp->dump_file, get_node(pbqp, index));
 	}
+
 	fputs("</p>", pbqp->dump_file);
 }
 
@@ -134,20 +141,18 @@ void pbqp_dump_section(FILE *f, int level, const char *txt)
 
 void pbqp_dump_graph(pbqp_t *pbqp)
 {
-	unsigned src_index;
-
 	fputs("<p>\n<graph>\n\tgraph input {\n", pbqp->dump_file);
-	for (src_index = 0; src_index < pbqp->num_nodes; ++src_index) {
+
+	for (unsigned src_index = 0; src_index < pbqp->num_nodes; ++src_index) {
 		pbqp_node_t *node = get_node(pbqp, src_index);
+
 		if (node && !node_is_reduced(node)) {
 			fprintf(pbqp->dump_file, "\t n%u;\n", src_index);
 		}
 	}
 
-	for (src_index = 0; src_index < pbqp->num_nodes; ++src_index) {
+	for (unsigned src_index = 0; src_index < pbqp->num_nodes; ++src_index) {
 		pbqp_node_t *node = get_node(pbqp, src_index);
-		unsigned len;
-		unsigned edge_index;
 
 		if (!node)
 			continue;
@@ -155,8 +160,9 @@ void pbqp_dump_graph(pbqp_t *pbqp)
 		if (node_is_reduced(node))
 			continue;
 
-		len = ARR_LEN(node->edges);
-		for (edge_index = 0; edge_index < len; ++edge_index) {
+		unsigned len = ARR_LEN(node->edges);
+
+		for (unsigned edge_index = 0; edge_index < len; ++edge_index) {
 			pbqp_node_t *tgt_node  = node->edges[edge_index]->tgt;
 			unsigned     tgt_index = tgt_node->index;
 
@@ -169,6 +175,7 @@ void pbqp_dump_graph(pbqp_t *pbqp)
 			}
 		}
 	}
+
 	fputs("\t}\n</graph>\n</p>\n", pbqp->dump_file);
 }
 

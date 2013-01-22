@@ -34,19 +34,17 @@
 
 static void merge_into_RN_node(pbqp_t *pbqp, plist_t *rpeo)
 {
-	pbqp_node_t *node = NULL;
-
-	assert(pbqp);
+	pbqp_node_t *node;
 
 	/* We want to reduce the first node in reverse perfect elimination order. */
 	do {
 		/* get first element from reverse perfect elimination order */
-		node = (pbqp_node_t*)plist_first(rpeo)->data;
+		node = (pbqp_node_t *)plist_first(rpeo)->data;
 		/* remove element from reverse perfect elimination order */
 		plist_erase(rpeo, plist_first(rpeo));
 		/* insert node at the end of rpeo so the rpeo already exits after pbqp solving */
 		plist_insert_back(rpeo, node);
-	} while(node_is_reduced(node));
+	} while (node_is_reduced(node));
 
 	assert(pbqp_node_get_degree(node) > 2);
 
@@ -56,12 +54,7 @@ static void merge_into_RN_node(pbqp_t *pbqp, plist_t *rpeo)
 
 static void apply_RN_co(pbqp_t *pbqp)
 {
-	pbqp_node_t *node;
-	unsigned     min_index;
-
-	assert(pbqp);
-
-	node        = merged_node;
+	pbqp_node_t *node = merged_node;
 	merged_node = NULL;
 
 	if (node_is_reduced(node))
@@ -76,7 +69,7 @@ static void apply_RN_co(pbqp_t *pbqp)
 	}
 #endif
 
-	min_index = get_local_minimal_alternative(pbqp, node);
+	unsigned min_index = get_local_minimal_alternative(pbqp, node);
 
 #if KAPS_DUMP
 	if (pbqp->dump_file) {
@@ -172,6 +165,9 @@ static void apply_heuristic_reductions_co(pbqp_t *pbqp, plist_t *rpeo)
 
 void solve_pbqp_heuristical_co(pbqp_t *pbqp, plist_t *rpeo)
 {
+	assert(pbqp);
+	assert(rpeo);
+
 	/* Reduce nodes degree ... */
 	initial_simplify_edges(pbqp);
 
