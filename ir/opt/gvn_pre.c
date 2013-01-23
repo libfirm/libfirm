@@ -1434,7 +1434,7 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 
 				for (i = 0; i < node_arity; ++i) {
 					ir_node *pred     = get_irn_n(expr, i);
-					ir_node *value    = identify(pred);
+					const ir_node *value    = identify(pred);
 					ir_node *leader;
 					ir_node *trans;
 					ir_node *trans_val;
@@ -1444,7 +1444,6 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 					   anti-leader world into leader world. */
 
 					DB((dbg, LEVEL_3, "pred %+F\n", pred));
-					value = identify(pred);
 
 					/* get leader for pred to lookup its translated value */
 					leader = ir_valueset_lookup(info->antic_in, value);
