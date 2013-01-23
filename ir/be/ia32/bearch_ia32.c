@@ -1031,7 +1031,6 @@ static void introduce_prolog_epilog(ir_graph *irg)
 	unsigned               frame_size = get_type_size_bytes(frame_type);
 	be_stack_layout_t     *layout     = be_get_irg_stack_layout(irg);
 	ir_node               *initial_sp = be_get_initial_reg_value(irg, sp);
-	ir_node               *curr_sp    = initial_sp;
 	ir_mode               *mode_gp    = mode_Iu;
 
 	if (!layout->sp_relative) {
@@ -1040,9 +1039,9 @@ static void introduce_prolog_epilog(ir_graph *irg)
 		ir_node *noreg      = ia32_new_NoReg_gp(irg);
 		ir_node *initial_bp = be_get_initial_reg_value(irg, bp);
 		ir_node *push       = new_bd_ia32_Push(NULL, block, noreg, noreg, mem, initial_bp, initial_sp);
+		ir_node *curr_sp    = new_r_Proj(push, mode_gp, pn_ia32_Push_stack);
 		ir_node *incsp;
 
-		curr_sp = new_r_Proj(push, mode_gp, pn_ia32_Push_stack);
 		arch_set_irn_register(curr_sp, sp);
 		sched_add_after(start, push);
 
