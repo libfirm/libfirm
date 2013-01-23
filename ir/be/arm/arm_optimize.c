@@ -196,7 +196,7 @@ static void peephole_arm_FrameAddr(ir_node *node)
 static void peephole_arm_Str_Ldr(ir_node *node)
 {
 	arm_load_store_attr_t *attr    = get_arm_load_store_attr(node);
-	int                    offset  = attr->offset;
+	const int              offset  = attr->offset;
 	int                    use_add = 1;
 	ir_node               *ptr;
 	arm_vals              v;
@@ -211,7 +211,6 @@ static void peephole_arm_Str_Ldr(ir_node *node)
 	}
 	if (offset < 0) {
 		use_add = 0;
-		offset = -offset;
 	}
 
 	if (is_arm_Str(node)) {

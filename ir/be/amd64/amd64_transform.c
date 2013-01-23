@@ -215,7 +215,6 @@ static ir_node *gen_Phi(ir_node *node)
 	const arch_register_req_t *req;
 	if (mode_needs_gp_reg(mode)) {
 		/* all integer operations are on 64bit registers now */
-		mode = mode_Lu;
 		req  = amd64_reg_classes[CLASS_amd64_gp].class_req;
 	} else {
 		req = arch_no_register_req;

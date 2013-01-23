@@ -2028,7 +2028,6 @@ static ir_node *gen_Phi(ir_node *node)
 		/* we shouldn't have any 64bit stuff around anymore */
 		assert(get_mode_size_bits(mode) <= 32);
 		/* all integer operations are on 32bit registers now */
-		mode = mode_gp;
 		req  = sparc_reg_classes[CLASS_sparc_gp].class_req;
 	} else if (mode_is_float(mode)) {
 		req  = get_float_req(mode);

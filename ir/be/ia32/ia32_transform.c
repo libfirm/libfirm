@@ -4036,14 +4036,11 @@ static ir_node *gen_Phi(ir_node *node)
 		/* we shouldn't have any 64bit stuff around anymore */
 		assert(get_mode_size_bits(mode) <= 32);
 		/* all integer operations are on 32bit registers now */
-		mode = mode_Iu;
 		req  = ia32_reg_classes[CLASS_ia32_gp].class_req;
 	} else if (mode_is_float(mode)) {
 		if (ia32_cg_config.use_sse2) {
-			mode = mode_xmm;
 			req  = ia32_reg_classes[CLASS_ia32_xmm].class_req;
 		} else {
-			mode = mode_fp;
 			req  = ia32_reg_classes[CLASS_ia32_fp].class_req;
 		}
 	} else {

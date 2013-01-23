@@ -239,7 +239,6 @@ static ir_node *gen_Phi(ir_node *node)
 	ir_mode                   *mode = get_irn_mode(node);
 	const arch_register_req_t *req;
 	if (mode_needs_gp_reg(mode)) {
-		mode = mode_Iu;
 		req  = TEMPLATE_reg_classes[CLASS_TEMPLATE_gp].class_req;
 	} else {
 		req = arch_no_register_req;

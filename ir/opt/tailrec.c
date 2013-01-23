@@ -468,10 +468,7 @@ static tail_rec_variants find_variant(ir_node *irn, ir_node *call)
 				return TR_BAD;
 		}
 		b = get_Sub_right(irn);
-		if (get_nodes_block(b) != get_nodes_block(call)) {
-			/* we are outside, ignore */
-			vb = TR_UNKNOWN;
-		} else {
+		if (get_nodes_block(b) == get_nodes_block(call)) {
 			vb = find_variant(b, call);
 			if (vb != TR_UNKNOWN)
 				return TR_BAD;
