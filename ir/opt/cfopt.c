@@ -417,23 +417,22 @@ static void optimize_blocks(ir_node *b, void *ctx)
 					}
 
 					/* now we are at k, copy the phi predecessors */
-					pred = get_nodes_block(get_Block_cfgpred(b, k));
 					for (i = 0; i < get_Phi_n_preds(phi); i++) {
 						in[q_preds++] = get_Phi_pred(phi, i);
 					}
 
 					/* and now all the rest */
 					for (i = k+1; i < get_Block_n_cfgpreds(b); i++) {
-						pred = get_Block_cfgpred_block(b, i);
+						ir_node *phi_pred = get_Block_cfgpred_block(b, i);
 
-						if (is_Bad(pred)) {
+						if (is_Bad(phi_pred)) {
 							ir_graph *irg  = get_irn_irg(b);
 							ir_mode  *mode = get_irn_mode(phi);
 							in[q_preds++] = new_r_Bad(irg, mode);
-						} else if (is_Block_removable(pred) && !Block_block_visited(pred)) {
+						} else if (is_Block_removable(phi_pred) && !Block_block_visited(phi_pred)) {
 							/* It's an empty block and not yet visited. */
-							for (j = 0; j < get_Block_n_cfgpreds(pred); j++) {
-								if (! is_Bad(get_Block_cfgpred(pred, j))) {
+							for (j = 0; j < get_Block_n_cfgpreds(phi_pred); j++) {
+								if (! is_Bad(get_Block_cfgpred(phi_pred, j))) {
 									in[q_preds++] = phi;
 								} else {
 									ir_graph *irg  = get_irn_irg(b);
