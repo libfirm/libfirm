@@ -57,7 +57,7 @@
 #define MIN_CUT 0
 
 /* GVN is very limited. This enables optimize_node during value recognition.
-   GVN ist still very limited, since a+1+b+1 doesn't equal a+b+2.
+   GVN is still very limited, since a+1+b+1 does not equal a+b+2.
    TODO Broken for yet unknown reasons. */
 #define OPTIMIZE_NODES 0
 
@@ -104,7 +104,7 @@ typedef struct pre_env {
 	int             iteration;    /* iteration counter */
 #if OPTIMIZE_NODES
 	pset           *value_table;   /* standard value table*/
-	pset           *gvnpre_values; /* gvnpre value table */
+	pset           *gvnpre_values; /* GVN-PRE value table */
 #endif
 } pre_env;
 
@@ -168,7 +168,7 @@ static void print_stats(void)
 #define inc_stats(var)        ((var)+=1)
 
 /* --------------------------------------------------------
- * Dump valuesets
+ * Dump value sets
  * --------------------------------------------------------
  */
 
@@ -226,7 +226,7 @@ static void dump_all_expgen_sets(block_info *list)
  */
 
 /**
- * Compares node collisions in valuetable.
+ * Compares node collisions in value table.
  * Modified identities_cmp().
  */
 static int compare_gvn_identities(const void *elt, const void *key)
@@ -264,7 +264,7 @@ static int compare_gvn_identities(const void *elt, const void *key)
 	if (is_Block(a) || is_Block(b))
 		return 1;
 
-	/* should only be used with gcse enabled */
+	/* should only be used with GCSE enabled */
 	assert(get_opt_global_cse());
 
 	/* compare a->in[0..ins] with b->in[0..ins] */
@@ -283,7 +283,7 @@ static int compare_gvn_identities(const void *elt, const void *key)
 }
 
 /**
- * Identify does a lookup in the GVN valuetable.
+ * Identify does a lookup in the GVN value table.
  * To be used when no new GVN values are to be created.
  *
  * @param e  a node representing an expression
@@ -299,10 +299,10 @@ static ir_node *identify(ir_node *irn)
 }
 
 /**
- * remember() adds node irn to the GVN valuetable.
+ * remember() adds node irn to the GVN value table.
  * Identify_remember only identifies values of nodes with the
  * same predecessor nodes (not values). By creating a node from the predecessor
- * values/leaders, a true valuetree is built. Phis kill their predecessor value,
+ * values/leaders, a true value tree is built. Phis kill their predecessor value,
  * so no circular dependencies need to be resolved.
  *
  * TODO Improvement:
@@ -344,7 +344,7 @@ static ir_node *remember(ir_node *irn)
 		ir_node *nn = new_similar_node(irn, get_nodes_block(irn), in);
 
 #if OPTIMIZE_NODES
-		/* TODO optimize_node() uses the valuetable and thus the custom
+		/* TODO optimize_node() uses the value table and thus the custom
 		   identify_cmp() and will fail trying. */
 		environment->graph->value_table = environment->value_table;
 		nn = optimize_node(nn);
@@ -498,7 +498,7 @@ static ir_loop *get_loop_outermost(ir_loop *loop)
 }
 
 /**
- * Topologic bottom-up walker sets links of infinite loops to non-zero.
+ * Topological bottom-up walker sets links of infinite loops to non-zero.
  * Block marks are used to flag blocks reachable (from end) on the one hand,
  * on the other hand they are set if the block is not part of an infinite loop.
  */
@@ -538,8 +538,8 @@ static void infinite_loop_walker(ir_node *block, void *env)
 		DEBUG_ONLY(inc_stats(gvnpre_stats->infinite_loops);)
 
 		/* The cf predecessors are unreachable, but can never be part of
-		   an infinite loop, because we just reached them. So we set the
-		   blockmark to prevent triggering the infinite loop detection. */
+		   an infinite loop, because we just reached them. So we mark the
+		   block to prevent triggering the infinite loop detection. */
 
 		/* passing information to the cf predecessors */
 		for (i = 0; i < arity; ++i) {
@@ -547,7 +547,7 @@ static void infinite_loop_walker(ir_node *block, void *env)
 			if (pred == NULL)
 				continue;
 
-			/* If our cf predecessor is in the same endless loop,
+			/* If our control flow predecessor is in the same endless loop,
 			   it is also unreachable. */
 			if (in_loop(pred, outermost_loop)) {
 				set_Block_mark(pred, 0);
@@ -1313,7 +1313,7 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 		return;
 	}
 
-	/* This is the main reason antic_in is preverred over antic_out;
+	/* This is the main reason antic_in is preferred over antic_out;
 	   we may iterate over every anticipated value first and not
 	   over the predecessor blocks. */
 	foreach_valueset(info->antic_in, value, expr, iter) {
@@ -1586,10 +1586,10 @@ static void hoist_high(ir_node *block, void *ctx)
 
 				/* TODO Being in antic_in means hoistable above block,
 				   but we need 'hoistable into block'.
-				   This could be achieved by a flag for each valueset pair,
+				   This could be achieved by a flag for each pair of value sets,
 				   being set during antic computation. */
 
-				/* check if available node ist still anticipated and clean */
+				/* check if available node is still anticipated and clean */
 				if (! ir_valueset_lookup(dom_info->antic_in, value)) {
 					DB((dbg, LEVEL_4, "%+F not antic in %+F\n", value, dom));
 					break;
