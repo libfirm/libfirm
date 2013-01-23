@@ -249,8 +249,8 @@ int pbqp_matrix_is_zero(pbqp_matrix_t *mat, vector_t *src_vec, vector_t *tgt_vec
 	unsigned col_len = mat->cols;
 	unsigned row_len = mat->rows;
 
-	assert(col_len = tgt_vec->len);
-	assert(row_len = src_vec->len);
+	assert(col_len == tgt_vec->len);
+	assert(row_len == src_vec->len);
 
 	for (unsigned row_index = 0; row_index < row_len; ++row_index) {
 		if (src_vec->entries[row_index].data == INF_COSTS)
