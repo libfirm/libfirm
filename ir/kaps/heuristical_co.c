@@ -193,6 +193,7 @@ void solve_pbqp_heuristical_co(pbqp_t *pbqp, plist_t *rpeo)
 		#else
 			fprintf(fh, ": %lld RE:%u R0:%u R1:%u R2:%u RM:%u RN/BF:%u\n", pbqp->solution,
 					pbqp->num_edges, pbqp->num_r0, pbqp->num_r1, pbqp->num_r2,
+					pbqp->num_rm, pbqp->num_rn);
 		#endif
 		fclose(fh);
 	#endif

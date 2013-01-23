@@ -126,7 +126,7 @@ num get_solution(pbqp_t *pbqp)
 }
 
 #if KAPS_DUMP
-void set_dumpfile(pbqp *pbqp, FILE *f)
+void set_dumpfile(pbqp_t *pbqp, FILE *f)
 {
 	pbqp->dump_file = f;
 }
