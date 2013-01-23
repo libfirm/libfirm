@@ -267,7 +267,7 @@ static void merge_source_into_target(pbqp_t *pbqp, pbqp_edge_t *edge)
 #if KAPS_DUMP
 	if (pbqp->dump_file) {
 		char txt[100];
-		sprintf(txt, "Merging n%d into n%d", src_node->index, tgt_node->index);
+		sprintf(txt, "Merging n%u into n%u", src_node->index, tgt_node->index);
 		pbqp_dump_section(pbqp->dump_file, 3, txt);
 	}
 #endif
@@ -408,7 +408,7 @@ static void merge_target_into_source(pbqp_t *pbqp, pbqp_edge_t *edge)
 #if KAPS_DUMP
 	if (pbqp->dump_file) {
 		char txt[100];
-		sprintf(txt, "Merging n%d into n%d", tgt_node->index, src_node->index);
+		sprintf(txt, "Merging n%u into n%u", tgt_node->index, src_node->index);
 		pbqp_dump_section(pbqp->dump_file, 3, txt);
 	}
 #endif
@@ -578,7 +578,7 @@ void simplify_edge(pbqp_t *pbqp, pbqp_edge_t *edge)
 #if KAPS_DUMP
 	if (pbqp->dump_file) {
 		char txt[100];
-		sprintf(txt, "Simplification of Edge n%d-n%d", src_node->index, tgt_node->index);
+		sprintf(txt, "Simplification of Edge n%u-n%u", src_node->index, tgt_node->index);
 		pbqp_dump_section(pbqp->dump_file, 3, txt);
 	}
 #endif
@@ -702,7 +702,7 @@ num determine_solution(pbqp_t *pbqp)
 
 #if KAPS_DUMP
 		if (file) {
-			fprintf(file, "node n%d is set to %d<br>\n", node->index, node->solution);
+			fprintf(file, "node n%u is set to %u<br>\n", node->index, node->solution);
 			pbqp_dump_node(file, node);
 		}
 #endif
@@ -746,7 +746,7 @@ static void back_propagate_RI(pbqp_t *pbqp, pbqp_node_t *node)
 
 #if KAPS_DUMP
 	if (pbqp->dump_file) {
-		fprintf(pbqp->dump_file, "node n%d is set to %d<br>\n", node->index, node->solution);
+		fprintf(pbqp->dump_file, "node n%u is set to %u<br>\n", node->index, node->solution);
 	}
 #endif
 }
@@ -811,7 +811,7 @@ static void back_propagate_RII(pbqp_t *pbqp, pbqp_node_t *node)
 
 #if KAPS_DUMP
 	if (pbqp->dump_file) {
-		fprintf(pbqp->dump_file, "node n%d is set to %d<br>\n", node->index, node->solution);
+		fprintf(pbqp->dump_file, "node n%u is set to %u<br>\n", node->index, node->solution);
 	}
 #endif
 
@@ -871,7 +871,7 @@ void apply_RI(pbqp_t *pbqp)
 #if KAPS_DUMP
 	if (pbqp->dump_file) {
 		char     txt[100];
-		sprintf(txt, "RI-Reduction of Node n%d", node->index);
+		sprintf(txt, "RI-Reduction of Node n%u", node->index);
 		pbqp_dump_section(pbqp->dump_file, 2, txt);
 		pbqp_dump_graph(pbqp);
 		fputs("<br>\nBefore reduction:<br>\n", pbqp->dump_file);
@@ -952,7 +952,7 @@ void apply_RII(pbqp_t *pbqp)
 #if KAPS_DUMP
 	if (pbqp->dump_file) {
 		char     txt[100];
-		sprintf(txt, "RII-Reduction of Node n%d", node->index);
+		sprintf(txt, "RII-Reduction of Node n%u", node->index);
 		pbqp_dump_section(pbqp->dump_file, 2, txt);
 		pbqp_dump_graph(pbqp);
 		fputs("<br>\nBefore reduction:<br>\n", pbqp->dump_file);

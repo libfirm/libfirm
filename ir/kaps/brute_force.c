@@ -131,7 +131,7 @@ static void apply_Brute_Force(pbqp_t *pbqp)
 #if KAPS_DUMP
 	if (pbqp->dump_file) {
 		char     txt[100];
-		sprintf(txt, "BF-Reduction of Node n%d", node->index);
+		sprintf(txt, "BF-Reduction of Node n%u", node->index);
 		pbqp_dump_section(pbqp->dump_file, 2, txt);
 		pbqp_dump_graph(pbqp);
 	}
@@ -146,7 +146,7 @@ static void apply_Brute_Force(pbqp_t *pbqp)
 
 #if KAPS_DUMP
 	if (pbqp->dump_file) {
-		fprintf(pbqp->dump_file, "node n%d is set to %d<br><br>\n", node->index, min_index);
+		fprintf(pbqp->dump_file, "node n%u is set to %u<br><br>\n", node->index, min_index);
 	}
 #endif
 
@@ -190,7 +190,7 @@ static void back_propagate_RI(pbqp_t *pbqp, pbqp_node_t *node)
 
 #if KAPS_DUMP
 	if (pbqp->dump_file) {
-		fprintf(pbqp->dump_file, "node n%d is set to %d<br>\n", node->index, node->solution);
+		fprintf(pbqp->dump_file, "node n%u is set to %u<br>\n", node->index, node->solution);
 	}
 #endif
 }
@@ -257,7 +257,7 @@ static void back_propagate_RII(pbqp_t *pbqp, pbqp_node_t *node)
 
 #if KAPS_DUMP
 	if (pbqp->dump_file) {
-		fprintf(pbqp->dump_file, "node n%d is set to %d<br>\n", node->index, node->solution);
+		fprintf(pbqp->dump_file, "node n%u is set to %u<br>\n", node->index, node->solution);
 	}
 #endif
 

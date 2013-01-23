@@ -46,7 +46,7 @@ static void back_propagate_RI(pbqp_t *pbqp, pbqp_node_t *node)
 
 #if KAPS_DUMP
 	if (pbqp->dump_file) {
-		fprintf(pbqp->dump_file, "node n%d is set to %d<br>\n", node->index, node->solution);
+		fprintf(pbqp->dump_file, "node n%u is set to %u<br>\n", node->index, node->solution);
 	}
 #endif
 }
@@ -110,7 +110,7 @@ static void back_propagate_RII(pbqp_t *pbqp, pbqp_node_t *node)
 
 #if KAPS_DUMP
 	if (pbqp->dump_file) {
-		fprintf(pbqp->dump_file, "node n%d is set to %d<br>\n", node->index, node->solution);
+		fprintf(pbqp->dump_file, "node n%u is set to %u<br>\n", node->index, node->solution);
 	}
 #endif
 
@@ -139,7 +139,7 @@ static void back_propagate_RN(pbqp_t *pbqp, pbqp_node_t *node)
 
 #if KAPS_DUMP
 	if (pbqp->dump_file) {
-		fprintf(pbqp->dump_file, "node n%d is set to %d<br>\n", node->index, node->solution);
+		fprintf(pbqp->dump_file, "node n%u is set to %u<br>\n", node->index, node->solution);
 	}
 #endif
 
@@ -205,7 +205,7 @@ static void apply_RN_co_without_selection(pbqp_t *pbqp)
 #if KAPS_DUMP
 	if (pbqp->dump_file) {
 		char     txt[100];
-		sprintf(txt, "RN-Reduction of Node n%d", node->index);
+		sprintf(txt, "RN-Reduction of Node n%u", node->index);
 		pbqp_dump_section(pbqp->dump_file, 2, txt);
 		pbqp_dump_graph(pbqp);
 	}

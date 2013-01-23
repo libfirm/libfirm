@@ -63,7 +63,7 @@ static void apply_RN_co(pbqp_t *pbqp)
 #if KAPS_DUMP
 	if (pbqp->dump_file) {
 		char     txt[100];
-		sprintf(txt, "RN-Reduction of Node n%d", node->index);
+		sprintf(txt, "RN-Reduction of Node n%u", node->index);
 		pbqp_dump_section(pbqp->dump_file, 2, txt);
 		pbqp_dump_graph(pbqp);
 	}
@@ -73,8 +73,7 @@ static void apply_RN_co(pbqp_t *pbqp)
 
 #if KAPS_DUMP
 	if (pbqp->dump_file) {
-		fprintf(pbqp->dump_file, "node n%d is set to %d<br><br>\n",
-					node->index, min_index);
+		fprintf(pbqp->dump_file, "node n%u is set to %u<br><br>\n", node->index, min_index);
 	}
 #endif
 
