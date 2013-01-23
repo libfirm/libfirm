@@ -810,7 +810,7 @@ static void lv_check_walker(ir_node *bl, void *data)
 	lv_walker_t *w     = (lv_walker_t*)data;
 	be_lv_t     *fresh = (be_lv_t*)w->data;
 
-	be_lv_info_t *curr = ir_nodehashmap_get(be_lv_info_t, &fresh->map, bl);
+	be_lv_info_t *curr = ir_nodehashmap_get(be_lv_info_t, &lv->map, bl);
 	be_lv_info_t *fr   = ir_nodehashmap_get(be_lv_info_t, &fresh->map, bl);
 
 	if (!fr && curr && curr[0].head.n_members > 0) {
