@@ -180,6 +180,4 @@ doc: $(docdir)/libfirm.tag $(docdir)/html/nodes.html
 .PHONY: clean
 clean:
 	@echo CLEAN
-	$(Q)rm -f $(libfirm_OBJECTS)
-	$(Q)rm -f $(libfirm_TARGET)
-	$(Q)rm -f $(shell find ir/ -name "gen_*.[ch]")
+	$(Q)rm -fr $(builddir) $(shell find ir/ -name "gen_*.[ch]")
