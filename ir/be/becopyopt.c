@@ -240,6 +240,8 @@ static int co_get_costs_loop_depth(const ir_node *root, int pos)
 }
 
 static ir_execfreq_int_factors factors;
+/* Remember the graph that we computed the factors for. */
+static ir_graph               *irg_for_factors = NULL;
 
 /**
  * Computes the costs of a copy according to execution frequency
@@ -953,6 +955,11 @@ void co_driver(be_chordal_env_t *cenv)
 	/* skip copymin if algo is 'none' */
 	if (selected_copyopt->copyopt == void_algo)
 		return;
+
+	if (cost_func == co_get_costs_exec_freq && irg_for_factors != cenv->irg) {
+		ir_calculate_execfreq_int_factors(&factors, cenv->irg);
+		irg_for_factors = cenv->irg;
+	}
 
 	be_assure_live_chk(cenv->irg);
 
