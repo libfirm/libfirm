@@ -303,8 +303,10 @@ void matrix_set(sp_matrix_t *m, int row, int col, double val)
 {
 	matrix_elem_t *me = NULL;
 	entry_t       *entr;
-	sp_matrix_list_head_t *leftof, *above;
-	sp_matrix_list_head_t *prev_leftof, *prev_above;
+	sp_matrix_list_head_t *leftof      = NULL;
+	sp_matrix_list_head_t *above       = NULL;
+	sp_matrix_list_head_t *prev_leftof = NULL;
+	sp_matrix_list_head_t *prev_above  = NULL;
 
 	/* if necessary enlarge the matrix */
 	if (row > m->maxrow) {
