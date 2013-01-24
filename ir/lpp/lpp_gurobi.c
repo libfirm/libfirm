@@ -207,6 +207,18 @@ static void gurobi_solve(gurobi_t *grb)
 	}
 #endif
 
+	/* The MIPGAP parameter determines when we consider a solution optimal.
+	 * To quote the documentation:
+	 * "The MIP solver will terminate (with an optimal result) when the
+	 *  relative gap between the lower and upper objective bound is less
+	 *  than MIPGap times the upper bound."
+	 * The default value of MIP gap is 1e-4, we set it to 0.0.
+	 * Otherwise, we sometimes produce an inferior solution (according
+	 * to our cost model) compared to heur4.
+	 */
+	error = GRBsetdblparam(grb->modelenv, GRB_DBL_PAR_MIPGAP, 0.0);
+	check_gurobi_error(grb, error);
+
 	/* solve */
 	error = GRBoptimize(grb->model);
 	check_gurobi_error(grb, error);
