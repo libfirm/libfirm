@@ -4186,14 +4186,10 @@ static ir_node *transform_node_Cmp(ir_node *n)
 		if (relation == ir_relation_equal
 	        || (mode_is_signed(mode) && relation == ir_relation_less_greater)
 	        || (!mode_is_signed(mode) && (relation & ir_relation_less_equal) == ir_relation_less)) {
-			ir_node *and0 = get_And_left(left);
-			ir_node *and1 = get_And_right(left);
-			if (and1 == right) {
-				ir_node *tmp = and0;
-				and0 = and1;
-				and1 = tmp;
-			}
-			if (and0 == right && is_single_bit(and0)) {
+			ir_node *mask = get_And_left(left);
+			if (mask != right)
+				mask = get_And_right(left);
+			if (mask == right && is_single_bit(mask)) {
 				ir_graph *irg = get_irn_irg(n);
 				relation =
 					relation == ir_relation_equal ? ir_relation_less_greater
