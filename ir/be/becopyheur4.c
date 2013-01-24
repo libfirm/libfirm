@@ -931,12 +931,13 @@ static inline int is_loose(co_mst_irn_t *node)
  */
 static void determine_color_costs(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *costs)
 {
-	int   *neigh_cols = ALLOCAN(int, env->n_regs);
+	const int n_regs  = env->n_regs;
+	int   *neigh_cols = ALLOCAN(int, n_regs);
 	int    n_loose    = 0;
 	real_t coeff;
 	int    i;
 
-	for (i = 0; i < env->n_regs; ++i) {
+	for (i = 0; i < n_regs; ++i) {
 		neigh_cols[i] = 0;
 		costs[i].col = i;
 		costs[i].cost = bitset_is_set(node->adm_colors, i) ? node->constr_factor : REAL(0.0);
@@ -945,6 +946,7 @@ static void determine_color_costs(co_mst_env_t *env, co_mst_irn_t *node, col_cos
 	for (i = 0; i < node->n_neighs; ++i) {
 		co_mst_irn_t *n = get_co_mst_irn(env, node->int_neighs[i]);
 		int col = get_mst_irn_col(n);
+		assert (col < n_regs);
 		if (is_loose(n)) {
 			++n_loose;
 			++neigh_cols[col];
@@ -954,7 +956,7 @@ static void determine_color_costs(co_mst_env_t *env, co_mst_irn_t *node, col_cos
 
 	if (n_loose > 0) {
 		coeff = REAL(1.0) / n_loose;
-		for (i = 0; i < env->n_regs; ++i)
+		for (i = 0; i < n_regs; ++i)
 			costs[i].cost *= REAL(1.0) - coeff * neigh_cols[i];
 	}
 }

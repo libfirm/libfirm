@@ -77,12 +77,13 @@ static void do_type_walk(type_or_ent tore,
                          void *env)
 {
 	size_t      i, n_types, n_mem;
-	ir_entity   *ent = NULL;
-	ir_type     *tp = NULL;
 	type_or_ent cont;
+	ir_entity       *ent  = NULL;
+	ir_type         *tp   = NULL;
+	const firm_kind  kind = get_kind(tore.ent);
 
 	/* marked? */
-	switch (get_kind(tore.ent)) {
+	switch (kind) {
 	case k_entity:
 		ent = tore.ent;
 		if (entity_visited(ent))
@@ -104,7 +105,7 @@ static void do_type_walk(type_or_ent tore,
 		pre(tore, env);
 
 	/* iterate */
-	switch (get_kind(tore.ent)) {
+	switch (kind) {
 	case k_entity:
 		cont.typ = get_entity_owner(ent);
 		do_type_walk(cont, pre, post, env);
