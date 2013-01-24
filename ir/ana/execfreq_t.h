@@ -35,7 +35,6 @@ void exit_execfreq(void);
 void set_block_execfreq(ir_node *block, double freq);
 
 typedef struct ir_execfreq_int_factors {
-	double max;
 	double min_non_zero;
 	double m, b;
 } ir_execfreq_int_factors;
