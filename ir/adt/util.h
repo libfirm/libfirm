@@ -15,16 +15,6 @@
 #include <stddef.h>
 
 /**
- * Make pointer to the struct from a pointer to a member of that struct.
- * @param ptr     The pointer to the member.
- * @param type    The type of the struct.
- * @param member  The name of the member.
- * @return        A pointer to the struct member is in.
- */
-#define firm_container_of(ptr, type, member) \
-	((type *) ((char *) (ptr) - offsetof(type, member)))
-
-/**
  * Returns size of a static array. Warning: This returns invalid values for
  * dynamically allocated arrays.
  *
