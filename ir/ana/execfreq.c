@@ -213,6 +213,8 @@ void ir_calculate_execfreq_int_factors(ir_execfreq_int_factors *factors,
 	/* the abscissa is then given by */
 	factors->b = l1 - factors->m * l2;
 
+	factors->min_non_zero = min_non_zero;
+
 	/*
 	 * if the slope is so high that the largest integer would be larger than
 	 * MAX_INT_FREQ set the largest int freq to that upper limit and recompute
@@ -229,6 +231,8 @@ void ir_calculate_execfreq_int_factors(ir_execfreq_int_factors *factors,
 int get_block_execfreq_int(const ir_execfreq_int_factors *factors,
                            const ir_node *block)
 {
+	assert(factors->min_non_zero > 0.0);
+	assert(factors->m != 0.0);
 	double f   = get_block_execfreq(block);
 	int    res = (int) (f > factors->min_non_zero ? factors->m * f + factors->b : 1.0);
 	return res;
