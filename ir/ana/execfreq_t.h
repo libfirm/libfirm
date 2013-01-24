@@ -36,7 +36,8 @@ void set_block_execfreq(ir_node *block, double freq);
 
 typedef struct ir_execfreq_int_factors {
 	double min_non_zero;
-	double m, b;
+	double m;
+	double b;
 } ir_execfreq_int_factors;
 
 void ir_calculate_execfreq_int_factors(ir_execfreq_int_factors *factors,
