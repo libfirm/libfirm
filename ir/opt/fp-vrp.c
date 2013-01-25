@@ -28,6 +28,7 @@
 #include "tv.h"
 #include "irpass.h"
 #include "irmemory.h"
+#include "fp-vrp.h"
 
 /* TODO:
  * - Implement cleared/set bit calculation for Add, Sub, Minus, Mul, Div, Mod, Shl, Shr, Shrs, Rotl
@@ -106,17 +107,13 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
-static struct obstack obst;
-
-typedef struct bitinfo
-{
-	ir_tarval* z; // safe zeroes, 0 = bit is zero,       1 = bit maybe is 1
-	ir_tarval* o; // safe ones,   0 = bit maybe is zero, 1 = bit is 1
-} bitinfo;
+static struct obstack *obst;
 
 typedef struct environment_t {
 	unsigned modified:1;     /**< Set, if the graph was modified. */
 } environment_t;
+
+typedef vrp_bitinfo bitinfo;
 
 static bool is_undefined(bitinfo const* const b)
 {
@@ -132,7 +129,7 @@ static int set_bitinfo(ir_node* const irn, ir_tarval* const z, ir_tarval* const 
 {
 	bitinfo* b = get_bitinfo(irn);
 	if (b == NULL) {
-		b = OALLOCZ(&obst, bitinfo);
+		b = OALLOCZ(obst, bitinfo);
 		set_irn_link(irn, b);
 	} else if (z == b->z && o == b->o) {
 		return 0;
@@ -827,20 +824,12 @@ static void build_phi_lists(ir_node *irn, void *env)
 		add_Block_phi(get_nodes_block(irn), irn);
 }
 
-void fixpoint_vrp(ir_graph* const irg)
+void fp_vrp_analyze(ir_graph* const irg, struct obstack *client_obst)
 {
-	environment_t env;
+	obst = client_obst;
 
-	FIRM_DBG_REGISTER(dbg, "firm.opt.fp-vrp");
-	DB((dbg, LEVEL_1, "===> Performing constant propagation on %+F\n", irg));
-
-	assure_irg_properties(irg,
-		IR_GRAPH_PROPERTY_NO_BADS
-		| IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
-		| IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
-		| IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
-
-	obstack_init(&obst);
+	FIRM_DBG_REGISTER(dbg, "firm.ana.fp-vrp");
+	DB((dbg, LEVEL_1, "===> Performing constant propagation on %+F (analysis)\n", irg));
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 
@@ -870,13 +859,37 @@ void fixpoint_vrp(ir_graph* const irg)
 		del_pdeq(q);
 	}
 
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
+}
+
+void fixpoint_vrp(ir_graph* const irg)
+{
+	environment_t env;
+	struct obstack private_obst;
+
+	assure_irg_properties(irg,
+		IR_GRAPH_PROPERTY_NO_BADS
+		| IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
+		| IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+		| IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
+
+	obstack_init(obst = &private_obst);
+
+	fp_vrp_analyze(irg, obst);
+
+	FIRM_DBG_REGISTER(dbg, "firm.opt.fp-vrp");
+	DB((dbg, LEVEL_1, "===> Performing constant propagation on %+F (optimization)\n", irg));
+
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
+
 	DB((dbg, LEVEL_2, "---> Applying analysis results\n"));
 	env.modified = 0;
 	irg_walk_graph(irg, NULL, apply_result, &env);
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 
-	obstack_free(&obst, NULL);
+	obstack_free(&private_obst, NULL);
+
 	confirm_irg_properties(irg,
 		env.modified ? IR_GRAPH_PROPERTIES_NONE : IR_GRAPH_PROPERTIES_ALL);
 }
