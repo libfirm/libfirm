@@ -240,14 +240,6 @@ static bool can_inline(ir_node *call, ir_graph *called_graph)
 		}
 	}
 
-	/* check results for compound arguments */
-	for (i = 0; i < n_res; ++i) {
-		ir_type *r_type = get_method_res_type(call_type, i);
-
-		if (is_compound_type(r_type) || is_Array_type(r_type))
-			return false;
-	}
-
 	/* check for nested functions */
 	for (i = 0; i < n_entities; ++i) {
 		ir_entity *ent = get_class_member(frame_type, i);
@@ -321,6 +313,7 @@ static void copy_parameter_entities(ir_node *call, ir_type *ctp, ir_graph *calle
 			ir_node *copyb      = new_rd_CopyB(dbgi, block, mem, sel, arg, param_type);
 			mem                 = new_r_Proj(copyb, mode_M, pn_CopyB_M);
 			set_Call_param(call, n_param_pos, sel);
+			set_Call_mem(call, mem);
 		} else if (is_parameter_entity(old_entity) && is_atomic_entity(old_entity)) {
 			/*Store the parameter onto the frame */
 			size_t n_param_pos  = old_entity->attr.parameter.number;
@@ -338,9 +331,9 @@ static void copy_parameter_entities(ir_node *call, ir_type *ctp, ir_graph *calle
 			arr[0]              = mem;
 			arr[1]              = new_mem;
 			mem                 = new_rd_Sync(dbgi, block, 2, arr);
+			set_Call_mem(call, mem);
 		}
 	}
-	set_Call_mem(call, mem);
 }
 
 /* Inlines a method at the given call site. */
@@ -541,7 +534,7 @@ int inline_method(ir_node *const call, ir_graph *called_graph)
 		for (int j = 0; j < n_res; j++) {
 			ir_type *res_type = get_method_res_type(ctp, j);
 			ir_mode *res_mode = get_type_mode(res_type);
-			int is_compound = is_compound_type(res_type);
+			int is_compound = is_compound_type(res_type) || is_Array_type(res_type);
 			int n_ret = 0;
 			for (int i = 0; i < arity; i++) {
 				ir_node *ret = get_Block_cfgpred(end_bl, i);
