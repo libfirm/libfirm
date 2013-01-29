@@ -1193,7 +1193,7 @@ static void emit_initializer(be_gas_decl_env_t *env, const ir_entity *entity)
 			be_emit_write_line();
 		}
 	}
-	xfree(vals);
+	free(vals);
 }
 
 static void emit_align(unsigned p2alignment)
@@ -1605,8 +1605,8 @@ void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
 	if (entity != NULL)
 		be_gas_emit_switch_section(GAS_SECTION_TEXT);
 
-	xfree(labels);
-	xfree(targets);
+	free(labels);
+	free(targets);
 }
 
 static void emit_global_asms(void)

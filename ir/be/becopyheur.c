@@ -477,8 +477,8 @@ static inline void free_qnode(qnode_t *qn)
 {
 	del_set(qn->conflicts);
 	del_set(qn->changed_nodes);
-	xfree(qn->mis);
-	xfree(qn);
+	free(qn->mis);
+	free(qn);
 }
 
 /**

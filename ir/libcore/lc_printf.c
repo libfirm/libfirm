@@ -287,7 +287,7 @@ static int std_emit(lc_appendable_t *app, const lc_arg_occ_t *occ, const lc_arg_
 				char *buf = XMALLOCN(char, len);
 				res = dispatch_snprintf(buf, len, fmt, occ->lc_arg_type, val);
 				res = lc_appendable_snadd(app, buf, res);
-				xfree(buf);
+				free(buf);
 			}
 	}
 

@@ -239,5 +239,5 @@ void heights_free(ir_heights_t *h)
 	dump_remove_node_info_callback(h->dump_handle);
 	obstack_free(&h->obst, NULL);
 	ir_nodemap_destroy(&h->data);
-	xfree(h);
+	free(h);
 }

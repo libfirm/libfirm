@@ -791,7 +791,7 @@ static void verify_edge_counter(ir_node *irn, void *env)
 			irn, ref_cnt, list_cnt);
 	}
 
-	bitset_free(bs);
+	free(bs);
 }
 
 int edges_verify(ir_graph *irg)

@@ -161,10 +161,10 @@ void hungarian_remove(hungarian_problem_t *p, unsigned left, unsigned right)
 
 void hungarian_free(hungarian_problem_t* p)
 {
-	xfree(p->missing_left);
-	xfree(p->missing_right);
-	xfree(p->cost);
-	xfree(p);
+	free(p->missing_left);
+	free(p->missing_right);
+	free(p->cost);
+	free(p);
 }
 
 int hungarian_solve(hungarian_problem_t* p, unsigned *assignment,
@@ -419,14 +419,14 @@ done:
 
 	DBG((dbg, LEVEL_1, "Cost is %d\n", res_cost));
 
-	xfree(slack);
-	xfree(col_inc);
-	xfree(parent_row);
-	xfree(row_mate);
-	xfree(slack_row);
-	xfree(row_dec);
-	xfree(unchosen_row);
-	xfree(col_mate);
+	free(slack);
+	free(col_inc);
+	free(parent_row);
+	free(row_mate);
+	free(slack_row);
+	free(row_dec);
+	free(unchosen_row);
+	free(col_mate);
 
 	if (final_cost != NULL)
 		*final_cost = res_cost;

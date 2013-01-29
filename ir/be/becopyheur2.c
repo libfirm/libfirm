@@ -988,7 +988,7 @@ static void process(co2_t *env)
 
 	DB((env->dbg, LEVEL_1, "all costs: %d, init costs: %d, final costs: %d\n", all_costs, init_costs, final_costs));
 
-	xfree(clouds);
+	free(clouds);
 }
 
 static int co_solve_heuristic_new(copy_opt_t *co)

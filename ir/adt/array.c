@@ -17,12 +17,6 @@
 #include "util.h"
 #include "xmalloc.h"
 
-/* Undefine the macros to get the functions instead, cf tmalloc.c.  */
-#undef xmalloc
-#undef xrealloc
-#undef xstrdup
-#undef xfree
-
 /**
  * An empty dynamic array descriptor.
  */

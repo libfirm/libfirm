@@ -78,7 +78,7 @@ void plist_free(plist_t *list)
 
 	if (! list->foreign_obstack) {
 		obstack_free(list->obst, NULL);
-		xfree(list);
+		free(list);
 	}
 }
 

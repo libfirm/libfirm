@@ -1043,7 +1043,7 @@ static ir_graph **create_irg_list(void)
 	walk_env_t env;
 
 	cgana(&free_methods);
-	xfree(free_methods);
+	free(free_methods);
 
 	compute_callgraph();
 
@@ -1345,7 +1345,7 @@ void inline_functions(unsigned maxsize, int inline_threshold,
 	}
 	pmap_destroy(copied_graphs);
 
-	xfree(irgs);
+	free(irgs);
 
 	obstack_free(&temp_obst, NULL);
 	current_ir_graph = rem;

@@ -74,7 +74,7 @@ static inline ir_nodeset_t *ir_nodeset_new(size_t expected_elements) {
  */
 static inline void ir_nodeset_del(ir_nodeset_t *nodeset) {
 	ir_nodeset_destroy(nodeset);
-	xfree(nodeset);
+	free(nodeset);
 }
 
 /**

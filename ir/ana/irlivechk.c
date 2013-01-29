@@ -254,7 +254,7 @@ void lv_chk_free(lv_chk_t *lv)
 	dfs_free(lv->dfs);
 	obstack_free(&lv->obst, NULL);
 	ir_nodemap_destroy(&lv->block_infos);
-	xfree(lv);
+	free(lv);
 }
 
 unsigned lv_chk_bl_xxx(lv_chk_t *lv, const ir_node *bl, const ir_node *var)

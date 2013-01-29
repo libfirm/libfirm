@@ -78,7 +78,7 @@ static inline ir_valueset_t *ir_valueset_new(size_t expected_elements) {
  */
 static inline void ir_valueset_del(ir_valueset_t *valueset) {
 	ir_valueset_destroy(valueset);
-	xfree(valueset);
+	free(valueset);
 }
 
 /**

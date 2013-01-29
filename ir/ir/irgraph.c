@@ -101,7 +101,7 @@ void irg_set_nloc(ir_graph *res, int n_loc)
 	                               parameters to the procedure!  */
 
 	if (res->loc_descriptions) {
-		xfree(res->loc_descriptions);
+		free(res->loc_descriptions);
 		res->loc_descriptions = NULL;
 	}
 }

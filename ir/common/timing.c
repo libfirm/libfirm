@@ -74,7 +74,7 @@ ir_timer_t *ir_timer_new(void)
 
 void ir_timer_free(ir_timer_t *timer)
 {
-	xfree(timer);
+	free(timer);
 }
 
 #ifdef HAVE_GETTIMEOFDAY

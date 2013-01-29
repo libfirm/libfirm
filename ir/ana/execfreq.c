@@ -374,5 +374,5 @@ void ir_estimate_execfreq(ir_graph *irg)
 
 	dfs_free(dfs);
 
-	xfree(x);
+	free(x);
 }

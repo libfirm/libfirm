@@ -1420,7 +1420,7 @@ void sparc_emit_routine(ir_graph *irg)
 	sparc_emit_func_epilog(irg);
 
 	pmap_destroy(delay_slots);
-	xfree(delay_slot_fillers);
+	free(delay_slot_fillers);
 	heights_free(heights);
 }
 

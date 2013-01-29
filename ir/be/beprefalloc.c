@@ -1772,7 +1772,7 @@ static void determine_block_order(void)
 
 static void free_block_order(void)
 {
-	xfree(block_order);
+	free(block_order);
 }
 
 /**

@@ -525,7 +525,7 @@ static unsigned int *parse_profile(const char *filename, unsigned int num_blocks
 	if (ret < 1) {
 		DBG((dbg, LEVEL_4, "Failed to read counters... (size: %u)\n",
 			sizeof(unsigned int) * num_blocks));
-		xfree(result);
+		free(result);
 		result = NULL;
 	}
 
@@ -585,7 +585,7 @@ bool ir_profile_read(const char *filename)
 	profile = new_set(cmp_execcount, 16);
 
 	irp_associate_blocks(&env);
-	xfree(env.counters);
+	free(env.counters);
 
 	/* register the vcg hook */
 	hook = dump_add_node_info_callback(dump_profile_node_info, NULL);

@@ -51,11 +51,6 @@ FIRM_API void *xrealloc(void *ptr, size_t size);
  * error handling is required for code using it.
  */
 FIRM_API char *xstrdup(const char *str);
-/**
- * Another name for the free function
- * @deprecated
- */
-#define xfree(ptr)      free(ptr)
 
 /**
  * Allocate n objects of a certain type

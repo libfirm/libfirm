@@ -668,7 +668,7 @@ void be_free_frame_entity_coalescer(be_fec_env_t *env)
 	DEL_ARR_F(env->reloads);
 	DEL_ARR_F(env->affinity_edges);
 	DEL_ARR_F(env->spills);
-	xfree(env->spills_set);
+	free(env->spills_set);
 	obstack_free(&env->obst, NULL);
 
 	free(env);

@@ -401,7 +401,7 @@ void be_peephole_opt(ir_graph *irg)
 
 	irg_block_walk_graph(irg, process_block, NULL, NULL);
 
-	xfree(register_values);
+	free(register_values);
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_peephole)

@@ -80,7 +80,7 @@ static inline void free_pdeq_block (pdeq *p)
 	if (pdeqs_cached < TUNE_NSAVED_PDEQS) {
 		pdeq_block_cache[pdeqs_cached++] = p;
 	} else {
-		xfree (p);
+		free (p);
 	}
 }
 

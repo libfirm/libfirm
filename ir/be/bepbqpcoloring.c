@@ -108,7 +108,7 @@ static FILE *my_open(const be_chordal_env_t *env, const char *prefix, const char
 			tu_name[i] = '_';
 
 	ir_snprintf(buf, sizeof(buf), "%s%s_%F_%s%s", prefix, tu_name, env->irg, env->cls->name, suffix);
-	xfree(tu_name);
+	free(tu_name);
 	result = fopen(buf, "wt");
 	if (result == NULL) {
 		panic("Couldn't open '%s' for writing.", buf);
@@ -708,8 +708,8 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 #endif
 	free_pbqp(pbqp_alloc_env.pbqp_inst);
 	plist_free(pbqp_alloc_env.rpeo);
-	xfree(pbqp_alloc_env.restr_nodes);
-	xfree(pbqp_alloc_env.ife_edge_num);
+	free(pbqp_alloc_env.restr_nodes);
+	free(pbqp_alloc_env.ife_edge_num);
 }
 
 

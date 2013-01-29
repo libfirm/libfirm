@@ -237,7 +237,7 @@ void be_abihelper_finish(beabi_helper_env_t *env)
 	if (env->epilog.reg_index_map != NULL) {
 		free_rsm(&env->epilog, arch_env);
 	}
-	xfree(env);
+	free(env);
 }
 
 void be_prolog_add_reg(beabi_helper_env_t *env, const arch_register_t *reg,
@@ -613,7 +613,7 @@ static void process_ops_in_block(ir_node *block, void *data)
 
 		ir_nodemap_insert(map, node, pred);
 	}
-	xfree(nodes);
+	free(nodes);
 }
 
 

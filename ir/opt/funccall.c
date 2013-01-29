@@ -879,8 +879,8 @@ void optimize_funccalls(void)
 
 	handle_const_Calls(&ctx);
 
-	xfree(busy_set);
-	xfree(ready_set);
+	free(busy_set);
+	free(ready_set);
 }
 
 void firm_init_funccalls(void)

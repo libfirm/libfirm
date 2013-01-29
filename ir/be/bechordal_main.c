@@ -305,7 +305,7 @@ static void post_spill(be_chordal_env_t *const chordal_env, ir_graph *const irg)
 
 	/* free some always allocated data structures */
 	pmap_destroy(chordal_env->border_heads);
-	bitset_free(chordal_env->allocatable_regs);
+	free(chordal_env->allocatable_regs);
 }
 
 /**

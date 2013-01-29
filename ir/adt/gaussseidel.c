@@ -78,11 +78,11 @@ void gs_delete_matrix(gs_matrix_t *m)
 	int i;
 	for (i = 0; i < m->c_rows; ++i) {
 		if (m->rows[i].c_cols)
-			xfree(m->rows[i].cols);
+			free(m->rows[i].cols);
 	}
 	if (m->c_rows)
-		xfree(m->rows);
-	xfree(m);
+		free(m->rows);
+	free(m);
 }
 
 unsigned gs_matrix_get_n_entries(const gs_matrix_t *m)
@@ -124,7 +124,7 @@ void gs_matrix_trim_row_capacities(gs_matrix_t *m)
 			if (the_row->c_cols)
 				the_row->cols = XREALLOC(the_row->cols, col_val_t, the_row->c_cols);
 			else
-				xfree(the_row->cols);
+				free(the_row->cols);
 		}
 	}
 }
@@ -321,5 +321,5 @@ void gs_matrix_dump(const gs_matrix_t *m, int a, int b, FILE *out)
 		fprintf(out, "\n");
 	}
 
-	xfree(elems);
+	free(elems);
 }

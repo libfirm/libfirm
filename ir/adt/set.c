@@ -127,7 +127,7 @@ SET *(PMANGLE(new)) (MANGLEP(cmp_fun) cmp, size_t nslots)
 void PMANGLE(del) (SET *table)
 {
 	obstack_free (&table->obst, NULL);
-	xfree (table);
+	free (table);
 }
 
 size_t MANGLEP(count) (SET *table)

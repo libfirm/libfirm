@@ -2326,7 +2326,7 @@ void stat_term(void)
 
 		stat_term_dumper();
 
-		xfree(status);
+		free(status);
 		status = (stat_info_t *)&status_disable;
 	}
 }

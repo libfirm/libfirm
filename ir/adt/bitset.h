@@ -75,15 +75,6 @@ static inline bitset_t *bitset_malloc(size_t n_bits)
 }
 
 /**
- * Free a bitset allocated with bitset_malloc().
- * @param bs The bitset.
- */
-static inline void bitset_free(bitset_t *bitset)
-{
-	xfree(bitset);
-}
-
-/**
  * Allocate a bitset on the stack via alloca.
  * @param size The greatest bit that shall be stored in the set.
  * @return A pointer to an empty initialized bitset.

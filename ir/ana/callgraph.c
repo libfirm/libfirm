@@ -828,11 +828,11 @@ static void reset_isbe(void)
 		ir_graph *irg = get_irp_irg(i);
 
 		if (irg->caller_isbe)
-			xfree(irg->caller_isbe);
+			free(irg->caller_isbe);
 		irg->caller_isbe = NULL;
 
 		if (irg->callee_isbe)
-			xfree(irg->callee_isbe);
+			free(irg->callee_isbe);
 		irg->callee_isbe = NULL;
 	}
 }
@@ -909,7 +909,7 @@ void analyse_loop_nesting_depth(void)
 		ir_entity **free_methods = NULL;
 
 		cgana(&free_methods);
-		xfree(free_methods);
+		free(free_methods);
 	}
 
 	if (irp_callgraph_consistent != get_irp_callgraph_state()) {

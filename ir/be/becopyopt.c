@@ -602,9 +602,9 @@ void co_free_ou_structure(copy_opt_t *co)
 {
 	ASSERT_OU_AVAIL(co);
 	list_for_each_entry_safe(unit_t, curr, tmp, &co->units, units) {
-		xfree(curr->nodes);
-		xfree(curr->costs);
-		xfree(curr);
+		free(curr->nodes);
+		free(curr->costs);
+		free(curr);
 	}
 	co->units.next = NULL;
 }
@@ -698,7 +698,7 @@ void co_complete_stats(const copy_opt_t *co, co_complete_stats_t *stat)
 		}
 	}
 
-	bitset_free(seen);
+	free(seen);
 }
 
 /******************************************************************************
@@ -913,7 +913,7 @@ static void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 		}
 	}
 
-	xfree(node_map);
+	free(node_map);
 }
 
 static FILE *my_open(const be_chordal_env_t *env, const char *prefix,
@@ -934,7 +934,7 @@ static FILE *my_open(const be_chordal_env_t *env, const char *prefix,
 
 
 	ir_snprintf(buf, sizeof(buf), "%s%s_%F_%s%s", prefix, tu_name, env->irg, env->cls->name, suffix);
-	xfree(tu_name);
+	free(tu_name);
 	result = fopen(buf, "wt");
 	if (result == NULL) {
 		panic("Couldn't open '%s' for writing.", buf);

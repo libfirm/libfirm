@@ -132,7 +132,7 @@ static void pass_wrapper(void)
     /* Remove methods that are never called. */
     gc_irgs(arr_len, keep_methods);
 
-    xfree(keep_methods);
+    free(keep_methods);
 }
 
 ir_prog_pass_t *gc_irgs_pass(const char *name)

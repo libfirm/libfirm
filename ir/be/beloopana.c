@@ -167,7 +167,7 @@ unsigned be_get_loop_pressure(be_loopana_t *loop_ana, const arch_register_class_
 void be_free_loop_pressure(be_loopana_t *loop_ana)
 {
 	del_set(loop_ana->data);
-	xfree(loop_ana);
+	free(loop_ana);
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_loopana)

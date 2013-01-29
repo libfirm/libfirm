@@ -247,7 +247,7 @@ void free_entity(ir_entity *ent)
 #ifdef DEBUG_libfirm
 	ent->kind = k_BAD;
 #endif
-	xfree(ent);
+	free(ent);
 }
 
 long get_entity_nr(const ir_entity *ent)

@@ -561,7 +561,7 @@ void set_vrp_data(ir_graph *irg)
 
 	env->visited = bitset_malloc(get_irg_last_idx(irg));
 	irg_walk_graph(irg, NULL, vrp_first_pass, env);
-	bitset_free(env->visited);
+	free(env->visited);
 
 	/* while there are entries in the worklist, continue*/
 	while (!waitq_empty(env->workqueue)) {

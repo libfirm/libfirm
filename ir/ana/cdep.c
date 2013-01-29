@@ -155,7 +155,7 @@ void free_cdep(ir_graph *irg)
 	if (cdep_data != NULL) {
 		pmap_destroy(cdep_data->cdep_map);
 		obstack_free(&cdep_data->obst, NULL);
-		xfree(cdep_data);
+		free(cdep_data);
 		cdep_data = NULL;
 	}
 }

@@ -40,7 +40,7 @@ void bipartite_free(bipartite_t *gr)
 {
 	int i;
 	for (i = 0; i < gr->n_left; ++i)
-		bitset_free(gr->adj[i]);
+		free(gr->adj[i]);
 	free(gr);
 }
 

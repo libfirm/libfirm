@@ -767,7 +767,7 @@ static __attribute__((unused)) void chunk_order_nodes(co_mst_env_t *env, aff_chu
 		}
 
 		del_pqueue(grow);
-		bitset_free(visited);
+		free(visited);
 	}
 }
 
@@ -879,7 +879,7 @@ static aff_chunk_t *fragment_chunk(co_mst_env_t *env, int col, aff_chunk_t *c, w
 	}
 
 	assert(best && "No chunk found?");
-	bitset_free(visited);
+	free(visited);
 	return best;
 }
 
@@ -1385,7 +1385,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 
 	/* clear obsolete chunks and free some memory */
 	delete_aff_chunk(best_chunk);
-	bitset_free(visited);
+	free(visited);
 	if (best_starts)
 		del_waitq(best_starts);
 

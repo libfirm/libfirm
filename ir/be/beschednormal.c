@@ -412,7 +412,7 @@ static void normal_finish_graph(void *env)
 	/* block uses the link field to store the schedule */
 	ir_free_resources(inst->irg, IR_RESOURCE_IRN_LINK);
 	obstack_free(&inst->obst, NULL);
-	xfree(inst);
+	free(inst);
 }
 
 static void sched_normal(ir_graph *irg)

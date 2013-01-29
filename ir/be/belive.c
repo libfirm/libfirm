@@ -375,7 +375,7 @@ void be_liveness_free(be_lv_t *lv)
 	be_liveness_invalidate_sets(lv);
 	be_liveness_invalidate_chk(lv);
 
-	xfree(lv);
+	free(lv);
 }
 
 void be_liveness_remove(be_lv_t *lv, const ir_node *irn)

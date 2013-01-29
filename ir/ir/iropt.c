@@ -6337,7 +6337,7 @@ void ir_normalize_node(ir_node *n)
 			memcpy(new_ins, ins, arity*sizeof(ins[0]));
 			qsort(new_ins, arity, sizeof(new_ins[0]), cmp_node_nr);
 			set_irn_in(n, arity, new_ins);
-			xfree(new_ins);
+			free(new_ins);
 		}
 	}
 }

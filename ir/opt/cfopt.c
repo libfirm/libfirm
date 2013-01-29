@@ -498,7 +498,7 @@ static void optimize_blocks(ir_node *b, void *ctx)
 
 	/* see if phi-fix was correct */
 	assert(get_Block_phis(b) == NULL || p_preds == -1 || (n_preds == p_preds));
-	xfree(in);
+	free(in);
 }
 
 /**

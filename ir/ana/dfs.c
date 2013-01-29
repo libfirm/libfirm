@@ -194,9 +194,9 @@ void dfs_free(dfs_t *dfs)
 	obstack_free(&dfs->obst, NULL);
 	del_set(dfs->nodes);
 	del_set(dfs->edges);
-	xfree(dfs->pre_order);
-	xfree(dfs->post_order);
-	xfree(dfs);
+	free(dfs->pre_order);
+	free(dfs->post_order);
+	free(dfs);
 }
 
 static void dfs_dump_edge(const dfs_edge_t *edge, FILE *file)
@@ -264,5 +264,5 @@ void dfs_dump(const dfs_t *dfs, FILE *file)
 		dfs_dump_edge(edge, file);
 
 	ir_fprintf(file, "}\n");
-	xfree(nodes);
+	free(nodes);
 }

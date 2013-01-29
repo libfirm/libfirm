@@ -284,19 +284,19 @@ void del_matrix(sp_matrix_t *m)
 				/* get current matrix element */
 				e = _container_of(n, entry_t, row_chain);
 				n = n->next;
-				xfree(e);
+				free(e);
 			} while (n != NULL);
 
 		}
-		xfree(m->rows[i]);
+		free(m->rows[i]);
 	}
 	for (i = 0; i < m->colc; ++i)
-		xfree(m->cols[i]);
-	xfree(m->last_col_el);
-	xfree(m->last_row_el);
-	xfree(m->rows);
-	xfree(m->cols);
-	xfree(m);
+		free(m->cols[i]);
+	free(m->last_col_el);
+	free(m->last_row_el);
+	free(m->rows);
+	free(m->cols);
+	free(m);
 }
 
 void matrix_set(sp_matrix_t *m, int row, int col, double val)

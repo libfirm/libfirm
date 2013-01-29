@@ -187,7 +187,7 @@ static void walker(ir_node *proj, void *env)
 		}
 		assert(i == n+1);
 		sync = new_r_Sync(block, i, in);
-		xfree(in);
+		free(in);
 		edges_reroute_except(proj, sync, sync);
 
 		n = ir_nodeset_size(&pi.this_mem);

@@ -1681,7 +1681,7 @@ void ia32_gen_routine(ir_graph *irg)
 	infos = construct_parameter_infos(irg);
 	be_gas_emit_function_prolog(entity, ia32_cg_config.function_alignment,
 	                            infos);
-	xfree(infos);
+	free(infos);
 
 	sp_relative = layout->sp_relative;
 	if (layout->sp_relative) {
@@ -3428,7 +3428,7 @@ void ia32_gen_binary_routine(ir_graph *irg)
 	infos = construct_parameter_infos(irg);
 	be_gas_emit_function_prolog(entity, ia32_cg_config.function_alignment,
 	                            NULL);
-	xfree(infos);
+	free(infos);
 
 	/* we use links to point to target blocks */
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);

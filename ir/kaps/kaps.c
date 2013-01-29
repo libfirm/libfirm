@@ -80,7 +80,7 @@ pbqp_t *alloc_pbqp(unsigned number_nodes)
 void free_pbqp(pbqp_t *pbqp)
 {
 	obstack_free(&pbqp->obstack, NULL);
-	xfree(pbqp);
+	free(pbqp);
 }
 
 void add_node_costs(pbqp_t *pbqp, unsigned node_index, vector_t *costs)

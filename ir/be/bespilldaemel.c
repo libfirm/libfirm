@@ -333,7 +333,7 @@ static void be_spill_daemel(ir_graph *irg, const arch_register_class_t *new_cls)
 
 	irg_block_walk_graph(irg, spill_block, NULL, NULL);
 
-	bitset_free(spilled_nodes);
+	free(spilled_nodes);
 
 	be_insert_spills_reloads(spill_env);
 	be_delete_spill_env(spill_env);

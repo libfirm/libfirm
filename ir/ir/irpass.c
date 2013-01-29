@@ -265,10 +265,10 @@ void term_graph_pass_mgr(ir_graph_pass_manager_t *mgr)
 		if (pass->rem_from_mgr)
 			pass->rem_from_mgr(pass->context);
 		pass->kind = k_BAD;
-		xfree(pass);
+		free(pass);
 	}
 	mgr->kind = k_BAD;
-	xfree(mgr);
+	free(mgr);
 }
 
 void term_prog_pass_mgr(ir_prog_pass_manager_t *mgr)
@@ -277,10 +277,10 @@ void term_prog_pass_mgr(ir_prog_pass_manager_t *mgr)
 		if (pass->rem_from_mgr)
 			pass->rem_from_mgr(pass->context);
 		pass->kind = k_BAD;
-		xfree(pass);
+		free(pass);
 	}
 	mgr->kind = k_BAD;
-	xfree(mgr);
+	free(mgr);
 }
 
 void ir_graph_pass_mgr_set_run_idx(

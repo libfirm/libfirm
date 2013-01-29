@@ -967,7 +967,7 @@ void be_dwarf_set_source_language(dwarf_source_language new_language)
 
 void be_dwarf_set_compilation_directory(const char *new_comp_dir)
 {
-	xfree(comp_dir);
+	free(comp_dir);
 	comp_dir = xstrdup(new_comp_dir);
 }
 

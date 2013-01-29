@@ -523,5 +523,5 @@ void ia32_calculate_non_address_mode_nodes(ir_graph *irg)
 
 void ia32_free_non_address_mode_nodes(void)
 {
-	bitset_free(non_address_mode_nodes);
+	free(non_address_mode_nodes);
 }

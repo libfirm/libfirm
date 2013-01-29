@@ -251,7 +251,7 @@ static char *dump_filter;
 
 void ir_set_dump_filter(const char *new_filter)
 {
-	xfree(dump_filter);
+	free(dump_filter);
 	dump_filter = xstrdup(new_filter);
 }
 
@@ -1010,7 +1010,7 @@ void dump_remove_node_info_callback(void *handle)
 {
 	hook_entry_t *info = (hook_entry_t*)handle;
 	unregister_hook(hook_node_info, info);
-	xfree(info);
+	free(info);
 }
 
 /**
@@ -2446,7 +2446,7 @@ static char  *dump_path;
 
 void ir_set_dump_path(const char *path)
 {
-	xfree(dump_path);
+	free(dump_path);
 	dump_path = xstrdup(path);
 }
 

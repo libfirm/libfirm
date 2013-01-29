@@ -463,7 +463,7 @@ static void find_switch_nodes(ir_node *block, void *ctx)
 	set_irn_in(info.default_block, ARR_LEN(info.defusers), info.defusers);
 
 	DEL_ARR_F(info.defusers);
-	xfree(info.cases);
+	free(info.cases);
 	clear_irg_properties(get_irn_irg(block), IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
 	                                  | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 }
