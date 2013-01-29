@@ -101,7 +101,6 @@ static void copy_node_inline(ir_node *node, void *env)
 			ir_entity *new_entity = (ir_entity*)get_entity_link(old_entity);
 			assert(new_entity != NULL);
 			set_Sel_entity(new_node, new_entity);
-			//set_Sel_ptr(new_node, get_irg_frame(new_irg));
 		}
 	} else if (is_Block(new_node)) {
 		new_node->attr.block.irg.irg = new_irg;
@@ -240,10 +239,12 @@ static bool can_inline(ir_node *call, ir_graph *called_graph)
 		}
 	}
 
-	/* check for nested functions */
+	/* check for nested functions and variable number of parameters */
 	for (i = 0; i < n_entities; ++i) {
 		ir_entity *ent = get_class_member(frame_type, i);
 		if (is_method_entity(ent))
+			return false;
+		if (is_parameter_entity(ent) && (get_entity_parameter_number(ent) == IR_VA_START_PARAMETER_NUMBER))
 			return false;
 	}
 
@@ -299,7 +300,7 @@ static void copy_parameter_entities(ir_node *call, ir_type *ctp, ir_graph *calle
 
 		if (is_parameter_entity(old_entity) && is_compound_entity(old_entity)) {
 			/*Copy the compound parameter */
-			size_t n_param_pos  = old_entity->attr.parameter.number;
+			size_t n_param_pos  = get_entity_parameter_number(old_entity);
 			ir_type *param_type = get_method_param_type(ctp, n_param_pos);
 
 			mem                 = get_Call_mem(call);
@@ -316,7 +317,7 @@ static void copy_parameter_entities(ir_node *call, ir_type *ctp, ir_graph *calle
 			set_Call_mem(call, mem);
 		} else if (is_parameter_entity(old_entity) && is_atomic_entity(old_entity)) {
 			/*Store the parameter onto the frame */
-			size_t n_param_pos  = old_entity->attr.parameter.number;
+			size_t n_param_pos  = get_entity_parameter_number(old_entity);
 			ir_node *param      = get_Call_param(call, n_param_pos);
 
 			new_entity          = copy_entity_own(old_entity, get_irg_frame_type(irg));
