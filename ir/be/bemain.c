@@ -87,8 +87,6 @@ be_options_t be_options = {
 	BE_VERIFY_WARN,                    /* verification level: warn */
 	"",                                /* ilp server */
 	"",                                /* ilp solver */
-	0,                                 /* enable statistic event dumping */
-	"",                                /* print stat events */
 	1,                                 /* verbose assembler output */
 };
 
@@ -133,8 +131,6 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_BOOL     ("time",       "get backend timing statistics",                       &be_options.timing),
 	LC_OPT_ENT_BOOL     ("profilegenerate", "instrument the code for execution count profiling",   &be_options.opt_profile_generate),
 	LC_OPT_ENT_BOOL     ("profileuse",      "use existing profile data",                           &be_options.opt_profile_use),
-	LC_OPT_ENT_BOOL     ("statev",     "dump statistic events",                               &be_options.statev),
-	LC_OPT_ENT_STR      ("filtev",     "filter for stat events (regex if support is active",   be_options.filtev),
 	LC_OPT_ENT_BOOL     ("verboseasm", "enable verbose assembler output",                     &be_options.verbose_asm),
 
 	LC_OPT_ENT_STR("ilp.server", "the ilp server name", be_options.ilp_server),
@@ -847,15 +843,13 @@ void be_main(FILE *file_handle, const char *cup_name)
 		ir_timer_reset_and_start(t);
 	}
 
-	if (be_options.statev) {
+	if (stat_ev_enabled) {
 		const char *dot = strrchr(cup_name, '.');
 		const char *pos = dot ? dot : cup_name + strlen(cup_name);
 		char       *buf = ALLOCAN(char, pos - cup_name + 1);
 		strncpy(buf, cup_name, pos - cup_name);
 		buf[pos - cup_name] = '\0';
 
-		be_options.statev = 1;
-		stat_ev_begin(buf, be_options.filtev);
 		stat_ev_ctx_push_str("bemain_compilation_unit", cup_name);
 	}
 
@@ -872,9 +866,8 @@ void be_main(FILE *file_handle, const char *cup_name)
 		}
 	}
 
-	if (be_options.statev) {
+	if (stat_ev_enabled) {
 		stat_ev_ctx_pop("bemain_compilation_unit");
-		stat_ev_end();
 	}
 }
 
