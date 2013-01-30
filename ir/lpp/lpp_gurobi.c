@@ -190,8 +190,19 @@ static void gurobi_solve(gurobi_t *grb)
 	case GRB_INFEASIBLE:        lpp->sol_state = lpp_infeasible; break;
 	case GRB_INF_OR_UNBD:       lpp->sol_state = lpp_inforunb; break;
 	case GRB_UNBOUNDED:         lpp->sol_state = lpp_unbounded; break;
-	/* TODO: is this correct? */
-	default:                    lpp->sol_state = lpp_feasible; break;
+	case GRB_LOADED:            /* fallthrough */
+	case GRB_CUTOFF:            lpp->sol_state = lpp_unknown; break;
+	default: {
+		int num_solutions;
+		error = GRBgetintattr(grb->model, GRB_INT_ATTR_SOLCOUNT, &num_solutions);
+		check_gurobi_error(grb, error);
+		if (num_solutions > 0) {
+			lpp->sol_state = lpp_feasible;
+		} else {
+			lpp->sol_state = lpp_unknown;
+		}
+		break;
+	}
 	}
 
 	if (lpp->sol_state >= lpp_feasible) {
