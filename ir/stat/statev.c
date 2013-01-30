@@ -199,9 +199,12 @@ void stat_ev_begin(const char *prefix, const char *filt)
 
 void stat_ev_end(void)
 {
-	if (stat_ev_file) {
+	if (stat_ev_file != NULL) {
 		fclose(stat_ev_file);
+		stat_ev_file = NULL;
 	}
-	if (filter != NULL)
+	if (filter != NULL) {
 		regfree(filter);
+		filter = NULL;
+	}
 }
