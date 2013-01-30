@@ -92,15 +92,12 @@ static void free_gurobi(gurobi_t *grb)
 }
 
 /**
- * Build CPLEX data structure from LPP matrix.
+ * Build Gurobi data structure from LPP matrix.
  * @note: The LPP matrix is freed after this step, to save memory.
  */
 static void gurobi_construct(gurobi_t *grb)
 {
 	int            i, o;
-	//int            sv_cnt;
-	//int           *indices;
-	//double        *startv;
 	int            numcols, numrows, numentries;
 	int            objsen, *matbeg, *matcnt, *matind;
 	double        *obj, *rhs, *matval, *lb;
@@ -121,8 +118,6 @@ static void gurobi_construct(gurobi_t *grb)
 	colname = obstack_alloc(&obst, numcols * sizeof(*colname));
 	rowname = obstack_alloc(&obst, numrows * sizeof(*rowname));
 	vartype = obstack_alloc(&obst, numcols * sizeof(*vartype));
-	//indices = obstack_alloc(&obst, numcols * sizeof(*indices));
-	//startv  = obstack_alloc(&obst, numcols * sizeof(*startv));
 	matbeg  = obstack_alloc(&obst, numcols * sizeof(*matbeg));
 	matcnt  = obstack_alloc(&obst, numcols * sizeof(*matcnt));
 	matind  = obstack_alloc(&obst, numentries * sizeof(*matind));
@@ -131,8 +126,7 @@ static void gurobi_construct(gurobi_t *grb)
 	sense   = obstack_alloc(&obst, numrows * sizeof(*sense));
 
 	o      = 0;
-	//sv_cnt = 0;
-	/* fill the CPLEX matrix*/
+	/* fill the Gurobi matrix*/
 	for (i = 0; i < numcols; ++i) {
 		lpp_name_t *curr_var = lpp->vars[1+i];
 
@@ -192,7 +186,7 @@ static void gurobi_solve(gurobi_t *grb)
 	double  iterations;
 
 	/* Set the time limit appropriately */
-	if(lpp->time_limit_secs > 0.0) {
+	if (lpp->time_limit_secs > 0.0) {
 		error = GRBsetdblparam(grb->modelenv, GRB_DBL_PAR_TIMELIMIT, lpp->time_limit_secs);
 		check_gurobi_error(grb, error);
 	}
@@ -242,7 +236,7 @@ static void gurobi_solve(gurobi_t *grb)
 		error = GRBgetdblattrarray(grb->model, GRB_DBL_ATTR_X, 0, numcols,
 		                           values);
 		check_gurobi_error(grb, error);
-		for(i=0; i<numcols; ++i) {
+		for (i=0; i<numcols; ++i) {
 			lpp->vars[1+i]->value      = values[i];
 			lpp->vars[1+i]->value_kind = lpp_value_solution;
 		}
