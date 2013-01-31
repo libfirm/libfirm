@@ -269,11 +269,9 @@ static ir_node *gen_Const(ir_node *node)
 			if (tarval_is_null(tv)) {
 				load = new_bd_ia32_fldz(dbgi, block);
 				res  = load;
-				set_ia32_ls_mode(load, mode);
 			} else if (tarval_is_one(tv)) {
 				load = new_bd_ia32_fld1(dbgi, block);
 				res  = load;
-				set_ia32_ls_mode(load, mode);
 			} else {
 				ir_mode *ls_mode;
 				ir_node *base;
@@ -1090,6 +1088,8 @@ static ir_node *gen_binop_x87_float(ir_node *node, ir_node *op1, ir_node *op2,
 	new_block = be_transform_node(block);
 	new_node  = func(dbgi, new_block, addr->base, addr->index, addr->mem,
 	                 am.new_op1, am.new_op2, get_fpcw());
+	if (am.op_type == ia32_Normal)
+		am.ls_mode = ia32_mode_E;
 	set_am_attributes(new_node, &am);
 
 	attr = get_ia32_x87_attr(new_node);
