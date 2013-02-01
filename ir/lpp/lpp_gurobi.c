@@ -165,6 +165,17 @@ static void gurobi_solve(gurobi_t *grb)
 		check_gurobi_error(grb, error);
 	}
 
+	/* Judging from the CPLEX code, we'd like to set a lower bound for
+	 * minimization problems and an upper bound for maximization problems.
+	 * According to [1], Gurobi does simply not support these combinations
+	 * (although lower/maximization and upper/minimization are okay).
+	 *
+	 * [1] https://groups.google.com/forum/?fromgroups=#!topic/gurobi/QkDpAAW7Cvw
+	 */
+	if (lpp->set_bound) {
+		fprintf(stderr, "Warning: Gurobi does not support setting bounds.\n");
+	}
+
 	/* The MIPGAP parameter determines when we consider a solution optimal.
 	 * To quote the documentation:
 	 * "The MIP solver will terminate (with an optimal result) when the
