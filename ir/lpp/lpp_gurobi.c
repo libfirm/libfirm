@@ -98,6 +98,9 @@ static void free_gurobi(gurobi_t *grb)
 static void gurobi_construct(gurobi_t *grb)
 {
 	int            i, o;
+	int            sv_cnt;
+	int           *indices;
+	double        *startv;
 	int            numcols, numrows, numentries;
 	int            objsen, *matbeg, *matcnt, *matind;
 	double        *obj, *rhs, *matval, *lb;
@@ -118,6 +121,8 @@ static void gurobi_construct(gurobi_t *grb)
 	colname = obstack_alloc(&obst, numcols * sizeof(*colname));
 	rowname = obstack_alloc(&obst, numrows * sizeof(*rowname));
 	vartype = obstack_alloc(&obst, numcols * sizeof(*vartype));
+	indices = obstack_alloc(&obst, numcols * sizeof(*indices));
+	startv  = obstack_alloc(&obst, numcols * sizeof(*startv));
 	matbeg  = obstack_alloc(&obst, numcols * sizeof(*matbeg));
 	matcnt  = obstack_alloc(&obst, numcols * sizeof(*matcnt));
 	matind  = obstack_alloc(&obst, numentries * sizeof(*matind));
@@ -126,6 +131,7 @@ static void gurobi_construct(gurobi_t *grb)
 	sense   = obstack_alloc(&obst, numrows * sizeof(*sense));
 
 	o      = 0;
+	sv_cnt = 0;
 	/* fill the Gurobi matrix*/
 	for (i = 0; i < numcols; ++i) {
 		lpp_name_t *curr_var = lpp->vars[1+i];
@@ -136,13 +142,10 @@ static void gurobi_construct(gurobi_t *grb)
 		colname[i] = (char*) curr_var->name;
 		vartype[i] = gurobi_var_encoding[curr_var->type.var_type];
 
-#if 0
 		if (curr_var->value_kind == lpp_value_start) {
-			panic("start values not supported in gurobi yet");
 			indices[sv_cnt]  = i;
 			startv[sv_cnt++] = curr_var->value;
 		}
-#endif
 
 		matbeg[i] = o;
 		matcnt[i] = 0;
@@ -170,6 +173,12 @@ static void gurobi_construct(gurobi_t *grb)
 	                     matval, lb, NULL, vartype, colname, rowname);
 	check_gurobi_error(grb, error);
 	grb->modelenv = GRBgetenv(grb->model);
+
+	/* set start values */
+	for (i = 0; i < sv_cnt; ++i) {
+		error = GRBsetdblattrelement(grb->model, GRB_DBL_ATTR_START, indices[i], startv[i]);
+		check_gurobi_error(grb, error);
+	}
 
 	obstack_free(&obst, NULL);
 	lpp_free_matrix(lpp);
