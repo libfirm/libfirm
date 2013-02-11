@@ -55,6 +55,7 @@ static ir_node   *in_nodes[NUM_REGISTERS];
 static ir_node   *out_nodes[NUM_REGISTERS];
 static perm_op_t  ops[NUM_REGISTERS];
 static unsigned   num_ops;
+static int        num_permis;
 static ir_node   *sched_point;
 static ir_node   *perm;
 static ir_mode   *perm_mode;
@@ -64,12 +65,14 @@ static int dump_graphs = 0;
 static int only_cycles = 0;
 static int single_movs = 0;
 
+
 static void init_state(void)
 {
 	memset(in_nodes,  0, NUM_REGISTERS * sizeof(in_nodes[0]));
 	memset(out_nodes, 0, NUM_REGISTERS * sizeof(out_nodes[0]));
 	memset(ops,       0, NUM_REGISTERS * sizeof(ops[0]));
 	num_ops     = 0;
+	num_permis  = 0;
 	sched_point = NULL;
 	perm        = NULL;
 	perm_mode   = NULL;
@@ -151,6 +154,9 @@ static void set_Permi_reg_reqs(ir_node *irn)
 	for (unsigned i = 0; i < outs; ++i) {
 		arch_set_irn_register_req_out(irn, i, req);
 	}
+
+	/* We are called each time we build a Permi insn. */
+	++num_permis;
 }
 
 static ir_node *create_permi(const perm_op_t *op)
@@ -672,7 +678,6 @@ static void emit_stat_events(void)
 	ir_calculate_execfreq_int_factors(&ef_factors, irg);
 	int count = get_block_execfreq_int(&ef_factors, block);
 
-	stat_ev_ctx_push_fmt("perm_stats", "%ld", get_irn_node_nr(perm));
 	stat_ev_int("perm_block_nr", get_irn_node_nr(block));
 	stat_ev_int("perm_exec_count", count);
 
@@ -684,8 +689,6 @@ static void emit_stat_events(void)
 		else
 			assert(!"Invalid perm op type");
 	}
-
-	stat_ev_ctx_pop("perm_stats");
 }
 
 static void lower_perm(void)
@@ -702,8 +705,12 @@ static void lower_perm(void)
 	handle_zero_chains();
 
 	/* For non-empty register transfer graphs, emit statistic events. */
-	if (num_ops > 0)
+	const bool emit_stats = num_ops > 0;
+	if (emit_stats) {
+		num_permis = 0;
+		stat_ev_ctx_push_fmt("perm_stats", "%ld", get_irn_node_nr(perm));
 		emit_stat_events();
+	}
 
 	if (only_cycles)
 		handle_all_chains();
@@ -716,6 +723,13 @@ static void lower_perm(void)
 
 	/* Try to combine small ops efficiently. */
 	handle_small_ops();
+
+	if (emit_stats) {
+		if (num_permis > 0) {
+			stat_ev_int("perm_num_insns", num_permis);
+		}
+		stat_ev_ctx_pop("perm_stats");
+	}
 
 	DB((dbg, LEVEL_2, "Finished %+F\n", perm));
 }
