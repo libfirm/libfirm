@@ -48,6 +48,8 @@
 #include "beintlive_t.h"
 #include "bemodule.h"
 
+#include "statev.h"
+
 #undef KEEP_ALIVE_COPYKEEP_HACK
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
@@ -93,6 +95,7 @@ typedef struct perm_move_t {
 
 
 static ir_nodehashmap_t free_register_map;
+static int              num_insns = 0;
 
 static void set_reg_in_use(ir_node *node, const arch_register_class_t *reg_class, bool *regs_in_use, bool in_use)
 {
@@ -436,6 +439,7 @@ static void split_chain_into_copies(ir_node *irn, const perm_move_t *move, reg_p
 
 		cpy = be_new_Copy(block, arg1);
 		arch_set_irn_register(cpy, move->elems[i + 1]);
+		++num_insns;
 
 		/* exchange copy node and proj */
 		exchange(res2, cpy);
@@ -506,6 +510,7 @@ static void split_cycle_into_swaps(ir_node *irn, const perm_move_t *move, reg_pa
 					irn, res1, move->elems[i]->name, res2, move->elems[i + 1]->name));
 
 		xchg = be_new_Perm(reg_class, block, 2, in);
+		++num_insns;
 
 		if (i > 0) {
 			/* cycle is not done yet */
@@ -549,6 +554,7 @@ static void split_cycle_into_copies(ir_node *irn, const perm_move_t *move, reg_p
 	ir_node *arg      = get_node_for_in_register(pairs, n_pairs, move->elems[num_elems - 1]);
 	ir_node *save_cpy = be_new_Copy(block, arg);
 	arch_set_irn_register(save_cpy, free_reg);
+	++num_insns;
 	sched_add_after(skip_Proj(sched_point), save_cpy);
 	sched_point = save_cpy;
 
@@ -561,6 +567,7 @@ static void split_cycle_into_copies(ir_node *irn, const perm_move_t *move, reg_p
 					irn, arg1, move->elems[i]->name, res2, move->elems[i + 1]->name));
 
 		cpy = be_new_Copy(block, arg1);
+		++num_insns;
 		arch_set_irn_register(cpy, move->elems[i + 1]);
 
 		/* exchange copy node and proj */
@@ -576,6 +583,7 @@ static void split_cycle_into_copies(ir_node *irn, const perm_move_t *move, reg_p
 	/* Restore last register content and write it to first register. */
 	ir_node *restore_cpy = be_new_Copy(block, save_cpy);
 	arch_set_irn_register(restore_cpy, move->elems[0]);
+	++num_insns;
 	ir_node *proj = get_node_for_out_register(pairs, n_pairs, move->elems[0]);
 
 	exchange(proj, restore_cpy);
@@ -627,6 +635,8 @@ static void lower_perm_node(ir_node *irn)
 
 	DBG((dbg, LEVEL_1, "%+F has %d unresolved constraints\n", irn, n_pairs));
 
+	num_insns = 0;
+
 	/* Check for cycles and chains */
 	while (get_n_unchecked_pairs(pairs, n_pairs) > 0) {
 		perm_move_t move;
@@ -660,6 +670,10 @@ static void lower_perm_node(ir_node *irn)
 		}
 
 		free(move.elems);
+	}
+
+	if (num_insns > 0) {
+		stat_ev_int("perm_num_insns", num_insns);
 	}
 
 	/* Remove the perm from schedule */
