@@ -690,8 +690,6 @@ static void emit_stat_events(void)
 
 static void lower_perm(void)
 {
-	unsigned i;
-
 	assert(perm && "No Perm node has been set");
 	DB((dbg, LEVEL_2, "Lowering %+F\n", perm));
 
@@ -713,7 +711,7 @@ static void lower_perm(void)
 	/* Place as many permis of maximum size as possible. */
 	handle_big_ops();
 
-	for (i = 0; i < num_ops; ++i)
+	for (unsigned i = 0; i < num_ops; ++i)
 		assert(ops[i].length >= 2 && ops[i].length < PERMI_SIZE);
 
 	/* Try to combine small ops efficiently. */
