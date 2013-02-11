@@ -201,7 +201,8 @@ void stat_ev_end(void)
 {
 	if (stat_ev_file != NULL) {
 		fclose(stat_ev_file);
-		stat_ev_file = NULL;
+		stat_ev_file    = NULL;
+		stat_ev_enabled = 0;
 	}
 	if (filter != NULL) {
 		regfree(filter);
