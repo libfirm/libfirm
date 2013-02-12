@@ -802,7 +802,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 					char buf[128];
 					snprintf(buf, sizeof(buf), "bemain_time_%s",
 					         get_timer_name(t));
-					stat_ev_dbl(buf, ir_timer_elapsed_usec(be_timers[i]));
+					stat_ev_dbl(buf, ir_timer_elapsed_usec(be_timers[t]));
 				}
 			} else {
 				printf("==>> IRG %s <<==\n",
