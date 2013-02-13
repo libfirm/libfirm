@@ -57,6 +57,7 @@
 #include "bestack.h"
 #include "beirgmod.h"
 #include "belower.h"
+#include "be_t.h"
 
 static ir_heights_t *heights;
 
@@ -668,10 +669,12 @@ void sparc_finish_graph(ir_graph *irg)
 	bool               at_begin     = stack_layout->sp_relative ? true : false;
 	be_fec_env_t      *fec_env      = be_new_frame_entity_coalescer(irg);
 
+	be_timer_push(T_FINISH_PERM);
 	if (sparc_cg_config.use_permi)
 		icore_lower_nodes_after_ra(irg);
 	else
 		lower_nodes_after_ra(irg);
+	be_timer_pop(T_FINISH_PERM);
 
 	irg_walk_graph(irg, NULL, sparc_collect_frame_entity_nodes, fec_env);
 	be_assign_entities(fec_env, sparc_set_frame_entity, at_begin);

@@ -113,6 +113,7 @@ typedef enum {
 	T_CONSTR,
 	T_SPLIT,
 	T_FINISH,
+	T_FINISH_PERM,
 	T_EMIT,
 	T_VERIFY,
 	T_OTHER,

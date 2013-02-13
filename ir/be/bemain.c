@@ -495,6 +495,7 @@ static const char *get_timer_name(be_timer_id_t id)
 	case T_SPLIT:          return "split";
 	case T_CONSTR:         return "constr";
 	case T_FINISH:         return "finish";
+	case T_FINISH_PERM:    return "finish_perm";
 	case T_EMIT:           return "emit";
 	case T_VERIFY:         return "verify";
 	case T_OTHER:          return "other";
