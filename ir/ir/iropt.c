@@ -5882,7 +5882,7 @@ static ir_node *create_load_replacement_tuple(ir_node *n, ir_node *mem,
 		in[pn_Load_X_regular] = new_r_Jmp(block);
 		in[pn_Load_X_except]  = new_r_Bad(irg, mode_X);
 		n_in                  = 4;
-		assert(pn_Load_max == 4);
+		assert(pn_Load_max == 3);
 	}
 	ir_node  *tuple = new_r_Tuple(block, n_in, in);
 	return tuple;
