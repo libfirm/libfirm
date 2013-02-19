@@ -56,41 +56,6 @@ FIRM_API ident *new_id_from_chars(const char *str, size_t len);
 FIRM_API const char *get_id_str(ident *id);
 
 /**
- * Returns the length of the string represented by an ident.
- *
- * @param id   the ident
- * @return len   the length of the string
- */
-FIRM_API size_t get_id_strlen(ident *id);
-
-/**
- * Test if @p prefix is a prefix of ident @p id.
- *
- * @param prefix   the prefix
- * @param id       the ident
- * @returns        1 if @p prefix is prefix of @p id, 0 otherwise
- */
-FIRM_API int id_is_prefix(ident *prefix, ident *id);
-
-/**
- * Test if @p suffix is a suffix of ident @p id.
- *
- * @param suffix   the suffix
- * @param id       the ident
- * @returns        1 if @p suffix is suffix of @p id, 0 otherwise
- */
-FIRM_API int id_is_suffix(ident *suffix, ident *id);
-
-/**
- * Test if identifier contains a given character.
- *
- * @param id    the ident
- * @param c     the character
- * @returns     1 if character is contained, 0 otherwise
- */
-FIRM_API int id_contains_char(ident *id, char c);
-
-/**
  * helper function for creating unique idents. It contains an internal counter
  * and replaces a "%u" inside the tag with the counter.
  */

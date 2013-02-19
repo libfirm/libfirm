@@ -42,8 +42,12 @@ typedef struct dbg_info             dbg_info;
  * Source Type Reference */
 typedef struct type_dbg_info        type_dbg_info;
 /** @ingroup ir_ident
- * Identifier */
-typedef struct ident                ident;
+ * Identifier
+ *
+ * @note This is currently defined as a normal C string, but you should not
+ *  rely on that and always use get_id_str() before using it as a C string.
+ */
+typedef const char                  ident;
 /** @ingroup ir_node
  * Procedure Graph Node */
 typedef struct ir_node              ir_node;

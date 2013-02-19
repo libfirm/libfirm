@@ -13,6 +13,13 @@
 
 #include "ident.h"
 
+#define get_id_str(x)   get_id_str_(x)
+
+static inline const char *get_id_str_(ident *ident)
+{
+	return ident;
+}
+
 /**
  * Initialize the ident module.
  */

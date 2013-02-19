@@ -32,9 +32,9 @@ void init_ident(void)
 
 ident *new_id_from_chars(const char *str, size_t len)
 {
-	unsigned hash   = hash_data((const unsigned char*)str, len);
-	ident   *result = (ident*) set_hinsert0(id_set, str, len, hash);
-	return result;
+	unsigned   hash   = hash_data((const unsigned char*)str, len);
+	set_entry *result = set_hinsert0(id_set, str, len, hash);
+	return (ident*)result->dptr;
 }
 
 ident *new_id_from_str(const char *str)
@@ -43,50 +43,15 @@ ident *new_id_from_str(const char *str)
 	return new_id_from_chars(str, strlen(str));
 }
 
-const char *get_id_str(ident *id)
+const char *(get_id_str)(ident *id)
 {
-	struct set_entry *entry = (struct set_entry*) id;
-	return (const char*) entry->dptr;
-}
-
-size_t get_id_strlen(ident *id)
-{
-	struct set_entry *entry = (struct set_entry*) id;
-	return entry->size;
+	return get_id_str_(id);
 }
 
 void finish_ident(void)
 {
 	del_set(id_set);
 	id_set = NULL;
-}
-
-int id_is_prefix(ident *prefix, ident *id)
-{
-	size_t prefix_len = get_id_strlen(prefix);
-	if (prefix_len > get_id_strlen(id))
-		return 0;
-	return 0 == memcmp(get_id_str(prefix), get_id_str(id), prefix_len);
-}
-
-int id_is_suffix(ident *suffix, ident *id)
-{
-	size_t suflen = get_id_strlen(suffix);
-	size_t idlen  = get_id_strlen(id);
-	const char *part;
-
-	if (suflen > idlen)
-		return 0;
-
-	part = get_id_str(id);
-	part = part + (idlen - suflen);
-
-	return 0 == memcmp(get_id_str(suffix), part, suflen);
-}
-
-int id_contains_char(ident *id, char c)
-{
-	return strchr(get_id_str(id), c) != NULL;
 }
 
 ident *id_unique(const char *tag)

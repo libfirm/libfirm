@@ -30,54 +30,47 @@ static inline ident *mangle_type(const ir_type *tp)
 	return tp->name;
 }
 
+static void obstack_grow_ident(struct obstack *obst, ident *id)
+{
+	const char *c = get_id_str(id);
+	for ( ; *c != '\0'; ++c) {
+		obstack_1grow(obst, *c);
+	}
+}
+
+static ident *new_ident_from_obst(struct obstack *obst)
+{
+	size_t len    = obstack_object_size(obst);
+	char  *string = (char*)obstack_finish(obst);
+	ident *res    = new_id_from_chars(string, len);
+	obstack_free(obst, string);
+	return res;
+}
+
 /* Returns a new ident that represents 'firstscnd'. */
 ident *id_mangle(ident *first, ident *scnd)
 {
-	char *cp;
-	int len;
-	ident *res;
-
-	obstack_grow(&mangle_obst, get_id_str(first), get_id_strlen(first));
-	obstack_grow(&mangle_obst, get_id_str(scnd), get_id_strlen(scnd));
-	len = obstack_object_size(&mangle_obst);
-	cp = (char*)obstack_finish(&mangle_obst);
-	res = new_id_from_chars(cp, len);
-	obstack_free(&mangle_obst, cp);
-	return res;
+	obstack_grow_ident(&mangle_obst, first);
+	obstack_grow_ident(&mangle_obst, scnd);
+	return new_ident_from_obst(&mangle_obst);
 }
 
 /** Returns a new ident that represents 'prefixscndsuffix'. */
 ident *id_mangle3(const char *prefix, ident *scnd, const char *suffix)
 {
-	char *cp;
-	int len;
-	ident *res;
-
 	obstack_grow(&mangle_obst, prefix, strlen(prefix));
-	obstack_grow(&mangle_obst, get_id_str(scnd), get_id_strlen(scnd));
+	obstack_grow_ident(&mangle_obst, scnd);
 	obstack_grow(&mangle_obst, suffix, strlen(suffix));
-	len = obstack_object_size(&mangle_obst);
-	cp  = (char*)obstack_finish(&mangle_obst);
-	res = new_id_from_chars(cp, len);
-	obstack_free(&mangle_obst, cp);
-	return res;
+	return new_ident_from_obst(&mangle_obst);
 }
 
 /** Returns a new ident that represents first<c>scnd. */
 static ident *id_mangle_3(ident *first, char c, ident *scnd)
 {
-	char *cp;
-	int len;
-	ident *res;
-
-	obstack_grow(&mangle_obst, get_id_str(first), get_id_strlen(first));
+	obstack_grow_ident(&mangle_obst, first);
 	obstack_1grow(&mangle_obst, c);
-	obstack_grow(&mangle_obst,get_id_str(scnd),get_id_strlen(scnd));
-	len = obstack_object_size(&mangle_obst);
-	cp = (char*)obstack_finish(&mangle_obst);
-	res = new_id_from_chars(cp, len);
-	obstack_free(&mangle_obst, cp);
-	return res;
+	obstack_grow_ident(&mangle_obst, scnd);
+	return new_ident_from_obst(&mangle_obst);
 }
 
 /* Returns a new ident that represents first_scnd. */
