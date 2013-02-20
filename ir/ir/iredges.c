@@ -486,29 +486,6 @@ static void init_lh_walker_dep(ir_node *irn, void *data)
 	}
 }
 
-typedef struct visitor_info_t {
-	irg_walk_func *visit;
-	void *data;
-} visitor_info_t;
-
-/**
- * Visitor: initializes the list-heads and set the out-count
- * of all nodes to 0 of nodes that are not seen so far.
- */
-static void visitor(ir_node *irn, void *data)
-{
-	visitor_info_t *info = (visitor_info_t*)data;
-
-	if (is_Deleted(irn))
-		return;
-	if (!is_Block(irn) && is_Deleted(get_nodes_block(irn)))
-		return;
-
-	if (!irn_visited_else_mark(irn)) {
-		info->visit(irn, info->data);
-	}
-}
-
 void edges_activate_kind(ir_graph *irg, ir_edge_kind_t kind)
 {
 	/*
@@ -535,11 +512,8 @@ void edges_activate_kind(ir_graph *irg, ir_edge_kind_t kind)
 	 */
 	struct build_walker w;
 	irg_edge_info_t     *info = get_irg_edge_info(irg, kind);
-	visitor_info_t      visit;
 
 	w.kind = kind;
-
-	visit.data = &w;
 
 	assert(!info->activated);
 
@@ -548,12 +522,13 @@ void edges_activate_kind(ir_graph *irg, ir_edge_kind_t kind)
 	if (kind == EDGE_KIND_DEP) {
 		irg_walk_anchors(irg, init_lh_walker_dep, NULL, &w);
 		/* Argh: Dep nodes might be dead, so we MUST visit identities first */
-		visit.visit = init_lh_walker_dep;
-		visit_all_identities(irg, visitor, &visit);
+		visit_all_identities(irg, init_lh_walker_dep, &w);
 		irg_walk_anchors(irg, NULL, build_edges_walker, &w);
+	} else if (kind == EDGE_KIND_BLOCK) {
+		visit_all_identities(irg, init_lh_walker, &w);
+		irg_block_walk_graph(irg, init_lh_walker, build_edges_walker, &w);
 	} else {
-		visit.visit = init_lh_walker;
-		visit_all_identities(irg, visitor, &visit);
+		visit_all_identities(irg, init_lh_walker, &w);
 		irg_walk_anchors(irg, init_lh_walker, build_edges_walker, &w);
 	}
 }
