@@ -91,10 +91,10 @@ typedef struct {
  */
 static ir_node *get_block_n(const ir_node *block, int pos)
 {
-	if (is_Block(block))
-		return get_Block_cfgpred_block(block, pos);
-	/* might be a Bad */
-	return NULL;
+	ir_node *cfgpred = get_Block_cfgpred(block, pos);
+	if (is_Bad(cfgpred))
+		return NULL;
+	return get_nodes_block(cfgpred);
 }
 
 static ir_node *get_irn_safe_n(const ir_node *node, int n)
@@ -104,7 +104,7 @@ static ir_node *get_irn_safe_n(const ir_node *node, int n)
 	return get_irn_n(node, n);
 }
 
-static const ir_edge_kind_info_t edge_kind_info[EDGE_KIND_LAST] = {
+static const ir_edge_kind_info_t edge_kind_info[EDGE_KIND_LAST+1] = {
 	{ "normal"     , set_irn_n,   -1, get_irn_arity,  get_irn_safe_n },
 	{ "block succs", NULL,         0, get_irn_arity,  get_block_n    },
 	{ "dependency",  set_irn_dep,  0, get_irn_deps,   get_irn_dep    }
@@ -218,6 +218,8 @@ void edges_dump_kind(ir_graph *irg, ir_edge_kind_t kind)
 static void add_edge(ir_node *src, int pos, ir_node *tgt, ir_edge_kind_t kind,
                      ir_graph *irg)
 {
+	if (tgt == NULL)
+		return;
 	assert(edges_activated_kind(irg, kind));
 	irg_edge_info_t *info  = get_irg_edge_info(irg, kind);
 	ir_edgeset_t    *edges = &info->edges;
@@ -253,6 +255,8 @@ static void add_edge(ir_node *src, int pos, ir_node *tgt, ir_edge_kind_t kind,
 static void delete_edge(ir_node *src, int pos, ir_node *old_tgt,
                         ir_edge_kind_t kind, ir_graph *irg)
 {
+	if (old_tgt == NULL)
+		return;
 	assert(edges_activated_kind(irg, kind));
 
 	irg_edge_info_t *info  = get_irg_edge_info(irg, kind);
@@ -282,6 +286,7 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
                             ir_node *old_tgt, ir_edge_kind_t kind,
                             ir_graph *irg)
 {
+	assert(edges_activated_kind(irg, kind));
 	if (old_tgt == NULL) {
 		add_edge(src, pos, tgt, kind, irg);
 		return;
@@ -294,7 +299,6 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
 	if (tgt == old_tgt)
 		return;
 
-	assert(edges_activated_kind(irg, kind));
 	irg_edge_info_t *info  = get_irg_edge_info(irg, kind);
 	ir_edgeset_t    *edges = &info->edges;
 
@@ -341,11 +345,18 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt,
 
 	if (edges_activated_kind(irg, EDGE_KIND_BLOCK)) {
 		if (is_Block(src)) {
-			ir_node *bl_old = old_tgt ? get_nodes_block(old_tgt) : NULL;
+			ir_node *bl_old = NULL;
 			ir_node *bl_tgt = NULL;
-
-			if (tgt)
-				bl_tgt = is_Bad(tgt) ? tgt : get_nodes_block(tgt);
+			if (old_tgt != NULL && !is_Bad(old_tgt)) {
+				bl_old = get_nodes_block(old_tgt);
+				if (is_Bad(bl_old))
+					bl_old = NULL;
+			}
+			if (tgt != NULL && !is_Bad(tgt)) {
+				bl_tgt = get_nodes_block(tgt);
+				if (is_Bad(bl_tgt))
+					bl_tgt = NULL;
+			}
 
 			edges_notify_edge_kind(src, pos, bl_tgt, bl_old, EDGE_KIND_BLOCK, irg);
 		} else if (get_irn_mode(src) == mode_X && old_tgt != NULL && is_Block(old_tgt)) {
@@ -356,6 +367,8 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt,
 				ir_node *block_pred = get_Block_cfgpred(succ, succ_pos);
 				if (block_pred != src)
 					continue;
+				if (is_Bad(tgt))
+					tgt = NULL;
 				edges_notify_edge_kind(succ, succ_pos, tgt, old_tgt,
 				                       EDGE_KIND_BLOCK, irg);
 			}
@@ -433,8 +446,7 @@ static void build_edges_walker(ir_node *irn, void *data)
 
 	foreach_tgt(irn, i, n, kind) {
 		ir_node *pred = get_n(irn, i, kind);
-		if (pred != NULL)
-			add_edge(irn, i, pred, kind, irg);
+		add_edge(irn, i, pred, kind, irg);
 	}
 	get_irn_edge_info(irn, kind)->edges_built = 1;
 }
@@ -860,14 +872,18 @@ void assure_edges_kind(ir_graph *irg, ir_edge_kind_t kind)
 void edges_node_deleted(ir_node *irn)
 {
 	edges_node_deleted_kind(irn, EDGE_KIND_NORMAL);
-	edges_node_deleted_kind(irn, EDGE_KIND_BLOCK);
 	edges_node_deleted_kind(irn, EDGE_KIND_DEP);
+	if (is_Block(irn)) {
+		edges_node_deleted_kind(irn, EDGE_KIND_BLOCK);
+	}
 }
 
 void edges_node_revival(ir_node *irn)
 {
 	edges_node_revival_kind(irn, EDGE_KIND_NORMAL);
-	edges_node_revival_kind(irn, EDGE_KIND_BLOCK);
+	if (is_Block(irn)) {
+		edges_node_revival_kind(irn, EDGE_KIND_BLOCK);
+	}
 }
 
 const ir_edge_t *(get_irn_out_edge_first_kind)(const ir_node *irn, ir_edge_kind_t kind)

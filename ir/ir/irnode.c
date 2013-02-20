@@ -78,8 +78,6 @@ ir_relation get_inversed_relation(ir_relation relation)
 ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
                      ir_mode *mode, int arity, ir_node *const *in)
 {
-	int i;
-
 	assert(irg);
 	assert(op);
 	assert(mode);
@@ -110,7 +108,7 @@ ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
 	set_irn_dbg_info(res, db);
 	res->node_nr = get_irp_new_node_nr();
 
-	for (i = 0; i < EDGE_KIND_LAST; ++i) {
+	for (ir_edge_kind_t i = EDGE_KIND_FIRST; i <= EDGE_KIND_LAST; ++i) {
 		INIT_LIST_HEAD(&res->edge_info[i].outs_head);
 		/* edges will be build immediately */
 		res->edge_info[i].edges_built = 1;
@@ -120,8 +118,8 @@ ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
 	/* don't put this into the for loop, arity is -1 for some nodes! */
 	if (block != NULL)
 		edges_notify_edge(res, -1, block, NULL, irg);
-	for (i = 1; i <= arity; ++i)
-		edges_notify_edge(res, i - 1, res->in[i], NULL, irg);
+	for (int i = 0; i < arity; ++i)
+		edges_notify_edge(res, i, res->in[i+1], NULL, irg);
 
 	hook_new_node(irg, res);
 	if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {

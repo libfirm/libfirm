@@ -404,7 +404,7 @@ typedef struct irn_edge_kind_info_t {
 	unsigned out_count : 31;     /**< Number of outs in the list. */
 } irn_edge_info_t;
 
-typedef irn_edge_info_t irn_edges_info_t[EDGE_KIND_LAST];
+typedef irn_edge_info_t irn_edges_info_t[EDGE_KIND_LAST+1];
 
 /**
  * A Def-Use edge.
@@ -466,7 +466,7 @@ typedef struct irg_edge_info_t {
 	unsigned         activated : 1;  /**< Set if edges are activated for the graph. */
 } irg_edge_info_t;
 
-typedef irg_edge_info_t irg_edges_info_t[EDGE_KIND_LAST];
+typedef irg_edge_info_t irg_edges_info_t[EDGE_KIND_LAST+1];
 
 /**
  * Index constants for nodes that can be accessed through the graph anchor node.

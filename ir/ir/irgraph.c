@@ -85,7 +85,7 @@ static ir_graph *alloc_graph(void)
  */
 static void free_graph(ir_graph *irg)
 {
-	for (ir_edge_kind_t i = EDGE_KIND_FIRST; i < EDGE_KIND_LAST; ++i)
+	for (ir_edge_kind_t i = EDGE_KIND_FIRST; i <= EDGE_KIND_LAST; ++i)
 		edges_deactivate_kind(irg, i);
 	DEL_ARR_F(irg->idx_irn_map);
 	free(irg);
