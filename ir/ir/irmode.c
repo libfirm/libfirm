@@ -246,7 +246,7 @@ ir_mode *new_float_mode(const char *name, ir_mode_arithmetic arithmetic,
 	if (mantissa_size >= 256)
 		panic("Mantissa >= 256 bits not supported");
 
-	result = alloc_mode(name, irms_float_number, irma_x86_extended_float, bit_size, 1, 0);
+	result = alloc_mode(name, irms_float_number, arithmetic, bit_size, 1, 0);
 	result->float_desc.exponent_size = exponent_size;
 	result->float_desc.mantissa_size = mantissa_size;
 	result->float_desc.explicit_one  = explicit_one;
