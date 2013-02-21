@@ -23,7 +23,7 @@
 #include "pbqp_node_t.h"
 #include "pbqp_t.h"
 
-pbqp_edge_t *alloc_edge(pbqp_t *pbqp, int src_index, int tgt_index,
+pbqp_edge_t *alloc_edge(pbqp_t *pbqp, unsigned src_index, unsigned tgt_index,
                         pbqp_matrix_t *costs)
 {
 	int          transpose = 0;

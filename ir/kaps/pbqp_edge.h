@@ -14,7 +14,7 @@
 
 #include "pbqp_t.h"
 
-pbqp_edge_t *alloc_edge(pbqp_t *pbqp, int src_index, int tgt_index,
+pbqp_edge_t *alloc_edge(pbqp_t *pbqp, unsigned src_index, unsigned tgt_index,
                         pbqp_matrix_t *costs);
 
 pbqp_edge_t *pbqp_edge_deep_copy(pbqp_t *pbqp, pbqp_edge_t *edge,
