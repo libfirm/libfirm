@@ -288,7 +288,7 @@ FIRM_API int obstack_exit_failure;
 # define obstack_make_room(OBSTACK,length)              \
 __extension__                                           \
 ({ struct obstack *__o = (OBSTACK);                     \
-   int __len = (length);                                \
+   PTR_INT_TYPE __len = (length);                       \
    if (__o->chunk_limit - __o->next_free < __len)       \
      _obstack_newchunk (__o, __len);                    \
    (void) 0; })
@@ -304,7 +304,7 @@ __extension__                                           \
 # define obstack_grow(OBSTACK,where,length)            \
 __extension__                                          \
 ({ struct obstack *__o = (OBSTACK);                    \
-   int __len = (length);                               \
+   PTR_INT_TYPE __len = (length);                      \
    if (__o->next_free + __len > __o->chunk_limit)      \
      _obstack_newchunk (__o, __len);                   \
    memcpy (__o->next_free, where, __len);              \
@@ -314,7 +314,7 @@ __extension__                                          \
 # define obstack_grow0(OBSTACK,where,length)           \
 __extension__                                          \
 ({ struct obstack *__o = (OBSTACK);                    \
-   int __len = (length);                               \
+   PTR_INT_TYPE __len = (length);                      \
    if (__o->next_free + __len + 1 > __o->chunk_limit)  \
      _obstack_newchunk (__o, __len + 1);               \
    memcpy (__o->next_free, where, __len);              \
@@ -365,7 +365,7 @@ __extension__                                                \
 # define obstack_blank(OBSTACK,length)                       \
 __extension__                                                \
 ({ struct obstack *__o = (OBSTACK);                          \
-   int __len = (length);                                     \
+   PTR_INT_TYPE __len = (length);                            \
    if (__o->chunk_limit - __o->next_free < __len)            \
      _obstack_newchunk (__o, __len);                         \
    obstack_blank_fast (__o, __len);                          \
