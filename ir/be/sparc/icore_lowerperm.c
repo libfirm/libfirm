@@ -56,6 +56,7 @@ static ir_node   *out_nodes[NUM_REGISTERS];
 static perm_op_t  ops[NUM_REGISTERS];
 static unsigned   num_ops;
 static int        num_permis;
+static int        num_moves;
 static ir_node   *sched_point;
 static ir_node   *perm;
 static ir_mode   *perm_mode;
@@ -73,6 +74,7 @@ static void init_state(void)
 	memset(ops,       0, NUM_REGISTERS * sizeof(ops[0]));
 	num_ops     = 0;
 	num_permis  = 0;
+	num_moves   = 0;
 	sched_point = NULL;
 	perm        = NULL;
 	perm_mode   = NULL;
@@ -289,6 +291,7 @@ static void split_chain_into_copies(const perm_op_t *op)
 
 		ir_node  *cpy     = be_new_Copy(bb, in);
 		arch_set_irn_register(cpy, arch_get_irn_register(out));
+		++num_moves;
 
 		exchange(out, cpy);
 		schedule_node(cpy);
@@ -725,8 +728,10 @@ static void lower_perm(void)
 	handle_small_ops();
 
 	if (emit_stats) {
-		if (num_permis > 0) {
-			stat_ev_int("perm_num_insns", num_permis);
+		const int num_insns = num_permis + num_moves;
+		if (num_insns > 0) {
+			stat_ev_int("perm_num_insns", num_insns);
+			stat_ev_int("perm_icore_num_permis", num_permis);
 		}
 		stat_ev_ctx_pop("perm_stats");
 	}
