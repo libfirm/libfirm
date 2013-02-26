@@ -145,14 +145,11 @@ class EmitSqlite3(EmitBase):
 		marks = ",".join(["?"] * len(ctxcols))
 		self.ctxinsert = "insert into `%s` (%s) values (%s)" % (self.ctxtab, keys, marks)
 
-		self.nextid = 0
 
 	def ev(self, curr_id, evitems):
 		self.execute(self.evinsert, (curr_id,) + tuple(evitems))
 
 	def ctx(self, ctxitems):
-		curr_id = self.nextid
-		self.nextid += 1
 		self.execute(self.ctxinsert, tuple(ctxitems))
 		self.conn.commit()
 		return self.cursor.lastrowid
