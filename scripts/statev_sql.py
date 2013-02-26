@@ -145,14 +145,21 @@ class EmitSqlite3(EmitBase):
 		marks = ",".join(["?"] * len(ctxcols))
 		self.ctxinsert = "insert into `%s` (%s) values (%s)" % (self.ctxtab, keys, marks)
 
+		self.contextids = dict()
 
 	def ev(self, curr_id, evitems):
 		self.execute(self.evinsert, (curr_id,) + tuple(evitems))
 
 	def ctx(self, ctxitems):
-		self.execute(self.ctxinsert, tuple(ctxitems))
-		self.conn.commit()
-		return self.cursor.lastrowid
+		items = tuple(ctxitems)
+		if self.contextids.has_key(items):
+			return self.contextids[items]
+		else:
+			self.execute(self.ctxinsert, items)
+			self.conn.commit()
+			ctxid = self.cursor.lastrowid
+			self.contextids[items] = ctxid
+			return ctxid
 
 	def commit(self):
 		self.conn.commit()
