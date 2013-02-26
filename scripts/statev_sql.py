@@ -119,6 +119,11 @@ class EmitSqlite3(EmitBase):
 		self.conn = sqlite3.connect(options.database)
 		self.cursor = self.conn.cursor()
 
+		# Improve sqlite performance according to http://stackoverflow.com/questions/1711631/how-do-i-improve-the-performance-of-sqlite
+		# Store journal in memory and don't wait for disk writes
+		self.execute("PRAGMA journal_mode = MEMORY")
+		self.execute("PRAGMA synchronous = OFF")
+
 		self.types["data"] = "double"
 		self.types["text"] = "text"
 		self.types["bool"] = "int"
