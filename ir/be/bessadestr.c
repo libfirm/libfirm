@@ -336,8 +336,9 @@ static void impl_parallel_copy(ir_node *before, unsigned *parcopy, unsigned *n_u
 		}
 	}
 
+	ir_node *perm = NULL;
 	if (perm_size > 0) {
-		ir_node *perm = be_new_Perm(the_env->cls, block, perm_size, ins);
+		perm = be_new_Perm(the_env->cls, block, perm_size, ins);
 		DB((dbg_icore, LEVEL_2, "Created %+F using permutation.\n", perm));
 		sched_add_before(before, perm);
 		unsigned input = 0;
@@ -378,6 +379,13 @@ static void impl_parallel_copy(ir_node *before, unsigned *parcopy, unsigned *n_u
 		assert(parcopy[r] == r);
 	}
 #endif
+
+	/* Emit statistics if perm has been placed. */
+	if (perm != NULL) {
+		stat_ev_ctx_push_fmt("perm_stats", "%ld", get_irn_node_nr(perm));
+		stat_ev_int("perm_num_restores", num_restores);
+		stat_ev_ctx_pop("perm_stats");
+	}
 
 	if (num_restores > 0) {
 		/* Step 4: Place restore movs. */
