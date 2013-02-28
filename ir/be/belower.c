@@ -510,7 +510,7 @@ static void split_cycle_into_swaps(ir_node *irn, const perm_move_t *move, reg_pa
 					irn, res1, move->elems[i]->name, res2, move->elems[i + 1]->name));
 
 		xchg = be_new_Perm(reg_class, block, 2, in);
-		++num_insns;
+		num_insns += 3;
 
 		if (i > 0) {
 			/* cycle is not done yet */
@@ -673,7 +673,9 @@ static void lower_perm_node(ir_node *irn)
 	}
 
 	if (num_insns > 0) {
+		stat_ev_ctx_push_fmt("perm_stats", "%ld", get_irn_node_nr(irn));
 		stat_ev_int("perm_num_insns", num_insns);
+		stat_ev_ctx_pop("perm_stats");
 	}
 
 	/* Remove the perm from schedule */
