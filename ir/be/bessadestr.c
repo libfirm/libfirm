@@ -380,11 +380,13 @@ static void impl_parallel_copy(ir_node *before, unsigned *parcopy, unsigned *n_u
 	}
 #endif
 
-	/* Emit statistics if perm has been placed. */
+	/* Emit statistics. */
 	if (perm != NULL) {
 		stat_ev_ctx_push_fmt("perm_stats", "%ld", get_irn_node_nr(perm));
 		stat_ev_int("perm_num_restores", num_restores);
 		stat_ev_ctx_pop("perm_stats");
+	} else if (num_restores > 0) {
+		stat_ev_int("bessadestr_copies", num_restores);
 	}
 
 	if (num_restores > 0) {
@@ -698,6 +700,7 @@ static void set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 					pin it
 				*/
 				ir_node *dupl = be_new_Copy(arg_block, arg);
+				stat_ev_int("bessadestr_copies", 1);
 
 				set_irn_n(phi, i, dupl);
 				arch_set_irn_register(dupl, phi_reg);
@@ -756,6 +759,7 @@ static void set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 				ir_node *dupl = be_new_Copy(arg_block, arg);
 				ir_node *ins;
 
+				stat_ev_int("bessadestr_copies", 1);
 				set_irn_n(phi, i, dupl);
 				arch_set_irn_register(dupl, phi_reg);
 				/* skip the Perm's Projs and insert the copies behind. */
