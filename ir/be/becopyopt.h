@@ -107,6 +107,8 @@ void co_free_ou_structure(copy_opt_t *co);
  */
 int co_solve_heuristic(copy_opt_t *co);
 
+int co_solve_heuristic_mst(copy_opt_t *co);
+
 /**
  * Returns the maximal costs possible, i.e. the costs if all
  * pairs would be assigned different registers.

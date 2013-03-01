@@ -1427,7 +1427,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 /**
  * Main driver for mst safe coalescing algorithm.
  */
-static int co_solve_heuristic_mst(copy_opt_t *co)
+int co_solve_heuristic_mst(copy_opt_t *co)
 {
 	unsigned     n_regs            = co->cls->n_regs;
 	bitset_t     *allocatable_regs = bitset_alloca(n_regs);

@@ -1056,7 +1056,7 @@ void co_driver(be_chordal_env_t *cenv)
 		co_complete_stats_t stats;
 
 		/* produce a heuristic solution */
-		co_solve_heuristic(co);
+		co_solve_heuristic_mst(co);
 
 		/* do the stats and provide the current costs */
 		co_complete_stats(co, &stats);
