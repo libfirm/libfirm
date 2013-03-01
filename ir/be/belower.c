@@ -621,6 +621,7 @@ static void lower_perm_node(ir_node *irn)
 	reg_pair_t *pairs       = ALLOCAN(reg_pair_t, arity);
 	int         n_pairs     = 0;
 	int         keep_perm   = 0;
+	int         rtg_nodes   = 0;
 	ir_node    *sched_point = sched_prev(irn);
 
 
@@ -657,6 +658,8 @@ static void lower_perm_node(ir_node *irn)
 		}
 		DB((dbg, LEVEL_1, "\n"));
 
+		rtg_nodes += move.n_elems;
+
 		if (move.type == PERM_CYCLE && arity == 2) {
 			/* We don't need to do anything if we have a Perm with two elements
 			* which represents a cycle, because those nodes already represent
@@ -674,6 +677,7 @@ static void lower_perm_node(ir_node *irn)
 
 	if (num_insns > 0) {
 		stat_ev_ctx_push_fmt("perm_stats", "%ld", get_irn_node_nr(irn));
+		stat_ev_int("perm_num_rtg_nodes", rtg_nodes);
 		stat_ev_int("perm_num_insns", num_insns);
 		stat_ev_ctx_pop("perm_stats");
 	}

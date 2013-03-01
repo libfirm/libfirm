@@ -684,7 +684,9 @@ static void emit_stat_events(void)
 	stat_ev_int("perm_block_nr", get_irn_node_nr(block));
 	stat_ev_int("perm_exec_count", count);
 
+	unsigned rtg_nodes = 0;
 	for (unsigned i = 0; i < num_ops; ++i) {
+		rtg_nodes += ops[i].length;
 		if (ops[i].type == PERM_OP_CYCLE)
 			stat_ev_int("perm_cycle_size", ops[i].length);
 		else if (ops[i].type == PERM_OP_CHAIN)
@@ -692,6 +694,7 @@ static void emit_stat_events(void)
 		else
 			assert(!"Invalid perm op type");
 	}
+	stat_ev_int("perm_num_rtg_nodes", (int)rtg_nodes);
 }
 
 static void lower_perm(void)
