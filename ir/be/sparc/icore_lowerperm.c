@@ -173,9 +173,11 @@ static ir_node *create_permi(const perm_op_t *op)
 
 	assert(op->type == PERM_OP_CYCLE && op->length <= PERMI_SIZE);
 
+#ifdef DEBUG_libfirm
 	DB((dbg, LEVEL_2, "Implementing cycle: "));
 	print_perm_op(op);
 	DB((dbg, LEVEL_2, "\n"));
+#endif
 
 	for (i = 0; i < length; ++i) {
 		const unsigned in  = i;
@@ -214,9 +216,11 @@ static ir_node *create_chain_permi(const perm_op_t *op)
 
 	assert(op->type == PERM_OP_CHAIN && op->length <= PERMI_SIZE);
 
+#ifdef DEBUG_libfirm
 	DB((dbg, LEVEL_2, "Implementing chain: "));
 	print_perm_op(op);
 	DB((dbg, LEVEL_2, "\n"));
+#endif
 
 	for (i = 0; i < size; ++i) {
 		args[i] = in_nodes[op->regs[i]];
@@ -724,8 +728,10 @@ static void lower_perm(void)
 	/* Place as many permis of maximum size as possible. */
 	handle_big_ops();
 
+#ifdef DEBUG_libfirm
 	for (unsigned i = 0; i < num_ops; ++i)
 		assert(ops[i].length >= 2 && ops[i].length < PERMI_SIZE);
+#endif
 
 	/* Try to combine small ops efficiently. */
 	handle_small_ops();

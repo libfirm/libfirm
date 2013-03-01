@@ -114,8 +114,10 @@ static void create_chain(unsigned reg)
 	op->length = length;
 	reverse_regs(op);
 
+#ifdef DEBUG_libfirm
 	DB((dbg, LEVEL_2, "  Found a chain: "));
 	print_perm_op(op);
+#endif
 }
 
 static void search_chains(void)
@@ -155,8 +157,10 @@ static void create_cycle(unsigned reg)
 	op->length = length;
 	reverse_regs(op);
 
+#ifdef DEBUG_libfirm
 	DB((dbg, LEVEL_2, "  Found a cycle: "));
 	print_perm_op(op);
+#endif
 }
 
 /* Precondition: all chains have already been handled. */
