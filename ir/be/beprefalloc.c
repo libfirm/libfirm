@@ -1248,10 +1248,11 @@ static void permute_values_perms(ir_nodeset_t *live_nodes, ir_node *before,
 			ins[perm_size++] = assignments[src];
 	}
 
+	ir_node *perm = NULL;
 	if (perm_size > 0) {
 		DB((dbg_icore, LEVEL_2, "Creating Perm using parcopy.\n"));
 
-		ir_node *perm = be_new_Perm(cls, block, perm_size, ins);
+		perm = be_new_Perm(cls, block, perm_size, ins);
 		sched_add_before(before, perm);
 		unsigned input = 0;
 		for (unsigned r = 0; r < n_regs; ++r) {
@@ -1287,6 +1288,15 @@ static void permute_values_perms(ir_nodeset_t *live_nodes, ir_node *before,
 		assert(parcopy[r] == r);
 	}
 #endif
+
+	/* Emit statistics. */
+	if (perm != NULL) {
+		stat_ev_ctx_push_fmt("perm_stats", "%ld", get_irn_node_nr(perm));
+		stat_ev_int("perm_num_restores", num_restores);
+		stat_ev_ctx_pop("perm_stats");
+	} else if (num_restores > 0) {
+		stat_ev_int("bessadestr_copies", num_restores);
+	}
 
 	if (num_restores > 0) {
 		/* Step 4: Place restore movs. */
