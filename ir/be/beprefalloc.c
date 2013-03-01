@@ -2092,6 +2092,7 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 
 	block_info->processed = true;
 
+	be_timer_push(T_RA_SSA);
 	/* permute values at end of predecessor blocks in case of phi-nodes */
 	if (n_preds > 1) {
 		for (int p = 0; p < n_preds; ++p) {
@@ -2112,6 +2113,7 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 			add_phi_permutations(succ, p);
 		}
 	}
+	be_timer_pop(T_RA_SSA);
 }
 
 typedef struct block_costs_t block_costs_t;
