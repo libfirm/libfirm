@@ -385,8 +385,11 @@ static void impl_parallel_copy(ir_node *before, unsigned *parcopy, unsigned *n_u
 		stat_ev_ctx_push_fmt("perm_stats", "%ld", get_irn_node_nr(perm));
 		stat_ev_int("perm_num_restores", num_restores);
 		stat_ev_ctx_pop("perm_stats");
+		const int already_in_prtg_form = num_restores == 0;
+		stat_ev_int("bessadestr_already_in_prtg_form", already_in_prtg_form);
 	} else if (num_restores > 0) {
 		stat_ev_int("bessadestr_copies", num_restores);
+		stat_ev_int("bessadestr_already_in_prtg_form", 0);
 	}
 
 	if (num_restores > 0) {
