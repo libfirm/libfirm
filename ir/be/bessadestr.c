@@ -433,6 +433,7 @@ static void analyze_parallel_copies_walker(ir_node *block, void *data)
 		unsigned parcopy[n_regs];
 		unsigned n_used[n_regs];
 		unsigned keep_val[n_regs];
+		bool     part_of_rtg[n_regs];
 		ir_node *phi_args[n_regs];
 		ir_node *phis[n_regs];
 
@@ -441,6 +442,7 @@ static void analyze_parallel_copies_walker(ir_node *block, void *data)
 		}
 		memset(n_used, 0, n_regs * sizeof(unsigned));
 		memset(keep_val, 0, n_regs * sizeof(unsigned));
+		memset(part_of_rtg, false, n_regs * sizeof(bool));
 		memset(phi_args, 0, n_regs * sizeof(ir_node*));
 		memset(phis, 0, n_regs * sizeof(ir_node*));
 
@@ -463,6 +465,8 @@ static void analyze_parallel_copies_walker(ir_node *block, void *data)
 			parcopy[phi_reg->index] = arg_reg->index;
 			DB((dbg_icore, LEVEL_2, "copy %s -> %s\n", arg_reg->name, phi_reg->name));
 			++n_used[arg_reg->index];
+			part_of_rtg[arg_reg->index] = true;
+			part_of_rtg[phi_reg->index] = true;
 
 			if (be_is_live_in(lv, block, arg))
 				keep_val[arg_reg->index] = 1;
@@ -474,16 +478,25 @@ static void analyze_parallel_copies_walker(ir_node *block, void *data)
 			phi_args[arg_reg->index] = arg;
 		}
 
-		for (unsigned i = 0; i < n_regs; ++i)
+		unsigned num_rtg_nodes = 0;
+		for (unsigned i = 0; i < n_regs; ++i) {
 			n_used[i] += keep_val[i];
+			if (part_of_rtg[i])
+				++num_rtg_nodes;
+		}
 
-		ir_node *pred   = get_Block_cfgpred_block(block, i);
-		ir_node *before = be_get_end_of_block_insertion_point(pred);
-		DB((dbg_icore, LEVEL_2, "copies for %+F:\n", pred));
+		if (num_rtg_nodes > 0) {
+			ir_node *pred   = get_Block_cfgpred_block(block, i);
+			ir_node *before = be_get_end_of_block_insertion_point(pred);
 #ifndef NDEBUG
-		print_parcopy(parcopy, n_used);
+			DB((dbg_icore, LEVEL_2, "RTG has %u nodes.\n", num_rtg_nodes));
+			DB((dbg_icore, LEVEL_2, "copies for %+F:\n", pred));
+			print_parcopy(parcopy, n_used);
 #endif
-		impl_parallel_copy(before, parcopy, n_used, phis, phi_args, i);
+			stat_ev_int("bessadestr_num_rtg_nodes", num_rtg_nodes);
+			impl_parallel_copy(before, parcopy, n_used, phis, phi_args, i);
+			DB((dbg_icore, LEVEL_2, "\n"));
+		}
 	}
 }
 
