@@ -679,11 +679,11 @@ static void handle_small_ops(void)
 
 static void emit_stat_events(void)
 {
-	ir_node  *block = get_nodes_block(perm);
-	ir_graph *irg   = get_irn_irg(block);
+	ir_node *block = get_nodes_block(perm);
 	stat_ev_int("perm_block_nr", get_irn_node_nr(block));
 
 #ifdef USE_EXECFREQ
+	ir_graph *irg = get_irn_irg(block);
 	ir_execfreq_int_factors ef_factors;
 	ir_calculate_execfreq_int_factors(&ef_factors, irg);
 	int count = get_block_execfreq_int(&ef_factors, block);
