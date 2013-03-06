@@ -1136,6 +1136,23 @@ static unsigned find_longest_chain(unsigned *parcopy, unsigned *n_used,
 	return max_dst;
 }
 
+static void emit_rtg_stats(unsigned *parcopy)
+{
+	bool *part_of_rtg = ALLOCANZ(bool, n_regs);
+	for (unsigned i = 0; i < n_regs; ++i) {
+		if (parcopy[i] != i) {
+			part_of_rtg[i] = true;
+			part_of_rtg[parcopy[i]] = true;
+		}
+	}
+	unsigned num_rtg_nodes = 0;
+	for (unsigned i = 0; i < n_regs; ++i) {
+		if (part_of_rtg[i])
+			++num_rtg_nodes;
+	}
+	stat_ev_int("bessadestr_num_rtg_nodes", num_rtg_nodes);
+}
+
 static void permute_values_perms(ir_nodeset_t *live_nodes, ir_node *before,
                                  unsigned *parcopy)
 {
@@ -1157,6 +1174,7 @@ static void permute_values_perms(ir_nodeset_t *live_nodes, ir_node *before,
 		++n_used[old_reg];
 	}
 
+	emit_rtg_stats(parcopy);
 	print_parcopy(parcopy, n_used);
 	ir_node *block = get_nodes_block(before);
 
@@ -1294,8 +1312,11 @@ static void permute_values_perms(ir_nodeset_t *live_nodes, ir_node *before,
 		stat_ev_ctx_push_fmt("perm_stats", "%ld", get_irn_node_nr(perm));
 		stat_ev_int("perm_num_restores", num_restores);
 		stat_ev_ctx_pop("perm_stats");
+		const int already_in_prtg_form = num_restores == 0;
+		stat_ev_int("bessadestr_already_in_prtg_form", already_in_prtg_form);
 	} else if (num_restores > 0) {
 		stat_ev_int("bessadestr_copies", num_restores);
+		stat_ev_int("bessadestr_already_in_prtg_form", 0);
 	}
 
 	if (num_restores > 0) {
