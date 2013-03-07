@@ -675,12 +675,14 @@ static void lower_perm_node(ir_node *irn)
 		free(move.elems);
 	}
 
+#ifdef DEBUG_libfirm
 	if (num_insns > 0) {
 		stat_ev_ctx_push_fmt("perm_stats", "%ld", get_irn_node_nr(irn));
 		stat_ev_int("perm_num_rtg_nodes", rtg_nodes);
 		stat_ev_int("perm_num_insns", num_insns);
 		stat_ev_ctx_pop("perm_stats");
 	}
+#endif
 
 	/* Remove the perm from schedule */
 	if (!keep_perm) {

@@ -1117,6 +1117,7 @@ static const char *get_reg_name(unsigned reg_index)
 	return arch_register_for_index(cls, reg_index)->name;
 }
 
+#ifdef DEBUG_libfirm
 static void print_parcopy(unsigned *parcopy_orig, unsigned *n_used_orig)
 {
 	unsigned parcopy[n_regs];
@@ -1189,6 +1190,7 @@ static void print_parcopy(unsigned *parcopy_orig, unsigned *n_used_orig)
 		DB((dbg_icore, LEVEL_2, "%s(%u)\n", get_reg_name(comp[0]), comp[0]));
 	}
 }
+#endif
 
 static void mark_cycle_parts(bool *part_of_cycle, unsigned *parcopy_orig,
                              unsigned *n_used_orig)
@@ -1280,6 +1282,7 @@ static unsigned find_longest_chain(unsigned *parcopy, unsigned *n_used,
 	return max_dst;
 }
 
+#ifdef DEBUG_libfirm
 static void emit_rtg_stats(unsigned *parcopy)
 {
 	bool *part_of_rtg = ALLOCANZ(bool, n_regs);
@@ -1296,6 +1299,7 @@ static void emit_rtg_stats(unsigned *parcopy)
 	}
 	stat_ev_int("bessadestr_num_rtg_nodes", num_rtg_nodes);
 }
+#endif
 
 static void permute_values_icore(ir_nodeset_t *live_nodes, ir_node *before,
                                  unsigned *parcopy)
@@ -1318,8 +1322,10 @@ static void permute_values_icore(ir_nodeset_t *live_nodes, ir_node *before,
 		++n_used[old_reg];
 	}
 
+#ifdef DEBUG_libfirm
 	emit_rtg_stats(parcopy);
 	print_parcopy(parcopy, n_used);
+#endif
 	ir_node *block = get_nodes_block(before);
 
 	unsigned restore_srcs[n_regs];
@@ -1399,7 +1405,9 @@ static void permute_values_icore(ir_nodeset_t *live_nodes, ir_node *before,
 	DB((dbg_icore, LEVEL_2, "Finished searching for forks.\n"));
 
 	DB((dbg_icore, LEVEL_2, "Current parallel copy:\n"));
+#ifdef DEBUG_libfirm
 	print_parcopy(parcopy, n_used);
+#endif
 
 	/* Step 3: The remaining parcopy must be suitable for a Perm. */
 	unsigned perm_size = 0;
@@ -1451,6 +1459,7 @@ static void permute_values_icore(ir_nodeset_t *live_nodes, ir_node *before,
 	}
 #endif
 
+#ifdef DEBUG_libfirm
 	/* Emit statistics. */
 	if (perm != NULL) {
 		stat_ev_ctx_push_fmt("perm_stats", "%ld", get_irn_node_nr(perm));
@@ -1462,6 +1471,7 @@ static void permute_values_icore(ir_nodeset_t *live_nodes, ir_node *before,
 		stat_ev_int("bessadestr_copies", num_restores);
 		stat_ev_int("bessadestr_already_in_prtg_form", 0);
 	}
+#endif
 
 	if (num_restores > 0) {
 		/* Step 4: Place restore movs. */

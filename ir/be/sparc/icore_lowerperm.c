@@ -257,10 +257,12 @@ static ir_node *create_permi23(ir_node **args, const perm_op_t *op2,
 	dbg_info *dbgi    = get_irn_dbg_info(perm);
 	ir_node  *permi23;
 
+#ifdef DEBUG_libfirm
 	DB((dbg, LEVEL_2, "Combining two small ops:\n"));
 	DB((dbg, LEVEL_2, "  ")); print_perm_op(op2);
 	DB((dbg, LEVEL_2, "  ")); print_perm_op(op3);
 	DB((dbg, LEVEL_2, "\n"));
+#endif
 
 	if (op2->type == PERM_OP_CHAIN)
 		--sz;
@@ -677,6 +679,7 @@ static void handle_small_ops(void)
 	}
 }
 
+#ifdef DEBUG_libfirm
 static void emit_stat_events(void)
 {
 	ir_node *block = get_nodes_block(perm);
@@ -702,6 +705,7 @@ static void emit_stat_events(void)
 	}
 	stat_ev_int("perm_num_rtg_nodes", (int)rtg_nodes);
 }
+#endif
 
 static void lower_perm(void)
 {
@@ -718,11 +722,13 @@ static void lower_perm(void)
 
 	/* For non-empty register transfer graphs, emit statistic events. */
 	const bool emit_stats = num_ops > 0;
+#ifdef DEBUG_libfirm
 	if (emit_stats) {
 		num_permis = 0;
 		stat_ev_ctx_push_fmt("perm_stats", "%ld", get_irn_node_nr(perm));
 		emit_stat_events();
 	}
+#endif
 
 	if (only_cycles)
 		handle_all_chains();
@@ -738,6 +744,7 @@ static void lower_perm(void)
 	/* Try to combine small ops efficiently. */
 	handle_small_ops();
 
+#ifdef DEBUG_libfirm
 	if (emit_stats) {
 		const int num_insns = num_permis + num_moves;
 		if (num_insns > 0) {
@@ -748,6 +755,7 @@ static void lower_perm(void)
 	}
 
 	DB((dbg, LEVEL_2, "Finished %+F\n", perm));
+#endif
 }
 
 static void lower_perm_node(ir_node *irn)

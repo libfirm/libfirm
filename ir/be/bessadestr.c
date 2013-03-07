@@ -380,6 +380,7 @@ static void impl_parallel_copy(ir_node *before, unsigned *parcopy, unsigned *n_u
 	}
 #endif
 
+#ifdef DEBUG_libfirm
 	/* Emit statistics. */
 	if (perm != NULL) {
 		stat_ev_ctx_push_fmt("perm_stats", "%ld", get_irn_node_nr(perm));
@@ -391,6 +392,7 @@ static void impl_parallel_copy(ir_node *before, unsigned *parcopy, unsigned *n_u
 		stat_ev_int("bessadestr_copies", num_restores);
 		stat_ev_int("bessadestr_already_in_prtg_form", 0);
 	}
+#endif
 
 	if (num_restores > 0) {
 		/* Step 4: Place restore movs. */
@@ -491,12 +493,12 @@ static void analyze_parallel_copies_walker(ir_node *block, void *data)
 		if (num_rtg_nodes > 0) {
 			ir_node *pred   = get_Block_cfgpred_block(block, i);
 			ir_node *before = be_get_end_of_block_insertion_point(pred);
-#ifndef NDEBUG
+#ifndef DEBUG_libfirm
 			DB((dbg_icore, LEVEL_2, "RTG has %u nodes.\n", num_rtg_nodes));
 			DB((dbg_icore, LEVEL_2, "copies for %+F:\n", pred));
 			print_parcopy(parcopy, n_used);
-#endif
 			stat_ev_int("bessadestr_num_rtg_nodes", num_rtg_nodes);
+#endif
 			impl_parallel_copy(before, parcopy, n_used, phis, phi_args, i);
 			DB((dbg_icore, LEVEL_2, "\n"));
 		}
@@ -608,7 +610,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 			}
 
 			perm = be_new_Perm(chordal_env->cls, pred_bl, n_projs, in);
-			stat_ev_int("phi_perm", n_projs);
+			DEBUG_ONLY(stat_ev_int("phi_perm", n_projs));
 
 			insert_after = pred_bl;
 			do {
@@ -716,7 +718,7 @@ static void set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 					pin it
 				*/
 				ir_node *dupl = be_new_Copy(arg_block, arg);
-				stat_ev_int("bessadestr_copies", 1);
+				DEBUG_ONLY(stat_ev_int("bessadestr_copies", 1));
 
 				set_irn_n(phi, i, dupl);
 				arch_set_irn_register(dupl, phi_reg);
@@ -775,7 +777,7 @@ static void set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 				ir_node *dupl = be_new_Copy(arg_block, arg);
 				ir_node *ins;
 
-				stat_ev_int("bessadestr_copies", 1);
+				DEBUG_ONLY(stat_ev_int("bessadestr_copies", 1));
 				set_irn_n(phi, i, dupl);
 				arch_set_irn_register(dupl, phi_reg);
 				/* skip the Perm's Projs and insert the copies behind. */

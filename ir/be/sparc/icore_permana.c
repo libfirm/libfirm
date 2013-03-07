@@ -54,6 +54,7 @@ static const char *get_register_name_from_index(unsigned index)
 	return get_arch_register_from_index(index)->name;
 }
 
+#ifdef DEBUG_libfirm
 void print_perm_op(const perm_op_t *op)
 {
 	unsigned i;
@@ -70,6 +71,7 @@ void print_perm_op(const perm_op_t *op)
 
 	DB((dbg, LEVEL_2, "\n"));
 }
+#endif
 
 static void reverse_regs(perm_op_t *op)
 {
