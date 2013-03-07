@@ -36,6 +36,7 @@
 #include "irgmod.h"
 #include "iredges_t.h"
 #include "irgwalk.h"
+#include "irtools.h"
 #include "array_t.h"
 
 #include "bearch.h"
@@ -49,12 +50,20 @@
 #include "bemodule.h"
 
 #include "statev.h"
+#include "lc_opts.h"
 
 #undef KEEP_ALIVE_COPYKEEP_HACK
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 DEBUG_ONLY(static firm_dbg_module_t *dbg_constr;)
 DEBUG_ONLY(static firm_dbg_module_t *dbg_permmove;)
+
+static int lower_use_movs = 0;
+
+static const lc_opt_table_entry_t options[] = {
+	LC_OPT_ENT_BOOL("use_movs", "try to use movs for complex Perm nodes", &lower_use_movs),
+	LC_OPT_LAST
+};
 
 /** Associates an ir_node with its copy and CopyKeep. */
 typedef struct {
@@ -1195,7 +1204,9 @@ void lower_nodes_after_ra(ir_graph *irg)
 	be_assure_live_sets(irg);
 
 	ir_nodehashmap_init(&free_register_map);
-	irg_walk_graph(irg, NULL, find_free_registers_walker, NULL);
+	if (lower_use_movs) {
+		irg_walk_graph(irg, NULL, find_free_registers_walker, NULL);
+	}
 	irg_walk_graph(irg, NULL, lower_nodes_after_ra_walker, NULL);
 	ir_nodehashmap_destroy(&free_register_map);
 
@@ -1207,4 +1218,8 @@ void be_init_lower(void)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.be.lower");
 	FIRM_DBG_REGISTER(dbg_permmove, "firm.be.lower.permmove");
+
+	lc_opt_entry_t *be_grp         = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *belower_group  = lc_opt_get_grp(be_grp, "lower");
+	lc_opt_add_table(belower_group, options);
 }
