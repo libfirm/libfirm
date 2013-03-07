@@ -30,7 +30,7 @@ pbqp_edge_t *alloc_edge(pbqp_t *pbqp, unsigned src_index, unsigned tgt_index,
 	pbqp_edge_t *edge      = OALLOC(&pbqp->obstack, pbqp_edge_t);
 
 	if (tgt_index < src_index) {
-		int tmp = src_index;
+		unsigned tmp = src_index;
 		src_index = tgt_index;
 		tgt_index = tmp;
 

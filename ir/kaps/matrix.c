@@ -76,9 +76,9 @@ void pbqp_matrix_add(pbqp_matrix_t *sum, pbqp_matrix_t *summand)
 	assert(sum->cols == summand->cols);
 	assert(sum->rows == summand->rows);
 
-	int len = sum->rows * sum->cols;
+	unsigned len = sum->rows * sum->cols;
 
-	for (int i = 0; i < len; ++i) {
+	for (unsigned i = 0; i < len; ++i) {
 		sum->entries[i] = pbqp_add(sum->entries[i], summand->entries[i]);
 	}
 }
