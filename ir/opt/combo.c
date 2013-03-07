@@ -3586,7 +3586,11 @@ void combo(ir_graph *irg)
 	 * apply_cf(). */
 	apply_end(get_irg_end(irg), &env);
 
-	assure_doms(irg);
+	/* need a freshly computed dominance tree (after killing unreachable code
+	 * it is not valid anymore) */
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
+
 	irg_walk_graph(irg, NULL, apply_result, &env);
 
 	len = ARR_LEN(env.kept_memory);
