@@ -60,6 +60,8 @@
 #include "unionfind.h"
 #include "pdeq.h"
 #include "hungarian.h"
+#include "lc_opts.h"
+#include "lc_opts_enum.h"
 
 #include "beabi.h"
 #include "bechordal_t.h"
@@ -99,13 +101,30 @@ static size_t                       n_block_order;
 static int                          create_preferences        = true;
 static int                          create_congruence_classes = true;
 static int                          propagate_phi_registers   = true;
-static int                          create_big_perms          = false;
+static int                          perm_building_mode        = 0;
+
+enum {
+	PREFALLOC_PERM_DIRECT,
+	PREFALLOC_PERM_NORMAL,
+	PREFALLOC_PERM_ICORE,
+};
+
+static const lc_opt_enum_int_items_t perm_items[] = {
+	{ "direct", PREFALLOC_PERM_DIRECT },
+	{ "normal", PREFALLOC_PERM_NORMAL },
+	{ "icore",  PREFALLOC_PERM_ICORE },
+	{ NULL,     0 },
+};
+
+static lc_opt_enum_int_var_t perm_building_mode_var = {
+	&perm_building_mode, perm_items
+};
 
 static const lc_opt_table_entry_t options[] = {
 	LC_OPT_ENT_BOOL("prefs", "use preference based coloring", &create_preferences),
 	LC_OPT_ENT_BOOL("congruences", "create congruence classes", &create_congruence_classes),
 	LC_OPT_ENT_BOOL("prop_phi", "propagate phi registers", &propagate_phi_registers),
-	LC_OPT_ENT_BOOL("create_big_perms", "create big perms", &create_big_perms),
+	LC_OPT_ENT_ENUM_INT("perm_mode", "select perm build mode", &perm_building_mode_var),
 	LC_OPT_LAST
 };
 
@@ -968,6 +987,131 @@ static void permute_values_direct(ir_nodeset_t *live_nodes, ir_node *before,
 #endif
 }
 
+static void permute_values_normal(ir_nodeset_t *live_nodes, ir_node *before,
+                                  unsigned *parcopy)
+{
+	unsigned *n_used = ALLOCANZ(unsigned, n_regs);
+
+	/* determine how often each source register needs to be read */
+	for (unsigned r = 0; r < n_regs; ++r) {
+		unsigned  old_reg = parcopy[r];
+		ir_node  *value;
+
+		value = assignments[old_reg];
+		if (value == NULL) {
+			/* nothing to do here, reg is not live. Mark it as fixpoint
+			 * so we ignore it in the next steps */
+			parcopy[r] = r;
+			continue;
+		}
+
+		++n_used[old_reg];
+	}
+
+	ir_node *block = get_nodes_block(before);
+
+	/* step1: create copies where immediately possible */
+	for (unsigned r = 0; r < n_regs; /* empty */) {
+		unsigned old_r = parcopy[r];
+
+		/* - no need to do anything for fixed points.
+		   - we can't copy if the value in the dest reg is still needed */
+		if (old_r == r || n_used[r] > 0) {
+			++r;
+			continue;
+		}
+
+		/* create a copy */
+		ir_node *src  = assignments[old_r];
+		ir_node *copy = be_new_Copy(block, src);
+		sched_add_before(before, copy);
+		const arch_register_t *reg = arch_register_for_index(cls, r);
+		DB((dbg, LEVEL_2, "Copy %+F (from %+F, before %+F) -> %s\n",
+		    copy, src, before, reg->name));
+		mark_as_copy_of(copy, src);
+		unsigned width = 1; /* TODO */
+		use_reg(copy, reg, width);
+
+		if (live_nodes != NULL) {
+			ir_nodeset_insert(live_nodes, copy);
+		}
+
+		/* old register has 1 user less, permutation is resolved */
+		assert(arch_get_irn_register(src)->index == old_r);
+		parcopy[r] = r;
+
+		assert(n_used[old_r] > 0);
+		--n_used[old_r];
+		if (n_used[old_r] == 0) {
+			if (live_nodes != NULL) {
+				ir_nodeset_remove(live_nodes, src);
+			}
+			free_reg_of_value(src);
+		}
+
+		/* advance or jump back (if this copy enabled another copy) */
+		if (old_r < r && n_used[old_r] == 0) {
+			r = old_r;
+		} else {
+			++r;
+		}
+	}
+
+	/* at this point we only have cycles left which we resolve with
+	 * one perm instruction. */
+	unsigned srcs[n_regs];
+	unsigned dsts[n_regs];
+	unsigned arity = 0;
+
+	for (unsigned r = 0; r < n_regs; /* empty */) {
+		unsigned old_r = parcopy[r];
+
+		if (old_r == r) {
+			++r;
+			continue;
+		}
+
+		/* we shouldn't have copies from 1 value to multiple destinations left*/
+		assert(n_used[old_r] == 1);
+
+		srcs[arity] = old_r;
+		dsts[arity] = r;
+		++arity;
+
+		/* mark as fixed point */
+		parcopy[r] = r;
+	}
+
+	ir_node *ins[arity];
+	for (unsigned i = 0; i < arity; ++i) {
+		ins[i] = assignments[srcs[i]];
+	}
+	ir_node *perm = be_new_Perm(cls, block, arity, ins);
+	sched_add_before(before, perm);
+
+	unsigned width = 1; /* TODO */
+
+	for (unsigned i = 0; i < arity; ++i) {
+		ir_node *proj = new_r_Proj(perm, get_irn_mode(ins[i]), i);
+		mark_as_copy_of(proj, ins[i]);
+		const arch_register_t *reg = arch_register_for_index(cls, dsts[i]);
+		use_reg(proj, reg, width);
+
+		if (live_nodes != NULL) {
+			ir_nodeset_remove(live_nodes, ins[i]);
+			ir_nodeset_insert(live_nodes, proj);
+		}
+	}
+
+#ifndef NDEBUG
+	/* now we should only have fixpoints left */
+	for (unsigned r = 0; r < n_regs; ++r) {
+		assert(parcopy[r] == r);
+	}
+#endif
+}
+
+
 static const char *get_reg_name(unsigned reg_index)
 {
 	return arch_register_for_index(cls, reg_index)->name;
@@ -1153,7 +1297,7 @@ static void emit_rtg_stats(unsigned *parcopy)
 	stat_ev_int("bessadestr_num_rtg_nodes", num_rtg_nodes);
 }
 
-static void permute_values_perms(ir_nodeset_t *live_nodes, ir_node *before,
+static void permute_values_icore(ir_nodeset_t *live_nodes, ir_node *before,
                                  unsigned *parcopy)
 {
 	unsigned *n_used = ALLOCANZ(unsigned, n_regs);
@@ -1350,10 +1494,17 @@ static void permute_values(ir_nodeset_t *live_nodes, ir_node *before,
 	for (unsigned i = 0; i < n_regs; ++i)
 		DB((dbg_icore, LEVEL_2, "  %u -> %+F\n", i, assignments[i]));
 
-	if (create_big_perms)
-		permute_values_perms(live_nodes, before, permutation);
-	else
+	switch (perm_building_mode) {
+	case PREFALLOC_PERM_DIRECT:
 		permute_values_direct(live_nodes, before, permutation);
+		break;
+	case PREFALLOC_PERM_NORMAL:
+		permute_values_normal(live_nodes, before, permutation);
+		break;
+	case PREFALLOC_PERM_ICORE:
+		permute_values_icore(live_nodes, before, permutation);
+		break;
+	}
 
 	DB((dbg_icore, LEVEL_2, "permute_values: after:\n"));
 	for (unsigned i = 0; i < n_regs; ++i)
