@@ -605,12 +605,6 @@ void compute_doms(ir_graph *irg)
 	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 }
 
-void assure_doms(ir_graph *irg)
-{
-	if (!irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE))
-		compute_doms(irg);
-}
-
 void free_dom(ir_graph *irg)
 {
 	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
@@ -699,12 +693,6 @@ void compute_postdoms(ir_graph *irg)
 	                  assign_tree_postdom_pre_order_max, &tree_pre_order);
 
 	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE);
-}
-
-void assure_postdoms(ir_graph *irg)
-{
-	if (!irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE))
-		compute_postdoms(irg);
 }
 
 void free_postdom(ir_graph *irg)

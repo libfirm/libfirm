@@ -567,11 +567,11 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 
 	printf("#### ----- === Allocating registers of %s (%s) ===\n", cls->name, get_entity_name(get_irg_entity(irg)));
 #endif
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	be_assure_live_sets(irg);
 	lv = be_get_irg_liveness(irg);
 
 	/* insert perms */
-	assure_doms(irg);
 	dom_tree_walk_irg(irg, insert_perms, NULL, env);
 
 	/* dump graph after inserting perms */
@@ -621,7 +621,7 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 #if TIMER
 	ir_timer_reset_and_start(t_ra_pbqp_alloc_create);
 #endif
-	assure_doms(irg);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	dom_tree_walk_irg(irg, create_pbqp_coloring_instance , NULL, &pbqp_alloc_env);
 #if TIMER
 	ir_timer_stop(t_ra_pbqp_alloc_create);

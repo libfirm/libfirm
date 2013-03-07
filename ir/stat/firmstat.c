@@ -1111,7 +1111,7 @@ static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
 
 	/* we need dominator info */
 	if (graph->irg != get_const_code_irg()) {
-		assure_doms(graph->irg);
+		assure_irg_properties(graph->irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	}
 
 	/* count the nodes in the graph */

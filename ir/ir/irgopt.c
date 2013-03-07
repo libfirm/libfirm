@@ -181,9 +181,8 @@ int optimize_graph_df(ir_graph *irg)
 	add_irg_constraints(irg, IR_GRAPH_CONSTRAINT_OPTIMIZE_UNREACHABLE_CODE);
 
 	new_identities(irg);
-	assure_edges(irg);
-	assure_doms(irg);
-
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
+	                         | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irg_walk_graph(irg, NULL, opt_walker, waitq);
@@ -197,7 +196,8 @@ int optimize_graph_df(ir_graph *irg)
 			opt_walker(n, waitq);
 		}
 		/* Calculate dominance so we can kill unreachable code
-		 * We want this intertwined with localopts for better optimization (phase coupling) */
+		 * We want this intertwined with localopts for better optimization
+		 * (phase coupling) */
 		compute_doms(irg);
 		irg_block_walk_graph(irg, NULL, find_unreachable_blocks, waitq);
 	}

@@ -335,8 +335,9 @@ static void be_ra_chordal_color(be_chordal_env_t *const chordal_env)
 {
 	char            buf[256];
 	ir_graph *const irg = chordal_env->irg;
+
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	be_assure_live_sets(irg);
-	assure_doms(irg);
 
 	be_timer_push(T_CONSTR);
 

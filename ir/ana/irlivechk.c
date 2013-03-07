@@ -33,6 +33,7 @@
 #include "irnode_t.h"
 #include "irnodemap.h"
 #include "iredges_t.h"
+#include "irgraph_t.h"
 #include "irdom.h"
 #include "irdump.h"
 
@@ -199,10 +200,10 @@ static inline void compute_back_edge_chains(lv_chk_t *lv)
 
 lv_chk_t *lv_chk_new(ir_graph *irg)
 {
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
+
 	lv_chk_t *res = XMALLOC(lv_chk_t);
 	int i;
-
-	assure_doms(irg);
 
 	stat_ev_tim_push();
 	ir_nodemap_init(&res->block_infos, irg);

@@ -178,9 +178,6 @@ FIRM_API void postdom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
  */
 FIRM_API void compute_doms(ir_graph *irg);
 
-/** Recomputes dominator relation of a graph if necessary */
-FIRM_API void assure_doms(ir_graph *irg);
-
 /** Computes the post dominance relation for all basic blocks of a given graph.
  *
  * Sets a flag in irg to "dom_consistent".
@@ -197,9 +194,6 @@ FIRM_API void assure_doms(ir_graph *irg);
  * the run does not free the outs information.
  */
 FIRM_API void compute_postdoms(ir_graph *irg);
-
-/** Recompute postdominance relation if necessary */
-FIRM_API void assure_postdoms(ir_graph *irg);
 
 /** Frees the dominance data structures.  Sets the flag in irg to "dom_none". */
 FIRM_API void free_dom(ir_graph *irg);

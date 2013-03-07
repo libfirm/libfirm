@@ -130,7 +130,7 @@ void compute_cdep(ir_graph *irg)
 
 	cdep_data->cdep_map = pmap_create();
 
-	assure_postdoms(irg);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE);
 
 	/* we must temporary change the post dominator relation:
 	   the ipdom of the startblock is the end block.

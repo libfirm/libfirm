@@ -80,10 +80,10 @@ void ir_compute_dominance_frontiers(ir_graph *irg)
 {
 	ir_dom_front_info_t *info = &irg->domfront;
 
-	assure_edges(irg);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
+	                         | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	obstack_init(&info->obst);
 	info->df_map = pmap_create();
-	assure_doms(irg);
 	compute_df(get_irg_start_block(irg), info);
 
 	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE_FRONTIERS);
