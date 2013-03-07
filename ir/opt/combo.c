@@ -2916,14 +2916,25 @@ static ir_node *get_leader(node_t *node)
 {
 	partition_t *part = node->part;
 
-	if (part->n_leader > 1 || node->is_follower) {
-		if (node->is_follower) {
-			DB((dbg, LEVEL_2, "Replacing follower %+F\n", node->node));
-		}
-		else
-			DB((dbg, LEVEL_2, "Found congruence class for %+F\n", node->node));
-
+	if (node->is_follower) {
+		DB((dbg, LEVEL_2, "Replacing follower %+F\n", node->node));
 		return get_first_node(part)->node;
+	}
+
+	if (part->n_leader > 1) {
+		ir_node *irn = node->node;
+
+		DB((dbg, LEVEL_2, "Found congruence class for %+F\n", irn));
+
+		ir_node *block       = get_nodes_block(irn);
+		ir_node *first       = get_first_node(part)->node;
+		ir_node *first_block = get_nodes_block(first);
+
+		/* Ensure that the leader dominates the node. */
+		if (block_dominates(first_block, block))
+			return first;
+		else
+			return irn;
 	}
 	return node->node;
 }
@@ -3571,6 +3582,8 @@ void combo(ir_graph *irg)
 	 * and fixes assertion because dead cf to dead blocks is NOT removed by
 	 * apply_cf(). */
 	apply_end(get_irg_end(irg), &env);
+
+	assure_doms(irg);
 	irg_walk_graph(irg, NULL, apply_result, &env);
 
 	len = ARR_LEN(env.kept_memory);
