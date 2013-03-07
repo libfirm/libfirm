@@ -24,157 +24,148 @@
 #include "array_t.h"
 #include "iredges.h"
 
-
-#define get_dom_info(bl)  (&(bl)->attr.block.dom)
-#define get_pdom_info(bl) (&(bl)->attr.block.pdom)
-
-ir_node *get_Block_idom(const ir_node *bl)
+static inline ir_dom_info *get_dom_info(ir_node *block)
 {
-	if (get_Block_dom_depth(bl) == -1) {
-		/* This block is not reachable from Start */
-		ir_graph *irg = get_irn_irg(bl);
-		return new_r_Bad(irg, mode_BB);
-	}
-	return get_dom_info(bl)->idom;
+	assert(is_Block(block));
+	return &block->attr.block.dom;
 }
 
-void set_Block_idom(ir_node *bl, ir_node *n)
+static inline const ir_dom_info *get_dom_info_const(const ir_node *block)
 {
-	ir_dom_info *bli = get_dom_info(bl);
+	assert(is_Block(block));
+	return &block->attr.block.dom;
+}
 
-	assert(is_Block(bl));
+static inline ir_dom_info *get_pdom_info(ir_node *block)
+{
+	assert(is_Block(block));
+	return &block->attr.block.pdom;
+}
 
-	/* Set the immediate dominator of bl to n */
+static inline const ir_dom_info *get_pdom_info_const(const ir_node *block)
+{
+	assert(is_Block(block));
+	return &block->attr.block.pdom;
+}
+
+ir_node *get_Block_idom(const ir_node *block)
+{
+	if (get_Block_dom_depth(block) == -1) {
+		/* This block is not reachable from Start */
+		ir_graph *irg = get_irn_irg(block);
+		return new_r_Bad(irg, mode_BB);
+	}
+	return get_dom_info_const(block)->idom;
+}
+
+void set_Block_idom(ir_node *block, ir_node *n)
+{
+	/* Set the immediate dominator of block to n */
+	ir_dom_info *bli = get_dom_info(block);
 	bli->idom = n;
 
-	/*
-	 * If we don't set the root of the dominator tree
-	 * Append bl to the dominates queue of n.
-	 */
+	/* If we don't set the root of the dominator tree
+	 * Append block to the dominates queue of n. */
 	if (n != NULL) {
 		ir_dom_info *ni = get_dom_info(n);
 
 		bli->next = ni->first;
-		ni->first = bl;
+		ni->first = block;
 	}
 }
 
-ir_node *get_Block_ipostdom(const ir_node *bl)
+ir_node *get_Block_ipostdom(const ir_node *block)
 {
-	if (get_Block_postdom_depth(bl) == -1) {
+	if (get_Block_postdom_depth(block) == -1) {
 		/* This block is not reachable from Start */
-		ir_graph *irg = get_irn_irg(bl);
+		ir_graph *irg = get_irn_irg(block);
 		return new_r_Bad(irg, mode_BB);
 	}
-	return get_pdom_info(bl)->idom;
+	return get_pdom_info_const(block)->idom;
 }
 
-void set_Block_ipostdom(ir_node *bl, ir_node *n)
+void set_Block_ipostdom(ir_node *block, ir_node *n)
 {
-	ir_dom_info *bli = get_pdom_info(bl);
-
-	assert(is_Block(bl));
-
-	/* Set the immediate post dominator of bl to n */
+	/* Set the immediate post dominator of block to n */
+	ir_dom_info *bli = get_pdom_info(block);
 	bli->idom = n;
 
-	/*
-	 * If we don't set the root of the post dominator tree
-	 * Append bl to the post dominates queue of n.
-	 */
+	/* If we don't set the root of the post dominator tree
+	 * Append block to the post dominates queue of n. */
 	if (n != NULL) {
 		ir_dom_info *ni = get_pdom_info(n);
 
 		bli->next = ni->first;
-		ni->first = bl;
+		ni->first = block;
 	}
 }
 
-int get_Block_dom_pre_num(const ir_node *bl)
+int get_Block_dom_pre_num(const ir_node *block)
 {
-	assert(is_Block(bl));
-	return get_dom_info(bl)->pre_num;
+	return get_dom_info_const(block)->pre_num;
 }
 
-void set_Block_dom_pre_num(ir_node *bl, int num)
+void set_Block_dom_pre_num(ir_node *block, int num)
 {
-	assert(is_Block(bl));
-	get_dom_info(bl)->pre_num = num;
+	get_dom_info(block)->pre_num = num;
 }
 
-int get_Block_dom_depth(const ir_node *bl)
+int get_Block_dom_depth(const ir_node *block)
 {
-	assert(is_Block(bl));
-	return get_dom_info(bl)->dom_depth;
+	return get_dom_info_const(block)->dom_depth;
 }
 
-void set_Block_dom_depth(ir_node *bl, int depth)
+void set_Block_dom_depth(ir_node *block, int depth)
 {
-	assert(is_Block(bl));
-	get_dom_info(bl)->dom_depth = depth;
+	get_dom_info(block)->dom_depth = depth;
 }
 
-
-int get_Block_postdom_pre_num(const ir_node *bl)
+int get_Block_postdom_pre_num(const ir_node *block)
 {
-	assert(is_Block(bl));
-	return get_pdom_info(bl)->pre_num;
+	return get_pdom_info_const(block)->pre_num;
 }
 
-void set_Block_postdom_pre_num(ir_node *bl, int num)
+void set_Block_postdom_pre_num(ir_node *block, int num)
 {
-	assert(is_Block(bl));
-	get_pdom_info(bl)->pre_num = num;
+	get_pdom_info(block)->pre_num = num;
 }
 
-int get_Block_postdom_depth(const ir_node *bl)
+int get_Block_postdom_depth(const ir_node *block)
 {
-	assert(is_Block(bl));
-	return get_pdom_info(bl)->dom_depth;
+	return get_pdom_info_const(block)->dom_depth;
 }
 
-void set_Block_postdom_depth(ir_node *bl, int depth)
+void set_Block_postdom_depth(ir_node *block, int depth)
 {
-	assert(is_Block(bl));
-	get_pdom_info(bl)->dom_depth = depth;
+	get_pdom_info(block)->dom_depth = depth;
 }
 
-unsigned get_Block_dom_tree_pre_num(const ir_node *bl)
+unsigned get_Block_dom_tree_pre_num(const ir_node *block)
 {
-	assert(is_Block(bl));
-	return get_dom_info(bl)->tree_pre_num;
+	return get_dom_info_const(block)->tree_pre_num;
 }
 
-unsigned get_Block_dom_max_subtree_pre_num(const ir_node *bl)
+unsigned get_Block_dom_max_subtree_pre_num(const ir_node *block)
 {
-	assert(is_Block(bl));
-	return get_dom_info(bl)->max_subtree_pre_num;
+	return get_dom_info_const(block)->max_subtree_pre_num;
 }
 
-unsigned get_Block_pdom_tree_pre_num(const ir_node *bl)
+unsigned get_Block_pdom_tree_pre_num(const ir_node *block)
 {
-	assert(is_Block(bl));
-	return get_pdom_info(bl)->tree_pre_num;
+	return get_pdom_info_const(block)->tree_pre_num;
 }
 
-unsigned get_Block_pdom_max_subtree_pre_num(const ir_node *bl)
+unsigned get_Block_pdom_max_subtree_pre_num(const ir_node *block)
 {
-	assert(is_Block(bl));
-	return get_pdom_info(bl)->max_subtree_pre_num;
+	return get_pdom_info_const(block)->max_subtree_pre_num;
 }
 
 int block_dominates(const ir_node *a, const ir_node *b)
 {
-	const ir_dom_info *ai, *bi;
-
-	if (is_Block(a) && is_Block(b)) {
-		ai = get_dom_info(a);
-		bi = get_dom_info(b);
-		return bi->tree_pre_num - ai->tree_pre_num
-			<= ai->max_subtree_pre_num - ai->tree_pre_num;
-	}
-
-	return 0;
+	const ir_dom_info *ai = get_dom_info_const(a);
+	const ir_dom_info *bi = get_dom_info_const(b);
+	return bi->tree_pre_num - ai->tree_pre_num
+		<= ai->max_subtree_pre_num - ai->tree_pre_num;
 }
 
 int block_strictly_dominates(const ir_node *a, const ir_node *b)
@@ -189,17 +180,16 @@ ir_node *node_smallest_common_dominator(ir_node *a, ir_node *b)
 	ir_node *dom_bl = NULL;
 
 	/* Check if block of a dominates block of b */
-	if (block_dominates(bl_a, bl_b))
+	if (block_dominates(bl_a, bl_b)) {
 		dom_bl = bl_a;
 	/* Check if block of b dominates block of a */
-	else if (block_dominates(bl_b, bl_a))
+	} else if (block_dominates(bl_b, bl_a)) {
 		dom_bl = bl_b;
-	else {
-		/* walk up dominator tree and search for first block dominating a and b */
-		while (! dom_bl) {
+	} else {
+		/* walk up and search for first block dominating a and b */
+		while (dom_bl == NULL) {
 			bl_a = get_Block_idom(bl_a);
-
-			assert(! is_Bad(bl_a) && "block is dead?");
+			assert(!is_Bad(bl_a));
 
 			if (block_dominates(bl_a, bl_b))
 				dom_bl = bl_a;
@@ -209,31 +199,22 @@ ir_node *node_smallest_common_dominator(ir_node *a, ir_node *b)
 	return dom_bl;
 }
 
-/* Get the first node in the list of nodes dominated by a given block. */
-ir_node *get_Block_dominated_first(const ir_node *bl)
+ir_node *get_Block_dominated_first(const ir_node *block)
 {
-	assert(is_Block(bl));
-	return get_dom_info(bl)->first;
+	return get_dom_info_const(block)->first;
 }
 
-ir_node *get_Block_dominated_next(const ir_node *bl)
+ir_node *get_Block_dominated_next(const ir_node *block)
 {
-	assert(is_Block(bl));
-	return get_dom_info(bl)->next;
+	return get_dom_info_const(block)->next;
 }
 
 int block_postdominates(const ir_node *a, const ir_node *b)
 {
-	const ir_dom_info *ai, *bi;
-
-	if (is_Block(a) && is_Block(b)) {
-		ai = get_pdom_info(a);
-		bi = get_pdom_info(b);
-		return bi->tree_pre_num - ai->tree_pre_num
-			<= ai->max_subtree_pre_num - ai->tree_pre_num;
-	}
-
-	return 0;
+	const ir_dom_info *ai = get_pdom_info_const(a);
+	const ir_dom_info *bi = get_pdom_info_const(b);
+	return bi->tree_pre_num - ai->tree_pre_num
+		<= ai->max_subtree_pre_num - ai->tree_pre_num;
 }
 
 int block_strictly_postdominates(const ir_node *a, const ir_node *b)
@@ -241,61 +222,52 @@ int block_strictly_postdominates(const ir_node *a, const ir_node *b)
 	return (a != b) && block_postdominates(a, b);
 }
 
-ir_node *get_Block_postdominated_first(const ir_node *bl)
+ir_node *get_Block_postdominated_first(const ir_node *block)
 {
-	assert(is_Block(bl));
-	return get_pdom_info(bl)->first;
+	return get_pdom_info_const(block)->first;
 }
 
-ir_node *get_Block_postdominated_next(const ir_node *bl)
+ir_node *get_Block_postdominated_next(const ir_node *block)
 {
-	assert(is_Block(bl));
-	return get_pdom_info(bl)->next;
+	return get_pdom_info_const(block)->next;
 }
 
-void dom_tree_walk(ir_node *bl, irg_walk_func *pre,
-		irg_walk_func *post, void *env)
+void dom_tree_walk(ir_node *block, irg_walk_func *pre, irg_walk_func *post,
+                   void *env)
 {
-	ir_node *p;
+	if (pre != NULL)
+		pre(block, env);
 
-	if (pre)
-		pre(bl, env);
-
-	dominates_for_each(bl, p) {
+	dominates_for_each(block, p) {
 		dom_tree_walk(p, pre, post, env);
 	}
 
-	if (post)
-		post(bl, env);
+	if (post != NULL)
+		post(block, env);
 }
 
-void postdom_tree_walk(ir_node *bl, irg_walk_func *pre,
+void postdom_tree_walk(ir_node *block, irg_walk_func *pre,
 		irg_walk_func *post, void *env)
 {
-	ir_node *p;
-
 	if (pre)
-		pre(bl, env);
+		pre(block, env);
 
-	postdominates_for_each(bl, p) {
+	postdominates_for_each(block, p) {
 		postdom_tree_walk(p, pre, post, env);
 	}
 
 	if (post)
-		post(bl, env);
+		post(block, env);
 }
 
-void dom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
-		irg_walk_func *post, void *env)
+void dom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post,
+                       void *env)
 {
 	/* The root of the dominator tree should be the Start block. */
 	ir_node *root = get_irg_start_block(irg);
 
-	assert(irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE)
-			&& "The dominators of the irg must be consistent");
-	assert(root && "The start block of the graph is NULL?");
-	assert(get_dom_info(root)->idom == NULL
-			&& "The start node in the graph must be the root of the dominator tree");
+	assert(irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE));
+	assert(get_dom_info(root)->idom == NULL);
 	dom_tree_walk(root, pre, post, env);
 }
 
@@ -305,32 +277,28 @@ void postdom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
 	/* The root of the post dominator tree should be the End block. */
 	ir_node *root = get_irg_end_block(irg);
 
-	assert(irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE)
-			&& "The dominators of the irg must be consistent");
-	assert(root && "The end block of the graph is NULL?");
-	assert(get_pdom_info(root)->idom == NULL
-			&& "The End block node in the graph must be the root of the post dominator tree");
+	assert(irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE));
+	assert(get_pdom_info(root)->idom == NULL);
 	postdom_tree_walk(root, pre, post, env);
 }
 
 
-static void assign_tree_dom_pre_order(ir_node *bl, void *data)
+static void assign_tree_dom_pre_order(ir_node *block, void *data)
 {
 	unsigned *num = (unsigned*) data;
-	ir_dom_info *bi = get_dom_info(bl);
+	ir_dom_info *bi = get_dom_info(block);
 
 	bi->tree_pre_num = (*num)++;
 }
 
-static void assign_tree_dom_pre_order_max(ir_node *bl, void *data)
+static void assign_tree_dom_pre_order_max(ir_node *block, void *data)
 {
-	ir_dom_info *bi = get_dom_info(bl);
-	ir_node *p;
+	(void) data;
+	ir_dom_info *bi = get_dom_info(block);
 	unsigned max = 0;
 	unsigned children = 0;
-	(void) data;
 
-	for (p = bi->first; p; p = get_dom_info(p)->next) {
+	for (ir_node *p = bi->first; p; p = get_dom_info(p)->next) {
 		unsigned max_p = get_dom_info(p)->max_subtree_pre_num;
 		max = max > max_p ? max : max_p;
 		children++;
@@ -340,23 +308,22 @@ static void assign_tree_dom_pre_order_max(ir_node *bl, void *data)
 	assert(bi->max_subtree_pre_num >= bi->tree_pre_num);
 }
 
-static void assign_tree_postdom_pre_order(ir_node *bl, void *data)
+static void assign_tree_postdom_pre_order(ir_node *block, void *data)
 {
-	unsigned *num = (unsigned*) data;
-	ir_dom_info *bi = get_pdom_info(bl);
+	unsigned *num = (unsigned*)data;
+	ir_dom_info *bi = get_pdom_info(block);
 
 	bi->tree_pre_num = (*num)++;
 }
 
-static void assign_tree_postdom_pre_order_max(ir_node *bl, void *data)
+static void assign_tree_postdom_pre_order_max(ir_node *block, void *data)
 {
-	ir_dom_info *bi = get_pdom_info(bl);
-	ir_node *p;
+	(void) data;
+	ir_dom_info *bi = get_pdom_info(block);
 	unsigned max = 0;
 	unsigned children = 0;
-	(void) data;
 
-	for (p = bi->first; p; p = get_pdom_info(p)->next) {
+	for (ir_node *p = bi->first; p; p = get_pdom_info(p)->next) {
 		unsigned max_p = get_pdom_info(p)->max_subtree_pre_num;
 		max = max > max_p ? max : max_p;
 		children++;
@@ -369,16 +336,15 @@ static void assign_tree_postdom_pre_order_max(ir_node *bl, void *data)
 /**
  * count the number of blocks and clears the post dominance info
  */
-static void count_and_init_blocks_pdom(ir_node *bl, void *env)
+static void count_and_init_blocks_pdom(ir_node *block, void *env)
 {
-	int *n_blocks = (int *) env;
+	int *n_blocks = (int*)env;
+	(*n_blocks)++;
 
-	(*n_blocks) ++;
-
-	memset(get_pdom_info(bl), 0, sizeof(ir_dom_info));
-	set_Block_ipostdom(bl, NULL);
-	set_Block_postdom_pre_num(bl, -1);
-	set_Block_postdom_depth(bl, -1);
+	memset(get_pdom_info(block), 0, sizeof(ir_dom_info));
+	set_Block_ipostdom(block, NULL);
+	set_Block_postdom_pre_num(block, -1);
+	set_Block_postdom_depth(block, -1);
 }
 
 /** temporary type used while constructing the dominator / post dominator tree. */
@@ -389,54 +355,46 @@ typedef struct tmp_dom_info {
 	struct tmp_dom_info *parent;
 	struct tmp_dom_info *label;   /**< used for LINK and EVAL */
 	struct tmp_dom_info *ancestor;/**< used for LINK and EVAL */
-	struct tmp_dom_info *dom;     /**< After step 3, if the semidominator of w is
-	                                   its immediate dominator, then w->dom is the
-	                                   immediate dominator of w.  Otherwise w->dom
-	                                   is a vertex v whose number is smaller than
-	                                   w and whose immediate dominator is also w's
-	                                   immediate dominator. After step 4, w->dom
-	                                   is the immediate dominator of w.  */
+	struct tmp_dom_info *dom;     /**< After step 3, if the semidominator of w
+	                                   is its immediate dominator, then w->dom
+	                                   is the immediate dominator of w.
+	                                   Otherwise w->dom is a vertex v whose
+	                                   number is smaller than w and whose
+	                                   immediate dominator is also w's
+	                                   immediate dominator. After step 4,
+	                                   w->dom is the immediate dominator of w.*/
 	struct tmp_dom_info *bucket;  /**< set of vertices with same semidominator */
 } tmp_dom_info;
-
-/** Struct to pass info through walker. */
-typedef struct {
-	tmp_dom_info *d;
-	int used;
-} dom_env;
-
 
 /**
  * Walks Blocks along the out data structure.  If recursion started with
  * Start block misses control dead blocks.
  */
-static void init_tmp_dom_info(ir_node *bl, tmp_dom_info *parent,
+static void init_tmp_dom_info(ir_node *block, tmp_dom_info *parent,
                               tmp_dom_info *tdi_list, int *used, int n_blocks)
 {
-	tmp_dom_info *tdi;
-	int i;
-
-	if (Block_block_visited(bl))
-	  return;
-	mark_Block_block_visited(bl);
-	set_Block_dom_pre_num(bl, *used);
+	if (Block_block_visited(block)) {
+		return;
+	}
+	mark_Block_block_visited(block);
+	set_Block_dom_pre_num(block, *used);
 
 	assert(*used < n_blocks);
-	tdi = &tdi_list[*used];
+	tmp_dom_info *tdi = &tdi_list[*used];
 	++(*used);
 
+	tdi->block    = block;
 	tdi->semi     = tdi;
+	tdi->parent   = parent;
 	tdi->label    = tdi;
 	tdi->ancestor = NULL;
+	tdi->dom      = NULL;
 	tdi->bucket   = NULL;
-	tdi->parent   = parent;
-	tdi->block    = bl;
 
 	/* Iterate */
-	for (i = get_Block_n_cfg_outs_ka(bl) - 1; i >= 0; --i) {
-		ir_node *pred = get_Block_cfg_out_ka(bl, i);
-		/* can happen for half-optimized dead code (I've seen this in student
-		   projects */
+	for (int i = get_Block_n_cfg_outs_ka(block) - 1; i >= 0; --i) {
+		ir_node *pred = get_Block_cfg_out_ka(block, i);
+		/* can happen for half-optimized dead code */
 		if (!is_Block(pred))
 			continue;
 
@@ -448,31 +406,29 @@ static void init_tmp_dom_info(ir_node *bl, tmp_dom_info *parent,
  * Walks Blocks along the control flow.  If recursion started with
  * End block misses blocks in endless loops.
  */
-static void init_tmp_pdom_info(ir_node *bl, tmp_dom_info *parent,
+static void init_tmp_pdom_info(ir_node *block, tmp_dom_info *parent,
                                tmp_dom_info *tdi_list, int* used, int n_blocks)
 {
-	tmp_dom_info *tdi;
-	int i;
-
-	if (get_irg_block_visited(current_ir_graph) == get_Block_block_visited(bl))
-	  return;
-	mark_Block_block_visited(bl);
-	set_Block_postdom_pre_num(bl, *used);
+	if (Block_block_visited(block))
+		return;
+	mark_Block_block_visited(block);
+	set_Block_postdom_pre_num(block, *used);
 
 	assert(*used < n_blocks);
-	tdi = &tdi_list[*used];
+	tmp_dom_info *tdi = &tdi_list[*used];
 	++(*used);
 
-	tdi->semi = tdi;
-	tdi->label = tdi;
+	tdi->block    = block;
+	tdi->semi     = tdi;
+	tdi->parent   = parent;
+	tdi->label    = tdi;
 	tdi->ancestor = NULL;
-	tdi->bucket = NULL;
-	tdi->parent = parent;
-	tdi->block = bl;
+	tdi->dom      = NULL;
+	tdi->bucket   = NULL;
 
 	/* Iterate */
-	for (i = get_Block_n_cfgpreds(bl) - 1; i >= 0; --i) {
-		ir_node *pred = get_Block_cfgpred_block(bl, i);
+	for (int i = get_Block_n_cfgpreds(block) - 1; i >= 0; --i) {
+		ir_node *pred = get_Block_cfgpred_block(block, i);
 		if (is_Bad(pred))
 			continue;
 		init_tmp_pdom_info(pred, tdi, tdi_list, used, n_blocks);
@@ -481,12 +437,11 @@ static void init_tmp_pdom_info(ir_node *bl, tmp_dom_info *parent,
 	/* Handle keep-alives. Note that the preprocessing
 	   in init_construction() had already killed all
 	   phantom keep-alive edges. All remaining block keep-alives
-	   are really edges to endless loops.
-	 */
-	if (bl == get_irg_end_block(current_ir_graph)) {
-		ir_node *end = get_irg_end(current_ir_graph);
-
-		for (i = get_irn_arity(end) - 1; i >= 0; --i) {
+	   are really edges to endless loops. */
+	ir_graph *irg = get_irn_irg(block);
+	if (block == get_irg_end_block(irg)) {
+		const ir_node *end = get_irg_end(irg);
+		for (int i = get_irn_arity(end) - 1; i >= 0; --i) {
 			ir_node *pred = get_irn_n(end, i);
 
 			if (is_Block(pred))
@@ -497,9 +452,9 @@ static void init_tmp_pdom_info(ir_node *bl, tmp_dom_info *parent,
 
 static void dom_compress(tmp_dom_info *v)
 {
-	assert (v->ancestor);
+	assert(v->ancestor);
 	if (v->ancestor->ancestor) {
-		dom_compress (v->ancestor);
+		dom_compress(v->ancestor);
 		if (v->ancestor->label->semi < v->label->semi) {
 			v->label = v->ancestor->label;
 		}
@@ -513,8 +468,9 @@ static void dom_compress(tmp_dom_info *v)
  */
 inline static tmp_dom_info *dom_eval(tmp_dom_info *v)
 {
-	if (!v->ancestor) return v;
-	dom_compress (v);
+	if (!v->ancestor)
+		return v;
+	dom_compress(v);
 	return v->label;
 }
 
@@ -527,68 +483,57 @@ inline static void dom_link(tmp_dom_info *v, tmp_dom_info *w)
 /**
  * Walker: count the number of blocks and clears the dominance info
  */
-static void count_and_init_blocks_dom(ir_node *bl, void *env)
+static void count_and_init_blocks_dom(ir_node *block, void *env)
 {
-	int *n_blocks = (int *) env;
+	int *n_blocks = (int*)env;
+	(*n_blocks)++;
 
-	(*n_blocks) ++;
-
-	memset(get_dom_info(bl), 0, sizeof(ir_dom_info));
-	set_Block_idom(bl, NULL);
-	set_Block_dom_pre_num(bl, -1);
-	set_Block_dom_depth(bl, -1);
+	memset(get_dom_info(block), 0, sizeof(ir_dom_info));
+	set_Block_idom(block, NULL);
+	set_Block_dom_pre_num(block, -1);
+	set_Block_dom_depth(block, -1);
 }
 
 void compute_doms(ir_graph *irg)
 {
-	ir_graph *rem = current_ir_graph;
-	int n_blocks, used, i, j;
-	tmp_dom_info *tdi_list;   /* Ein Golf? */
-
-	current_ir_graph = irg;
-
-	/* Update graph state */
 	assert(!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
 
+	/* We need the out data structure. */
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
+
 	/* Count the number of blocks in the graph. */
-	n_blocks = 0;
+	int n_blocks = 0;
 	irg_block_walk_graph(irg, count_and_init_blocks_dom, NULL, &n_blocks);
 
 	/* Memory for temporary information. */
-	tdi_list = XMALLOCNZ(tmp_dom_info, n_blocks);
-
-	/* We need the out data structure. */
-	assure_irg_outs(irg);
+	tmp_dom_info *tdi_list = XMALLOCN(tmp_dom_info, n_blocks);
 
 	/* this with a standard walker as passing the parent to the sons isn't
 	   simple. */
-	used = 0;
+	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 	inc_irg_block_visited(irg);
+	int used = 0;
 	init_tmp_dom_info(get_irg_start_block(irg), NULL, tdi_list, &used, n_blocks);
+	ir_free_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 	/* If not all blocks are reachable from Start by out edges this assertion
-	   fails.
-	   assert(used == n_blocks && "Precondition for dom construction violated"); */
-	assert(used <= n_blocks && "Precondition for dom construction violated");
+	   fails. */
+	assert(used <= n_blocks);
 	n_blocks = used;
 
-
-	for (i = n_blocks-1; i > 0; i--) {  /* Don't iterate the root, it's done. */
-		tmp_dom_info *w     = &tdi_list[i];
-		ir_node      *block = w->block;
-		tmp_dom_info *v;
-		int           irn_arity;
+	for (int i = n_blocks-1; i > 0; i--) {  /* Don't iterate the root, it's done. */
+		tmp_dom_info  *w     = &tdi_list[i];
+		const ir_node *block = w->block;
 
 		/* Step 2 */
-		irn_arity = get_irn_arity(block);
-		for (j = 0; j < irn_arity;  j++) {
-			ir_node *pred       = get_Block_cfgpred(block, j);
-			ir_node *pred_block = get_nodes_block(pred);
-			tmp_dom_info *u;
+		int irn_arity = get_irn_arity(block);
+		for (int j = 0; j < irn_arity; j++) {
+			const ir_node *pred       = get_Block_cfgpred(block, j);
+			const ir_node *pred_block = get_nodes_block(pred);
 
-			if (is_Bad(pred) || (get_Block_dom_pre_num (pred_block) == -1))
+			if (is_Bad(pred) || get_Block_dom_pre_num(pred_block) == -1)
 				continue;    /* unreachable */
 
-			u = dom_eval (&tdi_list[get_Block_dom_pre_num(pred_block)]);
+			tmp_dom_info *u = dom_eval(&tdi_list[get_Block_dom_pre_num(pred_block)]);
 			if (u->semi < w->semi)
 				w->semi = u->semi;
 		}
@@ -596,16 +541,13 @@ void compute_doms(ir_graph *irg)
 		/* handle keep-alives if we are at the end block */
 		if (block == get_irg_end_block(irg)) {
 			ir_node *end = get_irg_end(irg);
-
 			irn_arity = get_irn_arity(end);
-			for (j = 0; j < irn_arity;  j++) {
-				ir_node *pred = get_irn_n(end, j);
-				tmp_dom_info *u;
-
+			for (int j = 0; j < irn_arity; j++) {
+				const ir_node *pred = get_irn_n(end, j);
 				if (!is_Block(pred) || get_Block_dom_pre_num(pred) == -1)
 					continue;   /* unreachable */
 
-				u = dom_eval (&tdi_list[get_Block_dom_pre_num(pred)]);
+				tmp_dom_info *u = dom_eval(&tdi_list[get_Block_dom_pre_num(pred)]);
 				if (u->semi < w->semi)
 					w->semi = u->semi;
 			}
@@ -616,17 +558,16 @@ void compute_doms(ir_graph *irg)
 		w->bucket = w->semi->bucket;
 		w->semi->bucket = w;
 
-		dom_link (w->parent, w);
+		dom_link(w->parent, w);
 
 		/* Step 3 */
 		while (w->parent->bucket) {
-			tmp_dom_info *u;
-			v = w->parent->bucket;
+			tmp_dom_info *v = w->parent->bucket;
 			/* remove v from w->parent->bucket */
 			w->parent->bucket = v->bucket;
 			v->bucket = NULL;
 
-			u = dom_eval (v);
+			tmp_dom_info *u = dom_eval(v);
 			if (u->semi < v->semi)
 				v->dom = u;
 			else
@@ -637,11 +578,9 @@ void compute_doms(ir_graph *irg)
 	tdi_list[0].dom = NULL;
 	set_Block_idom(tdi_list[0].block, NULL);
 	set_Block_dom_depth(tdi_list[0].block, 1);
-	for (i = 1; i < n_blocks;  i++) {
+	for (int i = 1; i < n_blocks; i++) {
 		tmp_dom_info *w = &tdi_list[i];
-		int depth;
-
-		if (! w->dom)
+		if (w->dom == NULL)
 			continue; /* control dead */
 
 		if (w->dom != w->semi)
@@ -649,7 +588,7 @@ void compute_doms(ir_graph *irg)
 		set_Block_idom(w->block, w->dom->block);
 
 		/* blocks dominated by dead one's are still dead */
-		depth = get_Block_dom_depth(w->dom->block);
+		int depth = get_Block_dom_depth(w->dom->block);
 		if (depth > 0)
 			++depth;
 		set_Block_dom_depth(w->block, depth);
@@ -659,97 +598,79 @@ void compute_doms(ir_graph *irg)
 	free(tdi_list);
 
 	/* Do a walk over the tree and assign the tree pre orders. */
-	{
-		unsigned tree_pre_order = 0;
-		dom_tree_walk(get_irg_start_block(irg), assign_tree_dom_pre_order,
-		                  assign_tree_dom_pre_order_max, &tree_pre_order);
-	}
-	current_ir_graph = rem;
+	unsigned tree_pre_order = 0;
+	dom_tree_walk(get_irg_start_block(irg), assign_tree_dom_pre_order,
+	              assign_tree_dom_pre_order_max, &tree_pre_order);
+
 	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 }
 
 void assure_doms(ir_graph *irg)
 {
-	if (! irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE))
+	if (!irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE))
 		compute_doms(irg);
 }
 
 void free_dom(ir_graph *irg)
 {
-	/* Update graph state */
 	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
-
-	/* With the implementation right now there is nothing to free */
-
-	/* free dominance frontiers */
 	ir_free_dominance_frontiers(irg);
 }
 
 void compute_postdoms(ir_graph *irg)
 {
-	ir_graph *rem = current_ir_graph;
-	int n_blocks, used, i, j;
-	tmp_dom_info *tdi_list;
-
-	current_ir_graph = irg;
-
 	/* Update graph state */
 	assert(!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
 
+	/* We need the out data structure. */
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
+
 	/* Count the number of blocks in the graph. */
-	n_blocks = 0;
+	int n_blocks = 0;
 	irg_block_walk_graph(irg, count_and_init_blocks_pdom, NULL, &n_blocks);
 
-	/* Memory for temporary information. */
-	tdi_list = XMALLOCNZ(tmp_dom_info, n_blocks);
-
-	/* We need the out data structure. */
-	assure_irg_outs(irg);
+	/* memory for temporary information. */
+	tmp_dom_info *tdi_list = XMALLOCN(tmp_dom_info, n_blocks);
 
 	/* this with a standard walker as passing the parent to the sons isn't
 	   simple. */
-	used = 0;
+	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 	inc_irg_block_visited(irg);
+	int used = 0;
 	init_tmp_pdom_info(get_irg_end_block(irg), NULL, tdi_list, &used, n_blocks);
-	/* If not all blocks are reachable from End by cfg edges this assertion
-	   fails.
-	   assert(used == n_blocks && "Precondition for dom construction violated"); */
+	ir_free_resources(irg, IR_RESOURCE_BLOCK_VISITED);
+	assert(used <= n_blocks);
 	n_blocks = used;
 
-
-	for (i = n_blocks-1; i > 0; i--) {  /* Don't iterate the root, it's done. */
-		int irn_arity;
+	for (int i = n_blocks-1; i > 0; i--) {  /* Don't iterate the root, it's done. */
 		tmp_dom_info *w = &tdi_list[i];
-		tmp_dom_info *v;
 
 		/* Step 2 */
-		irn_arity = get_Block_n_cfg_outs_ka(w->block);
-		for (j = 0;  j < irn_arity;  j++) {
+		int irn_arity = get_Block_n_cfg_outs_ka(w->block);
+		for (int j = 0; j < irn_arity; j++) {
 			ir_node *succ = get_Block_cfg_out_ka(w->block, j);
-			tmp_dom_info *u;
-
-			if (get_Block_postdom_pre_num (succ) == -1)
+			if (get_Block_postdom_pre_num(succ) == -1)
 				continue;    /* endless-loop */
 
-			u = dom_eval (&tdi_list[get_Block_postdom_pre_num(succ)]);
-			if (u->semi < w->semi) w->semi = u->semi;
+			tmp_dom_info *u = dom_eval(&tdi_list[get_Block_postdom_pre_num(succ)]);
+			if (u->semi < w->semi)
+				w->semi = u->semi;
 		}
 		/* Add w to w->semi's bucket.  w is in exactly one bucket, so
 		   buckets can be implemented as linked lists. */
 		w->bucket = w->semi->bucket;
 		w->semi->bucket = w;
 
-		dom_link (w->parent, w);
+		dom_link(w->parent, w);
 
 		/* Step 3 */
 		while (w->parent->bucket) {
-			tmp_dom_info *u;
-			v = w->parent->bucket;
+			tmp_dom_info *v = w->parent->bucket;
 			/* remove v from w->parent->bucket */
 			w->parent->bucket = v->bucket;
 			v->bucket = NULL;
 
-			u = dom_eval(v);
+			tmp_dom_info *u = dom_eval(v);
 			if (u->semi < v->semi)
 				v->dom = u;
 			else
@@ -760,10 +681,11 @@ void compute_postdoms(ir_graph *irg)
 	tdi_list[0].dom = NULL;
 	set_Block_ipostdom(tdi_list[0].block, NULL);
 	set_Block_postdom_depth(tdi_list[0].block, 1);
-	for (i = 1;  i < n_blocks;  i++) {
+	for (int i = 1; i < n_blocks; i++) {
 		tmp_dom_info *w = &tdi_list[i];
 
-		if (w->dom != w->semi) w->dom = w->dom->dom;
+		if (w->dom != w->semi)
+			w->dom = w->dom->dom;
 		set_Block_ipostdom(w->block, w->dom->block);
 		set_Block_postdom_depth(w->block, get_Block_postdom_depth(w->dom->block) + 1);
 	}
@@ -772,18 +694,16 @@ void compute_postdoms(ir_graph *irg)
 	free(tdi_list);
 
 	/* Do a walk over the tree and assign the tree pre orders. */
-	{
-		unsigned tree_pre_order = 0;
-		postdom_tree_walk(get_irg_end_block(irg), assign_tree_postdom_pre_order,
-			assign_tree_postdom_pre_order_max, &tree_pre_order);
-	}
-	current_ir_graph = rem;
+	unsigned tree_pre_order = 0;
+	postdom_tree_walk(get_irg_end_block(irg), assign_tree_postdom_pre_order,
+	                  assign_tree_postdom_pre_order_max, &tree_pre_order);
+
 	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE);
 }
 
 void assure_postdoms(ir_graph *irg)
 {
-	if (! irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE))
+	if (!irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE))
 		compute_postdoms(irg);
 }
 

@@ -208,7 +208,6 @@ static void layout(const draw_chordal_env_t *env, ir_node *bl, int x)
 	rect_t                    *rect   = &dims->subtree_box;
 	int                       h_space = 0;
 	int                       v_space = 0;
-	ir_node                   *sub;
 
 	memset(rect, 0, sizeof(*rect));
 	rect->x = x;
@@ -238,7 +237,6 @@ static void set_y(const draw_chordal_env_t *env, ir_node *bl, int up)
 	const draw_chordal_opts_t *opts      = env->opts;
 	struct block_dims         *dims      = pmap_get(struct block_dims, env->block_dims, bl);
 	int                       max_height = dims->subtree_box.h - dims->box.h - opts->v_gap;
-	ir_node                   *sub;
 
 	dominates_for_each(bl, sub) {
 		struct block_dims *bl_dim = pmap_get(struct block_dims, env->block_dims, sub);
