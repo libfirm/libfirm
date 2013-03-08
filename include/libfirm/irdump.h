@@ -220,13 +220,13 @@ FIRM_API void dump_loop(FILE *out, ir_loop *loop);
 
 /** Write the graph and all its attributes to the file passed.
  *  Does not write the nodes. */
-FIRM_API void dump_graph_as_text(FILE *out, ir_graph *graph);
+FIRM_API void dump_graph_as_text(FILE *out, const ir_graph *graph);
 
 /** Write the entity and all its attributes to the passed file. */
-FIRM_API void dump_entity_to_file(FILE *out, ir_entity *entity);
+FIRM_API void dump_entity_to_file(FILE *out, const ir_entity *entity);
 
 /** Write the type and all its attributes to the file passed. */
-FIRM_API void dump_type_to_file(FILE *out, ir_type *type);
+FIRM_API void dump_type_to_file(FILE *out, const ir_type *type);
 
 /** Verbosity for text dumpers */
 typedef enum {
