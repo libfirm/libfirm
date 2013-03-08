@@ -99,14 +99,14 @@ void create_borders(ir_node *block, void *env_ptr)
 		/* If the node is no phi node we can examine the uses. */
 		if (!is_Phi(irn)) {
 			be_foreach_use(irn, env->cls, in_req_, op, op_req_,
-				const char *msg = "-";
+				char msg = '-';
 
 				if (ir_nodeset_insert(&live, op)) {
 					border_use(op, step, 1);
-					msg = "X";
+					msg = 'X';
 				}
 
-				DB((dbg, LEVEL_4, "\t\t%s pos: %d, use: %+F\n", msg, i_, op));
+				DB((dbg, LEVEL_4, "\t\t%c pos: %d, use: %+F\n", msg, i_, op));
 			);
 		}
 		++step;
