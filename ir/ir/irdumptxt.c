@@ -606,15 +606,6 @@ void dump_type_to_file(FILE *F, ir_type *tp)
 {
 	size_t i;
 
-	if ((is_Class_type(tp))       && (verbosity & dump_verbosity_noClassTypes)) return;
-	if ((is_Struct_type(tp))      && (verbosity & dump_verbosity_noStructTypes)) return;
-	if ((is_Union_type(tp))       && (verbosity & dump_verbosity_noUnionTypes)) return;
-	if ((is_Array_type(tp))       && (verbosity & dump_verbosity_noArrayTypes)) return;
-	if ((is_Pointer_type(tp))     && (verbosity & dump_verbosity_noPointerTypes)) return;
-	if ((is_Method_type(tp))      && (verbosity & dump_verbosity_noMethodTypes)) return;
-	if ((is_Primitive_type(tp))   && (verbosity & dump_verbosity_noPrimitiveTypes)) return;
-	if ((is_Enumeration_type(tp)) && (verbosity & dump_verbosity_noEnumerationTypes)) return;
-
 	ir_fprintf(F, "%+F", tp);
 	if (verbosity & dump_verbosity_onlynames) { fprintf(F, "\n"); return; }
 

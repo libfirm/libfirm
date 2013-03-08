@@ -243,24 +243,6 @@ typedef enum {
 
 	dump_verbosity_accessStats       = 0x00000100,   /**< Dump entity access statistics. */
 
-	dump_verbosity_noClassTypes      = 0x00001000,   /**< Dump no class       types. */
-	dump_verbosity_noStructTypes     = 0x00002000,   /**< Dump no struct      types. */
-	dump_verbosity_noUnionTypes      = 0x00004000,   /**< Dump no union       types. */
-	dump_verbosity_noArrayTypes      = 0x00008000,   /**< Dump no array       types. */
-	dump_verbosity_noPointerTypes    = 0x00010000,   /**< Dump no pointer     types. */
-	dump_verbosity_noMethodTypes     = 0x00020000,   /**< Dump no method      types. */
-	dump_verbosity_noPrimitiveTypes  = 0x00040000,   /**< Dump no primitive   types .*/
-	dump_verbosity_noEnumerationTypes= 0x00080000,   /**< Dump no enumeration types. */
-
-	dump_verbosity_onlyClassTypes     = 0x000FE000,  /**< Dump only class     types. */
-	dump_verbosity_onlyStructTypes    = 0x000FD000,  /**< Dump only struct    types. */
-	dump_verbosity_onlyUnionTypes     = 0x000FB000,  /**< Dump only union     types. */
-	dump_verbosity_onlyArrayTypes     = 0x000F7000,  /**< Dump only array     types. */
-	dump_verbosity_onlyPointerTypes   = 0x000EF000,  /**< Dump only pointer   types. */
-	dump_verbosity_onlyMethodTypes    = 0x000DF000,  /**< Dump only method    types. */
-	dump_verbosity_onlyPrimitiveTypes = 0x000BF000,  /**< Dump only primitive types. */
-	dump_verbosity_onlyEnumerationTypes=0x0007F000,  /**< Dump only enumeration types. */
-
 	dump_verbosity_max                = 0x4FF00FBE   /**< Turn everything on */
 } ir_dump_verbosity_t;
 ENUM_BITSET(ir_dump_verbosity_t)
