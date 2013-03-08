@@ -172,7 +172,6 @@ static inline void edge_change_cnt(ir_node *tgt, ir_edge_kind_t kind, int ofs)
  */
 static inline void verify_list_head(ir_node *irn, ir_edge_kind_t kind)
 {
-	int                    err     = 0;
 	int                    num     = 0;
 	pset                   *lh_set = pset_new_ptr(16);
 	const struct list_head *head   = &get_irn_edge_info(irn, kind)->outs_head;
@@ -186,7 +185,7 @@ static inline void verify_list_head(ir_node *irn, ir_edge_kind_t kind)
 			fprintf(stderr, "- at list entry %d\n", num);
 			if (edge->src)
 				ir_fprintf(stderr, "- edge(%ld) %+F(%d)\n", edge_get_id(edge), edge->src, edge->pos);
-			err = 1;
+			assert(0 && "No source node found");
 			break;
 		}
 		num++;
@@ -194,8 +193,6 @@ static inline void verify_list_head(ir_node *irn, ir_edge_kind_t kind)
 	}
 
 	del_pset(lh_set);
-
-	assert(err == 0);
 }
 
 void edges_dump_kind(ir_graph *irg, ir_edge_kind_t kind)
@@ -245,9 +242,8 @@ static void add_edge(ir_node *src, int pos, ir_node *tgt, ir_edge_kind_t kind,
 
 	ir_edge_t *new_edge = ir_edgeset_insert(edges, edge);
 	assert(new_edge == edge);
-	(void)new_edge;
 
-	list_add(&edge->list, head);
+	list_add(&new_edge->list, head);
 
 	edge_change_cnt(tgt, kind, +1);
 }
@@ -811,6 +807,8 @@ static int edges_verify_wrapper(ir_graph *irg, void *context)
 {
 	pass_t *pass           = (pass_t*)context;
 	int     problems_found = edges_verify(irg);
+	(void)pass;
+	(void)problems_found;
 	/* do NOT rerun the pass if verify is ok :-) */
 	assert(problems_found && pass->assert_on_problem);
 	return 0;

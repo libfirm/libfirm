@@ -3748,7 +3748,8 @@ static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
 	ia32_address_mode_t  am;
 	ia32_address_t      *addr = &am.addr;
 
-	(void) node;
+	(void)node;
+	(void)tgt_mode;
 	assert(get_mode_size_bits(src_mode) < get_mode_size_bits(tgt_mode));
 
 #ifdef DEBUG_libfirm

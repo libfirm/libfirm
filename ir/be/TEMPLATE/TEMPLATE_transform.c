@@ -66,8 +66,10 @@ static ir_node *gen_Eor(ir_node *node)
 
 static ir_node *gen_Div(ir_node *node)
 {
+#ifndef NDEBUG
 	ir_mode *mode = get_Div_resmode(node);
 	assert(mode_is_float(mode));
+#endif
 	return transform_binop(node, new_bd_TEMPLATE_fDiv);
 }
 

@@ -2529,7 +2529,6 @@ static void lower_reduce_builtin(ir_node *builtin, ir_mode *mode)
 
 	{
 	arch_allow_ifconv_func  allow_ifconv      = be_get_backend_param()->allow_ifconv;
-	int                     arity             = get_irn_arity(builtin);
 	dbg_info               *dbgi              = get_irn_dbg_info(builtin);
 	ir_graph               *irg               = get_irn_irg(builtin);
 	ir_type                *type              = get_Builtin_type(builtin);
@@ -2546,7 +2545,7 @@ static void lower_reduce_builtin(ir_node *builtin, ir_mode *mode)
 	ir_node                *res;
 
 	assert(is_NoMem(mem));
-	assert(arity == 2);
+	assert(get_irn_arity(builtin) == 2);
 
 	switch (kind) {
 	case ir_bk_ffs: {
@@ -2618,8 +2617,6 @@ static void lower_reduce_builtin(ir_node *builtin, ir_mode *mode)
 		ir_node  *parity_low;
 		ir_node  *high;
 		ir_node  *low;
-
-		assert(arity == 2);
 
 		parity_high = new_rd_Builtin(dbgi, block, mem, 1, in_high, kind, lowered_type_high);
 		high        = new_r_Proj(parity_high, result_mode, pn_Builtin_max+1);

@@ -688,7 +688,8 @@ static ir_graph *find_tail(const ir_graph *n)
 {
 	bool found = false;
 	ir_graph *m;
-	size_t i, res_index;
+	size_t i;
+	size_t res_index = 0;
 
 	/*
 	if (!icfg && rm_cyclic_phis && remove_cyclic_phis (n)) return NULL;

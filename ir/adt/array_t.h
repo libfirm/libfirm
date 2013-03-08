@@ -18,7 +18,8 @@
 #define ARR_F_MAGIC FOURCC('A','R','R','F')
 
 #ifdef NDEBUG
-# define ARR_SET_DBGINF(descr, co)
+# define ARR_SET_DBGINF(descr, co) \
+    ((void)(descr), (void)(co), (void)0)
 #else
 # define ARR_SET_DBGINF(descr, co) \
     ((descr)->magic = (co))

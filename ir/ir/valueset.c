@@ -88,6 +88,7 @@ static void resize(HashSet *self, size_t new_size)
 	}
 	/* all re-inserted data must be new, if not, we found a node twice ... */
 	assert(res == 1);
+	(void)res;
 
 	/* now we can free the old array */
 	Free(old_entries);

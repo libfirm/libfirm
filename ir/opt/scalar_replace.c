@@ -670,7 +670,7 @@ void scalar_replacement_opt(ir_graph *irg)
 	ir_mode   **modes;
 	set       *set_ent;
 	pset      *sels;
-	ir_type   *ent_type, *frame_tp;
+	ir_type   *frame_tp;
 
 	assure_irg_properties(irg,
 		IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
@@ -707,12 +707,12 @@ void scalar_replacement_opt(ir_graph *irg)
 				if (get_entity_link(ent) == NULL || get_entity_link(ent) == ADDRESS_TAKEN)
 					continue;
 
-				ent_type = get_entity_type(ent);
-
 				key.ent       = ent;
 				(void)set_insert(scalars_t, set_ent, &key, sizeof(key), hash_ptr(key.ent));
 
 #ifdef DEBUG_libfirm
+				ir_type *ent_type = get_entity_type(ent);
+
 				if (is_Array_type(ent_type)) {
 					DB((dbg, SET_LEVEL_1, "  found array %s\n", get_entity_name(ent)));
 				} else if (is_Struct_type(ent_type)) {

@@ -94,6 +94,7 @@ static int cmp_affinity(const void *d1, const void *d2)
 
 static spill_t *get_spill(be_fec_env_t *env, ir_node *node)
 {
+	(void)env;
 	assert(rbitset_is_set(env->spills_set, get_irn_idx(node)));
 	return (spill_t*)get_irn_link(node);
 }

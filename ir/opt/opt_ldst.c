@@ -1652,11 +1652,12 @@ static void calcAvail(void)
  */
 static void calcAntic(void)
 {
-	int i, need_iter;
+	int need_iter;
 
 	/* calculate antic_out */
 	DB((dbg, LEVEL_2, "Calculate Antic_in\n"));
-	i = 0;
+
+	DEBUG_ONLY(int i = 0;)
 	do {
 		block_t *bl;
 
@@ -1668,7 +1669,7 @@ static void calcAntic(void)
 		for (bl = env.backward->backward_next; bl != NULL; bl = bl->backward_next) {
 			need_iter |= backward_antic(bl);
 		}
-		++i;
+		DEBUG_ONLY(++i;)
 	} while (need_iter);
 	DB((dbg, LEVEL_2, "Get anticipated Load set after %d iterations\n", i));
 }
@@ -2004,13 +2005,13 @@ static int insert_Load(block_t *bl)
  */
 static void insert_Loads_upwards(void)
 {
-	int i, need_iter;
+	int      need_iter;
 	block_t *bl;
 
 	/* recalculate antic_out and insert Loads */
 	DB((dbg, LEVEL_2, "Inserting Loads\n"));
 
-	i = 0;
+	DEBUG_ONLY(int i = 0;)
 	do {
 		DB((dbg, LEVEL_2, "Iteration %d:\n=========\n", i));
 
@@ -2020,7 +2021,7 @@ static void insert_Loads_upwards(void)
 		for (bl = env.forward->forward_next; bl != NULL; bl = bl->forward_next) {
 			need_iter |= insert_Load(bl);
 		}
-		++i;
+		DEBUG_ONLY(++i;)
 	} while (need_iter);
 
 	DB((dbg, LEVEL_2, "Finished Load inserting after %d iterations\n", i));

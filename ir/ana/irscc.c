@@ -653,7 +653,6 @@ static void scc(ir_node *n)
 void construct_backedges(ir_graph *irg)
 {
 	ir_graph *rem = current_ir_graph;
-	ir_loop *head_rem;
 	struct obstack temp;
 
 	current_ir_graph   = irg;
@@ -664,7 +663,10 @@ void construct_backedges(ir_graph *irg)
 
 	current_loop = NULL;
 	new_loop();  /* sets current_loop */
-	head_rem = current_loop; /* Just for assertion */
+
+#ifndef NDEBUG
+	ir_loop *head_rem = current_loop; /* Just for assertion */
+#endif
 
 	inc_irg_visited(irg);
 

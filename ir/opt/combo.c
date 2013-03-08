@@ -261,6 +261,7 @@ static void check_partition(const partition_t *T)
 		assert(node->part == T);
 		++n;
 	}
+	(void)n;
 	assert(n == T->n_leader);
 
 	list_for_each_entry(node_t, node, &T->Follower, node_list) {
@@ -270,6 +271,7 @@ static void check_partition(const partition_t *T)
 	}
 }
 
+#ifdef DEBUG_libfirm
 /**
  * check that all leader nodes in the partition have the same opcode.
  */
@@ -287,6 +289,7 @@ static void check_opcode(const partition_t *Z)
 		}
 	}
 }
+#endif
 
 static void check_all_partitions(environment_t *env)
 {
@@ -448,11 +451,11 @@ static int dump_partition_hook(FILE *F, const ir_node *n, const ir_node *local)
 }
 
 #else
-#define dump_partition(msg, part)
-#define dump_race_list(msg, list)
-#define dump_list(msg, list)
-#define dump_all_partitions(env)
-#define dump_split_list(list)
+#define dump_partition(msg, part) (void)(msg), (void)(part)
+#define dump_race_list(msg, list) (void)(msg), (void)(list)
+#define dump_list(msg, list) (void)(msg), (void)(list)
+#define dump_all_partitions(env) (void)(env)
+#define dump_split_list(list) (void)(list)
 #endif
 
 #if defined(VERIFY_MONOTONE) && defined (DEBUG_libfirm)
@@ -477,7 +480,7 @@ static void verify_type(const lattice_elem_t old_type, node_t *node)
 }
 
 #else
-#define verify_type(old_type, node)
+#define verify_type(old_type, node) (void)(old_type), (void)node
 #endif
 
 /**

@@ -1582,7 +1582,6 @@ static int check_dominance_for_node(const ir_node *use)
 			ir_node  *def    = get_irn_n(use, i);
 			ir_node  *def_bl = get_nodes_block(def);
 			ir_node  *use_bl = bl;
-			ir_graph *irg;
 
 			/* we have no dominance relation for unreachable blocks, so we can't
 			 * check the dominance property there */
@@ -1598,13 +1597,12 @@ static int check_dominance_for_node(const ir_node *use)
 			if (!is_Block(use_bl) || get_Block_dom_depth(use_bl) == -1)
 				continue;
 
-			irg = get_irn_irg(use);
 			ASSERT_AND_RET_DBG(
 				block_dominates(def_bl, use_bl),
 				"the definition of a value used violates the dominance property", 0,
 				ir_fprintf(stderr,
 				"graph %+F: %+F of %+F must dominate %+F of user %+F input %d\n",
-				irg, def_bl, def, use_bl, use, i
+				get_irn_irg(use), def_bl, def, use_bl, use, i
 				);
 			);
 		}
@@ -1724,6 +1722,7 @@ typedef struct check_cfg_env_t {
 	ir_nodeset_t false_projs;
 } check_cfg_env_t;
 
+#ifdef DEBUG_libfirm
 static int check_block_cfg(const ir_node *block, check_cfg_env_t *env)
 {
 	pmap *branch_nodes;
@@ -1885,6 +1884,7 @@ static int check_cfg(ir_graph *irg)
 	pmap_destroy(env.branch_nodes);
 	return env.res;
 }
+#endif
 
 int irg_verify(ir_graph *irg, unsigned flags)
 {

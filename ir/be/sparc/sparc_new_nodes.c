@@ -42,10 +42,12 @@ static bool has_jmp_cond_attr(const ir_node *node)
 	return is_sparc_Bicc(node) || is_sparc_fbfcc(node);
 }
 
+#ifndef NDEBUG
 static bool has_switch_jmp_attr(const ir_node *node)
 {
 	return is_sparc_SwitchJmp(node);
 }
+#endif
 
 static bool has_fp_attr(const ir_node *node)
 {

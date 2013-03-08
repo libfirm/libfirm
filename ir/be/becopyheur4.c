@@ -51,8 +51,8 @@ static firm_dbg_module_t *dbg = NULL;
 
 #else
 
-#define DBG_AFF_CHUNK(env, level, chunk)
-#define DBG_COL_COST(env, level, cost)
+#define DBG_AFF_CHUNK(env, level, chunk) ((void)(env), (void)(chunk), (void)0)
+#define DBG_COL_COST(env, level, cost) ((void)(env), (void)(cost), (void)0)
 
 #endif
 

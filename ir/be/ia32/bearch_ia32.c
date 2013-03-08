@@ -1758,6 +1758,7 @@ static void ia32_get_call_abi(ir_type *method_type, be_abi_call_t *abi)
 
 	/* In case of 64bit returns, we will have two 32bit values */
 	if (n == 2) {
+#ifndef NDEBUG
 		ir_type *tp   = get_method_res_type(method_type, 0);
 		ir_mode *mode = get_type_mode(tp);
 
@@ -1767,6 +1768,7 @@ static void ia32_get_call_abi(ir_type *method_type, be_abi_call_t *abi)
 		mode = get_type_mode(tp);
 
 		assert(!mode_is_float(mode) && "mixed INT, FP results not supported");
+#endif
 
 		be_abi_call_res_reg(abi, 0, &ia32_registers[REG_EAX], ABI_CONTEXT_BOTH);
 		be_abi_call_res_reg(abi, 1, &ia32_registers[REG_EDX], ABI_CONTEXT_BOTH);

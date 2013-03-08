@@ -25,10 +25,12 @@
 #include "irgopt.h"
 #include "irpass.h"
 
+#ifndef NDEBUG
 static bool is_block_reachable(ir_node *block)
 {
 	return get_Block_dom_depth(block) >= 0;
 }
+#endif
 
 /**
  * Find the earliest correct block for node n.  --- Place n into the

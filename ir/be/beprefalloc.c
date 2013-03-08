@@ -696,7 +696,7 @@ static void assign_reg(ir_node const *const block, ir_node *const node, arch_reg
 		unsigned num = reg_prefs[r].num;
 		if (!rbitset_is_set(normal_regs, num))
 			continue;
-		const arch_register_t *reg = arch_register_for_index(cls, num);
+		DEBUG_ONLY(const arch_register_t *reg = arch_register_for_index(cls, num);)
 		DB((dbg, LEVEL_2, " %s(%f)", reg->name, reg_prefs[r].pref));
 	}
 	DB((dbg, LEVEL_2, "\n"));
@@ -1225,7 +1225,8 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 	hungarian_prepare_cost_matrix(bp, HUNGARIAN_MODE_MAXIMIZE_UTIL);
 
 	unsigned *assignment = ALLOCAN(unsigned, n_regs);
-	int res = hungarian_solve(bp, assignment, NULL, 0);
+	int       res        = hungarian_solve(bp, assignment, NULL, 0);
+	(void)res;
 	assert(res == 0);
 
 	hungarian_free(bp);
@@ -1446,6 +1447,7 @@ static void assign_phi_registers(ir_node *block)
 
 	unsigned *assignment = ALLOCAN(unsigned, n_regs);
 	int       res        = hungarian_solve(bp, assignment, NULL, 0);
+	(void)res;
 	assert(res == 0);
 
 	/* apply results */

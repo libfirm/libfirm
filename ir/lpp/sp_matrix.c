@@ -95,6 +95,7 @@ unsigned matrix_get_elem_size(void)
 static inline int m_new_size(int old_size, int min)
 {
 	unsigned bits = 0;
+	(void)old_size;
 	assert(min >= old_size);
 	while (min > 0) {
 		min >>= 1;

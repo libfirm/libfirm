@@ -174,8 +174,8 @@ static void dump_list(const char *msg, const block_t *block)
 	DB((dbg, LEVEL_3, "\n  }\n"));
 }
 #else
-#define dump_partition(msg, part)
-#define dump_list(msg, block)
+#define dump_partition(msg, part) (void)(msg), (void)(part)
+#define dump_list(msg, list) (void)(msg), (void)(list)
 #endif
 
 /**

@@ -700,6 +700,8 @@ static void check_entity_initializer(ir_entity *entity)
 	case IR_INITIALIZER_NULL:
 		break;
 	}
+#else
+	(void)entity;
 #endif
 }
 

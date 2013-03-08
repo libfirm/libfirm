@@ -920,10 +920,12 @@ static void emit_be_MemPerm(const ir_node *node)
 	/* n_spilled records the number of spilled registers, either 1 or 2. */
 	int         n_spilled     = 0;
 
+#ifndef NDEBUG
 	/* This implementation currently only works with frame pointers. */
 	ir_graph          *irg    = get_irn_irg(node);
 	be_stack_layout_t *layout = be_get_irg_stack_layout(irg);
 	assert(!layout->sp_relative && "MemPerms currently do not work without frame pointers");
+#endif
 
 	for (int i = 0; i < max_size; ++i) {
 		sourceof[i] = i;

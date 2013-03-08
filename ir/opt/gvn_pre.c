@@ -218,7 +218,7 @@ static void dump_all_expgen_sets(block_info *list)
 
 #else
 
-#define dump_all_expgen_sets(list)
+#define dump_all_expgen_sets(list) ((void)(list))
 #define dump_value_set(set, txt, block)
 
 #endif /* DEBUG_libfirm */
@@ -1121,6 +1121,7 @@ static ir_mode *is_partially_redundant(ir_node *block, ir_node *expr, ir_node *v
 	int      partially_redundant = 0;
 	ir_mode *mode                = NULL;
 
+	(void)value;
 	DB((dbg, LEVEL_3, "is partially redundant %+F(%+F) of %+F\n", expr, value, block));
 
 	/* for each predecessor blocks */
@@ -1213,6 +1214,8 @@ static void update_new_set(ir_node *block, ir_node *idom)
 #ifdef DEBUG_libfirm
 	if (updated)
 		dump_value_set(curr_info->avail_out, "Updated [Avail_out]", block);
+#else
+	(void)updated;
 #endif
 }
 

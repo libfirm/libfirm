@@ -18,7 +18,7 @@
 #include "pmap.h"
 
 #ifdef NDEBUG
-#define SET_IA32_ORIG_NODE(n, o)
+#define SET_IA32_ORIG_NODE(n, o) ((void)(n), (void)(o), (void)0)
 #else  /* ! NDEBUG */
 #define SET_IA32_ORIG_NODE(n, o) set_ia32_orig_node(n, o)
 #endif /* NDEBUG */

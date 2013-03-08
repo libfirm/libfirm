@@ -1441,6 +1441,8 @@ static int sim_Return(x87_state *state, ir_node *n)
 			++n_float_res;
 	}
 	assert(x87_get_depth(state) == n_float_res);
+#else
+	(void)n;
 #endif
 
 	/* pop them virtually */

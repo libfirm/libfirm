@@ -768,6 +768,7 @@ static void process_block(ir_node *block)
 	{
 		ir_node *irn;
 		workset_foreach(ws, irn, iter) {
+			(void)irn;
 			DB((dbg, DBG_WSETS, "  %+F (%u)\n", irn, workset_get_time(ws, iter)));
 		}
 	}
@@ -810,8 +811,10 @@ static void process_block(ir_node *block)
 	DB((dbg, DBG_WSETS, "End workset for %+F:\n", block));
 	{
 		ir_node *irn;
-		workset_foreach(ws, irn, iter)
+		workset_foreach(ws, irn, iter) {
+			(void)irn;
 			DB((dbg, DBG_WSETS, "  %+F (%u)\n", irn, workset_get_time(ws, iter)));
+		}
 	}
 }
 

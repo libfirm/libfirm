@@ -1746,8 +1746,7 @@ static ir_node *gen_Call(ir_node *node)
 		int                       offset;
 
 		if (mode_is_float(mode) && param->reg0 != NULL) {
-			unsigned size_bits = get_mode_size_bits(mode);
-			assert(size_bits <= 64);
+			assert(get_mode_size_bits(mode) <= 64);
 			bitcast_float_to_int(dbgi, new_block, value, mode, new_values);
 		} else {
 			ir_node *new_value = be_transform_node(value);

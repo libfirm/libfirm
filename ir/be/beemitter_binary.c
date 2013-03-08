@@ -20,7 +20,9 @@
 
 static code_fragment_t *first_fragment;
 static code_fragment_t *last_fragment;
+#ifndef NDEBUG
 static const unsigned CODE_FRAGMENT_MAGIC = 0x4643414d;  /* "CFMA" */
+#endif
 
 struct obstack code_fragment_obst;
 

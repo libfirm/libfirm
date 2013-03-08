@@ -192,10 +192,12 @@ const arm_attr_t *get_arm_attr_const(const ir_node *node)
 	return (const arm_attr_t*)get_irn_generic_attr_const(node);
 }
 
+#ifndef NDEBUG
 static bool has_symconst_attr(const ir_node *node)
 {
 	return is_arm_SymConst(node) || is_arm_FrameAddr(node) || is_arm_Bl(node);
 }
+#endif
 
 arm_SymConst_attr_t *get_arm_SymConst_attr(ir_node *node)
 {

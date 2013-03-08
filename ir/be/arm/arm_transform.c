@@ -988,14 +988,16 @@ static ir_node *gen_Switch(ir_node *node)
 	ir_node               *selector = get_Switch_selector(node);
 	dbg_info              *dbgi     = get_irn_dbg_info(node);
 	ir_node               *new_op   = be_transform_node(selector);
-	ir_mode               *mode     = get_irn_mode(selector);
 	const ir_switch_table *table    = get_Switch_table(node);
 	unsigned               n_outs   = get_Switch_n_outs(node);
 
 	table = ir_switch_table_duplicate(irg, table);
 
+#ifndef NDEBUG
 	/* switch with smaller modes not implemented yet */
+	ir_mode *mode = get_irn_mode(selector);
 	assert(get_mode_size_bits(mode) == 32);
+#endif
 
 	return new_bd_arm_SwitchJmp(dbgi, block, new_op, n_outs, table);
 }

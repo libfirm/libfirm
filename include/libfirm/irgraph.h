@@ -316,9 +316,9 @@ FIRM_API void ir_free_resources(ir_graph *irg, ir_resources_t resources);
 /** Returns currently reserved resources. */
 FIRM_API ir_resources_t ir_resources_reserved(const ir_graph *irg);
 #else
-#define ir_reserve_resources(irg,resources)  (void)0
-#define ir_free_resources(irg,resources)     (void)0
-#define ir_resources_reserved(irg)           0
+#define ir_reserve_resources(irg,resources)  ((void)(irg), (void)(resources), (void)0)
+#define ir_free_resources(irg,resources)     ((void)(irg), (void)(resources), (void)0)
+#define ir_resources_reserved(irg)           ((void)(irg), 0)
 #endif
 
 /**

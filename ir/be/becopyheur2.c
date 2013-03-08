@@ -925,6 +925,7 @@ static void process_cloud(co2_cloud_t *cloud)
 	obstack_free(&cloud->obst, NULL);
 }
 
+#ifdef DEBUG_libfirm
 static int cloud_costs(co2_cloud_t *cloud)
 {
 	int i, costs = 0;
@@ -940,6 +941,7 @@ static int cloud_costs(co2_cloud_t *cloud)
 
 	return costs / 2;
 }
+#endif
 
 static void writeback_colors(co2_t *env)
 {
@@ -956,9 +958,9 @@ static void process(co2_t *env)
 	co2_cloud_t **clouds;
 	int n_clouds;
 	int i;
-	int init_costs  = 0;
-	int all_costs   = 0;
-	int final_costs = 0;
+	DEBUG_ONLY(int init_costs  = 0;)
+	DEBUG_ONLY(int all_costs   = 0;)
+	DEBUG_ONLY(int final_costs = 0;)
 
 	n_clouds = 0;
 	co_gs_foreach_aff_node(env->co, a) {
@@ -977,13 +979,13 @@ static void process(co2_t *env)
 	qsort(clouds, n_clouds, sizeof(clouds[0]), cmp_clouds_gt);
 
 	for (i = 0; i < n_clouds; ++i) {
-		init_costs  += cloud_costs(clouds[i]);
+		DEBUG_ONLY(init_costs += cloud_costs(clouds[i]);)
 
 		/* Process the cloud. */
 		process_cloud(clouds[i]);
 
-		all_costs   += clouds[i]->costs;
-		final_costs += cloud_costs(clouds[i]);
+		DEBUG_ONLY(all_costs   += clouds[i]->costs;)
+		DEBUG_ONLY(final_costs += cloud_costs(clouds[i]);)
 	}
 
 	DB((env->dbg, LEVEL_1, "all costs: %d, init costs: %d, final costs: %d\n", all_costs, init_costs, final_costs));

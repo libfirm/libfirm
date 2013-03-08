@@ -82,8 +82,10 @@ lpp_t *lpp_new_userdef(const char *name, lpp_opt_t opt_type,
 	lpp->m           = new_matrix(estimated_csts, estimated_vars);
 	lpp->emphasis    = lpp_balanced;
 	idx              = lpp_add_cst(lpp, "obj", lpp_objective, 0);
+	(void)idx;
 	assert(idx == 0);
 	idx              = lpp_add_var(lpp, "rhs", lpp_rhs, 0);
+	(void)idx;
 	assert(idx == 0);
 
 	return lpp;
@@ -187,6 +189,7 @@ int lpp_add_cst(lpp_t *lpp, const char *cst_name, lpp_cst_t cst_type, double rhs
 
 int lpp_add_cst_uniq(lpp_t *lpp, const char *cst_name, lpp_cst_t cst_type, double rhs)
 {
+#ifndef NDEBUG
 	if (cst_name) {
 		lpp_name_t n;
 
@@ -195,6 +198,8 @@ int lpp_add_cst_uniq(lpp_t *lpp, const char *cst_name, lpp_cst_t cst_type, doubl
 		assert(!set_find(lpp_name_t, lpp->cst2nr, &n, sizeof(n), HASH_NAME_T(&n)) &&
 		    "constraint already exists");
 	}
+#endif
+
 	return lpp_add_cst(lpp, cst_name, cst_type, rhs);
 }
 

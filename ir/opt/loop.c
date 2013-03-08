@@ -1226,7 +1226,6 @@ static void loop_inversion(ir_graph *irg)
 	int      loop_depth;
 	unsigned max_loop_nodes = opt_params.max_loop_size;
 	unsigned max_loop_nodes_adapted;
-	int      depth_adaption = opt_params.depth_adaption;
 
 	bool do_inversion = true;
 
@@ -1237,7 +1236,7 @@ static void loop_inversion(ir_graph *irg)
 	max_loop_nodes_adapted = get_max_nodes_adapted(loop_depth);
 
 	DB((dbg, LEVEL_1, "max_nodes: %d\nmax_nodes_adapted %d at depth of %d (adaption %d)\n",
-			max_loop_nodes, max_loop_nodes_adapted, loop_depth, depth_adaption));
+			max_loop_nodes, max_loop_nodes_adapted, loop_depth, opt_params.depth_adaption));
 
 	if (loop_info.nodes == 0)
 		return;
@@ -1403,7 +1402,9 @@ static void place_copies(int copies)
 	 * Processed are the copies.
 	 * The original loop is done after that, to keep backedge infos. */
 	for (c = 0; c < copies; ++c) {
+#ifdef DEBUG_libfirm
 		ir_node *upper = get_unroll_copy(loophead, c);
+#endif
 		ir_node *lower = get_unroll_copy(loophead, c + 1);
 		ir_node *phi;
 		ir_node *topmost_be_block = get_nodes_block(get_irn_n(loophead, be_src_pos));
@@ -1631,6 +1632,7 @@ static void create_duffs_block(void)
 		/* Returns phis pred if phi would have arity 1*/
 		ir_node *new_phi = clone_phis_sans_bes(phi, loop_head, block1);
 
+		(void)new_phi;
 		DB((dbg, LEVEL_4, "HEAD %N phi %N\n", loop_head, phi));
 		DB((dbg, LEVEL_4, "BLOCK1 %N phi %N\n", block1, new_phi));
 	}

@@ -576,7 +576,6 @@ static void cfscc(ir_node *n)
 
 void construct_cf_backedges(ir_graph *irg)
 {
-	ir_loop *head_rem;
 	ir_node *end = get_irg_end(irg);
 	struct obstack temp;
 	int i;
@@ -588,7 +587,10 @@ void construct_cf_backedges(ir_graph *irg)
 
 	current_loop = NULL;
 	new_loop();  /* sets current_loop */
-	head_rem = current_loop; /* Just for assertion */
+
+#ifndef NDEBUG
+	ir_loop *head_rem = current_loop; /* Just for assertion */
+#endif
 
 	inc_irg_visited(irg);
 
