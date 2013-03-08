@@ -1310,13 +1310,14 @@ FIRM_API void add_class_subtype(ir_type *clss, ir_type *subtype);
 FIRM_API size_t get_class_n_subtypes(const ir_type *clss);
 
 /** Returns the subtype at position pos, 0 <= pos < n_subtype. */
-FIRM_API ir_type *get_class_subtype(ir_type *clss, size_t pos);
+FIRM_API ir_type *get_class_subtype(const ir_type *clss, size_t pos);
 
 /** Returns the index to access subclass as subtype of class.
  *
  *  If subclass is no direct subtype of class returns -1.
  */
-FIRM_API size_t get_class_subtype_index(ir_type *clss, const ir_type *subclass);
+FIRM_API size_t get_class_subtype_index(const ir_type *clss,
+                                        const ir_type *subclass);
 
 /** Sets the subtype at position pos, 0 <= pos < n_subtype.
  *
@@ -1340,10 +1341,11 @@ FIRM_API size_t get_class_n_supertypes(const ir_type *clss);
  *
  *  If superclass is no direct supertype of class returns -1.
  */
-FIRM_API size_t get_class_supertype_index(ir_type *clss, ir_type *super_clss);
+FIRM_API size_t get_class_supertype_index(const ir_type *clss,
+                                          const ir_type *super_clss);
 
 /** Returns the supertype at position pos,  0 <= pos < n_supertype. */
-FIRM_API ir_type *get_class_supertype(ir_type *clss, size_t pos);
+FIRM_API ir_type *get_class_supertype(const ir_type *clss, size_t pos);
 
 /** Sets the supertype at position pos, 0 <= pos < n_supertype.
  *

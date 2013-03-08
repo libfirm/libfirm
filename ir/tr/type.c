@@ -815,14 +815,14 @@ size_t get_class_n_subtypes(const ir_type *clss)
 	return ARR_LEN (clss->attr.ca.subtypes);
 }
 
-ir_type *get_class_subtype(ir_type *clss, size_t pos)
+ir_type *get_class_subtype(const ir_type *clss, size_t pos)
 {
 	assert(clss->type_op == type_class);
 	assert(pos < get_class_n_subtypes(clss));
 	return clss->attr.ca.subtypes[pos];
 }
 
-size_t get_class_subtype_index(ir_type *clss, const ir_type *subclass)
+size_t get_class_subtype_index(const ir_type *clss, const ir_type *subclass)
 {
 	size_t i, n_subtypes = get_class_n_subtypes(clss);
 	assert(is_Class_type(subclass));
@@ -875,7 +875,7 @@ size_t get_class_n_supertypes(const ir_type *clss)
 	return ARR_LEN(clss->attr.ca.supertypes);
 }
 
-size_t get_class_supertype_index(ir_type *clss, ir_type *super_clss)
+size_t get_class_supertype_index(const ir_type *clss, const ir_type *super_clss)
 {
 	size_t i, n_supertypes = get_class_n_supertypes(clss);
 	assert(super_clss && (super_clss->type_op == type_class));
@@ -886,7 +886,7 @@ size_t get_class_supertype_index(ir_type *clss, ir_type *super_clss)
 	return (size_t)-1;
 }
 
-ir_type *get_class_supertype(ir_type *clss, size_t pos)
+ir_type *get_class_supertype(const ir_type *clss, size_t pos)
 {
 	assert(clss->type_op == type_class);
 	assert(pos < get_class_n_supertypes(clss));
