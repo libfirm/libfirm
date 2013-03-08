@@ -110,26 +110,6 @@ FIRM_API ir_node *get_Block_dominated_next(const ir_node *node);
 FIRM_API ir_node *get_Block_postdominated_next(const ir_node *node);
 
 /**
- * Iterate over all nodes which are immediately dominated by a given
- * node.
- * @param bl   The block whose dominated blocks shall be iterated on.
- * @param curr An iterator variable of type ir_node*
- */
-#define dominates_for_each(bl,curr) \
-	for(curr = get_Block_dominated_first(bl); curr; \
-			curr = get_Block_dominated_next(curr))
-
-/**
- * Iterate over all nodes which are immediately post dominated by a given
- * node.
- * @param bl   The block whose post dominated blocks shall be iterated on.
- * @param curr An iterator variable of type ir_node*
- */
-#define postdominates_for_each(bl,curr) \
-	for(curr = get_Block_postdominated_first(bl); curr; \
-			curr = get_Block_postdominated_next(curr))
-
-/**
  * Returns the smallest common dominator block of two nodes.
  * @param a A node.
  * @param b Another node.

@@ -59,4 +59,24 @@ unsigned get_Block_pdom_max_subtree_pre_num(const ir_node *bl);
 
 void ir_free_dominance_frontiers(ir_graph *irg);
 
+/**
+ * Iterate over all nodes which are immediately dominated by a given
+ * node.
+ * @param block  The block whose dominated blocks shall be iterated on.
+ * @param curr   Name for an ir_node* iterator variable (will be declared)
+ */
+#define dominates_for_each(block, curr) \
+	for(ir_node *curr = get_Block_dominated_first(block); curr != NULL; \
+	    curr = get_Block_dominated_next(curr))
+
+/**
+ * Iterate over all nodes which are immediately post dominated by a given
+ * node.
+ * @param block The block whose post dominated blocks shall be iterated on.
+ * @param curr  Name for an ir_node *iterator variable (will be declared)
+ */
+#define postdominates_for_each(block, curr) \
+	for(ir_node *curr = get_Block_postdominated_first(block); curr != NULL; \
+	    curr = get_Block_postdominated_next(curr))
+
 #endif
