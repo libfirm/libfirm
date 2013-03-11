@@ -1654,7 +1654,7 @@ static void calcAntic(void)
 {
 	int need_iter;
 
-	/* calculate antic_out */
+	/* calculate antic_in */
 	DB((dbg, LEVEL_2, "Calculate Antic_in\n"));
 
 	DEBUG_ONLY(int i = 0;)
@@ -2008,7 +2008,7 @@ static void insert_Loads_upwards(void)
 	int      need_iter;
 	block_t *bl;
 
-	/* recalculate antic_out and insert Loads */
+	/* recalculate antic_in and insert Loads */
 	DB((dbg, LEVEL_2, "Inserting Loads\n"));
 
 	DEBUG_ONLY(int i = 0;)
