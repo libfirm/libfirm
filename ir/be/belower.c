@@ -215,7 +215,9 @@ static void find_free_registers_walker(ir_node *irn, void *env)
 
 static const arch_register_t *get_free_register(ir_node *irn)
 {
-	return ir_nodehashmap_get(const arch_register_t, &free_register_map, irn);
+	if (lower_use_movs)
+		return ir_nodehashmap_get(const arch_register_t, &free_register_map, irn);
+	return NULL;
 }
 
 /** returns the number register pairs marked as checked. */
@@ -1197,20 +1199,20 @@ static void lower_nodes_after_ra_walker(ir_node *irn, void *env)
 
 void lower_nodes_after_ra(ir_graph *irg)
 {
-	be_lv_t *liveness = be_get_irg_liveness(irg);
-
 	/* we will need interference */
 	be_assure_live_chk(irg);
-	be_assure_live_sets(irg);
 
-	ir_nodehashmap_init(&free_register_map);
 	if (lower_use_movs) {
+		be_assure_live_sets(irg);
+		ir_nodehashmap_init(&free_register_map);
 		irg_walk_graph(irg, NULL, find_free_registers_walker, NULL);
 	}
 	irg_walk_graph(irg, NULL, lower_nodes_after_ra_walker, NULL);
-	ir_nodehashmap_destroy(&free_register_map);
-
-	be_liveness_invalidate_sets(liveness);
+	if (lower_use_movs) {
+		be_lv_t *liveness = be_get_irg_liveness(irg);
+		ir_nodehashmap_destroy(&free_register_map);
+		be_liveness_invalidate_sets(liveness);
+	}
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_lower)
