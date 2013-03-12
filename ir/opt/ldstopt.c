@@ -1111,6 +1111,7 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr)
 				if (is_completely_overwritten(predmode, mode)
 				        || is_partially_same(predvalue, value)) {
 					DBG_OPT_WAW(pred, store);
+					DB((dbg, LEVEL_1, "  killing store %+F (override by %+F)\n", pred, store));
 					exchange(pred_info->projs[pn_Store_M], get_Store_mem(pred));
 					kill_node(pred);
 					reduce_adr_usage(ptr);
@@ -1130,6 +1131,7 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr)
 
 				if (is_partially_same(value, predvalue)) {
 					DBG_OPT_WAW(pred, store);
+					DB((dbg, LEVEL_1, "  killing store %+F (override by %+F)\n", pred, store));
 					exchange(info->projs[pn_Store_M], mem);
 					kill_node(store);
 					reduce_adr_usage(ptr);
@@ -1146,6 +1148,7 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr)
 			 */
 			if (! info->projs[pn_Store_X_except]) {
 				DBG_OPT_WAR(store, pred);
+				DB((dbg, LEVEL_1, "  killing store %+F (read %+F from same address)\n", store, pred));
 				exchange(info->projs[pn_Store_M], mem);
 				kill_node(store);
 				reduce_adr_usage(ptr);
