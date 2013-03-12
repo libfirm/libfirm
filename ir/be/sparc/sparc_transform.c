@@ -521,8 +521,11 @@ static ir_node *gen_Add(ir_node *node)
 
 static ir_node *gen_AddCC_t(ir_node *node)
 {
-	return gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_MODE_NEUTRAL,
-	                        new_bd_sparc_AddCC_reg, new_bd_sparc_AddCC_imm);
+	ir_node *left  = get_irn_n(node, n_sparc_AddCC_t_left);
+	ir_node *right = get_irn_n(node, n_sparc_AddCC_t_right);
+	return gen_helper_binop_args(node, left, right,
+	                             MATCH_COMMUTATIVE | MATCH_MODE_NEUTRAL,
+	                             new_bd_sparc_AddCC_reg, new_bd_sparc_AddCC_imm);
 }
 
 static ir_node *gen_Proj_AddCC_t(ir_node *node)
@@ -568,8 +571,10 @@ static ir_node *gen_Sub(ir_node *node)
 
 static ir_node *gen_SubCC_t(ir_node *node)
 {
-	return gen_helper_binop(node, MATCH_MODE_NEUTRAL,
-	                        new_bd_sparc_SubCC_reg, new_bd_sparc_SubCC_imm);
+	ir_node *left  = get_irn_n(node, n_sparc_SubCC_t_left);
+	ir_node *right = get_irn_n(node, n_sparc_SubCC_t_right);
+	return gen_helper_binop_args(node, left, right, MATCH_MODE_NEUTRAL,
+	                             new_bd_sparc_SubCC_reg, new_bd_sparc_SubCC_imm);
 }
 
 static ir_node *gen_Proj_SubCC_t(ir_node *node)
