@@ -32,10 +32,7 @@
 /** The allowed arities. */
 typedef enum {
 	oparity_invalid = 0,
-	oparity_unary,              /**< An unary operator -- considering 'numeric' arguments. */
 	oparity_binary,             /**< A binary operator  -- considering 'numeric' arguments.*/
-	oparity_trinary,            /**< A trinary operator  -- considering 'numeric' arguments.*/
-	oparity_zero,               /**< A zero arity operator, e.g. a Const. */
 	oparity_variable,           /**< The arity is not fixed by opcode, but statically
 	                                 known.  E.g., number of arguments to call. */
 	oparity_dynamic,            /**< The arity depends on state of Firm representation.

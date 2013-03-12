@@ -648,7 +648,7 @@ EOF
 
 	$n_opcodes++;
 	$temp  = "\top = new_ir_op(cur_opcode + iro_$op, \"$op\", op_pin_state_".$n{"state"}.", $op_flags";
-	$temp .= ", ".translate_arity($arity).", 0, ${attr_size});\n";
+	$temp .= ", ".translate_arity($arity).", -1, ${attr_size});\n";
 	$obst_new_irop .= $temp;
 	$obst_new_irop .= "\top->ops.be_ops        = be_ops;\n";
 	$obst_new_irop .= "\top->ops.dump_node     = ${dump_func};\n";
@@ -827,21 +827,7 @@ sub translate_arity {
 	my $arity = shift;
 
 	if ($arity =~ /^\d+$/) {
-		if    ($arity == 0) {
-			return "oparity_zero";
-		}
-		elsif ($arity == 1) {
-			return "oparity_unary";
-		}
-		elsif ($arity == 2) {
-			return "oparity_binary";
-		}
-		elsif ($arity == 3) {
-			return "oparity_trinary";
-		}
-		else {
-			return "oparity_any";
-		}
+		return "oparity_any";
 	} elsif ($arity == $ARITY_VARIABLE) {
 		return "oparity_variable";
 	} elsif ($arity == $ARITY_DYNAMIC) {

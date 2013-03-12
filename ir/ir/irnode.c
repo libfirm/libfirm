@@ -783,28 +783,6 @@ void remove_Call_callee_arr(ir_node *node)
 	node->attr.call.callee_arr = NULL;
 }
 
-int (is_unop)(const ir_node *node)
-{
-	return is_unop_(node);
-}
-
-ir_node *get_unop_op(const ir_node *node)
-{
-	if (node->op->opar == oparity_unary)
-		return get_irn_n(node, node->op->op_index);
-
-	assert(node->op->opar == oparity_unary);
-	return NULL;
-}
-
-void set_unop_op(ir_node *node, ir_node *op)
-{
-	if (node->op->opar == oparity_unary)
-		set_irn_n(node, node->op->op_index, op);
-
-	assert(node->op->opar == oparity_unary);
-}
-
 int (is_binop)(const ir_node *node)
 {
 	return is_binop_(node);

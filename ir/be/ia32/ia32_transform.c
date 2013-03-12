@@ -4124,9 +4124,8 @@ static ir_node *gen_ia32_l_Adc(ir_node *node)
  */
 static ir_node *gen_ia32_l_Mul(ir_node *node)
 {
-	ir_node *left  = get_binop_left(node);
-	ir_node *right = get_binop_right(node);
-
+	ir_node *left  = get_irn_n(node, n_ia32_l_Mul_left);
+	ir_node *right = get_irn_n(node, n_ia32_l_Mul_right);
 	return gen_binop(node, left, right, new_bd_ia32_Mul,
 	                 match_commutative | match_am | match_mode_neutral);
 }
@@ -4138,9 +4137,8 @@ static ir_node *gen_ia32_l_Mul(ir_node *node)
  */
 static ir_node *gen_ia32_l_IMul(ir_node *node)
 {
-	ir_node  *left  = get_binop_left(node);
-	ir_node  *right = get_binop_right(node);
-
+	ir_node *left  = get_irn_n(node, n_ia32_l_IMul_left);
+	ir_node *right = get_irn_n(node, n_ia32_l_IMul_right);
 	return gen_binop(node, left, right, new_bd_ia32_IMul1OP,
 	                 match_commutative | match_am | match_mode_neutral);
 }

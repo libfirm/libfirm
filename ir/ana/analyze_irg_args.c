@@ -362,9 +362,10 @@ static unsigned calc_method_param_weight(ir_node *arg)
 					weight += calc_method_param_weight(succ);
 				} else
 					weight += binop_weight;
-			} else if (is_unop(succ)) {
+			} else if (get_irn_arity(succ) == 1) {
 				/* We have reached a binop and we must increase the
-				   weight with the const_binop_weight and call the function recursive.*/
+				   weight with the const_binop_weight and call the function
+				   recursive.*/
 				weight += const_binop_weight;
 				weight += calc_method_param_weight(succ);
 			}

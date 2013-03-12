@@ -16,9 +16,7 @@ class Unop(object):
 	ins      = [
 		("op", "operand"),
 	]
-	op_index       = 0
-	pinned         = "no"
-	arity_override = "oparity_unary"
+	pinned = "no"
 
 @abstract
 @op

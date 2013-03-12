@@ -1259,22 +1259,22 @@ void be_init_op(void)
 	assert(op_be_Spill == NULL);
 
 	/* Acquire all needed opcodes. */
-	op_be_Spill     = new_be_op(beo_Spill,     "be_Spill",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_unary,    sizeof(be_frame_attr_t));
-	op_be_Reload    = new_be_op(beo_Reload,    "be_Reload",    op_pin_state_exc_pinned, irop_flag_none,                          oparity_zero,     sizeof(be_frame_attr_t));
+	op_be_Spill     = new_be_op(beo_Spill,     "be_Spill",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_frame_attr_t));
+	op_be_Reload    = new_be_op(beo_Reload,    "be_Reload",    op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_frame_attr_t));
 	op_be_Perm      = new_be_op(beo_Perm,      "be_Perm",      op_pin_state_exc_pinned, irop_flag_none,                          oparity_variable, sizeof(be_node_attr_t));
 	op_be_MemPerm   = new_be_op(beo_MemPerm,   "be_MemPerm",   op_pin_state_exc_pinned, irop_flag_none,                          oparity_variable, sizeof(be_memperm_attr_t));
-	op_be_Copy      = new_be_op(beo_Copy,      "be_Copy",      op_pin_state_exc_pinned, irop_flag_none,                          oparity_unary,    sizeof(be_node_attr_t));
+	op_be_Copy      = new_be_op(beo_Copy,      "be_Copy",      op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_node_attr_t));
 	op_be_Keep      = new_be_op(beo_Keep,      "be_Keep",      op_pin_state_exc_pinned, irop_flag_keep,                          oparity_dynamic,  sizeof(be_node_attr_t));
 	op_be_CopyKeep  = new_be_op(beo_CopyKeep,  "be_CopyKeep",  op_pin_state_exc_pinned, irop_flag_keep,                          oparity_variable, sizeof(be_node_attr_t));
 	op_be_Call      = new_be_op(beo_Call,      "be_Call",      op_pin_state_exc_pinned, irop_flag_fragile|irop_flag_uses_memory, oparity_variable, sizeof(be_call_attr_t));
 	ir_op_set_memory_index(op_be_Call, n_be_Call_mem);
 	ir_op_set_fragile_indices(op_be_Call, pn_be_Call_X_regular, pn_be_Call_X_except);
 	op_be_Return    = new_be_op(beo_Return,    "be_Return",    op_pin_state_exc_pinned, irop_flag_cfopcode,                      oparity_variable, sizeof(be_return_attr_t));
-	op_be_AddSP     = new_be_op(beo_AddSP,     "be_AddSP",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_unary,    sizeof(be_node_attr_t));
-	op_be_SubSP     = new_be_op(beo_SubSP,     "be_SubSP",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_unary,    sizeof(be_node_attr_t));
-	op_be_IncSP     = new_be_op(beo_IncSP,     "be_IncSP",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_unary,    sizeof(be_incsp_attr_t));
-	op_be_Start     = new_be_op(beo_Start,     "be_Start",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_zero,     sizeof(be_start_attr_t));
-	op_be_FrameAddr = new_be_op(beo_FrameAddr, "be_FrameAddr", op_pin_state_exc_pinned, irop_flag_none,                          oparity_unary,    sizeof(be_frame_attr_t));
+	op_be_AddSP     = new_be_op(beo_AddSP,     "be_AddSP",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_node_attr_t));
+	op_be_SubSP     = new_be_op(beo_SubSP,     "be_SubSP",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_node_attr_t));
+	op_be_IncSP     = new_be_op(beo_IncSP,     "be_IncSP",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_incsp_attr_t));
+	op_be_Start     = new_be_op(beo_Start,     "be_Start",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_start_attr_t));
+	op_be_FrameAddr = new_be_op(beo_FrameAddr, "be_FrameAddr", op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_frame_attr_t));
 
 	op_be_Spill->ops.node_cmp_attr     = FrameAddr_cmp_attr;
 	op_be_Reload->ops.node_cmp_attr    = FrameAddr_cmp_attr;

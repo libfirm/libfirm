@@ -427,15 +427,6 @@ FIRM_API void remove_Call_callee_arr(ir_node *node);
 /** Returns a human readable string for the ir_builtin_kind. */
 FIRM_API const char *get_builtin_kind_name(ir_builtin_kind kind);
 
-/** Tests whether node is an unary operation (opcode arity is #oparity_unary)
- * @returns 1 if @p node is an unary operation, 0 otherwise
- */
-FIRM_API int is_unop(const ir_node *node);
-/** Returns (arithmetic) operand of unary operation @p node. */
-FIRM_API ir_node *get_unop_op(const ir_node *node);
-/** Sets (arithmetic) operand of unary operation @p node. */
-FIRM_API void set_unop_op(ir_node *node, ir_node *op);
-
 /** Tests whether node is a binary operation (opcode arity is #oparity_binary)
  * @returns 1 if @p node is an binary operation, 0 otherwise
  */
