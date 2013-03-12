@@ -1067,7 +1067,7 @@ static int is_partially_same(ir_node *small, ir_node *large)
  *
  * INC_MASTER() must be called before dive into
  */
-static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr)
+static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr, bool had_split)
 {
 	unsigned res = 0;
 	ldst_info_t *info = (ldst_info_t*)get_irn_link(store);
@@ -1090,7 +1090,7 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr)
 		 * size of the old one, the old value is completely overwritten and can be
 		 * killed ...
 		 */
-		if (is_Store(pred) && get_Store_ptr(pred) == ptr &&
+		if (is_Store(pred) && !had_split && get_Store_ptr(pred) == ptr &&
             get_nodes_block(pred) == block) {
 			/*
 			 * a Store after a Store in the same Block -- a write after write.
@@ -1190,7 +1190,7 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr)
 
 		/* handle all Sync predecessors */
 		for (i = get_Sync_n_preds(pred) - 1; i >= 0; --i) {
-			res |= follow_Mem_chain_for_Store(store, skip_Proj(get_Sync_pred(pred, i)));
+			res |= follow_Mem_chain_for_Store(store, skip_Proj(get_Sync_pred(pred, i)), true);
 			if (res)
 				break;
 		}
@@ -1266,7 +1266,7 @@ static unsigned optimize_store(ir_node *store)
 	/* follow the memory chain as long as there are only Loads */
 	INC_MASTER();
 
-	return follow_Mem_chain_for_Store(store, skip_Proj(mem));
+	return follow_Mem_chain_for_Store(store, skip_Proj(mem), false);
 }
 
 /* check if a node has more than one real user. Keepalive edges do not count as
