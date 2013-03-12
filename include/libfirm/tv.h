@@ -735,6 +735,15 @@ FIRM_API int get_tarval_popcount(ir_tarval *tv);
 FIRM_API int get_tarval_lowest_bit(ir_tarval *tv);
 
 /**
+ * Return the number of the highest set bit in a given (integer) tarval.
+ *
+ * @param tv    the tarval
+ *
+ * @return number of highest set bit or -1 on error
+ */
+FIRM_API int get_tarval_highest_bit(ir_tarval *tv);
+
+/**
  * Output a tarval to a string buffer.
  *
  * @param buf     the output buffer

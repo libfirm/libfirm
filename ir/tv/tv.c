@@ -1381,6 +1381,23 @@ int get_tarval_lowest_bit(ir_tarval *tv)
 	return -1;
 }
 
+int get_tarval_highest_bit(ir_tarval *tv)
+{
+	int i, l;
+
+	if (!tv || tv == tarval_bad) return -1;
+	if (! mode_is_int(tv->mode)) return -1;
+
+	l = get_mode_size_bytes(tv->mode);
+	for (i = l - 1; i >= 0; --i) {
+		unsigned char v = get_tarval_sub_bits(tv, (unsigned)i);
+
+		if (v)
+		  return 8*sizeof(unsigned) - nlz(v) + i * 8 - 1;
+	}
+	return -1;
+}
+
 int tarval_zero_mantissa(ir_tarval *tv)
 {
 	assert(get_mode_arithmetic(tv->mode) == irma_ieee754
