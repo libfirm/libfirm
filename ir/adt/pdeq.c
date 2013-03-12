@@ -211,7 +211,6 @@ pdeq *pdeq_putr(pdeq *dq, const void *x)
 pdeq *pdeq_putl(pdeq *dq, const void *x)
 {
 	pdeq *ldq;
-	size_t p;
 
 	VRFY(dq);
 
@@ -237,13 +236,12 @@ pdeq *pdeq_putl(pdeq *dq, const void *x)
 	}
 
 	ldq->n++;
-	if (ldq->p == 0)
+	size_t p = ldq->p;
+	if (p == 0)
 		p = NDATA;
-	else
-		p = ldq->p - 1;
-	ldq->p = p;
 
-	ldq->data[p] = x;
+	ldq->data[--p] = x;
+	ldq->p         = p;
 
 	VRFY(dq);
 	return dq;
