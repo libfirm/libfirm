@@ -493,7 +493,7 @@ static void analyze_parallel_copies_walker(ir_node *block, void *data)
 		if (num_rtg_nodes > 0) {
 			ir_node *pred   = get_Block_cfgpred_block(block, i);
 			ir_node *before = be_get_end_of_block_insertion_point(pred);
-#ifndef DEBUG_libfirm
+#ifdef DEBUG_libfirm
 			DB((dbg_icore, LEVEL_2, "RTG has %u nodes.\n", num_rtg_nodes));
 			DB((dbg_icore, LEVEL_2, "copies for %+F:\n", pred));
 			print_parcopy(parcopy, n_used);
