@@ -316,30 +316,6 @@ static ir_node *gen_helper_binfpop(ir_node *node, ir_mode *mode,
 	panic("unsupported mode %+F for float op", mode);
 }
 
-static ir_node *gen_helper_unfpop(ir_node *node, ir_mode *mode,
-                                  new_unop_fp_func new_func_single,
-                                  new_unop_fp_func new_func_double,
-                                  new_unop_fp_func new_func_quad)
-{
-	ir_node  *block  = be_transform_node(get_nodes_block(node));
-	ir_node  *op     = get_unop_op(node);
-	ir_node  *new_op = be_transform_node(op);
-	dbg_info *dbgi   = get_irn_dbg_info(node);
-	unsigned  bits   = get_mode_size_bits(mode);
-
-	switch (bits) {
-	case 32:
-		return new_func_single(dbgi, block, new_op, mode);
-	case 64:
-		return new_func_double(dbgi, block, new_op, mode);
-	case 128:
-		return new_func_quad(dbgi, block, new_op, mode);
-	default:
-		break;
-	}
-	panic("unsupported mode %+F for float op", mode);
-}
-
 typedef ir_node* (*new_binopx_imm_func)(dbg_info *dbgi, ir_node *block,
                                         ir_node *op1, ir_node *flags,
                                         ir_entity *imm_entity, int32_t imm);
@@ -972,27 +948,42 @@ static ir_node *gen_Shrs(ir_node *node)
 	return gen_helper_binop(node, MATCH_NONE, new_bd_sparc_Sra_reg, new_bd_sparc_Sra_imm);
 }
 
+static ir_node *gen_fneg(ir_node *node, ir_mode *mode)
+{
+	ir_node  *block  = be_transform_node(get_nodes_block(node));
+	ir_node  *op     = get_Minus_op(node);
+	ir_node  *new_op = be_transform_node(op);
+	dbg_info *dbgi   = get_irn_dbg_info(node);
+	unsigned  bits   = get_mode_size_bits(mode);
+
+	switch (bits) {
+	case 32:
+		return new_bd_sparc_fneg_s(dbgi, block, new_op, mode);
+	case 64:
+		return new_bd_sparc_fneg_d(dbgi, block, new_op, mode);
+	case 128:
+		return new_bd_sparc_fneg_q(dbgi, block, new_op, mode);
+	default:
+		break;
+	}
+	panic("unsupported mode %+F for float op", mode);
+}
+
 /**
  * Transforms a Minus node.
  */
 static ir_node *gen_Minus(ir_node *node)
 {
 	ir_mode  *mode = get_irn_mode(node);
-	ir_node  *op;
-	ir_node  *block;
-	ir_node  *new_op;
-	ir_node  *zero;
-	dbg_info *dbgi;
-
 	if (mode_is_float(mode)) {
-		return gen_helper_unfpop(node, mode, new_bd_sparc_fneg_s,
-		                         new_bd_sparc_fneg_d, new_bd_sparc_fneg_q);
+		return gen_fneg(node, mode);
 	}
-	block  = be_transform_node(get_nodes_block(node));
-	dbgi   = get_irn_dbg_info(node);
-	op     = get_Minus_op(node);
-	new_op = be_transform_node(op);
-	zero   = get_g0(get_irn_irg(node));
+
+	ir_node  *block  = be_transform_node(get_nodes_block(node));
+	dbg_info *dbgi   = get_irn_dbg_info(node);
+	ir_node  *op     = get_Minus_op(node);
+	ir_node  *new_op = be_transform_node(op);
+	ir_node  *zero   = get_g0(get_irn_irg(node));
 	return new_bd_sparc_Sub_reg(dbgi, block, zero, new_op);
 }
 

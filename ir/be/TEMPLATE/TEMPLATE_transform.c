@@ -122,12 +122,12 @@ static ir_node *gen_Mul(ir_node *node)
 
 typedef ir_node* (*new_unop_func)(dbg_info *dbgi, ir_node *block, ir_node *op);
 
-static ir_node *transform_unop(ir_node *node, new_unop_func new_func)
+static ir_node *transform_unop(ir_node *node, int op_index, new_unop_func new_func)
 {
 	ir_node  *block     = get_nodes_block(node);
 	ir_node  *new_block = be_transform_node(block);
 	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *op        = get_unop_op(node);
+	ir_node  *op        = get_irn_n(node, op_index);
 	ir_node  *new_op    = be_transform_node(op);
 
 	return new_func(dbgi, new_block, new_op);
@@ -138,14 +138,14 @@ static ir_node *gen_Minus(ir_node *node)
 	ir_mode *mode = get_irn_mode(node);
 
 	if (mode_is_float(mode)) {
-		return transform_unop(node, new_bd_TEMPLATE_fMinus);
+		return transform_unop(node, n_Minus_op, new_bd_TEMPLATE_fMinus);
 	}
-	return transform_unop(node, new_bd_TEMPLATE_Minus);
+	return transform_unop(node, n_Minus_op, new_bd_TEMPLATE_Minus);
 }
 
 static ir_node *gen_Not(ir_node *node)
 {
-	return transform_unop(node, new_bd_TEMPLATE_Not);
+	return transform_unop(node, n_Not_op, new_bd_TEMPLATE_Not);
 }
 
 static ir_node *gen_Const(ir_node *node)

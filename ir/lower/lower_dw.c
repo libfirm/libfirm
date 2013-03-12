@@ -1085,16 +1085,16 @@ static void prepare_links_and_handle_rotl(ir_node *node, void *data)
  *
  * Create an intrinsic Call.
  */
-static void lower_unop(ir_node *node, ir_mode *mode)
+static void lower_Minus(ir_node *node, ir_mode *mode)
 {
-	ir_node  *op       = get_unop_op(node);
-	dbg_info *dbgi     = get_irn_dbg_info(node);
-	ir_node  *block    = get_nodes_block(node);
-	ir_graph *irg      = get_irn_irg(block);
-	ir_type  *mtp      = mode_is_signed(mode) ? unop_tp_s : unop_tp_u;
-	ir_op    *irop     = get_irn_op(node);
-	ir_node  *addr     = get_intrinsic_address(mtp, irop, mode, mode);
-	ir_node  *nomem    = get_irg_no_mem(irg);
+	ir_node  *op    = get_Minus_op(node);
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_node  *block = get_nodes_block(node);
+	ir_graph *irg   = get_irn_irg(block);
+	ir_type  *mtp   = mode_is_signed(mode) ? unop_tp_s : unop_tp_u;
+	ir_op    *irop  = get_irn_op(node);
+	ir_node  *addr  = get_intrinsic_address(mtp, irop, mode, mode);
+	ir_node  *nomem = get_irg_no_mem(irg);
 	ir_node  *in[2];
 	ir_node  *call;
 	ir_node  *resproj;
@@ -3032,7 +3032,7 @@ void ir_prepare_dw_lowering(const lwrdw_param_t *new_param)
 	ir_register_dw_lower_function(op_Div,     lower_Div);
 	ir_register_dw_lower_function(op_Eor,     lower_Eor);
 	ir_register_dw_lower_function(op_Load,    lower_Load);
-	ir_register_dw_lower_function(op_Minus,   lower_unop);
+	ir_register_dw_lower_function(op_Minus,   lower_Minus);
 	ir_register_dw_lower_function(op_Mod,     lower_Mod);
 	ir_register_dw_lower_function(op_Mul,     lower_binop);
 	ir_register_dw_lower_function(op_Mux,     lower_Mux);

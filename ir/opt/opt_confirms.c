@@ -94,7 +94,7 @@ int value_not_zero(const ir_node *n, const ir_node **confirm)
 	for (;;) {
 		if (is_Minus(n)) {
 			/* we can safely skip Minus when checking for != 0 */
-			n = get_unop_op(n);
+			n = get_Minus_op(n);
 			continue;
 		}
 		if (! is_Confirm(n))

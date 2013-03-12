@@ -116,18 +116,24 @@ static ir_node *gen_Shr (ir_node *const node) { return gen_binop(node, &new_bd_a
 static ir_node *gen_Shrs(ir_node *const node) { return gen_binop(node, &new_bd_amd64_Sar);  }
 static ir_node *gen_Sub (ir_node *const node) { return gen_binop(node, &new_bd_amd64_Sub);  }
 
-static ir_node *gen_unop(ir_node *const node, ir_node *(*const new_node)(dbg_info*, ir_node*, ir_node*))
+static ir_node *gen_unop(ir_node *const node, int op_pos, ir_node *(*const new_node)(dbg_info*, ir_node*, ir_node*))
 {
 	dbg_info *const dbgi   = get_irn_dbg_info(node);
 	ir_node  *const block  = be_transform_node(get_nodes_block(node));
-	ir_node  *const op     = get_unop_op(node);
+	ir_node  *const op     = get_irn_n(node, op_pos);
 	ir_node  *const new_op = be_transform_node(op);
 
 	return new_node(dbgi, block, new_op);
 }
 
-static ir_node *gen_Minus(ir_node *const node) { return gen_unop(node, &new_bd_amd64_Neg); }
-static ir_node *gen_Not  (ir_node *const node) { return gen_unop(node, &new_bd_amd64_Not); }
+static ir_node *gen_Minus(ir_node *const node)
+{
+	return gen_unop(node, n_Minus_op, &new_bd_amd64_Neg);
+}
+static ir_node *gen_Not  (ir_node *const node)
+{
+	return gen_unop(node, n_Not_op, &new_bd_amd64_Not);
+}
 
 static ir_node *gen_Jmp(ir_node *node)
 {

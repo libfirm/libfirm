@@ -892,15 +892,25 @@ static ir_node *equivalent_node_Sub(ir_node *n)
  *   We handle it anyway here but the better way would be a
  *   flag. This would be needed for Pascal for instance.
  */
-static ir_node *equivalent_node_involution(ir_node *n)
+static ir_node *equivalent_node_involution(ir_node *n, int input)
 {
 	ir_node *oldn = n;
-	ir_node *pred = get_unop_op(n);
+	ir_node *pred = get_irn_n(n, input);
 	if (get_irn_op(pred) == get_irn_op(n)) {
-		n = get_unop_op(pred);
+		n = get_irn_n(pred, input);
 		DBG_OPT_ALGSIM2(oldn, pred, n, FS_OPT_INVOLUTION);
 	}
 	return n;
+}
+
+static ir_node *equivalent_node_Minus(ir_node *n)
+{
+	return equivalent_node_involution(n, n_Minus_op);
+}
+
+static ir_node *equivalent_node_Not(ir_node *n)
+{
+	return equivalent_node_involution(n, n_Not_op);
 }
 
 /**
@@ -4037,8 +4047,9 @@ static ir_node *transform_node_Cmp(ir_node *n)
 				case iro_Not:
 				case iro_Minus:
 					/* ~a CMP ~b => a CMP b, -a CMP -b ==> a CMP b */
-					left  = get_unop_op(left);
-					right = get_unop_op(right);
+					assert((int)n_Minus_op == (int)n_Not_op);
+					left  = get_irn_n(left, n_Minus_op);
+					right = get_irn_n(right, n_Not_op);
 					changed = true;
 					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
 					break;
@@ -6149,10 +6160,10 @@ void ir_register_opt_node_ops(void)
 	register_equivalent_node_func(op_Conv,    equivalent_node_Conv);
 	register_equivalent_node_func(op_Eor,     equivalent_node_Eor);
 	register_equivalent_node_func(op_Id,      equivalent_node_Id);
-	register_equivalent_node_func(op_Minus,   equivalent_node_involution);
+	register_equivalent_node_func(op_Minus,   equivalent_node_Minus);
 	register_equivalent_node_func(op_Mul,     equivalent_node_Mul);
 	register_equivalent_node_func(op_Mux,     equivalent_node_Mux);
-	register_equivalent_node_func(op_Not,     equivalent_node_involution);
+	register_equivalent_node_func(op_Not,     equivalent_node_Not);
 	register_equivalent_node_func(op_Or,      equivalent_node_Or);
 	register_equivalent_node_func(op_Phi,     equivalent_node_Phi);
 	register_equivalent_node_func(op_Proj,    equivalent_node_Proj);
