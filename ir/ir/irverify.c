@@ -88,55 +88,19 @@ static void show_node_failure(const ir_node *n)
 	);
 }
 
-/**
- * Prints a failure message for a binop
- */
-static void show_binop_failure(const ir_node *n, const char *text)
+static void show_node_mode_mismatch(const ir_node *n, const char *text)
 {
-	ir_node *left  = get_binop_left(n);
-	ir_node *right = get_binop_right(n);
-
 	show_entity_failure(n);
-	fprintf(stderr, "  node %ld %s%s(%s%s, %s%s) did not match (%s)\n",
-		get_irn_node_nr(n),
-		get_irn_opname(n), get_irn_modename(n),
-		get_irn_opname(left), get_irn_modename(left),
-		get_irn_opname(right), get_irn_modename(right),
-		text);
-}
-
-/**
- * Prints a failure message for an unop
- */
-static void show_unop_failure(const ir_node *n, const char *text)
-{
-	ir_node *op  = get_unop_op(n);
-
-	show_entity_failure(n);
-	fprintf(stderr, "  node %ld %s%s(%s%s) did not match (%s)\n",
-		get_irn_node_nr(n),
-		get_irn_opname(n), get_irn_modename(n),
-		get_irn_opname(op), get_irn_modename(op),
-		text);
-}
-
-/**
- * Prints a failure message for an op with 3 operands
- */
-static void show_triop_failure(const ir_node *n, const char *text)
-{
-	ir_node *op0  = get_irn_n(n, 0);
-	ir_node *op1  = get_irn_n(n, 1);
-	ir_node *op2  = get_irn_n(n, 2);
-
-	show_entity_failure(n);
-	fprintf(stderr, "  of node %ld %s%s(%s%s, %s%s, %s%s) did not match (%s)\n",
-		get_irn_node_nr(n),
-		get_irn_opname(n), get_irn_modename(n),
-		get_irn_opname(op0), get_irn_modename(op0),
-		get_irn_opname(op1), get_irn_modename(op1),
-		get_irn_opname(op2), get_irn_modename(op2),
-		text);
+	fprintf(stderr, "  node %ld %s%s(", get_irn_node_nr(n),
+	        get_irn_opname(n), get_irn_modename(n));
+	const char *comma = "";
+	for (int i = 0, arity = get_irn_arity(n); i < arity; ++i) {
+		ir_node *op = get_irn_n(n, i);
+		fprintf(stderr, "%s%s%s", comma, get_irn_opname(op),
+		        get_irn_modename(op));
+		comma = ", ";
+	}
+	fprintf(stderr, ") did not match (%s)\n", text);
 }
 
 /**
@@ -1078,7 +1042,8 @@ static int verify_node_Add(const ir_node *n)
 			(mode_is_int(op1mode) && op2mode == mymode && mode_is_reference(mymode))
 		),
 		"Add node", 0,
-		show_binop_failure(n, "/* common Add: BB x numP x numP --> numP */ |\n"
+		show_node_mode_mismatch(n,
+			"/* common Add: BB x numP x numP --> numP */ |\n"
 			"/* Pointer Add: BB x ref x int --> ref */   |\n"
 			"/* Pointer Add: BB x int x ref --> ref */");
 	);
@@ -1104,7 +1069,8 @@ static int verify_node_Sub(const ir_node *n)
 			(op1mode == op2mode && mode_is_reference(op2mode) && mode_is_int(mymode))
 		),
 		"Sub node", 0,
-		show_binop_failure(n, "/* common Sub: BB x numP x numP --> numP */ |\n"
+		show_node_mode_mismatch(n,
+			"/* common Sub: BB x numP x numP --> numP */ |\n"
 			"/* Pointer Sub: BB x ref x int --> ref */   |\n"
 			"/* Pointer Sub: BB x ref x ref --> int */" );
 		);
@@ -1122,7 +1088,7 @@ static int verify_node_Minus(const ir_node *n)
 	ASSERT_AND_RET_DBG(
 		/* Minus: BB x num --> num */
 		op1mode == mymode && mode_is_num(op1mode), "Minus node", 0,
-		show_unop_failure(n , "/* Minus: BB x num --> num */");
+		show_node_mode_mismatch(n , "/* Minus: BB x num --> num */");
 	);
 	return 1;
 }
@@ -1145,8 +1111,9 @@ static int verify_node_Mul(const ir_node *n)
 			(mode_is_float(op1mode) && op2mode == op1mode && mymode == op1mode)
 		),
 		"Mul node",0,
-		show_binop_failure(n, "/* Mul: BB x int_n x int_n --> int_n|int_2n */ |\n"
-		"/* Mul: BB x float x float --> float */");
+		show_node_mode_mismatch(n,
+			"/* Mul: BB x int_n x int_n --> int_n|int_2n */ |\n"
+			"/* Mul: BB x float x float --> float */");
 	);
 	return 1;
 }
@@ -1166,7 +1133,7 @@ static int verify_node_Mulh(const ir_node *n)
 			(mode_is_int(op1mode) && op2mode == op1mode && op1mode == mymode)
 		),
 		"Mulh node",0,
-		show_binop_failure(n, "/* Mulh: BB x int x int --> int */");
+		show_node_mode_mismatch(n, "/* Mulh: BB x int x int --> int */");
 	);
 	return 1;
 }
@@ -1232,7 +1199,7 @@ static int verify_node_Logic(const ir_node *n)
 		op2mode == op1mode &&
 		mymode == op2mode,
 		"And, Or or Eor node", 0,
-		show_binop_failure(n, "/* And or Or or Eor: BB x int x int --> int */");
+		show_node_mode_mismatch(n, "/* And or Or or Eor: BB x int x int --> int */");
 	);
 	return 1;
 }
@@ -1265,7 +1232,7 @@ static int verify_node_Not(const ir_node *n)
 		(mode_is_int(mymode) || mymode == mode_b) &&
 		mymode == op1mode,
 		"Not node", 0,
-		show_unop_failure(n, "/* Not: BB x int --> int */");
+		show_node_mode_mismatch(n, "/* Not: BB x int --> int */");
 	);
 	return 1;
 }
@@ -1285,7 +1252,7 @@ static int verify_node_Cmp(const ir_node *n)
 		op2mode == op1mode &&
 		mymode == mode_b,
 		"Cmp node", 0,
-		show_binop_failure(n, "/* Cmp: BB x datab x datab --> b16 */");
+		show_node_mode_mismatch(n, "/* Cmp: BB x datab x datab --> b16 */");
 	);
 	return 1;
 }
@@ -1306,7 +1273,7 @@ static int verify_node_Shift(const ir_node *n)
 		!mode_is_signed(op2mode) &&
 		mymode == op1mode,
 		"Shl, Shr or Shrs node", 0,
-		show_binop_failure(n, "/* Shl, Shr or Shrs: BB x int x int_u --> int */");
+		show_node_mode_mismatch(n, "/* Shl, Shr or Shrs: BB x int x int_u --> int */");
 	);
 	return 1;
 }
@@ -1341,7 +1308,7 @@ static int verify_node_Rotl(const ir_node *n)
 		mode_is_int(op2mode) &&
 		mymode == op1mode,
 		"Rotl node", 0,
-		show_binop_failure(n, "/* Rotl: BB x int x int --> int */");
+		show_node_mode_mismatch(n, "/* Rotl: BB x int x int --> int */");
 	);
 	return 1;
 }
@@ -1356,7 +1323,7 @@ static int verify_node_Conv(const ir_node *n)
 
 	ASSERT_AND_RET_DBG(mode_is_data(op1mode) && mode_is_data(mymode),
 		"Conv node", 0,
-		show_unop_failure(n, "/* Conv: BB x data --> data */");
+		show_node_mode_mismatch(n, "/* Conv: BB x data --> data */");
 	);
 	return 1;
 }
@@ -1473,7 +1440,7 @@ static int verify_node_Free(const ir_node *n)
 		!mode_is_signed(op3mode) &&
 		mymode == mode_M,
 		"Free node", 0,
-		show_triop_failure(n, "/* Free: BB x M x ref x int_u --> M */");
+		show_node_mode_mismatch(n, "/* Free: BB x M x ref x int_u --> M */");
 	);
 	return 1;
 }
@@ -1508,7 +1475,7 @@ static int verify_node_Confirm(const ir_node *n)
 		op1mode == mymode &&
 		op2mode == mymode,
 		"Confirm node", 0,
-		show_binop_failure(n, "/* Confirm: BB x T x T --> T */");
+		show_node_mode_mismatch(n, "/* Confirm: BB x T x T --> T */");
 	);
 	return 1;
 }
