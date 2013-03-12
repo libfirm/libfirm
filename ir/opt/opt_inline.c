@@ -283,57 +283,58 @@ static void copy_frame_entities(ir_graph *from, ir_graph *to)
 }
 
 /* Copies parameter entities from the given called graph */
-static void copy_parameter_entities(ir_node *call, ir_type *ctp, ir_graph *called_graph)
+static void copy_parameter_entities(ir_node *call, ir_graph *called_graph)
 {
-	dbg_info *dbgi          = get_irn_dbg_info(call);
-	ir_graph *irg           = get_irn_irg(call);
-	ir_node *mem= get_Call_mem(call);
-	ir_node *nomem          = new_r_NoMem(irg);
-	ir_node *frame          = get_irg_frame(irg);
-	ir_node *block          = get_nodes_block(call);
-	ir_type *called_frame   = get_irg_frame_type(called_graph);
-	size_t n_entities       = get_class_n_members(called_frame);
+	dbg_info *dbgi         = get_irn_dbg_info(call);
+	ir_graph *irg          = get_irn_irg(call);
+	ir_node  *frame        = get_irg_frame(irg);
+	ir_node  *block        = get_nodes_block(call);
+	ir_type  *called_frame = get_irg_frame_type(called_graph);
+	ir_type  *frame_type   = get_irg_frame_type(irg);
+	ir_node  *call_mem     = get_Call_mem(call);
+	ir_node **sync_mem     = NULL;
 
-	for (size_t i = 0; i < n_entities; ++i) {
+	for (size_t i = 0, n_entities = get_class_n_members(called_frame);
+	     i < n_entities; ++i) {
 		ir_entity *old_entity = get_class_member(called_frame, i);
-		ir_entity *new_entity;
+		if (!is_parameter_entity(old_entity))
+			continue;
 
-		if (is_parameter_entity(old_entity) && is_compound_entity(old_entity)) {
-			/*Copy the compound parameter */
-			size_t n_param_pos  = get_entity_parameter_number(old_entity);
-			ir_type *param_type = get_method_param_type(ctp, n_param_pos);
-
-			mem                 = get_Call_mem(call);
-			ir_node *arg        = get_Call_param(call, n_param_pos);
-			new_entity          = copy_entity_own(old_entity, get_irg_frame_type(irg));
-
-			new_entity->entity_kind = IR_ENTITY_COMPOUND_MEMBER;
-			set_entity_link(old_entity, new_entity);
-
-			ir_node *sel        = new_rd_simpleSel(dbgi, block, nomem, frame, new_entity);
-			ir_node *copyb      = new_rd_CopyB(dbgi, block, mem, sel, arg, param_type);
-			mem                 = new_r_Proj(copyb, mode_M, pn_CopyB_M);
-			set_Call_param(call, n_param_pos, sel);
-			set_Call_mem(call, mem);
-		} else if (is_parameter_entity(old_entity) && is_atomic_entity(old_entity)) {
-			/*Store the parameter onto the frame */
-			size_t n_param_pos  = get_entity_parameter_number(old_entity);
-			ir_node *param      = get_Call_param(call, n_param_pos);
-
-			new_entity          = copy_entity_own(old_entity, get_irg_frame_type(irg));
-
-			new_entity->entity_kind = IR_ENTITY_NORMAL;
-			set_entity_link(old_entity, new_entity);
-
-			ir_node *sel        = new_rd_simpleSel(dbgi, block, nomem, frame, new_entity);
-			ir_node *store      = new_rd_Store(dbgi, block, nomem, sel, param, cons_none);
-			ir_node *new_mem    = new_rd_Proj(dbgi, store, mode_M, pn_Store_M);
-			ir_node **arr       = ALLOCAN(ir_node*, 2);
-			arr[0]              = mem;
-			arr[1]              = new_mem;
-			mem                 = new_rd_Sync(dbgi, block, 2, arr);
-			set_Call_mem(call, mem);
+		if (sync_mem == NULL) {
+			sync_mem = NEW_ARR_F(ir_node*, 1);
+			sync_mem[0] = get_Call_mem(call);
 		}
+
+		ir_type   *old_type    = get_entity_type(old_entity);
+		dbg_info  *entity_dbgi = get_entity_dbg_info(old_entity);
+		ident     *name        = get_entity_ident(old_entity);
+		name = id_mangle3("", name, "$inlined");
+		ir_entity *new_entity  = new_d_entity(frame_type, name, old_type, entity_dbgi);
+		set_entity_link(old_entity, new_entity);
+
+		size_t   n_param_pos = get_entity_parameter_number(old_entity);
+		ir_node *param       = get_Call_param(call, n_param_pos);
+		ir_node *nomem       = get_irg_no_mem(irg);
+		ir_node *sel         = new_rd_simpleSel(dbgi, block, nomem, frame, new_entity);
+		ir_node *new_mem;
+		if (is_compound_type(old_type) || is_Array_type(old_type)) {
+			/* Copy the compound parameter */
+			ir_node *copyb = new_rd_CopyB(dbgi, block, call_mem, sel, param, old_type);
+			new_mem = new_r_Proj(copyb, mode_M, pn_CopyB_M);
+			set_Call_param(call, n_param_pos, sel);
+		} else {
+			/* Store the parameter onto the frame */
+			ir_node *store = new_rd_Store(dbgi, block, nomem, sel, param, cons_none);
+			new_mem = new_r_Proj(store, mode_M, pn_Store_M);
+		}
+		ARR_APP1(ir_node*, sync_mem, new_mem);
+	}
+
+	if (sync_mem != NULL) {
+		int      sync_arity = (int)ARR_LEN(sync_mem);
+		ir_node *sync       = new_r_Sync(block, sync_arity, sync_mem);
+		set_Call_mem(call, sync);
+		DEL_ARR_F(sync_mem);
 	}
 }
 
@@ -395,7 +396,7 @@ int inline_method(ir_node *const call, ir_graph *called_graph)
 
 	/* If the call has parameters, copy all parameter entities */
 	if (n_params != 0) {
-		copy_parameter_entities(call, ctp, called_graph);
+		copy_parameter_entities(call, called_graph);
 	}
 
 	/* create the argument tuple */
