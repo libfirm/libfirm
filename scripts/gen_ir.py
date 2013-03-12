@@ -115,14 +115,6 @@ def format_arity(node):
 		return "oparity_dynamic"
 	if arity == "variable":
 		return "oparity_variable"
-	if arity == 0:
-		return "oparity_zero"
-	if arity == 1:
-		return "oparity_unary"
-	if arity == 2:
-		return "oparity_binary"
-	if arity == 3:
-		return "oparity_trinary"
 	return "oparity_any"
 
 def format_pinned(node):

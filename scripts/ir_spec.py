@@ -14,10 +14,11 @@ class Unop(object):
 	"""Unary nodes have exactly 1 input"""
 	name     = "unop"
 	ins      = [
-		("op",  "operand"),
+		("op", "operand"),
 	]
-	op_index = 0
-	pinned   = "no"
+	op_index       = 0
+	pinned         = "no"
+	arity_override = "oparity_unary"
 
 @abstract
 @op
@@ -25,11 +26,12 @@ class Binop(object):
 	"""Binary nodes have exactly 2 inputs"""
 	name     = "binop"
 	ins      = [
-		( "left",   "first operand" ),
-		( "right", "second operand" ),
+		("left",   "first operand"),
+		("right", "second operand"),
 	]
-	op_index = 0
-	pinned   = "no"
+	op_index       = 0
+	pinned         = "no"
+	arity_override = "oparity_binary"
 
 @op
 class Add(Binop):
