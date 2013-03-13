@@ -118,11 +118,8 @@ void (inc_master_type_visited)(void)
  */
 static ir_type *new_type(tp_op const *type_op, ir_mode *mode, type_dbg_info *db)
 {
-	ir_type *res;
-	size_t node_size;
-
-	node_size = offsetof(ir_type, attr) +  type_op->attr_size;
-	res = (ir_type*)xmalloc(node_size);
+	size_t   const node_size = offsetof(ir_type, attr) +  type_op->attr_size;
+	ir_type *const res       = (ir_type*)xmalloc(node_size);
 	memset(res, 0, node_size);
 
 	res->kind       = k_type;
@@ -154,7 +151,6 @@ void free_type_entities(ir_type *tp)
 static void free_type_attrs(ir_type *tp)
 {
 	const tp_op *tpop = get_type_tpop(tp);
-
 	if (tpop->ops.free_attrs)
 		tpop->ops.free_attrs(tp);
 }
@@ -217,7 +213,6 @@ ir_mode *(get_type_mode)(const ir_type *tp)
 void set_type_mode(ir_type *tp, ir_mode *mode)
 {
 	const tp_op *tpop = get_type_tpop(tp);
-
 	if (tpop->ops.set_type_mode)
 		tpop->ops.set_type_mode(tp, mode);
 	else
@@ -260,7 +255,6 @@ void set_type_size_bytes(ir_type *tp, unsigned size)
 unsigned get_type_alignment_bytes(ir_type *tp)
 {
 	unsigned align = 1;
-
 	if (tp->align > 0)
 		return tp->align;
 
@@ -270,12 +264,10 @@ unsigned get_type_alignment_bytes(ir_type *tp)
 	else if (is_Array_type(tp))
 		align = get_type_alignment_bytes(get_array_element_type(tp));
 	else if (is_compound_type(tp)) {
-		size_t i, n = get_compound_n_members(tp);
-
 		align = 0;
-		for (i = 0; i < n; ++i) {
+		for (size_t i = 0, n = get_compound_n_members(tp); i < n; ++i) {
 			ir_type  *t = get_entity_type(get_compound_member(tp, i));
-			unsigned a  = get_type_alignment_bytes(t);
+			unsigned  a = get_type_alignment_bytes(t);
 
 			if (a > align)
 				align = a;
@@ -292,7 +284,7 @@ unsigned get_type_alignment_bytes(ir_type *tp)
 
 void set_type_alignment_bytes(ir_type *tp, unsigned align)
 {
-	assert(tp && tp->kind == k_type);
+	assert(tp->kind == k_type);
 	/* Methods don't have an alignment. */
 	if (tp->type_op != type_method) {
 		tp->align = align;
@@ -319,18 +311,18 @@ void set_type_state(ir_type *tp, ir_type_state state)
 {
 	assert(tp && tp->kind == k_type);
 
-	if ((tp->type_op == type_pointer) || (tp->type_op == type_primitive) ||
-		(tp->type_op == type_method))
+	if (tp->type_op == type_pointer || tp->type_op == type_primitive
+	    || tp->type_op == type_method)
 		return;
 
+#ifndef NDEBUG
 	/* Just a correctness check: */
 	if (state == layout_fixed) {
-		size_t i;
 		switch (get_type_tpop_code(tp)) {
 		case tpo_class:
 			if (tp != get_glob_type()) {
-				size_t n_mem = get_class_n_members(tp);
-				for (i = 0; i < n_mem; i++) {
+				for (size_t i = 0, n_mem = get_class_n_members(tp);
+				     i < n_mem; i++) {
 					ir_entity *entity = get_class_member(tp, i);
 					if (is_Method_type(get_entity_type(entity)))
 						continue;
@@ -339,29 +331,27 @@ void set_type_state(ir_type *tp, ir_type_state state)
 			}
 			break;
 		case tpo_struct:
-			for (i = 0; i < get_struct_n_members(tp); i++) {
+			for (size_t i = 0, n_members = get_struct_n_members(tp);
+			     i < n_members; i++) {
 				assert(get_entity_offset(get_struct_member(tp, i)) > -1);
 			}
 			break;
-		case tpo_union:
-			break;
-		case tpo_array:
-			break;
-		case tpo_enumeration: {
-#ifndef NDEBUG
-			size_t n_enums = get_enumeration_n_enums(tp);
+		case tpo_enumeration:
 			assert(get_type_mode(tp) != NULL);
-			for (i = 0; i < n_enums; ++i) {
+			for (size_t i = 0, n_enums = get_enumeration_n_enums(tp);
+			     i < n_enums; ++i) {
 				ir_enum_const *ec = get_enumeration_const(tp, i);
 				ir_tarval     *tv = get_enumeration_value(ec);
 				assert(tv != NULL && tv != tarval_bad);
 			}
-#endif
+			break;
+		case tpo_union:
+		case tpo_array:
+		default:
 			break;
 		}
-		default: break;
-		}
 	}
+#endif
 	if (state == layout_fixed)
 		tp->flags |= tf_layout_fixed;
 	else
@@ -410,9 +400,7 @@ int (is_type)(const void *thing)
 
 ir_type *new_d_type_class(ident *name, type_dbg_info *db)
 {
-	ir_type *res;
-
-	res = new_type(type_class, NULL, db);
+	ir_type *res = new_type(type_class, NULL, db);
 	res->name = name;
 
 	res->attr.ca.members     = NEW_ARR_F (ir_entity *, 0);
@@ -433,11 +421,11 @@ ir_type *new_type_class(ident *name)
 
 void free_class_entities(ir_type *clss)
 {
-	size_t i;
-	assert(clss && (clss->type_op == type_class));
+	assert(clss && clss->type_op == type_class);
 	/* we must iterate backward here */
-	for (i = get_class_n_members(clss); i > 0;)
-		free_entity(get_class_member(clss, --i));
+	for (size_t i = get_class_n_members(clss); i-- > 0;) {
+		free_entity(get_class_member(clss, i));
+	}
 }
 
 void free_class_attrs(ir_type *clss)
@@ -463,9 +451,9 @@ const char *get_class_name(const ir_type *clss)
 
 static void add_class_member(ir_type *clss, ir_entity *member)
 {
-	assert(clss && (clss->type_op == type_class));
-	assert(clss != get_entity_type(member) && "recursive type");
-	ARR_APP1 (ir_entity *, clss->attr.ca.members, member);
+	assert(clss->type_op == type_class);
+	assert(clss != get_entity_type(member));
+	ARR_APP1(ir_entity *, clss->attr.ca.members, member);
 }
 
 size_t (get_class_n_members)(const ir_type *clss)
@@ -475,9 +463,8 @@ size_t (get_class_n_members)(const ir_type *clss)
 
 size_t get_class_member_index(const ir_type *clss, ir_entity *mem)
 {
-	size_t i, n;
-	assert(clss && (clss->type_op == type_class));
-	for (i = 0, n = get_class_n_members(clss); i < n; ++i) {
+	assert(clss->type_op == type_class);
+	for (size_t i = 0, n = get_class_n_members(clss); i < n; ++i) {
 		if (get_class_member(clss, i) == mem)
 			return i;
 	}
@@ -491,10 +478,8 @@ ir_entity *(get_class_member)(const ir_type *clss, size_t pos)
 
 ir_entity *get_class_member_by_name(ir_type *clss, ident *name)
 {
-	size_t i, n_mem;
-	assert(clss && (clss->type_op == type_class));
-	n_mem = get_class_n_members(clss);
-	for (i = 0; i < n_mem; ++i) {
+	assert(clss->type_op == type_class);
+	for (size_t i = 0, n_mem = get_class_n_members(clss); i < n_mem; ++i) {
 		ir_entity *mem = get_class_member(clss, i);
 		if (get_entity_ident(mem) == name)
 			return mem;
@@ -504,9 +489,8 @@ ir_entity *get_class_member_by_name(ir_type *clss, ident *name)
 
 static void remove_class_member(ir_type *clss, ir_entity *member)
 {
-	size_t i;
 	assert(clss && (clss->type_op == type_class));
-	for (i = 0; i < ARR_LEN(clss->attr.ca.members); ++i) {
+	for (size_t i = 0; i < ARR_LEN(clss->attr.ca.members); ++i) {
 		if (clss->attr.ca.members[i] == member) {
 			for (; i < ARR_LEN(clss->attr.ca.members) - 1; ++i)
 				clss->attr.ca.members[i] = clss->attr.ca.members[i + 1];
@@ -518,10 +502,10 @@ static void remove_class_member(ir_type *clss, ir_entity *member)
 
 void add_class_subtype(ir_type *clss, ir_type *subtype)
 {
-	size_t i;
 	assert(clss->type_op == type_class);
-	ARR_APP1 (ir_type *, clss->attr.ca.subtypes, subtype);
-	for (i = 0; i < get_class_n_supertypes(subtype); i++) {
+	ARR_APP1(ir_type *, clss->attr.ca.subtypes, subtype);
+	for (size_t i = 0, n_supertypes = get_class_n_supertypes(subtype);
+	     i < n_supertypes; i++) {
 		if (get_class_supertype(subtype, i) == clss)
 			/* Class already registered */
 			return;
@@ -532,7 +516,7 @@ void add_class_subtype(ir_type *clss, ir_type *subtype)
 size_t get_class_n_subtypes(const ir_type *clss)
 {
 	assert(clss->type_op == type_class);
-	return ARR_LEN (clss->attr.ca.subtypes);
+	return ARR_LEN(clss->attr.ca.subtypes);
 }
 
 ir_type *get_class_subtype(const ir_type *clss, size_t pos)
@@ -544,9 +528,9 @@ ir_type *get_class_subtype(const ir_type *clss, size_t pos)
 
 size_t get_class_subtype_index(const ir_type *clss, const ir_type *subclass)
 {
-	size_t i, n_subtypes = get_class_n_subtypes(clss);
 	assert(is_Class_type(subclass));
-	for (i = 0; i < n_subtypes; ++i) {
+	for (size_t i = 0, n_subtypes = get_class_n_subtypes(clss);
+	     i < n_subtypes; ++i) {
 		if (get_class_subtype(clss, i) == subclass)
 			return i;
 	}
@@ -562,9 +546,8 @@ void set_class_subtype(ir_type *clss, ir_type *subtype, size_t pos)
 
 void remove_class_subtype(ir_type *clss, ir_type *subtype)
 {
-	size_t i;
 	assert(clss && (clss->type_op == type_class));
-	for (i = 0; i < ARR_LEN(clss->attr.ca.subtypes); ++i) {
+	for (size_t i = 0; i < ARR_LEN(clss->attr.ca.subtypes); ++i) {
 		if (clss->attr.ca.subtypes[i] == subtype) {
 			for (; i < ARR_LEN(clss->attr.ca.subtypes) - 1; ++i)
 				clss->attr.ca.subtypes[i] = clss->attr.ca.subtypes[i+1];
@@ -576,12 +559,10 @@ void remove_class_subtype(ir_type *clss, ir_type *subtype)
 
 void add_class_supertype(ir_type *clss, ir_type *supertype)
 {
-	size_t i;
-	size_t n;
-	assert(clss && (clss->type_op == type_class));
-	assert(supertype && (supertype -> type_op == type_class));
-	ARR_APP1 (ir_type *, clss->attr.ca.supertypes, supertype);
-	for (i = 0, n = get_class_n_subtypes(supertype); i < n; ++i) {
+	assert(clss->type_op == type_class);
+	assert(supertype->type_op == type_class);
+	ARR_APP1(ir_type *, clss->attr.ca.supertypes, supertype);
+	for (size_t i = 0, n = get_class_n_subtypes(supertype); i < n; ++i) {
 		if (get_class_subtype(supertype, i) == clss)
 			/* Class already registered */
 			return;
@@ -597,9 +578,9 @@ size_t get_class_n_supertypes(const ir_type *clss)
 
 size_t get_class_supertype_index(const ir_type *clss, const ir_type *super_clss)
 {
-	size_t i, n_supertypes = get_class_n_supertypes(clss);
-	assert(super_clss && (super_clss->type_op == type_class));
-	for (i = 0; i < n_supertypes; i++) {
+	assert(super_clss->type_op == type_class);
+	for (size_t i = 0, n_supertypes = get_class_n_supertypes(clss);
+	     i < n_supertypes; i++) {
 		if (get_class_supertype(clss, i) == super_clss)
 			return i;
 	}
@@ -622,9 +603,8 @@ void set_class_supertype(ir_type *clss, ir_type *supertype, size_t pos)
 
 void remove_class_supertype(ir_type *clss, ir_type *supertype)
 {
-	size_t i;
-	assert(clss && (clss->type_op == type_class));
-	for (i = 0; i < ARR_LEN(clss->attr.ca.supertypes); ++i) {
+	assert(clss->type_op == type_class);
+	for (size_t i = 0; i < ARR_LEN(clss->attr.ca.supertypes); ++i) {
 		if (clss->attr.ca.supertypes[i] == supertype) {
 			for (; i < ARR_LEN(clss->attr.ca.supertypes) - 1; ++i)
 				clss->attr.ca.supertypes[i] = clss->attr.ca.supertypes[i+1];
@@ -636,13 +616,13 @@ void remove_class_supertype(ir_type *clss, ir_type *supertype)
 
 ir_peculiarity get_class_peculiarity(const ir_type *clss)
 {
-	assert(clss && (clss->type_op == type_class));
+	assert(clss->type_op == type_class);
 	return clss->attr.ca.peculiarity;
 }
 
 void set_class_peculiarity(ir_type *clss, ir_peculiarity pec)
 {
-	assert(clss && (clss->type_op == type_class));
+	assert(clss->type_op == type_class);
 	assert(pec != peculiarity_inherited);  /* There is no inheritance of types in libFirm. */
 	clss->attr.ca.peculiarity = pec;
 }
@@ -733,16 +713,15 @@ ir_type *new_type_struct(ident *name)
 
 void free_struct_entities(ir_type *strct)
 {
-	size_t i;
-	assert(strct && (strct->type_op == type_struct));
+	assert(strct->type_op == type_struct);
 	/* we must iterate backward here */
-	for (i = get_struct_n_members(strct); i > 0;)
+	for (size_t i = get_struct_n_members(strct); i > 0;)
 		free_entity(get_struct_member(strct, --i));
 }
 
 void free_struct_attrs(ir_type *strct)
 {
-	assert(strct && (strct->type_op == type_struct));
+	assert(strct->type_op == type_struct);
 	DEL_ARR_F(strct->attr.sa.members);
 }
 
@@ -754,9 +733,10 @@ ident *get_struct_ident(const ir_type *strct)
 
 const char *get_struct_name(const ir_type *strct)
 {
-	if (get_struct_ident(strct) == NULL)
+	ident *id = get_struct_ident(strct);
+	if (id == NULL)
 		return NULL;
-	return get_id_str(get_struct_ident(strct));
+	return get_id_str(id);
 }
 
 size_t get_struct_n_members(const ir_type *strct)
@@ -767,24 +747,23 @@ size_t get_struct_n_members(const ir_type *strct)
 
 static void add_struct_member(ir_type *strct, ir_entity *member)
 {
-	assert(strct && (strct->type_op == type_struct));
+	assert(strct->type_op == type_struct);
 	assert(get_type_tpop(get_entity_type(member)) != type_method);
-	assert(strct != get_entity_type(member) && "recursive type");
-	ARR_APP1 (ir_entity *, strct->attr.sa.members, member);
+	assert(strct != get_entity_type(member));
+	ARR_APP1(ir_entity *, strct->attr.sa.members, member);
 }
 
 ir_entity *get_struct_member(const ir_type *strct, size_t pos)
 {
-	assert(strct && (strct->type_op == type_struct));
+	assert(strct->type_op == type_struct);
 	assert(pos < get_struct_n_members(strct));
 	return strct->attr.sa.members[pos];
 }
 
 size_t get_struct_member_index(const ir_type *strct, ir_entity *mem)
 {
-	size_t i, n;
-	assert(strct && (strct->type_op == type_struct));
-	for (i = 0, n = get_struct_n_members(strct); i < n; ++i) {
+	assert(strct->type_op == type_struct);
+	for (size_t i = 0, n = get_struct_n_members(strct); i < n; ++i) {
 		if (get_struct_member(strct, i) == mem)
 			return i;
 	}
@@ -793,9 +772,8 @@ size_t get_struct_member_index(const ir_type *strct, ir_entity *mem)
 
 static void remove_struct_member(ir_type *strct, ir_entity *member)
 {
-	size_t i;
-	assert(strct && (strct->type_op == type_struct));
-	for (i = 0; i < ARR_LEN(strct->attr.sa.members); ++i) {
+	assert(strct->type_op == type_struct);
+	for (size_t i = 0; i < ARR_LEN(strct->attr.sa.members); ++i) {
 		if (strct->attr.sa.members[i] == member) {
 			for (; i < ARR_LEN(strct->attr.sa.members) - 1; ++i)
 				strct->attr.sa.members[i] = strct->attr.sa.members[i+1];
@@ -825,10 +803,8 @@ void set_struct_size(ir_type *tp, unsigned size)
 
 ir_type *new_d_type_method(size_t n_param, size_t n_res, type_dbg_info *db)
 {
-	ir_type *res;
-
 	assert((get_mode_size_bits(mode_P_code) % 8 == 0) && "unorthodox modes not implemented");
-	res = new_type(type_method, mode_P_code, db);
+	ir_type *res = new_type(type_method, mode_P_code, db);
 	res->flags               |= tf_layout_fixed;
 	res->size                 = get_mode_size_bytes(mode_P_code);
 	res->attr.ma.n_params     = n_param;
@@ -848,20 +824,12 @@ ir_type *new_type_method(size_t n_param, size_t n_res)
 
 ir_type *clone_type_method(ir_type *tp)
 {
-	ir_type  *res;
-	ir_mode  *mode;
-	size_t    n_params;
-	size_t    n_res;
-	type_dbg_info *db;
-
 	assert(is_Method_type(tp));
-
-	mode     = tp->mode;
-	n_params = tp->attr.ma.n_params;
-	n_res    = tp->attr.ma.n_res;
-	db       = tp->dbi;
-
-	res = new_type(type_method, mode, db);
+	ir_mode       *mode     = tp->mode;
+	size_t         n_params = tp->attr.ma.n_params;
+	size_t         n_res    = tp->attr.ma.n_res;
+	type_dbg_info *db       = tp->dbi;
+	ir_type       *res      = new_type(type_method, mode, db);
 
 	res->flags                    = tp->flags;
 	res->higher_type              = tp->higher_type;
@@ -882,12 +850,12 @@ ir_type *clone_type_method(ir_type *tp)
 void free_method_entities(ir_type *method)
 {
 	(void) method;
-	assert(method && (method->type_op == type_method));
+	assert(method->type_op == type_method);
 }
 
 void free_method_attrs(ir_type *method)
 {
-	assert(method && (method->type_op == type_method));
+	assert(method->type_op == type_method);
 	free(method->attr.ma.params);
 	free(method->attr.ma.res_type);
 }
@@ -899,11 +867,9 @@ size_t (get_method_n_params)(const ir_type *method)
 
 ir_type *get_method_param_type(const ir_type *method, size_t pos)
 {
-	ir_type *res;
 	assert(method->type_op == type_method);
 	assert(pos < get_method_n_params(method));
-	res = method->attr.ma.params[pos].tp;
-	assert(res != NULL && "empty method param type");
+	ir_type *res = method->attr.ma.params[pos].tp;
 	return res;
 }
 
@@ -921,11 +887,9 @@ size_t (get_method_n_ress)(const ir_type *method)
 
 ir_type *get_method_res_type(const ir_type *method, size_t pos)
 {
-	ir_type *res;
 	assert(method->type_op == type_method);
 	assert(pos < get_method_n_ress(method));
-	res = method->attr.ma.res_type[pos].tp;
-	assert(res != NULL && "empty method return type");
+	ir_type *res = method->attr.ma.res_type[pos].tp;
 	return res;
 }
 
@@ -933,9 +897,7 @@ void set_method_res_type(ir_type *method, size_t pos, ir_type *tp)
 {
 	assert(method->type_op == type_method);
 	assert(pos < get_method_n_ress(method));
-	/* set the result ir_type */
 	method->attr.ma.res_type[pos].tp = tp;
-	/* If information constructed set pass-by-value representation. */
 }
 
 const char *get_variadicity_name(ir_variadicity vari)
@@ -952,13 +914,13 @@ const char *get_variadicity_name(ir_variadicity vari)
 
 ir_variadicity get_method_variadicity(const ir_type *method)
 {
-	assert(method && (method->type_op == type_method));
+	assert(method->type_op == type_method);
 	return method->attr.ma.variadicity;
 }
 
 void set_method_variadicity(ir_type *method, ir_variadicity vari)
 {
-	assert(method && (method->type_op == type_method));
+	assert(method->type_op == type_method);
 	method->attr.ma.variadicity = vari;
 }
 
@@ -1027,16 +989,15 @@ ir_type *new_type_union(ident *name)
 
 void free_union_entities(ir_type *uni)
 {
-	size_t i;
-	assert(uni && (uni->type_op == type_union));
+	assert(uni->type_op == type_union);
 	/* we must iterate backward here */
-	for (i = get_union_n_members(uni); i > 0;)
+	for (size_t i = get_union_n_members(uni); i > 0;)
 		free_entity(get_union_member(uni, --i));
 }
 
 void free_union_attrs(ir_type *uni)
 {
-	assert(uni && (uni->type_op == type_union));
+	assert(uni->type_op == type_union);
 	DEL_ARR_F(uni->attr.ua.members);
 }
 
@@ -1048,9 +1009,10 @@ ident *get_union_ident(const ir_type *uni)
 
 const char *get_union_name(const ir_type *uni)
 {
-	if (get_union_ident(uni) == NULL)
+	ident *id = get_union_ident(uni);
+	if (id == NULL)
 		return NULL;
-	return get_id_str(get_union_ident(uni));
+	return get_id_str(id);
 }
 
 size_t get_union_n_members(const ir_type *uni)
@@ -1062,7 +1024,7 @@ size_t get_union_n_members(const ir_type *uni)
 static void add_union_member(ir_type *uni, ir_entity *member)
 {
 	assert(uni->type_op == type_union);
-	assert(uni != get_entity_type(member) && "recursive type");
+	assert(uni != get_entity_type(member));
 	ARR_APP1(ir_entity *, uni->attr.ua.members, member);
 }
 
@@ -1075,9 +1037,8 @@ ir_entity *get_union_member(const ir_type *uni, size_t pos)
 
 size_t get_union_member_index(const ir_type *uni, ir_entity *mem)
 {
-	size_t i, n;
-	assert(uni && (uni->type_op == type_union));
-	for (i = 0, n = get_union_n_members(uni); i < n; ++i) {
+	assert(uni->type_op == type_union);
+	for (size_t i = 0, n = get_union_n_members(uni); i < n; ++i) {
 		if (get_union_member(uni, i) == mem)
 			return i;
 	}
@@ -1086,9 +1047,8 @@ size_t get_union_member_index(const ir_type *uni, ir_entity *mem)
 
 static void remove_union_member(ir_type *uni, ir_entity *member)
 {
-	size_t i;
-	assert(uni && (uni->type_op == type_union));
-	for (i = 0; i < ARR_LEN(uni->attr.ua.members); ++i) {
+	assert(uni->type_op == type_union);
+	for (size_t i = 0; i < ARR_LEN(uni->attr.ua.members); ++i) {
 		if (uni->attr.ua.members[i] == member) {
 			for (; i < ARR_LEN(uni->attr.ua.members) - 1; i++)
 				uni->attr.ua.members[i] = uni->attr.ua.members[i+1];
@@ -1121,21 +1081,17 @@ ir_type *new_type_segment(ident *const name, type_flags const flags)
 ir_type *new_d_type_array(size_t n_dimensions, ir_type *element_type,
                           type_dbg_info *db)
 {
-	ir_type *res;
-	size_t i;
-	ir_node *unk;
-	ir_graph *irg = get_const_code_irg();
-
 	assert(!is_Method_type(element_type));
 
-	res = new_type(type_array, NULL, db);
+	ir_type *res = new_type(type_array, NULL, db);
 	res->attr.aa.n_dimensions = n_dimensions;
 	res->attr.aa.lower_bound  = XMALLOCNZ(ir_node*, n_dimensions);
 	res->attr.aa.upper_bound  = XMALLOCNZ(ir_node*, n_dimensions);
 	res->attr.aa.order        = XMALLOCNZ(size_t,   n_dimensions);
 
-	unk = new_r_Unknown(irg, mode_Iu);
-	for (i = 0; i < n_dimensions; i++) {
+	ir_graph *irg = get_const_code_irg();
+	ir_node  *unk = new_r_Unknown(irg, mode_Iu);
+	for (size_t i = 0; i < n_dimensions; i++) {
 		res->attr.aa.lower_bound[i] =
 		res->attr.aa.upper_bound[i] = unk;
 		res->attr.aa.order[i]       = i;
@@ -1204,7 +1160,7 @@ void set_array_lower_bound(ir_type *array, size_t dimension,
                            ir_node *lower_bound)
 {
 	assert(array->type_op == type_array);
-	assert(lower_bound && "lower_bound node may not be NULL.");
+	assert(lower_bound != NULL);
 	array->attr.aa.lower_bound[dimension] = lower_bound;
 }
 
@@ -1218,7 +1174,7 @@ void set_array_lower_bound_int(ir_type *array, size_t dimension, int lower_bound
 void set_array_upper_bound(ir_type *array, size_t dimension, ir_node *upper_bound)
 {
   assert(array->type_op == type_array);
-  assert(upper_bound && "upper_bound node may not be NULL.");
+  assert(upper_bound != NULL);
   array->attr.aa.upper_bound[dimension] = upper_bound;
 }
 
@@ -1283,11 +1239,8 @@ size_t get_array_order(const ir_type *array, size_t dimension)
 
 size_t find_array_dimension(const ir_type *array, size_t order)
 {
-	size_t dim;
-
 	assert(array->type_op == type_array);
-
-	for (dim = 0; dim < array->attr.aa.n_dimensions; ++dim) {
+	for (size_t dim = 0; dim < array->attr.aa.n_dimensions; ++dim) {
 		if (array->attr.aa.order[dim] == order)
 			return dim;
 	}
@@ -1348,9 +1301,7 @@ void set_array_size(ir_type *tp, unsigned size)
 
 ir_type *new_d_type_enumeration(ident *name, size_t n_enums, type_dbg_info *db)
 {
-	ir_type *res;
-
-	res = new_type(type_enumeration, NULL, db);
+	ir_type *res = new_type(type_enumeration, NULL, db);
 	res->name = name;
 	res->attr.ea.enumer = NEW_ARR_F(ir_enum_const, n_enums);
 	hook_new_type(res);
@@ -1382,9 +1333,10 @@ ident *get_enumeration_ident(const ir_type *enumeration)
 
 const char *get_enumeration_name(const ir_type *enumeration)
 {
-	if (get_enumeration_ident(enumeration) == NULL)
+	ident *id = get_enumeration_ident(enumeration);
+	if (id == NULL)
 		return NULL;
-	return get_id_str(get_enumeration_ident(enumeration));
+	return get_id_str(id);
 }
 
 size_t get_enumeration_n_enums(const ir_type *enumeration)
@@ -1446,10 +1398,7 @@ int (is_Enumeration_type)(const ir_type *enumeration)
 
 void set_enumeration_mode(ir_type *tp, ir_mode *mode)
 {
-	assert(mode_is_int(mode) && "Modes of enumerations must be integers");
-	/* For pointer and enumeration size depends on the mode, but only byte size allowed. */
-	assert((get_mode_size_bits(mode) % 8) == 0 && "unorthodox modes not implemented");
-
+	assert(mode_is_int(mode));
 	tp->size = get_mode_size_bytes(mode);
 	tp->mode = mode;
 }
@@ -1458,16 +1407,14 @@ void set_enumeration_mode(ir_type *tp, ir_mode *mode)
 
 ir_type *new_d_type_pointer(ir_type *points_to, type_dbg_info *db)
 {
-	ir_type *res;
 	ir_mode *mode;
-
 	if (is_Method_type(points_to) || is_code_type(points_to)) {
 		mode = mode_P_code;
 	} else {
 		mode = mode_P_data;
 	}
 
-	res = new_type(type_pointer, mode, db);
+	ir_type *res = new_type(type_pointer, mode, db);
 	res->attr.pa.points_to = points_to;
 	assert((get_mode_size_bits(res->mode) % 8 == 0) && "unorthodox modes not implemented");
 	res->size = get_mode_size_bytes(res->mode);
@@ -1484,24 +1431,24 @@ ir_type *new_type_pointer(ir_type *points_to)
 void free_pointer_entities(ir_type *pointer)
 {
 	(void) pointer;
-	assert(pointer && (pointer->type_op == type_pointer));
+	assert(pointer->type_op == type_pointer);
 }
 
 void free_pointer_attrs(ir_type *pointer)
 {
 	(void) pointer;
-	assert(pointer && (pointer->type_op == type_pointer));
+	assert(pointer->type_op == type_pointer);
 }
 
 void set_pointer_points_to_type(ir_type *pointer, ir_type *tp)
 {
-	assert(pointer && (pointer->type_op == type_pointer));
+	assert(pointer->type_op == type_pointer);
 	pointer->attr.pa.points_to = tp;
 }
 
 ir_type *get_pointer_points_to_type(const ir_type *pointer)
 {
-	assert(pointer && (pointer->type_op == type_pointer));
+	assert(pointer->type_op == type_pointer);
 	return pointer->attr.pa.points_to;
 }
 
@@ -1512,18 +1459,14 @@ int (is_Pointer_type)(const ir_type *pointer)
 
 void set_pointer_mode(ir_type *tp, ir_mode *mode)
 {
-	assert(mode_is_reference(mode) && "Modes of pointers must be references");
-	/* For pointer and enumeration size depends on the mode, but only byte size allowed. */
-	assert((get_mode_size_bits(mode) & 7) == 0 && "unorthodox modes not implemented");
-
+	assert(mode_is_reference(mode));
 	tp->size = get_mode_size_bytes(mode);
 	tp->mode = mode;
 }
 
 ir_type *find_pointer_type_to_type(ir_type *tp)
 {
-	size_t i, n = get_irp_n_types();
-	for (i = 0; i < n; ++i) {
+	for (size_t i = 0, n = get_irp_n_types(); i < n; ++i) {
 		ir_type *found = get_irp_type(i);
 		if (is_Pointer_type(found) && get_pointer_points_to_type(found) == tp)
 			return (found);
@@ -1583,7 +1526,7 @@ int (is_atomic_type)(const ir_type *tp)
 
 size_t get_compound_n_members(const ir_type *tp)
 {
-	const tp_op *op  = get_type_tpop(tp);
+	const tp_op *op = get_type_tpop(tp);
 	return op->ops.get_n_members(tp);
 }
 
@@ -1679,10 +1622,7 @@ int is_frame_type(const ir_type *tp)
 ir_type *new_type_frame(void)
 {
 	ir_type *res = new_type_class(new_id_from_str("<frame_type>"));
-
 	res->flags |= tf_frame_type;
-
-	/* It is not possible to derive from the frame type. Set the final flag. */
 	set_class_final(res, 1);
 
 	return res;
@@ -1690,15 +1630,12 @@ ir_type *new_type_frame(void)
 
 ir_type *clone_frame_type(ir_type *type)
 {
-	ir_type *res;
-	size_t  i, n;
-
 	assert(is_frame_type(type));
 	/* the entity link resource should be allocated if this function is called */
 	assert(irp_resources_reserved(irp) & IRP_RESOURCE_ENTITY_LINK);
 
-	res = new_type_frame();
-	for (i = 0, n = get_class_n_members(type); i < n; ++i) {
+	ir_type *res = new_type_frame();
+	for (size_t i = 0, n = get_class_n_members(type); i < n; ++i) {
 		ir_entity *ent  = get_class_member(type, i);
 		ir_entity *nent = copy_entity_own(ent, res);
 		set_entity_link(ent, nent);
@@ -1714,22 +1651,16 @@ void set_default_size(ir_type *tp, unsigned size)
 
 void default_layout_compound_type(ir_type *type)
 {
-	size_t   i;
-	size_t   n         = get_compound_n_members(type);
 	int      size      = 0;
 	unsigned align_all = 1;
 	bool     var_size  = is_compound_variable_size(type);
-
-	for (i = 0; i < n; ++i) {
+	for (size_t i = 0, n = get_compound_n_members(type); i < n; ++i) {
 		ir_entity *entity      = get_compound_member(type, i);
 		ir_type   *entity_type = get_entity_type(entity);
-		unsigned   align;
-		unsigned   misalign;
-		unsigned   entity_size;
-
 		if (is_Method_type(entity_type))
 			continue;
 
+		unsigned entity_size;
 		if (i+1 < n || !var_size) {
 			assert(get_type_state(entity_type) == layout_fixed);
 			entity_size = get_type_size_bytes(entity_type);
@@ -1737,10 +1668,10 @@ void default_layout_compound_type(ir_type *type)
 			entity_size = 0;
 		}
 
-		align     = get_type_alignment_bytes(entity_type);
-		align_all = align > align_all ? align : align_all;
-		misalign  = (align ? size % align : 0);
+		unsigned align     = get_type_alignment_bytes(entity_type);
+		unsigned misalign  = (align ? size % align : 0);
 		size     += (misalign ? align - misalign : 0);
+		align_all = align > align_all ? align : align_all;
 
 		set_entity_offset(entity, size);
 		if (!is_Union_type(type)) {
@@ -1760,13 +1691,6 @@ void default_layout_compound_type(ir_type *type)
 ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment,
                             int at_start)
 {
-	ir_entity *area;
-	ir_type *tp;
-	ident *name;
-	char buf[32];
-	int offset;
-	unsigned frame_size  = get_type_size_bytes(frame_type);
-	unsigned frame_align = get_type_alignment_bytes(frame_type);
 	static unsigned area_cnt = 0;
 
 	assert(is_frame_type(frame_type));
@@ -1777,19 +1701,22 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment,
 	if (irp->byte_type == NULL)
 		irp->byte_type = new_type_primitive(mode_Bu);
 
+	char buf[32];
 	snprintf(buf, sizeof(buf), "area%u", area_cnt++);
-	name = new_id_from_str(buf);
+	ident *name = new_id_from_str(buf);
 
-	tp = new_type_array(1, irp->byte_type);
+	ir_type *tp = new_type_array(1, irp->byte_type);
 	set_array_bounds_int(tp, 0, 0, size);
 	set_type_alignment_bytes(tp, alignment);
 	set_type_size_bytes(tp, size);
 
+	unsigned frame_size  = get_type_size_bytes(frame_type);
+	unsigned frame_align = get_type_alignment_bytes(frame_type);
+	int      offset;
 	if (at_start) {
-		size_t i, n;
 		unsigned delta = (size + frame_align - 1) & ~(frame_align - 1);
 		/* fix all offsets so far */
-		for (i = 0, n = get_class_n_members(frame_type); i < n; ++i) {
+		for (size_t i = 0, n = get_class_n_members(frame_type); i < n; ++i) {
 			ir_entity *ent = get_class_member(frame_type, i);
 
 			set_entity_offset(ent, get_entity_offset(ent) + delta);
@@ -1803,7 +1730,7 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment,
 		frame_size = offset + size;
 	}
 
-	area = new_entity(frame_type, name, tp);
+	ir_entity *area = new_entity(frame_type, name, tp);
 	set_entity_offset(area, offset);
 	set_type_size_bytes(frame_type, frame_size);
 	if (alignment > frame_align) {
@@ -1819,8 +1746,6 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment,
 
 void ir_print_type(char *buffer, size_t buffer_size, const ir_type *type)
 {
-	ident *id;
-	int p;
 	type_dbg_info *tdbgi = get_type_dbg_info(type);
 	if (tdbgi != NULL) {
 		ir_retrieve_type_dbg_info(buffer, buffer_size, tdbgi);
@@ -1835,48 +1760,55 @@ void ir_print_type(char *buffer, size_t buffer_size, const ir_type *type)
 		snprintf(buffer, buffer_size, "code");
 		return;
 
-	case tpo_class:
-		id = get_class_ident(type);
+	case tpo_class: {
+		ident *id = get_class_ident(type);
 		snprintf(buffer, buffer_size, "class '%s'", get_id_str(id));
 		return;
+	}
 
-	case tpo_struct:
-		id = get_struct_ident(type);
+	case tpo_struct: {
+		ident *id = get_struct_ident(type);
 		snprintf(buffer, buffer_size, "struct '%s'", get_id_str(id));
 		return;
+	}
 
-	case tpo_union:
-		id = get_union_ident(type);
+	case tpo_union: {
+		ident *id = get_union_ident(type);
 		snprintf(buffer, buffer_size, "union '%s'", get_id_str(id));
 		return;
+	}
 
-	case tpo_enumeration:
-		id = get_enumeration_ident(type);
+	case tpo_enumeration: {
+		ident *id = get_enumeration_ident(type);
 		snprintf(buffer, buffer_size, "enumeration '%s'", get_id_str(id));
 		return;
+	}
 
 	case tpo_unknown:
 		snprintf(buffer, buffer_size, "unknown type");
 		return;
 
-	case tpo_pointer:
-		p = snprintf(buffer, buffer_size, "pointer to ");
+	case tpo_pointer: {
+		int p = snprintf(buffer, buffer_size, "pointer to ");
 		buffer      += p;
 		buffer_size -= p;
 		ir_print_type(buffer, buffer_size, get_pointer_points_to_type(type));
 		return;
+	}
 
-	case tpo_array:
-		p = snprintf(buffer, buffer_size, "array of ");
+	case tpo_array: {
+		int p = snprintf(buffer, buffer_size, "array of ");
 		buffer      += p;
 		buffer_size -= p;
 		ir_print_type(buffer, buffer_size, get_array_element_type(type));
 		return;
+	}
 
-	case tpo_primitive:
-		id = get_mode_ident(get_type_mode(type));
+	case tpo_primitive: {
+		ident *id = get_mode_ident(get_type_mode(type));
 		snprintf(buffer, buffer_size, "%s", get_id_str(id));
 		return;
+	}
 
 	case tpo_none:
 		snprintf(buffer, buffer_size, "none");

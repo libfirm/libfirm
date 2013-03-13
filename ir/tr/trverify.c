@@ -21,9 +21,8 @@
 
 static void report_error(const char *fmt, ...)
 {
-	va_list ap;
-
 	fprintf(stderr, "Verify warning: ");
+	va_list ap;
 	va_start(ap, fmt);
 	ir_vfprintf(stderr, fmt, ap);
 	va_end(ap);
@@ -42,21 +41,16 @@ static bool check_class_member(const ir_type *tp, const ir_entity *entity)
 
 static bool check_compound_type(const ir_type *tp)
 {
-	bool   fine     = true;
-	bool   is_class = is_Class_type(tp);
-	size_t n        = get_compound_n_members(tp);
-	size_t i;
-
-	for (i = 0; i < n; ++i) {
+	bool fine     = true;
+	bool is_class = is_Class_type(tp);
+	for (size_t i = 0, n = get_compound_n_members(tp); i < n; ++i) {
 		ir_entity *member = get_compound_member(tp, i);
-		ir_type   *owner;
-
 		if (member == NULL) {
 			report_error("%+F has a NULL member\n", tp);
 			fine = false;
 			continue;
 		}
-		owner = get_entity_owner(member);
+		ir_type *owner = get_entity_owner(member);
 		if (owner != tp) {
 			report_error("member %+F of %+F has owner %+F\n", member, tp, owner);
 			fine = false;
@@ -72,9 +66,8 @@ static bool check_array_type(const ir_type *tp)
 {
 	bool   fine  = true;
 	size_t n_dim = get_array_n_dimensions(tp);
-	size_t i;
 
-	for (i = 0; i < n_dim; ++i) {
+	for (size_t i = 0; i < n_dim; ++i) {
 		if (!has_array_lower_bound(tp, i) && !has_array_upper_bound(tp, i)) {
 			report_error("missing array bound in %+F in dimension %zu", tp, i);
 			fine = false;
@@ -150,7 +143,6 @@ static void on_irg_storage(ir_node *n, void *data)
 static bool constant_on_wrong_irg(ir_node *n)
 {
 	myenv env;
-
 	env.fine = true;
 	env.irg  = get_const_code_irg();
 
@@ -168,10 +160,9 @@ static bool initializer_constant_on_wrong_irg(const ir_initializer_t *initialize
 	case IR_INITIALIZER_CONST:
 		return constant_on_wrong_irg(get_initializer_const_value(initializer));
 	case IR_INITIALIZER_COMPOUND: {
-		bool   fine = true;
-		size_t n    = get_initializer_compound_n_entries(initializer);
-		size_t i;
-		for (i = 0; i < n; ++i) {
+		bool fine = true;
+		for (size_t i = 0, n = get_initializer_compound_n_entries(initializer);
+		     i < n; ++i) {
 			const ir_initializer_t *sub
 				= get_initializer_compound_value(initializer, i);
 			fine &= initializer_constant_on_wrong_irg(sub);
@@ -209,9 +200,9 @@ static bool check_external_linkage(const ir_entity *entity, ir_linkage linkage,
 
 int check_entity(const ir_entity *entity)
 {
-	bool          fine           = true;
-	ir_type      *tp             = get_entity_type(entity);
-	ir_linkage    linkage        = get_entity_linkage(entity);
+	bool        fine    = true;
+	ir_type    *tp      = get_entity_type(entity);
+	ir_linkage  linkage = get_entity_linkage(entity);
 
 	fine &= constants_on_wrong_irg(entity);
 
@@ -292,15 +283,12 @@ int tr_verify(void)
 	ir_type      *constructors;
 	ir_type      *destructors;
 	ir_type      *thread_locals;
-	size_t        i, n;
-	ir_segment_t  s;
 
 	type_walk(check_tore, NULL, &fine);
 
-	for (s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
+	for (ir_segment_t s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
 		const ir_type *type = get_segment_type(s);
-		size_t         e;
-		for (e = 0; e < get_compound_n_members(type); ++e) {
+		for (size_t e = 0; e < get_compound_n_members(type); ++e) {
 			ir_entity *entity = get_compound_member(type, e);
 			if (get_entity_ld_ident(entity) == NULL &&
 				get_entity_visibility(entity) != ir_visibility_private) {
@@ -312,7 +300,7 @@ int tr_verify(void)
 	}
 
 	constructors = get_segment_type(IR_SEGMENT_CONSTRUCTORS);
-	for (i = 0, n = get_compound_n_members(constructors); i < n; ++i) {
+	for (size_t i = 0, n = get_compound_n_members(constructors); i < n; ++i) {
 		const ir_entity *entity = get_compound_member(constructors, i);
 		if ((get_entity_linkage(entity) & IR_LINKAGE_HIDDEN_USER) == 0) {
 			report_error("entity %+F in constructors without LINKAGE_HIDDEN_USER",
@@ -327,7 +315,7 @@ int tr_verify(void)
 		}
 	}
 	destructors = get_segment_type(IR_SEGMENT_DESTRUCTORS);
-	for (i = 0, n = get_compound_n_members(destructors); i < n; ++i) {
+	for (size_t i = 0, n = get_compound_n_members(destructors); i < n; ++i) {
 		const ir_entity *entity = get_compound_member(destructors, i);
 		if ((get_entity_linkage(entity) & IR_LINKAGE_HIDDEN_USER) == 0) {
 			report_error("entity %+F in destructors without LINKAGE_HIDDEN_USER",
@@ -342,7 +330,7 @@ int tr_verify(void)
 		}
 	}
 	thread_locals = get_segment_type(IR_SEGMENT_THREAD_LOCAL);
-	for (i = 0, n = get_compound_n_members(thread_locals); i < n; ++i) {
+	for (size_t i = 0, n = get_compound_n_members(thread_locals); i < n; ++i) {
 		const ir_entity *entity = get_compound_member(thread_locals, i);
 		/* this is odd and should not be allowed I think */
 		if (is_method_entity(entity)) {

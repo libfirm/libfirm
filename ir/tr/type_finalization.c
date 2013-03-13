@@ -25,7 +25,6 @@ static void do_finalization(type_or_ent tore, void *env)
 
 	if (is_type(tore.typ)) {
 		ir_type *cls = tore.typ;
-
 		if (!is_Class_type(cls))
 			return;
 
@@ -40,12 +39,10 @@ static void do_finalization(type_or_ent tore, void *env)
 		}
 	} else {
 		ir_entity *ent = tore.ent;
-		ir_type *owner;
-
 		if (is_entity_final(ent))
 			return;
 
-		owner = get_entity_owner(ent);
+		ir_type *owner = get_entity_owner(ent);
 		/* beware of array entities */
 		if (! is_Class_type(owner) || owner == glob_tp)
 			return;

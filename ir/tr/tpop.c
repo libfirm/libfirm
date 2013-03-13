@@ -27,8 +27,8 @@ const tp_op *tpop_code;          const tp_op *get_tpop_code_type  (void) { retur
 const tp_op *tpop_none;          const tp_op *get_tpop_none       (void) { return tpop_none;        }
 const tp_op *tpop_unknown;       const tp_op *get_tpop_unknown    (void) { return tpop_unknown;     }
 
-const tp_op *
-new_tpop(tp_opcode code, ident *name, unsigned flags, size_t attr_size, const tp_op_ops *ops)
+const tp_op *new_tpop(tp_opcode code, ident *name, unsigned flags,
+                      size_t attr_size, const tp_op_ops *ops)
 {
 	tp_op *res = XMALLOC(tp_op);
 	res->code          = code;
@@ -148,7 +148,8 @@ static const tp_op_ops
 		NULL,
 		NULL,
 		NULL
-	};
+	}
+;
 
 void init_tpop(void)
 {

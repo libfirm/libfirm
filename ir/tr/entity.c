@@ -41,10 +41,9 @@ ir_entity *get_unknown_entity(void)
 static ir_entity *intern_new_entity(ir_type *owner, ir_entity_kind kind,
                                     ident *name, ir_type *type, dbg_info *dbgi)
 {
-	assert(owner);
+	assert(owner != NULL);
 
 	ir_entity *res = XMALLOCZ(ir_entity);
-
 	res->kind    = k_entity;
 	res->name    = name;
 	res->ld_name = NULL;
@@ -79,7 +78,6 @@ ir_entity *new_d_entity(ir_type *owner, ident *name, ir_type *type,
                         dbg_info *db)
 {
 	ir_entity *res;
-
 	if (is_Method_type(type)) {
 		ir_graph *irg = get_const_code_irg();
 		symconst_symbol sym;
@@ -205,16 +203,14 @@ static ir_entity *deep_entity_copy(ir_entity *old)
 
 ir_entity *copy_entity_own(ir_entity *old, ir_type *new_owner)
 {
-	ir_entity *newe;
 	assert(is_entity(old));
 	assert(is_compound_type(new_owner));
 	assert(get_type_state(new_owner) != layout_fixed);
-
 	if (old->owner == new_owner)
 		return old;
 
 	/* create a deep copy so we are safe of aliasing and double-freeing. */
-	newe        = deep_entity_copy(old);
+	ir_entity *newe = deep_entity_copy(old);
 	newe->owner = new_owner;
 	add_compound_member(new_owner, newe);
 
@@ -223,14 +219,12 @@ ir_entity *copy_entity_own(ir_entity *old, ir_type *new_owner)
 
 ir_entity *copy_entity_name(ir_entity *old, ident *new_name)
 {
-	ir_entity *newe;
-	assert(old && old->kind == k_entity);
-
+	assert(old->kind == k_entity);
 	if (old->name == new_name)
 		return old;
 
-	newe       = deep_entity_copy(old);
-	newe->name = new_name;
+	ir_entity *newe = deep_entity_copy(old);
+	newe->name    = new_name;
 	newe->ld_name = NULL;
 	add_compound_member(old->owner, newe);
 
@@ -242,7 +236,7 @@ void free_entity(ir_entity *ent)
 	if (is_compound_type(ent->owner))
 		remove_compound_member(ent->owner, ent);
 
-	assert(ent && ent->kind == k_entity);
+	assert(ent->kind == k_entity);
 	free_entity_attrs(ent);
 #ifdef DEBUG_libfirm
 	ent->kind = k_BAD;
@@ -252,7 +246,7 @@ void free_entity(ir_entity *ent)
 
 long get_entity_nr(const ir_entity *ent)
 {
-	assert(ent && ent->kind == k_entity);
+	assert(ent->kind == k_entity);
 #ifdef DEBUG_libfirm
 	return ent->nr;
 #else
@@ -349,9 +343,9 @@ const char *get_volatility_name(ir_volatility var)
 	switch (var) {
 	X(volatility_non_volatile);
 	X(volatility_is_volatile);
-    default: return "BAD VALUE";
 	}
 #undef X
+	return "BAD VALUE";
 }
 
 ir_align (get_entity_aligned)(const ir_entity *ent)
@@ -380,9 +374,9 @@ const char *get_align_name(ir_align a)
 	switch (a) {
 	X(align_non_aligned);
 	X(align_is_aligned);
-	default: return "BAD VALUE";
 	}
 #undef X
+	return "BAD VALUE";
 }
 
 void set_entity_label(ir_entity *ent, ir_label_t label)
@@ -451,7 +445,7 @@ ir_node *get_atomic_ent_value(const ir_entity *entity)
 {
 	ir_initializer_t *initializer = get_entity_initializer(entity);
 
-	assert(entity && is_atomic_entity(entity));
+	assert(is_atomic_entity(entity));
 	if (initializer == NULL) {
 		ir_type *type = get_entity_type(entity);
 		return new_r_Unknown(get_const_code_irg(), get_type_mode(type));
@@ -478,20 +472,16 @@ ir_node *get_atomic_ent_value(const ir_entity *entity)
 
 void set_atomic_ent_value(ir_entity *entity, ir_node *val)
 {
-	ir_initializer_t *initializer;
-
 	assert(is_atomic_entity(entity));
-
 	assert(is_Dummy(val) || get_irn_mode(val) == get_type_mode(entity->type));
-	initializer = create_initializer_const(val);
+	ir_initializer_t *initializer = create_initializer_const(val);
 	entity->initializer = initializer;
 }
 
 int is_irn_const_expression(ir_node *n)
 {
 	/* we are in danger iff an exception will arise. TODO: be more precisely,
-	 * for instance Div. will NOT rise if divisor != 0
-	 */
+	 * for instance Div. will NOT rise if divisor != 0 */
 	if (is_binop(n) && !is_fragile_op(n))
 		return is_irn_const_expression(get_binop_left(n)) && is_irn_const_expression(get_binop_right(n));
 
@@ -511,13 +501,11 @@ int is_irn_const_expression(ir_node *n)
 ir_node *copy_const_value(dbg_info *dbg, ir_node *n, ir_node *block)
 {
 	ir_graph *irg = get_irn_irg(block);
+
+	/* @@@ GL I think we should implement this using the routines from irgopt
+	 * for dead node elimination/inlineing. */
+	ir_mode *m = get_irn_mode(n);
 	ir_node *nn;
-	ir_mode *m;
-
-	/* @@@ GL I think  we should implement this using the routines from irgopt for
-	       dead node elimination/inlineing. */
-
-	m = get_irn_mode(n);
 	switch (get_irn_opcode(n)) {
 	case iro_Const:
 		nn = new_rd_Const(dbg, irg, get_Const_tarval(n));
@@ -568,7 +556,8 @@ ir_node *copy_const_value(dbg_info *dbg, ir_node *n, ir_node *block)
 		                copy_const_value(dbg, get_Not_op(n), block), m);
 		break;
 	case iro_Unknown:
-		nn = new_r_Unknown(irg, m); break;
+		nn = new_r_Unknown(irg, m);
+		break;
 	default:
 		panic("opcode invalid or not implemented %+F", n);
 	}
@@ -583,9 +572,9 @@ const char *get_initializer_kind_name(ir_initializer_kind_t ini)
 	X(IR_INITIALIZER_TARVAL);
 	X(IR_INITIALIZER_NULL);
 	X(IR_INITIALIZER_COMPOUND);
-    default: return "BAD VALUE";
 	}
 #undef X
+	return "BAD VALUE";
 }
 
 static ir_initializer_t null_initializer = { IR_INITIALIZER_NULL };
@@ -623,17 +612,16 @@ ir_initializer_t *create_initializer_compound(size_t n_entries)
 {
 	struct obstack *obst = get_irg_obstack(get_const_code_irg());
 
-	size_t i;
-	size_t size  = sizeof(ir_initializer_compound_t)
-	             + n_entries * sizeof(ir_initializer_t*)
-	             - sizeof(ir_initializer_t*);
+	size_t size = sizeof(ir_initializer_compound_t)
+	            + n_entries * sizeof(ir_initializer_t*)
+	            - sizeof(ir_initializer_t*);
 
 	ir_initializer_t *initializer
 		= (ir_initializer_t*)obstack_alloc(obst, size);
 	initializer->kind                    = IR_INITIALIZER_COMPOUND;
 	initializer->compound.n_initializers = n_entries;
 
-	for (i = 0; i < n_entries; ++i) {
+	for (size_t i = 0; i < n_entries; ++i) {
 		initializer->compound.initializers[i] = get_initializer_null();
 	}
 
@@ -762,9 +750,7 @@ size_t get_entity_n_overwrites(const ir_entity *ent)
 
 size_t get_entity_overwrites_index(const ir_entity *ent, ir_entity *overwritten)
 {
-	size_t i;
-	size_t n = get_entity_n_overwrites(ent);
-	for (i = 0; i < n; ++i) {
+	for (size_t i = 0, n = get_entity_n_overwrites(ent); i < n; ++i) {
 		if (get_entity_overwrites(ent, i) == overwritten)
 			return i;
 	}
@@ -785,9 +771,7 @@ void set_entity_overwrites(ir_entity *ent, size_t pos, ir_entity *overwritten)
 
 void remove_entity_overwrites(ir_entity *ent, ir_entity *overwritten)
 {
-	size_t i;
-	size_t n = get_entity_n_overwrites(ent);
-	for (i = 0; i < n; ++i) {
+	for (size_t i = 0, n = get_entity_n_overwrites(ent); i < n; ++i) {
 		if (ent->overwrites[i] == overwritten) {
 			for (; i < n - 1; i++)
 				ent->overwrites[i] = ent->overwrites[i+1];
@@ -808,9 +792,7 @@ size_t get_entity_n_overwrittenby(const ir_entity *ent)
 size_t get_entity_overwrittenby_index(const ir_entity *ent,
                                       ir_entity *overwrites)
 {
-	size_t i;
-	size_t n = get_entity_n_overwrittenby(ent);
-	for (i = 0; i < n; ++i) {
+	for (size_t i = 0, n = get_entity_n_overwrittenby(ent); i < n; ++i) {
 		if (get_entity_overwrittenby(ent, i) == overwrites)
 			return i;
 	}
@@ -831,9 +813,7 @@ void set_entity_overwrittenby(ir_entity *ent, size_t pos, ir_entity *overwrites)
 
 void remove_entity_overwrittenby(ir_entity *ent, ir_entity *overwrites)
 {
-	size_t i;
-	size_t n = get_entity_n_overwrittenby(ent);
-	for (i = 0; i < n; ++i) {
+	for (size_t i = 0, n = get_entity_n_overwrittenby(ent); i < n; ++i) {
 		if (ent->overwrittenby[i] == overwrites) {
 			for (; i < n - 1; ++i)
 				ent->overwrittenby[i] = ent->overwrittenby[i+1];
@@ -905,7 +885,7 @@ int (is_entity)(const void *thing)
 
 int is_atomic_entity(const ir_entity *ent)
 {
-	ir_type *t      = get_entity_type(ent);
+	ir_type     *t  = get_entity_type(ent);
 	const tp_op *op = get_type_tpop(t);
 	return (op == type_primitive || op == type_pointer ||
 		op == type_enumeration || op == type_method);
