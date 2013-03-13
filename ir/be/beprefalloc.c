@@ -1082,24 +1082,26 @@ static void permute_values_normal(ir_nodeset_t *live_nodes, ir_node *before,
 		parcopy[r] = r;
 	}
 
-	ir_node *ins[arity];
-	for (unsigned i = 0; i < arity; ++i) {
-		ins[i] = assignments[srcs[i]];
-	}
-	ir_node *perm = be_new_Perm(cls, block, arity, ins);
-	sched_add_before(before, perm);
+	if (arity > 0) {
+		ir_node *ins[arity];
+		for (unsigned i = 0; i < arity; ++i) {
+			ins[i] = assignments[srcs[i]];
+		}
+		ir_node *perm = be_new_Perm(cls, block, arity, ins);
+		sched_add_before(before, perm);
 
-	unsigned width = 1; /* TODO */
+		unsigned width = 1; /* TODO */
 
-	for (unsigned i = 0; i < arity; ++i) {
-		ir_node *proj = new_r_Proj(perm, get_irn_mode(ins[i]), i);
-		mark_as_copy_of(proj, ins[i]);
-		const arch_register_t *reg = arch_register_for_index(cls, dsts[i]);
-		use_reg(proj, reg, width);
+		for (unsigned i = 0; i < arity; ++i) {
+			ir_node *proj = new_r_Proj(perm, get_irn_mode(ins[i]), i);
+			mark_as_copy_of(proj, ins[i]);
+			const arch_register_t *reg = arch_register_for_index(cls, dsts[i]);
+			use_reg(proj, reg, width);
 
-		if (live_nodes != NULL) {
-			ir_nodeset_remove(live_nodes, ins[i]);
-			ir_nodeset_insert(live_nodes, proj);
+			if (live_nodes != NULL) {
+				ir_nodeset_remove(live_nodes, ins[i]);
+				ir_nodeset_insert(live_nodes, proj);
+			}
 		}
 	}
 
