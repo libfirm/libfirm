@@ -1154,43 +1154,6 @@ FIRM_API int is_type(const void *thing);
 FIRM_API long get_type_nr(const ir_type *tp);
 
 /**
- *   Checks whether two types are structurally equal.
- *
- *   @param typ1  the first type
- *   @param typ2  the second type
- *
- *   @return
- *    true if the types are equal, else false.
- *
- *   Types are equal if :
- *    - they are the same type kind
- *    - they have the same name
- *    - they have the same mode (if applicable)
- *    - they have the same type_state and, ev., the same size
- *    - they are class types and have:
- *      - the same members (see same_entity in entity.h)
- *      - the same supertypes -- the C-pointers are compared --> no recursive call.
- *      - the same number of subtypes.  Subtypes are not compared,
- *        as this could cause a cyclic test.
- *    - they are structure types and have the same members
- *    - they are method types and have
- *      - the same parameter types
- *      - the same result types
- *    - they are union types and have the same members
- *    - they are array types and have
- *      - the same number of dimensions
- *      - the same dimension bounds
- *      - the same dimension order
- *      - the same element type
- *    - they are enumeration types and have the same enumerator names
- *    - they are pointer types and have the identical points_to type
- *      (i.e., the same C-struct to represent the type.
- *       This is to avoid endless recursions; with pointer types cyclic
- *       type graphs are possible.)
- */
-FIRM_API int equal_type(ir_type *typ1, ir_type *typ2);
-
-/**
  *   Checks whether two types are structural comparable.
  *
  *   @param st pointer type
