@@ -1154,43 +1154,6 @@ FIRM_API int is_type(const void *thing);
 FIRM_API long get_type_nr(const ir_type *tp);
 
 /**
- *   Checks whether two types are structural comparable.
- *
- *   @param st pointer type
- *   @param lt pointer type
- *
- *   @return
- *    true if type st is smaller than type lt, i.e. whenever
- *    lt is expected a st can be used.
- *    This is true if
- *    - they are the same type kind
- *    - mode(st) < mode (lt)  (if applicable)
- *    - they are class types and st is (transitive) subtype of lt,
- *    - they are structure types and
- *       - the members of st have exactly one counterpart in lt with the same name,
- *       - the counterpart has a bigger type.
- *    - they are method types and have
- *      - the same number of parameter and result types,
- *      - the parameter types of st are smaller than those of lt,
- *      - the result types of st are smaller than those of lt
- *    - they are union types and have the members of st have exactly one
- *      @return counterpart in lt and the type is smaller
- *    - they are array types and have
- *      - the same number of dimensions
- *      - all bounds of lt are bound of st
- *      - the same dimension order
- *      - the same element type
- *      @return or
- *      - the element type of st is smaller than that of lt
- *      - the element types have the same size and fixed layout.
- *    - they are enumeration types and have the same enumerator names
- *    - they are pointer types and have the points_to type of st is
- *      @return smaller than the points_to type of lt.
- *
- */
-FIRM_API int smaller_type(ir_type *st, ir_type *lt);
-
-/**
  * @ingroup compound_type
  * @defgroup class_type Class
  *
