@@ -1008,7 +1008,8 @@ static void permute_values_normal(ir_nodeset_t *live_nodes, ir_node *before,
 		++n_used[old_reg];
 	}
 
-	ir_node *block = get_nodes_block(before);
+	ir_node  *block      = get_nodes_block(before);
+	unsigned  num_copies = 0;
 
 	/* step1: create copies where immediately possible */
 	for (unsigned r = 0; r < n_regs; /* empty */) {
@@ -1025,6 +1026,7 @@ static void permute_values_normal(ir_nodeset_t *live_nodes, ir_node *before,
 		ir_node *src  = assignments[old_r];
 		ir_node *copy = be_new_Copy(block, src);
 		sched_add_before(before, copy);
+		++num_copies;
 		const arch_register_t *reg = arch_register_for_index(cls, r);
 		DB((dbg, LEVEL_2, "Copy %+F (from %+F, before %+F) -> %s\n",
 		    copy, src, before, reg->name));
@@ -1104,6 +1106,10 @@ static void permute_values_normal(ir_nodeset_t *live_nodes, ir_node *before,
 			}
 		}
 	}
+
+#ifdef DEBUG_libfirm
+	stat_ev_int("bessadestr_copies", num_copies);
+#endif
 
 #ifndef NDEBUG
 	/* now we should only have fixpoints left */
