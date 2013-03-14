@@ -672,10 +672,12 @@ static void lower_perm_node(ir_node *irn)
 		rtg_nodes += move.n_elems;
 
 		if (move.type == PERM_CYCLE && arity == 2) {
+			assert(keep_perm == 0);
 			/* We don't need to do anything if we have a Perm with two elements
 			* which represents a cycle, because those nodes already represent
 			* exchange nodes */
 			keep_perm = 1;
+			num_insns += 3;
 		} else {
 			/* Otherwise, we want to replace the big Perm node with a series
 			 * of smaller ones. */
