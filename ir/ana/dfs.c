@@ -27,19 +27,17 @@
 
 static int cmp_edge(const void *a, const void *b, size_t sz)
 {
+	(void) sz;
 	const dfs_edge_t *p = (const dfs_edge_t*) a;
 	const dfs_edge_t *q = (const dfs_edge_t*) b;
-	(void) sz;
-
 	return !(p->src == q->src && p->tgt == q->tgt);
 }
 
 static int cmp_node(const void *a, const void *b, size_t sz)
 {
+	(void) sz;
 	const dfs_node_t *p = (const dfs_node_t*) a;
 	const dfs_node_t *q = (const dfs_node_t*) b;
-	(void) sz;
-
 	return p->node != q->node;
 }
 
@@ -48,8 +46,8 @@ static int cmp_node(const void *a, const void *b, size_t sz)
 static dfs_edge_t *get_edge(const dfs_t *self, const void *src, const void *tgt)
 {
 	unsigned hash = hash_combine(hash_ptr(src), hash_ptr(tgt));
-	dfs_edge_t templ;
 
+	dfs_edge_t templ;
 	templ.src = src;
 	templ.tgt = tgt;
 	templ.kind = (dfs_edge_kind_t) -1;
@@ -60,10 +58,7 @@ static dfs_edge_t *get_edge(const dfs_t *self, const void *src, const void *tgt)
 static void dfs_perform(dfs_t *dfs, void *n, void *anc, int level)
 {
 	dfs_node_t *node = get_node(dfs, n);
-	void **succs, **iter;
-
 	assert(node->visited == 0);
-
 	node->visited     = 1;
 	node->node        = n;
 	node->ancestor    = anc;
@@ -73,9 +68,9 @@ static void dfs_perform(dfs_t *dfs, void *n, void *anc, int level)
 
 	dfs->graph_impl->grow_succs(dfs->graph, n, &dfs->obst);
 	obstack_ptr_grow(&dfs->obst, NULL);
-	succs = (void**) obstack_finish(&dfs->obst);
+	void **succs = (void**) obstack_finish(&dfs->obst);
 
-	for (iter = succs; *iter; ++iter) {
+	for (void **iter = succs; *iter != NULL; ++iter) {
 		void *p = *iter;
 
 		/* get the node */
@@ -201,11 +196,7 @@ void dfs_free(dfs_t *dfs)
 
 static void dfs_dump_edge(const dfs_edge_t *edge, FILE *file)
 {
-	dfs_node_t *src = edge->s;
-	dfs_node_t *tgt = edge->t;
-	const char *s, *style;
-	int weight;
-
+	const char *s;
 #define XXX(e)   case DFS_EDGE_ ## e: s = #e; break
 	switch (edge->kind) {
 		XXX(FWD);
@@ -215,9 +206,11 @@ static void dfs_dump_edge(const dfs_edge_t *edge, FILE *file)
 	}
 #undef XXX
 
-	weight = edge->kind == DFS_EDGE_BACK ? 1 : 1000;
-	style  = edge->kind == DFS_EDGE_BACK ? "dashed" : "solid";
+	int         weight = edge->kind == DFS_EDGE_BACK ? 1 : 1000;
+	const char *style  = edge->kind == DFS_EDGE_BACK ? "dashed" : "solid";
 
+	dfs_node_t *src = edge->s;
+	dfs_node_t *tgt = edge->t;
 	ir_fprintf(file, "\tn%d -> n%d [label=\"%s\",style=\"%s\",weight=\"%d\"];\n", src->pre_num, tgt->pre_num, s, style, weight);
 }
 
@@ -225,7 +218,6 @@ static int node_level_cmp(const void *a, const void *b)
 {
 	const dfs_node_t *p = *(const dfs_node_t **) a;
 	const dfs_node_t *q = *(const dfs_node_t **) b;
-
 	if (p->level == q->level)
 		return p->pre_num - q->pre_num;
 	return p->level - q->level;
@@ -234,16 +226,16 @@ static int node_level_cmp(const void *a, const void *b)
 void dfs_dump(const dfs_t *dfs, FILE *file)
 {
 	dfs_node_t **nodes = XMALLOCN(dfs_node_t*, dfs->pre_num);
-	int i, n = 0;
 
 	ir_fprintf(file, "digraph G {\nranksep=0.5\n");
+	int n = 0;
 	foreach_set (dfs->nodes, dfs_node_t, node) {
 		nodes[n++] = node;
 	}
 
 	qsort(nodes, n, sizeof(nodes[0]), node_level_cmp);
 
-	i = 0;
+	int i = 0;
 	while (i < n) {
 		int level = nodes[i]->level;
 
@@ -255,7 +247,7 @@ void dfs_dump(const dfs_t *dfs, FILE *file)
 
 	}
 
-	for (i = 0; i < n; ++i) {
+	for (int i = 0; i < n; ++i) {
 		dfs_node_t *const node = nodes[i];
 		ir_fprintf(file, "\tn%d [label=\"%d\"]\n", node->pre_num, get_Block_dom_tree_pre_num((ir_node*) node->node));
 	}

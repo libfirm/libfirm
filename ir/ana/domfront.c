@@ -40,7 +40,6 @@ static inline ir_node *get_idom(ir_node *bl)
  */
 static ir_node **compute_df(ir_node *blk, ir_dom_front_info_t *info)
 {
-	ir_node *c;
 	ir_node **df_list = NEW_ARR_F(ir_node *, 0);
 
 	/* Add local dominance frontiers */
@@ -57,12 +56,12 @@ static ir_node **compute_df(ir_node *blk, ir_dom_front_info_t *info)
 	 * into the dominance frontiers of the children, which are not
 	 * dominated by the given block.
 	 */
-	for (c = get_Block_dominated_first(blk); c; c = get_Block_dominated_next(c)) {
-		size_t i;
+	for (ir_node *c = get_Block_dominated_first(blk); c != NULL;
+	     c = get_Block_dominated_next(c)) {
 		ir_node **df_c_list = compute_df(c, info);
 
-		for (i = ARR_LEN(df_c_list); i > 0;) {
-			ir_node *w = df_c_list[--i];
+		for (size_t i = ARR_LEN(df_c_list); i-- > 0;) {
+			ir_node *w = df_c_list[i];
 			if (get_idom(w) != blk)
 				ARR_APP1(ir_node *, df_list, w);
 		}

@@ -66,8 +66,7 @@ static ir_node *get_case_value(ir_node *switchn, long pn)
 	const ir_switch_table *table     = get_Switch_table(switchn);
 	size_t                 n_entries = ir_switch_table_get_n_entries(table);
 	ir_tarval             *val       = NULL;
-	size_t                 e;
-	for (e = 0; e < n_entries; ++e) {
+	for (size_t e = 0; e < n_entries; ++e) {
 		const ir_switch_table_entry *entry
 			= ir_switch_table_get_entry_const(table, e);
 		if (entry->pn != pn)
@@ -93,7 +92,7 @@ static ir_node *get_case_value(ir_node *switchn, long pn)
  */
 static void handle_case(ir_node *block, ir_node *switchn, long pn, env_t *env)
 {
-	ir_node *c = NULL;
+	ir_node *c        = NULL;
 	ir_node *selector = get_Switch_selector(switchn);
 
 	/* we can't do usefull things with the default label */
@@ -134,8 +133,10 @@ static void handle_case(ir_node *block, ir_node *switchn, long pn, env_t *env)
  */
 static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *env)
 {
-	ir_node *cond, *old, *other_blk = NULL, *con = NULL;
-	ir_node *c_b = NULL, *c_o = NULL;
+	ir_node *other_blk = NULL;
+	ir_node *con       = NULL;
+	ir_node *c_b       = NULL;
+	ir_node *c_o       = NULL;
 
 	foreach_out_edge_safe(selector, edge) {
 		ir_node *user     = get_edge_src_irn(edge);
@@ -152,7 +153,7 @@ static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *
 				ir_graph *irg = get_irn_irg(block);
 				con = new_r_Const(irg, pnc == pn_Cond_true ? tarval_b_true : tarval_b_false);
 			}
-			old = get_irn_n(user, pos);
+			ir_node *old = get_irn_n(user, pos);
 			set_irn_n(user, pos, con);
 			DBG_OPT_CONFIRM_C(old, con);
 
@@ -160,12 +161,10 @@ static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *
 
 			env->num_consts += 1;
 		} else {
-			int i, n;
-
 			/* get the other block */
 			if (other_blk == NULL) {
 				/* we have already tested, that block has only ONE Cond predecessor */
-				cond = get_Proj_pred(get_Block_cfgpred(block, 0));
+				ir_node *cond = get_Proj_pred(get_Block_cfgpred(block, 0));
 				foreach_out_edge(cond, edge) {
 					ir_node *proj = get_edge_src_irn(edge);
 					if (get_Proj_proj(proj) == (long)pnc)
@@ -188,14 +187,15 @@ static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *
 				 */
 			}
 
-			n = get_Block_n_cfgpreds(user_blk);
+			int n = get_Block_n_cfgpreds(user_blk);
 
 			/*
 			 * We have found a user in a non-dominated block:
 			 * check, if all its block predecessors are dominated.
 			 * If yes, place a Phi.
 			 */
-			for (i = n - 1; i >= 0; --i) {
+			int i;
+			for (i = n; i-- > 0; ) {
 				ir_node *pred_blk = get_Block_cfgpred_block(user_blk, i);
 
 				if (!block_dominates(block, pred_blk) &&
@@ -205,14 +205,13 @@ static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *
 				}
 			}
 			if (i < 0) {
-				ir_node *phi, **in;
-
+				ir_node **in;
 				NEW_ARR_A(ir_node *, in, n);
 				/* ok, ALL predecessors are either dominated by block OR other block */
 				if (c_b == NULL) {
-					ir_graph *irg    = get_irn_irg(block);
-					ir_node *c_true  = new_r_Const(irg, tarval_b_true);
-					ir_node *c_false = new_r_Const(irg, tarval_b_false);
+					ir_graph *irg     = get_irn_irg(block);
+					ir_node  *c_true  = new_r_Const(irg, tarval_b_true);
+					ir_node  *c_false = new_r_Const(irg, tarval_b_false);
 					env->num_consts += 2;
 					if (pnc == pn_Cond_true) {
 						c_b = c_true;
@@ -222,15 +221,14 @@ static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *
 						c_o = c_true;
 					}
 				}
-				for (i = n - 1; i >= 0; --i) {
+				for (i = n; i-- > 0; ) {
 					ir_node *pred_blk = get_Block_cfgpred_block(user_blk, i);
-
 					if (block_dominates(block, pred_blk))
 						in[i] = c_b;
 					else
 						in[i] = c_o;
 				}
-				phi = new_r_Phi(user_blk, n, in, mode_b);
+				ir_node *phi = new_r_Phi(user_blk, n, in, mode_b);
 				set_irn_n(user, pos, phi);
 				env->num_eq += 1;
 			}
@@ -264,7 +262,6 @@ static void handle_if(ir_node *block, ir_node *cmp, ir_relation rel, env_t *env)
 	/* try to place the constant on the right side for a Confirm */
 	if (is_Const(left) || is_SymConst(left)) {
 		ir_node *t = left;
-
 		left  = right;
 		right = t;
 
@@ -362,14 +359,11 @@ static void handle_if(ir_node *block, ir_node *cmp, ir_relation rel, env_t *env)
 			rel = get_inversed_relation(rel);
 			foreach_out_edge_safe(right, edge) {
 				ir_node *succ = get_edge_src_irn(edge);
-				int     pos;
-				ir_node *blk;
-
 				if (succ == c)
 					continue;
 
-				pos  = get_edge_src_pos(edge);
-				blk  = get_effective_use_block(succ, pos);
+				int      pos  = get_edge_src_pos(edge);
+				ir_node *blk  = get_effective_use_block(succ, pos);
 
 				if (block_dominates(block, blk)) {
 					/*
@@ -396,10 +390,6 @@ static void handle_if(ir_node *block, ir_node *cmp, ir_relation rel, env_t *env)
  */
 static void insert_Confirm_in_block(ir_node *block, void *data)
 {
-	env_t   *env = (env_t*) data;
-	ir_node *cond;
-	ir_node *proj;
-
 	/*
 	 * we can only handle blocks with only ONE control flow
 	 * predecessor yet.
@@ -407,11 +397,12 @@ static void insert_Confirm_in_block(ir_node *block, void *data)
 	if (get_Block_n_cfgpreds(block) != 1)
 		return;
 
-	proj = get_Block_cfgpred(block, 0);
+	ir_node *proj = get_Block_cfgpred(block, 0);
 	if (! is_Proj(proj))
 		return;
 
-	cond = get_Proj_pred(proj);
+	env_t   *env = (env_t*)data;
+	ir_node *cond = get_Proj_pred(proj);
 	if (is_Switch(cond)) {
 		long proj_nr = get_Proj_proj(proj);
 		handle_case(block, cond, proj_nr, env);
@@ -439,7 +430,7 @@ static void insert_Confirm_in_block(ir_node *block, void *data)
 /**
  * Checks if a node is a non-null Confirm.
  */
-static int is_non_null_Confirm(const ir_node *ptr)
+static bool is_non_null_Confirm(const ir_node *ptr)
 {
 	for (;;) {
 		if (! is_Confirm(ptr))
@@ -448,7 +439,7 @@ static int is_non_null_Confirm(const ir_node *ptr)
 			ir_node *bound = get_Confirm_bound(ptr);
 
 			if (is_Const(bound) && is_Const_null(bound))
-				return 1;
+				return true;
 		}
 		ptr = get_Confirm_value(ptr);
 	}
@@ -458,8 +449,8 @@ static int is_non_null_Confirm(const ir_node *ptr)
 	 * constructed Confirms.
 	 */
 	if (is_SymConst_addr_ent(ptr))
-		return 1;
-	return 0;
+		return true;
+	return false;
 }
 
 /**
@@ -474,17 +465,13 @@ static void insert_non_null(ir_node *ptr, ir_node *block, env_t *env)
 	ir_node *c = NULL;
 
 	foreach_out_edge_safe(ptr, edge) {
-		ir_node *succ = get_edge_src_irn(edge);
-		int     pos;
-		ir_node *blk;
-
-
 		/* for now, we place a Confirm only in front of a Cmp */
+		ir_node *succ = get_edge_src_irn(edge);
 		if (! is_Cmp(succ))
 			continue;
 
-		pos = get_edge_src_pos(edge);
-		blk = get_effective_use_block(succ, pos);
+		int      pos = get_edge_src_pos(edge);
+		ir_node *blk = get_effective_use_block(succ, pos);
 
 		if (block_dominates(block, blk)) {
 			/*
@@ -513,23 +500,23 @@ static void insert_non_null(ir_node *ptr, ir_node *block, env_t *env)
  */
 static void insert_Confirm(ir_node *node, void *data)
 {
-	ir_node *ptr;
-	env_t   *env = (env_t*) data;
-
+	env_t *env = (env_t*)data;
 	switch (get_irn_opcode(node)) {
 	case iro_Block:
 		insert_Confirm_in_block(node, env);
 		break;
-	case iro_Load:
-		ptr = get_Load_ptr(node);
+	case iro_Load: {
+		ir_node *ptr = get_Load_ptr(node);
 		if (! is_non_null_Confirm(ptr))
 			insert_non_null(ptr, get_nodes_block(node), env);
 		break;
-	case iro_Store:
-		ptr = get_Store_ptr(node);
+	}
+	case iro_Store: {
+		ir_node *ptr = get_Store_ptr(node);
 		if (! is_non_null_Confirm(ptr))
 			insert_non_null(ptr, get_nodes_block(node), env);
 		break;
+	}
 	default:
 		break;
 	}
@@ -537,7 +524,6 @@ static void insert_Confirm(ir_node *node, void *data)
 
 void construct_confirms(ir_graph *irg)
 {
-	env_t env;
 	FIRM_DBG_REGISTER(dbg, "firm.ana.confirm");
 
 	assure_irg_properties(irg,
@@ -548,6 +534,7 @@ void construct_confirms(ir_graph *irg)
 	assert(get_irg_pinned(irg) == op_pin_state_pinned &&
 	       "Nodes must be placed to insert Confirms");
 
+	env_t env;
 	env.num_confirms = 0;
 	env.num_consts   = 0;
 	env.num_eq       = 0;
@@ -576,13 +563,11 @@ ir_graph_pass_t *construct_confirms_pass(const char *name)
 
 static void remove_confirm(ir_node *n, void *env)
 {
-	ir_node *value;
-
 	(void) env;
 	if (!is_Confirm(n))
 		return;
 
-	value = get_Confirm_value(n);
+	ir_node *value = get_Confirm_value(n);
 	exchange(n, value);
 }
 

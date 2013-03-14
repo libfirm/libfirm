@@ -70,10 +70,6 @@ static void height_dump_cb(void *data, FILE *f, const ir_node *irn)
  */
 static bool search(ir_heights_t *h, const ir_node *curr, const ir_node *tgt)
 {
-	irn_height_t *h_curr;
-	irn_height_t *h_tgt;
-	int i, n;
-
 	/* if the current node is the one we were looking for, we're done. */
 	if (curr == tgt)
 		return true;
@@ -85,12 +81,12 @@ static bool search(ir_heights_t *h, const ir_node *curr, const ir_node *tgt)
 		return false;
 
 	/* Check, if we have already been here. Coming more often won't help :-) */
-	h_curr = maybe_get_height_data(h, curr);
+	irn_height_t *h_curr = maybe_get_height_data(h, curr);
 	if (h_curr->visited >= h->visited)
 		return false;
 
 	/* If we are too deep into the DAG we won't find the target either. */
-	h_tgt = maybe_get_height_data(h, tgt);
+	irn_height_t *h_tgt = maybe_get_height_data(h, tgt);
 	if (h_curr->height > h_tgt->height)
 		return false;
 
@@ -98,7 +94,7 @@ static bool search(ir_heights_t *h, const ir_node *curr, const ir_node *tgt)
 	h_curr->visited = h->visited;
 
 	/* Start a search from this node. */
-	for (i = 0, n = get_irn_ins_or_deps(curr); i < n; ++i) {
+	for (int i = 0, n = get_irn_ins_or_deps(curr); i < n; ++i) {
 		ir_node *op = get_irn_in_or_dep(curr, i);
 		if (search(h, op, tgt))
 			return true;
@@ -110,9 +106,9 @@ static bool search(ir_heights_t *h, const ir_node *curr, const ir_node *tgt)
 int heights_reachable_in_block(ir_heights_t *h, const ir_node *n,
                                const ir_node *m)
 {
-	int res          = 0;
-	irn_height_t *hn = maybe_get_height_data(h, n);
-	irn_height_t *hm = maybe_get_height_data(h, m);
+	int           res = 0;
+	irn_height_t *hn  = maybe_get_height_data(h, n);
+	irn_height_t *hm  = maybe_get_height_data(h, m);
 
 	assert(get_nodes_block(n) == get_nodes_block(m));
 	assert(hn != NULL && hm != NULL);
@@ -170,10 +166,9 @@ static unsigned compute_height(ir_heights_t *h, ir_node *irn, const ir_node *bl)
 
 static unsigned compute_heights_in_block(ir_node *bl, ir_heights_t *h)
 {
-	int max_height = -1;
-
 	h->visited++;
 
+	int max_height = -1;
 	foreach_out_edge(bl, edge) {
 		ir_node *dep = get_edge_src_irn(edge);
 		int     curh = compute_height(h, dep, bl);
@@ -200,14 +195,13 @@ static void compute_heights_in_block_walker(ir_node *block, void *data)
 unsigned get_irn_height(const ir_heights_t *heights, const ir_node *irn)
 {
 	const irn_height_t *height = maybe_get_height_data(heights, irn);
-	assert(height != NULL && "No height information for node");
+	assert(height != NULL);
 	return height->height;
 }
 
 unsigned heights_recompute_block(ir_heights_t *h, ir_node *block)
 {
 	ir_graph *irg = get_irn_irg(block);
-
 	assure_edges(irg);
 
 	/* reset data for all nodes in the block */

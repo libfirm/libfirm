@@ -48,10 +48,9 @@ const char *get_ir_alias_relation_name(ir_alias_relation rel)
 	X(ir_no_alias);
 	X(ir_may_alias);
 	X(ir_sure_alias);
-	default:
-		panic("UNKNOWN alias relation");
 	}
 #undef X
+	panic("UNKNOWN alias relation");
 }
 
 unsigned get_irg_memory_disambiguator_options(const ir_graph *irg)
@@ -108,11 +107,10 @@ static ir_node *find_base_adr(const ir_node *sel, ir_entity **pEnt)
 static ir_alias_relation check_const(const ir_node *cns, int size)
 {
 	ir_tarval *tv = get_Const_tarval(cns);
-	ir_tarval *tv_size;
 
 	if (size == 0)
 		return tarval_is_null(tv) ? ir_may_alias : ir_no_alias;
-	tv_size = new_tarval_from_long(size, get_tarval_mode(tv));
+	ir_tarval *tv_size = new_tarval_from_long(size, get_tarval_mode(tv));
 	return tarval_cmp(tv_size, tv) & (ir_relation_less_equal) ? ir_no_alias : ir_may_alias;
 }
 
@@ -127,7 +125,8 @@ static ir_alias_relation check_const(const ir_node *cns, int size)
  *         ir_no_alias iff they ALWAYS differ more than size
  *         ir_may_alias else
  */
-static ir_alias_relation different_index(const ir_node *idx1, const ir_node *idx2, int size)
+static ir_alias_relation different_index(const ir_node *idx1,
+                                         const ir_node *idx2, int size)
 {
 	if (idx1 == idx2)
 		return ir_sure_alias;
@@ -135,15 +134,12 @@ static ir_alias_relation different_index(const ir_node *idx1, const ir_node *idx
 		/* both are const, we can compare them */
 		ir_tarval *tv1 = get_Const_tarval(idx1);
 		ir_tarval *tv2 = get_Const_tarval(idx2);
-		ir_tarval *tv, *tv_size;
-		ir_mode *m1, *m2;
-
 		if (size == 0)
 			return tv1 == tv2 ? ir_sure_alias : ir_no_alias;
 
 		/* arg, modes may be different */
-		m1 = get_tarval_mode(tv1);
-		m2 = get_tarval_mode(tv2);
+		ir_mode *m1 = get_tarval_mode(tv1);
+		ir_mode *m2 = get_tarval_mode(tv2);
 		if (m1 != m2) {
 			int size = get_mode_size_bits(m1) - get_mode_size_bits(m2);
 
@@ -169,9 +165,11 @@ static ir_alias_relation different_index(const ir_node *idx1, const ir_node *idx
 				/* find the signed */
 				if (mode_is_signed(m2)) {
 					ir_tarval *t = tv1;
+					tv1 = tv2;
+					tv2 = t;
 					ir_mode *tm = m1;
-					tv1 = tv2; m1 = m2;
-					tv2 = t;   m2 = tm;
+					m1 = m2;
+					m2 = tm;
 				}
 
 				/* m1 is now the signed one */
@@ -179,8 +177,7 @@ static ir_alias_relation different_index(const ir_node *idx1, const ir_node *idx
 					/* tv1 is signed, but >= 0, simply cast into unsigned */
 					tv1 = tarval_convert_to(tv1, m2);
 				} else {
-					tv_size = new_tarval_from_long(size, m2);
-
+					ir_tarval *tv_size = new_tarval_from_long(size, m2);
 					if (tarval_cmp(tv2, tv_size) & (ir_relation_greater_equal)) {
 						/* tv1 is negative and tv2 >= tv_size, so the difference is bigger than size */
 						return ir_no_alias;
@@ -205,8 +202,8 @@ static ir_alias_relation different_index(const ir_node *idx1, const ir_node *idx
 			tv2 = t;
 		}
 		/* tv1 is now the "smaller" one */
-		tv      = tarval_sub(tv2, tv1, NULL);
-		tv_size = new_tarval_from_long(size, get_tarval_mode(tv));
+		ir_tarval *tv      = tarval_sub(tv2, tv1, NULL);
+		ir_tarval *tv_size = new_tarval_from_long(size, get_tarval_mode(tv));
 		return tarval_cmp(tv_size, tv) & (ir_relation_less_equal) ? ir_no_alias : ir_may_alias;
 	}
 
@@ -287,7 +284,8 @@ static ir_alias_relation different_index(const ir_node *idx1, const ir_node *idx
  * @param adr1  The first address.
  * @param adr2  The second address.
  */
-static ir_alias_relation different_sel_offsets(const ir_node *sel1, const ir_node *sel2)
+static ir_alias_relation different_sel_offsets(const ir_node *sel1,
+                                               const ir_node *sel2)
 {
 	/* TODO: fix */
 	(void) sel1;
@@ -343,9 +341,11 @@ static ir_alias_relation different_sel_offsets(const ir_node *sel1, const ir_nod
  * @param adr1    The first address.
  * @param adr2    The second address.
  */
-static ir_alias_relation different_types(const ir_node *adr1, const ir_node *adr2)
+static ir_alias_relation different_types(const ir_node *adr1,
+                                         const ir_node *adr2)
 {
-	ir_entity *ent1 = NULL, *ent2 = NULL;
+	ir_entity *ent1 = NULL;
+	ir_entity *ent2 = NULL;
 
 	if (is_SymConst_addr_ent(adr1))
 		ent1 = get_SymConst_entity(adr1);
@@ -374,8 +374,7 @@ static ir_alias_relation different_types(const ir_node *adr1, const ir_node *adr
 			}
 			if (is_Class_type(tp1)) {
 				/* check class hierarchy */
-				if (! is_SubClass_of(tp1, tp2) &&
-					! is_SubClass_of(tp2, tp1))
+				if (!is_SubClass_of(tp1, tp2) && !is_SubClass_of(tp2, tp1))
 					return ir_no_alias;
 			} else {
 				/* different types */
@@ -394,10 +393,10 @@ static ir_alias_relation different_types(const ir_node *adr1, const ir_node *adr
 static int is_malloc_Result(const ir_node *node)
 {
 	node = get_Proj_pred(node);
-	if (! is_Proj(node))
+	if (!is_Proj(node))
 		return 0;
 	node = get_Proj_pred(node);
-	if (! is_Call(node))
+	if (!is_Call(node))
 		return 0;
 	node = get_Call_ptr(node);
 	if (is_SymConst_addr_ent(node)) {
@@ -413,13 +412,13 @@ static int is_malloc_Result(const ir_node *node)
 ir_storage_class_class_t classify_pointer(const ir_node *irn,
                                           const ir_entity *ent)
 {
-	ir_graph *irg = get_irn_irg(irn);
+	ir_graph                *irg = get_irn_irg(irn);
 	ir_storage_class_class_t res = ir_sc_pointer;
 	if (is_SymConst_addr_ent(irn)) {
 		ir_entity *entity = get_SymConst_entity(irn);
 		ir_type   *owner  = get_entity_owner(entity);
 		res = owner == get_tls_type() ? ir_sc_tls : ir_sc_globalvar;
-		if (! (get_entity_usage(entity) & ir_usage_address_taken))
+		if (!(get_entity_usage(entity) & ir_usage_address_taken))
 			res |= ir_sc_modifier_nottaken;
 	} else if (irn == get_irg_frame(irg)) {
 		res = ir_sc_localvar;
@@ -463,30 +462,17 @@ static const ir_node *skip_Bitfield_Sels(const ir_node *adr)
  * @return found memory relation
  */
 static ir_alias_relation _get_alias_relation(
-	const ir_node *adr1, const ir_mode *mode1,
-	const ir_node *adr2, const ir_mode *mode2)
+	const ir_node *adr1, const ir_mode *const mode1,
+	const ir_node *adr2, const ir_mode *const mode2)
 {
-	ir_entity             *ent1, *ent2;
-	unsigned              options;
-	long                  offset1 = 0;
-	long                  offset2 = 0;
-	const ir_node         *base1;
-	const ir_node         *base2;
-	const ir_node         *orig_adr1 = adr1;
-	const ir_node         *orig_adr2 = adr2;
-	ir_graph              *irg;
-	unsigned              mode_size;
-	ir_storage_class_class_t class1, class2, mod1, mod2;
-	int                   have_const_offsets;
-
-	if (! get_opt_alias_analysis())
+	if (!get_opt_alias_analysis())
 		return ir_may_alias;
 
 	if (adr1 == adr2)
 		return ir_sure_alias;
 
-	irg = get_irn_irg(adr1);
-	options = get_irg_memory_disambiguator_options(irg);
+	ir_graph *const irg     = get_irn_irg(adr1);
+	unsigned  const options = get_irg_memory_disambiguator_options(irg);
 
 	/* The Armageddon switch */
 	if (options & aa_opt_no_alias)
@@ -496,7 +482,11 @@ static ir_alias_relation _get_alias_relation(
 	 *  Note: nodes are normalized to have constants at right inputs,
 	 *        sub X, C is normalized to add X, -C
 	 */
-	have_const_offsets = 1;
+	long           offset1            = 0;
+	long           offset2            = 0;
+	const ir_node *orig_adr1          = adr1;
+	const ir_node *orig_adr2          = adr2;
+	bool           have_const_offsets = true;
 	while (is_Add(adr1)) {
 		ir_node *add_right = get_Add_right(adr1);
 		if (is_Const(add_right) && !mode_is_reference(get_irn_mode(add_right))) {
@@ -505,10 +495,10 @@ static ir_alias_relation _get_alias_relation(
 			adr1        = get_Add_left(adr1);
 		} else if (mode_is_reference(get_irn_mode(add_right))) {
 			adr1 = add_right;
-			have_const_offsets = 0;
+			have_const_offsets = false;
 		} else {
 			adr1 = get_Add_left(adr1);
-			have_const_offsets = 0;
+			have_const_offsets = false;
 		}
 	}
 	while (is_Add(adr2)) {
@@ -519,14 +509,14 @@ static ir_alias_relation _get_alias_relation(
 			adr2        = get_Add_left(adr2);
 		} else if (mode_is_reference(get_irn_mode(add_right))) {
 			adr2 = add_right;
-			have_const_offsets = 0;
+			have_const_offsets = false;
 		} else {
 			adr2 = get_Add_left(adr2);
-			have_const_offsets = 0;
+			have_const_offsets = false;
 		}
 	}
 
-	mode_size = get_mode_size_bytes(mode1);
+	unsigned mode_size = get_mode_size_bytes(mode1);
 	if (get_mode_size_bytes(mode2) > mode_size) {
 		mode_size = get_mode_size_bytes(mode2);
 	}
@@ -552,10 +542,10 @@ static ir_alias_relation _get_alias_relation(
 	adr2 = skip_Bitfield_Sels(adr2);
 
 	/* skip Sels */
-	base1 = adr1;
-	base2 = adr2;
-	ent1  = NULL;
-	ent2  = NULL;
+	const ir_node *base1 = adr1;
+	const ir_node *base2 = adr2;
+	ir_entity *ent1  = NULL;
+	ir_entity *ent2  = NULL;
 	if (is_Sel(adr1)) {
 		base1 = find_base_adr(adr1, &ent1);
 	}
@@ -571,11 +561,10 @@ static ir_alias_relation _get_alias_relation(
 			return different_sel_offsets(adr1, adr2);
 	}
 
-	mod1 = classify_pointer(base1, ent1);
-	mod2 = classify_pointer(base2, ent2);
-
-	class1 = get_base_sc(mod1);
-	class2 = get_base_sc(mod2);
+	ir_storage_class_class_t mod1   = classify_pointer(base1, ent1);
+	ir_storage_class_class_t mod2   = classify_pointer(base2, ent2);
+	ir_storage_class_class_t class1 = get_base_sc(mod1);
+	ir_storage_class_class_t class2 = get_base_sc(mod2);
 
 	/* struct-access cannot alias with variables */
 	if (ent1 == NULL && ent2 != NULL && is_compound_type(get_entity_owner(ent2))
@@ -678,8 +667,8 @@ leave_type_based_alias:;
 }
 
 ir_alias_relation get_alias_relation(
-	const ir_node *adr1, const ir_mode *mode1,
-	const ir_node *adr2, const ir_mode *mode2)
+	const ir_node *const adr1, const ir_mode *const mode1,
+	const ir_node *const adr2, const ir_mode *const mode2)
 {
 	ir_alias_relation rel = _get_alias_relation(adr1, mode1, adr2, mode2);
 	DB((dbg, LEVEL_1, "alias(%+F, %+F) = %s\n", adr1, adr2, get_ir_alias_relation_name(rel)));
@@ -710,10 +699,9 @@ typedef struct mem_disambig_entry {
  */
 static int cmp_mem_disambig_entry(const void *elt, const void *key, size_t size)
 {
+	(void) size;
 	const mem_disambig_entry *p1 = (const mem_disambig_entry*) elt;
 	const mem_disambig_entry *p2 = (const mem_disambig_entry*) key;
-	(void) size;
-
 	return p1->adr1 == p2->adr1 && p1->adr2 == p2->adr2 &&
 	       p1->mode1 == p2->mode1 && p1->mode2 == p2->mode2;
 }
@@ -727,11 +715,9 @@ ir_alias_relation get_alias_relation_ex(
 	const ir_node *adr1, const ir_mode *mode1,
 	const ir_node *adr2, const ir_mode *mode2)
 {
-	mem_disambig_entry key, *entry;
-
 	ir_fprintf(stderr, "%+F <-> %+F\n", adr1, adr2);
 
-	if (! get_opt_alias_analysis())
+	if (!get_opt_alias_analysis())
 		return ir_may_alias;
 
 	if (get_irn_opcode(adr1) > get_irn_opcode(adr2)) {
@@ -740,11 +726,12 @@ ir_alias_relation get_alias_relation_ex(
 		adr2 = t;
 	}
 
+	mem_disambig_entry key;
 	key.adr1  = adr1;
 	key.adr2  = adr2;
 	key.mode1 = mode1;
 	key.mode2 = mode2;
-	entry = set_find(mem_disambig_entry, result_cache, &key, sizeof(key), HASH_ENTRY(adr1, adr2));
+	mem_disambig_entry *entry = set_find(mem_disambig_entry, result_cache, &key, sizeof(key), HASH_ENTRY(adr1, adr2));
 	if (entry != NULL)
 		return entry->result;
 
@@ -786,12 +773,11 @@ static int is_hidden_cast(const ir_mode *mode, const ir_mode *ent_mode)
 	if (ent_mode == NULL)
 		return false;
 
-	if (ent_mode != mode) {
-		if (ent_mode == NULL ||
-			get_mode_size_bits(ent_mode) != get_mode_size_bits(mode) ||
-			get_mode_arithmetic(ent_mode) != irma_twos_complement ||
-			get_mode_arithmetic(mode) != irma_twos_complement)
-			return true;
+	if (ent_mode != mode &&
+		(get_mode_size_bits(ent_mode) != get_mode_size_bits(mode) ||
+		 get_mode_arithmetic(ent_mode) != irma_twos_complement ||
+		 get_mode_arithmetic(mode) != irma_twos_complement)) {
+		return true;
 	}
 	return false;
 }
@@ -801,15 +787,11 @@ static int is_hidden_cast(const ir_mode *mode, const ir_mode *ent_mode)
  *
  * @param irn  the node
  */
-static ir_entity_usage determine_entity_usage(const ir_node *irn, ir_entity *entity)
+static ir_entity_usage determine_entity_usage(const ir_node *irn,
+                                              ir_entity *entity)
 {
-	int       i;
-	ir_mode   *emode, *mode;
-	ir_node   *value;
-	ir_type   *tp;
-	unsigned   res = 0;
-
-	for (i = get_irn_n_outs(irn) - 1; i >= 0; --i) {
+	unsigned res = 0;
+	for (int i = get_irn_n_outs(irn); i-- > 0; ) {
 		ir_node *succ = get_irn_out(irn, i);
 
 		switch (get_irn_opcode(succ)) {
@@ -819,8 +801,8 @@ static ir_entity_usage determine_entity_usage(const ir_node *irn, ir_entity *ent
 			res |= ir_usage_read;
 
 			/* check if this load is not a hidden conversion */
-			mode  = get_Load_mode(succ);
-			emode = get_type_mode(get_entity_type(entity));
+			ir_mode *mode  = get_Load_mode(succ);
+			ir_mode *emode = get_type_mode(get_entity_type(entity));
 			if (is_hidden_cast(mode, emode))
 				res |= ir_usage_reinterpret_cast;
 			break;
@@ -834,18 +816,18 @@ static ir_entity_usage determine_entity_usage(const ir_node *irn, ir_entity *ent
 				res |= ir_usage_write;
 
 				/* check if this Store is not a hidden conversion */
-				value = get_Store_value(succ);
-				mode  = get_irn_mode(value);
-				emode = get_type_mode(get_entity_type(entity));
+				ir_node *value = get_Store_value(succ);
+				ir_mode *mode  = get_irn_mode(value);
+				ir_mode *emode = get_type_mode(get_entity_type(entity));
 				if (is_hidden_cast(mode, emode))
 					res |= ir_usage_reinterpret_cast;
 			}
 			assert(irn != get_Store_mem(succ));
 			break;
 
-		case iro_CopyB:
+		case iro_CopyB: {
 			/* CopyB are like Loads/Stores */
-			tp  = get_entity_type(entity);
+			ir_type *tp  = get_entity_type(entity);
 			if (tp != get_CopyB_type(succ)) {
 				/* bad, different types, might be a hidden conversion */
 				res |= ir_usage_reinterpret_cast;
@@ -857,6 +839,7 @@ static ir_entity_usage determine_entity_usage(const ir_node *irn, ir_entity *ent
 				res |= ir_usage_read;
 			}
 			break;
+		}
 
 		case iro_Add:
 		case iro_Sub:
@@ -932,18 +915,15 @@ static ir_entity_usage determine_entity_usage(const ir_node *irn, ir_entity *ent
 static void analyse_irg_entity_usage(ir_graph *irg)
 {
 	ir_type *ft = get_irg_frame_type(irg);
-	ir_node *irg_frame;
-	size_t i, n;
-	int j, k, static_link_arg;
 
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 
 	/* set initial state to not_taken, as this is the "smallest" state */
-	for (i = 0, n = get_class_n_members(ft); i < n; ++i) {
+	for (size_t i = 0, n = get_class_n_members(ft); i < n; ++i) {
 		ir_entity *ent = get_class_member(ft, i);
 
 		/* methods can only be analyzed globally */
-		if (! is_method_entity(ent)) {
+		if (!is_method_entity(ent)) {
 			ir_entity_usage flags = ir_usage_none;
 			if (get_entity_linkage(ent) & IR_LINKAGE_HIDDEN_USER)
 				flags = ir_usage_unknown;
@@ -951,9 +931,9 @@ static void analyse_irg_entity_usage(ir_graph *irg)
 		}
 	}
 
-	irg_frame = get_irg_frame(irg);
+	ir_node *irg_frame = get_irg_frame(irg);
 
-	for (j = get_irn_n_outs(irg_frame) - 1; j >= 0; --j) {
+	for (int j = get_irn_n_outs(irg_frame); j-- > 0; ) {
 		ir_node        *succ = get_irn_out(irg_frame, j);
 		ir_entity      *entity;
 		unsigned        flags;
@@ -968,26 +948,23 @@ static void analyse_irg_entity_usage(ir_graph *irg)
 	}
 
 	/* check inner functions accessing outer frame */
-	static_link_arg = 0;
-	for (i = 0, n = get_class_n_members(ft); i < n; ++i) {
+	int static_link_arg = 0;
+	for (size_t i = 0, n = get_class_n_members(ft); i < n; ++i) {
 		ir_entity *ent = get_class_member(ft, i);
-		ir_graph  *inner_irg;
-		ir_node   *args;
-
-		if (! is_method_entity(ent))
+		if (!is_method_entity(ent))
 			continue;
 
-		inner_irg = get_entity_irg(ent);
+		ir_graph *inner_irg = get_entity_irg(ent);
 		if (inner_irg == NULL)
 			continue;
 
 		assure_irg_outs(inner_irg);
-		args = get_irg_args(inner_irg);
-		for (j = get_irn_n_outs(args) - 1; j >= 0; --j) {
+		ir_node *args = get_irg_args(inner_irg);
+		for (int j = get_irn_n_outs(args); j-- > 0; ) {
 			ir_node *arg = get_irn_out(args, j);
 
 			if (get_Proj_proj(arg) == static_link_arg) {
-				for (k = get_irn_n_outs(arg) - 1; k >= 0; --k) {
+				for (int k = get_irn_n_outs(arg); k-- > 0; ) {
 					ir_node *succ = get_irn_out(arg, k);
 
 					if (is_Sel(succ)) {
@@ -1025,12 +1002,10 @@ void assure_irg_entity_usage_computed(ir_graph *irg)
  */
 static void init_entity_usage(ir_type *tp)
 {
-	size_t i, n;
-
 	/* We have to be conservative: All external visible entities are unknown */
-	for (i = 0, n = get_compound_n_members(tp); i < n; ++i) {
-		ir_entity       *ent   = get_compound_member(tp, i);
-		unsigned         flags = ir_usage_none;
+	for (size_t i = 0, n = get_compound_n_members(tp); i < n; ++i) {
+		ir_entity *ent   = get_compound_member(tp, i);
+		unsigned   flags = ir_usage_none;
 
 		if (entity_is_externally_visible(ent)) {
 			flags |= ir_usage_unknown;
@@ -1046,23 +1021,21 @@ static void init_entity_usage(ir_type *tp)
  */
 static void check_initializer_nodes(ir_initializer_t *initializer)
 {
-	size_t  i;
-	ir_node *n;
-
 	switch (initializer->kind) {
-	case IR_INITIALIZER_CONST:
+	case IR_INITIALIZER_CONST: {
 		/* let's check if it's an address */
-		n = initializer->consti.value;
+		ir_node *n = initializer->consti.value;
 		if (is_SymConst_addr_ent(n)) {
 			ir_entity *ent = get_SymConst_entity(n);
 			set_entity_usage(ent, ir_usage_unknown);
 		}
 		return;
+	}
 	case IR_INITIALIZER_TARVAL:
 	case IR_INITIALIZER_NULL:
 		return;
 	case IR_INITIALIZER_COMPOUND:
-		for (i = 0; i < initializer->compound.n_initializers; ++i) {
+		for (size_t i = 0; i < initializer->compound.n_initializers; ++i) {
 			ir_initializer_t *sub_initializer
 				= initializer->compound.initializers[i];
 			check_initializer_nodes(sub_initializer);
@@ -1100,9 +1073,7 @@ static void check_initializer(ir_entity *ent)
  */
 static void check_initializers(ir_type *tp)
 {
-	size_t i, n;
-
-	for (i = 0, n = get_compound_n_members(tp); i < n; ++i) {
+	for (size_t i = 0, n = get_compound_n_members(tp); i < n; ++i) {
 		ir_entity *ent = get_compound_member(tp, i);
 
 		check_initializer(ent);
@@ -1117,9 +1088,8 @@ static void check_initializers(ir_type *tp)
  */
 static void print_entity_usage_flags(const ir_type *tp)
 {
-	size_t i, n;
-	for (i = 0, n = get_compound_n_members(tp); i < n; ++i) {
-		ir_entity *ent = get_compound_member(tp, i);
+	for (size_t i = 0, n = get_compound_n_members(tp); i < n; ++i) {
+		ir_entity      *ent   = get_compound_member(tp, i);
 		ir_entity_usage flags = get_entity_usage(ent);
 
 		if (flags == 0)
@@ -1143,19 +1113,14 @@ static void print_entity_usage_flags(const ir_type *tp)
  */
 static void check_global_address(ir_node *irn, void *data)
 {
-	ir_entity *ent;
-	unsigned flags;
 	(void) data;
-
-	if (is_SymConst_addr_ent(irn)) {
-		/* A global. */
-		ent = get_SymConst_entity(irn);
-	} else
+	if (!is_SymConst_addr_ent(irn))
 		return;
 
-	flags = get_entity_usage(ent);
-	flags |= determine_entity_usage(irn, ent);
-	set_entity_usage(ent, (ir_entity_usage) flags);
+	ir_entity *entity = get_SymConst_entity(irn);
+	unsigned   flags  = get_entity_usage(entity);
+	flags |= determine_entity_usage(irn, entity);
+	set_entity_usage(entity, (ir_entity_usage) flags);
 }
 
 /**
@@ -1163,20 +1128,17 @@ static void check_global_address(ir_node *irn, void *data)
  */
 static void analyse_irp_globals_entity_usage(void)
 {
-	size_t i, n;
-	ir_segment_t s;
-
-	for (s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
+	for (ir_segment_t s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
 		ir_type *type = get_segment_type(s);
 		init_entity_usage(type);
 	}
 
-	for (s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
+	for (ir_segment_t s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
 		ir_type *type = get_segment_type(s);
 		check_initializers(type);
 	}
 
-	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
+	for (size_t i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 
 		assure_irg_outs(irg);
@@ -1185,7 +1147,7 @@ static void analyse_irp_globals_entity_usage(void)
 
 #ifdef DEBUG_libfirm
 	if (firm_dbg_get_mask(dbg) & LEVEL_1) {
-		for (s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
+		for (ir_segment_t s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
 			print_entity_usage_flags(get_segment_type(s));
 		}
 	}
@@ -1231,7 +1193,6 @@ static pmap *mtp_map;
 static ir_type *clone_type_and_cache(ir_type *tp)
 {
 	ir_type *res = pmap_get(ir_type, mtp_map, tp);
-
 	if (res == NULL) {
 		res = clone_type_method(tp);
 		pmap_insert(mtp_map, tp, res);
@@ -1252,15 +1213,14 @@ static void update_calls_to_private(ir_node *call, void *env)
 
 		if (is_SymConst(ptr)) {
 			ir_entity *ent = get_SymConst_entity(ptr);
-			ir_type *ctp = get_Call_type(call);
+			ir_type   *ctp = get_Call_type(call);
 
-			if (get_entity_additional_properties(ent) & mtp_property_private) {
-				if ((get_method_additional_properties(ctp) & mtp_property_private) == 0) {
-					ctp = clone_type_and_cache(ctp);
-					add_method_additional_properties(ctp, mtp_property_private);
-					set_Call_type(call, ctp);
-					DB((dbgcall, LEVEL_1, "changed call to private method %+F using cloned type %+F\n", ent, ctp));
-				}
+			if ((get_entity_additional_properties(ent) & mtp_property_private)
+			    && ((get_method_additional_properties(ctp) & mtp_property_private) == 0)) {
+				ctp = clone_type_and_cache(ctp);
+				add_method_additional_properties(ctp, mtp_property_private);
+				set_Call_type(call, ctp);
+				DB((dbgcall, LEVEL_1, "changed call to private method %+F using cloned type %+F\n", ent, ctp));
 			}
 		}
 	}
@@ -1268,15 +1228,12 @@ static void update_calls_to_private(ir_node *call, void *env)
 
 void mark_private_methods(void)
 {
-	size_t i, n;
-	int changed = 0;
-
 	assure_irp_globals_entity_usage_computed();
-
 	mtp_map = pmap_create();
 
 	/* first step: change the calling conventions of the local non-escaped entities */
-	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
+	bool changed = false;
+	for (size_t i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		ir_graph        *irg   = get_irp_irg(i);
 		ir_entity       *ent   = get_irg_entity(irg);
 		ir_entity_usage  flags = get_entity_usage(ent);
@@ -1292,7 +1249,7 @@ void mark_private_methods(void)
 				add_method_additional_properties(mtp, mtp_property_private);
 				set_entity_type(ent, mtp);
 				DB((dbgcall, LEVEL_2, "changed entity type of %+F to %+F\n", ent, mtp));
-				changed = 1;
+				changed = true;
 			}
 		}
 	}

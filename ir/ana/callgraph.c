@@ -26,12 +26,11 @@
 #include "pmap.h"
 #include "hashptr.h"
 #include "raw_bitset.h"
+#include "error.h"
 
 #include "irgwalk.h"
 
 static ir_visited_t master_cg_visited = 0;
-static inline int cg_irg_visited      (ir_graph *n);
-static inline void mark_cg_irg_visited(ir_graph *n);
 
 irp_callgraph_state get_irp_callgraph_state(void)
 {
@@ -45,7 +44,7 @@ void set_irp_callgraph_state(irp_callgraph_state s)
 
 size_t get_irg_n_callers(const ir_graph *irg)
 {
-	assert(irg->callers);
+	assert(irg->callers != NULL);
 	return irg->callers ? ARR_LEN(irg->callers) : 0;
 }
 
@@ -64,12 +63,11 @@ int is_irg_caller_backedge(const ir_graph *irg, size_t pos)
 /** Search the caller in the list of all callers and set its backedge property. */
 static void set_irg_caller_backedge(ir_graph *irg, const ir_graph *caller)
 {
-	size_t i, n_callers = get_irg_n_callers(irg);
-
 	/* allocate a new array on demand */
+	size_t n_callers = get_irg_n_callers(irg);
 	if (irg->caller_isbe == NULL)
 		irg->caller_isbe = rbitset_malloc(n_callers);
-	for (i = 0; i < n_callers; ++i) {
+	for (size_t i = 0; i < n_callers; ++i) {
 		if (get_irg_caller(irg, i) == caller) {
 			rbitset_set(irg->caller_isbe, i);
 			break;
@@ -79,10 +77,9 @@ static void set_irg_caller_backedge(ir_graph *irg, const ir_graph *caller)
 
 int has_irg_caller_backedge(const ir_graph *irg)
 {
-	size_t i, n_callers = get_irg_n_callers(irg);
-
 	if (irg->caller_isbe != NULL) {
-		for (i = 0; i < n_callers; ++i)
+		for (size_t i = 0, n_callers = get_irg_n_callers(irg);
+		     i < n_callers; ++i)
 			if (rbitset_is_set(irg->caller_isbe, i))
 				return 1;
 	}
@@ -98,30 +95,26 @@ static size_t reverse_pos(const ir_graph *callee, size_t pos_caller)
 {
 	ir_graph *caller = get_irg_caller(callee, pos_caller);
 	/* search the other relation for the corresponding edge. */
-	size_t i, n_callees = get_irg_n_callees(caller);
-	for (i = 0; i < n_callees; ++i) {
+	for (size_t i = 0, n_callees = get_irg_n_callees(caller);
+	     i < n_callees; ++i) {
 		if (get_irg_callee(caller, i) == callee) {
 			return i;
 		}
 	}
-
-	assert(!"reverse_pos() did not find position");
-
-	return 0;
+	panic("reverse_pos() did not find position");
 }
 
 size_t get_irg_caller_loop_depth(const ir_graph *irg, size_t pos)
 {
 	ir_graph *caller     = get_irg_caller(irg, pos);
 	size_t    pos_callee = reverse_pos(irg, pos);
-
 	return get_irg_callee_loop_depth(caller, pos_callee);
 }
 
 size_t get_irg_n_callees(const ir_graph *irg)
 {
-	assert(irg->callees);
-	return irg->callees ? ARR_LEN(irg->callees) : 0;
+	assert(irg->callees != NULL);
+	return ARR_LEN(irg->callees);
 }
 
 ir_graph *get_irg_callee(const ir_graph *irg, size_t pos)
@@ -138,10 +131,9 @@ int is_irg_callee_backedge(const ir_graph *irg, size_t pos)
 
 int has_irg_callee_backedge(const ir_graph *irg)
 {
-	size_t i, n_callees = get_irg_n_callees(irg);
-
 	if (irg->callee_isbe != NULL) {
-		for (i = 0; i < n_callees; ++i)
+		for (size_t i = 0, n_callees = get_irg_n_callees(irg);
+		     i < n_callees; ++i)
 			if (rbitset_is_set(irg->callee_isbe, i))
 				return 1;
 	}
@@ -153,9 +145,8 @@ int has_irg_callee_backedge(const ir_graph *irg)
  */
 static void set_irg_callee_backedge(ir_graph *irg, size_t pos)
 {
-	size_t n = get_irg_n_callees(irg);
-
 	/* allocate a new array on demand */
+	size_t n = get_irg_n_callees(irg);
 	if (irg->callee_isbe == NULL)
 		irg->callee_isbe = rbitset_malloc(n);
 	assert(pos < n);
@@ -174,27 +165,20 @@ size_t get_irg_callee_loop_depth(const ir_graph *irg, size_t pos)
  */
 static void ana_Call(ir_node *n, void *env)
 {
-	size_t i, n_callees;
-	ir_graph *irg;
 	(void) env;
+	if (! is_Call(n))
+		return;
 
-	if (! is_Call(n)) return;
-
-	irg = get_irn_irg(n);
-	n_callees = get_Call_n_callees(n);
-	for (i = 0; i < n_callees; ++i) {
+	ir_graph *irg = get_irn_irg(n);
+	for (size_t i = 0, n_callees = get_Call_n_callees(n); i < n_callees; ++i) {
 		ir_entity *callee_e = get_Call_callee(n, i);
-		ir_graph *callee = get_entity_irg(callee_e);
+		ir_graph  *callee   = get_entity_irg(callee_e);
 
 		if (callee) {
 			cg_callee_entry buf;
-			cg_callee_entry *found;
-			unsigned        depth;
-
 			buf.irg = callee;
-
 			pset_insert((pset *)callee->callers, irg, hash_ptr(irg));
-			found = (cg_callee_entry*) pset_find((pset *)irg->callees, &buf, hash_ptr(callee));
+			cg_callee_entry *found = (cg_callee_entry*) pset_find((pset *)irg->callees, &buf, hash_ptr(callee));
 			if (found) {  /* add Call node to list, compute new nesting. */
 				ir_node **arr = found->call_list;
 				ARR_APP1(ir_node *, arr, n);
@@ -207,7 +191,7 @@ static void ana_Call(ir_node *n, void *env)
 				found->max_depth = 0;
 				pset_insert((pset *)irg->callees, found, hash_ptr(callee));
 			}
-			depth = get_loop_depth(get_irn_loop(get_nodes_block(n)));
+			unsigned depth = get_loop_depth(get_irn_loop(get_nodes_block(n)));
 			found->max_depth = (depth > found->max_depth) ? depth : found->max_depth;
 		}
 	}
@@ -231,13 +215,11 @@ static int graph_cmp(const void *elt, const void *key)
 
 void compute_callgraph(void)
 {
-	size_t i, n_irgs;
-
 	/* initialize */
 	free_callgraph();
 
-	n_irgs = get_irp_n_irgs();
-	for (i = 0; i < n_irgs; ++i) {
+	size_t n_irgs = get_irp_n_irgs();
+	for (size_t i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		assert(get_irg_callee_info_state(irg) == irg_callee_info_consistent);
 		irg->callees = (cg_callee_entry **)new_pset(cg_callee_entry_cmp, 8);
@@ -246,30 +228,28 @@ void compute_callgraph(void)
 	}
 
 	/* Compute the call graph */
-	for (i = 0; i < n_irgs; ++i) {
+	for (size_t i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		construct_cf_backedges(irg);   // We also find the maximal loop depth of a call.
 		irg_walk_graph(irg, ana_Call, NULL, NULL);
 	}
 
 	/* Change the sets to arrays. */
-	for (i = 0; i < n_irgs; ++i) {
-		size_t j, count;
+	for (size_t i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
-		pset *callee_set, *caller_set;
 
-		callee_set = (pset *)irg->callees;
-		count = pset_count(callee_set);
+		pset *callee_set = (pset *)irg->callees;
+		size_t count = pset_count(callee_set);
 		irg->callees = NEW_ARR_F(cg_callee_entry *, count);
 		irg->callee_isbe = NULL;
-		j = 0;
+		size_t j = 0;
 		foreach_pset(callee_set, cg_callee_entry, callee) {
 			irg->callees[j++] = callee;
 		}
 		del_pset(callee_set);
 		assert(j == count);
 
-		caller_set = (pset *)irg->callers;
+		pset *caller_set = (pset *)irg->callers;
 		count = pset_count(caller_set);
 		irg->callers = NEW_ARR_F(ir_graph *, count);
 		irg->caller_isbe =  NULL;
@@ -285,8 +265,7 @@ void compute_callgraph(void)
 
 void free_callgraph(void)
 {
-	size_t i, n_irgs = get_irp_n_irgs();
-	for (i = 0; i < n_irgs; ++i) {
+	for (size_t i = 0, n_irgs = get_irp_n_irgs(); i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		if (irg->callees) DEL_ARR_F(irg->callees);
 		if (irg->callers) DEL_ARR_F(irg->callers);
@@ -300,43 +279,55 @@ void free_callgraph(void)
 	set_irp_callgraph_state(irp_callgraph_none);
 }
 
-
-static void do_walk(ir_graph *irg, callgraph_walk_func *pre, callgraph_walk_func *post, void *env)
+/**
+ * Returns non-zero if a graph was already visited.
+ */
+static inline int cg_irg_visited(ir_graph *irg)
 {
-	size_t i, n_callees;
+	return irg->self_visited >= master_cg_visited;
+}
 
+/**
+ * Marks a graph as visited.
+ */
+static inline void mark_cg_irg_visited(ir_graph *irg)
+{
+	irg->self_visited = master_cg_visited;
+}
+
+static void do_walk(ir_graph *irg, callgraph_walk_func *pre,
+                    callgraph_walk_func *post, void *env)
+{
 	if (cg_irg_visited(irg))
 		return;
 	mark_cg_irg_visited(irg);
 
-	if (pre)
+	if (pre != NULL)
 		pre(irg, env);
 
-	n_callees = get_irg_n_callees(irg);
-	for (i = 0; i < n_callees; i++) {
+	for (size_t i = 0, n_callees = get_irg_n_callees(irg); i < n_callees; i++) {
 		ir_graph *m = get_irg_callee(irg, i);
 		do_walk(m, pre, post, env);
 	}
 
-	if (post)
+	if (post != NULL)
 		post(irg, env);
 }
 
 void callgraph_walk(callgraph_walk_func *pre, callgraph_walk_func *post, void *env)
 {
-	size_t i, n_irgs = get_irp_n_irgs();
 	++master_cg_visited;
 
 	/* roots are methods which have no callers in the current program */
-	for (i = 0; i < n_irgs; ++i) {
+	size_t n_irgs = get_irp_n_irgs();
+	for (size_t i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
-
 		if (get_irg_n_callers(irg) == 0)
 			do_walk(irg, pre, post, env);
 	}
 
 	/* in case of unreachable call loops we haven't visited some irgs yet */
-	for (i = 0; i < n_irgs; i++) {
+	for (size_t i = 0; i < n_irgs; i++) {
 		ir_graph *irg = get_irp_irg(i);
 		do_walk(irg, pre, post, env);
 	}
@@ -368,22 +359,6 @@ static inline scc_info *new_scc_info(struct obstack *obst)
 }
 
 /**
- * Returns non-zero if a graph was already visited.
- */
-static inline int cg_irg_visited(ir_graph *irg)
-{
-	return irg->self_visited >= master_cg_visited;
-}
-
-/**
- * Marks a graph as visited.
- */
-static inline void mark_cg_irg_visited(ir_graph *irg)
-{
-	irg->self_visited = master_cg_visited;
-}
-
-/**
  * Set a graphs visited flag to i.
  */
 static inline void set_cg_irg_visited(ir_graph *irg, ir_visited_t i)
@@ -402,49 +377,49 @@ static inline ir_visited_t get_cg_irg_visited(const ir_graph *irg)
 static inline void mark_irg_in_stack(ir_graph *irg)
 {
 	scc_info *info = (scc_info*) get_irg_link(irg);
-	assert(info && "missing call to init_scc()");
+	assert(info != NULL);
 	info->in_stack = 1;
 }
 
 static inline void mark_irg_not_in_stack(ir_graph *irg)
 {
 	scc_info *info = (scc_info*) get_irg_link(irg);
-	assert(info && "missing call to init_scc()");
+	assert(info != NULL);
 	info->in_stack = 0;
 }
 
 static inline int irg_is_in_stack(const ir_graph *irg)
 {
 	scc_info *info = (scc_info*) get_irg_link(irg);
-	assert(info && "missing call to init_scc()");
+	assert(info != NULL);
 	return info->in_stack;
 }
 
 static inline void set_irg_uplink(ir_graph *irg, size_t uplink)
 {
 	scc_info *info = (scc_info*) get_irg_link(irg);
-	assert(info && "missing call to init_scc()");
+	assert(info != NULL);
 	info->uplink = uplink;
 }
 
 static inline size_t get_irg_uplink(const ir_graph *irg)
 {
 	const scc_info *info = (scc_info*) get_irg_link(irg);
-	assert(info && "missing call to init_scc()");
+	assert(info != NULL);
 	return info->uplink;
 }
 
 static inline void set_irg_dfn(ir_graph *irg, size_t dfn)
 {
 	scc_info *info = (scc_info*) get_irg_link(irg);
-	assert(info && "missing call to init_scc()");
+	assert(info != NULL);
 	info->dfn = dfn;
 }
 
 static inline size_t get_irg_dfn(const ir_graph *irg)
 {
 	const scc_info *info = (scc_info*) get_irg_link(irg);
-	assert(info && "missing call to init_scc()");
+	assert(info != NULL);
 	return info->dfn;
 }
 
@@ -474,7 +449,7 @@ static inline void push(ir_graph *irg)
 		size_t nlen = ARR_LEN(stack) * 2;
 		ARR_RESIZE(ir_graph*, stack, nlen);
 	}
-	stack [tos++] = irg;
+	stack[tos++] = irg;
 	mark_irg_in_stack(irg);
 }
 
@@ -483,10 +458,8 @@ static inline void push(ir_graph *irg)
  */
 static inline ir_graph *pop(void)
 {
-	ir_graph *irg;
-
 	assert(tos > 0);
-	irg = stack[--tos];
+	ir_graph *irg = stack[--tos];
 	mark_irg_not_in_stack(irg);
 	return irg;
 }
@@ -498,7 +471,6 @@ static inline ir_graph *pop(void)
 static inline void pop_scc_to_loop(ir_graph *irg)
 {
 	ir_graph *m;
-
 	do {
 		m = pop();
 		++loop_node_cnt;
@@ -514,16 +486,14 @@ static inline void pop_scc_to_loop(ir_graph *irg)
    can't they have two loops as sons? Does it never get that far? ) */
 static void close_loop(ir_loop *l)
 {
-	size_t last = get_loop_n_elements(l) - 1;
+	size_t       last     = get_loop_n_elements(l) - 1;
 	loop_element lelement = get_loop_element(l, last);
-	ir_loop *last_son = lelement.son;
+	ir_loop     *last_son = lelement.son;
 
-	if (get_kind(last_son) == k_ir_loop &&
-	    get_loop_n_elements(last_son) == 1) {
-		ir_loop *gson;
+	if (get_kind(last_son) == k_ir_loop && get_loop_n_elements(last_son) == 1) {
 
 		lelement = get_loop_element(last_son, 0);
-		gson = lelement.son;
+		ir_loop *gson = lelement.son;
 		if (get_kind(gson) == k_ir_loop) {
 			loop_element new_last_son;
 
@@ -542,7 +512,6 @@ static void close_loop(ir_loop *l)
 static inline void pop_scc_unmark_visit(ir_graph *n)
 {
 	ir_graph *m = NULL;
-
 	while (m != n) {
 		m = pop();
 		set_cg_irg_visited(m, 0);
@@ -565,14 +534,11 @@ static ir_loop *new_loop(void)
 
 static void init_scc(struct obstack *obst)
 {
-	size_t i, n_irgs;
-
 	current_dfn   = 1;
 	loop_node_cnt = 0;
 	init_stack();
 
-	n_irgs = get_irp_n_irgs();
-	for (i = 0; i < n_irgs; ++i) {
+	for (size_t i = 0, n_irgs = get_irp_n_irgs(); i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		set_irg_link(irg, new_scc_info(obst));
 		irg->callgraph_recursion_depth = 0;
@@ -587,20 +553,19 @@ static void init_scc(struct obstack *obst)
  */
 static int is_head(const ir_graph *n, const ir_graph *root)
 {
-	size_t i, n_callees;
-	int some_outof_loop = 0, some_in_loop = 0;
+	bool some_outof_loop = false;
+	bool some_in_loop    = false;
 
-	n_callees = get_irg_n_callees(n);
-	for (i = 0; i < n_callees; ++i) {
+	for (size_t i = 0, n_callees = get_irg_n_callees(n); i < n_callees; ++i) {
 		const ir_graph *pred = get_irg_callee(n, i);
 		if (is_irg_callee_backedge(n, i)) continue;
 		if (!irg_is_in_stack(pred)) {
-			some_outof_loop = 1;
+			some_outof_loop = true;
 		} else {
 			if (get_irg_uplink(pred) < get_irg_uplink(root))  {
 				assert(get_irg_uplink(pred) >= get_irg_uplink(root));
 			}
-			some_in_loop = 1;
+			some_in_loop = true;
 		}
 	}
 
@@ -615,22 +580,21 @@ static int is_head(const ir_graph *n, const ir_graph *root)
  */
 static int is_endless_head(const ir_graph *n, const ir_graph *root)
 {
-	size_t i, n_calless;
-	int some_outof_loop = 0, some_in_loop = 0;
+	bool some_outof_loop = false;
+	bool some_in_loop    = false;
 
-	n_calless = get_irg_n_callees(n);
-	for (i = 0; i < n_calless; ++i) {
+	for (size_t i = 0, n_calless = get_irg_n_callees(n); i < n_calless; ++i) {
 		const ir_graph *pred = get_irg_callee(n, i);
-		assert(pred);
+		assert(pred != NULL);
 		if (is_irg_callee_backedge(n, i))
 			continue;
 		if (!irg_is_in_stack(pred)) {
-			some_outof_loop = 1;
+			some_outof_loop = true;
 		} else {
 			if (get_irg_uplink(pred) < get_irg_uplink(root)) {
 				assert(get_irg_uplink(pred) >= get_irg_uplink(root));
 			}
-			some_in_loop = 1;
+			some_in_loop = true;
 		}
 	}
 	return !some_outof_loop && some_in_loop;
@@ -642,17 +606,16 @@ static int is_endless_head(const ir_graph *n, const ir_graph *root)
  */
 static bool smallest_dfn_pred(const ir_graph *n, size_t limit, size_t *result)
 {
-	size_t index = 0, min = 0;
-	bool found = false;
-
-	size_t i, n_callees = get_irg_n_callees(n);
-	for (i = 0; i < n_callees; ++i) {
+	size_t index = 0;
+	size_t min   = 0;
+	bool   found = false;
+	for (size_t i = 0, n_callees = get_irg_n_callees(n); i < n_callees; ++i) {
 		const ir_graph *pred = get_irg_callee(n, i);
 		if (is_irg_callee_backedge(n, i) || !irg_is_in_stack(pred))
 			continue;
 		if (get_irg_dfn(pred) >= limit && (!found || get_irg_dfn(pred) < min)) {
 			index = i;
-			min = get_irg_dfn(pred);
+			min   = get_irg_dfn(pred);
 			found = true;
 		}
 	}
@@ -664,18 +627,18 @@ static bool smallest_dfn_pred(const ir_graph *n, size_t limit, size_t *result)
 /** Finds index of the predecessor with the largest dfn number. */
 static bool largest_dfn_pred(const ir_graph *n, size_t *result)
 {
-	size_t index = 0, max = 0;
-	bool found = false;
+	size_t index = 0;
+	size_t max   = 0;
+	bool   found = false;
 
-	size_t i, n_callees = get_irg_n_callees(n);
-	for (i = 0; i < n_callees; ++i) {
+	for (size_t i = 0, n_callees = get_irg_n_callees(n); i < n_callees; ++i) {
 		const ir_graph *pred = get_irg_callee(n, i);
 		if (is_irg_callee_backedge (n, i) || !irg_is_in_stack(pred))
 			continue;
 		/* Note: dfn is always > 0 */
 		if (get_irg_dfn(pred) > max) {
 			index = i;
-			max = get_irg_dfn(pred);
+			max   = get_irg_dfn(pred);
 			found = true;
 		}
 	}
@@ -686,23 +649,21 @@ static bool largest_dfn_pred(const ir_graph *n, size_t *result)
 
 static ir_graph *find_tail(const ir_graph *n)
 {
-	bool found = false;
-	ir_graph *m;
-	size_t i;
-	size_t res_index = 0;
-
 	/*
 	if (!icfg && rm_cyclic_phis && remove_cyclic_phis (n)) return NULL;
 	*/
-	m = stack[tos - 1];  /* tos = top of stack */
+	bool      found     = false;
+	size_t    res_index = 0;
+	ir_graph *m         = stack[tos - 1];  /* tos = top of stack */
 	if (is_head(m, n)) {
 		found = smallest_dfn_pred(m, 0, &res_index);
 		if (!found &&  /* no smallest dfn pred found. */
 			n == m)
 			return NULL;
 	} else {
-		if (m == n) return NULL;    // Is this to catch Phi - self loops?
-		for (i = tos - 1; i > 0;) {
+		if (m == n)
+			return NULL;    // Is this to catch Phi - self loops?
+		for (size_t i = tos - 1; i > 0;) {
 			m = stack[--i];
 
 			if (is_head(m, n)) {
@@ -724,7 +685,7 @@ static ir_graph *find_tail(const ir_graph *n)
 
 		if (! found) {
 			/* A dead loop not reachable from Start. */
-			for (i = tos-1; i > 0;) {
+			for (size_t i = tos-1; i > 0;) {
 				m = stack[--i];
 				if (is_endless_head(m, n)) {
 					found = smallest_dfn_pred(m, get_irg_dfn(m) + 1, &res_index);
@@ -736,7 +697,6 @@ static ir_graph *find_tail(const ir_graph *n)
 				if (m == n)
 					break;
 			}
-			//assert(0 && "no head found on stack");
 		}
 
 	}
@@ -748,9 +708,8 @@ static ir_graph *find_tail(const ir_graph *n)
 
 static void cgscc(ir_graph *n)
 {
-	size_t i, n_callees;
-
-	if (cg_irg_visited(n)) return;
+	if (cg_irg_visited(n))
+		return;
 	mark_cg_irg_visited(n);
 
 	/* Initialize the node */
@@ -759,11 +718,10 @@ static void cgscc(ir_graph *n)
 	++current_dfn;
 	push(n);
 
-	n_callees = get_irg_n_callees(n);
-	for (i = 0; i < n_callees; ++i) {
-		ir_graph *m;
-		if (is_irg_callee_backedge(n, i)) continue;
-		m = get_irg_callee(n, i);
+	for (size_t i = 0, n_callees = get_irg_n_callees(n); i < n_callees; ++i) {
+		if (is_irg_callee_backedge(n, i))
+			continue;
+		ir_graph *m = get_irg_callee(n, i);
 
 		/** This marks the backedge, but does it guarantee a correct loop tree? */
 		//if (m == n) { set_irg_callee_backedge(n, i); continue; }
@@ -795,8 +753,6 @@ static void cgscc(ir_graph *n)
 			   because we found a cfloop head!
 			   Next actions: Open a new cfloop on the cfloop tree and
 			   try to find inner cfloops */
-
-
 			ir_loop *l = new_loop();
 
 			/* Remove the cfloop from the stack ... */
@@ -823,9 +779,7 @@ static void cgscc(ir_graph *n)
  */
 static void reset_isbe(void)
 {
-	size_t i, n_irgs = get_irp_n_irgs();
-
-	for (i = 0; i < n_irgs; ++i) {
+	for (size_t i = 0, n_irgs = get_irp_n_irgs(); i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 
 		if (irg->caller_isbe)
@@ -840,9 +794,6 @@ static void reset_isbe(void)
 
 void find_callgraph_recursions(void)
 {
-	size_t i, n_irgs;
-	struct obstack temp;
-
 	reset_isbe();
 
 	/* -- compute the looptree. -- */
@@ -853,6 +804,7 @@ void find_callgraph_recursions(void)
 	reachable from the outermost graph, but call themselves in a cycle. */
 	assert(get_irp_main_irg());
 	outermost_ir_graph = get_irp_main_irg();
+	struct obstack temp;
 	obstack_init(&temp);
 	init_scc(&temp);
 
@@ -861,13 +813,13 @@ void find_callgraph_recursions(void)
 
 	++master_cg_visited;
 	cgscc(outermost_ir_graph);
-	n_irgs = get_irp_n_irgs();
-	for (i = 0; i < n_irgs; ++i) {
+	size_t n_irgs = get_irp_n_irgs();
+	for (size_t i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		if (!cg_irg_visited(irg) && get_irg_n_callers(irg) == 0)
 			cgscc(irg);
 	}
-	for (i = 0; i < n_irgs; ++i) {
+	for (size_t i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		if (!cg_irg_visited(irg))
 			cgscc(irg);
@@ -878,10 +830,9 @@ void find_callgraph_recursions(void)
 	mature_loops(current_loop, get_irg_obstack(outermost_ir_graph));
 
 	/* -- Reverse the backedge information. -- */
-	for (i = 0; i < n_irgs; ++i) {
+	for (size_t i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
-		size_t j, n_callees = get_irg_n_callees(irg);
-		for (j = 0; j < n_callees; ++j) {
+		for (size_t j = 0, n_callees = get_irg_n_callees(irg); j < n_callees; ++j) {
 			if (is_irg_callee_backedge(irg, j))
 				set_irg_caller_backedge(get_irg_callee(irg, j), irg);
 		}
@@ -926,10 +877,12 @@ loop_nesting_depth_state get_irp_loop_nesting_depth_state(void)
 {
 	return irp->lnd_state;
 }
+
 void set_irp_loop_nesting_depth_state(loop_nesting_depth_state s)
 {
 	irp->lnd_state = s;
 }
+
 void set_irp_loop_nesting_depth_state_inconsistent(void)
 {
 	if (irp->lnd_state == loop_nesting_depth_consistent)

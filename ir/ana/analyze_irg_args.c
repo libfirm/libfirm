@@ -31,16 +31,11 @@
  */
 static ptr_access_kind analyze_arg(ir_node *arg, ptr_access_kind bits)
 {
-	int i, p;
-	ir_node *succ;
-
 	/* We must visit a node once to avoid endless recursion.*/
 	mark_irn_visited(arg);
 
-	for (i = get_irn_n_outs(arg) - 1; i >= 0; --i) {
-		succ = get_irn_out(arg, i);
-
-		/* We was here.*/
+	for (int i = get_irn_n_outs(arg); i-- > 0; ) {
+		ir_node *succ = get_irn_out(arg, i);
 		if (irn_visited(succ))
 			continue;
 
@@ -68,7 +63,7 @@ static ptr_access_kind analyze_arg(ir_node *arg, ptr_access_kind bits)
 				if (is_SymConst_addr_ent(ptr)) {
 					meth_ent = get_SymConst_entity(ptr);
 
-					for (p = get_Call_n_params(succ) - 1; p >= 0; --p) {
+					for (int p = get_Call_n_params(succ); p-- > 0; ) {
 						if (get_Call_param(succ, p) == arg) {
 							/* an arg can be used more than once ! */
 							bits |= get_method_param_access(meth_ent, p);
@@ -76,11 +71,10 @@ static ptr_access_kind analyze_arg(ir_node *arg, ptr_access_kind bits)
 					}
 				} else if (is_Sel(ptr) && get_irp_callee_info_state() == irg_callee_info_consistent) {
 					/* is be a polymorphic call but callee information is available */
-					int n_params = get_Call_n_params(succ);
-					int c;
+					size_t n_params = get_Call_n_params(succ);
 
 					/* simply look into ALL possible callees */
-					for (c = get_Call_n_callees(succ) - 1; c >= 0; --c) {
+					for (int c = get_Call_n_callees(succ); c-- > 0; ) {
 						meth_ent = get_Call_callee(succ, c);
 
 						/* unknown_entity is used to signal that we don't know what is called */
@@ -89,7 +83,7 @@ static ptr_access_kind analyze_arg(ir_node *arg, ptr_access_kind bits)
 							break;
 						}
 
-						for (p = n_params - 1; p >= 0; --p) {
+						for (size_t p = n_params; p-- > 0; ) {
 							if (get_Call_param(succ, p) == arg) {
 								/* an arg can be used more than once ! */
 								bits |= get_method_param_access(meth_ent, p);
@@ -162,16 +156,8 @@ static ptr_access_kind analyze_arg(ir_node *arg, ptr_access_kind bits)
  */
 static void analyze_ent_args(ir_entity *ent)
 {
-	ir_graph *irg;
-	ir_node *irg_args, *arg;
-	ir_mode *arg_mode;
-	int nparams, i;
-	long proj_nr;
-	ir_type *mtp;
-	ptr_access_kind *rw_info;
-
-	mtp     = get_entity_type(ent);
-	nparams = get_method_n_params(mtp);
+	ir_type *mtp     = get_entity_type(ent);
+	size_t   nparams = get_method_n_params(mtp);
 
 	ent->attr.mtd_attr.param_access = NEW_ARR_F(ptr_access_kind, nparams);
 
@@ -181,37 +167,36 @@ static void analyze_ent_args(ir_entity *ent)
 	if (nparams <= 0)
 		return;
 
-	irg = get_entity_irg(ent);
-
   /* we have not yet analyzed the graph, set ALL access for pointer args */
-	for (i = nparams - 1; i >= 0; --i) {
+	for (size_t i = nparams; i-- > 0; ) {
 		ir_type *type = get_method_param_type(mtp, i);
 		ent->attr.mtd_attr.param_access[i] = is_Pointer_type(type) ? ptr_access_all : ptr_access_none;
 	}
 
-	if (! irg) {
+	ir_graph *irg = get_entity_irg(ent);
+	if (irg == NULL) {
 		/* no graph, no better info */
 		return;
 	}
 
 	assure_irg_outs(irg);
-
-	irg_args = get_irg_args(irg);
+	ir_node *irg_args = get_irg_args(irg);
 
 	/* A array to save the information for each argument with
 	   mode reference.*/
+	ptr_access_kind *rw_info;
 	NEW_ARR_A(ptr_access_kind, rw_info, nparams);
 
 	/* We initialize the element with none state. */
-	for (i = nparams - 1; i >= 0; --i)
+	for (size_t i = nparams; i-- > 0; )
 		rw_info[i] = ptr_access_none;
 
 	/* search for arguments with mode reference
 	   to analyze them.*/
-	for (i = get_irn_n_outs(irg_args) - 1; i >= 0; --i) {
-		arg      = get_irn_out(irg_args, i);
-		arg_mode = get_irn_mode(arg);
-		proj_nr  = get_Proj_proj(arg);
+	for (int i = get_irn_n_outs(irg_args); i-- > 0; ) {
+		ir_node *arg      = get_irn_out(irg_args, i);
+		ir_mode *arg_mode = get_irn_mode(arg);
+		long     proj_nr  = get_Proj_proj(arg);
 
 		if (mode_is_reference(arg_mode))
 			rw_info[proj_nr] |= analyze_arg(arg, rw_info[proj_nr]);
@@ -219,30 +204,27 @@ static void analyze_ent_args(ir_entity *ent)
 
 	/* copy the temporary info */
 	memcpy(ent->attr.mtd_attr.param_access, rw_info,
-		nparams * sizeof(ent->attr.mtd_attr.param_access[0]));
+	       nparams * sizeof(ent->attr.mtd_attr.param_access[0]));
 }
 
 void analyze_irg_args(ir_graph *irg)
 {
-	ir_entity *ent;
-
 	if (irg == get_const_code_irg())
 		return;
 
-	ent = get_irg_entity(irg);
-	if (! ent)
+	ir_entity *entity = get_irg_entity(irg);
+	if (! entity)
 		return;
 
-	if (! ent->attr.mtd_attr.param_access)
-		analyze_ent_args(ent);
+	if (! entity->attr.mtd_attr.param_access)
+		analyze_ent_args(entity);
 }
 
 ptr_access_kind get_method_param_access(ir_entity *ent, size_t pos)
 {
 #ifndef NDEBUG
 	ir_type *mtp = get_entity_type(ent);
-	int is_variadic = get_method_variadicity(mtp) == variadicity_variadic;
-
+	bool is_variadic = get_method_variadicity(mtp) == variadicity_variadic;
 	assert(is_variadic || pos < get_method_n_params(mtp));
 #endif
 
@@ -278,17 +260,12 @@ enum args_weight {
  */
 static unsigned calc_method_param_weight(ir_node *arg)
 {
-	int      i, j, k;
-	ir_node  *succ, *op;
-	unsigned weight = null_weight;
-
 	/* We mark the nodes to avoid endless recursion */
 	mark_irn_visited(arg);
 
-	for (i = get_irn_n_outs(arg) - 1; i >= 0; i--) {
-		succ = get_irn_out(arg, i);
-
-		/* We was here.*/
+	unsigned weight = null_weight;
+	for (int i = get_irn_n_outs(arg); i-- > 0; ) {
+		ir_node *succ = get_irn_out(arg, i);
 		if (irn_visited(succ))
 			continue;
 
@@ -304,9 +281,10 @@ static unsigned calc_method_param_weight(ir_node *arg)
 				weight += indirect_call_weight;
 			}
 			break;
-		case iro_Cmp:
+		case iro_Cmp: {
 			/* We have reached a cmp and we must increase the
 			   weight with the cmp_weight. */
+			ir_node *op;
 			if (get_Cmp_left(succ) == arg)
 				op = get_Cmp_right(succ);
 			else
@@ -317,6 +295,7 @@ static unsigned calc_method_param_weight(ir_node *arg)
 			} else
 				weight += cmp_weight;
 			break;
+		}
 		case iro_Cond:
 			/* the argument is used for a SwitchCond, a big win */
 			weight += const_cmp_weight * get_irn_n_outs(succ);
@@ -327,11 +306,11 @@ static unsigned calc_method_param_weight(ir_node *arg)
 			break;
 		case iro_Tuple:
 			/* unoptimized tuple */
-			for (j = get_Tuple_n_preds(succ) - 1; j >= 0; --j) {
+			for (int j = get_Tuple_n_preds(succ); j-- > 0; ) {
 				ir_node *pred = get_Tuple_pred(succ, j);
 				if (pred == arg) {
 					/* look for Proj(j) */
-					for (k = get_irn_n_outs(succ) - 1; k >= 0; --k) {
+					for (int k = get_irn_n_outs(succ); k-- > 0; ) {
 						ir_node *succ_succ = get_irn_out(succ, k);
 						if (is_Proj(succ_succ)) {
 							if (get_Proj_proj(succ_succ) == j) {
@@ -352,6 +331,7 @@ static unsigned calc_method_param_weight(ir_node *arg)
 				   BinOp is a constant we increase the weight with const_binop_weight
 				   and call the function recursive.
 				 */
+				ir_node *op;
 				if (get_binop_left(succ) == arg)
 					op = get_binop_right(succ);
 				else
@@ -383,15 +363,9 @@ static unsigned calc_method_param_weight(ir_node *arg)
  */
 static void analyze_method_params_weight(ir_entity *ent)
 {
-	ir_type  *mtp;
-	ir_graph *irg;
-	int      nparams, i, proj_nr;
-	ir_node  *irg_args, *arg;
-
-	mtp      = get_entity_type(ent);
-	nparams  = get_method_n_params(mtp);
-
 	/* allocate a new array. currently used as 'analysed' flag */
+	ir_type *mtp      = get_entity_type(ent);
+	size_t   nparams  = get_method_n_params(mtp);
 	ent->attr.mtd_attr.param_weight = NEW_ARR_F(unsigned, nparams);
 
 	/* If the method haven't parameters we have nothing to do. */
@@ -399,10 +373,10 @@ static void analyze_method_params_weight(ir_entity *ent)
 	  return;
 
 	/* First we initialize the parameter weights with 0. */
-	for (i = nparams - 1; i >= 0; i--)
+	for (size_t i = nparams; i-- > 0; )
 		ent->attr.mtd_attr.param_weight[i] = null_weight;
 
-	irg = get_entity_irg(ent);
+	ir_graph *irg = get_entity_irg(ent);
 	if (irg == NULL) {
 		/* no graph, no better info */
 		return;
@@ -411,10 +385,10 @@ static void analyze_method_params_weight(ir_entity *ent)
 	/* Call algorithm that computes the out edges */
 	assure_irg_outs(irg);
 
-	irg_args = get_irg_args(irg);
-	for (i = get_irn_n_outs(irg_args) - 1; i >= 0; --i) {
-		arg     = get_irn_out(irg_args, i);
-		proj_nr = get_Proj_proj(arg);
+	ir_node *irg_args = get_irg_args(irg);
+	for (int i = get_irn_n_outs(irg_args); i-- > 0; ) {
+		ir_node *arg     = get_irn_out(irg_args, i);
+		long     proj_nr = get_Proj_proj(arg);
 		ent->attr.mtd_attr.param_weight[proj_nr] += calc_method_param_weight(arg);
 	}
 }

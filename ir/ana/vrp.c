@@ -64,19 +64,17 @@ vrp_attr *vrp_get_info(const ir_node *node)
 
 static int vrp_update_node(ir_vrp_info *info, ir_node *node)
 {
-	ir_tarval *new_bits_set = get_tarval_bad();
-	ir_tarval *new_bits_not_set = get_tarval_bad();
-	ir_tarval *new_range_bottom = get_tarval_bad();
-	ir_tarval *new_range_top = get_tarval_bad();
-	enum range_types new_range_type = VRP_UNDEFINED;
-	int something_changed = 0;
-	vrp_attr *vrp;
-
+	ir_tarval       *new_bits_set      = get_tarval_bad();
+	ir_tarval       *new_bits_not_set  = get_tarval_bad();
+	ir_tarval       *new_range_bottom  = get_tarval_bad();
+	ir_tarval       *new_range_top     = get_tarval_bad();
+	enum range_types new_range_type    = VRP_UNDEFINED;
+	bool             something_changed = false;
 	if (!mode_is_int(get_irn_mode(node))) {
 		return 0; /* we don't optimize for non-int-nodes*/
 	}
 
-	vrp = vrp_get_or_set_info(info, node);
+	vrp_attr *vrp = vrp_get_or_set_info(info, node);
 
 	/* TODO: Check if all predecessors have valid VRP information*/
 
@@ -331,27 +329,20 @@ static int vrp_update_node(ir_vrp_info *info, ir_node *node)
 
 	case iro_Phi: {
 		/* combine all ranges*/
-
-		int num = get_Phi_n_preds(node);
-		ir_relation relation;
-		int i;
-
 		const ir_node *pred = get_Phi_pred(node,0);
 		const vrp_attr *vrp_pred = vrp_get_or_set_info(info, pred);
-		new_range_top = vrp_pred->range_top;
+		new_range_top    = vrp_pred->range_top;
 		new_range_bottom = vrp_pred->range_bottom;
-		new_range_type = vrp_pred->range_type;
-		new_bits_set = vrp_pred->bits_set;
+		new_range_type   = vrp_pred->range_type;
+		new_bits_set     = vrp_pred->bits_set;
 		new_bits_not_set = vrp_pred->bits_not_set;
 
-		assert(num > 0);
-
-		for (i = 1; i < num; i++) {
+		for (int i = 1, num = get_Phi_n_preds(node); i < num; i++) {
 			pred = get_Phi_pred(node, i);
 			vrp_pred = vrp_get_or_set_info(info, pred);
 			if (new_range_type == VRP_RANGE && vrp_pred->range_type ==
 					VRP_RANGE) {
-				relation = tarval_cmp(new_range_top, vrp_pred->range_top);
+				ir_relation relation = tarval_cmp(new_range_top, vrp_pred->range_top);
 				if (relation == ir_relation_less) {
 					new_range_top = vrp_pred->range_top;
 				}
@@ -410,22 +401,22 @@ static int vrp_update_node(ir_vrp_info *info, ir_node *node)
 	if (new_bits_set != tarval_bad) {
 		new_bits_set = tarval_or(new_bits_set, vrp->bits_set);
 		if (new_bits_set != vrp->bits_set) {
-			something_changed = 1;
-			vrp->bits_set = new_bits_set;
+			something_changed = true;
+			vrp->bits_set     = new_bits_set;
 		}
 	}
 	if (new_bits_not_set != tarval_bad) {
 		new_bits_not_set = tarval_and(new_bits_not_set, vrp->bits_not_set);
 
 		if (new_bits_not_set != vrp->bits_not_set) {
-			something_changed = 1;
+			something_changed = true;
 			vrp->bits_not_set = new_bits_not_set;
 		}
 	}
 
 	if (vrp->range_type == VRP_UNDEFINED &&
 			new_range_type != VRP_UNDEFINED) {
-		something_changed = 1;
+		something_changed = true;
 		vrp->range_type = new_range_type;
 		vrp->range_bottom = new_range_bottom;
 		vrp->range_top = new_range_top;
@@ -433,12 +424,12 @@ static int vrp_update_node(ir_vrp_info *info, ir_node *node)
 	} else if (vrp->range_type == VRP_RANGE) {
 		if (new_range_type == VRP_RANGE) {
 			if (tarval_cmp(vrp->range_bottom, new_range_bottom) == ir_relation_less) {
-				something_changed = 1;
+				something_changed = true;
 				vrp->range_bottom = new_range_bottom;
 			}
 			if (tarval_cmp(vrp->range_top, new_range_top) == ir_relation_greater) {
-				something_changed = 1;
-				vrp->range_top = new_range_top;
+				something_changed = true;
+				vrp->range_top    = new_range_top;
 			}
 		}
 
@@ -447,13 +438,13 @@ static int vrp_update_node(ir_vrp_info *info, ir_node *node)
 			/* TODO: Maybe we can preserve more information here*/
 			if (tarval_cmp(vrp->range_bottom, new_range_top) == ir_relation_greater &&
 					tarval_cmp(vrp->range_bottom, new_range_bottom) == ir_relation_greater) {
-				something_changed = 1;
+				something_changed = true;
 				vrp->range_bottom = new_range_top;
 
 			} else if (tarval_cmp(vrp->range_top, new_range_bottom) == ir_relation_greater &&
 					tarval_cmp(vrp->range_top, new_range_top) == ir_relation_less) {
-				something_changed = 1;
-				vrp->range_top = new_range_bottom;
+				something_changed = true;
+				vrp->range_top    = new_range_bottom;
 			}
 
 			/* We can not handle the case where the anti range is in the*/
@@ -463,45 +454,42 @@ static int vrp_update_node(ir_vrp_info *info, ir_node *node)
 	} else if (vrp->range_type == VRP_ANTIRANGE) {
 		if (new_range_type == VRP_ANTIRANGE) {
 			if (tarval_cmp(vrp->range_bottom, new_range_bottom) == ir_relation_greater) {
-				something_changed = 1;
+				something_changed = true;
 				vrp->range_bottom = new_range_bottom;
 			}
 			if (tarval_cmp(vrp->range_top, new_range_top) == ir_relation_less) {
-				something_changed = 1;
-				vrp->range_top = new_range_top;
+				something_changed = true;
+				vrp->range_top    = new_range_top;
 			}
 		}
 
 		if (new_range_type == VRP_RANGE) {
 			if (tarval_cmp(vrp->range_bottom, new_range_top) == ir_relation_greater) {
-				something_changed = 1;
+				something_changed = true;
 				vrp->range_bottom = new_range_top;
 			}
 			if (tarval_cmp(vrp->range_top, new_range_bottom) == ir_relation_less) {
-				something_changed = 1;
-				vrp->range_top = new_range_bottom;
+				something_changed = true;
+				vrp->range_top    = new_range_bottom;
 			}
 		}
 	}
 
-	assert(tarval_is_null(
-				tarval_and(vrp->bits_set, tarval_not(vrp->bits_not_set))));
+	assert(tarval_is_null(tarval_and(vrp->bits_set, tarval_not(vrp->bits_not_set))));
 	return something_changed;
 }
 
 static void vrp_first_pass(ir_node *n, void *e)
 {
-	int i;
-	vrp_env_t *env = (vrp_env_t*) e;
-
 	if (is_Block(n))
 		return;
 
+	vrp_env_t *env = (vrp_env_t*) e;
 	bitset_set(env->visited, get_irn_idx(n));
 
 	vrp_update_node(env->info, n);
 
-	for (i = get_irn_n_outs(n) - 1; i >=0; --i) {
+	for (int i = get_irn_n_outs(n); i-- > 0; ) {
 		ir_node *succ = get_irn_out(n, i);
 		if (bitset_is_set(env->visited, get_irn_idx(succ))) {
 			/* we found a loop*/
@@ -512,13 +500,11 @@ static void vrp_first_pass(ir_node *n, void *e)
 
 static void dump_vrp_info(void *ctx, FILE *F, const ir_node *node)
 {
-	vrp_attr *vrp;
-
 	(void) ctx;
 	if (!mode_is_int(get_irn_mode(node)))
 		return;
 
-	vrp = vrp_get_info(node);
+	vrp_attr *vrp = vrp_get_info(node);
 	if (vrp == NULL)
 		return;
 
@@ -535,11 +521,6 @@ static hook_entry_t dump_hook;
 
 void set_vrp_data(ir_graph *irg)
 {
-	ir_node *succ, *node;
-	int i;
-	vrp_env_t *env;
-	ir_vrp_info *info;
-
 	if (irg->vrp.infos.data != NULL)
 		free_vrp_data(irg);
 
@@ -548,14 +529,14 @@ void set_vrp_data(ir_graph *irg)
 	assure_irg_outs(irg); /* ensure that out edges are consistent*/
 	ir_nodemap_init(&irg->vrp.infos, irg);
 	obstack_init(&irg->vrp.obst);
-	info = &irg->vrp;
+	ir_vrp_info *info = &irg->vrp;
 
 	if (dump_hook.hook._hook_node_info == NULL) {
 		dump_hook.hook._hook_node_info = dump_vrp_info;
 		register_hook(hook_node_info, &dump_hook);
 	}
 
-	env = OALLOCZ(&irg->vrp.obst, vrp_env_t);
+	vrp_env_t *env = OALLOCZ(&irg->vrp.obst, vrp_env_t);
 	env->workqueue = new_waitq();
 	env->info      = info;
 
@@ -565,12 +546,12 @@ void set_vrp_data(ir_graph *irg)
 
 	/* while there are entries in the worklist, continue*/
 	while (!waitq_empty(env->workqueue)) {
-		node = (ir_node*) waitq_get(env->workqueue);
+		ir_node *node = (ir_node*) waitq_get(env->workqueue);
 
 		if (vrp_update_node(info, node)) {
 			/* if something changed, add successors to worklist*/
-			for (i = get_irn_n_outs(node) - 1; i >= 0; --i) {
-				succ =  get_irn_out(node, i);
+			for (int i = get_irn_n_outs(node); i-- > 0; ) {
+				ir_node *succ =  get_irn_out(node, i);
 				waitq_put(env->workqueue, succ);
 			}
 		}
@@ -593,15 +574,12 @@ ir_graph_pass_t *set_vrp_pass(const char *name)
 
 ir_relation vrp_cmp(const ir_node *left, const ir_node *right)
 {
-	vrp_attr *vrp_left, *vrp_right;
-
 	if (!mode_is_int(get_irn_mode(left)))
 		return ir_relation_true;
 
-	vrp_left = vrp_get_info(left);
-	vrp_right = vrp_get_info(right);
-
-	if (!vrp_left || !vrp_right)
+	vrp_attr *vrp_left  = vrp_get_info(left);
+	vrp_attr *vrp_right = vrp_get_info(right);
+	if (vrp_left == NULL || vrp_right == NULL)
 		return ir_relation_true;
 
 	if (vrp_left->range_type == VRP_RANGE && vrp_right->range_type == VRP_RANGE) {

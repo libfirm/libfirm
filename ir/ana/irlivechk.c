@@ -95,16 +95,14 @@ static bl_info_t *get_block_info(lv_chk_t *lv, const ir_node *block)
  */
 static void red_trans_closure(lv_chk_t *lv)
 {
-	int i, n;
-
-	for (i = 0, n = dfs_get_n_nodes(lv->dfs); i < n; ++i) {
+	for (int i = 0, n = dfs_get_n_nodes(lv->dfs); i < n; ++i) {
 		const ir_node *bl = (const ir_node*) dfs_get_post_num_node(lv->dfs, i);
-		bl_info_t *bi = get_block_info(lv, bl);
+		bl_info_t     *bi = get_block_info(lv, bl);
 
 		bitset_set(bi->red_reachable, bi->id);
-		foreach_block_succ (bl, edge) {
-			ir_node *succ = get_edge_src_irn(edge);
-			bl_info_t *si = get_block_info(lv, succ);
+		foreach_block_succ(bl, edge) {
+			ir_node        *succ = get_edge_src_irn(edge);
+			bl_info_t      *si   = get_block_info(lv, succ);
 			dfs_edge_kind_t kind = dfs_get_edge_kind(lv->dfs, bl, succ);
 
 			/*
@@ -114,10 +112,8 @@ static void red_trans_closure(lv_chk_t *lv)
 			if (kind != DFS_EDGE_BACK) {
 				assert(dfs_get_post_num(lv->dfs, bl) > dfs_get_post_num(lv->dfs, succ));
 				bitset_or(bi->red_reachable, si->red_reachable);
-			}
-
-			/* mark the block as a back edge src and succ as back edge tgt. */
-			else {
+			} else {
+				/* mark block as a back edge src and succ as back edge tgt. */
 				bitset_set(lv->back_edge_src, bi->id);
 				bitset_set(lv->back_edge_tgt, si->id);
 			}
@@ -129,16 +125,15 @@ static void red_trans_closure(lv_chk_t *lv)
 
 static void compute_back_edge_chain(lv_chk_t *lv, const ir_node *bl)
 {
-	bitset_t *tmp = bitset_alloca(lv->n_blocks);
 	bl_info_t *bi = get_block_info(lv, bl);
-
 	DBG((lv->dbg, LEVEL_2, "computing T_%d\n", bi->id));
 
 	/* put all back edge sources reachable (reduced) from here in tmp */
+	bitset_t *tmp = bitset_alloca(lv->n_blocks);
 	bitset_copy(tmp, bi->red_reachable);
 	bitset_set(tmp, bi->id);
 	bitset_and(tmp, lv->back_edge_src);
-	bi->be_tgt_calc = 1;
+	bi->be_tgt_calc = true;
 
 	DBG((lv->dbg, LEVEL_2, "\treachable be src: %B\n", tmp));
 
@@ -147,9 +142,9 @@ static void compute_back_edge_chain(lv_chk_t *lv, const ir_node *bl)
 		bl_info_t *si = lv->map[elm];
 
 		/* and find back edge targets which are not reduced reachable from bl */
-		foreach_block_succ (si->block, edge) {
-			ir_node *tgt         = get_edge_src_irn(edge);
-			bl_info_t *ti        = get_block_info(lv, tgt);
+		foreach_block_succ(si->block, edge) {
+			ir_node        *tgt  = get_edge_src_irn(edge);
+			bl_info_t      *ti   = get_block_info(lv, tgt);
 			dfs_edge_kind_t kind = dfs_get_edge_kind(lv->dfs, si->block, tgt);
 
 			if (kind == DFS_EDGE_BACK && !bitset_is_set(bi->red_reachable, ti->id)) {
@@ -166,21 +161,19 @@ static void compute_back_edge_chain(lv_chk_t *lv, const ir_node *bl)
 
 static inline void compute_back_edge_chains(lv_chk_t *lv)
 {
-	int i, n;
-
 	DBG((lv->dbg, LEVEL_2, "back edge sources: %B\n", lv->back_edge_src));
 	bitset_foreach(lv->back_edge_src, elm) {
 		compute_back_edge_chain(lv, lv->map[elm]->block);
 	}
 
-	for (i = 0, n = dfs_get_n_nodes(lv->dfs); i < n; ++i) {
+	for (int i = 0, n = dfs_get_n_nodes(lv->dfs); i < n; ++i) {
 		const ir_node *bl = (const ir_node*) dfs_get_post_num_node(lv->dfs, i);
-		bl_info_t *bi     = get_block_info(lv, bl);
+		bl_info_t     *bi = get_block_info(lv, bl);
 
 		if (!bitset_is_set(lv->back_edge_tgt, bi->id)) {
-			foreach_block_succ (bl, edge) {
-				ir_node *succ = get_edge_src_irn(edge);
-				bl_info_t *si = get_block_info(lv, succ);
+			foreach_block_succ(bl, edge) {
+				ir_node   *succ = get_edge_src_irn(edge);
+				bl_info_t *si   = get_block_info(lv, succ);
 				dfs_edge_kind_t kind = dfs_get_edge_kind(lv->dfs, bl, succ);
 
 				if (kind != DFS_EDGE_BACK) {
@@ -191,9 +184,9 @@ static inline void compute_back_edge_chains(lv_chk_t *lv)
 		}
 	}
 
-	for (i = 0, n = dfs_get_n_nodes(lv->dfs); i < n; ++i) {
+	for (int i = 0, n = dfs_get_n_nodes(lv->dfs); i < n; ++i) {
 		const ir_node *bl = (const ir_node*) dfs_get_post_num_node(lv->dfs, i);
-		bl_info_t *bi     = get_block_info(lv, bl);
+		bl_info_t     *bi = get_block_info(lv, bl);
 		bitset_set(bi->be_tgt_reach, bi->id);
 	}
 }
@@ -202,15 +195,11 @@ lv_chk_t *lv_chk_new(ir_graph *irg)
 {
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
-	lv_chk_t *res = XMALLOC(lv_chk_t);
-	int i;
-
 	stat_ev_tim_push();
+	lv_chk_t *res = XMALLOC(lv_chk_t);
+	FIRM_DBG_REGISTER(res->dbg, "ir.ana.lvchk");
 	ir_nodemap_init(&res->block_infos, irg);
 	obstack_init(&res->obst);
-
-	FIRM_DBG_REGISTER(res->dbg, "ir.ana.lvchk");
-
 	res->dfs           = dfs_new(&absgraph_irg_cfg_succ, irg);
 	res->n_blocks      = dfs_get_n_nodes(res->dfs);
 	res->back_edge_src = bitset_obstack_alloc(&res->obst, res->n_blocks);
@@ -218,9 +207,9 @@ lv_chk_t *lv_chk_new(ir_graph *irg)
 	res->map           = OALLOCNZ(&res->obst, bl_info_t*, res->n_blocks);
 
 	/* fill the map which maps pre_num to block infos */
-	for (i = res->n_blocks - 1; i >= 0; --i) {
-		ir_node *irn  = (ir_node *) dfs_get_pre_num_node(res->dfs, i);
-		bl_info_t *bi = get_block_info(res, irn);
+	for (int i = res->n_blocks; i-- > 0; ) {
+		ir_node   *irn = (ir_node*)dfs_get_pre_num_node(res->dfs, i);
+		bl_info_t *bi  = get_block_info(res, irn);
 		assert(bi->id < res->n_blocks);
 		assert(res->map[bi->id] == NULL);
 		res->map[bi->id] = bi;
@@ -234,9 +223,9 @@ lv_chk_t *lv_chk_new(ir_graph *irg)
 
 #ifndef NDEBUG
 	DBG((res->dbg, LEVEL_1, "liveness chk in %+F\n", irg));
-	for (i = res->n_blocks - 1; i >= 0; --i) {
-		const ir_node *irn = (const ir_node*) dfs_get_pre_num_node(res->dfs, i);
-		bl_info_t *bi      = get_block_info(res, irn);
+	for (int i = res->n_blocks; i-- > 0; ) {
+		const ir_node   *irn = (const ir_node*) dfs_get_pre_num_node(res->dfs, i);
+		const bl_info_t *bi  = get_block_info(res, irn);
 		DBG((res->dbg, LEVEL_1, "lv_chk for %d -> %+F\n", i, irn));
 		DBG((res->dbg, LEVEL_1, "\tred reach: %B\n", bi->red_reachable));
 		DBG((res->dbg, LEVEL_1, "\ttgt reach: %B\n", bi->be_tgt_reach));
@@ -260,12 +249,9 @@ void lv_chk_free(lv_chk_t *lv)
 
 unsigned lv_chk_bl_xxx(lv_chk_t *lv, const ir_node *bl, const ir_node *var)
 {
-	int res  = 0;
-	ir_node *def_bl;
+	assert(is_Block(bl));
 	stat_ev_cnt_decl(uses);
 	stat_ev_cnt_decl(iter);
-
-	assert(is_Block(bl) && "can only check for liveness in a block");
 
 	/* If the variable ist no liveness related var, bail out. */
 	if (!is_liveness_node(var))
@@ -275,7 +261,8 @@ unsigned lv_chk_bl_xxx(lv_chk_t *lv, const ir_node *bl, const ir_node *var)
 	stat_ev_tim_push();
 
 	/* If there is no dominance relation, go out, too */
-	def_bl = get_nodes_block(var);
+	int            res    = 0;
+	const ir_node *def_bl = get_nodes_block(var);
 	if (!block_dominates(def_bl, bl)) {
 		stat_ev("lv_chk_no_dom");
 		goto end;
@@ -288,15 +275,13 @@ unsigned lv_chk_bl_xxx(lv_chk_t *lv, const ir_node *bl, const ir_node *var)
 	if (def_bl == bl) {
 		stat_ev("lv_chk_def_block");
 		DBG((lv->dbg, LEVEL_2, "lv check same block %+F in %+F\n", var, bl));
-		foreach_out_edge (var, edge) {
-			ir_node *use    = get_edge_src_irn(edge);
-			ir_node *use_bl;
-
+		foreach_out_edge(var, edge) {
+			ir_node *use = get_edge_src_irn(edge);
 			if (!is_liveness_node(use))
 				continue;
 
 			stat_ev_cnt_inc(uses);
-			use_bl = get_nodes_block(use);
+			ir_node *use_bl = get_nodes_block(use);
 			if (is_Phi(use)) {
 				int pos = get_edge_src_pos(edge);
 				use_bl  = get_Block_cfgpred_block(use_bl, pos);
@@ -314,44 +299,25 @@ unsigned lv_chk_bl_xxx(lv_chk_t *lv, const ir_node *bl, const ir_node *var)
 		}
 
 		goto end;
-	}
-
-	/*
-	 * this is the more complicated case.
-	 * We try to gather as much information as possible during looking
-	 * at the uses.
-	 *
-	 * Note that we know for sure that bl != def_bl. That is sometimes
-	 * silently exploited below.
-	 */
-	else {
-		bl_info_t *def = get_block_info(lv, def_bl);
-		bl_info_t *bli = get_block_info(lv, bl);
-		bitset_t *uses = bitset_alloca(lv->n_blocks);
-		bitset_t *Tq;
-
-		size_t i;
-		unsigned min_dom, max_dom;
-
-		/* if the block has no DFS info, it cannot be reached.
-		 * This can happen in functions with endless loops.
-		 * we then go out, since nothing is live there.
+	} else {
+		/*
+		 * this is the more complicated case.
+		 * We try to gather as much information as possible during looking
+		 * at the uses.
 		 *
-		 * TODO: Is that right?
+		 * Note that we know for sure that bl != def_bl. That is sometimes
+		 * silently exploited below.
 		 */
-		if (!bli)
-			goto end;
-
+		const bl_info_t *bli = get_block_info(lv, bl);
+		const bl_info_t *def = get_block_info(lv, def_bl);
 		(void) def;
-		DBG((lv->dbg, LEVEL_2, "lv check %+F (def in %+F #%d) in different block %+F #%d\n",
-					var, def_bl, def->id, bl, bli->id));
+		DBG((lv->dbg, LEVEL_2,
+		     "lv check %+F (def in %+F #%d) in different block %+F #%d\n",
+		     var, def_bl, def->id, bl, bli->id));
 
-		foreach_out_edge (var, edge) {
+		bitset_t *uses = bitset_alloca(lv->n_blocks);
+		foreach_out_edge(var, edge) {
 			ir_node *user = get_edge_src_irn(edge);
-			int mask      = lv_chk_state_in;
-
-			ir_node *use_bl;
-			bl_info_t *bi;
 
 			/* if the user is no liveness node, the use does not count */
 			if (!is_liveness_node(user))
@@ -363,7 +329,8 @@ unsigned lv_chk_bl_xxx(lv_chk_t *lv, const ir_node *bl, const ir_node *var)
 			 * furthermore, prepare a mask so that in the case where
 			 * bl (the block in question) coincides with a use, it
 			 * can be marked live_end there. */
-			use_bl = get_nodes_block(user);
+			int      mask   = lv_chk_state_in;
+			ir_node *use_bl = get_nodes_block(user);
 			if (is_Phi(user)) {
 				int pos = get_edge_src_pos(edge);
 				use_bl  = get_Block_cfgpred_block(use_bl, pos);
@@ -378,35 +345,33 @@ unsigned lv_chk_bl_xxx(lv_chk_t *lv, const ir_node *bl, const ir_node *var)
 			if (use_bl == bl)
 				res |= mask;
 
-			bi = get_block_info(lv, use_bl);
-
-			if (bi)
-				bitset_set(uses, bi->id);
+			const bl_info_t *bi = get_block_info(lv, use_bl);
+			bitset_set(uses, bi->id);
 		}
+		DBG((lv->dbg, LEVEL_2, "\tuses: %B\n", uses));
 
 		/* get the dominance range which really matters. all uses outside
 		 * the definition's dominance range are not to consider. note,
 		 * that the definition itself is also not considered. The case
 		 * where bl == def_bl is considered above. */
-		min_dom = get_Block_dom_tree_pre_num(def_bl) + 1;
-		max_dom = get_Block_dom_max_subtree_pre_num(def_bl);
-
-		DBG((lv->dbg, LEVEL_2, "\tuses: %B\n", uses));
+		unsigned min_dom = get_Block_dom_tree_pre_num(def_bl) + 1;
+		unsigned max_dom = get_Block_dom_max_subtree_pre_num(def_bl);
 
 		/* prepare a set with all reachable back edge targets.
 		 * this will determine our "looking points" from where
 		 * we will search/find the calculated uses. */
-		Tq = bli->be_tgt_reach;
+		const bitset_t *Tq = bli->be_tgt_reach;
 
 		/* now, visit all viewing points in the temporary bitset lying
 		 * in the dominance range of the variable. Note that for reducible
 		 * flow-graphs the first iteration is sufficient and the loop
 		 * will be left. */
-		DBG((lv->dbg, LEVEL_2, "\tbe tgt reach: %B, dom span: [%d, %d]\n", Tq, min_dom, max_dom));
-		i = bitset_next_set(Tq, min_dom);
+		DBG((lv->dbg, LEVEL_2, "\tbe tgt reach: %B, dom span: [%u, %u]\n", Tq,
+		     min_dom, max_dom));
+		size_t i = bitset_next_set(Tq, min_dom);
 		while (i <= max_dom) {
-			bl_info_t *ti = lv->map[i];
-			int use_in_current_block = bitset_is_set(uses, ti->id);
+			const bl_info_t *ti                   = lv->map[i];
+			bool             use_in_current_block = bitset_is_set(uses, ti->id);
 
 			stat_ev_cnt_inc(iter);
 
@@ -435,7 +400,8 @@ unsigned lv_chk_bl_xxx(lv_chk_t *lv, const ir_node *bl, const ir_node *var)
 			}
 
 			/* If we can reach a use, the variable is live there and we say goodbye */
-			DBG((lv->dbg, LEVEL_2, "\tlooking from %d: seeing %B\n", ti->id, ti->red_reachable));
+			DBG((lv->dbg, LEVEL_2, "\tlooking from %d: seeing %B\n",
+			     ti->id, ti->red_reachable));
 			if (bitset_intersect(ti->red_reachable, uses)) {
 				res |= lv_chk_state_in | lv_chk_state_out | lv_chk_state_end;
 				goto end;

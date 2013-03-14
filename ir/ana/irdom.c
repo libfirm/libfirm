@@ -249,14 +249,14 @@ void dom_tree_walk(ir_node *block, irg_walk_func *pre, irg_walk_func *post,
 void postdom_tree_walk(ir_node *block, irg_walk_func *pre,
 		irg_walk_func *post, void *env)
 {
-	if (pre)
+	if (pre != NULL)
 		pre(block, env);
 
 	postdominates_for_each(block, p) {
 		postdom_tree_walk(p, pre, post, env);
 	}
 
-	if (post)
+	if (post != NULL)
 		post(block, env);
 }
 
@@ -520,13 +520,12 @@ void compute_doms(ir_graph *irg)
 	assert(used <= n_blocks);
 	n_blocks = used;
 
-	for (int i = n_blocks-1; i > 0; i--) {  /* Don't iterate the root, it's done. */
+	for (int i = n_blocks; i-- > 1; ) {  /* Don't iterate the root, it's done. */
 		tmp_dom_info  *w     = &tdi_list[i];
 		const ir_node *block = w->block;
 
 		/* Step 2 */
-		int irn_arity = get_irn_arity(block);
-		for (int j = 0; j < irn_arity; j++) {
+		for (int j = 0, arity = get_irn_arity(block); j < arity; j++) {
 			const ir_node *pred       = get_Block_cfgpred(block, j);
 			const ir_node *pred_block = get_nodes_block(pred);
 
@@ -541,8 +540,7 @@ void compute_doms(ir_graph *irg)
 		/* handle keep-alives if we are at the end block */
 		if (block == get_irg_end_block(irg)) {
 			ir_node *end = get_irg_end(irg);
-			irn_arity = get_irn_arity(end);
-			for (int j = 0; j < irn_arity; j++) {
+			for (int j = 0, arity = get_irn_arity(end); j < arity; j++) {
 				const ir_node *pred = get_irn_n(end, j);
 				if (!is_Block(pred) || get_Block_dom_pre_num(pred) == -1)
 					continue;   /* unreachable */
@@ -636,7 +634,7 @@ void compute_postdoms(ir_graph *irg)
 	assert(used <= n_blocks);
 	n_blocks = used;
 
-	for (int i = n_blocks-1; i > 0; i--) {  /* Don't iterate the root, it's done. */
+	for (int i = n_blocks; i-- > 1; ) {  /* Don't iterate the root, it's done. */
 		tmp_dom_info *w = &tdi_list[i];
 
 		/* Step 2 */

@@ -69,8 +69,10 @@ static void add_cdep(ir_node *node, ir_node *dep_on)
 		ir_cdep *newdep;
 
 		for (;;) {
-			if (get_cdep_node(dep) == dep_on) return;
-			if (dep->next == NULL) break;
+			if (get_cdep_node(dep) == dep_on)
+				return;
+			if (dep->next == NULL)
+				break;
 			dep = dep->next;
 		}
 		newdep = OALLOC(&cdep_data->obst, ir_cdep);
@@ -86,16 +88,14 @@ static void add_cdep(ir_node *node, ir_node *dep_on)
 static void cdep_pre(ir_node *node, void *ctx)
 {
 	(void)ctx;
-
-	for (int i = get_Block_n_cfgpreds(node); i-- != 0;) {
+	for (int i = get_Block_n_cfgpreds(node); i-- > 0; ) {
 		ir_node *pred = get_Block_cfgpred_block(node, i);
-		ir_node *pdom;
-		ir_node *dependee;
+		if (is_Bad(pred))
+			continue;
 
-		if (is_Bad(pred)) continue;
-
-		pdom = get_Block_ipostdom(pred);
-		for (dependee = node; dependee != pdom; dependee = get_Block_ipostdom(dependee)) {
+		ir_node *pdom = get_Block_ipostdom(pred);
+		for (ir_node *dependee = node; dependee != pdom;
+		     dependee = get_Block_ipostdom(dependee)) {
 			assert(!is_Bad(pdom));
 			add_cdep(dependee, pred);
 		}
@@ -108,15 +108,10 @@ static void cdep_pre(ir_node *node, void *ctx)
  */
 static int cdep_edge_hook(FILE *F, ir_node *block)
 {
-	ir_cdep *cd;
-
-	for (cd = find_cdep(block); cd != NULL; cd = cd->next) {
-		fprintf(
-			F,
-			"edge:{sourcename:\"n%ld\" targetname:\"n%ld\" "
-			"linestyle:dashed color:gold}\n",
-			get_irn_node_nr(block), get_irn_node_nr(cd->node)
-		);
+	for (ir_cdep *cd = find_cdep(block); cd != NULL; cd = cd->next) {
+		fprintf(F, "edge:{sourcename:\"n%ld\" targetname:\"n%ld\" "
+		           "linestyle:dashed color:gold}\n",
+		        get_irn_node_nr(block), get_irn_node_nr(cd->node));
 	}
 
 	return 0;
@@ -162,10 +157,10 @@ void free_cdep(ir_graph *irg)
 
 int is_cdep_on(const ir_node *dependee, const ir_node *candidate)
 {
-	const ir_cdep *dep;
-
-	for (dep = find_cdep(dependee); dep != NULL; dep = dep->next) {
-		if (get_cdep_node(dep) == candidate) return 1;
+	for (const ir_cdep *dep = find_cdep(dependee); dep != NULL;
+	     dep = dep->next) {
+		if (get_cdep_node(dep) == candidate)
+			return 1;
 	}
 	return 0;
 }
@@ -173,13 +168,11 @@ int is_cdep_on(const ir_node *dependee, const ir_node *candidate)
 ir_node *get_unique_cdep(const ir_node *block)
 {
 	ir_cdep *cdep = find_cdep(block);
-
 	return cdep != NULL && cdep->next == NULL ? get_cdep_node(cdep) : NULL;
 }
 
 int has_multiple_cdep(const ir_node *block)
 {
 	ir_cdep *cdep = find_cdep(block);
-
 	return cdep != NULL && cdep->next != NULL;
 }

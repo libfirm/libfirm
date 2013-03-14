@@ -32,12 +32,13 @@ static bitset_t *mere_get_backarray(const ir_node *n)
 {
 	switch (get_irn_opcode(n)) {
 	case iro_Block:
-		if (!get_Block_matured(n)) return NULL;
+		if (!get_Block_matured(n))
+			return NULL;
 
-		assert(n->attr.block.backedge && "backedge array not allocated!");
+		assert(n->attr.block.backedge != NULL);
 		return n->attr.block.backedge;
 	case iro_Phi:
-		assert(n->attr.phi.u.backedge && "backedge array not allocated!");
+		assert(n->attr.phi.u.backedge != NULL);
 		return n->attr.phi.u.backedge;
 	default:
 		break;
@@ -52,12 +53,11 @@ static bitset_t *mere_get_backarray(const ir_node *n)
 static bitset_t *get_backarray(const ir_node *n)
 {
 	bitset_t *ba = mere_get_backarray(n);
-
 #ifndef NDEBUG
-	if (ba) {
+	if (ba != NULL) {
 		size_t bal = bitset_size(ba);  /* avoid macro expansion in assertion. */
 		size_t inl = get_irn_arity(n);
-		assert(bal == inl && "backedge array with faulty length");
+		assert(bal == inl);
 	}
 #endif
 
@@ -81,17 +81,14 @@ static int legal_backarray(const ir_node *n)
 void fix_backedges(struct obstack *obst, ir_node *n)
 {
 	bitset_t *arr = mere_get_backarray(n);
-	unsigned opc;
-	int arity;
-
-	if (! arr)
+	if (arr == NULL)
 		return;
 
-	arity = get_irn_arity(n);
+	int arity = get_irn_arity(n);
 	if (bitset_size(arr) != (unsigned) arity) {
 		arr = new_backedge_arr(obst, arity);
 
-		opc = get_irn_opcode(n);
+		unsigned opc = get_irn_opcode(n);
 		if (opc == iro_Phi)
 			n->attr.phi.u.backedge = arr;
 		else if (opc == iro_Block) {
@@ -105,7 +102,7 @@ void fix_backedges(struct obstack *obst, ir_node *n)
 int is_backedge(const ir_node *n, int pos)
 {
 	bitset_t *ba = get_backarray(n);
-	if (ba)
+	if (ba != NULL)
 		return bitset_is_set(ba, pos);
 	return 0;
 }
@@ -113,7 +110,7 @@ int is_backedge(const ir_node *n, int pos)
 void set_backedge(ir_node *n, int pos)
 {
 	bitset_t *ba = get_backarray(n);
-	assert(ba && "can only set backedges at Phi, Block nodes.");
+	assert(ba != NULL);
 	bitset_set(ba, pos);
 }
 

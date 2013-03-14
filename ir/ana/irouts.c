@@ -142,22 +142,23 @@ static void irg_out_walk_2(ir_node *node, irg_walk_func *pre,
 
 	set_irn_visited(node, get_irg_visited(current_ir_graph));
 
-	if (pre) pre(node, env);
+	if (pre != NULL)
+		pre(node, env);
 
-	int n = get_irn_n_outs(node);
-	for (int i = 0; i < n; ++i) {
+	for (int i = 0, n = get_irn_n_outs(node); i < n; ++i) {
 		ir_node *succ = get_irn_out(node, i);
 		if (get_irn_visited(succ) < get_irg_visited(current_ir_graph))
 			irg_out_walk_2(succ, pre, post, env);
 	}
 
-	if (post) post(node, env);
+	if (post != NULL)
+		post(node, env);
 }
 
 void irg_out_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
                   void *env)
 {
-	assert(node);
+	assert(node != NULL);
 	ir_graph *irg = get_irn_irg(node);
 	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS)) {
 		inc_irg_visited(irg);
@@ -170,21 +171,19 @@ static void irg_out_block_walk2(ir_node *bl, irg_walk_func *pre,
 {
 	if (Block_block_visited(bl))
 		return;
-
 	mark_Block_block_visited(bl);
 
-	if (pre)
+	if (pre != NULL)
 		pre(bl, env);
 
-	int n = get_Block_n_cfg_outs(bl);
-	for (int i = 0; i < n; ++i) {
+	for (int i = 0, n = get_Block_n_cfg_outs(bl); i < n; ++i) {
 		/* find the corresponding predecessor block. */
 		ir_node *pred = get_Block_cfg_out(bl, i);
 		/* recursion */
 		irg_out_block_walk2(pred, pre, post, env);
 	}
 
-	if (post)
+	if (post != NULL)
 		post(bl, env);
 }
 
@@ -200,8 +199,7 @@ void irg_out_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
 	inc_irg_block_visited(irg);
 
 	if (get_irn_mode(node) == mode_X) {
-		int n = get_irn_n_outs(node);
-		for (int i = 0; i < n; ++i) {
+		for (int i = 0, n = get_irn_n_outs(node); i < n; ++i) {
 			ir_node *succ = get_irn_out(node, i);
 			irg_out_block_walk2(succ, pre, post, env);
 		}
@@ -241,9 +239,8 @@ static void count_outs_node(ir_node *n)
 	/* initialize our counter */
 	n->o.n_outs = 0;
 
-	int start     = is_Block(n) ? 0 : -1;
-	int irn_arity = get_irn_arity(n);
-	for (int i = start; i < irn_arity; ++i) {
+	int start = is_Block(n) ? 0 : -1;
+	for (int i = start, irn_arity = get_irn_arity(n); i < irn_arity; ++i) {
 		ir_node *def = get_irn_n(n, i);
 		/* optimize Tuples */
 		ir_node *skipped = skip_Tuple(def);
@@ -281,9 +278,8 @@ static void set_out_edges_node(ir_node *node, struct obstack *obst)
 	node->o.out->n_edges = 0;
 
 	/* add def->use edges from my predecessors to me */
-	int start     = is_Block(node) ? 0 : -1;
-	int irn_arity = get_irn_arity(node);
-	for (int i = start; i < irn_arity; ++i) {
+	int start = is_Block(node) ? 0 : -1;
+	for (int i = start, irn_arity = get_irn_arity(node); i < irn_arity; ++i) {
 		ir_node *def = get_irn_n(node, i);
 
 		/* recurse, ensures that out array of pred is already allocated */
@@ -299,7 +295,6 @@ static void set_out_edges_node(ir_node *node, struct obstack *obst)
 static void set_out_edges(ir_graph *irg)
 {
 	struct obstack *obst = &irg->out_obst;
-
 	obstack_init(obst);
 	irg->out_obst_allocated = true;
 
@@ -340,7 +335,7 @@ void assure_irg_outs(ir_graph *irg)
 /** Clear the outs of a node */
 static void reset_outs(ir_node *node, void *unused)
 {
-	(void) unused;
+	(void)unused;
 	node->o.out = NULL;
 }
 #endif
@@ -355,6 +350,6 @@ void free_irg_outs(ir_graph *irg)
 #ifdef DEBUG_libfirm
 	/* when debugging, *always* reset all nodes' outs!  irg->outs might
 	   have been lying to us */
-	irg_walk_graph (irg, reset_outs, NULL, NULL);
+	irg_walk_graph(irg, reset_outs, NULL, NULL);
 #endif
 }

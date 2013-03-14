@@ -99,16 +99,15 @@ void exit_execfreq(void)
 
 static double *solve_lgs(gs_matrix_t *mat, double *x, int size)
 {
-	double init = 1.0 / size;
-	double dev;
-	int i, iter = 0;
-
 	/* better convergence. */
-	for (i = 0; i < size; ++i)
+	double init = 1.0 / size;
+	for (int i = 0; i < size; ++i)
 		x[i] = init;
 
 	stat_ev_dbl("execfreq_matrix_size", size);
 	stat_ev_tim_push();
+	int    iter = 0;
+	double dev;
 	do {
 		++iter;
 		dev = gs_matrix_gauss_seidel(mat, x, size);

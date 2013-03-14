@@ -176,7 +176,6 @@ static inline ir_node *pop(void)
 static inline void pop_scc_to_loop(ir_node *n)
 {
 	ir_node *m;
-
 	do {
 		m = pop();
 		loop_node_cnt++;
@@ -191,16 +190,13 @@ static inline void pop_scc_to_loop(ir_node *n)
    can't they have two loops as sons? Does it never get that far? ) */
 static void close_loop(ir_loop *l)
 {
-	size_t last = get_loop_n_elements(l) - 1;
+	size_t       last     = get_loop_n_elements(l) - 1;
 	loop_element lelement = get_loop_element(l, last);
-	ir_loop *last_son = lelement.son;
+	ir_loop     *last_son = lelement.son;
 
-	if (get_kind(last_son) == k_ir_loop &&
-	    get_loop_n_elements(last_son) == 1) {
-		ir_loop *gson;
-
+	if (get_kind(last_son) == k_ir_loop && get_loop_n_elements(last_son) == 1) {
 		lelement = get_loop_element(last_son, 0);
-		gson = lelement.son;
+		ir_loop *gson = lelement.son;
 		if (get_kind(gson) == k_ir_loop) {
 			loop_element new_last_son;
 
@@ -223,7 +219,6 @@ static void close_loop(ir_loop *l)
 static inline void pop_scc_unmark_visit(ir_node *n)
 {
 	ir_node *m;
-
 	do {
 		m = pop();
 		set_irn_visited(m, 0);
@@ -300,11 +295,11 @@ static inline void finish_scc(void)
  */
 static int is_head(ir_node *n, ir_node *root)
 {
-	int some_outof_loop = 0, some_in_loop = 0;
 	(void) root;
+	bool some_outof_loop = false;
+	bool some_in_loop    = false;
 
-	int const arity = get_Block_n_cfgpreds(n);
-	for (int i = 0; i < arity; i++) {
+	for (int i = 0, arity = get_Block_n_cfgpreds(n); i < arity; i++) {
 		ir_node *pred = get_Block_cfgpred_block(n, i);
 		/* ignore Bad control flow: it cannot happen */
 		if (is_Bad(pred))
@@ -312,10 +307,10 @@ static int is_head(ir_node *n, ir_node *root)
 		if (is_backedge(n, i))
 			continue;
 		if (!irn_is_in_stack(pred)) {
-			some_outof_loop = 1;
+			some_outof_loop = true;
 		} else {
 			assert(get_irn_uplink(pred) >= get_irn_uplink(root));
-			some_in_loop = 1;
+			some_in_loop = true;
 		}
 	}
 	return some_outof_loop & some_in_loop;
@@ -332,12 +327,12 @@ static int is_head(ir_node *n, ir_node *root)
  */
 static int is_endless_head(ir_node *n, ir_node *root)
 {
-	int none_outof_loop = 1, some_in_loop = 0;
 	(void) root;
+	bool none_outof_loop = true;
+	bool some_in_loop    = false;
 
 	/* Test for legal loop header: Block, Phi, ... */
-	int const arity = get_Block_n_cfgpreds(n);
-	for (int i = 0; i < arity; i++) {
+	for (int i = 0, arity = get_Block_n_cfgpreds(n); i < arity; i++) {
 		ir_node *pred = get_Block_cfgpred_block(n, i);
 		/* ignore Bad control flow: it cannot happen */
 		if (is_Bad(pred))
@@ -345,10 +340,10 @@ static int is_endless_head(ir_node *n, ir_node *root)
 		if (is_backedge(n, i))
 			continue;
 		if (!irn_is_in_stack(pred)) {
-			none_outof_loop = 0;
+			none_outof_loop = false;
 		} else {
 			assert(get_irn_uplink(pred) >= get_irn_uplink(root));
-			some_in_loop = 1;
+			some_in_loop = true;
 		}
 	}
 	return none_outof_loop && some_in_loop;
@@ -360,10 +355,9 @@ static int is_endless_head(ir_node *n, ir_node *root)
  */
 static int smallest_dfn_pred(ir_node *n, int limit)
 {
-	int i, index = -2, min = -1;
-
-	int arity = get_Block_n_cfgpreds(n);
-	for (i = 0; i < arity; i++) {
+	int index = -2;
+	int min   = -1;
+	for (int i = 0, arity = get_Block_n_cfgpreds(n); i < arity; i++) {
 		ir_node *pred = get_Block_cfgpred_block(n, i);
 		/* ignore Bad control flow: it cannot happen */
 		if (is_Bad(pred))
@@ -372,7 +366,7 @@ static int smallest_dfn_pred(ir_node *n, int limit)
 			continue;
 		if (get_irn_dfn(pred) >= limit && (min == -1 || get_irn_dfn(pred) < min)) {
 			index = i;
-			min = get_irn_dfn(pred);
+			min   = get_irn_dfn(pred);
 		}
 	}
 	return index;
@@ -383,10 +377,9 @@ static int smallest_dfn_pred(ir_node *n, int limit)
  */
 static int largest_dfn_pred(ir_node *n)
 {
-	int i, index = -2, max = -1;
-
-	int arity = get_Block_n_cfgpreds(n);
-	for (i = 0; i < arity; i++) {
+	int index = -2;
+	int max   = -1;
+	for (int i = 0, arity = get_Block_n_cfgpreds(n); i < arity; i++) {
 		ir_node *pred = get_Block_cfgpred_block(n, i);
 		/* ignore Bad control flow: it cannot happen */
 		if (is_Bad(pred))
@@ -409,11 +402,9 @@ static int largest_dfn_pred(ir_node *n)
  */
 static ir_node *find_tail(ir_node *n)
 {
-	ir_node *m;
 	int      res_index = -2;
-	size_t   i;
 
-	m = stack[tos - 1];  /* tos = top of stack */
+	ir_node *m = stack[tos - 1];  /* tos = top of stack */
 	if (is_head(m, n)) {
 		res_index = smallest_dfn_pred(m, 0);
 		if ((res_index == -2) &&  /* no smallest dfn pred found. */
@@ -422,6 +413,7 @@ static ir_node *find_tail(ir_node *n)
 	} else {
 		if (m == n)
 			return NULL;
+		size_t i;
 		for (i = tos - 1; i != 0;) {
 			m = stack[--i];
 			if (is_head(m, n)) {
@@ -482,12 +474,9 @@ inline static int is_outermost_loop(ir_loop *l)
  */
 static void cfscc(ir_node *n)
 {
-	int arity;
-	int i;
-
 	assert(is_Block(n));
-
-	if (irn_visited_else_mark(n)) return;
+	if (irn_visited_else_mark(n))
+		return;
 
 	/* Initialize the node */
 	set_irn_dfn(n, current_dfn);      /* Depth first number for this node */
@@ -496,14 +485,10 @@ static void cfscc(ir_node *n)
 	++current_dfn;
 	push(n);
 
-	arity = get_Block_n_cfgpreds(n);
-
-	for (i = 0; i < arity; i++) {
-		ir_node *m;
-
+	for (int i = 0, arity = get_Block_n_cfgpreds(n); i < arity; i++) {
 		if (is_backedge(n, i))
 			continue;
-		m = get_Block_cfgpred_block(n, i);
+		ir_node *m = get_Block_cfgpred_block(n, i);
 		/* ignore Bad control flow: it cannot happen */
 		if (is_Bad(m))
 			continue;
@@ -544,13 +529,13 @@ static void cfscc(ir_node *n)
 			 * in the heap analyses. */
 
 			ir_loop *l;
-			int close;
+			bool     close;
 			if ((get_loop_n_elements(current_loop) > 0) || (is_outermost_loop(current_loop))) {
 				l = new_loop();
-				close = 1;
+				close = true;
 			} else {
 				l = current_loop;
-				close = 0;
+				close = false;
 			}
 
 			/* Remove the cfloop from the stack ... */
@@ -576,12 +561,9 @@ static void cfscc(ir_node *n)
 
 void construct_cf_backedges(ir_graph *irg)
 {
-	ir_node *end = get_irg_end(irg);
-	struct obstack temp;
-	int i;
-
 	outermost_ir_graph = irg;
 
+	struct obstack temp;
 	obstack_init(&temp);
 	init_scc(irg, &temp);
 
@@ -596,7 +578,8 @@ void construct_cf_backedges(ir_graph *irg)
 
 	/* walk over all blocks of the graph, including keep alives */
 	cfscc(get_irg_end_block(irg));
-	for (i = get_End_n_keepalives(end) - 1; i >= 0; --i) {
+	ir_node *end = get_irg_end(irg);
+	for (int i = get_End_n_keepalives(end); i-- > 0; ) {
 		ir_node *el = get_End_keepalive(end, i);
 		if (is_Block(el))
 			cfscc(el);
