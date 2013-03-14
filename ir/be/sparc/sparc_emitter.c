@@ -284,7 +284,7 @@ static bool emits_multiple_instructions(const ir_node *node)
 	return is_sparc_SMulh(node) || is_sparc_UMulh(node)
 		|| is_sparc_SDiv(node) || is_sparc_UDiv(node)
 		|| be_is_MemPerm(node) || be_is_Perm(node)
-		|| is_sparc_SubSP(node);
+		|| is_sparc_SubSP(node) || is_sparc_ASM(node);
 }
 
 static bool uses_reg(const ir_node *node, unsigned reg_index, unsigned width)
@@ -707,6 +707,23 @@ static void emit_be_IncSP(const ir_node *irn)
 	/* SPARC stack grows downwards */
 	char const *const insn = offset > 0 ? offset = -offset, "add" : "sub";
 	sparc_emitf(irn, "%s %S0, %d, %D0", insn, offset);
+}
+
+static void emit_sparc_ASM(const ir_node *node)
+{
+	be_emit_cstring("#APP\n");
+	be_emit_write_line();
+
+	const sparc_asm_attr_t *attr = get_sparc_asm_attr_const(node);
+	const char             *s    = get_id_str(attr->text);
+
+	if (s[0] != '\t')
+		be_emit_char('\t');
+	be_emit_string(s);
+
+	be_emit_cstring("\n#NO_APP\n");
+	be_emit_write_line();
+
 }
 
 /**
@@ -1269,6 +1286,7 @@ static void sparc_register_emitters(void)
 	be_set_emitter(op_be_IncSP,        emit_be_IncSP);
 	be_set_emitter(op_be_MemPerm,      emit_be_MemPerm);
 	be_set_emitter(op_be_Perm,         emit_be_Perm);
+	be_set_emitter(op_sparc_ASM,       emit_sparc_ASM);
 	be_set_emitter(op_sparc_Ba,        emit_sparc_Ba);
 	be_set_emitter(op_sparc_Bicc,      emit_sparc_Bicc);
 	be_set_emitter(op_sparc_Call,      emit_sparc_Call);

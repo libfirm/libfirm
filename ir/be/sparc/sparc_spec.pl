@@ -112,12 +112,15 @@ $default_copy_attr = "sparc_copy_attr";
 	                            "\tinit_sparc_switch_jmp_attributes(res, table, jump_table);\n",
 	sparc_fp_attr_t          => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, n_res);\n".
 	                            "\tinit_sparc_fp_attributes(res, fp_mode);\n",
-	sparc_fp_conv_attr_t     => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, n_res);".
+	sparc_fp_conv_attr_t     => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, n_res);\n".
 	                            "\tinit_sparc_fp_conv_attributes(res, src_mode, dest_mode);\n",
+	sparc_asm_attr_t         => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, n_res);\n".
+	                            "\tinit_sparc_asm_attributes(res, text);",
 );
 
 %compare_attr = (
 	sparc_attr_t            => "cmp_attr_sparc",
+	sparc_asm_attr_t        => "cmp_attr_sparc_asm",
 	sparc_fp_attr_t         => "cmp_attr_sparc_fp",
 	sparc_fp_conv_attr_t    => "cmp_attr_sparc_fp_conv",
 	sparc_jmp_cond_attr_t   => "cmp_attr_sparc_jmp_cond",
@@ -237,6 +240,15 @@ my %float_unop_constructors = (
 );
 
 %nodes = (
+
+ASM => {
+	state     => "exc_pinned",
+	reg_req   => { in => [ "none" ], out => [ "none" ] },
+	ins       => [ "mem" ],
+	outs      => [ "M" ],
+	attr      => "ident *text",
+	attr_type => "sparc_asm_attr_t",
+},
 
 Add => {
 	irn_flags    => [ "rematerializable" ],

@@ -468,6 +468,37 @@ only_offset:
 	address->offset = offset;
 }
 
+static ir_node *gen_ASM(ir_node *node)
+{
+	size_t n_clobbers           = get_ASM_n_clobbers(node);
+	size_t n_output_constraints = get_ASM_n_output_constraints(node);
+	size_t n_inputs             = get_ASM_n_inputs(node);
+	if (n_clobbers != 0 || n_output_constraints != 0 || n_inputs != 0) {
+		panic("ASM with output constraints/input constraints or clobber not supported yet");
+	}
+
+	dbg_info *dbgi    = get_irn_dbg_info(node);
+	ir_node  *block   = be_transform_node(get_nodes_block(node));
+	ident    *text    = get_ASM_text(node);
+	ir_node  *mem     = get_ASM_mem(node);
+	ir_node  *new_mem = be_transform_node(mem);
+	return new_bd_sparc_ASM(dbgi, block, new_mem, text);
+}
+
+static ir_node *gen_Proj_ASM(ir_node *node)
+{
+	long     pn       = get_Proj_proj(node);
+	ir_node *pred     = get_Proj_pred(node);
+	ir_node *new_pred = be_transform_node(pred);
+
+	switch (pn) {
+	case 0:
+		return new_r_Proj(new_pred, mode_M, pn_sparc_ASM_M);
+	default:
+		panic("unexpected Proj from ASM found");
+	}
+}
+
 /**
  * Creates an sparc Add.
  *
@@ -2285,6 +2316,8 @@ static ir_node *gen_Proj(ir_node *node)
 	ir_node *pred = get_Proj_pred(node);
 
 	switch (get_irn_opcode(pred)) {
+	case iro_ASM:
+		return gen_Proj_ASM(node);
 	case iro_Alloc:
 		return gen_Proj_Alloc(node);
 	case iro_Store:
@@ -2338,6 +2371,7 @@ static void sparc_register_transformers(void)
 {
 	be_start_transform_setup();
 
+	be_set_transform_function(op_ASM,          gen_ASM);
 	be_set_transform_function(op_Add,          gen_Add);
 	be_set_transform_function(op_Alloc,        gen_Alloc);
 	be_set_transform_function(op_And,          gen_And);

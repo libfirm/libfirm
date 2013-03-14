@@ -208,6 +208,18 @@ const sparc_fp_conv_attr_t *get_sparc_fp_conv_attr_const(const ir_node *node)
 	return (const sparc_fp_conv_attr_t*) get_irn_generic_attr_const(node);
 }
 
+sparc_asm_attr_t *get_sparc_asm_attr(ir_node *node)
+{
+	assert(is_sparc_ASM(node));
+	return (sparc_asm_attr_t*)get_irn_generic_attr(node);
+}
+
+const sparc_asm_attr_t *get_sparc_asm_attr_const(const ir_node *node)
+{
+	assert(is_sparc_ASM(node));
+	return (const sparc_asm_attr_t*)get_irn_generic_attr_const(node);
+}
+
 /**
  * Initializes the nodes attributes.
  */
@@ -264,6 +276,12 @@ static void init_sparc_switch_jmp_attributes(ir_node *node,
 	be_foreach_out(node, o) {
 		arch_set_irn_register_req_out(node, o, arch_no_register_req);
 	}
+}
+
+static void init_sparc_asm_attributes(ir_node *node, ident *text)
+{
+	sparc_asm_attr_t *attr = get_sparc_asm_attr(node);
+	attr->text = text;
 }
 
 /**
@@ -344,6 +362,16 @@ static int cmp_attr_sparc_fp_conv(const ir_node *a, const ir_node *b)
 
 	return attr_a->src_mode != attr_b->src_mode
 	    || attr_a->dest_mode != attr_b->dest_mode;
+}
+
+static int cmp_attr_sparc_asm(const ir_node *a, const ir_node *b)
+{
+	if (cmp_attr_sparc(a, b))
+		return 1;
+
+	const sparc_asm_attr_t *attr_a = get_sparc_asm_attr_const(a);
+	const sparc_asm_attr_t *attr_b = get_sparc_asm_attr_const(b);
+	return attr_a->text != attr_b->text;
 }
 
 /* Include the generated constructor functions */
