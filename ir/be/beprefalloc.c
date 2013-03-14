@@ -1331,7 +1331,6 @@ static void permute_values_icore(ir_nodeset_t *live_nodes, ir_node *before,
 	}
 
 #ifdef DEBUG_libfirm
-	emit_rtg_stats(parcopy);
 	print_parcopy(parcopy, n_used);
 #endif
 	ir_node *block = get_nodes_block(before);
@@ -1511,6 +1510,10 @@ static void permute_values(ir_nodeset_t *live_nodes, ir_node *before,
 	DB((dbg_icore, LEVEL_2, "permute_values: before:\n"));
 	for (unsigned i = 0; i < n_regs; ++i)
 		DB((dbg_icore, LEVEL_2, "  %u -> %+F\n", i, assignments[i]));
+
+#ifdef DEBUG_libfirm
+	emit_rtg_stats(permutation);
+#endif
 
 	switch (perm_building_mode) {
 	case PREFALLOC_PERM_DIRECT:
