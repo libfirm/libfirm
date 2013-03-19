@@ -44,6 +44,8 @@ enum {
 };
 static int debug_level = LEVEL_NONE;
 
+static int has_cfi_sections = true;
+
 /**
  * Usually we simply use the DW_TAG_xxx numbers for our abbrev IDs, but for
  * the cases where we need multiple ids with the same DW_TAG we define new IDs
@@ -915,12 +917,14 @@ void be_dwarf_unit_begin(const char *filename)
 	if (comp_dir != NULL)
 		be_gas_emit_cstring(comp_dir);
 
-	/* tell gas to emit cfi in debug_frame
-	 * TODO: if we produce exception handling code then this should be
-	 *       .eh_frame (I also wonder if bad things happen if simply always
-	 *       use eh_frame) */
-	be_emit_cstring("\t.cfi_sections .debug_frame\n");
-	be_emit_write_line();
+	if (has_cfi_sections) {
+		/* tell gas to emit cfi in debug_frame
+		 * TODO: if we produce exception handling code then this should be
+		 *       .eh_frame (I also wonder if bad things happen if simply always
+		 *       use eh_frame) */
+		be_emit_cstring("\t.cfi_sections .debug_frame\n");
+		be_emit_write_line();
+	}
 }
 
 void be_dwarf_unit_end(void)
@@ -991,4 +995,13 @@ void be_init_dwarf(void)
 	};
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_add_table(be_grp, be_main_options);
+
+	static lc_opt_table_entry_t dwarf_options[] = {
+		LC_OPT_ENT_BOOL("has_cfi_sections",
+		                "assembler supports .cfi_sections directive",
+		                &has_cfi_sections),
+		LC_OPT_LAST
+	};
+	lc_opt_entry_t *dwarf_grp = lc_opt_get_grp(be_grp, "dwarf");
+	lc_opt_add_table(dwarf_grp, dwarf_options);
 }
