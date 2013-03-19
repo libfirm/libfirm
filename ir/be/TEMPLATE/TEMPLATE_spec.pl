@@ -110,7 +110,6 @@ $default_copy_attr = "TEMPLATE_copy_attr";
 # Integer nodes
 
 Add => {
-	op_flags  => [ "commutative" ],
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => 'add %S1, %S2, %D1',
@@ -118,7 +117,6 @@ Add => {
 },
 
 Mul => {
-	op_flags  => [ "commutative" ],
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      =>'mul %S1, %S2, %D1',
@@ -126,7 +124,6 @@ Mul => {
 },
 
 And => {
-	op_flags  => [ "commutative" ],
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => 'and %S1, %S2, %D1',
@@ -134,7 +131,6 @@ And => {
 },
 
 Or => {
-	op_flags  => [ "commutative" ],
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => 'or %S1, %S2, %D1',
@@ -142,7 +138,6 @@ Or => {
 },
 
 Xor => {
-	op_flags  => [ "commutative" ],
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => 'xor %S1, %S2, %D1',
@@ -246,7 +241,6 @@ Store => {
 # Floating Point operations
 
 fAdd => {
-	op_flags  => [ "commutative" ],
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
 	emit      => 'fadd %S1, %S2, %D1',
@@ -254,7 +248,6 @@ fAdd => {
 },
 
 fMul => {
-	op_flags  => [ "commutative" ],
 	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
 	emit      =>'fmul %S1, %S2, %D1',
 	mode      => $mode_fp,

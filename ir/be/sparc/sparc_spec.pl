@@ -747,7 +747,6 @@ fcmp => {
 },
 
 fadd => {
-	op_flags     => [ "commutative" ],
 	irn_flags    => [ "rematerializable" ],
 	emit         => 'fadd%FM %S0, %S1, %D0',
 	attr_type    => "sparc_fp_attr_t",
@@ -767,7 +766,6 @@ fsub => {
 
 fmul => {
 	irn_flags    => [ "rematerializable" ],
-	op_flags     => [ "commutative" ],
 	emit         =>'fmul%FM %S0, %S1, %D0',
 	attr_type    => "sparc_fp_attr_t",
 	attr         => "ir_mode *fp_mode",
