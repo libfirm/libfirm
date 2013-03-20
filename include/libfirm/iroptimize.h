@@ -852,6 +852,12 @@ FIRM_API ir_graph_pass_t *place_code_pass(const char *name);
 FIRM_API void fixpoint_vrp(ir_graph*);
 
 /**
+ * This optimization finds values where the bits are either constant or irrelevant
+ * and exchanges them for a corresponding constant.
+ */
+FIRM_API void occult_consts(ir_graph*);
+
+/**
  * Creates an ir_graph pass for fixpoint_vrp().
  * This pass dDetermines information about the values of nodes
  * and perform simplifications using this information.
