@@ -28,7 +28,7 @@
 #include "tv.h"
 #include "irnodemap.h"
 #include "dca.h"
-#include "fp-vrp.h"
+#include "constbits.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
@@ -48,7 +48,7 @@ static void occult_const_opt_walker(ir_node *node, void *data)
 	if (!mode_is_data(get_irn_mode(node))) return;
 
 	env_t       *env = (env_t *)data;
-	vrp_bitinfo *vrp = ir_nodemap_get(vrp_bitinfo, &env->vrp, node);
+	bitinfo *vrp = ir_nodemap_get(bitinfo, &env->vrp, node);
 
 	if (vrp == NULL) {
 		DB((dbg, LEVEL_4, "No VRP info: %+F\n", node));
@@ -91,7 +91,7 @@ void occult_consts(ir_graph *irg)
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 
-	fp_vrp_analyze(irg, &env.obst);
+	constbits_analyze(irg, &env.obst);
 	ir_nodemap_init(&env.vrp, irg);
 	irg_walk_graph(irg, fill_nodemap, 0, &env.vrp);
 

@@ -28,15 +28,13 @@
 #include "tv.h"
 #include "irpass.h"
 #include "irmemory.h"
-#include "fp-vrp.h"
+#include "constbits.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 typedef struct environment_t {
 	unsigned modified:1;     /**< Set, if the graph was modified. */
 } environment_t;
-
-typedef struct vrp_bitinfo bitinfo;
 
 static int mode_is_intb(ir_mode const* const m)
 {
@@ -221,7 +219,7 @@ void fixpoint_vrp(ir_graph* const irg)
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 
-	fp_vrp_analyze(irg, &private_obst);
+	constbits_analyze(irg, &private_obst);
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.fp-vrp");
 	DB((dbg, LEVEL_1, "===> Performing constant propagation on %+F (optimization)\n", irg));

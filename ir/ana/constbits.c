@@ -28,7 +28,7 @@
 #include "tv.h"
 #include "irpass.h"
 #include "irmemory.h"
-#include "fp-vrp.h"
+#include "constbits.h"
 
 /* TODO:
  * - Implement cleared/set bit calculation for Add, Sub, Minus, Mul, Div, Mod, Shl, Shr, Shrs, Rotl
@@ -108,8 +108,6 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 static struct obstack *obst;
-
-typedef struct vrp_bitinfo bitinfo;
 
 static bool is_undefined(bitinfo const* const b)
 {
@@ -646,7 +644,7 @@ static void build_phi_lists(ir_node *irn, void *env)
 		add_Block_phi(get_nodes_block(irn), irn);
 }
 
-void fp_vrp_analyze(ir_graph* const irg, struct obstack *client_obst)
+void constbits_analyze(ir_graph* const irg, struct obstack *client_obst)
 {
 	obst = client_obst;
 
