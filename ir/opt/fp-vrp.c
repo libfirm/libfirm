@@ -219,12 +219,12 @@ void fixpoint_vrp(ir_graph* const irg)
 
 	obstack_init(&private_obst);
 
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
+
 	fp_vrp_analyze(irg, &private_obst);
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.fp-vrp");
 	DB((dbg, LEVEL_1, "===> Performing constant propagation on %+F (optimization)\n", irg));
-
-	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 
 	DB((dbg, LEVEL_2, "---> Applying analysis results\n"));
 	env.modified = 0;

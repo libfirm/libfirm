@@ -296,7 +296,8 @@ void dca_analyze(ir_graph *irg)
 
 	assert(tarval_get_integer_overflow_mode() == TV_OVERFLOW_WRAP);
 
-	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
+	assert(((ir_resources_reserved(irg) & IR_RESOURCE_IRN_LINK) != 0) &&
+			"user of dc analysis must reserve links");
 
 	irg_walk_graph(irg, dca_init_node, NULL, 0);
 
@@ -311,8 +312,6 @@ void dca_analyze(ir_graph *irg)
 		}
 		del_pdeq(q);
 	}
-
-	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	return;
 }

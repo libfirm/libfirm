@@ -653,7 +653,10 @@ void fp_vrp_analyze(ir_graph* const irg, struct obstack *client_obst)
 	FIRM_DBG_REGISTER(dbg, "firm.ana.fp-vrp");
 	DB((dbg, LEVEL_1, "===> Performing constant propagation on %+F (analysis)\n", irg));
 
-	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
+	assert(((ir_resources_reserved(irg) & IR_RESOURCE_IRN_LINK) != 0) &&
+			"user of fp-vrp analysis must reserve links");
+	assert(((ir_resources_reserved(irg) & IR_RESOURCE_PHI_LIST) != 0) &&
+			"user of fp-vrp analysis must reserve phi list");
 
 	{
 		pdeq* const q = new_pdeq();
@@ -680,6 +683,4 @@ void fp_vrp_analyze(ir_graph* const irg, struct obstack *client_obst)
 
 		del_pdeq(q);
 	}
-
-	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 }

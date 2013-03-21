@@ -86,17 +86,22 @@ void occult_consts(ir_graph *irg)
 		| IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 
 	env_t env;
+	env.changed = false;
 	obstack_init(&env.obst);
 
-	env.changed = false;
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 
 	fp_vrp_analyze(irg, &env.obst);
 	ir_nodemap_init(&env.vrp, irg);
 	irg_walk_graph(irg, fill_nodemap, 0, &env.vrp);
 
+	ir_free_resources(irg, IR_RESOURCE_PHI_LIST);
+
 	dca_analyze(irg);
 	ir_nodemap_init(&env.dca, irg);
 	irg_walk_graph(irg, fill_nodemap, 0, &env.dca);
+
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	irg_walk_graph(irg, occult_const_opt_walker, 0, &env);
 
