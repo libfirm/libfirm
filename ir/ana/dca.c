@@ -26,6 +26,7 @@
 #include "irtypes.h"
 #include "pdeq.h"
 #include "irgwalk.h"
+#include "dca.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg);
 
