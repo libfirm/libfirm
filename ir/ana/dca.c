@@ -183,7 +183,22 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 			care_for(get_Mux_sel(irn), 0, q);
 			return;
 		}
-		case iro_Or:
+		case iro_Or: {
+			ir_node *left = get_binop_left(irn);
+			ir_node *right = get_binop_right(irn);
+
+			if (is_Const(left)) {
+				care_for(right, tarval_and(care, tarval_not(get_Const_tarval(left))), q);
+				care_for(left, care, q);
+			} else if (is_Const(right)) {
+				care_for(left, tarval_and(care, tarval_not(get_Const_tarval(right))), q);
+				care_for(right, care, q);
+			} else {
+				care_for(left, care, q);
+				care_for(right, care, q);
+			}
+			return;
+		}
 		case iro_Eor:
 		case iro_Confirm:
 		case iro_Id:
