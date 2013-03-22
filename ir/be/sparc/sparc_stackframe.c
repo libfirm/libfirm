@@ -171,19 +171,16 @@ static ir_type *compute_arg_type(ir_graph *irg, calling_convention_t *cconv,
 
 	ir_type *frame_type      = get_irg_frame_type(irg);
 	size_t   n_frame_members = get_compound_n_members(frame_type);
-	size_t   f;
-	size_t   i;
 
 	ir_type *res = new_type_struct(id_mangle_u(get_entity_ident(entity), new_id_from_chars("arg_type", 8)));
 
 	/* search for existing value_param entities */
-	for (f = n_frame_members; f > 0; ) {
-		ir_entity *member = get_compound_member(frame_type, --f);
-		size_t     num;
-
+	for (size_t f = n_frame_members; f-- > 0; ) {
+		ir_entity *member = get_compound_member(frame_type, f);
 		if (!is_parameter_entity(member))
 			continue;
-		num = get_entity_parameter_number(member);
+
+		size_t num = get_entity_parameter_number(member);
 		if (num == IR_VA_START_PARAMETER_NUMBER) {
 			if (va_start_entity != NULL)
 				panic("multiple va_start entities found (%+F,%+F)",
@@ -201,7 +198,7 @@ static ir_type *compute_arg_type(ir_graph *irg, calling_convention_t *cconv,
 	}
 
 	/* calculate offsets/create missing entities */
-	for (i = 0; i < n_params; ++i) {
+	for (size_t i = 0; i < n_params; ++i) {
 		reg_or_stackslot_t *param  = &cconv->parameters[i];
 		ir_entity          *entity = param_map[i];
 
@@ -227,8 +224,8 @@ static ir_type *compute_arg_type(ir_graph *irg, calling_convention_t *cconv,
 		 * original number of parameters */
 		ir_type *non_lowered   = get_higher_type(mtp);
 		size_t   orig_n_params = get_method_n_params(non_lowered);
-		long     offset;
 		assert(get_method_variadicity(mtp) == variadicity_variadic);
+		long offset;
 		if (orig_n_params < n_params) {
 			assert(param_map[orig_n_params] != NULL);
 			offset = get_entity_offset(param_map[orig_n_params]);
@@ -247,10 +244,9 @@ static ir_type *compute_arg_type(ir_graph *irg, calling_convention_t *cconv,
 void sparc_create_stacklayout(ir_graph *irg, calling_convention_t *cconv)
 {
 	be_stack_layout_t *layout = be_get_irg_stack_layout(irg);
-	ir_type           *between_type;
 	memset(layout, 0, sizeof(*layout));
 
-	between_type = new_type_class(new_id_from_str("sparc_between_type"));
+	ir_type *between_type = new_type_class(new_id_from_str("sparc_between_type"));
 	if (cconv->omit_fp) {
 		set_type_size_bytes(between_type, 0);
 	} else {

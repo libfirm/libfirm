@@ -78,13 +78,10 @@ static ir_entity *create_64_intrinsic_fkt(ir_type *method, const ir_op *op,
                                           const ir_mode *imode,
                                           const ir_mode *omode, void *context)
 {
-	ir_type    *glob = get_glob_type();
-	const char *name;
-	ident      *id;
-	ir_entity  *result;
 	(void) context;
 	(void) omode;
 
+	const char *name;
 	if (op == op_Mul) {
 		name = "__muldi3";
 	} else if (op == op_Div) {
@@ -118,8 +115,9 @@ static ir_entity *create_64_intrinsic_fkt(ir_type *method, const ir_op *op,
 	} else {
 		panic("Can't lower unexpected 64bit operation %s", get_op_name(op));
 	}
-	id     = new_id_from_str(name);
-	result = new_entity(glob, id, method);
+	ident     *id     = new_id_from_str(name);
+	ir_type   *glob   = get_glob_type();
+	ir_entity *result = new_entity(glob, id, method);
 	set_entity_ld_ident(result, id);
 	set_entity_visibility(result, ir_visibility_external);
 	return result;

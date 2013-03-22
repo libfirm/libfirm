@@ -187,47 +187,41 @@ static void rewrite_unsigned_float_Conv(ir_node *node)
 
 	part_block(node);
 
-	{
-		ir_node   *block       = get_nodes_block(node);
-		ir_node   *unsigned_x  = get_Conv_op(node);
-		ir_mode   *mode_u      = get_irn_mode(unsigned_x);
-		ir_mode   *mode_s      = find_signed_mode(mode_u);
-		ir_mode   *mode_d      = mode_D;
-		ir_node   *signed_x    = new_rd_Conv(dbgi, block, unsigned_x, mode_s);
-		ir_node   *res         = new_rd_Conv(dbgi, block, signed_x, mode_d);
-		ir_node   *zero        = new_r_Const(irg, get_mode_null(mode_s));
-		ir_node   *cmp         = new_rd_Cmp(dbgi, block, signed_x, zero,
-		                                    ir_relation_less);
-		ir_node   *cond        = new_rd_Cond(dbgi, block, cmp);
-		ir_node   *proj_true   = new_r_Proj(cond, mode_X, pn_Cond_true);
-		ir_node   *proj_false  = new_r_Proj(cond, mode_X, pn_Cond_false);
-		ir_node   *in_true[1]  = { proj_true };
-		ir_node   *in_false[1] = { proj_false };
-		ir_node   *true_block  = new_r_Block(irg, ARRAY_SIZE(in_true), in_true);
-		ir_node   *false_block = new_r_Block(irg, ARRAY_SIZE(in_false),in_false);
-		ir_node   *true_jmp    = new_r_Jmp(true_block);
-		ir_node   *false_jmp   = new_r_Jmp(false_block);
-		ir_tarval *correction  = new_tarval_from_double(4294967296., mode_d);
-		ir_node   *c_const     = new_r_Const(irg, correction);
-		ir_node   *fadd        = new_rd_Add(dbgi, true_block, res, c_const,
-		                                   mode_d);
+	ir_node   *block       = get_nodes_block(node);
+	ir_node   *unsigned_x  = get_Conv_op(node);
+	ir_mode   *mode_u      = get_irn_mode(unsigned_x);
+	ir_mode   *mode_s      = find_signed_mode(mode_u);
+	ir_mode   *mode_d      = mode_D;
+	ir_node   *signed_x    = new_rd_Conv(dbgi, block, unsigned_x, mode_s);
+	ir_node   *res         = new_rd_Conv(dbgi, block, signed_x, mode_d);
+	ir_node   *zero        = new_r_Const(irg, get_mode_null(mode_s));
+	ir_node   *cmp         = new_rd_Cmp(dbgi, block, signed_x, zero,
+	                                    ir_relation_less);
+	ir_node   *cond        = new_rd_Cond(dbgi, block, cmp);
+	ir_node   *proj_true   = new_r_Proj(cond, mode_X, pn_Cond_true);
+	ir_node   *proj_false  = new_r_Proj(cond, mode_X, pn_Cond_false);
+	ir_node   *in_true[1]  = { proj_true };
+	ir_node   *in_false[1] = { proj_false };
+	ir_node   *true_block  = new_r_Block(irg, ARRAY_SIZE(in_true), in_true);
+	ir_node   *false_block = new_r_Block(irg, ARRAY_SIZE(in_false),in_false);
+	ir_node   *true_jmp    = new_r_Jmp(true_block);
+	ir_node   *false_jmp   = new_r_Jmp(false_block);
+	ir_tarval *correction  = new_tarval_from_double(4294967296., mode_d);
+	ir_node   *c_const     = new_r_Const(irg, correction);
+	ir_node   *fadd        = new_rd_Add(dbgi, true_block, res, c_const, mode_d);
 
-		ir_node  *lower_in[2] = { true_jmp, false_jmp };
-		ir_node  *phi_in[2]   = { fadd, res };
-		ir_mode  *dest_mode   = get_irn_mode(node);
-		ir_node  *phi;
-		ir_node  *res_conv;
+	ir_node  *lower_in[2] = { true_jmp, false_jmp };
+	ir_node  *phi_in[2]   = { fadd, res };
+	ir_mode  *dest_mode   = get_irn_mode(node);
 
-		set_irn_in(lower_block, ARRAY_SIZE(lower_in), lower_in);
-		phi = new_r_Phi(lower_block, ARRAY_SIZE(phi_in), phi_in, mode_d);
-		assert(get_Block_phis(lower_block) == NULL);
-		set_Block_phis(lower_block, phi);
-		set_Phi_next(phi, NULL);
+	set_irn_in(lower_block, ARRAY_SIZE(lower_in), lower_in);
+	ir_node *phi = new_r_Phi(lower_block, ARRAY_SIZE(phi_in), phi_in, mode_d);
+	assert(get_Block_phis(lower_block) == NULL);
+	set_Block_phis(lower_block, phi);
+	set_Phi_next(phi, NULL);
 
-		res_conv = new_rd_Conv(dbgi, lower_block, phi, dest_mode);
-
-		exchange(node, res_conv);
-	}
+	ir_node *res_conv = new_rd_Conv(dbgi, lower_block, phi, dest_mode);
+	exchange(node, res_conv);
 }
 
 /**
@@ -249,58 +243,54 @@ static void rewrite_float_unsigned_Conv(ir_node *node)
 
 	part_block(node);
 
-	{
-		ir_node   *block       = get_nodes_block(node);
-		ir_node   *float_x     = get_Conv_op(node);
-		ir_mode   *mode_u      = get_irn_mode(node);
-		ir_mode   *mode_s      = find_signed_mode(mode_u);
-		ir_mode   *mode_f      = get_irn_mode(float_x);
-		ir_tarval *limit       = new_tarval_from_double(2147483648., mode_f);
-		ir_node   *limitc      = new_r_Const(irg, limit);
-		ir_node   *cmp         = new_rd_Cmp(dbgi, block, float_x, limitc,
-		                                    ir_relation_greater_equal);
-		ir_node   *cond        = new_rd_Cond(dbgi, block, cmp);
-		ir_node   *proj_true   = new_r_Proj(cond, mode_X, pn_Cond_true);
-		ir_node   *proj_false  = new_r_Proj(cond, mode_X, pn_Cond_false);
-		ir_node   *in_true[1]  = { proj_true };
-		ir_node   *in_false[1] = { proj_false };
-		ir_node   *true_block  = new_r_Block(irg, ARRAY_SIZE(in_true), in_true);
-		ir_node   *false_block = new_r_Block(irg, ARRAY_SIZE(in_false),in_false);
-		ir_node   *true_jmp    = new_r_Jmp(true_block);
-		ir_node   *false_jmp   = new_r_Jmp(false_block);
+	ir_node   *block       = get_nodes_block(node);
+	ir_node   *float_x     = get_Conv_op(node);
+	ir_mode   *mode_u      = get_irn_mode(node);
+	ir_mode   *mode_s      = find_signed_mode(mode_u);
+	ir_mode   *mode_f      = get_irn_mode(float_x);
+	ir_tarval *limit       = new_tarval_from_double(2147483648., mode_f);
+	ir_node   *limitc      = new_r_Const(irg, limit);
+	ir_node   *cmp         = new_rd_Cmp(dbgi, block, float_x, limitc,
+	                                    ir_relation_greater_equal);
+	ir_node   *cond        = new_rd_Cond(dbgi, block, cmp);
+	ir_node   *proj_true   = new_r_Proj(cond, mode_X, pn_Cond_true);
+	ir_node   *proj_false  = new_r_Proj(cond, mode_X, pn_Cond_false);
+	ir_node   *in_true[1]  = { proj_true };
+	ir_node   *in_false[1] = { proj_false };
+	ir_node   *true_block  = new_r_Block(irg, ARRAY_SIZE(in_true), in_true);
+	ir_node   *false_block = new_r_Block(irg, ARRAY_SIZE(in_false),in_false);
+	ir_node   *true_jmp    = new_r_Jmp(true_block);
+	ir_node   *false_jmp   = new_r_Jmp(false_block);
 
-		ir_tarval *correction  = new_tarval_from_long(0x80000000l, mode_s);
-		ir_node   *c_const     = new_r_Const(irg, correction);
-		ir_node   *sub         = new_rd_Sub(dbgi, true_block, float_x, limitc,
-		                                    mode_f);
-		ir_node   *sub_conv    = new_rd_Conv(dbgi, true_block, sub, mode_s);
-		ir_node   *xorn        = new_rd_Eor(dbgi, true_block, sub_conv, c_const,
-		                                    mode_s);
+	ir_tarval *correction  = new_tarval_from_long(0x80000000l, mode_s);
+	ir_node   *c_const     = new_r_Const(irg, correction);
+	ir_node   *sub         = new_rd_Sub(dbgi, true_block, float_x, limitc,
+										mode_f);
+	ir_node   *sub_conv    = new_rd_Conv(dbgi, true_block, sub, mode_s);
+	ir_node   *xorn        = new_rd_Eor(dbgi, true_block, sub_conv, c_const,
+										mode_s);
 
-		ir_node   *converted   = new_rd_Conv(dbgi, false_block, float_x,mode_s);
+	ir_node   *converted   = new_rd_Conv(dbgi, false_block, float_x,mode_s);
 
-		ir_node  *lower_in[2] = { true_jmp, false_jmp };
-		ir_node  *phi_in[2]   = { xorn, converted };
-		ir_node  *phi;
-		ir_node  *res_conv;
+	ir_node  *lower_in[2] = { true_jmp, false_jmp };
+	ir_node  *phi_in[2]   = { xorn, converted };
 
-		set_irn_in(lower_block, ARRAY_SIZE(lower_in), lower_in);
-		phi = new_r_Phi(lower_block, ARRAY_SIZE(phi_in), phi_in, mode_s);
-		assert(get_Block_phis(lower_block) == NULL);
-		set_Block_phis(lower_block, phi);
-		set_Phi_next(phi, NULL);
+	set_irn_in(lower_block, ARRAY_SIZE(lower_in), lower_in);
+	ir_node *phi = new_r_Phi(lower_block, ARRAY_SIZE(phi_in), phi_in, mode_s);
+	assert(get_Block_phis(lower_block) == NULL);
+	set_Block_phis(lower_block, phi);
+	set_Phi_next(phi, NULL);
 
-		res_conv = new_rd_Conv(dbgi, lower_block, phi, mode_u);
-		exchange(node, res_conv);
-	}
+	ir_node *res_conv = new_rd_Conv(dbgi, lower_block, phi, mode_u);
+	exchange(node, res_conv);
 }
 
 static int sparc_rewrite_Conv(ir_node *node, void *ctx)
 {
+	(void) ctx;
 	ir_mode *to_mode   = get_irn_mode(node);
 	ir_node *op        = get_Conv_op(node);
 	ir_mode *from_mode = get_irn_mode(op);
-	(void) ctx;
 
 	if (mode_is_float(to_mode) && mode_is_int(from_mode)
 	    && get_mode_size_bits(from_mode) == 32
@@ -320,77 +310,66 @@ static int sparc_rewrite_Conv(ir_node *node, void *ctx)
 
 static void sparc_handle_intrinsics(void)
 {
-	ir_type *tp, *int_tp, *uint_tp;
-	i_record records[8];
+	i_record records[3];
 	size_t n_records = 0;
 
-	runtime_rt rt_iMod, rt_uMod;
-
-#define ID(x) new_id_from_chars(x, sizeof(x)-1)
-
-	int_tp  = new_type_primitive(mode_Is);
-	uint_tp = new_type_primitive(mode_Iu);
-
 	/* we need to rewrite some forms of int->float conversions */
-	{
-		i_instr_record *map_Conv = &records[n_records++].i_instr;
+	i_instr_record *map_Conv = &records[n_records++].i_instr;
+	map_Conv->kind     = INTRINSIC_INSTR;
+	map_Conv->op       = op_Conv;
+	map_Conv->i_mapper = sparc_rewrite_Conv;
 
-		map_Conv->kind     = INTRINSIC_INSTR;
-		map_Conv->op       = op_Conv;
-		map_Conv->i_mapper = sparc_rewrite_Conv;
-	}
 	/* SPARC has no signed mod instruction ... */
-	{
-		i_instr_record *map_Mod = &records[n_records++].i_instr;
+	ir_type *int_tp = new_type_primitive(mode_Is);
+	ir_type *mod_tp = new_type_method(2, 1);
+	set_method_param_type(mod_tp, 0, int_tp);
+	set_method_param_type(mod_tp, 1, int_tp);
+	set_method_res_type(mod_tp, 0, int_tp);
 
-		tp = new_type_method(2, 1);
-		set_method_param_type(tp, 0, int_tp);
-		set_method_param_type(tp, 1, int_tp);
-		set_method_res_type(tp, 0, int_tp);
+	runtime_rt rt_iMod;
+	ident *mod_id = new_id_from_str(".rem");
+	rt_iMod.ent             = new_entity(get_glob_type(), mod_id, mod_tp);
+	set_entity_ld_ident(rt_iMod.ent, mod_id);
+	rt_iMod.mode            = mode_T;
+	rt_iMod.res_mode        = mode_Is;
+	rt_iMod.mem_proj_nr     = pn_Mod_M;
+	rt_iMod.regular_proj_nr = pn_Mod_X_regular;
+	rt_iMod.exc_proj_nr     = pn_Mod_X_except;
+	rt_iMod.res_proj_nr     = pn_Mod_res;
+	set_entity_visibility(rt_iMod.ent, ir_visibility_external);
 
-		rt_iMod.ent             = new_entity(get_glob_type(), ID(".rem"), tp);
-		set_entity_ld_ident(rt_iMod.ent, ID(".rem"));
-		rt_iMod.mode            = mode_T;
-		rt_iMod.res_mode        = mode_Is;
-		rt_iMod.mem_proj_nr     = pn_Mod_M;
-		rt_iMod.regular_proj_nr = pn_Mod_X_regular;
-		rt_iMod.exc_proj_nr     = pn_Mod_X_except;
-		rt_iMod.res_proj_nr     = pn_Mod_res;
+	i_instr_record *map_imod = &records[n_records++].i_instr;
+	map_imod->kind     = INTRINSIC_INSTR;
+	map_imod->op       = op_Mod;
+	map_imod->i_mapper = (i_mapper_func)i_mapper_RuntimeCall;
+	map_imod->ctx      = &rt_iMod;
 
-		set_entity_visibility(rt_iMod.ent, ir_visibility_external);
-
-		map_Mod->kind     = INTRINSIC_INSTR;
-		map_Mod->op       = op_Mod;
-		map_Mod->i_mapper = (i_mapper_func)i_mapper_RuntimeCall;
-		map_Mod->ctx      = &rt_iMod;
-	}
 	/* ... nor an unsigned mod. */
-	{
-		i_instr_record *map_Mod = &records[n_records++].i_instr;
+	ir_type *umod_tp = new_type_method(2, 1);
+	ir_type *uint_tp = new_type_primitive(mode_Iu);
+	set_method_param_type(umod_tp, 0, uint_tp);
+	set_method_param_type(umod_tp, 1, uint_tp);
+	set_method_res_type(umod_tp, 0, uint_tp);
 
-		tp = new_type_method(2, 1);
-		set_method_param_type(tp, 0, uint_tp);
-		set_method_param_type(tp, 1, uint_tp);
-		set_method_res_type(tp, 0, uint_tp);
+	runtime_rt rt_uMod;
+	ident *umod_id = new_id_from_str(".urem");
+	rt_uMod.ent             = new_entity(get_glob_type(), umod_id, umod_tp);
+	set_entity_ld_ident(rt_uMod.ent, umod_id);
+	rt_uMod.mode            = mode_T;
+	rt_uMod.res_mode        = mode_Iu;
+	rt_uMod.mem_proj_nr     = pn_Mod_M;
+	rt_uMod.regular_proj_nr = pn_Mod_X_regular;
+	rt_uMod.exc_proj_nr     = pn_Mod_X_except;
+	rt_uMod.res_proj_nr     = pn_Mod_res;
+	set_entity_visibility(rt_uMod.ent, ir_visibility_external);
 
-		rt_uMod.ent             = new_entity(get_glob_type(), ID(".urem"), tp);
-		set_entity_ld_ident(rt_uMod.ent, ID(".urem"));
-		rt_uMod.mode            = mode_T;
-		rt_uMod.res_mode        = mode_Iu;
-		rt_uMod.mem_proj_nr     = pn_Mod_M;
-		rt_uMod.regular_proj_nr = pn_Mod_X_regular;
-		rt_uMod.exc_proj_nr     = pn_Mod_X_except;
-		rt_uMod.res_proj_nr     = pn_Mod_res;
+	i_instr_record *map_umod = &records[n_records++].i_instr;
+	map_umod->kind     = INTRINSIC_INSTR;
+	map_umod->op       = op_Mod;
+	map_umod->i_mapper = (i_mapper_func)i_mapper_RuntimeCall;
+	map_umod->ctx      = &rt_uMod;
 
-		set_entity_visibility(rt_uMod.ent, ir_visibility_external);
-
-		map_Mod->kind     = INTRINSIC_INSTR;
-		map_Mod->op       = op_Mod;
-		map_Mod->i_mapper = (i_mapper_func)i_mapper_RuntimeCall;
-		map_Mod->ctx      = &rt_uMod;
-	}
-
-	assert(n_records < ARRAY_SIZE(records));
+	assert(n_records <= ARRAY_SIZE(records));
 	lower_intrinsics(records, n_records, /*part_block_used=*/ true);
 }
 
@@ -430,12 +409,9 @@ static void sparc_end_codegeneration(void *self)
 
 static void sparc_lower_for_target(void)
 {
-	ir_mode *mode_gp = sparc_reg_classes[CLASS_sparc_gp].mode;
-	size_t i, n_irgs = get_irp_n_irgs();
-
 	lower_calls_with_compounds(LF_RETURN_HIDDEN);
 
-	for (i = 0; i < n_irgs; ++i) {
+	for (size_t i = 0, n_irgs = get_irp_n_irgs(); i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		/* Turn all small CopyBs into loads/stores and all bigger CopyBs into
 		 * memcpy calls. */
@@ -447,14 +423,15 @@ static void sparc_lower_for_target(void)
 
 	lower_builtins(0, NULL);
 
-	for (size_t i = 0; i < n_irgs; ++i) {
+	ir_mode *mode_gp = sparc_reg_classes[CLASS_sparc_gp].mode;
+	for (size_t i = 0, n_irgs = get_irp_n_irgs(); i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		lower_switch(irg, 4, 256, mode_gp);
 	}
 
 	sparc_lower_64bit();
 
-	for (i = 0; i < n_irgs; ++i) {
+	for (size_t i = 0, n_irgs = get_irp_n_irgs(); i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		ir_lower_mode_b(irg, mode_Iu);
 		/* TODO: Pass SPARC_MIN_STACKSIZE as addr_delta as soon as
@@ -555,8 +532,8 @@ static ir_node *sparc_new_spill(ir_node *value, ir_node *after)
 	ir_node  *frame = get_irg_frame(irg);
 	ir_node  *mem   = get_irg_no_mem(irg);
 	ir_mode  *mode  = get_irn_mode(value);
-	ir_node  *store;
 
+	ir_node  *store;
 	if (mode_is_float(mode)) {
 		store = create_stf(NULL, block, value, frame, mem, mode, NULL, 0, true);
 	} else {
@@ -574,9 +551,8 @@ static ir_node *sparc_new_reload(ir_node *value, ir_node *spill,
 	ir_graph *irg   = get_irn_irg(value);
 	ir_node  *frame = get_irg_frame(irg);
 	ir_mode  *mode  = get_irn_mode(value);
-	ir_node  *load;
-	ir_node  *res;
 
+	ir_node  *load;
 	if (mode_is_float(mode)) {
 		load = create_ldf(NULL, block, frame, spill, mode, NULL, 0, true);
 	} else {
@@ -585,7 +561,7 @@ static ir_node *sparc_new_reload(ir_node *value, ir_node *spill,
 	}
 	sched_add_before(before, load);
 	assert((long)pn_sparc_Ld_res == (long)pn_sparc_Ldf_res);
-	res = new_r_Proj(load, mode, pn_sparc_Ld_res);
+	ir_node *res = new_r_Proj(load, mode, pn_sparc_Ld_res);
 
 	return res;
 }

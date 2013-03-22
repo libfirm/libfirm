@@ -54,12 +54,11 @@ static void kill_unused_stacknodes(ir_node *node)
 	} else if (is_Phi(node)) {
 		int       arity = get_irn_arity(node);
 		ir_node **ins   = ALLOCAN(ir_node*, arity);
-		int       i;
 		sched_remove(node);
 		memcpy(ins, get_irn_in(node), arity*sizeof(ins[0]));
 		kill_node(node);
 
-		for (i = 0; i < arity; ++i)
+		for (int i = 0; i < arity; ++i)
 			kill_unused_stacknodes(ins[i]);
 	}
 }
@@ -103,16 +102,11 @@ void sparc_introduce_prolog_epilog(ir_graph *irg)
 	unsigned               frame_size = get_type_size_bytes(frame_type);
 
 	/* introduce epilog for every return node */
-	{
-		ir_node *end_block = get_irg_end_block(irg);
-		int      arity     = get_irn_arity(end_block);
-		int      i;
-
-		for (i = 0; i < arity; ++i) {
-			ir_node *ret = get_irn_n(end_block, i);
-			assert(is_sparc_Return(ret));
-			introduce_epilog(ret);
-		}
+	ir_node *end_block = get_irg_end_block(irg);
+	for (int i = 0, arity = get_irn_arity(end_block); i < arity; ++i) {
+		ir_node *ret = get_irn_n(end_block, i);
+		assert(is_sparc_Return(ret));
+		introduce_epilog(ret);
 	}
 
 	while (be_is_Keep(sched_next(schedpoint)))
@@ -172,7 +166,7 @@ static void finish_sparc_Save(ir_node *node)
 	sparc_attr_t *attr = get_sparc_attr(node);
 	int offset = attr->immediate_value;
 
-	if (! sparc_is_value_imm_encodeable(offset)) {
+	if (!sparc_is_value_imm_encodeable(offset)) {
 		ir_node               *base     = get_irn_n(node, n_sparc_Save_stack);
 		dbg_info              *dbgi     = get_irn_dbg_info(node);
 		ir_node               *block    = get_nodes_block(node);
@@ -198,12 +192,12 @@ static void finish_be_IncSP(ir_node *node)
 	int offset = be_get_IncSP_offset(node);
 
 	/* we might have to break the IncSP apart if the constant has become too big */
-	if (! sparc_is_value_imm_encodeable(offset) && ! sparc_is_value_imm_encodeable(-offset)) {
-		ir_node               *sp       = be_get_IncSP_pred(node);
-		dbg_info              *dbgi     = get_irn_dbg_info(node);
-		ir_node               *block    = get_nodes_block(node);
-		ir_node               *constant = create_constant_from_immediate(node, offset);
-		ir_node               *sub      = new_bd_sparc_Sub_reg(dbgi, block, sp, constant);
+	if (!sparc_is_value_imm_encodeable(offset) && !sparc_is_value_imm_encodeable(-offset)) {
+		ir_node  *sp       = be_get_IncSP_pred(node);
+		dbg_info *dbgi     = get_irn_dbg_info(node);
+		ir_node  *block    = get_nodes_block(node);
+		ir_node  *constant = create_constant_from_immediate(node, offset);
+		ir_node  *sub      = new_bd_sparc_Sub_reg(dbgi, block, sp, constant);
 
 		sched_add_before(node, sub);
 		arch_set_irn_register(sub, &sparc_registers[REG_SP]);
@@ -221,7 +215,7 @@ static void finish_sparc_FrameAddr(ir_node *node)
 	sparc_attr_t *attr   = get_sparc_attr(node);
 	int           offset = attr->immediate_value;
 
-	if (! sparc_is_value_imm_encodeable(offset)) {
+	if (!sparc_is_value_imm_encodeable(offset)) {
 		ir_node               *base          = get_irn_n(node, n_sparc_FrameAddr_base);
 		dbg_info              *dbgi          = get_irn_dbg_info(node);
 		ir_node               *block         = get_nodes_block(node);
@@ -241,10 +235,10 @@ static void finish_sparc_Ld(ir_node *node)
 	int                            offset          = attr->immediate_value;
 	const sparc_load_store_attr_t *load_store_attr = get_sparc_load_store_attr_const(node);
 
-	if (! load_store_attr->is_frame_entity)
+	if (!load_store_attr->is_frame_entity)
 		return;
 
-	if (! sparc_is_value_imm_encodeable(offset)) {
+	if (!sparc_is_value_imm_encodeable(offset)) {
 		ir_node                 *ptr             = get_irn_n(node, n_sparc_Ld_ptr);
 		dbg_info                *dbgi            = get_irn_dbg_info(node);
 		ir_node                 *block           = get_nodes_block(node);
@@ -302,10 +296,10 @@ static void finish_sparc_Ldf(ir_node *node)
 	int                            offset          = attr->immediate_value;
 	const sparc_load_store_attr_t *load_store_attr = get_sparc_load_store_attr_const(node);
 
-	if (! load_store_attr->is_frame_entity)
+	if (!load_store_attr->is_frame_entity)
 		return;
 
-	if (! sparc_is_value_imm_encodeable(offset)) {
+	if (!sparc_is_value_imm_encodeable(offset)) {
 		ir_node                 *ptr             = get_irn_n(node, n_sparc_Ldf_ptr);
 		dbg_info                *dbgi            = get_irn_dbg_info(node);
 		ir_node                 *block           = get_nodes_block(node);
@@ -334,10 +328,10 @@ static void finish_sparc_St(ir_node *node)
 	int                            offset          = attr->immediate_value;
 	const sparc_load_store_attr_t *load_store_attr = get_sparc_load_store_attr_const(node);
 
-	if (! load_store_attr->is_frame_entity)
+	if (!load_store_attr->is_frame_entity)
 		return;
 
-	if (! sparc_is_value_imm_encodeable(offset)) {
+	if (!sparc_is_value_imm_encodeable(offset)) {
 		ir_node                 *ptr             = get_irn_n(node, n_sparc_St_ptr);
 		dbg_info                *dbgi            = get_irn_dbg_info(node);
 		ir_node                 *block           = get_nodes_block(node);
@@ -366,20 +360,20 @@ static void finish_sparc_Stf(ir_node *node)
 	int                            offset          = attr->immediate_value;
 	const sparc_load_store_attr_t *load_store_attr = get_sparc_load_store_attr_const(node);
 
-	if (! load_store_attr->is_frame_entity)
+	if (!load_store_attr->is_frame_entity)
 		return;
 
-	if (! sparc_is_value_imm_encodeable(offset)) {
-		ir_node                 *ptr             = get_irn_n(node, n_sparc_Stf_ptr);
-		dbg_info                *dbgi            = get_irn_dbg_info(node);
-		ir_node                 *block           = get_nodes_block(node);
-		ir_node                 *mem             = get_irn_n(node, n_sparc_Stf_mem);
-		ir_node                 *value           = get_irn_n(node, n_sparc_Stf_val);
-		ir_mode                 *load_store_mode = load_store_attr->load_store_mode;
-		ir_node                 *constant        = create_constant_from_immediate(node, offset);
-		ir_node                 *new_ptr         = new_bd_sparc_Add_reg(dbgi, block, ptr, constant);
-		ir_node                 *new_load        = new_bd_sparc_Stf_s(dbgi, block, value, new_ptr, mem, load_store_mode, NULL, 0, true);
-		sparc_load_store_attr_t *new_load_attr   = get_sparc_load_store_attr(new_load);
+	if (!sparc_is_value_imm_encodeable(offset)) {
+		ir_node  *ptr             = get_irn_n(node, n_sparc_Stf_ptr);
+		dbg_info *dbgi            = get_irn_dbg_info(node);
+		ir_node  *block           = get_nodes_block(node);
+		ir_node  *mem             = get_irn_n(node, n_sparc_Stf_mem);
+		ir_node  *value           = get_irn_n(node, n_sparc_Stf_val);
+		ir_mode  *load_store_mode = load_store_attr->load_store_mode;
+		ir_node  *constant        = create_constant_from_immediate(node, offset);
+		ir_node  *new_ptr         = new_bd_sparc_Add_reg(dbgi, block, ptr, constant);
+		ir_node  *new_load        = new_bd_sparc_Stf_s(dbgi, block, value, new_ptr, mem, load_store_mode, NULL, 0, true);
+		sparc_load_store_attr_t *new_load_attr = get_sparc_load_store_attr(new_load);
 
 		new_load_attr->is_frame_entity = load_store_attr->is_frame_entity;
 		new_load_attr->is_reg_reg      = load_store_attr->is_reg_reg;
@@ -395,12 +389,11 @@ static void finish_sparc_Stf(ir_node *node)
 
 static void peephole_be_IncSP(ir_node *node)
 {
-	ir_node *pred;
 	node = be_peephole_IncSP_IncSP(node);
 	if (!be_is_IncSP(node))
 		return;
 
-	pred = be_get_IncSP_pred(node);
+	ir_node *pred = be_get_IncSP_pred(node);
 	if (is_sparc_Save(pred) && be_has_only_one_user(pred)) {
 		int offset = -be_get_IncSP_offset(node);
 		sparc_attr_t *attr = get_sparc_attr(pred);
@@ -570,14 +563,10 @@ static void register_peephole_optimisation(ir_op *op, peephole_opt_func func)
 static void sparc_collect_frame_entity_nodes(ir_node *node, void *data)
 {
 	be_fec_env_t  *env = (be_fec_env_t*)data;
-	const ir_mode *mode;
-	int            align;
-	ir_entity     *entity;
-	const sparc_load_store_attr_t *attr;
 
 	if (be_is_Reload(node) && be_get_frame_entity(node) == NULL) {
-		mode  = get_irn_mode(node);
-		align = get_mode_size_bytes(mode);
+		ir_mode *mode  = get_irn_mode(node);
+		unsigned align = get_mode_size_bytes(mode);
 		be_node_needs_frame_entity(env, node, mode, align);
 		return;
 	}
@@ -585,16 +574,16 @@ static void sparc_collect_frame_entity_nodes(ir_node *node, void *data)
 	if (!is_sparc_Ld(node) && !is_sparc_Ldf(node))
 		return;
 
-	attr   = get_sparc_load_store_attr_const(node);
-	entity = attr->base.immediate_value_entity;
-	mode   = attr->load_store_mode;
+	const sparc_load_store_attr_t *attr = get_sparc_load_store_attr_const(node);
+	ir_entity *entity = attr->base.immediate_value_entity;
+	ir_mode   *mode   = attr->load_store_mode;
 	if (entity != NULL)
 		return;
 	if (!attr->is_frame_entity)
 		return;
 	if (arch_get_irn_flags(node) & sparc_arch_irn_flag_needs_64bit_spillslot)
 		mode = mode_Lu;
-	align  = get_mode_size_bytes(mode);
+	unsigned align = get_mode_size_bytes(mode);
 	be_node_needs_frame_entity(env, node, mode, align);
 }
 

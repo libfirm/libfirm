@@ -305,7 +305,7 @@ static bool uses_reg(const ir_node *node, unsigned reg_index, unsigned width)
 static bool writes_reg(const ir_node *node, unsigned reg_index, unsigned width)
 {
 	be_foreach_out(node, o) {
-		const arch_register_t     *out_reg = arch_get_irn_register_out(node, o);
+		const arch_register_t *out_reg = arch_get_irn_register_out(node, o);
 		if (out_reg == NULL)
 			continue;
 		const arch_register_req_t *out_req = arch_get_irn_register_req_out(node, o);
@@ -375,8 +375,7 @@ static bool can_move_up_into_delayslot(const ir_node *node, const ir_node *to)
 		return false;
 
 	/* node must not use any results of 'to' */
-	int arity = get_irn_arity(node);
-	for (int i = 0; i < arity; ++i) {
+	for (int i = 0, arity = get_irn_arity(node); i < arity; ++i) {
 		ir_node *in      = get_irn_n(node, i);
 		ir_node *skipped = skip_Proj(in);
 		if (skipped == to)
@@ -417,8 +416,7 @@ static bool can_move_up_into_delayslot(const ir_node *node, const ir_node *to)
 	} else if (is_sparc_SDiv(to) || is_sparc_UDiv(to)) {
 		/* node will be inserted between wr and div so it must not overwrite
 		 * anything except the wr input */
-		int arity = get_irn_arity(to);
-		for (int i = 0; i < arity; ++i) {
+		for (int i = 0, arity = get_irn_arity(to); i < arity; ++i) {
 			assert((long)n_sparc_SDiv_dividend_high == (long)n_sparc_UDiv_dividend_high);
 			if (i == n_sparc_SDiv_dividend_high)
 				continue;

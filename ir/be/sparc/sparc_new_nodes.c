@@ -70,8 +70,6 @@ static bool has_fp_conv_attr(const ir_node *node)
  */
 static void sparc_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 {
-	const sparc_attr_t *sparc_attr;
-
 	switch (reason) {
 	case dump_node_opcode_txt:
 		fprintf(F, "%s", get_irn_opname(n));
@@ -82,7 +80,7 @@ static void sparc_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 
 	case dump_node_info_txt:
 		arch_dump_reqs_and_registers(F, n);
-		sparc_attr = get_sparc_attr_const(n);
+		const sparc_attr_t *sparc_attr = get_sparc_attr_const(n);
 		if (sparc_attr->immediate_value_entity) {
 			ir_fprintf(F, "entity: %+F (offset %d)\n",
 			           sparc_attr->immediate_value_entity,
@@ -227,14 +225,12 @@ static void init_sparc_attributes(ir_node *node, arch_irn_flags_t flags,
                                   const arch_register_req_t **in_reqs,
                                   int n_res)
 {
-	ir_graph        *irg  = get_irn_irg(node);
-	struct obstack  *obst = get_irg_obstack(irg);
-	backend_info_t  *info;
-
 	arch_set_irn_flags(node, flags);
 	arch_set_irn_register_reqs_in(node, in_reqs);
 
-	info            = be_get_info(node);
+	backend_info_t  *info = be_get_info(node);
+	ir_graph        *irg  = get_irn_irg(node);
+	struct obstack  *obst = get_irg_obstack(irg);
 	info->out_infos = NEW_ARR_DZ(reg_out_info_t, obst, n_res);
 }
 
@@ -290,7 +286,7 @@ static void init_sparc_asm_attributes(ir_node *node, ident *text)
 static void sparc_copy_attr(ir_graph *irg, const ir_node *old_node,
                             ir_node *new_node)
 {
-	struct obstack     *obst    = get_irg_obstack(irg);
+	struct obstack     *obst     = get_irg_obstack(irg);
 	const sparc_attr_t *attr_old = get_sparc_attr_const(old_node);
 	sparc_attr_t       *attr_new = get_sparc_attr(new_node);
 	backend_info_t     *old_info = be_get_info(old_node);
