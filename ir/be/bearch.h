@@ -395,13 +395,6 @@ struct arch_isa_if_t {
 	void (*lower_for_target)(void);
 
 	/**
-	 * parse an assembler constraint part and set flags according to its nature
-	 * advances the *c pointer to point to the last parsed character (so if you
-	 * parse a single character don't advance c)
-	 */
-	asm_constraint_flags_t (*parse_asm_constraint)(const char **c);
-
-	/**
 	 * returns true if the string is a valid clobbered (register) in this
 	 * backend
 	 */

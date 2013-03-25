@@ -33,6 +33,7 @@
 #include "irprofile.h"
 #include "irpass_t.h"
 #include "ircons.h"
+#include "util.h"
 
 #include "bearch.h"
 #include "be_t.h"
@@ -127,10 +128,27 @@ static bool                    isa_initialized = false;
 
 asm_constraint_flags_t asm_constraint_flags[256];
 
+static void be_init_default_asm_constraint_flags(void)
+{
+	/* list of constraints supported by gcc for any machine (or at least
+	 * recognized). Mark them as NO_SUPPORT so we can differentiate them
+	 * from INVALID. Backends should change the flags they support. */
+	static const unsigned char gcc_common_flags[] = {
+		'?', '!', '&', '%', 'i', 's', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
+		'M', 'N', 'O', 'P', 'm', 'o', 'r', 'V', '<', '>', 'p', 'g', 'X',
+		'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+	};
+	for (size_t i = 0; i < ARRAY_SIZE(gcc_common_flags); ++i) {
+		unsigned char const c = gcc_common_flags[i];
+		asm_constraint_flags[c] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
+	}
+}
+
 static void initialize_isa(void)
 {
 	if (isa_initialized)
 		return;
+	be_init_default_asm_constraint_flags();
 	isa_if->init();
 	isa_initialized = true;
 }
@@ -143,67 +161,6 @@ static void finish_isa(void)
 	}
 }
 
-void be_init_default_asm_constraint_flags(void)
-{
-	asm_constraint_flags['?'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
-	asm_constraint_flags['!'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
-	asm_constraint_flags['&'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT
-		| ASM_CONSTRAINT_FLAG_MODIFIER_EARLYCLOBBER;
-	asm_constraint_flags['%'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT
-		| ASM_CONSTRAINT_FLAG_MODIFIER_COMMUTATIVE;
-	asm_constraint_flags['!'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
-
-	asm_constraint_flags['='] = ASM_CONSTRAINT_FLAG_MODIFIER_WRITE
-		| ASM_CONSTRAINT_FLAG_MODIFIER_NO_READ;
-	asm_constraint_flags['+'] = ASM_CONSTRAINT_FLAG_MODIFIER_READ
-		| ASM_CONSTRAINT_FLAG_MODIFIER_WRITE;
-
-	asm_constraint_flags['i'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
-	asm_constraint_flags['s'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
-	asm_constraint_flags['E'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
-	asm_constraint_flags['F'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
-	asm_constraint_flags['G'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
-	asm_constraint_flags['H'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
-	asm_constraint_flags['I'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
-	asm_constraint_flags['J'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
-	asm_constraint_flags['K'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
-	asm_constraint_flags['L'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
-	asm_constraint_flags['M'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
-	asm_constraint_flags['N'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
-	asm_constraint_flags['O'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
-	asm_constraint_flags['P'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
-
-	asm_constraint_flags['m'] = ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP;
-	asm_constraint_flags['o'] = ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP;
-	asm_constraint_flags['V'] = ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP;
-	asm_constraint_flags['<'] = ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP;
-	asm_constraint_flags['>'] = ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP;
-
-	asm_constraint_flags['p'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['0'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['1'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['2'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['3'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['4'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['5'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['6'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['7'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['8'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['9'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-
-	asm_constraint_flags['X'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER
-		| ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP
-		| ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
-
-	/* these should have been catched by the parsing code already */
-	asm_constraint_flags['#']  = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
-	asm_constraint_flags['*']  = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
-	asm_constraint_flags[' ']  = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
-	asm_constraint_flags['\t'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
-	asm_constraint_flags['\n'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
-	asm_constraint_flags['\r'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
-}
-
 asm_constraint_flags_t be_parse_asm_constraints(const char *constraint)
 {
 	asm_constraint_flags_t  flags = ASM_CONSTRAINT_FLAG_NONE;
@@ -214,26 +171,39 @@ asm_constraint_flags_t be_parse_asm_constraints(const char *constraint)
 
 	for (c = constraint; *c != '\0'; ++c) {
 		switch (*c) {
-		case '#':
-			/* 'comment' stuff */
-			while (*c != 0 && *c != ',')
-				++c;
-			break;
-		case '*':
-			/* 'comment' character */
-			++c;
-			break;
 		case ' ':
 		case '\t':
 		case '\n':
 		case '\r':
+			break;
+		case '=':
+			flags |= ASM_CONSTRAINT_FLAG_MODIFIER_WRITE;
+			flags |= ASM_CONSTRAINT_FLAG_MODIFIER_NO_READ;
+			break;
+		case '+':
+			flags |= ASM_CONSTRAINT_FLAG_MODIFIER_READ;
+			flags |= ASM_CONSTRAINT_FLAG_MODIFIER_WRITE;
+			break;
+		case '&':
+		case '%':
+			/* not really supported by libFirm yet */
+			flags |= ASM_CONSTRAINT_FLAG_NO_SUPPORT;
+			break;
+		case '#':
+			/* text until comma is a comment */
+			while (*c != 0 && *c != ',')
+				++c;
+			break;
+		case '*':
+			/* next character is a comment */
+			++c;
 			break;
 		default:
 			tflags = asm_constraint_flags[(int) *c];
 			if (tflags != 0) {
 				flags |= tflags;
 			} else {
-				flags |= isa_if->parse_asm_constraint(&c);
+				flags |= ASM_CONSTRAINT_FLAG_INVALID;
 			}
 			break;
 		}

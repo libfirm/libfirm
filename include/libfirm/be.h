@@ -35,7 +35,7 @@ typedef enum asm_constraint_flags_t {
 	ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP        = 1u << 1,
 	/** input can be encoded as an immediate number */
 	ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE    = 1u << 2,
-	/** the constraint is not supported yet by libFirm */
+	/** the constraint is not supported yet by libFirm (but valid in gcc) */
 	ASM_CONSTRAINT_FLAG_NO_SUPPORT            = 1u << 3,
 	/** The input is also written to */
 	ASM_CONSTRAINT_FLAG_MODIFIER_WRITE        = 1u << 4,

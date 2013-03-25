@@ -405,12 +405,6 @@ static const backend_params *amd64_get_backend_params(void) {
 	return &p;
 }
 
-static asm_constraint_flags_t amd64_parse_asm_constraint(const char **c)
-{
-	(void) c;
-	return ASM_CONSTRAINT_FLAG_INVALID;
-}
-
 static int amd64_is_valid_clobber(const char *clobber)
 {
 	(void) clobber;
@@ -449,7 +443,6 @@ const arch_isa_if_t amd64_isa_if = {
 	amd64_finish,
     amd64_get_backend_params,
 	amd64_lower_for_target,
-	amd64_parse_asm_constraint,
 	amd64_is_valid_clobber,
 
 	amd64_begin_codegeneration,

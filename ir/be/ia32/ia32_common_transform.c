@@ -31,10 +31,12 @@
 
 ir_heights_t *ia32_heights = NULL;
 
-static int check_immediate_constraint(long val, char immediate_constraint_type)
+static bool check_immediate_constraint(long val, char immediate_constraint_type)
 {
 	switch (immediate_constraint_type) {
-		case 'i': return 1;
+		case 'g':
+		case 'i':
+		case 'n': return true;
 
 		case 'I': return    0 <= val && val <=  31;
 		case 'J': return    0 <= val && val <=  63;

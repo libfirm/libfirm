@@ -67,8 +67,6 @@ struct be_main_env_t {
 
 extern asm_constraint_flags_t asm_constraint_flags[256];
 
-void be_init_default_asm_constraint_flags(void);
-
 void be_get_allocatable_regs(ir_graph const *irg, arch_register_class_t const *cls, unsigned *raw_bitset);
 
 unsigned be_get_n_allocatable_regs(const ir_graph *irg,

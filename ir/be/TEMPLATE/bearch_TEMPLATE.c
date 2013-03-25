@@ -267,12 +267,6 @@ static const backend_params *TEMPLATE_get_backend_params(void)
 	return &p;
 }
 
-static asm_constraint_flags_t TEMPLATE_parse_asm_constraint(const char **c)
-{
-	(void) c;
-	return ASM_CONSTRAINT_FLAG_INVALID;
-}
-
 static int TEMPLATE_is_valid_clobber(const char *clobber)
 {
 	(void) clobber;
@@ -328,7 +322,6 @@ const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_finish,
     TEMPLATE_get_backend_params,
 	TEMPLATE_lower_for_target,
-	TEMPLATE_parse_asm_constraint,
 	TEMPLATE_is_valid_clobber,
 
 	TEMPLATE_begin_codegeneration,

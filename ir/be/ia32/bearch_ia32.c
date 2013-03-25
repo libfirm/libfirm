@@ -1203,49 +1203,28 @@ extern const arch_isa_if_t ia32_isa_if;
 
 static void init_asm_constraints(void)
 {
-	be_init_default_asm_constraint_flags();
+	static const unsigned char register_flags[] = {
+		'a', 'b', 'c', 'd', 'D', 'S', 'Q', 'q', 'A', 'l', 'R', 'r', 'p', 'f',
+		't', 'u', 'Y', 'X', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
+	};
+	for (size_t i = 0; i < ARRAY_SIZE(register_flags); ++i) {
+		unsigned char const c = register_flags[i];
+		asm_constraint_flags[c] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	}
+	static const unsigned char immediate_flags[] = {
+		'i', 'n', 'I', 'J', 'K', 'L', 'M', 'N', 'O'
+	};
+	for (size_t i = 0; i < ARRAY_SIZE(immediate_flags); ++i) {
+		unsigned char const c = immediate_flags[i];
+		asm_constraint_flags[c] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
+	}
 
-	asm_constraint_flags['a'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['b'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['c'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['d'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['D'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['S'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['Q'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['q'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['A'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['l'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['R'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['r'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['p'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['f'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['t'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['u'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['Y'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['X'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['n'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
-	asm_constraint_flags['g'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
-
-	/* no support for autodecrement/autoincrement */
-	asm_constraint_flags['<'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
-	asm_constraint_flags['>'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
-	/* no float consts */
-	asm_constraint_flags['E'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
-	asm_constraint_flags['F'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
-	/* makes no sense on x86 */
-	asm_constraint_flags['s'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
-	/* no support for sse consts yet */
-	asm_constraint_flags['C'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
-	/* no support for x87 consts yet */
-	asm_constraint_flags['G'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
-	/* no support for mmx registers yet */
-	asm_constraint_flags['y'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
-	/* not available in 32bit mode */
-	asm_constraint_flags['Z'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
-	asm_constraint_flags['e'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
-
-	/* no code yet to determine register class needed... */
-	asm_constraint_flags['X'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
+	asm_constraint_flags['g'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE
+		| ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER
+		| ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP;
+	asm_constraint_flags['m'] = ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP;
+	asm_constraint_flags['o'] = ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP;
+	asm_constraint_flags['V'] = ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP;
 }
 
 /**
@@ -1792,15 +1771,6 @@ static void ia32_mark_remat(ir_node *node)
 	}
 }
 
-static asm_constraint_flags_t ia32_parse_asm_constraint(const char **c)
-{
-	(void) c;
-
-	/* we already added all our simple flags to the flags modifier list in
-	 * init, so this flag we don't know. */
-	return ASM_CONSTRAINT_FLAG_INVALID;
-}
-
 static int ia32_is_valid_clobber(const char *clobber)
 {
 	return ia32_get_clobber_register(clobber) != NULL;
@@ -1945,7 +1915,6 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_finish,
 	ia32_get_libfirm_params,
 	ia32_lower_for_target,
-	ia32_parse_asm_constraint,
 	ia32_is_valid_clobber,
 
 	ia32_begin_codegeneration,

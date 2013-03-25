@@ -430,13 +430,6 @@ static int arm_is_mux_allowed(ir_node *sel, ir_node *mux_false,
 	return false;
 }
 
-static asm_constraint_flags_t arm_parse_asm_constraint(const char **c)
-{
-	/* asm not supported */
-	(void) c;
-	return ASM_CONSTRAINT_FLAG_INVALID;
-}
-
 static int arm_is_valid_clobber(const char *clobber)
 {
 	(void) clobber;
@@ -525,7 +518,6 @@ const arch_isa_if_t arm_isa_if = {
 	arm_finish,
 	arm_get_libfirm_params,
 	arm_lower_for_target,
-	arm_parse_asm_constraint,
 	arm_is_valid_clobber,
 
 	arm_begin_codegeneration,
