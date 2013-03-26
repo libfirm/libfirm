@@ -115,7 +115,7 @@ $default_copy_attr = "sparc_copy_attr";
 	sparc_fp_conv_attr_t     => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, n_res);\n".
 	                            "\tinit_sparc_fp_conv_attributes(res, src_mode, dest_mode);\n",
 	sparc_asm_attr_t         => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, n_res);\n".
-	                            "\tinit_sparc_asm_attributes(res, text);",
+	                            "\tinit_sparc_asm_attributes(res, text, operands);",
 );
 
 %compare_attr = (
@@ -243,10 +243,9 @@ my %float_unop_constructors = (
 
 ASM => {
 	state     => "exc_pinned",
-	reg_req   => { in => [ "none" ], out => [ "none" ] },
-	ins       => [ "mem" ],
-	outs      => [ "M" ],
-	attr      => "ident *text",
+	arity     => "variable",
+	out_arity => "variable",
+	attr      => "ident *text, const sparc_asm_operand_t *operands",
 	attr_type => "sparc_asm_attr_t",
 },
 

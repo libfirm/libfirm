@@ -81,10 +81,24 @@ struct sparc_switch_jmp_attr_t {
 	ir_entity             *table_entity;
 };
 
+typedef enum operand_kind_t {
+	ASM_OPERAND_INPUT_VALUE,
+	ASM_OPERAND_OUTPUT_VALUE,
+	ASM_OPERAND_IMMEDIATE
+} operand_kind_t;
+
+typedef struct sparc_asm_operand_t {
+	operand_kind_t kind;
+	unsigned       pos;
+	int32_t        immediate_value;
+	ir_entity     *immediate_value_entity;
+} sparc_asm_operand_t;
+
 typedef struct sparc_asm_attr_t sparc_asm_attr_t;
 struct sparc_asm_attr_t {
-	sparc_attr_t  base;
-	ident        *text;
+	sparc_attr_t               base;
+	ident                     *text;
+	const sparc_asm_operand_t *operands;
 };
 
 enum n_sparc_Return {

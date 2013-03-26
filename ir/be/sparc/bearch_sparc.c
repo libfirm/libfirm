@@ -169,25 +169,6 @@ static sparc_isa_t sparc_isa_template = {
 	SPARC_FPU_ARCH_FPU,                    /* FPU architecture */
 };
 
-static void init_asm_constraints(void)
-{
-	asm_constraint_flags['r'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['e'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['f'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
-	asm_constraint_flags['A'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
-	asm_constraint_flags['I'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
-
-	asm_constraint_flags['='] = ASM_CONSTRAINT_FLAG_MODIFIER_WRITE
-		| ASM_CONSTRAINT_FLAG_MODIFIER_NO_READ;
-	asm_constraint_flags['+'] = ASM_CONSTRAINT_FLAG_MODIFIER_READ
-		| ASM_CONSTRAINT_FLAG_MODIFIER_WRITE;
-
-	/* Note there are many more flags in gcc which we can't properly support
-	 * at the moment. see gcc/config/sparc/constraints.md
-	 * Not supported: 'f', 'e', 'c', 'd', 'b', 'h', 'D', 'J', 'K',
-	 * 'L', 'M', 'N', 'O', 'G', 'H', 'Q', 'R', 'S', 'T', 'U', 'W', 'Y' */
-}
-
 /**
  * rewrite unsigned->float conversion.
  * Sparc has no instruction for this so instead we do the following:
@@ -394,7 +375,7 @@ static void sparc_handle_intrinsics(void)
 
 static void sparc_init(void)
 {
-	init_asm_constraints();
+	sparc_init_asm_constraints();
 	sparc_register_init();
 	sparc_create_opcodes(&sparc_irn_ops);
 	sparc_cconv_init();
@@ -515,12 +496,6 @@ static const backend_params *sparc_get_backend_params(void)
 	set_type_size_bytes(type_long_double, 16);
 	p.type_long_double = type_long_double;
 	return &p;
-}
-
-static int sparc_is_valid_clobber(const char *clobber)
-{
-	(void) clobber;
-	return 0;
 }
 
 /* fpu set architectures. */

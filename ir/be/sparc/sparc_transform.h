@@ -15,6 +15,10 @@ void sparc_init_transform(void);
 
 void sparc_transform_graph(ir_graph *irg);
 
+void sparc_init_asm_constraints(void);
+
+int sparc_is_valid_clobber(const char *clobber);
+
 ir_node *create_ldf(dbg_info *dbgi, ir_node *block, ir_node *ptr,
                     ir_node *mem, ir_mode *mode, ir_entity *entity,
                     long offset, bool is_frame_entity);

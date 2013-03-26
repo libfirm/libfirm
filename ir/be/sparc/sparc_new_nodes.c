@@ -274,10 +274,12 @@ static void init_sparc_switch_jmp_attributes(ir_node *node,
 	}
 }
 
-static void init_sparc_asm_attributes(ir_node *node, ident *text)
+static void init_sparc_asm_attributes(ir_node *node, ident *text,
+                                      const sparc_asm_operand_t *operands)
 {
 	sparc_asm_attr_t *attr = get_sparc_asm_attr(node);
-	attr->text = text;
+	attr->text     = text;
+	attr->operands = operands;
 }
 
 /**

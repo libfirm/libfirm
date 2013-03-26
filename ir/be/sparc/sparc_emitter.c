@@ -63,13 +63,9 @@ static void sparc_emit_indent(void)
 		be_emit_char(' ');
 }
 
-static void sparc_emit_immediate(ir_node const *const node)
+static void sparc_emit_immediate(int32_t value, ir_entity *entity)
 {
-	const sparc_attr_t *attr   = get_sparc_attr_const(node);
-	ir_entity          *entity = attr->immediate_value_entity;
-
 	if (entity == NULL) {
-		int32_t value = attr->immediate_value;
 		assert(sparc_is_value_imm_encodeable(value));
 		be_emit_irprintf("%d", value);
 	} else {
@@ -79,8 +75,8 @@ static void sparc_emit_immediate(ir_node const *const node)
 			be_emit_cstring("%lo(");
 		}
 		be_gas_emit_entity(entity);
-		if (attr->immediate_value != 0) {
-			be_emit_irprintf("%+d", attr->immediate_value);
+		if (value != 0) {
+			be_emit_irprintf("%+d", value);
 		}
 		be_emit_char(')');
 	}
@@ -108,18 +104,22 @@ static void sparc_emit_high_immediate(ir_node const *node)
 	}
 }
 
+static void sparc_emit_register(const arch_register_t *const reg)
+{
+	be_emit_char('%');
+	be_emit_string(reg->name);
+}
+
 static void sparc_emit_source_register(ir_node const *node, int const pos)
 {
 	const arch_register_t *reg = arch_get_irn_register_in(node, pos);
-	be_emit_char('%');
-	be_emit_string(reg->name);
+	sparc_emit_register(reg);
 }
 
 static void sparc_emit_dest_register(ir_node const *const node, int const pos)
 {
 	const arch_register_t *reg = arch_get_irn_register_out(node, pos);
-	be_emit_char('%');
-	be_emit_string(reg->name);
+	sparc_emit_register(reg);
 }
 
 /**
@@ -144,7 +144,8 @@ static void sparc_emit_offset(const ir_node *node, int offset_node_pos)
 	} else if (attr->base.immediate_value != 0
 			|| attr->base.immediate_value_entity != NULL) {
 		be_emit_char('+');
-		sparc_emit_immediate(node);
+		sparc_emit_immediate(attr->base.immediate_value,
+		                     attr->base.immediate_value_entity);
 	}
 }
 
@@ -658,7 +659,9 @@ void sparc_emitf(ir_node const *const node, char const *fmt, ...)
 				goto unknown;
 			unsigned const pos = *fmt++ - '0';
 			if (imm && arch_get_irn_flags(node) & (arch_irn_flags_t)sparc_arch_irn_flag_immediate_form) {
-				sparc_emit_immediate(node);
+				const sparc_attr_t *const attr = get_sparc_attr_const(node);
+				sparc_emit_immediate(attr->immediate_value,
+				                     attr->immediate_value_entity);
 			} else {
 				sparc_emit_source_register(node, pos);
 			}
@@ -707,6 +710,59 @@ static void emit_be_IncSP(const ir_node *irn)
 	sparc_emitf(irn, "%s %S0, %d, %D0", insn, offset);
 }
 
+static const char *emit_asm_operand(const ir_node *node, const char *s)
+{
+	assert(*s == '%');
+	char c = *(++s);
+	/* parse modifiers */
+	if (c == '\0') {
+		ir_fprintf(stderr, "Warning: asm text (%+F) ends with %%\n", node);
+		be_emit_char('%');
+		return s;
+	} else if (c == '%') {
+		be_emit_char('%');
+		return s+1;
+	} else if (c < '0' || c > '9') {
+		ir_fprintf(stderr, "Warning: asm text (%+F) contains unknown modifier '%c' for asm op\n",
+		           node, c);
+		return s+1;
+	}
+
+	/* parse number */
+	int num = 0;
+	int p   = 0;
+	sscanf(s, "%d%n", &num, &p);
+	s += p;
+
+	const sparc_asm_attr_t     *const attr     = get_sparc_asm_attr_const(node);
+	const sparc_asm_operand_t  *const operands = attr->operands;
+	if ((size_t)num > ARR_LEN(operands)) {
+		ir_fprintf(stderr,
+		           "Error: Custom assembler references invalid input/output (%+F)\n",
+		           node);
+		return s;
+	}
+
+	const sparc_asm_operand_t *const operand = &operands[num];
+	const arch_register_t *reg = NULL;
+	switch (operand->kind) {
+	case ASM_OPERAND_IMMEDIATE:
+		sparc_emit_immediate(operand->immediate_value,
+		                     operand->immediate_value_entity);
+		return s;
+	case ASM_OPERAND_INPUT_VALUE:
+		reg = arch_get_irn_register_in(node, operand->pos);
+		break;
+	case ASM_OPERAND_OUTPUT_VALUE:
+		reg = arch_get_irn_register_out(node, operand->pos);
+		break;
+	}
+
+	/* emit the register */
+	sparc_emit_register(reg);
+	return s;
+}
+
 static void emit_sparc_ASM(const ir_node *node)
 {
 	be_emit_cstring("#APP\n");
@@ -717,7 +773,13 @@ static void emit_sparc_ASM(const ir_node *node)
 
 	if (s[0] != '\t')
 		be_emit_char('\t');
-	be_emit_string(s);
+	while (*s != 0) {
+		if (*s == '%') {
+			s = emit_asm_operand(node, s);
+		} else {
+			be_emit_char(*s++);
+		}
+	}
 
 	be_emit_cstring("\n#NO_APP\n");
 	be_emit_write_line();

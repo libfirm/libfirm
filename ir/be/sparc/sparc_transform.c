@@ -221,6 +221,365 @@ static ir_node *skip_downconv(ir_node *node)
 }
 
 /**
+ * An assembler constraint.
+ */
+typedef struct constraint_t {
+	const arch_register_class_t *cls;
+	char                         all_registers_allowed;
+	char                         immediate_type;
+	int                          same_as;
+} constraint_t;
+
+static void parse_asm_constraints(constraint_t *const constraint,
+                                  ident *const constraint_text,
+                                  bool const is_output)
+{
+	memset(constraint, 0, sizeof(constraint[0]));
+	constraint->same_as = -1;
+
+	char const *c = get_id_str(constraint_text);
+	if (*c == '\0') {
+		/* a memory constraint: no need to do anything in backend about it
+		 * (the dependencies are already respected by the memory edge of
+		 * the node) */
+		return;
+	}
+
+	char                         immediate_type        = '\0';
+	arch_register_class_t const *cls                   = NULL;
+	bool                         all_registers_allowed = false;
+	int                          same_as               = -1;
+	while (*c != 0) {
+		arch_register_class_t const *new_cls = NULL;
+		char                         new_imm = '\0';
+		switch (*c) {
+		/* Skip spaces, out/in-out marker */
+		case ' ':
+		case '\t':
+		case '\n':
+		case '=':
+		case '+':
+		case '&': break;
+		case '*':
+			++c;
+			break;
+		case '#':
+			while (*c != 0 && *c != ',')
+				++c;
+			break;
+		case 'r':
+			new_cls               = &sparc_reg_classes[CLASS_sparc_gp];
+			all_registers_allowed = true;
+			break;
+		case 'e':
+		case 'f':
+			new_cls               = &sparc_reg_classes[CLASS_sparc_fp];
+			all_registers_allowed = true;
+			break;
+		case 'A':
+		case 'I':
+			new_cls = &sparc_reg_classes[CLASS_sparc_gp];
+			new_imm = *c;
+			break;
+
+		case '0':
+		case '1':
+		case '2':
+		case '3':
+		case '4':
+		case '5':
+		case '6':
+		case '7':
+		case '8':
+		case '9': {
+			if (is_output)
+				panic("can only specify same constraint on input");
+
+			int p;
+			sscanf(c, "%d%n", &same_as, &p);
+			if (same_as >= 0) {
+				c += p;
+				continue;
+			}
+			break;
+		}
+
+		default:
+			panic("unknown asm constraint '%c' found in (%+F)", *c, current_ir_graph);
+		}
+
+		if (new_cls) {
+			if (!cls) {
+				cls = new_cls;
+			} else if (cls != new_cls) {
+				panic("multiple register classes not supported");
+			}
+		}
+
+		if (new_imm != '\0') {
+			if (immediate_type == '\0') {
+				immediate_type = new_imm;
+			} else if (immediate_type != new_imm) {
+				panic("multiple immediate types not supported");
+			}
+		}
+
+		++c;
+	}
+
+	if (same_as >= 0) {
+		if (cls != NULL)
+			panic("same as and register constraint not supported");
+		if (immediate_type != '\0')
+			panic("same as and immediate constraint not supported");
+	}
+
+	if (!cls && same_as < 0)
+		panic("no constraint specified for assembler input");
+
+	constraint->same_as               = same_as;
+	constraint->cls                   = cls;
+	constraint->all_registers_allowed = all_registers_allowed;
+	constraint->immediate_type        = immediate_type;
+}
+
+static const arch_register_t *find_register(const char *name)
+{
+	for (size_t i = 0; i < N_SPARC_REGISTERS; ++i) {
+		const arch_register_t *const reg = &sparc_registers[i];
+		if (strcmp(reg->name, name) == 0)
+			return reg;
+	}
+	return NULL;
+}
+
+static arch_register_req_t const *make_register_req(ir_graph *const irg,
+	constraint_t const *const c, int const n_outs,
+	arch_register_req_t const **const out_reqs, int const pos)
+{
+	int const same_as = c->same_as;
+	if (same_as >= 0) {
+		if (same_as >= n_outs)
+			panic("invalid output number in same_as constraint");
+
+		struct obstack            *const obst  = get_irg_obstack(irg);
+		arch_register_req_t       *const req   = OALLOC(obst, arch_register_req_t);
+		arch_register_req_t const *const other = out_reqs[same_as];
+		*req            = *other;
+		req->type      |= arch_register_req_type_should_be_same;
+		req->other_same = 1U << pos;
+
+		/* Switch constraints. This is because in firm we have same_as
+		 * constraints on the output constraints while in the gcc asm syntax
+		 * they are specified on the input constraints. */
+		out_reqs[same_as] = req;
+		return other;
+	}
+
+	return c->cls->class_req;
+}
+
+void sparc_init_asm_constraints(void)
+{
+	static unsigned char const register_flags[] = {
+		'r', 'e', 'f', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
+	};
+	for (size_t i = 0; i < ARRAY_SIZE(register_flags); ++i) {
+		unsigned char const c = register_flags[i];
+		asm_constraint_flags[c] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	}
+
+	asm_constraint_flags['A'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
+	asm_constraint_flags['I'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
+
+	/* Note there are many more flags in gcc which we can't properly support
+	 * at the moment. see gcc/config/sparc/constraints.md */
+}
+
+int sparc_is_valid_clobber(const char *clobber)
+{
+	return strcmp(clobber, "memory") == 0 || strcmp(clobber, "cc") == 0;
+}
+
+static ir_node *gen_ASM(ir_node *node)
+{
+	int       n_inputs     = get_ASM_n_inputs(node);
+	size_t    n_clobbers   = 0;
+	ident   **clobbers     = get_ASM_clobbers(node);
+	ir_graph *irg          = get_irn_irg(node);
+	//unsigned  clobber_bits[BITSET_SIZE_ELEMS(N_SPARC_REGISTERS)];
+
+	for (size_t c = 0; c < get_ASM_n_clobbers(node); ++c) {
+		const char *const clobber = get_id_str(clobbers[c]);
+		if (strcmp(clobber, "memory") == 0)
+			continue;
+		if (strcmp(clobber, "cc") == 0) {
+			n_clobbers += 2;
+			continue;
+		}
+
+		const arch_register_t *reg = find_register(clobber);
+		if (reg == NULL)
+			panic("invalid clobber in sparc asm");
+
+#if 0
+		rbitset_set(clobber_bits, reg->global_index);
+		++n_clobbers;
+#else
+		panic("clobbers not correctly supported yet");
+#endif
+	}
+	size_t n_out_constraints = get_ASM_n_output_constraints(node);
+	size_t n_outs            = n_out_constraints + n_clobbers;
+
+	const ir_asm_constraint *in_constraints  = get_ASM_input_constraints(node);
+	const ir_asm_constraint *out_constraints = get_ASM_output_constraints(node);
+
+	/* determine number of operands */
+	unsigned n_operands = 0;
+	for (size_t out_idx = 0; out_idx < n_out_constraints; ++out_idx) {
+		const ir_asm_constraint *constraint = &out_constraints[out_idx];
+		if (constraint->pos+1 > n_operands)
+			n_operands = constraint->pos+1;
+	}
+	for (int i = 0; i < n_inputs; ++i) {
+		const ir_asm_constraint *constraint = &in_constraints[i];
+		if (constraint->pos+1 > n_operands)
+			n_operands = constraint->pos+1;
+	}
+
+	struct obstack      *const obst = get_irg_obstack(irg);
+	sparc_asm_operand_t *const operands
+		= NEW_ARR_DZ(sparc_asm_operand_t, obst, n_operands);
+
+	/* construct output constraints */
+	size_t                      out_size = n_outs + 1;
+	const arch_register_req_t **out_reg_reqs
+		= OALLOCN(obst, const arch_register_req_t*, out_size);
+
+	size_t out_idx;
+	for (out_idx = 0; out_idx < n_out_constraints; ++out_idx) {
+		const ir_asm_constraint *constraint = &out_constraints[out_idx];
+		unsigned                 pos        = constraint->pos;
+		constraint_t             parsed_constraint;
+		parse_asm_constraints(&parsed_constraint, constraint->constraint, true);
+
+		assert(parsed_constraint.immediate_type == 0);
+		arch_register_req_t const *const req
+			= make_register_req(irg, &parsed_constraint, n_out_constraints,
+			                    out_reg_reqs, out_idx);
+		out_reg_reqs[out_idx] = req;
+
+		/* TODO: adjust register_req for clobbers */
+
+		sparc_asm_operand_t *const operand = &operands[pos];
+		operand->kind = ASM_OPERAND_OUTPUT_VALUE;
+		operand->pos  = out_idx;
+	}
+
+	/* inputs + input constraints */
+	int       max_ins      = n_inputs+1;
+	ir_node **in = ALLOCANZ(ir_node*, max_ins);
+	const arch_register_req_t **in_reg_reqs
+		= OALLOCN(obst, const arch_register_req_t*, max_ins);
+	int n_ins = 0;
+	for (int i = 0; i < n_inputs; ++i) {
+		ir_node                 *pred         = get_ASM_input(node, i);
+		const ir_asm_constraint *constraint   = &in_constraints[i];
+		unsigned                 pos          = constraint->pos;
+
+		constraint_t parsed_constraint;
+		parse_asm_constraints(&parsed_constraint, constraint->constraint, false);
+
+		sparc_asm_operand_t *const operand = &operands[pos];
+
+		/* try to use an immediate value */
+		char imm_type = parsed_constraint.immediate_type;
+		if (imm_type == 'I') {
+			if (is_imm_encodeable(pred)) {
+				operand->kind = ASM_OPERAND_IMMEDIATE;
+				operand->immediate_value = get_tarval_long(get_Const_tarval(pred));
+				continue;
+			}
+		} else if (imm_type == 'A') {
+			/* TODO: match Add(SymConst,Const), ... */
+			if (is_SymConst(pred)) {
+				operand->kind = ASM_OPERAND_IMMEDIATE;
+				operand->immediate_value_entity = get_SymConst_entity(pred);
+				continue;
+			} else if (is_Const(pred)) {
+				operand->kind = ASM_OPERAND_IMMEDIATE;
+				operand->immediate_value = get_tarval_long(get_Const_tarval(pred));
+				continue;
+			}
+		}
+
+		arch_register_req_t const *const req = make_register_req(irg, &parsed_constraint, n_out_constraints, out_reg_reqs, i);
+		in_reg_reqs[i] = req;
+
+		int      op_pos      = n_ins++;
+		ir_node *new_pred = be_transform_node(pred);
+		in[op_pos]    = new_pred;
+		operand->kind = ASM_OPERAND_INPUT_VALUE;
+		operand->pos  = op_pos;
+	}
+
+	int      mem_pos     = n_ins++;
+	ir_node *mem         = get_ASM_mem(node);
+	in[mem_pos]          = be_transform_node(mem);
+	in_reg_reqs[mem_pos] = arch_no_register_req;
+
+	/* parse clobbers */
+	for (size_t c = 0; c < get_ASM_n_clobbers(node); ++c) {
+		const char *const clobber = get_id_str(clobbers[c]);
+		if (strcmp(clobber, "memory") == 0)
+			continue;
+		if (strcmp(clobber, "cc") == 0) {
+			const arch_register_t *flags_reg
+				= &sparc_registers[REG_FLAGS];
+			out_reg_reqs[out_idx++] = flags_reg->single_req;
+			const arch_register_t *fpflags_reg
+				= &sparc_registers[REG_FPFLAGS];
+			out_reg_reqs[out_idx++] = fpflags_reg->single_req;
+			continue;
+		}
+
+		const arch_register_t *reg = find_register(clobber);
+		assert(reg != NULL); /* otherwise we had a panic earlier */
+		out_reg_reqs[out_idx++] = reg->single_req;
+	}
+
+	/* append none register requirement for the memory output */
+	if (n_outs+1 >= out_size) {
+		out_size = n_outs + 1;
+		const arch_register_req_t **new_out_reg_reqs
+			= OALLOCN(obst, const arch_register_req_t*, out_size);
+		memcpy(new_out_reg_reqs, out_reg_reqs,
+			   n_outs * sizeof(new_out_reg_reqs[0]));
+		out_reg_reqs = new_out_reg_reqs;
+	}
+
+	/* add a new (dummy) output which occupies the register */
+	out_reg_reqs[n_outs] = arch_no_register_req;
+	++n_outs;
+
+	dbg_info *const dbgi      = get_irn_dbg_info(node);
+	ir_node  *const block     = get_nodes_block(node);
+	ir_node  *const new_block = be_transform_node(block);
+	ident    *const text      = get_ASM_text(node);
+	ir_node  *const new_node
+		= new_bd_sparc_ASM(dbgi, new_block, n_ins, in, n_outs, text, operands);
+
+	backend_info_t *const info = be_get_info(new_node);
+	for (size_t o = 0; o < n_outs; ++o) {
+		info->out_infos[o].req = out_reg_reqs[o];
+	}
+	arch_set_irn_register_reqs_in(new_node, in_reg_reqs);
+
+	return new_node;
+}
+
+/**
  * helper function for binop operations
  *
  * @param new_reg  register generation function ptr
@@ -458,35 +817,22 @@ only_offset:
 	address->offset = offset;
 }
 
-static ir_node *gen_ASM(ir_node *node)
-{
-	size_t n_clobbers           = get_ASM_n_clobbers(node);
-	size_t n_output_constraints = get_ASM_n_output_constraints(node);
-	size_t n_inputs             = get_ASM_n_inputs(node);
-	if (n_clobbers != 0 || n_output_constraints != 0 || n_inputs != 0) {
-		panic("ASM with output constraints/input constraints or clobber not supported yet");
-	}
-
-	dbg_info *dbgi    = get_irn_dbg_info(node);
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
-	ident    *text    = get_ASM_text(node);
-	ir_node  *mem     = get_ASM_mem(node);
-	ir_node  *new_mem = be_transform_node(mem);
-	return new_bd_sparc_ASM(dbgi, block, new_mem, text);
-}
-
 static ir_node *gen_Proj_ASM(ir_node *node)
 {
-	long     pn       = get_Proj_proj(node);
+	ir_mode *mode     = get_irn_mode(node);
 	ir_node *pred     = get_Proj_pred(node);
 	ir_node *new_pred = be_transform_node(pred);
+	long     pos      = get_Proj_proj(node);
 
-	switch (pn) {
-	case 0:
-		return new_r_Proj(new_pred, mode_M, pn_sparc_ASM_M);
-	default:
-		panic("unexpected Proj from ASM found");
+	if (mode == mode_M) {
+		pos = arch_get_irn_n_outs(new_pred)-1;
+	} else if (mode_needs_gp_reg(mode)) {
+		mode = mode_gp;
+	} else {
+		panic("unexpected proj mode at ASM");
 	}
+
+	return new_r_Proj(new_pred, mode, pos);
 }
 
 /**
