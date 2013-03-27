@@ -1197,16 +1197,21 @@ ir_switch_table *ir_switch_table_duplicate(ir_graph *irg,
 
 bool only_used_by_keepalive(const ir_node *node)
 {
+	bool kept = false;
+
 	foreach_out_edge(node, edge) {
 		ir_node *succ = get_edge_src_irn(edge);
-		if (is_End(succ))
+		if (is_End(succ)) {
+			kept = true;
 			continue;
+		}
 		if (is_Proj(succ) && only_used_by_keepalive(succ))
 			return true;
 		/* found a real user */
 		return false;
 	}
-	return true;
+
+	return kept;
 }
 
 /* include generated code */
