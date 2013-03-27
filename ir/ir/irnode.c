@@ -194,6 +194,7 @@ void set_irn_n(ir_node *node, int n, ir_node *in)
 	assert(-1 <= n);
 	assert(n < get_irn_arity(node));
 	assert(in && in->kind == k_ir_node);
+	assert(!is_Deleted(in));
 
 	/* Call the hook */
 	hook_set_irn_n(node, n, in, node->in[n + 1]);
