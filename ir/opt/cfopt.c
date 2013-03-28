@@ -279,12 +279,6 @@ static void merge_blocks(ir_node *b, void *env)
  */
 static void optimize_blocks(ir_node *b, void *ctx)
 {
-	int i, j, k, n, max_preds, n_preds, p_preds = -1;
-	ir_node *phi;
-	ir_node *next;
-	ir_node **in;
-	merge_env *env = (merge_env*)ctx;
-
 	if (get_Block_dom_depth(b) < 0) {
 		/* ignore unreachable blocks */
 		return;
@@ -292,22 +286,24 @@ static void optimize_blocks(ir_node *b, void *ctx)
 
 	/* Count the number of predecessor if this block is merged with pred blocks
 	   that are empty. */
-	max_preds = 0;
-	for (i = 0, k = get_Block_n_cfgpreds(b); i < k; ++i) {
+	int max_preds = 0;
+	for (int i = 0, k = get_Block_n_cfgpreds(b); i < k; ++i) {
 		max_preds += test_whether_dispensable(b, i);
 	}
-	in = XMALLOCN(ir_node*, max_preds);
+	ir_node **in = XMALLOCN(ir_node*, max_preds);
+
+	int        p_preds = -1;
+	merge_env *env     = (merge_env *)ctx;
 
 	/*- Fix the Phi nodes of the current block -*/
-	for (phi = get_Block_phis(b); phi != NULL; phi = next) {
+	for (ir_node *phi = get_Block_phis(b), *next; phi != NULL; phi = next) {
 		next = get_Phi_next(phi);
 
 		/* Find the new predecessors for the Phi */
 		p_preds = 0;
-		for (i = 0, n = get_Block_n_cfgpreds(b); i < n; ++i) {
+		for (int i = 0, n = get_Block_n_cfgpreds(b); i < n; ++i) {
 			ir_graph *irg = get_irn_irg(b);
 			ir_node *predx = get_Block_cfgpred(b, i);
-			ir_node *pred;
 
 			/* case Phi 1: maintain Bads, as somebody else is responsible to
 			 * remove them */
@@ -316,13 +312,13 @@ static void optimize_blocks(ir_node *b, void *ctx)
 				continue;
 			}
 
-			pred = get_nodes_block(predx);
+			ir_node *pred = get_nodes_block(predx);
 
 			/* case Phi 2: It's an empty block and not yet visited. */
 			if (is_Block_removable(pred) && !Block_block_visited(pred)) {
 				ir_node *phi_pred = get_Phi_pred(phi, i);
 
-				for (j = 0, k = get_Block_n_cfgpreds(pred); j < k; j++) {
+				for (int j = 0, k = get_Block_n_cfgpreds(pred); j < k; j++) {
 					ir_node *pred_pred = get_Block_cfgpred(pred, j);
 
 					if (is_Bad(pred_pred)) {
@@ -357,17 +353,15 @@ static void optimize_blocks(ir_node *b, void *ctx)
 	/*- This happens only if merge between loop backedge and single loop entry.
 	    Moreover, it is only needed if predb is the direct dominator of b,
 	    else there can be no uses of the Phi's in predb ... -*/
-	for (k = 0, n = get_Block_n_cfgpreds(b); k < n; ++k) {
+	for (int k = 0, n = get_Block_n_cfgpreds(b); k < n; ++k) {
 		ir_node *pred  = get_Block_cfgpred(b, k);
 		ir_node *predb = get_nodes_block(pred);
 		if (is_Bad(pred))
 			continue;
 
 		if (is_Block_removable(predb) && !Block_block_visited(predb)) {
-			ir_node *next_phi;
-
 			/* we found a predecessor block at position k that will be removed */
-			for (phi = get_Block_phis(predb); phi != NULL; phi = next_phi) {
+			for (ir_node *phi = get_Block_phis(predb), *next_phi; phi != NULL; phi = next_phi) {
 				int q_preds = 0;
 				next_phi = get_Phi_next(phi);
 
@@ -387,9 +381,8 @@ static void optimize_blocks(ir_node *b, void *ctx)
 					env->phis_moved = true;
 
 					/* first, copy all 0..k-1 predecessors */
-					for (i = 0; i < k; i++) {
+					for (int i = 0; i < k; i++) {
 						ir_node *predx = get_Block_cfgpred(b, i);
-						ir_node *pred_block;
 
 						if (is_Bad(predx)) {
 							ir_graph *irg  = get_irn_irg(b);
@@ -397,12 +390,12 @@ static void optimize_blocks(ir_node *b, void *ctx)
 							in[q_preds++] = new_r_Bad(irg, mode);
 							continue;
 						}
-						pred_block = get_nodes_block(predx);
+						ir_node *pred_block = get_nodes_block(predx);
 						if (is_Block_removable(pred_block)
 						           && !Block_block_visited(pred_block)) {
 							int n_cfgpreds = get_Block_n_cfgpreds(pred_block);
 							/* It's an empty block and not yet visited. */
-							for (j = 0; j < n_cfgpreds; j++) {
+							for (int j = 0; j < n_cfgpreds; j++) {
 								if (!is_Bad(get_Block_cfgpred(pred_block, j))) {
 									in[q_preds++] = phi;
 								} else {
@@ -417,12 +410,12 @@ static void optimize_blocks(ir_node *b, void *ctx)
 					}
 
 					/* now we are at k, copy the phi predecessors */
-					for (i = 0; i < get_Phi_n_preds(phi); i++) {
+					for (int i = 0; i < get_Phi_n_preds(phi); i++) {
 						in[q_preds++] = get_Phi_pred(phi, i);
 					}
 
 					/* and now all the rest */
-					for (i = k+1; i < get_Block_n_cfgpreds(b); i++) {
+					for (int i = k+1; i < get_Block_n_cfgpreds(b); i++) {
 						ir_node *phi_pred = get_Block_cfgpred_block(b, i);
 
 						if (is_Bad(phi_pred)) {
@@ -431,7 +424,7 @@ static void optimize_blocks(ir_node *b, void *ctx)
 							in[q_preds++] = new_r_Bad(irg, mode);
 						} else if (is_Block_removable(phi_pred) && !Block_block_visited(phi_pred)) {
 							/* It's an empty block and not yet visited. */
-							for (j = 0; j < get_Block_n_cfgpreds(phi_pred); j++) {
+							for (int j = 0; j < get_Block_n_cfgpreds(phi_pred); j++) {
 								if (! is_Bad(get_Block_cfgpred(phi_pred, j))) {
 									in[q_preds++] = phi;
 								} else {
@@ -460,8 +453,8 @@ static void optimize_blocks(ir_node *b, void *ctx)
 	}
 
 	/*- Fix the block -*/
-	n_preds = 0;
-	for (i = 0; i < get_Block_n_cfgpreds(b); i++) {
+	int n_preds = 0;
+	for (int i = 0; i < get_Block_n_cfgpreds(b); i++) {
 		ir_node *pred  = get_Block_cfgpred(b, i);
 		ir_node *predb = get_nodes_block(pred);
 		ir_graph *irg  = get_irn_irg(pred);
@@ -473,7 +466,7 @@ static void optimize_blocks(ir_node *b, void *ctx)
 		}
 		if (is_Block_removable(predb) && !Block_block_visited(predb)) {
 			/* case 2: It's an empty block and not yet visited. */
-			for (j = 0; j < get_Block_n_cfgpreds(predb); j++) {
+			for (int j = 0; j < get_Block_n_cfgpreds(predb); j++) {
 				ir_node *predpred = get_Block_cfgpred(predb, j);
 
 				if (is_Bad(predpred)) {
