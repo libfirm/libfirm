@@ -476,9 +476,9 @@ static void optimize_blocks(ir_node *b, void *ctx)
 
 				in[n_preds++] = predpred;
 			}
-			/* Remove block+jump as it might be kept alive. */
+			/* Remove jump and merge blocks as they might be kept alive. */
 			exchange(pred, new_r_Bad(get_irn_irg(b), mode_X));
-			exchange(predb, new_r_Bad(get_irn_irg(b), mode_BB));
+			exchange(predb, b);
 		} else {
 			/* case 3: */
 			in[n_preds++] = pred;
