@@ -2370,6 +2370,87 @@ static ir_node *gen_Phi(ir_node *node)
 	return be_transform_phi(node, req);
 }
 
+/*
+ * Transform saturating increment.
+ */
+static ir_node *gen_saturating_increment(ir_node *node)
+{
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *block     = be_transform_node(get_nodes_block(node));
+	ir_node  *operand   = be_transform_node(get_Builtin_param(node, 0));
+	ir_node  *increment = new_bd_sparc_AddCC_imm(dbgi, block, operand, NULL, 1);
+	ir_node  *value     = new_rd_Proj(dbgi, increment, mode_Iu, pn_sparc_AddCC_res);
+	ir_node  *eflags    = new_rd_Proj(dbgi, increment, mode_Iu, pn_sparc_AddCC_flags);
+	ir_graph *irg       = get_Block_irg(block);
+	ir_node  *zero      = get_g0(irg);
+	ir_node  *sbb       = new_bd_sparc_SubX_reg(dbgi, block, value, zero, eflags);
+
+	return sbb;
+}
+
+/**
+ * Transform Builtin node.
+ */
+static ir_node *gen_Builtin(ir_node *node)
+{
+	ir_builtin_kind kind = get_Builtin_kind(node);
+
+	switch (kind) {
+	case ir_bk_trap:
+	case ir_bk_debugbreak:
+	case ir_bk_return_address:
+	case ir_bk_frame_address:
+	case ir_bk_prefetch:
+	case ir_bk_ffs:
+	case ir_bk_clz:
+	case ir_bk_ctz:
+	case ir_bk_parity:
+	case ir_bk_popcount:
+	case ir_bk_bswap:
+	case ir_bk_outport:
+	case ir_bk_inport:
+	case ir_bk_inner_trampoline:
+		/* Should not occur in backend. */
+		break;
+	case ir_bk_saturating_increment:
+		return gen_saturating_increment(node);
+	}
+	panic("Builtin %s not implemented", get_builtin_kind_name(kind));
+}
+
+/**
+ * Transform Proj(Builtin) node.
+ */
+static ir_node *gen_Proj_Builtin(ir_node *proj)
+{
+	ir_node         *node     = get_Proj_pred(proj);
+	ir_node         *new_node = be_transform_node(node);
+	ir_builtin_kind kind      = get_Builtin_kind(node);
+
+	switch (kind) {
+	case ir_bk_return_address:
+	case ir_bk_frame_address:
+	case ir_bk_ffs:
+	case ir_bk_clz:
+	case ir_bk_ctz:
+	case ir_bk_parity:
+	case ir_bk_popcount:
+	case ir_bk_bswap:
+	case ir_bk_trap:
+	case ir_bk_debugbreak:
+	case ir_bk_prefetch:
+	case ir_bk_outport:
+	case ir_bk_inport:
+	case ir_bk_inner_trampoline:
+		/* Should not occur in backend. */
+		break;
+	case ir_bk_saturating_increment:
+		assert(get_Proj_proj(proj) == pn_Builtin_max+1);
+		return new_node;
+	}
+	panic("Builtin %s not implemented", get_builtin_kind_name(kind));
+}
+
 /**
  * Transform a Proj from a Load.
  */
@@ -2623,6 +2704,8 @@ static ir_node *gen_Proj(ir_node *node)
 		return gen_Proj_ASM(node);
 	case iro_Alloc:
 		return gen_Proj_Alloc(node);
+	case iro_Builtin:
+		return gen_Proj_Builtin(node);
 	case iro_Store:
 		return gen_Proj_Store(node);
 	case iro_Load:
@@ -2678,6 +2761,7 @@ static void sparc_register_transformers(void)
 	be_set_transform_function(op_Add,          gen_Add);
 	be_set_transform_function(op_Alloc,        gen_Alloc);
 	be_set_transform_function(op_And,          gen_And);
+	be_set_transform_function(op_Builtin,      gen_Builtin);
 	be_set_transform_function(op_Call,         gen_Call);
 	be_set_transform_function(op_Cmp,          gen_Cmp);
 	be_set_transform_function(op_Cond,         gen_Cond);

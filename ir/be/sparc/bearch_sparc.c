@@ -422,7 +422,8 @@ static void sparc_lower_for_target(void)
 	if (sparc_isa_template.fpu_arch == SPARC_FPU_ARCH_SOFTFLOAT)
 		lower_floating_point();
 
-	lower_builtins(0, NULL);
+	ir_builtin_kind builtin_exceptions[1] = {ir_bk_saturating_increment};
+	lower_builtins(1, builtin_exceptions);
 
 	ir_mode *mode_gp = sparc_reg_classes[CLASS_sparc_gp].mode;
 	for (size_t i = 0, n_irgs = get_irp_n_irgs(); i < n_irgs; ++i) {

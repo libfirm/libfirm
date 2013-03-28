@@ -5243,6 +5243,31 @@ static ir_node *gen_inport(ir_node *node)
 	return res;
 }
 
+/*
+ * Transform saturating increment.
+ */
+static ir_node *gen_saturating_increment(ir_node *node)
+{
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *block     = be_transform_node(get_nodes_block(node));
+	ir_node  *operand   = be_transform_node(get_Builtin_param(node, 0));
+	ir_graph *irg       = get_Block_irg(block);
+	ir_node  *one       = ia32_create_Immediate(irg, NULL, 0, 1);
+	ir_node  *increment = new_bd_ia32_Add(dbgi, block, noreg_GP, noreg_GP, nomem, operand, one);
+	set_irn_mode(increment, mode_T);
+	set_ia32_commutative(increment);
+	SET_IA32_ORIG_NODE(increment, node);
+
+	ir_node *value  = new_rd_Proj(dbgi, increment, mode_Iu, pn_ia32_Add_res);
+	ir_node *eflags = new_rd_Proj(dbgi, increment, mode_Iu, pn_ia32_Add_flags);
+	ir_node *zero   = ia32_create_Immediate(irg, NULL, 0, 0);
+	ir_node *sbb    = new_bd_ia32_Sbb(dbgi, block, noreg_GP, noreg_GP, nomem, value, zero, eflags);
+	set_ia32_ls_mode(sbb, mode_Iu);
+	SET_IA32_ORIG_NODE(sbb, node);
+
+	return sbb;
+}
+
 /**
  * Transform a builtin inner trampoline
  */
@@ -5369,6 +5394,8 @@ static ir_node *gen_Builtin(ir_node *node)
 		return gen_inport(node);
 	case ir_bk_inner_trampoline:
 		return gen_inner_trampoline(node);
+	case ir_bk_saturating_increment:
+		return gen_saturating_increment(node);
 	}
 	panic("Builtin %s not implemented", get_builtin_kind_name(kind));
 }
@@ -5391,6 +5418,7 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 	case ir_bk_parity:
 	case ir_bk_popcount:
 	case ir_bk_bswap:
+	case ir_bk_saturating_increment:
 		assert(get_Proj_proj(proj) == pn_Builtin_max+1);
 		return new_node;
 	case ir_bk_trap:

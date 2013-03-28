@@ -252,6 +252,7 @@ static void symtbl_init(void)
 	INSERTENUM(tt_builtin_kind, ir_bk_inport);
 	INSERTENUM(tt_builtin_kind, ir_bk_outport);
 	INSERTENUM(tt_builtin_kind, ir_bk_inner_trampoline);
+	INSERTENUM(tt_builtin_kind, ir_bk_saturating_increment);
 
 	INSERTENUM(tt_cond_jmp_predicate, COND_JMP_PRED_NONE);
 	INSERTENUM(tt_cond_jmp_predicate, COND_JMP_PRED_TRUE);

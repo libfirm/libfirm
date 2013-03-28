@@ -1221,6 +1221,7 @@ static ir_node *gen_Builtin(ir_node *node)
 	case ir_bk_outport:
 	case ir_bk_inport:
 	case ir_bk_inner_trampoline:
+	case ir_bk_saturating_increment:
 		break;
 	}
 	panic("Builtin %s not implemented", get_builtin_kind_name(kind));
@@ -1254,6 +1255,7 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 		return new_node;
 	case ir_bk_inport:
 	case ir_bk_inner_trampoline:
+	case ir_bk_saturating_increment:
 		break;
 	}
 	panic("Builtin %s not implemented", get_builtin_kind_name(kind));

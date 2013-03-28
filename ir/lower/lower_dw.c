@@ -2711,6 +2711,7 @@ static void lower_Builtin(ir_node *builtin, ir_mode *mode)
 	case ir_bk_inport:
 	case ir_bk_outport:
 	case ir_bk_inner_trampoline:
+	case ir_bk_saturating_increment:
 		/* Nothing to do. */
 		return;
 	case ir_bk_bswap:
