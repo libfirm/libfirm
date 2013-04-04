@@ -428,7 +428,7 @@ static bool can_move_up_into_delayslot(const ir_node *node, const ir_node *to)
 			if (writes_reg(node, reg->global_index, req->width))
 				return false;
 		}
-}
+	}
 	return true;
 }
 

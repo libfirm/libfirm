@@ -420,7 +420,7 @@ static bool is_restorezeroopt_reg(const arch_register_t *reg)
 }
 
 static void replace_with_restore_reg(ir_node *node, ir_node *replaced,
-									 ir_node *op0, ir_node *op1)
+                                     ir_node *op0, ir_node *op1)
 {
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	ir_node  *stack_in = get_irn_n(node, n_sparc_RestoreZero_stack);
@@ -442,8 +442,8 @@ static void replace_with_restore_reg(ir_node *node, ir_node *replaced,
 }
 
 static void replace_with_restore_imm(ir_node *node, ir_node *replaced,
-									 ir_node *op, ir_entity *imm_entity,
-									 int32_t immediate)
+                                     ir_node *op, ir_entity *imm_entity,
+                                     int32_t immediate)
 {
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	ir_node  *stack_in = get_irn_n(node, n_sparc_RestoreZero_stack);
