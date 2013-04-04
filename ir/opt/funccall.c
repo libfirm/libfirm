@@ -26,6 +26,7 @@
 #include "iroptimize.h"
 #include "analyze_irg_args.h"
 #include "irhooks.h"
+#include "irtools.h"
 #include "raw_bitset.h"
 #include "debug.h"
 
@@ -35,11 +36,10 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
  * The walker environment for updating function calls.
  */
 typedef struct env_t {
-	ir_node  *float_const_call_list;    /**< The list of all floating const function calls that will be changed. */
-	ir_node  *nonfloat_const_call_list; /**< The list of all non-floating const function calls that will be changed. */
-	ir_node  *pure_call_list;           /**< The list of all pure function calls that will be changed. */
-	ir_node  *nothrow_call_list;        /**< The list of all nothrow function calls that will be changed. */
-	ir_node  *proj_list;                /**< The list of all potential Proj nodes that must be fixed. */
+	ir_node  **float_const_call_list;    /**< The list of all floating const function calls that will be changed. */
+	ir_node  **nonfloat_const_call_list; /**< The list of all non-floating const function calls that will be changed. */
+	ir_node  **pure_call_list;           /**< The list of all pure function calls that will be changed. */
+	ir_node  **nothrow_call_list;        /**< The list of all nothrow function calls that will be changed. */
 } env_t;
 
 /** Ready IRG's are marked in the ready set. */
@@ -59,8 +59,6 @@ static void collect_const_and_pure_calls(ir_node *node, void *env)
 	if (is_Call(node)) {
 		ir_node *call = node;
 
-		/* set the link to NULL for all non-const/pure calls */
-		set_irn_link(call, NULL);
 		ir_node *ptr = get_Call_ptr(call);
 		if (!is_SymConst_addr_ent(ptr))
 			return;
@@ -73,16 +71,11 @@ static void collect_const_and_pure_calls(ir_node *node, void *env)
 
 		/* ok, if we get here we found a call to a const or a pure function */
 		if (prop & mtp_property_pure) {
-			set_irn_link(call, ctx->pure_call_list);
-			ctx->pure_call_list = call;
+			ARR_APP1(ir_node*, ctx->pure_call_list, call);
+		} else if (prop & mtp_property_has_loop) {
+			ARR_APP1(ir_node*, ctx->nonfloat_const_call_list, call);
 		} else {
-			if (prop & mtp_property_has_loop) {
-				set_irn_link(call, ctx->nonfloat_const_call_list);
-				ctx->nonfloat_const_call_list = call;
-			} else {
-				set_irn_link(call, ctx->float_const_call_list);
-				ctx->float_const_call_list = call;
-			}
+			ARR_APP1(ir_node*, ctx->float_const_call_list, call);
 		}
 	} else if (is_Proj(node)) {
 		/*
@@ -98,9 +91,10 @@ static void collect_const_and_pure_calls(ir_node *node, void *env)
 		case pn_Call_M:
 		case pn_Call_X_except:
 		case pn_Call_X_regular:
-			set_irn_link(node, ctx->proj_list);
-			ctx->proj_list = node;
+			set_irn_link(node, get_irn_link(call));
+			set_irn_link(call, node);
 			break;
+
 		default:
 			break;
 		}
@@ -117,15 +111,39 @@ static void fix_const_call_lists(ir_graph *irg, env_t *ctx)
 {
 	bool exc_changed = false;
 
-	/* First step: fix all calls by removing their memory input and let
-	 * them floating.
-	 * The original memory input is preserved in their link fields. */
-	ir_node *next;
-	for (ir_node *call = ctx->float_const_call_list; call != NULL; call = next) {
-		next = (ir_node*)get_irn_link(call);
-		ir_node *mem = get_Call_mem(call);
+	/* Fix all calls by removing their memory input, let them float and fix their
+	 * Projs. */
+	for (size_t i = ARR_LEN(ctx->float_const_call_list); i-- != 0;) {
+		ir_node *const call = ctx->float_const_call_list[i];
+		for (ir_node *next, *proj = (ir_node*)get_irn_link(call); proj != NULL; proj = next) {
+			next = (ir_node*)get_irn_link(proj);
 
-		set_irn_link(call, mem);
+			switch (get_Proj_proj(proj)) {
+			case pn_Call_M: {
+				ir_node *const mem = get_Call_mem(call);
+				/* in dead code there might be cycles where proj == mem */
+				if (proj != mem)
+					exchange(proj, mem);
+				break;
+			}
+
+			case pn_Call_X_except:
+				exc_changed = true;
+				exchange(proj, new_r_Bad(irg, mode_X));
+				break;
+
+			case pn_Call_X_regular: {
+				ir_node *block = get_nodes_block(call);
+				exc_changed = true;
+				exchange(proj, new_r_Jmp(block));
+				break;
+			}
+
+			default:
+				break;
+			}
+		}
+
 		set_Call_mem(call, get_irg_no_mem(irg));
 
 		/*
@@ -148,39 +166,6 @@ static void fix_const_call_lists(ir_graph *irg, env_t *ctx)
 		hook_func_call(irg, call);
 	}
 
-	/* Last step: fix all Proj's */
-	for (ir_node *proj = ctx->proj_list; proj != NULL; proj = next) {
-		next = (ir_node*)get_irn_link(proj);
-		ir_node *call = get_Proj_pred(proj);
-		ir_node *mem  = (ir_node*)get_irn_link(call);
-
-		/* beware of calls in the pure call list */
-		if (!mem || is_Call(mem))
-			continue;
-		assert(get_irn_mode(mem) == mode_M);
-
-		switch (get_Proj_proj(proj)) {
-		case pn_Call_M: {
-			/* in dead code there might be cycles where proj == mem */
-			if (proj != mem)
-				exchange(proj, mem);
-			 break;
-		}
-		case pn_Call_X_except:
-			exc_changed = true;
-			exchange(proj, new_r_Bad(irg, mode_X));
-			break;
-		case pn_Call_X_regular: {
-			ir_node *block = get_nodes_block(call);
-			exc_changed = true;
-			exchange(proj, new_r_Jmp(block));
-			break;
-		}
-		default:
-			break;
-		}
-	}
-
 	if (exc_changed) {
 		/* ... including exception edges */
 		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
@@ -199,8 +184,6 @@ static void collect_nothrow_calls(ir_node *node, void *env)
 	if (is_Call(node)) {
 		ir_node *call = node;
 
-		/* set the link to NULL for all non-const/pure calls */
-		set_irn_link(call, NULL);
 		ir_node *ptr = get_Call_ptr(call);
 		if (!is_SymConst_addr_ent(ptr))
 			return;
@@ -212,8 +195,7 @@ static void collect_nothrow_calls(ir_node *node, void *env)
 			return;
 
 		/* ok, if we get here we found a call to a nothrow function */
-		set_irn_link(call, ctx->nothrow_call_list);
-		ctx->nothrow_call_list = call;
+		ARR_APP1(ir_node*, ctx->nothrow_call_list, call);
 	} else if (is_Proj(node)) {
 		/*
 		 * Collect all memory and exception Proj's from
@@ -228,9 +210,10 @@ static void collect_nothrow_calls(ir_node *node, void *env)
 		case pn_Call_M:
 		case pn_Call_X_except:
 		case pn_Call_X_regular:
-			set_irn_link(node, ctx->proj_list);
-			ctx->proj_list = node;
+			set_irn_link(node, get_irn_link(call));
+			set_irn_link(call, node);
 			break;
+
 		default:
 			break;
 		}
@@ -242,47 +225,36 @@ static void collect_nothrow_calls(ir_node *node, void *env)
  *
  * @param irg        the graph that contained calls to pure functions
  * @param call_list  the list of all call sites of const functions
- * @param proj_list  the list of all memory/exception Proj's of this call sites
  */
-static void fix_nothrow_call_list(ir_graph *irg, ir_node *call_list,
-                                  ir_node *proj_list)
+static void fix_nothrow_call_list(ir_graph *irg, ir_node **call_list)
 {
 	bool exc_changed = false;
 
-	/* First step: go through the list of calls and mark them. */
-	ir_node *next;
-	for (ir_node *call = call_list; call; call = next) {
-		next = (ir_node*)get_irn_link(call);
+	/* Remove all exception Projs. */
+	for (size_t i = ARR_LEN(call_list); i-- != 0;) {
+		ir_node *const call = call_list[i];
 
-		/* current_ir_graph is in memory anyway, so it's a good marker */
-		set_irn_link(call, &current_ir_graph);
+		for (ir_node *next, *proj = (ir_node*)get_irn_link(call); proj != NULL; proj = next) {
+			next = (ir_node*)get_irn_link(proj);
+
+			/* kill any exception flow */
+			switch (get_Proj_proj(proj)) {
+			case pn_Call_X_except:
+				exc_changed = true;
+				exchange(proj, new_r_Bad(irg, mode_X));
+				break;
+			case pn_Call_X_regular: {
+				ir_node *block = get_nodes_block(call);
+				exc_changed = true;
+				exchange(proj, new_r_Jmp(block));
+				break;
+			}
+			default:
+				break;
+			}
+		}
+
 		hook_func_call(irg, call);
-	}
-
-	/* Second step: Remove all exception Proj's */
-	for (ir_node *proj = proj_list; proj; proj = next) {
-		next = (ir_node*)get_irn_link(proj);
-		ir_node *call = get_Proj_pred(proj);
-
-		/* handle only marked calls */
-		if (get_irn_link(call) != &current_ir_graph)
-			continue;
-
-		/* kill any exception flow */
-		switch (get_Proj_proj(proj)) {
-		case pn_Call_X_except:
-			exc_changed = true;
-			exchange(proj, new_r_Bad(irg, mode_X));
-			break;
-		case pn_Call_X_regular: {
-			ir_node *block = get_nodes_block(call);
-			exc_changed = true;
-			exchange(proj, new_r_Jmp(block));
-			break;
-		}
-		default:
-			break;
-		}
 	}
 
 	/* changes were done ... */
@@ -531,15 +503,18 @@ static void handle_const_Calls(env_t *ctx)
 	for (size_t i = 0; i < n; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 
-		ctx->float_const_call_list    = NULL;
-		ctx->nonfloat_const_call_list = NULL;
-		ctx->pure_call_list           = NULL;
-		ctx->proj_list                = NULL;
+		ctx->float_const_call_list    = NEW_ARR_F(ir_node*, 0);
+		ctx->nonfloat_const_call_list = NEW_ARR_F(ir_node*, 0);
+		ctx->pure_call_list           = NEW_ARR_F(ir_node*, 0);
 
 		ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-		irg_walk_graph(irg, NULL, collect_const_and_pure_calls, ctx);
+		irg_walk_graph(irg, firm_clear_link, collect_const_and_pure_calls, ctx);
 		fix_const_call_lists(irg, ctx);
 		ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+
+		DEL_ARR_F(ctx->pure_call_list);
+		DEL_ARR_F(ctx->nonfloat_const_call_list);
+		DEL_ARR_F(ctx->float_const_call_list);
 
 		confirm_irg_properties(irg,
 			IR_GRAPH_PROPERTIES_CONTROL_FLOW
@@ -560,15 +535,15 @@ static void handle_nothrow_Calls(env_t *ctx)
 	for (size_t i = 0; i < n; ++i) {
 		ir_graph *irg  = get_irp_irg(i);
 
-		ctx->nothrow_call_list = NULL;
-		ctx->proj_list         = NULL;
+		ctx->nothrow_call_list = NEW_ARR_F(ir_node*, 0);
 
 		ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-		irg_walk_graph(irg, NULL, collect_nothrow_calls, ctx);
+		irg_walk_graph(irg, firm_clear_link, collect_nothrow_calls, ctx);
 
-		if (ctx->nothrow_call_list)
-			fix_nothrow_call_list(irg, ctx->nothrow_call_list, ctx->proj_list);
+		fix_nothrow_call_list(irg, ctx->nothrow_call_list);
 		ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+
+		DEL_ARR_F(ctx->nothrow_call_list);
 	}
 }
 
