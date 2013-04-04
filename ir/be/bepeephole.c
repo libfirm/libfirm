@@ -338,21 +338,30 @@ bool be_can_move_up(ir_heights_t *heights, const ir_node *node,
 		if (heights_reachable_in_block(heights, node, schedpoint))
 			return false;
 
-		/* node must not overwrite registers used by schedpoint */
 		int arity = get_irn_arity(schedpoint);
-		for (int i = 0; i < arity; ++i) {
-			const arch_register_t *reg
-				= arch_get_irn_register_in(schedpoint, i);
-			if (reg == NULL)
+		be_foreach_out(node, o) {
+			const arch_register_t *node_outreg = arch_get_irn_register_out(node, o);
+			if (node_outreg == NULL)
 				continue;
-			const arch_register_req_t *in_req
-				= arch_get_irn_register_req_in(schedpoint, i);
-			be_foreach_out(node, o) {
-				const arch_register_t *outreg
-					= arch_get_irn_register_out(node, o);
-				const arch_register_req_t *outreq
-					= arch_get_irn_register_req_out(node, o);
-				if (overlapping_regs(outreg, outreq, reg, in_req))
+			const arch_register_req_t *node_outreq = arch_get_irn_register_req_out(node, o);
+
+			/* node must not overwrite registers used by schedpoint (anti dependency) */
+			for (int i = 0; i < arity; ++i) {
+				const arch_register_t *inreg = arch_get_irn_register_in(schedpoint, i);
+				if (inreg == NULL)
+					continue;
+				const arch_register_req_t *inreq = arch_get_irn_register_req_in(schedpoint, i);
+				if (overlapping_regs(node_outreg, node_outreq, inreg, inreq))
+					return false;
+			}
+
+			/* schedpoint must not overwrite registers written by node (output dependency) */
+			be_foreach_out(schedpoint, o2) {
+				const arch_register_t *outreg = arch_get_irn_register_out(schedpoint, o2);
+				if (outreg == NULL)
+					continue;
+				const arch_register_req_t *outreq = arch_get_irn_register_req_out(schedpoint, o2);
+				if (overlapping_regs(node_outreg, node_outreq, outreg, outreq))
 					return false;
 			}
 		}
