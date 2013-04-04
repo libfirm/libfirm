@@ -527,8 +527,9 @@ void construct_confirms(ir_graph *irg)
 	FIRM_DBG_REGISTER(dbg, "firm.ana.confirm");
 
 	assure_irg_properties(irg,
-	      IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
+		IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
 		| IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+		| IR_GRAPH_PROPERTY_NO_BADS
 		| IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES);
 
 	assert(get_irg_pinned(irg) == op_pin_state_pinned &&
