@@ -554,6 +554,47 @@ static void finish_sparc_Return(ir_node *node)
 	}
 }
 
+/**
+ * Check whether the flags of the node are used.
+ */
+static bool has_flags_user(ir_node *node)
+{
+	foreach_out_edge(node, edge) {
+		ir_node *src = get_edge_src_irn(edge);
+
+		if (is_Proj(src) && get_Proj_proj(src) == pn_sparc_AddCC_flags)
+			return true;
+	}
+
+	return false;
+}
+
+/*
+ * Transform AddCC into Add if flags output is unused.
+ */
+static void peephole_sparc_AddCC(ir_node *node)
+{
+	if (has_flags_user(node))
+		return;
+
+	set_irn_op(node, op_sparc_Add);
+	arch_set_irn_register_out(node, pn_sparc_AddCC_flags, NULL);
+}
+
+/*
+ * Transform SubCC into Sub if flags output is unused.
+ */
+static void peephole_sparc_SubCC(ir_node *node)
+{
+	assert((int)pn_sparc_AddCC_flags == (int)pn_sparc_SubCC_flags);
+
+	if (has_flags_user(node))
+		return;
+
+	set_irn_op(node, op_sparc_Sub);
+	arch_set_irn_register_out(node, pn_sparc_SubCC_flags, NULL);
+}
+
 static void register_peephole_optimisation(ir_op *op, peephole_opt_func func)
 {
 	assert(op->ops.generic == NULL);
@@ -627,6 +668,8 @@ void sparc_finish_graph(ir_graph *irg)
 	register_peephole_optimisation(op_sparc_RestoreZero,
 	                               peephole_sparc_RestoreZero);
 	register_peephole_optimisation(op_sparc_Ldf, split_sparc_ldf);
+	register_peephole_optimisation(op_sparc_AddCC, peephole_sparc_AddCC);
+	register_peephole_optimisation(op_sparc_SubCC, peephole_sparc_SubCC);
 	be_peephole_opt(irg);
 
 	/* perform legalizations (mostly fix nodes with too big immediates) */
