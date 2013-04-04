@@ -884,11 +884,14 @@ static ir_node *gen_Add(ir_node *node)
 
 static ir_node *gen_AddCC_t(ir_node *node)
 {
-	ir_node *left  = get_irn_n(node, n_sparc_AddCC_t_left);
-	ir_node *right = get_irn_n(node, n_sparc_AddCC_t_right);
-	return gen_helper_binop_args(node, left, right,
+	ir_node *left     = get_irn_n(node, n_sparc_AddCC_t_left);
+	ir_node *right    = get_irn_n(node, n_sparc_AddCC_t_right);
+	ir_node *new_node = gen_helper_binop_args(node, left, right,
 	                             MATCH_COMMUTATIVE | MATCH_MODE_NEUTRAL,
 	                             new_bd_sparc_AddCC_reg, new_bd_sparc_AddCC_imm);
+	arch_set_irn_register_out(new_node, pn_sparc_AddCC_flags, &sparc_registers[REG_FLAGS]);
+
+	return new_node;
 }
 
 static ir_node *gen_Proj_AddCC_t(ir_node *node)
@@ -933,10 +936,13 @@ static ir_node *gen_Sub(ir_node *node)
 
 static ir_node *gen_SubCC_t(ir_node *node)
 {
-	ir_node *left  = get_irn_n(node, n_sparc_SubCC_t_left);
-	ir_node *right = get_irn_n(node, n_sparc_SubCC_t_right);
-	return gen_helper_binop_args(node, left, right, MATCH_MODE_NEUTRAL,
+	ir_node *left     = get_irn_n(node, n_sparc_SubCC_t_left);
+	ir_node *right    = get_irn_n(node, n_sparc_SubCC_t_right);
+	ir_node *new_node = gen_helper_binop_args(node, left, right, MATCH_MODE_NEUTRAL,
 	                             new_bd_sparc_SubCC_reg, new_bd_sparc_SubCC_imm);
+	arch_set_irn_register_out(new_node, pn_sparc_SubCC_flags, &sparc_registers[REG_FLAGS]);
+
+	return new_node;
 }
 
 static ir_node *gen_Proj_SubCC_t(ir_node *node)
@@ -1510,38 +1516,50 @@ static ir_node *gen_Cmp(ir_node *node)
 	 */
 	if (is_Const(op2) && is_Const_null(op2) && get_irn_n_edges(op1) == 1) {
 		if (is_And(op1)) {
-			return gen_helper_bitop(op1,
+			ir_node *new_node = gen_helper_bitop(op1,
 			                        new_bd_sparc_AndCCZero_reg,
 			                        new_bd_sparc_AndCCZero_imm,
 			                        new_bd_sparc_AndNCCZero_reg,
 			                        new_bd_sparc_AndNCCZero_imm,
 			                        MATCH_NONE);
+			arch_set_irn_register(new_node, &sparc_registers[REG_FLAGS]);
+			return new_node;
 		} else if (is_Or(op1)) {
-			return gen_helper_bitop(op1,
+			ir_node *new_node = gen_helper_bitop(op1,
 			                        new_bd_sparc_OrCCZero_reg,
 			                        new_bd_sparc_OrCCZero_imm,
 			                        new_bd_sparc_OrNCCZero_reg,
 			                        new_bd_sparc_OrNCCZero_imm,
 			                        MATCH_NONE);
+			arch_set_irn_register(new_node, &sparc_registers[REG_FLAGS]);
+			return new_node;
 		} else if (is_Eor(op1)) {
-			return gen_helper_bitop(op1,
+			ir_node *new_node = gen_helper_bitop(op1,
 			                        new_bd_sparc_XorCCZero_reg,
 			                        new_bd_sparc_XorCCZero_imm,
 			                        new_bd_sparc_XNorCCZero_reg,
 			                        new_bd_sparc_XNorCCZero_imm,
 			                        MATCH_NONE);
+			arch_set_irn_register(new_node, &sparc_registers[REG_FLAGS]);
+			return new_node;
 		} else if (is_Add(op1)) {
-			return gen_helper_binop(op1, MATCH_COMMUTATIVE,
+			ir_node *new_node = gen_helper_binop(op1, MATCH_COMMUTATIVE,
 			                        new_bd_sparc_AddCCZero_reg,
 			                        new_bd_sparc_AddCCZero_imm);
+			arch_set_irn_register(new_node, &sparc_registers[REG_FLAGS]);
+			return new_node;
 		} else if (is_Sub(op1)) {
-			return gen_helper_binop(op1, MATCH_NONE,
+			ir_node *new_node = gen_helper_binop(op1, MATCH_NONE,
 			                        new_bd_sparc_SubCCZero_reg,
 			                        new_bd_sparc_SubCCZero_imm);
+			arch_set_irn_register(new_node, &sparc_registers[REG_FLAGS]);
+			return new_node;
 		} else if (is_Mul(op1)) {
-			return gen_helper_binop(op1, MATCH_COMMUTATIVE,
+			ir_node *new_node = gen_helper_binop(op1, MATCH_COMMUTATIVE,
 			                        new_bd_sparc_MulCCZero_reg,
 			                        new_bd_sparc_MulCCZero_imm);
+			arch_set_irn_register(new_node, &sparc_registers[REG_FLAGS]);
+			return new_node;
 		}
 	}
 
