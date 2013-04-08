@@ -481,12 +481,17 @@ static ir_tarval *computed_value_Mux(const ir_node *n)
  */
 static ir_tarval *computed_value_Confirm(const ir_node *n)
 {
-	if (get_Confirm_relation(n) == ir_relation_equal) {
-		ir_tarval *tv = value_of(get_Confirm_bound(n));
+	ir_node     *bound    = get_Confirm_bound(n);
+	ir_node     *value    = get_Confirm_value(n);
+	ir_relation  possible = ir_get_possible_cmp_relations(value, bound);
+	ir_relation  relation = get_Confirm_relation(n);
+
+	if ((possible & relation) == ir_relation_equal) {
+		ir_tarval *tv = value_of(bound);
 		if (tv != tarval_bad)
 			return tv;
 	}
-	return value_of(get_Confirm_value(n));
+	return value_of(value);
 }
 
 /**
