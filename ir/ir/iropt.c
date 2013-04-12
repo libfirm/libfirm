@@ -2418,18 +2418,39 @@ static ir_node *transform_node_Add(ir_node *n)
 		}
 	}
 
-	if (is_Const(b) && get_mode_arithmetic(mode) == irma_twos_complement) {
-		ir_tarval *tv  = get_Const_tarval(b);
-		ir_tarval *min = get_mode_min(mode);
-		/* if all bits are set, then this has the same effect as a Not.
-		 * Note that the following == gives false for different modes which
-		 * is exactly what we want */
-		if (tv == min) {
-			dbg_info *dbgi  = get_irn_dbg_info(n);
-			ir_graph *irg   = get_irn_irg(n);
-			ir_node  *block = get_nodes_block(n);
-			ir_node  *cnst  = new_r_Const(irg, min);
-			return new_rd_Eor(dbgi, block, a, cnst, mode);
+	if (is_Const(b)) {
+		if (is_Sub(a)) {
+			ir_node   *sub_l = get_Sub_left(a);
+			ir_tarval *ts    = value_of(sub_l);
+
+			if (ts != tarval_bad) {
+				ir_tarval *tb = get_Const_tarval(b);
+				ir_tarval *tv = tarval_add(ts, tb);
+
+				if (tv != tarval_bad) {
+					/* (C1 - x) + C2 = (C1 + C2) - x */
+					dbg_info *dbgi  = get_irn_dbg_info(n);
+					ir_graph *irg   = get_irn_irg(n);
+					ir_node  *block = get_nodes_block(n);
+					ir_node  *cnst  = new_r_Const(irg, tv);
+					ir_node  *sub_r = get_Sub_right(a);
+					return new_rd_Sub(dbgi, block, cnst, sub_r, mode);
+				}
+			}
+		}
+		if (get_mode_arithmetic(mode) == irma_twos_complement) {
+			ir_tarval *tv  = get_Const_tarval(b);
+			ir_tarval *min = get_mode_min(mode);
+			/* if all bits are set, then this has the same effect as a Not.
+			 * Note that the following == gives false for different modes which
+			 * is exactly what we want */
+			if (tv == min) {
+				dbg_info *dbgi  = get_irn_dbg_info(n);
+				ir_graph *irg   = get_irn_irg(n);
+				ir_node  *block = get_nodes_block(n);
+				ir_node  *cnst  = new_r_Const(irg, min);
+				return new_rd_Eor(dbgi, block, a, cnst, mode);
+			}
 		}
 	}
 
@@ -2588,6 +2609,25 @@ restart:
 		}
 	}
 
+	if (is_Const(a) && is_Add(b)) {
+		ir_node   *add_r = get_Add_right(b);
+		ir_tarval *tr    = value_of(add_r);
+
+		if (tr != tarval_bad) {
+			ir_tarval *ta = get_Const_tarval(a);
+			ir_tarval *tv = tarval_sub(ta, tr, NULL);
+
+			if (tv != tarval_bad) {
+				/* C1 - (x + C2) = (C1 - C2) - x*/
+				dbg_info *dbgi  = get_irn_dbg_info(n);
+				ir_graph *irg   = get_irn_irg(n);
+				ir_node  *block = get_nodes_block(n);
+				ir_node  *cnst  = new_r_Const(irg, tv);
+				ir_node  *add_l = get_Add_left(b);
+				return new_rd_Sub(dbgi, block, cnst, add_l, mode);
+			}
+		}
+	}
 	if (is_Minus(a)) { /* (-a) - b -> -(a + b) */
 		dbg_info *dbg   = get_irn_dbg_info(n);
 		ir_node  *block = get_nodes_block(n);
@@ -3612,13 +3652,40 @@ static ir_node *transform_node_Not(ir_node *n)
 			ir_node  *add_r = new_rd_Const(dbg, irg, get_mode_minus_one(mode));
 			n = new_rd_Add(dbg, block, add_l, add_r, mode);
 		} else if (is_Add(a) || is_Or_Eor_Add(a)) {
-			ir_node *add_r = get_binop_right(a);
-			if (is_Const(add_r) && is_Const_all_one(add_r)) {
-				/* ~(x + -1) = -x */
-				ir_node *op  = get_binop_left(a);
-				ir_node *blk = get_nodes_block(n);
-				n = new_rd_Minus(get_irn_dbg_info(n), blk, op, get_irn_mode(n));
-				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_NOT_MINUS_1);
+			ir_node   *add_r = get_binop_right(a);
+			ir_tarval *tr    = value_of(add_r);
+
+			if (tr != tarval_bad) {
+				ir_tarval *tv = tarval_not(tr);
+
+				if (tv != tarval_bad) {
+					/* ~(x + C) = (~C) - x */
+					ir_graph *irg   = get_irn_irg(n);
+					ir_node  *cnst  = new_r_Const(irg, tv);
+					dbg_info *dbg   = get_irn_dbg_info(a);
+					ir_node  *block = get_nodes_block(a);
+					ir_node  *add_l = get_binop_left(a);
+
+					return new_rd_Sub(dbg, block, cnst, add_l, mode);
+				}
+			}
+		} else if (is_Sub(a)) {
+			ir_node   *sub_l = get_Sub_left(a);
+			ir_tarval *tr    = value_of(sub_l);
+
+			if (tr != tarval_bad) {
+				ir_tarval *tv = tarval_not(tr);
+
+				if (tv != tarval_bad) {
+					/* ~(C - x) = x + (~C) */
+					ir_graph *irg   = get_irn_irg(n);
+					ir_node  *cnst  = new_r_Const(irg, tv);
+					dbg_info *dbg   = get_irn_dbg_info(a);
+					ir_node  *block = get_nodes_block(a);
+					ir_node  *sub_r = get_Sub_right(a);
+
+					return new_rd_Add(dbg, block, sub_r, cnst, mode);
+				}
 			}
 		}
 	}
@@ -3689,7 +3756,26 @@ static ir_node *transform_node_Minus(ir_node *n)
 			}
 		}
 	}
-	if (is_Sub(a)) {
+	if (is_Add(a)) {
+		ir_node   *ra = get_Add_right(a);
+		ir_tarval *tr = value_of(ra);
+
+		if (tr != tarval_bad) {
+			ir_tarval *tv = tarval_neg(tr);
+
+			if (tv != tarval_bad) {
+				/* -(a + C) = (-C) - a */
+				ir_graph *irg   = get_irn_irg(n);
+				ir_node  *cnst  = new_r_Const(irg, tv);
+				dbg_info *dbg   = get_irn_dbg_info(a);
+				ir_node  *block = get_nodes_block(a);
+				ir_node  *la    = get_Add_left(a);
+
+				n = new_rd_Sub(dbg, block, cnst, la, mode);
+				return n;
+			}
+		}
+	} else if (is_Sub(a)) {
 		/* - (a-b) = b - a */
 		ir_node *la  = get_Sub_left(a);
 		ir_node *ra  = get_Sub_right(a);
