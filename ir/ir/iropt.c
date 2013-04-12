@@ -2394,10 +2394,6 @@ static ir_node *transform_node_Eor(ir_node *n)
  */
 static ir_node *transform_node_Add(ir_node *n)
 {
-	ir_mode *mode;
-	ir_node *a;
-	ir_node *b;
-	ir_node *c;
 	ir_node *oldn = n;
 
 	n = fold_constant_associativity(n, tarval_add);
@@ -2408,9 +2404,9 @@ static ir_node *transform_node_Add(ir_node *n)
 	if (n != oldn)
 		return n;
 
-	a    = get_Add_left(n);
-	b    = get_Add_right(n);
-	mode = get_irn_mode(n);
+	ir_node *a    = get_Add_left(n);
+	ir_node *b    = get_Add_right(n);
+	ir_mode *mode = get_irn_mode(n);
 
 	if (mode_is_reference(mode)) {
 		ir_mode *lmode = get_irn_mode(a);
@@ -2437,6 +2433,7 @@ static ir_node *transform_node_Add(ir_node *n)
 		}
 	}
 
+	ir_node *c;
 	HANDLE_BINOP_PHI((eval_func) tarval_add, a, b, c, mode);
 
 	/* for FP the following optimizations are only allowed if
@@ -2536,16 +2533,13 @@ static ir_node *const_negate(ir_node *cnst)
  */
 static ir_node *transform_node_Sub(ir_node *n)
 {
-	ir_mode *mode;
 	ir_node *oldn = n;
-	ir_node *a, *b, *c;
 
 	n = transform_node_AddSub(n);
 
-	a = get_Sub_left(n);
-	b = get_Sub_right(n);
-
-	mode = get_irn_mode(n);
+	ir_node *a    = get_Sub_left(n);
+	ir_node *b    = get_Sub_right(n);
+	ir_mode *mode = get_irn_mode(n);
 
 	if (mode_is_int(mode)) {
 		ir_mode *lmode = get_irn_mode(a);
@@ -2570,6 +2564,7 @@ static ir_node *transform_node_Sub(ir_node *n)
 		}
 	}
 
+	ir_node *c;
 restart:
 	HANDLE_BINOP_PHI((eval_func) tarval_sub, a, b, c, mode);
 
