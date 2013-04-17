@@ -143,10 +143,8 @@ static unsigned compute_height(ir_heights_t *h, ir_node *irn, const ir_node *bl)
 
 		if (!is_Block(dep) && !is_Phi(dep) && get_nodes_block(dep) == bl) {
 			unsigned dep_height = compute_height(h, dep, bl);
-			ih->height          = MAX(ih->height, dep_height);
+			ih->height          = MAX(ih->height, dep_height+1);
 		}
-
-		ih->height++;
 	}
 
 	foreach_out_edge_kind(irn, edge, EDGE_KIND_DEP) {
@@ -155,10 +153,8 @@ static unsigned compute_height(ir_heights_t *h, ir_node *irn, const ir_node *bl)
 		assert(!is_Phi(dep));
 		if (!is_Block(dep) && get_nodes_block(dep) == bl) {
 			unsigned dep_height = compute_height(h, dep, bl);
-			ih->height          = MAX(ih->height, dep_height);
+			ih->height          = MAX(ih->height, dep_height+1);
 		}
-
-		ih->height++;
 	}
 
 	return ih->height;
