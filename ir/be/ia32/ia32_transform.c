@@ -2181,6 +2181,21 @@ static ir_node *get_flags_node(ir_node *cmp, ia32_condition_code_t *cc_out)
 	return flags;
 }
 
+static void create_transformed_address_mode(ia32_address_t *addr,
+                                            ir_node *ptr,
+                                            ia32_create_am_flags_t flags)
+{
+	memset(addr, 0, sizeof(*addr));
+	ia32_create_address_mode(addr, ptr, flags);
+	ir_node *base = addr->base;
+	base = base == NULL ? noreg_GP : be_transform_node(base);
+	addr->base = base;
+
+	ir_node *idx = addr->index;
+	idx = idx == NULL ? noreg_GP : be_transform_node(idx);
+	addr->index = idx;
+}
+
 /**
  * Transforms a Load.
  *
@@ -2202,22 +2217,9 @@ static ir_node *gen_Load(ir_node *node)
 	ia32_address_t addr;
 
 	/* construct load address */
-	memset(&addr, 0, sizeof(addr));
-	ia32_create_address_mode(&addr, ptr, ia32_create_am_normal);
+	create_transformed_address_mode(&addr, ptr, ia32_create_am_normal);
 	base = addr.base;
 	idx  = addr.index;
-
-	if (base == NULL) {
-		base = noreg_GP;
-	} else {
-		base = be_transform_node(base);
-	}
-
-	if (idx == NULL) {
-		idx = noreg_GP;
-	} else {
-		idx = be_transform_node(idx);
-	}
 
 	if (mode_is_float(mode)) {
 		if (ia32_cg_config.use_sse2) {
@@ -2728,20 +2730,7 @@ static ir_node *gen_general_Store(ir_node *node)
 		return new_node;
 
 	/* construct store address */
-	memset(&addr, 0, sizeof(addr));
-	ia32_create_address_mode(&addr, ptr, ia32_create_am_normal);
-
-	if (addr.base == NULL) {
-		addr.base = noreg_GP;
-	} else {
-		addr.base = be_transform_node(addr.base);
-	}
-
-	if (addr.index == NULL) {
-		addr.index = noreg_GP;
-	} else {
-		addr.index = be_transform_node(addr.index);
-	}
+	create_transformed_address_mode(&addr, ptr, ia32_create_am_normal);
 	addr.mem = be_transform_node(mem);
 
 	if (mode_is_float(mode)) {
@@ -4863,27 +4852,13 @@ static ir_node *gen_prefetch(ir_node *node)
 	rw    = get_tarval_long(tv);
 
 	/* construct load address */
-	memset(&addr, 0, sizeof(addr));
 	ptr = get_Builtin_param(node, 0);
-	ia32_create_address_mode(&addr, ptr, ia32_create_am_normal);
-	base = addr.base;
-	idx  = addr.index;
-
-	if (base == NULL) {
-		base = noreg_GP;
-	} else {
-		base = be_transform_node(base);
-	}
-
-	if (idx == NULL) {
-		idx = noreg_GP;
-	} else {
-		idx = be_transform_node(idx);
-	}
-
-	dbgi     = get_irn_dbg_info(node);
-	block    = be_transform_node(get_nodes_block(node));
-	mem      = be_transform_node(get_Builtin_mem(node));
+	create_transformed_address_mode(&addr, ptr, ia32_create_am_normal);
+	base  = addr.base;
+	idx   = addr.index;
+	dbgi  = get_irn_dbg_info(node);
+	block = be_transform_node(get_nodes_block(node));
+	mem   = be_transform_node(get_Builtin_mem(node));
 
 	if (rw == 1 && ia32_cg_config.use_3dnow_prefetch) {
 		/* we have 3DNow!, this was already checked above */
@@ -5288,20 +5263,7 @@ static ir_node *gen_inner_trampoline(ir_node *node)
 	ia32_address_t addr;
 
 	/* construct store address */
-	memset(&addr, 0, sizeof(addr));
-	ia32_create_address_mode(&addr, ptr, ia32_create_am_normal);
-
-	if (addr.base == NULL) {
-		addr.base = noreg_GP;
-	} else {
-		addr.base = be_transform_node(addr.base);
-	}
-
-	if (addr.index == NULL) {
-		addr.index = noreg_GP;
-	} else {
-		addr.index = be_transform_node(addr.index);
-	}
+	create_transformed_address_mode(&addr, ptr, ia32_create_am_normal);
 	addr.mem = be_transform_node(mem);
 
 	ir_graph *const irg = get_Block_irg(new_block);
