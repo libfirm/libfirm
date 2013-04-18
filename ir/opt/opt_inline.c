@@ -112,7 +112,7 @@ static void copy_node_inline(ir_node *node, void *data)
 			assert(new_entity != NULL);
 			set_Sel_entity(new_node, new_entity);
 		}
-	} else if (is_Call(new_node)) {
+	} else if (is_Call(new_node) && (NULL != env->todo)) {
 		int old_priority = compute_priority(node);
 		int new_priority = env->call_priority * old_priority;
 		pqueue_put(env->todo, new_node, new_priority);
