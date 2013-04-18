@@ -128,12 +128,12 @@ const arch_register_t *ia32_get_clobber_register(const char *clobber)
 	return NULL;
 }
 
-int ia32_mode_needs_gp_reg(ir_mode *mode)
+bool ia32_mode_needs_gp_reg(ir_mode *mode)
 {
 	if (mode == ia32_mode_fpcw)
-		return 0;
+		return false;
 	if (get_mode_size_bits(mode) > 32)
-		return 0;
+		return false;
 	return mode_is_int(mode) || mode_is_reference(mode) || mode == mode_b;
 }
 
@@ -757,11 +757,11 @@ const arch_register_req_t *ia32_parse_clobber(const char *clobber)
 }
 
 
-int ia32_prevents_AM(ir_node *const block, ir_node *const am_candidate,
-                       ir_node *const other)
+bool ia32_prevents_AM(ir_node *const block, ir_node *const am_candidate,
+                      ir_node *const other)
 {
 	if (get_nodes_block(other) != block)
-		return 0;
+		return false;
 
 	if (is_Sync(other)) {
 		int i;
@@ -779,19 +779,19 @@ int ia32_prevents_AM(ir_node *const block, ir_node *const am_candidate,
 			if (!heights_reachable_in_block(ia32_heights, pred, am_candidate))
 				continue;
 
-			return 1;
+			return true;
 		}
 
-		return 0;
+		return false;
 	} else {
 		/* Do not block ourselves from getting eaten */
 		if (is_Proj(other) && get_Proj_pred(other) == am_candidate)
-			return 0;
+			return false;
 
 		if (!heights_reachable_in_block(ia32_heights, other, am_candidate))
-			return 0;
+			return false;
 
-		return 1;
+		return true;
 	}
 }
 

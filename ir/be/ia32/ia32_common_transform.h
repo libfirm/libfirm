@@ -16,7 +16,7 @@
 #include "bearch_ia32_t.h"
 
 extern ir_heights_t *ia32_heights;
-extern int           ia32_no_pic_adjust;
+extern bool          ia32_no_pic_adjust;
 
 ir_type *ia32_get_prim_type(const ir_mode *mode);
 
@@ -46,7 +46,7 @@ const arch_register_t *ia32_get_clobber_register(const char *clobber);
 /**
  * Return true if a mode can be stored in the GP register set.
  */
-int ia32_mode_needs_gp_reg(ir_mode *mode);
+bool ia32_mode_needs_gp_reg(ir_mode *mode);
 
 /**
  * generates code for a ASM node
@@ -77,8 +77,8 @@ const arch_register_req_t *ia32_parse_clobber(const char *clobber);
 /**
  * Checks whether other node inputs depend on the am_candidate (via mem-proj).
  */
-int ia32_prevents_AM(ir_node *const block, ir_node *const am_candidate,
-                       ir_node *const other);
+bool ia32_prevents_AM(ir_node *const block, ir_node *const am_candidate,
+                      ir_node *const other);
 
 ir_node *ia32_try_create_Immediate(ir_node *node, char immediate_constraint_type);
 
