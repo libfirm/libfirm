@@ -33,6 +33,7 @@
 #include "lower_calls.h"
 #include "lower_mode_b.h"
 #include "lower_softfloat.h"
+#include "lower_builtins.h"
 #include "firmstat_t.h"
 
 #include "beabi.h"
@@ -1779,7 +1780,7 @@ static int ia32_is_valid_clobber(const char *clobber)
 static void ia32_lower_for_target(void)
 {
 	ir_mode *mode_gp = ia32_reg_classes[CLASS_ia32_gp].mode;
-	size_t i, n_irgs = get_irp_n_irgs();
+	size_t   n_irgs  = get_irp_n_irgs();
 
 	/* perform doubleword lowering */
 	lwrdw_param_t lower_dw_params = {
@@ -1803,7 +1804,28 @@ static void ia32_lower_for_target(void)
 		lower_floating_point();
 	}
 
-	for (i = 0; i < n_irgs; ++i) {
+	ir_builtin_kind supported[32];
+	size_t          s = 0;
+	supported[s++] = ir_bk_trap;
+	supported[s++] = ir_bk_debugbreak;
+	supported[s++] = ir_bk_return_address;
+	supported[s++] = ir_bk_frame_address;
+	supported[s++] = ir_bk_prefetch;
+	supported[s++] = ir_bk_ffs;
+	supported[s++] = ir_bk_clz;
+	supported[s++] = ir_bk_ctz;
+	supported[s++] = ir_bk_parity;
+	supported[s++] = ir_bk_bswap;
+	supported[s++] = ir_bk_outport;
+	supported[s++] = ir_bk_inport;
+	supported[s++] = ir_bk_inner_trampoline;
+	supported[s++] = ir_bk_saturating_increment;
+	if (ia32_cg_config.use_popcnt)
+		supported[s++] = ir_bk_popcount;
+	assert(s < ARRAY_SIZE(supported));
+	lower_builtins(s, supported);
+
+	for (size_t i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		/* break up switches with wide ranges */
 		lower_switch(irg, 4, 256, mode_gp);
@@ -1812,13 +1834,13 @@ static void ia32_lower_for_target(void)
 	ir_prepare_dw_lowering(&lower_dw_params);
 	ir_lower_dw_ops();
 
-	for (i = 0; i < n_irgs; ++i) {
+	for (size_t i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		/* lower for mode_b stuff */
 		ir_lower_mode_b(irg, mode_Iu);
 	}
 
-	for (i = 0; i < n_irgs; ++i) {
+	for (size_t i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		/* Turn all small CopyBs into loads/stores, keep medium-sized CopyBs,
 		 * so we can generate rep movs later, and turn all big CopyBs into

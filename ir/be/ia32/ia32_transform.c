@@ -4695,6 +4695,10 @@ static ir_node *gen_be_Call(ir_node *node)
 	                        am.new_op2, sp, fpcw, eax, ecx, edx, pop, call_tp);
 	ir_set_throws_exception(call, throws_exception);
 	set_am_attributes(call, &am);
+	arch_set_irn_register_out(call, pn_ia32_Call_stack,
+	                          &ia32_registers[REG_ESP]);
+	arch_set_irn_register_out(call, pn_ia32_Call_fpcw,
+	                          &ia32_registers[REG_FPCW]);
 	call = fix_mem_proj(call, &am);
 
 	if (get_irn_pinned(node) == op_pin_state_pinned)
@@ -5035,109 +5039,26 @@ static ir_node *gen_parity(ir_node *node)
  */
 static ir_node *gen_popcount(ir_node *node)
 {
-	ir_node *param     = get_Builtin_param(node, 0);
-	dbg_info *dbgi     = get_irn_dbg_info(node);
+	/* builtin lowerer should have replaced the popcount if !use_popcount */
+	assert(ia32_cg_config.use_popcnt);
 
-	ir_node *block     = get_nodes_block(node);
-	ir_node *new_block = be_transform_node(block);
+	ir_node            *param = get_Builtin_param(node, 0);
+	ir_node            *block = get_nodes_block(node);
+	ia32_address_mode_t am;
+	match_arguments(&am, block, NULL, param, NULL,
+					match_am | match_16bit_am | match_upconv);
 
-	ir_node *new_param;
-	ir_node *imm, *simm, *m1, *s1, *s2, *s3, *s4, *s5, *m2, *m3, *m4, *m5, *m6, *m7, *m8, *m9, *m10, *m11, *m12, *m13;
+	ia32_address_t *addr = &am.addr;
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *new_block = be_transform_node(block);
+	ir_node  *cnt       = new_bd_ia32_Popcnt(dbgi, new_block, addr->base,
+	                                         addr->index, addr->mem,
+	                                         am.new_op2);
+	set_am_attributes(cnt, &am);
+	set_ia32_ls_mode(cnt, get_irn_mode(param));
 
-	/* check for SSE4.2 or SSE4a and use the popcnt instruction */
-	if (ia32_cg_config.use_popcnt) {
-		ia32_address_mode_t am;
-		ia32_address_t      *addr = &am.addr;
-		ir_node             *cnt;
-
-		match_arguments(&am, block, NULL, param, NULL, match_am | match_16bit_am | match_upconv);
-
-		cnt = new_bd_ia32_Popcnt(dbgi, new_block, addr->base, addr->index, addr->mem, am.new_op2);
-		set_am_attributes(cnt, &am);
-		set_ia32_ls_mode(cnt, get_irn_mode(param));
-
-		SET_IA32_ORIG_NODE(cnt, node);
-		return fix_mem_proj(cnt, &am);
-	}
-
-	new_param = be_transform_node(param);
-
-	/* do the standard popcount algo */
-	/* TODO: This is stupid, we should transform this before the backend,
-	 * to get CSE, localopts, etc. for the operations
-	 * TODO: This is also not the optimal algorithm (it is just the starting
-	 * example in hackers delight, they optimize it more on the following page)
-	 * But I'm too lazy to fix this now, as the code should get lowered before
-	 * the backend anyway.
-	 */
-	ir_graph *const irg = get_Block_irg(new_block);
-
-	/* m1 = x & 0x55555555 */
-	imm = ia32_create_Immediate(irg, NULL, 0, 0x55555555);
-	m1 = new_bd_ia32_And(dbgi, new_block, noreg_GP, noreg_GP, nomem, new_param, imm);
-
-	/* s1 = x >> 1 */
-	simm = ia32_create_Immediate(irg, NULL, 0, 1);
-	s1 = new_bd_ia32_Shr(dbgi, new_block, new_param, simm);
-
-	/* m2 = s1 & 0x55555555 */
-	m2 = new_bd_ia32_And(dbgi, new_block, noreg_GP, noreg_GP, nomem, s1, imm);
-
-	/* m3 = m1 + m2 */
-	m3 = new_bd_ia32_Lea(dbgi, new_block, m2, m1);
-
-	/* m4 = m3 & 0x33333333 */
-	imm = ia32_create_Immediate(irg, NULL, 0, 0x33333333);
-	m4 = new_bd_ia32_And(dbgi, new_block, noreg_GP, noreg_GP, nomem, m3, imm);
-
-	/* s2 = m3 >> 2 */
-	simm = ia32_create_Immediate(irg, NULL, 0, 2);
-	s2 = new_bd_ia32_Shr(dbgi, new_block, m3, simm);
-
-	/* m5 = s2 & 0x33333333 */
-	m5 = new_bd_ia32_And(dbgi, new_block, noreg_GP, noreg_GP, nomem, s2, imm);
-
-	/* m6 = m4 + m5 */
-	m6 = new_bd_ia32_Lea(dbgi, new_block, m4, m5);
-
-	/* m7 = m6 & 0x0F0F0F0F */
-	imm = ia32_create_Immediate(irg, NULL, 0, 0x0F0F0F0F);
-	m7 = new_bd_ia32_And(dbgi, new_block, noreg_GP, noreg_GP, nomem, m6, imm);
-
-	/* s3 = m6 >> 4 */
-	simm = ia32_create_Immediate(irg, NULL, 0, 4);
-	s3 = new_bd_ia32_Shr(dbgi, new_block, m6, simm);
-
-	/* m8 = s3 & 0x0F0F0F0F */
-	m8 = new_bd_ia32_And(dbgi, new_block, noreg_GP, noreg_GP, nomem, s3, imm);
-
-	/* m9 = m7 + m8 */
-	m9 = new_bd_ia32_Lea(dbgi, new_block, m7, m8);
-
-	/* m10 = m9 & 0x00FF00FF */
-	imm = ia32_create_Immediate(irg, NULL, 0, 0x00FF00FF);
-	m10 = new_bd_ia32_And(dbgi, new_block, noreg_GP, noreg_GP, nomem, m9, imm);
-
-	/* s4 = m9 >> 8 */
-	simm = ia32_create_Immediate(irg, NULL, 0, 8);
-	s4 = new_bd_ia32_Shr(dbgi, new_block, m9, simm);
-
-	/* m11 = s4 & 0x00FF00FF */
-	m11 = new_bd_ia32_And(dbgi, new_block, noreg_GP, noreg_GP, nomem, s4, imm);
-
-	/* m12 = m10 + m11 */
-	m12 = new_bd_ia32_Lea(dbgi, new_block, m10, m11);
-
-	/* m13 = m12 & 0x0000FFFF */
-	imm = ia32_create_Immediate(irg, NULL, 0, 0x0000FFFF);
-	m13 = new_bd_ia32_And(dbgi, new_block, noreg_GP, noreg_GP, nomem, m12, imm);
-
-	/* s5 = m12 >> 16 */
-	simm = ia32_create_Immediate(irg, NULL, 0, 16);
-	s5 = new_bd_ia32_Shr(dbgi, new_block, m12, simm);
-
-	/* res = m13 + s5 */
-	return new_bd_ia32_Lea(dbgi, new_block, m13, s5);
+	SET_IA32_ORIG_NODE(cnt, node);
+	return fix_mem_proj(cnt, &am);
 }
 
 /**
@@ -5466,18 +5387,6 @@ found:;
 	}
 
 	res = new_rd_Proj(dbgi, new_call, mode, proj);
-
-	/* TODO arch_set_irn_register() only operates on Projs, need variant with index */
-	switch (proj) {
-	case pn_ia32_Call_stack:
-		arch_set_irn_register(res, &ia32_registers[REG_ESP]);
-		break;
-
-	case pn_ia32_Call_fpcw:
-		arch_set_irn_register(res, &ia32_registers[REG_FPCW]);
-		break;
-	}
-
 	return res;
 }
 
