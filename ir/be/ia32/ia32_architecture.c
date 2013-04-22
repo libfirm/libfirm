@@ -138,8 +138,9 @@ ENUM_BITSET(cpu_arch_features)
 
 static int               opt_size             = 0;
 static int               emit_machcode        = 0;
+static int               use_softfloat        = 0;
 static cpu_arch_features arch                 = cpu_generic;
-static cpu_arch_features opt_arch             = cpu_generic;
+static cpu_arch_features opt_arch             = 0;
 static int               fpu_arch             = 0;
 static int               opt_cc               = 1;
 static int               opt_unsafe_floatconv = 0;
@@ -213,8 +214,8 @@ static lc_opt_enum_int_var_t opt_arch_var = {
 };
 
 static const lc_opt_enum_int_items_t fp_unit_items[] = {
-	{ "x87" ,      IA32_FPU_ARCH_X87 },
-	{ "sse2",      IA32_FPU_ARCH_SSE2 },
+	{ "387" ,      IA32_FPU_ARCH_X87 },
+	{ "sse",       IA32_FPU_ARCH_SSE2 },
 	{ "softfloat", IA32_FPU_ARCH_SOFTFLOAT },
 	{ NULL,        IA32_FPU_ARCH_NONE }
 };
@@ -226,11 +227,12 @@ static lc_opt_enum_int_var_t fp_unit_var = {
 static const lc_opt_table_entry_t ia32_architecture_options[] = {
 	LC_OPT_ENT_BOOL    ("size",             "optimize for size",                                  &opt_size),
 	LC_OPT_ENT_ENUM_INT("arch",             "select the instruction architecture",                &arch_var),
-	LC_OPT_ENT_ENUM_INT("opt",              "optimize for instruction architecture",              &opt_arch_var),
-	LC_OPT_ENT_ENUM_INT("fpunit",           "select the floating point unit",                     &fp_unit_var),
+	LC_OPT_ENT_ENUM_INT("tune",             "optimize for instruction architecture",              &opt_arch_var),
+	LC_OPT_ENT_ENUM_INT("fpmath",           "select the floating point unit",                     &fp_unit_var),
 	LC_OPT_ENT_BOOL    ("optcc",            "optimize calling convention",                        &opt_cc),
 	LC_OPT_ENT_BOOL    ("unsafe_floatconv", "do unsafe floating point controlword optimisations", &opt_unsafe_floatconv),
 	LC_OPT_ENT_BOOL    ("machcode",         "output machine code instead of assembler",           &emit_machcode),
+	LC_OPT_ENT_BOOL    ("soft-float",       "equivalent to fpmath=softfloat",                     &use_softfloat),
 	LC_OPT_LAST
 };
 
@@ -854,16 +856,20 @@ static bool flags(cpu_arch_features features, cpu_arch_features flags)
 
 void ia32_setup_cg_config(void)
 {
-	ia32_code_gen_config_t *const c = &ia32_cg_config;
-	memset(c, 0, sizeof(*c));
-
-	set_arch_costs();
+	if (use_softfloat)
+		fpu_arch = IA32_FPU_ARCH_SOFTFLOAT;
 
 #ifdef NATIVE_X86
 	if (arch == cpu_autodetect)
 		autodetect_arch();
 #endif
+	if (opt_arch == 0)
+		opt_arch = arch;
 
+	set_arch_costs();
+
+	ia32_code_gen_config_t *const c = &ia32_cg_config;
+	memset(c, 0, sizeof(*c));
 	c->optimize_size        = opt_size != 0;
 	/* on newer intel cpus mov, pop is often faster than leave although it has a
 	 * longer opcode */
