@@ -16,21 +16,17 @@
 
 #include "bearch.h"
 
-typedef struct sparc_isa_t            sparc_isa_t;
-typedef struct calling_convention_t   calling_convention_t;
+typedef struct calling_convention_t calling_convention_t;
 
-/** Floating point instruction set. */
-enum sparc_fp_architectures {
-	SPARC_FPU_ARCH_NONE      = 0,
-	SPARC_FPU_ARCH_FPU       = 0x00000001,
-	SPARC_FPU_ARCH_SOFTFLOAT = 0x00000002,
-};
+typedef struct sparc_codegen_config_t {
+	bool use_fpu;
+} sparc_codegen_config_t;
+extern sparc_codegen_config_t sparc_cg_config;
 
-struct sparc_isa_t {
+typedef struct sparc_isa_t {
 	arch_env_t  base;      /**< must be derived from arch_env_t */
 	pmap       *constants;
-	int         fpu_arch;  /**< FPU architecture */
-};
+} sparc_isa_t;
 
 extern const arch_irn_ops_t sparc_irn_ops;
 

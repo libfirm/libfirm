@@ -54,6 +54,76 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
+extern const arch_isa_if_t sparc_isa_if;
+static sparc_isa_t sparc_isa_template = {
+	{
+		&sparc_isa_if,                       /* isa interface implementation */
+		N_SPARC_REGISTERS,
+		sparc_registers,
+		N_SPARC_CLASSES,
+		sparc_reg_classes,
+		&sparc_registers[REG_SP],            /* stack pointer register */
+		&sparc_registers[REG_FRAME_POINTER], /* base pointer register */
+		3,                                   /* power of two stack alignment
+		                                        for calls */
+		7,                                   /* costs for a spill instruction */
+		5,                                   /* costs for a reload instruction */
+		true,                                /* custom abi handling */
+	},
+	NULL,                                  /* constants */
+};
+
+typedef enum {
+	cpu_generic,
+	cpu_v8plus,
+	cpu_leon,
+	cpu_supersparc,
+	cpu_hypersparc,
+} sparc_cpu_t;
+static const lc_opt_enum_int_items_t cpu_items[] = {
+	{ "generic",    cpu_generic    },
+	{ "v8",         cpu_generic    },
+	{ "v8plus",     cpu_v8plus     },
+	{ "leon",       cpu_leon       },
+	{ "supersparc", cpu_supersparc },
+	{ "hypersparc", cpu_hypersparc },
+	{ NULL,         0               },
+};
+
+static int cpu;
+static lc_opt_enum_int_var_t cpu_var = {
+	&cpu, cpu_items
+};
+
+sparc_codegen_config_t sparc_cg_config;
+
+typedef enum {
+	use_fpu_auto,
+	use_fpu_yes,
+	use_fpu_no
+} sparc_use_fpu_t;
+/* fpu set architectures. */
+static const lc_opt_enum_int_items_t fpu_items[] = {
+	{ "auto",      use_fpu_auto },
+	{ "fpu",       use_fpu_yes  },
+	{ "softfloat", use_fpu_no   },
+	{ NULL,        0 }
+};
+
+static int fpu;
+static lc_opt_enum_int_var_t arch_fpu_var = {
+	&fpu, fpu_items
+};
+
+static int use_softfloat;
+
+static const lc_opt_table_entry_t sparc_options[] = {
+	LC_OPT_ENT_ENUM_INT("fpunit",     "select the floating point unit", &arch_fpu_var),
+	LC_OPT_ENT_ENUM_INT("cpu",        "select architecture variant",    &cpu_var),
+	LC_OPT_ENT_BOOL    ("soft-float", "equivalent to fpmath=softfloat", &use_softfloat),
+	LC_OPT_LAST
+};
+
 static ir_entity *sparc_get_frame_entity(const ir_node *node)
 {
 	if (is_sparc_FrameAddr(node)) {
@@ -148,26 +218,6 @@ static void sparc_before_ra(ir_graph *irg)
 	be_sched_fix_flags(irg, &sparc_reg_classes[CLASS_sparc_fpflags_class],
 	                   NULL, sparc_modifies_fp_flags);
 }
-
-extern const arch_isa_if_t sparc_isa_if;
-static sparc_isa_t sparc_isa_template = {
-	{
-		&sparc_isa_if,                       /* isa interface implementation */
-		N_SPARC_REGISTERS,
-		sparc_registers,
-		N_SPARC_CLASSES,
-		sparc_reg_classes,
-		&sparc_registers[REG_SP],            /* stack pointer register */
-		&sparc_registers[REG_FRAME_POINTER], /* base pointer register */
-		3,                                   /* power of two stack alignment
-		                                        for calls */
-		7,                                   /* costs for a spill instruction */
-		5,                                   /* costs for a reload instruction */
-		true,                                /* custom abi handling */
-	},
-	NULL,                                  /* constants */
-	SPARC_FPU_ARCH_FPU,                    /* FPU architecture */
-};
 
 /**
  * rewrite unsigned->float conversion.
@@ -373,12 +423,40 @@ static void sparc_handle_intrinsics(void)
 	lower_intrinsics(records, n_records, /*part_block_used=*/ true);
 }
 
+static void sparc_setup_cg_config(void)
+{
+	bool has_fpu;
+	switch ((sparc_cpu_t)cpu) {
+	case cpu_leon:
+	case cpu_hypersparc:
+		has_fpu = true;
+		break;
+	case cpu_v8plus:
+	case cpu_supersparc:
+	case cpu_generic:
+		has_fpu = false;
+		break;
+	default:
+		panic("sparc: invalid architecture selected");
+	}
+
+	if (use_softfloat)
+		fpu = use_fpu_no;
+
+	if (fpu == use_fpu_auto) {
+		sparc_cg_config.use_fpu = has_fpu;
+	} else {
+		sparc_cg_config.use_fpu = fpu == use_fpu_yes;
+	}
+}
+
 static void sparc_init(void)
 {
 	sparc_init_asm_constraints();
 	sparc_register_init();
 	sparc_create_opcodes(&sparc_irn_ops);
 	sparc_cconv_init();
+	sparc_setup_cg_config();
 }
 
 static void sparc_finish(void)
@@ -419,11 +497,14 @@ static void sparc_lower_for_target(void)
 		lower_CopyB(irg, 31, 32, false);
 	}
 
-	if (sparc_isa_template.fpu_arch == SPARC_FPU_ARCH_SOFTFLOAT)
+	if (!sparc_cg_config.use_fpu)
 		lower_floating_point();
 
-	ir_builtin_kind builtin_exceptions[1] = {ir_bk_saturating_increment};
-	lower_builtins(1, builtin_exceptions);
+	ir_builtin_kind supported[8];
+	size_t          s = 0;
+	supported[s++] = ir_bk_saturating_increment;
+	assert(s < ARRAY_SIZE(supported));
+	lower_builtins(s, supported);
 
 	ir_mode *mode_gp = sparc_reg_classes[CLASS_sparc_gp].mode;
 	for (size_t i = 0, n_irgs = get_irp_n_irgs(); i < n_irgs; ++i) {
@@ -498,22 +579,6 @@ static const backend_params *sparc_get_backend_params(void)
 	p.type_long_double = type_long_double;
 	return &p;
 }
-
-/* fpu set architectures. */
-static const lc_opt_enum_int_items_t sparc_fpu_items[] = {
-	{ "fpu",       SPARC_FPU_ARCH_FPU },
-	{ "softfloat", SPARC_FPU_ARCH_SOFTFLOAT },
-	{ NULL,        0 }
-};
-
-static lc_opt_enum_int_var_t arch_fpu_var = {
-	&sparc_isa_template.fpu_arch, sparc_fpu_items
-};
-
-static const lc_opt_table_entry_t sparc_options[] = {
-	LC_OPT_ENT_ENUM_INT("fpunit", "select the floating point unit", &arch_fpu_var),
-	LC_OPT_LAST
-};
 
 static ir_node *sparc_new_spill(ir_node *value, ir_node *after)
 {
