@@ -727,7 +727,7 @@ static void sparc_set_frame_entity(ir_node *node, ir_entity *entity)
  * fulfilled */
 static bool has_must_be_same(const ir_node *node)
 {
-	return is_sparc_Cas(node);
+	return is_sparc_Cas(node) || is_sparc_ASM(node);
 }
 
 static void fix_constraints_walker(ir_node *block, void *env)
