@@ -84,7 +84,11 @@ static void apply_heuristic_reductions(pbqp_t *pbqp)
 
 void solve_pbqp_heuristical(pbqp_t *pbqp)
 {
+#ifndef NDEBUG
 	assert(pbqp);
+	assert(pbqp->solution == INF_COSTS && "PBQP already solved");
+	pbqp->solution = 0;
+#endif
 
 	/* Reduce nodes degree ... */
 	initial_simplify_edges(pbqp);

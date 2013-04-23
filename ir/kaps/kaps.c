@@ -58,7 +58,11 @@ pbqp_t *alloc_pbqp(unsigned number_nodes)
 
 	obstack_init(&pbqp->obstack);
 
+#ifdef NDEBUG
 	pbqp->solution     = 0;
+#else
+	pbqp->solution     = INF_COSTS;
+#endif
 	pbqp->num_nodes    = number_nodes;
 #if KAPS_DUMP
 	pbqp->dump_file    = NULL;

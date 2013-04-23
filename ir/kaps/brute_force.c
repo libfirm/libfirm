@@ -292,7 +292,11 @@ static void back_propagate_brute_force(pbqp_t *pbqp)
 
 void solve_pbqp_brute_force(pbqp_t *pbqp)
 {
+#ifndef NDEBUG
 	assert(pbqp);
+	assert(pbqp->solution == INF_COSTS && "PBQP already solved");
+	pbqp->solution = 0;
+#endif
 
 	/* Reduce nodes degree ... */
 	initial_simplify_edges(pbqp);
