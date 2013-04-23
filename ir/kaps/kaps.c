@@ -102,6 +102,24 @@ void add_node_costs(pbqp_t *pbqp, unsigned node_index, vector_t *costs)
 void add_edge_costs(pbqp_t *pbqp, unsigned src_index, unsigned tgt_index,
                     pbqp_matrix_t *costs)
 {
+	/* Add self loops to the node's costs. */
+	if (src_index == tgt_index) {
+		assert(costs->rows == costs->cols);
+
+		unsigned  length   = costs->rows;
+		vector_t *diagonal = vector_alloc(pbqp, length);
+
+		for (unsigned i = length; i-- != 0;) {
+			num value = costs->entries[i * length + i];
+
+			vector_set(diagonal, i, value);
+		}
+
+		add_node_costs(pbqp, src_index, diagonal);
+
+		return;
+	}
+
 	pbqp_edge_t *edge = get_edge(pbqp, src_index, tgt_index);
 
 	if (tgt_index < src_index) {
