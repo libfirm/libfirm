@@ -1745,22 +1745,6 @@ static const lc_opt_table_entry_t ia32_emitter_options[] = {
 
 /* ==== Experimental binary emitter ==== */
 
-static unsigned char reg_gp_map[N_ia32_gp_REGS];
-//static unsigned char reg_mmx_map[N_ia32_mmx_REGS];
-//static unsigned char reg_sse_map[N_ia32_xmm_REGS];
-
-static void build_reg_map(void)
-{
-	reg_gp_map[REG_GP_EAX] = 0x0;
-	reg_gp_map[REG_GP_ECX] = 0x1;
-	reg_gp_map[REG_GP_EDX] = 0x2;
-	reg_gp_map[REG_GP_EBX] = 0x3;
-	reg_gp_map[REG_GP_ESP] = 0x4;
-	reg_gp_map[REG_GP_EBP] = 0x5;
-	reg_gp_map[REG_GP_ESI] = 0x6;
-	reg_gp_map[REG_GP_EDI] = 0x7;
-}
-
 /** Returns the encoding for a pnc field. */
 static unsigned char pnc2cc(ia32_condition_code_t cc)
 {
@@ -1877,8 +1861,8 @@ static void bemit_modrr(const arch_register_t *src1,
                         const arch_register_t *src2)
 {
 	unsigned char modrm = MOD_REG;
-	modrm |= ENC_RM(reg_gp_map[src1->index]);
-	modrm |= ENC_REG(reg_gp_map[src2->index]);
+	modrm |= ENC_RM(src1->encoding);
+	modrm |= ENC_REG(src2->encoding);
 	bemit8(modrm);
 }
 
@@ -1887,8 +1871,8 @@ static void bemit_modrr8(reg_modifier_t high_part1, const arch_register_t *src1,
 						 reg_modifier_t high_part2, const arch_register_t *src2)
 {
 	unsigned char modrm = MOD_REG;
-	modrm |= ENC_RM(reg_gp_map[src1->index] +  (high_part1 == REG_HIGH ? 4 : 0));
-	modrm |= ENC_REG(reg_gp_map[src2->index] + (high_part2 == REG_HIGH ? 4 : 0));
+	modrm |= ENC_RM(src1->encoding +  (high_part1 == REG_HIGH ? 4 : 0));
+	modrm |= ENC_REG(src2->encoding + (high_part2 == REG_HIGH ? 4 : 0));
 	bemit8(modrm);
 }
 
@@ -1897,7 +1881,7 @@ static void bemit_modru(const arch_register_t *reg, unsigned ext)
 {
 	unsigned char modrm = MOD_REG;
 	assert(ext <= 7);
-	modrm |= ENC_RM(reg_gp_map[reg->index]);
+	modrm |= ENC_RM(reg->encoding);
 	modrm |= ENC_REG(ext);
 	bemit8(modrm);
 }
@@ -1906,8 +1890,8 @@ static void bemit_modru(const arch_register_t *reg, unsigned ext)
 static void bemit_modrm8(reg_modifier_t high_part, const arch_register_t *reg)
 {
 	unsigned char modrm = MOD_REG;
-	assert(reg_gp_map[reg->index] < 4);
-	modrm |= ENC_RM(reg_gp_map[reg->index] + (high_part == REG_HIGH ? 4 : 0));
+	assert(reg->encoding < 4);
+	modrm |= ENC_RM(reg->encoding + (high_part == REG_HIGH ? 4 : 0));
 	modrm |= MOD_REG;
 	bemit8(modrm);
 }
@@ -1965,7 +1949,7 @@ static void bemit_mod_am(unsigned reg, const ir_node *node)
 
 	if (has_base) {
 		const arch_register_t *base_reg = arch_get_irn_register(base);
-		base_enc = reg_gp_map[base_reg->index];
+		base_enc = base_reg->encoding;
 	} else {
 		/* Use the EBP encoding + MOD_IND if NO base register. There is
 		 * always a 32bit offset present in this case. */
@@ -1981,7 +1965,7 @@ static void bemit_mod_am(unsigned reg, const ir_node *node)
 		assert(scale < 4);
 		/* R/M set to ESP means SIB in 32bit mode. */
 		modrm   |= ENC_RM(0x04);
-		sib      = ENC_SIB(scale, reg_gp_map[reg_index->index], base_enc);
+		sib      = ENC_SIB(scale, reg_index->encoding, base_enc);
 		emitsib = true;
 	} else if (base_enc == 0x04) {
 		/* for the above reason we are forced to emit a SIB when base is ESP.
@@ -2032,7 +2016,7 @@ static void bemit_unop(const ir_node *node, unsigned char code, unsigned char ex
 static void bemit_unop_reg(const ir_node *node, unsigned char code, int input)
 {
 	const arch_register_t *out = arch_get_irn_register_out(node, 0);
-	bemit_unop(node, code, reg_gp_map[out->index], input);
+	bemit_unop(node, code, out->encoding, input);
 }
 
 static void bemit_unop_mem(const ir_node *node, unsigned char code, unsigned char ext)
@@ -2082,9 +2066,9 @@ static void bemit_perm(const ir_node *node)
 
 	if (cls0 == &ia32_reg_classes[CLASS_ia32_gp]) {
 		if (reg0->index == REG_GP_EAX) {
-			bemit8(0x90 + reg_gp_map[reg1->index]);
+			bemit8(0x90 + reg1->encoding);
 		} else if (reg1->index == REG_GP_EAX) {
-			bemit8(0x90 + reg_gp_map[reg0->index]);
+			bemit8(0x90 + reg0->encoding);
 		} else {
 			bemit8(0x87);
 			bemit_modrr(reg0, reg1);
@@ -2111,7 +2095,7 @@ static void bemit_xor0(const ir_node *node)
 static void bemit_mov_const(const ir_node *node)
 {
 	const arch_register_t *out = arch_get_irn_register_out(node, 0);
-	bemit8(0xB8 + reg_gp_map[out->index]);
+	bemit8(0xB8 + out->encoding);
 	bemit_immediate(node, false);
 }
 
@@ -2163,7 +2147,7 @@ static void bemit_binop(ir_node const *const node, unsigned const code)
 			arch_register_t const *const src = arch_get_irn_register(right);
 			bemit_modrr(src, dst);
 		} else {
-			bemit_mod_am(reg_gp_map[dst->index], node);
+			bemit_mod_am(dst->encoding, node);
 		}
 	}
 }
@@ -2215,7 +2199,7 @@ static void bemit_binop_mem(ir_node const *const node, unsigned const code)
 		}
 	} else {
 		bemit8(code << 3 | op);
-		bemit_mod_am(reg_gp_map[arch_get_irn_register(val)->index], node);
+		bemit_mod_am(arch_get_irn_register(val)->encoding, node);
 	}
 }
 
@@ -2335,7 +2319,7 @@ static void bemit_shrd(const ir_node *node)
 static void bemit_sbb0(ir_node const *const node)
 {
 	arch_register_t const *const out = arch_get_irn_register_out(node, pn_ia32_Sbb0_res);
-	unsigned char          const reg = reg_gp_map[out->index];
+	unsigned char          const reg = out->encoding;
 	bemit8(0x1B);
 	bemit8(MOD_REG | ENC_REG(reg) | ENC_RM(reg));
 }
@@ -2460,7 +2444,7 @@ static void bemit_cmovcc(const ir_node *node)
 	if (get_ia32_op_type(node) == ia32_Normal) {
 		bemit_modrr(in_true, out);
 	} else {
-		bemit_mod_am(reg_gp_map[out->index], node);
+		bemit_mod_am(out->encoding, node);
 	}
 }
 
@@ -2502,7 +2486,7 @@ static void bemit_test(ir_node const *const node)
 			arch_register_t const *const src = arch_get_irn_register(right);
 			bemit_modrr(src, dst);
 		} else {
-			bemit_mod_am(reg_gp_map[dst->index], node);
+			bemit_mod_am(dst->encoding, node);
 		}
 	}
 }
@@ -2528,13 +2512,13 @@ static void bemit_imul(const ir_node *node)
 static void bemit_dec(const ir_node *node)
 {
 	const arch_register_t *out = arch_get_irn_register_out(node, pn_ia32_Dec_res);
-	bemit8(0x48 + reg_gp_map[out->index]);
+	bemit8(0x48 + out->encoding);
 }
 
 static void bemit_inc(const ir_node *node)
 {
 	const arch_register_t *out = arch_get_irn_register_out(node, pn_ia32_Inc_res);
-	bemit8(0x40 + reg_gp_map[out->index]);
+	bemit8(0x40 + out->encoding);
 }
 
 #define UNOPMEM(op, code, ext) \
@@ -2557,7 +2541,7 @@ static void bemit_ldtls(const ir_node *node)
 		bemit8(0xA1); // movl 0, %eax
 	} else {
 		bemit8(0x8B); // movl 0, %reg
-		bemit8(MOD_IND | ENC_REG(reg_gp_map[out->index]) | ENC_RM(0x05));
+		bemit8(MOD_IND | ENC_REG(out->encoding) | ENC_RM(0x05));
 	}
 	bemit32(0);
 }
@@ -2569,7 +2553,7 @@ static void bemit_lea(const ir_node *node)
 {
 	const arch_register_t *out = arch_get_irn_register_out(node, 0);
 	bemit8(0x8D);
-	bemit_mod_am(reg_gp_map[out->index], node);
+	bemit_mod_am(out->encoding, node);
 }
 
 /* helper function for bemit_minus64bit */
@@ -2605,9 +2589,9 @@ static void bemit_helper_sbb(const arch_register_t *src, const arch_register_t *
 static void bemit_helper_xchg(const arch_register_t *src, const arch_register_t *dst)
 {
 	if (src->index == REG_GP_EAX) {
-		bemit8(0x90 + reg_gp_map[dst->index]); // xchgl %eax, %dst
+		bemit8(0x90 + dst->encoding); // xchgl %eax, %dst
 	} else if (dst->index == REG_GP_EAX) {
-		bemit8(0x90 + reg_gp_map[src->index]); // xchgl %src, %eax
+		bemit8(0x90 + src->encoding); // xchgl %src, %eax
 	} else {
 		bemit8(0x87); // xchgl %src, %dst
 		bemit_modrr(src, dst);
@@ -2730,7 +2714,7 @@ static void bemit_load(const ir_node *node)
 		}
 	}
 	bemit8(0x8B);
-	bemit_mod_am(reg_gp_map[out->index], node);
+	bemit_mod_am(out->encoding, node);
 }
 
 /**
@@ -2788,7 +2772,7 @@ static void bemit_store(const ir_node *node)
 				bemit8(0x66);
 			bemit8(0x89);
 		}
-		bemit_mod_am(reg_gp_map[in->index], node);
+		bemit_mod_am(in->encoding, node);
 	}
 }
 
@@ -2839,7 +2823,7 @@ static void bemit_push(const ir_node *node)
 		bemit_mod_am(6, node);
 	} else {
 		const arch_register_t *reg = arch_get_irn_register_in(node, n_ia32_Push_val);
-		bemit8(0x50 + reg_gp_map[reg->index]);
+		bemit8(0x50 + reg->encoding);
 	}
 }
 
@@ -2849,7 +2833,7 @@ static void bemit_push(const ir_node *node)
 static void bemit_pop(const ir_node *node)
 {
 	const arch_register_t *reg = arch_get_irn_register_out(node, pn_ia32_Pop_res);
-	bemit8(0x58 + reg_gp_map[reg->index]);
+	bemit8(0x58 + reg->encoding);
 }
 
 static void bemit_popmem(const ir_node *node)
@@ -2986,7 +2970,7 @@ static void bemit_subsp(const ir_node *node)
 	/* mov %esp, %out */
 	bemit8(0x8B);
 	out = arch_get_irn_register_out(node, 1);
-	bemit8(MOD_REG | ENC_REG(reg_gp_map[out->index]) | ENC_RM(0x04));
+	bemit8(MOD_REG | ENC_REG(out->encoding) | ENC_RM(0x04));
 }
 
 static void bemit_incsp(const ir_node *node)
@@ -3047,7 +3031,7 @@ static void bemit_fbinop(ir_node const *const node, unsigned const op_fwd, unsig
 		if (attr->pop)        op0 |= 0x02;
 		bemit8(op0);
 
-		bemit8(MOD_REG | ENC_REG(op) | ENC_RM(attr->reg->index));
+		bemit8(MOD_REG | ENC_REG(op) | ENC_RM(attr->reg->encoding));
 	} else {
 		assert(!attr->reg);
 		assert(!attr->pop);
@@ -3061,7 +3045,7 @@ static void bemit_fbinop(ir_node const *const node, unsigned const op_fwd, unsig
 static void bemit_fop_reg(ir_node const *const node, unsigned char const op0, unsigned char const op1)
 {
 	bemit8(op0);
-	bemit8(op1 + get_ia32_x87_attr_const(node)->reg->index);
+	bemit8(op1 + get_ia32_x87_attr_const(node)->reg->encoding);
 }
 
 static void bemit_fabs(const ir_node *node)
@@ -3258,14 +3242,14 @@ static void bemit_fucomi(const ir_node *node)
 {
 	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
 	bemit8(attr->pop ? 0xDF : 0xDB); // fucom[p]i
-	bemit8(0xE8 + attr->reg->index);
+	bemit8(0xE8 + attr->reg->encoding);
 }
 
 static void bemit_fucomfnstsw(const ir_node *node)
 {
 	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
 	bemit8(0xDD); // fucom[p]
-	bemit8((attr->pop ? 0xE8 : 0xE0) + attr->reg->index);
+	bemit8((attr->pop ? 0xE8 : 0xE0) + attr->reg->encoding);
 	bemit_fnstsw();
 }
 
@@ -3463,8 +3447,6 @@ void ia32_init_emitter(void)
 	ia32_grp = lc_opt_get_grp(be_grp, "ia32");
 
 	lc_opt_add_table(ia32_grp, ia32_emitter_options);
-
-	build_reg_map();
 
 	FIRM_DBG_REGISTER(dbg, "firm.be.ia32.emitter");
 }

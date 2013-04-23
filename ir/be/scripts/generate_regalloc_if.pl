@@ -166,6 +166,10 @@ EOF
 		if (defined($_->{dwarf})) {
 			$dwarf_number = $_->{dwarf};
 		}
+		my $encoding = "REG_${classuc}_${ucname}";
+		if (defined($_->{encoding})) {
+			$encoding = $_->{encoding};
+		}
 
 		$regtypes_def .= <<EOF;
 	{
@@ -175,7 +179,8 @@ EOF
 		REG_${ucname},
 		${type},
 		&${arch}_single_reg_req_${old_classname}_${name},
-		${dwarf_number}
+		${dwarf_number},
+		${encoding}
 	},
 EOF
 

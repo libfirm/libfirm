@@ -218,6 +218,8 @@ struct arch_register_t {
 	const arch_register_req_t   *single_req;
 	/** register number in dwarf debugging format */
 	unsigned short               dwarf_number;
+	/** register number in instruction encoding */
+	unsigned short               encoding;
 };
 
 /**

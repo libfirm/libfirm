@@ -11,14 +11,14 @@ $mode_fpcw          = "ia32_mode_fpcw";
 
 %reg_classes = (
 	gp => [
-		{ name => "edx", dwarf => 2 },
-		{ name => "ecx", dwarf => 1 },
-		{ name => "eax", dwarf => 0 },
-		{ name => "ebx", dwarf => 3 },
-		{ name => "esi", dwarf => 6 },
-		{ name => "edi", dwarf => 7 },
-		{ name => "ebp", dwarf => 5 },
-		{ name => "esp", dwarf => 4, type => "ignore" },
+		{ name => "edx", encoding => 2, dwarf => 2 },
+		{ name => "ecx", encoding => 1, dwarf => 1 },
+		{ name => "eax", encoding => 0, dwarf => 0 },
+		{ name => "ebx", encoding => 3, dwarf => 3 },
+		{ name => "esi", encoding => 6, dwarf => 6 },
+		{ name => "edi", encoding => 7, dwarf => 7 },
+		{ name => "ebp", encoding => 5, dwarf => 5 },
+		{ name => "esp", encoding => 4, dwarf => 4, type => "ignore" },
 		{ name => "gp_NOREG", type => "ignore | virtual" }, # we need a dummy register for NoReg nodes
 		{ mode => $mode_gp }
 	],
@@ -46,14 +46,14 @@ $mode_fpcw          = "ia32_mode_fpcw";
 		{ mode => $mode_xmm }
 	],
 	fp => [
-		{ name => "st0", realname => "st",    dwarf => 11 },
-		{ name => "st1", realname => "st(1)", dwarf => 12 },
-		{ name => "st2", realname => "st(2)", dwarf => 13 },
-		{ name => "st3", realname => "st(3)", dwarf => 14 },
-		{ name => "st4", realname => "st(4)", dwarf => 15 },
-		{ name => "st5", realname => "st(5)", dwarf => 16 },
-		{ name => "st6", realname => "st(6)", dwarf => 17 },
-		{ name => "st7", realname => "st(7)", dwarf => 18 },
+		{ name => "st0", realname => "st",    encoding => 0, dwarf => 11 },
+		{ name => "st1", realname => "st(1)", encoding => 1, dwarf => 12 },
+		{ name => "st2", realname => "st(2)", encoding => 2, dwarf => 13 },
+		{ name => "st3", realname => "st(3)", encoding => 3, dwarf => 14 },
+		{ name => "st4", realname => "st(4)", encoding => 4, dwarf => 15 },
+		{ name => "st5", realname => "st(5)", encoding => 5, dwarf => 16 },
+		{ name => "st6", realname => "st(6)", encoding => 6, dwarf => 17 },
+		{ name => "st7", realname => "st(7)", encoding => 7, dwarf => 18 },
 		{ name => "fp_NOREG", type => "ignore | virtual" }, # we need a dummy register for NoReg nodes
 		{ mode => $mode_fp87 }
 	],
