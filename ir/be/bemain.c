@@ -278,7 +278,7 @@ int be_parse_arg(const char *arg)
 		lc_opt_print_help_for_entry(be_grp, '-', stdout);
 		return -1;
 	}
-	return lc_opt_from_single_arg(be_grp, NULL, arg, NULL);
+	return lc_opt_from_single_arg(be_grp, arg);
 }
 
 /* Perform schedule verification if requested. */

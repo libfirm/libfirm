@@ -16,7 +16,7 @@
 static const char *delim = " \t|,";
 
 #define DECL_CB(N, op) \
-int lc_opt_enum_ ## N ## _cb(const char *name, lc_opt_type_t type, void *data, size_t len, ...) \
+bool lc_opt_enum_ ## N ## _cb(const char *name, lc_opt_type_t type, void *data, size_t len, ...) \
 { \
 	lc_opt_enum_ ## N ## _var_t *var           = (lc_opt_enum_ ## N ## _var_t*)data; \
 	const lc_opt_enum_ ## N ## _items_t *items = var->items; \
@@ -25,7 +25,7 @@ int lc_opt_enum_ ## N ## _cb(const char *name, lc_opt_type_t type, void *data, s
 	char *s, *tmp; \
 	size_t begin, end; \
 	const char *arg; \
-	int res = 0; \
+	bool res = false; \
  \
 	(void) name; \
 	(void) type; \
@@ -50,7 +50,7 @@ int lc_opt_enum_ ## N ## _cb(const char *name, lc_opt_type_t type, void *data, s
 		for (i = 0; items[i].name != NULL; ++i) { \
 			if (strcmp(s, items[i].name) == 0) { \
 				*var->value op items[i].value; \
-				res = 1; \
+				res = true; \
 			} \
 		} \
 	} \

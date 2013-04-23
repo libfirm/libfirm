@@ -143,11 +143,11 @@ typedef struct module_opt_data_t {
  * Searches in list for module option. If found, set option to given value and return true.
  * Beware: return value of 0 means error.
  */
-static int set_opt_module(const char *name, lc_opt_type_t type, void *data,
-                          size_t length, ...)
+static bool set_opt_module(const char *name, lc_opt_type_t type, void *data,
+                           size_t length, ...)
 {
 	module_opt_data_t            *moddata = (module_opt_data_t*)data;
-	int                          res      = 0;
+	bool                         res      = false;
 	va_list                      args;
 	const char                   *opt;
 	const be_module_list_entry_t *module;
@@ -160,7 +160,7 @@ static int set_opt_module(const char *name, lc_opt_type_t type, void *data,
 	for (module = *(moddata->list_head); module != NULL; module = module->next) {
 		if (strcmp(module->name, opt) == 0) {
 			*(moddata->var) = module->data;
-			res = 1;
+			res = true;
 			break;
 		}
 	}
@@ -251,6 +251,5 @@ void be_add_module_list_opt(lc_opt_entry_t *grp, const char *name,
 
 	lc_opt_add_opt(grp, name, description, lc_opt_type_enum,
 	               moddata, sizeof(moddata[0]),
-	               set_opt_module, dump_opt_module, dump_opt_module_vals,
-				   NULL);
+	               set_opt_module, dump_opt_module, dump_opt_module_vals);
 }

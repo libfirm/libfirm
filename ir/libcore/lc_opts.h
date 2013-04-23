@@ -13,6 +13,7 @@
 #define _LC_OPTS_H
 
 #include <stdio.h>
+#include <stdbool.h>
 
 #include "lc_printf.h"
 
@@ -29,39 +30,13 @@ typedef enum {
 	lc_opt_type_double
 } lc_opt_type_t;
 
-/**
- * Error codes.
- */
-typedef enum {
-	lc_opt_err_none = 0,
-	lc_opt_err_no_callback,
-	lc_opt_err_illegal_option_type,
-	lc_opt_err_illegal_format,
-	lc_opt_err_grp_not_found,
-	lc_opt_err_opt_not_found,
-	lc_opt_err_grp_expected,
-	lc_opt_err_opt_already_there,
-	lc_opt_err_file_not_found,
-	lc_opt_err_unknown_value
-} lc_opt_err_t;
-
-typedef struct {
-	int error;
-	const char *msg;
-	const char *arg;
-} lc_opt_err_info_t;
-
-#define lc_opt_is_error(err) ((err)->error != lc_opt_err_none)
-
 typedef struct lc_opt_entry_t lc_opt_entry_t;
 
-typedef int (lc_opt_callback_t)(const char *name, lc_opt_type_t type, void *data, size_t length, ...);
+typedef bool (lc_opt_callback_t)(const char *name, lc_opt_type_t type, void *data, size_t length, ...);
 
 typedef int (lc_opt_dump_t)(char *buf, size_t n, const char *name, lc_opt_type_t type, void *data, size_t length);
 
 typedef int (lc_opt_dump_vals_t)(char *buf, size_t n, const char *name, lc_opt_type_t type, void *data, size_t length);
-
-typedef int (lc_opt_error_handler_t)(const char *prefix, const lc_opt_err_info_t *err);
 
 typedef struct {
 	const char *name;               /**< The name of the option. */
@@ -152,10 +127,9 @@ lc_opt_entry_t *lc_opt_add_opt(lc_opt_entry_t *grp,
                                void *value, size_t length,
                                lc_opt_callback_t *cb,
                                lc_opt_dump_t *dump,
-                               lc_opt_dump_vals_t *dump_vals,
-                               lc_opt_err_info_t *err);
+                               lc_opt_dump_vals_t *dump_vals);
 
-int lc_opt_std_cb(const char *name, lc_opt_type_t type, void *data, size_t length, ...);
+bool lc_opt_std_cb(const char *name, lc_opt_type_t type, void *data, size_t length, ...);
 
 int lc_opt_std_dump(char *buf, size_t n, const char *name, lc_opt_type_t type, void *data, size_t length);
 
@@ -178,50 +152,45 @@ int lc_opt_bool_dump_vals(char *buf, size_t n, const char *name, lc_opt_type_t t
  * Find a group inside another group.
  * @param grp   The group to search inside.
  * @param name  The name of the group you are looking for.
- * @param err   Error info (may be NULL).
  * @return      The group or NULL, if no such group can be found.
  */
-lc_opt_entry_t *lc_opt_find_grp(const lc_opt_entry_t *grp, const char *name, lc_opt_err_info_t *err);
+lc_opt_entry_t *lc_opt_find_grp(const lc_opt_entry_t *grp, const char *name);
 
 /**
  * Find an option inside another group.
  * @param grp   The group to search inside.
  * @param name  The name of the option you are looking for.
- * @param err   Error info (may be NULL).
  * @return      The group or NULL, if no such option can be found.
  */
-lc_opt_entry_t *lc_opt_find_opt(const lc_opt_entry_t *grp, const char *name, lc_opt_err_info_t *err);
+lc_opt_entry_t *lc_opt_find_opt(const lc_opt_entry_t *grp, const char *name);
 
 /**
  * Resolve a group.
  * @param root   The group to start resolving from.
  * @param names  A string array containing the path to the group.
  * @param n      Number of entries in @p names to consider.
- * @param err    Error information (may be NULL).
  * @return       The group or NULL, if none is found.
  */
 lc_opt_entry_t *lc_opt_resolve_grp(const lc_opt_entry_t *root,
-		const char * const *names, int n, lc_opt_err_info_t *err);
+                                   const char * const *names, int n);
 
 /**
  * Resolve an option.
  * @param root   The group to start resolving from.
  * @param names  A string array containing the path to the option.
  * @param n      Number of entries in @p names to consider.
- * @param err    Error information (may be NULL).
  * @return       The option or NULL, if none is found.
  */
 lc_opt_entry_t *lc_opt_resolve_opt(const lc_opt_entry_t *root,
-		const char * const *names, int n, lc_opt_err_info_t *err);
+                                   const char * const *names, int n);
 
 /**
  * Set the value of an option.
  * @param opt    The option to set.
  * @param value  The value of the option in a string representation.
- * @param err    Error information (may be NULL).
  * @return       0, if an error occurred, 1 else.
  */
-int lc_opt_occurs(lc_opt_entry_t *opt, const char *value, lc_opt_err_info_t *err);
+bool lc_opt_occurs(lc_opt_entry_t *opt, const char *value);
 
 /**
  * Convert the option to a string representation.
@@ -254,38 +223,14 @@ void lc_opt_print_help_for_entry(lc_opt_entry_t *ent, char separator, FILE *f);
 
 void lc_opt_print_tree(lc_opt_entry_t *ent, FILE *f);
 
-int lc_opt_add_table(lc_opt_entry_t *grp, const lc_opt_table_entry_t *table);
-
-/**
- * The same as lc_opt_from_single_arg() only for an array of arguments.
- */
-int lc_opt_from_argv(const lc_opt_entry_t *root,
-                     const char *opt_prefix,
-                     int argc, const char *argv[],
-                     lc_opt_error_handler_t *handler);
+bool lc_opt_add_table(lc_opt_entry_t *grp, const lc_opt_table_entry_t *table);
 
 /**
  * Set options from a single (command line) argument.
  * @param root          The root group we start resolving from.
- * @param opt_prefix    The option prefix which shall be stripped of (mostly --).
  * @param arg           The command line argument itself.
- * @param handler       An error handler.
  * @return              1, if the argument was set, 0 if not.
  */
-int lc_opt_from_single_arg(const lc_opt_entry_t *grp,
-                           const char *opt_prefix,
-                           const char *arg,
-                           lc_opt_error_handler_t *handler);
-
-/**
- * Get printf environment for the option module.
- * Currently implemented options are:
- * %{opt:value} (%V)       Value of an option.
- * %{opt:type}  (%T)       Type of an option.
- * %{opt:name}  (%O)       Name of an option.
- * %{opt:desc}  (%D)       Description of an option.
- * @return The option printf environment.
- */
-const lc_arg_env_t *lc_opt_get_arg_env(void);
+int lc_opt_from_single_arg(const lc_opt_entry_t *grp, const char *arg);
 
 #endif

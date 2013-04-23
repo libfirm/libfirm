@@ -28,15 +28,15 @@
 /* printf implementation */
 
 typedef struct lc_arg_t {
-	struct lc_arg_t *next;
-	const char *name;
-	char letter;
-	int lc_arg_type;
+	struct lc_arg_t        *next;
+	const char             *name;
+	char                    letter;
+	int                     lc_arg_type;
 	const lc_arg_handler_t *handler;
 } lc_arg_t;
 
 struct lc_arg_env_t {
-	set *args;                  /**< Map for named arguments. */
+	set      *args;             /**< Map for named arguments. */
 	lc_arg_t *lower[26];        /**< Map for lower conversion specifiers. */
 	lc_arg_t *upper[26];        /**< Map for upper conversion specifiers. */
 };
@@ -79,27 +79,25 @@ void lc_arg_free_env(lc_arg_env_t *env)
 	free(env);
 }
 
-int lc_arg_register(lc_arg_env_t *env, const char *name, char letter, const lc_arg_handler_t *handler)
+int lc_arg_register(lc_arg_env_t *env, const char *name, char letter,
+                    const lc_arg_handler_t *handler)
 {
 	lc_arg_t arg;
-	lc_arg_t *ent;
-	int base = 0;
-	lc_arg_t **map = NULL;
-
 	arg.name = name;
 	arg.letter = letter;
 	arg.handler = handler;
 
+	lc_arg_t **map  = NULL;
+	int        base = 0;
 	if (isupper((unsigned char)letter)) {
 		map = env->upper;
 		base = 'A';
-	}
-	else if (islower((unsigned char)letter)) {
+	} else if (islower((unsigned char)letter)) {
 		map = env->lower;
 		base = 'a';
 	}
 
-	ent = set_insert(lc_arg_t, env->args, &arg, sizeof(arg), hash_str(name));
+	lc_arg_t *ent = set_insert(lc_arg_t, env->args, &arg, sizeof(arg), hash_str(name));
 
 	if (ent && base != 0)
 		map[letter - base] = ent;
@@ -262,33 +260,29 @@ static int std_emit(lc_appendable_t *app, const lc_arg_occ_t *occ, const lc_arg_
 	make_fmt(fmt, sizeof(fmt), occ);
 
 	switch (occ->conversion) {
-
 		/* Store the number of written characters in the given
 		 * int pointer location */
-		case 'n':
-			{
-				int *num = (int*)val->v_ptr;
-				*num = (int)app->written;
-			}
+		case 'n': {
+			int *num = (int*)val->v_ptr;
+			*num = (int)app->written;
 			break;
+		}
 
 		/* strings are dumped directly, since they can get really big. A
 		 * buffer of 128 letters for all other types should be enough. */
-		case 's':
-			{
-				const char *str = (const char*)val->v_ptr;
-				res = lc_arg_append(app, occ, str, strlen(str));
-			}
+		case 's': {
+			const char *str = (const char*)val->v_ptr;
+			res = lc_arg_append(app, occ, str, strlen(str));
 			break;
+		}
 
-		default:
-			{
-				int len = MAX(128, occ->width + 1);
-				char *buf = XMALLOCN(char, len);
-				res = dispatch_snprintf(buf, len, fmt, occ->lc_arg_type, val);
-				res = lc_appendable_snadd(app, buf, res);
-				free(buf);
-			}
+		default: {
+			int len = MAX(128, occ->width + 1);
+			char *buf = XMALLOCN(char, len);
+			res = dispatch_snprintf(buf, len, fmt, occ->lc_arg_type, val);
+			res = lc_appendable_snadd(app, buf, res);
+			free(buf);
+		}
 	}
 
 	return res;
@@ -333,29 +327,26 @@ static char *read_int(const char *s, int *value)
 
 /* Generic printf() function. */
 
-int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt, va_list args)
+int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
+                 va_list args)
 {
-	int res = 0;
-	const char *s;
+	int         res  = 0;
 	const char *last = fmt + strlen(fmt);
 
 	/* Find the first % */
-	s = strchr(fmt, '%');
+	const char *s = strchr(fmt, '%');
 
 	/* Emit the text before the first % was found */
 	lc_appendable_snadd(app, fmt, (s ? s : last) - fmt);
 
 	while (s != NULL) {
-		lc_arg_occ_t occ;
 		lc_arg_value_t val;
-		const lc_arg_t *arg = NULL;
-		const char *old;
-		char ch;
 
 		/* We must be at a '%' */
 		assert(*s == '%');
 
 		/* Reset the occurrence structure */
+		lc_arg_occ_t occ;
 		memset(&occ, 0, sizeof(occ));
 
 		/* Eat all flags and set the corresponding flags in the occ struct */
@@ -400,74 +391,74 @@ int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
 		 * - some modifiers followed by a conversion specifier
 		 * - or some other character, which ends this format invalidly
 		 */
-		ch = *s;
+		char            ch  = *s;
+		const lc_arg_t *arg = NULL;
 		switch (ch) {
 			case '%':
 				s++;
 				res += lc_appendable_chadd(app, '%');
 				break;
-			case '{':
-				{
-					const char *named = ++s;
+			case '{': {
+				const char *named = ++s;
 
-					/* Read until the closing brace or end of the string. */
-					for (ch = *s; ch != '}' && ch != '\0'; ch = *++s) {
-					}
+				/* Read until the closing brace or end of the string. */
+				for (ch = *s; ch != '}' && ch != '\0'; ch = *++s) {
+				}
 
-					if (s - named) {
-						size_t n = s - named;
-						char *name;
-						lc_arg_t tmp;
+				if (s - named) {
+					size_t n = s - named;
+					char *name;
+					lc_arg_t tmp;
 
-						name = (char*) malloc(sizeof(char) * (n + 1));
-						memcpy(name, named, sizeof(char) * n);
-						name[n] = '\0';
-						tmp.name = name;
+					name = (char*) malloc(sizeof(char) * (n + 1));
+					memcpy(name, named, sizeof(char) * n);
+					name[n] = '\0';
+					tmp.name = name;
 
-						arg = set_find(lc_arg_t, env->args, &tmp, sizeof(tmp), hash_str(named));
-						occ.modifier = "";
-						occ.modifier_length = 0;
+					arg = set_find(lc_arg_t, env->args, &tmp, sizeof(tmp), hash_str(named));
+					occ.modifier = "";
+					occ.modifier_length = 0;
 
-						/* Set the conversion specifier of the occurrence to the
-						 * letter specified in the argument description. */
-						if (arg)
-							occ.conversion = arg->letter;
+					/* Set the conversion specifier of the occurrence to the
+					 * letter specified in the argument description. */
+					if (arg)
+						occ.conversion = arg->letter;
 
-						free(name);
+					free(name);
 
-						/* If we ended with a closing brace, move the current
-						 * pointer after it, since it is not to be dumped. */
-						if (ch == '}')
-							s++;
-					}
+					/* If we ended with a closing brace, move the current
+					 * pointer after it, since it is not to be dumped. */
+					if (ch == '}')
+						s++;
 				}
 				break;
+			}
 
-			default:
-				{
-					const char *mod = s;
+			default: {
+				const char *mod = s;
 
-					/* Read, as long there are letters */
-					while (isalpha((unsigned char)ch) && !arg) {
-						int base = 'a';
-						lc_arg_t * const *map = env->lower;
+				/* Read, as long there are letters */
+				while (isalpha((unsigned char)ch) && !arg) {
+					int              base = 'a';
+					lc_arg_t *const *map  = env->lower;
 
-						/* If uppercase, select the uppercase map from the environment */
-						if (isupper((unsigned char)ch)) {
-							base = 'A';
-							map = env->upper;
-						}
-
-						if (map[ch - base] != NULL) {
-							occ.modifier = mod;
-							occ.modifier_length = s - mod;
-							occ.conversion = ch;
-							arg = map[ch - base];
-						}
-
-						ch = *++s;
+					/* If uppercase, select the uppercase map from the
+					 * environment */
+					if (isupper((unsigned char)ch)) {
+						base = 'A';
+						map = env->upper;
 					}
+
+					if (map[ch - base] != NULL) {
+						occ.modifier = mod;
+						occ.modifier_length = s - mod;
+						occ.conversion = ch;
+						arg = map[ch - base];
+					}
+
+					ch = *++s;
 				}
+			}
 		}
 
 		/* Call the handler if an argument was determined */
@@ -490,7 +481,7 @@ int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
 			res += handler->emit(app, &occ, &val);
 		}
 
-		old = s;
+		const char *old = s;
 		s = strchr(s, '%');
 		res += lc_appendable_snadd(app, old, (s ? s : last) - old);
 	}
@@ -502,20 +493,18 @@ int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
 
 int lc_epprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt, ...)
 {
-	int res;
 	va_list args;
 	va_start(args, fmt);
-	res = lc_evpprintf(env, app, fmt, args);
+	int res = lc_evpprintf(env, app, fmt, args);
 	va_end(args);
 	return res;
 }
 
 int lc_pprintf(lc_appendable_t *app, const char *fmt, ...)
 {
-	int res;
 	va_list args;
 	va_start(args, fmt);
-	res = lc_vpprintf(app, fmt, args);
+	int res = lc_vpprintf(app, fmt, args);
 	va_end(args);
 	return res;
 }
@@ -527,40 +516,36 @@ int lc_vpprintf(lc_appendable_t *app, const char *fmt, va_list args)
 
 int lc_eprintf(const lc_arg_env_t *env, const char *fmt, ...)
 {
-	int res;
 	va_list args;
 	va_start(args, fmt);
-	res = lc_efprintf(env, stdout, fmt, args);
+	int res = lc_efprintf(env, stdout, fmt, args);
 	va_end(args);
 	return res;
 }
 
 int lc_esnprintf(const lc_arg_env_t *env, char *buf, size_t len, const char *fmt, ...)
 {
-	int res;
 	va_list args;
 	va_start(args, fmt);
-	res = lc_evsnprintf(env, buf, len, fmt, args);
+	int res = lc_evsnprintf(env, buf, len, fmt, args);
 	va_end(args);
 	return res;
 }
 
 int lc_efprintf(const lc_arg_env_t *env, FILE *file, const char *fmt, ...)
 {
-	int res;
 	va_list args;
 	va_start(args, fmt);
-	res = lc_evfprintf(env, file, fmt, args);
+	int res = lc_evfprintf(env, file, fmt, args);
 	va_end(args);
 	return res;
 }
 
 int lc_eoprintf(const lc_arg_env_t *env, struct obstack *obst, const char *fmt, ...)
 {
-	int res;
 	va_list args;
 	va_start(args, fmt);
-	res = lc_evoprintf(env, obst, fmt, args);
+	int res = lc_evoprintf(env, obst, fmt, args);
 	va_end(args);
 	return res;
 }
@@ -572,33 +557,30 @@ int lc_evprintf(const lc_arg_env_t *env, const char *fmt, va_list args)
 
 int lc_evsnprintf(const lc_arg_env_t *env, char *buf, size_t len, const char *fmt, va_list args)
 {
-	int res;
 	lc_appendable_t app;
 
 	lc_appendable_init(&app, lc_appendable_string, buf, len);
-	res = lc_evpprintf(env, &app, fmt, args);
+	int res = lc_evpprintf(env, &app, fmt, args);
 	lc_appendable_finish(&app);
 	return res;
 }
 
 int lc_evfprintf(const lc_arg_env_t *env, FILE *f, const char *fmt, va_list args)
 {
-	int res;
 	lc_appendable_t app;
 
 	lc_appendable_init(&app, lc_appendable_file, f, 0);
-	res = lc_evpprintf(env, &app, fmt, args);
+	int res = lc_evpprintf(env, &app, fmt, args);
 	lc_appendable_finish(&app);
 	return res;
 }
 
 int lc_evoprintf(const lc_arg_env_t *env, struct obstack *obst, const char *fmt, va_list args)
 {
-	int res;
 	lc_appendable_t app;
 
 	lc_appendable_init(&app, lc_appendable_obstack, obst, 0);
-	res = lc_evpprintf(env, &app, fmt, args);
+	int res = lc_evpprintf(env, &app, fmt, args);
 	lc_appendable_finish(&app);
 	return res;
 }
@@ -606,40 +588,36 @@ int lc_evoprintf(const lc_arg_env_t *env, struct obstack *obst, const char *fmt,
 
 int lc_printf(const char *fmt, ...)
 {
-	int res;
 	va_list args;
 	va_start(args, fmt);
-	res = lc_vprintf(fmt, args);
+	int res = lc_vprintf(fmt, args);
 	va_end(args);
 	return res;
 }
 
 int lc_snprintf(char *buf, size_t len, const char *fmt, ...)
 {
-	int res;
 	va_list args;
 	va_start(args, fmt);
-	res = lc_vsnprintf(buf, len, fmt, args);
+	int res = lc_vsnprintf(buf, len, fmt, args);
 	va_end(args);
 	return res;
 }
 
 int lc_fprintf(FILE *f, const char *fmt, ...)
 {
-	int res;
 	va_list args;
 	va_start(args, fmt);
-	res = lc_vfprintf(f, fmt, args);
+	int res = lc_vfprintf(f, fmt, args);
 	va_end(args);
 	return res;
 }
 
 int lc_oprintf(struct obstack *obst, const char *fmt, ...)
 {
-	int res;
 	va_list args;
 	va_start(args, fmt);
-	res = lc_voprintf(obst, fmt, args);
+	int res = lc_voprintf(obst, fmt, args);
 	va_end(args);
 	return res;
 }

@@ -15,6 +15,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #include <obstack.h>
 
@@ -35,11 +36,11 @@ typedef struct lc_arg_occ_t {
 	                                the @c get_lc_arg_type member function of
 	                                the handler. */
 
-	unsigned flag_hash : 1;    /**< @c # flag was seen. */
-	unsigned flag_zero : 1;    /**< @c 0 flag was seen. */
-	unsigned flag_minus : 1;   /**< @c - flag was seen. */
-	unsigned flag_plus : 1;    /**< @c + flag was seen. */
-	unsigned flag_space : 1;   /**< A space flag was seen. */
+	bool flag_hash  : 1;   /**< @c # flag was seen. */
+	bool flag_zero  : 1;   /**< @c 0 flag was seen. */
+	bool flag_minus : 1;   /**< @c - flag was seen. */
+	bool flag_plus  : 1;   /**< @c + flag was seen. */
+	bool flag_space : 1;   /**< A space flag was seen. */
 } lc_arg_occ_t;
 
 /**
