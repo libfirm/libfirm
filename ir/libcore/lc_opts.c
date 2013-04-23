@@ -589,12 +589,13 @@ int lc_opt_from_single_arg(const lc_opt_entry_t *root, const char *arg)
 		char *buf = (char*)obstack_copy0(&obst, arg, end - arg);
 
 		/* Resolve the group inside the group */
-		grp = lc_opt_find_grp(grp, buf);
-		if (grp == NULL)
-			return 0;
+		lc_opt_entry_t *new_grp = lc_opt_find_grp(grp, buf);
+		if (new_grp == NULL)
+			break;
+		grp = new_grp;
 
 		/* Find the next option part delimiter. */
-		arg = end + 1;
+		arg    = end + 1;
 		end    = strchr(arg, OPT_DELIM);
 		eqsign = strchr(arg, '=');
 		if (eqsign && eqsign < end)
