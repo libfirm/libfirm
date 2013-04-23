@@ -139,6 +139,15 @@ ENUM_BITSET(cpu_arch_features)
 static int               opt_size             = 0;
 static int               emit_machcode        = 0;
 static int               use_softfloat        = 0;
+static int               use_sse              = 0;
+static int               use_sse2             = 0;
+static int               use_sse3             = 0;
+static int               use_sse4             = 0;
+static int               use_sse4_1           = 0;
+static int               use_sse4_2           = 0;
+static int               use_sse4a            = 0;
+static int               use_sse5             = 0;
+static int               use_ssse3            = 0;
 static cpu_arch_features arch                 = cpu_generic;
 static cpu_arch_features opt_arch             = 0;
 static int               fpu_arch             = 0;
@@ -233,6 +242,15 @@ static const lc_opt_table_entry_t ia32_architecture_options[] = {
 	LC_OPT_ENT_BOOL    ("unsafe_floatconv", "do unsafe floating point controlword optimisations", &opt_unsafe_floatconv),
 	LC_OPT_ENT_BOOL    ("machcode",         "output machine code instead of assembler",           &emit_machcode),
 	LC_OPT_ENT_BOOL    ("soft-float",       "equivalent to fpmath=softfloat",                     &use_softfloat),
+	LC_OPT_ENT_BOOL    ("sse",              "gcc compatibility",                                  &use_sse),
+	LC_OPT_ENT_BOOL    ("sse2",             "gcc compatibility",                                  &use_sse2),
+	LC_OPT_ENT_BOOL    ("sse3",             "gcc compatibility",                                  &use_sse3),
+	LC_OPT_ENT_BOOL    ("sse4",             "gcc compatibility",                                  &use_sse4),
+	LC_OPT_ENT_BOOL    ("sse4.1",           "gcc compatibility",                                  &use_sse4_1),
+	LC_OPT_ENT_BOOL    ("sse4.2",           "gcc compatibility",                                  &use_sse4_2),
+	LC_OPT_ENT_BOOL    ("sse4a",            "gcc compatibility",                                  &use_sse4a),
+	LC_OPT_ENT_BOOL    ("sse5",             "gcc compatibility",                                  &use_sse5),
+	LC_OPT_ENT_BOOL    ("ssse3",            "gcc compatibility",                                  &use_ssse3),
 	LC_OPT_LAST
 };
 
