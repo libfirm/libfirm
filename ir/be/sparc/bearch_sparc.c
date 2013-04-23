@@ -425,19 +425,24 @@ static void sparc_handle_intrinsics(void)
 
 static void sparc_setup_cg_config(void)
 {
-	bool has_fpu;
+	memset(&sparc_cg_config, 0, sizeof(sparc_cg_config));
+	bool has_fpu = false;
 	switch ((sparc_cpu_t)cpu) {
+	case cpu_v8plus:
+		sparc_cg_config.use_cas = true;
+		has_fpu = false;
+		break;
 	case cpu_leon:
+		sparc_cg_config.use_cas = true;
+		has_fpu = true;
+		break;
 	case cpu_hypersparc:
 		has_fpu = true;
 		break;
-	case cpu_v8plus:
 	case cpu_supersparc:
 	case cpu_generic:
 		has_fpu = false;
 		break;
-	default:
-		panic("sparc: invalid architecture selected");
 	}
 
 	if (use_softfloat)
@@ -503,6 +508,8 @@ static void sparc_lower_for_target(void)
 	ir_builtin_kind supported[8];
 	size_t          s = 0;
 	supported[s++] = ir_bk_saturating_increment;
+	if (sparc_cg_config.use_cas)
+		supported[s++] = ir_bk_compare_swap;
 	assert(s < ARRAY_SIZE(supported));
 	lower_builtins(s, supported);
 

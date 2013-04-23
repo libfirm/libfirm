@@ -1251,6 +1251,18 @@ Bswap16 => {
 	mode      => $mode_gp,
 },
 
+CmpXChgMem => {
+	irn_flags      => [ "rematerializable" ],
+	state          => "exc_pinned",
+	reg_req        => { in  => [ "gp", "gp", "none", "eax", "gp" ],
+	                    out => [  "eax", "flags", "none" ] },
+	ins            => [ "base", "index", "mem", "old", "new" ],
+	outs           => [ "res", "flags", "M" ],
+	emit           => "lock cmpxchg%M %#S4, %AM",
+	latency        => 2,
+	modified_flags => $status_flags
+},
+
 #
 # BreakPoint
 #

@@ -1822,6 +1822,8 @@ static void ia32_lower_for_target(void)
 	supported[s++] = ir_bk_saturating_increment;
 	if (ia32_cg_config.use_popcnt)
 		supported[s++] = ir_bk_popcount;
+	if (ia32_cg_config.use_cmpxchg)
+		supported[s++] = ir_bk_compare_swap;
 	assert(s < ARRAY_SIZE(supported));
 	lower_builtins(s, supported);
 

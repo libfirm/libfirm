@@ -20,6 +20,7 @@ typedef struct calling_convention_t calling_convention_t;
 
 typedef struct sparc_codegen_config_t {
 	bool use_fpu;
+	bool use_cas;
 } sparc_codegen_config_t;
 extern sparc_codegen_config_t sparc_cg_config;
 

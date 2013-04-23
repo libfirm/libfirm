@@ -40,6 +40,87 @@
 #include "bespillslots.h"
 #include "bestack.h"
 #include "beirgmod.h"
+#include "error.h"
+
+static int get_first_same(const arch_register_req_t *req)
+{
+	const unsigned other = req->other_same;
+	for (int i = 0; i < 32; ++i) {
+		if (other & (1U << i))
+			return i;
+	}
+	panic("same position not found");
+}
+
+/**
+ * Insert copies for all ia32 nodes where the should_be_same requirement
+ * is not fulfilled.
+ * Transform Sub into Neg -- Add if IN2 == OUT
+ */
+static void assure_should_be_same_requirements(ir_node *node)
+{
+	ir_node *block = get_nodes_block(node);
+
+	/* check all OUT requirements, if there is a should_be_same */
+	be_foreach_out(node, i) {
+		const arch_register_req_t *req = arch_get_irn_register_req_out(node, i);
+		if (!arch_register_req_is(req, should_be_same))
+			continue;
+
+		int same_pos = get_first_same(req);
+
+		/* get in and out register */
+		const arch_register_t *out_reg = arch_get_irn_register_out(node, i);
+		ir_node               *in_node = get_irn_n(node, same_pos);
+		const arch_register_t *in_reg  = arch_get_irn_register(in_node);
+
+		/* requirement already fulfilled? */
+		if (in_reg == out_reg)
+			continue;
+		assert(in_reg->reg_class == out_reg->reg_class);
+
+		/* check if any other input operands uses the out register */
+		ir_node *uses_out_reg     = NULL;
+		int      uses_out_reg_pos = -1;
+		for (int i2 = 0, arity = get_irn_arity(node); i2 < arity; ++i2) {
+			ir_node *in = get_irn_n(node, i2);
+			if (!mode_is_data(get_irn_mode(in)))
+				continue;
+
+			const arch_register_t *other_in_reg = arch_get_irn_register(in);
+			if (other_in_reg != out_reg)
+				continue;
+
+			if (uses_out_reg != NULL && in != uses_out_reg) {
+				panic("invalid register allocation");
+			}
+			uses_out_reg = in;
+			if (uses_out_reg_pos >= 0)
+				uses_out_reg_pos = -1; /* multiple inputs... */
+			else
+				uses_out_reg_pos = i2;
+		}
+
+		/* no-one else is using the out reg, we can simply copy it
+		 * (the register can't be live since the operation will override it
+		 *  anyway) */
+		if (uses_out_reg == NULL) {
+			ir_node *copy = be_new_Copy(block, in_node);
+
+			/* destination is the out register */
+			arch_set_irn_register(copy, out_reg);
+
+			/* insert copy before the node into the schedule */
+			sched_add_before(node, copy);
+
+			/* set copy as in */
+			set_irn_n(node, same_pos, copy);
+			continue;
+		}
+
+		panic("Unresolved should_be_same constraint");
+	}
+}
 
 static ir_heights_t *heights;
 
@@ -642,6 +723,23 @@ static void sparc_set_frame_entity(ir_node *node, ir_entity *entity)
 	}
 }
 
+/** returns true if the should_be_same constraints of a node must be
+ * fulfilled */
+static bool has_must_be_same(const ir_node *node)
+{
+	return is_sparc_Cas(node);
+}
+
+static void fix_constraints_walker(ir_node *block, void *env)
+{
+	(void)env;
+	sched_foreach_safe(block, irn) {
+		if (!has_must_be_same(irn))
+			continue;
+		assure_should_be_same_requirements(irn);
+	}
+}
+
 void sparc_finish_graph(ir_graph *irg)
 {
 	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
@@ -685,6 +783,8 @@ void sparc_finish_graph(ir_graph *irg)
 	be_peephole_opt(irg);
 
 	heights_free(heights);
+
+	irg_block_walk_graph(irg, NULL, fix_constraints_walker, NULL);
 
 	be_remove_dead_nodes_from_schedule(irg);
 }

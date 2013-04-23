@@ -899,6 +899,7 @@ void ia32_setup_cg_config(void)
 	c->use_3dnow_prefetch   = flags(arch, arch_feature_3DNow);
 	c->use_popcnt           = flags(arch, arch_feature_popcnt);
 	c->use_bswap            = (arch & arch_mask) >= arch_i486;
+	c->use_cmpxchg          = (arch & arch_mask) != arch_i386;
 	c->optimize_cc          = opt_cc;
 	c->use_unsafe_floatconv = opt_unsafe_floatconv;
 	c->emit_machcode        = emit_machcode;

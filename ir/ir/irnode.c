@@ -743,6 +743,7 @@ const char *get_builtin_kind_name(ir_builtin_kind kind)
 		X(ir_bk_outport);
 		X(ir_bk_inner_trampoline);
 		X(ir_bk_saturating_increment);
+		X(ir_bk_compare_swap);
 	}
 	return "<unknown>";
 #undef X

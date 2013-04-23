@@ -67,6 +67,8 @@ typedef struct {
 	unsigned use_popcnt:1;
 	/** use i486 instructions */
 	unsigned use_bswap:1;
+	/** use cmpxchg */
+	unsigned use_cmpxchg:1;
 	/** optimize calling convention where possible */
 	unsigned optimize_cc:1;
 	/**

@@ -4975,6 +4975,34 @@ static ir_node *gen_saturating_increment(ir_node *node)
 	return sbb;
 }
 
+static ir_node *gen_compare_swap(ir_node *node)
+{
+	dbg_info *dbgi    = get_irn_dbg_info(node);
+	ir_node  *block   = be_transform_node(get_nodes_block(node));
+	ir_node  *ptr     = get_Builtin_param(node, 0);
+	ir_node  *old     = get_Builtin_param(node, 1);
+	ir_node  *new     = get_Builtin_param(node, 2);
+	ir_node  *mem     = get_Builtin_mem(node);
+	ir_node  *new_old = be_transform_node(old);
+	ir_node  *new_new = be_transform_node(new);
+	ir_node  *new_mem = be_transform_node(mem);
+	ir_mode  *mode    = get_irn_mode(new);
+	assert(get_irn_mode(old) == mode);
+
+	ia32_address_t addr;
+	create_transformed_address_mode(&addr, ptr, ia32_create_am_normal);
+	ir_node *base     = addr.base;
+	ir_node *idx      = addr.index;
+	ir_node *new_node = new_bd_ia32_CmpXChgMem(dbgi, block, base, idx, new_mem,
+	                                           new_old, new_new);
+	set_irn_pinned(new_node, get_irn_pinned(node));
+	set_ia32_op_type(new_node, ia32_AddrModeD);
+	set_ia32_ls_mode(new_node, mode);
+	set_address(new_node, &addr);
+	SET_IA32_ORIG_NODE(new_node, node);
+	return new_node;
+}
+
 /**
  * Transform a builtin inner trampoline
  */
@@ -5085,6 +5113,8 @@ static ir_node *gen_Builtin(ir_node *node)
 		return gen_inner_trampoline(node);
 	case ir_bk_saturating_increment:
 		return gen_saturating_increment(node);
+	case ir_bk_compare_swap:
+		return gen_compare_swap(node);
 	}
 	panic("Builtin %s not implemented", get_builtin_kind_name(kind));
 }
@@ -5129,6 +5159,14 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 		} else {
 			assert(get_Proj_proj(proj) == pn_Builtin_M);
 			return get_Tuple_pred(new_node, 0);
+		}
+	case ir_bk_compare_swap:
+		assert(is_ia32_CmpXChgMem(new_node));
+		if (get_Proj_proj(proj) == pn_Builtin_M) {
+			return new_r_Proj(new_node, mode_M, pn_ia32_CmpXChgMem_M);
+		} else {
+			assert(get_Proj_proj(proj) == pn_Builtin_max+1);
+			return new_r_Proj(new_node, mode_Iu, pn_ia32_CmpXChgMem_res);
 		}
 	}
 	panic("Builtin %s not implemented", get_builtin_kind_name(kind));

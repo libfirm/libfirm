@@ -348,7 +348,8 @@ typedef enum ir_builtin_kind {
 	ir_bk_outport,                /**< out port */
 	ir_bk_inner_trampoline,       /**< address of a trampoline for GCC inner functions */
 	ir_bk_saturating_increment,   /**< saturating increment */
-	ir_bk_last = ir_bk_saturating_increment,
+	ir_bk_compare_swap,           /**< compare exchange (aka. compare and swap) */
+	ir_bk_last = ir_bk_compare_swap,
 } ir_builtin_kind;
 
 /**

@@ -2388,6 +2388,35 @@ static ir_node *gen_saturating_increment(ir_node *node)
 	return sbb;
 }
 
+static ir_node *gen_compare_swap(ir_node *node)
+{
+	dbg_info *dbgi    = get_irn_dbg_info(node);
+	ir_node  *block   = be_transform_node(get_nodes_block(node));
+	ir_node  *ptr     = get_Builtin_param(node, 0);
+	ir_node  *new_ptr = be_transform_node(ptr);
+	ir_node  *old     = get_Builtin_param(node, 1);
+	ir_node  *new_old = be_transform_node(old);
+	ir_node  *new     = get_Builtin_param(node, 2);
+	ir_node  *new_new = be_transform_node(new);
+	ir_node  *mem     = get_Builtin_mem(node);
+	ir_node  *new_mem = be_transform_node(mem);
+	ir_node  *stbar   = new_bd_sparc_Stbar(dbgi, block, new_mem);
+	ir_node  *cas     = new_bd_sparc_Cas(dbgi, block, new_ptr, new_old,
+	                                     new_new, stbar);
+	op_pin_state pinned = get_irn_pinned(node);
+	set_irn_pinned(stbar, pinned);
+	set_irn_pinned(cas, pinned);
+
+	ir_mode *mode = get_irn_mode(old);
+	assert(get_irn_mode(new) == mode);
+	if ((!mode_is_int(mode) && !mode_is_reference(mode))
+	    || get_mode_size_bits(mode) != 32) {
+	    panic("sparc: compare and swap only allowed for 32bit values");
+	}
+
+	return cas;
+}
+
 /**
  * Transform Builtin node.
  */
@@ -2396,22 +2425,26 @@ static ir_node *gen_Builtin(ir_node *node)
 	ir_builtin_kind kind = get_Builtin_kind(node);
 
 	switch (kind) {
+	case ir_bk_bswap:
+	case ir_bk_clz:
+	case ir_bk_ctz:
+	case ir_bk_ffs:
+	case ir_bk_parity:
+	case ir_bk_popcount:
+	case ir_bk_prefetch:
+		panic("builtin not lowered(%+F)", node);
+
 	case ir_bk_trap:
 	case ir_bk_debugbreak:
 	case ir_bk_return_address:
 	case ir_bk_frame_address:
-	case ir_bk_prefetch:
-	case ir_bk_ffs:
-	case ir_bk_clz:
-	case ir_bk_ctz:
-	case ir_bk_parity:
-	case ir_bk_popcount:
-	case ir_bk_bswap:
 	case ir_bk_outport:
 	case ir_bk_inport:
 	case ir_bk_inner_trampoline:
-		/* Should not occur in backend. */
+		/* not supported */
 		break;
+	case ir_bk_compare_swap:
+		return gen_compare_swap(node);
 	case ir_bk_saturating_increment:
 		return gen_saturating_increment(node);
 	}
@@ -2423,9 +2456,10 @@ static ir_node *gen_Builtin(ir_node *node)
  */
 static ir_node *gen_Proj_Builtin(ir_node *proj)
 {
-	ir_node         *node     = get_Proj_pred(proj);
-	ir_node         *new_node = be_transform_node(node);
-	ir_builtin_kind kind      = get_Builtin_kind(node);
+	ir_node         *pred     = get_Proj_pred(proj);
+	ir_node         *new_pred = be_transform_node(pred);
+	ir_builtin_kind  kind     = get_Builtin_kind(pred);
+	long             pn       = get_Proj_proj(proj);
 
 	switch (kind) {
 	case ir_bk_return_address:
@@ -2442,11 +2476,18 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 	case ir_bk_outport:
 	case ir_bk_inport:
 	case ir_bk_inner_trampoline:
-		/* Should not occur in backend. */
+		/* not supported / should be lowered */
 		break;
 	case ir_bk_saturating_increment:
-		assert(get_Proj_proj(proj) == pn_Builtin_max+1);
-		return new_node;
+		assert(pn == pn_Builtin_max+1);
+		return new_pred;
+	case ir_bk_compare_swap:
+		if (pn == pn_Builtin_M) {
+			return new_r_Proj(new_pred, mode_M, pn_sparc_Cas_M);
+		} else {
+			assert(pn == pn_Builtin_max+1);
+			return new_r_Proj(new_pred, mode_gp, pn_sparc_Cas_res);
+		}
 	}
 	panic("Builtin %s not implemented", get_builtin_kind_name(kind));
 }

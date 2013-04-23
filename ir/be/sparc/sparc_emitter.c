@@ -686,6 +686,12 @@ void sparc_emitf(ir_node const *const node, char const *fmt, ...)
 			break;
 		}
 
+		case 'X': {
+			unsigned const num = va_arg(ap, unsigned);
+			be_emit_irprintf("%X", num);
+			break;
+		}
+
 		default:
 unknown:
 			panic("unknown format conversion in sparc_emitf()");
@@ -853,6 +859,31 @@ static void emit_sparc_Call(const ir_node *node)
 	if (arch_get_irn_flags(node) & sparc_arch_irn_flag_aggregate_return) {
 		sparc_emitf(NULL, "unimp 8");
 	}
+}
+
+static void emit_sparc_Cas(const ir_node *node)
+{
+	/* custom emiter is just here to check for should_be_same constraint
+	 * which isn't guaranteed to be fulfilled in current firm backend */
+	if (arch_get_irn_register_out(node, pn_sparc_Cas_res) !=
+	    arch_get_irn_register_in(node, n_sparc_Cas_new)) {
+	    panic("sparc: should_be_same in Cas not fulfilled");
+	}
+	/* except for some patched gaisler binutils nobody understands cas
+	 * in v8/leon mode, so we encode the cas in binary form */
+#if 0
+	sparc_emitf(node, "cas [%S0], %S1, %S2");
+#else
+	const arch_register_t *reg_new
+		= arch_get_irn_register_in(node, n_sparc_Cas_new);
+	const arch_register_t *reg_ptr
+		= arch_get_irn_register_in(node, n_sparc_Cas_ptr);
+	const arch_register_t *reg_old
+		= arch_get_irn_register_in(node, n_sparc_Cas_old);
+	uint32_t encoding = 3u<<30 | (reg_new->encoding<<25) | (0x3C << 19)
+	       | (reg_ptr->encoding<<14) | (0x80<<5) | (reg_old->encoding);
+	sparc_emitf(node, ".long 0x%X  /* cas [%S0], %S1, %S2", encoding);
+#endif
 }
 
 static void emit_be_Perm(const ir_node *irn)
@@ -1350,6 +1381,7 @@ static void sparc_register_emitters(void)
 	be_set_emitter(op_sparc_Ba,        emit_sparc_Ba);
 	be_set_emitter(op_sparc_Bicc,      emit_sparc_Bicc);
 	be_set_emitter(op_sparc_Call,      emit_sparc_Call);
+	be_set_emitter(op_sparc_Cas,       emit_sparc_Cas);
 	be_set_emitter(op_sparc_FrameAddr, emit_sparc_FrameAddr);
 	be_set_emitter(op_sparc_Restore,   emit_sparc_Restore);
 	be_set_emitter(op_sparc_Return,    emit_sparc_Return);

@@ -726,6 +726,28 @@ UDiv => {
 	constructors => \%div_operand_constructors,
 },
 
+Stbar => {
+	op_flags => [ "uses_memory" ],
+	state    => "exc_pinned",
+	ins      => [ "mem" ],
+	outs     => [ "M" ],
+	reg_req  => { in => [ "none" ], out => [ "none" ] },
+	emit     => "stbar",
+	mode     => "mode_M",
+},
+
+Cas => {
+	op_flags => [ "uses_memory" ],
+	state    => "exc_pinned",
+	ins      => [ "ptr", "old", "new", "mem" ],
+	outs     => [ "res", "M" ],
+	reg_req  => { in  => [ "gp", "gp", "gp", "none" ],
+	              out => [ "in_r3", "none" ] },
+	# TODO: we need a must-be-same constraint for the CAS
+	# for now we use a custom emitter which at least panics if constraints
+	# are not fulfilled
+},
+
 fcmp => {
 	irn_flags => [ "rematerializable" ],
 	emit      => "fcmp%FM %S0, %S1",
