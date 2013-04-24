@@ -94,17 +94,18 @@ static char                 *comp_dir;
 
 static unsigned insert_file(const char *filename)
 {
-	unsigned num;
-	void    *entry = pmap_get(void, env.file_map, filename);
+	void *entry = pmap_get(void, env.file_map, filename);
 	if (entry != NULL) {
 		return PTR_TO_INT(entry);
 	}
 	ARR_APP1(const char*, env.file_list, filename);
-	num = (unsigned)ARR_LEN(env.file_list);
+	unsigned num = (unsigned)ARR_LEN(env.file_list);
 	pmap_insert(env.file_map, filename, INT_TO_PTR(num));
 
-	/* TODO: quote chars in string */
-	be_emit_irprintf("\t.file %u \"%s\"\n", num, filename);
+	be_emit_irprintf("\t.file %u ", num);
+	be_gas_emit_string_literal(filename);
+	be_emit_char('\n');
+	be_emit_write_line();
 	return num;
 }
 

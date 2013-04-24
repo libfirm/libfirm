@@ -105,6 +105,11 @@ void be_gas_begin_block(const ir_node *block, bool needs_label);
 void be_gas_emit_cstring(const char *string);
 
 /**
+ * emit a string literal. This function takes care of escaping special chars.
+ */
+void be_gas_emit_string_literal(const char *string);
+
+/**
  * Starts emitting a compilation unit. This emits:
  *  - global assembler snippets
  *  - debug info

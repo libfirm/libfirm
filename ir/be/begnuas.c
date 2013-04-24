@@ -772,6 +772,15 @@ static size_t emit_string_initializer(const ir_initializer_t *initializer)
 	return initializer->compound.n_initializers;
 }
 
+void be_gas_emit_string_literal(const char *string)
+{
+	be_emit_char('"');
+	for (const char *c = string; *c != '\0'; ++c) {
+		emit_string_char(*c);
+	}
+	be_emit_char('"');
+}
+
 void be_gas_emit_cstring(const char *string)
 {
 	be_emit_cstring("\t.asciz \"");
