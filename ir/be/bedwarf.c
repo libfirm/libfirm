@@ -75,20 +75,20 @@ typedef enum custom_abbrevs {
  * The dwarf handle.
  */
 typedef struct dwarf_t {
-	const ir_entity         *cur_ent;     /**< current method entity */
-	unsigned                 next_type_nr; /**< next type number */
-	pmap                    *file_map;    /**< a map from file names to number in file list */
-	const char             **file_list;
-	const ir_entity        **pubnames_list;
-	pset_new_t               emitted_types;
-	const char              *main_file;   /**< name of the main source file */
-	const char              *curr_file;   /**< name of the current source file */
-	unsigned                 label_num;
-	unsigned                 last_line;
+	const ir_entity  *cur_ent;      /**< current method entity */
+	unsigned          next_type_nr; /**< next type number */
+	pmap             *file_map;     /**< a map from file names to number in
+	                                     file list */
+	const char      **file_list;
+	const ir_entity **pubnames_list;
+	pset_new_t        emitted_types;
+	const char       *main_file;    /**< name of the main source file */
+	const char       *curr_file;    /**< name of the current source file */
+	unsigned          label_num;
+	unsigned          last_line;
 } dwarf_t;
 
-static dwarf_t env;
-
+static dwarf_t               env;
 static dwarf_source_language language;
 static char                 *comp_dir;
 
@@ -233,8 +233,8 @@ static void emit_line_info(void)
 	be_gas_emit_switch_section(GAS_SECTION_DEBUG_LINE);
 
 	emit_label("line_section_begin");
-	/* on elf systems gas handles producing the line info for us, and we
-	 * don't have to do anything */
+	/* on elf systems gas handles producing the line info for us, and we don't
+	 * have to do anything */
 	if (be_gas_object_file_format != OBJECT_FILE_FORMAT_ELF) {
 		size_t i;
 		emit_size("line_info_begin", "line_info_end");
@@ -260,7 +260,6 @@ static void emit_line_info(void)
 		emit_uleb128(1);
 
 		/* include directory list */
-		be_gas_emit_cstring("/foo/bar");
 		emit_int8(0);
 
 		/* file list */
@@ -282,8 +281,6 @@ static void emit_line_info(void)
 
 static void emit_pubnames(void)
 {
-	size_t i;
-
 	be_gas_emit_switch_section(GAS_SECTION_DEBUG_PUBNAMES);
 
 	emit_size("pubnames_begin", "pubnames_end");
@@ -293,7 +290,7 @@ static void emit_pubnames(void)
 	emit_size("info_section_begin", "info_begin");
 	emit_size("compile_unit_begin", "compile_unit_end");
 
-	for (i = 0; i < ARR_LEN(env.pubnames_list); ++i) {
+	for (size_t i = 0; i < ARR_LEN(env.pubnames_list); ++i) {
 		const ir_entity *entity = env.pubnames_list[i];
 		be_emit_irprintf("\t.long %sE%ld - %sinfo_begin\n",
 		                 be_gas_get_private_prefix(),
@@ -307,16 +304,13 @@ static void emit_pubnames(void)
 
 void be_dwarf_location(dbg_info *dbgi)
 {
-	src_loc_t loc;
-	unsigned  filenum;
-
 	if (debug_level < LEVEL_LOCATIONS)
 		return;
-	loc = ir_retrieve_dbg_info(dbgi);
+	src_loc_t loc = ir_retrieve_dbg_info(dbgi);
 	if (!loc.file)
 		return;
 
-	filenum = insert_file(loc.file);
+	unsigned filenum = insert_file(loc.file);
 	be_emit_irprintf("\t.loc %u %u %u\n", filenum, loc.line, loc.column);
 	be_emit_write_line();
 }
@@ -439,11 +433,10 @@ static void emit_stack_location(long offset)
 static void emit_function_parameters(const ir_entity *entity,
                                      const parameter_dbg_info_t *infos)
 {
-	ir_type  *type     = get_entity_type(entity);
-	size_t    n_params = get_method_n_params(type);
-	dbg_info *dbgi     = get_entity_dbg_info(entity);
-	size_t    i;
-	for (i = 0; i < n_params; ++i) {
+	const ir_type  *type = get_entity_type(entity);
+	dbg_info *dbgi = get_entity_dbg_info(entity);
+	for (size_t i = 0, n_params = get_method_n_params(type);
+	     i < n_params; ++i) {
 		ir_type *param_type = get_method_param_type(type, i);
 
 		if (infos != NULL && infos[i].entity != NULL) {
@@ -467,19 +460,17 @@ void be_dwarf_method_before(const ir_entity *entity,
 {
 	if (debug_level < LEVEL_BASIC)
 		return;
-	{
-	ir_type *type     = get_entity_type(entity);
-	size_t   n_ress   = get_method_n_ress(type);
-	size_t   n_params = get_method_n_params(type);
-	size_t   i;
 
 	be_gas_emit_switch_section(GAS_SECTION_DEBUG_INFO);
 
+	ir_type *type   = get_entity_type(entity);
+	size_t   n_ress = get_method_n_ress(type);
 	if (n_ress > 0) {
 		ir_type *res = get_method_res_type(type, 0);
 		emit_type(res);
 	}
-	for (i = 0; i < n_params; ++i) {
+	for (size_t i = 0, n_params = get_method_n_params(type);
+	     i < n_params; ++i) {
 		ir_type *param_type = get_method_param_type(type, i);
 		emit_type(param_type);
 	}
@@ -506,7 +497,6 @@ void be_dwarf_method_before(const ir_entity *entity,
 	ARR_APP1(const ir_entity*, env.pubnames_list, entity);
 
 	env.cur_ent = entity;
-	}
 }
 
 void be_dwarf_method_begin(void)
@@ -549,11 +539,11 @@ static void emit_type_label(const ir_type *type)
 static void emit_base_type(const ir_type *type)
 {
 	char buf[128];
-	ir_mode *mode = get_type_mode(type);
 	ir_print_type(buf, sizeof(buf), type);
 
 	emit_type_label(type);
 	emit_uleb128(abbrev_base_type);
+	ir_mode *mode = get_type_mode(type);
 	if (mode_is_int(mode)) {
 		/* bool hack */
 		if (strcmp(buf, "_Bool")==0 || strcmp(buf, "bool")==0) {
@@ -617,11 +607,10 @@ static void emit_array_type_abbrev(void)
 
 static void emit_array_type(const ir_type *type)
 {
-	ir_type *element_type = get_array_element_type(type);
-
 	if (get_array_n_dimensions(type) != 1)
 		panic("multidimensional arrays no supported yet");
 
+	ir_type *element_type = get_array_element_type(type);
 	emit_type(element_type);
 
 	emit_type_label(type);
@@ -680,10 +669,8 @@ static void emit_op_plus_uconst(unsigned value)
 
 static void emit_compound_type(const ir_type *type)
 {
-	size_t i;
 	size_t n_members = get_compound_n_members(type);
-
-	for (i = 0; i < n_members; ++i) {
+	for (size_t i = 0; i < n_members; ++i) {
 		ir_entity *member      = get_compound_member(type, i);
 		ir_type   *member_type = get_entity_type(member);
 		if (is_Primitive_type(member_type)) {
@@ -704,7 +691,7 @@ static void emit_compound_type(const ir_type *type)
 		emit_uleb128(abbrev_class_type);
 	}
 	emit_uleb128(get_type_size_bytes(type));
-	for (i = 0; i < n_members; ++i) {
+	for (size_t i = 0; i < n_members; ++i) {
 		ir_entity *member      = get_compound_member(type, i);
 		ir_type   *member_type = get_entity_type(member);
 		int        offset      = get_entity_offset(member);
@@ -762,18 +749,18 @@ static void emit_subroutine_type(const ir_type *type)
 {
 	size_t n_params = get_method_n_params(type);
 	size_t n_ress   = get_method_n_ress(type);
-	size_t i;
-	for (i = 0; i < n_params; ++i) {
+	for (size_t i = 0; i < n_params; ++i) {
 		ir_type *param_type = get_method_param_type(type, i);
 		emit_type(param_type);
 	}
-	for (i = 0; i < n_ress; ++i) {
+	for (size_t i = 0; i < n_ress; ++i) {
 		ir_type *res_type = get_method_res_type(type, i);
 		emit_type(res_type);
 	}
 
 	emit_type_label(type);
-	emit_uleb128(n_ress == 0 ? abbrev_void_subroutine_type : abbrev_subroutine_type);
+	emit_uleb128(n_ress == 0 ? abbrev_void_subroutine_type
+	                         : abbrev_subroutine_type);
 	emit_int8(1); /* prototyped */
 	if (n_ress > 0) {
 		/* dwarf only supports 1 return type */
@@ -781,7 +768,7 @@ static void emit_subroutine_type(const ir_type *type)
 		emit_type_address(res_type);
 	}
 
-	for (i = 0; i < n_params; ++i) {
+	for (size_t i = 0; i < n_params; ++i) {
 		ir_type *param_type = get_method_param_type(type, i);
 		emit_uleb128(abbrev_unnamed_formal_parameter);
 		emit_type_address(param_type);
@@ -829,8 +816,6 @@ static void emit_variable_abbrev(void)
 
 void be_dwarf_variable(const ir_entity *entity)
 {
-	ir_type *type = get_entity_type(entity);
-
 	if (debug_level < LEVEL_BASIC)
 		return;
 	if (get_entity_ld_name(entity)[0] == '\0')
@@ -840,6 +825,7 @@ void be_dwarf_variable(const ir_entity *entity)
 
 	be_gas_emit_switch_section(GAS_SECTION_DEBUG_INFO);
 
+	ir_type *type = get_entity_type(entity);
 	emit_type(type);
 
 	emit_entity_label(entity);
@@ -896,9 +882,8 @@ void be_dwarf_unit_begin(const char *filename)
 	emit_label("info_section_begin");
 	emit_label("info_begin");
 
-	const backend_params *be_params = be_get_backend_param();
-
 	/* length of compilation unit info */
+	const backend_params *be_params = be_get_backend_param();
 	emit_size("compile_unit_begin", "compile_unit_end");
 	emit_label("compile_unit_begin");
 	emit_int16(3);   /* dwarf version */
