@@ -478,42 +478,78 @@ static ir_alias_relation _get_alias_relation(
 	if (options & aa_opt_no_alias)
 		return ir_no_alias;
 
-	/* do the addresses have constants offsets?
+	/* do the addresses have constants offsets from the same base?
 	 *  Note: nodes are normalized to have constants at right inputs,
 	 *        sub X, C is normalized to add X, -C
 	 */
 	long           offset1            = 0;
 	long           offset2            = 0;
+	const ir_node *sym_offset1        = NULL;
+	const ir_node *sym_offset2        = NULL;
 	const ir_node *orig_adr1          = adr1;
 	const ir_node *orig_adr2          = adr2;
 	bool           have_const_offsets = true;
+
+	/*
+	 * Currently, only expressions with at most one symbolic
+	 * offset can be handled.  To extend this, change
+	 * sym_offset{1,2} to be sets, and compare the sets.
+	 */
+
 	while (is_Add(adr1)) {
-		ir_node *add_right = get_Add_right(adr1);
-		if (is_Const(add_right) && !mode_is_reference(get_irn_mode(add_right))) {
-			ir_tarval *tv  = get_Const_tarval(add_right);
-			offset1    += get_tarval_long(tv);
-			adr1        = get_Add_left(adr1);
-		} else if (mode_is_reference(get_irn_mode(add_right))) {
-			adr1 = add_right;
-			have_const_offsets = false;
+		ir_node *ptr_node;
+		ir_node *int_node;
+
+		ir_mode *mode_left = get_irn_mode(get_Add_left(adr1));
+
+		if (mode_is_reference(mode_left)) {
+			ptr_node = get_Add_left(adr1);
+			int_node = get_Add_right(adr1);
 		} else {
-			adr1 = get_Add_left(adr1);
+			ptr_node = get_Add_right(adr1);
+			int_node = get_Add_left(adr1);
+		}
+
+		if (is_Const(int_node)) {
+			ir_tarval *tv  = get_Const_tarval(int_node);
+			offset1       += get_tarval_long(tv);
+		} else if (sym_offset1 == NULL) {
+			sym_offset1 = int_node;
+		} else {
+			// adr1 has more than one symbolic offset.
+			// Give up
 			have_const_offsets = false;
 		}
+
+		adr1 = ptr_node;
 	}
+
 	while (is_Add(adr2)) {
-		ir_node *add_right = get_Add_right(adr2);
-		if (is_Const(add_right) && !mode_is_reference(get_irn_mode(add_right))) {
-			ir_tarval *tv  = get_Const_tarval(add_right);
-			offset2    += get_tarval_long(tv);
-			adr2        = get_Add_left(adr2);
-		} else if (mode_is_reference(get_irn_mode(add_right))) {
-			adr2 = add_right;
-			have_const_offsets = false;
+		ir_node *ptr_node;
+		ir_node *int_node;
+
+		ir_mode *mode_left = get_irn_mode(get_Add_left(adr2));
+
+		if (mode_is_reference(mode_left)) {
+			ptr_node = get_Add_left(adr2);
+			int_node = get_Add_right(adr2);
 		} else {
-			adr2 = get_Add_left(adr2);
+			ptr_node = get_Add_right(adr2);
+			int_node = get_Add_left(adr2);
+		}
+
+		if (is_Const(int_node)) {
+			ir_tarval *tv  = get_Const_tarval(int_node);
+			offset2       += get_tarval_long(tv);
+		} else if (sym_offset2 == NULL) {
+			sym_offset2 = int_node;
+		} else {
+			// adr2 has more than one symbolic offset.
+			// Give up
 			have_const_offsets = false;
 		}
+
+		adr2 = ptr_node;
 	}
 
 	unsigned mode_size = get_mode_size_bytes(mode1);
@@ -524,7 +560,7 @@ static ir_alias_relation _get_alias_relation(
 	/* same base address -> compare offsets if possible.
 	 * FIXME: type long is not sufficient for this task ...
 	 */
-	if (adr1 == adr2 && have_const_offsets) {
+	if (adr1 == adr2 && sym_offset1 == sym_offset2 && have_const_offsets) {
 		if ((unsigned long)labs(offset2 - offset1) >= mode_size)
 			return ir_no_alias;
 		else
