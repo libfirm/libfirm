@@ -10,16 +10,6 @@ name = "ir"
 
 @abstract
 @op
-class Unop(object):
-	"""Unary nodes have exactly 1 input"""
-	name     = "unop"
-	ins      = [
-		("op", "operand"),
-	]
-	pinned = "no"
-
-@abstract
-@op
 class Binop(object):
 	"""Binary nodes have exactly 2 inputs"""
 	name     = "binop"
@@ -420,9 +410,13 @@ class Const:
 	attrs_name  = "con"
 
 @op
-class Conv(Unop):
+class Conv:
 	"""Converts values between modes"""
-	flags = []
+	flags  = []
+	pinned = "no"
+	ins    = [
+		("op", "operand")
+	]
 
 @op
 class CopyB:
@@ -644,9 +638,13 @@ class Load:
 	throws_init = "(flags & cons_throws_exception) != 0"
 
 @op
-class Minus(Unop):
+class Minus:
 	"""returns the additive inverse of its operand"""
-	flags = []
+	flags  = []
+	pinned = "no"
+	ins    = [
+		("op", "operand")
+	]
 
 @op
 class Mod:
@@ -716,9 +714,13 @@ class NoMem:
 	singleton     = True
 
 @op
-class Not(Unop):
+class Not:
 	"""returns the bitwise complement of a value. Works for boolean values, too."""
-	flags = []
+	flags  = []
+	pinned = "no"
+	ins    = [
+		("op", "operand")
+	]
 
 @op
 class Or(Binop):
