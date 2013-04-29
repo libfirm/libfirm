@@ -18,5 +18,4 @@ firm_revision.h
 /win32/vc2010/firm.sdf
 /win32/vc2010/firm.opensdf
 /win32/vc2010/win32/
-/include/libfirm/nodeops.h
-/include/libfirm/opcodes.h
+/include/libfirm/nodes.h

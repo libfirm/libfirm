@@ -111,12 +111,11 @@ $(foreach backend,$(backends),$(eval $(call backend_template,$(backend))))
 
 # generators
 IR_SPEC_GENERATED_FILES := \
-	include/libfirm/nodeops.h \
-	include/libfirm/opcodes.h \
-	ir/ir/gen_ir_cons.c.inl   \
-	ir/ir/gen_irdump.c.inl    \
-	ir/ir/gen_irnode.c.inl    \
-	ir/ir/gen_irnode.h        \
+	include/libfirm/nodes.h \
+	ir/ir/gen_ir_cons.c.inl \
+	ir/ir/gen_irdump.c.inl  \
+	ir/ir/gen_irnode.c.inl  \
+	ir/ir/gen_irnode.h      \
 	ir/ir/gen_irop.c.inl
 IR_SPEC_GENERATOR := scripts/gen_ir.py
 IR_SPEC_GENERATOR_DEPS := $(IR_SPEC_GENERATOR) scripts/spec_util.py scripts/filters.py

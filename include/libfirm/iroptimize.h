@@ -11,7 +11,6 @@
 #define FIRM_IROPTIMIZE_H
 
 #include "firm_types.h"
-#include "nodeops.h"
 #include "begin.h"
 
 /**

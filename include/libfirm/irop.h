@@ -16,7 +16,6 @@
 #include "firm_types.h"
 #include "ident.h"
 #include "begin.h"
-#include "opcodes.h"
 
 /**
  * @ingroup ir_node

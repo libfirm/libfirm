@@ -18,7 +18,7 @@
 #include "irop.h"
 #include "irmode.h"
 #include "begin.h"
-#include "nodeops.h"
+#include "nodes.h"
 
 /**
  * @ingroup ir_graph
