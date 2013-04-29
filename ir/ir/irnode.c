@@ -23,6 +23,7 @@
 #include "iredges_t.h"
 #include "ircons.h"
 #include "error.h"
+#include "irverify.h"
 
 #include "irhooks.h"
 #include "util.h"
@@ -1213,6 +1214,3 @@ bool only_used_by_keepalive(const ir_node *node)
 
 	return kept;
 }
-
-/* include generated code */
-#include "gen_irnode.c.inl"

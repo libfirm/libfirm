@@ -18,6 +18,7 @@
 #include "iropt_t.h"
 #include "ircons_t.h"
 #include "irgmod.h"
+#include "irgopt.h"
 #include "irverify.h"
 #include "iroptimize.h"
 #include "tv_t.h"

@@ -1,10 +1,15 @@
 {{warning}}
-#ifndef FIRM_IR_NODEOPS_H
-#define FIRM_IR_NODEOPS_H
+#ifndef FIRM_{{spec.name|upper}}_NODES_H
+#define FIRM_{{spec.name|upper}}_NODES_H
 
+{% if spec.external -%}
+{% set FIRM_API="" %}
+{%- else -%}
 #include "firm_types.h"
 
 #include "begin.h"
+{%- set FIRM_API="FIRM_API "-%}
+{%- endif -%}
 
 /** The opcodes of the libFirm predefined operations.
  * @ingroup ir_op
@@ -43,6 +48,11 @@ typedef enum {{spec.name}}_opcode {
  * @addtogroup ir_node
  * @{
  */
+
+{% if spec.external %}
+int is_{{spec.name}}_node(const ir_node *node);
+{{spec.name}}_opcode get_{{spec.name}}_irn_opcode(const ir_node *node);
+{% endif %}
 
 {% for node in nodes -%}
 
@@ -83,7 +93,7 @@ typedef enum {
 {{ node|blockparameterhelp -}}
 {{ node|nodeparametershelp -}}
  */
-FIRM_API ir_node *new_rd_{{node.name}}(
+{{FIRM_API}} ir_node *new_rd_{{node.name}}(
 	{%- filter parameters %}
 		dbg_info *dbgi
 		{{node|blockparameter}}
@@ -96,7 +106,7 @@ FIRM_API ir_node *new_rd_{{node.name}}(
 {{ node|blockparameterhelp -}}
 {{ node|nodeparametershelp -}}
  */
-FIRM_API ir_node *new_r_{{node.name}}(
+{{FIRM_API}} ir_node *new_r_{{node.name}}(
 	{%- filter parameters %}
 		{{node|blockparameter}}
 		{{node|nodeparameters}}
@@ -108,7 +118,7 @@ FIRM_API ir_node *new_r_{{node.name}}(
  * @param dbgi      A pointer to debug information.
 {{ node|nodeparametershelp -}}
  */
-FIRM_API ir_node *new_d_{{node.name}}(
+{{FIRM_API}} ir_node *new_d_{{node.name}}(
 	{%- filter parameters %}
 		dbg_info *dbgi
 		{{node|nodeparameters}}
@@ -119,7 +129,7 @@ FIRM_API ir_node *new_d_{{node.name}}(
  *
 {{ node|nodeparametershelp -}}
  */
-FIRM_API ir_node *new_{{node.name}}(
+{{FIRM_API}} ir_node *new_{{node.name}}(
 	{%- filter parameters %}
 		{{node|nodeparameters}}
 	{% endfilter %});
@@ -129,37 +139,37 @@ FIRM_API ir_node *new_{{node.name}}(
  * Test if node is a {{node.name}}
  * @returns 1 if the node is a {{node.name}} node, 0 otherwise
  */
-FIRM_API int is_{{node.name}}(const ir_node *node);
+{{FIRM_API}} int is_{{node.name}}(const ir_node *node);
 
 {% for input in node.ins -%}
 /** Returns {{input[0]}} input of {{node.name|a_an}} node. */
-FIRM_API ir_node *get_{{node.name}}_{{input[0]}}(const ir_node *node);
+{{FIRM_API}} ir_node *get_{{node.name}}_{{input[0]}}(const ir_node *node);
 /** Sets {{input[0]}} input of {{node.name|a_an}} node. */
-FIRM_API void set_{{node.name}}_{{input[0]}}(ir_node *node, ir_node *{{input[0]|escape_keywords}});
+{{FIRM_API}} void set_{{node.name}}_{{input[0]}}(ir_node *node, ir_node *{{input[0]|escape_keywords}});
 {% endfor -%}
 {%- if node.input_name -%}
 /** Get the number of {{node.name}} {{node.input_name}}s. */
-FIRM_API int get_{{node.name}}_n_{{node.input_name}}s(ir_node const *node);
+{{FIRM_API}} int get_{{node.name}}_n_{{node.input_name}}s(ir_node const *node);
 /** Get the {{node.name}} {{node.input_name}} with index @p pos. */
-FIRM_API ir_node *get_{{node.name}}_{{node.input_name}}(ir_node const *node, int pos);
+{{FIRM_API}} ir_node *get_{{node.name}}_{{node.input_name}}(ir_node const *node, int pos);
 /** Set the {{node.name}} {{node.input_name}} with index @p pos. */
-FIRM_API void set_{{node.name}}_{{node.input_name}}(ir_node *node, int pos, ir_node *{{node.input_name}});
+{{FIRM_API}} void set_{{node.name}}_{{node.input_name}}(ir_node *node, int pos, ir_node *{{node.input_name}});
 /** Get an array of all {{node.name}} {{node.input_name}}s. */
 ir_node **get_{{node.name}}_{{node.input_name}}_arr(ir_node *node);
 {% endif -%}
 
 {%- for attr in node.attrs|hasnot("noprop") %}
 /** Returns {{attr.name}} attribute of {{node.name|a_an}} node. */
-FIRM_API {{attr.type}} get_{{node.name}}_{{attr.name}}(const ir_node *node);
+{{FIRM_API}} {{attr.type}} get_{{node.name}}_{{attr.name}}(const ir_node *node);
 /** Sets {{attr.name}} attribute of {{node.name|a_an}} node. */
-FIRM_API void set_{{node.name}}_{{attr.name}}(ir_node *node, {{attr.type}} {{attr.name}});
+{{FIRM_API}} void set_{{node.name}}_{{attr.name}}(ir_node *node, {{attr.type}} {{attr.name}});
 {% endfor -%}
 
 /** {{node.name}} opcode */
-FIRM_API ir_op *op_{{node.name}};
+{{FIRM_API}} ir_op *op_{{node.name}};
 
 /** Returns opcode for {{node.name}} nodes. */
-FIRM_API ir_op *get_op_{{node.name}}(void);
+{{FIRM_API}} ir_op *get_op_{{node.name}}(void);
 
 /** @} */
 
@@ -167,6 +177,8 @@ FIRM_API ir_op *get_op_{{node.name}}(void);
 
 /** @} */
 
+{% if not spec.external %}
 #include "end.h"
+{% endif %}
 
 #endif

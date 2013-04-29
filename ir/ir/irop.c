@@ -22,6 +22,7 @@
 
 #include "xmalloc.h"
 #include "benode.h"
+#include "irnode_t.h"
 
 static ir_op **opcodes;
 /** the available next opcode */
@@ -607,13 +608,10 @@ void set_op_dump(ir_op *op, dump_node_func func)
 	op->ops.dump_node = func;
 }
 
-static void generated_init_op(void);
-static void generated_finish_op(void);
-
 void firm_init_op(void)
 {
 	opcodes = NEW_ARR_F(ir_op*, 0);
-	generated_init_op();
+	ir_init_opcodes();
 	be_init_op();
 
 	set_op_cmp_attr(op_ASM,      node_cmp_attr_ASM);
@@ -653,9 +651,7 @@ void firm_init_op(void)
 void firm_finish_op(void)
 {
 	be_finish_op();
-	generated_finish_op();
+	ir_finish_opcodes();
 	DEL_ARR_F(opcodes);
 	opcodes = NULL;
 }
-
-#include "gen_irop.c.inl"

@@ -266,6 +266,13 @@ FIRM_API ir_op *new_ir_op(unsigned code, const char *name, op_pin_state p,
                           irop_flags flags, op_arity opar, int op_index,
                           size_t attr_size);
 
+/**
+ * Frees an ir operation.
+ *
+ * Obviously nodes with this op mustn't exist at this point.
+ */
+FIRM_API void free_ir_op(ir_op *code);
+
 /** Returns one more than the highest opcode code in use. */
 FIRM_API unsigned ir_get_n_opcodes(void);
 

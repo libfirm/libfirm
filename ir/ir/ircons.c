@@ -26,8 +26,7 @@
 #include "iredges_t.h"
 #include "irflag_t.h"
 #include "error.h"
-
-#include "gen_ir_cons.c.inl"
+#include "irgopt.h"
 
 /**
  * Language dependent variable initialization callback.
@@ -480,7 +479,7 @@ ir_node *get_r_cur_block(ir_graph *irg)
 	return irg->current_block;
 }
 
-ir_node *get_cur_block(void)
+ir_node *(get_cur_block)(void)
 {
 	return get_r_cur_block(current_ir_graph);
 }

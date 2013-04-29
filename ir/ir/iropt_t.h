@@ -75,8 +75,6 @@ void visit_all_identities(ir_graph *irg, irg_walk_func visit, void *env);
  */
 void ir_normalize_node(ir_node *n);
 
-ir_node *optimize_node(ir_node *n);
-
 ir_node *optimize_in_place_2(ir_node *n);
 
 /**

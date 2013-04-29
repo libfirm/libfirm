@@ -68,7 +68,7 @@ def format_curblock(node):
 			return ""
 		return "current_ir_graph"
 	else:
-		return "current_ir_graph->current_block"
+		return "get_cur_block()"
 
 def format_insdecl(node):
 	arity = node.arity
@@ -223,7 +223,7 @@ def preprocess_node(node):
 		node.mode = "mode"
 
 	for attr in node.attrs:
-		attr["fqname"] = "." + attr["name"]
+		attr["fqname"] = attr["name"]
 		if "init" in attr:
 			continue
 		arguments.append(attr)
@@ -232,7 +232,7 @@ def preprocess_node(node):
 	if is_dynamic_pinned(node):
 		if hasattr(node, "pinned_init"):
 			initattrs.append(dict(
-				fqname = ".exc.pin_state",
+				fqname = "exc.pin_state",
 				init   = node.pinned_init
 			))
 		else:
@@ -244,12 +244,12 @@ def preprocess_node(node):
 				)
 			)
 			initattrs.append(dict(
-				fqname = ".exc.pin_state",
+				fqname = "exc.pin_state",
 				init   = "pin_state"
 			))
 	if hasattr(node, "throws_init"):
 		initattrs.append(dict(
-			fqname = ".exc.throws_exception",
+			fqname = "exc.throws_exception",
 			init   = node.throws_init
 		))
 
@@ -285,6 +285,7 @@ def main(argv):
 
 	env.globals['nodes']   = real_nodes
 	env.globals['spec']    = spec
+	env.globals['len']     = len
 	env.globals['warning'] = "/* Warning: automatically generated file */"
 
 	template = env.get_template(templatefile)

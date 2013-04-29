@@ -15,6 +15,7 @@
 #include "irmode_t.h"
 #include "ircons_t.h"
 #include "irgmod.h"
+#include "irgopt.h"
 #include "iropt_dbg.h"
 #include "irflag_t.h"
 #include "irgwalk.h"

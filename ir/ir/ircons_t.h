@@ -15,6 +15,13 @@
 #include "ircons.h"
 #include "irgraph_t.h"
 
+#define get_cur_block()       _get_cur_block()
+
+static inline ir_node *_get_cur_block(void)
+{
+	return current_ir_graph->current_block;
+}
+
 /**
  * Creates a new Anchor node.
  */

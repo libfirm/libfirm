@@ -27,6 +27,13 @@
  */
 FIRM_API void local_optimize_node(ir_node *n);
 
+/** Applies local optimizations to a single node.
+ *
+ * Node constructors call this function, so you should not need to call this
+ * manually.
+ */
+FIRM_API ir_node *optimize_node(ir_node *n);
+
 /** Applies local optimizations (see iropt.h) to all nodes in the graph.
  *
  * @param irg  The graph to be optimized.

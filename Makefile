@@ -73,6 +73,8 @@ EMITTER_GENERATOR = $(srcdir)ir/be/scripts/generate_emitter.pl
 REGALLOC_IF_GENERATOR = $(srcdir)ir/be/scripts/generate_regalloc_if.pl
 OPCODES_GENERATOR = $(srcdir)ir/be/scripts/generate_new_opcodes.pl
 
+GENERATED_FILES =
+
 define backend_template
 $(1)_SOURCES = $$(wildcard ir/be/$(1)/*.c)
 $(1)_SOURCES := $$(filter-out ir/be/$(1)/gen_%.c, $$($(1)_SOURCES))
@@ -85,23 +87,27 @@ $$(srcdir)ir/be/$(1)/gen_$(1)_emitter.h $$(srcdir)ir/be/$(1)/gen_$(1)_emitter.c:
 	$(Q)$$(EMITTER_GENERATOR) $$($(1)_SPEC) $$(srcdir)ir/be/$(1)
 $(1)_SOURCES += ir/be/$(1)/gen_$(1)_emitter.c
 $(1)_GEN_HEADERS += ir/be/$(1)/gen_$(1)_emitter.h
+GENERATED_FILES += ir/be/$(1)/gen_$(1)_emitter.c ir/be/$(1)/gen_$(1)_emitter.h
 
 $$(srcdir)ir/be/$(1)/gen_$(1)_regalloc_if.h $$(srcdir)ir/be/$(1)/gen_$(1)_regalloc_if.c: $$($(1)_SPEC) $$(REGALLOC_IF_GENERATOR)
 	@echo GEN $$@
 	$(Q)$$(REGALLOC_IF_GENERATOR) $$($(1)_SPEC) $$(srcdir)ir/be/$(1)
 $(1)_SOURCES += ir/be/$(1)/gen_$(1)_regalloc_if.c
 $(1)_GEN_HEADERS += ir/be/$(1)/gen_$(1)_regalloc_if.h
+GENERATED_FILES += ir/be/$(1)/gen_$(1)_regalloc_if.c ir/be/$(1)/gen_$(1)_regalloc_if.h
 
 $$(srcdir)ir/be/$(1)/gen_$(1)_new_nodes.h $$(srcdir)ir/be/$(1)/gen_$(1)_new_nodes.c.inl: $$($(1)_SPEC) $$(OPCODES_GENERATOR)
 	@echo GEN $$@
 	$(Q)$$(OPCODES_GENERATOR) $$($(1)_SPEC) $$(srcdir)ir/be/$(1)
 $(1)_GEN_HEADERS += ir/be/$(1)/gen_$(1)_new_nodes.h
+GENERATED_FILES += ir/be/$(1)/gen_$(1)_new_nodes.h ir/be/$(1)/gen_$(1)_new_nodes.c.inl
 
 ir/be/$(1)/$(1)_new_nodes.c: ir/be/$(1)/gen_$(1)_new_nodes.c.inl
 
 # We need to inform make of the headers it doesn't know yet...
 $(1)_OBJECTS = $$($(1)_SOURCES:%.c=$$(builddir)/%.o)
 $$($(1)_OBJECTS): $$($(1)_GEN_HEADERS)
+
 
 libfirm_SOURCES += $$($(1)_SOURCES)
 libfirm_DIRS += ir/be/$(1)
@@ -110,16 +116,18 @@ endef
 $(foreach backend,$(backends),$(eval $(call backend_template,$(backend))))
 
 # generators
-IR_SPEC_GENERATED_FILES := \
+IR_SPEC_GENERATED_INCLUDES := \
 	include/libfirm/nodes.h \
-	ir/ir/gen_ir_cons.c.inl \
 	ir/ir/gen_irdump.c.inl  \
-	ir/ir/gen_irnode.c.inl  \
-	ir/ir/gen_irnode.h      \
-	ir/ir/gen_irop.c.inl
+	ir/ir/gen_irnode.h
+GENERATED_FILES += $(IR_SPEC_GENERATED_INCLUDES)
 IR_SPEC_GENERATOR := scripts/gen_ir.py
 IR_SPEC_GENERATOR_DEPS := $(IR_SPEC_GENERATOR) scripts/spec_util.py scripts/filters.py
 IR_SPEC := scripts/ir_spec.py
+
+libfirm_SOURCES := $(filter-out ir/ir/gen_%.c, $(libfirm_SOURCES))
+libfirm_SOURCES := $(libfirm_SOURCES) ir/ir/gen_irnode.c
+GENERATED_FILES += ir/ir/gen_irnode.c
 
 ir/ir/% : scripts/templates/% $(IR_SPEC_GENERATOR_DEPS) $(IR_SPEC)
 	@echo GEN $@
@@ -132,6 +140,7 @@ include/libfirm/% : scripts/templates/% $(IR_SPEC_GENERATOR_DEPS) $(IR_SPEC)
 IR_IO_GENERATED_FILES := ir/ir/gen_irio.c.inl
 IR_IO_GENERATOR := scripts/gen_ir_io.py
 IR_IO_GENERATOR_DEPS := $(IR_IO_GENERATOR) scripts/spec_util.py scripts/filters.py
+GENERATED_FILES += $(IR_IO_GENERATED_FILES)
 
 ir/ir/irio.c : ir/ir/gen_irio.c.inl
 
@@ -157,12 +166,12 @@ UNUSED := $(shell mkdir -p $(libfirm_DIRS:%=$(builddir)/%))
 QUICKCHECK ?= $(shell which cparser-beta || echo true) -fsyntax-only
 QUICKCHECK_FLAGS ?= -Wno-shadow -Wno-shadow-local
 
-$(builddir)/%.o: %.c $(IR_SPEC_GENERATED_FILES)
+$(builddir)/%.o: %.c $(IR_SPEC_GENERATED_INCLUDES)
 	@echo CC $@
 	$(Q)$(QUICKCHECK) $(CFLAGS) $(CPPFLAGS) $(libfirm_CPPFLAGS) $(QUICKCHECK_FLAGS) $<
 	$(Q)$(CC) $(CFLAGS) $(CPPFLAGS) $(libfirm_CPPFLAGS) -MMD -c -o $@ $<
 
-$(docdir)/libfirm.tag: $(IR_SPEC_GENERATED_FILES) Doxyfile $(wildcard include/libfirm/*.h) $(wildcard include/libfirm/adt/*.h)
+$(docdir)/libfirm.tag: $(IR_SPEC_GENERATED_INCLUDES) Doxyfile $(wildcard include/libfirm/*.h) $(wildcard include/libfirm/adt/*.h)
 	@echo Doxygen $@
 	$(Q)$(DOXYGEN)
 
@@ -178,7 +187,7 @@ doc: $(docdir)/libfirm.tag $(docdir)/html/nodes.html
 .PHONY: clean
 clean:
 	@echo CLEAN
-	$(Q)rm -fr $(builddir) $(shell find ir/ -name "gen_*.[ch]")
+	$(Q)rm -fr $(builddir) $(GENERATED_FILES)
 
 # This rule is necessary so that make does not abort if headers get deleted
 # (the deleted header might still be referenced in a .d file)

@@ -29,11 +29,6 @@
 #define set_generic_function_ptr(op, func) set_generic_function_ptr_((op), (op_func)(func))
 #define get_generic_function_ptr(type, op) ((type*)get_generic_function_ptr_((op)))
 
-/**
- * Frees a newly created ir operation.
- */
-void free_ir_op(ir_op *code);
-
 /** Initialize the irop module. */
 void firm_init_op(void);
 

@@ -696,6 +696,7 @@ print OUT<<EOF;
 #include "gen_$arch\_regalloc_if.h"
 #include "irverify_t.h"
 #include "fourcc.h"
+#include "irgopt.h"
 
 $obst_cmp_attr
 $obst_opvar

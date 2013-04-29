@@ -35,6 +35,7 @@
 #include "iropt_t.h"
 #include "irbackedge_t.h"
 #include "irverify_t.h"
+#include "irgopt.h"
 
 #include "be_t.h"
 #include "belive_t.h"

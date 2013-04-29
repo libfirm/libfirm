@@ -1,4 +1,15 @@
 {{warning}}
+#ifndef {{spec.name|upper}}_GEN_IRNODE_H
+#define {{spec.name|upper}}_GEN_IRNODE_H
+
+#include <assert.h>
+{% if spec.external %}
+#include <libfirm/firm_types.h>
+#include <libfirm/irnode.h>
+#include <{{spec.external}}/nodes.h>
+#include "nodes_attr.h"
+{% endif %}
+
 {% for node in nodes %}
 #define is_{{node.name}}(node) is_{{node.name}}_(node)
 {%- for attr in node.attrs|hasnot("noprop") %}
@@ -26,13 +37,23 @@ static inline int is_{{node.name}}_(const ir_node *node)
 static inline {{attr.type}} get_{{node.name}}_{{attr.name}}_(const ir_node *node)
 {
 	assert(is_{{node.name}}(node));
+	{% if spec.external -%}
+	{{node.attr_struct}} const *const attr = ({{node.attr_struct}} const*)get_irn_generic_attr_const(node);
+	return attr->{{attr.name}};
+	{%- else -%}
 	return node->attr.{{node.attrs_name}}.{{attr.name}};
+	{%- endif %}
 }
 
 static inline void set_{{node.name}}_{{attr.name}}_(ir_node *node, {{attr.type}} {{attr.name}})
 {
 	assert(is_{{node.name}}(node));
+	{% if spec.external -%}
+	{{node.attr_struct}} *attr = ({{node.attr_struct}}*)get_irn_generic_attr(node);
+	attr->{{attr.name}} = {{attr.name}};
+	{%- else -%}
 	node->attr.{{node.attrs_name}}.{{attr.name}} = {{attr.name}};
+	{% endif %}
 }
 {% endfor -%}
 
@@ -76,3 +97,8 @@ static inline ir_node **get_{{node.name}}_{{node.input_name}}_arr_(ir_node *node
 }
 {% endif -%}
 {% endfor -%}
+
+void {{spec.name}}_init_opcodes(void);
+void {{spec.name}}_finish_opcodes(void);
+
+#endif
