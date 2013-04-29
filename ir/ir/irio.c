@@ -2455,4 +2455,4 @@ int ir_import_file(FILE *input, const char *inputname)
 	return env->read_errors;
 }
 
-#include "gen_irio.inl"
+#include "gen_irio.c.inl"

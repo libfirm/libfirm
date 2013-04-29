@@ -56,11 +56,6 @@ all: firm
 # disable make builtin suffix rules
 .SUFFIXES:
 
-# This rule is necessary so that make does not abort if headers get deleted
-# (the deleted header might still be referenced in a .d file)
-%.h:
-	@:
-
 # libFirm
 libfirm_SOURCES  = $(wildcard ir/*/*.c)
 libfirm_DIRS     = $(sort $(dir $(libfirm_SOURCES)))
@@ -119,24 +114,31 @@ IR_SPEC_GENERATED_FILES := \
 	include/libfirm/nodeops.h \
 	include/libfirm/opcodes.h \
 	ir/ir/gen_ir_cons.c.inl   \
-	ir/ir/gen_irop.c.inl      \
+	ir/ir/gen_irdump.c.inl    \
 	ir/ir/gen_irnode.c.inl    \
-	ir/ir/gen_irnode.h
+	ir/ir/gen_irnode.h        \
+	ir/ir/gen_irop.c.inl
 IR_SPEC_GENERATOR := scripts/gen_ir.py
+IR_SPEC_GENERATOR_DEPS := $(IR_SPEC_GENERATOR) scripts/spec_util.py scripts/filters.py
 IR_SPEC := scripts/ir_spec.py
 
-$(IR_SPEC_GENERATED_FILES): $(IR_SPEC_GENERATOR) $(IR_SPEC) scripts/spec_util.py
+ir/ir/% : scripts/templates/% $(IR_SPEC_GENERATOR_DEPS) $(IR_SPEC)
 	@echo GEN $@
-	$(Q)$(IR_SPEC_GENERATOR) $(IR_SPEC) ir/ir
+	$(Q)$(IR_SPEC_GENERATOR) $(IR_SPEC) $< > $@
 
+include/libfirm/% : scripts/templates/% $(IR_SPEC_GENERATOR_DEPS) $(IR_SPEC)
+	@echo GEN $@
+	$(Q)$(IR_SPEC_GENERATOR) $(IR_SPEC) $< > $@
+
+IR_IO_GENERATED_FILES := ir/ir/gen_irio.c.inl
 IR_IO_GENERATOR := scripts/gen_ir_io.py
-IR_IO_GENERATED_FILES := ir/ir/gen_irio.inl
+IR_IO_GENERATOR_DEPS := $(IR_IO_GENERATOR) scripts/spec_util.py scripts/filters.py
 
-$(IR_IO_GENERATED_FILES): $(IR_IO_GENERATOR) $(IR_SPEC) scripts/spec_util.py
+ir/ir/irio.c : ir/ir/gen_irio.c.inl
+
+ir/ir/% : scripts/templates_io/% $(IR_IO_GENERATOR_DEPS) $(IR_SPEC)
 	@echo GEN $@
-	$(Q)$(IR_IO_GENERATOR) $(IR_SPEC) ir/ir
-
-ir/ir/irio.c: $(IR_IO_GENERATED_FILES)
+	$(Q)$(IR_IO_GENERATOR) $(IR_SPEC) $< > $@
 
 libfirm_OBJECTS = $(libfirm_SOURCES:%.c=$(builddir)/%.o)
 libfirm_DEPS    = $(libfirm_OBJECTS:%.o=%.d)
@@ -178,3 +180,8 @@ doc: $(docdir)/libfirm.tag $(docdir)/html/nodes.html
 clean:
 	@echo CLEAN
 	$(Q)rm -fr $(builddir) $(shell find ir/ -name "gen_*.[ch]")
+
+# This rule is necessary so that make does not abort if headers get deleted
+# (the deleted header might still be referenced in a .d file)
+%.h:
+	@:
