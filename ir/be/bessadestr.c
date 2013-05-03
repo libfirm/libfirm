@@ -5,379 +5,245 @@
 
 /**
  * @file
- * @brief       Performs SSA-Destruction.
- * @author      Daniel Grund
+ * @brief       Performs SSA destruction.
+ * @author      Daniel Grund, Manuel Mohr
  * @date        25.05.2005
  */
 #include "bessadestr.h"
 
 #include "debug.h"
-#include "set.h"
-#include "pmap.h"
+#include "bitset.h"
 #include "irnode_t.h"
-#include "ircons_t.h"
-#include "iredges_t.h"
 #include "irgwalk.h"
 #include "irgmod.h"
-#include "irdump.h"
-#include "be_t.h"
-#include "beutil.h"
-#include "bechordal_t.h"
+#include "be_types.h"
 #include "bearch.h"
-#include "belive_t.h"
+#include "beirg.h"
+#include "belive.h"
 #include "benode.h"
 #include "besched.h"
-#include "statev_t.h"
-#include "beirg.h"
-#include "beintlive_t.h"
 #include "bespillutil.h"
+#include "statev_t.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static void clear_link(ir_node *irn, void *data)
+static void impl_parcopy(const arch_register_class_t *cls,
+                         ir_node *before, unsigned *parcopy, unsigned *n_used,
+                         ir_node **phis, ir_node **phi_args, unsigned pred_nr)
 {
-	(void) data;
-	set_irn_link(irn, NULL);
-}
+	ir_node        *block        = get_nodes_block(before);
+	ir_graph       *irg          = get_irn_irg(block);
+	be_lv_t        *lv           = be_get_irg_liveness(irg);
+	const unsigned  n_regs       = cls->n_regs;
+	unsigned        num_restores = 0;
+	unsigned        restore_srcs[n_regs];
+	unsigned        restore_dsts[n_regs];
 
-/**
- * For each block build a linked list of phis that
- *  - are in that block
- *  - have the current register class
- * The list is rooted at get_irn_link(BB).
- */
-static void collect_phis_walker(ir_node *irn, void *data)
-{
-	be_chordal_env_t *env = (be_chordal_env_t*)data;
-	if (is_Phi(irn) && arch_irn_consider_in_reg_alloc(env->cls, irn)) {
-		ir_node *bl = get_nodes_block(irn);
-		set_irn_link(irn, get_irn_link(bl));
-		set_irn_link(bl, irn);
+	/* Step 1: Search register transfer graph for nodes with > 1 outgoing edge.
+	 * Goal: Establish invariant that each node has <= 1 outgoing edges by
+	 *       recording restore copies (and inserting them later).
+	 */
+	for (unsigned to_reg = 0; to_reg < n_regs; ++to_reg) {
+		const unsigned from_reg    = parcopy[to_reg];
+		unsigned       from_n_used = n_used[from_reg];
+
+		/* If from_reg has > 1 outgoing edge, we keep this edge and implement
+		 * all outgoing edges with restore copies EXCEPT if the source of
+		 * the current edge has a self-loop.
+		 * In this case, we cannot make the current edge part of a Perm node
+		 * as it would violate its invariant.  Thus, we use a restore copy.
+		 * TODO: Clever heuristics which edge to keep?
+		 */
+		if (from_n_used > 1
+		    && (parcopy[from_reg] != from_reg || from_reg == to_reg)) {
+			/* Keep from_reg -> to_reg and cut every other edge. */
+
+			for (unsigned dst = 0; dst < n_regs && from_n_used > 1; ++dst) {
+				if (dst != to_reg && parcopy[dst] == from_reg) {
+					/* Note: As we insert restore copies *after* the Perm node,
+					 * we record to_reg as the source of the copy. */
+					restore_srcs[num_restores] = to_reg;
+					restore_dsts[num_restores] = dst;
+					++num_restores;
+
+					/* Mark as done. */
+					parcopy[dst] = dst;
+					--from_n_used;
+				}
+			}
+
+			assert(from_n_used == 1);
+			n_used[from_reg] = 1;
+		}
+	}
+
+#ifndef NDEBUG
+	/* Check invariant. */
+	for (unsigned dst = 0; dst < n_regs; ++dst) {
+		const unsigned src = parcopy[dst];
+		assert(src == dst || n_used[src] == 1);
+	}
+#endif
+
+	/* Step 2: Build Perm node and Proj node(s). */
+	unsigned  perm_size = 0;
+	ir_node  *perm_ins[n_regs];
+	for (unsigned dst = 0; dst < n_regs; ++dst) {
+		const unsigned src = parcopy[dst];
+		if (src != dst) {
+			assert(phi_args[src] != NULL);
+			perm_ins[perm_size++] = phi_args[src];
+		}
+	}
+
+	if (perm_size > 0) {
+		ir_node *perm = be_new_Perm(cls, block, perm_size, perm_ins);
+		stat_ev_int("phi_perm", perm_size);
+		sched_add_before(before, perm);
+
+		unsigned i = 0;
+		for (unsigned dst = 0; dst < n_regs; ++dst) {
+			const unsigned src = parcopy[dst];
+			if (src == dst)
+				continue;
+
+			ir_node               *in   = perm_ins[i];
+			ir_mode               *mode = get_irn_mode(in);
+			ir_node               *proj = new_r_Proj(perm, mode, i);
+			const arch_register_t *reg  = arch_register_for_index(cls, dst);
+			arch_set_irn_register(proj, reg);
+
+			ir_node *phi = phis[dst];
+			set_irn_n(phi, pred_nr, proj);
+			phi_args[dst] = proj;
+
+			be_liveness_introduce(lv, proj);
+			be_liveness_update(lv, in);
+
+			++i;
+		}
+	}
+
+	/* Step 3: Place restore copies. */
+	for (unsigned i = 0; i < num_restores; ++i) {
+		const unsigned  src_reg = restore_srcs[i];
+		const unsigned  dst_reg = restore_dsts[i];
+		ir_node        *src     = phi_args[src_reg];
+		ir_node        *copy    = be_new_Copy(block, src);
+		sched_add_before(before, copy);
+
+		const arch_register_t *reg = arch_register_for_index(cls, dst_reg);
+		arch_set_irn_register(copy, reg);
+
+		ir_node *phi = phis[dst_reg];
+		set_irn_n(phi, pred_nr, copy);
+		phi_args[src_reg] = copy;
+
+		be_liveness_introduce(lv, copy);
+		be_liveness_update(lv, src);
 	}
 }
 
-/**
- * This struct represents a Proj for a Perm.
- * It records the argument in the Perm and the corresponding Proj of the
- * Perm.
- */
-typedef struct {
-	ir_node *arg;  /**< The phi argument to make the Proj for. */
-	int pos;       /**< The proj number the Proj will get.
-									 This also denotes the position of @p arg
-									 in the in array of the Perm. */
-	ir_node *proj; /**< The proj created for @p arg. */
-} perm_proj_t;
-
-static int cmp_perm_proj(const void *a, const void *b, size_t n)
+static void insert_shuffle_code_walker(ir_node *block, void *data)
 {
-	const perm_proj_t *p = (const perm_proj_t*)a;
-	const perm_proj_t *q = (const perm_proj_t*)b;
-	(void) n;
-
-	return !(p->arg == q->arg);
-}
-
-/**
- * Insert Perms in all predecessors of a block containing a phi
- */
-static void insert_all_perms_walker(ir_node *bl, void *data)
-{
-	be_chordal_env_t *const chordal_env = (be_chordal_env_t*)data;
-	be_lv_t *lv = be_get_irg_liveness(chordal_env->irg);
-	int i, n;
-
-	assert(is_Block(bl));
-
-	/* If the link flag is NULL, this block has no phis. */
-	if (!get_irn_link(bl))
+	if (!is_Phi(sched_first(block)))
 		return;
 
-	/* Look at all predecessors of the phi block */
-	for (i = 0, n = get_irn_arity(bl); i < n; ++i) {
-		ir_node *phi, *perm, **in;
-		set *arg_set     = new_set(cmp_perm_proj, chordal_env->cls->n_regs);
-		ir_node *pred_bl = get_Block_cfgpred_block(bl, i);
-		int n_projs      = 0;
+	const arch_register_class_t *cls    = (const arch_register_class_t*)data;
+	ir_graph                    *irg    = get_irn_irg(block);
+	be_lv_t                     *lv     = be_get_irg_liveness(irg);
+	const unsigned               n_regs = cls->n_regs;
 
-		/*
-		 * Note that all phis in the list are in the same
-		 * register class by construction.
-		 */
-		for (phi = (ir_node*)get_irn_link(bl); phi != NULL;
-		     phi = (ir_node*)get_irn_link(phi)) {
-			ir_node                   *arg = get_irn_n(phi, i);
-			unsigned                   hash;
-			perm_proj_t                templ;
+	for (int pred_nr = 0; pred_nr < get_irn_arity(block); ++pred_nr) {
+		unsigned  parcopy [n_regs];
+		unsigned  n_used  [n_regs];
+		ir_node  *phis    [n_regs];
+		ir_node  *phi_args[n_regs];
+		bitset_t *keep_val = bitset_alloca(n_regs);
 
-			hash = hash_irn(arg);
-			templ.arg  = arg;
-			perm_proj_t *const pp = set_find(perm_proj_t, arg_set, &templ, sizeof(templ), hash);
-
-			/*
-			 * If a proj_perm_t entry has not been made in the argument set,
-			 * create one. The only restriction is, that the phi argument
-			 * may not be live in at the current block, since this argument
-			 * interferes with the phi and must thus not be member of a
-			 * Perm. A copy will be inserted for this argument later on.
-			 */
-			if (!pp && !be_is_live_in(lv, bl, arg)) {
-				templ.pos = n_projs++;
-				(void)set_insert(perm_proj_t, arg_set, &templ, sizeof(templ), hash);
-			}
+		memset(n_used,   0, n_regs * sizeof(n_used[0]));
+		memset(phis,     0, n_regs * sizeof(phis[0]));
+		memset(phi_args, 0, n_regs * sizeof(phi_args[0]));
+		for (unsigned i = 0; i < n_regs; ++i) {
+			parcopy[i] = i;
 		}
 
+		for (ir_node *phi = sched_first(block); is_Phi(phi);
+		     phi = sched_next(phi)) {
 
-		if (n_projs) {
-			/*
-			 * Create a new Perm with the arguments just collected
-			 * above in the arg_set and insert it into the schedule.
-			 */
-			in = XMALLOCN(ir_node*, n_projs);
-			foreach_set(arg_set, perm_proj_t, pp) {
-				in[pp->pos] = pp->arg;
-			}
-
-			perm = be_new_Perm(chordal_env->cls, pred_bl, n_projs, in);
-			stat_ev_int("phi_perm", n_projs);
-
-			ir_node *const schedpoint = be_get_end_of_block_insertion_point(pred_bl);
-			sched_add_before(schedpoint, perm);
-
-			/*
-			 * Make the Projs for the Perm and insert into schedule.
-			 * Register allocation is copied from the former phi
-			 * arguments to the projs (new phi arguments).
-			 */
-			foreach_set(arg_set, perm_proj_t, pp) {
-				ir_node *proj = new_r_Proj(perm, get_irn_mode(pp->arg), pp->pos);
-				pp->proj = proj;
-				assert(arch_get_irn_register(pp->arg));
-				arch_set_irn_register(proj, arch_get_irn_register(pp->arg));
-				DBG((dbg, LEVEL_2, "Copy register assignment %s from %+F to %+F\n", arch_get_irn_register(pp->arg)->name, pp->arg, pp->proj));
-			}
-
-			/*
-			 * Set the phi nodes to their new arguments: The Projs of the Perm
-			 */
-			for (phi = (ir_node*)get_irn_link(bl); phi != NULL;
-			     phi = (ir_node*)get_irn_link(phi)) {
-				perm_proj_t templ;
-
-				templ.arg = get_irn_n(phi, i);
-				perm_proj_t *const pp = set_find(perm_proj_t, arg_set, &templ, sizeof(templ), hash_irn(templ.arg));
-
-				/* If not found, it was an interfering argument */
-				if (pp) {
-					set_irn_n(phi, i, pp->proj);
-					be_liveness_introduce(lv, pp->proj);
-				}
-			}
-
-			/* update the liveness of the Perm's operands. It might be changed. */
-			{
-				int i;
-				for (i = 0; i < n_projs; ++i)
-					be_liveness_update(lv, in[i]);
-			}
-			free(in);
-		}
-
-		del_set(arg_set);
-	}
-}
-
-#define is_pinned(irn) (get_irn_link(irn))
-#define get_pinning_block(irn) ((ir_node *)get_irn_link(irn))
-#define pin_irn(irn, lock) (set_irn_link(irn, lock))
-
-/**
- * Adjusts the register allocation for the (new) phi-operands
- * and insert duplicates iff necessary.
- */
-static void set_regs_or_place_dupls_walker(ir_node *bl, void *data)
-{
-	be_chordal_env_t *chordal_env = (be_chordal_env_t*)data;
-	be_lv_t *lv = be_get_irg_liveness(chordal_env->irg);
-	ir_node *phi;
-
-	/* Consider all phis of this block */
-	for (phi = (ir_node*)get_irn_link(bl); phi != NULL;
-	     phi = (ir_node*)get_irn_link(phi)) {
-		ir_node                     *phi_block = get_nodes_block(phi);
-		const arch_register_t       *phi_reg   = arch_get_irn_register(phi);
-		int                          max;
-		int                          i;
-
-		assert(is_Phi(phi) && "Can only handle phi-destruction :)");
-
-		/* process all arguments of the phi */
-		for (i = 0, max = get_irn_arity(phi); i < max; ++i) {
-			ir_node                   *arg = get_irn_n(phi, i);
-			const arch_register_t     *arg_reg;
-			ir_node                   *arg_block;
-
-			arg_block = get_Block_cfgpred_block(phi_block, i);
-			arg_reg   = arch_get_irn_register(arg);
-
-			assert(arg_reg && "Register must be set while placing perms");
-
-			DBG((dbg, LEVEL_1, "  for %+F(%s) -- %+F(%s)\n", phi, phi_reg->name, arg, arg_reg->name));
-
-			if (phi_reg == arg_reg
-					|| (arg_reg->type & arch_register_type_virtual)) {
-				/* Phi and arg have the same register, so pin and continue */
-				pin_irn(arg, phi_block);
-				DBG((dbg, LEVEL_1, "      arg has same reg: pin %+F(%s)\n", arg, arch_get_irn_register(arg)->name));
+			if (!arch_irn_consider_in_reg_alloc(cls, phi))
 				continue;
+
+			const unsigned  phi_reg_idx = arch_get_irn_register(phi)->index;
+			ir_node        *arg         = get_irn_n(phi, pred_nr);
+			const unsigned  arg_reg_idx = arch_get_irn_register(arg)->index;
+
+			assert(parcopy[phi_reg_idx] == phi_reg_idx);
+			parcopy[phi_reg_idx] = arg_reg_idx;
+			++n_used[arg_reg_idx];
+
+			/* If arg is live, we must keep it in its current register.
+			 * This is done by adding a self-loop to the register transfer
+			 * graph; in our implementation by incrementing n_used[arg_reg_idx].
+			 * Because we may see the same arg multiple times, we use a bitset
+			 * instead of directly incrementing n_used.
+			 */
+			if (be_is_live_in(lv, block, arg)) {
+				bitset_set(keep_val, arg_reg_idx);
 			}
 
-			if (be_values_interfere(lv, phi, arg)) {
-				/*
-					Insert a duplicate in arguments block,
-					make it the new phi arg,
-					set its register,
-					insert it into schedule,
-					pin it
-				*/
-				ir_node *dupl = be_new_Copy(arg_block, arg);
-
-				set_irn_n(phi, i, dupl);
-				arch_set_irn_register(dupl, phi_reg);
-				ir_node *const schedpoint = be_get_end_of_block_insertion_point(arg_block);
-				sched_add_before(schedpoint, dupl);
-				pin_irn(dupl, phi_block);
-				be_liveness_introduce(lv, dupl);
-				be_liveness_update(lv, arg);
-				DBG((dbg, LEVEL_1, "    they do interfere: insert %+F(%s)\n", dupl, arch_get_irn_register(dupl)->name));
-				continue; /* with next argument */
-			}
-
-			DBG((dbg, LEVEL_1, "    they do not interfere\n"));
-			assert(is_Proj(arg));
-			/*
-				First check if there is an other phi
-				- in the same block
-				- having arg at the current pos in its arg-list
-				- having the same color as arg
-
-				If found, then pin the arg (for that phi)
-			*/
-			if (! is_pinned(arg)) {
-				ir_node *other_phi;
-
-				DBG((dbg, LEVEL_1, "      searching for phi with same arg having args register\n"));
-
-				for (other_phi = (ir_node*)get_irn_link(phi_block);
-				     other_phi != NULL;
-				     other_phi = (ir_node*)get_irn_link(other_phi)) {
-
-					assert(is_Phi(other_phi)                               &&
-						get_nodes_block(phi) == get_nodes_block(other_phi) &&
-						"link fields are screwed up");
-
-					if (get_irn_n(other_phi, i) == arg && arch_get_irn_register(other_phi) == arg_reg) {
-						DBG((dbg, LEVEL_1, "        found %+F(%s)\n", other_phi, arch_get_irn_register(other_phi)->name));
-						pin_irn(arg, phi_block);
-						break;
-					}
-				}
-			}
-
-			if (is_pinned(arg)) {
-				/*
-					Insert a duplicate of the original value in arguments block,
-					make it the new phi arg,
-					set its register,
-					insert it into schedule,
-					pin it
-				*/
-				ir_node *perm = get_Proj_pred(arg);
-				ir_node *dupl = be_new_Copy(arg_block, arg);
-
-				set_irn_n(phi, i, dupl);
-				arch_set_irn_register(dupl, phi_reg);
-				sched_add_after(perm, dupl);
-				pin_irn(dupl, phi_block);
-				be_liveness_introduce(lv, dupl);
-				be_liveness_update(lv, arg);
-				DBG((dbg, LEVEL_1, "      arg is pinned: insert %+F(%s)\n", dupl, arch_get_irn_register(dupl)->name));
-			} else {
-				/*
-					No other phi has the same color (else arg would have been pinned),
-					so just set the register and pin
-				*/
-				arch_set_irn_register(arg, phi_reg);
-				pin_irn(arg, phi_block);
-				DBG((dbg, LEVEL_1, "      arg is not pinned: so pin %+F(%s)\n", arg, arch_get_irn_register(arg)->name));
-			}
+			assert(phis[phi_reg_idx] == NULL);
+			phis[phi_reg_idx] = phi;
+			assert(phi_args[arg_reg_idx] == NULL || phi_args[arg_reg_idx] == arg);
+			phi_args[arg_reg_idx] = arg;
 		}
+
+		for (unsigned i = 0; i < n_regs; ++i) {
+			n_used[i] += bitset_is_set(keep_val, i);
+		}
+
+		ir_node *pred   = get_Block_cfgpred_block(block, pred_nr);
+		ir_node *before = be_get_end_of_block_insertion_point(pred);
+		impl_parcopy(cls, before, parcopy, n_used, phis, phi_args, pred_nr);
 	}
 }
 
-void be_ssa_destruction(be_chordal_env_t *chordal_env)
+void be_ssa_destruction(ir_graph *irg, const arch_register_class_t *cls)
 {
-	ir_graph *irg = chordal_env->irg;
-
 	FIRM_DBG_REGISTER(dbg, "ir.be.ssadestr");
 
 	be_invalidate_live_sets(irg);
-
-	/* create a map for fast lookup of perms: block --> perm */
-	irg_walk_graph(irg, clear_link, collect_phis_walker, chordal_env);
-
-	DBG((dbg, LEVEL_1, "Placing perms...\n"));
-	irg_block_walk_graph(irg, insert_all_perms_walker, NULL, chordal_env);
-
-	if (chordal_env->opts->dump_flags & BE_CH_DUMP_SSADESTR)
-		dump_ir_graph(irg, "ssa_destr_perms_placed");
-
 	be_assure_live_chk(irg);
 
-	DBG((dbg, LEVEL_1, "Setting regs and placing dupls...\n"));
-	irg_block_walk_graph(irg, set_regs_or_place_dupls_walker, NULL, chordal_env);
+	irg_block_walk_graph(irg, insert_shuffle_code_walker, NULL, (void*)cls);
 
 	/* unfortunately updating doesn't work yet. */
 	be_invalidate_live_chk(irg);
-
-	if (chordal_env->opts->dump_flags & BE_CH_DUMP_SSADESTR)
-		dump_ir_graph(irg, "ssa_destr_regs_set");
 }
 
-static void ssa_destruction_check_walker(ir_node *bl, void *data)
+static void ssa_destruction_check_walker(ir_node *block, void *data)
 {
-	ir_node *phi;
-	int i, max;
-	(void)data;
+	const arch_register_class_t *cls = (const arch_register_class_t*)data;
 
-	for (phi = (ir_node*)get_irn_link(bl); phi != NULL;
-	     phi = (ir_node*)get_irn_link(phi)) {
-		const arch_register_t *phi_reg, *arg_reg;
+	for (ir_node *phi = sched_first(block); is_Phi(phi); phi = sched_next(phi)) {
+		if (!arch_irn_consider_in_reg_alloc(cls, phi))
+			continue;
 
-		phi_reg = arch_get_irn_register(phi);
+		const arch_register_t *phi_reg = arch_get_irn_register(phi);
 		/* iterate over all args of phi */
-		for (i = 0, max = get_irn_arity(phi); i < max; ++i) {
+		for (int i = 0, max = get_irn_arity(phi); i < max; ++i) {
 			ir_node                   *arg = get_irn_n(phi, i);
 			const arch_register_req_t *req = arch_get_irn_register_req(arg);
 			if (arch_register_req_is(req, ignore))
 				continue;
 
-			arg_reg = arch_get_irn_register(arg);
-
-			if (phi_reg != arg_reg) {
-				DBG((dbg, 0, "Error: Registers of %+F and %+F differ: %s %s\n", phi, arg, phi_reg->name, arg_reg->name));
-				assert(0);
-			}
-
-			if (! is_pinned(arg)) {
-				DBG((dbg, 0, "Warning: Phi argument %+F is not pinned.\n", arg));
-				assert(0);
-			}
+			const arch_register_t *arg_reg = arch_get_irn_register(arg);
+			assert(phi_reg == arg_reg && "Error: Registers of phi and arg differ");
 		}
 	}
 }
 
-void be_ssa_destruction_check(be_chordal_env_t *chordal_env)
+void be_ssa_destruction_check(ir_graph *irg, const arch_register_class_t *cls)
 {
-	irg_block_walk_graph(chordal_env->irg, ssa_destruction_check_walker, NULL, NULL);
+	irg_block_walk_graph(irg, ssa_destruction_check_walker, NULL, (void*)cls);
 }
