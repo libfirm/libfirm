@@ -13,11 +13,9 @@
 #ifdef HAVE_FIRM_REVISION_H
 # include "firm_revision.h"
 #endif
-
+#include "version.h"
 #include <stdio.h>
-
 #include "lc_opts.h"
-
 #include "ident_t.h"
 #include "firm.h"
 #include "irflag_t.h"

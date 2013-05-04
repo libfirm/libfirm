@@ -65,9 +65,7 @@ all: firm
 $(srcdir)config.h:
 	@echo MakeConfig $@
 	$(Q)rm -f $@
-	$(Q)echo "#define libfirm_VERSION_MAJOR 1" >> $@
-	$(Q)echo "#define libfirm_VERSION_MICRO 0" >> $@
-	$(Q)echo "#define libfirm_VERSION_MINOR 21" >> $@
+	$(Q)touch $@
 
 # libFirm
 libfirm_SOURCES  = $(wildcard ir/*/*.c)
