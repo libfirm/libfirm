@@ -8,8 +8,6 @@
  * @brief   iropt --- optimizations intertwined with IR construction.
  * @author  Christian Schaefer, Goetz Lindenmaier, Michael Beck
  */
-#include "config.h"
-
 #include <string.h>
 #include <stdbool.h>
 

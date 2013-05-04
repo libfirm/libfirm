@@ -9,8 +9,6 @@
  * @date    29.1.2003
  * @author  Michael Beck, Goetz Lindenmaier
  */
-#include "config.h"
-
 #include "irgraph_t.h"
 #include "irflag_t.h"
 #include "irprintf.h"

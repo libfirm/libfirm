@@ -8,8 +8,6 @@
  * @brief   The main arm backend driver file.
  * @author  Matthias Braun, Oliver Richter, Tobias Gneist
  */
-#include "config.h"
-
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
 

@@ -9,8 +9,6 @@
  * @author    Goetz Lindenmaier, Michael Beck, Rubino Geiss
  * @date      2.2002
  */
-#include "config.h"
-
 #include <string.h>
 
 #include "irouts.h"

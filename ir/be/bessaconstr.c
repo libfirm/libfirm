@@ -32,8 +32,6 @@
  * This function reroutes all uses of the original value to the copies in the
  * corresponding dominance subtrees and creates Phi functions where necessary.
  */
-#include "config.h"
-
 /* statev in this file is extensive, so only enable if needed */
 #define DISABLE_STATEV
 

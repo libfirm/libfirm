@@ -9,8 +9,6 @@
  * @author   Michael Beck
  * @date     27.12.2006
  */
-#include "config.h"
-
 #include <stdlib.h>
 #include <stdbool.h>
 

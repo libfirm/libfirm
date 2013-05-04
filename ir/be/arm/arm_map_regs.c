@@ -8,8 +8,6 @@
  * @brief   Register mapping for firm nodes. Stolen from bearch_firm :)
  * @author  Oliver Richter, Tobias Gneist
  */
-#include "config.h"
-
 #include <stdlib.h>
 
 #include "arm_map_regs.h"

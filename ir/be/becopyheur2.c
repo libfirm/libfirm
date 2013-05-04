@@ -9,8 +9,6 @@
  * @author      Sebastian Hack
  * @date        14.04.2006
  */
-#include "config.h"
-
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
 

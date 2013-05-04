@@ -7,8 +7,6 @@
  * @file
  * @brief    The main amd64 backend driver file.
  */
-#include "config.h"
-
 #include "irgwalk.h"
 #include "irprog.h"
 #include "ircons.h"

@@ -9,8 +9,6 @@
  * @author      Matthias Braun, Michael Beck
  * @date        14.06.2007
  */
-#include "config.h"
-
 #include "pdeq.h"
 #include "irop_t.h"
 #include "iropt_t.h"

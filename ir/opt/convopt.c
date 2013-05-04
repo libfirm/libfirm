@@ -21,8 +21,6 @@
  * TODO: * try to optimize cmp modes
  *       * decide when it is useful to move the convs through phis
  */
-#include "config.h"
-
 #include "iroptimize.h"
 
 #include <stdbool.h>

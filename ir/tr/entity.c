@@ -8,8 +8,6 @@
  * @brief   Representation of all program known entities.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
  */
-#include "config.h"
-
 #include <stdlib.h>
 #include <stddef.h>
 

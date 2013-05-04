@@ -8,8 +8,6 @@
  * @brief    Removal of unreachable methods.
  * @author   Matthias Braun
  */
-#include "config.h"
-
 #include "iroptimize.h"
 #include "typerep.h"
 #include "type_t.h"

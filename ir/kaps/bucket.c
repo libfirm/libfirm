@@ -9,8 +9,6 @@
  * @date    30.11.2008
  * @author  Sebastian Buchwald
  */
-#include "config.h"
-
 #include "adt/array.h"
 
 #include "bucket.h"

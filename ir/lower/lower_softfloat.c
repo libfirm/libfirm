@@ -8,8 +8,6 @@
  * @brief   Lower floating point operations to function calls
  * @author  Sebastian Buchwald
  */
-#include "config.h"
-
 #include <stdbool.h>
 
 #include "be.h"

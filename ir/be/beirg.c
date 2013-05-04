@@ -9,8 +9,6 @@
  * @author      Matthias Braun
  * @date        13.12.2006
  */
-#include "config.h"
-
 #include "execfreq.h"
 #include "beirg.h"
 #include "absgraph.h"

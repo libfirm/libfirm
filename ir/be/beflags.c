@@ -20,8 +20,6 @@
  * spilled. So in some situations (for example 2 adc-nodes that use the flags of
  * a single add node on x86) operations have to be repeated to work correctly.
  */
-#include "config.h"
-
 #include <stdbool.h>
 
 #include "irgwalk.h"

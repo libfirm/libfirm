@@ -25,8 +25,6 @@
  * execution frequencies). We aleviate that by adding artificial edges from kept
  * blocks with a path to end.
  */
-#include "config.h"
-
 #include <stdio.h>
 #include <string.h>
 #include <limits.h>

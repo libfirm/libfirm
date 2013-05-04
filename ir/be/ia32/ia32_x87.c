@@ -9,8 +9,6 @@
  *              register translation for the ia32 backend.
  * @author      Michael Beck
  */
-#include "config.h"
-
 #include <assert.h>
 
 #include "beirg.h"

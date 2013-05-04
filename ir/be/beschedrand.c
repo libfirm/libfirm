@@ -9,8 +9,6 @@
  * @author      Matthias Braun
  * @date        29.08.2006
  */
-#include "config.h"
-
 #include <stdlib.h>
 
 #include "besched.h"

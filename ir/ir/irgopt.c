@@ -9,8 +9,6 @@
  * @author   Christian Schaefer, Goetz Lindenmaier, Sebastian Felis,
  *           Michael Beck
  */
-#include "config.h"
-
 #include <assert.h>
 
 #include "irnode_t.h"

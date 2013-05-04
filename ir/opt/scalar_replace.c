@@ -8,8 +8,6 @@
  * @brief   Scalar replacement of compounds.
  * @author  Beyhan Veliev, Michael Beck
  */
-#include "config.h"
-
 #include <string.h>
 #include <stdbool.h>
 

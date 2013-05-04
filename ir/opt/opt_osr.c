@@ -13,8 +13,6 @@
  *  by Keith D. Cooper, L. Taylor Simpson, Christopher A. Vick.
  *  Extended version.
  */
-#include "config.h"
-
 #include "adt/pdeq.h"
 #include "iroptimize.h"
 #include "ircons.h"

@@ -273,8 +273,6 @@ print OUT<<EOF;
  *          created by: $0 $specfile $target_dir
  * \$date    $creation_time
  */
-#include "config.h"
-
 #include "gen_${arch}_regalloc_if.h"
 #include "bearch_${arch}_t.h"
 #include "irmode.h"

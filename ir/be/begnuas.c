@@ -9,8 +9,6 @@
  * @author      Christian Wuerdig, Matthias Braun
  * @date        04.11.2005
  */
-#include "config.h"
-
 #include "begnuas.h"
 
 #include <stdlib.h>

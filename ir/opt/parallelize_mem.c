@@ -8,8 +8,6 @@
  * @brief   parallelizing Load/Store optimisation
  * @author  Christoph Mallon
  */
-#include "config.h"
-
 #include "iroptimize.h"
 
 #include "array_t.h"

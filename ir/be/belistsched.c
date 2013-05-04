@@ -9,8 +9,6 @@
  * @author      Sebastian Hack
  * @date        20.10.2004
  */
-#include "config.h"
-
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>

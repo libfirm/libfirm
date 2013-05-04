@@ -9,8 +9,6 @@
  *              nodes that can be used as address mode for x86 instructions
  * @author      Matthias Braun
  */
-#include "config.h"
-
 #include "beirg.h"
 #include "ia32_address_mode.h"
 #include "ia32_transform.h"

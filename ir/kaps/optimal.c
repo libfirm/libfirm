@@ -9,8 +9,6 @@
  * @date    28.12.2009
  * @author  Sebastian Buchwald
  */
-#include "config.h"
-
 #include <stdbool.h>
 
 #include "adt/array.h"

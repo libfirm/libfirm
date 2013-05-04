@@ -9,8 +9,6 @@
  * @author      Daniel Grund, Matthias Braun
  * @date        20.09.2005
  */
-#include "config.h"
-
 #include <stdbool.h>
 
 #include "obst.h"

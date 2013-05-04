@@ -8,8 +8,6 @@
  * @brief   Blockwise walker implementation
  * @author  Michael Beck
  */
-#include "config.h"
-
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "irgwalk.h"

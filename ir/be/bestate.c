@@ -10,8 +10,6 @@
  * @author      Matthias Braun
  * @date        26.03.2007
  */
-#include "config.h"
-
 #include "bestate.h"
 
 #include "obst.h"

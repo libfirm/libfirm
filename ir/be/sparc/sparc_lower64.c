@@ -8,8 +8,6 @@
  * @brief    Sparc 64bit lowering
  * @author   Matthias Braun
  */
-#include "config.h"
-
 #include "bearch_sparc_t.h"
 #include "error.h"
 #include "sparc_nodes_attr.h"

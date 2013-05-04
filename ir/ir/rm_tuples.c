@@ -7,8 +7,6 @@
  * @brief    Remove all Tuple nodes from ir graph
  * @author   Andreas Zwinkau
  */
-#include "config.h"
-
 #include "irnode_t.h"
 #include "irgopt.h"
 #include "irgmod.h"

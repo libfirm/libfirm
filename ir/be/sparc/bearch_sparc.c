@@ -8,8 +8,6 @@
  * @brief    The main sparc backend driver file.
  * @author   Hannes Rapp, Matthias Braun
  */
-#include "config.h"
-
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
 

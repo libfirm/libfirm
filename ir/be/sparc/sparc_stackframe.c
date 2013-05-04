@@ -8,8 +8,6 @@
  * @brief   Manage addressing into the stackframe
  * @author  Matthias Braun
  */
-#include "config.h"
-
 #include "beirg.h"
 #include "error.h"
 #include "firm_types.h"

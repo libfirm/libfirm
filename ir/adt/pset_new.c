@@ -8,8 +8,6 @@
  * @brief   implementation of pset_new
  * @author  Matthias Braun
  */
-#include "config.h"
-
 #include "pset_new.h"
 
 /** probing method: quadratic probing */

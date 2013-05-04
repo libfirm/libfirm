@@ -7,8 +7,6 @@
  * @file
  * @author      Matthias Braun
  */
-#include "config.h"
-
 #include <stdbool.h>
 
 #include "beinfo.h"

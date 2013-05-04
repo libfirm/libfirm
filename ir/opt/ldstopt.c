@@ -8,8 +8,6 @@
  * @brief   Load/Store optimizations.
  * @author  Michael Beck
  */
-#include "config.h"
-
 #include <string.h>
 
 #include "iroptimize.h"

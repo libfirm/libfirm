@@ -7,8 +7,6 @@
  * @file
  * @brief   code selection (transform FIRM into TEMPLATE FIRM)
  */
-#include "config.h"
-
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "irmode_t.h"

@@ -14,8 +14,6 @@
  * (also known as "heur3" :)
  * Performs simple copy minimization.
  */
-#include "config.h"
-
 #define DISABLE_STATEV
 
 #include <float.h>

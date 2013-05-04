@@ -9,8 +9,6 @@
  * @author      Daniel Grund
  * @date        19.04.2005
  */
-#include "config.h"
-
 #include <string.h>
 
 #include "timing.h"

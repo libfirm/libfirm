@@ -8,8 +8,6 @@
  * @author  Christian Wuerdig, Matthias Braun
  * @brief   Priority Queue implementation based on the heap datastructure
  */
-#include "config.h"
-
 #include "array.h"
 #include "pqueue.h"
 #include "error.h"

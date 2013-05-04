@@ -9,8 +9,6 @@
  * @date     2003
  * @author   Mathias Heil
  */
-#include "config.h"
-
 #include "fltcalc.h"
 #include "strcalc.h"
 #include "error.h"

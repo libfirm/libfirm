@@ -9,8 +9,6 @@
  *              functions to code or library calls.
  * @author      Michael Beck
  */
-#include "config.h"
-
 #include "iredges.h"
 #include "irgmod.h"
 #include "irop.h"

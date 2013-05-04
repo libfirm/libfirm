@@ -8,8 +8,6 @@
  * @brief   restarting SSA construction for values.
  * @author  Michael Beck
  */
-#include "config.h"
-
 #include "ircons_t.h"
 #include "irgraph_t.h"
 #include "irnode_t.h"

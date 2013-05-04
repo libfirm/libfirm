@@ -9,8 +9,6 @@
  * @author      Sebastian Hack
  * @date        12.05.2005
  */
-#include "config.h"
-
 #include <limits.h>
 
 #include "pmap.h"

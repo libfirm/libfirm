@@ -8,8 +8,6 @@
  * @brief   Reassociation
  * @author  Michael Beck
  */
-#include "config.h"
-
 #include "iroptimize.h"
 #include "iropt_t.h"
 #include "irnode_t.h"

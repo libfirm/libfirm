@@ -9,8 +9,6 @@
  *          inspecting the class hierarchy.
  * @author  Michael Beck
  */
-#include "config.h"
-
 #include "typerep.h"
 #include "irprog_t.h"
 #include "irflag_t.h"

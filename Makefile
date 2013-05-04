@@ -61,12 +61,6 @@ all: firm
 %.h:
 	@:
 
-# A very naive way to create a config.h if it is missing
-$(srcdir)config.h:
-	@echo MakeConfig $@
-	$(Q)rm -f $@
-	$(Q)touch $@
-
 # libFirm
 libfirm_SOURCES  = $(wildcard ir/*/*.c)
 libfirm_DIRS     = $(sort $(dir $(libfirm_SOURCES)))
@@ -162,7 +156,7 @@ UNUSED := $(shell mkdir -p $(libfirm_DIRS:%=$(builddir)/%))
 QUICKCHECK ?= $(shell which cparser-beta || echo true) -fsyntax-only
 QUICKCHECK_FLAGS ?= -Wno-shadow -Wno-shadow-local
 
-$(builddir)/%.o: %.c $(IR_SPEC_GENERATED_FILES) config.h
+$(builddir)/%.o: %.c $(IR_SPEC_GENERATED_FILES)
 	@echo CC $@
 	$(Q)$(QUICKCHECK) $(CFLAGS) $(CPPFLAGS) $(libfirm_CPPFLAGS) $(QUICKCHECK_FLAGS) $<
 	$(Q)$(CC) $(CFLAGS) $(CPPFLAGS) $(libfirm_CPPFLAGS) -MMD -c -o $@ $<

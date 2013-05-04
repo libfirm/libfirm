@@ -7,8 +7,6 @@
  * @brief   Use the strong normal form theorem (though it does not hold)
  * @author  Christoph Mallon
  */
-#include "config.h"
-
 #include <stdlib.h>
 
 #include "besched.h"

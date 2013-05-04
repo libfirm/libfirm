@@ -8,8 +8,6 @@
  * @brief     Error handling for libFirm
  * @author    Michael Beck
  */
-#include "config.h"
-
 #include <stdlib.h>
 
 #include <stdio.h>

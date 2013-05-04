@@ -28,8 +28,6 @@
 
     TODO: Fix Esmond's ugly MixedCapsIdentifiers ;->
  */
-#include "config.h"
-
 #ifdef PSET
 # define SET pset
 # define PMANGLE(pre) pre##_pset

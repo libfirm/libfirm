@@ -7,8 +7,6 @@
  * @file
  * @author  Matthias Braun
  */
-#include "config.h"
-
 #include "lpp_gurobi.h"
 #include "error.h"
 

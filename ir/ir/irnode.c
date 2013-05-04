@@ -8,8 +8,6 @@
  * @brief   Representation of an intermediate operation.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
  */
-#include "config.h"
-
 #include <string.h>
 
 #include "pset_new.h"

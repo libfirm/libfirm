@@ -8,8 +8,6 @@
  * @brief    Data modes of operations.
  * @author   Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Mathias Heil
  */
-#include "config.h"
-
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdbool.h>

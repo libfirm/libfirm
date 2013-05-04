@@ -11,8 +11,6 @@
  * @author    Goetz Lindenmaier
  * @date      7.2002
  */
-#include "config.h"
-
 #include "irloop_t.h"
 #include "irnode_t.h"
 #include "irgraph_t.h"

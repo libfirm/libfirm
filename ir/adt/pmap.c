@@ -9,8 +9,6 @@
  * @author      Hubert Schmid
  * @date        09.06.2002
  */
-#include "config.h"
-
 #include "pmap.h"
 #include "set.h"
 #include "hashptr.h"

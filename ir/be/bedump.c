@@ -8,8 +8,6 @@
  * @brief       Code for dumping backend datastructures (i.e. interference graphs)
  * @author      Matthias Braun
  */
-#include "config.h"
-
 #include "bedump.h"
 
 #include "irdump_t.h"

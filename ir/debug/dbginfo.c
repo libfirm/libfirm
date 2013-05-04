@@ -9,8 +9,6 @@
  * @author   Goetz Lindenmaier, Michael Beck
  * @date     2001
  */
-#include "config.h"
-
 #include "dbginfo_t.h"
 #include "irnode_t.h"
 #include "type_t.h"

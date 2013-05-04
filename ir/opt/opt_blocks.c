@@ -11,8 +11,6 @@
  * This phase find congruent blocks.
  * Two block are congruent, if they contains only equal calculations.
  */
-#include "config.h"
-
 #include "iroptimize.h"
 #include "ircons.h"
 #include "irgmod.h"

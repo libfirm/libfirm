@@ -9,8 +9,6 @@
  * @author      Sebastian Hack, Daniel Grund
  * @date        04.05.2005
  */
-#include "config.h"
-
 #include "obst.h"
 #include "pmap.h"
 #include "irdom.h"

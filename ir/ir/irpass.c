@@ -8,8 +8,6 @@
  * @brief     Manager for optimization passes.
  * @author    Michael Beck
  */
-#include "config.h"
-
 #include <string.h>
 #include "adt/list.h"
 #include "irpass_t.h"

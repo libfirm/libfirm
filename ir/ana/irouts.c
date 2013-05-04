@@ -9,8 +9,6 @@
  * @author   Goetz Lindenmaier, Michael Beck
  * @date     1.2002
  */
-#include "config.h"
-
 #include "xmalloc.h"
 #include "irouts.h"
 #include "irnode_t.h"

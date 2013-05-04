@@ -22,8 +22,6 @@
  *
  * The precomputation remains valid as long as the CFG is not altered.
  */
-#include <config.h>
-
 #include <stdio.h>
 
 /* statev is expensive here, only enable when needed */

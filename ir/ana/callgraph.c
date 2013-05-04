@@ -9,8 +9,6 @@
  * @author      Goetz Lindenmaier
  * @date        21.7.2004
  */
-#include "config.h"
-
 #include <stdlib.h>
 
 #include "callgraph.h"

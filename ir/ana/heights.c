@@ -9,8 +9,6 @@
  * @author   Sebastian Hack
  * @date     19.04.2006
  */
-#include "config.h"
-
 #include "heights.h"
 
 #include <stdlib.h>

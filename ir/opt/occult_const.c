@@ -10,8 +10,6 @@
 
 // TODO might make sense to merge this optimization with fp-vrp
 
-#include "config.h"
-
 #include "iroptimize.h"
 
 #include <stdbool.h>

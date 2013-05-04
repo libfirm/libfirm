@@ -8,8 +8,6 @@
  * @brief       A data structure to treat nodes and node-proj collections uniformly.
  * @author      Sebastian Hack
  */
-#include "config.h"
-
 #include "irgraph_t.h"
 #include "irmode_t.h"
 #include "irnode_t.h"

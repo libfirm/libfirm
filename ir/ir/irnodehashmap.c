@@ -11,8 +11,6 @@
  *            it guarantees deterministic behavior when iterating of the
  *            hashmap
  */
-#include "config.h"
-
 #include "irnodehashmap.h"
 #include "irnode_t.h"
 #include "hashptr.h"

@@ -13,8 +13,6 @@
  * Complexity is O(1) then.
  * Random access or right-to-left and bottom-to-top is O(m*n).
  */
-#include "config.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>

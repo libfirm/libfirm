@@ -9,8 +9,6 @@
  * @author      Daniel Grund
  * @date        25.05.2005
  */
-#include "config.h"
-
 #include "bessadestr.h"
 
 #include "debug.h"

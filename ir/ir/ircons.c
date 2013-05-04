@@ -10,8 +10,6 @@
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Boris Boesler
  *          Michael Beck, Matthias Braun
  */
-#include "config.h"
-
 #include "irprog_t.h"
 #include "irgraph_t.h"
 #include "irnode_t.h"

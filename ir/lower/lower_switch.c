@@ -8,8 +8,6 @@
  * @brief   Lowering of Switches if necessary or advantageous.
  * @author  Moritz Kroll
  */
-#include "config.h"
-
 #include <limits.h>
 #include <stdbool.h>
 

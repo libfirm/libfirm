@@ -9,8 +9,6 @@
  *          opcodes and the coresponding node constructors for the amd64
  *          assembler irg.
  */
-#include "config.h"
-
 #include <stdlib.h>
 
 #include "error.h"

@@ -11,8 +11,6 @@
  * @brief
  *   Optimize the frame type by removing unused type members.
  */
-#include "config.h"
-
 #include "iroptimize.h"
 #include "irgraph_t.h"
 #include "type_t.h"

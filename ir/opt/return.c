@@ -8,8 +8,6 @@
  * @brief   Normalize returns.
  * @author  Michael Beck
  */
-#include "config.h"
-
 #include <stdbool.h>
 
 #include "iroptimize.h"

@@ -8,8 +8,6 @@
  * @brief   Optimizations regarding Confirm nodes.
  * @author  Michael Beck
  */
-#include "config.h"
-
 #undef DEBUG_CONFIRM
 
 #include "tv_t.h"

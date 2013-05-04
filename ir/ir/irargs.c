@@ -8,8 +8,6 @@
  * @brief    Support for libcore IR object output.
  * @author   Sebastian Hack
  */
-#include "config.h"
-
 #include "irargs_t.h"
 
 #include <ctype.h>

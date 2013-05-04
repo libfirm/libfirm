@@ -17,8 +17,6 @@
  * and the qnode is reinserted in the queue. The first qnode colored without
  * conflicts is the best one.
  */
-#include "config.h"
-
 #include "debug.h"
 #include "bitset.h"
 #include "raw_bitset.h"

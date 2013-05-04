@@ -8,8 +8,6 @@
  * @brief   calling convention helpers
  * @author  Matthias Braun
  */
-#include "config.h"
-
 #include "be_t.h"
 #include "beirg.h"
 #include "sparc_cconv.h"

@@ -7,8 +7,6 @@
  * @file
  * @author    Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
  */
-#include "config.h"
-
 #include "irloop.h"
 #include "tv.h"
 

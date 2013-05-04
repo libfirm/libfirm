@@ -14,8 +14,6 @@
  * dependencies allow. After pushing them back up out of as many loops as
  * possible.
  */
-#include "config.h"
-
 #include <stdbool.h>
 
 #include "iroptimize.h"

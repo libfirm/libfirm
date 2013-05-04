@@ -12,8 +12,6 @@
  * Backend node support for generic backend nodes.
  * This file provides Perm, Copy, Spill and Reload nodes.
  */
-#include "config.h"
-
 #include <stdlib.h>
 
 #include "beirg.h"

@@ -8,8 +8,6 @@
  * @brief   Lower small CopyB nodes into a series of Load/Store nodes
  * @author  Michael Beck, Matthias Braun, Manuel Mohr
  */
-#include "config.h"
-
 #include "adt/list.h"
 #include "ircons.h"
 #include "lowering.h"

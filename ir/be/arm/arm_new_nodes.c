@@ -10,8 +10,6 @@
  *         assembler irg.
  * @author Oliver Richter, Tobias Gneist
  */
-#include "config.h"
-
 #include <stdlib.h>
 #include <stdbool.h>
 

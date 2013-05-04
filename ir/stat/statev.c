@@ -9,8 +9,6 @@
  * @author      Sebastian Hack
  * @date        17.06.2007
  */
-#include "config.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -21,8 +19,6 @@
 #include "irprintf.h"
 #include "statev_t.h"
 #include "util.h"
-
-#include "config.h"
 
 #define MAX_TIMER 256
 

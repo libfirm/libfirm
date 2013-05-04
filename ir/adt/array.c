@@ -8,9 +8,6 @@
  * @brief       Array --- dynamic & flexible arrays.
  * @author      Markus Armbruster
  */
-
-#include "config.h"
-
 #include <stdlib.h>
 
 #include "array_t.h"

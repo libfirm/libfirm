@@ -8,8 +8,6 @@
  * @brief   lowering of Calls of intrinsic functions
  * @author  Michael Beck
  */
-#include "config.h"
-
 #include <stdbool.h>
 
 #include "lowering.h"

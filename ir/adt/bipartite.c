@@ -8,8 +8,6 @@
  * @brief   Specialized implementation for perfect bipartite matching.
  * @author  Sebastian Hack
  */
-#include "config.h"
-
 #include <stdio.h>
 #include <assert.h>
 

@@ -8,8 +8,6 @@
  * @brief       This is the main ia32 firm backend driver.
  * @author      Christian Wuerdig
  */
-#include "config.h"
-
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
 #include "irarch.h"

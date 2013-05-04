@@ -22,8 +22,6 @@
  * of the stack frame. The code here among other things adjusts these offsets
  * accordingly.
  */
-#include "config.h"
-
 #include "bearch_sparc_t.h"
 #include "gen_sparc_regalloc_if.h"
 #include "sparc_new_nodes.h"

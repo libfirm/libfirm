@@ -43,8 +43,6 @@
  * in some cases from Firm terminology.  Especially, Click's type is a
  * Firm tarval/entity, nevertheless we call it type here for "maximum compatibility".
  */
-#include "config.h"
-
 #include <assert.h>
 
 #include "iroptimize.h"

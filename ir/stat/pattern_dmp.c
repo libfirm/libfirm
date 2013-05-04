@@ -8,8 +8,6 @@
  * @brief   Statistics for Firm. Dumping patterns.
  * @author  Michael Beck
  */
-#include "config.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 

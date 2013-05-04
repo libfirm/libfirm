@@ -10,8 +10,6 @@
  * @author      Christian Wuerdig
  * @date        14.12.2005
  */
-#include "config.h"
-
 #include <stdlib.h>
 
 #include "ircons.h"

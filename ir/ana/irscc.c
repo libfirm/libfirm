@@ -12,8 +12,6 @@
  * @author   Goetz Lindenmaier
  * @date     7.2002
  */
-#include "config.h"
-
 #include <stdlib.h>
 
 #include "irloop_t.h"

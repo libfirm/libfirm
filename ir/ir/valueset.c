@@ -8,8 +8,6 @@
  * @author    Michael Beck
  * @brief     A value set, containing expression for values.
  */
-#include "config.h"
-
 #include "valueset.h"
 #include "irnode_t.h"
 #include "iropt_t.h"

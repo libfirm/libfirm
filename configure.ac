@@ -48,6 +48,7 @@ AC_SUBST([LIBTOOL_DEPS])
 
 dnl generate the config header file
 AC_CONFIG_HEADER([config.h])
+CPPFLAGS=$CPPFLAGS" -include config.h"
 
 AC_DEFINE([FIRM_BUILD], [], [Defined when firm library is built])
 AC_DEFINE([FIRM_DLL], [], [Define when a dynamically loadable shared library is built])

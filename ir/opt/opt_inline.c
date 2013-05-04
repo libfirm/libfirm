@@ -8,8 +8,6 @@
  * @brief    Dead node elimination and Procedure Inlining.
  * @author   Michael Beck, Goetz Lindenmaier
  */
-#include "config.h"
-
 #include <limits.h>
 #include <stdbool.h>
 #include <assert.h>

@@ -8,8 +8,6 @@
  * @brief   Optimization of function calls.
  * @author  Michael Beck
  */
-#include "config.h"
-
 #include "opt_init.h"
 #include <stdbool.h>
 

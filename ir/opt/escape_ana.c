@@ -9,8 +9,6 @@
  * @date   03.11.2005
  * @brief  A fast and simple Escape analysis.
  */
-#include "config.h"
-
 #include "iroptimize.h"
 
 #include "irgraph_t.h"

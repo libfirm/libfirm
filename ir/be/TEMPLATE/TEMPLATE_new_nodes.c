@@ -9,8 +9,6 @@
  *          opcodes and the coresponding node constructors for the TEMPLATE
  *          assembler irg.
  */
-#include "config.h"
-
 #include <stdlib.h>
 
 #include "irprog_t.h"

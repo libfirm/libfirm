@@ -10,8 +10,6 @@
  * @author  Michael Beck
  * @brief
  */
-#include "config.h"
-
 #include "debug.h"
 #include "ircons.h"
 #include "irdom.h"

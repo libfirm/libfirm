@@ -8,8 +8,6 @@
  * @brief   Opcode of types.
  * @author  Goetz Lindenmaier, Michael Beck
  */
-#include "config.h"
-
 #include "xmalloc.h"
 #include "tpop_t.h"
 #include "type_t.h"

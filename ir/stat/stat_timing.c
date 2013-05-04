@@ -8,8 +8,6 @@
  * @brief   OS abstraction from time measurement
  * @author  Sebastian Hack, Michael Beck, Matthias Braun
  */
-#include "config.h"
-
 #include "stat_timing.h"
 
 #include <stdio.h>

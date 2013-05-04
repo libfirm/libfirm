@@ -9,8 +9,6 @@
  * @author      Matthias Braun
  * @date        05.05.2006
  */
-#include "config.h"
-
 #include <limits.h>
 #include <stdbool.h>
 

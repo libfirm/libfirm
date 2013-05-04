@@ -8,8 +8,6 @@
  * @brief       Scheduling utilities for nodes in Blocks and Blocks.
  * @author      Sebastian Hack
  */
-#include "config.h"
-
 #include <stdlib.h>
 
 #include "firm_types.h"

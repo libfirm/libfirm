@@ -2,8 +2,6 @@
  * This file is part of libFirm.
  * Copyright (C) 2012 IPD Goos, Universit"at Karlsruhe, Germany
  */
-#include "config.h"
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

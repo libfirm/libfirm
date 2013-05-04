@@ -8,8 +8,6 @@
  * @brief   Data-flow driven minimal fixpoint value range analysis
  * @author  Christoph Mallon
  */
-#include "config.h"
-
 #include <assert.h>
 #include <stdbool.h>
 

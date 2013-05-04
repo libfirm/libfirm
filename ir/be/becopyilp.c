@@ -9,8 +9,6 @@
  * @author      Daniel Grund
  * @date        28.02.2006
  */
-#include "config.h"
-
 #include <stdbool.h>
 
 #include "be_t.h"

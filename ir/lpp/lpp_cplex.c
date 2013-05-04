@@ -7,8 +7,6 @@
  * @file
  * @author  Daniel Grund
  */
-#include "config.h"
-
 #include "lpp_cplex.h"
 #include "error.h"
 

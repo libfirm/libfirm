@@ -9,8 +9,6 @@
  * @author      Sebastian Hack
  * @date        22.11.2004
  */
-#include "config.h"
-
 #include <stdlib.h>
 
 #include "irnode.h"

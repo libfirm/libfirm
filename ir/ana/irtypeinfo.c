@@ -20,8 +20,6 @@
  *  requires no compute time.  As firm nodes can not be freed and reallocated
  *  pointers for nodes are unique (until a call of dead_node_elimination).
  */
-#include "config.h"
-
 #include "irtypeinfo.h"
 
 #include <stddef.h>

@@ -9,8 +9,6 @@
  * @author      Matthias Braun
  * @date        12.03.2007
  */
-#include "config.h"
-
 #include "bedwarf.h"
 #include "beemitter.h"
 #include "be_t.h"

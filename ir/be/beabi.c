@@ -8,8 +8,6 @@
  * @brief       Backend ABI implementation.
  * @author      Sebastian Hack, Michael Beck
  */
-#include "config.h"
-
 #include "obst.h"
 
 #include "irgopt.h"

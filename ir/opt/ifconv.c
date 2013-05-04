@@ -8,8 +8,6 @@
  * @brief   If conversion
  * @author  Christoph Mallon
  */
-#include "config.h"
-
 #include <assert.h>
 #include <stdbool.h>
 

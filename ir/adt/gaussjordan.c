@@ -32,8 +32,6 @@
 /* returns 0 if successful                              */
 /* returns -1 if ill-conditioned matrix                 */
 /*------------------------------------------------------*/
-#include "config.h"
-
 #include <math.h>
 #include <stdlib.h>
 #include "xmalloc.h"

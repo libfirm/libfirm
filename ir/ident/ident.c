@@ -8,8 +8,6 @@
  * @brief     Hash table to store names.
  * @author    Goetz Lindenmaier
  */
-#include "config.h"
-
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>

@@ -8,8 +8,6 @@
  * @brief      read/write analyze of graph argument, which have mode reference.
  * @author     Beyhan Veliev
  */
-#include "config.h"
-
 #include <stdlib.h>
 
 #include "irouts.h"

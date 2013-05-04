@@ -9,8 +9,6 @@
  * @author      Christian Wuerdig
  * @date        19.02.2007
  */
-#include "config.h"
-
 #include "set.h"
 #include "irnode.h"
 #include "util.h"

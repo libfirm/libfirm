@@ -9,8 +9,6 @@
  * @author      Matthias Braun
  * @date        29.09.2005
  */
-#include "config.h"
-
 #include "irtools.h"
 #include "debug.h"
 #include "iredges_t.h"

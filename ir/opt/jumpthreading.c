@@ -9,8 +9,6 @@
  * @date    10. Sep. 2006
  * @author  Christoph Mallon, Matthias Braun
  */
-#include "config.h"
-
 #include "iroptimize.h"
 
 #include <assert.h>

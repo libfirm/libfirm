@@ -1,5 +1,3 @@
-#include "config.h"
-
 #include <assert.h>
 #include <math.h>
 #include <string.h>

@@ -16,8 +16,6 @@
  *  methods that are 'free', i.e., their adress is handled by
  *  the program directly, or they are visible external.
  */
-#include "config.h"
-
 #include "cgana.h"
 #include "xmalloc.h"
 #include "irnode_t.h"

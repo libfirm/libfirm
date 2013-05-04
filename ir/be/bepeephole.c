@@ -8,8 +8,6 @@
  * @brief       Peephole optimisation framework keeps track of which registers contain which values
  * @author      Matthias Braun
  */
-#include "config.h"
-
 #include "array_t.h"
 #include "bepeephole.h"
 

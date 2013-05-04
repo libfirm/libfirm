@@ -119,8 +119,6 @@ print OUT<<EOF;
  *            created by: $0 $specfile $target_dir
  * \@date      $creation_time
  */
-#include "config.h"
-
 #include <stdio.h>
 #include <assert.h>
 

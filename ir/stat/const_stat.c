@@ -8,8 +8,6 @@
  * @brief   Statistic functions for constant counting.
  * @author  Michael Beck
  */
-#include "config.h"
-
 #include "firmstat_t.h"
 #include "tv_t.h"
 #include "util.h"

@@ -8,8 +8,6 @@
  * @brief   boolean condition/control flow optimizations
  * @author  Matthias Braun, Christoph Mallon, Michael Beck
  */
-#include "config.h"
-
 #include <assert.h>
 
 #include "adt/obst.h"

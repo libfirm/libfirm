@@ -11,8 +11,6 @@
  *
  * Simple depth first search on CFGs.
  */
-#include <config.h>
-
 #include <stdlib.h>
 
 #define DISABLE_STATEV

@@ -7,8 +7,6 @@
  * @brief    Remove all Bad nodes from ir graph
  * @author   Andreas Zwinkau
  */
-#include "config.h"
-
 #include <assert.h>
 
 #include "irnode_t.h"

@@ -8,8 +8,6 @@
  * @brief       Processor architecture specification.
  * @author      Sebastian Hack
  */
-#include "config.h"
-
 #include "bearch.h"
 #include "benode.h"
 #include "beinfo.h"

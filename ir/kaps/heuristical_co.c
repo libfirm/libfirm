@@ -9,8 +9,6 @@
  * @date    18.09.2009
  * @author  Thomas Bersch
  */
-#include "config.h"
-
 #include "adt/array.h"
 #include "assert.h"
 #include "error.h"

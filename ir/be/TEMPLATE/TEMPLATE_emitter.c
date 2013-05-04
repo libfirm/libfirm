@@ -7,8 +7,6 @@
  * @file
  * @brief   emit assembler for a backend graph
  */
-#include "config.h"
-
 #include <limits.h>
 
 #include "error.h"

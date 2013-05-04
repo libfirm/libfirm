@@ -9,8 +9,6 @@
  * @date    2011-09-22
  * @author  Manuel Mohr
  */
-#include "config.h"
-
 #include "irprog.h"
 #include "iroptimize.h"
 #include "typerep.h"

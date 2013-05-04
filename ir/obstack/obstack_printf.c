@@ -2,7 +2,6 @@
  * This file is part of libFirm.
  * Copyright (C) 2012 Karlsruhe Institute of Technology.
  */
-#include <config.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>

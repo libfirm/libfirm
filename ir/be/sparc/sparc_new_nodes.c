@@ -10,8 +10,6 @@
  *          assembler irg.
  * @author  Hannes Rapp, Matthias Braun
  */
-#include "config.h"
-
 #include <stdlib.h>
 
 #include "irprog_t.h"

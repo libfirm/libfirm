@@ -8,8 +8,6 @@
  * @brief   Statistics for Firm. DAG's in graphs.
  * @author  Michael Beck
  */
-#include "config.h"
-
 #include <assert.h>
 
 #include "irdump.h"

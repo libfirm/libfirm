@@ -14,8 +14,6 @@
  * - empty block elimination
  * - a simple dead node elimination (set inputs of unreachable nodes to BAD)
  */
-#include "config.h"
-
 #include <stdlib.h>
 
 #include "hashptr.h"

@@ -11,8 +11,6 @@
 #ifndef FIRM_BE_IA32_BEARCH_IA32_T_H
 #define FIRM_BE_IA32_BEARCH_IA32_T_H
 
-#include "config.h"
-
 #include "bearch.h"
 #include "beirg.h"
 #include "pmap.h"

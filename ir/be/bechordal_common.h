@@ -13,8 +13,6 @@
 #ifndef BECHORDAL_COMMON_H_
 #define BECHORDAL_COMMON_H_
 
-#include "config.h"
-
 #include "bechordal.h"
 #include "beinsn_t.h"
 

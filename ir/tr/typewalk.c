@@ -14,8 +14,6 @@
  * - execute the pre function before recursion
  * - execute the post function after recursion
  */
-#include "config.h"
-
 #include <stdlib.h>
 #include <stdio.h>
 

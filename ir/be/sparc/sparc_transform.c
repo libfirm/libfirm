@@ -8,8 +8,6 @@
  * @brief   code selection (transform FIRM into SPARC FIRM)
  * @author  Hannes Rapp, Matthias Braun
  */
-#include "config.h"
-
 #include <stdint.h>
 #include <stdbool.h>
 

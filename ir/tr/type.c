@@ -27,8 +27,6 @@
  *  on the level of the programming language, modes at the level of
  *  the target processor.
  */
-#include "config.h"
-
 #include <string.h>
 #include <stdlib.h>
 #include <stddef.h>

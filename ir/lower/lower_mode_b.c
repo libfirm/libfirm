@@ -8,8 +8,6 @@
  * @brief       lower mode_b operations to something the backend can handle
  * @author      Matthias Braun, Christoph Mallon
  */
-#include "config.h"
-
 #include "lower_mode_b.h"
 
 #include <stdlib.h>

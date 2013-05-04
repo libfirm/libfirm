@@ -9,8 +9,6 @@
  * @author   Goetz Lindenmaier
  * @date     29.10.2004
  */
-#include "config.h"
-
 #include "trouts_t.h"
 
 #include "array.h"

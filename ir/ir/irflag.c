@@ -8,8 +8,6 @@
  * @brief   Flags to control optimizations.
  * @author  Michael Beck, Sebastian Hack
  */
-#include "config.h"
-
 #include <stdio.h>
 
 #include "lc_opts.h"

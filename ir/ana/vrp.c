@@ -8,8 +8,6 @@
  * @brief   analyze graph to provide value range information
  * @author  Jonas Fietz
  */
-#include "config.h"
-
 #include "irtypes.h"
 #include "vrp.h"
 #include "iroptimize.h"

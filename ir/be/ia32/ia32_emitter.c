@@ -26,8 +26,6 @@
  *   pnc_Uge => P || AE
  *   pnc_Ne  => P || NE
  */
-#include "config.h"
-
 #include <limits.h>
 
 #include "xmalloc.h"

@@ -8,8 +8,6 @@
  * @brief       ia32 architecture variants
  * @author      Michael Beck, Matthias Braun
  */
-#include "config.h"
-
 #include <stdbool.h>
 
 #include "irmode_t.h"

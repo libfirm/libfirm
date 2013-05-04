@@ -9,8 +9,6 @@
  * @date    14.4.2008
  * @author  Michael Beck
  */
-#include "config.h"
-
 #include "irgraph_t.h"
 #include "iredges.h"
 #include "error.h"

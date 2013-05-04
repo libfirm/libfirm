@@ -7,8 +7,6 @@
  * @file
  * @brief   platform neutral timing utilities
  */
-#include "config.h"
-
 #include <stdio.h>
 #include <string.h>
 

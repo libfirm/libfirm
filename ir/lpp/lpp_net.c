@@ -8,8 +8,6 @@
  * @brief   A client for an lpp solving server.
  * @author  Sebastian Hack
  */
-#include "config.h"
-
 #ifdef _WIN32
 #include <winsock.h>
 #include <io.h>

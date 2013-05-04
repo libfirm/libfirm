@@ -8,8 +8,6 @@
  * @brief   Statistics for Firm. Pattern history.
  * @author  Michael Beck
  */
-#include "config.h"
-
 #include <assert.h>
 #include <stdlib.h>
 #include <limits.h>

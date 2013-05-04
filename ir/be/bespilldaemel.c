@@ -18,8 +18,6 @@
  *   Spilling in this context means placing a spill instruction behind the
  *   definition of the value and a reload before each usage.
  */
-#include "config.h"
-
 #include "debug.h"
 
 #include "irnodeset.h"

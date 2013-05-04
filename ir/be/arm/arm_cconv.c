@@ -8,8 +8,6 @@
  * @brief   calling convention helpers
  * @author  Matthias Braun
  */
-#include "config.h"
-
 #include "arm_cconv.h"
 #include "beirg.h"
 #include "irmode.h"

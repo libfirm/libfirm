@@ -8,8 +8,6 @@
  * @brief   Methods to manipulate names.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
  */
-#include "config.h"
-
 #include <stdio.h>
 
 #include "ident_t.h"

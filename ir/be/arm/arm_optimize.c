@@ -8,8 +8,6 @@
  * @brief       Implements several optimizations for ARM.
  * @author      Michael Beck
  */
-#include "config.h"
-
 #include "irgmod.h"
 #include "ircons.h"
 #include "iredges.h"

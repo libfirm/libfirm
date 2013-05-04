@@ -8,8 +8,6 @@
  * @brief   arm emitter
  * @author  Oliver Richter, Tobias Gneist, Michael Beck
  */
-#include "config.h"
-
 #include <limits.h>
 #include <stdbool.h>
 

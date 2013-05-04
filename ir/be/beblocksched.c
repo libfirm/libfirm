@@ -19,8 +19,6 @@
  * a next and prev pointers on blocks. The greedy algorithm sorts the edges by
  * execution frequencies and tries to transform them to fallthroughs in this order
  */
-#include "config.h"
-
 #include "beblocksched.h"
 
 #include <stdlib.h>

@@ -9,8 +9,6 @@
  * @date    02.12.2008
  * @author  Sebastian Buchwald
  */
-#include "config.h"
-
 #include <stdbool.h>
 
 #include "assert.h"

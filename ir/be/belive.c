@@ -9,8 +9,6 @@
  * @author      Sebastian Hack
  * @date        06.12.2004
  */
-#include "config.h"
-
 /* statev is expensive here, only enable when needed */
 #define DISABLE_STATEV
 

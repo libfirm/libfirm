@@ -9,8 +9,6 @@
  * @author      Sebastian Hack
  * @date        29.08.2006
  */
-#include "config.h"
-
 #include <stdlib.h>
 
 #include "iredges_t.h"

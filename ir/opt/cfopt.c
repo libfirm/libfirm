@@ -13,8 +13,6 @@
  * needed for the semantics of Phi nodes. Further, we NEVER remove labeled
  * blocks (even if we could move the label).
  */
-#include "config.h"
-
 #include "iroptimize.h"
 
 #include <assert.h>

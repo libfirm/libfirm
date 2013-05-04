@@ -8,8 +8,6 @@
  * @brief       Contains some useful function for the backend.
  * @author      Sebastian Hack
  */
-#include "config.h"
-
 #include <stdio.h>
 
 #include "irgwalk.h"

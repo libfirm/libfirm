@@ -29,8 +29,6 @@
  *
  *     x_nc, y_ij \in N,   w_ij \in R^+
  */
-#include "config.h"
-
 #include "be_t.h"
 #include "beintlive_t.h"
 #include "beirg.h"

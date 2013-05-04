@@ -21,8 +21,6 @@
  * @file
  * @brief   This file implements functions to finalize the irg for emit.
  */
-#include "config.h"
-
 #include "amd64_finish.h"
 #include "bearch.h"
 #include "benode.h"

@@ -15,8 +15,6 @@
  * 3) The Firm frame type which consists of all local variables
  *    and the spills.
  */
-#include "config.h"
-
 #include "bestack.h"
 #include "beirg.h"
 #include "besched.h"

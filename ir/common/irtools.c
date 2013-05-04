@@ -8,8 +8,6 @@
  * @brief     Some often needed tool-functions
  * @author    Michael Beck
  */
-#include "config.h"
-
 #include <stdlib.h>
 #include "irnode_t.h"
 #include "irbackedge_t.h"

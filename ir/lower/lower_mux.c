@@ -8,8 +8,6 @@
  * @brief   Replaces Mux nodes with control-flow
  * @author  Olaf Liebe
  */
-#include "config.h"
-
 #include <assert.h>
 
 #include "lowering.h"

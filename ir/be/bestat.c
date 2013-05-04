@@ -8,8 +8,6 @@
  * @brief       Provides several statistic functions for the backend.
  * @author      Christian Wuerdig, Matthias Braun
  */
-#include "config.h"
-
 #include <time.h>
 
 #include "irnode_t.h"

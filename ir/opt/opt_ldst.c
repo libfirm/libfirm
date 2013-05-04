@@ -9,8 +9,6 @@
  *          VanDrunen's LEPRE
  * @author  Michael Beck
  */
-#include "config.h"
-
 #include "irnode_t.h"
 #include "irflag_t.h"
 #include "array_t.h"

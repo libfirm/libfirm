@@ -9,8 +9,6 @@
  * @author   Goetz Lindenmaier, Michael Beck
  * @date     2000
  */
-#include "config.h"
-
 #include "irprog_t.h"
 #include "irgraph_t.h"
 #include "irpass_t.h"

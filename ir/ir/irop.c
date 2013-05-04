@@ -8,8 +8,6 @@
  * @brief   Representation of opcode of intermediate operation.
  * @author  Christian Schaefer, Goetz Lindenmaier, Michael Beck
  */
-#include "config.h"
-
 #include <string.h>
 
 #include "error.h"

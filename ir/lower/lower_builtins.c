@@ -8,8 +8,6 @@
  * @brief   Lowering of builtins to compiler-lib calls
  * @author  Matthias Braun
  */
-#include "config.h"
-
 #include "lower_builtins.h"
 #include <stdbool.h>
 #include <stdlib.h>

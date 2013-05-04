@@ -11,8 +11,6 @@
  */
 
 /* miscellaneous includes */
-#include "config.h"
-
 #include "debug.h"
 #include "error.h"
 

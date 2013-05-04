@@ -13,8 +13,6 @@
  * to int conversion which are specified as truncation in the C standard we have
  * to spill, change and restore the fpu rounding mode between spills.
  */
-#include "config.h"
-
 #include "bearch_ia32_t.h"
 #include "ia32_fpu.h"
 #include "ia32_new_nodes.h"

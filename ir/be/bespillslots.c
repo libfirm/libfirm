@@ -9,8 +9,6 @@
  * @author      Matthias Braun
  * @date        26.07.2006
  */
-#include "config.h"
-
 #include <stdlib.h>
 
 #include "set.h"

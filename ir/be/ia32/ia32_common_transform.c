@@ -9,8 +9,6 @@
  *              firm into ia32-Firm.
  * @author      Matthias Braun, Sebastian Buchwald
  */
-#include "config.h"
-
 #include "bearch_ia32_t.h"
 #include "error.h"
 #include "ircons.h"

@@ -9,8 +9,6 @@
  * @brief    loop inversion and loop unrolling
  *
  */
-#include "config.h"
-
 #include <stdbool.h>
 
 #include "iroptimize.h"

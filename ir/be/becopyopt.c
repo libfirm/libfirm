@@ -14,8 +14,6 @@
  * - Register-constrained nodes
  * - Two-address code instructions
  */
-#include "config.h"
-
 #include "debug.h"
 #include "error.h"
 #include "execfreq_t.h"

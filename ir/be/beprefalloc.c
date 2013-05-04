@@ -22,8 +22,6 @@
  * TODO:
  *  - make use of free registers in the permute_values code
  */
-#include "config.h"
-
 #include <float.h>
 #include <stdbool.h>
 #include <math.h>

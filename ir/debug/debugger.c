@@ -9,8 +9,6 @@
  * @author    Michael Beck
  * @date      2005
  */
-#include "config.h"
-
 #ifdef DEBUG_libfirm
 
 #ifdef _WIN32

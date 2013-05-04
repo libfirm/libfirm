@@ -8,8 +8,6 @@
  * @brief       Implements several optimizations for IA32.
  * @author      Matthias Braun, Christian Wuerdig
  */
-#include "config.h"
-
 #include "irnode.h"
 #include "irprog_t.h"
 #include "ircons.h"

@@ -8,8 +8,6 @@
  * @brief   Lower (stack-) Alloc nodes to allocate an aligned number of bytes
  * @author  Matthias Braun
  */
-#include "config.h"
-
 #include "lower_alloc.h"
 #include "irgwalk.h"
 #include "irnode_t.h"

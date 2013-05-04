@@ -2,8 +2,6 @@
  * This file is part of libFirm.
  * Copyright (C) 2012 Universitaet Karlsruhe
  */
-#include "config.h"
-
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>

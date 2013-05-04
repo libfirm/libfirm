@@ -19,8 +19,6 @@
  * There is a commented-out walker at the end of this file that might
  * be useful when revising this code.
  */
-
-#include "config.h"
 #include "debug.h"
 #include "tv.h"
 #include "irtypes.h"

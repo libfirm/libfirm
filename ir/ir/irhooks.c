@@ -8,8 +8,6 @@
  * @brief    Generic hooks for various libFirm functions.
  * @author   Michael Beck
  */
-#include "config.h"
-
 #include <assert.h>
 
 #include "irhooks.h"

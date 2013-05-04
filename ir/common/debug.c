@@ -9,8 +9,6 @@
  * @author  Michael Beck, Sebastian Hack
  * @date    15.12.2004
  */
-#include "config.h"
-
 #ifdef DEBUG_libfirm
 
 #include <stdarg.h>

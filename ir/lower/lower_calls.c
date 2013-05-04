@@ -8,8 +8,6 @@
  * @brief   Lowering of Calls with compound parameters and return types.
  * @author  Michael Beck, Matthias Braun
  */
-#include "config.h"
-
 #include <stdbool.h>
 
 #include "lower_calls.h"

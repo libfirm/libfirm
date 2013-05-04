@@ -8,8 +8,6 @@
  * @brief    Check irnodes for correctness.
  * @author   Christian Schaefer, Goetz Lindenmaier, Till Riedel, Michael Beck
  */
-#include "config.h"
-
 #include "irnode_t.h"
 #include "irprog.h"
 #include "irop_t.h"

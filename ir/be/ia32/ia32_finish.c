@@ -8,8 +8,6 @@
  * @brief   This file implements functions to finalize the irg for emit.
  * @author  Christian Wuerdig
  */
-#include "config.h"
-
 #include "irnode.h"
 #include "ircons.h"
 #include "irgmod.h"

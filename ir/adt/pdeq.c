@@ -9,8 +9,6 @@
  * @author      Christian von Roques
  * @date        1999 by getting from fiasco
  */
-#include "config.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

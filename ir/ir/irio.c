@@ -8,8 +8,6 @@
  * @brief   Write textual representation of firm to file.
  * @author  Moritz Kroll, Matthias Braun
  */
-#include "config.h"
-
 #include <string.h>
 #include <ctype.h>
 #include <stdbool.h>

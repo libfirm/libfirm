@@ -17,8 +17,6 @@
    License along with the GNU C Library; if not, write to the Free
    Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
    Boston, MA 02110-1301, USA.  */
-#include <config.h>
-
 #include "obstack.h"
 
 /* NOTE BEFORE MODIFYING THIS FILE: This version number must be

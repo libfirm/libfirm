@@ -9,7 +9,6 @@
  * @date    02.10.2008
  * @author  Sebastian Buchwald
  */
-#include "config.h"
 #ifndef KAPS_VECTOR_T_H
 #define KAPS_VECTOR_T_H
 

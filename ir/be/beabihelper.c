@@ -9,8 +9,6 @@
  *              selection phase.
  * @author      Matthias Braun
  */
-#include "config.h"
-
 #include "beabihelper.h"
 #include "bearch.h"
 #include "beirg.h"

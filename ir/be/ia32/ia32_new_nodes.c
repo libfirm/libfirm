@@ -11,8 +11,6 @@
  * This file implements the creation of the architecture specific firm opcodes
  * and the corresponding node constructors for the ia32 assembler irg.
  */
-#include "config.h"
-
 #include <stdlib.h>
 #include <stdbool.h>
 

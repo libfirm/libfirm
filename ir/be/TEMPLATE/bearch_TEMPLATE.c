@@ -7,8 +7,6 @@
  * @file
  * @brief    The main TEMPLATE backend driver file.
  */
-#include "config.h"
-
 #include "bearch_TEMPLATE_t.h"
 
 #include "irgwalk.h"

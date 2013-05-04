@@ -14,8 +14,6 @@
  * this by copying all (reachable) nodes to a new obstack and throwing away
  * the old one.
  */
-#include "config.h"
-
 #include "iroptimize.h"
 #include "irnode_t.h"
 #include "irgraph_t.h"

@@ -15,8 +15,6 @@
  * der nicht erreichbaren Methoden wird aus der Abschätzung der
  * Aufrufrelation bestimmt.
  */
-#include "config.h"
-
 #include "ircgopt.h"
 
 #include "debug.h"

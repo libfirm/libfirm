@@ -10,8 +10,6 @@
  * @brief     A nodeset. This should be preferred over a simple pset, because it
               tries to guarantee deterministic behavior.
  */
-#include "config.h"
-
 #include "irnodeset.h"
 #include "irnode_t.h"
 #include "hashptr.h"

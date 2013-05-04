@@ -9,8 +9,6 @@
  *              ia32-Firm.
  * @author      Christian Wuerdig, Matthias Braun
  */
-#include "config.h"
-
 #include <limits.h>
 #include <stdbool.h>
 

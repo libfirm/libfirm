@@ -11,8 +11,6 @@
  *
  * Abstract graph implementations for the CFG of a ir_graph.
  */
-#include <config.h>
-
 #include "irgraph_t.h"
 #include "iredges_t.h"
 #include "absgraph.h"

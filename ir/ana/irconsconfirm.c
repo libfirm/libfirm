@@ -9,8 +9,6 @@
  * @author   Michael Beck
  * @date     6.2005
  */
-#include "config.h"
-
 #include "irconsconfirm.h"
 
 #include "irgraph_t.h"

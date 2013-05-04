@@ -8,7 +8,7 @@
  * @brief     Central firm functionality.
  * @author    Martin Trapp, Christian Schaefer, Goetz Lindenmaier
  */
-#include "config.h"
+#include <stdio.h>
 
 #ifdef HAVE_FIRM_REVISION_H
 # include "firm_revision.h"

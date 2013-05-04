@@ -9,12 +9,9 @@
  * @author      Sebastian Hack, Matthias Braun
  * @date        27.06.2005
  */
-#include "config.h"
-
 #include <limits.h>
 #include <stdlib.h>
 
-#include "config.h"
 #include "obst.h"
 #include "pmap.h"
 #include "debug.h"

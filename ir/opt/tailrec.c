@@ -9,8 +9,6 @@
  * @date    08.06.2004
  * @author  Michael Beck
  */
-#include "config.h"
-
 #include <assert.h>
 
 #include "debug.h"

@@ -9,8 +9,6 @@
  * @author      Adam M. Szalkowski, Steven Schaefer
  * @date        06.04.2006, 11.11.2010
  */
-#include "config.h"
-
 #include <math.h>
 #include <stdio.h>
 

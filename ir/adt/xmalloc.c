@@ -8,8 +8,6 @@
  * @brief       implementation of xmalloc & friends
  * @author      Markus Armbruster
  */
-#include "config.h"
-
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>

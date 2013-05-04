@@ -8,8 +8,6 @@
  * @brief   emit assembler for a backend graph
  * @author  Hannes Rapp, Matthias Braun
  */
-#include "config.h"
-
 #include <limits.h>
 
 #include "bitfiddle.h"

@@ -10,8 +10,6 @@
  * This is done by elminiating all edges into the unreachable code. So that
  * after that the unreachable code should be dead.
  */
-#include "config.h"
-
 #include "irgopt.h"
 
 #include <stdbool.h>

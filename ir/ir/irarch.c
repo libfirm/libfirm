@@ -13,8 +13,6 @@
  * by Youfeng Wu.
  * Implements Division and Modulo by Consts from "Hackers Delight",
  */
-#include "config.h"
-
 #include <stdlib.h>
 #include <assert.h>
 

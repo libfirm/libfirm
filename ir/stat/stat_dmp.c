@@ -8,8 +8,6 @@
  * @brief   Statistics for Firm. Dumping.
  * @author  Michael Beck
  */
-#include "config.h"
-
 #include "stat_dmp.h"
 #include "irhooks.h"
 #include "util.h"
