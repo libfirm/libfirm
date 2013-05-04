@@ -8,9 +8,6 @@
  * @brief       implementation of xmalloc & friends
  * @author      Markus Armbruster
  */
-
-/* @@@ ToDo: replace this file with the one from liberty.
-   [reimplement xstrdup, ... ] */
 #include "config.h"
 
 #include <string.h>
