@@ -26,7 +26,7 @@
 
 static ir_op **opcodes;
 /** the available next opcode */
-static unsigned next_iro = iro_MaxOpcode;
+static unsigned next_iro = iro_Last + 1;
 
 static ir_type *default_get_type_attr(const ir_node *node);
 static ir_entity *default_get_entity_attr(const ir_node *node);
@@ -55,16 +55,14 @@ ir_op *new_ir_op(unsigned code, const char *name, op_pin_state p,
 	res->ops.get_type_attr   = default_get_type_attr;
 	res->ops.get_entity_attr = default_get_entity_attr;
 
-	{
-		size_t len = ARR_LEN(opcodes);
-		if ((size_t)code >= len) {
-			ARR_RESIZE(ir_op*, opcodes, (size_t)code+1);
-			memset(&opcodes[len], 0, (code-len+1) * sizeof(opcodes[0]));
-		}
-		if (opcodes[code] != NULL)
-			panic("opcode registered twice");
-		opcodes[code] = res;
+	size_t len = ARR_LEN(opcodes);
+	if ((size_t)code >= len) {
+		ARR_RESIZE(ir_op*, opcodes, (size_t)code+1);
+		memset(&opcodes[len], 0, (code-len+1) * sizeof(opcodes[0]));
 	}
+	if (opcodes[code] != NULL)
+		panic("opcode registered twice");
+	opcodes[code] = res;
 
 	hook_new_ir_op(res);
 	return res;
@@ -93,10 +91,7 @@ ir_op *ir_get_opcode(unsigned code)
 
 void ir_clear_opcodes_generic_func(void)
 {
-	size_t n = ir_get_n_opcodes();
-	size_t i;
-
-	for (i = 0; i < n; ++i) {
+	for (size_t i = 0, n = ir_get_n_opcodes(); i < n; ++i) {
 		ir_op *op = ir_get_opcode(i);
 		if (op == NULL)
 			continue;
@@ -193,27 +188,25 @@ static ir_entity *default_get_entity_attr(const ir_node *node)
 
 static unsigned default_hash_node(const ir_node *node)
 {
-	unsigned h;
-	int i, irn_arity;
-
 	/* hash table value = 9*(9*(9*(9*(9*arity+in[0])+in[1])+ ...)+mode)+code */
-	h = irn_arity = get_irn_arity(node);
+	int      arity = get_irn_arity(node);
+	unsigned hash  = (unsigned)arity;
 
 	/* consider all in nodes... except the block if not a control flow. */
-	for (i = is_cfop(node) ? -1 : 0;  i < irn_arity;  ++i) {
+	for (int i = is_cfop(node) ? -1 : 0;  i < arity;  ++i) {
 		ir_node *pred = get_irn_n(node, i);
 		if (is_irn_cse_neutral(pred))
-			h *= 9;
+			hash *= 9;
 		else
-			h = 9*h + hash_ptr(pred);
+			hash = 9*hash + hash_ptr(pred);
 	}
 
 	/* ...mode,... */
-	h = 9*h + hash_ptr(get_irn_mode(node));
+	hash = 9*hash + hash_ptr(get_irn_mode(node));
 	/* ...and code */
-	h = 9*h + hash_ptr(get_irn_op(node));
+	hash = 9*hash + hash_ptr(get_irn_op(node));
 
-	return h;
+	return hash;
 }
 
 /**
@@ -221,12 +214,9 @@ static unsigned default_hash_node(const ir_node *node)
  */
 static unsigned hash_Const(const ir_node *node)
 {
-	unsigned h;
-
 	/* special value for const, as they only differ in their tarval. */
-	h = hash_ptr(node->attr.con.tarval);
-
-	return h;
+	unsigned hash = hash_ptr(node->attr.con.tarval);
+	return hash;
 }
 
 /**
@@ -234,12 +224,9 @@ static unsigned hash_Const(const ir_node *node)
  */
 static unsigned hash_SymConst(const ir_node *node)
 {
-	unsigned h;
-
 	/* all others are pointers */
-	h = hash_ptr(node->attr.symc.sym.type_p);
-
-	return h;
+	unsigned hash = hash_ptr(node->attr.symc.sym.type_p);
+	return hash;
 }
 
 /** Compares two exception attributes */
@@ -351,7 +338,6 @@ static int node_cmp_attr_CopyB(const ir_node *a, const ir_node *b)
 {
 	if (get_CopyB_type(a) != get_CopyB_type(b))
 		return 1;
-
 	return node_cmp_exception(a, b);
 }
 
@@ -466,9 +452,9 @@ static void default_copy_attr(ir_graph *irg, const ir_node *old_node,
                               ir_node *new_node)
 {
 	(void) irg;
-
 	assert(get_irn_op(old_node) == get_irn_op(new_node));
-	memcpy(&new_node->attr, &old_node->attr, get_op_attr_size(get_irn_op(old_node)));
+	size_t size = get_op_attr_size(get_irn_op(old_node));
+	memcpy(&new_node->attr, &old_node->attr, size);
 }
 
 /**
@@ -494,9 +480,10 @@ static void block_copy_attr(ir_graph *irg, const ir_node *old_node,
 	new_node->attr.block.block_visited = 0;
 	memset(&new_node->attr.block.dom, 0, sizeof(new_node->attr.block.dom));
 	memset(&new_node->attr.block.pdom, 0, sizeof(new_node->attr.block.pdom));
-	/* It should be safe to copy the entity here, as it has no back-link to the old block.
-	 * It serves just as a label number, so copying a labeled block results in an exact copy.
-	 * This is at least what we need for DCE to work. */
+	/* It should be safe to copy the entity here, as it has no back-link to the
+	 * old block. It serves just as a label number, so copying a labeled block
+	 * results in an exact copy. This is at least what we need for DCE to work.
+	 */
 	new_node->attr.block.entity         = old_node->attr.block.entity;
 	new_node->attr.block.phis           = NULL;
 }
