@@ -542,13 +542,13 @@ foreach my $op (keys(%nodes)) {
 
 	# Create opcode
 	$obst_opvar     .= "ir_op *op_$op = NULL;\n";
-	$obst_get_opvar .= "ir_op *get_op_$op(void)         { return op_$op; }\n";
-	$obst_get_opvar .= "int    is_$op(const ir_node *n) { return get_$arch\_irn_opcode(n) == iro_$op; }\n\n";
+	$obst_get_opvar .= "bool is_$op(const ir_node *n) {\n";
+	$obst_get_opvar .= "\treturn get_irn_op(n) == op_$op;\n";
+	$obst_get_opvar .= "}\n\n";
 
 	$obst_header .= <<EOF;
 extern ir_op *op_${op};
-ir_op *get_op_${op}(void);
-int is_${op}(const ir_node *n);
+bool is_${op}(const ir_node *n);
 EOF
 
 	my $attr_type= $n{attr_type};
