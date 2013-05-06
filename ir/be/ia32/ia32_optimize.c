@@ -329,20 +329,12 @@ static void peephole_ia32_Return(ir_node *node)
 
 	/* check if this return is the first on the block */
 	sched_foreach_reverse_before(node, irn) {
-		switch (get_irn_opcode(irn)) {
-		case beo_Start:
-			/* ignore no code generated */
+		if (is_Phi(irn) || be_is_Start(irn))
 			continue;
-		case beo_IncSP:
-			/* arg, IncSP 0 nodes might occur, ignore these */
-			if (be_get_IncSP_offset(irn) == 0)
-				continue;
-			return;
-		case iro_Phi:
+		/* arg, IncSP 0 nodes might occur, ignore these */
+		if (be_is_IncSP(irn) && be_get_IncSP_offset(irn) == 0)
 			continue;
-		default:
-			return;
-		}
+		return;
 	}
 
 	/* ensure, that the 3 byte return is generated */

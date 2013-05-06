@@ -93,6 +93,7 @@ typedef struct {
 	ir_entity    **out_entities;
 } be_memperm_attr_t;
 
+static unsigned be_opcode_start;
 ir_op *op_be_Spill;
 ir_op *op_be_Reload;
 ir_op *op_be_Perm;
@@ -107,6 +108,8 @@ ir_op *op_be_AddSP;
 ir_op *op_be_SubSP;
 ir_op *op_be_Start;
 ir_op *op_be_FrameAddr;
+
+#define be_op_tag FOURCC('B', 'E', '\0', '\0')
 
 /**
  * Compare the attributes of two be_FrameAddr nodes.
@@ -746,14 +749,7 @@ void be_set_CopyKeep_op(ir_node *cpy, ir_node *op)
 
 static bool be_has_frame_entity(const ir_node *irn)
 {
-	switch (get_irn_opcode(irn)) {
-	case beo_Spill:
-	case beo_Reload:
-	case beo_FrameAddr:
-		return true;
-	default:
-		return false;
-	}
+	return be_is_Spill(irn) || be_is_Reload(irn) || be_is_FrameAddr(irn);
 }
 
 ir_entity *be_get_frame_entity(const ir_node *irn)
@@ -1164,7 +1160,7 @@ static void dump_node(FILE *f, const ir_node *irn, dump_reason_t reason)
 
 			}
 
-			switch (get_irn_opcode(irn)) {
+			switch (get_be_irn_opcode(irn)) {
 			case beo_IncSP: {
 				const be_incsp_attr_t *a = (const be_incsp_attr_t*)get_irn_generic_attr_const(irn);
 				fprintf(f, "align: %d\n", a->align);
@@ -1236,9 +1232,15 @@ static void copy_attr(ir_graph *irg, const ir_node *old_node, ir_node *new_node)
 	}
 }
 
-int is_be_node(const ir_node *irn)
+bool is_be_node(const ir_node *irn)
 {
-	return get_op_ops(get_irn_op(irn))->be_ops == &be_node_irn_ops;
+	return get_op_tag(get_irn_op(irn)) == be_op_tag;
+}
+
+be_opcode get_be_irn_opcode(const ir_node *node)
+{
+	assert(is_be_node(node));
+	return (be_opcode) (get_irn_opcode(node) - be_opcode_start);
 }
 
 static ir_op *new_be_op(unsigned code, const char *name, op_pin_state p,
@@ -1248,6 +1250,7 @@ static ir_op *new_be_op(unsigned code, const char *name, op_pin_state p,
 	res->ops.dump_node = dump_node;
 	res->ops.copy_attr = copy_attr;
 	res->ops.be_ops    = &be_node_irn_ops;
+	set_op_tag(res, be_op_tag);
 	return res;
 }
 
@@ -1255,23 +1258,27 @@ void be_init_op(void)
 {
 	assert(op_be_Spill == NULL);
 
+	be_opcode_start = get_next_ir_opcodes(beo_last+1);
+
 	/* Acquire all needed opcodes. */
-	op_be_Spill     = new_be_op(beo_Spill,     "be_Spill",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_frame_attr_t));
-	op_be_Reload    = new_be_op(beo_Reload,    "be_Reload",    op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_frame_attr_t));
-	op_be_Perm      = new_be_op(beo_Perm,      "be_Perm",      op_pin_state_exc_pinned, irop_flag_none,                          oparity_variable, sizeof(be_node_attr_t));
-	op_be_MemPerm   = new_be_op(beo_MemPerm,   "be_MemPerm",   op_pin_state_exc_pinned, irop_flag_none,                          oparity_variable, sizeof(be_memperm_attr_t));
-	op_be_Copy      = new_be_op(beo_Copy,      "be_Copy",      op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_node_attr_t));
-	op_be_Keep      = new_be_op(beo_Keep,      "be_Keep",      op_pin_state_exc_pinned, irop_flag_keep,                          oparity_dynamic,  sizeof(be_node_attr_t));
-	op_be_CopyKeep  = new_be_op(beo_CopyKeep,  "be_CopyKeep",  op_pin_state_exc_pinned, irop_flag_keep,                          oparity_variable, sizeof(be_node_attr_t));
-	op_be_Call      = new_be_op(beo_Call,      "be_Call",      op_pin_state_exc_pinned, irop_flag_fragile|irop_flag_uses_memory, oparity_variable, sizeof(be_call_attr_t));
+	unsigned o = be_opcode_start;
+	op_be_Spill     = new_be_op(o+beo_Spill,     "be_Spill",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_frame_attr_t));
+	op_be_Reload    = new_be_op(o+beo_Reload,    "be_Reload",    op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_frame_attr_t));
+	op_be_Perm      = new_be_op(o+beo_Perm,      "be_Perm",      op_pin_state_exc_pinned, irop_flag_none,                          oparity_variable, sizeof(be_node_attr_t));
+	op_be_MemPerm   = new_be_op(o+beo_MemPerm,   "be_MemPerm",   op_pin_state_exc_pinned, irop_flag_none,                          oparity_variable, sizeof(be_memperm_attr_t));
+	op_be_Copy      = new_be_op(o+beo_Copy,      "be_Copy",      op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_node_attr_t));
+	op_be_Keep      = new_be_op(o+beo_Keep,      "be_Keep",      op_pin_state_exc_pinned, irop_flag_keep,                          oparity_dynamic,  sizeof(be_node_attr_t));
+	op_be_CopyKeep  = new_be_op(o+beo_CopyKeep,  "be_CopyKeep",  op_pin_state_exc_pinned, irop_flag_keep,                          oparity_variable, sizeof(be_node_attr_t));
+	op_be_Call      = new_be_op(o+beo_Call,      "be_Call",      op_pin_state_exc_pinned, irop_flag_fragile|irop_flag_uses_memory, oparity_variable, sizeof(be_call_attr_t));
+	op_be_Return    = new_be_op(o+beo_Return,    "be_Return",    op_pin_state_exc_pinned, irop_flag_cfopcode,                      oparity_variable, sizeof(be_return_attr_t));
+	op_be_AddSP     = new_be_op(o+beo_AddSP,     "be_AddSP",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_node_attr_t));
+	op_be_SubSP     = new_be_op(o+beo_SubSP,     "be_SubSP",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_node_attr_t));
+	op_be_IncSP     = new_be_op(o+beo_IncSP,     "be_IncSP",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_incsp_attr_t));
+	op_be_Start     = new_be_op(o+beo_Start,     "be_Start",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_start_attr_t));
+	op_be_FrameAddr = new_be_op(o+beo_FrameAddr, "be_FrameAddr", op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_frame_attr_t));
+
 	ir_op_set_memory_index(op_be_Call, n_be_Call_mem);
 	ir_op_set_fragile_indices(op_be_Call, pn_be_Call_X_regular, pn_be_Call_X_except);
-	op_be_Return    = new_be_op(beo_Return,    "be_Return",    op_pin_state_exc_pinned, irop_flag_cfopcode,                      oparity_variable, sizeof(be_return_attr_t));
-	op_be_AddSP     = new_be_op(beo_AddSP,     "be_AddSP",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_node_attr_t));
-	op_be_SubSP     = new_be_op(beo_SubSP,     "be_SubSP",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_node_attr_t));
-	op_be_IncSP     = new_be_op(beo_IncSP,     "be_IncSP",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_incsp_attr_t));
-	op_be_Start     = new_be_op(beo_Start,     "be_Start",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_start_attr_t));
-	op_be_FrameAddr = new_be_op(beo_FrameAddr, "be_FrameAddr", op_pin_state_exc_pinned, irop_flag_none,                          oparity_any,      sizeof(be_frame_attr_t));
 
 	op_be_Spill->ops.node_cmp_attr     = FrameAddr_cmp_attr;
 	op_be_Reload->ops.node_cmp_attr    = FrameAddr_cmp_attr;
