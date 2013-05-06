@@ -542,7 +542,8 @@ foreach my $op (keys(%nodes)) {
 
 	# Create opcode
 	$obst_opvar     .= "ir_op *op_$op = NULL;\n";
-	$obst_get_opvar .= "bool is_$op(const ir_node *n) {\n";
+	$obst_get_opvar .= "bool is_$op(const ir_node *n)\n";
+	$obst_get_opvar .= "{\n";
 	$obst_get_opvar .= "\treturn get_irn_op(n) == op_$op;\n";
 	$obst_get_opvar .= "}\n\n";
 
@@ -568,7 +569,8 @@ EOF
 	if (exists($n{"cmp_attr"})) {
 		my $cmpcode = $n{"cmp_attr"};
 
-		$obst_cmp_attr .= "static int cmp_attr_$op(const ir_node *a, const ir_node *b) {\n";
+		$obst_cmp_attr .= "static int cmp_attr_$op(const ir_node *a, const ir_node *b)\n";
+		$obst_cmp_attr .= "{\n";
 		if($cmpcode =~ m/attr_a/) {
 			$obst_cmp_attr .= "\tconst ${attr_type} *attr_a = get_irn_generic_attr_const(a);\n";
 		} else {
@@ -703,7 +705,6 @@ $obst_opvar
 $obst_get_opvar
 
 static int $arch\_opcode_start = -1;
-static int $arch\_opcode_end   = -1;
 
 EOF
 
@@ -729,33 +730,25 @@ if (length($arch) >= 4) {
 
 print OUT <<END;
 
-/** A tag for the $arch opcodes. Note that the address is used as a tag value, NOT the FOURCC code. */
+/** A tag for the $arch opcodes. */
 #define $arch\_op_tag FOURCC('$a', '$b', '$c', '$d')
 
-/** Return the opcode number of the first $arch opcode. */
-int get_$arch\_opcode_first(void) {
-	return $arch\_opcode_start;
-}
-
-/** Return the opcode number of the last $arch opcode + 1. */
-int get_$arch\_opcode_last(void) {
-	return $arch\_opcode_end;
-}
-
 /** Return 1 if the given opcode is a $arch machine op, 0 otherwise */
-int is_$arch\_op(const ir_op *op) {
+int is_$arch\_op(const ir_op *op)
+{
 	return get_op_tag(op) == $arch\_op_tag;
 }
 
 /** Return 1 if the given node is a $arch machine node, 0 otherwise */
-int is_$arch\_irn(const ir_node *node) {
+int is_$arch\_irn(const ir_node *node)
+{
 	return is_$arch\_op(get_irn_op(node));
 }
 
-int get_$arch\_irn_opcode(const ir_node *node) {
-	if (is_$arch\_irn(node))
-		return get_irn_opcode(node) - $arch\_opcode_start;
-	return -1;
+int get_$arch\_irn_opcode(const ir_node *node)
+{
+	assert(is_$arch\_irn(node));
+	return get_irn_opcode(node) - $arch\_opcode_start;
 }
 
 #ifdef BIT
@@ -778,7 +771,6 @@ void $arch\_create_opcodes(const arch_irn_ops_t *be_ops)
 
 	$arch\_opcode_start = cur_opcode;
 $obst_new_irop
-	$arch\_opcode_end = cur_opcode + iro_$arch\_last;
 }
 
 void $arch\_free_opcodes(void)
@@ -810,8 +802,6 @@ $obst_enum_op
 int is_${arch}_irn(const ir_node *node);
 int is_${arch}_op(const ir_op *op);
 
-int get_${arch}_opcode_first(void);
-int get_${arch}_opcode_last(void);
 int get_${arch}_irn_opcode(const ir_node *node);
 ${obst_header}
 ${obst_proj}

@@ -1251,30 +1251,32 @@ static ir_node *create_Copy(x87_state *state, ir_node *n)
 	const arch_register_t *op1;
 
 	/* Do not copy constants, recreate them. */
-	switch (get_ia32_irn_opcode(pred)) {
-	case iro_ia32_fldz:
-		cnstr = new_bd_ia32_fldz;
-		break;
-	case iro_ia32_fld1:
-		cnstr = new_bd_ia32_fld1;
-		break;
-	case iro_ia32_fldpi:
-		cnstr = new_bd_ia32_fldpi;
-		break;
-	case iro_ia32_fldl2e:
-		cnstr = new_bd_ia32_fldl2e;
-		break;
-	case iro_ia32_fldl2t:
-		cnstr = new_bd_ia32_fldl2t;
-		break;
-	case iro_ia32_fldlg2:
-		cnstr = new_bd_ia32_fldlg2;
-		break;
-	case iro_ia32_fldln2:
-		cnstr = new_bd_ia32_fldln2;
-		break;
-	default:
-		break;
+	if (is_ia32_irn(pred)) {
+		switch (get_ia32_irn_opcode(pred)) {
+		case iro_ia32_fldz:
+			cnstr = new_bd_ia32_fldz;
+			break;
+		case iro_ia32_fld1:
+			cnstr = new_bd_ia32_fld1;
+			break;
+		case iro_ia32_fldpi:
+			cnstr = new_bd_ia32_fldpi;
+			break;
+		case iro_ia32_fldl2e:
+			cnstr = new_bd_ia32_fldl2e;
+			break;
+		case iro_ia32_fldl2t:
+			cnstr = new_bd_ia32_fldl2t;
+			break;
+		case iro_ia32_fldlg2:
+			cnstr = new_bd_ia32_fldlg2;
+			break;
+		case iro_ia32_fldln2:
+			cnstr = new_bd_ia32_fldln2;
+			break;
+		default:
+			break;
+		}
 	}
 
 	out = x87_get_irn_register(n);
