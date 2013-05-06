@@ -2731,50 +2731,16 @@ static ir_node *gen_Proj_Proj_Call(ir_node *node)
 	return new_r_Proj(new_call, mode, new_pn);
 }
 
-/**
- * Transform a Proj node.
- */
-static ir_node *gen_Proj(ir_node *node)
+static ir_node *gen_Proj_Proj(ir_node *node)
 {
-	ir_node *pred = get_Proj_pred(node);
-
-	switch (get_irn_opcode(pred)) {
-	case iro_ASM:
-		return gen_Proj_ASM(node);
-	case iro_Alloc:
-		return gen_Proj_Alloc(node);
-	case iro_Builtin:
-		return gen_Proj_Builtin(node);
-	case iro_Store:
-		return gen_Proj_Store(node);
-	case iro_Load:
-		return gen_Proj_Load(node);
-	case iro_Call:
-		return gen_Proj_Call(node);
-	case iro_Switch:
-	case iro_Cond:
-		return be_duplicate_node(node);
-	case iro_Div:
-		return gen_Proj_Div(node);
-	case iro_Start:
-		return gen_Proj_Start(node);
-	case iro_Proj: {
-		ir_node *pred_pred = get_Proj_pred(pred);
-		if (is_Call(pred_pred)) {
-			return gen_Proj_Proj_Call(node);
-		} else if (is_Start(pred_pred)) {
-			return gen_Proj_Proj_Start(node);
-		}
-		/* FALLTHROUGH */
+	ir_node *pred      = get_Proj_pred(node);
+	ir_node *pred_pred = get_Proj_pred(pred);
+	if (is_Call(pred_pred)) {
+		return gen_Proj_Proj_Call(node);
+	} else if (is_Start(pred_pred)) {
+		return gen_Proj_Proj_Start(node);
 	}
-	default:
-		if (is_sparc_AddCC_t(pred)) {
-			return gen_Proj_AddCC_t(node);
-		} else if (is_sparc_SubCC_t(pred)) {
-			return gen_Proj_SubCC_t(node);
-		}
-		panic("code selection didn't expect Proj after %+F\n", pred);
-	}
+	panic("code selection didn't expect Proj(Proj) after %+F\n", pred_pred);
 }
 
 /**
@@ -2817,7 +2783,6 @@ static void sparc_register_transformers(void)
 	be_set_transform_function(op_Not,          gen_Not);
 	be_set_transform_function(op_Or,           gen_Or);
 	be_set_transform_function(op_Phi,          gen_Phi);
-	be_set_transform_function(op_Proj,         gen_Proj);
 	be_set_transform_function(op_Return,       gen_Return);
 	be_set_transform_function(op_Sel,          gen_Sel);
 	be_set_transform_function(op_Shl,          gen_Shl);
@@ -2835,6 +2800,20 @@ static void sparc_register_transformers(void)
 	be_set_transform_function(op_sparc_Save,   be_duplicate_node);
 	be_set_transform_function(op_sparc_SubX_t, gen_SubX_t);
 	be_set_transform_function(op_sparc_SubCC_t,gen_SubCC_t);
+
+	be_set_transform_proj_function(op_Alloc,         gen_Proj_Alloc);
+	be_set_transform_proj_function(op_ASM,           gen_Proj_ASM);
+	be_set_transform_proj_function(op_Builtin,       gen_Proj_Builtin);
+	be_set_transform_proj_function(op_Call,          gen_Proj_Call);
+	be_set_transform_proj_function(op_Cond,          be_duplicate_node);
+	be_set_transform_proj_function(op_Div,           gen_Proj_Div);
+	be_set_transform_proj_function(op_Load,          gen_Proj_Load);
+	be_set_transform_proj_function(op_Proj,          gen_Proj_Proj);
+	be_set_transform_proj_function(op_sparc_AddCC_t, gen_Proj_AddCC_t);
+	be_set_transform_proj_function(op_sparc_SubCC_t, gen_Proj_SubCC_t);
+	be_set_transform_proj_function(op_Start,         gen_Proj_Start);
+	be_set_transform_proj_function(op_Store,         gen_Proj_Store);
+	be_set_transform_proj_function(op_Switch,        be_duplicate_node);
 }
 
 /**

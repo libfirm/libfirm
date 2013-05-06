@@ -379,37 +379,29 @@ static ir_node *gen_Proj_Load(ir_node *node)
     return be_duplicate_node(node);
 }
 
-/**
- * Transform a Proj node.
- */
-static ir_node *gen_Proj(ir_node *node)
+static ir_node *gen_Proj_Store(ir_node *node)
 {
-	dbg_info *dbgi = get_irn_dbg_info(node);
-	ir_node  *pred = get_Proj_pred(node);
-	long     proj  = get_Proj_proj(node);
-
-    (void) dbgi;
-
-	if (is_Store(pred)) {
-		if (proj == pn_Store_M) {
-			return be_transform_node(pred);
-		} else {
-			panic("Unsupported Proj from Store");
-		}
-	} else if (is_Load(pred)) {
-		return gen_Proj_Load(node);
-	} else if (is_Start(pred)) {
-	} else if (be_is_Call(pred)) {
-		ir_mode *mode = get_irn_mode(node);
-		if (mode_needs_gp_reg(mode)) {
-			ir_node *new_pred = be_transform_node(pred);
-			long     pn       = get_Proj_proj(node);
-			ir_node *new_proj = new_r_Proj(new_pred, mode_Lu, pn);
-			return new_proj;
-		}
+	ir_node *pred = get_Proj_pred(node);
+	long     pn   = get_Proj_proj(node);
+	if (pn == pn_Store_M) {
+		return be_transform_node(pred);
+	} else {
+		panic("Unsupported Proj from Store");
 	}
+}
 
-    return be_duplicate_node(node);
+static ir_node *gen_Proj_be_Call(ir_node *node)
+{
+	ir_mode *mode = get_irn_mode(node);
+	if (mode_needs_gp_reg(mode)) {
+		ir_node *pred     = get_Proj_pred(node);
+		ir_node *new_pred = be_transform_node(pred);
+		long     pn       = get_Proj_proj(node);
+		ir_node *new_proj = new_r_Proj(new_pred, mode_Lu, pn);
+		return new_proj;
+	} else {
+		return be_duplicate_node(node);
+	}
 }
 
 /**
@@ -472,8 +464,12 @@ static void amd64_register_transformers(void)
 	be_set_transform_function(op_Phi,          gen_Phi);
 	be_set_transform_function(op_Load,         gen_Load);
 	be_set_transform_function(op_Store,        gen_Store);
-	be_set_transform_function(op_Proj,         gen_Proj);
 	be_set_transform_function(op_Minus,        gen_Minus);
+
+	be_set_transform_proj_function(op_be_Call,  gen_Proj_be_Call);
+	be_set_transform_proj_function(op_be_Start, be_duplicate_node);
+	be_set_transform_proj_function(op_Load,     gen_Proj_Load);
+	be_set_transform_proj_function(op_Store,    gen_Proj_Store);
 }
 
 void amd64_transform_graph(ir_graph *irg)

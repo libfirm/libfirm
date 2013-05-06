@@ -303,6 +303,7 @@ static void TEMPLATE_register_transformers(void)
 	be_set_transform_function(op_Start,  gen_Start);
 	be_set_transform_function(op_Store,  gen_Store);
 	be_set_transform_function(op_Sub,    gen_Sub);
+	be_set_transform_proj_function(op_Start, gen_Proj_Start);
 }
 
 /**

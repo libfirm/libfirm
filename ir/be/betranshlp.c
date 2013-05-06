@@ -108,6 +108,11 @@ void be_set_transform_function(ir_op *op, be_transform_func func)
 	op->ops.generic = (op_func) func;
 }
 
+void be_set_transform_proj_function(ir_op *op, be_transform_func func)
+{
+	op->ops.generic1 = (op_func) func;
+}
+
 /**
  * Transform helper for blocks.
  */
@@ -153,6 +158,17 @@ static ir_node *transform_end(ir_node *node)
 	be_enqueue_preds(node);
 
 	return new_end;
+}
+
+static ir_node *transform_proj(ir_node *node)
+{
+	ir_node *pred    = get_Proj_pred(node);
+	ir_op   *pred_op = get_irn_op(pred);
+	be_transform_func *proj_transform
+		= (be_transform_func*)pred_op->ops.generic1;
+	/* we should have a Proj transformer registered */
+	assert(proj_transform != NULL);
+	return proj_transform(node);
 }
 
 ir_node *be_duplicate_node(ir_node *node)
@@ -392,9 +408,9 @@ void be_transform_graph(ir_graph *irg, arch_pretrans_nodes *func)
 bool be_upper_bits_clean(const ir_node *node, ir_mode *mode)
 {
 	ir_op *op = get_irn_op(node);
-	if (op->ops.generic1 == NULL)
+	if (op->ops.generic2 == NULL)
 		return false;
-	upper_bits_clean_func func = (upper_bits_clean_func)op->ops.generic1;
+	upper_bits_clean_func func = (upper_bits_clean_func)op->ops.generic2;
 	return func(node, mode);
 }
 
@@ -497,7 +513,7 @@ static bool proj_upper_bits_clean(const ir_node *node, ir_mode *mode)
 
 void be_set_upper_bits_clean_function(ir_op *op, upper_bits_clean_func func)
 {
-	op->ops.generic1 = (op_func)func;
+	op->ops.generic2 = (op_func)func;
 }
 
 void be_start_transform_setup(void)
@@ -514,6 +530,7 @@ void be_start_transform_setup(void)
 	be_set_transform_function(op_End,         transform_end);
 	be_set_transform_function(op_NoMem,       be_duplicate_node);
 	be_set_transform_function(op_Pin,         be_duplicate_node);
+	be_set_transform_function(op_Proj,        transform_proj);
 	be_set_transform_function(op_Start,       be_duplicate_node);
 	be_set_transform_function(op_Sync,        be_duplicate_node);
 

@@ -5251,62 +5251,34 @@ static ir_node *gen_Proj_ASM(ir_node *node)
 	return new_r_Proj(new_pred, mode, pos);
 }
 
-/**
- * Transform and potentially renumber Proj nodes.
- */
-static ir_node *gen_Proj(ir_node *node)
+static ir_node *gen_Proj_Start(ir_node *node)
 {
 	ir_node *pred = get_Proj_pred(node);
-	switch (get_irn_opcode(pred)) {
-	case iro_Load:
-		return gen_Proj_Load(node);
-	case iro_Store:
-		return gen_Proj_Store(node);
-	case iro_ASM:
-		return gen_Proj_ASM(node);
-	case iro_Builtin:
-		return gen_Proj_Builtin(node);
-	case iro_Div:
-		return gen_Proj_Div(node);
-	case iro_Mod:
-		return gen_Proj_Mod(node);
-	case iro_CopyB:
-		return gen_Proj_CopyB(node);
-	case beo_SubSP:
-		return gen_Proj_be_SubSP(node);
-	case beo_AddSP:
-		return gen_Proj_be_AddSP(node);
-	case beo_Call:
-		return gen_Proj_be_Call(node);
-	case iro_Start: {
-		long proj = get_Proj_proj(node);
-		switch (proj) {
-		case pn_Start_X_initial_exec: {
-			ir_node  *block     = get_nodes_block(pred);
-			ir_node  *new_block = be_transform_node(block);
-			dbg_info *dbgi      = get_irn_dbg_info(node);
-			/* we exchange the ProjX with a jump */
-			ir_node  *jump      = new_rd_Jmp(dbgi, new_block);
+	long     proj = get_Proj_proj(node);
+	switch (proj) {
+	case pn_Start_X_initial_exec: {
+		ir_node  *block     = get_nodes_block(pred);
+		ir_node  *new_block = be_transform_node(block);
+		dbg_info *dbgi      = get_irn_dbg_info(node);
+		/* we exchange the ProjX with a jump */
+		ir_node  *jump      = new_rd_Jmp(dbgi, new_block);
 
-			return jump;
-		}
-		}
-		break;
+		return jump;
 	}
+	}
+	return be_duplicate_node(node);
+}
 
-	default:
-		if (is_ia32_l_FloattoLL(pred)) {
-			return gen_Proj_l_FloattoLL(node);
-		} else {
-			ir_mode *mode = get_irn_mode(node);
-			if (ia32_mode_needs_gp_reg(mode)) {
-				ir_node *new_pred = be_transform_node(pred);
-				ir_node *new_proj = new_r_Proj(new_pred, mode_Iu,
-				                               get_Proj_proj(node));
-				new_proj->node_nr = node->node_nr;
-				return new_proj;
-			}
-		}
+static ir_node *gen_Proj_default(ir_node *node)
+{
+	ir_node *pred = get_Proj_pred(node);
+	ir_mode *mode = get_irn_mode(node);
+	if (ia32_mode_needs_gp_reg(mode)) {
+		ir_node *new_pred = be_transform_node(pred);
+		ir_node *new_proj = new_r_Proj(new_pred, mode_Iu,
+									   get_Proj_proj(node));
+		new_proj->node_nr = node->node_nr;
+		return new_proj;
 	}
 	return be_duplicate_node(node);
 }
@@ -5318,6 +5290,11 @@ static void register_transformers(void)
 {
 	/* first clear the generic function pointer for all ops */
 	be_start_transform_setup();
+
+	for (unsigned opc = iro_first; opc <= iro_last; ++opc) {
+		ir_op *op = ir_get_opcode(opc);
+		be_set_transform_proj_function(op, gen_Proj_default);
+	}
 
 	be_set_transform_function(op_Add,              gen_Add);
 	be_set_transform_function(op_And,              gen_And);
@@ -5363,7 +5340,6 @@ static void register_transformers(void)
 	be_set_transform_function(op_Not,              gen_Not);
 	be_set_transform_function(op_Or,               gen_Or);
 	be_set_transform_function(op_Phi,              gen_Phi);
-	be_set_transform_function(op_Proj,             gen_Proj);
 	be_set_transform_function(op_Rotl,             gen_Rotl);
 	be_set_transform_function(op_Shl,              gen_Shl);
 	be_set_transform_function(op_Shr,              gen_Shr);
@@ -5373,6 +5349,27 @@ static void register_transformers(void)
 	be_set_transform_function(op_Switch,           gen_Switch);
 	be_set_transform_function(op_SymConst,         gen_SymConst);
 	be_set_transform_function(op_Unknown,          ia32_gen_Unknown);
+	be_set_transform_proj_function(op_ASM,              gen_Proj_ASM);
+	be_set_transform_proj_function(op_be_AddSP,         gen_Proj_be_AddSP);
+	be_set_transform_proj_function(op_be_Call,          gen_Proj_be_Call);
+	be_set_transform_proj_function(op_be_Start,         be_duplicate_node);
+	be_set_transform_proj_function(op_be_SubSP,         gen_Proj_be_SubSP);
+	be_set_transform_proj_function(op_Builtin,          gen_Proj_Builtin);
+	be_set_transform_proj_function(op_CopyB,            gen_Proj_CopyB);
+	be_set_transform_proj_function(op_Div,              gen_Proj_Div);
+	be_set_transform_proj_function(op_ia32_l_Adc,       gen_Proj_default);
+	be_set_transform_proj_function(op_ia32_l_Add,       gen_Proj_default);
+	be_set_transform_proj_function(op_ia32_l_FloattoLL, gen_Proj_l_FloattoLL);
+	be_set_transform_proj_function(op_ia32_l_IMul,      gen_Proj_default);
+	be_set_transform_proj_function(op_ia32_l_LLtoFloat, gen_Proj_default);
+	be_set_transform_proj_function(op_ia32_l_Mul,       gen_Proj_default);
+	be_set_transform_proj_function(op_ia32_l_Sbb,       gen_Proj_default);
+	be_set_transform_proj_function(op_ia32_l_Sub,       gen_Proj_default);
+	be_set_transform_proj_function(op_ia32_Minus64Bit,  gen_Proj_default);
+	be_set_transform_proj_function(op_Load,             gen_Proj_Load);
+	be_set_transform_proj_function(op_Mod,              gen_Proj_Mod);
+	be_set_transform_proj_function(op_Start,            gen_Proj_Start);
+	be_set_transform_proj_function(op_Store,            gen_Proj_Store);
 
 	be_set_upper_bits_clean_function(op_Mux, ia32_mux_upper_bits_clean);
 }

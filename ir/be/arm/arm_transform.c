@@ -1473,49 +1473,27 @@ static ir_node *gen_Proj_Call(ir_node *node)
 	panic("Unexpected Call proj %ld\n", pn);
 }
 
-/**
- * Transform a Proj node.
- */
-static ir_node *gen_Proj(ir_node *node)
+static ir_node *gen_Proj_Store(ir_node *node)
 {
-	ir_node  *pred = get_Proj_pred(node);
-	long      proj = get_Proj_proj(node);
+	ir_node *pred = get_Proj_pred(node);
+	long     pn   = get_Proj_proj(node);
+	if (pn == pn_Store_M) {
+		return be_transform_node(pred);
+	} else {
+		panic("Unsupported Proj from Store");
+	}
+}
 
-	switch (get_irn_opcode(pred)) {
-	case iro_Store:
-		if (proj == pn_Store_M) {
-			return be_transform_node(pred);
-		} else {
-			panic("Unsupported Proj from Store");
-		}
-	case iro_Load:
-		return gen_Proj_Load(node);
-	case iro_Call:
-		return gen_Proj_Call(node);
-	case iro_CopyB:
-		return gen_Proj_CopyB(node);
-	case iro_Div:
-		return gen_Proj_Div(node);
-	case iro_Start:
-		return gen_Proj_Start(node);
-	case iro_Cond:
-	case iro_Switch:
-		/* nothing to do */
-		return be_duplicate_node(node);
-	case iro_Proj: {
-		ir_node *pred_pred = get_Proj_pred(pred);
-		if (is_Call(pred_pred)) {
-			return gen_Proj_Proj_Call(node);
-		} else if (is_Start(pred_pred)) {
-			return gen_Proj_Proj_Start(node);
-		}
-		/* FALLTHROUGH */
+static ir_node *gen_Proj_Proj(ir_node *node)
+{
+	ir_node *pred      = get_Proj_pred(node);
+	ir_node *pred_pred = get_Proj_pred(pred);
+	if (is_Call(pred_pred)) {
+		return gen_Proj_Proj_Call(node);
+	} else if (is_Start(pred_pred)) {
+		return gen_Proj_Proj_Start(node);
 	}
-	case iro_Builtin:
-		return gen_Proj_Builtin(node);
-	default:
-		panic("code selection didn't expect Proj after %+F\n", pred);
-	}
+	panic("code selection didn't expect Proj(Proj) after %+F\n", pred_pred);
 }
 
 static ir_node *gen_Unknown(ir_node *node)
@@ -1926,7 +1904,6 @@ static void arm_register_transformers(void)
 	be_set_transform_function(op_Not,      gen_Not);
 	be_set_transform_function(op_Or,       gen_Or);
 	be_set_transform_function(op_Phi,      gen_Phi);
-	be_set_transform_function(op_Proj,     gen_Proj);
 	be_set_transform_function(op_Return,   gen_Return);
 	be_set_transform_function(op_Rotl,     gen_Rotl);
 	be_set_transform_function(op_Sel,      gen_Sel);
@@ -1940,6 +1917,17 @@ static void arm_register_transformers(void)
 	be_set_transform_function(op_SymConst, gen_SymConst);
 	be_set_transform_function(op_Unknown,  gen_Unknown);
 	be_set_transform_function(op_Builtin,  gen_Builtin);
+
+	be_set_transform_proj_function(op_Builtin, gen_Proj_Builtin);
+	be_set_transform_proj_function(op_Call,    gen_Proj_Call);
+	be_set_transform_proj_function(op_Cond,    be_duplicate_node);
+	be_set_transform_proj_function(op_CopyB,   gen_Proj_CopyB);
+	be_set_transform_proj_function(op_Div,     gen_Proj_Div);
+	be_set_transform_proj_function(op_Load,    gen_Proj_Load);
+	be_set_transform_proj_function(op_Proj,    gen_Proj_Proj);
+	be_set_transform_proj_function(op_Start,   gen_Proj_Start);
+	be_set_transform_proj_function(op_Store,   gen_Proj_Store);
+	be_set_transform_proj_function(op_Switch,  be_duplicate_node);
 }
 
 /**

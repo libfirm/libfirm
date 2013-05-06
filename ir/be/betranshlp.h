@@ -56,6 +56,9 @@ void be_start_transform_setup(void);
 /** register a transform function for a specific node type */
 void be_set_transform_function(ir_op *op, be_transform_func func);
 
+/** register a transform function for a Proj attached to a specific node */
+void be_set_transform_proj_function(ir_op *pred_op, be_transform_func func);
+
 /**
  * Associate an old node with a transformed node. Uses link field.
  */
