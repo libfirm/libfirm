@@ -3074,7 +3074,7 @@ void ir_lower_dw_ops(void)
 
 	/* create the necessary maps */
 	if (! intrinsic_fkt)
-		intrinsic_fkt = new_set(cmp_op_mode, iro_Last + 1);
+		intrinsic_fkt = new_set(cmp_op_mode, iro_last + 1);
 	if (! conv_types)
 		conv_types = new_set(cmp_conv_tp, 16);
 	if (! lowered_type)

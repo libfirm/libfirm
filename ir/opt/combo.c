@@ -3523,7 +3523,7 @@ void combo(ir_graph *irg)
 #ifdef DEBUG_libfirm
 	env.dbg_list       = NULL;
 #endif
-	env.opcode2id_map  = new_set(cmp_opcode, iro_Last * 4);
+	env.opcode2id_map  = new_set(cmp_opcode, iro_last * 4);
 	env.kept_memory    = NEW_ARR_F(ir_node *, 0);
 	env.end_idx        = get_opt_global_cse() ? 0 : -1;
 	env.lambda_input   = 0;

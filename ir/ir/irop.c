@@ -26,7 +26,7 @@
 
 static ir_op **opcodes;
 /** the available next opcode */
-static unsigned next_iro = iro_Last + 1;
+static unsigned next_iro = iro_MaxOpcode;
 
 static ir_type *default_get_type_attr(const ir_node *node);
 static ir_entity *default_get_entity_attr(const ir_node *node);

@@ -30,7 +30,7 @@
 static i_record *intrinsics;
 
 /** An array to cache all entities. */
-static ir_entity *i_ents[iro_Last + 1];
+static ir_entity *i_ents[iro_last + 1];
 
 /*
  * Maps all intrinsic calls that the backend support

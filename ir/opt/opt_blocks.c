@@ -1180,7 +1180,7 @@ void shape_blocks(ir_graph *irg)
 	obstack_init(&env.obst);
 	INIT_LIST_HEAD(&env.partitions);
 	INIT_LIST_HEAD(&env.ready);
-	env.opcode2id_map  = new_set(cmp_opcode, iro_Last * 4);
+	env.opcode2id_map  = new_set(cmp_opcode, iro_last * 4);
 
 	n             = get_irg_last_idx(irg);
 	env.live_outs = NEW_ARR_FZ(ir_node*, n);

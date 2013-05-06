@@ -18,8 +18,8 @@ typedef enum {{spec.name}}_opcode {
 {%- for node in nodes %}
 	{{spec.name}}o_{{node.name}},
 {%- endfor %}
-	{{spec.name}}o_First = {{spec.name}}o_{{nodes[0].name}},
-	{{spec.name}}o_Last  = {{spec.name}}o_{{nodes[-1].name}},
+	{{spec.name}}o_first = {{spec.name}}o_{{nodes[0].name}},
+	{{spec.name}}o_last  = {{spec.name}}o_{{nodes[-1].name}},
 
 {%- if spec.name == "ir" %}
 	beo_First,

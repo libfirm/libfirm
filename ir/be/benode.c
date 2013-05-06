@@ -1253,8 +1253,6 @@ static ir_op *new_be_op(unsigned code, const char *name, op_pin_state p,
 
 void be_init_op(void)
 {
-	unsigned opc;
-
 	assert(op_be_Spill == NULL);
 
 	/* Acquire all needed opcodes. */
@@ -1291,7 +1289,7 @@ void be_init_op(void)
 	op_be_FrameAddr->ops.node_cmp_attr = FrameAddr_cmp_attr;
 
 	/* attach out dummy_ops to middle end nodes */
-	for (opc = iro_First; opc <= iro_Last; ++opc) {
+	for (unsigned opc = iro_first; opc <= iro_last; ++opc) {
 		ir_op *op = ir_get_opcode(opc);
 		assert(op->ops.be_ops == NULL);
 		op->ops.be_ops = &dummy_be_irn_ops;
