@@ -26,7 +26,6 @@
 
 static pmap *entity_access_map;
 static pmap *entity_reference_map;
-static pmap *type_alloc_map;
 static pmap *type_pointertype_map;
 static pmap *type_arraytype_map;
 
@@ -72,28 +71,6 @@ static ir_node **get_entity_reference_array(const ir_entity *ent)
 static void set_entity_reference_array(const ir_entity *ent, ir_node **refs)
 {
 	pmap_insert(entity_reference_map, ent, (void *)refs);
-}
-
-/**
- * Return a flexible array containing all IR-nodes
- * that allocate a given type.
- */
-static ir_node **get_type_alloc_array(const ir_type *tp)
-{
-	if (!type_alloc_map) type_alloc_map = pmap_create();
-
-	ir_node **res = pmap_get(ir_node*, type_alloc_map, tp);
-	if (!res) {
-		res = NEW_ARR_F(ir_node *, 0);
-		pmap_insert(type_alloc_map, tp, (void *)res);
-	}
-
-	return res;
-}
-
-static void set_type_alloc_array(const ir_type *tp, ir_node **alls)
-{
-	pmap_insert(type_alloc_map, tp, (void *)alls);
 }
 
 /**
@@ -196,30 +173,6 @@ static void add_entity_reference(const ir_entity *ent, ir_node *n)
 /**------------------------------------------------------------------*/
 /*   Access routines for types                                       */
 /**------------------------------------------------------------------*/
-
-/* Number of Alloc nodes that create an instance of this type */
-size_t get_type_n_allocs(const ir_type *tp)
-{
-	ir_node **allocs = get_type_alloc_array(tp);
-	return ARR_LEN(allocs);
-}
-
-/* Alloc node that creates an instance of this type */
-ir_node *get_type_alloc(const ir_type *tp, size_t pos)
-{
-	ir_node **allocs = get_type_alloc_array(tp);
-	assert(pos < get_type_n_allocs(tp));
-	return allocs[pos];
-}
-
-static void add_type_alloc(const ir_type *tp, ir_node *n)
-{
-	ir_node **allocs = get_type_alloc_array(tp);
-	ARR_APP1(ir_node *, allocs, n);
-	set_type_alloc_array(tp, allocs);
-}
-
-/*------------------------------------------------------------------*/
 
 size_t get_type_n_pointertypes_to(const ir_type *tp)
 {
@@ -332,10 +285,7 @@ static void chain_accesses(ir_node *n, void *env)
 {
 	(void) env;
 	ir_node *addr;
-	if (is_Alloc(n)) {
-		add_type_alloc(get_Alloc_type(n), n);
-		return;
-	} else if (is_Sel(n)) {
+	if (is_Sel(n)) {
 		add_entity_reference(get_Sel_entity(n), n);
 		return;
 	} else if (is_SymConst_addr_ent(n)) {
@@ -413,17 +363,6 @@ void free_trouts(void)
 		*/
 		pmap_destroy(entity_reference_map);
 		entity_reference_map = NULL;
-	}
-
-	if (type_alloc_map != NULL) {
-		/*
-		for (ir_node **alls = (ir_node **)pmap_first(type_alloc_map);
-		     alls != NULL; alls = (ir_node **)pmap_next(type_alloc_map)) {
-			DEL_ARR_F(alls);
-		}
-		*/
-		pmap_destroy(type_alloc_map);
-		type_alloc_map = NULL;
 	}
 
 	if (type_pointertype_map != NULL) {

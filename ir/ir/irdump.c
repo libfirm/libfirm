@@ -1564,12 +1564,6 @@ static void dump_node2type_edges(ir_node *n, void *env)
 	case iro_Call:
 		print_node_type_edge(F,n,get_Call_type(n),NODE2TYPE_EDGE_ATTR);
 		break;
-	case iro_Alloc:
-		print_node_type_edge(F,n,get_Alloc_type(n),NODE2TYPE_EDGE_ATTR);
-		break;
-	case iro_Free:
-		print_node_type_edge(F,n,get_Free_type(n),NODE2TYPE_EDGE_ATTR);
-		break;
 	default:
 		break;
 	}

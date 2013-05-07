@@ -485,10 +485,8 @@ static int verify_node_Proj_Alloc(const ir_node *p)
 
 	ASSERT_AND_RET_DBG(
 		(
-			(proj == pn_Alloc_M         && mode == mode_M) ||
-			(proj == pn_Alloc_X_regular && mode == mode_X) ||
-			(proj == pn_Alloc_X_except  && mode == mode_X) ||
-			(proj == pn_Alloc_res       && mode_is_reference(mode))
+			(proj == pn_Alloc_M   && mode == mode_M) ||
+			(proj == pn_Alloc_res && mode_is_reference(mode))
 		),
 		"wrong Proj from Alloc", 0,
 		show_proj_failure(p);
@@ -1407,10 +1405,10 @@ static int verify_node_Alloc(const ir_node *n)
 {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Alloc_mem(n));
-	ir_mode *op2mode = get_irn_mode(get_Alloc_count(n));
+	ir_mode *op2mode = get_irn_mode(get_Alloc_size(n));
 
 	ASSERT_AND_RET_DBG(
-		/* Alloc: BB x M x int_u --> M x X x ref */
+		/* Alloc: BB x M x int_u --> M x ref */
 		op1mode == mode_M &&
 		mode_is_int(op2mode) &&
 		!mode_is_signed(op2mode) &&
@@ -1429,13 +1427,10 @@ static int verify_node_Free(const ir_node *n)
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Free_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_Free_ptr(n));
-	ir_mode *op3mode = get_irn_mode(get_Free_count(n));
 
 	ASSERT_AND_RET_DBG(
 		/* Free: BB x M x ref x int_u --> M */
 		op1mode == mode_M && mode_is_reference(op2mode) &&
-		mode_is_int(op3mode) &&
-		!mode_is_signed(op3mode) &&
 		mymode == mode_M,
 		"Free node", 0,
 		show_node_mode_mismatch(n, "/* Free: BB x M x ref x int_u --> M */");

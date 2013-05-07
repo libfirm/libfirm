@@ -53,9 +53,6 @@ def get_io_type(type, attrname, node):
 	elif type == "ir_relation":
 		importcmd = "read_relation(env)"
 		exportcmd = "write_relation(env, %(val)s);"
-	elif type == "ir_where_alloc":
-		importcmd = "read_where_alloc(env)"
-		exportcmd = "write_where_alloc(env, %(val)s);"
 	elif type == "ir_align":
 		importcmd = "read_align(env)"
 		exportcmd = "write_align(env, %(val)s);"

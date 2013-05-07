@@ -553,11 +553,8 @@ static void handle_nothrow_Calls(env_t *ctx)
  */
 static bool is_malloc_call_result(const ir_node *node)
 {
-	if (is_Alloc(node) && get_Alloc_where(node) == heap_alloc) {
-		/* Firm style high-level allocation */
-		return true;
-	}
 	/* TODO: check mtp_malloc */
+	(void)node;
 	return false;
 }
 

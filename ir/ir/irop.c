@@ -254,17 +254,7 @@ static int node_cmp_attr_Alloc(const ir_node *a, const ir_node *b)
 {
 	const alloc_attr *pa = &a->attr.alloc;
 	const alloc_attr *pb = &b->attr.alloc;
-	if (pa->where != pb->where || pa->type != pb->type)
-		return 1;
-	return node_cmp_exception(a, b);
-}
-
-/** Compares the attributes of two Free nodes. */
-static int node_cmp_attr_Free(const ir_node *a, const ir_node *b)
-{
-	const free_attr *pa = &a->attr.free;
-	const free_attr *pb = &b->attr.free;
-	return (pa->where != pb->where) || (pa->type != pb->type);
+	return pa->alignment != pb->alignment;
 }
 
 /** Compares the attributes of two SymConst nodes. */
@@ -611,7 +601,6 @@ void firm_init_op(void)
 	set_op_cmp_attr(op_CopyB,    node_cmp_attr_CopyB);
 	set_op_cmp_attr(op_Div,      node_cmp_attr_Div);
 	set_op_cmp_attr(op_Dummy,    node_cmp_attr_Dummy);
-	set_op_cmp_attr(op_Free,     node_cmp_attr_Free);
 	set_op_cmp_attr(op_InstOf,   node_cmp_attr_InstOf);
 	set_op_cmp_attr(op_Load,     node_cmp_attr_Load);
 	set_op_cmp_attr(op_Mod,      node_cmp_attr_Mod);

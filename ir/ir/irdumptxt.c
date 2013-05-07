@@ -219,12 +219,7 @@ void dump_irnode_to_file(FILE *const F, const ir_node *const n)
 		}
 		break;
 	case iro_Alloc:
-		ir_fprintf(F, "  allocating entity of type: %+F\n", get_Alloc_type(n));
-		fprintf(F, "  allocating on: the %s\n", (get_Alloc_where(n) == stack_alloc) ? "stack" : "heap");
-		break;
-	case iro_Free:
-		ir_fprintf(F, "  freeing entity of type %+F\n", get_Free_type(n));
-		fprintf(F, "  allocated on: the %s\n", (get_Free_where(n) == stack_alloc) ? "stack" : "heap");
+		ir_fprintf(F, "  alignment: %u\n", get_Alloc_alignment(n));
 		break;
 	case iro_Sel: {
 		const ir_entity *ent = get_Sel_entity(n);

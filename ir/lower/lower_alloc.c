@@ -77,11 +77,7 @@ static void transform_Proj_Alloc(ir_node *node)
 static void lower_alloca_free(ir_node *node, void *data)
 {
 	(void) data;
-	ir_type *type;
 	if (is_Alloc(node)) {
-		type = get_Alloc_type(node);
-	} else if (is_Free(node)) {
-		type = get_Free_type(node);
 	} else if (is_Proj(node)) {
 		ir_node *proj_pred = get_Proj_pred(node);
 		if (is_Alloc(proj_pred)) {
@@ -94,40 +90,16 @@ static void lower_alloca_free(ir_node *node, void *data)
 	if (!ir_nodeset_insert(&transformed, node))
 		return;
 
-	unsigned size = get_type_size_bytes(type);
-	if (is_unknown_type(type))
-		size = 1;
-	if (size == 1 && stack_alignment <= 1)
+	if (stack_alignment <= 1)
 		return;
 
-	ir_node       *count;
-	ir_node       *mem;
-	ir_where_alloc where;
-	if (is_Alloc(node)) {
-		count     = get_Alloc_count(node);
-		mem       = get_Alloc_mem(node);
-		where     = get_Alloc_where(node);
-	} else {
-		count = get_Free_count(node);
-		mem   = get_Free_mem(node);
-		where = get_Free_where(node);
-	}
-	ir_mode  *const mode      = get_irn_mode(count);
-	ir_node  *const block     = get_nodes_block(node);
-	ir_graph *const irg       = get_irn_irg(node);
-	ir_node  *const szconst   = new_r_Const_long(irg, mode, (long)size);
-	ir_node  *const mul       = new_r_Mul(block, count, szconst, mode);
-	dbg_info *const dbgi      = get_irn_dbg_info(node);
-	ir_node  *const new_size  = adjust_alloc_size(dbgi, mul, block);
-	ir_type  *const new_type  = get_unknown_type();
-	ir_node  *      new_node;
-	if (is_Alloc(node)) {
-		new_node = new_rd_Alloc(dbgi, block, mem, new_size, new_type, where);
-	} else {
-		ir_node *ptr = get_Free_ptr(node);
-		new_node
-			= new_rd_Free(dbgi, block, mem, ptr, new_size, new_type, where);
-	}
+	ir_node  *const size     = get_Alloc_size(node);
+	ir_node  *const mem      = get_Alloc_mem(node);
+	ir_node  *const block    = get_nodes_block(node);
+	dbg_info *const dbgi     = get_irn_dbg_info(node);
+	ir_node  *const new_size = adjust_alloc_size(dbgi, size, block);
+	ir_node  *const new_node
+		= new_rd_Alloc(dbgi, block, mem, new_size, 1);
 	ir_nodeset_insert(&transformed, new_node);
 
 	if (new_node != node)

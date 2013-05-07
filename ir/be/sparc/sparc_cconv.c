@@ -137,9 +137,7 @@ static void check_omit_fp(ir_node *node, void *env)
 	 *  - we have allocations on the stack
 	 *  - we have calls (with the exception of tail-calls once we support them)
 	 */
-	if ((is_Alloc(node) && get_Alloc_where(node) == stack_alloc)
-			|| (is_Free(node) && get_Free_where(node) == stack_alloc)
-			|| is_Call(node)) {
+	if (is_Alloc(node) || is_Free(node) || is_Call(node)) {
 		bool *can_omit_fp = (bool*) env;
 		*can_omit_fp = false;
 	}

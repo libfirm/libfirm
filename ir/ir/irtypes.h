@@ -272,16 +272,8 @@ typedef struct builtin_attr {
 
 /** Alloc attributes. */
 typedef struct alloc_attr {
-	except_attr    exc;           /**< the exception attribute. MUST be the first one. */
-    ir_where_alloc where;         /**< stack, heap or other managed part of memory */
-	ir_type        *type;         /**< Type of the allocated object.  */
+	unsigned alignment;
 } alloc_attr;
-
-/** Free attributes. */
-typedef struct free_attr {
-	ir_type *type;                /**< Type of the allocated object.  */
-	ir_where_alloc where;         /**< stack, heap or other managed part of memory */
-} free_attr;
 
 /** InstOf attributes. */
 typedef struct io_attr {
@@ -380,7 +372,6 @@ typedef union ir_attr {
 	call_attr      call;          /**< For Call. */
 	builtin_attr   builtin;       /**< For Builtin. */
 	alloc_attr     alloc;         /**< For Alloc. */
-	free_attr      free;          /**< For Free. */
 	io_attr        instof;        /**< For InstOf */
 	load_attr      load;          /**< For Load. */
 	store_attr     store;         /**< For Store. */

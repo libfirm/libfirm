@@ -263,7 +263,7 @@ int i_mapper_alloca(ir_node *call, void *ctx)
 	ir_node *mem   = get_Call_mem(call);
 	ir_node *block = get_nodes_block(call);
 	ir_node *op    = get_Call_param(call, 0);
-	ir_node *irn, *exc, *no_exc;
+	ir_node *irn;
 	dbg_info *dbg  = get_irn_dbg_info(call);
 	(void) ctx;
 
@@ -276,20 +276,13 @@ int i_mapper_alloca(ir_node *call, void *ctx)
 		op = new_rd_Conv(dbg, block, op, mode);
 	}
 
-	irn    = new_rd_Alloc(dbg, block, mem, op, get_unknown_type(), stack_alloc);
+	irn    = new_rd_Alloc(dbg, block, mem, op, 1);
 	mem    = new_rd_Proj(dbg, irn, mode_M, pn_Alloc_M);
 	irn    = new_rd_Proj(dbg, irn, get_modeP_data(), pn_Alloc_res);
-	if (ir_throws_exception(call)) {
-		no_exc = new_rd_Proj(dbg, irn, mode_X, pn_Alloc_X_regular);
-		exc    = new_rd_Proj(dbg, irn, mode_X, pn_Alloc_X_except);
-		ir_set_throws_exception(irn, true);
-	} else {
-		no_exc = NULL;
-		exc    = NULL;
-	}
+	assert(!ir_throws_exception(call));
 
 	DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_ALLOCA);
-	replace_call(irn, call, mem, no_exc, exc);
+	replace_call(irn, call, mem, NULL, NULL);
 	return 1;
 }
 

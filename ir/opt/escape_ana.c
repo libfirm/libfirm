@@ -255,16 +255,15 @@ static int can_escape(ir_node *n)
  */
 static void find_allocations(ir_node *alloc, void *ctx)
 {
+	/* TODO: check if we have a heap allocation */
+	(void)alloc;
+	(void)ctx;
+	return;
+
+#if 0
 	walk_env_t *env = (walk_env_t*)ctx;
 	int i;
 	ir_node *adr;
-
-	if (! is_Alloc(alloc))
-		return;
-
-	/* we searching only for heap allocations */
-	if (get_Alloc_where(alloc) != heap_alloc)
-		return;
 
 	adr = NULL;
 	for (i = get_irn_n_outs(alloc) - 1; i >= 0; --i) {
@@ -291,6 +290,7 @@ static void find_allocations(ir_node *alloc, void *ctx)
 		set_irn_link(alloc, env->found_allocs);
 		env->found_allocs = alloc;
 	}
+#endif
 }
 
 /**
@@ -353,6 +353,10 @@ static void find_allocation_calls(ir_node *call, void *ctx)
  */
 static void transform_allocs(ir_graph *irg, walk_env_t *env)
 {
+	(void)irg;
+	(void)env;
+	/* TODO: fix */
+#if 0
 	ir_node *alloc, *next, *mem, *sel, *size, *blk;
 	ir_type *ftp, *atp, *tp;
 	ir_entity *ent;
@@ -369,9 +373,7 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
 		mem = get_Alloc_mem(alloc);
 		blk = get_nodes_block(alloc);
 		ir_node *const in[] = {
-			[pn_Alloc_M]         = mem,
-			[pn_Alloc_X_regular] = new_r_Jmp(blk),
-			[pn_Alloc_X_except]  = new_r_Bad(irg, mode_X),
+			[pn_Alloc_M] = mem,
 		};
 		turn_into_tuple(alloc, ARRAY_SIZE(in), in);
 
@@ -382,13 +384,12 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
 	ftp = get_irg_frame_type(irg);
 	for (alloc = env->found_allocs; alloc; alloc = next) {
 		next = (ir_node*)get_irn_link(alloc);
-		size = get_Alloc_count(alloc);
-		atp  = get_Alloc_type(alloc);
+		size = get_Alloc_size(alloc);
+		unsigned alignment = get_Alloc_alignment(alloc);
 
 		tp = NULL;
 		if (is_SymConst(size) && get_SymConst_kind(size) == symconst_type_size)  {
 			/* if the size is a type size and the types matched */
-			assert(atp == get_SymConst_type(size));
 			tp = atp;
 		} else if (is_Const(size)) {
 			ir_tarval *tv = get_Const_tarval(size);
@@ -416,10 +417,8 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
 			mem = get_Alloc_mem(alloc);
 
 			ir_node *const in[] = {
-				[pn_Alloc_M]         = mem,
-				[pn_Alloc_res]       = sel,
-				[pn_Alloc_X_regular] = new_r_Jmp(blk),
-				[pn_Alloc_X_except]  = new_r_Bad(irg, mode_X),
+				[pn_Alloc_M]   = mem,
+				[pn_Alloc_res] = sel,
 			};
 			turn_into_tuple(alloc, ARRAY_SIZE(in), in);
 
@@ -441,6 +440,7 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
 	if (env->nr_removed && env->nr_deads) {
 		confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 	}
+#endif
 }
 
 /**

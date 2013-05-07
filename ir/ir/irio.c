@@ -86,7 +86,6 @@ typedef enum typetag_t {
 	tt_type_state,
 	tt_visibility,
 	tt_volatility,
-	tt_where_alloc,
 } typetag_t;
 
 typedef enum keyword_t {
@@ -278,9 +277,6 @@ static void symtbl_init(void)
 	INSERTENUM(tt_volatility, volatility_non_volatile);
 	INSERTENUM(tt_volatility, volatility_is_volatile);
 
-	INSERTENUM(tt_where_alloc, stack_alloc);
-	INSERTENUM(tt_where_alloc, heap_alloc);
-
 #undef INSERTKEYWORD
 #undef INSERTENUM
 #undef INSERT
@@ -455,15 +451,6 @@ static void write_cond_jmp_predicate(write_env_t *env, const ir_node *node)
 static void write_relation(write_env_t *env, ir_relation relation)
 {
 	write_long(env, (long)relation);
-}
-
-static void write_where_alloc(write_env_t *env, ir_where_alloc where_alloc)
-{
-	switch (where_alloc) {
-	case stack_alloc: write_symbol(env, "stack_alloc"); return;
-	case heap_alloc:  write_symbol(env, "heap_alloc");  return;
-	}
-	panic("invalid where_alloc value");
 }
 
 static void write_throws(write_env_t *env, bool throws)
@@ -1539,7 +1526,6 @@ static const char *get_typetag_name(typetag_t typetag)
 	case tt_type_state:          return "type state";
 	case tt_visibility:          return "visibility";
 	case tt_volatility:          return "volatility";
-	case tt_where_alloc:         return "where alloc";
 	}
 	return "<UNKNOWN>";
 }
@@ -1609,11 +1595,6 @@ static ir_linkage read_linkage(read_env_t *env)
 static ir_volatility read_volatility(read_env_t *env)
 {
 	return (ir_volatility)read_enum(env, tt_volatility);
-}
-
-static ir_where_alloc read_where_alloc(read_env_t *env)
-{
-	return (ir_where_alloc)read_enum(env, tt_where_alloc);
 }
 
 static bool read_throws(read_env_t *env)

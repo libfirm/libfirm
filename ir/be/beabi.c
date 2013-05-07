@@ -696,16 +696,14 @@ static ir_node *adjust_alloc_size(unsigned stack_alignment, ir_node *size,
 }
 /**
  * Adjust an alloca.
- * The alloca is transformed into a back end alloca node and connected to the stack nodes.
+ * The alloca is transformed into a back end alloca node and connected to the
+ * stack nodes.
  */
 static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp)
 {
 	ir_node          *block     = get_nodes_block(alloc);
 	ir_graph         *irg       = get_Block_irg(block);
 	const arch_env_t *arch_env  = be_get_irg_arch_env(irg);
-
-	/* all non-stack Alloc nodes should already be lowered before the backend */
-	assert(get_Alloc_where(alloc) == stack_alloc);
 
 	ir_node *alloc_mem = NULL;
 	ir_node *alloc_res = NULL;
@@ -732,20 +730,8 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 		return curr_sp;
 	}
 
-	dbg_info *dbg   = get_irn_dbg_info(alloc);
-	ir_node  *count = get_Alloc_count(alloc);
-	ir_type  *type  = get_Alloc_type(alloc);
-	ir_node  *size;
-	/* we might need to multiply the count with the element size */
-	if (!is_unknown_type(type) && get_type_size_bytes(type) != 1) {
-		ir_mode   *mode  = get_irn_mode(count);
-		ir_tarval *tv    = new_tarval_from_long(get_type_size_bytes(type),
-		                                        mode);
-		ir_node   *cnst = new_rd_Const(dbg, irg, tv);
-		size            = new_rd_Mul(dbg, block, count, cnst, mode);
-	} else {
-		size = count;
-	}
+	dbg_info *dbg  = get_irn_dbg_info(alloc);
+	ir_node  *size = get_Alloc_size(alloc);
 
 	/* The stack pointer will be modified in an unknown manner.
 	   We cannot omit it. */
@@ -783,10 +769,7 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
  */
 static ir_node *adjust_free(be_abi_irg_t *env, ir_node *free, ir_node *curr_sp)
 {
-	/* all non-stack-alloc Free nodes should already be lowered before the
-	 * backend phase */
-	assert(get_Free_where(free) == stack_alloc);
-
+#if 0
 	/* we might need to multiply the size with the element size */
 	ir_type  *type  = get_Free_type(free);
 	ir_node  *block = get_nodes_block(free);
@@ -827,8 +810,12 @@ static ir_node *adjust_free(be_abi_irg_t *env, ir_node *free, ir_node *curr_sp)
 	/* kill the free */
 	exchange(free, sync);
 	curr_sp = res;
-
 	return curr_sp;
+#endif
+	(void)env;
+	(void)free;
+	(void)curr_sp;
+	panic("beabi: Free nodes do not work properly yet");
 }
 
 /**
@@ -881,9 +868,7 @@ static void link_ops_in_block_walker(ir_node *irn, void *data)
 	be_abi_irg_t *env  = (be_abi_irg_t*)data;
 	unsigned      code = get_irn_opcode(irn);
 
-	if (code == iro_Call ||
-	   (code == iro_Alloc && get_Alloc_where(irn) == stack_alloc) ||
-	   (code == iro_Free && get_Free_where(irn) == stack_alloc)) {
+	if (code == iro_Call || code == iro_Alloc || code == iro_Free) {
 		ir_node *bl       = get_nodes_block(irn);
 		void *save        = get_irn_link(bl);
 
@@ -943,12 +928,10 @@ static void process_ops_in_block(ir_node *bl, void *data)
 				curr_sp = adjust_call(env, irn, curr_sp);
 				break;
 			case iro_Alloc:
-				if (get_Alloc_where(irn) == stack_alloc)
-					curr_sp = adjust_alloc(env, irn, curr_sp);
+				curr_sp = adjust_alloc(env, irn, curr_sp);
 				break;
 			case iro_Free:
-				if (get_Free_where(irn) == stack_alloc)
-					curr_sp = adjust_free(env, irn, curr_sp);
+				curr_sp = adjust_free(env, irn, curr_sp);
 				break;
 			default:
 				panic("invalid call");

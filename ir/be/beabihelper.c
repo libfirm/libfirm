@@ -500,11 +500,9 @@ static void link_ops_in_block_walker(ir_node *node, void *data)
 		break;
 	case iro_Alloc:
 		/** all non-stack alloc nodes should be lowered before the backend */
-		assert(get_Alloc_where(node) == stack_alloc);
 		collect_node(node);
 		break;
 	case iro_Free:
-		assert(get_Free_where(node) == stack_alloc);
 		collect_node(node);
 		break;
 	case iro_Builtin:

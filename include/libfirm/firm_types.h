@@ -211,10 +211,10 @@ ENUM_BITSET(ir_cons_flags)
 typedef enum op_pin_state {
 	op_pin_state_floats = 0,    /**< Nodes of this opcode can be placed in any basic block. */
 	op_pin_state_pinned = 1,    /**< Nodes must remain in this basic block. */
-	op_pin_state_exc_pinned,    /**< Node must be remain in this basic block if it can throw an
-	                                 exception, else can float. Used internally. */
-	op_pin_state_mem_pinned     /**< Node must be remain in this basic block if it can throw an
-	                                 exception or uses memory, else can float. Used internally. */
+	op_pin_state_exc_pinned,    /**< Node must remain in this basic block if it
+	                                 can throw an exception, else can float. */
+	op_pin_state_mem_pinned     /**< Node must remain in this basic block if it
+	                                 uses memory, else can float. */
 } op_pin_state;
 
 /**
@@ -310,15 +310,6 @@ typedef union symconst_symbol {
 	ir_entity     *entity_p;  /**< The entity of a SymConst. */
 	ir_enum_const *enum_p;    /**< The enumeration constant of a SymConst. */
 } symconst_symbol;
-
-/**
- * @ingroup Alloc
- * The allocation place.
- */
-typedef enum ir_where_alloc {
-	stack_alloc,          /**< Alloc allocates the object on the stack. */
-	heap_alloc            /**< Alloc allocates the object on the heap. */
-} ir_where_alloc;
 
 /** A input/output constraint attribute.
  * @ingroup ASM

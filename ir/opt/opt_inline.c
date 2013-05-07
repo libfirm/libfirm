@@ -143,7 +143,7 @@ static void find_addr(ir_node *node, void *env)
 				*allow_inline = false;
 			}
 		}
-	} else if (is_Alloc(node) && get_Alloc_where(node) == stack_alloc) {
+	} else if (is_Alloc(node)) {
 		/* From GCC:
 		 * Refuse to inline alloca call unless user explicitly forced so as this
 		 * may change program's memory overhead drastically when the function

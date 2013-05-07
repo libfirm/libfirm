@@ -28,37 +28,24 @@ class Add(Binop):
 
 @op
 class Alloc:
-	"""allocates a block of memory.
-	It can be specified whether the memory should be allocated to the stack
-	or to the heap.
-	Allocates memory for one or more objects (depending on value on count input).
-	"""
-	ins   = [
-		("mem",   "memory dependency" ),
-		("count", "number of objects to allocate" ),
+	"""Allocates a block of memory on the stack."""
+	ins = [
+		("mem",  "memory dependency" ),
+		("size", "size of the block in bytes" ),
 	]
-	outs  = [
-		("M",         "memory result"),
-		("res",       "pointer to newly allocated memory"),
-		("X_regular", "control flow when no exception occurs"),
-		("X_except",  "control flow when exception occured"),
+	outs = [
+		("M",   "memory result"),
+		("res", "pointer to newly allocated memory"),
 	]
 	attrs = [
 		dict(
-			name    = "type",
-			type    = "ir_type*",
-			comment = "type of the objects to allocate",
+			name    = "alignment",
+			type    = "unsigned",
+			comment = "alignment of the memory block (must be a power of 2)",
 		),
-		dict(
-			name    = "where",
-			type    = "ir_where_alloc",
-			comment = "whether to allocate the variable on the stack or heap",
-		)
 	]
-	flags       = [ "fragile", "uses_memory" ]
-	pinned      = "exception"
-	throws_init = "false"
-	pinned_init = "op_pin_state_pinned"
+	flags       = [ "uses_memory" ]
+	pinned      = "yes"
 	attr_struct = "alloc_attr"
 
 @op
@@ -511,27 +498,13 @@ class Eor(Binop):
 @op
 class Free:
 	"""Frees a block of memory previously allocated by an Alloc node"""
-	ins    = [
-		("mem",   "memory dependency" ),
-		("ptr",   "pointer to the object to free"),
-		("count", "number of objects to allocate" ),
+	ins = [
+		("mem", "memory dependency" ),
+		("ptr", "pointer to the object to free"),
 	]
 	mode   = "mode_M"
 	flags  = [ "uses_memory" ]
 	pinned = "yes"
-	attrs  = [
-		dict(
-			name    = "type",
-			type    = "ir_type*",
-			comment = "type of the allocated variable",
-		),
-		dict(
-			name    = "where",
-			type    = "ir_where_alloc",
-			comment = "whether allocation was on the stack or heap",
-		)
-	]
-	attr_struct = "free_attr"
 
 @op
 class Id:
