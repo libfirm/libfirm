@@ -31,22 +31,16 @@ static ir_nodeset_t transformed;
  */
 static ir_node *adjust_alloc_size(dbg_info *dbgi, ir_node *size, ir_node *block)
 {
-	ir_mode   *mode;
-	ir_tarval *tv;
-	ir_node   *mask;
-	ir_graph  *irg;
-
 	if (stack_alignment <= 1)
 		return size;
 	if (is_Const(size) && !lower_constant_sizes)
 		return size;
 
-	mode = get_irn_mode(size);
-	tv   = new_tarval_from_long(stack_alignment-1, mode);
-	irg  = get_Block_irg(block);
-	mask = new_r_Const(irg, tv);
+	ir_mode   *mode = get_irn_mode(size);
+	ir_tarval *tv   = new_tarval_from_long(stack_alignment-1, mode);
+	ir_graph  *irg  = get_Block_irg(block);
+	ir_node   *mask = new_r_Const(irg, tv);
 	size = new_rd_Add(dbgi, block, size, mask, mode);
-
 	tv   = new_tarval_from_long(-(long)stack_alignment, mode);
 	mask = new_r_Const(irg, tv);
 	size = new_rd_And(dbgi, block, size, mask, mode);
@@ -55,15 +49,6 @@ static ir_node *adjust_alloc_size(dbg_info *dbgi, ir_node *size, ir_node *block)
 
 static void transform_Proj_Alloc(ir_node *node)
 {
-	ir_graph *irg;
-	dbg_info *dbgi;
-	ir_node *block;
-	ir_node *delta;
-	ir_node *add;
-	ir_node *dummy;
-	ir_node *alloc;
-	ir_node *new_proj;
-
 	/* we might need a result adjustment */
 	if (addr_delta == 0)
 		return;
@@ -72,16 +57,16 @@ static void transform_Proj_Alloc(ir_node *node)
 	if (ir_nodeset_contains(&transformed, node))
 		return;
 
-	alloc = get_Proj_pred(node);
-	dbgi  = get_irn_dbg_info(alloc);
-	irg   = get_irn_irg(node);
-	block = get_nodes_block(node);
-	delta = new_r_Const_long(irg, mode_P, addr_delta);
-	dummy = new_r_Dummy(irg, mode_P);
-	add   = new_rd_Add(dbgi, block, dummy, delta, mode_P);
+	ir_node  *const alloc = get_Proj_pred(node);
+	dbg_info *const dbgi  = get_irn_dbg_info(alloc);
+	ir_graph *const irg   = get_irn_irg(node);
+	ir_node  *const block = get_nodes_block(node);
+	ir_node  *const delta = new_r_Const_long(irg, mode_P, addr_delta);
+	ir_node  *const dummy = new_r_Dummy(irg, mode_P);
+	ir_node  *const add   = new_rd_Add(dbgi, block, dummy, delta, mode_P);
 
 	exchange(node, add);
-	new_proj = new_r_Proj(alloc, mode_P, pn_Alloc_res);
+	ir_node *const new_proj = new_r_Proj(alloc, mode_P, pn_Alloc_res);
 	set_Add_left(add, new_proj);
 	ir_nodeset_insert(&transformed, new_proj);
 }
@@ -91,21 +76,8 @@ static void transform_Proj_Alloc(ir_node *node)
  */
 static void lower_alloca_free(ir_node *node, void *data)
 {
-	ir_type  *type;
-	unsigned  size;
-	ir_graph *irg;
-	ir_node  *count;
-	ir_mode  *mode;
-	ir_node  *szconst;
-	ir_node  *block;
-	ir_node  *mem;
-	ir_type  *new_type;
-	ir_node  *mul;
-	ir_node  *new_size;
-	dbg_info *dbgi;
-	ir_node  *new_node;
-	ir_where_alloc where;
 	(void) data;
+	ir_type *type;
 	if (is_Alloc(node)) {
 		type = get_Alloc_type(node);
 	} else if (is_Free(node)) {
@@ -122,12 +94,15 @@ static void lower_alloca_free(ir_node *node, void *data)
 	if (!ir_nodeset_insert(&transformed, node))
 		return;
 
-	size = get_type_size_bytes(type);
+	unsigned size = get_type_size_bytes(type);
 	if (is_unknown_type(type))
 		size = 1;
 	if (size == 1 && stack_alignment <= 1)
 		return;
 
+	ir_node       *count;
+	ir_node       *mem;
+	ir_where_alloc where;
 	if (is_Alloc(node)) {
 		count     = get_Alloc_count(node);
 		mem       = get_Alloc_mem(node);
@@ -137,14 +112,15 @@ static void lower_alloca_free(ir_node *node, void *data)
 		mem   = get_Free_mem(node);
 		where = get_Free_where(node);
 	}
-	mode      = get_irn_mode(count);
-	block     = get_nodes_block(node);
-	irg       = get_irn_irg(node);
-	szconst   = new_r_Const_long(irg, mode, (long)size);
-	mul       = new_r_Mul(block, count, szconst, mode);
-	dbgi      = get_irn_dbg_info(node);
-	new_size  = adjust_alloc_size(dbgi, mul, block);
-	new_type  = get_unknown_type();
+	ir_mode  *const mode      = get_irn_mode(count);
+	ir_node  *const block     = get_nodes_block(node);
+	ir_graph *const irg       = get_irn_irg(node);
+	ir_node  *const szconst   = new_r_Const_long(irg, mode, (long)size);
+	ir_node  *const mul       = new_r_Mul(block, count, szconst, mode);
+	dbg_info *const dbgi      = get_irn_dbg_info(node);
+	ir_node  *const new_size  = adjust_alloc_size(dbgi, mul, block);
+	ir_type  *const new_type  = get_unknown_type();
+	ir_node  *      new_node;
 	if (is_Alloc(node)) {
 		new_node = new_rd_Alloc(dbgi, block, mem, new_size, new_type, where);
 	} else {
