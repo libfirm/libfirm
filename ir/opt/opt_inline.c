@@ -290,6 +290,7 @@ static void copy_parameter_entities(ir_node *call, ir_graph *called_graph)
 	ir_type  *frame_type   = get_irg_frame_type(irg);
 	ir_node  *call_mem     = get_Call_mem(call);
 	ir_node **sync_mem     = NULL;
+	bool      have_copyb   = false;
 
 	for (size_t i = 0, n_entities = get_class_n_members(called_frame);
 	     i < n_entities; ++i) {
@@ -319,18 +320,32 @@ static void copy_parameter_entities(ir_node *call, ir_graph *called_graph)
 			ir_node *copyb = new_rd_CopyB(dbgi, block, call_mem, sel, param, old_type);
 			new_mem = new_r_Proj(copyb, mode_M, pn_CopyB_M);
 			set_Call_param(call, n_param_pos, sel);
+			if (have_copyb) {
+				ARR_APP1(ir_node*, sync_mem, new_mem);
+			} else {
+				/*
+				 * The first time a copyb node is added it may overwrite sync_mem[0],
+				 * because the copyb node itself references it.
+				 */
+				sync_mem[0] = new_mem;
+				have_copyb = true;
+			}
 		} else {
 			/* Store the parameter onto the frame */
 			ir_node *store = new_rd_Store(dbgi, block, nomem, sel, param, cons_none);
 			new_mem = new_r_Proj(store, mode_M, pn_Store_M);
+			ARR_APP1(ir_node*, sync_mem, new_mem);
 		}
-		ARR_APP1(ir_node*, sync_mem, new_mem);
 	}
 
 	if (sync_mem != NULL) {
-		int      sync_arity = (int)ARR_LEN(sync_mem);
-		ir_node *sync       = new_r_Sync(block, sync_arity, sync_mem);
-		set_Call_mem(call, sync);
+		int sync_arity = (int)ARR_LEN(sync_mem);
+		if (sync_arity > 1) {
+			ir_node *sync = new_r_Sync(block, sync_arity, sync_mem);
+			set_Call_mem(call, sync);
+		} else {
+			set_Call_mem(call, sync_mem[0]);
+		}
 		DEL_ARR_F(sync_mem);
 	}
 }
