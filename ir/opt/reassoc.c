@@ -736,7 +736,6 @@ static void reverse_rules(ir_node *node, void *env)
 {
 	(void)env;
 
-	ir_graph *irg  = get_irn_irg(node);
 	ir_mode  *mode = get_irn_mode(node);
 	int res;
 

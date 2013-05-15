@@ -28,22 +28,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg);
 
-/* Map signed modes to unsigned ones. */
-static ir_mode *coerce_abstract_mode(ir_mode * m)
-{
-	if (!mode_is_signed(m)) return m;
-
-	if (m == mode_Bs)  return mode_Bu;
-	if (m == mode_Hs)  return mode_Hu;
-	if (m == mode_Is)  return mode_Iu;
-	if (m == mode_Ls)  return mode_Lu;
-	if (m == mode_LLs) return mode_LLu;
-
-	assert(!mode_is_signed(m));
-
-	return m;
-}
-
 /* Set cared for bits in irn, possibly putting it on the worklist.
    care == 0 is short for unqualified caring. */
 static void care_for(ir_node *irn, ir_tarval *care, pdeq *q)
@@ -151,7 +135,7 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 				/* Thwart sign extension as it doesn't make sense on
 				 * our abstract tarvals. */
 				/* TODO: ugly */
-				care = tarval_convert_to(care, coerce_abstract_mode(get_tarval_mode(care)));
+				care = tarval_convert_to(care, find_unsigned_mode(get_tarval_mode(care)));
 			}
 
 			care = tarval_convert_to(care, pred_mode);
