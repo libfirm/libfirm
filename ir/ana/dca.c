@@ -139,11 +139,10 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 			unsigned pred_bits = get_mode_size_bits(pred_mode);
 			unsigned bits = get_mode_size_bits(mode);
 
-			if (pred_bits < bits
-				&& mode_is_signed(pred_mode)) {
+			if (pred_bits < bits && mode_is_signed(pred_mode)) {
 				/* Bits still care about the sign bit even if they
 				 * don't fit into the smaller mode. */
-				if (!get_tarval_highest_bit(care) < pred_bits)
+				if (get_tarval_highest_bit(care) >= (int)pred_bits)
 					care = tarval_or(care,
 									 tarval_shl(get_tarval_one(mode),
 												new_tarval_from_long(
