@@ -16,7 +16,6 @@
 #include "irdump.h"
 #include "hashptr.h"
 #include "firmstat_t.h"
-#include "irpass_t.h"
 #include "pattern.h"
 #include "dags.h"
 #include "stat_dmp.h"
@@ -2114,62 +2113,6 @@ void stat_dump_snapshot(const char *name, const char *phase)
 		graph_clear_entry(global, /*all=*/1);
 	}
 	STAT_LEAVE;
-}
-
-typedef struct pass_t {
-	ir_prog_pass_t pass;
-	const char     *fname;
-	const char     *phase;
-} pass_t;
-
-/**
- * Wrapper to run stat_dump_snapshot() as a ir_prog wrapper.
- */
-static int stat_dump_snapshot_wrapper(ir_prog *irp, void *context)
-{
-	pass_t *pass = (pass_t*)context;
-
-	(void)irp;
-	stat_dump_snapshot(pass->fname, pass->phase);
-	return 0;
-}
-
-/**
- * Ensure that no verifier is run from the wrapper.
- */
-static int no_verify(ir_prog *prog, void *ctx)
-{
-	(void)prog;
-	(void)ctx;
-	return 0;
-}
-
-/**
- * Ensure that no dumper is run from the wrapper.
- */
-static void no_dump(ir_prog *prog, void *ctx, unsigned idx)
-{
-	(void)prog;
-	(void)ctx;
-	(void)idx;
-}
-
-/* create an ir_pog pass */
-ir_prog_pass_t *stat_dump_snapshot_pass(
-	const char *name, const char *fname, const char *phase)
-{
-	pass_t *pass = XMALLOCZ(pass_t);
-
-	def_prog_pass_constructor(
-		&pass->pass, name ? name : "stat_snapshot", stat_dump_snapshot_wrapper);
-	pass->fname = fname;
-	pass->phase = phase;
-
-	/* no dump/verify */
-	pass->pass.dump_irprog   = no_dump;
-	pass->pass.verify_irprog = no_verify;
-
-	return &pass->pass;
 }
 
 /** the hook entries for the Firm statistics module */

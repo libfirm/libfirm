@@ -38,30 +38,12 @@
 FIRM_API void construct_confirms(ir_graph *irg);
 
 /**
- * Creates an ir_graph pass for construct_confirms().
- *
- * @param name     the name of this pass or NULL
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *construct_confirms_pass(const char *name);
-
-/**
  * Remove all Confirm nodes from a graph.
  *
  * Note that local_optimize() can handle this if
  * the remove Confirm node setting is on (set_opt_remove_Confirm(1)).
  */
 FIRM_API void remove_confirms(ir_graph *irg);
-
-/**
- * Creates an ir_graph pass for remove_confirms().
- *
- * @param name     the name of this pass or NULL
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *remove_confirms_pass(const char *name);
 
 #include "end.h"
 

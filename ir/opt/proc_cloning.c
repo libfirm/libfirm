@@ -30,7 +30,6 @@
 #include "irtools.h"
 #include "irgmod.h"
 #include "array_t.h"
-#include "irpass_t.h"
 
 /**
  * This struct contains the information quadruple for a Call, which we need to
@@ -659,31 +658,4 @@ void proc_cloning(float threshold)
 		}
 	}
 	obstack_free(&hmap.obst, NULL);
-}
-
-typedef struct pass_t {
-	ir_prog_pass_t pass;
-	float          threshold;
-} pass_t;
-
-/**
- * Wrapper to run proc_cloning() as an ir_prog pass.
- */
-static int proc_cloning_wrapper(ir_prog *irp, void *context)
-{
-	pass_t *pass = (pass_t*)context;
-
-	(void)irp;
-	proc_cloning(pass->threshold);
-	return 0;
-}
-
-/* create a ir_prog pass */
-ir_prog_pass_t *proc_cloning_pass(const char *name, float threshold)
-{
-	pass_t *pass = XMALLOCZ(pass_t);
-
-	pass->threshold = threshold;
-	return def_prog_pass_constructor(
-		&pass->pass, name ? name : "cloning", proc_cloning_wrapper);
 }

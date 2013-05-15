@@ -13,7 +13,6 @@
 #include "type_t.h"
 #include "entity_t.h"
 #include "irprog_t.h"
-#include "irpass.h"
 #include "irgwalk.h"
 #include "error.h"
 #include "debug.h"
@@ -162,10 +161,4 @@ void garbage_collect_entities(void)
 		garbage_collect_in_segment(type);
 	}
 	irp_free_resources(irp, IRP_RESOURCE_TYPE_VISITED);
-}
-
-ir_prog_pass_t *garbage_collect_entities_pass(const char *name)
-{
-	return def_prog_pass(name ? name : "garbage_collect",
-	                     garbage_collect_entities);
 }

@@ -27,7 +27,6 @@
 #include "irouts.h"
 #include "irhooks.h"
 #include "ircons_t.h"
-#include "irpass.h"
 #include "util.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
@@ -674,11 +673,6 @@ void opt_tail_rec_irg(ir_graph *irg)
 	current_ir_graph = rem;
 }
 
-ir_graph_pass_t *opt_tail_rec_irg_pass(const char *name)
-{
-	return def_graph_pass(name ? name : "tailrec", opt_tail_rec_irg);
-}
-
 /*
  * optimize tail recursion away
  */
@@ -693,9 +687,4 @@ void opt_tail_recursion(void)
 		ir_graph *irg = get_irp_irg(i);
 		opt_tail_rec_irg(irg);
 	}
-}
-
-ir_prog_pass_t *opt_tail_recursion_pass(const char *name)
-{
-	return def_prog_pass(name ? name : "tailrec", opt_tail_recursion);
 }

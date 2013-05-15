@@ -24,7 +24,6 @@
 #include "irnode_t.h"
 #include "iroptimize.h"
 #include "tv.h"
-#include "irpass.h"
 #include "irmemory.h"
 #include "constbits.h"
 

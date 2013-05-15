@@ -25,7 +25,6 @@
 #include "irouts.h"
 #include "trouts.h"
 #include "iropt_t.h"
-#include "irpass.h"
 #include "pmap.h"
 
 /**
@@ -111,9 +110,4 @@ void dead_node_elimination(ir_graph *irg)
 
 	/* inform statistics that the run is over */
 	hook_dead_node_elim(irg, 0);
-}
-
-ir_graph_pass_t *dead_node_elimination_pass(const char *name)
-{
-	return def_graph_pass(name ? name : "dce", dead_node_elimination);
 }

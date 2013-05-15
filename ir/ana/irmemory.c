@@ -27,7 +27,6 @@
 #include "debug.h"
 #include "error.h"
 #include "typerep.h"
-#include "irpass.h"
 
 /** The debug handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
@@ -1292,9 +1291,4 @@ void mark_private_methods(void)
 		all_irg_walk(NULL, update_calls_to_private, NULL);
 
 	pmap_destroy(mtp_map);
-}
-
-ir_prog_pass_t *mark_private_methods_pass(const char *name)
-{
-	return def_prog_pass(name ? name : "mark_private_methods", mark_private_methods);
 }

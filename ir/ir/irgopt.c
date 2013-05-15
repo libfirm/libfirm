@@ -23,7 +23,6 @@
 
 #include "adt/pdeq.h"
 
-#include "irpass_t.h"
 #include "irflag_t.h"
 #include "iredges_t.h"
 #include "irtools.h"
@@ -231,9 +230,4 @@ void local_opts_const_code(void)
 	new_identities(irg);
 
 	walk_const_code(firm_clear_link, optimize_in_place_wrapper, NULL);
-}
-
-ir_graph_pass_t *optimize_graph_df_pass(const char *name)
-{
-	return def_graph_pass_ret(name ? name : "optimize_graph_df", optimize_graph_df);
 }

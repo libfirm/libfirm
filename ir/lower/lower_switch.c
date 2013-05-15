@@ -17,7 +17,6 @@
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "irouts.h"
-#include "irpass_t.h"
 #include "lowering.h"
 #include "error.h"
 #include "irnodeset.h"

@@ -23,7 +23,6 @@
 #include "irverify.h"
 #include "pmap.h"
 #include "array_t.h"
-#include "irpass_t.h"
 #include "iropt_dbg.h"
 #include "error.h"
 #include "be.h"
@@ -127,47 +126,6 @@ size_t lower_intrinsics(i_record *list, size_t length, int part_block_used)
 	pmap_destroy(c_map);
 
 	return nr_of_intrinsics;
-}
-
-typedef struct pass_t {
-	ir_prog_pass_t pass;
-
-	int      part_block_used;
-	size_t   length;
-	i_record list[1];
-} pass_t;
-
-/**
- * Wrapper for running lower_intrinsics() as an ir_prog pass.
- */
-static int pass_wrapper(ir_prog *irp, void *context)
-{
-	pass_t *pass = (pass_t*)context;
-	(void) irp; /* TODO: set current irp, or remove parameter */
-	lower_intrinsics(pass->list, pass->length, pass->part_block_used);
-	/* probably this pass should not run again */
-	return 0;
-}
-
-/**
- * Creates an ir_prog pass for lower_intrinsics.
- *
- * @param name             the name of this pass or NULL
- * @param list             an array of intrinsic map records
- * @param length           the length of the array
- * @param part_block_used  set to true if part_block() must be using during lowering
- */
-ir_prog_pass_t *lower_intrinsics_pass(
-	const char *name,
-	i_record *list, size_t length, int part_block_used)
-{
-	pass_t *const pass = XMALLOCF(pass_t, list, length);
-	memcpy(pass->list, list, sizeof(list[0]) * length);
-	pass->length          = length;
-	pass->part_block_used = part_block_used;
-
-	return def_prog_pass_constructor(
-		&pass->pass, name ? name : "lower_intrinsics", pass_wrapper);
 }
 
 /**

@@ -24,7 +24,6 @@
 #include "tv.h"
 #include "error.h"
 #include "lowering.h"
-#include "irpass_t.h"
 #include "util.h"
 #include "array.h"
 #include "irgopt.h"

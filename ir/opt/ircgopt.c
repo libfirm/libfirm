@@ -26,7 +26,6 @@
 #include "ircons.h"
 #include "cgana.h"
 #include "irtools.h"
-#include "irpass.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
@@ -112,28 +111,4 @@ void gc_irgs(size_t n_keep, ir_entity ** keep_arr)
 		DB((dbg, LEVEL_1, "  freeing method %+F\n", ent));
 		free_ir_graph(irg);
 	}
-}
-
-/**
- * Wrapper for running gc_irgs() as an ir_prog pass.
- */
-static void pass_wrapper(void)
-{
-    ir_entity **keep_methods;
-    size_t    arr_len;
-
-    /* Analysis that finds the free methods,
-       i.e. methods that are dereferenced.
-       Optimizes polymorphic calls :-). */
-    arr_len = cgana(&keep_methods);
-
-    /* Remove methods that are never called. */
-    gc_irgs(arr_len, keep_methods);
-
-    free(keep_methods);
-}
-
-ir_prog_pass_t *gc_irgs_pass(const char *name)
-{
-	return def_prog_pass(name ? name : "cgana", pass_wrapper);
 }

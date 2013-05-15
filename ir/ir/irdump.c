@@ -22,7 +22,6 @@
 #include "irop.h"
 
 #include "irdump_t.h"
-#include "irpass_t.h"
 
 #include "irgwalk.h"
 #include "tv_t.h"
@@ -2553,37 +2552,4 @@ void dump_all_ir_graphs(const char *suffix)
 		ir_graph *irg = get_irp_irg(i);
 		dump_ir_graph(irg, suffix);
 	}
-}
-
-typedef struct pass_t {
-	ir_prog_pass_t pass;
-	char           suffix[1];
-} pass_t;
-
-/**
- * Wrapper around dump_all_ir_graphs().
- */
-static int dump_all_ir_graphs_wrapper(ir_prog *irp, void *context)
-{
-	pass_t *pass = (pass_t*)context;
-
-	(void)irp;
-	dump_all_ir_graphs(pass->suffix);
-	return 0;
-}
-
-ir_prog_pass_t *dump_all_ir_graph_pass(const char *name, const char *suffix)
-{
-	size_t  len  = strlen(suffix) + 1;
-	pass_t *pass = XMALLOCF(pass_t, suffix, len);
-	ir_prog_pass_t *res  = def_prog_pass_constructor(
-		&pass->pass, name ? name : "dump_all_graphs", dump_all_ir_graphs_wrapper);
-
-	/* this pass does not change anything, so neither dump nor verify is needed. */
-	res->dump_irprog   = ir_prog_no_dump;
-	res->verify_irprog = ir_prog_no_verify;
-
-	memcpy(pass->suffix, suffix, len);
-
-	return res;
 }

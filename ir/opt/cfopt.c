@@ -38,7 +38,6 @@
 
 #include "irflag_t.h"
 #include "firmstat.h"
-#include "irpass.h"
 #include "irnodehashmap.h"
 #include "iropt_dbg.h"
 
@@ -877,10 +876,4 @@ void optimize_cf(ir_graph *irg)
 
 	confirm_irg_properties(irg,
 		env.changed ? IR_GRAPH_PROPERTIES_NONE : IR_GRAPH_PROPERTIES_ALL);
-}
-
-/* Creates an ir_graph pass for optimize_cf. */
-ir_graph_pass_t *optimize_cf_pass(const char *name)
-{
-	return def_graph_pass(name ? name : "optimize_cf", optimize_cf);
 }

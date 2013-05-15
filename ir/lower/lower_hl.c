@@ -18,7 +18,6 @@
 #include "irhooks.h"
 #include "irgmod.h"
 #include "irgwalk.h"
-#include "irpass_t.h"
 
 /**
  * Lower a Sel node. Do not touch Sels accessing entities on the frame type.
@@ -281,40 +280,12 @@ void lower_highlevel_graph(ir_graph *irg)
 	irg_walk_graph(irg, NULL, lower_irnode, NULL);
 }
 
-typedef struct pass_t {
-	ir_graph_pass_t pass;
-} pass_t;
-
-/**
- * Wrapper for running lower_highlevel_graph() as an ir_graph pass.
- */
-static int lower_highlevel_graph_wrapper(ir_graph *irg, void *context)
-{
-	(void)context;
-
-	lower_highlevel_graph(irg);
-	return 0;
-}
-
-ir_graph_pass_t *lower_highlevel_graph_pass(const char *name)
-{
-	pass_t *pass = XMALLOCZ(pass_t);
-
-	return def_graph_pass_constructor(
-		&pass->pass, name ? name : "lower_hl", lower_highlevel_graph_wrapper);
-}
-
 /*
  * does the same as lower_highlevel() for all nodes on the const code irg
  */
 void lower_const_code(void)
 {
 	walk_const_code(NULL, lower_irnode, NULL);
-}
-
-ir_prog_pass_t *lower_const_code_pass(const char *name)
-{
-	return def_prog_pass(name ? name : "lower_const_code", lower_const_code);
 }
 
 /*

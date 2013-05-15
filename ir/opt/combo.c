@@ -64,7 +64,6 @@
 #include "array_t.h"
 #include "error.h"
 #include "irnodeset.h"
-#include "irpass.h"
 #include "tv_t.h"
 #include "firmstat_t.h"
 
@@ -3613,10 +3612,4 @@ void combo(ir_graph *irg)
 	current_ir_graph = rem;
 
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
-}
-
-/* Creates an ir_graph pass for combo. */
-ir_graph_pass_t *combo_pass(const char *name)
-{
-	return def_graph_pass(name ? name : "combo", combo);
 }

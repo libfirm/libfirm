@@ -25,7 +25,6 @@
 #include "irgwalk.h"
 #include "irgmod.h"
 #include "irnode_t.h"
-#include "irpass.h"
 #include "util.h"
 #include "xmalloc.h"
 #include "debug.h"
@@ -751,11 +750,6 @@ void scalar_replacement_opt(ir_graph *irg)
 	irp_free_resources(irp, IRP_RESOURCE_ENTITY_LINK);
 
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
-}
-
-ir_graph_pass_t *scalar_replacement_opt_pass(const char *name)
-{
-	return def_graph_pass(name ? name : "scalar_rep", scalar_replacement_opt);
 }
 
 void firm_init_scalar_replace(void)

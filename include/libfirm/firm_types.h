@@ -87,16 +87,6 @@ typedef struct ir_entity            ir_entity;
 /** @ingroup ir_cdep
  * Control Dependence Analysis Results */
 typedef struct ir_cdep              ir_cdep;
-/** A graph transformation pass */
-typedef struct ir_graph_pass_t      ir_graph_pass_t;
-/** A whole program transformation pass */
-typedef struct ir_prog_pass_t       ir_prog_pass_t;
-
-/** A graph pass manager */
-typedef struct ir_graph_pass_manager_t      ir_graph_pass_manager_t;
-/** A program pass manager */
-typedef struct ir_prog_pass_manager_t       ir_prog_pass_manager_t;
-
 /** @ingroup ir_initializer
  * Initializer (for entities) */
 typedef union  ir_initializer_t     ir_initializer_t;

@@ -21,7 +21,6 @@
 #include "trouts.h"
 #include "irgwalk.h"
 #include "set.h"
-#include "irpass.h"
 #include "debug.h"
 #include "util.h"
 
@@ -1238,9 +1237,4 @@ void shape_blocks(ir_graph *irg)
 	DEL_ARR_F(env.live_outs);
 	del_set(env.opcode2id_map);
 	obstack_free(&env.obst, NULL);
-}
-
-ir_graph_pass_t *shape_blocks_pass(const char *name)
-{
-	return def_graph_pass(name ? name : "shape_blocks", shape_blocks);
 }

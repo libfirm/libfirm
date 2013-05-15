@@ -85,15 +85,6 @@ FIRM_API void remove_bads(ir_graph *irg);
  */
 FIRM_API void remove_tuples(ir_graph *irg);
 
-/**
- * Creates an ir_graph pass for optimize_graph_df().
- *
- * @param name     the name of this pass or NULL
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *optimize_graph_df_pass(const char *name);
-
 /** Places an empty basic block on critical control flow edges thereby
  * removing them.
  *

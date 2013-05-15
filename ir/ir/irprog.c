@@ -11,7 +11,6 @@
  */
 #include "irprog_t.h"
 #include "irgraph_t.h"
-#include "irpass_t.h"
 #include "array.h"
 #include "error.h"
 #include "obst.h"

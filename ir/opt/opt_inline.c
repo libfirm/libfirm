@@ -43,7 +43,6 @@
 #include "irhooks.h"
 #include "irtools.h"
 #include "iropt_dbg.h"
-#include "irpass_t.h"
 #include "irnodemap.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
@@ -1349,42 +1348,6 @@ void inline_functions(unsigned maxsize, int inline_threshold,
 
 	obstack_free(&temp_obst, NULL);
 	current_ir_graph = rem;
-}
-
-typedef struct inline_functions_pass_t {
-	ir_prog_pass_t pass;
-	unsigned       maxsize;
-	int            inline_threshold;
-	opt_ptr        after_inline_opt;
-} inline_functions_pass_t;
-
-/**
- * Wrapper to run inline_functions() as a ir_prog pass.
- */
-static int inline_functions_wrapper(ir_prog *irp, void *context)
-{
-	inline_functions_pass_t *pass = (inline_functions_pass_t*)context;
-
-	(void)irp;
-	inline_functions(pass->maxsize, pass->inline_threshold,
-	                 pass->after_inline_opt);
-	return 0;
-}
-
-/* create a ir_prog pass for inline_functions */
-ir_prog_pass_t *inline_functions_pass(
-	  const char *name, unsigned maxsize, int inline_threshold,
-	  opt_ptr after_inline_opt)
-{
-	inline_functions_pass_t *pass = XMALLOCZ(inline_functions_pass_t);
-
-	pass->maxsize          = maxsize;
-	pass->inline_threshold = inline_threshold;
-	pass->after_inline_opt = after_inline_opt;
-
-	return def_prog_pass_constructor(
-		&pass->pass, name ? name : "inline_functions",
-		inline_functions_wrapper);
 }
 
 void firm_init_inline(void)

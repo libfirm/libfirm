@@ -210,12 +210,6 @@ FIRM_API const backend_params *be_get_backend_param(void);
 FIRM_API void be_lower_for_target(void);
 
 /**
- * Creates an ir_prog pass which performs lowerings necessary for the target
- * architecture. (Calling backend_params->lower_for_target)
- */
-FIRM_API ir_prog_pass_t *lower_for_target_pass(const char *name);
-
-/**
  * Main interface to the frontend.
  */
 FIRM_API void be_main(FILE *output, const char *compilation_unit_name);

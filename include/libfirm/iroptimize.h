@@ -32,29 +32,11 @@
 FIRM_API void optimize_cf(ir_graph *irg);
 
 /**
- * Creates an ir_graph pass for optimize_cf().
- *
- * @param name     the name of this pass or NULL
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *optimize_cf_pass(const char *name);
-
-/**
  * Perform path-sensitive jump threading on the given graph.
  *
  * @param irg  the graph
  */
 FIRM_API void opt_jumpthreading(ir_graph* irg);
-
-/**
- * Creates an ir_graph pass for opt_jumpthreading().
- *
- * @param name     the name of this pass or NULL
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *opt_jumpthreading_pass(const char *name);
 
 /**
  * Simplifies boolean expression in the given ir graph.
@@ -65,29 +47,11 @@ FIRM_API ir_graph_pass_t *opt_jumpthreading_pass(const char *name);
 FIRM_API void opt_bool(ir_graph *irg);
 
 /**
- * Creates an ir_graph pass for opt_bool().
- *
- * @param name     the name of this pass or NULL
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *opt_bool_pass(const char *name);
-
-/**
  * Reduces the number of Conv nodes in the given ir graph.
  *
  * @param irg  the graph
  */
 FIRM_API void conv_opt(ir_graph *irg);
-
-/**
- * Creates an ir_graph pass for conv_opt().
- *
- * @param name     the name of this pass or NULL
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *conv_opt_pass(const char *name);
 
 /**
  * A callback that checks whether a entity is an allocation
@@ -155,14 +119,6 @@ FIRM_API void escape_analysis(int run_scalar_replace,
 FIRM_API void optimize_funccalls(void);
 
 /**
- * Creates an ir_prog pass for optimize_funccalls().
- *
- * @param name       the name of this pass or NULL
- * @return  the newly created ir_prog pass
- */
-FIRM_API ir_prog_pass_t *optimize_funccalls_pass(const char *name);
-
-/**
  * Does Partial Redundancy Elimination combined with
  * Global Value Numbering.
  * Can be used to replace place_code() completely.
@@ -172,15 +128,6 @@ FIRM_API ir_prog_pass_t *optimize_funccalls_pass(const char *name);
  * @param irg  the graph
  */
 FIRM_API void do_gvn_pre(ir_graph *irg);
-
-/**
- * Creates an ir_graph pass for do_gvn_pre().
- *
- * @param name     the name of this pass or NULL
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *do_gvn_pre_pass(const char *name);
 
 /**
  * This function is called to evaluate, if a
@@ -207,29 +154,11 @@ typedef int (*arch_allow_ifconv_func)(ir_node *sel, ir_node *mux_false,
 FIRM_API void opt_if_conv(ir_graph *irg);
 
 /**
- * Creates an ir_graph pass for opt_if_conv().
- *
- * @param name     the name of this pass or NULL
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *opt_if_conv_pass(const char *name);
-
-/**
  * Tries to reduce dependencies for memory nodes where possible by parallelizing
  * them and synchronizing with Sync nodes
  * @param irg   the graph where memory operations should be parallelized
  */
 FIRM_API void opt_parallelize_mem(ir_graph *irg);
-
-/**
- * Creates an ir_graph pass for opt_sync().
- *
- * @param name     the name of this pass or NULL
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *opt_parallelize_mem_pass(const char *name);
 
 /**
  * Check if we can replace the load by a given const from
@@ -272,29 +201,11 @@ FIRM_API ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c);
 FIRM_API void optimize_load_store(ir_graph *irg);
 
 /**
- * Creates an ir_graph pass for optimize_load_store().
- *
- * @param name     the name of this pass or NULL
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *optimize_load_store_pass(const char *name);
-
-/**
  * New experimental alternative to optimize_load_store.
  * Based on a dataflow analysis, so load/stores are moved out of loops
  * where possible
  */
 FIRM_API void opt_ldst(ir_graph *irg);
-
-/**
- * Creates an ir_graph pass for opt_ldst().
- *
- * @param name     the name of this pass or NULL
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *opt_ldst_pass(const char *name);
 
 /**
  * Optimize loops by peeling or unrolling them if beneficial.
@@ -318,15 +229,6 @@ FIRM_API void loop_optimization(ir_graph *irg);
  * if entities were removed.
  */
 FIRM_API void opt_frame_irg(ir_graph *irg);
-
-/**
- * Creates an ir_graph pass for opt_frame_irg().
- *
- * @param name     the name of this pass or NULL
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *opt_frame_irg_pass(const char *name);
 
 /** Possible flags for the Operator Scalar Replacement. */
 typedef enum osr_flags {
@@ -402,16 +304,6 @@ typedef enum osr_flags {
 FIRM_API void opt_osr(ir_graph *irg, unsigned flags);
 
 /**
- * Creates an ir_graph pass for remove_phi_cycles().
- *
- * @param name     the name of this pass or NULL
- * @param flags    set of osr_flags
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *opt_osr_pass(const char *name, unsigned flags);
-
-/**
  * Removes useless Phi cycles, i.e cycles of Phi nodes with only one
  * non-Phi node.
  * This is automatically done in opt_osr(), so there is no need to call it
@@ -422,16 +314,6 @@ FIRM_API ir_graph_pass_t *opt_osr_pass(const char *name, unsigned flags);
  * This algorithm destroys the link field of nodes.
  */
 FIRM_API void remove_phi_cycles(ir_graph *irg);
-
-/**
- * Creates an ir_graph pass for remove_phi_cycles().
- *
- * @param name     the name of this pass or NULL
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *remove_phi_cycles_pass(const char *name);
-
 
 /** A default threshold. */
 #define DEFAULT_CLONE_THRESHOLD 20
@@ -450,16 +332,6 @@ FIRM_API ir_graph_pass_t *remove_phi_cycles_pass(const char *name);
 FIRM_API void proc_cloning(float threshold);
 
 /**
- * Creates an ir_prog pass for proc_cloning().
- *
- * @param name        the name of this pass or NULL
- * @param threshold   the threshold for cloning
- *
- * @return  the newly created ir_prog pass
- */
-FIRM_API ir_prog_pass_t *proc_cloning_pass(const char *name, float threshold);
-
-/**
  * Reassociation.
  *
  * Applies Reassociation rules to integer expressions.
@@ -474,15 +346,6 @@ FIRM_API ir_prog_pass_t *proc_cloning_pass(const char *name, float threshold);
  * Addressing Expressions.
  */
 FIRM_API void optimize_reassociation(ir_graph *irg);
-
-/**
- * Creates an ir_graph pass for optimize_reassociation().
- *
- * @param name     the name of this pass or NULL
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *optimize_reassociation_pass(const char *name);
 
 /**
  * Normalize the Returns of a graph by creating a new End block
@@ -507,15 +370,6 @@ FIRM_API ir_graph_pass_t *optimize_reassociation_pass(const char *name);
 FIRM_API void normalize_one_return(ir_graph *irg);
 
 /**
- * Creates an ir_graph pass for normalize_one_return().
- *
- * @param name     the name of this pass or NULL
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *normalize_one_return_pass(const char *name);
-
-/**
  * Normalize the Returns of a graph by moving
  * the Returns upwards as much as possible.
  * This might be preferred for code generation.
@@ -538,15 +392,6 @@ FIRM_API ir_graph_pass_t *normalize_one_return_pass(const char *name);
 FIRM_API void normalize_n_returns(ir_graph *irg);
 
 /**
- * Creates an ir_graph pass for normalize_n_returns().
- *
- * @param name     the name of this pass or NULL
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *normalize_n_returns_pass(const char *name);
-
-/**
  * Performs the scalar replacement optimization.
  * Replaces local compound entities (like structures and arrays)
  * with atomic values if possible. Does not handle classes yet.
@@ -554,15 +399,6 @@ FIRM_API ir_graph_pass_t *normalize_n_returns_pass(const char *name);
  * @param irg  the graph which should be optimized
  */
 FIRM_API void scalar_replacement_opt(ir_graph *irg);
-
-/**
- * Creates an ir_graph pass for scalar_replacement_opt().
- *
- * @param name     the name of this pass or NULL
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *scalar_replacement_opt_pass(const char *name);
 
 /**
  * Optimizes tail-recursion calls by converting them into loops.
@@ -581,15 +417,6 @@ FIRM_API ir_graph_pass_t *scalar_replacement_opt_pass(const char *name);
 FIRM_API void opt_tail_rec_irg(ir_graph *irg);
 
 /**
- * Creates an ir_graph pass for opt_tail_rec_irg().
- *
- * @param name     the name of this pass or NULL
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *opt_tail_rec_irg_pass(const char *name);
-
-/**
  * Optimize tail-recursion calls for all IR-Graphs.
  * Can currently handle:
  * - direct return value, i.e. return func().
@@ -603,15 +430,6 @@ FIRM_API ir_graph_pass_t *opt_tail_rec_irg_pass(const char *name);
 FIRM_API void opt_tail_recursion(void);
 
 /**
- * Creates an ir_prog pass for opt_tail_recursion().
- *
- * @param name     the name of this pass or NULL
- *
- * @return  the newly created ir_prog pass
- */
-FIRM_API ir_prog_pass_t *opt_tail_recursion_pass(const char *name);
-
-/**
  * CLiff Click's combo algorithm from
  *   "Combining Analyses, combining Optimizations".
  *
@@ -621,15 +439,6 @@ FIRM_API ir_prog_pass_t *opt_tail_recursion_pass(const char *name);
  * @param irg  the graph to run on
  */
 FIRM_API void combo(ir_graph *irg);
-
-/**
- * Creates an ir_graph pass for combo.
- *
- * @param name     the name of this pass or NULL
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *combo_pass(const char *name);
 
 /** pointer to an optimization function */
 typedef void (*opt_ptr)(ir_graph *irg);
@@ -649,38 +458,11 @@ FIRM_API void inline_functions(unsigned maxsize, int inline_threshold,
                                opt_ptr after_inline_opt);
 
 /**
- * Creates an ir_prog pass for inline_functions().
- *
- * @param name               the name of this pass or NULL
- * @param maxsize            Do not inline any calls if a method has more than
- *                           maxsize firm nodes.  It may reach this limit by
- *                           inlineing.
- * @param inline_threshold   inlining threshold
- * @param after_inline_opt   a function that is called after inlining a
- *                           procedure. You should run fast local optimisations
- *                           here which cleanup the graph before further
- *                           inlining
- *
- * @return  the newly created ir_prog pass
- */
-FIRM_API ir_prog_pass_t *inline_functions_pass(const char *name,
-		unsigned maxsize, int inline_threshold, opt_ptr after_inline_opt);
-
-/**
  * Combines congruent blocks into one.
  *
  * @param irg   The IR-graph to optimize.
  */
 FIRM_API void shape_blocks(ir_graph *irg);
-
-/**
- * Creates an ir_graph pass for shape_blocks().
- *
- * @param name   the name of this pass or NULL
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *shape_blocks_pass(const char *name);
 
 /**
  * Perform loop inversion on a given graph.
@@ -702,42 +484,6 @@ FIRM_API void do_loop_unrolling(ir_graph *irg);
 FIRM_API void do_loop_peeling(ir_graph *irg);
 
 /**
- * Creates an ir_graph pass for loop inversion.
- *
- * @param name     the name of this pass or NULL
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *loop_inversion_pass(const char *name);
-
-/**
- * Creates an ir_graph pass for loop unrolling.
- *
- * @param name     the name of this pass or NULL
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *loop_unroll_pass(const char *name);
-
-/**
- * Creates an ir_graph pass for loop peeling.
- *
- * @param name     the name of this pass or NULL
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *loop_peeling_pass(const char *name);
-
-/**
- * Creates an ir_graph pass for set_vrp_data()
- *
- * @param name The name of this pass or NULL
- *
- * @return the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *set_vrp_pass(const char *name);
-
-/**
  * Removes all entities which are unused.
  *
  * Unused entities have ir_visibility_local and are not used directly or
@@ -746,9 +492,6 @@ FIRM_API ir_graph_pass_t *set_vrp_pass(const char *name);
  * of object-oriented programs.
  */
 FIRM_API void garbage_collect_entities(void);
-
-/** Pass for garbage_collect_entities */
-FIRM_API ir_prog_pass_t *garbage_collect_entities_pass(const char *name);
 
 /**
  * Performs dead node elimination by copying the ir graph to a new obstack.
@@ -770,15 +513,6 @@ FIRM_API ir_prog_pass_t *garbage_collect_entities_pass(const char *name);
  * @param irg  The graph to be optimized.
  */
 FIRM_API void dead_node_elimination(ir_graph *irg);
-
-/**
- * Creates an ir_graph pass for dead_node_elimination().
- *
- * @param name     the name of this pass or NULL
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *dead_node_elimination_pass(const char *name);
 
 /**
  * Inlines a method at the given call site.
@@ -833,17 +567,6 @@ FIRM_API int inline_method(ir_node *call, ir_graph *called_graph);
 FIRM_API void place_code(ir_graph *irg);
 
 /**
- * Creates an ir_graph pass for place_code().
- * This pass enables GCSE, runs optimize_graph_df() and finally
- * place_code();
- *
- * @param name     the name of this pass or NULL
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *place_code_pass(const char *name);
-
-/**
  * Determines information about the values of nodes and perform simplifications
  * using this information.  This optimization performs a data-flow analysis to
  * find the minimal fixpoint.
@@ -855,19 +578,6 @@ FIRM_API void fixpoint_vrp(ir_graph*);
  * and exchanges them for a corresponding constant.
  */
 FIRM_API void occult_consts(ir_graph*);
-
-/**
- * Creates an ir_graph pass for fixpoint_vrp().
- * This pass dDetermines information about the values of nodes
- * and perform simplifications using this information.
- * This optimization performs a data-flow analysis to
- * find the minimal fixpoint.
- *
- * @param name     the name of this pass or NULL
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *fixpoint_vrp_irg_pass(const char *name);
 
 /**
  * Checks if the value of a node is != 0.

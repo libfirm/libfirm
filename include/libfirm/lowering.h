@@ -74,15 +74,6 @@ FIRM_API void lower_switch(ir_graph *irg, unsigned small_switch,
 FIRM_API void lower_highlevel_graph(ir_graph *irg);
 
 /**
- * Creates an ir_graph pass for lower_highlevel_graph().
- *
- * @param name              the name of this pass or NULL
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *lower_highlevel_graph_pass(const char *name);
-
-/**
  * Replaces SymConsts by a real constant if possible.
  * Replaces Sel nodes by address computation.  Also resolves array access.
  * Handle bit fields by added And/Or calculations.
@@ -97,15 +88,6 @@ FIRM_API void lower_highlevel(void);
  * does the same as lower_highlevel for all nodes on the const code irg
  */
 FIRM_API void lower_const_code(void);
-
-/**
- * Creates an ir_prog pass for lower_const_code().
- *
- * @param name     the name of this pass or NULL
- *
- * @return  the newly created ir_prog pass
- */
-FIRM_API ir_prog_pass_t *lower_const_code_pass(const char *name);
 
 /**
  * Used as callback, whenever a lowerable mux is found. The return value
@@ -126,18 +108,6 @@ typedef int lower_mux_callback(ir_node* mux);
  *                 to lower all mux nodes.
  */
 FIRM_API void lower_mux(ir_graph *irg, lower_mux_callback *cb_func);
-
-/**
- * Creates an ir_graph pass for lower_mux().
- *
- * @param name     the name of this pass or NULL
- * @param cb_func  The callback function for mux selection. Can be NULL,
- *                 to lower all mux nodes.
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *lower_mux_pass(const char *name,
-                                         lower_mux_callback *cb_func);
 
 /**
  * An intrinsic mapper function.
@@ -201,17 +171,6 @@ typedef union i_record {
  */
 FIRM_API size_t lower_intrinsics(i_record *list, size_t length,
                                  int part_block_used);
-
-/**
- * Creates an irprog pass for lower_intrinsics.
- *
- * @param name             the name of this pass or NULL
- * @param list             an array of intrinsic map records
- * @param length           the length of the array
- * @param part_block_used  set to true if part_block() must be using during lowering
- */
-FIRM_API ir_prog_pass_t *lower_intrinsics_pass(const char *name, i_record *list,
-                                               size_t length, int part_block_used);
 
 /**
  * A mapper for the integer/float absolute value: type abs(type v).

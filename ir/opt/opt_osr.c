@@ -34,7 +34,6 @@
 #include "array.h"
 #include "firmstat_t.h"
 #include "error.h"
-#include "irpass_t.h"
 
 /** The debug handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
@@ -1294,11 +1293,6 @@ void remove_phi_cycles(ir_graph *irg)
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW);
 }
 
-ir_graph_pass_t *remove_phi_cycles_pass(const char *name)
-{
-	return def_graph_pass(name ? name : "remove_phi_cycles", remove_phi_cycles);
-}
-
 /**
  * Post-walker: fix Add and Sub nodes that where results of I<->P conversions.
  */
@@ -1424,28 +1418,4 @@ void opt_osr(ir_graph *irg, unsigned flags)
 	obstack_free(&env.obst, NULL);
 
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
-}
-
-typedef struct pass_t {
-	ir_graph_pass_t pass;
-	unsigned        flags;
-} pass_t;
-
-/**
-* Wrapper for running opt_osr() as an ir_graph pass.
-*/
-static int pass_wrapper(ir_graph *irg, void *context)
-{
-	pass_t *pass = (pass_t*)context;
-	opt_osr(irg, pass->flags);
-	return 0;
-}
-
-ir_graph_pass_t *opt_osr_pass(const char *name, unsigned flags)
-{
-	pass_t *pass = XMALLOCZ(pass_t);
-
-	pass->flags = flags;
-	return def_graph_pass_constructor(
-		&pass->pass, name ? name : "osr", pass_wrapper);
 }

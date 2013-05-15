@@ -29,7 +29,6 @@
 #include "firmstat.h"
 #include "execfreq_t.h"
 #include "irprofile.h"
-#include "irpass_t.h"
 #include "ircons.h"
 #include "util.h"
 
@@ -818,20 +817,4 @@ void be_main(FILE *file_handle, const char *cup_name)
 	if (stat_ev_enabled) {
 		stat_ev_ctx_pop("bemain_compilation_unit");
 	}
-}
-
-static int do_lower_for_target(ir_prog *irp, void *context)
-{
-	be_lower_for_target();
-	(void) context;
-	(void) irp;
-	return 0;
-}
-
-ir_prog_pass_t *lower_for_target_pass(const char *name)
-{
-	ir_prog_pass_t *pass = XMALLOCZ(ir_prog_pass_t);
-	return def_prog_pass_constructor(pass,
-	                                 name ? name : "lower_for_target",
-	                                 do_lower_for_target);
 }

@@ -96,7 +96,6 @@
 #include "iropt.h"
 #include "iroptimize.h"
 #include "irouts.h"
-#include "irpass.h"
 #include "irprintf.h"
 #include "irprog.h"
 #include "irtypeinfo.h"

@@ -21,7 +21,6 @@
 #include "irgwalk.h"
 #include "irtools.h"
 #include "array_t.h"
-#include "irpass_t.h"
 #include "be.h"
 
 #include "irdump.h"
@@ -473,9 +472,4 @@ void opt_if_conv(ir_graph *irg)
 	confirm_irg_properties(irg,
 		IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
 		| IR_GRAPH_PROPERTY_ONE_RETURN);
-}
-
-ir_graph_pass_t *opt_if_conv_pass(const char *name)
-{
-	return def_graph_pass(name ? name : "ifconv", opt_if_conv);
 }

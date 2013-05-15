@@ -32,7 +32,6 @@
 #include "iropt_t.h"
 #include "iredges_t.h"
 #include "irgwalk.h"
-#include "irpass_t.h"
 #include "tv.h"
 #include "vrp.h"
 
@@ -290,15 +289,4 @@ void conv_opt(ir_graph *irg)
 
 	confirm_irg_properties(irg,
 		global_changed ? IR_GRAPH_PROPERTIES_NONE : IR_GRAPH_PROPERTIES_ALL);
-}
-
-/* Creates an ir_graph pass for conv_opt. */
-ir_graph_pass_t *conv_opt_pass(const char *name)
-{
-	ir_graph_pass_t *path = def_graph_pass(name ? name : "conv_opt", conv_opt);
-
-	/* safe to run parallel on all irgs */
-	ir_graph_pass_set_parallel(path, 1);
-
-	return path;
 }

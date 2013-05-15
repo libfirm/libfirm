@@ -23,7 +23,6 @@
 #include "iropt_dbg.h"
 #include "iroptimize.h"
 #include "irouts.h"
-#include "irpass.h"
 #include "valueset.h"
 #include "irloop.h"
 #include "firmstat_t.h"
@@ -2026,10 +2025,4 @@ void do_gvn_pre(ir_graph *irg)
 	/* TODO assure nothing else breaks. */
 	set_opt_global_cse(0);
 	edges_activate(irg);
-}
-
-/* Creates an ir_graph pass for do_gvn_pre. */
-ir_graph_pass_t *do_gvn_pre_pass(const char *name)
-{
-	return def_graph_pass(name ? name : "gvn_pre", do_gvn_pre);
 }

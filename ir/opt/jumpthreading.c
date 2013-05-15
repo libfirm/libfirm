@@ -27,7 +27,6 @@
 #include "tv.h"
 #include "iroptimize.h"
 #include "iropt_dbg.h"
-#include "irpass.h"
 #include "vrp.h"
 #include "firmstat_t.h"
 
@@ -719,10 +718,4 @@ void opt_jumpthreading(ir_graph* irg)
 
 	confirm_irg_properties(irg,
 		changed ? IR_GRAPH_PROPERTIES_NONE : IR_GRAPH_PROPERTIES_ALL);
-}
-
-/* Creates an ir_graph pass for opt_jumpthreading. */
-ir_graph_pass_t *opt_jumpthreading_pass(const char *name)
-{
-	return def_graph_pass(name ? name : "jumpthreading", opt_jumpthreading);
 }

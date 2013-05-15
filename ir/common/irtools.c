@@ -13,7 +13,6 @@
 #include "irbackedge_t.h"
 #include "irtools.h"
 #include "irprintf.h"
-#include "irpass_t.h"
 #include "iropt_t.h"
 
 void firm_clear_link(ir_node *n, void *env)

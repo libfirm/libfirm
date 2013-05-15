@@ -24,7 +24,6 @@
 #include "irnode_t.h"
 #include "iroptimize.h"
 #include "tv.h"
-#include "irpass.h"
 #include "irmemory.h"
 #include "constbits.h"
 
@@ -232,9 +231,4 @@ void fixpoint_vrp(ir_graph* const irg)
 
 	confirm_irg_properties(irg,
 		env.modified ? IR_GRAPH_PROPERTIES_NONE : IR_GRAPH_PROPERTIES_ALL);
-}
-
-ir_graph_pass_t *fixpoint_vrp_irg_pass(const char *name)
-{
-	return def_graph_pass(name ? name : "fixpoint_vrp", fixpoint_vrp);
 }

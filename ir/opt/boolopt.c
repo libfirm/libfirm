@@ -18,7 +18,6 @@
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "tv.h"
-#include "irpass.h"
 #include "debug.h"
 
 /** Describes a pair of relative conditions lo < hi, lo rel_lo x, hi rel_hi x */
@@ -704,10 +703,4 @@ void opt_bool(ir_graph *const irg)
 
 	confirm_irg_properties(irg,
 		env.changed ? IR_GRAPH_PROPERTIES_NONE : IR_GRAPH_PROPERTIES_ALL);
-}
-
-/* Creates an ir_graph pass for opt_bool. */
-ir_graph_pass_t *opt_bool_pass(const char *name)
-{
-	return def_graph_pass(name ? name : "opt_bool", opt_bool);
 }

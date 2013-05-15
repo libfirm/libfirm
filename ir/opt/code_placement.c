@@ -21,7 +21,6 @@
 #include "irnode_t.h"
 #include "iredges_t.h"
 #include "irgopt.h"
-#include "irpass.h"
 
 #ifndef NDEBUG
 static bool is_block_reachable(ir_node *block)
@@ -413,20 +412,4 @@ void place_code(ir_graph *irg)
 
 	del_waitq(worklist);
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW);
-}
-
-/**
- * Wrapper for place_code() inside the place_code pass.
- */
-static void place_code_wrapper(ir_graph *irg)
-{
-	set_opt_global_cse(1);
-	optimize_graph_df(irg);
-	place_code(irg);
-	set_opt_global_cse(0);
-}
-
-ir_graph_pass_t *place_code_pass(const char *name)
-{
-	return def_graph_pass(name ? name : "place", place_code_wrapper);
 }

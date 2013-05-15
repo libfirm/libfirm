@@ -26,7 +26,6 @@
 #include "irtools.h"
 #include "array_t.h"
 #include "beutil.h"
-#include "irpass.h"
 #include "irdom.h"
 
 #include <math.h>
@@ -2721,21 +2720,6 @@ void do_loop_peeling(ir_graph *irg)
 {
 	loop_op = loop_op_peeling;
 	loop_optimization(irg);
-}
-
-ir_graph_pass_t *loop_inversion_pass(const char *name)
-{
-	return def_graph_pass(name ? name : "loop_inversion", do_loop_inversion);
-}
-
-ir_graph_pass_t *loop_unroll_pass(const char *name)
-{
-	return def_graph_pass(name ? name : "loop_unroll", do_loop_unrolling);
-}
-
-ir_graph_pass_t *loop_peeling_pass(const char *name)
-{
-	return def_graph_pass(name ? name : "loop_peeling", do_loop_peeling);
 }
 
 void firm_init_loop_opt(void)

@@ -26,7 +26,6 @@
 #include "array_t.h"
 #include "irhooks.h"
 #include "iredges.h"
-#include "irpass.h"
 #include "irmemory.h"
 #include "irnodehashmap.h"
 #include "irgopt.h"
@@ -2150,9 +2149,4 @@ void optimize_load_store(ir_graph *irg)
 			? IR_GRAPH_PROPERTIES_NONE
 			: IR_GRAPH_PROPERTIES_CONTROL_FLOW
 		: IR_GRAPH_PROPERTIES_ALL);
-}
-
-ir_graph_pass_t *optimize_load_store_pass(const char *name)
-{
-	return def_graph_pass(name ? name : "ldst", optimize_load_store);
 }

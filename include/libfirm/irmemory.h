@@ -230,15 +230,6 @@ FIRM_API void set_irp_memory_disambiguator_options(unsigned options);
  */
 FIRM_API void mark_private_methods(void);
 
-/**
- * Creates an ir_prog pass for mark_private_methods().
- *
- * @param name     the name of this pass or NULL
- *
- * @return  the newly created ir_prog pass
- */
-FIRM_API ir_prog_pass_t *mark_private_methods_pass(const char *name);
-
 /** @} */
 
 #include "end.h"

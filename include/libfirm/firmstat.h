@@ -24,18 +24,6 @@
 FIRM_API void stat_dump_snapshot(const char *fname, const char *phase);
 
 /**
- * Creates an ir_prog pass for stat_dump_snapshot().
- *
- * @param name    the name of this pass or NULL
- * @param fname   base name of the statistic output file
- * @param phase   a phase name. Prefix will be firmstat-\<phase\>-
- *
- * @return  the newly created ir_prog pass
- */
-FIRM_API ir_prog_pass_t *stat_dump_snapshot_pass(
-	const char *name, const char *fname, const char *phase);
-
-/**
  * initialize the statistics module.
  * Should be called directly after ir_init
  */

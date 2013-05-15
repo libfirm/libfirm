@@ -113,17 +113,6 @@ FIRM_API const char *ir_get_dump_filter(void);
 /** Returns true if dump file filter is not set, or if it is a prefix of name */
 FIRM_API int ir_should_dump(const char *name);
 
-/**
- * Creates an ir_prog pass for dump_all_ir_graphs().
- *
- * @param name          the name of this pass or NULL
- * @param suffix        A suffix for the file name.
- *
- * @return  the newly created ir_prog pass
- */
-FIRM_API ir_prog_pass_t *dump_all_ir_graph_pass(const char *name,
-                                                const char *suffix);
-
 /*@}*/
 
 /**

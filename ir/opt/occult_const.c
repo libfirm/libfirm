@@ -22,7 +22,6 @@
 #include "irdump_t.h"
 #include "iredges_t.h"
 #include "irgwalk.h"
-#include "irpass_t.h"
 #include "tv.h"
 #include "irnodemap.h"
 #include "dca.h"

@@ -14,7 +14,6 @@
 #include "irouts.h"
 #include "irgraph_t.h"
 #include "irgopt.h"
-#include "irpass.h"
 #include "irgwalk.h"
 #include "iredges.h"
 #include "tv.h"
@@ -563,11 +562,6 @@ void free_vrp_data(ir_graph *irg)
 		return;
 	obstack_free(&irg->vrp.obst, NULL);
 	ir_nodemap_destroy(&irg->vrp.infos);
-}
-
-ir_graph_pass_t *set_vrp_pass(const char *name)
-{
-	return def_graph_pass(name ? name : "set_vrp", set_vrp_data);
 }
 
 ir_relation vrp_cmp(const ir_node *left, const ir_node *right)

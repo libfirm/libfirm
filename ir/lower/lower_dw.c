@@ -38,7 +38,6 @@
 #include "pdeq.h"
 #include "irdump.h"
 #include "array_t.h"
-#include "irpass_t.h"
 #include "lower_dw.h"
 
 /** A map from (op, imode, omode) to Intrinsic functions entities. */

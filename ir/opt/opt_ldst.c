@@ -24,7 +24,6 @@
 #include "raw_bitset.h"
 #include "debug.h"
 #include "error.h"
-#include "irpass.h"
 
 /* maximum number of output Proj's */
 #define MAX_PROJ ((long)pn_Load_max > (long)pn_Store_max ? (long)pn_Load_max : (long)pn_Store_max)
@@ -2157,9 +2156,4 @@ no_changes:
 #ifdef DEBUG_libfirm
 	DEL_ARR_F(env.id_2_address);
 #endif
-}
-
-ir_graph_pass_t *opt_ldst_pass(const char *name)
-{
-	return def_graph_pass(name ? name : "ldst_df", opt_ldst);
 }

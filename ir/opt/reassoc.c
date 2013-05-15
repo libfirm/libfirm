@@ -26,7 +26,6 @@
 #include "irloop.h"
 #include "pdeq.h"
 #include "debug.h"
-#include "irpass.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
@@ -786,12 +785,6 @@ void optimize_reassociation(ir_graph *irg)
 	del_waitq(wq);
 
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW);
-}
-
-/* create a pass for the reassociation */
-ir_graph_pass_t *optimize_reassociation_pass(const char *name)
-{
-	return def_graph_pass(name ? name : "reassoc", optimize_reassociation);
 }
 
 static void register_node_reassoc_func(ir_op *op, reassociate_func func)

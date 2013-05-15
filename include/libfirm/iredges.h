@@ -201,17 +201,6 @@ FIRM_API int edges_verify_kind(ir_graph *irg, ir_edge_kind_t kind);
 FIRM_API void edges_init_dbg(int do_dbg);
 
 /**
- * Creates an ir_graph pass for edges_verify().
- *
- * @param name                the name of this pass or NULL
- * @param assert_on_problem   assert if problems were found
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *irg_verify_edges_pass(const char *name,
-                                                unsigned assert_on_problem);
-
-/**
  * Activates data and block edges for an irg.
  * If the irg phase is phase_backend, Dependence edges are
  * additionally activated.

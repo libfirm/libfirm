@@ -62,16 +62,6 @@ typedef enum irg_verify_flags_t {
 FIRM_API int irg_verify(ir_graph *irg, unsigned flags);
 
 /**
- * Creates an ir_graph pass for irg_verify().
- *
- * @param name   the name of this pass or NULL
- * @param flags  one of irg_verify_flags_t
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *irg_verify_pass(const char *name, unsigned flags);
-
-/**
  * Possible flags for irg_verify_bads().
  */
 enum verify_bad_flags_t {

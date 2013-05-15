@@ -19,7 +19,6 @@
 #include "irprintf.h"
 #include "irouts.h"
 #include "irflag_t.h"
-#include "irpass_t.h"
 #include "irnodeset.h"
 #include "ircons.h"
 
@@ -1885,37 +1884,6 @@ int irg_verify(ir_graph *irg, unsigned flags)
 #endif /* DEBUG_libfirm */
 
 	return res;
-}
-
-typedef struct pass_t {
-	ir_graph_pass_t pass;
-	unsigned        flags;
-} pass_t;
-
-/**
- * Wrapper to irg_verify to be run as an ir_graph pass.
- */
-static int irg_verify_wrapper(ir_graph *irg, void *context)
-{
-	pass_t *pass = (pass_t*)context;
-	irg_verify(irg, pass->flags);
-	/* do NOT rerun the pass if verify is ok :-) */
-	return 0;
-}
-
-ir_graph_pass_t *irg_verify_pass(const char *name, unsigned flags)
-{
-	pass_t *pass = XMALLOCZ(pass_t);
-
-	def_graph_pass_constructor(
-		&pass->pass, name ? name : "irg_verify", irg_verify_wrapper);
-
-	/* neither dump for verify */
-	pass->pass.dump_irg   = (DUMP_ON_IRG_FUNC)ir_prog_no_dump;
-	pass->pass.verify_irg = (RUN_ON_IRG_FUNC)ir_prog_no_verify;
-
-	pass->flags = flags;
-	return &pass->pass;
 }
 
 int irn_verify_irg_dump(const ir_node *n, ir_graph *irg,

@@ -27,14 +27,6 @@
  */
 FIRM_API void gc_irgs(size_t n_keep, ir_entity *keep_arr[]);
 
-/**
- * Creates an ir_prog pass for gc_irgs().
- *
- * @param name     the name of this pass or NULL
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_prog_pass_t *gc_irgs_pass(const char *name);
-
 #include "end.h"
 
 #endif

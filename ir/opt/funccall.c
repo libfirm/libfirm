@@ -20,7 +20,6 @@
 #include "irloop_t.h"
 #include "ircons.h"
 #include "iredges_t.h"
-#include "irpass_t.h"
 #include "iroptimize.h"
 #include "analyze_irg_args.h"
 #include "irhooks.h"
@@ -856,9 +855,4 @@ void optimize_funccalls(void)
 void firm_init_funccalls(void)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.opt.funccalls");
-}
-
-ir_prog_pass_t *optimize_funccalls_pass(const char *name)
-{
-	return def_prog_pass(name ? name : "funccall", optimize_funccalls);
 }

@@ -23,7 +23,6 @@
 #include "obst.h"
 #include "irdump.h"
 #include "irflag_t.h"
-#include "irpass.h"
 #include "iredges.h"
 
 typedef struct parallelize_info
@@ -212,9 +211,4 @@ void opt_parallelize_mem(ir_graph *irg)
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 	irg_walk_graph(irg, NULL, walker, NULL);
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW);
-}
-
-ir_graph_pass_t *opt_parallelize_mem_pass(const char *name)
-{
-	return def_graph_pass(name ? name : "parallelize-mem", opt_parallelize_mem);
 }

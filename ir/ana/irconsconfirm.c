@@ -19,7 +19,6 @@
 #include "iredges_t.h"
 #include "irgwalk.h"
 #include "irgopt.h"
-#include "irpass.h"
 #include "irtools.h"
 #include "array_t.h"
 #include "debug.h"
@@ -555,11 +554,6 @@ void construct_confirms(ir_graph *irg)
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW);
 }
 
-ir_graph_pass_t *construct_confirms_pass(const char *name)
-{
-	return def_graph_pass(name ? name : "confirm", construct_confirms);
-}
-
 static void remove_confirm(ir_node *n, void *env)
 {
 	(void) env;
@@ -574,9 +568,4 @@ void remove_confirms(ir_graph *irg)
 {
 	irg_walk_graph(irg, NULL, remove_confirm, NULL);
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW);
-}
-
-ir_graph_pass_t *remove_confirms_pass(const char *name)
-{
-	return def_graph_pass(name ? name : "rem_confirm", remove_confirms);
 }

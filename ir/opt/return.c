@@ -15,7 +15,6 @@
 #include "ircons_t.h"
 #include "irnode_t.h"
 #include "irgmod.h"
-#include "irpass.h"
 #include "util.h"
 #include "raw_bitset.h"
 
@@ -136,12 +135,6 @@ void normalize_one_return(ir_graph *irg)
 		| IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
 		| IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE);
 	add_irg_properties(irg, IR_GRAPH_PROPERTY_ONE_RETURN);
-}
-
-/* Create a graph pass. */
-ir_graph_pass_t *normalize_one_return_pass(const char *name)
-{
-	return def_graph_pass(name ? name : "one_ret", normalize_one_return);
 }
 
 /**
@@ -359,10 +352,4 @@ void normalize_n_returns(ir_graph *irg)
 		| IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
 		| IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE);
 	add_irg_properties(irg, IR_GRAPH_PROPERTY_MANY_RETURNS);
-}
-
-/* Create a graph pass. */
-ir_graph_pass_t *normalize_n_returns_pass(const char *name)
-{
-	return def_graph_pass(name ? name : "n_rets", normalize_n_returns);
 }

@@ -16,7 +16,6 @@
 #include "type_t.h"
 #include "irouts.h"
 #include "iredges.h"
-#include "irpass.h"
 
 /*
  * Optimize the frame type of an irg by removing
@@ -90,9 +89,4 @@ void opt_frame_irg(ir_graph *irg)
 		| IR_GRAPH_PROPERTY_CONSISTENT_OUTS
 		| IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE
 		| IR_GRAPH_PROPERTY_MANY_RETURNS);
-}
-
-ir_graph_pass_t *opt_frame_irg_pass(const char *name)
-{
-	return def_graph_pass(name ? name : "opt_frame_irg", opt_frame_irg);
 }
