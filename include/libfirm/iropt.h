@@ -20,53 +20,6 @@
  * @{
  */
 
-/**
- * The Floating point model.
- *
- * Several basic properties are defined:
- * - fp_explicit_rounding
- * - fp_strict_algebraic
- * - fp_contradictions
- * - fp_strict_eval_order
- * - fp_exceptions
- * - fp_environment_access
- *
- * From those basic properties three general models are defined,
- * compatible to the VC8 compiler:
- * - fp_model_precise:
- *     Default mode. Associative and distributive law forbidden unless a transformation
- *     is guaranteed to produce the same result.
- *     No FPU environment access. No FP exception semantics.
- * - fp_model_strict:
- *     Slowest mode. Additionally to fp_model_precise allows correct handling of
- *     FP exceptions and FPU environment access.
- * - fp_model_fast:
- *     Fastest mode. Associative and distributive law allowed at the expense
- *     of floating point accuracy and correctness. Explicit rounding is disabled.
- */
-typedef enum fp_model_t {
-	fp_explicit_rounding  = (1u << 0),  /**< Explicit rounding at assignments, typecasts, return
-	                                  and function calls. Conv nodes may NOT be removed, even
-	                                  if they look useless. */
-	fp_strict_algebraic   = (1u << 1),  /**< Strict adherence to non-associative and non-distributive
-	                                  algebra unless the same result is guaranteed. */
-	fp_contradictions     = (1u << 2),  /**< FP contradictions are enabled. Only for backend. */
-	fp_strict_eval_order  = (1u << 3),  /**< FP instructions must be strict evaluated in given order. */
-	fp_exceptions         = (1u << 4),  /**< FP exceptions are supported. No reordering that changes
-	                                  the exception flow are allowed. Backends must generate
-	                                  synchronized exception code. */
-	fp_environment_access = (1u << 5),  /**< FPU environment can be accessed. Even Constant folding
-	                                  cannot be done. */
-
-	/** Precise floating point model. Default. */
-	fp_model_precise = fp_explicit_rounding|fp_strict_algebraic|fp_contradictions,
-	/** Strict floating point model. */
-	fp_model_strict  = fp_explicit_rounding|fp_strict_algebraic|fp_strict_eval_order|
-	                   fp_exceptions|fp_environment_access,
-	/** Fast floating point model. */
-	fp_model_fast    = fp_contradictions
-} fp_model_t;
-
 /** If the expression referenced can be evaluated statically
  *  computed_value returns a tarval representing the result.
  *  Else returns tarval_bad. */
@@ -93,6 +46,16 @@ FIRM_API int ir_is_negated_value(const ir_node *a, const ir_node *b);
  */
 FIRM_API ir_relation ir_get_possible_cmp_relations(const ir_node *left,
                                                    const ir_node *right);
+
+/**
+ * enable/disable imprecise floatingpoint optimizations. These include rules
+ * like (a - x) + x = a, or a-0=a. They are wrong in several corner cases but
+ * may still be fine for some applications.
+ */
+FIRM_API void ir_allow_imprecise_float_transforms(int enable);
+
+/** return 1 if imprecise float transformations are allowed. */
+FIRM_API int ir_imprecise_float_transforms_allowed(void);
 
 /** @} */
 

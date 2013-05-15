@@ -513,7 +513,6 @@ struct ir_graph {
 	ir_typeinfo_state      typeinfo_state;    /**< Validity of type information. */
 	irg_callee_info_state  callee_info_state; /**< Validity of callee information. */
 	unsigned mem_disambig_opt;               /**< Options for the memory disambiguator. */
-	unsigned fp_model;                       /**< floating point model of the graph. */
 
 	/* -- Fields for construction -- */
 	int n_loc;                         /**< Number of local variables in this

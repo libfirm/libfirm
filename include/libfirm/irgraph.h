@@ -464,12 +464,6 @@ FIRM_API void *get_irg_loc_description(ir_graph *irg, int n);
 /** Returns the last irn index for this graph. */
 FIRM_API unsigned get_irg_last_idx(const ir_graph *irg);
 
-/** Returns the floating point model of this graph. */
-FIRM_API unsigned get_irg_fp_model(const ir_graph *irg);
-
-/** Sets a floating point model for this graph. */
-FIRM_API void set_irg_fp_model(ir_graph *irg, unsigned model);
-
 /**
  * Ensures that a graph fulfills all properties stated in @p state.
  * Performs graph transformations if necessary.

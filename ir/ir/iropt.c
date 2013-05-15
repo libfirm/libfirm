@@ -40,6 +40,18 @@
 
 #include "entity_t.h"
 
+static int imprecise_float_transforms_allowed;
+
+void ir_allow_imprecise_float_transforms(int enable)
+{
+	imprecise_float_transforms_allowed = enable;
+}
+
+int ir_imprecise_float_transforms_allowed(void)
+{
+	return imprecise_float_transforms_allowed;
+}
+
 static bool is_Or_Eor_Add(const ir_node *node)
 {
 	if (is_Or(node) || is_Eor(node) || is_Add(node)) {
@@ -794,12 +806,9 @@ static ir_node *equivalent_node_Add(ir_node *n)
 	if (n != oldn)
 		return n;
 
-	/* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
-	if (mode_is_float(mode)) {
-		ir_graph *irg = get_irn_irg(n);
-		if (get_irg_fp_model(irg) & fp_strict_algebraic)
-			return n;
-	}
+	/* these optimizations are imprecise for floatingpoint ops */
+	if (mode_is_float(mode) && !ir_imprecise_float_transforms_allowed())
+		return n;
 
 	left  = get_Add_left(n);
 	right = get_Add_right(n);
@@ -865,12 +874,9 @@ static ir_node *equivalent_node_Sub(ir_node *n)
 	ir_mode   *mode = get_irn_mode(n);
 	ir_tarval *tb;
 
-	/* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
-	if (mode_is_float(mode)) {
-		ir_graph *irg = get_irn_irg(n);
-		if (get_irg_fp_model(irg) & fp_strict_algebraic)
-			return n;
-	}
+	/* these optimizations are imprecise for floatingpoint ops */
+	if (mode_is_float(mode) && !ir_imprecise_float_transforms_allowed())
+		return n;
 
 	b  = get_Sub_right(n);
 	tb = value_of(b);
@@ -2456,13 +2462,9 @@ static ir_node *transform_node_Add(ir_node *n)
 	ir_node *c;
 	HANDLE_BINOP_PHI((eval_func) tarval_add, a, b, c, mode);
 
-	/* for FP the following optimizations are only allowed if
-	 * fp_strict_algebraic is disabled */
-	if (mode_is_float(mode)) {
-		ir_graph *irg = get_irn_irg(n);
-		if (get_irg_fp_model(irg) & fp_strict_algebraic)
-			return n;
-	}
+	/* these optimizations are imprecise for floatingpoint ops */
+	if (mode_is_float(mode) && !ir_imprecise_float_transforms_allowed())
+		return n;
 
 	if (mode_is_num(mode)) {
 		ir_graph *irg = get_irn_irg(n);
@@ -2588,12 +2590,9 @@ static ir_node *transform_node_Sub(ir_node *n)
 restart:
 	HANDLE_BINOP_PHI((eval_func) tarval_sub, a, b, c, mode);
 
-	/* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
-	if (mode_is_float(mode)) {
-		ir_graph *irg = get_irn_irg(n);
-		if (get_irg_fp_model(irg) & fp_strict_algebraic)
-			return n;
-	}
+	/* these optimizations are improcise for floatingpoint ops */
+	if (mode_is_float(mode) && !ir_imprecise_float_transforms_allowed())
+		return n;
 
 	if (is_Const(b) && !mode_is_reference(get_irn_mode(b))) {
 		/* a - C -> a + (-C) */
@@ -3095,7 +3094,8 @@ static ir_node *transform_node_Div(ir_node *n)
 			/* Do the transformation if the result is either exact or we are
 			   not using strict rules. */
 			if (tv != tarval_bad &&
-				(tarval_ieee754_get_exact() || (get_irg_fp_model(get_irn_irg(n)) & fp_strict_algebraic) == 0)) {
+				(tarval_ieee754_get_exact()
+				 || ir_imprecise_float_transforms_allowed())) {
 				ir_node  *block = get_nodes_block(n);
 				ir_graph *irg   = get_irn_irg(block);
 				ir_node  *c     = new_r_Const(irg, tv);

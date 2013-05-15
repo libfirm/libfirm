@@ -123,7 +123,6 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 	res->typeinfo_state      = ir_typeinfo_none;
 	set_irp_typeinfo_inconsistent();           /* there is a new graph with typeinfo_none. */
 	res->callee_info_state   = irg_callee_info_none;
-	res->fp_model            = fp_model_precise;
 	res->mem_disambig_opt    = aa_opt_inherited;
 
 	/*-- Type information for the procedure of the graph --*/
@@ -194,7 +193,6 @@ ir_graph *new_const_code_irg(void)
 
 	res->n_loc            = 1; /* Only the memory. */
 	res->irg_pinned_state = op_pin_state_pinned;
-	res->fp_model         = fp_model_precise;
 
 	add_irg_constraints(res, IR_GRAPH_CONSTRAINT_CONSTRUCTION);
 
@@ -285,7 +283,6 @@ ir_graph *create_irg_copy(ir_graph *irg)
 	res = alloc_graph();
 
 	res->irg_pinned_state = irg->irg_pinned_state;
-	res->fp_model         = irg->fp_model;
 
 	/* clone the frame type here for safety */
 	irp_reserve_resources(irp, IRP_RESOURCE_ENTITY_LINK);
@@ -572,16 +569,6 @@ void (set_irg_block_visited)(ir_graph *irg, ir_visited_t visited)
 void (inc_irg_block_visited)(ir_graph *irg)
 {
   inc_irg_block_visited_(irg);
-}
-
-unsigned (get_irg_fp_model)(const ir_graph *irg)
-{
-	return get_irg_fp_model_(irg);
-}
-
-void set_irg_fp_model(ir_graph *irg, unsigned model)
-{
-	irg->fp_model = model;
 }
 
 void set_irg_loc_description(ir_graph *irg, int n, void *description)

@@ -463,8 +463,8 @@ static void do_reassociation(waitq *const wq)
 
 			res = 0;
 
-			/* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
-			if (mode_is_float(mode) && get_irg_fp_model(get_irn_irg(n)) & fp_strict_algebraic)
+			/* reassociating floatingpoint ops is imprecise */
+			if (mode_is_float(mode) && !ir_imprecise_float_transforms_allowed())
 				break;
 
 			if (op->ops.reassociate) {
@@ -740,8 +740,8 @@ static void reverse_rules(ir_node *node, void *env)
 	ir_mode  *mode = get_irn_mode(node);
 	int res;
 
-	/* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
-	if (mode_is_float(mode) && get_irg_fp_model(irg) & fp_strict_algebraic)
+	/* reassociating floatingpoint ops is imprecise */
+	if (mode_is_float(mode) && !ir_imprecise_float_transforms_allowed())
 		return;
 
 	do {

@@ -2563,7 +2563,7 @@ static node_t *identity_comm_zero_binop(node_t *node)
 	ir_tarval *zero;
 
 	/* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
-	if (mode_is_float(mode) && (get_irg_fp_model(current_ir_graph) & fp_strict_algebraic))
+	if (mode_is_float(mode) && !ir_imprecise_float_transforms_allowed())
 		return node;
 
 	/* node: no input should be tarval_top, else the binop would be also
@@ -2606,7 +2606,7 @@ static node_t *identity_Mul(node_t *node)
 	ir_tarval *one;
 
 	/* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
-	if (mode_is_float(mode) && (get_irg_fp_model(current_ir_graph) & fp_strict_algebraic))
+	if (mode_is_float(mode) && !ir_imprecise_float_transforms_allowed())
 		return node;
 
 	/* node: no input should be tarval_top, else the binop would be also
@@ -2629,7 +2629,7 @@ static node_t *identity_Sub(node_t *node)
 	ir_mode *mode = get_irn_mode(sub);
 
 	/* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
-	if (mode_is_float(mode) && (get_irg_fp_model(current_ir_graph) & fp_strict_algebraic))
+	if (mode_is_float(mode) && !ir_imprecise_float_transforms_allowed())
 		return node;
 
 	/* node: no input should be tarval_top, else the binop would be also

@@ -58,7 +58,6 @@
 #define set_irg_block_visited(irg, v)         set_irg_block_visited_(irg, v)
 #define inc_irg_block_visited(irg)            inc_irg_block_visited_(irg)
 #define dec_irg_block_visited(irg)            dec_irg_block_visited_(irg)
-#define get_irg_fp_model(irg)                 get_irg_fp_model_(irg)
 #define get_idx_irn(irg, idx)                 get_idx_irn_(irg, idx)
 #define irg_is_constrained(irg, constraints)  irg_is_constrained_(irg, constraints)
 #define add_irg_properties(irg, props)        add_irg_properties_(irg, props)
@@ -302,12 +301,6 @@ static inline void inc_irg_block_visited_(ir_graph *irg)
 static inline void dec_irg_block_visited_(ir_graph *irg)
 {
 	--irg->block_visited;
-}
-
-/* Return the floating point model of this graph. */
-static inline unsigned get_irg_fp_model_(const ir_graph *irg)
-{
-	return irg->fp_model;
 }
 
 static inline int irg_is_constrained_(const ir_graph *irg,
