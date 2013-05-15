@@ -1611,7 +1611,7 @@ int irn_verify_irg(const ir_node *n, ir_graph *irg)
 			"invalid pin state", 0,
 			ir_printf("node %+F", n);
 		);
-	} else if (!is_Block(n) && is_irn_pinned_in_irg(n)
+	} else if (!is_Block(n)
 	           && irg_has_properties(irg, IR_GRAPH_PROPERTY_NO_BADS)) {
 		ASSERT_AND_RET_DBG(is_Block(get_nodes_block(n)) || is_Anchor(n),
 				"block input is not a block", 0,

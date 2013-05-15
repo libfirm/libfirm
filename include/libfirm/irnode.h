@@ -185,14 +185,6 @@ FIRM_API op_pin_state get_irn_pinned(const ir_node *node);
 /** Sets pin state for nodes with op pin state op_pin_state_exc_pinned */
 FIRM_API void set_irn_pinned(ir_node *node, op_pin_state state);
 
-/** Returns whether the node is currently pinned.
- *
- * If get_irn_pinned returns op_pin_state_floats and the graph the
- * node belongs to is in state op_poin_state_floats then this function
- * returns 'floats', else 'pinned'.
- */
-FIRM_API op_pin_state is_irn_pinned_in_irg(const ir_node *node);
-
 /**
  * IR node constructor.
  * Create a new IR node in irg, with an op, mode, arity and

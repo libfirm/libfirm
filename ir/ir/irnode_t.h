@@ -38,7 +38,6 @@
 #define set_irn_link(node, link)              set_irn_link_(node, link)
 #define get_irn_link(node)                    get_irn_link_(node)
 #define get_irn_pinned(node)                  get_irn_pinned_(node)
-#define is_irn_pinned_in_irg(node)            is_irn_pinned_in_irg_(node)
 #define is_binop(node)                        is_binop_(node)
 #define is_SymConst_addr_ent(node)            is_SymConst_addr_ent_(node)
 #define get_Block_n_cfgpreds(node)            get_Block_n_cfgpreds_(node)
@@ -330,13 +329,6 @@ static inline op_pin_state get_irn_pinned_(const ir_node *node)
 		return (op_pin_state)node->attr.except.pin_state;
 
 	return state;
-}
-
-static inline op_pin_state is_irn_pinned_in_irg_(const ir_node *node)
-{
-	if (get_irg_pinned(get_irn_irg(node)) == op_pin_state_floats)
-		return get_irn_pinned(node);
-	return op_pin_state_pinned;
 }
 
 static inline int is_binop_(const ir_node *node)
