@@ -350,7 +350,7 @@ static void copy_parameter_entities(ir_node *call, ir_graph *called_graph)
 }
 
 /* Inlines a method at the given call site. */
-int inline_method(ir_node *const call, ir_graph *called_graph)
+static int inline_method(ir_node *const call, ir_graph *called_graph)
 {
 	/* we cannot inline some types of calls */
 	if (! can_inline(call, called_graph))
