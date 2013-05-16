@@ -52,6 +52,9 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
+/* Obstack for the inline pass */
+static struct obstack inline_obst;
+
 /**
  * Remember the new node in the old node by using a field all nodes have.
  */
@@ -67,6 +70,48 @@ static inline ir_node *get_new_node(ir_node *old_node)
 {
 	assert(irn_visited(old_node));
 	return (ir_node*)get_irn_link(old_node);
+}
+
+/**
+ * Environment for inlining, which will be set in the link of every irg
+ */
+typedef struct {
+	list_head all_calls;         /**< All Calls in the graph which will be inlined. */
+	list_head affected_calls;    /**< All calls that are affected by changing this irg. */
+	unsigned  *local_weights;    /**< Once allocated, the beneficial weight for transmitting local addresses. */
+	unsigned  n_nodes;           /**< Number of nodes in graph except Id, Tuple, Proj, Start, End. */
+	unsigned  n_blocks;          /**< Number of Blocks in graph without Start and End block. */
+	unsigned  n_nodes_orig;      /**< for statistics */
+	unsigned  n_call_nodes;      /**< Number of Call nodes in the graph. */
+	unsigned  n_call_nodes_orig; /**< for statistics */
+	unsigned  n_callers;         /**< Number of known graphs that call this graphs. */
+	unsigned  n_callers_orig;    /**< for statistics */
+	unsigned  n_alloca;          /**< Number of alloca nodes in the graph. */
+	bool      got_inline:1;      /**< Set, if at least one call inside this graph was inlined. */
+	bool      recursive:1;       /**< Set, if the graph contains recursive calls. */
+	bool      can_inline:1;      /**< false if the graph contains feature not
+	                                  supported by the inliner */
+} irg_env_t;
+
+/**
+ * Allocate a new environment for inlining.
+ */
+static irg_env_t *setup_irg_env(ir_graph *irg)
+{
+	irg_env_t *env = OALLOCZ(&inline_obst, irg_env_t);
+	INIT_LIST_HEAD(&env->affected_calls);
+	INIT_LIST_HEAD(&env->all_calls);
+	env->n_nodes      = -2; /* do not count count Start, End */
+	env->n_blocks     = -2; /* do not count count Start, End Block */
+	env->n_nodes_orig = -2; /* do not count Start, End */
+
+	set_irg_link(irg, env);
+	return env;
+}
+
+static irg_env_t *get_irg_env(ir_graph *irg)
+{
+	return (irg_env_t*)get_irg_link(irg);
 }
 
 /**
@@ -113,54 +158,94 @@ static void set_preds_inline(ir_node *node, void *env)
 	}
 }
 
-/**
- * Walker: checks if P_value_arg_base is used.
- */
-static void find_addr(ir_node *node, void *env)
+static void inline_check(ir_node *node, void *env)
 {
 	bool *allow_inline = (bool*)env;
 
-	if (is_Block(node) && get_Block_entity(node)) {
-		/**
-		 * Currently we can't handle blocks whose address was taken correctly
-		 * when inlining
-		 */
+	if (is_Block(node) && get_Block_entity(node) != NULL) {
+		/** Currently we can't handle blocks whose address was taken */
+		if (*allow_inline) {
+			DB((dbg, LEVEL_2, "Can't inling %+F: basic block address taken\n",
+			    get_irg_entity(get_irn_irg(node))));
+		}
 		*allow_inline = false;
 	} else if (is_Sel(node)) {
-		ir_graph *irg = current_ir_graph;
-		if (get_Sel_ptr(node) == get_irg_frame(irg)) {
-			/* access to frame */
-			ir_entity *ent = get_Sel_entity(node);
-			if (get_entity_owner(ent) != get_irg_frame_type(irg)) {
-				/* access to value_type */
-				*allow_inline = false;
+		/** we can't handle inner functions using things from the outer
+		 * frame */
+		ir_entity *ent   = get_Sel_entity(node);
+		ir_type   *owner = get_entity_owner(ent);
+		if (!is_frame_type(owner))
+			return;
+		ir_graph *irg = get_irn_irg(node);
+		if (owner != get_irg_frame_type(get_irn_irg(node))) {
+			if (*allow_inline) {
+				DB((dbg, LEVEL_2,
+				    "Can't inline %+F: inner function accessing outer frame\n",
+				    get_irg_entity(irg)));
 			}
+			*allow_inline = false;
 		}
 	}
 }
-/**
- * Check if we can inline a given call.
- * Currently, we cannot inline two cases:
- * - call with compound arguments
- * - graphs that take the address of a parameter
- *
- * check these conditions here
- */
-static bool can_inline(ir_node *call, ir_graph *called_graph)
-{
-	const ir_entity           *called = get_irg_entity(called_graph);
-	mtp_additional_properties  props  = get_entity_additional_properties(called);
-	if (props & mtp_property_noinline)
-		return false;
 
-	ir_type *called_type = get_entity_type(called);
-	size_t   n_params    = get_method_n_params(called_type);
-	ir_type *call_type   = get_Call_type(call);
-	size_t   n_arguments = get_method_n_params(call_type);
+/** check if a graph can be inlined at all. */
+static bool can_inline_graph(ir_graph *irg)
+{
+	const ir_entity *entity = get_irg_entity(irg);
+	mtp_additional_properties props = get_entity_additional_properties(entity);
+	if (props & mtp_property_noinline) {
+		DB((dbg, LEVEL_2,
+		    "Can't inline %+F: function is marked noinline\n", entity));
+		return false;
+	}
+	/* inlining noreturn functions is usually pointless */
+	if (props & mtp_property_noreturn) {
+		DB((dbg, LEVEL_2,
+		    "Won't inline %+F: function is marked noreturn\n", entity));
+		return false;
+	}
+
+	/* check for nested functions and variable number of parameters */
+	const ir_type *frame_type = get_irg_frame_type(irg);
+	for (size_t i = 0, n_entities = get_class_n_members(frame_type);
+	     i < n_entities; ++i) {
+		const ir_entity *member = get_class_member(frame_type, i);
+		if (is_method_entity(member)) {
+			DB((dbg, LEVEL_2,
+			    "Can't inline %+F: function has inner functions\n", entity));
+			return false;
+		}
+		if (is_parameter_entity(member)
+            && (get_entity_parameter_number(member) == IR_VA_START_PARAMETER_NUMBER)) {
+            DB((dbg, LEVEL_2,
+                "Can't inline %+F: function uses variable arguments\n",
+                entity));
+			return false;
+		}
+	}
+
+	bool res = true;
+	irg_walk_graph(irg, inline_check, NULL, &res);
+	return res;
+}
+
+/**
+ * the inliner only supports a limit number of cases where the call_type
+ * doesn't match the type of the called function.
+ */
+static bool call_types_compatible(const ir_type *const call_type,
+                                  const ir_entity *const called)
+{
+	const ir_type *called_type = get_entity_type(called);
+	if (called_type == call_type)
+		return true;
+
+	size_t n_arguments = get_method_n_params(call_type);
+	size_t n_params    = get_method_n_params(called_type);
 	if (n_arguments != n_params) {
 		/* this is a bad feature of C: without a prototype, we can
 		 * call a function with less parameters than needed. Currently
-		 * we don't support this, although we could use Unknown than. */
+		 * we don't support this. */
 		return false;
 	}
 	size_t n_res = get_method_n_ress(called_type);
@@ -205,23 +290,25 @@ static bool can_inline(ir_node *call, ir_graph *called_graph)
 			/* otherwise we can "reinterpret" the bits */
 		}
 	}
+	return true;
+}
 
-	/* check for nested functions and variable number of parameters */
-	const ir_type *frame_type = get_irg_frame_type(called_graph);
-	for (size_t i = 0, n_entities = get_class_n_members(frame_type);
-	     i < n_entities; ++i) {
-		const ir_entity *ent = get_class_member(frame_type, i);
-		if (is_method_entity(ent))
-			return false;
-		if (is_parameter_entity(ent)
-            && (get_entity_parameter_number(ent) == IR_VA_START_PARAMETER_NUMBER))
-			return false;
+static bool can_inline(ir_node *call, ir_graph *called_graph)
+{
+	irg_env_t *irg_env = get_irg_env(called_graph);
+	if (!irg_env->can_inline)
+		return false;
+
+	ir_type   *call_type = get_Call_type(call);
+	const ir_entity *called    = get_irg_entity(called_graph);
+	if (!call_types_compatible(call_type, called)) {
+		DB((dbg, LEVEL_2,
+			"Can't inline %+F in %+F(at %+F): call type not compatible with function type\n",
+			called_graph, get_irg_entity(get_irn_irg(call)), call));
+		return false;
 	}
 
-	bool res = true;
-	irg_walk_graph(called_graph, find_addr, NULL, &res);
-
-	return res;
+	return true;
 }
 
 /**
@@ -321,17 +408,11 @@ static void copy_parameter_entities(ir_node *call, ir_graph *called_graph)
 }
 
 /* Inlines a method at the given call site. */
-static bool inline_method(ir_node *const call, ir_graph *called_graph)
+static void inline_method(ir_node *const call, ir_graph *called_graph)
 {
-	/* we cannot inline some types of calls */
-	if (! can_inline(call, called_graph))
-		return false;
-
-	/* We cannot inline a recursive call. The graph must be copied before
-	 * the call the inline_method() using create_irg_copy(). */
 	ir_graph *irg = get_irn_irg(call);
-	if (called_graph == irg)
-		return false;
+	/* inliner should have created a copy in case of recursive inlining */
+	assert(irg != called_graph);
 
 	ir_graph *rem = current_ir_graph;
 	current_ir_graph = irg;
@@ -619,51 +700,6 @@ static bool inline_method(ir_node *const call, ir_graph *called_graph)
 	current_ir_graph = rem;
 
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
-
-	return true;
-}
-
-/* Obstack for the inline pass */
-static struct obstack inline_obst;
-
-/**
- * Environment for inlining, which will be set in the link of every irg
- */
-typedef struct {
-	list_head all_calls;         /**< All Calls in the graph which will be inlined. */
-	list_head affected_calls;    /**< All calls that are affected by changing this irg. */
-	unsigned  *local_weights;    /**< Once allocated, the beneficial weight for transmitting local addresses. */
-	unsigned  n_nodes;           /**< Number of nodes in graph except Id, Tuple, Proj, Start, End. */
-	unsigned  n_blocks;          /**< Number of Blocks in graph without Start and End block. */
-	unsigned  n_nodes_orig;      /**< for statistics */
-	unsigned  n_call_nodes;      /**< Number of Call nodes in the graph. */
-	unsigned  n_call_nodes_orig; /**< for statistics */
-	unsigned  n_callers;         /**< Number of known graphs that call this graphs. */
-	unsigned  n_callers_orig;    /**< for statistics */
-	unsigned  n_alloca;          /**< Number of alloca nodes in the graph. */
-	bool      got_inline:1;      /**< Set, if at least one call inside this graph was inlined. */
-	bool      recursive:1;       /**< Set, if the graph contains recursive calls. */
-} irg_env_t;
-
-/**
- * Allocate a new environment for inlining.
- */
-static irg_env_t *setup_irg_env(ir_graph *irg)
-{
-	irg_env_t *env = OALLOCZ(&inline_obst, irg_env_t);
-	INIT_LIST_HEAD(&env->affected_calls);
-	INIT_LIST_HEAD(&env->all_calls);
-	env->n_nodes      = -2; /* do not count count Start, End */
-	env->n_blocks     = -2; /* do not count count Start, End Block */
-	env->n_nodes_orig = -2; /* do not count Start, End */
-
-	set_irg_link(irg, env);
-	return env;
-}
-
-static irg_env_t *get_irg_env(ir_graph *irg)
-{
-	return (irg_env_t*)get_irg_link(irg);
 }
 
 /* Weights for the inline benefice */
@@ -815,22 +851,14 @@ typedef struct {
  */
 static int calc_call_static_benefice(call_env_t *cenv)
 {
-	ir_node                   *call       = cenv->call;
-	ir_graph                  *called     = cenv->called;
-	ir_graph                  *callee     = get_irn_irg(call);
-	ir_entity                 *called_ent = get_irg_entity(called);
-	irg_env_t                 *called_env = get_irg_env(called);
-	mtp_additional_properties  props      = get_entity_additional_properties(called_ent);
-	if (props & mtp_property_noinline) {
-		DB((dbg, LEVEL_2, "In %+F Call to %+F: inlining forbidden\n",
-		    call, called));
-		return cenv->benefice_static = INT_MIN;
-	}
+	ir_node   *call       = cenv->call;
+	ir_graph  *called     = cenv->called;
+	ir_graph  *callee     = get_irn_irg(call);
+	ir_entity *called_ent = get_irg_entity(called);
+	irg_env_t *called_env = get_irg_env(called);
 
-	if (props & mtp_property_noreturn) {
-		DB((dbg, LEVEL_2, "In %+F Call to %+F: not inlining noreturn or weak\n",
-		    call, called));
-		return cenv->benefice_static = INT_MIN;
+	if (!called_env->can_inline) {
+		return INT_MIN;
 	}
 
 	/* Costs for passed parameters */
@@ -908,7 +936,7 @@ static int calc_call_static_benefice(call_env_t *cenv)
 	}
 
 	assert(weight < INT_MAX && "weight too big for int");
-	return cenv->benefice_static = weight;
+	return weight;
 }
 
 /**
@@ -1044,20 +1072,22 @@ static void find_calls(ir_node *node, void *ctx)
  */
 static void handle_call(call_env_t *cenv, apqueue_t *pq, int threshold)
 {
-	int benefice = calc_call_static_benefice(cenv);
-	benefice += calc_call_dynamic_benefice(cenv);
+	cenv->benefice_static = calc_call_static_benefice(cenv);
+	int benefice = cenv->benefice_static + calc_call_dynamic_benefice(cenv);
 
 	/* Calculate priority and return or add to the priority queue */
 	int priority = calc_priority(benefice, cenv->execfreq);
 
-	DB((dbg, LEVEL_2, "In %F %+F to %+F has priority %d\n",
-	    get_irn_irg(cenv->call), cenv->call, cenv->called, priority));
-
-	ir_entity                 *ent   = get_irg_entity(cenv->called);
-	mtp_additional_properties  props = get_entity_additional_properties(ent);
+	ir_entity *ent = get_irg_entity(cenv->called);
+	mtp_additional_properties props = get_entity_additional_properties(ent);
 	if (!(props & mtp_property_always_inline) && priority < threshold) {
+		DB((dbg, LEVEL_2, "%F %+F to %+F not beneficial, priority %d\n",
+			get_irn_irg(cenv->call), cenv->call, ent, priority));
 		return;
 	}
+
+	DB((dbg, LEVEL_2, "Enqueue %F %+F to %+F, priority %d\n",
+        get_irn_irg(cenv->call), cenv->call, ent, priority));
 
 	apqueue_el_t *addr = apqueue_put(pq, cenv, priority);
 	cenv->address = addr;
@@ -1102,8 +1132,9 @@ void inline_functions(unsigned maxsize, int inline_threshold,
 
 	/* Extend all irgs by a temporary data structure for inlining */
 	for (size_t i = 0; i < n_irgs; ++i) {
-		ir_graph *irg = irgs[i];
-		setup_irg_env(irg);
+		ir_graph  *irg     = irgs[i];
+		irg_env_t *irg_env = setup_irg_env(irg);
+		irg_env->can_inline = can_inline_graph(irg);
 
 		/* Calculate execution frequency, deactivate edges or the inliner won't
 		 * work*/
@@ -1181,6 +1212,7 @@ void inline_functions(unsigned maxsize, int inline_threshold,
 				/* Onle one caller: The original graph */
 				copy_env->n_callers      = 1;
 				copy_env->n_callers_orig = 1;
+				copy_env->can_inline     = true;
 
 				/* Enter the entity of the original graph. This is needed for
 				 * inline_method(). However, note that ent->irg still points to
@@ -1197,9 +1229,10 @@ void inline_functions(unsigned maxsize, int inline_threshold,
 
 		collect_phiprojs(call_irg);
 
-		bool did_inline = inline_method(call, called_irg);
-		if (!did_inline)
+		/* we cannot inline some types of calls */
+		if (!can_inline(call, called_irg))
 			continue;
+		inline_method(call, called_irg);
 
 		/* Correct statistics */
 		call_irg_env->got_inline = true;
