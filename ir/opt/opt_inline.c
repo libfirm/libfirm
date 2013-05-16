@@ -713,7 +713,7 @@ enum inline_weights {
 	recursive_call_weight     = 0, /**< Will be subtracted if the call is recursive. */
 	leaf_function_weight      = 800,  /**< Addend, if the function is a leaf. */
 	one_block_function_weight = 50,   /**< Will be added, if the function consists of one block. */
-	block_function_weight     = -4,   /**< Factor for the number of blocks. */
+	block_function_weight     = 0,    /**< Factor for the number of blocks. */
 	small_function_weight     = 1000, /**< Addend for a small function. */
 	inner_loop_weight         = 1000, /**< Will be multiplied with the loop depth, then added. */
 	large_function_weight     = -3,   /**< Will be multiplied with the number of nodes. */
@@ -963,7 +963,7 @@ static int calc_call_dynamic_benefice(call_env_t *cenv)
 
 	/* Give a bonus for small non-recursive functions:
 	 * we want them to be inlined in almost every case */
-	if (called_env->n_nodes < 30 && !called_env->recursive)
+	if (called_env->n_nodes < 30)
 		weight += small_function_weight;
 
 	/* Give a penalty for the called graph size */
