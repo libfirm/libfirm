@@ -674,7 +674,7 @@ enum inline_weights {
 	load_store_param_weight   = 12,   /**< Addend for load/store argument nodes. */
 	const_sel_param_weight    = 6,    /**< Addend for constant Sel argument nodes. */
 	one_call_to_static_weight = 750,  /**< Will be added, if the graph is only called once. */
-	recursive_call_weight     = -150, /**< Will be subtracted if the call is recursive. */
+	recursive_call_weight     = 0, /**< Will be subtracted if the call is recursive. */
 	leaf_function_weight      = 800,  /**< Addend, if the function is a leaf. */
 	one_block_function_weight = 50,   /**< Will be added, if the function consists of one block. */
 	block_function_weight     = -4,   /**< Factor for the number of blocks. */
