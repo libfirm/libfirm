@@ -65,8 +65,7 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 	DBG((dbg, LEVEL_2, "analysing %+F\n", irn));
 
 	if (is_Block(irn)) {
-		int i;
-		for (i = 0; i < get_Block_n_cfgpreds(irn); i++)
+		for (int i = 0; i < get_Block_n_cfgpreds(irn); i++)
 			care_for(get_Block_cfgpred(irn, i), care, q);
 		return;
 	}
@@ -74,50 +73,40 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 	if (mode == mode_X) {
 		care_for(get_nodes_block(irn), 0, q);
 		switch (get_irn_opcode(irn)) {
-		case iro_Return: {
-			int i;
-			for (i = 0; i < get_Return_n_ress(irn); i++)
+		case iro_Return:
+			for (int i = 0; i < get_Return_n_ress(irn); i++)
 				care_for(get_Return_res(irn, i), care, q);
 			care_for(get_Return_mem(irn), care, q);
-		}
-		return;
-		case iro_Call: {
-			int i;
-			for (i = 0; i < get_Call_n_params(irn); i++)
+			return;
+		case iro_Call:
+			for (int i = 0; i < get_Call_n_params(irn); i++)
 				care_for(get_Call_param(irn, i), care, q);
 			care_for(get_Call_mem(irn), care, q);
-		}
-		return;
+			return;
 		case iro_Jmp:
-		default: {
-			int i;
-
-			for (i = 0; i < get_irn_arity(irn); i++)
+		default:
+			for (int i = 0; i < get_irn_arity(irn); i++)
 				care_for(get_irn_n(irn, i), 0, q);
 
 			care_for(get_nodes_block(irn), 0, q);
-		}
-		return;
+			return;
 		}
 	}
 
-	switch (get_irn_opcode(irn)) {
-	case iro_Phi: {
-		int i;
+	if (is_Phi(irn)) {
 		int npreds = get_Phi_n_preds(irn);
-		for (i = 0; i < npreds; i++)
+		for (int i = 0; i < npreds; i++)
 			care_for(get_Phi_pred(irn, i), care, q);
 
 		care_for(get_nodes_block(irn), 0, q);
 
 		return;
 	}
-	}
 
 	if (mode_is_int(mode) || mode==mode_b) {
 		switch (get_irn_opcode(irn)) {
 		case iro_Conv: {
-			ir_node *pred = get_irn_n(irn, 0);
+			ir_node *pred = get_Conv_op(irn);
 			ir_mode *pred_mode = get_irn_mode(pred);
 
 			unsigned pred_bits = get_mode_size_bits(pred_mode);
@@ -143,18 +132,18 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 			return;
 		}
 		case iro_And: {
-			ir_node *arg0 = get_irn_n(irn, 0);
-			ir_node *arg1 = get_irn_n(irn, 1);
+			ir_node *left  = get_And_left(irn);
+			ir_node *right = get_And_right(irn);
 
-			if (is_Const(arg0)) {
-				care_for(arg1, tarval_and(care, get_Const_tarval(arg0)), q);
-				care_for(arg0, care, q);
-			} else if (is_Const(arg1)) {
-				care_for(arg0, tarval_and(care, get_Const_tarval(arg1)), q);
-				care_for(arg1, care, q);
+			if (is_Const(left)) {
+				care_for(right, tarval_and(care, get_Const_tarval(left)), q);
+				care_for(left, care, q);
+			} else if (is_Const(right)) {
+				care_for(left, tarval_and(care, get_Const_tarval(right)), q);
+				care_for(right, care, q);
 			} else {
-				care_for(arg0, care, q);
-				care_for(arg1, care, q);
+				care_for(left, care, q);
+				care_for(right, care, q);
 			}
 			return;
 		}
@@ -165,7 +154,7 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 			return;
 		}
 		case iro_Or: {
-			ir_node *left = get_binop_left(irn);
+			ir_node *left  = get_binop_left(irn);
 			ir_node *right = get_binop_right(irn);
 
 			if (is_Const(left)) {
@@ -188,7 +177,7 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 			return;
 		case iro_Add:
 		case iro_Sub: {
-			ir_node *left = get_binop_left(irn);
+			ir_node *left  = get_binop_left(irn);
 			ir_node *right = get_binop_right(irn);
 			care_for(right, care, q);
 			care_for(left, care, q);
@@ -203,7 +192,7 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 			return;
 		case iro_Shrs:
 		case iro_Shr: {
-			ir_node *left= get_binop_left(irn);
+			ir_node *left  = get_binop_left(irn);
 			ir_node *right = get_binop_right(irn);
 
 			if (is_Const(right)) {
@@ -223,54 +212,49 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 			return;
 		}
 		case iro_Shl: {
-			ir_node *arg0 = get_irn_n(irn, 0);
-			ir_node *arg1 = get_irn_n(irn, 1);
+			ir_node *left  = get_Shl_left(irn);
+			ir_node *right = get_Shl_right(irn);
 
-			if (is_Const(arg1))
-				care_for(arg0, tarval_shr(care, get_Const_tarval(arg1)), q);
+			if (is_Const(right))
+				care_for(left, tarval_shr(care, get_Const_tarval(right)), q);
 			else
-				care_for(arg0, care, q);
+				care_for(left, care, q);
 
-			care_for(arg1, 0, q);
+			care_for(right, 0, q);
 
 			return;
 		}
 		case iro_Mul: {
-			ir_node *arg0 = get_irn_n(irn, 0);
-			ir_node *arg1 = get_irn_n(irn, 1);
+			ir_node *left  = get_Mul_left(irn);
+			ir_node *right = get_Mul_right(irn);
 
-			if (is_Const(arg1))
+			if (is_Const(right))
 				care_for(
-					arg0,
+					left,
 					tarval_shr(
 						care,
 						new_tarval_from_long(
 							get_tarval_lowest_bit(
-								get_Const_tarval(arg1)), mode)),
+								get_Const_tarval(right)), mode)),
 					q);
 			else
-				care_for(arg0, care, q);
+				care_for(left, care, q);
 
-			care_for(arg1, 0, q);
+			care_for(right, 0, q);
 			return;
 		}
 		}
 	}
 
 	if (mode == mode_M || mode == mode_T) {
-		int i;
-		for (i = 0; i < get_irn_arity(irn); i++)
+		for (int i = 0; i < get_irn_arity(irn); i++)
 			care_for(get_irn_n(irn, i), care, q);
 		return;
 	}
 
 	/* Assume worst case on other nodes */
-	{
-		int i;
-		for (i = 0; i < get_irn_arity(irn); i++)
-			care_for(get_irn_n(irn, i), 0, q);
-		return;
-	}
+	for (int i = 0; i < get_irn_arity(irn); i++)
+		care_for(get_irn_n(irn, i), 0, q);
 }
 
 static void dca_init_node(ir_node *n, void *data)
@@ -318,12 +302,11 @@ void dca_analyze(ir_graph *irg)
 void dca_add_fuzz(ir_node *node, void *data)
 {
 	(void) data;
-	int i;
 	ir_graph *irg = get_irn_irg(node);
 
 	if (is_Eor(node)) return;
 
-	for (i = 0; i < get_irn_arity(node); i++) {
+	for (int i = 0; i < get_irn_arity(node); i++) {
 		ir_node *pred = get_irn_n(node, i);
 		ir_mode *pred_mode = get_irn_mode(pred);
 		ir_tarval *dc = get_irn_link(pred);
