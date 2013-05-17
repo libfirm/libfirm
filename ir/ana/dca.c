@@ -56,6 +56,20 @@ static void care_for(ir_node *irn, ir_tarval *care, pdeq *q)
 	}
 }
 
+/* Creates a bit mask that have the msb and all less significant bits set. */
+static ir_tarval *create_msb_mask(ir_tarval *tv)
+{
+	ir_mode   *mode         = get_tarval_mode(tv);
+	ir_tarval *shift_amount = get_tarval_one(mode);
+
+	for (int msb = get_tarval_highest_bit(tv); msb != 0; msb /= 2) {
+		tv           = tarval_or(tv, tarval_shr(tv, shift_amount));
+		shift_amount = tarval_add(shift_amount, shift_amount);
+	}
+
+	return tv;
+}
+
 /* Compute cared for bits in predecessors of irn. */
 static void dca_transfer(ir_node *irn, pdeq *q)
 {
@@ -171,18 +185,19 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 			return;
 		case iro_Add:
 		case iro_Sub: {
-			ir_node *left  = get_binop_left(irn);
-			ir_node *right = get_binop_right(irn);
-			care_for(right, care, q);
-			care_for(left, care, q);
+			ir_node   *left      = get_binop_left(irn);
+			ir_node   *right     = get_binop_right(irn);
+			ir_tarval *care_mask = create_msb_mask(care);
+			care_for(right, care_mask, q);
+			care_for(left, care_mask, q);
 
-			/* Carry. */
-			care_for(irn, tarval_shr(care, get_tarval_one(mode)), q);
 			return;
 		}
 		case iro_Minus:
+			care_for(get_Minus_op(irn), create_msb_mask(care), q);
+			return;
 		case iro_Not:
-			care_for(get_irn_n(irn, 0), care, q);
+			care_for(get_Not_op(irn), care, q);
 			return;
 		case iro_Shrs:
 		case iro_Shr: {
@@ -212,29 +227,30 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 			if (is_Const(right))
 				care_for(left, tarval_shr(care, get_Const_tarval(right)), q);
 			else
-				care_for(left, care, q);
+				care_for(left, create_msb_mask(care), q);
 
 			care_for(right, 0, q);
 
 			return;
 		}
 		case iro_Mul: {
-			ir_node *left  = get_Mul_left(irn);
-			ir_node *right = get_Mul_right(irn);
+			ir_node   *left      = get_Mul_left(irn);
+			ir_node   *right     = get_Mul_right(irn);
+			ir_tarval *care_mask = create_msb_mask(care);
 
 			if (is_Const(right))
 				care_for(
 					left,
 					tarval_shr(
-						care,
+						care_mask,
 						new_tarval_from_long(
 							get_tarval_lowest_bit(
 								get_Const_tarval(right)), mode)),
 					q);
 			else
-				care_for(left, care, q);
+				care_for(left, care_mask, q);
 
-			care_for(right, 0, q);
+			care_for(right, care_mask, q);
 			return;
 		}
 		}
