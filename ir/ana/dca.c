@@ -56,6 +56,12 @@ static void care_for(ir_node *irn, ir_tarval *care, pdeq *q)
 	}
 }
 
+/* Creates a bit mask that have the lsb and all more significant bits set. */
+static ir_tarval *create_lsb_mask(ir_tarval *tv)
+{
+	return tarval_or(tv, tarval_neg(tv));
+}
+
 /* Creates a bit mask that have the msb and all less significant bits set. */
 static ir_tarval *create_msb_mask(ir_tarval *tv)
 {
@@ -214,8 +220,9 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 					care_for(left, get_tarval_min(mode), q);
 			}
 			else
-				care_for(left, 0, q);
+				care_for(left, create_lsb_mask(care), q);
 
+			// TODO Consider modulo shift
 			care_for(right, 0, q);
 
 			return;
@@ -229,6 +236,7 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 			else
 				care_for(left, create_msb_mask(care), q);
 
+			// TODO Consider modulo shift
 			care_for(right, 0, q);
 
 			return;
