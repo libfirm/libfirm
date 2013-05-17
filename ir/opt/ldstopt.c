@@ -1232,34 +1232,17 @@ static ir_entity *find_entity(ir_node *ptr)
  */
 static unsigned optimize_store(ir_node *store)
 {
-	ir_node   *ptr;
-	ir_node   *mem;
-	ir_entity *entity;
-
 	if (get_Store_volatility(store) == volatility_is_volatile)
 		return 0;
 
-	ptr    = get_Store_ptr(store);
-	entity = find_entity(ptr);
-
-	/* a store to an entity which is never read is unnecessary */
-	if (entity != NULL && !(get_entity_usage(entity) & ir_usage_read)) {
-		ldst_info_t *info = (ldst_info_t*)get_irn_link(store);
-		if (info->projs[pn_Store_X_except] == NULL) {
-			DB((dbg, LEVEL_1, "  Killing useless %+F to never read entity %+F\n", store, entity));
-			exchange(info->projs[pn_Store_M], get_Store_mem(store));
-			kill_node(store);
-			reduce_adr_usage(ptr);
-			return DF_CHANGED;
-		}
-	}
+	ir_node *ptr = get_Store_ptr(store);
 
 	/* Check, if the address of this Store is used more than once.
 	 * If not, this Store cannot be removed in any case. */
 	if (get_irn_n_edges(ptr) <= 1)
 		return 0;
 
-	mem = get_Store_mem(store);
+	ir_node *mem = get_Store_mem(store);
 
 	/* follow the memory chain as long as there are only Loads */
 	INC_MASTER();
@@ -1543,6 +1526,47 @@ static void do_load_store_optimize(ir_node *n, void *env)
 
 	default:
 		break;
+	}
+}
+
+/**
+ * Check if a store is dead and eliminate it.
+ *
+ * @param store  the Store node
+ */
+static unsigned eliminate_dead_store(ir_node *store)
+{
+	if (get_Store_volatility(store) == volatility_is_volatile)
+		return 0;
+
+	ir_node   *ptr    = get_Store_ptr(store);
+	ir_entity *entity = find_entity(ptr);
+
+	/* a store to an entity which is never read is unnecessary */
+	if (entity != NULL && !(get_entity_usage(entity) & ir_usage_read)) {
+		ldst_info_t *info = (ldst_info_t*)get_irn_link(store);
+
+		if (info->projs[pn_Store_X_except] == NULL) {
+			DB((dbg, LEVEL_1, "  Killing useless %+F to never read entity %+F\n", store, entity));
+			exchange(info->projs[pn_Store_M], get_Store_mem(store));
+			kill_node(store);
+			reduce_adr_usage(ptr);
+			return DF_CHANGED;
+		}
+	}
+
+	return 0; /* Nothing changed */
+}
+
+/**
+ * walker to eliminate dead stores.
+ */
+static void do_eliminate_dead_stores(ir_node *n, void *env) {
+
+	walk_env_t *wenv = (walk_env_t*)env;
+
+	if (is_Store(n)) {
+		wenv->changes |= eliminate_dead_store(n);
 	}
 }
 
@@ -2139,6 +2163,12 @@ void optimize_load_store(ir_graph *irg)
 
 	/* now we have collected enough information, optimize */
 	irg_walk_graph(irg, NULL, do_load_store_optimize, &env);
+
+	/* optimize_load can introduce dead stores. They are
+	 * eliminated now. */
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE);
+	assure_irg_entity_usage_computed(irg);
+	irg_walk_graph(irg, NULL, do_eliminate_dead_stores, &env);
 
 	env.changes |= optimize_loops(irg);
 
