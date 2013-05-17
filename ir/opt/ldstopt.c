@@ -10,6 +10,7 @@
  */
 #include <string.h>
 
+#include "error.h"
 #include "iroptimize.h"
 #include "irnode_t.h"
 #include "irgraph_t.h"
@@ -502,7 +503,7 @@ static ir_node *find_compound_ent_value(ir_node *ptr)
 }
 
 /* forward */
-static void reduce_adr_usage(ir_node *ptr);
+static void reduce_node_usage(ir_node *ptr);
 
 /**
  * Update a Load that may have lost its users.
@@ -524,15 +525,15 @@ static void handle_load_update(ir_node *load)
 		if (info->projs[pn_Load_X_regular])
 			exchange(info->projs[pn_Load_X_regular], new_r_Jmp(get_nodes_block(load)));
 		kill_node(load);
-		reduce_adr_usage(ptr);
+		reduce_node_usage(ptr);
 	}
 }
 
 /**
- * A use of an address node has vanished. Check if this was a Proj
+ * A use of a node has vanished. Check if this was a Proj
  * node and update the counters.
  */
-static void reduce_adr_usage(ir_node *ptr)
+static void reduce_node_usage(ir_node *ptr)
 {
 	ir_node *pred;
 	if (!is_Proj(ptr))
@@ -548,6 +549,33 @@ static void reduce_adr_usage(ir_node *ptr)
 
 		/* this node lost its result proj, handle that */
 		handle_load_update(pred);
+	}
+}
+
+/**
+ * Kill a Load or Store and all other nodes which are not needed after
+ * it has been killed.
+ */
+static void kill_and_reduce_usage(ir_node *node) {
+	ir_node *ptr;
+	ir_node *value = NULL;
+
+	switch(get_irn_opcode(node)) {
+	case iro_Load:
+		ptr = get_Load_ptr(node);
+		break;
+	case iro_Store:
+		ptr   = get_Store_ptr(node);
+		value = get_Store_value(node);
+		break;
+	default:
+		panic("Cannot handle node %+F", node);
+	}
+
+	kill_node(node);
+	reduce_node_usage(ptr);
+	if (value != NULL) {
+		reduce_node_usage(value);
 	}
 }
 
@@ -669,7 +697,6 @@ static int try_load_after_store(ir_node *load,
 	ir_node *store_base_ptr = get_base_and_offset(store_ptr, &store_offset);
 	ir_node *store_value;
 	ir_mode *store_mode;
-	ir_node *load_ptr;
 	ir_mode *load_mode;
 	long     load_mode_len;
 	long     store_mode_len;
@@ -732,9 +759,7 @@ static int try_load_after_store(ir_node *load,
 	if (info->projs[pn_Load_res])
 		exchange(info->projs[pn_Load_res], store_value);
 
-	load_ptr = get_Load_ptr(load);
-	kill_node(load);
-	reduce_adr_usage(load_ptr);
+	kill_and_reduce_usage(load);
 	return res | DF_CHANGED;
 }
 
@@ -835,8 +860,7 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr)
 					res |= CF_CHANGED;
 				}
 
-				kill_node(load);
-				reduce_adr_usage(ptr);
+				kill_and_reduce_usage(load);
 				return res |= DF_CHANGED;
 			}
 		}
@@ -940,8 +964,7 @@ static unsigned optimize_load(ir_node *load)
 			exchange(info->projs[pn_Load_X_regular], new_r_Jmp(get_nodes_block(load)));
 			res |= CF_CHANGED;
 		}
-		kill_node(load);
-		reduce_adr_usage(ptr);
+		kill_and_reduce_usage(load);
 		return res | DF_CHANGED;
 	}
 
@@ -1014,8 +1037,7 @@ static unsigned optimize_load(ir_node *load)
 			exchange(info->projs[pn_Load_res], value);
 			res |= DF_CHANGED;
 		}
-		kill_node(load);
-		reduce_adr_usage(ptr);
+		kill_and_reduce_usage(load);
 		return res;
 	}
 
@@ -1111,8 +1133,7 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr, bool h
 					DBG_OPT_WAW(pred, store);
 					DB((dbg, LEVEL_1, "  killing store %+F (override by %+F)\n", pred, store));
 					exchange(pred_info->projs[pn_Store_M], get_Store_mem(pred));
-					kill_node(pred);
-					reduce_adr_usage(ptr);
+					kill_and_reduce_usage(pred);
 					return DF_CHANGED;
 				}
 			}
@@ -1131,8 +1152,7 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr, bool h
 					DBG_OPT_WAW(pred, store);
 					DB((dbg, LEVEL_1, "  killing store %+F (override by %+F)\n", pred, store));
 					exchange(info->projs[pn_Store_M], mem);
-					kill_node(store);
-					reduce_adr_usage(ptr);
+					kill_and_reduce_usage(store);
 					return DF_CHANGED;
 				}
 			}
@@ -1148,8 +1168,7 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr, bool h
 				DBG_OPT_WAR(store, pred);
 				DB((dbg, LEVEL_1, "  killing store %+F (read %+F from same address)\n", store, pred));
 				exchange(info->projs[pn_Store_M], mem);
-				kill_node(store);
-				reduce_adr_usage(ptr);
+				kill_and_reduce_usage(store);
 				return DF_CHANGED;
 			}
 		}
@@ -1420,8 +1439,9 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 
 		if (is_Proj(proj)) {
 			ir_node *store = get_Proj_pred(proj);
+
 			exchange(proj, inM[i]);
-			kill_node(store);
+			kill_and_reduce_usage(store);
 		}
 	}
 
@@ -1549,8 +1569,7 @@ static unsigned eliminate_dead_store(ir_node *store)
 		if (info->projs[pn_Store_X_except] == NULL) {
 			DB((dbg, LEVEL_1, "  Killing useless %+F to never read entity %+F\n", store, entity));
 			exchange(info->projs[pn_Store_M], get_Store_mem(store));
-			kill_node(store);
-			reduce_adr_usage(ptr);
+			kill_and_reduce_usage(store);
 			return DF_CHANGED;
 		}
 	}
