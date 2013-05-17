@@ -78,11 +78,6 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 				care_for(get_Return_res(irn, i), care, q);
 			care_for(get_Return_mem(irn), care, q);
 			return;
-		case iro_Call:
-			for (int i = 0; i < get_Call_n_params(irn); i++)
-				care_for(get_Call_param(irn, i), care, q);
-			care_for(get_Call_mem(irn), care, q);
-			return;
 		case iro_Jmp:
 		default:
 			for (int i = 0; i < get_irn_arity(irn); i++)
@@ -171,7 +166,6 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 		}
 		case iro_Eor:
 		case iro_Confirm:
-		case iro_Id:
 			care_for(get_irn_n(irn, 0), care, q);
 			care_for(get_irn_n(irn, 1), care, q);
 			return;
