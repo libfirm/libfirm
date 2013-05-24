@@ -301,6 +301,7 @@ void ir_estimate_execfreq(ir_graph *irg)
 	 *  do not reach the End block) */
 	block_walk_no_keeps(end_block);
 	/* mark all kept blocks as (node)visited */
+	inc_irg_visited(irg);
 	const ir_node *end          = get_irg_end(irg);
 	int const      n_keepalives = get_End_n_keepalives(end);
 	for (int k = n_keepalives - 1; k >= 0; --k) {
