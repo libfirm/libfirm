@@ -69,6 +69,7 @@ double get_block_execfreq(const ir_node *block)
 
 void set_block_execfreq(ir_node *block, double newfreq)
 {
+	assert(newfreq >= 0);
 	block->attr.block.execfreq = newfreq;
 }
 
