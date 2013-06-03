@@ -21,6 +21,8 @@
 #include "iredges_t.h"
 #include "irgwalk.h"
 #include "array_t.h"
+#include "raw_bitset.h"
+#include "adt/obstack.h"
 #include "util.h"
 
 #include "bearch.h"
@@ -53,7 +55,11 @@ typedef struct {
 
 /** Lowering walker environment. */
 typedef struct lower_env_t {
-	bool do_copy;
+	bool             use_copies;
+	struct obstack   obst;
+	ir_nodehashmap_t live_regs; /**< maps Perm nodes to a raw bitset that
+	                                 maps register indices to register state
+	                                 at end of Perm's block (used=0, free=1) */
 } lower_env_t;
 
 /** Holds a Perm register pair. */
@@ -65,28 +71,123 @@ typedef struct reg_pair_t {
 	ir_node               *out_node;  /**< the out node to which the register belongs */
 } reg_pair_t;
 
+static void set_reg_free(unsigned *free_regs, ir_node const *irn, bool const reg_is_free)
+{
+	if (!mode_is_datab(get_irn_mode(irn)))
+		return;
+	arch_register_t const *reg = arch_get_irn_register(irn);
+	if (reg_is_free) {
+		rbitset_set(free_regs, reg->global_index);
+	} else {
+		rbitset_clear(free_regs, reg->global_index);
+	}
+}
+
+/* Save the register situation at the end of the Perm's block, i.e. mark all
+ * registers holding live values as used.
+ * As we do this before we modify the graph, we might mark more registers
+ * as used than really necessary.
+ */
+static void mark_live_nodes_registers(const ir_node *irn, lower_env_t *env)
+{
+	ir_node                     *block     = get_nodes_block(irn);
+	ir_graph                    *irg       = get_irn_irg(irn);
+	arch_register_class_t const *reg_class = arch_get_irn_register(get_irn_n(irn, 0))->reg_class;
+	arch_env_t const            *arch_env  = be_get_irg_arch_env(irg);
+	be_irg_t                    *birg      = be_birg_from_irg(irg);
+	unsigned                     n_regs    = arch_env->n_registers;
+	unsigned                    *free_regs = rbitset_duplicate_obstack_alloc(&env->obst, birg->allocatable_regs, n_regs);
+
+	be_lv_t *lv = be_get_irg_liveness(irg);
+	assert(lv->sets_valid && "Live sets are invalid");
+	be_lv_foreach_cls(lv, block, be_lv_state_end, reg_class, live) {
+		set_reg_free(free_regs, live, false);
+	}
+
+	ir_nodehashmap_insert(&env->live_regs, (ir_node*)irn, free_regs);
+}
+
+static void live_nodes_registers_walker(ir_node *irn, void *env)
+{
+	if (!be_is_Perm(irn))
+		return;
+
+	mark_live_nodes_registers(irn, (lower_env_t*)env);
+}
+
+static arch_register_t const *get_free_register(ir_node *const perm, lower_env_t *env)
+{
+	if (!env->use_copies)
+		return NULL;
+
+	ir_node                     *block     = get_nodes_block(perm);
+	ir_graph                    *irg       = get_irn_irg(perm);
+	arch_register_class_t const *reg_class = arch_get_irn_register(get_irn_n(perm, 0))->reg_class;
+	arch_env_t const            *arch_env  = be_get_irg_arch_env(irg);
+	unsigned                     n_regs    = arch_env->n_registers;
+	unsigned                    *free_regs = (unsigned*)ir_nodehashmap_get(arch_register_t const, &env->live_regs, perm);
+
+	sched_foreach_reverse(block, node) {
+		if (is_Phi(node))
+			break;
+
+		/* If we later implement first the chains and then the cycles
+		   of the Perm, we *cannot* regard the Perm's own outputs as
+		   free registers. */
+		bool const reg_is_free = perm != node;
+		if (get_irn_mode(node) == mode_T) {
+			foreach_out_edge(node, edge) {
+				ir_node *proj = get_edge_src_irn(edge);
+				set_reg_free(free_regs, proj, reg_is_free);
+			}
+		} else {
+			set_reg_free(free_regs, node, reg_is_free);
+		}
+
+		for (int i = 0, max = get_irn_arity(node); i < max; ++i) {
+			ir_node *const in = get_irn_n(node, i);
+			set_reg_free(free_regs, in, false);
+		}
+
+		if (perm == node)
+			break;
+	}
+
+	rbitset_foreach(free_regs, n_regs, free_idx) {
+		arch_register_t const *free_reg = &arch_env->registers[free_idx];
+		if (free_reg->reg_class != reg_class)
+			continue;
+
+		return free_reg;
+	}
+
+	return NULL;
+}
+
 /**
  * Lowers a perm node.  Resolves cycles and creates a bunch of
  * copy and swap operations to permute registers.
  *
- * @param perm     The perm node
- * @param env      The lowerer environment
+ * @param perm        The perm node
+ * @param env         The lowering environment, containing information on,
+ *                    i.e., whether to use copies if free register available
  */
-static void lower_perm_node(ir_node *const perm, lower_env_t *const env)
+static void lower_perm_node(ir_node *const perm, lower_env_t *env)
 {
-	(void)env;
-
 	DBG((dbg, LEVEL_1, "lowering %+F\n", perm));
 
-	arch_register_class_t const *const cls     = arch_get_irn_register_req_out(perm, 0)->cls;
-	unsigned                     const n_regs  = cls->n_regs;
+	bool const                         use_copies = env->use_copies;
+	arch_register_class_t const *const cls        = arch_get_irn_register_req_out(perm, 0)->cls;
+	unsigned                     const n_regs     = cls->n_regs;
 	/* Registers used as inputs of the Perm. */
-	unsigned                    *const inregs  = rbitset_alloca(n_regs);
+	unsigned                    *const inregs     = rbitset_alloca(n_regs);
 	/* Map from register index to pair with this register as output. */
-	reg_pair_t                 **const oregmap = ALLOCANZ(reg_pair_t*, n_regs);
-	size_t                       const arity   = get_irn_arity(perm);
-	reg_pair_t                  *const pairs   = ALLOCAN(reg_pair_t, arity);
-	reg_pair_t                        *pair    = pairs;
+	reg_pair_t                 **const oregmap    = ALLOCANZ(reg_pair_t*, n_regs);
+	size_t                       const arity      = get_irn_arity(perm);
+	reg_pair_t                  *const pairs      = ALLOCAN(reg_pair_t, arity);
+	reg_pair_t                        *pair       = pairs;
+	arch_register_t const             *free_reg   = NULL;
+
 	/* Collect all input-output pairs of the Perm. */
 	foreach_out_edge_safe(perm, edge) {
 		ir_node               *const out  = get_edge_src_irn(edge);
@@ -132,7 +233,15 @@ static void lower_perm_node(ir_node *const perm, lower_env_t *const env)
 			arch_set_irn_register(copy, p->out_reg);
 			exchange(p->out_node, copy);
 			sched_add_before(perm, copy);
-			k = p->in_reg->index;
+
+			const unsigned new_k = p->in_reg->index;
+			if (oregmap[new_k] == NULL) {
+				/* The invariant of Perm nodes allows us to overwrite
+				 * the first register in a chain with an arbitrary value. */
+				free_reg = p->in_reg;
+			}
+			k = new_k;
+
 			rbitset_clear(inregs, k);
 		}
 	}
@@ -142,58 +251,95 @@ static void lower_perm_node(ir_node *const perm, lower_env_t *const env)
 		return;
 	}
 
-	/* Decompose cycles into transpositions.
-	 *
-	 * Use as many independent transpositions as possible and do not thread one
-	 * value through all transpositions.
-	 * I.e., for the first level of decomposition of a n-Perm do floor(n/2)
-	 * transpositions. This puts floor(n/2) values into the right registers.
-	 * Repeat this for all remaining values until all have the right register.
-	 * This way no value is threaded through more than ceil(ld(n/2))
-	 * transpositions (compared to one value being threaded through all
-	 * transpositions using a naive decomposition).
-	 *
-	 * good:            bad:
-	 * r1 r2 r3 r4 r5   r1 r2 r3 r4 r5
-	 * +---+ +---+      +---+
-	 *    +------+         +---+
-	 *          +---+         +---+
-	 * r2 r3 r4 r5 r1            +---+
-	 *                  r2 r3 r4 r5 r1
-	 */
-	for (unsigned i = 0; i != n_regs;) {
-		if (!rbitset_is_set(inregs, i)) {
-			++i;
-			continue;
+	if (use_copies && free_reg == NULL) {
+		free_reg = get_free_register(perm, env);
+	}
+
+	if (use_copies && free_reg != NULL) {
+		/* Implement cycles using copies and the free register. */
+		for (unsigned i = 0; i != n_regs; /* empty */) {
+			if (!rbitset_is_set(inregs, i)) {
+				++i;
+				continue;
+			}
+			reg_pair_t *start = oregmap[i];
+
+			ir_node *save_copy = be_new_Copy(block, start->in_node);
+			arch_set_irn_register(save_copy, free_reg);
+			sched_add_before(perm, save_copy);
+
+			reg_pair_t *p = oregmap[start->in_reg->index];
+			do {
+				ir_node *copy = be_new_Copy(block, p->in_node);
+				arch_set_irn_register(copy, p->out_reg);
+				exchange(p->out_node, copy);
+				sched_add_before(perm, copy);
+				unsigned const in_idx = p->in_reg->index;
+				rbitset_clear(inregs, in_idx);
+				p = oregmap[in_idx];
+			} while (p != start);
+
+			rbitset_clear(inregs, start->in_reg->index);
+			ir_node *restore_copy = be_new_Copy(block, save_copy);
+			arch_set_irn_register(restore_copy, start->out_reg);
+			exchange(start->out_node, restore_copy);
+			sched_add_before(perm, restore_copy);
 		}
-		reg_pair_t             *p     = oregmap[i];
-		reg_pair_t const *const start = p;
-		ir_mode          *const mode  = get_irn_mode(p->out_node);
-		for (;;) {
-			reg_pair_t const *const q = oregmap[p->in_reg->index];
-			if (q == start)
-				break;
+	} else {
+		/* Decompose cycles into transpositions.
+		 *
+		 * Use as many independent transpositions as possible and do not thread
+		 * one value through all transpositions.
+		 * I.e., for the first level of decomposition of a n-Perm do floor(n/2)
+		 * transpositions. This puts floor(n/2) values into the right registers.
+		 * Repeat this for all remaining values until all have the right
+		 * register.
+		 * This way no value is threaded through more than ceil(ld(n/2))
+		 * transpositions (compared to one value being threaded through all
+		 * transpositions using a naive decomposition).
+		 *
+		 * good:            bad:
+		 * r1 r2 r3 r4 r5   r1 r2 r3 r4 r5
+		 * +---+ +---+      +---+
+		 *    +------+         +---+
+		 *          +---+         +---+
+		 * r2 r3 r4 r5 r1            +---+
+		 *                  r2 r3 r4 r5 r1
+		 */
+		for (unsigned i = 0; i != n_regs;) {
+			if (!rbitset_is_set(inregs, i)) {
+				++i;
+				continue;
+			}
+			reg_pair_t             *p     = oregmap[i];
+			reg_pair_t const *const start = p;
+			ir_mode          *const mode  = get_irn_mode(p->out_node);
+			for (;;) {
+				reg_pair_t const *const q = oregmap[p->in_reg->index];
+				if (q == start)
+					break;
 
-			rbitset_clear(inregs, q->out_reg->index);
-			p->in_reg = q->in_reg;
+				rbitset_clear(inregs, q->out_reg->index);
+				p->in_reg = q->in_reg;
 
-			ir_node *const in[]  = { p->in_node, q->in_node };
-			ir_node *const xchg  = be_new_Perm(cls, block, ARRAY_SIZE(in), in);
-			DBG((dbg, LEVEL_2, "%+F: inserting %+F for %+F (%s) and %+F (%s)\n", perm, xchg, in[0], arch_get_irn_register(in[0]), in[1], arch_get_irn_register(in[1])));
-			p->in_node = new_r_Proj(xchg, mode, 0);
-			ir_node *const projq = new_r_Proj(xchg, mode, 1);
-			arch_set_irn_register_out(xchg, 0, q->in_reg);
-			arch_set_irn_register_out(xchg, 1, q->out_reg);
-			exchange(q->out_node, projq);
-			sched_add_before(perm, xchg);
+				ir_node *const in[]  = { p->in_node, q->in_node };
+				ir_node *const xchg  = be_new_Perm(cls, block, ARRAY_SIZE(in), in);
+				DBG((dbg, LEVEL_2, "%+F: inserting %+F for %+F (%s) and %+F (%s)\n", perm, xchg, in[0], arch_get_irn_register(in[0]), in[1], arch_get_irn_register(in[1])));
+				p->in_node = new_r_Proj(xchg, mode, 0);
+				ir_node *const projq = new_r_Proj(xchg, mode, 1);
+				arch_set_irn_register_out(xchg, 0, q->in_reg);
+				arch_set_irn_register_out(xchg, 1, q->out_reg);
+				exchange(q->out_node, projq);
+				sched_add_before(perm, xchg);
 
-			p = oregmap[q->in_reg->index];
-			if (p == start) {
-				if (start->in_reg == start->out_reg) {
-					rbitset_clear(inregs, q->in_reg->index);
-					exchange(start->out_node, start->in_node);
+				p = oregmap[q->in_reg->index];
+				if (p == start) {
+					if (start->in_reg == start->out_reg) {
+						rbitset_clear(inregs, q->in_reg->index);
+						exchange(start->out_node, start->in_node);
+					}
+					break;
 				}
-				break;
 			}
 		}
 	}
@@ -677,27 +823,39 @@ done:
  */
 static void lower_nodes_after_ra_walker(ir_node *irn, void *walk_env)
 {
-	int perm_stayed;
-
 	if (!be_is_Perm(irn))
 		return;
 
-	perm_stayed = push_through_perm(irn);
-	if (perm_stayed)
-		lower_perm_node(irn, (lower_env_t*)walk_env);
+	const bool perm_stayed = push_through_perm(irn);
+	if (perm_stayed) {
+		lower_env_t *env = (lower_env_t*)walk_env;
+		lower_perm_node(irn, env);
+	}
 }
 
-void lower_nodes_after_ra(ir_graph *irg, int do_copy)
+void lower_nodes_after_ra(ir_graph *irg, bool use_copies)
 {
-	lower_env_t env;
-
 	FIRM_DBG_REGISTER(dbg, "firm.be.lower");
 	FIRM_DBG_REGISTER(dbg_permmove, "firm.be.lower.permmove");
-
-	env.do_copy = do_copy;
 
 	/* we will need interference */
 	be_assure_live_chk(irg);
 
+	lower_env_t env;
+	env.use_copies = use_copies;
+
+	if (use_copies) {
+		ir_nodehashmap_init(&env.live_regs);
+		obstack_init(&env.obst);
+		be_assure_live_sets(irg);
+		irg_walk_graph(irg, NULL, live_nodes_registers_walker, &env);
+	}
+
 	irg_walk_graph(irg, NULL, lower_nodes_after_ra_walker, &env);
+
+	if (use_copies) {
+		ir_nodehashmap_destroy(&env.live_regs);
+		obstack_free(&env.obst, NULL);
+		be_invalidate_live_sets(irg);
+	}
 }

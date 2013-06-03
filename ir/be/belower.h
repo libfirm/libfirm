@@ -26,9 +26,9 @@ void assure_constraints(ir_graph *irg);
  * Walks over all blocks in an irg and performs lowering need to be
  * done after register allocation (e.g. perm lowering).
  *
- * @param irg       The graph
- * @param do_copy   1 == resolve cycles with a free reg if available
+ * @param irg         The graph
+ * @param use_copies  Implement cycles using copies if a free reg is available
  */
-void lower_nodes_after_ra(ir_graph *irg, int do_copy);
+void lower_nodes_after_ra(ir_graph *irg, bool use_copies);
 
 #endif
