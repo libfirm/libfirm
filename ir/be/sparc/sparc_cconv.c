@@ -360,7 +360,9 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 			}
 
 			for (int i = 0; i < num_forbidden_regs; ++i) {
-				rbitset_clear(birg->allocatable_regs, REG_L7 - i);
+				unsigned reg = REG_L0 + 7 - i;
+				rbitset_clear(birg->allocatable_regs, reg);
+				rbitset_clear(default_returns_twice_saves, reg);
 			}
 		}
 	}

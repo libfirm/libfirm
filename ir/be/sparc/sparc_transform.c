@@ -92,13 +92,13 @@ static const arch_register_t *const omit_fp_callee_saves[] = {
 	&sparc_registers[REG_I4],
 	&sparc_registers[REG_I5],
 	&sparc_registers[REG_L0],
-	&sparc_registers[REG_L1],
-	&sparc_registers[REG_L2],
 	&sparc_registers[REG_L3],
 	&sparc_registers[REG_L4],
 	&sparc_registers[REG_L5],
 	&sparc_registers[REG_L6],
 	&sparc_registers[REG_L7],
+	&sparc_registers[REG_L1],
+	&sparc_registers[REG_L2],
 };
 
 static unsigned num_omit_fp_callee_saves = ARRAY_SIZE(omit_fp_callee_saves);

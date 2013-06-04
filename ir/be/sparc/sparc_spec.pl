@@ -15,13 +15,13 @@ $mode_fp4     = "mode_Q";
 		# Note: locals come first here since they're usually constrained last
 		# (by calls and others)
 		{ name => "l0", dwarf => 16 },
-		{ name => "l1", dwarf => 17 },
-		{ name => "l2", dwarf => 18 },
 		{ name => "l3", dwarf => 19 },
 		{ name => "l4", dwarf => 20 },
 		{ name => "l5", dwarf => 21 },
 		{ name => "l6", dwarf => 22 },
 		{ name => "l7", dwarf => 23 },
+		{ name => "l1", dwarf => 17 },
+		{ name => "l2", dwarf => 18 },
 
 		{ name => "g0", dwarf => 0 },
 		{ name => "g1", dwarf => 1 },
