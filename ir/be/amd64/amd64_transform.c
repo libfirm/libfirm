@@ -73,7 +73,10 @@ static ir_node *gen_SymConst(ir_node *node)
 	return new_bd_amd64_Const(dbgi, block, INSN_MODE_32, 0, false, entity);
 }
 
-static ir_node *gen_binop(ir_node *const node, ir_node *(*const new_node)(dbg_info*, ir_node*, ir_node*, ir_node*))
+typedef ir_node* (*binop_constructor)(dbg_info *dbgi, ir_node *block,
+		ir_node *left, ir_node *right, amd64_insn_mode_t insn_mode);
+
+static ir_node *gen_binop(ir_node *const node, binop_constructor const new_node)
 {
 	dbg_info *const dbgi    = get_irn_dbg_info(node);
 	ir_node  *const block   = be_transform_node(get_nodes_block(node));
@@ -81,8 +84,10 @@ static ir_node *gen_binop(ir_node *const node, ir_node *(*const new_node)(dbg_in
 	ir_node  *const new_op1 = be_transform_node(op1);
 	ir_node  *const op2     = get_binop_right(node);
 	ir_node  *const new_op2 = be_transform_node(op2);
-
-	return new_node(dbgi, block, new_op1, new_op2);
+	ir_mode  *const mode    = get_irn_mode(node);
+	amd64_insn_mode_t imode
+		= get_mode_size_bits(mode) > 32 ? INSN_MODE_64 : INSN_MODE_32;
+	return new_node(dbgi, block, new_op1, new_op2, imode);
 }
 
 static ir_node *gen_Add (ir_node *const node) { return gen_binop(node, &new_bd_amd64_Add);  }
@@ -173,6 +178,11 @@ static ir_node *gen_Cmp(ir_node *node)
 		panic("Floating point not implemented yet!");
 	}
 
+	amd64_insn_mode_t insn_mode
+		= get_mode_size_bits(cmp_mode) > 32 ? INSN_MODE_64 : INSN_MODE_32;
+	/* mode < 32 not correctly implemented yet */
+	assert(get_mode_size_bits(cmp_mode) >= 32);
+
 	assert(get_irn_mode(op2) == cmp_mode);
 	is_unsigned = !mode_is_signed(cmp_mode);
 
@@ -180,7 +190,7 @@ static ir_node *gen_Cmp(ir_node *node)
 	/* new_op1 = gen_extension(dbgi, block, new_op1, cmp_mode); */
 	new_op2 = be_transform_node(op2);
 	/* new_op2 = gen_extension(dbgi, block, new_op2, cmp_mode); */
-	return new_bd_amd64_Cmp(dbgi, block, new_op1, new_op2, false,
+	return new_bd_amd64_Cmp(dbgi, block, new_op1, new_op2, insn_mode, false,
 	                        is_unsigned);
 }
 
