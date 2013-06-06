@@ -591,16 +591,6 @@ FIRM_API ir_tarval *tarval_shrs(ir_tarval *a, ir_tarval *b);
 FIRM_API ir_tarval *tarval_shrs_unsigned(ir_tarval *a, unsigned b);
 
 /**
- * Rotation to left.
- *
- * @param a  the first tarval
- * @param b  the second tarval
- *
- * @return a \<\<L\>\> b or tarval_bad
- */
-FIRM_API ir_tarval *tarval_rotl(ir_tarval *a, ir_tarval *b);
-
-/**
  * The output mode for tarval values.
  *
  * Some modes allow more that one representation, for instance integers

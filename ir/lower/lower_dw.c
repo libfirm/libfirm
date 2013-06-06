@@ -251,8 +251,9 @@ static ir_mode *get_irn_op_mode(ir_node *node)
  * Walker, prepare the node links and determine which nodes need to be lowered
  * at all.
  */
-static void prepare_links(ir_node *node)
+static void prepare_links(ir_node *node, void *data)
 {
+	(void)data;
 	ir_mode         *mode = get_irn_op_mode(node);
 	lower64_entry_t *link;
 
@@ -261,15 +262,7 @@ static void prepare_links(ir_node *node)
 		/* ok, found a node that will be lowered */
 		link = OALLOCZ(&env->obst, lower64_entry_t);
 
-		if (idx >= env->n_entries) {
-			/* enlarge: this happens only for Rotl nodes which is RARELY */
-			unsigned old   = env->n_entries;
-			unsigned n_idx = idx + (idx >> 3);
-
-			ARR_RESIZE(lower64_entry_t *, env->entries, n_idx);
-			memset(&env->entries[old], 0, (n_idx - old) * sizeof(env->entries[0]));
-			env->n_entries = n_idx;
-		}
+		assert(idx < env->n_entries);
 		env->entries[idx] = link;
 		env->flags |= MUST_BE_LOWERED;
 	} else if (is_Conv(node)) {
@@ -1022,59 +1015,6 @@ static void lower_Shl(ir_node *node, ir_mode *mode)
 	phi_high = new_r_Phi(lower_block, ARRAY_SIZE(phi_high_in), phi_high_in,
 	                     mode);
 	ir_set_dw_lowered(node, phi_low, phi_high);
-}
-
-/**
- * Rebuild Rotl nodes into Or(Shl, Shr) and prepare all nodes.
- */
-static void prepare_links_and_handle_rotl(ir_node *node, void *data)
-{
-	(void) data;
-	if (is_Rotl(node)) {
-		ir_mode  *mode = get_irn_op_mode(node);
-		ir_node  *right;
-		ir_node  *left, *shl, *shr, *ornode, *block, *sub, *c;
-		ir_mode  *omode, *rmode;
-		ir_graph *irg;
-		dbg_info *dbg;
-		optimization_state_t state;
-
-		if (mode != env->high_signed && mode != env->high_unsigned) {
-			prepare_links(node);
-			return;
-		}
-
-		/* replace the Rotl(x,y) by an Or(Shl(x,y), Shr(x,64-y)) */
-		right = get_Rotl_right(node);
-		irg   = get_irn_irg(node);
-		dbg   = get_irn_dbg_info(node);
-		omode = get_irn_mode(node);
-		left  = get_Rotl_left(node);
-		block = get_nodes_block(node);
-		shl   = new_rd_Shl(dbg, block, left, right, omode);
-		rmode = get_irn_mode(right);
-		c     = new_r_Const_long(irg, rmode, get_mode_size_bits(omode));
-		sub   = new_rd_Sub(dbg, block, c, right, rmode);
-		shr   = new_rd_Shr(dbg, block, left, sub, omode);
-
-		/* switch optimization off here, or we will get the Rotl back */
-		save_optimization_state(&state);
-		set_opt_algebraic_simplification(0);
-		ornode = new_rd_Or(dbg, block, shl, shr, omode);
-		restore_optimization_state(&state);
-
-		exchange(node, ornode);
-
-		/* do lowering on the new nodes */
-		prepare_links(shl);
-		prepare_links(c);
-		prepare_links(sub);
-		prepare_links(shr);
-		prepare_links(ornode);
-		return;
-	}
-
-	prepare_links(node);
 }
 
 /**
@@ -2969,7 +2909,7 @@ static void lower_irg(ir_graph *irg)
 	/* first step: link all nodes and allocate data */
 	ir_reserve_resources(irg, IR_RESOURCE_PHI_LIST | IR_RESOURCE_IRN_LINK);
 	visit_all_identities(irg, clear_node_and_phi_links, NULL);
-	irg_walk_graph(irg, NULL, prepare_links_and_handle_rotl, env);
+	irg_walk_graph(irg, NULL, prepare_links, env);
 
 	if (env->flags & MUST_BE_LOWERED) {
 		size_t i;

@@ -1021,7 +1021,6 @@ static int is_real_follower(const ir_node *irn, int input)
 	case iro_Shr:
 	case iro_Shl:
 	case iro_Shrs:
-	case iro_Rotl:
 		if (input == 1) {
 			/* only a Sub x,0 / Shift x,0 might be a follower */
 			return 0;
@@ -2704,7 +2703,6 @@ static node_t *identity(node_t *node)
 	case iro_Shr:
 	case iro_Shl:
 	case iro_Shrs:
-	case iro_Rotl:
 		return identity_shift(node);
 	case iro_And:
 		return identity_And(node);

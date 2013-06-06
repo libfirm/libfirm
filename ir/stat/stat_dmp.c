@@ -75,7 +75,6 @@ static const struct {
 	{ (hook_opt_kind)FS_OPT_EOR_TO_NOT_BOOL,"boolean simplification: bool ^ 1 = !bool" },
 	{ (hook_opt_kind)FS_OPT_EOR_TO_NOT,     "algebraic simplification: x ^ 0b1..1 = ~x, (a ^ b) & b = ~a & b" },
 	{ (hook_opt_kind)FS_OPT_NOT_CMP,        "algebraic simplification: !(a cmp b) = a !cmp b" },
-	{ (hook_opt_kind)FS_OPT_OR_SHFT_TO_ROTL,"algebraic simplification: (x << c) | (x >> (bits - c)) == Rotl(x, c)" },
 	{ (hook_opt_kind)FS_OPT_REASSOC_SHIFT,  "algebraic simplification: (x SHF c1) SHF c2 = x SHF (c1+c2)" },
 	{ (hook_opt_kind)FS_OPT_SHIFT_AND,      "algebraic simplification: (a SHF c) AND (b SHF c) = (a AND b) SHF c" },
 	{ (hook_opt_kind)FS_OPT_SHIFT_OR,       "algebraic simplification: (a SHF c) OR (b SHF c) = (a OR b) SHF c" },

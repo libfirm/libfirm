@@ -181,20 +181,6 @@ static int vrp_update_node(ir_vrp_info *info, ir_node *node)
 		break;
 	}
 
-	case iro_Rotl: {
-		const vrp_attr *vrp_left;
-		const ir_node *right = get_Rotl_right(node);
-
-		vrp_left = vrp_get_or_set_info(info, get_Rotl_left(node));
-
-		/* We can only compute this if the right value is a constant*/
-		if (is_Const(right)) {
-			new_bits_set = tarval_rotl(vrp_left->bits_set, get_Const_tarval(right));
-			new_bits_not_set = tarval_rotl(vrp_left->bits_not_set, get_Const_tarval(right));
-		}
-		break;
-	}
-
 	case iro_Shl: {
 		const vrp_attr *vrp_left;
 		const ir_node *right = get_Shl_right(node);

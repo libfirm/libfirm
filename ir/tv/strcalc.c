@@ -535,30 +535,6 @@ static void do_shr(const char *val1, char *buffer, long shift_cnt, int bitsize, 
 	}
 }
 
-/**
- * Implements a Rotate Left.
- * positive: low-order -> high order, negative other direction
- */
-static void do_rotl(const char *val1, char *buffer, long offset, int radius, unsigned is_signed)
-{
-	char *temp1, *temp2;
-	temp1 = (char*) alloca(calc_buffer_size);
-	temp2 = (char*) alloca(calc_buffer_size);
-
-	offset = offset % radius;
-
-	/* rotation by multiples of the type length is identity */
-	if (offset == 0) {
-		memmove(buffer, val1, calc_buffer_size);
-		return;
-	}
-
-	do_shl(val1, temp1, offset, radius, is_signed);
-	do_shr(val1, temp2, radius - offset, radius, is_signed, 0);
-	do_bitor(temp1, temp2, buffer);
-	carry_flag = 0; /* set by shr, but due to rot this is false */
-}
-
 /*****************************************************************************
  * public functions, declared in strcalc.h
  *****************************************************************************/
@@ -1300,19 +1276,6 @@ void sc_shrs(const void *val1, const void *val2, int bitsize, int sign, void *bu
 	carry_flag = 0;
 
 	do_shr((const char*) val1, calc_buffer, offset, bitsize, sign, 1);
-
-	if ((buffer != NULL) && (buffer != calc_buffer)) {
-		memmove(buffer, calc_buffer, calc_buffer_size);
-	}
-}
-
-void sc_rotl(const void *val1, const void *val2, int bitsize, int sign, void *buffer)
-{
-	long offset = sc_val_to_long(val2);
-
-	carry_flag = 0;
-
-	do_rotl((const char*) val1, calc_buffer, offset, bitsize, sign);
 
 	if ((buffer != NULL) && (buffer != calc_buffer)) {
 		memmove(buffer, calc_buffer, calc_buffer_size);

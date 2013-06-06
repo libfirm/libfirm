@@ -1462,7 +1462,6 @@ static const ir_settings_arch_dep_t ia32_arch_dep = {
 	32, /* Mulh allowed up to 32 bit */
 };
 static backend_params ia32_backend_params = {
-	1,     /* support Rotl nodes */
 	0,     /* little endian */
 	1,     /* modulo shift efficient */
 	0,     /* non-modulo shift not efficient */

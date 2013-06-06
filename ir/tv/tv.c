@@ -1164,24 +1164,6 @@ ir_tarval *tarval_shrs_unsigned(ir_tarval *a, unsigned b)
 	return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
 }
 
-ir_tarval *tarval_rotl(ir_tarval *a, ir_tarval *b)
-{
-	char *temp_val = NULL;
-
-	assert(mode_is_int(a->mode) && mode_is_int(b->mode));
-
-	if (get_mode_modulo_shift(a->mode) != 0) {
-		temp_val = (char*) alloca(sc_get_buffer_length());
-
-		sc_val_from_ulong(get_mode_modulo_shift(a->mode), temp_val);
-		sc_mod(b->value, temp_val, temp_val);
-	} else
-		temp_val = (char*)b->value;
-
-	sc_rotl(a->value, temp_val, get_mode_size_bits(a->mode), mode_is_signed(a->mode), NULL);
-	return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
-}
-
 int tarval_snprintf(char *buf, size_t len, ir_tarval *tv)
 {
 	static const tarval_mode_info default_info = { TVO_NATIVE, NULL, NULL };

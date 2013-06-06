@@ -1289,26 +1289,6 @@ static int verify_node_Shrs(const ir_node *n)
 }
 
 /**
- * verify a Rotl node
- */
-static int verify_node_Rotl(const ir_node *n)
-{
-	ir_mode *mymode  = get_irn_mode(n);
-	ir_mode *op1mode = get_irn_mode(get_Rotl_left(n));
-	ir_mode *op2mode = get_irn_mode(get_Rotl_right(n));
-
-	ASSERT_AND_RET_DBG(
-		/* Rotl: BB x int x int --> int */
-		mode_is_int(op1mode) &&
-		mode_is_int(op2mode) &&
-		mymode == op1mode,
-		"Rotl node", 0,
-		show_node_mode_mismatch(n, "/* Rotl: BB x int x int --> int */");
-	);
-	return 1;
-}
-
-/**
  * verify a Conv node
  */
 static int verify_node_Conv(const ir_node *n)
@@ -2060,7 +2040,6 @@ void ir_register_verify_node_ops(void)
 	register_verify_node_func(op_Proj,     verify_node_Proj);
 	register_verify_node_func(op_Raise,    verify_node_Raise);
 	register_verify_node_func(op_Return,   verify_node_Return);
-	register_verify_node_func(op_Rotl,     verify_node_Rotl);
 	register_verify_node_func(op_Sel,      verify_node_Sel);
 	register_verify_node_func(op_Shl,      verify_node_Shl);
 	register_verify_node_func(op_Shr,      verify_node_Shr);

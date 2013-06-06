@@ -28,9 +28,9 @@
 #include "constbits.h"
 
 /* TODO:
- * - Implement cleared/set bit calculation for Add, Sub, Minus, Mul, Div, Mod, Shl, Shr, Shrs, Rotl
- * - Implement min/max calculation for And, Eor, Or, Not, Conv, Shl, Shr, Shrs, Rotl, Mux
- * - Implement min/max calculation for Add, Sub, Minus, Mul, Div, Mod, Conv, Shl, Shr, Shrs, Rotl, Mux
+ * - Implement cleared/set bit calculation for Add, Sub, Minus, Mul, Div, Mod, Shl, Shr, Shrs
+ * - Implement min/max calculation for And, Eor, Or, Not, Conv, Shl, Shr, Shrs, Mux
+ * - Implement min/max calculation for Add, Sub, Minus, Mul, Div, Mod, Conv, Shl, Shr, Shrs, Mux
  */
 
 /* Tables of the cleared/set bit lattice
@@ -323,19 +323,6 @@ undefined:
 					if (rz == r->o) {
 						z = tarval_shrs(l->z, rz);
 						o = tarval_shrs(l->o, rz);
-					} else {
-						goto cannot_analyse;
-					}
-					break;
-				}
-
-				case iro_Rotl: {
-					bitinfo*   const l  = get_bitinfo(get_Rotl_left(irn));
-					bitinfo*   const r  = get_bitinfo(get_Rotl_right(irn));
-					ir_tarval* const rz = r->z;
-					if (rz == r->o) {
-						z = tarval_rotl(l->z, rz);
-						o = tarval_rotl(l->o, rz);
 					} else {
 						goto cannot_analyse;
 					}

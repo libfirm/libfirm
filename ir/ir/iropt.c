@@ -400,23 +400,6 @@ static ir_tarval *computed_value_Shrs(const ir_node *n)
 	return tarval_bad;
 }
 
-/**
- * Return the value of a Rotl.
- */
-static ir_tarval *computed_value_Rotl(const ir_node *n)
-{
-	ir_node *a = get_Rotl_left(n);
-	ir_node *b = get_Rotl_right(n);
-
-	ir_tarval *ta = value_of(a);
-	ir_tarval *tb = value_of(b);
-
-	if ((ta != tarval_bad) && (tb != tarval_bad)) {
-		return tarval_rotl(ta, tb);
-	}
-	return tarval_bad;
-}
-
 bool ir_zero_when_converted(const ir_node *node, ir_mode *dest_mode)
 {
 	ir_mode *mode = get_irn_mode(node);
@@ -1687,7 +1670,7 @@ static ir_node *create_zero_const(ir_graph *irg, ir_mode *mode)
 
 static bool is_shiftop(const ir_node *n)
 {
-	return is_Shl(n) || is_Shr(n) || is_Shrs(n) || is_Rotl(n);
+	return is_Shl(n) || is_Shr(n) || is_Shrs(n);
 }
 
 /* the order of the values is important! */
@@ -1853,79 +1836,6 @@ static ir_node *transform_node_Or_bf_store(ir_node *irn_or)
 }
 
 /**
- * Optimize an Or(shl(x, c), shr(x, bits - c)) into a Rotl
- */
-static ir_node *transform_node_Or_Rotl(ir_node *irn_or)
-{
-	ir_mode *mode = get_irn_mode(irn_or);
-	ir_node *shl, *shr, *block;
-	ir_node *irn, *x, *c1, *c2, *n;
-	ir_tarval *tv1, *tv2;
-
-	/* some backends can't handle rotl */
-	if (!be_get_backend_param()->support_rotl)
-		return irn_or;
-
-	if (! mode_is_int(mode))
-		return irn_or;
-
-	shl = get_binop_left(irn_or);
-	shr = get_binop_right(irn_or);
-
-	if (is_Shr(shl)) {
-		if (!is_Shl(shr))
-			return irn_or;
-
-		irn = shl;
-		shl = shr;
-		shr = irn;
-	} else if (!is_Shl(shl)) {
-		return irn_or;
-	} else if (!is_Shr(shr)) {
-		return irn_or;
-	}
-	x = get_Shl_left(shl);
-	if (x != get_Shr_left(shr))
-		return irn_or;
-
-	c1 = get_Shl_right(shl);
-	c2 = get_Shr_right(shr);
-	if (is_Const(c1) && is_Const(c2)) {
-		tv1 = get_Const_tarval(c1);
-		if (! tarval_is_long(tv1))
-			return irn_or;
-
-		tv2 = get_Const_tarval(c2);
-		if (! tarval_is_long(tv2))
-			return irn_or;
-
-		if (get_tarval_long(tv1) + get_tarval_long(tv2)
-				!= (int) get_mode_size_bits(mode))
-			return irn_or;
-
-		/* yet, condition met */
-		block = get_nodes_block(irn_or);
-
-		n = new_r_Rotl(block, x, c1, mode);
-
-		DBG_OPT_ALGSIM1(irn_or, shl, shr, n, FS_OPT_OR_SHFT_TO_ROTL);
-		return n;
-	}
-
-	/* Note: the obvious rot formulation (a << x) | (a >> (32-x)) gets
-	 * transformed to (a << x) | (a >> -x) by transform_node_shift_modulo() */
-	if (!ir_is_negated_value(c1, c2)) {
-		return irn_or;
-	}
-
-	/* yet, condition met */
-	block = get_nodes_block(irn_or);
-	n = new_r_Rotl(block, x, c1, mode);
-	DBG_OPT_ALGSIM0(irn_or, n, FS_OPT_OR_SHFT_TO_ROTL);
-	return n;
-}
-
-/**
  * Prototype of a recursive transform function
  * for bitwise distributive transformations.
  */
@@ -2039,8 +1949,8 @@ static ir_node *transform_bitwise_distributive(ir_node *n,
 /**
  * normalisation: (x >> c1) & c2   to   (x & (c2<<c1)) >> c1
  *  (we can use:
- *    - and, or, xor          instead of &
- *    - Shl, Shr, Shrs, rotl  instead of >>
+ *    - and, or, xor    instead of &
+ *    - Shl, Shr, Shrs  instead of >>
  *    (with a special case for Or/Xor + Shrs)
  *
  * This normalisation is usually good for the backend since << C can often be
@@ -2099,7 +2009,8 @@ static ir_node *transform_node_bitop_shift(ir_node *n)
 			if (tarval_cmp(tv_back_again, tv2) != ir_relation_equal)
 				return n;
 		}
-	} else if (is_Shr(left)) {
+	} else {
+		assert(is_Shr(left));
 		if (!is_And(n)) {
 			/*
 			 * TODO this can be improved by checking whether
@@ -2108,9 +2019,6 @@ static ir_node *transform_node_bitop_shift(ir_node *n)
 			return n;
 		}
 		tv_bitop = tarval_shl(tv2, tv1);
-	} else {
-		assert(is_Rotl(left));
-		tv_bitop = tarval_rotl(tv2, tarval_neg(tv1));
 	}
 	new_const = new_r_Const(irg, tv_bitop);
 
@@ -2125,11 +2033,9 @@ static ir_node *transform_node_bitop_shift(ir_node *n)
 
 	if (is_Shl(left)) {
 		new_shift = new_rd_Shl(dbg_shift, block, new_bitop, shift_right, mode);
-	} else if (is_Shr(left)) {
-		new_shift = new_rd_Shr(dbg_shift, block, new_bitop, shift_right, mode);
 	} else {
-		assert(is_Rotl(left));
-		new_shift = new_rd_Rotl(dbg_shift, block, new_bitop, shift_right, mode);
+		assert(is_Shr(left));
+		new_shift = new_rd_Shr(dbg_shift, block, new_bitop, shift_right, mode);
 	}
 
 	return new_shift;
@@ -2277,9 +2183,6 @@ static ir_node *transform_node_Or_(ir_node *n)
 	HANDLE_BINOP_PHI((eval_func) tarval_or, a, b, c, mode);
 
 	n = transform_node_Or_bf_store(n);
-	if (n != oldn)
-		return n;
-	n = transform_node_Or_Rotl(n);
 	if (n != oldn)
 		return n;
 
@@ -3336,7 +3239,7 @@ static ir_node *transform_node_shift_bitop(ir_node *n)
 	if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_NORMALISATION2))
 		return n;
 
-	assert(is_Shrs(n) || is_Shr(n) || is_Shl(n) || is_Rotl(n));
+	assert(is_Shrs(n) || is_Shr(n) || is_Shl(n));
 
 	if (!is_Const(right))
 		return n;
@@ -3371,13 +3274,10 @@ static ir_node *transform_node_shift_bitop(ir_node *n)
 	} else if (is_Shr(n)) {
 		new_shift = new_rd_Shr(dbgi, block, bitop_left, right, mode);
 		tv_shift  = tarval_shr(tv1, tv2);
-	} else if (is_Shrs(n)) {
+	} else {
+		assert(is_Shrs(n));
 		new_shift = new_rd_Shrs(dbgi, block, bitop_left, right, mode);
 		tv_shift  = tarval_shrs(tv1, tv2);
-	} else {
-		assert(is_Rotl(n));
-		new_shift = new_rd_Rotl(dbgi, block, bitop_left, right, mode);
-		tv_shift  = tarval_rotl(tv1, tv2);
 	}
 
 	assert(get_tarval_mode(tv_shift) == mode);
@@ -4190,15 +4090,6 @@ static ir_node *transform_node_Cmp(ir_node *n)
 						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
 					}
 					break;
-				case iro_Rotl:
-					if (get_Rotl_right(left) == get_Rotl_right(right)) {
-						/* a ROTL X CMP b ROTL X ==> a CMP b */
-						left  = get_Rotl_left(left);
-						right = get_Rotl_left(right);
-						changed = true;
-						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
-					}
-					break;
 				default:
 					break;
 				}
@@ -4947,7 +4838,7 @@ static ir_node *transform_node_Phi(ir_node *phi)
 }
 
 /**
- * Optimize (a >> c1) >> c2), works for Shr, Shrs, Shl, Rotl.
+ * Optimize (a >> c1) >> c2), works for Shr, Shrs, Shl.
  *
  * Should be moved to reassociation?
  */
@@ -5001,26 +4892,20 @@ static ir_node *transform_node_shift(ir_node *n)
 	irg = get_irn_irg(n);
 
 	/* beware: a simple replacement works only, if res < modulo shift */
-	if (is_Rotl(n)) {
-		int        bits   = get_mode_size_bits(mode);
-		ir_tarval *modulo = new_tarval_from_long(bits, count_mode);
-		res = tarval_mod(res, modulo);
-	} else {
-		long       bits      = get_mode_size_bits(mode);
-		ir_tarval *mode_size = new_tarval_from_long(bits, count_mode);
+	long       bits      = get_mode_size_bits(mode);
+	ir_tarval *mode_size = new_tarval_from_long(bits, count_mode);
 
-		/* shifting too much */
-		if (!(tarval_cmp(res, mode_size) & ir_relation_less)) {
-			if (is_Shrs(n)) {
-				ir_node  *block = get_nodes_block(n);
-				dbg_info *dbgi  = get_irn_dbg_info(n);
-				ir_mode  *smode = get_irn_mode(right);
-				ir_node  *cnst  = new_r_Const_long(irg, smode, get_mode_size_bits(mode) - 1);
-				return new_rd_Shrs(dbgi, block, get_binop_left(left), cnst, mode);
-			}
-
-			return new_r_Const(irg, get_mode_null(mode));
+	/* shifting too much */
+	if (!(tarval_cmp(res, mode_size) & ir_relation_less)) {
+		if (is_Shrs(n)) {
+			ir_node  *block = get_nodes_block(n);
+			dbg_info *dbgi  = get_irn_dbg_info(n);
+			ir_mode  *smode = get_irn_mode(right);
+			ir_node  *cnst  = new_r_Const_long(irg, smode, get_mode_size_bits(mode) - 1);
+			return new_rd_Shrs(dbgi, block, get_binop_left(left), cnst, mode);
 		}
+
+		return new_r_Const(irg, get_mode_null(mode));
 	}
 
 	/* ok, we can replace it */
@@ -5316,25 +5201,6 @@ static ir_node *transform_node_Shl(ir_node *n)
 	if (is_Shl(n))
 		n = transform_node_shl_shr(n);
 	if (is_Shl(n))
-		n = transform_node_shift_bitop(n);
-
-	return n;
-}
-
-/**
- * Transform a Rotl.
- */
-static ir_node *transform_node_Rotl(ir_node *n)
-{
-	ir_node *c, *oldn = n;
-	ir_node *a    = get_Rotl_left(n);
-	ir_node *b    = get_Rotl_right(n);
-	ir_mode *mode = get_irn_mode(n);
-
-	HANDLE_BINOP_PHI((eval_func) tarval_rotl, a, b, c, mode);
-	n = transform_node_shift(n);
-
-	if (is_Rotl(n))
 		n = transform_node_shift_bitop(n);
 
 	return n;
@@ -6230,7 +6096,6 @@ void ir_register_opt_node_ops(void)
 	register_computed_value_func(op_Not,      computed_value_Not);
 	register_computed_value_func(op_Or,       computed_value_Or);
 	register_computed_value_func(op_Proj,     computed_value_Proj);
-	register_computed_value_func(op_Rotl,     computed_value_Rotl);
 	register_computed_value_func(op_Shl,      computed_value_Shl);
 	register_computed_value_func(op_Shr,      computed_value_Shr);
 	register_computed_value_func(op_Shrs,     computed_value_Shrs);
@@ -6252,7 +6117,6 @@ void ir_register_opt_node_ops(void)
 	register_equivalent_node_func(op_Or,      equivalent_node_Or);
 	register_equivalent_node_func(op_Phi,     equivalent_node_Phi);
 	register_equivalent_node_func(op_Proj,    equivalent_node_Proj);
-	register_equivalent_node_func(op_Rotl,    equivalent_node_left_zero);
 	register_equivalent_node_func(op_Shl,     equivalent_node_left_zero);
 	register_equivalent_node_func(op_Shr,     equivalent_node_left_zero);
 	register_equivalent_node_func(op_Shrs,    equivalent_node_left_zero);
@@ -6280,7 +6144,6 @@ void ir_register_opt_node_ops(void)
 	register_transform_node_func(op_Or,     transform_node_Or);
 	register_transform_node_func(op_Phi,    transform_node_Phi);
 	register_transform_node_func(op_Proj,   transform_node_Proj);
-	register_transform_node_func(op_Rotl,   transform_node_Rotl);
 	register_transform_node_func(op_Shl,    transform_node_Shl);
 	register_transform_node_func(op_Shrs,   transform_node_Shrs);
 	register_transform_node_func(op_Shr,    transform_node_Shr);

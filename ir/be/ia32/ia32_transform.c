@@ -1313,6 +1313,16 @@ static ir_node *match_64bit_shift(ir_node *node)
 	return NULL;
 }
 
+static ir_node *gen_Rol(ir_node *node, ir_node *op1, ir_node *op2)
+{
+	return gen_shift_binop(node, op1, op2, new_bd_ia32_Rol, match_immediate);
+}
+
+static ir_node *gen_Ror(ir_node *node, ir_node *op1, ir_node *op2)
+{
+	return gen_shift_binop(node, op1, op2, new_bd_ia32_Ror, match_immediate);
+}
+
 /**
  * Creates an ia32 Add.
  *
@@ -1323,6 +1333,14 @@ static ir_node *gen_Add(ir_node *node)
 	ir_mode  *mode = get_irn_mode(node);
 	ir_node  *op1  = get_Add_left(node);
 	ir_node  *op2  = get_Add_right(node);
+
+	ir_node *rot_left;
+	ir_node *rot_right;
+	if (be_pattern_is_rotl(node, &rot_left, &rot_right)) {
+		if (is_Minus(rot_right))
+			return gen_Ror(node, rot_left, get_Minus_op(rot_right));
+		return gen_Rol(node, rot_left, rot_right);
+	}
 
 	ir_node *new_node = match_64bit_shift(node);
 	if (new_node != NULL)
@@ -1499,13 +1517,16 @@ static ir_node *gen_And(ir_node *node)
 	                 | match_immediate);
 }
 
-/**
- * Creates an ia32 Or.
- *
- * @return The created ia32 Or node
- */
 static ir_node *gen_Or(ir_node *node)
 {
+	ir_node *rot_left;
+	ir_node *rot_right;
+	if (be_pattern_is_rotl(node, &rot_left, &rot_right)) {
+		if (is_Minus(rot_right))
+			return gen_Ror(node, rot_left, get_Minus_op(rot_right));
+		return gen_Rol(node, rot_left, rot_right);
+	}
+
 	ir_node *res = match_64bit_shift(node);
 	if (res != NULL)
 		return res;
@@ -1808,49 +1829,6 @@ static ir_node *gen_Shrs(ir_node *node)
 
 	return gen_shift_binop(node, left, right, new_bd_ia32_Sar,
 	                       match_immediate | match_upconv);
-}
-
-/**
- * Creates an ia32 Rol.
- *
- * @param op1   The first operator
- * @param op2   The second operator
- * @return The created ia32 RotL node
- */
-static ir_node *gen_Rol(ir_node *node, ir_node *op1, ir_node *op2)
-{
-	return gen_shift_binop(node, op1, op2, new_bd_ia32_Rol, match_immediate);
-}
-
-/**
- * Creates an ia32 Ror.
- * NOTE: There is no RotR with immediate because this would always be a RotL
- *       "imm-mode_size_bits" which can be pre-calculated.
- *
- * @param op1   The first operator
- * @param op2   The second operator
- * @return The created ia32 RotR node
- */
-static ir_node *gen_Ror(ir_node *node, ir_node *op1, ir_node *op2)
-{
-	return gen_shift_binop(node, op1, op2, new_bd_ia32_Ror, match_immediate);
-}
-
-/**
- * Creates an ia32 RotR or RotL (depending on the found pattern).
- *
- * @return The created ia32 RotL or RotR node
- */
-static ir_node *gen_Rotl(ir_node *node)
-{
-	ir_node *op1    = get_Rotl_left(node);
-	ir_node *op2    = get_Rotl_right(node);
-
-	if (is_Minus(op2)) {
-		return gen_Ror(node, op1, get_Minus_op(op2));
-	}
-
-	return gen_Rol(node, op1, op2);
 }
 
 /**
@@ -2377,6 +2355,22 @@ static ir_node *try_create_dest_am(ir_node *node)
 	ir_node *new_node;
 	switch (get_irn_opcode(val)) {
 	case iro_Add: {
+		ir_node *rot_left;
+		ir_node *rot_right;
+		if (be_pattern_is_rotl(val, &rot_left, &rot_right)) {
+			if (is_Minus(rot_right)) {
+				rot_right = get_Minus_op(rot_right);
+				new_node = dest_am_binop(val, rot_left, rot_right, mem, ptr,
+				                         mode, new_bd_ia32_RorMem,
+				                         new_bd_ia32_RorMem, match_immediate);
+			} else {
+				new_node = dest_am_binop(val, rot_left, rot_right, mem, ptr,
+				                         mode, new_bd_ia32_RolMem,
+				                         new_bd_ia32_RolMem, match_immediate);
+			}
+			break;
+		}
+
 		ir_node *op1 = get_Add_left(val);
 		ir_node *op2 = get_Add_right(val);
 		if (ia32_cg_config.use_incdec) {
@@ -2415,6 +2409,22 @@ static ir_node *try_create_dest_am(ir_node *node)
 		break;
 	}
 	case iro_Or: {
+		ir_node *rot_left;
+		ir_node *rot_right;
+		if (be_pattern_is_rotl(val, &rot_left, &rot_right)) {
+			if (is_Minus(rot_right)) {
+				rot_right = get_Minus_op(rot_right);
+				new_node = dest_am_binop(val, rot_left, rot_right, mem, ptr,
+				                         mode, new_bd_ia32_RorMem,
+				                         new_bd_ia32_RorMem, match_immediate);
+			} else {
+				new_node = dest_am_binop(val, rot_left, rot_right, mem, ptr,
+				                         mode, new_bd_ia32_RolMem,
+				                         new_bd_ia32_RolMem, match_immediate);
+			}
+			break;
+		}
+
 		ir_node *op1 = get_Or_left(val);
 		ir_node *op2 = get_Or_right(val);
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
@@ -2451,15 +2461,6 @@ static ir_node *try_create_dest_am(ir_node *node)
 		ir_node *op2 = get_Shrs_right(val);
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
 		                         new_bd_ia32_SarMem, new_bd_ia32_SarMem,
-		                         match_immediate);
-		break;
-	}
-	case iro_Rotl: {
-		ir_node *op1 = get_Rotl_left(val);
-		ir_node *op2 = get_Rotl_right(val);
-		/* TODO: match ROR patterns... */
-		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
-		                         new_bd_ia32_RolMem, new_bd_ia32_RolMem,
 		                         match_immediate);
 		break;
 	}
@@ -5340,7 +5341,6 @@ static void register_transformers(void)
 	be_set_transform_function(op_Not,              gen_Not);
 	be_set_transform_function(op_Or,               gen_Or);
 	be_set_transform_function(op_Phi,              gen_Phi);
-	be_set_transform_function(op_Rotl,             gen_Rotl);
 	be_set_transform_function(op_Shl,              gen_Shl);
 	be_set_transform_function(op_Shr,              gen_Shr);
 	be_set_transform_function(op_Shrs,             gen_Shrs);

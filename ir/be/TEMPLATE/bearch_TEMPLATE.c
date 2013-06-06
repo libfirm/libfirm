@@ -246,7 +246,6 @@ static int TEMPLATE_is_mux_allowed(ir_node *sel, ir_node *mux_false,
 static const backend_params *TEMPLATE_get_backend_params(void)
 {
 	static backend_params p = {
-		0,     /* no support for Rotl nodes */
 		0,     /* 0: little-endian, 1: big-endian */
 		1,     /* modulo shift efficient */
 		0,     /* non-modulo shift efficient */

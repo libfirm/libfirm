@@ -776,11 +776,6 @@ class Return:
 	flags      = [ "cfopcode" ]
 	pinned     = "yes"
 
-class Rotl(Binop):
-	"""Returns its first operand bits rotated left by the amount in the 2nd
-	operand"""
-	flags    = []
-
 @op
 class Sel:
 	"""Computes the address of a entity of a compound type given the base

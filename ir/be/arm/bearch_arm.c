@@ -466,7 +466,6 @@ static const backend_params *arm_get_libfirm_params(void)
 		32,   /* SMUL & UMUL available for 32 bit */
 	};
 	static backend_params p = {
-		1,     /* support Rotl nodes */
 		1,     /* big endian */
 		1,     /* modulo shift efficient */
 		0,     /* non-modulo shift not efficient */

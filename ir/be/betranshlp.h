@@ -95,4 +95,10 @@ void be_set_upper_bits_clean_function(ir_op *op, upper_bits_clean_func func);
  */
 bool be_upper_bits_clean(const ir_node *node, ir_mode *mode);
 
+/**
+ * returns true if node is the root pattern of a (left) rotation.
+ * The root @p node must be an Add or Or node.
+ */
+bool be_pattern_is_rotl(const ir_node *node, ir_node **left, ir_node **right);
+
 #endif

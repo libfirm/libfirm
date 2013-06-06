@@ -544,3 +544,61 @@ void be_start_transform_setup(void)
 	be_set_upper_bits_clean_function(op_Shr,   shr_upper_bits_clean);
 	be_set_upper_bits_clean_function(op_Shrs,  shrs_upper_bits_clean);
 }
+
+bool be_pattern_is_rotl(ir_node const *const irn_or, ir_node **const left,
+                        ir_node **const right)
+{
+	assert(is_Add(irn_or) || is_Or(irn_or));
+
+	ir_mode *mode = get_irn_mode(irn_or);
+	if (!mode_is_int(mode))
+		return false;
+
+	ir_node *shl = get_binop_left(irn_or);
+	ir_node *shr = get_binop_right(irn_or);
+	if (is_Shr(shl)) {
+		if (!is_Shl(shr))
+			return false;
+
+		ir_node *tmp = shl;
+		shl = shr;
+		shr = tmp;
+	} else if (!is_Shl(shl)) {
+		return false;
+	} else if (!is_Shr(shr)) {
+		return false;
+	}
+
+	ir_node *x = get_Shl_left(shl);
+	if (x != get_Shr_left(shr))
+		return false;
+
+	ir_node *c1 = get_Shl_right(shl);
+	ir_node *c2 = get_Shr_right(shr);
+	if (is_Const(c1) && is_Const(c2)) {
+		ir_tarval *tv1 = get_Const_tarval(c1);
+		if (!tarval_is_long(tv1))
+			return false;
+
+		ir_tarval *tv2 = get_Const_tarval(c2);
+		if (!tarval_is_long(tv2))
+			return false;
+
+		if (get_tarval_long(tv1) + get_tarval_long(tv2)
+		    != (long) get_mode_size_bits(mode))
+			return false;
+
+		*left  = x;
+		*right = c1;
+		return true;
+	}
+
+	/* Note: the obvious rot formulation (a << x) | (a >> (32-x)) gets
+	 * transformed to (a << x) | (a >> -x) by transform_node_shift_modulo() */
+	if (!ir_is_negated_value(c1, c2))
+		return false;
+
+	*left  = x;
+	*right = c1;
+	return true;
+}

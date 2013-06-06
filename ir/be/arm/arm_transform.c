@@ -496,6 +496,31 @@ static ir_node *gen_int_binop(ir_node *node, match_flags_t flags,
 	return factory->new_binop_reg(dbgi, block, new_op1, new_op2);
 }
 
+static ir_node *gen_Ror(ir_node *node, ir_node *op1, ir_node *op2,
+                        bool negate_op)
+{
+	dbg_info *dbgi    = get_irn_dbg_info(node);
+	ir_node  *block   = be_transform_node(get_nodes_block(node));
+	ir_node  *new_op1 = be_transform_node(op1);
+	if (is_Const(op2)) {
+		ir_tarval *tv   = get_Const_tarval(op2);
+		ir_mode   *mode = get_irn_mode(node);
+		long       bits = get_mode_size_bits(mode);
+		if (tarval_is_long(tv) && bits == 32) {
+			long val = get_tarval_long(tv);
+			val = (negate_op ? bits - val : val) & 31;
+			return new_bd_arm_Mov_reg_shift_imm(dbgi, block, new_op1, ARM_SHF_ROR_IMM, val);
+		}
+	}
+
+	ir_node  *new_op2 = be_transform_node(op2);
+	if (negate_op) {
+		new_op2 = new_bd_arm_Rsb_imm(dbgi, block, new_op2, 32, 0);
+	}
+	return new_bd_arm_Mov_reg_shift_reg(dbgi, block, new_op1, new_op2,
+											ARM_SHF_ROR_REG);
+}
+
 /**
  * Creates an ARM Add.
  *
@@ -503,6 +528,14 @@ static ir_node *gen_int_binop(ir_node *node, match_flags_t flags,
  */
 static ir_node *gen_Add(ir_node *node)
 {
+	ir_node *rotl_left;
+	ir_node *rotl_right;
+	if (be_pattern_is_rotl(node, &rotl_left, &rotl_right)) {
+		if (is_Minus(rotl_right))
+			return gen_Ror(node, rotl_left, get_Minus_op(rotl_right), false);
+		return gen_Ror(node, rotl_left, rotl_right, true);
+	}
+
 	static const arm_binop_factory_t add_factory = {
 		new_bd_arm_Add_reg,
 		new_bd_arm_Add_imm,
@@ -611,13 +644,20 @@ static ir_node *gen_And(ir_node *node)
 
 static ir_node *gen_Or(ir_node *node)
 {
+	ir_node *rotl_left;
+	ir_node *rotl_right;
+	if (be_pattern_is_rotl(node, &rotl_left, &rotl_right)) {
+		if (is_Minus(rotl_right))
+			return gen_Ror(node, rotl_left, get_Minus_op(rotl_right), false);
+		return gen_Ror(node, rotl_left, rotl_right, true);
+	}
+
 	static const arm_binop_factory_t or_factory = {
 		new_bd_arm_Or_reg,
 		new_bd_arm_Or_imm,
 		new_bd_arm_Or_reg_shift_reg,
 		new_bd_arm_Or_reg_shift_imm
 	};
-
 	return gen_int_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, &or_factory);
 }
 
@@ -747,89 +787,6 @@ static ir_node *gen_Shr(ir_node *node)
 static ir_node *gen_Shrs(ir_node *node)
 {
 	return make_shift(node, MATCH_NONE, ARM_SHF_ASR_REG);
-}
-
-static ir_node *gen_Ror(ir_node *node, ir_node *op1, ir_node *op2)
-{
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
-	ir_node  *new_op1 = be_transform_node(op1);
-	dbg_info *dbgi    = get_irn_dbg_info(node);
-	ir_node  *new_op2 = be_transform_node(op2);
-
-	return new_bd_arm_Mov_reg_shift_reg(dbgi, block, new_op1, new_op2,
-	                                    ARM_SHF_ROR_REG);
-}
-
-static ir_node *gen_Rol(ir_node *node, ir_node *op1, ir_node *op2)
-{
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
-	ir_node  *new_op1 = be_transform_node(op1);
-	dbg_info *dbgi    = get_irn_dbg_info(node);
-	ir_node  *new_op2 = be_transform_node(op2);
-
-	/* Note: there is no Rol on arm, we have to use Ror */
-	new_op2 = new_bd_arm_Rsb_imm(dbgi, block, new_op2, 32, 0);
-	return new_bd_arm_Mov_reg_shift_reg(dbgi, block, new_op1, new_op2,
-	                                    ARM_SHF_ROR_REG);
-}
-
-static ir_node *gen_Rotl(ir_node *node)
-{
-	ir_node *rotate = NULL;
-	ir_node *op1    = get_Rotl_left(node);
-	ir_node *op2    = get_Rotl_right(node);
-
-	/* Firm has only RotL, so we are looking for a right (op2)
-	   operand "-e+mode_size_bits" (it's an already modified "mode_size_bits-e",
-	   that means we can create a RotR. */
-
-	if (is_Add(op2)) {
-		ir_node *right = get_Add_right(op2);
-		if (is_Const(right)) {
-			ir_tarval *tv   = get_Const_tarval(right);
-			ir_mode   *mode = get_irn_mode(node);
-			long       bits = get_mode_size_bits(mode);
-			ir_node   *left = get_Add_left(op2);
-
-			if (is_Minus(left) &&
-			    tarval_is_long(tv)          &&
-			    get_tarval_long(tv) == bits &&
-			    bits                == 32)
-				rotate = gen_Ror(node, op1, get_Minus_op(left));
-		}
-	} else if (is_Sub(op2)) {
-		ir_node *left = get_Sub_left(op2);
-		if (is_Const(left)) {
-			ir_tarval *tv   = get_Const_tarval(left);
-			ir_mode   *mode = get_irn_mode(node);
-			long       bits = get_mode_size_bits(mode);
-			ir_node   *right = get_Sub_right(op2);
-
-			if (tarval_is_long(tv)          &&
-			    get_tarval_long(tv) == bits &&
-			    bits                == 32)
-				rotate = gen_Ror(node, op1, right);
-		}
-	} else if (is_Const(op2)) {
-		ir_tarval *tv   = get_Const_tarval(op2);
-		ir_mode   *mode = get_irn_mode(node);
-		long       bits = get_mode_size_bits(mode);
-
-		if (tarval_is_long(tv) && bits == 32) {
-			ir_node  *block   = be_transform_node(get_nodes_block(node));
-			ir_node  *new_op1 = be_transform_node(op1);
-			dbg_info *dbgi    = get_irn_dbg_info(node);
-
-			bits = (bits - get_tarval_long(tv)) & 31;
-			rotate = new_bd_arm_Mov_reg_shift_imm(dbgi, block, new_op1, ARM_SHF_ROR_IMM, bits);
-		}
-	}
-
-	if (rotate == NULL) {
-		rotate = gen_Rol(node, op1, op2);
-	}
-
-	return rotate;
 }
 
 static ir_node *gen_Not(ir_node *node)
@@ -1905,7 +1862,6 @@ static void arm_register_transformers(void)
 	be_set_transform_function(op_Or,       gen_Or);
 	be_set_transform_function(op_Phi,      gen_Phi);
 	be_set_transform_function(op_Return,   gen_Return);
-	be_set_transform_function(op_Rotl,     gen_Rotl);
 	be_set_transform_function(op_Sel,      gen_Sel);
 	be_set_transform_function(op_Shl,      gen_Shl);
 	be_set_transform_function(op_Shr,      gen_Shr);
