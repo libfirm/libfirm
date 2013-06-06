@@ -31,6 +31,8 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
+static ir_mode *mode_gp;
+
 /* Some support functions: */
 
 static inline int mode_needs_gp_reg(ir_mode *mode)
@@ -99,6 +101,96 @@ static ir_node *gen_Shl (ir_node *const node) { return gen_binop(node, &new_bd_a
 static ir_node *gen_Shr (ir_node *const node) { return gen_binop(node, &new_bd_amd64_Shr);  }
 static ir_node *gen_Shrs(ir_node *const node) { return gen_binop(node, &new_bd_amd64_Sar);  }
 static ir_node *gen_Sub (ir_node *const node) { return gen_binop(node, &new_bd_amd64_Sub);  }
+
+static ir_node *create_div(ir_node *const node, ir_mode *const mode,
+                           ir_node *const op1, ir_node *const op2,
+                           ir_node *const mem)
+{
+	dbg_info *const dbgi    = get_irn_dbg_info(node);
+	ir_node  *const block   = be_transform_node(get_nodes_block(node));
+	ir_node  *const new_op1 = be_transform_node(op1);
+	ir_node  *const new_op2 = be_transform_node(op2);
+	ir_node  *const new_mem = be_transform_node(mem);
+	amd64_insn_mode_t insn_mode
+		= get_mode_size_bits(mode) > 32 ? INSN_MODE_64 : INSN_MODE_32;
+	ir_node *res;
+	if (mode_is_signed(mode)) {
+		/* TODO: use immediates... */
+		int      const sval  = get_mode_size_bits(mode)-1;
+		ir_node *const cnst  = new_bd_amd64_Const(dbgi, block, INSN_MODE_32,
+		                                          sval, false, NULL);
+		ir_node *const upper = new_bd_amd64_Sar(dbgi, block, new_op1, cnst,
+		                                        insn_mode);
+		res = new_bd_amd64_IDiv(dbgi, block, upper, new_op1, new_op2, new_mem,
+		                        insn_mode);
+	} else {
+		ir_node *const zero = new_bd_amd64_Xor0(dbgi, block);
+		res = new_bd_amd64_Div(dbgi, block, zero, new_op1, new_op2, new_mem,
+		                       insn_mode);
+	}
+	return res;
+}
+
+static ir_node *gen_Div(ir_node *const node)
+{
+	ir_mode *const mode = get_Div_resmode(node);
+	if (!mode_needs_gp_reg(mode))
+		panic("amd64: float div NIY");
+	ir_node *const op1 = get_Div_left(node);
+	ir_node *const op2 = get_Div_right(node);
+	ir_node *const mem = get_Div_mem(node);
+	return create_div(node, mode, op1, op2, mem);
+}
+
+static ir_node *gen_Proj_Div(ir_node *const node)
+{
+	ir_node *pred     = get_Proj_pred(node);
+	ir_node *new_pred = be_transform_node(pred);
+	long     pn       = get_Proj_proj(node);
+
+	assert((long)pn_amd64_Div_M == (long)pn_amd64_IDiv_M);
+	assert((long)pn_amd64_Div_res_div == (long)pn_amd64_IDiv_res_div);
+	switch((pn_Div)pn) {
+	case pn_Div_M:
+		return new_r_Proj(new_pred, mode_M, pn_amd64_Div_M);
+	case pn_Div_res:
+		return new_r_Proj(new_pred, mode_gp, pn_amd64_Div_res_div);
+	case pn_Div_X_except:
+	case pn_Div_X_regular:
+		panic("amd64 exception NIY");
+	}
+	panic("invalid Div Proj");
+}
+
+static ir_node *gen_Mod(ir_node *const node)
+{
+	ir_mode *const mode = get_Mod_resmode(node);
+	ir_node *const op1  = get_Mod_left(node);
+	ir_node *const op2  = get_Mod_right(node);
+	ir_node *const mem  = get_Mod_mem(node);
+	assert(mode_needs_gp_reg(mode));
+	return create_div(node, mode, op1, op2, mem);
+}
+
+static ir_node *gen_Proj_Mod(ir_node *const node)
+{
+	ir_node *pred     = get_Proj_pred(node);
+	ir_node *new_pred = be_transform_node(pred);
+	long     pn       = get_Proj_proj(node);
+
+	assert((long)pn_amd64_Div_M == (long)pn_amd64_IDiv_M);
+	assert((long)pn_amd64_Div_res_mod == (long)pn_amd64_IDiv_res_mod);
+	switch((pn_Mod)pn) {
+	case pn_Mod_M:
+		return new_r_Proj(new_pred, mode_M, pn_amd64_Div_M);
+	case pn_Mod_res:
+		return new_r_Proj(new_pred, mode_gp, pn_amd64_Div_res_mod);
+	case pn_Mod_X_except:
+	case pn_Mod_X_regular:
+		panic("amd64 exception NIY");
+	}
+	panic("invalid Mod Proj");
+}
 
 typedef ir_node* (*unop_constructor)(dbg_info*,ir_node*block,ir_node*op,amd64_insn_mode_t insn_mode);
 
@@ -436,42 +528,47 @@ static void amd64_register_transformers(void)
 {
 	be_start_transform_setup();
 
-	be_set_transform_function(op_Const,        gen_Const);
-	be_set_transform_function(op_SymConst,     gen_SymConst);
 	be_set_transform_function(op_Add,          gen_Add);
 	be_set_transform_function(op_And,          gen_And);
-	be_set_transform_function(op_Eor,          gen_Eor);
-	be_set_transform_function(op_Sub,          gen_Sub);
-	be_set_transform_function(op_Mul,          gen_Mul);
-	be_set_transform_function(op_Not,          gen_Not);
-	be_set_transform_function(op_Or,           gen_Or);
-	be_set_transform_function(op_Shl,          gen_Shl);
-	be_set_transform_function(op_Shr,          gen_Shr);
-	be_set_transform_function(op_Shrs,         gen_Shrs);
 	be_set_transform_function(op_be_Call,      gen_be_Call);
 	be_set_transform_function(op_be_FrameAddr, gen_be_FrameAddr);
 	be_set_transform_function(op_be_Return,    gen_be_Return);
 	be_set_transform_function(op_be_Start,     gen_be_Start);
-	be_set_transform_function(op_Conv,         gen_Conv);
-	be_set_transform_function(op_Jmp,          gen_Jmp);
-	be_set_transform_function(op_Switch,       gen_Switch);
 	be_set_transform_function(op_Cmp,          gen_Cmp);
 	be_set_transform_function(op_Cond,         gen_Cond);
-	be_set_transform_function(op_Phi,          gen_Phi);
+	be_set_transform_function(op_Const,        gen_Const);
+	be_set_transform_function(op_Conv,         gen_Conv);
+	be_set_transform_function(op_Div,          gen_Div);
+	be_set_transform_function(op_Eor,          gen_Eor);
+	be_set_transform_function(op_Jmp,          gen_Jmp);
 	be_set_transform_function(op_Load,         gen_Load);
-	be_set_transform_function(op_Store,        gen_Store);
 	be_set_transform_function(op_Minus,        gen_Minus);
+	be_set_transform_function(op_Mod,          gen_Mod);
+	be_set_transform_function(op_Mul,          gen_Mul);
+	be_set_transform_function(op_Not,          gen_Not);
+	be_set_transform_function(op_Or,           gen_Or);
+	be_set_transform_function(op_Phi,          gen_Phi);
+	be_set_transform_function(op_Shl,          gen_Shl);
+	be_set_transform_function(op_Shr,          gen_Shr);
+	be_set_transform_function(op_Shrs,         gen_Shrs);
+	be_set_transform_function(op_Store,        gen_Store);
+	be_set_transform_function(op_Sub,          gen_Sub);
+	be_set_transform_function(op_Switch,       gen_Switch);
+	be_set_transform_function(op_SymConst,     gen_SymConst);
 
 	be_set_transform_proj_function(op_be_Call,  gen_Proj_be_Call);
 	be_set_transform_proj_function(op_be_Start, be_duplicate_node);
 	be_set_transform_proj_function(op_Cond,     be_duplicate_node);
+	be_set_transform_proj_function(op_Div,      gen_Proj_Div);
 	be_set_transform_proj_function(op_Load,     gen_Proj_Load);
+	be_set_transform_proj_function(op_Mod,      gen_Proj_Mod);
 	be_set_transform_proj_function(op_Store,    gen_Proj_Store);
 }
 
 void amd64_transform_graph(ir_graph *irg)
 {
 	amd64_register_transformers();
+	mode_gp = mode_Lu;
 	be_transform_graph(irg, NULL);
 }
 

@@ -118,6 +118,30 @@ And => {
 	modified_flags => 1,
 },
 
+Div => {
+	irn_flags  => [ "rematerializable" ],
+	state      => "exc_pinned",
+	attr       => "amd64_insn_mode_t insn_mode",
+	init_attr  => "attr->data.insn_mode = insn_mode;",
+	reg_req    => { in => [ "rdx", "rax", "gp", "none" ], out => [ "rax", "rdx", "none" ] },
+	ins        => [ "left_high", "left_low", "right", "mem" ],
+	outs       => [ "res_div", "res_mod", "M" ],
+	emit       => "div%M %S2",
+	modified_flags => 1,
+},
+
+IDiv => {
+	irn_flags  => [ "rematerializable" ],
+	state      => "exc_pinned",
+	attr       => "amd64_insn_mode_t insn_mode",
+	init_attr  => "attr->data.insn_mode = insn_mode;",
+	reg_req    => { in => [ "rdx", "rax", "gp", "none" ], out => [ "rax", "rdx", "none" ] },
+	ins        => [ "left_high", "left_low", "right", "mem" ],
+	outs       => [ "res_div", "res_mod", "M" ],
+	emit       => "idiv%M %S2",
+	modified_flags => 1,
+},
+
 IMul => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
@@ -228,6 +252,17 @@ Xor => {
 	ins        => [ "left", "right" ],
 	outs       => [ "res" ],
 	emit       => "xor%M %S1, %D0",
+	mode       => $mode_gp,
+	modified_flags => 1,
+},
+
+Xor0 => {
+	op_flags   => [ "constlike" ],
+	irn_flags  => [ "rematerializable" ],
+	init_attr  => "attr->data.insn_mode = INSN_MODE_32;",
+	reg_req    => { out => [ "gp" ] },
+	outs       => [ "res" ],
+	emit       => "xorl %D0, %D0",
 	mode       => $mode_gp,
 	modified_flags => 1,
 },
