@@ -17,6 +17,15 @@
 #include "irmode.h"
 #include "tv.h"
 
+#define get_tarval_mode(tv)      _get_tarval_mode(tv)
+#define get_tarval_bad()         _get_tarval_bad()
+#define get_tarval_undefined()   _get_tarval_undefined()
+#define get_tarval_b_false()     _get_tarval_b_false()
+#define get_tarval_b_true()      _get_tarval_b_true()
+#define get_tarval_unreachable() _get_tarval_unreachable()
+#define get_tarval_reachable()   _get_tarval_reachable()
+#define is_tarval(thing)         _is_tarval(thing)
+
 /**
  * Initialization of the tarval module.
  *
@@ -104,14 +113,5 @@ static inline int _is_tarval(const void *thing)
 {
 	return get_kind(thing) == k_tarval;
 }
-
-#define get_tarval_mode(tv)      _get_tarval_mode(tv)
-#define get_tarval_bad()         _get_tarval_bad()
-#define get_tarval_undefined()   _get_tarval_undefined()
-#define get_tarval_b_false()     _get_tarval_b_false()
-#define get_tarval_b_true()      _get_tarval_b_true()
-#define get_tarval_unreachable() _get_tarval_unreachable()
-#define get_tarval_reachable()   _get_tarval_reachable()
-#define is_tarval(thing)         _is_tarval(thing)
 
 #endif /* FIRM_TV_TV_T_H */

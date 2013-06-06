@@ -17,6 +17,13 @@
 #include "irnode_t.h"
 #include "irloop.h"
 
+#define is_ir_loop(thing)         _is_ir_loop(thing)
+#define set_irg_loop(irg, loop)   _set_irg_loop(irg, loop)
+#define get_irg_loop(irg)         _get_irg_loop(irg)
+#define get_loop_outer_loop(loop) _get_loop_outer_loop(loop)
+#define get_loop_depth(loop)      _get_loop_depth(loop)
+#define get_irn_loop(n)           _get_irn_loop(n)
+
 /**
  * The loops data structure.
  *
@@ -102,12 +109,5 @@ static inline ir_loop *_get_irn_loop(const ir_node *n)
 {
 	return n->loop;
 }
-
-#define is_ir_loop(thing)         _is_ir_loop(thing)
-#define set_irg_loop(irg, loop)   _set_irg_loop(irg, loop)
-#define get_irg_loop(irg)         _get_irg_loop(irg)
-#define get_loop_outer_loop(loop) _get_loop_outer_loop(loop)
-#define get_loop_depth(loop)      _get_loop_depth(loop)
-#define get_irn_loop(n)           _get_irn_loop(n)
 
 #endif
