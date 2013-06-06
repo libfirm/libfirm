@@ -212,20 +212,13 @@ Xor => {
 
 Const => {
 	op_flags  => [ "constlike" ],
-	attr      => "unsigned imm_value",
-	init_attr => "attr->ext.imm_value = imm_value;",
+	attr      => "amd64_insn_mode_t insn_mode, int64_t offset, bool sc_sign, ir_entity *symconst",
+	init_attr => "attr->imm.offset     = offset;\n"
+	           . "attr->imm.sc_sign    = sc_sign;\n"
+	           . "attr->imm.symconst   = symconst;\n"
+	           . "attr->data.insn_mode = insn_mode;\n",
 	reg_req   => { out => [ "gp" ] },
-	emit      => "mov %C, %D0",
-	mode      => $mode_gp,
-},
-
-SymConst => {
-	op_flags  => [ "constlike" ],
-	irn_flags => [ "rematerializable" ],
-	attr      => "ir_entity *entity",
-	attr_type => "amd64_SymConst_attr_t",
-	reg_req   => { out => [ "gp" ] },
-	outs      => [ "res" ],
+	emit      => 'mov%M $%C, %D0',
 	mode      => $mode_gp,
 },
 

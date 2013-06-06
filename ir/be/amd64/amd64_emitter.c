@@ -193,6 +193,22 @@ typedef enum amd64_emit_mod_t {
 } amd64_emit_mod_t;
 ENUM_BITSET(amd64_emit_mod_t)
 
+static void amd64_emit_immediate(const amd64_imm_t *const imm)
+{
+	if (imm->symconst != NULL) {
+		if (imm->sc_sign)
+			be_emit_char('-');
+		be_gas_emit_entity(imm->symconst);
+	}
+	if (imm->symconst == NULL || imm->offset != 0) {
+		if (imm->symconst != NULL) {
+			be_emit_irprintf("%+ld", imm->offset);
+		} else {
+			be_emit_irprintf("0x%lX", imm->offset);
+		}
+	}
+}
+
 void amd64_emitf(ir_node const *const node, char const *fmt, ...)
 {
 	va_list ap;
@@ -241,9 +257,7 @@ end_of_mods:
 
 			case 'C': {
 				amd64_attr_t const *const attr = get_amd64_attr_const(node);
-				/* FIXME: %d is a hack... we must emit 64bit constants, or sign
-				 * extended 32bit constants... */
-				be_emit_irprintf("$%d", attr->ext.imm_value);
+				amd64_emit_immediate(&attr->imm);
 				break;
 			}
 
@@ -358,15 +372,6 @@ unknown:
  * |_| |_| |_|\__,_|_|_| |_| |_| |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
  *
  ***********************************************************************************/
-
-/**
- * Emit a SymConst.
- */
-static void emit_amd64_SymConst(const ir_node *irn)
-{
-	const amd64_SymConst_attr_t *attr = get_amd64_SymConst_attr_const(irn);
-	amd64_emitf(irn, "mov $%E, %D0", attr->entity);
-}
 
 /**
  * Returns the next block in a block schedule.
@@ -616,7 +621,6 @@ static void amd64_register_emitters(void)
 	be_set_emitter(op_amd64_Jmp,        emit_amd64_Jmp);
 	be_set_emitter(op_amd64_LoadZ,      emit_amd64_LoadZ);
 	be_set_emitter(op_amd64_SwitchJmp,  emit_amd64_SwitchJmp);
-	be_set_emitter(op_amd64_SymConst,   emit_amd64_SymConst);
 	be_set_emitter(op_be_Call,          emit_be_Call);
 	be_set_emitter(op_be_Copy,          emit_be_Copy);
 	be_set_emitter(op_be_CopyKeep,      emit_be_Copy);

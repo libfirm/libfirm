@@ -134,7 +134,6 @@ static void init_amd64_attributes(ir_node *node, arch_irn_flags_t flags,
 	attr->data.ins_permuted = 0;
 	attr->data.cmp_unsigned = 0;
 	attr->ext.relation      = ir_relation_false;
-	attr->ext.imm_value     = 0;
 }
 
 /**
@@ -177,13 +176,18 @@ static int cmp_amd64_attr_SymConst(const ir_node *a, const ir_node *b)
 	return 0;
 }
 
+static int cmp_imm(const amd64_imm_t *const imm0, const amd64_imm_t *const imm1)
+{
+	return imm0->offset != imm1->offset || imm0->sc_sign != imm1->sc_sign
+	    || imm0->symconst != imm1->symconst;
+}
+
 /** Compare common amd64 node attributes. */
 static int cmp_amd64_attr(const ir_node *a, const ir_node *b)
 {
 	const amd64_attr_t *attr_a = get_amd64_attr_const(a);
 	const amd64_attr_t *attr_b = get_amd64_attr_const(b);
-
-	return attr_a->ext.imm_value != attr_b->ext.imm_value;
+	return cmp_imm(&attr_a->imm, &attr_b->imm);
 }
 
 /** copies the AMD64 attributes of a node. */

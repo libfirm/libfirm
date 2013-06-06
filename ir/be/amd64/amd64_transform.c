@@ -16,6 +16,7 @@
 #include "iropt_t.h"
 #include "error.h"
 #include "debug.h"
+#include "tv_t.h"
 
 #include "benode.h"
 #include "betranshlp.h"
@@ -37,29 +38,6 @@ static inline int mode_needs_gp_reg(ir_mode *mode)
 	return mode_is_int(mode) || mode_is_reference(mode);
 }
 
-/**
- * Create a DAG constructing a given Const.
- *
- * @param irn  a Firm const
- */
-static ir_node *create_const_graph(ir_node *irn, ir_node *block)
-{
-	ir_tarval *tv   = get_Const_tarval(irn);
-	ir_mode   *mode = get_tarval_mode(tv);
-	dbg_info  *dbgi = get_irn_dbg_info(irn);
-	unsigned   value;
-
-	if (mode_is_reference(mode)) {
-		/* AMD64 is 64bit, so we can safely convert a reference tarval into Iu */
-		assert(get_mode_size_bits(mode) == get_mode_size_bits(mode_Lu));
-		tv = tarval_convert_to(tv, mode_Lu);
-	}
-
-	value = get_tarval_long(tv);
-
-	return new_bd_amd64_Const(dbgi, block, value);
-}
-
 /* Op transformers: */
 
 /**
@@ -67,13 +45,18 @@ static ir_node *create_const_graph(ir_node *irn, ir_node *block)
  *
  * @return The transformed AMD64 node.
  */
-static ir_node *gen_Const(ir_node *node) {
+static ir_node *gen_Const(ir_node *node)
+{
 	ir_node  *block = be_transform_node(get_nodes_block(node));
+	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_mode  *mode  = get_irn_mode(node);
-	ir_node *res = create_const_graph(node, block);
-	(void) mode;
-
-	return res;
+	if (!mode_needs_gp_reg(mode))
+		panic("amd64: float constant not supported yet");
+	ir_tarval *tv = get_Const_tarval(node);
+	assert(tarval_is_uint64(tv));
+	uint64_t val = get_tarval_uint64(tv);
+	amd64_insn_mode_t imode = val > UINT32_MAX ? INSN_MODE_64 : INSN_MODE_32;
+	return new_bd_amd64_Const(dbgi, block, imode, val, false, NULL);
 }
 
 /**
@@ -84,12 +67,10 @@ static ir_node *gen_Const(ir_node *node) {
 static ir_node *gen_SymConst(ir_node *node)
 {
 	ir_node   *block  = be_transform_node(get_nodes_block(node));
-	ir_entity *entity = get_SymConst_entity(node);
 	dbg_info  *dbgi   = get_irn_dbg_info(node);
-	ir_node   *new_node;
+	ir_entity *entity = get_SymConst_entity(node);
 
-	new_node = new_bd_amd64_SymConst(dbgi, block, entity);
-	return new_node;
+	return new_bd_amd64_Const(dbgi, block, INSN_MODE_32, 0, false, entity);
 }
 
 static ir_node *gen_binop(ir_node *const node, ir_node *(*const new_node)(dbg_info*, ir_node*, ir_node*, ir_node*))

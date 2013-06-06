@@ -10,6 +10,7 @@
 #ifndef FIRM_BE_AMD64_AMD64_NODES_ATTR_H
 #define FIRM_BE_AMD64_AMD64_NODES_ATTR_H
 
+#include <stdint.h>
 #include "bearch.h"
 
 typedef struct amd64_attr_t            amd64_attr_t;
@@ -23,6 +24,12 @@ typedef enum {
 	INSN_MODE_8
 } amd64_insn_mode_t;
 
+typedef struct amd64_imm_t {
+	int64_t    offset;
+	bool       sc_sign;
+	ir_entity *symconst;
+} amd64_imm_t;
+
 struct amd64_attr_t
 {
 	except_attr  exc;     /**< the exception attribute. MUST be the first one. */
@@ -35,8 +42,8 @@ struct amd64_attr_t
 	} data;
 	struct amd64_attr_extended {
 		ir_relation relation;           /**< type of compare operation >*/
-		unsigned    imm_value;          /**< immediate value to use >*/
 	} ext;
+	amd64_imm_t  imm;
 };
 
 struct amd64_SymConst_attr_t
