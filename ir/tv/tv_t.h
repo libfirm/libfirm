@@ -16,6 +16,8 @@
 #include "firm_common.h"
 #include "irmode.h"
 #include "tv.h"
+#include <stdint.h>
+#include <stdbool.h>
 
 #define get_tarval_mode(tv)      _get_tarval_mode(tv)
 #define get_tarval_bad()         _get_tarval_bad()
@@ -113,5 +115,9 @@ static inline int _is_tarval(const void *thing)
 {
 	return get_kind(thing) == k_tarval;
 }
+
+uint64_t get_tarval_uint64(ir_tarval *tv);
+
+bool tarval_is_uint64(ir_tarval *tv);
 
 #endif /* FIRM_TV_TV_T_H */

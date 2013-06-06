@@ -393,9 +393,30 @@ int tarval_is_long(ir_tarval *tv)
 
 long get_tarval_long(ir_tarval* tv)
 {
-	assert(tarval_is_long(tv) && "tarval too big to fit in long");
-
+	assert(tarval_is_long(tv));
 	return sc_val_to_long(tv->value);
+}
+
+bool tarval_is_uint64(ir_tarval *tv)
+{
+	if (!mode_is_int(tv->mode) && !mode_is_reference(tv->mode))
+		return false;
+
+	if (get_mode_size_bits(tv->mode) > (int) (sizeof(uint64_t) << 3)) {
+		/* the value might be too big to fit in a long */
+		sc_max_from_bits(sizeof(uint64_t) << 3, 0, NULL);
+		if (sc_comp(sc_get_buffer(), tv->value) == ir_relation_less) {
+			/* really doesn't fit */
+			return false;
+		}
+	}
+	return true;
+}
+
+uint64_t get_tarval_uint64(ir_tarval *tv)
+{
+	assert(tarval_is_uint64(tv));
+	return sc_val_to_uint64(tv->value);
 }
 
 ir_tarval *new_tarval_from_long_double(long double d, ir_mode *mode)

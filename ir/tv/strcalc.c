@@ -664,6 +664,14 @@ long sc_val_to_long(const void *val)
 	return l;
 }
 
+uint64_t sc_val_to_uint64(const void *val)
+{
+	uint64_t res = 0;
+	for (int i = calc_buffer_size - 1; i >= 0; i--) {
+		res = (res << 4) + _val(((char*)val)[i]);
+	}
+}
+
 void sc_min_from_bits(unsigned int num_bits, unsigned int sign, void *buffer)
 {
 	if (buffer == NULL) buffer = calc_buffer;

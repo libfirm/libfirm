@@ -19,6 +19,7 @@
 #ifndef FIRM_TV_STRCALC_H
 #define FIRM_TV_STRCALC_H
 
+#include <stdint.h>
 #include "irmode.h"
 
 #ifdef STRCALC_DEBUG_ALL             /* switch on all debug options */
@@ -191,6 +192,7 @@ void sc_val_from_ulong(unsigned long l, void *buffer);
 
 /** converts a value to a long */
 long sc_val_to_long(const void *val);
+uint64_t sc_val_to_uint64(const void *val);
 void sc_min_from_bits(unsigned int num_bits, unsigned int sign, void *buffer);
 void sc_max_from_bits(unsigned int num_bits, unsigned int sign, void *buffer);
 
