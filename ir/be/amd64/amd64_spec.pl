@@ -180,9 +180,11 @@ Sub => {
 
 Neg => {
 	irn_flags => [ "rematerializable" ],
+	attr      => "amd64_insn_mode_t insn_mode",
+	init_attr => "attr->data.insn_mode = insn_mode;",
 	reg_req   => { in => [ "gp" ],
 	               out => [ "in_r1" ] },
-	emit      => "neg %S0",
+	emit      => "neg%M %S0",
 	ins       => [ "val" ],
 	outs      => [ "res" ],
 	mode      => $mode_gp,
@@ -191,8 +193,10 @@ Neg => {
 
 Not => {
 	irn_flags => [ "rematerializable" ],
+	attr      => "amd64_insn_mode_t insn_mode",
+	init_attr => "attr->data.insn_mode = insn_mode;",
 	reg_req   => { in => [ "gp" ], out => [ "in_r1" ] },
-	emit      => "not %S0",
+	emit      => "not%M %S0",
 	ins       => [ "val" ],
 	outs      => [ "res" ],
 	mode      => $mode_gp,
