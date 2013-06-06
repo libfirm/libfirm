@@ -454,6 +454,7 @@ static void amd64_register_transformers(void)
 
 	be_set_transform_proj_function(op_be_Call,  gen_Proj_be_Call);
 	be_set_transform_proj_function(op_be_Start, be_duplicate_node);
+	be_set_transform_proj_function(op_Cond,     be_duplicate_node);
 	be_set_transform_proj_function(op_Load,     gen_Proj_Load);
 	be_set_transform_proj_function(op_Store,    gen_Proj_Store);
 }
