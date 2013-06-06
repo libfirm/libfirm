@@ -131,13 +131,8 @@ static void arm_collect_frame_entity_nodes(ir_node *node, void *data)
 		return;
 	}
 
-	switch (get_arm_irn_opcode(node)) {
-	case iro_arm_Ldf:
-	case iro_arm_Ldr:
-		break;
-	default:
+	if (!is_arm_Ldf(node) && !is_arm_Ldr(node))
 		return;
-	}
 
 	attr   = get_arm_load_store_attr_const(node);
 	entity = attr->entity;
