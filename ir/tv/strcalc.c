@@ -86,9 +86,7 @@ static char const *const binary_table[] = {
  */
 static void do_bitnot(const char *val, char *buffer)
 {
-	int counter;
-
-	for (counter = 0; counter<calc_buffer_size; counter++)
+	for (int counter = 0; counter<calc_buffer_size; counter++)
 		buffer[counter] = val[counter] ^ SC_F;
 }
 
@@ -97,9 +95,7 @@ static void do_bitnot(const char *val, char *buffer)
  */
 static void do_bitor(const char *val1, const char *val2, char *buffer)
 {
-	int counter;
-
-	for (counter = 0; counter<calc_buffer_size; counter++)
+	for (int counter = 0; counter<calc_buffer_size; counter++)
 		buffer[counter] = val1[counter] | val2[counter];
 }
 
@@ -108,9 +104,7 @@ static void do_bitor(const char *val1, const char *val2, char *buffer)
  */
 static void do_bitxor(const char *val1, const char *val2, char *buffer)
 {
-	int counter;
-
-	for (counter = 0; counter<calc_buffer_size; counter++)
+	for (int counter = 0; counter<calc_buffer_size; counter++)
 		buffer[counter] = val1[counter] ^ val2[counter];
 }
 
@@ -119,9 +113,7 @@ static void do_bitxor(const char *val1, const char *val2, char *buffer)
  */
 static void do_bitand(const char *val1, const char *val2, char *buffer)
 {
-	int counter;
-
-	for (counter = 0; counter<calc_buffer_size; counter++)
+	for (int counter = 0; counter<calc_buffer_size; counter++)
 		buffer[counter] = val1[counter] & val2[counter];
 }
 
@@ -130,9 +122,7 @@ static void do_bitand(const char *val1, const char *val2, char *buffer)
  */
 static void do_bitandnot(const char *val1, const char *val2, char *buffer)
 {
-	int counter;
-
-	for (counter = 0; counter < calc_buffer_size; ++counter)
+	for (int counter = 0; counter < calc_buffer_size; ++counter)
 		buffer[counter] = val1[counter] & (SC_F ^ val2[counter]);
 }
 
@@ -221,22 +211,16 @@ static void do_sub(const char *val1, const char *val2, char *buffer)
  */
 static void do_mul(const char *val1, const char *val2, char *buffer)
 {
-	char *temp_buffer; /* result buffer */
-	char *neg_val1;    /* abs of val1 */
-	char *neg_val2;    /* abs of val2 */
-
-	char sign = 0;                      /* marks result sign */
-	int c_inner, c_outer;               /* loop counters */
-
-	temp_buffer = (char*) alloca(calc_buffer_size);
-	neg_val1 = (char*) alloca(calc_buffer_size);
-	neg_val2 = (char*) alloca(calc_buffer_size);
+	char *temp_buffer = (char*) alloca(calc_buffer_size);
+	char *neg_val1    = (char*) alloca(calc_buffer_size);
+	char *neg_val2    = (char*) alloca(calc_buffer_size);
 
 	/* init result buffer to zeros */
 	memset(temp_buffer, SC_0, calc_buffer_size);
 
 	/* the multiplication works only for positive values, for negative values *
 	 * it is necessary to negate them and adjust the result accordingly       */
+	char sign = 0;
 	if (do_sign(val1) == -1) {
 		do_negate(val1, neg_val1);
 		val1 = neg_val1;
@@ -248,29 +232,32 @@ static void do_mul(const char *val1, const char *val2, char *buffer)
 		sign ^= 1;
 	}
 
-	for (c_outer = 0; c_outer < max_value_size; c_outer++) {
+	for (int c_outer = 0; c_outer < max_value_size; c_outer++) {
 		if (val2[c_outer] != SC_0) {
 			unsigned carry = SC_0; /* container for carries */
-			for (c_inner = 0; c_inner < max_value_size; c_inner++) {
-				/* do the following calculation:                                    *
-				 * Add the current carry, the value at position c_outer+c_inner     *
-				 * and the result of the multiplication of val1[c_inner] and        *
-				 * val2[c_outer]. This is the usual pen-and-paper multiplication.   */
+			for (int c_inner = 0; c_inner < max_value_size; c_inner++) {
+				/* do the following calculation:
+				 * Add the current carry, the value at position c_outer+c_inner
+				 * and the result of the multiplication of val1[c_inner] and
+				 * val2[c_outer]. This is the usual pen-and-paper multiplication
+				 */
 
 				/* multiplicate the two digits */
 				unsigned const mul = val1[c_inner] * val2[c_outer];
 				/* add old value to result of multiplication and the carry */
-				unsigned const sum = temp_buffer[c_inner + c_outer] + mul + carry;
+				unsigned const sum = temp_buffer[c_inner+c_outer] + mul + carry;
 
-				/* all carries together result in new carry. This is always smaller *
-				 * than the base b:                                                 *
-				 * Both multiplicands, the carry and the value already in the temp  *
-				 * buffer are single digits and their value is therefore at most    *
-				 * equal to (b-1).                                                  *
-				 * This leads to:                                                   *
-				 * (b-1)(b-1)+(b-1)+(b-1) = b*b-1                                   *
-				 * The tables list all operations rem b, so the carry is at most    *
-				 * (b*b-1)rem b = -1rem b = b-1                                     */
+				/* all carries together result in new carry. This is always
+				 * smaller than the base b:
+				 * Both multiplicands, the carry and the value already in the
+				 * temp buffer are single digits and their value is therefore
+				 * at most equal to (b-1).
+				 * This leads to:
+				 * (b-1)(b-1)+(b-1)+(b-1) = b*b-1
+				 * The tables list all operations rem b, so the carry is at
+				 * most
+				 * (b*b-1)rem b = -1rem b = b-1
+				 */
 				temp_buffer[c_inner + c_outer] = SC_RESULT(sum);
 				carry                          = SC_CARRY(sum);
 			}
@@ -292,9 +279,7 @@ static void do_mul(const char *val1, const char *val2, char *buffer)
  */
 static void do_push(const char digit, char *buffer)
 {
-	int counter;
-
-	for (counter = calc_buffer_size - 2; counter >= 0; counter--) {
+	for (int counter = calc_buffer_size - 2; counter >= 0; counter--) {
 		buffer[counter+1] = buffer[counter];
 	}
 	buffer[0] = digit;
@@ -305,21 +290,9 @@ static void do_push(const char digit, char *buffer)
  *
  * Note: This is MOST slow
  */
-static void do_divmod(const char *rDividend, const char *divisor, char *quot, char *rem)
+static void do_divmod(const char *rDividend, const char *divisor, char *quot,
+                      char *rem)
 {
-	const char *dividend = rDividend;
-	const char *minus_divisor;
-	char *neg_val1;
-	char *neg_val2;
-
-	char div_sign = 0;     /* remember division result sign */
-	char rem_sign = 0;     /* remember remainder result sign */
-
-	int c_dividend;      /* loop counters */
-
-	neg_val1 = (char*) alloca(calc_buffer_size);
-	neg_val2 = (char*) alloca(calc_buffer_size);
-
 	/* clear result buffer */
 	memset(quot, SC_0, calc_buffer_size);
 	memset(rem, SC_0, calc_buffer_size);
@@ -328,9 +301,13 @@ static void do_divmod(const char *rDividend, const char *divisor, char *quot, ch
 	assert(sc_comp(divisor, quot) != ir_relation_equal && "division by zero!");
 
 	/* if the dividend is zero result is zero (quot is zero) */
+	const char *dividend = rDividend;
 	if (sc_comp(dividend, quot) == ir_relation_equal)
 		return;
 
+	char  div_sign = 0;
+	char  rem_sign = 0;
+	char *neg_val1 = (char*) alloca(calc_buffer_size);
 	if (do_sign(dividend) == -1) {
 		do_negate(dividend, neg_val1);
 		div_sign ^= 1;
@@ -338,13 +315,16 @@ static void do_divmod(const char *rDividend, const char *divisor, char *quot, ch
 		dividend = neg_val1;
 	}
 
+	char *neg_val2 = (char*) alloca(calc_buffer_size);
 	do_negate(divisor, neg_val2);
+	const char *minus_divisor;
 	if (do_sign(divisor) == -1) {
 		div_sign ^= 1;
 		minus_divisor = divisor;
 		divisor = neg_val2;
-	} else
+	} else {
 		minus_divisor = neg_val2;
+	}
 
 	/* if divisor >= dividend division is easy
 	 * (remember these are absolute values) */
@@ -361,11 +341,12 @@ static void do_divmod(const char *rDividend, const char *divisor, char *quot, ch
 		break;
 	}
 
-	for (c_dividend = calc_buffer_size - 1; c_dividend >= 0; c_dividend--) {
+	for (int c_dividend = calc_buffer_size - 1; c_dividend >= 0; c_dividend--) {
 		do_push(dividend[c_dividend], rem);
 		do_push(SC_0, quot);
 
-		if (sc_comp(rem, divisor) != ir_relation_less) {  /* remainder >= divisor */
+		if (sc_comp(rem, divisor) != ir_relation_less) {
+			/* remainder >= divisor */
 			/* subtract until the remainder becomes negative, this should
 			 * be faster than comparing remainder with divisor  */
 			do_add(rem, minus_divisor, rem);
@@ -396,11 +377,9 @@ end:
  *
  * @todo Assertions seems to be wrong
  */
-static void do_shl(const char *val1, char *buffer, long shift_cnt, int bitsize, unsigned is_signed)
+static void do_shl(const char *val1, char *buffer, long shift_cnt, int bitsize,
+                   unsigned is_signed)
 {
-	int counter;
-	int bitoffset = 0;
-
 	assert((shift_cnt >= 0) || (0 && "negative leftshift"));
 	assert(((do_sign(val1) != -1) || is_signed) || (0 && "unsigned mode and negative value"));
 	assert(((!_bitisset(val1[(bitsize-1)/4], (bitsize-1)%4)) || !is_signed || (do_sign(val1) == -1)) || (0 && "value is positive, should be negative"));
@@ -418,11 +397,13 @@ static void do_shl(const char *val1, char *buffer, long shift_cnt, int bitsize, 
 	/* shift the single digits some bytes (offset) and some bits (table)
 	 * to the left */
 	unsigned carry = SC_0;
-	for (counter = 0; counter < bitsize/4 - shift_cnt; counter++) {
+	for (int counter = 0; counter < bitsize/4 - shift_cnt; counter++) {
 		unsigned const shl = val1[counter] << shift | carry;
 		buffer[counter + shift_cnt] = SC_RESULT(shl);
 		carry = SC_CARRY(shl);
 	}
+	int counter   = bitsize/4 - shift_cnt;
+	int bitoffset = 0;
 	if (bitsize%4 > 0) {
 		unsigned const shl = val1[counter] << shift | carry;
 		buffer[counter + shift_cnt] = SC_RESULT(shl);
@@ -432,7 +413,7 @@ static void do_shl(const char *val1, char *buffer, long shift_cnt, int bitsize, 
 	}
 
 	/* fill with zeroes */
-	for (counter = 0; counter < shift_cnt; counter++)
+	for (int counter = 0; counter < shift_cnt; counter++)
 		buffer[counter] = SC_0;
 
 	/* if the mode was signed, change sign when the mode's msb is now 1 */
@@ -441,13 +422,13 @@ static void do_shl(const char *val1, char *buffer, long shift_cnt, int bitsize, 
 	if (is_signed && _bitisset(buffer[shift_cnt], bitoffset)) {
 		/* this sets the upper bits of the leftmost digit */
 		buffer[shift_cnt] |= min_digit[bitoffset];
-		for (counter = shift_cnt+1; counter < calc_buffer_size; counter++) {
+		for (int counter = shift_cnt+1; counter < calc_buffer_size; counter++) {
 			buffer[counter] = SC_F;
 		}
 	} else if (is_signed && !_bitisset(buffer[shift_cnt], bitoffset)) {
 		/* this clears the upper bits of the leftmost digit */
 		buffer[shift_cnt] &= max_digit[bitoffset];
-		for (counter = shift_cnt+1; counter < calc_buffer_size; counter++) {
+		for (int counter = shift_cnt+1; counter < calc_buffer_size; counter++) {
 			buffer[counter] = SC_0;
 		}
 	}
@@ -461,22 +442,14 @@ static void do_shl(const char *val1, char *buffer, long shift_cnt, int bitsize, 
  *
  * @todo Assertions seems to be wrong
  */
-static void do_shr(const char *val1, char *buffer, long shift_cnt, int bitsize, unsigned is_signed, int signed_shift)
+static void do_shr(const char *val1, char *buffer, long shift_cnt, int bitsize,
+                   unsigned is_signed, int signed_shift)
 {
-	const char *shrs;
-	char sign;
-	char msd;
-
-	int shift_mod, shift_nib;
-
-	int counter;
-	int bitoffset = 0;
-
 	assert((shift_cnt >= 0) || (0 && "negative rightshift"));
 	assert(((!_bitisset(val1[(bitsize-1)/4], (bitsize-1)%4)) || !is_signed || (do_sign(val1) == -1)) || (0 && "value is positive, should be negative"));
 	assert(((_bitisset(val1[(bitsize-1)/4], (bitsize-1)%4)) || !is_signed || (do_sign(val1) == 1)) || (0 && "value is negative, should be positive"));
 
-	sign = signed_shift && do_bit(val1, bitsize - 1) ? SC_F : SC_0;
+	char sign = signed_shift && do_bit(val1, bitsize - 1) ? SC_F : SC_0;
 
 	/* if shifting far enough the result is either 0 or -1 */
 	if (shift_cnt >= bitsize) {
@@ -487,37 +460,38 @@ static void do_shr(const char *val1, char *buffer, long shift_cnt, int bitsize, 
 		return;
 	}
 
-	shift_mod = shift_cnt &  3;
-	shift_nib = shift_cnt >> 2;
+	int shift_mod = shift_cnt &  3;
+	int shift_nib = shift_cnt >> 2;
 
 	/* check if any bits are lost, and set carry_flag if so */
-	for (counter = 0; counter < shift_nib; ++counter) {
+	for (int counter = 0; counter < shift_nib; ++counter) {
 		if (val1[counter] != 0) {
 			carry_flag = 1;
 			break;
 		}
 	}
-	if ((_val(val1[counter]) & ((1<<shift_mod)-1)) != 0)
+	if ((_val(val1[shift_nib]) & ((1<<shift_mod)-1)) != 0)
 		carry_flag = 1;
 
 	/* shift digits to the right with offset, carry and all */
 	buffer[0] = shrs_table[_val(val1[shift_nib])][shift_mod][0];
+	int counter;
 	for (counter = 1; counter < ((bitsize + 3) >> 2) - shift_nib; counter++) {
-		shrs = shrs_table[_val(val1[counter + shift_nib])][shift_mod];
+		const char *shrs = shrs_table[_val(val1[counter + shift_nib])][shift_mod];
 		buffer[counter]      = shrs[0];
 		buffer[counter - 1] |= shrs[1];
 	}
 
 	/* the last digit is special in regard of signed/unsigned shift */
-	bitoffset = bitsize & 3;
-	msd = sign;  /* most significant digit */
+	int bitoffset = bitsize & 3;
+	char msd = sign;  /* most significant digit */
 
 	/* remove sign bits if mode was signed and this is an unsigned shift */
 	if (!signed_shift && is_signed) {
 		msd &= max_digit[bitoffset];
 	}
 
-	shrs = shrs_table[_val(msd)][shift_mod];
+	const char *shrs = shrs_table[_val(msd)][shift_mod];
 
 	/* signed shift and signed mode and negative value means all bits to the left are set */
 	if (signed_shift && sign == SC_F) {
@@ -548,70 +522,56 @@ int sc_get_buffer_length(void)
 	return calc_buffer_size;
 }
 
-/**
- * Do sign extension if the mode is signed, otherwise to zero extension.
- */
 void sign_extend(void *buffer, ir_mode *mode)
 {
-	char *calc_buffer = (char*) buffer;
+	char *calc_buffer = (char*)buffer;
 	int bits          = get_mode_size_bits(mode) - 1;
 	int nibble        = bits >> 2;
-	int max           = max_digit[bits & 3];
-	int i;
 
 	if (mode_is_signed(mode)) {
+		int max = max_digit[bits & 3];
 		if (calc_buffer[nibble] > max) {
 			/* sign bit is set, we need sign expansion */
 
-			for (i = nibble + 1; i < calc_buffer_size; ++i)
+			for (int i = nibble + 1; i < calc_buffer_size; ++i)
 				calc_buffer[i] = SC_F;
 			calc_buffer[nibble] |= sex_digit[bits & 3];
 		} else {
 			/* set all bits to zero */
-			for (i = nibble + 1; i < calc_buffer_size; ++i)
+			for (int i = nibble + 1; i < calc_buffer_size; ++i)
 				calc_buffer[i] = SC_0;
 			calc_buffer[nibble] &= zex_digit[bits & 3];
 		}
 	} else {
 		/* do zero extension */
-		for (i = nibble + 1; i < calc_buffer_size; ++i)
+		for (int i = nibble + 1; i < calc_buffer_size; ++i)
 			calc_buffer[i] = SC_0;
 		calc_buffer[nibble] &= zex_digit[bits & 3];
 	}
 }
 
-/* we assume that '0'-'9', 'a'-'z' and 'A'-'Z' are a range.
- * The C-standard does theoretically allow otherwise. */
+/* ensure that our source character set conforms to ASCII for a-f, A-F, 0-9 */
 static inline void check_ascii(void)
 {
-	/* C standard guarantees that '0'-'9' is a range */
-	assert('b'-'a' == 1
-		&& 'c'-'a' == 2
-		&& 'd'-'a' == 3
-		&& 'e'-'a' == 4
-		&& 'f'-'a' == 5);
-	assert('B'-'A' == 1
-		&& 'C'-'A' == 2
-		&& 'D'-'A' == 3
-		&& 'E'-'A' == 4
-		&& 'F'-'A' == 5);
+	assert((('a'-97) | ('b'-98) | ('c'-99) | ('d'-100) | ('e'-101) | ('f'-102)
+	       |('A'-65) | ('B'-66) | ('C'-67) | ('D'- 68) | ('E'- 69) | ('F'- 70)
+	       |('0'-48) | ('1'-49) | ('2'-50) | ('3'- 51) | ('4'- 52)
+	       |('5'-53) | ('6'-54) | ('7'-55) | ('8'- 56) | ('9'- 57)) == 0);
 }
 
-int sc_val_from_str(char sign, unsigned base, const char *str,
-                    size_t len, void *buffer)
+int sc_val_from_str(char sign, unsigned base, const char *str, size_t len,
+                    void *buffer)
 {
-	char *sc_base, *val;
-
 	assert(sign == -1 || sign == 1);
 	assert(str != NULL);
 	assert(len > 0);
 	check_ascii();
 
 	assert(base > 1 && base <= 16);
-	sc_base = (char*) alloca(calc_buffer_size);
+	char *sc_base = (char*) alloca(calc_buffer_size);
 	sc_val_from_ulong(base, sc_base);
 
-	val = (char*) alloca(calc_buffer_size);
+	char *val = (char*) alloca(calc_buffer_size);
 	if (buffer == NULL)
 		buffer = calc_buffer;
 
@@ -655,14 +615,11 @@ int sc_val_from_str(char sign, unsigned base, const char *str,
 
 void sc_val_from_long(long value, void *buffer)
 {
-	char *pos;
-	char sign, is_minlong;
-
 	if (buffer == NULL) buffer = calc_buffer;
-	pos = (char*) buffer;
+	char *pos = (char*) buffer;
 
-	sign = (value < 0);
-	is_minlong = value == LONG_MIN;
+	char sign       = (value < 0);
+	char is_minlong = value == LONG_MIN;
 
 	/* use absolute value, special treatment of MIN_LONG to avoid overflow */
 	if (sign) {
@@ -689,10 +646,8 @@ void sc_val_from_long(long value, void *buffer)
 
 void sc_val_from_ulong(unsigned long value, void *buffer)
 {
-	unsigned char *pos;
-
 	if (buffer == NULL) buffer = calc_buffer;
-	pos = (unsigned char*) buffer;
+	unsigned char *pos = (unsigned char*) buffer;
 
 	while (pos < (unsigned char *)buffer + calc_buffer_size) {
 		*pos++ = (unsigned char)_digit(value & 0xf);
@@ -702,10 +657,8 @@ void sc_val_from_ulong(unsigned long value, void *buffer)
 
 long sc_val_to_long(const void *val)
 {
-	int i;
 	long l = 0;
-
-	for (i = calc_buffer_size - 1; i >= 0; i--) {
+	for (int i = calc_buffer_size - 1; i >= 0; i--) {
 		l = (l << 4) + _val(((char *)val)[i]);
 	}
 	return l;
@@ -713,17 +666,15 @@ long sc_val_to_long(const void *val)
 
 void sc_min_from_bits(unsigned int num_bits, unsigned int sign, void *buffer)
 {
-	char *pos;
-	int i, bits;
-
 	if (buffer == NULL) buffer = calc_buffer;
 	CLEAR_BUFFER(buffer);
 
 	if (!sign) return;  /* unsigned means minimum is 0(zero) */
 
-	pos = (char*) buffer;
+	char *pos = (char*) buffer;
 
-	bits = num_bits - 1;
+	int bits = num_bits - 1;
+	int i;
 	for (i = 0; i < bits/4; i++)
 		*pos++ = SC_0;
 
@@ -797,12 +748,9 @@ ir_relation sc_comp(void const* const value1, void const* const value2)
 
 int sc_get_highest_set_bit(const void *value)
 {
-	const char *val = (const char*)value;
-	int high, counter;
-
-	high = calc_buffer_size * 4 - 1;
-
-	for (counter = calc_buffer_size-1; counter >= 0; counter--) {
+	const char *val  = (const char*)value;
+	int         high = calc_buffer_size * 4 - 1;
+	for (int counter = calc_buffer_size-1; counter >= 0; counter--) {
 		if (val[counter] == SC_0)
 			high -= 4;
 		else {
@@ -818,10 +766,8 @@ int sc_get_highest_set_bit(const void *value)
 int sc_get_lowest_set_bit(const void *value)
 {
 	const char *val = (const char*)value;
-	int low, counter;
-
-	low = 0;
-	for (counter = 0; counter < calc_buffer_size; counter++) {
+	int         low = 0;
+	for (int counter = 0; counter < calc_buffer_size; counter++) {
 		switch (val[counter]) {
 		case SC_1:
 		case SC_3:
@@ -851,15 +797,15 @@ int sc_get_lowest_set_bit(const void *value)
 
 int sc_get_bit_at(const void *value, unsigned pos)
 {
-	const char *val = (const char*) value;
-	unsigned nibble = pos >> 2;
+	const char *val    = (const char*) value;
+	unsigned    nibble = pos >> 2;
 
 	return (val[nibble] & SHIFT(pos & 3)) != SC_0;
 }
 
 void sc_set_bit_at(void *value, unsigned pos)
 {
-	char *val = (char*) value;
+	char    *val    = (char*) value;
 	unsigned nibble = pos >> 2;
 
 	val[nibble] |= SHIFT(pos & 3);
@@ -868,9 +814,7 @@ void sc_set_bit_at(void *value, unsigned pos)
 int sc_is_zero(const void *value)
 {
 	const char* val = (const char *)value;
-	int counter;
-
-	for (counter = 0; counter < calc_buffer_size; ++counter) {
+	for (int counter = 0; counter < calc_buffer_size; ++counter) {
 		if (val[counter] != SC_0)
 			return 0;
 	}
@@ -889,15 +833,13 @@ int sc_had_carry(void)
 
 unsigned char sc_sub_bits(const void *value, int len, unsigned byte_ofs)
 {
-	const char *val = (const char *)value;
-	int nibble_ofs  = 2 * byte_ofs;
-	unsigned char res;
-
 	/* the current scheme uses one byte to store a nibble */
+	int nibble_ofs = 2 * byte_ofs;
 	if (4 * nibble_ofs >= len)
 		return 0;
 
-	res = _val(val[nibble_ofs]);
+	const char   *val = (const char *)value;
+	unsigned char res = _val(val[nibble_ofs]);
 	if (len > 4 * (nibble_ofs + 1))
 		res |= _val(val[nibble_ofs + 1]) << 4;
 
@@ -917,31 +859,24 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 	static const char big_digits[]   = "0123456789ABCDEF";
 	static const char small_digits[] = "0123456789abcdef";
 
-	char *base_val, *div1_res, *div2_res, *rem_res;
-	int counter, nibbles, i, sign, mask;
-	char x;
-
-	const char *val = (const char *)value;
-	const char *p;
-	char *m, *n, *t;
-	char *pos;
+	const char *val    = (const char *)value;
 	const char *digits = small_digits;
 
-	base_val = (char*) alloca(calc_buffer_size);
-	div1_res = (char*) alloca(calc_buffer_size);
-	div2_res = (char*) alloca(calc_buffer_size);
-	rem_res  = (char*) alloca(calc_buffer_size);
+	char *base_val = (char*) alloca(calc_buffer_size);
+	char *div1_res = (char*) alloca(calc_buffer_size);
+	char *div2_res = (char*) alloca(calc_buffer_size);
+	char *rem_res  = (char*) alloca(calc_buffer_size);
 
-	pos = output_buffer + bit_pattern_size;
+	char *pos = output_buffer + bit_pattern_size;
 	*(--pos) = '\0';
 
 	/* special case */
 	if (bits == 0) {
 		bits = bit_pattern_size;
 	}
-	nibbles = bits >> 2;
+	int nibbles = bits >> 2;
+	int counter;
 	switch (base) {
-
 	case SC_HEX:
 		digits = big_digits;
 	case SC_hex:
@@ -951,8 +886,8 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 
 		/* last nibble must be masked */
 		if (bits & 3) {
-			mask = zex_digit[(bits & 3) - 1];
-			x    = val[counter++] & mask;
+			int  mask = zex_digit[(bits & 3) - 1];
+			char x    = val[counter++] & mask;
 			*(--pos) = digits[_val(x)];
 		}
 
@@ -966,7 +901,7 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 	case SC_BIN:
 		for (counter = 0; counter < nibbles; ++counter) {
 			pos -= 4;
-			p = binary_table[_val(val[counter])];
+			const char *p = binary_table[_val(val[counter])];
 			pos[0] = p[0];
 			pos[1] = p[1];
 			pos[2] = p[2];
@@ -975,11 +910,11 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 
 		/* last nibble must be masked */
 		if (bits & 3) {
-			mask = zex_digit[(bits & 3) - 1];
-			x    = val[counter++] & mask;
+			int  mask = zex_digit[(bits & 3) - 1];
+			char x    = val[counter++] & mask;
 
 			pos -= 4;
-			p = binary_table[_val(x)];
+			const char *p = binary_table[_val(x)];
 			pos[0] = p[0];
 			pos[1] = p[1];
 			pos[2] = p[2];
@@ -997,8 +932,8 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 		memset(base_val, SC_0, calc_buffer_size);
 		base_val[0] = base == SC_DEC ? SC_A : SC_8;
 
-		p    = val;
-		sign = 0;
+		const char *p    = val;
+		int         sign = 0;
 		if (signed_mode && base == SC_DEC) {
 			/* check for negative values */
 			if (do_bit(val, bits - 1)) {
@@ -1015,22 +950,22 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 
 		/* last nibble must be masked */
 		if (bits & 3) {
-			mask = zex_digit[(bits & 3) - 1];
+			int mask = zex_digit[(bits & 3) - 1];
 			div1_res[counter] = p[counter] & mask;
 			++counter;
 		}
 
-		m = div1_res;
-		n = div2_res;
+		char *m = div1_res;
+		char *n = div2_res;
 		for (;;) {
 			do_divmod(m, base_val, n, rem_res);
-			t = m;
+			char *t = m;
 			m = n;
 			n = t;
 			*(--pos) = digits[_val(rem_res[0])];
 
-			x = 0;
-			for (i = 0; i < calc_buffer_size; ++i)
+			char x = 0;
+			for (int i = 0; i < calc_buffer_size; ++i)
 				x |= _val(m[i]);
 
 			if (x == 0)
