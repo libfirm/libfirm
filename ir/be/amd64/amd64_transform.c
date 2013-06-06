@@ -42,11 +42,6 @@ static inline int mode_needs_gp_reg(ir_mode *mode)
 
 /* Op transformers: */
 
-/**
- * Transforms a Const node.
- *
- * @return The transformed AMD64 node.
- */
 static ir_node *gen_Const(ir_node *node)
 {
 	ir_node  *block = be_transform_node(get_nodes_block(node));
@@ -61,11 +56,6 @@ static ir_node *gen_Const(ir_node *node)
 	return new_bd_amd64_Const(dbgi, block, imode, val, false, NULL);
 }
 
-/**
- * Transforms a SymConst node.
- *
- * @return The transformed ARM node.
- */
 static ir_node *gen_SymConst(ir_node *node)
 {
 	ir_node   *block  = be_transform_node(get_nodes_block(node));
@@ -286,11 +276,6 @@ static ir_node *gen_Cmp(ir_node *node)
 	                        is_unsigned);
 }
 
-/**
- * Transforms a Cond.
- *
- * @return the created ARM Cond node
- */
 static ir_node *gen_Cond(ir_node *node)
 {
 	ir_node    *const block     = be_transform_node(get_nodes_block(node));
@@ -315,11 +300,6 @@ static ir_node *gen_Phi(ir_node *node)
 	return be_transform_phi(node, req);
 }
 
-/**
- * Transforms a Conv node.
- *
- * @return The created ia32 Conv node
- */
 static ir_node *gen_Conv(ir_node *node)
 {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
@@ -371,11 +351,6 @@ static amd64_insn_mode_t get_insn_mode_from_mode(const ir_mode *mode)
 	panic("unexpected mode");
 }
 
-/**
- * Transforms a Store.
- *
- * @return the created AMD64 Store node
- */
 static ir_node *gen_Store(ir_node *node)
 {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
@@ -400,11 +375,6 @@ static ir_node *gen_Store(ir_node *node)
 	return new_store;
 }
 
-/**
- * Transforms a Load.
- *
- * @return the created AMD64 Load node
- */
 static ir_node *gen_Load(ir_node *node)
 {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
@@ -432,9 +402,6 @@ static ir_node *gen_Load(ir_node *node)
 	return new_load;
 }
 
-/**
- * Transform a Proj from a Load.
- */
 static ir_node *gen_Proj_Load(ir_node *node)
 {
 	ir_node  *load     = get_Proj_pred(node);
@@ -492,9 +459,6 @@ static ir_node *gen_Proj_be_Call(ir_node *node)
 	}
 }
 
-/**
- * Transforms a FrameAddr into an AMD64 Add.
- */
 static ir_node *gen_be_FrameAddr(ir_node *node)
 {
 	ir_node   *block  = be_transform_node(get_nodes_block(node));
