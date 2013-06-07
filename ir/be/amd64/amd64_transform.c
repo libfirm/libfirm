@@ -50,7 +50,6 @@ static ir_node *gen_Const(ir_node *node)
 	if (!mode_needs_gp_reg(mode))
 		panic("amd64: float constant not supported yet");
 	ir_tarval *tv = get_Const_tarval(node);
-	assert(tarval_is_uint64(tv));
 	uint64_t val = get_tarval_uint64(tv);
 	amd64_insn_mode_t imode = val > UINT32_MAX ? INSN_MODE_64 : INSN_MODE_32;
 	return new_bd_amd64_Const(dbgi, block, imode, val, false, NULL);
