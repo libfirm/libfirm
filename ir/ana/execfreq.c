@@ -69,7 +69,7 @@ double get_block_execfreq(const ir_node *block)
 
 void set_block_execfreq(ir_node *block, double newfreq)
 {
-	assert(newfreq >= 0);
+	assert(!isinf(newfreq) && newfreq >= 0);
 	block->attr.block.execfreq = newfreq;
 }
 
@@ -362,12 +362,50 @@ void ir_estimate_execfreq(ir_graph *irg)
 	 */
 	double start_freq = x[start_idx];
 	double norm       = start_freq != 0.0 ? 1.0 / start_freq : 1.0;
+	bool   valid_freq = true;
 	for (int idx = size - 1; idx >= 0; --idx) {
 		ir_node *bb = (ir_node *) dfs_get_post_num_node(dfs, size - idx - 1);
 
 		/* take abs because it sometimes can be -0 in case of endless loops */
 		double freq = fabs(x[idx]) * norm;
+
+		/* Check for inf, nan and negative values. */
+		if (isinf(freq) || !(freq >= 0)) {
+			valid_freq = false;
+			break;
+		}
 		set_block_execfreq(bb, freq);
+	}
+
+	/* Fallback solution: Use loop weight. */
+	if (!valid_freq) {
+		valid_freq = true;
+
+		for (int idx = size - 1; idx >= 0; --idx) {
+			ir_node       *bb    = (ir_node *) dfs_get_post_num_node(dfs, size - idx - 1);
+			const ir_loop *loop  = get_irn_loop(bb);
+			const int      depth = get_loop_depth(loop);
+			double         freq  = 1.0;
+
+			for (int d = 0; d < depth; ++d) {
+				freq *= loop_weight;
+			}
+
+			/* Check for inf, nan and negative values. */
+			if (isinf(freq) || !(freq >= 0)) {
+				valid_freq = false;
+				break;
+			}
+			set_block_execfreq(bb, freq);
+		}
+	}
+
+	/* Fallback solution: All blocks have the same execution frequency. */
+	if (!valid_freq) {
+		for (int idx = size - 1; idx >= 0; --idx) {
+			ir_node *bb = (ir_node *) dfs_get_post_num_node(dfs, size - idx - 1);
+			set_block_execfreq(bb, 1.0);
+		}
 	}
 
 	ir_free_resources(irg, IR_RESOURCE_BLOCK_VISITED | IR_RESOURCE_IRN_VISITED);
