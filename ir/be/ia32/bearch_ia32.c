@@ -453,6 +453,9 @@ static void ia32_before_abi(ir_graph *irg)
 		}
 		instrument_initcall(irg, mcount);
 	}
+	if (be_options.pic) {
+		ia32_adjust_pic(irg);
+	}
 }
 
 /**
@@ -1139,24 +1142,6 @@ static void ia32_emit(ir_graph *irg)
 	} else {
 		ia32_gen_routine(irg);
 	}
-}
-
-/**
- * Returns the node representing the PIC base.
- */
-static ir_node *ia32_get_pic_base(ir_graph *irg)
-{
-	ia32_irg_data_t *irg_data = ia32_get_irg_data(irg);
-	ir_node         *block;
-	ir_node         *get_eip = irg_data->get_eip;
-	if (get_eip != NULL)
-		return get_eip;
-
-	block             = get_irg_start_block(irg);
-	get_eip           = new_bd_ia32_GetEIP(NULL, block);
-	irg_data->get_eip = get_eip;
-
-	return get_eip;
 }
 
 /**
@@ -1944,7 +1929,6 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_init_graph,
 	ia32_get_call_abi,
 	ia32_mark_remat,
-	ia32_get_pic_base,   /* return node used as base in pic code addresses */
 	be_new_spill,
 	be_new_reload,
 	ia32_register_saved_by,

@@ -432,11 +432,6 @@ struct arch_isa_if_t {
 	void (*mark_remat)(ir_node *node);
 
 	/**
-	 * return node used as base in pic code addresses
-	 */
-	ir_node* (*get_pic_base)(ir_graph *irg);
-
-	/**
 	 * Create a spill instruction. We assume that spill instructions
 	 * do not need any additional registers and do not affect cpu-flags in any
 	 * way.

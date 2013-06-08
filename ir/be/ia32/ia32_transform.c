@@ -162,6 +162,21 @@ static bool is_simple_sse_Const(ir_node *node)
 	return false;
 }
 
+ir_node *ia32_get_pic_base(ir_graph *irg)
+{
+	ia32_irg_data_t *irg_data = ia32_get_irg_data(irg);
+	ir_node         *block;
+	ir_node         *get_eip = irg_data->get_eip;
+	if (get_eip != NULL)
+		return get_eip;
+
+	block             = get_irg_start_block(irg);
+	get_eip           = new_bd_ia32_GetEIP(NULL, block);
+	irg_data->get_eip = get_eip;
+
+	return get_eip;
+}
+
 /**
  * return NoREG or pic_base in case of PIC.
  * This is necessary as base address for newly created symbols
@@ -171,8 +186,7 @@ static ir_node *get_symconst_base(void)
 	ir_graph *irg = current_ir_graph;
 
 	if (be_options.pic) {
-		const arch_env_t *arch_env = be_get_irg_arch_env(irg);
-		return arch_env->impl->get_pic_base(irg);
+		return ia32_get_pic_base(irg);
 	}
 
 	return noreg_GP;

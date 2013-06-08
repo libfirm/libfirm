@@ -136,4 +136,12 @@ ir_entity *ia32_get_return_address_entity(ir_graph *irg);
  */
 ir_entity *ia32_get_frame_address_entity(ir_graph *irg);
 
+/**
+ * creates global offset table (GOT) for position independent code (PIC) and
+ * adjusts address calculations for it.
+ */
+void ia32_adjust_pic(ir_graph *irg);
+
+ir_node *ia32_get_pic_base(ir_graph *irg);
+
 #endif

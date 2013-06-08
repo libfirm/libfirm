@@ -518,7 +518,6 @@ const arch_isa_if_t arm_isa_if = {
 	NULL,
 	NULL,  /* get call abi */
 	NULL,  /* mark remat */
-	NULL,  /* get_pic_base */
 	be_new_spill,
 	be_new_reload,
 	NULL,  /* register_saved_by */

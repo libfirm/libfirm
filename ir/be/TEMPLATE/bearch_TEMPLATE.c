@@ -327,7 +327,6 @@ const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_init_graph,
 	TEMPLATE_get_call_abi,
 	NULL, /* mark remat */
-	NULL, /* get_pic_base */
 	be_new_spill,
 	be_new_reload,
 	TEMPLATE_register_saved_by,

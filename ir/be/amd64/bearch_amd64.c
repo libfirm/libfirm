@@ -448,7 +448,6 @@ const arch_isa_if_t amd64_isa_if = {
 	NULL,
 	amd64_get_call_abi,
 	NULL,              /* mark remat */
-	NULL,              /* get_pic_base */
 	be_new_spill,
 	be_new_reload,
 	amd64_register_saved_by,

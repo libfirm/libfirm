@@ -638,7 +638,6 @@ const arch_isa_if_t sparc_isa_if = {
 	NULL,
 	NULL,                /* get call abi */
 	NULL,                /* mark remat */
-	NULL,                /* get_pic_base */
 	sparc_new_spill,
 	sparc_new_reload,
 	NULL,                /* register_saved_by */
