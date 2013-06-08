@@ -109,6 +109,8 @@ typedef struct backend_params {
 	 * is efficient
 	 */
 	unsigned non_modulo_shift_efficient:1;
+	/** 1 if backend supports generation of position independent code (PIC) */
+	unsigned pic_supported:1;
 
 	/** Settings for architecture dependent optimizations. */
 	const ir_settings_arch_dep_t *dep_param;

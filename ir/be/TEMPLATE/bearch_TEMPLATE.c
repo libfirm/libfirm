@@ -249,6 +249,7 @@ static const backend_params *TEMPLATE_get_backend_params(void)
 		0,     /* 0: little-endian, 1: big-endian */
 		1,     /* modulo shift efficient */
 		0,     /* non-modulo shift efficient */
+		0,     /* PIC code supported */
 		NULL,  /* architecture dependent settings, will be set later */
 		TEMPLATE_is_mux_allowed,  /* parameter for if conversion */
 		32,    /* machine size - a 32bit CPU */

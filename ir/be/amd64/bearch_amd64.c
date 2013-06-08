@@ -387,6 +387,7 @@ static const backend_params *amd64_get_backend_params(void) {
 		0,     /* little endian */
 		1,     /* modulo shift is efficient */
 		0,     /* non-modulo shift is not efficient */
+		0,     /* PIC code not supported */
 		NULL,  /* will be set later */
 		amd64_is_mux_allowed,  /* parameter for if conversion */
 		64,    /* machine size */

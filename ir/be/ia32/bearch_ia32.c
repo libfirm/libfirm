@@ -1465,6 +1465,7 @@ static backend_params ia32_backend_params = {
 	0,     /* little endian */
 	1,     /* modulo shift efficient */
 	0,     /* non-modulo shift not efficient */
+	1,     /* PIC code supported */
 	&ia32_arch_dep, /* will be set later */
 	ia32_is_mux_allowed,
 	32,    /* machine_size */
