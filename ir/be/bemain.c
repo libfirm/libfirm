@@ -160,13 +160,10 @@ static void finish_isa(void)
 
 asm_constraint_flags_t be_parse_asm_constraints(const char *constraint)
 {
-	asm_constraint_flags_t  flags = ASM_CONSTRAINT_FLAG_NONE;
-	const char             *c;
-	asm_constraint_flags_t  tflags;
-
 	initialize_isa();
 
-	for (c = constraint; *c != '\0'; ++c) {
+	asm_constraint_flags_t flags = ASM_CONSTRAINT_FLAG_NONE;
+	for (const char *c = constraint; *c != '\0'; ++c) {
 		switch (*c) {
 		case ' ':
 		case '\t':
@@ -195,14 +192,15 @@ asm_constraint_flags_t be_parse_asm_constraints(const char *constraint)
 			/* next character is a comment */
 			++c;
 			break;
-		default:
-			tflags = asm_constraint_flags[(int) *c];
+		default: {
+			asm_constraint_flags_t tflags = asm_constraint_flags[(int) *c];
 			if (tflags != 0) {
 				flags |= tflags;
 			} else {
 				flags |= ASM_CONSTRAINT_FLAG_INVALID;
 			}
 			break;
+		}
 		}
 	}
 
@@ -251,14 +249,12 @@ void be_register_isa_if(const char *name, const arch_isa_if_t *isa)
 
 static void be_opt_register(void)
 {
-	lc_opt_entry_t *be_grp;
-	static int run_once = 0;
-
+	static bool run_once = false;
 	if (run_once)
 		return;
-	run_once = 1;
+	run_once = true;
 
-	be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_add_table(be_grp, be_main_options);
 
 	be_add_module_list_opt(be_grp, "isa", "the instruction set architecture",
@@ -345,7 +341,8 @@ ir_type *be_get_type_long_double(void)
  * @param env          an empty environment
  * @param file_handle  the file handle where the output will be written to
  */
-static be_main_env_t *be_init_env(be_main_env_t *const env, char const *const compilation_unit_name)
+static be_main_env_t *be_init_env(be_main_env_t *const env,
+                                  char const *const compilation_unit_name)
 {
 	memset(env, 0, sizeof(*env));
 	env->ent_trampoline_map   = pmap_create();
@@ -464,14 +461,12 @@ ir_timer_t *be_timers[T_LAST+1];
 
 void be_lower_for_target(void)
 {
-	size_t i;
-
 	initialize_isa();
 
 	isa_if->lower_for_target();
 	/* set the phase to low */
-	for (i = get_irp_n_irgs(); i > 0;) {
-		ir_graph *irg = get_irp_irg(--i);
+	for (size_t i = get_irp_n_irgs(); i-- > 0;) {
+		ir_graph *irg = get_irp_irg(i);
 		assert(!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_TARGET_LOWERED));
 		add_irg_constraints(irg, IR_GRAPH_CONSTRAINT_TARGET_LOWERED);
 	}
@@ -487,16 +482,6 @@ void be_lower_for_target(void)
  */
 static void be_main_loop(FILE *file_handle, const char *cup_name)
 {
-	static const char suffix[] = ".prof";
-
-	size_t        i;
-	size_t        num_irgs;
-	size_t        num_birgs;
-	be_main_env_t env;
-	char          prof_filename[256];
-	be_irg_t      *birgs;
-	arch_env_t    *arch_env;
-
 	be_timing = (be_options.timing == BE_TIME_ON);
 
 	/* perform target lowering if it didn't happen yet */
@@ -504,39 +489,41 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_lower_for_target();
 
 	if (be_timing) {
-		for (i = 0; i < T_LAST+1; ++i) {
+		for (size_t i = 0; i < T_LAST+1; ++i) {
 			be_timers[i] = ir_timer_new();
 		}
 	}
 
+	be_main_env_t env;
 	be_init_env(&env, cup_name);
 
 	be_emit_init(file_handle);
 	be_gas_begin_compilation_unit(&env);
 
-	arch_env = env.arch_env;
-
 	/* we might need 1 birg more for instrumentation constructor */
-	num_irgs = get_irp_n_irgs();
-	birgs    = ALLOCAN(be_irg_t, num_irgs + 1);
+	size_t    num_irgs = get_irp_n_irgs();
+	be_irg_t *birgs    = ALLOCAN(be_irg_t, num_irgs + 1);
 
 	be_info_init();
 
 	/* First: initialize all birgs */
-	num_birgs = 0;
-	for (i = 0; i < num_irgs; ++i) {
+	size_t num_birgs = 0;
+	for (size_t i = 0; i < num_irgs; ++i) {
 		ir_graph  *irg    = get_irp_irg(i);
 		ir_entity *entity = get_irg_entity(irg);
 		if (get_entity_linkage(entity) & IR_LINKAGE_NO_CODEGEN)
 			continue;
 		initialize_birg(&birgs[num_birgs++], irg, &env);
 	}
+	arch_env_t *arch_env = env.arch_env;
 	arch_env_handle_intrinsics(arch_env);
 
 	/*
 		Get the filename for the profiling data.
 		Beware: '\0' is already included in sizeof(suffix)
 	*/
+	static const char suffix[] = ".prof";
+	char prof_filename[256];
 	sprintf(prof_filename, "%.*s%s",
 	        (int)(sizeof(prof_filename) - sizeof(suffix)), cup_name, suffix);
 
@@ -567,7 +554,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	}
 	if (!have_profile) {
 		be_timer_push(T_EXECFREQ);
-		for (i = 0; i < num_irgs; ++i) {
+		for (size_t i = 0; i < num_irgs; ++i) {
 			ir_graph *irg = get_irp_irg(i);
 			ir_estimate_execfreq(irg);
 		}
@@ -575,7 +562,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	}
 
 	/* For all graphs */
-	for (i = 0; i < num_irgs; ++i) {
+	for (size_t i = 0; i < num_irgs; ++i) {
 		ir_graph  *const irg    = get_irp_irg(i);
 		ir_entity *const entity = get_irg_entity(irg);
 		if (get_entity_linkage(entity) & IR_LINKAGE_NO_CODEGEN)
@@ -729,9 +716,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_timer_pop(T_OTHER);
 
 		if (be_timing) {
-			be_timer_id_t t;
 			if (stat_ev_enabled) {
-				for (t = T_FIRST; t < T_LAST+1; ++t) {
+				for (be_timer_id_t t = T_FIRST; t < T_LAST+1; ++t) {
 					char buf[128];
 					snprintf(buf, sizeof(buf), "bemain_time_%s",
 					         get_timer_name(t));
@@ -740,12 +726,12 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 			} else {
 				printf("==>> IRG %s <<==\n",
 				       get_entity_name(get_irg_entity(irg)));
-				for (t = T_FIRST; t < T_LAST+1; ++t) {
+				for (be_timer_id_t t = T_FIRST; t < T_LAST+1; ++t) {
 					double val = ir_timer_elapsed_usec(be_timers[t]) / 1000.0;
 					printf("%-20s: %10.3f msec\n", get_timer_name(t), val);
 				}
 			}
-			for (t = T_FIRST; t < T_LAST+1; ++t) {
+			for (be_timer_id_t t = T_FIRST; t < T_LAST+1; ++t) {
 				ir_timer_reset(be_timers[t]);
 			}
 		}
