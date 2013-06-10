@@ -329,30 +329,22 @@ static ir_node *gen_SymConst(ir_node *node)
 	ir_node  *block     = be_transform_node(old_block);
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_mode  *mode      = get_irn_mode(node);
-	ir_node  *cnst;
 
-	if (mode_is_float(mode)) {
-		if (ia32_cg_config.use_sse2)
-			cnst = new_bd_ia32_xLoad(dbgi, block, noreg_GP, noreg_GP, nomem, mode_D);
-		else
-			cnst = new_bd_ia32_fld(dbgi, block, noreg_GP, noreg_GP, nomem, ia32_mode_E);
-		set_ia32_am_sc(cnst, get_SymConst_entity(node));
-		set_ia32_use_frame(cnst);
+	if (get_SymConst_kind(node) != symconst_addr_ent)
+		panic("backend only support symconst_addr_ent (at %+F)", node);
+	if (!ia32_mode_needs_gp_reg(mode))
+		panic("unexpected mode for SymConst");
+
+	ir_entity *entity = get_SymConst_entity(node);
+	ir_node   *cnst;
+	if (get_entity_owner(entity) == get_tls_type()) {
+		ir_node *tls_base = new_bd_ia32_LdTls(NULL, block);
+		ir_node *lea      = new_bd_ia32_Lea(dbgi, block, tls_base, noreg_GP);
+		set_ia32_am_sc(lea, entity);
+		cnst = lea;
 	} else {
-		if (get_SymConst_kind(node) != symconst_addr_ent) {
-			panic("backend only support symconst_addr_ent (at %+F)", node);
-		}
-		ir_entity *entity = get_SymConst_entity(node);
-		if (get_entity_owner(entity) == get_tls_type()) {
-			ir_node *tls_base = new_bd_ia32_LdTls(NULL, block);
-			ir_node *lea      = new_bd_ia32_Lea(dbgi, block, tls_base, noreg_GP);
-			set_ia32_am_sc(lea, entity);
-			cnst = lea;
-		} else {
-			cnst = new_bd_ia32_Const(dbgi, block, entity, 0, 0, 0);
-		}
+		cnst = new_bd_ia32_Const(dbgi, block, entity, 0, 0, 0);
 	}
-
 	SET_IA32_ORIG_NODE(cnst, node);
 	return cnst;
 }
