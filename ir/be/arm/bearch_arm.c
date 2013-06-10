@@ -375,7 +375,6 @@ static arm_isa_t arm_isa_template = {
 		2,                       /* power of two stack alignment for calls, 2^2 == 4 */
 		7,                       /* spill costs */
 		5,                       /* reload costs */
-		true,                    /* we do have custom abi handling */
 	},
 	ARM_FPU_ARCH_FPE,          /* FPU architecture */
 };
@@ -523,7 +522,6 @@ const arch_isa_if_t arm_isa_if = {
 	NULL,  /* register_saved_by */
 
 	arm_handle_intrinsics, /* handle_intrinsics */
-	NULL,  /* before_abi */
 	arm_prepare_graph,
 	arm_before_ra,
 	arm_finish_irg,

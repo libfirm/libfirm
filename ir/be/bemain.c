@@ -606,18 +606,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		if (arch_env->impl->init_graph)
 			arch_env->impl->init_graph(irg);
 
-		/* some transformations need to be done before abi introduce */
-		if (arch_env->impl->before_abi != NULL)
-			arch_env->impl->before_abi(irg);
-
-		/* implement the ABI conventions. */
-		if (!arch_env->custom_abi) {
-			be_timer_push(T_ABI);
-			be_abi_introduce(irg);
-			be_timer_pop(T_ABI);
-			dump(DUMP_ABI, irg, "abi");
-		}
-
 		/* We can't have Bad-blocks or critical edges in the backend.
 		 * Before removing Bads, we remove unreachable code. */
 		optimize_graph_df(irg);

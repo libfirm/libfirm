@@ -465,11 +465,6 @@ struct arch_isa_if_t {
 	void (*handle_intrinsics)(void);
 
 	/**
-	 * Called before abi introduce.
-	 */
-	void (*before_abi)(ir_graph *irg);
-
-	/**
 	 * Called, when the graph is being normalized.
 	 */
 	void (*prepare_graph)(ir_graph *irg);
@@ -516,9 +511,6 @@ struct arch_env_t {
 	int                    stack_alignment;  /**< power of 2 stack alignment */
 	int                    spill_cost;       /**< cost for a be_Spill node */
 	int                    reload_cost;      /**< cost for a be_Reload node */
-	bool                   custom_abi : 1;   /**< backend does all abi handling
-	                                              and does not need the generic
-	                                              stuff from beabi.h/.c */
 };
 
 static inline bool arch_irn_is_ignore(const ir_node *irn)

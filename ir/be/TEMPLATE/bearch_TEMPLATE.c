@@ -121,7 +121,6 @@ static TEMPLATE_isa_t TEMPLATE_isa_template = {
 		2,                           /* power of two stack alignment for calls, 2^2 == 4 */
 		7,                           /* costs for a spill instruction */
 		5,                           /* costs for a reload instruction */
-		true,                        /* custom abi handling */
 	},
 };
 
@@ -332,7 +331,6 @@ const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_register_saved_by,
 
 	NULL, /* handle intrinsics */
-	NULL, /* before_abi */
 	TEMPLATE_prepare_graph,
 	TEMPLATE_before_ra,
 	TEMPLATE_finish_irg,

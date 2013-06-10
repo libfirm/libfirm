@@ -1479,6 +1479,8 @@ static void fix_call_state_inputs(ir_graph *const irg, be_abi_irg_t *const env)
 
 void be_abi_introduce(ir_graph *irg)
 {
+	be_timer_push(T_ABI);
+
 	ir_node          *const old_frame   = get_irg_frame(irg);
 	const arch_env_t *const arch_env    = be_get_irg_arch_env(irg);
 	ir_entity        *const entity      = get_irg_entity(irg);
@@ -1531,6 +1533,8 @@ void be_abi_introduce(ir_graph *irg)
 	exchange(old_frame, get_irg_frame(irg));
 
 	pmap_destroy(env.regs);
+
+	be_timer_pop(T_ABI);
 }
 
 unsigned be_get_n_allocatable_regs(const ir_graph *irg,

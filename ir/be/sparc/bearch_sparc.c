@@ -66,7 +66,6 @@ static sparc_isa_t sparc_isa_template = {
 		                                        for calls */
 		7,                                   /* costs for a spill instruction */
 		5,                                   /* costs for a reload instruction */
-		true,                                /* custom abi handling */
 	},
 	NULL,                                  /* constants */
 };
@@ -643,7 +642,6 @@ const arch_isa_if_t sparc_isa_if = {
 	NULL,                /* register_saved_by */
 
 	sparc_handle_intrinsics,
-	NULL,                /* before_abi */
 	sparc_prepare_graph,
 	sparc_before_ra,
 	sparc_finish_graph,

@@ -439,25 +439,6 @@ static const arch_irn_ops_t ia32_irn_ops = {
 
 static int gprof = 0;
 
-static void ia32_before_abi(ir_graph *irg)
-{
-	if (gprof) {
-		static ir_entity *mcount = NULL;
-		if (mcount == NULL) {
-			ir_type *tp = new_type_method(0, 0);
-			ident   *id = new_id_from_str("mcount");
-			mcount = new_entity(get_glob_type(), id, tp);
-			/* FIXME: enter the right ld_ident here */
-			set_entity_ld_ident(mcount, get_entity_ident(mcount));
-			set_entity_visibility(mcount, ir_visibility_external);
-		}
-		instrument_initcall(irg, mcount);
-	}
-	if (be_options.pic) {
-		ia32_adjust_pic(irg);
-	}
-}
-
 /**
  * Transforms the standard firm graph into
  * an ia32 firm graph
@@ -1153,13 +1134,30 @@ static void ia32_init_graph(ir_graph *irg)
 	ia32_irg_data_t *irg_data = OALLOCZ(obst, ia32_irg_data_t);
 
 	irg_data->dump = (be_options.dump_flags & DUMP_BE) ? 1 : 0;
+	be_birg_from_irg(irg)->isa_link = irg_data;
 
 	if (gprof) {
 		/* Linux gprof implementation needs base pointer */
 		be_options.omit_fp = 0;
+
+		static ir_entity *mcount = NULL;
+		if (mcount == NULL) {
+			ir_type *tp = new_type_method(0, 0);
+			ident   *id = new_id_from_str("mcount");
+			mcount = new_entity(get_glob_type(), id, tp);
+			/* FIXME: enter the right ld_ident here */
+			set_entity_ld_ident(mcount, get_entity_ident(mcount));
+			set_entity_visibility(mcount, ir_visibility_external);
+		}
+		instrument_initcall(irg, mcount);
+	}
+	if (be_options.pic) {
+		ia32_adjust_pic(irg);
 	}
 
-	be_birg_from_irg(irg)->isa_link = irg_data;
+	be_abi_introduce(irg);
+	if (irg_data->dump)
+		dump_ir_graph(irg, "abi");
 }
 
 static const tarval_mode_info mo_integer = {
@@ -1536,7 +1534,6 @@ static ia32_isa_t ia32_isa_template = {
 		2,                        /* power of two stack alignment, 2^2 == 4 */
 		7,                        /* costs for a spill instruction */
 		5,                        /* costs for a reload instruction */
-		false,                    /* no custom abi handling */
 	},
 	NULL,                       /* tv_ents */
 	IA32_FPU_ARCH_X87,          /* FPU architecture */
@@ -1934,7 +1931,6 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_register_saved_by,
 
 	ia32_handle_intrinsics,
-	ia32_before_abi,     /* before abi introduce hook */
 	ia32_prepare_graph,
 	ia32_before_ra,      /* before register allocation hook */
 	ia32_finish_graph,   /* called before codegen */

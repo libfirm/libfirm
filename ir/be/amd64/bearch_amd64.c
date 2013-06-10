@@ -223,7 +223,6 @@ static amd64_isa_t amd64_isa_template = {
 		3,                         /* power of two stack alignment for calls, 2^2 == 4 */
 		7,                         /* costs for a spill instruction */
 		5,                         /* costs for a reload instruction */
-		false,                     /* no custom abi handling */
 	},
 };
 
@@ -252,6 +251,14 @@ static arch_env_t *amd64_begin_codegeneration(void)
 static void amd64_end_codegeneration(void *self)
 {
 	free(self);
+}
+
+static void amd64_init_graph(ir_graph *irg)
+{
+	be_abi_introduce(irg);
+	if (be_options.dump_flags & DUMP_BE) {
+		dump_ir_graph(irg, "abi");
+	}
 }
 
 /**
@@ -445,7 +452,7 @@ const arch_isa_if_t amd64_isa_if = {
 
 	amd64_begin_codegeneration,
 	amd64_end_codegeneration,
-	NULL,
+	amd64_init_graph,
 	amd64_get_call_abi,
 	NULL,              /* mark remat */
 	be_new_spill,
@@ -453,7 +460,6 @@ const arch_isa_if_t amd64_isa_if = {
 	amd64_register_saved_by,
 
 	NULL,              /* handle intrinsics */
-	NULL,              /* before_abi */
 	amd64_prepare_graph,
 	amd64_before_ra,
 	amd64_finish_graph,
