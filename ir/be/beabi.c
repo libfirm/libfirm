@@ -1481,6 +1481,8 @@ void be_abi_introduce(ir_graph *irg)
 {
 	be_timer_push(T_ABI);
 
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
+
 	ir_node          *const old_frame   = get_irg_frame(irg);
 	const arch_env_t *const arch_env    = be_get_irg_arch_env(irg);
 	ir_entity        *const entity      = get_irg_entity(irg);
@@ -1509,8 +1511,6 @@ void be_abi_introduce(ir_graph *irg)
 	env.init_sp = dummy;
 	env.calls   = NEW_ARR_F(ir_node*, 0);
 
-	assure_edges(irg);
-
 	/* Lower all call nodes in the IRG. */
 	process_calls(irg, &env);
 
@@ -1533,6 +1533,10 @@ void be_abi_introduce(ir_graph *irg)
 	exchange(old_frame, get_irg_frame(irg));
 
 	pmap_destroy(env.regs);
+
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTY_NO_BADS
+		| IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
+		| IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE);
 
 	be_timer_pop(T_ABI);
 }

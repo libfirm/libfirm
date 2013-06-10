@@ -395,34 +395,19 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 
 	dump(DUMP_INITIAL, irg, "begin");
 
-	irg->be_data = birg;
+	assure_irg_properties(irg,
+		IR_GRAPH_PROPERTY_NO_BADS
+		| IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
+		| IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
+		| IR_GRAPH_PROPERTY_MANY_RETURNS);
 
 	memset(birg, 0, sizeof(*birg));
 	birg->main_env = env;
 	obstack_init(&birg->obst);
-	birg->lv = be_liveness_new(irg);
-
-	edges_deactivate(irg);
-	edges_activate(irg);
-
-	/* set the current graph (this is important for several firm functions) */
-	current_ir_graph = irg;
-
-	/* we do this before critical edge split. As this produces less returns,
-	   because sometimes (= 164.gzip) multiple returns are slower */
-	normalize_n_returns(irg);
-
-	/* Remove critical edges */
-	remove_critical_cf_edges_ex(irg, /*ignore_exception_edges=*/0);
-
-	/* For code generation all unreachable code and Bad nodes should be gone */
-	remove_unreachable_code(irg);
-	remove_bads(irg);
-
-	/* Ensure, that the ir_edges are computed. */
-	assure_edges(irg);
+	irg->be_data = birg;
 
 	be_info_init_irg(irg);
+	birg->lv = be_liveness_new(irg);
 
 	dump(DUMP_INITIAL, irg, "prepared");
 }
@@ -568,9 +553,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		if (get_entity_linkage(entity) & IR_LINKAGE_NO_CODEGEN)
 			continue;
 
-		/* set the current graph (this is important for several firm functions) */
-		current_ir_graph = irg;
-
 		if (stat_ev_enabled) {
 			stat_ev_ctx_push_fmt("bemain_irg", "%+F", irg);
 			stat_ev_ull("bemain_insns_start", be_count_insns(irg));
@@ -592,18 +574,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		/* get a code generator for this graph. */
 		if (arch_env->impl->init_graph)
 			arch_env->impl->init_graph(irg);
-
-		/* We can't have Bad-blocks or critical edges in the backend.
-		 * Before removing Bads, we remove unreachable code. */
-		optimize_graph_df(irg);
-		remove_critical_cf_edges(irg);
-		remove_bads(irg);
-
-		/* We often have dead code reachable through out-edges here. So for
-		 * now we rebuild edges (as we need correct user count for code
-		 * selection) */
-		edges_deactivate(irg);
-		edges_activate(irg);
 
 		dump(DUMP_PREPARED, irg, "before-code-selection");
 

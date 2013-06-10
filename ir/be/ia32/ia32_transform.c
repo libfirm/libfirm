@@ -5502,6 +5502,8 @@ void ia32_transform_graph(ir_graph *irg)
 	initial_fpcw       = NULL;
 	ia32_no_pic_adjust = false;
 
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
+
 	old_initial_fpcw = be_get_initial_reg_value(irg, &ia32_registers[REG_FPCW]);
 
 	be_timer_push(T_HEIGHTS);
