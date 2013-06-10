@@ -670,6 +670,7 @@ uint64_t sc_val_to_uint64(const void *val)
 	for (int i = calc_buffer_size - 1; i >= 0; i--) {
 		res = (res << 4) + _val(((char*)val)[i]);
 	}
+	return res;
 }
 
 void sc_min_from_bits(unsigned int num_bits, unsigned int sign, void *buffer)
