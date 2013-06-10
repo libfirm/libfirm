@@ -481,18 +481,16 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 	be_main_env_t env;
 	be_init_env(&env, cup_name);
+	be_info_init();
 
 	be_emit_init(file_handle);
 	be_gas_begin_compilation_unit(&env);
 
-	/* we might need 1 birg more for instrumentation constructor */
-	size_t    num_irgs = get_irp_n_irgs();
-	be_irg_t *birgs    = ALLOCAN(be_irg_t, num_irgs + 1);
-
-	be_info_init();
-
 	/* First: initialize all birgs */
 	size_t num_birgs = 0;
+	size_t num_irgs  = get_irp_n_irgs();
+	/* we might need 1 birg more for instrumentation constructor */
+	be_irg_t *birgs = ALLOCAN(be_irg_t, num_irgs + 1);
 	for (size_t i = 0; i < num_irgs; ++i) {
 		ir_graph  *irg    = get_irp_irg(i);
 		ir_entity *entity = get_irg_entity(irg);
