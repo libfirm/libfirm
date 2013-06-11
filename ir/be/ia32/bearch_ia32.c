@@ -428,54 +428,6 @@ static const arch_irn_ops_t ia32_irn_ops = {
 
 static int gprof = 0;
 
-/**
- * Transforms the standard firm graph into
- * an ia32 firm graph
- */
-static void ia32_prepare_graph(ir_graph *irg)
-{
-	ia32_irg_data_t *irg_data = ia32_get_irg_data(irg);
-
-#ifdef FIRM_GRGEN_BE
-	switch (be_transformer) {
-	case TRANSFORMER_DEFAULT:
-		/* transform remaining nodes into assembler instructions */
-		ia32_transform_graph(irg);
-		break;
-
-	case TRANSFORMER_PBQP:
-	case TRANSFORMER_RAND:
-		/* transform nodes into assembler instructions by PBQP magic */
-		ia32_transform_graph_by_pbqp(irg);
-		break;
-
-	default:
-		panic("invalid transformer");
-	}
-#else
-	ia32_transform_graph(irg);
-#endif
-
-	/* do local optimizations (mainly CSE) */
-	optimize_graph_df(irg);
-	/* backend code expects that outedges are always enabled */
-	assure_edges(irg);
-
-	if (irg_data->dump)
-		dump_ir_graph(irg, "transformed");
-
-	/* optimize address mode */
-	ia32_optimize_graph(irg);
-
-	/* do code placement, to optimize the position of constants */
-	place_code(irg);
-	/* backend code expects that outedges are always enabled */
-	assure_edges(irg);
-
-	if (irg_data->dump)
-		dump_ir_graph(irg, "place");
-}
-
 ir_node *ia32_turn_back_am(ir_node *node)
 {
 	dbg_info *dbgi  = get_irn_dbg_info(node);
@@ -1115,9 +1067,9 @@ static void ia32_emit(ir_graph *irg)
 }
 
 /**
- * Initializes a IA32 code generator.
+ * Prepare a graph and perform code selection.
  */
-static void ia32_init_graph(ir_graph *irg)
+static void ia32_prepare_graph(ir_graph *irg)
 {
 	struct obstack  *obst     = be_get_be_obst(irg);
 	ia32_irg_data_t *irg_data = OALLOCZ(obst, ia32_irg_data_t);
@@ -1147,6 +1099,51 @@ static void ia32_init_graph(ir_graph *irg)
 	be_abi_introduce(irg);
 	if (irg_data->dump)
 		dump_ir_graph(irg, "abi");
+
+	be_timer_push(T_CODEGEN);
+#ifdef FIRM_GRGEN_BE
+	switch (be_transformer) {
+	case TRANSFORMER_DEFAULT:
+		/* transform remaining nodes into assembler instructions */
+		ia32_transform_graph(irg);
+		break;
+
+	case TRANSFORMER_PBQP:
+	case TRANSFORMER_RAND:
+		/* transform nodes into assembler instructions by PBQP magic */
+		ia32_transform_graph_by_pbqp(irg);
+		break;
+
+	default:
+		panic("invalid transformer");
+	}
+#else
+	ia32_transform_graph(irg);
+#endif
+	be_timer_pop(T_CODEGEN);
+
+	if (irg_data->dump)
+		dump_ir_graph(irg, "code-selection");
+
+	/* do local optimizations (mainly CSE) */
+	optimize_graph_df(irg);
+	/* backend code expects that outedges are always enabled */
+	assure_edges(irg);
+
+	/* optimize address mode */
+	ia32_optimize_graph(irg);
+
+	if (irg_data->dump)
+		dump_ir_graph(irg, "opt");
+
+	/* do code placement, to optimize the position of constants */
+	place_code(irg);
+
+	/* backend code expects that outedges are always enabled */
+	assure_edges(irg);
+
+	if (irg_data->dump)
+		dump_ir_graph(irg, "place");
 }
 
 static const tarval_mode_info mo_integer = {
@@ -1903,7 +1900,6 @@ const arch_isa_if_t ia32_isa_if = {
 
 	ia32_begin_codegeneration,
 	ia32_end_codegeneration,
-	ia32_init_graph,
 	ia32_get_call_abi,
 	ia32_mark_remat,
 	be_new_spill,

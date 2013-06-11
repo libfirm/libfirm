@@ -12,6 +12,7 @@
 #include "irgwalk.h"
 #include "irprog.h"
 #include "ircons.h"
+#include "irdump.h"
 #include "irgmod.h"
 #include "lower_calls.h"
 #include "lower_builtins.h"
@@ -79,7 +80,11 @@ static const arch_irn_ops_t TEMPLATE_irn_ops = {
 static void TEMPLATE_prepare_graph(ir_graph *irg)
 {
 	/* transform nodes into assembler instructions */
+	be_timer_push(T_CODEGEN);
 	TEMPLATE_transform_graph(irg);
+	be_timer_pop(T_CODEGEN);
+	if (be_options.dump_flags & DUMP_BE)
+		dump_ir_graph(irg, "code-selection");
 }
 
 
@@ -100,12 +105,6 @@ static void TEMPLATE_before_ra(ir_graph *irg)
 	(void) irg;
 	/* Some stuff you need to do after scheduling but before register allocation */
 }
-
-static void TEMPLATE_init_graph(ir_graph *irg)
-{
-	(void) irg;
-}
-
 
 
 extern const arch_isa_if_t TEMPLATE_isa_if;
@@ -323,7 +322,6 @@ const arch_isa_if_t TEMPLATE_isa_if = {
 
 	TEMPLATE_begin_codegeneration,
 	TEMPLATE_end_codegeneration,
-	TEMPLATE_init_graph,
 	TEMPLATE_get_call_abi,
 	NULL, /* mark remat */
 	be_new_spill,

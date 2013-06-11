@@ -79,7 +79,6 @@ static const arch_isa_if_t *isa_if = NULL;
 static const lc_opt_enum_mask_items_t dump_items[] = {
 	{ "none",       DUMP_NONE },
 	{ "initial",    DUMP_INITIAL },
-	{ "abi",        DUMP_ABI    },
 	{ "sched",      DUMP_SCHED  },
 	{ "prepared",   DUMP_PREPARED },
 	{ "regalloc",   DUMP_RA },
@@ -570,22 +569,9 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		}
 		be_timer_pop(T_VERIFY);
 
-		/* get a code generator for this graph. */
-		if (arch_env->impl->init_graph)
-			arch_env->impl->init_graph(irg);
-
-		dump(DUMP_PREPARED, irg, "before-code-selection");
-
-		/* perform codeselection */
-		be_timer_push(T_CODEGEN);
+		/* prepare and perform codeselection */
 		if (arch_env->impl->prepare_graph != NULL)
 			arch_env->impl->prepare_graph(irg);
-		be_timer_pop(T_CODEGEN);
-
-		dump(DUMP_PREPARED, irg, "code-selection");
-
-		/* disabled for now, fails for EmptyFor.c and XXEndless.c */
-		/* be_live_chk_compare(irg); */
 
 		/* schedule the irg */
 		be_timer_push(T_SCHED);

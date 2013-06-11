@@ -102,13 +102,16 @@ static const arch_irn_ops_t arm_irn_ops = {
 };
 
 /**
- * Transforms the standard Firm graph into
- * a ARM firm graph.
+ * Transforms the standard Firm graph into an ARM firm graph.
  */
 static void arm_prepare_graph(ir_graph *irg)
 {
 	/* transform nodes into assembler instructions */
+	be_timer_push(T_CODEGEN);
 	arm_transform_graph(irg);
+	be_timer_pop(T_CODEGEN);
+	if (be_options.dump_flags & DUMP_BE)
+		dump_ir_graph(irg, "code-selection");
 
 	/* do local optimizations (mainly CSE) */
 	local_optimize_graph(irg);
@@ -462,7 +465,6 @@ const arch_isa_if_t arm_isa_if = {
 
 	arm_begin_codegeneration,
 	arm_end_codegeneration,
-	NULL,
 	NULL,  /* get call abi */
 	NULL,  /* mark remat */
 	be_new_spill,

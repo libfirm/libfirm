@@ -98,20 +98,6 @@ static const arch_irn_ops_t amd64_irn_ops = {
 	NULL,    /* perform_memory_operand  */
 };
 
-
-
-/**
- * Transforms the standard firm graph into
- * a amd64 firm graph
- */
-static void amd64_prepare_graph(ir_graph *irg)
-{
-	amd64_transform_graph(irg);
-
-	if (be_options.dump_flags & DUMP_BE)
-		dump_ir_graph(irg, "transformed");
-}
-
 static void amd64_before_ra(ir_graph *irg)
 {
 	be_sched_fix_flags(irg, &amd64_reg_classes[CLASS_amd64_flags], NULL, NULL);
@@ -253,12 +239,22 @@ static void amd64_end_codegeneration(void *self)
 	free(self);
 }
 
-static void amd64_init_graph(ir_graph *irg)
+/**
+ * prepare graph and perform code selection.
+ */
+static void amd64_prepare_graph(ir_graph *irg)
 {
 	be_abi_introduce(irg);
 	if (be_options.dump_flags & DUMP_BE) {
 		dump_ir_graph(irg, "abi");
 	}
+
+	be_timer_push(T_CODEGEN);
+	amd64_transform_graph(irg);
+	be_timer_pop(T_CODEGEN);
+
+	if (be_options.dump_flags & DUMP_BE)
+		dump_ir_graph(irg, "code-selection");
 }
 
 /**
@@ -452,7 +448,6 @@ const arch_isa_if_t amd64_isa_if = {
 
 	amd64_begin_codegeneration,
 	amd64_end_codegeneration,
-	amd64_init_graph,
 	amd64_get_call_abi,
 	NULL,              /* mark remat */
 	be_new_spill,

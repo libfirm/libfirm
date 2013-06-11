@@ -414,12 +414,6 @@ struct arch_isa_if_t {
 	void (*end_codegeneration)(void *self);
 
 	/**
-	 * Initialize the code generator for a graph
-	 * @param irg  A graph
-	 */
-	void (*init_graph)(ir_graph *irg);
-
-	/**
 	 * Get the ABI restrictions for procedure calls.
 	 * @param call_type   The call type of the method (procedure) in question.
 	 * @param p           The array of parameter locations to be filled.
@@ -465,7 +459,8 @@ struct arch_isa_if_t {
 	void (*handle_intrinsics)(ir_graph *irg);
 
 	/**
-	 * Called, when the graph is being normalized.
+	 * Initialize a graph for codegeneration. Code selection is usually
+	 * performed in this step.
 	 */
 	void (*prepare_graph)(ir_graph *irg);
 

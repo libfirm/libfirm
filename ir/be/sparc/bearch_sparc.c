@@ -181,12 +181,15 @@ const arch_irn_ops_t sparc_irn_ops = {
 };
 
 /**
- * Transforms the standard firm graph into
- * a SPARC firm graph
+ * Transforms the standard firm graph into a SPARC firm graph
  */
 static void sparc_prepare_graph(ir_graph *irg)
 {
+	be_timer_push(T_CODEGEN);
 	sparc_transform_graph(irg);
+	be_timer_pop(T_CODEGEN);
+	if (be_options.dump_flags & DUMP_BE)
+		dump_ir_graph(irg, "code-selection");
 }
 
 static bool sparc_modifies_flags(const ir_node *node)
@@ -629,7 +632,6 @@ const arch_isa_if_t sparc_isa_if = {
 
 	sparc_begin_codegeneration,
 	sparc_end_codegeneration,
-	NULL,
 	NULL,                /* get call abi */
 	NULL,                /* mark remat */
 	sparc_new_spill,

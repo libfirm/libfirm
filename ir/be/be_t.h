@@ -22,7 +22,6 @@
 enum {
 	DUMP_NONE     = 0,
 	DUMP_INITIAL  = 1 << 0,
-	DUMP_ABI      = 1 << 1,
 	DUMP_SCHED    = 1 << 2,
 	DUMP_PREPARED = 1 << 3,
 	DUMP_RA       = 1 << 4,
