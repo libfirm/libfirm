@@ -482,6 +482,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	be_main_env_t env;
 	be_init_env(&env, cup_name);
 	be_info_init();
+	arch_env_t *arch_env = env.arch_env;
 
 	be_emit_init(file_handle);
 	be_gas_begin_compilation_unit(&env);
@@ -497,9 +498,9 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		if (get_entity_linkage(entity) & IR_LINKAGE_NO_CODEGEN)
 			continue;
 		initialize_birg(&birgs[num_birgs++], irg, &env);
+		if (arch_env->impl->handle_intrinsics)
+			arch_env->impl->handle_intrinsics(irg);
 	}
-	arch_env_t *arch_env = env.arch_env;
-	arch_env_handle_intrinsics(arch_env);
 
 	/*
 		Get the filename for the profiling data.

@@ -20,6 +20,7 @@
 #include "irtools.h"
 #include "irdump.h"
 #include "iropt_t.h"
+#include "irnode_t.h"
 #include "lowering.h"
 #include "lower_dw.h"
 #include "lower_alloc.h"
@@ -41,6 +42,7 @@
 #include "belistsched.h"
 #include "beflags.h"
 #include "beutil.h"
+#include "betranshlp.h"
 
 #include "bearch_sparc_t.h"
 
@@ -332,9 +334,8 @@ static void rewrite_float_unsigned_Conv(ir_node *node)
 	exchange(node, res_conv);
 }
 
-static int sparc_rewrite_Conv(ir_node *node, void *ctx)
+static bool sparc_rewrite_Conv(ir_node *node)
 {
-	(void) ctx;
 	ir_mode *to_mode   = get_irn_mode(node);
 	ir_node *op        = get_Conv_op(node);
 	ir_mode *from_mode = get_irn_mode(op);
@@ -343,81 +344,75 @@ static int sparc_rewrite_Conv(ir_node *node, void *ctx)
 	    && get_mode_size_bits(from_mode) == 32
 	    && !mode_is_signed(from_mode)) {
 		rewrite_unsigned_float_Conv(node);
-		return 1;
+		return true;
 	}
 	if (mode_is_float(from_mode) && mode_is_int(to_mode)
 	    && get_mode_size_bits(to_mode) <= 32
 	    && !mode_is_signed(to_mode)) {
 	    rewrite_float_unsigned_Conv(node);
-	    return 1;
+	    return true;
 	}
 
-	return 0;
+	return false;
 }
 
-static void sparc_handle_intrinsics(void)
+static ir_entity *rem;
+static ir_entity *urem;
+
+static void handle_intrinsic(ir_node *node, void *data)
 {
-	i_record records[3];
-	size_t n_records = 0;
+	bool *changed = (bool*)data;
+	if (is_Mod(node)) {
+		ir_mode *mode = get_Mod_resmode(node);
+		if (get_mode_arithmetic(mode) == irma_twos_complement) {
+			ir_entity *entity = mode_is_signed(mode) ? rem : urem;
+			be_map_exc_node_to_runtime_call(node, mode, entity, pn_Mod_M,
+			                                pn_Mod_X_regular, pn_Mod_X_except,
+			                                pn_Mod_res);
+			*changed = true;
+		}
+	} else if (is_Conv(node)) {
+		if (sparc_rewrite_Conv(node))
+			*changed = true;
+	}
+}
 
-	/* we need to rewrite some forms of int->float conversions */
-	i_instr_record *map_Conv = &records[n_records++].i_instr;
-	map_Conv->kind     = INTRINSIC_INSTR;
-	map_Conv->op       = op_Conv;
-	map_Conv->i_mapper = sparc_rewrite_Conv;
+static void sparc_create_runtime_entities(void)
+{
+	if (rem != NULL)
+		return;
 
-	/* SPARC has no signed mod instruction ... */
 	ir_type *int_tp = new_type_primitive(mode_Is);
 	ir_type *mod_tp = new_type_method(2, 1);
 	set_method_param_type(mod_tp, 0, int_tp);
 	set_method_param_type(mod_tp, 1, int_tp);
 	set_method_res_type(mod_tp, 0, int_tp);
+	rem = create_compilerlib_entity(new_id_from_str(".rem"), mod_tp);
 
-	runtime_rt rt_iMod;
-	ident *mod_id = new_id_from_str(".rem");
-	rt_iMod.ent             = new_entity(get_glob_type(), mod_id, mod_tp);
-	set_entity_ld_ident(rt_iMod.ent, mod_id);
-	rt_iMod.mode            = mode_T;
-	rt_iMod.res_mode        = mode_Is;
-	rt_iMod.mem_proj_nr     = pn_Mod_M;
-	rt_iMod.regular_proj_nr = pn_Mod_X_regular;
-	rt_iMod.exc_proj_nr     = pn_Mod_X_except;
-	rt_iMod.res_proj_nr     = pn_Mod_res;
-	set_entity_visibility(rt_iMod.ent, ir_visibility_external);
-
-	i_instr_record *map_imod = &records[n_records++].i_instr;
-	map_imod->kind     = INTRINSIC_INSTR;
-	map_imod->op       = op_Mod;
-	map_imod->i_mapper = (i_mapper_func)i_mapper_RuntimeCall;
-	map_imod->ctx      = &rt_iMod;
-
-	/* ... nor an unsigned mod. */
 	ir_type *umod_tp = new_type_method(2, 1);
 	ir_type *uint_tp = new_type_primitive(mode_Iu);
 	set_method_param_type(umod_tp, 0, uint_tp);
 	set_method_param_type(umod_tp, 1, uint_tp);
 	set_method_res_type(umod_tp, 0, uint_tp);
+	urem = create_compilerlib_entity(new_id_from_str(".urem"), umod_tp);
+}
 
-	runtime_rt rt_uMod;
-	ident *umod_id = new_id_from_str(".urem");
-	rt_uMod.ent             = new_entity(get_glob_type(), umod_id, umod_tp);
-	set_entity_ld_ident(rt_uMod.ent, umod_id);
-	rt_uMod.mode            = mode_T;
-	rt_uMod.res_mode        = mode_Iu;
-	rt_uMod.mem_proj_nr     = pn_Mod_M;
-	rt_uMod.regular_proj_nr = pn_Mod_X_regular;
-	rt_uMod.exc_proj_nr     = pn_Mod_X_except;
-	rt_uMod.res_proj_nr     = pn_Mod_res;
-	set_entity_visibility(rt_uMod.ent, ir_visibility_external);
+static void sparc_handle_intrinsics(ir_graph *irg)
+{
+	sparc_create_runtime_entities();
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
+	collect_phiprojs(irg);
+	bool changed = false;
+	irg_walk_graph(irg, handle_intrinsic, NULL, &changed);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 
-	i_instr_record *map_umod = &records[n_records++].i_instr;
-	map_umod->kind     = INTRINSIC_INSTR;
-	map_umod->op       = op_Mod;
-	map_umod->i_mapper = (i_mapper_func)i_mapper_RuntimeCall;
-	map_umod->ctx      = &rt_uMod;
-
-	assert(n_records <= ARRAY_SIZE(records));
-	lower_intrinsics(records, n_records, /*part_block_used=*/ true);
+	if (changed) {
+		confirm_irg_properties(irg,
+			IR_GRAPH_PROPERTY_NO_TUPLES
+			| IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
+			| IR_GRAPH_PROPERTY_MANY_RETURNS
+			| IR_GRAPH_PROPERTY_ONE_RETURN);
+	}
 }
 
 static void sparc_setup_cg_config(void)

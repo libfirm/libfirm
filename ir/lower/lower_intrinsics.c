@@ -30,102 +30,89 @@
 #include "firmstat_t.h"
 
 /** Walker environment. */
-typedef struct walker_env {
-	pmap     *c_map;              /**< The intrinsic call map. */
-	size_t   nr_of_intrinsics;    /**< statistics */
-	i_instr_record **i_map;       /**< The intrinsic instruction map. */
-} walker_env_t;
+struct ir_intrinsics_map {
+	pmap           *c_map;           /**< The intrinsic call map. */
+	i_mapper_func **i_map;           /**< The intrinsic instruction map. */
+	bool            part_block_used;
+	unsigned        n_intrinsics;
+};
+
+ir_intrinsics_map *ir_create_intrinsics_map(i_record *list, size_t length,
+                                            int part_block_used)
+{
+	size_t          n_ops = ir_get_n_opcodes();
+	pmap           *c_map = pmap_create_ex(length);
+	i_mapper_func **i_map = XMALLOCNZ(i_mapper_func*, n_ops);
+
+	/* fill a map for faster search */
+	for (size_t i = 0; i < length; ++i) {
+		if (list[i].kind == INTRINSIC_CALL) {
+			pmap_insert(c_map, list[i].i_call.i_ent,
+			            (void*)list[i].i_call.i_mapper);
+		} else {
+			assert(list[i].kind == INTRINSIC_INSTR);
+			ir_op *op = list[i].i_instr.op;
+			assert(op->code < n_ops);
+
+			assert(i_map[op->code] == NULL);
+			i_map[op->code] = list[i].i_instr.i_mapper;
+		}
+	}
+
+	ir_intrinsics_map *map = XMALLOCZ(ir_intrinsics_map);
+	map->c_map           = c_map;
+	map->i_map           = i_map;
+	map->part_block_used = part_block_used;
+	return map;
+}
+
+void ir_free_intrinsics_map(ir_intrinsics_map *map)
+{
+	free(map->i_map);
+	pmap_destroy(map->c_map);
+	free(map);
+}
 
 /**
  * walker: call all mapper functions
  */
-static void call_mapper(ir_node *node, void *env)
+static void call_mapper(ir_node *node, void *data)
 {
-	walker_env_t *wenv = (walker_env_t*)env;
+	ir_intrinsics_map *map = (ir_intrinsics_map*)data;
 	ir_op *op = get_irn_op(node);
 
 	if (op == op_Call) {
-		ir_node *symconst;
-		const i_call_record *r;
-		ir_entity *ent;
-
-		symconst = get_Call_ptr(node);
-		if (! is_SymConst_addr_ent(symconst))
+		ir_node *symconst = get_Call_ptr(node);
+		if (!is_SymConst_addr_ent(symconst))
 			return;
 
-		ent = get_SymConst_entity(symconst);
-		r   = pmap_get(i_call_record const, wenv->c_map, ent);
+		ir_entity     *ent = get_SymConst_entity(symconst);
+		i_mapper_func *f   = pmap_get(i_mapper_func, map->c_map, ent);
 
-		if (r != NULL) {
-			wenv->nr_of_intrinsics += r->i_mapper(node, r->ctx) ? 1 : 0;
-		}
+		if (f != NULL && f(node))
+			++map->n_intrinsics;
 	} else {
-		if (op->code < (unsigned) ARR_LEN(wenv->i_map)) {
-			const i_instr_record *r = wenv->i_map[op->code];
-			/* run all possible mapper */
-			while (r) {
-				if (r->i_mapper(node, r->ctx)) {
-					++wenv->nr_of_intrinsics;
-					break;
-				}
-				r = (const i_instr_record*)r->link;
-			}
+		/* run all possible mapper */
+		i_mapper_func *f = map->i_map[op->code];
+		if (f != NULL && f(node)) {
+			++map->n_intrinsics;
 		}
 	}
 }
 
-size_t lower_intrinsics(i_record *list, size_t length, int part_block_used)
+void ir_lower_intrinsics(ir_graph *irg, ir_intrinsics_map *map)
 {
-	size_t         i, n;
-	size_t         n_ops = ir_get_n_opcodes();
-	ir_graph       *irg;
-	pmap           *c_map = pmap_create_ex(length);
-	i_instr_record **i_map;
-	size_t         nr_of_intrinsics = 0;
-	walker_env_t   wenv;
-
-	/* we use the ir_op generic pointers here */
-	NEW_ARR_A(i_instr_record *, i_map, n_ops);
-	memset((void *)i_map, 0, sizeof(*i_map) * n_ops);
-
-	/* fill a map for faster search */
-	for (i = 0; i < length; ++i) {
-		if (list[i].i_call.kind == INTRINSIC_CALL) {
-			pmap_insert(c_map, list[i].i_call.i_ent, (void *)&list[i].i_call);
-		} else {
-			ir_op *op = list[i].i_instr.op;
-			assert(op->code < (unsigned) ARR_LEN(i_map));
-
-			list[i].i_instr.link = i_map[op->code];
-			i_map[op->code] = &list[i].i_instr;
-		}
+	if (map->part_block_used) {
+		ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
+		collect_phiprojs(irg);
 	}
-
-	wenv.c_map = c_map;
-	wenv.i_map = i_map;
-
-	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
-		irg = get_irp_irg(i);
-
-		if (part_block_used) {
-			ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
-			collect_phiprojs(irg);
-		}
-
-		wenv.nr_of_intrinsics = 0;
-		irg_walk_graph(irg, NULL, call_mapper, &wenv);
-
-		if (part_block_used)
-			ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
-
-		if (wenv.nr_of_intrinsics > 0) {
-			confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
-			nr_of_intrinsics += wenv.nr_of_intrinsics;
-		}
+	map->n_intrinsics = 0;
+	irg_walk_graph(irg, NULL, call_mapper, map);
+	if (map->part_block_used)
+		ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
+	if (map->n_intrinsics > 0) {
+		confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 	}
-	pmap_destroy(c_map);
-
-	return nr_of_intrinsics;
 }
 
 /**
@@ -172,7 +159,7 @@ static void replace_call(ir_node *irn, ir_node *call, ir_node *mem,
 	}
 }
 
-int i_mapper_abs(ir_node *call, void *ctx)
+int i_mapper_abs(ir_node *call)
 {
 	ir_node  *mem      = get_Call_mem(call);
 	ir_node  *block    = get_nodes_block(call);
@@ -185,7 +172,6 @@ int i_mapper_abs(ir_node *call, void *ctx)
 	ir_node  *minus_op = new_rd_Minus(dbg, block, op, mode);
 	ir_node  *mux;
 	arch_allow_ifconv_func allow_ifconv = be_get_backend_param()->allow_ifconv;
-	(void) ctx;
 
 	/* mux allowed by backend? */
 	if (!allow_ifconv(cmp, op, minus_op))
@@ -198,7 +184,7 @@ int i_mapper_abs(ir_node *call, void *ctx)
 	return 1;
 }
 
-int i_mapper_bswap(ir_node *call, void *ctx)
+int i_mapper_bswap(ir_node *call)
 {
 	ir_node *mem   = get_Call_mem(call);
 	ir_node *block = get_nodes_block(call);
@@ -206,7 +192,6 @@ int i_mapper_bswap(ir_node *call, void *ctx)
 	ir_type *tp    = get_Call_type(call);
 	dbg_info *dbg  = get_irn_dbg_info(call);
 	ir_node *irn;
-	(void) ctx;
 
 	ir_graph *const irg = get_Block_irg(block);
 	irn = new_rd_Builtin(dbg, block, get_irg_no_mem(irg), 1, &op, ir_bk_bswap, tp);
@@ -216,14 +201,13 @@ int i_mapper_bswap(ir_node *call, void *ctx)
 	return 1;
 }
 
-int i_mapper_alloca(ir_node *call, void *ctx)
+int i_mapper_alloca(ir_node *call)
 {
 	ir_node *mem   = get_Call_mem(call);
 	ir_node *block = get_nodes_block(call);
 	ir_node *op    = get_Call_param(call, 0);
 	ir_node *irn;
 	dbg_info *dbg  = get_irn_dbg_info(call);
-	(void) ctx;
 
 	if (mode_is_signed(get_irn_mode(op))) {
 		ir_mode *mode = get_irn_mode(op);
@@ -244,12 +228,11 @@ int i_mapper_alloca(ir_node *call, void *ctx)
 	return 1;
 }
 
-int i_mapper_sqrt(ir_node *call, void *ctx)
+int i_mapper_sqrt(ir_node *call)
 {
 	ir_node   *mem;
 	ir_tarval *tv;
 	ir_node   *op = get_Call_param(call, 0);
-	(void) ctx;
 
 	if (!is_Const(op))
 		return 0;
@@ -266,12 +249,11 @@ int i_mapper_sqrt(ir_node *call, void *ctx)
 	return 1;
 }
 
-int i_mapper_cbrt(ir_node *call, void *ctx)
+int i_mapper_cbrt(ir_node *call)
 {
 	ir_node   *mem;
 	ir_tarval *tv;
 	ir_node   *op = get_Call_param(call, 0);
-	(void) ctx;
 
 	if (!is_Const(op))
 		return 0;
@@ -288,7 +270,7 @@ int i_mapper_cbrt(ir_node *call, void *ctx)
 	return 1;
 }
 
-int i_mapper_pow(ir_node *call, void *ctx)
+int i_mapper_pow(ir_node *call)
 {
 	ir_node  *left    = get_Call_param(call, 0);
 	ir_node  *right   = get_Call_param(call, 1);
@@ -299,7 +281,6 @@ int i_mapper_pow(ir_node *call, void *ctx)
 	ir_node  *irn;
 	dbg_info *dbg;
 	ir_node  *mem;
-	(void) ctx;
 
 	if (is_Const(left) && is_Const_one(left)) {
 		/* pow (1.0, x) = 1.0 */
@@ -354,10 +335,9 @@ int i_mapper_pow(ir_node *call, void *ctx)
 	return 1;
 }
 
-int i_mapper_exp(ir_node *call, void *ctx)
+int i_mapper_exp(ir_node *call)
 {
 	ir_node *val  = get_Call_param(call, 0);
-	(void) ctx;
 
 	if (is_Const(val) && is_Const_null(val)) {
 		/* exp(0.0) = 1.0 */
@@ -372,23 +352,22 @@ int i_mapper_exp(ir_node *call, void *ctx)
 	return 0;
 }
 
-int i_mapper_exp2(ir_node *call, void *ctx)
+int i_mapper_exp2(ir_node *call)
 {
-	return i_mapper_exp(call, ctx);
+	return i_mapper_exp(call);
 }
 
-int i_mapper_exp10(ir_node *call, void *ctx)
+int i_mapper_exp10(ir_node *call)
 {
-	return i_mapper_exp(call, ctx);
+	return i_mapper_exp(call);
 }
 
 /**
  * A mapper for mapping f(0.0) to 0.0.
  */
-static int i_mapper_zero_to_zero(ir_node *call, void *ctx, int reason)
+static int i_mapper_zero_to_zero(ir_node *call, int reason)
 {
 	ir_node *val  = get_Call_param(call, 0);
-	(void) ctx;
 
 	if (is_Const(val) && is_Const_null(val)) {
 		/* f(0.0) = 0.0 */
@@ -403,10 +382,9 @@ static int i_mapper_zero_to_zero(ir_node *call, void *ctx, int reason)
 /**
  * A mapper for mapping f(1.0) to 0.0.
  */
-static int i_mapper_one_to_zero(ir_node *call, void *ctx, int reason)
+static int i_mapper_one_to_zero(ir_node *call, int reason)
 {
 	ir_node *val  = get_Call_param(call, 0);
-	(void) ctx;
 
 	if (is_Const(val) && is_Const_one(val)) {
 		/* acos(1.0) = 0.0 */
@@ -426,11 +404,10 @@ static int i_mapper_one_to_zero(ir_node *call, void *ctx, int reason)
  * f(-x)  = f(x).
  * f(0.0) = 1.0
  */
-static int i_mapper_symmetric_zero_to_one(ir_node *call, void *ctx, int reason)
+static int i_mapper_symmetric_zero_to_one(ir_node *call, int reason)
 {
 	int      changed = 0;
 	ir_node *val     = get_Call_param(call, 0);
-	(void) ctx;
 
 	if (is_Conv(val)) {
 		ir_node *op = get_Conv_op(val);
@@ -467,76 +444,76 @@ static int i_mapper_symmetric_zero_to_one(ir_node *call, void *ctx, int reason)
 	return changed;
 }
 
-int i_mapper_log(ir_node *call, void *ctx)
+int i_mapper_log(ir_node *call)
 {
 	/* log(1.0) = 0.0 */
-	return i_mapper_one_to_zero(call, ctx, FS_OPT_RTS_LOG);
+	return i_mapper_one_to_zero(call, FS_OPT_RTS_LOG);
 }
 
-int i_mapper_log2(ir_node *call, void *ctx)
+int i_mapper_log2(ir_node *call)
 {
 	/* log2(1.0) = 0.0 */
-	return i_mapper_one_to_zero(call, ctx, FS_OPT_RTS_LOG);
+	return i_mapper_one_to_zero(call, FS_OPT_RTS_LOG);
 }
 
-int i_mapper_log10(ir_node *call, void *ctx)
+int i_mapper_log10(ir_node *call)
 {
 	/* log10(1.0) = 0.0 */
-	return i_mapper_one_to_zero(call, ctx, FS_OPT_RTS_LOG);
+	return i_mapper_one_to_zero(call, FS_OPT_RTS_LOG);
 }
 
-int i_mapper_sin(ir_node *call, void *ctx)
+int i_mapper_sin(ir_node *call)
 {
 	/* sin(0.0) = 0.0 */
-	return i_mapper_zero_to_zero(call, ctx, FS_OPT_RTS_SIN);
+	return i_mapper_zero_to_zero(call, FS_OPT_RTS_SIN);
 }
 
-int i_mapper_cos(ir_node *call, void *ctx)
+int i_mapper_cos(ir_node *call)
 {
 	/* cos(0.0) = 1.0, cos(-x) = x */
-	return i_mapper_symmetric_zero_to_one(call, ctx, FS_OPT_RTS_COS);
+	return i_mapper_symmetric_zero_to_one(call, FS_OPT_RTS_COS);
 }
 
-int i_mapper_tan(ir_node *call, void *ctx)
+int i_mapper_tan(ir_node *call)
 {
 	/* tan(0.0) = 0.0 */
-	return i_mapper_zero_to_zero(call, ctx, FS_OPT_RTS_TAN);
+	return i_mapper_zero_to_zero(call, FS_OPT_RTS_TAN);
 }
 
-int i_mapper_asin(ir_node *call, void *ctx)
+int i_mapper_asin(ir_node *call)
 {
 	/* asin(0.0) = 0.0 */
-	return i_mapper_zero_to_zero(call, ctx, FS_OPT_RTS_ASIN);
+	return i_mapper_zero_to_zero(call, FS_OPT_RTS_ASIN);
 }
 
-int i_mapper_acos(ir_node *call, void *ctx)
+int i_mapper_acos(ir_node *call)
 {
 	/* acos(1.0) = 0.0 */
-	return i_mapper_one_to_zero(call, ctx, FS_OPT_RTS_ACOS);
+	return i_mapper_one_to_zero(call, FS_OPT_RTS_ACOS);
 }
 
-int i_mapper_atan(ir_node *call, void *ctx)
+int i_mapper_atan(ir_node *call)
 {
 	/* atan(0.0) = 0.0 */
-	return i_mapper_zero_to_zero(call, ctx, FS_OPT_RTS_ATAN);
+	return i_mapper_zero_to_zero(call, FS_OPT_RTS_ATAN);
 }
 
-int i_mapper_sinh(ir_node *call, void *ctx)
+int i_mapper_sinh(ir_node *call)
 {
 	/* sinh(0.0) = 0.0 */
-	return i_mapper_zero_to_zero(call, ctx, FS_OPT_RTS_SINH);
+	return i_mapper_zero_to_zero(call, FS_OPT_RTS_SINH);
 }
 
-int i_mapper_cosh(ir_node *call, void *ctx)
+int i_mapper_cosh(ir_node *call)
 {
 	/* cosh(0.0) = 1.0, cosh(-x) = x */
-	return i_mapper_symmetric_zero_to_one(call, ctx, FS_OPT_RTS_COSH);
+	return i_mapper_symmetric_zero_to_one(call, FS_OPT_RTS_COSH);
 }
 
-int i_mapper_tanh(ir_node *call, void *ctx)
+int i_mapper_tanh(ir_node *call)
 {
 	/* tanh(0.0) = 0.0 */
-	return i_mapper_zero_to_zero(call, ctx, FS_OPT_RTS_TANH);
+	return i_mapper_zero_to_zero(call, FS_OPT_RTS_TANH);
 }
 
 /**
@@ -646,12 +623,10 @@ static ir_node *eval_strlen(ir_graph *irg, ir_entity *ent, ir_type *res_tp)
 	return NULL;
 }
 
-int i_mapper_strlen(ir_node *call, void *ctx)
+int i_mapper_strlen(ir_node *call)
 {
 	ir_node *s     = get_Call_param(call, 0);
 	ir_entity *ent = get_const_entity(s);
-
-	(void) ctx;
 
 	/* FIXME: this cannot handle constant strings inside struct initializers yet */
 	if (ent != NULL) {
@@ -790,7 +765,7 @@ static int is_empty_string(ir_entity *ent)
 	return initializer_val_is_null(init0);
 }
 
-int i_mapper_strcmp(ir_node *call, void *ctx)
+int i_mapper_strcmp(ir_node *call)
 {
 	ir_node   *left    = get_Call_param(call, 0);
 	ir_node   *right   = get_Call_param(call, 1);
@@ -802,8 +777,6 @@ int i_mapper_strcmp(ir_node *call, void *ctx)
 	ir_entity *ent_l, *ent_r;
 	ir_type   *char_tp;
 	ir_node   *v;
-
-	(void) ctx;
 
 	/* do some type checks first */
 	if (! is_Primitive_type(res_tp))
@@ -885,13 +858,12 @@ replace_by_call:
 	return 0;
 }
 
-int i_mapper_strncmp(ir_node *call, void *ctx)
+int i_mapper_strncmp(ir_node *call)
 {
 	ir_node *left  = get_Call_param(call, 0);
 	ir_node *right = get_Call_param(call, 1);
 	ir_node *len   = get_Call_param(call, 2);
 	ir_node *irn;
-	(void) ctx;
 
 	if (left == right || (is_Const(len) && is_Const_null(len))) {
 		/* a strncmp(s, s, len) ==> 0 OR
@@ -912,11 +884,10 @@ int i_mapper_strncmp(ir_node *call, void *ctx)
 	return 0;
 }
 
-int i_mapper_strcpy(ir_node *call, void *ctx)
+int i_mapper_strcpy(ir_node *call)
 {
 	ir_node *dst = get_Call_param(call, 0);
 	ir_node *src = get_Call_param(call, 1);
-	(void) ctx;
 
 	if (dst == src) {
 		/* a strcpy(d, s) ==> d */
@@ -930,12 +901,11 @@ int i_mapper_strcpy(ir_node *call, void *ctx)
 	return 0;
 }
 
-int i_mapper_memcpy(ir_node *call, void *ctx)
+int i_mapper_memcpy(ir_node *call)
 {
 	ir_node *dst = get_Call_param(call, 0);
 	ir_node *src = get_Call_param(call, 1);
 	ir_node *len = get_Call_param(call, 2);
-	(void) ctx;
 
 	if (dst == src || (is_Const(len) && is_Const_null(len))) {
 		/* a memcpy(d, d, len) ==> d OR
@@ -949,12 +919,11 @@ int i_mapper_memcpy(ir_node *call, void *ctx)
 	return 0;
 }
 
-int i_mapper_mempcpy(ir_node *call, void *ctx)
+int i_mapper_mempcpy(ir_node *call)
 {
 	ir_node *dst = get_Call_param(call, 0);
 	ir_node *src = get_Call_param(call, 1);
 	ir_node *len = get_Call_param(call, 2);
-	(void) ctx;
 
 	if (dst == src || (is_Const(len) && is_Const_null(len))) {
 		/* a memcpy(d, d, len) ==> d + len OR
@@ -972,12 +941,11 @@ int i_mapper_mempcpy(ir_node *call, void *ctx)
 	return 0;
 }
 
-int i_mapper_memmove(ir_node *call, void *ctx)
+int i_mapper_memmove(ir_node *call)
 {
 	ir_node *dst = get_Call_param(call, 0);
 	ir_node *src = get_Call_param(call, 1);
 	ir_node *len = get_Call_param(call, 2);
-	(void) ctx;
 
 	if (dst == src || (is_Const(len) && is_Const_null(len))) {
 		/* a memmove(d, d, len) ==> d OR
@@ -991,10 +959,9 @@ int i_mapper_memmove(ir_node *call, void *ctx)
 	return 0;
 }
 
-int i_mapper_memset(ir_node *call, void *ctx)
+int i_mapper_memset(ir_node *call)
 {
 	ir_node *len = get_Call_param(call, 2);
-	(void) ctx;
 
 	if (is_Const(len) && is_Const_null(len)) {
 		/* a memset(d, C, 0) ==> d */
@@ -1008,13 +975,12 @@ int i_mapper_memset(ir_node *call, void *ctx)
 	return 0;
 }
 
-int i_mapper_memcmp(ir_node *call, void *ctx)
+int i_mapper_memcmp(ir_node *call)
 {
 	ir_node *left  = get_Call_param(call, 0);
 	ir_node *right = get_Call_param(call, 1);
 	ir_node *len   = get_Call_param(call, 2);
 	ir_node *irn;
-	(void) ctx;
 
 	if (left == right || (is_Const(len) && is_Const_null(len))) {
 		/* a memcmp(s, s, len) ==> 0 OR
@@ -1032,152 +998,5 @@ int i_mapper_memcmp(ir_node *call, void *ctx)
 		replace_call(irn, call, mem, NULL, NULL);
 		return 1;
 	}
-	return 0;
-}
-
-/**
- * Returns the result mode of a node.
- */
-static ir_mode *get_irn_res_mode(ir_node *node)
-{
-	switch (get_irn_opcode(node)) {
-	case iro_Load:   return get_Load_mode(node);
-	case iro_Div:    return get_Div_resmode(node);
-	case iro_Mod:    return get_Mod_resmode(node);
-	default: return NULL;
-	}
-}
-
-int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt)
-{
-	int i, j, arity, first, n_param, n_res;
-	long n_proj;
-	ir_type *mtp;
-	ir_node *mem, *call, *addr, *res_proj;
-	ir_node **in;
-	bool     throws_exception;
-	ir_op   *op;
-	symconst_symbol sym;
-	ir_mode *mode = get_irn_mode(node);
-
-	if (mode != rt->mode)
-		return 0;
-	/* check if the result modes match */
-	if (mode == mode_T && rt->res_mode != NULL) {
-		mode = get_irn_res_mode(node);
-		if (mode != rt->res_mode)
-			return 0;
-	}
-
-	arity = get_irn_arity(node);
-	if (arity <= 0)
-		return 0;
-
-	mtp     = get_entity_type(rt->ent);
-	n_param = get_method_n_params(mtp);
-	ir_node  *const bl  = get_nodes_block(node);
-	ir_graph *const irg = get_Block_irg(bl);
-
-	mem = get_irn_n(node, 0);
-	if (get_irn_mode(mem) != mode_M) {
-		mem = new_r_NoMem(irg);
-		first = 0;
-	} else
-		first = 1;
-
-	/* check if the modes of the predecessors match the parameter modes */
-	if (arity - first != n_param)
-		return 0;
-
-	for (i = first, j = 0; i < arity; ++i, ++j) {
-		ir_type *param_tp = get_method_param_type(mtp, j);
-		ir_node *pred = get_irn_n(node, i);
-
-		if (get_type_mode(param_tp) != get_irn_mode(pred))
-			return 0;
-	}
-
-	n_res            = get_method_n_ress(mtp);
-	throws_exception = ir_throws_exception(node);
-
-	/* step 0: calculate the number of needed Proj's */
-	n_proj = 0;
-	n_proj = MAX(n_proj, rt->mem_proj_nr + 1);
-	n_proj = MAX(n_proj, rt->res_proj_nr + 1);
-	if (throws_exception) {
-		n_proj = MAX(n_proj, rt->regular_proj_nr + 1);
-		n_proj = MAX(n_proj, rt->exc_proj_nr + 1);
-	}
-
-	if (n_proj > 0) {
-		if (rt->mode != mode_T) /* must be mode_T */
-			return 0;
-	} else {
-		if (n_res > 0)
-			/* must match */
-			if (get_type_mode(get_method_res_type(mtp, 0)) != rt->mode)
-				return 0;
-	}
-
-	/* ok, when we are here, the number of predecessors match as well as the parameter modes */
-	op = get_irn_op(node);
-
-	in = NULL;
-	if (n_param > 0) {
-		NEW_ARR_A(ir_node *, in, n_param);
-		for (i = 0; i < n_param; ++i)
-			in[i] = get_irn_n(node, first + i);
-	}
-
-	/* step 1: create the call */
-	sym.entity_p = rt->ent;
-	addr = new_r_SymConst(irg, mode_P_code, sym, symconst_addr_ent);
-	call = new_rd_Call(get_irn_dbg_info(node), bl, mem, addr, n_param, in, mtp);
-	set_irn_pinned(call, get_irn_pinned(node));
-
-	if (n_res > 0)
-		res_proj = new_r_Proj(call, mode_T, pn_Call_T_result);
-	else
-		res_proj = NULL;
-
-	if (n_proj > 0) {
-		n_proj += n_res - 1;
-
-		ir_node **const in  = ALLOCAN(ir_node*, n_proj);
-		ir_node  *const bad = new_r_Bad(irg, mode_ANY);
-		for (i = 0; i != n_proj; ++i) {
-			in[i] = bad;
-		}
-
-		if (rt->mem_proj_nr >= 0)
-			in[rt->mem_proj_nr] = new_r_Proj(call, mode_M, pn_Call_M);
-		if (throws_exception) {
-			in[op->pn_x_regular] = new_r_Proj(call, mode_X, pn_Call_X_regular);
-			in[op->pn_x_except]  = new_r_Proj(call, mode_X, pn_Call_X_except);
-		}
-
-		if (rt->res_proj_nr >= 0) {
-			for (i = 0; i < n_res; ++i) {
-				ir_mode *mode = get_type_mode(get_method_res_type(mtp, i));
-				ir_node *proj = new_r_Proj(res_proj, mode, i);
-				in[rt->res_proj_nr + i] = proj;
-			}
-		}
-
-		turn_into_tuple(node, n_proj, in);
-		return 1;
-	} else {
-		/* only one return value supported */
-		if (n_res > 0) {
-			ir_mode *mode = get_type_mode(get_method_res_type(mtp, 0));
-
-			res_proj = new_r_Proj(call, mode_T, pn_Call_T_result);
-			res_proj = new_r_Proj(res_proj, mode, 0);
-
-			exchange(node, res_proj);
-			return 1;
-		}
-	}
-	/* should not happen */
 	return 0;
 }

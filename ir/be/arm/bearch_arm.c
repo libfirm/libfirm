@@ -37,6 +37,7 @@
 #include "belistsched.h"
 #include "beflags.h"
 #include "bestack.h"
+#include "betranshlp.h"
 
 #include "bearch_arm_t.h"
 
@@ -238,128 +239,75 @@ static void arm_before_ra(ir_graph *irg)
 	be_sched_fix_flags(irg, &arm_reg_classes[CLASS_arm_flags], NULL, NULL);
 }
 
+static ir_entity *divsi3;
+static ir_entity *udivsi3;
+static ir_entity *modsi3;
+static ir_entity *umodsi3;
+
+static void handle_intrinsic(ir_node *node, void *data)
+{
+	(void)data;
+	if (is_Div(node)) {
+		ir_mode *mode = get_Div_resmode(node);
+		if (get_mode_arithmetic(mode) == irma_twos_complement) {
+			ir_entity *entity = mode_is_signed(mode) ? divsi3 : udivsi3;
+			be_map_exc_node_to_runtime_call(node, mode, entity, pn_Div_M,
+			                                pn_Div_X_regular, pn_Div_X_except,
+			                                pn_Div_res);
+		}
+	}
+	if (is_Mod(node)) {
+		ir_mode *mode = get_Mod_resmode(node);
+		assert(get_mode_arithmetic(mode) == irma_twos_complement);
+		ir_entity *entity = mode_is_signed(mode) ? modsi3 : umodsi3;
+		be_map_exc_node_to_runtime_call(node, mode, entity, pn_Mod_M,
+		                                pn_Mod_X_regular, pn_Mod_X_except,
+		                                pn_Mod_res);
+	}
+}
+
+static void arm_create_runtime_entities(void)
+{
+	if (divsi3 != NULL)
+		return;
+
+	ir_type *int_tp  = get_type_for_mode(mode_Is);
+	ir_type *uint_tp = get_type_for_mode(mode_Iu);
+
+	ir_type *tp_divsi3 = new_type_method(2, 1);
+	set_method_param_type(tp_divsi3, 0, int_tp);
+	set_method_param_type(tp_divsi3, 1, int_tp);
+	set_method_res_type(tp_divsi3, 0, int_tp);
+	divsi3 = create_compilerlib_entity(new_id_from_str("__divsi3"), tp_divsi3);
+
+	ir_type *tp_udivsi3 = new_type_method(2, 1);
+	set_method_param_type(tp_udivsi3, 0, uint_tp);
+	set_method_param_type(tp_udivsi3, 1, uint_tp);
+	set_method_res_type(tp_udivsi3, 0, uint_tp);
+	udivsi3 = create_compilerlib_entity(new_id_from_str("__udivsi3"), tp_udivsi3);
+
+	ir_type *tp_modsi3 = new_type_method(2, 1);
+	set_method_param_type(tp_modsi3, 0, int_tp);
+	set_method_param_type(tp_modsi3, 1, int_tp);
+	set_method_res_type(tp_modsi3, 0, int_tp);
+	modsi3 = create_compilerlib_entity(new_id_from_str("__modsi3"), tp_modsi3);
+
+	ir_type *tp_umodsi3 = new_type_method(2, 1);
+	set_method_param_type(tp_umodsi3, 0, uint_tp);
+	set_method_param_type(tp_umodsi3, 1, uint_tp);
+	set_method_res_type(tp_umodsi3, 0, uint_tp);
+	umodsi3 = create_compilerlib_entity(new_id_from_str("__umodsi3"), tp_umodsi3);
+}
+
 /**
  * Maps all intrinsic calls that the backend support
  * and map all instructions the backend did not support
  * to runtime calls.
  */
-static void arm_handle_intrinsics(void)
+static void arm_handle_intrinsics(ir_graph *irg)
 {
-	ir_type *tp, *int_tp, *uint_tp;
-	i_record records[8];
-	int n_records = 0;
-
-	runtime_rt rt_iDiv, rt_uDiv, rt_iMod, rt_uMod;
-
-#define ID(x) new_id_from_chars(x, sizeof(x)-1)
-
-	int_tp  = get_type_for_mode(mode_Is);
-	uint_tp = get_type_for_mode(mode_Iu);
-
-	/* ARM has neither a signed div instruction ... */
-	{
-		i_instr_record *map_Div = &records[n_records++].i_instr;
-
-		tp = new_type_method(2, 1);
-		set_method_param_type(tp, 0, int_tp);
-		set_method_param_type(tp, 1, int_tp);
-		set_method_res_type(tp, 0, int_tp);
-
-		rt_iDiv.ent             = new_entity(get_glob_type(), ID("__divsi3"), tp);
-		set_entity_ld_ident(rt_iDiv.ent, ID("__divsi3"));
-		rt_iDiv.mode            = mode_T;
-		rt_iDiv.res_mode        = mode_Is;
-		rt_iDiv.mem_proj_nr     = pn_Div_M;
-		rt_iDiv.regular_proj_nr = pn_Div_X_regular;
-		rt_iDiv.exc_proj_nr     = pn_Div_X_except;
-		rt_iDiv.res_proj_nr     = pn_Div_res;
-
-		add_entity_linkage(rt_iDiv.ent, IR_LINKAGE_CONSTANT);
-		set_entity_visibility(rt_iDiv.ent, ir_visibility_external);
-
-		map_Div->kind     = INTRINSIC_INSTR;
-		map_Div->op       = op_Div;
-		map_Div->i_mapper = (i_mapper_func)i_mapper_RuntimeCall;
-		map_Div->ctx      = &rt_iDiv;
-	}
-	/* ... nor an unsigned div instruction ... */
-	{
-		i_instr_record *map_Div = &records[n_records++].i_instr;
-
-		tp = new_type_method(2, 1);
-		set_method_param_type(tp, 0, uint_tp);
-		set_method_param_type(tp, 1, uint_tp);
-		set_method_res_type(tp, 0, uint_tp);
-
-		rt_uDiv.ent             = new_entity(get_glob_type(), ID("__udivsi3"), tp);
-		set_entity_ld_ident(rt_uDiv.ent, ID("__udivsi3"));
-		rt_uDiv.mode            = mode_T;
-		rt_uDiv.res_mode        = mode_Iu;
-		rt_uDiv.mem_proj_nr     = pn_Div_M;
-		rt_uDiv.regular_proj_nr = pn_Div_X_regular;
-		rt_uDiv.exc_proj_nr     = pn_Div_X_except;
-		rt_uDiv.res_proj_nr     = pn_Div_res;
-
-		set_entity_visibility(rt_uDiv.ent, ir_visibility_external);
-
-		map_Div->kind     = INTRINSIC_INSTR;
-		map_Div->op       = op_Div;
-		map_Div->i_mapper = (i_mapper_func)i_mapper_RuntimeCall;
-		map_Div->ctx      = &rt_uDiv;
-	}
-	/* ... nor a signed mod instruction ... */
-	{
-		i_instr_record *map_Mod = &records[n_records++].i_instr;
-
-		tp = new_type_method(2, 1);
-		set_method_param_type(tp, 0, int_tp);
-		set_method_param_type(tp, 1, int_tp);
-		set_method_res_type(tp, 0, int_tp);
-
-		rt_iMod.ent             = new_entity(get_glob_type(), ID("__modsi3"), tp);
-		set_entity_ld_ident(rt_iMod.ent, ID("__modsi3"));
-		rt_iMod.mode            = mode_T;
-		rt_iMod.res_mode        = mode_Is;
-		rt_iMod.mem_proj_nr     = pn_Mod_M;
-		rt_iMod.regular_proj_nr = pn_Mod_X_regular;
-		rt_iMod.exc_proj_nr     = pn_Mod_X_except;
-		rt_iMod.res_proj_nr     = pn_Mod_res;
-
-		set_entity_visibility(rt_iMod.ent, ir_visibility_external);
-
-		map_Mod->kind     = INTRINSIC_INSTR;
-		map_Mod->op       = op_Mod;
-		map_Mod->i_mapper = (i_mapper_func)i_mapper_RuntimeCall;
-		map_Mod->ctx      = &rt_iMod;
-	}
-	/* ... nor an unsigned mod. */
-	{
-		i_instr_record *map_Mod = &records[n_records++].i_instr;
-
-		tp = new_type_method(2, 1);
-		set_method_param_type(tp, 0, uint_tp);
-		set_method_param_type(tp, 1, uint_tp);
-		set_method_res_type(tp, 0, uint_tp);
-
-		rt_uMod.ent             = new_entity(get_glob_type(), ID("__umodsi3"), tp);
-		set_entity_ld_ident(rt_uMod.ent, ID("__umodsi3"));
-		rt_uMod.mode            = mode_T;
-		rt_uMod.res_mode        = mode_Iu;
-		rt_uMod.mem_proj_nr     = pn_Mod_M;
-		rt_uMod.regular_proj_nr = pn_Mod_X_regular;
-		rt_uMod.exc_proj_nr     = pn_Mod_X_except;
-		rt_uMod.res_proj_nr     = pn_Mod_res;
-
-		set_entity_visibility(rt_uMod.ent, ir_visibility_external);
-
-		map_Mod->kind     = INTRINSIC_INSTR;
-		map_Mod->op       = op_Mod;
-		map_Mod->i_mapper = (i_mapper_func)i_mapper_RuntimeCall;
-		map_Mod->ctx      = &rt_uMod;
-	}
-
-	if (n_records > 0)
-		lower_intrinsics(records, n_records, /*part_block_used=*/0);
+	arm_create_runtime_entities();
+	irg_walk_graph(irg, handle_intrinsic, NULL, NULL);
 }
 
 extern const arch_isa_if_t arm_isa_if;

@@ -19,6 +19,7 @@
 #include "iredges.h"
 #include "irouts.h"
 #include "trouts.h"
+#include "irgmod.h"
 #include "cgana.h"
 #include "debug.h"
 #include "execfreq_t.h"
@@ -601,4 +602,50 @@ bool be_pattern_is_rotl(ir_node const *const irn_or, ir_node **const left,
 	*left  = x;
 	*right = c1;
 	return true;
+}
+
+void be_map_exc_node_to_runtime_call(ir_node *node, ir_mode *res_mode,
+                                     ir_entity *runtime_entity,
+                                     long pn_M, long pn_X_regular,
+                                     long pn_X_except, long pn_res)
+{
+	assert(is_memop(node));
+
+	size_t    n_in = get_irn_arity(node)-1;
+	ir_node **in   = ALLOCAN(ir_node*, n_in);
+	ir_type  *mtp  = get_entity_type(runtime_entity);
+
+	assert(get_method_n_params(mtp) == n_in);
+	size_t p = 0;
+	for (int i = 0, arity = get_irn_arity(node); i < arity; ++i) {
+		ir_node *n = get_irn_n(node, i);
+		if (get_irn_mode(n) == mode_M)
+			continue;
+		in[p++] = n;
+	}
+	assert(p == n_in);
+
+	ir_graph *irg   = get_irn_irg(node);
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_node  *addr  = new_rd_SymConst_addr_ent(NULL, irg, mode_P_code,
+	                                           runtime_entity);
+	ir_node  *block = get_nodes_block(node);
+	ir_node  *mem   = get_memop_mem(node);
+	ir_node  *call  = new_rd_Call(dbgi, block, mem, addr, n_in, in, mtp);
+	set_irn_pinned(call, get_irn_pinned(node));
+	int throws_exception = ir_throws_exception(node);
+	ir_set_throws_exception(call, throws_exception);
+
+	assert(pn_M < 4 && pn_X_regular < 4 && pn_X_except < 4 && pn_res < 4);
+	int       const n_proj   = 4;
+	ir_node **const tuple_in = ALLOCAN(ir_node*, n_proj);
+	tuple_in[pn_M] = new_r_Proj(call, mode_M, pn_Call_M);
+	ir_node *ress = new_r_Proj(call, mode_T, pn_Call_T_result);
+	tuple_in[pn_res] = new_r_Proj(ress, res_mode, 0);
+	if (throws_exception) {
+		tuple_in[pn_X_regular] = new_r_Proj(call, mode_X, pn_Call_X_regular);
+		tuple_in[pn_X_except]  = new_r_Proj(call, mode_X, pn_Call_X_except);
+	}
+
+	turn_into_tuple(node, n_proj, tuple_in);
 }

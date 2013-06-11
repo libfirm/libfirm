@@ -113,11 +113,9 @@ FIRM_API void lower_mux(ir_graph *irg, lower_mux_callback *cb_func);
  * An intrinsic mapper function.
  *
  * @param node   the IR-node that will be mapped
- * @param ctx    a context
- *
  * @return  non-zero if the call was mapped
  */
-typedef int (*i_mapper_func)(ir_node *node, void *ctx);
+typedef int (i_mapper_func)(ir_node *node);
 
 /** kind of an instruction record
  * @see #i_record */
@@ -132,9 +130,7 @@ enum ikind {
 typedef struct i_call_record {
 	enum ikind    kind;       /**< must be INTRINSIC_CALL */
 	ir_entity     *i_ent;     /**< the entity representing an intrinsic call */
-	i_mapper_func i_mapper;   /**< the mapper function to call */
-	void          *ctx;       /**< mapper context */
-	void          *link;      /**< used in the construction algorithm, must be NULL */
+	i_mapper_func *i_mapper;  /**< the mapper function to call */
 } i_call_record;
 
 /**
@@ -143,9 +139,7 @@ typedef struct i_call_record {
 typedef struct i_instr_record {
 	enum ikind    kind;       /**< must be INTRINSIC_INSTR */
 	ir_op         *op;        /**< the opcode that must be mapped. */
-	i_mapper_func i_mapper;   /**< the mapper function to call */
-	void          *ctx;       /**< mapper context */
-	void          *link;      /**< used in the construction algorithm, must be NULL */
+	i_mapper_func *i_mapper;  /**< the mapper function to call */
 } i_instr_record;
 
 /**
@@ -157,20 +151,33 @@ typedef union i_record {
 	i_instr_record i_instr;  /**< used for isnstruction records */
 } i_record;
 
+typedef struct ir_intrinsics_map ir_intrinsics_map;
+
+/**
+ * Create a new intrinsic lowering map which can be used by ir_lower_intrinsics.
+ *
+ * @param list             an array of intrinsic map records
+ * @param length           the length of the array
+ * @param part_block_used  set to 1 if part_block() is used by one of the
+ *                         lowering functions.
+ */
+FIRM_API ir_intrinsics_map *ir_create_intrinsics_map(i_record *list,
+                                                     size_t length,
+                                                     int part_block_used);
+
+/**
+ * Frees resources occupied by an intrisics_map created by
+ * ir_create_intrinsics_map().
+ */
+FIRM_API void ir_free_intrinsics_map(ir_intrinsics_map *map);
+
 /**
  * Go through all graphs and map calls to intrinsic functions and instructions.
  *
  * Every call or instruction is reported to its mapper function,
  * which is responsible for rebuilding the graph.
- *
- * @param list             an array of intrinsic map records
- * @param length           the length of the array
- * @param part_block_used  set to true if part_block() must be using during lowering
- *
- * @return number of found intrinsics.
  */
-FIRM_API size_t lower_intrinsics(i_record *list, size_t length,
-                                 int part_block_used);
+FIRM_API void ir_lower_intrinsics(ir_graph *irg, ir_intrinsics_map *map);
 
 /**
  * A mapper for the integer/float absolute value: type abs(type v).
@@ -178,7 +185,7 @@ FIRM_API size_t lower_intrinsics(i_record *list, size_t length,
  *
  * @return always 1
  */
-FIRM_API int i_mapper_abs(ir_node *call, void *ctx);
+FIRM_API int i_mapper_abs(ir_node *call);
 
 /**
  * A mapper for the integer byte swap value: type bswap(type v).
@@ -186,196 +193,196 @@ FIRM_API int i_mapper_abs(ir_node *call, void *ctx);
  *
  * @return always 1
  */
-FIRM_API int i_mapper_bswap(ir_node *call, void *ctx);
+FIRM_API int i_mapper_bswap(ir_node *call);
 
 /**
  * A mapper for the floating point sqrt(v): floattype sqrt(floattype v);
  *
  * @return 1 if the sqrt call was removed, 0 else.
  */
-FIRM_API int i_mapper_sqrt(ir_node *call, void *ctx);
+FIRM_API int i_mapper_sqrt(ir_node *call);
 
 /**
  * A mapper for the floating point cbrt(v): floattype sqrt(floattype v);
  *
  * @return 1 if the cbrt call was removed, 0 else.
  */
-FIRM_API int i_mapper_cbrt(ir_node *call, void *ctx);
+FIRM_API int i_mapper_cbrt(ir_node *call);
 
 /**
  * A mapper for the floating point pow(a, b): floattype pow(floattype a, floattype b);
  *
  * @return 1 if the pow call was removed, 0 else.
  */
-FIRM_API int i_mapper_pow(ir_node *call, void *ctx);
+FIRM_API int i_mapper_pow(ir_node *call);
 
 /**
  * A mapper for the floating point exp(a): floattype exp(floattype a);
  *
  * @return 1 if the exp call was removed, 0 else.
  */
-FIRM_API int i_mapper_exp(ir_node *call, void *ctx);
+FIRM_API int i_mapper_exp(ir_node *call);
 
 /**
  * A mapper for the floating point exp2(a): floattype exp2(floattype a);
  *
  * @return 1 if the exp call was removed, 0 else.
  */
-FIRM_API int i_mapper_exp2(ir_node *call, void *ctx);
+FIRM_API int i_mapper_exp2(ir_node *call);
 
 /**
  * A mapper for the floating point exp10(a): floattype exp10(floattype a);
  *
  * @return 1 if the exp call was removed, 0 else.
  */
-FIRM_API int i_mapper_exp10(ir_node *call, void *ctx);
+FIRM_API int i_mapper_exp10(ir_node *call);
 
 /**
  * A mapper for the floating point log(a): floattype log(floattype a);
  *
  * @return 1 if the log call was removed, 0 else.
  */
-FIRM_API int i_mapper_log(ir_node *call, void *ctx);
+FIRM_API int i_mapper_log(ir_node *call);
 
 /**
  * A mapper for the floating point log(a): floattype log(floattype a);
  *
  * @return 1 if the log call was removed, 0 else.
  */
-FIRM_API int i_mapper_log2(ir_node *call, void *ctx);
+FIRM_API int i_mapper_log2(ir_node *call);
 
 /**
  * A mapper for the floating point log(a): floattype log(floattype a);
  *
  * @return 1 if the log call was removed, 0 else.
  */
-FIRM_API int i_mapper_log10(ir_node *call, void *ctx);
+FIRM_API int i_mapper_log10(ir_node *call);
 
 /**
  * A mapper for the floating point sin(a): floattype sin(floattype a);
  *
  * @return 1 if the sin call was removed, 0 else.
  */
-FIRM_API int i_mapper_sin(ir_node *call, void *ctx);
+FIRM_API int i_mapper_sin(ir_node *call);
 
 /**
  * A mapper for the floating point sin(a): floattype cos(floattype a);
  *
  * @return 1 if the cos call was removed, 0 else.
  */
-FIRM_API int i_mapper_cos(ir_node *call, void *ctx);
+FIRM_API int i_mapper_cos(ir_node *call);
 
 /**
  * A mapper for the floating point tan(a): floattype tan(floattype a);
  *
  * @return 1 if the tan call was removed, 0 else.
  */
-FIRM_API int i_mapper_tan(ir_node *call, void *ctx);
+FIRM_API int i_mapper_tan(ir_node *call);
 
 /**
  * A mapper for the floating point asin(a): floattype asin(floattype a);
  *
  * @return 1 if the asin call was removed, 0 else.
  */
-FIRM_API int i_mapper_asin(ir_node *call, void *ctx);
+FIRM_API int i_mapper_asin(ir_node *call);
 
 /**
  * A mapper for the floating point acos(a): floattype acos(floattype a);
  *
  * @return 1 if the tan call was removed, 0 else.
  */
-FIRM_API int i_mapper_acos(ir_node *call, void *ctx);
+FIRM_API int i_mapper_acos(ir_node *call);
 
 /**
  * A mapper for the floating point atan(a): floattype atan(floattype a);
  *
  * @return 1 if the atan call was removed, 0 else.
  */
-FIRM_API int i_mapper_atan(ir_node *call, void *ctx);
+FIRM_API int i_mapper_atan(ir_node *call);
 
 /**
  * A mapper for the floating point sinh(a): floattype sinh(floattype a);
  *
  * @return 1 if the sinh call was removed, 0 else.
  */
-FIRM_API int i_mapper_sinh(ir_node *call, void *ctx);
+FIRM_API int i_mapper_sinh(ir_node *call);
 
 /**
  * A mapper for the floating point cosh(a): floattype cosh(floattype a);
  *
  * @return 1 if the cosh call was removed, 0 else.
  */
-FIRM_API int i_mapper_cosh(ir_node *call, void *ctx);
+FIRM_API int i_mapper_cosh(ir_node *call);
 
 /**
  * A mapper for the floating point tanh(a): floattype tanh(floattype a);
  *
  * @return 1 if the tanh call was removed, 0 else.
  */
-FIRM_API int i_mapper_tanh(ir_node *call, void *ctx);
+FIRM_API int i_mapper_tanh(ir_node *call);
 
 /**
  * A mapper for the strcmp-Function: inttype strcmp(char pointer a, char pointer b);
  *
  * @return 1 if the strcmp call was removed, 0 else.
  */
-FIRM_API int i_mapper_strcmp(ir_node *call, void *ctx);
+FIRM_API int i_mapper_strcmp(ir_node *call);
 
 /**
  * A mapper for the strncmp-Function: inttype strncmp(char pointer a, char pointer b, inttype len);
  *
  * @return 1 if the strncmp call was removed, 0 else.
  */
-FIRM_API int i_mapper_strncmp(ir_node *call, void *ctx);
+FIRM_API int i_mapper_strncmp(ir_node *call);
 
 /**
  * A mapper for the strcpy-Function: char pointer strcpy(char pointer a, char pointer b);
  *
  * @return 1 if the strcpy call was removed, 0 else.
  */
-FIRM_API int i_mapper_strcpy(ir_node *call, void *ctx);
+FIRM_API int i_mapper_strcpy(ir_node *call);
 
 /**
  * A mapper for the strlen-Function: inttype strlen(char pointer a);
  *
  * @return 1 if the strlen call was removed, 0 else.
  */
-FIRM_API int i_mapper_strlen(ir_node *call, void *ctx);
+FIRM_API int i_mapper_strlen(ir_node *call);
 
 /**
  * A mapper for the memcpy-Function: void pointer memcpy(void pointer d, void pointer s, inttype c);
  *
  * @return 1 if the memcpy call was removed, 0 else.
  */
-FIRM_API int i_mapper_memcpy(ir_node *call, void *ctx);
+FIRM_API int i_mapper_memcpy(ir_node *call);
 
 /**
  * A mapper for the mempcpy-Function: void pointer mempcpy(void pointer d, void pointer s, inttype c);
  *
  * @return 1 if the mempcpy call was removed, 0 else.
  */
-FIRM_API int i_mapper_mempcpy(ir_node *call, void *ctx);
+FIRM_API int i_mapper_mempcpy(ir_node *call);
 
 /**
  * A mapper for the memmove-Function: void pointer memmove(void pointer d, void pointer s, inttype c);
  *
  * @return 1 if the memmove call was removed, 0 else.
  */
-FIRM_API int i_mapper_memmove(ir_node *call, void *ctx);
+FIRM_API int i_mapper_memmove(ir_node *call);
 
 /**
  * A mapper for the memset-Function: void pointer memset(void pointer d, inttype C, inttype len);
  *
  * @return 1 if the memset call was removed, 0 else.
  */
-FIRM_API int i_mapper_memset(ir_node *call, void *ctx);
+FIRM_API int i_mapper_memset(ir_node *call);
 
 /**
  * A mapper for the strncmp-Function: inttype memcmp(void pointer a, void pointer b, inttype len);
  *
  * @return 1 if the strncmp call was removed, 0 else.
  */
-FIRM_API int i_mapper_memcmp(ir_node *call, void *ctx);
+FIRM_API int i_mapper_memcmp(ir_node *call);
 
 /**
  * A mapper for the alloca() function: pointer alloca(inttype size)
@@ -383,81 +390,7 @@ FIRM_API int i_mapper_memcmp(ir_node *call, void *ctx);
  *
  * @return always 1
  */
-FIRM_API int i_mapper_alloca(ir_node *call, void *ctx);
-
-/**
- * A runtime routine description.
- */
-typedef struct runtime_rt {
-	ir_entity *ent;            /**< The entity representing the runtime routine. */
-	ir_mode   *mode;           /**< The operation mode of the mapped instruction. */
-	ir_mode   *res_mode;       /**< The result mode of the mapped instruction or NULL. */
-	long      mem_proj_nr;     /**< if >= 0, create a memory ProjM() */
-	long      regular_proj_nr; /**< if >= 0, create a regular ProjX() */
-	long      exc_proj_nr;     /**< if >= 0, create a exception ProjX() */
-	long      res_proj_nr;     /**< if >= 0, first result projection number */
-} runtime_rt;
-
-/**
- * A mapper for mapping unsupported instructions to runtime calls.
- * Maps a op(arg_0, ..., arg_n) into a call to a runtime function
- * rt(arg_0, ..., arg_n).
- *
- * The mapping is only done, if the modes of all arguments matches the
- * modes of rt's argument.
- * Further, if op has a memory input, the generated Call uses it, else
- * it gets a NoMem.
- * The pinned state of the Call will be set to the pinned state of op.
- *
- * Note that i_mapper_RuntimeCall() must be used with a i_instr_record.
- *
- * @return 1 if an op was mapped, 0 else
- *
- * Some examples:
- *
- * - Maps signed Div nodes to calls to rt_Div():
-   @code
-  runtime_rt rt_Div = {
-    ent("int rt_Div(int, int)"),
-    mode_T,
-    mode_Is,
-    pn_Div_M,
-    pn_Div_X_regular,
-    pn_Div_X_except,
-    pn_Div_M,
-    pn_Div_res
-  };
-  i_instr_record map_Div = {
-    INTRINSIC_INSTR,
-    op_Div,
-    i_mapper_RuntimeCall,
-    &rt_Div,
-    NULL
-  };
-  @endcode
- *
- * - Maps ConvD(F) to calls to rt_Float2Div():
-  @code
-  runtime_rt rt_Float2Double = {
-    ent("double rt_Float2Div(float)"),
-    get_type_mode("double"),
-    NULL,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1
-  };
-  i_instr_record map_Float2Double = {
-    INTRINSIC_INSTR,
-    op_Conv,
-    i_mapper_RuntimeCall,
-    &rt_Float2Double,
-    NULL
-  };
-  @endcode
- */
-FIRM_API int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt);
+FIRM_API int i_mapper_alloca(ir_node *call);
 
 /** @} */
 

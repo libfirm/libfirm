@@ -462,7 +462,7 @@ struct arch_isa_if_t {
 	 * Called directly after initialization. Backend should handle all
 	 * intrinsics here.
 	 */
-	void (*handle_intrinsics)(void);
+	void (*handle_intrinsics)(ir_graph *irg);
 
 	/**
 	 * Called, when the graph is being normalized.
@@ -488,8 +488,6 @@ struct arch_isa_if_t {
 };
 
 #define arch_env_end_codegeneration(env)               ((env)->impl->end_codegeneration(env))
-#define arch_env_handle_intrinsics(env)                \
-	do { if((env)->impl->handle_intrinsics != NULL) (env)->impl->handle_intrinsics(); } while(0)
 #define arch_env_get_call_abi(env,tp,abi)              ((env)->impl->get_call_abi((tp), (abi)))
 #define arch_env_mark_remat(env,node) \
 	do { if ((env)->impl->mark_remat != NULL) (env)->impl->mark_remat((node)); } while(0)

@@ -101,4 +101,13 @@ bool be_upper_bits_clean(const ir_node *node, ir_mode *mode);
  */
 bool be_pattern_is_rotl(const ir_node *node, ir_node **left, ir_node **right);
 
+/**
+ * maps an operation which potentially produces exceptions (like Div,Mod) to a
+ * runtime call.
+ */
+void be_map_exc_node_to_runtime_call(ir_node *node, ir_mode *res_mode,
+                                     ir_entity *runtime_entity,
+                                     long pn_M, long pn_X_regular,
+                                     long pn_X_except, long pn_res);
+
 #endif
