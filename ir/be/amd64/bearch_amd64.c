@@ -22,6 +22,7 @@
 #include "belower.h"
 #include "besched.h"
 #include "beabi.h"
+#include "beabihelper.h"
 #include "bemodule.h"
 #include "begnuas.h"
 #include "belistsched.h"
@@ -101,6 +102,8 @@ static const arch_irn_ops_t amd64_irn_ops = {
 static void amd64_before_ra(ir_graph *irg)
 {
 	be_sched_fix_flags(irg, &amd64_reg_classes[CLASS_amd64_flags], NULL, NULL);
+
+	be_add_missing_keeps(irg);
 }
 
 static void transform_Reload(ir_node *node)
