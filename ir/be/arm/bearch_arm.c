@@ -110,8 +110,7 @@ static void arm_prepare_graph(ir_graph *irg)
 	be_timer_push(T_CODEGEN);
 	arm_transform_graph(irg);
 	be_timer_pop(T_CODEGEN);
-	if (be_options.dump_flags & DUMP_BE)
-		dump_ir_graph(irg, "code-selection");
+	be_dump(DUMP_BE, irg, "code-selection");
 
 	/* do local optimizations (mainly CSE) */
 	local_optimize_graph(irg);

@@ -188,8 +188,7 @@ static void sparc_prepare_graph(ir_graph *irg)
 	be_timer_push(T_CODEGEN);
 	sparc_transform_graph(irg);
 	be_timer_pop(T_CODEGEN);
-	if (be_options.dump_flags & DUMP_BE)
-		dump_ir_graph(irg, "code-selection");
+	be_dump(DUMP_BE, irg, "code-selection");
 }
 
 static bool sparc_modifies_flags(const ir_node *node)

@@ -1074,7 +1074,6 @@ static void ia32_prepare_graph(ir_graph *irg)
 	struct obstack  *obst     = be_get_be_obst(irg);
 	ia32_irg_data_t *irg_data = OALLOCZ(obst, ia32_irg_data_t);
 
-	irg_data->dump = (be_options.dump_flags & DUMP_BE) ? 1 : 0;
 	be_birg_from_irg(irg)->isa_link = irg_data;
 
 	if (gprof) {
@@ -1097,8 +1096,7 @@ static void ia32_prepare_graph(ir_graph *irg)
 	}
 
 	be_abi_introduce(irg);
-	if (irg_data->dump)
-		dump_ir_graph(irg, "abi");
+	be_dump(DUMP_BE, irg, "abi");
 
 	be_timer_push(T_CODEGEN);
 #ifdef FIRM_GRGEN_BE
@@ -1122,8 +1120,7 @@ static void ia32_prepare_graph(ir_graph *irg)
 #endif
 	be_timer_pop(T_CODEGEN);
 
-	if (irg_data->dump)
-		dump_ir_graph(irg, "code-selection");
+	be_dump(DUMP_BE, irg, "code-selection");
 
 	/* do local optimizations (mainly CSE) */
 	optimize_graph_df(irg);
@@ -1133,8 +1130,7 @@ static void ia32_prepare_graph(ir_graph *irg)
 	/* optimize address mode */
 	ia32_optimize_graph(irg);
 
-	if (irg_data->dump)
-		dump_ir_graph(irg, "opt");
+	be_dump(DUMP_BE, irg, "opt");
 
 	/* do code placement, to optimize the position of constants */
 	place_code(irg);
@@ -1142,8 +1138,7 @@ static void ia32_prepare_graph(ir_graph *irg)
 	/* backend code expects that outedges are always enabled */
 	assure_edges(irg);
 
-	if (irg_data->dump)
-		dump_ir_graph(irg, "place");
+	be_dump(DUMP_BE, irg, "place");
 }
 
 static const tarval_mode_info mo_integer = {

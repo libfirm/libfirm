@@ -370,21 +370,6 @@ static void be_done_env(be_main_env_t *env)
 }
 
 /**
- * A wrapper around a firm dumper. Dumps only, if
- * flags are enabled.
- *
- * @param mask    a bitmask containing the reason what will be dumped
- * @param irg     the IR graph to dump
- * @param suffix  the suffix for the dumper
- * @param dumper  the dumper to be called
- */
-static void dump(int mask, ir_graph *irg, const char *suffix)
-{
-	if (be_options.dump_flags & mask)
-		dump_ir_graph(irg, suffix);
-}
-
-/**
  * Prepare a backend graph for code generation and initialize its irg
  */
 static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
@@ -392,7 +377,7 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 	/* don't duplicate locals in backend when dumping... */
 	ir_remove_dump_flags(ir_dump_flag_consts_local);
 
-	dump(DUMP_INITIAL, irg, "begin");
+	be_dump(DUMP_INITIAL, irg, "begin");
 
 	assure_irg_properties(irg,
 		IR_GRAPH_PROPERTY_NO_BADS
@@ -408,7 +393,7 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 	be_info_init_irg(irg);
 	birg->lv = be_liveness_new(irg);
 
-	dump(DUMP_INITIAL, irg, "prepared");
+	be_dump(DUMP_INITIAL, irg, "prepared");
 }
 
 int be_timing;
@@ -578,7 +563,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_schedule_graph(irg);
 		be_timer_pop(T_SCHED);
 
-		dump(DUMP_SCHED, irg, "sched");
+		be_dump(DUMP_SCHED, irg, "sched");
 
 		/* check schedule */
 		be_timer_push(T_VERIFY);
@@ -598,7 +583,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		assure_constraints(irg);
 		be_timer_pop(T_CONSTR);
 
-		dump(DUMP_SCHED, irg, "assured");
+		be_dump(DUMP_SCHED, irg, "assured");
 
 		/* stuff needs to be done after scheduling but before register allocation */
 		be_timer_push(T_RA_PREPARATION);
@@ -611,7 +596,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_abi_fix_stack_nodes(irg);
 		be_timer_pop(T_ABI);
 
-		dump(DUMP_SCHED, irg, "fix_stack");
+		be_dump(DUMP_SCHED, irg, "fix_stack");
 
 		/* check schedule */
 		be_timer_push(T_VERIFY);
@@ -629,14 +614,14 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		stat_ev_dbl("bemain_costs_before_ra", be_estimate_irg_costs(irg));
 
-		dump(DUMP_RA, irg, "ra");
+		be_dump(DUMP_RA, irg, "ra");
 
 		be_timer_push(T_FINISH);
 		if (arch_env->impl->finish_graph != NULL)
 			arch_env->impl->finish_graph(irg);
 		be_timer_pop(T_FINISH);
 
-		dump(DUMP_FINAL, irg, "finish");
+		be_dump(DUMP_FINAL, irg, "finish");
 
 		if (stat_ev_enabled) {
 			stat_ev_ull("bemain_insns_finish", be_count_insns(irg));
@@ -664,7 +649,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 			arch_env->impl->emit(irg);
 		be_timer_pop(T_EMIT);
 
-		dump(DUMP_FINAL, irg, "end");
+		be_dump(DUMP_FINAL, irg, "end");
 
 		restore_optimization_state(&state);
 

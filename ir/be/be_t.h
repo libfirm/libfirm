@@ -18,6 +18,7 @@
 #include "firm_types.h"
 #include "pmap.h"
 #include "timing.h"
+#include "irdump.h"
 
 enum {
 	DUMP_NONE     = 0,
@@ -122,6 +123,19 @@ static inline void be_timer_pop(be_timer_id_t id)
 	if (!be_timing)
 		return;
 	ir_timer_pop(be_timers[id]);
+}
+
+/**
+ * A wrapper around a firm dumper. Dumps only, if flags are enabled.
+ *
+ * @param mask    a bitmask containing the reason what will be dumped
+ * @param irg     the IR graph to dump
+ * @param suffix  the suffix for the dumper
+ */
+static inline void be_dump(int mask, ir_graph *irg, const char *suffix)
+{
+	if (be_options.dump_flags & mask)
+		dump_ir_graph(irg, suffix);
 }
 
 #endif

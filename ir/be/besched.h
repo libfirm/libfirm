@@ -209,7 +209,7 @@ typedef void (*schedule_func) (ir_graph *irg);
 void be_register_scheduler(const char *name, schedule_func func);
 
 /**
- * schedule a graph with the currenty selected scheduler.
+ * schedule a graph with the currently selected scheduler.
  */
 void be_schedule_graph(ir_graph *irg);
 

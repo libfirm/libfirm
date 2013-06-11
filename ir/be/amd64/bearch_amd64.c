@@ -245,16 +245,13 @@ static void amd64_end_codegeneration(void *self)
 static void amd64_prepare_graph(ir_graph *irg)
 {
 	be_abi_introduce(irg);
-	if (be_options.dump_flags & DUMP_BE) {
-		dump_ir_graph(irg, "abi");
-	}
+	be_dump(DUMP_BE, irg, "abi");
 
 	be_timer_push(T_CODEGEN);
 	amd64_transform_graph(irg);
 	be_timer_pop(T_CODEGEN);
 
-	if (be_options.dump_flags & DUMP_BE)
-		dump_ir_graph(irg, "code-selection");
+	be_dump(DUMP_BE, irg, "code-selection");
 }
 
 /**
