@@ -244,6 +244,14 @@ static ir_node *gen_be_Call(ir_node *node)
 	return res;
 }
 
+static bool needs_extension(ir_node *op)
+{
+	ir_mode *mode = get_irn_mode(op);
+	if (get_mode_size_bits(mode) >= 32)
+		return false;
+	return !be_upper_bits_clean(op, mode);
+}
+
 static ir_node *gen_Cmp(ir_node *node)
 {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
@@ -261,16 +269,16 @@ static ir_node *gen_Cmp(ir_node *node)
 
 	amd64_insn_mode_t insn_mode
 		= get_mode_size_bits(cmp_mode) > 32 ? INSN_MODE_64 : INSN_MODE_32;
-	/* mode < 32 not correctly implemented yet */
-	assert(get_mode_size_bits(cmp_mode) >= 32);
 
 	assert(get_irn_mode(op2) == cmp_mode);
 	is_unsigned = !mode_is_signed(cmp_mode);
 
 	new_op1 = be_transform_node(op1);
-	/* new_op1 = gen_extension(dbgi, block, new_op1, cmp_mode); */
+	if (needs_extension(op1))
+		new_op1 = new_bd_amd64_Conv(dbgi, block, new_op1, cmp_mode);
 	new_op2 = be_transform_node(op2);
-	/* new_op2 = gen_extension(dbgi, block, new_op2, cmp_mode); */
+	if (needs_extension(op2))
+		new_op2 = new_bd_amd64_Conv(dbgi, block, new_op2, cmp_mode);
 	return new_bd_amd64_Cmp(dbgi, block, new_op1, new_op2, insn_mode, false,
 	                        is_unsigned);
 }
