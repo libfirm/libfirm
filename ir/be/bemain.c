@@ -600,7 +600,11 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 			be_timer_pop(T_VERIFY);
 		}
 
-		stat_ev_dbl("bemain_costs_before_ra", be_estimate_irg_costs(irg));
+		if (stat_ev_enabled) {
+			stat_ev_dbl("bemain_costs_after_ra", be_estimate_irg_costs(irg));
+			stat_ev_ull("bemain_insns_after_ra", be_count_insns(irg));
+			stat_ev_ull("bemain_blocks_after_ra", be_count_blocks(irg));
+		}
 
 		be_dump(DUMP_RA, irg, "ra");
 
