@@ -224,9 +224,8 @@ static ir_node *gen_Switch(ir_node *node)
 	const ir_switch_table *table  = get_Switch_table(node);
 	unsigned               n_outs = get_Switch_n_outs(node);
 
-	ir_entity *entity;
-
-	entity = new_entity(NULL, id_unique("TBL%u"), get_unknown_type());
+	ir_type   *const utype  = get_unknown_type();
+	ir_entity *const entity = new_entity(utype, id_unique("TBL%u"), utype);
 	set_entity_visibility(entity, ir_visibility_private);
 	add_entity_linkage(entity, IR_LINKAGE_CONSTANT);
 
@@ -534,6 +533,7 @@ static void amd64_register_transformers(void)
 	be_set_transform_proj_function(op_Load,     gen_Proj_Load);
 	be_set_transform_proj_function(op_Mod,      gen_Proj_Mod);
 	be_set_transform_proj_function(op_Store,    gen_Proj_Store);
+	be_set_transform_proj_function(op_Switch,   be_duplicate_node);
 }
 
 void amd64_transform_graph(ir_graph *irg)
