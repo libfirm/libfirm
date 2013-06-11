@@ -66,7 +66,7 @@ be_options_t be_options = {
 	false,                             /* profile_use */
 	0,                                 /* try to omit frame pointer */
 	0,                                 /* create PIC code */
-	BE_VERIFY_WARN,                    /* verification level: warn */
+	true,                              /* do verification */
 	"",                                /* ilp server */
 	"",                                /* ilp solver */
 	1,                                 /* verbose assembler output */
@@ -88,27 +88,15 @@ static const lc_opt_enum_mask_items_t dump_items[] = {
 	{ NULL,         0 }
 };
 
-/* verify options. */
-static const lc_opt_enum_int_items_t verify_items[] = {
-	{ "off",    BE_VERIFY_OFF    },
-	{ "warn",   BE_VERIFY_WARN   },
-	{ "assert", BE_VERIFY_ASSERT },
-	{ NULL,     0 }
-};
-
 static lc_opt_enum_mask_var_t dump_var = {
 	&be_options.dump_flags, dump_items
-};
-
-static lc_opt_enum_int_var_t verify_var = {
-	&be_options.verify_option, verify_items
 };
 
 static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_ENUM_MASK("dump",       "dump irg on several occasions",                       &dump_var),
 	LC_OPT_ENT_BOOL     ("omitfp",     "omit frame pointer",                                  &be_options.omit_fp),
 	LC_OPT_ENT_BOOL     ("pic",        "create PIC code",                                     &be_options.pic),
-	LC_OPT_ENT_ENUM_INT ("verify",     "verify the backend irg",                              &verify_var),
+	LC_OPT_ENT_BOOL     ("verify",     "verify the backend irg",                              &be_options.do_verify),
 	LC_OPT_ENT_BOOL     ("time",       "get backend timing statistics",                       &be_options.timing),
 	LC_OPT_ENT_BOOL     ("profilegenerate", "instrument the code for execution count profiling",   &be_options.opt_profile_generate),
 	LC_OPT_ENT_BOOL     ("profileuse",      "use existing profile data",                           &be_options.opt_profile_use),
@@ -274,12 +262,12 @@ int be_parse_arg(const char *arg)
 }
 
 /* Perform schedule verification if requested. */
-static void be_sched_verify(ir_graph *irg, int verify_opt)
+static void be_sched_verify(ir_graph *irg)
 {
-	if (verify_opt == BE_VERIFY_WARN) {
+	if (be_options.do_verify) {
+		be_timer_push(T_VERIFY);
 		be_verify_schedule(irg);
-	} else if (verify_opt == BE_VERIFY_ASSERT) {
-		assert(be_verify_schedule(irg) && "Schedule verification failed.");
+		be_timer_pop(T_VERIFY);
 	}
 }
 
@@ -546,13 +534,11 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_timer_push(T_OTHER);
 
 		/* Verify the initial graph */
-		be_timer_push(T_VERIFY);
-		if (be_options.verify_option == BE_VERIFY_WARN) {
+		if (be_options.do_verify) {
+			be_timer_push(T_VERIFY);
 			irg_verify(irg, VERIFY_ENFORCE_SSA);
-		} else if (be_options.verify_option == BE_VERIFY_ASSERT) {
-			assert(irg_verify(irg, VERIFY_ENFORCE_SSA) && "irg verification failed");
+			be_timer_pop(T_VERIFY);
 		}
-		be_timer_pop(T_VERIFY);
 
 		/* prepare and perform codeselection */
 		if (arch_env->impl->prepare_graph != NULL)
@@ -566,9 +552,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_dump(DUMP_SCHED, irg, "sched");
 
 		/* check schedule */
-		be_timer_push(T_VERIFY);
-		be_sched_verify(irg, be_options.verify_option);
-		be_timer_pop(T_VERIFY);
+		be_sched_verify(irg);
 
 		/* introduce patterns to assure constraints */
 		be_timer_push(T_CONSTR);
@@ -599,9 +583,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_dump(DUMP_SCHED, irg, "fix_stack");
 
 		/* check schedule */
-		be_timer_push(T_VERIFY);
-		be_sched_verify(irg, be_options.verify_option);
-		be_timer_pop(T_VERIFY);
+		be_sched_verify(irg);
 
 		if (stat_ev_enabled) {
 			stat_ev_dbl("bemain_costs_before_ra", be_estimate_irg_costs(irg));
@@ -611,6 +593,12 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* Do register allocation */
 		be_allocate_registers(irg);
+
+		if (be_options.do_verify) {
+			be_timer_push(T_VERIFY);
+			be_verify_register_allocation(irg);
+			be_timer_pop(T_VERIFY);
+		}
 
 		stat_ev_dbl("bemain_costs_before_ra", be_estimate_irg_costs(irg));
 
@@ -629,19 +617,13 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		}
 
 		/* check schedule and register allocation */
-		be_timer_push(T_VERIFY);
-		if (be_options.verify_option == BE_VERIFY_WARN) {
+		if (be_options.do_verify) {
+			be_timer_push(T_VERIFY);
 			irg_verify(irg, VERIFY_ENFORCE_SSA);
 			be_verify_schedule(irg);
 			be_verify_register_allocation(irg);
-		} else if (be_options.verify_option == BE_VERIFY_ASSERT) {
-			assert(irg_verify(irg, VERIFY_ENFORCE_SSA) && "irg verification failed");
-			assert(be_verify_schedule(irg) && "Schedule verification failed");
-			assert(be_verify_register_allocation(irg)
-			       && "register allocation verification failed");
-
+			be_timer_pop(T_VERIFY);
 		}
-		be_timer_pop(T_VERIFY);
 
 		/* emit assembler code */
 		be_timer_push(T_EMIT);

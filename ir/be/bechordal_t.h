@@ -75,17 +75,11 @@ enum {
 	/* lower perm options */
 	BE_CH_LOWER_PERM_SWAP   = 1,
 	BE_CH_LOWER_PERM_COPY   = 2,
-
-	/* verify options */
-	BE_CH_VRFY_OFF    = 1,
-	BE_CH_VRFY_WARN   = 2,
-	BE_CH_VRFY_ASSERT = 3,
 };
 
 struct be_ra_chordal_opts_t {
 	unsigned dump_flags;
 	int      lower_perm_opt;
-	int      vrfy_option;
 };
 
 void check_for_memory_operands(ir_graph *irg);

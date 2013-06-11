@@ -67,7 +67,6 @@
 static be_ra_chordal_opts_t options = {
 	BE_CH_DUMP_NONE,
 	BE_CH_LOWER_PERM_SWAP,
-	BE_CH_VRFY_WARN
 };
 
 static const lc_opt_enum_int_items_t lower_perm_items[] = {
@@ -93,13 +92,6 @@ static const lc_opt_enum_mask_items_t dump_items[] = {
 	{ NULL, 0 }
 };
 
-static const lc_opt_enum_int_items_t be_ch_vrfy_items[] = {
-	{ "off",    BE_CH_VRFY_OFF    },
-	{ "warn",   BE_CH_VRFY_WARN   },
-	{ "assert", BE_CH_VRFY_ASSERT },
-	{ NULL, 0 }
-};
-
 static lc_opt_enum_int_var_t lower_perm_var = {
 	&options.lower_perm_opt, lower_perm_items
 };
@@ -108,14 +100,9 @@ static lc_opt_enum_mask_var_t dump_var = {
 	&options.dump_flags, dump_items
 };
 
-static lc_opt_enum_int_var_t be_ch_vrfy_var = {
-	&options.vrfy_option, be_ch_vrfy_items
-};
-
 static const lc_opt_table_entry_t be_chordal_options[] = {
 	LC_OPT_ENT_ENUM_INT ("perm",          "perm lowering options", &lower_perm_var),
 	LC_OPT_ENT_ENUM_MASK("dump",          "select dump phases", &dump_var),
-	LC_OPT_ENT_ENUM_INT ("verify",        "verify options", &be_ch_vrfy_var),
 	LC_OPT_LAST
 };
 
@@ -241,15 +228,12 @@ static void post_spill(be_chordal_env_t *const chordal_env, ir_graph *const irg)
 	be_timer_pop(T_RA_SPILL_APPLY);
 
 	/* verify schedule and register pressure */
-	be_timer_push(T_VERIFY);
-	if (chordal_env->opts->vrfy_option == BE_CH_VRFY_WARN) {
+	if (be_options.do_verify) {
+		be_timer_push(T_VERIFY);
 		be_verify_schedule(irg);
 		be_verify_register_pressure(irg, chordal_env->cls);
-	} else if (chordal_env->opts->vrfy_option == BE_CH_VRFY_ASSERT) {
-		assert(be_verify_schedule(irg) && "Schedule verification failed");
-		assert(be_verify_register_pressure(irg, chordal_env->cls) && "Register pressure verification failed");
+		be_timer_pop(T_VERIFY);
 	}
-	be_timer_pop(T_VERIFY);
 
 	/* Color the graph. */
 	be_timer_push(T_RA_COLOR);
@@ -292,7 +276,7 @@ static void post_spill(be_chordal_env_t *const chordal_env, ir_graph *const irg)
 
 	dump(BE_CH_DUMP_SSADESTR, irg, chordal_env->cls, "ssadestr");
 
-	if (chordal_env->opts->vrfy_option != BE_CH_VRFY_OFF) {
+	if (be_options.do_verify) {
 		be_timer_push(T_VERIFY);
 		be_ssa_destruction_check(chordal_env);
 		be_timer_pop(T_VERIFY);
@@ -374,15 +358,6 @@ static void be_ra_chordal_main(ir_graph *irg)
 			stat_ev_ctx_pop("bechordal_cls");
 		}
 	}
-
-	be_timer_push(T_VERIFY);
-	if (chordal_env.opts->vrfy_option == BE_CH_VRFY_WARN) {
-		be_verify_register_allocation(irg);
-	} else if (chordal_env.opts->vrfy_option == BE_CH_VRFY_ASSERT) {
-		assert(be_verify_register_allocation(irg)
-				&& "Register allocation invalid");
-	}
-	be_timer_pop(T_VERIFY);
 
 	be_timer_push(T_RA_EPILOG);
 	lower_nodes_after_ra(irg, options.lower_perm_opt == BE_CH_LOWER_PERM_COPY);

@@ -12,6 +12,7 @@
 #define FIRM_BE_BE_T_H
 
 #include <assert.h>
+#include <stdbool.h>
 
 #include "be.h"
 #include "be_types.h"
@@ -35,12 +36,6 @@ enum {
 	BE_TIME_ON
 };
 
-enum {
-	BE_VERIFY_OFF,
-	BE_VERIFY_WARN,
-	BE_VERIFY_ASSERT
-};
-
 /** Backend options */
 struct be_options_t {
 	unsigned dump_flags;       /**< backend dumping flags */
@@ -49,7 +44,7 @@ struct be_options_t {
 	int  opt_profile_use;      /**< use existing profile data */
 	int  omit_fp;              /**< try to omit the frame pointer */
 	int  pic;                  /**< create position independent code */
-	int  verify_option;        /**< backend verify option */
+	int  do_verify;            /**< backend verify option */
 	char ilp_server[128];      /**< the ilp server name */
 	char ilp_solver[128];      /**< the ilp solver name */
 	int  verbose_asm;          /**< dump verbose assembler */
