@@ -181,7 +181,7 @@ static inline int need_constraint_copy(ir_node *irn)
 		case iro_ia32_Lea:
 		case iro_ia32_Conv_I2I:
 		case iro_ia32_CMovcc:
-		case iro_ia32_Minus64Bit:
+		case iro_ia32_Minus64:
 			return 0;
 
 		default:

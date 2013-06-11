@@ -240,6 +240,7 @@ Adc => {
 
 l_Add => {
 	ins       => [ "left", "right" ],
+	outs      => [ "res", "flags" ],
 	attr_type => "",
 	dump_func => "NULL",
 },
@@ -443,6 +444,7 @@ Sbb0 => {
 
 l_Sub => {
 	ins       => [ "minuend", "subtrahend" ],
+	outs      => [ "res", "flags" ],
 	attr_type => "",
 	dump_func => "NULL",
 },
@@ -641,14 +643,20 @@ NegMem => {
 	modified_flags => $status_flags
 },
 
-Minus64Bit => {
+Minus64 => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "in_r1", "in_r2" ] },
-	outs      => [ "low_res", "high_res" ],
+	outs      => [ "res_low", "res_high" ],
 	latency   => 3,
 	modified_flags => $status_flags
 },
 
+l_Minus64 => {
+	ins       => [ "low", "high" ],
+	outs      => [ "res_low", "res_high" ],
+	attr_type => "",
+	dump_func => "NULL",
+},
 
 Inc => {
 	irn_flags => [ "rematerializable" ],

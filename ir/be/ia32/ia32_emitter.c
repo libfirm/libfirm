@@ -1221,43 +1221,43 @@ static void emit_be_Perm(const ir_node *node)
 	}
 }
 
-/* helper function for emit_ia32_Minus64Bit */
+/* helper function for emit_ia32_Minus64 */
 static void emit_mov(const ir_node* node, const arch_register_t *src, const arch_register_t *dst)
 {
 	ia32_emitf(node, "movl %R, %R", src, dst);
 }
 
-/* helper function for emit_ia32_Minus64Bit */
+/* helper function for emit_ia32_Minus64 */
 static void emit_neg(const ir_node* node, const arch_register_t *reg)
 {
 	ia32_emitf(node, "negl %R", reg);
 }
 
-/* helper function for emit_ia32_Minus64Bit */
+/* helper function for emit_ia32_Minus64 */
 static void emit_sbb0(const ir_node* node, const arch_register_t *reg)
 {
 	ia32_emitf(node, "sbbl $0, %R", reg);
 }
 
-/* helper function for emit_ia32_Minus64Bit */
+/* helper function for emit_ia32_Minus64 */
 static void emit_sbb(const ir_node* node, const arch_register_t *src, const arch_register_t *dst)
 {
 	ia32_emitf(node, "sbbl %R, %R", src, dst);
 }
 
-/* helper function for emit_ia32_Minus64Bit */
+/* helper function for emit_ia32_Minus64 */
 static void emit_xchg(const ir_node* node, const arch_register_t *src, const arch_register_t *dst)
 {
 	ia32_emitf(node, "xchgl %R, %R", src, dst);
 }
 
-/* helper function for emit_ia32_Minus64Bit */
+/* helper function for emit_ia32_Minus64 */
 static void emit_zero(const ir_node* node, const arch_register_t *reg)
 {
 	ia32_emitf(node, "xorl %R, %R", reg, reg);
 }
 
-static void emit_ia32_Minus64Bit(const ir_node *node)
+static void emit_ia32_Minus64(const ir_node *node)
 {
 	const arch_register_t *in_lo  = arch_get_irn_register_in(node, 0);
 	const arch_register_t *in_hi  = arch_get_irn_register_in(node, 1);
@@ -1377,7 +1377,7 @@ static void ia32_register_emitters(void)
 	IA32_EMIT(IMul);
 	IA32_EMIT(Jcc);
 	IA32_EMIT(Setcc);
-	IA32_EMIT(Minus64Bit);
+	IA32_EMIT(Minus64);
 	IA32_EMIT(SwitchJmp);
 	IA32_EMIT(ClimbFrame);
 	IA32_EMIT(Jmp);
@@ -2604,7 +2604,7 @@ static void bemit_helper_zero(const arch_register_t *reg)
 	bemit_modrr(reg, reg);
 }
 
-static void bemit_minus64bit(const ir_node *node)
+static void bemit_minus64(const ir_node *node)
 {
 	const arch_register_t *in_lo  = arch_get_irn_register_in(node, 0);
 	const arch_register_t *in_hi  = arch_get_irn_register_in(node, 1);
@@ -3318,7 +3318,7 @@ static void ia32_register_binary_emitters(void)
 	be_set_emitter(op_ia32_Lea,           bemit_lea);
 	be_set_emitter(op_ia32_Leave,         bemit_leave);
 	be_set_emitter(op_ia32_Load,          bemit_load);
-	be_set_emitter(op_ia32_Minus64Bit,    bemit_minus64bit);
+	be_set_emitter(op_ia32_Minus64,       bemit_minus64);
 	be_set_emitter(op_ia32_Mul,           bemit_mul);
 	be_set_emitter(op_ia32_Neg,           bemit_neg);
 	be_set_emitter(op_ia32_NegMem,        bemit_negmem);

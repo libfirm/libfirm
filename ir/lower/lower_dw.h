@@ -70,8 +70,7 @@ void ir_register_dw_lower_function(ir_op *op, lower_dw_func func);
  * After lowering a node a custom doubleword lowering function has to call this.
  * It registers 2 new values for the high and low part of the lowered value.
  */
-void ir_set_dw_lowered(ir_node *old, ir_node *new_low,
-                                ir_node *new_high);
+void ir_set_dw_lowered(ir_node *old, ir_node *new_low, ir_node *new_high);
 
 /**
  * Query lowering results of a node. In a lowering callback you can use this
@@ -89,6 +88,17 @@ static inline ir_node *get_lowered_high(ir_node *node)
 {
 	return get_node_entry(node)->high_word;
 }
+
+void ir_default_lower_dw_Conv(ir_node *node, ir_mode *mode);
+
+/**
+ * We need a custom version of part_block_edges because during transformation
+ * not all data-dependencies are explicit yet if a lowered nodes users are not
+ * lowered yet.
+ * We can fix this by modifying move to look for such implicit dependencies.
+ * Additionally we have to keep the proj_2_block map updated
+ */
+ir_node *part_block_dw(ir_node *node);
 
 /**
  * Return the unsigned variant of the lowered mode

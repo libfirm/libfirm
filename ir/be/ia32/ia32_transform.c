@@ -4010,6 +4010,18 @@ static ir_node *gen_ia32_l_Sbb(ir_node *node)
 	                       match_am | match_immediate | match_mode_neutral);
 }
 
+static ir_node *gen_ia32_l_Minus64(ir_node *node)
+{
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	ir_node  *low       = get_irn_n(node, n_ia32_l_Minus64_low);
+	ir_node  *high      = get_irn_n(node, n_ia32_l_Minus64_high);
+	ir_node  *new_low   = be_transform_node(low);
+	ir_node  *new_high  = be_transform_node(high);
+	return new_bd_ia32_Minus64(dbgi, new_block, new_low, new_high);
+}
+
 static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 {
 	if (ia32_cg_config.use_sse2) {
@@ -5320,19 +5332,19 @@ static void register_transformers(void)
 	be_set_transform_function(op_CopyB,            ia32_gen_CopyB);
 	be_set_transform_function(op_Div,              gen_Div);
 	be_set_transform_function(op_Eor,              gen_Eor);
+	be_set_transform_function(op_ia32_GetEIP,      be_duplicate_node);
 	be_set_transform_function(op_ia32_l_Adc,       gen_ia32_l_Adc);
 	be_set_transform_function(op_ia32_l_Add,       gen_ia32_l_Add);
 	be_set_transform_function(op_ia32_Leave,       be_duplicate_node);
 	be_set_transform_function(op_ia32_l_FloattoLL, gen_ia32_l_FloattoLL);
 	be_set_transform_function(op_ia32_l_IMul,      gen_ia32_l_IMul);
 	be_set_transform_function(op_ia32_l_LLtoFloat, gen_ia32_l_LLtoFloat);
+	be_set_transform_function(op_ia32_l_Minus64,   gen_ia32_l_Minus64);
 	be_set_transform_function(op_ia32_l_Mul,       gen_ia32_l_Mul);
 	be_set_transform_function(op_ia32_l_Sbb,       gen_ia32_l_Sbb);
 	be_set_transform_function(op_ia32_l_Sub,       gen_ia32_l_Sub);
-	be_set_transform_function(op_ia32_GetEIP,      be_duplicate_node);
-	be_set_transform_function(op_ia32_Minus64Bit,  be_duplicate_node);
-	be_set_transform_function(op_ia32_NoReg_GP,    be_duplicate_node);
 	be_set_transform_function(op_ia32_NoReg_FP,    be_duplicate_node);
+	be_set_transform_function(op_ia32_NoReg_GP,    be_duplicate_node);
 	be_set_transform_function(op_ia32_NoReg_XMM,   be_duplicate_node);
 	be_set_transform_function(op_ia32_PopEbp,      be_duplicate_node);
 	be_set_transform_function(op_ia32_Push,        be_duplicate_node);
@@ -5371,7 +5383,7 @@ static void register_transformers(void)
 	be_set_transform_proj_function(op_ia32_l_Mul,       gen_Proj_default);
 	be_set_transform_proj_function(op_ia32_l_Sbb,       gen_Proj_default);
 	be_set_transform_proj_function(op_ia32_l_Sub,       gen_Proj_default);
-	be_set_transform_proj_function(op_ia32_Minus64Bit,  gen_Proj_default);
+	be_set_transform_proj_function(op_ia32_l_Minus64,   gen_Proj_default);
 	be_set_transform_proj_function(op_Load,             gen_Proj_Load);
 	be_set_transform_proj_function(op_Mod,              gen_Proj_Mod);
 	be_set_transform_proj_function(op_Start,            gen_Proj_Start);

@@ -85,17 +85,6 @@ static ir_entity *ret_addr_ent         = NULL;
 static ir_entity *omit_fp_ret_addr_ent = NULL;
 static int        precise_x87_spills;
 
-/**
- * The environment for the intrinsic mapping.
- */
-static ia32_intrinsic_env_t intrinsic_env = {
-	NULL,    /* entity for __divdi3 library call */
-	NULL,    /* entity for __moddi3 library call */
-	NULL,    /* entity for __udivdi3 library call */
-	NULL,    /* entity for __umoddi3 library call */
-};
-
-
 typedef ir_node *(*create_const_node_func) (dbg_info *dbgi, ir_node *block);
 
 /**
@@ -1762,14 +1751,6 @@ static void ia32_lower_for_target(void)
 	ir_mode *mode_gp = ia32_reg_classes[CLASS_ia32_gp].mode;
 	size_t   n_irgs  = get_irp_n_irgs();
 
-	/* perform doubleword lowering */
-	lwrdw_param_t lower_dw_params = {
-		1,  /* little endian */
-		64, /* doubleword size */
-		ia32_create_intrinsic_fkt,
-		&intrinsic_env,
-	};
-
 	/* lower compound param handling
 	 * Note: we lower compound arguments ourself, since on ia32 we don't
 	 * have hidden parameters but know where to find the structs on the stack.
@@ -1813,8 +1794,7 @@ static void ia32_lower_for_target(void)
 		lower_switch(irg, 4, 256, mode_gp);
 	}
 
-	ir_prepare_dw_lowering(&lower_dw_params);
-	ir_lower_dw_ops();
+	ia32_lower64();
 
 	for (size_t i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
@@ -1930,7 +1910,7 @@ const arch_isa_if_t ia32_isa_if = {
 	be_new_reload,
 	ia32_register_saved_by,
 
-	ia32_handle_intrinsics,
+	NULL,
 	ia32_prepare_graph,
 	ia32_before_ra,      /* before register allocation hook */
 	ia32_finish_graph,   /* called before codegen */

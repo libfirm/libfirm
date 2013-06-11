@@ -738,14 +738,7 @@ static void move(ir_node *node, ir_node *from_bl, ir_node *to_bl)
 	}
 }
 
-/**
- * We need a custom version of part_block_edges because during transformation
- * not all data-dependencies are explicit yet if a lowered nodes users are not
- * lowered yet.
- * We can fix this by modifying move to look for such implicit dependencies.
- * Additionally we have to keep the proj_2_block map updated
- */
-static ir_node *part_block_dw(ir_node *node)
+ir_node *part_block_dw(ir_node *node)
 {
 	ir_graph *irg        = get_irn_irg(node);
 	ir_node  *old_block  = get_nodes_block(node);
@@ -1554,10 +1547,7 @@ static void lower_Cmp(ir_node *cmp, ir_mode *m)
 	exchange(cmp, res);
 }
 
-/**
- * Translate a Conv.
- */
-static void lower_Conv(ir_node *node, ir_mode *mode)
+void ir_default_lower_dw_Conv(ir_node *node, ir_mode *mode)
 {
 	mode = get_irn_mode(node);
 
@@ -2967,7 +2957,7 @@ void ir_prepare_dw_lowering(const lwrdw_param_t *new_param)
 	ir_register_dw_lower_function(op_Cmp,     lower_Cmp);
 	ir_register_dw_lower_function(op_Cond,    lower_Cond);
 	ir_register_dw_lower_function(op_Const,   lower_Const);
-	ir_register_dw_lower_function(op_Conv,    lower_Conv);
+	ir_register_dw_lower_function(op_Conv,    ir_default_lower_dw_Conv);
 	ir_register_dw_lower_function(op_Div,     lower_Div);
 	ir_register_dw_lower_function(op_Eor,     lower_Eor);
 	ir_register_dw_lower_function(op_Load,    lower_Load);

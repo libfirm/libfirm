@@ -106,25 +106,7 @@ ir_node *ia32_new_Fpu_truncate(ir_graph *irg);
  */
 ir_node *ia32_turn_back_am(ir_node *node);
 
-/**
- * Maps all intrinsic calls that the backend support
- * and map all instructions the backend did not support
- * to runtime calls.
- */
-void ia32_handle_intrinsics(void);
-
-/**
- * Ia32 implementation.
- *
- * @param method   the method type of the emulation function entity
- * @param op       the emulated ir_op
- * @param imode    the input mode of the emulated opcode
- * @param omode    the output mode of the emulated opcode
- * @param context  the context parameter
- */
-ir_entity *ia32_create_intrinsic_fkt(ir_type *method, const ir_op *op,
-                                     const ir_mode *imode, const ir_mode *omode,
-                                     void *context);
+void ia32_lower64(void);
 
 /**
  * Return the stack entity that contains the return address.
