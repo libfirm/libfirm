@@ -110,7 +110,7 @@ static double *solve_lgs(gs_matrix_t *mat, double *x, int size)
 	do {
 		++iter;
 		dev = gs_matrix_gauss_seidel(mat, x, size);
-	} while (fabs(dev) > SEIDEL_TOLERANCE);
+	} while (dev > SEIDEL_TOLERANCE);
 	stat_ev_tim_pop("execfreq_seidel_time");
 	stat_ev_dbl("execfreq_seidel_iter", iter);
 
