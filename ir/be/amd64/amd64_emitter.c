@@ -570,9 +570,9 @@ static void emit_be_IncSP(const ir_node *node)
 		return;
 
 	if (offs > 0) {
-		amd64_emitf(node, "subq $%d, %D0", offs);
+		amd64_emitf(node, "subq $%d, %^D0", offs);
 	} else {
-		amd64_emitf(node, "addq $%d, %D0", -offs);
+		amd64_emitf(node, "addq $%d, %^D0", -offs);
 	}
 }
 
