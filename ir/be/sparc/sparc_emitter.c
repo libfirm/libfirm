@@ -1493,7 +1493,7 @@ static void pick_delay_slots(size_t n_blocks, ir_node **blocks)
 	}
 }
 
-void sparc_emit_routine(ir_graph *irg)
+void sparc_emit_function(ir_graph *irg)
 {
 	heights            = heights_new(irg);
 	delay_slot_fillers = rbitset_malloc(get_irg_last_idx(irg));

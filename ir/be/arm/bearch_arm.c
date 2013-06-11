@@ -213,10 +213,7 @@ static void arm_after_ra_walker(ir_node *block, void *data)
 	}
 }
 
-/**
- * Called immediately before emit phase.
- */
-static void arm_finish_irg(ir_graph *irg)
+static void arm_emit(ir_graph *irg)
 {
 	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
 	bool               at_begin     = stack_layout->sp_relative ? true : false;
@@ -234,6 +231,9 @@ static void arm_finish_irg(ir_graph *irg)
 
 	/* do peephole optimizations and fix stack offsets */
 	arm_peephole_optimization(irg);
+
+	/* emit code */
+	arm_emit_function(irg);
 }
 
 static void arm_before_ra(ir_graph *irg)
@@ -473,8 +473,7 @@ const arch_isa_if_t arm_isa_if = {
 	arm_handle_intrinsics, /* handle_intrinsics */
 	arm_prepare_graph,
 	arm_before_ra,
-	arm_finish_irg,
-	arm_gen_routine,
+	arm_emit,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_arm)

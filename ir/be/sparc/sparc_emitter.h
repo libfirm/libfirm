@@ -45,7 +45,7 @@
  */
 void sparc_emitf(ir_node const *node, char const *fmt, ...);
 
-void sparc_emit_routine(ir_graph *irg);
+void sparc_emit_function(ir_graph *irg);
 
 void sparc_init_emitter(void);
 

@@ -38,6 +38,6 @@
  */
 void amd64_emitf(ir_node const *node, char const *fmt, ...);
 
-void amd64_gen_routine(ir_graph *irg);
+void amd64_emit_function(ir_graph *irg);
 
 #endif

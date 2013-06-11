@@ -48,8 +48,8 @@
  */
 void ia32_emitf(ir_node const *node, char const *fmt, ...);
 
-void ia32_gen_routine(ir_graph *irg);
-void ia32_gen_binary_routine(ir_graph *irg);
+void ia32_emit_function(ir_graph *irg);
+void ia32_emit_function_binary(ir_graph *irg);
 
 /** Initializes the Emitter. */
 void ia32_init_emitter(void);

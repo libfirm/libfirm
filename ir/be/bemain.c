@@ -604,34 +604,18 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		be_dump(DUMP_RA, irg, "ra");
 
-		be_timer_push(T_FINISH);
-		if (arch_env->impl->finish_graph != NULL)
-			arch_env->impl->finish_graph(irg);
-		be_timer_pop(T_FINISH);
-
-		be_dump(DUMP_FINAL, irg, "finish");
-
-		if (stat_ev_enabled) {
-			stat_ev_ull("bemain_insns_finish", be_count_insns(irg));
-			stat_ev_ull("bemain_blocks_finish", be_count_blocks(irg));
-		}
-
-		/* check schedule and register allocation */
-		if (be_options.do_verify) {
-			be_timer_push(T_VERIFY);
-			irg_verify(irg, VERIFY_ENFORCE_SSA);
-			be_verify_schedule(irg);
-			be_verify_register_allocation(irg);
-			be_timer_pop(T_VERIFY);
-		}
-
 		/* emit assembler code */
 		be_timer_push(T_EMIT);
 		if (arch_env->impl->emit != NULL)
 			arch_env->impl->emit(irg);
 		be_timer_pop(T_EMIT);
 
-		be_dump(DUMP_FINAL, irg, "end");
+		if (stat_ev_enabled) {
+			stat_ev_ull("bemain_insns_finish", be_count_insns(irg));
+			stat_ev_ull("bemain_blocks_finish", be_count_blocks(irg));
+		}
+
+		be_dump(DUMP_FINAL, irg, "final");
 
 		restore_optimization_state(&state);
 

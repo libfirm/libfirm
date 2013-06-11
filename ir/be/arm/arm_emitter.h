@@ -42,7 +42,7 @@
  */
 void arm_emitf(const ir_node *node, const char *format, ...);
 
-void arm_gen_routine(ir_graph *irg);
+void arm_emit_function(ir_graph *irg);
 
 void arm_init_emitter(void);
 

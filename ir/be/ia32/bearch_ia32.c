@@ -1010,13 +1010,13 @@ static void introduce_prolog_epilog(ir_graph *irg)
 	}
 }
 
-/**
- * Last touchups for the graph before emit: x87 simulation to replace the
- * virtual with real x87 instructions, creating a block schedule and peephole
- * optimisations.
- */
-static void ia32_finish_graph(ir_graph *irg)
+static void ia32_emit(ir_graph *irg)
 {
+	/*
+	 * Last touchups for the graph before emit: x87 simulation to replace the
+	 * virtual with real x87 instructions, creating a block schedule and
+	 * peephole optimisations.
+	 */
 	ia32_irg_data_t   *irg_data     = ia32_get_irg_data(irg);
 	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
 	bool               at_begin     = stack_layout->sp_relative ? true : false;
@@ -1051,18 +1051,12 @@ static void ia32_finish_graph(ir_graph *irg)
 	/* create block schedule, this also removes empty blocks which might
 	 * produce critical edges */
 	irg_data->blk_sched = be_create_block_schedule(irg);
-}
 
-/**
- * Emits the code, closes the output file and frees
- * the code generator interface.
- */
-static void ia32_emit(ir_graph *irg)
-{
+	/* emit the code */
 	if (ia32_cg_config.emit_machcode) {
-		ia32_gen_binary_routine(irg);
+		ia32_emit_function_binary(irg);
 	} else {
-		ia32_gen_routine(irg);
+		ia32_emit_function(irg);
 	}
 }
 
@@ -1904,7 +1898,6 @@ const arch_isa_if_t ia32_isa_if = {
 	NULL,
 	ia32_prepare_graph,
 	ia32_before_ra,      /* before register allocation hook */
-	ia32_finish_graph,   /* called before codegen */
 	ia32_emit,           /* emit && done */
 };
 

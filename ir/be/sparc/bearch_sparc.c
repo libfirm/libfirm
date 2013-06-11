@@ -191,6 +191,12 @@ static void sparc_prepare_graph(ir_graph *irg)
 	be_dump(DUMP_BE, irg, "code-selection");
 }
 
+static void sparc_emit(ir_graph *irg)
+{
+	sparc_finish_graph(irg);
+	sparc_emit_function(irg);
+}
+
 static bool sparc_modifies_flags(const ir_node *node)
 {
 	be_foreach_out(node, o) {
@@ -640,8 +646,7 @@ const arch_isa_if_t sparc_isa_if = {
 	sparc_handle_intrinsics,
 	sparc_prepare_graph,
 	sparc_before_ra,
-	sparc_finish_graph,
-	sparc_emit_routine,
+	sparc_emit,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_sparc)

@@ -668,10 +668,7 @@ static void amd64_gen_labels(ir_node *block, void *env)
 	}
 }
 
-/**
- * Main driver
- */
-void amd64_gen_routine(ir_graph *irg)
+void amd64_emit_function(ir_graph *irg)
 {
 	ir_entity *entity = get_irg_entity(irg);
 	ir_node  **blk_sched;

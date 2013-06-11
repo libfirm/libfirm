@@ -1657,7 +1657,7 @@ static parameter_dbg_info_t *construct_parameter_infos(ir_graph *irg)
 /**
  * Main driver. Emits the code for one routine.
  */
-void ia32_gen_routine(ir_graph *irg)
+void ia32_emit_function(ir_graph *irg)
 {
 	ir_entity        *entity    = get_irg_entity(irg);
 	exc_entry        *exc_list  = NEW_ARR_F(exc_entry, 0);
@@ -3395,7 +3395,7 @@ static void gen_binary_block(ir_node *block)
 	}
 }
 
-void ia32_gen_binary_routine(ir_graph *irg)
+void ia32_emit_function_binary(ir_graph *irg)
 {
 	ir_entity        *entity    = get_irg_entity(irg);
 	const arch_env_t *arch_env  = be_get_irg_arch_env(irg);

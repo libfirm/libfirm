@@ -253,10 +253,7 @@ static void TEMPLATE_gen_labels(ir_node *block, void *env)
 	}
 }
 
-/**
- * Main driver
- */
-void TEMPLATE_emit_routine(ir_graph *irg)
+void TEMPLATE_emit_function(ir_graph *irg)
 {
 	ir_node   **block_schedule;
 	ir_entity  *entity = get_irg_entity(irg);

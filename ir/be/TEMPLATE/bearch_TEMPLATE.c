@@ -89,13 +89,15 @@ static void TEMPLATE_prepare_graph(ir_graph *irg)
 
 
 /**
- * Called immediatly before emit phase.
+ * Last touchups and emitting of the generated code of a function.
  */
-static void TEMPLATE_finish_irg(ir_graph *irg)
+static void TEMPLATE_emit(ir_graph *irg)
 {
 	/* fix stack entity offsets */
 	be_abi_fix_stack_nodes(irg);
 	be_abi_fix_stack_bias(irg);
+	/* emit code */
+	TEMPLATE_emit_function(irg);
 }
 
 
@@ -330,8 +332,7 @@ const arch_isa_if_t TEMPLATE_isa_if = {
 	NULL, /* handle intrinsics */
 	TEMPLATE_prepare_graph,
 	TEMPLATE_before_ra,
-	TEMPLATE_finish_irg,
-	TEMPLATE_emit_routine,
+	TEMPLATE_emit,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_TEMPLATE)

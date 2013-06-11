@@ -802,7 +802,7 @@ static int cmp_sym_or_tv(const void *elt, const void *key, size_t size)
 	return p1->u.generic != p2->u.generic;
 }
 
-void arm_gen_routine(ir_graph *irg)
+void arm_emit_function(ir_graph *irg)
 {
 	ir_node          *last_block = NULL;
 	ir_entity        *entity     = get_irg_entity(irg);

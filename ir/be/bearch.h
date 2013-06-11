@@ -470,14 +470,9 @@ struct arch_isa_if_t {
 	void (*before_ra)(ir_graph *irg);
 
 	/**
-	 * Called directly before done is called. This should be the last place
-	 * where the irg is modified.
-	 */
-	void (*finish_graph)(ir_graph *irg);
-
-	/**
-	 * Called after everything happened. This call should emit the final
-	 * assembly code but avoid changing the irg.
+	 * Last step in the backend. Called after register allocation.
+	 * May perform peephole optimizations and legalizations and finally emit
+	 * the code.
 	 */
 	void (*emit)(ir_graph *irg);
 };

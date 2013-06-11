@@ -36,6 +36,6 @@
  */
 void TEMPLATE_emitf(const ir_node *node, const char *format, ...);
 
-void TEMPLATE_emit_routine(ir_graph *irg);
+void TEMPLATE_emit_function(ir_graph *irg);
 
 #endif

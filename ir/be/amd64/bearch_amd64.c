@@ -194,6 +194,9 @@ static void amd64_finish_graph(ir_graph *irg)
 
 	/* Fix 2-address code constraints. */
 	amd64_finish_irg(irg);
+
+	/* emit code */
+	amd64_emit_function(irg);
 }
 
 extern const arch_isa_if_t amd64_isa_if;
@@ -455,7 +458,6 @@ const arch_isa_if_t amd64_isa_if = {
 	amd64_prepare_graph,
 	amd64_before_ra,
 	amd64_finish_graph,
-	amd64_gen_routine,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_amd64)
