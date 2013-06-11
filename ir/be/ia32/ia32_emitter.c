@@ -756,7 +756,8 @@ static ia32_condition_code_t determine_final_cc(const ir_node *node,
 	if (is_ia32_Sahf(flags)) {
 		ir_node *cmp = get_irn_n(flags, n_ia32_Sahf_val);
 		if (!(is_ia32_FucomFnstsw(cmp) || is_ia32_FucomppFnstsw(cmp) || is_ia32_FtstFnstsw(cmp))) {
-			inc_irg_visited(current_ir_graph);
+			ir_graph *irg = get_irn_irg(node);
+			inc_irg_visited(irg);
 			cmp = find_original_value(cmp);
 			assert(cmp != NULL);
 			assert(is_ia32_FucomFnstsw(cmp) || is_ia32_FucomppFnstsw(cmp) || is_ia32_FtstFnstsw(cmp));
