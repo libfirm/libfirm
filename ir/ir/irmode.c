@@ -630,20 +630,33 @@ int mode_has_signed_zero(const ir_mode *mode)
 	case irma_twos_complement:
 		return 0;
 	}
-	panic("invalid mode arithmetic");
+	panic("invalid arithmetic mode");
 }
 
 int mode_overflow_on_unary_Minus(const ir_mode *mode)
 {
-	if (mode->sort == irms_float_number)
-		return mode->arithmetic == irma_ieee754 ? 0 : 1;
-	return 1;
+	switch (mode->arithmetic) {
+	case irma_twos_complement:
+		return 1;
+	case irma_ieee754:
+	case irma_x86_extended_float:
+	case irma_none:
+		return 0;
+	}
+	panic("invalid arithmetic mode");
 }
 
 int mode_wrap_around(const ir_mode *mode)
 {
-	/* FIXME: better would be an extra mode property */
-	return mode_is_int(mode);
+	switch (mode->arithmetic) {
+	case irma_twos_complement:
+	case irma_none:
+		return 1;
+	case irma_ieee754:
+	case irma_x86_extended_float:
+		return 0;
+	}
+	panic("invalid arithmetic mode");
 }
 
 int is_reinterpret_cast(const ir_mode *src, const ir_mode *dst)
