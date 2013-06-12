@@ -607,15 +607,6 @@ FIRM_API int value_not_zero(const ir_node *n, const ir_node **confirm);
 FIRM_API int value_not_null(const ir_node *n, const ir_node **confirm);
 
 /**
- * Checks if the value of a node can be confirmed >= 0 or <= 0,
- * If the mode of the value did not honor signed zeros, else
- * check for >= 0 or < 0.
- *
- * @param n  a node representing the value
- */
-FIRM_API ir_value_classify_sign classify_value_sign(ir_node *n);
-
-/**
  * Returns the value of a Cmp if one or both predecessors are Confirm nodes.
  *
  * @param cmp       the compare node that will be evaluated

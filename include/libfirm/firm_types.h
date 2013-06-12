@@ -334,16 +334,6 @@ typedef enum ir_builtin_kind {
 } ir_builtin_kind;
 
 /**
- * Possible return values of value_classify().
- */
-typedef enum ir_value_classify_sign {
-	value_classified_unknown  = 0,   /**< could not classify */
-	value_classified_positive = 1,   /**< value is positive, i.e. >= 0 */
-	value_classified_negative = -1   /**< value is negative, i.e. <= 0 if
-	                                      no signed zero exists or < 0 else */
-} ir_value_classify_sign;
-
-/**
  * This enumeration flags the volatility of entities and Loads/Stores.
  */
 typedef enum {
