@@ -620,14 +620,17 @@ ir_mode *find_double_bits_int_mode(const ir_mode *mode)
 	return find_mode(&n);
 }
 
-int mode_honor_signed_zeros(const ir_mode *mode)
+int mode_has_signed_zero(const ir_mode *mode)
 {
-	/* for floating point, we know that IEEE 754 has +0 and -0,
-	 * but always handles it identical.
-	 */
-	return
-		mode->sort == irms_float_number &&
-		mode->arithmetic != irma_ieee754;
+	switch (mode->arithmetic) {
+	case irma_ieee754:
+	case irma_x86_extended_float:
+		return 1;
+	case irma_none:
+	case irma_twos_complement:
+		return 0;
+	}
+	panic("invalid mode arithmetic");
 }
 
 int mode_overflow_on_unary_Minus(const ir_mode *mode)

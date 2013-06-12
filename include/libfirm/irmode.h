@@ -359,10 +359,11 @@ FIRM_API ir_mode *find_signed_mode(const ir_mode *mode);
 FIRM_API ir_mode *find_double_bits_int_mode(const ir_mode *mode);
 
 /**
- * Returns non-zero if the given mode honors signed zero's, i.e.,
- * a +0 and a -0 exists and handled differently.
+ * Returns non-zero if the given mode has negative zeros, i.e. +0 and -0 exist.
+ * Note that for comparisons +0 and -0 are considered equal, the sign only
+ * shows in expressions like 1/x which results in +inf/-inf.
  */
-FIRM_API int mode_honor_signed_zeros(const ir_mode *mode);
+FIRM_API int mode_has_signed_zero(const ir_mode *mode);
 
 /**
  * Returns non-zero if the given mode might overflow on unary Minus.

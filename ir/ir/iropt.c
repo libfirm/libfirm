@@ -1258,7 +1258,7 @@ static ir_node *equivalent_node_Mux(ir_node *n)
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_EQ);
 		return n;
 	}
-	if (is_Cmp(sel) && !mode_honor_signed_zeros(get_irn_mode(n))) {
+	if (is_Cmp(sel) && !mode_has_signed_zero(get_irn_mode(n))) {
 		ir_relation relation = get_Cmp_relation(sel);
 		ir_node    *f        = get_Mux_false(n);
 		ir_node    *t        = get_Mux_true(n);
@@ -5412,7 +5412,7 @@ int ir_mux_is_abs(const ir_node *sel, const ir_node *mux_false,
 	 * transformations.
 	 */
 	mode = get_irn_mode(mux_true);
-	if (mode_honor_signed_zeros(mode))
+	if (mode_has_signed_zero(mode))
 		return 0;
 
 	/* must be <, <=, >=, > */
