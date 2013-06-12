@@ -165,16 +165,12 @@ int i_mapper_abs(ir_node *call)
 	ir_node  *block    = get_nodes_block(call);
 	ir_node  *op       = get_Call_param(call, 0);
 	ir_graph *irg      = get_irn_irg(call);
-	ir_mode  *omode    = get_irn_mode(op);
+	ir_mode  *mode     = get_irn_mode(op);
 	dbg_info *dbg      = get_irn_dbg_info(call);
-	ir_mode  *mode     = omode;
-	if (mode_is_float(mode)) {
-		ir_mode *float_arith = be_get_mode_float_arithmetic();
-		if (float_arith != NULL && mode != float_arith) {
-			mode = float_arith;
-			op   = new_rd_Conv(dbg, block, op, mode);
-		}
-	}
+	/* if we have +0/-0 then we can't implement abs with a simple Mux.
+	 * (we should probably introduce a builtin. */
+	if (mode_has_signed_zero(mode))
+		return 0;
 
 	ir_node  *zero     = new_r_Const(irg, get_mode_null(mode));
 	ir_node  *cmp      = new_rd_Cmp(dbg, block, op, zero, ir_relation_less);
@@ -188,9 +184,6 @@ int i_mapper_abs(ir_node *call)
 
 	/* construct Mux */
 	mux = new_rd_Mux(dbg, block, cmp, op, minus_op, mode);
-	if (omode != mode) {
-		mux = new_rd_Conv(dbg, block, mux, omode);
-	}
 	DBG_OPT_ALGSIM0(call, mux, FS_OPT_RTS_ABS);
 	replace_call(mux, call, mem, NULL, NULL);
 	return 1;
