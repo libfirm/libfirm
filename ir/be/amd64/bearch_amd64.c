@@ -12,6 +12,7 @@
 #include "ircons.h"
 #include "irgmod.h"
 #include "irdump.h"
+#include "lower_builtins.h"
 #include "lower_calls.h"
 #include "debug.h"
 #include "error.h"
@@ -38,6 +39,7 @@
 #include "gen_amd64_regalloc_if.h"
 #include "amd64_transform.h"
 #include "amd64_emitter.h"
+#include "amd64_cconv.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -67,24 +69,24 @@ static ir_entity *amd64_get_frame_entity(const ir_node *node)
  */
 static void amd64_set_frame_offset(ir_node *irn, int offset)
 {
-	if (is_amd64_FrameAddr(irn)) {
+	if (is_amd64_FrameAddr(irn) || is_amd64_Store(irn) || is_amd64_LoadS(irn)
+	    || is_amd64_LoadZ(irn)) {
 		amd64_SymConst_attr_t *attr = get_amd64_SymConst_attr(irn);
 		attr->fp_offset += offset;
-
-	} else if (is_amd64_Store(irn)) {
-		amd64_SymConst_attr_t *attr = get_amd64_SymConst_attr(irn);
-		attr->fp_offset += offset;
-
-	} else if (is_amd64_LoadS(irn) || is_amd64_LoadZ(irn)) {
-		amd64_SymConst_attr_t *attr = get_amd64_SymConst_attr(irn);
-		attr->fp_offset += offset;
-
 	}
 }
 
 static int amd64_get_sp_bias(const ir_node *irn)
 {
-	(void) irn;
+	if (is_amd64_Start(irn)) {
+		ir_graph *irg        = get_irn_irg(irn);
+		ir_type  *frame_type = get_irg_frame_type(irg);
+		return get_type_size_bytes(frame_type);
+	} else if (is_amd64_Return(irn)) {
+		ir_graph *irg        = get_irn_irg(irn);
+		ir_type  *frame_type = get_irg_frame_type(irg);
+		return -(int)get_type_size_bytes(frame_type);
+	}
 	return 0;
 }
 
@@ -143,6 +145,117 @@ static void transform_Spill(ir_node *node)
 	exchange(node, store);
 }
 
+static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp, ir_node *mem, ir_entity *ent)
+{
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_node  *block = get_nodes_block(node);
+	ir_graph *irg   = get_irn_irg(node);
+	ir_node  *frame = get_irg_frame(irg);
+
+	ir_node *push
+		= new_bd_amd64_PushAM(dbgi, block, frame, mem, sp, INSN_MODE_64, 0, ent);
+	sched_add_before(schedpoint, push);
+	return push;
+}
+
+static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp, ir_entity *ent)
+{
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_node  *block = get_nodes_block(node);
+	ir_graph *irg   = get_irn_irg(node);
+	ir_node  *frame = get_irg_frame(irg);
+
+	ir_node *pop = new_bd_amd64_PopAM(dbgi, block, frame, get_irg_no_mem(irg),
+	                                  sp, INSN_MODE_64, 0, ent);
+	sched_add_before(schedpoint, pop);
+
+	return pop;
+}
+
+static ir_node* create_spproj(ir_node *pred, int pos)
+{
+	const arch_register_t *spreg = &amd64_registers[REG_RSP];
+	ir_mode               *spmode = spreg->reg_class->mode;
+	ir_node               *sp     = new_r_Proj(pred, spmode, pos);
+	arch_set_irn_register(sp, spreg);
+	return sp;
+}
+
+/**
+ * Transform MemPerm, currently we do this the ugly way and produce
+ * push/pop into/from memory cascades. This is possible without using
+ * any registers.
+ */
+static void transform_MemPerm(ir_node *node)
+{
+	ir_node  *block = get_nodes_block(node);
+	ir_graph *irg   = get_irn_irg(node);
+	ir_node  *sp    = be_get_initial_reg_value(irg, &amd64_registers[REG_RSP]);
+	int       arity = be_get_MemPerm_entity_arity(node);
+	ir_node **pops  = ALLOCAN(ir_node*, arity);
+	ir_node  *in[1];
+	ir_node  *keep;
+	int       i;
+
+	/* create Pushs */
+	for (i = 0; i < arity; ++i) {
+		ir_entity *inent = be_get_MemPerm_in_entity(node, i);
+		ir_entity *outent = be_get_MemPerm_out_entity(node, i);
+		ir_type *enttype = get_entity_type(inent);
+		unsigned entsize = get_type_size_bytes(enttype);
+		unsigned entsize2 = get_type_size_bytes(get_entity_type(outent));
+		ir_node *mem = get_irn_n(node, i + 1);
+		ir_node *push;
+
+		/* work around cases where entities have different sizes */
+		if (entsize2 < entsize)
+			entsize = entsize2;
+		/* spillslot should be 64bit size */
+		assert(entsize == 8);
+
+		push = create_push(node, node, sp, mem, inent);
+		sp = create_spproj(push, pn_amd64_PushAM_stack);
+		set_irn_n(node, i, new_r_Bad(irg, mode_X));
+	}
+
+	/* create pops */
+	for (i = arity - 1; i >= 0; --i) {
+		ir_entity *inent = be_get_MemPerm_in_entity(node, i);
+		ir_entity *outent = be_get_MemPerm_out_entity(node, i);
+		ir_type *enttype = get_entity_type(outent);
+		unsigned entsize = get_type_size_bytes(enttype);
+		unsigned entsize2 = get_type_size_bytes(get_entity_type(inent));
+		ir_node *pop;
+
+		/* work around cases where entities have different sizes */
+		if (entsize2 < entsize)
+			entsize = entsize2;
+		assert(entsize == 8);
+
+		pop = create_pop(node, node, sp, outent);
+		sp = create_spproj(pop, pn_amd64_PopAM_stack);
+		pops[i] = pop;
+	}
+
+	in[0] = sp;
+	keep  = be_new_Keep(block, 1, in);
+	sched_replace(node, keep);
+
+	/* exchange memprojs */
+	foreach_out_edge_safe(node, edge) {
+		ir_node *proj = get_edge_src_irn(edge);
+		int p = get_Proj_proj(proj);
+
+		assert(p < arity);
+
+		set_Proj_pred(proj, pops[p]);
+		set_Proj_proj(proj, pn_amd64_PopAM_M);
+	}
+
+	/* remove memperm */
+	kill_node(node);
+}
+
 static void amd64_after_ra_walker(ir_node *block, void *data)
 {
 	(void) data;
@@ -152,6 +265,8 @@ static void amd64_after_ra_walker(ir_node *block, void *data)
 			transform_Reload(node);
 		} else if (be_is_Spill(node)) {
 			transform_Spill(node);
+		} else if (be_is_MemPerm(node)) {
+			transform_MemPerm(node);
 		}
 	}
 }
@@ -222,6 +337,7 @@ static void amd64_init(void)
 {
 	amd64_register_init();
 	amd64_create_opcodes(&amd64_irn_ops);
+	amd64_cconv_init();
 }
 
 static void amd64_finish(void)
@@ -250,9 +366,6 @@ static void amd64_end_codegeneration(void *self)
  */
 static void amd64_prepare_graph(ir_graph *irg)
 {
-	be_abi_introduce(irg);
-	be_dump(DUMP_BE, irg, "abi");
-
 	be_timer_push(T_CODEGEN);
 	amd64_transform_graph(irg);
 	be_timer_pop(T_CODEGEN);
@@ -374,6 +487,8 @@ static void amd64_lower_for_target(void)
 		 * TODO:  Adapt this once custom CopyB handling is implemented. */
 		lower_CopyB(irg, 64, 65, true);
 	}
+
+	lower_builtins(0, NULL);
 }
 
 static int amd64_is_mux_allowed(ir_node *sel, ir_node *mux_false,

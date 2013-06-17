@@ -26,7 +26,6 @@ typedef enum {
 
 typedef struct amd64_imm_t {
 	int64_t    offset;
-	bool       sc_sign;
 	ir_entity *symconst;
 } amd64_imm_t;
 

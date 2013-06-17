@@ -178,8 +178,7 @@ static int cmp_amd64_attr_SymConst(const ir_node *a, const ir_node *b)
 
 static int cmp_imm(const amd64_imm_t *const imm0, const amd64_imm_t *const imm1)
 {
-	return imm0->offset != imm1->offset || imm0->sc_sign != imm1->sc_sign
-	    || imm0->symconst != imm1->symconst;
+	return imm0->offset != imm1->offset || imm0->symconst != imm1->symconst;
 }
 
 /** Compare common amd64 node attributes. */

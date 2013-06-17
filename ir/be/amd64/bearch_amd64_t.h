@@ -18,4 +18,6 @@ struct amd64_isa_t {
 	arch_env_t  base;      /**< must be derived from arch_isa */
 };
 
+#define AMD64_REGISTER_SIZE 8
+
 #endif

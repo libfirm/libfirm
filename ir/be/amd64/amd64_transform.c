@@ -21,25 +21,74 @@
 #include "betranshlp.h"
 #include "beutil.h"
 #include "bearch_amd64_t.h"
+#include "beirg.h"
+#include "beabihelper.h"
 
 #include "amd64_nodes_attr.h"
 #include "amd64_transform.h"
 #include "amd64_new_nodes.h"
+#include "amd64_cconv.h"
 
 #include "gen_amd64_regalloc_if.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static ir_mode *mode_gp;
+typedef struct reg_info_t {
+	size_t   offset;
+	ir_node *irn;
+} reg_info_t;
 
-/* Some support functions: */
+static ir_mode         *mode_gp;
+static amd64_cconv_t   *current_cconv = NULL;
+static reg_info_t       start_mem;
+static reg_info_t       start_sp;
+static reg_info_t       start_fp;
+static size_t           start_callee_saves_offset;
+static size_t           start_params_offset;
+static pmap            *node_to_stack;
+static be_stackorder_t *stackorder;
 
 static inline int mode_needs_gp_reg(ir_mode *mode)
 {
 	return mode_is_int(mode) || mode_is_reference(mode);
 }
 
-/* Op transformers: */
+static ir_node *get_reg(ir_graph *const irg, reg_info_t *const reg)
+{
+	if (!reg->irn) {
+		/* this is already the transformed start node */
+		ir_node *const start = get_irg_start(irg);
+		assert(is_amd64_Start(start));
+		arch_register_class_t const *const cls
+			= arch_get_irn_register_req_out(start, reg->offset)->cls;
+		reg->irn = new_r_Proj(start, cls ? cls->mode : mode_M, reg->offset);
+	}
+	return reg->irn;
+}
+
+static ir_node *get_initial_sp(ir_graph *irg)
+{
+	return get_reg(irg, &start_sp);
+}
+
+static ir_node *get_initial_fp(ir_graph *irg)
+{
+	return get_reg(irg, &start_fp);
+}
+
+static ir_node *get_initial_mem(ir_graph *irg)
+{
+	return get_reg(irg, &start_mem);
+}
+
+static ir_node *get_frame_base(ir_graph *irg)
+{
+	if (current_cconv->omit_fp) {
+		return get_initial_sp(irg);
+	} else {
+		return get_initial_fp(irg);
+	}
+}
 
 static ir_node *gen_Const(ir_node *node)
 {
@@ -51,7 +100,7 @@ static ir_node *gen_Const(ir_node *node)
 	ir_tarval *tv = get_Const_tarval(node);
 	uint64_t val = get_tarval_uint64(tv);
 	amd64_insn_mode_t imode = val > UINT32_MAX ? INSN_MODE_64 : INSN_MODE_32;
-	return new_bd_amd64_Const(dbgi, block, imode, val, false, NULL);
+	return new_bd_amd64_Const(dbgi, block, imode, val, NULL);
 }
 
 static ir_node *gen_SymConst(ir_node *node)
@@ -60,7 +109,7 @@ static ir_node *gen_SymConst(ir_node *node)
 	dbg_info  *dbgi   = get_irn_dbg_info(node);
 	ir_entity *entity = get_SymConst_entity(node);
 
-	return new_bd_amd64_Const(dbgi, block, INSN_MODE_32, 0, false, entity);
+	return new_bd_amd64_Const(dbgi, block, INSN_MODE_32, 0, entity);
 }
 
 typedef ir_node* (*binop_constructor)(dbg_info *dbgi, ir_node *block,
@@ -106,7 +155,7 @@ static ir_node *create_div(ir_node *const node, ir_mode *const mode,
 		/* TODO: use immediates... */
 		int      const sval  = get_mode_size_bits(mode)-1;
 		ir_node *const cnst  = new_bd_amd64_Const(dbgi, block, INSN_MODE_32,
-		                                          sval, false, NULL);
+		                                          sval, NULL);
 		ir_node *const upper = new_bd_amd64_Sar(dbgi, block, new_op1, cnst,
 		                                        insn_mode);
 		res = new_bd_amd64_IDiv(dbgi, block, upper, new_op1, new_op2, new_mem,
@@ -204,6 +253,22 @@ static ir_node *gen_Not(ir_node *const node)
 	return gen_unop(node, n_Not_op, &new_bd_amd64_Not);
 }
 
+static ir_node *gen_Sel(ir_node *const node)
+{
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *ptr       = get_Sel_ptr(node);
+	ir_graph *irg       = get_irn_irg(node);
+	ir_node  *base      = get_frame_base(irg);
+	if (!is_Proj(ptr) || !is_Start(get_Proj_pred(ptr)))
+		panic("Sel not lowered");
+	if (get_Sel_n_indexs(node) > 0)
+		panic("array Sel not lowered %+F", node);
+	ir_entity *entity = get_Sel_entity(node);
+	return new_bd_amd64_FrameAddr(dbgi, new_block, base, entity);
+}
+
 static ir_node *gen_Jmp(ir_node *node)
 {
 	ir_node  *block     = get_nodes_block(node);
@@ -234,12 +299,438 @@ static ir_node *gen_Switch(ir_node *node)
 	return out;
 }
 
-static ir_node *gen_be_Call(ir_node *node)
+static void make_start_out(reg_info_t *const info, struct obstack *const obst,
+                           ir_node *const start, size_t const offset,
+                           arch_register_t const *const reg,
+                           arch_register_req_type_t const flags)
 {
-	ir_node *res = be_duplicate_node(node);
-	arch_add_irn_flags(res, arch_irn_flag_modify_flags);
+	info->offset = offset;
+	info->irn    = NULL;
+	arch_register_req_t const *const req
+		= be_create_reg_req(obst, reg, arch_register_req_type_ignore | flags);
+	arch_set_irn_register_req_out(start, offset, req);
+	arch_set_irn_register_out(start, offset, reg);
+}
 
-	return res;
+static ir_node *gen_Start(ir_node *node)
+{
+	ir_graph  *irg           = get_irn_irg(node);
+	ir_entity *entity        = get_irg_entity(irg);
+	ir_type   *function_type = get_entity_type(entity);
+	ir_node   *block         = get_nodes_block(node);
+	ir_node   *new_block     = be_transform_node(block);
+	dbg_info  *dbgi          = get_irn_dbg_info(node);
+	struct obstack *obst     = be_get_be_obst(irg);
+
+	amd64_cconv_t const *const cconv = current_cconv;
+
+	/* start building list of start constraints */
+
+	/* calculate number of outputs */
+	size_t n_outs = 2; /* memory, rsp */
+	if (!cconv->omit_fp)
+		++n_outs; /* rbp */
+	/* function parameters */
+	n_outs += cconv->n_param_regs;
+	size_t n_callee_saves
+		= rbitset_popcount(cconv->callee_saves, N_AMD64_REGISTERS);
+	n_outs += n_callee_saves;
+
+	ir_node *start = new_bd_amd64_Start(dbgi, new_block, n_outs);
+
+	size_t o = 0;
+
+	/* first output is memory */
+	start_mem.offset = o;
+	start_mem.irn    = NULL;
+	arch_set_irn_register_req_out(start, o, arch_no_register_req);
+	++o;
+
+	/* the stack pointer */
+	make_start_out(&start_sp, obst, start, o++, &amd64_registers[REG_RSP],
+	               arch_register_req_type_produces_sp);
+
+	if (!cconv->omit_fp) {
+		make_start_out(&start_fp, obst, start, o++, &amd64_registers[REG_RBP],
+		               arch_register_req_type_none);
+	}
+
+	/* function parameters in registers */
+	start_params_offset = o;
+	for (size_t i = 0; i < get_method_n_params(function_type); ++i) {
+		const reg_or_stackslot_t *param = &current_cconv->parameters[i];
+		const arch_register_t    *reg   = param->reg;
+		if (reg != NULL) {
+			arch_set_irn_register_req_out(start, o, reg->single_req);
+			arch_set_irn_register_out(start, o, reg);
+			++o;
+		}
+	}
+
+	/* callee saves */
+	start_callee_saves_offset = o;
+	for (size_t i = 0; i < N_AMD64_REGISTERS; ++i) {
+		if (!rbitset_is_set(cconv->callee_saves, i))
+			continue;
+		const arch_register_t *reg = &amd64_registers[i];
+		arch_set_irn_register_req_out(start, o, reg->single_req);
+		arch_set_irn_register_out(start, o, reg);
+		++o;
+	}
+	assert(n_outs == o);
+
+	return start;
+}
+
+static ir_node *gen_Proj_Start(ir_node *node)
+{
+	ir_graph *irg       = get_irn_irg(node);
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	long      pn        = get_Proj_proj(node);
+	be_transform_node(get_Proj_pred(node));
+
+	switch ((pn_Start)pn) {
+	case pn_Start_X_initial_exec:
+		return new_bd_amd64_Jmp(NULL, new_block);
+	case pn_Start_M:
+		return get_initial_mem(irg);
+	case pn_Start_T_args:
+		return new_r_Bad(irg, mode_T);
+	case pn_Start_P_frame_base:
+		return get_frame_base(irg);
+	}
+	panic("Unexpected Start Proj: %ld\n", pn);
+}
+
+static ir_node *get_stack_pointer_for(ir_node *node)
+{
+	/* get predecessor in stack_order list */
+	ir_node *stack_pred = be_get_stack_pred(stackorder, node);
+	if (stack_pred == NULL) {
+		/* first stack user in the current block. We can simply use the
+		 * initial sp_proj for it */
+		ir_graph *irg = get_irn_irg(node);
+		return get_initial_sp(irg);
+	}
+
+	be_transform_node(stack_pred);
+	ir_node *stack = pmap_get(ir_node, node_to_stack, stack_pred);
+	if (stack == NULL) {
+		return get_stack_pointer_for(stack_pred);
+	}
+
+	return stack;
+}
+
+static ir_node *gen_Return(ir_node *node)
+{
+	ir_node  *block     = get_nodes_block(node);
+	ir_graph *irg       = get_irn_irg(node);
+	ir_node  *new_block = be_transform_node(block);
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *mem       = get_Return_mem(node);
+	ir_node  *new_mem   = be_transform_node(mem);
+	ir_node  *sp        = get_stack_pointer_for(node);
+	size_t    n_res     = get_Return_n_ress(node);
+	struct obstack *be_obst = be_get_be_obst(irg);
+	amd64_cconv_t  *cconv   = current_cconv;
+
+	/* estimate number of return values */
+	size_t n_ins = 2 + n_res; /* memory + stackpointer, return values */
+	size_t n_callee_saves
+		= rbitset_popcount(cconv->callee_saves, N_AMD64_REGISTERS);
+	n_ins += n_callee_saves;
+
+	const arch_register_req_t **reqs
+		= OALLOCN(be_obst, const arch_register_req_t*, n_ins);
+	ir_node **in = ALLOCAN(ir_node*, n_ins);
+	size_t    p  = 0;
+
+	in[p]   = new_mem;
+	reqs[p] = arch_no_register_req;
+	++p;
+
+	in[p]   = sp;
+	reqs[p] = amd64_registers[REG_RSP].single_req;
+	++p;
+
+	/* result values */
+	for (size_t i = 0; i < n_res; ++i) {
+		ir_node                  *res_value     = get_Return_res(node, i);
+		ir_node                  *new_res_value = be_transform_node(res_value);
+		const reg_or_stackslot_t *slot          = &current_cconv->results[i];
+		in[p]   = new_res_value;
+		reqs[p] = slot->req;
+		++p;
+	}
+	/* callee saves */
+	ir_node *start = get_irg_start(irg);
+	long start_pn = start_callee_saves_offset;
+	for (size_t i = 0; i < N_AMD64_REGISTERS; ++i) {
+		if (!rbitset_is_set(cconv->callee_saves, i))
+			continue;
+		const arch_register_t *reg    = &amd64_registers[i];
+		ir_mode               *mode  = reg->reg_class->mode;
+		ir_node               *value = new_r_Proj(start, mode, start_pn++);
+		in[p]   = value;
+		reqs[p] = reg->single_req;
+		++p;
+	}
+	assert(p == n_ins);
+
+	ir_node *returnn = new_bd_amd64_Return(dbgi, new_block, n_ins, in);
+	arch_set_irn_register_reqs_in(returnn, reqs);
+
+	return returnn;
+}
+
+static amd64_insn_mode_t get_insn_mode_from_mode(const ir_mode *mode)
+{
+	switch (get_mode_size_bits(mode)) {
+	case  8: return INSN_MODE_8;
+	case 16: return INSN_MODE_16;
+	case 32: return INSN_MODE_32;
+	case 64: return INSN_MODE_64;
+	}
+	panic("unexpected mode");
+}
+
+static ir_node *gen_Call(ir_node *node)
+{
+	ir_node         *callee       = get_Call_ptr(node);
+	ir_node         *block        = get_nodes_block(node);
+	ir_node         *new_block    = be_transform_node(block);
+	dbg_info        *dbgi         = get_irn_dbg_info(node);
+	ir_node         *mem          = get_Call_mem(node);
+	ir_node         *new_mem      = be_transform_node(mem);
+	ir_type         *type         = get_Call_type(node);
+	size_t           n_params     = get_Call_n_params(node);
+	size_t           n_ress       = get_method_n_ress(type);
+	/* max inputs: memory, callee, register arguments */
+	ir_node        **sync_ins     = ALLOCAN(ir_node*, n_params);
+	ir_graph        *irg          = get_irn_irg(node);
+	struct obstack  *obst         = be_get_be_obst(irg);
+	amd64_cconv_t   *cconv
+		= amd64_decide_calling_convention(type, NULL);
+	size_t           n_param_regs = cconv->n_param_regs;
+	/* param-regs + mem + stackpointer + callee + n_sse_regs */
+	unsigned         max_inputs   = 4 + n_param_regs;
+	ir_node        **in           = ALLOCAN(ir_node*, max_inputs);
+	const arch_register_req_t **in_req
+		= OALLOCNZ(obst, const arch_register_req_t*, max_inputs);
+	int              in_arity     = 0;
+	int              sync_arity   = 0;
+	ir_node         *new_frame    = get_stack_pointer_for(node);
+
+	assert(n_params == get_method_n_params(type));
+
+	/* construct arguments */
+
+	/* memory input */
+	in_req[in_arity] = arch_no_register_req;
+	int mem_pos      = in_arity;
+	++in_arity;
+
+	/* stack pointer input */
+	/* construct an IncSP -> we have to always be sure that the stack is
+	 * aligned even if we don't push arguments on it */
+	const arch_register_t *sp_reg = &amd64_registers[REG_RSP];
+	ir_node *incsp = be_new_IncSP(sp_reg, new_block, new_frame,
+	                              cconv->param_stack_size, 1);
+	in_req[in_arity] = sp_reg->single_req;
+	in[in_arity]     = incsp;
+	++in_arity;
+
+	/* vararg calls need the number of SSE registers used */
+	if (get_method_variadicity(type) == variadicity_variadic) {
+		ir_node *zero = new_bd_amd64_Xor0(NULL, block);
+		in_req[in_arity] = amd64_registers[REG_RAX].single_req;
+		in[in_arity] = zero;
+		++in_arity;
+	}
+
+	/* parameters */
+	for (size_t p = 0; p < n_params; ++p) {
+		ir_node                  *value      = get_Call_param(node, p);
+		const reg_or_stackslot_t *param      = &cconv->parameters[p];
+		ir_type                  *param_type = get_method_param_type(type, p);
+		ir_mode                  *mode       = get_type_mode(param_type);
+		assert(mode_needs_gp_reg(mode));
+
+		ir_node *new_value = be_transform_node(value);
+
+		/* put value into registers */
+		if (param->reg != NULL) {
+			in[in_arity]     = new_value;
+			in_req[in_arity] = param->reg->single_req;
+			++in_arity;
+			continue;
+		}
+		/* we need a store if we're here */
+		mode = mode_gp;
+		amd64_insn_mode_t imode = get_insn_mode_from_mode(mode);
+		ir_node *store = new_bd_amd64_Store(dbgi, new_block, new_value, incsp,
+		                                    new_mem, imode, NULL);
+		set_irn_pinned(store, op_pin_state_floats);
+		sync_ins[sync_arity++] = store;
+	}
+
+	/* construct memory input */
+	if (sync_arity == 0) {
+		in[mem_pos] = new_mem;
+	} else if (sync_arity == 1) {
+		in[mem_pos] = sync_ins[0];
+	} else {
+		in[mem_pos] = new_rd_Sync(NULL, new_block, sync_arity, sync_ins);
+	}
+
+	in[in_arity]     = be_transform_node(callee);
+	in_req[in_arity] = amd64_reg_classes[CLASS_amd64_gp].class_req;
+	++in_arity;
+	assert(in_arity <= (int)max_inputs);
+
+	/* outputs:
+	 *  - memory
+	 *  - results
+	 *  - caller saves
+	 */
+	int n_caller_saves
+		= rbitset_popcount(cconv->caller_saves, N_AMD64_REGISTERS);
+	int out_arity = 1 + cconv->n_reg_results + n_caller_saves;
+
+	/* create call node */
+	ir_node *call = new_bd_amd64_Call(dbgi, new_block, in_arity, in, out_arity);
+	arch_set_irn_register_reqs_in(call, in_req);
+
+	/* create output register reqs */
+	int o = 0;
+	arch_set_irn_register_req_out(call, o++, arch_no_register_req);
+	/* add register requirements for the result regs */
+	for (size_t r = 0; r < n_ress; ++r) {
+		const reg_or_stackslot_t  *result_info = &cconv->results[r];
+		const arch_register_req_t *req         = result_info->req;
+		if (req != NULL) {
+			arch_set_irn_register_req_out(call, o++, req);
+		}
+	}
+	const unsigned *allocatable_regs = be_birg_from_irg(irg)->allocatable_regs;
+	for (size_t i = 0; i < N_AMD64_REGISTERS; ++i) {
+		if (!rbitset_is_set(cconv->caller_saves, i))
+			continue;
+		const arch_register_t *reg = &amd64_registers[i];
+		arch_set_irn_register_req_out(call, o, reg->single_req);
+		if (!rbitset_is_set(allocatable_regs, reg->global_index))
+			arch_set_irn_register_out(call, o, reg);
+		++o;
+	}
+	assert(o == out_arity);
+
+	/* copy pinned attribute */
+	set_irn_pinned(call, get_irn_pinned(node));
+
+	/* IncSP to destroy the call stackframe */
+	incsp = be_new_IncSP(sp_reg, new_block, incsp, -cconv->param_stack_size, 0);
+	/* if we are the last IncSP producer in a block then we have to keep
+	 * the stack value.
+	 * Note: This here keeps all producers which is more than necessary */
+	add_irn_dep(incsp, call);
+	keep_alive(incsp);
+
+	pmap_insert(node_to_stack, node, incsp);
+
+	amd64_free_calling_convention(cconv);
+	return call;
+}
+
+static ir_node *gen_Proj_Call(ir_node *node)
+{
+	long     pn       = get_Proj_proj(node);
+	ir_node *call     = get_Proj_pred(node);
+	ir_node *new_call = be_transform_node(call);
+	switch ((pn_Call)pn) {
+	case pn_Call_M:
+		return new_r_Proj(new_call, mode_M, 0);
+	case pn_Call_X_regular:
+	case pn_Call_X_except:
+	case pn_Call_T_result:
+		break;
+	}
+	panic("Unexpected Call proj %+F\n", node);
+}
+
+static ir_node *gen_Proj_Proj_Call(ir_node *node)
+{
+	long           pn       = get_Proj_proj(node);
+	ir_node       *call     = get_Proj_pred(get_Proj_pred(node));
+	ir_node       *new_call = be_transform_node(call);
+	ir_type       *tp       = get_Call_type(call);
+	amd64_cconv_t *cconv    = amd64_decide_calling_convention(tp, NULL);
+	const reg_or_stackslot_t *res  = &cconv->results[pn];
+	ir_mode                  *mode = get_irn_mode(node);
+	long                      new_pn = 1 + res->reg_offset;
+
+	assert(res->req != NULL);
+	if (mode_needs_gp_reg(mode))
+		mode = mode_gp;
+	amd64_free_calling_convention(cconv);
+	return new_r_Proj(new_call, mode, new_pn);
+}
+
+static ir_node *gen_Proj_Proj_Start(ir_node *node)
+{
+	ir_node *block     = get_nodes_block(node);
+	ir_node *new_block = be_transform_node(block);
+	long     pn        = get_Proj_proj(node);
+	ir_node *args      = get_Proj_pred(node);
+	ir_node *start     = get_Proj_pred(args);
+	ir_node *new_start = be_transform_node(start);
+
+	assert(get_Proj_proj(args) == pn_Start_T_args);
+
+	const reg_or_stackslot_t *param = &current_cconv->parameters[pn];
+	if (param->reg != NULL) {
+		/* argument transmitted in register */
+		const arch_register_t *reg    = param->reg;
+		ir_mode               *mode   = reg->reg_class->mode;
+		long                   new_pn = param->reg_offset + start_params_offset;
+		ir_node               *value  = new_r_Proj(new_start, mode, new_pn);
+		return value;
+	} else {
+		/* argument transmitted on stack */
+		ir_graph *irg  = get_irn_irg(node);
+		ir_node  *mem  = get_initial_mem(irg);
+		ir_mode  *mode = get_type_mode(param->type);
+		ir_node  *base = get_frame_base(irg);
+
+		amd64_insn_mode_t imode = get_insn_mode_from_mode(mode);
+		/* TODO: use the AM form for the address calculation */
+		ir_node  *addr = new_bd_amd64_FrameAddr(NULL, new_block, base,
+												param->entity);
+		ir_node *load;
+		ir_node *value;
+		if (get_mode_size_bits(mode) < 64 && mode_is_signed(mode)) {
+			load  = new_bd_amd64_LoadS(NULL, new_block, addr, mem, imode, NULL);
+			value = new_r_Proj(load, mode_gp, pn_amd64_LoadS_res);
+		} else {
+			load  = new_bd_amd64_LoadZ(NULL, new_block, addr, mem, imode, NULL);
+			value = new_r_Proj(load, mode_gp, pn_amd64_LoadZ_res);
+		}
+		set_irn_pinned(load, op_pin_state_floats);
+		return value;
+	}
+}
+
+static ir_node *gen_Proj_Proj(ir_node *node)
+{
+	ir_node *pred      = get_Proj_pred(node);
+	ir_node *pred_pred = get_Proj_pred(pred);
+	if (is_Call(pred_pred)) {
+		return gen_Proj_Proj_Call(node);
+	} else if (is_Start(pred_pred)) {
+		return gen_Proj_Proj_Start(node);
+	}
+	panic("amd64: unexpected Proj(Proj) after %+F", pred_pred);
 }
 
 static bool needs_extension(ir_node *op)
@@ -345,17 +836,6 @@ static ir_node *gen_Conv(ir_node *node)
 	}
 }
 
-static amd64_insn_mode_t get_insn_mode_from_mode(const ir_mode *mode)
-{
-	switch (get_mode_size_bits(mode)) {
-	case  8: return INSN_MODE_8;
-	case 16: return INSN_MODE_16;
-	case 32: return INSN_MODE_32;
-	case 64: return INSN_MODE_64;
-	}
-	panic("unexpected mode");
-}
-
 static ir_node *gen_Store(ir_node *node)
 {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
@@ -450,89 +930,100 @@ static ir_node *gen_Proj_Store(ir_node *node)
 	}
 }
 
-static ir_node *gen_Proj_be_Call(ir_node *node)
-{
-	ir_mode *mode = get_irn_mode(node);
-	if (mode_needs_gp_reg(mode)) {
-		ir_node *pred     = get_Proj_pred(node);
-		ir_node *new_pred = be_transform_node(pred);
-		long     pn       = get_Proj_proj(node);
-		ir_node *new_proj = new_r_Proj(new_pred, mode_Lu, pn);
-		return new_proj;
-	} else {
-		return be_duplicate_node(node);
-	}
-}
-
-static ir_node *gen_be_FrameAddr(ir_node *node)
-{
-	ir_node   *block  = be_transform_node(get_nodes_block(node));
-	ir_entity *ent    = be_get_frame_entity(node);
-	ir_node   *fp     = be_get_FrameAddr_frame(node);
-	ir_node   *new_fp = be_transform_node(fp);
-	dbg_info  *dbgi   = get_irn_dbg_info(node);
-	ir_node   *new_node;
-
-	new_node = new_bd_amd64_FrameAddr(dbgi, block, new_fp, ent);
-	return new_node;
-}
-
-static ir_node *gen_be_Start(ir_node *node)
-{
-	ir_node *new_node = be_duplicate_node(node);
-	be_start_set_setup_stackframe(new_node, true);
-	return new_node;
-}
-
-static ir_node *gen_be_Return(ir_node *node)
-{
-	ir_node *new_node = be_duplicate_node(node);
-	be_return_set_destroy_stackframe(new_node, true);
-	return new_node;
-}
-
 /* Boilerplate code for transformation: */
 
 static void amd64_register_transformers(void)
 {
 	be_start_transform_setup();
 
-	be_set_transform_function(op_Add,          gen_Add);
-	be_set_transform_function(op_And,          gen_And);
-	be_set_transform_function(op_be_Call,      gen_be_Call);
-	be_set_transform_function(op_be_FrameAddr, gen_be_FrameAddr);
-	be_set_transform_function(op_be_Return,    gen_be_Return);
-	be_set_transform_function(op_be_Start,     gen_be_Start);
-	be_set_transform_function(op_Cmp,          gen_Cmp);
-	be_set_transform_function(op_Cond,         gen_Cond);
-	be_set_transform_function(op_Const,        gen_Const);
-	be_set_transform_function(op_Conv,         gen_Conv);
-	be_set_transform_function(op_Div,          gen_Div);
-	be_set_transform_function(op_Eor,          gen_Eor);
-	be_set_transform_function(op_Jmp,          gen_Jmp);
-	be_set_transform_function(op_Load,         gen_Load);
-	be_set_transform_function(op_Minus,        gen_Minus);
-	be_set_transform_function(op_Mod,          gen_Mod);
-	be_set_transform_function(op_Mul,          gen_Mul);
-	be_set_transform_function(op_Not,          gen_Not);
-	be_set_transform_function(op_Or,           gen_Or);
-	be_set_transform_function(op_Phi,          gen_Phi);
-	be_set_transform_function(op_Shl,          gen_Shl);
-	be_set_transform_function(op_Shr,          gen_Shr);
-	be_set_transform_function(op_Shrs,         gen_Shrs);
-	be_set_transform_function(op_Store,        gen_Store);
-	be_set_transform_function(op_Sub,          gen_Sub);
-	be_set_transform_function(op_Switch,       gen_Switch);
-	be_set_transform_function(op_SymConst,     gen_SymConst);
+	be_set_transform_function(op_Add,      gen_Add);
+	be_set_transform_function(op_And,      gen_And);
+	be_set_transform_function(op_Cmp,      gen_Cmp);
+	be_set_transform_function(op_Call,     gen_Call);
+	be_set_transform_function(op_Cond,     gen_Cond);
+	be_set_transform_function(op_Const,    gen_Const);
+	be_set_transform_function(op_Conv,     gen_Conv);
+	be_set_transform_function(op_Div,      gen_Div);
+	be_set_transform_function(op_Eor,      gen_Eor);
+	be_set_transform_function(op_Jmp,      gen_Jmp);
+	be_set_transform_function(op_Load,     gen_Load);
+	be_set_transform_function(op_Minus,    gen_Minus);
+	be_set_transform_function(op_Mod,      gen_Mod);
+	be_set_transform_function(op_Mul,      gen_Mul);
+	be_set_transform_function(op_Not,      gen_Not);
+	be_set_transform_function(op_Or,       gen_Or);
+	be_set_transform_function(op_Phi,      gen_Phi);
+	be_set_transform_function(op_Return,   gen_Return);
+	be_set_transform_function(op_Sel,      gen_Sel);
+	be_set_transform_function(op_Shl,      gen_Shl);
+	be_set_transform_function(op_Shr,      gen_Shr);
+	be_set_transform_function(op_Shrs,     gen_Shrs);
+	be_set_transform_function(op_Start,    gen_Start);
+	be_set_transform_function(op_Store,    gen_Store);
+	be_set_transform_function(op_Sub,      gen_Sub);
+	be_set_transform_function(op_Switch,   gen_Switch);
+	be_set_transform_function(op_SymConst, gen_SymConst);
 
-	be_set_transform_proj_function(op_be_Call,  gen_Proj_be_Call);
-	be_set_transform_proj_function(op_be_Start, be_duplicate_node);
-	be_set_transform_proj_function(op_Cond,     be_duplicate_node);
-	be_set_transform_proj_function(op_Div,      gen_Proj_Div);
-	be_set_transform_proj_function(op_Load,     gen_Proj_Load);
-	be_set_transform_proj_function(op_Mod,      gen_Proj_Mod);
-	be_set_transform_proj_function(op_Store,    gen_Proj_Store);
-	be_set_transform_proj_function(op_Switch,   be_duplicate_node);
+	be_set_transform_proj_function(op_Call,   gen_Proj_Call);
+	be_set_transform_proj_function(op_Cond,   be_duplicate_node);
+	be_set_transform_proj_function(op_Div,    gen_Proj_Div);
+	be_set_transform_proj_function(op_Load,   gen_Proj_Load);
+	be_set_transform_proj_function(op_Mod,    gen_Proj_Mod);
+	be_set_transform_proj_function(op_Proj,   gen_Proj_Proj);
+	be_set_transform_proj_function(op_Start,  gen_Proj_Start);
+	be_set_transform_proj_function(op_Store,  gen_Proj_Store);
+	be_set_transform_proj_function(op_Switch, be_duplicate_node);
+}
+
+static ir_type *amd64_get_between_type(void)
+{
+	static ir_type *between_type = NULL;
+
+	assert(current_cconv->omit_fp);
+	if (between_type == NULL) {
+		between_type = new_type_class(new_id_from_str("amd64_between_type"));
+		set_type_size_bytes(between_type, get_mode_size_bytes(mode_gp));
+	}
+
+	return between_type;
+}
+
+static void amd64_create_stacklayout(ir_graph *irg, amd64_cconv_t *cconv)
+{
+	ir_entity         *entity        = get_irg_entity(irg);
+	ir_type           *function_type = get_entity_type(entity);
+	be_stack_layout_t *layout        = be_get_irg_stack_layout(irg);
+
+	/* construct argument type */
+	assert(cconv != NULL);
+	ident   *arg_type_id = new_id_from_str("arg_type");
+	ident   *arg_id      = id_mangle_u(get_entity_ident(entity), arg_type_id);
+	ir_type *arg_type    = new_type_struct(arg_id);
+	size_t n_params = get_method_n_params(function_type);
+	for (size_t p = 0; p < n_params; ++p) {
+		reg_or_stackslot_t *param = &cconv->parameters[p];
+		if (param->type == NULL)
+			continue;
+
+		char buf[128];
+		snprintf(buf, sizeof(buf), "param_%u", (unsigned)p);
+		ident *id     = new_id_from_str(buf);
+		param->entity = new_entity(arg_type, id, param->type);
+		set_entity_offset(param->entity, param->offset);
+	}
+
+	memset(layout, 0, sizeof(*layout));
+	layout->frame_type     = get_irg_frame_type(irg);
+	layout->between_type   = amd64_get_between_type();
+	layout->arg_type       = arg_type;
+	layout->initial_offset = 0;
+	layout->initial_bias   = 0;
+	layout->sp_relative    = cconv->omit_fp;
+
+	assert(N_FRAME_TYPES == 3);
+	layout->order[0] = layout->frame_type;
+	layout->order[1] = layout->between_type;
+	layout->order[2] = layout->arg_type;
 }
 
 void amd64_transform_graph(ir_graph *irg)
@@ -540,9 +1031,36 @@ void amd64_transform_graph(ir_graph *irg)
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_TUPLES
 	                         | IR_GRAPH_PROPERTY_NO_BADS);
 
+	start_mem.irn = NULL;
+	start_sp.irn  = NULL;
+	start_fp.irn  = NULL;
+
 	amd64_register_transformers();
 	mode_gp = mode_Lu;
+	node_to_stack = pmap_create();
+
+	stackorder = be_collect_stacknodes(irg);
+	ir_entity *entity = get_irg_entity(irg);
+	ir_type   *mtp    = get_entity_type(entity);
+	current_cconv = amd64_decide_calling_convention(mtp, irg);
+	amd64_create_stacklayout(irg, current_cconv);
+
 	be_transform_graph(irg, NULL);
+
+	be_free_stackorder(stackorder);
+	amd64_free_calling_convention(current_cconv);
+	pmap_destroy(node_to_stack);
+	node_to_stack = NULL;
+
+	ir_type *frame_type = get_irg_frame_type(irg);
+	if (get_type_state(frame_type) == layout_undefined)
+		default_layout_compound_type(frame_type);
+
+	place_code(irg);
+
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
+
+	be_add_missing_keeps(irg);
 }
 
 void amd64_init_transform(void)

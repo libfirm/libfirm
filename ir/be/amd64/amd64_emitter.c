@@ -196,8 +196,6 @@ ENUM_BITSET(amd64_emit_mod_t)
 static void amd64_emit_immediate(const amd64_imm_t *const imm)
 {
 	if (imm->symconst != NULL) {
-		if (imm->sc_sign)
-			be_emit_char('-');
 		be_gas_emit_entity(imm->symconst);
 	}
 	if (imm->symconst == NULL || imm->offset != 0) {
@@ -207,6 +205,17 @@ static void amd64_emit_immediate(const amd64_imm_t *const imm)
 			be_emit_irprintf("0x%lX", imm->offset);
 		}
 	}
+}
+
+static void amd64_emit_am(const arch_register_t *const base,
+                          const amd64_imm_t *const imm)
+{
+	if (base == NULL) {
+		amd64_emit_immediate(imm);
+		return;
+	}
+	emit_register(base);
+
 }
 
 void amd64_emitf(ir_node const *const node, char const *fmt, ...)
@@ -253,6 +262,20 @@ end_of_mods:
 
 			case '%':
 				be_emit_char('%');
+				break;
+
+			case 'A':
+				switch (*fmt++) {
+				case 'M': {
+					amd64_attr_t const *const attr = get_amd64_attr_const(node);
+					arch_register_t const *const base
+						= arch_get_irn_register_in(node, 0);
+					amd64_emit_am(base, &attr->imm);
+					break;
+				}
+				default:
+					goto unknown;
+				}
 				break;
 
 			case 'C': {
@@ -492,26 +515,15 @@ static void emit_amd64_LoadZ(const ir_node *node)
 	}
 }
 
-/**
- * Emits code for a call.
- */
-static void emit_be_Call(const ir_node *node)
+static void emit_amd64_Call(const ir_node *node)
 {
-	ir_entity *entity = be_Call_get_entity(node);
+	const amd64_attr_t *attr = get_amd64_attr_const(node);
 
-	/* %eax/%rax is used in AMD64 to pass the number of vector parameters for
-	 * variable argument counts */
-	if (get_method_variadicity (be_Call_get_type((ir_node *) node))) {
-		/* But this still is a hack... */
-		amd64_emitf(node, "xor %%rax, %%rax");
-	}
-
-	if (entity) {
-		amd64_emitf(node, "call %E", entity);
-	} else {
-		be_emit_pad_comment();
-		be_emit_cstring("/* FIXME: call NULL entity?! */\n");
-	}
+	be_emit_cstring("\tcall *");
+	int arity = get_irn_arity(node);
+	const arch_register_t *reg = arch_get_irn_register_in(node, arity-1);
+	emit_register_insn_mode(reg, attr->data.insn_mode);
+	be_emit_finish_line_gas(node);
 }
 
 /**
@@ -576,7 +588,7 @@ static void emit_be_IncSP(const ir_node *node)
 	}
 }
 
-static void emit_be_Start(const ir_node *node)
+static void emit_amd64_Start(const ir_node *node)
 {
 	ir_graph *irg        = get_irn_irg(node);
 	ir_type  *frame_type = get_irg_frame_type(irg);
@@ -587,10 +599,7 @@ static void emit_be_Start(const ir_node *node)
 	}
 }
 
-/**
- * Emits code for a return.
- */
-static void emit_be_Return(const ir_node *node)
+static void emit_amd64_Return(const ir_node *node)
 {
 	ir_graph *irg        = get_irn_irg(node);
 	ir_type  *frame_type = get_irg_frame_type(irg);
@@ -616,21 +625,20 @@ static void amd64_register_emitters(void)
 	/* register all emitter functions defined in spec */
 	amd64_register_spec_emitters();
 
-	be_set_emitter(op_amd64_FrameAddr,  emit_amd64_FrameAddr);
-	be_set_emitter(op_amd64_Jcc,        emit_amd64_Jcc);
-	be_set_emitter(op_amd64_Jmp,        emit_amd64_Jmp);
-	be_set_emitter(op_amd64_LoadZ,      emit_amd64_LoadZ);
-	be_set_emitter(op_amd64_SwitchJmp,  emit_amd64_SwitchJmp);
-	be_set_emitter(op_be_Call,          emit_be_Call);
-	be_set_emitter(op_be_Copy,          emit_be_Copy);
-	be_set_emitter(op_be_CopyKeep,      emit_be_Copy);
-	be_set_emitter(op_be_IncSP,         emit_be_IncSP);
-	be_set_emitter(op_be_Perm,          emit_be_Perm);
-	be_set_emitter(op_be_Return,        emit_be_Return);
-	be_set_emitter(op_be_Start,         emit_be_Start);
-
-	be_set_emitter(op_Phi,      be_emit_nothing);
-	be_set_emitter(op_be_Keep,  be_emit_nothing);
+	be_set_emitter(op_amd64_Call,      emit_amd64_Call);
+	be_set_emitter(op_amd64_FrameAddr, emit_amd64_FrameAddr);
+	be_set_emitter(op_amd64_Jcc,       emit_amd64_Jcc);
+	be_set_emitter(op_amd64_Jmp,       emit_amd64_Jmp);
+	be_set_emitter(op_amd64_LoadZ,     emit_amd64_LoadZ);
+	be_set_emitter(op_amd64_Return,    emit_amd64_Return);
+	be_set_emitter(op_amd64_Start,     emit_amd64_Start);
+	be_set_emitter(op_amd64_SwitchJmp, emit_amd64_SwitchJmp);
+	be_set_emitter(op_be_Copy,         emit_be_Copy);
+	be_set_emitter(op_be_CopyKeep,     emit_be_Copy);
+	be_set_emitter(op_be_IncSP,        emit_be_IncSP);
+	be_set_emitter(op_be_Keep,         be_emit_nothing);
+	be_set_emitter(op_be_Perm,         emit_be_Perm);
+	be_set_emitter(op_Phi,             be_emit_nothing);
 }
 
 /**

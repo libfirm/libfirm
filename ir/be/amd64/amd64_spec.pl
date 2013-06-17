@@ -9,7 +9,7 @@ $arch = "amd64";
 		{ name => "rdi", dwarf => 5 },
 		{ name => "rbx", dwarf => 3 },
 		{ name => "rbp", dwarf => 6 },
-		{ name => "rsp", dwarf => 7, type => "ignore" }, # stackpointer
+		{ name => "rsp", dwarf => 7 },
 		{ name => "r8",  dwarf => 8 },
 		{ name => "r9",  dwarf => 9 },
 		{ name => "r10", dwarf => 10 },
@@ -18,28 +18,8 @@ $arch = "amd64";
 		{ name => "r13", dwarf => 13 },
 		{ name => "r14", dwarf => 14 },
 		{ name => "r15", dwarf => 15 },
-#		{ name => "gp_NOREG", type => "ignore" }, # we need a dummy register for NoReg nodes
 		{ mode => "mode_Lu" }
 	],
-#	fp => [
-#		{ name => "xmm0",  dwarf => 17 },
-#		{ name => "xmm1",  dwarf => 18 },
-#		{ name => "xmm2",  dwarf => 19 },
-#		{ name => "xmm3",  dwarf => 20 },
-#		{ name => "xmm4",  dwarf => 21 },
-#		{ name => "xmm5",  dwarf => 22 },
-#		{ name => "xmm6",  dwarf => 23 },
-#		{ name => "xmm7",  dwarf => 24 },
-#		{ name => "xmm8",  dwarf => 25 },
-#		{ name => "xmm9",  dwarf => 26 },
-#		{ name => "xmm10", dwarf => 27 },
-#		{ name => "xmm11", dwarf => 28 },
-#		{ name => "xmm12", dwarf => 29 },
-#		{ name => "xmm13", dwarf => 30 },
-#		{ name => "xmm14", dwarf => 31 },
-#		{ name => "xmm15", dwarf => 32 },
-#		{ mode => "mode_D" }
-#	]
 	flags => [
 		{ name => "eflags", dwarf => 49 },
 		{ mode => "mode_Iu", flags => "manual_ra" }
@@ -82,14 +62,30 @@ $default_copy_attr = "amd64_copy_attr";
 );
 
 %nodes = (
-Push => {
+PushAM => {
 	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "gp", "rsp" ], out => [ "rsp:I|S", "none" ] },
-	ins       => [ "base", "index", "mem", "val", "stack" ],
-	emit      => "push %S0",
+	reg_req   => { in => [ "gp", "none", "rsp" ], out => [ "rsp:I|S", "none" ] },
+	ins       => [ "base", "mem", "stack" ],
 	outs      => [ "stack", "M" ],
-	am        => "source,unary",
+	attr      => "amd64_insn_mode_t insn_mode, int64_t offset, ir_entity *symconst",
+	init_attr => "attr->imm.offset     = offset;\n"
+	           . "attr->imm.symconst   = symconst;\n"
+	           . "attr->data.insn_mode = insn_mode;\n",
+	emit      => "push %AM",
+},
+
+PopAM => {
+	op_flags  => [ "uses_memory" ],
+	state     => "exc_pinned",
+	reg_req   => { in => [ "gp", "none", "rsp" ], out => [ "rsp:I|S", "none" ] },
+	ins       => [ "base", "mem", "stack" ],
+	outs      => [ "stack", "M" ],
+	attr      => "amd64_insn_mode_t insn_mode, int64_t offset, ir_entity *symconst",
+	init_attr => "attr->imm.offset     = offset;\n"
+	           . "attr->imm.symconst   = symconst;\n"
+	           . "attr->data.insn_mode = insn_mode;\n",
+	emit      => "pop %AM",
 },
 
 Add => {
@@ -269,9 +265,8 @@ Xor0 => {
 
 Const => {
 	op_flags  => [ "constlike" ],
-	attr      => "amd64_insn_mode_t insn_mode, int64_t offset, bool sc_sign, ir_entity *symconst",
+	attr      => "amd64_insn_mode_t insn_mode, int64_t offset, ir_entity *symconst",
 	init_attr => "attr->imm.offset     = offset;\n"
-	           . "attr->imm.sc_sign    = sc_sign;\n"
 	           . "attr->imm.symconst   = symconst;\n"
 	           . "attr->data.insn_mode = insn_mode;\n",
 	reg_req   => { out => [ "gp" ] },
@@ -381,6 +376,26 @@ SwitchJmp => {
 	out_arity    => "variable",
 	attr_type    => "amd64_switch_jmp_attr_t",
 	attr         => "const ir_switch_table *table, ir_entity *table_entity",
+},
+
+Call => {
+	state     => "exc_pinned",
+	arity     => "variable",
+	out_arity => "variable",
+},
+
+Start => {
+	state     => "pinned",
+	out_arity => "variable",
+	ins       => [],
+},
+
+Return => {
+	state  => "pinned",
+	op_flags => [ "cfopcode" ],
+	arity    => "variable",
+	reg_req  => { out => [ "none" ] },
+	mode     => "mode_X",
 },
 
 );
