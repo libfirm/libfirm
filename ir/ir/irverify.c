@@ -875,7 +875,7 @@ static int verify_node_SymConst(const ir_node *n)
 		/* SymConst: BB --> ref */
 		mode_is_reference(mymode))
 		,"SymConst node", 0);
-	if (SYMCONST_HAS_ENT(get_SymConst_kind(n))) {
+	if (get_SymConst_kind(n) == symconst_addr_ent) {
 		ir_entity *ent = get_SymConst_entity(n);
 		/* the is_method_entity(ent) exception is for nested functions... */
 		ASSERT_AND_RET_DBG((get_entity_owner(ent)->flags & tf_segment)
