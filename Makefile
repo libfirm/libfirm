@@ -154,7 +154,7 @@ libfirm_DEPS    = $(libfirm_OBJECTS:%.o=%.d)
 
 $(libfirm_a): $(libfirm_OBJECTS)
 	@echo AR $@
-	$(Q)$(AR) -cr $@ $^
+	$(Q)$(AR) -crsu $@ $^
 
 $(libfirm_dll): $(libfirm_OBJECTS)
 	@echo LINK $@
