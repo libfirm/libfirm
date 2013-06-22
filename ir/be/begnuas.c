@@ -282,7 +282,8 @@ static ir_tarval *get_initializer_tarval(const ir_initializer_t *initializer)
 	return get_tarval_undefined();
 }
 
-static bool initializer_is_string_const(const ir_initializer_t *initializer)
+static bool initializer_is_string_const(const ir_initializer_t *initializer,
+                                        bool only_suffix_null)
 {
 	if (initializer->kind != IR_INITIALIZER_COMPOUND)
 		return false;
@@ -305,13 +306,15 @@ static bool initializer_is_string_const(const ir_initializer_t *initializer)
 			return false;
 
 		int c = get_tarval_long(tv);
-		if (isgraph(c) || isspace(c))
-			found_printable = true;
-		else if (c != 0)
-			return false;
-
-		if (i == len - 1 && c != '\0')
-			return false;
+		if (i == len-1) {
+			if (c != '\0')
+				return false;
+		} else {
+			if (isgraph(c) || isspace(c))
+				found_printable = true;
+			else if (c != 0 || only_suffix_null)
+				return false;
+		}
 	}
 
 	return found_printable;
@@ -348,8 +351,10 @@ static bool initializer_is_null(const ir_initializer_t *initializer)
 /**
  * Determine if an entity is a string constant
  * @param ent The entity
+ * @param only_suffix_null  if true '\0' is only legal at the end of the
+ *                          string.
  */
-static bool entity_is_string_const(const ir_entity *ent)
+static bool entity_is_string_const(const ir_entity *ent, bool only_suffix_null)
 {
 	/* if it's an array */
 	ir_type *type = get_entity_type(ent);
@@ -367,11 +372,10 @@ static bool entity_is_string_const(const ir_entity *ent)
 	if (!mode_is_int(mode) || get_mode_size_bits(mode) != 8)
 		return false;
 
-	if (ent->initializer != NULL) {
-		return initializer_is_string_const(ent->initializer);
-	}
+	if (ent->initializer == NULL)
+		return false;
 
-	return false;
+	return initializer_is_string_const(ent->initializer, only_suffix_null);
 }
 
 static bool entity_is_null(const ir_entity *entity)
@@ -396,7 +400,7 @@ static be_gas_section_t determine_basic_section(const ir_entity *entity)
 	if (linkage & IR_LINKAGE_CONSTANT) {
 		/* mach-o is the only one with a cstring section */
 		if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O
-		    && entity_is_string_const(entity))
+		    && entity_is_string_const(entity, true))
 			return GAS_SECTION_CSTRING;
 
 		return GAS_SECTION_RODATA;
@@ -921,7 +925,7 @@ static void emit_ir_initializer(normal_or_bitfield *vals,
 {
 	assert((size_t) (vals - glob_vals) <= max_vals);
 
-	if (initializer_is_string_const(initializer)) {
+	if (initializer_is_string_const(initializer, false)) {
 		assert(vals->kind != BITFIELD);
 		vals->kind     = STRING;
 		vals->v.string = initializer;
@@ -1105,7 +1109,7 @@ static void emit_node_data(be_gas_decl_env_t *env, ir_node *init, ir_type *type)
 static void emit_initializer(be_gas_decl_env_t *env, const ir_entity *entity)
 {
 	const ir_initializer_t *initializer = entity->initializer;
-	if (initializer_is_string_const(initializer)) {
+	if (initializer_is_string_const(initializer, false)) {
 		emit_string_initializer(initializer);
 		return;
 	}
