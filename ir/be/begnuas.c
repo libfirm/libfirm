@@ -55,13 +55,13 @@ static void emit_section_macho(be_gas_section_t section)
 {
 	be_gas_section_t  base  = section & GAS_SECTION_TYPE_MASK;
 	be_gas_section_t  flags = section & ~GAS_SECTION_TYPE_MASK;
-	const char       *name;
 
 	if (current_section == section)
 		return;
 	current_section = section;
 
 	/* shortforms */
+	const char *name;
 	if (flags == 0) {
 		switch (base) {
 		case GAS_SECTION_TEXT:            name = "text";          break;
@@ -98,9 +98,10 @@ static void emit_section_macho(be_gas_section_t section)
 	be_emit_write_line();
 }
 
-static void emit_section_sparc(be_gas_section_t section, const ir_entity *entity)
+static void emit_section_sparc(be_gas_section_t section,
+                               const ir_entity *entity)
 {
-	be_gas_section_t base = section & GAS_SECTION_TYPE_MASK;
+	be_gas_section_t base  = section & GAS_SECTION_TYPE_MASK;
 	be_gas_section_t flags = section & ~GAS_SECTION_TYPE_MASK;
 	static const char *const basename[GAS_SECTION_LAST+1] = {
 		"text",
@@ -259,13 +260,11 @@ static void emit_section(be_gas_section_t section, const ir_entity *entity)
 	be_emit_write_line();
 }
 
-
-
 void be_gas_emit_switch_section(be_gas_section_t section)
 {
 	/* you have to produce a switch_section call with entity manually
 	 * for comdat sections */
-	assert( !(section & GAS_SECTION_FLAG_COMDAT));
+	assert(!(section & GAS_SECTION_FLAG_COMDAT));
 
 	emit_section(section, NULL);
 }
@@ -285,31 +284,27 @@ static ir_tarval *get_initializer_tarval(const ir_initializer_t *initializer)
 
 static bool initializer_is_string_const(const ir_initializer_t *initializer)
 {
-	size_t i, len;
-	bool found_printable = false;
-
 	if (initializer->kind != IR_INITIALIZER_COMPOUND)
 		return false;
 
-	len = initializer->compound.n_initializers;
+	size_t len = initializer->compound.n_initializers;
 	if (len < 1)
 		return false;
-	for (i = 0; i < len; ++i) {
-		int               c;
-		ir_tarval        *tv;
-		ir_mode          *mode;
+
+	bool found_printable = false;
+	for (size_t i = 0; i < len; ++i) {
 		ir_initializer_t *sub_initializer
 			= initializer->compound.initializers[i];
 
-		tv = get_initializer_tarval(sub_initializer);
+		ir_tarval *tv = get_initializer_tarval(sub_initializer);
 		if (!tarval_is_constant(tv))
 			return false;
 
-		mode = get_tarval_mode(tv);
+		ir_mode *mode = get_tarval_mode(tv);
 		if (!mode_is_int(mode) || get_mode_size_bits(mode) != 8)
 			return false;
 
-		c = get_tarval_long(tv);
+		int c = get_tarval_long(tv);
 		if (isgraph(c) || isspace(c))
 			found_printable = true;
 		else if (c != 0)
@@ -338,8 +333,7 @@ static bool initializer_is_null(const ir_initializer_t *initializer)
 		return is_Const_null(value);
 	}
 	case IR_INITIALIZER_COMPOUND: {
-		size_t i;
-		for (i = 0; i < initializer->compound.n_initializers; ++i) {
+		for (size_t i = 0; i < initializer->compound.n_initializers; ++i) {
 			ir_initializer_t *subinitializer
 				= initializer->compound.initializers[i];
 			if (!initializer_is_null(subinitializer))
@@ -354,36 +348,30 @@ static bool initializer_is_null(const ir_initializer_t *initializer)
 /**
  * Determine if an entity is a string constant
  * @param ent The entity
- * @return 1 if it is a string constant, 0 otherwise
  */
-static int entity_is_string_const(const ir_entity *ent)
+static bool entity_is_string_const(const ir_entity *ent)
 {
-	ir_type *type, *element_type;
-	ir_mode *mode;
-
-	type = get_entity_type(ent);
-
 	/* if it's an array */
+	ir_type *type = get_entity_type(ent);
 	if (!is_Array_type(type))
-		return 0;
-
-	element_type = get_array_element_type(type);
+		return false;
 
 	/* and the array's element type is primitive */
+	ir_type *element_type = get_array_element_type(type);
 	if (!is_Primitive_type(element_type))
-		return 0;
+		return false;
 
 	/* and the mode of the element type is an int of
 	 * the same size as the byte mode */
-	mode = get_type_mode(element_type);
+	ir_mode *mode = get_type_mode(element_type);
 	if (!mode_is_int(mode) || get_mode_size_bits(mode) != 8)
-		return 0;
+		return false;
 
 	if (ent->initializer != NULL) {
 		return initializer_is_string_const(ent->initializer);
 	}
 
-	return 0;
+	return false;
 }
 
 static bool entity_is_null(const ir_entity *entity)
@@ -401,12 +389,10 @@ static bool is_comdat(const ir_entity *entity)
 
 static be_gas_section_t determine_basic_section(const ir_entity *entity)
 {
-	ir_linkage linkage;
-
 	if (is_method_entity(entity))
 		return GAS_SECTION_TEXT;
 
-	linkage = get_entity_linkage(entity);
+	ir_linkage linkage = get_entity_linkage(entity);
 	if (linkage & IR_LINKAGE_CONSTANT) {
 		/* mach-o is the only one with a cstring section */
 		if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O
@@ -492,13 +478,12 @@ static void emit_visibility(const ir_entity *entity)
 	}
 }
 
-void be_gas_emit_function_prolog(const ir_entity *entity, unsigned po2alignment, const parameter_dbg_info_t *parameter_infos)
+void be_gas_emit_function_prolog(const ir_entity *entity, unsigned po2alignment,
+                                 const parameter_dbg_info_t *parameter_infos)
 {
-	be_gas_section_t section;
-
 	be_dwarf_method_before(entity, parameter_infos);
 
-	section = determine_section(NULL, entity);
+	be_gas_section_t section = determine_section(NULL, entity);
 	emit_section(section, entity);
 
 	/* write the begin line (makes the life easier for scripts parsing the
@@ -511,7 +496,7 @@ void be_gas_emit_function_prolog(const ir_entity *entity, unsigned po2alignment,
 	}
 
 	if (po2alignment > 0) {
-		const char *fill_byte = "";
+		const char *fill_byte    = "";
 		unsigned    maximum_skip = (1 << po2alignment) - 1;
 		/* gcc fills space between function with 0x90... */
 		if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
@@ -633,36 +618,39 @@ const char *be_gas_insn_label_prefix(void)
  */
 static void emit_init_expression(be_gas_decl_env_t *env, ir_node *init)
 {
-	ir_mode *mode = get_irn_mode(init);
-	int bytes     = get_mode_size_bytes(mode);
-	ir_tarval *tv;
-	ir_entity *ent;
-
-	init = skip_Id(init);
+	ir_mode *mode  = get_irn_mode(init);
+	int      bytes = get_mode_size_bytes(mode);
 
 	switch (get_irn_opcode(init)) {
+	case iro_Id:
+		emit_init_expression(env, get_Id_pred(init));
+		return;
+
 	case iro_Conv:
 		emit_init_expression(env, get_Conv_op(init));
 		return;
 
-	case iro_Const:
-		tv = get_Const_tarval(init);
+	case iro_Const: {
+		ir_tarval *tv = get_Const_tarval(init);
 
 		/* it's an arithmetic value */
 		emit_arith_tarval(tv, bytes);
 		return;
+	}
 
 	case iro_SymConst:
 		switch (get_SymConst_kind(init)) {
-		case symconst_addr_ent:
-			ent = get_SymConst_entity(init);
+		case symconst_addr_ent: {
+			ir_entity *ent = get_SymConst_entity(init);
 			be_gas_emit_entity(ent);
 			break;
+		}
 
-		case symconst_ofs_ent:
-			ent = get_SymConst_entity(init);
+		case symconst_ofs_ent: {
+			ir_entity *ent = get_SymConst_entity(init);
 			be_emit_irprintf("%d", get_entity_offset(ent));
 			break;
+		}
 
 		case symconst_type_size:
 			be_emit_irprintf("%u", get_type_size_bytes(get_SymConst_type(init)));
@@ -672,10 +660,11 @@ static void emit_init_expression(be_gas_decl_env_t *env, ir_node *init)
 			be_emit_irprintf("%u", get_type_alignment_bytes(get_SymConst_type(init)));
 			break;
 
-		case symconst_enum_const:
-			tv = get_enumeration_value(get_SymConst_enum(init));
+		case symconst_enum_const: {
+			ir_tarval *tv = get_enumeration_value(get_SymConst_enum(init));
 			emit_arith_tarval(tv, bytes);
 			break;
+		}
 
 		default:
 			assert(!"emit_atomic_init(): don't know how to init from this SymConst");
@@ -863,12 +852,8 @@ static void emit_bitfield(normal_or_bitfield *vals, size_t offset_bits,
                           const ir_initializer_t *initializer, ir_type *type)
 {
 	static const size_t BITS_PER_BYTE = 8;
-	ir_mode   *mode      = get_type_mode(type);
-	ir_tarval *tv        = NULL;
-	int        value_len;
-	size_t     bit_offset;
-	size_t     end;
-	bool       big_endian = be_get_backend_param()->byte_order_big_endian;
+	ir_mode   *mode = get_type_mode(type);
+	ir_tarval *tv   = NULL;
 
 	switch (get_initializer_kind(initializer)) {
 	case IR_INITIALIZER_NULL:
@@ -892,21 +877,21 @@ static void emit_bitfield(normal_or_bitfield *vals, size_t offset_bits,
 	}
 	tv = tarval_convert_to(tv, get_type_mode(type));
 
-	value_len  = get_type_size_bytes(get_primitive_base_type(type));
-	bit_offset = 0;
-	end        = get_mode_size_bits(mode);
+	int    value_len  = get_type_size_bytes(get_primitive_base_type(type));
+	size_t bit_offset = 0;
+	size_t end        = get_mode_size_bits(mode);
+	bool   big_endian = be_get_backend_param()->byte_order_big_endian;
 	while (bit_offset < end) {
-		size_t        src_offset      = bit_offset / BITS_PER_BYTE;
-		size_t        src_offset_bits = bit_offset % BITS_PER_BYTE;
-		size_t        dst_offset      = (bit_offset+offset_bits) / BITS_PER_BYTE;
-		size_t        dst_offset_bits = (bit_offset+offset_bits) % BITS_PER_BYTE;
-		size_t        src_bits_len    = end-bit_offset;
-		size_t        dst_bits_len    = BITS_PER_BYTE-dst_offset_bits;
-		unsigned char curr_bits;
-		normal_or_bitfield *val;
+		size_t src_offset      = bit_offset / BITS_PER_BYTE;
+		size_t src_offset_bits = bit_offset % BITS_PER_BYTE;
+		size_t dst_offset      = (bit_offset+offset_bits) / BITS_PER_BYTE;
+		size_t dst_offset_bits = (bit_offset+offset_bits) % BITS_PER_BYTE;
+		size_t src_bits_len    = end-bit_offset;
+		size_t dst_bits_len    = BITS_PER_BYTE-dst_offset_bits;
 		if (src_bits_len > dst_bits_len)
 			src_bits_len = dst_bits_len;
 
+		normal_or_bitfield *val;
 		if (big_endian) {
 			val = &vals[value_len - dst_offset - 1];
 		} else {
@@ -916,9 +901,9 @@ static void emit_bitfield(normal_or_bitfield *vals, size_t offset_bits,
 		assert((val-glob_vals) < (ptrdiff_t) max_vals);
 		assert(val->kind == BITFIELD ||
 				(val->kind == NORMAL && val->v.value == NULL));
-		val->kind  = BITFIELD;
-		curr_bits  = get_tarval_sub_bits(tv, src_offset);
-		curr_bits  = curr_bits >> src_offset_bits;
+		val->kind = BITFIELD;
+		unsigned char curr_bits = get_tarval_sub_bits(tv, src_offset);
+		curr_bits = curr_bits >> src_offset_bits;
 		if (src_offset_bits + src_bits_len > 8) {
 			unsigned next_bits = get_tarval_sub_bits(tv, src_offset+1);
 			curr_bits |= next_bits << (8 - src_offset_bits);
@@ -946,39 +931,32 @@ static void emit_ir_initializer(normal_or_bitfield *vals,
 	switch (get_initializer_kind(initializer)) {
 	case IR_INITIALIZER_NULL:
 		return;
-	case IR_INITIALIZER_TARVAL: {
-		size_t i;
-
+	case IR_INITIALIZER_TARVAL:
 		assert(vals->kind != BITFIELD);
 		vals->kind     = TARVAL;
 		vals->type     = type;
 		vals->v.tarval = get_initializer_tarval_value(initializer);
 		assert(get_type_mode(type) == get_tarval_mode(vals->v.tarval));
-		for (i = 1; i < get_type_size_bytes(type); ++i) {
+		for (size_t i = 1; i < get_type_size_bytes(type); ++i) {
 			vals[i].kind    = NORMAL;
 			vals[i].type    = NULL;
 			vals[i].v.value = NULL;
 		}
 		return;
-	}
-	case IR_INITIALIZER_CONST: {
-		size_t i;
 
+	case IR_INITIALIZER_CONST:
 		assert(vals->kind != BITFIELD);
 		vals->kind    = NORMAL;
 		vals->type    = type;
 		vals->v.value = get_initializer_const_value(initializer);
-		for (i = 1; i < get_type_size_bytes(type); ++i) {
+		for (size_t i = 1; i < get_type_size_bytes(type); ++i) {
 			vals[i].kind    = NORMAL;
 			vals[i].type    = NULL;
 			vals[i].v.value = NULL;
 		}
 		return;
-	}
-	case IR_INITIALIZER_COMPOUND: {
-		size_t i = 0;
-		size_t n = get_initializer_compound_n_entries(initializer);
 
+	case IR_INITIALIZER_COMPOUND:
 		if (is_Array_type(type)) {
 			ir_type *element_type = get_array_element_type(type);
 			size_t   skip         = get_type_size_bytes(element_type);
@@ -988,7 +966,9 @@ static void emit_ir_initializer(normal_or_bitfield *vals,
 				skip += alignment - misalign;
 			}
 
-			for (i = 0; i < n; ++i) {
+			for (size_t i = 0,
+			     n = get_initializer_compound_n_entries(initializer);
+			     i < n; ++i) {
 				ir_initializer_t *sub_initializer
 					= get_initializer_compound_value(initializer, i);
 
@@ -997,20 +977,18 @@ static void emit_ir_initializer(normal_or_bitfield *vals,
 				vals += skip;
 			}
 		} else {
-			size_t n_members, i;
 			assert(is_compound_type(type));
-			n_members = get_compound_n_members(type);
-			for (i = 0; i < n_members; ++i) {
-				ir_entity        *member    = get_compound_member(type, i);
-				size_t            offset    = get_entity_offset(member);
-				ir_type          *subtype   = get_entity_type(member);
-				ir_mode          *mode      = get_type_mode(subtype);
-				ir_initializer_t *sub_initializer;
+			for (size_t i = 0, n_members = get_compound_n_members(type);
+			     i < n_members; ++i) {
+				ir_entity *member = get_compound_member(type, i);
+				size_t     offset = get_entity_offset(member);
 
 				assert(i < get_initializer_compound_n_entries(initializer));
-				sub_initializer
+				ir_initializer_t *sub_initializer
 					= get_initializer_compound_value(initializer, i);
 
+				ir_type *subtype = get_entity_type(member);
+				ir_mode *mode    = get_type_mode(subtype);
 				if (mode != NULL) {
 					size_t offset_bits
 						= get_entity_offset_bits_remainder(member);
@@ -1030,7 +1008,6 @@ static void emit_ir_initializer(normal_or_bitfield *vals,
 		}
 
 		return;
-	}
 	}
 	panic("invalid ir_initializer kind found");
 }
@@ -1111,11 +1088,10 @@ static void emit_node_data(be_gas_decl_env_t *env, ir_node *init, ir_type *type)
 {
 	size_t size = get_type_size_bytes(type);
 	if (size == 12 || size == 16) {
-		ir_tarval *tv;
 		if (!is_Const(init)) {
 			panic("12/16byte initializers only support Const nodes yet");
 		}
-		tv = get_Const_tarval(init);
+		ir_tarval *tv = get_Const_tarval(init);
 		emit_tarval_data(type, tv);
 		return;
 	}
@@ -1129,19 +1105,13 @@ static void emit_node_data(be_gas_decl_env_t *env, ir_node *init, ir_type *type)
 static void emit_initializer(be_gas_decl_env_t *env, const ir_entity *entity)
 {
 	const ir_initializer_t *initializer = entity->initializer;
-	ir_type                *type;
-	normal_or_bitfield     *vals;
-	size_t                  size;
-	size_t                  k;
-
 	if (initializer_is_string_const(initializer)) {
 		emit_string_initializer(initializer);
 		return;
 	}
 
-	type = get_entity_type(entity);
-	size = get_initializer_size(initializer, type);
-
+	ir_type *type = get_entity_type(entity);
+	size_t   size = get_initializer_size(initializer, type);
 	if (size == 0)
 		return;
 
@@ -1149,7 +1119,7 @@ static void emit_initializer(be_gas_decl_env_t *env, const ir_entity *entity)
 	 * In the worst case, every initializer allocates one byte.
 	 * Moreover, initializer might be big, do not allocate on stack.
 	 */
-	vals = XMALLOCNZ(normal_or_bitfield, size);
+	normal_or_bitfield *vals = XMALLOCNZ(normal_or_bitfield, size);
 
 #ifndef NDEBUG
 	glob_vals = vals;
@@ -1159,7 +1129,7 @@ static void emit_initializer(be_gas_decl_env_t *env, const ir_entity *entity)
 	emit_ir_initializer(vals, initializer, type);
 
 	/* now write values sorted */
-	for (k = 0; k < size; ) {
+	for (size_t k = 0; k < size; ) {
 		int                     space     = 0;
 		normal_or_bitfield_kind kind      = vals[k].kind;
 		int                     elem_size;
@@ -1287,7 +1257,8 @@ static void emit_local_common(const ir_entity *entity)
 	panic("invalid object file format");
 }
 
-static void emit_indirect_symbol(const ir_entity *entity, be_gas_section_t section)
+static void emit_indirect_symbol(const ir_entity *entity,
+                                 be_gas_section_t section)
 {
 	/* we can only do PIC code on macho so far */
 	assert(be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O);
@@ -1365,8 +1336,7 @@ void be_gas_begin_block(const ir_node *block, bool needs_label)
 		if (arity == 0) {
 			be_emit_cstring(" none");
 		} else {
-			int i;
-			for (i = 0; i < arity; ++i) {
+			for (int i = 0; i < arity; ++i) {
 				ir_node *predblock = get_Block_cfgpred_block(block, i);
 				be_emit_char(' ');
 				be_gas_emit_block_name(predblock);
@@ -1386,26 +1356,22 @@ void be_gas_begin_block(const ir_node *block, bool needs_label)
  */
 static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 {
-	ir_type          *type       = get_entity_type(entity);
-	ident            *ld_ident   = get_entity_ld_ident(entity);
-	unsigned          alignment  = get_effective_entity_alignment(entity);
-	be_gas_section_t  section    = determine_section(env, entity);
-	ir_visibility     visibility = get_entity_visibility(entity);
-	ir_linkage        linkage    = get_entity_linkage(entity);
-
 	/* Block labels are already emitted in the code. */
+	ir_type *type = get_entity_type(entity);
 	if (type == get_code_type())
 		return;
 
 	/* we already emitted all methods with graphs in other functions like
-	 * be_gas_emit_function_prolog(). All others don't need to be emitted.
-	 */
+	 * be_gas_emit_function_prolog(). All others don't need to be emitted. */
+	be_gas_section_t section = determine_section(env, entity);
 	if (is_Method_type(type) && section != GAS_SECTION_PIC_TRAMPOLINES) {
 		return;
 	}
 
 	be_dwarf_variable(entity);
 
+	ir_visibility visibility = get_entity_visibility(entity);
+	ir_linkage    linkage    = get_entity_linkage(entity);
 	if (section == GAS_SECTION_BSS) {
 		switch (visibility) {
 		case ir_visibility_local:
@@ -1423,6 +1389,7 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 
 	emit_visibility(entity);
 
+	unsigned alignment = get_effective_entity_alignment(entity);
 	if (!is_po2(alignment))
 		panic("alignment not a power of 2");
 
@@ -1443,8 +1410,7 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 		emit_align(alignment);
 	}
 	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_ELF
-			&& be_gas_emit_types
-			&& visibility != ir_visibility_private) {
+	    && be_gas_emit_types && visibility != ir_visibility_private) {
 		be_emit_cstring("\t.type\t");
 		be_gas_emit_entity(entity);
 		be_emit_cstring(", ");
@@ -1454,6 +1420,7 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 		be_emit_irprintf(", %u\n", get_type_size_bytes(type));
 	}
 
+	ident *ld_ident = get_entity_ld_ident(entity);
 	if (get_id_str(ld_ident)[0] != '\0') {
 		be_gas_emit_entity(entity);
 		be_emit_cstring(":\n");
@@ -1481,9 +1448,7 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
  */
 static void be_gas_emit_globals(ir_type *gt, be_gas_decl_env_t *env)
 {
-	size_t i, n = get_compound_n_members(gt);
-
-	for (i = 0; i < n; i++) {
+	for (size_t i = 0, n = get_compound_n_members(gt); i < n; i++) {
 		ir_entity *ent = get_compound_member(gt, i);
 		emit_global(env, ent);
 	}
@@ -1522,15 +1487,9 @@ static void emit_global_decls(const be_main_env_t *main_env)
 void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
                         ir_entity *entity, get_cfop_target_func get_cfop_target)
 {
-	unsigned        n_outs    = arch_get_irn_n_outs(node);
-	const ir_node **targets   = XMALLOCNZ(const ir_node*, n_outs);
-	size_t          n_entries = ir_switch_table_get_n_entries(table);
-	unsigned long   length    = 0;
-	size_t          e;
-	unsigned        i;
-	const ir_node **labels;
-
 	/* go over all proj's and collect their jump targets */
+	unsigned        n_outs  = arch_get_irn_n_outs(node);
+	const ir_node **targets = XMALLOCNZ(const ir_node*, n_outs);
 	foreach_out_edge(node, edge) {
 		ir_node *proj   = get_edge_src_irn(edge);
 		long     pn     = get_Proj_proj(proj);
@@ -1541,7 +1500,9 @@ void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
 
 	/* go over table to determine max value (note that we normalized the
 	 * ranges so that the minimum is 0) */
-	for (e = 0; e < n_entries; ++e) {
+	size_t        n_entries = ir_switch_table_get_n_entries(table);
+	unsigned long length    = 0;
+	for (size_t e = 0; e < n_entries; ++e) {
 		const ir_switch_table_entry *entry
 			= ir_switch_table_get_entry_const(table, e);
 		ir_tarval *max = entry->max;
@@ -1564,8 +1525,8 @@ void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
 	}
 	++length;
 
-	labels = XMALLOCNZ(const ir_node*, length);
-	for (e = 0; e < n_entries; ++e) {
+	const ir_node **labels = XMALLOCNZ(const ir_node*, length);
+	for (size_t e = 0; e < n_entries; ++e) {
 		const ir_switch_table_entry *entry
 			= ir_switch_table_get_entry_const(table, e);
 		ir_tarval     *min    = entry->min;
@@ -1599,7 +1560,7 @@ void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
 		be_emit_cstring(":\n");
 	}
 
-	for (i = 0; i < length; ++i) {
+	for (unsigned long i = 0; i < length; ++i) {
 		const ir_node *block = labels[i];
 		if (block == NULL)
 			block = targets[0];
@@ -1618,11 +1579,8 @@ void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
 
 static void emit_global_asms(void)
 {
-	size_t n = get_irp_n_asms();
-	size_t i;
-
 	be_gas_emit_switch_section(GAS_SECTION_TEXT);
-	for (i = 0; i < n; ++i) {
+	for (size_t i = 0, n = get_irp_n_asms(); i < n; ++i) {
 		ident *asmtext = get_irp_asm(i);
 
 		be_emit_cstring("#APP\n");
