@@ -136,7 +136,6 @@ const char *get_op_pin_state_name(op_pin_state s)
 	XXX(op_pin_state_floats);
 	XXX(op_pin_state_pinned);
 	XXX(op_pin_state_exc_pinned);
-	XXX(op_pin_state_mem_pinned);
 #undef XXX
 	}
 	return "<none>";

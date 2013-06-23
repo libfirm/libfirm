@@ -203,8 +203,6 @@ typedef enum op_pin_state {
 	op_pin_state_pinned = 1,    /**< Nodes must remain in this basic block. */
 	op_pin_state_exc_pinned,    /**< Node must remain in this basic block if it
 	                                 can throw an exception, else can float. */
-	op_pin_state_mem_pinned     /**< Node must remain in this basic block if it
-	                                 uses memory, else can float. */
 } op_pin_state;
 
 /**

@@ -17,7 +17,7 @@ def isOp(nodetype):
 	return hasattr(nodetype, "__is_firm_op")
 
 def is_dynamic_pinned(node):
-	return node.pinned in ["memory", "exception"]
+	return node.pinned == "exception"
 
 def is_fragile(node):
 	return hasattr(node, "flags") and "fragile" in node.flags
@@ -31,7 +31,7 @@ def inout_contains(l, name):
 def verify_node(node):
 	if not hasattr(node, "pinned"):
 		print "%s: NO PINNED SET" % node.name
-	elif node.pinned not in ["yes", "no", "memory", "exception"]:
+	elif node.pinned not in ["yes", "no", "exception"]:
 		print "%s: UNKNOWN PINNED MODE: %s" % (node.name, node.pinned)
 
 	if not hasattr(node, "flags"):

@@ -104,7 +104,7 @@ class ASM:
 	arity            = "variable"
 	input_name       = "input"
 	flags            = [ "keep", "uses_memory" ]
-	pinned           = "memory"
+	pinned           = "exception"
 	pinned_init      = "op_pin_state_pinned"
 	attr_struct      = "asm_attr"
 	attrs_name       = "assem"
@@ -246,7 +246,7 @@ class Builtin:
 			comment = "method type for the builtin call",
 		)
 	]
-	pinned      = "memory"
+	pinned      = "exception"
 	pinned_init = "op_pin_state_pinned"
 	attr_struct = "builtin_attr"
 	init        = '''
@@ -280,7 +280,7 @@ class Call:
 		),
 	]
 	attr_struct = "call_attr"
-	pinned      = "memory"
+	pinned      = "exception"
 	pinned_init = "op_pin_state_pinned"
 	throws_init = "false"
 	init = '''
@@ -428,7 +428,7 @@ class CopyB:
 		)
 	]
 	attr_struct = "copyb_attr"
-	pinned      = "memory"
+	pinned      = "exception"
 	pinned_init = "op_pin_state_pinned"
 	throws_init = "false"
 
@@ -553,7 +553,7 @@ class InstOf:
 		)
 	]
 	attr_struct = "io_attr"
-	pinned      = "memory"
+	pinned      = "exception"
 	pinned_init = "op_pin_state_floats"
 
 @op

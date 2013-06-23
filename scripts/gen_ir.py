@@ -125,8 +125,6 @@ def format_pinned(node):
 		return "op_pin_state_floats"
 	if pinned == "exception":
 		return "op_pin_state_exc_pinned"
-	if pinned == "memory":
-		return "op_pin_state_mem_pinned"
 	print "WARNING: Unknown pinned state %s in format pined" % pinned
 	return ""
 

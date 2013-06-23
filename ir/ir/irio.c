@@ -269,7 +269,6 @@ static void symtbl_init(void)
 	INSERTENUM(tt_pin_state, op_pin_state_floats);
 	INSERTENUM(tt_pin_state, op_pin_state_pinned);
 	INSERTENUM(tt_pin_state, op_pin_state_exc_pinned);
-	INSERTENUM(tt_pin_state, op_pin_state_mem_pinned);
 
 	INSERTENUM(tt_type_state, layout_undefined);
 	INSERTENUM(tt_type_state, layout_fixed);
