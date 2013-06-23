@@ -647,33 +647,30 @@ static void emit_init_expression(be_gas_decl_env_t *env, ir_node *init)
 		case symconst_addr_ent: {
 			ir_entity *ent = get_SymConst_entity(init);
 			be_gas_emit_entity(ent);
-			break;
+			return;
 		}
 
 		case symconst_ofs_ent: {
 			ir_entity *ent = get_SymConst_entity(init);
 			be_emit_irprintf("%d", get_entity_offset(ent));
-			break;
+			return;
 		}
 
 		case symconst_type_size:
 			be_emit_irprintf("%u", get_type_size_bytes(get_SymConst_type(init)));
-			break;
+			return;
 
 		case symconst_type_align:
 			be_emit_irprintf("%u", get_type_alignment_bytes(get_SymConst_type(init)));
-			break;
+			return;
 
 		case symconst_enum_const: {
 			ir_tarval *tv = get_enumeration_value(get_SymConst_enum(init));
 			emit_arith_tarval(tv, bytes);
-			break;
+			return;
 		}
-
-		default:
-			assert(!"emit_atomic_init(): don't know how to init from this SymConst");
 		}
-		return;
+		panic("invalid SymConst kind");
 
 	case iro_Add:
 		if (!mode_is_int(mode) && !mode_is_reference(mode)) {

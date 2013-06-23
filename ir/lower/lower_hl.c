@@ -8,6 +8,7 @@
  * @brief   Lower some High-level constructs, moved from the firmlower.
  * @author  Boris Boesler, Goetz Lindenmaier, Michael Beck
  */
+#include "error.h"
 #include "lowering.h"
 #include "irmode_t.h"
 #include "irnode_t.h"
@@ -204,7 +205,8 @@ static void lower_symconst(ir_node *symc)
 		/* run the hooks */
 		hook_lower(symc);
 		exchange(symc, newn);
-		break;
+		return;
+
 	case symconst_type_align:
 		/* rewrite the SymConst node by a Const node */
 		irg  = get_irn_irg(symc);
@@ -216,10 +218,12 @@ static void lower_symconst(ir_node *symc)
 		/* run the hooks */
 		hook_lower(symc);
 		exchange(symc, newn);
-		break;
+		return;
+
 	case symconst_addr_ent:
 		/* leave */
-		break;
+		return;
+
 	case symconst_ofs_ent:
 		/* rewrite the SymConst node by a Const node */
 		irg  = get_irn_irg(symc);
@@ -231,7 +235,8 @@ static void lower_symconst(ir_node *symc)
 		/* run the hooks */
 		hook_lower(symc);
 		exchange(symc, newn);
-		break;
+		return;
+
 	case symconst_enum_const:
 		/* rewrite the SymConst node by a Const node */
 		irg  = get_irn_irg(symc);
@@ -243,12 +248,9 @@ static void lower_symconst(ir_node *symc)
 		/* run the hooks */
 		hook_lower(symc);
 		exchange(symc, newn);
-		break;
-
-	default:
-		assert(!"unknown SymConst kind");
-		break;
+		return;
 	}
+	panic("invalid SymConst kind");
 }
 
 /**

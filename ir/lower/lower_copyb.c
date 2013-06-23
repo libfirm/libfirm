@@ -206,7 +206,7 @@ static void lower_copyb_node(ir_node *irn)
 	else if (size >= min_large_size)
 		lower_large_copyb_node(irn);
 	else
-		assert(!"CopyB of invalid size handed to lower_copyb_node");
+		panic("CopyB of invalid size");
 }
 
 /**

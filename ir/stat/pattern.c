@@ -388,8 +388,7 @@ static size_t find_mode_index(const ir_mode *mode)
 			return i;
 	}
 	/* should really not happen */
-	assert(!"Cound not find index of mode in find_mode_index()");
-	return (size_t)-1;
+	panic("could not find index of mode");
 }
 
 /**

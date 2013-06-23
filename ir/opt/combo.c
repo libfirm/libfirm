@@ -1044,7 +1044,7 @@ static int is_real_follower(const ir_node *irn, int input)
 			return 0;
 		break;
 	default:
-		assert(!"opcode not implemented yet");
+		panic("opcode not implemented yet");
 		break;
 	}
 	return 1;

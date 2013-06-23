@@ -12,6 +12,7 @@
 #include <assert.h>
 
 #include "debug.h"
+#include "error.h"
 #include "iroptimize.h"
 #include "scalar_replace.h"
 #include "array_t.h"
@@ -356,7 +357,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 					break;
 
 				default:
-					assert(!"unexpected tail recursion variant");
+					panic("unexpected tail recursion variant");
 				}
 			}
 		}
