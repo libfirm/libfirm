@@ -1676,12 +1676,11 @@ l_FloattoLL => {
 },
 
 CopyB => {
-	op_flags  => [ "uses_memory", "fragile" ],
-	state     => "pinned",
+	op_flags  => [ "uses_memory" ],
 	reg_req   => { in => [ "edi", "esi", "ecx", "none" ],
-	               out => [ "edi", "esi", "ecx", "none", "none", "none" ] },
+	               out => [ "edi", "esi", "ecx", "none" ] },
 	ins       => [ "dest", "source", "count", "mem" ],
-	outs      => [ "dest", "source", "count", "M", "X_regular", "X_except" ],
+	outs      => [ "dest", "source", "count", "M" ],
 	attr_type => "ia32_copyb_attr_t",
 	attr      => "unsigned size",
 	latency   => 250,
@@ -1690,12 +1689,11 @@ CopyB => {
 },
 
 CopyB_i => {
-	op_flags  => [ "uses_memory", "fragile" ],
-	state     => "pinned",
+	op_flags  => [ "uses_memory" ],
 	reg_req   => { in => [ "edi", "esi", "none" ],
-	               out => [  "edi", "esi", "none", "none", "none" ] },
+	               out => [  "edi", "esi", "none" ] },
 	ins       => [ "dest", "source", "mem" ],
-	outs      => [ "dest", "source", "M", "X_regular", "X_except" ],
+	outs      => [ "dest", "source", "M" ],
 	attr_type => "ia32_copyb_attr_t",
 	attr      => "unsigned size",
 	latency   => 3,

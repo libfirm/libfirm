@@ -1124,12 +1124,9 @@ static ir_node *gen_CopyB(ir_node *node)
 	ir_node  *mem      = get_CopyB_mem(node);
 	ir_node  *new_mem  = be_transform_node(mem);
 	dbg_info *dbg      = get_irn_dbg_info(node);
-	int      size      = get_type_size_bytes(get_CopyB_type(node));
-	ir_node  *src_copy;
-	ir_node  *dst_copy;
-
-	src_copy = be_new_Copy(block, new_src);
-	dst_copy = be_new_Copy(block, new_dst);
+	int       size     = get_type_size_bytes(get_CopyB_type(node));
+	ir_node  *src_copy = be_new_Copy(block, new_src);
+	ir_node  *dst_copy = be_new_Copy(block, new_dst);
 
 	return new_bd_arm_CopyB(dbg, block, dst_copy, src_copy,
 			new_bd_arm_EmptyReg(dbg, block),
@@ -1247,25 +1244,6 @@ static ir_node *gen_Proj_Load(ir_node *node)
 		break;
 	}
 	panic("Unsupported Proj from Load");
-}
-
-static ir_node *gen_Proj_CopyB(ir_node *node)
-{
-	ir_node  *pred     = get_Proj_pred(node);
-	ir_node  *new_pred = be_transform_node(pred);
-	dbg_info *dbgi     = get_irn_dbg_info(node);
-	long     proj      = get_Proj_proj(node);
-
-	switch (proj) {
-	case pn_CopyB_M:
-		if (is_arm_CopyB(new_pred)) {
-			return new_rd_Proj(dbgi, new_pred, mode_M, pn_arm_CopyB_M);
-		}
-		break;
-	default:
-		break;
-	}
-	panic("Unsupported Proj from CopyB");
 }
 
 static ir_node *gen_Proj_Div(ir_node *node)
@@ -1877,7 +1855,6 @@ static void arm_register_transformers(void)
 	be_set_transform_proj_function(op_Builtin, gen_Proj_Builtin);
 	be_set_transform_proj_function(op_Call,    gen_Proj_Call);
 	be_set_transform_proj_function(op_Cond,    be_duplicate_node);
-	be_set_transform_proj_function(op_CopyB,   gen_Proj_CopyB);
 	be_set_transform_proj_function(op_Div,     gen_Proj_Div);
 	be_set_transform_proj_function(op_Load,    gen_Proj_Load);
 	be_set_transform_proj_function(op_Proj,    gen_Proj_Proj);

@@ -334,6 +334,7 @@ CopyB => {
 	attr_type => "arm_CopyB_attr_t",
 	reg_req   => { in => [ "!sp", "!sp", "gp", "gp", "gp", "none" ], out => [ "none" ] },
 	outs      => [ "M" ],
+	mode      => "mode_M",
 },
 
 FrameAddr => {

@@ -518,28 +518,15 @@ static void add_hidden_param(ir_graph *irg, size_t n_com, ir_node **ins,
 
 		/* consider only the first CopyB */
 		if (ins[idx] == NULL) {
-			ir_node *block = get_nodes_block(p);
-
 			/* use the memory output of the call and not the input of the CopyB
-			 * otherwise stuff breaks if the call was mtp_property_const, because
-			 * then the copyb skips the call. But after lowering the call is not
-			 * const anymore, and its memory has to be used */
+			 * otherwise stuff breaks if the call was mtp_property_const,
+			 * because then the copyb skips the call. But after lowering the
+			 * call is not const anymore, and its memory has to be used */
 			ir_node *mem = new_r_Proj(entry->call, mode_M, pn_Call_M);
 
 			ins[idx] = get_CopyB_dst(p);
-
 			/* get rid of the CopyB */
-			if (ir_throws_exception(p)) {
-				ir_node *const in[] = {
-					[pn_CopyB_M]         = mem,
-					[pn_CopyB_X_regular] = new_r_Jmp(block),
-					[pn_CopyB_X_except]  = new_r_Bad(irg, mode_X),
-				};
-				turn_into_tuple(p, ARRAY_SIZE(in), in);
-			} else {
-				ir_node *const in[] = { mem };
-				turn_into_tuple(p, ARRAY_SIZE(in), in);
-			}
+			exchange(p, mem);
 			++n_args;
 		}
 	}
@@ -620,7 +607,6 @@ static void fix_compound_params(cl_entry *entry, ir_type *ctp)
 		ir_node   *block;
 		ir_node   *arg;
 		ir_node   *sel;
-		ir_node   *copyb;
 		ir_entity *arg_entity;
 		if (!needs_lowering(type))
 			continue;
@@ -629,8 +615,7 @@ static void fix_compound_params(cl_entry *entry, ir_type *ctp)
 		arg_entity = create_compound_arg_entity(irg, type);
 		block      = get_nodes_block(call);
 		sel        = new_rd_simpleSel(dbgi, block, nomem, frame, arg_entity);
-		copyb      = new_rd_CopyB(dbgi, block, mem, sel, arg, type);
-		mem        = new_r_Proj(copyb, mode_M, pn_CopyB_M);
+		mem        = new_rd_CopyB(dbgi, block, mem, sel, arg, type);
 		set_Call_param(call, i, sel);
 	}
 	set_Call_mem(call, mem);
@@ -673,7 +658,7 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 	ir_type   *lowered_mtp, *tp, *ft;
 	size_t    i, j, k;
 	size_t    n_cr_opt;
-	ir_node   **new_in, *ret, *endbl, *bl, *mem, *copy;
+	ir_node   **new_in, *ret, *endbl, *bl, *mem;
 	cr_pair   *cr_opt;
 	wlk_env   env;
 
@@ -787,15 +772,10 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 							cr_opt[n_cr_opt].ent = get_Sel_entity(pred);
 							cr_opt[n_cr_opt].arg = arg;
 							++n_cr_opt;
-						} else { /* copy-return optimization is impossible, do the copy. */
-							copy = new_r_CopyB(
-									bl,
-									mem,
-									arg,
-									pred,
-									tp
-									);
-							mem = new_r_Proj(copy, mode_M, pn_CopyB_M);
+						} else {
+							/* copy-return optimization is impossible, do the
+							 * copy. */
+							mem = new_r_CopyB(bl, mem, arg, pred, tp);
 						}
 					}
 					if (flags & LF_RETURN_HIDDEN) {

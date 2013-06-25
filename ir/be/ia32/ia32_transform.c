@@ -4440,43 +4440,6 @@ static ir_node *gen_Proj_Mod(ir_node *node)
 	panic("No idea how to transform proj->Mod");
 }
 
-/**
- * Transform and renumber the Projs from a CopyB.
- */
-static ir_node *gen_Proj_CopyB(ir_node *node)
-{
-	ir_node  *pred     = get_Proj_pred(node);
-	ir_node  *new_pred = be_transform_node(pred);
-	dbg_info *dbgi     = get_irn_dbg_info(node);
-	long      proj     = get_Proj_proj(node);
-
-	switch ((pn_CopyB)proj) {
-	case pn_CopyB_M:
-		if (is_ia32_CopyB_i(new_pred)) {
-			return new_rd_Proj(dbgi, new_pred, mode_M, pn_ia32_CopyB_i_M);
-		} else if (is_ia32_CopyB(new_pred)) {
-			return new_rd_Proj(dbgi, new_pred, mode_M, pn_ia32_CopyB_M);
-		}
-		break;
-	case pn_CopyB_X_regular:
-		if (is_ia32_CopyB_i(new_pred)) {
-			return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_CopyB_i_X_regular);
-		} else if (is_ia32_CopyB(new_pred)) {
-			return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_CopyB_X_regular);
-		}
-		break;
-	case pn_CopyB_X_except:
-		if (is_ia32_CopyB_i(new_pred)) {
-			return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_CopyB_i_X_except);
-		} else if (is_ia32_CopyB(new_pred)) {
-			return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_CopyB_X_except);
-		}
-		break;
-	}
-
-	panic("No idea how to transform proj->CopyB");
-}
-
 static ir_node *gen_be_Call(ir_node *node)
 {
 	ir_node        *const src_block = get_nodes_block(node);
@@ -5373,7 +5336,6 @@ static void register_transformers(void)
 	be_set_transform_proj_function(op_be_Start,         be_duplicate_node);
 	be_set_transform_proj_function(op_be_SubSP,         gen_Proj_be_SubSP);
 	be_set_transform_proj_function(op_Builtin,          gen_Proj_Builtin);
-	be_set_transform_proj_function(op_CopyB,            gen_Proj_CopyB);
 	be_set_transform_proj_function(op_Div,              gen_Proj_Div);
 	be_set_transform_proj_function(op_ia32_l_Adc,       gen_Proj_default);
 	be_set_transform_proj_function(op_ia32_l_Add,       gen_Proj_default);

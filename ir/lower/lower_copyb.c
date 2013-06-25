@@ -139,13 +139,7 @@ static void lower_small_copyb_node(ir_node *irn)
 		mode_bytes /= 2;
 	}
 
-	ir_node *const bad = new_r_Bad(irg, mode_X);
-	ir_node *const in[] = {
-		[pn_CopyB_M]         = mem,
-		[pn_CopyB_X_regular] = bad,
-		[pn_CopyB_X_except]  = bad,
-	};
-	turn_into_tuple(irn, ARRAY_SIZE(in), in);
+	exchange(irn, mem);
 }
 
 static ir_type *get_memcpy_methodtype(void)
@@ -199,8 +193,7 @@ static void lower_large_copyb_node(ir_node *irn)
 	call     = new_rd_Call(dbgi, block, mem, symconst, 3, in, call_tp);
 	call_mem = new_r_Proj(call, mode_M, pn_Call_M);
 
-	ir_node *const tuple_in[] = { call_mem };
-	turn_into_tuple(irn, ARRAY_SIZE(tuple_in), tuple_in);
+	exchange(irn, call_mem);
 }
 
 static void lower_copyb_node(ir_node *irn)
@@ -226,17 +219,6 @@ static void find_copyb_nodes(ir_node *irn, void *ctx)
 	unsigned   size;
 	entry_t    *entry;
 	bool        medium_sized;
-
-	if (is_Proj(irn)) {
-		ir_node *pred = get_Proj_pred(irn);
-
-		if (is_CopyB(pred) && get_Proj_proj(irn) != pn_CopyB_M) {
-			/* found an exception Proj: remove it from the list again */
-			entry = (entry_t*)get_irn_link(pred);
-			list_del(&entry->list);
-		}
-		return;
-	}
 
 	if (! is_CopyB(irn))
 		return;

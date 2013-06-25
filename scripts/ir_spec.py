@@ -414,12 +414,8 @@ class CopyB:
 		("dst",  "destination address"),
 		("src",  "source address"),
 	]
-	outs  = [
-		("M",         "memory result"),
-		("X_regular", "control flow when no exception occurs"),
-		("X_except",  "control flow when exception occured"),
-	]
-	flags = [ "fragile", "uses_memory" ]
+	mode  = "mode_M"
+	flags = [ "uses_memory" ]
 	attrs = [
 		dict(
 			name    = "type",
@@ -428,9 +424,7 @@ class CopyB:
 		)
 	]
 	attr_struct = "copyb_attr"
-	pinned      = "exception"
-	pinned_init = "op_pin_state_pinned"
-	throws_init = "false"
+	pinned      = "no"
 
 @op
 class Div:

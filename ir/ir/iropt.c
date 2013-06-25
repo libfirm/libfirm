@@ -1163,23 +1163,14 @@ static ir_node *equivalent_node_Proj_Div(ir_node *proj)
 /**
  * Optimize CopyB(mem, x, x) into a Nop.
  */
-static ir_node *equivalent_node_Proj_CopyB(ir_node *proj)
+static ir_node *equivalent_node_CopyB(ir_node *copyb)
 {
-	ir_node *oldn  = proj;
-	ir_node *copyb = get_Proj_pred(proj);
-	ir_node *a     = get_CopyB_dst(copyb);
-	ir_node *b     = get_CopyB_src(copyb);
+	ir_node *a = get_CopyB_dst(copyb);
+	ir_node *b = get_CopyB_src(copyb);
+	if (a == b)
+		return get_CopyB_mem(copyb);
 
-	if (a == b) {
-		/* Turn CopyB into a tuple (mem, jmp, bad, bad) */
-		switch (get_Proj_proj(proj)) {
-		case pn_CopyB_M:
-			proj = get_CopyB_mem(copyb);
-			DBG_OPT_ALGSIM0(oldn, proj, FS_OPT_NOP);
-			break;
-		}
-	}
-	return proj;
+	return copyb;
 }
 
 /**
@@ -4655,35 +4646,6 @@ is_bittest: {
 }
 
 /**
- * Optimize CopyB(mem, x, x) into a Nop.
- */
-static ir_node *transform_node_Proj_CopyB(ir_node *proj)
-{
-	ir_node *copyb = get_Proj_pred(proj);
-	ir_node *a     = get_CopyB_dst(copyb);
-	ir_node *b     = get_CopyB_src(copyb);
-
-	if (a == b) {
-		switch (get_Proj_proj(proj)) {
-		case pn_CopyB_X_regular:
-			/* Turn CopyB into a tuple (mem, jmp, bad, bad) */
-			DBG_OPT_EXC_REM(proj);
-			proj = new_r_Jmp(get_nodes_block(copyb));
-			break;
-		case pn_CopyB_X_except: {
-			ir_graph *irg = get_irn_irg(proj);
-			DBG_OPT_EXC_REM(proj);
-			proj = new_r_Bad(irg, mode_X);
-			break;
-		}
-		default:
-			break;
-		}
-	}
-	return proj;
-}
-
-/**
  * Does all optimizations on nodes that must be done on its Projs
  * because of creating new nodes.
  */
@@ -6108,6 +6070,7 @@ void ir_register_opt_node_ops(void)
 	register_equivalent_node_func(op_And,     equivalent_node_And);
 	register_equivalent_node_func(op_Confirm, equivalent_node_Confirm);
 	register_equivalent_node_func(op_Conv,    equivalent_node_Conv);
+	register_equivalent_node_func(op_CopyB,   equivalent_node_CopyB);
 	register_equivalent_node_func(op_Eor,     equivalent_node_Eor);
 	register_equivalent_node_func(op_Id,      equivalent_node_Id);
 	register_equivalent_node_func(op_Minus,   equivalent_node_Minus);
@@ -6121,7 +6084,6 @@ void ir_register_opt_node_ops(void)
 	register_equivalent_node_func(op_Shr,     equivalent_node_left_zero);
 	register_equivalent_node_func(op_Shrs,    equivalent_node_left_zero);
 	register_equivalent_node_func(op_Sub,     equivalent_node_Sub);
-	register_equivalent_node_func_proj(op_CopyB, equivalent_node_Proj_CopyB);
 	register_equivalent_node_func_proj(op_Div,   equivalent_node_Proj_Div);
 	register_equivalent_node_func_proj(op_Tuple, equivalent_node_Proj_Tuple);
 
@@ -6151,7 +6113,6 @@ void ir_register_opt_node_ops(void)
 	register_transform_node_func(op_Sub,    transform_node_Sub);
 	register_transform_node_func(op_Switch, transform_node_Switch);
 	register_transform_node_func(op_Sync,   transform_node_Sync);
-	register_transform_node_func_proj(op_CopyB, transform_node_Proj_CopyB);
 	register_transform_node_func_proj(op_Div,   transform_node_Proj_Div);
 	register_transform_node_func_proj(op_Load,  transform_node_Proj_Load);
 	register_transform_node_func_proj(op_Mod,   transform_node_Proj_Mod);

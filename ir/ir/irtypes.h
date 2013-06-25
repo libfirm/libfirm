@@ -321,7 +321,6 @@ typedef struct confirm_attr {
 
 /** CopyB attribute. */
 typedef struct copyb_attr {
-	except_attr    exc;           /**< The exception attribute. MUST be the first one. */
 	ir_type        *type;         /**< Type of the copied entity. */
 } copyb_attr;
 

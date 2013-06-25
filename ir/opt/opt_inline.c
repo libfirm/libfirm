@@ -317,8 +317,7 @@ static void copy_parameter_entities(ir_node *call, ir_graph *called_graph)
 		ir_node *new_mem;
 		if (is_compound_type(old_type) || is_Array_type(old_type)) {
 			/* Copy the compound parameter */
-			ir_node *copyb = new_rd_CopyB(dbgi, block, call_mem, sel, param, old_type);
-			new_mem = new_r_Proj(copyb, mode_M, pn_CopyB_M);
+			new_mem = new_rd_CopyB(dbgi, block, call_mem, sel, param, old_type);
 			set_Call_param(call, n_param_pos, sel);
 			if (have_copyb) {
 				ARR_APP1(ir_node*, sync_mem, new_mem);

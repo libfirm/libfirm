@@ -642,33 +642,33 @@ ir_node *ia32_gen_CopyB(ir_node *node)
 	ir_node  *new_dst  = get_new_node(dst);
 	ir_node  *mem      = get_CopyB_mem(node);
 	ir_node  *new_mem  = get_new_node(mem);
-	ir_node  *res      = NULL;
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	int      size      = get_type_size_bytes(get_CopyB_type(node));
-	int      throws_exception = ir_throws_exception(node);
 	int      rem;
 
 	/* If we have to copy more than 32 bytes, we use REP MOVSx and */
 	/* then we need the size explicitly in ECX.                    */
+	ir_node *projm;
 	if (size >= 32 * 4) {
 		rem = size & 0x3; /* size % 4 */
 		size >>= 2;
 
-		res = new_bd_ia32_Const(dbgi, block, NULL, 0, 0, size);
-
-		res = new_bd_ia32_CopyB(dbgi, block, new_dst, new_src, res, new_mem, rem);
+		ir_node *cnst  = new_bd_ia32_Const(dbgi, block, NULL, 0, 0, size);
+		ir_node *copyb = new_bd_ia32_CopyB(dbgi, block, new_dst, new_src, cnst,
+		                                   new_mem, rem);
+		SET_IA32_ORIG_NODE(copyb, node);
+		projm = new_r_Proj(copyb, mode_M, pn_ia32_CopyB_M);
 	} else {
 		if (size == 0) {
 			ir_fprintf(stderr, "Optimization warning copyb %+F with size <4\n",
 			           node);
 		}
-		res = new_bd_ia32_CopyB_i(dbgi, block, new_dst, new_src, new_mem, size);
+		ir_node *copyb = new_bd_ia32_CopyB_i(dbgi, block, new_dst, new_src,
+		                                     new_mem, size);
+		SET_IA32_ORIG_NODE(copyb, node);
+		projm = new_r_Proj(copyb, mode_M, pn_ia32_CopyB_i_M);
 	}
-	ir_set_throws_exception(res, throws_exception);
-
-	SET_IA32_ORIG_NODE(res, node);
-
-	return res;
+	return projm;
 }
 
 ir_node *ia32_gen_Proj_tls(ir_node *node)

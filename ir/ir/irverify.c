@@ -572,35 +572,6 @@ static int verify_node_Proj_Tuple(const ir_node *p)
 	return 1;
 }
 
-/**
- * verify a Proj(CopyB) node
- */
-static int verify_node_Proj_CopyB(const ir_node *p)
-{
-	ir_mode *mode = get_irn_mode(p);
-	ir_node *n    = get_Proj_pred(p);
-	long proj     = get_Proj_proj(p);
-
-	ASSERT_AND_RET_DBG(
-		(
-			(proj == pn_CopyB_M         && mode == mode_M) ||
-			(proj == pn_CopyB_X_regular && mode == mode_X) ||
-			(proj == pn_CopyB_X_except  && mode == mode_X)
-		),
-		"wrong Proj from CopyB", 0,
-		show_proj_failure(p);
-	);
-	if (proj == pn_CopyB_X_regular)
-		ASSERT_AND_RET(
-			get_irn_pinned(n) == op_pin_state_pinned,
-			"Regular Proj from unpinned CopyB", 0);
-	else if (proj == pn_CopyB_X_except)
-		ASSERT_AND_RET(
-			get_irn_pinned(n) == op_pin_state_pinned,
-			"Exception Proj from unpinned CopyB", 0);
-	return 1;
-}
-
 static int verify_node_Proj_fragile(const ir_node *node)
 {
 	ir_node *pred             = get_Proj_pred(node);
@@ -1486,7 +1457,7 @@ static int verify_node_CopyB(const ir_node *n)
 	ir_type  *t = get_CopyB_type(n);
 
 	/* CopyB: BB x M x ref x ref --> M x X */
-	ASSERT_AND_RET(mymode == mode_T && op1mode == mode_M, "CopyB node", 0);
+	ASSERT_AND_RET(mymode == mode_M && op1mode == mode_M, "CopyB node", 0);
 	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
 		ASSERT_AND_RET(mode_is_reference(op2mode) && mode_is_reference(op3mode),
 			"CopyB node", 0 );
@@ -1496,9 +1467,6 @@ static int verify_node_CopyB(const ir_node *n)
 		is_compound_type(t) || is_Array_type(t),
 		"CopyB node should copy compound types only", 0 );
 
-	/* NoMem nodes are only allowed as memory input if the CopyB is NOT pinned.
-	   This should happen RARELY, as CopyB COPIES MEMORY */
-	ASSERT_AND_RET(verify_right_pinned(n), "CopyB node with wrong memory input", 0 );
 	return 1;
 }
 
@@ -2054,7 +2022,6 @@ void ir_register_verify_node_ops(void)
 	register_verify_node_func_proj(op_Alloc,  verify_node_Proj_Alloc);
 	register_verify_node_func_proj(op_Call,   verify_node_Proj_Call);
 	register_verify_node_func_proj(op_Cond,   verify_node_Proj_Cond);
-	register_verify_node_func_proj(op_CopyB,  verify_node_Proj_CopyB);
 	register_verify_node_func_proj(op_Div,    verify_node_Proj_Div);
 	register_verify_node_func_proj(op_InstOf, verify_node_Proj_InstOf);
 	register_verify_node_func_proj(op_Load,   verify_node_Proj_Load);

@@ -412,11 +412,8 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 				mem   = new_r_Proj(store, mode_M, pn_Store_M);
 			} else {
 				/* Make a mem copy for compound arguments. */
-				ir_node *copy;
-
 				assert(mode_is_reference(get_irn_mode(param)));
-				copy = new_rd_CopyB(dbgi, bl, curr_mem, addr, param, param_type);
-				mem = new_r_Proj(copy, mode_M, pn_CopyB_M);
+				mem = new_rd_CopyB(dbgi, bl, curr_mem, addr, param, param_type);
 			}
 
 			curr_ofs += param_size;
