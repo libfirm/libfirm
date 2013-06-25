@@ -176,6 +176,7 @@ class Bad:
 	attr_struct   = "bad_attr"
 	init = '''
 	res->attr.bad.irg.irg = irg;
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_NO_BADS);
 	'''
 
 @op
