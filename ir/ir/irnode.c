@@ -1120,7 +1120,6 @@ void ir_register_getter_ops(void)
 	register_get_type_func(op_Builtin,  get_Builtin_type);
 	register_get_type_func(op_Call,     get_Call_type);
 	register_get_type_func(op_CopyB,    get_CopyB_type);
-	register_get_type_func(op_InstOf,   get_InstOf_type);
 	register_get_type_func(op_SymConst, get_SymConst_attr_type);
 
 	register_get_entity_func(op_SymConst, get_SymConst_attr_entity);

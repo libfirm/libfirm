@@ -430,13 +430,6 @@ static int node_cmp_attr_Dummy(const ir_node *a, const ir_node *b)
 	return 1;
 }
 
-static int node_cmp_attr_InstOf(const ir_node *a, const ir_node *b)
-{
-	if (get_InstOf_type(a) != get_InstOf_type(b))
-		return 1;
-	return node_cmp_exception(a, b);
-}
-
 static void default_copy_attr(ir_graph *irg, const ir_node *old_node,
                               ir_node *new_node)
 {
@@ -600,7 +593,6 @@ void firm_init_op(void)
 	set_op_cmp_attr(op_CopyB,    node_cmp_attr_CopyB);
 	set_op_cmp_attr(op_Div,      node_cmp_attr_Div);
 	set_op_cmp_attr(op_Dummy,    node_cmp_attr_Dummy);
-	set_op_cmp_attr(op_InstOf,   node_cmp_attr_InstOf);
 	set_op_cmp_attr(op_Load,     node_cmp_attr_Load);
 	set_op_cmp_attr(op_Mod,      node_cmp_attr_Mod);
 	set_op_cmp_attr(op_Phi,      node_cmp_attr_Phi);

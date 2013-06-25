@@ -275,12 +275,6 @@ typedef struct alloc_attr {
 	unsigned alignment;
 } alloc_attr;
 
-/** InstOf attributes. */
-typedef struct io_attr {
-	except_attr    exc;           /**< the exception attribute. MUST be the first one. */
-	ir_type *type;                /**< the type of which the object pointer must be */
-} io_attr;
-
 /** Load attributes. */
 typedef struct load_attr {
 	except_attr   exc;            /**< The exception attribute. MUST be the first one. */
@@ -371,7 +365,6 @@ typedef union ir_attr {
 	call_attr      call;          /**< For Call. */
 	builtin_attr   builtin;       /**< For Builtin. */
 	alloc_attr     alloc;         /**< For Alloc. */
-	io_attr        instof;        /**< For InstOf */
 	load_attr      load;          /**< For Load. */
 	store_attr     store;         /**< For Store. */
 	phi_attr       phi;           /**< For Phi. */

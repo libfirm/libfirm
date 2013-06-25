@@ -526,31 +526,6 @@ class IJmp:
 	flags    = [ "cfopcode", "forking", "keep", "unknown_jump" ]
 
 @op
-class InstOf:
-	"""Tests whether an object is an instance of a class-type"""
-	ins   = [
-	   ("store", "memory dependency"),
-	   ("obj",   "pointer to object being queried")
-	]
-	outs  = [
-		("M",         "memory result"),
-		("res",       "checked object pointer"),
-		("X_regular", "control flow when no exception occurs"),
-		("X_except",  "control flow when exception occured"),
-	]
-	flags = [ "highlevel" ]
-	attrs = [
-		dict(
-			name    = "type",
-			type    = "ir_type*",
-			comment = "type to check ptr for",
-		)
-	]
-	attr_struct = "io_attr"
-	pinned      = "exception"
-	pinned_init = "op_pin_state_floats"
-
-@op
 class Jmp:
 	"""Jumps to the block connected through the out-value"""
 	mode     = "mode_X"

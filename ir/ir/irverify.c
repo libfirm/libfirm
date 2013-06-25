@@ -287,27 +287,6 @@ static int verify_node_Proj_Raise(const ir_node *p)
 }
 
 /**
- * verify a Proj(InstOf) node
- */
-static int verify_node_Proj_InstOf(const ir_node *p)
-{
-	ir_mode *mode = get_irn_mode(p);
-	long proj     = get_Proj_proj(p);
-
-	ASSERT_AND_RET_DBG(
-		(
-			(proj == pn_InstOf_M         && mode == mode_M) ||
-			(proj == pn_InstOf_X_regular && mode == mode_X) ||
-			(proj == pn_InstOf_X_except  && mode == mode_X) ||
-			(proj == pn_InstOf_res       && mode_is_reference(mode))
-		),
-		"wrong Proj from InstOf", 0,
-		show_proj_failure(p);
-	);
-	return 1;
-}
-
-/**
  * verify a Proj(Call) node
  */
 static int verify_node_Proj_Call(const ir_node *p)
@@ -881,19 +860,6 @@ static int verify_node_Sel(const ir_node *n)
 	ASSERT_AND_RET_DBG(ent, "Sel node with empty entity", 0, show_node_failure(n););
 	ASSERT_AND_RET_DBG(!(get_entity_owner(ent)->flags & tf_segment),
 	                   "Sel node with global entity", 0, show_node_failure(n););
-	return 1;
-}
-
-/**
- * verify an InstOf node
- */
-static int verify_node_InstOf(const ir_node *n)
-{
-	ir_mode *mymode  = get_irn_mode(n);
-	ir_mode *op1mode = get_irn_mode(get_InstOf_obj(n));
-
-	ASSERT_AND_RET(mode_T == mymode, "mode of Instof is not a tuple", 0);
-	ASSERT_AND_RET(mode_is_data(op1mode), "Instof not on data", 0);
 	return 1;
 }
 
@@ -1994,7 +1960,6 @@ void ir_register_verify_node_ops(void)
 	register_verify_node_func(op_Eor,      verify_node_Eor);
 	register_verify_node_func(op_Free,     verify_node_Free);
 	register_verify_node_func(op_IJmp,     verify_node_IJmp);
-	register_verify_node_func(op_InstOf,   verify_node_InstOf);
 	register_verify_node_func(op_Jmp,      verify_node_Jmp);
 	register_verify_node_func(op_Load,     verify_node_Load);
 	register_verify_node_func(op_Minus,    verify_node_Minus);
@@ -2023,7 +1988,6 @@ void ir_register_verify_node_ops(void)
 	register_verify_node_func_proj(op_Call,   verify_node_Proj_Call);
 	register_verify_node_func_proj(op_Cond,   verify_node_Proj_Cond);
 	register_verify_node_func_proj(op_Div,    verify_node_Proj_Div);
-	register_verify_node_func_proj(op_InstOf, verify_node_Proj_InstOf);
 	register_verify_node_func_proj(op_Load,   verify_node_Proj_Load);
 	register_verify_node_func_proj(op_Mod,    verify_node_Proj_Mod);
 	register_verify_node_func_proj(op_Proj,   verify_node_Proj_Proj);
