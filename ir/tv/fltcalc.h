@@ -58,17 +58,13 @@ const void *fc_get_buffer(void);
 int fc_get_buffer_length(void);
 /*}@*/
 
-void *fc_val_from_str(const char *str, size_t len, const float_descriptor_t *desc, void *result);
+void *fc_val_from_str(const char *str, size_t len, void *result);
 
 /** get the representation of a floating point value
  * This function tries to builds a representation having the same value as the
- * float number passed.
- * If the wished precision is less than the precision of long double the value
- * built will be rounded. Therefore only an approximation of the passed float
- * can be expected in this case.
+ * long double floating point number passed.
  *
  * @param l       The floating point number to build a representation for
- * @param desc    The floating point descriptor
  * @param result  A buffer to hold the value built. If this is NULL, the internal
  *                accumulator buffer is used. Note that the buffer must be big
  *                enough to hold the value. Use fc_get_buffer_length() to find out
@@ -77,8 +73,7 @@ void *fc_val_from_str(const char *str, size_t len, const float_descriptor_t *des
  * @return  The result pointer passed to the function. If this was NULL this returns
  *          a pointer to the internal accumulator buffer
  */
-fp_value *fc_val_from_ieee754(long double l, const float_descriptor_t *desc,
-                              fp_value *result);
+fp_value *fc_val_from_ieee754(long double l, fp_value *result);
 
 /** retrieve the float value of an internal value
  * This function casts the internal value to long double and returns a

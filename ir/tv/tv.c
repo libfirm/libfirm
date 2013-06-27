@@ -247,6 +247,16 @@ static const float_descriptor_t *get_descriptor(const ir_mode *mode)
 	return &mode->float_desc;
 }
 
+static ir_tarval *get_tarval_from_fp_value(fp_value *val, ir_mode *mode)
+{
+	const float_descriptor_t *desc          = get_descriptor(mode);
+	const int                 buffer_length = fc_get_buffer_length();
+	fp_value                 *tmp           = alloca(buffer_length);
+	memcpy(tmp, val, buffer_length);
+	fp_value *casted_val = fc_cast(tmp, desc, NULL);
+	return get_tarval(casted_val, buffer_length, mode);
+}
+
 ir_tarval *new_integer_tarval_from_str(const char *str, size_t len, char sign,
                                        unsigned char base, ir_mode *mode)
 {
@@ -319,8 +329,6 @@ static ir_tarval *new_tarval_from_str_int(const char *str, size_t len,
 
 ir_tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 {
-	const float_descriptor_t *desc;
-
 	assert(str);
 	assert(len);
 	assert(mode);
@@ -336,11 +344,10 @@ ir_tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 			/* XXX This is C semantics */
 			return atoi(str) ? tarval_b_true : tarval_b_false;
 
-	case irms_float_number:
-		desc = get_descriptor(mode);
-		fc_val_from_str(str, len, desc, NULL);
-		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
-
+	case irms_float_number: {
+		fp_value *val = fc_val_from_str(str, len, NULL);
+		return get_tarval_from_fp_value(val, mode);
+	}
 	case irms_reference:
 		if (!strcasecmp(str, "null"))
 			return get_tarval_null(mode);
@@ -421,12 +428,9 @@ uint64_t get_tarval_uint64(ir_tarval *tv)
 
 ir_tarval *new_tarval_from_long_double(long double d, ir_mode *mode)
 {
-	const float_descriptor_t *desc;
-
 	assert(mode && (get_mode_sort(mode) == irms_float_number));
-	desc = get_descriptor(mode);
-	fc_val_from_ieee754(d, desc, NULL);
-	return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
+	fp_value *val = fc_val_from_ieee754(d, NULL);
+	return get_tarval_from_fp_value(val, mode);
 }
 
 ir_tarval *new_tarval_from_double(double d, ir_mode *mode)
@@ -795,10 +799,9 @@ ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *dst_mode)
 			len = snprintf(buffer, 100, "%s",
 				sc_print(src->value, get_mode_size_bits(src->mode), SC_DEC, mode_is_signed(src->mode)));
 			buffer[100 - 1] = '\0';
-			desc = get_descriptor(dst_mode);
-			fc_val_from_str(buffer, len, desc, NULL);
-			return get_tarval(fc_get_buffer(), fc_get_buffer_length(), dst_mode);
 
+			fp_value *val = fc_val_from_str(buffer, len, NULL);
+			return get_tarval_from_fp_value(val, dst_mode);
 		default:
 			break;
 		}

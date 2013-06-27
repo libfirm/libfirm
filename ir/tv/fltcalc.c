@@ -15,6 +15,7 @@
 
 #include <math.h>
 #include <inttypes.h>
+#include <float.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -118,6 +119,8 @@ static int max_precision;
 
 /** Exact flag. */
 static int fc_exact = 1;
+
+static float_descriptor_t long_double_desc;
 
 /** pack machine-like */
 static void *pack(const fp_value *int_float, void *packed)
@@ -765,58 +768,45 @@ int fc_get_buffer_length(void)
 	return calc_buffer_size;
 }
 
-void *fc_val_from_str(const char *str, size_t len,
-                      const float_descriptor_t *desc, void *result)
+void *fc_val_from_str(const char *str, size_t len, void *result)
 {
-	char *buffer;
-
-	/* XXX excuse of an implementation to make things work */
-	long double        val;
-	fp_value          *tmp = (fp_value*) alloca(calc_buffer_size);
-	float_descriptor_t tmp_desc;
-
-	buffer = (char*) alloca(len+1);
+	char *buffer = alloca(len + 1);
 	memcpy(buffer, str, len);
 	buffer[len] = '\0';
-	val = string_to_long_double(buffer);
-
-	tmp_desc.exponent_size = 15;
-	tmp_desc.mantissa_size = 63;
-	tmp_desc.explicit_one  = 1;
-	fc_val_from_ieee754(val, &tmp_desc, tmp);
-
-	return fc_cast(tmp, desc, (fp_value*) result);
+	long double val = string_to_long_double(buffer);
+	return fc_val_from_ieee754(val, result);
 }
 
-fp_value *fc_val_from_ieee754(long double l, const float_descriptor_t *desc,
-                              fp_value *result)
+fp_value *fc_val_from_ieee754(long double l, fp_value *result)
 {
 	char    *temp;
 	int      bias_res, bias_val, mant_val;
 	value_t  srcval;
 	char     sign;
 	uint32_t exponent, mantissa0, mantissa1;
-	size_t   long_double_size = sizeof(long double);
 
 	srcval.d = l;
-	bias_res = ((1 << (desc->exponent_size - 1)) - 1);
+	bias_res = ((1 << (long_double_desc.exponent_size - 1)) - 1);
 
-	if (long_double_size == 8) {
+	if (long_double_desc.exponent_size == 11 && long_double_desc.mantissa_size == 52) {
+		assert(sizeof(long double) == 8);
 		mant_val  = 52;
 		bias_val  = 0x3ff;
 		sign      = (srcval.val_ld8.high & 0x80000000) != 0;
 		exponent  = (srcval.val_ld8.high & 0x7FF00000) >> 20;
 		mantissa0 = srcval.val_ld8.high & 0x000FFFFF;
 		mantissa1 = srcval.val_ld8.low;
-	} else {
+	} else if (long_double_desc.exponent_size == 15 && long_double_desc.mantissa_size == 63) {
 		/* we assume an x86-like 80bit representation of the value... */
-		assert(sizeof(long double)==12 || sizeof(long double)==16);
+		assert(sizeof(long double) == 12 || sizeof(long double) == 16);
 		mant_val  = 63;
 		bias_val  = 0x3fff;
 		sign      = (srcval.val_ld12.high & 0x00008000) != 0;
 		exponent  = (srcval.val_ld12.high & 0x00007FFF) ;
 		mantissa0 = srcval.val_ld12.mid;
 		mantissa1 = srcval.val_ld12.low;
+	} else {
+		panic("unsupported long double format");
 	}
 
 	if (result == NULL)
@@ -826,7 +816,7 @@ fp_value *fc_val_from_ieee754(long double l, const float_descriptor_t *desc,
 	/* CLEAR the buffer, else some bits might be uninitialized */
 	memset(result, 0, fc_get_buffer_length());
 
-	result->desc = *desc;
+	result->desc = long_double_desc;
 	result->clss = FC_NORMAL;
 	result->sign = sign;
 
@@ -844,7 +834,7 @@ fp_value *fc_val_from_ieee754(long double l, const float_descriptor_t *desc,
 	 * this looks more complicated than it is: unbiased input exponent + output bias,
 	 * minus the mantissa difference which is added again later when the output float
 	 * becomes normalized */
-	sc_val_from_long((exponent - bias_val + bias_res) - (mant_val - desc->mantissa_size), _exp(result));
+	sc_val_from_long((exponent - bias_val + bias_res) - (mant_val - long_double_desc.mantissa_size), _exp(result));
 
 	/* build mantissa representation */
 	if (exponent != 0) {
@@ -895,25 +885,13 @@ long double fc_val_to_ieee754(const fp_value *val)
 	uint32_t mantissa0;
 	uint32_t mantissa1;
 
-	value_t           buildval;
-	float_descriptor_t desc;
-	unsigned          mantissa_size;
+	value_t  buildval;
+	unsigned mantissa_size;
 
-	size_t            long_double_size = sizeof(long double);
-
-	if (long_double_size == 8) {
-		desc.exponent_size = 11;
-		desc.mantissa_size = 52;
-		desc.explicit_one  = 0;
-	} else {
-		desc.exponent_size = 15;
-		desc.mantissa_size = 63;
-		desc.explicit_one  = 1;
-	}
-	mantissa_size = desc.mantissa_size + desc.explicit_one;
+	mantissa_size = long_double_desc.mantissa_size + long_double_desc.explicit_one;
 
 	temp = (fp_value*) alloca(calc_buffer_size);
-	value = fc_cast(val, &desc, temp);
+	value = fc_cast(val, &long_double_desc, temp);
 
 	sign = value->sign;
 
@@ -930,20 +908,25 @@ long double fc_val_to_ieee754(const fp_value *val)
 	for (byte_offset = 0; byte_offset < 4; byte_offset++)
 		mantissa1 |= sc_sub_bits(_mant(value), mantissa_size, byte_offset) << (byte_offset << 3);
 
-	for (; (byte_offset<<3) < desc.mantissa_size; byte_offset++)
+	for (; (byte_offset<<3) < long_double_desc.mantissa_size; byte_offset++)
 		mantissa0 |= sc_sub_bits(_mant(value), mantissa_size, byte_offset) << ((byte_offset - 4) << 3);
 
-	if (long_double_size == 8) {
+	if (long_double_desc.exponent_size == 11 && long_double_desc.mantissa_size == 52) {
+		assert(sizeof(long double) == 8);
 		mantissa0 &= 0x000FFFFF;  /* get rid of garbage */
 		buildval.val_ld8.high = sign << 31;
 		buildval.val_ld8.high |= exponent << 20;
 		buildval.val_ld8.high |= mantissa0;
 		buildval.val_ld8.low = mantissa1;
-	} else {
+	} else if (long_double_desc.exponent_size == 15 && long_double_desc.mantissa_size == 63) {
+		/* we assume an x86-like 80bit representation of the value... */
+		assert(sizeof(long double) == 12 || sizeof(long double) == 16);
 		buildval.val_ld12.high = sign << 15;
 		buildval.val_ld12.high |= exponent;
 		buildval.val_ld12.mid = mantissa0;
 		buildval.val_ld12.low = mantissa1;
+	} else {
+		panic("unsupported long double format");
 	}
 
 	return buildval.d;
@@ -955,7 +938,9 @@ fp_value *fc_cast(const fp_value *value, const float_descriptor_t *desc,
 	char *temp;
 	int exp_offset, val_bias, res_bias;
 
-	if (result == NULL) result = calc_buffer;
+	if (result == NULL)
+		result = calc_buffer;
+	assert(value != result);
 	temp = (char*) alloca(value_size);
 
 	if (value->desc.exponent_size == desc->exponent_size &&
@@ -1307,6 +1292,17 @@ void init_fltcalc(int precision)
 
 		calc_buffer = (fp_value*) xmalloc(calc_buffer_size);
 		memset(calc_buffer, 0, calc_buffer_size);
+
+		const size_t long_double_size = sizeof(long double);
+#if LDBL_MANT_DIG == 64
+		assert(long_double_size == 12 || long_double_size == 16);
+		long_double_desc = (float_descriptor_t) { 15, 63, 1 };
+#elif LDBL_MANT_DIG == 53
+		assert(long_double_size == 8);
+		long_double_desc = (float_descriptor_t) { 11, 52, 0 };
+#else
+	#error "Unsupported long double format"
+#endif
 	}
 }
 
