@@ -186,7 +186,7 @@ static void amd64_finish_graph(ir_graph *irg)
 
 	/* create and coalesce frame entities */
 	irg_walk_graph(irg, NULL, amd64_collect_frame_entity_nodes, fec_env);
-	be_assign_entities(fec_env, amd64_set_frame_entity, at_begin, true);
+	be_assign_entities(fec_env, amd64_set_frame_entity, at_begin);
 	be_free_frame_entity_coalescer(fec_env);
 
 	irg_block_walk_graph(irg, NULL, amd64_after_ra_walker, NULL);

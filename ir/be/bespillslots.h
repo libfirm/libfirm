@@ -27,6 +27,11 @@ be_fec_env_t *be_new_frame_entity_coalescer(ir_graph *irg);
 void be_free_frame_entity_coalescer(be_fec_env_t *env);
 
 /**
+ * forbid coalescing of spillslots.
+ */
+void be_forbid_coalescing(be_fec_env_t *env);
+
+/**
  * Adds a node that needs a frame entity and consumes memory (Reload nodes). The
  * memory edges are followed to find memory-phis and the entities that produce
  * the memory values.
@@ -46,6 +51,6 @@ typedef void (*set_frame_entity_func)(ir_node *node, ir_entity *entity);
  * Adds memory perms where needed.
  */
 void be_assign_entities(be_fec_env_t *env, set_frame_entity_func set_frame,
-                        bool alloc_entities_at_begin, bool coalescing_allowed);
+                        bool alloc_entities_at_begin);
 
 #endif

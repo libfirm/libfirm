@@ -811,6 +811,17 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 	const ir_mode *mode;
 	int            align;
 
+	/* Disable coalescing for "returns twice" calls: In case of setjmp/longjmp
+	 * our control flow graph isn't completely correct: There are no backedges
+	 * from longjmp to the setjmp => coalescing would produce wrong results. */
+	if (is_ia32_Call(node)) {
+		const ia32_call_attr_t    *attrs = get_ia32_call_attr_const(node);
+		const ir_type             *type  = attrs->call_tp;
+		mtp_additional_properties  mtp   = get_method_additional_properties(type);
+		if (mtp & mtp_property_returns_twice)
+			be_forbid_coalescing(env);
+	}
+
 	if (be_is_Reload(node) && be_get_frame_entity(node) == NULL) {
 		mode  = get_spill_mode_mode(get_irn_mode(node));
 		align = get_mode_size_bytes(mode);
@@ -871,20 +882,6 @@ need_stackent:
 		return;
 	}
 	be_node_needs_frame_entity(env, node, mode, align);
-}
-
-static void ia32_check_coal_allowed(ir_node *irn, void *data)
-{
-	bool *allowed = (bool*)data;
-
-	if (!*allowed || !is_ia32_Call(irn))
-		return;
-
-	const ia32_call_attr_t    *attrs = get_ia32_call_attr_const(irn);
-	const ir_type             *type  = attrs->call_tp;
-	mtp_additional_properties  mtp   = get_method_additional_properties(type);
-	if (mtp & mtp_property_returns_twice)
-		*allowed = false;
 }
 
 static int determine_ebp_input(ir_node *ret)
@@ -1035,13 +1032,11 @@ static void ia32_emit(ir_graph *irg)
 	ia32_irg_data_t   *irg_data     = ia32_get_irg_data(irg);
 	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
 	bool               at_begin     = stack_layout->sp_relative ? true : false;
-	bool               coal_allowed = true;
 	be_fec_env_t      *fec_env      = be_new_frame_entity_coalescer(irg);
 
 	/* create and coalesce frame entities */
 	irg_walk_graph(irg, NULL, ia32_collect_frame_entity_nodes, fec_env);
-	irg_walk_graph(irg, NULL, ia32_check_coal_allowed, &coal_allowed);
-	be_assign_entities(fec_env, ia32_set_frame_entity, at_begin, coal_allowed);
+	be_assign_entities(fec_env, ia32_set_frame_entity, at_begin);
 	be_free_frame_entity_coalescer(fec_env);
 
 	irg_block_walk_graph(irg, NULL, ia32_after_ra_walker, NULL);

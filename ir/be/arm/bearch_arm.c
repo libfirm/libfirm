@@ -220,7 +220,7 @@ static void arm_emit(ir_graph *irg)
 	be_fec_env_t      *fec_env      = be_new_frame_entity_coalescer(irg);
 
 	irg_walk_graph(irg, NULL, arm_collect_frame_entity_nodes, fec_env);
-	be_assign_entities(fec_env, arm_set_frame_entity, at_begin, true);
+	be_assign_entities(fec_env, arm_set_frame_entity, at_begin);
 	be_free_frame_entity_coalescer(fec_env);
 
 	irg_block_walk_graph(irg, NULL, arm_after_ra_walker, NULL);

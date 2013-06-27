@@ -682,7 +682,19 @@ static void register_peephole_optimisation(ir_op *op, peephole_opt_func func)
 
 static void sparc_collect_frame_entity_nodes(ir_node *node, void *data)
 {
-	be_fec_env_t  *env = (be_fec_env_t*)data;
+	be_fec_env_t *env = (be_fec_env_t*)data;
+
+	/* Disable coalescing for "returns twice" calls: In case of setjmp/longjmp
+	 * our control flow graph isn't completely correct: There are no backedges
+	 * from longjmp to the setjmp => coalescing would produce wrong results. */
+	if (is_sparc_Call(node)) {
+		const sparc_call_attr_t   *attrs = get_sparc_call_attr_const(node);
+		const ir_type             *type  = attrs->call_type;
+		mtp_additional_properties  mtp   = get_method_additional_properties(type);
+		if (mtp & mtp_property_returns_twice)
+			be_forbid_coalescing(env);
+		return;
+	}
 
 	if (be_is_Reload(node) && be_get_frame_entity(node) == NULL) {
 		ir_mode *mode  = get_irn_mode(node);
@@ -738,30 +750,14 @@ static void fix_constraints_walker(ir_node *block, void *env)
 	}
 }
 
-static void sparc_check_coal_allowed(ir_node *irn, void *data)
-{
-	bool *allowed = (bool*)data;
-
-	if (!*allowed || !is_sparc_Call(irn))
-		return;
-
-	const sparc_call_attr_t   *attrs = get_sparc_call_attr_const(irn);
-	const ir_type             *type  = attrs->call_type;
-	mtp_additional_properties  mtp   = get_method_additional_properties(type);
-	if (mtp & mtp_property_returns_twice)
-		*allowed = false;
-}
-
 void sparc_finish_graph(ir_graph *irg)
 {
 	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
 	bool               at_begin     = stack_layout->sp_relative ? true : false;
-	bool               coal_allowed = true;
 	be_fec_env_t      *fec_env      = be_new_frame_entity_coalescer(irg);
 
 	irg_walk_graph(irg, NULL, sparc_collect_frame_entity_nodes, fec_env);
-	irg_walk_graph(irg, NULL, sparc_check_coal_allowed, &coal_allowed);
-	be_assign_entities(fec_env, sparc_set_frame_entity, at_begin, coal_allowed);
+	be_assign_entities(fec_env, sparc_set_frame_entity, at_begin);
 	be_free_frame_entity_coalescer(fec_env);
 	sparc_adjust_stack_entity_offsets(irg);
 

@@ -60,6 +60,7 @@ struct be_fec_env_t {
 	set_frame_entity_func  set_frame_entity;
 	bool                   at_begin;  /**< frame entities should be allocate at
 	                                       the beginning of the stackframe */
+	bool                   coalescing_forbidden;
 };
 
 /** Compare 2 affinity edges (used in quicksort) */
@@ -673,10 +674,14 @@ void be_free_frame_entity_coalescer(be_fec_env_t *env)
 	free(env);
 }
 
+void be_forbid_coalescing(be_fec_env_t *env)
+{
+	env->coalescing_forbidden = true;
+}
+
 void be_assign_entities(be_fec_env_t *env,
                         set_frame_entity_func set_frame_entity,
-                        bool alloc_entities_at_begin,
-                        bool coalescing_allowed)
+                        bool alloc_entities_at_begin)
 {
 	env->set_frame_entity = set_frame_entity;
 	env->at_begin         = alloc_entities_at_begin;
@@ -685,7 +690,7 @@ void be_assign_entities(be_fec_env_t *env,
 		stat_ev_dbl("spillslots", ARR_LEN(env->spills));
 	}
 
-	if (be_coalesce_spill_slots && coalescing_allowed) {
+	if (be_coalesce_spill_slots && !env->coalescing_forbidden) {
 		do_greedy_coalescing(env);
 	}
 
