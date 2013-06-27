@@ -2152,10 +2152,10 @@ static ir_node *gen_Call(ir_node *node)
 	ir_node *res;
 	if (entity != NULL) {
 		res = new_bd_sparc_Call_imm(dbgi, new_block, in_arity, in, out_arity,
-		                            entity, 0, aggregate_return);
+		                            type, entity, 0, aggregate_return);
 	} else {
 		res = new_bd_sparc_Call_reg(dbgi, new_block, in_arity, in, out_arity,
-		                            aggregate_return);
+		                            type, aggregate_return);
 	}
 	arch_set_irn_register_reqs_in(res, in_req);
 

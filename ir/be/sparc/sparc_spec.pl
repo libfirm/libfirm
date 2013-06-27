@@ -116,11 +116,14 @@ $default_copy_attr = "sparc_copy_attr";
 	                            "\tinit_sparc_fp_conv_attributes(res, src_mode, dest_mode);\n",
 	sparc_asm_attr_t         => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, n_res);\n".
 	                            "\tinit_sparc_asm_attributes(res, text, operands);",
+	sparc_call_attr_t        => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, n_res);\n".
+	                            "\tinit_sparc_call_attributes(res, call_type);",
 );
 
 %compare_attr = (
 	sparc_attr_t            => "cmp_attr_sparc",
 	sparc_asm_attr_t        => "cmp_attr_sparc_asm",
+	sparc_call_attr_t       => "cmp_attr_sparc_call",
 	sparc_fp_attr_t         => "cmp_attr_sparc_fp",
 	sparc_fp_conv_attr_t    => "cmp_attr_sparc_fp_conv",
 	sparc_jmp_cond_attr_t   => "cmp_attr_sparc_jmp_cond",
@@ -540,16 +543,17 @@ Call => {
 	state     => "exc_pinned",
 	arity     => "variable",
 	out_arity => "variable",
+	attr_type => "sparc_call_attr_t",
 	constructors => {
 		imm => {
-			attr       => "ir_entity *entity, int32_t offset, bool aggregate_return",
-			custominit => "\tsparc_set_attr_imm(res, entity, offset);".
+			attr       => "ir_type *call_type, ir_entity *entity, int32_t offset, bool aggregate_return",
+			custominit => "\tsparc_set_attr_imm(res, entity, offset);\n".
 			              "\tif (aggregate_return) arch_add_irn_flags(res, (arch_irn_flags_t)sparc_arch_irn_flag_aggregate_return);",
 			arity     => "variable",
 			out_arity => "variable",
 		},
 		reg => {
-			attr       => "bool aggregate_return",
+			attr       => "ir_type *call_type, bool aggregate_return",
 			arity      => "variable",
 			out_arity  => "variable",
 			custominit => "\tif (aggregate_return) arch_add_irn_flags(res, (arch_irn_flags_t)sparc_arch_irn_flag_aggregate_return);",

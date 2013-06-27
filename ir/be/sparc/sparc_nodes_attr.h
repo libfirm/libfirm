@@ -11,6 +11,7 @@
 #ifndef FIRM_BE_SPARC_SPARC_NODES_ATTR_H
 #define FIRM_BE_SPARC_SPARC_NODES_ATTR_H
 
+#include "firm_types.h"
 #include "bearch.h"
 #include <stdint.h>
 
@@ -31,6 +32,15 @@ enum sparc_arch_irn_flags_t {
 	sparc_arch_irn_flag_immediate_form        = arch_irn_flags_backend << 1,
 	sparc_arch_irn_flag_aggregate_return      = arch_irn_flags_backend << 2,
 	sparc_arch_irn_flag_has_delay_slot        = arch_irn_flags_backend << 3,
+};
+
+/**
+ * attribute for Call instruction
+ */
+typedef struct sparc_call_attr_t sparc_call_attr_t;
+struct sparc_call_attr_t {
+	sparc_attr_t  base;
+	ir_type      *call_type; /**< The call type, copied from the original Call node. */
 };
 
 /**

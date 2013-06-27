@@ -216,6 +216,18 @@ const sparc_asm_attr_t *get_sparc_asm_attr_const(const ir_node *node)
 	return (const sparc_asm_attr_t*)get_irn_generic_attr_const(node);
 }
 
+sparc_call_attr_t *get_sparc_call_attr(ir_node *node)
+{
+	assert(is_sparc_Call(node));
+	return (sparc_call_attr_t*)get_irn_generic_attr(node);
+}
+
+const sparc_call_attr_t *get_sparc_call_attr_const(const ir_node *node)
+{
+	assert(is_sparc_Call(node));
+	return (const sparc_call_attr_t*)get_irn_generic_attr_const(node);
+}
+
 /**
  * Initializes the nodes attributes.
  */
@@ -278,6 +290,12 @@ static void init_sparc_asm_attributes(ir_node *node, ident *text,
 	sparc_asm_attr_t *attr = get_sparc_asm_attr(node);
 	attr->text     = text;
 	attr->operands = operands;
+}
+
+static void init_sparc_call_attributes(ir_node *node, ir_type *call_type)
+{
+	sparc_call_attr_t *attr = get_sparc_call_attr(node);
+	attr->call_type = call_type;
 }
 
 /**
@@ -368,6 +386,16 @@ static int cmp_attr_sparc_asm(const ir_node *a, const ir_node *b)
 	const sparc_asm_attr_t *attr_a = get_sparc_asm_attr_const(a);
 	const sparc_asm_attr_t *attr_b = get_sparc_asm_attr_const(b);
 	return attr_a->text != attr_b->text;
+}
+
+static int cmp_attr_sparc_call(const ir_node *a, const ir_node *b)
+{
+	if (cmp_attr_sparc(a, b))
+		return 1;
+
+	const sparc_call_attr_t *attr_a = get_sparc_call_attr_const(a);
+	const sparc_call_attr_t *attr_b = get_sparc_call_attr_const(b);
+	return attr_a->call_type != attr_b->call_type;
 }
 
 /* Include the generated constructor functions */
