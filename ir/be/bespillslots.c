@@ -675,7 +675,8 @@ void be_free_frame_entity_coalescer(be_fec_env_t *env)
 
 void be_assign_entities(be_fec_env_t *env,
                         set_frame_entity_func set_frame_entity,
-                        bool alloc_entities_at_begin)
+                        bool alloc_entities_at_begin,
+                        bool coalescing_allowed)
 {
 	env->set_frame_entity = set_frame_entity;
 	env->at_begin         = alloc_entities_at_begin;
@@ -684,7 +685,7 @@ void be_assign_entities(be_fec_env_t *env,
 		stat_ev_dbl("spillslots", ARR_LEN(env->spills));
 	}
 
-	if (be_coalesce_spill_slots) {
+	if (be_coalesce_spill_slots && coalescing_allowed) {
 		do_greedy_coalescing(env);
 	}
 

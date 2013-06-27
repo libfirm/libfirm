@@ -46,6 +46,6 @@ typedef void (*set_frame_entity_func)(ir_node *node, ir_entity *entity);
  * Adds memory perms where needed.
  */
 void be_assign_entities(be_fec_env_t *env, set_frame_entity_func set_frame,
-                        bool alloc_entities_at_begin);
+                        bool alloc_entities_at_begin, bool coalescing_allowed);
 
 #endif

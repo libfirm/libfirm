@@ -738,14 +738,30 @@ static void fix_constraints_walker(ir_node *block, void *env)
 	}
 }
 
+static void sparc_check_coal_allowed(ir_node *irn, void *data)
+{
+	bool *allowed = (bool*)data;
+
+	if (!*allowed || !is_sparc_Call(irn))
+		return;
+
+	const sparc_call_attr_t   *attrs = get_sparc_call_attr_const(irn);
+	const ir_type             *type  = attrs->call_type;
+	mtp_additional_properties  mtp   = get_method_additional_properties(type);
+	if (mtp & mtp_property_returns_twice)
+		*allowed = false;
+}
+
 void sparc_finish_graph(ir_graph *irg)
 {
 	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
 	bool               at_begin     = stack_layout->sp_relative ? true : false;
+	bool               coal_allowed = true;
 	be_fec_env_t      *fec_env      = be_new_frame_entity_coalescer(irg);
 
 	irg_walk_graph(irg, NULL, sparc_collect_frame_entity_nodes, fec_env);
-	be_assign_entities(fec_env, sparc_set_frame_entity, at_begin);
+	irg_walk_graph(irg, NULL, sparc_check_coal_allowed, &coal_allowed);
+	be_assign_entities(fec_env, sparc_set_frame_entity, at_begin, coal_allowed);
 	be_free_frame_entity_coalescer(fec_env);
 	sparc_adjust_stack_entity_offsets(irg);
 
