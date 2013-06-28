@@ -137,6 +137,19 @@ FIRM_API ir_tarval *new_integer_tarval_from_str(const char *str, size_t len,
 FIRM_API ir_tarval *new_tarval_from_long(long l, ir_mode *mode);
 
 /**
+ * Construct a new tarval from a sequence of bytes.
+ *
+ * @param buf          pointer to a buffer holding at least
+ *                     get_ir_mode_size_bytes(mode) bytes.
+ * @param mode         mode for the resulting tarval
+ * @param big_endian   construct value in big_endian order if true, else little
+ *                     endian.
+ * @return A newly created (or cached) tarval representing the value.
+ */
+FIRM_API ir_tarval *new_tarval_from_bytes(unsigned char const *buf,
+                                          ir_mode *mode, int big_endian);
+
+/**
  * Returns value as long if possible.
  */
 FIRM_API long get_tarval_long(ir_tarval *tv);

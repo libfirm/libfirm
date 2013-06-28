@@ -382,6 +382,25 @@ ir_tarval *new_tarval_from_long(long l, ir_mode *mode)
 	}
 }
 
+ir_tarval *new_tarval_from_bytes(unsigned char const *buf,
+                                 ir_mode *mode, int big_endian)
+{
+	switch (get_mode_arithmetic(mode)) {
+	case irma_twos_complement:
+		if (get_mode_size_bytes(mode) == (unsigned)-1)
+			return tarval_bad;
+		sc_val_from_bytes(buf, get_mode_size_bytes(mode), big_endian, NULL);
+		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
+	case irma_ieee754:
+	case irma_x86_extended_float:
+		/* not implemented yet */
+		return tarval_bad;
+	case irma_none:
+		break;
+	}
+	panic("tarval from byte requested for non storable mode");
+}
+
 int tarval_is_long(ir_tarval *tv)
 {
 	if (!mode_is_int(tv->mode) && !mode_is_reference(tv->mode))

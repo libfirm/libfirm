@@ -859,6 +859,32 @@ unsigned char sc_sub_bits(const void *value, int len, unsigned byte_ofs)
 	return res;
 }
 
+void sc_val_from_bytes(unsigned char const *const bytes, size_t n_bytes,
+                       bool big_endian, void *buffer)
+{
+	assert(n_bytes <= (size_t)calc_buffer_size);
+
+	if (buffer == NULL)
+		buffer = calc_buffer;
+	char *p = (char*)buffer;
+	if (big_endian) {
+		for (unsigned char const *bp = bytes+n_bytes; bp >= bytes; --bp) {
+			unsigned char v = *bp;
+			*p++ =  v     & 0xf;
+			*p++ = (v>>4) & 0xf;
+		}
+	} else {
+		for (unsigned char const *bp = bytes, *bp_end = bytes + n_bytes;
+		     bp < bp_end; ++bp) {
+			unsigned char v = *bp;
+			*p++ =  v     & 0xf;
+			*p++ = (v>>4) & 0xf;
+		}
+	}
+	for (char *p_end = (char*)buffer+calc_buffer_size; p < p_end; ++p)
+		*p = 0;
+}
+
 /*
  * convert to a string
  * FIXME: Doesn't check buffer bounds

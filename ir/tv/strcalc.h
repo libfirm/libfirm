@@ -20,6 +20,7 @@
 #define FIRM_TV_STRCALC_H
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "irmode.h"
 
 #ifdef STRCALC_DEBUG_ALL             /* switch on all debug options */
@@ -189,6 +190,18 @@ void sc_val_from_long(long l, void *buffer);
 
 /** create a value form an unsigned long */
 void sc_val_from_ulong(unsigned long l, void *buffer);
+
+/**
+ * Construct a strcalc value form a sequence of bytes in two complement big
+ * or little endian format.
+ * @param bytes       pointer to array of bytes
+ * @param n_bytes     number of bytes in the sequence
+ * @param big_endian  interpret bytes as big_endian format if true, else
+ *                    little endian
+ * @param buffer      destination buffer (calc_buffer if used if NULL)
+ */
+void sc_val_from_bytes(unsigned char const *bytes, size_t n_bytes,
+                       bool big_endian, void *buffer);
 
 /** converts a value to a long */
 long sc_val_to_long(const void *val);
