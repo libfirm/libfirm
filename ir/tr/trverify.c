@@ -138,7 +138,7 @@ static void on_irg_storage(ir_node *n, void *data)
 	env->fine &= check_visited_flag(env->irg, n);
 }
 
-static bool constant_on_wrong_irg(ir_node *n)
+static bool constant_on_correct_irg(ir_node *n)
 {
 	myenv env;
 	env.fine = true;
@@ -148,35 +148,70 @@ static bool constant_on_wrong_irg(ir_node *n)
 	return env.fine;
 }
 
-static bool initializer_constant_on_wrong_irg(const ir_initializer_t *initializer)
+static bool check_initializer(const ir_initializer_t *initializer,
+                              const ir_type *type,
+                              const ir_entity *context)
 {
+	bool fine = true;
 	switch (get_initializer_kind(initializer)) {
 	case IR_INITIALIZER_NULL:
-		return 0;
-	case IR_INITIALIZER_TARVAL:
-		return 0;
-	case IR_INITIALIZER_CONST:
-		return constant_on_wrong_irg(get_initializer_const_value(initializer));
+		return fine;
+	case IR_INITIALIZER_TARVAL: {
+		ir_tarval *tv = get_initializer_tarval_value(initializer);
+		if (get_type_mode(type) != get_tarval_mode(tv)) {
+			report_error("initializer for entity %+F has wrong mode", context);
+			fine = false;
+		}
+		return fine;
+	}
+	case IR_INITIALIZER_CONST: {
+		ir_node *value = get_initializer_const_value(initializer);
+		if (get_type_mode(type) != get_irn_mode(value)) {
+			report_error("initializer for entity %+F has wrong mode", context);
+			fine = false;
+		}
+		if (!constant_on_correct_irg(value)) {
+			report_error("initializer const value %+F for entity %+F not on const-code irg", value, context);
+			fine = false;
+		}
+		return fine;
+	}
 	case IR_INITIALIZER_COMPOUND: {
-		bool fine = true;
-		for (size_t i = 0, n = get_initializer_compound_n_entries(initializer);
-		     i < n; ++i) {
-			const ir_initializer_t *sub
-				= get_initializer_compound_value(initializer, i);
-			fine &= initializer_constant_on_wrong_irg(sub);
+		size_t n_entries = get_initializer_compound_n_entries(initializer);
+		if (is_Array_type(type)) {
+			ir_type *element_type = get_array_element_type(type);
+			/* TODO: check array bounds? */
+			for (size_t i = 0; i < n_entries; ++i) {
+				const ir_initializer_t *sub_initializer
+					= get_initializer_compound_value(initializer, i);
+				check_initializer(sub_initializer, element_type, context);
+			}
+		} else if (is_compound_type(type)) {
+			size_t n_members = get_compound_n_members(type);
+			if (n_entries > n_members) {
+				report_error("too many values in compound initializer of %+F",
+				             context);
+				fine = false;
+			}
+			for (size_t i = 0; i < n_entries; ++i) {
+				if (i >= n_members)
+					break;
+				ir_entity *member      = get_compound_member(type, i);
+				ir_type   *member_type = get_entity_type(member);
+				const ir_initializer_t *sub_initializer
+					= get_initializer_compound_value(initializer, i);
+				check_initializer(sub_initializer, member_type, context);
+			}
+		} else {
+			report_error("compound initiailizer for non-array/compound type in entity %+F",
+			             context);
+			fine = false;
 		}
 		return fine;
 	}
 	}
-	panic("invalid initializer");
-}
-
-static bool constants_on_wrong_irg(const ir_entity *ent)
-{
-	if (ent->initializer != NULL) {
-		return initializer_constant_on_wrong_irg(ent->initializer);
-	}
-	return true;
+	report_error("invalid initializer for entity %+F", context);
+	return false;
 }
 
 static bool check_external_linkage(const ir_entity *entity, ir_linkage linkage,
@@ -202,7 +237,9 @@ int check_entity(const ir_entity *entity)
 	ir_type    *tp      = get_entity_type(entity);
 	ir_linkage  linkage = get_entity_linkage(entity);
 
-	fine &= constants_on_wrong_irg(entity);
+	const ir_initializer_t *initializer = get_entity_initializer(entity);
+	if (initializer != NULL)
+		fine &= check_initializer(initializer, tp, entity);
 
 	if (is_method_entity(entity)) {
 		ir_graph *irg = get_entity_irg(entity);
@@ -241,25 +278,6 @@ int check_entity(const ir_entity *entity)
 	                       "GARBAGE_COLLECT");
 	check_external_linkage(entity, IR_LINKAGE_MERGE, "MERGE");
 
-	if (is_atomic_entity(entity) && entity->initializer != NULL) {
-		ir_mode *mode = NULL;
-		ir_initializer_t *initializer = entity->initializer;
-		switch (initializer->kind) {
-		case IR_INITIALIZER_CONST:
-			mode = get_irn_mode(get_initializer_const_value(initializer));
-			break;
-		case IR_INITIALIZER_TARVAL:
-			mode = get_tarval_mode(get_initializer_tarval_value(initializer));
-			break;
-		case IR_INITIALIZER_NULL:
-		case IR_INITIALIZER_COMPOUND:
-			break;
-		}
-		if (mode != NULL && mode != get_type_mode(tp)) {
-			report_error("initializer of entity %+F has wrong mode.", entity);
-			fine = false;
-		}
-	}
 	return fine;
 }
 
