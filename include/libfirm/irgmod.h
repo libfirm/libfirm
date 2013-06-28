@@ -75,6 +75,18 @@ FIRM_API ir_node *part_block_edges(ir_node *node);
  */
 FIRM_API void kill_node(ir_node *node);
 
+/**
+ * Creates a copy of the subgraph starting at node @p n.
+ * This currently only works for subgraphs containing only arithmetic nodes
+ * (= enough for everything that can be found on the const code irg).
+ *
+ * @param dbg       debug info for all newly created nodes
+ * @param n         the node
+ * @param to_block  block to copy to
+ */
+FIRM_API ir_node *duplicate_subgraph(dbg_info *dbg, ir_node *n,
+                                     ir_node *to_block);
+
 #include "end.h"
 
 #endif

@@ -457,25 +457,6 @@ FIRM_API size_t get_entity_parameter_number(const ir_entity *entity);
  */
 FIRM_API void set_entity_parameter_number(ir_entity *entity, size_t n);
 
-/**
- * Returns true if the the node is representable as code on
- * const_code_irg.
- *
- * @deprecated This function is not used by libFirm and stays here
- *             only as a helper for the old Jack frontend.
- */
-FIRM_API int is_irn_const_expression(ir_node *n);
-
-/**
- * Copies a Firm subgraph that complies to the restrictions for
- * constant expressions to block.
- *
- * @param dbg       debug info for all newly created nodes
- * @param n         the node
- * @param to_block  block to copy to
- */
-FIRM_API ir_node *copy_const_value(dbg_info *dbg, ir_node *n, ir_node *to_block);
-
 /** Returns initial value of entity with atomic type @p ent. */
 FIRM_API ir_node *get_atomic_ent_value(const ir_entity *ent);
 /** Sets initial value of entity with atomic type @p ent to node @p val.

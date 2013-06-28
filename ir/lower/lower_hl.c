@@ -94,12 +94,12 @@ static void lower_sel(ir_node *sel)
 				ub = get_array_upper_bound(arr_ty, dim);
 
 				if (! is_Unknown(lb))
-					lb = new_rd_Conv(dbg, bl, copy_const_value(get_irn_dbg_info(sel), lb, bl), mode_Int);
+					lb = new_rd_Conv(dbg, bl, duplicate_subgraph(get_irn_dbg_info(sel), lb, bl), mode_Int);
 				else
 					lb = NULL;
 
 				if (! is_Unknown(ub))
-					ub = new_rd_Conv(dbg, bl, copy_const_value(get_irn_dbg_info(sel), ub, bl), mode_Int);
+					ub = new_rd_Conv(dbg, bl, duplicate_subgraph(get_irn_dbg_info(sel), ub, bl), mode_Int);
 				else
 					ub = NULL;
 

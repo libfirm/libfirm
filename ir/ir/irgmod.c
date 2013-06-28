@@ -255,3 +255,62 @@ void kill_node(ir_node *node)
 	/* noone is allowed to reference this node anymore */
 	set_irn_op(node, op_Deleted);
 }
+
+ir_node *duplicate_subgraph(dbg_info *dbg, ir_node *n, ir_node *block)
+{
+	ir_graph *irg  = get_irn_irg(block);
+	ir_mode  *mode = get_irn_mode(n);
+	switch (get_irn_opcode(n)) {
+	case iro_Const:
+		return new_rd_Const(dbg, irg, get_Const_tarval(n));
+	case iro_SymConst:
+		return new_rd_SymConst(dbg, irg, mode,
+		                       get_SymConst_symbol(n), get_SymConst_kind(n));
+	case iro_Add:
+		return new_rd_Add(dbg, block,
+		                  duplicate_subgraph(dbg, get_Add_left(n), block),
+		                  duplicate_subgraph(dbg, get_Add_right(n), block),
+		                  mode);
+	case iro_Sub:
+		return new_rd_Sub(dbg, block,
+		                  duplicate_subgraph(dbg, get_Sub_left(n), block),
+		                  duplicate_subgraph(dbg, get_Sub_right(n), block),
+		                  mode);
+	case iro_Mul:
+		return new_rd_Mul(dbg, block,
+		                  duplicate_subgraph(dbg, get_Mul_left(n), block),
+		                  duplicate_subgraph(dbg, get_Mul_right(n), block),
+		                  mode);
+	case iro_And:
+		return new_rd_And(dbg, block,
+		                  duplicate_subgraph(dbg, get_And_left(n), block),
+		                  duplicate_subgraph(dbg, get_And_right(n), block),
+		                  mode);
+	case iro_Or:
+		return new_rd_Or(dbg, block,
+		                 duplicate_subgraph(dbg, get_Or_left(n), block),
+		                 duplicate_subgraph(dbg, get_Or_right(n), block),
+		                 mode);
+	case iro_Eor:
+		return new_rd_Eor(dbg, block,
+		                  duplicate_subgraph(dbg, get_Eor_left(n), block),
+		                  duplicate_subgraph(dbg, get_Eor_right(n), block),
+		                  mode);
+	case iro_Conv:
+		return new_rd_Conv(dbg, block,
+		                   duplicate_subgraph(dbg, get_Conv_op(n), block),
+		                   mode);
+	case iro_Minus:
+		return new_rd_Minus(dbg, block,
+		                    duplicate_subgraph(dbg, get_Minus_op(n), block),
+		                    mode);
+	case iro_Not:
+		return new_rd_Not(dbg, block,
+		                  duplicate_subgraph(dbg, get_Not_op(n), block), mode);
+	case iro_Unknown:
+		return new_r_Unknown(irg, mode);
+	default:
+		break;
+	}
+	panic("opcode invalid or not implemented %+F", n);
+}

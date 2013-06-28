@@ -917,7 +917,7 @@ ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c)
 	ir_mode  *l_mode = get_Load_mode(load);
 	ir_node  *block  = get_nodes_block(load);
 	dbg_info *dbgi   = get_irn_dbg_info(load);
-	ir_node  *res    = copy_const_value(dbgi, c, block);
+	ir_node  *res    = duplicate_subgraph(dbgi, c, block);
 
 	if (c_mode != l_mode) {
 		/* check, if the mode matches OR can be easily converted info */
