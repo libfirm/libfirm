@@ -1764,6 +1764,19 @@ static ir_node *gen_Shl(ir_node *node)
 	ir_node *left  = get_Shl_left(node);
 	ir_node *right = get_Shl_right(node);
 
+	/* special case Shl x,1 => Lea x,x because Lea has fewer register
+	 * constraints */
+	if (is_Const_1(right)) {
+		dbg_info *dbgi      = get_irn_dbg_info(node);
+		ir_node  *block     = get_nodes_block(node);
+		ir_node  *new_block = be_transform_node(block);
+		ir_node  *new_left  = be_transform_node(left);
+		ir_node  *new_node
+			= new_bd_ia32_Lea(dbgi, new_block, new_left, new_left);
+		SET_IA32_ORIG_NODE(new_node, node);
+		return new_node;
+	}
+
 	return gen_shift_binop(node, left, right, new_bd_ia32_Shl,
 	                       match_mode_neutral | match_immediate);
 }

@@ -2364,18 +2364,25 @@ static ir_node *transform_node_Add(ir_node *n)
 		ir_graph *irg = get_irn_irg(n);
 		/* the following code leads to endless recursion when Mul are replaced
 		 * by a simple instruction chain */
-		if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_ARCH_DEP)
-				&& a == b && mode_is_int(mode)) {
-			ir_node *block = get_nodes_block(n);
+		if (a == b) {
+			if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_ARCH_DEP)) {
+				ir_node *block = get_nodes_block(n);
 
-			n = new_rd_Mul(
-				get_irn_dbg_info(n),
-				block,
-				a,
-				new_r_Const_long(irg, mode, 2),
-				mode);
-			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_A_A);
-			return n;
+				n = new_rd_Mul(
+					get_irn_dbg_info(n),
+					block,
+					a,
+					new_r_Const_long(irg, mode, 2),
+					mode);
+				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_A_A);
+				return n;
+			} else {
+				dbg_info *dbgi  = get_irn_dbg_info(n);
+				ir_node  *block = get_nodes_block(n);
+				ir_node  *one   = new_r_Const(irg, get_mode_one(mode_Iu));
+				n = new_rd_Shl(dbgi, block, a, one, mode);
+				return n;
+			}
 		}
 		if (is_Minus(a)) {
 			n = new_rd_Sub(
