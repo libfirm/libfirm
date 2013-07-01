@@ -2173,13 +2173,13 @@ static ir_node *gen_Load(ir_node *node)
 }
 
 static bool use_dest_am(ir_node *block, ir_node *node, ir_node *mem,
-                        ir_node *ptr, ir_node *other)
+                        ir_node *ptr, ir_node *other, match_flags_t flags)
 {
 	if (!is_Proj(node))
 		return false;
 
 	/* we only use address mode if we're the only user of the load */
-	if (get_irn_n_edges(node) > 1)
+	if (get_irn_n_edges(node) != (flags & match_two_users ? 2 : 1))
 		return false;
 
 	ir_node *load = get_Proj_pred(node);
@@ -2219,10 +2219,10 @@ static ir_node *dest_am_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	memset(&am, 0, sizeof(am));
 	ir_node *src_block = get_nodes_block(node);
 	ir_node *new_op;
-	if (use_dest_am(src_block, op1, mem, ptr, op2)) {
+	if (use_dest_am(src_block, op1, mem, ptr, op2, flags)) {
 		build_address(&am, op1, ia32_create_am_double_use);
 		new_op = create_immediate_or_transform(op2);
-	} else if (commutative && use_dest_am(src_block, op2, mem, ptr, op1)) {
+	} else if (commutative && use_dest_am(src_block, op2, mem, ptr, op1, flags)) {
 		build_address(&am, op2, ia32_create_am_double_use);
 		new_op = create_immediate_or_transform(op1);
 	} else {
@@ -2267,7 +2267,7 @@ static ir_node *dest_am_unop(ir_node *node, ir_node *op, ir_node *mem,
 {
 	ir_node  *src_block = get_nodes_block(node);
 
-	if (!use_dest_am(src_block, op, mem, ptr, NULL))
+	if (!use_dest_am(src_block, op, mem, ptr, NULL, (match_flags_t)0))
 		return NULL;
 
 	ia32_address_mode_t am;
@@ -2381,11 +2381,13 @@ static ir_node *try_create_dest_am(ir_node *node)
 				rot_right = get_Minus_op(rot_right);
 				new_node = dest_am_binop(val, rot_left, rot_right, mem, ptr,
 				                         mode, new_bd_ia32_RorMem,
-				                         new_bd_ia32_RorMem, match_immediate);
+				                         new_bd_ia32_RorMem,
+				                         match_immediate | match_two_users);
 			} else {
 				new_node = dest_am_binop(val, rot_left, rot_right, mem, ptr,
 				                         mode, new_bd_ia32_RolMem,
-				                         new_bd_ia32_RolMem, match_immediate);
+				                         new_bd_ia32_RolMem,
+				                         match_immediate | match_two_users);
 			}
 			break;
 		}
@@ -2435,11 +2437,13 @@ static ir_node *try_create_dest_am(ir_node *node)
 				rot_right = get_Minus_op(rot_right);
 				new_node = dest_am_binop(val, rot_left, rot_right, mem, ptr,
 				                         mode, new_bd_ia32_RorMem,
-				                         new_bd_ia32_RorMem, match_immediate);
+				                         new_bd_ia32_RorMem,
+				                         match_immediate | match_two_users);
 			} else {
 				new_node = dest_am_binop(val, rot_left, rot_right, mem, ptr,
 				                         mode, new_bd_ia32_RolMem,
-				                         new_bd_ia32_RolMem, match_immediate);
+				                         new_bd_ia32_RolMem,
+				                         match_immediate | match_two_users);
 			}
 			break;
 		}
