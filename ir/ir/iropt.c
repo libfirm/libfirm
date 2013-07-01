@@ -5499,7 +5499,7 @@ static ir_node *transform_Mux_set(ir_node *n)
 		b = right;
 		break;
 	case ir_relation_less_equal:
-		/* a <= b  -> ~(a - b) >> 31 */
+		/* a <= b  -> ~(b - a) >> 31 */
 		a        = right;
 		b        = left;
 		need_not = true;
