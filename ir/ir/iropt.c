@@ -5469,40 +5469,29 @@ bool ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
  */
 static ir_node *transform_Mux_set(ir_node *n)
 {
-	ir_node    *cond = get_Mux_sel(n);
-	ir_mode    *dest_mode;
-	ir_mode    *mode;
-	ir_node    *left;
-	ir_node    *right;
-	ir_relation relation;
-	bool        need_not;
-	dbg_info   *dbgi;
-	ir_node    *block;
-	ir_graph   *irg;
-	ir_node    *a;
-	ir_node    *b;
-	unsigned    bits;
-	ir_tarval  *tv;
-	ir_node    *shift_cnt;
-	ir_node    *res;
-
+	ir_node *cond = get_Mux_sel(n);
 	if (!is_Cmp(cond))
 		return n;
-	left = get_Cmp_left(cond);
-	mode = get_irn_mode(left);
+
+	ir_node *left = get_Cmp_left(cond);
+	ir_mode *mode = get_irn_mode(left);
 	if (!mode_is_int(mode) && !mode_is_reference(mode))
 		return n;
-	dest_mode = get_irn_mode(n);
+
+	ir_mode *dest_mode = get_irn_mode(n);
 	if (!mode_is_int(dest_mode) && !mode_is_reference(dest_mode))
 		return n;
-	right     = get_Cmp_right(cond);
-	relation  = get_Cmp_relation(cond) & ~ir_relation_unordered;
+
+	ir_node     *right    = get_Cmp_right(cond);
+	ir_relation  relation = get_Cmp_relation(cond) &~ir_relation_unordered;
 	if (get_mode_size_bits(mode) >= get_mode_size_bits(dest_mode)
 	    && !(mode_is_signed(mode) && is_Const(right) && is_Const_null(right)
 	         && relation != ir_relation_greater))
 	    return n;
 
-	need_not = false;
+	bool     need_not = false;
+	ir_node *a;
+	ir_node *b;
 	switch (relation) {
 	case ir_relation_less:
 		/* a < b  ->  (a - b) >> 31 */
@@ -5530,19 +5519,19 @@ static ir_node *transform_Mux_set(ir_node *n)
 		return n;
 	}
 
-	dbgi      = get_irn_dbg_info(n);
-	block     = get_nodes_block(n);
-	irg       = get_irn_irg(block);
-	bits      = get_mode_size_bits(dest_mode);
-	tv        = new_tarval_from_long(bits-1, mode_Iu);
-	shift_cnt = new_rd_Const(dbgi, irg, tv);
+	dbg_info  *dbgi      = get_irn_dbg_info(n);
+	ir_node   *block     = get_nodes_block(n);
+	ir_graph  *irg       = get_irn_irg(block);
+	unsigned   bits      = get_mode_size_bits(dest_mode);
+	ir_tarval *tv        = new_tarval_from_long(bits-1, mode_Iu);
+	ir_node   *shift_cnt = new_rd_Const(dbgi, irg, tv);
 
 	if (mode != dest_mode) {
 		a = new_rd_Conv(dbgi, block, a, dest_mode);
 		b = new_rd_Conv(dbgi, block, b, dest_mode);
 	}
 
-	res = new_rd_Sub(dbgi, block, a, b, dest_mode);
+	ir_node *res = new_rd_Sub(dbgi, block, a, b, dest_mode);
 	if (need_not) {
 		res = new_rd_Not(dbgi, block, res, dest_mode);
 	}
