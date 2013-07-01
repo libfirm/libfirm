@@ -27,6 +27,16 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
+/* We represent a parallel copy/register transfer graph as follows.  As usual,
+ * nodes are registers and edges are move operations.
+ * - We exploit the fact that each node has at most one incoming edge and
+ *   save the reverse graph: parcopy[n] contains the node index of the
+ *   *source* node of n.
+ * - We mark nodes that do not have an incoming edge with parcopy[n] == n_regs.
+ * - Self-loops are explicitely represented as parcopy[n] == n.
+ * - Additionally, we maintain a second array n_used where n_used[n] gives us
+ *   the number of *outgoing* edges of node n.
+ */
 static void impl_parcopy(const arch_register_class_t *cls,
                          ir_node *before, unsigned *parcopy, unsigned *n_used,
                          ir_node **phis, ir_node **phi_args, unsigned pred_nr)
@@ -41,24 +51,22 @@ static void impl_parcopy(const arch_register_class_t *cls,
 
 	/* Step 1: Search register transfer graph for nodes with > 1 outgoing edge.
 	 * Goal: Establish invariant that each node has <= 1 outgoing edges by
-	 *       recording restore copies (and inserting them later).
-	 */
+	 *       recording restore copies (and inserting them later). */
 	for (unsigned to_reg = 0; to_reg < n_regs; ++to_reg) {
 		const unsigned from_reg    = parcopy[to_reg];
 		unsigned       from_n_used = n_used[from_reg];
 
-		/* If from_reg has > 1 outgoing edge, we keep this edge and implement
-		 * all outgoing edges with restore copies EXCEPT if the source of
-		 * the current edge has a self-loop.
-		 * In this case, we cannot make the current edge part of a Perm node
-		 * as it would violate its invariant.  Thus, we use a restore copy.
-		 * TODO: Clever heuristics which edge to keep?
-		 */
-		if (from_n_used > 1
-		    && (parcopy[from_reg] != from_reg || from_reg == to_reg)) {
+		if (from_reg == n_regs)
+			continue;
+
+		/* Decide if the current edge should be kept or not.
+		 * We keep an edge if it is a self-loop or if it is the last outgoing
+		 * edge of a node with multiple outgoing edges.
+		 * TODO: More clever heuristics which edge to keep? */
+		if (from_reg == to_reg || from_n_used == 1) {
 			/* Keep from_reg -> to_reg and cut every other edge. */
 
-			for (unsigned dst = 0; dst < n_regs && from_n_used > 1; ++dst) {
+			for (unsigned dst = 0; dst < n_regs; ++dst) {
 				if (dst != to_reg && parcopy[dst] == from_reg) {
 					/* Note: As we insert restore copies *after* the Perm node,
 					 * we record to_reg as the source of the copy. */
@@ -67,13 +75,17 @@ static void impl_parcopy(const arch_register_class_t *cls,
 					++num_restores;
 
 					/* Mark as done. */
-					parcopy[dst] = dst;
-					--from_n_used;
+					parcopy[dst] = n_regs;
+					if (dst > to_reg) {
+						--from_n_used;
+					}
 				}
 			}
 
 			assert(from_n_used == 1);
 			n_used[from_reg] = 1;
+		} else {
+			--n_used[from_reg];
 		}
 	}
 
@@ -81,7 +93,7 @@ static void impl_parcopy(const arch_register_class_t *cls,
 	/* Check invariant. */
 	for (unsigned dst = 0; dst < n_regs; ++dst) {
 		const unsigned src = parcopy[dst];
-		assert(src == dst || n_used[src] == 1);
+		assert(src == n_regs || n_used[src] == 1);
 	}
 #endif
 
@@ -90,7 +102,7 @@ static void impl_parcopy(const arch_register_class_t *cls,
 	ir_node  *perm_ins[n_regs];
 	for (unsigned dst = 0; dst < n_regs; ++dst) {
 		const unsigned src = parcopy[dst];
-		if (src != dst) {
+		if (src != n_regs && src != dst) {
 			assert(phi_args[src] != NULL);
 			perm_ins[perm_size++] = phi_args[src];
 		}
@@ -104,7 +116,7 @@ static void impl_parcopy(const arch_register_class_t *cls,
 		unsigned i = 0;
 		for (unsigned dst = 0; dst < n_regs; ++dst) {
 			const unsigned src = parcopy[dst];
-			if (src == dst)
+			if (src == n_regs || src == dst)
 				continue;
 
 			ir_node               *in   = perm_ins[i];
@@ -165,9 +177,10 @@ static void insert_shuffle_code_walker(ir_node *block, void *data)
 		memset(phis,     0, n_regs * sizeof(phis[0]));
 		memset(phi_args, 0, n_regs * sizeof(phi_args[0]));
 		for (unsigned i = 0; i < n_regs; ++i) {
-			parcopy[i] = i;
+			parcopy[i] = n_regs;
 		}
 
+		bool need_perm = false;
 		for (ir_node *phi = sched_first(block); is_Phi(phi);
 		     phi = sched_next(phi)) {
 
@@ -178,17 +191,22 @@ static void insert_shuffle_code_walker(ir_node *block, void *data)
 			ir_node        *arg         = get_irn_n(phi, pred_nr);
 			const unsigned  arg_reg_idx = arch_get_irn_register(arg)->index;
 
-			assert(parcopy[phi_reg_idx] == phi_reg_idx);
+			assert(parcopy[phi_reg_idx] == n_regs);
 			parcopy[phi_reg_idx] = arg_reg_idx;
 			++n_used[arg_reg_idx];
 
+			if (phi_reg_idx != arg_reg_idx)
+				need_perm = true;
+
 			/* If arg is live, we must keep it in its current register.
 			 * This is done by adding a self-loop to the register transfer
-			 * graph; in our implementation by incrementing n_used[arg_reg_idx].
+			 * graph.
 			 * Because we may see the same arg multiple times, we use a bitset
 			 * instead of directly incrementing n_used.
 			 */
 			if (be_is_live_in(lv, block, arg)) {
+				assert(parcopy[arg_reg_idx] == n_regs || parcopy[arg_reg_idx] == arg_reg_idx);
+				parcopy[arg_reg_idx] = arg_reg_idx;
 				bitset_set(keep_val, arg_reg_idx);
 			}
 
@@ -198,13 +216,14 @@ static void insert_shuffle_code_walker(ir_node *block, void *data)
 			phi_args[arg_reg_idx] = arg;
 		}
 
-		for (unsigned i = 0; i < n_regs; ++i) {
-			n_used[i] += bitset_is_set(keep_val, i);
-		}
+		if (need_perm) {
+			for (unsigned i = 0; i < n_regs; ++i)
+				n_used[i] += bitset_is_set(keep_val, i);
 
-		ir_node *pred   = get_Block_cfgpred_block(block, pred_nr);
-		ir_node *before = be_get_end_of_block_insertion_point(pred);
-		impl_parcopy(cls, before, parcopy, n_used, phis, phi_args, pred_nr);
+			ir_node *pred   = get_Block_cfgpred_block(block, pred_nr);
+			ir_node *before = be_get_end_of_block_insertion_point(pred);
+			impl_parcopy(cls, before, parcopy, n_used, phis, phi_args, pred_nr);
+		}
 	}
 }
 
