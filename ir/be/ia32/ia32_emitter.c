@@ -355,7 +355,8 @@ typedef enum ia32_emit_mod_t {
 	EMIT_LONG         = 1U << 2,
 	EMIT_HIGH_REG     = 1U << 3,
 	EMIT_LOW_REG      = 1U << 4,
-	EMIT_16BIT_REG    = 1U << 5
+	EMIT_16BIT_REG    = 1U << 5,
+	EMIT_SHIFT_COMMA  = 1U << 6,
 } ia32_emit_mod_t;
 ENUM_BITSET(ia32_emit_mod_t)
 
@@ -459,6 +460,7 @@ void ia32_emitf(ir_node const *const node, char const *fmt, ...)
 			case '>': mod |= EMIT_HIGH_REG;     break;
 			case '<': mod |= EMIT_LOW_REG;      break;
 			case '^': mod |= EMIT_16BIT_REG;    break;
+			case ',': mod |= EMIT_SHIFT_COMMA;  break;
 			default:
 				goto end_of_mods;
 			}
@@ -582,9 +584,18 @@ destination_operand:
 			case 'I':
 				imm = node;
 emit_I:
+				if (mod & EMIT_SHIFT_COMMA) {
+					const ia32_immediate_attr_t *attr
+						= get_ia32_immediate_attr_const(imm);
+					if (attr->symconst == NULL && attr->offset == 1)
+						break;
+				}
 				if (!(mod & EMIT_ALTERNATE_AM))
 					be_emit_char('$');
 				emit_ia32_Immediate_no_prefix(imm);
+				if (mod & EMIT_SHIFT_COMMA) {
+					be_emit_char(',');
+				}
 				break;
 
 			case 'L':
@@ -633,6 +644,9 @@ emit_R:
 					emit_16bit_register(reg);
 				} else {
 					emit_register(reg, mod & EMIT_RESPECT_LS ? get_ia32_ls_mode(node) : NULL);
+				}
+				if (mod & EMIT_SHIFT_COMMA) {
+					be_emit_char(',');
 				}
 				break;
 

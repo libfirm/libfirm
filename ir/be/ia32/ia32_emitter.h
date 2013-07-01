@@ -45,6 +45,8 @@
  * l modifier for %lu and %ld
  * > modifier to output high 8bit register (ah, bh)
  * < modifier to output low 8bit register (al, bl)
+ * , modifier output comma after operand, leave out operand if it is 1
+ *    (used for shift nodes)
  */
 void ia32_emitf(ir_node const *node, char const *fmt, ...);
 
