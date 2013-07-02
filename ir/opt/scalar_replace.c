@@ -83,7 +83,8 @@ static int path_cmp(const void *elt, const void *key, size_t size)
 	const path_t *p2 = (const path_t*)key;
 	(void) size;
 
-	/* we can use memcmp here, because identical tarvals should have identical addresses */
+	/* we can use memcmp here, because identical tarvals should have identical
+	 * addresses */
 	return memcmp(p1->path, p2->path, p1->path_len * sizeof(p1->path[0]));
 }
 
@@ -107,9 +108,7 @@ static int ent_cmp(const void *elt, const void *key, size_t size)
 static unsigned path_hash(const path_t *path)
 {
 	unsigned hash = 0;
-	unsigned i;
-
-	for (i = 0; i < path->path_len; ++i)
+	for (unsigned i = 0; i < path->path_len; ++i)
 		hash ^= (unsigned)PTR_TO_INT(path->path[i].ent);
 
 	return hash >> 4;
@@ -122,11 +121,8 @@ static unsigned path_hash(const path_t *path)
  */
 static bool is_const_sel(ir_node *sel)
 {
-	int i, n = get_Sel_n_indexs(sel);
-
-	for (i = 0; i < n; ++i) {
+	for (int i = 0, n = get_Sel_n_indexs(sel); i < n; ++i) {
 		ir_node *idx = get_Sel_index(sel, i);
-
 		if (!is_Const(idx))
 			return false;
 	}
@@ -168,11 +164,6 @@ static bool check_load_store_mode(ir_mode *mode, ir_mode *ent_mode)
  */
 bool is_address_taken(ir_node *sel)
 {
-	int       input_nr;
-	ir_mode   *emode, *mode;
-	ir_node   *value;
-	ir_entity *ent;
-
 	if (! is_const_sel(sel))
 		return true;
 
@@ -180,43 +171,44 @@ bool is_address_taken(ir_node *sel)
 		ir_node *succ = get_irn_out(sel, i);
 
 		switch (get_irn_opcode(succ)) {
-		case iro_Load:
+		case iro_Load: {
 			/* do not remove volatile variables */
 			if (get_Load_volatility(succ) == volatility_is_volatile)
 				return true;
 			/* check if this load is not a hidden conversion */
-			mode = get_Load_mode(succ);
-			ent = get_Sel_entity(sel);
-			emode = get_type_mode(get_entity_type(ent));
+			ir_mode   *mode  = get_Load_mode(succ);
+			ir_entity *ent   = get_Sel_entity(sel);
+			ir_mode   *emode = get_type_mode(get_entity_type(ent));
 			if (! check_load_store_mode(mode, emode))
 				return true;
 			break;
+		}
 
-		case iro_Store:
+		case iro_Store: {
 			/* check that Sel is not the Store's value */
-			value = get_Store_value(succ);
+			ir_node *value = get_Store_value(succ);
 			if (value == sel)
 				return true;
 			/* do not remove volatile variables */
 			if (get_Store_volatility(succ) == volatility_is_volatile)
 				return true;
 			/* check if this Store is not a hidden conversion */
-			mode = get_irn_mode(value);
-			ent = get_Sel_entity(sel);
-			emode = get_type_mode(get_entity_type(ent));
+			ir_mode   *mode  = get_irn_mode(value);
+			ir_entity *ent   = get_Sel_entity(sel);
+			ir_mode   *emode = get_type_mode(get_entity_type(ent));
 			if (! check_load_store_mode(mode, emode))
 				return true;
 			break;
+		}
 
 		case iro_Sel: {
-			int       res;
 			ir_entity *entity = get_Sel_entity(succ);
 			/* we can't handle unions correctly yet -> address taken */
 			if (is_Union_type(get_entity_owner(entity)))
 				return true;
 
 			/* Check the Sel successor of Sel */
-			res = is_address_taken(succ);
+			bool res = is_address_taken(succ);
 			if (res)
 				return true;
 			break;
@@ -232,7 +224,7 @@ bool is_address_taken(ir_node *sel)
 			return true;
 
 		case iro_Id: {
-			int res = is_address_taken(succ);
+			bool res = is_address_taken(succ);
 			if (res)
 				return true;
 			break;
@@ -240,19 +232,18 @@ bool is_address_taken(ir_node *sel)
 
 		case iro_Tuple:
 			/* Non-optimized Tuple, happens in inlining */
-			for (input_nr = get_Tuple_n_preds(succ) - 1; input_nr >= 0; --input_nr) {
+			for (int input_nr = get_Tuple_n_preds(succ); input_nr-- > 0; ) {
 				ir_node *pred = get_Tuple_pred(succ, input_nr);
+				if (pred != sel)
+					continue;
+				/* we found one input */
+				for (unsigned k = get_irn_n_outs(succ); k-- > 0; ) {
+					ir_node *proj = get_irn_out(succ, k);
 
-				if (pred == sel) {
-					/* we found one input */
-					for (unsigned k = get_irn_n_outs(succ); k-- > 0; ) {
-						ir_node *proj = get_irn_out(succ, k);
-
-						if (is_Proj(proj) && get_Proj_proj(proj) == input_nr) {
-							int res = is_address_taken(proj);
-							if (res)
-								return true;
-						}
+					if (is_Proj(proj) && get_Proj_proj(proj) == input_nr) {
+						bool res = is_address_taken(proj);
+						if (res)
+							return true;
 					}
 				}
 			}
@@ -275,7 +266,6 @@ bool is_address_taken(ir_node *sel)
 static bool link_all_leave_sels(ir_entity *ent, ir_node *sel)
 {
 	bool is_leave = true;
-
 	for (unsigned i = get_irn_n_outs(sel); i-- > 0; ) {
 		ir_node *succ = get_irn_out(sel, i);
 
@@ -322,31 +312,24 @@ static void *ADDRESS_TAKEN = &_x;
  */
 static int find_possible_replacements(ir_graph *irg)
 {
-	ir_node *irg_frame;
-	ir_type *frame_tp;
-	size_t  mem_idx;
-	long    static_link_arg;
-	int     res = 0;
-
-	/*
-	 * First, clear the link field of all interesting entities.
-	 */
-	frame_tp = get_irg_frame_type(irg);
-	for (mem_idx = get_class_n_members(frame_tp); mem_idx > 0;) {
+	/* First, clear the link field of all interesting entities. */
+	ir_type *frame_tp = get_irg_frame_type(irg);
+	for (size_t mem_idx = get_class_n_members(frame_tp); mem_idx > 0;) {
 		ir_entity *ent = get_class_member(frame_tp, --mem_idx);
 		set_entity_link(ent, NULL);
 	}
 
 	/* check for inner functions:
 	 * FIXME: need a way to get the argument position for the static link */
-	static_link_arg = 0;
-	for (mem_idx = get_class_n_members(frame_tp); mem_idx > 0;) {
+	long static_link_arg = 0;
+	for (size_t mem_idx = get_class_n_members(frame_tp); mem_idx > 0;) {
 		ir_entity *ent = get_class_member(frame_tp, --mem_idx);
 		if (is_method_entity(ent)) {
 			ir_graph *inner_irg = get_entity_irg(ent);
 			ir_node  *args;
 
-			assure_irg_properties(inner_irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
+			assure_irg_properties(inner_irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS
+			                               | IR_GRAPH_PROPERTY_NO_TUPLES);
 			args = get_irg_args(inner_irg);
 			for (unsigned j = get_irn_n_outs(args); j-- > 0; ) {
 				ir_node *arg = get_irn_out(args, j);
@@ -374,26 +357,24 @@ static int find_possible_replacements(ir_graph *irg)
 	 * isn't a scalar replacement set the link of this entity
 	 * equal ADDRESS_TAKEN.
 	 */
-	irg_frame = get_irg_frame(irg);
+	ir_node *irg_frame = get_irg_frame(irg);
+	int      res       = 0;
 	for (unsigned i = get_irn_n_outs(irg_frame); i-- > 0; ) {
 		ir_node *succ = get_irn_out(irg_frame, i);
 
 		if (is_Sel(succ)) {
-			ir_entity *ent = get_Sel_entity(succ);
-			ir_type *ent_type;
-
 			/* we are only interested in entities on the frame, NOT
 			   on the value type */
+			ir_entity *ent = get_Sel_entity(succ);
 			if (get_entity_owner(ent) != frame_tp)
 				continue;
-
 			if (get_entity_link(ent) == ADDRESS_TAKEN)
 				continue;
 
-			ent_type = get_entity_type(ent);
-
 			/* we can handle arrays, structs and atomic types yet */
-			if (is_Array_type(ent_type) || is_Struct_type(ent_type) || is_atomic_type(ent_type)) {
+			ir_type *ent_type = get_entity_type(ent);
+			if (is_Array_type(ent_type) || is_Struct_type(ent_type)
+			    || is_atomic_type(ent_type)) {
 				if (is_address_taken(succ)) {
 					 /* killing one */
 					if (get_entity_link(ent))
@@ -420,27 +401,24 @@ static int find_possible_replacements(ir_graph *irg)
  */
 static path_t *find_path(ir_node *sel, size_t len)
 {
-	size_t pos;
-	int i, n;
-	path_t *res;
-	ir_node *pred = get_Sel_ptr(sel);
-
 	/* the current Sel node will add some path elements */
-	n    = get_Sel_n_indexs(sel);
+	int n = get_Sel_n_indexs(sel);
 	len += n + 1;
 
+	path_t  *res;
+	ir_node *pred = get_Sel_ptr(sel);
 	if (! is_Sel(pred)) {
 		/* we found the root */
 		res = XMALLOCF(path_t, path, len);
 		res->path_len = len;
-	} else
+	} else {
 		res = find_path(pred, len);
+	}
 
 	assert(len <= res->path_len);
-	pos = res->path_len - len;
-
+	size_t pos = res->path_len - len;
 	res->path[pos++].ent = get_Sel_entity(sel);
-	for (i = 0; i < n; ++i) {
+	for (int i = 0; i < n; ++i) {
 		ir_node *index = get_Sel_index(sel, i);
 
 		res->path[pos++].tv = get_Const_tarval(index);
@@ -463,20 +441,20 @@ static path_t *find_path(ir_node *sel, size_t len)
  */
 static unsigned allocate_value_numbers(pset *sels, ir_entity *ent, unsigned vnum, ir_mode ***modes)
 {
-	ir_node *sel, *next;
-	path_t *key, *path;
 	set *pathes = new_set(path_cmp, 8);
 
 	DB((dbg, SET_LEVEL_3, "  Visiting Sel nodes of entity %+F\n", ent));
 	/* visit all Sel nodes in the chain of the entity */
-	for (sel = (ir_node*)get_entity_link(ent); sel != NULL; sel = next) {
+	ir_node *next;
+	for (ir_node *sel = (ir_node*)get_entity_link(ent); sel != NULL;
+	     sel = next) {
 		next = (ir_node*)get_irn_link(sel);
 
 		/* we must mark this sel for later */
 		pset_insert_ptr(sels, sel);
 
-		key  = find_path(sel, 0);
-		path = set_find(path_t, pathes, key, path_size(key), path_hash(key));
+		path_t *key  = find_path(sel, 0);
+		path_t *path = set_find(path_t, pathes, key, path_size(key), path_hash(key));
 
 		if (path) {
 			set_vnum(sel, path->vnum);
@@ -497,17 +475,14 @@ static unsigned allocate_value_numbers(pset *sels, ir_entity *ent, unsigned vnum
 
 #ifdef DEBUG_libfirm
 			/* Debug output */
-			{
-				unsigned i;
-				DB((dbg, SET_LEVEL_2, "  %s", get_entity_name(key->path[0].ent)));
-				for (i = 1; i < key->path_len; ++i) {
-					if (is_entity(key->path[i].ent))
-						DB((dbg, SET_LEVEL_2, ".%s", get_entity_name(key->path[i].ent)));
-					else
-						DB((dbg, SET_LEVEL_2, "[%ld]", get_tarval_long(key->path[i].tv)));
-				}
-				DB((dbg, SET_LEVEL_2, " = %u (%s)\n", PTR_TO_INT(get_irn_link(sel)), get_mode_name((*modes)[key->vnum])));
+			DB((dbg, SET_LEVEL_2, "  %s", get_entity_name(key->path[0].ent)));
+			for (unsigned i = 1; i < key->path_len; ++i) {
+				if (is_entity(key->path[i].ent))
+					DB((dbg, SET_LEVEL_2, ".%s", get_entity_name(key->path[i].ent)));
+				else
+					DB((dbg, SET_LEVEL_2, "[%ld]", get_tarval_long(key->path[i].tv)));
 			}
+			DB((dbg, SET_LEVEL_2, " = %u (%s)\n", PTR_TO_INT(get_irn_link(sel)), get_mode_name((*modes)[key->vnum])));
 #endif /* DEBUG_libfirm */
 		}
 		free(key);
@@ -534,13 +509,10 @@ static void walker(ir_node *node, void *ctx)
 {
 	env_t    *env = (env_t*)ctx;
 	ir_graph *irg = get_irn_irg(node);
-	ir_node  *addr, *block, *mem, *val;
-	ir_mode  *mode;
-	unsigned vnum;
 
 	if (is_Load(node)) {
 		/* a load, check if we can resolve it */
-		addr = get_Load_ptr(node);
+		ir_node *addr = get_Load_ptr(node);
 
 		DB((dbg, SET_LEVEL_3, "  checking %+F for replacement ", node));
 		if (! is_Sel(addr)) {
@@ -554,16 +526,16 @@ static void walker(ir_node *node, void *ctx)
 		}
 
 		/* ok, we have a Load that will be replaced */
-		vnum = get_vnum(addr);
+		unsigned vnum = get_vnum(addr);
 		assert(vnum < env->nvals);
 
 		DB((dbg, SET_LEVEL_3, "replacing by value %u\n", vnum));
 
-		block = get_nodes_block(node);
+		ir_node *block = get_nodes_block(node);
 		set_cur_block(block);
 
 		/* check, if we can replace this Load */
-		val = get_value(vnum, env->modes[vnum]);
+		ir_node *val = get_value(vnum, env->modes[vnum]);
 
 		/* Beware: A Load can contain a hidden conversion in Firm.
 		This happens for instance in the following code:
@@ -572,11 +544,11 @@ static void walker(ir_node *node, void *ctx)
 		 unsigned j = *(unsigned *)&i;
 
 		Handle this here. */
-		mode = get_Load_mode(node);
+		ir_mode *mode = get_Load_mode(node);
 		if (mode != get_irn_mode(val))
 			val = new_rd_Conv(get_irn_dbg_info(node), block, val, mode);
 
-		mem = get_Load_mem(node);
+		ir_node *mem = get_Load_mem(node);
 		ir_node *const in[] = {
 			[pn_Load_M]         = mem,
 			[pn_Load_res]       = val,
@@ -588,7 +560,7 @@ static void walker(ir_node *node, void *ctx)
 		DB((dbg, SET_LEVEL_3, "  checking %+F for replacement ", node));
 
 		/* a Store always can be replaced */
-		addr = get_Store_ptr(node);
+		ir_node *addr = get_Store_ptr(node);
 
 		if (! is_Sel(addr)) {
 			DB((dbg, SET_LEVEL_3, "no Sel input (%+F)\n", addr));
@@ -600,22 +572,22 @@ static void walker(ir_node *node, void *ctx)
 			return;
 		}
 
-		vnum = get_vnum(addr);
+		unsigned vnum = get_vnum(addr);
 		assert(vnum < env->nvals);
 
 		DB((dbg, SET_LEVEL_3, "replacing by value %u\n", vnum));
 
-		block = get_nodes_block(node);
+		ir_node *block = get_nodes_block(node);
 		set_cur_block(block);
 
 		/* Beware: A Store can contain a hidden conversion in Firm. */
-		val = get_Store_value(node);
+		ir_node *val = get_Store_value(node);
 		if (get_irn_mode(val) != env->modes[vnum])
 			val = new_rd_Conv(get_irn_dbg_info(node), block, val, env->modes[vnum]);
 
 		set_value(vnum, val);
 
-		mem = get_Store_mem(node);
+		ir_node *mem = get_Store_mem(node);
 		ir_node *const in[] = {
 			[pn_Store_M]         = mem,
 			[pn_Store_X_regular] = new_r_Jmp(block),
@@ -636,19 +608,17 @@ static void walker(ir_node *node, void *ctx)
 static void do_scalar_replacements(ir_graph *irg, pset *sels, unsigned nvals,
                                    ir_mode **modes)
 {
-	env_t env;
-
 	ssa_cons_start(irg, (int)nvals);
-
-	env.nvals = nvals;
-	env.modes = modes;
-	env.sels  = sels;
 
 	/*
 	 * second step: walk over the graph blockwise in topological order
 	 * and fill the array as much as possible.
 	 */
 	DB((dbg, SET_LEVEL_3, "Substituting Loads and Stores in %+F\n", irg));
+	env_t env;
+	env.nvals = nvals;
+	env.modes = modes;
+	env.sels  = sels;
 	irg_walk_blkwise_graph(irg, NULL, walker, &env);
 
 	ssa_cons_finish(irg);
@@ -661,17 +631,9 @@ static void do_scalar_replacements(ir_graph *irg, pset *sels, unsigned nvals,
  */
 void scalar_replacement_opt(ir_graph *irg)
 {
-	unsigned  nvals;
-	scalars_t key;
-	ir_node   *irg_frame;
-	ir_mode   **modes;
-	set       *set_ent;
-	pset      *sels;
-	ir_type   *frame_tp;
-
-	assure_irg_properties(irg,
-		IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
-		| IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
+	                         | IR_GRAPH_PROPERTY_CONSISTENT_OUTS
+	                         | IR_GRAPH_PROPERTY_NO_TUPLES);
 
 	/* we use the link field to store the VNUM */
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
@@ -682,12 +644,12 @@ void scalar_replacement_opt(ir_graph *irg)
 		DB((dbg, SET_LEVEL_1, "Scalar Replacement: %+F\n", irg));
 
 		/* Insert in set the scalar replacements. */
-		irg_frame = get_irg_frame(irg);
-		nvals     = 0;
-		modes     = NEW_ARR_F(ir_mode *, 16);
-		set_ent   = new_set(ent_cmp, 8);
-		sels      = pset_new_ptr(8);
-		frame_tp  = get_irg_frame_type(irg);
+		ir_node  *irg_frame = get_irg_frame(irg);
+		unsigned  nvals     = 0;
+		ir_mode **modes     = NEW_ARR_F(ir_mode *, 16);
+		set      *set_ent   = new_set(ent_cmp, 8);
+		pset     *sels      = pset_new_ptr(8);
+		ir_type  *frame_tp  = get_irg_frame_type(irg);
 
 		for (unsigned i = get_irn_n_outs(irg_frame); i-- > 0; ) {
 			ir_node *succ = get_irn_out(irg_frame, i);
@@ -704,7 +666,8 @@ void scalar_replacement_opt(ir_graph *irg)
 				if (get_entity_link(ent) == NULL || get_entity_link(ent) == ADDRESS_TAKEN)
 					continue;
 
-				key.ent       = ent;
+				scalars_t key;
+				key.ent = ent;
 				(void)set_insert(scalars_t, set_ent, &key, sizeof(key), hash_ptr(key.ent));
 
 #ifdef DEBUG_libfirm
