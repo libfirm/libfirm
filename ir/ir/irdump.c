@@ -1499,6 +1499,8 @@ static void dump_graph_info(FILE *F, ir_graph *irg)
 		fprintf(F, " no_critical_edges");
 	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_NO_BADS))
 		fprintf(F, " no_bads");
+	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_NO_TUPLES))
+		fprintf(F, " no_tuples");
 	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE))
 		fprintf(F, " no_unreachable_code");
 	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_ONE_RETURN))
@@ -1507,6 +1509,8 @@ static void dump_graph_info(FILE *F, ir_graph *irg)
 		fprintf(F, " consistent_dominance");
 	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE))
 		fprintf(F, " consistent_postdominance");
+	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE_FRONTIERS))
+		fprintf(F, " consistent_dominance_frontiers");
 	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES))
 		fprintf(F, " consistent_out_edges");
 	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS))
@@ -1515,6 +1519,8 @@ static void dump_graph_info(FILE *F, ir_graph *irg)
 		fprintf(F, " consistent_loopinfo");
 	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE))
 		fprintf(F, " consistent_entity_usage");
+	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_MANY_RETURNS))
+		fprintf(F, " many_returns");
 	fprintf(F, "\"\n");
 }
 
