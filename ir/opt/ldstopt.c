@@ -305,203 +305,6 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 	}
 }
 
-/**
- * Return the Selection index of a Sel node from dimension n
- */
-static long get_Sel_array_index_long(ir_node *n, int dim)
-{
-	ir_node *index = get_Sel_index(n, dim);
-	return get_tarval_long(get_Const_tarval(index));
-}
-
-typedef struct path_entry {
-	ir_entity         *ent;
-	struct path_entry *next;
-	size_t            index;
-} path_entry;
-
-static ir_node *rec_find_compound_ent_value(ir_node *ptr, path_entry *next)
-{
-	path_entry       entry, *p;
-	ir_entity        *ent, *field;
-	ir_initializer_t *initializer;
-	ir_tarval        *tv;
-	ir_type          *tp;
-	size_t           n;
-
-	entry.next = next;
-	if (is_SymConst(ptr)) {
-		/* found the root */
-		ent         = get_SymConst_entity(ptr);
-		initializer = get_entity_initializer(ent);
-		for (p = next; p != NULL;) {
-			if (initializer->kind != IR_INITIALIZER_COMPOUND)
-				return NULL;
-			n  = get_initializer_compound_n_entries(initializer);
-			tp = get_entity_type(ent);
-
-			if (is_Array_type(tp)) {
-				ent = get_array_element_entity(tp);
-				if (ent != p->ent) {
-					/* a missing [0] */
-					if (0 >= n)
-						return NULL;
-					initializer = get_initializer_compound_value(initializer, 0);
-					continue;
-				}
-			}
-			if (p->index >= n)
-				return NULL;
-			initializer = get_initializer_compound_value(initializer, p->index);
-
-			ent = p->ent;
-			p   = p->next;
-		}
-		tp = get_entity_type(ent);
-		while (is_Array_type(tp)) {
-			ent = get_array_element_entity(tp);
-			tp = get_entity_type(ent);
-			/* a missing [0] */
-			n  = get_initializer_compound_n_entries(initializer);
-			if (0 >= n)
-				return NULL;
-			initializer = get_initializer_compound_value(initializer, 0);
-		}
-
-		switch (initializer->kind) {
-		case IR_INITIALIZER_CONST:
-			return get_initializer_const_value(initializer);
-		case IR_INITIALIZER_TARVAL:
-		case IR_INITIALIZER_NULL:
-		default:
-			return NULL;
-		}
-	} else if (is_Sel(ptr)) {
-		entry.ent = field = get_Sel_entity(ptr);
-		tp = get_entity_owner(field);
-		if (is_Array_type(tp)) {
-			assert(get_Sel_n_indexs(ptr) == 1 && "multi dim arrays not implemented");
-			entry.index = get_Sel_array_index_long(ptr, 0) - get_array_lower_bound_int(tp, 0);
-		} else {
-			size_t i, n_members = get_compound_n_members(tp);
-			for (i = 0; i < n_members; ++i) {
-				if (get_compound_member(tp, i) == field)
-					break;
-			}
-			if (i >= n_members) {
-				/* not found: should NOT happen */
-				return NULL;
-			}
-			entry.index = i;
-		}
-		return rec_find_compound_ent_value(get_Sel_ptr(ptr), &entry);
-	}  else if (is_Add(ptr)) {
-		ir_mode  *mode;
-		unsigned pos;
-
-		{
-			ir_node *l = get_Add_left(ptr);
-			ir_node *r = get_Add_right(ptr);
-			if (is_Const(r)) {
-				ptr = l;
-				tv  = get_Const_tarval(r);
-			} else {
-				ptr = r;
-				tv  = get_Const_tarval(l);
-			}
-		}
-ptr_arith:
-		mode = get_tarval_mode(tv);
-
-		/* ptr must be a Sel or a SymConst, this was checked in find_constant_entity() */
-		if (is_Sel(ptr)) {
-			field = get_Sel_entity(ptr);
-		} else {
-			field = get_SymConst_entity(ptr);
-		}
-
-		/* count needed entries */
-		pos = 0;
-		for (ent = field;;) {
-			tp = get_entity_type(ent);
-			if (! is_Array_type(tp))
-				break;
-			ent = get_array_element_entity(tp);
-			++pos;
-		}
-		/* should be at least ONE entry */
-		if (pos == 0)
-			return NULL;
-
-		/* allocate the right number of entries */
-		NEW_ARR_A(path_entry, p, pos);
-
-		/* fill them up */
-		pos = 0;
-		for (ent = field;;) {
-			unsigned   size;
-			ir_tarval *sz, *tv_index, *tlower, *tupper;
-			long       index;
-			ir_node   *bound;
-
-			tp = get_entity_type(ent);
-			if (! is_Array_type(tp))
-				break;
-			ent = get_array_element_entity(tp);
-			p[pos].ent  = ent;
-			p[pos].next = &p[pos + 1];
-
-			size = get_type_size_bytes(get_entity_type(ent));
-			sz   = new_tarval_from_long(size, mode);
-
-			tv_index = tarval_div(tv, sz);
-			tv       = tarval_mod(tv, sz);
-
-			if (tv_index == tarval_bad || tv == tarval_bad)
-				return NULL;
-
-			assert(get_array_n_dimensions(tp) == 1 && "multiarrays not implemented");
-			bound  = get_array_lower_bound(tp, 0);
-			tlower = computed_value(bound);
-			bound  = get_array_upper_bound(tp, 0);
-			tupper = computed_value(bound);
-
-			if (tlower == tarval_bad || tupper == tarval_bad)
-				return NULL;
-
-			if (tarval_cmp(tv_index, tlower) == ir_relation_less)
-				return NULL;
-			if (tarval_cmp(tupper, tv_index) == ir_relation_less)
-				return NULL;
-
-			/* ok, bounds check finished */
-			index = get_tarval_long(tv_index);
-			p[pos].index = index;
-			++pos;
-		}
-		if (! tarval_is_null(tv)) {
-			/* hmm, wrong access */
-			return NULL;
-		}
-		p[pos - 1].next = next;
-		return rec_find_compound_ent_value(ptr, p);
-	} else if (is_Sub(ptr)) {
-		ir_node *l = get_Sub_left(ptr);
-		ir_node *r = get_Sub_right(ptr);
-
-		ptr = l;
-		tv  = get_Const_tarval(r);
-		tv  = tarval_neg(tv);
-		goto ptr_arith;
-	}
-	return NULL;
-}
-
-static ir_node *find_compound_ent_value(ir_node *ptr)
-{
-	return rec_find_compound_ent_value(ptr, NULL);
-}
-
 /* forward */
 static void reduce_node_usage(ir_node *ptr);
 
@@ -939,7 +742,7 @@ ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c)
 static unsigned optimize_load(ir_node *load)
 {
 	ldst_info_t *info = (ldst_info_t*)get_irn_link(load);
-	ir_node     *mem, *ptr, *value;
+	ir_node     *mem, *ptr;
 	ir_entity   *ent;
 	long        dummy;
 	unsigned    res = 0;
@@ -968,7 +771,6 @@ static unsigned optimize_load(ir_node *load)
 		return res | DF_CHANGED;
 	}
 
-	value = NULL;
 	/* check if we can determine the entity that will be loaded */
 	ent = find_constant_entity(ptr);
 	if (ent != NULL
@@ -989,40 +791,6 @@ static unsigned optimize_load(ir_node *load)
 			info->projs[pn_Load_X_regular] = NULL;
 			res |= CF_CHANGED;
 		}
-
-		if (get_entity_linkage(ent) & IR_LINKAGE_CONSTANT) {
-			if (has_entity_initializer(ent)) {
-				/* new style initializer */
-				value = find_compound_ent_value(ptr);
-			}
-			if (value != NULL) {
-				value = can_replace_load_by_const(load, value);
-			}
-		}
-	}
-	if (value != NULL) {
-		/* we completely replace the load by this value */
-		if (info->projs[pn_Load_X_except]) {
-			ir_graph *irg = get_irn_irg(load);
-			exchange(info->projs[pn_Load_X_except], new_r_Bad(irg, mode_X));
-			info->projs[pn_Load_X_except] = NULL;
-			res |= CF_CHANGED;
-		}
-		if (info->projs[pn_Load_X_regular]) {
-			exchange(info->projs[pn_Load_X_regular], new_r_Jmp(get_nodes_block(load)));
-			info->projs[pn_Load_X_regular] = NULL;
-			res |= CF_CHANGED;
-		}
-		if (info->projs[pn_Load_M]) {
-			exchange(info->projs[pn_Load_M], mem);
-			res |= DF_CHANGED;
-		}
-		if (info->projs[pn_Load_res]) {
-			exchange(info->projs[pn_Load_res], value);
-			res |= DF_CHANGED;
-		}
-		kill_and_reduce_usage(load);
-		return res;
 	}
 
 	/* Check, if the address of this load is used more than once.

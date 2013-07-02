@@ -5828,8 +5828,261 @@ static ir_node *create_load_replacement_tuple(ir_node *n, ir_node *mem,
 		n_in                  = 4;
 		assert(pn_Load_max == 3);
 	}
-	ir_node  *tuple = new_r_Tuple(block, n_in, in);
-	return tuple;
+	return new_r_Tuple(block, n_in, in);
+}
+
+static bool sim_store(unsigned char *buf, ir_mode *mode, long offset,
+                      const ir_type *type,
+                      const ir_initializer_t *initializer)
+{
+	unsigned mode_size = get_mode_size_bytes(mode);
+	if (offset + (int)mode_size <= 0)
+		return true;
+	unsigned initializer_size = get_type_size_bytes(type);
+	assert(initializer_size > 0);
+	if (offset >= (long)initializer_size)
+		return true;
+
+	ir_tarval *tv;
+	switch (get_initializer_kind(initializer)) {
+	case IR_INITIALIZER_NULL:
+		return true;
+	case IR_INITIALIZER_TARVAL:
+		tv = get_initializer_tarval_value(initializer);
+handle_tv:;
+		ir_mode *tv_mode   = get_tarval_mode(tv);
+		ir_mode *type_mode = get_type_mode(type);
+		/* tv_mode != type_mode is forbidden, but we still have some frontends
+		 * constructing this case, so use a workaround for now */
+		if (tv_mode != type_mode)
+			tv = tarval_convert_to(tv, type_mode);
+
+		for (unsigned b = offset <= 0 ? 0 : (unsigned)offset;
+		     b < initializer_size; ++b) {
+			if (b > (unsigned)offset + mode_size)
+				continue;
+			unsigned idx = be_is_big_endian() ? (initializer_size-1-b) : b;
+			unsigned char v = get_tarval_sub_bits(tv, idx);
+			buf[b-offset] = v;
+		}
+		return true;
+	case IR_INITIALIZER_CONST: {
+		ir_node *val = get_initializer_const_value(initializer);
+		if (is_Const(val)) {
+			tv = get_Const_tarval(val);
+			goto handle_tv;
+		}
+		return false;
+	}
+	case IR_INITIALIZER_COMPOUND:
+		if (is_Array_type(type)) {
+			ir_type *el_type = get_array_element_type(type);
+			unsigned el_size = get_type_size_bytes(el_type);
+			assert(el_size > 0);
+			long offset0 = offset < 0 ? 0 : offset;
+			size_t first_idx = (size_t) ((unsigned)offset0 / el_size);
+			size_t last_idx  = (size_t)
+				((unsigned)(offset+get_mode_size_bytes(mode)-1) / el_size);
+			size_t n_entries
+				= get_initializer_compound_n_entries(initializer);
+			if (last_idx >= n_entries)
+				last_idx = n_entries-1;
+			for (size_t i = first_idx; i <= last_idx; ++i) {
+				const ir_initializer_t *sub_initializer
+					= get_initializer_compound_value(initializer, i);
+				long new_offset = offset - (i * el_size);
+				bool res
+					= sim_store(buf, mode, new_offset, el_type, sub_initializer);
+				if (!res)
+					return false;
+			}
+		} else {
+			assert(is_compound_type(type));
+			/* in case of unions there is no order in the compound offsets,
+			 * so we look at all of them in reverse order */
+			for (size_t i = 0, n_members = get_compound_n_members(type);
+			     i < n_members; ++i) {
+				const ir_entity *member      = get_compound_member(type, i);
+				const ir_type   *member_type = get_entity_type(member);
+				int              member_offs = get_entity_offset(member);
+				if ((unsigned)member_offs >= (unsigned)offset + get_mode_size_bytes(mode)
+				    || (unsigned)offset >= (unsigned)member_offs + get_type_size_bytes(member_type))
+				    continue;
+				if (i > get_initializer_compound_n_entries(initializer))
+					continue;
+				if (get_entity_bitfield_size(member) > 0)
+					return false;
+				const ir_initializer_t *sub_initializer
+					= get_initializer_compound_value(initializer, i);
+				long new_offset = offset - member_offs;
+				bool res = sim_store(buf, mode, new_offset, member_type,
+				                     sub_initializer);
+				if (!res)
+					return false;
+			}
+		}
+		return true;
+	}
+	panic("invalid initializer");
+}
+
+static ir_node *sim_store_load(const ir_type *type,
+                               const ir_initializer_t *initializer, long offset,
+                               ir_mode *mode, ir_graph *irg)
+{
+	unsigned       storage_size = get_mode_size_bytes(mode);
+	unsigned char *storage      = ALLOCANZ(unsigned char, storage_size);
+	if (!sim_store(storage, mode, offset, type, initializer))
+		return NULL;
+	ir_tarval *tv = new_tarval_from_bytes(storage, mode, be_is_big_endian());
+	if (tv == tarval_bad)
+		return NULL;
+	return new_r_Const(irg, tv);
+}
+
+static ir_node *extract_from_initializer(const ir_type *type,
+                                         const ir_initializer_t *initializer,
+                                         long offset, ir_mode *mode,
+                                         dbg_info *dbgi, ir_graph *irg)
+{
+	if (offset < 0)
+		return NULL;
+	int size = get_type_size_bytes(type);
+	if (offset >= size)
+		return NULL;
+
+	ir_tarval *tv;
+	switch (get_initializer_kind(initializer)) {
+	case IR_INITIALIZER_NULL: {
+		ir_tarval *tv = get_mode_null(mode);
+		return new_r_Const(irg, tv);
+	}
+	case IR_INITIALIZER_TARVAL: {
+		tv = get_initializer_tarval_value(initializer);
+handle_tv:;
+		ir_mode *tv_mode = get_tarval_mode(tv);
+		/* the following is forbidden, but some frontends construct it anyway */
+		if (tv_mode != get_type_mode(type))
+			return NULL;
+		/* the easy case */
+		if (offset == 0
+		    && get_mode_arithmetic(tv_mode) == get_mode_arithmetic(mode)
+		    && get_mode_size_bits(tv_mode) == get_mode_size_bits(mode)) {
+			if (tv_mode != mode)
+				tv = tarval_convert_to(tv, mode);
+			return new_r_Const(irg, tv);
+		}
+		/* TODO: more advanced variants */
+		break;
+	}
+	case IR_INITIALIZER_CONST: {
+		ir_node *val = get_initializer_const_value(initializer);
+		if (is_Const(val)) {
+			tv = get_Const_tarval(val);
+			goto handle_tv;
+		}
+
+		ir_mode *val_mode = get_irn_mode(val);
+		if (offset == 0
+		    && get_mode_arithmetic(val_mode) == get_mode_arithmetic(val_mode)
+		    && get_mode_size_bits(val_mode) == get_mode_size_bits(mode)) {
+			ir_node *start_block = get_irg_start_block(irg);
+			ir_node *res         = duplicate_subgraph(dbgi, val, start_block);
+			if (val_mode != mode)
+				res = new_rd_Conv(dbgi, start_block, res, mode);
+			return res;
+		}
+		/* we could do more complicated transformations with the expression tree
+		 * here, but it's unclear to me if that improves things */
+		return NULL;
+	}
+	case IR_INITIALIZER_COMPOUND: {
+		if (is_Array_type(type)) {
+			ir_type *el_type = get_array_element_type(type);
+			unsigned el_size = get_type_size_bytes(el_type);
+			assert(el_size > 0);
+			unsigned idx     = (unsigned)offset / el_size;
+			if ((size_t)idx >= get_initializer_compound_n_entries(initializer))
+				return NULL;
+			const ir_initializer_t *sub_initializer
+				= get_initializer_compound_value(initializer, (size_t)idx);
+			long new_offset = offset - (idx * el_size);
+			return extract_from_initializer(el_type, sub_initializer,
+			                                new_offset, mode, dbgi, irg);
+		} else {
+			assert(is_compound_type(type));
+			/* in case of unions there is no order in the compound offsets,
+			 * so we look at all of them in reverse order */
+			for (size_t i = get_compound_n_members(type); i-- > 0; ) {
+				const ir_entity *member      = get_compound_member(type, i);
+				const ir_type   *member_type = get_entity_type(member);
+				int              member_offs = get_entity_offset(member);
+				if ((unsigned)member_offs >= (unsigned)offset + get_mode_size_bytes(mode)
+				    || (unsigned)offset >= (unsigned)member_offs + get_type_size_bytes(member_type))
+				    continue;
+				if (get_entity_bitfield_size(member) > 0)
+					return NULL;
+				if (i > get_initializer_compound_n_entries(initializer))
+					continue;
+				const ir_initializer_t *sub_initializer
+					= get_initializer_compound_value(initializer, i);
+				if (get_initializer_kind(sub_initializer)
+				    == IR_INITIALIZER_NULL)
+				    continue;
+				long new_offset = offset - member_offs;
+				ir_node *res
+					= extract_from_initializer(member_type, sub_initializer,
+				                               new_offset, mode, dbgi, irg);
+				if (res != NULL)
+					return res;
+				return NULL;
+			}
+			return new_r_Const(irg, get_mode_null(mode));
+		}
+	}
+	}
+	return NULL;
+}
+
+/* try to predict the value of a Load operation.
+ * This can usually be done if it loads from a known global entity with a
+ * constant value.
+ */
+static ir_node *predict_load(ir_node *ptr, ir_mode *mode)
+{
+	long offset = 0;
+	if (is_Add(ptr)) {
+		ir_node *right = get_Add_right(ptr);
+		if (!is_Const(right))
+			return NULL;
+		ir_tarval *tv = get_Const_tarval(right);
+		if (!tarval_is_long(tv))
+			return NULL;
+		offset = get_tarval_long(tv);
+		ptr    = get_Add_left(ptr);
+	}
+	if (is_SymConst_addr_ent(ptr)) {
+		ir_entity *entity = get_SymConst_entity(ptr);
+		if (! (get_entity_linkage(entity) & IR_LINKAGE_CONSTANT))
+			return NULL;
+		const ir_type *type = get_entity_type(entity);
+		if (get_type_state(type) != layout_fixed)
+			return NULL;
+		const ir_initializer_t *initializer = get_entity_initializer(entity);
+		if (initializer == NULL)
+			initializer = get_initializer_null();
+		dbg_info *dbgi = get_irn_dbg_info(ptr);
+		ir_graph *irg  = get_irn_irg(ptr);
+		/* attempt 1 */
+		ir_node  *val  =
+			extract_from_initializer(type, initializer, offset, mode, dbgi,
+			                         irg);
+		if (val != NULL)
+			return val;
+		ir_node *val2 = sim_store_load(type, initializer, offset, mode, irg);
+		return val2;
+	}
+	return NULL;
 }
 
 static ir_node *transform_node_Load(ir_node *n)
@@ -5838,7 +6091,15 @@ static ir_node *transform_node_Load(ir_node *n)
 	if (get_Load_volatility(n) == volatility_is_volatile)
 		return n;
 
-	ir_node *ptr = get_Load_ptr(n);
+	/* are we loading from a global constant entity? */
+	ir_node *ptr  = get_Load_ptr(n);
+	ir_node *mem  = get_Load_mem(n);
+	ir_mode *mode = get_Load_mode(n);
+	ir_node *val  = predict_load(ptr, mode);
+	if (val != NULL) {
+		return create_load_replacement_tuple(n, mem, val);
+	}
+
 	const ir_node *confirm;
 	if (value_not_zero(ptr, &confirm) && confirm == NULL) {
 		set_irn_pinned(n, op_pin_state_floats);
@@ -5846,7 +6107,6 @@ static ir_node *transform_node_Load(ir_node *n)
 
 	/* if our memory predecessor is a load from the same address, then reuse the
 	 * previous result */
-	ir_node *mem = get_Load_mem(n);
 	if (!is_Proj(mem))
 		return n;
 	ir_node *mem_pred = get_Proj_pred(mem);
@@ -5857,12 +6117,11 @@ static ir_node *transform_node_Load(ir_node *n)
 		 * with fixup code in some situations (like smaller/bigger modes) */
 		if (get_Load_ptr(pred_load) != ptr)
 			return n;
-		if (get_Load_mode(pred_load) != get_Load_mode(n))
+		if (get_Load_mode(pred_load) != mode)
 			return n;
 		/* all combinations of aligned/unaligned pred/n should be fine so we do
 		 * not compare the unaligned attribute */
-		ir_mode  *mode  = get_Load_mode(n);
-		ir_node  *res   = new_r_Proj(pred_load, mode, pn_Load_res);
+		ir_node *res = new_r_Proj(pred_load, mode, pn_Load_res);
 		return create_load_replacement_tuple(n, mem, res);
 	} else if (is_Store(mem_pred)) {
 		ir_node *pred_store = mem_pred;
@@ -5870,7 +6129,7 @@ static ir_node *transform_node_Load(ir_node *n)
 
 		if (get_Store_ptr(pred_store) != ptr)
 			return n;
-		if (get_irn_mode(value) != get_Load_mode(n))
+		if (get_irn_mode(value) != mode)
 			return n;
 		/* all combinations of aligned/unaligned pred/n should be fine so we do
 		 * not compare the unaligned attribute */
