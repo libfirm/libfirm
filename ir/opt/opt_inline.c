@@ -652,6 +652,8 @@ static int inline_method(ir_node *const call, ir_graph *called_graph)
 	set_optimize(rem_opt);
 	current_ir_graph = rem;
 
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
+
 	return 1;
 }
 
