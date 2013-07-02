@@ -5475,42 +5475,60 @@ static ir_node *transform_Mux_set(ir_node *n)
 
 	ir_node *left = get_Cmp_left(cond);
 	ir_mode *mode = get_irn_mode(left);
-	if (!mode_is_int(mode) && !mode_is_reference(mode))
+	if (get_mode_arithmetic(mode) != irma_twos_complement)
 		return n;
 
 	ir_mode *dest_mode = get_irn_mode(n);
-	if (!mode_is_int(dest_mode) && !mode_is_reference(dest_mode))
+	if (get_mode_arithmetic(dest_mode) != irma_twos_complement)
 		return n;
 
 	ir_node     *right    = get_Cmp_right(cond);
-	ir_relation  relation = get_Cmp_relation(cond) &~ir_relation_unordered;
-	if (get_mode_size_bits(mode) >= get_mode_size_bits(dest_mode)
-	    && !(mode_is_signed(mode) && is_Const(right) && is_Const_null(right)
-	         && relation != ir_relation_greater))
-	    return n;
+	ir_relation  relation = get_Cmp_relation(cond) & ~ir_relation_unordered;
+	if (get_mode_size_bits(mode) >= get_mode_size_bits(dest_mode)) {
+		/* Due to possible overflows, we can only transform compares with special constants. */
+		if (!mode_is_signed(mode) || !is_Const(right))
+			return n;
+
+		switch (relation) {
+		case ir_relation_less:
+		case ir_relation_greater_equal:
+			if (!is_Const_null(right))
+				return n;
+			break;
+		case ir_relation_less_equal:
+		case ir_relation_greater:
+			if (!is_Const_all_one(right))
+				return n;
+			break;
+		default:
+			return n;
+		}
+	} else if (!mode_is_signed(dest_mode)) {
+		return n;
+	}
 
 	bool     need_not = false;
 	ir_node *a;
 	ir_node *b;
 	switch (relation) {
 	case ir_relation_less:
-		/* a < b  ->  (a - b) >> 31 */
+		/* a < b <=> (a - b) < 0 <=> (a - b) >> 31 */
 		a = left;
 		b = right;
 		break;
 	case ir_relation_less_equal:
-		/* a <= b  -> ~(b - a) >> 31 */
+		/* a <= b <=> !(a > b) <=> !((b - a) < 0) <=> ~(b - a) >> 31 */
 		a        = right;
 		b        = left;
 		need_not = true;
 		break;
 	case ir_relation_greater:
-		/* a > b   -> (b - a) >> 31 */
+		/* a > b <=> (b - a) < 0 <=> (b - a) >> 31 */
 		a = right;
 		b = left;
 		break;
 	case ir_relation_greater_equal:
-		/* a >= b   -> ~(a - b) >> 31 */
+		/* a >= b <=> !(a < b) <=> !((a - b) < 0) <=> ~(a - b) >> 31 */
 		a        = left;
 		b        = right;
 		need_not = true;
@@ -5519,24 +5537,30 @@ static ir_node *transform_Mux_set(ir_node *n)
 		return n;
 	}
 
-	dbg_info  *dbgi      = get_irn_dbg_info(n);
-	ir_node   *block     = get_nodes_block(n);
-	ir_graph  *irg       = get_irn_irg(block);
-	unsigned   bits      = get_mode_size_bits(dest_mode);
-	ir_tarval *tv        = new_tarval_from_long(bits-1, mode_Iu);
-	ir_node   *shift_cnt = new_rd_Const(dbgi, irg, tv);
-
-	if (mode != dest_mode) {
-		a = new_rd_Conv(dbgi, block, a, dest_mode);
-		b = new_rd_Conv(dbgi, block, b, dest_mode);
+	dbg_info *dbgi      = get_irn_dbg_info(n);
+	ir_node  *block     = get_nodes_block(n);
+	ir_mode  *calc_mode = mode;
+	if (get_mode_size_bits(mode) < get_mode_size_bits(dest_mode)) {
+		a         = new_rd_Conv(dbgi, block, a, dest_mode);
+		b         = new_rd_Conv(dbgi, block, b, dest_mode);
+		calc_mode = dest_mode;
 	}
 
-	ir_node *res = new_rd_Sub(dbgi, block, a, b, dest_mode);
+	ir_node *sub = new_rd_Sub(dbgi, block, a, b, calc_mode);
 	if (need_not) {
-		res = new_rd_Not(dbgi, block, res, dest_mode);
+		sub = new_rd_Not(dbgi, block, sub, calc_mode);
 	}
-	res = new_rd_Shr(dbgi, block, res, shift_cnt, dest_mode);
-	return res;
+
+	ir_graph  *irg       = get_irn_irg(block);
+	unsigned   bits      = get_mode_size_bits(calc_mode);
+	ir_tarval *tv        = new_tarval_from_long(bits - 1, mode_Iu);
+	ir_node   *shift_cnt = new_rd_Const(dbgi, irg, tv);
+	ir_node   *shift     = new_rd_Shr(dbgi, block, sub, shift_cnt, calc_mode);
+	if (calc_mode != dest_mode) {
+		shift = new_rd_Conv(dbgi, block, shift, dest_mode);
+	}
+
+	return shift;
 }
 
 /**
