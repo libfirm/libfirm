@@ -5759,7 +5759,7 @@ static ir_node *transform_node_Sync(ir_node *n)
 
 		/* Remove Bad predecessors */
 		if (is_Bad(pred)) {
-			del_Sync_n(n, i);
+			remove_Sync_n(n, i);
 			--arity;
 			continue;
 		}
@@ -5767,7 +5767,7 @@ static ir_node *transform_node_Sync(ir_node *n)
 		/* Remove duplicate predecessors */
 		for (j = 0; j < i; ++j) {
 			if (get_Sync_pred(n, j) == pred) {
-				del_Sync_n(n, i);
+				remove_Sync_n(n, i);
 				--arity;
 				break;
 			}
@@ -5780,7 +5780,7 @@ static ir_node *transform_node_Sync(ir_node *n)
 			continue;
 		}
 
-		del_Sync_n(n, i);
+		remove_Sync_n(n, i);
 		--arity;
 
 		pred_arity = get_Sync_n_preds(pred);

@@ -227,7 +227,7 @@ int add_irn_n(ir_node *node, ir_node *in)
 	return pos;
 }
 
-static void del_irn_n(ir_node *node, int n)
+static void remove_irn_n(ir_node *node, int n)
 {
 	ir_graph *irg = get_irn_irg(node);
 
@@ -249,9 +249,9 @@ static void del_irn_n(ir_node *node, int n)
 	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 }
 
-void del_Sync_n(ir_node *n, int i)
+void remove_Sync_n(ir_node *n, int i)
 {
-	del_irn_n(n, i);
+	remove_irn_n(n, i);
 }
 
 int (get_irn_deps)(const ir_node *node)
@@ -576,6 +576,11 @@ void set_End_keepalives(ir_node *end, int n, ir_node *in[])
 	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 }
 
+void remove_End_n(ir_node *n, int idx)
+{
+	remove_irn_n(n, idx);
+}
+
 void remove_End_keepalive(ir_node *end, ir_node *irn)
 {
 	int n = get_End_n_keepalives(end);
@@ -593,7 +598,7 @@ void remove_End_keepalive(ir_node *end, ir_node *irn)
 		}
 	}
 	assert(idx != -1);
-	del_irn_n(end, idx);
+	remove_irn_n(end, idx);
 }
 
 void remove_End_Bads_and_doublets(ir_node *end)
@@ -614,7 +619,7 @@ void remove_End_Bads_and_doublets(ir_node *end)
 
 		if (is_Bad(ka) || is_NoMem(ka) || pset_new_contains(&keeps, ka)) {
 			changed = true;
-			del_irn_n(end, idx - END_KEEPALIVE_OFFSET);
+			remove_irn_n(end, idx - END_KEEPALIVE_OFFSET);
 			--n;
 		} else {
 			pset_new_insert(&keeps, ka);

@@ -22,35 +22,29 @@
  */
 static void exchange_tuple_projs(ir_node *node, void *env)
 {
-	ir_node *pred;
-	int proj;
 	(void)env;
+	if (!is_Proj(node))
+		return;
 
-	if (!is_Proj(node)) return;
+	ir_node *pred = get_Proj_pred(node);
+	if (!is_Tuple(pred))
+		return;
 
-	pred = get_Proj_pred(node);
-	proj = get_Proj_proj(node);
-
-	if (!is_Tuple(pred)) return;
-
-	pred = get_Tuple_pred(pred, proj);
-	exchange(node, pred);
+	int      pn         = get_Proj_proj(node);
+	ir_node *tuple_pred = get_Tuple_pred(pred, pn);
+	exchange(node, tuple_pred);
 }
 
 void remove_tuples(ir_graph *irg)
 {
 	irg_walk_graph(irg, exchange_tuple_projs, NULL, NULL);
 
-	ir_node *end          = get_irg_end(irg);
-	int      n_keepalives = get_End_n_keepalives(end);
-	int      i;
-
-	for (i = n_keepalives - 1; i >= 0; --i) {
+	/* remove Tuples only held by keep-alive edges */
+	ir_node *end = get_irg_end(irg);
+	for (int i = get_End_n_keepalives(end); i-- > 0; ) {
 		ir_node *irn = get_End_keepalive(end, i);
-
-		if (is_Tuple(irn)) {
-			remove_End_keepalive(end, irn);
-		}
+		if (is_Tuple(irn))
+			remove_End_n(end, i);
 	}
 
 	add_irg_properties(irg, IR_GRAPH_PROPERTY_NO_TUPLES);

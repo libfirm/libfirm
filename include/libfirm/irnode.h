@@ -302,6 +302,9 @@ FIRM_API void set_End_keepalives(ir_node *end, int n, ir_node *in[]);
 /** Removes irn from the keep-alive set. */
 FIRM_API void remove_End_keepalive(ir_node *end, ir_node *irn);
 
+/** Removes predecessor (a keepalive) at index @p idx from End node @p end. */
+FIRM_API void remove_End_n(ir_node *end, int idx);
+
 /** Removes Bads, NoMem and doublets from the keep-alive set. */
 FIRM_API void remove_End_Bads_and_doublets(ir_node *end);
 
@@ -497,8 +500,8 @@ FIRM_API void set_memop_mem(ir_node *node, ir_node *mem);
 
 /** Adds @p pred to predecessor list of Sync node @p node. */
 FIRM_API void add_Sync_pred(ir_node *node, ir_node *pred);
-/** Removes predecessor i from Sync n */
-FIRM_API void del_Sync_n(ir_node *n, int i);
+/** Removes predecessor @p i from Sync @p n */
+FIRM_API void remove_Sync_n(ir_node *n, int i);
 
 /** @} */
 
