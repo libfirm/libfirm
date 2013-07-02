@@ -1349,16 +1349,12 @@ static void memperm_emit_spill_registers(const ir_node *node, int n_spilled,
 		 * prevent wasting SPARC_REGISTER_SIZE bytes of stack space but
 		 * it is not worth the worse readability of emit_MemPerm. */
 
-		/* Keep stack pointer aligned. */
-		unsigned sp_change = get_aligned_sp_change(2);
+		const unsigned sp_change = get_aligned_sp_change(2);
 		sparc_emitf(node, "sub %%sp, %u, %%sp", sp_change);
-
-		/* Spill register l0. */
 		sparc_emitf(node, "st %%l0, [%%sp%+d]", SPARC_MIN_STACKSIZE);
 	}
 
 	if (n_to_spill == 2) {
-		/* Spill register l1. */
 		sparc_emitf(node, "st %%l1, [%%sp%+d]", SPARC_MIN_STACKSIZE + SPARC_REGISTER_SIZE);
 	}
 }
@@ -1367,19 +1363,14 @@ static void memperm_emit_spill_registers(const ir_node *node, int n_spilled,
 static void memperm_emit_restore_registers(const ir_node *node, int n_spilled)
 {
 	if (n_spilled == 2) {
-		/* Restore register l1. */
 		sparc_emitf(node, "ld [%%sp%+d], %%l1", SPARC_MIN_STACKSIZE + SPARC_REGISTER_SIZE);
 	}
 
-	/* Restore register l0. */
 	sparc_emitf(node, "ld [%%sp%+d], %%l0", SPARC_MIN_STACKSIZE);
-
-	/* Restore stack pointer. */
-	unsigned sp_change = get_aligned_sp_change(2);
+	const unsigned sp_change = get_aligned_sp_change(2);
 	sparc_emitf(node, "add %%sp, %u, %%sp", sp_change);
 }
 
-/* Emit code to copy in_ent to out_ent.  Only uses l0. */
 static void memperm_emit_copy(const ir_node *node, ir_entity *in_ent,
                               ir_entity *out_ent)
 {
@@ -1388,13 +1379,10 @@ static void memperm_emit_copy(const ir_node *node, ir_entity *in_ent,
 	int                off_in  = be_get_stack_entity_offset(layout, in_ent, 0);
 	int                off_out = be_get_stack_entity_offset(layout, out_ent, 0);
 
-	/* Load from input entity. */
 	sparc_emitf(node, "ld [%%fp%+d], %%l0", off_in);
-	/* Store to output entity. */
 	sparc_emitf(node, "st %%l0, [%%fp%+d]", off_out);
 }
 
-/* Emit code to swap ent1 and ent2.  Uses l0 and l1. */
 static void memperm_emit_swap(const ir_node *node, ir_entity *ent1,
                               ir_entity *ent2)
 {
@@ -1403,17 +1391,12 @@ static void memperm_emit_swap(const ir_node *node, ir_entity *ent1,
 	int                off1    = be_get_stack_entity_offset(layout, ent1, 0);
 	int                off2    = be_get_stack_entity_offset(layout, ent2, 0);
 
-	/* Load from first input entity. */
 	sparc_emitf(node, "ld [%%fp%+d], %%l0", off1);
-	/* Load from second input entity. */
 	sparc_emitf(node, "ld [%%fp%+d], %%l1", off2);
-	/* Store first value to second output entity. */
 	sparc_emitf(node, "st %%l0, [%%fp%+d]", off2);
-	/* Store second value to first output entity. */
 	sparc_emitf(node, "st %%l1, [%%fp%+d]", off1);
 }
 
-/* Find the index of ent in ents or return -1 if not found. */
 static int get_index(ir_entity **ents, int n, ir_entity *ent)
 {
 	for (int i = 0; i < n; ++i) {
@@ -1470,8 +1453,8 @@ static void emit_be_MemPerm(const ir_node *node)
 		int oidx = get_index(entities, n, out);
 		int iidx = get_index(entities, n, in);
 
-		sourceof[oidx] = iidx; /* Remember the source. */
-		++n_users[iidx]; /* Increment number of users of this entity. */
+		sourceof[oidx] = iidx;
+		++n_users[iidx];
 	}
 
 	/* First do all the copies. */
@@ -1497,8 +1480,6 @@ static void emit_be_MemPerm(const ir_node *node)
 		sourceof[oidx] = oidx;
 
 		assert(n_users[iidx] > 0);
-		/* Decrementing the number of users might enable us to do another
-		 * copy. */
 		--n_users[iidx];
 
 		if (iidx < oidx && n_users[iidx] == 0) {
@@ -1512,7 +1493,6 @@ static void emit_be_MemPerm(const ir_node *node)
 	for (int oidx = 0; oidx < n; /* empty */) {
 		int iidx = sourceof[oidx];
 
-		/* Nothing to do for fix points. */
 		if (iidx == oidx) {
 			++oidx;
 			continue;
@@ -1520,7 +1500,6 @@ static void emit_be_MemPerm(const ir_node *node)
 
 		assert(n_users[iidx] == 1);
 
-		/* Swap the two values to resolve the cycle. */
 		if (n_spilled < 2) {
 			memperm_emit_spill_registers(node, n_spilled, /*n_to_spill=*/2);
 			n_spilled = 2;
@@ -1528,8 +1507,7 @@ static void emit_be_MemPerm(const ir_node *node)
 		memperm_emit_swap(node, entities[iidx], entities[oidx]);
 
 		int tidx = sourceof[iidx];
-		/* Mark as done. */
-		sourceof[iidx] = iidx;
+		sourceof[iidx] = iidx; /* Mark as done. */
 
 		/* The source of oidx is now the old source of iidx, because we swapped
 		 * the two entities. */
@@ -1544,7 +1522,6 @@ static void emit_be_MemPerm(const ir_node *node)
 #endif
 
 	assert(n_spilled > 0 && "Useless MemPerm node");
-
 	memperm_emit_restore_registers(node, n_spilled);
 }
 
