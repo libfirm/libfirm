@@ -369,6 +369,7 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 
 	assure_irg_properties(irg,
 		IR_GRAPH_PROPERTY_NO_BADS
+		| IR_GRAPH_PROPERTY_NO_TUPLES
 		| IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
 		| IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
 		| IR_GRAPH_PROPERTY_MANY_RETURNS);
