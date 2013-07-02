@@ -37,7 +37,7 @@ static void exchange_tuple_projs(ir_node *node, void *env)
 
 void remove_tuples(ir_graph *irg)
 {
-	irg_walk_graph(irg, exchange_tuple_projs, NULL, NULL);
+	irg_walk_graph(irg, NULL, exchange_tuple_projs, NULL);
 
 	/* remove Tuples only held by keep-alive edges */
 	ir_node *end = get_irg_end(irg);
