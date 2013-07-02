@@ -567,7 +567,7 @@ static void dump_entity_to_file_prefix(FILE *const F,
 		ir_fprintf(F, "%s %+F: %s", prefix, type, get_entity_name(ent));
 		if (is_Method_type(type))
 			fputs("(...)", F);
-		if (ent->entity_kind == IR_ENTITY_COMPOUND_MEMBER) {
+		if (is_entity_compound_member(ent)) {
 			ir_fprintf(F, " offset: %d", get_entity_offset(ent));
 			unsigned bitfield_size = get_entity_bitfield_size(ent);
 			if (bitfield_size > 0) {
@@ -600,7 +600,15 @@ static void dump_entity_to_file_prefix(FILE *const F,
 		fprintf(F, "\n%s  aligned:  %s", prefix, get_align_name(get_entity_aligned(ent)));
 		fprintf(F, "\n%s  alignment:  %u", prefix, get_entity_alignment(ent));
 		fprintf(F, "\n%s  ld_name: %s", prefix, ent->ld_name ? get_entity_ld_name(ent) : "no yet set");
-		fprintf(F, "\n%s  offset:  %d bytes", prefix, get_entity_offset(ent));
+		if (is_entity_compound_member(ent)) {
+			fprintf(F, "\n%s  offset:  %d bytes", prefix, get_entity_offset(ent));
+			unsigned bitfield_size   = get_entity_bitfield_size(ent);
+			if (bitfield_size > 0) {
+				unsigned bitfield_offset = get_entity_bitfield_offset(ent);
+				fprintf(F, "\n%s  bitfield offset: %u", prefix, bitfield_offset);
+				fprintf(F, "\n%s  bitfield size: %u", prefix, bitfield_size);
+			}
+		}
 		if (is_Method_type(type)) {
 			const ir_graph *irg = get_entity_irg(ent);
 			if (irg != NULL) {

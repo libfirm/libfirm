@@ -771,6 +771,9 @@ static void write_entity(write_env_t *env, ir_entity *ent)
 		} else {
 			write_size_t(env, num);
 		}
+		write_long(env, get_entity_offset(ent));
+		write_unsigned(env, get_entity_bitfield_offset(ent));
+		write_unsigned(env, get_entity_bitfield_size(ent));
 		break;
 	}
 	case IR_ENTITY_UNKNOWN:
@@ -1888,6 +1891,9 @@ static void read_entity(read_env_t *env, ir_entity_kind kind)
 		}
 		obstack_free(&env->obst, str);
 		entity = new_parameter_entity(owner, parameter_number, type);
+		set_entity_offset(entity, read_int(env));
+		set_entity_bitfield_offset(entity, read_unsigned(env));
+		set_entity_bitfield_size(entity, read_unsigned(env));
 		break;
 	}
 	case IR_ENTITY_LABEL: {

@@ -336,6 +336,12 @@ static inline void _set_entity_usage(ir_entity *ent, ir_entity_usage state)
 	ent->usage = state;
 }
 
+static inline bool is_entity_compound_member(const ir_entity *entity)
+{
+	return entity->entity_kind == IR_ENTITY_COMPOUND_MEMBER
+	    || entity->entity_kind == IR_ENTITY_PARAMETER;
+}
+
 static inline int _get_entity_offset(const ir_entity *ent)
 {
 	assert(ent->entity_kind == IR_ENTITY_COMPOUND_MEMBER
