@@ -76,7 +76,7 @@ FIRM_API void irg_out_block_walk(ir_node *node, irg_walk_func *pre,
  * Computes the out edges.  Sets a flag in irg to "outs_consistent".  If the
  * graph is changed this flag must be set to "outs_inconsistent".  Computes
  * out edges from block to floating nodes even if graph is in state
- * "op_pin_state_floats".   Optimizes Tuple nodes.
+ * "op_pin_state_floats".
  */
 FIRM_API void compute_irg_outs(ir_graph *irg);
 

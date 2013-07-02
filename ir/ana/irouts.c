@@ -224,7 +224,6 @@ void irg_out_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
 /** Then the large array is allocated.  The second iteration chops   **/
 /** the large array into smaller parts, sets the out edges and       **/
 /** recounts the out edges.                                          **/
-/** Removes Tuple nodes!                                             **/
 /*--------------------------------------------------------------------*/
 
 
@@ -240,13 +239,8 @@ static void count_outs_node(ir_node *n)
 	int start = is_Block(n) ? 0 : -1;
 	for (int i = start, irn_arity = get_irn_arity(n); i < irn_arity; ++i) {
 		ir_node *def = get_irn_n(n, i);
-		/* optimize Tuples */
-		ir_node *skipped = skip_Tuple(def);
-		if (skipped != def)
-			set_irn_n(n, i, skipped);
-
-		count_outs_node(skipped);
-		++skipped->o.n_outs;
+		count_outs_node(def);
+		++def->o.n_outs;
 	}
 }
 
@@ -319,8 +313,7 @@ void compute_irg_outs(ir_graph *irg)
 	   for each node and writes the back edges into this array. */
 	set_out_edges(irg);
 
-	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS
-	                      | IR_GRAPH_PROPERTY_NO_TUPLES);
+	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 }
 
 void assure_irg_outs(ir_graph *irg)
