@@ -11,7 +11,6 @@
 #include "irgraph_t.h"
 #include "irmode_t.h"
 #include "irgmod.h"
-#include "iredges.h"
 #include "ircons.h"
 #include "iropt_t.h"
 #include "error.h"
@@ -538,6 +537,9 @@ static void amd64_register_transformers(void)
 
 void amd64_transform_graph(ir_graph *irg)
 {
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_TUPLES
+	                         | IR_GRAPH_PROPERTY_NO_BADS);
+
 	amd64_register_transformers();
 	mode_gp = mode_Lu;
 	be_transform_graph(irg, NULL);

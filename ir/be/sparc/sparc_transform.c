@@ -2777,6 +2777,9 @@ static void sparc_register_transformers(void)
  */
 void sparc_transform_graph(ir_graph *irg)
 {
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_TUPLES
+	                         | IR_GRAPH_PROPERTY_NO_BADS);
+
 	ir_entity *entity = get_irg_entity(irg);
 
 	sparc_register_transformers();

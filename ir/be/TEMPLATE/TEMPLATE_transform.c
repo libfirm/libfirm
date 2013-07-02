@@ -311,6 +311,9 @@ static void TEMPLATE_register_transformers(void)
  */
 void TEMPLATE_transform_graph(ir_graph *irg)
 {
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_TUPLES
+	                         | IR_GRAPH_PROPERTY_NO_BADS);
+
 	gp_regs_mode = TEMPLATE_reg_classes[CLASS_TEMPLATE_gp].mode;
 
 	TEMPLATE_register_transformers();

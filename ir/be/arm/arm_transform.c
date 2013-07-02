@@ -1893,6 +1893,9 @@ static void arm_init_fpa_immediate(void)
  */
 void arm_transform_graph(ir_graph *irg)
 {
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_TUPLES
+	                         | IR_GRAPH_PROPERTY_NO_BADS);
+
 	static int imm_initialized = 0;
 	ir_entity *entity          = get_irg_entity(irg);
 	const arch_env_t *arch_env = be_get_irg_arch_env(irg);

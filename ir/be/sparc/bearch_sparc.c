@@ -416,7 +416,7 @@ static void sparc_handle_intrinsics(ir_graph *irg)
 
 	if (changed) {
 		confirm_irg_properties(irg,
-			IR_GRAPH_PROPERTY_NO_TUPLES
+			IR_GRAPH_PROPERTY_NO_BADS
 			| IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
 			| IR_GRAPH_PROPERTY_MANY_RETURNS
 			| IR_GRAPH_PROPERTY_ONE_RETURN);
