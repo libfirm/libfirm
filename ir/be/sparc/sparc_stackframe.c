@@ -101,6 +101,9 @@ static void adjust_entity_offsets(ir_type *type, long offset)
 
 	for (i = 0; i < n_members; ++i) {
 		ir_entity *member        = get_compound_member(type, i);
+		/* ignore nested functions */
+		if (member->entity_kind == IR_ENTITY_METHOD)
+			continue;
 		int        member_offset = get_entity_offset(member);
 		set_entity_offset(member, member_offset + offset);
 	}
