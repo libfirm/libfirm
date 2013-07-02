@@ -636,16 +636,18 @@ void be_map_exc_node_to_runtime_call(ir_node *node, ir_mode *res_mode,
 	int throws_exception = ir_throws_exception(node);
 	ir_set_throws_exception(call, throws_exception);
 
-	assert(pn_M < 4 && pn_X_regular < 4 && pn_X_except < 4 && pn_res < 4);
-	int       const n_proj   = 4;
-	ir_node **const tuple_in = ALLOCAN(ir_node*, n_proj);
+	assert(pn_M < 2 && pn_res < 2 && pn_X_regular < 4 && pn_X_except < 4);
+	int const         n_proj     = 4;
+	int               n_operands = 2;
+	ir_node   **const tuple_in   = ALLOCAN(ir_node*, n_proj);
 	tuple_in[pn_M] = new_r_Proj(call, mode_M, pn_Call_M);
 	ir_node *ress = new_r_Proj(call, mode_T, pn_Call_T_result);
 	tuple_in[pn_res] = new_r_Proj(ress, res_mode, 0);
 	if (throws_exception) {
-		tuple_in[pn_X_regular] = new_r_Proj(call, mode_X, pn_Call_X_regular);
-		tuple_in[pn_X_except]  = new_r_Proj(call, mode_X, pn_Call_X_except);
+		tuple_in[pn_X_regular]  = new_r_Proj(call, mode_X, pn_Call_X_regular);
+		tuple_in[pn_X_except]   = new_r_Proj(call, mode_X, pn_Call_X_except);
+		n_operands             += 2;
 	}
 
-	turn_into_tuple(node, n_proj, tuple_in);
+	turn_into_tuple(node, n_operands, tuple_in);
 }
