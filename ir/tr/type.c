@@ -1478,7 +1478,6 @@ ir_type *new_d_type_primitive(ir_mode *mode, type_dbg_info *db)
 	ir_type *res = new_type(type_primitive, mode, db);
 	res->size  = get_mode_size_bytes(mode);
 	res->flags |= tf_layout_fixed;
-	res->attr.ba.base_type = NULL;
 	hook_new_type(res);
 	return res;
 }
@@ -1502,19 +1501,6 @@ void set_primitive_mode(ir_type *tp, ir_mode *mode)
 	tp->size = get_mode_size_bytes(mode);
 	tp->mode = mode;
 }
-
-ir_type *get_primitive_base_type(const ir_type *tp)
-{
-	assert(is_Primitive_type(tp));
-	return tp->attr.ba.base_type;
-}
-
-void set_primitive_base_type(ir_type *tp, ir_type *base_tp)
-{
-	assert(is_Primitive_type(tp));
-	tp->attr.ba.base_type = base_tp;
-}
-
 
 
 int (is_atomic_type)(const ir_type *tp)
@@ -1657,6 +1643,10 @@ void default_layout_compound_type(ir_type *type)
 		ir_type   *entity_type = get_entity_type(entity);
 		if (is_Method_type(entity_type))
 			continue;
+
+		if (get_entity_bitfield_size(entity) > 0) {
+			panic("default_layout_compound_type() cannot handle bitfield members (in %+F)", type);
+		}
 
 		unsigned entity_size;
 		if (i+1 < n || !var_size) {

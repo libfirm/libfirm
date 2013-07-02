@@ -40,8 +40,10 @@
 #define set_entity_usage(ent, flags)             _set_entity_usage(ent, flags)
 #define get_entity_offset(ent)                   _get_entity_offset(ent)
 #define set_entity_offset(ent, offset)           _set_entity_offset(ent, offset)
-#define get_entity_offset_bits_remainder(ent)    _get_entity_offset_bits_remainder(ent)
-#define set_entity_offset_bits_remainder(ent, o) _set_entity_offset_bits_remainder(ent, o)
+#define get_entity_bitfield_offset(ent)          _get_entity_bitfield_offset(ent)
+#define set_entity_bitfield_offset(ent, o)       _set_entity_bitfield_offset(ent, o)
+#define get_entity_bitfield_size(ent)            _get_entity_bitfield_size(ent)
+#define set_entity_bitfield_size(ent, s)         _set_entity_bitfield_size(ent, s)
 #define get_entity_link(ent)                     _get_entity_link(ent)
 #define set_entity_link(ent, l)                  _set_entity_link(ent, l)
 #define get_entity_irg(ent)                      _get_entity_irg(ent)
@@ -112,7 +114,17 @@ typedef struct code_ent_attr {
 	ir_label_t  label;       /** label of the basic block */
 } code_ent_attr;
 
+typedef struct compound_member_ent_attr {
+	int offset;               /**< Offset in bytes for this entity. Fixed
+	                               when layout of owner is determined. */
+	unsigned bitfield_offset; /**< for bitfields: offset in bits from base */
+	unsigned bitfield_size;   /**< for bitfields: size of entity in bits,
+	                               0 if entity is not a bitfield. */
+} compound_member_ent_attr;
+
 typedef struct parameter_ent_attr {
+	compound_member_ent_attr  base; /**< a parameter is also a compound_member
+	                                     of the frame type. */
 	size_t   number; /**< corresponding parameter number */
 	ir_mode *doubleword_low_mode;/**< entity is a lowered doubleword parameter,
 								so additional stores because of calling
@@ -156,12 +168,6 @@ struct ir_entity {
 	unsigned allocation:3;   /**< @deprecated */
 	unsigned peculiarity:3;  /**< @deprecated */
 	unsigned final:1;        /**< @deprecated */
-	unsigned offset_bit_remainder:8;
-	                         /**< If the entity is a bit field, this is the
-	                              offset of the start of the bit field
-	                              within the byte specified by offset. */
-	int offset;              /**< Offset in bytes for this entity. Fixed
-	                              when layout of owner is determined. */
 	unsigned alignment;      /**< entity alignment in bytes */
 	ir_visited_t visit;      /**< visited counter for walks of the type
 	                              information. */
@@ -179,12 +185,14 @@ struct ir_entity {
 #endif
 
 	union {
-		/* ------------- fields for method entities ---------------- */
-		method_ent_attr    mtd_attr;
-		/* fields for code entities */
-		code_ent_attr      code_attr;
+		/** attributes for method entities */
+		method_ent_attr          mtd_attr;
+		/** fields for code entities */
+		code_ent_attr            code_attr;
+		/** compound member attributes */
+		compound_member_ent_attr compound_member;
 		/** parameter number for parameter entities */
-		parameter_ent_attr parameter;
+		parameter_ent_attr       parameter;
 	} attr; /**< type specific attributes */
 };
 
@@ -330,26 +338,44 @@ static inline void _set_entity_usage(ir_entity *ent, ir_entity_usage state)
 
 static inline int _get_entity_offset(const ir_entity *ent)
 {
-	assert(ent->kind == k_entity);
-	return ent->offset;
+	assert(ent->entity_kind == IR_ENTITY_COMPOUND_MEMBER
+	       || ent->entity_kind == IR_ENTITY_PARAMETER);
+	return ent->attr.compound_member.offset;
 }
 
 static inline void _set_entity_offset(ir_entity *ent, int offset)
 {
-	assert(ent->kind == k_entity);
-	ent->offset = offset;
+	assert(ent->entity_kind == IR_ENTITY_COMPOUND_MEMBER
+	       || ent->entity_kind == IR_ENTITY_PARAMETER);
+	ent->attr.compound_member.offset = offset;
 }
 
-static inline unsigned char _get_entity_offset_bits_remainder(const ir_entity *ent)
+static inline unsigned _get_entity_bitfield_offset(const ir_entity *ent)
 {
-	assert(ent->kind == k_entity);
-	return ent->offset_bit_remainder;
+	assert(ent->entity_kind == IR_ENTITY_COMPOUND_MEMBER
+	       || ent->entity_kind == IR_ENTITY_PARAMETER);
+	return ent->attr.compound_member.bitfield_offset;
 }
 
-static inline void _set_entity_offset_bits_remainder(ir_entity *ent, unsigned char offset)
+static inline void _set_entity_bitfield_offset(ir_entity *ent, unsigned offset)
 {
-	assert(ent->kind == k_entity);
-	ent->offset_bit_remainder = offset;
+	assert(ent->entity_kind == IR_ENTITY_COMPOUND_MEMBER
+	       || ent->entity_kind == IR_ENTITY_PARAMETER);
+	ent->attr.compound_member.bitfield_offset = offset;
+}
+
+static inline unsigned _get_entity_bitfield_size(const ir_entity *entity)
+{
+	assert(entity->entity_kind == IR_ENTITY_COMPOUND_MEMBER
+	       || entity->entity_kind == IR_ENTITY_PARAMETER);
+	return entity->attr.compound_member.bitfield_size;
+}
+
+static inline void _set_entity_bitfield_size(ir_entity *entity, unsigned size)
+{
+	assert(entity->entity_kind == IR_ENTITY_COMPOUND_MEMBER
+	       || entity->entity_kind == IR_ENTITY_PARAMETER);
+	entity->attr.compound_member.bitfield_size = size;
 }
 
 static inline void *_get_entity_link(const ir_entity *ent)

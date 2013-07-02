@@ -673,11 +673,6 @@ static void emit_compound_type(const ir_type *type)
 	for (size_t i = 0; i < n_members; ++i) {
 		ir_entity *member      = get_compound_member(type, i);
 		ir_type   *member_type = get_entity_type(member);
-		if (is_Primitive_type(member_type)) {
-			ir_type *base = get_primitive_base_type(member_type);
-			if (base != NULL)
-				member_type = base;
-		}
 		emit_type(member_type);
 	}
 
@@ -695,14 +690,11 @@ static void emit_compound_type(const ir_type *type)
 		ir_entity *member      = get_compound_member(type, i);
 		ir_type   *member_type = get_entity_type(member);
 		int        offset      = get_entity_offset(member);
-		ir_type   *base;
 
-		if (is_Primitive_type(member_type) &&
-		    (base = get_primitive_base_type(member_type))) {
-		    unsigned bit_offset = get_entity_offset_bits_remainder(member);
-		    unsigned base_size  = get_type_size_bytes(base);
-		    ir_mode *mode       = get_type_mode(member_type);
-		    unsigned bit_size   = get_mode_size_bits(mode);
+		if (get_entity_bitfield_size(member) > 0) {
+		    unsigned bit_offset = get_entity_bitfield_offset(member);
+		    unsigned bit_size   = get_entity_bitfield_size(member);
+		    unsigned base_size  = get_type_size_bytes(member_type);
 
 			bit_offset = base_size*8 - bit_offset - bit_size;
 
@@ -710,7 +702,6 @@ static void emit_compound_type(const ir_type *type)
 			emit_uleb128(base_size);
 			emit_uleb128(bit_size);
 			emit_uleb128(bit_offset);
-			member_type = base;
 		} else {
 			emit_uleb128(abbrev_member);
 		}

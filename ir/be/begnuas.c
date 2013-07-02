@@ -852,13 +852,13 @@ static normal_or_bitfield *glob_vals;
 static size_t              max_vals;
 #endif
 
-static void emit_bitfield(normal_or_bitfield *vals, size_t offset_bits,
+static void emit_bitfield(normal_or_bitfield *vals, unsigned offset_bits,
+                          unsigned bitfield_size,
                           const ir_initializer_t *initializer, ir_type *type)
 {
 	static const size_t BITS_PER_BYTE = 8;
-	ir_mode   *mode = get_type_mode(type);
-	ir_tarval *tv   = NULL;
 
+	ir_tarval *tv = NULL;
 	switch (get_initializer_kind(initializer)) {
 	case IR_INITIALIZER_NULL:
 		return;
@@ -876,14 +876,13 @@ static void emit_bitfield(normal_or_bitfield *vals, size_t offset_bits,
 	case IR_INITIALIZER_COMPOUND:
 		panic("bitfield initializer is compound");
 	}
-	if (tv == NULL) {
+	if (tv == NULL || tv == tarval_bad) {
 		panic("Couldn't get numeric value for bitfield initializer");
 	}
-	tv = tarval_convert_to(tv, get_type_mode(type));
 
-	int    value_len  = get_type_size_bytes(get_primitive_base_type(type));
+	int    value_len  = get_type_size_bytes(type);
 	size_t bit_offset = 0;
-	size_t end        = get_mode_size_bits(mode);
+	size_t end        = bitfield_size;
 	bool   big_endian = be_get_backend_param()->byte_order_big_endian;
 	while (bit_offset < end) {
 		size_t src_offset      = bit_offset / BITS_PER_BYTE;
@@ -991,20 +990,13 @@ static void emit_ir_initializer(normal_or_bitfield *vals,
 				ir_initializer_t *sub_initializer
 					= get_initializer_compound_value(initializer, i);
 
-				ir_type *subtype = get_entity_type(member);
-				ir_mode *mode    = get_type_mode(subtype);
-				if (mode != NULL) {
-					size_t offset_bits
-						= get_entity_offset_bits_remainder(member);
-
-					if (is_Primitive_type(subtype)
-							&& get_primitive_base_type(subtype) != NULL) {
-						emit_bitfield(&vals[offset], offset_bits,
-						              sub_initializer, subtype);
-						continue;
-					} else {
-						assert(offset_bits == 0);
-					}
+				ir_type *subtype       = get_entity_type(member);
+				unsigned bitfield_size = get_entity_bitfield_size(member);
+				if (bitfield_size > 0) {
+					unsigned offset_bits = get_entity_bitfield_offset(member);
+					emit_bitfield(&vals[offset], offset_bits, bitfield_size,
+								  sub_initializer, subtype);
+					continue;
 				}
 
 				emit_ir_initializer(&vals[offset], sub_initializer, subtype);

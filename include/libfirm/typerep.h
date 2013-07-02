@@ -345,18 +345,22 @@ FIRM_API const char *get_align_name(ir_align a);
 
 /** Returns the offset of an entity (in a compound) in bytes. Only set if
  * layout = fixed. */
-FIRM_API int get_entity_offset(const ir_entity *ent);
+FIRM_API int get_entity_offset(const ir_entity *entity);
 
 /** Sets the offset of an entity (in a compound) in bytes. */
-FIRM_API void set_entity_offset(ir_entity *ent, int offset);
+FIRM_API void set_entity_offset(ir_entity *entity, int offset);
 
-/** Returns the offset bit remainder of a bitfield entity (in a compound) in
- * bits. Only set if layout = fixed. */
-FIRM_API unsigned char get_entity_offset_bits_remainder(const ir_entity *ent);
+/** For bitfields, returns the offset in bits to the bitfield base. */
+FIRM_API unsigned get_entity_bitfield_offset(const ir_entity *entity);
 
-/** Sets the offset bit remainder of a bitfield entity (in a compound) in bits. */
-FIRM_API void set_entity_offset_bits_remainder(ir_entity *ent,
-                                               unsigned char offset);
+/** Sets the offset in bits to the base for a bitfield. */
+FIRM_API void set_entity_bitfield_offset(ir_entity *entity, unsigned offset);
+
+/** Sets the size in bits for a bitfield. 0 means not a bitfield. */
+FIRM_API void set_entity_bitfield_size(ir_entity *entity, unsigned size);
+
+/** Returns the size in bits for a bitfield, 0 if entity is not a bitfield. */
+FIRM_API unsigned get_entity_bitfield_size(const ir_entity *entity);
 
 /** Returns the stored intermediate information. */
 FIRM_API void *get_entity_link(const ir_entity *ent);
@@ -1885,12 +1889,6 @@ FIRM_API ir_type *new_d_type_primitive(ir_mode *mode, type_dbg_info* db);
 
 /** Returns true if a type is a primitive type. */
 FIRM_API int is_Primitive_type(const ir_type *primitive);
-
-/** Returns the base type of a primitive (bitfield) type or NULL if none. */
-FIRM_API ir_type *get_primitive_base_type(const ir_type *tp);
-
-/** Sets the base type of a primitive (bitfield) type. */
-FIRM_API void set_primitive_base_type(ir_type *tp, ir_type *base_tp);
 
 /**
  * This type opcode marks that the corresponding type is a primitive type.

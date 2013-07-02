@@ -140,11 +140,6 @@ typedef struct {
 	ir_type *points_to;  /**< The type of the ir_entity the pointer points to. */
 } ptr_attr;
 
-/** Primitive type attributes. */
-typedef struct {
-	ir_type *base_type;  /**< For bitfield types: The base primitive type, NULL else. */
-} pri_attr;
-
 /** General type attributes. */
 typedef union {
 	cls_attr ca;      /**< Attributes of a class type */
@@ -154,7 +149,6 @@ typedef union {
 	arr_attr aa;      /**< Attributes of an array type */
 	enm_attr ea;      /**< Attributes of an enumeration type */
 	ptr_attr pa;      /**< Attributes of a pointer type */
-	pri_attr ba;      /**< Attributes of a primitive bitfield type */
 } tp_attr;
 
 /** Additional type flags. */

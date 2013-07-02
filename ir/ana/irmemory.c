@@ -433,22 +433,6 @@ ir_storage_class_class_t classify_pointer(const ir_node *irn,
 }
 
 /**
- * If adr represents a Bitfield Sel, skip it
- */
-static const ir_node *skip_Bitfield_Sels(const ir_node *adr)
-{
-	if (is_Sel(adr)) {
-		ir_entity *ent     = get_Sel_entity(adr);
-		ir_type   *bf_type = get_entity_type(ent);
-
-		/* is it a bitfield type? */
-		if (is_Primitive_type(bf_type) && get_primitive_base_type(bf_type) != NULL)
-			adr = get_Sel_ptr(adr);
-	}
-	return adr;
-}
-
-/**
  * Determine the alias relation between two addresses.
  *
  * @param addr1  pointer address of the first memory operation
@@ -563,16 +547,6 @@ static ir_alias_relation _get_alias_relation(
 		else
 			return ir_sure_alias;
 	}
-
-	/*
-	 * Bitfields can be constructed as Sels from its base address.
-	 * As they have different entities, the disambiguator would find that they are
-	 * alias free. While this is true for its values, it is false for the addresses
-	 * (strictly speaking, the Sel's are NOT the addresses of the bitfields).
-	 * So, skip those bitfield selecting Sel's.
-	 */
-	adr1 = skip_Bitfield_Sels(adr1);
-	adr2 = skip_Bitfield_Sels(adr2);
 
 	/* skip Sels */
 	const ir_node *base1 = adr1;

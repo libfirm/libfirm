@@ -564,12 +564,18 @@ static void dump_entity_to_file_prefix(FILE *const F,
 			        get_entity_vtable_number(ent));
 		}
 	} else {  /* no entattrs */
-		ir_fprintf(F, "%s(%3d:%d) %+F: %s", prefix,
-		           get_entity_offset(ent),
-		           get_entity_offset_bits_remainder(ent), type,
-		           get_entity_name(ent));
+		ir_fprintf(F, "%s %+F: %s", prefix, type, get_entity_name(ent));
 		if (is_Method_type(type))
 			fputs("(...)", F);
+		if (ent->entity_kind == IR_ENTITY_COMPOUND_MEMBER) {
+			ir_fprintf(F, " offset: %d", get_entity_offset(ent));
+			unsigned bitfield_size = get_entity_bitfield_size(ent);
+			if (bitfield_size > 0) {
+				unsigned bitfield_offset = get_entity_bitfield_offset(ent);
+				ir_fprintf(F, " bitfield offs %u size %u", bitfield_offset,
+				           bitfield_size);
+			}
+		}
 
 		if (verbosity & dump_verbosity_accessStats) {
 			dump_entity_linkage(F, ent);
@@ -594,7 +600,7 @@ static void dump_entity_to_file_prefix(FILE *const F,
 		fprintf(F, "\n%s  aligned:  %s", prefix, get_align_name(get_entity_aligned(ent)));
 		fprintf(F, "\n%s  alignment:  %u", prefix, get_entity_alignment(ent));
 		fprintf(F, "\n%s  ld_name: %s", prefix, ent->ld_name ? get_entity_ld_name(ent) : "no yet set");
-		fprintf(F, "\n%s  offset:  %d bytes, %d rem bits", prefix, get_entity_offset(ent), get_entity_offset_bits_remainder(ent));
+		fprintf(F, "\n%s  offset:  %d bytes", prefix, get_entity_offset(ent));
 		if (is_Method_type(type)) {
 			const ir_graph *irg = get_entity_irg(ent);
 			if (irg != NULL) {
@@ -758,14 +764,6 @@ void dump_type_to_file(FILE *const F, const ir_type *const tp)
 		break;
 
 	case tpo_primitive:
-		if (verbosity & dump_verbosity_typeattrs) {
-			const ir_type *base_tp = get_primitive_base_type(tp);
-			if (base_tp != NULL)
-				ir_fprintf(F, "\n  base type: %+F", tp);
-			fprintf(F, "\n");
-		}
-		break;
-
 	case tpo_none:
 	case tpo_unknown:
 		fprintf(F, "\n");

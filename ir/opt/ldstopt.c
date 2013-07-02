@@ -996,23 +996,7 @@ static unsigned optimize_load(ir_node *load)
 				value = find_compound_ent_value(ptr);
 			}
 			if (value != NULL) {
-				ir_graph *irg = get_irn_irg(load);
 				value = can_replace_load_by_const(load, value);
-				if (value != NULL && is_Sel(ptr)) {
-					/* frontend has inserted masking operations after bitfield accesses,
-					 * so we might have to shift the const. */
-					unsigned char bit_offset = get_entity_offset_bits_remainder(get_Sel_entity(ptr));
-					if (bit_offset != 0) {
-						if (is_Const(value)) {
-							ir_tarval *tv_old = get_Const_tarval(value);
-							ir_tarval *tv_offset = new_tarval_from_long(bit_offset, mode_Bu);
-							ir_tarval *tv_new = tarval_shl(tv_old, tv_offset);
-							value = new_r_Const(irg, tv_new);
-						} else {
-							value = NULL;
-						}
-					}
-				}
 			}
 		}
 	}

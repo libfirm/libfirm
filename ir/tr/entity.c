@@ -44,7 +44,6 @@ static ir_entity *intern_new_entity(ir_type *owner, ir_entity_kind kind,
 	ir_entity *res = XMALLOCZ(ir_entity);
 	res->kind    = k_entity;
 	res->name    = name;
-	res->ld_name = NULL;
 	res->type    = type;
 	res->owner   = owner;
 
@@ -52,12 +51,7 @@ static ir_entity *intern_new_entity(ir_type *owner, ir_entity_kind kind,
 	res->volatility           = volatility_non_volatile;
 	res->aligned              = align_is_aligned;
 	res->usage                = ir_usage_unknown;
-	res->compiler_gen         = 0;
 	res->visibility           = ir_visibility_external;
-	res->offset               = -1;
-	res->offset_bit_remainder = 0;
-	res->alignment            = 0;
-	res->link                 = NULL;
 #ifdef DEBUG_libfirm
 	res->nr = get_irp_new_node_nr();
 #endif
@@ -90,6 +84,7 @@ ir_entity *new_d_entity(ir_type *owner, ident *name, ir_type *type,
 		res->attr.mtd_attr.irg           = NULL;
 	} else if (is_compound_type(owner) && !(owner->flags & tf_segment)) {
 		res = intern_new_entity(owner, IR_ENTITY_COMPOUND_MEMBER, name, type, db);
+		res->attr.compound_member.offset = -1;
 	} else {
 		res = intern_new_entity(owner, IR_ENTITY_NORMAL, name, type, db);
 	}
@@ -116,6 +111,7 @@ ir_entity *new_d_parameter_entity(ir_type *owner, size_t pos, ir_type *type,
 	ident     *name = make_parameter_entity_name(pos);
 	ir_entity *res
 		= intern_new_entity(owner, IR_ENTITY_PARAMETER, name, type, dbgi);
+	res->attr.compound_member.offset = -1;
 	res->attr.parameter.number = pos;
 	hook_new_entity(res);
 	return res;
@@ -717,14 +713,24 @@ void (set_entity_offset)(ir_entity *ent, int offset)
 	_set_entity_offset(ent, offset);
 }
 
-unsigned char (get_entity_offset_bits_remainder)(const ir_entity *ent)
+unsigned (get_entity_bitfield_offset)(const ir_entity *ent)
 {
-	return _get_entity_offset_bits_remainder(ent);
+	return _get_entity_bitfield_offset(ent);
 }
 
-void (set_entity_offset_bits_remainder)(ir_entity *ent, unsigned char offset)
+void (set_entity_bitfield_offset)(ir_entity *ent, unsigned offset)
 {
-	_set_entity_offset_bits_remainder(ent, offset);
+	_set_entity_bitfield_offset(ent, offset);
+}
+
+unsigned (get_entity_bitfield_size)(const ir_entity *ent)
+{
+	return _get_entity_bitfield_size(ent);
+}
+
+void (set_entity_bitfield_size)(ir_entity *ent, unsigned size)
+{
+	_set_entity_bitfield_size(ent, size);
 }
 
 void add_entity_overwrites(ir_entity *ent, ir_entity *overwritten)

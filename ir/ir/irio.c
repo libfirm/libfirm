@@ -559,16 +559,8 @@ static void write_type(write_env_t *env, ir_type *tp);
 
 static void write_type_primitive(write_env_t *env, ir_type *tp)
 {
-	ir_type *base_type = get_primitive_base_type(tp);
-
-	if (base_type != NULL)
-		write_type(env, base_type);
-
 	write_type_common(env, tp);
 	write_mode_ref(env, get_type_mode(tp));
-	if (base_type == NULL)
-		base_type = get_none_type();
-	write_type_ref(env, base_type);
 	fputc('\n', env->file);
 }
 
@@ -769,7 +761,8 @@ static void write_entity(write_env_t *env, ir_entity *ent)
 		break;
 	case IR_ENTITY_COMPOUND_MEMBER:
 		write_long(env, get_entity_offset(ent));
-		write_unsigned(env, get_entity_offset_bits_remainder(ent));
+		write_unsigned(env, get_entity_bitfield_offset(ent));
+		write_unsigned(env, get_entity_bitfield_size(ent));
 		break;
 	case IR_ENTITY_PARAMETER: {
 		size_t num = get_entity_parameter_number(ent);
@@ -1776,11 +1769,7 @@ static void read_type(read_env_t *env)
 
 	case tpo_primitive: {
 		ir_mode *mode = read_mode_ref(env);
-		ir_type *base_type = read_type_ref(env);
 		type = new_type_primitive(mode);
-		if (base_type != get_none_type()) {
-			set_primitive_base_type(type, base_type);
-		}
 		goto finish_type;
 	}
 
@@ -1880,8 +1869,9 @@ static void read_entity(read_env_t *env, ir_entity_kind kind)
 		entity = new_entity(owner, name, type);
 		if (ld_name != NULL)
 			set_entity_ld_ident(entity, ld_name);
-		set_entity_offset(entity, (int) read_long(env));
-		set_entity_offset_bits_remainder(entity, (unsigned char) read_long(env));
+		set_entity_offset(entity, read_int(env));
+		set_entity_bitfield_offset(entity, read_unsigned(env));
+		set_entity_bitfield_size(entity, read_unsigned(env));
 		break;
 	case IR_ENTITY_METHOD:
 		entity = new_entity(owner, name, type);
