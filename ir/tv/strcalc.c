@@ -868,7 +868,7 @@ void sc_val_from_bytes(unsigned char const *const bytes, size_t n_bytes,
 		buffer = calc_buffer;
 	char *p = (char*)buffer;
 	if (big_endian) {
-		for (unsigned char const *bp = bytes+n_bytes; bp >= bytes; --bp) {
+		for (unsigned char const *bp = bytes+n_bytes-1; bp >= bytes; --bp) {
 			unsigned char v = *bp;
 			*p++ =  v     & 0xf;
 			*p++ = (v>>4) & 0xf;
