@@ -284,7 +284,7 @@ void sparc_adjust_stack_entity_offsets(ir_graph *irg)
 	 *                   |-----------------------------|
 	 *                   | space for storing regarg0-5 |
 	 *      between type | pointer to aggregate return |
-	 *                   |      16 words save are      |
+	 *                   |      16 words save area     |
 	 *  stack pointer -> |-----------------------------|
 	 *                   |    high end of stackframe   |
 	 *                   |            ...              |
