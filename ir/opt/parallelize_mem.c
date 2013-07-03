@@ -24,6 +24,7 @@
 #include "irdump.h"
 #include "irflag_t.h"
 #include "iredges.h"
+#include "type_t.h"
 
 typedef struct parallelize_info
 {
@@ -58,7 +59,7 @@ static void parallelize_load(parallelize_info *pi, ir_node *irn)
 				ir_node *org_ptr    = pi->origin_ptr;
 				ir_mode *store_mode = get_irn_mode(get_Store_value(pred));
 				ir_node *store_ptr  = get_Store_ptr(pred);
-				if (get_alias_relation(org_ptr, org_mode, store_ptr, store_mode) == ir_no_alias) {
+				if (get_alias_relation(org_ptr, get_type_for_mode(org_mode), store_ptr, get_type_for_mode(store_mode)) == ir_no_alias) {
 					ir_node *mem = get_Store_mem(pred);
 					ir_nodeset_insert(&pi->user_mem, irn);
 					parallelize_load(pi, mem);
@@ -95,7 +96,7 @@ static void parallelize_store(parallelize_info *pi, ir_node *irn)
 				ir_node *org_ptr   = pi->origin_ptr;
 				ir_mode *load_mode = get_Load_mode(pred);
 				ir_node *load_ptr  = get_Load_ptr(pred);
-				if (get_alias_relation(org_ptr, org_mode, load_ptr, load_mode) == ir_no_alias) {
+				if (get_alias_relation(org_ptr, get_type_for_mode(org_mode), load_ptr, get_type_for_mode(load_mode)) == ir_no_alias) {
 					ir_node *mem = get_Load_mem(pred);
 					ir_nodeset_insert(&pi->user_mem, irn);
 					parallelize_store(pi, mem);
@@ -107,7 +108,7 @@ static void parallelize_store(parallelize_info *pi, ir_node *irn)
 				ir_node *org_ptr    = pi->origin_ptr;
 				ir_mode *store_mode = get_irn_mode(get_Store_value(pred));
 				ir_node *store_ptr  = get_Store_ptr(pred);
-				if (get_alias_relation(org_ptr, org_mode, store_ptr, store_mode) == ir_no_alias) {
+				if (get_alias_relation(org_ptr, get_type_for_mode(org_mode), store_ptr, get_type_for_mode(store_mode)) == ir_no_alias) {
 					ir_node *mem;
 
 					ir_nodeset_insert(&pi->user_mem, irn);

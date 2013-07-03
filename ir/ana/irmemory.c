@@ -27,6 +27,7 @@
 #include "debug.h"
 #include "error.h"
 #include "typerep.h"
+#include "type_t.h"
 
 /** The debug handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
@@ -301,7 +302,7 @@ static ir_alias_relation different_sel_offsets(const ir_node *sel1,
 		if (tp1 == tp2)
 			check_arr = 1;
 		else if (get_type_state(tp1) == layout_fixed && get_type_state(tp2) == layout_fixed &&
-		         get_type_size_bits(tp1) == get_type_size_bits(tp2))
+		         get_type_size_bytes(tp1) == get_type_size_bytes(tp2))
 			check_arr = 1;
 	}
 	if (check_arr) {
@@ -450,16 +451,17 @@ static const ir_node *skip_bitfield_sels(const ir_node *adr)
  * Determine the alias relation between two addresses.
  *
  * @param addr1  pointer address of the first memory operation
- * @param mode1  the mode of the accessed data through addr1
+ * @param type1  the type of the accessed data through addr1
  * @param addr2  pointer address of the second memory operation
- * @param mode2  the mode of the accessed data through addr2
+ * @param type2  the type of the accessed data through addr2
  *
  * @return found memory relation
  */
 static ir_alias_relation _get_alias_relation(
-	const ir_node *adr1, const ir_mode *const mode1,
-	const ir_node *adr2, const ir_mode *const mode2)
+	const ir_node *adr1, const ir_type *const type1,
+	const ir_node *adr2, const ir_type *const type2)
 {
+
 	if (!get_opt_alias_analysis())
 		return ir_may_alias;
 
@@ -547,16 +549,16 @@ static ir_alias_relation _get_alias_relation(
 		adr2 = ptr_node;
 	}
 
-	unsigned mode_size = get_mode_size_bytes(mode1);
-	if (get_mode_size_bytes(mode2) > mode_size) {
-		mode_size = get_mode_size_bytes(mode2);
+	unsigned type_size = get_type_size_bytes(type1);
+	if (get_type_size_bytes(type2) > type_size) {
+		type_size = get_type_size_bytes(type2);
 	}
 
 	/* same base address -> compare offsets if possible.
 	 * FIXME: type long is not sufficient for this task ...
 	 */
 	if (adr1 == adr2 && sym_offset1 == sym_offset2 && have_const_offsets) {
-		if ((unsigned long)labs(offset2 - offset1) >= mode_size)
+		if ((unsigned long)labs(offset2 - offset1) >= type_size)
 			return ir_no_alias;
 		else
 			return ir_sure_alias;
@@ -650,7 +652,7 @@ static ir_alias_relation _get_alias_relation(
 			tv            = get_Const_tarval(base2);
 			offset2      += get_tarval_long(tv);
 
-			if ((unsigned long)labs(offset2 - offset1) >= mode_size)
+			if ((unsigned long)labs(offset2 - offset1) >= type_size)
 				return ir_no_alias;
 			else
 				return ir_sure_alias;
@@ -662,23 +664,30 @@ static ir_alias_relation _get_alias_relation(
 		ir_alias_relation rel;
 
 		if (options & aa_opt_byte_type_may_alias) {
-			if (get_mode_size_bits(mode1) == 8 || get_mode_size_bits(mode2) == 8) {
-				/* One of the modes address a byte. Assume a ir_may_alias and leave
+			if (get_type_size_bytes(type1) == 1 || get_type_size_bytes(type2) == 1) {
+				/* One of the types address a byte. Assume a ir_may_alias and leave
 				   the type based check. */
 				goto leave_type_based_alias;
 			}
 		}
-		/* cheap check: If the mode sizes did not match, the types MUST be different */
-		if (get_mode_size_bits(mode1) != get_mode_size_bits(mode2))
+
+		/* cheap check: If the type sizes did not match, the types MUST be different */
+		if (get_type_size_bytes(type1) != get_type_size_bytes(type2))
 			return ir_no_alias;
 
-		/* cheap test: if only one is a reference mode, no alias */
-		if (mode_is_reference(mode1) != mode_is_reference(mode2))
+		/* cheap test: if only one is a reference type, no alias */
+		if (is_Pointer_type(type1) != is_Pointer_type(type2))
 			return ir_no_alias;
 
-		/* cheap test: if arithmetic is different, no alias */
-		if (get_mode_arithmetic(mode1) != get_mode_arithmetic(mode2))
-			return ir_no_alias;
+		if (is_Primitive_type(type1) && is_Primitive_type(type2)) {
+			const ir_mode *const mode1 = get_type_mode(type1);
+			const ir_mode *const mode2 = get_type_mode(type2);
+
+			/* cheap test: if arithmetic is different, no alias */
+			if (get_mode_arithmetic(mode1) != get_mode_arithmetic(mode2))
+				return ir_no_alias;
+
+		}
 
 		/* try rule R5 */
 		rel = different_types(orig_adr1, orig_adr2);
@@ -689,7 +698,7 @@ leave_type_based_alias:;
 
 	/* do we have a language specific memory disambiguator? */
 	if (language_disambuigator != NULL) {
-		ir_alias_relation rel = language_disambuigator(orig_adr1, mode1, orig_adr2, mode2);
+		ir_alias_relation rel = language_disambuigator(orig_adr1, type1, orig_adr2, type2);
 		if (rel != ir_may_alias)
 			return rel;
 	}
@@ -699,10 +708,10 @@ leave_type_based_alias:;
 }
 
 ir_alias_relation get_alias_relation(
-	const ir_node *const adr1, const ir_mode *const mode1,
-	const ir_node *const adr2, const ir_mode *const mode2)
+	const ir_node *const adr1, const ir_type *const type1,
+	const ir_node *const adr2, const ir_type *const type2)
 {
-	ir_alias_relation rel = _get_alias_relation(adr1, mode1, adr2, mode2);
+	ir_alias_relation rel = _get_alias_relation(adr1, type1, adr2, type2);
 	DB((dbg, LEVEL_1, "alias(%+F, %+F) = %s\n", adr1, adr2, get_ir_alias_relation_name(rel)));
 	return rel;
 }
@@ -718,9 +727,9 @@ static set *result_cache = NULL;
 /** An entry in the relation cache. */
 typedef struct mem_disambig_entry {
 	const ir_node     *adr1;    /**< The first address. */
-	const ir_mode     *mode1;   /**< The first address mode. */
+	const ir_type     *type1;   /**< The first address type. */
 	const ir_node     *adr2;    /**< The second address. */
-	const ir_mode     *mode2;   /**< The second address mode. */
+	const ir_type     *type2;   /**< The second address type. */
 	ir_alias_relation result;   /**< The alias relation result. */
 } mem_disambig_entry;
 
@@ -735,7 +744,7 @@ static int cmp_mem_disambig_entry(const void *elt, const void *key, size_t size)
 	const mem_disambig_entry *p1 = (const mem_disambig_entry*) elt;
 	const mem_disambig_entry *p2 = (const mem_disambig_entry*) key;
 	return p1->adr1 == p2->adr1 && p1->adr2 == p2->adr2 &&
-	       p1->mode1 == p2->mode1 && p1->mode2 == p2->mode2;
+	       p1->type1 == p2->type1 && p1->type2 == p2->type2;
 }
 
 void mem_disambig_init(void)
@@ -744,8 +753,8 @@ void mem_disambig_init(void)
 }
 
 ir_alias_relation get_alias_relation_ex(
-	const ir_node *adr1, const ir_mode *mode1,
-	const ir_node *adr2, const ir_mode *mode2)
+	const ir_node *adr1, const ir_type *type1,
+	const ir_node *adr2, const ir_type *type2)
 {
 	ir_fprintf(stderr, "%+F <-> %+F\n", adr1, adr2);
 
@@ -761,13 +770,13 @@ ir_alias_relation get_alias_relation_ex(
 	mem_disambig_entry key;
 	key.adr1  = adr1;
 	key.adr2  = adr2;
-	key.mode1 = mode1;
-	key.mode2 = mode2;
+	key.type1 = type1;
+	key.type2 = type2;
 	mem_disambig_entry *entry = set_find(mem_disambig_entry, result_cache, &key, sizeof(key), HASH_ENTRY(adr1, adr2));
 	if (entry != NULL)
 		return entry->result;
 
-	key.result = get_alias_relation(adr1, mode1, adr2, mode2);
+	key.result = get_alias_relation(adr1, type1, adr2, type2);
 
 	(void)set_insert(mem_disambig_entry, result_cache, &key, sizeof(key), HASH_ENTRY(adr1, adr2));
 	return key.result;

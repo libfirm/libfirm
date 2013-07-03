@@ -16,6 +16,7 @@
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "irmode_t.h"
+#include "type_t.h"
 #include "iropt_t.h"
 #include "ircons_t.h"
 #include "irgmod.h"
@@ -673,8 +674,9 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr)
 			/* check if we can pass through this store */
 			ir_alias_relation rel = get_alias_relation(
 				get_Store_ptr(pred),
-				get_irn_mode(get_Store_value(pred)),
-				ptr, load_mode);
+				get_type_for_mode(get_irn_mode(get_Store_value(pred))),
+				ptr,
+				get_type_for_mode(load_mode));
 			/* if the might be an alias, we cannot pass this Store */
 			if (rel != ir_no_alias)
 				break;
@@ -930,16 +932,19 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr, bool h
 			/* check if we can pass through this store */
 			ir_alias_relation rel = get_alias_relation(
 				get_Store_ptr(pred),
-				get_irn_mode(get_Store_value(pred)),
-				ptr, mode);
+				get_type_for_mode(get_irn_mode(get_Store_value(pred))),
+				ptr,
+				get_type_for_mode(mode));
 			/* if the might be an alias, we cannot pass this Store */
 			if (rel != ir_no_alias)
 				break;
 			pred = skip_Proj(get_Store_mem(pred));
 		} else if (is_Load(pred)) {
 			ir_alias_relation rel = get_alias_relation(
-				get_Load_ptr(pred), get_Load_mode(pred),
-				ptr, mode);
+				get_Load_ptr(pred),
+				get_type_for_mode(get_Load_mode(pred)),
+				ptr,
+				get_type_for_mode(mode));
 			if (rel != ir_no_alias)
 				break;
 
@@ -1541,8 +1546,9 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 				if (is_Store(other)) {
 					ir_alias_relation rel = get_alias_relation(
 						get_Store_ptr(other),
-						get_irn_mode(get_Store_value(other)),
-						ptr, load_mode);
+						get_type_for_mode(get_irn_mode(get_Store_value(other))),
+						ptr,
+						get_type_for_mode(load_mode));
 					/* if the might be an alias, we cannot pass this Store */
 					if (rel != ir_no_alias)
 						break;

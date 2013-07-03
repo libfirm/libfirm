@@ -77,8 +77,8 @@ FIRM_API ir_storage_class_class_t get_base_sc(ir_storage_class_class_t x);
  * Called by get_alias_relation().
  */
 typedef ir_alias_relation (*DISAMBIGUATOR_FUNC)(
-	const ir_node *adr1, const ir_mode *mode1,
-	const ir_node *adr2, const ir_mode *mode2);
+	const ir_node *adr1, const ir_type *type1,
+	const ir_node *adr2, const ir_type *type2);
 
 /**
  * Classify a base pointer.
@@ -98,9 +98,9 @@ FIRM_API const char *get_ir_alias_relation_name(ir_alias_relation rel);
  * Determine the alias relation between two addresses.
  *
  * @param adr1    The first address.
- * @param mode1   The mode of the first memory access.
+ * @param type1   The type of the first memory access.
  * @param adr2    The second address.
- * @param mode2   The mode of the second memory access.
+ * @param type2   The type of the second memory access.
  *
  * The memory disambiguator tries to determine the alias state between
  * two memory addresses. The following rules are used:
@@ -128,8 +128,8 @@ FIRM_API const char *get_ir_alias_relation_name(ir_alias_relation rel);
  * interrogated to detect the alias relation.
  */
 FIRM_API ir_alias_relation get_alias_relation(
-	const ir_node *adr1, const ir_mode *mode1,
-	const ir_node *adr2, const ir_mode *mode2);
+	const ir_node *adr1, const ir_type *type1,
+	const ir_node *adr2, const ir_type *type2);
 
 /**
  * Sets a source language specific memory disambiguator function.
@@ -148,15 +148,15 @@ FIRM_API void mem_disambig_init(void);
  * cache the result.
  *
  * @param adr1    The first address.
- * @param mode1   The mode of the first memory access.
+ * @param type1   The type of the first memory access.
  * @param adr2    The second address.
- * @param mode2   The mode of the second memory access.
+ * @param type2   The type of the second memory access.
  *
  * @see get_alias_relation()
  */
 FIRM_API ir_alias_relation get_alias_relation_ex(
-	const ir_node *adr1, const ir_mode *mode1,
-	const ir_node *adr2, const ir_mode *mode2);
+	const ir_node *adr1, const ir_type *type1,
+	const ir_node *adr2, const ir_type *type2);
 
 /**
  * Free the relation cache.
