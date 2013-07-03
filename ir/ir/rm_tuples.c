@@ -22,8 +22,6 @@
  */
 static void exchange_tuple_projs(ir_node *node, void *env)
 {
-	(void)env;
-
 	if (!is_Proj(node))
 		return;
 
