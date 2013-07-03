@@ -23,8 +23,12 @@
 static void exchange_tuple_projs(ir_node *node, void *env)
 {
 	(void)env;
+
 	if (!is_Proj(node))
 		return;
+
+	/* Handle Tuple(Tuple,...) case. */
+	exchange_tuple_projs(get_Proj_pred(node), env);
 
 	ir_node *pred = get_Proj_pred(node);
 	if (!is_Tuple(pred))
@@ -37,7 +41,7 @@ static void exchange_tuple_projs(ir_node *node, void *env)
 
 void remove_tuples(ir_graph *irg)
 {
-	irg_walk_graph(irg, NULL, exchange_tuple_projs, NULL);
+	irg_walk_graph(irg, exchange_tuple_projs, NULL, NULL);
 
 	/* remove Tuples only held by keep-alive edges */
 	ir_node *end = get_irg_end(irg);
