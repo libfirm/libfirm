@@ -948,30 +948,50 @@ static void memperm_emit_restore_registers(const ir_node *node, int n_spilled)
 	sparc_emitf(node, "add %%sp, %u, %%sp", sp_change);
 }
 
+static int get_real_entity_offset(const ir_node *node, ir_entity *ent)
+{
+	ir_graph          *irg     = get_irn_irg(node);
+	be_stack_layout_t *layout  = be_get_irg_stack_layout(irg);
+	const int          off_ent = be_get_stack_entity_offset(layout, ent, 0);
+
+	if (layout->sp_relative) {
+		ir_entity *ent_ref   = be_get_MemPerm_in_entity(node, 0);
+		const int  off_ref   = be_get_stack_entity_offset(layout, ent_ref, 0);
+		const int  delta_ent = off_ent - off_ref;
+		const int  offset    = be_get_MemPerm_offset(node);
+		const int  sp_change = (int)get_aligned_sp_change(2);
+		return offset + delta_ent + sp_change;
+	} else {
+		return off_ent;
+	}
+}
+
 static void memperm_emit_copy(const ir_node *node, ir_entity *in_ent,
                               ir_entity *out_ent)
 {
 	ir_graph          *irg     = get_irn_irg(node);
 	be_stack_layout_t *layout  = be_get_irg_stack_layout(irg);
-	int                off_in  = be_get_stack_entity_offset(layout, in_ent, 0);
-	int                off_out = be_get_stack_entity_offset(layout, out_ent, 0);
+	const char        *reg     = layout->sp_relative ? "sp" : "fp";
+	const int          off_in  = get_real_entity_offset(node, in_ent);
+	const int          off_out = get_real_entity_offset(node, out_ent);
 
-	sparc_emitf(node, "ld [%%fp%+d], %%l0", off_in);
-	sparc_emitf(node, "st %%l0, [%%fp%+d]", off_out);
+	sparc_emitf(node, "ld [%%%s%+d], %%l0", reg, off_in);
+	sparc_emitf(node, "st %%l0, [%%%s%+d]", reg, off_out);
 }
 
 static void memperm_emit_swap(const ir_node *node, ir_entity *ent1,
                               ir_entity *ent2)
 {
-	ir_graph          *irg     = get_irn_irg(node);
-	be_stack_layout_t *layout  = be_get_irg_stack_layout(irg);
-	int                off1    = be_get_stack_entity_offset(layout, ent1, 0);
-	int                off2    = be_get_stack_entity_offset(layout, ent2, 0);
+	ir_graph          *irg    = get_irn_irg(node);
+	be_stack_layout_t *layout = be_get_irg_stack_layout(irg);
+	const char        *reg    = layout->sp_relative ? "sp" : "fp";
+	const int          off1   = get_real_entity_offset(node, ent1);
+	const int          off2   = get_real_entity_offset(node, ent2);
 
-	sparc_emitf(node, "ld [%%fp%+d], %%l0", off1);
-	sparc_emitf(node, "ld [%%fp%+d], %%l1", off2);
-	sparc_emitf(node, "st %%l0, [%%fp%+d]", off2);
-	sparc_emitf(node, "st %%l1, [%%fp%+d]", off1);
+	sparc_emitf(node, "ld [%%%s%+d], %%l0", reg, off1);
+	sparc_emitf(node, "ld [%%%s%+d], %%l1", reg, off2);
+	sparc_emitf(node, "st %%l0, [%%%s%+d]", reg, off2);
+	sparc_emitf(node, "st %%l1, [%%%s%+d]", reg, off1);
 }
 
 static int get_index(ir_entity **ents, int n, ir_entity *ent)
@@ -1006,13 +1026,6 @@ static void emit_be_MemPerm(const ir_node *node)
 	int        *n_users       = ALLOCANZ(int,         max_size);
 	/* n_spilled records the number of spilled registers, either 1 or 2. */
 	int         n_spilled     = 0;
-
-#ifndef NDEBUG
-	/* This implementation currently only works with frame pointers. */
-	ir_graph          *irg    = get_irn_irg(node);
-	be_stack_layout_t *layout = be_get_irg_stack_layout(irg);
-	assert(!layout->sp_relative && "MemPerms currently do not work without frame pointers");
-#endif
 
 	for (int i = 0; i < max_size; ++i) {
 		sourceof[i] = i;
