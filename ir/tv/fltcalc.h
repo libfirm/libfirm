@@ -125,11 +125,11 @@ fp_value *fc_get_plusinf(const float_descriptor_t *desc, fp_value *result);
 fp_value *fc_get_minusinf(const float_descriptor_t *desc, fp_value *result);
 /*@}*/
 
-int fc_is_zero(const fp_value *a);
-int fc_is_negative(const fp_value *a);
-int fc_is_inf(const fp_value *a);
-int fc_is_nan(const fp_value *a);
-int fc_is_subnormal(const fp_value *a);
+bool fc_is_zero(const fp_value *a);
+bool fc_is_negative(const fp_value *a);
+bool fc_is_inf(const fp_value *a);
+bool fc_is_nan(const fp_value *a);
+bool fc_is_subnormal(const fp_value *a);
 
 fp_value *fc_add(const fp_value *a, const fp_value *b, fp_value *result);
 fp_value *fc_sub(const fp_value *a, const fp_value *b, fp_value *result);
@@ -154,22 +154,22 @@ ir_relation fc_comp(const fp_value *a, const fp_value *b);
 /**
  * Converts an floating point value into an integer value.
  */
-int fc_flt2int(const fp_value *a, void *result, ir_mode *dst_mode);
+bool fc_flt2int(const fp_value *a, void *result, ir_mode *dst_mode);
 
 /**
  * Returns non-zero if the mantissa is zero, i.e. 1.0Exxx
  */
-int fc_zero_mantissa(const fp_value *value);
+bool fc_zero_mantissa(const fp_value *value);
 
-/**
- * Returns the exponent of a value.
- */
+/** Returns the exponent of a value. */
 int fc_get_exponent(const fp_value *value);
 
 /**
- * Return non-zero if a given value can be converted lossless into another precision.
+ * Return non-zero if a given value can be converted lossless into another
+ * precision.
  */
-int fc_can_lossless_conv_to(const fp_value *value, const float_descriptor_t *desc);
+bool fc_can_lossless_conv_to(const fp_value *value,
+                             const float_descriptor_t *desc);
 
 /** Set new rounding mode
  * This function sets the rounding mode to one of the following, returning

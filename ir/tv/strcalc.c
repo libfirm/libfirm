@@ -41,7 +41,7 @@ static int bit_pattern_size;        /* maximum number of bits */
 static int calc_buffer_size;        /* size of internally stored values */
 static int max_value_size;          /* maximum size of values */
 
-static int carry_flag;              /**< some computation set the carry_flag:
+static bool carry_flag;             /**< some computation set the carry_flag:
                                          - right shift if bits were lost due to shifting
                                          - division if there was a remainder
                                          However, the meaning of carry is machine dependent
@@ -454,7 +454,7 @@ static void do_shr(const char *val1, char *buffer, long shift_cnt, int bitsize,
 	/* if shifting far enough the result is either 0 or -1 */
 	if (shift_cnt >= bitsize) {
 		if (!sc_is_zero(val1)) {
-			carry_flag = 1;
+			carry_flag = true;
 		}
 		memset(buffer, sign, calc_buffer_size);
 		return;
@@ -466,12 +466,12 @@ static void do_shr(const char *val1, char *buffer, long shift_cnt, int bitsize,
 	/* check if any bits are lost, and set carry_flag if so */
 	for (int counter = 0; counter < shift_nib; ++counter) {
 		if (val1[counter] != 0) {
-			carry_flag = 1;
+			carry_flag = true;
 			break;
 		}
 	}
 	if ((_val(val1[shift_nib]) & ((1<<shift_mod)-1)) != 0)
-		carry_flag = 1;
+		carry_flag = true;
 
 	/* shift digits to the right with offset, carry and all */
 	buffer[0] = shrs_table[_val(val1[shift_nib])][shift_mod][0];
@@ -695,15 +695,13 @@ void sc_min_from_bits(unsigned int num_bits, unsigned int sign, void *buffer)
 
 void sc_max_from_bits(unsigned int num_bits, unsigned int sign, void *buffer)
 {
-	char* pos;
-	int i, bits;
-
 	if (buffer == NULL) buffer = calc_buffer;
 	CLEAR_BUFFER(buffer);
-	pos = (char*) buffer;
+	char *pos = (char*) buffer;
 
-	bits = num_bits - sign;
-	for (i = 0; i < bits/4; i++)
+	int bits = num_bits - sign;
+	int i    = 0;
+	for ( ; i < bits/4; i++)
 		*pos++ = SC_F;
 
 	*pos++ = max_digit[bits%4];
@@ -1049,7 +1047,7 @@ int sc_get_precision(void)
 void sc_add(const void *value1, const void *value2, void *buffer)
 {
 	CLEAR_BUFFER(calc_buffer);
-	carry_flag = 0;
+	carry_flag = false;
 
 	do_add((const char*) value1, (const char*) value2, (char*) calc_buffer);
 
@@ -1061,7 +1059,7 @@ void sc_add(const void *value1, const void *value2, void *buffer)
 void sc_sub(const void *value1, const void *value2, void *buffer)
 {
 	CLEAR_BUFFER(calc_buffer);
-	carry_flag = 0;
+	carry_flag = false;
 
 	do_sub((const char*) value1, (const char*) value2, calc_buffer);
 
@@ -1072,7 +1070,7 @@ void sc_sub(const void *value1, const void *value2, void *buffer)
 
 void sc_neg(const void *value1, void *buffer)
 {
-	carry_flag = 0;
+	carry_flag = false;
 
 	do_negate((const char*) value1, calc_buffer);
 
@@ -1084,7 +1082,7 @@ void sc_neg(const void *value1, void *buffer)
 void sc_and(const void *value1, const void *value2, void *buffer)
 {
 	CLEAR_BUFFER(calc_buffer);
-	carry_flag = 0;
+	carry_flag = false;
 
 	do_bitand((const char*) value1, (const char*) value2, calc_buffer);
 
@@ -1096,7 +1094,7 @@ void sc_and(const void *value1, const void *value2, void *buffer)
 void sc_andnot(const void *value1, const void *value2, void *buffer)
 {
 	CLEAR_BUFFER(calc_buffer);
-	carry_flag = 0;
+	carry_flag = false;
 
 	do_bitandnot((const char*) value1, (const char*) value2, calc_buffer);
 
@@ -1108,7 +1106,7 @@ void sc_andnot(const void *value1, const void *value2, void *buffer)
 void sc_or(const void *value1, const void *value2, void *buffer)
 {
 	CLEAR_BUFFER(calc_buffer);
-	carry_flag = 0;
+	carry_flag = false;
 
 	do_bitor((const char*) value1, (const char*) value2, calc_buffer);
 
@@ -1120,7 +1118,7 @@ void sc_or(const void *value1, const void *value2, void *buffer)
 void sc_xor(const void *value1, const void *value2, void *buffer)
 {
 	CLEAR_BUFFER(calc_buffer);
-	carry_flag = 0;
+	carry_flag = false;
 
 	do_bitxor((const char*) value1, (const char*) value2, calc_buffer);
 
@@ -1132,7 +1130,7 @@ void sc_xor(const void *value1, const void *value2, void *buffer)
 void sc_not(const void *value1, void *buffer)
 {
 	CLEAR_BUFFER(calc_buffer);
-	carry_flag = 0;
+	carry_flag = false;
 
 	do_bitnot((const char*) value1, calc_buffer);
 
@@ -1144,7 +1142,7 @@ void sc_not(const void *value1, void *buffer)
 void sc_mul(const void *value1, const void *value2, void *buffer)
 {
 	CLEAR_BUFFER(calc_buffer);
-	carry_flag = 0;
+	carry_flag = false;
 
 	do_mul((const char*) value1, (const char*) value2, calc_buffer);
 
@@ -1159,7 +1157,7 @@ void sc_div(const void *value1, const void *value2, void *buffer)
 	char *unused_res = (char*) alloca(calc_buffer_size);
 
 	CLEAR_BUFFER(calc_buffer);
-	carry_flag = 0;
+	carry_flag = false;
 
 	do_divmod((const char*) value1, (const char*) value2, calc_buffer, unused_res);
 
@@ -1174,7 +1172,7 @@ void sc_mod(const void *value1, const void *value2, void *buffer)
 	char *unused_res = (char*) alloca(calc_buffer_size);
 
 	CLEAR_BUFFER(calc_buffer);
-	carry_flag = 0;
+	carry_flag = false;
 
 	do_divmod((const char*) value1, (const char*) value2, unused_res, calc_buffer);
 
@@ -1186,7 +1184,7 @@ void sc_mod(const void *value1, const void *value2, void *buffer)
 void sc_divmod(const void *value1, const void *value2, void *div_buffer, void *mod_buffer)
 {
 	CLEAR_BUFFER(calc_buffer);
-	carry_flag = 0;
+	carry_flag = false;
 
 	do_divmod((const char*) value1, (const char*) value2, (char*) div_buffer, (char*) mod_buffer);
 }
@@ -1194,7 +1192,7 @@ void sc_divmod(const void *value1, const void *value2, void *div_buffer, void *m
 
 void sc_shlI(const void *val1, long shift_cnt, int bitsize, int sign, void *buffer)
 {
-	carry_flag = 0;
+	carry_flag = false;
 
 	do_shl((const char*) val1, calc_buffer, shift_cnt, bitsize, sign);
 
@@ -1212,7 +1210,7 @@ void sc_shl(const void *val1, const void *val2, int bitsize, int sign, void *buf
 
 void sc_shrI(const void *val1, long shift_cnt, int bitsize, int sign, void *buffer)
 {
-	carry_flag = 0;
+	carry_flag = false;
 
 	do_shr((const char*) val1, calc_buffer, shift_cnt, bitsize, sign, 0);
 
@@ -1230,7 +1228,7 @@ void sc_shr(const void *val1, const void *val2, int bitsize, int sign, void *buf
 
 void sc_shrsI(const void *val1, long shift_cnt, int bitsize, int sign, void *buffer)
 {
-	carry_flag = 0;
+	carry_flag = false;
 
 	do_shr((const char*) val1, calc_buffer, shift_cnt, bitsize, sign, 1);
 
@@ -1243,7 +1241,7 @@ void sc_shrs(const void *val1, const void *val2, int bitsize, int sign, void *bu
 {
 	long offset = sc_val_to_long(val2);
 
-	carry_flag = 0;
+	carry_flag = false;
 
 	do_shr((const char*) val1, calc_buffer, offset, bitsize, sign, 1);
 
@@ -1257,5 +1255,5 @@ void sc_zero(void *buffer)
 	if (buffer == NULL)
 		buffer = calc_buffer;
 	CLEAR_BUFFER(buffer);
-	carry_flag = 0;
+	carry_flag = false;
 }
