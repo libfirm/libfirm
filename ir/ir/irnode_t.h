@@ -53,7 +53,6 @@
 #define is_Const_all_one(node)                is_Const_all_one_(node)
 #define is_irn_forking(node)                  is_irn_forking_(node)
 #define copy_node_attr(irg,oldn,newn)         copy_node_attr_(irg,oldn,newn)
-#define get_irn_type(node)                    get_irn_type_(node)
 #define get_irn_type_attr(node)               get_irn_type_attr_(node)
 #define get_irn_entity_attr(node)             get_irn_entity_attr_(node)
 #define is_irn_constlike(node)                is_irn_constlike_(node)
