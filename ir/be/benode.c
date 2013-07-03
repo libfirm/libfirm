@@ -99,6 +99,7 @@ typedef struct {
 	be_node_attr_t base;
 	ir_entity    **in_entities;
 	ir_entity    **out_entities;
+	int            offset;
 } be_memperm_attr_t;
 
 ir_op *op_be_Spill;
@@ -405,6 +406,7 @@ ir_node *be_new_MemPerm(ir_node *block, int n, ir_node *in[])
 	attr               = (be_memperm_attr_t*)get_irn_generic_attr(irn);
 	attr->in_entities  = OALLOCNZ(irg->obst, ir_entity*, n);
 	attr->out_entities = OALLOCNZ(irg->obst, ir_entity*, n);
+	attr->offset       = 0;
 
 	return irn;
 }
@@ -767,6 +769,8 @@ ir_entity *be_get_frame_entity(const ir_node *irn)
 	if (be_has_frame_entity(irn)) {
 		const be_frame_attr_t *a = (const be_frame_attr_t*)get_irn_generic_attr_const(irn);
 		return a->ent;
+	} else if (be_is_MemPerm(irn)) {
+		return be_get_MemPerm_in_entity(irn, 0);
 	}
 	return NULL;
 }
@@ -777,6 +781,8 @@ int be_get_frame_offset(const ir_node *irn)
 	if (be_has_frame_entity(irn)) {
 		const be_frame_attr_t *a = (const be_frame_attr_t*)get_irn_generic_attr_const(irn);
 		return a->offset;
+	} else if (be_is_MemPerm(irn)) {
+		return be_get_MemPerm_offset(irn);
 	}
 	return 0;
 }
@@ -819,6 +825,22 @@ ir_entity* be_get_MemPerm_out_entity(const ir_node* irn, int n)
 	assert(n < be_get_MemPerm_entity_arity(irn));
 
 	return attr->out_entities[n];
+}
+
+void be_set_MemPerm_offset(ir_node *irn, int offset)
+{
+	be_memperm_attr_t *attr = (be_memperm_attr_t*)get_irn_generic_attr(irn);
+
+	assert(be_is_MemPerm(irn));
+	attr->offset = offset;
+}
+
+int be_get_MemPerm_offset(const ir_node *irn)
+{
+	const be_memperm_attr_t *attr = (const be_memperm_attr_t*)get_irn_generic_attr_const(irn);
+
+	assert(be_is_MemPerm(irn));
+	return attr->offset;
 }
 
 int be_get_MemPerm_entity_arity(const ir_node *irn)
@@ -943,12 +965,14 @@ void be_node_set_frame_entity(ir_node *irn, ir_entity *ent)
 
 static void be_node_set_frame_offset(ir_node *irn, int offset)
 {
-	be_frame_attr_t *a;
-
+	if (be_is_MemPerm(irn)) {
+		be_set_MemPerm_offset(irn, offset);
+		return;
+	}
 	if (!be_has_frame_entity(irn))
 		return;
 
-	a = (be_frame_attr_t*)get_irn_generic_attr(irn);
+	be_frame_attr_t *a = (be_frame_attr_t*)get_irn_generic_attr(irn);
 	a->offset = offset;
 }
 
