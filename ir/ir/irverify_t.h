@@ -21,13 +21,10 @@ extern const char *firm_verify_failure_msg;
 
 #define ASSERT_AND_RET(expr, string, ret) \
 do { \
-  if (opt_do_node_verification == FIRM_VERIFICATION_ON) {\
-    if (!(expr) && current_ir_graph != get_const_code_irg()) \
-      dump_ir_graph(current_ir_graph, "assert"); \
-    assert((expr) && string); } \
+  if (!(expr) && current_ir_graph != get_const_code_irg()) \
+    dump_ir_graph(current_ir_graph, "assert"); \
+  assert((expr) && string); \
   if (!(expr)) { \
-    if (opt_do_node_verification == FIRM_VERIFICATION_REPORT) \
-      fprintf(stderr, #expr " : " string "\n"); \
     firm_verify_failure_msg = #expr " && " string; \
     return (ret); \
   } \
@@ -37,14 +34,10 @@ do { \
 do { \
   if (!(expr)) { \
     firm_verify_failure_msg = #expr " && " string; \
-    if (opt_do_node_verification != FIRM_VERIFICATION_ERROR_ONLY) { blk } \
-    if (opt_do_node_verification == FIRM_VERIFICATION_REPORT) \
-      fprintf(stderr, #expr " : " string "\n"); \
-    else if (opt_do_node_verification == FIRM_VERIFICATION_ON) { \
-      if (!(expr) && current_ir_graph != get_const_code_irg()) \
-        dump_ir_graph(current_ir_graph, "assert"); \
-      assert((expr) && string); \
-    } \
+    blk \
+    if (!(expr) && current_ir_graph != get_const_code_irg()) \
+      dump_ir_graph(current_ir_graph, "assert"); \
+    assert((expr) && string); \
     return (ret); \
   } \
 } while(0)

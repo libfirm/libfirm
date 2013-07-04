@@ -159,9 +159,6 @@ parse_error(read_env_t *env, const char *fmt, ...)
 	fprintf(stderr, "%s:%u: error ", env->inputname, line);
 	env->read_errors = true;
 
-	/* let's hope firm doesn't die on further errors */
-	do_node_verification(FIRM_VERIFICATION_OFF);
-
 	va_start(ap, fmt);
 	vfprintf(stderr, fmt, ap);
 	va_end(ap);

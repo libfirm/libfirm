@@ -1457,9 +1457,6 @@ static int check_dominance_for_node(const ir_node *use)
 
 int irn_verify_irg(const ir_node *n, ir_graph *irg)
 {
-	if (!get_node_verification_mode())
-		return 1;
-
 	/*
 	 * do NOT check placement in interprocedural view, as we don't always
 	 * know the "right" graph ...
@@ -1732,15 +1729,6 @@ int irg_verify(ir_graph *irg, unsigned flags)
 		&res
 	);
 
-	if (get_node_verification_mode() == FIRM_VERIFICATION_REPORT && !res) {
-		ir_entity *ent = get_irg_entity(irg);
-
-		if (ent)
-			fprintf(stderr, "irg_verify: Verifying graph %s failed\n", get_entity_name(ent));
-		else
-			fprintf(stderr, "irg_verify: Verifying graph %p failed\n", (void *)irg);
-	}
-
 #else
 	(void)irg;
 	(void)flags;
@@ -1752,15 +1740,11 @@ int irg_verify(ir_graph *irg, unsigned flags)
 int irn_verify_irg_dump(const ir_node *n, ir_graph *irg,
                         const char **bad_string)
 {
-	firm_verification_t old = get_node_verification_mode();
-
 	firm_verify_failure_msg = NULL;
-	do_node_verification(FIRM_VERIFICATION_ERROR_ONLY);
 	int res = irn_verify_irg(n, irg);
 	if (res && irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE) &&
 	    get_irg_pinned(irg) == op_pin_state_pinned)
 		res = check_dominance_for_node(n);
-	do_node_verification(old);
 	*bad_string = firm_verify_failure_msg;
 
 	return res;
@@ -1789,12 +1773,8 @@ static void check_bads(ir_node *node, void *env)
 				if (is_Bad(pred)) {
 					venv->res |= BAD_CF;
 
-					if (get_node_verification_mode() == FIRM_VERIFICATION_REPORT) {
-						fprintf(stderr, "irg_verify_bads: Block %ld has Bad predecessor\n", get_irn_node_nr(node));
-					}
-					if (get_node_verification_mode() == FIRM_VERIFICATION_ON) {
-						dump_ir_graph(irg, "assert");
-					}
+					fprintf(stderr, "irg_verify_bads: Block %ld has Bad predecessor\n", get_irn_node_nr(node));
+					dump_ir_graph(irg, "assert");
 				}
 			}
 		}
@@ -1805,12 +1785,8 @@ static void check_bads(ir_node *node, void *env)
 			if (is_Bad(get_nodes_block(node))) {
 				venv->res |= BAD_BLOCK;
 
-				if (get_node_verification_mode() == FIRM_VERIFICATION_REPORT) {
-					fprintf(stderr, "irg_verify_bads: node %ld has Bad Block\n", get_irn_node_nr(node));
-				}
-				if (get_node_verification_mode() == FIRM_VERIFICATION_ON) {
-					dump_ir_graph(irg, "assert");
-				}
+				fprintf(stderr, "irg_verify_bads: node %ld has Bad Block\n", get_irn_node_nr(node));
+				dump_ir_graph(irg, "assert");
 			}
 		}
 
@@ -1818,12 +1794,8 @@ static void check_bads(ir_node *node, void *env)
 			if (is_Tuple(node)) {
 				venv->res |= TUPLE;
 
-				if (get_node_verification_mode() == FIRM_VERIFICATION_REPORT) {
-					fprintf(stderr, "irg_verify_bads: node %ld is a Tuple\n", get_irn_node_nr(node));
-				}
-				if (get_node_verification_mode() == FIRM_VERIFICATION_ON) {
-					dump_ir_graph(irg, "assert");
-				}
+				fprintf(stderr, "irg_verify_bads: node %ld is a Tuple\n", get_irn_node_nr(node));
+				dump_ir_graph(irg, "assert");
 			}
 		}
 
@@ -1838,12 +1810,8 @@ static void check_bads(ir_node *node, void *env)
 					else {
 						venv->res |= BAD_CF;
 
-						if (get_node_verification_mode() == FIRM_VERIFICATION_REPORT) {
-							fprintf(stderr, "irg_verify_bads: Phi %ld has Bad Input\n", get_irn_node_nr(node));
-						}
-						if (get_node_verification_mode() == FIRM_VERIFICATION_ON) {
-							dump_ir_graph(irg, "assert");
-						}
+						fprintf(stderr, "irg_verify_bads: Phi %ld has Bad Input\n", get_irn_node_nr(node));
+						dump_ir_graph(irg, "assert");
 					}
 				}
 
@@ -1851,12 +1819,8 @@ static void check_bads(ir_node *node, void *env)
 				if ((venv->flags & BAD_DF) == 0) {
 					venv->res |= BAD_DF;
 
-					if (get_node_verification_mode() == FIRM_VERIFICATION_REPORT) {
-						fprintf(stderr, "irg_verify_bads: node %ld has Bad Input\n", get_irn_node_nr(node));
-					}
-					if (get_node_verification_mode() == FIRM_VERIFICATION_ON) {
-						dump_ir_graph(irg, "assert");
-					}
+					fprintf(stderr, "irg_verify_bads: node %ld has Bad Input\n", get_irn_node_nr(node));
+					dump_ir_graph(irg, "assert");
 				}
 			}
 		}

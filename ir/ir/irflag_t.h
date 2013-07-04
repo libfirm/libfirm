@@ -44,7 +44,6 @@ typedef enum {
 } libfirm_running_t;
 
 extern optimization_state_t libFIRM_opt, libFIRM_running, libFIRM_verb;
-extern firm_verification_t opt_do_node_verification;
 
 /** initialises the flags */
 void firm_init_flags(void);
@@ -80,11 +79,6 @@ static inline void set_##name##_running(int flag) {\
 static inline int get_optimize_(void)
 {
 	return get_opt_optimize();
-}
-
-static inline firm_verification_t get_node_verification_mode(void)
-{
-	return opt_do_node_verification;
 }
 
 #define get_optimize()                           get_optimize_()

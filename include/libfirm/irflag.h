@@ -142,33 +142,6 @@ FIRM_API void all_optimizations_off(void);
 
 /** @} */
 
-/** @ingroup irverify
- * @defgroup irverify_flags Flags
- * Enable/Disable automatic correctness tests
- * @{
- */
-
-/**
- * Possible verification modes.
- */
-typedef enum firm_verification_t {
-  FIRM_VERIFICATION_OFF        = 0, /**< do not verify nodes at all */
-  FIRM_VERIFICATION_ON         = 1, /**< do node verification and assert on error in debug version */
-  FIRM_VERIFICATION_REPORT     = 2, /**< do node verification, but report to stderr only */
-  FIRM_VERIFICATION_ERROR_ONLY = 3  /**< do node verification, but NEVER do assert nor report */
-} firm_verification_t;
-
-/**
- * Select verification of IR nodes and types.
- *
- * Per default the  verification is in mode NODE_VERIFICATION_ASSERT.
- * Turn the verification off during development to check partial
- * implementations.
- */
-FIRM_API void do_node_verification(firm_verification_t mode);
-
-/** @} */
-
 #include "end.h"
 
 #endif
