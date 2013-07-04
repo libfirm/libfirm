@@ -5,7 +5,7 @@
 
 /**
  * @file
- * @brief       Peephole optimisation framework keeps track of which registers contain which values
+ * @brief       Peephole optimization framework keeps track of which registers contain which values
  * @author      Matthias Braun
  */
 #include "array_t.h"
@@ -94,7 +94,7 @@ static void set_uses(ir_node *node)
 }
 
 /**
- * must be called from peephole optimisations before a node will be killed
+ * must be called from peephole optimizations before a node will be killed
  * and its users will be redirected to new_node.
  * so bepeephole can update its internal state.
  *

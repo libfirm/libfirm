@@ -1027,7 +1027,7 @@ static void ia32_emit(ir_graph *irg)
 	/*
 	 * Last touchups for the graph before emit: x87 simulation to replace the
 	 * virtual with real x87 instructions, creating a block schedule and
-	 * peephole optimisations.
+	 * peephole optimizations.
 	 */
 	ia32_irg_data_t   *irg_data     = ia32_get_irg_data(irg);
 	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
@@ -1055,7 +1055,7 @@ static void ia32_emit(ir_graph *irg)
 		ia32_x87_simulate_graph(irg);
 	}
 
-	/* do peephole optimisations */
+	/* do peephole optimizations */
 	ia32_peephole_optimization(irg);
 
 	be_remove_dead_nodes_from_schedule(irg);
@@ -1678,8 +1678,8 @@ static void ia32_get_call_abi(ir_type *method_type, be_abi_call_t *abi)
 			be_abi_call_param_reg(abi, i, reg, ABI_CONTEXT_BOTH);
 			++regnum;
 		} else {
-			/* Micro optimisation: if the mode is shorter than 4 bytes, load 4 bytes.
-			 * movl has a shorter opcode than mov[sz][bw]l */
+			/* Micro optimization: if the mode is shorter than 4 bytes,
+			 * load 4 bytes. movl has a shorter opcode than mov[sz][bw]l */
 			ir_mode *load_mode = mode;
 
 			if (mode != NULL) {

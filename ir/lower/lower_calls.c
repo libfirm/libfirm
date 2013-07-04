@@ -586,7 +586,7 @@ static ir_entity *create_compound_arg_entity(ir_graph *irg, ir_type *type)
 	ident     *id     = id_unique("$compound_param.%u");
 	ir_entity *entity = new_entity(frame, id, type);
 	/* TODO:
-	 * we could do some optimisations here and create a big union type for all
+	 * we could do some optimizations here and create a big union type for all
 	 * different call types in a function */
 	return entity;
 }

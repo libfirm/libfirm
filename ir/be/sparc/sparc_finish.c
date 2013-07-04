@@ -674,7 +674,7 @@ static void peephole_sparc_SubCC(ir_node *node)
 	arch_set_irn_register_out(node, pn_sparc_SubCC_flags, NULL);
 }
 
-static void register_peephole_optimisation(ir_op *op, peephole_opt_func func)
+static void register_peephole_optimization(ir_op *op, peephole_opt_func func)
 {
 	assert(op->ops.generic == NULL);
 	op->ops.generic = (op_func) func;
@@ -771,25 +771,25 @@ void sparc_finish_graph(ir_graph *irg)
 
 	/* perform peephole optimizations */
 	ir_clear_opcodes_generic_func();
-	register_peephole_optimisation(op_be_IncSP,        peephole_be_IncSP);
-	register_peephole_optimisation(op_sparc_FrameAddr, peephole_sparc_FrameAddr);
-	register_peephole_optimisation(op_sparc_RestoreZero,
+	register_peephole_optimization(op_be_IncSP,        peephole_be_IncSP);
+	register_peephole_optimization(op_sparc_FrameAddr, peephole_sparc_FrameAddr);
+	register_peephole_optimization(op_sparc_RestoreZero,
 	                               peephole_sparc_RestoreZero);
-	register_peephole_optimisation(op_sparc_Ldf, split_sparc_ldf);
-	register_peephole_optimisation(op_sparc_AddCC, peephole_sparc_AddCC);
-	register_peephole_optimisation(op_sparc_SubCC, peephole_sparc_SubCC);
+	register_peephole_optimization(op_sparc_Ldf, split_sparc_ldf);
+	register_peephole_optimization(op_sparc_AddCC, peephole_sparc_AddCC);
+	register_peephole_optimization(op_sparc_SubCC, peephole_sparc_SubCC);
 	be_peephole_opt(irg);
 
 	/* perform legalizations (mostly fix nodes with too big immediates) */
 	ir_clear_opcodes_generic_func();
-	register_peephole_optimisation(op_be_IncSP,        finish_be_IncSP);
-	register_peephole_optimisation(op_sparc_FrameAddr, finish_sparc_FrameAddr);
-	register_peephole_optimisation(op_sparc_Ld,        finish_sparc_Ld);
-	register_peephole_optimisation(op_sparc_Ldf,       finish_sparc_Ldf);
-	register_peephole_optimisation(op_sparc_Return,    finish_sparc_Return);
-	register_peephole_optimisation(op_sparc_Save,      finish_sparc_Save);
-	register_peephole_optimisation(op_sparc_St,        finish_sparc_St);
-	register_peephole_optimisation(op_sparc_Stf,       finish_sparc_Stf);
+	register_peephole_optimization(op_be_IncSP,        finish_be_IncSP);
+	register_peephole_optimization(op_sparc_FrameAddr, finish_sparc_FrameAddr);
+	register_peephole_optimization(op_sparc_Ld,        finish_sparc_Ld);
+	register_peephole_optimization(op_sparc_Ldf,       finish_sparc_Ldf);
+	register_peephole_optimization(op_sparc_Return,    finish_sparc_Return);
+	register_peephole_optimization(op_sparc_Save,      finish_sparc_Save);
+	register_peephole_optimization(op_sparc_St,        finish_sparc_St);
+	register_peephole_optimization(op_sparc_Stf,       finish_sparc_Stf);
 	be_peephole_opt(irg);
 
 	heights_free(heights);

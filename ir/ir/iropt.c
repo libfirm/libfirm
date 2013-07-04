@@ -5620,7 +5620,7 @@ static ir_node *transform_node_Mux(ir_node *n)
 			return n;
 	}
 
-	/* the following optimisations create new mode_b nodes, so only do them
+	/* the following optimizations create new mode_b nodes, so only do them
 	 * before mode_b lowering */
 	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_MODEB_LOWERED)) {
 		if (is_Mux(t)) {
@@ -6766,7 +6766,7 @@ ir_node *optimize_in_place_2(ir_node *n)
 
 	/* Now we have a legal, useful node. Enter it in hash table for cse.
 	 *
-	 * Note: This is only necessary because some of the optimisations
+	 * Note: This is only necessary because some of the optimizations
 	 * operate in-place (set_XXX_bla, turn_into_tuple, ...) which is considered
 	 * bad practice and should be fixed sometime.
 	 */

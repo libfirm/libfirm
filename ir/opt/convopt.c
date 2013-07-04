@@ -5,7 +5,7 @@
 
 /**
  * @file
- * @brief   conv node optimisation
+ * @brief   conv node optimization
  * @author  Matthias Braun, Christoph Mallon
  *
  * Try to minimize the number of conv nodes by changing modes of operations.
@@ -135,7 +135,7 @@ static int get_conv_costs(const ir_node *node, ir_mode *dest_mode)
 	}
 
 	costs = 0;
-	// The shift count does not participate in the conv optimisation
+	// The shift count does not participate in the conv optimization
 	arity = is_Shl(node) ? 1 : get_irn_arity(node);
 	for (i = 0; i < arity; ++i) {
 		ir_node *pred = get_irn_n(node, i);
@@ -206,7 +206,7 @@ static ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 	arity = get_irn_arity(node);
 	ins = ALLOCAN(ir_node *, arity);
 
-	// The shift count does not participate in the conv optimisation
+	// The shift count does not participate in the conv optimization
 	conv_arity = is_Shl(node) ? 1 : arity;
 	for (i = 0; i < conv_arity; i++) {
 		ir_node *pred = get_irn_n(node, i);

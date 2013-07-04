@@ -205,7 +205,7 @@ FIRM_API const backend_params *be_get_backend_param(void);
  * implementation of boolean values, if-conversion, with target specific
  * settings.
  * The resulting graph is still a "normal" firm-graph on which you can and
- * should perform further architecture-neutral optimisations before be_main.
+ * should perform further architecture-neutral optimizations before be_main.
  */
 FIRM_API void be_lower_for_target(void);
 

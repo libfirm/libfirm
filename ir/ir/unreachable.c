@@ -35,7 +35,7 @@ static void unreachable_to_bad(ir_node *node, void *env)
 		ir_graph *irg;
 		int       arity;
 		int       i;
-		/* optimisation: we do not have to do anything inside the unreachable
+		/* optimization: we do not have to do anything inside the unreachable
 		 * code */
 		if (is_block_unreachable(node))
 			return;
@@ -54,7 +54,7 @@ static void unreachable_to_bad(ir_node *node, void *env)
 		int       arity;
 		int       i;
 		ir_graph *irg;
-		/* optimisation: we do not have to do anything inside the unreachable
+		/* optimization: we do not have to do anything inside the unreachable
 		 * code */
 		if (is_block_unreachable(block))
 			return;

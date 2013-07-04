@@ -237,7 +237,7 @@ static const lc_opt_table_entry_t ia32_architecture_options[] = {
 	LC_OPT_ENT_ENUM_INT("tune",             "optimize for instruction architecture",              &opt_arch_var),
 	LC_OPT_ENT_ENUM_INT("fpmath",           "select the floating point unit",                     &fp_unit_var),
 	LC_OPT_ENT_BOOL    ("optcc",            "optimize calling convention",                        &opt_cc),
-	LC_OPT_ENT_BOOL    ("unsafe_floatconv", "do unsafe floating point controlword optimisations", &opt_unsafe_floatconv),
+	LC_OPT_ENT_BOOL    ("unsafe_floatconv", "do unsafe floating point controlword optimizations", &opt_unsafe_floatconv),
 	LC_OPT_ENT_BOOL    ("machcode",         "output machine code instead of assembler",           &emit_machcode),
 	LC_OPT_ENT_BOOL    ("soft-float",       "equivalent to fpmath=softfloat",                     &use_softfloat),
 	LC_OPT_ENT_BOOL    ("sse",              "gcc compatibility",                                  &use_sse),

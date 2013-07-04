@@ -238,7 +238,7 @@ static void peephole_arm_Str_Ldr(ir_node *node)
 /**
  * Register a peephole optimization function.
  */
-static void register_peephole_optimisation(ir_op *op, peephole_opt_func func)
+static void register_peephole_optimization(ir_op *op, peephole_opt_func func)
 {
 	assert(op->ops.generic == NULL);
 	op->ops.generic = (op_func)func;
@@ -249,10 +249,10 @@ void arm_peephole_optimization(ir_graph *irg)
 {
 	/* register peephole optimizations */
 	ir_clear_opcodes_generic_func();
-	register_peephole_optimisation(op_be_IncSP,      peephole_be_IncSP);
-	register_peephole_optimisation(op_arm_Str,       peephole_arm_Str_Ldr);
-	register_peephole_optimisation(op_arm_Ldr,       peephole_arm_Str_Ldr);
-	register_peephole_optimisation(op_arm_FrameAddr, peephole_arm_FrameAddr);
+	register_peephole_optimization(op_be_IncSP,      peephole_be_IncSP);
+	register_peephole_optimization(op_arm_Str,       peephole_arm_Str_Ldr);
+	register_peephole_optimization(op_arm_Ldr,       peephole_arm_Str_Ldr);
+	register_peephole_optimization(op_arm_FrameAddr, peephole_arm_FrameAddr);
 
 	be_peephole_opt(irg);
 }

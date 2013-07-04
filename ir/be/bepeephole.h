@@ -5,7 +5,7 @@
 
 /**
  * @file
- * @brief       peephole optimisation framework
+ * @brief       peephole optimization framework
  * @author      Matthias Braun
  */
 #ifndef BEPEEPHOLE_H
@@ -27,12 +27,12 @@ static inline ir_node *be_peephole_get_reg_value(const arch_register_t *reg)
 }
 
 /**
- * Datatype of the generic op handler for optimisation.
+ * Datatype of the generic op handler for optimization.
  */
 typedef void (*peephole_opt_func) (ir_node *node);
 
 /**
- * When doing peephole optimisation use this function instead of plain
+ * When doing peephole optimization use this function instead of plain
  * exchange(), so it can update its internal state.  This function also removes
  * the old node from the schedule.
  */
@@ -65,11 +65,11 @@ bool be_can_move_up(ir_heights_t *heights, const ir_node *node,
                     const ir_node *after);
 
 /**
- * Do peephole optimisations. It traverses the schedule of all blocks in
+ * Do peephole optimizations. It traverses the schedule of all blocks in
  * backward direction. The register_values variable indicates which (live)
  * values are stored in which register.
  * The generic op handler is called for each node if it exists. That's where
- * backend specific optimisations should be performed based on the
+ * backend specific optimizations should be performed based on the
  * register-liveness information.
  */
 void be_peephole_opt(ir_graph *irg);

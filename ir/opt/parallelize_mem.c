@@ -5,7 +5,7 @@
 
 /**
  * @file
- * @brief   parallelizing Load/Store optimisation
+ * @brief   parallelizing Load/Store optimization
  * @author  Christoph Mallon
  */
 #include "iroptimize.h"

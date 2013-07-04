@@ -767,7 +767,7 @@ static void peephole_be_IncSP(ir_node *node)
 }
 
 /**
- * Peephole optimisation for ia32_Const's
+ * Peephole optimization for ia32_Const's
  */
 static void peephole_ia32_Const(ir_node *node)
 {
@@ -1062,9 +1062,9 @@ static void peephole_ia32_Conv_I2I(ir_node *node)
 }
 
 /**
- * Register a peephole optimisation function.
+ * Register a peephole optimization function.
  */
-static void register_peephole_optimisation(ir_op *op, peephole_opt_func func)
+static void register_peephole_optimization(ir_op *op, peephole_opt_func func)
 {
 	assert(op->ops.generic == NULL);
 	op->ops.generic = (op_func)func;
@@ -1079,22 +1079,22 @@ void ia32_peephole_optimization(ir_graph *irg)
 
 	/* pass 1 */
 	ir_clear_opcodes_generic_func();
-	register_peephole_optimisation(op_ia32_Cmp,      peephole_ia32_Cmp);
-	register_peephole_optimisation(op_ia32_Lea,      peephole_ia32_Lea);
+	register_peephole_optimization(op_ia32_Cmp,      peephole_ia32_Cmp);
+	register_peephole_optimization(op_ia32_Lea,      peephole_ia32_Lea);
 	if (ia32_cg_config.use_short_sex_eax)
-		register_peephole_optimisation(op_ia32_Conv_I2I, peephole_ia32_Conv_I2I);
+		register_peephole_optimization(op_ia32_Conv_I2I, peephole_ia32_Conv_I2I);
 	if (ia32_cg_config.use_pxor)
-		register_peephole_optimisation(op_ia32_xZero, peephole_ia32_xZero);
+		register_peephole_optimization(op_ia32_xZero, peephole_ia32_xZero);
 	if (! ia32_cg_config.use_imul_mem_imm32)
-		register_peephole_optimisation(op_ia32_IMul, peephole_ia32_Imul_split);
+		register_peephole_optimization(op_ia32_IMul, peephole_ia32_Imul_split);
 	be_peephole_opt(irg);
 
 	/* pass 2 */
 	ir_clear_opcodes_generic_func();
-	register_peephole_optimisation(op_ia32_Const, peephole_ia32_Const);
-	register_peephole_optimisation(op_be_IncSP,   peephole_be_IncSP);
-	register_peephole_optimisation(op_ia32_Test,  peephole_ia32_Test);
-	register_peephole_optimisation(op_be_Return,  peephole_ia32_Return);
+	register_peephole_optimization(op_ia32_Const, peephole_ia32_Const);
+	register_peephole_optimization(op_be_IncSP,   peephole_be_IncSP);
+	register_peephole_optimization(op_ia32_Test,  peephole_ia32_Test);
+	register_peephole_optimization(op_be_Return,  peephole_ia32_Return);
 	be_peephole_opt(irg);
 }
 
@@ -1268,7 +1268,7 @@ static void optimize_conv_conv(ir_node *node)
 		if (get_mode_sign(conv_mode) == get_mode_sign(pred_mode)) {
 			result_conv = pred_proj;
 		} else {
-			/* no optimisation possible if smaller conv is sign-extend */
+			/* no optimization possible if smaller conv is sign-extend */
 			if (mode_is_signed(pred_mode)) {
 				return;
 			}
