@@ -5831,6 +5831,46 @@ static ir_node *create_load_replacement_tuple(ir_node *n, ir_node *mem,
 	return new_r_Tuple(block, n_in, in);
 }
 
+static bool sim_store_bitfield(unsigned char *buf, ir_mode *mode, long offset,
+                               unsigned bitfield_offset,
+                               unsigned bitfield_size, const ir_type *type,
+                               const ir_initializer_t *initializer)
+{
+	if (get_initializer_kind(initializer) == IR_INITIALIZER_NULL)
+		return true;
+	if (get_initializer_kind(initializer) != IR_INITIALIZER_TARVAL)
+		return false;
+	ir_tarval *tv = get_initializer_tarval_value(initializer);
+	if (tv == tarval_bad)
+		return false;
+
+	ir_mode *type_mode = get_type_mode(type);
+	assert(get_tarval_mode(tv) == type_mode);
+	assert(bitfield_offset + bitfield_size <= get_mode_size_bits(type_mode));
+
+	ir_tarval *mask = get_mode_all_one(type_mode);
+	mask = tarval_shr_unsigned(mask, get_mode_size_bits(type_mode)-bitfield_size);
+	mask = tarval_shl_unsigned(mask, bitfield_offset);
+
+	ir_tarval *shifted_value = tarval_shl_unsigned(tv, bitfield_offset);
+	ir_tarval *masked_value  = tarval_and(shifted_value, mask);
+
+	unsigned mode_size        = get_mode_size_bytes(mode);
+	unsigned initializer_size = get_type_size_bytes(type);
+	for (unsigned b = offset <= 0 ? 0 : (unsigned)offset;
+		 b < initializer_size; ++b) {
+		if (b > (unsigned)offset + mode_size)
+			continue;
+		unsigned      idx     = be_is_big_endian() ? (initializer_size-1-b) : b;
+		unsigned char prev    = buf[b-offset];
+		unsigned char maskbits = get_tarval_sub_bits(mask, idx);
+		unsigned char val     = get_tarval_sub_bits(masked_value, idx);
+		unsigned char v       = (prev & ~maskbits) | val;
+		buf[b-offset] = v;
+	}
+	return true;
+}
+
 static bool sim_store(unsigned char *buf, ir_mode *mode, long offset,
                       const ir_type *type,
                       const ir_initializer_t *initializer)
@@ -5849,13 +5889,8 @@ static bool sim_store(unsigned char *buf, ir_mode *mode, long offset,
 		return true;
 	case IR_INITIALIZER_TARVAL:
 		tv = get_initializer_tarval_value(initializer);
-handle_tv:;
-		ir_mode *tv_mode   = get_tarval_mode(tv);
-		ir_mode *type_mode = get_type_mode(type);
-		/* tv_mode != type_mode is forbidden, but we still have some frontends
-		 * constructing this case, so use a workaround for now */
-		if (tv_mode != type_mode)
-			tv = tarval_convert_to(tv, type_mode);
+handle_tv:
+		assert(get_type_mode(type) == get_tarval_mode(tv));
 
 		for (unsigned b = offset <= 0 ? 0 : (unsigned)offset;
 		     b < initializer_size; ++b) {
@@ -5910,13 +5945,21 @@ handle_tv:;
 				    continue;
 				if (i > get_initializer_compound_n_entries(initializer))
 					continue;
-				if (get_entity_bitfield_size(member) > 0)
-					return false;
 				const ir_initializer_t *sub_initializer
 					= get_initializer_compound_value(initializer, i);
-				long new_offset = offset - member_offs;
-				bool res = sim_store(buf, mode, new_offset, member_type,
-				                     sub_initializer);
+				long     new_offset    = offset - member_offs;
+				unsigned bitfield_size = get_entity_bitfield_size(member);
+				bool res;
+				if (bitfield_size > 0) {
+					unsigned bitfield_offset
+						= get_entity_bitfield_offset(member);
+					res = sim_store_bitfield(buf, mode, new_offset,
+					                         bitfield_offset, bitfield_size,
+					                         member_type, sub_initializer);
+				} else {
+					res = sim_store(buf, mode, new_offset, member_type,
+					                sub_initializer);
+				}
 				if (!res)
 					return false;
 			}
