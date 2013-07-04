@@ -31,7 +31,7 @@ const char *firm_verify_failure_msg;
  */
 static const char *get_mode_name_ex(ir_mode *mode)
 {
-	if (! mode)
+	if (!mode)
 		return "<no mode>";
 	return get_mode_name(mode);
 }
@@ -47,12 +47,10 @@ static ir_graph *last_irg_error = NULL;
 static void show_entity_failure(const ir_node *node)
 {
 	ir_graph *irg = get_irn_irg(node);
-
 	if (last_irg_error == irg)
 		return;
 
 	last_irg_error = irg;
-
 	if (irg == get_const_code_irg()) {
 		fprintf(stderr, "\nFIRM: irn_verify_irg() <of CONST_CODE_IRG> failed\n");
 	} else {
@@ -105,14 +103,13 @@ static void show_node_mode_mismatch(const ir_node *n, const char *text)
  */
 static void show_proj_failure(const ir_node *n)
 {
-	ir_node *op  = get_Proj_pred(n);
-	int proj     = get_Proj_proj(n);
+	ir_node *op   = get_Proj_pred(n);
+	int      proj = get_Proj_proj(n);
 
 	show_entity_failure(n);
 	fprintf(stderr, "  node %ld %s%s %d(%s%s) failed\n" ,
-		get_irn_node_nr(n),
-		get_irn_opname(n), get_irn_modename(n), proj,
-		get_irn_opname(op), get_irn_modename(op));
+	        get_irn_node_nr(n), get_irn_opname(n), get_irn_modename(n), proj,
+	        get_irn_opname(op), get_irn_modename(op));
 }
 
 /**
@@ -120,18 +117,15 @@ static void show_proj_failure(const ir_node *n)
  */
 static void show_proj_mode_failure(const ir_node *n, ir_type *ty)
 {
-	long proj  = get_Proj_proj(n);
-	ir_mode *m = get_type_mode(ty);
+	long     proj = get_Proj_proj(n);
+	ir_mode *m    = get_type_mode(ty);
 	char type_name[256];
 	ir_print_type(type_name, sizeof(type_name), ty);
 
 	show_entity_failure(n);
 	fprintf(stderr, "  Proj %ld mode %s proj %ld (type %s mode %s) failed\n" ,
-		get_irn_node_nr(n),
-		get_irn_modename(n),
-		proj,
-		type_name,
-		get_mode_name_ex(m));
+	        get_irn_node_nr(n), get_irn_modename(n), proj, type_name,
+	        get_mode_name_ex(m));
 }
 
 /**
@@ -175,9 +169,9 @@ static void show_return_modes(const ir_graph *irg, const ir_node *n,
 
 	show_entity_failure(n);
 	fprintf(stderr, "  Return node %ld in entity \"%s\" mode %s different from type mode %s\n",
-		get_irn_node_nr(n), get_entity_name(ent),
-		get_mode_name_ex(get_irn_mode(get_Return_res(n, i))),
-		get_mode_name_ex(get_type_mode(get_method_res_type(mt, i)))
+	        get_irn_node_nr(n), get_entity_name(ent),
+	        get_mode_name_ex(get_irn_mode(get_Return_res(n, i))),
+	        get_mode_name_ex(get_type_mode(get_method_res_type(mt, i)))
 	);
 }
 
@@ -190,9 +184,9 @@ static void show_return_nres(const ir_graph *irg, const ir_node *n, ir_type *mt)
 
 	show_entity_failure(n);
 	fprintf(stderr, "  Return node %ld in entity \"%s\" has %lu results different from type %lu\n",
-		get_irn_node_nr(n), get_entity_name(ent),
-		(unsigned long) get_Return_n_ress(n),
-		(unsigned long) get_method_n_ress(mt));
+	        get_irn_node_nr(n), get_entity_name(ent),
+	        (unsigned long) get_Return_n_ress(n),
+	        (unsigned long) get_method_n_ress(mt));
 }
 
 /**
@@ -203,8 +197,8 @@ static void show_phi_failure(const ir_node *phi, const ir_node *pred, int pos)
 	(void) pos;
 	show_entity_failure(phi);
 	fprintf(stderr, "  Phi node %ld has mode %s different from predeccessor node %ld mode %s\n",
-		get_irn_node_nr(phi), get_mode_name_ex(get_irn_mode(phi)),
-		get_irn_node_nr(pred), get_mode_name_ex(get_irn_mode(pred)));
+	        get_irn_node_nr(phi), get_mode_name_ex(get_irn_mode(phi)),
+	        get_irn_node_nr(pred), get_mode_name_ex(get_irn_mode(pred)));
 }
 
 /**
@@ -214,8 +208,8 @@ static void show_phi_inputs(const ir_node *phi, const ir_node *block)
 {
 	show_entity_failure(phi);
 	fprintf(stderr, "  Phi node %ld has %d inputs, its Block %ld has %d\n",
-		get_irn_node_nr(phi),   get_irn_arity(phi),
-		get_irn_node_nr(block), get_irn_arity(block));
+	        get_irn_node_nr(phi),   get_irn_arity(phi),
+	        get_irn_node_nr(block), get_irn_arity(block));
 }
 
 #endif /* #ifndef NDEBUG */
@@ -226,7 +220,7 @@ static void show_phi_inputs(const ir_node *phi, const ir_node *block)
 static int verify_node_Proj_Start(const ir_node *p)
 {
 	ir_mode *mode = get_irn_mode(p);
-	long proj     = get_Proj_proj(p);
+	long     proj = get_Proj_proj(p);
 
 	ASSERT_AND_RET_DBG(
 		(
@@ -276,7 +270,7 @@ static int verify_node_Proj_Switch(const ir_node *p)
 static int verify_node_Proj_Raise(const ir_node *p)
 {
 	ir_mode *mode = get_irn_mode(p);
-	long proj     = get_Proj_proj(p);
+	long     proj = get_Proj_proj(p);
 
 	ASSERT_AND_RET_DBG(
 		((proj == pn_Raise_X && mode == mode_X) || (proj == pn_Raise_M && mode == mode_M)),
@@ -293,7 +287,7 @@ static int verify_node_Proj_Call(const ir_node *p)
 {
 	ir_mode *mode = get_irn_mode(p);
 	ir_node *n    = get_Proj_pred(p);
-	long proj     = get_Proj_proj(p);
+	long     proj = get_Proj_proj(p);
 
 	ASSERT_AND_RET_DBG(
 		(
@@ -306,14 +300,15 @@ static int verify_node_Proj_Call(const ir_node *p)
 		show_proj_failure(p);
 	);
 	/* if we have exception flow, we must have a real Memory input */
-	if (proj == pn_Call_X_regular)
+	if (proj == pn_Call_X_regular) {
 		ASSERT_AND_RET(
 			!is_NoMem(get_Call_mem(n)),
 			"Regular Proj from FunctionCall", 0);
-	else if (proj == pn_Call_X_except)
+	} else if (proj == pn_Call_X_except) {
 		ASSERT_AND_RET(
 			!is_NoMem(get_Call_mem(n)),
 			"Exception Proj from FunctionCall", 0);
+	}
 	return 1;
 }
 
@@ -324,7 +319,7 @@ static int verify_node_Proj_Div(const ir_node *p)
 {
 	ir_mode *mode = get_irn_mode(p);
 	ir_node *n    = get_Proj_pred(p);
-	long proj     = get_Proj_proj(p);
+	long     proj = get_Proj_proj(p);
 
 	ASSERT_AND_RET_DBG(
 		(
@@ -336,18 +331,19 @@ static int verify_node_Proj_Div(const ir_node *p)
 		"wrong Proj from Div", 0,
 		show_proj_failure(p);
 	);
-	if (proj == pn_Div_X_regular)
+	if (proj == pn_Div_X_regular) {
 		ASSERT_AND_RET(
 			get_irn_pinned(n) == op_pin_state_pinned,
 			"Regular Proj from unpinned Div", 0);
-	else if (proj == pn_Div_X_except)
+	} else if (proj == pn_Div_X_except) {
 		ASSERT_AND_RET(
 			get_irn_pinned(n) == op_pin_state_pinned,
 			"Exception Proj from unpinned Div", 0);
-	else if (proj == pn_Div_M)
+	} else if (proj == pn_Div_M) {
 		ASSERT_AND_RET(
 			get_irn_pinned(n) == op_pin_state_pinned,
 			"Memory Proj from unpinned Div", 0);
+	}
 	return 1;
 }
 
@@ -358,7 +354,7 @@ static int verify_node_Proj_Mod(const ir_node *p)
 {
 	ir_mode *mode = get_irn_mode(p);
 	ir_node *n    = get_Proj_pred(p);
-	long proj     = get_Proj_proj(p);
+	long     proj = get_Proj_proj(p);
 
 	ASSERT_AND_RET_DBG(
 		(
@@ -370,18 +366,19 @@ static int verify_node_Proj_Mod(const ir_node *p)
 		"wrong Proj from Mod", 0,
 		show_proj_failure(p);
 	);
-	if (proj == pn_Mod_X_regular)
+	if (proj == pn_Mod_X_regular) {
 		ASSERT_AND_RET(
 			get_irn_pinned(n) == op_pin_state_pinned,
 			"Regular Proj from unpinned Mod", 0);
-	else if (proj == pn_Mod_X_except)
+	} else if (proj == pn_Mod_X_except) {
 		ASSERT_AND_RET(
 			get_irn_pinned(n) == op_pin_state_pinned,
 			"Exception Proj from unpinned Mod", 0);
-	else if (proj == pn_Mod_M)
+	} else if (proj == pn_Mod_M) {
 		ASSERT_AND_RET(
 			get_irn_pinned(n) == op_pin_state_pinned,
 			"Memory Proj from unpinned Div", 0);
+	}
 	return 1;
 }
 
@@ -392,7 +389,7 @@ static int verify_node_Proj_Load(const ir_node *p)
 {
 	ir_mode *mode = get_irn_mode(p);
 	ir_node *n    = get_Proj_pred(p);
-	long proj     = get_Proj_proj(p);
+	long     proj = get_Proj_proj(p);
 
 	if (proj == pn_Load_res) {
 		ASSERT_AND_RET_DBG(
@@ -430,7 +427,7 @@ static int verify_node_Proj_Store(const ir_node *p)
 {
 	ir_mode *mode = get_irn_mode(p);
 	ir_node *n    = get_Proj_pred(p);
-	long proj     = get_Proj_proj(p);
+	long     proj = get_Proj_proj(p);
 
 	ASSERT_AND_RET_DBG(
 		(
@@ -459,7 +456,7 @@ static int verify_node_Proj_Store(const ir_node *p)
 static int verify_node_Proj_Alloc(const ir_node *p)
 {
 	ir_mode *mode = get_irn_mode(p);
-	long proj     = get_Proj_proj(p);
+	long     proj = get_Proj_proj(p);
 
 	ASSERT_AND_RET_DBG(
 		(
@@ -567,11 +564,8 @@ static int verify_node_Proj_fragile(const ir_node *node)
  */
 static int verify_node_Proj(const ir_node *p)
 {
-	ir_graph *irg = get_irn_irg(p);
-	ir_node *pred;
-	ir_op *op;
-
-	pred = skip_Id(get_Proj_pred(p));
+	ir_graph *irg  = get_irn_irg(p);
+	ir_node  *pred = skip_Id(get_Proj_pred(p));
 	ASSERT_AND_RET(get_irn_mode(pred) == mode_T, "mode of a 'projed' node is not Tuple", 0);
 	ASSERT_AND_RET(get_irg_pinned(irg) == op_pin_state_floats || get_nodes_block(pred) == get_nodes_block(p), "Proj must be in same block as its predecessor", 0);
 
@@ -581,7 +575,7 @@ static int verify_node_Proj(const ir_node *p)
 			return res;
 	}
 
-	op = get_irn_op(pred);
+	ir_op *op = get_irn_op(pred);
 	if (op->ops.verify_proj_node)
 		return op->ops.verify_proj_node(p);
 
@@ -595,9 +589,7 @@ static int verify_node_Proj(const ir_node *p)
 static int verify_node_Block(const ir_node *n)
 {
 	ir_graph *irg = get_irn_irg(n);
-	int i;
-
-	for (i = get_Block_n_cfgpreds(n) - 1; i >= 0; --i) {
+	for (int i = get_Block_n_cfgpreds(n); i-- > 0; ) {
 		ir_node *pred         = get_Block_cfgpred(n, i);
 		ir_node *skipped_pred = skip_Proj(skip_Tuple(pred));
 		ASSERT_AND_RET(get_irn_mode(pred) == mode_X,
@@ -611,7 +603,7 @@ static int verify_node_Block(const ir_node *n)
 
 	if (n == get_irg_end_block(irg) && !irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
 		/* End block may only have Return, Raise or fragile ops as preds. */
-		for (i = get_Block_n_cfgpreds(n) - 1; i >= 0; --i) {
+		for (int i = get_Block_n_cfgpreds(n); i-- > 0; ) {
 			ir_node *pred =  skip_Proj(get_Block_cfgpred(n, i));
 			if (is_Proj(pred) || is_Tuple(pred))
 				break;   /*  We can not test properly.  How many tuples are there? */
@@ -692,13 +684,11 @@ static int verify_switch_table(const ir_node *n)
 	unsigned               n_outs    = get_Switch_n_outs(n);
 	ir_node               *selector  = get_Switch_selector(n);
 	ir_mode               *mode      = get_irn_mode(selector);
-	size_t                 n_entries;
-	size_t                 e;
 
 	ASSERT_AND_RET(table != NULL, "switch table is NULL", 0);
 
-	n_entries = ir_switch_table_get_n_entries(table);
-	for (e = 0; e < n_entries; ++e) {
+	size_t n_entries = ir_switch_table_get_n_entries(table);
+	for (size_t e = 0; e < n_entries; ++e) {
 		const ir_switch_table_entry *entry
 			= ir_switch_table_get_entry_const(table, e);
 		if (entry->pn == 0)
@@ -736,23 +726,21 @@ static int verify_node_Return(const ir_node *n)
 	ir_graph *irg      = get_irn_irg(n);
 	ir_mode  *mymode   = get_irn_mode(n);
 	ir_mode  *mem_mode = get_irn_mode(get_Return_mem(n));
-	ir_type  *mt;
-	int       i;
 
 	/* Return: BB x M x data1 x ... x datan --> X */
 
 	ASSERT_AND_RET( mem_mode == mode_M, "Return node", 0 );  /* operand M */
 
-	for (i = get_Return_n_ress(n) - 1; i >= 0; --i) {
+	for (int i = get_Return_n_ress(n); i-- > 0; ) {
 		ASSERT_AND_RET( mode_is_datab(get_irn_mode(get_Return_res(n, i))), "Return node", 0 );  /* operand datai */
 	}
 	ASSERT_AND_RET( mymode == mode_X, "Result X", 0 );   /* result X */
 	/* Compare returned results with result types of method type */
-	mt = get_entity_type(get_irg_entity(irg));
+	ir_type *mt = get_entity_type(get_irg_entity(irg));
 	ASSERT_AND_RET_DBG((size_t)get_Return_n_ress(n) == get_method_n_ress(mt),
 		"Number of results for Return doesn't match number of results in type.", 0,
 		show_return_nres(irg, n, mt););
-	for (i = get_Return_n_ress(n) - 1; i >= 0; --i) {
+	for (int i = get_Return_n_ress(n); i-- > 0; ) {
 		ir_type *res_type = get_method_res_type(mt, i);
 
 		if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
@@ -841,22 +829,19 @@ static int verify_node_SymConst(const ir_node *n)
  */
 static int verify_node_Sel(const ir_node *n)
 {
-	int i;
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Sel_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_Sel_ptr(n));
-	ir_entity *ent;
-
 	ASSERT_AND_RET_DBG(
 		/* Sel: BB x M x ref x int^n --> ref */
 		(op1mode == mode_M && op2mode == mymode && mode_is_reference(mymode)),
 		"Sel node", 0, show_node_failure(n);
 	);
 
-	for (i = get_Sel_n_indexs(n) - 1; i >= 0; --i) {
+	for (int i = get_Sel_n_indexs(n); i-- > 0; ) {
 		ASSERT_AND_RET_DBG(mode_is_int(get_irn_mode(get_Sel_index(n, i))), "Sel node", 0, show_node_failure(n););
 	}
-	ent = get_Sel_entity(n);
+	ir_entity *ent = get_Sel_entity(n);
 	ASSERT_AND_RET_DBG(ent, "Sel node with empty entity", 0, show_node_failure(n););
 	ASSERT_AND_RET_DBG(!(get_entity_owner(ent)->flags & tf_segment),
 	                   "Sel node with global entity", 0, show_node_failure(n););
@@ -868,11 +853,9 @@ static int verify_node_Sel(const ir_node *n)
  */
 static int verify_right_pinned(const ir_node *n)
 {
-	ir_node *mem;
-
 	if (get_irn_pinned(n) == op_pin_state_pinned)
 		return 1;
-	mem = get_Call_mem(n);
+	ir_node *mem = get_Call_mem(n);
 
 	/* if it's not pinned, its memory predecessor must be NoMem or Pin */
 	if (is_NoMem(mem) || is_Pin(mem))
@@ -889,9 +872,6 @@ static int verify_node_Call(const ir_node *n)
 	ir_mode  *mymode  = get_irn_mode(n);
 	ir_mode  *op1mode = get_irn_mode(get_Call_mem(n));
 	ir_mode  *op2mode = get_irn_mode(get_Call_ptr(n));
-	ir_type  *mt;
-	size_t    i;
-	size_t    n_params;
 
 	/* Call: BB x M x ref x data1 x ... x datan
 	--> M x datan+1 x ... x data n+m */
@@ -900,13 +880,12 @@ static int verify_node_Call(const ir_node *n)
 	/* NoMem nodes are only allowed as memory input if the Call is NOT pinned */
 	ASSERT_AND_RET(verify_right_pinned(n),"Call node with wrong memory input", 0 );
 
-	mt = get_Call_type(n);
+	ir_type *mt = get_Call_type(n);
 	if (get_unknown_type() == mt) {
 		return 1;
 	}
 
-	n_params = get_Call_n_params(n);
-	for (i = 0; i < n_params; ++i) {
+	for (size_t i = 0, n_params = get_Call_n_params(n); i < n_params; ++i) {
 		ASSERT_AND_RET( mode_is_datab(get_irn_mode(get_Call_param(n, i))), "Call node", 0 );  /* operand datai */
 	}
 
@@ -931,8 +910,8 @@ static int verify_node_Call(const ir_node *n)
 		);
 	}
 
-	for (i = 0; i < get_method_n_params(mt); i++) {
-		ir_type *t = get_method_param_type(mt, i);
+	for (size_t i = 0, n_params = get_method_n_params(mt); i < n_params; i++) {
+		const ir_type *t = get_method_param_type(mt, i);
 
 		if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
 			if (is_atomic_type(t)) {
@@ -1247,12 +1226,11 @@ static int verify_node_Phi(const ir_node *n)
 {
 	ir_mode *mymode = get_irn_mode(n);
 	ir_node *block  = get_nodes_block(n);
-	int i;
 
 	/* a Phi node MUST have the same number of inputs as its block
 	 * Exception is a phi with 0 inputs which is used when (re)constructing the
 	 * SSA form */
-	if (! is_Bad(block)
+	if (!is_Bad(block)
 	    && !irg_is_constrained(get_irn_irg(n), IR_GRAPH_CONSTRAINT_CONSTRUCTION)
 	    && get_irn_arity(n) > 0) {
 		ASSERT_AND_RET_DBG(
@@ -1262,8 +1240,8 @@ static int verify_node_Phi(const ir_node *n)
 		);
 	}
 
-	/* Phi: BB x dataM^n --> dataM */
-	for (i = get_Phi_n_preds(n) - 1; i >= 0; --i) {
+	/* Phi: BB x dataM --> dataM */
+	for (int i = get_Phi_n_preds(n) - 1; i >= 0; --i) {
 		ir_node *pred = get_Phi_pred(n, i);
 		ASSERT_AND_RET_DBG(get_irn_mode(pred) == mymode,
 		                   "Phi node", 0, show_phi_failure(n, pred, i);
@@ -1298,12 +1276,11 @@ static int verify_node_Load(const ir_node *n)
  */
 static int verify_node_Store(const ir_node *n)
 {
-	ir_graph  *irg = get_irn_irg(n);
-
-	ir_mode *mymode  = get_irn_mode(n);
-	ir_mode *op1mode = get_irn_mode(get_Store_mem(n));
-	ir_mode *op2mode = get_irn_mode(get_Store_ptr(n));
-	ir_mode *op3mode = get_irn_mode(get_Store_value(n));
+	ir_graph *irg = get_irn_irg(n);
+	ir_mode  *mymode  = get_irn_mode(n);
+	ir_mode  *op1mode = get_irn_mode(get_Store_mem(n));
+	ir_mode  *op2mode = get_irn_mode(get_Store_ptr(n));
+	ir_mode  *op3mode = get_irn_mode(get_Store_value(n));
 
 	ASSERT_AND_RET(op1mode == mode_M && mode_is_datab(op3mode), "Store node", 0 );
 	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
@@ -1359,13 +1336,11 @@ static int verify_node_Free(const ir_node *n)
  */
 static int verify_node_Sync(const ir_node *n)
 {
-	int i;
-	ir_mode *mymode  = get_irn_mode(n);
-
 	/* Sync: BB x M^n --> M */
-	for (i = get_Sync_n_preds(n) - 1; i >= 0; --i) {
+	for (int i = get_Sync_n_preds(n); i-- > 0; ) {
 		ASSERT_AND_RET( get_irn_mode(get_Sync_pred(n, i)) == mode_M, "Sync node", 0 );
 	}
+	ir_mode *mymode  = get_irn_mode(n);
 	ASSERT_AND_RET( mymode == mode_M, "Sync node", 0 );
 	return 1;
 }
@@ -1448,10 +1423,9 @@ static int check_dominance_for_node(const ir_node *use)
 {
 	/* This won't work for blocks and the end node */
 	if (!is_Block(use) && !is_End(use) && !is_Anchor(use)) {
-		int i;
 		ir_node *bl = get_nodes_block(use);
 
-		for (i = get_irn_arity(use) - 1; i >= 0; --i) {
+		for (int i = get_irn_arity(use); i-- > 0; ) {
 			ir_node  *def    = get_irn_n(use, i);
 			ir_node  *def_bl = get_nodes_block(def);
 			ir_node  *use_bl = bl;
@@ -1485,8 +1459,6 @@ static int check_dominance_for_node(const ir_node *use)
 
 int irn_verify_irg(const ir_node *n, ir_graph *irg)
 {
-	ir_op *op;
-
 	if (!get_node_verification_mode())
 		return 1;
 
@@ -1506,15 +1478,13 @@ int irn_verify_irg(const ir_node *n, ir_graph *irg)
 	);
 #endif
 	assert(get_irn_irg(n) == irg);
-	{
-		unsigned idx           = get_irn_idx(n);
-		ir_node *node_from_map = get_idx_irn(irg, idx);
-		ASSERT_AND_RET_DBG(node_from_map == n, "Node index and index map entry differ", 0,
-			ir_printf("node %+F node in map %+F(%p)\n", n, node_from_map, node_from_map);
-		);
-	}
+	unsigned idx           = get_irn_idx(n);
+	ir_node *node_from_map = get_idx_irn(irg, idx);
+	ASSERT_AND_RET_DBG(node_from_map == n, "Node index and index map entry differ", 0,
+		ir_printf("node %+F node in map %+F(%p)\n", n, node_from_map, node_from_map);
+	);
 
-	op = get_irn_op(n);
+	ir_op *op = get_irn_op(n);
 
 	if (get_op_pinned(op) >= op_pin_state_exc_pinned) {
 		op_pin_state state = get_irn_pinned(n);
@@ -1598,29 +1568,21 @@ typedef struct check_cfg_env_t {
 #ifdef DEBUG_libfirm
 static int check_block_cfg(const ir_node *block, check_cfg_env_t *env)
 {
-	pmap *branch_nodes;
-	int   n_cfgpreds;
-	int   i;
-
 	ASSERT_AND_RET_DBG(ir_nodeset_contains(&env->reachable_blocks, block),
 	                   "Block is not reachable by blockwalker (endless loop with no kept block?)", 0,
 	                   ir_printf("block %+F\n", block);
 	);
 
-	n_cfgpreds   = get_Block_n_cfgpreds(block);
-	branch_nodes = env->branch_nodes;
-	for (i = 0; i < n_cfgpreds; ++i) {
+	int   n_cfgpreds   = get_Block_n_cfgpreds(block);
+	pmap *branch_nodes = env->branch_nodes;
+	for (int i = 0; i < n_cfgpreds; ++i) {
 		/* check that each mode_X node is only connected
 		 * to 1 user */
 		ir_node *branch = get_Block_cfgpred(block, i);
-		ir_node *former_dest;
-		ir_node *former_branch;
-		ir_node *branch_proj;
-		ir_node *branch_block;
 		branch = skip_Tuple(branch);
 		if (is_Bad(branch))
 			continue;
-		former_dest = pmap_get(ir_node, branch_nodes, branch);
+		ir_node *former_dest = pmap_get(ir_node, branch_nodes, branch);
 		ASSERT_AND_RET_DBG(former_dest==NULL || is_unknown_jump(skip_Proj(branch)),
 						   "Multiple users on mode_X node", 0,
 						   ir_printf("node %+F\n", branch);
@@ -1628,12 +1590,12 @@ static int check_block_cfg(const ir_node *block, check_cfg_env_t *env)
 		pmap_insert(branch_nodes, branch, (void*)block);
 
 		/* check that there's only 1 branching instruction in each block */
-		branch_block = get_nodes_block(branch);
-		branch_proj  = branch;
+		ir_node *branch_block = get_nodes_block(branch);
+		ir_node *branch_proj  = branch;
 		if (is_Proj(branch)) {
 			branch = skip_Proj(branch);
 		}
-		former_branch = pmap_get(ir_node, branch_nodes, branch_block);
+		ir_node *former_branch = pmap_get(ir_node, branch_nodes, branch_block);
 
 		ASSERT_AND_RET_DBG(former_branch == NULL || former_branch == branch,
 						   "Multiple branching nodes in a block", 0,
@@ -1739,14 +1701,10 @@ static int check_cfg(ir_graph *irg)
 	irg_walk_graph(irg, check_cfg_walk_func, NULL, &env);
 
 	ir_nodeset_init(&env.kept_nodes);
-	{
-		ir_node *end   = get_irg_end(irg);
-		int      arity = get_irn_arity(end);
-		int      i;
-		for (i = 0; i < arity; ++i) {
-			ir_node *n = get_irn_n(end, i);
-			ir_nodeset_insert(&env.kept_nodes, n);
-		}
+	ir_node *end = get_irg_end(irg);
+	for (int i = 0, arity = get_irn_arity(end); i < arity; ++i) {
+		ir_node *n = get_irn_n(end, i);
+		ir_nodeset_insert(&env.kept_nodes, n);
 	}
 	irg_walk_graph(irg, assert_branch, NULL, &env);
 
@@ -1783,7 +1741,7 @@ int irg_verify(ir_graph *irg, unsigned flags)
 		&res
 	);
 
-	if (get_node_verification_mode() == FIRM_VERIFICATION_REPORT && ! res) {
+	if (get_node_verification_mode() == FIRM_VERIFICATION_REPORT && !res) {
 		ir_entity *ent = get_irg_entity(irg);
 
 		if (ent)
@@ -1803,12 +1761,11 @@ int irg_verify(ir_graph *irg, unsigned flags)
 int irn_verify_irg_dump(const ir_node *n, ir_graph *irg,
                         const char **bad_string)
 {
-	int res;
 	firm_verification_t old = get_node_verification_mode();
 
 	firm_verify_failure_msg = NULL;
 	do_node_verification(FIRM_VERIFICATION_ERROR_ONLY);
-	res = irn_verify_irg(n, irg);
+	int res = irn_verify_irg(n, irg);
 	if (res && irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE) &&
 	    get_irg_pinned(irg) == op_pin_state_pinned)
 		res = check_dominance_for_node(n);
@@ -1829,14 +1786,13 @@ typedef struct verify_bad_env_t {
 static void check_bads(ir_node *node, void *env)
 {
 	verify_bad_env_t *venv = (verify_bad_env_t*)env;
-	int i, arity = get_irn_arity(node);
 	ir_graph *irg = get_irn_irg(node);
 
 	if (is_Block(node)) {
 		if ((venv->flags & BAD_CF) == 0) {
 
 			/* check for Bad Block predecessor */
-			for (i = 0; i < arity; ++i) {
+			for (int i = 0, arity = get_irn_arity(node); i < arity; ++i) {
 				ir_node *pred = get_irn_n(node, i);
 
 				if (is_Bad(pred)) {
@@ -1880,7 +1836,7 @@ static void check_bads(ir_node *node, void *env)
 			}
 		}
 
-		for (i = 0; i < arity; ++i) {
+		for (int i = 0, arity = get_irn_arity(node); i < arity; ++i) {
 			ir_node *pred = get_irn_n(node, i);
 
 			if (is_Bad(pred)) {
@@ -1919,12 +1875,10 @@ static void check_bads(ir_node *node, void *env)
 int irg_verify_bads(ir_graph *irg, int flags)
 {
 	verify_bad_env_t env;
-
 	env.flags = flags;
 	env.res   = 0;
 
 	irg_walk_graph(irg, check_bads, NULL, &env);
-
 	return env.res;
 }
 
