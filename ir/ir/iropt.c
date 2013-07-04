@@ -6761,8 +6761,10 @@ ir_node *optimize_in_place_2(ir_node *n)
 
 	n = transform_node(n);
 
+#ifdef DEBUG_libfirm
 	/* Now we can verify the node, as it has no dead inputs any more. */
 	irn_verify(n);
+#endif
 
 	/* Now we have a legal, useful node. Enter it in hash table for cse.
 	 *

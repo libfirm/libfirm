@@ -22,6 +22,13 @@
 #include "irgopt.h"
 {% endif %}
 
+static void verify_new_node(ir_graph *irg, ir_node *node)
+{
+#ifdef DEBUG_libfirm
+	irn_verify_irg(node, irg);
+#endif
+}
+
 {% if spec.external %}
 static unsigned {{spec.name}}_opcode_start;
 
@@ -83,7 +90,7 @@ ir_node *new_rd_{{node.name}}(
 	{%- endfor %}
 	{%- endif %}
 	{{- node.init }}
-	irn_verify_irg(res, irg);
+	verify_new_node(irg, res);
 	res = optimize_node(res);
 	{{- node.init_after_opt }}
 	return res;

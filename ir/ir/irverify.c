@@ -24,8 +24,6 @@
 
 const char *firm_verify_failure_msg;
 
-#ifndef NDEBUG
-
 /**
  * little helper for NULL modes
  */
@@ -128,6 +126,7 @@ static void show_proj_mode_failure(const ir_node *n, ir_type *ty)
 	        get_mode_name_ex(m));
 }
 
+#ifdef DEBUG_libfirm
 /**
  * Show a node and a graph
  */
@@ -135,6 +134,7 @@ static void show_node_on_graph(const ir_graph *irg, const ir_node *n)
 {
 	ir_fprintf(stderr, "\nFIRM: irn_verify_irg() of %+F, node %+F\n", irg, n);
 }
+#endif
 
 /**
  * Show call parameters
@@ -211,8 +211,6 @@ static void show_phi_inputs(const ir_node *phi, const ir_node *block)
 	        get_irn_node_nr(phi),   get_irn_arity(phi),
 	        get_irn_node_nr(block), get_irn_arity(block));
 }
-
-#endif /* #ifndef NDEBUG */
 
 /**
  * verify a Proj(Start) node
@@ -1467,7 +1465,7 @@ int irn_verify_irg(const ir_node *n, ir_graph *irg)
 	 * know the "right" graph ...
 	 */
 
-#ifndef NDEBUG
+#ifdef DEBUG_libfirm
 	/* this is an expensive check for large graphs (it has a quadratic
 	 * runtime but with a small constant); so do NOT run it in release mode
 	 */
@@ -1517,12 +1515,7 @@ int irn_verify_irg(const ir_node *n, ir_graph *irg)
 
 int irn_verify(const ir_node *n)
 {
-#ifdef DEBUG_libfirm
 	return irn_verify_irg(n, get_irn_irg(n));
-#else
-	(void)n;
-	return 1;
-#endif
 }
 
 /*-----------------------------------------------------------------*/
@@ -1723,9 +1716,7 @@ int irg_verify(ir_graph *irg, unsigned flags)
 #ifdef DEBUG_libfirm
 	int pinned = get_irg_pinned(irg) == op_pin_state_pinned;
 
-#ifndef NDEBUG
 	last_irg_error = NULL;
-#endif /* NDEBUG */
 
 	if (pinned && !check_cfg(irg))
 		res = 0;

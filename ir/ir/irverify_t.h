@@ -19,19 +19,6 @@
 
 extern const char *firm_verify_failure_msg;
 
-#ifdef NDEBUG
-/*
- * in RELEASE mode, returns ret if the expression expr evaluates to zero
- * in ASSERT mode, asserts the expression expr (and the string string).
- */
-#define ASSERT_AND_RET(expr, string, ret)       do { if (!(expr)) return (ret); } while (0)
-
-/*
- * in RELEASE mode, returns ret if the expression expr evaluates to zero
- * in ASSERT mode, executes blk if the expression expr evaluates to zero and asserts expr
- */
-#define ASSERT_AND_RET_DBG(expr, string, ret, blk)     do { if (!(expr)) return (ret); } while (0)
-#else
 #define ASSERT_AND_RET(expr, string, ret) \
 do { \
   if (opt_do_node_verification == FIRM_VERIFICATION_ON) {\
@@ -61,8 +48,6 @@ do { \
     return (ret); \
   } \
 } while(0)
-
-#endif
 
 /**
  * Set the default verify_node and verify_proj_node operations.
