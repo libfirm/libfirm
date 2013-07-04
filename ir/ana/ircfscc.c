@@ -446,7 +446,7 @@ static ir_node *find_tail(ir_node *n)
 				}
 				if (m == n) break;   /* It's not an unreachable loop, either. */
 			}
-			//assert(0 && "no head found on stack");
+			//panic("no head found on stack");
 		}
 	}
 	assert(res_index > -2);

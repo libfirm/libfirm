@@ -17,6 +17,7 @@
 #include "debug.h"
 #include "set.h"
 #include "debug.h"
+#include "error.h"
 
 #include "sp_matrix.h"
 #include "mps.h"
@@ -364,7 +365,7 @@ void lpp_check_startvals(lpp_t *lpp)
 				}
 				break;
 			default:
-				assert(0 && "unknown constraint type");
+				panic("unknown constraint type");
 		}
 next: ;
 	}

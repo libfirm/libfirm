@@ -1864,7 +1864,7 @@ static void do_dfs(ir_graph *irg, loop_env *env)
 		} else if (is_Bad(pred)) {
 			/* ignore non-optimized block predecessor */
 		} else {
-			assert(0 && "Unknown EndBlock predecessor");
+			panic("Unknown EndBlock predecessor");
 		}
 	}
 

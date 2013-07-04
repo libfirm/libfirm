@@ -10,6 +10,7 @@
 #include <stdarg.h>
 #include <assert.h>
 #include "mps.h"
+#include "error.h"
 
 /**
  * These must comply to the enum cst_t in lpp.h
@@ -48,7 +49,7 @@ static void mps_write_line(FILE *out, lpp_mps_style_t style,
 			case l_data_col2: fmt = "    %-8s  %-8s  %12g   %-8s  %12g\n"; break; /* Field 2-6 */
 			case l_data_mst:  fmt = "    %-8s            %12g\n"; break; /* Field 3-4 */
 			case l_marker:    fmt = "    M%-7d  'MARKER'                 '%s'\n"; break; /* Field 2,3,5 */
-			default: assert(0);
+			default: panic("invalid line type");
 		}
 	} else {
 		switch (line_type) {
@@ -64,7 +65,7 @@ static void mps_write_line(FILE *out, lpp_mps_style_t style,
 			case l_data_col2: fmt = " %s\t%s\t%g\t%s\t%g\n"; break;
 			case l_data_mst:  fmt = " %s\t%g\n"; break;
 			case l_marker:    fmt = " M%d\t'MARKER'\t'%s'\n"; break;
-			default: assert(0);
+			default: panic("invalid line type");
 		}
 	}
 

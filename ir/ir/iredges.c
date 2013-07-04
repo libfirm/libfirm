@@ -182,7 +182,6 @@ static inline void verify_list_head(ir_node *irn, ir_edge_kind_t kind)
 			fprintf(stderr, "- at list entry %d\n", num);
 			if (edge->src)
 				ir_fprintf(stderr, "- edge(%ld) %+F(%d)\n", edge_get_id(edge), edge->src, edge->pos);
-			assert(0 && "No source node found");
 			break;
 		}
 		num++;

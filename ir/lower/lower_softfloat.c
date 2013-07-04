@@ -200,9 +200,7 @@ static ir_type *get_softfloat_type(const ir_node *n)
 	default: break;
 	}
 
-	assert(0 && "Could not determine a suitable type");
-
-	return NULL;
+	panic("Could not determine a suitable type");
 }
 
 /**
@@ -722,7 +720,7 @@ static void lower_Div(ir_node *n)
 			exchange(proj, call_result);
 			break;
 		default:
-			assert(0 && "unexpected Proj number");
+			panic("unexpected Proj number");
 		}
 	}
 

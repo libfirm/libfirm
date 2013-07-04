@@ -183,8 +183,7 @@ static void do_type_walk(type_or_ent tore,
 			/* a leave. */
 			break;
 		case tpo_uninitialized:
-			assert(0 && "Faulty type");
-			break;
+			panic("Faulty type");
 		}
 		break; /* end case k_type */
 

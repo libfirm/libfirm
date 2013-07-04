@@ -484,7 +484,7 @@ static void co_collect_units(ir_node *irn, void *env)
 			}
 		}
 	} else {
-		assert(0 && "This is not an optimizable node!");
+		panic("This is not an optimizable node!");
 	}
 
 	/* Insert the new unit at a position according to its costs */

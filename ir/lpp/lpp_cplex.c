@@ -39,7 +39,6 @@ static void chk_cpx_err(cpx_t *cpx)
 			printf("%s", cpx->buf);
 		else
 			printf("Unknown CPLEX error\n");
-		assert(0);
 	}
 }
 

@@ -201,10 +201,11 @@ ir_mode *(get_type_mode)(const ir_type *tp)
 void set_type_mode(ir_type *tp, ir_mode *mode)
 {
 	const tp_op *tpop = get_type_tpop(tp);
-	if (tpop->ops.set_type_mode)
+	if (tpop->ops.set_type_mode) {
 		tpop->ops.set_type_mode(tp, mode);
-	else
-		assert(0 && "setting a mode is NOT allowed for this type");
+	} else {
+		panic("setting a mode is NOT allowed for this type");
+	}
 }
 
 long get_type_nr(const ir_type *tp)

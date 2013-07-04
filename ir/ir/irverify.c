@@ -1847,7 +1847,6 @@ static void check_bads(ir_node *node, void *env)
 					}
 					if (get_node_verification_mode() == FIRM_VERIFICATION_ON) {
 						dump_ir_graph(irg, "assert");
-						assert(0 && "Bad CF detected");
 					}
 				}
 			}
@@ -1864,7 +1863,6 @@ static void check_bads(ir_node *node, void *env)
 				}
 				if (get_node_verification_mode() == FIRM_VERIFICATION_ON) {
 					dump_ir_graph(irg, "assert");
-					assert(0 && "Bad CF detected");
 				}
 			}
 		}
@@ -1878,7 +1876,6 @@ static void check_bads(ir_node *node, void *env)
 				}
 				if (get_node_verification_mode() == FIRM_VERIFICATION_ON) {
 					dump_ir_graph(irg, "assert");
-					assert(0 && "Tuple detected");
 				}
 			}
 		}
@@ -1899,7 +1896,6 @@ static void check_bads(ir_node *node, void *env)
 						}
 						if (get_node_verification_mode() == FIRM_VERIFICATION_ON) {
 							dump_ir_graph(irg, "assert");
-							assert(0 && "Bad CF detected");
 						}
 					}
 				}
@@ -1913,7 +1909,6 @@ static void check_bads(ir_node *node, void *env)
 					}
 					if (get_node_verification_mode() == FIRM_VERIFICATION_ON) {
 						dump_ir_graph(irg, "assert");
-						assert(0 && "Bad NON-CF detected");
 					}
 				}
 			}

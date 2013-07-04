@@ -93,7 +93,6 @@ static void verify_liveness_walker(ir_node *block, void *data)
 				irn, block, get_irg_name(env->irg), pressure, env->registers_available);
 			print_living_values(stderr, &live_nodes);
 			env->problem_found = true;
-			assert(0);
 		}
 	}
 	ir_nodeset_destroy(&live_nodes);

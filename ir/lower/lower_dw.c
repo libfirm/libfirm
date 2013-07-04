@@ -388,7 +388,7 @@ static void lower_Load(ir_node *node, ir_mode *mode)
 			break;
 		}
 		default:
-			assert(0 && "unexpected Proj number");
+			panic("unexpected Proj number");
 		}
 		/* mark this proj: we have handled it already, otherwise we might fall
 		 * into out new nodes. */
@@ -453,7 +453,7 @@ static void lower_Store(ir_node *node, ir_mode *mode)
 			set_Proj_pred(proj, low);
 			break;
 		default:
-			assert(0 && "unexpected Proj number");
+			panic("unexpected Proj number");
 		}
 		/* mark this proj: we have handled it already, otherwise we might fall into
 		 * out new nodes. */
@@ -561,7 +561,7 @@ static void lower_Div(ir_node *node, ir_mode *mode)
 			}
 			break;
 		default:
-			assert(0 && "unexpected Proj number");
+			panic("unexpected Proj number");
 		}
 		/* mark this proj: we have handled it already, otherwise we might fall into
 		 * out new nodes. */
@@ -633,7 +633,7 @@ static void lower_Mod(ir_node *node, ir_mode *mode)
 			}
 			break;
 		default:
-			assert(0 && "unexpected Proj number");
+			panic("unexpected Proj number");
 		}
 		/* mark this proj: we have handled it already, otherwise we might fall
 		 * into out new nodes. */
