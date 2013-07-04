@@ -50,11 +50,6 @@
 
 static ir_type *new_type(tp_op const *type_op, ir_mode *mode, type_dbg_info *db);
 
-ir_type *get_none_type(void)
-{
-	return irp->none_type;
-}
-
 ir_type *get_code_type(void)
 {
 	return irp->code_type;
@@ -67,11 +62,6 @@ ir_type *get_unknown_type(void)
 
 void ir_init_type(ir_prog *irp)
 {
-	/* construct none and unknown type. */
-	irp->none_type = new_type(tpop_none, mode_BAD, NULL);
-	set_type_size_bytes(irp->none_type, 0);
-	set_type_state (irp->none_type, layout_fixed);
-
 	irp->code_type = new_type(tpop_code, mode_ANY, NULL);
 	set_type_state(irp->code_type, layout_fixed);
 
@@ -82,7 +72,7 @@ void ir_init_type(ir_prog *irp)
 
 void ir_finish_type(ir_prog *irp)
 {
-	/** nothing todo. (The none, code, unknown types are in the global type list
+	/** nothing todo. (The code, unknown types are in the global type list
 	 * and freed there */
 	(void)irp;
 }
@@ -1592,12 +1582,6 @@ int is_unknown_type(const ir_type *tp)
 	return tp->type_op == tpop_unknown;
 }
 
-int is_none_type(const ir_type *tp)
-{
-	assert(tp->kind == k_type);
-	return tp->type_op == tpop_none;
-}
-
 int is_frame_type(const ir_type *tp)
 {
 	return tp->flags & tf_frame_type;
@@ -1798,9 +1782,6 @@ void ir_print_type(char *buffer, size_t buffer_size, const ir_type *type)
 		return;
 	}
 
-	case tpo_none:
-		snprintf(buffer, buffer_size, "none");
-		return;
 	case tpo_method:
 		/* TODO: we should print argument and return types here... */
 		snprintf(buffer, buffer_size, "method type");

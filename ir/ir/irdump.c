@@ -821,11 +821,7 @@ static int dump_node_typeinfo(FILE *F, const ir_node *n)
 		if (get_irg_typeinfo_state(irg) == ir_typeinfo_consistent  ||
 			get_irg_typeinfo_state(irg) == ir_typeinfo_inconsistent) {
 			ir_type *tp = get_irn_typeinfo_type(n);
-			if (tp != get_none_type()) {
-				ir_fprintf(F, "[%+F]", tp);
-			} else {
-				fprintf(F, "[] ");
-			}
+			ir_fprintf(F, "[%+F]", tp);
 		}
 	}
 	return bad;
@@ -1763,7 +1759,6 @@ static void dump_type_info(type_or_ent tore, void *env)
 		case tpo_unknown:
 		case tpo_code:
 		case tpo_uninitialized:
-		case tpo_none:
 		case tpo_primitive:
 			break;
 		}

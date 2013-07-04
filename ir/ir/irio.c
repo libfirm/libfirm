@@ -362,9 +362,6 @@ static void write_type_ref(write_env_t *env, ir_type *type)
 	case tpo_unknown:
 		write_symbol(env, "unknown");
 		return;
-	case tpo_none:
-		write_symbol(env, "none");
-		return;
 	case tpo_code:
 		write_symbol(env, "code");
 		return;
@@ -670,7 +667,6 @@ static void write_type(write_env_t *env, ir_type *tp)
 	mark_type_visited(tp);
 
 	switch ((tp_opcode)get_type_tpop_code(tp)) {
-	case tpo_none:
 	case tpo_unknown:
 	case tpo_code:
 	case tpo_uninitialized:
@@ -1439,10 +1435,6 @@ static ir_type *get_type(read_env_t *env, long typenr)
 static ir_type *read_type_ref(read_env_t *env)
 {
 	char *str = read_word(env);
-	if (strcmp(str, "none") == 0) {
-		obstack_free(&env->obst, str);
-		return get_none_type();
-	}
 	if (strcmp(str, "unknown") == 0) {
 		obstack_free(&env->obst, str);
 		return get_unknown_type();
@@ -1790,7 +1782,6 @@ static void read_type(read_env_t *env)
 		goto finish_type;
 	}
 
-	case tpo_none:
 	case tpo_code:
 	case tpo_unknown:
 	case tpo_enumeration:

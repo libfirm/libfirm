@@ -179,7 +179,6 @@ static void do_type_walk(type_or_ent tore,
 
 		case tpo_code:
 		case tpo_primitive:
-		case tpo_none:
 		case tpo_unknown:
 			/* a leave. */
 			break;

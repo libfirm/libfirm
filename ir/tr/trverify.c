@@ -107,7 +107,6 @@ int check_type(const ir_type *tp)
 	case tpo_method:
 	case tpo_uninitialized:
 	case tpo_unknown:
-	case tpo_none:
 	case tpo_code:
 		break;
 	}

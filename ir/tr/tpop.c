@@ -22,7 +22,6 @@ const tp_op *type_enumeration;   const tp_op *get_tpop_enumeration(void) { retur
 const tp_op *type_pointer;       const tp_op *get_tpop_pointer    (void) { return type_pointer;     }
 const tp_op *type_primitive;     const tp_op *get_tpop_primitive  (void) { return type_primitive;   }
 const tp_op *tpop_code;          const tp_op *get_tpop_code_type  (void) { return tpop_code;        }
-const tp_op *tpop_none;          const tp_op *get_tpop_none       (void) { return tpop_none;        }
 const tp_op *tpop_unknown;       const tp_op *get_tpop_unknown    (void) { return tpop_unknown;     }
 
 const tp_op *new_tpop(tp_opcode code, ident *name, unsigned flags,
@@ -161,7 +160,6 @@ void init_tpop(void)
 	type_pointer     = new_tpop(tpo_pointer    , ID("pointer"),     0,                   sizeof(ptr_attr), &pointer_ops);
 	type_primitive   = new_tpop(tpo_primitive  , ID("primitive"),   0,                   0,                &null_ops);
 	tpop_code        = new_tpop(tpo_code       , ID("code"),        0,                   0,                &null_ops);
-	tpop_none        = new_tpop(tpo_none       , ID("None"),        0,                   0,                &pseudo_ops);
 	tpop_unknown     = new_tpop(tpo_unknown    , ID("Unknown"),     0,                   0,                &pseudo_ops);
 #undef ID
 }
@@ -177,7 +175,6 @@ void finish_tpop(void)
 	free_tpop(type_pointer    ); type_pointer     = NULL;
 	free_tpop(type_primitive  ); type_primitive   = NULL;
 	free_tpop(tpop_code       ); tpop_code        = NULL;
-	free_tpop(tpop_none       ); tpop_none        = NULL;
 	free_tpop(tpop_unknown    ); tpop_unknown     = NULL;
 }
 

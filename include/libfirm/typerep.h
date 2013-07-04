@@ -764,7 +764,6 @@ typedef enum tp_opcode {
 	tpo_pointer,             /**< A pointer type. */
 	tpo_primitive,           /**< A primitive type. */
 	tpo_code,                /**< a piece of code (a basic block) */
-	tpo_none,                /**< Special type for the None type. */
 	tpo_unknown,             /**< Special code for the Unknown type. */
 	tpo_last = tpo_unknown   /* not a type opcode */
 } tp_opcode;
@@ -1883,41 +1882,6 @@ FIRM_API const tp_op *type_primitive;
 /** Returns type opcode for primitive type. @see type_primitive */
 FIRM_API const tp_op *get_tpop_primitive(void);
 
-/** @} */
-
-/**
- * @defgroup none_type None
- *
- *  This type is an auxiliary type dedicated to support type analyses.
- *
- *  The none type represents that there is no type.  The type can be used to
- *  initialize fields of type* that actually can not contain a type or that
- *  are initialized for an analysis. There exists exactly one type none.
- *  This type is not on the type list in ir_prog. It is
- *  allocated when initializing the type module.
- *
- *  The following values are set:
- *    - mode:  mode_BAD
- *    - name:  "type_none"
- *    - state: layout_fixed
- *    - size:  0
- * @{
- */
-/** Returns the none type. */
-FIRM_API ir_type *get_none_type(void);
-/** Checks whether type @p type is the none type. */
-FIRM_API int is_none_type(const ir_type *type);
-/**
- * This type opcode is an auxiliary opcode dedicated to support type analyses.
- *
- * Types with this opcode represents that there is no type.
- * The type can be used to initialize fields of the type* that actually can not
- * contain a type or that are initialized for an analysis. There exists exactly
- * one type with this opcode.
- */
-FIRM_API const tp_op *tpop_none;
-/** Returns type opcode for none type. @see tpop_none */
-FIRM_API const tp_op *get_tpop_none(void);
 /** @} */
 
 /** @defgroup code_type Code

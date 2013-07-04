@@ -343,9 +343,9 @@ void dump_irnode_to_file(FILE *const F, const ir_node *const n)
 	}
 
 	if (get_irg_typeinfo_state(get_irn_irg(n)) == ir_typeinfo_consistent  ||
-		get_irg_typeinfo_state(get_irn_irg(n)) == ir_typeinfo_inconsistent  )
-		if (get_irn_typeinfo_type(n) != get_none_type())
-			ir_fprintf (F, "  Analysed type: %s\n", get_irn_typeinfo_type(n));
+		get_irg_typeinfo_state(get_irn_irg(n)) == ir_typeinfo_inconsistent) {
+		ir_fprintf (F, "  Analysed type: %s\n", get_irn_typeinfo_type(n));
+	}
 }
 
 void dump_graph_as_text(FILE *const out, const ir_graph *const irg)
@@ -772,7 +772,6 @@ void dump_type_to_file(FILE *const F, const ir_type *const tp)
 		break;
 
 	case tpo_primitive:
-	case tpo_none:
 	case tpo_unknown:
 		fprintf(F, "\n");
 		break;

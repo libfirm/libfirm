@@ -588,7 +588,6 @@ struct ir_prog {
 	ir_entity *unknown_entity;      /**< unique 'unknown'-entity */
 	ir_type   *segment_types[IR_SEGMENT_LAST+1];
 	ir_type  **types;               /**< A list of all types in the ir. */
-	ir_type   *none_type;           /**< unique 'none'-type */
 	ir_type   *code_type;           /**< unique 'code'-type */
 	ir_type   *unknown_type;        /**< unique 'unknown'-type */
 	ir_type   *byte_type;           /**< type for a 'byte' */
