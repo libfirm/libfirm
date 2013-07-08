@@ -67,14 +67,14 @@ void stat_ev_tim_push(void)
 	int            sp   = stat_ev_timer_sp++;
 	assert((size_t)sp < ARRAY_SIZE(stat_ev_timer_start));
 	timing_ticks_t temp = timing_ticks();
+	stat_ev_timer_elapsed[sp] = 0;
+	stat_ev_timer_start[sp]   = temp;
 	if (sp == 0) {
 		timing_enter_max_prio();
 	} else {
 		temp -= stat_ev_timer_start[sp-1];
 		stat_ev_timer_elapsed[sp-1] += temp;
 	}
-	stat_ev_timer_elapsed[sp] = 0;
-	stat_ev_timer_start[sp]   = temp;
 }
 
 void stat_ev_tim_pop(const char *name)
