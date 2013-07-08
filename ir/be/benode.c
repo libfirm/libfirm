@@ -1090,7 +1090,7 @@ ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
 	for (i = 0; i < n_ins; ++i) {
 		info->in_reqs[i] = req;
 	}
-	irn_verify_irg(phi, irg);
+	verify_new_node(irg, phi);
 	phi = optimize_node(phi);
 	return phi;
 }

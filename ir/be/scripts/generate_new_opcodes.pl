@@ -425,7 +425,7 @@ EOF
 	$temp .= <<EOF;
 	/* optimize node */
 	res = optimize_node(res);
-	irn_verify_irg(res, irg);
+	verify_new_node(irg, res);
 
 	return res;
 EOF

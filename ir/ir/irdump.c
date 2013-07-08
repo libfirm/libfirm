@@ -1112,17 +1112,6 @@ static void dump_const_block_local(FILE *F, const ir_node *n)
 }
 
 /**
- * prints the error message of a node to a file F as info2.
- */
-static void print_node_error(FILE *F, const char *err_msg)
-{
-	if (! err_msg)
-		return;
-
-	fprintf(F, " info2: \"%s\"", err_msg);
-}
-
-/**
  * prints debug messages of a node to file F as info3.
  */
 static void print_dbg_info(FILE *F, dbg_info *dbg)
@@ -1147,10 +1136,6 @@ static void print_type_dbg_info(FILE *F, type_dbg_info *dbg)
  */
 void dump_node(FILE *F, const ir_node *n)
 {
-	int bad = 0;
-	const char *p;
-	ir_graph   *irg;
-
 	if (get_opt_dump_const_local() && is_constlike_node(n))
 		return;
 
@@ -1159,15 +1144,12 @@ void dump_node(FILE *F, const ir_node *n)
 	print_nodeid(F, n);
 
 	fputs(" label: \"", F);
-	irg = get_irn_irg(n);
-	bad = ! irn_verify_irg_dump(n, irg, &p);
 	dump_node_label(F, n);
 	fputs("\" ", F);
 
 	dump_node_info(F, n);
-	print_node_error(F, p);
 	print_dbg_info(F, get_irn_dbg_info(n));
-	dump_node_vcgattr(F, n, NULL, bad);
+	dump_node_vcgattr(F, n, NULL, 0);
 	fputs("}\n", F);
 	dump_const_node_local(F, n);
 

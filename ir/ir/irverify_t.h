@@ -11,36 +11,7 @@
 #ifndef FIRM_IR_IRVERIFY_T_H
 #define FIRM_IR_IRVERIFY_T_H
 
-#include "irflag_t.h"
 #include "irverify.h"
-#include "irdump.h"
-
-#include "beutil.h"
-
-extern const char *firm_verify_failure_msg;
-
-#define ASSERT_AND_RET(expr, string, ret) \
-do { \
-  if (!(expr) && current_ir_graph != get_const_code_irg()) \
-    dump_ir_graph(current_ir_graph, "assert"); \
-  assert((expr) && string); \
-  if (!(expr)) { \
-    firm_verify_failure_msg = #expr " && " string; \
-    return (ret); \
-  } \
-} while(0)
-
-#define ASSERT_AND_RET_DBG(expr, string, ret, blk) \
-do { \
-  if (!(expr)) { \
-    firm_verify_failure_msg = #expr " && " string; \
-    blk \
-    if (!(expr) && current_ir_graph != get_const_code_irg()) \
-      dump_ir_graph(current_ir_graph, "assert"); \
-    assert((expr) && string); \
-    return (ret); \
-  } \
-} while(0)
 
 /**
  * Set the default verify_node and verify_proj_node operations.

@@ -22,13 +22,6 @@
 #include "irgopt.h"
 {% endif %}
 
-static void verify_new_node(ir_graph *irg, ir_node *node)
-{
-#ifdef DEBUG_libfirm
-	irn_verify_irg(node, irg);
-#endif
-}
-
 {% if spec.external %}
 static unsigned {{spec.name}}_opcode_start;
 

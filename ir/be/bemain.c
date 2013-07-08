@@ -536,7 +536,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		/* Verify the initial graph */
 		if (be_options.do_verify) {
 			be_timer_push(T_VERIFY);
-			irg_verify(irg, VERIFY_ENFORCE_SSA);
+			irg_assert_verify(irg);
 			be_timer_pop(T_VERIFY);
 		}
 

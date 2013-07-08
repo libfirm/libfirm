@@ -65,7 +65,7 @@ ir_node *new_rd_ASM(dbg_info *db, ir_node *block, ir_node *mem,
 	memcpy(res->attr.assem.output_constraints, outputs, sizeof(outputs[0]) * n_outs);
 	memcpy(res->attr.assem.clobbers, clobber, sizeof(clobber[0]) * n_clobber);
 
-	irn_verify_irg(res, irg);
+	verify_new_node(irg, res);
 	res = optimize_node(res);
 	return res;
 }
@@ -84,7 +84,7 @@ ir_node *new_rd_SymConst(dbg_info *db, ir_graph *irg, ir_mode *mode,
 	res->attr.symc.kind = symkind;
 	res->attr.symc.sym  = value;
 
-	irn_verify_irg(res, irg);
+	verify_new_node(irg, res);
 	res = optimize_node(res);
 	return res;
 }
@@ -146,7 +146,7 @@ static inline ir_node *new_rd_Phi0(dbg_info *dbgi, ir_node *block,
 	ir_graph *irg = get_irn_irg(block);
 	ir_node  *res = new_ir_node(dbgi, irg, block, op_Phi, mode, 0, NULL);
 	res->attr.phi.u.pos = pos;
-	irn_verify_irg(res, irg);
+	verify_new_node(irg, res);
 	return res;
 }
 
@@ -220,7 +220,7 @@ static ir_node *set_phi_arguments(ir_node *phi, int pos)
 	phi->attr.phi.u.backedge = new_backedge_arr(get_irg_obstack(irg), arity);
 	set_irn_in(phi, arity, in);
 
-	irn_verify_irg(phi, irg);
+	verify_new_node(irg, phi);
 
 	try_remove_unnecessary_phi(phi);
 	return phi;
@@ -335,7 +335,7 @@ void mature_immBlock(ir_node *block)
 	   nodes refer to the unoptimized node.
 	   We can call optimize_in_place_2(), as global cse has no effect on blocks.
 	 */
-	irn_verify_irg(block, irg);
+	verify_new_node(irg, block);
 	optimize_in_place_2(block);
 }
 
@@ -384,7 +384,7 @@ ir_node *new_rd_DivRL(dbg_info *dbgi, ir_node *block, ir_node * irn_mem, ir_node
 	res->attr.div.resmode = resmode;
 	res->attr.div.no_remainder = 1;
 	res->attr.div.exc.pin_state = pin_state;
-	irn_verify_irg(res, irg);
+	verify_new_node(irg, res);
 	res = optimize_node(res);
 	return res;
 }
@@ -427,7 +427,7 @@ ir_node *new_rd_immBlock(dbg_info *dbgi, ir_graph *irg)
 	res->attr.block.graph_arr = NEW_ARR_DZ(ir_node*, get_irg_obstack(irg), irg->n_loc);
 
 	/* Immature block may not be optimized! */
-	irn_verify_irg(res, irg);
+	verify_new_node(irg, res);
 
 	return res;
 }
@@ -699,6 +699,6 @@ ir_node *new_r_Block_noopt(ir_graph *irg, int arity, ir_node *in[])
 	if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION)) {
 		res->attr.block.graph_arr = NEW_ARR_DZ(ir_node*, get_irg_obstack(irg), irg->n_loc);
 	}
-	irn_verify_irg(res, irg);
+	verify_new_node(irg, res);
 	return res;
 }
