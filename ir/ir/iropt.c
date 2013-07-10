@@ -1161,6 +1161,33 @@ static ir_node *equivalent_node_Proj_Div(ir_node *proj)
 }
 
 /**
+ * Optimize Store-after-Load
+ */
+static ir_node *equivalent_node_Proj_Store(ir_node *proj)
+{
+	ir_node *store = get_Proj_pred(proj);
+
+	if (get_Store_volatility(store) == volatility_is_volatile ||
+	    ir_throws_exception(store)) {
+		return proj;
+	}
+
+	ir_node *store_mem   = get_Store_mem(store);
+	ir_node *store_value = get_Store_value(store);
+	ir_node *store_ptr   = get_Store_ptr(store);
+
+	if (is_Proj(store_mem) && is_Proj(store_value)) {
+		ir_node *load = get_Proj_pred(store_mem);
+		if (is_Load(load) &&
+		    get_Proj_pred(store_value) == load &&
+		    get_Load_ptr(load) == store_ptr) {
+			return store_mem;
+		}
+	}
+	return proj;
+}
+
+/**
  * Optimize CopyB(mem, x, x) into a Nop.
  */
 static ir_node *equivalent_node_CopyB(ir_node *copyb)
@@ -6408,6 +6435,7 @@ void ir_register_opt_node_ops(void)
 	register_equivalent_node_func(op_Sub,     equivalent_node_Sub);
 	register_equivalent_node_func_proj(op_Div,   equivalent_node_Proj_Div);
 	register_equivalent_node_func_proj(op_Tuple, equivalent_node_Proj_Tuple);
+	register_equivalent_node_func_proj(op_Store, equivalent_node_Proj_Store);
 
 	register_transform_node_func(op_Add,    transform_node_Add);
 	register_transform_node_func(op_And,    transform_node_And);
