@@ -157,15 +157,13 @@ static void collect_nodes(ir_node *node, void *env)
 {
 	walk_env_t  *wenv   = (walk_env_t *)env;
 	unsigned     opcode = get_irn_opcode(node);
-	ir_node     *pred, *blk, *pred_blk;
-	ldst_info_t *ldst_info;
 
 	if (opcode == iro_Proj) {
-		pred   = get_Proj_pred(node);
+		ir_node *pred   = get_Proj_pred(node);
 		opcode = get_irn_opcode(pred);
 
 		if (opcode == iro_Load || opcode == iro_Store || opcode == iro_Call) {
-			ldst_info = get_ldst_info(pred, &wenv->obst);
+			ldst_info_t *ldst_info = get_ldst_info(pred, &wenv->obst);
 
 			wenv->changes |= update_projs(ldst_info, node);
 
@@ -175,8 +173,8 @@ static void collect_nodes(ir_node *node, void *env)
 			 * "non-SSA" form after optimizations if the Proj
 			 * is in a wrong block.
 			 */
-			blk      = get_nodes_block(node);
-			pred_blk = get_nodes_block(pred);
+			ir_node *blk      = get_nodes_block(node);
+			ir_node *pred_blk = get_nodes_block(pred);
 			if (blk != pred_blk) {
 				wenv->changes |= DF_CHANGED;
 				set_nodes_block(node, pred_blk);
@@ -186,11 +184,9 @@ static void collect_nodes(ir_node *node, void *env)
 		int i;
 
 		for (i = get_Block_n_cfgpreds(node) - 1; i >= 0; --i) {
-			ir_node      *pred_block, *proj;
-			block_info_t *bl_info;
-			int          is_exc = 0;
-
-			pred = proj = get_Block_cfgpred(node, i);
+			int      is_exc = 0;
+			ir_node *proj   = get_Block_cfgpred(node, i);
+			ir_node *pred   = proj;
 
 			if (is_Proj(proj)) {
 				pred   = get_Proj_pred(proj);
@@ -201,8 +197,8 @@ static void collect_nodes(ir_node *node, void *env)
 			if (is_Bad(pred))
 				continue;
 
-			pred_block = get_nodes_block(pred);
-			bl_info    = get_block_info(pred_block, &wenv->obst);
+			ir_node      *pred_block = get_nodes_block(pred);
+			block_info_t *bl_info    = get_block_info(pred_block, &wenv->obst);
 
 			if (is_fragile_op(pred) && is_exc)
 				bl_info->flags |= BLOCK_HAS_EXC;
@@ -211,7 +207,7 @@ static void collect_nodes(ir_node *node, void *env)
 
 			opcode = get_irn_opcode(pred);
 			if (is_exc && (opcode == iro_Load || opcode == iro_Store || opcode == iro_Call)) {
-				ldst_info = get_ldst_info(pred, &wenv->obst);
+				ldst_info_t *ldst_info = get_ldst_info(pred, &wenv->obst);
 
 				wenv->changes |= update_exc(ldst_info, node, i);
 			}
@@ -249,8 +245,6 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 				int i, n;
 
 				for (i = 0, n = get_Sel_n_indexs(ptr); i < n; ++i) {
-					ir_node   *bound;
-					ir_tarval *tlower, *tupper;
 					ir_node   *index = get_Sel_index(ptr, i);
 					ir_tarval *tv    = computed_value(index);
 
@@ -258,10 +252,10 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 					if (tv == tarval_bad)
 						return NULL;
 
-					bound  = get_array_lower_bound(tp, i);
-					tlower = computed_value(bound);
-					bound  = get_array_upper_bound(tp, i);
-					tupper = computed_value(bound);
+					ir_node   *bound  = get_array_lower_bound(tp, i);
+					ir_tarval *tlower = computed_value(bound);
+					bound = get_array_upper_bound(tp, i);
+					ir_tarval *tupper = computed_value(bound);
 
 					if (tlower == tarval_bad || tupper == tarval_bad)
 						return NULL;
@@ -393,13 +387,11 @@ static void kill_and_reduce_usage(ir_node *node) {
  */
 static int can_use_stored_value(ir_mode *old_mode, ir_mode *new_mode)
 {
-	unsigned old_size;
-	unsigned new_size;
 	if (old_mode == new_mode)
 		return true;
 
-	old_size = get_mode_size_bits(old_mode);
-	new_size = get_mode_size_bits(new_mode);
+	unsigned old_size = get_mode_size_bits(old_mode);
+	unsigned new_size = get_mode_size_bits(new_mode);
 
 	/* if both modes are two-complement ones, we can always convert the
 	   Stored value into the needed one. (on big endian machines we currently
@@ -499,27 +491,19 @@ static ir_node *get_base_and_offset(ir_node *ptr, long *pOffset)
 static int try_load_after_store(ir_node *load,
 		ir_node *load_base_ptr, long load_offset, ir_node *store)
 {
-	ldst_info_t *info;
 	ir_node *store_ptr      = get_Store_ptr(store);
 	long     store_offset;
 	ir_node *store_base_ptr = get_base_and_offset(store_ptr, &store_offset);
-	ir_node *store_value;
-	ir_mode *store_mode;
-	ir_mode *load_mode;
-	long     load_mode_len;
-	long     store_mode_len;
-	long     delta;
-	int      res;
 
 	if (load_base_ptr != store_base_ptr)
 		return 0;
 
-	load_mode      = get_Load_mode(load);
-	load_mode_len  = get_mode_size_bytes(load_mode);
-	store_mode     = get_irn_mode(get_Store_value(store));
-	store_mode_len = get_mode_size_bytes(store_mode);
-	delta          = load_offset - store_offset;
-	store_value    = get_Store_value(store);
+	ir_mode *load_mode      = get_Load_mode(load);
+	long     load_mode_len  = get_mode_size_bytes(load_mode);
+	ir_mode *store_mode     = get_irn_mode(get_Store_value(store));
+	long     store_mode_len = get_mode_size_bytes(store_mode);
+	long     delta          = load_offset - store_offset;
+	ir_node *store_value    = get_Store_value(store);
 
 	if (delta < 0 || delta+load_mode_len > store_mode_len)
 		return 0;
@@ -548,11 +532,11 @@ static int try_load_after_store(ir_node *load,
 
 	DBG_OPT_RAW(load, store_value);
 
-	info = (ldst_info_t*)get_irn_link(load);
+	ldst_info_t *info = (ldst_info_t*)get_irn_link(load);
 	if (info->projs[pn_Load_M])
 		exchange(info->projs[pn_Load_M], get_Load_mem(load));
 
-	res = 0;
+	int res = 0;
 	/* no exception */
 	if (info->projs[pn_Load_X_except]) {
 		ir_graph *irg = get_irn_irg(load);
@@ -689,8 +673,6 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr)
 			 */
 			if (info->projs[pn_Load_X_except] == NULL
 					|| get_nodes_block(load) == get_nodes_block(pred)) {
-				ir_node *value;
-
 				DBG_OPT_RAR(load, pred);
 
 				/* the result is used */
@@ -699,7 +681,7 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr)
 						/* create a new Proj again */
 						pred_info->projs[pn_Load_res] = new_r_Proj(pred, get_Load_mode(pred), pn_Load_res);
 					}
-					value = pred_info->projs[pn_Load_res];
+					ir_node *value = pred_info->projs[pn_Load_res];
 
 					/* add an convert if needed */
 					if (get_Load_mode(pred) != load_mode) {
@@ -839,9 +821,6 @@ ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c)
 static unsigned optimize_load(ir_node *load)
 {
 	ldst_info_t *info = (ldst_info_t*)get_irn_link(load);
-	ir_node     *mem, *ptr;
-	ir_entity   *ent;
-	long        dummy;
 	unsigned    res = 0;
 
 	/* do NOT touch volatile loads for now */
@@ -849,10 +828,10 @@ static unsigned optimize_load(ir_node *load)
 		return 0;
 
 	/* the address of the load to be optimized */
-	ptr = get_Load_ptr(load);
+	ir_node *ptr = get_Load_ptr(load);
 
 	/* The mem of the Load. Must still be returned after optimization. */
-	mem = get_Load_mem(load);
+	ir_node *mem = get_Load_mem(load);
 
 	if (info->projs[pn_Load_res] == NULL
 			&& info->projs[pn_Load_X_except] == NULL) {
@@ -869,7 +848,7 @@ static unsigned optimize_load(ir_node *load)
 	}
 
 	/* check if we can determine the entity that will be loaded */
-	ent = find_constant_entity(ptr);
+	ir_entity *ent = find_constant_entity(ptr);
 	if (ent != NULL
 			&& get_entity_visibility(ent) != ir_visibility_external) {
 		/* a static allocation that is not external: there should be NO
@@ -892,6 +871,7 @@ static unsigned optimize_load(ir_node *load)
 
 	/* Check, if the address of this load is used more than once.
 	 * If not, more load cannot be removed in any case. */
+	long dummy;
 	if (get_irn_n_edges(ptr) <= 1 && get_irn_n_edges(get_base_and_offset(ptr, &dummy)) <= 1)
 		return res;
 
@@ -1157,58 +1137,48 @@ static bool has_multiple_users(const ir_node *node)
  */
 static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 {
-	int i, n;
-	ir_node *store, *ptr, *block, *phi_block, *phiM, *phiD, *exc, *projM;
-#ifdef DO_CACHEOPT
-	ir_node *old_store;
-#endif
-	ir_mode *mode;
-	ir_node **inM, **inD, **projMs;
-	int *idx;
 	dbg_info *db = NULL;
-	ldst_info_t *info;
-	block_info_t *bl_info;
 	unsigned res = 0;
 
 	/* Must be a memory Phi */
 	if (get_irn_mode(phi) != mode_M)
 		return 0;
 
-	n = get_Phi_n_preds(phi);
+	int n = get_Phi_n_preds(phi);
 	if (n <= 0)
 		return 0;
 
 	/* must be only one user */
-	projM = get_Phi_pred(phi, 0);
+	ir_node *projM = get_Phi_pred(phi, 0);
 	if (has_multiple_users(projM))
 		return 0;
 
-	store = skip_Proj(projM);
+	ir_node *store = skip_Proj(projM);
 #ifdef DO_CACHEOPT
-	old_store = store;
+	ir_node *old_store = store;
 #endif
 	if (!is_Store(store))
 		return 0;
 
-	block = get_nodes_block(store);
+	ir_node *block = get_nodes_block(store);
 
 	/* check if the block is post dominated by Phi-block
 	   and has no exception exit */
-	bl_info = (block_info_t*)get_irn_link(block);
+	block_info_t *bl_info = (block_info_t*)get_irn_link(block);
 	if (bl_info->flags & BLOCK_HAS_EXC)
 		return 0;
 
-	phi_block = get_nodes_block(phi);
+	ir_node *phi_block = get_nodes_block(phi);
 	if (! block_strictly_postdominates(phi_block, block))
 		return 0;
 
 	/* this is the address of the store */
-	ptr  = get_Store_ptr(store);
-	mode = get_irn_mode(get_Store_value(store));
-	info = (ldst_info_t*)get_irn_link(store);
-	exc  = info->exc_block;
+	ir_node     *ptr  = get_Store_ptr(store);
+	ir_mode     *mode = get_irn_mode(get_Store_value(store));
+	ldst_info_t *info = (ldst_info_t*)get_irn_link(store);
+	ir_node     *exc  = info->exc_block;
 
-	for (i = 1; i < n; ++i) {
+	for (int i = 1; i < n; ++i) {
 		ir_node *pred = get_Phi_pred(phi, i);
 
 		if (has_multiple_users(pred))
@@ -1257,6 +1227,8 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 	 * Is only allowed if the predecessor blocks have only one successor.
 	 */
 
+	ir_node **inM, **inD, **projMs;
+	int *idx;
 	NEW_ARR_A(ir_node *, projMs, n);
 	NEW_ARR_A(ir_node *, inM, n);
 	NEW_ARR_A(ir_node *, inD, n);
@@ -1266,7 +1238,7 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 	   first because we otherwise may loose a store when exchanging its
 	   memory Proj.
 	 */
-	for (i = n - 1; i >= 0; --i) {
+	for (int i = n - 1; i >= 0; --i) {
 		projMs[i] = get_Phi_pred(phi, i);
 
 		ir_node *const store = get_Proj_pred(projMs[i]);
@@ -1279,13 +1251,13 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 	block = get_nodes_block(phi);
 
 	/* second step: create a new memory Phi */
-	phiM = new_rd_Phi(get_irn_dbg_info(phi), block, n, inM, mode_M);
+	ir_node *phiM = new_rd_Phi(get_irn_dbg_info(phi), block, n, inM, mode_M);
 
 	/* third step: create a new data Phi */
-	phiD = new_rd_Phi(get_irn_dbg_info(phi), block, n, inD, mode);
+	ir_node *phiD = new_rd_Phi(get_irn_dbg_info(phi), block, n, inD, mode);
 
 	/* rewire memory and kill the node */
-	for (i = n - 1; i >= 0; --i) {
+	for (int i = n - 1; i >= 0; --i) {
 		ir_node *proj  = projMs[i];
 
 		if (is_Proj(proj)) {
@@ -1315,7 +1287,7 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 		info->exc_block                = exc;
 		info->exc_idx                  = idx[0];
 
-		for (i = 0; i < n; ++i) {
+		for (int i = 0; i < n; ++i) {
 			set_Block_cfgpred(exc, idx[i], projX);
 		}
 
@@ -1490,14 +1462,12 @@ static node_entry *get_irn_ne(ir_node *irn, loop_env *env)
  */
 static void push(loop_env *env, ir_node *n)
 {
-	node_entry *e;
-
 	if (env->tos == ARR_LEN(env->stack)) {
 		size_t nlen = ARR_LEN(env->stack) * 2;
 		ARR_RESIZE(ir_node *, env->stack, nlen);
 	}
 	env->stack[env->tos++] = n;
-	e = get_irn_ne(n, env);
+	node_entry *e = get_irn_ne(n, env);
 	e->in_stack = 1;
 }
 
@@ -1576,13 +1546,11 @@ static unsigned hash_cache_entry(const avail_entry_t *entry)
  */
 static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 {
-	ir_node   *phi, *load, *next, *other, *next_other;
-	int       j;
+	ir_node   *next, *next_other;
 	phi_entry *phi_list = NULL;
-	set       *avail;
 
 	/* collect all outer memories */
-	for (phi = pscc->head; phi != NULL; phi = next) {
+	for (ir_node *phi = pscc->head; phi != NULL; phi = next) {
 		node_entry *ne = get_irn_ne(phi, env);
 		next = ne->next;
 
@@ -1592,7 +1560,7 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 
 		assert(get_irn_mode(phi) == mode_M && "DFS return non-memory Phi");
 
-		for (j = get_irn_arity(phi) - 1; j >= 0; --j) {
+		for (int j = get_irn_arity(phi) - 1; j >= 0; --j) {
 			ir_node    *pred = get_irn_n(phi, j);
 			node_entry *pe   = get_irn_ne(pred, env);
 
@@ -1614,10 +1582,9 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 	if (phi_list->next != NULL)
 		return;
 
-	avail = new_set(cmp_avail_entry, 8);
+	set *avail = new_set(cmp_avail_entry, 8);
 
-	for (load = pscc->head; load; load = next) {
-		ir_mode *load_mode;
+	for (ir_node *load = pscc->head; load; load = next) {
 		node_entry *ne = get_irn_ne(load, env);
 		next = ne->next;
 
@@ -1632,7 +1599,8 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 			/* for now, we can only move Load(Global) */
 			if (! is_SymConst_addr_ent(ptr))
 				continue;
-			load_mode = get_Load_mode(load);
+			ir_mode *load_mode = get_Load_mode(load);
+			ir_node *other;
 			for (other = pscc->head; other != NULL; other = next_other) {
 				node_entry *ne = get_irn_ne(other, env);
 				next_other = ne->next;
@@ -1651,14 +1619,12 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 			}
 			if (other == NULL) {
 				ldst_info_t *ninfo = NULL;
-				phi_entry   *pe;
-				dbg_info    *db;
 
 				/* yep, no aliasing Store found, Load can be moved */
 				DB((dbg, LEVEL_1, "  Found a Load that could be moved: %+F\n", load));
 
-				db   = get_irn_dbg_info(load);
-				for (pe = phi_list; pe != NULL; pe = pe->next) {
+				dbg_info *db   = get_irn_dbg_info(load);
+				for (phi_entry *pe = phi_list; pe != NULL; pe = pe->next) {
 					int     pos   = pe->pos;
 					ir_node *phi  = pe->phi;
 					ir_node *blk  = get_nodes_block(phi);
@@ -1710,18 +1676,16 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
  */
 static void process_loop(scc *pscc, loop_env *env)
 {
-	ir_node *irn, *next, *header = NULL;
-	node_entry *b, *h = NULL;
-	int j, only_phi, num_outside, process = 0;
-	ir_node *out_rc;
+	ir_node *next, *header = NULL;
+	node_entry *h = NULL;
 
 	/* find the header block for this scc */
-	for (irn = pscc->head; irn; irn = next) {
+	for (ir_node *irn = pscc->head; irn; irn = next) {
 		node_entry *e = get_irn_ne(irn, env);
 		ir_node *block = get_nodes_block(irn);
 
 		next = e->next;
-		b = get_irn_ne(block, env);
+		node_entry *b = get_irn_ne(block, env);
 
 		if (header != NULL) {
 			if (h->POnum < b->POnum) {
@@ -1735,10 +1699,11 @@ static void process_loop(scc *pscc, loop_env *env)
 	}
 
 	/* check if this scc contains only Phi, Loads or Stores nodes */
-	only_phi    = 1;
-	num_outside = 0;
-	out_rc      = NULL;
-	for (irn = pscc->head; irn; irn = next) {
+	int      only_phi    = 1;
+	int      num_outside = 0;
+	int      process     = 0;
+	ir_node *out_rc      = NULL;
+	for (ir_node *irn = pscc->head; irn; irn = next) {
 		node_entry *e = get_irn_ne(irn, env);
 
 		next = e->next;
@@ -1773,7 +1738,7 @@ static void process_loop(scc *pscc, loop_env *env)
 			only_phi = 0;
 			break;
 		case iro_Phi:
-			for (j = get_irn_arity(irn) - 1; j >= 0; --j) {
+			for (int j = get_irn_arity(irn) - 1; j >= 0; --j) {
 				ir_node *pred  = get_irn_n(irn, j);
 				node_entry *pe = get_irn_ne(pred, env);
 
@@ -1805,7 +1770,7 @@ static void process_loop(scc *pscc, loop_env *env)
 		/* a phi cycle with only one real predecessor can be collapsed */
 		DB((dbg, LEVEL_2, "  Found an USELESS Phi cycle:\n  "));
 
-		for (irn = pscc->head; irn; irn = next) {
+		for (ir_node *irn = pscc->head; irn; irn = next) {
 			node_entry *e = get_irn_ne(irn, env);
 			next = e->next;
 			exchange(irn, out_rc);
@@ -1815,7 +1780,7 @@ static void process_loop(scc *pscc, loop_env *env)
 	}
 
 #ifdef DEBUG_libfirm
-	for (irn = pscc->head; irn; irn = next) {
+	for (ir_node *irn = pscc->head; irn; irn = next) {
 		node_entry *e = get_irn_ne(irn, env);
 		next = e->next;
 		DB((dbg, LEVEL_2, " %+F,", irn));
@@ -1841,10 +1806,10 @@ static void process_scc(scc *pscc, loop_env *env)
 
 #ifdef DEBUG_libfirm
 	{
-		ir_node *irn, *next;
+		ir_node *next;
 
 		DB((dbg, LEVEL_4, " SCC at %p:\n ", pscc));
-		for (irn = pscc->head; irn; irn = next) {
+		for (ir_node *irn = pscc->head; irn; irn = next) {
 			node_entry *e = get_irn_ne(irn, env);
 
 			next = e->next;
@@ -1869,7 +1834,6 @@ static void process_scc(scc *pscc, loop_env *env)
  */
 static void dfs(ir_node *irn, loop_env *env)
 {
-	int i, n;
 	node_entry *node = get_irn_ne(irn, env);
 
 	mark_irn_visited(irn);
@@ -1880,8 +1844,8 @@ static void dfs(ir_node *irn, loop_env *env)
 
 	/* handle preds */
 	if (is_Phi(irn) || is_Sync(irn)) {
-		n = get_irn_arity(irn);
-		for (i = 0; i < n; ++i) {
+		int n = get_irn_arity(irn);
+		for (int i = 0; i < n; ++i) {
 			ir_node *pred = get_irn_n(irn, i);
 			node_entry *o = get_irn_ne(pred, env);
 
@@ -1944,14 +1908,11 @@ static void dfs(ir_node *irn, loop_env *env)
  */
 static void do_dfs(ir_graph *irg, loop_env *env)
 {
-	ir_node  *endblk, *end;
-	int      i;
-
 	inc_irg_visited(irg);
 
 	/* visit all memory nodes */
-	endblk = get_irg_end_block(irg);
-	for (i = get_Block_n_cfgpreds(endblk) - 1; i >= 0; --i) {
+	ir_node *endblk = get_irg_end_block(irg);
+	for (int i = get_Block_n_cfgpreds(endblk) - 1; i >= 0; --i) {
 		ir_node *pred = get_Block_cfgpred(endblk, i);
 
 		pred = skip_Proj(pred);
@@ -1969,8 +1930,8 @@ static void do_dfs(ir_graph *irg, loop_env *env)
 	}
 
 	/* visit the keep-alives */
-	end = get_irg_end(irg);
-	for (i = get_End_n_keepalives(end) - 1; i >= 0; --i) {
+	ir_node *end = get_irg_end(irg);
+	for (int i = get_End_n_keepalives(end) - 1; i >= 0; --i) {
 		ir_node *ka = get_End_keepalive(end, i);
 
 		if (is_Phi(ka) && !irn_visited(ka))
@@ -2007,8 +1968,6 @@ static int optimize_loops(ir_graph *irg)
 
 void optimize_load_store(ir_graph *irg)
 {
-	walk_env_t env;
-
 	assure_irg_properties(irg,
 		IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
 		| IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
@@ -2025,6 +1984,7 @@ void optimize_load_store(ir_graph *irg)
 		assure_irp_globals_entity_usage_computed();
 	}
 
+	walk_env_t env;
 	obstack_init(&env.obst);
 	env.changes = 0;
 
