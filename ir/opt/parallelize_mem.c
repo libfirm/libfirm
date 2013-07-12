@@ -32,13 +32,16 @@ typedef struct parallelize_info
 	ir_mode      *origin_mode;
 	ir_nodeset_t  this_mem;
 	ir_nodeset_t  user_mem;
+	ir_nodeset_t  all_visited;
 } parallelize_info;
 
 static void parallelize_load(parallelize_info *pi, ir_node *irn)
 {
 	/* There is no point in investigating the same subgraph twice */
-	if (ir_nodeset_contains(&pi->user_mem, irn))
+	if (ir_nodeset_contains(&pi->all_visited, irn))
 		return;
+
+	ir_nodeset_insert(&pi->all_visited, irn);
 
 	if (get_nodes_block(irn) == pi->origin_block) {
 		if (is_Proj(irn)) {
@@ -78,8 +81,10 @@ static void parallelize_load(parallelize_info *pi, ir_node *irn)
 static void parallelize_store(parallelize_info *pi, ir_node *irn)
 {
 	/* There is no point in investigating the same subgraph twice */
-	if (ir_nodeset_contains(&pi->user_mem, irn))
+	if (ir_nodeset_contains(&pi->all_visited, irn))
 		return;
+
+	ir_nodeset_insert(&pi->all_visited, irn);
 
 	if (get_nodes_block(irn) == pi->origin_block) {
 		if (is_Proj(irn)) {
@@ -147,6 +152,7 @@ static void walker(ir_node *proj, void *env)
 		pi.origin_mode  = get_Load_mode(mem_op);
 		ir_nodeset_init(&pi.this_mem);
 		ir_nodeset_init(&pi.user_mem);
+		ir_nodeset_init(&pi.all_visited);
 
 		parallelize_load(&pi, pred);
 	} else if (is_Store(mem_op)) {
@@ -160,6 +166,7 @@ static void walker(ir_node *proj, void *env)
 		pi.origin_mode  = get_irn_mode(get_Store_value(mem_op));
 		ir_nodeset_init(&pi.this_mem);
 		ir_nodeset_init(&pi.user_mem);
+		ir_nodeset_init(&pi.all_visited);
 
 		parallelize_store(&pi, pred);
 	} else {
@@ -197,6 +204,7 @@ static void walker(ir_node *proj, void *env)
 
 	ir_nodeset_destroy(&pi.this_mem);
 	ir_nodeset_destroy(&pi.user_mem);
+	ir_nodeset_destroy(&pi.all_visited);
 }
 
 void opt_parallelize_mem(ir_graph *irg)
