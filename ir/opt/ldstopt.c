@@ -1400,6 +1400,26 @@ static unsigned eliminate_dead_store(ir_node *store)
 	return 0; /* Nothing changed */
 }
 
+static unsigned eliminate_dead_copyB(ir_node *copyB)
+{
+	if (get_CopyB_volatility(copyB) == volatility_is_volatile)
+		return 0;
+
+	ir_node   *ptr    = get_CopyB_dst(copyB);
+	ir_entity *entity = find_entity(ptr);
+
+	/* a CopyB whose destination is never read is unnecessary */
+	if (entity != NULL && !(get_entity_usage(entity) & ir_usage_read)) {
+		DB((dbg, LEVEL_1, "  Killing useless %+F to never read entity %+F\n", copyB, entity));
+		reduce_node_usage(get_CopyB_dst(copyB));
+		reduce_node_usage(get_CopyB_src(copyB));
+		exchange(copyB, get_CopyB_mem(copyB));
+		return DF_CHANGED;
+	}
+
+	return 0; /* Nothing changed */
+}
+
 /**
  * walker to eliminate dead stores.
  */
@@ -1409,6 +1429,8 @@ static void do_eliminate_dead_stores(ir_node *n, void *env) {
 
 	if (is_Store(n)) {
 		wenv->changes |= eliminate_dead_store(n);
+	} else if (is_CopyB(n)) {
+		wenv->changes |= eliminate_dead_copyB(n);
 	}
 }
 
