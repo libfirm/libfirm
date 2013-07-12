@@ -46,7 +46,6 @@ static void parallelize_load(parallelize_info *pi, ir_node *irn)
 			if (is_Load(pred) &&
 					get_Load_volatility(pred) == volatility_non_volatile) {
 				ir_node *mem = get_Load_mem(pred);
-				//ir_nodeset_insert(&pi->this_mem, mem);
 				ir_nodeset_insert(&pi->user_mem, irn);
 				parallelize_load(pi, mem);
 				return;
@@ -65,9 +64,8 @@ static void parallelize_load(parallelize_info *pi, ir_node *irn)
 			}
 		} else if (is_Sync(irn)) {
 			int n = get_Sync_n_preds(irn);
-			int i;
 
-			for (i = 0; i < n; ++i) {
+			for (int i = 0; i < n; ++i) {
 				ir_node *sync_pred = get_Sync_pred(irn, i);
 				parallelize_load(pi, sync_pred);
 			}
@@ -115,9 +113,8 @@ static void parallelize_store(parallelize_info *pi, ir_node *irn)
 			}
 		} else if (is_Sync(irn)) {
 			int n = get_Sync_n_preds(irn);
-			int i;
 
-			for (i = 0; i < n; ++i) {
+			for (int i = 0; i < n; ++i) {
 				ir_node *sync_pred = get_Sync_pred(irn, i);
 				parallelize_store(pi, sync_pred);
 			}
@@ -129,18 +126,16 @@ static void parallelize_store(parallelize_info *pi, ir_node *irn)
 
 static void walker(ir_node *proj, void *env)
 {
-	ir_node          *mem_op;
-	ir_node          *pred;
-	ir_node          *block;
-	size_t            n;
-	parallelize_info  pi;
-
 	(void)env;
 
 	if (!is_Proj(proj)) return;
 	if (get_irn_mode(proj) != mode_M) return;
 
-	mem_op = get_Proj_pred(proj);
+	ir_node          *mem_op = get_Proj_pred(proj);
+	ir_node          *pred;
+	ir_node          *block;
+	parallelize_info  pi;
+
 	if (is_Load(mem_op)) {
 		if (get_Load_volatility(mem_op) != volatility_non_volatile) return;
 
@@ -171,19 +166,17 @@ static void walker(ir_node *proj, void *env)
 		return;
 	}
 
-	n = ir_nodeset_size(&pi.user_mem);
+	size_t n = ir_nodeset_size(&pi.user_mem);
 	if (n > 0) { /* nothing happened otherwise */
-		ir_node  *sync;
 		ir_node **in   = XMALLOCN(ir_node*, n+1);
-		size_t    i;
 
-		i = 0;
+		size_t i = 0;
 		in[i++] = proj;
 		foreach_ir_nodeset(&pi.user_mem, node, iter) {
 			in[i++] = node;
 		}
 		assert(i == n+1);
-		sync = new_r_Sync(block, i, in);
+		ir_node *sync = new_r_Sync(block, i, in);
 		free(in);
 		edges_reroute_except(proj, sync, sync);
 
