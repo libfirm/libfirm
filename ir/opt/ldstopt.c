@@ -149,7 +149,7 @@ static unsigned update_exc(ldst_info_t *info, ir_node *block, int pos)
 }
 
 /**
- * walker, collects all Load/Store/Proj nodes
+ * walker, collects all Proj/Load/Store/Call/CopyB nodes
  *
  * walks from Start -> End
  */
@@ -216,6 +216,9 @@ static void collect_nodes(ir_node *node, void *env)
 				wenv->changes |= update_exc(ldst_info, node, i);
 			}
 		}
+	} else if (opcode == iro_CopyB) {
+		/* Just initialize a ldst_info for the CopyB node. */
+		(void) get_ldst_info(node, &wenv->obst);
 	}
 }
 
@@ -568,6 +571,60 @@ static int try_load_after_store(ir_node *load,
 	return res | DF_CHANGED;
 }
 
+static ir_node *try_update_ptr_CopyB(ir_node *load,
+				     ir_node *load_base_ptr, long load_offset,
+				     ir_node *copyB)
+{
+	ir_node *copyB_dst = get_CopyB_dst(copyB);
+	long     dst_offset;
+	ir_node *dst_base_ptr = get_base_and_offset(copyB_dst, &dst_offset);
+
+	if (load_base_ptr != dst_base_ptr) {
+		return NULL;
+	}
+
+	/*
+	 * There are quite a few offsets here, please do not get
+	 * confused: The CopyB node copies n_copy bytes from
+	 * (src_base_ptr + src_offset) to (dst_base_ptr + dst_offset)
+	 * (calculated in bytes; no pointer arithmetic). The Load
+	 * loads from (dst_base_ptr + load_offset). This is translated
+	 * into load_src_offset, which points to the same data in the
+	 * CopyB's source array, if it is within its bounds.
+	 */
+	ir_type *copyB_type      = get_CopyB_type(copyB);
+	long     n_copy          = get_type_size_bytes(copyB_type);
+
+	ir_node *copyB_src       = get_CopyB_src(copyB);
+	long     src_offset;
+	ir_node *src_base_ptr    = get_base_and_offset(copyB_src, &src_offset);
+
+	long     load_src_offset = src_offset - dst_offset + load_offset;
+
+	ir_mode *load_mode       = get_Load_mode(load);
+	long     load_size       = get_mode_size_bytes(load_mode);
+
+	if (load_src_offset + load_size > n_copy
+		|| load_src_offset < 0) {
+		return NULL;
+	}
+
+	/*
+	 * Everything is OK, we can replace
+	 *   ptr = (load_base_ptr + load_offset)
+	 * with
+	 *   new_load_ptr = (src_base_ptr + load_src_offset)
+	 */
+	ir_graph *irg          = get_irn_irg(load);
+	ir_node  *block        = get_nodes_block(load);
+	ir_node  *new_load_ptr = new_r_Add(block,
+					   src_base_ptr,
+					   new_r_Const_long(irg, mode_Is, load_src_offset),
+					   mode_P);
+
+	return new_load_ptr;
+}
+
 /**
  * Follow the memory chain as long as there are only Loads,
  * alias free Stores, and constant Calls and try to replace the
@@ -613,6 +670,7 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr)
 
 			if (changes != 0)
 				return res | changes;
+
 		} else if (is_Load(pred) && get_Load_ptr(pred) == ptr &&
 		           can_use_stored_value(get_Load_mode(pred), load_mode)) {
 			/*
@@ -692,6 +750,42 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr)
 				/* there might be Store's in the graph, stop here */
 				break;
 			}
+		} else if (is_CopyB(pred)) {
+			/*
+			 * We cannot replace the Load with another
+			 * Load from the CopyB's source directly,
+			 * because there may be Stores in between,
+			 * destroying the source data. However, we can
+			 * use the source address from this point
+			 * onwards for further optimizations.
+			 */
+			long     load_offset;
+			ir_node *base_ptr = get_base_and_offset(ptr, &load_offset);
+			ir_node *new_ptr  = try_update_ptr_CopyB(load, base_ptr, load_offset, pred);
+
+			if (new_ptr) {
+				ptr = new_ptr;
+				/*
+				 * Special case: If new_ptr points to
+				 * a constant, we *can* replace the
+				 * Load immediately.
+				 */
+				if (find_constant_entity(new_ptr)) {
+					set_Load_ptr(load, new_ptr);
+					return res | DF_CHANGED;
+				}
+			} else {
+				ir_alias_relation rel = get_alias_relation(
+					get_CopyB_dst(pred),
+					get_CopyB_type(pred),
+					ptr,
+					get_type_for_mode(load_mode));
+				if (rel != ir_no_alias)
+					break;
+			}
+
+			pred = skip_Proj(get_CopyB_mem(pred));
+
 		} else {
 			/* follow only Load chains */
 			break;
