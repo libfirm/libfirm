@@ -15,7 +15,7 @@ some unfinished backends for SPARC, ARM
 1.1. Features
 -------------
 
-- works exculsively on a graph based SSA represenation up to the code emission.
+- works exclusively on a graph based SSA representation up to the code emission.
   Based on the work of C. Click and M. Trapp
 - written in portable C. Known to run on msvc 6-8 Win32, gcc on Linux, FreeBSD,
   Cygwin
@@ -40,7 +40,7 @@ some unfinished backends for SPARC, ARM
   spilling and copy coalescing. Instruction and block scheduling, support for
   ABI handling.
 - working ia32 backend with support for x87 and SSE2 floating point
-- unfinished backends for SPARC, ARM
+- unfinished backends for SPARC, ARM, AMD64
 
 - connections to the Edison Design Group C and java frontends available.
 
