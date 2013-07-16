@@ -45,8 +45,8 @@ FIRM_API int irn_verify_irg(const ir_node *checknode, ir_graph *irg);
 FIRM_API int irg_verify(ir_graph *irg);
 
 /**
- * Checks graph for errors, in case of error the graph is dumped and the
- * aborted. This is a convenience function for irg_verify().
+ * Convenience function: Checks graph for errors, in case of error the graph
+ * is dumped to a file with "-assert" suffix and the program aborted.
  */
 FIRM_API void irg_assert_verify(ir_graph *irg);
 
