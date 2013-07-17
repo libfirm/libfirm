@@ -476,8 +476,7 @@ static ir_alias_relation _get_alias_relation(
 		return ir_no_alias;
 
 	/* do the addresses have constants offsets from the same base?
-	 *  Note: nodes are normalized to have constants at right inputs,
-	 *        sub X, C is normalized to add X, -C
+	 *  Note: sub X, C is normalized to add X, -C
 	 */
 	long           offset1            = 0;
 	long           offset2            = 0;
@@ -558,7 +557,20 @@ static ir_alias_relation _get_alias_relation(
 	 * FIXME: type long is not sufficient for this task ...
 	 */
 	if (adr1 == adr2 && sym_offset1 == sym_offset2 && have_const_offsets) {
-		if ((unsigned long)labs(offset2 - offset1) >= type_size)
+		unsigned long first_offset, last_offset;
+		unsigned first_type_size;
+
+		if (offset1 <= offset2) {
+			first_offset = offset1;
+			last_offset = offset2;
+			first_type_size = get_type_size_bytes(type1);
+		} else {
+			first_offset = offset2;
+			last_offset = offset1;
+			first_type_size = get_type_size_bytes(type2);
+		}
+
+		if (first_offset + first_type_size <= last_offset)
 			return ir_no_alias;
 		else
 			return ir_sure_alias;
