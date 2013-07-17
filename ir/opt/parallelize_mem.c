@@ -320,9 +320,163 @@ static void walker(ir_node *proj, void *env)
 	ir_nodeset_destroy(&pi.all_visited);
 }
 
+/*
+ * Elimination of unnecessary Sync edges
+ *
+ * This code removes Sync inputs, where the immediate predecessor is
+ * reachable by another one of the Sync's inputs.
+ */
+
+typedef struct {
+	irg_walk_func *pre;
+	irg_walk_func *post;
+	irg_walk_func *again;
+	ir_nodeset_t *visited;
+	void *inner_env;
+} dfs_env_t;
+
+/* WARNING: Stops at Phi nodes for now */
+static void dfs_step(ir_node *irn, dfs_env_t *env) {
+	if (ir_nodeset_contains(env->visited, irn)) {
+		if (env->again) env->again(irn, env->inner_env);
+		return;
+	} else {
+		if (env->pre) env->pre(irn, env->inner_env);
+		ir_nodeset_insert(env->visited, irn);
+	}
+
+	if (is_Proj(irn)) {
+		dfs_step(get_Proj_pred(irn), env);
+	} else {
+		int arity = get_irn_arity(irn);
+		for (int i = 0; i < arity; i++) {
+			ir_node *pred = get_irn_n(irn, i);
+			if (get_irn_mode(pred) == mode_M &&
+			    !is_Phi(pred)) {
+				dfs_step(pred, env);
+			}
+		}
+	}
+
+	if (env->post) env->post(irn, env->inner_env);
+}
+
+/**
+ * Performs a DFS beginning at @c irn, but traversing each edge once
+ * rather than visiting each node once.
+ *
+ * When a node is visited again through another edge, the @c again
+ * callback is called.
+ *
+ * WARNING: Because this particular use of DFS needs it, the search
+ * stops at Phi nodes.
+ */
+static void dfs_by_edges_from(ir_node *irn,
+			      irg_walk_func *pre, irg_walk_func *post, irg_walk_func *again,
+			      void *env)
+{
+	ir_nodeset_t visited;
+	ir_nodeset_init(&visited);
+
+	dfs_env_t dfs_env = {
+		pre,
+		post,
+		again,
+		&visited,
+		env
+	};
+
+	dfs_step(irn, &dfs_env);
+
+	ir_nodeset_destroy(&visited);
+}
+
+typedef struct {
+	bool is_Sync_pred;
+	int sync_pred_count;
+} sync_pred_info_t;
+
+static void prepare_links_Sync(ir_node *irn, void *e)
+{
+	struct obstack *obst = (struct obstack*) e;
+
+	sync_pred_info_t *info = obstack_alloc(obst, sizeof(*info));
+	info->is_Sync_pred = false;
+	info->sync_pred_count = 0;
+
+	set_irn_link(irn, info);
+}
+
+static void visit_Sync_pred(ir_node *irn, void *e)
+{
+	(void)e;
+
+	sync_pred_info_t *info = (sync_pred_info_t*) get_irn_link(irn);
+
+	if (info->is_Sync_pred) {
+		info->sync_pred_count++;
+	}
+}
+
+static void simplify_Sync(ir_node *irn, void *e)
+{
+	struct obstack *obst = (struct obstack*) e;
+
+	if (!is_Sync(irn)) {
+		return;
+	}
+
+	ir_node **preds = get_Sync_pred_arr(irn);
+	int n_preds = get_Sync_n_preds(irn);
+
+	/* Mark all direct predecessors */
+	for (int i = 0; i < n_preds; i++) {
+		sync_pred_info_t *info = (sync_pred_info_t*) get_irn_link(preds[i]);
+		info->is_Sync_pred = true;
+		info->sync_pred_count--;
+	}
+
+	/* Do a DFS from the Sync, stopping at Phi nodes */
+	dfs_by_edges_from(irn, visit_Sync_pred, NULL, visit_Sync_pred, NULL);
+
+	/* Find unnecessary preds, reset sync_pred_infos. */
+	ir_node **necessary = NEW_ARR_F(ir_node*, 0);
+	for (int i = 0; i < n_preds; i++) {
+		sync_pred_info_t *info = (sync_pred_info_t*) get_irn_link(preds[i]);
+
+		if (info->sync_pred_count <= 0) {
+			ARR_APP1(ir_node*, necessary, preds[i]);
+		}
+
+		info->is_Sync_pred = false;
+		info->sync_pred_count = 0;
+	}
+
+	ir_node *block = get_nodes_block(irn);
+	ir_node *new_Sync = new_r_Sync(block, ARR_LEN(necessary), necessary);
+	prepare_links_Sync(new_Sync, obst);
+
+	if (irn != new_Sync)
+		exchange(irn, new_Sync);
+
+	DEL_ARR_F(necessary);
+}
+
+static void eliminate_sync_edges(ir_graph *irg)
+{
+	struct obstack obst;
+	obstack_init(&obst);
+
+	irg_walk_graph(irg, prepare_links_Sync, NULL, &obst);
+	irg_walk_graph(irg, simplify_Sync, NULL, &obst);
+
+	obstack_free(&obst, NULL);
+}
+
 void opt_parallelize_mem(ir_graph *irg)
 {
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 	irg_walk_graph(irg, NULL, walker, NULL);
+	eliminate_sync_edges(irg);
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW);
 }
