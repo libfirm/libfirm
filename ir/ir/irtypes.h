@@ -315,7 +315,8 @@ typedef struct confirm_attr {
 
 /** CopyB attribute. */
 typedef struct copyb_attr {
-	ir_type        *type;         /**< Type of the copied entity. */
+	ir_type      *type;           /**< Type of the copied entity. */
+	__extension__ ir_volatility  volatility:1;  /**< The volatility of this CopyB operation. */
 } copyb_attr;
 
 /** Div attribute. */

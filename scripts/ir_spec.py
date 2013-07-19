@@ -420,9 +420,23 @@ class CopyB:
 			name    = "type",
 			type    = "ir_type*",
 			comment = "type of copied data",
+		),
+		dict(
+			type      = "ir_volatility",
+			name      = "volatility",
+			comment   = "volatile CopyB nodes have a visible side-effect and may not be optimized",
+			init      = "flags & cons_volatile ? volatility_is_volatile : volatility_non_volatile",
+			to_flags  = "%s == volatility_is_volatile ? cons_volatile : cons_none"
 		)
 	]
 	attr_struct = "copyb_attr"
+	constructor_args = [
+		dict(
+			type    = "ir_cons_flags",
+			name    = "flags",
+			comment = "specifies volatility",
+		),
+	]
 	pinned      = "no"
 
 @op

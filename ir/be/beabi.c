@@ -26,6 +26,7 @@
 #include "raw_bitset.h"
 #include "error.h"
 #include "pset_new.h"
+#include "irmemory_t.h"
 
 #include "be.h"
 #include "beabi.h"
@@ -413,7 +414,11 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			} else {
 				/* Make a mem copy for compound arguments. */
 				assert(mode_is_reference(get_irn_mode(param)));
-				mem = new_rd_CopyB(dbgi, bl, curr_mem, addr, param, param_type);
+
+				bool is_volatile = is_partly_volatile(addr) ||
+					is_partly_volatile(param);
+
+				mem = new_rd_CopyB(dbgi, bl, curr_mem, addr, param, param_type, is_volatile ? cons_volatile : cons_none);
 			}
 
 			curr_ofs += param_size;

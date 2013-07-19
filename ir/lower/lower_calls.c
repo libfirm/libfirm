@@ -10,6 +10,7 @@
  */
 #include <stdbool.h>
 
+#include "firm_types.h"
 #include "lower_calls.h"
 #include "lowering.h"
 #include "irprog_t.h"
@@ -20,6 +21,7 @@
 #include "irgmod.h"
 #include "irgwalk.h"
 #include "irmemory.h"
+#include "irmemory_t.h"
 #include "irtools.h"
 #include "iroptimize.h"
 #include "array_t.h"
@@ -608,14 +610,16 @@ static void fix_compound_params(cl_entry *entry, ir_type *ctp)
 		ir_node   *arg;
 		ir_node   *sel;
 		ir_entity *arg_entity;
+		bool    is_volatile;
 		if (!needs_lowering(type))
 			continue;
 
-		arg        = get_Call_param(call, i);
-		arg_entity = create_compound_arg_entity(irg, type);
-		block      = get_nodes_block(call);
-		sel        = new_rd_simpleSel(dbgi, block, nomem, frame, arg_entity);
-		mem        = new_rd_CopyB(dbgi, block, mem, sel, arg, type);
+		arg         = get_Call_param(call, i);
+		arg_entity  = create_compound_arg_entity(irg, type);
+		block       = get_nodes_block(call);
+		sel         = new_rd_simpleSel(dbgi, block, nomem, frame, arg_entity);
+		is_volatile = is_partly_volatile(arg);
+		mem         = new_rd_CopyB(dbgi, block, mem, sel, arg, type, is_volatile ? cons_volatile : cons_none);
 		set_Call_param(call, i, sel);
 	}
 	set_Call_mem(call, mem);
@@ -775,7 +779,9 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 						} else {
 							/* copy-return optimization is impossible, do the
 							 * copy. */
-							mem = new_r_CopyB(bl, mem, arg, pred, tp);
+							bool is_volatile = is_partly_volatile(pred);
+
+							mem = new_r_CopyB(bl, mem, arg, pred, tp, is_volatile ? cons_volatile : cons_none);
 						}
 					}
 					if (flags & LF_RETURN_HIDDEN) {

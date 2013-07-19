@@ -10,6 +10,7 @@
  */
 #include <string.h>
 
+#include "entity_t.h"
 #include "error.h"
 #include "iroptimize.h"
 #include "irnode_t.h"
@@ -967,7 +968,6 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr, bool h
 	return res;
 }
 
-/** find entity used as base for an address calculation */
 static ir_entity *find_entity(ir_node *ptr)
 {
 	switch (get_irn_opcode(ptr)) {

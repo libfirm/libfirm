@@ -1291,3 +1291,129 @@ void mark_private_methods(void)
 
 	pmap_destroy(mtp_map);
 }
+
+/**
+ * Find the entity that the given pointer points to.
+ *
+ * This function returns the entity into which @c ptr points, ignoring
+ * any offsets (it assumes that offsets always stay within the
+ * entity).
+ *
+ * This function does *not* always return a top-level entity
+ * (i.e. local/global variable), but may also return a member of
+ * another entity.
+ *
+ * If no entity can be found (e.g. pointer is itself result of a
+ * Load), NULL is returned.
+ */
+static ir_entity *find_entity(ir_node *ptr)
+{
+	switch (get_irn_opcode(ptr)) {
+	case iro_SymConst:
+		return get_SymConst_entity(ptr);
+	case iro_Sel:
+		return get_Sel_entity(ptr);
+	case iro_Sub:
+	case iro_Add: {
+		ir_node *left = get_binop_left(ptr);
+		if (mode_is_reference(get_irn_mode(left)))
+			return find_entity(left);
+		ir_node *right = get_binop_right(ptr);
+		if (mode_is_reference(get_irn_mode(right)))
+			return find_entity(right);
+		return NULL;
+	}
+	default:
+		return NULL;
+	}
+}
+
+/**
+ * Returns true, if the entity that the given pointer points to is
+ * volatile itself, or if it is part of a larger volatile entity.
+ *
+ * If no entity can be found (@see find_entity), the functions assumes
+ * volatility.
+ */
+static bool is_inside_volatile_entity(ir_node *ptr)
+{
+	ir_entity *ent = find_entity(ptr);
+
+	// TODO Probably a pointer, follow the Load(s) to the actual entity
+	if (!ent) return true;
+
+	if (get_entity_volatility(ent) == volatility_is_volatile) {
+		return true;
+	}
+
+	if (is_Sel(ptr)) {
+		ir_node *sel_ptr = get_Sel_ptr(ptr);
+		return is_inside_volatile_entity(sel_ptr);
+	} else {
+		return false;
+	}
+
+}
+
+/**
+ * Returns true, if the given type is compound and contains at least
+ * one entity which is volatile.
+ */
+static bool contains_volatile_entity(ir_type *type)
+{
+	size_t n;
+
+	switch (get_type_tpop_code(type)) {
+	case tpo_class:  n = get_class_n_members(type);
+		break;
+	case tpo_struct: n = get_struct_n_members(type);
+		break;
+	case tpo_union:  n = get_union_n_members(type);
+		break;
+	default:
+		return false;
+	}
+
+	for (size_t i = 0; i < n; i++) {
+		ir_entity *ent;
+
+		switch (get_type_tpop_code(type)) {
+		case tpo_class:  ent = get_class_member(type, i);
+			break;
+		case tpo_struct: ent = get_struct_member(type, i);
+			break;
+		case tpo_union:  ent = get_union_member(type, i);
+			break;
+		default:         abort(); // Should never happen
+		}
+
+		if (get_entity_volatility(ent) == volatility_is_volatile)
+			return true;
+
+		ir_type *ent_type = get_entity_type(ent);
+		if (contains_volatile_entity(ent_type))
+			return true;
+	}
+
+	return false;
+}
+
+/**
+ * Returns true, if the entity that the given pointer points to is...
+ * - volatile itself
+ * - part of a larger volatile entity
+ * - of a type which contains volatile entities.
+ *
+ * If no entity can be found (@see find_entity), the function assumes
+ * volatility.
+ */
+bool is_partly_volatile(ir_node *ptr)
+{
+	ir_entity *ent = find_entity(ptr);
+	if (!ent) return true;
+
+	ir_type *type = get_entity_type(ent);
+
+	return contains_volatile_entity(type) ||
+		is_inside_volatile_entity(ptr);
+}

@@ -17,4 +17,6 @@
  */
 void firm_init_memory_disambiguator(void);
 
+bool is_partly_volatile(ir_node *ptr);
+
 #endif
