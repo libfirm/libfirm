@@ -154,6 +154,17 @@ typedef int (*arch_allow_ifconv_func)(ir_node *sel, ir_node *mux_false,
 FIRM_API void opt_if_conv(ir_graph *irg);
 
 /**
+ * Perform If conversion on a graph - callback version.
+ *
+ * @param irg      The graph.
+ * @param callback The predicate.
+ *
+ * Like above, but let the caller decide about valid transformations
+ * by supplying a predicate function.
+ */
+FIRM_API void opt_if_conv_cb(ir_graph *irg, arch_allow_ifconv_func callback);
+
+/**
  * Tries to reduce dependencies for memory nodes where possible by parallelizing
  * them and synchronizing with Sync nodes
  * @param irg   the graph where memory operations should be parallelized

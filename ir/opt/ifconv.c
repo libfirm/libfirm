@@ -434,20 +434,18 @@ static void collect_phis(ir_node *node, void *env)
 	}
 }
 
-void opt_if_conv(ir_graph *irg)
+void opt_if_conv_cb(ir_graph *irg, arch_allow_ifconv_func callback)
 {
 	walker_env            env;
-	const backend_params *be_params = be_get_backend_param();
+
+	env.allow_ifconv = callback;
+	env.changed      = false;
 
 	assure_irg_properties(irg,
 		IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
 		| IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
 		| IR_GRAPH_PROPERTY_NO_BADS
 		| IR_GRAPH_PROPERTY_ONE_RETURN);
-
-	/* get the parameters */
-	env.allow_ifconv = be_params->allow_ifconv;
-	env.changed      = false;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.ifconv");
 
@@ -472,4 +470,11 @@ void opt_if_conv(ir_graph *irg)
 	confirm_irg_properties(irg,
 		IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
 		| IR_GRAPH_PROPERTY_ONE_RETURN);
+}
+
+void opt_if_conv(ir_graph *irg)
+{
+	const backend_params *be_params = be_get_backend_param();
+	/* get the parameters */
+	opt_if_conv_cb(irg, be_params->allow_ifconv);
 }
