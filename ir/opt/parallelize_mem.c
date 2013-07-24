@@ -201,7 +201,7 @@ static void parallelize_copyB(parallelize_info *pi, ir_node *origin, ir_node *ir
 			}
 			return;
 		} else if (is_CopyB(irn) &&
-				get_Store_volatility(irn) == volatility_non_volatile) {
+				get_CopyB_volatility(irn) == volatility_non_volatile) {
 			ir_type *org_type   = pi->origin_type;
 			ir_node *org_src    = get_CopyB_src(origin);
 			ir_node *org_dst    = get_CopyB_dst(origin);
