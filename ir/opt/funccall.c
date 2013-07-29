@@ -45,6 +45,22 @@ static unsigned *ready_set;
 /** IRG's that are in progress are marked here. */
 static unsigned *busy_set;
 
+static bool method_type_contains_aggregate(const ir_type *type)
+{
+	for (size_t i = 0, n_params = get_method_n_params(type);
+	     i < n_params; ++i) {
+		ir_type *param = get_method_param_type(type, i);
+		if (is_aggregate_type(param))
+			return true;
+	}
+	for (size_t i = 0, n_ress = get_method_n_ress(type); i < n_ress; ++i) {
+		ir_type *res = get_method_res_type(type, i);
+		if (is_aggregate_type(res))
+			return true;
+	}
+	return false;
+}
+
 /**
  * Walker: Collect all calls to const and pure functions
  * to lists. Collect all Proj(Call) nodes into a Proj list.
@@ -54,25 +70,31 @@ static void collect_const_and_pure_calls(ir_node *node, void *env)
 	env_t *ctx = (env_t*)env;
 
 	if (is_Call(node)) {
-		ir_node *call = node;
+		ir_type *type = get_Call_type(node);
+		unsigned prop = get_method_additional_properties(type);
+		ir_node *ptr  = get_Call_ptr(node);
+		if (is_SymConst_addr_ent(ptr)) {
+			ir_entity *ent = get_SymConst_entity(ptr);
+			prop |= get_entity_additional_properties(ent);
+		}
+		/* stop on aggregates (see comment in check_const_or_pure_function()) */
+		if ((prop & mtp_property_const) != 0
+		    && method_type_contains_aggregate(type)) {
+			prop &= ~mtp_property_const;
+			if ((prop & (mtp_property_const|mtp_property_pure)) == 0)
+				return;
+		}
 
-		ir_node *ptr = get_Call_ptr(call);
-		if (!is_SymConst_addr_ent(ptr))
-			return;
-
-		ir_entity *ent = get_SymConst_entity(ptr);
-
-		unsigned prop = get_entity_additional_properties(ent);
 		if ((prop & (mtp_property_const|mtp_property_pure)) == 0)
 			return;
 
 		/* ok, if we get here we found a call to a const or a pure function */
 		if (prop & mtp_property_pure) {
-			ARR_APP1(ir_node*, ctx->pure_call_list, call);
+			ARR_APP1(ir_node*, ctx->pure_call_list, node);
 		} else if (prop & mtp_property_has_loop) {
-			ARR_APP1(ir_node*, ctx->nonfloat_const_call_list, call);
+			ARR_APP1(ir_node*, ctx->nonfloat_const_call_list, node);
 		} else {
-			ARR_APP1(ir_node*, ctx->float_const_call_list, call);
+			ARR_APP1(ir_node*, ctx->float_const_call_list, node);
 		}
 	} else if (is_Proj(node)) {
 		/*
@@ -383,20 +405,17 @@ static mtp_additional_properties follow_mem(ir_node *node, mtp_additional_proper
  */
 static mtp_additional_properties check_const_or_pure_function(ir_graph *irg, bool top)
 {
-	ir_entity *entity   = get_irg_entity(irg);
-	ir_type   *type     = get_entity_type(entity);
-	size_t     n_params = get_method_n_params(type);
+	ir_entity *entity = get_irg_entity(irg);
+	ir_type   *type   = get_entity_type(entity);
 	mtp_additional_properties may_be_const = mtp_property_const;
 	mtp_additional_properties prop = get_entity_additional_properties(entity);
 
 	/* libfirm handles aggregate parameters by passing around pointers to
-	 * stuff in memory, so if we have compound parameters we are never const */
-	for (size_t i = 0; i < n_params; ++i) {
-		ir_type *param = get_method_param_type(type, i);
-		if (is_compound_type(param)) {
-			prop        &= ~mtp_property_const;
-			may_be_const = mtp_no_property;
-		}
+	 * stuff in memory, so if we have compound parameters or return types
+	 * we are never const */
+	if (method_type_contains_aggregate(type)) {
+		prop        &= ~mtp_property_const;
+		may_be_const = mtp_no_property;
 	}
 
 	if (prop & mtp_property_const) {
