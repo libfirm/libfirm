@@ -277,8 +277,7 @@ static int verify_node_Proj_Proj_Call(const ir_node *p)
 		return false;
 	}
 	ir_type *type = get_method_res_type(mt, pn);
-	ir_mode *mode = is_compound_type(type) || is_Array_type(type)
-	              ? mode_P : get_type_mode(type);
+	ir_mode *mode = is_aggregate_type(type) ? mode_P : get_type_mode(type);
 	return check_mode(p, mode);
 }
 

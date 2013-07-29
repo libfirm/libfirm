@@ -584,7 +584,7 @@ static void check_entity_initializer(ir_entity *entity)
 	ir_type          *entity_tp   = get_entity_type(entity);
 	switch (initializer->kind) {
 	case IR_INITIALIZER_COMPOUND:
-		assert(is_compound_type(entity_tp) || is_Array_type(entity_tp));
+		assert(is_aggregate_type(entity_tp));
 		break;
 	case IR_INITIALIZER_CONST:
 		/* methods are initialized by a SymConst */

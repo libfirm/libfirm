@@ -373,8 +373,7 @@ static int find_possible_replacements(ir_graph *irg)
 
 			/* we can handle arrays, structs and atomic types yet */
 			ir_type *ent_type = get_entity_type(ent);
-			if (is_Array_type(ent_type) || is_Struct_type(ent_type)
-			    || is_atomic_type(ent_type)) {
+			if (is_aggregate_type(ent_type) || is_atomic_type(ent_type)) {
 				if (is_address_taken(succ)) {
 					 /* killing one */
 					if (get_entity_link(ent))
@@ -675,7 +674,7 @@ void scalar_replacement_opt(ir_graph *irg)
 
 				if (is_Array_type(ent_type)) {
 					DB((dbg, SET_LEVEL_1, "  found array %s\n", get_entity_name(ent)));
-				} else if (is_Struct_type(ent_type)) {
+				} else if (is_compound_type(ent_type)) {
 					DB((dbg, SET_LEVEL_1, "  found struct %s\n", get_entity_name(ent)));
 				} else if (is_atomic_type(ent_type))
 					DB((dbg, SET_LEVEL_1, "  found atomic value %s\n", get_entity_name(ent)));

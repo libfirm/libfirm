@@ -553,6 +553,17 @@ static inline void _set_method_calling_convention(ir_type *method, unsigned cc_m
 	method->attr.ma.irg_calling_conv = cc_mask;
 }
 
+/**
+ * Check if type is a compound or array type.
+ * This function returns true iff a value of this type cannot be represented by
+ * a firm mode and need therefore special handling in lower_calls when used as
+ * a parameter or return type.
+ */
+static inline bool is_aggregate_type(const ir_type *type)
+{
+	return is_compound_type(type) || is_Array_type(type);
+}
+
 ir_type *new_type_segment(ident *name, type_flags flags);
 
 #endif /* FIRM_TR_TYPE_T_H */

@@ -317,7 +317,7 @@ static void copy_parameter_entities(ir_node *call, ir_graph *called_graph)
 		ir_node *nomem       = get_irg_no_mem(irg);
 		ir_node *sel         = new_rd_simpleSel(dbgi, block, nomem, frame, new_entity);
 		ir_node *new_mem;
-		if (is_compound_type(old_type) || is_Array_type(old_type)) {
+		if (is_aggregate_type(old_type)) {
 			/* Copy the compound parameter */
 
 			bool is_volatile = is_partly_volatile(param) || is_partly_volatile(sel);
@@ -424,9 +424,7 @@ static int inline_method(ir_node *const call, ir_graph *called_graph)
 		ir_type *param_tp = get_method_param_type(mtp, i);
 		ir_mode *mode     = get_type_mode(param_tp);
 
-		if (!is_compound_type(param_tp)
-		    && !is_Array_type(param_tp)
-		    && mode != get_irn_mode(arg)) {
+		if (!is_aggregate_type(param_tp) && mode != get_irn_mode(arg)) {
 			arg = new_r_Conv(block, arg, mode);
 		}
 		args_in[i] = arg;
@@ -550,15 +548,15 @@ static int inline_method(ir_node *const call, ir_graph *called_graph)
 	ir_node *call_res;
 	if (n_res > 0) {
 		for (int j = 0; j < n_res; j++) {
-			ir_type *res_type = get_method_res_type(ctp, j);
-			ir_mode *res_mode = get_type_mode(res_type);
-			int is_compound = is_compound_type(res_type) || is_Array_type(res_type);
+			ir_type *res_type     = get_method_res_type(ctp, j);
+			ir_mode *res_mode     = get_type_mode(res_type);
+			bool     is_aggregate = is_aggregate_type(res_type);
 			int n_ret = 0;
 			for (int i = 0; i < arity; i++) {
 				ir_node *ret = get_Block_cfgpred(end_bl, i);
 				if (is_Return(ret)) {
 					ir_node *res = get_Return_res(ret, j);
-					if (is_compound) {
+					if (is_aggregate) {
 						res_mode = get_irn_mode(res);
 					} else if (get_irn_mode(res) != res_mode) {
 						ir_node *block = get_nodes_block(res);

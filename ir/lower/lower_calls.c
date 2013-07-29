@@ -32,11 +32,6 @@
 static pmap *pointer_types;
 static pmap *lowered_mtps;
 
-static bool needs_lowering(const ir_type *type)
-{
-	return is_compound_type(type) || is_Array_type(type);
-}
-
 /**
  * Default implementation for finding a pointer type for a given element type.
  * Simply create a new one.
@@ -84,7 +79,7 @@ static void remove_compound_param_entities(ir_graph *irg)
 			continue;
 
 		type = get_entity_type(member);
-		if (needs_lowering(type)) {
+		if (is_aggregate_type(type)) {
 			free_entity(member);
 		}
 	}
@@ -120,7 +115,7 @@ static ir_type *lower_mtp(compound_call_lowering_flags flags, ir_type *mtp)
 	n_ress   = get_method_n_ress(mtp);
 	for (i = 0; i < n_ress; ++i) {
 		ir_type *res_tp = get_method_res_type(mtp, i);
-		if (needs_lowering(res_tp)) {
+		if (is_aggregate_type(res_tp)) {
 			must_be_lowered = true;
 			break;
 		}
@@ -128,7 +123,7 @@ static ir_type *lower_mtp(compound_call_lowering_flags flags, ir_type *mtp)
 	if (!must_be_lowered && !(flags & LF_DONT_LOWER_ARGUMENTS)) {
 		for (i = 0; i < n_params; ++i) {
 			ir_type *param_type = get_method_param_type(mtp, i);
-			if (needs_lowering(param_type)) {
+			if (is_aggregate_type(param_type)) {
 				must_be_lowered = true;
 				break;
 			}
@@ -146,7 +141,7 @@ static ir_type *lower_mtp(compound_call_lowering_flags flags, ir_type *mtp)
 	for (i = 0; i < n_ress; ++i) {
 		ir_type *res_tp = get_method_res_type(mtp, i);
 
-		if (needs_lowering(res_tp)) {
+		if (is_aggregate_type(res_tp)) {
 			/* this compound will be allocated on callers stack and its
 			   address will be transmitted as a hidden parameter. */
 			ir_type *ptr_tp = get_pointer_type(res_tp);
@@ -161,7 +156,8 @@ static ir_type *lower_mtp(compound_call_lowering_flags flags, ir_type *mtp)
 	/* copy over parameter types */
 	for (i = 0; i < n_params; ++i) {
 		ir_type *param_type = get_method_param_type(mtp, i);
-		if (! (flags & LF_DONT_LOWER_ARGUMENTS) && needs_lowering(param_type)) {
+		if (!(flags & LF_DONT_LOWER_ARGUMENTS)
+		    && is_aggregate_type(param_type)) {
 		    /* turn parameter into a pointer type */
 		    param_type = new_type_pointer(param_type);
 		}
@@ -360,7 +356,7 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx)
 		/* check for compound returns */
 		for (i = 0; i < n_ress; ++i) {
 			ir_type *type = get_method_res_type(ctp, i);
-			if (needs_lowering(type)) {
+			if (is_aggregate_type(type)) {
 				/*
 				 * This is a call with a compound return. As the result
 				 * might be ignored, we must put it in the list.
@@ -372,7 +368,7 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx)
 		}
 		for (i = 0; i < n_params; ++i) {
 			ir_type *type = get_method_param_type(ctp, i);
-			if (needs_lowering(type)) {
+			if (is_aggregate_type(type)) {
 				cl_entry *entry = get_call_entry(n, env);
 				entry->has_compound_param = true;
 				break;
@@ -394,7 +390,7 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx)
 				ir_node *call = get_Proj_pred(proj);
 				if (is_Call(call)) {
 					ir_type *ctp = get_Call_type(call);
-					if (needs_lowering(get_method_res_type(ctp, get_Proj_proj(src)))) {
+					if (is_aggregate_type(get_method_res_type(ctp, get_Proj_proj(src)))) {
 						/* found a CopyB from compound Call result */
 						cl_entry *e = get_call_entry(call, env);
 						set_irn_link(n, e->copyb);
@@ -409,7 +405,7 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx)
 		ir_entity *entity = get_Sel_entity(n);
 		ir_type   *type   = get_entity_type(entity);
 
-		if (is_parameter_entity(entity) && needs_lowering(type)) {
+		if (is_parameter_entity(entity) && is_aggregate_type(type)) {
 			if (! (env->flags & LF_DONT_LOWER_ARGUMENTS)) {
 				/* note that num was already modified by fix_parameter_entities
 				 * so no need to add env->arg_shift again */
@@ -540,7 +536,7 @@ static void add_hidden_param(ir_graph *irg, size_t n_com, ir_node **ins,
 
 		for (j = i = 0; i < get_method_n_ress(ctp); ++i) {
 			ir_type *rtp = get_method_res_type(ctp, i);
-			if (needs_lowering(rtp)) {
+			if (is_aggregate_type(rtp)) {
 				if (ins[j] == NULL)
 					ins[j] = get_dummy_sel(irg, get_nodes_block(entry->call), rtp);
 				++j;
@@ -562,7 +558,7 @@ static void fix_compound_ret(cl_entry *entry, ir_type *ctp)
 
 	for (i = 0; i < n_res; ++i) {
 		ir_type *type = get_method_res_type(ctp, i);
-		if (needs_lowering(type))
+		if (is_aggregate_type(type))
 			++n_com;
 	}
 
@@ -611,7 +607,7 @@ static void fix_compound_params(cl_entry *entry, ir_type *ctp)
 		ir_node   *sel;
 		ir_entity *arg_entity;
 		bool    is_volatile;
-		if (!needs_lowering(type))
+		if (!is_aggregate_type(type))
 			continue;
 
 		arg         = get_Call_param(call, i);
@@ -670,12 +666,12 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 	size_t n_ret_com = 0;
 	for (i = 0; i < n_ress; ++i) {
 		ir_type *type = get_method_res_type(mtp, i);
-		if (needs_lowering(type))
+		if (is_aggregate_type(type))
 			++n_ret_com;
 	}
 	for (i = 0; i < n_params; ++i) {
 		ir_type *type = get_method_param_type(mtp, i);
-		if (needs_lowering(type))
+		if (is_aggregate_type(type))
 			++n_param_com;
 	}
 
@@ -755,7 +751,7 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 				ir_node *pred = get_Return_res(ret, i);
 				tp = get_method_res_type(mtp, i);
 
-				if (needs_lowering(tp)) {
+				if (is_aggregate_type(tp)) {
 					ir_node *arg = get_irg_args(irg);
 					arg = new_r_Proj(arg, mode_P_data, k);
 					++k;
