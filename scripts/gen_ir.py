@@ -287,7 +287,10 @@ def main(argv):
 	env.globals['warning'] = "/* Warning: automatically generated file */"
 
 	template = env.get_template(templatefile)
-	sys.stdout.write(template.render().encode("utf-8"))
+	result = template.render().encode("utf-8")
+	if result[-1] != "\n":
+		result += "\n"
+	sys.stdout.write(result)
 
 if __name__ == "__main__":
 	main(sys.argv)
