@@ -1115,6 +1115,173 @@ static unsigned optimize_store(ir_node *store)
 	return follow_Mem_chain_for_Store(store, skip_Proj(mem), false);
 }
 
+/**
+ * Checks whether @c ptr of type @c ptr_type lies completely within an
+ * object of type @c struct_type starting at @c struct_ptr;
+ */
+static bool ptr_is_in_struct(ir_node *ptr, ir_type *ptr_type, ir_node *struct_ptr, ir_type *struct_type)
+{
+	long      ptr_offset;
+	ir_node  *ptr_base      = get_base_and_offset(ptr, &ptr_offset);
+	long      struct_offset;
+	ir_node  *struct_base   = get_base_and_offset(struct_ptr, &struct_offset);
+	unsigned  ptr_size      = get_type_size_bytes(ptr_type);
+	unsigned  struct_size   = get_type_size_bytes(struct_type);
+
+	return ptr_base == struct_base &&
+		ptr_offset >= struct_offset &&
+		ptr_offset + ptr_size <= struct_offset + struct_size;
+}
+
+/**
+ * Tries to optimize @c copyB. This function handles the following
+ * cases:
+ * - A previous Store that lies completely within @c copyB's
+ *   destination will be deleted.
+ * - If a previous CopyB writes to @c copyB's source, @c copyB will
+ *   read from the previous CopyB's source if possible. Cases where
+ *   the CopyB nodes are offset against each other are not handled.
+ */
+static unsigned follow_Mem_chain_for_CopyB(ir_node *copyB, ir_node *curr, bool had_split)
+{
+	unsigned  res       = 0;
+	ir_node  *src       = get_CopyB_src(copyB);
+	ir_node  *dst       = get_CopyB_dst(copyB);
+	ir_type  *type      = get_CopyB_type(copyB);
+	unsigned  type_size = get_type_size_bytes(type);
+	ir_node  *block     = get_nodes_block(copyB);
+	ir_node  *pred;
+
+	for (pred = curr; pred != copyB;) {
+		ldst_info_t *pred_info = (ldst_info_t*)get_irn_link(pred);
+
+		if (is_Store(pred) &&
+		    get_Store_volatility(pred) != volatility_is_volatile &&
+		    !pred_info->projs[pn_Store_X_except] &&
+		    !had_split &&
+		    get_nodes_block(pred) == block) {
+			/*
+			 * If the CopyB completely overwrites the Store,
+			 * and the Store has no exception handler, the Store can be removed.
+			 * This is basically a write-after-write.
+			 */
+			ir_node *store_ptr = get_Store_ptr(pred);
+			ir_type *store_type = get_type_for_mode(get_irn_mode(store_ptr));
+
+			if (ptr_is_in_struct(store_ptr, store_type, dst, type)) {
+				DBG_OPT_WAW(pred, copyB);
+				DB((dbg, LEVEL_1, "  killing store %+F (override by %+F)\n", pred, copyB));
+				exchange(pred_info->projs[pn_Store_M], get_Store_mem(pred));
+				kill_and_reduce_usage(pred);
+				return DF_CHANGED;
+			}
+		}
+
+		if (is_Store(pred)) {
+			/* check if we can pass through this store */
+			ir_alias_relation src_rel = get_alias_relation(
+				get_Store_ptr(pred),
+				get_type_for_mode(get_irn_mode(get_Store_value(pred))),
+				src,
+				type);
+			ir_alias_relation dst_rel = get_alias_relation(
+				get_Store_ptr(pred),
+				get_type_for_mode(get_irn_mode(get_Store_value(pred))),
+				dst,
+				type);
+			if (src_rel != ir_no_alias || dst_rel != ir_no_alias)
+				break;
+
+			pred = skip_Proj(get_Store_mem(pred));
+		} else if (is_Load(pred)) {
+			ir_alias_relation rel = get_alias_relation(
+				get_Load_ptr(pred),
+				get_type_for_mode(get_Load_mode(pred)),
+				dst,
+				type);
+			if (rel != ir_no_alias)
+				break;
+
+			pred = skip_Proj(get_Load_mem(pred));
+		} else if (is_CopyB(pred)) {
+			ir_node  *pred_dst       = get_CopyB_dst(pred);
+			ir_node  *pred_src       = get_CopyB_src(pred);
+			ir_type  *pred_type      = get_CopyB_type(pred);
+			unsigned  pred_type_size = get_type_size_bytes(pred_type);
+
+			if (src == pred_dst &&
+			    type_size == pred_type_size &&
+			    get_CopyB_volatility(pred) == volatility_non_volatile) {
+				src = pred_src;
+
+				/*
+				 * Special case: If src now points to
+				 * a constant, we *can* replace it
+				 * immediately.
+				 */
+				if (find_constant_entity(src)) {
+					DBG((dbg, LEVEL_1, "Optimizing %+F to read from %+F's source\n", copyB, pred));
+
+					set_CopyB_src(copyB, src);
+					return res | DF_CHANGED;
+				}
+			} else {
+				ir_alias_relation dst_dst_rel = get_alias_relation(
+					pred_dst, pred_type,
+					dst, type);
+				ir_alias_relation src_dst_rel = get_alias_relation(
+					pred_src, pred_type,
+					dst, type);
+				ir_alias_relation dst_src_rel = get_alias_relation(
+					pred_dst, pred_type,
+					src, type);
+				if (dst_dst_rel != ir_no_alias ||
+				    src_dst_rel != ir_no_alias ||
+				    dst_src_rel != ir_no_alias) {
+					break;
+				}
+			}
+
+			pred = skip_Proj(get_CopyB_mem(pred));
+		} else {
+			break;
+		}
+
+		/* check for cycles */
+		if (NODE_VISITED(pred_info))
+			break;
+		MARK_NODE(pred_info);
+	}
+
+	if (is_Sync(pred)) {
+		/* handle all Sync predecessors */
+		for (int i = get_Sync_n_preds(pred) - 1; i >= 0; --i) {
+			res |= follow_Mem_chain_for_CopyB(copyB, skip_Proj(get_Sync_pred(pred, i)), true);
+			if (res)
+				break;
+		}
+	}
+	return res;
+}
+
+/**
+ * Optimizes a CopyB node.
+ *
+ * @param copyB  the CopyB node
+ */
+static unsigned optimize_copyB(ir_node *copyB)
+{
+	if (get_CopyB_volatility(copyB) == volatility_is_volatile) {
+		return 0;
+	}
+
+	ir_node *mem = get_CopyB_mem(copyB);
+
+	INC_MASTER();
+
+	return follow_Mem_chain_for_CopyB(copyB, skip_Proj(mem), false);
+}
+
 /* check if a node has more than one real user. Keepalive edges do not count as
  * real users */
 static bool has_multiple_users(const ir_node *node)
@@ -1372,6 +1539,10 @@ static void do_load_store_optimize(ir_node *n, void *env)
 
 	case iro_Store:
 		wenv->changes |= optimize_store(n);
+		break;
+
+	case iro_CopyB:
+		wenv->changes |= optimize_copyB(n);
 		break;
 
 	case iro_Phi:
