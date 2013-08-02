@@ -1023,6 +1023,21 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr, bool h
 				break;
 
 			pred = skip_Proj(get_Load_mem(pred));
+		} else if (is_CopyB(pred)) {
+			ir_alias_relation src_rel = get_alias_relation(
+				get_CopyB_src(pred),
+				get_CopyB_type(pred),
+				ptr,
+				get_type_for_mode(mode));
+			ir_alias_relation dst_rel = get_alias_relation(
+				get_CopyB_dst(pred),
+				get_CopyB_type(pred),
+				ptr,
+				get_type_for_mode(mode));
+			if (src_rel != ir_no_alias ||
+			    dst_rel != ir_no_alias) {
+				break;
+			}
 		} else {
 			/* follow only Load chains */
 			break;
