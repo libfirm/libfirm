@@ -12,6 +12,7 @@
 #ifndef FIRM_BE_BEUSES_H
 #define FIRM_BE_BEUSES_H
 
+#include <stdbool.h>
 #include "firm_types.h"
 #include "belive.h"
 
@@ -41,7 +42,7 @@ static inline bool USES_IS_PENDING(unsigned time)
 typedef struct be_uses_t be_uses_t;
 
 be_next_use_t be_get_next_use(be_uses_t *uses, ir_node *from,
-                              const ir_node *def, int skip_from_uses);
+                              const ir_node *def, bool skip_from_uses);
 
 /**
  * Creates a new uses environment for a graph.

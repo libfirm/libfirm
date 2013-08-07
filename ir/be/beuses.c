@@ -59,15 +59,14 @@ struct be_uses_t {
  */
 static int cmp_use(const void *a, const void *b, size_t n)
 {
+	(void) n;
 	const be_use_t *p = (const be_use_t*)a;
 	const be_use_t *q = (const be_use_t*)b;
-	(void) n;
-
-	return !(p->block == q->block && p->node == q->node);
+	return p->block != q->block || p->node != q->node;
 }
 
 static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
-								  const ir_node *def, int skip_from_uses);
+								  const ir_node *def, bool skip_from_uses);
 
 /**
  * Return the use for the given definition in the given block if exists,
@@ -81,13 +80,12 @@ static const be_use_t *get_or_set_use_block(be_uses_t *env,
                                             const ir_node *block,
                                             const ir_node *def)
 {
-	unsigned hash = hash_combine(hash_irn(block), hash_irn(def));
 	be_use_t temp;
-	be_use_t* result;
-
 	temp.block = block;
-	temp.node = def;
-	result = set_find(be_use_t, env->uses, &temp, sizeof(temp), hash);
+	temp.node  = def;
+
+	unsigned hash = hash_combine(hash_irn(block), hash_irn(def));
+	be_use_t *result = set_find(be_use_t, env->uses, &temp, sizeof(temp), hash);
 
 	if (result == NULL) {
 		// insert templ first as we might end in a loop in the get_next_use
@@ -98,11 +96,10 @@ static const be_use_t *get_or_set_use_block(be_uses_t *env,
 		result = set_insert(be_use_t, env->uses, &temp, sizeof(temp), hash);
 	}
 
-	if (result->outermost_loop == UNKNOWN_OUTERMOST_LOOP && result->visited < env->visited_counter) {
-		be_next_use_t next_use;
-
+	if (result->outermost_loop == UNKNOWN_OUTERMOST_LOOP
+	    && result->visited < env->visited_counter) {
 		result->visited = env->visited_counter;
-		next_use = get_next_use(env, sched_first(block), def, 0);
+		be_next_use_t next_use = get_next_use(env, sched_first(block), def, 0);
 		if (next_use.outermost_loop != UNKNOWN_OUTERMOST_LOOP) {
 			result->next_use = next_use.time;
 			result->outermost_loop = next_use.outermost_loop;
@@ -130,7 +127,6 @@ static int be_is_phi_argument(const ir_node *block, const ir_node *def)
 		return 0;
 
 	ir_node *const succ_block = get_first_block_succ(block);
-
 	if (get_Block_n_cfgpreds(succ_block) <= 1) {
 		/* no Phis in the successor */
 		return 0;
@@ -143,14 +139,11 @@ static int be_is_phi_argument(const ir_node *block, const ir_node *def)
 	/* iterate over the Phi nodes in the successor and check if def is
 	 * one of its arguments */
 	sched_foreach(succ_block, node) {
-		ir_node *arg;
-
-		if (!is_Phi(node)) {
-			/* found first non-Phi node, we can stop the search here */
+		/* we can stop the search on the first non-phi node */
+		if (!is_Phi(node))
 			break;
-		}
 
-		arg = get_irn_n(node, i);
+		const ir_node *arg = get_irn_n(node, i);
 		if (arg == def)
 			return 1;
 	}
@@ -159,10 +152,7 @@ static int be_is_phi_argument(const ir_node *block, const ir_node *def)
 }
 
 /**
- * Retrieve the scheduled index (the "step") of this node in its
- * block.
- *
- * @param node  the node
+ * Retrieve the scheduled index (the "step") of this node in its block.
  */
 static inline unsigned get_step(const ir_node *node)
 {
@@ -170,11 +160,7 @@ static inline unsigned get_step(const ir_node *node)
 }
 
 /**
- * Set the scheduled index (the "step") of this node in its
- * block.
- *
- * @param node  the node
- * @param step  the scheduled index of the node
+ * Set the scheduled index (the "step") of this node in its block.
  */
 static inline void set_step(ir_node *node, unsigned step)
 {
@@ -190,26 +176,18 @@ static inline void set_step(ir_node *node, unsigned step)
  * @param skip_from_uses  if non-zero, ignore from uses
  */
 static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
-								  const ir_node *def, int skip_from_uses)
+								  const ir_node *def, bool skip_from_uses)
 {
-	unsigned  step;
-	ir_node  *block = get_nodes_block(from);
-	ir_node  *next_use_node;
-	ir_node  *node;
-	unsigned  timestep;
-	unsigned  next_use_step;
-
-	assert(skip_from_uses == 0 || skip_from_uses == 1);
 	if (skip_from_uses) {
 		from = sched_next(from);
 	}
 
-	next_use_node = NULL;
-	next_use_step = INT_MAX;
-	timestep      = get_step(from);
+	ir_node *next_use_node = NULL;
+	unsigned next_use_step = INT_MAX;
+	unsigned timestep      = get_step(from);
+	ir_node *block         = get_nodes_block(from);
 	foreach_out_edge(def, edge) {
-		unsigned node_step;
-		node = get_edge_src_irn(edge);
+		ir_node *node = get_edge_src_irn(edge);
 
 		if (is_Anchor(node))
 			continue;
@@ -218,7 +196,7 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 		if (is_Phi(node))
 			continue;
 
-		node_step = get_step(node);
+		unsigned node_step = get_step(node);
 		if (node_step < timestep)
 			continue;
 		if (node_step < next_use_step) {
@@ -235,8 +213,8 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 		return result;
 	}
 
-	node = sched_last(block);
-	step = get_step(node) + 1 + timestep + skip_from_uses;
+	ir_node *node = sched_last(block);
+	unsigned step = get_step(node) + 1 + timestep + skip_from_uses;
 
 	if (be_is_phi_argument(block, def)) {
 		// TODO we really should continue searching the uses of the phi,
@@ -250,47 +228,45 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 		return result;
 	}
 
-	{
-	unsigned  next_use   = USES_INFINITY;
-	unsigned  outermost_loop;
 	be_next_use_t result;
+	result.before = NULL;
 	ir_loop  *loop          = get_irn_loop(block);
 	unsigned  loopdepth     = get_loop_depth(loop);
-	int       found_visited = 0;
-	int       found_use     = 0;
-
-	result.before  = NULL;
-	outermost_loop = loopdepth;
+	bool      found_visited = false;
+	bool      found_use     = false;
+	unsigned outermost_loop = loopdepth;
+	unsigned next_use       = USES_INFINITY;
 	foreach_block_succ(block, edge) {
-		const be_use_t *use;
 		const ir_node *succ_block = get_edge_src_irn(edge);
-		ir_loop *succ_loop;
-		unsigned use_dist;
-
-		DBG((env->dbg, LEVEL_5, "Checking succ of block %+F: %+F (for use of %+F)\n", block, succ_block, def));
+		DBG((env->dbg, LEVEL_5,
+		     "Checking succ of block %+F: %+F (for use of %+F)\n", block,
+		     succ_block, def));
 		if (!be_is_live_in(env->lv, succ_block, def)) {
 			//next_use = USES_INFINITY;
 			DBG((env->dbg, LEVEL_5, "   not live in\n"));
 			continue;
 		}
 
-		use = get_or_set_use_block(env, succ_block, def);
-		DBG((env->dbg, LEVEL_5, "Found %u (loopdepth %u) (we're in block %+F)\n", use->next_use,
-					use->outermost_loop, block));
+		const be_use_t *use = get_or_set_use_block(env, succ_block, def);
+		DBG((env->dbg, LEVEL_5,
+		     "Found %u (loopdepth %u) (we're in block %+F)\n", use->next_use,
+		     use->outermost_loop, block));
 		if (USES_IS_INFINITE(use->next_use)) {
 			if (use->outermost_loop == UNKNOWN_OUTERMOST_LOOP) {
-				found_visited = 1;
+				found_visited = true;
 			}
 			continue;
 		}
 
-		found_use = 1;
-		use_dist = use->next_use;
+		found_use = true;
+		unsigned use_dist = use->next_use;
 
-		succ_loop = get_irn_loop(succ_block);
+		ir_loop *succ_loop = get_irn_loop(succ_block);
 		if (get_loop_depth(succ_loop) < loopdepth) {
 			unsigned factor = (loopdepth - get_loop_depth(succ_loop)) * 5000;
-			DBG((env->dbg, LEVEL_5, "Increase usestep because of loop out edge %d -> %d (%u)\n", factor));
+			DBG((env->dbg, LEVEL_5,
+			     "Increase usestep because of loop out edge %d -> %d (%u)\n",
+			     factor));
 			// TODO we should use the number of nodes in the loop or so...
 			use_dist += factor;
 		}
@@ -315,11 +291,10 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 	}
 	DBG((env->dbg, LEVEL_5, "Result: %d (outerloop: %u)\n", result.time, result.outermost_loop));
 	return result;
-	}
 }
 
 be_next_use_t be_get_next_use(be_uses_t *env, ir_node *from,
-                         const ir_node *def, int skip_from_uses)
+                              const ir_node *def, bool skip_from_uses)
 {
 	++env->visited_counter;
 	return get_next_use(env, from, def, skip_from_uses);
@@ -334,8 +309,8 @@ be_next_use_t be_get_next_use(be_uses_t *env, ir_node *from,
  */
 static void set_sched_step_walker(ir_node *block, void *data)
 {
-	unsigned step = 0;
 	(void) data;
+	unsigned step = 0;
 
 	sched_foreach(block, node) {
 		set_step(node, step);
@@ -347,15 +322,12 @@ static void set_sched_step_walker(ir_node *block, void *data)
 
 be_uses_t *be_begin_uses(ir_graph *irg, const be_lv_t *lv)
 {
-	be_uses_t *env = XMALLOC(be_uses_t);
-
 	assure_edges(irg);
-
-	//set_using_irn_link(irg);
 
 	/* precalculate sched steps */
 	irg_block_walk_graph(irg, set_sched_step_walker, NULL, NULL);
 
+	be_uses_t *env = XMALLOC(be_uses_t);
 	env->uses = new_set(cmp_use, 512);
 	env->irg = irg;
 	env->lv = lv;
@@ -367,7 +339,6 @@ be_uses_t *be_begin_uses(ir_graph *irg, const be_lv_t *lv)
 
 void be_end_uses(be_uses_t *env)
 {
-	//clear_using_irn_link(env->irg);
 	del_set(env->uses);
 	free(env);
 }

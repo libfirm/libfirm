@@ -236,7 +236,6 @@ static void emit_line_info(void)
 	/* on elf systems gas handles producing the line info for us, and we don't
 	 * have to do anything */
 	if (be_gas_object_file_format != OBJECT_FILE_FORMAT_ELF) {
-		size_t i;
 		emit_size("line_info_begin", "line_info_end");
 
 		emit_label("line_info_begin");
@@ -263,7 +262,7 @@ static void emit_line_info(void)
 		emit_int8(0);
 
 		/* file list */
-		for (i = 0; i < ARR_LEN(env.file_list); ++i) {
+		for (size_t i = 0; i < ARR_LEN(env.file_list); ++i) {
 			be_gas_emit_cstring(env.file_list[i]);
 			emit_uleb128(1); /* directory */
 			emit_uleb128(0); /* modification time */
@@ -433,8 +432,8 @@ static void emit_stack_location(long offset)
 static void emit_function_parameters(const ir_entity *entity,
                                      const parameter_dbg_info_t *infos)
 {
-	const ir_type  *type = get_entity_type(entity);
-	dbg_info *dbgi = get_entity_dbg_info(entity);
+	const ir_type *type = get_entity_type(entity);
+	dbg_info      *dbgi = get_entity_dbg_info(entity);
 	for (size_t i = 0, n_params = get_method_n_params(type);
 	     i < n_params; ++i) {
 		ir_type *param_type = get_method_param_type(type, i);
@@ -532,7 +531,8 @@ static void emit_base_type_abbrev(void)
 
 static void emit_type_label(const ir_type *type)
 {
-	be_emit_irprintf("%sT%ld:\n", be_gas_get_private_prefix(), get_type_nr(type));
+	be_emit_irprintf("%sT%ld:\n", be_gas_get_private_prefix(),
+	                 get_type_nr(type));
 	be_emit_write_line();
 }
 
