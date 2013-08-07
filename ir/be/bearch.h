@@ -187,7 +187,7 @@ static inline arch_irn_flags_t arch_get_irn_flags(const ir_node *node)
 void arch_set_irn_flags(ir_node *node, arch_irn_flags_t flags);
 void arch_add_irn_flags(ir_node *node, arch_irn_flags_t flags);
 
-#define arch_irn_is(irn, flag) ((arch_get_irn_flags(irn) & arch_irn_flags_ ## flag) != 0)
+#define arch_irn_is(irn, flag) ((arch_get_irn_flags(irn) & arch_irn_flag_ ## flag) != 0)
 
 static inline unsigned arch_get_irn_n_outs(const ir_node *node)
 {

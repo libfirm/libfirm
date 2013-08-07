@@ -14,7 +14,7 @@
  * Flags are modeled as register classes with ignore registers. However to avoid
  * bloating the graph, only flag-consumer -> producer dependencies are
  * explicitely modeled in the graph. Nodes that just change the flags are only
- * marked with the arch_irn_flags_modify_flags flag.
+ * marked with the arch_irn_flag_modify_flags flag.
  *
  * Flags are usually a limited resource that can't (or at least shouldn't) be
  * spilled. So in some situations (for example 2 adc-nodes that use the flags of

@@ -237,7 +237,7 @@ static ir_node *gen_Switch(ir_node *node)
 static ir_node *gen_be_Call(ir_node *node)
 {
 	ir_node *res = be_duplicate_node(node);
-	arch_add_irn_flags(res, arch_irn_flags_modify_flags);
+	arch_add_irn_flags(res, arch_irn_flag_modify_flags);
 
 	return res;
 }

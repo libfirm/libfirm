@@ -274,7 +274,7 @@ static ir_node *gen_Const(ir_node *node)
 				                         mode);
 				set_ia32_op_type(load, ia32_AddrModeS);
 				set_ia32_am_sc(load, floatent);
-				arch_add_irn_flags(load, arch_irn_flags_rematerializable);
+				arch_add_irn_flags(load, arch_irn_flag_rematerializable);
 				res = new_r_Proj(load, mode_xmm, pn_ia32_xLoad_res);
 			}
 		} else {
@@ -295,7 +295,7 @@ static ir_node *gen_Const(ir_node *node)
 				                       ls_mode);
 				set_ia32_op_type(load, ia32_AddrModeS);
 				set_ia32_am_sc(load, floatent);
-				arch_add_irn_flags(load, arch_irn_flags_rematerializable);
+				arch_add_irn_flags(load, arch_irn_flag_rematerializable);
 				res = new_r_Proj(load, mode_fp, pn_ia32_fld_res);
 			}
 		}
@@ -2164,7 +2164,7 @@ static ir_node *gen_Load(ir_node *node)
 		assert((int)pn_ia32_xLoad_res == (int)pn_ia32_fld_res
 				&& (int)pn_ia32_fld_res == (int)pn_ia32_Load_res
 				&& (int)pn_ia32_Load_res == (int)pn_ia32_res);
-		arch_add_irn_flags(new_node, arch_irn_flags_rematerializable);
+		arch_add_irn_flags(new_node, arch_irn_flag_rematerializable);
 	}
 
 	SET_IA32_ORIG_NODE(new_node, node);
@@ -3448,7 +3448,7 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node)
 	set_irn_pinned(fist, op_pin_state_floats);
 	set_ia32_use_frame(fist);
 	set_ia32_op_type(fist, ia32_AddrModeD);
-	arch_add_irn_flags(fist, arch_irn_flags_spill);
+	arch_add_irn_flags(fist, arch_irn_flag_spill);
 
 	assert((long)pn_ia32_fist_M == (long) pn_ia32_fisttp_M);
 	ir_node *mem = new_r_Proj(fist, mode_M, pn_ia32_fist_M);
@@ -3497,7 +3497,7 @@ static ir_node *gen_x87_conv(ir_mode *tgt_mode, ir_node *node)
 	                                 tgt_mode);
 	set_ia32_use_frame(store);
 	set_ia32_op_type(store, ia32_AddrModeD);
-	arch_add_irn_flags(store, arch_irn_flags_spill);
+	arch_add_irn_flags(store, arch_irn_flag_spill);
 	SET_IA32_ORIG_NODE(store, node);
 
 	ir_node *store_mem = new_r_Proj(store, mode_M, pn_ia32_fst_M);
@@ -3580,7 +3580,7 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode)
 	set_ia32_use_frame(store);
 	set_ia32_op_type(store, ia32_AddrModeD);
 	set_ia32_ls_mode(store, mode_Iu);
-	arch_add_irn_flags(store, arch_irn_flags_spill);
+	arch_add_irn_flags(store, arch_irn_flag_spill);
 
 	ir_node *store_mem = new_r_Proj(store, mode_M, pn_ia32_Store_M);
 
@@ -3599,7 +3599,7 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode)
 		set_ia32_op_type(zero_store, ia32_AddrModeD);
 		add_ia32_am_offs_int(zero_store, 4);
 		set_ia32_ls_mode(zero_store, mode_Iu);
-		arch_add_irn_flags(zero_store, arch_irn_flags_spill);
+		arch_add_irn_flags(zero_store, arch_irn_flag_spill);
 
 		in[0] = zero_store_mem;
 		in[1] = store_mem;
@@ -3834,7 +3834,7 @@ static ir_node *gen_be_Return(ir_node *node)
 	set_ia32_ls_mode(sse_store, mode);
 	set_ia32_op_type(sse_store, ia32_AddrModeD);
 	set_ia32_use_frame(sse_store);
-	arch_add_irn_flags(sse_store, arch_irn_flags_spill);
+	arch_add_irn_flags(sse_store, arch_irn_flag_spill);
 	ir_node *store_mem = new_r_Proj(sse_store, mode_M, pn_ia32_xStoreSimple_M);
 
 	/* load into x87 register */
@@ -4072,8 +4072,8 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 	set_ia32_op_type(store_high, ia32_AddrModeD);
 	set_ia32_ls_mode(store_low, mode_Iu);
 	set_ia32_ls_mode(store_high, mode_Is);
-	arch_add_irn_flags(store_low, arch_irn_flags_spill);
-	arch_add_irn_flags(store_high, arch_irn_flags_spill);
+	arch_add_irn_flags(store_low, arch_irn_flag_spill);
+	arch_add_irn_flags(store_high, arch_irn_flag_spill);
 	add_ia32_am_offs_int(store_high, 4);
 
 	ir_node *in[2] = { mem_low, mem_high };
@@ -4139,7 +4139,7 @@ static ir_node *gen_ia32_l_FloattoLL(ir_node *node)
 	set_ia32_use_frame(fist);
 	set_ia32_op_type(fist, ia32_AddrModeD);
 	set_ia32_ls_mode(fist, mode_Ls);
-	arch_add_irn_flags(fist, arch_irn_flags_spill);
+	arch_add_irn_flags(fist, arch_irn_flag_spill);
 
 	assert((long)pn_ia32_fist_M == (long) pn_ia32_fisttp_M);
 	return new_r_Proj(fist, mode_M, pn_ia32_fist_M);
@@ -4599,7 +4599,7 @@ static ir_node *gen_return_address(ir_node *node)
 		assert((int)pn_ia32_xLoad_res == (int)pn_ia32_fld_res
 				&& (int)pn_ia32_fld_res == (int)pn_ia32_Load_res
 				&& (int)pn_ia32_Load_res == (int)pn_ia32_res);
-		arch_add_irn_flags(load, arch_irn_flags_rematerializable);
+		arch_add_irn_flags(load, arch_irn_flag_rematerializable);
 	}
 
 	SET_IA32_ORIG_NODE(load, node);
@@ -4646,7 +4646,7 @@ static ir_node *gen_frame_address(ir_node *node)
 		assert((int)pn_ia32_xLoad_res == (int)pn_ia32_fld_res
 				&& (int)pn_ia32_fld_res == (int)pn_ia32_Load_res
 				&& (int)pn_ia32_Load_res == (int)pn_ia32_res);
-		arch_add_irn_flags(load, arch_irn_flags_rematerializable);
+		arch_add_irn_flags(load, arch_irn_flag_rematerializable);
 	}
 
 	SET_IA32_ORIG_NODE(load, node);
@@ -5172,7 +5172,7 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 static ir_node *gen_be_IncSP(ir_node *node)
 {
 	ir_node *res = be_duplicate_node(node);
-	arch_add_irn_flags(res, arch_irn_flags_modify_flags);
+	arch_add_irn_flags(res, arch_irn_flag_modify_flags);
 	return res;
 }
 
@@ -5462,7 +5462,7 @@ static void postprocess_fp_call_results(void)
 					                                 call_mem, res, res_mode);
 					set_ia32_op_type(vfst, ia32_AddrModeD);
 					set_ia32_use_frame(vfst);
-					arch_add_irn_flags(vfst, arch_irn_flags_spill);
+					arch_add_irn_flags(vfst, arch_irn_flag_spill);
 
 					ir_node *vfst_mem = new_r_Proj(vfst, mode_M, pn_ia32_fst_M);
 

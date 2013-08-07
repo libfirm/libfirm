@@ -245,19 +245,19 @@ void arch_dump_reqs_and_registers(FILE *F, const ir_node *node)
 	if (flags == arch_irn_flags_none) {
 		fprintf(F, " none");
 	} else {
-		if (flags & arch_irn_flags_dont_spill) {
+		if (flags & arch_irn_flag_dont_spill) {
 			fprintf(F, " unspillable");
 		}
-		if (flags & arch_irn_flags_rematerializable) {
+		if (flags & arch_irn_flag_rematerializable) {
 			fprintf(F, " remat");
 		}
-		if (flags & arch_irn_flags_modify_flags) {
+		if (flags & arch_irn_flag_modify_flags) {
 			fprintf(F, " modify_flags");
 		}
-		if (flags & arch_irn_flags_simple_jump) {
+		if (flags & arch_irn_flag_simple_jump) {
 			fprintf(F, " simple_jump");
 		}
-		if (flags & arch_irn_flags_not_scheduled) {
+		if (flags & arch_irn_flag_not_scheduled) {
 			fprintf(F, " not_scheduled");
 		}
 	}

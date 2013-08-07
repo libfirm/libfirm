@@ -92,7 +92,7 @@ static void add_to_sched(block_sched_env_t *env, ir_node *irn);
 static void node_ready(block_sched_env_t *env, ir_node *pred, ir_node *irn)
 {
 	if (is_Proj(irn)
-	    || (arch_get_irn_flags(irn) & arch_irn_flags_not_scheduled)) {
+	    || (arch_get_irn_flags(irn) & arch_irn_flag_not_scheduled)) {
 		selected(env, irn);
 		DB((dbg, LEVEL_3, "\tmaking immediately available: %+F\n", irn));
 	} else if (be_is_Keep(irn) || be_is_CopyKeep(irn)) {
@@ -169,7 +169,7 @@ static void selected(block_sched_env_t *env, ir_node *node)
  */
 static void add_to_sched(block_sched_env_t *env, ir_node *irn)
 {
-	assert(! (arch_get_irn_flags(irn) & arch_irn_flags_not_scheduled));
+	assert(! (arch_get_irn_flags(irn) & arch_irn_flag_not_scheduled));
 
 	sched_add_before(env->block, irn);
 

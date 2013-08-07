@@ -25,19 +25,19 @@ typedef struct arch_env_t                arch_env_t;
  * Some flags describing a node in more detail.
  */
 typedef enum arch_irn_flags_t {
-	arch_irn_flags_none             = 0,       /**< Node flags. */
-	arch_irn_flags_dont_spill       = 1U << 0, /**< This must not be spilled. */
-	arch_irn_flags_rematerializable = 1U << 1, /**< This can be replicated instead of spilled/reloaded. */
-	arch_irn_flags_modify_flags     = 1U << 2, /**< I modify flags, used by the
-	                                                default check_modifies
-	                                                implementation in beflags */
-	arch_irn_flags_simple_jump      = 1U << 3, /**< a simple jump instruction */
-	arch_irn_flags_not_scheduled    = 1U << 4, /**< node must not be scheduled*/
+	arch_irn_flags_none            = 0,       /**< No flags. */
+	arch_irn_flag_dont_spill       = 1U << 0, /**< This must not be spilled. */
+	arch_irn_flag_rematerializable = 1U << 1, /**< This can be replicated instead of spilled/reloaded. */
+	arch_irn_flag_modify_flags     = 1U << 2, /**< I modify flags, used by the
+	                                               default check_modifies
+	                                               implementation in beflags */
+	arch_irn_flag_simple_jump      = 1U << 3, /**< a simple jump instruction */
+	arch_irn_flag_not_scheduled    = 1U << 4, /**< node must not be scheduled*/
 	/** node writes to a spillslot, this means we can load from the spillslot
 	 * anytime (important when deciding wether we can rematerialize) */
-	arch_irn_flags_spill            = 1U << 5,
-	arch_irn_flags_backend          = 1U << 6, /**< begin of custom backend
-	                                                flags */
+	arch_irn_flag_spill            = 1U << 5,
+	arch_irn_flag_backend          = 1U << 6, /**< begin of custom backend
+	                                               flags */
 } arch_irn_flags_t;
 ENUM_BITSET(arch_irn_flags_t)
 

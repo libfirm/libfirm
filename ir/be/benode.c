@@ -259,7 +259,7 @@ ir_node *be_new_Spill(const arch_register_class_t *cls,
 	be_node_set_reg_class_in(res, n_be_Spill_frame, cls_frame);
 	be_node_set_reg_class_in(res, n_be_Spill_val, cls);
 	arch_set_irn_register_req_out(res, 0, arch_no_register_req);
-	arch_add_irn_flags(res, arch_irn_flags_spill);
+	arch_add_irn_flags(res, arch_irn_flag_spill);
 
 	return res;
 }
@@ -281,7 +281,7 @@ ir_node *be_new_Reload(const arch_register_class_t *cls,
 	be_node_set_reg_class_out(res, 0, cls);
 
 	be_node_set_reg_class_in(res, n_be_Reload_frame, cls_frame);
-	arch_set_irn_flags(res, arch_irn_flags_rematerializable);
+	arch_set_irn_flags(res, arch_irn_flag_rematerializable);
 
 	a         = (be_frame_attr_t*) get_irn_generic_attr(res);
 	a->ent    = NULL;

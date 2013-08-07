@@ -187,7 +187,7 @@ static inline int reg_pr_costs(reg_pressure_selector_env_t *env, ir_node *irn)
 		ir_node *op = get_irn_n(irn, i);
 
 		if (is_Proj(op)
-		    || (arch_get_irn_flags(op) & arch_irn_flags_not_scheduled))
+		    || (arch_get_irn_flags(op) & arch_irn_flag_not_scheduled))
 			continue;
 
 		sum += compute_max_hops(env, op);

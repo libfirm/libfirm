@@ -77,7 +77,7 @@ sub ia32_custom_init_attr {
 	my $res    = "";
 
 	if(defined($node->{modified_flags})) {
-		$res .= "\tarch_add_irn_flags(res, arch_irn_flags_modify_flags);\n";
+		$res .= "\tarch_add_irn_flags(res, arch_irn_flag_modify_flags);\n";
 	}
 	if(defined($node->{am})) {
 		my $am = $node->{am};
@@ -797,7 +797,7 @@ Setcc => {
 	# (when we emit the setX; setp; orb and the setX;setnp;andb sequences)
 	init_attr => "set_ia32_ls_mode(res, mode_Bu);\n"
 		. "\tif (condition_code & ia32_cc_additional_float_cases) {\n"
-		. "\t\tarch_add_irn_flags(res, arch_irn_flags_modify_flags);\n"
+		. "\t\tarch_add_irn_flags(res, arch_irn_flag_modify_flags);\n"
 		. "\t\t/* attr->latency = 3; */\n"
 		. "\t}\n",
 	latency   => 1,

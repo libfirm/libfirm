@@ -561,7 +561,7 @@ static bool try_optimistic_split(ir_node *to_split, ir_node *before,
 	 * (so we don't split away the values produced because of
 	 *  must_be_different constraints) */
 	ir_node *original_insn = skip_Proj(info->original_value);
-	if (arch_get_irn_flags(original_insn) & arch_irn_flags_dont_spill)
+	if (arch_get_irn_flags(original_insn) & arch_irn_flag_dont_spill)
 		return false;
 
 	const arch_register_t *from_reg        = arch_get_irn_register(to_split);

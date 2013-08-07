@@ -53,7 +53,7 @@ void be_info_new_node(ir_graph *irg, ir_node *node)
 	case iro_Bad:
 	case iro_End:
 	case iro_Unknown:
-		info->flags |= arch_irn_flags_not_scheduled;
+		info->flags |= arch_irn_flag_not_scheduled;
 		/* FALLTHROUGH */
 	case iro_Phi:
 		info->out_infos        = NEW_ARR_DZ(reg_out_info_t, obst, 1);

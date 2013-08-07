@@ -366,12 +366,12 @@ EOF
 	if (exists($n->{"irn_flags"})) {
 		$temp .= "\t/* flags */\n";
 		my %known_irn_flags = (
-			"none"             => "arch_irn_flags_none",
-			"dont_spill"       => "arch_irn_flags_dont_spill",
-			"rematerializable" => "arch_irn_flags_rematerializable",
-			"modify_flags"     => "arch_irn_flags_modify_flags",
-			"simple_jump"      => "arch_irn_flags_simple_jump",
-			"not_scheduled"    => "arch_irn_flags_not_scheduled",
+			"none"             => "arch_irn_flag_none",
+			"dont_spill"       => "arch_irn_flag_dont_spill",
+			"rematerializable" => "arch_irn_flag_rematerializable",
+			"modify_flags"     => "arch_irn_flag_modify_flags",
+			"simple_jump"      => "arch_irn_flag_simple_jump",
+			"not_scheduled"    => "arch_irn_flag_not_scheduled",
 		);
 		if (%custom_irn_flags) {
 			%known_irn_flags = (%known_irn_flags, %custom_irn_flags);
