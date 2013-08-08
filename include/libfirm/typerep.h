@@ -574,7 +574,7 @@ FIRM_API void remove_entity_overwrittenby(ir_entity *ent,
 FIRM_API int is_entity(const void *thing);
 
 /** Returns true if the type of the entity is a primitive, pointer
- * enumeration or method type.
+ * or method type.
  *
  * @note This is a different classification than from is_primitive_type().
  */
@@ -741,10 +741,10 @@ ENUM_BITSET(ptr_access_kind)
  * @defgroup tp_op  Type Opcodes
  *  This module specifies the kinds of types available in firm.
  *
- *  They are called type opcodes. These include classes, structs, methods, unions,
- *  arrays, enumerations, pointers and primitive types.
- *  Special types with own opcodes are the id type, a type representing an unknown
- *  type and a type used to specify that something has no type.
+ *  They are called type opcodes. These include classes, structs, methods,
+ *  unions, arrays, pointers and primitive types.
+ *  Special types with own opcodes are the id type, a type representing an
+ *  unknown type and a type used to specify that something has no type.
  *
  * @{
  */
@@ -760,7 +760,6 @@ typedef enum tp_opcode {
 	tpo_method,              /**< A method type. */
 	tpo_union,               /**< An union type. */
 	tpo_array,               /**< An array type. */
-	tpo_enumeration,         /**< An enumeration type. */
 	tpo_pointer,             /**< A pointer type. */
 	tpo_primitive,           /**< A primitive type. */
 	tpo_code,                /**< a piece of code (a basic block) */
@@ -1014,14 +1013,15 @@ typedef enum {
 	layout_undefined,    /**< The layout of this type is not defined.
 	                          Address computation to access fields is not
 	                          possible, fields must be accessed by Sel
-	                          nodes.  Enumeration constants might be undefined.
+	                          nodes.
 	                          This is the default value except for
 	                          pointer, primitive and method types. */
 	layout_fixed         /**< The layout is fixed, all component/member entities
-	                          have an offset assigned.  Size of the type is known.
-	                          Arrays can be accessed by explicit address
-	                          computation.  Enumeration constants must be defined.
-	                          Default for pointer, primitive and method types. */
+	                          have an offset assigned. Size of the type is
+	                          known. Arrays can be accessed by explicit address
+	                          computation.
+	                          Default for pointer, primitive and method types.
+	                          */
 } ir_type_state;
 
 /** Returns a human readable string for the enum entry. */
@@ -1045,7 +1045,7 @@ FIRM_API ir_mode *get_type_mode(const ir_type *tp);
 
 /** Sets the mode of a type.
  *
- * Only has an effect on primitive, enumeration and pointer types.
+ * Only has an effect on primitive and pointer types.
  */
 FIRM_API void set_type_mode(ir_type *tp, ir_mode* m);
 
@@ -1054,8 +1054,8 @@ FIRM_API unsigned get_type_size_bytes(const ir_type *tp);
 
 /** Sets the size of a type in bytes.
  *
- * For primitive, enumeration, pointer and method types the size
- * is always fixed. This call is legal but has no effect.
+ * For primitive, pointer and method types the size is always fixed.
+ * This call is legal but has no effect.
  */
 FIRM_API void set_type_size_bytes(ir_type *tp, unsigned size);
 
@@ -1149,7 +1149,7 @@ FIRM_API long get_type_nr(const ir_type *tp);
  *  - member:     All entities belonging to this class.  This are method entities
  *                which have type_method or fields that can have any of the
  *                following type kinds: type_class, type_struct, type_union,
- *                type_array, type_enumeration, type_pointer, type_primitive.
+ *                type_array, type_pointer, type_primitive.
  *
  *  The following two are dynamic lists that can be grown with an "add_" function,
  *  but not shrinked:
@@ -1316,8 +1316,8 @@ FIRM_API const tp_op *get_tpop_class(void);
  *  The following attributes are private to this type kind:
  *  - member:  All entities belonging to this class.  This are the fields
  *             that can have any of the following types:  type_class,
- *             type_struct, type_union, type_array, type_enumeration,
- *             type_pointer, type_primitive.
+ *             type_struct, type_union, type_array, type_pointer,
+ *             type_primitive.
  *             This is a dynamic list that can be grown with an "add_" function,
  *             but not shrinked.
  *             This is a dynamic list that can be grown with an "add_" function,
@@ -1737,81 +1737,6 @@ FIRM_API const tp_op *get_tpop_array(void);
 /** @} */
 
 /**
- * @defgroup enumeration_type   Enumeration
- *
- * Enumeration types need not necessarily be represented explicitly
- * by Firm types, as the frontend can lower them to integer constants as
- * well.  For debugging purposes or similar tasks this information is useful.
- * The type state layout_fixed is set, if all enumeration constants have
- * their tarvals assigned.  Until then
- *
- * - *const:        The target values representing the constants used to
- *                  represent individual enumerations.
- * @{
- */
-
-/** Create a new type enumeration -- set the enumerators independently. */
-FIRM_API ir_type *new_type_enumeration(ident *name, size_t n_enums);
-
-/** Create a new type enumeration with debug information -- set the enumerators independently. */
-FIRM_API ir_type *new_d_type_enumeration(ident *name, size_t n_enums,
-                                         type_dbg_info *db);
-
-
-/** Returns enumeration identifier */
-FIRM_API ident *get_enumeration_ident(const ir_type *enumeration);
-
-/** Returns enumeration identifier as c-string */
-FIRM_API const char *get_enumeration_name(const ir_type *enumeration);
-
-/** Sets an enumeration constant to a enumeration type at a given position. */
-FIRM_API void set_enumeration_const(ir_type *enumeration, size_t pos,
-                                    ident *nameid, ir_tarval *con);
-
-/** Returns the number of enumeration values of this enumeration */
-FIRM_API size_t get_enumeration_n_enums(const ir_type *enumeration);
-
-/** Returns the enumeration constant at a given position. */
-FIRM_API ir_enum_const *get_enumeration_const(const ir_type *enumeration,
-                                              size_t pos);
-
-/** Returns the enumeration type owner of an enumeration constant. */
-FIRM_API ir_type *get_enumeration_owner(const ir_enum_const *enum_cnst);
-
-/** Sets the enumeration constant value. */
-FIRM_API void set_enumeration_value(ir_enum_const *enum_cnst, ir_tarval *con);
-
-/** Returns the enumeration constant value. */
-FIRM_API ir_tarval *get_enumeration_value(const ir_enum_const *enum_cnst);
-
-/** Assign an ident to an enumeration constant. */
-FIRM_API void set_enumeration_nameid(ir_enum_const *enum_cnst, ident *id);
-
-/** Returns the assigned ident of an enumeration constant. */
-FIRM_API ident *get_enumeration_const_nameid(const ir_enum_const *enum_cnst);
-
-/** Returns the assigned name of an enumeration constant. */
-FIRM_API const char *get_enumeration_const_name(const ir_enum_const *enum_cnst);
-
-/** Returns true if a type is a enumeration type. */
-FIRM_API int is_Enumeration_type(const ir_type *enumeration);
-
-/**
- * This type opcode marks that the corresponding type is an enumeration type.
- *
- * Consequently it contains a list of idents for the enumeration identifiers
- * and a list of target values that are the constants used to implement
- * the enumerators.
- * This struct is dynamically allocated but constant for the lifetime
- * of the library.
- */
-FIRM_API const tp_op *type_enumeration;
-/** Returns type opcode for enumeration type. @see type_enumeration */
-FIRM_API const tp_op *get_tpop_enumeration(void);
-
-/** @} */
-
-/**
  * @defgroup pointer_type   Pointer
  *
  * Pointer types:
@@ -1939,7 +1864,7 @@ FIRM_API const tp_op *get_tpop_unknown(void);
 /**
  *  Checks whether a type is atomic.
  *  @param tp   any type
- *  @return true if type is primitive, pointer or enumeration
+ *  @return true if type is primitive or pointer
  */
 FIRM_API int is_atomic_type(const ir_type *tp);
 

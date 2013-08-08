@@ -347,9 +347,6 @@ FIRM_API int is_SymConst_addr_ent(const ir_node *node);
 /** Returns non-zero if s symconst kind has an entity attribute */
 #define SYMCONST_HAS_ENT(kind) ((kind) == symconst_addr_ent || (kind) == symconst_ofs_ent)
 
-/** Returns non-zero if s symconst kind has an enum_const attribute */
-#define SYMCONST_HAS_ENUM(kind) ((kind) == symconst_enum_const)
-
 /** Returns the kind of the SymConst. */
 FIRM_API symconst_kind get_SymConst_kind(const ir_node *node);
 /** Sets the kind of the SymConst. */
@@ -368,13 +365,6 @@ FIRM_API void set_SymConst_type(ir_node *node, ir_type *tp);
 FIRM_API ir_entity *get_SymConst_entity(const ir_node *node);
 /** Sets the entity attribute of Symconst node @p node. */
 FIRM_API void set_SymConst_entity(ir_node *node, ir_entity *ent);
-
-/** Returns the enum attribute of SymConst node @p node.
- * Only to access SymConst of kind symconst_enum_const, else assertion
- */
-FIRM_API ir_enum_const *get_SymConst_enum(const ir_node *node);
-/** Sets the enum attribute of SymConst node @p node. */
-FIRM_API void set_SymConst_enum(ir_node *node, ir_enum_const *ec);
 
 /** Returns the symbol attribute of SymConst node @p node. */
 FIRM_API union symconst_symbol get_SymConst_symbol(const ir_node *node);

@@ -293,10 +293,6 @@ void dump_irnode_to_file(FILE *const F, const ir_node *const n)
 			fprintf(F, "  type: ");
 			dump_type_to_file(F, get_SymConst_type(n));
 			break;
-		case symconst_enum_const:
-			fprintf(F, "  kind: enumeration\n");
-			fprintf(F, "  name: %s\n", get_enumeration_const_name(get_SymConst_enum(n)));
-			break;
 		}
 		break;
 	}

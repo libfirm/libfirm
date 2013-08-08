@@ -361,11 +361,6 @@ void print_entityid(FILE *F, const ir_entity *entity)
 	fprintf(F, "\"e%ld\"", get_entity_nr(entity));
 }
 
-static void print_itemid(FILE *F, const ir_type *tp, size_t itemnr)
-{
-	fprintf(F, "\"i%ldT%zu\"", get_type_nr(tp), itemnr);
-}
-
 /**
  * Prints the edge kind of a given IR node.
  *
@@ -489,24 +484,6 @@ static void print_node_ent_edge(FILE *F, const ir_node *irn, const ir_entity *en
 	print_nodeid(F, irn);
 	fprintf(F, " targetname: ");
 	print_entityid(F, ent);
-	ir_vfprintf(F, fmt, ap);
-	fprintf(F,"}\n");
-	va_end(ap);
-}
-
-/**
- * Prints the edge from a type tp to an enumeration item item with additional info fmt, ...
- * to the file F.
- */
-static void print_enum_item_edge(FILE *F, const ir_type *tp, size_t item, const char *fmt, ...)
-{
-	va_list ap;
-
-	va_start(ap, fmt);
-	fprintf(F, "edge: { sourcename: ");
-	print_typeid(F, tp);
-	fprintf(F, " targetname: ");
-	print_itemid(F, tp, item);
 	ir_vfprintf(F, fmt, ap);
 	fprintf(F,"}\n");
 	va_end(ap);
@@ -729,9 +706,6 @@ void dump_node_opcode(FILE *F, const ir_node *n)
 			break;
 		case symconst_type_align:
 			ir_fprintf(F, "SymC %+F align", get_SymConst_type(n));
-			break;
-		case symconst_enum_const:
-			fprintf(F, "SymC %s enum", get_enumeration_const_name(get_SymConst_enum(n)));
 			break;
 		}
 		break;
@@ -1567,8 +1541,6 @@ static void print_typespecific_vcgattr(FILE *F, ir_type *tp)
 		break;
 	case tpo_array:
 		break;
-	case tpo_enumeration:
-		break;
 	case tpo_pointer:
 		break;
 	case tpo_primitive:
@@ -1613,24 +1585,6 @@ static void dump_entity_node(FILE *F, ir_entity *ent)
 	fprintf(F, "\"\n");
 	print_dbg_info(F, get_entity_dbg_info(ent));
 	fprintf(F, "}\n");
-}
-
-static void dump_enum_item(FILE *F, ir_type *tp, size_t pos)
-{
-	char buf[1024];
-	ir_enum_const *ec = get_enumeration_const(tp, pos);
-	ident         *id = get_enumeration_const_nameid(ec);
-	ir_tarval     *tv = get_enumeration_value(ec);
-
-	if (tv)
-		tarval_snprintf(buf, sizeof(buf), tv);
-	else
-		strncpy(buf, "<not set>", sizeof(buf));
-	fprintf(F, "node: {title: ");
-	print_itemid(F, tp, pos);
-	fprintf(F, " label: ");
-	fprintf(F, "\"enum item %s\" " ENUM_ITEM_NODE_ATTR, get_id_str(id));
-	fprintf(F, "\n info1: \"value: %s\"}\n", buf);
 }
 
 /**
@@ -1726,13 +1680,6 @@ static void dump_type_info(type_or_ent tore, void *env)
 				print_node_type_edge(F, lower, tp, "label: \"lower %zu\"", get_array_order(tp, i));
 				dump_const_expression(F, upper);
 				dump_const_expression(F, lower);
-			}
-			break;
-		case tpo_enumeration:
-			for (i = get_enumeration_n_enums(tp); i > 0;) {
-				 --i;
-				dump_enum_item(F, tp, i);
-				print_enum_item_edge(F, tp, i, "label: \"item %zu\"", i);
 			}
 			break;
 		case tpo_pointer:

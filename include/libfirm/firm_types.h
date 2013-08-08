@@ -66,9 +66,6 @@ typedef struct ir_heights_t         ir_heights_t;
 /** @ingroup ir_tarval
  * Target Machine Value */
 typedef struct ir_tarval            ir_tarval;
-/** @ingroup enumeration_type
- * Enumeration constant */
-typedef struct ir_enum_const        ir_enum_const;
 /** @ingroup ir_type
  * Type */
 typedef struct ir_type              ir_type;
@@ -273,17 +270,15 @@ ENUM_BITSET(mtp_additional_properties)
  * Use the proper access routine after testing this flag.
  */
 typedef enum symconst_kind {
-	symconst_type_size,   /**< The SymConst is the size of the given type.
-	                           symconst_symbol is type *. */
-	symconst_type_align,  /**< The SymConst is the alignment of the given type.
-	                           symconst_symbol is type *. */
-	symconst_addr_ent,    /**< The SymConst is a symbolic pointer to be filled in
-	                           by the linker.  The pointer is represented by an entity.
-	                           symconst_symbol is entity *. */
-	symconst_ofs_ent,     /**< The SymConst is the offset of its entity in the entities
-	                           owner type. */
-	symconst_enum_const   /**< The SymConst is a enumeration constant of an
-	                           enumeration type. */
+	symconst_type_size,  /**< The SymConst is the size of the given type.
+	                          symconst_symbol is type *. */
+	symconst_type_align, /**< The SymConst is the alignment of the given type.
+	                          symconst_symbol is type *. */
+	symconst_addr_ent,   /**< The SymConst is a symbolic pointer to be filled in
+	                          by the linker.  The pointer is represented by an
+	                          entity. symconst_symbol is entity *. */
+	symconst_ofs_ent,    /**< The SymConst is the offset of its entity in the
+	                          entities owner type. */
 } symconst_kind;
 
 /**
@@ -296,7 +291,6 @@ typedef enum symconst_kind {
 typedef union symconst_symbol {
 	ir_type       *type_p;    /**< The type of a SymConst. */
 	ir_entity     *entity_p;  /**< The entity of a SymConst. */
-	ir_enum_const *enum_p;    /**< The enumeration constant of a SymConst. */
 } symconst_symbol;
 
 /** A input/output constraint attribute.

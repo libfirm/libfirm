@@ -805,8 +805,8 @@ int is_atomic_entity(const ir_entity *ent)
 {
 	ir_type     *t  = get_entity_type(ent);
 	const tp_op *op = get_type_tpop(t);
-	return (op == type_primitive || op == type_pointer ||
-		op == type_enumeration || op == type_method);
+	return op == type_primitive || op == type_pointer
+	    || op == type_method;
 }
 
 int is_compound_entity(const ir_entity *ent)

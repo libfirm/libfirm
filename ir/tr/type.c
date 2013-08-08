@@ -325,15 +325,6 @@ void set_type_state(ir_type *tp, ir_type_state state)
 				assert(get_entity_offset(get_struct_member(tp, i)) > -1);
 			}
 			break;
-		case tpo_enumeration:
-			assert(get_type_mode(tp) != NULL);
-			for (size_t i = 0, n_enums = get_enumeration_n_enums(tp);
-			     i < n_enums; ++i) {
-				ir_enum_const *ec = get_enumeration_const(tp, i);
-				ir_tarval     *tv = get_enumeration_value(ec);
-				assert(tv != NULL && tv != tarval_bad);
-			}
-			break;
 		case tpo_union:
 		case tpo_array:
 		default:
@@ -1288,112 +1279,6 @@ void set_array_size(ir_type *tp, unsigned size)
 }
 
 
-ir_type *new_d_type_enumeration(ident *name, size_t n_enums, type_dbg_info *db)
-{
-	ir_type *res = new_type(type_enumeration, NULL, db);
-	res->name = name;
-	res->attr.ea.enumer = NEW_ARR_F(ir_enum_const, n_enums);
-	hook_new_type(res);
-	return res;
-}
-
-ir_type *new_type_enumeration(ident *name, size_t n_enums)
-{
-	return new_d_type_enumeration(name, n_enums, NULL);
-}
-
-void free_enumeration_entities(ir_type *enumeration)
-{
-	(void) enumeration;
-	assert(enumeration->type_op == type_enumeration);
-}
-
-void free_enumeration_attrs(ir_type *enumeration)
-{
-	assert(enumeration->type_op == type_enumeration);
-	DEL_ARR_F(enumeration->attr.ea.enumer);
-}
-
-ident *get_enumeration_ident(const ir_type *enumeration)
-{
-	assert(enumeration->type_op == type_enumeration);
-	return enumeration->name;
-}
-
-const char *get_enumeration_name(const ir_type *enumeration)
-{
-	ident *id = get_enumeration_ident(enumeration);
-	if (id == NULL)
-		return NULL;
-	return get_id_str(id);
-}
-
-size_t get_enumeration_n_enums(const ir_type *enumeration)
-{
-	assert(enumeration->type_op == type_enumeration);
-	return ARR_LEN(enumeration->attr.ea.enumer);
-}
-
-void set_enumeration_const(ir_type *enumeration, size_t pos, ident *nameid,
-                           ir_tarval *con)
-{
-	assert(pos < ARR_LEN(enumeration->attr.ea.enumer));
-	enumeration->attr.ea.enumer[pos].nameid = nameid;
-	enumeration->attr.ea.enumer[pos].value  = con;
-	enumeration->attr.ea.enumer[pos].owner  = enumeration;
-}
-
-ir_enum_const *get_enumeration_const(const ir_type *enumeration, size_t pos)
-{
-	assert(enumeration->type_op == type_enumeration);
-	assert(pos < get_enumeration_n_enums(enumeration));
-	return &enumeration->attr.ea.enumer[pos];
-}
-
-ir_type *get_enumeration_owner(const ir_enum_const *enum_cnst)
-{
-	return enum_cnst->owner;
-}
-
-void set_enumeration_value(ir_enum_const *enum_cnst, ir_tarval *con)
-{
-	enum_cnst->value = con;
-}
-
-ir_tarval *get_enumeration_value(const ir_enum_const *enum_cnst)
-{
-	return enum_cnst->value;
-}
-
-void set_enumeration_nameid(ir_enum_const *enum_cnst, ident *id)
-{
-	enum_cnst->nameid = id;
-}
-
-ident *get_enumeration_const_nameid(const ir_enum_const *enum_cnst)
-{
-	return enum_cnst->nameid;
-}
-
-const char *get_enumeration_const_name(const ir_enum_const *enum_cnst)
-{
-	return get_id_str(enum_cnst->nameid);
-}
-
-int (is_Enumeration_type)(const ir_type *enumeration)
-{
-	return _is_enumeration_type(enumeration);
-}
-
-void set_enumeration_mode(ir_type *tp, ir_mode *mode)
-{
-	assert(mode_is_int(mode));
-	tp->size = get_mode_size_bytes(mode);
-	tp->mode = mode;
-}
-
-
-
 ir_type *new_d_type_pointer(ir_type *points_to, type_dbg_info *db)
 {
 	ir_mode *mode;
@@ -1748,12 +1633,6 @@ void ir_print_type(char *buffer, size_t buffer_size, const ir_type *type)
 	case tpo_union: {
 		ident *id = get_union_ident(type);
 		snprintf(buffer, buffer_size, "union '%s'", get_id_str(id));
-		return;
-	}
-
-	case tpo_enumeration: {
-		ident *id = get_enumeration_ident(type);
-		snprintf(buffer, buffer_size, "enumeration '%s'", get_id_str(id));
 		return;
 	}
 

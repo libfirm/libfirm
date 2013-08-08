@@ -373,8 +373,6 @@ FIRM_API ir_node *new_Const_long(ir_mode *mode, long value);
  *                          explicitly by a firm entity.
  *    - symconst_ofs_ent    The symbolic constant represents the offset of an
  *                          entity in its owner type.
- *    - symconst_enum_const The symbolic constant is a enumeration constant of
- *                          an enumeration type.
  *
  *    Inputs to the node:
  *      No inputs except the block it belongs to.
@@ -446,8 +444,6 @@ FIRM_API ir_node *new_rd_SymConst_align(dbg_info *db, ir_graph *irg,
  *                          explicitly by a firm entity.
  *    - symconst_ofs_ent    The symbolic constant represents the offset of an
  *                          entity in its owner type.
- *    - symconst_enum_const The symbolic constant is a enumeration constant of
- *                          an enumeration type.
  *
  *    Inputs to the node:
  *      No inputs except the block it belongs to.
@@ -482,8 +478,6 @@ FIRM_API ir_node *new_r_SymConst(ir_graph *irg, ir_mode *mode,
  *                          explicitly by a firm entity.
  *    - symconst_ofs_ent    The symbolic constant represents the offset of an
  *                          entity in its owner type.
- *    - symconst_enum_const The symbolic constant is a enumeration constant of
- *                          an enumeration type.
  *
  *    Inputs to the node:
  *      No inputs except the block it belongs to.
@@ -518,8 +512,6 @@ FIRM_API ir_node *new_d_SymConst(dbg_info *db, ir_mode *mode,
  *                          explicitly by a firm entity.
  *    - symconst_ofs_ent    The symbolic constant represents the offset of an
  *                          entity in its owner type.
- *    - symconst_enum_const The symbolic constant is a enumeration constant of
- *                          an enumeration type.
  *
  *    Inputs to the node:
  *      No inputs except the block it belongs to.

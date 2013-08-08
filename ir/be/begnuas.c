@@ -663,12 +663,6 @@ static void emit_init_expression(be_gas_decl_env_t *env, ir_node *init)
 		case symconst_type_align:
 			be_emit_irprintf("%u", get_type_alignment_bytes(get_SymConst_type(init)));
 			return;
-
-		case symconst_enum_const: {
-			ir_tarval *tv = get_enumeration_value(get_SymConst_enum(init));
-			emit_arith_tarval(tv, bytes);
-			return;
-		}
 		}
 		panic("invalid SymConst kind");
 

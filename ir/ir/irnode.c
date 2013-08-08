@@ -699,20 +699,7 @@ void set_SymConst_entity(ir_node *node, ir_entity *ent)
 	node->attr.symc.sym.entity_p  = ent;
 }
 
-ir_enum_const *get_SymConst_enum(const ir_node *node)
-{
-	assert(is_SymConst(node) && SYMCONST_HAS_ENUM(get_SymConst_kind(node)));
-	return node->attr.symc.sym.enum_p;
-}
-
-void set_SymConst_enum(ir_node *node, ir_enum_const *ec)
-{
-	assert(is_SymConst(node) && SYMCONST_HAS_ENUM(get_SymConst_kind(node)));
-	node->attr.symc.sym.enum_p  = ec;
-}
-
-union symconst_symbol
-get_SymConst_symbol(const ir_node *node)
+union symconst_symbol get_SymConst_symbol(const ir_node *node)
 {
 	assert(is_SymConst(node));
 	return node->attr.symc.sym;

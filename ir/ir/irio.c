@@ -650,13 +650,6 @@ static void write_type_pointer(write_env_t *env, ir_type *tp)
 	fputc('\n', env->file);
 }
 
-static void write_type_enumeration(write_env_t *env, ir_type *tp)
-{
-	write_type_common(env, tp);
-	write_ident_null(env, get_enumeration_ident(tp));
-	fputc('\n', env->file);
-}
-
 static void write_type(write_env_t *env, ir_type *tp)
 {
 	if (type_visited(tp))
@@ -677,7 +670,6 @@ static void write_type(write_env_t *env, ir_type *tp)
 		return;
 
 	case tpo_primitive:    write_type_primitive(env, tp);   return;
-	case tpo_enumeration:  write_type_enumeration(env, tp); return;
 	case tpo_method:       write_type_method(env, tp);      return;
 	case tpo_pointer:      write_type_pointer(env, tp);     return;
 	case tpo_array:        write_type_array(env, tp);       return;
@@ -1781,7 +1773,6 @@ static void read_type(read_env_t *env)
 
 	case tpo_code:
 	case tpo_unknown:
-	case tpo_enumeration:
 	case tpo_uninitialized:
 		parse_error(env, "can't import this type kind (%d)", tpop);
 		return;

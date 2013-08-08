@@ -53,7 +53,6 @@
 #define is_Method_type(method)            _is_method_type(method)
 #define is_Union_type(uni)                _is_union_type(uni)
 #define is_Array_type(array)              _is_array_type(array)
-#define is_Enumeration_type(enumeration)  _is_enumeration_type(enumeration)
 #define is_Pointer_type(pointer)          _is_pointer_type(pointer)
 #define is_Primitive_type(primitive)      _is_primitive_type(primitive)
 #define is_atomic_type(tp)                _is_atomic_type(tp)
@@ -122,19 +121,6 @@ typedef struct {
 	                             element selection with a Sel node. */
 } arr_attr;
 
-/** An enumerator constant. */
-struct ir_enum_const {
-	ir_tarval  *value;  /**< The constants that represents this enumerator identifier. */
-	ident   *nameid;    /**< The name of the enumerator identifier. */
-	ir_type *owner;     /**< owner type of this enumerator constant. */
-};
-
-/** Enum type attributes. */
-typedef struct {
-	ir_enum_const *enumer;   /**< Contains all enumerator constants that represent a member
-	                              of the enum -- enumerators. */
-} enm_attr;
-
 /** Pointer type attributes. */
 typedef struct {
 	ir_type *points_to;  /**< The type of the ir_entity the pointer points to. */
@@ -147,7 +133,6 @@ typedef union {
 	mtd_attr ma;      /**< Attributes of a method type */
 	uni_attr ua;      /**< Attributes of an union type */
 	arr_attr aa;      /**< Attributes of an array type */
-	enm_attr ea;      /**< Attributes of an enumeration type */
 	ptr_attr pa;      /**< Attributes of a pointer type */
 } tp_attr;
 
@@ -217,7 +202,6 @@ void free_struct_entities     (ir_type *strct);
 void free_method_entities     (ir_type *method);
 void free_union_entities      (ir_type *uni);
 void free_array_entities      (ir_type *array);
-void free_enumeration_entities(ir_type *enumeration);
 void free_pointer_entities    (ir_type *pointer);
 
 void free_array_automatic_entities(ir_type *array);
@@ -227,14 +211,12 @@ void free_struct_attrs     (ir_type *strct);
 void free_method_attrs     (ir_type *method);
 void free_union_attrs      (ir_type *uni);
 void free_array_attrs      (ir_type *array);
-void free_enumeration_attrs(ir_type *enumeration);
 void free_pointer_attrs    (ir_type *pointer);
 
 void set_class_mode(ir_type *tp, ir_mode *mode);
 void set_struct_mode(ir_type *tp, ir_mode *mode);
 void set_pointer_mode(ir_type *tp, ir_mode *mode);
 void set_primitive_mode(ir_type *tp, ir_mode *mode);
-void set_enumeration_mode(ir_type *tp, ir_mode *mode);
 
 void set_class_size(ir_type *tp, unsigned bytes);
 void set_struct_size(ir_type *tp, unsigned bytes);
@@ -487,11 +469,6 @@ static inline int _is_array_type(const ir_type *array)
 	return (array->type_op == type_array);
 }
 
-static inline int _is_enumeration_type(const ir_type *enumeration)
-{
-	return (enumeration->type_op == type_enumeration);
-}
-
 static inline int _is_pointer_type(const ir_type *pointer)
 {
 	return (pointer->type_op == type_pointer);
@@ -507,8 +484,7 @@ static inline int _is_primitive_type(const ir_type *primitive)
 static inline int _is_atomic_type(const ir_type *tp)
 {
 	assert(tp->kind == k_type);
-	return (_is_primitive_type(tp) || _is_pointer_type(tp) ||
-	        _is_enumeration_type(tp));
+	return _is_primitive_type(tp) || _is_pointer_type(tp);
 }
 
 static inline size_t _get_method_n_params(const ir_type *method)

@@ -103,7 +103,7 @@ void free_tpop(const tp_op *tpop);
  * opcodes and sets the globals that are external visible as specified
  * in tpop.h.
  * Allocates opcodes for classes, struct, method, union, array,
- * enumeration, pointer and primitive and sets the according values.
+ * pointer and primitive and sets the according values.
  */
 void init_tpop(void);
 

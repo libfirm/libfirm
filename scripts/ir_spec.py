@@ -889,9 +889,7 @@ class SymConst:
 	                        entity (variable or method).  The variable is given
 	                        explicitly by a firm entity.
 	 - *symconst_ofs_ent*   The symbolic constant represents the offset of an
-	                        entity in its owner type.
-	 - *symconst_enum_const* The symbolic constant is a enumeration constant of
-	                        an enumeration type."""
+	                        entity in its owner type."""
 	mode       = "mode_P"
 	flags      = [ "constlike", "start_block" ]
 	knownBlock = True

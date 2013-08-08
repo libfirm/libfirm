@@ -18,7 +18,6 @@ const tp_op *type_struct;        const tp_op *get_tpop_struct     (void) { retur
 const tp_op *type_method;        const tp_op *get_tpop_method     (void) { return type_method;      }
 const tp_op *type_union;         const tp_op *get_tpop_union      (void) { return type_union;       }
 const tp_op *type_array;         const tp_op *get_tpop_array      (void) { return type_array;       }
-const tp_op *type_enumeration;   const tp_op *get_tpop_enumeration(void) { return type_enumeration; }
 const tp_op *type_pointer;       const tp_op *get_tpop_pointer    (void) { return type_pointer;     }
 const tp_op *type_primitive;     const tp_op *get_tpop_primitive  (void) { return type_primitive;   }
 const tp_op *tpop_code;          const tp_op *get_tpop_code_type  (void) { return tpop_code;        }
@@ -102,17 +101,6 @@ static const tp_op_ops
 		NULL,
 		NULL
 	},
-	/** tpop operations for enumeration types */
-	enum_ops = {
-		free_enumeration_attrs,
-		free_enumeration_entities,
-		NULL,
-		set_enumeration_mode,
-		NULL,
-		NULL,
-		NULL,
-		NULL
-	},
 	/** tpop operations for pointer types */
 	pointer_ops = {
 		free_pointer_attrs,
@@ -156,7 +144,6 @@ void init_tpop(void)
 	type_method      = new_tpop(tpo_method     , ID("method"),      0,                   sizeof(mtd_attr), &method_ops);
 	type_union       = new_tpop(tpo_union      , ID("union"),       TP_OP_FLAG_COMPOUND, sizeof(uni_attr), &union_ops);
 	type_array       = new_tpop(tpo_array      , ID("array"),       0,                   sizeof(arr_attr), &array_ops);
-	type_enumeration = new_tpop(tpo_enumeration, ID("enumeration"), 0,                   sizeof(enm_attr), &enum_ops);
 	type_pointer     = new_tpop(tpo_pointer    , ID("pointer"),     0,                   sizeof(ptr_attr), &pointer_ops);
 	type_primitive   = new_tpop(tpo_primitive  , ID("primitive"),   0,                   0,                &null_ops);
 	tpop_code        = new_tpop(tpo_code       , ID("code"),        0,                   0,                &null_ops);
@@ -171,7 +158,6 @@ void finish_tpop(void)
 	free_tpop(type_method     ); type_method      = NULL;
 	free_tpop(type_union      ); type_union       = NULL;
 	free_tpop(type_array      ); type_array       = NULL;
-	free_tpop(type_enumeration); type_enumeration = NULL;
 	free_tpop(type_pointer    ); type_pointer     = NULL;
 	free_tpop(type_primitive  ); type_primitive   = NULL;
 	free_tpop(tpop_code       ); tpop_code        = NULL;

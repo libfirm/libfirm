@@ -504,7 +504,6 @@ static int verify_node_SymConst(const ir_node *n)
 	switch (get_SymConst_kind(n)) {
 	case symconst_type_size:
 	case symconst_type_align:
-	case symconst_enum_const:
 	case symconst_ofs_ent:
 		return check_mode_func(n, mode_is_int, "int");
 	case symconst_addr_ent: {

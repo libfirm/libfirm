@@ -168,10 +168,6 @@ static void do_type_walk(type_or_ent tore,
 			do_type_walk(cont, pre, post, env);
 			break;
 
-		case tpo_enumeration:
-			/* a leave */
-			break;
-
 		case tpo_pointer:
 			cont.typ = get_pointer_points_to_type(tp);
 			do_type_walk(cont, pre, post, env);
@@ -323,7 +319,6 @@ static void type_walk_s2s_2(type_or_ent tore,
 			case tpo_method:
 			case tpo_union:
 			case tpo_array:
-			case tpo_enumeration:
 			case tpo_pointer:
 			case tpo_primitive:
 				/* dont care */
@@ -402,7 +397,6 @@ static void type_walk_super_2(type_or_ent tore, type_walk_func *pre,
 		case tpo_method:
 		case tpo_union:
 		case tpo_array:
-		case tpo_enumeration:
 		case tpo_pointer:
 		case tpo_primitive:
 			/* don't care */
@@ -507,7 +501,6 @@ void walk_types_entities(ir_type *tp,
 		doit(get_array_element_entity(tp), env);
 		break;
 	case tpo_method:
-	case tpo_enumeration:
 	case tpo_pointer:
 	case tpo_primitive:
 	default:

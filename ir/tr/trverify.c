@@ -103,7 +103,6 @@ int check_type(const ir_type *tp)
 	case tpo_array:     return check_array_type(tp);
 	case tpo_primitive: return check_primitive_type(tp);
 	case tpo_pointer:   return check_pointer_type(tp);
-	case tpo_enumeration:
 	case tpo_method:
 	case tpo_uninitialized:
 	case tpo_unknown:

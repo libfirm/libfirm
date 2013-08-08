@@ -185,13 +185,11 @@ static void lower_sel(ir_node *sel)
  */
 static void lower_symconst(ir_node *symc)
 {
-	ir_node       *newn;
-	ir_type       *tp;
-	ir_entity     *ent;
-	ir_tarval     *tv;
-	ir_enum_const *ec;
-	ir_mode       *mode;
-	ir_graph      *irg;
+	ir_node   *newn;
+	ir_type   *tp;
+	ir_entity *ent;
+	ir_mode   *mode;
+	ir_graph  *irg;
 
 	switch (get_SymConst_kind(symc)) {
 	case symconst_type_size:
@@ -231,19 +229,6 @@ static void lower_symconst(ir_node *symc)
 		assert(get_type_state(get_entity_type(ent)) == layout_fixed);
 		mode = get_irn_mode(symc);
 		newn = new_r_Const_long(irg, mode, get_entity_offset(ent));
-		assert(newn);
-		/* run the hooks */
-		hook_lower(symc);
-		exchange(symc, newn);
-		return;
-
-	case symconst_enum_const:
-		/* rewrite the SymConst node by a Const node */
-		irg  = get_irn_irg(symc);
-		ec   = get_SymConst_enum(symc);
-		assert(get_type_state(get_enumeration_owner(ec)) == layout_fixed);
-		tv   = get_enumeration_value(ec);
-		newn = new_r_Const(irg, tv);
 		assert(newn);
 		/* run the hooks */
 		hook_lower(symc);
