@@ -39,6 +39,7 @@
 #include "statev_t.h"
 #include "dfs_t.h"
 #include "absgraph.h"
+#include "error.h"
 
 #include "irprog_t.h"
 #include "irgraph_t.h"
@@ -47,7 +48,6 @@
 #include "irgwalk.h"
 #include "iredges.h"
 #include "irouts.h"
-#include "irprintf.h"
 #include "util.h"
 #include "irhooks.h"
 #include "irnodehashmap.h"
@@ -97,7 +97,7 @@ void exit_execfreq(void)
 }
 
 
-static double *solve_lgs(double *mat, double *x, int size)
+static int solve_lgs(double *mat, double *x, int size)
 {
 	/* better convergence. */
 	double init = 1.0 / size;
@@ -106,16 +106,10 @@ static double *solve_lgs(double *mat, double *x, int size)
 
 	stat_ev_dbl("execfreq_matrix_size", size);
 	stat_ev_tim_push();
-	int    iter = 0;
-	double dev;
-	do {
-		++iter;
-		dev = firm_gaussjordansolve(mat, x, size);
-	} while (fabs(dev) > SEIDEL_TOLERANCE);
+	int result = firm_gaussjordansolve(mat, x, size);
 	stat_ev_tim_pop("execfreq_seidel_time");
-	stat_ev_dbl("execfreq_seidel_iter", iter);
 
-	return x;
+	return result;
 }
 
 static bool has_path_to_end(const ir_node *block)
@@ -271,9 +265,30 @@ static void block_walk_no_keeps(ir_node *block)
 	}
 }
 
-static void matrix_set(double *m, int size, int row, int col, double val)
+/**
+ * Computes acc += x * weight, where acc and x are vectors.
+ */
+static void add_weighted(double *acc, double *x, double weight, int size)
 {
-	m[row * size + col] = val;
+	for (int i = 0; i < size; i++) {
+		acc[i] += x[i] * weight;
+	}
+}
+
+/**
+ * Computes dot(factors, freqs) where factors and freqs are vectors.
+ * If factors[i] == 0, freqs[i] is not read and may be not finite.
+ */
+static double eval_factors(double *factors, double *freqs, int size)
+{
+	double acc = 0.0;
+	for (int i = 0; i < size; i++) {
+		if (factors[i] != 0) {
+			assert(isfinite(freqs[i]));
+			acc += factors[i] * freqs[i];
+		}
+	}
+	return acc;
 }
 
 void ir_estimate_execfreq(ir_graph *irg)
@@ -292,16 +307,22 @@ void ir_estimate_execfreq(ir_graph *irg)
 	 * => they can "flow" from start to end. */
 	dfs_t *dfs = dfs_new(&absgraph_irg_cfg_succ, irg);
 
-	int          size = dfs_get_n_nodes(dfs);
-	double *mat  = (double *)malloc(size * size * sizeof(double));
+	int     size   = dfs_get_n_nodes(dfs);
+	double *in_fac = (double *)malloc(size * size * sizeof(double));
+	memset(in_fac, 0, size * size * sizeof(double));
+
+#define ROW(m,r) (m + (size * (r)))
+#define ENTRY(m,r,c) (m[size * (r) + (c)])
 
 	ir_node *const start_block = get_irg_start_block(irg);
 	ir_node *const end_block   = get_irg_end_block(irg);
-	const int      start_idx   = size - dfs_get_post_num(dfs, start_block) - 1;
+	const int      end_idx     = size - dfs_get_post_num(dfs, end_block) - 1;
 
 	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_VISITED
-	                     | IR_RESOURCE_IRN_VISITED);
+	                     | IR_RESOURCE_IRN_VISITED
+			     | IR_RESOURCE_IRN_LINK);
 	inc_irg_block_visited(irg);
+
 	/* mark all blocks reachable from end_block as (block)visited
 	 * (so we can detect places like endless-loops/noreturn calls which
 	 *  do not reach the End block) */
@@ -312,75 +333,168 @@ void ir_estimate_execfreq(ir_graph *irg)
 	int const      n_keepalives = get_End_n_keepalives(end);
 	for (int k = n_keepalives - 1; k >= 0; --k) {
 		ir_node *keep = get_End_keepalive(end, k);
-		if (is_Block(keep))
+		if (is_Block(keep)) {
 			mark_irn_visited(keep);
+		}
 	}
 
 	double const inv_loop_weight = 1.0 / loop_weight;
-	for (int idx = size - 1; idx >= 0; --idx) {
+	/* lgs_to_mat[i] is the index of the block represented by the
+	 * i-th row/column in the LGS matrix. */
+	int *lgs_to_mat = NEW_ARR_F(int, 0);
+
+	for (int idx = 0; idx < size; idx++) {
 		const ir_node *bb = (ir_node*)dfs_get_post_num_node(dfs, size-idx-1);
 
-		/* Sum of (execution frequency of predecessor * probability of cf edge) ... */
+		if (bb == end_block) {
+			/* The end block is handled properly later,
+			 * when all the kept blocks are done. */
+			continue;
+		}
+
 		for (int i = get_Block_n_cfgpreds(bb) - 1; i >= 0; --i) {
 			const ir_node *pred           = get_Block_cfgpred_block(bb, i);
 			int            pred_idx       = size - dfs_get_post_num(dfs, pred)-1;
 			double         cf_probability = get_cf_probability(bb, i, inv_loop_weight);
-			matrix_set(mat, size, idx, pred_idx, cf_probability);
-		}
-		/* ... equals my execution frequency */
-		matrix_set(mat, size, idx, idx, -1.0);
+			bool           pred_visited   = pred_idx < idx;
 
-		if (bb == end_block) {
-			/* Add an edge from end to start.
-			 * The problem is then an eigenvalue problem:
-			 * Solve A*x = 1*x => (A-I)x = 0
-			 */
-			matrix_set(mat, size, start_idx, idx, 1.0);
-
-			/* add artifical edges from "kept blocks without a path to end"
-			 * to end */
-			for (int k = n_keepalives - 1; k >= 0; --k) {
-				ir_node *keep = get_End_keepalive(end, k);
-				if (!is_Block(keep) || has_path_to_end(keep))
-					continue;
-
-				double sum      = get_sum_succ_factors(keep, inv_loop_weight);
-				double fac      = KEEP_FAC/sum;
-				int    keep_idx = size - dfs_get_post_num(dfs, keep)-1;
-				//ir_printf("SEdge %+F -> %+F, fak: %f\n", keep, end_block, fac);
-				matrix_set(mat, size, idx, keep_idx, fac);
-				//gs_matrix_set(mat, start_idx, keep_idx, fac);
+			if (pred_visited) {
+				add_weighted(ROW(in_fac, idx), ROW(in_fac, pred_idx), cf_probability, size);
+			} else {
+				ARR_APP1(int, lgs_to_mat, pred_idx);
+				ENTRY(in_fac, idx, pred_idx) = cf_probability;
 			}
+		}
+
+		if (bb == start_block) {
+			ENTRY(in_fac, idx, end_idx) = 1.0;
 		}
 	}
 
-	/* solve the system and delete the matrix */
-	double *x = XMALLOCN(double, size);
-	//ir_fprintf(stderr, "%+F:\n", irg);
-	//gs_matrix_dump(mat, 100, 100, stderr);
-	solve_lgs(mat, x, size);
-	free(mat);
+	/* Now correct the end block */ {
+		const ir_node *bb = end_block;
+		int idx = end_idx;
+
+		ARR_APP1(int, lgs_to_mat, idx);
+
+		for (int i = get_Block_n_cfgpreds(bb) - 1; i >= 0; --i) {
+			const ir_node *pred           = get_Block_cfgpred_block(bb, i);
+			int            pred_idx       = size - dfs_get_post_num(dfs, pred)-1;
+			double         cf_probability = get_cf_probability(bb, i, inv_loop_weight);
+
+			add_weighted(ROW(in_fac, idx), ROW(in_fac, pred_idx), cf_probability, size);
+		}
+
+		/* add artifical edges from "kept blocks without a path to end"
+		 * to end */
+		for (int k = n_keepalives - 1; k >= 0; --k) {
+			ir_node *keep = get_End_keepalive(end, k);
+			if (!is_Block(keep) || has_path_to_end(keep))
+				continue;
+
+			double sum      = get_sum_succ_factors(keep, inv_loop_weight);
+			double fac      = KEEP_FAC/sum;
+			int    keep_idx = size - dfs_get_post_num(dfs, keep)-1;
+
+			add_weighted(ROW(in_fac, idx), ROW(in_fac, keep_idx), fac, size);
+		}
+	}
+
+	/* mat_to_lgs[i] is the index of node i in the LGS matrix, or
+	 * -1 if the node can be solved by simple substitution. */
+	int *mat_to_lgs = NEW_ARR_F(int, size);
+	for (int x = 0; x < size; x++) {
+		mat_to_lgs[x] = -1;
+	}
+	for (unsigned b = 0; b < ARR_LEN(lgs_to_mat); b++) {
+		mat_to_lgs[lgs_to_mat[b]] = b;
+	}
+
+#ifdef DEBUG
+	/* Check that all values in in_fac are only given in terms of nodes with backedges */
+	for (int y = 0; y < size; y++) {
+		if (mat_to_lgs[y] != -1) {
+			for (int x = 0; x < size; x++) {
+				if (ENTRY(in_fac, x, y) != 0) {
+					panic("Expect entry at (%d, %d) to be 0.\n", x, y);
+				}
+			}
+		}
+	}
+#endif
+
+	/* Build the LGS matrix with only the indices in lgs_to_mat. */
+	/* Beware! ROW and ENTRY can only be used for in_fac. To avoid
+	 * confusion, they are not used here at all. */
+	unsigned lgs_size = ARR_LEN(lgs_to_mat);
+	double *lgs_matrix = XMALLOCNZ(double, size * size);
+	double *lgs_x = XMALLOCNZ(double, size);
+
+	for (unsigned x = 0; x < lgs_size; x++) {
+		int bx = lgs_to_mat[x];
+		for (unsigned y = 0; y < lgs_size; y++) {
+			int by = lgs_to_mat[y];
+			lgs_matrix[x * lgs_size + y] = in_fac[bx * size + by];
+		}
+		lgs_matrix[x * lgs_size + x] -= 1.0; /* RHS of the equation */
+	}
+
+	bool valid_freq;
+	if (lgs_size == 1) {
+		lgs_x[0] = 1.0;
+		valid_freq = true;
+	} else {
+		int  lgs_result = solve_lgs(lgs_matrix, lgs_x, lgs_size);
+		valid_freq = !lgs_result; /* solve_lgs returns -1 on error. */
+	}
+
 
 	/* compute the normalization factor.
-	 * 1.0 / exec freq of start block.
-	 * (note: start_idx is != 0 in strange cases involving endless loops,
-	 *  probably a misfeature/bug)
+	 * 1.0 / exec freq of end block.
 	 */
-	double start_freq = x[start_idx];
-	double norm       = start_freq != 0.0 ? 1.0 / start_freq : 1.0;
-	bool   valid_freq = true;
-	for (int idx = size - 1; idx >= 0; --idx) {
-		ir_node *bb = (ir_node *) dfs_get_post_num_node(dfs, size - idx - 1);
+	double end_freq = lgs_x[mat_to_lgs[end_idx]];
+	double norm     = end_freq != 0.0 ? 1.0 / end_freq : 1.0;
 
-		/* take abs because it sometimes can be -0 in case of endless loops */
-		double freq = fabs(x[idx]) * norm;
+	if (valid_freq) {
+		double *freqs = NEW_ARR_F(double, size);
 
-		/* Check for inf, nan and negative values. */
-		if (isinf(freq) || !(freq >= 0)) {
-			valid_freq = false;
-			break;
+		/* First get the frequency for the nodes which were
+		 * explicitly computed. */
+		for (int idx = size - 1; idx >= 0; --idx) {
+			ir_node *bb = (ir_node *) dfs_get_post_num_node(dfs, size - idx - 1);
+
+			if (mat_to_lgs[idx] != -1) {
+				double freq = lgs_x[mat_to_lgs[idx]] * norm;
+				/* Check for inf, nan and negative values. */
+				if (isinf(freq) || !(freq >= 0)) {
+					valid_freq = false;
+					break;
+				}
+				set_block_execfreq(bb, freq);
+				freqs[idx] = freq;
+			} else {
+				freqs[idx] = nan("");
+			}
 		}
-		set_block_execfreq(bb, freq);
+
+		if (valid_freq) {
+			/* Now get the rest of the frequencies using the factors in in_fac */
+			for (int idx = size - 1; idx >= 0; --idx) {
+				ir_node *bb = (ir_node *) dfs_get_post_num_node(dfs, size - idx - 1);
+
+				if (mat_to_lgs[idx] == -1) {
+					double freq = eval_factors(ROW(in_fac, idx), freqs, size);
+					/* Check for inf, nan and negative values. */
+					if (isinf(freq) || !(freq >= 0)) {
+						valid_freq = false;
+						break;
+					}
+					set_block_execfreq(bb, freq);
+				}
+			}
+		}
+
+		DEL_ARR_F(freqs);
 	}
 
 	/* Fallback solution: Use loop weight. */
@@ -414,9 +528,14 @@ void ir_estimate_execfreq(ir_graph *irg)
 		}
 	}
 
-	ir_free_resources(irg, IR_RESOURCE_BLOCK_VISITED | IR_RESOURCE_IRN_VISITED);
+	ir_free_resources(irg, IR_RESOURCE_BLOCK_VISITED
+			  | IR_RESOURCE_IRN_VISITED
+			  | IR_RESOURCE_IRN_LINK);
 
 	dfs_free(dfs);
-
-	free(x);
+	DEL_ARR_F(lgs_to_mat);
+	DEL_ARR_F(mat_to_lgs);
+	free(in_fac);
+	free(lgs_matrix);
+	free(lgs_x);
 }
