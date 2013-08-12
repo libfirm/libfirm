@@ -32,11 +32,41 @@
  * nodes and replace large CopyBs by a call to memcpy, depending on the given
  * parameters.
  *
- * Small CopyB nodes (size <= max_small_size) are turned into a series of
- * loads and stores.
- * Medium-sized CopyB nodes (max_small_size < size < min_large_size) are
- * left untouched.
- * Large CopyB nodes (size >= min_large_size) are turned into a memcpy call.
+ * Every CopyB is assigned a size category as follows:
+ *  - 'small'  iff                  size <= max_small_size,
+ *  - 'medium' iff max_small_size < size <  min_large_size,
+ *  - 'large'  iff                  size >= min_large_size.
+ *
+ * The idea is that each backend can apply different optimizations in each
+ * of the three categories.
+ *
+ * For small CopyBs, the x86 backend could, e.g., emit a single SSE
+ * instruction to copy 16 bytes.  Other backends might just go with a series
+ * of Load/Stores.  Therefore, x86 would like to keep the small CopyB nodes
+ * around whereas other backends would not.
+ * For medium-sized CopyBs, the x86 backend might generate a rep-prefixed mov
+ * instruction.  Hence, it also wants to keep the CopyBs in these cases.  Other
+ * backends might handle this differently.
+ * For large CopyBs, a call to memcpy is worth the call overhead, so large
+ * CopyBs should always be lowered to memcpy calls.
+ *
+ * The lowerer performs the following actions if the CopyB is
+ * - 'small':  Replace it with a series of Loads/Stores
+ * - 'medium': Nothing.
+ * - 'large':  Replace it with a call to memcpy.
+ *
+ * max_small_size and min_large_size allow for a flexible configuration.
+ * For example, one backend could specify max_small_size == 0 and
+ * min_large_size == 8192 to keep all CopyB nodes smaller than 8192 and get
+ * memcpy Calls for all others.  Here, the set of small CopyBs is empty.
+ * Another backend could specify max_small_size == 63 and min_large_size == 64
+ * to lower all small CopyBs to Loads/Stores and all big CopyBs to memcpy.
+ * Hence, the set of medium-sized CopyBs is empty and this backend never
+ * sees a CopyB node at all.
+ * If memcpy is not available, min_large_size can be set to UINT_MAX to prevent
+ * the creation of calls to memcpy.  Note that CopyBs whose size is UINT_MAX
+ * will still be lowered to memcpy calls because we check if the size is greater
+ * *or equal* to min_large_size.  However, this should never occur in practice.
  *
  * @param irg                 The graph to be lowered.
  * @param max_small_size      The maximum number of bytes for a CopyB node so
