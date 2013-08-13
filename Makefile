@@ -163,7 +163,8 @@ $(libfirm_dll): $(libfirm_OBJECTS)
 # Generic rules
 UNUSED := $(shell mkdir -p $(libfirm_DIRS:%=$(builddir)/%))
 # Determine if we can use cparser-beta for quickcheck
-QUICKCHECK ?= $(shell which cparser-beta || echo true) -fsyntax-only
+QUICKCHECK_DEFAULT := $(shell which cparser-beta || echo true) -fsyntax-only
+QUICKCHECK ?= $(QUICKCHECK_DEFAULT)
 QUICKCHECK_FLAGS ?= -Wno-shadow -Wno-shadow-local
 
 $(builddir)/%.o: %.c $(IR_SPEC_GENERATED_INCLUDES)
