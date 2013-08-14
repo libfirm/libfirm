@@ -432,24 +432,24 @@ static inline void rbitset_set_range(unsigned *bitset, size_t from,
 	/* do we want to set the bits in the range? */
 	if (val) {
 		if (from_pos == to_pos) {
-			BITSET_ELEM(bitset, from_pos) |= from_unit_mask & to_unit_mask;
+			bitset[from_pos] |= from_unit_mask & to_unit_mask;
 		} else {
 			size_t i;
-			BITSET_ELEM(bitset, from_pos) |= from_unit_mask;
-			BITSET_ELEM(bitset, to_pos)   |= to_unit_mask;
+			bitset[from_pos] |= from_unit_mask;
+			bitset[to_pos]   |= to_unit_mask;
 			for (i = from_pos + 1; i < to_pos; ++i)
-				BITSET_ELEM(bitset, i) = ~0u;
+				bitset[i] = ~0u;
 		}
 	} else {
 		/* ... or clear them? */
 		if (from_pos == to_pos) {
-			BITSET_ELEM(bitset, from_pos) &= ~(from_unit_mask & to_unit_mask);
+			bitset[from_pos] &= ~(from_unit_mask & to_unit_mask);
 		} else {
 			size_t i;
-			BITSET_ELEM(bitset, from_pos) &= ~from_unit_mask;
-			BITSET_ELEM(bitset, to_pos)   &= ~to_unit_mask;
+			bitset[from_pos] &= ~from_unit_mask;
+			bitset[to_pos]   &= ~to_unit_mask;
 			for (i = from_pos + 1; i < to_pos; ++i)
-				BITSET_ELEM(bitset, i) = 0;
+				bitset[i] = 0;
 		}
 	}
 }
