@@ -132,7 +132,7 @@ bool sparc_variadic_fixups(ir_graph *irg, calling_convention_t *cconv)
 	size_t         n_ress       = get_method_n_ress(mtp);
 	size_t         new_n_params
 		= n_params + (SPARC_N_PARAM_REGS - cconv->n_param_regs);
-	ir_type       *new_mtp      = new_d_type_method(new_n_params, n_ress, dbgi);
+	ir_type       *new_mtp      = new_type_method(new_n_params, n_ress);
 	ir_mode       *gp_reg_mode  = sparc_reg_classes[CLASS_sparc_gp].mode;
 	ir_type       *gp_reg_type  = get_type_for_mode(gp_reg_mode);
 	ir_type       *frame_type   = get_irg_frame_type(irg);
@@ -151,6 +151,7 @@ bool sparc_variadic_fixups(ir_graph *irg, calling_convention_t *cconv)
 		new_parameter_entity(frame_type, i, gp_reg_type);
 	}
 
+	set_type_dbg_info(new_mtp, dbgi);
 	set_method_variadicity(new_mtp, get_method_variadicity(mtp));
 	set_method_calling_convention(new_mtp, get_method_calling_convention(mtp));
 	set_method_additional_properties(new_mtp, get_method_additional_properties(mtp));

@@ -48,7 +48,7 @@
 
 #include "array.h"
 
-static ir_type *new_type(tp_op const *type_op, ir_mode *mode, type_dbg_info *db);
+static ir_type *new_type(tp_op const *type_op, ir_mode *mode);
 
 ir_type *get_code_type(void)
 {
@@ -62,10 +62,10 @@ ir_type *get_unknown_type(void)
 
 void ir_init_type(ir_prog *irp)
 {
-	irp->code_type = new_type(tpop_code, mode_ANY, NULL);
+	irp->code_type = new_type(tpop_code, mode_ANY);
 	set_type_state(irp->code_type, layout_fixed);
 
-	irp->unknown_type = new_type(tpop_unknown, mode_ANY, NULL);
+	irp->unknown_type = new_type(tpop_unknown, mode_ANY);
 	set_type_size_bytes(irp->unknown_type, 0);
 	set_type_state (irp->unknown_type, layout_fixed);
 }
@@ -99,12 +99,11 @@ void (inc_master_type_visited)(void)
  *
  *   @param type_op  the kind of this type.  May not be type_id.
  *   @param mode     the mode to be used for this type, may be NULL
- *   @param db       debug info
  *
  *   @return A new type of the given type.  The remaining private attributes are
  *           not initialized.  The type is in state layout_undefined.
  */
-static ir_type *new_type(tp_op const *type_op, ir_mode *mode, type_dbg_info *db)
+static ir_type *new_type(tp_op const *type_op, ir_mode *mode)
 {
 	size_t   const node_size = offsetof(ir_type, attr) +  type_op->attr_size;
 	ir_type *const res       = (ir_type*)xmalloc(node_size);
@@ -119,7 +118,6 @@ static ir_type *new_type(tp_op const *type_op, ir_mode *mode, type_dbg_info *db)
 	res->align      = 0;
 	res->visit      = 0;
 	res->link       = NULL;
-	res->dbi        = db;
 #ifdef DEBUG_libfirm
 	res->nr         = get_irp_new_node_nr();
 #endif /* defined DEBUG_libfirm */
@@ -378,9 +376,9 @@ int (is_type)(const void *thing)
 	return _is_type(thing);
 }
 
-ir_type *new_d_type_class(ident *name, type_dbg_info *db)
+ir_type *new_type_class(ident *name)
 {
-	ir_type *res = new_type(type_class, NULL, db);
+	ir_type *res = new_type(type_class, NULL);
 	res->name = name;
 
 	res->attr.ca.members     = NEW_ARR_F (ir_entity *, 0);
@@ -392,11 +390,6 @@ ir_type *new_d_type_class(ident *name, type_dbg_info *db)
 	res->attr.ca.dfn         = 0;
 	hook_new_type(res);
 	return res;
-}
-
-ir_type *new_type_class(ident *name)
-{
-	return new_d_type_class(name, NULL);
 }
 
 void free_class_entities(ir_type *clss)
@@ -676,19 +669,14 @@ void set_class_size(ir_type *tp, unsigned size)
 }
 
 
-ir_type *new_d_type_struct(ident *name, type_dbg_info *db)
+ir_type *new_type_struct(ident *name)
 {
-	ir_type *res = new_type(type_struct, NULL, db);
+	ir_type *res = new_type(type_struct, NULL);
 	res->name = name;
 
 	res->attr.sa.members = NEW_ARR_F(ir_entity *, 0);
 	hook_new_type(res);
 	return res;
-}
-
-ir_type *new_type_struct(ident *name)
-{
-	return new_d_type_struct (name, NULL);
 }
 
 void free_struct_entities(ir_type *strct)
@@ -781,10 +769,10 @@ void set_struct_size(ir_type *tp, unsigned size)
 	tp->size = size;
 }
 
-ir_type *new_d_type_method(size_t n_param, size_t n_res, type_dbg_info *db)
+ir_type *new_type_method(size_t n_param, size_t n_res)
 {
 	assert((get_mode_size_bits(mode_P_code) % 8 == 0) && "unorthodox modes not implemented");
-	ir_type *res = new_type(type_method, mode_P_code, db);
+	ir_type *res = new_type(type_method, mode_P_code);
 	res->flags               |= tf_layout_fixed;
 	res->size                 = get_mode_size_bytes(mode_P_code);
 	res->attr.ma.n_params     = n_param;
@@ -797,11 +785,6 @@ ir_type *new_d_type_method(size_t n_param, size_t n_res, type_dbg_info *db)
 	return res;
 }
 
-ir_type *new_type_method(size_t n_param, size_t n_res)
-{
-	return new_d_type_method(n_param, n_res, NULL);
-}
-
 ir_type *clone_type_method(ir_type *tp)
 {
 	assert(is_Method_type(tp));
@@ -809,7 +792,8 @@ ir_type *clone_type_method(ir_type *tp)
 	size_t         n_params = tp->attr.ma.n_params;
 	size_t         n_res    = tp->attr.ma.n_res;
 	type_dbg_info *db       = tp->dbi;
-	ir_type       *res      = new_type(type_method, mode, db);
+	ir_type       *res      = new_type(type_method, mode);
+	set_type_dbg_info(res, db);
 
 	res->flags                    = tp->flags;
 	res->higher_type              = tp->higher_type;
@@ -952,19 +936,14 @@ int (is_Method_type)(const ir_type *method)
 }
 
 
-ir_type *new_d_type_union(ident *name, type_dbg_info *db)
+ir_type *new_type_union(ident *name)
 {
-	ir_type *res = new_type(type_union, NULL, db);
+	ir_type *res = new_type(type_union, NULL);
 	res->name = name;
 
 	res->attr.ua.members = NEW_ARR_F(ir_entity *, 0);
 	hook_new_type(res);
 	return res;
-}
-
-ir_type *new_type_union(ident *name)
-{
-	return new_d_type_union(name, NULL);
 }
 
 void free_union_entities(ir_type *uni)
@@ -1058,12 +1037,11 @@ ir_type *new_type_segment(ident *const name, type_flags const flags)
 }
 
 
-ir_type *new_d_type_array(size_t n_dimensions, ir_type *element_type,
-                          type_dbg_info *db)
+ir_type *new_type_array(size_t n_dimensions, ir_type *element_type)
 {
 	assert(!is_Method_type(element_type));
 
-	ir_type *res = new_type(type_array, NULL, db);
+	ir_type *res = new_type(type_array, NULL);
 	res->attr.aa.n_dimensions = n_dimensions;
 	res->attr.aa.lower_bound  = XMALLOCNZ(ir_node*, n_dimensions);
 	res->attr.aa.upper_bound  = XMALLOCNZ(ir_node*, n_dimensions);
@@ -1083,11 +1061,6 @@ ir_type *new_d_type_array(size_t n_dimensions, ir_type *element_type,
 
 	hook_new_type(res);
 	return res;
-}
-
-ir_type *new_type_array(size_t n_dimensions, ir_type *element_type)
-{
-	return new_d_type_array(n_dimensions, element_type, NULL);
 }
 
 void free_array_automatic_entities(ir_type *array)
@@ -1279,7 +1252,7 @@ void set_array_size(ir_type *tp, unsigned size)
 }
 
 
-ir_type *new_d_type_pointer(ir_type *points_to, type_dbg_info *db)
+ir_type *new_type_pointer(ir_type *points_to)
 {
 	ir_mode *mode;
 	if (is_Method_type(points_to) || is_code_type(points_to)) {
@@ -1288,18 +1261,13 @@ ir_type *new_d_type_pointer(ir_type *points_to, type_dbg_info *db)
 		mode = mode_P_data;
 	}
 
-	ir_type *res = new_type(type_pointer, mode, db);
+	ir_type *res = new_type(type_pointer, mode);
 	res->attr.pa.points_to = points_to;
 	assert((get_mode_size_bits(res->mode) % 8 == 0) && "unorthodox modes not implemented");
 	res->size = get_mode_size_bytes(res->mode);
 	res->flags |= tf_layout_fixed;
 	hook_new_type(res);
 	return res;
-}
-
-ir_type *new_type_pointer(ir_type *points_to)
-{
-	return new_d_type_pointer(points_to, NULL);
 }
 
 void free_pointer_entities(ir_type *pointer)
@@ -1349,18 +1317,13 @@ ir_type *find_pointer_type_to_type(ir_type *tp)
 }
 
 
-ir_type *new_d_type_primitive(ir_mode *mode, type_dbg_info *db)
+ir_type *new_type_primitive(ir_mode *mode)
 {
-	ir_type *res = new_type(type_primitive, mode, db);
+	ir_type *res = new_type(type_primitive, mode);
 	res->size  = get_mode_size_bytes(mode);
 	res->flags |= tf_layout_fixed;
 	hook_new_type(res);
 	return res;
-}
-
-ir_type *new_type_primitive(ir_mode *mode)
-{
-	return new_d_type_primitive(mode, NULL);
 }
 
 int (is_Primitive_type)(const ir_type *primitive)

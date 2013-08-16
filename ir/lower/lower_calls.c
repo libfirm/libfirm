@@ -167,7 +167,8 @@ static ir_type *lower_mtp(compound_call_lowering_flags flags, ir_type *mtp)
 	assert(nn_params <= n_params + n_ress);
 
 	/* create the new type */
-	lowered = new_d_type_method(nn_params, nn_ress, get_type_dbg_info(mtp));
+	lowered = new_type_method(nn_params, nn_ress);
+	set_type_dbg_info(lowered, get_type_dbg_info(mtp));
 
 	/* fill it */
 	for (i = 0; i < nn_params; ++i)

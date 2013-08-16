@@ -1604,7 +1604,8 @@ static ir_type *lower_mtp(ir_type *mtp)
 		return mtp;
 	}
 
-	res = new_d_type_method(n_param, n_res, get_type_dbg_info(mtp));
+	res = new_type_method(n_param, n_res);
+	set_type_dbg_info(res, get_type_dbg_info(mtp));
 
 	/* set param types and result types */
 	for (i = n_param = 0; i < orig_n_params; ++i) {
@@ -2172,7 +2173,8 @@ static ir_type *lower_Builtin_type_high(ir_type *mtp)
 		return mtp;
 	}
 
-	res = new_d_type_method(n_params, n_results, get_type_dbg_info(mtp));
+	res = new_type_method(n_params, n_results);
+	set_type_dbg_info(res, get_type_dbg_info(mtp));
 
 	/* set param types and result types */
 	for (size_t i = 0; i < n_params; ++i) {
@@ -2262,7 +2264,8 @@ static ir_type *lower_Builtin_type_low(ir_type *mtp)
 		return mtp;
 	}
 
-	res = new_d_type_method(n_params, n_results, get_type_dbg_info(mtp));
+	res = new_type_method(n_params, n_results);
+	set_type_dbg_info(res, get_type_dbg_info(mtp));
 
 	/* set param types and result types */
 	for (size_t i = 0; i < n_params; ++i) {

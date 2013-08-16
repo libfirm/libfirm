@@ -6258,7 +6258,8 @@ static ir_node *transform_node_Call(ir_node *call)
 
 	n_res   = get_method_n_ress(mtp);
 	n_param = get_method_n_params(mtp);
-	ctp     = new_d_type_method(n_param + 1, n_res, tdb);
+	ctp     = new_type_method(n_param + 1, n_res);
+	set_type_dbg_info(ctp, tdb);
 
 	for (i = 0; i < n_res; ++i)
 		set_method_res_type(ctp, i, get_method_res_type(mtp, i));

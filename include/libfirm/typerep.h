@@ -1164,9 +1164,6 @@ FIRM_API long get_type_nr(const ir_type *tp);
 /** Creates a new class type. */
 FIRM_API ir_type *new_type_class(ident *name);
 
-/** Creates a new class type with debug information. */
-FIRM_API ir_type *new_d_type_class(ident *name, type_dbg_info *db);
-
 /** Returns identifier of the class type */
 FIRM_API ident *get_class_ident(const ir_type *clss);
 
@@ -1309,8 +1306,6 @@ FIRM_API const tp_op *get_tpop_class(void);
 
 /** Creates a new type struct */
 FIRM_API ir_type *new_type_struct(ident *name);
-/** Creates a new type struct with debug information. */
-FIRM_API ir_type *new_d_type_struct(ident *name, type_dbg_info* db);
 
 /** Returns struct identifier */
 FIRM_API ident *get_struct_ident(const ir_type *strct);
@@ -1361,10 +1356,6 @@ FIRM_API const tp_op *get_tpop_struct(void);
  */
 /** Creates a new type union. */
 FIRM_API ir_type *new_type_union(ident *name);
-
-/** Creates a new type union with debug information. */
-FIRM_API ir_type *new_d_type_union(ident *name, type_dbg_info* db);
-
 
 /** Returns union identifier */
 FIRM_API ident *get_union_ident(const ir_type *uni);
@@ -1437,18 +1428,6 @@ FIRM_API const tp_op *get_tpop_union(void);
  * the constructor.
  */
 FIRM_API ir_type *new_type_method(size_t n_param, size_t n_res);
-
-/** Create a new method type with debug information.
- *
- * @param n_param   the number of parameters
- * @param n_res     the number of results
- * @param db        user defined debug information
- *
- * The arrays for the parameter and result types are not initialized by
- * the constructor.
- */
-FIRM_API ir_type *new_d_type_method(size_t n_param, size_t n_res,
-                                    type_dbg_info *db);
 
 /** Returns the number of parameters of this method. */
 FIRM_API size_t get_method_n_params(const ir_type *method);
@@ -1609,18 +1588,6 @@ FIRM_API const tp_op *get_tpop_method(void);
  */
 FIRM_API ir_type *new_type_array(size_t n_dims, ir_type *element_type);
 
-/** Create a new type array with debug information.
- *
- * Sets n_dimension to dimension and all dimension entries to NULL.
- * Initializes order to the order of the dimensions.
- * The entity for array elements is built automatically.
- * Sets dimension sizes after call to constructor with set_* routines.
- * A legal array type must have at least one dimension set.
- */
-FIRM_API ir_type *new_d_type_array(size_t n_dims, ir_type *element_type,
-                                   type_dbg_info* db);
-
-
 /** Returns the number of array dimensions of this type. */
 FIRM_API size_t get_array_n_dimensions(const ir_type *array);
 
@@ -1729,10 +1696,6 @@ FIRM_API const tp_op *get_tpop_array(void);
 /** Creates a new type pointer. */
 FIRM_API ir_type *new_type_pointer(ir_type *points_to);
 
-/** Creates a new type pointer with debug information. */
-FIRM_API ir_type *new_d_type_pointer(ir_type *points_to, type_dbg_info* db);
-
-
 /** Sets the type to which a pointer points to. */
 FIRM_API void set_pointer_points_to_type(ir_type *pointer, ir_type *tp);
 
@@ -1770,9 +1733,6 @@ FIRM_API const tp_op *get_tpop_pointer(void);
  */
 /** Creates a new primitive type. */
 FIRM_API ir_type *new_type_primitive(ir_mode *mode);
-
-/** Creates a new primitive type with debug information. */
-FIRM_API ir_type *new_d_type_primitive(ir_mode *mode, type_dbg_info* db);
 
 /** Returns true if a type is a primitive type. */
 FIRM_API int is_Primitive_type(const ir_type *primitive);
