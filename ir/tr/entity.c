@@ -37,7 +37,7 @@ ir_entity *get_unknown_entity(void)
 /*-----------------------------------------------------------------*/
 
 static ir_entity *intern_new_entity(ir_type *owner, ir_entity_kind kind,
-                                    ident *name, ir_type *type, dbg_info *dbgi)
+                                    ident *name, ir_type *type)
 {
 	assert(owner != NULL);
 
@@ -61,19 +61,16 @@ static ir_entity *intern_new_entity(ir_type *owner, ir_entity_kind kind,
 		add_compound_member(owner, res);
 
 	res->visit = 0;
-	set_entity_dbg_info(res, dbgi);
-
 	return res;
 }
 
-ir_entity *new_d_entity(ir_type *owner, ident *name, ir_type *type,
-                        dbg_info *db)
+ir_entity *new_entity(ir_type *owner, ident *name, ir_type *type)
 {
 	ir_entity *res;
 	if (is_Method_type(type)) {
 		ir_graph *irg = get_const_code_irg();
 		symconst_symbol sym;
-		res = intern_new_entity(owner, IR_ENTITY_METHOD, name, type, db);
+		res = intern_new_entity(owner, IR_ENTITY_METHOD, name, type);
 		sym.entity_p            = res;
 		set_atomic_ent_value(res, new_r_SymConst(irg, mode_P_code, sym, symconst_addr_ent));
 		res->linkage                     = IR_LINKAGE_CONSTANT;
@@ -83,19 +80,14 @@ ir_entity *new_d_entity(ir_type *owner, ident *name, ir_type *type,
 		res->attr.mtd_attr.param_weight  = NULL;
 		res->attr.mtd_attr.irg           = NULL;
 	} else if (is_compound_type(owner) && !(owner->flags & tf_segment)) {
-		res = intern_new_entity(owner, IR_ENTITY_COMPOUND_MEMBER, name, type, db);
+		res = intern_new_entity(owner, IR_ENTITY_COMPOUND_MEMBER, name, type);
 		res->attr.compound_member.offset = -1;
 	} else {
-		res = intern_new_entity(owner, IR_ENTITY_NORMAL, name, type, db);
+		res = intern_new_entity(owner, IR_ENTITY_NORMAL, name, type);
 	}
 
 	hook_new_entity(res);
 	return res;
-}
-
-ir_entity *new_entity(ir_type *owner, ident *name, ir_type *type)
-{
-	return new_d_entity(owner, name, type, NULL);
 }
 
 static ident *make_parameter_entity_name(size_t pos)
@@ -105,38 +97,25 @@ static ident *make_parameter_entity_name(size_t pos)
 	return new_id_from_str(buf);
 }
 
-ir_entity *new_d_parameter_entity(ir_type *owner, size_t pos, ir_type *type,
-                                  dbg_info *dbgi)
+ir_entity *new_parameter_entity(ir_type *owner, size_t pos, ir_type *type)
 {
 	ident     *name = make_parameter_entity_name(pos);
-	ir_entity *res
-		= intern_new_entity(owner, IR_ENTITY_PARAMETER, name, type, dbgi);
+	ir_entity *res	= intern_new_entity(owner, IR_ENTITY_PARAMETER, name, type);
 	res->attr.compound_member.offset = -1;
 	res->attr.parameter.number = pos;
 	hook_new_entity(res);
 	return res;
 }
 
-ir_entity *new_parameter_entity(ir_type *owner, size_t pos, ir_type *type)
-{
-	return new_d_parameter_entity(owner, pos, type, NULL);
-}
-
-ir_entity *new_d_label_entity(ir_label_t label, dbg_info *dbgi)
+ir_entity *new_label_entity(ir_label_t label)
 {
 	ident *name = id_unique("label_%u");
 	ir_type *global_type = get_glob_type();
-	ir_entity *res
-		= intern_new_entity(global_type, IR_ENTITY_LABEL, name, get_code_type(),
-		                    dbgi);
+	ir_entity *res	= intern_new_entity(global_type, IR_ENTITY_LABEL, name,
+		                                get_code_type());
 	res->attr.code_attr.label = label;
 	hook_new_entity(res);
 	return res;
-}
-
-ir_entity *new_label_entity(ir_label_t label)
-{
-	return new_d_label_entity(label, NULL);
 }
 
 /**
@@ -907,7 +886,7 @@ void ir_init_entity(ir_prog *irp)
 {
 	ident   *const id    = new_id_from_str(UNKNOWN_ENTITY_NAME);
 	ir_type *const utype = get_unknown_type();
-	irp->unknown_entity = intern_new_entity(utype, IR_ENTITY_UNKNOWN, id, utype, NULL);
+	irp->unknown_entity = intern_new_entity(utype, IR_ENTITY_UNKNOWN, id, utype);
 	set_entity_visibility(irp->unknown_entity, ir_visibility_external);
 	set_entity_ld_ident(irp->unknown_entity, id);
 	hook_new_entity(irp->unknown_entity);

@@ -192,29 +192,11 @@ FIRM_API int entity_has_definition(const ir_entity *entity);
 FIRM_API ir_entity *new_entity(ir_type *owner, ident *name, ir_type *tp);
 
 /**
- * Creates a new entity.
- *
- * Automatically inserts the entity as a member of owner.
- * The entity is automatic allocated and uninitialized except if the type
- * is type_method, then it is static allocated and constant.  The constant
- * value is a pointer to the method.
- * Visibility is local, offset -1, and it is not volatile.
- */
-FIRM_API ir_entity *new_d_entity(ir_type *owner, ident *name, ir_type *tp,
-                                 dbg_info *db);
-
-/**
  * Creates a new entity corresponding to a function parameter.
  * This must be created on an irgs frame_type
  */
 FIRM_API ir_entity *new_parameter_entity(ir_type *owner, size_t pos,
                                          ir_type *type);
-
-/**
- * Like new_parameter_entity() but with debug information.
- */
-FIRM_API ir_entity *new_d_parameter_entity(ir_type *owner, size_t pos,
-                                           ir_type *type, dbg_info *dbgi);
 
 /**
  * Check an entity. Currently, we check only if initialized constants

@@ -309,13 +309,14 @@ static void copy_parameter_entities(ir_node *call, ir_graph *called_graph)
 		dbg_info  *entity_dbgi = get_entity_dbg_info(old_entity);
 		ident     *name        = get_entity_ident(old_entity);
 		name = id_mangle3("", name, "$inlined");
-		ir_entity *new_entity  = new_d_entity(frame_type, name, old_type, entity_dbgi);
-		set_entity_link(old_entity, new_entity);
+		ir_entity *new_ent     = new_entity(frame_type, name, old_type);
+		set_entity_dbg_info(new_ent, entity_dbgi);
+		set_entity_link(old_entity, new_ent);
 
 		size_t   n_param_pos = get_entity_parameter_number(old_entity);
 		ir_node *param       = get_Call_param(call, n_param_pos);
 		ir_node *nomem       = get_irg_no_mem(irg);
-		ir_node *sel         = new_rd_simpleSel(dbgi, block, nomem, frame, new_entity);
+		ir_node *sel         = new_rd_simpleSel(dbgi, block, nomem, frame, new_ent);
 		ir_node *new_mem;
 		if (is_aggregate_type(old_type)) {
 			/* Copy the compound parameter */
