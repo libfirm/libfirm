@@ -229,35 +229,20 @@ static bool check_external_linkage(const ir_entity *entity, ir_linkage linkage,
 	return fine;
 }
 
+static bool is_data_type(const ir_type *type)
+{
+	return type != get_code_type() && !is_Method_type(type);
+}
+
 int check_entity(const ir_entity *entity)
 {
-	bool        fine    = true;
-	ir_type    *tp      = get_entity_type(entity);
-	ir_linkage  linkage = get_entity_linkage(entity);
-
+	bool                    fine        = true;
 	const ir_initializer_t *initializer = get_entity_initializer(entity);
+	const ir_type          *type        = get_entity_type(entity);
 	if (initializer != NULL)
-		fine &= check_initializer(initializer, tp, entity);
+		fine &= check_initializer(initializer, type, entity);
 
-	if (is_method_entity(entity)) {
-		ir_graph *irg = get_entity_irg(entity);
-		if (irg != NULL) {
-			ir_entity *irg_entity = get_irg_entity(irg);
-			if (irg_entity != entity) {
-				report_error("entity(%+F)->irg->entity(%+F) relation invalid",
-				             entity, irg_entity);
-				fine = false;
-			}
-		}
-		if (get_entity_peculiarity(entity) == peculiarity_existent) {
-			ir_entity *impl = get_SymConst_entity(get_atomic_ent_value(entity));
-			if (impl == NULL) {
-				report_error("inherited method entity %+F must have constant pointing to existent entity.", entity);
-				fine = false;
-			}
-		}
-	}
-
+	ir_linkage linkage = get_entity_linkage(entity);
 	if (linkage & IR_LINKAGE_NO_CODEGEN) {
 		if (!is_method_entity(entity)) {
 			report_error("entity %+F has IR_LINKAGE_NO_CODEGEN but is not a function", entity);
@@ -276,6 +261,80 @@ int check_entity(const ir_entity *entity)
 	                       "GARBAGE_COLLECT");
 	check_external_linkage(entity, IR_LINKAGE_MERGE, "MERGE");
 
+	const ir_type *owner = get_entity_owner(entity);
+	switch (get_entity_kind(entity)) {
+	case IR_ENTITY_NORMAL:
+		if (!is_data_type(type)) {
+			report_error("normal entity %+F has non-data type %+F", entity,
+			             type);
+			fine = false;
+		}
+		break;
+	case IR_ENTITY_COMPOUND_MEMBER:
+		if (!is_compound_type(owner)) {
+			report_error("compound member entity %+F has non-compound owner %+F",
+			             entity, owner);
+			fine = false;
+		}
+		if (initializer != NULL) {
+			report_error("compound member entity %+F has initializer", entity);
+			fine = false;
+		}
+		break;
+	case IR_ENTITY_LABEL:
+		if (type != get_code_type()) {
+			report_error("label entity %+F has non-code type %+F", entity,
+			             type);
+			fine = false;
+		}
+		if (initializer != NULL) {
+			report_error("label entity %+F has initializer", entity);
+			fine = false;
+		}
+		break;
+	case IR_ENTITY_METHOD:
+		if (!is_Method_type(type)) {
+			report_error("method entity %+F has non-method type %+F", entity,
+			             type);
+			fine = false;
+		}
+		ir_graph *irg = get_entity_irg(entity);
+		if (irg != NULL) {
+			ir_entity *irg_entity = get_irg_entity(irg);
+			if (irg_entity != entity) {
+				report_error("entity(%+F)->irg->entity(%+F) relation invalid",
+				             entity, irg_entity);
+				fine = false;
+			}
+		}
+		if (get_entity_peculiarity(entity) == peculiarity_existent) {
+			ir_entity *impl = get_SymConst_entity(get_atomic_ent_value(entity));
+			if (impl == NULL) {
+				report_error("inherited method entity %+F must have constant pointing to existent entity.", entity);
+				fine = false;
+			}
+		}
+		break;
+	case IR_ENTITY_PARAMETER:
+		if (!is_frame_type(owner)) {
+			report_error("parameter entity %+F has non-frame owner %+F",
+			             entity, owner);
+			fine = false;
+		}
+		if (!is_data_type(type)) {
+			report_error("parameter entity %+F has non-data type %+F", entity,
+			             type);
+			fine = false;
+		}
+		if (initializer != NULL) {
+			report_error("parameter entity %+F has initializer", entity);
+			fine = false;
+		}
+		break;
+	case IR_ENTITY_UNKNOWN:
+		break;
+	}
+
 	return fine;
 }
 
@@ -293,10 +352,10 @@ static void check_tore(type_or_ent tore, void *env)
 
 int tr_verify(void)
 {
-	bool          fine = true;
-	ir_type      *constructors;
-	ir_type      *destructors;
-	ir_type      *thread_locals;
+	bool     fine = true;
+	ir_type *constructors;
+	ir_type *destructors;
+	ir_type *thread_locals;
 
 	type_walk(check_tore, NULL, &fine);
 

@@ -215,6 +215,11 @@ static inline int _is_entity(const void *thing)
 	return get_kind(thing) == k_entity;
 }
 
+static inline ir_entity_kind get_entity_kind(const ir_entity *entity)
+{
+	return (ir_entity_kind)entity->entity_kind;
+}
+
 static inline ident *_get_entity_ident(const ir_entity *ent)
 {
 	assert(ent->kind == k_entity);
