@@ -1120,6 +1120,12 @@ FIRM_API int is_type(const void *thing);
 FIRM_API long get_type_nr(const ir_type *tp);
 
 /**
+ * Returns true if a type is a segment type.
+ * A segment type is one of the global types returned by get_segment_type().
+ */
+FIRM_API int is_segment_type(const ir_type *tp);
+
+/**
  * @ingroup compound_type
  * @defgroup class_type Class
  *

@@ -1037,6 +1037,11 @@ ir_type *new_type_segment(ident *const name, type_flags const flags)
 	return seg;
 }
 
+int is_segment_type(const ir_type *type)
+{
+	return (type->flags & tf_segment) != 0;
+}
+
 ir_type *new_type_array(size_t n_dimensions, ir_type *element_type)
 {
 	assert(!is_Method_type(element_type));
