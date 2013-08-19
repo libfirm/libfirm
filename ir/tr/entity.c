@@ -115,6 +115,27 @@ ir_entity *new_label_entity(ir_label_t label)
 	return res;
 }
 
+ir_entity *new_alias_entity(ir_type *owner, ident *name, ir_entity *aliased,
+                            ir_type *type)
+{
+	ir_entity *res = intern_new_entity(owner, IR_ENTITY_ALIAS, name, type);
+	res->attr.alias.aliased = aliased;
+	hook_new_entity(res);
+	return res;
+}
+
+void set_entity_alias(ir_entity *entity, ir_entity *aliased)
+{
+	assert(get_entity_kind(entity) == IR_ENTITY_ALIAS);
+	entity->attr.alias.aliased = aliased;
+}
+
+ir_entity *get_entity_alias(const ir_entity *entity)
+{
+	assert(get_entity_kind(entity) == IR_ENTITY_ALIAS);
+	return entity->attr.alias.aliased;
+}
+
 /**
  * Free entity attributes.
  */
@@ -868,15 +889,21 @@ int entity_is_externally_visible(const ir_entity *entity)
 
 int entity_has_definition(const ir_entity *entity)
 {
-	switch (entity->entity_kind) {
+	switch (get_entity_kind(entity)) {
 	case IR_ENTITY_METHOD:
 		return get_entity_irg(entity) != NULL
 		    && (get_entity_linkage(entity) & IR_LINKAGE_NO_CODEGEN) == 0;
-	case IR_ENTITY_LABEL:
-		return true;
-	default:
+	case IR_ENTITY_NORMAL:
 		return entity->initializer != NULL;
+	case IR_ENTITY_LABEL:
+	case IR_ENTITY_ALIAS:
+		return true;
+	case IR_ENTITY_PARAMETER:
+	case IR_ENTITY_UNKNOWN:
+	case IR_ENTITY_COMPOUND_MEMBER:
+		return false;
 	}
+	panic("invalid entity kind");
 }
 
 void ir_init_entity(ir_prog *irp)

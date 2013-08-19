@@ -263,6 +263,17 @@ int check_entity(const ir_entity *entity)
 
 	const ir_type *owner = get_entity_owner(entity);
 	switch (get_entity_kind(entity)) {
+	case IR_ENTITY_ALIAS:
+		if (!is_segment_type(owner)) {
+			report_error("alias entity %+F has non-segment owner %+F", entity,
+			             owner);
+			fine = false;
+		}
+		if (initializer != NULL) {
+			report_error("alias entity %+F has initializer", entity);
+			fine = false;
+		}
+		break;
 	case IR_ENTITY_NORMAL:
 		if (!is_data_type(type)) {
 			report_error("normal entity %+F has non-data type %+F", entity,

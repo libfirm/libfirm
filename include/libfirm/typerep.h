@@ -199,6 +199,33 @@ FIRM_API ir_entity *new_parameter_entity(ir_type *owner, size_t pos,
                                          ir_type *type);
 
 /**
+ * Creates a new entity aliasing another entity.
+ * An aliasing entity is a logically separate entity with its own name,
+ * but instead of having a definition the linker will merge the name with
+ * the definition of the aliased entity.
+ * In gcc this feature is known as __attribute__((alias())).
+ *
+ * @param owner  owning type (must be a global segment)
+ * @param name   name of the entity
+ * @param alias  entity that is aliased
+ * @param type   type of the aliased entity, should but need not be the same
+ *               type as the one of the aliased entity
+ * @return       the newly created entity
+ */
+FIRM_API ir_entity *new_alias_entity(ir_type *owner, ident *name,
+                                     ir_entity *alias, ir_type *type);
+
+/**
+ * Sets the entity an alias entity aliases.
+ */
+FIRM_API void set_entity_alias(ir_entity *alias, ir_entity *aliased);
+
+/**
+ * Returns the entity aliased by an alias entity.
+ */
+FIRM_API ir_entity *get_entity_alias(const ir_entity *alias);
+
+/**
  * Check an entity. Currently, we check only if initialized constants
  * are build on the const irg graph.
  *

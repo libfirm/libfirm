@@ -96,6 +96,7 @@ typedef enum keyword_t {
 	kw_float_mode,
 	kw_int_mode,
 	kw_irg,
+	kw_alias,
 	kw_label,
 	kw_method,
 	kw_modes,
@@ -211,6 +212,7 @@ static void symtbl_init(void)
 	INSERT(tt_throws, "throw",   true);
 	INSERT(tt_throws, "nothrow", false);
 
+	INSERTKEYWORD(alias);
 	INSERTKEYWORD(asm);
 	INSERTKEYWORD(compound_member);
 	INSERTKEYWORD(constirg);
@@ -693,6 +695,7 @@ static void write_entity(write_env_t *env, ir_entity *ent)
 
 	fputc('\t', env->file);
 	switch ((ir_entity_kind)ent->entity_kind) {
+	case IR_ENTITY_ALIAS:           write_symbol(env, "alias");           break;
 	case IR_ENTITY_NORMAL:          write_symbol(env, "entity");          break;
 	case IR_ENTITY_METHOD:          write_symbol(env, "method");          break;
 	case IR_ENTITY_LABEL:           write_symbol(env, "label");           break;
@@ -736,6 +739,9 @@ static void write_entity(write_env_t *env, ir_entity *ent)
 	write_volatility(env, get_entity_volatility(ent));
 
 	switch ((ir_entity_kind)ent->entity_kind) {
+	case IR_ENTITY_ALIAS:
+		write_entity_ref(env, get_entity_alias(ent));
+		break;
 	case IR_ENTITY_NORMAL:
 		if (ent->initializer != NULL) {
 			write_symbol(env, "initializer");
@@ -1832,6 +1838,11 @@ static void read_entity(read_env_t *env, ir_entity_kind kind)
 	volatility         = read_volatility(env);
 
 	switch (kind) {
+	case IR_ENTITY_ALIAS: {
+		ir_entity *aliased = read_entity_ref(env);
+		entity = new_alias_entity(owner, name, aliased, type);
+		break;
+	}
 	case IR_ENTITY_NORMAL:
 		entity = new_entity(owner, name, type);
 		if (ld_name != NULL)
@@ -1922,6 +1933,9 @@ static void read_typegraph(read_env_t *env)
 
 		case kw_entity:
 			read_entity(env, IR_ENTITY_NORMAL);
+			break;
+		case kw_alias:
+			read_entity(env, IR_ENTITY_ALIAS);
 			break;
 		case kw_label:
 			read_entity(env, IR_ENTITY_LABEL);

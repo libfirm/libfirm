@@ -405,7 +405,7 @@ static be_gas_section_t determine_basic_section(const ir_entity *entity)
 
 		return GAS_SECTION_RODATA;
 	}
-	if (entity_is_null(entity))
+	if (entity_is_null(entity) && get_entity_kind(entity) != IR_ENTITY_ALIAS)
 		return GAS_SECTION_BSS;
 
 	return GAS_SECTION_DATA;
@@ -1265,6 +1265,20 @@ static void emit_indirect_symbol(const ir_entity *entity,
 	}
 }
 
+static void emit_alias(const ir_entity *entity)
+{
+	/* no support on other object file formats (yet) */
+	if (be_gas_object_file_format != OBJECT_FILE_FORMAT_ELF)
+		panic("alias entities only supported for ELF");
+
+	be_emit_cstring("\t.set ");
+	be_gas_emit_entity(entity);
+	be_emit_char(',');
+	be_gas_emit_entity(get_entity_alias(entity));
+	be_emit_char('\n');
+	be_emit_write_line();
+}
+
 char const *be_gas_get_private_prefix(void)
 {
 	return be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O ? "L" : ".L";
@@ -1343,15 +1357,17 @@ void be_gas_begin_block(const ir_node *block, bool needs_label)
  */
 static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 {
+	ir_entity_kind kind = get_entity_kind(entity);
+
 	/* Block labels are already emitted in the code. */
 	ir_type *type = get_entity_type(entity);
-	if (type == get_code_type())
+	if (kind == IR_ENTITY_LABEL)
 		return;
 
 	/* we already emitted all methods with graphs in other functions like
 	 * be_gas_emit_function_prolog(). All others don't need to be emitted. */
 	be_gas_section_t section = determine_section(env, entity);
-	if (is_Method_type(type) && section != GAS_SECTION_PIC_TRAMPOLINES) {
+	if (kind == IR_ENTITY_METHOD && section != GAS_SECTION_PIC_TRAMPOLINES) {
 		return;
 	}
 
@@ -1376,15 +1392,14 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 
 	emit_visibility(entity);
 
-	unsigned alignment = get_effective_entity_alignment(entity);
-	if (!is_po2(alignment))
-		panic("alignment not a power of 2");
-
 	emit_section(section, entity);
 
 	if (section == GAS_SECTION_PIC_TRAMPOLINES
-			|| section == GAS_SECTION_PIC_SYMBOLS) {
+	 || section == GAS_SECTION_PIC_SYMBOLS) {
 		emit_indirect_symbol(entity, section);
+		return;
+	} else if (get_entity_kind(entity) == IR_ENTITY_ALIAS) {
+		emit_alias(entity);
 		return;
 	}
 
@@ -1393,6 +1408,9 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 		return;
 
 	/* alignment */
+	unsigned alignment = get_effective_entity_alignment(entity);
+	if (!is_po2(alignment))
+		panic("alignment not a power of 2");
 	if (alignment > 1) {
 		emit_align(alignment);
 	}

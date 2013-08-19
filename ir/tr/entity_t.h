@@ -135,12 +135,18 @@ typedef struct parameter_ent_attr {
 	                            lowering...) */
 } parameter_ent_attr;
 
+typedef struct alias_ent_attr {
+	mtp_additional_properties properties;
+	ir_entity                *aliased;
+} alias_ent_attr;
+
 typedef enum ir_entity_kind {
-	IR_ENTITY_NORMAL,
-	IR_ENTITY_METHOD,
+	IR_ENTITY_ALIAS,
 	IR_ENTITY_COMPOUND_MEMBER,
-	IR_ENTITY_PARAMETER,
 	IR_ENTITY_LABEL,
+	IR_ENTITY_METHOD,
+	IR_ENTITY_NORMAL,
+	IR_ENTITY_PARAMETER,
 	IR_ENTITY_UNKNOWN,
 } ir_entity_kind;
 
@@ -193,6 +199,8 @@ struct ir_entity {
 		compound_member_ent_attr compound_member;
 		/** parameter number for parameter entities */
 		parameter_ent_attr       parameter;
+		/** alias attributes */
+		alias_ent_attr           alias;
 	} attr; /**< type specific attributes */
 };
 

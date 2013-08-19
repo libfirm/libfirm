@@ -108,9 +108,24 @@ static void do_type_walk(type_or_ent tore,
 		cont.typ = get_entity_type(ent);
 		do_type_walk(cont, pre, post, env);
 
-		/* walk over the value types */
-		if (ent->initializer != NULL) {
-			walk_initializer(ent->initializer, pre, post, env);
+		switch (get_entity_kind(ent)) {
+		case IR_ENTITY_ALIAS:
+			cont.ent = get_entity_alias(ent);
+			if (cont.ent != NULL)
+				do_type_walk(cont, pre, post, env);
+			break;
+		case IR_ENTITY_METHOD:
+		case IR_ENTITY_NORMAL:
+			/* walk over the value types */
+			if (ent->initializer != NULL) {
+				walk_initializer(ent->initializer, pre, post, env);
+			}
+			break;
+		case IR_ENTITY_UNKNOWN:
+		case IR_ENTITY_PARAMETER:
+		case IR_ENTITY_LABEL:
+		case IR_ENTITY_COMPOUND_MEMBER:
+			break;
 		}
 		break;
 	case k_type:
