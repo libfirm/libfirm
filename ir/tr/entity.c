@@ -32,28 +32,23 @@ ir_entity *get_unknown_entity(void)
 	return irp->unknown_entity;
 }
 
-/*-----------------------------------------------------------------*/
-/* ENTITY                                                          */
-/*-----------------------------------------------------------------*/
-
 static ir_entity *intern_new_entity(ir_type *owner, ir_entity_kind kind,
                                     ident *name, ir_type *type)
 {
 	assert(owner != NULL);
 
 	ir_entity *res = XMALLOCZ(ir_entity);
-	res->kind    = k_entity;
-	res->name    = name;
-	res->type    = type;
-	res->owner   = owner;
-
-	res->entity_kind          = kind;
-	res->volatility           = volatility_non_volatile;
-	res->aligned              = align_is_aligned;
-	res->usage                = ir_usage_unknown;
-	res->visibility           = ir_visibility_external;
+	res->kind        = k_entity;
+	res->name        = name;
+	res->type        = type;
+	res->owner       = owner;
+	res->entity_kind = kind;
+	res->volatility  = volatility_non_volatile;
+	res->aligned     = align_is_aligned;
+	res->usage       = ir_usage_unknown;
+	res->visibility  = ir_visibility_external;
 #ifdef DEBUG_libfirm
-	res->nr = get_irp_new_node_nr();
+	res->nr          = get_irp_new_node_nr();
 #endif
 
 	/* Remember entity in its owner. */
@@ -70,11 +65,13 @@ ir_entity *new_entity(ir_type *owner, ident *name, ir_type *type)
 	if (is_Method_type(type)) {
 		ir_graph *irg = get_const_code_irg();
 		symconst_symbol sym;
-		res = intern_new_entity(owner, IR_ENTITY_METHOD, name, type);
-		sym.entity_p            = res;
-		set_atomic_ent_value(res, new_r_SymConst(irg, mode_P_code, sym, symconst_addr_ent));
-		res->linkage                     = IR_LINKAGE_CONSTANT;
-		res->attr.mtd_attr.properties    = get_method_additional_properties(type);
+		res          = intern_new_entity(owner, IR_ENTITY_METHOD, name, type);
+		sym.entity_p = res;
+		ir_node *symconst
+			= new_r_SymConst(irg, mode_P_code, sym, symconst_addr_ent);
+		set_atomic_ent_value(res, symconst);
+		res->linkage                   = IR_LINKAGE_CONSTANT;
+		res->attr.mtd_attr.properties  = get_method_additional_properties(type);
 		res->attr.mtd_attr.vtable_number = IR_VTABLE_NUM_NOT_SET;
 		res->attr.mtd_attr.param_access  = NULL;
 		res->attr.mtd_attr.param_weight  = NULL;
@@ -120,8 +117,6 @@ ir_entity *new_label_entity(ir_label_t label)
 
 /**
  * Free entity attributes.
- *
- * @param ent  the entity
  */
 static void free_entity_attrs(ir_entity *ent)
 {
@@ -416,9 +411,9 @@ void (set_entity_usage)(ir_entity *ent, ir_entity_usage flags)
 
 ir_node *get_atomic_ent_value(const ir_entity *entity)
 {
-	ir_initializer_t *initializer = get_entity_initializer(entity);
-
 	assert(is_atomic_entity(entity));
+
+	ir_initializer_t *initializer = get_entity_initializer(entity);
 	if (initializer == NULL) {
 		ir_type *type = get_entity_type(entity);
 		return new_r_Unknown(get_const_code_irg(), get_type_mode(type));
@@ -833,7 +828,8 @@ mtp_additional_properties get_entity_additional_properties(const ir_entity *ent)
 	return ent->attr.mtd_attr.properties;
 }
 
-void set_entity_additional_properties(ir_entity *ent, mtp_additional_properties property_mask)
+void set_entity_additional_properties(ir_entity *ent,
+                                      mtp_additional_properties property_mask)
 {
 	assert(is_method_entity(ent));
 	/* you mustn't set less properties than the entities type */
@@ -844,7 +840,8 @@ void set_entity_additional_properties(ir_entity *ent, mtp_additional_properties 
 	ent->attr.mtd_attr.properties = property_mask;
 }
 
-void add_entity_additional_properties(ir_entity *ent, mtp_additional_properties properties)
+void add_entity_additional_properties(ir_entity *ent,
+                                      mtp_additional_properties properties)
 {
 	assert(is_method_entity(ent));
 

@@ -241,11 +241,11 @@ void set_type_size_bytes(ir_type *tp, unsigned size)
 
 unsigned get_type_alignment_bytes(ir_type *tp)
 {
-	unsigned align = 1;
 	if (tp->align > 0)
 		return tp->align;
 
 	/* alignment NOT set calculate it "on demand" */
+	unsigned align;
 	if (tp->mode)
 		align = (get_mode_size_bits(tp->mode) + 7) >> 3;
 	else if (is_Array_type(tp))
@@ -261,11 +261,12 @@ unsigned get_type_alignment_bytes(ir_type *tp)
 		}
 	} else if (is_Method_type(tp)) {
 		align = 0;
+	} else {
+		align = 1;
 	}
 
 	/* write back */
 	tp->align = align;
-
 	return align;
 }
 
@@ -657,9 +658,10 @@ int (is_Class_type)(const ir_type *clss)
 
 void set_class_mode(ir_type *tp, ir_mode *mode)
 {
-	/* for classes and structs we allow to set a mode if the layout is fixed AND the size matches */
+	/* for classes and structs we allow to set a mode if the layout is fixed
+	 * AND the size matches */
 	assert(get_type_state(tp) == layout_fixed &&
-	       tp->size == get_mode_size_bytes(mode) && "mode don't match class layout");
+	       tp->size == get_mode_size_bytes(mode));
 	tp->mode = mode;
 }
 
@@ -758,9 +760,10 @@ int (is_Struct_type)(const ir_type *strct)
 
 void set_struct_mode(ir_type *tp, ir_mode *mode)
 {
-	/* for classes and structs we allow to set a mode if the layout is fixed AND the size matches */
+	/* for classes and structs we allow to set a mode if the layout is fixed
+	 * AND the size matches */
 	assert(get_type_state(tp) == layout_fixed &&
-	       tp->size == get_mode_size_bytes(mode) && "mode don't match struct layout");
+	       tp->size == get_mode_size_bytes(mode));
 	tp->mode = mode;
 }
 
@@ -771,7 +774,6 @@ void set_struct_size(ir_type *tp, unsigned size)
 
 ir_type *new_type_method(size_t n_param, size_t n_res)
 {
-	assert((get_mode_size_bits(mode_P_code) % 8 == 0) && "unorthodox modes not implemented");
 	ir_type *res = new_type(type_method, mode_P_code);
 	res->flags               |= tf_layout_fixed;
 	res->size                 = get_mode_size_bytes(mode_P_code);
@@ -1027,7 +1029,6 @@ void set_union_size(ir_type *tp, unsigned size)
 	tp->size = size;
 }
 
-
 ir_type *new_type_segment(ident *const name, type_flags const flags)
 {
 	ir_type *const seg = new_type_class(name);
@@ -1035,7 +1036,6 @@ ir_type *new_type_segment(ident *const name, type_flags const flags)
 	set_class_final(seg, true);
 	return seg;
 }
-
 
 ir_type *new_type_array(size_t n_dimensions, ir_type *element_type)
 {
@@ -1093,8 +1093,8 @@ void set_array_bounds(ir_type *array, size_t dimension, ir_node *lower_bound,
                       ir_node *upper_bound)
 {
 	assert(array->type_op == type_array);
-	assert(lower_bound && "lower_bound node may not be NULL.");
-	assert(upper_bound && "upper_bound node may not be NULL.");
+	assert(lower_bound != NULL);
+	assert(upper_bound != NULL);
 	assert(dimension < array->attr.aa.n_dimensions);
 	array->attr.aa.lower_bound[dimension] = lower_bound;
 	array->attr.aa.upper_bound[dimension] = upper_bound;
@@ -1263,7 +1263,6 @@ ir_type *new_type_pointer(ir_type *points_to)
 
 	ir_type *res = new_type(type_pointer, mode);
 	res->attr.pa.points_to = points_to;
-	assert((get_mode_size_bits(res->mode) % 8 == 0) && "unorthodox modes not implemented");
 	res->size = get_mode_size_bytes(res->mode);
 	res->flags |= tf_layout_fixed;
 	hook_new_type(res);
