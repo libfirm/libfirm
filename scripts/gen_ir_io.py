@@ -26,7 +26,7 @@ def format_block(node):
 	else:
 		return "block"
 
-env = Environment(loader=FileSystemLoader("."))
+env = Environment(loader=FileSystemLoader([".", "/"]))
 env.filters['args']      = format_args
 env.filters['block']     = format_block
 env.filters['arguments'] = format_arguments

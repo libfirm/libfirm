@@ -153,7 +153,7 @@ def format_escape_keywords(word):
 def format_parameters(string):
 	return format_arguments(string, voidwhenempty = True)
 
-env = Environment(loader=FileSystemLoader("."))
+env = Environment(loader=FileSystemLoader([".", "/"]))
 env.filters['a_an']            = format_a_an
 env.filters['parameterlist']   = format_parameterlist
 env.filters['nodearguments']   = format_nodearguments

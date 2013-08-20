@@ -1,13 +1,8 @@
 {{warning}}
-#ifndef FIRM_{{spec.name|upper}}_NODES_H
-#define FIRM_{{spec.name|upper}}_NODES_H
 
 {% if spec.external -%}
 {% set FIRM_API="" %}
 {%- else -%}
-#include "firm_types.h"
-
-#include "begin.h"
 {%- set FIRM_API="FIRM_API "-%}
 {%- endif -%}
 
@@ -154,9 +149,3 @@ ir_node **get_{{node.name}}_{{node.input_name}}_arr(ir_node *node);
 {% endfor -%}
 
 /** @} */
-
-{% if not spec.external %}
-#include "end.h"
-{% endif %}
-
-#endif
