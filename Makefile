@@ -156,7 +156,7 @@ QUICKCHECK_FLAGS ?= -Wno-shadow -Wno-shadow-local
 $(builddir)/%.o: %.c $(IR_SPEC_GENERATED_INCLUDES)
 	@echo CC $@
 	$(Q)$(QUICKCHECK) $(CFLAGS) $(CPPFLAGS) $(libfirm_CPPFLAGS) $(QUICKCHECK_FLAGS) $<
-	$(Q)$(CC) $(CFLAGS) $(CPPFLAGS) $(libfirm_CPPFLAGS) -MMD -c -o $@ $<
+	$(Q)$(CC) $(CFLAGS) $(CPPFLAGS) $(libfirm_CPPFLAGS) -MP -MMD -c -o $@ $<
 
 $(docdir)/libfirm.tag: Doxyfile $(IR_SPEC_GENERATED_INCLUDES) $(wildcard include/libfirm/*.h) $(wildcard include/libfirm/adt/*.h)
 	@echo Doxygen $@
@@ -176,11 +176,6 @@ doc: $(docdir)/libfirm.tag $(docdir)/html/nodes.html
 clean:
 	@echo CLEAN
 	$(Q)rm -fr $(builddir) $(gendir) $(docdir)
-
-# This rule is necessary so that make does not abort if headers get deleted
-# (the deleted header might still be referenced in a .d file)
-%.h:
-	@:
 
 # Ensure all output directories are created
 UNUSED1 := $(shell mkdir -p $(libfirm_BUILDDIRS))
