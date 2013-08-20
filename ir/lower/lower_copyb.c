@@ -103,7 +103,8 @@ static void lower_small_copyb_node(ir_node *irn)
 	ir_node  *addr_dst   = get_CopyB_dst(irn);
 	ir_node  *mem        = get_CopyB_mem(irn);
 	ir_mode  *addr_mode  = get_irn_mode(addr_src);
-	unsigned  mode_bytes = allow_misalignments ? native_mode_bytes : tp->align;
+	unsigned  mode_bytes =
+		allow_misalignments ? native_mode_bytes : get_type_alignment_bytes(tp);
 	unsigned  size       = get_type_size_bytes(tp);
 	unsigned  offset     = 0;
 	ir_mode  *mode;
