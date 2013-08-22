@@ -97,7 +97,7 @@ static ident *make_parameter_entity_name(size_t pos)
 ir_entity *new_parameter_entity(ir_type *owner, size_t pos, ir_type *type)
 {
 	ident     *name = make_parameter_entity_name(pos);
-	ir_entity *res	= intern_new_entity(owner, IR_ENTITY_PARAMETER, name, type);
+	ir_entity *res  = intern_new_entity(owner, IR_ENTITY_PARAMETER, name, type);
 	res->attr.compound_member.offset = -1;
 	res->attr.parameter.number = pos;
 	hook_new_entity(res);
@@ -108,8 +108,8 @@ ir_entity *new_label_entity(ir_label_t label)
 {
 	ident *name = id_unique("label_%u");
 	ir_type *global_type = get_glob_type();
-	ir_entity *res	= intern_new_entity(global_type, IR_ENTITY_LABEL, name,
-		                                get_code_type());
+	ir_entity *res = intern_new_entity(global_type, IR_ENTITY_LABEL, name,
+	                                   get_code_type());
 	res->attr.code_attr.label = label;
 	hook_new_entity(res);
 	return res;
