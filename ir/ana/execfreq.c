@@ -63,6 +63,102 @@
 
 static hook_entry_t hook;
 
+/*
+ * Algorithm for QR decomposition taken from JAMA/C++ Linear Algebra
+ * Library.
+ * See http://math.nist.gov/tnt/jama_doxygen/jama_qr_h-source.html.
+ * License: Public domain (U.S. government work).
+ */
+
+/**
+ * Use QR decomposition to find the nullspace of A (size n * n). This
+ * function assumes that rank(a) = n-1.
+ */
+static int nullspace(double *A, double *nullspace, int n)
+{
+	// The nullspace of A is the n-th column of Q, where Q * R is
+	// the QR decomposition of transpose(A).
+
+	stat_ev_dbl("execfreq_matrix_size", n);
+	stat_ev_tim_push();
+
+#define ENTRY(m,r,c) (m[n * (r) + (c)])
+	double *QR = malloc(n * n * sizeof(double));
+
+	// Transpose A
+	for (int x = 0; x < n; x++) {
+		for (int y = 0; y < n; y++) {
+			ENTRY(QR, x, y) = ENTRY(A, y, x);
+		}
+	}
+
+	// In-place computation of QR.
+	for (int k = 0; k < n; k++) {
+		// Compute 2-norm of k-th column without under/overflow.
+		double nrm = 0;
+		for (int i = k; i < n; i++) {
+			nrm = hypot(nrm, ENTRY(QR, i, k));
+		}
+
+		if (nrm != 0.0) {
+			// Form k-th Householder vector.
+			if (ENTRY(QR, k, k) < 0) {
+				nrm = -nrm;
+			}
+			for (int i = k; i < n; i++) {
+				ENTRY(QR, i, k) /= nrm;
+			}
+			ENTRY(QR, k, k) += 1.0;
+
+			// Apply transformation to remaining columns.
+			for (int j = k+1; j < n; j++) {
+				double s = 0.0;
+				for (int i = k; i < n; i++) {
+					s += ENTRY(QR, i, k) * ENTRY(QR, i, j);
+				}
+				s = -s / ENTRY(QR, k, k);
+				for (int i = k; i < n; i++) {
+					ENTRY(QR, i, j) += s * ENTRY(QR, i, k);
+				}
+			}
+		}
+	}
+
+	double *Q = malloc(n * n * sizeof(double));
+
+	// Computation of Q from QR.
+	for (int k = n-1; k >= 0; k--) {
+		for (int i = 0; i < n; i++) {
+			ENTRY(Q, i, k) = 0.0;
+		}
+		ENTRY(Q, k, k) = 1.0;
+		for (int j = k; j < n; j++) {
+			if (ENTRY(QR, k, k) != 0) {
+				double s = 0.0;
+				for (int i = k; i < n; i++) {
+					s += ENTRY(QR, i, k) * ENTRY(Q, i, j);
+				}
+				s = -s / ENTRY(QR, k, k);
+				for (int i = k; i < n; i++) {
+					ENTRY(Q, i, j) += s * ENTRY(QR, i, k);
+				}
+			}
+		}
+	}
+
+	// Fill nullspace with required information
+	for (int i = 0; i < n; i++) {
+		nullspace[i] = ENTRY(Q, i, n-1);
+	}
+#undef ENTRY
+	/* This has nothing to do with Seidel iteration, but that's
+	 * what the timer is called... */
+	stat_ev_tim_pop("execfreq_seidel_time");
+	free(QR);
+	free(Q);
+	return 0;
+}
+
 double get_block_execfreq(const ir_node *block)
 {
 	return block->attr.block.execfreq;
@@ -94,22 +190,6 @@ void init_execfreq(void)
 void exit_execfreq(void)
 {
 	unregister_hook(hook_node_info, &hook);
-}
-
-
-static int solve_lgs(double *mat, double *x, int size)
-{
-	/* better convergence. */
-	double init = 1.0 / size;
-	for (int i = 0; i < size; ++i)
-		x[i] = init;
-
-	stat_ev_dbl("execfreq_matrix_size", size);
-	stat_ev_tim_push();
-	int result = firm_gaussjordansolve(mat, x, size);
-	stat_ev_tim_pop("execfreq_seidel_time");
-
-	return result;
 }
 
 static bool has_path_to_end(const ir_node *block)
@@ -444,10 +524,9 @@ void ir_estimate_execfreq(ir_graph *irg)
 		lgs_x[0] = 1.0;
 		valid_freq = true;
 	} else {
-		int  lgs_result = solve_lgs(lgs_matrix, lgs_x, lgs_size);
+		int  lgs_result = nullspace(lgs_matrix, lgs_x, lgs_size);
 		valid_freq = !lgs_result; /* solve_lgs returns -1 on error. */
 	}
-
 
 	/* compute the normalization factor.
 	 * 1.0 / exec freq of end block.
