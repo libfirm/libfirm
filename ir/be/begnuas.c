@@ -1436,7 +1436,7 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 		/* we should use .space for stuff in the bss segment */
 		unsigned size = get_type_size_bytes(type);
 		if (size > 0) {
-			be_emit_irprintf("\t.space %u, 0\n", get_type_size_bytes(type));
+			be_emit_irprintf("\t.space %u, 0\n", size);
 			be_emit_write_line();
 		}
 	} else {
