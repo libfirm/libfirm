@@ -1398,7 +1398,7 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 	 || section == GAS_SECTION_PIC_SYMBOLS) {
 		emit_indirect_symbol(entity, section);
 		return;
-	} else if (get_entity_kind(entity) == IR_ENTITY_ALIAS) {
+	} else if (kind == IR_ENTITY_ALIAS) {
 		emit_alias(entity);
 		return;
 	}
