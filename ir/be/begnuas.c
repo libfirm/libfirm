@@ -1360,7 +1360,6 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 	ir_entity_kind kind = get_entity_kind(entity);
 
 	/* Block labels are already emitted in the code. */
-	ir_type *type = get_entity_type(entity);
 	if (kind == IR_ENTITY_LABEL)
 		return;
 
@@ -1422,6 +1421,7 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 		be_emit_char(be_gas_elf_type_char);
 		be_emit_cstring("object\n\t.size\t");\
 		be_gas_emit_entity(entity);
+		ir_type *const type = get_entity_type(entity);
 		be_emit_irprintf(", %u\n", get_type_size_bytes(type));
 	}
 
@@ -1434,7 +1434,8 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 
 	if (entity_is_null(entity)) {
 		/* we should use .space for stuff in the bss segment */
-		unsigned size = get_type_size_bytes(type);
+		ir_type *const type = get_entity_type(entity);
+		unsigned const size = get_type_size_bytes(type);
 		if (size > 0) {
 			be_emit_irprintf("\t.space %u, 0\n", size);
 			be_emit_write_line();
