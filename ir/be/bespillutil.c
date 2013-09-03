@@ -848,8 +848,8 @@ void be_insert_spills_reloads(spill_env_t *env)
 
 		/* determine possibility of rematerialisations */
 		if (be_do_remats) {
-			/* calculate cost savings for each indivial value when it would
-			   be rematted instead of reloaded */
+			/* calculate cost savings for each individual value when it would
+			   be rematerialised instead of reloaded */
 			for (rld = si->reloaders; rld != NULL; rld = rld->next) {
 				double   freq;
 				int      remat_cost;
