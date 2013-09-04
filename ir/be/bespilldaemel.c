@@ -98,6 +98,10 @@ static void spill_node(ir_node *node)
 		if (be_is_Keep(use))
 			continue;
 
+		/* Ignore CopyKeeps, except for the operand to copy. */
+		if (be_is_CopyKeep(use) && get_edge_src_pos(edge) != n_be_CopyKeep_op)
+			continue;
+
 		if (is_Phi(use)) {
 			int      in    = get_edge_src_pos(edge);
 			ir_node *block = get_nodes_block(use);
