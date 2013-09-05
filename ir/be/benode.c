@@ -1111,10 +1111,6 @@ void be_set_phi_reg_req(ir_node *node, const arch_register_req_t *req)
 
 void be_dump_phi_reg_reqs(FILE *F, const ir_node *node, dump_reason_t reason)
 {
-	ir_graph *irg = get_irn_irg(node);
-	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND))
-		return;
-
 	switch (reason) {
 	case dump_node_opcode_txt:
 		fputs(get_op_name(get_irn_op(node)), F);
@@ -1125,8 +1121,13 @@ void be_dump_phi_reg_reqs(FILE *F, const ir_node *node, dump_reason_t reason)
 	case dump_node_nodeattr_txt:
 		break;
 	case dump_node_info_txt:
-		arch_dump_reqs_and_registers(F, node);
+	{
+		ir_graph *irg = get_irn_irg(node);
+		if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
+			arch_dump_reqs_and_registers(F, node);
+		}
 		break;
+	}
 
 	default:
 		break;
