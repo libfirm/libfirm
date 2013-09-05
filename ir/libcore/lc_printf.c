@@ -335,7 +335,7 @@ int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
 	const char *s = strchr(fmt, '%');
 
 	/* Emit the text before the first % was found */
-	lc_appendable_snadd(app, fmt, (s ? s : last) - fmt);
+	res += lc_appendable_snadd(app, fmt, (s ? s : last) - fmt);
 
 	while (s != NULL) {
 		lc_arg_value_t val;
