@@ -264,6 +264,10 @@ static void if_conv_walker(ir_node *block, void *ctx)
 {
 	walker_env *env = (walker_env*)ctx;
 
+	/* We might have replaced this block already. */
+	if (!is_Block(block))
+		return;
+
 	/* Bail out, if there are no Phis at all */
 	if (get_Block_phis(block) == NULL) return;
 
