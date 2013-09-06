@@ -227,6 +227,24 @@ static void prepare_path(ir_node *block, int i, const ir_node *dependency)
 
 	DB((dbg, LEVEL_1, "Preparing predecessor %d of %+F\n", i, block));
 
+	/* Optimize blocks with only one predecessor. */
+	while (get_irn_arity(pred) == 1) {
+		for (ir_node *next, *phi = get_Block_phis(pred); phi != NULL; phi = next) {
+			next = get_Phi_next(phi);
+
+			ir_node *operand = get_irn_n(phi, 0);
+			exchange(phi, operand);
+		}
+
+		ir_node *pred_pred = get_Block_cfgpred(pred, 0);
+		if (!is_Jmp(pred_pred))
+			break;
+
+		ir_node *pred_pred_block = get_nodes_block(pred_pred);
+		exchange(pred, pred_pred_block);
+		pred = pred_pred_block;
+	}
+
 	int pred_arity = get_irn_arity(pred);
 	for (int j = 0; j < pred_arity; ++j) {
 		ir_node *pred_pred = get_Block_cfgpred_block(pred, j);
