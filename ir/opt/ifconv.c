@@ -123,7 +123,7 @@ static ir_node *copy_to(ir_node *node, ir_node *src_block, int i)
 
 	/* else really need a copy */
 	ir_node *copy      = exact_copy(node);
-	ir_node *dst_block = get_nodes_block(get_irn_n(src_block, i));
+	ir_node *dst_block = get_Block_cfgpred_block(src_block, i);
 	set_nodes_block(copy, dst_block);
 
 	DB((dbg, LEVEL_1, "Copying node %+F to block %+F, copy is %+F\n",
@@ -170,7 +170,7 @@ static void rewire(ir_node *node, int i, int j, ir_node *new_pred)
  */
 static void split_block(ir_node *block, int i, int j)
 {
-	ir_node  *pred_block = get_nodes_block(get_Block_cfgpred(block, i));
+	ir_node  *pred_block = get_Block_cfgpred_block(block, i);
 	int       arity      = get_Block_n_cfgpreds(block);
 	ir_node **ins        = ALLOCAN(ir_node*, arity + 1);
 	int       new_pred_arity;
@@ -223,13 +223,13 @@ static void split_block(ir_node *block, int i, int j)
 
 static void prepare_path(ir_node *block, int i, const ir_node *dependency)
 {
-	ir_node *pred = get_nodes_block(get_Block_cfgpred(block, i));
+	ir_node *pred = get_Block_cfgpred_block(block, i);
 
 	DB((dbg, LEVEL_1, "Preparing predecessor %d of %+F\n", i, block));
 
 	int pred_arity = get_irn_arity(pred);
 	for (int j = 0; j < pred_arity; ++j) {
-		ir_node *pred_pred = get_nodes_block(get_irn_n(pred, j));
+		ir_node *pred_pred = get_Block_cfgpred_block(pred, j);
 
 		if (pred_pred != dependency && is_cdep_on(pred_pred, dependency)) {
 			prepare_path(pred, j, dependency);
@@ -351,8 +351,8 @@ restart:;
 				} while (phi != NULL);
 
 				/* move mux operands into mux_block */
-				exchange(get_nodes_block(get_Block_cfgpred(block, i)), mux_block);
-				exchange(get_nodes_block(get_Block_cfgpred(block, j)), mux_block);
+				exchange(get_Block_cfgpred_block(block, i), mux_block);
+				exchange(get_Block_cfgpred_block(block, j), mux_block);
 
 				if (arity == 2) {
 					unsigned mark;
