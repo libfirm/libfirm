@@ -56,7 +56,7 @@ static bool can_empty_block(ir_node *block)
  *         NULL is start is not dependent at all or a block on the way
  *         cannot be emptied
  */
-static ir_node* walk_to_projx(ir_node* start, const ir_node* dependency)
+static ir_node *walk_to_projx(ir_node *start, const ir_node *dependency)
 {
 	int arity;
 	int i;
@@ -67,8 +67,8 @@ static ir_node* walk_to_projx(ir_node* start, const ir_node* dependency)
 
 	arity = get_irn_arity(start);
 	for (i = 0; i < arity; ++i) {
-		ir_node* pred = get_irn_n(start, i);
-		ir_node* pred_block = get_nodes_block(skip_Proj(pred));
+		ir_node *pred = get_irn_n(start, i);
+		ir_node *pred_block = get_nodes_block(skip_Proj(pred));
 
 		if (pred_block == dependency) {
 			if (is_Proj(pred)) {
@@ -110,12 +110,8 @@ static ir_node* walk_to_projx(ir_node* start, const ir_node* dependency)
  *
  * @return  the root of the copied DAG
  */
-static ir_node* copy_to(ir_node* node, ir_node* src_block, int i)
+static ir_node *copy_to(ir_node *node, ir_node *src_block, int i)
 {
-	ir_node* dst_block;
-	ir_node* copy;
-	int j;
-
 	if (get_nodes_block(node) != src_block) {
 		/* already outside src_block, do not copy */
 		return node;
@@ -126,15 +122,15 @@ static ir_node* copy_to(ir_node* node, ir_node* src_block, int i)
 	}
 
 	/* else really need a copy */
-	copy = exact_copy(node);
-	dst_block = get_nodes_block(get_irn_n(src_block, i));
+	ir_node *copy      = exact_copy(node);
+	ir_node *dst_block = get_nodes_block(get_irn_n(src_block, i));
 	set_nodes_block(copy, dst_block);
 
 	DB((dbg, LEVEL_1, "Copying node %+F to block %+F, copy is %+F\n",
 		node, dst_block, copy));
 
 	/* move recursively all predecessors */
-	for (j = get_irn_arity(node) - 1; j >= 0; --j) {
+	for (int j = get_irn_arity(node) - 1; j >= 0; --j) {
 		set_irn_n(copy, j, copy_to(get_irn_n(node, j), src_block, i));
 		DB((dbg, LEVEL_2, "-- pred %d is %+F\n", j, get_irn_n(copy, j)));
 	}
@@ -151,16 +147,15 @@ static ir_node* copy_to(ir_node* node, ir_node* src_block, int i)
  * @param j         the second index to remove
  * @param new_pred  a node that is added as a new input to node
  */
-static void rewire(ir_node* node, int i, int j, ir_node* new_pred)
+static void rewire(ir_node *node, int i, int j, ir_node *new_pred)
 {
 	int arity = get_irn_arity(node);
 	ir_node **ins;
 	int k;
-	int l;
 
 	NEW_ARR_A(ir_node *, ins, arity - 1);
 
-	l = 0;
+	int l = 0;
 	for (k = 0; k < i;     ++k) ins[l++] = get_irn_n(node, k);
 	for (++k;   k < j;     ++k) ins[l++] = get_irn_n(node, k);
 	for (++k;   k < arity; ++k) ins[l++] = get_irn_n(node, k);
@@ -173,7 +168,7 @@ static void rewire(ir_node* node, int i, int j, ir_node* new_pred)
 /**
  * Remove the j-th predecessor from the i-th predecessor of block and add it to block
  */
-static void split_block(ir_node* block, int i, int j)
+static void split_block(ir_node *block, int i, int j)
 {
 	ir_node  *pred_block = get_nodes_block(get_Block_cfgpred(block, i));
 	int       arity      = get_Block_n_cfgpreds(block);
@@ -187,7 +182,7 @@ static void split_block(ir_node* block, int i, int j)
 	DB((dbg, LEVEL_1, "Splitting predecessor %d of predecessor %d of %+F\n", j, i, block));
 
 	for (phi = get_Block_phis(block); phi != NULL; phi = get_Phi_next(phi)) {
-		ir_node* copy = copy_to(get_irn_n(phi, i), pred_block, j);
+		ir_node *copy = copy_to(get_irn_n(phi, i), pred_block, j);
 
 		for (k = 0; k < i; ++k) ins[k] = get_irn_n(phi, k);
 		ins[k++] = copy;
@@ -226,17 +221,15 @@ static void split_block(ir_node* block, int i, int j)
 }
 
 
-static void prepare_path(ir_node* block, int i, const ir_node* dependency)
+static void prepare_path(ir_node *block, int i, const ir_node *dependency)
 {
-	ir_node* pred = get_nodes_block(get_Block_cfgpred(block, i));
-	int pred_arity;
-	int j;
+	ir_node *pred = get_nodes_block(get_Block_cfgpred(block, i));
 
 	DB((dbg, LEVEL_1, "Preparing predecessor %d of %+F\n", i, block));
 
-	pred_arity = get_irn_arity(pred);
-	for (j = 0; j < pred_arity; ++j) {
-		ir_node* pred_pred = get_nodes_block(get_irn_n(pred, j));
+	int pred_arity = get_irn_arity(pred);
+	for (int j = 0; j < pred_arity; ++j) {
+		ir_node *pred_pred = get_nodes_block(get_irn_n(pred, j));
 
 		if (pred_pred != dependency && is_cdep_on(pred_pred, dependency)) {
 			prepare_path(pred, j, dependency);
@@ -252,58 +245,41 @@ static void prepare_path(ir_node* block, int i, const ir_node* dependency)
 static void if_conv_walker(ir_node *block, void *ctx)
 {
 	walker_env *env = (walker_env*)ctx;
-	int arity;
-	int i;
 
 	/* Bail out, if there are no Phis at all */
 	if (get_Block_phis(block) == NULL) return;
 
-restart:
-	arity = get_irn_arity(block);
-	for (i = 0; i < arity; ++i) {
-		ir_node* pred0;
-		ir_cdep* cdep;
-
-		pred0 = get_Block_cfgpred_block(block, i);
+restart:;
+	int arity = get_irn_arity(block);
+	for (int i = 0; i < arity; ++i) {
+		ir_node *pred0 = get_Block_cfgpred_block(block, i);
 		if (pred0 == block) continue;
 
-		for (cdep = find_cdep(pred0); cdep != NULL; cdep = get_cdep_next(cdep)) {
-			const ir_node* dependency = get_cdep_node(cdep);
-			ir_node* projx0 = walk_to_projx(pred0, dependency);
-			ir_node* cond;
-			int j;
+		for (ir_cdep *cdep = find_cdep(pred0); cdep != NULL; cdep = get_cdep_next(cdep)) {
+			const ir_node *dependency = get_cdep_node(cdep);
+			ir_node *projx0 = walk_to_projx(pred0, dependency);
 
 			if (projx0 == NULL) continue;
 
-			cond = get_Proj_pred(projx0);
+			ir_node *cond = get_Proj_pred(projx0);
 			if (! is_Cond(cond))
 				continue;
 
-			for (j = i + 1; j < arity; ++j) {
-				ir_node* projx1;
-				ir_node* sel;
-				ir_node* mux_block;
-				ir_node* phi;
-				ir_node* p;
-				ir_node* pred1;
-				bool     supported;
-				bool     negated;
-				dbg_info* cond_dbg;
-
-				pred1 = get_Block_cfgpred_block(block, j);
+			for (int j = i + 1; j < arity; ++j) {
+				ir_node *pred1 = get_Block_cfgpred_block(block, j);
 				if (pred1 == block) continue;
 
 				if (!is_cdep_on(pred1, dependency)) continue;
 
-				projx1 = walk_to_projx(pred1, dependency);
+				ir_node *projx1 = walk_to_projx(pred1, dependency);
 
 				if (projx1 == NULL) continue;
 
-				sel = get_Cond_selector(cond);
-				phi = get_Block_phis(block);
-				supported = true;
-				negated   = get_Proj_proj(projx0) == pn_Cond_false;
-				for (p = phi; p != NULL; p = get_Phi_next(p)) {
+				ir_node *sel       = get_Cond_selector(cond);
+				ir_node *phi       = get_Block_phis(block);
+				bool     supported = true;
+				bool     negated   = get_Proj_proj(projx0) == pn_Cond_false;
+				for (ir_node *p = phi; p != NULL; p = get_Phi_next(p)) {
 					ir_node *mux_false;
 					ir_node *mux_true;
 					if (negated) {
@@ -335,13 +311,12 @@ restart:
 				prepare_path(block, j, dependency);
 				arity = get_irn_arity(block);
 
-				mux_block = get_nodes_block(cond);
-				cond_dbg = get_irn_dbg_info(cond);
+				ir_node  *mux_block = get_nodes_block(cond);
+				dbg_info *cond_dbg  = get_irn_dbg_info(cond);
 				do { /* generate Mux nodes in mux_block for Phis in block */
-					ir_node* val_i = get_irn_n(phi, i);
-					ir_node* val_j = get_irn_n(phi, j);
-					ir_node* mux;
-					ir_node* next_phi;
+					ir_node *val_i = get_irn_n(phi, i);
+					ir_node *val_j = get_irn_n(phi, j);
+					ir_node *mux;
 
 					if (val_i == val_j) {
 						mux = val_i;
@@ -365,7 +340,7 @@ restart:
 						DB((dbg, LEVEL_2, "Generating %+F for %+F\n", mux, phi));
 					}
 
-					next_phi = get_Phi_next(phi);
+					ir_node *next_phi = get_Phi_next(phi);
 
 					if (arity == 2) {
 						exchange(phi, mux);
