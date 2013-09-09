@@ -252,7 +252,7 @@ l_Adc => {
 },
 
 Mul => {
-	# we should not rematrialize this node. It produces 2 results and has
+	# we should not rematerialize this node. It produces 2 results and has
 	# very strict constraints
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "eax", "gp" ],
@@ -975,7 +975,7 @@ FnstCWNOP => {
 },
 
 Cltd => {
-	# we should not rematrialize this node. It has very strict constraints.
+	# we should not rematerialize this node. It has very strict constraints.
 	reg_req   => { in => [ "eax", "edx" ], out => [ "edx" ] },
 	ins       => [ "val", "clobbered" ],
 	emit      => "cltd",
