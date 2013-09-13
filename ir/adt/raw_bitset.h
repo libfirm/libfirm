@@ -540,16 +540,6 @@ static inline void rbitset_copy(unsigned *dst, const unsigned *src,
 	memcpy(dst, src, BITSET_SIZE_BYTES(size));
 }
 
-static inline void rbitset_copy_into(unsigned *dst, const unsigned *src,
-                                     size_t size)
-{
-	size_t n           = BITSET_SIZE_ELEMS(size);
-	unsigned last_mask = rbitset_last_mask_(size);
-
-	memcpy(dst, src, (n-1) * (BITS_PER_ELEM/8));
-	dst[n-1] = (src[n-1] & last_mask) | (dst[n-1] & ~last_mask);
-}
-
 /**
  * Convenience macro for raw bitset iteration.
  * @param bitset The bitset.

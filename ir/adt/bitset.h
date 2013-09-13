@@ -160,12 +160,6 @@ static inline void bitset_copy(bitset_t *tgt, const bitset_t *src)
 	rbitset_copy(tgt->data, src->data, src->size);
 }
 
-static inline void bitset_copy_into(bitset_t *tgt, const bitset_t *src)
-{
-	assert(tgt->size >= src->size);
-	rbitset_copy_into(tgt->data, src->data, src->size);
-}
-
 /**
  * Find the next unset bit from a given bit.
  * @note Note that if pos is unset, pos is returned.
