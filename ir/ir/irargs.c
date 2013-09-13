@@ -48,12 +48,13 @@ static int bitset_get_arg_type(const lc_arg_occ_t *occ)
 static int bitset_emit(lc_appendable_t *app,
     const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
 {
-	int res = 2;
 	bitset_t *b = (bitset_t*)arg->v_ptr;
 	char buf[32];
 	const char *prefix = "";
 
+	int res = 0;
 	lc_arg_append(app, occ, "[", 1);
+	++res;
 	bitset_foreach(b, p) {
 		int n;
 
@@ -63,6 +64,7 @@ static int bitset_emit(lc_appendable_t *app,
 		res += n;
 	}
 	lc_arg_append(app, occ, "]", 1);
+	++res;
 
 	return res;
 }
@@ -78,7 +80,9 @@ static int firm_emit_dbg(lc_appendable_t *app,
 	dbg_info *dbg = get_irn_dbg_info(irn);
 
 	ir_dbg_info_snprint(buf, sizeof(buf), dbg);
-	return lc_arg_append(app, occ, buf, strlen(buf));
+	size_t size = strlen(buf);
+	lc_arg_append(app, occ, buf, size);
+	return size;
 }
 
 /**
@@ -94,8 +98,8 @@ static const char *get_entity_ld_name_ex(ir_entity *ent)
 /**
  * emit a Firm object
  */
-static int firm_emit(lc_appendable_t *app,
-    const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
+static int firm_emit(lc_appendable_t *app, const lc_arg_occ_t *occ,
+                     const lc_arg_value_t *arg)
 {
 #define A(s)    occ->flag_hash ? s " ": ""
 
@@ -215,27 +219,31 @@ static int firm_emit(lc_appendable_t *app,
 	if (occ->flag_plus)
 		strncat(buf, add, sizeof(buf)-strlen(buf)-1);
 
-	return lc_arg_append(app, occ, buf, strlen(buf));
+	size_t size = strlen(buf);
+	lc_arg_append(app, occ, buf, size);
+	return size;
 #undef A
 }
 
 /**
  * emit an ident
  */
-static int firm_emit_ident(lc_appendable_t *app,
-    const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
+static int firm_emit_ident(lc_appendable_t *app, const lc_arg_occ_t *occ,
+                           const lc_arg_value_t *arg)
 {
 	ident *id = (ident *)arg->v_ptr;
 	const char *p = id ? get_id_str(id) : "(null)";
 
-	return lc_arg_append(app, occ, p, strlen(p));
+	size_t size = strlen(p);
+	lc_arg_append(app, occ, p, size);
+	return size;
 }
 
 /**
  * Emit indent.
  */
-static int firm_emit_indent(lc_appendable_t *app,
-    const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
+static int firm_emit_indent(lc_appendable_t *app, const lc_arg_occ_t *occ,
+                            const lc_arg_value_t *arg)
 {
 	int i;
 	int width  = occ->width > 0 ? occ->width : 1;
@@ -250,13 +258,15 @@ static int firm_emit_indent(lc_appendable_t *app,
 /**
  * Emit pnc.
  */
-static int firm_emit_pnc(lc_appendable_t *app,
-    const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
+static int firm_emit_pnc(lc_appendable_t *app, const lc_arg_occ_t *occ,
+                         const lc_arg_value_t *arg)
 {
 	ir_relation value = (ir_relation)arg->v_int;
 	const char *p = get_relation_string(value);
 
-	return lc_arg_append(app, occ, p, strlen(p));
+	size_t size = strlen(p);
+	lc_arg_append(app, occ, p, size);
+	return size;
 }
 
 lc_arg_env_t *firm_get_arg_env(void)

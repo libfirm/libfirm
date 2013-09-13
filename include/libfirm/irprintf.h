@@ -45,39 +45,38 @@ struct obstack;
  * Note that some of the standard format capabilities are not available
  * due to this new conversion specifiers, use lc_printf() if needed.
  */
-FIRM_API void ir_printf(const char *fmt, ...);
+FIRM_API int ir_printf(const char *fmt, ...);
 
 /**
  * @see ir_printf.
  */
-FIRM_API void ir_fprintf(FILE *f, const char *fmt, ...);
+FIRM_API int ir_fprintf(FILE *f, const char *fmt, ...);
 
 /**
  * @see ir_printf.
  */
-FIRM_API void ir_snprintf(char *buf, size_t n, const char *fmt, ...);
+FIRM_API int ir_snprintf(char *buf, size_t n, const char *fmt, ...);
 
 /**
  * @see ir_printf.
  */
-FIRM_API void ir_vprintf(const char *fmt, va_list args);
+FIRM_API int ir_vprintf(const char *fmt, va_list args);
 
 /**
  * @see ir_printf.
  */
-FIRM_API void ir_vfprintf(FILE *f, const char *fmt, va_list args);
+FIRM_API int ir_vfprintf(FILE *f, const char *fmt, va_list args);
 
 /**
  * @see ir_printf.
  */
-FIRM_API void ir_vsnprintf(char *buf, size_t len, const char *fmt,
-                           va_list args);
+FIRM_API int ir_vsnprintf(char *buf, size_t len, const char *fmt, va_list args);
 
 /**
  * @see ir_printf.
  */
-FIRM_API void ir_obst_vprintf(struct obstack *obst, const char *fmt,
-                              va_list args);
+FIRM_API int ir_obst_vprintf(struct obstack *obst, const char *fmt,
+                             va_list args);
 
 #include "end.h"
 

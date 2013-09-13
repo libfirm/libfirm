@@ -270,7 +270,9 @@ static int std_emit(lc_appendable_t *app, const lc_arg_occ_t *occ, const lc_arg_
 		 * buffer of 128 letters for all other types should be enough. */
 		case 's': {
 			const char *str = (const char*)val->v_ptr;
-			res = lc_arg_append(app, occ, str, strlen(str));
+			size_t size = strlen(str);
+			lc_arg_append(app, occ, str, size);
+			res = size;
 			break;
 		}
 
@@ -278,7 +280,8 @@ static int std_emit(lc_appendable_t *app, const lc_arg_occ_t *occ, const lc_arg_
 			int len = MAX(128, occ->width + 1);
 			char *buf = XMALLOCN(char, len);
 			res = dispatch_snprintf(buf, len, fmt, occ->lc_arg_type, val);
-			res = lc_appendable_snadd(app, buf, res);
+			assert(res < len);
+			lc_appendable_snadd(app, buf, res);
 			free(buf);
 		}
 	}
@@ -335,7 +338,9 @@ int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
 	const char *s = strchr(fmt, '%');
 
 	/* Emit the text before the first % was found */
-	res += lc_appendable_snadd(app, fmt, (s ? s : last) - fmt);
+	size_t addlen = (s ? s : last) - fmt;
+	lc_appendable_snadd(app, fmt, addlen);
+	res += addlen;
 
 	while (s != NULL) {
 		lc_arg_value_t val;
@@ -394,7 +399,8 @@ int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
 		switch (ch) {
 			case '%':
 				s++;
-				res += lc_appendable_chadd(app, '%');
+				lc_appendable_chadd(app, '%');
+				++res;
 				break;
 			case '{': {
 				const char *named = ++s;
@@ -481,7 +487,9 @@ int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
 
 		const char *old = s;
 		s = strchr(s, '%');
-		res += lc_appendable_snadd(app, old, (s ? s : last) - old);
+		size_t addlen = (s ? s : last) - old;
+		lc_appendable_snadd(app, old, addlen);
+		res += addlen;
 	}
 
 	return res;
