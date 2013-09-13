@@ -189,3 +189,15 @@ UNUSED2 := $(shell \
 	REV="\#define libfirm_VERSION_REVISION \"$(REVISION)\""; \
 	echo "$$REV" | cmp -s - "$(REVISIONH)" 2> /dev/null || echo "$$REV" > "$(REVISIONH)" \
 )
+
+# Unit tests
+UNITTESTS_SOURCES = $(subst $(srcdir)/unittests/,,$(wildcard $(srcdir)/unittests/*.c))
+UNITTESTS         = $(UNITTESTS_SOURCES:%.c=$(builddir)/%.exe)
+
+$(builddir)/%.exe: $(srcdir)/unittests/%.c $(libfirm_a)
+	@echo TEST $<
+	$(Q)$(LINK) $(CFLAGS) $(CPPFLAGS) $(libfirm_CPPFLAGS) $(libfirm_a) "$<" -o "$@"
+	$(Q)$@
+
+.PHONY: test
+test: $(UNITTESTS)
