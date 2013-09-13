@@ -92,13 +92,9 @@ static inline unsigned *rbitset_duplicate_obstack_alloc(struct obstack *obst,
  */
 static inline bool rbitset_is_empty(const unsigned *bitset, size_t size)
 {
-	size_t i;
-	size_t n = BITSET_SIZE_ELEMS(size);
-
-	for (i = 0; i < n; ++i) {
-		if (bitset[i] != 0) {
+	for (size_t i = 0, n = BITSET_SIZE_ELEMS(size); i < n; ++i) {
+		if (bitset[i] != 0)
 			return false;
-		}
 	}
 	return true;
 }
@@ -125,12 +121,11 @@ static inline void rbitset_flip(unsigned *bitset, size_t pos)
 	BITSET_ELEM(bitset, pos) ^= 1 << (pos % BITS_PER_ELEM);
 }
 
+/* internal helper: return mask for last bitset element, must not be called
+ * with size==0 */
 static inline unsigned rbitset_last_mask_(size_t size)
 {
-	size_t p;
-	if (size == 0)
-		return 0;
-	p = size % BITS_PER_ELEM;
+	size_t p = size % BITS_PER_ELEM;
 	return p == 0 ? ~0u : (1u << p)-1u;
 }
 
@@ -142,12 +137,11 @@ static inline unsigned rbitset_last_mask_(size_t size)
  */
 static inline void rbitset_set_all(unsigned *bitset, size_t size)
 {
-	size_t i;
 	size_t n = BITSET_SIZE_ELEMS(size);
-
 	if (n == 0)
 		return;
 
+	size_t i;
 	for (i = 0; i < n-1; ++i) {
 		bitset[i] = ~0u;
 	}
@@ -185,16 +179,15 @@ static inline void rbitset_clear_all(unsigned *bitset, size_t size)
  */
 static inline void rbitset_flip_all(unsigned *bitset, size_t size)
 {
-	size_t pos;
 	size_t n = BITSET_SIZE_ELEMS(size);
-
 	if (n == 0)
 		return;
 
-	for (pos = 0; pos < n-1; ++pos) {
-		bitset[pos] ^= ~0u;
+	size_t i;
+	for (i = 0; i < n-1; ++i) {
+		bitset[i] ^= ~0u;
 	}
-	bitset[pos] ^= rbitset_last_mask_(size);
+	bitset[i] ^= rbitset_last_mask_(size);
 }
 
 /**
@@ -216,13 +209,10 @@ static inline bool rbitset_is_set(const unsigned *bitset, size_t pos)
  */
 static inline size_t rbitset_popcount(const unsigned *bitset, size_t size)
 {
-	size_t i, n  = BITSET_SIZE_ELEMS(size);
 	size_t res = 0;
-
-	for (i = 0; i < n; ++i) {
+	for (size_t i = 0, n = BITSET_SIZE_ELEMS(size); i < n; ++i) {
 		res += popcount(bitset[i]);
 	}
-
 	return res;
 }
 
@@ -242,9 +232,8 @@ static inline size_t rbitset_popcount(const unsigned *bitset, size_t size)
 static inline size_t rbitset_next(const unsigned *bitset, size_t pos,
                                   bool set)
 {
-	unsigned p;
 	size_t elem_pos = pos / BITS_PER_ELEM;
-	size_t bit_pos = pos % BITS_PER_ELEM;
+	size_t bit_pos  = pos % BITS_PER_ELEM;
 
 	unsigned elem = bitset[elem_pos];
 	unsigned mask = set ? 0 : ~0u;
@@ -256,7 +245,7 @@ static inline size_t rbitset_next(const unsigned *bitset, size_t pos,
 	unsigned in_elem_mask = (1 << bit_pos) - 1;
 
 	elem ^= mask;
-	p = ntz(elem & ~in_elem_mask);
+	unsigned p = ntz(elem & ~in_elem_mask);
 
 	/* If there is a bit set in the current elem, exit. */
 	if (p < BITS_PER_ELEM) {
@@ -294,13 +283,12 @@ static inline size_t rbitset_next_max(const unsigned *bitset, size_t pos,
 	if (pos == last)
 		return (size_t)-1;
 
-	size_t p;
 	size_t elem_pos = pos / BITS_PER_ELEM;
 	size_t bit_pos  = pos % BITS_PER_ELEM;
 
 	unsigned elem = bitset[elem_pos];
 	unsigned mask = set ? 0u : ~0u;
-	size_t res  = (size_t)-1;
+	size_t   res  = (size_t)-1;
 
 	/*
 	 * Mask out the bits smaller than pos in the current unit.
@@ -309,7 +297,7 @@ static inline size_t rbitset_next_max(const unsigned *bitset, size_t pos,
 	unsigned in_elem_mask = (1u << bit_pos) - 1;
 
 	elem ^= mask;
-	p = ntz(elem & ~in_elem_mask);
+	size_t p = ntz(elem & ~in_elem_mask);
 
 	/* If there is a bit set in the current elem, exit. */
 	if (p < BITS_PER_ELEM) {
@@ -342,9 +330,7 @@ static inline size_t rbitset_next_max(const unsigned *bitset, size_t pos,
  */
 static inline void rbitset_and(unsigned *dst, const unsigned *src, size_t size)
 {
-	size_t i, n = BITSET_SIZE_ELEMS(size);
-
-	for (i = 0; i < n; ++i) {
+	for (size_t i = 0, n = BITSET_SIZE_ELEMS(size); i < n; ++i) {
 		dst[i] &= src[i];
 	}
 }
@@ -358,9 +344,7 @@ static inline void rbitset_and(unsigned *dst, const unsigned *src, size_t size)
  */
 static inline void rbitset_or(unsigned *dst, const unsigned *src, size_t size)
 {
-	size_t i, n = BITSET_SIZE_ELEMS(size);
-
-	for (i = 0; i < n; ++i) {
+	for (size_t i = 0, n = BITSET_SIZE_ELEMS(size); i < n; ++i) {
 		dst[i] |= src[i];
 	}
 }
@@ -372,11 +356,10 @@ static inline void rbitset_or(unsigned *dst, const unsigned *src, size_t size)
  * @param src   the second bitset
  * @param size  size of both bitsets in bits
  */
-static inline void rbitset_andnot(unsigned *dst, const unsigned *src, size_t size)
+static inline void rbitset_andnot(unsigned *dst, const unsigned *src,
+                                  size_t size)
 {
-	size_t i, n = BITSET_SIZE_ELEMS(size);
-
-	for (i = 0; i < n; ++i) {
+	for (size_t i = 0, n = BITSET_SIZE_ELEMS(size); i < n; ++i) {
 		dst[i] &= ~src[i];
 	}
 }
@@ -390,9 +373,7 @@ static inline void rbitset_andnot(unsigned *dst, const unsigned *src, size_t siz
  */
 static inline void rbitset_xor(unsigned *dst, const unsigned *src, size_t size)
 {
-	size_t i, n = BITSET_SIZE_ELEMS(size);
-
-	for (i = 0; i < n; ++i) {
+	for (size_t i = 0, n = BITSET_SIZE_ELEMS(size); i < n; ++i) {
 		dst[i] ^= src[i];
 	}
 }
@@ -434,10 +415,9 @@ static inline void rbitset_set_range(unsigned *bitset, size_t from,
 		if (from_pos == to_pos) {
 			bitset[from_pos] |= from_unit_mask & to_unit_mask;
 		} else {
-			size_t i;
 			bitset[from_pos] |= from_unit_mask;
 			bitset[to_pos]   |= to_unit_mask;
-			for (i = from_pos + 1; i < to_pos; ++i)
+			for (size_t i = from_pos + 1; i < to_pos; ++i)
 				bitset[i] = ~0u;
 		}
 	} else {
@@ -445,10 +425,9 @@ static inline void rbitset_set_range(unsigned *bitset, size_t from,
 		if (from_pos == to_pos) {
 			bitset[from_pos] &= ~(from_unit_mask & to_unit_mask);
 		} else {
-			size_t i;
 			bitset[from_pos] &= ~from_unit_mask;
 			bitset[to_pos]   &= ~to_unit_mask;
-			for (i = from_pos + 1; i < to_pos; ++i)
+			for (size_t i = from_pos + 1; i < to_pos; ++i)
 				bitset[i] = 0;
 		}
 	}
@@ -478,9 +457,7 @@ static inline bool rbitsets_equal(const unsigned *bitset1,
 static inline bool rbitsets_have_common(const unsigned *bitset1,
                                         const unsigned *bitset2, size_t size)
 {
-	size_t i, n = BITSET_SIZE_ELEMS(size);
-
-	for (i = 0; i < n; ++i) {
+	for (size_t i = 0, n = BITSET_SIZE_ELEMS(size); i < n; ++i) {
 		if ((bitset1[i] & bitset2[i]) != 0)
 			return true;
 	}
@@ -497,9 +474,7 @@ static inline bool rbitsets_have_common(const unsigned *bitset1,
 static inline bool rbitset_contains(const unsigned *bitset1,
                                     const unsigned *bitset2, size_t size)
 {
-	size_t i, n = BITSET_SIZE_ELEMS(size);
-
-	for (i = 0; i < n; ++i) {
+	for (size_t i = 0, n = BITSET_SIZE_ELEMS(size); i < n; ++i) {
 		if ((bitset1[i] & bitset2[i]) != bitset1[i])
 			return false;
 	}
@@ -513,11 +488,10 @@ static inline bool rbitset_contains(const unsigned *bitset1,
  */
 static inline void rbitset_minus1(unsigned *bitset, size_t size)
 {
-	size_t i, n        = BITSET_SIZE_ELEMS(size);
-	unsigned last_mask = rbitset_last_mask_(size);
-
-	for (i = 0; i < n; ++i) {
-		unsigned mask       = i == n-1 ? last_mask : ~0u;
+	for (size_t i = 0, n = BITSET_SIZE_ELEMS(size); i < n; ++i) {
+		unsigned mask       = i == n-1
+							? rbitset_last_mask_(size)
+							: ~0u;
 		unsigned val        = bitset[i] & mask;
 		unsigned val_minus1 = val - 1;
 		bitset[i] = val_minus1 & mask;
