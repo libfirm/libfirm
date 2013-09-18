@@ -2,15 +2,12 @@
 /autom4te.cache/
 /build
 /config.guess
-/config.h
 /config.h.in
 /config.mak
 /config.sub
 /configure
 /depcomp
 /install-sh
-/ir/ir/gen_irdump.c.inl
-/ir/ir/gen_irio.c.inl
 /ltmain.sh
 /missing
 /win32/vc2010/firm.opensdf
@@ -19,4 +16,3 @@
 /win32/vc2010/firm.vcxproj.user
 /win32/vc2010/win32/
 Makefile.in
-firm_revision.h
