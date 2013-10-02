@@ -38,7 +38,7 @@ struct amd64_attr_t
 		unsigned ins_permuted : 1;      /**< inputs of node have been permuted
 		                                     (for commutative nodes) */
 		unsigned cmp_unsigned : 1;      /**< compare should be unsigned */
-		__extension__ amd64_insn_mode_t insn_mode : 2;
+		ENUMBF(amd64_insn_mode_t) insn_mode : 2;
 	} data;
 	struct amd64_attr_extended {
 		ir_relation relation;           /**< type of compare operation >*/

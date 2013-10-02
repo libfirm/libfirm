@@ -278,16 +278,16 @@ typedef struct alloc_attr {
 /** Load attributes. */
 typedef struct load_attr {
 	except_attr   exc;            /**< The exception attribute. MUST be the first one. */
-	__extension__ ir_volatility volatility:1;   /**< The volatility of this Load operation. */
-	__extension__ ir_align      unaligned:1;    /**< The align attribute of this Load operation. */
+	ENUMBF(ir_volatility) volatility:1;   /**< The volatility of this Load operation. */
+	ENUMBF(ir_align)      unaligned:1;    /**< The align attribute of this Load operation. */
 	ir_mode       *mode;          /**< The mode of this Load operation. */
 } load_attr;
 
 /** Store attributes. */
 typedef struct store_attr {
 	except_attr   exc;            /**< the exception attribute. MUST be the first one. */
-	__extension__ ir_volatility volatility:1;   /**< The volatility of this Store operation. */
-	__extension__ ir_align      unaligned:1;    /**< The align attribute of this Store operation. */
+	ENUMBF(ir_volatility) volatility:1;   /**< The volatility of this Store operation. */
+	ENUMBF(ir_align)      unaligned:1;    /**< The align attribute of this Store operation. */
 } store_attr;
 
 typedef struct phi_attr {
@@ -316,7 +316,7 @@ typedef struct confirm_attr {
 /** CopyB attribute. */
 typedef struct copyb_attr {
 	ir_type      *type;           /**< Type of the copied entity. */
-	__extension__ ir_volatility  volatility:1;  /**< The volatility of this CopyB operation. */
+	ENUMBF(ir_volatility) volatility:1;  /**< The volatility of this CopyB operation. */
 } copyb_attr;
 
 /** Div attribute. */

@@ -38,11 +38,19 @@
  */
 #define UNUSED      __attribute__((unused))
 
+/**
+ * Use an enum type as the base type for a bitfield. This is more usefull
+ * than using the generic "unsigned" because the compiler can warn if the
+ * range of enum elements exceeds the bitfield size now.
+ */
+#define ENUMBF(type)  __extension__ type
+
 #else
 #define LIKELY(x)   x
 #define UNLIKELY(x) x
 #define PURE
 #define UNUSED
+#define ENUMBF(type)  unsigned
 #endif
 
 /**
