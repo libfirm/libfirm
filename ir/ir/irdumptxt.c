@@ -67,7 +67,7 @@ static const bitflag_name_t cc_names[] = {
 	{ 0,                      NULL                  },
 };
 
-static void print_bitflags(FILE *const F, const bitflag_name_t const names[],
+static void print_bitflags(FILE *const F, const bitflag_name_t names[],
                            unsigned const bitset)
 {
 	for (size_t i = 0; names[i].name != 0; ++i) {
