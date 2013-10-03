@@ -1286,9 +1286,14 @@ char const *be_gas_get_private_prefix(void)
 
 void be_gas_emit_entity(const ir_entity *entity)
 {
-	if (entity->type == get_code_type()) {
+	if (entity->entity_kind == IR_ENTITY_LABEL) {
 		ir_label_t label = get_entity_label(entity);
 		be_emit_irprintf("%s_%lu", be_gas_get_private_prefix(), label);
+		return;
+	} else if (entity->entity_kind == IR_ENTITY_GOTENTRY) {
+		ir_entity *referenced = entity->attr.got.referenced;
+		be_gas_emit_entity(referenced);
+		be_emit_cstring("@GOTPCREL");
 		return;
 	}
 

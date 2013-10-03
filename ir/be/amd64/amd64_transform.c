@@ -16,6 +16,7 @@
 #include "error.h"
 #include "debug.h"
 #include "tv_t.h"
+#include "util.h"
 
 #include "benode.h"
 #include "betranshlp.h"
@@ -23,6 +24,7 @@
 #include "bearch_amd64_t.h"
 #include "beirg.h"
 #include "beabihelper.h"
+#include "besched.h"
 
 #include "amd64_nodes_attr.h"
 #include "amd64_transform.h"
@@ -47,6 +49,30 @@ static size_t           start_callee_saves_offset;
 static size_t           start_params_offset;
 static pmap            *node_to_stack;
 static be_stackorder_t *stackorder;
+
+static const arch_register_req_t amd64_requirement_gp = {
+	arch_register_req_type_normal,
+	&amd64_reg_classes[CLASS_amd64_gp],
+	NULL,
+	0,
+	0,
+	1
+};
+
+static const arch_register_req_t *am_load_reqs[] = {
+	&arch_no_requirement,
+};
+
+static const arch_register_req_t *am_load_base_reqs[] = {
+	&amd64_requirement_gp,
+	&arch_no_requirement,
+};
+
+static const arch_register_req_t *am_store_base_reqs[] = {
+	&amd64_requirement_gp,
+	&amd64_requirement_gp,
+	&arch_no_requirement,
+};
 
 static inline int mode_needs_gp_reg(ir_mode *mode)
 {
@@ -103,13 +129,56 @@ static ir_node *gen_Const(ir_node *node)
 	return new_bd_amd64_Const(dbgi, block, imode, val, NULL);
 }
 
+typedef enum reference_mode_t {
+	REFERENCE_DIRECT,
+	REFERENCE_IP_RELATIVE,
+	REFERENCE_GOT,
+} reference_mode_t;
+
+static reference_mode_t need_relative_addressing(const ir_entity *entity)
+{
+	if (!be_options.pic)
+		return REFERENCE_DIRECT;
+
+	/* simply everything is instruction pointer relative, external functions
+	 * use a global offset table */
+	return entity_has_definition(entity)
+	   && (get_entity_linkage(entity) & IR_LINKAGE_MERGE) == 0
+	    ? REFERENCE_IP_RELATIVE : REFERENCE_GOT;
+}
+
 static ir_node *gen_SymConst(ir_node *node)
 {
 	ir_node   *block  = be_transform_node(get_nodes_block(node));
 	dbg_info  *dbgi   = get_irn_dbg_info(node);
 	ir_entity *entity = get_SymConst_entity(node);
 
-	return new_bd_amd64_Const(dbgi, block, INSN_MODE_32, 0, entity);
+	/* do we need RIP-relative addressing because of PIC? */
+	reference_mode_t mode = need_relative_addressing(entity);
+	if (mode == REFERENCE_DIRECT) {
+		return new_bd_amd64_Const(dbgi, block, INSN_MODE_64, 0, entity);
+	}
+
+	amd64_am_info_t am;
+	memset(&am, 0, sizeof(am));
+	am.base_input = RIP_INPUT;
+	am.index_input = NO_INPUT;
+	if (mode == REFERENCE_IP_RELATIVE) {
+		am.symconst = entity;
+		ir_node *lea
+			= new_bd_amd64_Lea(dbgi, block, 0, NULL, INSN_MODE_64, am);
+		return lea;
+	} else {
+		assert(mode == REFERENCE_GOT);
+		am.symconst = new_got_entry_entity(entity);
+		ir_graph *irg  = get_irn_irg(node);
+		ir_node  *in[] = { get_irg_no_mem(irg) };
+		ir_node *load
+			= new_bd_amd64_LoadZ(dbgi, block, ARRAY_SIZE(in), in,
+								 INSN_MODE_64, am);
+		arch_set_irn_register_reqs_in(load, am_load_reqs);
+		return new_r_Proj(load, mode_gp, pn_amd64_LoadZ_res);
+	}
 }
 
 typedef ir_node* (*binop_constructor)(dbg_info *dbgi, ir_node *block,
@@ -570,8 +639,13 @@ static ir_node *gen_Call(ir_node *node)
 		/* we need a store if we're here */
 		mode = mode_gp;
 		amd64_insn_mode_t imode = get_insn_mode_from_mode(mode);
-		ir_node *store = new_bd_amd64_Store(dbgi, new_block, new_value, incsp,
-		                                    new_mem, imode, NULL);
+		amd64_am_info_t am;
+		memset(&am, 0, sizeof(am));
+		am.base_input  = 1;
+		am.index_input = NO_INPUT;
+		ir_node *in[] = { new_value, incsp, new_mem };
+		ir_node *store = new_bd_amd64_Store(dbgi, new_block, ARRAY_SIZE(in), in,
+		                                    imode, am);
 		set_irn_pinned(store, op_pin_state_floats);
 		sync_ins[sync_arity++] = store;
 	}
@@ -705,17 +779,24 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 
 		amd64_insn_mode_t imode = get_insn_mode_from_mode(mode);
 		/* TODO: use the AM form for the address calculation */
-		ir_node  *addr = new_bd_amd64_FrameAddr(NULL, new_block, base,
-												param->entity);
+		amd64_am_info_t am;
+		memset(&am, 0, sizeof(am));
+		am.base_input = 0;
+		am.mem_input  = 1;
+		am.symconst   = param->entity;
+		ir_node *in[] = { base, mem };
 		ir_node *load;
 		ir_node *value;
 		if (get_mode_size_bits(mode) < 64 && mode_is_signed(mode)) {
-			load  = new_bd_amd64_LoadS(NULL, new_block, addr, mem, imode, NULL);
+			load  = new_bd_amd64_LoadS(NULL, new_block, ARRAY_SIZE(in),
+			                           in, imode, am);
 			value = new_r_Proj(load, mode_gp, pn_amd64_LoadS_res);
 		} else {
-			load  = new_bd_amd64_LoadZ(NULL, new_block, addr, mem, imode, NULL);
+			load  = new_bd_amd64_LoadZ(NULL, new_block, ARRAY_SIZE(in),
+			                           in, imode, am);
 			value = new_r_Proj(load, mode_gp, pn_amd64_LoadZ_res);
 		}
+		arch_set_irn_register_reqs_in(load, am_load_base_reqs);
 		set_irn_pinned(load, op_pin_state_floats);
 		return value;
 	}
@@ -854,10 +935,58 @@ static ir_node *gen_Store(ir_node *node)
 	} else {
 		assert(mode_needs_gp_reg(mode) && "unsupported mode for Store");
 		amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(mode);
-		new_store = new_bd_amd64_Store(dbgi, block, new_ptr, new_val, new_mem, insn_mode, NULL);
+		amd64_am_info_t am;
+		memset(&am, 0, sizeof(am));
+		am.base_input  = 1;
+		am.index_input = NO_INPUT;
+		ir_node *in[] = { new_val, new_ptr, new_mem };
+		new_store = new_bd_amd64_Store(dbgi, block, ARRAY_SIZE(in), in,
+		                               insn_mode, am);
+		arch_set_irn_register_reqs_in(new_store, am_store_base_reqs);
 	}
 	set_irn_pinned(new_store, get_irn_pinned(node));
 	return new_store;
+}
+
+ir_node *amd64_new_spill(ir_node *value, ir_node *after)
+{
+	ir_node  *block = get_block(after);
+	ir_graph *irg   = get_irn_irg(block);
+	ir_node  *frame = get_irg_frame(irg);
+	ir_node  *mem   = get_irg_no_mem(irg);
+
+	amd64_am_info_t am;
+	memset(&am, 0, sizeof(am));
+	am.base_input  = 1;
+	am.index_input = NO_INPUT;
+
+	ir_node *in[] = { value, frame, mem };
+	ir_node *store = new_bd_amd64_Store(NULL, block, ARRAY_SIZE(in), in,
+	                                    INSN_MODE_64, am);
+	arch_set_irn_register_reqs_in(store, am_store_base_reqs);
+	sched_add_after(after, store);
+	return store;
+}
+
+ir_node *amd64_new_reload(ir_node *value, ir_node *spill, ir_node *before)
+{
+	ir_node  *block = get_block(before);
+	ir_graph *irg   = get_irn_irg(block);
+	ir_node  *frame = get_irg_frame(irg);
+	ir_mode  *mode  = get_irn_mode(value);
+
+	amd64_am_info_t am;
+	memset(&am, 0, sizeof(am));
+	am.base_input  = 0;
+	am.index_input = NO_INPUT;
+
+	ir_node *in[] = { frame, spill };
+	ir_node *load = new_bd_amd64_LoadZ(NULL, block, ARRAY_SIZE(in), in,
+	                                   INSN_MODE_64, am);
+	arch_set_irn_register_reqs_in(load, am_load_base_reqs);
+	sched_add_before(before, load);
+	ir_node *res = new_r_Proj(load, mode, pn_amd64_LoadZ_res);
+	return res;
 }
 
 static ir_node *gen_Load(ir_node *node)
@@ -876,11 +1005,19 @@ static ir_node *gen_Load(ir_node *node)
 	} else {
 		assert(mode_needs_gp_reg(mode) && "unsupported mode for Load");
 		amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(mode);
+		amd64_am_info_t am;
+		memset(&am, 0, sizeof(am));
+		am.base_input = 0;
+		am.mem_input  = 1;
+		ir_node *in[] = { new_ptr, new_mem };
 		if (get_mode_size_bits(mode) < 64 && mode_is_signed(mode)) {
-			new_load = new_bd_amd64_LoadS(dbgi, block, new_ptr, new_mem, insn_mode, NULL);
+			new_load = new_bd_amd64_LoadS(dbgi, block, ARRAY_SIZE(in), in,
+			                              insn_mode, am);
 		} else {
-			new_load = new_bd_amd64_LoadZ(dbgi, block, new_ptr, new_mem, insn_mode, NULL);
+			new_load = new_bd_amd64_LoadZ(dbgi, block, ARRAY_SIZE(in), in,
+			                              insn_mode, am);
 		}
+		arch_set_irn_register_reqs_in(new_load, am_load_base_reqs);
 	}
 	set_irn_pinned(new_load, get_irn_pinned(node));
 

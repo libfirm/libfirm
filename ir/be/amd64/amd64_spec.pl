@@ -308,6 +308,18 @@ Cmp => {
 	modified_flags => 1,
 },
 
+Lea => {
+	irn_flags => [ "rematerializable" ],
+	arity     => "variable",
+	outs      => [ "res", "flags", "M" ],
+	attr      => "amd64_insn_mode_t insn_mode, amd64_am_info_t am",
+	reg_req   => { out => [ "gp", "flags", "none" ] },
+	init_attr => "attr->data.insn_mode = insn_mode;\n".
+	             "\tattr->am             = am;\n",
+	emit      => "lea%M %AM, %D0",
+	mode      => $mode_gp,
+},
+
 Jcc => {
 	state     => "pinned",
 	op_flags  => [ "cfopcode", "forking" ],
@@ -322,27 +334,26 @@ Jcc => {
 LoadZ => {
 	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "none" ],
-	               out => [ "gp", "none" ] },
-	ins       => [ "ptr", "mem" ],
+	reg_req   => { out => [ "gp", "none" ] },
+	arity     => "variable",
 	outs      => [ "res",  "M" ],
-	attr      => "amd64_insn_mode_t insn_mode, ir_entity *entity",
-	attr_type => "amd64_SymConst_attr_t",
-	init_attr => "attr->base.data.insn_mode = insn_mode;",
-	emit      => "mov%M %O(%^S0), %D0"
+	attr      => "amd64_insn_mode_t insn_mode, amd64_am_info_t am",
+	attr_type => "amd64_attr_t",
+	init_attr => "attr->data.insn_mode = insn_mode;\n"
+	            ."\tattr->am                  = am;\n",
 },
 
 LoadS => {
 	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "none" ],
-	               out => [ "gp", "none" ] },
-	ins       => [ "ptr", "mem" ],
+	reg_req   => { out => [ "gp", "none" ] },
+	arity     => "variable",
 	outs      => [ "res",  "M" ],
-	attr      => "amd64_insn_mode_t insn_mode, ir_entity *entity",
-	attr_type => "amd64_SymConst_attr_t",
-	init_attr => "attr->base.data.insn_mode = insn_mode;",
-	emit      => "movs%Mq %O(%^S0), %^D0"
+	attr      => "amd64_insn_mode_t insn_mode, amd64_am_info_t am",
+	attr_type => "amd64_attr_t",
+	init_attr => "attr->data.insn_mode = insn_mode;\n"
+	            ."\tattr->am                  = am;\n",
+	emit      => "movs%Mq %AM, %^D0"
 },
 
 FrameAddr => {
@@ -358,14 +369,15 @@ FrameAddr => {
 Store => {
 	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
-	ins       => [ "ptr", "val", "mem" ],
+	reg_req   => { out => [ "none" ] },
+	arity     => "variable",
 	outs      => [ "M" ],
-	attr      => "amd64_insn_mode_t insn_mode, ir_entity *entity",
-	attr_type => "amd64_SymConst_attr_t",
-	init_attr => "attr->base.data.insn_mode = insn_mode;",
+	attr      => "amd64_insn_mode_t insn_mode, amd64_am_info_t am",
+	attr_type => "amd64_attr_t",
+	init_attr => "attr->data.insn_mode = insn_mode;\n"
+	            ."\tattr->am                  = am;\n",
 	mode      => "mode_M",
-	emit      => "mov%M %S1, %O(%^S0)"
+	emit      => "mov%M %S0, %AM"
 },
 
 SwitchJmp => {

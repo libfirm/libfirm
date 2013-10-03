@@ -16,6 +16,7 @@
 #include "lower_calls.h"
 #include "debug.h"
 #include "error.h"
+#include "util.h"
 #include "be_t.h"
 #include "bearch.h"
 #include "beirg.h"
@@ -48,18 +49,17 @@ static ir_entity *amd64_get_frame_entity(const ir_node *node)
 	if (is_amd64_FrameAddr(node)) {
 		const amd64_SymConst_attr_t *attr = get_amd64_SymConst_attr_const(node);
 		return attr->entity;
-
-	} else if (is_amd64_Store(node)) {
-		const amd64_SymConst_attr_t *attr = get_amd64_SymConst_attr_const(node);
-		return attr->entity;
-
-	} else if (is_amd64_LoadS(node) || is_amd64_LoadZ(node)) {
-		const amd64_SymConst_attr_t *attr = get_amd64_SymConst_attr_const(node);
-		return attr->entity;
+	} else if (is_amd64_Store(node) || is_amd64_LoadS(node)
+	        || is_amd64_LoadZ(node)) {
+	    const amd64_attr_t *attr = get_amd64_attr_const(node);
+	    ir_entity *entity = attr->am.symconst;
+	    if (entity == NULL)
+			return NULL;
+		ir_type *parent = get_entity_owner(entity);
+		if (is_frame_type(parent))
+			return entity;
 	}
 
-	(void) node;
-	/* TODO: return the ir_entity assigned to the frame */
 	return NULL;
 }
 
@@ -67,12 +67,15 @@ static ir_entity *amd64_get_frame_entity(const ir_node *node)
  * This function is called by the generic backend to correct offsets for
  * nodes accessing the stack.
  */
-static void amd64_set_frame_offset(ir_node *irn, int offset)
+static void amd64_set_frame_offset(ir_node *node, int offset)
 {
-	if (is_amd64_FrameAddr(irn) || is_amd64_Store(irn) || is_amd64_LoadS(irn)
-	    || is_amd64_LoadZ(irn)) {
-		amd64_SymConst_attr_t *attr = get_amd64_SymConst_attr(irn);
+	if (is_amd64_FrameAddr(node)) {
+		amd64_SymConst_attr_t *attr = get_amd64_SymConst_attr(node);
 		attr->fp_offset += offset;
+	} else if (is_amd64_Store(node) || is_amd64_LoadS(node)
+	        || is_amd64_LoadZ(node)) {
+	    amd64_attr_t *attr = get_amd64_attr(node);
+	    attr->am.offset += offset;
 	}
 }
 
@@ -106,43 +109,6 @@ static void amd64_before_ra(ir_graph *irg)
 	be_sched_fix_flags(irg, &amd64_reg_classes[CLASS_amd64_flags], NULL, NULL);
 
 	be_add_missing_keeps(irg);
-}
-
-static void transform_Reload(ir_node *node)
-{
-	ir_graph  *irg    = get_irn_irg(node);
-	ir_node   *block  = get_nodes_block(node);
-	dbg_info  *dbgi   = get_irn_dbg_info(node);
-	ir_node   *ptr    = get_irg_frame(irg);
-	ir_node   *mem    = get_irn_n(node, n_be_Reload_mem);
-	ir_mode   *mode   = get_irn_mode(node);
-	ir_entity *entity = be_get_frame_entity(node);
-
-	ir_node *load = new_bd_amd64_LoadZ(dbgi, block, ptr, mem, INSN_MODE_64, entity);
-	sched_replace(node, load);
-
-	ir_node *proj = new_rd_Proj(dbgi, load, mode, pn_amd64_LoadZ_res);
-
-	const arch_register_t *reg = arch_get_irn_register(node);
-	arch_set_irn_register(proj, reg);
-
-	exchange(node, proj);
-}
-
-static void transform_Spill(ir_node *node)
-{
-	ir_graph  *irg    = get_irn_irg(node);
-	ir_node   *block  = get_nodes_block(node);
-	dbg_info  *dbgi   = get_irn_dbg_info(node);
-	ir_node   *ptr    = get_irg_frame(irg);
-	ir_node   *mem    = get_irg_no_mem(irg);
-	ir_node   *val    = get_irn_n(node, n_be_Spill_val);
-	ir_entity *entity = be_get_frame_entity(node);
-
-	ir_node *store = new_bd_amd64_Store(dbgi, block, ptr, val, mem, INSN_MODE_64, entity);
-	sched_replace(node, store);
-
-	exchange(node, store);
 }
 
 static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp, ir_node *mem, ir_entity *ent)
@@ -261,11 +227,7 @@ static void amd64_after_ra_walker(ir_node *block, void *data)
 	(void) data;
 
 	sched_foreach_reverse_safe(block, node) {
-		if (be_is_Reload(node)) {
-			transform_Reload(node);
-		} else if (be_is_Spill(node)) {
-			transform_Spill(node);
-		} else if (be_is_MemPerm(node)) {
+		if (be_is_MemPerm(node)) {
 			transform_MemPerm(node);
 		}
 	}
@@ -568,8 +530,8 @@ const arch_isa_if_t amd64_isa_if = {
 	amd64_end_codegeneration,
 	amd64_get_call_abi,
 	NULL,              /* mark remat */
-	be_new_spill,
-	be_new_reload,
+	amd64_new_spill,
+	amd64_new_reload,
 	amd64_register_saved_by,
 
 	NULL,              /* handle intrinsics */

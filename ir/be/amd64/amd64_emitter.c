@@ -196,8 +196,8 @@ static void amd64_emit_immediate(const amd64_imm_t *const imm)
 	}
 }
 
-static void amd64_emit_am(const arch_register_t *const base,
-                          const amd64_imm_t *const imm)
+static void amd64_emit_am_old(const arch_register_t *const base,
+                              const amd64_imm_t *const imm)
 {
 	if (base == NULL) {
 		amd64_emit_immediate(imm);
@@ -205,6 +205,46 @@ static void amd64_emit_am(const arch_register_t *const base,
 	}
 	emit_register(base);
 
+}
+
+static void amd64_emit_am(const ir_node *const node,
+                          const amd64_am_info_t *const am)
+{
+	ir_entity *entity = am->symconst;
+	if (entity != NULL) {
+		be_gas_emit_entity(entity);
+	}
+
+	int32_t offset      = am->offset;
+	uint8_t base_input  = am->base_input;
+	uint8_t index_input = am->index_input;
+	if (offset != 0 || (entity == NULL && base_input == NO_INPUT
+	                    && index_input == NO_INPUT)) {
+		if (entity != NULL) {
+			be_emit_irprintf("%+d", offset);
+		} else {
+			be_emit_irprintf("%d", offset);
+		}
+	}
+
+	if (base_input != NO_INPUT || index_input != NO_INPUT) {
+		be_emit_char('(');
+
+		if (base_input == RIP_INPUT) {
+			be_emit_cstring("%rip");
+		} else if (base_input != NO_INPUT) {
+			be_emit_char(',');
+
+			const arch_register_t *reg
+				= arch_get_irn_register_in(node, base_input);
+			emit_register(reg);
+
+			unsigned scale = am->log_scale;
+			if (scale > 0)
+				be_emit_irprintf(",%u", 1 << scale);
+		}
+		be_emit_char(')');
+	}
 }
 
 void amd64_emitf(ir_node const *const node, char const *fmt, ...)
@@ -257,9 +297,13 @@ end_of_mods:
 				switch (*fmt++) {
 				case 'M': {
 					amd64_attr_t const *const attr = get_amd64_attr_const(node);
-					arch_register_t const *const base
-						= arch_get_irn_register_in(node, 0);
-					amd64_emit_am(base, &attr->imm);
+					if (mod & EMIT_RESPECT_LS) {
+						arch_register_t const *const base
+							= arch_get_irn_register_in(node, 0);
+						amd64_emit_am_old(base, &attr->imm);
+					} else {
+						amd64_emit_am(node, &attr->am);
+					}
 					break;
 				}
 				default:
@@ -485,10 +529,10 @@ static void emit_amd64_LoadZ(const ir_node *node)
 {
 	const amd64_attr_t *attr = get_amd64_attr_const(node);
 	switch (attr->data.insn_mode) {
-	case INSN_MODE_8:  amd64_emitf(node, "movzbq %O(%^S0), %^D0"); break;
-	case INSN_MODE_16: amd64_emitf(node, "movzwq %O(%^S0), %^D0"); break;
+	case INSN_MODE_8:  amd64_emitf(node, "movzbq %AM, %^D0"); break;
+	case INSN_MODE_16: amd64_emitf(node, "movzwq %AM, %^D0"); break;
 	case INSN_MODE_32:
-	case INSN_MODE_64: amd64_emitf(node, "mov%M %O(%^S0), %D0");   break;
+	case INSN_MODE_64: amd64_emitf(node, "mov%M %AM, %D0");   break;
 	default:
 		panic("invalid insn mode");
 	}
