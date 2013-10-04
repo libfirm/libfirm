@@ -212,7 +212,12 @@ static void amd64_emit_am(const ir_node *const node,
 {
 	ir_entity *entity = am->symconst;
 	if (entity != NULL) {
-		be_gas_emit_entity(entity);
+		ir_type *owner = get_entity_owner(entity);
+		if (is_frame_type(owner)) {
+			entity = NULL; /* only emit offset for frame entities */
+		} else {
+			be_gas_emit_entity(entity);
+		}
 	}
 
 	int32_t offset      = am->offset;
@@ -233,10 +238,15 @@ static void amd64_emit_am(const ir_node *const node,
 		if (base_input == RIP_INPUT) {
 			be_emit_cstring("%rip");
 		} else if (base_input != NO_INPUT) {
-			be_emit_char(',');
-
 			const arch_register_t *reg
 				= arch_get_irn_register_in(node, base_input);
+			emit_register(reg);
+		}
+
+		if (index_input != NO_INPUT) {
+			be_emit_char(',');
+			const arch_register_t *reg
+				= arch_get_irn_register_in(node, index_input);
 			emit_register(reg);
 
 			unsigned scale = am->log_scale;

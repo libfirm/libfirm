@@ -235,8 +235,10 @@ static void amd64_after_ra_walker(ir_node *block, void *data)
 
 static void amd64_set_frame_entity(ir_node *node, ir_entity *entity)
 {
-	assert(be_is_Reload(node) || be_is_Spill(node));
-	be_node_set_frame_entity(node, entity);
+	assert(is_amd64_Store(node) || is_amd64_LoadZ(node)
+	    || is_amd64_LoadS(node));
+	amd64_attr_t *attr = get_amd64_attr(node);
+	attr->am.symconst = entity;
 }
 
 /**
@@ -244,9 +246,13 @@ static void amd64_set_frame_entity(ir_node *node, ir_entity *entity)
  */
 static void amd64_collect_frame_entity_nodes(ir_node *node, void *data)
 {
-	if (be_is_Reload(node) && be_get_frame_entity(node) == NULL) {
+	if (!is_amd64_LoadZ(node))
+		return;
+
+	const amd64_attr_t *attr = get_amd64_attr_const(node);
+	if (attr->data.needs_frame_ent) {
 		be_fec_env_t  *env   = (be_fec_env_t*)data;
-		const ir_mode *mode  = get_irn_mode(node);
+		const ir_mode *mode  = mode_Lu; /* TODO: improve */
 		int            align = get_mode_size_bytes(mode);
 		be_node_needs_frame_entity(env, node, mode, align);
 	}

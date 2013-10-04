@@ -963,6 +963,8 @@ ir_node *amd64_new_spill(ir_node *value, ir_node *after)
 	ir_node *in[] = { value, frame, mem };
 	ir_node *store = new_bd_amd64_Store(NULL, block, ARRAY_SIZE(in), in,
 	                                    INSN_MODE_64, am);
+	amd64_attr_t *attr = get_amd64_attr(store);
+	attr->data.needs_frame_ent = true;
 	arch_set_irn_register_reqs_in(store, am_store_base_reqs);
 	sched_add_after(after, store);
 	return store;
@@ -985,6 +987,8 @@ ir_node *amd64_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 	                                   INSN_MODE_64, am);
 	arch_set_irn_register_reqs_in(load, am_load_base_reqs);
 	sched_add_before(before, load);
+	amd64_attr_t *attr = get_amd64_attr(load);
+	attr->data.needs_frame_ent = true;
 	ir_node *res = new_r_Proj(load, mode, pn_amd64_LoadZ_res);
 	return res;
 }

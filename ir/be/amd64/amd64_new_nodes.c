@@ -181,12 +181,24 @@ static int cmp_imm(const amd64_imm_t *const imm0, const amd64_imm_t *const imm1)
 	return imm0->offset != imm1->offset || imm0->symconst != imm1->symconst;
 }
 
+static int cmp_am(const amd64_am_info_t *const am0,
+                  const amd64_am_info_t *const am1)
+{
+	return am0->offset != am1->offset || am0->symconst != am1->symconst
+	    || am0->base_input != am1->base_input
+	    || am0->index_input != am1->index_input
+	    || am0->mem_input != am1->mem_input
+	    || am0->log_scale != am1->log_scale
+	    || am0->segment != am1->segment;
+}
+
 /** Compare common amd64 node attributes. */
 static int cmp_amd64_attr(const ir_node *a, const ir_node *b)
 {
 	const amd64_attr_t *attr_a = get_amd64_attr_const(a);
 	const amd64_attr_t *attr_b = get_amd64_attr_const(b);
-	return cmp_imm(&attr_a->imm, &attr_b->imm);
+	return cmp_imm(&attr_a->imm, &attr_b->imm)
+	    || cmp_am(&attr_a->am, &attr_b->am);
 }
 
 /** copies the AMD64 attributes of a node. */
