@@ -125,6 +125,7 @@ static void do_type_walk(type_or_ent tore,
 		case IR_ENTITY_PARAMETER:
 		case IR_ENTITY_LABEL:
 		case IR_ENTITY_COMPOUND_MEMBER:
+		case IR_ENTITY_GOTENTRY:
 			break;
 		}
 		break;

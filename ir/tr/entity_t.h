@@ -140,6 +140,10 @@ typedef struct alias_ent_attr {
 	ir_entity                *aliased;
 } alias_ent_attr;
 
+typedef struct got_ent_attr {
+	ir_entity *referenced;
+} got_ent_attr;
+
 typedef enum ir_entity_kind {
 	IR_ENTITY_ALIAS,
 	IR_ENTITY_COMPOUND_MEMBER,
@@ -148,6 +152,7 @@ typedef enum ir_entity_kind {
 	IR_ENTITY_NORMAL,
 	IR_ENTITY_PARAMETER,
 	IR_ENTITY_UNKNOWN,
+	IR_ENTITY_GOTENTRY,
 } ir_entity_kind;
 
 /**
@@ -201,6 +206,8 @@ struct ir_entity {
 		parameter_ent_attr       parameter;
 		/** alias attributes */
 		alias_ent_attr           alias;
+		/** got entry attributes */
+		got_ent_attr             got;
 	} attr; /**< type specific attributes */
 };
 
@@ -214,6 +221,12 @@ void ir_finish_entity(ir_prog *irp);
  * (the basic block is marked with a label id).
  */
 ir_entity *new_label_entity(ir_label_t label);
+
+/**
+ * Create an entity representing an entry in the global offset table used for
+ * position independent code (PIC) code.
+ */
+ir_entity *new_got_entry_entity(ir_entity *reference);
 
 void set_entity_irg(ir_entity *ent, ir_graph *irg);
 

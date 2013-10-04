@@ -97,6 +97,7 @@ typedef enum keyword_t {
 	kw_int_mode,
 	kw_irg,
 	kw_alias,
+	kw_gotentry,
 	kw_label,
 	kw_method,
 	kw_modes,
@@ -218,6 +219,7 @@ static void symtbl_init(void)
 	INSERTKEYWORD(constirg);
 	INSERTKEYWORD(entity);
 	INSERTKEYWORD(float_mode);
+	INSERTKEYWORD(gotentry);
 	INSERTKEYWORD(int_mode);
 	INSERTKEYWORD(irg);
 	INSERTKEYWORD(label);
@@ -696,6 +698,7 @@ static void write_entity(write_env_t *env, ir_entity *ent)
 	fputc('\t', env->file);
 	switch ((ir_entity_kind)ent->entity_kind) {
 	case IR_ENTITY_ALIAS:           write_symbol(env, "alias");           break;
+	case IR_ENTITY_GOTENTRY:        write_symbol(env, "gotentry");        break;
 	case IR_ENTITY_NORMAL:          write_symbol(env, "entity");          break;
 	case IR_ENTITY_METHOD:          write_symbol(env, "method");          break;
 	case IR_ENTITY_LABEL:           write_symbol(env, "label");           break;
@@ -741,6 +744,9 @@ static void write_entity(write_env_t *env, ir_entity *ent)
 	switch ((ir_entity_kind)ent->entity_kind) {
 	case IR_ENTITY_ALIAS:
 		write_entity_ref(env, get_entity_alias(ent));
+		break;
+	case IR_ENTITY_GOTENTRY:
+		write_entity_ref(env, ent->attr.got.referenced);
 		break;
 	case IR_ENTITY_NORMAL:
 		if (ent->initializer != NULL) {
@@ -1843,6 +1849,11 @@ static void read_entity(read_env_t *env, ir_entity_kind kind)
 		entity = new_alias_entity(owner, name, aliased, type);
 		break;
 	}
+	case IR_ENTITY_GOTENTRY: {
+		ir_entity *referenced = read_entity_ref(env);
+		entity = new_got_entry_entity(referenced);
+		break;
+	}
 	case IR_ENTITY_NORMAL:
 		entity = new_entity(owner, name, type);
 		if (ld_name != NULL)
@@ -1936,6 +1947,9 @@ static void read_typegraph(read_env_t *env)
 			break;
 		case kw_alias:
 			read_entity(env, IR_ENTITY_ALIAS);
+			break;
+		case kw_gotentry:
+			read_entity(env, IR_ENTITY_GOTENTRY);
 			break;
 		case kw_label:
 			read_entity(env, IR_ENTITY_LABEL);
