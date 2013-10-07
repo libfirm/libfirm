@@ -214,12 +214,12 @@ static void peephole_ia32_Test(ir_node *node)
 		/* make sure users only look at the sign/zero flag */
 		foreach_out_edge(node, edge) {
 			ir_node              *user = get_edge_src_irn(edge);
-			ia32_condition_code_t cc  = get_ia32_condcode(user);
+			x86_condition_code_t  cc  = get_ia32_condcode(user);
 
-			if (cc == ia32_cc_equal || cc == ia32_cc_not_equal)
+			if (cc == x86_cc_equal || cc == x86_cc_not_equal)
 				continue;
 			if (produced == produces_zero_sign
-				&& (cc == ia32_cc_sign || cc == ia32_cc_not_sign)) {
+				&& (cc == x86_cc_sign || cc == x86_cc_not_sign)) {
 				continue;
 			}
 			return;
@@ -237,11 +237,11 @@ static void peephole_ia32_Test(ir_node *node)
 			/* patch users to look at the carry instead of the zero flag */
 			foreach_out_edge(node, edge) {
 				ir_node              *user = get_edge_src_irn(edge);
-				ia32_condition_code_t cc   = get_ia32_condcode(user);
+				x86_condition_code_t  cc   = get_ia32_condcode(user);
 
 				switch (cc) {
-				case ia32_cc_equal:     cc = ia32_cc_above_equal; break;
-				case ia32_cc_not_equal: cc = ia32_cc_below;       break;
+				case x86_cc_equal:     cc = x86_cc_above_equal; break;
+				case x86_cc_not_equal: cc = x86_cc_below;       break;
 				default: panic("unexpected pn");
 				}
 				set_ia32_condcode(user, cc);

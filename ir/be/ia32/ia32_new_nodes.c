@@ -654,7 +654,7 @@ const ir_switch_table *get_ia32_switch_table(const ir_node *node)
 	return attr->table;
 }
 
-ia32_condition_code_t get_ia32_condcode(const ir_node *node)
+x86_condition_code_t get_ia32_condcode(const ir_node *node)
 {
 	const ia32_condcode_attr_t *attr = get_ia32_condcode_attr_const(node);
 	return attr->condition_code;
@@ -663,7 +663,7 @@ ia32_condition_code_t get_ia32_condcode(const ir_node *node)
 /**
  * Sets the condition code of a node
  */
-void set_ia32_condcode(ir_node *node, ia32_condition_code_t code)
+void set_ia32_condcode(ir_node *node, x86_condition_code_t code)
 {
 	ia32_condcode_attr_t *attr = get_ia32_condcode_attr(node);
 	attr->condition_code = code;
@@ -836,7 +836,7 @@ static void init_ia32_copyb_attributes(ir_node *res, unsigned size)
 }
 
 static void init_ia32_condcode_attributes(ir_node *res,
-                                          ia32_condition_code_t cc)
+                                          x86_condition_code_t cc)
 {
 	ia32_condcode_attr_t *attr = (ia32_condcode_attr_t*)get_irn_generic_attr(res);
 

@@ -329,6 +329,18 @@ end_of_mods:
 				break;
 			}
 
+			case 'P': {
+				x86_condition_code_t cc;
+				if (*fmt == 'X') {
+					++fmt;
+					cc = (x86_condition_code_t)va_arg(ap, int);
+				} else {
+					panic("unknown modifier");
+				}
+				x86_emit_condition_code(cc);
+				break;
+			}
+
 			case 'R':
 				reg = va_arg(ap, arch_register_t const*);
 emit_R:
@@ -450,10 +462,8 @@ static void emit_amd64_Jcc(const ir_node *irn)
 	const ir_node         *proj_false = NULL;
 	const ir_node         *block;
 	const ir_node         *next_block;
-	const char            *suffix;
-	const amd64_cc_attr_t *attr      = get_amd64_cc_attr_const(irn);
-	ir_relation            relation  = attr->relation;
-	bool                   is_signed = !attr->is_unsigned;
+	const amd64_cc_attr_t *attr = get_amd64_cc_attr_const(irn);
+	x86_condition_code_t   cc   = attr->cc;
 
 	foreach_out_edge(irn, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
@@ -471,36 +481,23 @@ static void emit_amd64_Jcc(const ir_node *irn)
 	/* we have a block schedule */
 	next_block = sched_next_block(block);
 
-	assert(relation != ir_relation_false);
-	assert(relation != ir_relation_true);
-
 	if (get_cfop_target_block(proj_true) == next_block) {
 		/* exchange both proj's so the second one can be omitted */
 		const ir_node *t = proj_true;
 
 		proj_true  = proj_false;
 		proj_false = t;
-		relation   = get_negated_relation(relation);
-	}
-
-	switch (relation & ir_relation_less_equal_greater) {
-		case ir_relation_equal:              suffix = "e"; break;
-		case ir_relation_less:               suffix = is_signed ? "l"  : "b"; break;
-		case ir_relation_less_equal:         suffix = is_signed ? "le" : "be"; break;
-		case ir_relation_greater:            suffix = is_signed ? "g"  : "a"; break;
-		case ir_relation_greater_equal:      suffix = is_signed ? "ge" : "ae"; break;
-		case ir_relation_less_greater:       suffix = "ne"; break;
-		case ir_relation_less_equal_greater: suffix = "mp"; break;
-		default: panic("Cmp has unsupported pnc");
+		cc         = x86_negate_condition_code(cc);
 	}
 
 	/* emit the true proj */
-	amd64_emitf(proj_true, "j%s %L", suffix);
+	amd64_emitf(proj_true, "j%PX %L", (int)cc);
 
-	if (get_cfop_target_block(proj_false) != next_block) {
+	if (get_cfop_target_block(proj_false) == next_block) {
+		if (be_options.verbose_asm)
+			amd64_emitf(proj_false, "/* fallthrough to %L */");
+	} else  {
 		amd64_emitf(proj_false, "jmp %L");
-	} else if (be_options.verbose_asm) {
-		amd64_emitf(proj_false, "/* fallthrough to %L */");
 	}
 }
 

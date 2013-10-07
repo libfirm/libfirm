@@ -14,88 +14,7 @@
 #include "firm_types.h"
 #include "bearch.h"
 #include "irnode_t.h"
-
-/** ia32 condition codes (the numbers correspond to the real encoding order) */
-typedef enum ia32_condition_code_t {
-	ia32_cc_negated       = 0x01, /**< negates condition */
-
-	ia32_cc_overflow      = 0x00,                                /**< OF=1 */
-	ia32_cc_below         = 0x02,                                /**< CF=1 */
-	ia32_cc_equal         = 0x04,                                /**< ZF=1 */
-	ia32_cc_below_equal   = 0x06,                                /**< ZF=1 or CF=1 */
-	ia32_cc_sign          = 0x08,                                /**< SF=1 */
-	ia32_cc_parity        = 0x0A,                                /**< PF=1 */
-	ia32_cc_less          = 0x0C,                                /**< SF!=OF */
-	ia32_cc_less_equal    = 0x0E,                                /**< ZF=1 or SF!=OF */
-	ia32_cc_not_overflow  = ia32_cc_negated|ia32_cc_overflow,    /**< OF=0 */
-	ia32_cc_above_equal   = ia32_cc_negated|ia32_cc_below,       /**< CF=0 */
-	ia32_cc_not_equal     = ia32_cc_negated|ia32_cc_equal,       /**< ZF=0 */
-	ia32_cc_above         = ia32_cc_negated|ia32_cc_below_equal, /**< ZF=0 and CF=0 */
-	ia32_cc_not_sign      = ia32_cc_negated|ia32_cc_sign,        /**< SF=0 */
-	ia32_cc_not_parity    = ia32_cc_negated|ia32_cc_parity,      /**< PF=0 */
-	ia32_cc_greater_equal = ia32_cc_negated|ia32_cc_less,        /**< SF=OF */
-	ia32_cc_greater       = ia32_cc_negated|ia32_cc_less_equal,  /**< ZF=0 and SF=OF */
-
-	/* the following codes are (unfortunately) NOT real hardware codes but
-	 * simplify our backend as you need these combinations for some
-	 * floatingpoint compares (the emitter will split them into multiple
-	 * instructions) */
-	ia32_cc_float_parity_cases = 0x20,
-	/* we need even more cases as inversing the cc is different for float
-	 * comparisons (though for the following we need no special
-	 * parity+x combinations) */
-	ia32_cc_additional_float_cases = 0x10,
-
-	/* make sure that the lower 4 bit correspond to the real encoding
-	 * (of the comparison not involving the parity special) */
-	ia32_cc_float_equal        = 0x34,                                /**< PF=0 and ZF=1 */
-	ia32_cc_float_below        = 0x32,                                /**< PF=0 and CF=1 */
-	ia32_cc_float_below_equal  = 0x36,                                /**< PF=0 and (ZF=1 or CF=1) */
-	ia32_cc_float_not_equal    = ia32_cc_negated|ia32_cc_float_equal, /**< PF=1 or ZF=0 */
-	ia32_cc_float_unordered_above_equal
-		= ia32_cc_negated|ia32_cc_float_below,                        /**< PF=1 or CF=0 */
-	ia32_cc_float_unordered_above
-		= ia32_cc_negated|ia32_cc_float_below_equal,                  /**< PF=1 or (ZF=0 and CF=0) */
-
-	ia32_cc_float_unordered_below_equal = 0x16,                       /**< ZF=1 or CF=1 */
-	ia32_cc_float_unordered_below       = 0x12,                       /**< CF=1 */
-	ia32_cc_float_above        =
-		ia32_cc_negated|ia32_cc_float_unordered_below_equal,          /**< ZF=0 and CF=0 */
-	ia32_cc_float_above_equal
-		= ia32_cc_negated|ia32_cc_float_unordered_below,              /**< CF=0 */
-} ia32_condition_code_t;
-ENUM_BITSET(ia32_condition_code_t)
-
-static inline ia32_condition_code_t ia32_negate_condition_code(
-		ia32_condition_code_t code)
-{
-	return code ^ ia32_cc_negated;
-}
-
-static inline ia32_condition_code_t ia32_invert_condition_code(
-		ia32_condition_code_t code)
-{
-	/* doesn't appear to have any systematic, so use a table */
-	switch (code) {
-	case ia32_cc_below:              return ia32_cc_above;
-	case ia32_cc_below_equal:        return ia32_cc_above_equal;
-	case ia32_cc_above:              return ia32_cc_below;
-	case ia32_cc_above_equal:        return ia32_cc_below_equal;
-	case ia32_cc_less:               return ia32_cc_greater;
-	case ia32_cc_less_equal:         return ia32_cc_greater_equal;
-	case ia32_cc_greater:            return ia32_cc_less;
-	case ia32_cc_greater_equal:      return ia32_cc_less_equal;
-	case ia32_cc_float_below:        return ia32_cc_float_above;
-	case ia32_cc_float_below_equal:  return ia32_cc_float_above_equal;
-	case ia32_cc_float_above:        return ia32_cc_float_below;
-	case ia32_cc_float_above_equal:  return ia32_cc_float_below_equal;
-	case ia32_cc_float_unordered_below:       return ia32_cc_float_unordered_above;
-	case ia32_cc_float_unordered_below_equal: return ia32_cc_float_unordered_above_equal;
-	case ia32_cc_float_unordered_above:       return ia32_cc_float_unordered_below;
-	case ia32_cc_float_unordered_above_equal: return ia32_cc_float_unordered_below_equal;
-	default:                         return code;
-	}
-}
+#include "x86_cc.h"
 
 typedef enum {
 	ia32_Normal,
@@ -215,8 +134,8 @@ struct ia32_call_attr_t {
  */
 typedef struct ia32_condcode_attr_t ia32_condcode_attr_t;
 struct ia32_condcode_attr_t {
-	ia32_attr_t           attr;           /**< generic attribute */
-	ia32_condition_code_t condition_code; /**< condition code*/
+	ia32_attr_t          attr;           /**< generic attribute */
+	x86_condition_code_t condition_code; /**< condition code*/
 };
 
 /**

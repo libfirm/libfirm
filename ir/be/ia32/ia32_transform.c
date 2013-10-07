@@ -1961,30 +1961,30 @@ static ir_node *gen_bt(ir_node *cmp, ir_node *x, ir_node *n)
 	return new_bd_ia32_Bt(dbgi, new_block, op1, op2);
 }
 
-static ia32_condition_code_t relation_to_condition_code(ir_relation relation,
-                                                        ir_mode *mode,
-                                                        bool overflow_possible)
+x86_condition_code_t ir_relation_to_x86_condition_code(ir_relation relation,
+                                                       ir_mode *mode,
+                                                       bool overflow_possible)
 {
 	if (mode_is_float(mode)) {
 		switch (relation) {
-		case ir_relation_equal:              return ia32_cc_float_equal;
-		case ir_relation_less:               return ia32_cc_float_below;
-		case ir_relation_less_equal:         return ia32_cc_float_below_equal;
-		case ir_relation_greater:            return ia32_cc_float_above;
-		case ir_relation_greater_equal:      return ia32_cc_float_above_equal;
-		case ir_relation_less_greater:       return ia32_cc_not_equal;
-		case ir_relation_less_equal_greater: return ia32_cc_not_parity;
-		case ir_relation_unordered:          return ia32_cc_parity;
-		case ir_relation_unordered_equal:    return ia32_cc_equal;
-		case ir_relation_unordered_less:   return ia32_cc_float_unordered_below;
+		case ir_relation_equal:              return x86_cc_float_equal;
+		case ir_relation_less:               return x86_cc_float_below;
+		case ir_relation_less_equal:         return x86_cc_float_below_equal;
+		case ir_relation_greater:            return x86_cc_float_above;
+		case ir_relation_greater_equal:      return x86_cc_float_above_equal;
+		case ir_relation_less_greater:       return x86_cc_not_equal;
+		case ir_relation_less_equal_greater: return x86_cc_not_parity;
+		case ir_relation_unordered:          return x86_cc_parity;
+		case ir_relation_unordered_equal:    return x86_cc_equal;
+		case ir_relation_unordered_less:   return x86_cc_float_unordered_below;
 		case ir_relation_unordered_less_equal:
-		                             return ia32_cc_float_unordered_below_equal;
+		                             return x86_cc_float_unordered_below_equal;
 		case ir_relation_unordered_greater:
-		                             return ia32_cc_float_unordered_above;
+		                             return x86_cc_float_unordered_above;
 		case ir_relation_unordered_greater_equal:
-		                             return ia32_cc_float_unordered_above_equal;
+		                             return x86_cc_float_unordered_above_equal;
 		case ir_relation_unordered_less_greater:
-		                             return ia32_cc_float_not_equal;
+		                             return x86_cc_float_not_equal;
 		case ir_relation_false:
 		case ir_relation_true:
 			/* should we introduce a jump always/jump never? */
@@ -1994,19 +1994,19 @@ static ia32_condition_code_t relation_to_condition_code(ir_relation relation,
 	} else if (mode_is_signed(mode)) {
 		switch (relation) {
 		case ir_relation_unordered_equal:
-		case ir_relation_equal:                return ia32_cc_equal;
+		case ir_relation_equal:                return x86_cc_equal;
 		case ir_relation_unordered_less:
 		case ir_relation_less:
-			return overflow_possible ? ia32_cc_less : ia32_cc_sign;
+			return overflow_possible ? x86_cc_less : x86_cc_sign;
 		case ir_relation_unordered_less_equal:
-		case ir_relation_less_equal:           return ia32_cc_less_equal;
+		case ir_relation_less_equal:           return x86_cc_less_equal;
 		case ir_relation_unordered_greater:
-		case ir_relation_greater:              return ia32_cc_greater;
+		case ir_relation_greater:              return x86_cc_greater;
 		case ir_relation_unordered_greater_equal:
 		case ir_relation_greater_equal:
-			return overflow_possible ? ia32_cc_greater_equal : ia32_cc_not_sign;
+			return overflow_possible ? x86_cc_greater_equal : x86_cc_not_sign;
 		case ir_relation_unordered_less_greater:
-		case ir_relation_less_greater:         return ia32_cc_not_equal;
+		case ir_relation_less_greater:         return x86_cc_not_equal;
 		case ir_relation_less_equal_greater:
 		case ir_relation_unordered:
 		case ir_relation_false:
@@ -2018,17 +2018,17 @@ static ia32_condition_code_t relation_to_condition_code(ir_relation relation,
 	} else {
 		switch (relation) {
 		case ir_relation_unordered_equal:
-		case ir_relation_equal:         return ia32_cc_equal;
+		case ir_relation_equal:         return x86_cc_equal;
 		case ir_relation_unordered_less:
-		case ir_relation_less:          return ia32_cc_below;
+		case ir_relation_less:          return x86_cc_below;
 		case ir_relation_unordered_less_equal:
-		case ir_relation_less_equal:    return ia32_cc_below_equal;
+		case ir_relation_less_equal:    return x86_cc_below_equal;
 		case ir_relation_unordered_greater:
-		case ir_relation_greater:       return ia32_cc_above;
+		case ir_relation_greater:       return x86_cc_above;
 		case ir_relation_unordered_greater_equal:
-		case ir_relation_greater_equal: return ia32_cc_above_equal;
+		case ir_relation_greater_equal: return x86_cc_above_equal;
 		case ir_relation_unordered_less_greater:
-		case ir_relation_less_greater:  return ia32_cc_not_equal;
+		case ir_relation_less_greater:  return x86_cc_not_equal;
 		case ir_relation_less_equal_greater:
 		case ir_relation_unordered:
 		case ir_relation_false:
@@ -2040,7 +2040,7 @@ static ia32_condition_code_t relation_to_condition_code(ir_relation relation,
 	}
 }
 
-static ir_node *get_flags_node(ir_node *cmp, ia32_condition_code_t *cc_out)
+static ir_node *get_flags_node(ir_node *cmp, x86_condition_code_t *cc_out)
 {
 	/* must have a Cmp as input */
 	ir_relation relation = get_Cmp_relation(cmp);
@@ -2069,9 +2069,9 @@ static ir_node *get_flags_node(ir_node *cmp, ia32_condition_code_t *cc_out)
 				ir_node *flags = gen_bt(cmp, ra, n);
 				/* the bit is copied into the CF flag */
 				if (relation & ir_relation_equal)
-					*cc_out = ia32_cc_above_equal; /* test for CF=0 */
+					*cc_out = x86_cc_above_equal; /* test for CF=0 */
 				else
-					*cc_out = ia32_cc_below;       /* test for CF=1 */
+					*cc_out = x86_cc_below;       /* test for CF=1 */
 				return flags;
 			}
 		}
@@ -2091,7 +2091,8 @@ static ir_node *get_flags_node(ir_node *cmp, ia32_condition_code_t *cc_out)
 		overflow_possible = false;
 
 	/* just do a normal transformation of the Cmp */
-	*cc_out = relation_to_condition_code(relation, mode, overflow_possible);
+	*cc_out = ir_relation_to_x86_condition_code(relation, mode,
+	                                            overflow_possible);
 	ir_node *flags = be_transform_node(cmp);
 	return flags;
 }
@@ -2312,14 +2313,14 @@ static ir_node *try_create_SetMem(ir_node *node, ir_node *ptr, ir_node *mem)
 		return NULL;
 	}
 
-	ia32_condition_code_t cc;
+	x86_condition_code_t cc;
 	ir_node *cond  = get_Mux_sel(node);
 	ir_node *flags = get_flags_node(cond, &cc);
 	/* we can't handle the float special cases with SetM */
-	if (cc & ia32_cc_additional_float_cases)
+	if (cc & x86_cc_additional_float_cases)
 		return NULL;
 	if (negated)
-		cc = ia32_negate_condition_code(cc);
+		cc = x86_negate_condition_code(cc);
 
 	ia32_address_t addr;
 	build_address_ptr(&addr, ptr, mem);
@@ -2767,7 +2768,7 @@ static ir_node *gen_Cond(ir_node *node)
 {
 	/* we get flags from a Cmp */
 	ir_node              *sel = get_Cond_selector(node);
-	ia32_condition_code_t cc;
+	x86_condition_code_t  cc;
 	ir_node *flags = get_flags_node(sel, &cc);
 
 	dbg_info *dbgi      = get_irn_dbg_info(node);
@@ -2934,7 +2935,7 @@ static ir_node *gen_Cmp(ir_node *node)
 }
 
 static ir_node *create_CMov(ir_node *node, ir_node *flags, ir_node *new_flags,
-                            ia32_condition_code_t cc)
+                            x86_condition_code_t cc)
 {
 	ir_node  *val_true  = get_Mux_true(node);
 	ir_node  *val_false = get_Mux_false(node);
@@ -2947,7 +2948,7 @@ static ir_node *create_CMov(ir_node *node, ir_node *flags, ir_node *new_flags,
 			match_commutative | match_am | match_16bit_am | match_mode_neutral);
 
 	if (am.ins_permuted)
-		cc = ia32_negate_condition_code(cc);
+		cc = x86_negate_condition_code(cc);
 
 	ia32_address_t *addr      = &am.addr;
 	dbg_info       *dbgi      = get_irn_dbg_info(node);
@@ -2967,7 +2968,7 @@ static ir_node *create_CMov(ir_node *node, ir_node *flags, ir_node *new_flags,
  * Creates a ia32 Setcc instruction.
  */
 static ir_node *create_set_32bit(dbg_info *dbgi, ir_node *new_block,
-                                 ir_node *flags, ia32_condition_code_t cc,
+                                 ir_node *flags, x86_condition_code_t cc,
                                  ir_node *orig_node)
 {
 	ir_mode *mode     = get_irn_mode(orig_node);
@@ -3090,8 +3091,8 @@ enum setcc_transform_insn {
 };
 
 typedef struct setcc_transform {
-	unsigned              num_steps;
-	ia32_condition_code_t cc;
+	unsigned             num_steps;
+	x86_condition_code_t cc;
 	struct {
 		enum setcc_transform_insn  transform;
 		long val;
@@ -3104,7 +3105,7 @@ typedef struct setcc_transform {
  * Find a transformation that creates 0 and 1 from
  * tv_t and tv_f.
  */
-static void find_const_transform(ia32_condition_code_t cc,
+static void find_const_transform(x86_condition_code_t cc,
                                  ir_tarval *t, ir_tarval *f,
                                  setcc_transform_t *res)
 {
@@ -3116,13 +3117,13 @@ static void find_const_transform(ia32_condition_code_t cc,
 		ir_tarval *tmp = t;
 		t = f;
 		f = tmp;
-		cc = ia32_negate_condition_code(cc);
+		cc = x86_negate_condition_code(cc);
 	} else if (tarval_cmp(t, f) == ir_relation_less) {
 		// now, t is the bigger one
 		ir_tarval *tmp = t;
 		t = f;
 		f = tmp;
-		cc = ia32_negate_condition_code(cc);
+		cc = x86_negate_condition_code(cc);
 	}
 	res->cc = cc;
 
@@ -3282,7 +3283,7 @@ static ir_node *gen_Mux(ir_node *node)
 		}
 
 		if (is_Const(mux_true) && is_Const(mux_false)) {
-			ia32_condition_code_t cc;
+			x86_condition_code_t cc;
 			ir_node *flags    = get_flags_node(sel, &cc);
 			ir_node *new_node = create_set_32bit(dbgi, new_block, flags, cc, node);
 			ir_mode *new_mode;
@@ -3372,7 +3373,7 @@ static ir_node *gen_Mux(ir_node *node)
 			}
 		}
 
-		ia32_condition_code_t cc;
+		x86_condition_code_t cc;
 		ir_node *flags = get_flags_node(sel, &cc);
 		ir_node *new_node;
 		if (is_Const(mux_true) && is_Const(mux_false)) {
@@ -4759,7 +4760,7 @@ static ir_node *gen_ffs(ir_node *node)
 	/* sete */
 	dbg_info *dbgi  = get_irn_dbg_info(real);
 	ir_node  *block = get_nodes_block(real);
-	ir_node  *set   = new_bd_ia32_Setcc(dbgi, block, flag, ia32_cc_equal);
+	ir_node  *set   = new_bd_ia32_Setcc(dbgi, block, flag, x86_cc_equal);
 	SET_IA32_ORIG_NODE(set, node);
 
 	/* conv to 32bit */
@@ -4835,7 +4836,7 @@ static ir_node *gen_parity(ir_node *node)
 
 	/* setp */
 	ir_node *new_node = new_bd_ia32_Setcc(dbgi, new_block, flags,
-	                                      ia32_cc_not_parity);
+	                                      x86_cc_not_parity);
 	SET_IA32_ORIG_NODE(new_node, node);
 
 	/* conv to 32bit */

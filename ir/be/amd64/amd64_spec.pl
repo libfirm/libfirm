@@ -52,7 +52,7 @@ $default_copy_attr = "amd64_copy_attr";
 		. "\tinit_amd64_switch_attributes(res, table, table_entity);",
 	amd64_cc_attr_t =>
 		"\tinit_amd64_attributes(res, irn_flags_, in_reqs, n_res);"
-		. "\tinit_amd64_cc_attributes(res, relation, is_unsigned);",
+		. "\tinit_amd64_cc_attributes(res, cc);",
 	amd64_movimm_attr_t =>
 		"\tinit_amd64_attributes(res, irn_flags_, in_reqs, n_res);"
 		. "\tinit_amd64_movimm_attributes(res, symconst, offset);",
@@ -330,7 +330,7 @@ Jcc => {
 	reg_req   => { in  => [ "eflags" ], out => [ "none", "none" ] },
 	ins       => [ "eflags" ],
 	outs      => [ "false", "true" ],
-	attr      => "ir_relation relation, bool is_unsigned",
+	attr      => "x86_condition_code_t cc",
 	attr_type => "amd64_cc_attr_t",
 	mode      => "mode_T",
 },

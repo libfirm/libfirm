@@ -230,12 +230,12 @@ void set_ia32_frame_ent(ir_node *node, ir_entity *ent);
 /**
  * Returns the condition code of a node.
  */
-ia32_condition_code_t get_ia32_condcode(const ir_node *node);
+x86_condition_code_t get_ia32_condcode(const ir_node *node);
 
 /**
  * Sets the condition code of a node
  */
-void set_ia32_condcode(ir_node *node, ia32_condition_code_t code);
+void set_ia32_condcode(ir_node *node, x86_condition_code_t code);
 
 const ir_switch_table *get_ia32_switch_table(const ir_node *node);
 

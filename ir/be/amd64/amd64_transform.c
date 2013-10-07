@@ -858,15 +858,43 @@ static ir_node *gen_Cmp(ir_node *node)
 	return new_bd_amd64_Cmp(dbgi, block, new_op1, new_op2, insn_mode);
 }
 
+static ir_node *get_flags_node(ir_node *cmp, x86_condition_code_t *cc_out)
+{
+	/* must have a Cmp as input */
+	ir_relation relation = get_Cmp_relation(cmp);
+	ir_node    *l        = get_Cmp_left(cmp);
+	ir_node    *r        = get_Cmp_right(cmp);
+	ir_mode    *mode     = get_irn_mode(l);
+
+	/* the middle-end tries to eliminate impossible relations, so a ptr <> 0
+	 * test becomes ptr > 0. But for x86 an equal comparison is preferable to
+	 * a >0 (we can sometimes eliminate the cmp in favor of flags produced by
+	 * a predecessor node). So add the < bit.
+	 * (Note that we do not want to produce <=> (which can happen for
+	 * unoptimized code), because no x86 flag can represent that */
+	if (!(relation & ir_relation_equal) && relation & ir_relation_less_greater)
+		relation |= get_negated_relation(ir_get_possible_cmp_relations(l, r)) & ir_relation_less_greater;
+
+	bool overflow_possible = true;
+	if (is_Const(r) && is_Const_null(r))
+		overflow_possible = false;
+
+	/* just do a normal transformation of the Cmp */
+	*cc_out = ir_relation_to_x86_condition_code(relation, mode,
+	                                            overflow_possible);
+	ir_node *flags = be_transform_node(cmp);
+	return flags;
+}
+
 static ir_node *gen_Cond(ir_node *node)
 {
-	ir_node    *const block       = be_transform_node(get_nodes_block(node));
-	dbg_info   *const dbgi        = get_irn_dbg_info(node);
-	ir_node    *const selector    = get_Cond_selector(node);
-	ir_node    *const flag_node   = be_transform_node(selector);
-	ir_relation const relation    = get_Cmp_relation(selector);
-	bool        const is_unsigned = !mode_is_signed(get_irn_mode(get_Cmp_left(selector)));
-	return new_bd_amd64_Jcc(dbgi, block, flag_node, relation, is_unsigned);
+	ir_node             *sel = get_Cond_selector(node);
+	x86_condition_code_t cc;
+	ir_node             *flags = get_flags_node(sel, &cc);
+
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node  *const block = be_transform_node(get_nodes_block(node));
+	return new_bd_amd64_Jcc(dbgi, block, flags, cc);
 }
 
 static ir_node *gen_Phi(ir_node *node)

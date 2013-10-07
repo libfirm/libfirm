@@ -792,11 +792,11 @@ Setcc => {
 	ins       => [ "eflags" ],
 	outs      => [ "res" ],
 	attr_type => "ia32_condcode_attr_t",
-	attr      => "ia32_condition_code_t condition_code",
+	attr      => "x86_condition_code_t condition_code",
 	# The way we handle Setcc with float nodes (potentially) destroys the flags
 	# (when we emit the setX; setp; orb and the setX;setnp;andb sequences)
 	init_attr => "set_ia32_ls_mode(res, mode_Bu);\n"
-		. "\tif (condition_code & ia32_cc_additional_float_cases) {\n"
+		. "\tif (condition_code & x86_cc_additional_float_cases) {\n"
 		. "\t\tarch_add_irn_flags(res, arch_irn_flag_modify_flags);\n"
 		. "\t\t/* attr->latency = 3; */\n"
 		. "\t}\n",
@@ -810,7 +810,7 @@ SetccMem => {
 	reg_req   => { in => [ "gp", "gp", "none", "eflags" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem","eflags" ],
 	attr_type => "ia32_condcode_attr_t",
-	attr      => "ia32_condition_code_t condition_code",
+	attr      => "x86_condition_code_t condition_code",
 	init_attr => "set_ia32_ls_mode(res, mode_Bu);\n",
 	emit      => "set%P3 %AM",
 	latency   => 1,
@@ -828,7 +828,7 @@ CMovcc => {
 	outs      => [ "res", "flags", "M" ],
 	am        => "source,binary",
 	attr_type => "ia32_condcode_attr_t",
-	attr      => "ia32_condition_code_t condition_code",
+	attr      => "x86_condition_code_t condition_code",
 	latency   => 1,
 	mode      => $mode_gp,
 },
@@ -840,7 +840,7 @@ Jcc => {
 	ins       => [ "eflags" ],
 	outs      => [ "false", "true" ],
 	attr_type => "ia32_condcode_attr_t",
-	attr      => "ia32_condition_code_t condition_code",
+	attr      => "x86_condition_code_t condition_code",
 	latency   => 2,
 },
 

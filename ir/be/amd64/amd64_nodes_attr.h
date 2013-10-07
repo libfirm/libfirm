@@ -14,6 +14,7 @@
 
 #include "bearch.h"
 #include "compiler.h"
+#include "../ia32/x86_cc.h"
 
 typedef struct amd64_attr_t            amd64_attr_t;
 typedef struct amd64_switch_jmp_attr_t amd64_switch_jmp_attr_t;
@@ -72,8 +73,8 @@ struct amd64_movimm_attr_t
 
 struct amd64_cc_attr_t
 {
-	ir_relation relation;
-	bool        is_unsigned : 1;
+	amd64_attr_t         base;
+	x86_condition_code_t cc;
 };
 
 struct amd64_switch_jmp_attr_t

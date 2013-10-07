@@ -155,12 +155,10 @@ static void init_amd64_switch_attributes(ir_node *node, const ir_switch_table *t
 	}
 }
 
-static void init_amd64_cc_attributes(ir_node *node, ir_relation relation,
-                                     bool is_unsigned)
+static void init_amd64_cc_attributes(ir_node *node, x86_condition_code_t cc)
 {
 	amd64_cc_attr_t *attr = get_amd64_cc_attr(node);
-	attr->relation    = relation;
-	attr->is_unsigned = is_unsigned;
+	attr->cc = cc;
 }
 
 static void init_amd64_movimm_attributes(ir_node *node, ir_entity *symconst,
@@ -210,8 +208,7 @@ static int cmp_amd64_cc_attr(const ir_node *const a,
 		return true;
 	const amd64_cc_attr_t *const attr_a = get_amd64_cc_attr_const(a);
 	const amd64_cc_attr_t *const attr_b = get_amd64_cc_attr_const(b);
-	return attr_a->relation != attr_b->relation
-	    || attr_a->is_unsigned != attr_b->is_unsigned;
+	return attr_a->cc != attr_b->cc;
 }
 
 static int cmp_amd64_switch_jmp_attr(const ir_node *const a,
