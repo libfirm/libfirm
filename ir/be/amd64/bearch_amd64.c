@@ -46,21 +46,29 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static ir_entity *amd64_get_frame_entity(const ir_node *node)
 {
-	if (is_amd64_FrameAddr(node)) {
-		const amd64_SymConst_attr_t *attr = get_amd64_SymConst_attr_const(node);
-		return attr->entity;
-	} else if (is_amd64_Store(node) || is_amd64_LoadS(node)
-	        || is_amd64_LoadZ(node)) {
-	    const amd64_attr_t *attr = get_amd64_attr_const(node);
-	    ir_entity *entity = attr->am.symconst;
-	    if (entity == NULL)
-			return NULL;
-		ir_type *parent = get_entity_owner(entity);
-		if (is_frame_type(parent))
-			return entity;
-	}
-
+	if (!is_amd64_irn(node))
+		return NULL;
+	const amd64_attr_t *attr = get_amd64_attr_const(node);
+	if (!attr->data.has_am_info)
+		return NULL;
+	ir_entity *entity = attr->am.symconst;
+	if (entity == NULL)
+		return NULL;
+	ir_type *parent = get_entity_owner(entity);
+	if (is_frame_type(parent))
+		return entity;
 	return NULL;
+}
+
+static int get_insn_mode_bytes(amd64_insn_mode_t insn_mode)
+{
+	switch (insn_mode) {
+	case INSN_MODE_8:  return 1;
+	case INSN_MODE_16: return 2;
+	case INSN_MODE_32: return 4;
+	case INSN_MODE_64: return 8;
+	}
+	panic("bad insn mode");
 }
 
 /**
@@ -69,26 +77,37 @@ static ir_entity *amd64_get_frame_entity(const ir_node *node)
  */
 static void amd64_set_frame_offset(ir_node *node, int offset)
 {
-	if (is_amd64_FrameAddr(node)) {
-		amd64_SymConst_attr_t *attr = get_amd64_SymConst_attr(node);
-		attr->fp_offset += offset;
-	} else if (is_amd64_Store(node) || is_amd64_LoadS(node)
-	        || is_amd64_LoadZ(node)) {
-	    amd64_attr_t *attr = get_amd64_attr(node);
-	    attr->am.offset += offset;
+	if (!is_amd64_irn(node))
+		return;
+	amd64_attr_t *attr = get_amd64_attr(node);
+	if (!attr->data.has_am_info)
+		return;
+	attr->am.offset += offset;
+	if (is_amd64_PopAM(node)) {
+		ir_graph          *irg    = get_irn_irg(node);
+		be_stack_layout_t *layout = be_get_irg_stack_layout(irg);
+		if (layout->sp_relative) {
+			attr->am.offset -= get_insn_mode_bytes(attr->data.insn_mode);
+		}
 	}
 }
 
-static int amd64_get_sp_bias(const ir_node *irn)
+static int amd64_get_sp_bias(const ir_node *node)
 {
-	if (is_amd64_Start(irn)) {
-		ir_graph *irg        = get_irn_irg(irn);
+	if (is_amd64_Start(node)) {
+		ir_graph *irg        = get_irn_irg(node);
 		ir_type  *frame_type = get_irg_frame_type(irg);
 		return get_type_size_bytes(frame_type);
-	} else if (is_amd64_Return(irn)) {
-		ir_graph *irg        = get_irn_irg(irn);
+	} else if (is_amd64_Return(node)) {
+		ir_graph *irg        = get_irn_irg(node);
 		ir_type  *frame_type = get_irg_frame_type(irg);
 		return -(int)get_type_size_bytes(frame_type);
+	} else if (is_amd64_PushAM(node)) {
+		const amd64_attr_t *attr = get_amd64_attr_const(node);
+		return get_insn_mode_bytes(attr->data.insn_mode);
+	} else if (is_amd64_PopAM(node)) {
+		const amd64_attr_t *attr = get_amd64_attr_const(node);
+		return -get_insn_mode_bytes(attr->data.insn_mode);
 	}
 	return 0;
 }
@@ -111,15 +130,48 @@ static void amd64_before_ra(ir_graph *irg)
 	be_add_missing_keeps(irg);
 }
 
-static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp, ir_node *mem, ir_entity *ent)
+static const arch_register_req_t amd64_requirement_gp = {
+	arch_register_req_type_normal,
+	&amd64_reg_classes[CLASS_amd64_gp],
+	NULL,
+	0,
+	0,
+	1
+};
+
+static const unsigned amd64_limited_gp_rsp [] = { (1 << REG_GP_RSP) };
+static const arch_register_req_t amd64_single_reg_req_gp_rsp = {
+	arch_register_req_type_limited,
+	&amd64_reg_classes[CLASS_amd64_gp],
+	amd64_limited_gp_rsp,
+	0,
+	0,
+	1
+};
+
+static const arch_register_req_t *am_pushpop_base_reqs[] = {
+	&amd64_single_reg_req_gp_rsp,
+	&amd64_requirement_gp,
+	&arch_no_requirement,
+};
+
+static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
+                            ir_node *mem, ir_entity *ent)
 {
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = get_nodes_block(node);
 	ir_graph *irg   = get_irn_irg(node);
 	ir_node  *frame = get_irg_frame(irg);
 
-	ir_node *push
-		= new_bd_amd64_PushAM(dbgi, block, frame, mem, sp, INSN_MODE_64, 0, ent);
+	amd64_am_info_t am;
+	memset(&am, 0, sizeof(am));
+	am.base_input  = 0;
+	am.index_input = NO_INPUT;
+	am.symconst    = ent;
+	ir_node *in[] = { sp, frame, mem };
+	ir_node *push = new_bd_amd64_PushAM(dbgi, block, ARRAY_SIZE(in), in,
+	                                    INSN_MODE_64, am);
+	arch_set_irn_register_reqs_in(push, am_pushpop_base_reqs);
 	sched_add_before(schedpoint, push);
 	return push;
 }
@@ -131,8 +183,16 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp, ir_e
 	ir_graph *irg   = get_irn_irg(node);
 	ir_node  *frame = get_irg_frame(irg);
 
-	ir_node *pop = new_bd_amd64_PopAM(dbgi, block, frame, get_irg_no_mem(irg),
-	                                  sp, INSN_MODE_64, 0, ent);
+	amd64_am_info_t am;
+	memset(&am, 0, sizeof(am));
+	am.base_input  = 0;
+	am.index_input = NO_INPUT;
+	am.symconst    = ent;
+	ir_node *in[] = { sp, frame, get_irg_no_mem(irg) };
+
+	ir_node *pop = new_bd_amd64_PopAM(dbgi, block, ARRAY_SIZE(in), in,
+	                                  INSN_MODE_64, am);
+	arch_set_irn_register_reqs_in(pop, am_pushpop_base_reqs);
 	sched_add_before(schedpoint, pop);
 
 	return pop;

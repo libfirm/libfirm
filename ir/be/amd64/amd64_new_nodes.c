@@ -84,20 +84,6 @@ amd64_attr_t *get_amd64_attr(ir_node *node)
 	return (amd64_attr_t *)get_irn_generic_attr(node);
 }
 
-const amd64_SymConst_attr_t *get_amd64_SymConst_attr_const(const ir_node *node)
-{
-	const amd64_SymConst_attr_t *attr
-		= (const amd64_SymConst_attr_t*)get_irn_generic_attr_const(node);
-	return attr;
-}
-
-amd64_SymConst_attr_t *get_amd64_SymConst_attr(ir_node *node)
-{
-	amd64_SymConst_attr_t *attr
-		= (amd64_SymConst_attr_t*)get_irn_generic_attr(node);
-	return attr;
-}
-
 const amd64_switch_jmp_attr_t *get_amd64_switch_jmp_attr_const(const ir_node *node)
 {
 	const amd64_switch_jmp_attr_t *attr
@@ -112,38 +98,44 @@ amd64_switch_jmp_attr_t *get_amd64_switch_jmp_attr(ir_node *node)
 	return attr;
 }
 
+const amd64_movimm_attr_t *get_amd64_movimm_attr_const(const ir_node *node)
+{
+	assert(is_amd64_irn(node));
+	return (const amd64_movimm_attr_t*)get_irn_generic_attr_const(node);
+}
+
+amd64_movimm_attr_t *get_amd64_movimm_attr(ir_node *node)
+{
+	assert(is_amd64_irn(node));
+	return (amd64_movimm_attr_t*)get_irn_generic_attr(node);
+}
+
+const amd64_cc_attr_t *get_amd64_cc_attr_const(const ir_node *node)
+{
+	assert(is_amd64_irn(node));
+	return (const amd64_cc_attr_t*)get_irn_generic_attr_const(node);
+}
+
+amd64_cc_attr_t *get_amd64_cc_attr(ir_node *node)
+{
+	assert(is_amd64_irn(node));
+	return (amd64_cc_attr_t*)get_irn_generic_attr(node);
+}
+
 /**
  * Initializes the nodes attributes.
  */
 static void init_amd64_attributes(ir_node *node, arch_irn_flags_t flags,
-                              const arch_register_req_t **in_reqs,
-                              int n_res)
+                                  const arch_register_req_t **in_reqs,
+                                  int n_res)
 {
-	ir_graph        *irg  = get_irn_irg(node);
-	struct obstack  *obst = get_irg_obstack(irg);
-	amd64_attr_t *attr    = get_amd64_attr(node);
-
-	backend_info_t  *info;
-
 	arch_set_irn_flags(node, flags);
 	arch_set_irn_register_reqs_in(node, in_reqs);
 
-	info            = be_get_info(node);
+	ir_graph       *irg  = get_irn_irg(node);
+	struct obstack *obst = get_irg_obstack(irg);
+	backend_info_t *info = be_get_info(node);
 	info->out_infos = NEW_ARR_DZ(reg_out_info_t, obst, n_res);
-
-	attr->data.ins_permuted = 0;
-	attr->data.cmp_unsigned = 0;
-	attr->ext.relation      = ir_relation_false;
-}
-
-/**
- * Initialize SymConst attributes.
- */
-static void init_amd64_SymConst_attributes(ir_node *node, ir_entity *entity)
-{
-	amd64_SymConst_attr_t *attr = get_amd64_SymConst_attr(node);
-	attr->entity    = entity;
-	attr->fp_offset = 0;
 }
 
 /**
@@ -163,22 +155,20 @@ static void init_amd64_switch_attributes(ir_node *node, const ir_switch_table *t
 	}
 }
 
-/** Compare node attributes for SymConst. */
-static int cmp_amd64_attr_SymConst(const ir_node *a, const ir_node *b)
+static void init_amd64_cc_attributes(ir_node *node, ir_relation relation,
+                                     bool is_unsigned)
 {
-	const amd64_SymConst_attr_t *attr_a = get_amd64_SymConst_attr_const(a);
-	const amd64_SymConst_attr_t *attr_b = get_amd64_SymConst_attr_const(b);
-
-	if (attr_a->entity != attr_b->entity
-	    || attr_a->fp_offset != attr_b->fp_offset)
-		return 1;
-
-	return 0;
+	amd64_cc_attr_t *attr = get_amd64_cc_attr(node);
+	attr->relation    = relation;
+	attr->is_unsigned = is_unsigned;
 }
 
-static int cmp_imm(const amd64_imm_t *const imm0, const amd64_imm_t *const imm1)
+static void init_amd64_movimm_attributes(ir_node *node, ir_entity *symconst,
+                                         int64_t offset)
 {
-	return imm0->offset != imm1->offset || imm0->symconst != imm1->symconst;
+	amd64_movimm_attr_t *attr = get_amd64_movimm_attr(node);
+	attr->symconst = symconst;
+	attr->offset   = offset;
 }
 
 static int cmp_am(const amd64_am_info_t *const am0,
@@ -187,7 +177,6 @@ static int cmp_am(const amd64_am_info_t *const am0,
 	return am0->offset != am1->offset || am0->symconst != am1->symconst
 	    || am0->base_input != am1->base_input
 	    || am0->index_input != am1->index_input
-	    || am0->mem_input != am1->mem_input
 	    || am0->log_scale != am1->log_scale
 	    || am0->segment != am1->segment;
 }
@@ -197,13 +186,49 @@ static int cmp_amd64_attr(const ir_node *a, const ir_node *b)
 {
 	const amd64_attr_t *attr_a = get_amd64_attr_const(a);
 	const amd64_attr_t *attr_b = get_amd64_attr_const(b);
-	return cmp_imm(&attr_a->imm, &attr_b->imm)
-	    || cmp_am(&attr_a->am, &attr_b->am);
+	return cmp_am(&attr_a->am, &attr_b->am)
+	    || attr_a->data.insn_mode != attr_b->data.insn_mode
+	    || attr_a->data.needs_frame_ent != attr_b->data.needs_frame_ent
+	    || attr_a->ls_mode != attr_b->ls_mode;
+}
+
+static int cmp_amd64_movimm_attr(const ir_node *const a,
+                                 const ir_node *const b)
+{
+	if (cmp_amd64_attr(a, b))
+		return true;
+	const amd64_movimm_attr_t *const attr_a = get_amd64_movimm_attr_const(a);
+	const amd64_movimm_attr_t *const attr_b = get_amd64_movimm_attr_const(b);
+	return attr_a->symconst != attr_b->symconst
+	    || attr_a->offset != attr_b->offset;
+}
+
+static int cmp_amd64_cc_attr(const ir_node *const a,
+                             const ir_node *const b)
+{
+	if (cmp_amd64_attr(a, b))
+		return true;
+	const amd64_cc_attr_t *const attr_a = get_amd64_cc_attr_const(a);
+	const amd64_cc_attr_t *const attr_b = get_amd64_cc_attr_const(b);
+	return attr_a->relation != attr_b->relation
+	    || attr_a->is_unsigned != attr_b->is_unsigned;
+}
+
+static int cmp_amd64_switch_jmp_attr(const ir_node *const a,
+                                    const ir_node *const b)
+{
+	if (cmp_amd64_attr(a, b))
+		return true;
+	const amd64_switch_jmp_attr_t *const attr_a
+		= get_amd64_switch_jmp_attr_const(a);
+	const amd64_switch_jmp_attr_t *const attr_b
+		= get_amd64_switch_jmp_attr_const(b);
+	return attr_a->table != attr_b->table;
 }
 
 /** copies the AMD64 attributes of a node. */
 static void amd64_copy_attr(ir_graph *irg, const ir_node *old_node,
-                          ir_node *new_node)
+                            ir_node *new_node)
 {
 	struct obstack   *obst       = get_irg_obstack(irg);
 	const amd64_attr_t *attr_old = get_amd64_attr_const(old_node);

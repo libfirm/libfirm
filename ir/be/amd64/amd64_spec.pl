@@ -47,45 +47,51 @@ $default_copy_attr = "amd64_copy_attr";
 %init_attr = (
 	amd64_attr_t           =>
 		 "\tinit_amd64_attributes(res, irn_flags_, in_reqs, n_res);",
-	amd64_SymConst_attr_t =>
-		"\tinit_amd64_attributes(res, irn_flags_, in_reqs, n_res);"
-		. "\tinit_amd64_SymConst_attributes(res, entity);",
 	amd64_switch_jmp_attr_t =>
 		"\tinit_amd64_attributes(res, irn_flags_, in_reqs, n_res);"
-		. "\tinit_amd64_switch_attributes(res, table, table_entity);"
+		. "\tinit_amd64_switch_attributes(res, table, table_entity);",
+	amd64_cc_attr_t =>
+		"\tinit_amd64_attributes(res, irn_flags_, in_reqs, n_res);"
+		. "\tinit_amd64_cc_attributes(res, relation, is_unsigned);",
+	amd64_movimm_attr_t =>
+		"\tinit_amd64_attributes(res, irn_flags_, in_reqs, n_res);"
+		. "\tinit_amd64_movimm_attributes(res, symconst, offset);",
 );
 
 %compare_attr = (
-	amd64_attr_t             => "cmp_amd64_attr",
-	amd64_SymConst_attr_t    => "cmp_amd64_attr_SymConst",
-	amd64_switch_jmp_attr_t  => "cmp_amd64_attr",
+	amd64_attr_t            => "cmp_amd64_attr",
+	amd64_switch_jmp_attr_t => "cmp_amd64_switch_jmp_attr",
+	amd64_movimm_attr_t     => "cmp_amd64_movimm_attr",
+	amd64_cc_attr_t         => "cmp_amd64_cc_attr",
 );
 
 %nodes = (
 PushAM => {
 	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "none", "rsp" ], out => [ "rsp:I|S", "none" ] },
-	ins       => [ "base", "mem", "stack" ],
+	reg_req   => { out => [ "rsp:I|S", "none" ] },
+	arity     => "variable",
 	outs      => [ "stack", "M" ],
-	attr      => "amd64_insn_mode_t insn_mode, int64_t offset, ir_entity *symconst",
-	init_attr => "attr->imm.offset     = offset;\n"
-	           . "attr->imm.symconst   = symconst;\n"
-	           . "attr->data.insn_mode = insn_mode;\n",
-	emit      => "push %AM",
+	attr      => "amd64_insn_mode_t insn_mode, amd64_am_info_t am",
+	attr_type => "amd64_attr_t",
+	init_attr => "attr->data.insn_mode = insn_mode;\n"
+	            ."\tattr->am                  = am;\n"
+	            ."\tattr->data.has_am_info    = true;\n",
+	emit      => "push%M %AM",
 },
 
 PopAM => {
 	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "none", "rsp" ], out => [ "rsp:I|S", "none" ] },
-	ins       => [ "base", "mem", "stack" ],
+	reg_req   => { out => [ "rsp:I|S", "none" ] },
+	arity     => "variable",
 	outs      => [ "stack", "M" ],
-	attr      => "amd64_insn_mode_t insn_mode, int64_t offset, ir_entity *symconst",
-	init_attr => "attr->imm.offset     = offset;\n"
-	           . "attr->imm.symconst   = symconst;\n"
-	           . "attr->data.insn_mode = insn_mode;\n",
-	emit      => "pop %AM",
+	attr      => "amd64_insn_mode_t insn_mode, amd64_am_info_t am",
+	attr_type => "amd64_attr_t",
+	init_attr => "attr->data.insn_mode = insn_mode;\n"
+	            ."\tattr->am                  = am;\n"
+	            ."\tattr->data.has_am_info    = true;\n",
+	emit      => "pop%M %AM",
 },
 
 Add => {
@@ -266,9 +272,8 @@ Xor0 => {
 Const => {
 	op_flags  => [ "constlike" ],
 	attr      => "amd64_insn_mode_t insn_mode, int64_t offset, ir_entity *symconst",
-	init_attr => "attr->imm.offset     = offset;\n"
-	           . "attr->imm.symconst   = symconst;\n"
-	           . "attr->data.insn_mode = insn_mode;\n",
+	init_attr => "attr->base.data.insn_mode = insn_mode;\n",
+	attr_type => "amd64_movimm_attr_t",
 	reg_req   => { out => [ "gp" ] },
 	emit      => 'mov%M $%C, %D0',
 	mode      => $mode_gp,
@@ -300,10 +305,8 @@ Cmp => {
 	ins       => [ "left", "right" ],
 	outs      => [ "eflags" ],
 	emit      => "cmp%M %S1, %S0",
-	attr      => "amd64_insn_mode_t insn_mode, int ins_permuted, int cmp_unsigned",
-	init_attr => "attr->data.ins_permuted   = ins_permuted;\n".
-	             "\tattr->data.cmp_unsigned = cmp_unsigned;\n".
-	             "\tattr->data.insn_mode    = insn_mode;\n",
+	attr      => "amd64_insn_mode_t insn_mode",
+	init_attr => "attr->data.insn_mode = insn_mode;\n",
 	mode      => $mode_flags,
 	modified_flags => 1,
 },
@@ -314,8 +317,9 @@ Lea => {
 	outs      => [ "res", "flags", "M" ],
 	attr      => "amd64_insn_mode_t insn_mode, amd64_am_info_t am",
 	reg_req   => { out => [ "gp", "flags", "none" ] },
-	init_attr => "attr->data.insn_mode = insn_mode;\n".
-	             "\tattr->am             = am;\n",
+	init_attr => "attr->data.insn_mode = insn_mode;\n"
+	            ."\tattr->am             = am;\n"
+	            ."\tattr->data.has_am_info    = true;\n",
 	emit      => "lea%M %AM, %D0",
 	mode      => $mode_gp,
 },
@@ -326,8 +330,8 @@ Jcc => {
 	reg_req   => { in  => [ "eflags" ], out => [ "none", "none" ] },
 	ins       => [ "eflags" ],
 	outs      => [ "false", "true" ],
-	attr      => "ir_relation relation",
-	init_attr => "attr->ext.relation = relation;",
+	attr      => "ir_relation relation, bool is_unsigned",
+	attr_type => "amd64_cc_attr_t",
 	mode      => "mode_T",
 },
 
@@ -340,7 +344,8 @@ LoadZ => {
 	attr      => "amd64_insn_mode_t insn_mode, amd64_am_info_t am",
 	attr_type => "amd64_attr_t",
 	init_attr => "attr->data.insn_mode = insn_mode;\n"
-	            ."\tattr->am                  = am;\n",
+	            ."\tattr->am                  = am;\n"
+	            ."\tattr->data.has_am_info    = true;\n",
 },
 
 LoadS => {
@@ -352,18 +357,9 @@ LoadS => {
 	attr      => "amd64_insn_mode_t insn_mode, amd64_am_info_t am",
 	attr_type => "amd64_attr_t",
 	init_attr => "attr->data.insn_mode = insn_mode;\n"
-	            ."\tattr->am                  = am;\n",
+	            ."\tattr->am                  = am;\n"
+	            ."\tattr->data.has_am_info    = true;\n",
 	emit      => "movs%Mq %AM, %^D0"
-},
-
-FrameAddr => {
-	op_flags  => [ "constlike" ],
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-	ins       => [ "base" ],
-	attr      => "ir_entity *entity",
-	attr_type => "amd64_SymConst_attr_t",
-	mode      => $mode_gp,
 },
 
 Store => {
@@ -375,7 +371,8 @@ Store => {
 	attr      => "amd64_insn_mode_t insn_mode, amd64_am_info_t am",
 	attr_type => "amd64_attr_t",
 	init_attr => "attr->data.insn_mode = insn_mode;\n"
-	            ."\tattr->am                  = am;\n",
+	            ."\tattr->am                  = am;\n"
+	            ."\tattr->data.has_am_info    = true;\n",
 	mode      => "mode_M",
 	emit      => "mov%M %S0, %AM"
 },

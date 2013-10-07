@@ -182,7 +182,7 @@ typedef enum amd64_emit_mod_t {
 } amd64_emit_mod_t;
 ENUM_BITSET(amd64_emit_mod_t)
 
-static void amd64_emit_immediate(const amd64_imm_t *const imm)
+static void amd64_emit_immediate(const amd64_movimm_attr_t *const imm)
 {
 	if (imm->symconst != NULL) {
 		be_gas_emit_entity(imm->symconst);
@@ -194,17 +194,6 @@ static void amd64_emit_immediate(const amd64_imm_t *const imm)
 			be_emit_irprintf("0x%lX", imm->offset);
 		}
 	}
-}
-
-static void amd64_emit_am_old(const arch_register_t *const base,
-                              const amd64_imm_t *const imm)
-{
-	if (base == NULL) {
-		amd64_emit_immediate(imm);
-		return;
-	}
-	emit_register(base);
-
 }
 
 static void amd64_emit_am(const ir_node *const node,
@@ -307,13 +296,7 @@ end_of_mods:
 				switch (*fmt++) {
 				case 'M': {
 					amd64_attr_t const *const attr = get_amd64_attr_const(node);
-					if (mod & EMIT_RESPECT_LS) {
-						arch_register_t const *const base
-							= arch_get_irn_register_in(node, 0);
-						amd64_emit_am_old(base, &attr->imm);
-					} else {
-						amd64_emit_am(node, &attr->am);
-					}
+					amd64_emit_am(node, &attr->am);
 					break;
 				}
 				default:
@@ -322,8 +305,9 @@ end_of_mods:
 				break;
 
 			case 'C': {
-				amd64_attr_t const *const attr = get_amd64_attr_const(node);
-				amd64_emit_immediate(&attr->imm);
+				amd64_movimm_attr_t const *const attr
+					= get_amd64_movimm_attr_const(node);
+				amd64_emit_immediate(attr);
 				break;
 			}
 
@@ -342,13 +326,6 @@ end_of_mods:
 			case 'L': {
 				ir_node *const block = get_cfop_target_block(node);
 				be_gas_emit_block_name(block);
-				break;
-			}
-
-			case 'O': {
-				amd64_SymConst_attr_t const *const attr = get_amd64_SymConst_attr_const(node);
-				if (attr->fp_offset)
-					be_emit_irprintf("%d", attr->fp_offset);
 				break;
 			}
 
@@ -469,18 +446,14 @@ static void emit_amd64_SwitchJmp(const ir_node *node)
  */
 static void emit_amd64_Jcc(const ir_node *irn)
 {
-	const ir_node      *proj_true  = NULL;
-	const ir_node      *proj_false = NULL;
-	const ir_node      *block;
-	const ir_node      *next_block;
-	const char         *suffix;
-	const amd64_attr_t *attr      = get_amd64_attr_const(irn);
-	ir_relation         relation  = attr->ext.relation;
-	ir_node            *op1       = get_irn_n(irn, 0);
-	const amd64_attr_t *cmp_attr  = get_amd64_attr_const(op1);
-	bool                is_signed = !cmp_attr->data.cmp_unsigned;
-
-	assert(is_amd64_Cmp(op1));
+	const ir_node         *proj_true  = NULL;
+	const ir_node         *proj_false = NULL;
+	const ir_node         *block;
+	const ir_node         *next_block;
+	const char            *suffix;
+	const amd64_cc_attr_t *attr      = get_amd64_cc_attr_const(irn);
+	ir_relation            relation  = attr->relation;
+	bool                   is_signed = !attr->is_unsigned;
 
 	foreach_out_edge(irn, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
@@ -490,10 +463,6 @@ static void emit_amd64_Jcc(const ir_node *irn)
 		} else {
 			proj_false = proj;
 		}
-	}
-
-	if (cmp_attr->data.ins_permuted) {
-		relation = get_inversed_relation(relation);
 	}
 
 	/* for now, the code works for scheduled and non-schedules blocks */
@@ -595,15 +564,6 @@ static void emit_be_Perm(const ir_node *node)
 	}
 }
 
-static void emit_amd64_FrameAddr(const ir_node *irn)
-{
-	const amd64_SymConst_attr_t *attr =
-		(const amd64_SymConst_attr_t*) get_amd64_attr_const(irn);
-
-	amd64_emitf(irn, "mov %S0, %D0");
-	amd64_emitf(irn, "add $%u, %D0", attr->fp_offset);
-}
-
 /**
  * Emits code to increase stack pointer.
  */
@@ -659,7 +619,6 @@ static void amd64_register_emitters(void)
 	amd64_register_spec_emitters();
 
 	be_set_emitter(op_amd64_Call,      emit_amd64_Call);
-	be_set_emitter(op_amd64_FrameAddr, emit_amd64_FrameAddr);
 	be_set_emitter(op_amd64_Jcc,       emit_amd64_Jcc);
 	be_set_emitter(op_amd64_Jmp,       emit_amd64_Jmp);
 	be_set_emitter(op_amd64_LoadZ,     emit_amd64_LoadZ);

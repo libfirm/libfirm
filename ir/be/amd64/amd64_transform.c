@@ -74,6 +74,10 @@ static const arch_register_req_t *am_store_base_reqs[] = {
 	&arch_no_requirement,
 };
 
+static const arch_register_req_t *am_lea_base_reqs[] = {
+	&amd64_requirement_gp,
+};
+
 static inline int mode_needs_gp_reg(ir_mode *mode)
 {
 	return mode_is_int(mode) || mode_is_reference(mode);
@@ -161,7 +165,7 @@ static ir_node *gen_SymConst(ir_node *node)
 
 	amd64_am_info_t am;
 	memset(&am, 0, sizeof(am));
-	am.base_input = RIP_INPUT;
+	am.base_input  = RIP_INPUT;
 	am.index_input = NO_INPUT;
 	if (mode == REFERENCE_IP_RELATIVE) {
 		am.symconst = entity;
@@ -334,8 +338,16 @@ static ir_node *gen_Sel(ir_node *const node)
 		panic("Sel not lowered");
 	if (get_Sel_n_indexs(node) > 0)
 		panic("array Sel not lowered %+F", node);
-	ir_entity *entity = get_Sel_entity(node);
-	return new_bd_amd64_FrameAddr(dbgi, new_block, base, entity);
+	amd64_am_info_t am;
+	memset(&am, 0, sizeof(am));
+	am.base_input  = 0;
+	am.index_input = NO_INPUT;
+	am.symconst    = get_Sel_entity(node);
+	ir_node *in[] = { base };
+	ir_node *res = new_bd_amd64_Lea(dbgi, new_block, ARRAY_SIZE(in), in,
+	                                INSN_MODE_64, am);
+	arch_set_irn_register_reqs_in(res, am_lea_base_reqs);
+	return res;
 }
 
 static ir_node *gen_Jmp(ir_node *node)
@@ -781,10 +793,10 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 		/* TODO: use the AM form for the address calculation */
 		amd64_am_info_t am;
 		memset(&am, 0, sizeof(am));
-		am.base_input = 0;
-		am.mem_input  = 1;
-		am.symconst   = param->entity;
-		ir_node *in[] = { base, mem };
+		am.base_input  = 0;
+		am.index_input = NO_INPUT;
+		am.symconst    = param->entity;
+		ir_node *in[]  = { base, mem };
 		ir_node *load;
 		ir_node *value;
 		if (get_mode_size_bits(mode) < 64 && mode_is_signed(mode)) {
@@ -829,9 +841,6 @@ static ir_node *gen_Cmp(ir_node *node)
 	ir_node  *op2      = get_Cmp_right(node);
 	ir_mode  *cmp_mode = get_irn_mode(op1);
 	dbg_info *dbgi     = get_irn_dbg_info(node);
-	ir_node  *new_op1;
-	ir_node  *new_op2;
-	bool      is_unsigned;
 
 	if (mode_is_float(cmp_mode)) {
 		panic("Floating point not implemented yet!");
@@ -840,27 +849,24 @@ static ir_node *gen_Cmp(ir_node *node)
 	amd64_insn_mode_t insn_mode
 		= get_mode_size_bits(cmp_mode) > 32 ? INSN_MODE_64 : INSN_MODE_32;
 
-	assert(get_irn_mode(op2) == cmp_mode);
-	is_unsigned = !mode_is_signed(cmp_mode);
-
-	new_op1 = be_transform_node(op1);
+	ir_node *new_op1 = be_transform_node(op1);
 	if (needs_extension(op1))
 		new_op1 = new_bd_amd64_Conv(dbgi, block, new_op1, cmp_mode);
-	new_op2 = be_transform_node(op2);
+	ir_node *new_op2 = be_transform_node(op2);
 	if (needs_extension(op2))
 		new_op2 = new_bd_amd64_Conv(dbgi, block, new_op2, cmp_mode);
-	return new_bd_amd64_Cmp(dbgi, block, new_op1, new_op2, insn_mode, false,
-	                        is_unsigned);
+	return new_bd_amd64_Cmp(dbgi, block, new_op1, new_op2, insn_mode);
 }
 
 static ir_node *gen_Cond(ir_node *node)
 {
-	ir_node    *const block     = be_transform_node(get_nodes_block(node));
-	dbg_info   *const dbgi      = get_irn_dbg_info(node);
-	ir_node    *const selector  = get_Cond_selector(node);
-	ir_node    *const flag_node = be_transform_node(selector);
-	ir_relation const relation  = get_Cmp_relation(selector);
-	return new_bd_amd64_Jcc(dbgi, block, flag_node, relation);
+	ir_node    *const block       = be_transform_node(get_nodes_block(node));
+	dbg_info   *const dbgi        = get_irn_dbg_info(node);
+	ir_node    *const selector    = get_Cond_selector(node);
+	ir_node    *const flag_node   = be_transform_node(selector);
+	ir_relation const relation    = get_Cmp_relation(selector);
+	bool        const is_unsigned = !mode_is_signed(get_irn_mode(get_Cmp_left(selector)));
+	return new_bd_amd64_Jcc(dbgi, block, flag_node, relation, is_unsigned);
 }
 
 static ir_node *gen_Phi(ir_node *node)
@@ -1011,8 +1017,8 @@ static ir_node *gen_Load(ir_node *node)
 		amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(mode);
 		amd64_am_info_t am;
 		memset(&am, 0, sizeof(am));
-		am.base_input = 0;
-		am.mem_input  = 1;
+		am.base_input  = 0;
+		am.index_input = NO_INPUT;
 		ir_node *in[] = { new_ptr, new_mem };
 		if (get_mode_size_bits(mode) < 64 && mode_is_signed(mode)) {
 			new_load = new_bd_amd64_LoadS(dbgi, block, ARRAY_SIZE(in), in,
