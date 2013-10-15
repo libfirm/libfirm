@@ -77,19 +77,19 @@ def format_insdecl(node):
 
 	if arity == "variable":
 		insarity = len(node.ins)
-		res  = "int r_arity = arity + " + `insarity` + ";"
+		res  = "int r_arity = arity + " + repr(insarity) + ";"
 		res += "\n\tir_node **r_in;"
 		res += "\n\tNEW_ARR_A(ir_node *, r_in, r_arity);"
 		i = 0
 		for input in node.ins:
-			res += "\n\tr_in[" + `i` + "] = irn_" + input[0] + ";"
+			res += "\n\tr_in[" + repr(i) + "] = irn_" + input[0] + ";"
 			i += 1
-		res += "\n\tmemcpy(&r_in[" + `insarity` + "], in, sizeof(ir_node *) * arity);\n\t"
+		res += "\n\tmemcpy(&r_in[" + repr(insarity) + "], in, sizeof(ir_node *) * arity);\n\t"
 	else:
-		res = "ir_node *in[" + `arity` + "];"
+		res = "ir_node *in[" + repr(arity) + "];"
 		i = 0
 		for input in node.ins:
-			res += "\n\tin[" + `i` + "] = irn_" + input[0] + ";"
+			res += "\n\tin[" + repr(i) + "] = irn_" + input[0] + ";"
 			i += 1
 	return res
 
@@ -105,7 +105,7 @@ def format_arity_and_ins(node):
 	elif arity == 0:
 		return "0, NULL"
 	else:
-		return `arity` + ", in"
+		return repr(arity) + ", in"
 
 def format_arity(node):
 	if hasattr(node, "arity_override"):
