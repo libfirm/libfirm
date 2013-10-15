@@ -125,7 +125,7 @@ def format_pinned(node):
 		return "op_pin_state_floats"
 	if pinned == "exception":
 		return "op_pin_state_exc_pinned"
-	print "WARNING: Unknown pinned state %s in format pined" % pinned
+	print("WARNING: Unknown pinned state %s in format pined" % pinned)
 	return ""
 
 def format_flags(node):
@@ -271,7 +271,7 @@ def prepare_nodes(nodes):
 
 def main(argv):
 	if len(argv) < 3:
-		print "usage: %s specfile templatefile" % argv[0]
+		print("usage: %s specfile templatefile" % argv[0])
 		sys.exit(1)
 
 	specfile   = argv[1]

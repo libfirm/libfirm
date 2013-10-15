@@ -138,7 +138,7 @@ def preprocess_node(node):
 
 def main(argv):
 	if len(argv) < 3:
-		print "usage: %s specname(ignored) destdirectory" % argv[0]
+		print("usage: %s specname(ignored) destdirectory" % argv[0])
 		sys.exit(1)
 
 	specfile     = argv[1]

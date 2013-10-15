@@ -44,7 +44,7 @@ class EmitMysql(EmitBase):
 	tmpfile_mode = stat.S_IREAD | stat.S_IROTH | stat.S_IWUSR
 
 	def execute(self, query, *args):
-		#print query + " %s\n" % str(tuple(args))
+		#print(query + " %s\n" % str(tuple(args)))
 		self.cursor.execute(query, *args);
 		self.conn.commit()
 
@@ -104,14 +104,14 @@ class EmitMysql(EmitBase):
 # Abstraction for sqlite3 databases and sql syntax
 class EmitSqlite3(EmitBase):
 	def execute(self, query, *args):
-		#print query + " %s\n" % str(tuple(args))
+		#print(query + " %s\n" % str(tuple(args)))
 		self.cursor.execute(query, *args)
 
 	def __init__(self, options, ctxcols, evcols):
 		import sqlite3
 
 		if options.database == None:
-			print "Have to specify database (file-)name for sqlite"
+			print("Have to specify database (file-)name for sqlite")
 			sys.exit(1)
 
 		if not options.update:
@@ -187,7 +187,7 @@ class Conv:
 			fields  = line.strip().split(";")
 			if fields[0] == 'P':
 				if (len(fields)-1) % 2 != 0:
-					print "%s: Invalid number of fields after 'P'" % linenr
+					print("%s: Invalid number of fields after 'P'" % linenr)
 
 				for i in range(1,len(fields),2):
 					key = fields[i]
@@ -198,7 +198,7 @@ class Conv:
 
 			elif fields[0] == 'E':
 				if (len(fields)-1) % 2 != 0:
-					print "%s: Invalid number of fields after 'E'" % linenr
+					print("%s: Invalid number of fields after 'E'" % linenr)
 
 				self.n_events += 1
 				for i in range(1,len(fields),2):
@@ -268,7 +268,7 @@ class Conv:
 
 					keyidx = self.ctxcols[key]
 					if self.ctxvals[keyidx] != None:
-						print "Error: context key '%s' pushed multiple times" % key
+						print("Error: context key '%s' pushed multiple times" % key)
 						sys.exit(1)
 					self.ctxvals[keyidx] = val
 				self.pushpending = True
@@ -289,11 +289,11 @@ class Conv:
 					self.curr_id = idstack.pop()
 
 					if popkey != key:
-						print "unmatched pop in line %d, push key %s, pop key: %s" % (lineno, key, popkey)
+						print("unmatched pop in line %d, push key %s, pop key: %s" % (lineno, key, popkey))
 
 					keyidx = self.ctxcols[key]
 					if self.ctxvals[keyidx] == None:
-						print "Error: context key '%s' popped before it was pushed" % popkey
+						print("Error: context key '%s' popped before it was pushed" % popkey)
 						sys.exit(1)
 					self.ctxvals[keyidx] = None
 
@@ -307,7 +307,7 @@ class Conv:
 					prec = curr_event * 10 / self.n_events
 					if prec > last_prec:
 						last_prec = prec
-						print '%10d / %10d' % (curr_event, self.n_events)
+						print('%10d / %10d' % (curr_event, self.n_events))
 
 				for p in range(1,len(items),2):
 					key = items[p]
@@ -348,12 +348,12 @@ class Conv:
 
 		for file in files:
 			if not os.path.isfile(file):
-				print "cannot find input file %s" % (file, )
+				print("cannot find input file %s" % (file, ))
 			else:
 				self.files.append(file)
 
 		if len(self.files) < 1:
-			print "no input file to process"
+			print("no input file to process")
 			sys.exit(3)
 
 		if options.filter:
@@ -364,27 +364,27 @@ class Conv:
 		if options.engine in self.engines:
 			engine = self.engines[options.engine]
 		else:
-			print 'engine %s not found' % options.engine
-			print 'we offer: %s' % self.engines.keys()
+			print('engine %s not found' % options.engine)
+			print('we offer: %s' % self.engines.keys())
 			sys.exit(0)
 
 		if options.verbose:
-			print "determining schema..."
+			print("determining schema...")
 
 		(ctxcols, evcols) = self.find_heads()
 		if options.verbose:
-			print "context schema:"
-			print ctxcols
-			print "event schema:"
-			print evcols
+			print("context schema:")
+			print(ctxcols)
+			print("event schema:")
+			print(evcols)
 
 		self.emit = engine(options, ctxcols, evcols)
 
 		if options.verbose:
-			print "filling tables..."
+			print("filling tables...")
 		self.fill_tables()
 		if options.verbose:
-			print "comitting..."
+			print("comitting...")
 		self.emit.commit()
 
 if __name__ == "__main__":

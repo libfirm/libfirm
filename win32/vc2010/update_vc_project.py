@@ -197,4 +197,4 @@ vcxfo = "/tmp/firm.vcxproj.filters"
 os.system("xmllint --format /tmp/out.xml > %s" % vcxo)
 os.system("xmllint --format /tmp/outf.xml > %s" % vcxfo)
 
-print "Generated: %s %s" % (vcxo, vcxfo)
+print("Generated: %s %s" % (vcxo, vcxfo))
