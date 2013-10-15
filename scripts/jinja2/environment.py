@@ -731,8 +731,7 @@ class Environment(object):
            from the function unchanged.
         """
         if not names:
-            raise TemplatesNotFound(message=u'Tried to select from an empty list '
-                                            u'of templates.')
+            raise TemplatesNotFound(message='Tried to select from an empty list of templates.')
         globals = self.make_globals(globals)
         for name in names:
             if isinstance(name, Template):
