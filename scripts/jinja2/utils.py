@@ -100,7 +100,7 @@ def _func():
 FunctionType = type(_func)
 GeneratorType = type(_func())
 MethodType = type(_C.method)
-CodeType = type(_C.method.func_code)
+CodeType = type(_C.method.__code__)
 try:
     raise TypeError()
 except TypeError:
@@ -151,7 +151,7 @@ def environmentfunction(f):
 
 def internalcode(f):
     """Marks the function as internally used"""
-    internal_code.add(f.func_code)
+    internal_code.add(f.__code__)
     return f
 
 
