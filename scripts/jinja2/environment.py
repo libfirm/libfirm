@@ -596,7 +596,7 @@ class Environment(object):
                 source, filename, _ = self.loader.get_source(self, name)
                 try:
                     code = self.compile(source, name, filename, True, True)
-                except TemplateSyntaxError, e:
+                except TemplateSyntaxError as e:
                     if not ignore_errors:
                         raise
                     log_function('Could not compile "%s": %s' % (name, e))

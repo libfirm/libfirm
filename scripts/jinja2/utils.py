@@ -47,7 +47,7 @@ try:
         raise TypeError(_test_gen_bug)
         yield None
     _concat(_test_gen_bug())
-except TypeError, _error:
+except TypeError as _error:
     if not _error.args or _error.args[0] is not _test_gen_bug:
         def concat(gen):
             try:
@@ -221,7 +221,7 @@ def open_if_exists(filename, mode='rb'):
     """
     try:
         return open(filename, mode)
-    except IOError, e:
+    except IOError as e:
         if e.errno not in (errno.ENOENT, errno.EISDIR):
             raise
 
