@@ -567,8 +567,7 @@ class Environment(object):
 
         if py_compile:
             import imp, marshal
-            py_header = imp.get_magic() + \
-                u'\xff\xff\xff\xff'.encode('iso-8859-15')
+            py_header = imp.get_magic() + b'\xff\xff\xff\xff'
 
         def write_file(filename, data, mode):
             if zip:
