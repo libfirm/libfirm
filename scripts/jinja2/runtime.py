@@ -8,7 +8,7 @@
     :copyright: (c) 2010 by the Jinja Team.
     :license: BSD.
 """
-from itertools import chain, imap
+from itertools import chain
 from jinja2.nodes import EvalContext, _context_function_types
 from jinja2.utils import Markup, partial, soft_unicode, escape, missing, \
      concat, internalcode, next, object_type_repr
@@ -34,7 +34,7 @@ identity = lambda x: x
 def markup_join(seq):
     """Concatenation that escapes if necessary and converts to unicode."""
     buf = []
-    iterator = imap(soft_unicode, seq)
+    iterator = map(soft_unicode, seq)
     for arg in iterator:
         buf.append(arg)
         if hasattr(arg, '__html__'):
@@ -44,7 +44,7 @@ def markup_join(seq):
 
 def unicode_join(seq):
     """Simple args to unicode conversion and concatenation."""
-    return concat(imap(unicode, seq))
+    return concat(map(unicode, seq))
 
 
 def new_context(environment, template_name, blocks, vars=None,

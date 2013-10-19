@@ -16,14 +16,13 @@ try:
 except ImportError:
     from dummy_thread import allocate_lock
 from collections import deque
-from itertools import imap
 
 
 _word_split_re = re.compile(r'(\s+)')
 _punctuation_re = re.compile(
     '^(?P<lead>(?:%s)*)(?P<middle>.*?)(?P<trail>(?:%s)*)$' % (
-        '|'.join(imap(re.escape, ('(', '<', '&lt;'))),
-        '|'.join(imap(re.escape, ('.', ',', ')', '>', '\n', '&gt;')))
+        '|'.join(map(re.escape, ('(', '<', '&lt;'))),
+        '|'.join(map(re.escape, ('.', ',', ')', '>', '\n', '&gt;')))
     )
 )
 _simple_email_re = re.compile(r'^\S+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+$')

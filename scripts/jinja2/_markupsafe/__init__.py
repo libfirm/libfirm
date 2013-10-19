@@ -9,7 +9,6 @@
     :license: BSD, see LICENSE for more details.
 """
 import re
-from itertools import imap
 
 
 __all__ = ['Markup', 'soft_unicode', 'escape', 'escape_silent']
@@ -92,7 +91,7 @@ class Markup(unicode):
 
     def __mod__(self, arg):
         if isinstance(arg, tuple):
-            arg = tuple(imap(_MarkupEscapeHelper, arg))
+            arg = tuple(map(_MarkupEscapeHelper, arg))
         else:
             arg = _MarkupEscapeHelper(arg)
         return self.__class__(unicode.__mod__(self, arg))
@@ -104,7 +103,7 @@ class Markup(unicode):
         )
 
     def join(self, seq):
-        return self.__class__(unicode.join(self, imap(escape, seq)))
+        return self.__class__(unicode.join(self, map(escape, seq)))
     join.__doc__ = unicode.join.__doc__
 
     def split(self, *args, **kwargs):
