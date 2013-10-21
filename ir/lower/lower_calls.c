@@ -50,16 +50,14 @@ static void fix_parameter_entities(ir_graph *irg, size_t n_compound_ret)
 {
 	ir_type *frame_type = get_irg_frame_type(irg);
 	size_t   n_members  = get_compound_n_members(frame_type);
-	size_t   i;
 
-	for (i = 0; i < n_members; ++i) {
+	for (size_t i = 0; i < n_members; ++i) {
 		ir_entity *member = get_compound_member(frame_type, i);
-		size_t     num;
 		if (!is_parameter_entity(member))
 			continue;
 
 		/* increase parameter number since we added a new parameter in front */
-		num = get_entity_parameter_number(member);
+		size_t num = get_entity_parameter_number(member);
 		if (num == IR_VA_START_PARAMETER_NUMBER)
 			continue;
 		set_entity_parameter_number(member, num + n_compound_ret);
@@ -70,15 +68,13 @@ static void remove_compound_param_entities(ir_graph *irg)
 {
 	ir_type *frame_type = get_irg_frame_type(irg);
 	size_t   n_members  = get_compound_n_members(frame_type);
-	size_t   i;
 
-	for (i = n_members; i > 0; ) {
-		ir_entity *member = get_compound_member(frame_type, --i);
-		ir_type   *type;
+	for (size_t i = n_members; i-- > 0; ) {
+		ir_entity *member = get_compound_member(frame_type, i);
 		if (!is_parameter_entity(member))
 			continue;
 
-		type = get_entity_type(member);
+		ir_type *type = get_entity_type(member);
 		if (is_aggregate_type(type)) {
 			free_entity(member);
 		}
@@ -91,29 +87,18 @@ static void remove_compound_param_entities(ir_graph *irg)
  */
 static ir_type *lower_mtp(compound_call_lowering_flags flags, ir_type *mtp)
 {
-	bool      must_be_lowered = false;
-	ir_type  *lowered;
-	ir_type **params;
-	ir_type **results;
-	size_t    n_ress;
-	size_t    n_params;
-	size_t    nn_ress;
-	size_t    nn_params;
-	size_t    i;
-	unsigned  cconv;
-	mtp_additional_properties mtp_properties;
-
 	if (!is_Method_type(mtp))
 		return mtp;
 
-	lowered = pmap_get(ir_type, lowered_mtps, mtp);
+	ir_type *lowered = pmap_get(ir_type, lowered_mtps, mtp);
 	if (lowered != NULL)
 		return lowered;
 
 	/* check if the type has to be lowered at all */
-	n_params = get_method_n_params(mtp);
-	n_ress   = get_method_n_ress(mtp);
-	for (i = 0; i < n_ress; ++i) {
+	bool   must_be_lowered = false;
+	size_t n_params        = get_method_n_params(mtp);
+	size_t n_ress          = get_method_n_ress(mtp);
+	for (size_t i = 0; i < n_ress; ++i) {
 		ir_type *res_tp = get_method_res_type(mtp, i);
 		if (is_aggregate_type(res_tp)) {
 			must_be_lowered = true;
@@ -121,7 +106,7 @@ static ir_type *lower_mtp(compound_call_lowering_flags flags, ir_type *mtp)
 		}
 	}
 	if (!must_be_lowered && !(flags & LF_DONT_LOWER_ARGUMENTS)) {
-		for (i = 0; i < n_params; ++i) {
+		for (size_t i = 0; i < n_params; ++i) {
 			ir_type *param_type = get_method_param_type(mtp, i);
 			if (is_aggregate_type(param_type)) {
 				must_be_lowered = true;
@@ -132,13 +117,13 @@ static ir_type *lower_mtp(compound_call_lowering_flags flags, ir_type *mtp)
 	if (!must_be_lowered)
 		return mtp;
 
-	results   = ALLOCANZ(ir_type*, n_ress);
-	params    = ALLOCANZ(ir_type*, n_params + n_ress);
-	nn_ress   = 0;
-	nn_params = 0;
+	ir_type **params    = ALLOCANZ(ir_type*, n_params + n_ress);
+	ir_type **results   = ALLOCANZ(ir_type*, n_ress);
+	size_t    nn_params = 0;
+	size_t    nn_ress   = 0;
 
 	/* add a hidden parameter in front for every compound result */
-	for (i = 0; i < n_ress; ++i) {
+	for (size_t i = 0; i < n_ress; ++i) {
 		ir_type *res_tp = get_method_res_type(mtp, i);
 
 		if (is_aggregate_type(res_tp)) {
@@ -154,7 +139,7 @@ static ir_type *lower_mtp(compound_call_lowering_flags flags, ir_type *mtp)
 		}
 	}
 	/* copy over parameter types */
-	for (i = 0; i < n_params; ++i) {
+	for (size_t i = 0; i < n_params; ++i) {
 		ir_type *param_type = get_method_param_type(mtp, i);
 		if (!(flags & LF_DONT_LOWER_ARGUMENTS)
 		    && is_aggregate_type(param_type)) {
@@ -171,20 +156,20 @@ static ir_type *lower_mtp(compound_call_lowering_flags flags, ir_type *mtp)
 	set_type_dbg_info(lowered, get_type_dbg_info(mtp));
 
 	/* fill it */
-	for (i = 0; i < nn_params; ++i)
+	for (size_t i = 0; i < nn_params; ++i)
 		set_method_param_type(lowered, i, params[i]);
-	for (i = 0; i < nn_ress; ++i)
+	for (size_t i = 0; i < nn_ress; ++i)
 		set_method_res_type(lowered, i, results[i]);
 
 	set_method_variadicity(lowered, get_method_variadicity(mtp));
 
-	cconv = get_method_calling_convention(mtp);
+	unsigned cconv = get_method_calling_convention(mtp);
 	if (nn_params > n_params) {
 		cconv |= cc_compound_ret;
 	}
 	set_method_calling_convention(lowered, cconv);
 
-	mtp_properties = get_method_additional_properties(mtp);
+	mtp_additional_properties mtp_properties = get_method_additional_properties(mtp);
 	/* after lowering the call is not const anymore, since it writes to the
 	 * memory for the return value passed to it */
 	mtp_properties &= ~mtp_property_const;
@@ -283,12 +268,11 @@ static ir_node *find_base_adr(ir_node *ptr, ir_entity **pEnt)
  */
 static void check_ptr(ir_node *ptr, wlk_env *env)
 {
-	ir_storage_class_class_t sc;
-	ir_entity                *ent;
+	ir_entity *ent;
 
 	/* still alias free */
 	ptr = find_base_adr(ptr, &ent);
-	sc  = get_base_sc(classify_pointer(ptr, ent));
+	ir_storage_class_class_t sc = get_base_sc(classify_pointer(ptr, ent));
 	if (sc != ir_sc_localvar && sc != ir_sc_malloced) {
 		/* non-local memory access */
 		env->only_local_mem = false;
@@ -321,20 +305,19 @@ static bool is_self_recursive_Call(const ir_node *call)
 static void fix_args_and_collect_calls(ir_node *n, void *ctx)
 {
 	wlk_env *env = (wlk_env*)ctx;
-	ir_node *ptr;
 
 	switch (get_irn_opcode(n)) {
 	case iro_Load:
 	case iro_Store:
 		if (env->only_local_mem) {
-			ptr = get_irn_n(n, 1);
+			ir_node *ptr = get_irn_n(n, 1);
 			check_ptr(ptr, env);
 		}
 		break;
 	case iro_Proj:
 		if (env->arg_shift > 0) {
-			ir_node *pred = get_Proj_pred(n);
-			ir_graph *irg = get_irn_irg(n);
+			ir_node  *pred = get_Proj_pred(n);
+			ir_graph *irg  = get_irn_irg(n);
 
 			/* Fix the argument numbers */
 			if (pred == get_irg_args(irg)) {
@@ -348,14 +331,13 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx)
 		ir_type *ctp      = get_Call_type(n);
 		size_t   n_ress   = get_method_n_ress(ctp);
 		size_t   n_params = get_method_n_params(ctp);
-		size_t   i;
 		if (! is_self_recursive_Call(n)) {
 			/* any non self recursive call might access global memory */
 			env->only_local_mem = false;
 		}
 
 		/* check for compound returns */
-		for (i = 0; i < n_ress; ++i) {
+		for (size_t i = 0; i < n_ress; ++i) {
 			ir_type *type = get_method_res_type(ctp, i);
 			if (is_aggregate_type(type)) {
 				/*
@@ -367,7 +349,7 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx)
 				break;
 			}
 		}
-		for (i = 0; i < n_params; ++i) {
+		for (size_t i = 0; i < n_params; ++i) {
 			ir_type *type = get_method_param_type(ctp, i);
 			if (is_aggregate_type(type)) {
 				cl_entry *entry = get_call_entry(n, env);
@@ -439,13 +421,11 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx)
  */
 static bool is_compound_address(ir_type *ft, ir_node *adr)
 {
-	ir_entity *ent;
-
 	if (! is_Sel(adr))
 		return false;
 	if (get_Sel_n_indexs(adr) != 0)
 		return false;
-	ent = get_Sel_entity(adr);
+	ir_entity *ent = get_Sel_entity(adr);
 	return get_entity_owner(ent) == ft;
 }
 
@@ -468,9 +448,8 @@ static void do_copy_return_opt(ir_node *n, void *ctx)
 	if (is_Sel(n)) {
 		ir_entity *ent = get_Sel_entity(n);
 		cr_pair   *arr = (cr_pair*)ctx;
-		size_t    i, l;
 
-		for (i = 0, l = ARR_LEN(arr); i < l; ++i) {
+		for (size_t i = 0, l = ARR_LEN(arr); i < l; ++i) {
 			if (ent == arr[i].ent) {
 				exchange(n, arr[i].arg);
 				break;
@@ -488,15 +467,14 @@ static void do_copy_return_opt(ir_node *n, void *ctx)
  */
 static ir_node *get_dummy_sel(ir_graph *irg, ir_node *block, ir_type *tp)
 {
-	ir_type   *ft       = get_irg_frame_type(irg);
-	ident     *dummy_id = id_unique("dummy.%u");
-	ir_entity *ent      = new_entity(ft, dummy_id, tp);
-
+	ir_type *ft = get_irg_frame_type(irg);
 	if (get_type_state(ft) == layout_fixed) {
 		/* Fix the layout again */
 		panic("Fixed layout not implemented");
 	}
 
+	ident     *dummy_id = id_unique("dummy.%u");
+	ir_entity *ent      = new_entity(ft, dummy_id, tp);
 	return new_r_simpleSel(block, get_irg_no_mem(irg), get_irg_frame(irg), ent);
 }
 
@@ -506,11 +484,9 @@ static ir_node *get_dummy_sel(ir_graph *irg, ir_node *block, ir_type *tp)
 static void add_hidden_param(ir_graph *irg, size_t n_com, ir_node **ins,
                              cl_entry *entry, ir_type *ctp)
 {
-	ir_node *p, *n;
-	size_t n_args;
+	size_t n_args = 0;
 
-	n_args = 0;
-	for (p = entry->copyb; p; p = n) {
+	for (ir_node *p = entry->copyb, *n; p; p = n) {
 		ir_node *src = get_CopyB_src(p);
 		size_t   idx = get_Proj_proj(src);
 		n = (ir_node*)get_irn_link(p);
@@ -519,7 +495,7 @@ static void add_hidden_param(ir_graph *irg, size_t n_com, ir_node **ins,
 		if (ins[idx] == NULL) {
 			/* use the memory output of the call and not the input of the CopyB
 			 * otherwise stuff breaks if the call was mtp_property_const,
-			 * because then the copyb skips the call. But after lowering the
+			 * because then the CopyB skips the call. But after lowering the
 			 * call is not const anymore, and its memory has to be used */
 			ir_node *mem = new_r_Proj(entry->call, mode_M, pn_Call_M);
 
@@ -532,10 +508,7 @@ static void add_hidden_param(ir_graph *irg, size_t n_com, ir_node **ins,
 
 	/* now create dummy entities for function with ignored return value */
 	if (n_args < n_com) {
-		size_t i;
-		size_t j;
-
-		for (j = i = 0; i < get_method_n_ress(ctp); ++i) {
+		for (size_t i = 0, j = 0; i < get_method_n_ress(ctp); ++i) {
 			ir_type *rtp = get_method_res_type(ctp, i);
 			if (is_aggregate_type(rtp)) {
 				if (ins[j] == NULL)
@@ -548,22 +521,21 @@ static void add_hidden_param(ir_graph *irg, size_t n_com, ir_node **ins,
 
 static void fix_compound_ret(cl_entry *entry, ir_type *ctp)
 {
-	ir_node  *call     = entry->call;
-	ir_graph *irg      = get_irn_irg(call);
-	size_t    n_params = get_Call_n_params(call);
-	size_t    n_com    = 0;
-	size_t    n_res    = get_method_n_ress(ctp);
-	size_t    pos      = 0;
-	ir_node **new_in;
-	size_t    i;
+	ir_node *call  = entry->call;
+	size_t   n_com = 0;
+	size_t   n_res = get_method_n_ress(ctp);
 
-	for (i = 0; i < n_res; ++i) {
+	for (size_t i = 0; i < n_res; ++i) {
 		ir_type *type = get_method_res_type(ctp, i);
 		if (is_aggregate_type(type))
 			++n_com;
 	}
 
-	new_in = ALLOCANZ(ir_node*, n_params + n_com + (n_Call_max+1));
+	ir_graph  *irg      = get_irn_irg(call);
+	size_t     n_params = get_Call_n_params(call);
+	size_t     pos      = 0;
+	ir_node  **new_in   = ALLOCANZ(ir_node*, n_params + n_com + (n_Call_max+1));
+
 	new_in[pos++] = get_Call_mem(call);
 	new_in[pos++] = get_Call_ptr(call);
 	assert(pos == n_Call_max+1);
@@ -571,7 +543,7 @@ static void fix_compound_ret(cl_entry *entry, ir_type *ctp)
 	pos += n_com;
 
 	/* copy all other parameters */
-	for (i = 0; i < n_params; ++i) {
+	for (size_t i = 0; i < n_params; ++i) {
 		ir_node *param = get_Call_param(call, i);
 		new_in[pos++] = param;
 	}
@@ -599,24 +571,18 @@ static void fix_compound_params(cl_entry *entry, ir_type *ctp)
 	ir_node  *nomem    = new_r_NoMem(irg);
 	ir_node  *frame    = get_irg_frame(irg);
 	size_t    n_params = get_method_n_params(ctp);
-	size_t    i;
 
-	for (i = 0; i < n_params; ++i) {
-		ir_type   *type = get_method_param_type(ctp, i);
-		ir_node   *block;
-		ir_node   *arg;
-		ir_node   *sel;
-		ir_entity *arg_entity;
-		bool    is_volatile;
+	for (size_t i = 0; i < n_params; ++i) {
+		ir_type *type = get_method_param_type(ctp, i);
 		if (!is_aggregate_type(type))
 			continue;
 
-		arg         = get_Call_param(call, i);
-		arg_entity  = create_compound_arg_entity(irg, type);
-		block       = get_nodes_block(call);
-		sel         = new_rd_simpleSel(dbgi, block, nomem, frame, arg_entity);
-		is_volatile = is_partly_volatile(arg);
-		mem         = new_rd_CopyB(dbgi, block, mem, sel, arg, type, is_volatile ? cons_volatile : cons_none);
+		ir_node   *arg         = get_Call_param(call, i);
+		ir_entity *arg_entity  = create_compound_arg_entity(irg, type);
+		ir_node   *block       = get_nodes_block(call);
+		ir_node   *sel         = new_rd_simpleSel(dbgi, block, nomem, frame, arg_entity);
+		bool       is_volatile = is_partly_volatile(arg);
+		mem = new_rd_CopyB(dbgi, block, mem, sel, arg, type, is_volatile ? cons_volatile : cons_none);
 		set_Call_param(call, i, sel);
 	}
 	set_Call_mem(call, mem);
@@ -624,8 +590,7 @@ static void fix_compound_params(cl_entry *entry, ir_type *ctp)
 
 static void fix_calls(wlk_env *env)
 {
-	cl_entry *entry;
-	for (entry = env->cl_list; entry; entry = entry->next) {
+	for (cl_entry *entry = env->cl_list; entry; entry = entry->next) {
 		ir_node *call        = entry->call;
 		ir_type *ctp         = get_Call_type(call);
 		ir_type *lowered_mtp = lower_mtp(env->flags, ctp);
@@ -655,22 +620,16 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 	size_t     n_ress      = get_method_n_ress(mtp);
 	size_t     n_params    = get_method_n_params(mtp);
 	size_t     n_param_com = 0;
-
-	ir_type   *lowered_mtp, *tp, *ft;
-	size_t    i, j, k;
-	size_t    n_cr_opt;
-	ir_node   **new_in, *ret, *endbl, *bl, *mem;
-	cr_pair   *cr_opt;
-	wlk_env   env;
+	wlk_env    env;
 
 	/* calculate the number of compound returns */
 	size_t n_ret_com = 0;
-	for (i = 0; i < n_ress; ++i) {
+	for (size_t i = 0; i < n_ress; ++i) {
 		ir_type *type = get_method_res_type(mtp, i);
 		if (is_aggregate_type(type))
 			++n_ret_com;
 	}
-	for (i = 0; i < n_params; ++i) {
+	for (size_t i = 0; i < n_params; ++i) {
 		ir_type *type = get_method_param_type(mtp, i);
 		if (is_aggregate_type(type))
 			++n_param_com;
@@ -690,7 +649,7 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 		env.arg_shift = 0;
 	}
 
-	lowered_mtp = lower_mtp(flags, mtp);
+	ir_type *lowered_mtp = lower_mtp(flags, mtp);
 	set_entity_type(ent, lowered_mtp);
 
 	obstack_init(&env.obst);
@@ -717,8 +676,8 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 		int idx;
 
 		/* STEP 1: find the return. This is simple, we have normalized the graph. */
-		endbl = get_irg_end_block(irg);
-		ret = NULL;
+		ir_node *endbl = get_irg_end_block(irg);
+		ir_node *ret   = NULL;
 		for (idx = get_Block_n_cfgpreds(endbl) - 1; idx >= 0; --idx) {
 			ir_node *pred = get_Block_cfgpred(endbl, idx);
 
@@ -739,17 +698,19 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 			 * STEP 2: fix it. For all compound return values add a CopyB,
 			 * all others are copied.
 			 */
+			ir_node  *bl       = get_nodes_block(ret);
+			ir_node  *mem      = get_Return_mem(ret);
+			ir_type  *ft       = get_irg_frame_type(irg);
+			size_t    n_cr_opt = 0;
+			size_t    j        = 1;
+			ir_node **new_in;
+			cr_pair  *cr_opt;
 			NEW_ARR_A(ir_node *, new_in, n_ress + 1);
-
-			bl  = get_nodes_block(ret);
-			mem = get_Return_mem(ret);
-
-			ft = get_irg_frame_type(irg);
 			NEW_ARR_A(cr_pair, cr_opt, n_ret_com);
-			n_cr_opt = 0;
-			for (j = 1, i = k = 0; i < n_ress; ++i) {
+
+			for (size_t i = 0, k = 0; i < n_ress; ++i) {
 				ir_node *pred = get_Return_res(ret, i);
-				tp = get_method_res_type(mtp, i);
+				ir_type *tp   = get_method_res_type(mtp, i);
 
 				if (is_aggregate_type(tp)) {
 					ir_node *arg = get_irg_args(irg);
@@ -794,12 +755,9 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 			set_irn_in(ret, j, new_in);
 
 			if (n_cr_opt > 0) {
-				size_t c;
-				size_t n;
-
 				irg_walk_graph(irg, NULL, do_copy_return_opt, cr_opt);
 
-				for (c = 0, n = ARR_LEN(cr_opt); c < n; ++c) {
+				for (size_t c = 0, n = ARR_LEN(cr_opt); c < n; ++c) {
 					free_entity(cr_opt[c].ent);
 				}
 			}
@@ -834,13 +792,11 @@ static void lower_method_types(type_or_ent tore, void *env)
 
 void lower_calls_with_compounds(compound_call_lowering_flags flags)
 {
-	size_t i, n;
-
 	pointer_types = pmap_create();
 	lowered_mtps = pmap_create();
 
 	/* first step: Transform all graphs */
-	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
+	for (size_t i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		transform_irg(flags, irg);
 	}
