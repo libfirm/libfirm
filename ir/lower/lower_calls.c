@@ -11,6 +11,7 @@
 #include <stdbool.h>
 
 #include "firm_types.h"
+#include "heights.h"
 #include "lower_calls.h"
 #include "lowering.h"
 #include "irprog_t.h"
@@ -203,6 +204,7 @@ typedef struct wlk_env_t {
 	cl_entry             *cl_list;         /**< The call list. */
 	compound_call_lowering_flags flags;
 	ir_type              *lowered_mtp;     /**< The lowered method type of the current irg if any. */
+	ir_heights_t         *heights;         /**< Heights for reachability check. */
 	bool                  only_local_mem:1;/**< Set if only local memory access was found. */
 	bool                  changed:1;       /**< Set if the current graph was changed. */
 } wlk_env;
@@ -482,7 +484,7 @@ static ir_node *get_dummy_sel(ir_graph *irg, ir_node *block, ir_type *tp)
  * Add the hidden parameter from the CopyB node to the Call node.
  */
 static void add_hidden_param(ir_graph *irg, size_t n_com, ir_node **ins,
-                             cl_entry *entry, ir_type *ctp)
+                             cl_entry *entry, ir_type *ctp, wlk_env *env)
 {
 	size_t n_args = 0;
 
@@ -493,13 +495,35 @@ static void add_hidden_param(ir_graph *irg, size_t n_com, ir_node **ins,
 
 		/* consider only the first CopyB */
 		if (ins[idx] == NULL) {
+			ir_node *call       = entry->call;
+			ir_node *call_block = get_nodes_block(call);
+			ir_node *dst        = get_CopyB_dst(p);
+			ir_node *dst_block  = get_nodes_block(dst);
+
+			/* Check whether we can use the destination of the CopyB for the call. */
+			if (!block_dominates(dst_block, call_block))
+				continue;
+
+			if (dst_block == call_block) {
+				ir_heights_t *heights = env->heights;
+
+				if (heights == NULL) {
+					heights = heights_new(irg);
+					env->heights = heights;
+				}
+
+				/* Do not optimize the CopyB if the destination depends on the call. */
+				if (heights_reachable_in_block(heights, dst, call))
+					continue;
+			}
+
 			/* use the memory output of the call and not the input of the CopyB
 			 * otherwise stuff breaks if the call was mtp_property_const,
 			 * because then the CopyB skips the call. But after lowering the
 			 * call is not const anymore, and its memory has to be used */
-			ir_node *mem = new_r_Proj(entry->call, mode_M, pn_Call_M);
+			ir_node *mem = new_r_Proj(call, mode_M, pn_Call_M);
 
-			ins[idx] = get_CopyB_dst(p);
+			ins[idx] = dst;
 			/* get rid of the CopyB */
 			exchange(p, mem);
 			++n_args;
@@ -519,7 +543,7 @@ static void add_hidden_param(ir_graph *irg, size_t n_com, ir_node **ins,
 	}
 }
 
-static void fix_compound_ret(cl_entry *entry, ir_type *ctp)
+static void fix_compound_ret(cl_entry *entry, ir_type *ctp, wlk_env *env)
 {
 	ir_node *call  = entry->call;
 	size_t   n_com = 0;
@@ -539,7 +563,7 @@ static void fix_compound_ret(cl_entry *entry, ir_type *ctp)
 	new_in[pos++] = get_Call_mem(call);
 	new_in[pos++] = get_Call_ptr(call);
 	assert(pos == n_Call_max+1);
-	add_hidden_param(irg, n_com, &new_in[pos], entry, ctp);
+	add_hidden_param(irg, n_com, &new_in[pos], entry, ctp, env);
 	pos += n_com;
 
 	/* copy all other parameters */
@@ -600,7 +624,7 @@ static void fix_calls(wlk_env *env)
 			fix_compound_params(entry, ctp);
 		}
 		if (entry->has_compound_ret) {
-			fix_compound_ret(entry, ctp);
+			fix_compound_ret(entry, ctp, env);
 		}
 	}
 }
@@ -656,6 +680,7 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 	env.cl_list        = NULL;
 	env.flags          = flags;
 	env.lowered_mtp    = lowered_mtp;
+	env.heights        = NULL;
 	env.only_local_mem = true;
 	env.changed        = false;
 
