@@ -688,7 +688,6 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 	} else {
 		/* we must only search for calls */
 		env.arg_shift = 0;
-		lowered_mtp   = NULL;
 	}
 
 	lowered_mtp = lower_mtp(flags, mtp);
