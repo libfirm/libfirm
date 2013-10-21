@@ -91,11 +91,12 @@ FIRM_API void add_irn_dep(ir_node *node, ir_node *dep);
 FIRM_API void add_irn_deps(ir_node *tgt, ir_node *src);
 
 /**
- * Returns the length of the dependency array.
+ * Returns the number of dependency predecessors/edges of node @p node.
  * @param node The node.
- * @return The length of the dependency array or 0 if it has not yet been allocated.
+ * @return The length of the dependency array or 0 if it has not yet been
+ *         allocated.
  */
-FIRM_API int get_irn_deps(const ir_node *node);
+FIRM_API int get_irn_n_deps(const ir_node *node);
 
 /**
  * Returns an entry of the dependency array.

@@ -104,7 +104,7 @@ static ir_node *get_irn_safe_n(const ir_node *node, int n)
 static const ir_edge_kind_info_t edge_kind_info[EDGE_KIND_LAST+1] = {
 	{ "normal"     , set_irn_n,   -1, get_irn_arity,  get_irn_safe_n },
 	{ "block succs", NULL,         0, get_irn_arity,  get_block_n    },
-	{ "dependency",  set_irn_dep,  0, get_irn_deps,   get_irn_dep    }
+	{ "dependency",  set_irn_dep,  0, get_irn_n_deps, get_irn_dep    }
 };
 
 #define foreach_tgt(irn, i, n, kind) for (i = edge_kind_info[kind].first_idx, n = edge_kind_info[kind].get_arity(irn); i < n; ++i)
@@ -479,7 +479,7 @@ static void init_lh_walker_dep(ir_node *irn, void *data)
 	get_irn_edge_info(irn, kind)->edges_built = 0;
 	get_irn_edge_info(irn, kind)->out_count   = 0;
 
-	for (i = get_irn_deps(irn) - 1; i >= 0; --i) {
+	for (i = get_irn_n_deps(irn) - 1; i >= 0; --i) {
 		ir_node *dep = get_irn_dep(irn, i);
 
 		head = &get_irn_edge_info(dep, kind)->outs_head;

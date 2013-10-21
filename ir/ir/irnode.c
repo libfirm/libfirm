@@ -254,9 +254,9 @@ void remove_Sync_n(ir_node *n, int i)
 	remove_irn_n(n, i);
 }
 
-int (get_irn_deps)(const ir_node *node)
+int (get_irn_n_deps)(const ir_node *node)
 {
-	return get_irn_deps_(node);
+	return get_irn_n_deps_(node);
 }
 
 ir_node *(get_irn_dep)(const ir_node *node, int pos)
@@ -314,7 +314,7 @@ void add_irn_deps(ir_node *tgt, ir_node *src)
 {
 	int i, n;
 
-	for (i = 0, n = get_irn_deps(src); i < n; ++i)
+	for (i = 0, n = get_irn_n_deps(src); i < n; ++i)
 		add_irn_dep(tgt, get_irn_dep(src, i));
 }
 

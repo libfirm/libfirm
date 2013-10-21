@@ -63,7 +63,7 @@
 #define get_irn_generic_attr_const(node)      get_irn_generic_attr_const_(node)
 #define get_irn_idx(node)                     get_irn_idx_(node)
 
-#define get_irn_deps(node)                    get_irn_deps_(node)
+#define get_irn_n_deps(node)                  get_irn_n_deps_(node)
 #define get_irn_dep(node, pos)                get_irn_dep_(node, pos)
 
 #define get_irn_ins_or_deps(node)             get_irn_ins_or_deps_(node)
@@ -185,7 +185,7 @@ static inline unsigned hash_irn(const ir_node *node)
 	return (unsigned) get_irn_idx(node);
 }
 
-static inline int get_irn_deps_(const ir_node *node)
+static inline int get_irn_n_deps_(const ir_node *node)
 {
 	return node->deps ? (int)ARR_LEN(node->deps) : 0;
 }
@@ -201,7 +201,7 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt, ir_node *old_tg
 
 static inline int get_irn_ins_or_deps_(const ir_node *irn)
 {
-	return get_irn_deps_(irn) + get_irn_arity_(irn);
+	return get_irn_n_deps_(irn) + get_irn_arity_(irn);
 }
 
 static inline ir_node *get_irn_in_or_dep_(const ir_node *irn, int pos)

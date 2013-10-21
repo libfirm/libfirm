@@ -63,7 +63,7 @@ static inline ir_node *be_get_transformed_node(ir_node *old_node)
 
 void be_duplicate_deps(ir_node *old_node, ir_node *new_node)
 {
-	int deps = get_irn_deps(old_node);
+	int deps = get_irn_n_deps(old_node);
 	for (int i = 0; i < deps; ++i) {
 		ir_node *dep     = get_irn_dep(old_node, i);
 		ir_node *new_dep = be_transform_node(dep);
@@ -277,7 +277,7 @@ static void fix_loops(ir_node *node)
 		changed = true;
 	}
 
-	arity = get_irn_deps(node);
+	arity = get_irn_n_deps(node);
 	for (int i = 0; i < arity; ++i) {
 		ir_node *in = get_irn_dep(node, i);
 		ir_node *nw = (ir_node*)get_irn_link(in);

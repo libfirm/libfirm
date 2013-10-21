@@ -1236,7 +1236,7 @@ static void dump_ir_data_edges(FILE *F, const ir_node *n)
 	}
 
 	/* dump the dependency edges. */
-	num = get_irn_deps(n);
+	num = get_irn_n_deps(n);
 	for (i = 0; i < num; ++i) {
 		ir_node *dep = get_irn_dep(n, i);
 
