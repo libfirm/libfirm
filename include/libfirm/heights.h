@@ -19,8 +19,8 @@
  * @ingroup irana
  * @defgroup ir_heights  Node Heights
  *
- * The height is a measure for the longest datadependencies path from a node to
- * the end of a basic block. This is usefull for scheduling heuristics and can
+ * The height is a measure for the longest data dependency path from a node to
+ * the end of a basic block. This is useful for scheduling heuristics and can
  * also be used to speedup reachability queries.
  *
  * @{
@@ -37,15 +37,15 @@
 FIRM_API unsigned get_irn_height(const ir_heights_t *h, const ir_node *irn);
 
 /**
- * Checks if a certain node is reachable according to data dependence edges
- * from another node. Both nodes must be in the same block.
- * @param h The heights object.
- * @param n The first node.
- * @param m The other node.
- * @return  1, if n is data dependent on m, 0 if not.
+ * Checks if the node @p tgt is reachable according to data dependence edges
+ * from the node @p src. Both nodes must be in the same block.
+ * @param h   The heights object.
+ * @param src The source node of a possible path.
+ * @param tgt The target node of a possible path.
+ * @return    1, if src is data dependent on tgt, 0 if not.
  */
-FIRM_API int heights_reachable_in_block(ir_heights_t *h, const ir_node *n,
-                                        const ir_node *m);
+FIRM_API int heights_reachable_in_block(ir_heights_t *h, const ir_node *src,
+                                        const ir_node *tgt);
 
 /**
  * Recomputes the height information for a certain block.
