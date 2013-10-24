@@ -17,8 +17,10 @@ builddir     ?= $(top_builddir)/$(variant)
 gendir       ?= $(top_builddir)/gen
 docdir       ?= $(top_builddir)/doc
 
-# This hides the noisy commandline outputs. Show them with "make Q="
+# This hides the noisy commandline outputs. Show them with "make V=1"
+ifneq ($(V),1)
 Q ?= @
+endif
 
 # Tools
 CC ?= cc
