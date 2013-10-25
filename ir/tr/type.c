@@ -1472,7 +1472,8 @@ void set_default_size(ir_type *tp, unsigned size)
 
 void default_layout_compound_type(ir_type *type)
 {
-	int      size      = 0;
+	unsigned size      = 0;
+	int      offset    = 0;
 	unsigned align_all = 1;
 	bool     var_size  = is_compound_variable_size(type);
 	for (size_t i = 0, n = get_compound_n_members(type); i < n; ++i) {
@@ -1493,16 +1494,21 @@ void default_layout_compound_type(ir_type *type)
 			entity_size = 0;
 		}
 
-		unsigned align     = get_type_alignment_bytes(entity_type);
-		unsigned misalign  = (align ? size % align : 0);
-		size     += (misalign ? align - misalign : 0);
+		unsigned align    = get_type_alignment_bytes(entity_type);
+		unsigned misalign = (align ? offset % align : 0);
+		offset += (misalign ? align - misalign : 0);
 		align_all = align > align_all ? align : align_all;
 
-		set_entity_offset(entity, size);
+		set_entity_offset(entity, offset);
 		if (!is_Union_type(type)) {
-			size += entity_size;
+			offset += entity_size;
+		} else if (entity_size > size) {
+			size = entity_size;
 		}
 	}
+	if (!is_Union_type(type))
+		size = offset;
+
 	if (align_all > 0 && size % align_all) {
 		size += align_all - (size % align_all);
 	}
