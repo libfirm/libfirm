@@ -773,9 +773,11 @@ static void write_entity(write_env_t *env, ir_entity *ent)
 		write_unsigned(env, get_entity_bitfield_size(ent));
 		break;
 	}
+	case IR_ENTITY_METHOD:
+		write_long(env, (long)get_entity_additional_properties(ent));
+		break;
 	case IR_ENTITY_UNKNOWN:
 	case IR_ENTITY_LABEL:
-	case IR_ENTITY_METHOD:
 		break;
 	}
 
@@ -1881,6 +1883,8 @@ static void read_entity(read_env_t *env, ir_entity_kind kind)
 		entity = new_entity(owner, name, type);
 		if (ld_name != NULL)
 			set_entity_ld_ident(entity, ld_name);
+		add_entity_additional_properties(
+			entity, (mtp_additional_properties) read_long(env));
 		break;
 	case IR_ENTITY_PARAMETER: {
 		char  *str = read_word(env);
