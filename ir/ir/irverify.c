@@ -379,6 +379,12 @@ static int verify_node_Block(const ir_node *n)
 	return fine;
 }
 
+static int verify_node_Deleted(const ir_node *n)
+{
+	warn(n, "Deleted node %+F appears to be reachable");
+	return false;
+}
+
 static int verify_node_Start(const ir_node *n)
 {
 	return check_mode(n, mode_T);
@@ -1230,6 +1236,7 @@ void ir_register_verify_node_ops(void)
 	register_verify_node_func(op_Const,    verify_node_Const);
 	register_verify_node_func(op_Conv,     verify_node_Conv);
 	register_verify_node_func(op_CopyB,    verify_node_CopyB);
+	register_verify_node_func(op_Deleted,  verify_node_Deleted);
 	register_verify_node_func(op_Div,      verify_node_Div);
 	register_verify_node_func(op_Eor,      verify_node_Eor);
 	register_verify_node_func(op_Free,     verify_node_Free);
