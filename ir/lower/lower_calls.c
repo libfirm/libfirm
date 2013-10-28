@@ -437,6 +437,11 @@ typedef struct cr_pair {
 	ir_node *arg;   /**< the argument that replaces the entities address */
 } cr_pair;
 
+typedef struct copy_return_opt_env {
+	cr_pair *arr;
+	size_t   n_pairs;
+} copy_return_opt_env;
+
 /**
  * Post walker: fixes all entities addresses for the copy-return
  * optimization.
@@ -448,12 +453,12 @@ typedef struct cr_pair {
 static void do_copy_return_opt(ir_node *n, void *ctx)
 {
 	if (is_Sel(n)) {
+		copy_return_opt_env *env = (copy_return_opt_env*)ctx;
 		ir_entity *ent = get_Sel_entity(n);
-		cr_pair   *arr = (cr_pair*)ctx;
 
-		for (size_t i = 0, l = ARR_LEN(arr); i < l; ++i) {
-			if (ent == arr[i].ent) {
-				exchange(n, arr[i].arg);
+		for (size_t i = 0, n_pairs = env->n_pairs; i < n_pairs; ++i) {
+			if (ent == env->arr[i].ent) {
+				exchange(n, env->arr[i].arg);
 				break;
 			}
 		}
@@ -778,9 +783,12 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 			set_irn_in(ret, j, new_in);
 
 			if (n_cr_opt > 0) {
-				irg_walk_graph(irg, NULL, do_copy_return_opt, cr_opt);
+				copy_return_opt_env env;
+				env.arr     = cr_opt;
+				env.n_pairs = n_cr_opt;
+				irg_walk_graph(irg, NULL, do_copy_return_opt, &env);
 
-				for (size_t c = 0, n = ARR_LEN(cr_opt); c < n; ++c) {
+				for (size_t c = 0; c < n_cr_opt; ++c) {
 					free_entity(cr_opt[c].ent);
 				}
 			}
