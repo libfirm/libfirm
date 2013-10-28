@@ -92,23 +92,6 @@ void all_optimizations_off(void)
 	libFIRM_opt = 0;
 }
 
-#ifdef _DEBUG
-void firm_show_flags(FILE *f)
-{
-	if (! f)
-		f = stdout;
-	printf("Firm optimization state:\n");
-#define E_FLAG(name, value, def) printf(" %-20s = %s\n", #name, get_opt_##name() ? "ON" : "OFF");
-#define I_FLAG(name, value, def) printf(" %-20s = %s\n", #name, get_opt_##name() ? "ON" : "OFF");
-#define R_FLAG(name, value)      printf(" %-20s = %s\n", #name, is_##name##_running() ? "is running" : "not running");
-#include "irflag_t.def"
-#undef I_FLAG
-#undef E_FLAG
-#undef R_FLAG
-	printf("\n");
-}
-#endif
-
 static const lc_opt_table_entry_t firm_flags[] = {
 #define I_FLAG(name, val, def) LC_OPT_ENT_BIT(#name, #name, &libFIRM_opt, (1 << val)),
 #define E_FLAG(name, val, def) LC_OPT_ENT_BIT(#name, #name, &libFIRM_opt, (1 << val)),
