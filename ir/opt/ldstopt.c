@@ -1336,9 +1336,6 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 		return 0;
 
 	ir_node *store = skip_Proj(projM);
-#ifdef DO_CACHEOPT
-	ir_node *old_store = store;
-#endif
 	if (!is_Store(store))
 		return 0;
 
@@ -1449,9 +1446,6 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 
 	/* fourth step: create the Store */
 	store = new_rd_Store(db, block, phiM, ptr, phiD, cons_none);
-#ifdef DO_CACHEOPT
-	co_set_irn_name(store, co_get_irn_ident(old_store));
-#endif
 
 	projM = new_rd_Proj(NULL, store, mode_M, pn_Store_M);
 
