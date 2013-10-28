@@ -30,7 +30,7 @@
 #include "hashptr.h"
 #include "irtools.h"
 #include "irhooks.h"
-#include "array_t.h"
+#include "array.h"
 #include "vrp.h"
 #include "firm_types.h"
 #include "bitfiddle.h"
@@ -4760,11 +4760,10 @@ static ir_node *transform_node_Phi(ir_node *phi)
 
 		/* Beware of Phi0 */
 		if (n > 0) {
-			ir_node **in;
 			ir_node  *new_phi;
 			bool      has_pin = false;
 
-			NEW_ARR_A(ir_node *, in, n);
+			ir_node **in = ALLOCAN(ir_node*, n);
 
 			for (i = 0; i < n; ++i) {
 				ir_node *pred = get_irn_n(phi, i);
@@ -4794,7 +4793,7 @@ static ir_node *transform_node_Phi(ir_node *phi)
 		/* Beware of Phi0 */
 		if (n > 0) {
 			ir_node    *pred = get_irn_n(phi, 0);
-			ir_node    *bound, *new_phi, **in;
+			ir_node    *bound, *new_phi;
 			ir_relation relation;
 			bool        has_confirm = false;
 
@@ -4804,7 +4803,7 @@ static ir_node *transform_node_Phi(ir_node *phi)
 			bound    = get_Confirm_bound(pred);
 			relation = get_Confirm_relation(pred);
 
-			NEW_ARR_A(ir_node *, in, n);
+			ir_node **in = ALLOCAN(ir_node*, n);
 			in[0] = get_Confirm_value(pred);
 
 			for (i = 1; i < n; ++i) {
@@ -5337,9 +5336,7 @@ static ir_node *transform_node_Conv(ir_node *n)
 static ir_node *transform_node_End(ir_node *n)
 {
 	int i, j, n_keepalives = get_End_n_keepalives(n);
-	ir_node **in;
-
-	NEW_ARR_A(ir_node *, in, n_keepalives);
+	ir_node **in = ALLOCAN(ir_node*, n_keepalives);
 
 	for (i = j = 0; i < n_keepalives; ++i) {
 		ir_node *ka = get_End_keepalive(n, i);
@@ -6229,7 +6226,7 @@ static ir_node *transform_node_Store(ir_node *n)
 static ir_node *transform_node_Call(ir_node *call)
 {
 	ir_node  *callee = get_Call_ptr(call);
-	ir_node  *adr, *mem, *res, *bl, **in;
+	ir_node  *adr, *mem, *res, *bl;
 	ir_type  *ctp, *mtp, *tp;
 	ir_graph *irg;
 	type_dbg_info *tdb;
@@ -6264,7 +6261,7 @@ static ir_node *transform_node_Call(ir_node *call)
 	for (i = 0; i < n_res; ++i)
 		set_method_res_type(ctp, i, get_method_res_type(mtp, i));
 
-	NEW_ARR_A(ir_node *, in, n_param + 1);
+	ir_node **in = ALLOCAN(ir_node*, n_param+1);
 
 	/* FIXME: we don't need a new pointer type in every step */
 	irg = get_irn_irg(call);
@@ -6702,10 +6699,11 @@ ir_node *optimize_node(ir_node *n)
 				oldn = (ir_node*)alloca(node_size);
 
 				memcpy(oldn, n, node_size);
-				CLONE_ARR_A(ir_node *, oldn->in, n->in);
+				size_t n_in = ARR_LEN(n->in);
+				oldn->in = ALLOCAN(ir_node*, n_in);
 
 				/* ARG, copy the in array, we need it for statistics */
-				memcpy(oldn->in, n->in, ARR_LEN(n->in) * sizeof(n->in[0]));
+				memcpy(oldn->in, n->in, n_in * sizeof(n->in[0]));
 
 				/* note the inplace edges module */
 				edges_node_deleted(n);

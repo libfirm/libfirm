@@ -10,9 +10,22 @@
  */
 #include <stdlib.h>
 
-#include "array_t.h"
+#include "array.h"
 #include "util.h"
 #include "xmalloc.h"
+#include "fourcc.h"
+
+#define ARR_D_MAGIC FOURCC('A','R','R','D')
+#define ARR_A_MAGIC FOURCC('A','R','R','A')
+#define ARR_F_MAGIC FOURCC('A','R','R','F')
+
+#ifdef NDEBUG
+# define ARR_SET_DBGINF(descr, co) \
+    ((void)(descr), (void)(co), (void)0)
+#else
+# define ARR_SET_DBGINF(descr, co) \
+    ((descr)->magic = (co))
+#endif
 
 /**
  * An empty dynamic array descriptor.

@@ -20,7 +20,7 @@
 #include "irgopt.h"
 #include "irgwalk.h"
 #include "irtools.h"
-#include "array_t.h"
+#include "array.h"
 #include "be.h"
 
 #include "irdump.h"
@@ -150,10 +150,8 @@ static ir_node *copy_to(ir_node *node, ir_node *src_block, int i)
 static void rewire(ir_node *node, int i, int j, ir_node *new_pred)
 {
 	int arity = get_irn_arity(node);
-	ir_node **ins;
+	ir_node **ins = ALLOCAN(ir_node*, arity-1);
 	int k;
-
-	NEW_ARR_A(ir_node *, ins, arity - 1);
 
 	int l = 0;
 	for (k = 0; k < i;     ++k) ins[l++] = get_irn_n(node, k);

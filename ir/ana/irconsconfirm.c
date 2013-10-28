@@ -20,7 +20,7 @@
 #include "irgwalk.h"
 #include "irgopt.h"
 #include "irtools.h"
-#include "array_t.h"
+#include "array.h"
 #include "debug.h"
 #include "error.h"
 #include "irflag.h"
@@ -202,8 +202,7 @@ static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *
 				}
 			}
 			if (i < 0) {
-				ir_node **in;
-				NEW_ARR_A(ir_node *, in, n);
+				ir_node **in = ALLOCAN(ir_node*, n);
 				/* ok, ALL predecessors are either dominated by block OR other block */
 				if (c_b == NULL) {
 					ir_graph *irg     = get_irn_irg(block);

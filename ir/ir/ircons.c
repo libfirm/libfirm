@@ -20,7 +20,7 @@
 #include "iropt_t.h"
 #include "irgmod.h"
 #include "irhooks.h"
-#include "array_t.h"
+#include "array.h"
 #include "irbackedge_t.h"
 #include "irflag_t.h"
 #include "iredges_t.h"
@@ -47,8 +47,7 @@ ir_node *new_rd_ASM(dbg_info *db, ir_node *block, ir_node *mem,
 	ir_graph *irg = get_irn_irg(block);
 
 	int r_arity = arity+1;
-	ir_node **r_in;
-	NEW_ARR_A(ir_node*, r_in, r_arity);
+	ir_node **r_in = ALLOCAN(ir_node*,r_arity);
 	r_in[0] = mem;
 	memcpy(&r_in[1], in, arity*sizeof(ir_node*));
 

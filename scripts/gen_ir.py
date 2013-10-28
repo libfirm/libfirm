@@ -78,8 +78,7 @@ def format_insdecl(node):
 	if arity == "variable":
 		insarity = len(node.ins)
 		res  = "int r_arity = arity + " + repr(insarity) + ";"
-		res += "\n\tir_node **r_in;"
-		res += "\n\tNEW_ARR_A(ir_node *, r_in, r_arity);"
+		res += "\n\tir_node **r_in= ALLOCAN(ir_node*, r_arity);"
 		i = 0
 		for input in node.ins:
 			res += "\n\tr_in[" + repr(i) + "] = irn_" + input[0] + ";"

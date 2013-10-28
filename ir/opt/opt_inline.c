@@ -24,7 +24,7 @@
 #include "irgmod.h"
 #include "irgwalk.h"
 
-#include "array_t.h"
+#include "array.h"
 #include "list.h"
 #include "pmap.h"
 #include "xmalloc.h"

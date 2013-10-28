@@ -23,7 +23,7 @@
 #include "pset_new.h"
 #include "util.h"
 #include "obst.h"
-#include "array_t.h"
+#include "array.h"
 #include "irtools.h"
 #include "lc_opts.h"
 #include "lc_opts_enum.h"

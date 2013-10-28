@@ -11,7 +11,7 @@
  */
 #include "irnode_t.h"
 #include "irflag_t.h"
-#include "array_t.h"
+#include "array.h"
 #include "ircons.h"
 #include "irdom.h"
 #include "irgmod.h"
@@ -1552,10 +1552,8 @@ static int insert_Load(block_t *bl)
 	}
 
 	if (n > 1) {
-		ir_node **ins;
+		ir_node **ins = ALLOCAN(ir_node*, n);
 		size_t    pos;
-
-		NEW_ARR_A(ir_node *, ins, n);
 
 		rbitset_set_all(env.curr_set, env.rbs_size);
 
@@ -1702,10 +1700,9 @@ static int insert_Load(block_t *bl)
 			}
 			if (have_some && !all_same) {
 				ir_mode *mode = op->value.mode;
-				ir_node **in, *phi;
+				ir_node **in  = ALLOCAN(ir_node*, n);
+				ir_node  *phi;
 				memop_t *phi_op;
-
-				NEW_ARR_A(ir_node *, in, n);
 
 				for (i = n - 1; i >= 0; --i) {
 					ir_node *pred    = get_Block_cfgpred_block(block, i);

@@ -18,7 +18,7 @@
 #include "benode.h"
 #include "bemodule.h"
 #include "util.h"
-#include "array_t.h"
+#include "array.h"
 
 // XXX there is no one time init for schedulers
 //#define NORMAL_DBG
@@ -292,7 +292,6 @@ static void normal_sched_block(ir_node* block, void* env)
 {
 	ir_node**      roots = (ir_node**)get_irn_link(block);
 	ir_heights_t*  heights = (ir_heights_t*)env;
-	irn_cost_pair* root_costs;
 	int i;
 	ir_node**      sched;
 
@@ -308,7 +307,7 @@ static void normal_sched_block(ir_node* block, void* env)
 		return;
 	}
 
-	NEW_ARR_A(irn_cost_pair, root_costs, root_count);
+	irn_cost_pair *root_costs = ALLOCAN(irn_cost_pair, root_count);
 	for (i = 0; i < root_count; ++i) {
 		root_costs[i].irn  = roots[i];
 		root_costs[i].cost = get_irn_height(heights, roots[i]);

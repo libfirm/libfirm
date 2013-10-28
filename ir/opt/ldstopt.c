@@ -26,7 +26,7 @@
 #include "dbginfo_t.h"
 #include "iropt_dbg.h"
 #include "irflag_t.h"
-#include "array_t.h"
+#include "array.h"
 #include "irhooks.h"
 #include "iredges.h"
 #include "irmemory.h"
@@ -1408,13 +1408,10 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 	 *
 	 * Is only allowed if the predecessor blocks have only one successor.
 	 */
-
-	ir_node **inM, **inD, **projMs;
-	int *idx;
-	NEW_ARR_A(ir_node *, projMs, n);
-	NEW_ARR_A(ir_node *, inM, n);
-	NEW_ARR_A(ir_node *, inD, n);
-	NEW_ARR_A(int, idx, n);
+	ir_node **projMs = ALLOCAN(ir_node*, n);
+	ir_node **inM    = ALLOCAN(ir_node*, n);
+	ir_node **inD    = ALLOCAN(ir_node*, n);
+	int      *idx    = ALLOCAN(int, n);
 
 	/* Prepare: Collect all Store nodes.  We must do this
 	   first because we otherwise may loose a store when exchanging its

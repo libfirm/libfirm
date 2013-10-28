@@ -13,7 +13,7 @@
 #include "irouts.h"
 #include "irnode_t.h"
 #include "irmode_t.h"
-#include "array_t.h"
+#include "array.h"
 #include "irprog.h"
 #include "entity_t.h"
 
@@ -182,8 +182,7 @@ static void analyze_ent_args(ir_entity *ent)
 
 	/* A array to save the information for each argument with
 	   mode reference.*/
-	ptr_access_kind *rw_info;
-	NEW_ARR_A(ptr_access_kind, rw_info, nparams);
+	ptr_access_kind *rw_info = ALLOCAN(ptr_access_kind, nparams);
 
 	/* We initialize the element with none state. */
 	for (size_t i = nparams; i-- > 0; )

@@ -13,7 +13,7 @@
 
 #include <assert.h>
 #include <stdbool.h>
-#include "array_t.h"
+#include "array.h"
 #include "debug.h"
 #include "ircons.h"
 #include "irgmod.h"
@@ -39,10 +39,8 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
  */
 static void add_pred(ir_node* node, ir_node* x)
 {
-	ir_node** ins;
-
-	int const n = get_Block_n_cfgpreds(node);
-	NEW_ARR_A(ir_node*, ins, n + 1);
+	int const  n   = get_Block_n_cfgpreds(node);
+	ir_node  **ins = ALLOCAN(ir_node*, n+1);
 	for (int i = 0; i < n; i++)
 		ins[i] = get_irn_n(node, i);
 	ins[n] = x;
@@ -59,7 +57,6 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
 	int n_cfgpreds;
 	ir_graph *irg;
 	ir_node *phi;
-	ir_node **in;
 	ir_node *dummy;
 
 	/* In case of a bad input to a block we need to return the bad value */
@@ -98,7 +95,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
 	}
 
 	/* create a new Phi */
-	NEW_ARR_A(ir_node*, in, n_cfgpreds);
+	ir_node **in = ALLOCAN(ir_node*, n_cfgpreds);
 	dummy = new_r_Dummy(irg, mode);
 	for (i = 0; i < n_cfgpreds; ++i)
 		in[i] = dummy;

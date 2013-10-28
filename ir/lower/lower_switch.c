@@ -11,7 +11,7 @@
 #include <limits.h>
 #include <stdbool.h>
 
-#include "array_t.h"
+#include "array.h"
 #include "ircons.h"
 #include "irgopt.h"
 #include "irgwalk.h"

@@ -22,7 +22,7 @@
 #include "trouts.h"
 #include "irverify.h"
 #include "pmap.h"
-#include "array_t.h"
+#include "array.h"
 #include "iropt_dbg.h"
 #include "error.h"
 #include "be.h"

@@ -61,7 +61,7 @@
 #include "irgmod.h"
 #include "iropt_dbg.h"
 #include "debug.h"
-#include "array_t.h"
+#include "array.h"
 #include "error.h"
 #include "irnodeset.h"
 #include "tv_t.h"
@@ -2995,7 +2995,6 @@ static void apply_cf(ir_node *block, void *ctx)
 	environment_t *env = (environment_t*)ctx;
 	node_t        *node = get_irn_node(block);
 	int           i, j, k, n;
-	ir_node       **ins, **in_X;
 	ir_node       *phi, *next;
 
 	n = get_Block_n_cfgpreds(block);
@@ -3051,7 +3050,7 @@ static void apply_cf(ir_node *block, void *ctx)
 		return;
 	}
 
-	NEW_ARR_A(ir_node *, in_X, n);
+	ir_node **in_X = ALLOCAN(ir_node*, n);
 	k = 0;
 	for (i = 0; i < n; ++i) {
 		ir_node *pred = get_Block_cfgpred(block, i);
@@ -3086,7 +3085,7 @@ static void apply_cf(ir_node *block, void *ctx)
 		return;
 
 	/* fix Phi's */
-	NEW_ARR_A(ir_node *, ins, n);
+	ir_node **ins = ALLOCAN(ir_node*, n);
 	for (phi = get_Block_phis(block); phi != NULL; phi = next) {
 		node_t *node = get_irn_node(phi);
 
@@ -3404,7 +3403,7 @@ static void apply_end(ir_node *end, environment_t *env)
 	ir_node **in = NULL;
 
 	if (n > 0)
-		NEW_ARR_A(ir_node *, in, n);
+		in = ALLOCAN(ir_node*, n);
 
 	/* fix the keep alive */
 	for (i = j = 0; i < n; i++) {

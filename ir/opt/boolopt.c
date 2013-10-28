@@ -11,7 +11,7 @@
 #include <assert.h>
 
 #include "adt/obst.h"
-#include "../adt/array_t.h"
+#include "../adt/array.h"
 #include "iroptimize.h"
 #include "ircons.h"
 #include "irgmod.h"
@@ -479,9 +479,9 @@ static int can_fuse_block_inputs(const ir_node *block, int idx_i, int idx_j)
 static void remove_block_input(ir_node *block, int idx)
 {
 	int i, j, n = get_Block_n_cfgpreds(block) - 1;
-	ir_node *phi, **ins;
+	ir_node *phi;
 
-	NEW_ARR_A(ir_node *, ins, n);
+	ir_node **ins = ALLOCAN(ir_node*, n);
 
 	if (n == 1) {
 		/* all Phis will be deleted */

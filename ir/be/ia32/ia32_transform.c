@@ -28,7 +28,7 @@
 #include "irdom.h"
 #include "iropt.h"
 #include "error.h"
-#include "array_t.h"
+#include "array.h"
 #include "heights.h"
 
 #include "benode.h"
@@ -1601,8 +1601,7 @@ static ir_node *transform_AM_mem(ir_node *const block,
 	} else if (is_Proj(src_val) && is_Sync(src_mem)) {
 		int const arity = get_Sync_n_preds(src_mem);
 
-		ir_node **ins;
-		NEW_ARR_A(ir_node*, ins, arity + 1);
+		ir_node **ins = ALLOCAN(ir_node*, arity+1);
 
 		/* NOTE: This sometimes produces dead-code because the old sync in
 		 * src_mem might not be used anymore, we should detect this case

@@ -31,7 +31,7 @@
 #include "irverify.h"
 #include "iredges.h"
 
-#include "array_t.h"
+#include "array.h"
 
 #include "irouts.h"
 #include "irbackedge_t.h"
@@ -787,7 +787,6 @@ static void cfgopt_ignoring_phis(ir_graph *irg)
 void optimize_cf(ir_graph *irg)
 {
 	int i, j, n;
-	ir_node **in = NULL;
 	ir_node *end = get_irg_end(irg);
 	ir_node *new_end;
 	merge_env env;
@@ -845,7 +844,7 @@ void optimize_cf(ir_graph *irg)
 		 */
 		n = get_End_n_keepalives(end);
 		if (n > 0) {
-			NEW_ARR_A(ir_node *, in, n);
+			ir_node **in = ALLOCAN(ir_node*, n);
 			assure_irg_outs(irg);
 
 			for (i = j = 0; i < n; ++i) {

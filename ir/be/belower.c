@@ -20,7 +20,7 @@
 #include "irgmod.h"
 #include "iredges_t.h"
 #include "irgwalk.h"
-#include "array_t.h"
+#include "array.h"
 #include "raw_bitset.h"
 #include "adt/obstack.h"
 #include "util.h"
@@ -539,7 +539,6 @@ static void melt_copykeeps(constraint_env_t *cenv)
 
 			if (ck_arr[idx]) {
 				int j, n_melt;
-				ir_node **new_ck_in;
 				ir_node *sched_pt = NULL;
 
 				n_melt     = 1;
@@ -575,7 +574,7 @@ static void melt_copykeeps(constraint_env_t *cenv)
 
 				melt_arr = (ir_node **)obstack_finish(&obst);
 				/* melt all found copykeeps */
-				NEW_ARR_A(ir_node *, new_ck_in, n_melt);
+				ir_node **new_ck_in = ALLOCAN(ir_node*,n_melt);
 				for (j = 0; j < n_melt; ++j) {
 					new_ck_in[j] = get_irn_n(melt_arr[j], 1);
 

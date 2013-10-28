@@ -37,7 +37,7 @@
 #include "pmap.h"
 #include "pdeq.h"
 #include "irdump.h"
-#include "array_t.h"
+#include "array.h"
 #include "lower_dw.h"
 
 /** A map from (op, imode, omode) to Intrinsic functions entities. */
@@ -1676,7 +1676,6 @@ static ir_type *lower_mtp(ir_type *mtp)
  */
 static void lower_Return(ir_node *node, ir_mode *mode)
 {
-	ir_node  **in;
 	size_t     i, j, n;
 	int        need_conv = 0;
 	(void) mode;
@@ -1697,7 +1696,7 @@ static void lower_Return(ir_node *node, ir_mode *mode)
 	ir_type   *mtp = get_entity_type(ent);
 
 	/* create a new in array */
-	NEW_ARR_A(ir_node *, in, get_method_n_ress(mtp) + 1);
+	ir_node **in = ALLOCAN(ir_node*, get_method_n_ress(mtp)+1);
 	j = 0;
 	in[j++] = get_Return_mem(node);
 

@@ -21,7 +21,7 @@
 #include "irgwalk.h"
 #include "obst.h"
 #include "pmap.h"
-#include "array_t.h"
+#include "array.h"
 #include "pdeq.h"
 #include "debug.h"
 #include "error.h"
@@ -1462,7 +1462,6 @@ static int sim_Perm(x87_state *state, ir_node *irn)
 {
 	int      i, n;
 	ir_node *pred = get_irn_n(irn, 0);
-	int     *stack_pos;
 
 	/* handle only floating point Perms */
 	if (! mode_is_float(get_irn_mode(pred)))
@@ -1475,7 +1474,7 @@ static int sim_Perm(x87_state *state, ir_node *irn)
 	   different from each other.
 	   So, all we need to do is to permutate the stack state. */
 	n = get_irn_arity(irn);
-	NEW_ARR_A(int, stack_pos, n);
+	int *stack_pos = ALLOCAN(int, n);
 
 	/* collect old stack positions */
 	for (i = 0; i < n; ++i) {

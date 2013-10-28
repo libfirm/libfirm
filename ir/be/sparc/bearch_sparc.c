@@ -29,7 +29,7 @@
 #include "lower_mode_b.h"
 #include "lower_softfloat.h"
 #include "debug.h"
-#include "array_t.h"
+#include "array.h"
 #include "error.h"
 #include "util.h"
 #include "be_t.h"

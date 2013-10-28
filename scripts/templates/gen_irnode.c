@@ -16,7 +16,6 @@
 #include "irverify_t.h"
 #include "iropt_t.h"
 #include "ircons_t.h"
-#include "array_t.h"
 #include "irgraph_t.h"
 #include "irbackedge_t.h"
 #include "irgopt.h"

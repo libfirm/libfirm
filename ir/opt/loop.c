@@ -24,7 +24,7 @@
 #include "irouts.h"
 #include "iredges.h"
 #include "irtools.h"
-#include "array_t.h"
+#include "array.h"
 #include "beutil.h"
 #include "irdom.h"
 
@@ -341,7 +341,6 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode, int fi
 	int n_cfgpreds;
 	ir_graph *irg = get_irn_irg(block);
 	ir_node *phi;
-	ir_node **in;
 
 	DB((dbg, LEVEL_5, "ssa search_def_and_create_phis: block %N\n", block));
 
@@ -382,7 +381,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode, int fi
 	}
 
 	/* create a new Phi */
-	NEW_ARR_A(ir_node*, in, n_cfgpreds);
+	ir_node **in = ALLOCAN(ir_node*, n_cfgpreds);
 	for (i = 0; i < n_cfgpreds; ++i)
 		in[i] = new_r_Dummy(irg, mode);
 
@@ -652,7 +651,6 @@ static void copy_walk(ir_node *node, walker_condition *walk_condition,
 	int i;
 	int arity;
 	ir_node *cp;
-	ir_node **cpin;
 
 	/**
 	 * break condition and cycle resolver, creating temporary node copies
@@ -681,7 +679,7 @@ static void copy_walk(ir_node *node, walker_condition *walk_condition,
 
 	arity = get_irn_arity(node);
 
-	NEW_ARR_A(ir_node *, cpin, arity);
+	ir_node **cpin = ALLOCAN(ir_node*, arity);
 
 	for (i = 0; i < arity; ++i) {
 		ir_node *pred = get_irn_n(node, i);
@@ -734,7 +732,6 @@ static void copy_walk_n(ir_node *node, walker_condition *walk_condition,
 	int i;
 	int arity;
 	ir_node *cp;
-	ir_node **cpin;
 
 	/**
 	 * break condition and cycle resolver, creating temporary node copies
@@ -762,7 +759,7 @@ static void copy_walk_n(ir_node *node, walker_condition *walk_condition,
 	}
 
 	arity = get_irn_arity(node);
-	NEW_ARR_A(ir_node *, cpin, arity);
+	ir_node **cpin = ALLOCAN(ir_node*, arity);
 
 	for (i = 0; i < arity; ++i) {
 		ir_node *pred = get_irn_n(node, i);
@@ -994,7 +991,6 @@ static void find_condition_chain(ir_node *block)
 static void fix_copy_inversion(void)
 {
 	ir_node *new_head;
-	ir_node **ins;
 	ir_node **phis;
 	ir_node *phi, *next;
 	ir_node *head_cp = get_inversion_copy(loop_head);
@@ -1002,10 +998,9 @@ static void fix_copy_inversion(void)
 	int arity        = get_irn_arity(head_cp);
 	int backedges    = get_backedge_n(head_cp, false);
 	int new_arity    = arity - backedges;
+	ir_node **ins    = ALLOCAN(ir_node*, new_arity);
 	int pos;
 	int i;
-
-	NEW_ARR_A(ir_node *, ins, new_arity);
 
 	pos = 0;
 	/* Remove block backedges */
@@ -1020,7 +1015,6 @@ static void fix_copy_inversion(void)
 
 	for_each_phi_safe(get_Block_phis(head_cp), phi, next) {
 		ir_node *new_phi;
-		NEW_ARR_A(ir_node *, ins, new_arity);
 		pos = 0;
 		for(i = 0; i < arity; ++i) {
 			if (!is_backedge(head_cp, i))
@@ -1050,17 +1044,15 @@ static void fix_copy_inversion(void)
 static void fix_head_inversion(void)
 {
 	ir_node *new_head;
-	ir_node **ins;
 	ir_node *phi, *next;
 	ir_node **phis;
 	ir_graph *irg = get_irn_irg(loop_head);
 	int arity     = get_irn_arity(loop_head);
 	int backedges = get_backedge_n(loop_head, false);
 	int new_arity = backedges;
+	ir_node **ins = ALLOCAN(ir_node*, new_arity);
 	int pos;
 	int i;
-
-	NEW_ARR_A(ir_node *, ins, new_arity);
 
 	pos = 0;
 	/* Keep only backedges */
@@ -1076,8 +1068,6 @@ static void fix_head_inversion(void)
 	for_each_phi(loop_head, phi) {
 		ir_node *new_phi;
 		DB((dbg, LEVEL_5, "Fixing phi %N of loop head\n", phi));
-
-		NEW_ARR_A(ir_node *, ins, new_arity);
 
 		pos = 0;
 		for (i = 0; i < arity; ++i) {
@@ -1564,12 +1554,11 @@ static ir_node *clone_phis_sans_bes(ir_node *phi, ir_node *be_block, ir_node *de
 static ir_node *clone_block_sans_bes(ir_node *node, ir_node *be_block)
 {
 	int i, c = 0;
-	ir_node **ins;
 
 	int const arity = get_Block_n_cfgpreds(node);
 	assert(arity == get_irn_arity(be_block));
 
-	NEW_ARR_A(ir_node *, ins, arity);
+	ir_node **ins = ALLOCAN(ir_node*, arity);
 	for (i = 0; i < arity; ++i) {
 		if (! is_own_backedge(be_block, i)) {
 			ins[c] = get_irn_n(node, i);

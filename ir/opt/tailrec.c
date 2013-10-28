@@ -15,7 +15,7 @@
 #include "error.h"
 #include "iroptimize.h"
 #include "scalar_replace.h"
-#include "array_t.h"
+#include "array.h"
 #include "irprog_t.h"
 #include "irgwalk.h"
 #include "irgmod.h"
@@ -116,9 +116,6 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 {
 	ir_node *end_block = get_irg_end_block(irg);
 	ir_node *block, *jmp, *call, *calls;
-	ir_node **in;
-	ir_node **phis;
-	ir_node ***call_params;
 	ir_node *p, *n;
 	int i, j, n_params, n_locs;
 	collect_t data;
@@ -152,7 +149,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 	assert((data.proj_data || n_params == 0) && "Could not find Proj(ProjT(Start)) of non-void function");
 
 	/* allocate in's for phi and block construction */
-	NEW_ARR_A(ir_node *, in, env->n_tail_calls + 1);
+	ir_node **in = ALLOCAN(ir_node*, env->n_tail_calls+1);
 
 	/* build a new header block for the loop we create */
 	i = 0;
@@ -181,7 +178,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 	set_Block_cfgpred(data.block, data.blk_idx, jmp);
 
 	/* allocate phi's, position 0 contains the memory phi */
-	NEW_ARR_A(ir_node *, phis, n_params + 1);
+	ir_node **phis = ALLOCAN(ir_node*, n_params+1);
 
 	/* build the memory phi */
 	i = 0;
@@ -202,7 +199,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 		ir_node *calls;
 		ir_node *args;
 
-		NEW_ARR_A(ir_node **, call_params, env->n_tail_calls);
+		ir_node ***call_params = ALLOCAN(ir_node**, env->n_tail_calls);
 
 		/* collect all parameters */
 		for (i = 0, calls = call; calls != NULL;
@@ -255,11 +252,9 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 
 	if (n_locs > 0) {
 		ir_node *start_block;
-		ir_node **in;
-		ir_mode **modes;
+		ir_node **in    = ALLOCAN(ir_node*, env->n_ress);
+		ir_mode **modes = ALLOCAN(ir_mode*, env->n_ress);
 
-		NEW_ARR_A(ir_node *, in, env->n_ress);
-		NEW_ARR_A(ir_mode *, modes, env->n_ress);
 		ssa_cons_start(irg, env->n_ress);
 
 		start_block = get_irg_start_block(irg);
@@ -566,7 +561,7 @@ void opt_tail_rec_irg(ir_graph *irg)
 	env.n_ress   = n_ress;
 
 	if (n_ress > 0) {
-		NEW_ARR_A(tail_rec_variants, env.variants, n_ress);
+		env.variants = ALLOCAN(tail_rec_variants, n_ress);
 
 		for (i = 0; i < n_ress; ++i)
 			env.variants[i] = TR_DIRECT;

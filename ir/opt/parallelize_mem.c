@@ -10,7 +10,7 @@
  */
 #include "iroptimize.h"
 
-#include "array_t.h"
+#include "array.h"
 #include "debug.h"
 #include "ircons.h"
 #include "irgraph_t.h"

@@ -24,7 +24,7 @@
 #include "bitfiddle.h"
 #include "raw_bitset.h"
 #include "error.h"
-#include "array_t.h"
+#include "array.h"
 
 #include "irop_t.h"
 #include "irmode_t.h"
@@ -469,9 +469,8 @@ ir_node *be_new_Call(dbg_info *const dbg, ir_node *const bl, ir_node *const mem,
 {
 	be_call_attr_t *a;
 	int real_n = n_be_Call_first_arg + n;
-	ir_node **real_in;
+	ir_node **real_in = ALLOCAN(ir_node*, real_n);
 
-	NEW_ARR_A(ir_node *, real_in, real_n);
 	real_in[n_be_Call_mem] = mem;
 	real_in[n_be_Call_sp]  = sp;
 	real_in[n_be_Call_ptr] = ptr;

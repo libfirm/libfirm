@@ -17,7 +17,7 @@
 #include "irgraph_t.h"
 #include "irnode_t.h"
 #include "iropt_t.h"
-#include "array_t.h"
+#include "array.h"
 #include "trouts.h"
 #include "irgwalk.h"
 #include "set.h"
@@ -1048,7 +1048,6 @@ static void check_for_cf_meet(ir_node *block, void *ctx)
 {
 	environment_t *env = (environment_t*)ctx;
 	int           i, k, n;
-	pred_t        *preds;
 
 	if (block == get_irg_end_block(get_irn_irg(block))) {
 		/* always create a partition for the end block */
@@ -1062,7 +1061,7 @@ static void check_for_cf_meet(ir_node *block, void *ctx)
 		return;
 	}
 
-	NEW_ARR_A(pred_t, preds, n);
+	pred_t *preds = ALLOCAN(pred_t, n);
 	k = 0;
 	for (i = n - 1; i >= 0; --i) {
 		ir_node *pred = get_Block_cfgpred(block, i);

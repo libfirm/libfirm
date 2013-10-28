@@ -21,7 +21,7 @@
 #include "lower_calls.h"
 #include "error.h"
 #include "debug.h"
-#include "array_t.h"
+#include "array.h"
 #include "irtools.h"
 
 #include "bearch.h"

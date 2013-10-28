@@ -29,7 +29,7 @@
 #include "irnode_t.h"
 #include "irtools.h"
 #include "irgmod.h"
-#include "array_t.h"
+#include "array.h"
 
 /**
  * This struct contains the information quadruple for a Call, which we need to
@@ -427,7 +427,6 @@ static ir_entity *clone_method(const quadruple_t *q)
  **/
 static ir_node *new_cl_Call(ir_node *call, ir_entity *new_entity, size_t pos)
 {
-	ir_node **in;
 	size_t i, n_params, new_params = 0;
 	ir_node *callee;
 	symconst_symbol sym;
@@ -438,7 +437,7 @@ static ir_node *new_cl_Call(ir_node *call, ir_entity *new_entity, size_t pos)
 	callee = new_r_SymConst(irg, mode_P_code, sym, symconst_addr_ent);
 
 	n_params = get_Call_n_params(call);
-	NEW_ARR_A(ir_node *, in, n_params - 1);
+	ir_node **in = ALLOCAN(ir_node*, n_params-1);
 
 	/* we save the parameters of the new call in the array "in" without the
 	 * parameter in position "pos", that is replaced with a constant.*/

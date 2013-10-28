@@ -25,7 +25,7 @@
 #include "irmemory_t.h"
 #include "irtools.h"
 #include "iroptimize.h"
-#include "array_t.h"
+#include "array.h"
 #include "pmap.h"
 #include "error.h"
 #include "util.h"
@@ -728,10 +728,8 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 			ir_type  *ft       = get_irg_frame_type(irg);
 			size_t    n_cr_opt = 0;
 			size_t    j        = 1;
-			ir_node **new_in;
-			cr_pair  *cr_opt;
-			NEW_ARR_A(ir_node *, new_in, n_ress + 1);
-			NEW_ARR_A(cr_pair, cr_opt, n_ret_com);
+			ir_node **new_in   = ALLOCAN(ir_node*, n_ress+1);
+			cr_pair  *cr_opt   = ALLOCAN(cr_pair, n_ret_com);
 
 			for (size_t i = 0, k = 0; i < n_ress; ++i) {
 				ir_node *pred = get_Return_res(ret, i);
