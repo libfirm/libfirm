@@ -550,16 +550,15 @@ static int inline_method(ir_node *const call, ir_graph *called_graph)
 	if (n_res > 0) {
 		for (int j = 0; j < n_res; j++) {
 			ir_type *res_type     = get_method_res_type(ctp, j);
-			ir_mode *res_mode     = get_type_mode(res_type);
 			bool     is_aggregate = is_aggregate_type(res_type);
+			ir_mode *res_mode     = is_aggregate ? mode_P_data
+			                                     : get_type_mode(res_type);
 			int n_ret = 0;
 			for (int i = 0; i < arity; i++) {
 				ir_node *ret = get_Block_cfgpred(end_bl, i);
 				if (is_Return(ret)) {
 					ir_node *res = get_Return_res(ret, j);
-					if (is_aggregate) {
-						res_mode = get_irn_mode(res);
-					} else if (get_irn_mode(res) != res_mode) {
+					if (get_irn_mode(res) != res_mode) {
 						ir_node *block = get_nodes_block(res);
 						res = new_r_Conv(block, res, res_mode);
 					}
