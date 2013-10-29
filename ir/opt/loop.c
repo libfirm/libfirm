@@ -649,7 +649,6 @@ static void copy_walk(ir_node *node, walker_condition *walk_condition,
                       ir_loop *set_loop)
 {
 	int i;
-	int arity;
 	ir_node *cp;
 
 	/**
@@ -677,9 +676,8 @@ static void copy_walk(ir_node *node, walker_condition *walk_condition,
 		copy_walk(pred, walk_condition, set_loop);
 	}
 
-	arity = get_irn_arity(node);
-
-	ir_node **cpin = ALLOCAN(ir_node*, arity);
+	int       arity = get_irn_arity(node);
+	ir_node **cpin  = ALLOCAN(ir_node*, arity);
 
 	for (i = 0; i < arity; ++i) {
 		ir_node *pred = get_irn_n(node, i);
@@ -716,7 +714,7 @@ static void copy_walk(ir_node *node, walker_condition *walk_condition,
 	}
 
 	/* Keeps phi list of temporary node. */
-	set_irn_in(cp, ARR_LEN(cpin), cpin);
+	set_irn_in(cp, arity, cpin);
 }
 
 /**
@@ -730,7 +728,6 @@ static void copy_walk_n(ir_node *node, walker_condition *walk_condition,
                         int copy_index)
 {
 	int i;
-	int arity;
 	ir_node *cp;
 
 	/**
@@ -758,8 +755,8 @@ static void copy_walk_n(ir_node *node, walker_condition *walk_condition,
 		copy_walk_n(block, walk_condition, copy_index);
 	}
 
-	arity = get_irn_arity(node);
-	ir_node **cpin = ALLOCAN(ir_node*, arity);
+	int       arity = get_irn_arity(node);
+	ir_node **cpin  = ALLOCAN(ir_node*, arity);
 
 	for (i = 0; i < arity; ++i) {
 		ir_node *pred = get_irn_n(node, i);
@@ -794,7 +791,7 @@ static void copy_walk_n(ir_node *node, walker_condition *walk_condition,
 	}
 
 	/* Keeps phi list of temporary node. */
-	set_irn_in(cp, ARR_LEN(cpin), cpin);
+	set_irn_in(cp, arity, cpin);
 }
 
 /* Removes alle Blocks with non marked predecessors from the condition chain. */
