@@ -265,6 +265,8 @@ void lower_highlevel_graph(ir_graph *irg)
 {
 	/* Finally: lower SymConst-Size and Sel nodes, unaligned Load/Stores. */
 	irg_walk_graph(irg, NULL, lower_irnode, NULL);
+
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW);
 }
 
 /*
