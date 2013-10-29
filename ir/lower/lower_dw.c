@@ -2718,11 +2718,11 @@ static void clear_node_and_phi_links(ir_node *node, void *data)
 
 static void lower_irg(ir_graph *irg)
 {
-	obstack_init(&env->obst);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 
 	/* just here for debugging */
+	obstack_init(&env->obst);
 	current_ir_graph = irg;
-	assure_edges(irg);
 
 	unsigned n_idx = get_irg_last_idx(irg);
 	n_idx = n_idx + (n_idx >> 2);  /* add 25% */
@@ -2766,15 +2766,16 @@ static void lower_irg(ir_graph *irg)
 			fixup_phi(phi);
 		}
 		DEL_ARR_F(env->lowered_phis);
-
-
 		ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
 
 		if (env->flags & CF_CHANGED) {
 			/* control flow changed, dominance info is invalid */
-			clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
+			confirm_irg_properties(irg,
+				IR_GRAPH_PROPERTY_ONE_RETURN
+				| IR_GRAPH_PROPERTY_MANY_RETURNS);
+		} else {
+			confirm_irg_properties(irg,IR_GRAPH_PROPERTIES_CONTROL_FLOW);
 		}
-		edges_deactivate(irg);
 	}
 
 	ir_free_resources(irg, IR_RESOURCE_PHI_LIST | IR_RESOURCE_IRN_LINK);
