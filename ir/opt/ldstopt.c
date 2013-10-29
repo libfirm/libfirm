@@ -1432,22 +1432,18 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 	/* third step: create a new data Phi */
 	ir_node *phiD = new_rd_Phi(get_irn_dbg_info(phi), block, n, inD, mode);
 
-	/* rewire memory and kill the node */
-	for (int i = n - 1; i >= 0; --i) {
-		ir_node *proj  = projMs[i];
-
-		if (is_Proj(proj)) {
-			ir_node *store = get_Proj_pred(proj);
-
-			exchange(proj, inM[i]);
-			kill_and_reduce_usage(store);
-		}
-	}
-
 	/* fourth step: create the Store */
 	store = new_rd_Store(db, block, phiM, ptr, phiD, cons_none);
-
 	projM = new_rd_Proj(NULL, store, mode_M, pn_Store_M);
+
+	/* rewire memory and kill the old nodes */
+	for (int i = n - 1; i >= 0; --i) {
+		ir_node *proj = projMs[i];
+		assert(is_Proj(proj));
+		ir_node *store = get_Proj_pred(proj);
+		exchange(proj, inM[i]);
+		kill_and_reduce_usage(store);
+	}
 
 	info = get_ldst_info(store, &wenv->obst);
 	info->projs[pn_Store_M] = projM;
