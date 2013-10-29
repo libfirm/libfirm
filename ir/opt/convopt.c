@@ -283,7 +283,8 @@ void conv_opt(ir_graph *irg)
 	do {
 		changed = false;
 		irg_walk_graph(irg, NULL, conv_opt_walker, &changed);
-		local_optimize_graph(irg);
+		if (changed)
+			local_optimize_graph(irg);
 		global_changed |= changed;
 	} while (changed);
 
