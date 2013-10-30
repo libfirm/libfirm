@@ -198,7 +198,7 @@ UNITTESTS         = $(UNITTESTS_SOURCES:%.c=$(builddir)/%.exe)
 
 $(builddir)/%.exe: $(srcdir)/unittests/%.c $(libfirm_a)
 	@echo TEST $<
-	$(Q)$(LINK) $(CFLAGS) $(CPPFLAGS) $(libfirm_CPPFLAGS) $(libfirm_a) "$<" -o "$@"
+	$(Q)$(LINK) $(CFLAGS) $(CPPFLAGS) $(libfirm_CPPFLAGS) "$<" $(libfirm_a) -lm -o "$@"
 	$(Q)$@
 
 .PHONY: test
