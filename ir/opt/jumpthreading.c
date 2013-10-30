@@ -180,10 +180,10 @@ static void split_critical_edge(ir_node *block, int pos)
 }
 
 typedef struct jumpthreading_env_t {
-	ir_node      *true_block;
-	ir_node      *cmp;        /**< The Compare node that might be partial
-	                               evaluated */
-	ir_relation   relation;   /**< The Compare mode of the Compare node. */
+	ir_node      *true_block;  /**< Block we try to thread into */
+	ir_node      *cmp;         /**< The Compare node that might be partial
+	                                evaluated */
+	ir_relation   relation;    /**< The Compare mode of the Compare node. */
 	ir_node      *cnst;
 	ir_tarval    *tv;
 	ir_visited_t  visited_nr;
@@ -386,7 +386,24 @@ static ir_node *find_const_or_confirm(jumpthreading_env_t *env, ir_node *jump,
 
 	ir_node *block = get_nodes_block(jump);
 	if (is_Const_or_Confirm(value)) {
-		if (eval_cmp(env, value) <= 0)
+		int evaluated = eval_cmp(env, value);
+		if (evaluated < 0)
+			return NULL;
+		/* maybe we could evaluate the condition completely without any
+		 * partial tracking along paths. */
+		if (block == get_nodes_block(env->cmp)) {
+			if (evaluated == 0) {
+				ir_graph *irg = get_irn_irg(block);
+				ir_node  *bad = new_r_Bad(irg, mode_X);
+				exchange(jump, bad);
+			} else if (evaluated == 1) {
+				dbg_info *dbgi = get_irn_dbg_info(skip_Proj(jump));
+				ir_node  *jmp  = new_rd_Jmp(dbgi, get_nodes_block(jump));
+				exchange(jump, jmp);
+			}
+			return block;
+		}
+		if (evaluated <= 0)
 			return NULL;
 
 		DB((dbg, LEVEL_1, "> Found jump threading candidate %+F->%+F\n",
@@ -542,85 +559,44 @@ static void thread_jumps(ir_node* block, void* data)
 	if (!is_Cond(cond))
 		return;
 
-	/* handle cases that can be immediately evaluated */
-	ir_node *selector = get_Cond_selector(cond);
-	int selector_evaluated = -1;
-	if (is_Cmp(selector)) {
-		ir_node *left  = get_Cmp_left(selector);
-		ir_node *right = get_Cmp_right(selector);
-		if (is_Const(left) && is_Const(right)) {
-			ir_relation relation = get_Cmp_relation(selector);
-			ir_tarval  *tv_left  = get_Const_tarval(left);
-			ir_tarval  *tv_right = get_Const_tarval(right);
-
-			selector_evaluated = eval_cmp_tv(relation, tv_left, tv_right);
-		}
-	} else if (is_Const_or_Confirm(selector)) {
-		ir_tarval *tv = get_Const_or_Confirm_tarval(selector);
-		if (tv == tarval_b_true) {
-			selector_evaluated = 1;
-		} else {
-			assert(tv == tarval_b_false);
-			selector_evaluated = 0;
-		}
-	}
-
-	jumpthreading_env_t env;
-	env.cnst_pred = NULL;
-	if (get_Proj_proj(projx) == pn_Cond_false) {
-		env.tv = tarval_b_false;
-		if (selector_evaluated >= 0)
-			selector_evaluated = !selector_evaluated;
-	} else {
-		env.tv = tarval_b_true;
-	}
-
-	if (selector_evaluated == 0) {
-		ir_graph *irg = get_irn_irg(block);
-		ir_node  *bad = new_r_Bad(irg, mode_X);
-		exchange(projx, bad);
-		*changed = true;
-		return;
-	} else if (selector_evaluated == 1) {
-		dbg_info *dbgi = get_irn_dbg_info(selector);
-		ir_node  *jmp  = new_rd_Jmp(dbgi, get_nodes_block(projx));
-		DBG_OPT_JUMPTHREADING(projx, jmp);
-		exchange(projx, jmp);
-		*changed = true;
-		return;
-	}
-
 	/* (recursively) look if a pred of a Phi is a constant or a Confirm */
-	env.true_block = block;
-	ir_graph *irg = get_irn_irg(block);
+	ir_node  *selector = get_Cond_selector(cond);
+	ir_graph *irg      = get_irn_irg(block);
 	inc_irg_visited(irg);
+	jumpthreading_env_t env;
+	env.cnst_pred  = NULL;
+	env.tv         = get_Proj_proj(projx) == pn_Cond_false
+	                 ? tarval_b_false : tarval_b_true;
+	env.true_block = block;
 	env.visited_nr = get_irg_visited(irg);
 
 	ir_node *copy_block = find_candidate(&env, projx, selector);
 	if (copy_block == NULL)
 		return;
 
-	/* We might thread the condition block of an infinite loop,
-	 * such that there is no path to End anymore. */
-	keep_alive(block);
+	if (copy_block != get_nodes_block(cond)) {
+		/* We might thread the condition block of an infinite loop,
+		 * such that there is no path to End anymore. */
+		keep_alive(block);
 
-	/* we have to remove the edge towards the pred as the pred now
-	 * jumps into the true_block. We also have to shorten Phis
-	 * in our block because of this */
-	ir_node *badX     = new_r_Bad(irg, mode_X);
-	int      cnst_pos = env.cnst_pos;
+		/* we have to remove the edge towards the pred as the pred now
+		 * jumps into the true_block. We also have to shorten Phis
+		 * in our block because of this */
+		ir_node *badX     = new_r_Bad(irg, mode_X);
+		int      cnst_pos = env.cnst_pos;
 
-	/* shorten Phis */
-	foreach_out_edge_safe(env.cnst_pred, edge) {
-		ir_node *node = get_edge_src_irn(edge);
+		/* shorten Phis */
+		foreach_out_edge_safe(env.cnst_pred, edge) {
+			ir_node *node = get_edge_src_irn(edge);
 
-		if (is_Phi(node)) {
-			ir_node *bad = new_r_Bad(irg, get_irn_mode(node));
-			set_Phi_pred(node, cnst_pos, bad);
+			if (is_Phi(node)) {
+				ir_node *bad = new_r_Bad(irg, get_irn_mode(node));
+				set_Phi_pred(node, cnst_pos, bad);
+			}
 		}
-	}
 
-	set_Block_cfgpred(env.cnst_pred, cnst_pos, badX);
+		set_Block_cfgpred(env.cnst_pred, cnst_pos, badX);
+	}
 
 	/* the graph is changed now */
 	*changed = true;
