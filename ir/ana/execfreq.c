@@ -335,13 +335,14 @@ void ir_estimate_execfreq(ir_graph *irg)
 			 * to end */
 			for (int k = n_keepalives - 1; k >= 0; --k) {
 				ir_node *keep = get_End_keepalive(end, k);
-				if (!is_Block(keep) || has_path_to_end(keep))
+				if (!is_Block(keep) || has_path_to_end(keep)
+				    || keep == start_block)
 					continue;
 
 				double sum      = get_sum_succ_factors(keep, inv_loop_weight);
 				double fac      = KEEP_FAC/sum;
 				int    keep_idx = size - dfs_get_post_num(dfs, keep)-1;
-				gs_matrix_set(mat, idx, keep_idx, fac);
+				gs_matrix_set(mat, start_idx, keep_idx, fac);
 			}
 		}
 	}
