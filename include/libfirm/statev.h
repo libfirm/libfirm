@@ -49,8 +49,8 @@ FIRM_API void stat_ev(const char *name);
 
 /**
  * Initialize the stat ev machinery.
- * @param filename_prefix  The prefix of the filename (.ev or .ev.gz will be
- *                         appended).
+ * @param filename_prefix  The name of the file (.ev or .ev.gz will be
+ *                         appended). File will be truncated!
  * @param filter           All pushes, pops and events will be filtered by this.
  *                         If we have regex support, you can give an extended
  *                         regex here. If not, each key will be matched against
