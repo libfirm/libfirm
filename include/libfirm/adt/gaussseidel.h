@@ -19,41 +19,29 @@ gs_matrix_t *gs_new_matrix(int n_init_rows, int n_init_cols);
  */
 void gs_delete_matrix(gs_matrix_t *m);
 
-void gs_matrix_assure_row_capacity(gs_matrix_t *m, int row, int min_capacity);
-
-void gs_matrix_trim_row_capacities(gs_matrix_t *m);
-
-void gs_matrix_delete_zero_entries(gs_matrix_t *m);
-
 /**
  * Sets m[row, col] to val
- * @p increase If non-zero @p val is added to the existing
  */
-void gs_matrix_set(gs_matrix_t *m, int row, int col, double val);
+void gs_matrix_set(gs_matrix_t *m, unsigned row, unsigned col, double val);
 
 /**
  * Returns the value stored in m[row, col].
  */
-double gs_matrix_get(const gs_matrix_t *m, int row, int col);
+double gs_matrix_get(const gs_matrix_t *m, unsigned row, unsigned col);
 
 /**
  * Performs one step of the Gauss-Seidel algorithm
  * @p m         The iteration matrix
  * @p x         The iteration vector
- * @p a         The dimension of the matrix (axa matrix)
  */
-double gs_matrix_gauss_seidel(const gs_matrix_t *m, double *x, int n);
+double gs_matrix_gauss_seidel(const gs_matrix_t *m, double *x);
 
 unsigned gs_matrix_get_n_entries(const gs_matrix_t *m);
 
 /**
  * Dumps the matrix factor*m to the stream @p out.
  */
-void gs_matrix_dump(const gs_matrix_t *m, int a, int b, FILE *out);
-
-int gs_matrix_get_sizeof_allocated_memory(const gs_matrix_t *m);
-
-void gs_matrix_export(const gs_matrix_t *m, double *nw, int size);
+void gs_matrix_dump(const gs_matrix_t *m, FILE *out);
 
 #include "../end.h"
 

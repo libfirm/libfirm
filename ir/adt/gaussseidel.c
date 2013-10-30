@@ -5,53 +5,40 @@
 #include "gaussseidel.h"
 #include "util.h"
 
-/**
- * The number of newly allocated rows (realloc)
- * when there is no more room. Must be >= 1.
- */
-#define ROW_INCREASE_FACTOR 1.2
-
-/**
- * The number of newly allocated cols (realloc)
- * when there is no more room. Must be >= 1.
- */
-#define COL_INCREASE 2
-
 typedef struct col_val_t {
-	double v;
-	int col_idx;
+	double   v;
+	unsigned col_idx;
 } col_val_t;
 
 typedef struct row_col_t {
-	int c_cols;
-	int n_cols;
-	double diag;
+	unsigned   c_cols;
+	unsigned   n_cols;
+	double     diag;
 	col_val_t *cols;
 } row_col_t;
 
 struct gs_matrix_t {
-	int initial_col_increase;
-	int c_rows;
-	int n_zero_entries;           ///< Upper bound on number of entries equal to 0.0
+	unsigned   c_rows;
+	unsigned   n_zero_entries; /**< Upper bound on number of 0 entries */
 	row_col_t *rows;
 };
 
-static inline void alloc_cols(row_col_t *row, int c_cols)
+static void alloc_cols(row_col_t *row, unsigned c_cols)
 {
 	assert(c_cols > row->c_cols);
 	row->c_cols = c_cols;
 	row->cols   = XREALLOC(row->cols, col_val_t, c_cols);
 }
 
-static inline void alloc_rows(gs_matrix_t *m, int c_rows, int c_cols, int begin_init)
+static void alloc_rows(gs_matrix_t *m, unsigned c_rows, unsigned c_cols,
+                       unsigned begin_init)
 {
-	int i;
 	assert(c_rows > m->c_rows);
 
 	m->c_rows = c_rows;
 	m->rows   = XREALLOC(m->rows, row_col_t, c_rows);
 
-	for (i = begin_init; i < c_rows; ++i) {
+	for (unsigned i = begin_init; i < c_rows; ++i) {
 		m->rows[i].c_cols = 0;
 		m->rows[i].n_cols = 0;
 		m->rows[i].diag   = 0.0;
@@ -64,17 +51,13 @@ static inline void alloc_rows(gs_matrix_t *m, int c_rows, int c_cols, int begin_
 gs_matrix_t *gs_new_matrix(int n_init_rows, int n_init_cols)
 {
 	gs_matrix_t *res = XMALLOCZ(gs_matrix_t);
-	if (n_init_rows < 16)
-		n_init_rows = 16;
-	res->initial_col_increase = n_init_cols;
 	alloc_rows(res, n_init_rows, n_init_cols, 0);
 	return res;
 }
 
 void gs_delete_matrix(gs_matrix_t *m)
 {
-	int i;
-	for (i = 0; i < m->c_rows; ++i) {
+	for (unsigned i = 0; i < m->c_rows; ++i) {
 		if (m->rows[i].c_cols)
 			free(m->rows[i].cols);
 	}
@@ -85,10 +68,8 @@ void gs_delete_matrix(gs_matrix_t *m)
 
 unsigned gs_matrix_get_n_entries(const gs_matrix_t *m)
 {
-	int i;
 	unsigned n_entries = 0;
-
-	for (i = 0; i < m->c_rows; ++i) {
+	for (unsigned i = 0; i < m->c_rows; ++i) {
 		n_entries += m->rows[i].n_cols;
 		n_entries += (m->rows[i].diag != 0.0) ? 1 : 0;
 	}
@@ -96,81 +77,27 @@ unsigned gs_matrix_get_n_entries(const gs_matrix_t *m)
 	return n_entries - m->n_zero_entries;
 }
 
-int gs_matrix_get_sizeof_allocated_memory(const gs_matrix_t *m)
+void gs_matrix_set(gs_matrix_t *m, unsigned row, unsigned col, double val)
 {
-	int i, n_col_val_ts = 0;
-	for (i = 0; i < m->c_rows; ++i)
-		n_col_val_ts += m->rows[i].c_cols;
-
-	return n_col_val_ts * sizeof(col_val_t) + m->c_rows * sizeof(row_col_t) + sizeof(gs_matrix_t);
-}
-
-void gs_matrix_assure_row_capacity(gs_matrix_t *m, int row, int min_capacity)
-{
+	assert(row < m->c_rows);
+	assert(col < m->c_rows);
 	row_col_t *the_row = &m->rows[row];
-	if (the_row->c_cols < min_capacity)
-		alloc_cols(the_row, min_capacity);
-}
-
-void gs_matrix_trim_row_capacities(gs_matrix_t *m)
-{
-	int i;
-	for (i = 0; i < m->c_rows; ++i) {
-		row_col_t *the_row = &m->rows[i];
-		if (the_row->c_cols) {
-			the_row->c_cols    = the_row->n_cols;
-			if (the_row->c_cols)
-				the_row->cols = XREALLOC(the_row->cols, col_val_t, the_row->c_cols);
-			else
-				free(the_row->cols);
-		}
-	}
-}
-
-void gs_matrix_delete_zero_entries(gs_matrix_t *m)
-{
-	int i, read_pos;
-	for (i = 0; i < m->c_rows; ++i) {
-		row_col_t *the_row = &m->rows[i];
-		int write_pos = 0;
-
-		for (read_pos = 0; read_pos < the_row->n_cols; ++read_pos)
-			if (the_row->cols[read_pos].v != 0.0 && read_pos != write_pos)
-				the_row->cols[write_pos++] = the_row->cols[read_pos];
-
-		the_row->n_cols = write_pos;
-	}
-	m->n_zero_entries = 0;
-}
-
-void gs_matrix_set(gs_matrix_t *m, int row, int col, double val)
-{
-	row_col_t *the_row;
-	col_val_t *cols;
-	int min, max, c, i;
-
-	if (row >= m->c_rows) {
-		int new_c_rows = (int)(ROW_INCREASE_FACTOR * row);
-		alloc_rows(m, new_c_rows, m->initial_col_increase, m->c_rows);
-	}
-
-	the_row = &m->rows[row];
 
 	if (row == col) {
-		/* Note that we store the diagonal inverted to turn divisions to mults in
-		 * matrix_gauss_seidel(). */
+		/* Note that we store the diagonal inverted to turn divisions to mults
+		 * in matrix_gauss_seidel(). */
 		assert(val != 0.0);
 		the_row->diag = 1.0 / val;
 		return;
 	}
 
 	// Search for correct column
-	cols = the_row->cols;
-	min  = 0;
-	max  = the_row->n_cols;
-	c    = max/2;
+	col_val_t *cols = the_row->cols;
+	unsigned   min  = 0;
+	unsigned   max  = the_row->n_cols;
+	unsigned   c    = max/2;
 	while (min < max) {
-		int idx = cols[c].col_idx;
+		unsigned idx = cols[c].col_idx;
 		if (idx < col)
 			min = MAX(c, min+1);
 		else if (idx > col)
@@ -190,11 +117,11 @@ void gs_matrix_set(gs_matrix_t *m, int row, int col, double val)
 
 	// We haven't found the entry, so we must create a new one.
 	// Is there enough space?
-	if (the_row->c_cols == the_row->n_cols)
-		alloc_cols(the_row, the_row->c_cols + COL_INCREASE);
+	if (the_row->n_cols <= the_row->c_cols)
+		alloc_cols(the_row, the_row->c_cols + 16);
 
 	// Shift right-most entries to the right by one
-	for (i = the_row->n_cols; i > c; --i)
+	for (unsigned i = the_row->n_cols; i > c; --i)
 		the_row->cols[i] = the_row->cols[i-1];
 
 	// Finally insert the new entry
@@ -207,20 +134,15 @@ void gs_matrix_set(gs_matrix_t *m, int row, int col, double val)
 	assert(c>=the_row->n_cols-1 || the_row->cols[c].col_idx < the_row->cols[c+1].col_idx);
 }
 
-double gs_matrix_get(const gs_matrix_t *m, int row, int col)
+double gs_matrix_get(const gs_matrix_t *m, unsigned row, unsigned col)
 {
-	row_col_t *the_row;
-	int c;
-
-	if (row >= m->c_rows)
-		return 0.0;
-
-	the_row = &m->rows[row];
-
+	assert(row < m->c_rows);
+	row_col_t *the_row = &m->rows[row];
 	if (row == col)
 		return the_row->diag != 0.0 ? 1.0 / the_row->diag : 0.0;
 
 	// Search for correct column
+	unsigned c;
 	for (c = 0; c < the_row->n_cols && the_row->cols[c].col_idx < col; ++c) {
 	}
 
@@ -238,27 +160,23 @@ double gs_matrix_get(const gs_matrix_t *m, int row, int col)
  *
  * Note that the diagonal element is stored separately in this matrix implementation.
  * */
-double gs_matrix_gauss_seidel(const gs_matrix_t *m, double *x, int n)
+double gs_matrix_gauss_seidel(const gs_matrix_t *m, double *x)
 {
 	double res = 0.0;
-	int r;
+	unsigned n = m->c_rows;
 
-	assert(n <= m->c_rows);
-
-	for (r = 0; r < n; ++r) {
+	for (unsigned r = 0; r < n; ++r) {
 		row_col_t *row  = &m->rows[r];
 		col_val_t *cols = row->cols;
-		double sum, old, nw;
-		int c;
 
-		sum = 0.0;
-		for (c = 0; c < row->n_cols; ++c) {
-			int col_idx = cols[c].col_idx;
+		double sum = 0.0;
+		for (unsigned c = 0; c < row->n_cols; ++c) {
+			unsigned col_idx = cols[c].col_idx;
 			sum += cols[c].v * x[col_idx];
 		}
 
-		old  = x[r];
-		nw   = - sum * row->diag;
+		double old = x[r];
+		double nw  = - sum * row->diag;
 		// nw   = old - overdrive * (old + sum * row->diag);
 		res += fabs(old - nw);
 		x[r] = nw;
@@ -267,55 +185,29 @@ double gs_matrix_gauss_seidel(const gs_matrix_t *m, double *x, int n)
 	return res;
 }
 
-void gs_matrix_export(const gs_matrix_t *m, double *nw, int size)
+void gs_matrix_dump(const gs_matrix_t *m, FILE *out)
 {
-	int effective_rows = MIN(size, m->c_rows);
-	int c, r;
-
-	memset(nw, 0, size * size * sizeof(*nw));
-	for (r=0; r < effective_rows; ++r) {
-		row_col_t *row = &m->rows[r];
-		int base       = r * size;
-
-		assert(row->diag != 0.0);
-		nw[base + r] = 1.0 / row->diag;
-		for (c = 0; c < row->n_cols; ++c) {
-			int col_idx = row->cols[c].col_idx;
-			nw[base + col_idx] = row->cols[c].v;
-		}
-	}
-}
-
-void gs_matrix_dump(const gs_matrix_t *m, int a, int b, FILE *out)
-{
-	int effective_rows = MIN(a, m->c_rows);
-	int r, c, i;
-	double *elems = XMALLOCN(double, b);
+	unsigned size = m->c_rows;
+	double *elems = XMALLOCN(double, size);
 
 	// The rows which have some content
-	for (r=0; r < effective_rows; ++r) {
+	for (unsigned r = 0; r < size; ++r) {
 		row_col_t *row = &m->rows[r];
 
-		memset(elems, 0, b * sizeof(*elems));
+		memset(elems, 0, size * sizeof(*elems));
 
-		for (c = 0; c < row->n_cols; ++c) {
-			int col_idx = row->cols[c].col_idx;
+		for (unsigned c = 0; c < row->n_cols; ++c) {
+			unsigned col_idx = row->cols[c].col_idx;
 			elems[col_idx] = row->cols[c].v;
 		}
 		elems[r] = row->diag != 0.0 ? 1.0 / row->diag : 0.0;
 
-		for (i = 0; i < b; ++i)
+		for (unsigned i = 0; i < size; ++i) {
 			if (elems[i] != 0.0)
 				fprintf(out, "%+4.4f ", elems[i]);
 			else
 				fprintf(out, "        ");
-		fprintf(out, "\n");
-	}
-
-	// Append 0-rows to fit height of matrix
-	for (r=effective_rows; r < a; ++r) {
-		for (c=0; c < b; ++c)
-				fprintf(out, "        ");
+		}
 		fprintf(out, "\n");
 	}
 

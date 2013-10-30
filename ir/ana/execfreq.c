@@ -109,7 +109,7 @@ static double *solve_lgs(gs_matrix_t *mat, double *x, int size)
 	double dev;
 	do {
 		++iter;
-		dev = gs_matrix_gauss_seidel(mat, x, size);
+		dev = gs_matrix_gauss_seidel(mat, x);
 	} while (dev > SEIDEL_TOLERANCE);
 	stat_ev_tim_pop("execfreq_seidel_time");
 	stat_ev_dbl("execfreq_seidel_iter", iter);
@@ -351,7 +351,7 @@ void ir_estimate_execfreq(ir_graph *irg)
 	/* solve the system and delete the matrix */
 	double *x = XMALLOCN(double, size);
 	//ir_fprintf(stderr, "%+F:\n", irg);
-	//gs_matrix_dump(mat, 100, 100, stderr);
+	//gs_matrix_dump(mat, stderr);
 	solve_lgs(mat, x, size);
 	gs_delete_matrix(mat);
 
