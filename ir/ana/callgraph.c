@@ -171,7 +171,7 @@ static void ana_Call(ir_node *n, void *env)
 	for (size_t i = 0, n_callees = cg_get_call_n_callees(n); i < n_callees;
 	     ++i) {
 		ir_entity *callee_e = cg_get_call_callee(n, i);
-		ir_graph  *callee   = get_entity_irg(callee_e);
+		ir_graph  *callee   = get_entity_linktime_irg(callee_e);
 
 		if (callee) {
 			cg_callee_entry buf;

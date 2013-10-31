@@ -736,6 +736,20 @@ const char *get_builtin_kind_name(ir_builtin_kind kind)
 #undef X
 }
 
+ir_entity *get_Call_callee(const ir_node *node)
+{
+	ir_node *ptr = get_Call_ptr(node);
+	if (!is_SymConst_addr_ent(ptr))
+		return NULL;
+	ir_entity *entity = get_SymConst_entity(ptr);
+	/* some (corner case/pointless) graphs can have non-method entities as
+	 * call pointers */
+	ir_type *type = get_entity_type(entity);
+	if (!is_Method_type(type))
+		return NULL;
+	return entity;
+}
+
 int (is_binop)(const ir_node *node)
 {
 	return is_binop_(node);

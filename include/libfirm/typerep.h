@@ -378,10 +378,20 @@ FIRM_API void *get_entity_link(const ir_entity *ent);
 FIRM_API void set_entity_link(ir_entity *ent, void *l);
 
 /**
- * The entity knows the corresponding irg if the entity is a method.
- * This allows to get from a Call to the called irg.
+ * Return the method graph of a method entity.
+ * @warning If it is a weak symbol, then this is not necessarily the final code
+ *          bound to the entity. If you are writing an analysis use
+ *          get_entity_linktime_irg()!
  */
 FIRM_API ir_graph *get_entity_irg(const ir_entity *ent);
+
+/**
+ * Return the method graph the method entity points to after linking.
+ * This is different to get_entity_irg() in case of weak symbols where this
+ * function returns NULL because the code may be replaced by a non-weak symbol
+ * after linking.
+ */
+FIRM_API ir_graph *get_entity_linktime_irg(const ir_entity *ent);
 
 /** A reserved value for "not yet set". */
 #define IR_VTABLE_NUM_NOT_SET ((unsigned)(-1))

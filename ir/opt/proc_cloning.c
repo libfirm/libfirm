@@ -156,28 +156,18 @@ static void process_call(ir_node *call, ir_entity *callee, q_set *hmap)
 static void collect_irg_calls(ir_node *call, void *env)
 {
 	q_set *hmap = (q_set*)env;
-	ir_node *call_ptr;
-	ir_entity *callee;
 
 	/* We collect just "Call" nodes */
-	if (is_Call(call)) {
-		call_ptr = get_Call_ptr(call);
+	if (!is_Call(call))
+		return;
+	ir_entity *callee = get_Call_callee(call);
+	if (callee == NULL)
+		return;
+	ir_graph *callee_irg = get_entity_linktime_irg(callee);
+	if (callee_irg == NULL)
+		return;
 
-		if (! is_SymConst_addr_ent(call_ptr))
-			return;
-
-		callee = get_SymConst_entity(call_ptr);
-
-		/* we don't know which function gets finally bound to a weak symbol */
-		if (get_entity_linkage(callee) & IR_LINKAGE_WEAK)
-			return;
-
-		/* we can only clone calls to existing entities */
-		if (get_entity_irg(callee) == NULL)
-			return;
-
-		process_call(call, callee, hmap);
-	}
+	process_call(call, callee, hmap);
 }
 
 /**
@@ -319,7 +309,7 @@ static void create_clone_proc_irg(ir_entity *ent, const quadruple_t *q)
 	ir_graph *method_irg, *clone_irg;
 	ir_node *arg, *const_arg;
 
-	method_irg = get_entity_irg(ent);
+	method_irg = get_entity_linktime_irg(ent);
 
 	/* We create the skeleton of the clone irg.*/
 	clone_irg  = new_ir_graph(ent, 0);
@@ -502,15 +492,13 @@ restart:
 
 	len = ARR_LEN(entry->q.calls);
 	for (i = 0; i < len; ++i) {
-		ir_node *ptr, *call = entry->q.calls[i];
+		ir_node *call = entry->q.calls[i];
 
 		/* might be exchanged, so skip Id nodes here. */
 		call = skip_Id(call);
 
 		/* we know, that a SymConst is here */
-		ptr = get_Call_ptr(call);
-
-		ir_entity *const callee = get_SymConst_entity(ptr);
+		ir_entity *const callee = get_Call_callee(call);
 		if (callee != entry->q.ent) {
 			/*
 			 * This call is already changed because of a previous

@@ -574,7 +574,7 @@ void opt_tail_rec_irg(ir_graph *irg)
 
 	for (i = get_Block_n_cfgpreds(end_block) - 1; i >= 0; --i) {
 		ir_node *ret = get_Block_cfgpred(end_block, i);
-		ir_node *call, *call_ptr;
+		ir_node *call;
 		int j;
 		ir_node **ress;
 
@@ -592,13 +592,8 @@ void opt_tail_rec_irg(ir_graph *irg)
 			continue;
 
 		/* check if it's a recursive call */
-		call_ptr = get_Call_ptr(call);
-
-		if (! is_SymConst_addr_ent(call_ptr))
-			continue;
-
-		ent = get_SymConst_entity(call_ptr);
-		if (!ent || get_entity_irg(ent) != irg)
+		ir_entity *callee = get_Call_callee(call);
+		if (callee == NULL || get_entity_linktime_irg(callee) != irg)
 			continue;
 
 		/*

@@ -373,6 +373,22 @@ FIRM_API void set_SymConst_symbol(ir_node *node, union symconst_symbol sym);
 
 /** @} */
 
+/**
+ * @addtogroup Call
+ * @{
+ */
+
+/**
+ * Convenience function: Return method that will be called by a call.
+ *
+ * This matches for an address of entity SymConst at the Call ptr input, return
+ * the referenced entity if it has a method type.
+ */
+FIRM_API ir_entity *get_Call_callee(const ir_node *call);
+
+/** @} */
+
+
 /** Returns a human readable string for the ir_builtin_kind. */
 FIRM_API const char *get_builtin_kind_name(ir_builtin_kind kind);
 

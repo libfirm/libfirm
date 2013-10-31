@@ -763,6 +763,11 @@ ir_graph *(get_entity_irg)(const ir_entity *ent)
 	return _get_entity_irg(ent);
 }
 
+ir_graph *(get_entity_linktime_irg)(const ir_entity *ent)
+{
+	return _get_entity_linktime_irg(ent);
+}
+
 void set_entity_irg(ir_entity *ent, ir_graph *irg)
 {
 	assert(is_method_entity(ent));

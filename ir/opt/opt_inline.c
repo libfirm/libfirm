@@ -674,29 +674,6 @@ typedef struct call_entry {
 } call_entry;
 
 /**
- * Returns the irg called from a Call node. If the irg is not
- * known, NULL is returned.
- *
- * @param call  the call node
- */
-static ir_graph *get_call_called_irg(ir_node *call)
-{
-	ir_node *addr;
-
-	addr = get_Call_ptr(call);
-	if (is_SymConst_addr_ent(addr)) {
-		ir_entity *ent = get_SymConst_entity(addr);
-		/* we don't know which function gets finally bound to a weak symbol */
-		if (get_entity_linkage(ent) & IR_LINKAGE_WEAK)
-			return NULL;
-
-		return get_entity_irg(ent);
-	}
-
-	return NULL;
-}
-
-/**
  * Environment for inlining irgs.
  */
 typedef struct {
@@ -747,7 +724,6 @@ static void collect_calls2(ir_node *call, void *ctx)
 	wenv_t         *env = (wenv_t*)ctx;
 	inline_irg_env *x = env->x;
 	unsigned        code = get_irn_opcode(call);
-	ir_graph       *callee;
 	call_entry     *entry;
 
 	/* count meaningful nodes in irg */
@@ -766,7 +742,10 @@ static void collect_calls2(ir_node *call, void *ctx)
 	++x->n_call_nodes;
 	++x->n_call_nodes_orig;
 
-	callee = get_call_called_irg(call);
+	ir_entity *callee_ent = get_Call_callee(call);
+	if (callee_ent == NULL)
+		return;
+	ir_graph *callee = get_entity_linktime_irg(callee_ent);
 	if (callee != NULL) {
 		if (! env->ignore_callers) {
 			inline_irg_env *callee_env = (inline_irg_env*)get_irg_link(callee);

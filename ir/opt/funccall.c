@@ -71,12 +71,10 @@ static void collect_const_and_pure_calls(ir_node *node, void *env)
 
 	if (is_Call(node)) {
 		ir_type *type = get_Call_type(node);
-		unsigned prop = get_method_additional_properties(type);
-		ir_node *ptr  = get_Call_ptr(node);
-		if (is_SymConst_addr_ent(ptr)) {
-			ir_entity *ent = get_SymConst_entity(ptr);
-			prop |= get_entity_additional_properties(ent);
-		}
+		unsigned   prop   = get_method_additional_properties(type);
+		ir_entity *callee = get_Call_callee(node);
+		if (callee != NULL)
+			prop |= get_entity_additional_properties(callee);
 		/* stop on aggregates (see comment in check_const_or_pure_function()) */
 		if ((prop & mtp_property_const) != 0
 		    && method_type_contains_aggregate(type)) {
@@ -201,18 +199,14 @@ static void collect_nothrow_calls(ir_node *node, void *env)
 	env_t *ctx = (env_t*)env;
 
 	if (is_Call(node)) {
-		ir_node *call = node;
-		ir_node *ptr  = get_Call_ptr(call);
-		if (!is_SymConst_addr_ent(ptr))
+		ir_entity *callee = get_Call_callee(node);
+		if (callee == NULL)
 			return;
-
-		ir_entity *ent  = get_SymConst_entity(ptr);
-		unsigned   prop = get_entity_additional_properties(ent);
+		unsigned prop = get_entity_additional_properties(callee);
 		if ((prop & mtp_property_nothrow) == 0)
 			return;
-
 		/* ok, if we get here we found a call to a nothrow function */
-		ARR_APP1(ir_node*, ctx->nothrow_call_list, call);
+		ARR_APP1(ir_node*, ctx->nothrow_call_list, node);
 	} else if (is_Proj(node)) {
 		/*
 		 * Collect all memory and exception Proj's from
@@ -357,20 +351,20 @@ static mtp_additional_properties follow_mem_(ir_node *node)
 
 		case iro_Call: {
 			/* A call is only tolerable if its either constant or pure. */
-			ir_node *ptr = get_Call_ptr(node);
-			if (!is_SymConst_addr_ent(ptr))
+			ir_entity *callee = get_Call_callee(node);
+			if (callee == NULL)
 				return mtp_no_property;
 
-			ir_entity *ent = get_SymConst_entity(ptr);
-			ir_graph  *irg = get_entity_irg(ent);
-
-			mtp_additional_properties m;
+			ir_graph *irg = get_entity_linktime_irg(callee);
 			if (irg == NULL) {
-				m = get_entity_additional_properties(ent) & (mtp_property_const|mtp_property_pure);
+				mtp_additional_properties m
+					= get_entity_additional_properties(callee)
+				    & (mtp_property_const|mtp_property_pure);
 				mode = max_property(mode, m);
 			} else {
 				/* we have a graph, analyze it. */
-				m = check_const_or_pure_function(irg, false);
+				mtp_additional_properties m
+					= check_const_or_pure_function(irg, false);
 				mode = max_property(mode, m);
 			}
 			node = get_Call_mem(node);
@@ -589,8 +583,6 @@ static mtp_additional_properties update_property(mtp_additional_properties orig_
  */
 static bool is_stored(const ir_node *n)
 {
-	const ir_node *ptr;
-
 	foreach_out_edge(n, edge) {
 		const ir_node *succ = get_edge_src_irn(edge);
 
@@ -610,26 +602,23 @@ static bool is_stored(const ir_node *n)
 			if (is_stored(succ))
 				return true;
 			break;
-		case iro_Call:
-			ptr = get_Call_ptr(succ);
-			if (is_SymConst_addr_ent(ptr)) {
-				ir_entity *ent = get_SymConst_entity(ptr);
-
-				/* we know the called entity */
-				for (size_t i = get_Call_n_params(succ); i > 0;) {
-					if (get_Call_param(succ, --i) == n) {
-						/* n is the i'th param of the call */
-						if (get_method_param_access(ent, i) & ptr_access_store) {
-							/* n is store in ent */
-							return true;
-						}
+		case iro_Call: {
+			ir_entity *callee = get_Call_callee(succ);
+			/* unknown call address */
+			if (callee == NULL)
+				return true;
+			/* we know the called entity */
+			for (size_t i = get_Call_n_params(succ); i > 0;) {
+				if (get_Call_param(succ, --i) == n) {
+					/* n is the i'th param of the call */
+					if (get_method_param_access(callee, i) & ptr_access_store) {
+						/* n is store in ent */
+						return true;
 					}
 				}
-			} else {
-				/* unknown call address */
-				return true;
 			}
 			break;
+		}
 		default:
 			/* bad, potential alias */
 			return true;
@@ -715,23 +704,20 @@ static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, bool top
 					if (is_malloc_call_result(res)) {
 						/* ok, this is a malloc */
 					} else if (is_Call(res)) {
-						ir_node *ptr = get_Call_ptr(res);
-
-						if (is_SymConst_addr_ent(ptr)) {
+						ir_entity *callee = get_Call_callee(res);
+						if (callee != NULL) {
 							/* a direct call */
-							ir_entity *ent    = get_SymConst_entity(ptr);
-							ir_graph  *callee = get_entity_irg(ent);
-
-							if (callee == irg) {
+							ir_graph *callee_irg = get_entity_irg(callee);
+							if (callee_irg == irg) {
 								/* A self-recursive call. The property did not
 								 * depend on this call. */
-							} else if (callee != NULL) {
+							} else if (callee_irg != NULL) {
 								mtp_additional_properties prop
-									= check_nothrow_or_malloc(callee, false);
+									= check_nothrow_or_malloc(callee_irg, false);
 								curr_prop = update_property(curr_prop, prop);
 							} else {
 								mtp_additional_properties prop
-									= get_entity_additional_properties(ent);
+									= get_entity_additional_properties(callee);
 								curr_prop = update_property(curr_prop, prop);
 							}
 						} else {
@@ -749,25 +735,23 @@ static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, bool top
 			pred = skip_Proj(pred);
 
 			if (is_Call(pred)) {
-				ir_node *ptr = get_Call_ptr(pred);
-
-				if (is_SymConst_addr_ent(ptr)) {
+				ir_entity *callee = get_Call_callee(pred);
+				if (callee != NULL) {
 					/* a direct call */
-					ir_entity *ent    = get_SymConst_entity(ptr);
-					ir_graph  *callee = get_entity_irg(ent);
-
-					if (callee == irg) {
+					ir_graph *called_irg = get_entity_linktime_irg(callee);
+					if (called_irg == irg) {
 						/* A self-recursive call. The property did not depend
 						 * on this call. */
-					} else if (callee != NULL) {
+					} else if (called_irg != NULL) {
 						/* Note: we check here for nothrow only, so do NOT
 						 * reset the malloc property */
 						mtp_additional_properties prop
-							= check_nothrow_or_malloc(callee, false)
+							= check_nothrow_or_malloc(called_irg, false)
 							| mtp_property_malloc;
 						curr_prop = update_property(curr_prop, prop);
 					} else {
-						if ((get_entity_additional_properties(ent) & mtp_property_nothrow) == 0)
+						if ((get_entity_additional_properties(callee)
+						     & mtp_property_nothrow) == 0)
 							curr_prop &= ~mtp_property_nothrow;
 					}
 				} else {

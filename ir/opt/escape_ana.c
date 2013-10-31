@@ -154,29 +154,25 @@ static int can_escape(ir_node *n)
 			return 1;
 
 		case iro_Call: { /* most complicated case */
-			ir_node *ptr = get_Call_ptr(succ);
-			ir_entity *ent;
+			ir_entity *callee = get_Call_callee(succ);
 
-			if (is_SymConst_addr_ent(ptr)) {
-			    size_t j;
-			    ent = get_SymConst_entity(ptr);
-
+			if (callee != NULL) {
 				/* we know the called entity */
-				for (j = get_Call_n_params(succ); j > 0;) {
+				for (size_t j = get_Call_n_params(succ); j > 0;) {
 					if (get_Call_param(succ, --j) == n) {
 						/* n is the j'th param of the call */
-						if (get_method_param_access(ent, j) & ptr_access_store)
+						if (get_method_param_access(callee, j) & ptr_access_store)
 							/* n is store in ent */
 							return 1;
 					}
 				}
-			} else if (is_Sel(ptr)) {
+			} else if (is_Sel(get_Call_ptr(succ))) {
 				size_t k;
 
 				/* go through all possible callees */
 				for (k = cg_get_call_n_callees(succ); k > 0;) {
 					size_t j;
-					ent = cg_get_call_callee(succ, --k);
+					ir_entity *ent = cg_get_call_callee(succ, --k);
 
 					if (is_unknown_entity(ent)) {
 						/* we don't know what will be called, a possible escape */

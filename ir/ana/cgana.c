@@ -564,9 +564,11 @@ static void callee_ana_node(ir_node *node, pset *methods)
 		break;
 
 	case iro_SymConst: {
+		if (!is_SymConst_addr_ent(node))
+			break;
 		ir_entity *ent = get_SymConst_entity(node);
-		assert(ent && is_method_entity(ent));
-		pset_insert_ptr(methods, ent);
+		if (is_method_entity(ent))
+			pset_insert_ptr(methods, ent);
 		break;
 	}
 

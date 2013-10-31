@@ -396,14 +396,10 @@ static int is_malloc_Result(const ir_node *node)
 	node = get_Proj_pred(node);
 	if (!is_Call(node))
 		return 0;
-	node = get_Call_ptr(node);
-	if (is_SymConst_addr_ent(node)) {
-		ir_entity *ent = get_SymConst_entity(node);
-
-		if (get_entity_additional_properties(ent) & mtp_property_malloc)
-			return 1;
-		return 0;
-	}
+	ir_entity *callee = get_Call_callee(node);
+	if (callee != NULL
+	    && get_entity_additional_properties(callee) & mtp_property_malloc)
+		return 1;
 	return 0;
 }
 
@@ -1260,22 +1256,22 @@ static ir_type *clone_type_and_cache(ir_type *tp)
  */
 static void update_calls_to_private(ir_node *call, void *env)
 {
-	(void) env;
-	if (is_Call(call)) {
-		ir_node *ptr = get_Call_ptr(call);
+	(void)env;
+	if (!is_Call(call))
+		return;
+	ir_entity *callee = get_Call_callee(call);
+	if (callee == NULL)
+		return;
 
-		if (is_SymConst(ptr)) {
-			ir_entity *ent = get_SymConst_entity(ptr);
-			ir_type   *ctp = get_Call_type(call);
-
-			if ((get_entity_additional_properties(ent) & mtp_property_private)
-			    && ((get_method_additional_properties(ctp) & mtp_property_private) == 0)) {
-				ctp = clone_type_and_cache(ctp);
-				add_method_additional_properties(ctp, mtp_property_private);
-				set_Call_type(call, ctp);
-				DB((dbgcall, LEVEL_1, "changed call to private method %+F using cloned type %+F\n", ent, ctp));
-			}
-		}
+	ir_type *ctp = get_Call_type(call);
+	if ((get_entity_additional_properties(callee) & mtp_property_private)
+		&& ((get_method_additional_properties(ctp) & mtp_property_private) == 0)) {
+		ctp = clone_type_and_cache(ctp);
+		add_method_additional_properties(ctp, mtp_property_private);
+		set_Call_type(call, ctp);
+		DB((dbgcall, LEVEL_1,
+		    "changed call to private method %+F using cloned type %+F\n",
+		    callee, ctp));
 	}
 }
 

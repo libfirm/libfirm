@@ -47,6 +47,7 @@
 #define get_entity_link(ent)                     _get_entity_link(ent)
 #define set_entity_link(ent, l)                  _set_entity_link(ent, l)
 #define get_entity_irg(ent)                      _get_entity_irg(ent)
+#define get_entity_linktime_irg(ent)             _get_entity_linktime_irg(ent)
 #define is_parameter_entity(ent)                 _is_parameter_entity(ent)
 #define get_entity_parameter_number(ent)         _get_entity_parameter_number(ent)
 #define get_entity_visited(ent)                  _get_entity_visited(ent)
@@ -425,6 +426,15 @@ static inline ir_graph *_get_entity_irg(const ir_entity *ent)
 	}
 
 	return ent->attr.mtd_attr.irg;
+}
+
+static inline ir_graph *_get_entity_linktime_irg(const ir_entity *entity)
+{
+	/** weak entities might get replaced by non-weak entities at linktime
+	 * so we can't return a definite graph. */
+	if (get_entity_linkage(entity) & IR_LINKAGE_WEAK)
+		return NULL;
+	return get_entity_irg(entity);
 }
 
 static inline ir_visited_t _get_entity_visited(const ir_entity *ent)

@@ -51,21 +51,19 @@ static ptr_access_kind analyze_arg(ir_node *arg, ptr_access_kind bits)
 		switch (get_irn_opcode(succ)) {
 
 		case iro_Call: {
-			ir_node *ptr  = get_Call_ptr(succ);
+			ir_node *ptr = get_Call_ptr(succ);
 
 			if (ptr == arg) {
 				/* Hmm: not sure what this is, most likely a read */
 				bits |= ptr_access_read;
 			} else {
-				ir_entity *meth_ent;
+				ir_entity *callee = get_Call_callee(succ);
 
-				if (is_SymConst_addr_ent(ptr)) {
-					meth_ent = get_SymConst_entity(ptr);
-
+				if (callee != NULL) {
 					for (int p = get_Call_n_params(succ); p-- > 0; ) {
 						if (get_Call_param(succ, p) == arg) {
 							/* an arg can be used more than once ! */
-							bits |= get_method_param_access(meth_ent, p);
+							bits |= get_method_param_access(callee, p);
 						}
 					}
 				} else if (is_Sel(ptr) && get_irp_callee_info_state() == irg_callee_info_consistent) {
@@ -74,7 +72,7 @@ static ptr_access_kind analyze_arg(ir_node *arg, ptr_access_kind bits)
 
 					/* simply look into ALL possible callees */
 					for (int c = cg_get_call_n_callees(succ); c-- > 0; ) {
-						meth_ent = cg_get_call_callee(succ, c);
+						ir_entity *meth_ent = cg_get_call_callee(succ, c);
 
 						/* unknown_entity is used to signal that we don't know what is called */
 						if (is_unknown_entity(meth_ent)) {

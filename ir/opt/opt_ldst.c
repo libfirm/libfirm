@@ -499,13 +499,9 @@ static unsigned get_Call_memory_properties(ir_node *call)
 	/* check first the call type */
 	if ((prop & (mtp_property_const|mtp_property_pure)) == 0) {
 		/* try the called entity */
-		ir_node *ptr = get_Call_ptr(call);
-
-		if (is_SymConst_addr_ent(ptr)) {
-			ir_entity *ent = get_SymConst_entity(ptr);
-
-			prop = get_entity_additional_properties(ent);
-		}
+		ir_entity *callee = get_Call_callee(call);
+		if (callee != NULL)
+			prop = get_entity_additional_properties(callee);
 	}
 	return prop & (mtp_property_const|mtp_property_pure);
 }

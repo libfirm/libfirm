@@ -287,11 +287,9 @@ static void check_ptr(ir_node *ptr, wlk_env *env)
  */
 static bool is_self_recursive_Call(const ir_node *call)
 {
-	const ir_node *callee = get_Call_ptr(call);
-
-	if (is_SymConst_addr_ent(callee)) {
-		const ir_entity *ent = get_SymConst_entity(callee);
-		const ir_graph  *irg = get_entity_irg(ent);
+	const ir_entity *callee = get_Call_callee(call);
+	if (callee != NULL) {
+		const ir_graph *irg = get_entity_linktime_irg(callee);
 		if (irg == get_irn_irg(call))
 			return true;
 	}
