@@ -97,10 +97,11 @@ union ir_initializer_t {
 
 /** The attributes for methods. */
 typedef struct method_ent_attr {
+	mtp_additional_properties properties; /**< Additional graph properties can
+											   be stored in a entity if no irg
+											   is available. Must be first. */
 	ir_graph *irg;                 /**< The corresponding irg if known.
 	                                    The ir_graph constructor automatically sets this field. */
-	mtp_additional_properties properties;   /**< Additional graph properties can be
-	                                    stored in a entity if no irg is available. */
 
 	unsigned vtable_number;        /**< For a dynamically called method, the number assigned
 	                                    in the virtual function table. */
@@ -137,7 +138,9 @@ typedef struct parameter_ent_attr {
 } parameter_ent_attr;
 
 typedef struct alias_ent_attr {
-	mtp_additional_properties properties;
+	mtp_additional_properties properties; /**< Additional graph properties can
+											   be stored in a entity if no irg
+											   is available. Must be first. */
 	ir_entity                *aliased;
 } alias_ent_attr;
 
@@ -209,6 +212,8 @@ struct ir_entity {
 		alias_ent_attr           alias;
 		/** got entry attributes */
 		got_ent_attr             got;
+		/** additional properties shared by method+alias entities */
+		mtp_additional_properties properties;
 	} attr; /**< type specific attributes */
 };
 
@@ -421,18 +426,18 @@ static inline void _set_entity_link(ir_entity *ent, void *l)
 static inline ir_graph *_get_entity_irg(const ir_entity *ent)
 {
 	assert(ent->kind == k_entity);
-	if (!is_Method_type(ent->type) || is_unknown_entity(ent)) {
-		return NULL;
-	}
-
+	assert(ent->entity_kind == IR_ENTITY_METHOD);
 	return ent->attr.mtd_attr.irg;
 }
 
 static inline ir_graph *_get_entity_linktime_irg(const ir_entity *entity)
 {
-	/** weak entities might get replaced by non-weak entities at linktime
+	/* weak entities might get replaced by non-weak entities at linktime
 	 * so we can't return a definite graph. */
 	if (get_entity_linkage(entity) & IR_LINKAGE_WEAK)
+		return NULL;
+	/* only method entities have an irg field (alias etc. does not) */
+	if (entity->entity_kind != IR_ENTITY_METHOD)
 		return NULL;
 	return get_entity_irg(entity);
 }

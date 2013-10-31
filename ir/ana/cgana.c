@@ -123,6 +123,7 @@ static size_t collect_impls(ir_entity *method, pset *set)
  */
 static ir_entity **get_impl_methods(ir_entity *method)
 {
+	assert(is_method_entity(method));
 	/* Collect all method entities that can be called here */
 	ir_entity  **arr = NULL;
 	pset       *set  = pset_new_ptr_default();
@@ -165,8 +166,7 @@ static void sel_methods_walker(ir_node *node, void *env)
 	}
 
 	ir_entity     *const entity      = get_Sel_entity(node);
-	const ir_type *const entity_type = get_entity_type(entity);
-	if (!is_Method_type(entity_type))
+	if (!is_method_entity(entity))
 		return;
 	/* we may have a vtable entry and need this redirection to get the actually
 	 * called method */
@@ -572,7 +572,10 @@ static void callee_ana_node(ir_node *node, pset *methods)
 		break;
 	}
 
-	case iro_Sel:
+	case iro_Sel: {
+		ir_entity *entity = get_Sel_entity(node);
+		if (!is_method_entity(entity))
+			break;
 		/* polymorphic method */
 		for (size_t i = 0, n = get_Sel_n_methods(node); i < n; ++i) {
 			ir_entity *ent = get_Sel_method(node, i);
@@ -583,6 +586,7 @@ static void callee_ana_node(ir_node *node, pset *methods)
 			}
 		}
 		break;
+	}
 
 	case iro_Bad:
 		break;

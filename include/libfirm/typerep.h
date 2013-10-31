@@ -601,8 +601,10 @@ FIRM_API int is_atomic_entity(const ir_entity *ent);
 /** Returns true if the type of the entity is a class, structure,
    array or union type. */
 FIRM_API int is_compound_entity(const ir_entity *ent);
-/** Returns true if the type of the entity is a Method type. */
+/** Returns true if the entity is a method entity. */
 FIRM_API int is_method_entity(const ir_entity *ent);
+/** Returns true if the entity is an alias entity. */
+FIRM_API int is_alias_entity(const ir_entity *ent);
 
 /** Outputs a unique number for this entity if libfirm is compiled for
  *  debugging, (configure with --enable-debug) else returns the address
@@ -629,6 +631,12 @@ FIRM_API int entity_visited(const ir_entity *ent);
 /** Returns true if this entity was not visited.
  * @see @ref visited_counters */
 FIRM_API int entity_not_visited(const ir_entity *ent);
+
+/** Return true if this entity can be queried for additional properties.
+ *
+ * This is possible for method and alias entities.
+ */
+FIRM_API int entity_has_additional_properties(const ir_entity *entity);
 
 /**
  * Returns the mask of the additional entity properties.

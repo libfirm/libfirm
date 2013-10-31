@@ -84,9 +84,10 @@ static void visit_entity(ir_entity *entity)
 		visit_initializer(entity->initializer);
 	}
 
-	irg = get_entity_irg(entity);
-	if (irg != NULL) {
-		start_visit_node(get_irg_end(irg));
+	if (is_method_entity(entity)) {
+		irg = get_entity_irg(entity);
+		if (irg != NULL)
+			start_visit_node(get_irg_end(irg));
 	}
 }
 

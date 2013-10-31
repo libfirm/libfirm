@@ -707,7 +707,7 @@ static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, bool top
 						ir_entity *callee = get_Call_callee(res);
 						if (callee != NULL) {
 							/* a direct call */
-							ir_graph *callee_irg = get_entity_irg(callee);
+							ir_graph *callee_irg = get_entity_linktime_irg(callee);
 							if (callee_irg == irg) {
 								/* A self-recursive call. The property did not
 								 * depend on this call. */

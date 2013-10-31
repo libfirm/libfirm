@@ -234,11 +234,11 @@ void be_abi_fix_stack_bias(ir_graph *irg)
 	frame_tp = get_irg_frame_type(irg);
 	for (i = get_class_n_members(frame_tp) - 1; i >= 0; --i) {
 		ir_entity *ent = get_class_member(frame_tp, i);
-		ir_graph  *irg = get_entity_irg(ent);
-
-		if (irg != NULL) {
+		if (!is_method_entity(ent))
+			continue;
+		ir_graph *irg = get_entity_irg(ent);
+		if (irg != NULL)
 			irg_walk_graph(irg, NULL, lower_outer_frame_sels, NULL);
-		}
 	}
 }
 

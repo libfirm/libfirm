@@ -393,7 +393,7 @@ static bool is_comdat(const ir_entity *entity)
 
 static be_gas_section_t determine_basic_section(const ir_entity *entity)
 {
-	if (is_method_entity(entity))
+	if (is_method_entity(entity) || is_alias_entity(entity))
 		return GAS_SECTION_TEXT;
 
 	ir_linkage linkage = get_entity_linkage(entity);
@@ -405,7 +405,7 @@ static be_gas_section_t determine_basic_section(const ir_entity *entity)
 
 		return GAS_SECTION_RODATA;
 	}
-	if (entity_is_null(entity) && get_entity_kind(entity) != IR_ENTITY_ALIAS)
+	if (entity_is_null(entity) && !is_alias_entity(entity))
 		return GAS_SECTION_BSS;
 
 	return GAS_SECTION_DATA;

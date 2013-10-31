@@ -744,8 +744,7 @@ ir_entity *get_Call_callee(const ir_node *node)
 	ir_entity *entity = get_SymConst_entity(ptr);
 	/* some (corner case/pointless) graphs can have non-method entities as
 	 * call pointers */
-	ir_type *type = get_entity_type(entity);
-	if (!is_Method_type(type))
+	if (!is_method_entity(entity) && !is_alias_entity(entity))
 		return NULL;
 	return entity;
 }

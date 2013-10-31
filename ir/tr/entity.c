@@ -831,8 +831,12 @@ int is_compound_entity(const ir_entity *ent)
 
 int is_method_entity(const ir_entity *ent)
 {
-	ir_type *t = get_entity_type(ent);
-	return is_Method_type(t);
+	return ent->entity_kind == IR_ENTITY_METHOD;
+}
+
+int is_alias_entity(const ir_entity *entity)
+{
+	return entity->entity_kind == IR_ENTITY_ALIAS;
 }
 
 ir_visited_t (get_entity_visited)(const ir_entity *ent)
@@ -860,32 +864,38 @@ int (entity_not_visited)(const ir_entity *ent)
 	return _entity_not_visited(ent);
 }
 
+int entity_has_additional_properties(const ir_entity *entity)
+{
+	return entity->entity_kind == IR_ENTITY_METHOD
+	    || entity->entity_kind == IR_ENTITY_ALIAS;
+}
+
 mtp_additional_properties get_entity_additional_properties(const ir_entity *ent)
 {
-	assert(is_method_entity(ent));
-	return ent->attr.mtd_attr.properties;
+	assert(entity_has_additional_properties(ent));
+	return ent->attr.properties;
 }
 
 void set_entity_additional_properties(ir_entity *ent,
                                       mtp_additional_properties property_mask)
 {
-	assert(is_method_entity(ent));
+	assert(entity_has_additional_properties(ent));
 	/* you mustn't set less properties than the entities type */
 	assert((get_method_additional_properties(get_entity_type(ent)) & ~property_mask) == 0);
 
 	/* do not allow to set the mtp_property_inherited flag or
 	 * the automatic inheritance of flags will not work */
-	ent->attr.mtd_attr.properties = property_mask;
+	ent->attr.properties = property_mask;
 }
 
 void add_entity_additional_properties(ir_entity *ent,
                                       mtp_additional_properties properties)
 {
-	assert(is_method_entity(ent));
+	assert(entity_has_additional_properties(ent));
 
 	/* do not allow to set the mtp_property_inherited flag or
 	 * the automatic inheritance of flags will not work */
-	ent->attr.mtd_attr.properties |= properties;
+	ent->attr.properties |= properties;
 }
 
 dbg_info *(get_entity_dbg_info)(const ir_entity *ent)
