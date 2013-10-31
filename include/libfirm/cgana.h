@@ -71,6 +71,36 @@ FIRM_API void free_irp_callee_info(void);
  */
 FIRM_API void opt_call_addrs(void);
 
+/** Sets, get and remove the callee information for a Call node.
+ *
+ *  The callee information lists all method entities that can be called
+ *  from this node.  If the address expression can not be analyzed fully,
+ *  e.g., as entities can be called that are not in the compilation unit,
+ *  the array contains the unknown_entity.  The array contains only entities
+ *  with peculiarity_existent, but with all kinds of visibility.  The entities
+ *  not necessarily contain an irg.
+ *
+ *  The array is only accessible if callee information is valid.  See flag
+ *  in graph.
+ *
+ *  The memory allocated for the array is managed automatically, i.e., it must
+ *  not be freed if the Call node is removed from the graph.
+ *
+ *  @param node A Call node.
+ */
+FIRM_API int cg_call_has_callees(const ir_node *node);
+/** Returns the number of callees of Call node @p node. */
+FIRM_API size_t cg_get_call_n_callees(const ir_node *node);
+/** Returns callee number @p pos of Call node @p node. */
+FIRM_API ir_entity *cg_get_call_callee(const ir_node *node, size_t pos);
+
+/** Sets the full callee array.
+ *
+ *  The passed array is copied. */
+FIRM_API void cg_set_call_callee_arr(ir_node *node, size_t n, ir_entity **arr);
+/** Frees callee array of call node @p node */
+FIRM_API void cg_remove_call_callee_arr(ir_node *node);
+
 /** @} */
 
 #include "end.h"

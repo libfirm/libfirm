@@ -168,8 +168,9 @@ static void ana_Call(ir_node *n, void *env)
 		return;
 
 	ir_graph *irg = get_irn_irg(n);
-	for (size_t i = 0, n_callees = get_Call_n_callees(n); i < n_callees; ++i) {
-		ir_entity *callee_e = get_Call_callee(n, i);
+	for (size_t i = 0, n_callees = cg_get_call_n_callees(n); i < n_callees;
+	     ++i) {
+		ir_entity *callee_e = cg_get_call_callee(n, i);
 		ir_graph  *callee   = get_entity_irg(callee_e);
 
 		if (callee) {

@@ -736,42 +736,6 @@ const char *get_builtin_kind_name(ir_builtin_kind kind)
 #undef X
 }
 
-
-int Call_has_callees(const ir_node *node)
-{
-	assert(is_Call(node));
-	return ((get_irg_callee_info_state(get_irn_irg(node)) != irg_callee_info_none) &&
-	        (node->attr.call.callee_arr != NULL));
-}
-
-size_t get_Call_n_callees(const ir_node *node)
-{
-  assert(is_Call(node) && node->attr.call.callee_arr);
-  return ARR_LEN(node->attr.call.callee_arr);
-}
-
-ir_entity *get_Call_callee(const ir_node *node, size_t pos)
-{
-	assert(pos < get_Call_n_callees(node));
-	return node->attr.call.callee_arr[pos];
-}
-
-void set_Call_callee_arr(ir_node *node, size_t n, ir_entity ** arr)
-{
-	assert(is_Call(node));
-	if (node->attr.call.callee_arr == NULL || get_Call_n_callees(node) != n) {
-		ir_graph *const irg = get_irn_irg(node);
-		node->attr.call.callee_arr = NEW_ARR_D(ir_entity*, get_irg_obstack(irg), n);
-	}
-	memcpy(node->attr.call.callee_arr, arr, n * sizeof(ir_entity *));
-}
-
-void remove_Call_callee_arr(ir_node *node)
-{
-	assert(is_Call(node));
-	node->attr.call.callee_arr = NULL;
-}
-
 int (is_binop)(const ir_node *node)
 {
 	return is_binop_(node);

@@ -24,6 +24,7 @@
 #include "tv_t.h"
 #include "irprintf.h"
 #include "error.h"
+#include "cgana.h"
 
 #include "irdom.h"
 
@@ -247,11 +248,11 @@ void dump_irnode_to_file(FILE *const F, const ir_node *const n)
 				ir_fprintf(F, "    result %d type: %+F\n", i, res_type);
 			}
 		}
-		if (Call_has_callees(n)) {
+		if (cg_call_has_callees(n)) {
 			fprintf(F, "  possible callees:\n");
-			for (size_t i = 0, n_callees = get_Call_n_callees(n);
+			for (size_t i = 0, n_callees = cg_get_call_n_callees(n);
 			     i < n_callees; i++) {
-				const ir_entity *callee = get_Call_callee(n, i);
+				const ir_entity *callee = cg_get_call_callee(n, i);
 				ir_fprintf(F, "    %zu: %s\n", i, get_ent_dump_name(callee));
 			}
 		}

@@ -14,6 +14,7 @@
 #include "irnode_t.h"
 #include "irmode_t.h"
 #include "array.h"
+#include "cgana.h"
 #include "irprog.h"
 #include "entity_t.h"
 
@@ -72,8 +73,8 @@ static ptr_access_kind analyze_arg(ir_node *arg, ptr_access_kind bits)
 					size_t n_params = get_Call_n_params(succ);
 
 					/* simply look into ALL possible callees */
-					for (int c = get_Call_n_callees(succ); c-- > 0; ) {
-						meth_ent = get_Call_callee(succ, c);
+					for (int c = cg_get_call_n_callees(succ); c-- > 0; ) {
+						meth_ent = cg_get_call_callee(succ, c);
 
 						/* unknown_entity is used to signal that we don't know what is called */
 						if (is_unknown_entity(meth_ent)) {

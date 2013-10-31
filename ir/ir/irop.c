@@ -11,6 +11,7 @@
 #include <string.h>
 
 #include "error.h"
+#include "cgana.h"
 #include "irop_t.h"
 #include "irnode_t.h"
 #include "irhooks.h"
@@ -446,7 +447,7 @@ static void call_copy_attr(ir_graph *irg, const ir_node *old_node,
                            ir_node *new_node)
 {
 	default_copy_attr(irg, old_node, new_node);
-	remove_Call_callee_arr(new_node);
+	cg_remove_call_callee_arr(new_node);
 }
 
 /**

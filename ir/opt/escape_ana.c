@@ -11,6 +11,7 @@
  */
 #include "iroptimize.h"
 
+#include "cgana.h"
 #include "irgraph_t.h"
 #include "irnode_t.h"
 #include "type_t.h"
@@ -173,9 +174,9 @@ static int can_escape(ir_node *n)
 				size_t k;
 
 				/* go through all possible callees */
-				for (k = get_Call_n_callees(succ); k > 0;) {
+				for (k = cg_get_call_n_callees(succ); k > 0;) {
 					size_t j;
-					ent = get_Call_callee(succ, --k);
+					ent = cg_get_call_callee(succ, --k);
 
 					if (is_unknown_entity(ent)) {
 						/* we don't know what will be called, a possible escape */

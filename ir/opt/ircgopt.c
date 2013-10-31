@@ -83,8 +83,8 @@ void gc_irgs(size_t n_keep, ir_entity ** keep_arr)
 			/* iterate calls */
 			for (node = (ir_node*)get_irn_link(node); node != NULL;
 			     node = (ir_node*)get_irn_link(node)) {
-				for (size_t i = get_Call_n_callees(node); i > 0;) {
-					ir_entity *ent = get_Call_callee(node, --i);
+				for (size_t i = cg_get_call_n_callees(node); i > 0;) {
+					ir_entity *ent = cg_get_call_callee(node, --i);
 
 					if (get_entity_irg(ent) && get_entity_link(ent) != MARK) {
 						set_entity_link(ent, MARK);

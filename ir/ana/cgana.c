@@ -42,6 +42,41 @@ static void *MARK = &MARK;
 
 static pset *entities = NULL;
 
+int cg_call_has_callees(const ir_node *node)
+{
+	assert(is_Call(node));
+	return ((get_irg_callee_info_state(get_irn_irg(node)) != irg_callee_info_none) &&
+	        (node->attr.call.callee_arr != NULL));
+}
+
+size_t cg_get_call_n_callees(const ir_node *node)
+{
+  assert(is_Call(node) && node->attr.call.callee_arr);
+  return ARR_LEN(node->attr.call.callee_arr);
+}
+
+ir_entity *cg_get_call_callee(const ir_node *node, size_t pos)
+{
+	assert(pos < cg_get_call_n_callees(node));
+	return node->attr.call.callee_arr[pos];
+}
+
+void cg_set_call_callee_arr(ir_node *node, size_t n, ir_entity **arr)
+{
+	assert(is_Call(node));
+	if (node->attr.call.callee_arr==NULL || cg_get_call_n_callees(node) != n) {
+		ir_graph *const irg = get_irn_irg(node);
+		node->attr.call.callee_arr = NEW_ARR_D(ir_entity*, get_irg_obstack(irg), n);
+	}
+	memcpy(node->attr.call.callee_arr, arr, n * sizeof(ir_entity *));
+}
+
+void cg_remove_call_callee_arr(ir_node *node)
+{
+	assert(is_Call(node));
+	node->attr.call.callee_arr = NULL;
+}
+
 /*--------------------------------------------------------------------------*/
 /* The analysis                                                             */
 /*--------------------------------------------------------------------------*/
@@ -600,7 +635,7 @@ static void callee_walker(ir_node *call, void *env)
 		}
 		++i;
 	}
-	set_Call_callee_arr(call, ARR_LEN(arr), arr);
+	cg_set_call_callee_arr(call, ARR_LEN(arr), arr);
 	DEL_ARR_F(arr);
 	del_pset(methods);
 }
@@ -643,10 +678,9 @@ static void sel_methods_dispose(void)
 
 static void destruct_walker(ir_node *node, void *env)
 {
-	(void) env;
-	if (is_Call(node)) {
-		remove_Call_callee_arr(node);
-	}
+	(void)env;
+	if (is_Call(node))
+		cg_remove_call_callee_arr(node);
 }
 
 size_t cgana(ir_entity ***free_methods)
