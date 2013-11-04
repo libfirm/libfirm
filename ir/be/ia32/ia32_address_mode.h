@@ -13,23 +13,23 @@
 #define IA32_ADDRESS_MODE_H
 
 #include <stdbool.h>
+#include <stdint.h>
 #include "irtypes.h"
 
 /**
  * The address mode data: Used to construct (memory) address modes.
  */
-typedef struct ia32_address_t ia32_address_t;
-struct ia32_address_t {
-	ir_node   *base;          /**< The base register (if any) */
-	ir_node   *index;         /**< The index register (if any). */
-	ir_node   *mem;           /**< The memory value (if any). */
-	int        offset;        /**< An integer offset. */
-	int        scale;         /**< An integer scale. {0,1,2,3} */
-	ir_entity *symconst_ent;  /**< A SynConst entity if any. */
-	bool       use_frame;     /**< Set, if the frame is accessed */
-	bool       tls_segment;   /**< Set if AM is relative to TLS */
-	ir_entity *frame_entity;  /**< The accessed frame entity if any. */
-};
+typedef struct ia32_address_t {
+	ir_node   *base;            /**< value for base register (if any) */
+	ir_node   *index;           /**< value for index register (if any). */
+	ir_node   *mem;             /**< value for memory input (if any). */
+	int32_t    offset;          /**< An integer offset. */
+	unsigned   scale       : 8; /**< An integer scale. {0,1,2,3} */
+	bool       use_frame   : 1; /**< Set, if the frame is accessed */
+	bool       tls_segment : 1; /**< Set if AM is relative to TLS */
+	ir_entity *symconst_ent;    /**< A SymConst entity if any. */
+	ir_entity *frame_entity;    /**< The accessed frame entity if any. */
+} ia32_address_t;
 
 /**
  * Additional flags for the address mode creation.
@@ -46,7 +46,8 @@ typedef enum ia32_create_am_flags_t {
 /**
  * Create an address mode for a given node.
  */
-void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, ia32_create_am_flags_t);
+void ia32_create_address_mode(ia32_address_t *addr, ir_node *node,
+                              ia32_create_am_flags_t);
 
 /**
  * Mark those nodes of the given graph that cannot be used inside an
@@ -62,7 +63,7 @@ void ia32_free_non_address_mode_nodes(void);
 /**
  * Tells whether the given node is a non address mode node.
  */
-int ia32_is_non_address_mode_node(ir_node const *node);
+bool ia32_is_non_address_mode_node(ir_node const *node);
 
 /**
  * mark a node so it will not be used as part of address modes
