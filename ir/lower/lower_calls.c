@@ -491,46 +491,54 @@ static void add_hidden_param(ir_graph *irg, size_t n_com, ir_node **ins,
 {
 	size_t n_args = 0;
 
-	for (ir_node *p = entry->copyb, *n; p; p = n) {
-		ir_node *src = get_CopyB_src(p);
+	for (ir_node *next, *copyb = entry->copyb; copyb != NULL; copyb = next) {
+		ir_node *src = get_CopyB_src(copyb);
 		size_t   idx = get_Proj_proj(src);
-		n = (ir_node*)get_irn_link(p);
+		next = (ir_node*)get_irn_link(copyb);
 
 		/* consider only the first CopyB */
-		if (ins[idx] == NULL) {
-			ir_node *call       = entry->call;
-			ir_node *call_block = get_nodes_block(call);
-			ir_node *dst        = get_CopyB_dst(p);
-			ir_node *dst_block  = get_nodes_block(dst);
+		if (ins[idx] != NULL)
+			continue;
 
-			/* Check whether we can use the destination of the CopyB for the call. */
-			if (!block_dominates(dst_block, call_block))
-				continue;
+		ir_node *call       = entry->call;
+		ir_node *call_block = get_nodes_block(call);
+		ir_node *dst        = get_CopyB_dst(copyb);
+		ir_node *dst_block  = get_nodes_block(dst);
 
-			if (dst_block == call_block) {
-				ir_heights_t *heights = env->heights;
+		/* Check whether we can use the destination of the CopyB for the call. */
+		if (!block_dominates(dst_block, call_block))
+			continue;
 
-				if (heights == NULL) {
-					heights = heights_new(irg);
-					env->heights = heights;
-				}
-
-				/* Do not optimize the CopyB if the destination depends on the call. */
-				if (heights_reachable_in_block(heights, dst, call))
-					continue;
+		if (dst_block == call_block) {
+			ir_heights_t *heights = env->heights;
+			if (heights == NULL) {
+				heights = heights_new(irg);
+				env->heights = heights;
 			}
 
-			/* use the memory output of the call and not the input of the CopyB
-			 * otherwise stuff breaks if the call was mtp_property_const,
-			 * because then the CopyB skips the call. But after lowering the
-			 * call is not const anymore, and its memory has to be used */
-			ir_node *mem = new_r_Proj(call, mode_M, pn_Call_M);
-
-			ins[idx] = dst;
-			/* get rid of the CopyB */
-			exchange(p, mem);
-			++n_args;
+			/* Do not optimize the CopyB if the destination depends on the
+			 * call. */
+			if (heights_reachable_in_block(heights, dst, call))
+				continue;
 		}
+
+		/* Special case for calls with NoMem memory input. This can happen
+		 * for mtp_property_const functions. The call needs a memory input
+		 * after lowering, so patch it here to be the input of the CopyB.
+		 * Note that in case of multiple CopyB return values this code
+		 * may break the order: fix it if you find a language that actually
+		 * uses this. */
+		ir_node *copyb_mem = get_CopyB_mem(copyb);
+		ir_node *call_mem  = get_Call_mem(call);
+		if (is_NoMem(call_mem)) {
+			set_Call_mem(call, copyb_mem);
+			copyb_mem = new_r_Proj(call, mode_M, pn_Call_M);
+		}
+
+		ins[idx] = dst;
+		/* get rid of the CopyB */
+		exchange(copyb, copyb_mem);
+		++n_args;
 	}
 
 	/* now create dummy entities for function with ignored return value */
