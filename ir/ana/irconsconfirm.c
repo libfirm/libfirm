@@ -102,14 +102,15 @@ static void handle_case(ir_node *block, ir_node *switchn, long pn, env_t *env)
 		ir_node *blk  = get_effective_use_block(succ, pos);
 
 		if (block_dominates(block, blk)) {
-			/*
-			 * Ok, we found a user of irn that is placed
+			/* Ok, we found a user of irn that is placed
 			 * in a block dominated by the branch block.
 			 * We can replace the input with the Constant
-			 * branch label.
-			 */
-			if (c == NULL)
+			 * branch label. */
+			if (c == NULL) {
 				c = get_case_value(switchn, pn);
+				if (c == NULL)
+					return;
+			}
 
 			set_irn_n(succ, pos, c);
 			DBG_OPT_CONFIRM_C(selector, c);
