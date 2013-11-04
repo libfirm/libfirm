@@ -248,7 +248,9 @@ static void ssa_destruction_check_walker(ir_node *block, void *data)
 		if (!arch_irn_consider_in_reg_alloc(cls, phi))
 			continue;
 
+#ifndef NDEBUG
 		const arch_register_t *phi_reg = arch_get_irn_register(phi);
+#endif
 		/* iterate over all args of phi */
 		for (int i = 0, max = get_irn_arity(phi); i < max; ++i) {
 			ir_node                   *arg = get_irn_n(phi, i);
@@ -256,8 +258,10 @@ static void ssa_destruction_check_walker(ir_node *block, void *data)
 			if (arch_register_req_is(req, ignore))
 				continue;
 
+#ifndef NDEBUG
 			const arch_register_t *arg_reg = arch_get_irn_register(arg);
 			assert(phi_reg == arg_reg && "Error: Registers of phi and arg differ");
+#endif
 		}
 	}
 }

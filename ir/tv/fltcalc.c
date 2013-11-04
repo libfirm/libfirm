@@ -1246,12 +1246,11 @@ void init_fltcalc(int precision)
 		calc_buffer = (fp_value*) xmalloc(calc_buffer_size);
 		memset(calc_buffer, 0, calc_buffer_size);
 
-		const size_t long_double_size = sizeof(long double);
 #if LDBL_MANT_DIG == 64
-		assert(long_double_size == 12 || long_double_size == 16);
+		assert(sizeof(long double) == 12 || sizeof(long double) == 16);
 		long_double_desc = (float_descriptor_t) { 15, 63, 1 };
 #elif LDBL_MANT_DIG == 53
-		assert(long_double_size == 8);
+		assert(sizeof(long double) == 8);
 		long_double_desc = (float_descriptor_t) { 11, 52, 0 };
 #else
 	#error "Unsupported long double format"

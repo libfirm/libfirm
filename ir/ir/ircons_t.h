@@ -30,6 +30,9 @@ static inline void verify_new_node(ir_graph *irg, ir_node *node)
 #ifdef DEBUG_libfirm
 	if (UNLIKELY(!irn_verify_irg(node, irg)))
 		abort();
+#else
+	(void)irg;
+	(void)node;
 #endif
 }
 

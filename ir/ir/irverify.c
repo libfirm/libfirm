@@ -933,6 +933,7 @@ static bool check_dominance_for_node(const ir_node *use)
 	return fine;
 }
 
+#ifdef DEBUG_libfirm
 /**
  * Check if node is stored on the obstack belonging to the ir graph
  */
@@ -944,6 +945,7 @@ static bool check_irn_storage(ir_graph *irg, const ir_node *node)
 	}
 	return true;
 }
+#endif
 
 int irn_verify_irg(const ir_node *n, ir_graph *irg)
 {
