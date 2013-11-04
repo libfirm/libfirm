@@ -51,6 +51,8 @@ struct be_options_t {
 };
 extern be_options_t be_options;
 
+extern after_transform_func be_after_transform;
+
 struct be_main_env_t {
 	arch_env_t   *arch_env;
 	const char   *cup_name;             /**< name of the compilation unit */
@@ -66,6 +68,8 @@ void be_get_allocatable_regs(ir_graph const *irg, arch_register_class_t const *c
 
 unsigned be_get_n_allocatable_regs(const ir_graph *irg,
                                    const arch_register_class_t *cls);
+
+void be_after_irp_transform(const char *name);
 
 /**
  * Initialize the backend. Must be run first in init_firm();

@@ -500,11 +500,13 @@ static void amd64_lower_for_target(void)
 {
 	/* lower compound param handling */
 	lower_calls_with_compounds(LF_RETURN_HIDDEN);
+	be_after_irp_transform("lower-calls");
 
 	size_t n_irgs = get_irp_n_irgs();
 	for (size_t i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		lower_switch(irg, 4, 256, mode_Iu);
+		be_after_transform(irg, "lower-switch");
 	}
 
 	for (size_t i = 0; i < n_irgs; ++i) {
@@ -514,9 +516,11 @@ static void amd64_lower_for_target(void)
 		 * during code generation yet.
 		 * TODO:  Adapt this once custom CopyB handling is implemented. */
 		lower_CopyB(irg, 64, 65, true);
+		be_after_transform(irg, "lower-copyb");
 	}
 
 	lower_builtins(0, NULL);
+	be_after_irp_transform("lower-builtins");
 }
 
 static int amd64_is_mux_allowed(ir_node *sel, ir_node *mux_false,

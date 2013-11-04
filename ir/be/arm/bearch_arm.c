@@ -385,10 +385,12 @@ static void arm_lower_for_target(void)
 
 	/* lower compound param handling */
 	lower_calls_with_compounds(LF_RETURN_HIDDEN);
+	be_after_irp_transform("lower-calls");
 
 	for (i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		lower_switch(irg, 4, 256, mode_gp);
+		be_after_transform(irg, "lower-switch");
 	}
 
 	for (i = 0; i < n_irgs; ++i) {
@@ -397,6 +399,7 @@ static void arm_lower_for_target(void)
 		 * memcpy calls.
 		 * TODO:  These constants need arm-specific tuning. */
 		lower_CopyB(irg, 31, 32, false);
+		be_after_transform(irg, "lower-copyb");
 	}
 }
 

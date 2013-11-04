@@ -416,6 +416,30 @@ static const char *get_timer_name(be_timer_id_t id)
 }
 ir_timer_t *be_timers[T_LAST+1];
 
+static void dummy_after_transform(ir_graph *irg, const char *name)
+{
+	(void)irg;
+	(void)name;
+}
+
+after_transform_func be_after_transform = dummy_after_transform;
+
+void be_set_after_transform_func(after_transform_func after_transform)
+{
+	be_after_transform = after_transform;
+}
+
+void be_after_irp_transform(const char *name)
+{
+	if (be_after_transform == NULL)
+		return;
+
+	for (size_t i = get_irp_n_irgs(); i-- > 0; ) {
+		ir_graph *irg = get_irp_irg(i);
+		be_after_transform(irg, name);
+	}
+}
+
 void be_lower_for_target(void)
 {
 	initialize_isa();

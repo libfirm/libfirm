@@ -225,9 +225,11 @@ static void TEMPLATE_get_call_abi(ir_type *method_type, be_abi_call_t *abi)
 static void TEMPLATE_lower_for_target(void)
 {
 	lower_builtins(0, NULL);
+	be_after_irp_transform("lower-builtins");
 
 	/* lower compound param handling */
 	lower_calls_with_compounds(LF_RETURN_HIDDEN);
+	be_after_irp_transform("lower-calls");
 }
 
 static int TEMPLATE_is_mux_allowed(ir_node *sel, ir_node *mux_false,

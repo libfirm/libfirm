@@ -209,6 +209,15 @@ FIRM_API const backend_params *be_get_backend_param(void);
  */
 FIRM_API void be_lower_for_target(void);
 
+typedef void (*after_transform_func)(ir_graph *irg, const char *name);
+
+/**
+ * Sets a callback that is called after each transformation step in
+ * be_lower_for_target(). This is typically used to run dump & verify steps
+ * to help debugging.
+ */
+FIRM_API void be_set_after_transform_func(after_transform_func func);
+
 /**
  * Main interface to the frontend.
  */

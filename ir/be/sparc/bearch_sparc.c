@@ -494,39 +494,48 @@ static void sparc_end_codegeneration(void *self)
 static void sparc_lower_for_target(void)
 {
 	lower_calls_with_compounds(LF_RETURN_HIDDEN);
+	be_after_irp_transform("lower-calls");
 
 	for (size_t i = 0, n_irgs = get_irp_n_irgs(); i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		/* Turn all small CopyBs into loads/stores and all bigger CopyBs into
 		 * memcpy calls. */
 		lower_CopyB(irg, 31, 32, false);
+		be_after_transform(irg, "lower-copyb");
 	}
 
-	if (!sparc_cg_config.use_fpu)
+	if (!sparc_cg_config.use_fpu) {
 		lower_floating_point();
+		be_after_irp_transform("lower-fp");
+	}
 
 	ir_builtin_kind supported[8];
-	size_t          s = 0;
+	size_t s = 0;
 	supported[s++] = ir_bk_saturating_increment;
 	if (sparc_cg_config.use_cas)
 		supported[s++] = ir_bk_compare_swap;
 	assert(s < ARRAY_SIZE(supported));
 	lower_builtins(s, supported);
+	be_after_irp_transform("lower-builtins");
 
 	ir_mode *mode_gp = sparc_reg_classes[CLASS_sparc_gp].mode;
 	for (size_t i = 0, n_irgs = get_irp_n_irgs(); i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		lower_switch(irg, 4, 256, mode_gp);
+		be_after_transform(irg, "lower-switch");
 	}
 
 	sparc_lower_64bit();
+	be_after_irp_transform("lower-64");
 
 	for (size_t i = 0, n_irgs = get_irp_n_irgs(); i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		ir_lower_mode_b(irg, mode_Iu);
+		be_after_transform(irg, "lower-modeb");
 		/* TODO: Pass SPARC_MIN_STACKSIZE as addr_delta as soon as
 		 * Alloc nodes are implemented more efficiently. */
 		lower_alloc(irg, SPARC_STACK_ALIGNMENT, true, 0);
+		be_after_transform(irg, "lower-alloc");
 	}
 }
 

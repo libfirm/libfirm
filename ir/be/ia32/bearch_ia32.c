@@ -1757,10 +1757,12 @@ static void ia32_lower_for_target(void)
 	 *  stackframe)
 	 */
 	lower_calls_with_compounds(LF_RETURN_HIDDEN | LF_DONT_LOWER_ARGUMENTS);
+	be_after_irp_transform("lower-calls");
 
 	/* replace floating point operations by function calls */
 	if (ia32_cg_config.use_softfloat) {
 		lower_floating_point();
+		be_after_irp_transform("lower-fp");
 	}
 
 	ir_builtin_kind supported[32];
@@ -1785,19 +1787,23 @@ static void ia32_lower_for_target(void)
 		supported[s++] = ir_bk_compare_swap;
 	assert(s < ARRAY_SIZE(supported));
 	lower_builtins(s, supported);
+	be_after_irp_transform("lower-builtins");
 
 	for (size_t i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		/* break up switches with wide ranges */
 		lower_switch(irg, 4, 256, mode_gp);
+		be_after_transform(irg, "lower-switch");
 	}
 
 	ia32_lower64();
+	be_after_irp_transform("lower-64");
 
 	for (size_t i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		/* lower for mode_b stuff */
 		ir_lower_mode_b(irg, mode_Iu);
+		be_after_transform(irg, "lower-modeb");
 	}
 
 	for (size_t i = 0; i < n_irgs; ++i) {
@@ -1806,6 +1812,7 @@ static void ia32_lower_for_target(void)
 		 * so we can generate rep movs later, and turn all big CopyBs into
 		 * memcpy calls. */
 		lower_CopyB(irg, 64, 8193, true);
+		be_after_transform(irg, "lower-copyb");
 	}
 }
 
