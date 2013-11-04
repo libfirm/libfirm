@@ -9,8 +9,8 @@
  *              nodes that can be used as address mode for x86 instructions
  * @author      Matthias Braun
  */
-#ifndef IA32_ADDRESS_MODE_H
-#define IA32_ADDRESS_MODE_H
+#ifndef X86_ADDRESS_MODE_H
+#define X86_ADDRESS_MODE_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -19,7 +19,7 @@
 /**
  * The address mode data: Used to construct (memory) address modes.
  */
-typedef struct ia32_address_t {
+typedef struct x86_address_t {
 	ir_node   *base;            /**< value for base register (if any) */
 	ir_node   *index;           /**< value for index register (if any). */
 	ir_node   *mem;             /**< value for memory input (if any). */
@@ -29,45 +29,45 @@ typedef struct ia32_address_t {
 	bool       tls_segment : 1; /**< Set if AM is relative to TLS */
 	ir_entity *entity;          /**< The accessed entity if any. */
 	ir_entity *frame_entity;    /**< The accessed frame entity if any. */
-} ia32_address_t;
+} x86_address_t;
 
 /**
  * Additional flags for the address mode creation.
  */
-typedef enum ia32_create_am_flags_t {
-	ia32_create_am_normal     = 0,       /**< Normal operation. */
-	ia32_create_am_force      = 1U << 0, /**< Ignore the marking of node as a
-	                                          non-address-mode node. */
-	ia32_create_am_double_use = 1U << 1  /**< Fold AM, even if the root of
-	                                          address calculation has two users.
-	                                          This is useful for dest AM. */
-} ia32_create_am_flags_t;
+typedef enum x86_create_am_flags_t {
+	x86_create_am_normal     = 0,       /**< Normal operation. */
+	x86_create_am_force      = 1U << 0, /**< Ignore the marking of node as a
+	                                         non-address-mode node. */
+	x86_create_am_double_use = 1U << 1  /**< Fold AM, even if the root of
+	                                         address calculation has two users.
+	                                         This is useful for dest AM. */
+} x86_create_am_flags_t;
 
 /**
  * Create an address mode for a given node.
  */
-void ia32_create_address_mode(ia32_address_t *addr, ir_node *node,
-                              ia32_create_am_flags_t);
+void x86_create_address_mode(x86_address_t *addr, ir_node *node,
+                             x86_create_am_flags_t);
 
 /**
  * Mark those nodes of the given graph that cannot be used inside an
  * address mode because there values must be materialized in registers.
  */
-void ia32_calculate_non_address_mode_nodes(ir_graph *irg);
+void x86_calculate_non_address_mode_nodes(ir_graph *irg);
 
 /**
  * Free the non_address_mode information.
  */
-void ia32_free_non_address_mode_nodes(void);
+void x86_free_non_address_mode_nodes(void);
 
 /**
  * Tells whether the given node is a non address mode node.
  */
-bool ia32_is_non_address_mode_node(ir_node const *node);
+bool x86_is_non_address_mode_node(ir_node const *node);
 
 /**
  * mark a node so it will not be used as part of address modes
  */
-void ia32_mark_non_am(ir_node *node);
+void x86_mark_non_am(ir_node *node);
 
 #endif
