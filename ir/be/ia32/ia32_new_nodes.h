@@ -119,21 +119,6 @@ ir_entity *get_ia32_am_sc(const ir_node *node);
  */
 void set_ia32_am_sc(ir_node *node, ir_entity *sc);
 
-/**
- * Sets the sign bit for address mode symconst.
- */
-void set_ia32_am_sc_sign(ir_node *node);
-
-/**
- * Clears the sign bit for address mode symconst.
- */
-void clear_ia32_am_sc_sign(ir_node *node);
-
-/**
- * Returns the sign bit for address mode symconst.
- */
-int is_ia32_am_sc_sign(const ir_node *node);
-
 void set_ia32_am_tls_segment(ir_node *node, bool value);
 
 bool get_ia32_am_tls_segment(const ir_node *node);

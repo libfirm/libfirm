@@ -284,15 +284,15 @@ static void peephole_ia32_Test(ir_node *node)
 			if ((offset & 0xFFFFFF00) == 0) {
 				/* attr->am_offs += 0; */
 			} else if ((offset & 0xFFFF00FF) == 0) {
-				ir_node *imm_node = ia32_create_Immediate(irg, NULL, 0, offset >>  8);
+				ir_node *imm_node = ia32_create_Immediate(irg, NULL, offset >>  8);
 				set_irn_n(node, n_ia32_Test_right, imm_node);
 				attr->am_offs += 1;
 			} else if ((offset & 0xFF00FFFF) == 0) {
-				ir_node *imm_node = ia32_create_Immediate(irg, NULL, 0, offset >> 16);
+				ir_node *imm_node = ia32_create_Immediate(irg, NULL, offset >> 16);
 				set_irn_n(node, n_ia32_Test_right, imm_node);
 				attr->am_offs += 2;
 			} else if ((offset & 0x00FFFFFF) == 0) {
-				ir_node *imm_node = ia32_create_Immediate(irg, NULL, 0, offset >> 24);
+				ir_node *imm_node = ia32_create_Immediate(irg, NULL, offset >> 24);
 				set_irn_n(node, n_ia32_Test_right, imm_node);
 				attr->am_offs += 3;
 			} else {
@@ -811,7 +811,7 @@ ir_node *ia32_immediate_from_long(long val)
 	ir_graph *irg         = current_ir_graph;
 	ir_node  *start_block = get_irg_start_block(irg);
 	ir_node  *immediate
-		= new_bd_ia32_Immediate(NULL, start_block, NULL, 0, 0, val);
+		= new_bd_ia32_Immediate(NULL, start_block, NULL, 0, val);
 	arch_set_irn_register(immediate, &ia32_registers[REG_GP_NOREG]);
 
 	return immediate;
@@ -821,14 +821,12 @@ static ir_node *create_immediate_from_am(const ir_node *node)
 {
 	ir_node   *block   = get_nodes_block(node);
 	int        offset  = get_ia32_am_offs_int(node);
-	int        sc_sign = is_ia32_am_sc_sign(node);
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	int        sc_no_pic_adjust = attr->data.am_sc_no_pic_adjust;
 	ir_entity *entity  = get_ia32_am_sc(node);
 	ir_node   *res;
 
-	res = new_bd_ia32_Immediate(NULL, block, entity, sc_sign, sc_no_pic_adjust,
-	                            offset);
+	res = new_bd_ia32_Immediate(NULL, block, entity, sc_no_pic_adjust, offset);
 	arch_set_irn_register(res, &ia32_registers[REG_GP_NOREG]);
 	return res;
 }

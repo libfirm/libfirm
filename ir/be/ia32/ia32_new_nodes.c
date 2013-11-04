@@ -60,9 +60,6 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 
 				fputc(' ', F);
 				if (attr->symconst) {
-					if (attr->sc_sign) {
-						fputc('-', F);
-					}
 					fputs(get_entity_name(attr->symconst), F);
 				}
 				if (attr->offset != 0 || attr->symconst == NULL) {
@@ -82,9 +79,6 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 					fputs(" [", F);
 
 				if (attr->am_sc != NULL) {
-					if (attr->data.am_sc_sign) {
-						fputc('-', F);
-					}
 					fputs(get_entity_name(attr->am_sc), F);
 					if (attr->data.am_sc_no_pic_adjust) {
 						fputs("(no_pic_adjust)", F);
@@ -417,33 +411,6 @@ void set_ia32_am_sc(ir_node *node, ir_entity *entity)
 	attr->am_sc       = entity;
 }
 
-/**
- * Sets the sign bit for address mode symconst.
- */
-void set_ia32_am_sc_sign(ir_node *node)
-{
-	ia32_attr_t *attr     = get_ia32_attr(node);
-	attr->data.am_sc_sign = 1;
-}
-
-/**
- * Clears the sign bit for address mode symconst.
- */
-void clear_ia32_am_sc_sign(ir_node *node)
-{
-	ia32_attr_t *attr     = get_ia32_attr(node);
-	attr->data.am_sc_sign = 0;
-}
-
-/**
- * Returns the sign bit for address mode symconst.
- */
-int is_ia32_am_sc_sign(const ir_node *node)
-{
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->data.am_sc_sign;
-}
-
 void set_ia32_am_tls_segment(ir_node *node, bool value)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
@@ -480,8 +447,6 @@ void ia32_copy_am_attrs(ir_node *to, const ir_node *from)
 	set_ia32_ls_mode(to, get_ia32_ls_mode(from));
 	set_ia32_am_scale(to, get_ia32_am_scale(from));
 	set_ia32_am_sc(to, get_ia32_am_sc(from));
-	if (is_ia32_am_sc_sign(from))
-		set_ia32_am_sc_sign(to);
 	add_ia32_am_offs_int(to, get_ia32_am_offs_int(from));
 	set_ia32_frame_ent(to, get_ia32_frame_ent(from));
 	if (is_ia32_use_frame(from))
@@ -799,8 +764,7 @@ static void init_ia32_asm_attributes(ir_node *res)
 }
 
 static void init_ia32_immediate_attributes(ir_node *res, ir_entity *symconst,
-                                           int symconst_sign, int no_pic_adjust,
-                                           long offset)
+                                           int no_pic_adjust, long offset)
 {
 	ia32_immediate_attr_t *attr = (ia32_immediate_attr_t*)get_irn_generic_attr(res);
 
@@ -808,7 +772,6 @@ static void init_ia32_immediate_attributes(ir_node *res, ir_entity *symconst,
 	attr->attr.attr_type  |= IA32_ATTR_ia32_immediate_attr_t;
 #endif
 	attr->symconst      = symconst;
-	attr->sc_sign       = symconst_sign;
 	attr->no_pic_adjust = no_pic_adjust;
 	attr->offset        = offset;
 }
@@ -877,7 +840,6 @@ static int ia32_compare_attr(const ia32_attr_t *a, const ia32_attr_t *b)
 		return 1;
 
 	if (a->data.am_scale != b->data.am_scale
-	    || a->data.am_sc_sign != b->data.am_sc_sign
 	    || a->am_offs != b->am_offs
 	    || a->am_sc != b->am_sc
 		|| a->data.am_sc_no_pic_adjust != b->data.am_sc_no_pic_adjust
@@ -996,7 +958,7 @@ static unsigned ia32_hash_Immediate(const ir_node *irn)
 {
 	const ia32_immediate_attr_t *a = get_ia32_immediate_attr_const(irn);
 
-	return hash_ptr(a->symconst) + (a->sc_sign << 16) + a->offset;
+	return hash_ptr(a->symconst) + a->offset;
 }
 
 /** Compare node attributes for Immediates. */
@@ -1006,7 +968,6 @@ static int ia32_compare_immediate_attr(const ir_node *a, const ir_node *b)
 	const ia32_immediate_attr_t *attr_b = get_ia32_immediate_attr_const(b);
 
 	if (attr_a->symconst != attr_b->symconst
-		|| attr_a->sc_sign != attr_b->sc_sign
 		|| attr_a->no_pic_adjust != attr_b->no_pic_adjust
 		|| attr_a->offset != attr_b->offset) {
 		return 1;

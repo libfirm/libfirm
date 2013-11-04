@@ -25,9 +25,6 @@
 
 #define AGGRESSIVE_AM
 
-/* gas/ld don't support negative symconsts :-( */
-#undef SUPPORT_NEGATIVE_SYMCONSTS
-
 static bitset_t *non_address_mode_nodes;
 
 /**
@@ -58,11 +55,9 @@ static bool do_is_immediate(const ir_node *node, int *symconsts, bool negate)
 		return true;
 	case iro_SymConst:
 		/* the first SymConst of a DAG can be fold into an immediate */
-#ifndef SUPPORT_NEGATIVE_SYMCONSTS
 		/* unfortunately the assembler/linker doesn't support -symconst */
 		if (negate)
 			return false;
-#endif
 		if (get_SymConst_kind(node) != symconst_addr_ent)
 			return false;
 		if (++*symconsts > 1)
@@ -140,10 +135,7 @@ static void eat_immediate(ia32_address_t *addr, ir_node *node, bool negate)
 		addr->symconst_ent  = get_SymConst_entity(node);
 		if (get_entity_owner(addr->symconst_ent) == get_tls_type())
 			addr->tls_segment = true;
-#ifndef SUPPORT_NEGATIVE_SYMCONSTS
 		assert(!negate);
-#endif
-		addr->symconst_sign = negate;
 		break;
 	case iro_Unknown:
 		break;
@@ -178,9 +170,9 @@ static void eat_immediate(ia32_address_t *addr, ir_node *node, bool negate)
 static ir_node *eat_immediates(ia32_address_t *addr, ir_node *node,
                                ia32_create_am_flags_t flags)
 {
-	if (!(flags & ia32_create_am_force)     &&
-			ia32_is_non_address_mode_node(node) &&
-			(!(flags & ia32_create_am_double_use) || get_irn_n_edges(node) > 2))
+	if (!(flags & ia32_create_am_force)
+	    && ia32_is_non_address_mode_node(node)
+	    && (!(flags & ia32_create_am_double_use) || get_irn_n_edges(node) > 2))
 		return node;
 
 	if (is_Add(node)) {
@@ -213,63 +205,59 @@ static ir_node *eat_immediates(ia32_address_t *addr, ir_node *node,
  *
  * @param addr    the address mode data so far
  * @param node   the node to place
- *
- * @return non-zero on success
+ * @return true on success
  */
-static int eat_shl(ia32_address_t *addr, ir_node *node)
+static bool eat_shl(ia32_address_t *addr, ir_node *node)
 {
 	ir_node *shifted_val;
 	long     val;
 
 	if (is_Shl(node)) {
-		ir_node   *right = get_Shl_right(node);
-		ir_tarval *tv;
-
 		/* we can use shl with 1, 2 or 3 shift */
+		ir_node *right = get_Shl_right(node);
 		if (!is_Const(right))
-			return 0;
-		tv = get_Const_tarval(right);
+			return false;
+		ir_tarval *tv = get_Const_tarval(right);
 		if (!tarval_is_long(tv))
-			return 0;
+			return false;
 
 		val = get_tarval_long(tv);
 		if (val < 0 || val > 3)
-			return 0;
-		if (val == 0) {
-			ir_fprintf(stderr, "Optimisation warning: unoptimized Shl(,0) found\n");
-		}
+			return false;
+		if (val == 0)
+			ir_fprintf(stderr,
+			           "Optimisation warning: unoptimized Shl(,0) found\n");
 
 		shifted_val = get_Shl_left(node);
 	} else if (is_Add(node)) {
 		/* might be an add x, x */
 		ir_node *left  = get_Add_left(node);
 		ir_node *right = get_Add_right(node);
-
 		if (left != right)
-			return 0;
+			return false;
 		if (is_Const(left))
-			return 0;
+			return false;
 
 		val         = 1;
 		shifted_val = left;
 	} else {
-		return 0;
+		return false;
 	}
 
 	/* we can only eat a shl if we don't have a scale or index set yet */
 	if (addr->scale != 0 || addr->index != NULL)
-		return 0;
+		return false;
 	if (ia32_is_non_address_mode_node(node))
-		return 0;
+		return false;
 
 #ifndef AGGRESSIVE_AM
 	if (get_irn_n_edges(node) > 1)
-		return 0;
+		return false;
 #endif
 
 	addr->scale = val;
 	addr->index = shifted_val;
-	return 1;
+	return true;
 }
 
 /* Create an address mode for a given node. */

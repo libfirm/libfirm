@@ -32,10 +32,9 @@ ir_entity *ia32_create_float_const_entity(ia32_isa_t *isa, ir_tarval *tv,
  *
  * @param irg            The IR graph the node belongs to.
  * @param symconst       if set, create a SymConst immediate
- * @param symconst_sign  sign for the symconst
  * @param val            integer value for the immediate
  */
-ir_node *ia32_create_Immediate(ir_graph *irg, ir_entity *symconst, int symconst_sign, long val);
+ir_node *ia32_create_Immediate(ir_graph *irg, ir_entity *symconst, long val);
 
 /**
  * returns register by name (used for determining clobber specifications in

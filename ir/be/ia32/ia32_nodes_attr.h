@@ -84,7 +84,6 @@ struct ia32_attr_t {
 		unsigned tp:3;                  /**< ia32 node type. */
 		unsigned am_arity:2;            /**< Indicates the address mode type supported by this node. */
 		unsigned am_scale:2;            /**< The address mode scale for index register. */
-		unsigned am_sc_sign:1;          /**< The sign bit of the address mode symconst. */
 
 		unsigned am_sc_no_pic_adjust : 1;/**< AM symconst can be relative to EIP */
 		unsigned am_tls_segment:1;       /**< addresses are relative to TLS */
@@ -165,7 +164,6 @@ struct ia32_immediate_attr_t {
 	ia32_attr_t  attr;              /**< generic attribute */
 	ir_entity   *symconst;          /**< An entity if any. */
 	long         offset;            /**< An offset if any. */
-	unsigned     sc_sign : 1;       /**< The sign bit of the symconst. */
 	unsigned     no_pic_adjust : 1; /**< constant can be relative to EIP */
 };
 

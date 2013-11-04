@@ -29,7 +29,6 @@ struct ia32_address_t {
 	bool       use_frame;     /**< Set, if the frame is accessed */
 	bool       tls_segment;   /**< Set if AM is relative to TLS */
 	ir_entity *frame_entity;  /**< The accessed frame entity if any. */
-	bool       symconst_sign; /**< The "sign" of the symconst. */
 };
 
 /**
