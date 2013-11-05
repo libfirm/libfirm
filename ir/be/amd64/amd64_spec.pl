@@ -73,7 +73,6 @@ PushAM => {
 	arity     => "variable",
 	outs      => [ "stack", "M" ],
 	attr      => "amd64_insn_mode_t insn_mode, amd64_am_info_t am",
-	attr_type => "amd64_attr_t",
 	init_attr => "attr->data.insn_mode = insn_mode;\n"
 	            ."\tattr->am                  = am;\n"
 	            ."\tattr->data.has_am_info    = true;\n",
@@ -87,7 +86,6 @@ PopAM => {
 	arity     => "variable",
 	outs      => [ "stack", "M" ],
 	attr      => "amd64_insn_mode_t insn_mode, amd64_am_info_t am",
-	attr_type => "amd64_attr_t",
 	init_attr => "attr->data.insn_mode = insn_mode;\n"
 	            ."\tattr->am                  = am;\n"
 	            ."\tattr->data.has_am_info    = true;\n",
@@ -342,7 +340,6 @@ LoadZ => {
 	arity     => "variable",
 	outs      => [ "res",  "M" ],
 	attr      => "amd64_insn_mode_t insn_mode, amd64_am_info_t am",
-	attr_type => "amd64_attr_t",
 	init_attr => "attr->data.insn_mode = insn_mode;\n"
 	            ."\tattr->am                  = am;\n"
 	            ."\tattr->data.has_am_info    = true;\n",
@@ -355,7 +352,6 @@ LoadS => {
 	arity     => "variable",
 	outs      => [ "res",  "M" ],
 	attr      => "amd64_insn_mode_t insn_mode, amd64_am_info_t am",
-	attr_type => "amd64_attr_t",
 	init_attr => "attr->data.insn_mode = insn_mode;\n"
 	            ."\tattr->am                  = am;\n"
 	            ."\tattr->data.has_am_info    = true;\n",
@@ -369,7 +365,6 @@ Store => {
 	arity     => "variable",
 	outs      => [ "M" ],
 	attr      => "amd64_insn_mode_t insn_mode, amd64_am_info_t am",
-	attr_type => "amd64_attr_t",
 	init_attr => "attr->data.insn_mode = insn_mode;\n"
 	            ."\tattr->am                  = am;\n"
 	            ."\tattr->data.has_am_info    = true;\n",
