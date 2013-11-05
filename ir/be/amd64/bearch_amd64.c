@@ -532,6 +532,16 @@ static int amd64_is_mux_allowed(ir_node *sel, ir_node *mux_false,
 	return false;
 }
 
+static const ir_settings_arch_dep_t amd64_arch_dep = {
+	1,     /* also use subs */
+	4,     /* maximum shifts */
+	63,    /* maximum shift amount */
+	NULL,  /* evaluate the instruction sequence */
+
+	1,  /* allow Mulhs */
+	1,  /* allow Mulus */
+	32, /* Mulh allowed up to 32 bit */
+};
 /**
  * Returns the libFirm configuration parameter for this backend.
  */
@@ -540,7 +550,7 @@ static const backend_params *amd64_get_backend_params(void) {
 		0,     /* little endian */
 		0,     /* PIC code not supported */
 		32,    /* modulo shift */
-		NULL,  /* will be set later */
+		&amd64_arch_dep,
 		amd64_is_mux_allowed,  /* parameter for if conversion */
 		64,    /* machine size */
 		NULL,  /* float arithmetic mode */
