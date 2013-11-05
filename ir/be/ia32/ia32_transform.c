@@ -488,9 +488,9 @@ static bool ia32_use_source_address_mode(ir_node *block, ir_node *node,
 	if (!is_Proj(node))
 		return false;
 	ir_node *load = get_Proj_pred(node);
-	long     pn   = get_Proj_proj(node);
-	if (!is_Load(load) || pn != pn_Load_res)
+	if (!is_Load(load))
 		return false;
+	assert(get_Proj_proj(node) == pn_Load_res);
 	if (get_nodes_block(load) != block)
 		return false;
 	ir_mode *mode = get_irn_mode(node);
