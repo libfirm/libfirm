@@ -72,6 +72,7 @@ static workset_t                   *ws;     /**< the main workset used while
 static be_uses_t                   *uses;   /**< env for the next-use magic */
 static spill_env_t                 *senv;   /**< see bespill.h */
 static ir_node                    **blocklist;
+static workset_t                   *temp_workset;
 
 static int                          move_spills      = true;
 static int                          respectloopdepth = true;
@@ -139,9 +140,8 @@ static void workset_insert(workset_t *workset, ir_node *val, bool spilled)
 	for (unsigned i = 0, len = workset->len; i < len; ++i) {
 		loc_t *loc = &workset->vals[i];
 		if (loc->node == val) {
-			if (spilled) {
+			if (spilled)
 				loc->spilled = true;
-			}
 			return;
 		}
 	}
@@ -246,19 +246,16 @@ typedef struct block_info_t {
 	workset_t *end_workset;
 } block_info_t;
 
-static block_info_t *new_block_info(void)
+static block_info_t *new_block_info(ir_node *block)
 {
-	return OALLOCZ(&obst, block_info_t);
+	block_info_t *info = OALLOCZ(&obst, block_info_t);
+	set_irn_link(block, info);
+	return info;
 }
 
 static inline block_info_t *get_block_info(const ir_node *block)
 {
 	return (block_info_t*)get_irn_link(block);
-}
-
-static inline void set_block_info(ir_node *block, block_info_t *info)
-{
-	set_irn_link(block, info);
 }
 
 /**
@@ -408,14 +405,11 @@ static available_t available_in_all_preds(workset_t* const* pred_worksets,
 				continue;
 
 			found = true;
+			avail_nowhere = false;
 			break;
 		}
 
-		if (found) {
-			avail_nowhere = false;
-		} else {
-			avail_everywhere = false;
-		}
+		avail_everywhere &= found;
 	}
 
 	if (avail_everywhere) {
@@ -698,9 +692,6 @@ static void process_block(ir_node *block)
 	DB((dbg, DBG_DECIDE, "\n"));
 	DB((dbg, DBG_DECIDE, "Decide for %+F\n", block));
 
-	block_info_t *block_info = new_block_info();
-	set_block_info(block, block_info);
-
 	DB((dbg, DBG_WSETS, "Start workset for %+F:\n", block));
 	ir_node *irn;
 	workset_foreach(ws, irn, iter) {
@@ -708,12 +699,12 @@ static void process_block(ir_node *block)
 		DB((dbg, DBG_WSETS, "  %+F (%u)\n", irn, workset_get_time(ws, iter)));
 	}
 
+	block_info_t *block_info = new_block_info(block);
 	block_info->start_workset = workset_clone(ws);
 
 	/* process the block from start to end */
 	DB((dbg, DBG_WSETS, "Processing...\n"));
-	/* TODO: this leaks (into the obstack)... */
-	workset_t *new_vals = new_workset();
+	workset_t *new_vals = temp_workset;
 
 	sched_foreach(block, irn) {
 		assert(workset_get_length(ws) <= n_regs);
@@ -760,14 +751,10 @@ static void fix_block_borders(ir_node *block, void *data)
 	DB((dbg, DBG_FIX, "\n"));
 	DB((dbg, DBG_FIX, "Fixing %+F\n", block));
 
-	int arity = get_irn_arity(block);
-	/* can happen for endless loops */
-	if (arity == 0)
-		return;
-
 	/* process all pred blocks */
 	workset_t *start_workset = get_block_info(block)->start_workset;
-	for (int i = 0; i < arity; ++i) {
+	for (int i = 0, n_cfgpreds = get_Block_n_cfgpreds(block); i < n_cfgpreds;
+	     ++i) {
 		ir_node   *pred = get_Block_cfgpred_block(block, i);
 		workset_t *pred_end_workset = get_block_info(pred)->end_workset;
 
@@ -783,7 +770,7 @@ static void fix_block_borders(ir_node *block, void *data)
 					found = true;
 					break;
 				}
-				/* note that we do not look at phi inputs, becuase the values
+				/* note that we do not look at phi inputs, because the values
 				 * will be either live-end and need no spill or
 				 * they have other users in which must be somewhere else in the
 				 * workset */
@@ -795,7 +782,7 @@ static void fix_block_borders(ir_node *block, void *data)
 			if (move_spills && be_is_live_in(lv, block, node)
 					&& !pred_end_workset->vals[iter].spilled) {
 				ir_node *insert_point;
-				if (arity > 1) {
+				if (n_cfgpreds > 1) {
 					insert_point = be_get_end_of_block_insertion_point(pred);
 					insert_point = sched_prev(insert_point);
 				} else {
@@ -861,14 +848,15 @@ static void be_spill_belady(ir_graph *irg, const arch_register_class_t *rcls)
 	/* init belady env */
 	stat_ev_tim_push();
 	obstack_init(&obst);
-	cls       = rcls;
-	lv        = be_get_irg_liveness(irg);
-	n_regs    = be_get_n_allocatable_regs(irg, cls);
-	ws        = new_workset();
-	uses      = be_begin_uses(irg, lv);
-	loop_ana  = be_new_loop_pressure(irg, cls);
-	senv      = be_new_spill_env(irg);
-	blocklist = be_get_cfgpostorder(irg);
+	cls          = rcls;
+	lv           = be_get_irg_liveness(irg);
+	n_regs       = be_get_n_allocatable_regs(irg, cls);
+	ws           = new_workset();
+	uses         = be_begin_uses(irg, lv);
+	loop_ana     = be_new_loop_pressure(irg, cls);
+	senv         = be_new_spill_env(irg);
+	blocklist    = be_get_cfgpostorder(irg);
+	temp_workset = new_workset();
 	stat_ev_tim_pop("belady_time_init");
 
 	stat_ev_tim_push();
