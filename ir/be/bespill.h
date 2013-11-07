@@ -17,18 +17,7 @@
 extern int be_coalesce_spill_slots;
 extern int be_do_remats;
 
-/**
- * An entry in the list of spill-algorithms.
- */
-typedef struct be_spiller_t {
-	/**
-	 * The spill function.
-	 *
-	 * @param irg   the graph to spill on
-	 * @param cls   the register class to spill
-	 */
-	void (*spill)(ir_graph *irg, const arch_register_class_t *cls);
-} be_spiller_t;
+typedef void (*be_spill_func)(ir_graph *irg, const arch_register_class_t *cls);
 
 /**
  * Register a new spill algorithm.
@@ -37,7 +26,7 @@ typedef struct be_spiller_t {
  *                 used to select it
  * @param spiller  a spill entry
  */
-void be_register_spiller(const char *name, be_spiller_t *spiller);
+void be_register_spiller(const char *name, be_spill_func spiller);
 
 /**
  * Execute the selected spill algorithm

@@ -888,13 +888,10 @@ static void be_spill_belady(ir_graph *irg, const arch_register_class_t *rcls)
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spillbelady)
 void be_init_spillbelady(void)
 {
-	static be_spiller_t belady_spiller = {
-		be_spill_belady
-	};
 	lc_opt_entry_t *be_grp       = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_entry_t *belady_group = lc_opt_get_grp(be_grp, "belady");
 	lc_opt_add_table(belady_group, options);
 
-	be_register_spiller("belady", &belady_spiller);
+	be_register_spiller("belady", be_spill_belady);
 	FIRM_DBG_REGISTER(dbg, "firm.be.spill.belady");
 }
