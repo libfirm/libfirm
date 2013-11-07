@@ -40,28 +40,25 @@ typedef struct be_pre_spill_env_t {
 static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 {
 	const arch_register_class_t *cls = env->cls;
-	ir_node  *block      = get_nodes_block(node);
-	const ir_graph *irg  = env->irg;
-	be_irg_t       *birg = be_birg_from_irg(irg);
-	be_lv_t *lv          = be_get_irg_liveness(irg);
-	unsigned *def_constr = NULL;
-	int       arity      = get_irn_arity(node);
+	ir_node        *block      = get_nodes_block(node);
+	const ir_graph *irg        = env->irg;
+	be_irg_t       *birg       = be_birg_from_irg(irg);
+	be_lv_t        *lv         = be_get_irg_liveness(irg);
+	unsigned       *def_constr = NULL;
 
 	/* Insert a copy for constraint inputs attached to a value which can't
 	 * fulfill the constraint
 	 * (typical example: stack pointer as input to copyb)
 	 * TODO: This really just checks precolored registers at the moment and
-	 *       ignores the general case of not matching in/out constraints
-	 */
+	 *       ignores the general case of not matching in/out constraints */
+	int const arity = get_irn_arity(node);
 	for (int i = 0; i < arity; ++i) {
-		ir_node                   *op  = get_irn_n(node, i);
 		const arch_register_req_t *req = arch_get_irn_register_req_in(node, i);
-		const arch_register_t     *reg;
-		ir_node                   *copy;
-
 		if (req->cls != cls)
 			continue;
-		reg = arch_get_irn_register(op);
+
+		ir_node               *op  = get_irn_n(node, i);
+		const arch_register_t *reg = arch_get_irn_register(op);
 		if (reg == NULL)
 			continue;
 
@@ -75,7 +72,7 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 		if (rbitset_is_set(req->limited, reg->index))
 			continue;
 
-		copy = be_new_Copy(block, op);
+		ir_node *copy = be_new_Copy(block, op);
 		stat_ev_int("constr_copy", 1);
 		sched_add_before(node, copy);
 		set_irn_n(node, i, copy);
@@ -89,16 +86,14 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 			continue;
 
 		for (int i2 = i_ + 1; i2 < arity; ++i2) {
-			ir_node *in2;
-			const arch_register_req_t *req2;
-
-			req2 = arch_get_irn_register_req_in(node, i2);
+			const arch_register_req_t *req2
+				= arch_get_irn_register_req_in(node, i2);
 			if (req2->cls != cls)
 				continue;
 			if (!arch_register_req_is(req2, limited))
 				continue;
 
-			in2 = get_irn_n(node, i2);
+			ir_node *in2 = get_irn_n(node, i2);
 			if (in2 != in)
 				continue;
 
