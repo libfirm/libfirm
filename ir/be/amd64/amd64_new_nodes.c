@@ -10,6 +10,7 @@
  *          assembler irg.
  */
 #include <stdlib.h>
+#include <inttypes.h>
 
 #include "error.h"
 #include "irprog_t.h"
@@ -27,12 +28,6 @@
 #include "amd64_nodes_attr.h"
 #include "amd64_new_nodes.h"
 #include "gen_amd64_regalloc_if.h"
-
-void set_amd64_ls_mode(ir_node *node, ir_mode *mode)
-{
-  amd64_attr_t *attr = get_amd64_attr(node);
-  attr->ls_mode = mode;
-}
 
 /**
  * Dumper interface for dumping amd64 nodes in vcg.
@@ -60,14 +55,30 @@ static void amd64_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 		break;
 
 	case dump_node_nodeattr_txt:
-
-		/* TODO: dump some attributes which should show up */
-		/* in node name in dump (e.g. consts or the like)  */
-
 		break;
 
 	case dump_node_info_txt:
 		arch_dump_reqs_and_registers(F, n);
+		const amd64_attr_t *attr = get_amd64_attr_const(n);
+		fputs("size = ", F);
+		switch (attr->data.insn_mode) {
+		case INSN_MODE_8:  fputs("8\n", F); break;
+		case INSN_MODE_16: fputs("16\n", F); break;
+		case INSN_MODE_32: fputs("32\n", F); break;
+		case INSN_MODE_64: fputs("64\n", F); break;
+		}
+		fputs("mode = ", F);
+		switch (attr->data.op_mode) {
+		case AMD64_MODE_REG_REG:  fputs("reg+reg\n", F); break;
+		case AMD64_MODE_REG_IMM:  fputs("reg+imm\n", F); break;
+		case AMD64_MODE_LOAD_REG: fputs("load+reg\n", F); break;
+		default: fputs("unknown\n", F); break;
+		}
+		fprintf(F, "reg input: %d\n", attr->am.reg_input);
+		fprintf(F, "base input: %d\n", attr->am.base_input);
+		fprintf(F, "index input: %d\n", attr->am.index_input);
+		ir_fprintf(F, "am imm: %+F%+" PRId32 "\n", attr->am.entity,
+		           attr->am.offset);
 		break;
 	}
 }
@@ -186,8 +197,7 @@ static int cmp_amd64_attr(const ir_node *a, const ir_node *b)
 	const amd64_attr_t *attr_b = get_amd64_attr_const(b);
 	return cmp_am(&attr_a->am, &attr_b->am)
 	    || attr_a->data.insn_mode != attr_b->data.insn_mode
-	    || attr_a->data.needs_frame_ent != attr_b->data.needs_frame_ent
-	    || attr_a->ls_mode != attr_b->ls_mode;
+	    || attr_a->data.needs_frame_ent != attr_b->data.needs_frame_ent;
 }
 
 static int cmp_amd64_movimm_attr(const ir_node *const a,

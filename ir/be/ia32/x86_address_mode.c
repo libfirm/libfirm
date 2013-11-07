@@ -27,37 +27,40 @@
 
 static bitset_t *non_address_mode_nodes;
 
+static bool tarval_possible(ir_tarval *tv)
+{
+	if (!tarval_is_long(tv))
+		return false;
+	long    val   = get_tarval_long(tv);
+	int32_t val32 = (long)val;
+	return val == (long)val32;
+}
+
 /**
  * Recursive worker for checking if a DAG with root node can be represented as
  * a simple immediate.
  *
  * @param node      the node
- * @param entities  number of entities found so far
  * @param negate    if set, the immediate must be negated
  *
- * @return non-zero if the DAG represents an immediate, 0 else
+ * @return true if the DAG represents an immediate, false else
  */
-static bool do_is_immediate(const ir_node *node, int *entities, bool negate)
+static bool do_is_immediate(const ir_node *node, bool *symconst_allowed,
+                            bool negate)
 {
 	switch (get_irn_opcode(node)) {
 	case iro_Const:
-		/* Consts are typically immediates */
-		if (!tarval_is_long(get_Const_tarval(node))) {
-#ifdef DEBUG_libfirm
-			ir_fprintf(stderr,
-			           "Optimisation warning tarval of %+F(%+F) is not a long.\n",
-			           node, get_irn_irg(node));
-#endif
-			return false;
-		}
-		return true;
+		return tarval_possible(get_Const_tarval(node));
 	case iro_Address:
-		/* the first Address of a DAG can be folded into an immediate */
-		/* unfortunately the assembler/linker doesn't support -entity */
+		/* the first SymConst of a DAG can be fold into an immediate */
+		/* unfortunately the assembler/linker doesn't support -symconst */
 		if (negate)
 			return false;
-		if (++*entities > 1)
+		if (!*symconst_allowed)
 			return false;
+		/* only 1 symconst allowed */
+		*symconst_allowed = false;
+
 		return true;
 
 	case iro_Unknown:
@@ -71,10 +74,11 @@ static bool do_is_immediate(const ir_node *node, int *entities, bool negate)
 			return false;
 
 		ir_node *left = get_binop_left(node);
-		if (!do_is_immediate(left, entities, negate))
+		if (!do_is_immediate(left, symconst_allowed, negate))
 			return false;
 		ir_node *right = get_binop_right(node);
-		if (!do_is_immediate(right, entities, is_Sub(node) ? !negate : negate))
+		if (!do_is_immediate(right, symconst_allowed,
+		                     is_Sub(node) ? !negate : negate))
 			return false;
 
 		return true;
@@ -92,10 +96,11 @@ static bool do_is_immediate(const ir_node *node, int *entities, bool negate)
  * @param node    the node
  * @param negate  if set, the immediate must be negated
  */
-static int is_immediate(x86_address_t *addr, const ir_node *node, bool negate)
+static int is_immediate(const ir_node *node, bool negate,
+                        bool init_symconst_allowed)
 {
-	int entities = addr->entity != NULL;
-	return do_is_immediate(node, &entities, negate);
+	bool symconst_allowed = init_symconst_allowed;
+	return do_is_immediate(node, &symconst_allowed, negate);
 }
 
 /**
@@ -172,20 +177,28 @@ static ir_node *eat_immediates(x86_address_t *addr, ir_node *node,
 	if (is_Add(node)) {
 		ir_node *left  = get_Add_left(node);
 		ir_node *right = get_Add_right(node);
+		bool symconst_ok =
+			addr->entity != NULL &&
+			((flags & x86_create_am_entities_ip_relative) == 0
+			 || (addr->base == NULL));
 
-		if (is_immediate(addr, left, false)) {
+		if (is_immediate(left, false, symconst_ok)) {
 			eat_immediate(addr, left, false);
 			return eat_immediates(addr, right, x86_create_am_normal);
 		}
-		if (is_immediate(addr, right, false)) {
+		if (is_immediate(right, false, symconst_ok)) {
 			eat_immediate(addr, right, false);
 			return eat_immediates(addr, left, x86_create_am_normal);
 		}
 	} else if (is_Sub(node)) {
 		ir_node *left  = get_Sub_left(node);
 		ir_node *right = get_Sub_right(node);
+		bool symconst_ok =
+			addr->entity != NULL &&
+			((flags & x86_create_am_entities_ip_relative) == 0
+			 || (addr->base == NULL));
 
-		if (is_immediate(addr, right, true)) {
+		if (is_immediate(right, true, symconst_ok)) {
 			eat_immediate(addr, right, true);
 			return eat_immediates(addr, left, x86_create_am_normal);
 		}
@@ -203,6 +216,10 @@ static ir_node *eat_immediates(x86_address_t *addr, ir_node *node,
  */
 static bool eat_shl(x86_address_t *addr, ir_node *node)
 {
+	/* we can only eat a shl if we don't have a scale or index set yet */
+	if (addr->scale != 0 || addr->index != NULL)
+		return false;
+
 	ir_node *shifted_val;
 	long     val;
 	if (is_Shl(node)) {
@@ -237,12 +254,8 @@ static bool eat_shl(x86_address_t *addr, ir_node *node)
 		return false;
 	}
 
-	/* we can only eat a shl if we don't have a scale or index set yet */
-	if (addr->scale != 0 || addr->index != NULL)
-		return false;
 	if (x86_is_non_address_mode_node(node))
 		return false;
-
 #ifndef AGGRESSIVE_AM
 	if (get_irn_n_edges(node) > 1)
 		return false;
@@ -289,7 +302,7 @@ static ir_node *skip_downconv(ir_node *node)
 void x86_create_address_mode(x86_address_t *addr, ir_node *node,
                              x86_create_am_flags_t flags)
 {
-	if (is_immediate(addr, node, false)) {
+	if (is_immediate(node, false, true)) {
 		eat_immediate(addr, node, false);
 		return;
 	}
@@ -333,7 +346,8 @@ void x86_create_address_mode(x86_address_t *addr, ir_node *node,
 		 * instructions, because we want the former as Lea x, x, not Shl x, 1 */
 		if (eat_shl(addr, node))
 			return;
-	} else if (is_immediate(addr, node, false)) {
+	} else if (is_immediate(node, false, addr->entity == NULL)) {
+		/* we can hit this case in x86_create_am_force mode */
 		eat_immediate(addr, node, false);
 		return;
 	} else if (be_is_FrameAddr(node)) {
@@ -347,9 +361,6 @@ void x86_create_address_mode(x86_address_t *addr, ir_node *node,
 			left  = skip_downconv(left);
 			right = skip_downconv(right);
 		}
-
-		assert(flags & x86_create_am_force || !is_immediate(addr, left,  false));
-		assert(flags & x86_create_am_force || !is_immediate(addr, right, false));
 
 		if (eat_shl(addr, left)) {
 			left = NULL;
@@ -426,8 +437,8 @@ static bool value_last_used_here(be_lv_t *lv, ir_node *here, ir_node *value)
 
 static bool simple_is_immediate(const ir_node *node)
 {
-	int entities = 0;
-	return do_is_immediate(node, &entities, false);
+	bool symconst_ok = true;
+	return do_is_immediate(node, &symconst_ok, false);
 }
 
 /**

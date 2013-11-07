@@ -22,14 +22,16 @@
  * @brief   This file implements functions to finalize the irg for emit.
  */
 #include "amd64_finish.h"
+#include "amd64_new_nodes.h"
+#include "amd64_nodes_attr.h"
 #include "bearch.h"
 #include "benode.h"
 #include "besched.h"
 #include "debug.h"
 #include "error.h"
-#include "amd64_nodes_attr.h"
 #include "gen_amd64_new_nodes.h"
 #include "irgwalk.h"
+#include "util.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -44,6 +46,71 @@ static unsigned get_first_same(arch_register_req_t const *const req)
 			return i;
 	}
 	panic("same position not found");
+}
+
+static bool try_swap_inputs(ir_node *node)
+{
+	/* commutative operation, just switch the inputs */
+	if (is_amd64_Add(node) || is_amd64_And(node) || is_amd64_Or(node)
+	 || is_amd64_Xor(node) || is_amd64_IMul(node)) {
+		/* TODO: support Cmp input swapping */
+		ir_node *in0 = get_irn_n(node, 0);
+		ir_node *in1 = get_irn_n(node, 1);
+		set_irn_n(node, 0, in1);
+		set_irn_n(node, 1, in0);
+		return true;
+	}
+	return false;
+}
+
+static ir_node *amd64_turn_back_am(ir_node *node)
+{
+	dbg_info     *dbgi  = get_irn_dbg_info(node);
+	ir_node      *block = get_nodes_block(node);
+	amd64_attr_t *attr  = get_amd64_attr(node);
+
+	amd64_am_info_t new_am = attr->am;
+	ir_node *load_in[3];
+	int      load_arity = 0;
+	if (attr->am.base_input != NO_INPUT && attr->am.base_input != RIP_INPUT) {
+		new_am.base_input = load_arity;
+		load_in[load_arity++] = get_irn_n(node, attr->am.base_input);
+	}
+	if (attr->am.index_input != NO_INPUT) {
+		new_am.index_input = load_arity;
+		load_in[load_arity++] = get_irn_n(node, attr->am.index_input);
+	}
+	assert(attr->am.mem_input != NO_INPUT);
+	new_am.mem_input = load_arity;
+	load_in[load_arity++] = get_irn_n(node, attr->am.mem_input);
+
+	ir_node *load = new_bd_amd64_Movz(dbgi, block, load_arity, load_in,
+	                                  attr->data.insn_mode, AMD64_MODE_LOAD,
+	                                  new_am);
+	ir_node *load_res = new_r_Proj(load, mode_Lu, pn_amd64_Movz_res);
+
+	/* change operation */
+	ir_node *new_in[2];
+	new_in[0] = get_irn_n(node, attr->am.reg_input);
+	new_in[1] = load_res;
+	set_irn_in(node, ARRAY_SIZE(new_in), new_in);
+	attr->data.op_mode = AMD64_MODE_REG_REG;
+	attr->am.base_input  = NO_INPUT;
+	attr->am.index_input = NO_INPUT;
+
+	/* rewire mem-proj */
+	foreach_out_edge(node, edge) {
+		ir_node *out = get_edge_src_irn(edge);
+		if (get_irn_mode(out) == mode_M) {
+			set_Proj_pred(out, load);
+			set_Proj_proj(out, pn_amd64_Movz_M);
+			break;
+		}
+	}
+
+	if (sched_is_scheduled(node))
+		sched_add_before(node, load);
+	return load_res;
 }
 
 /**
@@ -67,6 +134,34 @@ static void assure_should_be_same_requirements(ir_node *const node)
 			= arch_get_irn_register_out(node, i);
 		if (in_reg == out_reg)
 			continue;
+
+		/* test if any other input is using the out register */
+		for (int i2 = 0, arity = get_irn_arity(node); i2 < arity; ++i2) {
+			const arch_register_t *reg = arch_get_irn_register_in(node, i2);
+			if (reg == out_reg && (unsigned)i2 != same_pos) {
+				if (!is_amd64_irn(node))
+					panic("Can't fulfill should_be_same on non-amd64 node");
+				/* see what role this register has */
+				const amd64_attr_t *attr = get_amd64_attr_const(node);
+				if (attr->data.op_mode == AMD64_MODE_LOAD
+				 || attr->data.op_mode == AMD64_MODE_REG
+				 || attr->data.op_mode == AMD64_MODE_REG_IMM) {
+					panic("unexpected op_mode");
+				} else if (attr->data.op_mode == AMD64_MODE_REG_REG) {
+swap:;
+					bool res = try_swap_inputs(node);
+					if (res)
+						return;
+					panic("couldn't swap inputs of %+F", node);
+				} else {
+					assert(attr->data.op_mode == AMD64_MODE_LOAD_REG);
+					/* extract load into an own instruction */
+					ir_node *res = amd64_turn_back_am(node);
+					arch_set_irn_register(res, out_reg);
+					goto swap;
+				}
+			}
+		}
 
 		ir_node *const block = get_nodes_block(node);
 		ir_node *const copy  = be_new_Copy(block, in_node);

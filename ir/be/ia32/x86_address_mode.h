@@ -35,12 +35,14 @@ typedef struct x86_address_t {
  * Additional flags for the address mode creation.
  */
 typedef enum x86_create_am_flags_t {
-	x86_create_am_normal     = 0,       /**< Normal operation. */
-	x86_create_am_force      = 1U << 0, /**< Ignore the marking of node as a
-	                                         non-address-mode node. */
-	x86_create_am_double_use = 1U << 1  /**< Fold AM, even if the root of
-	                                         address calculation has two users.
-	                                         This is useful for dest AM. */
+	x86_create_am_normal     = 0,
+	/** Ignore non-address-mode markings on the root node. */
+	x86_create_am_force      = 1U << 0,
+	/** Fold AM, even if the root node has two users. */
+	x86_create_am_double_use = 1U << 1,
+	/** Global entities need to be addressed relative to the instruction
+	 * pointer */
+	x86_create_am_entities_ip_relative = 1U << 2,
 } x86_create_am_flags_t;
 
 /**

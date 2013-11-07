@@ -74,9 +74,8 @@ PushAM => {
 	outs      => [ "stack", "M" ],
 	attr      => "amd64_insn_mode_t insn_mode, amd64_am_info_t am",
 	init_attr => "attr->data.insn_mode = insn_mode;\n"
-	            ."\tattr->am                  = am;\n"
-	            ."\tattr->data.has_am_info    = true;\n",
-	emit      => "push%M %AM",
+	            ."\tattr->am             = am;\n",
+	emit      => "push%M %A",
 },
 
 PopAM => {
@@ -87,35 +86,37 @@ PopAM => {
 	outs      => [ "stack", "M" ],
 	attr      => "amd64_insn_mode_t insn_mode, amd64_am_info_t am",
 	init_attr => "attr->data.insn_mode = insn_mode;\n"
-	            ."\tattr->am                  = am;\n"
-	            ."\tattr->data.has_am_info    = true;\n",
-	emit      => "pop%M %AM",
+	            ."\tattr->am             = am;\n",
+	emit      => "pop%M %A",
 },
 
 Add => {
-	irn_flags  => [ "rematerializable" ],
-	state      => "exc_pinned",
-	attr       => "amd64_insn_mode_t insn_mode",
-	init_attr  => "attr->data.insn_mode = insn_mode;",
-	reg_req    => { in => [ "gp", "gp" ], out => [ "in_r1 !in_r2" ] },
-	ins        => [ "left", "right" ],
-	outs       => [ "res" ],
-	emit       => "add%M %S1, %D0",
-	mode       => $mode_gp,
-	modified_flags => 1,
+	irn_flags => [ "rematerializable" ],
+	state     => "exc_pinned",
+	reg_req   => { out => [ "gp", "flags", "none" ] },
+	arity     => "variable",
+	outs      => [ "res", "flags", "M" ],
+	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_am_info_t am",
+	init_attr => "attr->data.insn_mode = insn_mode;\n"
+	            ."\tattr->data.op_mode   = op_mode;\n"
+	            ."\tattr->am             = am;\n",
+	emit      => "add%M %AM",
+	modified_flags => $status_flags,
 },
 
 And => {
-	irn_flags  => [ "rematerializable" ],
-	state      => "exc_pinned",
-	attr       => "amd64_insn_mode_t insn_mode",
-	init_attr  => "attr->data.insn_mode = insn_mode;",
-	reg_req    => { in => [ "gp", "gp" ], out => [ "in_r1 !in_r2" ] },
-	ins        => [ "left", "right" ],
-	outs       => [ "res" ],
-	emit       => "and%M %S1, %D0",
-	mode       => $mode_gp,
-	modified_flags => 1,
+	irn_flags => [ "rematerializable" ],
+	state     => "exc_pinned",
+	reg_req   => { out => [ "gp", "flags", "none" ] },
+	arity     => "variable",
+	outs      => [ "res", "flags", "M" ],
+	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_am_info_t am",
+	init_attr => "attr->data.insn_mode = insn_mode;\n"
+	            ."\tattr->data.op_mode   = op_mode;\n"
+	            ."\tattr->am             = am;\n",
+	emit      => "and%M %AM",
+	modified_flags => $status_flags,
+
 },
 
 Div => {
@@ -145,62 +146,69 @@ IDiv => {
 IMul => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	attr      => "amd64_insn_mode_t insn_mode",
-	init_attr => "attr->data.insn_mode = insn_mode;",
-	reg_req   => { in  => [ "gp", "gp" ], out => [ "in_r1 !in_r2" ] },
-	ins       => [ "left", "right" ],
-	outs      => [ "res" ],
-	emit      => "imul%M %S1, %D0",
-	mode      => $mode_gp,
-	am        => "source,binary",
-	modified_flags => $status_flags
+	reg_req   => { out => [ "gp", "flags", "none" ] },
+	outs      => [ "res", "flags", "M" ],
+	arity     => "variable",
+	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_am_info_t am",
+	init_attr => "attr->data.insn_mode = insn_mode;\n"
+	            ."\tattr->data.op_mode   = op_mode;\n"
+	            ."\tattr->am             = am;\n",
+	emit      => "imul%M %AM",
+	modified_flags => $status_flags,
 },
 
 Or => {
-	irn_flags  => [ "rematerializable" ],
-	state      => "exc_pinned",
-	attr       => "amd64_insn_mode_t insn_mode",
-	init_attr  => "attr->data.insn_mode = insn_mode;",
-	reg_req    => { in => [ "gp", "gp" ], out => [ "in_r1 !in_r2" ] },
-	ins        => [ "left", "right" ],
-	outs       => [ "res" ],
-	emit       => "or%M %S1, %D0",
-	mode       => $mode_gp,
-	modified_flags => 1,
+	irn_flags => [ "rematerializable" ],
+	state     => "exc_pinned",
+	reg_req   => { out => [ "gp", "flags", "none" ] },
+	outs      => [ "res", "flags", "M" ],
+	arity     => "variable",
+	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_am_info_t am",
+	init_attr => "attr->data.insn_mode = insn_mode;\n"
+	            ."\tattr->data.op_mode   = op_mode;\n"
+	            ."\tattr->am             = am;\n",
+	emit      => "or%M %AM",
+	modified_flags => $status_flags,
 },
 
 Shl => {
 	irn_flags => [ "rematerializable" ],
-	attr      => "amd64_insn_mode_t insn_mode",
-	init_attr => "attr->data.insn_mode = insn_mode;",
-	reg_req   => { in => [ "gp", "rcx" ], out => [ "in_r1 !in_r2" ] },
-	ins       => [ "val", "count" ],
+	reg_req   => { out => [ "gp" ] },
 	out       => [ "res" ],
-	emit      => "shl%M %%cl, %D0",
+	arity     => "variable",
+	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, uint8_t immediate",
+	init_attr => "attr->data.insn_mode = insn_mode;\n"
+	            ."\tattr->data.op_mode   = op_mode;\n"
+	            ."\tattr->am.offset      = immediate;\n",
+	emit      => "shl%M %SO",
 	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
 
 Shr => {
 	irn_flags => [ "rematerializable" ],
-	attr      => "amd64_insn_mode_t insn_mode",
-	init_attr => "attr->data.insn_mode = insn_mode;",
-	reg_req   => { in => [ "gp", "rcx" ], out => [ "in_r1 !in_r2" ] },
-	ins       => [ "val", "count" ],
+	reg_req   => { out => [ "gp" ] },
 	out       => [ "res" ],
-	emit      => "shr%M %%cl, %D0",
+	arity     => "variable",
+	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, uint8_t immediate",
+	init_attr => "attr->data.insn_mode = insn_mode;\n"
+	            ."\tattr->data.op_mode   = op_mode;\n"
+	            ."\tattr->am.offset      = immediate;\n",
+	emit      => "shr%M %SO",
 	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
 
 Sar => {
 	irn_flags => [ "rematerializable" ],
-	attr      => "amd64_insn_mode_t insn_mode",
-	init_attr => "attr->data.insn_mode = insn_mode;",
-	reg_req   => { in => [ "gp", "rcx" ], out => [ "in_r1 !in_r2" ] },
-	ins       => [ "val", "count" ],
+	reg_req   => { out => [ "gp" ] },
 	out       => [ "res" ],
-	emit      => "sar%M %%cl, %D0",
+	arity     => "variable",
+	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, uint8_t immediate",
+	init_attr => "attr->data.insn_mode = insn_mode;\n"
+	            ."\tattr->data.op_mode   = op_mode;\n"
+	            ."\tattr->am.offset      = immediate;\n",
+	emit      => "sar%M %SO",
 	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
@@ -244,16 +252,17 @@ Not => {
 },
 
 Xor => {
-	irn_flags  => [ "rematerializable" ],
-	attr       => "amd64_insn_mode_t insn_mode",
-	init_attr  => "attr->data.insn_mode = insn_mode;",
-	state      => "exc_pinned",
-	reg_req    => { in => [ "gp", "gp" ], out => [ "in_r1 !in_r2" ] },
-	ins        => [ "left", "right" ],
-	outs       => [ "res" ],
-	emit       => "xor%M %S1, %D0",
-	mode       => $mode_gp,
-	modified_flags => 1,
+	irn_flags => [ "rematerializable" ],
+	state     => "exc_pinned",
+	reg_req   => { out => [ "gp", "flags", "none" ] },
+	arity     => "variable",
+	outs      => [ "res", "flags", "M" ],
+	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_am_info_t am",
+	init_attr => "attr->data.insn_mode = insn_mode;\n"
+	            ."\tattr->data.op_mode   = op_mode;\n"
+	            ."\tattr->am             = am;\n",
+	emit      => "xor%M %AM",
+	modified_flags => $status_flags,
 },
 
 Xor0 => {
@@ -277,15 +286,27 @@ Const => {
 	mode      => $mode_gp,
 },
 
-Conv => {
+Movs => {
 	state     => "exc_pinned",
-	attr      => "ir_mode *smaller_mode",
-	init_attr => "attr->ls_mode = smaller_mode;",
-	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-	ins       => [ "val" ],
-	outs      => [ "res" ],
-	emit      => "mov%c%M %#S0, %D0",
-	mode      => $mode_gp,
+	reg_req   => { out => [ "gp", "none", "none" ] },
+	outs      => [ "res", "unused", "M" ],
+	arity     => "variable",
+	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_am_info_t am",
+	init_attr => "attr->data.insn_mode = insn_mode;\n"
+	            ."\tattr->data.op_mode   = op_mode;\n"
+	            ."\tattr->am             = am;\n",
+	emit      => "movs%Mq %AM, %^D0",
+},
+
+Movz => {
+	state     => "exc_pinned",
+	reg_req   => { out => [ "gp", "none", "none" ] },
+	outs      => [ "res", "unused", "M" ],
+	arity     => "variable",
+	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_am_info_t am",
+	init_attr => "attr->data.insn_mode = insn_mode;\n"
+	            ."\tattr->data.op_mode   = op_mode;\n"
+	            ."\tattr->am             = am;\n",
 },
 
 Jmp => {
@@ -298,14 +319,14 @@ Jmp => {
 Cmp => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in  => [ "gp", "gp" ],
-	               out => [ "flags" ] },
-	ins       => [ "left", "right" ],
-	outs      => [ "eflags" ],
-	emit      => "cmp%M %S1, %S0",
-	attr      => "amd64_insn_mode_t insn_mode",
-	init_attr => "attr->data.insn_mode = insn_mode;\n",
-	mode      => $mode_flags,
+	reg_req   => { out => [ "none", "flags", "none" ] },
+	arity     => "variable",
+	outs      => [ "dummy", "flags", "M" ],
+	attr       => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_am_info_t am",
+	init_attr => "attr->data.insn_mode = insn_mode;\n"
+	            ."\tattr->data.op_mode   = op_mode;\n"
+	            ."\tattr->am             = am;\n",
+	emit      => "cmp%M %AM",
 	modified_flags => 1,
 },
 
@@ -316,9 +337,8 @@ Lea => {
 	attr      => "amd64_insn_mode_t insn_mode, amd64_am_info_t am",
 	reg_req   => { out => [ "gp", "flags", "none" ] },
 	init_attr => "attr->data.insn_mode = insn_mode;\n"
-	            ."\tattr->am             = am;\n"
-	            ."\tattr->data.has_am_info    = true;\n",
-	emit      => "lea%M %AM, %D0",
+	            ."\tattr->am             = am;\n",
+	emit      => "lea%M %A, %D0",
 	mode      => $mode_gp,
 },
 
@@ -333,31 +353,6 @@ Jcc => {
 	mode      => "mode_T",
 },
 
-LoadZ => {
-	op_flags  => [ "uses_memory" ],
-	state     => "exc_pinned",
-	reg_req   => { out => [ "gp", "none" ] },
-	arity     => "variable",
-	outs      => [ "res",  "M" ],
-	attr      => "amd64_insn_mode_t insn_mode, amd64_am_info_t am",
-	init_attr => "attr->data.insn_mode = insn_mode;\n"
-	            ."\tattr->am                  = am;\n"
-	            ."\tattr->data.has_am_info    = true;\n",
-},
-
-LoadS => {
-	op_flags  => [ "uses_memory" ],
-	state     => "exc_pinned",
-	reg_req   => { out => [ "gp", "none" ] },
-	arity     => "variable",
-	outs      => [ "res",  "M" ],
-	attr      => "amd64_insn_mode_t insn_mode, amd64_am_info_t am",
-	init_attr => "attr->data.insn_mode = insn_mode;\n"
-	            ."\tattr->am                  = am;\n"
-	            ."\tattr->data.has_am_info    = true;\n",
-	emit      => "movs%Mq %AM, %^D0"
-},
-
 Store => {
 	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
@@ -366,10 +361,10 @@ Store => {
 	outs      => [ "M" ],
 	attr      => "amd64_insn_mode_t insn_mode, amd64_am_info_t am",
 	init_attr => "attr->data.insn_mode = insn_mode;\n"
-	            ."\tattr->am                  = am;\n"
-	            ."\tattr->data.has_am_info    = true;\n",
+	            ."\tattr->am             = am;\n",
 	mode      => "mode_M",
-	emit      => "mov%M %S0, %AM"
+	emit      => "mov%M %S0, %A",
+	mode      => "mode_M",
 },
 
 SwitchJmp => {
@@ -386,6 +381,9 @@ Call => {
 	state     => "exc_pinned",
 	arity     => "variable",
 	out_arity => "variable",
+	attr      => "amd64_am_info_t am",
+	init_attr => "attr->am = am;\n",
+	emit      => "call %A",
 },
 
 Start => {

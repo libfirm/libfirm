@@ -8,6 +8,7 @@
  * @brief   emit assembler for a backend graph
  */
 #include <limits.h>
+#include <inttypes.h>
 
 #include "be_t.h"
 #include "error.h"
@@ -50,21 +51,6 @@ static void amd64_emit_insn_mode_suffix(amd64_insn_mode_t mode)
 	case INSN_MODE_64: c = 'q'; break;
 	default:
 		panic("invalid insn mode");
-	}
-	be_emit_char(c);
-}
-
-static void amd64_emit_mode_suffix(const ir_mode *mode)
-{
-	assert(mode_is_int(mode) || mode_is_reference(mode));
-	char c;
-	switch (get_mode_size_bits(mode)) {
-	case 8:  c = 'b'; break;
-	case 16: c = 'w'; break;
-	case 32: c = 'l'; break;
-	case 64: c = 'q'; break;
-	default:
-		panic("Can't output mode_suffix for %+F", mode);
 	}
 	be_emit_char(c);
 }
@@ -144,21 +130,6 @@ static void emit_register(const arch_register_t *reg)
 	be_emit_string(reg->name);
 }
 
-static void emit_register_mode(const arch_register_t *reg, const ir_mode *mode)
-{
-	const char *name;
-	switch (get_mode_size_bits(mode)) {
-	case 8:  name = get_8bit_name(reg);  break;
-	case 16: name = get_16bit_name(reg); break;
-	case 32: name = get_32bit_name(reg); break;
-	case 64: name = reg->name;           break;
-	default:
-		panic("invalid mode");
-	}
-	be_emit_char('%');
-	be_emit_string(name);
-}
-
 static void emit_register_insn_mode(const arch_register_t *reg,
                                     amd64_insn_mode_t mode)
 {
@@ -177,7 +148,6 @@ static void emit_register_insn_mode(const arch_register_t *reg,
 
 typedef enum amd64_emit_mod_t {
 	EMIT_NONE        = 0,
-	EMIT_RESPECT_LS  = 1U << 0,
 	EMIT_IGNORE_MODE = 1U << 1,
 } amd64_emit_mod_t;
 ENUM_BITSET(amd64_emit_mod_t)
@@ -188,14 +158,29 @@ static void amd64_emit_immediate(const amd64_movimm_attr_t *const imm)
 	if (entity != NULL) {
 		be_gas_emit_entity(entity);
 		if (imm->offset != 0)
-			be_emit_irprintf("%+ld", imm->offset);
+			be_emit_irprintf("%+" PRId64, imm->offset);
 	} else {
-		be_emit_irprintf("0x%lX", imm->offset);
+		be_emit_irprintf("0x%" PRIX64, imm->offset);
 	}
 }
 
-static void amd64_emit_am(const ir_node *const node,
-                          const amd64_am_info_t *const am)
+static void amd64_emit_am_immediate(const amd64_am_info_t *const am)
+{
+	be_emit_char('$');
+	if (am->entity != NULL) {
+		be_gas_emit_entity(am->entity);
+	}
+	if (am->entity == NULL || am->offset != 0) {
+		if (am->entity != NULL) {
+			be_emit_irprintf("%+" PRId32, am->offset);
+		} else {
+			be_emit_irprintf("0x%" PRIX32, am->offset);
+		}
+	}
+}
+
+static void amd64_emit_addr(const ir_node *const node,
+                            const amd64_am_info_t *const am)
 {
 	ir_entity *entity = am->entity;
 	if (entity != NULL) {
@@ -213,9 +198,9 @@ static void amd64_emit_am(const ir_node *const node,
 	if (offset != 0 || (entity == NULL && base_input == NO_INPUT
 	                    && index_input == NO_INPUT)) {
 		if (entity != NULL) {
-			be_emit_irprintf("%+d", offset);
+			be_emit_irprintf("%+" PRId32, offset);
 		} else {
-			be_emit_irprintf("%d", offset);
+			be_emit_irprintf("%" PRId32, offset);
 		}
 	}
 
@@ -242,6 +227,71 @@ static void amd64_emit_am(const ir_node *const node,
 		}
 		be_emit_char(')');
 	}
+}
+
+static void amd64_emit_am(const ir_node *const node)
+{
+	amd64_attr_t const *const attr = get_amd64_attr_const(node);
+	switch (attr->data.op_mode) {
+	case AMD64_MODE_REG_IMM: {
+		amd64_emit_am_immediate(&attr->am);
+		be_emit_cstring(", ");
+		const arch_register_t *reg = arch_get_irn_register_in(node, 0);
+		emit_register_insn_mode(reg, attr->data.insn_mode);
+		return;
+	}
+	case AMD64_MODE_REG_REG: {
+		const arch_register_t *reg0 = arch_get_irn_register_in(node, 0);
+		const arch_register_t *reg1 = arch_get_irn_register_in(node, 1);
+		emit_register_insn_mode(reg1, attr->data.insn_mode);
+		be_emit_cstring(", ");
+		emit_register_insn_mode(reg0, attr->data.insn_mode);
+		return;
+	}
+	case AMD64_MODE_LOAD_REG: {
+		amd64_emit_addr(node, &attr->am);
+		be_emit_cstring(", ");
+		const arch_register_t *reg
+			= arch_get_irn_register_in(node, attr->am.reg_input);
+		emit_register_insn_mode(reg, attr->data.insn_mode);
+		return;
+	}
+	case AMD64_MODE_LOAD:
+		amd64_emit_addr(node, &attr->am);
+		return;
+	case AMD64_MODE_REG: {
+		const arch_register_t *reg
+			= arch_get_irn_register_in(node, attr->am.reg_input);
+		emit_register_insn_mode(reg, attr->data.insn_mode);
+		return;
+	}
+	}
+	panic("invalid op_mode");
+}
+
+static void emit_shiftop(const ir_node *const node)
+{
+	amd64_attr_t const *const attr = get_amd64_attr_const(node);
+	switch (attr->data.op_mode) {
+	case AMD64_MODE_REG_IMM: {
+		amd64_emit_am_immediate(&attr->am);
+		be_emit_cstring(", ");
+		const arch_register_t *reg = arch_get_irn_register_in(node, 0);
+		emit_register_insn_mode(reg, attr->data.insn_mode);
+		return;
+	}
+	case AMD64_MODE_REG_REG: {
+		const arch_register_t *reg0 = arch_get_irn_register_in(node, 0);
+		const arch_register_t *reg1 = arch_get_irn_register_in(node, 1);
+		emit_register_insn_mode(reg1, INSN_MODE_8);
+		be_emit_cstring(", ");
+		emit_register_insn_mode(reg0, attr->data.insn_mode);
+		return;
+	}
+	case AMD64_MODE_LOAD_REG:
+		break;
+	}
+	panic("invalid op_mode for shiftop");
 }
 
 void amd64_emitf(ir_node const *const node, char const *fmt, ...)
@@ -274,7 +324,6 @@ void amd64_emitf(ir_node const *const node, char const *fmt, ...)
 		amd64_emit_mod_t mod = EMIT_NONE;
 		for (;;) {
 			switch (*fmt) {
-			case '#': mod |= EMIT_RESPECT_LS;  break;
 			case '^': mod |= EMIT_IGNORE_MODE; break;
 			default:
 				goto end_of_mods;
@@ -292,13 +341,14 @@ end_of_mods:
 
 			case 'A':
 				switch (*fmt++) {
-				case 'M': {
-					amd64_attr_t const *const attr = get_amd64_attr_const(node);
-					amd64_emit_am(node, &attr->am);
+				case 'M':
+					amd64_emit_am(node);
 					break;
+				default: {
+					amd64_attr_t const *const attr = get_amd64_attr_const(node);
+					amd64_emit_addr(node, &attr->am);
+					--fmt;
 				}
-				default:
-					goto unknown;
 				}
 				break;
 
@@ -346,15 +396,16 @@ emit_R:
 					emit_register(reg);
 				} else {
 					amd64_attr_t const *const attr = get_amd64_attr_const(node);
-					if (mod & EMIT_RESPECT_LS) {
-						emit_register_mode(reg, attr->ls_mode);
-					} else {
-						emit_register_insn_mode(reg, attr->data.insn_mode);
-					}
+					emit_register_insn_mode(reg, attr->data.insn_mode);
 				}
 				break;
 
 			case 'S': {
+				if (*fmt == 'O') {
+					++fmt;
+					emit_shiftop(node);
+					break;
+				}
 				int pos;
 				if ('0' <= *fmt && *fmt <= '9') {
 					pos = *fmt++ - '0';
@@ -367,11 +418,7 @@ emit_R:
 
 			case 'M': {
 				amd64_attr_t const *const attr = get_amd64_attr_const(node);
-				if (mod & EMIT_RESPECT_LS) {
-					amd64_emit_mode_suffix(attr->ls_mode);
-				} else {
-					amd64_emit_insn_mode_suffix(attr->data.insn_mode);
-				}
+				amd64_emit_insn_mode_suffix(attr->data.insn_mode);
 				break;
 			}
 
@@ -390,19 +437,6 @@ emit_R:
 			case 'u': {
 				unsigned const num = va_arg(ap, unsigned);
 				be_emit_irprintf("%u", num);
-				break;
-			}
-
-			case 'c': {
-				amd64_attr_t const *const attr = get_amd64_attr_const(node);
-				ir_mode                  *mode = attr->ls_mode;
-				if (get_mode_size_bits(mode) == 64)
-					break;
-				if (get_mode_size_bits(mode) == 32 && !mode_is_signed(mode)
-				 && attr->data.insn_mode == INSN_MODE_32)
-					break;
-				be_emit_char(mode_is_signed(mode) ? 's' : 'z');
-				amd64_emit_mode_suffix(mode);
 				break;
 			}
 
@@ -499,28 +533,17 @@ static void emit_amd64_Jcc(const ir_node *irn)
 	}
 }
 
-static void emit_amd64_LoadZ(const ir_node *node)
+static void emit_amd64_Movz(const ir_node *node)
 {
 	const amd64_attr_t *attr = get_amd64_attr_const(node);
 	switch (attr->data.insn_mode) {
-	case INSN_MODE_8:  amd64_emitf(node, "movzbq %AM, %^D0"); break;
-	case INSN_MODE_16: amd64_emitf(node, "movzwq %AM, %^D0"); break;
+	case INSN_MODE_8:  amd64_emitf(node, "movzbq %A, %^D0"); break;
+	case INSN_MODE_16: amd64_emitf(node, "movzwq %A, %^D0"); break;
 	case INSN_MODE_32:
-	case INSN_MODE_64: amd64_emitf(node, "mov%M %AM, %D0");   break;
+	case INSN_MODE_64: amd64_emitf(node, "mov%M %A, %D0");   break;
 	default:
 		panic("invalid insn mode");
 	}
-}
-
-static void emit_amd64_Call(const ir_node *node)
-{
-	const amd64_attr_t *attr = get_amd64_attr_const(node);
-
-	be_emit_cstring("\tcall *");
-	int arity = get_irn_arity(node);
-	const arch_register_t *reg = arch_get_irn_register_in(node, arity-1);
-	emit_register_insn_mode(reg, attr->data.insn_mode);
-	be_emit_finish_line_gas(node);
 }
 
 /**
@@ -613,10 +636,9 @@ static void amd64_register_emitters(void)
 	/* register all emitter functions defined in spec */
 	amd64_register_spec_emitters();
 
-	be_set_emitter(op_amd64_Call,      emit_amd64_Call);
 	be_set_emitter(op_amd64_Jcc,       emit_amd64_Jcc);
 	be_set_emitter(op_amd64_Jmp,       emit_amd64_Jmp);
-	be_set_emitter(op_amd64_LoadZ,     emit_amd64_LoadZ);
+	be_set_emitter(op_amd64_Movz,      emit_amd64_Movz);
 	be_set_emitter(op_amd64_Return,    emit_amd64_Return);
 	be_set_emitter(op_amd64_Start,     emit_amd64_Start);
 	be_set_emitter(op_amd64_SwitchJmp, emit_amd64_SwitchJmp);

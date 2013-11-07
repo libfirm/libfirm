@@ -7,31 +7,32 @@
  * @file
  * @brief    The main amd64 backend driver file.
  */
-#include "irgwalk.h"
-#include "irprog.h"
-#include "ircons.h"
-#include "irgmod.h"
-#include "irdump.h"
-#include "lower_builtins.h"
-#include "lower_calls.h"
-#include "debug.h"
-#include "error.h"
-#include "util.h"
-#include "be_t.h"
-#include "bearch.h"
-#include "beirg.h"
-#include "benode.h"
-#include "belower.h"
-#include "besched.h"
 #include "beabi.h"
 #include "beabihelper.h"
-#include "bemodule.h"
-#include "begnuas.h"
-#include "belistsched.h"
+#include "bearch.h"
 #include "beflags.h"
+#include "begnuas.h"
+#include "beirg.h"
+#include "belistsched.h"
+#include "belower.h"
+#include "bemodule.h"
+#include "benode.h"
+#include "besched.h"
 #include "bespillslots.h"
 #include "bespillutil.h"
 #include "bestack.h"
+#include "be_t.h"
+#include "debug.h"
+#include "error.h"
+#include "ircons.h"
+#include "irdump.h"
+#include "irgmod.h"
+#include "irgwalk.h"
+#include "iropt_t.h"
+#include "irprog.h"
+#include "lower_builtins.h"
+#include "lower_calls.h"
+#include "util.h"
 
 #include "bearch_amd64_t.h"
 
@@ -49,8 +50,6 @@ static ir_entity *amd64_get_frame_entity(const ir_node *node)
 	if (!is_amd64_irn(node))
 		return NULL;
 	const amd64_attr_t *attr = get_amd64_attr_const(node);
-	if (!attr->data.has_am_info)
-		return NULL;
 	ir_entity *entity = attr->am.entity;
 	if (entity == NULL)
 		return NULL;
@@ -80,8 +79,6 @@ static void amd64_set_frame_offset(ir_node *node, int offset)
 	if (!is_amd64_irn(node))
 		return;
 	amd64_attr_t *attr = get_amd64_attr(node);
-	if (!attr->data.has_am_info)
-		return;
 	attr->am.offset += offset;
 	if (is_amd64_PopAM(node)) {
 		ir_graph          *irg    = get_irn_irg(node);
@@ -295,8 +292,8 @@ static void amd64_after_ra_walker(ir_node *block, void *data)
 
 static void amd64_set_frame_entity(ir_node *node, ir_entity *entity)
 {
-	assert(is_amd64_Store(node) || is_amd64_LoadZ(node)
-	    || is_amd64_LoadS(node));
+	assert(is_amd64_Store(node) || is_amd64_Movz(node)
+	    || is_amd64_Movs(node));
 	amd64_attr_t *attr = get_amd64_attr(node);
 	attr->am.entity = entity;
 }
@@ -306,7 +303,7 @@ static void amd64_set_frame_entity(ir_node *node, ir_entity *entity)
  */
 static void amd64_collect_frame_entity_nodes(ir_node *node, void *data)
 {
-	if (!is_amd64_LoadZ(node))
+	if (!is_amd64_Movz(node) && !is_amd64_Movs(node))
 		return;
 
 	const amd64_attr_t *attr = get_amd64_attr_const(node);
@@ -526,9 +523,9 @@ static void amd64_lower_for_target(void)
 static int amd64_is_mux_allowed(ir_node *sel, ir_node *mux_false,
                                 ir_node *mux_true)
 {
-	(void) sel;
-	(void) mux_false;
-	(void) mux_true;
+	/* optimizable by middleend */
+	if (ir_is_optimizable_mux(sel, mux_false, mux_true))
+		return true;
 	return false;
 }
 
