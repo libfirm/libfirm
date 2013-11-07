@@ -173,20 +173,20 @@ static ir_node *eat_immediates(x86_address_t *addr, ir_node *node,
 		ir_node *left  = get_Add_left(node);
 		ir_node *right = get_Add_right(node);
 
-		if (is_immediate(addr, left, 0)) {
-			eat_immediate(addr, left, 0);
+		if (is_immediate(addr, left, false)) {
+			eat_immediate(addr, left, false);
 			return eat_immediates(addr, right, x86_create_am_normal);
 		}
-		if (is_immediate(addr, right, 0)) {
-			eat_immediate(addr, right, 0);
+		if (is_immediate(addr, right, false)) {
+			eat_immediate(addr, right, false);
 			return eat_immediates(addr, left, x86_create_am_normal);
 		}
 	} else if (is_Sub(node)) {
 		ir_node *left  = get_Sub_left(node);
 		ir_node *right = get_Sub_right(node);
 
-		if (is_immediate(addr, right, 1)) {
-			eat_immediate(addr, right, 1);
+		if (is_immediate(addr, right, true)) {
+			eat_immediate(addr, right, true);
 			return eat_immediates(addr, left, x86_create_am_normal);
 		}
 	}
@@ -259,7 +259,7 @@ static void set_frame_addr(x86_address_t *const addr, ir_node *const frame)
 	assert(!addr->frame_entity);
 	addr->base         = be_get_FrameAddr_frame(frame);
 	addr->frame_entity = be_get_FrameAddr_entity(frame);
-	addr->use_frame    = 1;
+	addr->use_frame    = true;
 }
 
 static bool is_downconv(const ir_node *node)
@@ -289,8 +289,8 @@ static ir_node *skip_downconv(ir_node *node)
 void x86_create_address_mode(x86_address_t *addr, ir_node *node,
                              x86_create_am_flags_t flags)
 {
-	if (is_immediate(addr, node, 0)) {
-		eat_immediate(addr, node, 0);
+	if (is_immediate(addr, node, false)) {
+		eat_immediate(addr, node, false);
 		return;
 	}
 
@@ -333,8 +333,8 @@ void x86_create_address_mode(x86_address_t *addr, ir_node *node,
 		 * instructions, because we want the former as Lea x, x, not Shl x, 1 */
 		if (eat_shl(addr, node))
 			return;
-	} else if (is_immediate(addr, node, 0)) {
-		eat_immediate(addr, node, 0);
+	} else if (is_immediate(addr, node, false)) {
+		eat_immediate(addr, node, false);
 		return;
 	} else if (be_is_FrameAddr(node)) {
 		set_frame_addr(addr, node);
@@ -348,8 +348,8 @@ void x86_create_address_mode(x86_address_t *addr, ir_node *node,
 			right = skip_downconv(right);
 		}
 
-		assert(flags & x86_create_am_force || !is_immediate(addr, left,  0));
-		assert(flags & x86_create_am_force || !is_immediate(addr, right, 0));
+		assert(flags & x86_create_am_force || !is_immediate(addr, left,  false));
+		assert(flags & x86_create_am_force || !is_immediate(addr, right, false));
 
 		if (eat_shl(addr, left)) {
 			left = NULL;
@@ -479,8 +479,8 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 		 * an addition and has the same register pressure for the case that only
 		 * one operand dies, but is faster (on Pentium 4).
 		 * && instead of || only folds AM if both operands do not die here */
-		if (!value_last_used_here(lv, node, left) ||
-		    !value_last_used_here(lv, node, right)) {
+		if (!value_last_used_here(lv, node, left)
+		 || !value_last_used_here(lv, node, right)) {
 			return;
 		}
 
