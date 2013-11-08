@@ -151,10 +151,17 @@ char *fc_print(const fp_value *a, char *buf, int buflen, unsigned base);
  */
 ir_relation fc_comp(const fp_value *a, const fp_value *b);
 
+typedef enum flt2int_result_t {
+	FLT2INT_OK,
+	FLT2INT_POSITIVE_OVERFLOW,
+	FLT2INT_NEGATIVE_OVERFLOW,
+	FLT2INT_UNKNOWN
+} flt2int_result_t;
+
 /**
  * Converts an floating point value into an integer value.
  */
-bool fc_flt2int(const fp_value *a, void *result, ir_mode *dst_mode);
+flt2int_result_t fc_flt2int(const fp_value *a, void *result, ir_mode *dst_mode);
 
 /**
  * Returns non-zero if the mantissa is zero, i.e. 1.0Exxx

@@ -707,9 +707,17 @@ ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *dst_mode)
 		case irms_int_number: {
 			fp_value *res = fc_int((const fp_value*) src->value, NULL);
 			char     *buffer = ALLOCAN(char, sc_get_buffer_length());
-			if (!fc_flt2int(res, buffer, dst_mode))
+			flt2int_result_t cres = fc_flt2int(res, buffer, dst_mode);
+			switch (cres) {
+			case FLT2INT_POSITIVE_OVERFLOW:
+				return get_mode_max(dst_mode);
+			case FLT2INT_NEGATIVE_OVERFLOW:
+				return get_mode_min(dst_mode);
+			case FLT2INT_UNKNOWN:
 				return tarval_bad;
-			return get_tarval(buffer, sc_get_buffer_length(), dst_mode);
+			case FLT2INT_OK:
+				return get_tarval(buffer, sc_get_buffer_length(), dst_mode);
+			}
 		}
 
 		default:

@@ -1347,12 +1347,12 @@ fp_value *fc_rnd(const fp_value *a, fp_value *result)
 	panic("not yet implemented");
 }
 
-bool fc_flt2int(const fp_value *a, void *result, ir_mode *dst_mode)
+flt2int_result_t fc_flt2int(const fp_value *a, void *result, ir_mode *dst_mode)
 {
 	if (a->clss == FC_NORMAL) {
 		if (a->sign && !mode_is_signed(dst_mode)) {
 			/* FIXME: for now we cannot convert this */
-			return false;
+			return FLT2INT_UNKNOWN;
 		}
 
 		int tgt_bits = get_mode_size_bits(dst_mode);
@@ -1362,6 +1362,15 @@ bool fc_flt2int(const fp_value *a, void *result, ir_mode *dst_mode)
 		int exp_bias = (1 << (a->desc.exponent_size - 1)) - 1;
 		int exp_val  = sc_val_to_long(_exp(a)) - exp_bias;
 		assert(exp_val >= 0 && "floating point value not integral before fc_flt2int() call");
+		/* highest bit outside dst_mode range */
+		if (exp_val > tgt_bits || (exp_val == tgt_bits &&
+			/* MIN_INT is the only exception allowed */
+			(!mode_is_signed(dst_mode) || !a->sign ||
+              sc_get_highest_set_bit(_mant(a))
+              != sc_get_lowest_set_bit(_mant(a))))) {
+			return a->sign ? FLT2INT_NEGATIVE_OVERFLOW
+						   : FLT2INT_POSITIVE_OVERFLOW;
+		}
 		int mantissa_size = a->desc.mantissa_size + ROUNDING_BITS;
 		int shift         = exp_val - mantissa_size;
 
@@ -1372,39 +1381,15 @@ bool fc_flt2int(const fp_value *a, void *result, ir_mode *dst_mode)
 		} else {
 			sc_shrI(_mant(a), -shift, tgt_bits, 0, result);
 		}
-
-		/* check for overflow */
-		int highest = sc_get_highest_set_bit(result);
-
-		if (mode_is_signed(dst_mode)) {
-			if (highest == sc_get_lowest_set_bit(result)) {
-				/* need extra test for MIN_INT */
-				if (highest >= (int) get_mode_size_bits(dst_mode)) {
-					/* FIXME: handle overflow */
-					return false;
-				}
-			} else {
-				if (highest >= (int) get_mode_size_bits(dst_mode) - 1) {
-					/* FIXME: handle overflow */
-					return false;
-				}
-			}
-		} else {
-			if (highest >= (int) get_mode_size_bits(dst_mode)) {
-				/* FIXME: handle overflow */
-				return false;
-			}
-		}
-
 		if (a->sign)
 			sc_neg(result, result);
 
-		return true;
+		return FLT2INT_OK;
 	} else if (a->clss == FC_ZERO) {
 		sc_zero(result);
-		return true;
+		return FLT2INT_OK;
 	}
-	return false;
+	return FLT2INT_UNKNOWN;
 }
 
 int fc_is_exact(void)
