@@ -92,7 +92,10 @@ struct fp_value {
 	float_descriptor_t desc;
 	unsigned char      clss;
 	char               sign;
-	char               value[];  /* exp[value_size] + mant[value_size] */
+	/** exp[value_size] + mant[value_size].
+	 * Mantissa has an explizit one at the beginning (contrary to many
+	 * floatingpoint formats) */
+	char               value[];
 };
 
 #define _exp(a)  &((a)->value[0])
