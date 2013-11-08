@@ -1146,27 +1146,6 @@ static void ia32_prepare_graph(ir_graph *irg)
 	be_dump(DUMP_BE, irg, "place");
 }
 
-static const tarval_mode_info mo_integer = {
-	TVO_HEX,
-	"0x",
-	NULL,
-};
-
-/*
- * set the tarval output mode of all integer modes to decimal
- */
-static void set_tarval_output_modes(void)
-{
-	size_t i;
-
-	for (i = ir_get_n_modes(); i > 0;) {
-		ir_mode *mode = ir_get_mode(--i);
-
-		if (mode_is_int(mode))
-			set_tarval_mode_output_option(mode, &mo_integer);
-	}
-}
-
 extern const arch_isa_if_t ia32_isa_if;
 
 static void init_asm_constraints(void)
@@ -1528,8 +1507,6 @@ static ia32_isa_t ia32_isa_template = {
 static arch_env_t *ia32_begin_codegeneration(void)
 {
 	ia32_isa_t *isa = XMALLOC(ia32_isa_t);
-
-	set_tarval_output_modes();
 
 	*isa        = ia32_isa_template;
 	isa->tv_ent = pmap_create();
