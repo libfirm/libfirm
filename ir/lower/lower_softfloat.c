@@ -571,12 +571,6 @@ static void lower_Cmp(ir_node *n)
 	exchange(n, cmp);
 }
 
-static const tarval_mode_info hex_output = {
-	TVO_HEX,
-	"0x",
-	NULL,
-};
-
 /**
  * Adapts floating point constants.
  */
@@ -586,16 +580,19 @@ static void lower_Const(ir_node *n)
 	if (!mode_is_float(mode))
 		return;
 
-	ir_mode *lowered_mode = get_lowered_mode(mode);
+	assert(get_mode_size_bits(mode) % 8 == 0);
+	unsigned       size = get_mode_size_bits(mode) / 8;
+	unsigned char *buf  = ALLOCAN(unsigned char, size);
+
+	ir_tarval *float_tv = get_Const_tarval(n);
+	for (unsigned i = 0; i < size; ++i) {
+		buf[i] = get_tarval_sub_bits(float_tv, i);
+	}
+	ir_mode   *lowered_mode = get_lowered_mode(mode);
+	ir_tarval *int_tv       = new_tarval_from_bytes(buf, lowered_mode, false);
+
 	set_irn_mode(n, lowered_mode);
-
-	set_tarval_mode_output_option(mode, &hex_output);
-	char buf[100];
-	tarval_snprintf(buf, sizeof(buf), get_Const_tarval(n));
-
-	size_t     len = strlen(buf);
-	ir_tarval *tv  = new_tarval_from_str(buf, len, lowered_mode);
-	set_Const_tarval(n, tv);
+	set_Const_tarval(n, int_tv);
 }
 
 /**
