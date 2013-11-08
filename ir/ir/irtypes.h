@@ -486,77 +486,71 @@ typedef struct ir_vrp_info {
  * An ir_graph holds all information for a procedure.
  */
 struct ir_graph {
-	firm_kind         kind;        /**< Always set to k_ir_graph. */
-	/* --  Basics of the representation -- */
-	unsigned last_node_idx;        /**< The last IR node index for this graph. */
-	ir_entity  *ent;               /**< The entity of this procedure, i.e.,
-	                                    the type of the procedure and the
-	                                    class it belongs to. */
-	ir_type *frame_type;           /**< A class type representing the stack frame.
-	                                    Can include "inner" methods. */
-	ir_node *anchor;               /**< Pointer to the anchor node of this graph. */
-	struct obstack obst;           /**< The obstack where all of the ir_nodes live. */
-	ir_node *current_block;        /**< Current block for new_*()ly created ir_nodes. */
+	firm_kind   kind;          /**< Always set to k_ir_graph. */
+	unsigned    last_node_idx; /**< The last IR node index for this graph. */
+	/** The entity of this procedure, i.e., the type of the procedure and the
+	 * class it belongs to. */
+	ir_entity  *ent;
+	/** A type representing the stack frame. Can include "inner" functions. */
+	ir_type    *frame_type;
+	ir_node    *anchor;        /**< Pointer to the anchor node. */
+	struct obstack obst;       /**< obstack allocator for nodes. */
 
 	/* -- Fields indicating different states of irgraph -- */
 	ir_graph_properties_t  properties;
 	ir_graph_constraints_t constraints;
 	op_pin_state           irg_pinned_state;  /**< Flag for status of nodes. */
-	ir_typeinfo_state      typeinfo_state;    /**< Validity of type information. */
+	ir_typeinfo_state      typeinfo_state;    /**< Validity of typeinfo. */
 	irg_callee_info_state  callee_info_state; /**< Validity of callee information. */
-	unsigned mem_disambig_opt;               /**< Options for the memory disambiguator. */
+
+	/* -- Helpers for walking/analysis of the graph -- */
+	/** this flag is an identifier for ir walk. it will be incremented every
+	 * time someone walks through the graph */
+	ir_visited_t     visited;
+	ir_visited_t     block_visited; /**< Visited flag for block nodes. */
+	ir_visited_t     self_visited;  /**< Visited flag of the irg */
+	ir_node        **idx_irn_map;   /**< Map of node indexes to nodes. */
+	size_t           index;         /**< a unique number for each graph */
+	/** A void* field to link any information to the graph. */
+	void            *link;
+	void            *be_data; /**< backend can put in private data here */
+	unsigned short   dump_nr;       /**< number of graph dumps */
+
+	/* -- Semantic Settings -- */
+	unsigned char    mem_disambig_opt;
 
 	/* -- Fields for construction -- */
-	int n_loc;                         /**< Number of local variables in this
-	                                        procedure including procedure parameters. */
-	void **loc_descriptions;           /**< Storage for local variable descriptions. */
+	/** Number of local variables in this function including parameters. */
+	int      n_loc;
+	void   **loc_descriptions; /**< Descriptions for variables. */
+	ir_node *current_block;    /**< Block for new_*()ly created nodes. */
 
 	/* -- Fields for optimizations / analysis information -- */
-	pset *value_table;                 /**< Hash table for global value numbering (cse)
-	                                        for optimizing use in iropt.c */
-	struct obstack   out_obst;         /**< Space for the Def-Use arrays. */
-	bool             out_obst_allocated;
-	ir_vrp_info      vrp;              /**< vrp info */
+	/** Hash table for global value numbering (cse) */
+	pset               *value_table;
+	struct obstack      out_obst;    /**< Space for the Def-Use arrays. */
+	bool                out_obst_allocated;
+	ir_vrp_info         vrp;         /**< vrp info */
+	ir_loop            *loop;        /**< The outermost loop for this graph. */
+	ir_dom_front_info_t domfront;    /**< dominance frontier analysis data */
+	irg_edges_info_t    edge_info;   /**< edge info for automatic outs */
+	ir_graph          **callers;     /**< Callgraph: list of callers. */
+	unsigned           *caller_isbe; /**< Callgraph: bitset if backedge info calculated. */
+	cg_callee_entry   **callees;     /**< Callgraph: list of callee calls */
+	unsigned           *callee_isbe; /**< Callgraph: bitset if backedge info calculated. */
+	ir_loop            *l;           /**< For callgraph analysis. */
+	size_t              callgraph_loop_depth;
+	size_t              callgraph_recursion_depth;
+	double              method_execution_frequency;
 
-	ir_loop *loop;                     /**< The outermost loop for this graph. */
-	ir_dom_front_info_t domfront;      /**< dominance frontier analysis data */
-	void *link;                        /**< A void* field to link any information to
-	                                        the node. */
-
-	ir_graph **callers;                /**< For callgraph analysis: list of caller graphs. */
-	unsigned *caller_isbe;             /**< For callgraph analysis: raw bitset if backedge info calculated. */
-	cg_callee_entry **callees;         /**< For callgraph analysis: list of callee calls */
-	unsigned *callee_isbe;             /**< For callgraph analysis: raw bitset if backedge info calculated. */
-	ir_loop   *l;                            /**< For callgraph analysis. */
-	size_t     callgraph_loop_depth;         /**< For callgraph analysis */
-	size_t     callgraph_recursion_depth;    /**< For callgraph analysis */
-	double     method_execution_frequency;   /**< For callgraph analysis */
-
-
-	/* -- Fields for Walking the graph -- */
-	ir_visited_t visited;             /**< this flag is an identifier for
-	                  ir walk. it will be incremented
-	                  every time someone walks through
-	                  the graph */
-	ir_visited_t block_visited;        /**< same as visited, for a complete block */
-
-	ir_visited_t self_visited;         /**< visited flag of the irg */
-
-	irg_edges_info_t edge_info;        /**< edge info for automatic outs */
-	ir_node **idx_irn_map;             /**< Array mapping node indexes to nodes. */
-
-	size_t index;                      /**< a unique number for each graph */
-	/** extra info which should survive accross multiple passes */
-	void     *be_data;                 /**< backend can put in private data here */
-
-	unsigned  dump_nr;                 /**< number of graph dumps */
 #ifdef DEBUG_libfirm
-	long graph_nr;                     /**< a unique graph number for each
-	                                        graph to make output readable. */
+	/** Unique graph number for each graph to make output readable. */
+	long             graph_nr;
 #endif
-
 #ifndef NDEBUG
-	ir_resources_t reserved_resources; /**< Bitset for tracking used local resources. */
+	/** Debug helper: Phases/Analysis can indicate here which exclusive
+	 * resources (e.g. link fields of the graph nodes) they are using. */
+	ir_resources_t   reserved_resources;
 #endif
 };
 
