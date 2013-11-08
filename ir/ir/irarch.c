@@ -269,10 +269,8 @@ static ir_tarval *condensed_to_value(mul_env *env, unsigned char *R, int r)
 	ir_tarval *res = NULL;
 	for (int i = 0; i < r; ++i) {
 		int j = R[i];
-		if (j) {
-			ir_tarval *t = new_tarval_from_long(j, mode_Iu);
-			tv = tarval_shl(tv, t);
-		}
+		if (j)
+			tv = tarval_shl_unsigned(tv, j);
 		res = res ? tarval_add(res, tv) : tv;
 	}
 	return res;
@@ -626,8 +624,8 @@ static int tv_ld2(ir_tarval *tv, int bits)
 #define ABS(a)    tarval_abs(a)
 #define NEG(a)    tarval_neg(a)
 #define NOT(a)    tarval_not(a)
-#define SHL(a, b) tarval_shl(a, b)
-#define SHR(a, b) tarval_shr(a, b)
+#define SHL(a, b) tarval_shl_unsigned(a, b)
+#define SHR(a, b) tarval_shr_unsigned(a, b)
 #define ADD(a, b) tarval_add(a, b)
 #define SUB(a, b) tarval_sub(a, b, NULL)
 #define MUL(a, b) tarval_mul(a, b)
@@ -661,7 +659,7 @@ static struct ms magic(ir_tarval *d)
 	ir_tarval *ad, *anc, *delta, *q1, *r1, *q2, *r2, *t;     /* unsigned */
 	ir_relation d_cmp, M_cmp;
 
-	ir_tarval *bits_minus_1, *two_bits_1;
+	ir_tarval *two_bits_1;
 
 	struct ms mag;
 
@@ -671,11 +669,10 @@ static struct ms magic(ir_tarval *d)
 	tarval_set_integer_overflow_mode(TV_OVERFLOW_WRAP);
 
 	/* 2^(bits-1) */
-	bits_minus_1 = new_tarval_from_long(bits - 1, u_mode);
-	two_bits_1   = SHL(get_mode_one(u_mode), bits_minus_1);
+	two_bits_1 = SHL(get_mode_one(u_mode), bits-1);
 
 	ad  = CNV(ABS(d), u_mode);
-	t   = ADD(two_bits_1, SHR(CNV(d, u_mode), bits_minus_1));
+	t   = ADD(two_bits_1, SHR(CNV(d, u_mode), bits-1));
 	anc = SUB(SUB(t, ONE(u_mode)), MOD(t, ad));   /* Absolute value of nc */
 	p   = bits - 1;                               /* Init: p */
 	q1  = DIV(two_bits_1, anc);                   /* Init: q1 = 2^p/|nc| */
@@ -757,7 +754,7 @@ static struct magicu_info compute_unsigned_magic_info(ir_tarval *divisor, unsign
 	const unsigned extra_shift = UINT_BITS - num_bits;
 
 	/* The initial power of 2 is one less than the first one that can possibly work */
-	ir_tarval *initial_power_of_2 = SHL(ONE(mode), new_tarval_from_long(UINT_BITS - 1, mode));
+	ir_tarval *initial_power_of_2 = SHL(ONE(mode), UINT_BITS - 1);
 
 	/* The remainder and quotient of our power of 2 divided by divisor */
 	ir_tarval *quotient  = DIV(initial_power_of_2, divisor);
@@ -773,7 +770,7 @@ static struct magicu_info compute_unsigned_magic_info(ir_tarval *divisor, unsign
 
 	/* Compute ceil(log_2 D) */
 	ceil_log_2_D = 0;
-	for (ir_tarval *tmp = divisor; CMP(tmp, ZERO(mode)) & ir_relation_greater; tmp = SHR(tmp, ONE(mode)))
+	for (ir_tarval *tmp = divisor; CMP(tmp, ZERO(mode)) & ir_relation_greater; tmp = SHR(tmp, 1))
 		ceil_log_2_D++;
 
 	/* Begin a loop that increments the exponent, until we find a power of 2 that works. */
@@ -796,12 +793,12 @@ static struct magicu_info compute_unsigned_magic_info(ir_tarval *divisor, unsign
 		 * so the check for >= ceil_log_2_D is critical. */
 		if ((exponent + extra_shift >= ceil_log_2_D) ||
 				/* (divisor - remainder) <= (1 << exponent + extra_shift) */
-				(CMP(SUB(divisor, remainder), SHL(ONE(mode), new_tarval_from_long(exponent + extra_shift, mode))) & ir_relation_less_equal))
+				(CMP(SUB(divisor, remainder), SHL(ONE(mode), exponent + extra_shift)) & ir_relation_less_equal))
 			break;
 
 		/* Set magic_down if we have not set it yet and this exponent works for the round_down algorithm */
 		if (! has_magic_down &&
-				(CMP(remainder, SHL(ONE(mode), new_tarval_from_long(exponent + extra_shift, mode))) &
+				(CMP(remainder, SHL(ONE(mode), exponent + extra_shift)) &
 				ir_relation_less_equal)) {
 			has_magic_down  = 1;
 			down_multiplier = quotient;
@@ -827,7 +824,7 @@ static struct magicu_info compute_unsigned_magic_info(ir_tarval *divisor, unsign
 		unsigned pre_shift   = 0;
 		ir_tarval *shifted_D = divisor;
 		while (CMP(AND(shifted_D, ONE(mode)), ZERO(mode)) & ir_relation_equal) {
-			shifted_D  = SHR(shifted_D, ONE(mode));
+			shifted_D  = SHR(shifted_D, 1);
 			pre_shift += 1;
 		}
 		result = compute_unsigned_magic_info(shifted_D, num_bits - pre_shift);

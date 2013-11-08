@@ -65,12 +65,10 @@ static ir_tarval *create_lsb_mask(ir_tarval *tv)
 /* Creates a bit mask that have the msb and all less significant bits set. */
 static ir_tarval *create_msb_mask(ir_tarval *tv)
 {
-	ir_mode   *mode         = get_tarval_mode(tv);
-	ir_tarval *shift_amount = get_tarval_one(mode);
-
+	unsigned shift_amount = 1;
 	for (int msb = get_tarval_highest_bit(tv); msb != 0; msb /= 2) {
-		tv           = tarval_or(tv, tarval_shr(tv, shift_amount));
-		shift_amount = tarval_add(shift_amount, shift_amount);
+		tv            = tarval_or(tv, tarval_shr_unsigned(tv, shift_amount));
+		shift_amount *= 2;
 	}
 
 	return tv;
@@ -132,9 +130,8 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 				 * don't fit into the smaller mode. */
 				if (get_tarval_highest_bit(care) >= (int)pred_bits)
 					care = tarval_or(care,
-									 tarval_shl(get_tarval_one(mode),
-												new_tarval_from_long(
-													pred_bits - 1, mode)));
+									 tarval_shl_unsigned(get_tarval_one(mode),
+												         pred_bits - 1));
 			} else {
 				/* Thwart sign extension as it doesn't make sense on
 				 * our abstract tarvals. */
@@ -249,12 +246,9 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 			if (is_Const(right))
 				care_for(
 					left,
-					tarval_shr(
-						care_mask,
-						new_tarval_from_long(
-							get_tarval_lowest_bit(
-								get_Const_tarval(right)), mode)),
-					q);
+					tarval_shr_unsigned(care_mask,
+					                    get_tarval_lowest_bit(
+					                       get_Const_tarval(right))), q);
 			else
 				care_for(left, care_mask, q);
 

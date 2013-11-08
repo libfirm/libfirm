@@ -5165,9 +5165,8 @@ static ir_node *transform_node_Shrs(ir_node *n)
 	/* normalisation: use Shr when sign bit is guaranteed to be cleared */
 	attr = vrp_get_info(a);
 	if (attr != NULL) {
-		unsigned   bits   = get_mode_size_bits(mode);
-		ir_tarval *scount = new_tarval_from_long(bits-1, mode_Iu);
-		ir_tarval *sign   = tarval_shl(get_mode_one(mode), scount);
+		unsigned   bits = get_mode_size_bits(mode);
+		ir_tarval *sign = tarval_shl_unsigned(get_mode_one(mode), bits-1);
 		if (tarval_is_null(tarval_and(attr->bits_not_set, sign))) {
 			dbg_info *dbgi  = get_irn_dbg_info(n);
 			ir_node  *block = get_nodes_block(n);
