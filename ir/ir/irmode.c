@@ -188,7 +188,6 @@ static ir_mode *alloc_mode(const char *name, ir_mode_sort sort,
 	mode_tmpl->modulo_shift = modulo_shift;
 	mode_tmpl->arithmetic   = arithmetic;
 	mode_tmpl->link         = NULL;
-	mode_tmpl->tv_priv      = NULL;
 	return mode_tmpl;
 }
 

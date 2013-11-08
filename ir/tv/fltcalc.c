@@ -1111,55 +1111,44 @@ bool fc_is_subnormal(const fp_value *a)
 	return a->clss == FC_SUBNORMAL;
 }
 
-char *fc_print(const fp_value *val, char *buf, int buflen, unsigned base)
+int fc_print(const fp_value *val, char *buf, int buflen, unsigned base)
 {
-	long double flt_val;
-
 	switch (base) {
 	case FC_DEC:
 		switch ((value_class_t)val->clss) {
 		case FC_INF:
-			snprintf(buf, buflen, "%cINF", val->sign ? '-' : '+');
-			break;
+			return snprintf(buf, buflen, "%cINF", val->sign ? '-' : '+');
 		case FC_NAN:
-			snprintf(buf, buflen, "NaN");
-			break;
+			return snprintf(buf, buflen, "NaN");
 		case FC_ZERO:
-			snprintf(buf, buflen, "0.0");
-			break;
-		default:
-			flt_val = fc_val_to_ieee754(val);
+			return snprintf(buf, buflen, "0.0");
+		default: {
+			long double flt_val = fc_val_to_ieee754(val);
 			/* XXX 30 is arbitrary */
-			snprintf(buf, buflen, "%.30LE", flt_val);
+			return snprintf(buf, buflen, "%.30LE", flt_val);
 		}
-		break;
+		}
 
 	case FC_HEX:
 		switch ((value_class_t)val->clss) {
 		case FC_INF:
-			snprintf(buf, buflen, "%cINF", val->sign ? '-' : '+');
-			break;
+			return snprintf(buf, buflen, "%cINF", val->sign ? '-' : '+');
 		case FC_NAN:
-			snprintf(buf, buflen, "NaN");
-			break;
+			return snprintf(buf, buflen, "NaN");
 		case FC_ZERO:
-			snprintf(buf, buflen, "0.0");
-			break;
-		default:
-			flt_val = fc_val_to_ieee754(val);
-			snprintf(buf, buflen, "%LA", flt_val);
+			return snprintf(buf, buflen, "0.0");
+		default: {
+			long double flt_val = fc_val_to_ieee754(val);
+			return snprintf(buf, buflen, "%LA", flt_val);
 		}
-		break;
+		}
 
 	case FC_PACKED:
 	default: {
 		char *mul_1 = (char*) alloca(calc_buffer_size);
-		snprintf(buf, buflen, "%s", sc_print(pack(val, mul_1), value_size*4, SC_HEX, 0));
-		buf[buflen - 1] = '\0';
-		break;
+		return snprintf(buf, buflen, "%s", sc_print(pack(val, mul_1), value_size*4, SC_HEX, 0));
 	}
 	}
-	return buf;
 }
 
 unsigned char fc_sub_bits(const fp_value *value, unsigned num_bits,

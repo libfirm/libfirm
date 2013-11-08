@@ -163,7 +163,8 @@ static int firm_emit(lc_appendable_t *app, const lc_arg_occ_t *occ,
 			if (is_Const(node)) {
 				ir_tarval *tv = get_Const_tarval(node);
 				if (tv)
-					tarval_snprintf(tv_buf, sizeof(tv_buf), tv);
+					tarval_snprintf(tv_buf, sizeof(tv_buf), tv,
+					                !mode_is_float(get_tarval_mode(tv)));
 				else
 					strncpy(tv_buf, "(NULL)", sizeof(tv_buf));
 				snprintf(buf, sizeof(buf), "%s%s %s<%s>", A("irn"), get_irn_opname(node),
@@ -196,7 +197,8 @@ static int firm_emit(lc_appendable_t *app, const lc_arg_occ_t *occ,
 	}
 	case k_tarval: {
 		ir_tarval *tarval = (ir_tarval*)X;
-		tarval_snprintf(tv_buf, sizeof(tv_buf), tarval);
+		tarval_snprintf(tv_buf, sizeof(tv_buf), tarval,
+		                !mode_is_float(get_tarval_mode(tarval)));
 		snprintf(buf, sizeof(buf), "%s%s", A("tv"), tv_buf);
 		break;
 	}

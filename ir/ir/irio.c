@@ -420,8 +420,9 @@ static void write_tarval(write_env_t *env, ir_tarval *tv)
 	if (tv == tarval_bad) {
 		write_symbol(env, "bad");
 	} else {
+		fputs("0x", env->file);
 		char buf[1024];
-		tarval_snprintf(buf, sizeof(buf), tv);
+		tarval_snprintf(buf, sizeof(buf), tv, true);
 		fputs(buf, env->file);
 		fputc(' ', env->file);
 	}

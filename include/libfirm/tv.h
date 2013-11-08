@@ -597,61 +597,6 @@ FIRM_API ir_tarval *tarval_shrs(ir_tarval *a, ir_tarval *b);
 FIRM_API ir_tarval *tarval_shrs_unsigned(ir_tarval *a, unsigned b);
 
 /**
- * The output mode for tarval values.
- *
- * Some modes allow more that one representation, for instance integers
- * can be represented hex or decimal. Of course it would be enough to have
- * one and let every backend convert it into the 'right' one.
- * However, we can do this in the tarval much simpler...
- */
-typedef enum {
-	TVO_NATIVE,  /**< the default output mode, depends on the mode */
-	TVO_HEX,     /**< use hex representation, always possible */
-	TVO_DECIMAL, /**< use decimal representation */
-	TVO_OCTAL,   /**< use octal representation */
-	TVO_BINARY,  /**< use binary representation */
-	TVO_FLOAT,   /**< use floating point representation (i.e 1.342e-2)*/
-	TVO_HEXFLOAT /**< use hexadecimal floating point representation
-	                  (i.e 0x1.ea32p-12)*/
-} tv_output_mode;
-
-/**
- * This structure contains helper information to format the output
- * of a tarval of a mode.
- */
-typedef struct tarval_mode_info {
-	tv_output_mode mode_output;  /**< if != TVO_NATIVE select a special mode */
-	const char *mode_prefix;     /**< if set, this prefix will be printed
-	                                  before a value of this mode */
-	const char *mode_suffix;     /**< if set, this suffix will be printed
-	                                  after a value of this mode */
-} tarval_mode_info;
-
-/**
- * Specify the output options of one mode.
- *
- * This functions stores the mode info, so DO NOT DESTROY it.
- *
- * @param mode      a ir_mode that should be associated
- * @param modeinfo  the output format info
- *
- * @return zero on success.
- */
-FIRM_API int set_tarval_mode_output_option(ir_mode *mode,
-                                           const tarval_mode_info *modeinfo);
-
-/**
- * Returns the output options of one mode.
- *
- * This functions returns the mode info of a given mode.
- *
- * @param mode      a ir_mode that should be associated
- *
- * @return the output option
- */
-FIRM_API const tarval_mode_info *get_tarval_mode_output_option(ir_mode *mode);
-
-/**
  * Returns Bit representation of a tarval value, as string of '0' and '1'
  *
  * @param tv   The tarval
@@ -745,8 +690,10 @@ FIRM_API int get_tarval_highest_bit(ir_tarval *tv);
  * @param buf     the output buffer
  * @param buflen  the length of the buffer
  * @param tv      the tarval
+ * @param hex     print value in hexadecimal if true, else decimal
  */
-FIRM_API int tarval_snprintf(char *buf, size_t buflen, ir_tarval *tv);
+FIRM_API int tarval_snprintf(char *buf, size_t buflen, ir_tarval *tv,
+                             int hex);
 
 /**
  * Output a tarval to stdio.

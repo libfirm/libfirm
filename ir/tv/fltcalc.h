@@ -139,7 +139,7 @@ fp_value *fc_neg(const fp_value *a, fp_value *result);
 fp_value *fc_int(const fp_value *a, fp_value *result);
 fp_value *fc_rnd(const fp_value *a, fp_value *result);
 
-char *fc_print(const fp_value *a, char *buf, int buflen, unsigned base);
+int fc_print(const fp_value *a, char *buf, int buflen, unsigned base);
 
 /** Compare two values
  * This function compares two values

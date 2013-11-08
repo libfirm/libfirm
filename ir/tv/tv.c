@@ -1137,70 +1137,29 @@ ir_tarval *tarval_shrs_unsigned(ir_tarval *a, unsigned b)
 	return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
 }
 
-int tarval_snprintf(char *buf, size_t len, ir_tarval *tv)
+int tarval_snprintf(char *buf, size_t len, ir_tarval *tv, int hex)
 {
-	static const tarval_mode_info default_info = { TVO_NATIVE, NULL, NULL };
-	const tarval_mode_info *mode_info
-		= (const tarval_mode_info*)tv->mode->tv_priv;
-	if (mode_info == NULL)
-		mode_info = &default_info;
-	const char *prefix = mode_info->mode_prefix ? mode_info->mode_prefix : "";
-	const char *suffix = mode_info->mode_suffix ? mode_info->mode_suffix : "";
-
-	const char *str;
 	switch (get_mode_sort(tv->mode)) {
 	case irms_reference:
-		if (tv == tv->mode->null) return snprintf(buf, len, "NULL");
+		if (tv == tv->mode->null)
+			return snprintf(buf, len, "NULL");
 		/* FALLTHROUGH */
-	case irms_int_number:
-		switch (mode_info->mode_output) {
-
-		case TVO_DECIMAL:
-			str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_DEC, mode_is_signed(tv->mode));
-			break;
-
-		case TVO_OCTAL:
-			str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_OCT, 0);
-			break;
-
-		case TVO_NATIVE:
-			prefix = "0x";
-		case TVO_HEX:
-		default:
+	case irms_int_number: {
+		const char *str;
+		if (hex)
 			str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_HEX, 0);
-			break;
-		}
-		return snprintf(buf, len, "%s%s%s", prefix, str, suffix);
-
-	case irms_float_number: {
-		char tv_buf[100];
-		switch (mode_info->mode_output) {
-		case TVO_HEX:
-			return snprintf(buf, len, "%s%s%s", prefix, fc_print((const fp_value*) tv->value, tv_buf, sizeof(tv_buf), FC_PACKED), suffix);
-
-		case TVO_HEXFLOAT:
-			return snprintf(buf, len, "%s%s%s", prefix, fc_print((const fp_value*) tv->value, tv_buf, sizeof(tv_buf), FC_HEX), suffix);
-
-		case TVO_FLOAT:
-		case TVO_NATIVE:
-		default:
-			return snprintf(buf, len, "%s%s%s", prefix, fc_print((const fp_value*) tv->value, tv_buf, sizeof(tv_buf), FC_DEC), suffix);
-		}
+		else
+			str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_DEC, mode_is_signed(tv->mode));
+		return snprintf(buf, len, "%s", str);
 	}
 
+	case irms_float_number:
+		return fc_print((const fp_value*)tv->value, buf, len,
+		                hex ? FC_HEX : FC_DEC);
+
 	case irms_internal_boolean:
-		switch (mode_info->mode_output) {
-
-		case TVO_DECIMAL:
-		case TVO_OCTAL:
-		case TVO_HEX:
-		case TVO_BINARY:
-			return snprintf(buf, len, "%s%c%s", prefix, (tv == tarval_b_true) ? '1' : '0', suffix);
-
-		case TVO_NATIVE:
-		default:
-			return snprintf(buf, len, "%s%s%s", prefix, (tv == tarval_b_true) ? "true" : "false", suffix);
-		}
+		return snprintf(buf, len, "%s",
+		                (tv == tarval_b_true) ? "true" : "false");
 
 	default:
 		if (tv == tarval_bad)
@@ -1219,8 +1178,9 @@ int tarval_snprintf(char *buf, size_t len, ir_tarval *tv)
 int tarval_printf(ir_tarval *tv)
 {
 	char buf[1024];
-	int res = tarval_snprintf(buf, sizeof(buf), tv);
-	assert(res < (int) sizeof(buf) && "buffer to small for tarval_snprintf");
+	int res = tarval_snprintf(buf, sizeof(buf), tv,
+	                          !mode_is_float(get_tarval_mode(tv)));
+	assert(res >= (int) sizeof(buf) && "buffer to small for tarval_snprintf");
 	printf("%s", buf);
 	return res;
 }
@@ -1252,17 +1212,6 @@ unsigned char get_tarval_sub_bits(ir_tarval *tv, unsigned byte_ofs)
 	default:
 		panic("arithmetic mode not supported");
 	}
-}
-
-int set_tarval_mode_output_option(ir_mode *mode, const tarval_mode_info *modeinfo)
-{
-	mode->tv_priv = modeinfo;
-	return 0;
-}
-
-const tarval_mode_info *get_tarval_mode_output_option(ir_mode *mode)
-{
-	return (const tarval_mode_info*) mode->tv_priv;
 }
 
 int tarval_is_single_bit(ir_tarval *tv)
@@ -1396,15 +1345,6 @@ tarval_int_overflow_mode_t tarval_get_integer_overflow_mode(void)
 	return int_overflow_mode;
 }
 
-/**
- * default mode_info for output as HEX
- */
-static const tarval_mode_info hex_output = {
-	TVO_HEX,
-	"0x",
-	NULL,
-};
-
 void init_tarval_1(long null_value, int support_quad_precision)
 {
 	_null_value = null_value;
@@ -1436,20 +1376,6 @@ void init_tarval_2(void)
 
 	tarval_reachable->kind    = k_tarval;
 	tarval_reachable->mode    = mode_X;
-
-	/*
-	 * assign output modes that are compatible with the
-	 * old implementation: Hex output
-	 */
-	set_tarval_mode_output_option(mode_Bs, &hex_output);
-	set_tarval_mode_output_option(mode_Bu, &hex_output);
-	set_tarval_mode_output_option(mode_Hs, &hex_output);
-	set_tarval_mode_output_option(mode_Hu, &hex_output);
-	set_tarval_mode_output_option(mode_Is, &hex_output);
-	set_tarval_mode_output_option(mode_Iu, &hex_output);
-	set_tarval_mode_output_option(mode_Ls, &hex_output);
-	set_tarval_mode_output_option(mode_Lu, &hex_output);
-	set_tarval_mode_output_option(mode_P,  &hex_output);
 }
 
 void finish_tarval(void)

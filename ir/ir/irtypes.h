@@ -176,7 +176,6 @@ struct ir_mode {
 	ir_mode           *eq_signed;   /**< For pointer modes, the equivalent signed integer one. */
 	ir_mode           *eq_unsigned; /**< For pointer modes, the equivalent unsigned integer one. */
 	void              *link;        /**< To store some intermediate information */
-	const void        *tv_priv;     /**< tarval module will save private data here */
 };
 
 /* note: we use "long" here because that is the type used for Proj-Numbers */
