@@ -44,8 +44,7 @@ static bool modes_are_equal(const ir_mode *m, const ir_mode *n)
  */
 static ir_mode *find_mode(const ir_mode *m)
 {
-	size_t i, n_modes;
-	for (i = 0, n_modes = ARR_LEN(mode_list); i < n_modes; ++i) {
+	for (size_t i = 0, n_modes = ARR_LEN(mode_list); i < n_modes; ++i) {
 		ir_mode *n = mode_list[i];
 		if (modes_are_equal(n, m))
 			return n;
@@ -58,7 +57,7 @@ static ir_mode *find_mode(const ir_mode *m)
  */
 static void set_mode_values(ir_mode* mode)
 {
-	switch (get_mode_sort(mode))    {
+	switch (get_mode_sort(mode)) {
 	case irms_reference:
 	case irms_int_number:
 	case irms_float_number:
@@ -126,25 +125,25 @@ ir_mode *mode_P;
 ir_mode *mode_P_code;
 ir_mode *mode_P_data;
 
-ir_mode *get_modeT(void) { return mode_T; }
-ir_mode *get_modeF(void) { return mode_F; }
-ir_mode *get_modeD(void) { return mode_D; }
-ir_mode *get_modeQ(void) { return mode_Q; }
-ir_mode *get_modeBs(void) { return mode_Bs; }
-ir_mode *get_modeBu(void) { return mode_Bu; }
-ir_mode *get_modeHs(void) { return mode_Hs; }
-ir_mode *get_modeHu(void) { return mode_Hu; }
-ir_mode *get_modeIs(void) { return mode_Is; }
-ir_mode *get_modeIu(void) { return mode_Iu; }
-ir_mode *get_modeLs(void) { return mode_Ls; }
-ir_mode *get_modeLu(void) { return mode_Lu; }
-ir_mode *get_modeLLs(void){ return mode_LLs; }
-ir_mode *get_modeLLu(void){ return mode_LLu; }
-ir_mode *get_modeb(void) { return mode_b; }
-ir_mode *get_modeP(void) { return mode_P; }
-ir_mode *get_modeX(void) { return mode_X; }
-ir_mode *get_modeM(void) { return mode_M; }
-ir_mode *get_modeBB(void) { return mode_BB; }
+ir_mode *get_modeT(void)   { return mode_T;   }
+ir_mode *get_modeF(void)   { return mode_F;   }
+ir_mode *get_modeD(void)   { return mode_D;   }
+ir_mode *get_modeQ(void)   { return mode_Q;   }
+ir_mode *get_modeBs(void)  { return mode_Bs;  }
+ir_mode *get_modeBu(void)  { return mode_Bu;  }
+ir_mode *get_modeHs(void)  { return mode_Hs;  }
+ir_mode *get_modeHu(void)  { return mode_Hu;  }
+ir_mode *get_modeIs(void)  { return mode_Is;  }
+ir_mode *get_modeIu(void)  { return mode_Iu;  }
+ir_mode *get_modeLs(void)  { return mode_Ls;  }
+ir_mode *get_modeLu(void)  { return mode_Lu;  }
+ir_mode *get_modeLLs(void) { return mode_LLs; }
+ir_mode *get_modeLLu(void) { return mode_LLu; }
+ir_mode *get_modeb(void)   { return mode_b;   }
+ir_mode *get_modeP(void)   { return mode_P;   }
+ir_mode *get_modeX(void)   { return mode_X;   }
+ir_mode *get_modeM(void)   { return mode_M;   }
+ir_mode *get_modeBB(void)  { return mode_BB;  }
 ir_mode *get_modeANY(void) { return mode_ANY; }
 ir_mode *get_modeBAD(void) { return mode_BAD; }
 
@@ -230,7 +229,6 @@ ir_mode *new_float_mode(const char *name, ir_mode_arithmetic arithmetic,
 {
 	bool     explicit_one = false;
 	unsigned bit_size     = exponent_size + mantissa_size + 1;
-	ir_mode *result;
 
 	if (arithmetic == irma_x86_extended_float) {
 		explicit_one = true;
@@ -243,7 +241,8 @@ ir_mode *new_float_mode(const char *name, ir_mode_arithmetic arithmetic,
 	if (mantissa_size >= 256)
 		panic("Mantissa >= 256 bits not supported");
 
-	result = alloc_mode(name, irms_float_number, arithmetic, bit_size, 1, 0);
+	ir_mode *result
+		= alloc_mode(name, irms_float_number, arithmetic, bit_size, 1, 0);
 	result->float_desc.exponent_size = exponent_size;
 	result->float_desc.mantissa_size = mantissa_size;
 	result->float_desc.explicit_one  = explicit_one;
@@ -298,7 +297,6 @@ void (set_mode_link)(ir_mode *mode, void *l)
 
 ir_tarval *get_mode_min(ir_mode *mode)
 {
-	assert(mode);
 	assert(mode_is_data(mode));
 
 	return mode->min;
@@ -306,7 +304,6 @@ ir_tarval *get_mode_min(ir_mode *mode)
 
 ir_tarval *get_mode_max(ir_mode *mode)
 {
-	assert(mode);
 	assert(mode_is_data(mode));
 
 	return mode->max;
@@ -314,7 +311,6 @@ ir_tarval *get_mode_max(ir_mode *mode)
 
 ir_tarval *get_mode_null(ir_mode *mode)
 {
-	assert(mode);
 	assert(mode_is_data(mode) || mode == mode_b);
 
 	return mode->null;
@@ -322,7 +318,6 @@ ir_tarval *get_mode_null(ir_mode *mode)
 
 ir_tarval *get_mode_one(ir_mode *mode)
 {
-	assert(mode);
 	assert(mode_is_data(mode) || mode == mode_b);
 
 	return mode->one;
@@ -330,7 +325,6 @@ ir_tarval *get_mode_one(ir_mode *mode)
 
 ir_tarval *get_mode_minus_one(ir_mode *mode)
 {
-	assert(mode);
 	assert(mode_is_data(mode));
 
 	return mode->minus_one;
@@ -338,14 +332,12 @@ ir_tarval *get_mode_minus_one(ir_mode *mode)
 
 ir_tarval *get_mode_all_one(ir_mode *mode)
 {
-	assert(mode);
 	assert(mode_is_data(mode) || mode == mode_b);
 	return mode->all_one;
 }
 
 ir_tarval *get_mode_infinite(ir_mode *mode)
 {
-	assert(mode);
 	assert(mode_is_float(mode));
 
 	return get_tarval_plus_inf(mode);
@@ -353,7 +345,6 @@ ir_tarval *get_mode_infinite(ir_mode *mode)
 
 ir_tarval *get_mode_NAN(ir_mode *mode)
 {
-	assert(mode);
 	assert(mode_is_float(mode));
 
 	return get_tarval_nan(mode);
@@ -406,22 +397,16 @@ unsigned (get_mode_exponent_size)(const ir_mode *mode)
 
 int smaller_mode(const ir_mode *sm, const ir_mode *lm)
 {
-	int sm_bits, lm_bits;
-
-	assert(sm);
-	assert(lm);
-
-	if (sm == lm) return 1;
-
-	sm_bits = get_mode_size_bits(sm);
-	lm_bits = get_mode_size_bits(lm);
+	assert(sm != NULL);
+	assert(lm != NULL);
+	if (sm == lm) return true;
 
 	switch (get_mode_sort(sm)) {
 	case irms_int_number:
 		switch (get_mode_sort(lm)) {
 		case irms_int_number:
 			if (get_mode_arithmetic(sm) != get_mode_arithmetic(lm))
-				return 0;
+				return false;
 
 			/* only two complement implemented */
 			assert(get_mode_arithmetic(sm) == irma_twos_complement);
@@ -430,8 +415,11 @@ int smaller_mode(const ir_mode *sm, const ir_mode *lm)
 			 *   - both have the same sign and lm is the larger one
 			 *   - lm is the signed one and is at least two bits larger
 			 *     (one for the sign, one for the highest bit of sm)
-			 *   - sm & lm are two_complement and lm has greater or equal number of bits
+			 *   - sm & lm are two_complement and lm has greater or equal
+			 *     number of bits
 			 */
+			unsigned sm_bits = get_mode_size_bits(sm);
+			unsigned lm_bits = get_mode_size_bits(lm);
 			if (mode_is_signed(sm)) {
 				if (!mode_is_signed(lm))
 					return 0;
@@ -445,7 +433,7 @@ int smaller_mode(const ir_mode *sm, const ir_mode *lm)
 
 		case irms_float_number:
 			/* int to float works if the float is large enough */
-			return 0;
+			return false;
 
 		default:
 			break;
@@ -456,13 +444,13 @@ int smaller_mode(const ir_mode *sm, const ir_mode *lm)
 		if (get_mode_arithmetic(sm) == get_mode_arithmetic(lm)) {
 			if ( (get_mode_sort(lm) == irms_float_number)
 				&& (get_mode_size_bits(lm) >= get_mode_size_bits(sm)) )
-				return 1;
+				return true;
 		}
 		break;
 
 	case irms_reference:
 		/* do exist machines out there with different pointer lengths ?*/
-		return 0;
+		return false;
 
 	case irms_internal_boolean:
 		return mode_is_int(lm);
@@ -472,11 +460,13 @@ int smaller_mode(const ir_mode *sm, const ir_mode *lm)
 	}
 
 	/* else */
-	return 0;
+	return false;
 }
 
 int values_in_mode(const ir_mode *sm, const ir_mode *lm)
 {
+	assert(sm != NULL);
+	assert(lm != NULL);
 	if (sm == lm)
 		return true;
 
@@ -491,15 +481,15 @@ int values_in_mode(const ir_mode *sm, const ir_mode *lm)
 		if (sarith == irma_ieee754 || sarith == irma_x86_extended_float) {
 			return get_mode_size_bits(sm) <= get_mode_size_bits(lm);
 		} else if (sarith == irma_twos_complement) {
-			unsigned int_mantissa   = get_mode_size_bits(sm) - (mode_is_signed(sm) ? 1 : 0);
+			unsigned int_mantissa
+				= get_mode_size_bits(sm) - (mode_is_signed(sm) ? 1 : 0);
 			unsigned float_mantissa = get_mode_mantissa_size(lm) + 1;
 			return int_mantissa <= float_mantissa;
 		}
 		break;
 	case irma_twos_complement:
-		if (sarith == irma_twos_complement) {
+		if (sarith == irma_twos_complement)
 			return get_mode_size_bits(sm) <= get_mode_size_bits(lm);
-		}
 		break;
 	case irma_none:
 		break;
@@ -603,7 +593,8 @@ ir_mode *find_double_bits_int_mode(const ir_mode *mode)
 {
 	ir_mode n = *mode;
 
-	assert(mode->sort == irms_int_number && mode->arithmetic == irma_twos_complement);
+	assert(mode->sort == irms_int_number
+	       && mode->arithmetic == irma_twos_complement);
 
 	n.size = 2*mode->size;
 	return find_mode(&n);
@@ -614,10 +605,10 @@ int mode_has_signed_zero(const ir_mode *mode)
 	switch (mode->arithmetic) {
 	case irma_ieee754:
 	case irma_x86_extended_float:
-		return 1;
+		return true;
 	case irma_none:
 	case irma_twos_complement:
-		return 0;
+		return false;
 	}
 	panic("invalid arithmetic mode");
 }
@@ -626,11 +617,11 @@ int mode_overflow_on_unary_Minus(const ir_mode *mode)
 {
 	switch (mode->arithmetic) {
 	case irma_twos_complement:
-		return 1;
+		return true;
 	case irma_ieee754:
 	case irma_x86_extended_float:
 	case irma_none:
-		return 0;
+		return false;
 	}
 	panic("invalid arithmetic mode");
 }
@@ -640,25 +631,23 @@ int mode_wrap_around(const ir_mode *mode)
 	switch (mode->arithmetic) {
 	case irma_twos_complement:
 	case irma_none:
-		return 1;
+		return true;
 	case irma_ieee754:
 	case irma_x86_extended_float:
-		return 0;
+		return false;
 	}
 	panic("invalid arithmetic mode");
 }
 
 int is_reinterpret_cast(const ir_mode *src, const ir_mode *dst)
 {
-	ir_mode_arithmetic ma;
-
 	if (src == dst)
-		return 1;
+		return true;
 	if (get_mode_size_bits(src) != get_mode_size_bits(dst))
-		return 0;
-	ma = get_mode_arithmetic(src);
+		return false;
+	ir_mode_arithmetic ma = get_mode_arithmetic(src);
 	if (ma != get_mode_arithmetic(dst))
-		return 0;
+		return false;
 
 	return ma == irma_twos_complement;
 }
