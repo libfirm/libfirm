@@ -92,8 +92,8 @@ static ir_node *create_fpu_mode_spill(void *env, ir_node *state, bool force,
 		ir_node *spill
 			= new_bd_ia32_FnstCW(NULL, block, frame, noreg, nomem, state);
 		set_ia32_op_type(spill, ia32_AddrModeD);
-		/* use mode_Iu, as movl has a shorter opcode than movw */
-		set_ia32_ls_mode(spill, mode_Iu);
+		/* use ia32_mode_gp, as movl has a shorter opcode than movw */
+		set_ia32_ls_mode(spill, ia32_mode_gp);
 		set_ia32_use_frame(spill);
 
 		sched_add_after(skip_Proj(after), spill);
@@ -153,7 +153,7 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 
 		sched_add_before(before, reload);
 	} else {
-		ir_mode *lsmode = ia32_reg_classes[CLASS_ia32_fp_cw].mode;
+		ir_mode *lsmode = mode_Hu;
 		ir_node *nomem  = get_irg_no_mem(irg);
 		ir_node *cwstore, *load, *load_res, *orn, *store, *fldcw;
 		ir_node *store_proj;
@@ -173,7 +173,7 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 		set_ia32_use_frame(load);
 		sched_add_before(before, load);
 
-		load_res = new_r_Proj(load, mode_Iu, pn_ia32_Load_res);
+		load_res = new_r_Proj(load, ia32_mode_gp, pn_ia32_Load_res);
 
 		/* TODO: make the actual mode configurable in ChangeCW... */
 		or_const = new_bd_ia32_Immediate(NULL, get_irg_start_block(irg),
@@ -185,8 +185,8 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 
 		store = new_bd_ia32_Store(NULL, block, frame, noreg, nomem, orn);
 		set_ia32_op_type(store, ia32_AddrModeD);
-		/* use mode_Iu, as movl has a shorter opcode than movw */
-		set_ia32_ls_mode(store, mode_Iu);
+		/* use ia32_mode_gp, as movl has a shorter opcode than movw */
+		set_ia32_ls_mode(store, ia32_mode_gp);
 		set_ia32_use_frame(store);
 		store_proj = new_r_Proj(store, mode_M, pn_ia32_Store_M);
 		sched_add_before(before, store);

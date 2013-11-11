@@ -598,7 +598,7 @@ emit_I:
 			case 'M': {
 				ir_mode *mode = get_ia32_ls_mode(node);
 				if (!mode)
-					mode = mode_Iu;
+					mode = ia32_mode_gp;
 				if (mod & EMIT_RESPECT_LS) {
 					if (get_mode_size_bits(mode) == 32)
 						break;

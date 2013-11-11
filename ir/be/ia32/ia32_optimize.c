@@ -253,7 +253,7 @@ static void peephole_ia32_Test(ir_node *node)
 
 			/* If there are other users, reroute them to result proj */
 			if (get_irn_n_edges(op) != 2) {
-				ir_node *res = new_r_Proj(op, mode_Iu, pn_ia32_res);
+				ir_node *res = new_r_Proj(op, ia32_mode_gp, pn_ia32_res);
 				edges_reroute_except(op, res, res);
 			}
 		} else {
@@ -621,7 +621,7 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 		copy_mark(load, pop);
 
 		/* create stackpointer Proj */
-		pred_sp = new_r_Proj(pop, mode_Iu, pn_ia32_Pop_stack);
+		pred_sp = new_r_Proj(pop, ia32_mode_gp, pn_ia32_Pop_stack);
 		arch_set_irn_register(pred_sp, esp);
 
 		sched_add_before(irn, pop);
@@ -687,9 +687,9 @@ static ir_node *create_pop(dbg_info *dbgi, ir_node *block,
 
 	pop   = new_bd_ia32_Pop(dbgi, block, get_irg_no_mem(irg), stack);
 
-	stack = new_r_Proj(pop, mode_Iu, pn_ia32_Pop_stack);
+	stack = new_r_Proj(pop, ia32_mode_gp, pn_ia32_Pop_stack);
 	arch_set_irn_register(stack, esp);
-	val   = new_r_Proj(pop, mode_Iu, pn_ia32_Pop_res);
+	val   = new_r_Proj(pop, ia32_mode_gp, pn_ia32_Pop_res);
 	arch_set_irn_register(val, reg);
 
 	sched_add_before(schedpoint, pop);

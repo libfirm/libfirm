@@ -75,8 +75,12 @@ transformer_t be_transformer = TRANSFORMER_DEFAULT;
 #endif
 
 ir_mode *ia32_mode_fpcw;
+ir_mode *ia32_mode_flags;
 ir_mode *ia32_mode_E;
 ir_type *ia32_type_E;
+ir_mode *ia32_mode_gp;
+ir_mode *ia32_mode_float64;
+ir_mode *ia32_mode_float32;
 
 /** The current omit-fp state */
 static ir_type *omit_fp_between_type   = NULL;
@@ -213,8 +217,8 @@ static void ia32_build_between_type(void)
 {
 #define IDENT(s) new_id_from_chars(s, sizeof(s)-1)
 	if (between_type == NULL) {
-		ir_type *old_bp_type   = new_type_primitive(mode_Iu);
-		ir_type *ret_addr_type = new_type_primitive(mode_Iu);
+		ir_type *old_bp_type   = new_type_primitive(ia32_mode_gp);
+		ir_type *ret_addr_type = new_type_primitive(ia32_mode_gp);
 
 		between_type           = new_type_struct(IDENT("ia32_between_type"));
 		old_bp_ent             = new_entity(between_type, IDENT("old_bp"), old_bp_type);
@@ -303,9 +307,9 @@ static int ia32_get_op_estimated_cost(ir_node const *const irn)
 static ir_mode *get_spill_mode_mode(const ir_mode *mode)
 {
 	if (mode_is_float(mode))
-		return precise_x87_spills ? ia32_mode_E : mode_D;
+		return precise_x87_spills ? ia32_mode_E : ia32_mode_float64;
 
-	return mode_Iu;
+	return ia32_mode_gp;
 }
 
 /**
@@ -334,7 +338,7 @@ static int ia32_possible_memory_operand(const ir_node *irn, unsigned int i)
 		return 0;
 	if (mode_is_float(mode)) {
 		ir_mode *spillmode = get_spill_mode_mode(mode);
-		if (spillmode != mode_D && spillmode != mode_F)
+		if (spillmode != ia32_mode_float64 && spillmode != mode_F)
 			return 0;
 	}
 
@@ -440,7 +444,7 @@ ir_node *ia32_turn_back_am(ir_node *node)
 	ir_node  *noreg;
 
 	ir_node  *load     = new_bd_ia32_Load(dbgi, block, base, idx, mem);
-	ir_node  *load_res = new_rd_Proj(dbgi, load, mode_Iu, pn_ia32_Load_res);
+	ir_node  *load_res = new_rd_Proj(dbgi, load, ia32_mode_gp, pn_ia32_Load_res);
 
 	ia32_copy_am_attrs(load, node);
 	if (is_ia32_is_reload(node))
@@ -651,7 +655,7 @@ static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp, ir_
 	set_ia32_frame_ent(push, ent);
 	set_ia32_use_frame(push);
 	set_ia32_op_type(push, ia32_AddrModeS);
-	set_ia32_ls_mode(push, mode_Is);
+	set_ia32_ls_mode(push, ia32_mode_gp);
 	set_ia32_is_spill(push);
 
 	sched_add_before(schedpoint, push);
@@ -672,7 +676,7 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp, ir_e
 	set_ia32_frame_ent(pop, ent);
 	set_ia32_use_frame(pop);
 	set_ia32_op_type(pop, ia32_AddrModeD);
-	set_ia32_ls_mode(pop, mode_Is);
+	set_ia32_ls_mode(pop, ia32_mode_gp);
 	set_ia32_is_reload(pop);
 
 	sched_add_before(schedpoint, pop);
@@ -683,7 +687,7 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp, ir_e
 static ir_node* create_spproj(ir_node *node, ir_node *pred, int pos)
 {
 	dbg_info *dbgi   = get_irn_dbg_info(node);
-	ir_mode  *spmode = mode_Iu;
+	ir_mode  *spmode = ia32_mode_gp;
 	const arch_register_t *spreg = &ia32_registers[REG_ESP];
 	ir_node *sp;
 
@@ -836,7 +840,7 @@ need_stackent:
 				const ia32_attr_t *attr = get_ia32_attr_const(node);
 
 				if (attr->data.need_32bit_stackent) {
-					mode = mode_Is;
+					mode = ia32_mode_gp;
 				} else if (attr->data.need_64bit_stackent) {
 					mode = mode_Ls;
 				} else {
@@ -858,7 +862,7 @@ need_stackent:
 
 			case iro_ia32_FldCW: {
 				/* although 2 byte would be enough 4 byte performs best */
-				mode  = mode_Iu;
+				mode  = ia32_mode_gp;
 				align = 4;
 				break;
 			}
@@ -966,7 +970,7 @@ static void introduce_prolog_epilog(ir_graph *irg)
 	unsigned               frame_size = get_type_size_bytes(frame_type);
 	be_stack_layout_t     *layout     = be_get_irg_stack_layout(irg);
 	ir_node               *initial_sp = be_get_initial_reg_value(irg, sp);
-	ir_mode               *mode_gp    = mode_Iu;
+	ir_mode               *mode_gp    = ia32_mode_gp;
 
 	if (!layout->sp_relative) {
 		/* push ebp */
@@ -1378,8 +1382,8 @@ static ir_node *ia32_create_trampoline_fkt(ir_node *block, ir_node *mem, ir_node
 	ir_graph *const irg  = get_irn_irg(block);
 	ir_node  *      p    = trampoline;
 	ir_mode  *const mode = get_irn_mode(p);
-	ir_node  *const one  = new_r_Const(irg, get_mode_one(mode_Iu));
-	ir_node  *const four = new_r_Const_long(irg, mode_Iu, 4);
+	ir_node  *const one  = new_r_Const(irg, get_mode_one(ia32_mode_gp));
+	ir_node  *const four = new_r_Const_long(irg, ia32_mode_gp, 4);
 	ir_node  *      st;
 
 	/* mov  ecx,<env> */
@@ -1440,7 +1444,8 @@ static void ia32_init(void)
 
 	init_asm_constraints();
 
-	ia32_mode_fpcw = new_int_mode("Fpcw", irma_twos_complement, 16, 0, 0);
+	ia32_mode_fpcw = new_non_arithmetic_mode("fpcw");
+	ia32_mode_flags = new_non_arithmetic_mode("flags");
 
 	/* note mantissa is 64bit but with explicitely encoded 1 so the really
 	 * usable part as counted by firm is only 63 bits */
@@ -1448,6 +1453,10 @@ static void ia32_init(void)
 	ia32_type_E = new_type_primitive(ia32_mode_E);
 	set_type_size_bytes(ia32_type_E, 12);
 	set_type_alignment_bytes(ia32_type_E, 4);
+
+	ia32_mode_gp = new_int_mode("gp", irma_twos_complement, 32, 0, 32);
+	ia32_mode_float64 = new_float_mode("fp64", irma_ieee754, 11, 52);
+	ia32_mode_float32 = new_float_mode("fp32", irma_ieee754, 8, 23);
 
 	mode_long_long = new_int_mode("long long", irma_twos_complement, 64, 1, 64);
 	type_long_long = new_type_primitive(mode_long_long);
@@ -1664,7 +1673,7 @@ static void ia32_get_call_abi(ir_type *method_type, be_abi_call_t *abi)
 					pop_amount += (size + 3U) & ~3U;
 				}
 
-				if (size < 4) load_mode = mode_Iu;
+				if (size < 4) load_mode = ia32_mode_gp;
 			}
 
 			be_abi_call_param_stack(abi, i, load_mode, 4, 0, 0, ABI_CONTEXT_BOTH);
@@ -1777,7 +1786,7 @@ static void ia32_lower_for_target(void)
 	for (size_t i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		/* lower for mode_b stuff */
-		ir_lower_mode_b(irg, mode_Iu);
+		ir_lower_mode_b(irg, ia32_mode_gp);
 		be_after_transform(irg, "lower-modeb");
 	}
 

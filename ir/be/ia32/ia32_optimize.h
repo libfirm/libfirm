@@ -14,8 +14,7 @@
 #include "firm_types.h"
 
 /**
- * Prepares irg for codegeneration. Places consts and transform reference mode
- * nodes into mode_Iu nodes.
+ * Prepares irg for codegeneration.
  */
 void ia32_pre_transform_phase(ir_graph *irg);
 

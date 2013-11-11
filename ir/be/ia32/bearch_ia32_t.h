@@ -75,6 +75,10 @@ extern ir_mode *ia32_mode_fpcw;
 /** extended floatingpoint mode */
 extern ir_mode *ia32_mode_E;
 extern ir_type *ia32_type_E;
+extern ir_mode *ia32_mode_gp;
+extern ir_mode *ia32_mode_float64;
+extern ir_mode *ia32_mode_float32;
+extern ir_mode *ia32_mode_flags;
 
 static inline ia32_irg_data_t *ia32_get_irg_data(const ir_graph *irg)
 {

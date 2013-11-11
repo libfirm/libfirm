@@ -129,11 +129,7 @@ const arch_register_t *ia32_get_clobber_register(const char *clobber)
 
 bool ia32_mode_needs_gp_reg(ir_mode *mode)
 {
-	if (mode == ia32_mode_fpcw)
-		return false;
-	if (get_mode_size_bits(mode) > 32)
-		return false;
-	return mode_is_int(mode) || mode_is_reference(mode) || mode == mode_b;
+	return get_mode_arithmetic(mode) == irma_twos_complement;
 }
 
 /**

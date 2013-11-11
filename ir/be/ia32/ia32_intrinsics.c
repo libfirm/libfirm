@@ -45,7 +45,7 @@ static void ia32_lower_add64(ir_node *node, ir_mode *mode)
 	ir_node  *add_low
 		= new_bd_ia32_l_Add(dbg, block, left_low, right_low);
 	ir_mode  *mode_flags = ia32_reg_classes[CLASS_ia32_flags].mode;
-	ir_node  *res_low    = new_r_Proj(add_low, mode_Iu, pn_ia32_l_Add_res);
+	ir_node  *res_low    = new_r_Proj(add_low, ia32_mode_gp, pn_ia32_l_Add_res);
 	ir_node  *flags      = new_r_Proj(add_low, mode_flags, pn_ia32_l_Add_flags);
 
 	/* h_res = a_h + b_h + carry */
@@ -73,7 +73,7 @@ static void ia32_lower_sub64(ir_node *node, ir_mode *mode)
 	ir_node  *sub_low
 		= new_bd_ia32_l_Sub(dbg, block, left_low, right_low);
 	ir_mode  *mode_flags = ia32_reg_classes[CLASS_ia32_flags].mode;
-	ir_node  *res_low    = new_r_Proj(sub_low, mode_Iu, pn_ia32_l_Sub_res);
+	ir_node  *res_low    = new_r_Proj(sub_low, ia32_mode_gp, pn_ia32_l_Sub_res);
 	ir_node  *flags      = new_r_Proj(sub_low, mode_flags, pn_ia32_l_Sub_flags);
 
 	/* h_res = a_h - b_h - carry */
@@ -145,12 +145,12 @@ static void ia32_lower_mul64(ir_node *node, ir_mode *mode)
 	    && is_sign_extend(right_low, right_high)) {
 		ir_node *mul = new_bd_ia32_l_IMul(dbg, block, left_low, right_low);
 		h_res = new_rd_Proj(dbg, mul, mode, pn_ia32_l_IMul_res_high);
-		l_res = new_rd_Proj(dbg, mul, mode_Iu, pn_ia32_l_IMul_res_low);
+		l_res = new_rd_Proj(dbg, mul, ia32_mode_gp, pn_ia32_l_IMul_res_low);
 	} else {
 		/* note that zero extension is handled hare efficiently */
 		ir_node *mul  = new_bd_ia32_l_Mul(dbg, block, left_low, right_low);
 		ir_node *pEDX = new_rd_Proj(dbg, mul, mode, pn_ia32_l_Mul_res_high);
-		l_res = new_rd_Proj(dbg, mul, mode_Iu, pn_ia32_l_Mul_res_low);
+		l_res = new_rd_Proj(dbg, mul, ia32_mode_gp, pn_ia32_l_Mul_res_low);
 
 		ir_node *right_lowc = new_rd_Conv(dbg, block, right_low, mode);
 		ir_node *mul1 = new_rd_Mul(dbg, block, left_high, right_lowc, mode);
@@ -173,7 +173,7 @@ static void ia32_lower_minus64(ir_node *node, ir_mode *mode)
 	ir_node  *op_low  = get_lowered_low(op);
 	ir_node  *op_high = get_lowered_high(op);
 	ir_node  *minus   = new_bd_ia32_l_Minus64(dbg, block, op_low, op_high);
-	ir_node  *l_res   = new_r_Proj(minus, mode_Iu, pn_ia32_Minus64_res_low);
+	ir_node  *l_res   = new_r_Proj(minus, ia32_mode_gp, pn_ia32_Minus64_res_low);
 	ir_node  *h_res   = new_r_Proj(minus, mode, pn_ia32_Minus64_res_high);
 	ir_set_dw_lowered(node, l_res, h_res);
 }
@@ -198,7 +198,7 @@ static void ia32_lower_conv64(ir_node *node, ir_mode *mode)
 			/* convert from float to signed 64bit */
 			ir_node *block = get_nodes_block(node);
 			float_to_ll = new_bd_ia32_l_FloattoLL(dbg, block, op);
-			l_res = new_r_Proj(float_to_ll, mode_Iu,
+			l_res = new_r_Proj(float_to_ll, ia32_mode_gp,
 			                   pn_ia32_l_FloattoLL_res_low);
 			h_res = new_r_Proj(float_to_ll, mode,
 							   pn_ia32_l_FloattoLL_res_high);
@@ -248,7 +248,7 @@ static void ia32_lower_conv64(ir_node *node, ir_mode *mode)
 				add_Block_phi(lower_blk, flt_phi);
 
 			float_to_ll = new_bd_ia32_l_FloattoLL(dbg, lower_blk, flt_phi);
-			l_res = new_r_Proj(float_to_ll, mode_Iu,
+			l_res = new_r_Proj(float_to_ll, ia32_mode_gp,
 							   pn_ia32_l_FloattoLL_res_low);
 			h_res = new_r_Proj(float_to_ll, mode,
 							   pn_ia32_l_FloattoLL_res_high);

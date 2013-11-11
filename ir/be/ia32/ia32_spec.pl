@@ -2,11 +2,11 @@
 
 $arch = "ia32";
 
-$mode_xmm           = "mode_D";
-$mode_mmx           = "mode_D";
+$mode_xmm           = "ia32_mode_float64";
+$mode_mmx           = "ia32_mode_float64";
 $mode_fp87          = "ia32_mode_E";
-$mode_gp            = "mode_Iu";
-$mode_flags         = "mode_Iu";
+$mode_gp            = "ia32_mode_gp";
+$mode_flags         = "ia32_mode_flags";
 $mode_fpcw          = "ia32_mode_fpcw";
 
 %reg_classes = (
@@ -63,7 +63,7 @@ $mode_fpcw          = "ia32_mode_fpcw";
 	],
 	flags => [
 		{ name => "eflags", dwarf => 9 },
-		{ mode => "mode_Iu", flags => "manual_ra" }
+		{ mode => "ia32_mode_flags", flags => "manual_ra" }
 	],
 ); # %reg_classes
 
