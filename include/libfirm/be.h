@@ -99,18 +99,16 @@ typedef ir_node *(create_trampoline_fkt)(ir_node *block, ir_node *mem, ir_node *
 typedef struct backend_params {
 	/** the backend uses big-endian byte ordering if set, else little endian */
 	unsigned byte_order_big_endian:1;
-	/** whether the architecure can natively handle modulo shift modes.
-	 * If this is true, then you can assume that shifting in modes with
-	 * module_shift==machine_size (if mode size is <= machine_size) is efficient
-	 */
-	unsigned modulo_shift_efficient:1;
-	/** whether the architecure can natively handle modulo shift modes.
-	 * If this is true, then you can assume that shifting without modulo shift
-	 * is efficient
-	 */
-	unsigned non_modulo_shift_efficient:1;
 	/** 1 if backend supports generation of position independent code (PIC) */
 	unsigned pic_supported:1;
+
+	/**
+	 * Shifts on this architecture only read some bits of the shift value.
+	 * For example on x86 for every mode with less than 32bits only 5 bits of
+	 * the shift value are read resulting in a modulo shift value of 32.
+	 * On an architecture without modulo_shift this value is 0.
+	 */
+	unsigned char modulo_shift;
 
 	/** Settings for architecture dependent optimizations. */
 	const ir_settings_arch_dep_t *dep_param;

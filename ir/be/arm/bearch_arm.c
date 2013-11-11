@@ -419,9 +419,8 @@ static const backend_params *arm_get_libfirm_params(void)
 	};
 	static backend_params p = {
 		1,     /* big endian */
-		1,     /* modulo shift efficient */
-		0,     /* non-modulo shift not efficient */
 		0,     /* PIC code not supported */
+		32,    /* modulo shift */
 		&ad,   /* will be set later */
 		arm_is_mux_allowed, /* allow_ifconv function */
 		32,    /* machine size */

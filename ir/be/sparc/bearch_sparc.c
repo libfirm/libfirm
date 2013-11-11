@@ -561,9 +561,8 @@ static const backend_params *sparc_get_backend_params(void)
 	};
 	static backend_params p = {
 		1,     /* big endian */
-		1,     /* modulo shift efficient */
-		0,     /* non-modulo shift not efficient */
 		0,     /* PIC code supported */
+		32,    /* modulo shift */
 		&arch_dep,              /* will be set later */
 		sparc_is_mux_allowed,   /* parameter for if conversion */
 		32,    /* machine size */
