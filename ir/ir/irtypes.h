@@ -93,30 +93,21 @@ enum ir_mode_sort_helper {
 
 /**
  * These values represent the different mode classes of value representations.
- * Beware: do not change the order of these values without checking
- * the mode_is
  */
 typedef enum ir_mode_sort {
-	irms_control_flow     = 0, /**< Marks all control flow modes. */
-	irms_block            = 1,
-	irms_tuple            = 2,
-	irms_any              = 3,
-	irms_bad              = 4,
-	irms_memory           = 5,
-
-	/** Internal boolean representation.
-	     Storing to memory impossible, convert first. (irm_b) */
-	irms_internal_boolean = 6,
+	irms_auxiliary        = 0,
+	irms_internal_boolean = 1 | irmsh_is_data,
+	irms_data             = 2 | irmsh_is_data,
 
 	/** A mode to represent entities.
 	    Restricted int computations can be performed */
-	irms_reference        = 7 | irmsh_is_data,
+	irms_reference        = 3 | irmsh_is_data,
 	/** A mode to represent int numbers.
 	    Integer computations can be performed. */
-	irms_int_number       = 8 | irmsh_is_data | irmsh_is_num,
+	irms_int_number       = 4 | irmsh_is_data | irmsh_is_num,
 	/** A mode to represent float numbers.
 	    Floating point computations can be performed. */
-	irms_float_number     = 9 | irmsh_is_data | irmsh_is_num,
+	irms_float_number     = 5 | irmsh_is_data | irmsh_is_num,
 } ir_mode_sort;
 
 /**

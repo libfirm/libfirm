@@ -35,8 +35,7 @@
  */
 typedef enum ir_mode_arithmetic {
 	irma_none = 1,            /**< For modes for which no representation is
-	                               specified. These are modes of sort auxiliary,
-	                               internal_boolean and character. */
+	                               specified. */
 	irma_twos_complement = 2, /**< Values of the mode are represented as two's
 	                               complement. Only legal for modes of sort
 	                               int_number and reference. */
@@ -92,6 +91,12 @@ FIRM_API ir_mode *new_float_mode(const char *name,
                                  ir_mode_arithmetic arithmetic,
                                  unsigned exponent_size,
                                  unsigned mantissa_size);
+
+/**
+ * Creates a new mode for data values which are not used to perform arithmetic.
+ * Arithmetic will be set to irma_none.
+ */
+FIRM_API ir_mode *new_non_arithmetic_mode(const char *name);
 
 /**
  * Checks whether a pointer points to a mode.

@@ -30,8 +30,11 @@ static ir_mode **mode_list;
 
 static bool modes_are_equal(const ir_mode *m, const ir_mode *n)
 {
-	return m->sort         == n->sort &&
-	       m->arithmetic   == n->arithmetic &&
+	if (m->sort != n->sort)
+		return false;
+	if (m->sort == irms_auxiliary || m->sort == irms_data)
+		return strcmp(m->name, n->name) == 0;
+	return m->arithmetic   == n->arithmetic &&
 	       m->size         == n->size &&
 	       m->sign         == n->sign &&
 	       m->modulo_shift == n->modulo_shift;
@@ -82,12 +85,8 @@ static void set_mode_values(ir_mode* mode)
 		mode->all_one = tarval_b_true;
 		break;
 
-	case irms_control_flow:
-	case irms_block:
-	case irms_tuple:
-	case irms_any:
-	case irms_bad:
-	case irms_memory:
+	case irms_auxiliary:
+	case irms_data:
 		mode->min  = tarval_bad;
 		mode->max  = tarval_bad;
 		mode->null = tarval_bad;
@@ -246,6 +245,18 @@ ir_mode *new_float_mode(const char *name, ir_mode_arithmetic arithmetic,
 	result->float_desc.exponent_size = exponent_size;
 	result->float_desc.mantissa_size = mantissa_size;
 	result->float_desc.explicit_one  = explicit_one;
+	return register_mode(result);
+}
+
+ir_mode *new_non_arithmetic_mode(const char *name)
+{
+	ir_mode *result = alloc_mode(name, irms_data, irma_none, 0, 0, 0);
+	return register_mode(result);
+}
+
+static ir_mode *new_non_data_mode(const char *name)
+{
+	ir_mode *result = alloc_mode(name, irms_auxiliary, irma_none, 0, 0, 0);
 	return register_mode(result);
 }
 
@@ -431,36 +442,30 @@ int smaller_mode(const ir_mode *sm, const ir_mode *lm)
 				return sm_bits <= lm_bits;
 			}
 
+		case irms_auxiliary:
+		case irms_data:
+		case irms_internal_boolean:
+		case irms_reference:
 		case irms_float_number:
 			/* int to float works if the float is large enough */
 			return false;
-
-		default:
-			break;
 		}
-		break;
+		panic("invalid mode_sort");
 
 	case irms_float_number:
-		if (get_mode_arithmetic(sm) == get_mode_arithmetic(lm)) {
-			if ( (get_mode_sort(lm) == irms_float_number)
-				&& (get_mode_size_bits(lm) >= get_mode_size_bits(sm)) )
-				return true;
-		}
-		break;
+		return get_mode_arithmetic(sm) == get_mode_arithmetic(lm)
+		    && get_mode_sort(lm) == irms_float_number
+		    && get_mode_size_bits(lm) >= get_mode_size_bits(sm);
 
+	case irms_auxiliary:
+	case irms_data:
+	case irms_internal_boolean:
 	case irms_reference:
 		/* do exist machines out there with different pointer lengths ?*/
 		return false;
-
-	case irms_internal_boolean:
-		return mode_is_int(lm);
-
-	default:
-		break;
 	}
 
-	/* else */
-	return false;
+	panic("invalid mode_sort");
 }
 
 int values_in_mode(const ir_mode *sm, const ir_mode *lm)
@@ -523,25 +528,20 @@ void set_reference_mode_unsigned_eq(ir_mode *ref_mode, ir_mode *int_mode)
 	ref_mode->eq_unsigned = int_mode;
 }
 
-static ir_mode *new_internal_mode(const char *name, ir_mode_sort sort)
-{
-	ir_mode *mode = alloc_mode(name, sort, irma_none, 0, 0, 0);
-	return register_mode(mode);
-}
-
 void init_mode(void)
 {
 	obstack_init(&modes);
 	mode_list = NEW_ARR_F(ir_mode*, 0);
 
 	/* initialize predefined modes */
-	mode_BB  = new_internal_mode("BB",  irms_block);
-	mode_X   = new_internal_mode("X",   irms_control_flow);
-	mode_M   = new_internal_mode("M",   irms_memory);
-	mode_T   = new_internal_mode("T",   irms_tuple);
-	mode_ANY = new_internal_mode("ANY", irms_any);
-	mode_BAD = new_internal_mode("BAD", irms_bad);
-	mode_b   = new_internal_mode("b",   irms_internal_boolean);
+	mode_BB  = new_non_data_mode("BB");
+	mode_X   = new_non_data_mode("X");
+	mode_M   = new_non_data_mode("M");
+	mode_T   = new_non_data_mode("T");
+	mode_ANY = new_non_data_mode("ANY");
+	mode_BAD = new_non_data_mode("BAD");
+	mode_b   = alloc_mode("b", irms_internal_boolean, irma_none, 0, 0, 0);
+	mode_b   = register_mode(mode_b);
 
 	mode_F   = new_float_mode("F", irma_ieee754,  8, 23);
 	mode_D   = new_float_mode("D", irma_ieee754, 11, 52);
