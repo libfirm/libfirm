@@ -908,18 +908,22 @@ ir_tarval *tarval_div(ir_tarval *a, ir_tarval *b)
 	ir_mode *mode = a->mode;
 	assert(mode == b->mode);
 
-	if (mode_is_int(mode)) {
+	switch (get_mode_sort(a->mode)) {
+	case irms_int_number:
+	case irms_reference:
 		/* x/0 error */
 		if (b == get_mode_null(mode))
 			return tarval_bad;
 
-		/* modes of a,b are equal */
 		sc_div(a->value, b->value, NULL);
 		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
-	} else {
-		assert(mode_is_float(mode));
+
+	case irms_float_number:
 		fc_div((const fp_value*) a->value, (const fp_value*) b->value, NULL);
 		return get_tarval_overflow(fc_get_buffer(), fc_get_buffer_length(), mode);
+
+	default:
+		return tarval_bad;
 	}
 }
 
@@ -927,29 +931,43 @@ ir_tarval *tarval_mod(ir_tarval *a, ir_tarval *b)
 {
 	assert((a->mode == b->mode) && mode_is_int(a->mode));
 
-	/* x/0 error */
-	if (b == get_mode_null(b->mode))
+	switch (get_mode_sort(a->mode)) {
+	case irms_int_number:
+	case irms_reference:
+		/* x/0 error */
+		if (b == get_mode_null(b->mode))
+			return tarval_bad;
+		/* modes of a,b are equal */
+		sc_mod(a->value, b->value, NULL);
+		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
+
+	default:
 		return tarval_bad;
-	/* modes of a,b are equal */
-	sc_mod(a->value, b->value, NULL);
-	return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
+	}
 }
 
 ir_tarval *tarval_divmod(ir_tarval *a, ir_tarval *b, ir_tarval **mod)
 {
-	size_t len = sc_get_buffer_length();
-	char *div_res = ALLOCAN(char, len);
-	char *mod_res = ALLOCAN(char, len);
-
 	assert((a->mode == b->mode) && mode_is_int(a->mode));
 
-	/* x/0 error */
-	if (b == get_mode_null(b->mode))
+	switch (get_mode_sort(a->mode)) {
+	case irms_int_number:
+	case irms_reference: {
+		size_t len = sc_get_buffer_length();
+		char *div_res = ALLOCAN(char, len);
+		char *mod_res = ALLOCAN(char, len);
+
+		/* x/0 error */
+		if (b == get_mode_null(b->mode))
+			return tarval_bad;
+		/* modes of a,b are equal */
+		sc_divmod(a->value, b->value, div_res, mod_res);
+		*mod = get_tarval(mod_res, len, a->mode);
+		return get_tarval(div_res, len, a->mode);
+
+	default:
 		return tarval_bad;
-	/* modes of a,b are equal */
-	sc_divmod(a->value, b->value, div_res, mod_res);
-	*mod = get_tarval(mod_res, len, a->mode);
-	return get_tarval(div_res, len, a->mode);
+	}
 }
 
 ir_tarval *tarval_abs(ir_tarval *a)
