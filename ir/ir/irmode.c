@@ -399,11 +399,6 @@ int (mode_is_datab)(const ir_mode *mode)
 	return mode_is_datab_(mode);
 }
 
-int (mode_is_dataM)(const ir_mode *mode)
-{
-	return mode_is_dataM_(mode);
-}
-
 unsigned (get_mode_mantissa_size)(const ir_mode *mode)
 {
 	return get_mode_mantissa_size_(mode);

@@ -90,7 +90,6 @@ enum ir_mode_sort_helper {
 	irmsh_is_num   = 0x10, /**< mode represents a number */
 	irmsh_is_data  = 0x20, /**< mode represents data (can be carried in registers) */
 	irmsh_is_datab = 0x40, /**< mode represents data or is internal boolean */
-	irmsh_is_dataM = 0x80, /**< mode represents data or is memory */
 };
 
 /**
@@ -104,7 +103,7 @@ typedef enum ir_mode_sort {
 	irms_tuple            = 2,
 	irms_any              = 3,
 	irms_bad              = 4,
-	irms_memory           = 5 | irmsh_is_dataM, /**< Marks the memory mode.  Not extensible. (irm_M) */
+	irms_memory           = 5,
 
 	/** Internal boolean representation.
 	     Storing to memory impossible, convert first. (irm_b) */
@@ -112,13 +111,13 @@ typedef enum ir_mode_sort {
 
 	/** A mode to represent entities.
 	    Restricted int computations can be performed */
-	irms_reference        = 7 | irmsh_is_data | irmsh_is_datab | irmsh_is_dataM,
+	irms_reference        = 7 | irmsh_is_data | irmsh_is_datab,
 	/** A mode to represent int numbers.
 	    Integer computations can be performed. */
-	irms_int_number       = 8 | irmsh_is_data | irmsh_is_datab | irmsh_is_dataM | irmsh_is_num,
+	irms_int_number       = 8 | irmsh_is_data | irmsh_is_datab | irmsh_is_num,
 	/** A mode to represent float numbers.
 	    Floating point computations can be performed. */
-	irms_float_number     = 9 | irmsh_is_data | irmsh_is_datab | irmsh_is_dataM | irmsh_is_num,
+	irms_float_number     = 9 | irmsh_is_data | irmsh_is_datab | irmsh_is_num,
 } ir_mode_sort;
 
 /**
