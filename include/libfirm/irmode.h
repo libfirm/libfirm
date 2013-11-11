@@ -228,7 +228,15 @@ FIRM_API ir_mode *mode_P_data; /**< A pointer mode that is set by the client of 
                                   represents the pointer size of the target machine data addresses. Is initialized
                                   to mode_P. */
 
-FIRM_API ir_mode *mode_b;  /**< internal boolean */
+/**
+ * This mode represents (parts of) the processor status flag queried in
+ * conditional jumps or predicated code.
+ *
+ * Do not confuse this with boolean variables found in some languages. You
+ * cannot perform any operations like And, Or, Not, Phi, etc. on mode_b
+ * values (although some of these constructs can be legalized by lower_mode_b().
+ */
+FIRM_API ir_mode *mode_b;
 
 FIRM_API ir_mode *mode_X;  /**< execution */
 FIRM_API ir_mode *mode_BB; /**< block */
