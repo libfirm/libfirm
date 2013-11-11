@@ -89,7 +89,6 @@ struct ir_op {
 enum ir_mode_sort_helper {
 	irmsh_is_num   = 0x10, /**< mode represents a number */
 	irmsh_is_data  = 0x20, /**< mode represents data (can be carried in registers) */
-	irmsh_is_datab = 0x40, /**< mode represents data or is internal boolean */
 };
 
 /**
@@ -107,17 +106,17 @@ typedef enum ir_mode_sort {
 
 	/** Internal boolean representation.
 	     Storing to memory impossible, convert first. (irm_b) */
-	irms_internal_boolean = 6 | irmsh_is_datab,
+	irms_internal_boolean = 6,
 
 	/** A mode to represent entities.
 	    Restricted int computations can be performed */
-	irms_reference        = 7 | irmsh_is_data | irmsh_is_datab,
+	irms_reference        = 7 | irmsh_is_data,
 	/** A mode to represent int numbers.
 	    Integer computations can be performed. */
-	irms_int_number       = 8 | irmsh_is_data | irmsh_is_datab | irmsh_is_num,
+	irms_int_number       = 8 | irmsh_is_data | irmsh_is_num,
 	/** A mode to represent float numbers.
 	    Floating point computations can be performed. */
-	irms_float_number     = 9 | irmsh_is_data | irmsh_is_datab | irmsh_is_num,
+	irms_float_number     = 9 | irmsh_is_data | irmsh_is_num,
 } ir_mode_sort;
 
 /**

@@ -98,9 +98,6 @@ static inline ir_node *be_lv_iteration_cls_next(lv_iterator_t *iterator, be_lv_s
 			continue;
 
 		ir_node *node = info->node.node;
-		ir_mode *mode = get_irn_mode(node);
-		if (!mode_is_datab(mode))
-			continue;
 		if (!arch_irn_consider_in_reg_alloc(cls, node))
 			continue;
 		return node;

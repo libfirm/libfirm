@@ -1105,7 +1105,7 @@ void be_set_phi_reg_req(ir_node *node, const arch_register_req_t *req)
 		info->in_reqs[i] = req;
 	}
 
-	assert(mode_is_datab(get_irn_mode(node)));
+	assert(mode_is_data(get_irn_mode(node)));
 }
 
 void be_dump_phi_reg_reqs(FILE *F, const ir_node *node, dump_reason_t reason)

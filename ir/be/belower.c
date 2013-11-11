@@ -73,7 +73,7 @@ typedef struct reg_pair_t {
 
 static void set_reg_free(unsigned *free_regs, ir_node const *irn, bool const reg_is_free)
 {
-	if (!mode_is_datab(get_irn_mode(irn)))
+	if (!mode_is_data(get_irn_mode(irn)))
 		return;
 	arch_register_t const *reg = arch_get_irn_register(irn);
 	if (reg_is_free) {
@@ -377,8 +377,8 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 
 	arch_register_req_t const *const req = arch_get_irn_register_req(other_different);
 	if (arch_register_req_is(req, ignore) ||
-			!mode_is_datab(get_irn_mode(other_different))) {
-		DB((dbg_constr, LEVEL_1, "ignore constraint for %+F because other_irn is ignore or not a datab node\n", irn));
+			!mode_is_data(get_irn_mode(other_different))) {
+		DB((dbg_constr, LEVEL_1, "ignore constraint for %+F because other_irn is ignore or not a data node\n", irn));
 		return;
 	}
 
@@ -493,7 +493,7 @@ static void assure_constraints_walker(ir_node *block, void *walk_env)
 
 	sched_foreach_reverse(block, irn) {
 		be_foreach_value(irn, value,
-			if (mode_is_datab(get_irn_mode(value)))
+			if (mode_is_data(get_irn_mode(value)))
 				assure_different_constraints(value, irn, env);
 		);
 	}

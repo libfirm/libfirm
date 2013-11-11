@@ -318,8 +318,6 @@ FIRM_API int mode_is_reference (const ir_mode *mode);
 FIRM_API int mode_is_num (const ir_mode *mode);
 /** Returns 1 if @p mode is for data values, 0 otherwise */
 FIRM_API int mode_is_data (const ir_mode *mode);
-/** Returns 1 if @p mode is for data values or internal booleans, 0 otherwise */
-FIRM_API int mode_is_datab (const ir_mode *mode);
 
 /**
  * Returns true if a value of mode @p sm can be converted to mode @p lm without

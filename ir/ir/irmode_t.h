@@ -32,7 +32,6 @@
 #define mode_is_reference(mode)        mode_is_reference_(mode)
 #define mode_is_num(mode)              mode_is_num_(mode)
 #define mode_is_data(mode)             mode_is_data_(mode)
-#define mode_is_datab(mode)            mode_is_datab_(mode)
 #define get_type_for_mode(mode)        get_type_for_mode_(mode)
 #define get_mode_mantissa_size(mode)   get_mode_mantissa_size_(mode)
 #define get_mode_exponent_size(mode)   get_mode_exponent_size_(mode)
@@ -64,8 +63,8 @@ static inline void *get_mode_link_(const ir_mode *mode) { return mode->link; }
 
 static inline void set_mode_link_(ir_mode *mode, void *l) { mode->link = l; }
 
-/* Functions to check, whether a mode is signed, float, int, num, data,
-   datab. For more exact definitions read the corresponding pages
+/* Functions to check, whether a mode is signed, float, int, num, data.
+   For more exact definitions read the corresponding pages
    in the firm documentation or the following enumeration
 
    The set of "float" is defined as:
@@ -87,13 +86,7 @@ static inline void set_mode_link_(ir_mode *mode, void *l) { mode->link = l; }
    data  = {irm_F, irm_D, irm_E irm_Bs, irm_Bu, irm_Hs, irm_Hu,
             irm_Is, irm_Iu, irm_Ls, irm_Lu, irm_C, irm_U, irm_P}
             = {num || irm_C || irm_U || irm_P}
-
-   The set of "datab" is defined as:
-   ---------------------------------
-   datab = {irm_F, irm_D, irm_E, irm_Bs, irm_Bu, irm_Hs, irm_Hu,
-            irm_Is, irm_Iu, irm_Ls, irm_Lu, irm_C, irm_U, irm_P, irm_b}
-            = {data || irm_b }
-*/
+ */
 
 static inline int mode_is_signed_(const ir_mode *mode)
 {
@@ -123,11 +116,6 @@ static inline int mode_is_num_(const ir_mode *mode)
 static inline int mode_is_data_(const ir_mode *mode)
 {
 	return (get_mode_sort(mode) & irmsh_is_data);
-}
-
-static inline int mode_is_datab_(const ir_mode *mode)
-{
-	return (get_mode_sort(mode) & irmsh_is_datab);
 }
 
 static inline ir_type *get_type_for_mode_(const ir_mode *mode)

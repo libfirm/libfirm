@@ -315,7 +315,7 @@ ir_tarval *get_mode_max(ir_mode *mode)
 ir_tarval *get_mode_null(ir_mode *mode)
 {
 	assert(mode);
-	assert(mode_is_datab(mode));
+	assert(mode_is_data(mode) || mode == mode_b);
 
 	return mode->null;
 }
@@ -323,7 +323,7 @@ ir_tarval *get_mode_null(ir_mode *mode)
 ir_tarval *get_mode_one(ir_mode *mode)
 {
 	assert(mode);
-	assert(mode_is_datab(mode));
+	assert(mode_is_data(mode) || mode == mode_b);
 
 	return mode->one;
 }
@@ -339,7 +339,7 @@ ir_tarval *get_mode_minus_one(ir_mode *mode)
 ir_tarval *get_mode_all_one(ir_mode *mode)
 {
 	assert(mode);
-	assert(mode_is_datab(mode));
+	assert(mode_is_data(mode) || mode == mode_b);
 	return mode->all_one;
 }
 
@@ -392,11 +392,6 @@ int (mode_is_num)(const ir_mode *mode)
 int (mode_is_data)(const ir_mode *mode)
 {
 	return mode_is_data_(mode);
-}
-
-int (mode_is_datab)(const ir_mode *mode)
-{
-	return mode_is_datab_(mode);
 }
 
 unsigned (get_mode_mantissa_size)(const ir_mode *mode)

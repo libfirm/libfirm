@@ -26,7 +26,7 @@ static char _mark;
 typedef struct trace_irn {
 	sched_timestep_t delay;      /**< The delay for this node if already calculated, else 0. */
 	sched_timestep_t etime;      /**< The earliest time of this node. */
-	unsigned num_user;           /**< The number real users (mode datab) of this node */
+	unsigned num_user;           /**< The number real users (mode data) of this node */
 	int      reg_diff;           /**< The difference of num(out registers) - num(in registers) */
 	int      preorder;           /**< The pre-order position */
 	unsigned critical_path_len;  /**< The weighted length of the longest critical path */
@@ -232,7 +232,7 @@ static sched_timestep_t latency(trace_env_t *env, ir_node *pred, int pred_cycle,
 }
 
 /**
- * Returns the number of users of a node having mode datab.
+ * Returns the number of users of a node having mode data.
  */
 static int get_num_successors(ir_node *irn)
 {
@@ -246,7 +246,7 @@ static int get_num_successors(ir_node *irn)
 
 			if (mode == mode_T)
 				sum += get_num_successors(proj);
-			else if (mode_is_datab(mode))
+			else if (mode_is_data(mode))
 				sum += get_irn_n_edges(proj);
 		}
 	}
@@ -277,21 +277,21 @@ static int get_reg_difference(trace_env_t *env, ir_node *irn)
 	}
 
 	if (get_irn_mode(irn) == mode_T) {
-		/* mode_T nodes: num out regs == num Projs with mode datab */
+		/* mode_T nodes: num out regs == num Projs with mode data */
 		foreach_out_edge(irn, edge) {
 			ir_node *proj = get_edge_src_irn(edge);
-			if (mode_is_datab(get_irn_mode(proj)))
+			if (mode_is_data(get_irn_mode(proj)))
 				num_out++;
 		}
 	}
 	else
 		num_out = 1;
 
-	/* num in regs: number of ins with mode datab and not ignore */
+	/* num in regs: number of ins with mode data and not ignore */
 	for (i = get_irn_arity(irn) - 1; i >= 0; i--) {
 		ir_node *in = get_irn_n(irn, i);
 
-		if (!mode_is_datab(get_irn_mode(in)))
+		if (!mode_is_data(get_irn_mode(in)))
 			continue;
 
 		if (arch_irn_is_ignore(in))

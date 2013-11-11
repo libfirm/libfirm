@@ -619,7 +619,7 @@ static void undate_block_info(ir_node *node, graph_entry_t *graph)
 	block   = get_nodes_block(node);
 	b_entry = block_get_entry(&graph->recalc_cnts, get_irn_node_nr(block), graph->block_hash);
 
-	if (is_Phi(node) && mode_is_datab(get_irn_mode(node))) {
+	if (is_Phi(node) && get_irn_mode(node) != mode_M) {
 		/* count data Phi per block */
 		cnt_inc(&b_entry->cnt[bcnt_phi_data]);
 	}

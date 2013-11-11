@@ -492,6 +492,11 @@ static int verify_node_Raise(const ir_node *n)
 	return fine;
 }
 
+static int mode_is_datab(const ir_mode *mode)
+{
+	return mode_is_data(mode) || mode == mode_b;
+}
+
 static int verify_node_Const(const ir_node *n)
 {
 	bool     fine    = check_mode_func(n, mode_is_datab, "data or b");
