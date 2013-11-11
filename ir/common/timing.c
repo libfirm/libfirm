@@ -271,41 +271,6 @@ int ir_timer_leave_high_priority(void)
 
 #endif
 
-
-#ifdef __linux__
-
-#include <malloc.h>
-size_t ir_get_heap_used_bytes(void)
-{
-	struct mallinfo mi = mallinfo();
-	return mi.uordblks;
-}
-
-#elif defined(_WIN32) /* __linux__ */
-
-#include <malloc.h>
-
-size_t ir_get_heap_used_bytes(void)
-{
-	_HEAPINFO hinfo;
-	int heapstatus;
-	size_t res = 0;
-	hinfo._pentry = NULL;
-	while ((heapstatus = _heapwalk(&hinfo)) == _HEAPOK)
-		res += hinfo._useflag == _USEDENTRY ? hinfo._size : 0;
-	return res;
-}
-
-#else
-
-size_t ir_get_heap_used_bytes(void)
-{
-	fprintf(stderr, "function not implemented\n");
-	return 0;
-}
-
-#endif
-
 /* reset a timer */
 void ir_timer_reset(ir_timer_t *timer)
 {

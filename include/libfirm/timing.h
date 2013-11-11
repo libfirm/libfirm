@@ -39,12 +39,6 @@ FIRM_API int ir_timer_enter_high_priority(void);
 FIRM_API int ir_timer_leave_high_priority(void);
 
 /**
- * Returns the amount of bytes allocated on the heap.
- * @return The number of bytes allocated on the heap.
- */
-FIRM_API size_t ir_get_heap_used_bytes(void);
-
-/**
  * Create a new timer
  * @return The timer.
  * @see #ir_timer_t
