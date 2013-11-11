@@ -161,21 +161,6 @@ static ir_node *lower_node(ir_node *node)
 		break;
 	}
 
-	case iro_Mux: {
-		ir_node *cond        = get_Mux_sel(node);
-		ir_node *low_cond    = lower_node(cond);
-		ir_node *v_true      = get_Mux_true(node);
-		ir_node *low_v_true  = lower_node(v_true);
-		ir_node *v_false     = get_Mux_false(node);
-		ir_node *low_v_false = lower_node(v_false);
-
-		ir_node *and0     = new_rd_And(dbgi, block, low_cond, low_v_true, mode);
-		ir_node *not_cond = create_not(dbgi, low_cond);
-		ir_node *and1     = new_rd_And(dbgi, block, not_cond, low_v_false, mode);
-		res = new_rd_Or(dbgi, block, and0, and1, mode);
-		break;
-	}
-
 	case iro_Cmp:
 		res = create_cond_set(node, mode);
 		break;

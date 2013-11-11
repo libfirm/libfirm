@@ -728,8 +728,8 @@ static int verify_node_Not(const ir_node *n)
 static int verify_node_Cmp(const ir_node *n)
 {
 	bool fine = check_mode(n, mode_b);
-	fine &= check_input_func(n, n_Cmp_left, "left", mode_is_datab, "datab");
-	fine &= check_input_func(n, n_Cmp_right, "right", mode_is_datab, "datab");
+	fine &= check_input_func(n, n_Cmp_left, "left", mode_is_data, "data");
+	fine &= check_input_func(n, n_Cmp_right, "right", mode_is_data, "data");
 	ir_mode *model = get_irn_mode(get_Cmp_left(n));
 	ir_mode *moder = get_irn_mode(get_Cmp_right(n));
 	if (model != moder) {
@@ -870,7 +870,7 @@ static int verify_node_Confirm(const ir_node *n)
 
 static int verify_node_Mux(const ir_node *n)
 {
-	bool fine = check_mode_func(n, mode_is_datab, "data or mode_b");
+	bool fine = check_mode_func(n, mode_is_data, "data or mode_b");
 	fine &= check_input_mode(n, n_Mux_sel, "sel", mode_b);
 	fine &= check_mode_same_input(n, n_Mux_true, "true");
 	fine &= check_mode_same_input(n, n_Mux_false, "false");
