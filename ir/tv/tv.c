@@ -731,7 +731,13 @@ ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *dst_mode)
 			flt2int_result_t cres = fc_flt2int(res, buffer, dst_mode);
 			switch (cres) {
 			case FLT2INT_POSITIVE_OVERFLOW:
-				return get_mode_max(dst_mode);
+				switch (get_mode_float_int_overflow(src->mode)) {
+				case ir_overflow_indefinite:
+					return get_mode_min(dst_mode);
+				case ir_overflow_min_max:
+					return get_mode_max(dst_mode);
+				}
+				break;
 			case FLT2INT_NEGATIVE_OVERFLOW:
 				return get_mode_min(dst_mode);
 			case FLT2INT_UNKNOWN:

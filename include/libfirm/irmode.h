@@ -47,6 +47,18 @@ typedef enum ir_mode_arithmetic {
 } ir_mode_arithmetic;
 
 /**
+ * Specifies what happens when a float value is converted to an integer and
+ * overflow happens.
+ */
+typedef enum float_int_conversion_overflow_style_t {
+	ir_overflow_indefinite,  /**< the integer indefinite value (=INT_MIN) is
+	                              returned. (e.g. x86 does this) */
+	ir_overflow_min_max,     /**< INT_MIN/INT_MAX is returned depending on the
+	                              sign of the floatingpoint number. (e.g. sparc
+	                              does this). */
+} float_int_conversion_overflow_style_t;
+
+/**
  * Creates a new mode.
  *
  * @param name          the name of the mode to be created
@@ -86,11 +98,14 @@ FIRM_API ir_mode *new_reference_mode(const char *name,
  * @param exponent_size size of exponent in bits
  * @param mantissa_size size of mantissa in bits (number of bits after the
  *                      leading one).
+ * @param int_conv_overflow Semantic on float to integer conversion overflow.
  */
 FIRM_API ir_mode *new_float_mode(const char *name,
                                  ir_mode_arithmetic arithmetic,
                                  unsigned exponent_size,
-                                 unsigned mantissa_size);
+                                 unsigned mantissa_size,
+                                 float_int_conversion_overflow_style_t
+                                     int_conv_overflow);
 
 /**
  * Creates a new mode for data values which are not used to perform arithmetic.
@@ -420,6 +435,12 @@ FIRM_API unsigned get_mode_mantissa_size(const ir_mode *mode);
  * Returns size of exponent in bits (for float modes)
  */
 FIRM_API unsigned get_mode_exponent_size(const ir_mode *mode);
+
+/**
+ * Returns semantic on float to integer conversion overflow.
+ */
+FIRM_API float_int_conversion_overflow_style_t get_mode_float_int_overflow(
+		const ir_mode *mode);
 
 /**
  * Returns non-zero if the cast from mode src to mode dst is a

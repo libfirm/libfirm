@@ -573,7 +573,8 @@ static const backend_params *sparc_get_backend_params(void)
 		0,     /* no trampoline support: size 0 */
 		0,     /* no trampoline support: align 0 */
 		NULL,  /* no trampoline support: no trampoline builder */
-		4      /* alignment of stack parameter: typically 4 (32bit) or 8 (64bit) */
+		4,     /* alignment of stack parameter: typically 4 (32bit) or 8 (64bit) */
+		ir_overflow_min_max
 	};
 
 	ir_mode *mode_long_long

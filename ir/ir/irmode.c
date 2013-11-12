@@ -34,10 +34,11 @@ static bool modes_are_equal(const ir_mode *m, const ir_mode *n)
 		return false;
 	if (m->sort == irms_auxiliary || m->sort == irms_data)
 		return strcmp(m->name, n->name) == 0;
-	return m->arithmetic   == n->arithmetic &&
-	       m->size         == n->size &&
-	       m->sign         == n->sign &&
-	       m->modulo_shift == n->modulo_shift;
+	return m->arithmetic        == n->arithmetic
+	    && m->size              == n->size
+	    && m->sign              == n->sign
+	    && m->modulo_shift      == n->modulo_shift
+	    && m->int_conv_overflow == n->int_conv_overflow;
 }
 
 /**
@@ -224,7 +225,8 @@ ir_mode *new_reference_mode(const char *name, ir_mode_arithmetic arithmetic,
 }
 
 ir_mode *new_float_mode(const char *name, ir_mode_arithmetic arithmetic,
-                        unsigned exponent_size, unsigned mantissa_size)
+                        unsigned exponent_size, unsigned mantissa_size,
+                        float_int_conversion_overflow_style_t conv_overflow)
 {
 	bool     explicit_one = false;
 	unsigned bit_size     = exponent_size + mantissa_size + 1;
@@ -242,6 +244,7 @@ ir_mode *new_float_mode(const char *name, ir_mode_arithmetic arithmetic,
 
 	ir_mode *result
 		= alloc_mode(name, irms_float_number, arithmetic, bit_size, 1, 0);
+	result->int_conv_overflow        = conv_overflow;
 	result->float_desc.exponent_size = exponent_size;
 	result->float_desc.mantissa_size = mantissa_size;
 	result->float_desc.explicit_one  = explicit_one;
@@ -406,6 +409,12 @@ unsigned (get_mode_exponent_size)(const ir_mode *mode)
 	return get_mode_exponent_size_(mode);
 }
 
+float_int_conversion_overflow_style_t get_mode_float_int_overflow(
+		const ir_mode *mode)
+{
+	return mode->int_conv_overflow;
+}
+
 int smaller_mode(const ir_mode *sm, const ir_mode *lm)
 {
 	assert(sm != NULL);
@@ -543,9 +552,9 @@ void init_mode(void)
 	mode_b   = alloc_mode("b", irms_internal_boolean, irma_none, 0, 0, 0);
 	mode_b   = register_mode(mode_b);
 
-	mode_F   = new_float_mode("F", irma_ieee754,  8, 23);
-	mode_D   = new_float_mode("D", irma_ieee754, 11, 52);
-	mode_Q   = new_float_mode("Q", irma_ieee754, 15, 112);
+	mode_F   = new_float_mode("F", irma_ieee754,  8, 23, ir_overflow_min_max);
+	mode_D   = new_float_mode("D", irma_ieee754, 11, 52, ir_overflow_min_max);
+	mode_Q   = new_float_mode("Q", irma_ieee754, 15, 112, ir_overflow_min_max);
 
 	mode_Bs  = new_int_mode("Bs",  irma_twos_complement, 8,   1, 32);
 	mode_Bu  = new_int_mode("Bu",  irma_twos_complement, 8,   0, 32);

@@ -15,6 +15,7 @@
 #include "irarch.h"
 #include "lowering.h"
 #include "iroptimize.h"
+#include "irmode.h"
 #include "begin.h"
 
 /**
@@ -152,6 +153,9 @@ typedef struct backend_params {
 
 	/** Alignment of stack parameters */
 	unsigned stack_param_align;
+
+	/** Semantic on float->int conversion overflow. */
+	float_int_conversion_overflow_style_t float_int_overflow;
 } backend_params;
 
 /**

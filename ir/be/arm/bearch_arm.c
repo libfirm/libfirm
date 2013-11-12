@@ -431,7 +431,8 @@ static const backend_params *arm_get_libfirm_params(void)
 		0,     /* no trampoline support: size 0 */
 		0,     /* no trampoline support: align 0 */
 		NULL,  /* no trampoline support: no trampoline builder */
-		4      /* alignment of stack parameter */
+		4,     /* alignment of stack parameter */
+		ir_overflow_min_max
 	};
 
 	return &p;

@@ -151,8 +151,10 @@ struct ir_mode {
                                            (see irmode.h) */
 	ir_mode_arithmetic arithmetic;    /**< different arithmetic operations possible with a mode */
 	unsigned           size;          /**< size of the mode in Bits. */
-	unsigned           sign:1;        /**< signedness of this mode */
-	unsigned int       modulo_shift;  /**< number of bits a values of this mode will be shifted */
+	bool               sign:1;        /**< signedness of this mode */
+	ENUMBF(float_int_conversion_overflow_style_t)
+	                   int_conv_overflow:1;
+	unsigned char      modulo_shift;  /**< number of bits a values of this mode will be shifted */
 	float_descriptor_t float_desc;
 
 	/* ---------------------------------------------------------------------- */

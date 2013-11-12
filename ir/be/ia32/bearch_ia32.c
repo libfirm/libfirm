@@ -1427,7 +1427,8 @@ static backend_params ia32_backend_params = {
 	12,    /* size of trampoline code */
 	4,     /* alignment of trampoline code */
 	ia32_create_trampoline_fkt,
-	4      /* alignment of stack parameter */
+	4,     /* alignment of stack parameter */
+	ir_overflow_indefinite
 };
 
 /**
@@ -1449,14 +1450,17 @@ static void ia32_init(void)
 
 	/* note mantissa is 64bit but with explicitely encoded 1 so the really
 	 * usable part as counted by firm is only 63 bits */
-	ia32_mode_E = new_float_mode("E", irma_x86_extended_float, 15, 63);
+	ia32_mode_E = new_float_mode("E", irma_x86_extended_float, 15, 63,
+	                             ir_overflow_indefinite);
 	ia32_type_E = new_type_primitive(ia32_mode_E);
 	set_type_size_bytes(ia32_type_E, 12);
 	set_type_alignment_bytes(ia32_type_E, 4);
 
 	ia32_mode_gp = new_int_mode("gp", irma_twos_complement, 32, 0, 32);
-	ia32_mode_float64 = new_float_mode("fp64", irma_ieee754, 11, 52);
-	ia32_mode_float32 = new_float_mode("fp32", irma_ieee754, 8, 23);
+	ia32_mode_float64 = new_float_mode("fp64", irma_ieee754, 11, 52,
+	                                   ir_overflow_indefinite);
+	ia32_mode_float32 = new_float_mode("fp32", irma_ieee754, 8, 23,
+	                                   ir_overflow_indefinite);
 
 	mode_long_long = new_int_mode("long long", irma_twos_complement, 64, 1, 64);
 	type_long_long = new_type_primitive(mode_long_long);

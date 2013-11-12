@@ -1001,6 +1001,7 @@ static void write_mode(write_env_t *env, ir_mode *mode)
 		write_mode_arithmetic(env, get_mode_arithmetic(mode));
 		write_unsigned(env, get_mode_exponent_size(mode));
 		write_unsigned(env, get_mode_mantissa_size(mode));
+		write_unsigned(env, get_mode_float_int_overflow(mode));
 	} else {
 		panic("Can't write internal modes");
 	}
@@ -2276,7 +2277,10 @@ static void read_modes(read_env_t *env)
 			ir_mode_arithmetic arith = read_mode_arithmetic(env);
 			int exponent_size = read_long(env);
 			int mantissa_size = read_long(env);
-			new_float_mode(name, arith, exponent_size, mantissa_size);
+			float_int_conversion_overflow_style_t overflow =
+				(float_int_conversion_overflow_style_t)read_long(env);
+			new_float_mode(name, arith, exponent_size, mantissa_size,
+			               overflow);
 			break;
 		}
 
