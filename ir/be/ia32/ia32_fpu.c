@@ -67,7 +67,7 @@ static void create_fpcw_entities(void)
 	fpcw_truncate = create_ent(0x37f, "_fpcw_truncate");
 }
 
-static ir_node *create_fpu_mode_spill(void *env, ir_node *state, int force,
+static ir_node *create_fpu_mode_spill(void *env, ir_node *state, bool force,
                                       ir_node *after)
 {
 	(void) env;

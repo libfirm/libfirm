@@ -64,11 +64,9 @@ typedef struct block_info_t {
 static inline block_info_t *new_block_info(struct obstack *obst, ir_node *block)
 {
 	block_info_t *res = OALLOCZ(obst, block_info_t);
-
 	assert(is_Block(block));
 	set_irn_link(block, res);
 	mark_irn_visited(block);
-
 	return res;
 }
 
@@ -78,14 +76,13 @@ static inline block_info_t *get_block_info(ir_node *block)
 	return (block_info_t*) get_irn_link(block);
 }
 
-static inline spill_info_t *create_spill_info(minibelady_env_t *env, ir_node *state)
+static inline spill_info_t *create_spill_info(minibelady_env_t *env,
+                                              ir_node *state)
 {
 	spill_info_t *spill_info = OALLOCZ(&env->obst, spill_info_t);
 	spill_info->value = state;
 	spill_info->reloads = NEW_ARR_F(ir_node*, 0);
-
 	ir_nodehashmap_insert(&env->spill_infos, state, spill_info);
-	//ir_fprintf(stderr, "Insert %+F -> %p\n", state, spill_info);
 
 	spill_info->next = env->spills;
 	env->spills = spill_info;
@@ -93,28 +90,27 @@ static inline spill_info_t *create_spill_info(minibelady_env_t *env, ir_node *st
 	return spill_info;
 }
 
-static inline spill_info_t *get_spill_info(minibelady_env_t *env, const ir_node *node)
+static inline spill_info_t *get_spill_info(minibelady_env_t *env,
+                                           const ir_node *node)
 {
-	spill_info_t *spill_info = ir_nodehashmap_get(spill_info_t, &env->spill_infos, node);
-	//ir_fprintf(stderr, "Get %+F -> %p\n", node, spill_info);
+	spill_info_t *spill_info = ir_nodehashmap_get(spill_info_t,
+	                                              &env->spill_infos, node);
 	return spill_info;
 }
 
-static spill_info_t *create_spill(minibelady_env_t *env, ir_node *state, int force)
+static spill_info_t *create_spill(minibelady_env_t *env, ir_node *state,
+                                  bool force)
 {
-	spill_info_t *spill_info;
-	ir_node *next;
-	ir_node *after;
-
-	spill_info = get_spill_info(env, state);
+	spill_info_t *spill_info = get_spill_info(env, state);
 	if (spill_info == NULL) {
 		spill_info = create_spill_info(env, state);
 	} else if (spill_info->spill != NULL) {
 		return spill_info;
 	}
 
+	ir_node *after;
 	if (sched_is_scheduled(state)) {
-		next = state;
+		ir_node *next = state;
 		do {
 			after = next;
 			next = sched_next(after);
@@ -130,28 +126,24 @@ static spill_info_t *create_spill(minibelady_env_t *env, ir_node *state, int for
 static void create_reload(minibelady_env_t *env, ir_node *state,
                           ir_node *before, ir_node *last_state)
 {
-	spill_info_t *spill_info = create_spill(env, state, 0);
-	ir_node *spill = spill_info->spill;
-	ir_node *reload;
-
-	reload = env->create_reload(env->func_env, state, spill, before,
-	                            last_state);
+	spill_info_t *spill_info = create_spill(env, state, false);
+	ir_node *spill  = spill_info->spill;
+	ir_node *reload = env->create_reload(env->func_env, state, spill, before,
+	                                     last_state);
 	ARR_APP1(ir_node*, spill_info->reloads, reload);
 }
 
 static void spill_phi(minibelady_env_t *env, ir_node *phi)
 {
-	ir_graph     *irg           = get_irn_irg(phi);
-	ir_node      *block         = get_nodes_block(phi);
-	int           arity         = get_irn_arity(phi);
-	ir_node     **phi_in        = ALLOCAN(ir_node*, arity);
-	ir_node      *dummy         = new_r_Dummy(irg, mode_M);
-	ir_node      *spill_to_kill = NULL;
-	spill_info_t *spill_info;
-	int           i;
+	ir_graph *irg           = get_irn_irg(phi);
+	ir_node  *block         = get_nodes_block(phi);
+	int       arity         = get_irn_arity(phi);
+	ir_node **phi_in        = ALLOCAN(ir_node*, arity);
+	ir_node  *dummy         = new_r_Dummy(irg, mode_M);
+	ir_node  *spill_to_kill = NULL;
 
 	/* does a spill exist for the phis value? */
-	spill_info = get_spill_info(env, phi);
+	spill_info_t *spill_info = get_spill_info(env, phi);
 	if (spill_info != NULL) {
 		spill_to_kill = spill_info->spill;
 	} else {
@@ -159,7 +151,7 @@ static void spill_phi(minibelady_env_t *env, ir_node *phi)
 	}
 
 	/* create a new phi-M with bad preds */
-	for (i = 0; i < arity; ++i) {
+	for (int i = 0; i < arity; ++i) {
 		phi_in[i] = dummy;
 	}
 
@@ -176,9 +168,9 @@ static void spill_phi(minibelady_env_t *env, ir_node *phi)
 	}
 
 	/* create spills for the phi values */
-	for (i = 0; i < arity; ++i) {
+	for (int i = 0; i < arity; ++i) {
 		ir_node *in = get_irn_n(phi, i);
-		spill_info_t *pred_spill = create_spill(env, in, 1);
+		spill_info_t *pred_spill = create_spill(env, in, true);
 		set_irn_n(spill_info->spill, i, pred_spill->spill);
 	}
 }
@@ -193,19 +185,12 @@ static void belady(minibelady_env_t *env, ir_node *block);
  * their args to break interference and make it possible to spill them to the
  * same spill slot.
  */
-static block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *block)
+static block_info_t *compute_block_start_state(minibelady_env_t *env,
+                                               ir_node *block)
 {
-	block_info_t  *block_info;
-	be_next_use_t  next_use;
-	ir_loop       *loop;
-	ir_node       *best_starter, *first;
-	int            n_cfgpreds;
-	unsigned       best_time;
-	int            outer_loop_allowed;
-
 	/* Create the block info for this block. */
-	block_info = new_block_info(&env->obst, block);
-	n_cfgpreds = get_Block_n_cfgpreds(block);
+	block_info_t *block_info = new_block_info(&env->obst, block);
+	int           n_cfgpreds = get_Block_n_cfgpreds(block);
 
 	/* no cfgpred -> no value active */
 	if (n_cfgpreds == 0) {
@@ -223,18 +208,19 @@ static block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *b
 
 		pred_info = get_block_info(pred_block);
 
-		DBG((dbg, LEVEL_2, "Taking end state from %+F: %+F\n", pred_block, pred_info->end_state));
+		DBG((dbg, LEVEL_2, "Taking end state from %+F: %+F\n", pred_block,
+		     pred_info->end_state));
 		block_info->start_state = pred_info->end_state;
 		return block_info;
 	}
 
 	/* Collect all values living at start of block */
 	DBG((dbg, LEVEL_2, "Living at start of %+F:\n", block));
-	first = sched_first(block);
-	loop = get_irn_loop(block);
-	best_starter = NULL;
-	best_time = USES_INFINITY;
-	outer_loop_allowed = 1;
+	ir_node *first        = sched_first(block);
+	ir_loop *loop         = get_irn_loop(block);
+	ir_node *best_starter = NULL;
+	unsigned best_time    = USES_INFINITY;
+	bool     outer_loop_allowed = true;
 
 	/* check all Phis first */
 	sched_foreach(block, node) {
@@ -244,7 +230,7 @@ static block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *b
 			continue;
 
 		DBG((dbg, LEVEL_2, "\t...checking %+F\n", node));
-		next_use = be_get_next_use(env->uses, first, node, 0);
+		be_next_use_t next_use = be_get_next_use(env->uses, first, node, 0);
 
 		if (USES_IS_INFINITE(next_use.time)) {
 			DBG((dbg, LEVEL_2, "\tnot taken (dead)\n"));
@@ -262,7 +248,7 @@ static block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *b
 				}
 				best_starter = node;
 				best_time = next_use.time;
-				outer_loop_allowed = 0;
+				outer_loop_allowed = false;
 			}
 		} else {
 			if (outer_loop_allowed && next_use.time < best_time) {
@@ -289,7 +275,7 @@ static block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *b
 			continue;
 
 		DBG((dbg, LEVEL_2, "\t...checking %+F\n", node));
-		next_use = be_get_next_use(env->uses, first, node, 0);
+		be_next_use_t next_use = be_get_next_use(env->uses, first, node, 0);
 
 		if (USES_IS_INFINITE(next_use.time)) {
 			DBG((dbg, LEVEL_2, "\tnot taken (dead)\n"));
@@ -307,7 +293,7 @@ static block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *b
 				}
 				best_starter = node;
 				best_time = next_use.time;
-				outer_loop_allowed = 0;
+				outer_loop_allowed = false;
 			}
 		} else {
 			if (outer_loop_allowed && next_use.time < best_time) {
@@ -335,44 +321,33 @@ static block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *b
  */
 static void belady(minibelady_env_t *env, ir_node *block)
 {
-	ir_node *current_state;
-	block_info_t *block_info;
-
 	/* Don't do a block twice */
 	if (irn_visited(block))
 		return;
 
 	/* compute value to start with */
-	block_info = compute_block_start_state(env, block);
+	block_info_t *block_info = compute_block_start_state(env, block);
 
 	/* get the starting workset for this block */
 	DBG((dbg, LEVEL_3, "\n"));
 	DBG((dbg, LEVEL_3, "Decide for %+F\n", block));
 
-	current_state = block_info->start_state;
+	ir_node *current_state = block_info->start_state;
 	DBG((dbg, LEVEL_3, "Start value: %+F\n", current_state));
 
 	/* process the block from start to end */
 	DBG((dbg, LEVEL_3, "Processing...\n"));
 
 	sched_foreach(block, node) {
-		int i, arity;
-		ir_node *need_val = NULL;
-
 		/* Phis are no real instr (see insert_starters()) */
 		if (is_Phi(node))
 			continue;
 
 		/* check which state is desired for the node */
-		arity = get_irn_arity(node);
-		for (i = 0; i < arity; ++i) {
-			const arch_register_t *reg;
-			ir_node *in = get_irn_n(node, i);
-
-			if (!mode_is_data(get_irn_mode(in)))
-				continue;
-
-			reg = arch_get_irn_register(in);
+		ir_node *need_val = NULL;
+		for (int i = 0, arity = get_irn_arity(node); i < arity; ++i) {
+			ir_node               *in  = get_irn_n(node, i);
+			const arch_register_t *reg = arch_get_irn_register(in);
 			if (reg == env->reg) {
 				assert(need_val == NULL);
 				need_val = in;
@@ -391,8 +366,6 @@ static void belady(minibelady_env_t *env, ir_node *block)
 
 		/* record state changes by the node */
 		be_foreach_value(node, value,
-			if (!mode_is_data(get_irn_mode(value)))
-				continue;
 			arch_register_t const *const reg = arch_get_irn_register(value);
 			if (reg != env->reg)
 				continue;
@@ -416,21 +389,15 @@ static void belady_walker(ir_node *block, void *data)
  */
 static void fix_block_borders(ir_node *block, void *data)
 {
-	minibelady_env_t *env = (minibelady_env_t*)data;
-	int i;
-	int arity;
-	block_info_t *block_info;
+	minibelady_env_t *env        = (minibelady_env_t*)data;
+	block_info_t     *block_info = get_block_info(block);
 
 	DBG((dbg, LEVEL_3, "\n"));
-
-	block_info = get_block_info(block);
-
 	DBG((dbg, LEVEL_3, "Fixing %+F (needs %+F)\n", block,
 	     block_info->start_state));
 
 	/* process all pred blocks */
-	arity = get_irn_arity(block);
-	for (i = 0; i < arity; ++i) {
+	for (int i = 0, arity = get_irn_arity(block); i < arity; ++i) {
 		ir_node      *pred       = get_Block_cfgpred_block(block, i);
 		block_info_t *pred_info  = get_block_info(pred);
 		ir_node      *need_state = block_info->start_state;
@@ -457,14 +424,13 @@ void be_assure_state(ir_graph *irg, const arch_register_t *reg, void *func_env,
                      create_spill_func create_spill,
                      create_reload_func create_reload)
 {
-	minibelady_env_t env;
-	spill_info_t *info;
 	be_lv_t *lv = be_get_irg_liveness(irg);
 
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO
 	                         | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	be_assure_live_sets(irg);
 
+	minibelady_env_t env;
 	obstack_init(&env.obst);
 	env.reg           = reg;
 	env.func_env      = func_env;
@@ -487,12 +453,9 @@ void be_assure_state(ir_graph *irg, const arch_register_t *reg, void *func_env,
 	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED | IR_RESOURCE_IRN_LINK);
 
 	/* reconstruct ssa-form */
-	info = env.spills;
+	spill_info_t *info = env.spills;
 	while (info != NULL) {
 		be_ssa_construction_env_t senv;
-		size_t i, len;
-		ir_node **phis;
-
 		be_ssa_construction_init(&senv, irg);
 		if (sched_is_scheduled(info->value))
 			be_ssa_construction_add_copy(&senv, info->value);
@@ -504,18 +467,16 @@ void be_assure_state(ir_graph *irg, const arch_register_t *reg, void *func_env,
 			be_ssa_construction_update_liveness_phis(&senv, lv);
 
 			be_liveness_update(lv, info->value);
-			len = ARR_LEN(info->reloads);
-			for (i = 0; i < len; ++i) {
+			for (size_t i = 0, len = ARR_LEN(info->reloads); i < len; ++i) {
 				ir_node *reload = info->reloads[i];
 				be_liveness_update(lv, reload);
 			}
 		}
 
-		phis = be_ssa_construction_get_new_phis(&senv);
+		ir_node **phis = be_ssa_construction_get_new_phis(&senv);
 
 		/* set register requirements for phis */
-		len = ARR_LEN(phis);
-		for (i = 0; i < len; ++i) {
+		for (size_t i = 0, len = ARR_LEN(phis); i < len; ++i) {
 			ir_node *phi = phis[i];
 			arch_set_irn_register(phi, env.reg);
 		}
