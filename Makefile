@@ -63,7 +63,6 @@ libfirm_CPPFLAGS    = $(foreach dir,$(libfirm_INCLUDEDIRS),-I$(dir))
 libfirm_OBJECTS     = $(libfirm_SOURCES:%.c=$(builddir)/%.o) $(libfirm_GEN_SOURCES:%.c=$(builddir)/%.o)
 libfirm_DEPS        = $(libfirm_OBJECTS:%.o=%.d)
 libfirm_BUILDDIRS   = $(sort $(dir $(libfirm_OBJECTS))) $(addprefix $(gendir)/, $(libfirm_GEN_DIRS))
--include $(libfirm_DEPS)
 
 .PHONY: firm
 firm: $(libfirm_dll)
@@ -203,3 +202,5 @@ $(builddir)/%.exe: $(srcdir)/unittests/%.c $(libfirm_a)
 
 .PHONY: test
 test: $(UNITTESTS)
+
+-include $(libfirm_DEPS)
