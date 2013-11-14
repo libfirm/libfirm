@@ -233,47 +233,37 @@ sub create_constructor {
 
 	# emit constructor code
 	$temp = <<EOF;
-	ir_graph         *irg        = get_irn_irg(block);
-	ir_op            *op         = op_${arch}_${op};
-	arch_irn_flags_t  irn_flags_ = arch_irn_flags_none;
-	ir_node          *res;
-	backend_info_t   *info;
+	arch_irn_flags_t irn_flags_ = arch_irn_flags_none;
 EOF
 
 	if($arity == $ARITY_DYNAMIC) {
 		$temp .= <<EOF;
-	int             arity   = -1;
-	ir_node       **in      = NULL;
+	int      const   arity      = -1;
+	ir_node  const **in         = NULL;
 EOF
 	} elsif($arity == $ARITY_VARIABLE) {
 	} else {
 		$temp .= <<EOF;
-	int             arity   = $arity;
+	int      const   arity      = $arity;
 EOF
 		if($arity > 0) {
 			$temp .= <<EOF;
-	ir_node        *in[$arity];
+	ir_node         *in[$arity];
 EOF
 		} else {
 			$temp .= <<EOF;
-	ir_node       **in      = NULL;
+	ir_node        **in         = NULL;
 EOF
 		}
 	}
 	if($out_arity == $ARITY_DYNAMIC) {
 		$temp .= <<EOF;
-	int             n_res   = -1;
+	int      const   n_res      = -1;
 EOF
 	} elsif($out_arity == $ARITY_VARIABLE) {
 	} else {
 		$temp .= <<EOF;
-	int             n_res   = ${out_arity};
-EOF
-	}
-
-	if (defined($known_mode)) {
-		$temp .= <<EOF;
-	ir_mode        *mode    = ${known_mode};
+	int      const   n_res      = ${out_arity};
 EOF
 	}
 
@@ -342,9 +332,6 @@ EOF
 		$temp .= "\tstatic const arch_register_req_t **in_reqs = NULL;\n";
 	}
 	my $attr_type = $on->{attr_type};
-	if(exists($n->{"init_attr"})) {
-		$temp .= "\t${attr_type} *attr;\n";
-	}
 
 	$temp .= "\n";
 
@@ -404,21 +391,40 @@ EOF
 
 	$temp .= <<EOF;
 	/* create node */
-	assert(op != NULL);
-	res = new_ir_node(dbgi, irg, block, op, mode, arity, in);
+	ir_graph *irg  = get_irn_irg(block);
+	ir_op    *op   = op_${arch}_${op};
+EOF
+	if (defined($known_mode)) {
+		$temp .= <<EOF;
+	ir_mode  *mode = ${known_mode};
+EOF
+	}
+	$temp .= <<EOF;
+	ir_node  *res  = new_ir_node(dbgi, irg, block, op, mode, arity, in);
 
 	/* init node attributes */
+EOF
+	if ($attr_type ne "") {
+		$temp .= <<EOF;
+	${attr_type} *attr = (${attr_type}*)get_irn_generic_attr(res);
+	(void) attr; /* avoid potential warning */
+EOF
+	}
+	$temp .= <<EOF;
 	${attr_init_code}
+EOF
+	if ($custominit ne "") {
+		$temp .= <<EOF;
 	${custominit}
-	info = be_get_info(res);
+EOF
+	}
+	$temp .= <<EOF;
+	backend_info_t *info = be_get_info(res);
 	(void) info; /* avoid potential warning */
 ${set_out_reqs}
-
 EOF
 
 	if (exists($n->{"init_attr"})) {
-		$temp .= "\tattr = (${attr_type}*)get_irn_generic_attr(res);\n";
-		$temp .= "\t(void) attr; /* avoid potential warning */\n";
 		$temp .= "\t".$n->{"init_attr"}."\n";
 	}
 
