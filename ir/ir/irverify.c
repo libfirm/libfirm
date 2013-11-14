@@ -325,13 +325,13 @@ static int verify_node_Proj(const ir_node *p)
 	ir_graph *irg  = get_irn_irg(p);
 	ir_node  *pred = get_Proj_pred(p);
 	if (get_irn_mode(pred) != mode_T) {
-		warn(p, "predecessor %+F does not have mode_T", p, pred);
+		warn(p, "predecessor %+F does not have mode_T", pred);
 		return false;
 	}
 	bool fine = true;
 	if (get_irg_pinned(irg) != op_pin_state_floats
 	    && get_nodes_block(pred) != get_nodes_block(p)) {
-	    warn(p, "different block than predecessor %+F", p, pred);
+	    warn(p, "different block than predecessor %+F", pred);
 	    fine = false;
 	}
 	fine &= verify_node_Proj_fragile(p);
