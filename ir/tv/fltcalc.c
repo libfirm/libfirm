@@ -862,10 +862,10 @@ long double fc_val_to_ieee754(const fp_value *val)
 
 	unsigned byte_offset;
 	for (byte_offset = 0; byte_offset < 4; byte_offset++)
-		mantissa1 |= sc_sub_bits(_mant(value), mantissa_size, byte_offset) << (byte_offset << 3);
+		mantissa1 |= (unsigned)sc_sub_bits(_mant(value), mantissa_size, byte_offset) << (byte_offset << 3);
 
 	for (; (byte_offset<<3) < long_double_desc.mantissa_size; byte_offset++)
-		mantissa0 |= sc_sub_bits(_mant(value), mantissa_size, byte_offset) << ((byte_offset - 4) << 3);
+		mantissa0 |= (unsigned)sc_sub_bits(_mant(value), mantissa_size, byte_offset) << ((byte_offset - 4) << 3);
 
 	value_t buildval;
 	if (long_double_desc.exponent_size == 11 && long_double_desc.mantissa_size == 52) {

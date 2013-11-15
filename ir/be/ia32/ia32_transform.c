@@ -2567,10 +2567,10 @@ static ir_node *gen_float_const_Store(ir_node *node, ir_node *cns)
 		unsigned delta;
 		ir_mode *mode;
 		if (size >= 4) {
-			val= get_tarval_sub_bits(tv, ofs)            |
-			    (get_tarval_sub_bits(tv, ofs + 1) <<  8) |
-			    (get_tarval_sub_bits(tv, ofs + 2) << 16) |
-			    (get_tarval_sub_bits(tv, ofs + 3) << 24);
+			val= (unsigned)get_tarval_sub_bits(tv, ofs)            |
+			    ((unsigned)get_tarval_sub_bits(tv, ofs + 1) <<  8) |
+			    ((unsigned)get_tarval_sub_bits(tv, ofs + 2) << 16) |
+			    ((unsigned)get_tarval_sub_bits(tv, ofs + 3) << 24);
 			delta = 4;
 			mode  = ia32_mode_gp;
 		} else if (size >= 2) {
