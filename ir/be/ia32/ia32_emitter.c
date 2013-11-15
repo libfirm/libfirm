@@ -1509,16 +1509,21 @@ static int should_align_block(const ir_node *block)
 		double         pred_freq = get_block_execfreq(pred);
 
 		if (pred == prev) {
+			assert (pred_freq > 0.0f && "Might result in NaN below!?!");
 			prev_freq += pred_freq;
 		} else {
 			jmp_freq  += pred_freq;
 		}
 	}
+	if (prev_freq == 0.0)
+		/* Prev-by-schedule block never falls-through => align! */
+		return 1;
 
 	if (prev_freq < DELTA && !(jmp_freq < DELTA))
 		return 1;
 
 	jmp_freq /= prev_freq;
+	assert (jmp_freq == jmp_freq && "NaN!");
 
 	return jmp_freq > ia32_cg_config.label_alignment_factor;
 }
