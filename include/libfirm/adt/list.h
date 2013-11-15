@@ -47,11 +47,8 @@ struct list_head {
 	struct list_head *next, *prev;
 };
 
-#define _list_offsetof(type,member) \
-  ((char *) &(((type *) 0)->member) - (char *) 0)
-
 #define _list_container_of(ptr, type, member) \
-	((type *) ((char *) (ptr) - _list_offsetof(type, member)))
+	((type *) ((char *) (ptr) - offsetof(type, member)))
 /** @endcond  */
 
 /**
