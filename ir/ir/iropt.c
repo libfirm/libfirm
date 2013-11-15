@@ -5963,8 +5963,8 @@ handle_tv:
 				const ir_entity *member      = get_compound_member(type, i);
 				const ir_type   *member_type = get_entity_type(member);
 				int              member_offs = get_entity_offset(member);
-				if ((unsigned)member_offs >= (unsigned)offset + get_mode_size_bytes(mode)
-				    || (unsigned)offset >= (unsigned)member_offs + get_type_size_bytes(member_type))
+				if (member_offs >= offset + (long)get_mode_size_bytes(mode)
+				    || offset >= member_offs + (long)get_type_size_bytes(member_type))
 				    continue;
 				if (i > get_initializer_compound_n_entries(initializer))
 					continue;
@@ -6083,8 +6083,8 @@ handle_tv:;
 				const ir_entity *member      = get_compound_member(type, i);
 				const ir_type   *member_type = get_entity_type(member);
 				int              member_offs = get_entity_offset(member);
-				if ((unsigned)member_offs >= (unsigned)offset + get_mode_size_bytes(mode)
-				    || (unsigned)offset >= (unsigned)member_offs + get_type_size_bytes(member_type))
+				if (member_offs >= offset + (long)get_mode_size_bytes(mode)
+				    || offset >= member_offs + (long)get_type_size_bytes(member_type))
 				    continue;
 				if (get_entity_bitfield_size(member) > 0)
 					return NULL;
