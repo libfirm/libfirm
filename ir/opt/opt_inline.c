@@ -916,7 +916,7 @@ static int calc_inline_benefice(call_entry *entry, ir_graph *callee)
 	size_t    i, n_params;
 	ir_node   *frame_ptr;
 	ir_type   *mtp;
-	int       weight = 0;
+	int64_t   weight = 0;
 	int       all_const;
 	unsigned  cc, v;
 
@@ -1011,6 +1011,7 @@ static int calc_inline_benefice(call_entry *entry, ir_graph *callee)
 	if (all_const)
 		weight += 1024;
 
+	assert(weight < INT_MAX && "weight too big for int");
 	return entry->benefice = weight;
 }
 
