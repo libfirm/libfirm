@@ -107,7 +107,7 @@ static inline bool rbitset_is_empty(const unsigned *bitset, size_t size)
  */
 static inline void rbitset_set(unsigned *bitset, size_t pos)
 {
-	BITSET_ELEM(bitset,pos) |= 1 << (pos % BITS_PER_ELEM);
+	BITSET_ELEM(bitset,pos) |= 1u << (pos % BITS_PER_ELEM);
 }
 
 /**
@@ -198,7 +198,7 @@ static inline void rbitset_flip_all(unsigned *bitset, size_t size)
  */
 static inline bool rbitset_is_set(const unsigned *bitset, size_t pos)
 {
-	return (BITSET_ELEM(bitset, pos) & (1 << (pos % BITS_PER_ELEM))) != 0;
+	return (BITSET_ELEM(bitset, pos) & (1u << (pos % BITS_PER_ELEM))) != 0;
 }
 
 /**
