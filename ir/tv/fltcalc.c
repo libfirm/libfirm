@@ -93,8 +93,8 @@ struct fp_value {
 	unsigned char      clss;
 	char               sign;
 	/** exp[value_size] + mant[value_size].
-	 * Mantissa has an explizit one at the beginning (contrary to many
-	 * floatingpoint formats) */
+	 * Mantissa has an explicit one at the beginning (contrary to many
+	 * floating point formats) */
 	char               value[];
 };
 
@@ -320,7 +320,7 @@ static bool normalize(const fp_value *in_val, fp_value *out_val, bool sticky)
 		 * TO_POSITIVE |      +        |   +inf
 		 *             |      -        |   smallest representable value
 		 *--------------------------------------------------------------
-		 * TO_NEAGTIVE |      +        |   largest representable value
+		 * TO_NEGATIVE |      +        |   largest representable value
 		 *             |      -        |   -inf
 		 *--------------------------------------------------------------
 		 * TO_ZERO     |      +        |   largest representable value
@@ -1219,7 +1219,7 @@ fc_rounding_mode_t fc_get_rounding_mode(void)
 void init_fltcalc(int precision)
 {
 	if (calc_buffer == NULL) {
-		/* does nothing if already init */
+		/* does nothing if already initialized */
 		if (precision == 0)
 			precision = FC_DEFAULT_PRECISION;
 
