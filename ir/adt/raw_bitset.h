@@ -118,7 +118,7 @@ static inline void rbitset_set(unsigned *bitset, size_t pos)
  */
 static inline void rbitset_flip(unsigned *bitset, size_t pos)
 {
-	BITSET_ELEM(bitset, pos) ^= 1 << (pos % BITS_PER_ELEM);
+	BITSET_ELEM(bitset, pos) ^= 1u << (pos % BITS_PER_ELEM);
 }
 
 /* internal helper: return mask for last bitset element, must not be called
@@ -156,7 +156,7 @@ static inline void rbitset_set_all(unsigned *bitset, size_t size)
  */
 static inline void rbitset_clear(unsigned *bitset, size_t pos)
 {
-	BITSET_ELEM(bitset, pos) &= ~(1 << (pos % BITS_PER_ELEM));
+	BITSET_ELEM(bitset, pos) &= ~(1u << (pos % BITS_PER_ELEM));
 }
 
 /**
@@ -242,7 +242,7 @@ static inline size_t rbitset_next(const unsigned *bitset, size_t pos,
 	 * Mask out the bits smaller than pos in the current unit.
 	 * We are only interested in bits set higher than pos.
 	 */
-	unsigned in_elem_mask = (1 << bit_pos) - 1;
+	unsigned in_elem_mask = (1u << bit_pos) - 1u;
 
 	elem ^= mask;
 	unsigned p = ntz(elem & ~in_elem_mask);
@@ -402,11 +402,11 @@ static inline void rbitset_set_range(unsigned *bitset, size_t from,
 
 	size_t from_bit         = from % BITS_PER_ELEM;
 	size_t from_pos         = from / BITS_PER_ELEM;
-	unsigned from_unit_mask = ~((1 << from_bit) - 1);
+	unsigned from_unit_mask = ~((1u << from_bit) - 1);
 
 	size_t to_bit         = to % BITS_PER_ELEM;
 	size_t to_pos         = to / BITS_PER_ELEM;
-	unsigned to_unit_mask = (1 << to_bit) - 1;
+	unsigned to_unit_mask = (1u << to_bit) - 1;
 
 	assert(from < to);
 
