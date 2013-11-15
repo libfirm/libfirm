@@ -1,4 +1,6 @@
 {{warning}}
+#ifndef FIRM_GEN_NODES_H
+#define FIRM_GEN_NODES_H
 
 {% if spec.external -%}
 {% set FIRM_API="" %}
@@ -149,3 +151,5 @@ ir_node **get_{{node.name}}_{{node.input_name}}_arr(ir_node *node);
 {% endfor -%}
 
 /** @} */
+
+#endif
