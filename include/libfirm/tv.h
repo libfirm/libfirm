@@ -155,9 +155,11 @@ FIRM_API ir_tarval *new_tarval_from_bytes(unsigned char const *buf,
 FIRM_API long get_tarval_long(ir_tarval *tv);
 
 /**
- * This validates if get_tarval_long() will return a satisfying
- * result. I.e. if tv is an int_number and between min, max
- * of long int (signed!)
+ * This validates if get_tarval_long() will return something sensible.
+ * This is the case if the value is a two_complement (integer/reference) mode
+ * and converting it to a mode equivalent to "long" would not result in
+ * information loss. So ULONGMAX in an unsigned mode is fine, ULONG_MAX in a
+ * signed mode not.
  *
  * @param tv    the tarval
  */
