@@ -657,8 +657,10 @@ void sc_val_from_ulong(unsigned long value, void *buffer)
 
 long sc_val_to_long(const void *val)
 {
-	long l = 0;
-	for (int i = calc_buffer_size - 1; i >= 0; i--) {
+	unsigned long l = 0;
+	int max_buffer_index = sizeof(long)*8/SC_BITS;
+	for (size_t i = max_buffer_index; i-- > 0;) {
+		assert(l <= (ULONG_MAX>>4) && "signed shift overflow");
 		l = (l << 4) + _val(((char *)val)[i]);
 	}
 	return l;
