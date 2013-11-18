@@ -346,18 +346,25 @@ ir_tarval *new_tarval_from_bytes(unsigned char const *buf,
 
 int tarval_is_long(ir_tarval *tv)
 {
-	if (!mode_is_int(tv->mode) && !mode_is_reference(tv->mode))
-		return 0;
+	ir_mode *mode = get_tarval_mode(tv);
+	if (get_mode_arithmetic(mode) != irma_twos_complement)
+		return false;
+	if (get_mode_size_bytes(mode) <= sizeof(long))
+		return true;
 
-	if (get_mode_size_bits(tv->mode) > (int) (sizeof(long) << 3)) {
-		/* the value might be too big to fit in a long */
-		sc_max_from_bits(sizeof(long) << 3, 0, NULL);
-		if (sc_comp(sc_get_buffer(), tv->value) == ir_relation_less) {
-			/* really doesn't fit */
-			return 0;
-		}
+	/* the value might be too big to fit in a long */
+	size_t long_bits = sizeof(long)*8;
+	sc_max_from_bits(long_bits, mode_is_signed(mode), NULL);
+	if (sc_comp(tv->value, sc_get_buffer()) == ir_relation_greater)
+		return false;
+	if (mode_is_signed(mode)) {
+		char *min = ALLOCAN(char, sc_get_buffer_length());
+		sc_min_from_bits(long_bits, true, min);
+		sign_extend(min, long_bits, true);
+		if (sc_comp(tv->value, min) == ir_relation_less)
+			return false;
 	}
-	return 1;
+	return true;
 }
 
 long get_tarval_long(ir_tarval* tv)
@@ -368,18 +375,15 @@ long get_tarval_long(ir_tarval* tv)
 
 bool tarval_is_uint64(ir_tarval *tv)
 {
-	if (!mode_is_int(tv->mode) && !mode_is_reference(tv->mode))
+	ir_mode *mode = get_tarval_mode(tv);
+	if (get_mode_arithmetic(mode) != irma_twos_complement)
 		return false;
+	if (get_mode_size_bytes(mode) <= sizeof(uint64_t))
+		return true;
 
-	if (get_mode_size_bits(tv->mode) > (int) (sizeof(uint64_t) << 3)) {
-		/* the value might be too big to fit in a long */
-		sc_max_from_bits(sizeof(uint64_t) << 3, 0, NULL);
-		if (sc_comp(sc_get_buffer(), tv->value) == ir_relation_less) {
-			/* really doesn't fit */
-			return false;
-		}
-	}
-	return true;
+	/* the value might be too big to fit in a long */
+	sc_max_from_bits(sizeof(uint64_t)*8, 0, NULL);
+	return sc_comp(tv->value, sc_get_buffer()) & ir_relation_less_equal;
 }
 
 uint64_t get_tarval_uint64(ir_tarval *tv)
