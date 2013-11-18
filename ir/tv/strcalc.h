@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "irmode.h"
+#include "firm_types.h"
 
 #ifdef STRCALC_DEBUG_ALL             /* switch on all debug options */
 #  ifndef STRCALC_DEBUG
@@ -176,7 +176,7 @@ void sc_zero(void *buffer);
 const void *sc_get_buffer(void);
 int sc_get_buffer_length(void);
 
-void sign_extend(void *buffer, ir_mode *mode);
+void sign_extend(void *buffer, unsigned from_bits, bool is_signed);
 
 /**
  * create an value form a string representation

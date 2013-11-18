@@ -522,13 +522,13 @@ int sc_get_buffer_length(void)
 	return calc_buffer_size;
 }
 
-void sign_extend(void *buffer, ir_mode *mode)
+void sign_extend(void *buffer, unsigned from_bits, bool is_signed)
 {
 	char *calc_buffer = (char*)buffer;
-	int bits          = get_mode_size_bits(mode) - 1;
+	int bits          = from_bits - 1;
 	int nibble        = bits >> 2;
 
-	if (mode_is_signed(mode)) {
+	if (is_signed) {
 		int max = max_digit[bits & 3];
 		if (calc_buffer[nibble] > max) {
 			/* sign bit is set, we need sign expansion */

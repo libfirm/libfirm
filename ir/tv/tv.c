@@ -111,7 +111,7 @@ static ir_tarval *get_tarval(const void *value, size_t length, ir_mode *mode)
 		char *temp = ALLOCAN(char, length);
 		memcpy(temp, value, length);
 		if (get_mode_arithmetic(mode) == irma_twos_complement) {
-			sign_extend(temp, mode);
+			sign_extend(temp, get_mode_size_bits(mode), mode_is_signed(mode));
 		}
 		tv.value = INSERT_VALUE(temp, length);
 	} else {
@@ -133,7 +133,7 @@ static ir_tarval *get_tarval_overflow(const void *value, size_t length,
 		memcpy(temp, value, sc_get_buffer_length());
 		sc_truncate(get_mode_size_bits(mode), temp);
 		/* the sc_ module expects that all bits are set ... */
-		sign_extend(temp, mode);
+		sign_extend(temp, get_mode_size_bits(mode), mode_is_signed(mode));
 		return get_tarval(temp, length, mode);
 	}
 
@@ -147,7 +147,7 @@ static ir_tarval *get_tarval_overflow(const void *value, size_t length,
 				memcpy(temp, value, sc_get_buffer_length());
 				sc_truncate(get_mode_size_bits(mode), temp);
 				/* the sc_ module expects that all bits are set ... */
-				sign_extend(temp, mode);
+				sign_extend(temp, get_mode_size_bits(mode), mode_is_signed(mode));
 				return get_tarval(temp, length, mode);
 			}
 			case TV_OVERFLOW_BAD:
@@ -789,7 +789,8 @@ ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *dst_mode)
 		if (get_mode_sort(dst_mode) == irms_int_number) {
 			char *buffer = ALLOCAN(char, sc_get_buffer_length());
 			memcpy(buffer, src->value, sc_get_buffer_length());
-			sign_extend(buffer, src->mode);
+			sign_extend(buffer, get_mode_size_bits(src->mode),
+			            mode_is_signed(src->mode));
 			return get_tarval_overflow(buffer, src->length, dst_mode);
 		}
 		break;
