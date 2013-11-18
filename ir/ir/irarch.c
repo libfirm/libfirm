@@ -1101,7 +1101,7 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn)
 
 				curr   = new_rd_Add(dbg, block, left, curr, mode);
 
-				k_node = new_r_Const_long(irg, mode, (-1) << k);
+				k_node = new_r_Const_long(irg, mode, (~0u) << k);
 				curr   = new_rd_And(dbg, block, curr, k_node, mode);
 
 				res    = new_rd_Sub(dbg, block, left, curr, mode);
