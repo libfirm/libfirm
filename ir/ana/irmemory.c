@@ -1064,6 +1064,31 @@ static void init_entity_usage(ir_type *tp)
 }
 
 /**
+ * Mark all entities used in the initializer's value as unknown usage.
+ *
+ * @param value  the value to check
+ */
+static void check_initializer_value(ir_node *value)
+{
+	/* Handle each node at most once. */
+	if (irn_visited_else_mark(value))
+		return;
+
+	/* let's check if it's an address */
+	if (is_SymConst_addr_ent(value)) {
+		ir_entity *ent = get_SymConst_entity(value);
+		set_entity_usage(ent, ir_usage_unknown);
+	}
+
+	int arity = get_irn_arity(value);
+
+	for (int i = 0; i < arity; i++) {
+		ir_node *op = get_irn_n(value, i);
+		check_initializer_value(op);
+	}
+}
+
+/**
  * Mark all entities used in the initializer as unknown usage.
  *
  * @param initializer  the initializer to check
@@ -1072,12 +1097,12 @@ static void check_initializer_nodes(ir_initializer_t *initializer)
 {
 	switch (initializer->kind) {
 	case IR_INITIALIZER_CONST: {
-		/* let's check if it's an address */
-		ir_node *n = initializer->consti.value;
-		if (is_SymConst_addr_ent(n)) {
-			ir_entity *ent = get_SymConst_entity(n);
-			set_entity_usage(ent, ir_usage_unknown);
-		}
+		ir_node  *n   = initializer->consti.value;
+		ir_graph *irg = get_irn_irg(n);
+		ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
+		inc_irg_visited(irg);
+		check_initializer_value(n);
+		ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
 		return;
 	}
 	case IR_INITIALIZER_TARVAL:
