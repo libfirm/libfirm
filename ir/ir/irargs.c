@@ -199,7 +199,7 @@ static int firm_emit(lc_appendable_t *app, const lc_arg_occ_t *occ,
 		ir_tarval *tarval = (ir_tarval*)X;
 		tarval_snprintf(tv_buf, sizeof(tv_buf), tarval,
 		                !mode_is_float(get_tarval_mode(tarval)));
-		snprintf(buf, sizeof(buf), "%s%s", A("tv"), tv_buf);
+		snprintf(buf, sizeof(buf), "%s0x%s", A("tv"), tv_buf);
 		break;
 	}
 	case k_ir_loop: {
