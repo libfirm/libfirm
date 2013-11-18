@@ -49,11 +49,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
-/*------------------------------------------------------------------*/
-/* Routines for dead node elimination / copying garbage collection  */
-/* of the obstack.                                                  */
-/*------------------------------------------------------------------*/
-
 /**
  * Remember the new node in the old node by using a field all nodes have.
  */
@@ -71,12 +66,8 @@ static inline ir_node *get_new_node(ir_node *old_node)
 	return (ir_node*) get_irn_link(old_node);
 }
 
-/*--------------------------------------------------------------------*/
-/*  Functionality for inlining                                         */
-/*--------------------------------------------------------------------*/
-
 /**
- * Copy node for inlineing.  Updates attributes that change when
+ * Copy node for inlining.  Updates attributes that change when
  * inlineing but not for dead node elimination.
  *
  * Copies the node by calling copy_node() and then updates the entity if
@@ -108,12 +99,10 @@ static void copy_node_inline(ir_node *node, void *env)
 
 static void set_preds_inline(ir_node *node, void *env)
 {
-	ir_node *new_node;
-
 	irn_rewire_inputs(node);
 
 	/* move constants into start block */
-	new_node = get_new_node(node);
+	ir_node *new_node = get_new_node(node);
 	if (is_irn_start_block_placed(new_node)) {
 		ir_graph *new_irg     = (ir_graph *) env;
 		ir_node  *start_block = get_irg_start_block(new_irg);
@@ -175,27 +164,22 @@ static void find_addr(ir_node *node, void *env)
  */
 static bool can_inline(ir_node *call, ir_graph *called_graph)
 {
-	ir_entity          *called      = get_irg_entity(called_graph);
-	ir_type            *called_type = get_entity_type(called);
-	ir_type            *call_type   = get_Call_type(call);
-	ir_type            *frame_type  = get_irg_frame_type(called_graph);
-	size_t              n_params    = get_method_n_params(called_type);
-	size_t              n_arguments = get_method_n_params(call_type);
-	size_t              n_res       = get_method_n_ress(called_type);
-	size_t              n_entities  = get_class_n_members(frame_type);
-	mtp_additional_properties props = get_entity_additional_properties(called);
-	size_t              i;
-	bool                res;
-
+	ir_entity                *called = get_irg_entity(called_graph);
+	mtp_additional_properties props  = get_entity_additional_properties(called);
 	if (props & mtp_property_noinline)
 		return false;
 
+	ir_type *called_type = get_entity_type(called);
+	size_t   n_params    = get_method_n_params(called_type);
+	ir_type *call_type   = get_Call_type(call);
+	size_t   n_arguments = get_method_n_params(call_type);
 	if (n_arguments != n_params) {
 		/* this is a bad feature of C: without a prototype, we can
 		 * call a function with less parameters than needed. Currently
 		 * we don't support this, although we could use Unknown than. */
 		return false;
 	}
+	size_t n_res = get_method_n_ress(called_type);
 	if (n_res != get_method_n_ress(call_type)) {
 		return false;
 	}
@@ -204,7 +188,7 @@ static bool can_inline(ir_node *call, ir_graph *called_graph)
 	 * It is implementation dependent what happens in that case.
 	 * We support inlining, if the bitsize of the types matches AND
 	 * the same arithmetic is used. */
-	for (i = 0; i < n_params; ++i) {
+	for (size_t i = 0; i < n_params; ++i) {
 		ir_type *param_tp = get_method_param_type(called_type, i);
 		ir_type *arg_tp   = get_method_param_type(call_type, i);
 
@@ -221,7 +205,7 @@ static bool can_inline(ir_node *call, ir_graph *called_graph)
 			/* otherwise we can simply "reinterpret" the bits */
 		}
 	}
-	for (i = 0; i < n_res; ++i) {
+	for (size_t i = 0; i < n_res; ++i) {
 		ir_type *decl_res_tp = get_method_res_type(called_type, i);
 		ir_type *used_res_tp = get_method_res_type(call_type, i);
 
@@ -239,7 +223,9 @@ static bool can_inline(ir_node *call, ir_graph *called_graph)
 	}
 
 	/* check for nested functions and variable number of parameters */
-	for (i = 0; i < n_entities; ++i) {
+	ir_type *frame_type = get_irg_frame_type(called_graph);
+	for (size_t i = 0, n_entities = get_class_n_members(frame_type);
+	     i < n_entities; ++i) {
 		ir_entity *ent = get_class_member(frame_type, i);
 		if (is_method_entity(ent))
 			return false;
@@ -247,7 +233,7 @@ static bool can_inline(ir_node *call, ir_graph *called_graph)
 			return false;
 	}
 
-	res = true;
+	bool res = true;
 	irg_walk_graph(called_graph, find_addr, NULL, &res);
 
 	return res;
@@ -266,11 +252,9 @@ static void copy_frame_entities(ir_graph *from, ir_graph *to)
 {
 	ir_type *from_frame = get_irg_frame_type(from);
 	ir_type *to_frame   = get_irg_frame_type(to);
-	size_t   n_members  = get_class_n_members(from_frame);
-	size_t   i;
 	assert(from_frame != to_frame);
-
-	for (i = 0; i < n_members; ++i) {
+	for (size_t i = 0, n_members = get_class_n_members(from_frame);
+	     i < n_members; ++i) {
 		ir_entity *old_ent = get_class_member(from_frame, i);
 
 		// parameter entities are already copied and the link has been set
@@ -329,8 +313,8 @@ static void copy_parameter_entities(ir_node *call, ir_graph *called_graph)
 				ARR_APP1(ir_node*, sync_mem, new_mem);
 			} else {
 				/*
-				 * The first time a copyb node is added it may overwrite sync_mem[0],
-				 * because the copyb node itself references it.
+				 * The first time a copyb node is added it may overwrite
+				 * sync_mem[0], because the copyb node itself references it.
 				 */
 				sync_mem[0] = new_mem;
 				have_copyb = true;
@@ -356,22 +340,17 @@ static void copy_parameter_entities(ir_node *call, ir_graph *called_graph)
 }
 
 /* Inlines a method at the given call site. */
-static int inline_method(ir_node *const call, ir_graph *called_graph)
+static bool inline_method(ir_node *const call, ir_graph *called_graph)
 {
 	/* we cannot inline some types of calls */
-	if (! can_inline(call, called_graph))
-		return 0;
+	if (!can_inline(call, called_graph))
+		return false;
 
 	/* We cannot inline a recursive call. The graph must be copied before
 	 * the call the inline_method() using create_irg_copy(). */
 	ir_graph *irg = get_irn_irg(call);
 	if (called_graph == irg)
-		return 0;
-
-	ir_entity *ent      = get_irg_entity(called_graph);
-	ir_type   *mtp      = get_entity_type(ent);
-	ir_type   *ctp      = get_Call_type(call);
-	int        n_params = get_method_n_params(mtp);
+		return false;
 
 	ir_graph *rem = current_ir_graph;
 	current_ir_graph = irg;
@@ -412,6 +391,9 @@ static int inline_method(ir_node *const call, ir_graph *called_graph)
 	irp_reserve_resources(irp, IRP_RESOURCE_ENTITY_LINK);
 
 	/* If the call has parameters, copy all parameter entities */
+	ir_entity *ent      = get_irg_entity(called_graph);
+	ir_type   *mtp      = get_entity_type(ent);
+	int        n_params = get_method_n_params(mtp);
 	if (n_params != 0) {
 		copy_parameter_entities(call, called_graph);
 	}
@@ -504,7 +486,7 @@ static int inline_method(ir_node *const call, ir_graph *called_graph)
 	int irn_arity = get_irn_arity(end);
 	for (int i = 0; i < irn_arity; i++) {
 		ir_node *ka = get_End_keepalive(end, i);
-		if (! is_Bad(ka))
+		if (!is_Bad(ka))
 			add_End_keepalive(get_irg_end(irg), ka);
 	}
 
@@ -533,7 +515,8 @@ static int inline_method(ir_node *const call, ir_graph *called_graph)
 		if (is_Call(ret)) {
 			cf_pred[n_mem_phi++] = new_r_Proj(ret, mode_M, 3);
 		} else if (is_fragile_op(ret)) {
-			/* We rely that all cfops have the memory output at the same position. */
+			/* We rely that all cfops have the memory output at the same
+			 * position. */
 			cf_pred[n_mem_phi++] = new_r_Proj(ret, mode_M, 0);
 		} else if (is_Raise(ret)) {
 			cf_pred[n_mem_phi++] = new_r_Proj(ret, mode_M, 1);
@@ -546,6 +529,7 @@ static int inline_method(ir_node *const call, ir_graph *called_graph)
 		set_irn_link(post_bl, call_mem);
 	}
 	/* Now the real results */
+	ir_type *ctp = get_Call_type(call);
 	ir_node *call_res;
 	if (n_res > 0) {
 		for (int j = 0; j < n_res; j++) {
@@ -570,7 +554,8 @@ static int inline_method(ir_node *const call, ir_graph *called_graph)
 				? new_r_Phi(post_bl, n_ret, cf_pred, res_mode)
 				: new_r_Bad(irg, res_mode);
 			res_pred[j] = phi;
-			/* Conserve Phi-list for further inlinings -- but might be optimized */
+			/* Conserve Phi-list for further inlinings -- but might be
+			 * optimized */
 			if (get_nodes_block(phi) == post_bl) {
 				set_Phi_next(phi, get_Block_phis(post_bl));
 				set_Block_phis(post_bl, phi);
@@ -586,11 +571,10 @@ static int inline_method(ir_node *const call, ir_graph *called_graph)
 	/* Finally the exception control flow.
 	   We have two possible situations:
 	   First if the Call branches to an exception handler:
-	   We need to add a Phi node to
-	   collect the memory containing the exception objects.  Further we need
-	   to add another block to get a correct representation of this Phi.  To
-	   this block we add a Jmp that resolves into the X output of the Call
-	   when the Call is turned into a tuple.
+	   We need to add a Phi node to collect the memory containing the exception
+	   objects.  Further we need to add another block to get a correct
+	   representation of this Phi.  To this block we add a Jmp that resolves
+	   into the X output of the Call when the Call is turned into a tuple.
 	   Second: There is no exception edge. Just add all inlined exception
 	   branches to the End node.
 	 */
@@ -657,7 +641,7 @@ static int inline_method(ir_node *const call, ir_graph *called_graph)
 
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 
-	return 1;
+	return true;
 }
 
 static struct obstack  temp_obst;
@@ -669,8 +653,8 @@ typedef struct call_entry {
 	list_head  list;        /**< List head for linking the next one. */
 	int        loop_depth;  /**< The loop depth of this call. */
 	int        benefice;    /**< The calculated benefice of this call. */
-	unsigned   local_adr:1; /**< Set if this call gets an address of a local variable. */
-	unsigned   all_const:1; /**< Set if this call has only constant parameters. */
+	bool       local_adr:1; /**< Set if this call gets an address of a local variable. */
+	bool       all_const:1; /**< Set if this call has only constant parameters. */
 } call_entry;
 
 /**
@@ -695,7 +679,7 @@ typedef struct {
  */
 static inline_irg_env *alloc_inline_irg_env(void)
 {
-	inline_irg_env *env    = OALLOC(&temp_obst, inline_irg_env);
+	inline_irg_env *env = OALLOC(&temp_obst, inline_irg_env);
 	INIT_LIST_HEAD(&env->calls);
 	env->local_weights     = NULL;
 	env->n_nodes           = -2; /* do not count count Start, End */
@@ -711,8 +695,8 @@ static inline_irg_env *alloc_inline_irg_env(void)
 }
 
 typedef struct walker_env {
-	inline_irg_env *x;     /**< the inline environment */
-	char ignore_callers;   /**< if set, do change callers data */
+	inline_irg_env *x;              /**< the inline environment */
+	bool            ignore_callers; /**< if set, do change callers data */
 } wenv_t;
 
 /**
@@ -722,11 +706,10 @@ typedef struct walker_env {
 static void collect_calls2(ir_node *call, void *ctx)
 {
 	wenv_t         *env = (wenv_t*)ctx;
-	inline_irg_env *x = env->x;
-	unsigned        code = get_irn_opcode(call);
-	call_entry     *entry;
+	inline_irg_env *x   = env->x;
 
 	/* count meaningful nodes in irg */
+	unsigned code = get_irn_opcode(call);
 	if (code != iro_Proj && code != iro_Tuple && code != iro_Sync) {
 		if (code != iro_Block) {
 			++x->n_nodes;
@@ -736,7 +719,8 @@ static void collect_calls2(ir_node *call, void *ctx)
 		}
 	}
 
-	if (code != iro_Call) return;
+	if (code != iro_Call)
+		return;
 
 	/* collect all call nodes */
 	++x->n_call_nodes;
@@ -747,7 +731,7 @@ static void collect_calls2(ir_node *call, void *ctx)
 		return;
 	ir_graph *callee = get_entity_linktime_irg(callee_ent);
 	if (callee != NULL) {
-		if (! env->ignore_callers) {
+		if (!env->ignore_callers) {
 			inline_irg_env *callee_env = (inline_irg_env*)get_irg_link(callee);
 			/* count all static callers */
 			++callee_env->n_callers;
@@ -757,13 +741,13 @@ static void collect_calls2(ir_node *call, void *ctx)
 			x->recursive = 1;
 
 		/* link it in the list of possible inlinable entries */
-		entry = OALLOC(&temp_obst, call_entry);
+		call_entry *entry = OALLOC(&temp_obst, call_entry);
 		entry->call       = call;
 		entry->callee     = callee;
 		entry->loop_depth = get_irn_loop(get_nodes_block(call))->depth;
 		entry->benefice   = 0;
-		entry->local_adr  = 0;
-		entry->all_const  = 0;
+		entry->local_adr  = false;
+		entry->all_const  = false;
 
 		list_add_tail(&entry->list, &x->calls);
 	}
@@ -792,12 +776,12 @@ static call_entry *duplicate_call_entry(const call_entry *entry,
 }
 
 /**
- * Calculate the parameter weights for transmitting the address of a local variable.
+ * Calculate the parameter weights for transmitting the address of a local
+ * variable.
  */
 static unsigned calc_method_local_weight(ir_node *arg)
 {
-	int      j;
-	unsigned v, weight = 0;
+	unsigned weight = 0;
 
 	for (unsigned i = get_irn_n_outs(arg); i-- > 0; ) {
 		ir_node *succ = get_irn_out(arg, i);
@@ -810,14 +794,14 @@ static unsigned calc_method_local_weight(ir_node *arg)
 			break;
 		case iro_Sel:
 			/* check if all args are constant */
-			for (j = get_Sel_n_indexs(succ) - 1; j >= 0; --j) {
+			for (int j = get_Sel_n_indexs(succ); j-- > 0; ) {
 				ir_node *idx = get_Sel_index(succ, j);
-				if (! is_Const(idx))
+				if (!is_Const(idx))
 					return 0;
 			}
 			/* Check users on this Sel. Note: if a 0 is returned here, there was
 			   some unsupported node. */
-			v = calc_method_local_weight(succ);
+			unsigned v = calc_method_local_weight(succ);
 			if (v == 0)
 				return 0;
 			/* we can kill one Sel with constant indexes, this is cheap */
@@ -829,7 +813,7 @@ static unsigned calc_method_local_weight(ir_node *arg)
 			break;
 		case iro_Tuple:
 			/* unoptimized tuple */
-			for (j = get_Tuple_n_preds(succ) - 1; j >= 0; --j) {
+			for (int j = get_Tuple_n_preds(succ); j-- > 0; ) {
 				ir_node *pred = get_Tuple_pred(succ, j);
 				if (pred == arg) {
 					/* look for Proj(j) */
@@ -857,32 +841,22 @@ static unsigned calc_method_local_weight(ir_node *arg)
 }
 
 /**
- * Calculate the parameter weights for transmitting the address of a local variable.
+ * Calculate the parameter weights for transmitting the address of a local
+ * variable.
  */
 static void analyze_irg_local_weights(inline_irg_env *env, ir_graph *irg)
 {
-	ir_entity *ent = get_irg_entity(irg);
-	ir_type  *mtp;
-	size_t   nparams;
-	long     proj_nr;
-	ir_node  *irg_args, *arg;
-
-	mtp      = get_entity_type(ent);
-	nparams  = get_method_n_params(mtp);
-
-	/* allocate a new array. currently used as 'analysed' flag */
-	env->local_weights = NEW_ARR_D(unsigned, &temp_obst, nparams);
-
-	/* If the method haven't parameters we have nothing to do. */
-	if (nparams <= 0)
-		return;
+	ir_entity *ent     = get_irg_entity(irg);
+	ir_type   *mtp     = get_entity_type(ent);
+	size_t     nparams = get_method_n_params(mtp);
+	env->local_weights = OALLOCNZ(&temp_obst, unsigned, nparams);
 
 	assure_irg_outs(irg);
-	irg_args = get_irg_args(irg);
+	ir_node *irg_args = get_irg_args(irg);
 	for (unsigned i = get_irn_n_outs(irg_args); i-- > 0; ) {
-		arg     = get_irn_out(irg_args, i);
-		proj_nr = get_Proj_proj(arg);
-		env->local_weights[proj_nr] = calc_method_local_weight(arg);
+		ir_node *arg = get_irn_out(irg_args, i);
+		long     pn  = get_Proj_proj(arg);
+		env->local_weights[pn] = calc_method_local_weight(arg);
 	}
 }
 
@@ -898,9 +872,8 @@ static unsigned get_method_local_adress_weight(ir_graph *callee, size_t pos)
 	if (env->local_weights == NULL)
 		analyze_irg_local_weights(env, callee);
 
-	if (pos < ARR_LEN(env->local_weights))
-		return env->local_weights[pos];
-	return 0;
+	assert(pos < get_method_n_params(get_entity_type(get_irg_entity(callee))));
+	return env->local_weights[pos];
 }
 
 /**
@@ -911,17 +884,8 @@ static unsigned get_method_local_adress_weight(ir_graph *callee, size_t pos)
  */
 static int calc_inline_benefice(call_entry *entry, ir_graph *callee)
 {
-	ir_node   *call = entry->call;
-	ir_entity *ent  = get_irg_entity(callee);
-	size_t    i, n_params;
-	ir_node   *frame_ptr;
-	ir_type   *mtp;
-	int64_t   weight = 0;
-	int       all_const;
-	unsigned  cc, v;
-
-	inline_irg_env *callee_env;
-
+	ir_node                  *call  = entry->call;
+	ir_entity                *ent   = get_irg_entity(callee);
 	mtp_additional_properties props = get_entity_additional_properties(ent);
 	if (props & mtp_property_noinline) {
 		DB((dbg, LEVEL_2, "In %+F Call to %+F: inlining forbidden\n",
@@ -936,9 +900,10 @@ static int calc_inline_benefice(call_entry *entry, ir_graph *callee)
 	}
 
 	/* costs for every passed parameter */
-	n_params = get_Call_n_params(call);
-	mtp      = get_entity_type(ent);
-	cc       = get_method_calling_convention(mtp);
+	size_t   n_params = get_Call_n_params(call);
+	ir_type *mtp      = get_entity_type(ent);
+	unsigned cc       = get_method_calling_convention(mtp);
+	int64_t  weight   = 0;
 	if (cc & cc_reg_param) {
 		/* register parameter, smaller costs for register parameters */
 		size_t max_regs = cc & ~cc_bits;
@@ -953,33 +918,34 @@ static int calc_inline_benefice(call_entry *entry, ir_graph *callee)
 	}
 
 	/* constant parameters improve the benefice */
-	frame_ptr = get_irg_frame(current_ir_graph);
-	all_const = 1;
-	for (i = 0; i < n_params; ++i) {
+	ir_node *frame_ptr = get_irg_frame(current_ir_graph);
+	bool     all_const = true;
+	for (size_t i = 0; i < n_params; ++i) {
 		ir_node *param = get_Call_param(call, i);
 
 		if (is_Const(param)) {
 			weight += get_method_param_weight(ent, i);
 		} else {
-			all_const = 0;
+			all_const = false;
 			if (is_SymConst(param))
 				weight += get_method_param_weight(ent, i);
-			else if (is_Sel(param) && get_Sel_ptr(param) == frame_ptr) {
+			else if (is_Sel(param) && get_Sel_ptr(param) == frame_ptr
+			         && i < get_method_n_params(mtp)) {
 				/*
 				 * An address of a local variable is transmitted. After
 				 * inlining, scalar_replacement might be able to remove the
 				 * local variable, so honor this.
 				 */
-				v = get_method_local_adress_weight(callee, i);
+				unsigned v = get_method_local_adress_weight(callee, i);
 				weight += v;
 				if (v > 0)
-					entry->local_adr = 1;
+					entry->local_adr = true;
 			}
 		}
 	}
 	entry->all_const = all_const;
 
-	callee_env = (inline_irg_env*)get_irg_link(callee);
+	inline_irg_env *callee_env = (inline_irg_env*)get_irg_link(callee);
 	if (callee_env->n_callers == 1 &&
 	    callee != current_ir_graph &&
 	    !entity_is_externally_visible(ent)) {
@@ -1036,15 +1002,14 @@ static void callgraph_walker(ir_graph *irg, void *data)
  */
 static ir_graph **create_irg_list(void)
 {
-	ir_entity  **free_methods;
-	size_t     n_irgs = get_irp_n_irgs();
-	walk_env_t env;
-
+	ir_entity **free_methods;
 	cgana(&free_methods);
 	free(free_methods);
 
 	compute_callgraph();
 
+	size_t     n_irgs = get_irp_n_irgs();
+	walk_env_t env;
 	env.irgs     = XMALLOCNZ(ir_graph*, n_irgs);
 	env.last_irg = 0;
 
@@ -1069,7 +1034,6 @@ static void maybe_push_call(pqueue_t *pqueue, call_entry *call,
 {
 	ir_graph *callee   = call->callee;
 	int       benefice = calc_inline_benefice(call, callee);
-
 	DB((dbg, LEVEL_2, "In %+F Call %+F to %+F has benefice %d\n",
 	    get_irn_irg(call->call), call->call, callee, benefice));
 
@@ -1096,11 +1060,7 @@ static void maybe_push_call(pqueue_t *pqueue, call_entry *call,
 static void inline_into(ir_graph *irg, unsigned maxsize,
                         int inline_threshold, pmap *copied_graphs)
 {
-	int            phiproj_computed = 0;
 	inline_irg_env *env = (inline_irg_env*)get_irg_link(irg);
-	wenv_t         wenv;
-	pqueue_t       *pqueue;
-
 	if (env->n_call_nodes == 0)
 		return;
 
@@ -1113,7 +1073,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST);
 
 	/* put irgs into the pqueue */
-	pqueue = new_pqueue();
+	pqueue_t *pqueue = new_pqueue();
 
 	list_for_each_entry(call_entry, curr_call, &env->calls, list) {
 		assert(is_Call(curr_call->call));
@@ -1121,18 +1081,14 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 	}
 
 	/* note that the list of possible calls is updated during the process */
+	bool phiproj_computed = false;
 	while (!pqueue_empty(pqueue)) {
-		int                 did_inline;
-		call_entry          *curr_call  = (call_entry*)pqueue_pop_front(pqueue);
-		ir_graph            *callee     = curr_call->callee;
-		ir_node             *call_node  = curr_call->call;
-		inline_irg_env      *callee_env = (inline_irg_env*)get_irg_link(callee);
-		ir_entity           *ent        = get_irg_entity(callee);
+		call_entry     *curr_call  = (call_entry*)pqueue_pop_front(pqueue);
+		ir_graph       *callee     = curr_call->callee;
+		inline_irg_env *callee_env = (inline_irg_env*)get_irg_link(callee);
+		ir_entity      *ent        = get_irg_entity(callee);
 		mtp_additional_properties props
 			= get_entity_additional_properties(ent);
-		ir_graph            *calleee;
-		int                 loop_depth;
-
 		if (!(props & mtp_property_always_inline)
 		    && env->n_nodes + callee_env->n_nodes > maxsize) {
 			DB((dbg, LEVEL_2, "%+F: too big (%d) + %+F (%d)\n", irg,
@@ -1140,12 +1096,12 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 			continue;
 		}
 
-		calleee = pmap_get(ir_graph, copied_graphs, callee);
+		ir_graph *calleee = pmap_get(ir_graph, copied_graphs, callee);
 		if (calleee != NULL) {
 			int benefice = curr_call->benefice;
 			/*
-			 * Reduce the weight for recursive function IFF not all arguments are const.
-			 * inlining recursive functions is rarely good.
+			 * Reduce the weight for recursive function IFF not all arguments
+			 * are const. inlining recursive functions is rarely good.
 			 */
 			if (!curr_call->all_const)
 				benefice -= 2000;
@@ -1169,8 +1125,8 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 			ir_graph *copy;
 
 			/*
-			 * Reduce the weight for recursive function IFF not all arguments are const.
-			 * inlining recursive functions is rarely good.
+			 * Reduce the weight for recursive function IFF not all arguments
+			 * are const. inlining recursive functions is rarely good.
 			 */
 			if (!curr_call->all_const)
 				benefice -= 2000;
@@ -1187,7 +1143,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 			copy = create_irg_copy(callee);
 
 			/* create_irg_copy() destroys the Proj links, recompute them */
-			phiproj_computed = 0;
+			phiproj_computed = false;
 
 			ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST);
 
@@ -1196,9 +1152,10 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 			set_irg_link(copy, callee_env);
 
 			assure_irg_properties(copy, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
+			wenv_t wenv;
 			memset(&wenv, 0, sizeof(wenv));
 			wenv.x              = callee_env;
-			wenv.ignore_callers = 1;
+			wenv.ignore_callers = true;
 			irg_walk_graph(copy, NULL, collect_calls2, &wenv);
 
 			/*
@@ -1215,16 +1172,16 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 			callee_env->n_callers      = 1;
 			callee_env->n_callers_orig = 1;
 		}
-		if (! phiproj_computed) {
-			phiproj_computed = 1;
+		if (!phiproj_computed) {
+			phiproj_computed = true;
 			collect_phiprojs(current_ir_graph);
 		}
-		did_inline = inline_method(call_node, callee);
+		bool did_inline = inline_method(curr_call->call, callee);
 		if (!did_inline)
 			continue;
 
 		/* call was inlined, Phi/Projs for current graph must be recomputed */
-		phiproj_computed = 0;
+		phiproj_computed = false;
 
 		/* remove it from the caller list */
 		list_del(&curr_call->list);
@@ -1234,11 +1191,9 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 		--env->n_call_nodes;
 
 		/* we just generate a bunch of new calls */
-		loop_depth = curr_call->loop_depth;
+		int loop_depth = curr_call->loop_depth;
 		list_for_each_entry(call_entry, centry, &callee_env->calls, list) {
 			inline_irg_env *penv = (inline_irg_env*)get_irg_link(centry->callee);
-			ir_node        *new_call;
-			call_entry     *new_entry;
 
 			/* after we have inlined callee, all called methods inside
 			 * callee are now called once more */
@@ -1247,7 +1202,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 			/* Note that the src list points to Call nodes in the inlined graph,
 			 * but we need Call nodes in our graph. Luckily the inliner leaves
 			 * this information in the link field. */
-			new_call = (ir_node*)get_irn_link(centry->call);
+			ir_node *new_call = (ir_node*)get_irn_link(centry->call);
 			if (get_irn_irg(new_call) != irg) {
 				/* centry->call has not been copied, which means it is dead.
 				 * This might happen during inlining, if a const function,
@@ -1257,7 +1212,8 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 			}
 			assert(is_Call(new_call));
 
-			new_entry = duplicate_call_entry(centry, new_call, loop_depth);
+			call_entry *new_entry
+				= duplicate_call_entry(centry, new_call, loop_depth);
 			list_add_tail(&new_entry->list, &env->calls);
 			maybe_push_call(pqueue, new_entry, inline_threshold);
 		}
@@ -1277,30 +1233,23 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 void inline_functions(unsigned maxsize, int inline_threshold,
                       opt_ptr after_inline_opt)
 {
-	inline_irg_env   *env;
-	size_t           i, n_irgs;
-	ir_graph         *rem;
-	wenv_t           wenv;
-	pmap             *copied_graphs;
-	pmap_entry       *pm_entry;
-	ir_graph         **irgs;
-
-	rem = current_ir_graph;
+	ir_graph *rem = current_ir_graph;
 	obstack_init(&temp_obst);
 
-	irgs = create_irg_list();
+	ir_graph **irgs = create_irg_list();
 
 	/* a map for the copied graphs, used to inline recursive calls */
-	copied_graphs = pmap_create();
+	pmap *copied_graphs = pmap_create();
 
 	/* extend all irgs by a temporary data structure for inlining. */
-	n_irgs = get_irp_n_irgs();
-	for (i = 0; i < n_irgs; ++i)
+	size_t n_irgs = get_irp_n_irgs();
+	for (size_t i = 0; i < n_irgs; ++i)
 		set_irg_link(irgs[i], alloc_inline_irg_env());
 
 	/* Pre-compute information in temporary data structure. */
-	wenv.ignore_callers = 0;
-	for (i = 0; i < n_irgs; ++i) {
+	wenv_t wenv;
+	wenv.ignore_callers = false;
+	for (size_t i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = irgs[i];
 
 		free_callee_info(irg);
@@ -1311,16 +1260,15 @@ void inline_functions(unsigned maxsize, int inline_threshold,
 	}
 
 	/* -- and now inline. -- */
-	for (i = 0; i < n_irgs; ++i) {
+	for (size_t i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = irgs[i];
-
 		inline_into(irg, maxsize, inline_threshold, copied_graphs);
 	}
 
-	for (i = 0; i < n_irgs; ++i) {
+	for (size_t i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = irgs[i];
 
-		env = (inline_irg_env*)get_irg_link(irg);
+		inline_irg_env *env = (inline_irg_env*)get_irg_link(irg);
 		if (env->got_inline && after_inline_opt != NULL) {
 			/* this irg got calls inlined: optimize it */
 			after_inline_opt(irg);
@@ -1334,6 +1282,7 @@ void inline_functions(unsigned maxsize, int inline_threshold,
 	}
 
 	/* kill the copied graphs: we don't need them anymore */
+	pmap_entry *pm_entry;
 	foreach_pmap(copied_graphs, pm_entry) {
 		ir_graph *copy = (ir_graph*)pm_entry->value;
 
