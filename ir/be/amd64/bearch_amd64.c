@@ -49,14 +49,16 @@ static ir_entity *amd64_get_frame_entity(const ir_node *node)
 {
 	if (!is_amd64_irn(node))
 		return NULL;
-	const amd64_attr_t *attr = get_amd64_attr_const(node);
-	ir_entity *entity = attr->am.entity;
+	if (!amd64_has_addr_attr(node))
+		return NULL;
+	const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
+	ir_entity *entity = attr->addr.immediate.entity;
 	if (entity == NULL)
 		return NULL;
 	ir_type *parent = get_entity_owner(entity);
-	if (is_frame_type(parent))
-		return entity;
-	return NULL;
+	if (!is_frame_type(parent))
+		return NULL;
+	return entity;
 }
 
 static int get_insn_mode_bytes(amd64_insn_mode_t insn_mode)
@@ -78,14 +80,13 @@ static void amd64_set_frame_offset(ir_node *node, int offset)
 {
 	if (!is_amd64_irn(node))
 		return;
-	amd64_attr_t *attr = get_amd64_attr(node);
-	attr->am.offset += offset;
+	amd64_addr_attr_t *attr = get_amd64_addr_attr(node);
+	attr->addr.immediate.offset += offset;
 	if (is_amd64_PopAM(node)) {
 		ir_graph          *irg    = get_irn_irg(node);
 		be_stack_layout_t *layout = be_get_irg_stack_layout(irg);
-		if (layout->sp_relative) {
-			attr->am.offset -= get_insn_mode_bytes(attr->data.insn_mode);
-		}
+		if (layout->sp_relative)
+			attr->addr.immediate.offset -= get_insn_mode_bytes(attr->insn_mode);
 	}
 }
 
@@ -100,11 +101,11 @@ static int amd64_get_sp_bias(const ir_node *node)
 		ir_type  *frame_type = get_irg_frame_type(irg);
 		return -(int)get_type_size_bytes(frame_type);
 	} else if (is_amd64_PushAM(node)) {
-		const amd64_attr_t *attr = get_amd64_attr_const(node);
-		return get_insn_mode_bytes(attr->data.insn_mode);
+		const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
+		return get_insn_mode_bytes(attr->insn_mode);
 	} else if (is_amd64_PopAM(node)) {
-		const amd64_attr_t *attr = get_amd64_attr_const(node);
-		return -get_insn_mode_bytes(attr->data.insn_mode);
+		const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
+		return -get_insn_mode_bytes(attr->insn_mode);
 	}
 	return 0;
 }
@@ -160,14 +161,14 @@ static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
 	ir_graph *irg   = get_irn_irg(node);
 	ir_node  *frame = get_irg_frame(irg);
 
-	amd64_am_info_t am;
-	memset(&am, 0, sizeof(am));
-	am.base_input  = 0;
-	am.index_input = NO_INPUT;
-	am.entity      = ent;
+	amd64_addr_t addr;
+	memset(&addr, 0, sizeof(addr));
+	addr.base_input       = 0;
+	addr.index_input      = NO_INPUT;
+	addr.immediate.entity = ent;
 	ir_node *in[] = { sp, frame, mem };
 	ir_node *push = new_bd_amd64_PushAM(dbgi, block, ARRAY_SIZE(in), in,
-	                                    INSN_MODE_64, am);
+	                                    INSN_MODE_64, addr);
 	arch_set_irn_register_reqs_in(push, am_pushpop_base_reqs);
 	sched_add_before(schedpoint, push);
 	return push;
@@ -180,15 +181,15 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp, ir_e
 	ir_graph *irg   = get_irn_irg(node);
 	ir_node  *frame = get_irg_frame(irg);
 
-	amd64_am_info_t am;
-	memset(&am, 0, sizeof(am));
-	am.base_input  = 0;
-	am.index_input = NO_INPUT;
-	am.entity      = ent;
+	amd64_addr_t addr;
+	memset(&addr, 0, sizeof(addr));
+	addr.base_input  = 0;
+	addr.index_input = NO_INPUT;
+	addr.immediate.entity = ent;
 	ir_node *in[] = { sp, frame, get_irg_no_mem(irg) };
 
 	ir_node *pop = new_bd_amd64_PopAM(dbgi, block, ARRAY_SIZE(in), in,
-	                                  INSN_MODE_64, am);
+	                                  INSN_MODE_64, addr);
 	arch_set_irn_register_reqs_in(pop, am_pushpop_base_reqs);
 	sched_add_before(schedpoint, pop);
 
@@ -292,10 +293,10 @@ static void amd64_after_ra_walker(ir_node *block, void *data)
 
 static void amd64_set_frame_entity(ir_node *node, ir_entity *entity)
 {
-	assert(is_amd64_Store(node) || is_amd64_Movz(node)
+	assert(is_amd64_Store(node) || is_amd64_Mov(node)
 	    || is_amd64_Movs(node));
-	amd64_attr_t *attr = get_amd64_attr(node);
-	attr->am.entity = entity;
+	amd64_addr_attr_t *attr = get_amd64_addr_attr(node);
+	attr->addr.immediate.entity = entity;
 }
 
 /**
@@ -303,11 +304,11 @@ static void amd64_set_frame_entity(ir_node *node, ir_entity *entity)
  */
 static void amd64_collect_frame_entity_nodes(ir_node *node, void *data)
 {
-	if (!is_amd64_Movz(node) && !is_amd64_Movs(node))
+	if (!is_amd64_Mov(node) && !is_amd64_Movs(node))
 		return;
 
-	const amd64_attr_t *attr = get_amd64_attr_const(node);
-	if (attr->data.needs_frame_ent) {
+	const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
+	if (attr->needs_frame_ent) {
 		be_fec_env_t  *env   = (be_fec_env_t*)data;
 		const ir_mode *mode  = mode_Lu; /* TODO: improve */
 		int            align = get_mode_size_bytes(mode);

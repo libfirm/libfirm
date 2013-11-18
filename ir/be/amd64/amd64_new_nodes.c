@@ -60,85 +60,46 @@ static void amd64_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 	case dump_node_info_txt:
 		arch_dump_reqs_and_registers(F, n);
 		const amd64_attr_t *attr = get_amd64_attr_const(n);
-		fputs("size = ", F);
-		switch (attr->data.insn_mode) {
-		case INSN_MODE_8:  fputs("8\n", F); break;
-		case INSN_MODE_16: fputs("16\n", F); break;
-		case INSN_MODE_32: fputs("32\n", F); break;
-		case INSN_MODE_64: fputs("64\n", F); break;
-		}
 		fputs("mode = ", F);
-		switch (attr->data.op_mode) {
-		case AMD64_MODE_REG_REG:  fputs("reg+reg\n", F); break;
-		case AMD64_MODE_REG_IMM:  fputs("reg+imm\n", F); break;
-		case AMD64_MODE_LOAD_REG: fputs("load+reg\n", F); break;
-		default: fputs("unknown\n", F); break;
+		switch (attr->op_mode) {
+		case AMD64_OP_REG_REG:  fputs("reg+reg\n", F);  break;
+		case AMD64_OP_REG_IMM:  fputs("reg+imm\n", F);  break;
+		case AMD64_OP_ADDR_REG: fputs("load+reg\n", F); break;
+		case AMD64_OP_ADDR:     fputs("load\n", F);     break;
+		case AMD64_OP_REG:      fputs("reg\n", F);      break;
 		}
-		fprintf(F, "reg input: %d\n", attr->am.reg_input);
-		fprintf(F, "base input: %d\n", attr->am.base_input);
-		fprintf(F, "index input: %d\n", attr->am.index_input);
-		ir_fprintf(F, "am imm: %+F%+" PRId32 "\n", attr->am.entity,
-		           attr->am.offset);
+		if (attr->op_mode != AMD64_OP_NONE) {
+			const amd64_addr_attr_t *addr_attr
+				= (const amd64_addr_attr_t*)attr;
+			fputs("size = ", F);
+			switch (addr_attr->insn_mode) {
+			case INSN_MODE_8:  fputs("8\n", F); break;
+			case INSN_MODE_16: fputs("16\n", F); break;
+			case INSN_MODE_32: fputs("32\n", F); break;
+			case INSN_MODE_64: fputs("64\n", F); break;
+			}
+		}
+		if (attr->op_mode == AMD64_OP_ADDR_REG) {
+			const amd64_binop_addr_attr_t *binop_attr
+				= (const amd64_binop_addr_attr_t*)attr;
+			fprintf(F, "reg input: %d\n", binop_attr->u.reg_input);
+		}
+		if (attr->op_mode == AMD64_OP_ADDR_REG
+		 || attr->op_mode == AMD64_OP_ADDR) {
+			const amd64_addr_attr_t *addr_attr
+				= (const amd64_addr_attr_t*)attr;
+			fprintf(F, "base input: %d\n", addr_attr->addr.base_input);
+			fprintf(F, "index input: %d\n", addr_attr->addr.index_input);
+			ir_fprintf(F, "am imm: %+F%+" PRId32 "\n",
+			           addr_attr->addr.immediate.entity,
+					   addr_attr->addr.immediate.offset);
+		}
 		break;
 	}
 }
 
-const amd64_attr_t *get_amd64_attr_const(const ir_node *node)
-{
-	assert(is_amd64_irn(node) && "need amd64 node to get attributes");
-	return (const amd64_attr_t *)get_irn_generic_attr_const(node);
-}
-
-amd64_attr_t *get_amd64_attr(ir_node *node)
-{
-	assert(is_amd64_irn(node) && "need amd64 node to get attributes");
-	return (amd64_attr_t *)get_irn_generic_attr(node);
-}
-
-const amd64_switch_jmp_attr_t *get_amd64_switch_jmp_attr_const(const ir_node *node)
-{
-	const amd64_switch_jmp_attr_t *attr
-		= (const amd64_switch_jmp_attr_t*)get_irn_generic_attr_const(node);
-	return attr;
-}
-
-amd64_switch_jmp_attr_t *get_amd64_switch_jmp_attr(ir_node *node)
-{
-	amd64_switch_jmp_attr_t *attr
-		= (amd64_switch_jmp_attr_t*)get_irn_generic_attr(node);
-	return attr;
-}
-
-const amd64_movimm_attr_t *get_amd64_movimm_attr_const(const ir_node *node)
-{
-	assert(is_amd64_irn(node));
-	return (const amd64_movimm_attr_t*)get_irn_generic_attr_const(node);
-}
-
-amd64_movimm_attr_t *get_amd64_movimm_attr(ir_node *node)
-{
-	assert(is_amd64_irn(node));
-	return (amd64_movimm_attr_t*)get_irn_generic_attr(node);
-}
-
-const amd64_cc_attr_t *get_amd64_cc_attr_const(const ir_node *node)
-{
-	assert(is_amd64_irn(node));
-	return (const amd64_cc_attr_t*)get_irn_generic_attr_const(node);
-}
-
-amd64_cc_attr_t *get_amd64_cc_attr(ir_node *node)
-{
-	assert(is_amd64_irn(node));
-	return (amd64_cc_attr_t*)get_irn_generic_attr(node);
-}
-
-/**
- * Initializes the nodes attributes.
- */
-static void init_amd64_attributes(ir_node *node, arch_irn_flags_t flags,
-                                  const arch_register_req_t **in_reqs,
-                                  int n_res)
+static void init_be_info(ir_node *node, arch_irn_flags_t flags,
+                         const arch_register_req_t **in_reqs, int n_res)
 {
 	arch_set_irn_flags(node, flags);
 	arch_set_irn_register_reqs_in(node, in_reqs);
@@ -149,19 +110,24 @@ static void init_amd64_attributes(ir_node *node, arch_irn_flags_t flags,
 	info->out_infos = NEW_ARR_DZ(reg_out_info_t, obst, n_res);
 }
 
-/**
- * Initialize SwitchJmp attributes.
- */
-static void init_amd64_switch_attributes(ir_node *node, const ir_switch_table *table, ir_entity *table_entity)
+static void init_amd64_attributes(ir_node *node, arch_irn_flags_t flags,
+                                  const arch_register_req_t **in_reqs,
+                                  int n_res, amd64_op_mode_t op_mode)
 {
-	unsigned n_outs = arch_get_irn_n_outs(node);
-	unsigned o;
+	init_be_info(node, flags, in_reqs, n_res);
+	amd64_attr_t *attr = get_amd64_attr(node);
+	attr->op_mode = op_mode;
+}
 
+static void init_amd64_switch_attributes(ir_node *node,
+                                         const ir_switch_table *table,
+                                         ir_entity *table_entity)
+{
 	amd64_switch_jmp_attr_t *attr = get_amd64_switch_jmp_attr(node);
 	attr->table        = table;
 	attr->table_entity = table_entity;
 
-	for (o = 0; o < n_outs; o++) {
+	for (unsigned o = 0, n_outs = arch_get_irn_n_outs(node); o < n_outs; o++) {
 		arch_set_irn_register_req_out(node, o, arch_no_register_req);
 	}
 }
@@ -172,43 +138,96 @@ static void init_amd64_cc_attributes(ir_node *node, x86_condition_code_t cc)
 	attr->cc = cc;
 }
 
-static void init_amd64_movimm_attributes(ir_node *node, ir_entity *entity,
-                                         int64_t offset)
+static void init_amd64_movimm_attributes(ir_node *node,
+                                         amd64_insn_mode_t insn_mode,
+                                         ir_entity *entity, int64_t offset)
 {
 	amd64_movimm_attr_t *attr = get_amd64_movimm_attr(node);
-	attr->entity = entity;
-	attr->offset = offset;
+	attr->insn_mode        = insn_mode;
+	attr->immediate.entity = entity;
+	attr->immediate.offset = offset;
 }
 
-static int cmp_am(const amd64_am_info_t *const am0,
-                  const amd64_am_info_t *const am1)
+static int cmp_imm32(const amd64_imm32_t *const imm0,
+                     const amd64_imm32_t *const imm1)
 {
-	return am0->offset != am1->offset || am0->entity != am1->entity
+	return imm0->offset != imm1->offset || imm0->entity != imm1->entity;
+}
+
+static int cmp_imm64(const amd64_imm64_t *const imm0,
+                     const amd64_imm64_t *const imm1)
+{
+	return imm0->offset != imm1->offset || imm0->entity != imm1->entity;
+}
+
+static int cmp_addr(const amd64_addr_t *const am0,
+                    const amd64_addr_t *const am1)
+{
+	return cmp_imm32(&am0->immediate, &am1->immediate)
 	    || am0->base_input != am1->base_input
 	    || am0->index_input != am1->index_input
 	    || am0->log_scale != am1->log_scale
 	    || am0->segment != am1->segment;
 }
 
-/** Compare common amd64 node attributes. */
 static int cmp_amd64_attr(const ir_node *a, const ir_node *b)
 {
 	const amd64_attr_t *attr_a = get_amd64_attr_const(a);
 	const amd64_attr_t *attr_b = get_amd64_attr_const(b);
-	return cmp_am(&attr_a->am, &attr_b->am)
-	    || attr_a->data.insn_mode != attr_b->data.insn_mode
-	    || attr_a->data.needs_frame_ent != attr_b->data.needs_frame_ent;
+	return attr_a->op_mode != attr_b->op_mode;
+}
+
+static int cmp_amd64_addr_attr(const ir_node *a, const ir_node *b)
+{
+	const amd64_addr_attr_t *attr_a = get_amd64_addr_attr_const(a);
+	const amd64_addr_attr_t *attr_b = get_amd64_addr_attr_const(b);
+	return cmp_amd64_attr(a, b)
+	    || cmp_addr(&attr_a->addr, &attr_b->addr)
+	    || attr_a->insn_mode != attr_b->insn_mode
+	    || attr_a->needs_frame_ent != attr_b->needs_frame_ent;
+}
+
+static int cmp_amd64_unop_attr(const ir_node *a, const ir_node *b)
+{
+	const amd64_unop_attr_t *attr_a = get_amd64_unop_attr_const(a);
+	const amd64_unop_attr_t *attr_b = get_amd64_unop_attr_const(b);
+	return cmp_amd64_attr(a, b)
+	    || attr_a->insn_mode != attr_b->insn_mode;
+}
+
+static int cmp_amd64_binop_addr_attr(const ir_node *a,
+                                     const ir_node *b)
+{
+	const amd64_binop_addr_attr_t *attr_a = get_amd64_binop_addr_attr_const(a);
+	const amd64_binop_addr_attr_t *attr_b = get_amd64_binop_addr_attr_const(b);
+	if (cmp_amd64_addr_attr(a, b))
+		return 1;
+	amd64_op_mode_t op_mode = attr_a->base.base.op_mode;
+	if (op_mode == AMD64_OP_REG_IMM || op_mode == AMD64_OP_ADDR_IMM) {
+		return cmp_imm32(&attr_a->u.immediate, &attr_b->u.immediate);
+	} else {
+		return attr_a->u.reg_input != attr_b->u.reg_input;
+	}
 }
 
 static int cmp_amd64_movimm_attr(const ir_node *const a,
                                  const ir_node *const b)
 {
-	if (cmp_amd64_attr(a, b))
-		return true;
 	const amd64_movimm_attr_t *const attr_a = get_amd64_movimm_attr_const(a);
 	const amd64_movimm_attr_t *const attr_b = get_amd64_movimm_attr_const(b);
-	return attr_a->entity != attr_b->entity
-	    || attr_a->offset != attr_b->offset;
+	return cmp_amd64_attr(a, b)
+	    || cmp_imm64(&attr_a->immediate, &attr_b->immediate)
+	    || attr_a->insn_mode != attr_b->insn_mode;
+}
+
+static int cmp_amd64_shift_attr(const ir_node *const a,
+                                const ir_node *const b)
+{
+	const amd64_shift_attr_t *const attr_a = get_amd64_shift_attr_const(a);
+	const amd64_shift_attr_t *const attr_b = get_amd64_shift_attr_const(b);
+	return cmp_amd64_attr(a, b)
+	    || attr_a->immediate != attr_b->immediate
+	    || attr_a->insn_mode != attr_b->insn_mode;
 }
 
 static int cmp_amd64_cc_attr(const ir_node *const a,
@@ -233,7 +252,6 @@ static int cmp_amd64_switch_jmp_attr(const ir_node *const a,
 	return attr_a->table != attr_b->table;
 }
 
-/** copies the AMD64 attributes of a node. */
 static void amd64_copy_attr(ir_graph *irg, const ir_node *old_node,
                             ir_node *new_node)
 {

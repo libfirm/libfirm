@@ -65,45 +65,47 @@ static bool try_swap_inputs(ir_node *node)
 
 static ir_node *amd64_turn_back_am(ir_node *node)
 {
-	dbg_info     *dbgi  = get_irn_dbg_info(node);
-	ir_node      *block = get_nodes_block(node);
-	amd64_attr_t *attr  = get_amd64_attr(node);
+	dbg_info          *dbgi  = get_irn_dbg_info(node);
+	ir_node           *block = get_nodes_block(node);
+	amd64_addr_attr_t *attr  = get_amd64_addr_attr(node);
 
-	amd64_am_info_t new_am = attr->am;
+	amd64_addr_t new_addr = attr->addr;
 	ir_node *load_in[3];
 	int      load_arity = 0;
-	if (attr->am.base_input != NO_INPUT && attr->am.base_input != RIP_INPUT) {
-		new_am.base_input = load_arity;
-		load_in[load_arity++] = get_irn_n(node, attr->am.base_input);
+	if (attr->addr.base_input != NO_INPUT
+	 && attr->addr.base_input != RIP_INPUT) {
+		new_addr.base_input = load_arity;
+		load_in[load_arity++] = get_irn_n(node, attr->addr.base_input);
 	}
-	if (attr->am.index_input != NO_INPUT) {
-		new_am.index_input = load_arity;
-		load_in[load_arity++] = get_irn_n(node, attr->am.index_input);
+	if (attr->addr.index_input != NO_INPUT) {
+		new_addr.index_input = load_arity;
+		load_in[load_arity++] = get_irn_n(node, attr->addr.index_input);
 	}
-	assert(attr->am.mem_input != NO_INPUT);
-	new_am.mem_input = load_arity;
-	load_in[load_arity++] = get_irn_n(node, attr->am.mem_input);
+	assert(attr->addr.mem_input != NO_INPUT);
+	new_addr.mem_input = load_arity;
+	load_in[load_arity++] = get_irn_n(node, attr->addr.mem_input);
 
-	ir_node *load = new_bd_amd64_Movz(dbgi, block, load_arity, load_in,
-	                                  attr->data.insn_mode, AMD64_MODE_LOAD,
-	                                  new_am);
-	ir_node *load_res = new_r_Proj(load, mode_Lu, pn_amd64_Movz_res);
+	ir_node *load = new_bd_amd64_Mov(dbgi, block, load_arity, load_in,
+	                                 AMD64_OP_ADDR, attr->insn_mode, new_addr);
+	ir_node *load_res = new_r_Proj(load, mode_Lu, pn_amd64_Mov_res);
 
 	/* change operation */
+	const amd64_binop_addr_attr_t *binop_attr
+		= (const amd64_binop_addr_attr_t*)attr;
 	ir_node *new_in[2];
-	new_in[0] = get_irn_n(node, attr->am.reg_input);
+	new_in[0] = get_irn_n(node, binop_attr->u.reg_input);
 	new_in[1] = load_res;
 	set_irn_in(node, ARRAY_SIZE(new_in), new_in);
-	attr->data.op_mode = AMD64_MODE_REG_REG;
-	attr->am.base_input  = NO_INPUT;
-	attr->am.index_input = NO_INPUT;
+	attr->base.op_mode     = AMD64_OP_REG_REG;
+	attr->addr.base_input  = NO_INPUT;
+	attr->addr.index_input = NO_INPUT;
 
 	/* rewire mem-proj */
 	foreach_out_edge(node, edge) {
 		ir_node *out = get_edge_src_irn(edge);
 		if (get_irn_mode(out) == mode_M) {
 			set_Proj_pred(out, load);
-			set_Proj_proj(out, pn_amd64_Movz_M);
+			set_Proj_proj(out, pn_amd64_Mov_M);
 			break;
 		}
 	}
@@ -143,18 +145,18 @@ static void assure_should_be_same_requirements(ir_node *const node)
 					panic("Can't fulfill should_be_same on non-amd64 node");
 				/* see what role this register has */
 				const amd64_attr_t *attr = get_amd64_attr_const(node);
-				if (attr->data.op_mode == AMD64_MODE_LOAD
-				 || attr->data.op_mode == AMD64_MODE_REG
-				 || attr->data.op_mode == AMD64_MODE_REG_IMM) {
+				if (attr->op_mode == AMD64_OP_ADDR
+				 || attr->op_mode == AMD64_OP_REG
+				 || attr->op_mode == AMD64_OP_REG_IMM) {
 					panic("unexpected op_mode");
-				} else if (attr->data.op_mode == AMD64_MODE_REG_REG) {
+				} else if (attr->op_mode == AMD64_OP_REG_REG) {
 swap:;
 					bool res = try_swap_inputs(node);
 					if (res)
 						return;
 					panic("couldn't swap inputs of %+F", node);
 				} else {
-					assert(attr->data.op_mode == AMD64_MODE_LOAD_REG);
+					assert(attr->op_mode == AMD64_OP_ADDR_REG);
 					/* extract load into an own instruction */
 					ir_node *res = amd64_turn_back_am(node);
 					arch_set_irn_register(res, out_reg);

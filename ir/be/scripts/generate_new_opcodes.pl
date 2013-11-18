@@ -410,6 +410,12 @@ EOF
 	(void) attr; /* avoid potential warning */
 EOF
 	}
+	my $fixed = $on->{fixed};
+	if (defined($fixed)) {
+		$temp .= <<EOF;
+	${fixed}
+EOF
+	}
 	$temp .= <<EOF;
 	${attr_init_code}
 EOF

@@ -16,11 +16,6 @@
 #include "compiler.h"
 #include "../ia32/x86_cc.h"
 
-typedef struct amd64_attr_t            amd64_attr_t;
-typedef struct amd64_switch_jmp_attr_t amd64_switch_jmp_attr_t;
-typedef struct amd64_movimm_attr_t     amd64_movimm_attr_t;
-typedef struct amd64_cc_attr_t         amd64_cc_attr_t;
-
 typedef enum {
 	INSN_MODE_64,
 	INSN_MODE_32,
@@ -39,11 +34,20 @@ typedef enum {
 } amd64_segment_selector_t;
 
 typedef enum {
-	AMD64_MODE_LOAD,
-	AMD64_MODE_REG,
-	AMD64_MODE_REG_REG,
-	AMD64_MODE_REG_IMM,
-	AMD64_MODE_LOAD_REG,
+	AMD64_OP_NONE,
+	AMD64_OP_ADDR,
+	AMD64_OP_REG,
+	AMD64_OP_REG_REG,
+	AMD64_OP_REG_IMM,
+	AMD64_OP_IMM32,
+	AMD64_OP_IMM64,
+	AMD64_OP_ADDR_REG,
+	AMD64_OP_ADDR_IMM,
+	AMD64_OP_UNOP_REG,
+	AMD64_OP_SHIFT_REG,
+	AMD64_OP_SHIFT_IMM,
+	AMD64_OP_CALL_ADDR,
+	AMD64_OP_CALL_IMM32,
 } amd64_op_mode_t;
 
 enum {
@@ -51,46 +55,71 @@ enum {
 	RIP_INPUT = 0xFE, /* can be used as base_input for PIC code */
 };
 
-typedef struct amd64_am_info_t {
-	int32_t    offset;
+typedef struct {
 	ir_entity *entity;
-	uint8_t    base_input;
-	uint8_t    index_input;
-	uint8_t    mem_input;
-	unsigned   log_scale : 2; /* 0, 1, 2, 3  (giving scale 1, 2, 4, 8) */
+	int32_t    offset;
+} amd64_imm32_t;
+
+typedef struct {
+	ir_entity *entity;
+	int64_t    offset;
+} amd64_imm64_t;
+
+typedef struct {
+	amd64_imm32_t immediate;
+	uint8_t       base_input;
+	uint8_t       index_input;
+	uint8_t       mem_input;
+	unsigned      log_scale : 2; /* 0, 1, 2, 3  (giving scale 1, 2, 4, 8) */
 	ENUMBF(amd64_segment_selector_t) segment : 4;
-	unsigned   reg_input : 4;
-} amd64_am_info_t;
+} amd64_addr_t;
 
-struct amd64_attr_t
-{
-	except_attr  exc;     /**< the exception attribute. MUST be the first one. */
-	struct amd64_attr_data_bitfield {
-		bool needs_frame_ent : 1;
-		ENUMBF(amd64_insn_mode_t) insn_mode : 2;
-		ENUMBF(amd64_op_mode_t)   op_mode   : 3;
-	} data;
-	amd64_am_info_t am;
-};
+typedef struct {
+	except_attr exc; /**< the exception attribute. MUST be the first one. */
+	ENUMBF(amd64_op_mode_t) op_mode : 4;
+} amd64_attr_t;
 
-struct amd64_movimm_attr_t
-{
+typedef struct {
 	amd64_attr_t base;
-	int64_t      offset;
-	ir_entity   *entity;
-};
+	ENUMBF(amd64_insn_mode_t) insn_mode : 2;
+} amd64_unop_attr_t;
 
-struct amd64_cc_attr_t
-{
+typedef struct {
+	amd64_attr_t base;
+	bool                      needs_frame_ent : 1;
+	ENUMBF(amd64_insn_mode_t) insn_mode       : 2;
+	amd64_addr_t addr;
+} amd64_addr_attr_t;
+
+typedef struct {
+	amd64_addr_attr_t base;
+	union {
+		uint8_t       reg_input;
+		amd64_imm32_t immediate;
+	} u;
+} amd64_binop_addr_attr_t;
+
+typedef struct {
+	amd64_attr_t base;
+	ENUMBF(amd64_insn_mode_t) insn_mode : 2;
+	uint8_t                   immediate;
+} amd64_shift_attr_t;
+
+typedef struct {
+	amd64_attr_t base;
+	ENUMBF(amd64_insn_mode_t) insn_mode : 2;
+	amd64_imm64_t             immediate;
+} amd64_movimm_attr_t;
+
+typedef struct {
 	amd64_attr_t         base;
 	x86_condition_code_t cc;
-};
+} amd64_cc_attr_t;
 
-struct amd64_switch_jmp_attr_t
-{
+typedef struct {
 	amd64_attr_t           base;
 	const ir_switch_table *table;
 	ir_entity             *table_entity;
-};
+} amd64_switch_jmp_attr_t;
 
 #endif
