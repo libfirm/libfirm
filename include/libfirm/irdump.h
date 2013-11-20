@@ -18,7 +18,9 @@
 #include "firm_types.h"
 #include "begin.h"
 
-/** @defgroup ir_dump Visualisation
+/**
+ * @ingroup printing
+ * @defgroup ir_dump Visualisation
  *
  * Dumps information so it can be visualised. The dump format of most functions
  * is vcg.  This is a text based graph representation. Some use the original

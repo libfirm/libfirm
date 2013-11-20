@@ -5,9 +5,8 @@
 
 /**
  * @file
- * @brief    A little printf understanding some firm types.
- * @author   Sebastian Hack
- * @date     29.11.2004
+ * @brief    printf variants understanding firm objects.
+ * @author   Sebastian Hack, Matthias Braun
  */
 #ifndef FIRM_IR_IRPRINTF_H
 #define FIRM_IR_IRPRINTF_H
@@ -17,8 +16,15 @@
 #include <stdio.h>
 #include "begin.h"
 
-/* forward definition */
 struct obstack;
+
+/**
+ * @ingroup printing
+ * @defgroup printf      String Formatting
+ * These functions allow printing of formated strings with support for
+ * printing firm objects in a human readable form.
+ * @{
+ */
 
 /**
  * A string formatting routine for ir objects.
@@ -41,9 +47,6 @@ struct obstack;
  * - @%G A debug info (if available) from the given ir node.
  * - @%B A bitset.
  * - @%F A Firm object (automatically detected).
- *
- * Note that some of the standard format capabilities are not available
- * due to this new conversion specifiers, use lc_printf() if needed.
  */
 FIRM_API int ir_printf(const char *fmt, ...);
 
@@ -77,6 +80,8 @@ FIRM_API int ir_vsnprintf(char *buf, size_t len, const char *fmt, va_list args);
  */
 FIRM_API int ir_obst_vprintf(struct obstack *obst, const char *fmt,
                              va_list args);
+
+/** @} */
 
 #include "end.h"
 
