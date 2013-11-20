@@ -159,7 +159,7 @@ $(builddir)/%.o: %.c $(IR_SPEC_GENERATED_INCLUDES)
 	$(Q)$(QUICKCHECK) $(CFLAGS) $(CPPFLAGS) $(libfirm_CPPFLAGS) $(QUICKCHECK_FLAGS) $<
 	$(Q)$(CC) $(CFLAGS) $(CPPFLAGS) $(libfirm_CPPFLAGS) -MP -MMD -c -o $@ $<
 
-$(docdir)/libfirm.tag: Doxyfile $(IR_SPEC_GENERATED_INCLUDES) $(wildcard include/libfirm/*.h) $(wildcard include/libfirm/adt/*.h)
+$(docdir)/libfirm.tag: doc/Doxyfile doc/logo.png $(IR_SPEC_GENERATED_INCLUDES) $(wildcard include/libfirm/*.h) $(wildcard include/libfirm/adt/*.h)
 	@echo Doxygen $@
 	$(Q)$(DOXYGEN) $<
 
