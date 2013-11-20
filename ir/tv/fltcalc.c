@@ -749,26 +749,20 @@ fp_value *fc_val_from_ieee754(long double l, fp_value *result)
 {
 	value_t  srcval;
 	srcval.d = l;
-	int  bias_res = ((1 << (long_double_desc.exponent_size - 1)) - 1);
-	int  bias_val;
-	int  mant_val;
+	int  mantissa_size = long_double_desc.mantissa_size;
 	char sign;
 	uint32_t exponent;
 	uint32_t mantissa0;
 	uint32_t mantissa1;
-	if (long_double_desc.exponent_size == 11 && long_double_desc.mantissa_size == 52) {
+	if (long_double_desc.exponent_size == 11 && mantissa_size == 52) {
 		assert(sizeof(long double) == 8);
-		mant_val  = 52;
-		bias_val  = 0x3ff;
 		sign      = (srcval.val_ld8.high & 0x80000000) != 0;
 		exponent  = (srcval.val_ld8.high & 0x7FF00000) >> 20;
 		mantissa0 = srcval.val_ld8.high & 0x000FFFFF;
 		mantissa1 = srcval.val_ld8.low;
-	} else if (long_double_desc.exponent_size == 15 && long_double_desc.mantissa_size == 63) {
+	} else if (long_double_desc.exponent_size == 15 && mantissa_size == 63) {
 		/* we assume an x86-like 80bit representation of the value... */
 		assert(sizeof(long double) == 12 || sizeof(long double) == 16);
-		mant_val  = 63;
-		bias_val  = 0x3fff;
 		sign      = (srcval.val_ld12.high & 0x00008000) != 0;
 		exponent  = (srcval.val_ld12.high & 0x00007FFF) ;
 		mantissa0 = srcval.val_ld12.mid;
@@ -797,18 +791,15 @@ fp_value *fc_val_from_ieee754(long double l, fp_value *result)
 		return result;
 	}
 
-	/* build exponent, because input and output exponent and mantissa sizes may
-	 * differ this looks more complicated than it is:
-	 * unbiased input exponent + output bias, minus the mantissa difference
-	 * which is added again later when the output float becomes normalized */
-	sc_val_from_long((exponent - bias_val + bias_res) - (mant_val - long_double_desc.mantissa_size), _exp(result));
+	/* build exponent */
+	sc_val_from_long(exponent, _exp(result));
 
 	/* build mantissa representation */
 	char *temp = ALLOCAN(char, value_size);
 	if (exponent != 0) {
 		/* insert the hidden bit */
 		sc_val_from_ulong(1, temp);
-		sc_val_from_ulong(mant_val + ROUNDING_BITS, NULL);
+		sc_val_from_ulong(mantissa_size + ROUNDING_BITS, NULL);
 		_shift_left(temp, sc_get_buffer(), NULL);
 	} else {
 		sc_val_from_ulong(0, NULL);
