@@ -1263,16 +1263,6 @@ int tarval_snprintf(char *buf, size_t len, ir_tarval *tv, int hex)
 	}
 }
 
-int tarval_printf(ir_tarval *tv)
-{
-	char buf[1024];
-	int res = tarval_snprintf(buf, sizeof(buf), tv,
-	                          !mode_is_float(get_tarval_mode(tv)));
-	assert(res >= (int) sizeof(buf) && "buffer to small for tarval_snprintf");
-	printf("%s", buf);
-	return res;
-}
-
 char *get_tarval_bitpattern(ir_tarval *tv)
 {
 	int   n   = get_mode_size_bits(tv->mode);

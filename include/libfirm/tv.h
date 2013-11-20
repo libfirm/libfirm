@@ -698,13 +698,6 @@ FIRM_API int tarval_snprintf(char *buf, size_t buflen, ir_tarval *tv,
                              int hex);
 
 /**
- * Output a tarval to stdio.
- *
- * @param tv    the tarval
- */
-FIRM_API int tarval_printf(ir_tarval *tv);
-
-/**
  * Returns non-zero if the mantissa of a floating point tarval is zero
  * (i.e. 1.0Exxx)
  *
