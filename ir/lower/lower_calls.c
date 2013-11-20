@@ -225,6 +225,8 @@ static cl_entry *get_call_entry(ir_node *call, wlk_env *env)
 		res->next  = env->cl_list;
 		res->call  = call;
 		res->copyb = NULL;
+		res->has_compound_ret   = false;
+		res->has_compound_param = false;
 		set_irn_link(call, res);
 		env->cl_list = res;
 	}
