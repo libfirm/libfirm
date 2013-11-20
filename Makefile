@@ -65,7 +65,7 @@ libfirm_DEPS        = $(libfirm_OBJECTS:%.o=%.d)
 libfirm_BUILDDIRS   = $(sort $(dir $(libfirm_OBJECTS))) $(addprefix $(gendir)/, $(libfirm_GEN_DIRS))
 
 .PHONY: firm
-firm: $(libfirm_dll)
+firm: $(libfirm_dll) $(libfirm_a)
 
 # backends
 backends = amd64 arm ia32 sparc TEMPLATE
