@@ -239,7 +239,16 @@ unsigned char sc_sub_bits(const void *value, int len, unsigned byte_ofs);
  * @param base        output base
  * @param signed_mode print it signed (only decimal mode supported
  */
-const char *sc_print(const void *val1, unsigned bits, enum base_t base, int signed_mode);
+const char *sc_print(const void *val1, unsigned bits, enum base_t base,
+                     bool signed_mode);
+
+/**
+ * Write value into string. The buffer is filled from the end, use the return
+ * value to get the real start position of the string!
+ * If the buffer is too small for the value, the behavior is undefined!
+ */
+char *sc_print_buf(char *buf, size_t buf_len, const void *val, unsigned bits,
+                   enum base_t base, bool is_signed);
 
 /** Initialize the strcalc module.
  * Sets up internal data structures and constants

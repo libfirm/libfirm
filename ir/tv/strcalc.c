@@ -885,11 +885,15 @@ void sc_val_from_bytes(unsigned char const *const bytes, size_t n_bytes,
 		*p = 0;
 }
 
-/*
- * convert to a string
- * FIXME: Doesn't check buffer bounds
- */
-const char *sc_print(const void *value, unsigned bits, enum base_t base, int signed_mode)
+const char *sc_print(const void *value, unsigned bits, enum base_t base,
+                     bool is_signed)
+{
+	return sc_print_buf(output_buffer, bit_pattern_size+1, value, bits,
+	                    base, is_signed);
+}
+
+char *sc_print_buf(char *buf, size_t buf_len, const void *value,
+                   unsigned bits, enum base_t base, bool is_signed)
 {
 	static const char big_digits[]   = "0123456789ABCDEF";
 	static const char small_digits[] = "0123456789abcdef";
@@ -897,18 +901,14 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 	const char *val    = (const char *)value;
 	const char *digits = small_digits;
 
-	char *base_val = (char*) alloca(calc_buffer_size);
-	char *div1_res = (char*) alloca(calc_buffer_size);
-	char *div2_res = (char*) alloca(calc_buffer_size);
-	char *rem_res  = (char*) alloca(calc_buffer_size);
-
-	char *pos = output_buffer + bit_pattern_size;
+	char *pos = buf + buf_len;
 	*(--pos) = '\0';
+	assert(pos >= buf);
 
 	/* special case */
-	if (bits == 0) {
+	if (bits == 0)
 		bits = bit_pattern_size;
-	}
+
 	int nibbles = bits >> 2;
 	int counter;
 	switch (base) {
@@ -918,12 +918,14 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 		for (counter = 0; counter < nibbles; ++counter) {
 			*(--pos) = digits[_val(val[counter])];
 		}
+		assert(pos >= buf);
 
 		/* last nibble must be masked */
 		if (bits & 3) {
 			int  mask = zex_digit[(bits & 3) - 1];
 			char x    = val[counter++] & mask;
 			*(--pos) = digits[_val(x)];
+			assert(pos >= buf);
 		}
 
 		/* now kill zeros */
@@ -942,6 +944,7 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 			pos[2] = p[2];
 			pos[3] = p[3];
 		}
+		assert(pos >= buf);
 
 		/* last nibble must be masked */
 		if (bits & 3) {
@@ -955,6 +958,7 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 			pos[2] = p[2];
 			pos[3] = p[3];
 		}
+		assert(pos >= buf);
 
 		/* now kill zeros */
 		for (counter <<= 2; counter > 1; --counter, ++pos)
@@ -963,13 +967,15 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 			break;
 
 	case SC_DEC:
-	case SC_OCT:
+	case SC_OCT: {
+		char *base_val = (char*) alloca(calc_buffer_size);
 		memset(base_val, SC_0, calc_buffer_size);
 		base_val[0] = base == SC_DEC ? SC_A : SC_8;
 
-		const char *p    = val;
-		int         sign = 0;
-		if (signed_mode && base == SC_DEC) {
+		const char *p        = val;
+		int         sign     = 0;
+		char       *div2_res = (char*) alloca(calc_buffer_size);
+		if (is_signed && base == SC_DEC) {
 			/* check for negative values */
 			if (do_bit(val, bits - 1)) {
 				do_negate(val, div2_res);
@@ -979,6 +985,7 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 		}
 
 		/* transfer data into oscillating buffers */
+		char *div1_res = (char*) alloca(calc_buffer_size);
 		memset(div1_res, SC_0, calc_buffer_size);
 		for (counter = 0; counter < nibbles; ++counter)
 			div1_res[counter] = p[counter];
@@ -990,8 +997,9 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 			++counter;
 		}
 
-		char *m = div1_res;
-		char *n = div2_res;
+		char *m       = div1_res;
+		char *n       = div2_res;
+		char *rem_res = (char*) alloca(calc_buffer_size);
 		for (;;) {
 			do_divmod(m, base_val, n, rem_res);
 			char *t = m;
@@ -1006,9 +1014,13 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 			if (x == 0)
 				break;
 		}
-		if (sign)
+		assert(pos >= buf);
+		if (sign) {
 			*(--pos) = '-';
+			assert(pos >= buf);
+		}
 		break;
+	}
 
 	default:
 		panic("Unsupported base %d", base);
