@@ -31,6 +31,8 @@ typedef struct sparc_isa_t {
 
 extern const arch_irn_ops_t sparc_irn_ops;
 
+extern ir_mode *sparc_mode_Q;
+
 /**
  * SPARC ABI requires some space which is always available at the top of
  * the stack. It contains:

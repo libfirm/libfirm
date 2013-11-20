@@ -21,6 +21,7 @@
 #include "array.h"
 #include "error.h"
 #include "pattern_dmp.h"
+#include "strcalc.h"
 
 /** Obstack to hold all modes. */
 static struct obstack modes;
@@ -106,7 +107,6 @@ ir_mode *mode_BAD;
 
 ir_mode *mode_F;
 ir_mode *mode_D;
-ir_mode *mode_Q;
 
 ir_mode *mode_Bs;
 ir_mode *mode_Bu;
@@ -116,8 +116,6 @@ ir_mode *mode_Is;
 ir_mode *mode_Iu;
 ir_mode *mode_Ls;
 ir_mode *mode_Lu;
-ir_mode *mode_LLs;
-ir_mode *mode_LLu;
 
 ir_mode *mode_b;
 ir_mode *mode_P;
@@ -128,7 +126,6 @@ ir_mode *mode_P_data;
 ir_mode *get_modeT(void)   { return mode_T;   }
 ir_mode *get_modeF(void)   { return mode_F;   }
 ir_mode *get_modeD(void)   { return mode_D;   }
-ir_mode *get_modeQ(void)   { return mode_Q;   }
 ir_mode *get_modeBs(void)  { return mode_Bs;  }
 ir_mode *get_modeBu(void)  { return mode_Bu;  }
 ir_mode *get_modeHs(void)  { return mode_Hs;  }
@@ -137,8 +134,6 @@ ir_mode *get_modeIs(void)  { return mode_Is;  }
 ir_mode *get_modeIu(void)  { return mode_Iu;  }
 ir_mode *get_modeLs(void)  { return mode_Ls;  }
 ir_mode *get_modeLu(void)  { return mode_Lu;  }
-ir_mode *get_modeLLs(void) { return mode_LLs; }
-ir_mode *get_modeLLu(void) { return mode_LLu; }
 ir_mode *get_modeb(void)   { return mode_b;   }
 ir_mode *get_modeP(void)   { return mode_P;   }
 ir_mode *get_modeX(void)   { return mode_X;   }
@@ -211,6 +206,9 @@ static ir_mode *register_mode(ir_mode *mode)
 ir_mode *new_int_mode(const char *name, ir_mode_arithmetic arithmetic,
                       unsigned bit_size, int sign, unsigned modulo_shift)
 {
+	if (bit_size >= (unsigned)sc_get_precision())
+		panic("Can't create mode: more bits than tarval module maximum");
+
 	ir_mode *result = alloc_mode(name, irms_int_number, arithmetic, bit_size,
 	                             sign, modulo_shift);
 	return register_mode(result);
@@ -219,6 +217,9 @@ ir_mode *new_int_mode(const char *name, ir_mode_arithmetic arithmetic,
 ir_mode *new_reference_mode(const char *name, ir_mode_arithmetic arithmetic,
                             unsigned bit_size, unsigned modulo_shift)
 {
+	if (bit_size >= (unsigned)sc_get_precision())
+		panic("Can't create mode: more bits than tarval module maximum");
+
 	ir_mode *result = alloc_mode(name, irms_reference, arithmetic, bit_size,
 	                             0, modulo_shift);
 	return register_mode(result);
@@ -241,6 +242,10 @@ ir_mode *new_float_mode(const char *name, ir_mode_arithmetic arithmetic,
 		panic("Exponents >= 256 bits not supported");
 	if (mantissa_size >= 256)
 		panic("Mantissa >= 256 bits not supported");
+	if (exponent_size >= (unsigned)sc_get_precision())
+		panic("Can't create mode: more bits than tarval module maximum");
+	if (mantissa_size >= (unsigned)sc_get_precision())
+		panic("Can't create mode: more bits than tarval module maximum");
 
 	ir_mode *result
 		= alloc_mode(name, irms_float_number, arithmetic, bit_size, 1, 0);
@@ -554,7 +559,6 @@ void init_mode(void)
 
 	mode_F   = new_float_mode("F", irma_ieee754,  8, 23, ir_overflow_min_max);
 	mode_D   = new_float_mode("D", irma_ieee754, 11, 52, ir_overflow_min_max);
-	mode_Q   = new_float_mode("Q", irma_ieee754, 15, 112, ir_overflow_min_max);
 
 	mode_Bs  = new_int_mode("Bs",  irma_twos_complement, 8,   1, 32);
 	mode_Bu  = new_int_mode("Bu",  irma_twos_complement, 8,   0, 32);
@@ -564,8 +568,6 @@ void init_mode(void)
 	mode_Iu  = new_int_mode("Iu",  irma_twos_complement, 32,  0, 32);
 	mode_Ls  = new_int_mode("Ls",  irma_twos_complement, 64,  1, 64);
 	mode_Lu  = new_int_mode("Lu",  irma_twos_complement, 64,  0, 64);
-	mode_LLs = new_int_mode("LLs", irma_twos_complement, 128, 1, 128);
-	mode_LLu = new_int_mode("LLu", irma_twos_complement, 128, 0, 128);
 
 	mode_P   = new_reference_mode("P", irma_twos_complement, 32, 32);
 	set_reference_mode_signed_eq(mode_P, mode_Is);

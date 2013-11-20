@@ -228,7 +228,6 @@ FIRM_API ir_mode *mode_M; /**< memory */
 
 FIRM_API ir_mode *mode_F;   /**< ieee754 binary32 float (single precision) */
 FIRM_API ir_mode *mode_D;   /**< ieee754 binary64 float (double precision) */
-FIRM_API ir_mode *mode_Q;   /**< ieee754 binary128 float (quadruple precision)*/
 FIRM_API ir_mode *mode_Bs;  /**< int8 */
 FIRM_API ir_mode *mode_Bu;  /**< uint8 */
 FIRM_API ir_mode *mode_Hs;  /**< int16 */
@@ -237,8 +236,6 @@ FIRM_API ir_mode *mode_Is;  /**< int32 */
 FIRM_API ir_mode *mode_Iu;  /**< uint32 */
 FIRM_API ir_mode *mode_Ls;  /**< int64 */
 FIRM_API ir_mode *mode_Lu;  /**< uint64 */
-FIRM_API ir_mode *mode_LLs; /**< int128 */
-FIRM_API ir_mode *mode_LLu; /**< uint128 */
 
 FIRM_API ir_mode *mode_P;   /**< pointer */
 FIRM_API ir_mode *mode_P_code; /**< A pointer mode that is set by the client of libfirm.  This mode
@@ -269,8 +266,6 @@ FIRM_API ir_mode *mode_BAD;/**< bad mode */
 FIRM_API ir_mode *get_modeF(void);
 /** Returns double mode */
 FIRM_API ir_mode *get_modeD(void);
-/** Returns quadruple prevision mode */
-FIRM_API ir_mode *get_modeQ(void);
 /** Returns byte signed mode */
 FIRM_API ir_mode *get_modeBs(void);
 /** Returns byte unsigned mode */
@@ -287,10 +282,6 @@ FIRM_API ir_mode *get_modeIu(void);
 FIRM_API ir_mode *get_modeLs(void);
 /** Returns long unsigned mode */
 FIRM_API ir_mode *get_modeLu(void);
-/** Returns long long signed mode */
-FIRM_API ir_mode *get_modeLLs(void);
-/** Returns long long unsigned mode */
-FIRM_API ir_mode *get_modeLLu(void);
 /** Returns pointer mode */
 FIRM_API ir_mode *get_modeP(void);
 /** Returns internal boolean mode */

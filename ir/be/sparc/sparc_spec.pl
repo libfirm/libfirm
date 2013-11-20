@@ -7,7 +7,7 @@ $mode_flags   = "mode_Bu";
 $mode_fpflags = "mode_Bu";
 $mode_fp      = "mode_F";
 $mode_fp2     = "mode_D";
-$mode_fp4     = "mode_Q";
+$mode_fp4     = "sparc_mode_Q";
 
 # available SPARC registers: 8 globals, 24 window regs (8 ins, 8 outs, 8 locals)
 %reg_classes = (

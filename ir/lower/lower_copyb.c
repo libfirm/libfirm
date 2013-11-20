@@ -47,7 +47,6 @@ static ir_mode *get_ir_mode(unsigned mode_bytes)
 	case 2:  return mode_Hu;
 	case 4:  return mode_Iu;
 	case 8:  return mode_Lu;
-	case 16: return mode_LLu;
 	default:
 		panic("unexpected mode size requested in copyb lowering");
 	}
