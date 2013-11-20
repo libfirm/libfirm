@@ -15,6 +15,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include "begin.h"
+#include "firm_types.h"
 
 struct obstack;
 
@@ -81,8 +82,24 @@ FIRM_API int ir_vsnprintf(char *buf, size_t len, const char *fmt, va_list args);
 FIRM_API int ir_obst_vprintf(struct obstack *obst, const char *fmt,
                              va_list args);
 
-/** @} */
+/**
+ * Output a tarval in human readable format to a string buffer.
+ *
+ * This function is meant for debugging purposes, the string is formated in a
+ * way easily understandable for humans. You should not use this for storage or
+ * output for other tools (like assemblers), use get_tarval_sub_bits() for these
+ * cases.
+ *
+ * The final string in "buf" is guaranteed to be zero-terminated (if buflen is
+ * at least 1).
+ *
+ * @param buf     the output buffer
+ * @param buflen  the length of the buffer
+ * @param tv      the tarval
+ */
+FIRM_API int tarval_snprintf(char *buf, size_t buflen, ir_tarval *tv);
 
+/** @} */
 #include "end.h"
 
 #endif

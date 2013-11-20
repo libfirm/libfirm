@@ -1225,7 +1225,7 @@ ir_tarval *tarval_shrs_unsigned(ir_tarval *a, unsigned b)
 	return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
 }
 
-int tarval_snprintf(char *buf, size_t len, ir_tarval *tv, int hex)
+int tarval_snprintf(char *buf, size_t len, ir_tarval *tv)
 {
 	switch (get_mode_sort(tv->mode)) {
 	case irms_reference:
@@ -1233,17 +1233,13 @@ int tarval_snprintf(char *buf, size_t len, ir_tarval *tv, int hex)
 			return snprintf(buf, len, "NULL");
 		/* FALLTHROUGH */
 	case irms_int_number: {
-		const char *str;
-		if (hex)
-			str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_HEX, 0);
-		else
-			str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_DEC, mode_is_signed(tv->mode));
-		return snprintf(buf, len, "%s", str);
+		unsigned    bits = get_mode_size_bits(tv->mode);
+		const char *str  = sc_print(tv->value, bits, SC_HEX, 0);
+		return snprintf(buf, len, "0x%s", str);
 	}
 
 	case irms_float_number:
-		return fc_print((const fp_value*)tv->value, buf, len,
-		                hex ? FC_HEX : FC_DEC);
+		return fc_print((const fp_value*)tv->value, buf, len, FC_DEC);
 
 	case irms_internal_boolean:
 		return snprintf(buf, len, "%s",

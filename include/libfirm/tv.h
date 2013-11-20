@@ -687,17 +687,6 @@ FIRM_API int get_tarval_lowest_bit(ir_tarval *tv);
 FIRM_API int get_tarval_highest_bit(ir_tarval *tv);
 
 /**
- * Output a tarval to a string buffer.
- *
- * @param buf     the output buffer
- * @param buflen  the length of the buffer
- * @param tv      the tarval
- * @param hex     print value in hexadecimal if true, else decimal
- */
-FIRM_API int tarval_snprintf(char *buf, size_t buflen, ir_tarval *tv,
-                             int hex);
-
-/**
  * Returns non-zero if the mantissa of a floating point tarval is zero
  * (i.e. 1.0Exxx)
  *

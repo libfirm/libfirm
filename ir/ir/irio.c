@@ -422,7 +422,7 @@ static void write_tarval(write_env_t *env, ir_tarval *tv)
 	} else {
 		fputs("0x", env->file);
 		char buf[1024];
-		tarval_snprintf(buf, sizeof(buf), tv, true);
+		tarval_snprintf(buf, sizeof(buf), tv);
 		fputs(buf, env->file);
 		fputc(' ', env->file);
 	}
