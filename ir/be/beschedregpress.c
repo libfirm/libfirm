@@ -55,13 +55,6 @@ static inline usage_stats_t *get_or_set_usage_stats(reg_pressure_selector_env_t 
 	return us;
 }
 
-static inline usage_stats_t *get_usage_stats(ir_node *irn)
-{
-	usage_stats_t *us = (usage_stats_t*)get_irn_link(irn);
-	assert(us && "This node must have usage stats");
-	return us;
-}
-
 static int max_hops_walker(reg_pressure_selector_env_t *env, ir_node *irn, ir_node *curr_bl, int depth, unsigned visited_nr)
 {
 	ir_node *bl = get_nodes_block(irn);

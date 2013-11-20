@@ -365,14 +365,6 @@ static inline void set_cg_irg_visited(ir_graph *irg, ir_visited_t i)
 	irg->self_visited = i;
 }
 
-/**
- * Returns the visited flag of a graph.
- */
-static inline ir_visited_t get_cg_irg_visited(const ir_graph *irg)
-{
-	return irg->self_visited;
-}
-
 static inline void mark_irg_in_stack(ir_graph *irg)
 {
 	scc_info *info = (scc_info*) get_irg_link(irg);

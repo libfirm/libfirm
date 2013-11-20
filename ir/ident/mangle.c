@@ -21,13 +21,6 @@
 /** An obstack used for temporary space */
 static struct obstack mangle_obst;
 
-/** returned a mangled type name, currently no mangling */
-static inline ident *mangle_type(const ir_type *tp)
-{
-	assert(tp->kind == k_type);
-	return tp->name;
-}
-
 static void obstack_grow_ident(struct obstack *obst, ident *id)
 {
 	const char *c = get_id_str(id);

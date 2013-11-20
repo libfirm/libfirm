@@ -1096,30 +1096,6 @@ void ia32_peephole_optimization(ir_graph *irg)
 	be_peephole_opt(irg);
 }
 
-/**
- * Removes node from schedule if it is not used anymore. If irn is a mode_T node
- * all its Projs are removed as well.
- * @param irn  The irn to be removed from schedule
- */
-static inline void try_kill(ir_node *node)
-{
-	if (get_irn_mode(node) == mode_T) {
-		foreach_out_edge_safe(node, edge) {
-			ir_node *proj = get_edge_src_irn(edge);
-			try_kill(proj);
-		}
-	}
-
-	if (get_irn_n_edges(node) != 0)
-		return;
-
-	if (sched_is_scheduled(node)) {
-		sched_remove(node);
-	}
-
-	kill_node(node);
-}
-
 static void optimize_conv_store(ir_node *node)
 {
 	ir_node *pred;

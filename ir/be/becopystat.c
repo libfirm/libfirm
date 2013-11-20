@@ -117,30 +117,6 @@ void be_quit_copystat(void)
 	}
 }
 
-/**
- * @return 1 if the block at pos @p pos removed a critical edge
- *         0 else
- */
-static inline int was_edge_critical(const ir_node *bl, int pos)
-{
-	const ir_edge_t *edge;
-	const ir_node *bl_at_pos, *bl_before;
-
-	/* Does bl have several predecessors ?*/
-	if (get_Block_n_cfgpreds(bl) <= 1)
-		return 0;
-
-	/* Does the pred have exactly one predecessor */
-	bl_at_pos = get_irn_n(bl, pos);
-	if (get_irn_arity(bl_at_pos) != 1)
-		return 0;
-
-	/* Does the pred of the pred have several successors */
-	bl_before = get_irn_n(bl_at_pos, 0);
-	edge = get_block_succ_first(bl_before);
-	return get_block_succ_next(bl_before, edge) ? 1 : 0;
-}
-
 void copystat_add_max_costs(int costs)
 {
 	curr_vals[I_COPIES_MAX] += costs;
