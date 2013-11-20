@@ -209,18 +209,20 @@ FIRM_API ir_tarval *get_mode_minus_one(ir_mode *mode);
 FIRM_API ir_tarval *get_mode_all_one(ir_mode *mode);
 
 /**
- * Returns the positive infinite value of a mode.
+ * Returns a positive infinite value of a mode.
  *
- * This is only valid for float_numbers, other modes
- * will result in tarval_bad.
+ * This is only valid for float_numbers, other modes will result in tarval_bad.
+ * There are typically multiple possible representations of infinity, don't
+ * compare with this value but use tarval_is_plus_inf() instead.
  */
 FIRM_API ir_tarval *get_mode_infinite(ir_mode *mode);
 
 /**
- * Returns the NAN value of a given mode.
+ * Returns a NAN value of a given mode.
  *
- * This is only valid for float_numbers, other modes
- * will result in tarval_bad.
+ * This is only valid for float_numbers, other modes will result in tarval_bad.
+ * There are typically multiple possible representations of NaN, don't compare
+ * with this value but use tarval_is_NaN() instead.
  */
 FIRM_API ir_tarval *get_mode_NAN(ir_mode *mode);
 

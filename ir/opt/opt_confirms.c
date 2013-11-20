@@ -232,14 +232,12 @@ static interval_t *get_interval_from_tv(interval_t *iv, ir_tarval *tv)
 		}
 	}
 
-	if (mode_is_float(mode)) {
-		if (tv == get_mode_NAN(mode)) {
-			/* arg, we cannot handle NaN's. */
-			iv->min   = tarval_bad;
-			iv->max   = tarval_bad;
-			iv->flags = MIN_EXCLUDED | MAX_EXCLUDED;
-			return NULL;
-		}
+	if (mode_is_float(mode) && tarval_is_NaN(tv)) {
+		/* arg, we cannot handle NaN's. */
+		iv->min   = tarval_bad;
+		iv->max   = tarval_bad;
+		iv->flags = MIN_EXCLUDED | MAX_EXCLUDED;
+		return NULL;
 	}
 
 	/* [tv, tv] */
@@ -277,15 +275,13 @@ static interval_t *get_interval(interval_t *iv, ir_node *bound, ir_relation rela
 		return NULL;
 	}
 
-	if (mode_is_float(mode)) {
-		if (tv == get_mode_NAN(mode)) {
-			/* arg, we cannot handle NaN's. */
-			iv->min   = tarval_bad;
-			iv->max   = tarval_bad;
-			iv->flags = MIN_EXCLUDED | MAX_EXCLUDED;
+	if (mode_is_float(mode) && tarval_is_NaN(tv)) {
+		/* arg, we cannot handle NaN's. */
+		iv->min   = tarval_bad;
+		iv->max   = tarval_bad;
+		iv->flags = MIN_EXCLUDED | MAX_EXCLUDED;
 
-			return NULL;
-		}
+		return NULL;
 	}
 
 	/* check which side is known */
