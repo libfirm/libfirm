@@ -229,7 +229,7 @@ FIRM_API int tarval_is_double(ir_tarval *tv);
  *
  * @param tv    the tarval
  */
-FIRM_API ir_mode *get_tarval_mode(const ir_tarval *tv);
+FIRM_API ir_mode *get_tarval_mode(ir_tarval *tv);
 
 /**
  * Returns 1 if tv is negative

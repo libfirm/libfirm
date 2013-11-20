@@ -76,7 +76,7 @@ struct ir_tarval {
 /*
  * Access routines for tarval fields ========================================
  */
-static inline ir_mode *_get_tarval_mode(const ir_tarval *tv)
+static inline ir_mode *_get_tarval_mode(ir_tarval *tv)
 {
 	return tv->mode;
 }

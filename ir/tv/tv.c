@@ -420,7 +420,7 @@ double get_tarval_double(ir_tarval *tv)
 	return get_tarval_long_double(tv);
 }
 
-ir_mode *(get_tarval_mode)(const ir_tarval *tv)
+ir_mode *(get_tarval_mode)(ir_tarval *tv)
 {
 	return _get_tarval_mode(tv);
 }
