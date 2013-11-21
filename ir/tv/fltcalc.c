@@ -873,10 +873,10 @@ fp_value *fc_cast(const fp_value *value, const float_descriptor_t *desc,
 	assert(value != result);
 
 	if (value->desc.exponent_size == desc->exponent_size &&
-		value->desc.mantissa_size == desc->mantissa_size &&
-		value->desc.explicit_one  == desc->explicit_one) {
+		value->desc.mantissa_size == desc->mantissa_size) {
 		if (value != result)
 			memcpy(result, value, calc_buffer_size);
+		result->desc.explicit_one = desc->explicit_one;
 		return result;
 	}
 
@@ -997,7 +997,6 @@ fp_value *fc_get_plusinf(const float_descriptor_t *desc, fp_value *result)
 	sc_val_from_ulong(0, mant);
 	if (desc->explicit_one)
 		sc_set_bit_at(mant, result->desc.mantissa_size + ROUNDING_BITS);
-
 	return result;
 }
 
