@@ -147,7 +147,7 @@ $(libfirm_a): $(libfirm_OBJECTS)
 
 $(libfirm_dll): $(libfirm_OBJECTS)
 	@echo LINK $@
-	$(Q)$(LINK) -shared $(LINKFLAGS) -o $@ $^
+	$(Q)$(LINK) -shared $^ -o $@ $(LINKFLAGS)
 
 # Determine if we can use cparser-beta for quickcheck
 QUICKCHECK_DEFAULT := $(shell which cparser-beta || echo true) -fsyntax-only
