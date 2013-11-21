@@ -68,7 +68,7 @@ static inline ir_node *get_new_node(ir_node *old_node)
 
 /**
  * Copy node for inlining.  Updates attributes that change when
- * inlineing but not for dead node elimination.
+ * inlining but not for dead node elimination.
  *
  * Copies the node by calling copy_node() and then updates the entity if
  * it's a local one.  env must be a pointer of the frame type of the
@@ -245,7 +245,7 @@ enum exc_mode {
 };
 
 /**
- * copy all entities on the stack frame on 1 irg to the stackframe of another.
+ * copy all entities on the stack frame on 1 irg to the stack frame of another.
  * Sets entity links of the old entities to the copies
  */
 static void copy_frame_entities(ir_graph *from, ir_graph *to)
@@ -313,8 +313,8 @@ static void copy_parameter_entities(ir_node *call, ir_graph *called_graph)
 				ARR_APP1(ir_node*, sync_mem, new_mem);
 			} else {
 				/*
-				 * The first time a copyb node is added it may overwrite
-				 * sync_mem[0], because the copyb node itself references it.
+				 * The first time a CopyB node is added it may overwrite
+				 * sync_mem[0], because the CopyB node itself references it.
 				 */
 				sync_mem[0] = new_mem;
 				have_copyb = true;
@@ -386,8 +386,8 @@ static bool inline_method(ir_node *const call, ir_graph *called_graph)
 	}
 	enum exc_mode exc_handling = Xproj != NULL ? exc_handler : exc_no_handler;
 
-	/* entitiy link is used to link entities on old stackframe to the
-	 * new stackframe */
+	/* entity link is used to link entities on old stack frame to the
+	 * new stack frame */
 	irp_reserve_resources(irp, IRP_RESOURCE_ENTITY_LINK);
 
 	/* If the call has parameters, copy all parameter entities */
@@ -523,7 +523,7 @@ static bool inline_method(ir_node *const call, ir_graph *called_graph)
 		}
 	}
 	ir_node *const call_mem = new_r_Phi(post_bl, n_mem_phi, cf_pred, mode_M);
-	/* Conserve Phi-list for further inlinings -- but might be optimized */
+	/* Conserve Phi-list for further inlining -- but might be optimized */
 	if (get_nodes_block(call_mem) == post_bl) {
 		set_irn_link(call_mem, get_irn_link(post_bl));
 		set_irn_link(post_bl, call_mem);
@@ -554,7 +554,7 @@ static bool inline_method(ir_node *const call, ir_graph *called_graph)
 				? new_r_Phi(post_bl, n_ret, cf_pred, res_mode)
 				: new_r_Bad(irg, res_mode);
 			res_pred[j] = phi;
-			/* Conserve Phi-list for further inlinings -- but might be
+			/* Conserve Phi-list for further inlining -- but might be
 			 * optimized */
 			if (get_nodes_block(phi) == post_bl) {
 				set_Phi_next(phi, get_Block_phis(post_bl));
@@ -987,7 +987,7 @@ typedef struct walk_env_t {
 } walk_env_t;
 
 /**
- * Callgraph walker, collect all visited graphs.
+ * Call graph walker, collect all visited graphs.
  */
 static void callgraph_walker(ir_graph *irg, void *data)
 {
@@ -1026,7 +1026,7 @@ static ir_graph **create_irg_list(void)
  *
  * @param pqueue   the priority queue of calls
  * @param call     the call entry
- * @param inlien_threshold
+ * @param inline_threshold
  *                 the threshold value
  */
 static void maybe_push_call(pqueue_t *pqueue, call_entry *call,
@@ -1101,7 +1101,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 			int benefice = curr_call->benefice;
 			/*
 			 * Reduce the weight for recursive function IFF not all arguments
-			 * are const. inlining recursive functions is rarely good.
+			 * are constant. Inlining recursive functions is rarely good.
 			 */
 			if (!curr_call->all_const)
 				benefice -= 2000;
@@ -1126,7 +1126,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 
 			/*
 			 * Reduce the weight for recursive function IFF not all arguments
-			 * are const. inlining recursive functions is rarely good.
+			 * are constant. Inlining recursive functions is rarely good.
 			 */
 			if (!curr_call->all_const)
 				benefice -= 2000;
@@ -1246,7 +1246,7 @@ void inline_functions(unsigned maxsize, int inline_threshold,
 	for (size_t i = 0; i < n_irgs; ++i)
 		set_irg_link(irgs[i], alloc_inline_irg_env());
 
-	/* Pre-compute information in temporary data structure. */
+	/* Precompute information in temporary data structure. */
 	wenv_t wenv;
 	wenv.ignore_callers = false;
 	for (size_t i = 0; i < n_irgs; ++i) {
