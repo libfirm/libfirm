@@ -103,7 +103,9 @@ struct fp_value {
 
 #define _save_result(x) memcpy((x), sc_get_buffer(), value_size)
 #define _shift_right(x, y, res) sc_shr((x), (y), value_size*4, 0, (res))
+#define _shift_righti(x, y, res) sc_shrI((x), (y), value_size*4, 0, (res))
 #define _shift_left(x, y, res) sc_shl((x), (y), value_size*4, 0, (res))
+#define _shift_lefti(x, y, res) sc_shlI((x), (y), value_size*4, 0, (res))
 
 /** A temporary buffer. */
 static fp_value *calc_buffer = NULL;
@@ -149,30 +151,26 @@ static void *pack(const fp_value *int_float, void *packed)
 	sc_val_from_ulong(int_float->sign, temp);
 
 	int pos = int_float->desc.exponent_size + int_float->desc.mantissa_size + int_float->desc.explicit_one;
-	sc_val_from_ulong(pos, NULL);
-	_shift_left(temp, sc_get_buffer(), packed);
+	_shift_lefti(temp, pos, packed);
 
 	/* pack exponent: move it to the left after mantissa */
 	pos = int_float->desc.mantissa_size + int_float->desc.explicit_one;
-	char *shift_val = ALLOCAN(char, value_size);
-	sc_val_from_ulong(pos, shift_val);
-	_shift_left(_exp(int_float), shift_val, temp);
+	_shift_lefti(_exp(int_float), pos, temp);
 
 	/* combine sign|exponent */
 	sc_or(temp, packed, packed);
 
 	/* extract mantissa */
 	/* remove rounding bits */
-	sc_val_from_ulong(ROUNDING_BITS, shift_val);
-	_shift_right(_mant(int_float), shift_val, temp);
+	_shift_righti(_mant(int_float), ROUNDING_BITS, temp);
 
 	/* remove leading 1 (or 0 if denormalized) */
-	sc_max_from_bits(pos, 0, shift_val); /* all mantissa bits are 1's */
-	sc_and(temp, shift_val, temp);
+	char *mask = ALLOCAN(char, value_size);
+	sc_max_from_bits(pos, 0, mask); /* all mantissa bits are 1's */
+	sc_and(temp, mask, temp);
 
 	/* combine sign|exponent|mantissa */
 	sc_or(temp, packed, packed);
-
 	return packed;
 }
 
@@ -206,7 +204,7 @@ static bool normalize(const fp_value *in_val, fp_value *out_val, bool sticky)
 		/* shift right */
 		sc_val_from_ulong(-hsb-1, temp);
 
-		_shift_right(_mant(in_val), temp, _mant(out_val));
+		_shift_righti(_mant(in_val), -hsb-1, _mant(out_val));
 
 		/* remember if some bits were shifted away */
 		if (sc_had_carry()) {
@@ -218,7 +216,7 @@ static bool normalize(const fp_value *in_val, fp_value *out_val, bool sticky)
 		/* shift left */
 		sc_val_from_ulong(hsb+1, temp);
 
-		_shift_left(_mant(in_val), temp, _mant(out_val));
+		_shift_lefti(_mant(in_val), hsb+1, _mant(out_val));
 
 		sc_sub(_exp(in_val), temp, _exp(out_val));
 	}
@@ -290,7 +288,7 @@ static bool normalize(const fp_value *in_val, fp_value *out_val, bool sticky)
 	hsb = ROUNDING_BITS + out_val->desc.mantissa_size - sc_get_highest_set_bit(_mant(out_val)) - 1;
 	if ((out_val->clss != FC_SUBNORMAL) && (hsb < -1)) {
 		sc_val_from_ulong(1, temp);
-		_shift_right(_mant(out_val), temp, _mant(out_val));
+		_shift_righti(_mant(out_val), 1, _mant(out_val));
 		if (exact && sc_had_carry())
 			exact = false;
 		sc_add(_exp(out_val), temp, _exp(out_val));
@@ -477,8 +475,7 @@ static void _fadd(const fp_value *a, const fp_value *b, fp_value *result)
 	/* _normalize expects a 'normal' radix point, adding two subnormals
 	 * results in a subnormal radix point -> shifting before normalizing */
 	if ((a->clss == FC_SUBNORMAL) && (b->clss == FC_SUBNORMAL)) {
-		sc_val_from_ulong(1, NULL);
-		_shift_left(_mant(result), sc_get_buffer(), _mant(result));
+		_shift_lefti(_mant(result), 1, _mant(result));
 	}
 
 	/* resulting exponent is the bigger one */
@@ -561,9 +558,8 @@ static void _fmul(const fp_value *a, const fp_value *b, fp_value *result)
 	 * values are normalized they both have the same amount of these digits,
 	 * which has to be restored by proper shifting
 	 * because of the rounding bits */
-	sc_val_from_ulong(ROUNDING_BITS + result->desc.mantissa_size, temp);
-
-	_shift_right(_mant(result), temp, _mant(result));
+	_shift_righti(_mant(result), result->desc.mantissa_size+ROUNDING_BITS,
+	              _mant(result));
 	bool sticky = sc_had_carry();
 	fc_exact &= !sticky;
 
@@ -651,14 +647,12 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result)
 	 * fit into the integer precision, but due to the rounding bits (which
 	 * are always zero because the values are all normalized) the divisor
 	 * can be shifted right instead to achieve the same result */
-	sc_val_from_ulong(ROUNDING_BITS + result->desc.mantissa_size, temp);
-
 	char *dividend = ALLOCAN(char, value_size);
-	_shift_left(_mant(a), temp, dividend);
+	_shift_lefti(_mant(a), result->desc.mantissa_size + ROUNDING_BITS,
+	             dividend);
 
 	char *divisor = ALLOCAN(char, value_size);
-	sc_val_from_ulong(1, divisor);
-	_shift_right(_mant(b), divisor, divisor);
+	_shift_righti(_mant(b), 1, divisor);
 	sc_div(dividend, divisor, _mant(result));
 	bool sticky = sc_had_carry();
 	fc_exact &= !sticky;
@@ -711,8 +705,7 @@ static void _trunc(const fp_value *a, fp_value *result)
 	 * radix point if the mantissa had been shifted until exp == 0 */
 	char *temp = ALLOCAN(char, value_size);
 	sc_max_from_bits(1 + exp_val, 0, temp);
-	sc_val_from_long(a->desc.mantissa_size - exp_val + 2, NULL);
-	_shift_left(temp, sc_get_buffer(), temp);
+	_shift_lefti(temp, a->desc.mantissa_size - exp_val + 2, temp);
 
 	/* and the mask and return the result */
 	sc_and(_mant(a), temp, _mant(result));
@@ -749,18 +742,19 @@ fp_value *fc_val_from_ieee754(long double l, fp_value *result)
 {
 	value_t  srcval;
 	srcval.d = l;
+	int  exponent_size = long_double_desc.exponent_size;
 	int  mantissa_size = long_double_desc.mantissa_size;
 	char sign;
 	uint32_t exponent;
 	uint32_t mantissa0;
 	uint32_t mantissa1;
-	if (long_double_desc.exponent_size == 11 && mantissa_size == 52) {
+	if (exponent_size == 11 && mantissa_size == 52) {
 		assert(sizeof(long double) == 8);
 		sign      = (srcval.val_ld8.high & 0x80000000) != 0;
 		exponent  = (srcval.val_ld8.high & 0x7FF00000) >> 20;
 		mantissa0 = srcval.val_ld8.high & 0x000FFFFF;
 		mantissa1 = srcval.val_ld8.low;
-	} else if (long_double_desc.exponent_size == 15 && mantissa_size == 63) {
+	} else if (exponent_size == 15 && mantissa_size == 63) {
 		/* we assume an x86-like 80bit representation of the value... */
 		assert(sizeof(long double) == 12 || sizeof(long double) == 16);
 		sign      = (srcval.val_ld12.high & 0x00008000) != 0;
@@ -797,37 +791,30 @@ fp_value *fc_val_from_ieee754(long double l, fp_value *result)
 	/* build mantissa representation */
 	char *temp = ALLOCAN(char, value_size);
 	if (exponent != 0) {
-		/* insert the hidden bit */
+		/* insert the implicit one */
 		sc_val_from_ulong(1, temp);
-		sc_val_from_ulong(mantissa_size + ROUNDING_BITS, NULL);
-		_shift_left(temp, sc_get_buffer(), NULL);
+		_shift_lefti(temp, mantissa_size + ROUNDING_BITS, _mant(result));
 	} else {
-		sc_val_from_ulong(0, NULL);
+		sc_zero(_mant(result));
 	}
-
-	_save_result(_mant(result));
 
 	/* bits from the upper word */
 	sc_val_from_ulong(mantissa0, temp);
-	sc_val_from_ulong(34, NULL);
-	_shift_left(temp, sc_get_buffer(), temp);
+	_shift_lefti(temp, 32+ROUNDING_BITS, temp);
 	sc_or(_mant(result), temp, _mant(result));
 
 	/* bits from the lower word */
 	sc_val_from_ulong(mantissa1, temp);
-	sc_val_from_ulong(ROUNDING_BITS, NULL);
-	_shift_left(temp, sc_get_buffer(), temp);
+	_shift_lefti(temp, ROUNDING_BITS, temp);
 	sc_or(_mant(result), temp, _mant(result));
 
 	/* _normalize expects the radix point to be normal, so shift mantissa of
 	 * subnormal origin one to the left */
 	if (exponent == 0) {
-		sc_val_from_ulong(1, NULL);
-		_shift_left(_mant(result), sc_get_buffer(), _mant(result));
+		_shift_lefti(_mant(result), 1, _mant(result));
 	}
 
 	normalize(result, result, 0);
-
 	return result;
 }
 
@@ -845,8 +832,7 @@ long double fc_val_to_ieee754(const fp_value *val)
 	 * not lead to wrong results */
 	uint32_t exponent = sc_val_to_long(_exp(value)) ;
 
-	sc_val_from_ulong(ROUNDING_BITS, NULL);
-	_shift_right(_mant(value), sc_get_buffer(), _mant(value));
+	_shift_righti(_mant(value), ROUNDING_BITS, _mant(value));
 
 	uint32_t mantissa0 = 0;
 	uint32_t mantissa1 = 0;
@@ -876,7 +862,6 @@ long double fc_val_to_ieee754(const fp_value *val)
 	} else {
 		panic("unsupported long double format");
 	}
-
 	return buildval.d;
 }
 
@@ -926,8 +911,7 @@ fp_value *fc_cast(const fp_value *value, const float_descriptor_t *desc,
 
 	/* _normalize expects normalized radix point */
 	if (value->clss == FC_SUBNORMAL) {
-		sc_val_from_ulong(1, NULL);
-		_shift_left(_mant(value), sc_get_buffer(), _mant(result));
+		_shift_lefti(_mant(value), 1, _mant(result));
 	} else if (value != result) {
 		memcpy(_mant(result), _mant(value), value_size);
 	} else {
@@ -950,9 +934,7 @@ fp_value *fc_get_max(const float_descriptor_t *desc, fp_value *result)
 	sc_val_from_ulong((1 << desc->exponent_size) - 2, _exp(result));
 
 	sc_max_from_bits(desc->mantissa_size + 1, 0, _mant(result));
-	sc_val_from_ulong(ROUNDING_BITS, NULL);
-	_shift_left(_mant(result), sc_get_buffer(), _mant(result));
-
+	_shift_lefti(_mant(result), ROUNDING_BITS, _mant(result));
 	return result;
 }
 
@@ -963,7 +945,6 @@ fp_value *fc_get_min(const float_descriptor_t *desc, fp_value *result)
 
 	fc_get_max(desc, result);
 	result->sign = 1;
-
 	return result;
 }
 
@@ -980,7 +961,6 @@ fp_value *fc_get_snan(const float_descriptor_t *desc, fp_value *result)
 
 	/* signaling NaN has non-zero mantissa with msb not set */
 	sc_val_from_ulong(1, _mant(result));
-
 	return result;
 }
 
@@ -998,9 +978,7 @@ fp_value *fc_get_qnan(const float_descriptor_t *desc, fp_value *result)
 	/* quiet NaN has the msb of the mantissa set, so shift one there */
 	sc_val_from_ulong(1, _mant(result));
 	/* mantissa_size >+< 1 because of two extra rounding bits */
-	sc_val_from_ulong(desc->mantissa_size + 1, NULL);
-	_shift_left(_mant(result), sc_get_buffer(), _mant(result));
-
+	_shift_lefti(_mant(result), desc->mantissa_size+1, _mant(result));
 	return result;
 }
 
@@ -1017,21 +995,16 @@ fp_value *fc_get_plusinf(const float_descriptor_t *desc, fp_value *result)
 
 	char *mant = _mant(result);
 	sc_val_from_ulong(0, mant);
-	if (desc->explicit_one) {
+	if (desc->explicit_one)
 		sc_set_bit_at(mant, result->desc.mantissa_size + ROUNDING_BITS);
-	}
 
 	return result;
 }
 
 fp_value *fc_get_minusinf(const float_descriptor_t *desc, fp_value *result)
 {
-	if (result == NULL)
-		result = calc_buffer;
-
-	fc_get_plusinf(desc, result);
+	result = fc_get_plusinf(desc, result);
 	result->sign = 1;
-
 	return result;
 }
 
@@ -1284,7 +1257,6 @@ fp_value *fc_mul(const fp_value *a, const fp_value *b, fp_value *result)
 		result = calc_buffer;
 
 	_fmul(a, b, result);
-
 	return result;
 }
 
@@ -1294,7 +1266,6 @@ fp_value *fc_div(const fp_value *a, const fp_value *b, fp_value *result)
 		result = calc_buffer;
 
 	_fdiv(a, b, result);
-
 	return result;
 }
 
@@ -1306,7 +1277,6 @@ fp_value *fc_neg(const fp_value *a, fp_value *result)
 	if (a != result)
 		memcpy(result, a, calc_buffer_size);
 	result->sign = !a->sign;
-
 	return result;
 }
 
@@ -1316,7 +1286,6 @@ fp_value *fc_int(const fp_value *a, fp_value *result)
 		result = calc_buffer;
 
 	_trunc(a, result);
-
 	return result;
 }
 
