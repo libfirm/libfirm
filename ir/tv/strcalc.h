@@ -138,32 +138,32 @@ void sc_divmod(const void *value1, const void *value2, void *div_buffer, void *m
 /**
  * buffer = value1 << offset
  */
-void sc_shlI(const void *val1, long shift_cnt, int bitsize, int sign, void *buffer);
+void sc_shlI(const void *val1, long shift_cnt, int bitsize, bool sign, void *buffer);
 
 /**
  * buffer = value1 << value2
  */
-void sc_shl(const void *value1, const void *value2, int bitsize, int sign, void *buffer);
+void sc_shl(const void *value1, const void *value2, int bitsize, bool sign, void *buffer);
 
 /**
  * buffer = value1 >>u offset
  */
-void sc_shrI(const void *val1, long shift_cnt, int bitsize, int sign, void *buffer);
+void sc_shrI(const void *val1, long shift_cnt, int bitsize, bool sign, void *buffer);
 
 /**
  * buffer = value1 >>u value2
  */
-void sc_shr(const void *value1, const void *value2, int bitsize, int sign, void *buffer);
+void sc_shr(const void *value1, const void *value2, int bitsize, bool sign, void *buffer);
 
 /**
  * buffer = value1 >>s offset
  */
-void sc_shrsI(const void *val1, long shift_cnt, int bitsize, int sign, void *buffer);
+void sc_shrsI(const void *val1, long shift_cnt, int bitsize, bool sign, void *buffer);
 
 /**
  * buffer = value1 >>s value2
  */
-void sc_shrs(const void *value1, const void *value2, int bitsize, int sign, void *buffer);
+void sc_shrs(const void *value1, const void *value2, int bitsize, bool sign, void *buffer);
 
 /**
  * buffer = 0
@@ -180,10 +180,10 @@ void sign_extend(void *buffer, unsigned from_bits, bool is_signed);
 
 /**
  * create an value form a string representation
- * @return 1 if ok, 0 in case of parse error
+ * @return true if ok, false in case of parse error
  */
-int sc_val_from_str(char sign, unsigned base, const char *str,
-                    size_t len, void *buffer);
+bool sc_val_from_str(char sign, unsigned base, const char *str,
+                     size_t len, void *buffer);
 
 /** create a value from a long */
 void sc_val_from_long(long l, void *buffer);
@@ -214,8 +214,8 @@ void sc_val_from_bits(unsigned char const *const bytes, unsigned from,
 /** converts a value to a long */
 long sc_val_to_long(const void *val);
 uint64_t sc_val_to_uint64(const void *val);
-void sc_min_from_bits(unsigned int num_bits, unsigned int sign, void *buffer);
-void sc_max_from_bits(unsigned int num_bits, unsigned int sign, void *buffer);
+void sc_min_from_bits(unsigned int num_bits, bool sign, void *buffer);
+void sc_max_from_bits(unsigned int num_bits, bool sign, void *buffer);
 
 /** truncates a value to lowest @p num_bits bits */
 void sc_truncate(unsigned num_bits, void *buffer);
@@ -227,8 +227,8 @@ ir_relation sc_comp(void const *val1, void const *val2);
 
 int sc_get_highest_set_bit(const void *value);
 int sc_get_lowest_set_bit(const void *value);
-int sc_is_zero(const void *value);
-int sc_is_negative(const void *value);
+bool sc_is_zero(const void *value);
+bool sc_is_negative(const void *value);
 
 /**
  * Return the bits of a tarval at a given byte-offset.
@@ -276,6 +276,6 @@ int sc_get_bit_at(const void *value, unsigned pos);
 void sc_set_bit_at(void *value, unsigned pos);
 
 /* Strange semantics */
-int sc_had_carry(void);
+bool sc_had_carry(void);
 
 #endif /* FIRM_TV_STRCALC_H */

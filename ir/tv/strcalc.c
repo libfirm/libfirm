@@ -378,7 +378,7 @@ end:
  * @todo Assertions seems to be wrong
  */
 static void do_shl(const char *val1, char *buffer, long shift_cnt, int bitsize,
-                   unsigned is_signed)
+                   bool is_signed)
 {
 	assert((shift_cnt >= 0) || (0 && "negative leftshift"));
 	assert(((do_sign(val1) != -1) || is_signed) || (0 && "unsigned mode and negative value"));
@@ -443,7 +443,7 @@ static void do_shl(const char *val1, char *buffer, long shift_cnt, int bitsize,
  * @todo Assertions seems to be wrong
  */
 static void do_shr(const char *val1, char *buffer, long shift_cnt, int bitsize,
-                   unsigned is_signed, int signed_shift)
+                   bool is_signed, int signed_shift)
 {
 	assert((shift_cnt >= 0) || (0 && "negative rightshift"));
 	assert(((!_bitisset(val1[(bitsize-1)/4], (bitsize-1)%4)) || !is_signed || (do_sign(val1) == -1)) || (0 && "value is positive, should be negative"));
@@ -559,8 +559,8 @@ static inline void check_ascii(void)
 	       |('5'-53) | ('6'-54) | ('7'-55) | ('8'- 56) | ('9'- 57)) == 0);
 }
 
-int sc_val_from_str(char sign, unsigned base, const char *str, size_t len,
-                    void *buffer)
+bool sc_val_from_str(char sign, unsigned base, const char *str, size_t len,
+                     void *buffer)
 {
 	assert(sign == -1 || sign == 1);
 	assert(str != NULL);
@@ -589,10 +589,10 @@ int sc_val_from_str(char sign, unsigned base, const char *str, size_t len,
 		else if (c >= 'a' && c <= 'f')
 			v = c - 'a' + 10;
 		else
-			return 0;
+			return false;
 
 		if (v >= base)
-			return 0;
+			return false;
 		val[0] = v;
 
 		/* Radix conversion from base b to base B:
@@ -610,7 +610,7 @@ int sc_val_from_str(char sign, unsigned base, const char *str, size_t len,
 	if (sign < 0)
 		do_negate((const char*) buffer, (char*) buffer);
 
-	return 1;
+	return true;
 }
 
 void sc_val_from_long(long value, void *buffer)
@@ -675,7 +675,7 @@ uint64_t sc_val_to_uint64(const void *val)
 	return res;
 }
 
-void sc_min_from_bits(unsigned int num_bits, unsigned int sign, void *buffer)
+void sc_min_from_bits(unsigned int num_bits, bool sign, void *buffer)
 {
 	if (buffer == NULL) buffer = calc_buffer;
 	CLEAR_BUFFER(buffer);
@@ -695,7 +695,7 @@ void sc_min_from_bits(unsigned int num_bits, unsigned int sign, void *buffer)
 		*pos++ = SC_F;
 }
 
-void sc_max_from_bits(unsigned int num_bits, unsigned int sign, void *buffer)
+void sc_max_from_bits(unsigned int num_bits, bool sign, void *buffer)
 {
 	if (buffer == NULL) buffer = calc_buffer;
 	CLEAR_BUFFER(buffer);
@@ -820,22 +820,22 @@ void sc_set_bit_at(void *value, unsigned pos)
 	val[nibble] |= SHIFT(pos & 3);
 }
 
-int sc_is_zero(const void *value)
+bool sc_is_zero(const void *value)
 {
 	const char* val = (const char *)value;
 	for (int counter = 0; counter < calc_buffer_size; ++counter) {
 		if (val[counter] != SC_0)
-			return 0;
+			return false;
 	}
-	return 1;
+	return true;
 }
 
-int sc_is_negative(const void *value)
+bool sc_is_negative(const void *value)
 {
 	return do_sign((const char*) value) == -1;
 }
 
-int sc_had_carry(void)
+bool sc_had_carry(void)
 {
 	return carry_flag;
 }
@@ -1256,7 +1256,7 @@ void sc_divmod(const void *value1, const void *value2, void *div_buffer, void *m
 }
 
 
-void sc_shlI(const void *val1, long shift_cnt, int bitsize, int sign, void *buffer)
+void sc_shlI(const void *val1, long shift_cnt, int bitsize, bool sign, void *buffer)
 {
 	carry_flag = false;
 
@@ -1267,14 +1267,14 @@ void sc_shlI(const void *val1, long shift_cnt, int bitsize, int sign, void *buff
 	}
 }
 
-void sc_shl(const void *val1, const void *val2, int bitsize, int sign, void *buffer)
+void sc_shl(const void *val1, const void *val2, int bitsize, bool sign, void *buffer)
 {
 	long offset = sc_val_to_long(val2);
 
 	sc_shlI(val1, offset, bitsize, sign, buffer);
 }
 
-void sc_shrI(const void *val1, long shift_cnt, int bitsize, int sign, void *buffer)
+void sc_shrI(const void *val1, long shift_cnt, int bitsize, bool sign, void *buffer)
 {
 	carry_flag = false;
 
@@ -1285,14 +1285,14 @@ void sc_shrI(const void *val1, long shift_cnt, int bitsize, int sign, void *buff
 	}
 }
 
-void sc_shr(const void *val1, const void *val2, int bitsize, int sign, void *buffer)
+void sc_shr(const void *val1, const void *val2, int bitsize, bool sign, void *buffer)
 {
 	long shift_cnt = sc_val_to_long(val2);
 
 	sc_shrI(val1, shift_cnt, bitsize, sign, buffer);
 }
 
-void sc_shrsI(const void *val1, long shift_cnt, int bitsize, int sign, void *buffer)
+void sc_shrsI(const void *val1, long shift_cnt, int bitsize, bool sign, void *buffer)
 {
 	carry_flag = false;
 
@@ -1303,7 +1303,7 @@ void sc_shrsI(const void *val1, long shift_cnt, int bitsize, int sign, void *buf
 	}
 }
 
-void sc_shrs(const void *val1, const void *val2, int bitsize, int sign, void *buffer)
+void sc_shrs(const void *val1, const void *val2, int bitsize, bool sign, void *buffer)
 {
 	long offset = sc_val_to_long(val2);
 
