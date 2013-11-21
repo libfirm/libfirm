@@ -867,6 +867,7 @@ void sc_val_from_bytes(unsigned char const *const bytes, size_t n_bytes,
 	if (buffer == NULL)
 		buffer = calc_buffer;
 	char *p = (char*)buffer;
+	assert(SC_BITS == 4);
 	if (big_endian) {
 		for (unsigned char const *bp = bytes+n_bytes-1; bp >= bytes; --bp) {
 			unsigned char v = *bp;
@@ -883,6 +884,57 @@ void sc_val_from_bytes(unsigned char const *const bytes, size_t n_bytes,
 	}
 	for (char *p_end = (char*)buffer+calc_buffer_size; p < p_end; ++p)
 		*p = 0;
+}
+
+void sc_val_from_bits(unsigned char const *const bytes, unsigned from,
+                      unsigned to, void *buffer)
+{
+	assert(from < to);
+
+	unsigned bit_size = to-from;
+	assert(bit_size/8 <= (unsigned)calc_buffer_size);
+	assert(SC_BITS == 4);
+
+	if (buffer == NULL)
+		buffer = calc_buffer;
+	unsigned char *p = (unsigned char*)buffer;
+
+	/* see which is the lowest and highest byte, special case if they are
+	 * the same. */
+	const unsigned char *const low      = &bytes[from/8];
+	const unsigned char *const high     = &bytes[(to-1)/8];
+	const uint8_t              low_bit  = from%8;
+	const uint8_t              high_bit = (to-1)%8 + 1;
+	if (low == high) {
+		uint32_t val = ((uint32_t)*low << (32-high_bit)) >> (32-high_bit+low_bit);
+		*p++ = (val >> 0) & 0xf;
+		*p++ = (val >> 4) & 0xf;
+		goto clear_rest;
+	}
+
+	/* lowest byte gets applied partially */
+	uint32_t val = ((uint32_t)*low) >> low_bit;
+	*p     = (val >> 0) & 0xf;
+	*(p+1) = (val >> 4) & 0xf;
+	*(p+2) = 0;
+	unsigned bit = (8-low_bit)%4;
+	p += (8-low_bit)/4;
+	/* fully apply bytes in the middle (but note that they may affect up to 3
+	 * units of the destination number) */
+	for (const unsigned char *mid = low+1; mid < high; ++mid) {
+		uint32_t mval = ((uint32_t)*mid) << bit;
+		*p++   |= (mval >> 0) & 0xf;
+		*p++    = (mval >> 4) & 0xf;
+		*p      = (mval >> 8) & 0xf;
+	}
+	/* partially apply the highest byte */
+	uint32_t hval = ((uint32_t)(*high) << (32-high_bit)) >> (32-high_bit-bit);
+	*p++ |= (hval >> 0) & 0xf;
+	*p++  = (hval >> 4) & 0xf;
+
+clear_rest:
+	assert(p <= ((unsigned char*)buffer) + calc_buffer_size);
+	memset(p, 0, calc_buffer_size - (p-(unsigned char*)buffer));
 }
 
 const char *sc_print(const void *value, unsigned bits, enum base_t base,

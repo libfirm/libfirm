@@ -203,6 +203,14 @@ void sc_val_from_ulong(unsigned long l, void *buffer);
 void sc_val_from_bytes(unsigned char const *bytes, size_t n_bytes,
                        bool big_endian, void *buffer);
 
+/**
+ * Construct a strcalc value from a sequence of bytes in a little endian
+ * formatted buffer. @p from specifies the first byte, @p to the last byte
+ * (excluding).
+ */
+void sc_val_from_bits(unsigned char const *const bytes, unsigned from,
+                      unsigned to, void *buffer);
+
 /** converts a value to a long */
 long sc_val_to_long(const void *val);
 uint64_t sc_val_to_uint64(const void *val);
