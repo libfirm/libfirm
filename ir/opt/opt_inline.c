@@ -1032,14 +1032,30 @@ static ir_graph **create_irg_list(void)
 static void maybe_push_call(pqueue_t *pqueue, call_entry *call,
                             int inline_threshold)
 {
-	ir_graph *callee   = call->callee;
-	int       benefice = calc_inline_benefice(call, callee);
+	ir_graph                  *caller       = get_irn_irg(call->call);
+	ir_entity                 *caller_ent   = get_irg_entity(caller);
+	mtp_additional_properties  caller_props = get_entity_additional_properties(caller_ent);
+	ir_graph                  *callee       = call->callee;
+	ir_entity                 *callee_ent   = get_irg_entity(callee);
+	mtp_additional_properties  callee_props = get_entity_additional_properties(callee_ent);
+
+	/*
+	 * If the caller is declared as always inline and the callee contains a call
+	 * to the caller, we would end up with a recursive always inline function.
+	 * So we reject to inline a call within an always inline function.
+	 */
+	if (!(callee_props & mtp_property_always_inline)
+	    && caller_props & mtp_property_always_inline) {
+		DB((dbg, LEVEL_2, "Do not inline %+F into %+F to prevent endless inlining\n",
+		    call->call, caller));
+		return;
+	}
+
+	int benefice = calc_inline_benefice(call, callee);
 	DB((dbg, LEVEL_2, "In %+F Call %+F to %+F has benefice %d\n",
 	    get_irn_irg(call->call), call->call, callee, benefice));
 
-	ir_entity                *ent   = get_irg_entity(callee);
-	mtp_additional_properties props = get_entity_additional_properties(ent);
-	if (!(props & mtp_property_always_inline) && benefice < inline_threshold) {
+	if (!(callee_props & mtp_property_always_inline) && benefice < inline_threshold) {
 		return;
 	}
 
