@@ -23,7 +23,7 @@
 #include "irgmod.h"
 #include "irflag_t.h"
 #include "irgwalk.h"
-#include "tv.h"
+#include "tv_t.h"
 #include "array.h"
 #include "error.h"
 #include "typerep.h"
@@ -416,16 +416,12 @@ static void write_mode_ref(write_env_t *env, ir_mode *mode)
 
 static void write_tarval(write_env_t *env, ir_tarval *tv)
 {
-	write_mode_ref(env, get_tarval_mode(tv));
-	if (tv == tarval_bad) {
-		write_symbol(env, "bad");
-	} else {
-		fputs("0x", env->file);
-		char buf[1024];
-		tarval_snprintf(buf, sizeof(buf), tv);
-		fputs(buf, env->file);
-		fputc(' ', env->file);
-	}
+	ir_mode *mode = get_tarval_mode(tv);
+	write_mode_ref(env, mode);
+	char buf[128];
+	const char *ascii = ir_tarval_to_ascii(buf, sizeof(buf), tv);
+	fputs(ascii, env->file);
+	fputc(' ', env->file);
 }
 
 static void write_align(write_env_t *env, ir_align align)
@@ -1608,12 +1604,7 @@ static ir_tarval *read_tarval(read_env_t *env)
 {
 	ir_mode   *tvmode = read_mode_ref(env);
 	char      *str    = read_word(env);
-	ir_tarval *tv;
-	if (strcmp(str, "bad") == 0)
-		return tarval_bad;
-	tv = new_tarval_from_str(str, strlen(str), tvmode);
-	if (tv == tarval_bad)
-		parse_error(env, "problem while parsing tarval '%s'\n", str);
+	ir_tarval *tv     = ir_tarval_from_ascii(str, tvmode);
 	obstack_free(&env->obst, str);
 
 	return tv;

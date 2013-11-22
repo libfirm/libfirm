@@ -1259,6 +1259,89 @@ int tarval_snprintf(char *buf, size_t len, ir_tarval *tv)
 	}
 }
 
+static char hexchar(unsigned val)
+{
+	if (val < 10)
+		return val + '0';
+	return (val-10) + 'A';
+}
+
+static unsigned hexval(char c)
+{
+	if (c >= '0' && c <= '9')
+		return c - '0';
+	return (c - 'A')+10;
+}
+
+const char *ir_tarval_to_ascii(char *buf, size_t len, ir_tarval *tv)
+{
+	ir_mode *mode = get_tarval_mode(tv);
+	switch (get_mode_sort(mode)) {
+	case irms_internal_boolean:
+	case irms_reference:
+	case irms_int_number:
+		return sc_print_buf(buf, len, tv->value, get_mode_size_bits(mode),
+		                    SC_HEX, 0);
+	case irms_float_number: {
+		/* fc_print is not specific enough for nans/infs, so we simply dump the
+		 * bit representation in hex. */
+		unsigned size = get_mode_size_bytes(mode);
+		for (size_t i = 0; i < size; ++i) {
+			uint8_t bits = get_tarval_sub_bits(tv, (int)i);
+			buf[i*2]   = hexchar(bits & 0xf);
+			buf[i*2+1] = hexchar(bits >> 4);
+		}
+		buf[size*2] = '\0';
+		return buf;
+	}
+	case irms_data:
+	case irms_auxiliary:
+		if (tv == tarval_bad)
+			return "bad";
+		else if (tv == tarval_undefined)
+			return "undefined";
+		else if (tv == tarval_reachable)
+			return "reachable";
+		else if (tv == tarval_unreachable)
+			return "unreachable";
+		break;
+	}
+	panic("invalid tarval");
+}
+
+ir_tarval *ir_tarval_from_ascii(const char *buf, ir_mode *mode)
+{
+	size_t len = strlen(buf);
+	switch (get_mode_sort(mode)) {
+	case irms_reference:
+	case irms_internal_boolean:
+	case irms_int_number:
+		return new_integer_tarval_from_str(buf, len, 1, 16, mode);
+	case irms_float_number: {
+		unsigned       size = get_mode_size_bytes(mode);
+		unsigned char *temp = ALLOCAN(unsigned char, size);
+		for (size_t i = 0; i < size; ++i) {
+			unsigned char val = hexval(buf[i*2]) | (hexval(buf[i*2+1]) << 4);
+			temp[i] = val;
+		}
+		fc_val_from_ieee754_buf(NULL, temp, get_descriptor(mode));
+		return get_tarval_from_fp_value(fc_get_buffer(), mode);
+	}
+	case irms_data:
+	case irms_auxiliary:
+		if (strcmp(buf, "bad") == 0)
+			return tarval_bad;
+		else if (strcmp(buf, "undefined") == 0)
+			return tarval_undefined;
+		else if (strcmp(buf, "reachable") == 0)
+			return tarval_reachable;
+		else if (strcmp(buf, "unreachable") == 0)
+			return tarval_unreachable;
+		break;
+	}
+	panic("invalid mode for tarval_from_ascii");
+}
+
 char *get_tarval_bitpattern(ir_tarval *tv)
 {
 	int   n   = get_mode_size_bits(tv->mode);

@@ -116,6 +116,20 @@ static inline int _is_tarval(const void *thing)
 	return get_kind(thing) == k_tarval;
 }
 
+/**
+ * Converts tarval to ascii representation (in contrast to tarval_snprintf()
+ * this is meant to be machine readble).
+ * If the output is bigger than buf_len the behaviour is undefined. The
+ * final value may be near the end of the buffer, use the return value!
+ */
+const char *ir_tarval_to_ascii(char *buf, size_t buf_len, ir_tarval *tv);
+
+/**
+ * Converts ascii representation to tarval with specified mode. Compatible with
+ * ir_tarval_to_ascii().
+ */
+ir_tarval *ir_tarval_from_ascii(const char *buf, ir_mode *mode);
+
 uint64_t get_tarval_uint64(ir_tarval *tv);
 
 bool tarval_is_uint64(ir_tarval *tv);
