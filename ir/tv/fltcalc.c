@@ -1232,3 +1232,31 @@ int fc_is_exact(void)
 {
 	return fc_exact;
 }
+
+#ifdef DEBUG_libfirm
+/* helper to print fp_values in a debugger */
+void fc_debug(fp_value *value);
+void __attribute__((used)) fc_debug(fp_value *value)
+{
+	printf("Class: %d\n", value->clss);
+	printf("Sign: %d\n", value->sign);
+	printf("Exponent: %s\n",
+	       sc_print(_exp(value), sc_get_precision(), SC_HEX, false));
+	printf("Unbiased Exponent: %d\n", fc_get_exponent(value));
+	printf("Mantissa: %s\n",
+	       sc_print(_mant(value), sc_get_precision(), SC_HEX, false));
+	printf("Mantissa w/o round: ");
+	char *temp = ALLOCAN(char, value_size);
+	_shift_righti(_mant(value), ROUNDING_BITS, temp);
+	printf("%s\n", sc_print(temp, sc_get_precision(), SC_HEX, false));
+	printf("Mantissa w/o round implicit one: ");
+	sc_clear_bit_at(temp, value->desc.mantissa_size);
+	printf("%s\n", sc_print(temp, sc_get_precision(), SC_HEX, false));
+
+	char buf[128];
+	//fc_print(value, buf, sizeof(buf), FC_DEC);
+	//printf("%s\n", buf);
+	fc_print(value, buf, sizeof(buf), FC_PACKED);
+	printf("Packed: %s\n", buf);
+}
+#endif
