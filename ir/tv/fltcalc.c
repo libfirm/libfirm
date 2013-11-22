@@ -36,37 +36,6 @@ static long double string_to_long_double(const char *str)
 /** The number of extra precision rounding bits */
 #define ROUNDING_BITS 2
 
-typedef union {
-	volatile struct {
-#ifdef WORDS_BIGENDIAN
-		uint32_t high;
-#else
-		uint32_t low;
-#endif
-		uint32_t mid;
-#ifdef WORDS_BIGENDIAN
-		uint32_t low;
-#else
-		uint32_t high;
-#endif
-	} val_ld12;
-	volatile struct {
-#ifdef WORDS_BIGENDIAN
-		uint32_t high;
-#else
-		uint32_t low;
-#endif
-#ifdef WORDS_BIGENDIAN
-		uint32_t low;
-#else
-		uint32_t high;
-#endif
-	} val_ld8;
-	volatile long double d;
-} value_t;
-
-#define CLEAR_BUFFER(buffer) memset(buffer, 0, calc_buffer_size)
-
 /* our floating point value */
 struct fp_value {
 	float_descriptor_t desc;
@@ -695,58 +664,30 @@ void *fc_val_from_str(const char *str, size_t len, void *result)
 	return fc_val_from_ieee754(val, result);
 }
 
-fp_value *fc_val_from_ieee754(long double l, fp_value *result)
+fp_value *fc_val_from_ieee754_buf(fp_value *result, const unsigned char *buffer,
+                                  const float_descriptor_t *desc)
 {
-	value_t  srcval;
-	srcval.d = l;
-	int  exponent_size = long_double_desc.exponent_size;
-	int  mantissa_size = long_double_desc.mantissa_size;
-	bool sign;
-	uint32_t exponent;
-	uint32_t mantissa0;
-	uint32_t mantissa1;
-	if (exponent_size == 11 && mantissa_size == 52) {
-		assert(sizeof(long double) == 8);
-		sign      = srcval.val_ld8.high & 0x80000000;
-		exponent  = (srcval.val_ld8.high & 0x7FF00000) >> 20;
-		mantissa0 = srcval.val_ld8.high & 0x000FFFFF;
-		mantissa1 = srcval.val_ld8.low;
-	} else if (exponent_size == 15 && mantissa_size == 64) {
-		/* we assume an x86-like 80bit representation of the value... */
-		assert(sizeof(long double) == 12 || sizeof(long double) == 16);
-		sign      = srcval.val_ld12.high & 0x00008000;
-		exponent  = (srcval.val_ld12.high & 0x00007FFF) ;
-		mantissa0 = srcval.val_ld12.mid;
-		mantissa1 = srcval.val_ld12.low;
-	} else {
-		panic("unsupported long double format");
-	}
-
 	if (result == NULL)
 		result = calc_buffer;
 
 	/* CLEAR the buffer, else some bits might be uninitialized */
 	memset(result, 0, fc_get_buffer_length());
 
-	result->desc = long_double_desc;
-	result->sign = sign;
+	unsigned exponent_size = desc->exponent_size;
+	unsigned mantissa_size = desc->mantissa_size;
+	unsigned sign_bit      = exponent_size + mantissa_size;
+	result->desc = *desc;
+	sc_val_from_bits(buffer, 0, mantissa_size, _mant(result));
+	sc_val_from_bits(buffer, mantissa_size, mantissa_size+exponent_size,
+	                 _exp(result));
+	result->sign = (buffer[sign_bit/8] & (1u << (sign_bit%8))) != 0;
 
-	/* build exponent */
-	sc_val_from_long(exponent, _exp(result));
-
-	/* build mantissa */
-	sc_val_from_ulong(mantissa0, _mant(result));
-	_shift_lefti(_mant(result), 32, _mant(result));
-	char *temp = ALLOCAN(char, value_size);
-	sc_val_from_ulong(mantissa1, temp);
-	sc_or(_mant(result), temp, _mant(result));
-
+	/* adjust for rounding bits */
 	_shift_lefti(_mant(result), ROUNDING_BITS, _mant(result));
 
-	/* sign and flag suffice to identify NaN or inf, no exponent/mantissa
-	 * encoding is needed. the function can return immediately in these cases */
-	if (exponent == 0) {
-		if (mantissa0 == 0 && mantissa1 == 0) {
+	/* check for special values */
+	if (sc_is_zero(_exp(result), value_size)) {
+		if (sc_is_zero(_mant(result), value_size)) {
 			result->clss = FC_ZERO;
 		} else {
 			result->clss = FC_SUBNORMAL;
@@ -755,24 +696,38 @@ fp_value *fc_val_from_ieee754(long double l, fp_value *result)
 			_shift_lefti(_mant(result), 1, _mant(result));
 			normalize(result, result, 0);
 		}
-	} else if (exponent == (1u << exponent_size)-1) {
-		if (!long_double_desc.explicit_one) {
-			result->clss = (mantissa0 == 0 && mantissa1 == 0)
-						 ? FC_INF : FC_NAN;
+	} else if (sc_is_all_one(_exp(result), exponent_size)) {
+		unsigned size = mantissa_size + ROUNDING_BITS - desc->explicit_one;
+		if (sc_is_zero(_mant(result), size)) {
+			if (!desc->explicit_one)
+				sc_set_bit_at(_mant(result), ROUNDING_BITS+mantissa_size);
+			result->clss = FC_INF;
 		} else {
-			/* ignore explicit one bit */
-			unsigned size = mantissa_size + ROUNDING_BITS - 1;
-			result->clss = sc_is_zero(_mant(result), size)
-						 ? FC_INF : FC_NAN;
+			result->clss = FC_NAN;
 		}
 	} else {
 		result->clss = FC_NORMAL;
-		/* insert the implicit one */
-		if (!long_double_desc.explicit_one)
-			sc_set_bit_at(_mant(result), mantissa_size+ROUNDING_BITS);
+		/* we always have an explicit one */
+		if (!desc->explicit_one)
+			sc_set_bit_at(_mant(result), ROUNDING_BITS+mantissa_size);
 		normalize(result, result, 0);
 	}
 	return result;
+}
+
+fp_value *fc_val_from_ieee754(long double l, fp_value *result)
+{
+	unsigned real_size
+		= (long_double_desc.mantissa_size+long_double_desc.exponent_size+1)/8;
+	unsigned char *buf = ALLOCAN(unsigned char, real_size);
+#ifdef WORDS_BIGENDIAN
+	unsigned char *from = (unsigned char*)&l;
+	for (unsigned i = 0; i < real_size; ++i)
+		buf[i] = from[real_size-1-i];
+#else
+	memcpy(buf, &l, real_size);
+#endif
+	return fc_val_from_ieee754_buf(result, buf, &long_double_desc);
 }
 
 long double fc_val_to_ieee754(const fp_value *val)

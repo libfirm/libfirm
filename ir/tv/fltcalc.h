@@ -75,6 +75,9 @@ void *fc_val_from_str(const char *str, size_t len, void *result);
  */
 fp_value *fc_val_from_ieee754(long double l, fp_value *result);
 
+fp_value *fc_val_from_ieee754_buf(fp_value *result, const unsigned char *buffer,
+                             const float_descriptor_t *desc);
+
 /** retrieve the float value of an internal value
  * This function casts the internal value to long double and returns a
  * long double with that value.
