@@ -234,7 +234,6 @@ ir_mode *new_float_mode(const char *name, ir_mode_arithmetic arithmetic,
 
 	if (arithmetic == irma_x86_extended_float) {
 		explicit_one = true;
-		bit_size++;
 	} else if (arithmetic != irma_ieee754) {
 		panic("Arithmetic %s invalid for float");
 	}

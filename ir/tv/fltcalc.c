@@ -33,26 +33,6 @@ static long double string_to_long_double(const char *str)
 #endif
 }
 
-static bool my_isnan(long double val)
-{
-#if __STDC_VERSION__ >= 199901L
-	return isnan(val);
-#else
-	/* hopefully the compiler does not optimize aggressively (=incorrect) */
-	return val != val;
-#endif
-}
-
-static bool my_isinf(long double val)
-{
-#if __STDC_VERSION__ >= 199901L
-	return isinf(val);
-#else
-	/* hopefully the compiler does not optimize aggressively (=incorrect) */
-	return my_isnan(val-val) && !my_isnan(val);
-#endif
-}
-
 /** The number of extra precision rounding bits */
 #define ROUNDING_BITS 2
 
@@ -91,7 +71,7 @@ typedef union {
 struct fp_value {
 	float_descriptor_t desc;
 	unsigned char      clss;
-	char               sign;
+	bool               sign;
 	/** exp[value_size] + mant[value_size].
 	 * Mantissa has an explicit one at the beginning (contrary to many
 	 * floating point formats) */
@@ -123,55 +103,45 @@ static bool fc_exact = true;
 static float_descriptor_t long_double_desc;
 
 /** pack machine-like */
-static void *pack(const fp_value *int_float, void *packed)
+static void pack(const fp_value *value, void *packed)
 {
-	switch ((value_class_t)int_float->clss) {
+	switch ((value_class_t)value->clss) {
 	case FC_NAN: {
 		fp_value *val_buffer = (fp_value*) alloca(calc_buffer_size);
-		fc_get_qnan(&int_float->desc, val_buffer);
-		int_float = val_buffer;
+		fc_get_qnan(&value->desc, val_buffer);
+		value = val_buffer;
 		break;
 	}
 
 	case FC_INF: {
 		fp_value *val_buffer = (fp_value*) alloca(calc_buffer_size);
-		fc_get_plusinf(&int_float->desc, val_buffer);
-		val_buffer->sign = int_float->sign;
-		int_float = val_buffer;
+		fc_get_inf(&value->desc, val_buffer, value->sign);
+		value = val_buffer;
 		break;
 	}
 
 	default:
 		break;
 	}
-	assert(int_float->desc.explicit_one <= 1);
 
-	/* pack sign: move it to the left after exponent AND mantissa */
-	char *temp = ALLOCAN(char, value_size);
-	sc_val_from_ulong(int_float->sign, temp);
-
-	int pos = int_float->desc.exponent_size + int_float->desc.mantissa_size + int_float->desc.explicit_one;
-	_shift_lefti(temp, pos, packed);
-
-	/* pack exponent: move it to the left after mantissa */
-	pos = int_float->desc.mantissa_size + int_float->desc.explicit_one;
-	_shift_lefti(_exp(int_float), pos, temp);
-
-	/* combine sign|exponent */
-	sc_or(temp, packed, packed);
+	const float_descriptor_t *desc = &value->desc;
 
 	/* extract mantissa */
 	/* remove rounding bits */
-	_shift_righti(_mant(int_float), ROUNDING_BITS, temp);
+	_shift_righti(_mant(value), ROUNDING_BITS, packed);
 
-	/* remove leading 1 (or 0 if denormalized) */
-	char *mask = ALLOCAN(char, value_size);
-	sc_max_from_bits(pos, 0, mask); /* all mantissa bits are 1's */
-	sc_and(temp, mask, temp);
+	/* extract lower bits, this masks out a leading one if necessary. */
+	char *temp = ALLOCAN(char, value_size);
+	sc_max_from_bits(desc->mantissa_size, 0, temp);
+	sc_and(packed, temp, packed);
 
-	/* combine sign|exponent|mantissa */
-	sc_or(temp, packed, packed);
-	return packed;
+	/* pack exponent: move it to the left after mantissa */
+	_shift_lefti(_exp(value), desc->mantissa_size, temp);
+	sc_or(packed, temp, packed);
+
+	/* set sign bit */
+	if (value->sign)
+		sc_set_bit_at(packed, desc->mantissa_size+desc->exponent_size);
 }
 
 /**
@@ -181,8 +151,10 @@ static void *pack(const fp_value *int_float, void *packed)
  */
 static bool normalize(const fp_value *in_val, fp_value *out_val, bool sticky)
 {
+	const float_descriptor_t *desc = &in_val->desc;
+	int effective_mantissa = desc->mantissa_size - desc->explicit_one;
 	/* save rounding bits at the end */
-	int hsb = ROUNDING_BITS + in_val->desc.mantissa_size - sc_get_highest_set_bit(_mant(in_val)) - 1;
+	int hsb = ROUNDING_BITS + effective_mantissa - sc_get_highest_set_bit(_mant(in_val)) - 1;
 
 	if (in_val != out_val) {
 		out_val->sign = in_val->sign;
@@ -192,14 +164,14 @@ static bool normalize(const fp_value *in_val, fp_value *out_val, bool sticky)
 	out_val->clss = FC_NORMAL;
 
 	/* mantissa all zeros, so zero exponent (because of explicit one) */
-	if (hsb == ROUNDING_BITS + in_val->desc.mantissa_size) {
+	if (hsb == ROUNDING_BITS + effective_mantissa) {
 		sc_val_from_ulong(0, _exp(out_val));
 		hsb = -1;
 	}
 
 	/* shift the first 1 into the left of the radix point (i.e. hsb == -1) */
 	bool  exact = true;
-	char *temp  = (char*) alloca(value_size);
+	char *temp  = ALLOCAN(char, value_size);
 	if (hsb < -1) {
 		/* shift right */
 		sc_val_from_ulong(-hsb-1, temp);
@@ -222,7 +194,8 @@ static bool normalize(const fp_value *in_val, fp_value *out_val, bool sticky)
 	}
 
 	/* check for exponent underflow */
-	if (sc_is_negative(_exp(out_val)) || sc_is_zero(_exp(out_val))) {
+	if (sc_is_negative(_exp(out_val))
+	 || sc_is_zero(_exp(out_val), value_size)) {
 		/* exponent underflow */
 		/* shift the mantissa right to have a zero exponent */
 		sc_val_from_ulong(1, temp);
@@ -239,10 +212,10 @@ static bool normalize(const fp_value *in_val, fp_value *out_val, bool sticky)
 		out_val->clss = FC_SUBNORMAL;
 	}
 
-	/* perform rounding by adding a value that clears the guard bit and the round bit
-	 * and either causes a carry to round up or not */
+	/* perform rounding by adding a value that clears the guard bit and the
+	 * round bit and either causes a carry to round up or not */
 	/* get the last 3 bits of the value */
-	char lsb       = sc_sub_bits(_mant(out_val), out_val->desc.mantissa_size + ROUNDING_BITS, 0) & 0x7;
+	char lsb       = sc_sub_bits(_mant(out_val), effective_mantissa + ROUNDING_BITS, 0) & 0x7;
 	char guard     = (lsb&0x2)>>1;
 	char round     = lsb&0x1;
 	char round_dir = 0;
@@ -281,11 +254,12 @@ static bool normalize(const fp_value *in_val, fp_value *out_val, bool sticky)
 	}
 
 	/* could have rounded down to zero */
-	if (sc_is_zero(_mant(out_val)) && (out_val->clss == FC_SUBNORMAL))
+	if (sc_is_zero(_mant(out_val), value_size)
+	    && (out_val->clss == FC_SUBNORMAL))
 		out_val->clss = FC_ZERO;
 
 	/* check for rounding overflow */
-	hsb = ROUNDING_BITS + out_val->desc.mantissa_size - sc_get_highest_set_bit(_mant(out_val)) - 1;
+	hsb = ROUNDING_BITS + effective_mantissa - sc_get_highest_set_bit(_mant(out_val)) - 1;
 	if ((out_val->clss != FC_SUBNORMAL) && (hsb < -1)) {
 		sc_val_from_ulong(1, temp);
 		_shift_righti(_mant(out_val), 1, _mant(out_val));
@@ -324,30 +298,16 @@ static bool normalize(const fp_value *in_val, fp_value *out_val, bool sticky)
 		 * TO_ZERO     |      +        |   largest representable value
 		 *             |      -        |   smallest representable value
 		 *--------------------------------------------------------------*/
-		if (out_val->sign == 0) {
-			/* value is positive */
-			switch (rounding_mode) {
-			case FC_TONEAREST:
-			case FC_TOPOSITIVE:
-				out_val->clss = FC_INF;
-				break;
+		switch (rounding_mode) {
+		case FC_TONEAREST:
+		case FC_TOPOSITIVE:
+			fc_get_inf(&out_val->desc, out_val, out_val->sign);
+			break;
 
-			case FC_TONEGATIVE:
-			case FC_TOZERO:
-				fc_get_max(&out_val->desc, out_val);
-			}
-		} else {
-			/* value is negative */
-			switch (rounding_mode) {
-			case FC_TONEAREST:
-			case FC_TONEGATIVE:
-				out_val->clss = FC_INF;
-				break;
-
-			case FC_TOPOSITIVE:
-			case FC_TOZERO:
-				fc_get_min(&out_val->desc, out_val);
-			}
+		case FC_TONEGATIVE:
+		case FC_TOZERO:
+			fc_get_max(&out_val->desc, out_val, out_val->sign);
+			break;
 		}
 	}
 	return exact;
@@ -386,7 +346,7 @@ static void _fadd(const fp_value *a, const fp_value *b, fp_value *result)
 		result->desc = a->desc;
 
 	/* determine if this is an addition or subtraction */
-	char sign = a->sign ^ b->sign;
+	bool sign = a->sign ^ b->sign;
 
 	/* produce NaN on inf - inf */
 	if (sign && (a->clss == FC_INF) && (b->clss == FC_INF)) {
@@ -405,7 +365,7 @@ static void _fadd(const fp_value *a, const fp_value *b, fp_value *result)
 	 * when exponents are equal is required though.
 	 * Also special care about the sign is needed when the mantissas are equal
 	 * (+/- 0 ?) */
-	char res_sign;
+	bool res_sign;
 	if (sign && sc_val_to_long(exp_diff) == 0) {
 		switch (sc_comp(_mant(a), _mant(b))) {
 		case ir_relation_greater:  /* a > b */
@@ -472,7 +432,7 @@ static void _fadd(const fp_value *a, const fp_value *b, fp_value *result)
 		sc_add(_mant(a), temp, _mant(result));
 	}
 
-	/* _normalize expects a 'normal' radix point, adding two subnormals
+	/* normalize expects a 'normal' radix point, adding two subnormals
 	 * results in a subnormal radix point -> shifting before normalizing */
 	if ((a->clss == FC_SUBNORMAL) && (b->clss == FC_SUBNORMAL)) {
 		_shift_lefti(_mant(result), 1, _mant(result));
@@ -496,8 +456,8 @@ static void _fmul(const fp_value *a, const fp_value *b, fp_value *result)
 	if (result != a && result != b)
 		result->desc = a->desc;
 
-	char res_sign;
-	result->sign = res_sign = a->sign ^ b->sign;
+	bool res_sign;
+	result->sign = res_sign = (a->sign ^ b->sign);
 
 	/* produce NaN on 0 * inf */
 	if (a->clss == FC_ZERO) {
@@ -578,8 +538,8 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result)
 	if (result != a && result != b)
 		result->desc = a->desc;
 
-	char res_sign;
-	result->sign = res_sign = a->sign ^ b->sign;
+	bool res_sign;
+	result->sign = res_sign = (a->sign ^ b->sign);
 
 	/* produce FC_NAN on 0/0 and inf/inf */
 	if (a->clss == FC_ZERO) {
@@ -622,10 +582,7 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result)
 	if (b->clss == FC_ZERO) {
 		fc_exact = false;
 		/* division by zero */
-		if (result->sign)
-			fc_get_minusinf(&a->desc, result);
-		else
-			fc_get_plusinf(&a->desc, result);
+		fc_get_inf(&a->desc, result, result->sign);
 		return;
 	}
 
@@ -744,20 +701,20 @@ fp_value *fc_val_from_ieee754(long double l, fp_value *result)
 	srcval.d = l;
 	int  exponent_size = long_double_desc.exponent_size;
 	int  mantissa_size = long_double_desc.mantissa_size;
-	char sign;
+	bool sign;
 	uint32_t exponent;
 	uint32_t mantissa0;
 	uint32_t mantissa1;
 	if (exponent_size == 11 && mantissa_size == 52) {
 		assert(sizeof(long double) == 8);
-		sign      = (srcval.val_ld8.high & 0x80000000) != 0;
+		sign      = srcval.val_ld8.high & 0x80000000;
 		exponent  = (srcval.val_ld8.high & 0x7FF00000) >> 20;
 		mantissa0 = srcval.val_ld8.high & 0x000FFFFF;
 		mantissa1 = srcval.val_ld8.low;
-	} else if (exponent_size == 15 && mantissa_size == 63) {
+	} else if (exponent_size == 15 && mantissa_size == 64) {
 		/* we assume an x86-like 80bit representation of the value... */
 		assert(sizeof(long double) == 12 || sizeof(long double) == 16);
-		sign      = (srcval.val_ld12.high & 0x00008000) != 0;
+		sign      = srcval.val_ld12.high & 0x00008000;
 		exponent  = (srcval.val_ld12.high & 0x00007FFF) ;
 		mantissa0 = srcval.val_ld12.mid;
 		mantissa1 = srcval.val_ld12.low;
@@ -772,179 +729,155 @@ fp_value *fc_val_from_ieee754(long double l, fp_value *result)
 	memset(result, 0, fc_get_buffer_length());
 
 	result->desc = long_double_desc;
-	result->clss = FC_NORMAL;
 	result->sign = sign;
-
-	/* sign and flag suffice to identify NaN or inf, no exponent/mantissa
-	 * encoding is needed. the function can return immediately in these cases */
-	if (my_isnan(l)) {
-		result->clss = FC_NAN;
-		return result;
-	} else if (my_isinf(l)) {
-		result->clss = FC_INF;
-		return result;
-	}
 
 	/* build exponent */
 	sc_val_from_long(exponent, _exp(result));
 
-	/* build mantissa representation */
+	/* build mantissa */
+	sc_val_from_ulong(mantissa0, _mant(result));
+	_shift_lefti(_mant(result), 32, _mant(result));
 	char *temp = ALLOCAN(char, value_size);
-	if (exponent != 0) {
-		/* insert the implicit one */
-		sc_val_from_ulong(1, temp);
-		_shift_lefti(temp, mantissa_size + ROUNDING_BITS, _mant(result));
-	} else {
-		sc_zero(_mant(result));
-	}
-
-	/* bits from the upper word */
-	sc_val_from_ulong(mantissa0, temp);
-	_shift_lefti(temp, 32+ROUNDING_BITS, temp);
-	sc_or(_mant(result), temp, _mant(result));
-
-	/* bits from the lower word */
 	sc_val_from_ulong(mantissa1, temp);
-	_shift_lefti(temp, ROUNDING_BITS, temp);
 	sc_or(_mant(result), temp, _mant(result));
 
-	/* _normalize expects the radix point to be normal, so shift mantissa of
-	 * subnormal origin one to the left */
-	if (exponent == 0) {
-		_shift_lefti(_mant(result), 1, _mant(result));
-	}
+	_shift_lefti(_mant(result), ROUNDING_BITS, _mant(result));
 
-	normalize(result, result, 0);
+	/* sign and flag suffice to identify NaN or inf, no exponent/mantissa
+	 * encoding is needed. the function can return immediately in these cases */
+	if (exponent == 0) {
+		if (mantissa0 == 0 && mantissa1 == 0) {
+			result->clss = FC_ZERO;
+		} else {
+			result->clss = FC_SUBNORMAL;
+			/* normalize expects the radix point to be normal, so shift
+			 * mantissa of subnormal origin one to the left */
+			_shift_lefti(_mant(result), 1, _mant(result));
+			normalize(result, result, 0);
+		}
+	} else if (exponent == (1u << exponent_size)-1) {
+		if (!long_double_desc.explicit_one) {
+			result->clss = (mantissa0 == 0 && mantissa1 == 0)
+						 ? FC_INF : FC_NAN;
+		} else {
+			/* ignore explicit one bit */
+			unsigned size = mantissa_size + ROUNDING_BITS - 1;
+			result->clss = sc_is_zero(_mant(result), size)
+						 ? FC_INF : FC_NAN;
+		}
+	} else {
+		result->clss = FC_NORMAL;
+		/* insert the implicit one */
+		if (!long_double_desc.explicit_one)
+			sc_set_bit_at(_mant(result), mantissa_size+ROUNDING_BITS);
+		normalize(result, result, 0);
+	}
 	return result;
 }
 
 long double fc_val_to_ieee754(const fp_value *val)
 {
-	unsigned mantissa_size
-		= long_double_desc.mantissa_size + long_double_desc.explicit_one;
 
 	fp_value *temp  = (fp_value*) alloca(calc_buffer_size);
 	fp_value *value = fc_cast(val, &long_double_desc, temp);
 
-	uint32_t sign = value->sign;
+	char *packed = ALLOCAN(char, value_size);
+	pack(value, packed);
 
-	/* @@@ long double exponent is 15bit, so the use of sc_val_to_long should
-	 * not lead to wrong results */
-	uint32_t exponent = sc_val_to_long(_exp(value)) ;
-
-	_shift_righti(_mant(value), ROUNDING_BITS, _mant(value));
-
-	uint32_t mantissa0 = 0;
-	uint32_t mantissa1 = 0;
-
-	unsigned byte_offset;
-	for (byte_offset = 0; byte_offset < 4; byte_offset++)
-		mantissa1 |= (unsigned)sc_sub_bits(_mant(value), mantissa_size, byte_offset) << (byte_offset << 3);
-
-	for (; (byte_offset<<3) < long_double_desc.mantissa_size; byte_offset++)
-		mantissa0 |= (unsigned)sc_sub_bits(_mant(value), mantissa_size, byte_offset) << ((byte_offset - 4) << 3);
-
-	value_t buildval;
-	if (long_double_desc.exponent_size == 11 && long_double_desc.mantissa_size == 52) {
-		assert(sizeof(long double) == 8);
-		mantissa0 &= 0x000FFFFF;  /* get rid of garbage */
-		buildval.val_ld8.high = sign << 31;
-		buildval.val_ld8.high |= exponent << 20;
-		buildval.val_ld8.high |= mantissa0;
-		buildval.val_ld8.low = mantissa1;
-	} else if (long_double_desc.exponent_size == 15 && long_double_desc.mantissa_size == 63) {
-		/* we assume an x86-like 80bit representation of the value... */
-		assert(sizeof(long double) == 12 || sizeof(long double) == 16);
-		buildval.val_ld12.high = sign << 15;
-		buildval.val_ld12.high |= exponent;
-		buildval.val_ld12.mid = mantissa0;
-		buildval.val_ld12.low = mantissa1;
-	} else {
-		panic("unsupported long double format");
+	char buf[sizeof(long double)];
+	unsigned real_size
+		= (long_double_desc.mantissa_size+long_double_desc.exponent_size+1)/8;
+	for (unsigned i = 0; i < real_size; ++i) {
+#ifdef WORDS_BIGENDIAN
+		unsigned offset = real_size - i;
+#else
+		unsigned offset = i;
+#endif
+		buf[i] = sc_sub_bits(packed, value_size*4, offset);
 	}
-	return buildval.d;
+	memset(buf+real_size, 0, sizeof(long double)-real_size);
+	long double result;
+	memcpy(&result, buf, sizeof(result));
+	return result;
 }
 
-fp_value *fc_cast(const fp_value *value, const float_descriptor_t *desc,
+static bool is_quiet_nan(const fp_value *value)
+{
+	assert(value->clss == FC_NAN);
+	const float_descriptor_t *desc = &value->desc;
+	if (!desc->explicit_one) {
+		return sc_get_bit_at(_mant(value), desc->mantissa_size-1);
+	} else {
+		return !sc_get_bit_at(_mant(value), desc->mantissa_size-2);
+	}
+}
+
+fp_value *fc_cast(const fp_value *value, const float_descriptor_t *dest,
                   fp_value *result)
 {
 	if (result == NULL)
 		result = calc_buffer;
 	assert(value != result);
 
-	if (value->desc.exponent_size == desc->exponent_size &&
-		value->desc.mantissa_size == desc->mantissa_size) {
+	const float_descriptor_t *desc = &value->desc;
+	if (desc->exponent_size == dest->exponent_size &&
+		desc->mantissa_size == dest->mantissa_size &&
+		desc->explicit_one  == dest->explicit_one) {
 		if (value != result)
 			memcpy(result, value, calc_buffer_size);
-		result->desc.explicit_one = desc->explicit_one;
 		return result;
 	}
 
 	if (value->clss == FC_NAN) {
-		if (sc_get_highest_set_bit(_mant(value)) == value->desc.mantissa_size + 1)
-			return fc_get_qnan(desc, result);
-		else
-			return fc_get_snan(desc, result);
-	}
-	else if (value->clss == FC_INF) {
-		if (value->sign == 0)
-			return fc_get_plusinf(desc, result);
-		else
-			return fc_get_minusinf(desc, result);
+		/* TODO: preserve mantissa bits? */
+		return is_quiet_nan(value)
+			? fc_get_qnan(dest, result)
+			: fc_get_snan(dest, result);
+	} else if (value->clss == FC_INF) {
+		return fc_get_inf(dest, result, value->sign);
 	}
 
 	/* set the descriptor of the new value */
-	result->desc = *desc;
+	result->desc = *dest;
 	result->clss = value->clss;
 	result->sign = value->sign;
 
 	/* when the mantissa sizes differ normalizing has to shift to align it.
 	 * this would change the exponent, which is unwanted. So calculate this
 	 * offset and add it */
-	int val_bias = (1 << (value->desc.exponent_size - 1)) - 1;
-	int res_bias = (1 << (desc->exponent_size - 1)) - 1;
+	int val_bias = (1 << (desc->exponent_size - 1)) - 1;
+	int res_bias = (1 << (dest->exponent_size - 1)) - 1;
 
-	int exp_offset = (res_bias - val_bias) - (value->desc.mantissa_size - desc->mantissa_size);
+	int exp_offset = res_bias - val_bias;
+	exp_offset    += dest->mantissa_size - dest->explicit_one
+	               - (desc->mantissa_size - desc->explicit_one);
 	char *temp = ALLOCAN(char, value_size);
 	sc_val_from_long(exp_offset, temp);
 	sc_add(_exp(value), temp, _exp(result));
 
-	/* _normalize expects normalized radix point */
+	/* normalize expects normalized radix point */
 	if (value->clss == FC_SUBNORMAL) {
 		_shift_lefti(_mant(value), 1, _mant(result));
 	} else if (value != result) {
 		memcpy(_mant(result), _mant(value), value_size);
-	} else {
-		memmove(_mant(result), _mant(value), value_size);
 	}
 
 	normalize(result, result, 0);
 	return result;
 }
 
-fp_value *fc_get_max(const float_descriptor_t *desc, fp_value *result)
+fp_value *fc_get_max(const float_descriptor_t *desc, fp_value *result, bool sign)
 {
 	if (result == NULL)
 		result = calc_buffer;
 
 	result->desc = *desc;
 	result->clss = FC_NORMAL;
-	result->sign = 0;
+	result->sign = sign;
 
 	sc_val_from_ulong((1 << desc->exponent_size) - 2, _exp(result));
-
-	sc_max_from_bits(desc->mantissa_size + 1, 0, _mant(result));
+	sc_max_from_bits(desc->mantissa_size+1-desc->explicit_one, 0, _mant(result));
 	_shift_lefti(_mant(result), ROUNDING_BITS, _mant(result));
-	return result;
-}
-
-fp_value *fc_get_min(const float_descriptor_t *desc, fp_value *result)
-{
-	if (result == NULL)
-		result = calc_buffer;
-
-	fc_get_max(desc, result);
-	result->sign = 1;
 	return result;
 }
 
@@ -957,10 +890,15 @@ fp_value *fc_get_snan(const float_descriptor_t *desc, fp_value *result)
 	result->clss = FC_NAN;
 	result->sign = 0;
 
-	sc_val_from_ulong((1 << desc->exponent_size) - 1, _exp(result));
+	sc_max_from_bits(desc->exponent_size, 0, _exp(result));
 
-	/* signaling NaN has non-zero mantissa with msb not set */
-	sc_val_from_ulong(1, _mant(result));
+	/* signaling NaN has msb in mantissa cleared */
+	sc_zero(_mant(result));
+	/* we still set our explicit one */
+	if (desc->explicit_one) {
+		sc_set_bit_at(_mant(result), desc->mantissa_size+ROUNDING_BITS-1);
+		sc_set_bit_at(_mant(result), desc->mantissa_size+ROUNDING_BITS-3);
+	}
 	return result;
 }
 
@@ -973,44 +911,36 @@ fp_value *fc_get_qnan(const float_descriptor_t *desc, fp_value *result)
 	result->clss = FC_NAN;
 	result->sign = 0;
 
-	sc_val_from_ulong((1 << desc->exponent_size) - 1, _exp(result));
+	sc_max_from_bits(desc->exponent_size, 0, _exp(result));
 
 	/* quiet NaN has the msb of the mantissa set, so shift one there */
-	sc_val_from_ulong(1, _mant(result));
-	/* mantissa_size >+< 1 because of two extra rounding bits */
-	_shift_lefti(_mant(result), desc->mantissa_size+1, _mant(result));
+	sc_zero(_mant(result));
+	sc_set_bit_at(_mant(result), desc->mantissa_size+ROUNDING_BITS-1);
+	if (desc->explicit_one)
+		sc_set_bit_at(_mant(result), desc->mantissa_size+ROUNDING_BITS-2);
 	return result;
 }
 
-fp_value *fc_get_plusinf(const float_descriptor_t *desc, fp_value *result)
+fp_value *fc_get_inf(const float_descriptor_t *desc, fp_value *result,
+                     bool sign)
 {
 	if (result == NULL)
 		result = calc_buffer;
 
 	result->desc = *desc;
 	result->clss = FC_INF;
-	result->sign = 0;
-
-	sc_val_from_ulong((1 << desc->exponent_size) - 1, _exp(result));
-
-	char *mant = _mant(result);
-	sc_val_from_ulong(0, mant);
-	if (desc->explicit_one)
-		sc_set_bit_at(mant, result->desc.mantissa_size + ROUNDING_BITS);
-	return result;
-}
-
-fp_value *fc_get_minusinf(const float_descriptor_t *desc, fp_value *result)
-{
-	result = fc_get_plusinf(desc, result);
-	result->sign = 1;
+	result->sign = sign;
+	sc_max_from_bits(desc->exponent_size, 0, _exp(result));
+	sc_zero(_mant(result));
+	// set the explicit one
+	sc_set_bit_at(_mant(result),
+				  (desc->mantissa_size - desc->explicit_one)+ROUNDING_BITS);
 	return result;
 }
 
 ir_relation fc_comp(fp_value const *const val_a, fp_value const *const val_b)
 {
-	/*
-	 * shortcut: if both values are identical, they are either
+	/* shortcut: if both values are identical, they are either
 	 * Unordered if NaN or equal
 	 */
 	if (val_a == val_b)
@@ -1108,8 +1038,9 @@ int fc_print(const fp_value *val, char *buf, int buflen, unsigned base)
 
 	case FC_PACKED:
 	default: {
-		char *mul_1 = (char*) alloca(calc_buffer_size);
-		return snprintf(buf, buflen, "%s", sc_print(pack(val, mul_1), value_size*4, SC_HEX, 0));
+		char *packed = (char*) alloca(calc_buffer_size);
+		pack(val, packed);
+		return snprintf(buf, buflen, "%s", sc_print(packed, value_size*4, SC_HEX, 0));
 	}
 	}
 }
@@ -1130,7 +1061,9 @@ unsigned char fc_sub_bits(const fp_value *value, unsigned num_bits,
 
 bool fc_zero_mantissa(const fp_value *value)
 {
-	return sc_get_lowest_set_bit(_mant(value)) == ROUNDING_BITS + value->desc.mantissa_size;
+	const float_descriptor_t *desc = &value->desc;
+	return sc_is_zero(_mant(value),
+	                  desc->mantissa_size+ ROUNDING_BITS-desc->explicit_one);
 }
 
 int fc_get_exponent(const fp_value *value)
@@ -1203,7 +1136,7 @@ void init_fltcalc(int precision)
 
 #if LDBL_MANT_DIG == 64
 		assert(sizeof(long double) == 12 || sizeof(long double) == 16);
-		long_double_desc = (float_descriptor_t) { 15, 63, 1 };
+		long_double_desc = (float_descriptor_t) { 15, 64, 1 };
 #elif LDBL_MANT_DIG == 53
 		assert(sizeof(long double) == 8);
 		long_double_desc = (float_descriptor_t) { 11, 52, 0 };

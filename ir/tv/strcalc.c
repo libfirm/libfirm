@@ -362,7 +362,7 @@ static void do_divmod(const char *rDividend, const char *divisor, char *quot,
 	}
 end:
 	/* sets carry if remainder is non-zero ??? */
-	carry_flag = !sc_is_zero(rem);
+	carry_flag = !sc_is_zero(rem, calc_buffer_size);
 
 	if (div_sign)
 		do_negate(quot, quot);
@@ -453,7 +453,7 @@ static void do_shr(const char *val1, char *buffer, long shift_cnt, int bitsize,
 
 	/* if shifting far enough the result is either 0 or -1 */
 	if (shift_cnt >= bitsize) {
-		if (!sc_is_zero(val1)) {
+		if (!sc_is_zero(val1, calc_buffer_size)) {
 			carry_flag = true;
 		}
 		memset(buffer, sign, calc_buffer_size);
@@ -820,14 +820,36 @@ void sc_set_bit_at(void *value, unsigned pos)
 	val[nibble] |= SHIFT(pos & 3);
 }
 
-bool sc_is_zero(const void *value)
+void sc_clear_bit_at(void *value, unsigned pos)
+{
+	char    *val    = (char*) value;
+	unsigned nibble = pos >> 2;
+
+	val[nibble] &= ~SHIFT(pos & 3);
+}
+
+bool sc_is_zero(const void *value, unsigned bits)
 {
 	const char* val = (const char *)value;
-	for (int counter = 0; counter < calc_buffer_size; ++counter) {
-		if (val[counter] != SC_0)
+	unsigned i;
+	for (i = 0; i < bits/SC_BITS; ++i) {
+		if (val[i] != SC_0)
 			return false;
 	}
-	return true;
+	char mask = max_digit[bits%SC_BITS];
+	return mask == 0 || (val[i] & mask) == SC_0;
+}
+
+bool sc_is_all_one(const void *value, unsigned bits)
+{
+	const char* val = (const char*)value;
+	unsigned i;
+	for (i = 0; i < bits/SC_BITS; ++i) {
+		if (val[i] != SC_F)
+			return false;
+	}
+	char mask = max_digit[bits%SC_BITS];
+	return mask == 0 || (val[i] & mask) == mask;
 }
 
 bool sc_is_negative(const void *value)

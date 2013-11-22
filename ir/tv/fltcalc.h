@@ -117,12 +117,10 @@ fp_value *fc_cast(const fp_value *val, const float_descriptor_t *desc, fp_value 
  * @return  The result pointer passed to the function. If this was NULL this returns
  *          a pointer to the internal accumulator buffer
  */
-fp_value *fc_get_min(const float_descriptor_t *desc, fp_value *result);
-fp_value *fc_get_max(const float_descriptor_t *desc, fp_value *result);
+fp_value *fc_get_max(const float_descriptor_t *desc, fp_value *result, bool sign);
 fp_value *fc_get_snan(const float_descriptor_t *desc, fp_value *result);
 fp_value *fc_get_qnan(const float_descriptor_t *desc, fp_value *result);
-fp_value *fc_get_plusinf(const float_descriptor_t *desc, fp_value *result);
-fp_value *fc_get_minusinf(const float_descriptor_t *desc, fp_value *result);
+fp_value *fc_get_inf(const float_descriptor_t *desc, fp_value *result, bool sign);
 /*@}*/
 
 bool fc_is_zero(const fp_value *a);

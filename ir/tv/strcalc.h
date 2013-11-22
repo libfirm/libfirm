@@ -227,8 +227,9 @@ ir_relation sc_comp(void const *val1, void const *val2);
 
 int sc_get_highest_set_bit(const void *value);
 int sc_get_lowest_set_bit(const void *value);
-bool sc_is_zero(const void *value);
 bool sc_is_negative(const void *value);
+bool sc_is_zero(const void *value, unsigned num_bits);
+bool sc_is_all_one(const void *value, unsigned num_bits);
 
 /**
  * Return the bits of a tarval at a given byte-offset.
@@ -274,6 +275,7 @@ int sc_get_bit_at(const void *value, unsigned pos);
 
 /** Set the bit at the specified position. */
 void sc_set_bit_at(void *value, unsigned pos);
+void sc_clear_bit_at(void *value, unsigned pos);
 
 /* Strange semantics */
 bool sc_had_carry(void);

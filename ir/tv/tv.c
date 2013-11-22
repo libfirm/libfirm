@@ -201,7 +201,7 @@ static const float_descriptor_t *get_descriptor(const ir_mode *mode)
 	return &mode->float_desc;
 }
 
-static ir_tarval *get_tarval_from_fp_value(fp_value *val, ir_mode *mode)
+static ir_tarval *get_tarval_from_fp_value(const fp_value *val, ir_mode *mode)
 {
 	const float_descriptor_t *desc          = get_descriptor(mode);
 	const int                 buffer_length = fc_get_buffer_length();
@@ -470,7 +470,7 @@ ir_tarval *get_tarval_max(ir_mode *mode)
 	switch (get_mode_sort(mode)) {
 	case irms_float_number: {
 		const float_descriptor_t *desc = get_descriptor(mode);
-		fc_get_max(desc, NULL);
+		fc_get_max(desc, NULL, false);
 		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 	}
 
@@ -494,7 +494,7 @@ ir_tarval *get_tarval_min(ir_mode *mode)
 	switch (get_mode_sort(mode)) {
 	case irms_float_number: {
 		const float_descriptor_t *desc = get_descriptor(mode);
-		fc_get_min(desc, NULL);
+		fc_get_max(desc, NULL, true);
 		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 	}
 
@@ -618,7 +618,7 @@ ir_tarval *get_tarval_plus_inf(ir_mode *mode)
 	if (get_mode_sort(mode) != irms_float_number)
 		panic("mode %F does not support +inf value", mode);
 	const float_descriptor_t *desc = get_descriptor(mode);
-	fc_get_plusinf(desc, NULL);
+	fc_get_inf(desc, NULL, false);
 	return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 }
 
@@ -627,7 +627,7 @@ ir_tarval *get_tarval_minus_inf(ir_mode *mode)
 	if (get_mode_sort(mode) != irms_float_number)
 		panic("mode %F does not support -inf value", mode);
 	const float_descriptor_t *desc = get_descriptor(mode);
-	fc_get_minusinf(desc, NULL);
+	fc_get_inf(desc, NULL, true);
 	return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 }
 

@@ -1450,7 +1450,7 @@ static void ia32_init(void)
 
 	/* note mantissa is 64bit but with explicitely encoded 1 so the really
 	 * usable part as counted by firm is only 63 bits */
-	ia32_mode_E = new_float_mode("E", irma_x86_extended_float, 15, 63,
+	ia32_mode_E = new_float_mode("E", irma_x86_extended_float, 15, 64,
 	                             ir_overflow_indefinite);
 	ia32_type_E = new_type_primitive(ia32_mode_E);
 	set_type_size_bytes(ia32_type_E, 12);
