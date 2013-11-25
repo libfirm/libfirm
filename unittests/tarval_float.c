@@ -2,7 +2,7 @@
 #include <assert.h>
 #include <math.h>
 #include "firm.h"
-#include "tv.h"
+#include "tv_t.h"
 #include "irmode.h"
 
 static void test_float(float v, ir_tarval *known)
@@ -47,6 +47,8 @@ int main(void)
 	test_float(INFINITY, get_mode_infinite(mode_F));
 	test_float(HUGE_VALF, NULL);
 	test_float(NAN, get_mode_NAN(mode_F));
+	test_float(FLT_MIN, get_tarval_small(mode_F));
+	test_float(FLT_EPSILON, get_tarval_epsilon(mode_F));
 	test_float(FLT_MIN * FLT_EPSILON, NULL); // subnormal
 
 	test_double(0, get_mode_null(mode_D));
@@ -59,6 +61,8 @@ int main(void)
 	test_double(HUGE_VAL, NULL);
 	test_double(INFINITY, get_mode_infinite(mode_D));
 	test_double(NAN, get_mode_NAN(mode_D));
+	test_double(DBL_MIN, get_tarval_small(mode_D));
+	test_double(DBL_EPSILON, get_tarval_epsilon(mode_D));
 	test_double(DBL_MIN * DBL_EPSILON, NULL); // subnormal
 
 #if LDBL_MANT_DIG == 64
@@ -81,6 +85,8 @@ int main(void)
 	test_ldouble(HUGE_VAL, NULL);
 	test_ldouble(INFINITY, get_mode_infinite(mode_E));
 	test_ldouble(NAN, get_mode_NAN(mode_E));
+	test_ldouble(LDBL_MIN, get_tarval_small(mode_E));
+	test_ldouble(LDBL_EPSILON, get_tarval_epsilon(mode_E));
 	test_ldouble(LDBL_MIN * LDBL_EPSILON, NULL); // subnormal
 
 	return 0;

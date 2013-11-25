@@ -124,6 +124,8 @@ fp_value *fc_get_max(const float_descriptor_t *desc, fp_value *result, bool sign
 fp_value *fc_get_snan(const float_descriptor_t *desc, fp_value *result);
 fp_value *fc_get_qnan(const float_descriptor_t *desc, fp_value *result);
 fp_value *fc_get_inf(const float_descriptor_t *desc, fp_value *result, bool sign);
+fp_value *fc_get_small(const float_descriptor_t *desc, fp_value *result);
+fp_value *fc_get_epsilon(const float_descriptor_t *desc, fp_value *result);
 /*@}*/
 
 bool fc_is_zero(const fp_value *a);

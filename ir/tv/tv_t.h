@@ -134,4 +134,8 @@ uint64_t get_tarval_uint64(ir_tarval *tv);
 
 bool tarval_is_uint64(ir_tarval *tv);
 
+ir_tarval *get_tarval_small(ir_mode *mode);
+
+ir_tarval *get_tarval_epsilon(ir_mode *mode);
+
 #endif /* FIRM_TV_TV_T_H */

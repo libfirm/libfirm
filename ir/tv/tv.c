@@ -513,6 +513,24 @@ ir_tarval *get_tarval_min(ir_mode *mode)
 	panic("invalid mode sort");
 }
 
+ir_tarval *get_tarval_small(ir_mode *mode)
+{
+	if (!mode_is_float(mode))
+		panic("mode %+F does not support small value");
+	const float_descriptor_t *desc = get_descriptor(mode);
+	fc_get_small(desc, NULL);
+	return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
+}
+
+ir_tarval *get_tarval_epsilon(ir_mode *mode)
+{
+	if (!mode_is_float(mode))
+		panic("mode %+F does not support small value");
+	const float_descriptor_t *desc = get_descriptor(mode);
+	fc_get_epsilon(desc, NULL);
+	return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
+}
+
 /** The bit pattern for the pointer NULL */
 static long _null_value = 0;
 

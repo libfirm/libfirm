@@ -838,6 +838,38 @@ fp_value *fc_get_max(const float_descriptor_t *desc, fp_value *result, bool sign
 	return result;
 }
 
+fp_value *fc_get_small(const float_descriptor_t *desc, fp_value *result)
+{
+	if (result == NULL)
+		result = calc_buffer;
+
+	result->desc = *desc;
+	result->clss = FC_NORMAL;
+	result->sign = false;
+	sc_val_from_ulong(1, _exp(result));
+	sc_zero(_mant(result));
+	sc_set_bit_at(_mant(result), (desc->mantissa_size - desc->explicit_one)
+	                             + ROUNDING_BITS);
+	return result;
+}
+
+fp_value *fc_get_epsilon(const float_descriptor_t *desc, fp_value *result)
+{
+	if (result == NULL)
+		result = calc_buffer;
+
+	result->desc = *desc;
+	result->clss = FC_NORMAL;
+	result->sign = false;
+
+	int exp_bias = (1 << (desc->exponent_size-1)) -1;
+	int effective_mantissa = desc->mantissa_size - desc->explicit_one;
+	sc_val_from_ulong(exp_bias - effective_mantissa, _exp(result));
+	sc_zero(_mant(result));
+	sc_set_bit_at(_mant(result), effective_mantissa + ROUNDING_BITS);
+	return result;
+}
+
 fp_value *fc_get_snan(const float_descriptor_t *desc, fp_value *result)
 {
 	if (result == NULL)
