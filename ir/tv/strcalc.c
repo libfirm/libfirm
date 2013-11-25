@@ -912,9 +912,7 @@ void sc_val_from_bits(unsigned char const *const bytes, unsigned from,
                       unsigned to, void *buffer)
 {
 	assert(from < to);
-
-	unsigned bit_size = to-from;
-	assert(bit_size/8 <= (unsigned)calc_buffer_size);
+	assert((to - from) / 8 <= (unsigned)calc_buffer_size);
 	assert(SC_BITS == 4);
 
 	if (buffer == NULL)
