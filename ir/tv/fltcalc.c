@@ -623,7 +623,8 @@ static void _trunc(const fp_value *a, fp_value *result)
 		return;
 	}
 
-	if (exp_val > (long)a->desc.mantissa_size) {
+	int effective_mantissa = a->desc.mantissa_size - a->desc.explicit_one;
+	if (exp_val > effective_mantissa) {
 		if (a != result)
 			memcpy(result, a, calc_buffer_size);
 		return;
@@ -633,7 +634,7 @@ static void _trunc(const fp_value *a, fp_value *result)
 	 * radix point if the mantissa had been shifted until exp == 0 */
 	char *temp = ALLOCAN(char, value_size);
 	sc_max_from_bits(1 + exp_val, 0, temp);
-	_shift_lefti(temp, a->desc.mantissa_size - exp_val + 2, temp);
+	_shift_lefti(temp, effective_mantissa - exp_val + ROUNDING_BITS, temp);
 
 	/* and the mask and return the result */
 	sc_and(_mant(a), temp, _mant(result));
@@ -1220,7 +1221,14 @@ fp_value *fc_rnd(const fp_value *a, fp_value *result)
 
 flt2int_result_t fc_flt2int(const fp_value *a, void *result, ir_mode *dst_mode)
 {
-	if (a->clss == FC_NORMAL) {
+	switch (a->clss) {
+	case FC_ZERO:
+		sc_zero(result);
+		return FLT2INT_OK;
+	case FC_INF:
+		return a->sign ? FLT2INT_NEGATIVE_OVERFLOW
+					   : FLT2INT_POSITIVE_OVERFLOW;
+	case FC_NORMAL:
 		if (a->sign && !mode_is_signed(dst_mode)) {
 			/* FIXME: for now we cannot convert this */
 			return FLT2INT_UNKNOWN;
@@ -1243,7 +1251,7 @@ flt2int_result_t fc_flt2int(const fp_value *a, void *result, ir_mode *dst_mode)
 						   : FLT2INT_POSITIVE_OVERFLOW;
 		}
 		int mantissa_size = a->desc.mantissa_size + ROUNDING_BITS;
-		int shift         = exp_val - mantissa_size;
+		int shift         = exp_val - (mantissa_size - a->desc.explicit_one);
 
 		if (tgt_bits < mantissa_size + 1)
 			tgt_bits = mantissa_size + 1;
@@ -1256,9 +1264,8 @@ flt2int_result_t fc_flt2int(const fp_value *a, void *result, ir_mode *dst_mode)
 			sc_neg(result, result);
 
 		return FLT2INT_OK;
-	} else if (a->clss == FC_ZERO) {
-		sc_zero(result);
-		return FLT2INT_OK;
+	case FC_NAN:
+		break;
 	}
 	return FLT2INT_UNKNOWN;
 }

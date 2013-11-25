@@ -1,14 +1,16 @@
 #include <assert.h>
 #include <float.h>
 #include <stdlib.h>
+#include <string.h>
 #include "tv_t.h"
 #include "firm.h"
 #include "util.h"
 
 static void check_mode(ir_mode *mode)
 {
-	ir_tarval *one        = get_mode_one(mode);
 	ir_tarval *zero       = get_mode_null(mode);
+	ir_tarval *one        = get_mode_one(mode);
+	ir_tarval *minus_one  = get_mode_minus_one(mode);
 	ir_tarval *minus_zero = tarval_neg(zero);
 	ir_tarval *two        = new_tarval_from_str("2", 1, mode);
 	ir_tarval *half       = new_tarval_from_str("0.5", 3, mode);
@@ -18,6 +20,8 @@ static void check_mode(ir_mode *mode)
 	ir_tarval *small      = get_tarval_small(mode);
 	ir_tarval *epsilon    = get_tarval_epsilon(mode);
 	ir_tarval *denorm     = tarval_mul(small, epsilon);
+	ir_tarval *min        = get_mode_min(mode);
+	ir_tarval *max        = get_mode_max(mode);
 	ir_tarval *values[] = {
 		one,
 		two,
@@ -28,13 +32,13 @@ static void check_mode(ir_mode *mode)
 		epsilon,
 		tarval_neg(small),
 		tarval_neg(epsilon),
-		get_mode_min(mode),
-		get_mode_max(mode),
+		min,
+		max,
 		zero,
 		minus_zero,
 		inf,
 		minus_inf,
-		get_mode_minus_one(mode),
+		minus_one,
 		nan,
 		denorm,
 		tarval_neg(denorm),
@@ -117,6 +121,32 @@ static void check_mode(ir_mode *mode)
 	/* some random arithmetics */
 	assert(tarval_div(one, two) == half);
 	assert(tarval_mul(two, one) == two);
+
+	ir_tarval *int_zero      = get_mode_null(mode_Is);
+	ir_tarval *int_one       = get_mode_one(mode_Is);
+	ir_tarval *int_minus_one = get_mode_minus_one(mode_Is);
+	ir_tarval *int_min       = get_mode_min(mode_Is);
+	ir_tarval *int_max       = get_mode_max(mode_Is);
+	assert(tarval_convert_to(zero, mode_Is) == int_zero);
+	assert(tarval_convert_to(minus_zero, mode_Is) == int_zero);
+	assert(tarval_convert_to(one, mode_Is) == int_one);
+	assert(tarval_convert_to(minus_one, mode_Is) == int_minus_one);
+	assert(tarval_convert_to(min, mode_Is) == int_min);
+	assert(tarval_convert_to(max, mode_Is) == int_max);
+	assert(tarval_convert_to(inf, mode_Is) == int_max);
+	assert(tarval_convert_to(minus_inf, mode_Is) == int_min);
+
+	static const char *const ints[] = {
+		"0", "1", "-1", "12345", "2", "4", "8", "16", "32", "64", "128", "256",
+		"512", "1024", "2048", "127", "2047"
+	};
+	for (unsigned i = 0; i < ARRAY_SIZE(ints); ++i) {
+		const char *str = ints[i];
+		ir_tarval *flt = new_tarval_from_str(str, strlen(str), mode);
+		ir_tarval *intt = new_tarval_from_str(str, strlen(str), mode_Is);
+		assert(tarval_convert_to(flt, mode_Is) == intt);
+		assert(tarval_convert_to(intt, mode) == flt);
+	}
 }
 
 int main(void)
@@ -127,7 +157,7 @@ int main(void)
 	check_mode(mode_F);
 #if LDBL_MANT_DIG == 64
 	ir_mode *mode_E = new_float_mode("E", irma_x86_extended_float, 15, 64,
-	                                 ir_overflow_indefinite);
+	                                 ir_overflow_min_max);
 	check_mode(mode_E);
 #endif
 }
