@@ -90,41 +90,37 @@ static ir_node *create_cond_set(ir_node *cond_value, ir_mode *dest_mode)
 
 static ir_node *lower_node(ir_node *node)
 {
-	dbg_info *dbgi  = get_irn_dbg_info(node);
-	ir_node  *block = get_nodes_block(node);
-	ir_mode  *mode  = lowered_mode;
-	ir_node  *res   = (ir_node*)get_irn_link(node);
-	ir_graph *irg;
+	ir_node *res = (ir_node *)get_irn_link(node);
 
 	if (res != NULL)
 		return res;
+
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_node  *block = get_nodes_block(node);
+	ir_mode  *mode  = lowered_mode;
+	ir_graph *irg   = get_irn_irg(node);
 
 	node = skip_Tuple(node);
 
 	assert(get_irn_mode(node) == mode_b);
 
-	irg = get_irn_irg(node);
 	switch (get_irn_opcode(node)) {
 	case iro_Phi: {
-		int       i, arity;
-		ir_node **in;
-		ir_node  *dummy;
-		ir_node  *new_phi;
+		int       arity = get_irn_arity(node);
+		ir_node **in    = ALLOCAN(ir_node*, arity);
+		ir_node  *dummy = new_r_Dummy(irg, mode);
 
-		arity = get_irn_arity(node);
-		in    = ALLOCAN(ir_node*, arity);
-		dummy = new_r_Dummy(irg, mode);
-		for (i = 0; i < arity; ++i) {
+		for (int i = 0; i < arity; ++i) {
 			in[i] = dummy;
 		}
-		new_phi = new_r_Phi(block, arity, in, mode);
+		ir_node *new_phi = new_r_Phi(block, arity, in, mode);
 		/* FIXME This does not correctly break cycles: The Phi might not be the
 		 * first in the recursion, so the caller(s) are some yet un-lowered
 		 * nodes and this Phi might have them (indirectly) as operands, so they
 		 * would be replaced twice. */
 		set_irn_link(node, new_phi);
 
-		for (i = 0; i < arity; ++i) {
+		for (int i = 0; i < arity; ++i) {
 			ir_node *in         = get_irn_n(node, i);
 			ir_node *lowered_in = lower_node(in);
 
@@ -222,9 +218,7 @@ static bool needs_mode_b_input(const ir_node *node, int input)
  */
 static void collect_needs_lowering(ir_node *node, void *env)
 {
-	int arity = get_irn_arity(node);
-	int i;
-	(void) env;
+	(void)env;
 
 	/* if the node produces mode_b then it is not a root (but should be
 	 * something our lower_node function can handle) */
@@ -235,25 +229,21 @@ static void collect_needs_lowering(ir_node *node, void *env)
 		return;
 	}
 
-	for (i = 0; i < arity; ++i) {
-		needs_lowering_t entry;
+	int arity = get_irn_arity(node);
+	for (int i = 0; i < arity; ++i) {
 		ir_node *in = get_irn_n(node, i);
 		if (get_irn_mode(in) != mode_b)
 			continue;
 		if (is_Cmp(in) && needs_mode_b_input(node, i))
 			continue;
 
-		entry.node  = node;
-		entry.input = i;
+		needs_lowering_t entry = { .node  = node, .input = i };
 		ARR_APP1(needs_lowering_t, needs_lowering, entry);
 	}
 }
 
 void ir_lower_mode_b(ir_graph *const irg, ir_mode *const nlowered_mode)
 {
-	size_t i;
-	size_t n;
-
 	lowered_mode = nlowered_mode;
 
 	/* edges are used by part_block_edges in the ir_create_cond_set variant. */
@@ -267,8 +257,8 @@ void ir_lower_mode_b(ir_graph *const irg, ir_mode *const nlowered_mode)
 
 	irg_walk_graph(irg, firm_clear_link, collect_needs_lowering, NULL);
 
-	n = ARR_LEN(needs_lowering);
-	for (i = 0; i < n; ++i) {
+	size_t n = ARR_LEN(needs_lowering);
+	for (size_t i = 0; i < n; ++i) {
 		const needs_lowering_t *entry   = &needs_lowering[i];
 		ir_node                *node    = entry->node;
 		int                     input   = entry->input;
