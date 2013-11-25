@@ -1046,8 +1046,9 @@ bool fc_can_lossless_conv_to(const fp_value *value,
 	int v        = fc_get_exponent(value) + exp_bias;
 	if (0 < v && v < (1 << desc->exponent_size) - 1) {
 		/* exponent can be encoded, now check the mantissa */
-		v = value->desc.mantissa_size + ROUNDING_BITS - sc_get_lowest_set_bit(_mant(value));
-		return v <= (int)desc->mantissa_size;
+		v = (value->desc.mantissa_size - value->desc.explicit_one)
+		    + ROUNDING_BITS - sc_get_lowest_set_bit(_mant(value));
+		return v <= desc->mantissa_size - desc->explicit_one;
 	}
 	return false;
 }
