@@ -691,6 +691,10 @@ static void write_entity(write_env_t *env, ir_entity *ent)
 
 	write_type(env, type);
 	write_type(env, owner);
+	if (is_alias_entity(ent)) {
+		ir_entity *aliased = get_entity_alias(ent);
+		write_entity(env, aliased);
+	}
 
 	fputc('\t', env->file);
 	switch ((ir_entity_kind)ent->entity_kind) {
