@@ -1765,6 +1765,7 @@ static void read_type(read_env_t *env)
 	case tpo_primitive: {
 		ir_mode *mode = read_mode_ref(env);
 		type = new_type_primitive(mode);
+		set_type_size_bytes(type, size);
 		goto finish_type;
 	}
 
