@@ -2358,6 +2358,14 @@ static void compute_Proj(node_t *node)
 		return;
 	}
 
+	ir_mode *mode = get_irn_mode(proj);
+
+	if (mode == mode_M) {
+		/* mode M is always bottom */
+		node->type.tv = tarval_bottom;
+		return;
+	}
+
 	ir_node *pred = get_Proj_pred(proj);
 
 	if (get_irn_node(pred)->type.tv == tarval_top && !is_Cond(pred) && !is_Switch(pred)) {
@@ -2366,13 +2374,7 @@ static void compute_Proj(node_t *node)
 		return;
 	}
 
-	ir_mode *mode = get_irn_mode(proj);
-
-	if (mode == mode_M) {
-		/* mode M is always bottom */
-		node->type.tv = tarval_bottom;
-		return;
-	} else if (mode == mode_X) {
+	if (mode == mode_X) {
 		/* handle mode_X nodes */
 		switch (get_irn_opcode(pred)) {
 		case iro_Start:
