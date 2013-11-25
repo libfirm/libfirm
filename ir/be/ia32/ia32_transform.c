@@ -3193,7 +3193,7 @@ static void find_const_transform(x86_condition_code_t cc,
 			res->num_steps = step;
 			return;
 		default:
-			if (!tarval_is_single_bit(t)) {
+			if (get_tarval_popcount(t) != 1) {
 				res->steps[step].transform = SETCC_TR_AND;
 				res->steps[step].val       = v;
 				++step;

@@ -652,14 +652,6 @@ FIRM_API char *get_tarval_bitpattern(ir_tarval *tv);
 FIRM_API unsigned char get_tarval_sub_bits(ir_tarval *tv, unsigned byte_ofs);
 
 /**
- * Returns non-zero if a given (integer) tarval has only one single bit
- * set.
- *
- * @param tv    the tarval
- */
-FIRM_API int tarval_is_single_bit(ir_tarval *tv);
-
-/**
  * Returns the number of set bits in a given (integer) tarval.
  *
  * @param tv    the tarval

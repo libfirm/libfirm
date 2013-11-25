@@ -3925,7 +3925,7 @@ static bool is_single_bit(const ir_node *node)
 		}
 	} else if (is_Const(node)) {
 		ir_tarval *tv = get_Const_tarval(node);
-		return tarval_is_single_bit(tv);
+		return get_tarval_popcount(tv) == 1;
 	}
 	return false;
 }
@@ -4223,7 +4223,7 @@ is_bittest: {
 			ir_node *and1 = get_And_right(left);
 			if (is_Const(and1)) {
 				ir_tarval *tv = get_Const_tarval(and1);
-				if (tarval_is_single_bit(tv)) {
+				if (get_tarval_popcount(tv) == 1) {
 					ir_node *flipped = flips_bit(and0, tv);
 					if (flipped != NULL) {
 						dbg_info *dbgi  = get_irn_dbg_info(left);
@@ -4494,7 +4494,7 @@ is_bittest: {
 							return c1;
 						}
 
-						if (tarval_is_single_bit(tv)) {
+						if (get_tarval_popcount(tv) == 1) {
 							/*
 							 * optimization for AND:
 							 * Optimize:
@@ -4652,7 +4652,7 @@ is_bittest: {
 			if (is_Const(c)) {
 				ir_tarval *tv = get_Const_tarval(c);
 
-				if (tarval_is_single_bit(tv)) {
+				if (get_tarval_popcount(tv) == 1) {
 					/* special case: (x % 2^n) CMP 0 ==> x & (2^n-1) CMP 0 */
 					ir_node *v    = get_binop_left(op);
 					ir_node *blk  = get_nodes_block(op);

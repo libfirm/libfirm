@@ -1371,27 +1371,6 @@ unsigned char get_tarval_sub_bits(ir_tarval *tv, unsigned byte_ofs)
 	}
 }
 
-int tarval_is_single_bit(ir_tarval *tv)
-{
-	if (!mode_is_int(tv->mode))
-		return 0;
-
-	int l    = get_mode_size_bytes(tv->mode);
-	int bits = 0;
-	for (int i = l - 1; i >= 0; --i) {
-		unsigned char v = get_tarval_sub_bits(tv, (unsigned)i);
-
-		/* check for more than one bit in these */
-		if (v) {
-			if (v & (v-1))
-				return 0;
-			if (++bits > 1)
-				return 0;
-		}
-	}
-	return bits;
-}
-
 int get_tarval_popcount(ir_tarval *tv)
 {
 	if (!mode_is_int(tv->mode))
