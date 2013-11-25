@@ -1040,7 +1040,7 @@ ir_tarval *tarval_abs(ir_tarval *a)
 		return a;
 
 	case irms_float_number:
-		if (fc_is_negative((fp_value const*)a)) {
+		if (fc_is_negative((const fp_value*)a->value)) {
 			fc_neg((const fp_value*) a->value, NULL);
 			return get_tarval_overflow(fc_get_buffer(), fc_get_buffer_length(), a->mode);
 		}
