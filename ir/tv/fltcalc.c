@@ -518,7 +518,7 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result)
 			fc_get_qnan(&a->desc, result);
 			fc_exact = false;
 		} else {
-			/* 0/x -> a */
+			/* 0/x -> 0 */
 			if (a != result)
 				memcpy(result, a, calc_buffer_size);
 			result->sign = res_sign;
