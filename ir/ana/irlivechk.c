@@ -219,7 +219,7 @@ lv_chk_t *lv_chk_new(ir_graph *irg)
 	/* compute back edge chains */
 	compute_back_edge_chains(res);
 
-#ifndef NDEBUG
+#ifdef DEBUG_libfirm
 	DBG((res->dbg, LEVEL_1, "liveness chk in %+F\n", irg));
 	for (int i = res->n_blocks; i-- > 0; ) {
 		const ir_node   *irn = (const ir_node*) dfs_get_pre_num_node(res->dfs, i);
