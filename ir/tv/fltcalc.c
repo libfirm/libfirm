@@ -1263,7 +1263,7 @@ flt2int_result_t fc_flt2int(const fp_value *a, void *result, ir_mode *dst_mode)
 	return FLT2INT_UNKNOWN;
 }
 
-int fc_is_exact(void)
+bool fc_is_exact(void)
 {
 	return fc_exact;
 }

@@ -251,7 +251,7 @@ unsigned char fc_sub_bits(const fp_value *val, unsigned num_bit, unsigned byte_o
 /**
  * Returns non-zero if the result of the last operation was exact.
  */
-int fc_is_exact(void);
+bool fc_is_exact(void);
 
 void init_fltcalc(int precision);
 void finish_fltcalc(void);
