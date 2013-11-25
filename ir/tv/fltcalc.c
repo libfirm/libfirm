@@ -487,8 +487,9 @@ static void _fmul(const fp_value *a, const fp_value *b, fp_value *result)
 	 * values are normalized they both have the same amount of these digits,
 	 * which has to be restored by proper shifting
 	 * because of the rounding bits */
-	_shift_righti(_mant(result), result->desc.mantissa_size+ROUNDING_BITS,
-	              _mant(result));
+	_shift_righti(_mant(result),
+	              (result->desc.mantissa_size - result->desc.explicit_one)
+	              +ROUNDING_BITS, _mant(result));
 	bool sticky = sc_had_carry();
 	fc_exact &= !sticky;
 
@@ -574,8 +575,9 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result)
 	 * are always zero because the values are all normalized) the divisor
 	 * can be shifted right instead to achieve the same result */
 	char *dividend = ALLOCAN(char, value_size);
-	_shift_lefti(_mant(a), result->desc.mantissa_size + ROUNDING_BITS,
-	             dividend);
+	_shift_lefti(_mant(a),
+	             (result->desc.mantissa_size - result->desc.explicit_one)
+	             + ROUNDING_BITS, dividend);
 
 	char *divisor = ALLOCAN(char, value_size);
 	_shift_righti(_mant(b), 1, divisor);
