@@ -1440,7 +1440,7 @@ unsigned tarval_ieee754_get_exact(void)
 	return fc_is_exact();
 }
 
-int tarval_is_NaN(ir_tarval *tv)
+int tarval_is_nan(ir_tarval *tv)
 {
 	if (!mode_is_float(tv->mode))
 		return 0;

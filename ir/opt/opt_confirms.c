@@ -232,7 +232,7 @@ static interval_t *get_interval_from_tv(interval_t *iv, ir_tarval *tv)
 		}
 	}
 
-	if (mode_is_float(mode) && tarval_is_NaN(tv)) {
+	if (mode_is_float(mode) && tarval_is_nan(tv)) {
 		/* arg, we cannot handle NaN's. */
 		iv->min   = tarval_bad;
 		iv->max   = tarval_bad;
@@ -275,7 +275,7 @@ static interval_t *get_interval(interval_t *iv, ir_node *bound, ir_relation rela
 		return NULL;
 	}
 
-	if (mode_is_float(mode) && tarval_is_NaN(tv)) {
+	if (mode_is_float(mode) && tarval_is_nan(tv)) {
 		/* arg, we cannot handle NaN's. */
 		iv->min   = tarval_bad;
 		iv->max   = tarval_bad;

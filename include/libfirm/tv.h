@@ -713,7 +713,7 @@ FIRM_API unsigned tarval_ieee754_get_exact(void);
  *
  * @param tv    the tarval
  */
-FIRM_API int tarval_is_NaN(ir_tarval *tv);
+FIRM_API int tarval_is_nan(ir_tarval *tv);
 
 /**
  * Check if its the a floating point +inf.
