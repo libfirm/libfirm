@@ -1594,6 +1594,13 @@ static ir_node *gen_Load(ir_node *node)
 	return new_load;
 }
 
+static ir_node *gen_Unknown(ir_node *node)
+{
+	/* for now, there should be more efficient ways to do this */
+	ir_node *block = be_transform_node(get_nodes_block(node));
+	return new_bd_amd64_Xor0(NULL, block);
+}
+
 static const unsigned pn_amd64_mem = 2;
 
 static ir_node *gen_Proj_Load(ir_node *node)
@@ -1685,6 +1692,7 @@ static void amd64_register_transformers(void)
 	be_set_transform_function(op_Store,    gen_Store);
 	be_set_transform_function(op_Sub,      gen_Sub);
 	be_set_transform_function(op_Switch,   gen_Switch);
+	be_set_transform_function(op_Unknown,  gen_Unknown);
 
 	be_set_transform_proj_function(op_Call,   gen_Proj_Call);
 	be_set_transform_proj_function(op_Cond,   be_duplicate_node);
