@@ -2890,7 +2890,7 @@ static ir_node *gen_Cmp(ir_node *node)
 
 		/* use 32bit compare mode if possible since the opcode is smaller */
 		if (am.op_type == ia32_Normal &&
-			be_upper_bits_clean(and_left, cmp_mode) &&
+		    be_upper_bits_clean(and_left, cmp_mode) &&
 		    be_upper_bits_clean(and_right, cmp_mode)) {
 			cmp_mode = ia32_mode_gp;
 		}
