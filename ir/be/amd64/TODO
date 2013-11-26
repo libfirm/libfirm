@@ -1,0 +1,26 @@
+amd64 backend TODO:
+Correctness:
+- Implement 32/64bit floatingpoint with SSE instructions
+- Transform to Neg-Add in finish phase if should_be_same is not fulfilled.
+- Implement more builtins (libgcc lacks several of them that gcc provides
+  natively on amd64 so cparser/libfirm when linking to the compilerlib fallback)
+- (Support 80bit long double with x87 instructions)
+- Support ASM node
+- Imm32 are sign extended in 64bit ops, we incorrectly match them as 32bit
+  unsigned.
+
+Improve Quality:
+- Immediate32 matching could be better and match SymConst, Add(SymConst, Const)
+  combinations where possible. Be carefull with PIC code this may usually not
+  be legal!
+- Match Immediate + Address mode for Cmp
+- Support swapping of cmp arguments (see ins_permuted in ia32 backend)
+- Support Read-Modify-Store operations (aka destination address mode)
+- Leave out labels that are not jumped at (improves assembly readability, see
+  ia32 backend output)
+- Align certain labels if beneficial (see ia32 backend, compare with clang/gcc)
+- Implement CMov/Set and announce this in mux_allowed callback
+- We always Spill/Reload 64bit, we should improve the spiller to allow smaller
+  spills where possible.
+- Perform some benchmark comparison with clang/gcc and distill more issues to
+  put on this list.
