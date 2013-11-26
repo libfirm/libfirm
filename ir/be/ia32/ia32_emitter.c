@@ -761,6 +761,11 @@ static x86_condition_code_t determine_final_cc(const ir_node *node,
 	const ia32_attr_t *flags_attr;
 	flags = skip_Proj(flags);
 
+	/* Permuted operands of a test instruction do not change the result. */
+	if (is_ia32_Test(flags)) {
+		return cc;
+	}
+
 	if (is_ia32_Sahf(flags)) {
 		ir_node *cmp = get_irn_n(flags, n_ia32_Sahf_val);
 		if (!(is_ia32_FucomFnstsw(cmp) || is_ia32_FucomppFnstsw(cmp) || is_ia32_FtstFnstsw(cmp))) {
