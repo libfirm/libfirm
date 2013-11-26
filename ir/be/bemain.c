@@ -322,6 +322,11 @@ ir_type *be_get_type_long_double(void)
 	return be_get_backend_param()->type_long_double;
 }
 
+float_int_conversion_overflow_style_t be_get_float_int_overflow(void)
+{
+	return be_get_backend_param()->float_int_overflow;
+}
+
 /**
  * Initializes the main environment for the backend.
  *

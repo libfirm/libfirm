@@ -192,6 +192,9 @@ FIRM_API ir_type *be_get_type_unsigned_long_long(void);
 /** Returns type used for long double or NULL if none available. */
 FIRM_API ir_type *be_get_type_long_double(void);
 
+/** Returns the backend behaviour on float to integer conversion overflow. */
+FIRM_API float_int_conversion_overflow_style_t be_get_float_int_overflow(void);
+
 /**
  * Returns the backend configuration parameter.
  *
