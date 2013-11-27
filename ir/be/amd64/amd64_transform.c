@@ -308,7 +308,8 @@ static amd64_insn_mode_t get_insn_mode_from_mode(const ir_mode *mode)
 }
 
 static bool match_immediate_32(amd64_imm32_t *imm, const ir_node *op,
-                               bool can_match_ip_relative)
+                               bool can_match_ip_relative,
+                               bool upper32_dont_care)
 {
 	assert(mode_needs_gp_reg(get_irn_mode(op)));
 	assert(imm->offset == 0 && imm->entity == NULL);
@@ -320,6 +321,11 @@ static bool match_immediate_32(amd64_imm32_t *imm, const ir_node *op,
 		int32_t val  = (int32_t)lval;
 		if ((long)val != lval)
 			return false;
+		/** the immediate value is signed extended to 64bit, sometimes
+		 * this is not what we want. */
+		if (!upper32_dont_care && val < 0
+		    && !mode_is_signed(get_tarval_mode(tv)))
+		    return false;
 		imm->offset = val;
 		return true;
 	} else if (can_match_ip_relative && is_Address(op)) {
@@ -374,6 +380,7 @@ static void match_binop(amd64_args_t *args, ir_node *block,
 
 	bool use_am        = flags & match_am;
 	bool use_immediate = flags & match_immediate;
+	bool mode_neutral  = flags & match_mode_neutral;
 
 	unsigned mode_bits = get_mode_size_bits(mode);
 	if (mode_bits == 8 || mode_bits == 16)
@@ -381,7 +388,7 @@ static void match_binop(amd64_args_t *args, ir_node *block,
 	args->attr.base.insn_mode = get_insn_mode_from_mode(mode);
 
 	/* TODO: legalize phase */
-	if (flags & match_mode_neutral) {
+	if (mode_neutral) {
 		op1 = skip_downconv(op1);
 		op2 = skip_downconv(op2);
 	} else {
@@ -391,7 +398,8 @@ static void match_binop(amd64_args_t *args, ir_node *block,
 
 	ir_node *load;
 	ir_node *op;
-	if (use_immediate && match_immediate_32(&args->attr.u.immediate, op2, false)) {
+	if (use_immediate
+	    && match_immediate_32(&args->attr.u.immediate, op2, false, mode_neutral)) {
 		/* fine, we found an immediate */
 		args->attr.base.base.op_mode = AMD64_OP_REG_IMM;
 		args->in[args->arity++]      = be_transform_node(op1);
@@ -1076,6 +1084,7 @@ static ir_node *gen_Call(ir_node *node)
 		ir_node *in[] = { new_value, incsp, new_mem };
 		ir_node *store = new_bd_amd64_Store(dbgi, new_block, ARRAY_SIZE(in), in,
 		                                    &attr);
+		arch_set_irn_register_reqs_in(store, reg_reg_mem_reqs);
 		set_irn_pinned(store, op_pin_state_floats);
 		sync_ins[sync_arity++] = store;
 	}
@@ -1094,7 +1103,7 @@ static ir_node *gen_Call(ir_node *node)
 	memset(&addr, 0, sizeof(addr));
 	addr.mem_input = NO_INPUT;
 	amd64_op_mode_t op_mode;
-	if (match_immediate_32(&addr.immediate, callee, true)) {
+	if (match_immediate_32(&addr.immediate, callee, true, true)) {
 		op_mode = AMD64_OP_CALL_IMM32;
 	} else if (source_am_possible(block, callee, NULL)) {
 		/* TODO: check condition, can't other call inputs be dependent

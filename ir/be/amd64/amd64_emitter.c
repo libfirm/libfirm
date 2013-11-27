@@ -176,7 +176,7 @@ static void amd64_emit_immediate32(const amd64_imm32_t *const imm)
 		if (imm->entity != NULL) {
 			be_emit_irprintf("%+" PRId32, imm->offset);
 		} else {
-			be_emit_irprintf("0x%" PRIX32, imm->offset);
+			be_emit_irprintf("%" PRId32, imm->offset);
 		}
 	}
 }
