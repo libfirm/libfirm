@@ -58,16 +58,13 @@ static bool can_empty_block(ir_node *block)
  */
 static ir_node *walk_to_projx(ir_node *start, const ir_node *dependency)
 {
-	int arity;
-	int i;
-
 	/* No need to find the conditional block if this block cannot be emptied and
 	 * therefore not moved */
 	if (!can_empty_block(start)) return NULL;
 
-	arity = get_irn_arity(start);
-	for (i = 0; i < arity; ++i) {
-		ir_node *pred = get_irn_n(start, i);
+	int arity = get_irn_arity(start);
+	for (int i = 0; i < arity; ++i) {
+		ir_node *pred       = get_irn_n(start, i);
 		ir_node *pred_block = get_nodes_block(skip_Proj(pred));
 
 		if (pred_block == dependency) {
@@ -150,7 +147,7 @@ static ir_node *copy_to(ir_node *node, ir_node *src_block, int i)
 static void rewire(ir_node *node, int i, int j, ir_node *new_pred)
 {
 	int arity = get_irn_arity(node);
-	ir_node **ins = ALLOCAN(ir_node*, arity-1);
+	ir_node **ins = ALLOCAN(ir_node*, arity - 1);
 	int k;
 
 	int l = 0;
@@ -171,17 +168,13 @@ static void split_block(ir_node *block, int i, int j)
 	ir_node  *pred_block = get_Block_cfgpred_block(block, i);
 	int       arity      = get_Block_n_cfgpreds(block);
 	ir_node **ins        = ALLOCAN(ir_node*, arity + 1);
-	int       new_pred_arity;
-	ir_node  *phi;
-	ir_node  *next;
-	ir_node **pred_ins;
-	int       k;
 
 	DB((dbg, LEVEL_1, "Splitting predecessor %d of predecessor %d of %+F\n", j, i, block));
 
-	for (phi = get_Block_phis(block); phi != NULL; phi = get_Phi_next(phi)) {
+	for (ir_node *phi = get_Block_phis(block); phi != NULL; phi = get_Phi_next(phi)) {
 		ir_node *copy = copy_to(get_irn_n(phi, i), pred_block, j);
 
+		int k;
 		for (k = 0; k < i; ++k) ins[k] = get_irn_n(phi, k);
 		ins[k++] = copy;
 		for (; k < arity; ++k) ins[k] = get_irn_n(phi, k);
@@ -189,16 +182,17 @@ static void split_block(ir_node *block, int i, int j)
 		set_irn_in(phi, k, ins);
 	}
 
+	int k;
 	for (k = 0; k < i; ++k) ins[k] = get_Block_cfgpred(block, k);
 	ins[k++] = get_irn_n(pred_block, j);
 	for (; k < arity; ++k) ins[k] = get_Block_cfgpred(block, k);
 	ins[k++] = get_Block_cfgpred(block, i);
 	set_irn_in(block, k, ins);
 
-	new_pred_arity = get_irn_arity(pred_block) - 1;
-	pred_ins       = ALLOCAN(ir_node*, new_pred_arity);
+	int       new_pred_arity = get_irn_arity(pred_block) - 1;
+	ir_node **pred_ins       = ALLOCAN(ir_node*, new_pred_arity);
 
-	for (phi = get_Block_phis(pred_block); phi != NULL; phi = next) {
+	for (ir_node *next, *phi = get_Block_phis(pred_block); phi != NULL; phi = next) {
 		next = get_Phi_next(phi);
 		for (k = 0; k != j;              ++k) pred_ins[k] = get_irn_n(phi, k);
 		for (;      k != new_pred_arity; ++k) pred_ins[k] = get_irn_n(phi, k + 1);
@@ -277,7 +271,7 @@ restart:;
 
 		for (ir_cdep *cdep = find_cdep(pred0); cdep != NULL; cdep = get_cdep_next(cdep)) {
 			const ir_node *dependency = get_cdep_node(cdep);
-			ir_node *projx0 = walk_to_projx(pred0, dependency);
+			ir_node       *projx0     = walk_to_projx(pred0, dependency);
 
 			if (projx0 == NULL) continue;
 
@@ -431,10 +425,7 @@ static void collect_phis(ir_node *node, void *env)
 
 void opt_if_conv_cb(ir_graph *irg, arch_allow_ifconv_func callback)
 {
-	walker_env            env;
-
-	env.allow_ifconv = callback;
-	env.changed      = false;
+	walker_env env = { .allow_ifconv = callback, .changed = false };
 
 	assure_irg_properties(irg,
 		IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
