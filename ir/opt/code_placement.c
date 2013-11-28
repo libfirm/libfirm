@@ -34,7 +34,7 @@ static bool is_block_reachable(ir_node *block)
  * same Block as its dominance-deepest Input.
  *
  * move_out_of_loops() expects that place_floats_early() have placed
- * all "living" nodes into a living block. That's why we must
+ * all "living" nodes into a living block. That is why we must
  * move nodes in dead block with "live" successors into a valid
  * block.
  * We move them just into the same block as its successor (or
@@ -44,14 +44,6 @@ static bool is_block_reachable(ir_node *block)
  */
 static void place_floats_early(ir_node *n, waitq *worklist)
 {
-	int       i;
-	int       arity;
-	ir_node  *block;
-	int       new_depth;
-	ir_graph *irg;
-	ir_node  *start_block;
-	ir_node  *new_block;
-
 	/* we must not run into an infinite loop */
 	if (irn_visited_else_mark(n))
 		return;
@@ -62,14 +54,14 @@ static void place_floats_early(ir_node *n, waitq *worklist)
 	 * However we have to break cycles somewhere. Relying on the visited flag
 	 * will result in nodes not being moved up despite their place_floats_early
 	 * call.
-	 * Instead we break cycles at pinned nodes which won't move anyway:
+	 * Instead we break cycles at pinned nodes which will not move anyway:
 	 * This works because in firm each cycle contains a Phi or Block node
 	 * (which are pinned)
 	 */
 	if (get_irn_pinned(n) != op_pin_state_floats || only_used_by_keepalive(n)) {
-		/* we can't move pinned nodes */
-		arity = get_irn_arity(n);
-		for (i = 0; i < arity; ++i) {
+		/* we cannot move pinned nodes */
+		int arity = get_irn_arity(n);
+		for (int i = 0; i < arity; ++i) {
 			ir_node *pred = get_irn_n(n, i);
 			pdeq_putr(worklist, pred);
 		}
@@ -78,20 +70,20 @@ static void place_floats_early(ir_node *n, waitq *worklist)
 		return;
 	}
 
-	block = get_nodes_block(n);
+	ir_node *block = get_nodes_block(n);
 
 	/* first move predecessors up */
-	arity = get_irn_arity(n);
+	int arity = get_irn_arity(n);
 	place_floats_early(block, worklist);
-	for (i = 0; i < arity; ++i) {
+	for (int i = 0; i < arity; ++i) {
 		ir_node *pred = get_irn_n(n, i);
 		place_floats_early(pred, worklist);
 	}
 
 	/* determine earliest point */
-	new_block = NULL;
-	new_depth = 0;
-	for (i = 0; i < arity; ++i) {
+	ir_node *new_block = NULL;
+	int      new_depth = 0;
+	for (int i = 0; i < arity; ++i) {
 		ir_node *pred       = get_irn_n(n, i);
 		ir_node *pred_block = get_nodes_block(pred);
 		int      pred_depth = get_Block_dom_depth(pred_block);
@@ -102,8 +94,8 @@ static void place_floats_early(ir_node *n, waitq *worklist)
 	}
 
 	/* avoid moving nodes into the start block if we are not in the backend */
-	irg         = get_irn_irg(n);
-	start_block = get_irg_start_block(irg);
+	ir_graph *irg         = get_irn_irg(n);
+	ir_node  *start_block = get_irg_start_block(irg);
 	if (new_block == start_block && block != start_block &&
 		!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
 		assert(get_irn_n_edges_kind(start_block, EDGE_KIND_BLOCK) == 1);
@@ -130,7 +122,7 @@ static void place_early(ir_graph *irg, waitq *worklist)
 	assert(worklist);
 	inc_irg_visited(irg);
 
-	/* this inits the worklist */
+	/* this initializes the worklist */
 	place_floats_early(get_irg_end(irg), worklist);
 
 	/* Work the content of the worklist. */
@@ -168,7 +160,8 @@ static ir_node *calc_dom_dca(ir_node *dca, ir_node *block)
 	}
 
 	while (block != dca) {
-		block = get_Block_idom(block); dca = get_Block_idom(dca);
+		block = get_Block_idom(block);
+		dca   = get_Block_idom(dca);
 	}
 	return dca;
 }
@@ -188,9 +181,8 @@ static ir_node *consumer_dom_dca(ir_node *dca, ir_node *consumer,
 		   blocks through which the Phi-node reaches producer */
 		ir_node *phi_block = get_nodes_block(consumer);
 		int      arity     = get_irn_arity(consumer);
-		int      i;
 
-		for (i = 0;  i < arity; i++) {
+		for (int i = 0;  i < arity; i++) {
 			if (get_Phi_pred(consumer, i) == producer) {
 				ir_node *new_block = get_Block_cfgpred_block(phi_block, i);
 				if (is_Bad(new_block))
@@ -255,7 +247,7 @@ static ir_node *get_deepest_common_dom_ancestor(ir_node *node, ir_node *dca)
 	foreach_out_edge(node, edge) {
 		ir_node *succ = get_edge_src_irn(edge);
 
-		/* keepalive edges are special and don't respect the dominance */
+		/* keepalive edges are special and do not respect the dominance */
 		if (is_End(succ))
 			continue;
 
@@ -314,9 +306,6 @@ static void set_projs_block(ir_node *node, ir_node *block)
  */
 static void place_floats_late(ir_node *n, pdeq *worklist)
 {
-	ir_node *block;
-	ir_node *dca;
-
 	if (irn_visited_else_mark(n))
 		return;
 
@@ -338,25 +327,24 @@ static void place_floats_late(ir_node *n, pdeq *worklist)
 	/* no point in moving Projs around, they are moved with their predecessor */
 	if (is_Proj(n))
 		return;
-	/* some nodes should simply stay in the startblock */
+	/* some nodes should simply stay in the start block */
 	if (is_irn_start_block_placed(n)) {
 		assert(get_nodes_block(n) == get_irg_start_block(get_irn_irg(n)));
 		return;
 	}
 
-	block = get_nodes_block(n);
+	ir_node *block = get_nodes_block(n);
 	assert(is_block_reachable(block));
 
 	/* deepest common ancestor in the dominator tree of all nodes'
 	   blocks depending on us; our final placement has to dominate
 	   DCA. */
-	dca = get_deepest_common_dom_ancestor(n, NULL);
-	if (dca != NULL) {
-		set_nodes_block(n, dca);
-		move_out_of_loops(n, block);
-		if (get_irn_mode(n) == mode_T) {
-			set_projs_block(n, get_nodes_block(n));
-		}
+	ir_node *dca = get_deepest_common_dom_ancestor(n, NULL);
+	assert(dca != NULL);
+	set_nodes_block(n, dca);
+	move_out_of_loops(n, block);
+	if (get_irn_mode(n) == mode_T) {
+		set_projs_block(n, get_nodes_block(n));
 	}
 }
 
@@ -385,8 +373,6 @@ static void place_late(ir_graph *irg, waitq *worklist)
 /* Code Placement. */
 void place_code(ir_graph *irg)
 {
-	waitq *worklist;
-
 	/* Handle graph state */
 	assure_irg_properties(irg,
 		IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES |
@@ -397,7 +383,7 @@ void place_code(ir_graph *irg)
 
 	/* Place all floating nodes as early as possible. This guarantees
 	 a legal code placement. */
-	worklist = new_waitq();
+	waitq *worklist = new_waitq();
 	place_early(irg, worklist);
 
 	/* While GCSE might place nodes in unreachable blocks,
