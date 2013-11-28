@@ -857,11 +857,6 @@ bool sc_is_negative(const void *value)
 	return do_sign((const char*) value) == -1;
 }
 
-bool sc_had_carry(void)
-{
-	return carry_flag;
-}
-
 unsigned char sc_sub_bits(const void *value, int len, unsigned byte_ofs)
 {
 	/* the current scheme uses one byte to store a nibble */
@@ -1237,7 +1232,7 @@ void sc_mul(const void *value1, const void *value2, void *buffer)
 	}
 }
 
-void sc_div(const void *value1, const void *value2, void *buffer)
+bool sc_div(const void *value1, const void *value2, void *buffer)
 {
 	/* temp buffer holding unused result of divmod */
 	char *unused_res = (char*) alloca(calc_buffer_size);
@@ -1250,6 +1245,7 @@ void sc_div(const void *value1, const void *value2, void *buffer)
 	if ((buffer != NULL) && (buffer != calc_buffer)) {
 		memcpy(buffer, calc_buffer, calc_buffer_size);
 	}
+	return carry_flag;
 }
 
 void sc_mod(const void *value1, const void *value2, void *buffer)
@@ -1276,7 +1272,7 @@ void sc_divmod(const void *value1, const void *value2, void *div_buffer, void *m
 }
 
 
-void sc_shlI(const void *val1, long shift_cnt, int bitsize, bool sign, void *buffer)
+bool sc_shlI(const void *val1, long shift_cnt, int bitsize, bool sign, void *buffer)
 {
 	carry_flag = false;
 
@@ -1285,16 +1281,16 @@ void sc_shlI(const void *val1, long shift_cnt, int bitsize, bool sign, void *buf
 	if ((buffer != NULL) && (buffer != calc_buffer)) {
 		memmove(buffer, calc_buffer, calc_buffer_size);
 	}
+	return carry_flag;
 }
 
-void sc_shl(const void *val1, const void *val2, int bitsize, bool sign, void *buffer)
+bool sc_shl(const void *val1, const void *val2, int bitsize, bool sign, void *buffer)
 {
 	long offset = sc_val_to_long(val2);
-
-	sc_shlI(val1, offset, bitsize, sign, buffer);
+	return sc_shlI(val1, offset, bitsize, sign, buffer);
 }
 
-void sc_shrI(const void *val1, long shift_cnt, int bitsize, bool sign, void *buffer)
+bool sc_shrI(const void *val1, long shift_cnt, int bitsize, bool sign, void *buffer)
 {
 	carry_flag = false;
 
@@ -1303,16 +1299,16 @@ void sc_shrI(const void *val1, long shift_cnt, int bitsize, bool sign, void *buf
 	if ((buffer != NULL) && (buffer != calc_buffer)) {
 		memmove(buffer, calc_buffer, calc_buffer_size);
 	}
+	return carry_flag;
 }
 
-void sc_shr(const void *val1, const void *val2, int bitsize, bool sign, void *buffer)
+bool sc_shr(const void *val1, const void *val2, int bitsize, bool sign, void *buffer)
 {
 	long shift_cnt = sc_val_to_long(val2);
-
-	sc_shrI(val1, shift_cnt, bitsize, sign, buffer);
+	return sc_shrI(val1, shift_cnt, bitsize, sign, buffer);
 }
 
-void sc_shrsI(const void *val1, long shift_cnt, int bitsize, bool sign, void *buffer)
+bool sc_shrsI(const void *val1, long shift_cnt, int bitsize, bool sign, void *buffer)
 {
 	carry_flag = false;
 
@@ -1321,9 +1317,10 @@ void sc_shrsI(const void *val1, long shift_cnt, int bitsize, bool sign, void *bu
 	if ((buffer != NULL) && (buffer != calc_buffer)) {
 		memmove(buffer, calc_buffer, calc_buffer_size);
 	}
+	return carry_flag;
 }
 
-void sc_shrs(const void *val1, const void *val2, int bitsize, bool sign, void *buffer)
+bool sc_shrs(const void *val1, const void *val2, int bitsize, bool sign, void *buffer)
 {
 	long offset = sc_val_to_long(val2);
 
@@ -1334,6 +1331,7 @@ void sc_shrs(const void *val1, const void *val2, int bitsize, bool sign, void *b
 	if ((buffer != NULL) && (buffer != calc_buffer)) {
 		memmove(buffer, calc_buffer, calc_buffer_size);
 	}
+	return carry_flag;
 }
 
 void sc_zero(void *buffer)

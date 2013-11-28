@@ -121,8 +121,9 @@ void sc_mul(const void *value1, const void *value2, void *buffer);
 
 /**
  * buffer = value1 / value2
+ * @returns carry flag
  */
-void sc_div(const void *value1, const void *value2, void *buffer);
+bool sc_div(const void *value1, const void *value2, void *buffer);
 
 /**
  * buffer = value1 % value2
@@ -137,33 +138,39 @@ void sc_divmod(const void *value1, const void *value2, void *div_buffer, void *m
 
 /**
  * buffer = value1 << offset
+ * @returns carry flag
  */
-void sc_shlI(const void *val1, long shift_cnt, int bitsize, bool sign, void *buffer);
+bool sc_shlI(const void *val1, long shift_cnt, int bitsize, bool sign, void *buffer);
 
 /**
  * buffer = value1 << value2
+ * @returns carry flag
  */
-void sc_shl(const void *value1, const void *value2, int bitsize, bool sign, void *buffer);
+bool sc_shl(const void *value1, const void *value2, int bitsize, bool sign, void *buffer);
 
 /**
  * buffer = value1 >>u offset
+ * @returns carry flag
  */
-void sc_shrI(const void *val1, long shift_cnt, int bitsize, bool sign, void *buffer);
+bool sc_shrI(const void *val1, long shift_cnt, int bitsize, bool sign, void *buffer);
 
 /**
  * buffer = value1 >>u value2
+ * @returns carry flag
  */
-void sc_shr(const void *value1, const void *value2, int bitsize, bool sign, void *buffer);
+bool sc_shr(const void *value1, const void *value2, int bitsize, bool sign, void *buffer);
 
 /**
  * buffer = value1 >>s offset
+ * @returns carry flag
  */
-void sc_shrsI(const void *val1, long shift_cnt, int bitsize, bool sign, void *buffer);
+bool sc_shrsI(const void *val1, long shift_cnt, int bitsize, bool sign, void *buffer);
 
 /**
  * buffer = value1 >>s value2
+ * @returns carry flag
  */
-void sc_shrs(const void *value1, const void *value2, int bitsize, bool sign, void *buffer);
+bool sc_shrs(const void *value1, const void *value2, int bitsize, bool sign, void *buffer);
 
 /**
  * buffer = 0
@@ -276,8 +283,5 @@ int sc_get_bit_at(const void *value, unsigned pos);
 /** Set the bit at the specified position. */
 void sc_set_bit_at(void *value, unsigned pos);
 void sc_clear_bit_at(void *value, unsigned pos);
-
-/* Strange semantics */
-bool sc_had_carry(void);
 
 #endif /* FIRM_TV_STRCALC_H */

@@ -145,10 +145,10 @@ static bool normalize(const fp_value *in_val, fp_value *out_val, bool sticky)
 		/* shift right */
 		sc_val_from_ulong(-hsb-1, temp);
 
-		_shift_righti(_mant(in_val), -hsb-1, _mant(out_val));
+		bool carry = _shift_righti(_mant(in_val), -hsb-1, _mant(out_val));
 
 		/* remember if some bits were shifted away */
-		if (sc_had_carry()) {
+		if (carry) {
 			exact  = false;
 			sticky = true;
 		}
@@ -170,8 +170,9 @@ static bool normalize(const fp_value *in_val, fp_value *out_val, bool sticky)
 		sc_val_from_ulong(1, temp);
 		sc_sub(temp, _exp(out_val), NULL);
 
-		_shift_right(_mant(out_val), sc_get_buffer(), _mant(out_val));
-		if (sc_had_carry()) {
+		bool carry = _shift_right(_mant(out_val), sc_get_buffer(),
+		                          _mant(out_val));
+		if (carry) {
 			exact  = false;
 			sticky = true;
 		}
@@ -231,8 +232,8 @@ static bool normalize(const fp_value *in_val, fp_value *out_val, bool sticky)
 	hsb = ROUNDING_BITS + effective_mantissa - sc_get_highest_set_bit(_mant(out_val)) - 1;
 	if ((out_val->clss != FC_SUBNORMAL) && (hsb < -1)) {
 		sc_val_from_ulong(1, temp);
-		_shift_righti(_mant(out_val), 1, _mant(out_val));
-		if (exact && sc_had_carry())
+		bool carry = _shift_righti(_mant(out_val), 1, _mant(out_val));
+		if (carry)
 			exact = false;
 		sc_add(_exp(out_val), temp, _exp(out_val));
 	} else if ((out_val->clss == FC_SUBNORMAL) && (hsb == -1)) {
@@ -378,8 +379,7 @@ static void _fadd(const fp_value *a, const fp_value *b, fp_value *result)
 		sc_sub(exp_diff, temp, exp_diff);
 	}
 
-	_shift_right(_mant(b), exp_diff, temp);
-	bool sticky = sc_had_carry();
+	bool sticky = _shift_right(_mant(b), exp_diff, temp);
 	fc_exact &= !sticky;
 
 	if (sticky && sign) {
@@ -487,10 +487,9 @@ static void _fmul(const fp_value *a, const fp_value *b, fp_value *result)
 	 * values are normalized they both have the same amount of these digits,
 	 * which has to be restored by proper shifting
 	 * because of the rounding bits */
-	_shift_righti(_mant(result),
+	bool sticky = _shift_righti(_mant(result),
 	              (result->desc.mantissa_size - result->desc.explicit_one)
 	              +ROUNDING_BITS, _mant(result));
-	bool sticky = sc_had_carry();
 	fc_exact &= !sticky;
 
 	fc_exact &= normalize(result, result, sticky);
@@ -581,8 +580,7 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result)
 
 	char *divisor = ALLOCAN(char, value_size);
 	_shift_righti(_mant(b), 1, divisor);
-	sc_div(dividend, divisor, _mant(result));
-	bool sticky = sc_had_carry();
+	bool sticky = sc_div(dividend, divisor, _mant(result));
 	fc_exact &= !sticky;
 
 	fc_exact &= normalize(result, result, sticky);
