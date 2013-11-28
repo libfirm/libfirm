@@ -1325,8 +1325,5 @@ bool sc_shrs(const void *val1, const void *val2, int bitsize, bool sign,
 
 void sc_zero(void *buffer)
 {
-	if (buffer == NULL)
-		buffer = calc_buffer;
 	CLEAR_BUFFER(buffer);
-	carry_flag = false;
 }
