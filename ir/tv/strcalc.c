@@ -200,7 +200,8 @@ static void do_add(const char *val1, const char *val2, char *buffer)
  */
 static void do_sub(const char *val1, const char *val2, char *buffer)
 {
-	char *temp_buffer = (char*) alloca(calc_buffer_size); /* intermediate buffer to hold -val2 */
+	/* intermediate buffer to hold -val2 */
+	char *temp_buffer = ALLOCAN(char, calc_buffer_size);
 
 	do_negate(val2, temp_buffer);
 	do_add(val1, temp_buffer, buffer);
@@ -211,9 +212,9 @@ static void do_sub(const char *val1, const char *val2, char *buffer)
  */
 static void do_mul(const char *val1, const char *val2, char *buffer)
 {
-	char *temp_buffer = (char*) alloca(calc_buffer_size);
-	char *neg_val1    = (char*) alloca(calc_buffer_size);
-	char *neg_val2    = (char*) alloca(calc_buffer_size);
+	char *temp_buffer = ALLOCAN(char, calc_buffer_size);
+	char *neg_val1    = ALLOCAN(char, calc_buffer_size);
+	char *neg_val2    = ALLOCAN(char, calc_buffer_size);
 
 	/* init result buffer to zeros */
 	memset(temp_buffer, SC_0, calc_buffer_size);
@@ -307,7 +308,7 @@ static void do_divmod(const char *rDividend, const char *divisor, char *quot,
 
 	char  div_sign = 0;
 	char  rem_sign = 0;
-	char *neg_val1 = (char*) alloca(calc_buffer_size);
+	char *neg_val1 = ALLOCAN(char, calc_buffer_size);
 	if (do_sign(dividend) == -1) {
 		do_negate(dividend, neg_val1);
 		div_sign ^= 1;
@@ -315,7 +316,7 @@ static void do_divmod(const char *rDividend, const char *divisor, char *quot,
 		dividend = neg_val1;
 	}
 
-	char *neg_val2 = (char*) alloca(calc_buffer_size);
+	char *neg_val2 = ALLOCAN(char, calc_buffer_size);
 	do_negate(divisor, neg_val2);
 	const char *minus_divisor;
 	if (do_sign(divisor) == -1) {
@@ -568,10 +569,10 @@ bool sc_val_from_str(char sign, unsigned base, const char *str, size_t len,
 	check_ascii();
 
 	assert(base > 1 && base <= 16);
-	char *sc_base = (char*) alloca(calc_buffer_size);
+	char *sc_base = ALLOCAN(char, calc_buffer_size);
 	sc_val_from_ulong(base, sc_base);
 
-	char *val = (char*) alloca(calc_buffer_size);
+	char *val = ALLOCAN(char, calc_buffer_size);
 	if (buffer == NULL)
 		buffer = calc_buffer;
 
@@ -1035,13 +1036,13 @@ char *sc_print_buf(char *buf, size_t buf_len, const void *value,
 
 	case SC_DEC:
 	case SC_OCT: {
-		char *base_val = (char*) alloca(calc_buffer_size);
+		char *base_val = ALLOCAN(char, calc_buffer_size);
 		memset(base_val, SC_0, calc_buffer_size);
 		base_val[0] = base == SC_DEC ? SC_A : SC_8;
 
 		const char *p        = val;
 		int         sign     = 0;
-		char       *div2_res = (char*) alloca(calc_buffer_size);
+		char       *div2_res = ALLOCAN(char, calc_buffer_size);
 		if (is_signed && base == SC_DEC) {
 			/* check for negative values */
 			if (do_bit(val, bits - 1)) {
@@ -1052,7 +1053,7 @@ char *sc_print_buf(char *buf, size_t buf_len, const void *value,
 		}
 
 		/* transfer data into oscillating buffers */
-		char *div1_res = (char*) alloca(calc_buffer_size);
+		char *div1_res = ALLOCAN(char, calc_buffer_size);
 		memset(div1_res, SC_0, calc_buffer_size);
 		for (counter = 0; counter < nibbles; ++counter)
 			div1_res[counter] = p[counter];
@@ -1066,7 +1067,7 @@ char *sc_print_buf(char *buf, size_t buf_len, const void *value,
 
 		char *m       = div1_res;
 		char *n       = div2_res;
-		char *rem_res = (char*) alloca(calc_buffer_size);
+		char *rem_res = ALLOCAN(char, calc_buffer_size);
 		for (;;) {
 			do_divmod(m, base_val, n, rem_res);
 			char *t = m;
@@ -1235,7 +1236,7 @@ void sc_mul(const void *value1, const void *value2, void *buffer)
 bool sc_div(const void *value1, const void *value2, void *buffer)
 {
 	/* temp buffer holding unused result of divmod */
-	char *unused_res = (char*) alloca(calc_buffer_size);
+	char *unused_res = ALLOCAN(char, calc_buffer_size);
 
 	CLEAR_BUFFER(calc_buffer);
 	carry_flag = false;
@@ -1251,7 +1252,7 @@ bool sc_div(const void *value1, const void *value2, void *buffer)
 void sc_mod(const void *value1, const void *value2, void *buffer)
 {
 	/* temp buffer holding unused result of divmod */
-	char *unused_res = (char*) alloca(calc_buffer_size);
+	char *unused_res = ALLOCAN(char, calc_buffer_size);
 
 	CLEAR_BUFFER(calc_buffer);
 	carry_flag = false;
