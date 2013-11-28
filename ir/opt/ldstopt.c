@@ -937,7 +937,7 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr, bool h
 		 * killed ...
 		 */
 		if (is_Store(pred) && !had_split && get_Store_ptr(pred) == ptr &&
-            get_nodes_block(pred) == block) {
+		    get_nodes_block(pred) == block) {
 			/*
 			 * a Store after a Store in the same Block -- a write after write.
 			 */
