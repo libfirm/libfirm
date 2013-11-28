@@ -5,7 +5,8 @@
 
 /**
  * @file
- * @brief    Provides basic mathematical operations on values represented as strings.
+ * @brief    Provides basic mathematical operations on values represented as
+ *           strings.
  * @date     2003
  * @author   Mathias Heil
  */
@@ -19,9 +20,6 @@
 #include "xmalloc.h"
 #include "error.h"
 
-/*
- * local definitions and macros
- */
 #define SC_BITS      4
 #define SC_RESULT(x) ((x) & ((1U << SC_BITS) - 1U))
 #define SC_CARRY(x)  ((unsigned)(x) >> SC_BITS)
@@ -32,9 +30,6 @@
 #define _digit(a) ((a)+SC_0)
 #define _bitisset(digit, pos) (((digit) & SHIFT(pos)) != SC_0)
 
-/*
- * private variables
- */
 static char *calc_buffer = NULL;    /* buffer holding all results */
 static char *output_buffer = NULL;  /* buffer for output */
 static int bit_pattern_size;        /* maximum number of bits */
@@ -76,10 +71,6 @@ static char const *const binary_table[] = {
 	"0000", "0001", "0010", "0011", "0100", "0101", "0110", "0111",
 	"1000", "1001", "1010", "1011", "1100", "1101", "1110", "1111"
 };
-
-/*****************************************************************************
- * private functions
- *****************************************************************************/
 
 /**
  * implements the bitwise NOT operation
@@ -347,7 +338,8 @@ static void do_divmod(const char *rDividend, const char *divisor, char *quot,
 			do_add(rem, minus_divisor, rem);
 
 			while (do_sign(rem) == 1) {
-				quot[0] = SC_RESULT(quot[0] + SC_1); /* TODO can this generate carry or is masking redundant? */
+				/* TODO can this generate carry or is masking redundant? */
+				quot[0] = SC_RESULT(quot[0] + SC_1);
 				do_add(rem, minus_divisor, rem);
 			}
 
@@ -373,10 +365,8 @@ end:
 static void do_shl(const char *val1, char *buffer, long shift_cnt, int bitsize,
                    bool is_signed)
 {
-	assert((shift_cnt >= 0) || (0 && "negative leftshift"));
-	assert(((do_sign(val1) != -1) || is_signed) || (0 && "unsigned mode and negative value"));
-	assert(((!_bitisset(val1[(bitsize-1)/4], (bitsize-1)%4)) || !is_signed || (do_sign(val1) == -1)) || (0 && "value is positive, should be negative"));
-	assert(((_bitisset(val1[(bitsize-1)/4], (bitsize-1)%4)) || !is_signed || (do_sign(val1) == 1)) || (0 && "value is negative, should be positive"));
+	assert(shift_cnt >= 0);
+	assert((do_sign(val1) != -1) || is_signed);
 
 	/* if shifting far enough the result is zero */
 	if (shift_cnt >= bitsize) {
@@ -436,9 +426,7 @@ static void do_shl(const char *val1, char *buffer, long shift_cnt, int bitsize,
 static void do_shr(const char *val1, char *buffer, long shift_cnt, int bitsize,
                    bool is_signed, int signed_shift)
 {
-	assert((shift_cnt >= 0) || (0 && "negative rightshift"));
-	assert(((!_bitisset(val1[(bitsize-1)/4], (bitsize-1)%4)) || !is_signed || (do_sign(val1) == -1)) || (0 && "value is positive, should be negative"));
-	assert(((_bitisset(val1[(bitsize-1)/4], (bitsize-1)%4)) || !is_signed || (do_sign(val1) == 1)) || (0 && "value is negative, should be positive"));
+	assert(shift_cnt >= 0);
 
 	char sign = signed_shift && do_bit(val1, bitsize - 1) ? SC_F : SC_0;
 
@@ -468,7 +456,7 @@ static void do_shr(const char *val1, char *buffer, long shift_cnt, int bitsize,
 	buffer[0] = shrs_table[_val(val1[shift_nib])][shift_mod][0];
 	int counter;
 	for (counter = 1; counter < ((bitsize + 3) >> 2) - shift_nib; counter++) {
-		const char *shrs = shrs_table[_val(val1[counter + shift_nib])][shift_mod];
+		const char *shrs = shrs_table[_val(val1[counter+shift_nib])][shift_mod];
 		buffer[counter]      = shrs[0];
 		buffer[counter - 1] |= shrs[1];
 	}
@@ -484,7 +472,8 @@ static void do_shr(const char *val1, char *buffer, long shift_cnt, int bitsize,
 
 	const char *shrs = shrs_table[_val(msd)][shift_mod];
 
-	/* signed shift and signed mode and negative value means all bits to the left are set */
+	/* signed shift and signed mode and negative value means all bits to the
+	 * left are set */
 	if (signed_shift && sign == SC_F) {
 		buffer[counter] = shrs[0] | min_digit[bitoffset];
 	} else {
@@ -500,9 +489,7 @@ static void do_shr(const char *val1, char *buffer, long shift_cnt, int bitsize,
 	}
 }
 
-/*****************************************************************************
- * public functions, declared in strcalc.h
- *****************************************************************************/
+
 const void *sc_get_buffer(void)
 {
 	return (void*)calc_buffer;
@@ -912,7 +899,8 @@ void sc_val_from_bits(unsigned char const *const bytes, unsigned from,
 	const uint8_t              low_bit  = from%8;
 	const uint8_t              high_bit = (to-1)%8 + 1;
 	if (low == high) {
-		uint32_t val = ((uint32_t)*low << (32-high_bit)) >> (32-high_bit+low_bit);
+		uint32_t val
+			= ((uint32_t)*low << (32-high_bit)) >> (32-high_bit+low_bit);
 		*p++ = (val >> 0) & 0xf;
 		*p++ = (val >> 4) & 0xf;
 		goto clear_rest;
@@ -1089,7 +1077,7 @@ char *sc_print_buf(char *buf, size_t buf_len, const void *value,
 void init_strcalc(int precision)
 {
 	if (calc_buffer == NULL) {
-		if (precision <= 0) precision = SC_DEFAULT_PRECISION;
+		assert(precision > 0);
 
 		/* round up to multiple of 4 */
 		precision = (precision + 3) & ~3;
@@ -1231,7 +1219,8 @@ bool sc_div(const void *value1, const void *value2, void *buffer)
 	CLEAR_BUFFER(calc_buffer);
 	carry_flag = false;
 
-	do_divmod((const char*) value1, (const char*) value2, calc_buffer, unused_res);
+	do_divmod((const char*) value1, (const char*) value2, calc_buffer,
+	          unused_res);
 
 	if ((buffer != NULL) && (buffer != calc_buffer)) {
 		memcpy(buffer, calc_buffer, calc_buffer_size);
@@ -1247,23 +1236,27 @@ void sc_mod(const void *value1, const void *value2, void *buffer)
 	CLEAR_BUFFER(calc_buffer);
 	carry_flag = false;
 
-	do_divmod((const char*) value1, (const char*) value2, unused_res, calc_buffer);
+	do_divmod((const char*) value1, (const char*) value2, unused_res,
+	          calc_buffer);
 
 	if ((buffer != NULL) && (buffer != calc_buffer)) {
 		memcpy(buffer, calc_buffer, calc_buffer_size);
 	}
 }
 
-void sc_divmod(const void *value1, const void *value2, void *div_buffer, void *mod_buffer)
+void sc_divmod(const void *value1, const void *value2, void *div_buffer,
+               void *mod_buffer)
 {
 	CLEAR_BUFFER(calc_buffer);
 	carry_flag = false;
 
-	do_divmod((const char*) value1, (const char*) value2, (char*) div_buffer, (char*) mod_buffer);
+	do_divmod((const char*) value1, (const char*) value2, (char*) div_buffer,
+	          (char*) mod_buffer);
 }
 
 
-bool sc_shlI(const void *val1, long shift_cnt, int bitsize, bool sign, void *buffer)
+bool sc_shlI(const void *val1, long shift_cnt, int bitsize, bool sign,
+             void *buffer)
 {
 	carry_flag = false;
 
@@ -1275,13 +1268,15 @@ bool sc_shlI(const void *val1, long shift_cnt, int bitsize, bool sign, void *buf
 	return carry_flag;
 }
 
-bool sc_shl(const void *val1, const void *val2, int bitsize, bool sign, void *buffer)
+bool sc_shl(const void *val1, const void *val2, int bitsize, bool sign,
+            void *buffer)
 {
 	long offset = sc_val_to_long(val2);
 	return sc_shlI(val1, offset, bitsize, sign, buffer);
 }
 
-bool sc_shrI(const void *val1, long shift_cnt, int bitsize, bool sign, void *buffer)
+bool sc_shrI(const void *val1, long shift_cnt, int bitsize, bool sign,
+             void *buffer)
 {
 	carry_flag = false;
 
@@ -1293,13 +1288,15 @@ bool sc_shrI(const void *val1, long shift_cnt, int bitsize, bool sign, void *buf
 	return carry_flag;
 }
 
-bool sc_shr(const void *val1, const void *val2, int bitsize, bool sign, void *buffer)
+bool sc_shr(const void *val1, const void *val2, int bitsize, bool sign,
+            void *buffer)
 {
 	long shift_cnt = sc_val_to_long(val2);
 	return sc_shrI(val1, shift_cnt, bitsize, sign, buffer);
 }
 
-bool sc_shrsI(const void *val1, long shift_cnt, int bitsize, bool sign, void *buffer)
+bool sc_shrsI(const void *val1, long shift_cnt, int bitsize, bool sign,
+              void *buffer)
 {
 	carry_flag = false;
 
@@ -1311,7 +1308,8 @@ bool sc_shrsI(const void *val1, long shift_cnt, int bitsize, bool sign, void *bu
 	return carry_flag;
 }
 
-bool sc_shrs(const void *val1, const void *val2, int bitsize, bool sign, void *buffer)
+bool sc_shrs(const void *val1, const void *val2, int bitsize, bool sign,
+             void *buffer)
 {
 	long offset = sc_val_to_long(val2);
 

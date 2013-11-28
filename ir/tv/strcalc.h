@@ -5,16 +5,14 @@
 
 /**
  * @file
- * @brief    Provides basic mathematical operations on values represented as strings.
+ * @brief    Provides basic mathematical operations on values represented as
+ *           strings.
  * @date     2003
  * @author   Mathias Heil
  * @brief
  *
- * The module uses a string to represent values, and provides operations
- * to perform calculations with these values.
  * Results are stored in an internal buffer, so you have to make a copy
  * of them if you need to store the result.
- *
  */
 #ifndef FIRM_TV_STRCALC_H
 #define FIRM_TV_STRCALC_H
@@ -22,27 +20,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "firm_types.h"
-
-#ifdef STRCALC_DEBUG_ALL             /* switch on all debug options */
-#  ifndef STRCALC_DEBUG
-#    define STRCALC_DEBUG            /* switch on debug output */
-#  endif
-#  ifndef STRCALC_DEBUG_PRINTCOMP    /* print arguments and result of each computation */
-#    define STRCALC_DEBUG_PRINTCOMP
-#  endif
-#  ifndef STRCALC_DEBUG_FULLPRINT
-#    define STRCALC_DEBUG_FULLPRINT  /* print full length of values (e.g. 128 bit instead of 64 bit using default init) */
-#  endif
-#  ifndef STRCALC_DEBUG_GROUPPRINT
-#    define STRCALC_DEBUG_GROUPPRINT /* print spaces after each 8 bits */
-#  endif
-#endif
-
-/*
- * constants, typedefs, enums
- */
-
-#define SC_DEFAULT_PRECISION 64
 
 enum {
   SC_0 = 0,
@@ -134,43 +111,50 @@ void sc_mod(const void *value1, const void *value2, void *buffer);
  * div_buffer = value1 / value2
  * mod_buffer = value1 % value2
  */
-void sc_divmod(const void *value1, const void *value2, void *div_buffer, void *mod_buffer);
+void sc_divmod(const void *value1, const void *value2, void *div_buffer,
+               void *mod_buffer);
 
 /**
  * buffer = value1 << offset
  * @returns carry flag
  */
-bool sc_shlI(const void *val1, long shift_cnt, int bitsize, bool sign, void *buffer);
+bool sc_shlI(const void *val1, long shift_cnt, int bitsize, bool sign,
+             void *buffer);
 
 /**
  * buffer = value1 << value2
  * @returns carry flag
  */
-bool sc_shl(const void *value1, const void *value2, int bitsize, bool sign, void *buffer);
+bool sc_shl(const void *value1, const void *value2, int bitsize, bool sign,
+            void *buffer);
 
 /**
  * buffer = value1 >>u offset
  * @returns carry flag
  */
-bool sc_shrI(const void *val1, long shift_cnt, int bitsize, bool sign, void *buffer);
+bool sc_shrI(const void *val1, long shift_cnt, int bitsize, bool sign,
+             void *buffer);
 
 /**
  * buffer = value1 >>u value2
  * @returns carry flag
  */
-bool sc_shr(const void *value1, const void *value2, int bitsize, bool sign, void *buffer);
+bool sc_shr(const void *value1, const void *value2, int bitsize, bool sign,
+            void *buffer);
 
 /**
  * buffer = value1 >>s offset
  * @returns carry flag
  */
-bool sc_shrsI(const void *val1, long shift_cnt, int bitsize, bool sign, void *buffer);
+bool sc_shrsI(const void *val1, long shift_cnt, int bitsize, bool sign,
+              void *buffer);
 
 /**
  * buffer = value1 >>s value2
  * @returns carry flag
  */
-bool sc_shrs(const void *value1, const void *value2, int bitsize, bool sign, void *buffer);
+bool sc_shrs(const void *value1, const void *value2, int bitsize, bool sign,
+             void *buffer);
 
 /**
  * buffer = 0
@@ -284,4 +268,4 @@ int sc_get_bit_at(const void *value, unsigned pos);
 void sc_set_bit_at(void *value, unsigned pos);
 void sc_clear_bit_at(void *value, unsigned pos);
 
-#endif /* FIRM_TV_STRCALC_H */
+#endif
