@@ -33,6 +33,7 @@
 #include "error.h"
 #include "util.h"
 #include "be_t.h"
+#include "beabihelper.h"
 #include "bearch.h"
 #include "benode.h"
 #include "belower.h"
