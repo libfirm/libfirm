@@ -531,9 +531,6 @@ ir_tarval *get_tarval_epsilon(ir_mode *mode)
 	return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 }
 
-/** The bit pattern for the pointer NULL */
-static long _null_value = 0;
-
 ir_tarval *get_tarval_null(ir_mode *mode)
 {
 	switch (get_mode_sort(mode)) {
@@ -544,7 +541,7 @@ ir_tarval *get_tarval_null(ir_mode *mode)
 		return new_tarval_from_long(0l,  mode);
 
 	case irms_reference:
-		return new_tarval_from_long(_null_value, mode);
+		return new_tarval_from_long(0l, mode);
 
 	case irms_internal_boolean:
 		return tarval_b_false;
@@ -1499,10 +1496,8 @@ tarval_int_overflow_mode_t tarval_get_integer_overflow_mode(void)
 	return int_overflow_mode;
 }
 
-void init_tarval_1(long null_value, int support_quad_precision)
+void init_tarval_1(int support_quad_precision)
 {
-	_null_value = null_value;
-
 	/* initialize the sets holding the tarvals with a comparison function and
 	 * an initial size, which is the expected number of constants */
 	tarvals = new_set(cmp_tv, N_CONSTANTS);

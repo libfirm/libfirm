@@ -38,7 +38,7 @@
  * @param support_quad_precision
  *            If non-zero, activate support for quad precision
  */
-void init_tarval_1(long null_value, int support_quad_precision);
+void init_tarval_1(int support_quad_precision);
 
 /**
  * Initialization of the tarval module.
