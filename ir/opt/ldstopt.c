@@ -1133,8 +1133,8 @@ static bool ptr_is_in_struct(ir_node *ptr, ir_type *ptr_type, ir_node *struct_pt
 /**
  * Tries to optimize @c copyB. This function handles the following
  * cases:
- * - A previous Store that lies completely within @c copyB's
- *   destination will be deleted.
+ * - A previous Store that lies completely within @c copyB's destination
+ *   will be deleted, except it modifies the @c copyB's source.
  * - If a previous CopyB writes to @c copyB's source, @c copyB will
  *   read from the previous CopyB's source if possible. Cases where
  *   the CopyB nodes are offset against each other are not handled.
@@ -1159,13 +1159,16 @@ static unsigned follow_Mem_chain_for_CopyB(ir_node *copyB, ir_node *curr, bool h
 		    get_nodes_block(pred) == block) {
 			/*
 			 * If the CopyB completely overwrites the Store,
-			 * and the Store has no exception handler, the Store can be removed.
+			 * and the Store does not modify the CopyB's source memory,
+			 * and the Store has no exception handler,
+			 * the Store can be removed.
 			 * This is basically a write-after-write.
 			 */
-			ir_node *store_ptr = get_Store_ptr(pred);
-			ir_type *store_type = get_type_for_mode(get_irn_mode(store_ptr));
+			ir_node           *store_ptr  = get_Store_ptr(pred);
+			ir_type           *store_type = get_type_for_mode(get_irn_mode(store_ptr));
+			ir_alias_relation  src_rel    = get_alias_relation(src, type, store_ptr, store_type);
 
-			if (ptr_is_in_struct(store_ptr, store_type, dst, type)) {
+			if (src_rel == ir_no_alias && ptr_is_in_struct(store_ptr, store_type, dst, type)) {
 				DBG_OPT_WAW(pred, copyB);
 				DB((dbg, LEVEL_1, "  killing store %+F (override by %+F)\n", pred, copyB));
 				exchange(pred_info->projs[pn_Store_M], get_Store_mem(pred));
