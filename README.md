@@ -17,8 +17,8 @@ some unfinished backends for SPARC, ARM
 
 - works exclusively on a graph based SSA representation up to the code emission.
   Based on the work of C. Click and M. Trapp
-- written in portable C. Known to run on msvc 6-8 Win32, gcc on Linux, FreeBSD,
-  Cygwin
+- written in portable C99. Known to run on gcc on Linux, FreeBSD, Cygwin, clang,
+  ICC on windows.
 - includes doxygen documentation
 - support for object oriented type hierarchies
 - Analyses: dominance, loop tree, execution frequency, control dependencies,
