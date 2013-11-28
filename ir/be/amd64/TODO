@@ -8,6 +8,13 @@ Correctness:
 - Support ASM node
 - Imm32 are sign extended in 64bit ops, we incorrectly match them as 32bit
   unsigned.
+- Handle Alloc nodes (used by alloca and C99 VLA). See ia32/sparc backend on
+  how to do this.
+- Support non-omit_fp modes.
+- Sign/Zero extension for operations that are not mode_neutral.
+   (Alternatively work on legalize phase)
+- Div node is missing proper register requirements.
+- Generate code for Mulh nodes
 
 Improve Quality:
 - Immediate32 matching could be better and match SymConst, Add(SymConst, Const)
