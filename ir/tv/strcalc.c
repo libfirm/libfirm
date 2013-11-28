@@ -128,9 +128,6 @@ static void do_bitandnot(const char *val1, const char *val2, char *buffer)
 
 /**
  * returns the sign bit.
- *
- * @todo This implementation is wrong, as it returns the highest bit of the buffer
- *       NOT the highest bit depending on the real mode
  */
 static int do_sign(const char *val)
 {
@@ -180,9 +177,6 @@ static void do_negate(const char *val, char *buffer)
 
 /**
  * Implements a binary ADD
- *
- * @todo The implementation of carry is wrong, as it is the
- *       calc_buffer_size carry, not the mode depending
  */
 static void do_add(const char *val1, const char *val2, char *buffer)
 {
@@ -375,8 +369,6 @@ end:
 /**
  * Implements a Shift Left, which can either preserve the sign bit
  * or not.
- *
- * @todo Assertions seems to be wrong
  */
 static void do_shl(const char *val1, char *buffer, long shift_cnt, int bitsize,
                    bool is_signed)
@@ -440,8 +432,6 @@ static void do_shl(const char *val1, char *buffer, long shift_cnt, int bitsize,
  * or not.
  *
  * @param bitsize   bitsize of the value to be shifted
- *
- * @todo Assertions seems to be wrong
  */
 static void do_shr(const char *val1, char *buffer, long shift_cnt, int bitsize,
                    bool is_signed, int signed_shift)
