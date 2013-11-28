@@ -2818,8 +2818,6 @@ void sparc_transform_graph(ir_graph *irg)
 	pmap_destroy(node_to_stack);
 	node_to_stack = NULL;
 
-	be_add_missing_keeps(irg);
-
 	/* do code placement, to optimize the position of constants */
 	place_code(irg);
 	/* backend expects outedges to be always on */
