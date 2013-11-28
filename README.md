@@ -42,8 +42,6 @@ some unfinished backends for SPARC, ARM
 - working ia32 backend with support for x87 and SSE2 floating point
 - unfinished backends for SPARC, ARM, AMD64
 
-- connections to the Edison Design Group C and java frontends available.
-
 
 2. Building and Installation
 ----------------------------
