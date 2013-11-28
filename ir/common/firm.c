@@ -63,7 +63,7 @@ void ir_init(void)
 	/* create the type kinds. */
 	init_tpop();
 	/* create an obstack and put all tarvals in a pdeq */
-	init_tarval_1(0l, /* support_quad_precision */0);
+	init_tarval_1(0l, true);
 	/* Builds a basic program representation, so modes can be added. */
 	init_irprog_1();
 	/* initialize all modes an ir node can consist of */
