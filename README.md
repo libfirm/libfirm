@@ -50,7 +50,7 @@ Prerequisites for the build:
 
 * python (>=2.4)
 * perl
-* an ANSI C89 compiler (gcc, msvc known to work)
+* an ANSI C99 compiler (gcc, clang, icc are known to work)
 
 Building on unix variants/cygwin:
 
