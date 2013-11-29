@@ -270,7 +270,7 @@ void dom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post,
 }
 
 void postdom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
-		irg_walk_func *post, void *env)
+                           irg_walk_func *post, void *env)
 {
 	/* The root of the post dominator tree should be the End block. */
 	ir_node *root = get_irg_end_block(irg);
@@ -283,51 +283,51 @@ void postdom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
 
 static void assign_tree_dom_pre_order(ir_node *block, void *data)
 {
-	unsigned *num = (unsigned*) data;
-	ir_dom_info *bi = get_dom_info(block);
+	unsigned    *num = (unsigned*)data;
+	ir_dom_info *bi  = get_dom_info(block);
 
 	bi->tree_pre_num = (*num)++;
 }
 
 static void assign_tree_dom_pre_order_max(ir_node *block, void *data)
 {
-	(void) data;
-	ir_dom_info *bi = get_dom_info(block);
-	unsigned max = 0;
-	unsigned children = 0;
+	(void)data;
+	ir_dom_info *bi           = get_dom_info(block);
+	unsigned     max          = 0;
+	bool         has_children = false;
 
 	for (ir_node *p = bi->first; p; p = get_dom_info(p)->next) {
 		unsigned max_p = get_dom_info(p)->max_subtree_pre_num;
-		max = max > max_p ? max : max_p;
-		children++;
+		max          = max > max_p ? max : max_p;
+		has_children = true;
 	}
 
-	bi->max_subtree_pre_num = children > 0 ? max : bi->tree_pre_num;
+	bi->max_subtree_pre_num = has_children ? max : bi->tree_pre_num;
 	assert(bi->max_subtree_pre_num >= bi->tree_pre_num);
 }
 
 static void assign_tree_postdom_pre_order(ir_node *block, void *data)
 {
-	unsigned *num = (unsigned*)data;
-	ir_dom_info *bi = get_pdom_info(block);
+	unsigned    *num = (unsigned*)data;
+	ir_dom_info *bi  = get_pdom_info(block);
 
 	bi->tree_pre_num = (*num)++;
 }
 
 static void assign_tree_postdom_pre_order_max(ir_node *block, void *data)
 {
-	(void) data;
-	ir_dom_info *bi = get_pdom_info(block);
-	unsigned max = 0;
-	unsigned children = 0;
+	(void)data;
+	ir_dom_info *bi           = get_pdom_info(block);
+	unsigned     max          = 0;
+	bool         has_children = false;
 
 	for (ir_node *p = bi->first; p; p = get_pdom_info(p)->next) {
 		unsigned max_p = get_pdom_info(p)->max_subtree_pre_num;
-		max = max > max_p ? max : max_p;
-		children++;
+		max          = max > max_p ? max : max_p;
+		has_children = true;
 	}
 
-	bi->max_subtree_pre_num = children > 0 ? max : bi->tree_pre_num;
+	bi->max_subtree_pre_num = has_children ? max : bi->tree_pre_num;
 	assert(bi->max_subtree_pre_num >= bi->tree_pre_num);
 }
 
@@ -336,7 +336,7 @@ static void assign_tree_postdom_pre_order_max(ir_node *block, void *data)
  */
 static void count_and_init_blocks_pdom(ir_node *block, void *env)
 {
-	int *n_blocks = (int*)env;
+	unsigned *n_blocks = (unsigned*)env;
 	(*n_blocks)++;
 
 	memset(get_pdom_info(block), 0, sizeof(ir_dom_info));
@@ -390,7 +390,7 @@ static void init_tmp_dom_info(ir_node *block, tmp_dom_info *parent,
 	tdi->bucket   = NULL;
 
 	/* Iterate */
-	for (int i = get_Block_n_cfg_outs_ka(block) - 1; i >= 0; --i) {
+	for (unsigned i = get_Block_n_cfg_outs_ka(block); i-- != 0;) {
 		ir_node *pred = get_Block_cfg_out_ka(block, i);
 		/* can happen for half-optimized dead code */
 		if (!is_Block(pred))
@@ -436,7 +436,7 @@ static void init_tmp_pdom_info(ir_node *block, tmp_dom_info *parent,
 	   in init_construction() had already killed all
 	   phantom keep-alive edges. All remaining block keep-alives
 	   are really edges to endless loops. */
-	ir_graph *irg = get_irn_irg(block);
+	const ir_graph *irg = get_irn_irg(block);
 	if (block == get_irg_end_block(irg)) {
 		const ir_node *end = get_irg_end(irg);
 		for (int i = get_irn_arity(end) - 1; i >= 0; --i) {
@@ -483,7 +483,7 @@ inline static void dom_link(tmp_dom_info *v, tmp_dom_info *w)
  */
 static void count_and_init_blocks_dom(ir_node *block, void *env)
 {
-	int *n_blocks = (int*)env;
+	unsigned *n_blocks = (unsigned*)env;
 	(*n_blocks)++;
 
 	memset(get_dom_info(block), 0, sizeof(ir_dom_info));
@@ -530,20 +530,20 @@ void compute_doms(ir_graph *irg)
 			if (is_Bad(pred) || get_Block_dom_pre_num(pred_block) == -1)
 				continue;    /* unreachable */
 
-			tmp_dom_info *u = dom_eval(&tdi_list[get_Block_dom_pre_num(pred_block)]);
+			const tmp_dom_info *u = dom_eval(&tdi_list[get_Block_dom_pre_num(pred_block)]);
 			if (u->semi < w->semi)
 				w->semi = u->semi;
 		}
 
 		/* handle keep-alives if we are at the end block */
 		if (block == get_irg_end_block(irg)) {
-			ir_node *end = get_irg_end(irg);
+			const ir_node *end = get_irg_end(irg);
 			for (int j = 0, arity = get_irn_arity(end); j < arity; j++) {
 				const ir_node *pred = get_irn_n(end, j);
 				if (!is_Block(pred) || get_Block_dom_pre_num(pred) == -1)
 					continue;   /* unreachable */
 
-				tmp_dom_info *u = dom_eval(&tdi_list[get_Block_dom_pre_num(pred)]);
+				const tmp_dom_info *u = dom_eval(&tdi_list[get_Block_dom_pre_num(pred)]);
 				if (u->semi < w->semi)
 					w->semi = u->semi;
 			}
@@ -561,7 +561,7 @@ void compute_doms(ir_graph *irg)
 			tmp_dom_info *v = w->parent->bucket;
 			/* remove v from w->parent->bucket */
 			w->parent->bucket = v->bucket;
-			v->bucket = NULL;
+			v->bucket         = NULL;
 
 			tmp_dom_info *u = dom_eval(v);
 			if (u->semi < v->semi)
@@ -636,13 +636,13 @@ void compute_postdoms(ir_graph *irg)
 		tmp_dom_info *w = &tdi_list[i];
 
 		/* Step 2 */
-		int irn_arity = get_Block_n_cfg_outs_ka(w->block);
-		for (int j = 0; j < irn_arity; j++) {
-			ir_node *succ = get_Block_cfg_out_ka(w->block, j);
+		unsigned irn_arity = get_Block_n_cfg_outs_ka(w->block);
+		for (unsigned j = 0; j < irn_arity; j++) {
+			const ir_node *succ = get_Block_cfg_out_ka(w->block, j);
 			if (get_Block_postdom_pre_num(succ) == -1)
 				continue;    /* endless-loop */
 
-			tmp_dom_info *u = dom_eval(&tdi_list[get_Block_postdom_pre_num(succ)]);
+			const tmp_dom_info *u = dom_eval(&tdi_list[get_Block_postdom_pre_num(succ)]);
 			if (u->semi < w->semi)
 				w->semi = u->semi;
 		}
@@ -658,7 +658,7 @@ void compute_postdoms(ir_graph *irg)
 			tmp_dom_info *v = w->parent->bucket;
 			/* remove v from w->parent->bucket */
 			w->parent->bucket = v->bucket;
-			v->bucket = NULL;
+			v->bucket         = NULL;
 
 			tmp_dom_info *u = dom_eval(v);
 			if (u->semi < v->semi)
