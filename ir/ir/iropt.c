@@ -3186,6 +3186,9 @@ static ir_node *transform_node_Cond(ir_node *n)
 			[pn_Cond_true]  = cond ? jmp : bad,
 		};
 		turn_into_tuple(n, ARRAY_SIZE(in), in);
+
+		/* Since we may produce an endless loop, we have to keep the block. */
+		keep_alive(blk);
 		clear_irg_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE);
 	}
 	return n;
