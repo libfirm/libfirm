@@ -18,16 +18,16 @@
 
 /** For dominator information */
 typedef struct ir_dom_info {
-  ir_node *idom;   /**< immediate CFG dominator */
-  ir_node *next;   /**< The next node in the dominated list of @c idom. */
-  ir_node *first;  /**< The first node in the list of nodes
-                        this nodes dominates immediately. */
-  unsigned tree_pre_num;         /**< The pre-order number from a dfs walk
-                                      over the dominator tree. */
-  unsigned max_subtree_pre_num;  /**< The largest tree pre num found in the
-                                      dominator subtree of this node. */
-  int pre_num;     /**< pre-order graph-walk number */
-  int dom_depth;   /**< depth in dominator-tree */
+	ir_node *idom;   /**< immediate CFG dominator */
+	ir_node *next;   /**< The next node in the dominated list of @c idom. */
+	ir_node *first;  /**< The first node in the list of nodes
+	                      this nodes dominates immediately. */
+	unsigned tree_pre_num;         /**< The pre-order number from a dfs walk
+	                                    over the dominator tree. */
+	unsigned max_subtree_pre_num;  /**< The largest tree pre num found in the
+	                                    dominator subtree of this node. */
+	int pre_num;     /**< pre-order graph-walk number */
+	int dom_depth;   /**< depth in dominator-tree */
 } ir_dom_info;
 
 typedef struct ir_dom_front_info_t {
