@@ -313,14 +313,14 @@ void (set_mode_link)(ir_mode *mode, void *l)
 	set_mode_link_(mode, l);
 }
 
-ir_tarval *get_mode_min(ir_mode *mode)
+ir_tarval *get_mode_min(const ir_mode *mode)
 {
 	assert(mode_is_data(mode));
 
 	return mode->min;
 }
 
-ir_tarval *get_mode_max(ir_mode *mode)
+ir_tarval *get_mode_max(const ir_mode *mode)
 {
 	assert(mode_is_data(mode));
 
@@ -348,7 +348,7 @@ ir_tarval *get_mode_minus_one(ir_mode *mode)
 	return mode->minus_one;
 }
 
-ir_tarval *get_mode_all_one(ir_mode *mode)
+ir_tarval *get_mode_all_one(const ir_mode *mode)
 {
 	assert(mode_is_data(mode) || mode == mode_b);
 	return mode->all_one;
@@ -528,7 +528,7 @@ void set_reference_mode_signed_eq(ir_mode *ref_mode, ir_mode *int_mode)
 	ref_mode->eq_signed = int_mode;
 }
 
-ir_mode *get_reference_mode_unsigned_eq(ir_mode *mode)
+ir_mode *get_reference_mode_unsigned_eq(const ir_mode *mode)
 {
 	assert(mode_is_reference(mode));
 	return mode->eq_unsigned;

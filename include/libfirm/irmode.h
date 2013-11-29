@@ -164,7 +164,7 @@ FIRM_API void set_mode_link(ir_mode *mode, void *l);
  * For modes of the sort float_number this is the most negative value
  * bigger than -infinite.
  */
-FIRM_API ir_tarval *get_mode_min(ir_mode *mode);
+FIRM_API ir_tarval *get_mode_min(const ir_mode *mode);
 
 /**
  * Returns the biggest representable value of a given mode.
@@ -172,7 +172,7 @@ FIRM_API ir_tarval *get_mode_min(ir_mode *mode);
  * For modes of the sort float_number this is the largest value lower
  * than infinite.
  */
-FIRM_API ir_tarval *get_mode_max(ir_mode *mode);
+FIRM_API ir_tarval *get_mode_max(const ir_mode *mode);
 
 /**
  * Returns the value Zero represented in this mode.
@@ -206,7 +206,7 @@ FIRM_API ir_tarval *get_mode_minus_one(ir_mode *mode);
  *
  * All One is defined only for modes integer, reference and boolean modes
  */
-FIRM_API ir_tarval *get_mode_all_one(ir_mode *mode);
+FIRM_API ir_tarval *get_mode_all_one(const ir_mode *mode);
 
 /**
  * Returns a positive infinite value of a mode.
@@ -408,7 +408,7 @@ FIRM_API void set_reference_mode_signed_eq(ir_mode *ref_mode, ir_mode *int_mode)
 /**
  * Returns the unsigned integer equivalent mode for an reference mode.
  */
-FIRM_API ir_mode *get_reference_mode_unsigned_eq(ir_mode *mode);
+FIRM_API ir_mode *get_reference_mode_unsigned_eq(const ir_mode *mode);
 
 /**
  * Sets the unsigned integer equivalent mode for an reference mode.
