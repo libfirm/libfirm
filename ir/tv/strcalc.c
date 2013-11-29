@@ -19,6 +19,7 @@
 #include "strcalc.h"
 #include "xmalloc.h"
 #include "error.h"
+#include "bitfiddle.h"
 
 #define SC_BITS      4
 #define SC_RESULT(x) ((x) & ((1U << SC_BITS) - 1U))
@@ -848,6 +849,22 @@ unsigned char sc_sub_bits(const void *value, int len, unsigned byte_ofs)
 	if (len - 8 * byte_ofs < 8) {
 		res &= (1 << (len - 8 * byte_ofs)) - 1;
 	}
+	return res;
+}
+
+unsigned sc_popcount(const void *value, unsigned bits)
+{
+	const unsigned char *val = (const unsigned char*)value;
+	unsigned             res = 0;
+
+	unsigned i;
+	for (i = 0; i < bits/SC_BITS; ++i) {
+		res += popcount(val[i]);
+	}
+	char mask = max_digit[bits%SC_BITS];
+	if (mask != 0)
+		res += popcount(val[i] & mask);
+
 	return res;
 }
 

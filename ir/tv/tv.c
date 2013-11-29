@@ -1388,16 +1388,11 @@ unsigned char get_tarval_sub_bits(ir_tarval *tv, unsigned byte_ofs)
 
 int get_tarval_popcount(ir_tarval *tv)
 {
-	if (!mode_is_int(tv->mode))
+	ir_mode *mode = get_tarval_mode(tv);
+	if (!mode_is_int(mode))
 		return -1;
 
-	int l    = get_mode_size_bytes(tv->mode);
-	int bits = 0;
-	for (int i = l - 1; i >= 0; --i) {
-		unsigned char v = get_tarval_sub_bits(tv, (unsigned)i);
-		bits += popcount(v);
-	}
-	return bits;
+	return sc_popcount(tv->value, get_mode_size_bits(mode));
 }
 
 int get_tarval_lowest_bit(ir_tarval *tv)
