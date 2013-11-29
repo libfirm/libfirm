@@ -3160,15 +3160,14 @@ make_tuple:
  */
 static ir_node *transform_node_Cond(ir_node *n)
 {
-	ir_node   *a   = get_Cond_selector(n);
-	ir_graph  *irg = get_irn_irg(n);
-	ir_tarval *ta;
+	ir_graph *irg = get_irn_irg(n);
 
 	/* we need block info which is not available in floating irgs */
 	if (get_irg_pinned(irg) == op_pin_state_floats)
 		return n;
 
-	ta = value_of(a);
+	ir_node   *a  = get_Cond_selector(n);
+	ir_tarval *ta = value_of(a);
 	if (ta == tarval_bad && is_Cmp(a)) {
 		/* try again with a direct call to compute_cmp, as we don't care
 		 * about the MODEB_LOWERED flag here */
