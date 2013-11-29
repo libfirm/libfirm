@@ -654,27 +654,27 @@ uint64_t sc_val_to_uint64(const sc_word *val)
 void sc_min_from_bits(unsigned num_bits, bool sign, sc_word *buffer)
 {
 	if (buffer == NULL) buffer = calc_buffer;
-	CLEAR_BUFFER(buffer);
+	if (!sign) {
+		CLEAR_BUFFER(buffer);
+		return;
+	} else {
+		sc_word *pos = buffer;
 
-	if (!sign) return;  /* unsigned means minimum is 0(zero) */
+		unsigned bits = num_bits - 1;
+		unsigned i    = 0;
+		for ( ; i < bits/4; i++)
+			*pos++ = 0;
 
-	sc_word *pos = buffer;
+		*pos++ = min_digit[bits%4];
 
-	unsigned bits = num_bits - 1;
-	unsigned i    = 0;
-	for ( ; i < bits/4; i++)
-		*pos++ = 0;
-
-	*pos++ = min_digit[bits%4];
-
-	for (i++; (int)i <= calc_buffer_size - 1; i++)
-		*pos++ = 0xF;
+		for (i++; (int)i <= calc_buffer_size - 1; i++)
+			*pos++ = 0xF;
+	}
 }
 
 void sc_max_from_bits(unsigned num_bits, bool sign, sc_word *buffer)
 {
 	if (buffer == NULL) buffer = calc_buffer;
-	CLEAR_BUFFER(buffer);
 	sc_word *pos = buffer;
 
 	unsigned bits = num_bits - sign;
@@ -1105,7 +1105,6 @@ int sc_get_precision(void)
 
 void sc_add(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 {
-	CLEAR_BUFFER(calc_buffer);
 	carry_flag = false;
 
 	do_add(value1, value2, calc_buffer);
@@ -1117,7 +1116,6 @@ void sc_add(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 
 void sc_sub(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 {
-	CLEAR_BUFFER(calc_buffer);
 	carry_flag = false;
 
 	do_sub(value1, value2, calc_buffer);
@@ -1140,7 +1138,6 @@ void sc_neg(const sc_word *value1, sc_word *buffer)
 
 void sc_and(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 {
-	CLEAR_BUFFER(calc_buffer);
 	carry_flag = false;
 
 	do_bitand(value1, value2, calc_buffer);
@@ -1152,7 +1149,6 @@ void sc_and(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 
 void sc_andnot(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 {
-	CLEAR_BUFFER(calc_buffer);
 	carry_flag = false;
 
 	do_bitandnot(value1, value2, calc_buffer);
@@ -1164,7 +1160,6 @@ void sc_andnot(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 
 void sc_or(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 {
-	CLEAR_BUFFER(calc_buffer);
 	carry_flag = false;
 
 	do_bitor(value1, value2, calc_buffer);
@@ -1176,7 +1171,6 @@ void sc_or(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 
 void sc_xor(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 {
-	CLEAR_BUFFER(calc_buffer);
 	carry_flag = false;
 
 	do_bitxor(value1, value2, calc_buffer);
@@ -1188,7 +1182,6 @@ void sc_xor(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 
 void sc_not(const sc_word *value1, sc_word *buffer)
 {
-	CLEAR_BUFFER(calc_buffer);
 	carry_flag = false;
 
 	do_bitnot(value1, calc_buffer);
@@ -1200,7 +1193,6 @@ void sc_not(const sc_word *value1, sc_word *buffer)
 
 void sc_mul(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 {
-	CLEAR_BUFFER(calc_buffer);
 	carry_flag = false;
 
 	do_mul(value1, value2, calc_buffer);
@@ -1215,7 +1207,6 @@ bool sc_div(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 	/* temp buffer holding unused result of divmod */
 	sc_word *unused_res = ALLOCAN(sc_word, calc_buffer_size);
 
-	CLEAR_BUFFER(calc_buffer);
 	carry_flag = false;
 
 	do_divmod(value1, value2, calc_buffer, unused_res);
@@ -1231,7 +1222,6 @@ void sc_mod(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 	/* temp buffer holding unused result of divmod */
 	sc_word *unused_res = ALLOCAN(sc_word, calc_buffer_size);
 
-	CLEAR_BUFFER(calc_buffer);
 	carry_flag = false;
 
 	do_divmod(value1, value2, unused_res, calc_buffer);
@@ -1244,7 +1234,6 @@ void sc_mod(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 void sc_divmod(const sc_word *value1, const sc_word *value2,
                sc_word *div_buffer, sc_word *mod_buffer)
 {
-	CLEAR_BUFFER(calc_buffer);
 	carry_flag = false;
 
 	do_divmod(value1, value2, div_buffer, mod_buffer);
