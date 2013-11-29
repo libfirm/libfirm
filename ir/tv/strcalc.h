@@ -22,6 +22,8 @@
 #include <stdlib.h>
 #include "firm_types.h"
 
+typedef unsigned char sc_word;
+
 /**
  * The output mode for integer values.
  */
@@ -36,133 +38,133 @@ enum base_t {
 /**
  * buffer = value1 + value2
  */
-void sc_add(const void *value1, const void *value2, void *buffer);
+void sc_add(const sc_word *value1, const sc_word *value2, sc_word *buffer);
 
 /**
  * buffer = value1 - value2
  */
-void sc_sub(const void *value1, const void *value2, void *buffer);
+void sc_sub(const sc_word *value1, const sc_word *value2, sc_word *buffer);
 
 /**
  * buffer = -value
  */
-void sc_neg(const void *value, void *buffer);
+void sc_neg(const sc_word *value, sc_word *buffer);
 
 /**
  * buffer = value1 & value2
  */
-void sc_and(const void *value1, const void *value2, void *buffer);
+void sc_and(const sc_word *value1, const sc_word *value2, sc_word *buffer);
 
 /**
  * buffer = value1 & ~value2
  */
-void sc_andnot(const void *value1, const void *value2, void *buffer);
+void sc_andnot(const sc_word *value1, const sc_word *value2, sc_word *buffer);
 
 /**
  * buffer = value1 | value2
  */
-void sc_or(const void *value1, const void *value2, void *buffer);
+void sc_or(const sc_word *value1, const sc_word *value2, sc_word *buffer);
 
 /**
  * buffer = value1 ^ value2
  */
-void sc_xor(const void *value1, const void *value2, void *buffer);
+void sc_xor(const sc_word *value1, const sc_word *value2, sc_word *buffer);
 
 /**
  * buffer = ~value
  */
-void sc_not(const void *value, void *buffer);
+void sc_not(const sc_word *value, sc_word *buffer);
 
 /**
  * buffer = value1 * value2
  */
-void sc_mul(const void *value1, const void *value2, void *buffer);
+void sc_mul(const sc_word *value1, const sc_word *value2, sc_word *buffer);
 
 /**
  * buffer = value1 / value2
  * @returns carry flag
  */
-bool sc_div(const void *value1, const void *value2, void *buffer);
+bool sc_div(const sc_word *value1, const sc_word *value2, sc_word *buffer);
 
 /**
  * buffer = value1 % value2
  */
-void sc_mod(const void *value1, const void *value2, void *buffer);
+void sc_mod(const sc_word *value1, const sc_word *value2, sc_word *buffer);
 
 /**
  * div_buffer = value1 / value2
  * mod_buffer = value1 % value2
  */
-void sc_divmod(const void *value1, const void *value2, void *div_buffer,
-               void *mod_buffer);
+void sc_divmod(const sc_word *value1, const sc_word *value2,
+               sc_word *div_buffer, sc_word *mod_buffer);
 
 /**
  * buffer = value1 << offset
  * @returns carry flag
  */
-bool sc_shlI(const void *val1, long shift_cnt, int bitsize, bool sign,
-             void *buffer);
+bool sc_shlI(const sc_word *val1, long shift_cnt, int bitsize, bool sign,
+             sc_word *buffer);
 
 /**
  * buffer = value1 << value2
  * @returns carry flag
  */
-bool sc_shl(const void *value1, const void *value2, int bitsize, bool sign,
-            void *buffer);
+bool sc_shl(const sc_word *value1, const sc_word *value2, int bitsize,
+            bool sign, sc_word *buffer);
 
 /**
  * buffer = value1 >>u offset
  * @returns carry flag
  */
-bool sc_shrI(const void *val1, long shift_cnt, int bitsize, bool sign,
-             void *buffer);
+bool sc_shrI(const sc_word *val1, long shift_cnt, int bitsize, bool sign,
+             sc_word *buffer);
 
 /**
  * buffer = value1 >>u value2
  * @returns carry flag
  */
-bool sc_shr(const void *value1, const void *value2, int bitsize, bool sign,
-            void *buffer);
+bool sc_shr(const sc_word *value1, const sc_word *value2, int bitsize,
+            bool sign, sc_word *buffer);
 
 /**
  * buffer = value1 >>s offset
  * @returns carry flag
  */
-bool sc_shrsI(const void *val1, long shift_cnt, int bitsize, bool sign,
-              void *buffer);
+bool sc_shrsI(const sc_word *val1, long shift_cnt, int bitsize, bool sign,
+              sc_word *buffer);
 
 /**
  * buffer = value1 >>s value2
  * @returns carry flag
  */
-bool sc_shrs(const void *value1, const void *value2, int bitsize, bool sign,
-             void *buffer);
+bool sc_shrs(const sc_word *value1, const sc_word *value2, int bitsize,
+             bool sign, sc_word *buffer);
 
 /**
  * buffer = 0
  */
-void sc_zero(void *buffer);
+void sc_zero(sc_word *buffer);
 
 /*
  * function declarations
  */
-const void *sc_get_buffer(void);
+const sc_word *sc_get_buffer(void);
 int sc_get_buffer_length(void);
 
-void sign_extend(void *buffer, unsigned from_bits, bool is_signed);
+void sign_extend(sc_word *buffer, unsigned from_bits, bool is_signed);
 
 /**
  * create an value form a string representation
  * @return true if ok, false in case of parse error
  */
 bool sc_val_from_str(char sign, unsigned base, const char *str,
-                     size_t len, void *buffer);
+                     size_t len, sc_word *buffer);
 
 /** create a value from a long */
-void sc_val_from_long(long l, void *buffer);
+void sc_val_from_long(long l, sc_word *buffer);
 
 /** create a value form an unsigned long */
-void sc_val_from_ulong(unsigned long l, void *buffer);
+void sc_val_from_ulong(unsigned long l, sc_word *buffer);
 
 /**
  * Construct a strcalc value form a sequence of bytes in two complement big
@@ -174,7 +176,7 @@ void sc_val_from_ulong(unsigned long l, void *buffer);
  * @param buffer      destination buffer (calc_buffer if used if NULL)
  */
 void sc_val_from_bytes(unsigned char const *bytes, size_t n_bytes,
-                       bool big_endian, void *buffer);
+                       bool big_endian, sc_word *buffer);
 
 /**
  * Construct a strcalc value from a sequence of bytes in a little endian
@@ -182,27 +184,27 @@ void sc_val_from_bytes(unsigned char const *bytes, size_t n_bytes,
  * (excluding).
  */
 void sc_val_from_bits(unsigned char const *const bytes, unsigned from,
-                      unsigned to, void *buffer);
+                      unsigned to, sc_word *buffer);
 
 /** converts a value to a long */
-long sc_val_to_long(const void *val);
-uint64_t sc_val_to_uint64(const void *val);
-void sc_min_from_bits(unsigned int num_bits, bool sign, void *buffer);
-void sc_max_from_bits(unsigned int num_bits, bool sign, void *buffer);
+long sc_val_to_long(const sc_word *val);
+uint64_t sc_val_to_uint64(const sc_word *val);
+void sc_min_from_bits(unsigned int num_bits, bool sign, sc_word *buffer);
+void sc_max_from_bits(unsigned int num_bits, bool sign, sc_word *buffer);
 
 /** truncates a value to lowest @p num_bits bits */
-void sc_truncate(unsigned num_bits, void *buffer);
+void sc_truncate(unsigned num_bits, sc_word *buffer);
 
 /**
  * Compares val1 and val2
  */
-ir_relation sc_comp(void const *val1, void const *val2);
+ir_relation sc_comp(const sc_word *val1, const sc_word *val2);
 
-int sc_get_highest_set_bit(const void *value);
-int sc_get_lowest_set_bit(const void *value);
-bool sc_is_negative(const void *value);
-bool sc_is_zero(const void *value, unsigned num_bits);
-bool sc_is_all_one(const void *value, unsigned num_bits);
+int sc_get_highest_set_bit(const sc_word *value);
+int sc_get_lowest_set_bit(const sc_word *value);
+bool sc_is_negative(const sc_word *value);
+bool sc_is_zero(const sc_word *value, unsigned num_bits);
+bool sc_is_all_one(const sc_word *value, unsigned num_bits);
 
 /**
  * Return the bits of a tarval at a given byte-offset.
@@ -211,7 +213,7 @@ bool sc_is_all_one(const void *value, unsigned num_bits);
  * @param len       number of valid bits in the value
  * @param byte_ofs  the byte offset
  */
-unsigned char sc_sub_bits(const void *value, int len, unsigned byte_ofs);
+unsigned char sc_sub_bits(const sc_word *value, int len, unsigned byte_ofs);
 
 /**
  * Converts a tarval into a string.
@@ -221,7 +223,7 @@ unsigned char sc_sub_bits(const void *value, int len, unsigned byte_ofs);
  * @param base        output base
  * @param signed_mode print it signed (only decimal mode supported
  */
-const char *sc_print(const void *val1, unsigned bits, enum base_t base,
+const char *sc_print(const sc_word *val1, unsigned bits, enum base_t base,
                      bool signed_mode);
 
 /**
@@ -229,7 +231,7 @@ const char *sc_print(const void *val1, unsigned bits, enum base_t base,
  * value to get the real start position of the string!
  * If the buffer is too small for the value, the behavior is undefined!
  */
-char *sc_print_buf(char *buf, size_t buf_len, const void *val, unsigned bits,
+char *sc_print_buf(char *buf, size_t buf_len, const sc_word *val, unsigned bits,
                    enum base_t base, bool is_signed);
 
 /** Initialize the strcalc module.
@@ -244,12 +246,12 @@ void finish_strcalc(void);
 int sc_get_precision(void);
 
 /** Return the bit at a given position. */
-int sc_get_bit_at(const void *value, unsigned pos);
+int sc_get_bit_at(const sc_word *value, unsigned pos);
 
 /** Set the bit at the specified position. */
-void sc_set_bit_at(void *value, unsigned pos);
-void sc_clear_bit_at(void *value, unsigned pos);
+void sc_set_bit_at(sc_word *value, unsigned pos);
+void sc_clear_bit_at(sc_word *value, unsigned pos);
 
-unsigned sc_popcount(const void *value, unsigned bits);
+unsigned sc_popcount(const sc_word *value, unsigned bits);
 
 #endif

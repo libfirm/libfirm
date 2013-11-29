@@ -10,7 +10,7 @@ static void test(const unsigned char *bytes, unsigned from, unsigned to,
                  const char *expected)
 {
 	size_t val_len = sc_get_buffer_length();
-	char val0[val_len];
+	sc_word val0[val_len];
 	sc_val_from_bits(bytes, from, to, val0);
 
 	char print_buf[32];

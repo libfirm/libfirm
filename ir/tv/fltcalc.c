@@ -44,7 +44,7 @@ struct fp_value {
 	/** exp[value_size] + mant[value_size].
 	 * Mantissa has an explicit one at the beginning (contrary to many
 	 * floating point formats) */
-	char               value[];
+	sc_word            value[];
 };
 
 #define _exp(a)  &((a)->value[0])
@@ -72,7 +72,7 @@ static bool fc_exact = true;
 static float_descriptor_t long_double_desc;
 
 /** pack machine-like */
-static void pack(const fp_value *value, void *packed)
+static void pack(const fp_value *value, sc_word *packed)
 {
 	switch ((value_class_t)value->clss) {
 	case FC_NAN: {
@@ -100,7 +100,7 @@ static void pack(const fp_value *value, void *packed)
 	_shift_righti(_mant(value), ROUNDING_BITS, packed);
 
 	/* extract lower bits, this masks out a leading one if necessary. */
-	char *temp = ALLOCAN(char, value_size);
+	sc_word *temp = ALLOCAN(sc_word, value_size);
 	sc_max_from_bits(desc->mantissa_size, 0, temp);
 	sc_and(packed, temp, packed);
 
@@ -140,7 +140,7 @@ static bool normalize(const fp_value *in_val, fp_value *out_val, bool sticky)
 
 	/* shift the first 1 into the left of the radix point (i.e. hsb == -1) */
 	bool  exact = true;
-	char *temp  = ALLOCAN(char, value_size);
+	sc_word *temp  = ALLOCAN(sc_word, value_size);
 	if (hsb < -1) {
 		/* shift right */
 		sc_val_from_ulong(-hsb-1, temp);
@@ -325,8 +325,8 @@ static void _fadd(const fp_value *a, const fp_value *b, fp_value *result)
 		return;
 	}
 
-	char *temp     = ALLOCAN(char, value_size);
-	char *exp_diff = ALLOCAN(char, value_size);
+	sc_word *temp     = ALLOCAN(sc_word, value_size);
+	sc_word *exp_diff = ALLOCAN(sc_word, value_size);
 
 	/* get exponent difference */
 	sc_sub(_exp(a), _exp(b), exp_diff);
@@ -387,7 +387,7 @@ static void _fadd(const fp_value *a, const fp_value *b, fp_value *result)
 		 * little more than the represented value to a negative value this, in
 		 * addition to the still set sticky bit, takes account of the
 		 * 'little more' */
-		char *temp1 = ALLOCAN(char, value_size);
+		sc_word *temp1 = ALLOCAN(sc_word, value_size);
 		sc_val_from_ulong(1, temp1);
 		sc_add(temp, temp1, temp);
 	}
@@ -470,7 +470,7 @@ static void _fmul(const fp_value *a, const fp_value *b, fp_value *result)
 	/* exp = exp(a) + exp(b) - excess */
 	sc_add(_exp(a), _exp(b), _exp(result));
 
-	char *temp = ALLOCAN(char, value_size);
+	sc_word *temp = ALLOCAN(sc_word, value_size);
 	sc_val_from_ulong((1 << (a->desc.exponent_size - 1)) - 1, temp);
 	sc_sub(_exp(result), temp, _exp(result));
 
@@ -556,7 +556,7 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result)
 	}
 
 	/* exp = exp(a) - exp(b) + excess - 1*/
-	char *temp = ALLOCAN(char, value_size);
+	sc_word *temp = ALLOCAN(sc_word, value_size);
 	sc_sub(_exp(a), _exp(b), _exp(result));
 	sc_val_from_ulong((1 << (a->desc.exponent_size - 1)) - 2, temp);
 	sc_add(_exp(result), temp, _exp(result));
@@ -573,12 +573,12 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result)
 	 * fit into the integer precision, but due to the rounding bits (which
 	 * are always zero because the values are all normalized) the divisor
 	 * can be shifted right instead to achieve the same result */
-	char *dividend = ALLOCAN(char, value_size);
+	sc_word *dividend = ALLOCAN(sc_word, value_size);
 	_shift_lefti(_mant(a),
 	             (result->desc.mantissa_size - result->desc.explicit_one)
 	             + ROUNDING_BITS, dividend);
 
-	char *divisor = ALLOCAN(char, value_size);
+	sc_word *divisor = ALLOCAN(sc_word, value_size);
 	_shift_righti(_mant(b), 1, divisor);
 	bool sticky = sc_div(dividend, divisor, _mant(result));
 	fc_exact &= !sticky;
@@ -630,7 +630,7 @@ static void _trunc(const fp_value *a, fp_value *result)
 
 	/* set up a proper mask to delete all bits right of the
 	 * radix point if the mantissa had been shifted until exp == 0 */
-	char *temp = ALLOCAN(char, value_size);
+	sc_word *temp = ALLOCAN(sc_word, value_size);
 	sc_max_from_bits(1 + exp_val, 0, temp);
 	_shift_lefti(temp, effective_mantissa - exp_val + ROUNDING_BITS, temp);
 
@@ -737,7 +737,7 @@ long double fc_val_to_ieee754(const fp_value *val)
 	fp_value *temp  = (fp_value*) alloca(calc_buffer_size);
 	fp_value *value = fc_cast(val, &long_double_desc, temp);
 
-	char *packed = ALLOCAN(char, value_size);
+	sc_word *packed = ALLOCAN(sc_word, value_size);
 	pack(value, packed);
 
 	char buf[sizeof(long double)];
@@ -807,7 +807,7 @@ fp_value *fc_cast(const fp_value *value, const float_descriptor_t *dest,
 	int exp_offset = res_bias - val_bias;
 	exp_offset    += dest->mantissa_size - dest->explicit_one
 	               - (desc->mantissa_size - desc->explicit_one);
-	char *temp = ALLOCAN(char, value_size);
+	sc_word *temp = ALLOCAN(sc_word, value_size);
 	sc_val_from_long(exp_offset, temp);
 	sc_add(_exp(value), temp, _exp(result));
 
@@ -1026,7 +1026,7 @@ int fc_print(const fp_value *val, char *buf, int buflen, unsigned base)
 
 	case FC_PACKED:
 	default: {
-		char *packed = (char*) alloca(calc_buffer_size);
+		sc_word *packed = ALLOCAN(sc_word, value_size);
 		pack(val, packed);
 		return snprintf(buf, buflen, "%s", sc_print(packed, value_size*4, SC_HEX, 0));
 	}
@@ -1037,9 +1037,9 @@ unsigned char fc_sub_bits(const fp_value *value, unsigned num_bits,
                           unsigned byte_ofs)
 {
 	/* this is used to cache the packed version of the value */
-	static char *packed_value = NULL;
+	static sc_word *packed_value = NULL;
 	if (packed_value == NULL)
-		packed_value = XMALLOCN(char, value_size);
+		packed_value = XMALLOCN(sc_word, value_size);
 
 	if (value != NULL)
 		pack(value, packed_value);
@@ -1217,7 +1217,8 @@ fp_value *fc_rnd(const fp_value *a, fp_value *result)
 	panic("not yet implemented");
 }
 
-flt2int_result_t fc_flt2int(const fp_value *a, void *result, ir_mode *dst_mode)
+flt2int_result_t fc_flt2int(const fp_value *a, sc_word *result,
+                            ir_mode *dst_mode)
 {
 	switch (a->clss) {
 	case FC_ZERO:
@@ -1286,7 +1287,7 @@ void __attribute__((used)) fc_debug(fp_value *value)
 	printf("Mantissa: %s\n",
 	       sc_print(_mant(value), sc_get_precision(), SC_HEX, false));
 	printf("Mantissa w/o round: ");
-	char *temp = ALLOCAN(char, value_size);
+	sc_word *temp = ALLOCAN(sc_word, value_size);
 	_shift_righti(_mant(value), ROUNDING_BITS, temp);
 	printf("%s\n", sc_print(temp, sc_get_precision(), SC_HEX, false));
 	printf("Mantissa w/o round implicit one: ");

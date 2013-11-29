@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include "firm_types.h"
 #include "irtypes.h"
+#include "strcalc.h"
 
 enum {
 	FC_DEC,
@@ -164,7 +165,8 @@ typedef enum flt2int_result_t {
 /**
  * Converts an floating point value into an integer value.
  */
-flt2int_result_t fc_flt2int(const fp_value *a, void *result, ir_mode *dst_mode);
+flt2int_result_t fc_flt2int(const fp_value *a, sc_word *result,
+                            ir_mode *dst_mode);
 
 /**
  * Returns non-zero if the mantissa is zero, i.e. 1.0Exxx
