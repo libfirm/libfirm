@@ -19,26 +19,8 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include "firm_types.h"
-
-enum {
-  SC_0 = 0,
-  SC_1,
-  SC_2,
-  SC_3,
-  SC_4,
-  SC_5,
-  SC_6,
-  SC_7,
-  SC_8,
-  SC_9,
-  SC_A,
-  SC_B,
-  SC_C,
-  SC_D,
-  SC_E,
-  SC_F
-};
 
 /**
  * The output mode for integer values.
