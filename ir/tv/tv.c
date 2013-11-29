@@ -314,9 +314,11 @@ ir_tarval *new_tarval_from_long(long l, ir_mode *mode)
 
 	case irms_reference:
 		/* same as integer modes */
-	case irms_int_number:
-		sc_val_from_long(l, NULL);
-		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
+	case irms_int_number: {
+		sc_word *buffer = ALLOCAN(sc_word, sc_get_buffer_length());
+		sc_val_from_long(l, buffer);
+		return get_tarval(buffer, sc_get_buffer_length(), mode);
+	}
 
 	case irms_float_number:
 		return new_tarval_from_double((long double)l, mode);
@@ -330,11 +332,13 @@ ir_tarval *new_tarval_from_bytes(unsigned char const *buf,
                                  ir_mode *mode, int big_endian)
 {
 	switch (get_mode_arithmetic(mode)) {
-	case irma_twos_complement:
+	case irma_twos_complement: {
 		if (get_mode_size_bytes(mode) == (unsigned)-1)
 			return tarval_bad;
-		sc_val_from_bytes(buf, get_mode_size_bytes(mode), big_endian, NULL);
-		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
+		sc_word *dest = ALLOCAN(sc_word, sc_get_buffer_length());
+		sc_val_from_bytes(buf, get_mode_size_bytes(mode), big_endian, dest);
+		return get_tarval(dest, sc_get_buffer_length(), mode);
+	}
 	case irma_ieee754:
 	case irma_x86_extended_float:
 		/* not implemented yet */
@@ -355,8 +359,9 @@ int tarval_is_long(ir_tarval *tv)
 
 	/* the value might be too big to fit in a long */
 	size_t long_bits = sizeof(long)*8;
-	sc_max_from_bits(long_bits, mode_is_signed(mode), NULL);
-	if (sc_comp(tv->value, sc_get_buffer()) == ir_relation_greater)
+	sc_word *temp = ALLOCAN(sc_word, sc_get_buffer_length());
+	sc_max_from_bits(long_bits, mode_is_signed(mode), temp);
+	if (sc_comp(tv->value, temp) == ir_relation_greater)
 		return false;
 	if (mode_is_signed(mode)) {
 		sc_word *min = ALLOCAN(sc_word, sc_get_buffer_length());
@@ -383,8 +388,9 @@ bool tarval_is_uint64(ir_tarval *tv)
 		return true;
 
 	/* the value might be too big to fit in a long */
-	sc_max_from_bits(sizeof(uint64_t)*8, 0, NULL);
-	return sc_comp(tv->value, sc_get_buffer()) & ir_relation_less_equal;
+	sc_word *temp = ALLOCAN(sc_word, sc_get_buffer_length());
+	sc_max_from_bits(sizeof(uint64_t)*8, 0, temp);
+	return sc_comp(tv->value, temp) & ir_relation_less_equal;
 }
 
 uint64_t get_tarval_uint64(ir_tarval *tv)
@@ -476,9 +482,11 @@ ir_tarval *get_tarval_max(ir_mode *mode)
 	}
 
 	case irms_reference:
-	case irms_int_number:
-		sc_max_from_bits(get_mode_size_bits(mode), mode_is_signed(mode), NULL);
-		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
+	case irms_int_number: {
+		sc_word *temp = ALLOCAN(sc_word, sc_get_buffer_length());
+		sc_max_from_bits(get_mode_size_bits(mode), mode_is_signed(mode), temp);
+		return get_tarval(temp, sc_get_buffer_length(), mode);
+	}
 
 	case irms_internal_boolean:
 		return tarval_b_true;
@@ -500,9 +508,11 @@ ir_tarval *get_tarval_min(ir_mode *mode)
 	}
 
 	case irms_reference:
-	case irms_int_number:
-		sc_min_from_bits(get_mode_size_bits(mode), mode_is_signed(mode), NULL);
-		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
+	case irms_int_number: {
+		sc_word *temp = ALLOCAN(sc_word, sc_get_buffer_length());
+		sc_min_from_bits(get_mode_size_bits(mode), mode_is_signed(mode), temp);
+		return get_tarval(temp, sc_get_buffer_length(), mode);
+	}
 
 	case irms_internal_boolean:
 		return tarval_b_false;
@@ -969,13 +979,15 @@ ir_tarval *tarval_div(ir_tarval *a, ir_tarval *b)
 
 	switch (get_mode_sort(a->mode)) {
 	case irms_int_number:
-	case irms_reference:
+	case irms_reference: {
 		/* x/0 error */
 		if (b == get_mode_null(mode))
 			return tarval_bad;
 
-		sc_div(a->value, b->value, NULL);
-		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
+		sc_word *buffer = ALLOCAN(sc_word, sc_get_buffer_length());
+		sc_div(a->value, b->value, buffer);
+		return get_tarval(buffer, sc_get_buffer_length(), a->mode);
+	}
 
 	case irms_float_number:
 		fc_div((const fp_value*) a->value, (const fp_value*) b->value, NULL);
@@ -995,13 +1007,15 @@ ir_tarval *tarval_mod(ir_tarval *a, ir_tarval *b)
 
 	switch (get_mode_sort(a->mode)) {
 	case irms_int_number:
-	case irms_reference:
+	case irms_reference: {
 		/* x/0 error */
 		if (b == get_mode_null(b->mode))
 			return tarval_bad;
 		/* modes of a,b are equal */
-		sc_mod(a->value, b->value, NULL);
-		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
+		sc_word *buffer = ALLOCAN(sc_word, sc_get_buffer_length());
+		sc_mod(a->value, b->value, buffer);
+		return get_tarval(buffer, sc_get_buffer_length(), a->mode);
+	}
 
 	case irms_auxiliary:
 	case irms_data:
@@ -1079,9 +1093,11 @@ ir_tarval *tarval_and(ir_tarval *a, ir_tarval *b)
 		return (a == tarval_b_false) ? a : b;
 
 	case irms_reference:
-	case irms_int_number:
-		sc_and(a->value, b->value, NULL);
-		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
+	case irms_int_number: {
+		sc_word *buffer = ALLOCAN(sc_word, sc_get_buffer_length());
+		sc_and(a->value, b->value, buffer);
+		return get_tarval(buffer, sc_get_buffer_length(), a->mode);
+	}
 
 	case irms_auxiliary:
 	case irms_data:
@@ -1100,9 +1116,11 @@ ir_tarval *tarval_andnot(ir_tarval *a, ir_tarval *b)
 		return a == tarval_b_true && b == tarval_b_false ? tarval_b_true : tarval_b_false;
 
 	case irms_reference:
-	case irms_int_number:
-		sc_andnot(a->value, b->value, NULL);
-		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
+	case irms_int_number: {
+		sc_word *buffer = ALLOCAN(sc_word, sc_get_buffer_length());
+		sc_andnot(a->value, b->value, buffer);
+		return get_tarval(buffer, sc_get_buffer_length(), a->mode);
+	}
 
 	case irms_auxiliary:
 	case irms_data:
@@ -1121,9 +1139,11 @@ ir_tarval *tarval_or(ir_tarval *a, ir_tarval *b)
 		return (a == tarval_b_true) ? a : b;
 
 	case irms_reference:
-	case irms_int_number:
-		sc_or(a->value, b->value, NULL);
-		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
+	case irms_int_number: {
+		sc_word *buffer = ALLOCAN(sc_word, sc_get_buffer_length());
+		sc_or(a->value, b->value, buffer);
+		return get_tarval(buffer, sc_get_buffer_length(), a->mode);
+	}
 
 	case irms_auxiliary:
 	case irms_data:
@@ -1142,9 +1162,11 @@ ir_tarval *tarval_eor(ir_tarval *a, ir_tarval *b)
 		return (a == b)? tarval_b_false : tarval_b_true;
 
 	case irms_reference:
-	case irms_int_number:
-		sc_xor(a->value, b->value, NULL);
-		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
+	case irms_int_number: {
+		sc_word *buffer = ALLOCAN(sc_word, sc_get_buffer_length());
+		sc_xor(a->value, b->value, buffer);
+		return get_tarval(buffer, sc_get_buffer_length(), a->mode);
+	}
 
 	case irms_auxiliary:
 	case irms_data:
@@ -1161,15 +1183,17 @@ ir_tarval *tarval_shl(ir_tarval *a, ir_tarval *b)
 	sc_word *temp_val;
 	if (get_mode_modulo_shift(a->mode) != 0) {
 		temp_val = ALLOCAN(sc_word, sc_get_buffer_length());
-
-		sc_val_from_ulong(get_mode_modulo_shift(a->mode), temp_val);
-		sc_mod(b->value, temp_val, temp_val);
+		sc_word *temp2 = ALLOCAN(sc_word, sc_get_buffer_length());
+		sc_val_from_ulong(get_mode_modulo_shift(a->mode), temp2);
+		sc_mod(b->value, temp2, temp_val);
 	} else {
 		temp_val = (sc_word*)b->value;
 	}
 
-	sc_shl(a->value, temp_val, get_mode_size_bits(a->mode), mode_is_signed(a->mode), NULL);
-	return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
+	sc_word *temp = ALLOCAN(sc_word, sc_get_buffer_length());
+	sc_shl(a->value, temp_val, get_mode_size_bits(a->mode),
+	       mode_is_signed(a->mode), temp);
+	return get_tarval(temp, sc_get_buffer_length(), a->mode);
 }
 
 ir_tarval *tarval_shl_unsigned(ir_tarval *a, unsigned b)
@@ -1179,8 +1203,11 @@ ir_tarval *tarval_shl_unsigned(ir_tarval *a, unsigned b)
 	if (modulo != 0)
 		b %= modulo;
 	assert((unsigned)(long)b==b);
-	sc_shlI(a->value, (long)b, get_mode_size_bits(mode), mode_is_signed(mode), NULL);
-	return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
+
+	sc_word *buffer = ALLOCAN(sc_word, sc_get_buffer_length());
+	sc_shlI(a->value, (long)b, get_mode_size_bits(mode), mode_is_signed(mode),
+	        buffer);
+	return get_tarval(buffer, sc_get_buffer_length(), mode);
 }
 
 ir_tarval *tarval_shr(ir_tarval *a, ir_tarval *b)
@@ -1190,15 +1217,17 @@ ir_tarval *tarval_shr(ir_tarval *a, ir_tarval *b)
 	sc_word *temp_val;
 	if (get_mode_modulo_shift(a->mode) != 0) {
 		temp_val = ALLOCAN(sc_word, sc_get_buffer_length());
-
-		sc_val_from_ulong(get_mode_modulo_shift(a->mode), temp_val);
-		sc_mod(b->value, temp_val, temp_val);
+		sc_word *temp2 = ALLOCAN(sc_word, sc_get_buffer_length());
+		sc_val_from_ulong(get_mode_modulo_shift(a->mode), temp2);
+		sc_mod(b->value, temp2, temp_val);
 	} else {
 		temp_val = (sc_word*)b->value;
 	}
 
-	sc_shr(a->value, temp_val, get_mode_size_bits(a->mode), mode_is_signed(a->mode), NULL);
-	return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
+	sc_word *temp = ALLOCAN(sc_word, sc_get_buffer_length());
+	sc_shr(a->value, temp_val, get_mode_size_bits(a->mode),
+	       mode_is_signed(a->mode), temp);
+	return get_tarval(temp, sc_get_buffer_length(), a->mode);
 }
 
 ir_tarval *tarval_shr_unsigned(ir_tarval *a, unsigned b)
@@ -1208,8 +1237,11 @@ ir_tarval *tarval_shr_unsigned(ir_tarval *a, unsigned b)
 	if (modulo != 0)
 		b %= modulo;
 	assert((unsigned)(long)b==b);
-	sc_shrI(a->value, (long)b, get_mode_size_bits(mode), mode_is_signed(mode), NULL);
-	return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
+
+	sc_word *temp = ALLOCAN(sc_word, sc_get_buffer_length());
+	sc_shrI(a->value, (long)b, get_mode_size_bits(mode), mode_is_signed(mode),
+	        temp);
+	return get_tarval(temp, sc_get_buffer_length(), mode);
 }
 
 ir_tarval *tarval_shrs(ir_tarval *a, ir_tarval *b)
@@ -1219,15 +1251,17 @@ ir_tarval *tarval_shrs(ir_tarval *a, ir_tarval *b)
 	sc_word *temp_val;
 	if (get_mode_modulo_shift(a->mode) != 0) {
 		temp_val = ALLOCAN(sc_word, sc_get_buffer_length());
-
-		sc_val_from_ulong(get_mode_modulo_shift(a->mode), temp_val);
-		sc_mod(b->value, temp_val, temp_val);
+		sc_word *temp2 = ALLOCAN(sc_word, sc_get_buffer_length());
+		sc_val_from_ulong(get_mode_modulo_shift(a->mode), temp2);
+		sc_mod(b->value, temp2, temp_val);
 	} else {
 		temp_val = (sc_word*)b->value;
 	}
 
-	sc_shrs(a->value, temp_val, get_mode_size_bits(a->mode), mode_is_signed(a->mode), NULL);
-	return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
+	sc_word *temp = ALLOCAN(sc_word, sc_get_buffer_length());
+	sc_shrs(a->value, temp_val, get_mode_size_bits(a->mode),
+	        mode_is_signed(a->mode), temp);
+	return get_tarval(temp, sc_get_buffer_length(), a->mode);
 }
 
 ir_tarval *tarval_shrs_unsigned(ir_tarval *a, unsigned b)
@@ -1237,8 +1271,11 @@ ir_tarval *tarval_shrs_unsigned(ir_tarval *a, unsigned b)
 	if (modulo != 0)
 		b %= modulo;
 	assert((unsigned)(long)b==b);
-	sc_shrsI(a->value, (long)b, get_mode_size_bits(mode), mode_is_signed(mode), NULL);
-	return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
+
+	sc_word *temp = ALLOCAN(sc_word, sc_get_buffer_length());
+	sc_shrsI(a->value, (long)b, get_mode_size_bits(mode), mode_is_signed(mode),
+	         temp);
+	return get_tarval(temp, sc_get_buffer_length(), mode);
 }
 
 int tarval_snprintf(char *buf, size_t len, ir_tarval *tv)

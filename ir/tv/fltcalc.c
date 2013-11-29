@@ -168,10 +168,9 @@ static bool normalize(const fp_value *in_val, fp_value *out_val, bool sticky)
 		/* exponent underflow */
 		/* shift the mantissa right to have a zero exponent */
 		sc_val_from_ulong(1, temp);
-		sc_sub(temp, _exp(out_val), NULL);
+		sc_sub(temp, _exp(out_val), temp);
 
-		bool carry = _shift_right(_mant(out_val), sc_get_buffer(),
-		                          _mant(out_val));
+		bool carry = _shift_right(_mant(out_val), temp, _mant(out_val));
 		if (carry) {
 			exact  = false;
 			sticky = true;
@@ -532,9 +531,8 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result)
 			fc_get_qnan(&a->desc, result);
 		} else {
 			/* x/inf -> 0 */
-			sc_val_from_ulong(0, NULL);
-			_save_result(_exp(result));
-			_save_result(_mant(result));
+			sc_zero(_exp(result));
+			sc_zero(_mant(result));
 			result->clss = FC_ZERO;
 		}
 		return;
@@ -614,9 +612,8 @@ static void _trunc(const fp_value *a, fp_value *result)
 	int exp_bias = (1 << (a->desc.exponent_size - 1)) - 1;
 	int exp_val  = sc_val_to_long(_exp(a)) - exp_bias;
 	if (exp_val < 0) {
-		sc_val_from_ulong(0, NULL);
-		_save_result(_exp(result));
-		_save_result(_mant(result));
+		sc_zero(_exp(result));
+		sc_zero(_mant(result));
 		result->clss = FC_ZERO;
 		return;
 	}

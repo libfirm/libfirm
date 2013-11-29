@@ -279,9 +279,11 @@ static void do_push(sc_word digit, sc_word *buffer)
  *
  * Note: This is MOST slow
  */
-static void do_divmod(const sc_word *rDividend, const sc_word *divisor,
+static void do_divmod(const sc_word *rdividend, const sc_word *divisor,
                       sc_word *quot, sc_word *rem)
 {
+	assert(quot != rdividend && quot != divisor);
+	assert(rem != rdividend && rem != divisor);
 	/* clear result buffer */
 	memset(quot, 0, calc_buffer_size);
 	memset(rem, 0, calc_buffer_size);
@@ -290,7 +292,7 @@ static void do_divmod(const sc_word *rDividend, const sc_word *divisor,
 	assert(sc_comp(divisor, quot) != ir_relation_equal && "division by zero!");
 
 	/* if the dividend is zero result is zero (quot is zero) */
-	const sc_word *dividend = rDividend;
+	const sc_word *dividend = rdividend;
 	if (sc_comp(dividend, quot) == ir_relation_equal)
 		return;
 
@@ -368,6 +370,7 @@ end:
 static void do_shl(const sc_word *val1, sc_word *buffer, long shift_cnt,
                    int bitsize, bool is_signed)
 {
+	assert(buffer != val1);
 	assert(shift_cnt >= 0);
 	assert((do_sign(val1) != -1) || is_signed);
 
@@ -552,8 +555,6 @@ bool sc_val_from_str(char sign, unsigned base, const char *str, size_t len,
 	sc_val_from_ulong(base, sc_base);
 
 	sc_word *val = ALLOCAN(sc_word, calc_buffer_size);
-	if (buffer == NULL)
-		buffer = calc_buffer;
 
 	sc_zero(buffer);
 	sc_zero(val);
@@ -595,7 +596,6 @@ bool sc_val_from_str(char sign, unsigned base, const char *str, size_t len,
 
 void sc_val_from_long(long value, sc_word *buffer)
 {
-	if (buffer == NULL) buffer = calc_buffer;
 	sc_word *pos = buffer;
 
 	char sign       = (value < 0);
@@ -626,7 +626,6 @@ void sc_val_from_long(long value, sc_word *buffer)
 
 void sc_val_from_ulong(unsigned long value, sc_word *buffer)
 {
-	if (buffer == NULL) buffer = calc_buffer;
 	sc_word *pos = buffer;
 
 	while (pos < buffer + calc_buffer_size) {
@@ -657,7 +656,6 @@ uint64_t sc_val_to_uint64(const sc_word *val)
 
 void sc_min_from_bits(unsigned num_bits, bool sign, sc_word *buffer)
 {
-	if (buffer == NULL) buffer = calc_buffer;
 	if (!sign) {
 		sc_zero(buffer);
 		return;
@@ -678,7 +676,6 @@ void sc_min_from_bits(unsigned num_bits, bool sign, sc_word *buffer)
 
 void sc_max_from_bits(unsigned num_bits, bool sign, sc_word *buffer)
 {
-	if (buffer == NULL) buffer = calc_buffer;
 	sc_word *pos = buffer;
 
 	unsigned bits = num_bits - sign;
@@ -863,8 +860,6 @@ void sc_val_from_bytes(unsigned char const *const bytes, size_t n_bytes,
 {
 	assert(n_bytes <= (size_t)calc_buffer_size);
 
-	if (buffer == NULL)
-		buffer = calc_buffer;
 	sc_word *p = buffer;
 	assert(SC_BITS == 4);
 	if (big_endian) {
@@ -892,8 +887,6 @@ void sc_val_from_bits(unsigned char const *const bytes, unsigned from,
 	assert((to - from) / 8 <= (unsigned)calc_buffer_size);
 	assert(SC_BITS == 4);
 
-	if (buffer == NULL)
-		buffer = calc_buffer;
 	sc_word *p = buffer;
 
 	/* see which is the lowest and highest byte, special case if they are
@@ -1111,128 +1104,80 @@ void sc_add(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 {
 	carry_flag = false;
 
-	do_add(value1, value2, calc_buffer);
-
-	if ((buffer != NULL) && (buffer != calc_buffer)) {
-		memcpy(buffer, calc_buffer, calc_buffer_size);
-	}
+	do_add(value1, value2, buffer);
 }
 
 void sc_sub(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 {
 	carry_flag = false;
 
-	do_sub(value1, value2, calc_buffer);
-
-	if ((buffer != NULL) && (buffer != calc_buffer)) {
-		memcpy(buffer, calc_buffer, calc_buffer_size);
-	}
+	do_sub(value1, value2, buffer);
 }
 
 void sc_neg(const sc_word *value1, sc_word *buffer)
 {
 	carry_flag = false;
 
-	do_negate(value1, calc_buffer);
-
-	if ((buffer != NULL) && (buffer != calc_buffer)) {
-		memcpy(buffer, calc_buffer, calc_buffer_size);
-	}
+	do_negate(value1, buffer);
 }
 
 void sc_and(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 {
 	carry_flag = false;
 
-	do_bitand(value1, value2, calc_buffer);
-
-	if ((buffer != NULL) && (buffer != calc_buffer)) {
-		memcpy(buffer, calc_buffer, calc_buffer_size);
-	}
+	do_bitand(value1, value2, buffer);
 }
 
 void sc_andnot(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 {
 	carry_flag = false;
 
-	do_bitandnot(value1, value2, calc_buffer);
-
-	if (buffer != NULL && buffer != calc_buffer) {
-		memcpy(buffer, calc_buffer, calc_buffer_size);
-	}
+	do_bitandnot(value1, value2, buffer);
 }
 
 void sc_or(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 {
 	carry_flag = false;
 
-	do_bitor(value1, value2, calc_buffer);
-
-	if ((buffer != NULL) && (buffer != calc_buffer)) {
-		memcpy(buffer, calc_buffer, calc_buffer_size);
-	}
+	do_bitor(value1, value2, buffer);
 }
 
 void sc_xor(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 {
 	carry_flag = false;
 
-	do_bitxor(value1, value2, calc_buffer);
-
-	if ((buffer != NULL) && (buffer != calc_buffer)) {
-		memcpy(buffer, calc_buffer, calc_buffer_size);
-	}
+	do_bitxor(value1, value2, buffer);
 }
 
 void sc_not(const sc_word *value1, sc_word *buffer)
 {
 	carry_flag = false;
 
-	do_bitnot(value1, calc_buffer);
-
-	if ((buffer != NULL) && (buffer != calc_buffer)) {
-		memcpy(buffer, calc_buffer, calc_buffer_size);
-	}
+	do_bitnot(value1, buffer);
 }
 
 void sc_mul(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 {
 	carry_flag = false;
 
-	do_mul(value1, value2, calc_buffer);
-
-	if ((buffer != NULL) && (buffer != calc_buffer)) {
-		memcpy(buffer, calc_buffer, calc_buffer_size);
-	}
+	do_mul(value1, value2, buffer);
 }
 
 bool sc_div(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 {
-	/* temp buffer holding unused result of divmod */
-	sc_word *unused_res = ALLOCAN(sc_word, calc_buffer_size);
-
 	carry_flag = false;
 
-	do_divmod(value1, value2, calc_buffer, unused_res);
-
-	if ((buffer != NULL) && (buffer != calc_buffer)) {
-		memcpy(buffer, calc_buffer, calc_buffer_size);
-	}
+	sc_word *unused_res = ALLOCAN(sc_word, calc_buffer_size);
+	do_divmod(value1, value2, buffer, unused_res);
 	return carry_flag;
 }
 
 void sc_mod(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 {
-	/* temp buffer holding unused result of divmod */
-	sc_word *unused_res = ALLOCAN(sc_word, calc_buffer_size);
-
 	carry_flag = false;
 
-	do_divmod(value1, value2, unused_res, calc_buffer);
-
-	if ((buffer != NULL) && (buffer != calc_buffer)) {
-		memcpy(buffer, calc_buffer, calc_buffer_size);
-	}
+	sc_word *unused_res = ALLOCAN(sc_word, calc_buffer_size);
+	do_divmod(value1, value2, unused_res, buffer);
 }
 
 void sc_divmod(const sc_word *value1, const sc_word *value2,
@@ -1243,25 +1188,28 @@ void sc_divmod(const sc_word *value1, const sc_word *value2,
 	do_divmod(value1, value2, div_buffer, mod_buffer);
 }
 
-
 bool sc_shlI(const sc_word *val1, long shift_cnt, int bitsize, bool sign,
              sc_word *buffer)
 {
 	carry_flag = false;
 
-	do_shl(val1, calc_buffer, shift_cnt, bitsize, sign);
+	sc_word *dest = buffer;
+	if (dest == val1)
+		dest = ALLOCAN(sc_word, calc_buffer_size);
 
-	if ((buffer != NULL) && (buffer != calc_buffer)) {
-		memmove(buffer, calc_buffer, calc_buffer_size);
-	}
+	do_shl(val1, dest, shift_cnt, bitsize, sign);
+
+	if (dest != buffer)
+		memcpy(buffer, dest, calc_buffer_size);
+
 	return carry_flag;
 }
 
 bool sc_shl(const sc_word *val1, const sc_word *val2, int bitsize, bool sign,
             sc_word *buffer)
 {
-	long offset = sc_val_to_long(val2);
-	return sc_shlI(val1, offset, bitsize, sign, buffer);
+	long shift_count = sc_val_to_long(val2);
+	return sc_shlI(val1, shift_count, bitsize, sign, buffer);
 }
 
 bool sc_shrI(const sc_word *val1, long shift_cnt, int bitsize, bool sign,
@@ -1269,11 +1217,7 @@ bool sc_shrI(const sc_word *val1, long shift_cnt, int bitsize, bool sign,
 {
 	carry_flag = false;
 
-	do_shr(val1, calc_buffer, shift_cnt, bitsize, sign, 0);
-
-	if ((buffer != NULL) && (buffer != calc_buffer)) {
-		memmove(buffer, calc_buffer, calc_buffer_size);
-	}
+	do_shr(val1, buffer, shift_cnt, bitsize, sign, 0);
 	return carry_flag;
 }
 
@@ -1289,25 +1233,13 @@ bool sc_shrsI(const sc_word *val1, long shift_cnt, int bitsize, bool sign,
 {
 	carry_flag = false;
 
-	do_shr(val1, calc_buffer, shift_cnt, bitsize, sign, 1);
-
-	if ((buffer != NULL) && (buffer != calc_buffer)) {
-		memmove(buffer, calc_buffer, calc_buffer_size);
-	}
+	do_shr(val1, buffer, shift_cnt, bitsize, sign, 1);
 	return carry_flag;
 }
 
 bool sc_shrs(const sc_word *val1, const sc_word *val2, int bitsize, bool sign,
              sc_word *buffer)
 {
-	long offset = sc_val_to_long(val2);
-
-	carry_flag = false;
-
-	do_shr(val1, calc_buffer, offset, bitsize, sign, 1);
-
-	if ((buffer != NULL) && (buffer != calc_buffer)) {
-		memmove(buffer, calc_buffer, calc_buffer_size);
-	}
-	return carry_flag;
+	long shift_count = sc_val_to_long(val2);
+	return sc_shrsI(val1, shift_count, bitsize, sign, buffer);
 }
