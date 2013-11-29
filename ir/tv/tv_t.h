@@ -76,7 +76,7 @@ struct ir_tarval {
 /*
  * Access routines for tarval fields ========================================
  */
-static inline ir_mode *_get_tarval_mode(ir_tarval *tv)
+static inline ir_mode *_get_tarval_mode(const ir_tarval *tv)
 {
 	return tv->mode;
 }
@@ -130,9 +130,9 @@ const char *ir_tarval_to_ascii(char *buf, size_t buf_len, ir_tarval *tv);
  */
 ir_tarval *ir_tarval_from_ascii(const char *buf, ir_mode *mode);
 
-uint64_t get_tarval_uint64(ir_tarval *tv);
+uint64_t get_tarval_uint64(const ir_tarval *tv);
 
-bool tarval_is_uint64(ir_tarval *tv);
+bool tarval_is_uint64(const ir_tarval *tv);
 
 ir_tarval *get_tarval_small(ir_mode *mode);
 

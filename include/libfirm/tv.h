@@ -153,7 +153,7 @@ FIRM_API ir_tarval *new_tarval_from_bytes(unsigned char const *buf,
 /**
  * Returns value as long if possible.
  */
-FIRM_API long get_tarval_long(ir_tarval *tv);
+FIRM_API long get_tarval_long(const ir_tarval *tv);
 
 /**
  * This validates if get_tarval_long() will return something sensible.
@@ -164,7 +164,7 @@ FIRM_API long get_tarval_long(ir_tarval *tv);
  *
  * @param tv    the tarval
  */
-FIRM_API int tarval_is_long(ir_tarval *tv);
+FIRM_API int tarval_is_long(const ir_tarval *tv);
 
 /**
  * Constructor function for new tarvals.
@@ -209,12 +209,12 @@ FIRM_API ir_tarval *new_tarval_from_long_double(long double d, ir_mode *mode);
  *
  * @param tv    the tarval
  */
-FIRM_API double get_tarval_double(ir_tarval *tv);
+FIRM_API double get_tarval_double(const ir_tarval *tv);
 
 /**
  * same as get_tarval_double but returns a long double value
  */
-FIRM_API long double get_tarval_long_double(ir_tarval *tv);
+FIRM_API long double get_tarval_long_double(const ir_tarval *tv);
 
 /**
  * This validates if tarval_to_double() will return a satisfying
@@ -223,53 +223,53 @@ FIRM_API long double get_tarval_long_double(ir_tarval *tv);
  *
  * @param tv    the tarval
  */
-FIRM_API int tarval_is_double(ir_tarval *tv);
+FIRM_API int tarval_is_double(const ir_tarval *tv);
 
 /**
  * Returns the mode of the tarval.
  *
  * @param tv    the tarval
  */
-FIRM_API ir_mode *get_tarval_mode(ir_tarval *tv);
+FIRM_API ir_mode *get_tarval_mode(const ir_tarval *tv);
 
 /**
  * Returns 1 if tv is negative
  *
  * @param tv    the tarval
  */
-FIRM_API int tarval_is_negative(ir_tarval *tv);
+FIRM_API int tarval_is_negative(const ir_tarval *tv);
 
 /**
  * Returns 1 if tv is null
  *
  * @param tv    the tarval
  */
-FIRM_API int tarval_is_null(ir_tarval *tv);
+FIRM_API int tarval_is_null(const ir_tarval *tv);
 
 /**
  * Returns 1 if tv is the "one"
  *
  * @param tv    the tarval
  */
-FIRM_API int tarval_is_one(ir_tarval *tv);
+FIRM_API int tarval_is_one(const ir_tarval *tv);
 
 /**
  * Returns 1 if tv is the "minus one"
  *
  * @param tv    the tarval
  */
-FIRM_API int tarval_is_minus_one(ir_tarval *tv);
+FIRM_API int tarval_is_minus_one(const ir_tarval *tv);
 
 /**
  * returns non-zero if all bits in the tarval are set
  */
-FIRM_API int tarval_is_all_one(ir_tarval *tv);
+FIRM_API int tarval_is_all_one(const ir_tarval *tv);
 
 /**
  * Returns non-zero if the tarval is a constant (i.e. NOT
  * a reserved tarval like bad, undef, reachable etc.)
  */
-FIRM_API int tarval_is_constant(ir_tarval *tv);
+FIRM_API int tarval_is_constant(const ir_tarval *tv);
 
 /** The 'bad' tarval. */
 FIRM_API ir_tarval *tarval_bad;
@@ -371,7 +371,7 @@ FIRM_API tarval_int_overflow_mode_t tarval_get_integer_overflow_mode(void);
  * @param a   the first tarval to be compared
  * @param b   the second tarval to be compared
  */
-FIRM_API ir_relation tarval_cmp(ir_tarval *a, ir_tarval *b);
+FIRM_API ir_relation tarval_cmp(const ir_tarval *a, const ir_tarval *b);
 
 /**
  * Converts a tarval to another mode.
@@ -622,7 +622,7 @@ FIRM_API ir_tarval *tarval_shrs_unsigned(ir_tarval *a, unsigned b);
  *    irmode.h for the definition of the ir_mode struct
  *    the size member of aforementioned struct
  */
-FIRM_API char *get_tarval_bitpattern(ir_tarval *tv);
+FIRM_API char *get_tarval_bitpattern(const ir_tarval *tv);
 
 /**
  * Returns the bitpattern of the bytes_ofs byte.
@@ -650,7 +650,7 @@ FIRM_API char *get_tarval_bitpattern(ir_tarval *tv);
  *   The result of this function is undefined if the mode is neither integer
  *   nor float.
  */
-FIRM_API unsigned char get_tarval_sub_bits(ir_tarval *tv, unsigned byte_ofs);
+FIRM_API unsigned char get_tarval_sub_bits(const ir_tarval *tv, unsigned byte_ofs);
 
 /**
  * Returns the number of set bits in a given (integer) tarval.
@@ -659,7 +659,7 @@ FIRM_API unsigned char get_tarval_sub_bits(ir_tarval *tv, unsigned byte_ofs);
  *
  * @return number of set bits or -1 on error
  */
-FIRM_API int get_tarval_popcount(ir_tarval *tv);
+FIRM_API int get_tarval_popcount(const ir_tarval *tv);
 
 /**
  * Returns the number of the lowest set bit in a given (integer) tarval.
@@ -668,7 +668,7 @@ FIRM_API int get_tarval_popcount(ir_tarval *tv);
  *
  * @return number of lowest set bit or -1 on error
  */
-FIRM_API int get_tarval_lowest_bit(ir_tarval *tv);
+FIRM_API int get_tarval_lowest_bit(const ir_tarval *tv);
 
 /**
  * Return the number of the highest set bit in a given (integer) tarval.
@@ -677,7 +677,7 @@ FIRM_API int get_tarval_lowest_bit(ir_tarval *tv);
  *
  * @return number of highest set bit or -1 on error
  */
-FIRM_API int get_tarval_highest_bit(ir_tarval *tv);
+FIRM_API int get_tarval_highest_bit(const ir_tarval *tv);
 
 /**
  * Returns non-zero if the mantissa of a floating point tarval is zero
@@ -685,7 +685,7 @@ FIRM_API int get_tarval_highest_bit(ir_tarval *tv);
  *
  * @param tv    the tarval
  */
-FIRM_API int tarval_zero_mantissa(ir_tarval *tv);
+FIRM_API int tarval_zero_mantissa(const ir_tarval *tv);
 
 /**
  * Returns the exponent of a floating point IEEE-754
@@ -693,7 +693,7 @@ FIRM_API int tarval_zero_mantissa(ir_tarval *tv);
  *
  * @param tv    the tarval
  */
-FIRM_API int tarval_get_exponent(ir_tarval *tv);
+FIRM_API int tarval_get_exponent(const ir_tarval *tv);
 
 /**
  * Check if the tarval can be converted to the given mode without
@@ -702,7 +702,7 @@ FIRM_API int tarval_get_exponent(ir_tarval *tv);
  * @param tv    the tarval
  * @param mode  the mode to convert to
  */
-FIRM_API int tarval_ieee754_can_conv_lossless(ir_tarval *tv, ir_mode *mode);
+FIRM_API int tarval_ieee754_can_conv_lossless(const ir_tarval *tv, ir_mode *mode);
 
 /**
  * Returns non-zero if the result of the last IEEE-754 operation was exact.
@@ -714,28 +714,28 @@ FIRM_API unsigned tarval_ieee754_get_exact(void);
  *
  * @param tv    the tarval
  */
-FIRM_API int tarval_is_nan(ir_tarval *tv);
+FIRM_API int tarval_is_nan(const ir_tarval *tv);
 
 /**
  * Check if its the a floating point +inf.
  *
  * @param tv    the tarval
  */
-FIRM_API int tarval_is_plus_inf(ir_tarval *tv);
+FIRM_API int tarval_is_plus_inf(const ir_tarval *tv);
 
 /**
  * Check if its the a floating point -inf.
  *
  * @param tv    the tarval
  */
-FIRM_API int tarval_is_minus_inf(ir_tarval *tv);
+FIRM_API int tarval_is_minus_inf(const ir_tarval *tv);
 
 /**
  * Check if the tarval represents a finite value, ie neither NaN nor inf.
  *
  * @param tv    the tarval
  */
-FIRM_API int tarval_is_finite(ir_tarval *tv);
+FIRM_API int tarval_is_finite(const ir_tarval *tv);
 
 /**
  *   Checks whether a pointer points to a tarval.
