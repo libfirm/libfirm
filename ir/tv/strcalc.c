@@ -222,39 +222,41 @@ static void do_mul(const sc_word *val1, const sc_word *val2, sc_word *buffer)
 	}
 
 	for (int c_outer = 0; c_outer < max_value_size; c_outer++) {
-		if (val2[c_outer] != 0) {
-			unsigned carry = 0; /* container for carries */
-			for (int c_inner = 0; c_inner < max_value_size; c_inner++) {
-				/* do the following calculation:
-				 * Add the current carry, the value at position c_outer+c_inner
-				 * and the result of the multiplication of val1[c_inner] and
-				 * val2[c_outer]. This is the usual pen-and-paper multiplication
-				 */
+		sc_word outer = val2[c_outer];
+		if (outer == 0)
+			continue;
+		unsigned carry = 0; /* container for carries */
+		for (int c_inner = 0; c_inner < max_value_size; c_inner++) {
+			sc_word inner = val1[c_inner];
+			/* do the following calculation:
+			 * Add the current carry, the value at position c_outer+c_inner
+			 * and the result of the multiplication of val1[c_inner] and
+			 * val2[c_outer]. This is the usual pen-and-paper multiplication
+			 */
 
-				/* multiplicate the two digits */
-				unsigned const mul = val1[c_inner] * val2[c_outer];
-				/* add old value to result of multiplication and the carry */
-				unsigned const sum = temp_buffer[c_inner+c_outer] + mul + carry;
+			/* multiplicate the two digits */
+			unsigned const mul = inner*outer;
+			/* add old value to result of multiplication and the carry */
+			unsigned const sum = temp_buffer[c_inner+c_outer] + mul + carry;
 
-				/* all carries together result in new carry. This is always
-				 * smaller than the base b:
-				 * Both multiplicands, the carry and the value already in the
-				 * temp buffer are single digits and their value is therefore
-				 * at most equal to (b-1).
-				 * This leads to:
-				 * (b-1)(b-1)+(b-1)+(b-1) = b*b-1
-				 * The tables list all operations rem b, so the carry is at
-				 * most
-				 * (b*b-1)rem b = -1rem b = b-1
-				 */
-				temp_buffer[c_inner + c_outer] = SC_RESULT(sum);
-				carry                          = SC_CARRY(sum);
-			}
-
-			/* A carry may hang over */
-			/* c_outer is always smaller than max_value_size! */
-			temp_buffer[max_value_size + c_outer] = carry;
+			/* all carries together result in new carry. This is always
+			 * smaller than the base b:
+			 * Both multiplicands, the carry and the value already in the
+			 * temp buffer are single digits and their value is therefore
+			 * at most equal to (b-1).
+			 * This leads to:
+			 * (b-1)(b-1)+(b-1)+(b-1) = b*b-1
+			 * The tables list all operations rem b, so the carry is at
+			 * most
+			 * (b*b-1)rem b = -1rem b = b-1
+			 */
+			temp_buffer[c_inner + c_outer] = SC_RESULT(sum);
+			carry                          = SC_CARRY(sum);
 		}
+
+		/* A carry may hang over */
+		/* c_outer is always smaller than max_value_size! */
+		temp_buffer[max_value_size + c_outer] = carry;
 	}
 
 	if (sign)
