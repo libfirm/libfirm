@@ -121,14 +121,6 @@ static void do_bitandnot(const sc_word *val1, const sc_word *val2,
 }
 
 /**
- * returns the sign bit.
- */
-static int do_sign(const sc_word *val)
-{
-	return (val[calc_buffer_size-1] <= 7) ? (1) : (-1);
-}
-
-/**
  * returns non-zero if bit at position pos is set
  */
 static int do_bit(const sc_word *val, int pos)
@@ -210,12 +202,12 @@ static void do_mul(const sc_word *val1, const sc_word *val2, sc_word *buffer)
 	/* the multiplication works only for positive values, for negative values *
 	 * it is necessary to negate them and adjust the result accordingly       */
 	char sign = 0;
-	if (do_sign(val1) == -1) {
+	if (sc_is_negative(val1)) {
 		do_negate(val1, neg_val1);
 		val1 = neg_val1;
 		sign ^= 1;
 	}
-	if (do_sign(val2) == -1) {
+	if (sc_is_negative(val2)) {
 		do_negate(val2, neg_val2);
 		val2 = neg_val2;
 		sign ^= 1;
@@ -281,38 +273,37 @@ static void do_push(sc_word digit, sc_word *buffer)
  *
  * Note: This is MOST slow
  */
-static void do_divmod(const sc_word *rdividend, const sc_word *divisor,
+static void do_divmod(const sc_word *dividend, const sc_word *divisor,
                       sc_word *quot, sc_word *rem)
 {
-	assert(quot != rdividend && quot != divisor);
-	assert(rem != rdividend && rem != divisor);
+	assert(quot != dividend && quot != divisor);
+	assert(rem != dividend && rem != divisor);
 	/* clear result buffer */
 	memset(quot, 0, calc_buffer_size);
 	memset(rem, 0, calc_buffer_size);
 
-	/* if the divisor is zero this won't work (quot is zero) */
-	assert(sc_comp(divisor, quot) != ir_relation_equal && "division by zero!");
+	/* division by zero is not allowed */
+	assert(!sc_is_zero(divisor, calc_buffer_size*SC_BITS));
 
 	/* if the dividend is zero result is zero (quot is zero) */
-	const sc_word *dividend = rdividend;
-	if (sc_comp(dividend, quot) == ir_relation_equal)
+	if (sc_is_zero(dividend, calc_buffer_size*SC_BITS))
 		return;
 
-	char     div_sign = 0;
-	char     rem_sign = 0;
+	bool     div_sign = false;
+	bool     rem_sign = false;
 	sc_word *neg_val1 = ALLOCAN(sc_word, calc_buffer_size);
-	if (do_sign(dividend) == -1) {
+	if (sc_is_negative(dividend)) {
 		do_negate(dividend, neg_val1);
-		div_sign ^= 1;
-		rem_sign ^= 1;
+		div_sign ^= true;
+		rem_sign ^= true;
 		dividend = neg_val1;
 	}
 
 	sc_word *neg_val2 = ALLOCAN(sc_word, calc_buffer_size);
 	do_negate(divisor, neg_val2);
 	const sc_word *minus_divisor;
-	if (do_sign(divisor) == -1) {
-		div_sign ^= 1;
+	if (sc_is_negative(divisor)) {
+		div_sign ^= true;
 		minus_divisor = divisor;
 		divisor = neg_val2;
 	} else {
@@ -344,7 +335,7 @@ static void do_divmod(const sc_word *rdividend, const sc_word *divisor,
 			 * be faster than comparing remainder with divisor  */
 			do_add(rem, minus_divisor, rem);
 
-			while (do_sign(rem) == 1) {
+			while (!sc_is_negative(rem)) {
 				/* TODO can this generate carry or is masking redundant? */
 				quot[0] = SC_RESULT(quot[0] + 1);
 				do_add(rem, minus_divisor, rem);
@@ -356,7 +347,7 @@ static void do_divmod(const sc_word *rdividend, const sc_word *divisor,
 	}
 end:
 	/* sets carry if remainder is non-zero ??? */
-	carry_flag = !sc_is_zero(rem, calc_buffer_size);
+	carry_flag = !sc_is_zero(rem, calc_buffer_size*SC_BITS);
 
 	if (div_sign)
 		do_negate(quot, quot);
@@ -374,7 +365,7 @@ static void do_shl(const sc_word *val1, sc_word *buffer, long shift_cnt,
 {
 	assert(buffer != val1);
 	assert(shift_cnt >= 0);
-	assert((do_sign(val1) != -1) || is_signed);
+	assert(!sc_is_negative(val1) || is_signed);
 
 	/* if shifting far enough the result is zero */
 	if (shift_cnt >= bitsize) {
@@ -440,7 +431,7 @@ static void do_shr(const sc_word *val1, sc_word *buffer, long shift_cnt,
 
 	/* if shifting far enough the result is either 0 or -1 */
 	if (shift_cnt >= bitsize) {
-		if (!sc_is_zero(val1, calc_buffer_size)) {
+		if (!sc_is_zero(val1, calc_buffer_size*SC_BITS)) {
 			carry_flag = true;
 		}
 		memset(buffer, sign, calc_buffer_size);
@@ -712,15 +703,16 @@ void sc_truncate(unsigned int num_bits, sc_word *buffer)
 
 ir_relation sc_comp(const sc_word* const val1, const sc_word* const val2)
 {
-	int counter = calc_buffer_size - 1;
-
 	/* compare signs first:
 	 * the loop below can only compare values of the same sign! */
-	if (do_sign(val1) != do_sign(val2))
-		return do_sign(val1) == 1 ? ir_relation_greater : ir_relation_less;
+	bool val1_negative = sc_is_negative(val1);
+	bool val2_negative = sc_is_negative(val2);
+	if (val1_negative != val2_negative)
+		return val1_negative ? ir_relation_less : ir_relation_greater;
 
 	/* loop until two digits differ, the values are equal if there
 	 * are no such two digits */
+	int counter = calc_buffer_size - 1;
 	while (val1[counter] == val2[counter]) {
 		counter--;
 		if (counter < 0) return ir_relation_equal;
@@ -729,7 +721,8 @@ ir_relation sc_comp(const sc_word* const val1, const sc_word* const val2)
 	/* the leftmost digit is the most significant, so this returns
 	 * the correct result.
 	 * This implies the digit enum is ordered */
-	return val1[counter] > val2[counter] ? ir_relation_greater : ir_relation_less;
+	return val1[counter] > val2[counter]
+	     ? ir_relation_greater : ir_relation_less;
 }
 
 int sc_get_highest_set_bit(const sc_word *value)
@@ -821,7 +814,7 @@ bool sc_is_all_one(const sc_word *value, unsigned bits)
 
 bool sc_is_negative(const sc_word *value)
 {
-	return do_sign(value) == -1;
+	return sc_get_bit_at(value, calc_buffer_size*SC_BITS-1);
 }
 
 unsigned char sc_sub_bits(const sc_word *value, int len, unsigned byte_ofs)
