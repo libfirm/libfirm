@@ -1097,64 +1097,46 @@ int sc_get_precision(void)
 
 void sc_add(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 {
-	carry_flag = false;
-
 	do_add(value1, value2, buffer);
 }
 
 void sc_sub(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 {
-	carry_flag = false;
-
 	do_sub(value1, value2, buffer);
 }
 
 void sc_neg(const sc_word *value1, sc_word *buffer)
 {
-	carry_flag = false;
-
 	do_negate(value1, buffer);
 }
 
 void sc_and(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 {
-	carry_flag = false;
-
 	do_bitand(value1, value2, buffer);
 }
 
 void sc_andnot(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 {
-	carry_flag = false;
-
 	do_bitandnot(value1, value2, buffer);
 }
 
 void sc_or(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 {
-	carry_flag = false;
-
 	do_bitor(value1, value2, buffer);
 }
 
 void sc_xor(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 {
-	carry_flag = false;
-
 	do_bitxor(value1, value2, buffer);
 }
 
 void sc_not(const sc_word *value1, sc_word *buffer)
 {
-	carry_flag = false;
-
 	do_bitnot(value1, buffer);
 }
 
 void sc_mul(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 {
-	carry_flag = false;
-
 	do_mul(value1, value2, buffer);
 }
 
@@ -1169,8 +1151,6 @@ bool sc_div(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 
 void sc_mod(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 {
-	carry_flag = false;
-
 	sc_word *unused_res = ALLOCAN(sc_word, calc_buffer_size);
 	do_divmod(value1, value2, unused_res, buffer);
 }
@@ -1178,8 +1158,6 @@ void sc_mod(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 void sc_divmod(const sc_word *value1, const sc_word *value2,
                sc_word *div_buffer, sc_word *mod_buffer)
 {
-	carry_flag = false;
-
 	do_divmod(value1, value2, div_buffer, mod_buffer);
 }
 
