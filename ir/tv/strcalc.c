@@ -25,7 +25,6 @@
 #define SC_RESULT(x) ((x) & ((1U << SC_BITS) - 1U))
 #define SC_CARRY(x)  ((unsigned)(x) >> SC_BITS)
 
-#define CLEAR_BUFFER(b) memset(b, 0, calc_buffer_size)
 #define _bitisset(digit, pos) (((digit) & (1 << (pos))) != 0)
 
 static sc_word *calc_buffer = NULL;    /* buffer holding all results */
@@ -69,6 +68,11 @@ static char const *const binary_table[] = {
 	"0000", "0001", "0010", "0011", "0100", "0101", "0110", "0111",
 	"1000", "1001", "1010", "1011", "1100", "1101", "1110", "1111"
 };
+
+void sc_zero(sc_word *buffer)
+{
+	memset(buffer, 0, sizeof(buffer[0]) * calc_buffer_size);
+}
 
 /**
  * implements the bitwise NOT operation
@@ -551,8 +555,8 @@ bool sc_val_from_str(char sign, unsigned base, const char *str, size_t len,
 	if (buffer == NULL)
 		buffer = calc_buffer;
 
-	CLEAR_BUFFER(buffer);
-	CLEAR_BUFFER(val);
+	sc_zero(buffer);
+	sc_zero(val);
 
 	/* BEGIN string evaluation, from left to right */
 	while (len > 0) {
@@ -605,7 +609,7 @@ void sc_val_from_long(long value, sc_word *buffer)
 			value = -value;
 	}
 
-	CLEAR_BUFFER(buffer);
+	sc_zero(buffer);
 
 	while ((value != 0) && (pos < buffer + calc_buffer_size)) {
 		*pos++ = value & 0xF;
@@ -655,7 +659,7 @@ void sc_min_from_bits(unsigned num_bits, bool sign, sc_word *buffer)
 {
 	if (buffer == NULL) buffer = calc_buffer;
 	if (!sign) {
-		CLEAR_BUFFER(buffer);
+		sc_zero(buffer);
 		return;
 	} else {
 		sc_word *pos = buffer;
@@ -1306,9 +1310,4 @@ bool sc_shrs(const sc_word *val1, const sc_word *val2, int bitsize, bool sign,
 		memmove(buffer, calc_buffer, calc_buffer_size);
 	}
 	return carry_flag;
-}
-
-void sc_zero(sc_word *buffer)
-{
-	CLEAR_BUFFER(buffer);
 }
