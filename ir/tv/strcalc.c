@@ -40,11 +40,6 @@ static bool carry_flag;             /**< some computation set the carry_flag:
                                          However, the meaning of carry is machine dependent
                                          and often defined in other ways! */
 
-static const sc_word sex_digit[4] = { 14, 12,  8,  0 };
-static const sc_word zex_digit[4] = {  1,  3,  7, 15 };
-static const sc_word max_digit[4] = {  0,  1,  3,  7 };
-static const sc_word min_digit[4] = { 15, 14, 12,  8 };
-
 static const sc_word shrs_table[16][4][2] = {
 	{ { 0, 0}, {0, 0}, {0,  0}, {0,  0} },
 	{ { 1, 0}, {0, 8}, {0,  4}, {0,  2} },
@@ -73,6 +68,26 @@ static char const *const binary_table[] = {
 void sc_zero(sc_word *buffer)
 {
 	memset(buffer, 0, sizeof(buffer[0]) * calc_buffer_size);
+}
+
+static sc_word zex_digit(unsigned x)
+{
+	return (1u << (x+1)) - 1;
+}
+
+static sc_word sex_digit(unsigned x)
+{
+	return (SC_MASK << (x+1)) & SC_MASK;
+}
+
+static sc_word max_digit(unsigned x)
+{
+	return (1u << x) - 1;
+}
+
+static sc_word min_digit(unsigned x)
+{
+	return SC_MASK - max_digit(x);
 }
 
 /**
@@ -404,13 +419,13 @@ static void do_shl(const sc_word *val1, sc_word *buffer, long shift_cnt,
 	bitoffset = (bitsize-1) % 4;
 	if (is_signed && _bitisset(buffer[shift_cnt], bitoffset)) {
 		/* this sets the upper bits of the leftmost digit */
-		buffer[shift_cnt] |= min_digit[bitoffset];
+		buffer[shift_cnt] |= min_digit(bitoffset);
 		for (int counter = shift_cnt+1; counter < calc_buffer_size; counter++) {
 			buffer[counter] = SC_MASK;
 		}
 	} else if (is_signed && !_bitisset(buffer[shift_cnt], bitoffset)) {
 		/* this clears the upper bits of the leftmost digit */
-		buffer[shift_cnt] &= max_digit[bitoffset];
+		buffer[shift_cnt] &= max_digit(bitoffset);
 		for (int counter = shift_cnt+1; counter < calc_buffer_size; counter++) {
 			buffer[counter] = 0;
 		}
@@ -467,7 +482,7 @@ static void do_shr(const sc_word *val1, sc_word *buffer, long shift_cnt,
 
 	/* remove sign bits if mode was signed and this is an unsigned shift */
 	if (!signed_shift && is_signed) {
-		msd &= max_digit[bitoffset];
+		msd &= max_digit(bitoffset);
 	}
 
 	const sc_word *shrs = shrs_table[msd][shift_mod];
@@ -475,7 +490,7 @@ static void do_shr(const sc_word *val1, sc_word *buffer, long shift_cnt,
 	/* signed shift and signed mode and negative value means all bits to the
 	 * left are set */
 	if (signed_shift && sign == SC_MASK) {
-		buffer[counter] = shrs[0] | min_digit[bitoffset];
+		buffer[counter] = shrs[0] | min_digit(bitoffset);
 	} else {
 		buffer[counter] = shrs[0];
 	}
@@ -506,24 +521,24 @@ void sign_extend(sc_word *buffer, unsigned from_bits, bool is_signed)
 	int nibble = bits >> 2;
 
 	if (is_signed) {
-		sc_word max = max_digit[bits & 3];
+		sc_word max = max_digit(bits & 3);
 		if (buffer[nibble] > max) {
 			/* sign bit is set, we need sign expansion */
 
 			for (int i = nibble + 1; i < calc_buffer_size; ++i)
 				buffer[i] = SC_MASK;
-			buffer[nibble] |= sex_digit[bits & 3];
+			buffer[nibble] |= sex_digit(bits & 3);
 		} else {
 			/* set all bits to zero */
 			for (int i = nibble + 1; i < calc_buffer_size; ++i)
 				buffer[i] = 0;
-			buffer[nibble] &= zex_digit[bits & 3];
+			buffer[nibble] &= zex_digit(bits & 3);
 		}
 	} else {
 		/* do zero extension */
 		for (int i = nibble + 1; i < calc_buffer_size; ++i)
 			buffer[i] = 0;
-		buffer[nibble] &= zex_digit[bits & 3];
+		buffer[nibble] &= zex_digit(bits & 3);
 	}
 }
 
@@ -661,7 +676,7 @@ void sc_min_from_bits(unsigned num_bits, bool sign, sc_word *buffer)
 		for ( ; i < bits/4; i++)
 			*pos++ = 0;
 
-		*pos++ = min_digit[bits%4];
+		*pos++ = min_digit(bits%4);
 
 		for (i++; (int)i <= calc_buffer_size - 1; i++)
 			*pos++ = SC_MASK;
@@ -677,7 +692,7 @@ void sc_max_from_bits(unsigned num_bits, bool sign, sc_word *buffer)
 	for ( ; i < bits/4; i++)
 		*pos++ = SC_MASK;
 
-	*pos++ = max_digit[bits%4];
+	*pos++ = max_digit(bits%4);
 
 	for (i++; (int)i <= calc_buffer_size - 1; i++)
 		*pos++ = 0;
@@ -798,7 +813,7 @@ bool sc_is_zero(const sc_word *value, unsigned bits)
 		if (value[i] != 0)
 			return false;
 	}
-	sc_word mask = max_digit[bits%SC_BITS];
+	sc_word mask = max_digit(bits%SC_BITS);
 	return mask == 0 || (value[i] & mask) == 0;
 }
 
@@ -809,7 +824,7 @@ bool sc_is_all_one(const sc_word *value, unsigned bits)
 		if (value[i] != SC_MASK)
 			return false;
 	}
-	sc_word mask = max_digit[bits%SC_BITS];
+	sc_word mask = max_digit(bits%SC_BITS);
 	return mask == 0 || (value[i] & mask) == mask;
 }
 
@@ -844,7 +859,7 @@ unsigned sc_popcount(const sc_word *value, unsigned bits)
 	for (i = 0; i < bits/SC_BITS; ++i) {
 		res += popcount(value[i]);
 	}
-	sc_word mask = max_digit[bits%SC_BITS];
+	sc_word mask = max_digit(bits%SC_BITS);
 	if (mask != 0)
 		res += popcount(value[i] & mask);
 
@@ -960,7 +975,7 @@ char *sc_print_buf(char *buf, size_t buf_len, const sc_word *value,
 
 		/* last nibble must be masked */
 		if (bits & 3) {
-			sc_word mask = zex_digit[(bits & 3) - 1];
+			sc_word mask = zex_digit((bits & 3) - 1);
 			sc_word x    = value[counter++] & mask;
 			*(--pos) = digits[x];
 			assert(pos >= buf);
@@ -986,7 +1001,7 @@ char *sc_print_buf(char *buf, size_t buf_len, const sc_word *value,
 
 		/* last nibble must be masked */
 		if (bits & 3) {
-			sc_word mask = zex_digit[(bits & 3) - 1];
+			sc_word mask = zex_digit((bits & 3) - 1);
 			sc_word x    = value[counter++] & mask;
 
 			pos -= 4;
@@ -1030,7 +1045,7 @@ char *sc_print_buf(char *buf, size_t buf_len, const sc_word *value,
 
 		/* last nibble must be masked */
 		if (bits & 3) {
-			sc_word mask = zex_digit[(bits & 3) - 1];
+			sc_word mask = zex_digit((bits & 3) - 1);
 			div1_res[counter] = p[counter] & mask;
 			++counter;
 		}
