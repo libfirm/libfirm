@@ -22,6 +22,7 @@
 #include "bitfiddle.h"
 
 #define SC_BITS      4
+#define SC_MASK      ((sc_word)0xF)
 #define SC_RESULT(x) ((x) & ((1U << SC_BITS) - 1U))
 #define SC_CARRY(x)  ((unsigned)(x) >> SC_BITS)
 
@@ -80,7 +81,7 @@ void sc_zero(sc_word *buffer)
 static void do_bitnot(const sc_word *val, sc_word *buffer)
 {
 	for (int counter = 0; counter<calc_buffer_size; counter++)
-		buffer[counter] = val[counter] ^ 0xF;
+		buffer[counter] = val[counter] ^ SC_MASK;
 }
 
 /**
@@ -117,7 +118,7 @@ static void do_bitandnot(const sc_word *val1, const sc_word *val2,
                          sc_word *buffer)
 {
 	for (int counter = 0; counter < calc_buffer_size; ++counter)
-		buffer[counter] = val1[counter] & (0xF ^ val2[counter]);
+		buffer[counter] = val1[counter] & (SC_MASK ^ val2[counter]);
 }
 
 /**
@@ -405,7 +406,7 @@ static void do_shl(const sc_word *val1, sc_word *buffer, long shift_cnt,
 		/* this sets the upper bits of the leftmost digit */
 		buffer[shift_cnt] |= min_digit[bitoffset];
 		for (int counter = shift_cnt+1; counter < calc_buffer_size; counter++) {
-			buffer[counter] = 0xF;
+			buffer[counter] = SC_MASK;
 		}
 	} else if (is_signed && !_bitisset(buffer[shift_cnt], bitoffset)) {
 		/* this clears the upper bits of the leftmost digit */
@@ -427,7 +428,7 @@ static void do_shr(const sc_word *val1, sc_word *buffer, long shift_cnt,
 {
 	assert(shift_cnt >= 0);
 
-	sc_word sign = signed_shift && do_bit(val1, bitsize - 1) ? 0xF : 0;
+	sc_word sign = signed_shift && do_bit(val1, bitsize - 1) ? SC_MASK : 0;
 
 	/* if shifting far enough the result is either 0 or -1 */
 	if (shift_cnt >= bitsize) {
@@ -473,7 +474,7 @@ static void do_shr(const sc_word *val1, sc_word *buffer, long shift_cnt,
 
 	/* signed shift and signed mode and negative value means all bits to the
 	 * left are set */
-	if (signed_shift && sign == 0xF) {
+	if (signed_shift && sign == SC_MASK) {
 		buffer[counter] = shrs[0] | min_digit[bitoffset];
 	} else {
 		buffer[counter] = shrs[0];
@@ -510,7 +511,7 @@ void sign_extend(sc_word *buffer, unsigned from_bits, bool is_signed)
 			/* sign bit is set, we need sign expansion */
 
 			for (int i = nibble + 1; i < calc_buffer_size; ++i)
-				buffer[i] = 0xF;
+				buffer[i] = SC_MASK;
 			buffer[nibble] |= sex_digit[bits & 3];
 		} else {
 			/* set all bits to zero */
@@ -605,7 +606,7 @@ void sc_val_from_long(long value, sc_word *buffer)
 	sc_zero(buffer);
 
 	while ((value != 0) && (pos < buffer + calc_buffer_size)) {
-		*pos++ = value & 0xF;
+		*pos++ = value & SC_MASK;
 		value >>= 4;
 	}
 
@@ -622,7 +623,7 @@ void sc_val_from_ulong(unsigned long value, sc_word *buffer)
 	sc_word *pos = buffer;
 
 	while (pos < buffer + calc_buffer_size) {
-		*pos++ = value & 0xF;
+		*pos++ = value & SC_MASK;
 		value >>= 4;
 	}
 }
@@ -663,7 +664,7 @@ void sc_min_from_bits(unsigned num_bits, bool sign, sc_word *buffer)
 		*pos++ = min_digit[bits%4];
 
 		for (i++; (int)i <= calc_buffer_size - 1; i++)
-			*pos++ = 0xF;
+			*pos++ = SC_MASK;
 	}
 }
 
@@ -674,7 +675,7 @@ void sc_max_from_bits(unsigned num_bits, bool sign, sc_word *buffer)
 	unsigned bits = num_bits - sign;
 	unsigned i    = 0;
 	for ( ; i < bits/4; i++)
-		*pos++ = 0xF;
+		*pos++ = SC_MASK;
 
 	*pos++ = max_digit[bits%4];
 
@@ -805,7 +806,7 @@ bool sc_is_all_one(const sc_word *value, unsigned bits)
 {
 	unsigned i;
 	for (i = 0; i < bits/SC_BITS; ++i) {
-		if (value[i] != 0xF)
+		if (value[i] != SC_MASK)
 			return false;
 	}
 	sc_word mask = max_digit[bits%SC_BITS];
@@ -860,15 +861,15 @@ void sc_val_from_bytes(unsigned char const *const bytes, size_t n_bytes,
 	if (big_endian) {
 		for (unsigned char const *bp = bytes+n_bytes-1; bp >= bytes; --bp) {
 			unsigned char v = *bp;
-			*p++ =  v     & 0xF;
-			*p++ = (v>>4) & 0xF;
+			*p++ =  v     & SC_MASK;
+			*p++ = (v>>4) & SC_MASK;
 		}
 	} else {
 		for (unsigned char const *bp = bytes, *bp_end = bytes + n_bytes;
 		     bp < bp_end; ++bp) {
 			unsigned char v = *bp;
-			*p++ =  v     & 0xF;
-			*p++ = (v>>4) & 0xF;
+			*p++ =  v     & SC_MASK;
+			*p++ = (v>>4) & SC_MASK;
 		}
 	}
 	for (sc_word *p_end = buffer+calc_buffer_size; p < p_end; ++p)
@@ -893,15 +894,15 @@ void sc_val_from_bits(unsigned char const *const bytes, unsigned from,
 	if (low == high) {
 		uint32_t val
 			= ((uint32_t)*low << (32-high_bit)) >> (32-high_bit+low_bit);
-		*p++ = (val >> 0) & 0xF;
-		*p++ = (val >> 4) & 0xF;
+		*p++ = (val >> 0) & SC_MASK;
+		*p++ = (val >> 4) & SC_MASK;
 		goto clear_rest;
 	}
 
 	/* lowest byte gets applied partially */
 	uint32_t val = ((uint32_t)*low) >> low_bit;
-	*p     = (val >> 0) & 0xF;
-	*(p+1) = (val >> 4) & 0xF;
+	*p     = (val >> 0) & SC_MASK;
+	*(p+1) = (val >> 4) & SC_MASK;
 	*(p+2) = 0;
 	unsigned bit = (8-low_bit)%4;
 	p += (8-low_bit)/4;
@@ -909,14 +910,14 @@ void sc_val_from_bits(unsigned char const *const bytes, unsigned from,
 	 * units of the destination number) */
 	for (const unsigned char *mid = low+1; mid < high; ++mid) {
 		uint32_t mval = ((uint32_t)*mid) << bit;
-		*p++   |= (mval >> 0) & 0xF;
-		*p++    = (mval >> 4) & 0xF;
-		*p      = (mval >> 8) & 0xF;
+		*p++   |= (mval >> 0) & SC_MASK;
+		*p++    = (mval >> 4) & SC_MASK;
+		*p      = (mval >> 8) & SC_MASK;
 	}
 	/* partially apply the highest byte */
 	uint32_t hval = ((uint32_t)(*high) << (32-high_bit)) >> (32-high_bit-bit);
-	*p++ |= (hval >> 0) & 0xF;
-	*p++  = (hval >> 4) & 0xF;
+	*p++ |= (hval >> 0) & SC_MASK;
+	*p++  = (hval >> 4) & SC_MASK;
 
 clear_rest:
 	assert(p <= buffer + calc_buffer_size);
