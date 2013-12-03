@@ -101,41 +101,41 @@ void sc_divmod(const sc_word *value1, const sc_word *value2,
 /**
  * buffer = value1 << offset
  */
-void sc_shlI(const sc_word *val1, long shift_cnt, int bitsize, bool sign,
-             sc_word *buffer);
+void sc_shlI(const sc_word *val1, unsigned shift_cnt, unsigned bitsize,
+             bool sign, sc_word *buffer);
 
 /**
  * buffer = value1 << value2
  */
-void sc_shl(const sc_word *value1, const sc_word *value2, int bitsize,
+void sc_shl(const sc_word *value1, const sc_word *value2, unsigned bitsize,
             bool sign, sc_word *buffer);
 
 /**
  * buffer = value1 >>u offset
  * @returns carry flag
  */
-bool sc_shrI(const sc_word *val1, long shift_cnt, int bitsize, bool sign,
-             sc_word *buffer);
+bool sc_shrI(const sc_word *val1, unsigned shift_cnt, unsigned bitsize,
+             bool sign, sc_word *buffer);
 
 /**
  * buffer = value1 >>u value2
  * @returns carry flag
  */
-bool sc_shr(const sc_word *value1, const sc_word *value2, int bitsize,
+bool sc_shr(const sc_word *value1, const sc_word *value2, unsigned bitsize,
             bool sign, sc_word *buffer);
 
 /**
  * buffer = value1 >>s offset
  * @returns carry flag
  */
-bool sc_shrsI(const sc_word *val1, long shift_cnt, int bitsize, bool sign,
-              sc_word *buffer);
+bool sc_shrsI(const sc_word *val1, unsigned shift_cnt, unsigned bitsize,
+              bool sign, sc_word *buffer);
 
 /**
  * buffer = value1 >>s value2
  * @returns carry flag
  */
-bool sc_shrs(const sc_word *value1, const sc_word *value2, int bitsize,
+bool sc_shrs(const sc_word *value1, const sc_word *value2, unsigned bitsize,
              bool sign, sc_word *buffer);
 
 /**
@@ -147,7 +147,7 @@ void sc_zero(sc_word *buffer);
  * function declarations
  */
 const sc_word *sc_get_buffer(void);
-int sc_get_buffer_length(void);
+unsigned sc_get_buffer_length(void);
 
 void sign_extend(sc_word *buffer, unsigned from_bits, bool is_signed);
 
@@ -187,8 +187,8 @@ void sc_val_from_bits(unsigned char const *const bytes, unsigned from,
 /** converts a value to a long */
 long sc_val_to_long(const sc_word *val);
 uint64_t sc_val_to_uint64(const sc_word *val);
-void sc_min_from_bits(unsigned int num_bits, bool sign, sc_word *buffer);
-void sc_max_from_bits(unsigned int num_bits, bool sign, sc_word *buffer);
+void sc_min_from_bits(unsigned num_bits, bool sign, sc_word *buffer);
+void sc_max_from_bits(unsigned num_bits, bool sign, sc_word *buffer);
 
 /** truncates a value to lowest @p num_bits bits */
 void sc_truncate(unsigned num_bits, sc_word *buffer);
@@ -211,7 +211,8 @@ bool sc_is_all_one(const sc_word *value, unsigned num_bits);
  * @param len       number of valid bits in the value
  * @param byte_ofs  the byte offset
  */
-unsigned char sc_sub_bits(const sc_word *value, int len, unsigned byte_ofs);
+unsigned char sc_sub_bits(const sc_word *value, unsigned len,
+                          unsigned byte_ofs);
 
 /**
  * Converts a tarval into a string.
@@ -236,9 +237,9 @@ char *sc_print_buf(char *buf, size_t buf_len, const sc_word *val, unsigned bits,
  * Sets up internal data structures and constants
  * After the first call subsequent calls have no effect
  */
-void init_strcalc(int precision);
+void init_strcalc(unsigned precision);
 void finish_strcalc(void);
-int sc_get_precision(void);
+unsigned sc_get_precision(void);
 
 /** Return the bit at a given position. */
 bool sc_get_bit_at(const sc_word *value, unsigned pos);
