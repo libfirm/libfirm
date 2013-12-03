@@ -4601,20 +4601,19 @@ is_bittest: {
 					break;
 				case iro_Shrs:
 					/*
-					 * optimize x >>s c1 == c into x & (-1 << c1) == c << c1  if  (c >>s (BITS - c1)) \in {0,-1}
+					 * optimize x >>s c1 == c into x & (-1 << c1) == c << c1  if  (c >>s ((BITS - 1) - c1)) \in {0,-1}
 					 *                             FALSE                       else
-					 * optimize x >>s c1 != c into x & (-1 << c1) != c << c1  if  (c >>s (BITS - c1)) \in {0,-1}
+					 * optimize x >>s c1 != c into x & (-1 << c1) != c << c1  if  (c >>s ((BITS - 1) - c1)) \in {0,-1}
 					 *                             TRUE                        else
 					 */
 					c1 = get_Shrs_right(left);
 					if (is_Const(c1)) {
-						ir_graph  *irg    = get_irn_irg(c1);
-						ir_tarval *tv1    = get_Const_tarval(c1);
-						ir_mode   *mode   = get_irn_mode(left);
-						ir_tarval *minus1 = get_mode_all_one(mode);
-						ir_tarval *amask  = tarval_shl(minus1, tv1);
-						ir_tarval *cond   = new_tarval_from_long(get_mode_size_bits(mode), get_tarval_mode(tv1));
-						ir_node *sl, *blk;
+						ir_graph  *irg     = get_irn_irg(c1);
+						ir_tarval *tv1     = get_Const_tarval(c1);
+						ir_mode   *mode    = get_irn_mode(left);
+						ir_tarval *all_one = get_mode_all_one(mode);
+						ir_tarval *amask   = tarval_shl(all_one, tv1);
+						ir_tarval *cond    = new_tarval_from_long(get_mode_size_bits(mode) - 1, get_tarval_mode(tv1));
 
 						cond = tarval_sub(cond, tv1, NULL);
 						cond = tarval_shrs(tv, cond);
@@ -4626,8 +4625,8 @@ is_bittest: {
 							DBG_OPT_CSTEVAL(n, c1);
 							return c1;
 						}
-						sl   = get_Shrs_left(left);
-						blk  = get_nodes_block(n);
+						ir_node *sl  = get_Shrs_left(left);
+						ir_node *blk = get_nodes_block(n);
 						left = new_rd_And(get_irn_dbg_info(left), blk, sl, new_r_Const(irg, amask), mode);
 						tv   = tarval_shl(tv, tv1);
 						changedc = true;
