@@ -235,11 +235,8 @@ char *sc_print_buf(char *buf, size_t buf_len, const sc_word *val, unsigned bits,
 /** Initialize the strcalc module.
  * Sets up internal data structures and constants
  * After the first call subsequent calls have no effect
- *
- * @param precision_in_bytes Specifies internal precision to be used
- *   for calculations. The reason for being multiples of 8 eludes me
  */
-void init_strcalc(int precision_in_bytes);
+void init_strcalc(int precision);
 void finish_strcalc(void);
 int sc_get_precision(void);
 
