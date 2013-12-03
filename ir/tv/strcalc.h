@@ -94,8 +94,9 @@ void sc_mod(const sc_word *value1, const sc_word *value2, sc_word *buffer);
 /**
  * div_buffer = value1 / value2
  * mod_buffer = value1 % value2
+ * @returns carry
  */
-void sc_divmod(const sc_word *value1, const sc_word *value2,
+bool sc_divmod(const sc_word *value1, const sc_word *value2,
                sc_word *div_buffer, sc_word *mod_buffer);
 
 /**

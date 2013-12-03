@@ -84,45 +84,30 @@ static sc_word min_digit(unsigned x)
 	return SC_MASK - max_digit(x);
 }
 
-/**
- * implements the bitwise NOT operation
- */
-static void do_bitnot(const sc_word *val, sc_word *buffer)
+void sc_not(const sc_word *val, sc_word *buffer)
 {
 	for (unsigned counter = 0; counter<calc_buffer_size; counter++)
 		buffer[counter] = val[counter] ^ SC_MASK;
 }
 
-/**
- * implements the bitwise OR operation
- */
-static void do_bitor(const sc_word *val1, const sc_word *val2, sc_word *buffer)
+void sc_or(const sc_word *val1, const sc_word *val2, sc_word *buffer)
 {
 	for (unsigned counter = 0; counter<calc_buffer_size; counter++)
 		buffer[counter] = val1[counter] | val2[counter];
 }
 
-/**
- * implements the bitwise eXclusive OR operation
- */
-static void do_bitxor(const sc_word *val1, const sc_word *val2, sc_word *buffer)
+void sc_xor(const sc_word *val1, const sc_word *val2, sc_word *buffer)
 {
 	for (unsigned counter = 0; counter<calc_buffer_size; counter++)
 		buffer[counter] = val1[counter] ^ val2[counter];
 }
 
-/**
- * implements the bitwise AND operation
- */
-static void do_bitand(const sc_word *val1, const sc_word *val2, sc_word *buffer)
+void sc_and(const sc_word *val1, const sc_word *val2, sc_word *buffer)
 {
 	for (unsigned counter = 0; counter<calc_buffer_size; counter++)
 		buffer[counter] = val1[counter] & val2[counter];
 }
 
-/**
- * implements the bitwise AND not operation
- */
 void sc_andnot(const sc_word *val1, const sc_word *val2, sc_word *buffer)
 {
 	for (unsigned counter = 0; counter < calc_buffer_size; ++counter)
@@ -132,7 +117,7 @@ void sc_andnot(const sc_word *val1, const sc_word *val2, sc_word *buffer)
 /**
  * Implements a fast ADD + 1
  */
-static void do_inc(const sc_word *val, sc_word *buffer)
+static void sc_inc(const sc_word *val, sc_word *buffer)
 {
 	unsigned counter = 0;
 	while (counter++ < calc_buffer_size) {
@@ -149,19 +134,13 @@ static void do_inc(const sc_word *val, sc_word *buffer)
 	 * happen only when a value changes sign. */
 }
 
-/**
- * Implements a unary MINUS
- */
-static void do_negate(const sc_word *val, sc_word *buffer)
+void sc_neg(const sc_word *val, sc_word *buffer)
 {
-	do_bitnot(val, buffer);
-	do_inc(buffer, buffer);
+	sc_not(val, buffer);
+	sc_inc(buffer, buffer);
 }
 
-/**
- * Implements a binary ADD
- */
-static void do_add(const sc_word *val1, const sc_word *val2, sc_word *buffer)
+void sc_add(const sc_word *val1, const sc_word *val2, sc_word *buffer)
 {
 	sc_word carry = 0;
 	for (unsigned counter = 0; counter < calc_buffer_size; ++counter) {
@@ -171,22 +150,16 @@ static void do_add(const sc_word *val1, const sc_word *val2, sc_word *buffer)
 	}
 }
 
-/**
- * Implements a binary SUB
- */
-static void do_sub(const sc_word *val1, const sc_word *val2, sc_word *buffer)
+void sc_sub(const sc_word *val1, const sc_word *val2, sc_word *buffer)
 {
 	/* intermediate buffer to hold -val2 */
 	sc_word *temp_buffer = ALLOCAN(sc_word, calc_buffer_size);
 
-	do_negate(val2, temp_buffer);
-	do_add(val1, temp_buffer, buffer);
+	sc_neg(val2, temp_buffer);
+	sc_add(val1, temp_buffer, buffer);
 }
 
-/**
- * Implements a binary MUL
- */
-static void do_mul(const sc_word *val1, const sc_word *val2, sc_word *buffer)
+void sc_mul(const sc_word *val1, const sc_word *val2, sc_word *buffer)
 {
 	sc_word *temp_buffer = ALLOCAN(sc_word, calc_buffer_size);
 	sc_word *neg_val1    = ALLOCAN(sc_word, calc_buffer_size);
@@ -199,12 +172,12 @@ static void do_mul(const sc_word *val1, const sc_word *val2, sc_word *buffer)
 	 * it is necessary to negate them and adjust the result accordingly       */
 	bool sign = false;
 	if (sc_is_negative(val1)) {
-		do_negate(val1, neg_val1);
+		sc_neg(val1, neg_val1);
 		val1 = neg_val1;
 		sign = !sign;
 	}
 	if (sc_is_negative(val2)) {
-		do_negate(val2, neg_val2);
+		sc_neg(val2, neg_val2);
 		val2 = neg_val2;
 		sign = !sign;
 	}
@@ -248,7 +221,7 @@ static void do_mul(const sc_word *val1, const sc_word *val2, sc_word *buffer)
 	}
 
 	if (sign)
-		do_negate(temp_buffer, buffer);
+		sc_neg(temp_buffer, buffer);
 	else
 		memcpy(buffer, temp_buffer, calc_buffer_size);
 }
@@ -256,7 +229,7 @@ static void do_mul(const sc_word *val1, const sc_word *val2, sc_word *buffer)
 /**
  * Shift the buffer to left and add an sc digit
  */
-static void do_push(sc_word digit, sc_word *buffer)
+static void sc_push(sc_word digit, sc_word *buffer)
 {
 	for (unsigned counter = calc_buffer_size - 1; counter-- > 0; ) {
 		buffer[counter+1] = buffer[counter];
@@ -264,13 +237,8 @@ static void do_push(sc_word digit, sc_word *buffer)
 	buffer[0] = digit;
 }
 
-/**
- * Implements truncating integer division and remainder.
- *
- * Note: This is MOST slow
- */
-static bool do_divmod(const sc_word *dividend, const sc_word *divisor,
-                      sc_word *quot, sc_word *rem)
+bool sc_divmod(const sc_word *dividend, const sc_word *divisor,
+               sc_word *quot, sc_word *rem)
 {
 	assert(quot != dividend && quot != divisor);
 	assert(rem != dividend && rem != divisor);
@@ -289,14 +257,14 @@ static bool do_divmod(const sc_word *dividend, const sc_word *divisor,
 	bool     rem_sign = false;
 	sc_word *neg_val1 = ALLOCAN(sc_word, calc_buffer_size);
 	if (sc_is_negative(dividend)) {
-		do_negate(dividend, neg_val1);
+		sc_neg(dividend, neg_val1);
 		div_sign = !div_sign;
 		rem_sign = !rem_sign;
 		dividend = neg_val1;
 	}
 
 	sc_word *neg_val2 = ALLOCAN(sc_word, calc_buffer_size);
-	do_negate(divisor, neg_val2);
+	sc_neg(divisor, neg_val2);
 	const sc_word *minus_divisor;
 	if (sc_is_negative(divisor)) {
 		div_sign = !div_sign;
@@ -322,31 +290,31 @@ static bool do_divmod(const sc_word *dividend, const sc_word *divisor,
 	}
 
 	for (unsigned c_dividend = calc_buffer_size; c_dividend-- > 0; ) {
-		do_push(dividend[c_dividend], rem);
-		do_push(0, quot);
+		sc_push(dividend[c_dividend], rem);
+		sc_push(0, quot);
 
 		if (sc_comp(rem, divisor) != ir_relation_less) {
 			/* remainder >= divisor */
 			/* subtract until the remainder becomes negative, this should
 			 * be faster than comparing remainder with divisor  */
-			do_add(rem, minus_divisor, rem);
+			sc_add(rem, minus_divisor, rem);
 
 			while (!sc_is_negative(rem)) {
 				/* TODO can this generate carry or is masking redundant? */
 				quot[0] = SC_RESULT(quot[0] + 1);
-				do_add(rem, minus_divisor, rem);
+				sc_add(rem, minus_divisor, rem);
 			}
 
 			/* subtracted one too much */
-			do_add(rem, divisor, rem);
+			sc_add(rem, divisor, rem);
 		}
 	}
 end:
 	if (div_sign)
-		do_negate(quot, quot);
+		sc_neg(quot, quot);
 
 	if (rem_sign)
-		do_negate(rem, rem);
+		sc_neg(rem, rem);
 
 	/* sets carry if remainder is non-zero ??? */
 	bool carry_flag = !sc_is_zero(rem, calc_buffer_size*SC_BITS);
@@ -526,7 +494,7 @@ void sign_extend(sc_word *buffer, unsigned from_bits, bool is_signed)
 	}
 }
 
-/* ensure that our source character set conforms to ASCII for a-f, A-F, 0-9 */
+/** Ensures that our source character set conforms to ASCII for a-f, A-F, 0-9 */
 static inline void check_ascii(void)
 {
 	assert((('a'-97) | ('b'-98) | ('c'-99) | ('d'-100) | ('e'-101) | ('f'-102)
@@ -571,9 +539,9 @@ bool sc_val_from_str(bool negative, unsigned base, const char *str, size_t len,
 		/* Radix conversion from base b to base B:
 		 *  (UnUn-1...U1U0)b == ((((Un*b + Un-1)*b + ...)*b + U1)*b + U0)B */
 		/* multiply current value with base */
-		do_mul(sc_base, buffer, buffer);
+		sc_mul(sc_base, buffer, buffer);
 		/* add next digit to current value  */
-		do_add(val, buffer, buffer);
+		sc_add(val, buffer, buffer);
 
 		/* get ready for the next letter */
 		str++;
@@ -581,7 +549,7 @@ bool sc_val_from_str(bool negative, unsigned base, const char *str, size_t len,
 	}
 
 	if (negative)
-		do_negate(buffer, buffer);
+		sc_neg(buffer, buffer);
 
 	return true;
 }
@@ -610,9 +578,9 @@ void sc_val_from_long(long value, sc_word *buffer)
 
 	if (sign) {
 		if (is_minlong)
-			do_inc(buffer, buffer);
+			sc_inc(buffer, buffer);
 
-		do_negate(buffer, buffer);
+		sc_neg(buffer, buffer);
 	}
 }
 
@@ -1015,7 +983,7 @@ char *sc_print_buf(char *buf, size_t buf_len, const sc_word *value,
 		if (is_signed && base == SC_DEC) {
 			/* check for negative values */
 			if (sc_get_bit_at(value, bits-1)) {
-				do_negate(value, div2_res);
+				sc_neg(value, div2_res);
 				sign = true;
 				p = div2_res;
 			}
@@ -1038,7 +1006,7 @@ char *sc_print_buf(char *buf, size_t buf_len, const sc_word *value,
 		sc_word *n       = div2_res;
 		sc_word *rem_res = ALLOCAN(sc_word, calc_buffer_size);
 		for (;;) {
-			do_divmod(m, base_val, n, rem_res);
+			sc_divmod(m, base_val, n, rem_res);
 			sc_word *t = m;
 			m = n;
 			n = t;
@@ -1091,67 +1059,16 @@ unsigned sc_get_precision(void)
 	return bit_pattern_size;
 }
 
-void sc_add(const sc_word *value1, const sc_word *value2, sc_word *buffer)
-{
-	do_add(value1, value2, buffer);
-}
-
-void sc_sub(const sc_word *value1, const sc_word *value2, sc_word *buffer)
-{
-	do_sub(value1, value2, buffer);
-}
-
-void sc_neg(const sc_word *value1, sc_word *buffer)
-{
-	do_negate(value1, buffer);
-}
-
-void sc_and(const sc_word *value1, const sc_word *value2, sc_word *buffer)
-{
-	do_bitand(value1, value2, buffer);
-}
-
-void sc_andnot(const sc_word *value1, const sc_word *value2, sc_word *buffer)
-{
-	do_bitandnot(value1, value2, buffer);
-}
-
-void sc_or(const sc_word *value1, const sc_word *value2, sc_word *buffer)
-{
-	do_bitor(value1, value2, buffer);
-}
-
-void sc_xor(const sc_word *value1, const sc_word *value2, sc_word *buffer)
-{
-	do_bitxor(value1, value2, buffer);
-}
-
-void sc_not(const sc_word *value1, sc_word *buffer)
-{
-	do_bitnot(value1, buffer);
-}
-
-void sc_mul(const sc_word *value1, const sc_word *value2, sc_word *buffer)
-{
-	do_mul(value1, value2, buffer);
-}
-
 bool sc_div(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 {
 	sc_word *unused_res = ALLOCAN(sc_word, calc_buffer_size);
-	return do_divmod(value1, value2, buffer, unused_res);
+	return sc_divmod(value1, value2, buffer, unused_res);
 }
 
 void sc_mod(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 {
 	sc_word *unused_res = ALLOCAN(sc_word, calc_buffer_size);
-	do_divmod(value1, value2, unused_res, buffer);
-}
-
-void sc_divmod(const sc_word *value1, const sc_word *value2,
-               sc_word *div_buffer, sc_word *mod_buffer)
-{
-	do_divmod(value1, value2, div_buffer, mod_buffer);
+	sc_divmod(value1, value2, unused_res, buffer);
 }
 
 void sc_shlI(const sc_word *val1, unsigned shift_cnt, unsigned bitsize,
