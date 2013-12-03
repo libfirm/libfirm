@@ -123,21 +123,10 @@ static void do_bitand(const sc_word *val1, const sc_word *val2, sc_word *buffer)
 /**
  * implements the bitwise AND not operation
  */
-static void do_bitandnot(const sc_word *val1, const sc_word *val2,
-                         sc_word *buffer)
+void sc_andnot(const sc_word *val1, const sc_word *val2, sc_word *buffer)
 {
 	for (unsigned counter = 0; counter < calc_buffer_size; ++counter)
 		buffer[counter] = val1[counter] & (SC_MASK ^ val2[counter]);
-}
-
-/**
- * returns non-zero if bit at position pos is set
- */
-static int do_bit(const sc_word *val, int pos)
-{
-	unsigned bit    = pos % SC_BITS;
-	unsigned nibble = pos / SC_BITS;
-	return _bitisset(val[nibble], bit);
 }
 
 /**
@@ -436,7 +425,7 @@ static bool do_shr(const sc_word *val1, sc_word *buffer, unsigned shift_cnt,
                    unsigned bitsize, bool is_signed, bool signed_shift)
 {
 	bool    carry_flag = false;
-	sc_word sign = signed_shift && do_bit(val1, bitsize - 1) ? SC_MASK : 0;
+	sc_word sign = signed_shift && sc_get_bit_at(val1, bitsize-1) ? SC_MASK : 0;
 
 	/* if shifting far enough the result is either 0 or -1 */
 	if (shift_cnt >= bitsize) {
@@ -1025,7 +1014,7 @@ char *sc_print_buf(char *buf, size_t buf_len, const sc_word *value,
 		sc_word       *div2_res = ALLOCAN(sc_word, calc_buffer_size);
 		if (is_signed && base == SC_DEC) {
 			/* check for negative values */
-			if (do_bit(value, bits - 1)) {
+			if (sc_get_bit_at(value, bits-1)) {
 				do_negate(value, div2_res);
 				sign = true;
 				p = div2_res;
