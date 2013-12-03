@@ -836,7 +836,7 @@ static void lower_shr_helper(ir_node *node, ir_mode *mode,
 	ir_node *fconv       = create_conv(block_false, left_high, low_unsigned);
 	ir_node *fres_low    = new_rd_shrs(dbgi, block_false, fconv, right,
 	                                   low_unsigned);
-	int      cnsti       = modulo_shift2-1;
+	int      cnsti       = modulo_shift2 - 1;
 	ir_node *cnst3       = new_r_Const_long(irg, low_unsigned, cnsti);
 	ir_node *fres_high;
 	if (new_rd_shrs == new_rd_Shrs) {
@@ -846,9 +846,9 @@ static void lower_shr_helper(ir_node *node, ir_mode *mode,
 	}
 
 	/* patch lower block */
-	ir_node  *lower_in[]    = { new_r_Jmp(block_true), new_r_Jmp(block_false) };
-	ir_node  *phi_low_in[]  = { tres_low,  fres_low };
-	ir_node  *phi_high_in[] = { tres_high, fres_high };
+	ir_node *lower_in[]    = { new_r_Jmp(block_true), new_r_Jmp(block_false) };
+	ir_node *phi_low_in[]  = { tres_low,  fres_low };
+	ir_node *phi_high_in[] = { tres_high, fres_high };
 	set_irn_in(lower_block, ARRAY_SIZE(lower_in), lower_in);
 	ir_node *phi_low  = new_r_Phi(lower_block, ARRAY_SIZE(phi_low_in),
 	                              phi_low_in, low_unsigned);
