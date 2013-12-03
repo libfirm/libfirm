@@ -210,16 +210,16 @@ static void do_mul(const sc_word *val1, const sc_word *val2, sc_word *buffer)
 
 	/* the multiplication works only for positive values, for negative values *
 	 * it is necessary to negate them and adjust the result accordingly       */
-	char sign = 0;
+	bool sign = false;
 	if (sc_is_negative(val1)) {
 		do_negate(val1, neg_val1);
 		val1 = neg_val1;
-		sign ^= 1;
+		sign = !sign;
 	}
 	if (sc_is_negative(val2)) {
 		do_negate(val2, neg_val2);
 		val2 = neg_val2;
-		sign ^= 1;
+		sign = !sign;
 	}
 
 	for (int c_outer = 0; c_outer < max_value_size; c_outer++) {
@@ -303,8 +303,8 @@ static bool do_divmod(const sc_word *dividend, const sc_word *divisor,
 	sc_word *neg_val1 = ALLOCAN(sc_word, calc_buffer_size);
 	if (sc_is_negative(dividend)) {
 		do_negate(dividend, neg_val1);
-		div_sign ^= true;
-		rem_sign ^= true;
+		div_sign = !div_sign;
+		rem_sign = !rem_sign;
 		dividend = neg_val1;
 	}
 
@@ -312,7 +312,7 @@ static bool do_divmod(const sc_word *dividend, const sc_word *divisor,
 	do_negate(divisor, neg_val2);
 	const sc_word *minus_divisor;
 	if (sc_is_negative(divisor)) {
-		div_sign ^= true;
+		div_sign = !div_sign;
 		minus_divisor = divisor;
 		divisor = neg_val2;
 	} else {
@@ -433,7 +433,7 @@ static void do_shl(const sc_word *val1, sc_word *buffer, long shift_cnt,
  * @param bitsize   bitsize of the value to be shifted
  */
 static bool do_shr(const sc_word *val1, sc_word *buffer, long shift_cnt,
-                   int bitsize, bool is_signed, int signed_shift)
+                   int bitsize, bool is_signed, bool signed_shift)
 {
 	assert(shift_cnt >= 0);
 
@@ -548,10 +548,9 @@ static inline void check_ascii(void)
 	       |('5'-53) | ('6'-54) | ('7'-55) | ('8'- 56) | ('9'- 57)) == 0);
 }
 
-bool sc_val_from_str(char sign, unsigned base, const char *str, size_t len,
+bool sc_val_from_str(bool negative, unsigned base, const char *str, size_t len,
                      sc_word *buffer)
 {
-	assert(sign == -1 || sign == 1);
 	assert(str != NULL);
 	assert(len > 0);
 	check_ascii();
@@ -594,7 +593,7 @@ bool sc_val_from_str(char sign, unsigned base, const char *str, size_t len,
 		len--;
 	}
 
-	if (sign < 0)
+	if (negative)
 		do_negate(buffer, buffer);
 
 	return true;
@@ -604,8 +603,8 @@ void sc_val_from_long(long value, sc_word *buffer)
 {
 	sc_word *pos = buffer;
 
-	char sign       = (value < 0);
-	char is_minlong = value == LONG_MIN;
+	bool sign       = value < 0;
+	bool is_minlong = value == LONG_MIN;
 
 	/* use absolute value, special treatment of MIN_LONG to avoid overflow */
 	if (sign) {
@@ -785,10 +784,10 @@ int sc_get_lowest_set_bit(const sc_word *value)
 	return -1;
 }
 
-int sc_get_bit_at(const sc_word *value, unsigned pos)
+bool sc_get_bit_at(const sc_word *value, unsigned pos)
 {
 	unsigned nibble = pos >> 2;
-	return (value[nibble] & (1 << (pos & 3))) != 0;
+	return value[nibble] & (1 << (pos & 3));
 }
 
 void sc_set_bit_at(sc_word *value, unsigned pos)
@@ -1023,13 +1022,13 @@ char *sc_print_buf(char *buf, size_t buf_len, const sc_word *value,
 		base_val[0] = base == SC_DEC ? 10 : 8;
 
 		const sc_word *p        = value;
-		int            sign     = 0;
+		bool           sign     = false;
 		sc_word       *div2_res = ALLOCAN(sc_word, calc_buffer_size);
 		if (is_signed && base == SC_DEC) {
 			/* check for negative values */
 			if (do_bit(value, bits - 1)) {
 				do_negate(value, div2_res);
-				sign = 1;
+				sign = true;
 				p = div2_res;
 			}
 		}
@@ -1194,7 +1193,7 @@ void sc_shl(const sc_word *val1, const sc_word *val2, int bitsize, bool sign,
 bool sc_shrI(const sc_word *val1, long shift_cnt, int bitsize, bool sign,
              sc_word *buffer)
 {
-	return do_shr(val1, buffer, shift_cnt, bitsize, sign, 0);
+	return do_shr(val1, buffer, shift_cnt, bitsize, sign, false);
 }
 
 bool sc_shr(const sc_word *val1, const sc_word *val2, int bitsize, bool sign,
@@ -1207,7 +1206,7 @@ bool sc_shr(const sc_word *val1, const sc_word *val2, int bitsize, bool sign,
 bool sc_shrsI(const sc_word *val1, long shift_cnt, int bitsize, bool sign,
               sc_word *buffer)
 {
-	return do_shr(val1, buffer, shift_cnt, bitsize, sign, 1);
+	return do_shr(val1, buffer, shift_cnt, bitsize, sign, true);
 }
 
 bool sc_shrs(const sc_word *val1, const sc_word *val2, int bitsize, bool sign,

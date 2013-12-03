@@ -212,11 +212,12 @@ static ir_tarval *get_tarval_from_fp_value(const fp_value *val, ir_mode *mode)
 	return get_tarval(casted_val, buffer_length, mode);
 }
 
-ir_tarval *new_integer_tarval_from_str(const char *str, size_t len, char sign,
-                                       unsigned char base, ir_mode *mode)
+ir_tarval *new_integer_tarval_from_str(const char *str, size_t len,
+                                       int negative, unsigned char base,
+                                       ir_mode *mode)
 {
 	sc_word *buffer = ALLOCAN(sc_word, sc_get_buffer_length());
-	bool ok = sc_val_from_str(sign, base, str, len, buffer);
+	bool ok = sc_val_from_str(negative, base, str, len, buffer);
 	if (!ok)
 		return tarval_bad;
 
@@ -235,9 +236,9 @@ static ir_tarval *new_tarval_from_str_int(const char *str, size_t len,
 		return tarval_bad;
 
 	/* 1 sign character allowed */
-	char sign = 1;
+	bool negative = false;
 	if (str[0] == '-') {
-		sign = -1;
+		negative = true;
 		++str;
 		--len;
 	} else if (str[0] == '+') {
@@ -267,7 +268,7 @@ static ir_tarval *new_tarval_from_str_int(const char *str, size_t len,
 		return tarval_bad;
 
 	sc_word *buffer = ALLOCAN(sc_word, sc_get_buffer_length());
-	bool     ok     = sc_val_from_str(sign, base, str, len, buffer);
+	bool     ok     = sc_val_from_str(negative, base, str, len, buffer);
 	if (!ok)
 		return tarval_bad;
 
@@ -1369,7 +1370,7 @@ ir_tarval *ir_tarval_from_ascii(const char *buf, ir_mode *mode)
 	case irms_reference:
 	case irms_internal_boolean:
 	case irms_int_number:
-		return new_integer_tarval_from_str(buf, len, 1, 16, mode);
+		return new_integer_tarval_from_str(buf, len, false, 16, mode);
 	case irms_float_number: {
 		unsigned       size = get_mode_size_bytes(mode);
 		unsigned char *temp = ALLOCAN(unsigned char, size);

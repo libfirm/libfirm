@@ -155,7 +155,7 @@ void sign_extend(sc_word *buffer, unsigned from_bits, bool is_signed);
  * create an value form a string representation
  * @return true if ok, false in case of parse error
  */
-bool sc_val_from_str(char sign, unsigned base, const char *str,
+bool sc_val_from_str(bool negative, unsigned base, const char *str,
                      size_t len, sc_word *buffer);
 
 /** create a value from a long */
@@ -244,7 +244,7 @@ void finish_strcalc(void);
 int sc_get_precision(void);
 
 /** Return the bit at a given position. */
-int sc_get_bit_at(const sc_word *value, unsigned pos);
+bool sc_get_bit_at(const sc_word *value, unsigned pos);
 
 /** Set the bit at the specified position. */
 void sc_set_bit_at(sc_word *value, unsigned pos);
