@@ -34,12 +34,6 @@ static int bit_pattern_size;        /* maximum number of bits */
 static int calc_buffer_size;        /* size of internally stored values */
 static int max_value_size;          /* maximum size of values */
 
-static bool carry_flag;             /**< some computation set the carry_flag:
-                                         - right shift if bits were lost due to shifting
-                                         - division if there was a remainder
-                                         However, the meaning of carry is machine dependent
-                                         and often defined in other ways! */
-
 static const sc_word shrs_table[16][4][2] = {
 	{ { 0, 0}, {0, 0}, {0,  0}, {0,  0} },
 	{ { 1, 0}, {0, 8}, {0,  4}, {0,  2} },
@@ -188,7 +182,6 @@ static void do_add(const sc_word *val1, const sc_word *val2, sc_word *buffer)
 		buffer[counter] = SC_RESULT(sum);
 		carry           = SC_CARRY(sum);
 	}
-	carry_flag = carry != 0;
 }
 
 /**
@@ -289,7 +282,7 @@ static void do_push(sc_word digit, sc_word *buffer)
  *
  * Note: This is MOST slow
  */
-static void do_divmod(const sc_word *dividend, const sc_word *divisor,
+static bool do_divmod(const sc_word *dividend, const sc_word *divisor,
                       sc_word *quot, sc_word *rem)
 {
 	assert(quot != dividend && quot != divisor);
@@ -303,7 +296,7 @@ static void do_divmod(const sc_word *dividend, const sc_word *divisor,
 
 	/* if the dividend is zero result is zero (quot is zero) */
 	if (sc_is_zero(dividend, calc_buffer_size*SC_BITS))
-		return;
+		return false;
 
 	bool     div_sign = false;
 	bool     rem_sign = false;
@@ -362,14 +355,15 @@ static void do_divmod(const sc_word *dividend, const sc_word *divisor,
 		}
 	}
 end:
-	/* sets carry if remainder is non-zero ??? */
-	carry_flag = !sc_is_zero(rem, calc_buffer_size*SC_BITS);
-
 	if (div_sign)
 		do_negate(quot, quot);
 
 	if (rem_sign)
 		do_negate(rem, rem);
+
+	/* sets carry if remainder is non-zero ??? */
+	bool carry_flag = !sc_is_zero(rem, calc_buffer_size*SC_BITS);
+	return carry_flag;
 }
 
 /**
@@ -438,11 +432,12 @@ static void do_shl(const sc_word *val1, sc_word *buffer, long shift_cnt,
  *
  * @param bitsize   bitsize of the value to be shifted
  */
-static void do_shr(const sc_word *val1, sc_word *buffer, long shift_cnt,
+static bool do_shr(const sc_word *val1, sc_word *buffer, long shift_cnt,
                    int bitsize, bool is_signed, int signed_shift)
 {
 	assert(shift_cnt >= 0);
 
+	bool    carry_flag = false;
 	sc_word sign = signed_shift && do_bit(val1, bitsize - 1) ? SC_MASK : 0;
 
 	/* if shifting far enough the result is either 0 or -1 */
@@ -451,7 +446,7 @@ static void do_shr(const sc_word *val1, sc_word *buffer, long shift_cnt,
 			carry_flag = true;
 		}
 		memset(buffer, sign, calc_buffer_size);
-		return;
+		return carry_flag;
 	}
 
 	int shift_mod = shift_cnt &  3;
@@ -502,6 +497,8 @@ static void do_shr(const sc_word *val1, sc_word *buffer, long shift_cnt,
 	for (counter++; counter < calc_buffer_size; counter++) {
 		buffer[counter] = sign;
 	}
+
+	return carry_flag;
 }
 
 
@@ -1158,11 +1155,8 @@ void sc_mul(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 
 bool sc_div(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 {
-	carry_flag = false;
-
 	sc_word *unused_res = ALLOCAN(sc_word, calc_buffer_size);
-	do_divmod(value1, value2, buffer, unused_res);
-	return carry_flag;
+	return do_divmod(value1, value2, buffer, unused_res);
 }
 
 void sc_mod(const sc_word *value1, const sc_word *value2, sc_word *buffer)
@@ -1177,11 +1171,9 @@ void sc_divmod(const sc_word *value1, const sc_word *value2,
 	do_divmod(value1, value2, div_buffer, mod_buffer);
 }
 
-bool sc_shlI(const sc_word *val1, long shift_cnt, int bitsize, bool sign,
+void sc_shlI(const sc_word *val1, long shift_cnt, int bitsize, bool sign,
              sc_word *buffer)
 {
-	carry_flag = false;
-
 	sc_word *dest = buffer;
 	if (dest == val1)
 		dest = ALLOCAN(sc_word, calc_buffer_size);
@@ -1190,24 +1182,19 @@ bool sc_shlI(const sc_word *val1, long shift_cnt, int bitsize, bool sign,
 
 	if (dest != buffer)
 		memcpy(buffer, dest, calc_buffer_size);
-
-	return carry_flag;
 }
 
-bool sc_shl(const sc_word *val1, const sc_word *val2, int bitsize, bool sign,
+void sc_shl(const sc_word *val1, const sc_word *val2, int bitsize, bool sign,
             sc_word *buffer)
 {
 	long shift_count = sc_val_to_long(val2);
-	return sc_shlI(val1, shift_count, bitsize, sign, buffer);
+	sc_shlI(val1, shift_count, bitsize, sign, buffer);
 }
 
 bool sc_shrI(const sc_word *val1, long shift_cnt, int bitsize, bool sign,
              sc_word *buffer)
 {
-	carry_flag = false;
-
-	do_shr(val1, buffer, shift_cnt, bitsize, sign, 0);
-	return carry_flag;
+	return do_shr(val1, buffer, shift_cnt, bitsize, sign, 0);
 }
 
 bool sc_shr(const sc_word *val1, const sc_word *val2, int bitsize, bool sign,
@@ -1220,10 +1207,7 @@ bool sc_shr(const sc_word *val1, const sc_word *val2, int bitsize, bool sign,
 bool sc_shrsI(const sc_word *val1, long shift_cnt, int bitsize, bool sign,
               sc_word *buffer)
 {
-	carry_flag = false;
-
-	do_shr(val1, buffer, shift_cnt, bitsize, sign, 1);
-	return carry_flag;
+	return do_shr(val1, buffer, shift_cnt, bitsize, sign, 1);
 }
 
 bool sc_shrs(const sc_word *val1, const sc_word *val2, int bitsize, bool sign,

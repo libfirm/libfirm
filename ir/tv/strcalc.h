@@ -100,16 +100,14 @@ void sc_divmod(const sc_word *value1, const sc_word *value2,
 
 /**
  * buffer = value1 << offset
- * @returns carry flag
  */
-bool sc_shlI(const sc_word *val1, long shift_cnt, int bitsize, bool sign,
+void sc_shlI(const sc_word *val1, long shift_cnt, int bitsize, bool sign,
              sc_word *buffer);
 
 /**
  * buffer = value1 << value2
- * @returns carry flag
  */
-bool sc_shl(const sc_word *value1, const sc_word *value2, int bitsize,
+void sc_shl(const sc_word *value1, const sc_word *value2, int bitsize,
             bool sign, sc_word *buffer);
 
 /**
