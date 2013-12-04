@@ -4948,7 +4948,10 @@ static ir_node *gen_saturating_increment(ir_node *node)
 	ir_node  *increment = new_bd_ia32_Add(dbgi, block, noreg_GP, noreg_GP,
 	                                      nomem, operand, one);
 	set_irn_mode(increment, mode_T);
+	set_ia32_ls_mode(increment, ia32_mode_gp);
 	set_ia32_commutative(increment);
+	/* We cannot use source address mode and immediate at the same time. */
+	set_ia32_am_support(increment, ia32_am_none);
 	SET_IA32_ORIG_NODE(increment, node);
 
 	ir_node *value  = new_rd_Proj(dbgi, increment, ia32_mode_gp, pn_ia32_Add_res);
