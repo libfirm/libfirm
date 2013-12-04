@@ -119,19 +119,19 @@ void sc_andnot(const sc_word *val1, const sc_word *val2, sc_word *buffer)
  */
 static void sc_inc(const sc_word *val, sc_word *buffer)
 {
-	unsigned counter = 0;
-	while (counter++ < calc_buffer_size) {
-		if (*val == 15) {
-			*buffer++ = 0;
-			val++;
-		} else {
-			/* No carry here, *val != 15 */
-			*buffer = *val + 1;
-			return;
+	unsigned counter;
+	for (counter = 0; counter < calc_buffer_size; ++counter) {
+		sc_word v = val[counter];
+		if (v < SC_MASK) {
+			buffer[counter] = v+1;
+			/* copy the rest of the buffer if necessary */
+			if (buffer != val)
+				memcpy(&buffer[counter+1], &val[counter+1],
+				       calc_buffer_size-(counter+1));
+			break;
 		}
+		buffer[counter] = 0;
 	}
-	/* here a carry could be lost, this is intended because this should
-	 * happen only when a value changes sign. */
 }
 
 void sc_neg(const sc_word *val, sc_word *buffer)

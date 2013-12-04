@@ -49,7 +49,7 @@ static bool is_zero(const sc_word *val)
 int main(void)
 {
 	init_strcalc(precision);
-	buflen = sc_get_buffer_length() + 1;
+	buflen = sc_get_buffer_length();
 
 	sc_word *temp = ALLOCAN(sc_word, buflen);
 
