@@ -134,7 +134,7 @@ static bool normalize(const fp_value *in_val, fp_value *out_val, bool sticky)
 
 	/* mantissa all zeros, so zero exponent (because of explicit one) */
 	if (hsb == ROUNDING_BITS + effective_mantissa) {
-		sc_val_from_ulong(0, _exp(out_val));
+		sc_zero(_exp(out_val));
 		hsb = -1;
 	}
 
@@ -176,7 +176,7 @@ static bool normalize(const fp_value *in_val, fp_value *out_val, bool sticky)
 			sticky = true;
 		}
 		/* denormalized means exponent of zero */
-		sc_val_from_ulong(0, _exp(out_val));
+		sc_zero(_exp(out_val));
 
 		out_val->clss = FC_SUBNORMAL;
 	}
