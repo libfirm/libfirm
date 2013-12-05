@@ -1017,7 +1017,7 @@ void init_strcalc(unsigned precision)
 		calc_buffer_size = precision / 2;
 		max_value_size   = precision / 4;
 
-		calc_buffer   = XMALLOCN(sc_word, calc_buffer_size + 1);
+		calc_buffer   = XMALLOCN(sc_word, calc_buffer_size);
 		output_buffer = XMALLOCN(char, bit_pattern_size + 1);
 	}
 }
