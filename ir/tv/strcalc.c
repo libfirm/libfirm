@@ -152,12 +152,9 @@ void sc_sub(const sc_word *val1, const sc_word *val2, sc_word *buffer)
 
 void sc_mul(const sc_word *val1, const sc_word *val2, sc_word *buffer)
 {
-	sc_word *temp_buffer = ALLOCAN(sc_word, calc_buffer_size);
+	sc_word *temp_buffer = ALLOCANZ(sc_word, calc_buffer_size);
 	sc_word *neg_val1    = ALLOCAN(sc_word, calc_buffer_size);
 	sc_word *neg_val2    = ALLOCAN(sc_word, calc_buffer_size);
-
-	/* init result buffer to zeros */
-	memset(temp_buffer, 0, calc_buffer_size);
 
 	/* the multiplication works only for positive values, for negative values *
 	 * it is necessary to negate them and adjust the result accordingly       */
@@ -234,8 +231,8 @@ bool sc_divmod(const sc_word *dividend, const sc_word *divisor,
 	assert(quot != dividend && quot != divisor);
 	assert(rem != dividend && rem != divisor);
 	/* clear result buffer */
-	memset(quot, 0, calc_buffer_size);
-	memset(rem, 0, calc_buffer_size);
+	sc_zero(quot);
+	sc_zero(rem);
 
 	/* division by zero is not allowed */
 	assert(!sc_is_zero(divisor, calc_buffer_size*SC_BITS));
@@ -323,7 +320,7 @@ static void do_shl(const sc_word *val1, sc_word *buffer, unsigned shift_cnt,
 
 	/* if shifting far enough the result is zero */
 	if (shift_cnt >= bitsize) {
-		memset(buffer, 0, calc_buffer_size);
+		sc_zero(buffer);
 		return;
 	}
 
@@ -504,10 +501,9 @@ bool sc_val_from_str(bool negative, unsigned base, const char *str, size_t len,
 	sc_word *sc_base = ALLOCAN(sc_word, calc_buffer_size);
 	sc_val_from_ulong(base, sc_base);
 
-	sc_word *val = ALLOCAN(sc_word, calc_buffer_size);
+	sc_word *val = ALLOCANZ(sc_word, calc_buffer_size);
 
 	sc_zero(buffer);
-	sc_zero(val);
 
 	/* BEGIN string evaluation, from left to right */
 	while (len > 0) {
@@ -944,8 +940,7 @@ char *sc_print_buf(char *buf, size_t buf_len, const sc_word *value,
 
 	case SC_DEC:
 	case SC_OCT: {
-		sc_word *base_val = ALLOCAN(sc_word, calc_buffer_size);
-		memset(base_val, 0, calc_buffer_size);
+		sc_word *base_val = ALLOCANZ(sc_word, calc_buffer_size);
 		base_val[0] = base == SC_DEC ? 10 : 8;
 
 		const sc_word *p        = value;
@@ -961,8 +956,7 @@ char *sc_print_buf(char *buf, size_t buf_len, const sc_word *value,
 		}
 
 		/* transfer data into oscillating buffers */
-		sc_word *div1_res = ALLOCAN(sc_word, calc_buffer_size);
-		memset(div1_res, 0, calc_buffer_size);
+		sc_word *div1_res = ALLOCANZ(sc_word, calc_buffer_size);
 		for (counter = 0; counter < nibbles; ++counter)
 			div1_res[counter] = p[counter];
 
