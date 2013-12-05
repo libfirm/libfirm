@@ -1762,7 +1762,7 @@ static ir_node *gen_Start(ir_node *node)
 	/* calculate number of outputs */
 	size_t n_outs = 4; /* memory, g0, g7, sp */
 	if (!current_cconv->omit_fp)
-		++n_outs; /* framepointer */
+		++n_outs; /* frame pointer */
 	/* function parameters */
 	n_outs += current_cconv->n_param_regs;
 	/* callee saves */
@@ -1786,7 +1786,7 @@ static ir_node *gen_Start(ir_node *node)
 	/* g7 is used for TLS data */
 	make_start_out(&start_g7, obst, start, o++, &sparc_registers[REG_G7], arch_register_req_type_none);
 
-	/* we need an output for the stackpointer */
+	/* we need an output for the stack pointer */
 	make_start_out(&start_sp, obst, start, o++, sp_reg, arch_register_req_type_produces_sp);
 
 	if (!current_cconv->omit_fp) {

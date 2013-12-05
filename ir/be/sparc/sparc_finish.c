@@ -5,17 +5,17 @@
 
 /**
  * @file
- * @brief    Peephole optimization and legalization of a sparc function
+ * @brief    Peephole optimization and legalization of a SPARC function
  * @author   Matthias Braun
  *
- * A note on sparc stackpointer (sp) behaviour:
+ * A note on SPARC stack pointer (sp) behavior:
  * The ABI expects SPARC_MIN_STACKSIZE bytes to be available at the
- * stackpointer. This space will be used to spill register windows,
+ * stack pointer. This space will be used to spill register windows,
  * and for spilling va_arg arguments (maybe we can optimize this away for
  * statically known not-va-arg-functions...)
  * This in effect means that we allocate that extra space at the function begin
  * which is easy. But this space isn't really fixed at the beginning of the
- * stackframe. Instead you should rather imagine the space as always being the
+ * stack frame. Instead you should rather imagine the space as always being the
  * last-thing on the stack.
  * So when addressing anything stack-specific we have to account for this
  * area, while our compiler thinks the space is occupied at the beginning
@@ -51,7 +51,7 @@ static int get_first_same(const arch_register_req_t *req)
 }
 
 /**
- * Insert copies for all ia32 nodes where the should_be_same requirement
+ * Insert copies for all SPARC nodes where the should_be_same requirement
  * is not fulfilled.
  * Transform Sub into Neg -- Add if IN2 == OUT
  */
