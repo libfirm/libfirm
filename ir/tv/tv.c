@@ -111,8 +111,11 @@ static ir_tarval *get_tarval(const void *value, size_t length, ir_mode *mode)
 		char *temp = ALLOCAN(char, length);
 		memcpy(temp, value, length);
 		if (get_mode_arithmetic(mode) == irma_twos_complement) {
-			sign_extend((sc_word*)temp, get_mode_size_bits(mode),
-			            mode_is_signed(mode));
+			if (mode_is_signed(mode)) {
+				sc_sign_extend((sc_word*)temp, get_mode_size_bits(mode));
+			} else {
+				sc_zero_extend((sc_word*)temp, get_mode_size_bits(mode));
+			}
 		}
 		tv.value = INSERT_VALUE(temp, length);
 	} else {
@@ -132,9 +135,13 @@ static ir_tarval *get_tarval_overflow(const void *value, size_t length,
 		/* addresses always wrap around */
 		sc_word *temp = ALLOCAN(sc_word, sc_get_buffer_length());
 		memcpy(temp, value, sc_get_buffer_length());
-		sc_truncate(get_mode_size_bits(mode), temp);
+		unsigned bits = get_mode_size_bits(mode);
 		/* the sc_ module expects that all bits are set ... */
-		sign_extend(temp, get_mode_size_bits(mode), mode_is_signed(mode));
+		if (mode_is_signed(mode)) {
+			sc_sign_extend(temp, bits);
+		} else {
+			sc_zero_extend(temp, bits);
+		}
 		return get_tarval(temp, length, mode);
 	}
 
@@ -146,9 +153,13 @@ static ir_tarval *get_tarval_overflow(const void *value, size_t length,
 			case TV_OVERFLOW_WRAP: {
 				sc_word *temp = ALLOCAN(sc_word, sc_get_buffer_length());
 				memcpy(temp, value, sc_get_buffer_length());
-				sc_truncate(get_mode_size_bits(mode), temp);
+				unsigned bits = get_mode_size_bits(mode);
 				/* the sc_ module expects that all bits are set ... */
-				sign_extend(temp, get_mode_size_bits(mode), mode_is_signed(mode));
+				if (mode_is_signed(mode)) {
+					sc_sign_extend(temp, bits);
+				} else {
+					sc_zero_extend(temp, bits);
+				}
 				return get_tarval(temp, length, mode);
 			}
 			case TV_OVERFLOW_BAD:
@@ -164,7 +175,6 @@ static ir_tarval *get_tarval_overflow(const void *value, size_t length,
 			case TV_OVERFLOW_WRAP: {
 				sc_word *temp = ALLOCAN(sc_word, sc_get_buffer_length());
 				memcpy(temp, value, sc_get_buffer_length());
-				sc_truncate(get_mode_size_bits(mode), temp);
 				return get_tarval(temp, length, mode);
 			}
 			case TV_OVERFLOW_BAD:
@@ -367,7 +377,7 @@ int tarval_is_long(ir_tarval *tv)
 	if (mode_is_signed(mode)) {
 		sc_word *min = ALLOCAN(sc_word, sc_get_buffer_length());
 		sc_min_from_bits(long_bits, true, min);
-		sign_extend(min, long_bits, true);
+		sc_sign_extend(min, long_bits);
 		if (sc_comp(tv->value, min) == ir_relation_less)
 			return false;
 	}
@@ -820,8 +830,12 @@ ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *dst_mode)
 		if (get_mode_sort(dst_mode) == irms_int_number) {
 			sc_word *buffer = ALLOCAN(sc_word, sc_get_buffer_length());
 			memcpy(buffer, src->value, sc_get_buffer_length());
-			sign_extend(buffer, get_mode_size_bits(src->mode),
-			            mode_is_signed(src->mode));
+			unsigned bits = get_mode_size_bits(src->mode);
+			if (mode_is_signed(src->mode)) {
+				sc_sign_extend(buffer, bits);
+			} else {
+				sc_zero_extend(buffer, bits);
+			}
 			return get_tarval_overflow(buffer, src->length, dst_mode);
 		}
 		break;

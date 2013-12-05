@@ -150,7 +150,9 @@ void sc_zero(sc_word *buffer);
 const sc_word *sc_get_buffer(void);
 unsigned sc_get_buffer_length(void);
 
-void sign_extend(sc_word *buffer, unsigned from_bits, bool is_signed);
+void sc_sign_extend(sc_word *buffer, unsigned from_bits);
+
+void sc_zero_extend(sc_word *buffer, unsigned from_bits);
 
 /**
  * create an value form a string representation
@@ -190,9 +192,6 @@ long sc_val_to_long(const sc_word *val);
 uint64_t sc_val_to_uint64(const sc_word *val);
 void sc_min_from_bits(unsigned num_bits, bool sign, sc_word *buffer);
 void sc_max_from_bits(unsigned num_bits, bool sign, sc_word *buffer);
-
-/** truncates a value to lowest @p num_bits bits */
-void sc_truncate(unsigned num_bits, sc_word *buffer);
 
 /**
  * Compares val1 and val2

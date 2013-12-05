@@ -64,11 +64,6 @@ void sc_zero(sc_word *buffer)
 	memset(buffer, 0, sizeof(buffer[0]) * calc_buffer_size);
 }
 
-static sc_word zex_digit(unsigned x)
-{
-	return (1u << (x+1)) - 1;
-}
-
 static sc_word sex_digit(unsigned x)
 {
 	return (SC_MASK << (x+1)) & SC_MASK;
@@ -119,8 +114,7 @@ void sc_andnot(const sc_word *val1, const sc_word *val2, sc_word *buffer)
  */
 static void sc_inc(const sc_word *val, sc_word *buffer)
 {
-	unsigned counter;
-	for (counter = 0; counter < calc_buffer_size; ++counter) {
+	for (unsigned counter = 0; counter < calc_buffer_size; ++counter) {
 		sc_word v = val[counter];
 		if (v < SC_MASK) {
 			buffer[counter] = v+1;
@@ -466,30 +460,30 @@ unsigned sc_get_buffer_length(void)
 	return calc_buffer_size;
 }
 
-void sign_extend(sc_word *buffer, unsigned from_bits, bool is_signed)
+void sc_zero_extend(sc_word *buffer, unsigned from_bits)
 {
-	unsigned bits   = from_bits - 1;
-	unsigned nibble = bits / SC_BITS;
-
-	if (is_signed) {
-		sc_word max = max_digit(bits % SC_BITS);
-		if (buffer[nibble] > max) {
-			/* sign bit is set, we need sign expansion */
-
-			for (unsigned i = nibble + 1; i < calc_buffer_size; ++i)
-				buffer[i] = SC_MASK;
-			buffer[nibble] |= sex_digit(bits % SC_BITS);
-		} else {
-			/* set all bits to zero */
-			for (unsigned i = nibble + 1; i < calc_buffer_size; ++i)
-				buffer[i] = 0;
-			buffer[nibble] &= zex_digit(bits % SC_BITS);
-		}
+	unsigned bit  = from_bits % SC_BITS;
+	unsigned word = from_bits / SC_BITS;
+	if (bit > 0) {
+		memset(&buffer[word+1], 0, calc_buffer_size-(word+1));
+		buffer[word] &= max_digit(bit);
 	} else {
-		/* do zero extension */
-		for (unsigned i = nibble + 1; i < calc_buffer_size; ++i)
-			buffer[i] = 0;
-		buffer[nibble] &= zex_digit(bits % SC_BITS);
+		memset(&buffer[word], 0, calc_buffer_size-word);
+	}
+}
+
+void sc_sign_extend(sc_word *buffer, unsigned from_bits)
+{
+	unsigned bits     = from_bits - 1;
+	bool     sign_bit = sc_get_bit_at(buffer, bits);
+	if (sign_bit) {
+		/* sign bit is set, we need sign extension */
+		unsigned word = bits / SC_BITS;
+		for (unsigned i = word + 1; i < calc_buffer_size; ++i)
+			buffer[i] = SC_MASK;
+		buffer[word] |= sex_digit(bits % SC_BITS);
+	} else {
+		sc_zero_extend(buffer, from_bits);
 	}
 }
 
@@ -646,25 +640,6 @@ void sc_max_from_bits(unsigned num_bits, bool sign, sc_word *buffer)
 
 	for (i++; i <= calc_buffer_size - 1; i++)
 		*pos++ = 0;
-}
-
-void sc_truncate(unsigned num_bits, sc_word *buffer)
-{
-	sc_word *cbuffer = buffer;
-	sc_word *pos     = cbuffer + (num_bits / SC_BITS);
-	sc_word *end     = cbuffer + calc_buffer_size;
-
-	assert(pos < end);
-
-	switch (num_bits % SC_BITS) {
-	case 0: /* nothing to do */ break;
-	case 1: *pos++ &= 1; break;
-	case 2: *pos++ &= 3; break;
-	case 3: *pos++ &= 7; break;
-	}
-
-	for ( ; pos < end; ++pos)
-		*pos = 0;
 }
 
 ir_relation sc_comp(const sc_word* const val1, const sc_word* const val2)
@@ -925,7 +900,7 @@ char *sc_print_buf(char *buf, size_t buf_len, const sc_word *value,
 
 		/* last nibble must be masked */
 		if (bits % SC_BITS) {
-			sc_word mask = zex_digit((bits % SC_BITS) - 1);
+			sc_word mask = max_digit(bits % SC_BITS);
 			sc_word x    = value[counter++] & mask;
 			*(--pos) = digits[x];
 			assert(pos >= buf);
@@ -952,7 +927,7 @@ char *sc_print_buf(char *buf, size_t buf_len, const sc_word *value,
 
 		/* last nibble must be masked */
 		if (bits % SC_BITS) {
-			sc_word mask = zex_digit((bits % SC_BITS) - 1);
+			sc_word mask = max_digit(bits % SC_BITS);
 			sc_word x    = value[counter++] & mask;
 
 			pos -= SC_BITS;
@@ -996,7 +971,7 @@ char *sc_print_buf(char *buf, size_t buf_len, const sc_word *value,
 
 		/* last nibble must be masked */
 		if (bits % SC_BITS) {
-			sc_word mask = zex_digit((bits % SC_BITS) - 1);
+			sc_word mask = max_digit(bits % SC_BITS);
 			div1_res[counter] = p[counter] & mask;
 			++counter;
 		}
