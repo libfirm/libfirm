@@ -314,6 +314,7 @@ void sc_zero_extend(sc_word *buffer, unsigned from_bits)
 
 void sc_sign_extend(sc_word *buffer, unsigned from_bits)
 {
+	assert(from_bits > 0);
 	unsigned bits     = from_bits - 1;
 	bool     sign_bit = sc_get_bit_at(buffer, bits);
 	if (sign_bit) {
@@ -388,8 +389,6 @@ bool sc_val_from_str(bool negative, unsigned base, const char *str, size_t len,
 
 void sc_val_from_long(long value, sc_word *buffer)
 {
-	sc_word *pos = buffer;
-
 	bool sign       = value < 0;
 	bool is_minlong = value == LONG_MIN;
 
@@ -403,6 +402,7 @@ void sc_val_from_long(long value, sc_word *buffer)
 
 	sc_zero(buffer);
 
+	sc_word *pos = buffer;
 	while ((value != 0) && (pos < buffer + calc_buffer_size)) {
 		*pos++ = value & SC_MASK;
 		value >>= SC_BITS;
@@ -461,7 +461,7 @@ void sc_min_from_bits(unsigned num_bits, bool sign, sc_word *buffer)
 
 		*pos++ = min_digit(bits%SC_BITS);
 
-		for (i++; i <= calc_buffer_size - 1; i++)
+		for (i++; i < calc_buffer_size; i++)
 			*pos++ = SC_MASK;
 	}
 }
@@ -477,7 +477,7 @@ void sc_max_from_bits(unsigned num_bits, bool sign, sc_word *buffer)
 
 	*pos++ = max_digit(bits%SC_BITS);
 
-	for (i++; i <= calc_buffer_size - 1; i++)
+	for (i++; i < calc_buffer_size; i++)
 		*pos++ = 0;
 }
 
