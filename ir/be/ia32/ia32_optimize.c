@@ -66,11 +66,10 @@ typedef enum produces_flag_t {
  */
 static produces_flag_t check_produces_zero_sign(ir_node *node, int pn)
 {
-	ir_node                     *count;
-	const ia32_immediate_attr_t *imm_attr;
-
 	if (!is_ia32_irn(node))
 		return produces_no_flag;
+
+	ir_node *count;
 
 	switch (get_ia32_irn_opcode(node)) {
 		case iro_ia32_Add:
@@ -103,7 +102,7 @@ check_shift_amount:
 			if (!is_ia32_Immediate(count))
 				return produces_no_flag;
 
-			imm_attr = get_ia32_immediate_attr_const(count);
+			const ia32_immediate_attr_t *imm_attr = get_ia32_immediate_attr_const(count);
 			if (imm_attr->symconst != NULL)
 				return produces_no_flag;
 			if ((imm_attr->offset & 0x1f) == 0)
@@ -177,18 +176,12 @@ static void peephole_ia32_Test(ir_node *node)
 	ir_node *right = get_irn_n(node, n_ia32_Test_right);
 
 	if (left == right) { /* we need a test for 0 */
-		ir_node         *block = get_nodes_block(node);
-		int              pn    = pn_ia32_res;
-		ir_node         *op    = left;
-		ir_node         *flags_proj;
-		ir_mode         *flags_mode;
-		ir_mode         *op_mode;
-		ir_node         *schedpoint;
-		produces_flag_t  produced;
-
+		ir_node *block = get_nodes_block(node);
 		if (get_nodes_block(left) != block)
 			return;
 
+		int      pn = pn_ia32_res;
+		ir_node *op = left;
 		if (is_Proj(op)) {
 			pn = get_Proj_proj(op);
 			op = get_Proj_pred(op);
@@ -196,7 +189,7 @@ static void peephole_ia32_Test(ir_node *node)
 
 		/* walk schedule up and abort when we find left or some other node
 		 * destroys the flags */
-		schedpoint = node;
+		ir_node *schedpoint = node;
 		for (;;) {
 			schedpoint = sched_prev(schedpoint);
 			if (schedpoint == op)
@@ -207,7 +200,7 @@ static void peephole_ia32_Test(ir_node *node)
 				panic("couldn't find left");
 		}
 
-		produced = check_produces_zero_sign(op, pn);
+		produces_flag_t produced = check_produces_zero_sign(op, pn);
 		if (produced == produces_no_flag)
 			return;
 
@@ -225,7 +218,7 @@ static void peephole_ia32_Test(ir_node *node)
 			return;
 		}
 
-		op_mode = get_ia32_ls_mode(op);
+		ir_mode *op_mode = get_ia32_ls_mode(op);
 		if (op_mode == NULL)
 			op_mode = get_irn_mode(op);
 
@@ -261,8 +254,8 @@ static void peephole_ia32_Test(ir_node *node)
 				kill_node(left);
 		}
 
-		flags_mode = ia32_reg_classes[CLASS_ia32_flags].mode;
-		flags_proj = new_r_Proj(op, flags_mode, pn_ia32_flags);
+		ir_mode *flags_mode = ia32_reg_classes[CLASS_ia32_flags].mode;
+		ir_node *flags_proj = new_r_Proj(op, flags_mode, pn_ia32_flags);
 		arch_set_irn_register(flags_proj, &ia32_registers[REG_EFLAGS]);
 
 		assert(get_irn_mode(node) != mode_T);
@@ -270,13 +263,12 @@ static void peephole_ia32_Test(ir_node *node)
 		be_peephole_exchange(node, flags_proj);
 	} else if (is_ia32_Immediate(right)) {
 		ia32_immediate_attr_t const *const imm = get_ia32_immediate_attr_const(right);
-		unsigned                           offset;
 
 		/* A test with a symconst is rather strange, but better safe than sorry */
 		if (imm->symconst != NULL)
 			return;
 
-		offset = imm->offset;
+		unsigned offset = imm->offset;
 		if (get_ia32_op_type(node) == ia32_AddrModeS) {
 			ia32_attr_t *const attr = get_ia32_attr(node);
 			ir_graph    *const irg  = get_irn_irg(node);
@@ -351,20 +343,14 @@ static void peephole_ia32_Return(ir_node *node)
  */
 static void peephole_IncSP_Store_to_push(ir_node *irn)
 {
-	int       i;
-	int       maxslot;
-	ir_node  *stores[MAXPUSH_OPTIMIZE];
-	ir_node  *block;
-	ir_graph *irg;
-	ir_node  *curr_sp;
-	ir_mode  *spmode;
-	ir_node  *first_push = NULL;
-
-	memset(stores, 0, sizeof(stores));
-
 	int inc_ofs = be_get_IncSP_offset(irn);
 	if (inc_ofs < 4)
 		return;
+
+	int      maxslot                  = -1;
+	ir_node *stores[MAXPUSH_OPTIMIZE];
+
+	memset(stores, 0, sizeof(stores));
 
 	/*
 	 * We first walk the schedule after the IncSP node as long as we find
@@ -372,12 +358,7 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 	 * We save them into the stores array which is sorted by the frame offset/4
 	 * attached to the node
 	 */
-	maxslot = -1;
 	sched_foreach_after(irn, node) {
-		ir_node *mem;
-		int offset;
-		int storeslot;
-
 		/* it has to be a Store */
 		if (!is_ia32_Store(node))
 			break;
@@ -386,7 +367,7 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 		if (get_irn_n(node, n_ia32_base) != irn)
 			continue;
 		/* Store has to be attached to NoMem */
-		mem = get_irn_n(node, n_ia32_mem);
+		ir_node *mem = get_irn_n(node, n_ia32_mem);
 		if (!is_NoMem(mem))
 			continue;
 
@@ -395,7 +376,7 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 		if (!is_ia32_NoReg_GP(get_irn_n(node, n_ia32_index)))
 			break;
 
-		offset = get_ia32_am_offs_int(node);
+		int offset = get_ia32_am_offs_int(node);
 		/* we should NEVER access uninitialized stack BELOW the current SP */
 		assert(offset >= 0);
 
@@ -405,7 +386,8 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 
 		if (inc_ofs - 4 < offset || offset >= MAXPUSH_OPTIMIZE * 4)
 			continue;
-		storeslot = offset >> 2;
+
+		int storeslot = offset >> 2;
 
 		/* storing into the same slot twice is bad (and shouldn't happen...) */
 		if (stores[storeslot] != NULL)
@@ -416,30 +398,27 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 			maxslot = storeslot;
 	}
 
-	curr_sp = irn;
-
+	ir_node *curr_sp = irn;
+	int      i;
 	for (i = -1; i < maxslot; ++i) {
 		if (stores[i + 1] == NULL)
 			break;
 	}
 
 	/* walk through the Stores and create Pushs for them */
-	block  = get_nodes_block(irn);
-	spmode = get_irn_mode(irn);
-	irg    = get_irn_irg(irn);
+	ir_node  *block      = get_nodes_block(irn);
+	ir_mode  *spmode     = get_irn_mode(irn);
+	ir_graph *irg        = get_irn_irg(irn);
+	ir_node  *first_push = NULL;
 	for (; i >= 0; --i) {
-		const arch_register_t *spreg;
-		ir_node *push;
-		ir_node *val, *mem, *mem_proj;
-		ir_node *store = stores[i];
-		ir_node *noreg = ia32_new_NoReg_gp(irg);
+		ir_node               *store = stores[i];
+		ir_node               *noreg = ia32_new_NoReg_gp(irg);
+		ir_node               *val   = get_irn_n(store, n_ia32_unary_op);
+		ir_node               *mem   = get_irn_n(store, n_ia32_mem);
+		const arch_register_t *spreg = arch_get_irn_register(curr_sp);
 
-		val = get_irn_n(store, n_ia32_unary_op);
-		mem = get_irn_n(store, n_ia32_mem);
-		spreg = arch_get_irn_register(curr_sp);
-
-		push = new_bd_ia32_Push(get_irn_dbg_info(store), block, noreg, noreg,
-		                        mem, val, curr_sp);
+		ir_node *push = new_bd_ia32_Push(get_irn_dbg_info(store), block, noreg, noreg,
+		                                 mem, val, curr_sp);
 		copy_mark(store, push);
 
 		if (first_push == NULL)
@@ -452,7 +431,7 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 		arch_set_irn_register(curr_sp, spreg);
 
 		/* create memory Proj */
-		mem_proj = new_r_Proj(push, mode_M, pn_ia32_Push_M);
+		ir_node *mem_proj = new_r_Proj(push, mode_M, pn_ia32_Push_M);
 
 		/* rewire Store Projs */
 		foreach_out_edge_safe(store, edge) {
@@ -476,11 +455,11 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 
 	foreach_out_edge_safe(irn, edge) {
 		ir_node *const src = get_edge_src_irn(edge);
-		int      const pos = get_edge_src_pos(edge);
 
 		if (src == first_push)
 			continue;
 
+		const int pos = get_edge_src_pos(edge);
 		set_irn_n(src, pos, curr_sp);
 	}
 
@@ -494,17 +473,16 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
  */
 static void peephole_Load_IncSP_to_pop(ir_node *irn)
 {
-	const arch_register_t *esp = &ia32_registers[REG_ESP];
-	int      i, maxslot, ofs;
-	ir_node  *loads[MAXPUSH_OPTIMIZE];
-	unsigned regmask = 0;
-	unsigned copymask = ~0;
-
-	memset(loads, 0, sizeof(loads));
 
 	int inc_ofs = -be_get_IncSP_offset(irn);
 	if (inc_ofs < 4)
 		return;
+
+	ir_node  *loads[MAXPUSH_OPTIMIZE];
+	unsigned  regmask                 = 0;
+	unsigned  copymask                = ~0;
+
+	memset(loads, 0, sizeof(loads));
 
 	/*
 	 * We first walk the schedule before the IncSP node as long as we find
@@ -512,22 +490,18 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 	 * We save them into the stores array which is sorted by the frame offset/4
 	 * attached to the node
 	 */
-	maxslot = -1;
+	int      maxslot = -1;
 	ir_node *pred_sp = be_get_IncSP_pred(irn);
 	sched_foreach_reverse_before(irn, node) {
-		int offset;
-		int loadslot;
-		const arch_register_t *sreg, *dreg;
-
 		/* it has to be a Load */
 		if (!is_ia32_Load(node)) {
 			if (be_is_Copy(node)) {
-				dreg = arch_get_irn_register(node);
+				const arch_register_t *dreg = arch_get_irn_register(node);
 				if (dreg->reg_class != &ia32_reg_classes[CLASS_ia32_gp]) {
 					/* not a GP copy, ignore */
 					continue;
 				}
-				sreg = arch_get_irn_register(be_get_Copy_op(node));
+				const arch_register_t *sreg = arch_get_irn_register(be_get_Copy_op(node));
 				if (regmask & copymask & (1 << sreg->index)) {
 					break;
 				}
@@ -554,7 +528,7 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 		if (!is_ia32_NoReg_GP(get_irn_n(node, n_ia32_index)))
 			break;
 
-		offset = get_ia32_am_offs_int(node);
+		int offset = get_ia32_am_offs_int(node);
 		/* we should NEVER access uninitialized stack BELOW the current SP */
 		assert(offset >= 0);
 
@@ -567,13 +541,13 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 		/* ignore those outside the possible windows */
 		if (offset > inc_ofs - 4)
 			continue;
-		loadslot = offset >> 2;
+		int loadslot = offset >> 2;
 
 		/* loading from the same slot twice is bad (and shouldn't happen...) */
 		if (loads[loadslot] != NULL)
 			break;
 
-		dreg = arch_get_irn_register_out(node, pn_ia32_Load_res);
+		const arch_register_t *dreg = arch_get_irn_register_out(node, pn_ia32_Load_res);
 		if (regmask & (1 << dreg->index)) {
 			/* this register is already used */
 			break;
@@ -589,6 +563,7 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 		return;
 
 	/* find the first slot */
+	int i;
 	for (i = maxslot; i >= 0; --i) {
 		ir_node *load = loads[i];
 
@@ -596,11 +571,12 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 			break;
 	}
 
-	ofs = inc_ofs - (maxslot + 1) * 4;
-	inc_ofs = (i+1) * 4;
+	int ofs = inc_ofs - (maxslot + 1) * 4;
+	inc_ofs = (i + 1) * 4;
 
 	/* create a new IncSP if needed */
-	ir_node *const block = get_nodes_block(irn);
+	const arch_register_t *esp   = &ia32_registers[REG_ESP];
+	ir_node               *const   block = get_nodes_block(irn);
 	if (inc_ofs > 0) {
 		pred_sp = be_new_IncSP(esp, block, pred_sp, -inc_ofs, be_get_IncSP_align(irn));
 		sched_add_before(irn, pred_sp);
@@ -608,14 +584,11 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 
 	/* walk through the Loads and create Pops for them */
 	for (++i; i <= maxslot; ++i) {
-		ir_node *load = loads[i];
-		ir_node *mem, *pop;
-		const arch_register_t *reg;
+		ir_node               *load = loads[i];
+		ir_node               *mem  = get_irn_n(load, n_ia32_mem);
+		const arch_register_t *reg  = arch_get_irn_register_out(load, pn_ia32_Load_res);
 
-		mem = get_irn_n(load, n_ia32_mem);
-		reg = arch_get_irn_register_out(load, pn_ia32_Load_res);
-
-		pop = new_bd_ia32_Pop(get_irn_dbg_info(load), block, mem, pred_sp);
+		ir_node *pop = new_bd_ia32_Pop(get_irn_dbg_info(load), block, mem, pred_sp);
 		arch_set_irn_register_out(pop, pn_ia32_Load_res, reg);
 
 		copy_mark(load, pop);
@@ -649,9 +622,8 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 static const arch_register_t *get_free_gp_reg(ir_graph *irg)
 {
 	be_irg_t *birg = be_birg_from_irg(irg);
-	int i;
 
-	for (i = 0; i < N_ia32_gp_REGS; ++i) {
+	for (int i = 0; i < N_ia32_gp_REGS; ++i) {
 		const arch_register_t *reg = &ia32_reg_classes[CLASS_ia32_gp].regs[i];
 		if (!rbitset_is_set(birg->allocatable_regs, reg->global_index))
 			continue;
@@ -679,23 +651,19 @@ static ir_node *create_pop(dbg_info *dbgi, ir_node *block,
                            const arch_register_t *reg)
 {
 	const arch_register_t *esp = &ia32_registers[REG_ESP];
-	ir_graph *irg = get_irn_irg(block);
-	ir_node *pop;
-	ir_node *keep;
-	ir_node *val;
-	ir_node *in[1];
+	ir_graph              *irg = get_irn_irg(block);
 
-	pop   = new_bd_ia32_Pop(dbgi, block, get_irg_no_mem(irg), stack);
+	ir_node *pop = new_bd_ia32_Pop(dbgi, block, get_irg_no_mem(irg), stack);
 
 	stack = new_r_Proj(pop, ia32_mode_gp, pn_ia32_Pop_stack);
 	arch_set_irn_register(stack, esp);
-	val   = new_r_Proj(pop, ia32_mode_gp, pn_ia32_Pop_res);
+	ir_node *val = new_r_Proj(pop, ia32_mode_gp, pn_ia32_Pop_res);
 	arch_set_irn_register(val, reg);
 
 	sched_add_before(schedpoint, pop);
 
-	in[0] = val;
-	keep  = be_new_Keep(block, 1, in);
+	ir_node *in[1] = { val };
+	ir_node *keep  = be_new_Keep(block, 1, in);
 	sched_add_before(schedpoint, keep);
 
 	return stack;
@@ -707,11 +675,6 @@ static ir_node *create_pop(dbg_info *dbgi, ir_node *block,
 static void peephole_be_IncSP(ir_node *node)
 {
 	const arch_register_t *esp = &ia32_registers[REG_ESP];
-	const arch_register_t *reg;
-	dbg_info              *dbgi;
-	ir_node               *block;
-	ir_node               *stack;
-	int                    offset;
 
 	/* first optimize incsp->incsp combinations */
 	node = be_peephole_IncSP_IncSP(node);
@@ -726,31 +689,34 @@ static void peephole_be_IncSP(ir_node *node)
 		return;
 
 	/* replace IncSP -4 by Pop freereg when possible */
-	offset = be_get_IncSP_offset(node);
+	int offset = be_get_IncSP_offset(node);
 	if ((offset != -8 || ia32_cg_config.use_add_esp_8) &&
 	    (offset != -4 || ia32_cg_config.use_add_esp_4) &&
 	    (offset != +4 || ia32_cg_config.use_sub_esp_4) &&
 	    (offset != +8 || ia32_cg_config.use_sub_esp_8))
 		return;
 
+	ir_node *stack;
+
 	if (offset < 0) {
 		/* we need a free register for pop */
-		reg = get_free_gp_reg(get_irn_irg(node));
+		const arch_register_t *reg = get_free_gp_reg(get_irn_irg(node));
 		if (reg == NULL)
 			return;
 
-		dbgi  = get_irn_dbg_info(node);
-		block = get_nodes_block(node);
-		stack = be_get_IncSP_pred(node);
+		dbg_info *dbgi  = get_irn_dbg_info(node);
+		ir_node  *block = get_nodes_block(node);
 
+		stack = be_get_IncSP_pred(node);
 		stack = create_pop(dbgi, block, stack, node, reg);
 
 		if (offset == -8) {
 			stack = create_pop(dbgi, block, stack, node, reg);
 		}
 	} else {
-		dbgi  = get_irn_dbg_info(node);
-		block = get_nodes_block(node);
+		dbg_info *dbgi  = get_irn_dbg_info(node);
+		ir_node  *block = get_nodes_block(node);
+
 		stack = be_get_IncSP_pred(node);
 		stack = new_bd_ia32_PushEax(dbgi, block, stack);
 		arch_set_irn_register(stack, esp);
@@ -772,10 +738,6 @@ static void peephole_be_IncSP(ir_node *node)
 static void peephole_ia32_Const(ir_node *node)
 {
 	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(node);
-	const arch_register_t       *reg;
-	ir_node                     *block;
-	dbg_info                    *dbgi;
-	ir_node                     *xorn;
 
 	/* try to transform a mov 0, reg to xor reg reg */
 	if (attr->offset != 0 || attr->symconst != NULL)
@@ -786,13 +748,13 @@ static void peephole_ia32_Const(ir_node *node)
 	if (be_peephole_get_value(REG_EFLAGS) != NULL)
 		return;
 
-	reg = arch_get_irn_register(node);
+	const arch_register_t *reg = arch_get_irn_register(node);
 	assert(be_peephole_get_reg_value(reg) == NULL);
 
 	/* create xor(produceval, produceval) */
-	block = get_nodes_block(node);
-	dbgi  = get_irn_dbg_info(node);
-	xorn  = new_bd_ia32_Xor0(dbgi, block);
+	ir_node  *block = get_nodes_block(node);
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_node  *xorn  = new_bd_ia32_Xor0(dbgi, block);
 	arch_set_irn_register(xorn, reg);
 
 	sched_add_before(node, xorn);
@@ -819,14 +781,13 @@ ir_node *ia32_immediate_from_long(long val)
 
 static ir_node *create_immediate_from_am(const ir_node *node)
 {
-	ir_node   *block   = get_nodes_block(node);
-	int        offset  = get_ia32_am_offs_int(node);
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	int        sc_no_pic_adjust = attr->data.am_sc_no_pic_adjust;
-	ir_entity *entity  = get_ia32_am_sc(node);
-	ir_node   *res;
+	ir_node           *block            = get_nodes_block(node);
+	int                offset           = get_ia32_am_offs_int(node);
+	const ia32_attr_t *attr             = get_ia32_attr_const(node);
+	int                sc_no_pic_adjust = attr->data.am_sc_no_pic_adjust;
+	ir_entity         *entity           = get_ia32_am_sc(node);
 
-	res = new_bd_ia32_Immediate(NULL, block, entity, sc_no_pic_adjust, offset);
+	ir_node *res = new_bd_ia32_Immediate(NULL, block, entity, sc_no_pic_adjust, offset);
 	arch_set_irn_register(res, &ia32_registers[REG_GP_NOREG]);
 	return res;
 }
@@ -852,27 +813,16 @@ static int is_am_minus_one(const ir_node *node)
  */
 static void peephole_ia32_Lea(ir_node *node)
 {
-	ir_node               *base;
-	ir_node               *index;
-	const arch_register_t *base_reg;
-	const arch_register_t *index_reg;
-	const arch_register_t *out_reg;
-	int                    scale;
-	int                    has_immediates;
-	ir_node               *op1;
-	ir_node               *op2;
-	dbg_info              *dbgi;
-	ir_node               *block;
-	ir_node               *res;
-
 	assert(is_ia32_Lea(node));
 
 	/* we can only do this if it is allowed to clobber the flags */
 	if (be_peephole_get_value(REG_EFLAGS) != NULL)
 		return;
 
-	base  = get_irn_n(node, n_ia32_Lea_base);
-	index = get_irn_n(node, n_ia32_Lea_index);
+	ir_node *base  = get_irn_n(node, n_ia32_Lea_base);
+	ir_node *index = get_irn_n(node, n_ia32_Lea_index);
+	const arch_register_t *base_reg;
+	const arch_register_t *index_reg;
 
 	if (is_noreg(base)) {
 		base     = NULL;
@@ -895,8 +845,11 @@ static void peephole_ia32_Lea(ir_node *node)
 		return;
 	}
 
-	out_reg = arch_get_irn_register(node);
-	scale   = get_ia32_am_scale(node);
+	const arch_register_t *out_reg        = arch_get_irn_register(node);
+	int                    scale          = get_ia32_am_scale(node);
+	int                    has_immediates;
+	ir_node               *op1;
+	ir_node               *op2;
 	assert(!is_ia32_need_stackent(node) || get_ia32_frame_ent(node) != NULL);
 	/* check if we have immediates values (frame entities should already be
 	 * expressed in the offsets) */
@@ -953,6 +906,10 @@ static void peephole_ia32_Lea(ir_node *node)
 		return;
 	}
 
+	dbg_info *dbgi;
+	ir_node  *block;
+	ir_node  *res;
+
 make_add_immediate:
 	if (ia32_cg_config.use_incdec) {
 		if (is_am_one(node)) {
@@ -1007,21 +964,19 @@ exchange:
  */
 static void peephole_ia32_Imul_split(ir_node *imul)
 {
-	const ir_node         *right = get_irn_n(imul, n_ia32_IMul_right);
-	const arch_register_t *reg;
-	ir_node               *res;
+	const ir_node *right = get_irn_n(imul, n_ia32_IMul_right);
 
 	if (!is_ia32_Immediate(right) || get_ia32_op_type(imul) != ia32_AddrModeS) {
 		/* no memory, imm form ignore */
 		return;
 	}
 	/* we need a free register */
-	reg = get_free_gp_reg(get_irn_irg(imul));
+	const arch_register_t *reg = get_free_gp_reg(get_irn_irg(imul));
 	if (reg == NULL)
 		return;
 
 	/* fine, we can rebuild it */
-	res = ia32_turn_back_am(imul);
+	ir_node *res = ia32_turn_back_am(imul);
 	arch_set_irn_register(res, reg);
 }
 
@@ -1041,9 +996,6 @@ static void peephole_ia32_Conv_I2I(ir_node *node)
 	const arch_register_t *eax          = &ia32_registers[REG_EAX];
 	ir_mode               *smaller_mode = get_ia32_ls_mode(node);
 	ir_node               *val          = get_irn_n(node, n_ia32_Conv_I2I_val);
-	dbg_info              *dbgi;
-	ir_node               *block;
-	ir_node               *cwtl;
 
 	if (get_mode_size_bits(smaller_mode) != 16 ||
 			!mode_is_signed(smaller_mode)          ||
@@ -1051,9 +1003,9 @@ static void peephole_ia32_Conv_I2I(ir_node *node)
 			eax != arch_get_irn_register_out(node, pn_ia32_Conv_I2I_res))
 		return;
 
-	dbgi  = get_irn_dbg_info(node);
-	block = get_nodes_block(node);
-	cwtl  = new_bd_ia32_Cwtl(dbgi, block, val);
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_node  *block = get_nodes_block(node);
+	ir_node  *cwtl  = new_bd_ia32_Cwtl(dbgi, block, val);
 	arch_set_irn_register(cwtl, eax);
 	sched_add_before(node, cwtl);
 	be_peephole_exchange(node, cwtl);
@@ -1098,15 +1050,11 @@ void ia32_peephole_optimization(ir_graph *irg)
 
 static void optimize_conv_store(ir_node *node)
 {
-	ir_node *pred;
-	ir_node *pred_proj;
-	ir_mode *conv_mode;
-	ir_mode *store_mode;
-
 	if (!is_ia32_Store(node))
 		return;
 
-	pred_proj = get_irn_n(node, n_ia32_Store_val);
+	ir_node *pred;
+	ir_node *pred_proj = get_irn_n(node, n_ia32_Store_val);
 	if (is_Proj(pred_proj)) {
 		pred = get_Proj_pred(pred_proj);
 	} else {
@@ -1119,8 +1067,8 @@ static void optimize_conv_store(ir_node *node)
 
 	/* the store only stores the lower bits, so we only need the conv
 	 * it it shrinks the mode */
-	conv_mode  = get_ia32_ls_mode(pred);
-	store_mode = get_ia32_ls_mode(node);
+	ir_mode *conv_mode  = get_ia32_ls_mode(pred);
+	ir_mode *store_mode = get_ia32_ls_mode(node);
 	if (get_mode_size_bits(conv_mode) < get_mode_size_bits(store_mode))
 		return;
 
@@ -1135,25 +1083,21 @@ static void optimize_conv_store(ir_node *node)
 
 static void optimize_load_conv(ir_node *node)
 {
-	ir_node *pred, *predpred;
-	ir_mode *load_mode;
-	ir_mode *conv_mode;
-
 	if (!is_ia32_Conv_I2I(node))
 		return;
 
-	pred = get_irn_n(node, n_ia32_Conv_I2I_val);
+	ir_node *pred = get_irn_n(node, n_ia32_Conv_I2I_val);
 	if (!is_Proj(pred))
 		return;
 
-	predpred = get_Proj_pred(pred);
+	ir_node *predpred = get_Proj_pred(pred);
 	if (!is_ia32_Load(predpred))
 		return;
 
 	/* the load is sign extending the upper bits, so we only need the conv
 	 * if it shrinks the mode */
-	load_mode = get_ia32_ls_mode(predpred);
-	conv_mode = get_ia32_ls_mode(node);
+	ir_mode *load_mode = get_ia32_ls_mode(predpred);
+	ir_mode *conv_mode = get_ia32_ls_mode(node);
 	if (get_mode_size_bits(conv_mode) < get_mode_size_bits(load_mode))
 		return;
 
@@ -1181,15 +1125,11 @@ static void optimize_load_conv(ir_node *node)
 
 static void optimize_conv_conv(ir_node *node)
 {
-	ir_node *pred_proj, *pred, *result_conv;
-	ir_mode *pred_mode, *conv_mode;
-	int      conv_mode_bits;
-	int      pred_mode_bits;
-
 	if (!is_ia32_Conv_I2I(node))
 		return;
 
-	pred_proj = get_irn_n(node, n_ia32_Conv_I2I_val);
+	ir_node *pred;
+	ir_node *pred_proj = get_irn_n(node, n_ia32_Conv_I2I_val);
 	if (is_Proj(pred_proj))
 		pred = get_Proj_pred(pred_proj);
 	else
@@ -1200,10 +1140,11 @@ static void optimize_conv_conv(ir_node *node)
 
 	/* we know that after a conv, the upper bits are sign extended
 	 * so we only need the 2nd conv if it shrinks the mode */
-	conv_mode      = get_ia32_ls_mode(node);
-	conv_mode_bits = get_mode_size_bits(conv_mode);
-	pred_mode      = get_ia32_ls_mode(pred);
-	pred_mode_bits = get_mode_size_bits(pred_mode);
+	ir_node *result_conv;
+	ir_mode *conv_mode      = get_ia32_ls_mode(node);
+	int      conv_mode_bits = get_mode_size_bits(conv_mode);
+	ir_mode *pred_mode      = get_ia32_ls_mode(pred);
+	int      pred_mode_bits = get_mode_size_bits(pred_mode);
 
 	if (conv_mode_bits == pred_mode_bits
 			&& get_mode_sign(conv_mode) == get_mode_sign(pred_mode)) {
@@ -1268,7 +1209,7 @@ static void optimize_conv_conv(ir_node *node)
 
 static void optimize_node(ir_node *node, void *env)
 {
-	(void) env;
+	(void)env;
 
 	optimize_load_conv(node);
 	optimize_conv_store(node);
