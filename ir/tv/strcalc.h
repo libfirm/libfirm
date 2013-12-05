@@ -107,42 +107,38 @@ bool sc_divmod(const sc_word *value1, const sc_word *value2,
 /**
  * buffer = value1 << offset
  */
-void sc_shlI(const sc_word *val1, unsigned shift_cnt, unsigned bitsize,
-             bool sign, sc_word *buffer);
+void sc_shlI(const sc_word *val1, unsigned shift_cnt, sc_word *buffer);
 
 /**
  * buffer = value1 << value2
  */
-void sc_shl(const sc_word *value1, const sc_word *value2, unsigned bitsize,
-            bool sign, sc_word *buffer);
+void sc_shl(const sc_word *value1, const sc_word *value2, sc_word *buffer);
 
 /**
  * buffer = value1 >>u offset
  * @returns carry flag
  */
-bool sc_shrI(const sc_word *val1, unsigned shift_cnt, unsigned bitsize,
-             bool sign, sc_word *buffer);
+bool sc_shrI(const sc_word *val1, unsigned shift_count, sc_word *buffer);
 
 /**
  * buffer = value1 >>u value2
  * @returns carry flag
  */
-bool sc_shr(const sc_word *value1, const sc_word *value2, unsigned bitsize,
-            bool sign, sc_word *buffer);
+bool sc_shr(const sc_word *value1, const sc_word *value2, sc_word *buffer);
 
 /**
  * buffer = value1 >>s offset
  * @returns carry flag
  */
 bool sc_shrsI(const sc_word *val1, unsigned shift_cnt, unsigned bitsize,
-              bool sign, sc_word *buffer);
+              sc_word *buffer);
 
 /**
  * buffer = value1 >>s value2
  * @returns carry flag
  */
 bool sc_shrs(const sc_word *value1, const sc_word *value2, unsigned bitsize,
-             bool sign, sc_word *buffer);
+             sc_word *buffer);
 
 /**
  * buffer = 0

@@ -169,11 +169,11 @@ int main(void)
 		assert(equal(temp, val));
 		sc_andnot(val, zero, temp);
 		assert(equal(temp, val));
-		sc_shl(val, zero, precision, false, temp);
+		sc_shl(val, zero, temp);
 		assert(equal(temp, val));
-		sc_shr(val, zero, precision, false, temp);
+		sc_shr(val, zero, temp);
 		assert(equal(temp, val));
-		sc_shrs(val, zero, precision, false, temp);
+		sc_shrs(val, zero, precision, temp);
 		assert(equal(temp, val));
 
 		/* test zero */
@@ -181,11 +181,17 @@ int main(void)
 		assert(is_zero(temp));
 		sc_xor(val, val, temp);
 		assert(is_zero(temp));
-		sc_shlI(val, precision, precision, false, temp);
+		sc_shlI(val, precision, temp);
 		assert(is_zero(temp));
-		sc_shrI(val, precision, precision, false, temp);
+
+		/* workaround until we don't have this stupid
+		 * calc_buffer_size*4 > precision anymore */
+		memcpy(temp, val, buflen);
+		sc_zero_extend(temp, precision);
+
+		sc_shrI(temp, precision, temp);
 		assert(is_zero(temp));
-		sc_shrsI(val, precision, precision, false, temp);
+		sc_shrsI(val, precision, precision, temp);
 		if (sc_get_bit_at(val, precision-1))
 			assert(equal(temp, all_one));
 		else

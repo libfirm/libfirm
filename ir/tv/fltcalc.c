@@ -51,10 +51,10 @@ struct fp_value {
 #define _mant(a) &((a)->value[value_size])
 
 #define _save_result(x) memcpy((x), sc_get_buffer(), value_size)
-#define _shift_right(x, y, res) sc_shr((x), (y), value_size*4, 0, (res))
-#define _shift_righti(x, y, res) sc_shrI((x), (y), value_size*4, 0, (res))
-#define _shift_left(x, y, res) sc_shl((x), (y), value_size*4, 0, (res))
-#define _shift_lefti(x, y, res) sc_shlI((x), (y), value_size*4, 0, (res))
+#define _shift_right(x, y, res) sc_shr((x), (y), (res))
+#define _shift_righti(x, y, res) sc_shrI((x), (y), (res))
+#define _shift_left(x, y, res) sc_shl((x), (y), (res))
+#define _shift_lefti(x, y, res) sc_shlI((x), (y), (res))
 
 /** A temporary buffer. */
 static fp_value *calc_buffer = NULL;
@@ -1246,10 +1246,14 @@ flt2int_result_t fc_flt2int(const fp_value *a, sc_word *result,
 
 		if (tgt_bits < mantissa_size + 1)
 			tgt_bits = mantissa_size + 1;
+		else
+			tgt_bits += mode_is_signed(dst_mode);
+
 		if (shift > 0) {
-			sc_shlI(_mant(a),  shift, tgt_bits, 0, result);
+			sc_shlI(_mant(a), shift, result);
+			sc_zero_extend(result, tgt_bits);
 		} else {
-			sc_shrI(_mant(a), -shift, tgt_bits, 0, result);
+			sc_shrI(_mant(a), -shift, result);
 		}
 		if (a->sign)
 			sc_neg(result, result);

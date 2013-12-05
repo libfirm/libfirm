@@ -1206,8 +1206,7 @@ ir_tarval *tarval_shl(ir_tarval *a, ir_tarval *b)
 	}
 
 	sc_word *temp = ALLOCAN(sc_word, sc_get_buffer_length());
-	sc_shl(a->value, temp_val, get_mode_size_bits(a->mode),
-	       mode_is_signed(a->mode), temp);
+	sc_shl(a->value, temp_val, temp);
 	return get_tarval(temp, sc_get_buffer_length(), a->mode);
 }
 
@@ -1220,8 +1219,7 @@ ir_tarval *tarval_shl_unsigned(ir_tarval *a, unsigned b)
 	assert((unsigned)(long)b==b);
 
 	sc_word *buffer = ALLOCAN(sc_word, sc_get_buffer_length());
-	sc_shlI(a->value, (long)b, get_mode_size_bits(mode), mode_is_signed(mode),
-	        buffer);
+	sc_shlI(a->value, (long)b, buffer);
 	return get_tarval(buffer, sc_get_buffer_length(), mode);
 }
 
@@ -1240,8 +1238,10 @@ ir_tarval *tarval_shr(ir_tarval *a, ir_tarval *b)
 	}
 
 	sc_word *temp = ALLOCAN(sc_word, sc_get_buffer_length());
-	sc_shr(a->value, temp_val, get_mode_size_bits(a->mode),
-	       mode_is_signed(a->mode), temp);
+	/* workaround for unnecessary internal higher precision */
+	memcpy(temp, a->value, sc_get_buffer_length());
+	sc_zero_extend(temp, get_mode_size_bits(a->mode));
+	sc_shr(temp, temp_val, temp);
 	return get_tarval(temp, sc_get_buffer_length(), a->mode);
 }
 
@@ -1254,8 +1254,7 @@ ir_tarval *tarval_shr_unsigned(ir_tarval *a, unsigned b)
 	assert((unsigned)(long)b==b);
 
 	sc_word *temp = ALLOCAN(sc_word, sc_get_buffer_length());
-	sc_shrI(a->value, (long)b, get_mode_size_bits(mode), mode_is_signed(mode),
-	        temp);
+	sc_shrI(a->value, (long)b, temp);
 	return get_tarval(temp, sc_get_buffer_length(), mode);
 }
 
@@ -1274,8 +1273,7 @@ ir_tarval *tarval_shrs(ir_tarval *a, ir_tarval *b)
 	}
 
 	sc_word *temp = ALLOCAN(sc_word, sc_get_buffer_length());
-	sc_shrs(a->value, temp_val, get_mode_size_bits(a->mode),
-	        mode_is_signed(a->mode), temp);
+	sc_shrs(a->value, temp_val, get_mode_size_bits(a->mode), temp);
 	return get_tarval(temp, sc_get_buffer_length(), a->mode);
 }
 
@@ -1288,8 +1286,7 @@ ir_tarval *tarval_shrs_unsigned(ir_tarval *a, unsigned b)
 	assert((unsigned)(long)b==b);
 
 	sc_word *temp = ALLOCAN(sc_word, sc_get_buffer_length());
-	sc_shrsI(a->value, (long)b, get_mode_size_bits(mode), mode_is_signed(mode),
-	         temp);
+	sc_shrsI(a->value, (long)b, get_mode_size_bits(mode), temp);
 	return get_tarval(temp, sc_get_buffer_length(), mode);
 }
 

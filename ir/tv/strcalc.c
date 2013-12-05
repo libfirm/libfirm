@@ -34,25 +34,6 @@ static unsigned bit_pattern_size;   /**< maximum number of bits */
 static unsigned calc_buffer_size;   /**< size of internally stored values */
 static unsigned max_value_size;     /**< maximum size of values */
 
-static const sc_word shrs_table[16][4][2] = {
-	{ { 0, 0}, {0, 0}, {0,  0}, {0,  0} },
-	{ { 1, 0}, {0, 8}, {0,  4}, {0,  2} },
-	{ { 2, 0}, {1, 0}, {0,  8}, {0,  4} },
-	{ { 3, 0}, {1, 8}, {0, 12}, {0,  6} },
-	{ { 4, 0}, {2, 0}, {1,  0}, {0,  8} },
-	{ { 5, 0}, {2, 8}, {1,  4}, {0, 10} },
-	{ { 6, 0}, {3, 0}, {1,  8}, {0, 12} },
-	{ { 7, 0}, {3, 8}, {1, 12}, {0, 14} },
-	{ { 8, 0}, {4, 0}, {2,  0}, {1,  0} },
-	{ { 9, 0}, {4, 8}, {2,  4}, {1,  2} },
-	{ {10, 0}, {5, 0}, {2,  8}, {1,  4} },
-	{ {11, 0}, {5, 8}, {2, 12}, {1,  6} },
-	{ {12, 0}, {6, 0}, {3,  0}, {1,  8} },
-	{ {13, 0}, {6, 8}, {3,  4}, {1, 10} },
-	{ {14, 0}, {7, 0}, {3,  8}, {1, 12} },
-	{ {15, 0}, {7, 8}, {3, 12}, {1, 14} }
-};
-
 /** converting a digit to a binary string */
 static char const *const binary_table[] = {
 	"0000", "0001", "0010", "0011", "0100", "0101", "0110", "0111",
@@ -306,141 +287,6 @@ end:
 
 	/* sets carry if remainder is non-zero ??? */
 	bool carry_flag = !sc_is_zero(rem, calc_buffer_size*SC_BITS);
-	return carry_flag;
-}
-
-/**
- * Implements a Shift Left, which can either preserve the sign bit
- * or not.
- */
-static void do_shl(const sc_word *val1, sc_word *buffer, unsigned shift_cnt,
-                   unsigned bitsize, bool is_signed)
-{
-	assert(buffer != val1);
-
-	/* if shifting far enough the result is zero */
-	if (shift_cnt >= bitsize) {
-		sc_zero(buffer);
-		return;
-	}
-
-	unsigned const shift = shift_cnt % SC_BITS;
-	shift_cnt = shift_cnt / SC_BITS;
-
-	/* shift the single digits some bytes (offset) and some bits (table)
-	 * to the left */
-	unsigned carry = 0;
-	for (unsigned counter = 0; counter < bitsize/SC_BITS - shift_cnt;
-	     ++counter) {
-		unsigned const shl = val1[counter] << shift | carry;
-		buffer[counter + shift_cnt] = SC_RESULT(shl);
-		carry = SC_CARRY(shl);
-	}
-	unsigned counter   = bitsize/SC_BITS - shift_cnt;
-	unsigned bitoffset = 0;
-	if (bitsize%SC_BITS > 0) {
-		unsigned const shl = val1[counter] << shift | carry;
-		buffer[counter + shift_cnt] = SC_RESULT(shl);
-		bitoffset = counter;
-	} else {
-		bitoffset = counter - 1;
-	}
-
-	/* fill with zeroes */
-	for (unsigned counter = 0; counter < shift_cnt; counter++)
-		buffer[counter] = 0;
-
-	/* if the mode was signed, change sign when the mode's msb is now 1 */
-	shift_cnt = bitoffset + shift_cnt;
-	bitoffset = (bitsize-1) % SC_BITS;
-	if (is_signed && _bitisset(buffer[shift_cnt], bitoffset)) {
-		/* this sets the upper bits of the leftmost digit */
-		buffer[shift_cnt] |= min_digit(bitoffset);
-		for (unsigned counter = shift_cnt+1; counter < calc_buffer_size;
-		     ++counter) {
-			buffer[counter] = SC_MASK;
-		}
-	} else if (is_signed && !_bitisset(buffer[shift_cnt], bitoffset)) {
-		/* this clears the upper bits of the leftmost digit */
-		buffer[shift_cnt] &= max_digit(bitoffset);
-		for (unsigned counter = shift_cnt+1; counter < calc_buffer_size;
-		     ++counter) {
-			buffer[counter] = 0;
-		}
-	}
-}
-
-/**
- * Implements a Shift Right, which can either preserve the sign bit
- * or not.
- *
- * @param bitsize   bitsize of the value to be shifted
- */
-static bool do_shr(const sc_word *val1, sc_word *buffer, unsigned shift_cnt,
-                   unsigned bitsize, bool is_signed, bool signed_shift)
-{
-	bool    carry_flag = false;
-	sc_word sign = signed_shift && sc_get_bit_at(val1, bitsize-1) ? SC_MASK : 0;
-
-	/* if shifting far enough the result is either 0 or -1 */
-	if (shift_cnt >= bitsize) {
-		if (!sc_is_zero(val1, calc_buffer_size*SC_BITS)) {
-			carry_flag = true;
-		}
-		memset(buffer, sign, calc_buffer_size);
-		return carry_flag;
-	}
-
-	unsigned shift_mod = shift_cnt % SC_BITS;
-	unsigned shift_nib = shift_cnt / SC_BITS;
-
-	/* check if any bits are lost, and set carry_flag if so */
-	for (unsigned counter = 0; counter < shift_nib; ++counter) {
-		if (val1[counter] != 0) {
-			carry_flag = true;
-			break;
-		}
-	}
-	if ((val1[shift_nib] & ((1<<shift_mod)-1)) != 0)
-		carry_flag = true;
-
-	/* shift digits to the right with offset, carry and all */
-	buffer[0] = shrs_table[val1[shift_nib]][shift_mod][0];
-	unsigned counter;
-	for (counter = 1; counter < ((bitsize + 3) / SC_BITS) - shift_nib;
-	     ++counter) {
-		const sc_word *shrs = shrs_table[val1[counter+shift_nib]][shift_mod];
-		buffer[counter]      = shrs[0];
-		buffer[counter - 1] |= shrs[1];
-	}
-
-	/* the last digit is special in regard of signed/unsigned shift */
-	unsigned bitoffset = bitsize % SC_BITS;
-	sc_word  msd       = sign;  /* most significant digit */
-
-	/* remove sign bits if mode was signed and this is an unsigned shift */
-	if (!signed_shift && is_signed) {
-		msd &= max_digit(bitoffset);
-	}
-
-	const sc_word *shrs = shrs_table[msd][shift_mod];
-
-	/* signed shift and signed mode and negative value means all bits to the
-	 * left are set */
-	if (signed_shift && sign == SC_MASK) {
-		buffer[counter] = shrs[0] | min_digit(bitoffset);
-	} else {
-		buffer[counter] = shrs[0];
-	}
-
-	if (counter > 0)
-		buffer[counter - 1] |= shrs[1];
-
-	/* fill with 0xF or 0 depending on sign */
-	for (counter++; counter < calc_buffer_size; counter++) {
-		buffer[counter] = sign;
-	}
-
 	return carry_flag;
 }
 
@@ -1036,51 +882,148 @@ void sc_mod(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 	sc_divmod(value1, value2, unused_res, buffer);
 }
 
-void sc_shlI(const sc_word *val1, unsigned shift_cnt, unsigned bitsize,
-             bool sign, sc_word *buffer)
+void sc_shlI(const sc_word *value, unsigned shift_count, sc_word *buffer)
 {
-	sc_word *dest = buffer;
-	if (dest == val1)
-		dest = ALLOCAN(sc_word, calc_buffer_size);
+	if (shift_count >= calc_buffer_size*SC_BITS) {
+		sc_zero(buffer);
+		return;
+	}
 
-	do_shl(val1, dest, shift_cnt, bitsize, sign);
+	/* set upper values */
+	unsigned const shift_bits  = shift_count % SC_BITS;
+	unsigned const shift_words = shift_count / SC_BITS;
+	if (shift_bits == 0) {
+		for (unsigned counter = calc_buffer_size; counter-- > shift_words; ) {
+			buffer[counter] = value[counter-shift_words];
+		}
+	} else {
+		sc_word val  = value[calc_buffer_size-shift_words];
+		for (unsigned counter = calc_buffer_size; counter-- > shift_words; ) {
+			unsigned nextpos = counter-shift_words-1;
+			sc_word  next    = nextpos < calc_buffer_size ? value[nextpos] : 0;
+			buffer[counter] = SC_RESULT(val << shift_bits)
+			                | SC_RESULT(next >> (4-shift_bits));
+			val = next;
+		}
+	}
 
-	if (dest != buffer)
-		memcpy(buffer, dest, calc_buffer_size);
+	/* fill up with zeros */
+	memset(buffer, 0, shift_words);
 }
 
-void sc_shl(const sc_word *val1, const sc_word *val2, unsigned bitsize,
-            bool sign, sc_word *buffer)
+void sc_shl(const sc_word *val1, const sc_word *val2, sc_word *buffer)
 {
 	long shift_count = sc_val_to_long(val2);
 	assert(shift_count >= 0);
-	sc_shlI(val1, shift_count, bitsize, sign, buffer);
+	sc_shlI(val1, shift_count, buffer);
 }
 
-bool sc_shrI(const sc_word *val1, unsigned shift_cnt, unsigned bitsize,
-             bool sign, sc_word *buffer)
+bool sc_shrI(const sc_word *value, unsigned shift_count, sc_word *buffer)
 {
-	return do_shr(val1, buffer, shift_cnt, bitsize, sign, false);
+	if (shift_count >= calc_buffer_size*SC_BITS) {
+		bool carry_flag = !sc_is_zero(value, calc_buffer_size*SC_BITS);
+		sc_zero(buffer);
+		return carry_flag;
+	}
+
+	unsigned shift_words = shift_count / SC_BITS;
+	unsigned shift_bits  = shift_count % SC_BITS;
+
+	/* determine carry flag */
+	bool carry_flag = false;
+	for (unsigned i = 0; i < shift_words; ++i) {
+		if (value[i] != 0) {
+			carry_flag = true;
+			break;
+		}
+	}
+
+	/* shift to the right */
+	if (shift_bits == 0) {
+		/* fast path */
+		for (unsigned i = 0; i < calc_buffer_size-shift_words; ++i) {
+			buffer[i] = value[i+shift_words];
+		}
+	} else {
+		sc_word val = value[shift_words];
+		carry_flag |= val & max_digit(shift_bits);
+		for (unsigned i = 0; i < calc_buffer_size-shift_words; ++i) {
+			unsigned next_pos = i+shift_words+1;
+			sc_word  next = next_pos < calc_buffer_size ? value[next_pos] : 0;
+			buffer[i] = SC_RESULT(val >> shift_bits)
+			          | SC_RESULT(next << (SC_BITS - shift_bits));
+			val = next;
+		}
+	}
+
+	/* fill upper words with zero */
+	memset(&buffer[calc_buffer_size-shift_words], 0, shift_words);
+	return carry_flag;
 }
 
-bool sc_shr(const sc_word *val1, const sc_word *val2, unsigned bitsize,
-            bool sign, sc_word *buffer)
+bool sc_shr(const sc_word *val1, const sc_word *val2, sc_word *buffer)
 {
-	long shift_cnt = sc_val_to_long(val2);
-	assert(shift_cnt >= 0);
-	return sc_shrI(val1, shift_cnt, bitsize, sign, buffer);
+	long shift_count = sc_val_to_long(val2);
+	assert(shift_count >= 0);
+	return sc_shrI(val1, shift_count, buffer);
 }
 
-bool sc_shrsI(const sc_word *val1, unsigned shift_cnt, unsigned bitsize,
-              bool sign, sc_word *buffer)
+bool sc_shrsI(const sc_word *value, unsigned shift_count, unsigned bitsize,
+              sc_word *buffer)
 {
-	return do_shr(val1, buffer, shift_cnt, bitsize, sign, true);
+	sc_word sign = sc_get_bit_at(value, bitsize-1) ? SC_MASK : 0;
+
+	/* if shifting far enough the result is either 0 or -1 */
+	if (shift_count >= bitsize) {
+		bool carry_flag = !sc_is_zero(value, calc_buffer_size*SC_BITS);
+		memset(buffer, sign, calc_buffer_size);
+		return carry_flag;
+	}
+
+	unsigned shift_words = shift_count / SC_BITS;
+	unsigned shift_bits  = shift_count % SC_BITS;
+
+	/* determine carry flag */
+	bool carry_flag = false;
+	for (unsigned i = 0; i < shift_words; ++i) {
+		if (value[i] != 0) {
+			carry_flag = true;
+			break;
+		}
+	}
+
+	/* TODO: bitsize % 4 != 0*/
+	assert(bitsize % SC_BITS == 0);
+	unsigned limit = bitsize / SC_BITS;
+
+	/* shift to the right */
+	if (shift_bits == 0) {
+		/* fast path */
+		for (unsigned i = 0; i < limit-shift_words; ++i) {
+			buffer[i] = value[i+shift_words];
+		}
+	} else {
+		sc_word val = value[shift_words];
+		carry_flag |= val & max_digit(shift_bits);
+		for (unsigned i = 0; i < limit-shift_words; ++i) {
+			unsigned next_pos = i+shift_words+1;
+			sc_word next = next_pos<limit ? value[next_pos] : sign;
+			buffer[i] = SC_RESULT(val >> shift_bits)
+			          | SC_RESULT(next << (SC_BITS - shift_bits));
+			val = next;
+		}
+	}
+
+	/* fill upper words with extended sign */
+	memset(&buffer[limit-shift_words], sign,
+	       calc_buffer_size-(limit-shift_words));
+	return carry_flag;
 }
 
 bool sc_shrs(const sc_word *val1, const sc_word *val2, unsigned bitsize,
-             bool sign, sc_word *buffer)
+             sc_word *buffer)
 {
 	long shift_count = sc_val_to_long(val2);
 	assert(shift_count >= 0);
-	return sc_shrsI(val1, shift_count, bitsize, sign, buffer);
+	return sc_shrsI(val1, shift_count, bitsize, buffer);
 }
