@@ -10,7 +10,10 @@ static unsigned buflen;
 
 static bool equal(const sc_word *v0, const sc_word *v1)
 {
-	return memcmp(v0, v1, buflen) == 0;
+	/* use precision/4 instead of buflen for now until we don't have these
+	 * strange extra precision words anymore. */
+	size_t len = precision/4;
+	return memcmp(v0, v1, len) == 0;
 }
 
 typedef void (*binop)(const sc_word *v0, const sc_word *v1, sc_word *dest);
@@ -215,10 +218,7 @@ int main(void)
 				check_associativity(val0, val1, val2, sc_or);
 				check_associativity(val0, val1, val2, sc_and);
 				check_associativity(val0, val1, val2, sc_xor);
-				// following disabled: internal precision is higher and high
-				// bits generated (but not regarded as source for next
-				// multiplication)
-				//check_associativity(val0, val1, val2, sc_mul);
+				check_associativity(val0, val1, val2, sc_mul);
 			}
 		}
 	}
