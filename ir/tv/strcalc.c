@@ -329,7 +329,6 @@ static void do_shl(const sc_word *val1, sc_word *buffer, unsigned shift_cnt,
                    unsigned bitsize, bool is_signed)
 {
 	assert(buffer != val1);
-	assert(!sc_is_negative(val1) || is_signed);
 
 	/* if shifting far enough the result is zero */
 	if (shift_cnt >= bitsize) {
