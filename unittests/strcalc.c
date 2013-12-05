@@ -100,10 +100,15 @@ int main(void)
 	sc_neg(one, temp);
 	assert(equal(temp, all_one));
 
+	/* some tests with values where exactly 1 bit is set */
 	for (unsigned i = 0; i < precision; ++i) {
 		sc_zero(temp);
 		sc_set_bit_at(temp, i);
 		assert(sc_popcount(temp, precision) == 1);
+		sc_shlI(one, i, temp1);
+		assert(equal(temp, temp1));
+		sc_shrI(temp, i, temp1);
+		assert(equal(temp1, one));
 		// following disabled: internal precision is currently higher than
 		// precision...
 		//assert(sc_is_negative(temp) == (i == precision-1));
@@ -121,6 +126,10 @@ int main(void)
 	}
 	assert(sc_popcount(alt0, precision) == precision/2+(precision&1));
 	assert(sc_popcount(alt1, precision) == precision/2);
+	sc_shrI(alt1, 1, temp);
+	assert(equal(alt0, temp));
+	sc_shlI(alt0, 1, temp);
+	assert(equal(alt1, temp));
 
 	sc_word *v2    = XMALLOCNZ(sc_word, buflen);
 	sc_word *v4    = XMALLOCNZ(sc_word, buflen);
@@ -140,6 +149,9 @@ int main(void)
 	// precision...
 	//assert(sc_is_negative(highbit));
 
+	sc_word *cafebabe = XMALLOCN(sc_word, buflen);
+	sc_val_from_str(false, 16, "CAFEBABE", 8, cafebabe);
+
 	const sc_word * const vals[] = {
 		zero,
 		all_one,
@@ -151,7 +163,8 @@ int main(void)
 		v8,
 		v16,
 		v2048,
-		highbit
+		highbit,
+		cafebabe
 	};
 	for (unsigned i = 0; i < ARRAY_SIZE(vals); ++i) {
 		/* test neutral elements */
@@ -216,6 +229,34 @@ int main(void)
 		assert(is_zero(temp));
 		sc_mul(val, zero, temp);
 		assert(is_zero(temp));
+
+		/* test if zero/sign extension is equivalent to shl+shr combinations */
+		for (unsigned b = 0; b < precision; ++b) {
+			sc_shlI(val, b, temp);
+			sc_zero_extend(temp, precision); /* higher precision workaround */
+			sc_shrI(temp, b, temp);
+			memcpy(temp1, val, buflen);
+			sc_zero_extend(temp1, precision-b);
+			assert(equal(temp, temp1));
+
+			if (b > 0) {
+				sc_shlI(val, precision-b, temp);
+				sc_zero_extend(temp, precision); /* higher precision workaround */
+				sc_shrsI(temp, precision-b, precision, temp);
+				memcpy(temp1, val, buflen);
+				sc_sign_extend(temp1, b);
+				assert(equal(temp, temp1));
+			}
+		}
+
+		/* test if we shl+shr combinations can isolate a specific bit */
+		for (unsigned b = 0; b < precision; ++b) {
+			sc_shlI(val, precision-b-1, temp);
+			/* workaround internal higher precision... */
+			sc_zero_extend(temp, precision);
+			sc_shrI(temp, precision-1, temp);
+			assert(!is_zero(temp) == sc_get_bit_at(val, b));
+		}
 	}
 
 	/* test commutativity + associativity */
