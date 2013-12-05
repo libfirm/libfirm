@@ -2565,7 +2565,9 @@ static ir_node *gen_Proj_Start(ir_node *node)
 		return new_bd_sparc_Ba(NULL, new_block);
 	case pn_Start_M: {
 		ir_graph *irg = get_irn_irg(node);
-		return get_initial_mem(irg);
+		ir_node  *mem = get_initial_mem(irg);
+		keep_alive(mem);
+		return mem;
 	}
 	case pn_Start_T_args:
 		return new_r_Bad(get_irn_irg(block), mode_T);
