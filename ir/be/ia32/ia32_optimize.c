@@ -168,7 +168,7 @@ static void peephole_ia32_Cmp(ir_node *const node)
 /**
  * Peephole optimization for Test instructions.
  * - Remove the Test, if an appropriate flag was produced which is still live
- * - Change a Test(x, c) to 8Bit, if 0 <= c < 256 (3 byte shorter opcode)
+ * - Change a Test(x, c) to 8Bit, if 0 <= c < 128 (3 byte shorter opcode)
  */
 static void peephole_ia32_Test(ir_node *node)
 {
@@ -268,18 +268,23 @@ static void peephole_ia32_Test(ir_node *node)
 		if (imm->symconst != NULL)
 			return;
 
+		/*
+		 * We have to take care that we end up with the same sign flag:
+		 * testl(128, 128) -> SF=0
+		 * testb(128, 128) -> SF=1
+		 */
 		unsigned offset = imm->offset;
 		if (get_ia32_op_type(node) == ia32_AddrModeS) {
 			ia32_attr_t *const attr = get_ia32_attr(node);
 			ir_graph    *const irg  = get_irn_irg(node);
 
-			if ((offset & 0xFFFFFF00) == 0) {
+			if ((offset & 0xFFFFFF80) == 0) {
 				/* attr->am_offs += 0; */
-			} else if ((offset & 0xFFFF00FF) == 0) {
+			} else if ((offset & 0xFFFF80FF) == 0) {
 				ir_node *imm_node = ia32_create_Immediate(irg, NULL, offset >>  8);
 				set_irn_n(node, n_ia32_Test_right, imm_node);
 				attr->am_offs += 1;
-			} else if ((offset & 0xFF00FFFF) == 0) {
+			} else if ((offset & 0xFF80FFFF) == 0) {
 				ir_node *imm_node = ia32_create_Immediate(irg, NULL, offset >> 16);
 				set_irn_n(node, n_ia32_Test_right, imm_node);
 				attr->am_offs += 2;
@@ -290,7 +295,7 @@ static void peephole_ia32_Test(ir_node *node)
 			} else {
 				return;
 			}
-		} else if (offset < 256) {
+		} else if ((offset & 0xFFFFFF80) == 0) {
 			arch_register_t const* const reg = arch_get_irn_register(left);
 
 			if (reg != &ia32_registers[REG_EAX] &&
