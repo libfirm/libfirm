@@ -144,7 +144,7 @@ int main(void)
 	};
 	for (unsigned i = 0; i < ARRAY_SIZE(vals); ++i) {
 		/* test neutral elements */
-		const sc_word *val = vals[0];
+		const sc_word *val = vals[i];
 		sc_add(val, zero, temp);
 		assert(equal(temp, val));
 		sc_add(zero, val, temp);
