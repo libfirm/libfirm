@@ -1,3 +1,9 @@
+/*
+ * Test some strcalc operations.
+ * Note: we use XMALLOCN (instead of ALLOCAN) here so valgrind can detect
+ *       buffer overflows more easily.
+ */
+
 #include "strcalc.h"
 
 #include <assert.h>
@@ -21,24 +27,28 @@ typedef void (*binop)(const sc_word *v0, const sc_word *v1, sc_word *dest);
 static void check_commutativity(const sc_word *val0, const sc_word *val1,
                                 binop op)
 {
-	sc_word *temp0 = ALLOCAN(sc_word, buflen);
-	sc_word *temp1 = ALLOCAN(sc_word, buflen);
+	sc_word *temp0 = XMALLOCN(sc_word, buflen);
+	sc_word *temp1 = XMALLOCN(sc_word, buflen);
 	op(val0, val1, temp0);
 	op(val1, val0, temp1);
 	assert(equal(temp0, temp1));
+	free(temp0);
+	free(temp1);
 }
 
 static void check_associativity(const sc_word *val0, const sc_word *val1,
                                 const sc_word *val2, binop op)
 {
-	sc_word *temp0 = ALLOCAN(sc_word, buflen);
-	sc_word *temp1 = ALLOCAN(sc_word, buflen);
+	sc_word *temp0 = XMALLOCN(sc_word, buflen);
+	sc_word *temp1 = XMALLOCN(sc_word, buflen);
 	op(val0,  val1, temp0);
 	op(temp0, val2, temp0);
 
 	op(val1,  val2, temp1);
 	op(val0, temp1, temp1);
 	assert(equal(temp0, temp1));
+	free(temp0);
+	free(temp1);
 }
 
 static bool is_zero(const sc_word *val)
@@ -51,9 +61,10 @@ int main(void)
 	init_strcalc(precision);
 	buflen = sc_get_buffer_length();
 
-	sc_word *temp = ALLOCAN(sc_word, buflen);
+	sc_word *temp  = XMALLOCN(sc_word, buflen);
+	sc_word *temp1 = XMALLOCN(sc_word, buflen);
 
-	sc_word *zero = ALLOCAN(sc_word, buflen);
+	sc_word *zero = XMALLOCN(sc_word, buflen);
 	sc_zero(zero);
 	for (unsigned i = 0; i <= precision; ++i) {
 		assert(sc_is_zero(zero, i));
@@ -61,7 +72,7 @@ int main(void)
 	assert(sc_popcount(zero, precision) == 0);
 	assert(!sc_is_negative(zero));
 
-	sc_word *all_one = ALLOCAN(sc_word, buflen);
+	sc_word *all_one = XMALLOCN(sc_word, buflen);
 	sc_not(zero, all_one);
 	for (unsigned i = 0; i <= precision; ++i) {
 		assert(sc_is_all_one(all_one, i));
@@ -69,7 +80,7 @@ int main(void)
 	assert(sc_popcount(all_one, precision) == precision);
 	assert(sc_is_negative(all_one));
 
-	sc_word *one = ALLOCAN(sc_word, buflen);
+	sc_word *one = XMALLOCN(sc_word, buflen);
 	sc_zero(one);
 	sc_set_bit_at(one, 0);
 	for (unsigned i = 1; i <= precision; ++i) {
@@ -98,8 +109,8 @@ int main(void)
 		//assert(sc_is_negative(temp) == (i == precision-1));
 	}
 
-	sc_word *alt0 = ALLOCAN(sc_word, buflen);
-	sc_word *alt1 = ALLOCAN(sc_word, buflen);
+	sc_word *alt0 = XMALLOCN(sc_word, buflen);
+	sc_word *alt1 = XMALLOCN(sc_word, buflen);
 	sc_zero(alt0);
 	sc_zero(alt1);
 	for (unsigned i = 0; i < precision; ++i) {
@@ -111,18 +122,18 @@ int main(void)
 	assert(sc_popcount(alt0, precision) == precision/2+(precision&1));
 	assert(sc_popcount(alt1, precision) == precision/2);
 
-	sc_word *v2    = ALLOCANZ(sc_word, buflen);
-	sc_word *v4    = ALLOCANZ(sc_word, buflen);
-	sc_word *v8    = ALLOCANZ(sc_word, buflen);
-	sc_word *v16   = ALLOCANZ(sc_word, buflen);
-	sc_word *v2048 = ALLOCANZ(sc_word, buflen);
+	sc_word *v2    = XMALLOCNZ(sc_word, buflen);
+	sc_word *v4    = XMALLOCNZ(sc_word, buflen);
+	sc_word *v8    = XMALLOCNZ(sc_word, buflen);
+	sc_word *v16   = XMALLOCNZ(sc_word, buflen);
+	sc_word *v2048 = XMALLOCNZ(sc_word, buflen);
 	sc_set_bit_at(v2, 1);
 	sc_set_bit_at(v4, 2);
 	sc_set_bit_at(v8, 3);
 	sc_set_bit_at(v16, 4);
 	sc_set_bit_at(v2048, 11);
 
-	sc_word *highbit = ALLOCANZ(sc_word, buflen);
+	sc_word *highbit = XMALLOCNZ(sc_word, buflen);
 	sc_set_bit_at(highbit, precision-1);
 
 	// following disabled: internal precision is currently higher than
