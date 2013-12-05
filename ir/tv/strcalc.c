@@ -109,10 +109,7 @@ void sc_andnot(const sc_word *val1, const sc_word *val2, sc_word *buffer)
 		buffer[counter] = val1[counter] & (SC_MASK ^ val2[counter]);
 }
 
-/**
- * Implements a fast ADD + 1
- */
-static void sc_inc(const sc_word *val, sc_word *buffer)
+void sc_inc(const sc_word *val, sc_word *buffer)
 {
 	for (unsigned counter = 0; counter < calc_buffer_size; ++counter) {
 		sc_word v = val[counter];

@@ -238,8 +238,7 @@ static bool normalize(const fp_value *in_val, fp_value *out_val, bool sticky)
 	} else if ((out_val->clss == FC_SUBNORMAL) && (hsb == -1)) {
 		/* overflow caused the mantissa to be normal again,
 		 * so adapt the exponent accordingly */
-		sc_val_from_ulong(1, temp);
-		sc_add(_exp(out_val), temp, _exp(out_val));
+		sc_inc(_exp(out_val), _exp(out_val));
 
 		out_val->clss = FC_NORMAL;
 	}
@@ -386,9 +385,7 @@ static void _fadd(const fp_value *a, const fp_value *b, fp_value *result)
 		 * little more than the represented value to a negative value this, in
 		 * addition to the still set sticky bit, takes account of the
 		 * 'little more' */
-		sc_word *temp1 = ALLOCAN(sc_word, value_size);
-		sc_val_from_ulong(1, temp1);
-		sc_add(temp, temp1, temp);
+		sc_inc(temp, temp);
 	}
 
 	if (sign) {
@@ -475,8 +472,7 @@ static void _fmul(const fp_value *a, const fp_value *b, fp_value *result)
 
 	/* mixed normal, subnormal values introduce an error of 1, correct it */
 	if ((a->clss == FC_SUBNORMAL) ^ (b->clss == FC_SUBNORMAL)) {
-		sc_val_from_ulong(1, temp);
-		sc_add(_exp(result), temp, _exp(result));
+		sc_inc(_exp(result), _exp(result));
 	}
 
 	sc_mul(_mant(a), _mant(b), _mant(result));
@@ -561,8 +557,7 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result)
 
 	/* mixed normal, subnormal values introduce an error of 1, correct it */
 	if ((a->clss == FC_SUBNORMAL) ^ (b->clss == FC_SUBNORMAL)) {
-		sc_val_from_ulong(1, temp);
-		sc_add(_exp(result), temp, _exp(result));
+		sc_inc(_exp(result), _exp(result));
 	}
 
 	/* mant(res) = mant(a) / 1/2mant(b) */

@@ -41,6 +41,11 @@ enum base_t {
 void sc_add(const sc_word *value1, const sc_word *value2, sc_word *buffer);
 
 /**
+ * buffer = value1 + 1
+ */
+void sc_inc(const sc_word *value1, sc_word *buffer);
+
+/**
  * buffer = value1 - value2
  */
 void sc_sub(const sc_word *value1, const sc_word *value2, sc_word *buffer);
