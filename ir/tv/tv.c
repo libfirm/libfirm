@@ -769,7 +769,9 @@ ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *dst_mode)
 		case irms_int_number: {
 			fp_value *res    = fc_int((const fp_value*) src->value, NULL);
 			sc_word  *buffer = ALLOCAN(sc_word, sc_get_buffer_length());
-			flt2int_result_t cres = fc_flt2int(res, buffer, dst_mode);
+			flt2int_result_t cres
+				= fc_flt2int(res, buffer, get_mode_size_bits(dst_mode),
+				             mode_is_signed(dst_mode));
 			switch (cres) {
 			case FLT2INT_POSITIVE_OVERFLOW:
 				switch (get_mode_float_int_overflow(src->mode)) {

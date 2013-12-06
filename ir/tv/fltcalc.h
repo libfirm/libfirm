@@ -13,16 +13,15 @@
 #define FIRM_TV_FLTCALC_H
 
 #include <stdlib.h>
-#include "firm_types.h"
 #include "irtypes.h"
 #include "strcalc.h"
 
-enum {
+typedef enum {
 	FC_DEC,
 	FC_HEX,
 	FC_BIN,
 	FC_PACKED
-};
+} fc_base_t;
 
 /** IEEE-754 Rounding modes. */
 typedef enum {
@@ -31,8 +30,6 @@ typedef enum {
 	FC_TONEGATIVE,  /**< to -oo */
 	FC_TOZERO       /**< to 0 */
 } fc_rounding_mode_t;
-
-#define FC_DEFAULT_PRECISION 64
 
 /**
  * possible float states
@@ -48,16 +45,15 @@ typedef enum {
 struct fp_value;
 typedef struct fp_value fp_value;
 
-/*@{*/
 /** internal buffer access
  * All functions that accept NULL as return buffer put their result into an
  * internal buffer.
- * @return fc_get_buffer() returns the pointer to the buffer, fc_get_buffer_length()
+ * @return fc_get_buffer() returns the pointer to the buffer,
+ *         fc_get_buffer_length()
  * returns the size of this buffer
  */
 const void *fc_get_buffer(void);
-int fc_get_buffer_length(void);
-/*}@*/
+unsigned fc_get_buffer_length(void);
 
 void *fc_val_from_str(const char *str, size_t len, void *result);
 
@@ -141,9 +137,8 @@ fp_value *fc_mul(const fp_value *a, const fp_value *b, fp_value *result);
 fp_value *fc_div(const fp_value *a, const fp_value *b, fp_value *result);
 fp_value *fc_neg(const fp_value *a, fp_value *result);
 fp_value *fc_int(const fp_value *a, fp_value *result);
-fp_value *fc_rnd(const fp_value *a, fp_value *result);
 
-int fc_print(const fp_value *a, char *buf, int buflen, unsigned base);
+int fc_print(const fp_value *a, char *buf, size_t buflen, fc_base_t base);
 
 /** Compare two values
  * This function compares two values
@@ -166,7 +161,7 @@ typedef enum flt2int_result_t {
  * Converts an floating point value into an integer value.
  */
 flt2int_result_t fc_flt2int(const fp_value *a, sc_word *result,
-                            ir_mode *dst_mode);
+                            unsigned result_bits, bool result_signed);
 
 /**
  * Returns non-zero if the mantissa is zero, i.e. 1.0Exxx
@@ -248,14 +243,15 @@ fc_rounding_mode_t fc_get_rounding_mode(void);
  *        byte.
  * @return 8 bits of encoded data
  */
-unsigned char fc_sub_bits(const fp_value *val, unsigned num_bit, unsigned byte_ofs);
+unsigned char fc_sub_bits(const fp_value *val, unsigned num_bit,
+                          unsigned byte_ofs);
 
 /**
  * Returns non-zero if the result of the last operation was exact.
  */
 bool fc_is_exact(void);
 
-void init_fltcalc(int precision);
+void init_fltcalc(unsigned precision);
 void finish_fltcalc(void);
 
-#endif /* FIRM_TV_FLTCALC_H */
+#endif

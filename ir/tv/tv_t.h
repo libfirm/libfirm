@@ -138,4 +138,4 @@ ir_tarval *get_tarval_small(ir_mode *mode);
 
 ir_tarval *get_tarval_epsilon(ir_mode *mode);
 
-#endif /* FIRM_TV_TV_T_H */
+#endif
