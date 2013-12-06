@@ -5451,6 +5451,60 @@ ir_node *ir_get_abs_op(const ir_node *sel, ir_node *mux_false,
 	return cmp_left == skip_upconv(mux_false) ? mux_false : mux_true;
 }
 
+static bool ir_is_optimizable_mux_set(const ir_node *cond, ir_relation relation)
+{
+	ir_node *left = get_Cmp_left(cond);
+	ir_mode *mode = get_irn_mode(left);
+	if (get_mode_arithmetic(mode) != irma_twos_complement)
+		return false;
+
+	ir_mode *dest_mode = get_irn_mode(cond);
+	if (get_mode_arithmetic(dest_mode) != irma_twos_complement)
+		return false;
+
+	ir_node *right = get_Cmp_right(cond);
+	relation &= ~ir_relation_unordered;
+	if (get_mode_size_bits(mode) >= get_mode_size_bits(dest_mode)) {
+		/* Due to possible overflows, we can only transform compares with special constants. */
+		if (!mode_is_signed(mode) || !is_Const(right))
+			return false;
+
+		switch (relation) {
+		case ir_relation_less:
+		case ir_relation_greater_equal:
+			if (!is_Const_null(right))
+				return false;
+			break;
+		case ir_relation_less_equal:
+		case ir_relation_greater:
+			if (!is_Const_all_one(right))
+				return false;
+			break;
+		default:
+			return false;
+		}
+	} else if (!mode_is_signed(dest_mode)) {
+		return false;
+	}
+
+	switch (relation) {
+	case ir_relation_less:
+		/* a < b <=> (a - b) < 0 <=> (a - b) >> 31 */
+		return true;
+	case ir_relation_less_equal:
+		/* a <= b <=> !(a > b) <=> !((b - a) < 0) <=> ~(b - a) >> 31 */
+		return true;
+	case ir_relation_greater:
+		/* a > b <=> (b - a) < 0 <=> (b - a) >> 31 */
+		return true;
+	case ir_relation_greater_equal:
+		/* a >= b <=> !(a < b) <=> !((a - b) < 0) <=> ~(a - b) >> 31 */
+		return true;
+	default:
+		return false;
+	}
+}
+
 bool ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
                            const ir_node *mux_true)
 {
@@ -5459,29 +5513,62 @@ bool ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
 
 	ir_mode *mode = get_irn_mode(mux_false);
 	if (get_mode_arithmetic(mode) == irma_twos_complement
-	    && ir_mux_is_abs(sel, mux_false, mux_true))
-	    return true;
+	    && ir_mux_is_abs(sel, mux_false, mux_true)) {
+		/* abs(x) = x^(x >>s 31) - (x >>s 31) */
+		return true;
+	}
 
-	if (is_Cmp(sel) && mode_is_int(mode) && is_cmp_equality_zero(sel)) {
+	if (!is_Cmp(sel))
+		return false;
+
+	const ir_node *f        = mux_false;
+	const ir_node *t        = mux_true;
+	ir_relation    relation = get_Cmp_relation(sel);
+
+	/* first normalization step: try to move a constant to the false side,
+	 * 0 preferred on false side too */
+	if (is_Const(t) &&
+	    (!is_Const(f) ||
+	     (is_Const_null(t) && !is_Const_null(f)))) {
+		t        = mux_false;
+		f        = mux_true;
+		relation = get_negated_relation(relation);
+	}
+
+	if (is_Const(f) && is_Const_null(f) && is_Const(t) && is_Const_one(t)
+	    && ir_is_optimizable_mux_set(sel, relation)) {
+		return true;
+	}
+
+	if (mode == mode_b) {
+		/* note: after normalization, false can only happen on default */
+		if (is_Const(t)) {
+			ir_tarval *tv_t = get_Const_tarval(t);
+			if (tv_t == tarval_b_true) {
+				/* Muxb(sel, true, false) = sel */
+				/* Muxb(sel, true, x)     = Or(sel, x) */
+				return true;
+			}
+		} else if (is_Const(f)) {
+			/* Muxb(sel, x, true)  = Or(Not(sel), x) */
+			/* Muxb(sel, x, false) = And(sel, x) */
+			return true;
+		}
+	}
+
+	if (mode_is_int(mode) && is_cmp_equality_zero(sel)) {
 		const ir_node *cmp_r = get_Cmp_right(sel);
 		const ir_node *cmp_l = get_Cmp_left(sel);
-		const ir_node *f     = mux_false;
-		const ir_node *t     = mux_true;
-
-		if (is_Const(t) && is_Const_null(t)) {
-			t = mux_false;
-			f = mux_true;
-		}
 
 		if (is_And(cmp_l) && f == cmp_r) {
+			ir_node *and_l = get_And_left(cmp_l);
 			ir_node *and_r = get_And_right(cmp_l);
-			ir_node *and_l;
 
-			if (and_r == t && is_single_bit(and_r))
+			if ((and_l == t || and_r == t) && is_single_bit(t)) {
+				/* Mux((a & (1<<n)) == 0, 0, (1<<n)) == (a & (1<<n)) xor ((1<<n)) */
+				/* Mux((a & (1<<n)) != 0, 0, (1<<n)) ==  a & (1<<n) */
 				return true;
-			and_l = get_And_left(cmp_l);
-			if (and_l == t && is_single_bit(and_l))
-				return true;
+			}
 		}
 	}
 
