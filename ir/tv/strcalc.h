@@ -5,14 +5,8 @@
 
 /**
  * @file
- * @brief    Provides basic mathematical operations on values represented as
- *           strings.
- * @date     2003
- * @author   Mathias Heil
- * @brief
- *
- * Results are stored in an internal buffer, so you have to make a copy
- * of them if you need to store the result.
+ * @brief   Arithmetic operations on arbitrary precision integer numbers.
+ * @author   Mathias Heil, Matthias Braun
  */
 #ifndef FIRM_TV_STRCALC_H
 #define FIRM_TV_STRCALC_H
@@ -105,9 +99,9 @@ bool sc_divmod(const sc_word *value1, const sc_word *value2,
                sc_word *div_buffer, sc_word *mod_buffer);
 
 /**
- * buffer = value1 << offset
+ * buffer = value1 << shift_cnt
  */
-void sc_shlI(const sc_word *val1, unsigned shift_cnt, sc_word *buffer);
+void sc_shlI(const sc_word *value1, unsigned shift_cnt, sc_word *buffer);
 
 /**
  * buffer = value1 << value2
@@ -115,10 +109,10 @@ void sc_shlI(const sc_word *val1, unsigned shift_cnt, sc_word *buffer);
 void sc_shl(const sc_word *value1, const sc_word *value2, sc_word *buffer);
 
 /**
- * buffer = value1 >>u offset
+ * buffer = value1 >>u shift_count
  * @returns carry flag
  */
-bool sc_shrI(const sc_word *val1, unsigned shift_count, sc_word *buffer);
+bool sc_shrI(const sc_word *value1, unsigned shift_count, sc_word *buffer);
 
 /**
  * buffer = value1 >>u value2
@@ -127,10 +121,10 @@ bool sc_shrI(const sc_word *val1, unsigned shift_count, sc_word *buffer);
 bool sc_shr(const sc_word *value1, const sc_word *value2, sc_word *buffer);
 
 /**
- * buffer = value1 >>s offset
+ * buffer = value1 >>s shift_count
  * @returns carry flag
  */
-bool sc_shrsI(const sc_word *val1, unsigned shift_cnt, unsigned bitsize,
+bool sc_shrsI(const sc_word *value1, unsigned shift_cnt, unsigned bitsize,
               sc_word *buffer);
 
 /**
@@ -145,14 +139,13 @@ bool sc_shrs(const sc_word *value1, const sc_word *value2, unsigned bitsize,
  */
 void sc_zero(sc_word *buffer);
 
-/*
- * function declarations
- */
-const sc_word *sc_get_buffer(void);
-unsigned sc_get_buffer_length(void);
+/** return length in sc_words of a strcalc value. */
+unsigned sc_get_value_length(void);
 
+/** perform sign extension from @p from_bits size to full buffer */
 void sc_sign_extend(sc_word *buffer, unsigned from_bits);
 
+/** perform zero extension from @p from_bits size to full buffer */
 void sc_zero_extend(sc_word *buffer, unsigned from_bits);
 
 /**

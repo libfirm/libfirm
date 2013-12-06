@@ -59,7 +59,7 @@ static bool is_zero(const sc_word *val)
 int main(void)
 {
 	init_strcalc(precision);
-	buflen = sc_get_buffer_length();
+	buflen = sc_get_value_length();
 
 	sc_word *temp  = XMALLOCN(sc_word, buflen);
 	sc_word *temp1 = XMALLOCN(sc_word, buflen);

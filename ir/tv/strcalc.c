@@ -5,10 +5,8 @@
 
 /**
  * @file
- * @brief    Provides basic mathematical operations on values represented as
- *           strings.
- * @date     2003
- * @author   Mathias Heil
+ * @brief   Arithmetic operations on arbitrary precision integer numbers.
+ * @author  Mathias Heil, Matthias Braun
  */
 #include <stdlib.h>
 #include <string.h>
@@ -28,7 +26,6 @@
 
 #define _bitisset(digit, pos) (((digit) & (1 << (pos))) != 0)
 
-static sc_word *calc_buffer = NULL; /**< buffer holding all results */
 static char *output_buffer = NULL;  /**< buffer for output */
 static unsigned bit_pattern_size;   /**< maximum number of bits */
 static unsigned calc_buffer_size;   /**< size of internally stored values */
@@ -290,12 +287,7 @@ end:
 	return carry_flag;
 }
 
-const sc_word *sc_get_buffer(void)
-{
-	return calc_buffer;
-}
-
-unsigned sc_get_buffer_length(void)
+unsigned sc_get_value_length(void)
 {
 	return calc_buffer_size;
 }
@@ -846,7 +838,7 @@ char *sc_print_buf(char *buf, size_t buf_len, const sc_word *value,
 
 void init_strcalc(unsigned precision)
 {
-	if (calc_buffer == NULL) {
+	if (output_buffer == NULL) {
 		/* round up to multiple of 4 */
 		precision = (precision + 3) & ~3;
 
@@ -854,15 +846,14 @@ void init_strcalc(unsigned precision)
 		calc_buffer_size = precision / 2;
 		max_value_size   = precision / 4;
 
-		calc_buffer   = XMALLOCN(sc_word, calc_buffer_size);
 		output_buffer = XMALLOCN(char, bit_pattern_size + 1);
 	}
 }
 
 void finish_strcalc(void)
 {
-	free(calc_buffer);   calc_buffer   = NULL;
-	free(output_buffer); output_buffer = NULL;
+	free(output_buffer);
+	output_buffer = NULL;
 }
 
 unsigned sc_get_precision(void)

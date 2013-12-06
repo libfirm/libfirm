@@ -1098,7 +1098,7 @@ void init_fltcalc(unsigned precision)
 			printf("WARNING: not enough precision available, using %d\n", max_precision);
 
 		rounding_mode    = FC_TONEAREST;
-		value_size       = sc_get_buffer_length();
+		value_size       = sc_get_value_length();
 		calc_buffer_size = sizeof(fp_value) + 2*value_size;
 
 		calc_buffer = (fp_value*) xmalloc(calc_buffer_size);
