@@ -15,12 +15,20 @@ int main(void)
 	ir_mode *big_u = new_int_mode("big signed", irma_twos_complement,
 	                              66, 0, 0);
 
-	ir_tarval *ulongmax
-		= sizeof(long) == 8 ? get_mode_max(mode_Lu)
-		: sizeof(long) == 4 ? get_mode_max(mode_Iu)
-		: (panic("unexpected long size"), NULL);
+	ir_mode *long_u;
+	ir_mode *long_s;
+	if (sizeof(long) == 4) {
+		long_u = mode_Iu;
+		long_s = mode_Is;
+	} else if (sizeof(long) == 8) {
+		long_u = mode_Lu;
+		long_s = mode_Ls;
+	} else {
+		panic("unexpected long size");
+	}
+	ir_tarval *ulongmax = get_mode_max(long_u);
 	assert(tarval_is_long(ulongmax));
-	ir_tarval *ulongmax_s = tarval_convert_to(ulongmax, mode_Ls);
+	ir_tarval *ulongmax_s = tarval_convert_to(ulongmax, long_s);
 	assert(tarval_is_long(ulongmax_s));
 	ir_tarval *ulongmax_se = tarval_convert_to(ulongmax_s, big_s);
 	assert(tarval_is_long(ulongmax_se));
