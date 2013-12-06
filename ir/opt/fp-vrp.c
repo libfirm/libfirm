@@ -14,6 +14,7 @@
 #include "adt/pdeq.h"
 #include "adt/obst.h"
 #include "adt/xmalloc.h"
+#include "constbits.h"
 #include "debug.h"
 #include "ircons.h"
 #include "irdom.h"
@@ -21,11 +22,10 @@
 #include "irgmod.h"
 #include "irgraph_t.h"
 #include "irgwalk.h"
+#include "irmemory.h"
 #include "irnode_t.h"
 #include "iroptimize.h"
 #include "tv.h"
-#include "irmemory.h"
-#include "constbits.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
@@ -41,14 +41,9 @@ static int mode_is_intb(ir_mode const* const m)
 static void apply_result(ir_node* const irn, void* ctx)
 {
 	environment_t* env = (environment_t*)ctx;
-	ir_node*       block;
-	bitinfo*       block_b;
-	bitinfo*       b;
-	ir_tarval*     z;
-	ir_tarval*     o;
 
 	if (is_Block(irn)) {
-		block_b = get_bitinfo(irn);
+		bitinfo *block_b = get_bitinfo(irn);
 		/* Trivially unreachable blocks have no info. */
 		if (block_b == NULL || block_b->z == get_tarval_b_false()) {
 			ir_graph *irg  = get_irn_irg(irn);
@@ -59,8 +54,8 @@ static void apply_result(ir_node* const irn, void* ctx)
 		return;
 	}
 
-	block   = get_nodes_block(irn);
-	block_b = get_bitinfo(block);
+	ir_node *block   = get_nodes_block(irn);
+	bitinfo *block_b = get_bitinfo(block);
 	/* Trivially unreachable blocks have no info. */
 	if (block_b == NULL || block_b->z == get_tarval_b_false()) {
 		/* Unreachable blocks might be replaced before the nodes in them. */
@@ -72,12 +67,12 @@ static void apply_result(ir_node* const irn, void* ctx)
 		return;
 	}
 
-	b = get_bitinfo(irn);
+	bitinfo *b = get_bitinfo(irn);
 	if (!b) return;
 	if (is_Const(irn)) return; // It cannot get any better than a Const.
 
-	z = b->z;
-	o = b->o;
+	ir_tarval *z = b->z;
+	ir_tarval *o = b->o;
 	// Only display information if we could find out anything about the value.
 	DEBUG_ONLY(if (!tarval_is_all_one(z) || !tarval_is_null(o)))
 		DB((dbg, LEVEL_2, "%+F: 0:%T 1:%T%s\n", irn, z, o, z == o ? " --- constant" : ""));
@@ -133,15 +128,14 @@ exchange_only:
 			bitinfo const* const br = get_bitinfo(r);
 			/* if each bit is guaranteed to be zero on either the left or right
 			 * then an Add will have the same effect as the Eor. Change it for
-			 * normalisation */
+			 * normalization */
 			if (tarval_is_null(tarval_and(bl->z, br->z))) {
-				dbg_info      *dbgi     = get_irn_dbg_info(irn);
-				ir_node       *block    = get_nodes_block(irn);
-				ir_mode       *mode     = get_irn_mode(irn);
-				ir_node       *new_node = new_rd_Add(dbgi, block, l, r, mode);
-				bitinfo const *bi       = get_bitinfo(irn);
-				DB((dbg, LEVEL_2, "%+F(%+F, %+F) normalised to Add\n", irn, l, r));
-				set_bitinfo(new_node, bi->z, bi->o);
+				dbg_info *dbgi     = get_irn_dbg_info(irn);
+				ir_node  *block    = get_nodes_block(irn);
+				ir_mode  *mode     = get_irn_mode(irn);
+				ir_node  *new_node = new_rd_Add(dbgi, block, l, r, mode);
+				DB((dbg, LEVEL_2, "%+F(%+F, %+F) normalized to Add\n", irn, l, r));
+				set_bitinfo(new_node, z, o);
 				exchange(irn, new_node);
 				env->modified = 1;
 			}
@@ -183,15 +177,14 @@ exchange_only:
 
 			/* if each bit is guaranteed to be zero on either the left or right
 			 * then an Add will have the same effect as the Or. Change it for
-			 * normalisation */
+			 * normalization */
 			if (tarval_is_null(tarval_and(bl->z, br->z))) {
-				dbg_info      *dbgi     = get_irn_dbg_info(irn);
-				ir_node       *block    = get_nodes_block(irn);
-				ir_mode       *mode     = get_irn_mode(irn);
-				ir_node       *new_node = new_rd_Add(dbgi, block, l, r, mode);
-				bitinfo const *bi       = get_bitinfo(irn);
-				DB((dbg, LEVEL_2, "%+F(%+F, %+F) normalised to Add\n", irn, l, r));
-				set_bitinfo(new_node, bi->z, bi->o);
+				dbg_info *dbgi     = get_irn_dbg_info(irn);
+				ir_node  *block    = get_nodes_block(irn);
+				ir_mode  *mode     = get_irn_mode(irn);
+				ir_node  *new_node = new_rd_Add(dbgi, block, l, r, mode);
+				DB((dbg, LEVEL_2, "%+F(%+F, %+F) normalized to Add\n", irn, l, r));
+				set_bitinfo(new_node, z, o);
 				exchange(irn, new_node);
 				env->modified = 1;
 			}
@@ -203,15 +196,13 @@ exchange_only:
 
 void fixpoint_vrp(ir_graph* const irg)
 {
-	environment_t env;
-	struct obstack private_obst;
-
 	assure_irg_properties(irg,
 		IR_GRAPH_PROPERTY_NO_BADS
 		| IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
 		| IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
 		| IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 
+	struct obstack private_obst;
 	obstack_init(&private_obst);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
@@ -222,7 +213,7 @@ void fixpoint_vrp(ir_graph* const irg)
 	DB((dbg, LEVEL_1, "===> Performing constant propagation on %+F (optimization)\n", irg));
 
 	DB((dbg, LEVEL_2, "---> Applying analysis results\n"));
-	env.modified = 0;
+	environment_t env = { .modified = 0 };
 	irg_walk_graph(irg, NULL, apply_result, &env);
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
