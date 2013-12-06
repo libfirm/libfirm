@@ -1268,7 +1268,10 @@ ir_tarval *tarval_shr_unsigned(ir_tarval *a, unsigned b)
 	assert((unsigned)(long)b==b);
 
 	sc_word *temp = ALLOCAN(sc_word, sc_value_length);
-	sc_shrI(a->value, (long)b, temp);
+	/* workaround for unnecessary internal higher precision */
+	memcpy(temp, a->value, sc_value_length);
+	sc_zero_extend(temp, get_mode_size_bits(a->mode));
+	sc_shrI(temp, (long)b, temp);
 	return get_tarval(temp, sc_value_length, mode);
 }
 
