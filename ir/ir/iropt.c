@@ -5725,37 +5725,22 @@ static ir_node *transform_node_Mux(ir_node *n)
 	}
 
 	if (is_Cmp(sel) && mode_is_int(mode) && is_cmp_equality_zero(sel)) {
-		ir_relation relation = get_Cmp_relation(sel);
-		ir_node    *cmp_r    = get_Cmp_right(sel);
-		ir_node    *cmp_l    = get_Cmp_left(sel);
-		ir_node    *block    = get_nodes_block(n);
+		ir_relation  relation = get_Cmp_relation(sel);
+		ir_node     *cmp_r    = get_Cmp_right(sel);
+		ir_node     *cmp_l    = get_Cmp_left(sel);
 
 		if (is_And(cmp_l) && f == cmp_r) {
+			ir_node *and_l = get_And_left(cmp_l);
 			ir_node *and_r = get_And_right(cmp_l);
-			ir_node *and_l;
 
-			if (and_r == t && is_single_bit(and_r)) {
+			if ((and_l == t || and_r == t) && is_single_bit(t)) {
 				if (relation == ir_relation_equal) {
-					/* Mux((a & (1<<n)) == 0, (1<<n), 0) == (a&(1<<n)) xor ((1<<n)) */
-					n = new_rd_Eor(get_irn_dbg_info(n),
-						block, cmp_l, t, mode);
+					/* Mux((a & (1<<n)) == 0, 0, (1<<n)) == (a & (1<<n)) xor ((1<<n)) */
+					ir_node *block = get_nodes_block(n);
+					n = new_rd_Eor(get_irn_dbg_info(n), block, cmp_l, t, mode);
 					DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
 				} else {
-					/* Mux((a & (1<<n)) != 0, (1<<n), 0) == a & (1<<n) */
-					n = cmp_l;
-					DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
-				}
-				return n;
-			}
-			and_l = get_And_left(cmp_l);
-			if (and_l == t && is_single_bit(and_l)) {
-				if (relation == ir_relation_equal) {
-					/* ((1 << n) & a) == 0, (1 << n), 0) */
-					n = new_rd_Eor(get_irn_dbg_info(n),
-						block, cmp_l, t, mode);
-					DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
-				} else {
-					/* ((1 << n) & a) != 0, (1 << n), 0) */
+					/* Mux((a & (1<<n)) != 0, 0, (1<<n)) == a & (1<<n) */
 					n = cmp_l;
 					DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
 				}
