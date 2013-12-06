@@ -353,9 +353,19 @@ ir_tarval *new_tarval_from_bytes(unsigned char const *buf,
 		return get_tarval(dest, sc_value_length, mode);
 	}
 	case irma_ieee754:
-	case irma_x86_extended_float:
-		/* not implemented yet */
-		return tarval_bad;
+	case irma_x86_extended_float: {
+		if (big_endian) {
+			unsigned       size = get_mode_size_bytes(mode);
+			unsigned char *temp = ALLOCAN(unsigned char, size);
+			for (unsigned i = 0; i < size; ++i) {
+				temp[i] = buf[size-i-1];
+			}
+			fc_val_from_ieee754_buf(NULL, temp, get_descriptor(mode));
+		} else {
+			fc_val_from_ieee754_buf(NULL, buf, get_descriptor(mode));
+		}
+		return get_tarval_from_fp_value(fc_get_buffer(), mode);
+	}
 	case irma_none:
 		break;
 	}
