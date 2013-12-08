@@ -124,6 +124,8 @@ int main(void)
 		assert(equal(temp, temp1));
 		sc_shrI(temp, i, temp1);
 		assert(equal(temp1, one));
+		assert(sc_get_lowest_set_bit(temp) == (int)i);
+		assert(sc_get_highest_set_bit(temp) == (int)i);
 		// following disabled: internal precision is currently higher than
 		// precision...
 		//assert(sc_is_negative(temp) == (i == precision-1));
@@ -272,6 +274,12 @@ int main(void)
 			sc_shrI(temp, precision-1, temp);
 			assert(!is_zero(temp) == sc_get_bit_at(val, b));
 		}
+
+		/* misc */
+		int high = sc_get_highest_set_bit(val);
+		int low  = sc_get_lowest_set_bit(val);
+		assert(high >= low);
+		assert((int)sc_popcount(val, precision) <= (high-low+1));
 	}
 
 	/* test commutativity + associativity */
