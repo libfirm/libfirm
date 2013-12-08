@@ -494,47 +494,21 @@ ir_relation sc_comp(const sc_word* const val1, const sc_word* const val2)
 
 int sc_get_highest_set_bit(const sc_word *value)
 {
-	int high = calc_buffer_size * SC_BITS - 1;
 	for (unsigned counter = calc_buffer_size; counter-- > 0; ) {
-		if (value[counter] == 0)
-			high -= SC_BITS;
-		else {
-			if (value[counter] > 7) return high;
-			else if (value[counter] > 3) return high - 1;
-			else if (value[counter] > 1) return high - 2;
-			else return high - 3;
-		}
+		sc_word word = value[counter];
+		if (word != 0)
+			return counter*SC_BITS + (31 - nlz(word));
 	}
-	return high;
+	return -1;
 }
 
 int sc_get_lowest_set_bit(const sc_word *value)
 {
-	int low = 0;
-	for (unsigned counter = 0; counter < calc_buffer_size; ++counter) {
-		switch (value[counter]) {
-		case 1:
-		case 3:
-		case 5:
-		case 7:
-		case 9:
-		case 11:
-		case 13:
-		case 15:
-			return low;
-		case 2:
-		case 6:
-		case 10:
-		case 14:
-			return low + 1;
-		case 4:
-		case 12:
-			return low + 2;
-		case 8:
-			return low + 3;
-		default:
-			low += SC_BITS;
-		}
+	for (unsigned counter = 0; counter < calc_buffer_size;
+	     ++counter) {
+		sc_word word = value[counter];
+		if (word != 0)
+			return (counter * SC_BITS) + ntz(word);
 	}
 	return -1;
 }
