@@ -31,12 +31,6 @@ static unsigned bit_pattern_size;   /**< maximum number of bits */
 static unsigned calc_buffer_size;   /**< size of internally stored values */
 static unsigned max_value_size;     /**< maximum size of values */
 
-/** converting a digit to a binary string */
-static char const *const binary_table[] = {
-	"0000", "0001", "0010", "0011", "0100", "0101", "0110", "0111",
-	"1000", "1001", "1010", "1011", "1100", "1101", "1110", "1111"
-};
-
 void sc_zero(sc_word *buffer)
 {
 	memset(buffer, 0, sizeof(buffer[0]) * calc_buffer_size);
@@ -702,6 +696,13 @@ const char *sc_print(const sc_word *value, unsigned bits, enum base_t base,
 	                    base, is_signed);
 }
 
+static void write_bits(char *dest, sc_word word)
+{
+	for (unsigned i = 0; i < SC_BITS; ++i) {
+		dest[i] = (word & (1u << (SC_BITS-i-1))) ? '1' : '0';
+	}
+}
+
 char *sc_print_buf(char *buf, size_t buf_len, const sc_word *value,
                    unsigned bits, enum base_t base, bool is_signed)
 {
@@ -718,13 +719,13 @@ char *sc_print_buf(char *buf, size_t buf_len, const sc_word *value,
 	if (bits == 0)
 		bits = bit_pattern_size;
 
-	unsigned nibbles = bits / SC_BITS;
+	unsigned words = bits / SC_BITS;
 	unsigned counter;
 	switch (base) {
 	case SC_HEX:
 		digits = big_digits;
 	case SC_hex:
-		for (counter = 0; counter < nibbles; ++counter) {
+		for (counter = 0; counter < words; ++counter) {
 			*(--pos) = digits[value[counter]];
 		}
 		assert(pos >= buf);
@@ -746,13 +747,9 @@ char *sc_print_buf(char *buf, size_t buf_len, const sc_word *value,
 
 	case SC_BIN:
 		assert(SC_BITS == 4);
-		for (counter = 0; counter < nibbles; ++counter) {
+		for (counter = 0; counter < words; ++counter) {
 			pos -= SC_BITS;
-			const char *p = binary_table[value[counter]];
-			pos[0] = p[0];
-			pos[1] = p[1];
-			pos[2] = p[2];
-			pos[3] = p[3];
+			write_bits(pos, value[counter]);
 		}
 		assert(pos >= buf);
 
@@ -762,11 +759,7 @@ char *sc_print_buf(char *buf, size_t buf_len, const sc_word *value,
 			sc_word x    = value[counter++] & mask;
 
 			pos -= SC_BITS;
-			const char *p = binary_table[x];
-			pos[0] = p[0];
-			pos[1] = p[1];
-			pos[2] = p[2];
-			pos[3] = p[3];
+			write_bits(pos, x);
 		}
 		assert(pos >= buf);
 
@@ -795,7 +788,7 @@ char *sc_print_buf(char *buf, size_t buf_len, const sc_word *value,
 
 		/* transfer data into oscillating buffers */
 		sc_word *div1_res = ALLOCANZ(sc_word, calc_buffer_size);
-		for (counter = 0; counter < nibbles; ++counter)
+		for (counter = 0; counter < words; ++counter)
 			div1_res[counter] = p[counter];
 
 		/* last nibble must be masked */
