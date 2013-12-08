@@ -22,6 +22,21 @@ static bool equal(const sc_word *v0, const sc_word *v1)
 	return memcmp(v0, v1, len) == 0;
 }
 
+static bool streq(const char *str0, const char *str1)
+{
+	return strcmp(str0, str1) == 0;
+}
+
+static void test_conv_print(long v, enum base_t base, const char *expected)
+{
+	sc_word *temp = XMALLOCN(sc_word, buflen);
+	sc_val_from_long(v, temp);
+	char buf[128];
+	const char *p = sc_print_buf(buf, sizeof(buf), temp, precision, base, false);
+	assert(streq(p, expected));
+	assert(sc_val_to_long(temp) == v);
+}
+
 typedef void (*binop)(const sc_word *v0, const sc_word *v1, sc_word *dest);
 
 static void check_commutativity(const sc_word *val0, const sc_word *val1,
@@ -281,7 +296,18 @@ int main(void)
 		}
 	}
 
-	sc_print(all_one, precision, SC_HEX, false);
+	/* test printing/conversion */
+	test_conv_print(1, SC_hex, "1");
+	test_conv_print(1, SC_HEX, "1");
+	test_conv_print(1, SC_DEC, "1");
+	test_conv_print(1, SC_OCT, "1");
+	test_conv_print(1, SC_BIN, "1");
+
+	test_conv_print(0xcafebabe, SC_hex, "cafebabe");
+	test_conv_print(0xcafebabe, SC_HEX, "CAFEBABE");
+	test_conv_print(0xcafebabe, SC_DEC, "3405691582");
+	test_conv_print(0xcafebabe, SC_OCT, "31277535276");
+	test_conv_print(0xcafebabe, SC_BIN, "11001010111111101011101010111110");
 
 	return 0;
 }
