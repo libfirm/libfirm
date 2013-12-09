@@ -12,21 +12,19 @@
 #ifndef FIRM_ADT_BITFIDDLE_H
 #define FIRM_ADT_BITFIDDLE_H
 
-#include "compiler.h"
-
 #include <limits.h>
 #include <assert.h>
+#include <stdbool.h>
+#include <stdint.h>
 
-/* some functions here assume ints are 32 bit wide */
-#define HACKDEL_WORDSIZE 32
-COMPILETIME_ASSERT(sizeof(unsigned) == 4, unsignedsize)
-COMPILETIME_ASSERT(UINT_MAX == 4294967295U, uintmax)
+#include "compiler.h"
 
 /**
  * Add saturated.
  * @param x Summand 1.
  * @param y Summand 2.
- * @return x + y or INT_MAX/INT_MIN if an overflow occurred and x,y was positive/negative.
+ * @return x + y or INT_MAX/INT_MIN if an overflow occurred and x,y was
+ *         positive/negative.
  *
  * @note See hacker's delight, page 27.
  */
@@ -58,7 +56,7 @@ static inline int add_saturated(int x, int y)
  * @param x A 32-bit word.
  * @return The number of bits set in x.
  */
-static inline unsigned popcount(unsigned x)
+static inline uint32_t popcount(uint32_t x)
 {
 #if defined(__GNUC__) && __GNUC__ >= 4
 	return __builtin_popcount(x);
@@ -77,10 +75,10 @@ static inline unsigned popcount(unsigned x)
  * @param x The word.
  * @return The number of leading (from the most significant bit) zeros.
  */
-static inline unsigned nlz(unsigned x)
+static inline unsigned nlz(uint32_t x)
 {
 #if defined(__GNUC__) && __GNUC__ >= 4
-	if(x == 0)
+	if (x == 0)
 		return 32;
 	return __builtin_clz(x);
 #else
@@ -101,14 +99,14 @@ static inline unsigned nlz(unsigned x)
  * @param x The word.
  * @return The number of trailing zeros.
  */
-static inline unsigned ntz(unsigned x)
+static inline unsigned ntz(uint32_t x)
 {
 #if defined(__GNUC__) && __GNUC__ >= 4
-	if(x == 0)
+	if (x == 0)
 		return 32;
 	return __builtin_ctz(x);
 #else
-	return HACKDEL_WORDSIZE - nlz(~x & (x - 1));
+	return 32 - nlz(~x & (x - 1));
 #endif
 }
 
@@ -118,7 +116,10 @@ static inline unsigned ntz(unsigned x)
  * @param x The value.
  * @return The power of two.
  */
-#define log2_floor(x) (HACKDEL_WORDSIZE - 1 - nlz(x))
+static inline uint32_t log2_floor(uint32_t x)
+{
+	return 32 - 1 - nlz(x);
+}
 
 /**
  * Compute the smallest power of 2 greater or equal to a value.
@@ -126,7 +127,10 @@ static inline unsigned ntz(unsigned x)
  * @param x The value.
  * @return The power of two.
  */
-#define log2_ceil(x) (HACKDEL_WORDSIZE - nlz((x) - 1))
+static inline uint32_t log2_ceil(uint32_t x)
+{
+	return 32 - nlz(x - 1);
+}
 
 /**
  * Round up to the next multiple of a power of two.
@@ -134,16 +138,20 @@ static inline unsigned ntz(unsigned x)
  * @param pot A power of two.
  * @return x rounded up to the next multiple of pot.
  */
-#define round_up2(x,pot) (((x) + ((pot) - 1)) & (~((pot) - 1)))
+static inline unsigned round_up2(unsigned x, unsigned pot)
+{
+	unsigned pot_m1 = pot-1;
+	return (x + pot_m1) & ~pot_m1;
+}
 
 /**
  * Returns the biggest power of 2 that is equal or smaller than @p x
  * (see hackers delight power-of-2 boundaries, page 48)
  */
-static inline unsigned floor_po2(unsigned x)
+static inline uint32_t floor_po2(uint32_t x)
 {
 #if defined(__GNUC__) && __GNUC__ >= 4 // in this case nlz is fast
-	if(x == 0)
+	if (x == 0)
 		return 0;
 	// note that x != 0 here, so nlz(x) < 32!
 	return 0x80000000U >> nlz(x);
@@ -162,9 +170,9 @@ static inline unsigned floor_po2(unsigned x)
  * @remark x has to be <= 0x8000000 of course
  * @note see hackers delight power-of-2 boundaries, page 48
  */
-static inline unsigned ceil_po2(unsigned x)
+static inline uint32_t ceil_po2(uint32_t x)
 {
-	if(x == 0)
+	if (x == 0)
 		return 0;
 	assert(x < (1U << 31));
 
@@ -185,7 +193,7 @@ static inline unsigned ceil_po2(unsigned x)
 /**
  * Tests whether @p x is a power of 2
  */
-static inline int is_po2(unsigned x)
+static inline bool is_po2(unsigned x)
 {
 	return (x & (x-1)) == 0;
 }
