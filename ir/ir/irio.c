@@ -552,10 +552,28 @@ static void write_type_common(write_env_t *env, ir_type *tp)
 
 static void write_type(write_env_t *env, ir_type *tp);
 
+static bool is_internal_mode(ir_mode *mode)
+{
+	return !mode_is_int(mode) && !mode_is_reference(mode)
+	    && !mode_is_float(mode);
+}
+
+static bool is_default_mode(ir_mode *mode)
+{
+	/* some modes which are always available in libfirm */
+	return mode == mode_b || mode == mode_X || mode == mode_BB
+	    || mode == mode_T || mode == mode_ANY || mode == mode_BAD;
+}
+
 static void write_type_primitive(write_env_t *env, ir_type *tp)
 {
+	/* skip types for internal modes */
+	ir_mode *mode = get_type_mode(tp);
+	if (is_internal_mode(mode) && !is_default_mode(mode))
+		return;
+
 	write_type_common(env, tp);
-	write_mode_ref(env, get_type_mode(tp));
+	write_mode_ref(env, mode);
 	fputc('\n', env->file);
 }
 
@@ -670,10 +688,10 @@ static void write_type(write_env_t *env, ir_type *tp)
 		write_type_compound(env, tp);
 		return;
 
-	case tpo_primitive:    write_type_primitive(env, tp);   return;
-	case tpo_method:       write_type_method(env, tp);      return;
-	case tpo_pointer:      write_type_pointer(env, tp);     return;
-	case tpo_array:        write_type_array(env, tp);       return;
+	case tpo_primitive: write_type_primitive(env, tp); return;
+	case tpo_method:    write_type_method(env, tp);    return;
+	case tpo_pointer:   write_type_pointer(env, tp);   return;
+	case tpo_array:     write_type_array(env, tp);     return;
 	}
 	panic("can't write invalid type %+F\n", tp);
 }
@@ -1017,11 +1035,8 @@ static void write_modes(write_env_t *env)
 
 	for (i = 0; i < n_modes; i++) {
 		ir_mode *mode = ir_get_mode(i);
-		if (!mode_is_int(mode) && !mode_is_reference(mode)
-		    && !mode_is_float(mode)) {
-		    /* skip internal modes */
-		    continue;
-		}
+		if (is_internal_mode(mode))
+			continue;
 		fputc('\t', env->file);
 		write_mode(env, mode);
 		fputc('\n', env->file);
