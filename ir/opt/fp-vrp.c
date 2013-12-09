@@ -121,6 +121,79 @@ exchange_only:
 			break;
 		}
 
+		case iro_Cmp: {
+			ir_node       *const  l = get_Cmp_left(irn);
+			ir_node       *const  r = get_Cmp_right(irn);
+			const bitinfo *const  bl = get_bitinfo(l);
+			const bitinfo *const  br = get_bitinfo(r);
+			if (bl == NULL || br == NULL)
+				break;
+
+			ir_mode   *const mode  = get_irn_mode(l);
+			ir_tarval *const l_o   = bl->o;
+			ir_tarval *const l_z   = bl->z;
+			ir_tarval *const r_o   = br->o;
+			ir_tarval *const r_z   = br->z;
+			ir_tarval *      l_max;
+			ir_tarval *      l_min;
+			ir_tarval *      r_max;
+			ir_tarval *      r_min;
+			if (mode_is_signed(mode)) {
+				if (!get_mode_arithmetic(mode) == irma_twos_complement)
+					break;
+				ir_tarval *min     = get_mode_min(mode);
+				ir_tarval *not_min = tarval_not(min);
+				l_max = l_z;
+				l_min = l_o;
+				if (tarval_is_negative(l_z)) {
+					/* Value may be negative. */
+					l_min = tarval_or(l_o, min);
+				}
+				if (!tarval_is_negative(l_o)) {
+					/* Value may be positive. */
+					l_max = tarval_and(l_z, not_min);
+				}
+				r_max = r_z;
+				r_min = r_o;
+				if (tarval_is_negative(r_z)) {
+					/* Value may be negative. */
+					r_min = tarval_or(r_o, min);
+				}
+				if (!tarval_is_negative(r_o)) {
+					/* Value may be positive. */
+					r_max = tarval_and(r_z, not_min);
+				}
+			} else {
+				l_max = l_z;
+				l_min = l_o;
+				r_max = r_z;
+				r_min = r_o;
+			}
+
+			const ir_relation relation     = get_Cmp_relation(irn);
+			ir_relation       new_relation = relation;
+			if (!(tarval_cmp(l_max, r_min) & ir_relation_greater)) {
+				new_relation &= ~ir_relation_greater;
+			}
+			if (!(tarval_cmp(l_min, r_max) & ir_relation_less)) {
+				new_relation &= ~ir_relation_less;
+			}
+			if (!tarval_is_null(tarval_andnot(l_o, r_z))
+			    || !tarval_is_null(tarval_andnot(r_o, l_z))) {
+				new_relation &= ~ir_relation_equal;
+			}
+
+			if (relation != new_relation) {
+				dbg_info *dbgi = get_irn_dbg_info(irn);
+				ir_node  *cmp  = new_rd_Cmp(dbgi, block, l, r, new_relation);
+				DB((dbg, LEVEL_2, "Simplified relation of %+F(%+F, %+F)\n", irn, l, r));
+				set_bitinfo(cmp, z, o);
+				exchange(irn, cmp);
+				env->modified = 1;
+			}
+			break;
+		}
+
 		case iro_Eor: {
 			ir_node*       const l  = get_Eor_left(irn);
 			ir_node*       const r  = get_Eor_right(irn);
