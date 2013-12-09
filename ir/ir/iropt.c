@@ -5462,20 +5462,34 @@ static bool ir_is_optimizable_mux_set(const ir_node *cond, ir_relation relation,
 	ir_node *right = get_Cmp_right(cond);
 	relation &= ~ir_relation_unordered;
 
-	/* Try to use an appropriate relation. */
-	if (relation == ir_relation_equal) {
-		ir_relation possible = ir_get_possible_cmp_relations(left, right);
-		if (!(possible & ir_relation_less)) {
-			relation |= ir_relation_less;
-		} else if (!(possible & ir_relation_greater)) {
-			relation |= ir_relation_greater;
+	if (relation == ir_relation_equal || relation == ir_relation_less_greater) {
+		if (is_Const(right) && is_Const_null(right) && is_And(left)) {
+			ir_node *and_right = get_And_right(left);
+			if (is_Const(and_right)) {
+				ir_tarval *tv = get_Const_tarval(and_right);
+				if (get_tarval_popcount(tv) == 1) {
+					/* (a & (1 << c)) == 0 <=> (~a >> c) & 1 */
+					/* (a & (1 << c)) != 0 <=> ( a >> c) & 1 */
+					return true;
+				}
+			}
 		}
-	} else if (relation == ir_relation_less_greater) {
+
 		ir_relation possible = ir_get_possible_cmp_relations(left, right);
-		if (!(possible & ir_relation_less)) {
-			relation &= ~ir_relation_less;
-		} else if (!(possible & ir_relation_greater)) {
-			relation &= ~ir_relation_greater;
+
+		/* Try to use an appropriate relation. */
+		if (relation == ir_relation_equal) {
+			if (!(possible & ir_relation_less)) {
+				relation |= ir_relation_less;
+			} else if (!(possible & ir_relation_greater)) {
+				relation |= ir_relation_greater;
+			}
+		} else {
+			if (!(possible & ir_relation_less)) {
+				relation &= ~ir_relation_less;
+			} else if (!(possible & ir_relation_greater)) {
+				relation &= ~ir_relation_greater;
+			}
 		}
 	}
 
@@ -5608,20 +5622,59 @@ static ir_node *transform_Mux_set(ir_node *n, ir_relation relation)
 	ir_node *right = get_Cmp_right(cond);
 	relation &= ~ir_relation_unordered;
 
-	/* Try to use an appropriate relation. */
-	if (relation == ir_relation_equal) {
-		ir_relation possible = ir_get_possible_cmp_relations(left, right);
-		if (!(possible & ir_relation_less)) {
-			relation |= ir_relation_less;
-		} else if (!(possible & ir_relation_greater)) {
-			relation |= ir_relation_greater;
+	if (relation == ir_relation_equal || relation == ir_relation_less_greater) {
+		if (is_Const(right) && is_Const_null(right) && is_And(left)) {
+			ir_node *and_right = get_And_right(left);
+			if (is_Const(and_right)) {
+				ir_tarval *tv = get_Const_tarval(and_right);
+				if (get_tarval_popcount(tv) == 1) {
+					/* (a & (1 << c)) == 0 <=> (~a >> c) & 1 */
+					/* (a & (1 << c)) != 0 <=> ( a >> c) & 1 */
+					dbg_info *dbgi      = get_irn_dbg_info(n);
+					ir_node  *block     = get_nodes_block(n);
+					ir_node  *a         = get_And_left(left);
+					ir_mode  *calc_mode = mode;
+					if (get_mode_size_bits(mode) < get_mode_size_bits(dest_mode)) {
+						a         = new_rd_Conv(dbgi, block, a, dest_mode);
+						calc_mode = dest_mode;
+					}
+
+					if (relation == ir_relation_equal) {
+						a = new_rd_Not(dbgi, block, a, calc_mode);
+					}
+
+					ir_graph  *irg          = get_irn_irg(block);
+					unsigned   shift_amount = get_tarval_highest_bit(tv);
+					ir_tarval *tv           = new_tarval_from_long(shift_amount, mode_Iu);
+					ir_node   *shift_cnt    = new_rd_Const(dbgi, irg, tv);
+					ir_node   *shift        = new_rd_Shr(dbgi, block, a, shift_cnt, calc_mode);
+					ir_tarval *one          = get_mode_one(calc_mode);
+					ir_node   *c            = new_rd_Const(dbgi, irg, one);
+					ir_node   *and          = new_rd_And(dbgi, block, shift, c, calc_mode);
+					if (calc_mode != dest_mode) {
+						and = new_rd_Conv(dbgi, block, and, dest_mode);
+					}
+
+					return and;
+				}
+			}
 		}
-	} else if (relation == ir_relation_less_greater) {
+
 		ir_relation possible = ir_get_possible_cmp_relations(left, right);
-		if (!(possible & ir_relation_less)) {
-			relation &= ~ir_relation_less;
-		} else if (!(possible & ir_relation_greater)) {
-			relation &= ~ir_relation_greater;
+
+		/* Try to use an appropriate relation. */
+		if (relation == ir_relation_equal) {
+			if (!(possible & ir_relation_less)) {
+				relation |= ir_relation_less;
+			} else if (!(possible & ir_relation_greater)) {
+				relation |= ir_relation_greater;
+			}
+		} else {
+			if (!(possible & ir_relation_less)) {
+				relation &= ~ir_relation_less;
+			} else if (!(possible & ir_relation_greater)) {
+				relation &= ~ir_relation_greater;
+			}
 		}
 	}
 
