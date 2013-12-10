@@ -7,10 +7,12 @@
 #include "strcalc.h"
 
 #include <assert.h>
+#include <stdio.h>
+#include <limits.h>
 #include "xmalloc.h"
 #include "util.h"
 
-static const unsigned precision = 60; /* some random non-po2 number (but a multiple of 4),
+static const unsigned precision = 72; /* some random non-po2 number (but a multiple of 4),
                                          as strcalc rounds up to multiple of 4 anyway */
 static unsigned buflen;
 
@@ -27,14 +29,46 @@ static bool streq(const char *str0, const char *str1)
 	return strcmp(str0, str1) == 0;
 }
 
-static void test_conv_print(long v, enum base_t base, const char *expected)
+static void test_conv_print(unsigned long v, enum base_t base,
+                            const char *expected)
 {
 	sc_word *temp = XMALLOCN(sc_word, buflen);
-	sc_val_from_long(v, temp);
+	sc_val_from_ulong(v, temp);
 	char buf[128];
 	const char *p = sc_print_buf(buf, sizeof(buf), temp, precision, base, false);
 	assert(streq(p, expected));
-	assert(sc_val_to_long(temp) == v);
+	assert((unsigned long)sc_val_to_long(temp) == v);
+}
+
+static void test_conv(long v)
+{
+	sc_word *temp = XMALLOCN(sc_word, buflen);
+	sc_val_from_long(v, temp);
+	long back = sc_val_to_long(temp);
+	assert(back == v);
+	free(temp);
+
+	char buf[128];
+	snprintf(buf, sizeof(buf), "%ld", v);
+	bool negative = false;
+	const char *p = buf;
+	if (*p == '-') {
+		negative = true;
+		++p;
+	}
+	sc_word *temp2 = XMALLOCN(sc_word, buflen);
+	sc_val_from_str(negative, 10, p, strlen(p), temp2);
+	long back2 = sc_val_to_long(temp2);
+	assert(back2 == v);
+	free(temp2);
+
+	snprintf(buf, sizeof(buf), "%lX", (unsigned long)v);
+	sc_word *temp3 = XMALLOCN(sc_word, buflen);
+	sc_val_from_str(false, 16, buf, strlen(buf), temp3);
+	long back3 = sc_val_to_long(temp3);
+	assert(back3 == v);
+	free(temp3);
+	test_conv_print((unsigned long)v, SC_HEX, buf);
 }
 
 typedef void (*binop)(const sc_word *v0, const sc_word *v1, sc_word *dest);
@@ -316,6 +350,20 @@ int main(void)
 	test_conv_print(0xcafebabe, SC_DEC, "3405691582");
 	test_conv_print(0xcafebabe, SC_OCT, "31277535276");
 	test_conv_print(0xcafebabe, SC_BIN, "11001010111111101011101010111110");
+
+	test_conv(0);
+	test_conv(-1);
+	test_conv(-2);
+	test_conv(-4);
+	test_conv(-8);
+	test_conv(1);
+	test_conv(2);
+	test_conv(4);
+	test_conv(8);
+	test_conv(42);
+	test_conv(13);
+	test_conv(LONG_MAX);
+	test_conv(LONG_MIN);
 
 	return 0;
 }
