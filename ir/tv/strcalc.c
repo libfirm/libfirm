@@ -593,7 +593,7 @@ unsigned sc_popcount(const sc_word *value, unsigned bits)
 void sc_val_from_bytes(unsigned char const *const bytes, size_t n_bytes,
                        bool big_endian, sc_word *buffer)
 {
-	assert(n_bytes <= (size_t)calc_buffer_size);
+	assert(n_bytes*8 <= (size_t)calc_buffer_size*SC_BITS);
 
 	sc_word *p = buffer;
 	assert(SC_BITS == 4);
@@ -860,7 +860,7 @@ void sc_shlI(const sc_word *value, unsigned shift_count, sc_word *buffer)
 			unsigned nextpos = counter-shift_words-1;
 			sc_word  next    = nextpos < calc_buffer_size ? value[nextpos] : 0;
 			buffer[counter] = SC_RESULT(val << shift_bits)
-			                | SC_RESULT(next >> (4-shift_bits));
+			                | SC_RESULT(next >> (SC_BITS-shift_bits));
 			val = next;
 		}
 	}
