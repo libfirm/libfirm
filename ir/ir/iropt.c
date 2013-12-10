@@ -5451,14 +5451,13 @@ ir_node *ir_get_abs_op(const ir_node *sel, ir_node *mux_false,
 	return cmp_left == skip_upconv(mux_false) ? mux_false : mux_true;
 }
 
-static bool ir_is_optimizable_mux_set(const ir_node *cond, ir_relation relation)
+static bool ir_is_optimizable_mux_set(const ir_node *cond, ir_relation relation, const ir_mode *dest_mode)
 {
 	ir_node *left = get_Cmp_left(cond);
 	ir_mode *mode = get_irn_mode(left);
 	if (get_mode_arithmetic(mode) != irma_twos_complement)
 		return false;
 
-	ir_mode *dest_mode = get_irn_mode(cond);
 	if (get_mode_arithmetic(dest_mode) != irma_twos_complement)
 		return false;
 
@@ -5539,9 +5538,10 @@ bool ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
 	if (!is_Cmp(sel))
 		return false;
 
-	const ir_node *f        = mux_false;
-	const ir_node *t        = mux_true;
-	ir_relation    relation = get_Cmp_relation(sel);
+	const ir_node *f         = mux_false;
+	const ir_node *t         = mux_true;
+	const ir_mode *dest_mode = get_irn_mode(f);
+	ir_relation    relation  = get_Cmp_relation(sel);
 
 	/* first normalization step: try to move a constant to the false side,
 	 * 0 preferred on false side too */
@@ -5554,7 +5554,7 @@ bool ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
 	}
 
 	if (is_Const(f) && is_Const_null(f) && is_Const(t) && is_Const_one(t)
-	    && ir_is_optimizable_mux_set(sel, relation)) {
+	    && ir_is_optimizable_mux_set(sel, relation, dest_mode)) {
 		return true;
 	}
 
