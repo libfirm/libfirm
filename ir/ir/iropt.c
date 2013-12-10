@@ -5464,6 +5464,24 @@ static bool ir_is_optimizable_mux_set(const ir_node *cond, ir_relation relation)
 
 	ir_node *right = get_Cmp_right(cond);
 	relation &= ~ir_relation_unordered;
+
+	/* Try to use an appropriate relation. */
+	if (relation == ir_relation_equal) {
+		ir_relation possible = ir_get_possible_cmp_relations(left, right);
+		if (!(possible & ir_relation_less)) {
+			relation |= ir_relation_less;
+		} else if (!(possible & ir_relation_greater)) {
+			relation |= ir_relation_greater;
+		}
+	} else if (relation == ir_relation_less_greater) {
+		ir_relation possible = ir_get_possible_cmp_relations(left, right);
+		if (!(possible & ir_relation_less)) {
+			relation &= ~ir_relation_less;
+		} else if (!(possible & ir_relation_greater)) {
+			relation &= ~ir_relation_greater;
+		}
+	}
+
 	if (get_mode_size_bits(mode) >= get_mode_size_bits(dest_mode)) {
 		/* Due to possible overflows, we can only transform compares with special constants. */
 		if (!mode_is_signed(mode) || !is_Const(right))
@@ -5595,6 +5613,24 @@ static ir_node *transform_Mux_set(ir_node *n)
 
 	ir_node     *right    = get_Cmp_right(cond);
 	ir_relation  relation = get_Cmp_relation(cond) & ~ir_relation_unordered;
+
+	/* Try to use an appropriate relation. */
+	if (relation == ir_relation_equal) {
+		ir_relation possible = ir_get_possible_cmp_relations(left, right);
+		if (!(possible & ir_relation_less)) {
+			relation |= ir_relation_less;
+		} else if (!(possible & ir_relation_greater)) {
+			relation |= ir_relation_greater;
+		}
+	} else if (relation == ir_relation_less_greater) {
+		ir_relation possible = ir_get_possible_cmp_relations(left, right);
+		if (!(possible & ir_relation_less)) {
+			relation &= ~ir_relation_less;
+		} else if (!(possible & ir_relation_greater)) {
+			relation &= ~ir_relation_greater;
+		}
+	}
+
 	if (get_mode_size_bits(mode) >= get_mode_size_bits(dest_mode)) {
 		/* Due to possible overflows, we can only transform compares with special constants. */
 		if (!mode_is_signed(mode) || !is_Const(right))
