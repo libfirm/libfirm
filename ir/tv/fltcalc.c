@@ -24,15 +24,6 @@
 
 #include "xmalloc.h"
 
-static long double string_to_long_double(const char *str)
-{
-#if __STDC_VERSION__ >= 199901L || _POSIX_C_SOURCE >= 200112L
-	return strtold(str, NULL);
-#else
-	return strtod(str, NULL);
-#endif
-}
-
 /** The number of extra precision rounding bits */
 #define ROUNDING_BITS 2
 
@@ -647,7 +638,7 @@ void *fc_val_from_str(const char *str, size_t len, void *result)
 	char *buffer = alloca(len + 1);
 	memcpy(buffer, str, len);
 	buffer[len] = '\0';
-	long double val = string_to_long_double(buffer);
+	long double val = strtold(buffer, NULL);
 	return fc_val_from_ieee754(val, result);
 }
 
