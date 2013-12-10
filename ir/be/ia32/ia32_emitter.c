@@ -1279,8 +1279,16 @@ static void emit_ia32_Minus64(const ir_node *node)
 
 	if (out_lo == in_lo) {
 		if (out_hi != in_hi) {
-			/* a -> a, b -> d */
-			goto zero_neg;
+			if (in_lo == in_hi) {
+				/* a -> a, a -> d */
+				emit_neg( node, out_lo);
+				emit_mov( node, out_lo, out_hi);
+				emit_sbb0(node, out_hi);
+				return;
+			} else {
+				/* a -> a, b -> d */
+				goto zero_neg;
+			}
 		} else {
 			/* a -> a, b -> b */
 			goto normal_neg;
