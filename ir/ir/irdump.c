@@ -903,8 +903,8 @@ static void dump_node_vcgattr(FILE *F, const ir_node *node, const ir_node *local
 	}
 
 	if (dump_node_vcgattr_hook != NULL) {
-		dump_node_vcgattr_hook(F, node, local);
-		return;
+		if (dump_node_vcgattr_hook(F, node, local) != 0)
+			return;
 	}
 
 	n = local ? local : node;
