@@ -562,6 +562,20 @@ static void thread_jumps(ir_node* block, void* data)
 	/* (recursively) look if a pred of a Phi is a constant or a Confirm */
 	ir_node  *selector = get_Cond_selector(cond);
 	ir_graph *irg      = get_irn_irg(block);
+	if (is_Const(selector)) {
+		const ir_tarval *tv = get_Const_tarval(selector);
+		assert(tv == tarval_b_false || tv == tarval_b_true);
+		ir_node    *const cond_block = get_nodes_block(cond);
+		ir_node    *const jmp        = new_r_Jmp(cond_block);
+		ir_node    *const bad        = new_r_Bad(irg, mode_X);
+		const bool        is_true    = tv == tarval_b_true;
+		ir_node *const in[] = {
+			[pn_Cond_false] = is_true ? bad : jmp,
+			[pn_Cond_true]  = is_true ? jmp : bad,
+		};
+		turn_into_tuple(cond, ARRAY_SIZE(in), in);
+		return;
+	}
 	inc_irg_visited(irg);
 	jumpthreading_env_t env;
 	env.cnst_pred  = NULL;
