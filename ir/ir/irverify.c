@@ -915,9 +915,7 @@ static bool check_dominance_for_node(const ir_node *use)
 
 	ir_node *bl = get_nodes_block(use);
 	for (int i = get_irn_arity(use); i-- > 0; ) {
-		ir_node *def = get_irn_n(use, i);
-		if (is_Bad(def))
-			continue;
+		ir_node *def    = get_irn_n(use, i);
 		ir_node *def_bl = get_nodes_block(def);
 		/* we have no dominance relation for unreachable blocks, so we can't
 		 * check the dominance property there */
