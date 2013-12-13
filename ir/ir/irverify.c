@@ -931,7 +931,7 @@ static bool check_dominance_for_node(const ir_node *use)
 			continue;
 
 		if (!block_dominates(def_bl, use_bl)) {
-			warn(use, "not dominated by operand %+F", use, def);
+			warn(use, "not dominated by operand %+F", def);
 			fine = false;
 		}
 	}
