@@ -13,8 +13,6 @@ Correctness:
 - Support non-omit_fp modes.
 - Sign/Zero extension for operations that are not mode_neutral.
    (Alternatively work on legalize phase)
-- Div node is missing proper register requirements.
-- Generate code for Mulh nodes
 
 Improve Quality:
 - Immediate32 matching could be better and match SymConst, Add(SymConst, Const)

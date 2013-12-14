@@ -93,6 +93,16 @@ static const arch_register_req_t amd64_requirement_rcx = {
 	1
 };
 
+static const unsigned amd64_limited_gp_rax [] = { BIT(REG_GP_RAX) };
+static const arch_register_req_t amd64_requirement_rax = {
+	arch_register_req_type_limited,
+	&amd64_reg_classes[CLASS_amd64_gp],
+	amd64_limited_gp_rax,
+	0,
+	0,
+	1
+};
+
 static const arch_register_req_t *mem_reqs[] = {
 	&arch_no_requirement,
 };
@@ -117,6 +127,11 @@ static const arch_register_req_t *reg_reg_reg_mem_reqs[] = {
 
 static const arch_register_req_t *reg_reg_reqs[] = {
 	&amd64_requirement_gp,
+	&amd64_requirement_gp,
+};
+
+static const arch_register_req_t *rax_reg_reqs[] = {
+	&amd64_requirement_rax,
 	&amd64_requirement_gp,
 };
 
@@ -281,6 +296,10 @@ static ir_node *gen_Address(ir_node *node)
 typedef ir_node *(*construct_binop_func)(dbg_info *dbgi, ir_node *block,
 	int arity, ir_node *in[], const amd64_binop_addr_attr_t *attr_init);
 
+typedef ir_node *(*construct_rax_binop_func)(dbg_info *dbgi, ir_node *block,
+	int arity, ir_node *in[], amd64_insn_mode_t insn_mode,
+	amd64_op_mode_t op_mode, amd64_addr_t addr);
+
 typedef enum match_flags_t {
 	match_am           = 1 << 0,
 	match_mode_neutral = 1 << 1,
@@ -372,13 +391,74 @@ static bool needs_extension(ir_node *op)
 	return !be_upper_bits_clean(op, mode);
 }
 
+static bool use_address_matching(match_flags_t flags, ir_node *block,
+                                 ir_node *op1, ir_node *op2,
+                                 ir_node **out_load, ir_node **out_op)
+{
+	bool flags_match = flags & match_am;
+
+	if (flags_match && source_am_possible(block, op2, op1)) {
+		(*out_load) = get_Proj_pred(op2);
+		(*out_op)   = op1;
+		return true;
+	} else if (flags_match && (flags & match_commutative)
+               && source_am_possible(block, op1, op2)) {
+		(*out_load) = get_Proj_pred(op1);
+		(*out_op)   = op2;
+		return true;
+	}
+	return false;
+}
+
+static void perform_address_matching(const ir_node *load, int *arity,
+                                     ir_node **in, amd64_addr_t *addr,
+                                     const arch_register_req_t ***reqs)
+{
+	ir_node *ptr = get_Load_ptr(load);
+	x86_address_t maddr;
+	memset(&maddr, 0, sizeof(maddr));
+
+	x86_create_address_mode(&maddr, ptr, x86_create_am_entities_ip_relative);
+	assert(maddr.frame_entity == NULL);
+	*reqs = reg_mem_reqs;
+
+	if (maddr.base != NULL) {
+		int base_input   = (*arity)++;
+		addr->base_input = base_input;
+		in[base_input]   = be_transform_node(maddr.base);
+		*reqs             = reg_reg_mem_reqs;
+	} else if(maddr.entity != NULL) {
+		addr->base_input = RIP_INPUT;
+	} else {
+		addr->base_input = NO_INPUT;
+	}
+	if (maddr.index != NULL) {
+		int index_input = (*arity)++;
+		addr->index_input = index_input;
+		in[index_input]  = be_transform_node(maddr.index);
+		*reqs              = maddr.base != NULL
+			                           ? reg_reg_reg_mem_reqs
+			                           : reg_reg_mem_reqs;
+	} else {
+		addr->index_input = NO_INPUT;
+	}
+	ir_node *mem           = get_Load_mem(load);
+	ir_node *new_mem       = be_transform_node(mem);
+	int      mem_input     = (*arity)++;
+	in[mem_input]          = new_mem;
+	addr->mem_input        = mem_input;
+	addr->immediate.entity = maddr.entity;
+	addr->immediate.offset = maddr.offset;
+	addr->log_scale        = maddr.scale;
+}
+
 static void match_binop(amd64_args_t *args, ir_node *block,
                         ir_mode *mode, ir_node *op1, ir_node *op2,
                         match_flags_t flags)
 {
 	memset(args, 0, sizeof(*args));
 
-	bool use_am        = flags & match_am;
+	bool use_am;
 	bool use_immediate = flags & match_immediate;
 	bool mode_neutral  = flags & match_mode_neutral;
 
@@ -398,62 +478,27 @@ static void match_binop(amd64_args_t *args, ir_node *block,
 
 	ir_node *load;
 	ir_node *op;
+
+	use_am = use_address_matching(flags, block, op1, op2, &load, &op);
+
 	if (use_immediate
 	    && match_immediate_32(&args->attr.u.immediate, op2, false, mode_neutral)) {
 		/* fine, we found an immediate */
 		args->attr.base.base.op_mode = AMD64_OP_REG_IMM;
 		args->in[args->arity++]      = be_transform_node(op1);
 		args->reqs                   = reg_reqs;
-	} else if (use_am && source_am_possible(block, op2, op1)) {
-		load = get_Proj_pred(op2);
-		op   = op1;
-		goto perform_am;
-	} else if (use_am && (flags & match_commutative)
-			   && source_am_possible(block, op1, op2)) {
-		load = get_Proj_pred(op1);
-		op   = op2;
-perform_am:;
+	} else if (use_am) {
 		ir_node *new_op        = be_transform_node(op);
 		int      reg_input     = args->arity++;
 		args->attr.u.reg_input = reg_input;
 		args->in[reg_input]    = new_op;
-		amd64_addr_t *addr = &args->attr.base.addr;
+		amd64_addr_t *addr     = &args->attr.base.addr;
 
-		ir_node *ptr = get_Load_ptr(load);
-		x86_address_t maddr;
-		memset(&maddr, 0, sizeof(maddr));
-		x86_create_address_mode(&maddr, ptr, x86_create_am_entities_ip_relative);
-		assert(maddr.frame_entity == NULL);
-		args->reqs = reg_mem_reqs;
-		if (maddr.base != NULL) {
-			int base_input = args->arity++;
-			addr->base_input     = base_input;
-			args->in[base_input] = be_transform_node(maddr.base);
-			args->reqs           = reg_reg_mem_reqs;
-		} else if (maddr.entity != NULL) {
-			addr->base_input = RIP_INPUT;
-		} else {
-			addr->base_input = NO_INPUT;
-		}
-		if (maddr.index != NULL) {
-			int index_input = args->arity++;
-			addr->index_input     = index_input;
-			args->in[index_input] = be_transform_node(maddr.index);
-			args->reqs            = maddr.base != NULL
-			                      ? reg_reg_reg_mem_reqs
-			                      : reg_reg_mem_reqs;
-		} else {
-			addr->index_input = NO_INPUT;
-		}
-		ir_node *mem           = get_Load_mem(load);
-		ir_node *new_mem       = be_transform_node(mem);
-		int      mem_input     = args->arity++;
-		addr->mem_input        = mem_input;
-		args->in[mem_input]    = new_mem;
-		addr->immediate.entity = maddr.entity;
-		addr->immediate.offset = maddr.offset;
-		addr->log_scale        = maddr.scale;
-		args->mem_proj         = be_get_Proj_for_pn(load, pn_Load_M);
+		perform_address_matching(load, &(args->arity), args->in, addr,
+				                 &(args->reqs));
+
+		args->mem_proj               = be_get_Proj_for_pn(load, pn_Load_M);
+		args->attr.base.base.op_mode = AMD64_OP_ADDR_REG;
 	} else {
 		/* simply transform the arguments */
 		args->in[args->arity++] = be_transform_node(op1);
@@ -484,6 +529,76 @@ static ir_node *gen_binop_am(ir_node *node, ir_node *op1, ir_node *op2,
 	}
 
 	return new_r_Proj(new_node, mode_gp, pn_amd64_Sub_res);
+}
+
+/* Transform arguments for a binop using RAX and register as input */
+static void gen_binop_rax_reg(ir_node *op1, ir_node *op2, ir_node **in,
+                              int *arity, amd64_op_mode_t *op_mode,
+                              const arch_register_req_t ***reqs)
+{
+	in[(*arity)++] = be_transform_node(op1);
+	in[(*arity)++] = be_transform_node(op2);
+	*reqs          = rax_reg_reqs;
+	*op_mode       = AMD64_OP_RAX_REG;
+}
+
+static ir_node *gen_binop_rax(ir_node *node, ir_node *op1, ir_node *op2,
+                              construct_rax_binop_func make_node,
+                              match_flags_t flags)
+{
+	bool use_am;
+	bool mode_neutral  = flags & match_mode_neutral;
+	assert(! (flags & match_immediate));
+
+	ir_mode *mode = get_irn_mode(op1);
+
+	unsigned mode_bits = get_mode_size_bits(mode);
+	if (mode_bits == 8 || mode_bits == 16)
+		use_am = false;
+	amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(mode);
+
+	/* TODO: legalize phase */
+	if (mode_neutral) {
+		op1 = skip_downconv(op1);
+		op2 = skip_downconv(op2);
+	} else {
+		/* TODO: extend inputs? */
+		(void)needs_extension;
+	}
+
+	ir_node *load;
+	ir_node *op;
+	ir_node *mem_proj;
+	ir_node *block = get_nodes_block(node);
+	ir_node *in[4];
+	int      arity = 0;
+	const arch_register_req_t **reqs;
+	amd64_op_mode_t op_mode;
+	amd64_addr_t    addr;
+	memset(&addr, 0, sizeof(addr));
+
+	use_am = use_address_matching(flags, block, op1, op2, &load, &op);
+	if (use_am) {
+		ir_node *new_op    = be_transform_node(op);
+		int      reg_input = arity++;
+		in[reg_input]      = new_op;
+
+		perform_address_matching(load, &arity, in, &addr, &reqs);
+
+		mem_proj                = be_get_Proj_for_pn(load, pn_Load_M);
+		op_mode                 = AMD64_OP_RAX_ADDR;
+	} else {
+		/* simply transform the arguments */
+		gen_binop_rax_reg(op1, op2, in, &arity, &op_mode, &reqs);
+	}
+
+	(void)mem_proj;
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_node  = make_node(dbgi, new_block, arity, in, insn_mode,
+	                                op_mode, addr);
+	arch_set_irn_register_reqs_in(new_node, reqs);
+	return new_node;
 }
 
 typedef ir_node *(*construct_shift_func)(dbg_info *dbgi, ir_node *block,
@@ -603,7 +718,7 @@ static ir_node *gen_Or(ir_node *const node)
 {
 	ir_node *op1 = get_Or_left(node);
 	ir_node *op2 = get_Or_right(node);
-	return gen_binop_am(node, op1, op2, new_bd_amd64_Xor,
+	return gen_binop_am(node, op1, op2, new_bd_amd64_Or,
 	                    match_immediate | match_am | match_mode_neutral
 	                    | match_commutative);
 }
@@ -615,6 +730,17 @@ static ir_node *gen_Mul(ir_node *const node)
 	return gen_binop_am(node, op1, op2, new_bd_amd64_IMul,
 	                    match_immediate | match_am | match_mode_neutral
 	                    | match_commutative);
+}
+
+static ir_node *gen_Mulh(ir_node *const node)
+{
+	ir_node *op1      = get_Mulh_left(node);
+	ir_node *op2      = get_Mulh_right(node);
+	ir_node *new_node = gen_binop_rax(node, op1, op2, new_bd_amd64_Mul,
+                         /* match_am TODO */
+                         match_mode_neutral | match_commutative);
+
+    return new_r_Proj(new_node, mode_gp, pn_amd64_Mul_res_high);
 }
 
 static ir_node *gen_Shl(ir_node *const node)
@@ -642,40 +768,55 @@ static ir_node *gen_Shrs(ir_node *const node)
 }
 
 static ir_node *create_div(ir_node *const node, ir_mode *const mode,
-                           ir_node *const op1, ir_node *const op2,
-                           ir_node *const mem)
+                           ir_node *const op1, ir_node *const op2)
 {
 	dbg_info *const dbgi    = get_irn_dbg_info(node);
 	ir_node  *const block   = be_transform_node(get_nodes_block(node));
-	ir_node  *const new_op1 = be_transform_node(op1);
-	ir_node  *const new_op2 = be_transform_node(op2);
-	ir_node  *const new_mem = be_transform_node(mem);
 	amd64_insn_mode_t insn_mode
 		= get_mode_size_bits(mode) > 32 ? INSN_MODE_64 : INSN_MODE_32;
+
 	ir_node *res;
+	ir_node *in[3];
+	int      arity = 0;
+	const arch_register_req_t **reqs;
+	amd64_op_mode_t op_mode;
+
 	if (mode_is_signed(mode)) {
+		ir_node  *const new_op1 = be_transform_node(op1);
+
 		amd64_shift_attr_t attr;
 		memset(&attr, 0, sizeof(attr));
 		attr.base.op_mode = AMD64_OP_SHIFT_IMM;
 		attr.insn_mode    = insn_mode;
 		attr.immediate    = get_mode_size_bits(mode)-1;
-		ir_node *in[1] = { new_op1 };
+		ir_node *sar_in[1] = { new_op1 };
 		ir_node *const upper
-			= new_bd_amd64_Sar(dbgi, block, ARRAY_SIZE(in), in, &attr);
+			= new_bd_amd64_Sar(dbgi, block, ARRAY_SIZE(sar_in), sar_in, &attr);
+		arch_set_irn_register_reqs_in(upper, reg_reqs);
 
-		ir_node *div_in[] = { upper, new_op1, new_op2, new_mem };
+		in[arity++] = upper;
+		gen_binop_rax_reg(op1, op2, in, &arity, &op_mode, &reqs);
+
 		amd64_addr_t addr;
 		memset(&addr, 0, sizeof(addr));
-		res = new_bd_amd64_IDiv(dbgi, block, ARRAY_SIZE(div_in), div_in,
-								insn_mode, AMD64_OP_REG, addr);
+		res = new_bd_amd64_IDiv(dbgi, block, arity, in, insn_mode,
+                                op_mode, addr);
 	} else {
+		const arch_register_req_t **zero_reqs;
+		zero_reqs           = reg_reqs;
 		ir_node *const zero = new_bd_amd64_Xor0(dbgi, block);
-		ir_node *div_in[] = { zero, new_op1, new_op2, new_mem };
+		in[arity++]         = zero;
+		arch_set_irn_register_reqs_in(zero, zero_reqs);
+
+		gen_binop_rax_reg(op1, op2, in, &arity, &op_mode, &reqs);
+
 		amd64_addr_t addr;
 		memset(&addr, 0, sizeof(addr));
-		res = new_bd_amd64_Div(dbgi, block, ARRAY_SIZE(div_in), div_in,
-		                       insn_mode, AMD64_OP_REG, addr);
+		res  = new_bd_amd64_Div(dbgi, block, arity, in, insn_mode,
+                                op_mode, addr);
 	}
+
+	arch_set_irn_register_reqs_in(res, reqs);
 	return res;
 }
 
@@ -686,8 +827,7 @@ static ir_node *gen_Div(ir_node *const node)
 		panic("amd64: float div NIY");
 	ir_node *const op1 = get_Div_left(node);
 	ir_node *const op2 = get_Div_right(node);
-	ir_node *const mem = get_Div_mem(node);
-	return create_div(node, mode, op1, op2, mem);
+	return create_div(node, mode, op1, op2);
 }
 
 static ir_node *gen_Proj_Div(ir_node *const node)
@@ -715,9 +855,8 @@ static ir_node *gen_Mod(ir_node *const node)
 	ir_mode *const mode = get_Mod_resmode(node);
 	ir_node *const op1  = get_Mod_left(node);
 	ir_node *const op2  = get_Mod_right(node);
-	ir_node *const mem  = get_Mod_mem(node);
 	assert(mode_needs_gp_reg(mode));
-	return create_div(node, mode, op1, op2, mem);
+	return create_div(node, mode, op1, op2);
 }
 
 static ir_node *gen_Proj_Mod(ir_node *const node)
@@ -1689,6 +1828,7 @@ static void amd64_register_transformers(void)
 	be_set_transform_function(op_Minus,    gen_Minus);
 	be_set_transform_function(op_Mod,      gen_Mod);
 	be_set_transform_function(op_Mul,      gen_Mul);
+	be_set_transform_function(op_Mulh,     gen_Mulh);
 	be_set_transform_function(op_Not,      gen_Not);
 	be_set_transform_function(op_Or,       gen_Or);
 	be_set_transform_function(op_Phi,      gen_Phi);

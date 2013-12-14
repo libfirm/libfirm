@@ -48,6 +48,10 @@ typedef enum {
 	AMD64_OP_SHIFT_IMM,
 	AMD64_OP_CALL_ADDR,
 	AMD64_OP_CALL_IMM32,
+	/** A binary operation with 1 operand being RAX (which is usually not
+	 * explicitely given in the assembly */
+	AMD64_OP_RAX_REG,
+	AMD64_OP_RAX_ADDR,
 } amd64_op_mode_t;
 
 enum {

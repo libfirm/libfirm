@@ -140,7 +140,7 @@ Div => {
 	outs      => [ "res_div", "flags", "M", "res_mod" ],
 	attr_type => "amd64_addr_attr_t",
 	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
-	emit      => "div%M %S2",
+	emit      => "div%M %AM",
 	modified_flags => 1,
 },
 
@@ -165,6 +165,19 @@ IMul => {
 	attr_type => "amd64_binop_addr_attr_t",
 	attr      => "const amd64_binop_addr_attr_t *attr_init",
 	emit      => "imul%M %AM",
+	modified_flags => $status_flags,
+},
+
+Mul => {
+	# Do not rematerialize this node
+	# It produces 2 results and has strict constraints
+	state     => "exc_pinned",
+	reg_req   => { out => [ "rax", "flags", "none", "rdx" ] },
+	outs      => [ "res_low", "flags", "M", "res_high" ],
+	arity     => "variable",
+	attr_type => "amd64_addr_attr_t",
+	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
+	emit      => "mul%M %AM",
 	modified_flags => $status_flags,
 },
 

@@ -282,6 +282,16 @@ static void amd64_emit_am(const ir_node *const node)
 		be_emit_char('*');
 		amd64_emit_addr(node, &attr->addr);
 		return;
+
+	case AMD64_OP_RAX_REG: {
+		const arch_register_t *reg = arch_get_irn_register_in(node, 1);
+		emit_register_insn_mode(reg, attr->insn_mode);
+		return;
+	}
+
+	case AMD64_OP_RAX_ADDR:
+		amd64_emit_addr(node, &attr->addr);
+		return;
 	case AMD64_OP_IMM32:
 	case AMD64_OP_IMM64:
 	case AMD64_OP_NONE:
