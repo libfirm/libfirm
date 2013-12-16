@@ -136,7 +136,7 @@ void edges_init_graph_kind(ir_graph *irg, ir_edge_kind_t kind);
 void edges_node_deleted(ir_node *irn);
 
 /**
- * A node might be revivaled by CSE.
+ * A node might be revived by CSE.
  */
 void edges_node_revival(ir_node *node);
 
