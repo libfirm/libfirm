@@ -1736,14 +1736,12 @@ static bool is_cmp_unequal(const ir_node *node)
 /**
  * returns true for Cmp(x == 0) or Cmp(x != 0)
  */
-static bool is_cmp_equality_zero(const ir_node *node)
+static bool is_cmp_equality_zero(const ir_node *node, ir_relation relation)
 {
-	ir_relation relation;
-	ir_node    *right    = get_Cmp_right(node);
-
+	ir_node *right = get_Cmp_right(node);
 	if (!is_Const(right) || !is_Const_null(right))
 		return false;
-	relation = get_Cmp_relation(node);
+
 	return relation == ir_relation_equal
 		|| relation == ir_relation_less_greater
 		|| (!mode_is_signed(get_irn_mode(right))
@@ -5535,30 +5533,45 @@ bool ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
 		return true;
 	}
 
-	if (!is_Cmp(sel))
-		return false;
-
 	const ir_node *f         = mux_false;
 	const ir_node *t         = mux_true;
 	const ir_mode *dest_mode = get_irn_mode(f);
-	ir_relation    relation  = get_Cmp_relation(sel);
 
-	/* first normalization step: try to move a constant to the false side,
-	 * 0 preferred on false side too */
-	if (is_Const(t) &&
-	    (!is_Const(f) ||
-	     (is_Const_null(t) && !is_Const_null(f)))) {
-		t        = mux_false;
-		f        = mux_true;
-		relation = get_negated_relation(relation);
+	if (is_Cmp(sel)) {
+		ir_node     *cmp_l    = get_Cmp_left(sel);
+		ir_node     *cmp_r    = get_Cmp_right(sel);
+		ir_relation  relation = get_Cmp_relation(sel);
+
+		if (is_Const(t)) {
+			/* first normalization step: try to move a constant to the false side,
+			 * 0 preferred on false side too */
+			if (!is_Const(f) || (is_Const_null(t) && !is_Const_null(f))) {
+				/* Mux(x, a, b) => Mux(not(x), b, a) */
+				t        = mux_false;
+				f        = mux_true;
+				relation = get_negated_relation(relation);
+			}
+
+			if (is_Const_null(f) && is_Const(t) && is_Const_one(t)
+			    && ir_is_optimizable_mux_set(sel, relation, dest_mode)) {
+				return true;
+			}
+		}
+
+		if (mode_is_int(mode) && is_cmp_equality_zero(sel, relation) && is_And(cmp_l) && f == cmp_r) {
+			const ir_node *and_l = get_And_left(cmp_l);
+			const ir_node *and_r = get_And_right(cmp_l);
+
+			if ((and_l == t || and_r == t) && is_single_bit(t)) {
+				/* Mux((a & (1<<n)) == 0, 0, (1<<n)) == (a & (1<<n)) xor ((1<<n)) */
+				/* Mux((a & (1<<n)) != 0, 0, (1<<n)) ==  a & (1<<n) */
+				return true;
+			}
+		}
 	}
 
-	if (is_Const(f) && is_Const_null(f) && is_Const(t) && is_Const_one(t)
-	    && ir_is_optimizable_mux_set(sel, relation, dest_mode)) {
-		return true;
-	}
-
-	if (mode == mode_b) {
+	ir_graph *irg  = get_irn_irg(sel);
+	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_MODEB_LOWERED) && mode == mode_b) {
 		/* note: after normalization, false can only happen on default */
 		if (is_Const(t)) {
 			ir_tarval *tv_t = get_Const_tarval(t);
@@ -5574,34 +5587,15 @@ bool ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
 		}
 	}
 
-	if (mode_is_int(mode) && is_cmp_equality_zero(sel)) {
-		const ir_node *cmp_r = get_Cmp_right(sel);
-		const ir_node *cmp_l = get_Cmp_left(sel);
-
-		if (is_And(cmp_l) && f == cmp_r) {
-			ir_node *and_l = get_And_left(cmp_l);
-			ir_node *and_r = get_And_right(cmp_l);
-
-			if ((and_l == t || and_r == t) && is_single_bit(t)) {
-				/* Mux((a & (1<<n)) == 0, 0, (1<<n)) == (a & (1<<n)) xor ((1<<n)) */
-				/* Mux((a & (1<<n)) != 0, 0, (1<<n)) ==  a & (1<<n) */
-				return true;
-			}
-		}
-	}
-
 	return false;
 }
 
 /**
  * Optimize a Mux(c, 0, 1) node (sometimes called a "set" instruction)
  */
-static ir_node *transform_Mux_set(ir_node *n)
+static ir_node *transform_Mux_set(ir_node *n, ir_relation relation)
 {
 	ir_node *cond = get_Mux_sel(n);
-	if (!is_Cmp(cond))
-		return n;
-
 	ir_node *left = get_Cmp_left(cond);
 	ir_mode *mode = get_irn_mode(left);
 	if (get_mode_arithmetic(mode) != irma_twos_complement)
@@ -5611,8 +5605,8 @@ static ir_node *transform_Mux_set(ir_node *n)
 	if (get_mode_arithmetic(dest_mode) != irma_twos_complement)
 		return n;
 
-	ir_node     *right    = get_Cmp_right(cond);
-	ir_relation  relation = get_Cmp_relation(cond) & ~ir_relation_unordered;
+	ir_node *right = get_Cmp_right(cond);
+	relation &= ~ir_relation_unordered;
 
 	/* Try to use an appropriate relation. */
 	if (relation == ir_relation_equal) {
@@ -5743,28 +5737,59 @@ static ir_node *transform_node_Mux(ir_node *n)
 		}
 	}
 
-	/* first normalization step: try to move a constant to the false side,
-	 * 0 preferred on false side too */
-	if (is_Cmp(sel) && is_Const(t) &&
-			(!is_Const(f) || (is_Const_null(t) && !is_Const_null(f)))) {
-		dbg_info *seldbgi = get_irn_dbg_info(sel);
-		ir_node  *block   = get_nodes_block(sel);
-		ir_relation relation = get_Cmp_relation(sel);
-		ir_node *tmp = t;
-		t = f;
-		f = tmp;
+	if (is_Cmp(sel)) {
+		ir_node     *cmp_l    = get_Cmp_left(sel);
+		ir_node     *cmp_r    = get_Cmp_right(sel);
+		ir_relation  relation = get_Cmp_relation(sel);
+		bool         inverted = false;
 
-		/* Mux(x, a, b) => Mux(not(x), b, a) */
-		relation = get_negated_relation(relation);
-		sel = new_rd_Cmp(seldbgi, block, get_Cmp_left(sel),
-				get_Cmp_right(sel), relation);
-		return new_rd_Mux(get_irn_dbg_info(n), get_nodes_block(n), sel, f, t, mode);
-	}
+		if (is_Const(t)) {
+			/* first normalization step: try to move a constant to the false side,
+			 * 0 preferred on false side too */
+			if (!is_Const(f) || (is_Const_null(t) && !is_Const_null(f))) {
+				/* Mux(x, a, b) => Mux(not(x), b, a) */
+				ir_node *tmp = t;
+				t        = f;
+				f        = tmp;
+				relation = get_negated_relation(relation);
+				inverted = true;
+			}
 
-	if (is_Const(f) && is_Const_null(f) && is_Const(t) && is_Const_one(t)) {
-		n = transform_Mux_set(n);
-		if (n != oldn)
-			return n;
+			if (is_Const_null(f) && is_Const(t) && is_Const_one(t)) {
+				n = transform_Mux_set(n, relation);
+				if (n != oldn)
+					return n;
+			}
+		}
+
+		if (mode_is_int(mode) && is_cmp_equality_zero(sel, relation) && is_And(cmp_l) && f == cmp_r) {
+			ir_node *and_l = get_And_left(cmp_l);
+			ir_node *and_r = get_And_right(cmp_l);
+
+			if ((and_l == t || and_r == t) && is_single_bit(t)) {
+				if (relation == ir_relation_equal) {
+					/* Mux((a & (1<<n)) == 0, 0, (1<<n)) == (a & (1<<n)) xor ((1<<n)) */
+					ir_node *block = get_nodes_block(n);
+					n = new_rd_Eor(get_irn_dbg_info(n), block, cmp_l, t, mode);
+					DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
+				} else {
+					/* Mux((a & (1<<n)) != 0, 0, (1<<n)) == a & (1<<n) */
+					n = cmp_l;
+					DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
+				}
+				return n;
+			}
+		}
+
+		/* Normalize Mux. */
+		if (inverted) {
+			dbg_info *seldbgi = get_irn_dbg_info(sel);
+			ir_node  *block   = get_nodes_block(sel);
+
+			/* Mux(x, a, b) => Mux(not(x), b, a) */
+			sel = new_rd_Cmp(seldbgi, block, cmp_l, cmp_r, relation);
+			return new_rd_Mux(get_irn_dbg_info(n), get_nodes_block(n), sel, f, t, mode);
+		}
 	}
 
 	/* the following optimizations create new mode_b nodes, so only do them
@@ -5843,31 +5868,6 @@ static ir_node *transform_node_Mux(ir_node *n)
 					DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_AND_BOOL);
 					return n;
 				}
-			}
-		}
-	}
-
-	if (is_Cmp(sel) && mode_is_int(mode) && is_cmp_equality_zero(sel)) {
-		ir_relation  relation = get_Cmp_relation(sel);
-		ir_node     *cmp_r    = get_Cmp_right(sel);
-		ir_node     *cmp_l    = get_Cmp_left(sel);
-
-		if (is_And(cmp_l) && f == cmp_r) {
-			ir_node *and_l = get_And_left(cmp_l);
-			ir_node *and_r = get_And_right(cmp_l);
-
-			if ((and_l == t || and_r == t) && is_single_bit(t)) {
-				if (relation == ir_relation_equal) {
-					/* Mux((a & (1<<n)) == 0, 0, (1<<n)) == (a & (1<<n)) xor ((1<<n)) */
-					ir_node *block = get_nodes_block(n);
-					n = new_rd_Eor(get_irn_dbg_info(n), block, cmp_l, t, mode);
-					DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
-				} else {
-					/* Mux((a & (1<<n)) != 0, 0, (1<<n)) == a & (1<<n) */
-					n = cmp_l;
-					DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
-				}
-				return n;
 			}
 		}
 	}
