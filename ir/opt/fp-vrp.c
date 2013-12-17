@@ -264,6 +264,28 @@ exchange_only:
 
 			break;
 		}
+
+		case iro_Shrs: {
+			ir_mode *mode = get_irn_mode(irn);
+
+			if (get_mode_arithmetic(mode) == irma_twos_complement) {
+				unsigned mode_bits   = get_mode_size_bits(mode);
+				unsigned highest_bit = get_tarval_highest_bit(z);
+				if (highest_bit + 1U != mode_bits) {
+					dbg_info *const dbgi     = get_irn_dbg_info(irn);
+					ir_node  *const block    = get_nodes_block(irn);
+					ir_node  *const l        = get_Shrs_left(irn);
+					ir_node  *const r        = get_Shrs_right(irn);
+					ir_node  *const new_node = new_rd_Shr(dbgi, block, l, r, mode);
+					DB((dbg, LEVEL_2, "%+F(%+F, %+F) normalized to Shr\n", irn, l, r));
+					set_bitinfo(new_node, z, o);
+					exchange(irn, new_node);
+					env->modified = 1;
+				}
+			}
+
+			break;
+		}
 	}
 }
 
