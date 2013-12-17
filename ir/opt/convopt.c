@@ -55,6 +55,16 @@ static bool is_optimizable_node(const ir_node *node, ir_mode *dest_mode)
 		if (mode_is_float(get_irn_mode(node)))
 			return false;
 		return true;
+	case iro_Shr:
+	case iro_Shrs: {
+		int dest_size = get_mode_size_bits(dest_mode);
+		int size      = get_mode_size_bits(get_irn_mode(node));
+
+		if (dest_size != size)
+			return false;
+
+		/* fall through */
+	}
 	case iro_Shl: {
 		int modulo_shift = get_mode_modulo_shift(dest_mode);
 		int old_shift    = get_mode_modulo_shift(get_irn_mode(node));
@@ -136,7 +146,9 @@ static int get_conv_costs(const ir_node *node, ir_mode *dest_mode)
 
 	costs = 0;
 	// The shift count does not participate in the conv optimization
-	arity = is_Shl(node) ? 1 : get_irn_arity(node);
+	arity = is_Shl(node)  ? 1 :
+	        is_Shr(node)  ? 1 :
+	        is_Shrs(node) ? 1 : get_irn_arity(node);
 	for (i = 0; i < arity; ++i) {
 		ir_node *pred = get_irn_n(node, i);
 		costs += imin(get_conv_costs(pred, dest_mode), 1);
@@ -207,7 +219,9 @@ static ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 	ins = ALLOCAN(ir_node *, arity);
 
 	// The shift count does not participate in the conv optimization
-	conv_arity = is_Shl(node) ? 1 : arity;
+	conv_arity = is_Shl(node)  ? 1 :
+	             is_Shr(node)  ? 1 :
+	             is_Shrs(node) ? 1 : arity;
 	for (i = 0; i < conv_arity; i++) {
 		ir_node *pred = get_irn_n(node, i);
 		ir_node *transformed;
