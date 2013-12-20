@@ -11,6 +11,7 @@
 #include <assert.h>
 #include <stdbool.h>
 
+#include "adt/pdeq.h"
 #include "be.h"
 #include "cdep_t.h"
 #include "debug.h"
@@ -419,9 +420,15 @@ static void collect_phis(ir_node *node, void *env)
 	}
 }
 
+static void fill_waitq(ir_node *node, void *env) {
+	pdeq *waitq = (pdeq*)env;
+	pdeq_putr(waitq, node);
+}
+
 void opt_if_conv_cb(ir_graph *irg, arch_allow_ifconv_func callback)
 {
-	walker_env env = { .allow_ifconv = callback, .changed = false };
+	walker_env  env   = { .allow_ifconv = callback, .changed = false };
+	pdeq       *waitq = new_pdeq();
 
 	assure_irg_properties(irg,
 		IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
@@ -437,9 +444,14 @@ void opt_if_conv_cb(ir_graph *irg, arch_allow_ifconv_func callback)
 
 	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_PHI_LIST);
 
-	irg_block_walk_graph(irg, init_block_link, NULL, NULL);
+	irg_block_walk_graph(irg, init_block_link, fill_waitq, waitq);
 	irg_walk_graph(irg, collect_phis, NULL, NULL);
-	irg_block_walk_graph(irg, NULL, if_conv_walker, &env);
+
+	while (! pdeq_empty(waitq)) {
+		ir_node *n = (ir_node *)pdeq_getl(waitq);
+		if_conv_walker(n, &env);
+	}
+	del_pdeq(waitq);
 
 	ir_free_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_PHI_LIST);
 
