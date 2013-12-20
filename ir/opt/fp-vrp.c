@@ -8,22 +8,13 @@
  * @brief   Data-flow driven minimal fixpoint value range propagation
  * @author  Christoph Mallon
  */
-#include <assert.h>
-#include <stdbool.h>
-
-#include "adt/pdeq.h"
 #include "adt/obst.h"
-#include "adt/xmalloc.h"
 #include "constbits.h"
 #include "debug.h"
 #include "ircons.h"
-#include "irdom.h"
-#include "iredges.h"
 #include "irgmod.h"
 #include "irgraph_t.h"
 #include "irgwalk.h"
-#include "irmemory.h"
-#include "irnode_t.h"
 #include "iroptimize.h"
 #include "tv.h"
 

@@ -11,20 +11,16 @@
 #include <assert.h>
 #include <stdbool.h>
 
-#include "iroptimize.h"
-#include "obst.h"
-#include "irnode_t.h"
+#include "be.h"
 #include "cdep_t.h"
+#include "debug.h"
 #include "ircons.h"
 #include "irgmod.h"
 #include "irgopt.h"
 #include "irgwalk.h"
+#include "irnode_t.h"
+#include "iroptimize.h"
 #include "irtools.h"
-#include "array.h"
-#include "be.h"
-
-#include "irdump.h"
-#include "debug.h"
 
 /**
  * Environment for if-conversion.
