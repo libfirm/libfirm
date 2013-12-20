@@ -19,7 +19,7 @@
  */
 struct ir_cdep {
 	ir_node *node;  /**< A node on which the current block is control dependent on. */
-	ir_cdep    *next;  /**< Link to the next one if any. */
+	ir_cdep *next;  /**< Link to the next one if any. */
 };
 
 static inline ir_node *_get_cdep_node(const ir_cdep *cdep)
