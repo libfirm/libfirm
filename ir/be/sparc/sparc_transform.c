@@ -155,11 +155,13 @@ static ir_node *gen_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
 }
 
 typedef enum {
-	MATCH_NONE         = 0,
-	MATCH_COMMUTATIVE  = 1U << 0, /**< commutative operation. */
-	MATCH_MODE_NEUTRAL = 1U << 1, /**< the higher bits of the inputs don't
-	                                   influence the significant lower bit at
-	                                   all (for cases where mode < 32bit) */
+	MATCH_NONE          = 0,
+	MATCH_COMMUTATIVE   = 1U << 0, /**< commutative operation. */
+	MATCH_MODE_NEUTRAL  = 1U << 1, /**< the higher bits of the inputs don't
+	                                    influence the significant lower bit at
+	                                    all (for cases where mode < 32bit) */
+	MATCH_SIGN_EXT_LEFT = 1U << 7, /**< we need to sign_extend the left operand
+	                                    (for cases wheew mode < 32bit) */
 } match_flags_t;
 ENUM_BITSET(match_flags_t)
 
@@ -606,7 +608,12 @@ static ir_node *gen_helper_binop_args(ir_node *node,
 		int32_t  immediate = get_tarval_long(get_Const_tarval(op2));
 		ir_node *new_op1 = be_transform_node(op1);
 		if (! (flags & MATCH_MODE_NEUTRAL) && needs_extension(op1)) {
-			new_op1 = gen_extension(dbgi, block, new_op1, mode1);
+			if (flags & MATCH_SIGN_EXT_LEFT) {
+				int bits = get_mode_size_bits(mode1);
+				new_op1 = gen_sign_extension(dbgi, block, new_op1, bits);
+			} else {
+				new_op1 = gen_extension(dbgi, block, new_op1, mode1);
+			}
 		}
 		return new_imm(dbgi, block, new_op1, NULL, immediate);
 	}
@@ -622,7 +629,12 @@ static ir_node *gen_helper_binop_args(ir_node *node,
 
 	ir_node *new_op1 = be_transform_node(op1);
 	if (! (flags & MATCH_MODE_NEUTRAL) && needs_extension(op1)) {
-		new_op1 = gen_extension(dbgi, block, new_op1, mode1);
+		if (flags & MATCH_SIGN_EXT_LEFT) {
+			int bits = get_mode_size_bits(mode1);
+			new_op1 = gen_sign_extension(dbgi, block, new_op1, bits);
+		} else {
+			new_op1 = gen_extension(dbgi, block, new_op1, mode1);
+		}
 	}
 	return new_reg(dbgi, block, new_op1, new_op2);
 }
@@ -1315,7 +1327,7 @@ static ir_node *gen_Shrs(ir_node *node)
 	ir_mode *mode = get_irn_mode(node);
 	if (get_mode_modulo_shift(mode) != 32)
 		panic("modulo_shift!=32 not supported");
-	return gen_helper_binop(node, MATCH_NONE, new_bd_sparc_Sra_reg, new_bd_sparc_Sra_imm);
+	return gen_helper_binop(node, MATCH_SIGN_EXT_LEFT, new_bd_sparc_Sra_reg, new_bd_sparc_Sra_imm);
 }
 
 static ir_node *gen_fneg(ir_node *node, ir_mode *mode)

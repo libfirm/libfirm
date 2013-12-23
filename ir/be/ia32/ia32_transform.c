@@ -700,6 +700,13 @@ static ir_node *transform_sext(ir_node *node, ir_node *orig_node)
 	ir_mode  *mode  = get_irn_mode(node);
 	ir_node  *block = get_nodes_block(node);
 	dbg_info *dbgi  = get_irn_dbg_info(node);
+	/* normalize to an signed mode */
+	switch (get_mode_size_bits(mode)) {
+	case 8:  mode = mode_Bs; break;
+	case 16: mode = mode_Hs; break;
+	default:
+		panic("ia32: invalid mode in sest: %+F", node);
+	}
 	return create_I2I_Conv(mode, ia32_mode_gp, dbgi, block, node, orig_node);
 }
 
@@ -1077,7 +1084,7 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 
 	assert(!mode_is_float(mode));
 	assert(flags & match_immediate);
-	assert((flags & ~(match_mode_neutral | match_zero_ext | match_upconv | match_immediate)) == 0);
+	assert((flags & ~(match_mode_neutral | match_sign_ext | match_zero_ext | match_upconv | match_immediate)) == 0);
 
 	if (get_mode_modulo_shift(mode) != 32) {
 		/* TODO: implement special cases for non-modulo shifts */
@@ -1093,6 +1100,8 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 		if (get_mode_size_bits(mode) != 32) {
 			if (flags & match_upconv) {
 				new_op1 = transform_upconv(op1, node);
+			} else if (flags & match_sign_ext) {
+				new_op1 = transform_sext(op1, node);
 			} else if (flags & match_zero_ext) {
 				new_op1 = transform_zext(op1, node);
 			} else {
@@ -1844,7 +1853,7 @@ static ir_node *gen_Shrs(ir_node *node)
 	}
 
 	return gen_shift_binop(node, left, right, new_bd_ia32_Sar,
-	                       match_immediate | match_upconv);
+	                       match_immediate | match_sign_ext);
 }
 
 /**
