@@ -793,7 +793,7 @@ void set_entity_parameter_number(ir_entity *entity, size_t n)
 
 unsigned get_entity_vtable_number(const ir_entity *ent)
 {
-	assert(is_method_entity((ir_entity *)ent));
+	assert(is_method_entity(ent));
 	return ent->attr.mtd_attr.vtable_number;
 }
 
