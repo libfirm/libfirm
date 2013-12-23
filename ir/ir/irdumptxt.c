@@ -541,13 +541,16 @@ static void dump_entity_to_file_prefix(FILE *const F,
 		}
 
 		if (is_Method_type(type)) {
-			unsigned        const mask = get_entity_additional_properties(ent);
-			unsigned        const cc   = get_method_calling_convention(type);
-			const ir_graph *const irg  = get_entity_irg(ent);
+			const unsigned mask = get_entity_additional_properties(ent);
+			const unsigned cc   = get_method_calling_convention(type);
 
-			if (irg != NULL) {
-				fprintf(F, "%s  maximum node index:   %u\n", prefix,
-				        get_irg_last_idx(irg));
+			if (is_method_entity(ent)) {
+				const ir_graph *const irg = get_entity_irg(ent);
+
+				if (irg != NULL) {
+					fprintf(F, "%s  maximum node index:   %u\n", prefix,
+					        get_irg_last_idx(irg));
+				}
 			}
 
 			fprintf(F, "%s  additional prop: ", prefix);
@@ -557,8 +560,10 @@ static void dump_entity_to_file_prefix(FILE *const F,
 			fprintf(F, "%s  calling convention: ", prefix);
 			print_bitflags(F, cc_names, (unsigned)cc);
 
-			fprintf(F, "\n%s  vtable number:        %u\n", prefix,
-			        get_entity_vtable_number(ent));
+			if (is_method_entity(ent)) {
+				fprintf(F, "\n%s  vtable number:        %u\n", prefix,
+					get_entity_vtable_number(ent));
+			}
 		}
 	} else {  /* no entattrs */
 		ir_fprintf(F, "%s %+F: %s", prefix, type, get_entity_name(ent));
@@ -606,7 +611,7 @@ static void dump_entity_to_file_prefix(FILE *const F,
 				fprintf(F, "\n%s  bitfield size: %u", prefix, bitfield_size);
 			}
 		}
-		if (is_Method_type(type)) {
+		if (is_Method_type(type) && is_method_entity(ent)) {
 			const ir_graph *irg = get_entity_irg(ent);
 			if (irg != NULL) {
 				fprintf(F, "\n%s  irg = %ld", prefix, get_irg_graph_nr(irg));
