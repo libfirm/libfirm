@@ -842,7 +842,7 @@ void sc_mod(const sc_word *value1, const sc_word *value2, sc_word *buffer)
 
 void sc_shlI(const sc_word *value, unsigned shift_count, sc_word *buffer)
 {
-	if (shift_count >= calc_buffer_size*SC_BITS) {
+	if (shift_count >= calc_buffer_size * SC_BITS) {
 		sc_zero(buffer);
 		return;
 	}
@@ -852,15 +852,15 @@ void sc_shlI(const sc_word *value, unsigned shift_count, sc_word *buffer)
 	unsigned const shift_words = shift_count / SC_BITS;
 	if (shift_bits == 0) {
 		for (unsigned counter = calc_buffer_size; counter-- > shift_words; ) {
-			buffer[counter] = value[counter-shift_words];
+			buffer[counter] = value[counter - shift_words];
 		}
 	} else {
 		sc_word val = value[calc_buffer_size - shift_words - 1];
 		for (unsigned counter = calc_buffer_size; counter-- > shift_words; ) {
-			unsigned nextpos = counter-shift_words-1;
+			unsigned nextpos = counter - shift_words - 1;
 			sc_word  next    = nextpos < calc_buffer_size ? value[nextpos] : 0;
 			buffer[counter] = SC_RESULT(val << shift_bits)
-			                | SC_RESULT(next >> (SC_BITS-shift_bits));
+			                | SC_RESULT(next >> (SC_BITS - shift_bits));
 			val = next;
 		}
 	}
