@@ -855,7 +855,7 @@ void sc_shlI(const sc_word *value, unsigned shift_count, sc_word *buffer)
 			buffer[counter] = value[counter-shift_words];
 		}
 	} else {
-		sc_word val  = value[calc_buffer_size-shift_words];
+		sc_word val = value[calc_buffer_size - shift_words - 1];
 		for (unsigned counter = calc_buffer_size; counter-- > shift_words; ) {
 			unsigned nextpos = counter-shift_words-1;
 			sc_word  next    = nextpos < calc_buffer_size ? value[nextpos] : 0;
