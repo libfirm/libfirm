@@ -351,7 +351,8 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt,
 			}
 
 			edges_notify_edge_kind(src, pos, bl_tgt, bl_old, EDGE_KIND_BLOCK, irg);
-		} else if (get_irn_mode(src) == mode_X && old_tgt != NULL && is_Block(old_tgt)) {
+		} else if (get_irn_mode(src) == mode_X && old_tgt != NULL && pos == -1) {
+			assert(is_Block(old_tgt));
 			/* moving a jump node from one block to another */
 			foreach_out_edge_kind_safe(old_tgt, edge, EDGE_KIND_BLOCK) {
 				ir_node *succ       = get_edge_src_irn(edge);
