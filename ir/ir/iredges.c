@@ -114,12 +114,6 @@ static const ir_edge_kind_info_t edge_kind_info[EDGE_KIND_LAST+1] = {
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 /**
- * This flag is set to 1, if the edges get initialized for an irg.
- * Then register additional data is forbidden.
- */
-static int edges_used = 0;
-
-/**
  * If set to 1, the list heads are checked every time an edge is changed.
  */
 static int edges_dbg = 0;
@@ -138,7 +132,6 @@ void edges_init_graph_kind(ir_graph *irg, ir_edge_kind_t kind)
 		irg_edge_info_t *info = get_irg_edge_info(irg, kind);
 		size_t amount = get_irg_last_idx(irg) * 5 / 4;
 
-		edges_used = 1;
 		if (info->allocated) {
 			amount = ir_edgeset_size(&info->edges);
 			ir_edgeset_destroy(&info->edges);
