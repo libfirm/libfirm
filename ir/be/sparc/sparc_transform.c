@@ -161,7 +161,7 @@ typedef enum {
 	                                    influence the significant lower bit at
 	                                    all (for cases where mode < 32bit) */
 	MATCH_SIGN_EXT_LEFT = 1U << 7, /**< we need to sign_extend the left operand
-	                                    (for cases wheew mode < 32bit) */
+	                                    (for cases when mode < 32bit) */
 } match_flags_t;
 ENUM_BITSET(match_flags_t)
 

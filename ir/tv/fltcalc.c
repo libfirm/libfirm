@@ -34,7 +34,7 @@ struct fp_value {
 	bool               sign;
 	/** exp[value_size] + mant[value_size].
 	 * Mantissa has an explicit one at the beginning (contrary to many
-	 * floating point formats) */
+	 * floatingpoint formats) */
 	sc_word            value[];
 };
 

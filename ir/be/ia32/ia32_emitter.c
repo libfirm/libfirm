@@ -1919,7 +1919,7 @@ static void bemit_modrm8(reg_modifier_t high_part, const arch_register_t *reg)
 }
 
 /**
- * Calculate the size of an signed immediate in bytes.
+ * Calculate the size of a signed immediate in bytes.
  *
  * @param offset  an offset
  */

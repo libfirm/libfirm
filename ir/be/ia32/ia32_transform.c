@@ -700,7 +700,7 @@ static ir_node *transform_sext(ir_node *node, ir_node *orig_node)
 	ir_mode  *mode  = get_irn_mode(node);
 	ir_node  *block = get_nodes_block(node);
 	dbg_info *dbgi  = get_irn_dbg_info(node);
-	/* normalize to an signed mode */
+	/* normalize to a signed mode */
 	switch (get_mode_size_bits(mode)) {
 	case 8:  mode = mode_Bs; break;
 	case 16: mode = mode_Hs; break;
