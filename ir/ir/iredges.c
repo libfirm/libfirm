@@ -59,18 +59,18 @@ size_t ir_edgeset_size(const ir_edgeset_t *self);
  * This abstraction is necessary since different edge kind have
  * different methods of setting edges.
  */
-typedef void (set_edge_func_t)(ir_node *src, int pos, ir_node *tgt);
+typedef void set_edge_func_t(ir_node *src, int pos, ir_node *tgt);
 
 /**
  * A function that returns the "arity" of a given edge kind
  * for a node.
  */
-typedef int (get_edge_src_arity_func_t)(const ir_node *src);
+typedef int get_edge_src_arity_func_t(const ir_node *src);
 
 /**
  * A function that returns the pos'th edge of a given edge kind for a node.
  */
-typedef ir_node *(get_edge_src_n_func_t)(const ir_node *src, int pos);
+typedef ir_node *get_edge_src_n_func_t(const ir_node *src, int pos);
 
 /**
  * Additional data for an edge kind.
