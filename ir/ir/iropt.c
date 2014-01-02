@@ -3050,7 +3050,7 @@ static ir_node *transform_node_Mod(ir_node *n)
 
 		if (a == b && value_not_zero(a, &dummy)) {
 			/* BEWARE: we can optimize a%a to 0 only if this cannot cause a exception */
-			value = new_r_Const(irg, get_mode_null(mode));
+			value = create_zero_const(irg, mode);
 			DBG_OPT_CSTEVAL(n, value);
 			goto make_tuple;
 		} else {
@@ -3059,7 +3059,7 @@ static ir_node *transform_node_Mod(ir_node *n)
 
 				if (tv == get_mode_minus_one(mode)) {
 					/* a % -1 = 0 */
-					value = new_r_Const(irg, get_mode_null(mode));
+					value = create_zero_const(irg, mode);
 					DBG_OPT_CSTEVAL(n, value);
 					goto make_tuple;
 				}
@@ -3823,7 +3823,7 @@ static ir_node *transform_node_Proj_Mod(ir_node *proj)
 				/* a % a = 0 if a != 0 */
 				ir_graph *irg  = get_irn_irg(proj);
 				ir_mode  *mode = get_irn_mode(proj);
-				ir_node  *res  = new_r_Const(irg, get_mode_null(mode));
+				ir_node  *res  = create_zero_const(irg, mode);
 
 				DBG_OPT_CSTEVAL(mod, res);
 				return res;
@@ -4810,7 +4810,7 @@ static ir_node *transform_node_shift(ir_node *n)
 			return new_rd_Shrs(dbgi, block, get_binop_left(left), cnst, mode);
 		}
 
-		return new_r_Const(irg, get_mode_null(mode));
+		return create_zero_const(irg, mode);
 	}
 
 	/* ok, we can replace it */
@@ -6151,7 +6151,7 @@ handle_tv:;
 					return res;
 				return NULL;
 			}
-			return new_r_Const(irg, get_mode_null(mode));
+			return create_zero_const(irg, mode);
 		}
 	}
 	}
