@@ -1652,6 +1652,12 @@ static ir_node *create_zero_const(ir_graph *irg, ir_mode *mode)
 	return cnst;
 }
 
+static ir_node *create_bool_const(ir_graph *const irg, bool const val)
+{
+	ir_tarval *const tv = val ? get_tarval_b_true() : get_tarval_b_false();
+	return new_r_Const(irg, tv);
+}
+
 static bool is_shiftop(const ir_node *n)
 {
 	return is_Shl(n) || is_Shr(n) || is_Shrs(n);
@@ -4416,8 +4422,7 @@ is_bittest: {
 						if (mask != tv) {
 							/* TODO: move to constant evaluation */
 							ir_graph *irg = get_irn_irg(n);
-							tv = relation == ir_relation_equal ? get_tarval_b_false() : get_tarval_b_true();
-							c1 = new_r_Const(irg, tv);
+							c1 = create_bool_const(irg, relation != ir_relation_equal);
 							DBG_OPT_CSTEVAL(n, c1);
 							return c1;
 						}
@@ -4454,8 +4459,7 @@ is_bittest: {
 						if (! tarval_is_null(get_Const_tarval(c1))) {
 							/* TODO: move to constant evaluation */
 							ir_graph *irg = get_irn_irg(n);
-							tv = relation == ir_relation_equal ? get_tarval_b_false() : get_tarval_b_true();
-							c1 = new_r_Const(irg, tv);
+							c1 = create_bool_const(irg, relation != ir_relation_equal);
 							DBG_OPT_CSTEVAL(n, c1);
 							return c1;
 						}
@@ -4478,8 +4482,7 @@ is_bittest: {
 
 						if (tarval_and(tv, cmask) != tv) {
 							/* condition not met */
-							tv = relation == ir_relation_equal ? get_tarval_b_false() : get_tarval_b_true();
-							c1 = new_r_Const(irg, tv);
+							c1 = create_bool_const(irg, relation != ir_relation_equal);
 							DBG_OPT_CSTEVAL(n, c1);
 							return c1;
 						}
@@ -4509,8 +4512,7 @@ is_bittest: {
 
 						if (tarval_and(tv, cmask) != tv) {
 							/* condition not met */
-							tv = relation == ir_relation_equal ? get_tarval_b_false() : get_tarval_b_true();
-							c1 = new_r_Const(irg, tv);
+							c1 = create_bool_const(irg, relation != ir_relation_equal);
 							DBG_OPT_CSTEVAL(n, c1);
 							return c1;
 						}
@@ -4543,8 +4545,7 @@ is_bittest: {
 
 						if (!tarval_is_all_one(cond) && !tarval_is_null(cond)) {
 							/* condition not met */
-							tv = relation == ir_relation_equal ? get_tarval_b_false() : get_tarval_b_true();
-							c1 = new_r_Const(irg, tv);
+							c1 = create_bool_const(irg, relation != ir_relation_equal);
 							DBG_OPT_CSTEVAL(n, c1);
 							return c1;
 						}
