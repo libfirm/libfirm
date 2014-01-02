@@ -5534,8 +5534,7 @@ static ir_node *transform_Mux_set(ir_node *n, ir_relation relation)
 
 					ir_graph  *irg          = get_irn_irg(block);
 					unsigned   shift_amount = get_tarval_highest_bit(tv);
-					ir_tarval *tv           = new_tarval_from_long(shift_amount, mode_Iu);
-					ir_node   *shift_cnt    = new_rd_Const(dbgi, irg, tv);
+					ir_node   *shift_cnt    = new_rd_Const_long(dbgi, irg, mode_Iu, shift_amount);
 					ir_node   *shift        = new_rd_Shr(dbgi, block, a, shift_cnt, calc_mode);
 					ir_tarval *one          = get_mode_one(calc_mode);
 					ir_node   *c            = new_rd_Const(dbgi, irg, one);
@@ -5636,8 +5635,7 @@ static ir_node *transform_Mux_set(ir_node *n, ir_relation relation)
 
 	ir_graph  *irg       = get_irn_irg(block);
 	unsigned   bits      = get_mode_size_bits(calc_mode);
-	ir_tarval *tv        = new_tarval_from_long(bits - 1, mode_Iu);
-	ir_node   *shift_cnt = new_rd_Const(dbgi, irg, tv);
+	ir_node   *shift_cnt = new_rd_Const_long(dbgi, irg, mode_Iu, bits - 1);
 	ir_node   *shift     = new_rd_Shr(dbgi, block, sub, shift_cnt, calc_mode);
 	if (calc_mode != dest_mode) {
 		shift = new_rd_Conv(dbgi, block, shift, dest_mode);
