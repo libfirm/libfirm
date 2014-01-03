@@ -107,7 +107,7 @@ static const ir_edge_kind_info_t edge_kind_info[EDGE_KIND_LAST+1] = {
 	{ "dependency",  set_irn_dep,  0, get_irn_n_deps, get_irn_dep    }
 };
 
-#define foreach_tgt(irn, i, n, kind) for (i = edge_kind_info[kind].first_idx, n = edge_kind_info[kind].get_arity(irn); i < n; ++i)
+#define foreach_tgt(irn, i, n, kind) for (int i = edge_kind_info[kind].first_idx, n = edge_kind_info[kind].get_arity(irn); i < n; ++i)
 #define get_n(irn, pos, kind)        (edge_kind_info[kind].get_n(irn, pos))
 #define get_kind_str(kind)           (edge_kind_info[kind].name)
 
@@ -371,7 +371,6 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt,
  */
 static void edges_node_deleted_kind(ir_node *old, ir_edge_kind_t kind)
 {
-	int i, n;
 	ir_graph *irg = get_irn_irg(old);
 
 	if (!edges_activated_kind(irg, kind))
@@ -395,7 +394,6 @@ static void edges_node_deleted_kind(ir_node *old, ir_edge_kind_t kind)
 static void edges_node_revival_kind(ir_node *irn, ir_edge_kind_t kind)
 {
 	irn_edge_info_t *info;
-	int             i, n;
 	ir_graph        *irg = get_irn_irg(irn);
 
 	if (!edges_activated_kind(irg, kind))
@@ -426,7 +424,6 @@ typedef struct build_walker {
 static void build_edges_walker(ir_node *irn, void *data)
 {
 	build_walker          *w = (build_walker*)data;
-	int                   i, n;
 	ir_edge_kind_t        kind = w->kind;
 	ir_graph              *irg = get_irn_irg(irn);
 
@@ -593,7 +590,6 @@ static void verify_set_presence(ir_node *irn, void *data)
 	build_walker *w     = (build_walker*)data;
 	ir_graph     *irg   = get_irn_irg(irn);
 	ir_edgeset_t *edges = &get_irg_edge_info(irg, w->kind)->edges;
-	int i, n;
 
 	foreach_tgt(irn, i, n, w->kind) {
 		ir_edge_t templ, *e;
