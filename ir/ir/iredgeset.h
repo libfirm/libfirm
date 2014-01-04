@@ -63,15 +63,6 @@ ir_edge_t *ir_edgeset_insert(ir_edgeset_t *edgeset, ir_edge_t *edge);
 void ir_edgeset_remove(ir_edgeset_t *edgeset, const ir_edge_t *edge);
 
 /**
- * Tests whether a edgeset contains a specific edge
- *
- * @param edgeset   Pointer to the edgeset
- * @param edge      The pointer to find
- * @returns         1 if edgeset contains the edge, 0 else
- */
-int ir_edgeset_contains(const ir_edgeset_t *edgeset, const ir_edge_t *edge);
-
-/**
  * Initializes a edgeset iterator. Sets the iterator before the first element in
  * the edgeset.
  *
