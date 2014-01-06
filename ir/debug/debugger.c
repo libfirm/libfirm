@@ -647,41 +647,6 @@ static void set_dbg_outfile(const char *name, const char *fname)
 }
 
 /**
- * Show info about a firm thing.
- */
-static void show_firm_object(void *firm_thing)
-{
-	FILE *f = stdout;
-
-	if (firm_thing == NULL) {
-		fprintf(f, "<NULL>\n");
-		return;
-	}
-	switch (get_kind(firm_thing)) {
-	case k_BAD:
-		fprintf(f, "BAD: (%p)\n", firm_thing);
-		break;
-	case k_entity:
-		dump_entity_to_file(f, (ir_entity*)firm_thing);
-		break;
-	case k_type:
-		dump_type_to_file(f, (ir_type*)firm_thing);
-		break;
-	case k_ir_graph:
-	case k_ir_node:
-	case k_ir_mode:
-	case k_ir_op:
-	case k_tarval:
-	case k_ir_loop:
-	case k_ir_prog:
-		fprintf(f, "NIY\n");
-		break;
-	default:
-		fprintf(f, "Cannot identify thing at (%p).\n", firm_thing);
-	}
-}
-
-/**
  * Find a firm type by its number.
  */
 static ir_type *find_type_nr(long nr)
@@ -1097,33 +1062,39 @@ void firm_debug(const char *cmd)
 				goto error;
 			break;
 
-		case tok_showtype:
+		case tok_showtype: {
 			token = get_token();
 
+			ir_type *type;
 			if (token == tok_number)
-				show_firm_object(find_type_nr(lexer.number));
+				type = find_type_nr(lexer.number);
 			else if (token == tok_identifier) {
 				len = MIN(lexer.len, 1023);
 				strncpy(name, lexer.s, len);
 				name[len] = '\0';
-				show_firm_object(find_type_name(name));
+				type = find_type_name(name);
 			} else
 				goto error;
+			dump_type_to_file(stdout, type);
 			break;
+		}
 
-		case tok_showent:
+		case tok_showent: {
 			token = get_token();
 
+			ir_entity *entity;
 			if (token == tok_number)
-				show_firm_object(find_entity_nr(lexer.number));
+				entity = find_entity_nr(lexer.number);
 			else if (token == tok_identifier) {
 				len = MIN(lexer.len, 1023);
 				strncpy(name, lexer.s, len);
 				name[len] = '\0';
-				show_firm_object(find_entity_name(name));
+				entity = find_entity_name(name);
 			} else
 				goto error;
+			dump_entity_to_file(stdout, entity);
 			break;
+		}
 
 		case tok_init:
 			break_on_init = 1;
