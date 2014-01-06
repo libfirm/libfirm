@@ -58,11 +58,6 @@ typedef enum firm_kind {
 	k_tarval,                 /**< A tarval. */
 	k_ir_loop,                /**< A loop. */
 	k_ir_prog,                /**< A program representation (irp). */
-	k_ir_graph_pass,          /**< An ir_graph pass. */
-	k_ir_prog_pass,           /**< An ir_prog pass. */
-	k_ir_graph_pass_mgr,      /**< An ir_graph pass manager. */
-	k_ir_prog_pass_mgr,       /**< An ir_prog pass manager. */
-	k_ir_max                  /**< maximum value -- illegal for firm nodes. */
 } firm_kind;
 
 /**
