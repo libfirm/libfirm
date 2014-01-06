@@ -93,8 +93,6 @@ void ir_edgeset_remove_iterator(ir_edgeset_t *edgeset,
                                 const ir_edgeset_iterator_t *iterator);
 
 #define foreach_ir_edgeset(edgeset, edge, iter) \
-	for(ir_edgeset_iterator_init(&iter, edgeset), \
-        edge = ir_edgeset_iterator_next(&iter);    \
-		edge != NULL; edge = ir_edgeset_iterator_next(&iter))
+	for (ir_edgeset_iterator_init(&iter, edgeset); (edge = ir_edgeset_iterator_next(&iter)) != NULL;)
 
 #endif
