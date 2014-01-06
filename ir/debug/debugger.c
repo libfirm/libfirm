@@ -997,10 +997,16 @@ static unsigned get_token(void)
 	return c;
 }
 
+static void get_token_text(char *const buf, size_t const size)
+{
+	size_t const len = MIN(lexer.len, size - 1);
+	strncpy(buf, lexer.s, len);
+	buf[len] = '\0';
+}
+
 void firm_debug(const char *cmd)
 {
 	char name[1024], fname[1024];
-	size_t len;
 
 	init_lexer(cmd);
 
@@ -1040,9 +1046,7 @@ void firm_debug(const char *cmd)
 			if (token == tok_number)
 				break_on_nr(lexer.number, BP_ON_REMIRG);
 			else if (token == tok_identifier) {
-				len = MIN(lexer.len, 1023);
-				strncpy(name, lexer.s, len);
-				name[len] = '\0';
+				get_token_text(name, sizeof(name));
 				break_on_ident(name, BP_ON_REMIRG);
 			} else
 				goto error;
@@ -1054,9 +1058,7 @@ void firm_debug(const char *cmd)
 			if (token == tok_number)
 				break_on_nr(lexer.number, BP_ON_NEW_THING);
 			else if (token == tok_identifier) {
-				len = MIN(lexer.len, 1023);
-				strncpy(name, lexer.s, len);
-				name[len] = '\0';
+				get_token_text(name, sizeof(name));
 				break_on_ident(name, BP_ON_NEW_ENT);
 			} else
 				goto error;
@@ -1069,9 +1071,7 @@ void firm_debug(const char *cmd)
 			if (token == tok_number)
 				type = find_type_nr(lexer.number);
 			else if (token == tok_identifier) {
-				len = MIN(lexer.len, 1023);
-				strncpy(name, lexer.s, len);
-				name[len] = '\0';
+				get_token_text(name, sizeof(name));
 				type = find_type_name(name);
 			} else
 				goto error;
@@ -1086,9 +1086,7 @@ void firm_debug(const char *cmd)
 			if (token == tok_number)
 				entity = find_entity_nr(lexer.number);
 			else if (token == tok_identifier) {
-				len = MIN(lexer.len, 1023);
-				strncpy(name, lexer.s, len);
-				name[len] = '\0';
+				get_token_text(name, sizeof(name));
 				entity = find_entity_name(name);
 			} else
 				goto error;
@@ -1122,9 +1120,7 @@ void firm_debug(const char *cmd)
 			token = get_token();
 			if (token != tok_identifier)
 				goto error;
-			len = MIN(lexer.len, 1023);
-			strncpy(name, lexer.s, len);
-			name[len] = '\0';
+			get_token_text(name, sizeof(name));
 
 			token = get_token();
 			if (token != tok_number)
@@ -1136,9 +1132,7 @@ void firm_debug(const char *cmd)
 			token = get_token();
 			if (token != tok_identifier)
 				goto error;
-			len = MIN(lexer.len, 1023);
-			strncpy(name, lexer.s, len);
-			name[len] = '\0';
+			get_token_text(name, sizeof(name));
 
 			token = get_token();
 			if (token != tok_number)
@@ -1150,16 +1144,12 @@ void firm_debug(const char *cmd)
 			token = get_token();
 			if (token != tok_identifier)
 				goto error;
-			len = MIN(lexer.len, 1023);
-			strncpy(name, lexer.s, len);
-			name[len] = '\0';
+			get_token_text(name, sizeof(name));
 
 			token = get_token();
 			if (token != tok_identifier)
 				goto error;
-			len = MIN(lexer.len, 1023);
-			strncpy(fname, lexer.s, len);
-			fname[len] = '\0';
+			get_token_text(fname, sizeof(fname));
 			set_dbg_outfile(name, fname);
 			break;
 
@@ -1167,9 +1157,7 @@ void firm_debug(const char *cmd)
 			token = get_token();
 			if (token != tok_identifier)
 				goto error;
-			len = MIN(lexer.len, 1023);
-			strncpy(name, lexer.s, len);
-			name[len] = '\0';
+			get_token_text(name, sizeof(name));
 			irg_name(name);
 			break;
 
@@ -1190,9 +1178,7 @@ void firm_debug(const char *cmd)
 			token = get_token();
 			if (token != tok_identifier)
 				goto error;
-			len = MIN(lexer.len, 1023);
-			strncpy(name, lexer.s, len);
-			name[len] = '\0';
+			get_token_text(name, sizeof(name));
 			irg_ld_name(name);
 			break;
 
@@ -1200,9 +1186,7 @@ void firm_debug(const char *cmd)
 			token = get_token();
 			if (token != tok_identifier)
 				goto error;
-			len = MIN(lexer.len, 1023);
-			strncpy(name, lexer.s, len);
-			name[len] = '\0';
+			get_token_text(name, sizeof(name));
 			ir_set_dump_filter(name);
 			break;
 
