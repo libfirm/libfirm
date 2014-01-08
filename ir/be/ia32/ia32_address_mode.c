@@ -255,6 +255,15 @@ static bool eat_shl(ia32_address_t *addr, ir_node *node)
 	return true;
 }
 
+static void set_frame_addr(ia32_address_t *const addr, ir_node *const frame)
+{
+	assert(!addr->base);
+	assert(!addr->frame_entity);
+	addr->base         = be_get_FrameAddr_frame(frame);
+	addr->frame_entity = be_get_FrameAddr_entity(frame);
+	addr->use_frame    = 1;
+}
+
 void ia32_create_address_mode(ia32_address_t *addr, ir_node *node,
                               ia32_create_am_flags_t flags)
 {
@@ -306,11 +315,7 @@ void ia32_create_address_mode(ia32_address_t *addr, ir_node *node,
 		eat_immediate(addr, node, 0);
 		return;
 	} else if (be_is_FrameAddr(node)) {
-		assert(addr->base == NULL);
-		assert(addr->frame_entity == NULL);
-		addr->base         = be_get_FrameAddr_frame(node);
-		addr->use_frame    = 1;
-		addr->frame_entity = be_get_FrameAddr_entity(node);
+		set_frame_addr(addr, node);
 		return;
 	} else if (is_Add(node)) {
 		ir_node *left  = get_Add_left(node);
@@ -331,20 +336,12 @@ void ia32_create_address_mode(ia32_address_t *addr, ir_node *node,
 		}
 		if (left != NULL && be_is_FrameAddr(left)
 		    && !ia32_is_non_address_mode_node(left)) {
-			assert(addr->base == NULL);
-			assert(addr->frame_entity == NULL);
-			addr->base         = be_get_FrameAddr_frame(left);
-			addr->use_frame    = 1;
-			addr->frame_entity = be_get_FrameAddr_entity(left);
-			left               = NULL;
+			set_frame_addr(addr, left);
+			left = NULL;
 		} else if (right != NULL && be_is_FrameAddr(right)
 		           && !ia32_is_non_address_mode_node(right)) {
-			assert(addr->base == NULL);
-			assert(addr->frame_entity == NULL);
-			addr->base         = be_get_FrameAddr_frame(right);
-			addr->use_frame    = 1;
-			addr->frame_entity = be_get_FrameAddr_entity(right);
-			right              = NULL;
+			set_frame_addr(addr, right);
+			right = NULL;
 		}
 
 		if (left != NULL) {
