@@ -10,6 +10,7 @@
  */
 #include <limits.h>
 
+#include "beutil.h"
 #include "bitfiddle.h"
 #include "xmalloc.h"
 #include "tv.h"
@@ -67,7 +68,7 @@ static void sparc_emit_immediate(int32_t value, ir_entity *entity)
 		assert(sparc_is_value_imm_encodeable(value));
 		be_emit_irprintf("%d", value);
 	} else {
-		if (get_entity_owner(entity) == get_tls_type()) {
+		if (is_tls_entity(entity)) {
 			be_emit_cstring("%tle_lox10(");
 		} else {
 			be_emit_cstring("%lo(");
@@ -89,7 +90,7 @@ static void sparc_emit_high_immediate(ir_node const *node)
 		uint32_t value = (uint32_t) attr->immediate_value;
 		be_emit_irprintf("%%hi(0x%X)", value);
 	} else {
-		if (get_entity_owner(entity) == get_tls_type()) {
+		if (is_tls_entity(entity)) {
 			be_emit_cstring("%tle_hix22(");
 		} else {
 			be_emit_cstring("%hi(");

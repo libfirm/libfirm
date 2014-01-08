@@ -11,7 +11,9 @@
 #ifndef FIRM_BE_BEUTIL_H
 #define FIRM_BE_BEUTIL_H
 
+#include "entity_t.h"
 #include "firm_types.h"
+#include "irprog_t.h"
 
 /**
  * Convenient block getter.
@@ -53,5 +55,10 @@ ir_node **be_get_cfgpostorder(ir_graph *irg);
  * (it is often known that there is exactly 1 successor anyway)
  */
 ir_node *get_first_block_succ(const ir_node *block);
+
+static inline bool is_tls_entity(ir_entity *const ent)
+{
+	return get_entity_owner(ent) == get_tls_type();
+}
 
 #endif

@@ -755,7 +755,7 @@ static ir_node *make_tls_offset(dbg_info *dbgi, ir_node *block,
 static ir_node *make_address(dbg_info *dbgi, ir_node *block, ir_entity *entity,
                              int32_t offset)
 {
-	if (get_entity_owner(entity) == get_tls_type()) {
+	if (is_tls_entity(entity)) {
 		ir_graph *irg     = get_irn_irg(block);
 		ir_node  *g7      = get_g7(irg);
 		ir_node  *offsetn = make_tls_offset(dbgi, block, entity, offset);
@@ -804,7 +804,7 @@ static void match_address(ir_node *ptr, address_t *address, bool use_ptr2)
 		ir_node   *block     = get_nodes_block(ptr);
 		ir_node   *new_block = be_transform_node(block);
 
-		if (get_entity_owner(sc_entity) == get_tls_type()) {
+		if (is_tls_entity(sc_entity)) {
 			if (!use_ptr2) {
 				goto only_offset;
 			} else {

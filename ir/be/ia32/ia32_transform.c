@@ -337,7 +337,7 @@ static ir_node *gen_SymConst(ir_node *node)
 
 	ir_entity *entity = get_SymConst_entity(node);
 	ir_node   *cnst;
-	if (get_entity_owner(entity) == get_tls_type()) {
+	if (is_tls_entity(entity)) {
 		ir_node *tls_base = new_bd_ia32_LdTls(NULL, block);
 		ir_node *lea      = new_bd_ia32_Lea(dbgi, block, tls_base, noreg_GP);
 		set_ia32_am_sc(lea, entity);

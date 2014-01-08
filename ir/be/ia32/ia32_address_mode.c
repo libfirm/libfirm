@@ -10,6 +10,7 @@
  * @author      Matthias Braun
  */
 #include "beirg.h"
+#include "beutil.h"
 #include "ia32_address_mode.h"
 #include "ia32_transform.h"
 
@@ -127,7 +128,7 @@ static void eat_immediate(ia32_address_t *addr, ir_node *node, bool negate)
 			panic("Internal error: more than 1 symconst in address calculation");
 		}
 		addr->symconst_ent = get_SymConst_entity(node);
-		if (get_entity_owner(addr->symconst_ent) == get_tls_type())
+		if (is_tls_entity(addr->symconst_ent))
 			addr->tls_segment = true;
 		assert(!negate);
 		break;

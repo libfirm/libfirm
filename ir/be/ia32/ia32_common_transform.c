@@ -10,6 +10,7 @@
  * @author      Matthias Braun, Sebastian Buchwald
  */
 #include "bearch_ia32_t.h"
+#include "beutil.h"
 #include "error.h"
 #include "ircons.h"
 #include "irprintf.h"
@@ -801,8 +802,7 @@ ir_node *ia32_try_create_Immediate(ir_node *node, char immediate_constraint_type
 	if (is_Const(node)) {
 		cnst     = node;
 		symconst = NULL;
-	} else if (is_SymConst_addr_ent(node)
-			&& get_entity_owner(get_SymConst_entity(node)) != get_tls_type()) {
+	} else if (is_SymConst_addr_ent(node) && !is_tls_entity(get_SymConst_entity(node))) {
 		cnst     = NULL;
 		symconst = node;
 	} else if (is_Add(node)) {

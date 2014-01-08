@@ -188,7 +188,7 @@ static void ia32_emit_entity(ir_entity *entity, int no_pic_adjust)
 {
 	be_gas_emit_entity(entity);
 
-	if (get_entity_owner(entity) == get_tls_type()) {
+	if (is_tls_entity(entity)) {
 		if (!entity_has_definition(entity)) {
 			be_emit_cstring("@INDNTPOFF");
 		} else {
@@ -1842,7 +1842,7 @@ static void bemit_entity(ir_entity *entity, int offset, bool is_relative)
 	be_emit_cstring("\t.long ");
 	be_gas_emit_entity(entity);
 
-	if (get_entity_owner(entity) == get_tls_type()) {
+	if (is_tls_entity(entity)) {
 		if (!entity_has_definition(entity)) {
 			be_emit_cstring("@INDNTPOFF");
 		} else {
