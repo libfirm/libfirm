@@ -915,13 +915,8 @@ static int sim_store(x87_state *state, ir_node *n)
 				ir_node *const vfld  = new_bd_ia32_fld(NULL, block, get_irn_n(n, 0), get_irn_n(n, 1), mem, mode);
 
 				/* copy all attributes */
-				set_ia32_frame_ent(vfld, get_ia32_frame_ent(n));
-				if (is_ia32_use_frame(n))
-					set_ia32_use_frame(vfld);
+				ia32_copy_am_attrs(vfld, n);
 				set_ia32_op_type(vfld, ia32_AddrModeS);
-				add_ia32_am_offs_int(vfld, get_ia32_am_offs_int(n));
-				set_ia32_am_sc(vfld, get_ia32_am_sc(n));
-				set_ia32_ls_mode(vfld, mode);
 
 				ir_node *const rproj = new_r_Proj(vfld, mode, pn_ia32_fld_res);
 				ir_node *const mproj = new_r_Proj(vfld, mode_M, pn_ia32_fld_M);

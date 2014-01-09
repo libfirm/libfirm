@@ -5436,11 +5436,7 @@ static void postprocess_fp_call_results(void)
 					ir_mode  *mode  = get_ia32_ls_mode(succ);
 					ir_node  *st    = new_bd_ia32_fst(db, block, base, idx,
 					                                  mem, value, mode);
-					//ir_node  *mem = new_r_Proj(st, mode_M, pn_ia32_fst_M);
-					set_ia32_am_offs_int(st, get_ia32_am_offs_int(succ));
-					if (is_ia32_use_frame(succ))
-						set_ia32_use_frame(st);
-					set_ia32_frame_ent(st, get_ia32_frame_ent(succ));
+					ia32_copy_am_attrs(st, succ);
 					set_irn_pinned(st, get_irn_pinned(succ));
 					set_ia32_op_type(st, ia32_AddrModeD);
 
