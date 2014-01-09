@@ -32,6 +32,7 @@
 #include "gen_amd64_new_nodes.h"
 #include "irgwalk.h"
 #include "util.h"
+#include "irgmod.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -61,6 +62,40 @@ static bool try_swap_inputs(ir_node *node)
 		return true;
 	}
 	return false;
+}
+
+/**
+  * Transforms a Sub to a Neg + Add, which subsequently allows swapping
+  * of the inputs. The swapping is also (implicitly) done here.
+  */
+static void transform_sub_to_neg_add(ir_node *node,
+                                     const arch_register_t *out_reg)
+{
+	assert(is_amd64_Sub(node));
+
+	ir_node  *block = get_nodes_block(node);
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	const amd64_binop_addr_attr_t *attr = get_amd64_binop_addr_attr(node);
+
+	ir_node *in1  = get_irn_n(node, 0);
+	ir_node *in2  = get_irn_n(node, 1);
+
+	ir_node *neg  = new_bd_amd64_Neg(dbgi, block, in2, attr->base.insn_mode);
+	arch_set_irn_register(neg, out_reg);
+
+	sched_add_before(node, neg);
+
+	ir_node *in[2]   = { neg, in1 };
+	ir_node *add     = new_bd_amd64_Add(dbgi, block, ARRAY_SIZE(in), in, attr);
+	ir_node *add_res = new_r_Proj(add, mode_Lu, pn_amd64_Add_res);
+
+	arch_set_irn_register(add_res, out_reg);
+
+	/* exchange the add and the sub */
+	edges_reroute(node, add);
+	sched_replace(node, add);
+
+	kill_node(node);
 }
 
 static ir_node *amd64_turn_back_am(ir_node *node)
@@ -154,6 +189,11 @@ swap:;
 					bool res = try_swap_inputs(node);
 					if (res)
 						return;
+
+					if (is_amd64_Sub(node)) {
+						transform_sub_to_neg_add(node, out_reg);
+						return;
+					}
 					panic("couldn't swap inputs of %+F", node);
 				} else {
 					assert(attr->op_mode == AMD64_OP_ADDR_REG);
