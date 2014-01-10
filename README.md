@@ -48,7 +48,7 @@ some unfinished backends for SPARC, ARM
 
 Prerequisites for the build:
 
-* python (>=2.4)
+* python (2.6.x, 2.7.x or >=3.3 are supported)
 * perl
 * an ANSI C99 compiler (gcc, clang, icc are known to work)
 

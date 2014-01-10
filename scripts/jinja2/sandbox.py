@@ -15,8 +15,8 @@
 import operator
 from jinja2.environment import Environment
 from jinja2.exceptions import SecurityError
-from jinja2.utils import FunctionType, MethodType, TracebackType, CodeType, \
-     FrameType, GeneratorType
+from jinja2._compat import string_types, function_type, method_type, \
+     traceback_type, code_type, frame_type, generator_type, PY2
 
 
 #: maximum number of items a range may produce
@@ -29,6 +29,13 @@ UNSAFE_FUNCTION_ATTRIBUTES = set(['func_closure', 'func_code', 'func_dict',
 #: unsafe method attributes.  function attributes are unsafe for methods too
 UNSAFE_METHOD_ATTRIBUTES = set(['im_class', 'im_func', 'im_self'])
 
+#: unsafe generator attirbutes.
+UNSAFE_GENERATOR_ATTRIBUTES = set(['gi_frame', 'gi_code'])
+
+# On versions > python 2 the special attributes on functions are gone,
+# but they remain on methods and generators for whatever reason.
+if not PY2:
+    UNSAFE_FUNCTION_ATTRIBUTES = set()
 
 import warnings
 
@@ -90,7 +97,7 @@ def safe_range(*args):
     """A range that can't generate ranges with a length of more than
     MAX_RANGE items.
     """
-    rng = xrange(*args)
+    rng = range(*args)
     if len(rng) > MAX_RANGE:
         raise OverflowError('range too big, maximum size for range is %d' %
                             MAX_RANGE)
@@ -114,7 +121,7 @@ def is_internal_attribute(obj, attr):
     """Test if the attribute given is an internal python attribute.  For
     example this function returns `True` for the `func_code` attribute of
     python objects.  This is useful if the environment method
-    :meth:`~SandboxedEnvironment.is_safe_attribute` is overriden.
+    :meth:`~SandboxedEnvironment.is_safe_attribute` is overridden.
 
     >>> from jinja2.sandbox import is_internal_attribute
     >>> is_internal_attribute(lambda: None, "func_code")
@@ -124,20 +131,20 @@ def is_internal_attribute(obj, attr):
     >>> is_internal_attribute(str, "upper")
     False
     """
-    if isinstance(obj, FunctionType):
+    if isinstance(obj, function_type):
         if attr in UNSAFE_FUNCTION_ATTRIBUTES:
             return True
-    elif isinstance(obj, MethodType):
+    elif isinstance(obj, method_type):
         if attr in UNSAFE_FUNCTION_ATTRIBUTES or \
            attr in UNSAFE_METHOD_ATTRIBUTES:
             return True
     elif isinstance(obj, type):
         if attr == 'mro':
             return True
-    elif isinstance(obj, (CodeType, TracebackType, FrameType)):
+    elif isinstance(obj, (code_type, traceback_type, frame_type)):
         return True
-    elif isinstance(obj, GeneratorType):
-        if attr == 'gi_frame':
+    elif isinstance(obj, generator_type):
+        if attr in UNSAFE_GENERATOR_ATTRIBUTES:
             return True
     return attr.startswith('__')
 
@@ -299,7 +306,7 @@ class SandboxedEnvironment(Environment):
         try:
             return obj[argument]
         except (TypeError, LookupError):
-            if isinstance(argument, basestring):
+            if isinstance(argument, string_types):
                 try:
                     attr = str(argument)
                 except Exception:
