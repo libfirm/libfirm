@@ -18,11 +18,12 @@
 #include <string.h>
 
 /* Includes for alloca() */
-#ifdef _WIN32
+#if defined(__GNUC__) && !defined(alloca)
+#define alloca(x)       __builtin_alloca(x)
+#elif defined(__WIN32)
 #include <malloc.h>
-#endif
-#if defined(__linux__) || defined(__APPLE__)
-#include <alloca.h>
+#else
+#error do not know how to get alloca
 #endif
 
 #include "../begin.h"
