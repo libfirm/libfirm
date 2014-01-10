@@ -152,7 +152,7 @@ def format_escape_keywords(word):
 def format_parameters(string):
 	return format_arguments(string, voidwhenempty = True)
 
-env = Environment(loader=FileSystemLoader([".", "/"]))
+env = Environment(loader=FileSystemLoader([".", "/"]), keep_trailing_newline=True)
 env.filters['a_an']            = format_a_an
 env.filters['parameterlist']   = format_parameterlist
 env.filters['nodearguments']   = format_nodearguments
@@ -286,9 +286,7 @@ def main(argv):
 	env.globals['warning'] = "/* Warning: automatically generated file */"
 
 	template = env.get_template(templatefile)
-	result = template.render().encode("utf-8")
-	if result[-1] != "\n":
-		result += "\n"
+	result = template.render()
 	sys.stdout.write(result)
 
 if __name__ == "__main__":

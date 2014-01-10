@@ -26,7 +26,7 @@ def format_block(node):
 	else:
 		return "block"
 
-env = Environment(loader=FileSystemLoader([".", "/"]))
+env = Environment(loader=FileSystemLoader([".", "/"]), keep_trailing_newline=True)
 env.filters['args']      = format_args
 env.filters['block']     = format_block
 env.filters['arguments'] = format_arguments
@@ -159,7 +159,8 @@ def main(argv):
 	env.globals['hasattr'] = hasattr
 
 	template = env.get_template(templatefile)
-	sys.stdout.write(template.render().encode("utf-8"))
+	result = template.render()
+	sys.stdout.write(result)
 
 if __name__ == "__main__":
 	main(sys.argv)
