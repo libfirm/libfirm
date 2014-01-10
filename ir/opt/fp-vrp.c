@@ -177,6 +177,7 @@ exchange_only:
 			if (relation != new_relation) {
 				dbg_info *dbgi = get_irn_dbg_info(irn);
 				ir_node  *cmp  = new_rd_Cmp(dbgi, block, l, r, new_relation);
+				mark_irn_visited(cmp);
 				DB((dbg, LEVEL_2, "Simplified relation of %+F(%+F, %+F)\n", irn, l, r));
 				set_bitinfo(cmp, z, o);
 				exchange(irn, cmp);
@@ -198,6 +199,7 @@ exchange_only:
 				ir_node  *block    = get_nodes_block(irn);
 				ir_mode  *mode     = get_irn_mode(irn);
 				ir_node  *new_node = new_rd_Add(dbgi, block, l, r, mode);
+				mark_irn_visited(new_node);
 				DB((dbg, LEVEL_2, "%+F(%+F, %+F) normalized to Add\n", irn, l, r));
 				set_bitinfo(new_node, z, o);
 				exchange(irn, new_node);
@@ -247,6 +249,7 @@ exchange_only:
 				ir_node  *block    = get_nodes_block(irn);
 				ir_mode  *mode     = get_irn_mode(irn);
 				ir_node  *new_node = new_rd_Add(dbgi, block, l, r, mode);
+				mark_irn_visited(new_node);
 				DB((dbg, LEVEL_2, "%+F(%+F, %+F) normalized to Add\n", irn, l, r));
 				set_bitinfo(new_node, z, o);
 				exchange(irn, new_node);
@@ -268,6 +271,7 @@ exchange_only:
 					ir_node  *const l        = get_Shrs_left(irn);
 					ir_node  *const r        = get_Shrs_right(irn);
 					ir_node  *const new_node = new_rd_Shr(dbgi, block, l, r, mode);
+					mark_irn_visited(new_node);
 					DB((dbg, LEVEL_2, "%+F(%+F, %+F) normalized to Shr\n", irn, l, r));
 					set_bitinfo(new_node, z, o);
 					exchange(irn, new_node);
