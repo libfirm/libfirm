@@ -83,12 +83,22 @@ typedef struct {
 	get_edge_src_n_func_t     *get_n;      /**< the get_n function */
 } ir_edge_kind_info_t;
 
+/* Walks back from n until it finds a real cf op. */
+static ir_node *get_cf_op(ir_node *n)
+{
+	while (!is_cfop(n) && !is_fragile_op(n) && !is_Bad(n)) {
+		n = skip_Tuple(n);
+		n = skip_Proj(n);
+	}
+	return n;
+}
+
 /**
  * Get the predecessor block.
  */
 static ir_node *get_block_n(const ir_node *block, int pos)
 {
-	ir_node *cfgpred = get_Block_cfgpred(block, pos);
+	ir_node *cfgpred = get_cf_op(get_Block_cfgpred(block, pos));
 	if (is_Bad(cfgpred))
 		return NULL;
 	return get_nodes_block(cfgpred);
