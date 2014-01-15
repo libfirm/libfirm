@@ -621,12 +621,9 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 		mode = get_mode_size_bits(mode) > 32 ? mode_gp : mode_Iu;
 	} else {
 		op1 = skip_sameconv(op1);
-		if (get_mode_size_bits(mode) != 32
-			&& get_mode_size_bits(mode) != 64) {
-			panic("TODO: different modes, upconv/zext, ...");
-		} else {
-			in[arity++] = be_transform_node(op1);
-		}
+
+		/* Use 8/16bit operations instead of doing zext/upconv */
+		in[arity++] = be_transform_node(op1);
 	}
 
 	/* we can skip any convs for the shift count, as it only uses the lowest
