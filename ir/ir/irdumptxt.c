@@ -298,7 +298,7 @@ void dump_irnode_to_file(FILE *const F, const ir_node *const n)
 		break;
 	}
 	case iro_Load:
-		fprintf(F, "  mode of loaded value: %s\n", get_mode_name_ex(get_Load_mode(n)));
+		fprintf(F, "  mode of loaded value: %s\n", get_mode_name(get_Load_mode(n)));
 		fprintf(F, "  volatility: %s\n", get_volatility_name(get_Load_volatility(n)));
 		fprintf(F, "  align: %s\n", get_align_name(get_Load_unaligned(n)));
 		break;

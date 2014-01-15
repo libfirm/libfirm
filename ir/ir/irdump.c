@@ -274,13 +274,6 @@ int ir_should_dump(const char *name)
 
 /* -------------- some extended helper functions ----------------- */
 
-char const *get_mode_name_ex(ir_mode const *const mode)
-{
-	if (is_mode(mode))
-		return get_mode_name(mode);
-	return "<ERROR>";
-}
-
 #define CUSTOM_COLOR_BASE    100
 static const char *color_names[ird_color_count];
 static const char *color_rgb[ird_color_count];
@@ -713,7 +706,7 @@ void dump_node_opcode(FILE *F, const ir_node *n)
 	case iro_Load:
 		if (get_Load_unaligned(n) == align_non_aligned)
 			fprintf(F, "ua");
-		fprintf(F, "%s[%s]", get_irn_opname(n), get_mode_name_ex(get_Load_mode(n)));
+		fprintf(F, "%s[%s]", get_irn_opname(n), get_mode_name(get_Load_mode(n)));
 		break;
 	case iro_Store:
 		if (get_Store_unaligned(n) == align_non_aligned)
@@ -732,10 +725,10 @@ void dump_node_opcode(FILE *F, const ir_node *n)
 		fprintf(F, "%s", get_irn_opname(n));
 		if (get_Div_no_remainder(n))
 			fprintf(F, "RL");
-		fprintf(F, "[%s]", get_mode_name_ex(get_Div_resmode(n)));
+		fprintf(F, "[%s]", get_mode_name(get_Div_resmode(n)));
 		break;
 	case iro_Mod:
-		fprintf(F, "%s[%s]", get_irn_opname(n), get_mode_name_ex(get_Mod_resmode(n)));
+		fprintf(F, "%s[%s]", get_irn_opname(n), get_mode_name(get_Mod_resmode(n)));
 		break;
 	case iro_Builtin:
 		fprintf(F, "%s[%s]", get_irn_opname(n), get_builtin_kind_name(get_Builtin_kind(n)));
@@ -779,7 +772,7 @@ static void dump_node_mode(FILE *F, const ir_node *n)
 
 		if (mode != NULL && mode != mode_BB && mode != mode_ANY && mode != mode_BAD &&
 			(mode != mode_T || iro == iro_Proj))
-			fprintf(F, "%s", get_mode_name_ex(mode));
+			fprintf(F, "%s", get_mode_name(mode));
 	}
 }
 
