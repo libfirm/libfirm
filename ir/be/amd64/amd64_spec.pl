@@ -249,7 +249,7 @@ Neg => {
 	attr_type => "amd64_unop_attr_t",
 	attr      => "amd64_insn_mode_t insn_mode",
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_REG;\n",
-	emit      => "neg%M %S0",
+	emit      => "neg%MU %UO",
 	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
@@ -263,7 +263,7 @@ Not => {
 	outs      => [ "res" ],
 	attr_type => "amd64_unop_attr_t",
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_REG;\n",
-	emit      => "not%M %S0",
+	emit      => "not%MU %UO",
 	mode      => $mode_gp,
 	modified_flags => $status_flags
 },

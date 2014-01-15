@@ -21,9 +21,10 @@
 #include "irargs_t.h"
 #include "irprog.h"
 
-#include "besched.h"
-#include "begnuas.h"
 #include "beblocksched.h"
+#include "begnuas.h"
+#include "beirg.h"
+#include "besched.h"
 
 #include "amd64_emitter.h"
 #include "gen_amd64_emitter.h"
@@ -32,6 +33,8 @@
 #include "amd64_new_nodes.h"
 
 #include "benode.h"
+
+static be_stack_layout_t *layout;
 
 /**
  * Returns the target block for a control flow node.
@@ -181,13 +184,18 @@ static void amd64_emit_immediate32(const amd64_imm32_t *const imm)
 	}
 }
 
+static bool is_fp_relative(const ir_entity *entity)
+{
+	ir_type *owner = get_entity_owner(entity);
+	return is_frame_type(owner) || owner == layout->arg_type;
+}
+
 static void amd64_emit_addr(const ir_node *const node,
                             const amd64_addr_t *const addr)
 {
 	ir_entity *entity = addr->immediate.entity;
 	if (entity != NULL) {
-		ir_type *owner = get_entity_owner(entity);
-		if (is_frame_type(owner)) {
+		if (is_fp_relative(entity)) {
 			entity = NULL; /* only emit offset for frame entities */
 		} else {
 			be_gas_emit_entity(entity);
@@ -470,6 +478,19 @@ emit_R:
 				break;
 			}
 
+			case 'U':
+				if (*fmt == 'O') {
+					++fmt;
+					const amd64_unop_attr_t *attr
+						= get_amd64_unop_attr_const(node);
+					const arch_register_t *reg
+						= arch_get_irn_register_in(node, 0);
+					emit_register_insn_mode(reg, attr->insn_mode);
+				} else {
+					panic("invalid emit spec 'U'");
+				}
+				break;
+
 			case 'M': {
 				amd64_insn_mode_t insn_mode;
 				if (*fmt == 'S') {
@@ -481,6 +502,11 @@ emit_R:
 					++fmt;
 					const amd64_movimm_attr_t *attr
 						= get_amd64_movimm_attr_const(node);
+					insn_mode = attr->insn_mode;
+				} else if (*fmt == 'U') {
+					++fmt;
+					const amd64_unop_attr_t *attr
+						= get_amd64_unop_attr_const(node);
 					insn_mode = attr->insn_mode;
 				} else {
 					amd64_addr_attr_t const *const attr
@@ -759,6 +785,8 @@ void amd64_emit_function(ir_graph *irg)
 	ir_entity *entity = get_irg_entity(irg);
 	ir_node  **blk_sched;
 	size_t i, n;
+
+	layout = be_get_irg_stack_layout(irg);
 
 	/* register all emitter functions */
 	amd64_register_emitters();

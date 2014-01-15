@@ -55,10 +55,14 @@ static ir_entity *amd64_get_frame_entity(const ir_node *node)
 	ir_entity *entity = attr->addr.immediate.entity;
 	if (entity == NULL)
 		return NULL;
-	ir_type *parent = get_entity_owner(entity);
-	if (!is_frame_type(parent))
-		return NULL;
-	return entity;
+	ir_type *owner = get_entity_owner(entity);
+	if (is_frame_type(owner))
+		return entity;
+	ir_graph *irg = get_irn_irg(node);
+	be_stack_layout_t *layout = be_get_irg_stack_layout(irg);
+	if (owner == layout->arg_type)
+		return entity;
+	return NULL;
 }
 
 static int get_insn_mode_bytes(amd64_insn_mode_t insn_mode)
