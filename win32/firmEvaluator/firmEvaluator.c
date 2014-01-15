@@ -56,7 +56,6 @@ HRESULT copy_from_debuggee(const void *address, DEBUGHELPER *pHelper, void *dst,
 HRESULT WINAPI firm_Evaluate(DWORD dwAddress, DEBUGHELPER *pHelper, int nBase, BOOL bUniStrings, char *pResult, size_t max, DWORD reserved )
 {
   firm_kind kind;
-  int size;
   void *address = GetInitialAddress(dwAddress, pHelper);
 
   if (address == NULL) {
@@ -65,10 +64,6 @@ HRESULT WINAPI firm_Evaluate(DWORD dwAddress, DEBUGHELPER *pHelper, int nBase, B
   }
 
   if (copy_from_debuggee(address, pHelper, &kind, sizeof(kind)) != S_OK)
-    return E_FAIL;
-
-  size = get_firm_object_size(kind);
-  if (size <= 0)
     return E_FAIL;
 
   return FormatFirmObject(pHelper, nBase, kind, address, pResult, max);

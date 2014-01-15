@@ -56,35 +56,6 @@ static void debug(char *fmt, ...)
 }
 
 /**
- * return the size of a firm object
- */
-int get_firm_object_size(firm_kind kind)
-{
-  switch (kind) {
-  case k_entity:     /* an entity */
-    return sizeof(ir_entity);
-  case k_type:       /* a type */
-    return sizeof(ir_type);
-  case k_ir_graph:   /* an ir graph */
-    return sizeof(ir_graph);
-  case k_ir_node:    /* an ir node */
-    return sizeof(ir_node);
-  case k_ir_mode:    /* an ir mode */
-    return sizeof(ir_mode);
-  case k_ir_op:      /* an ir opcode */
-    return sizeof(ir_op);
-  case k_tarval:     /* a tarval */
-    return sizeof(tarval);
-  case k_ir_loop:    /* a loop */
-    return sizeof(ir_loop);
-  case k_ir_prog:    /* a program representation (irp) */
-    return sizeof(ir_prog);
-  default:
-    return 0;
-  }
-}
-
-/**
  * returns the string length of a string in debuggee space
  *
  * @return string length or negative value on error

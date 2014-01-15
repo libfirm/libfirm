@@ -28,13 +28,6 @@ typedef HRESULT (WINAPI *CUSTOMVIEWER)( void *address, DEBUGHELPER *pHelper, int
 HRESULT copy_from_debuggee(const void *address, DEBUGHELPER *pHelper, void *dst, DWORD size);
 
 /**
- * return the size of a firm object
- *
- * @kind  the firm kind
- */
-int get_firm_object_size(firm_kind kind);
-
-/**
  * Format an ident
  *
  * @param pHelper  debugger helper
