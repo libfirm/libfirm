@@ -517,7 +517,7 @@ static int try_load_after_store(ir_node *load,
 				ir_graph *const irg  = get_irn_irg(load);
 				ir_node  *const cnst = new_r_Const_long(irg, mode_Iu, shift * 8);
 				store_value = new_r_Shr(get_nodes_block(load),
-							store_value, cnst, store_mode);
+				                        store_value, cnst, store_mode);
 			}
 
 			store_value = new_r_Conv(get_nodes_block(load), store_value, load_mode);
@@ -552,9 +552,8 @@ static int try_load_after_store(ir_node *load,
 	return res | DF_CHANGED;
 }
 
-static ir_node *try_update_ptr_CopyB(ir_node *load,
-				     ir_node *load_base_ptr, long load_offset,
-				     ir_node *copyB)
+static ir_node *try_update_ptr_CopyB(ir_node *load, ir_node *load_base_ptr,
+                                     long load_offset, ir_node *copyB)
 {
 	ir_node *copyB_dst = get_CopyB_dst(copyB);
 	long     dst_offset;
@@ -599,9 +598,9 @@ static ir_node *try_update_ptr_CopyB(ir_node *load,
 	ir_graph *irg          = get_irn_irg(load);
 	ir_node  *block        = get_nodes_block(load);
 	ir_node  *new_load_ptr = new_r_Add(block,
-					   src_base_ptr,
-					   new_r_Const_long(irg, mode_Is, load_src_offset),
-					   mode_P);
+	                                   src_base_ptr,
+	                                   new_r_Const_long(irg, mode_Is, load_src_offset),
+	                                   mode_P);
 
 	return new_load_ptr;
 }
