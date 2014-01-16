@@ -585,7 +585,7 @@ static ir_node *try_update_ptr_CopyB(ir_node *load, ir_node *load_base_ptr,
 	long     load_size       = get_mode_size_bytes(load_mode);
 
 	if (load_src_offset + load_size > n_copy
-		|| load_src_offset < 0) {
+		|| load_src_offset < src_offset) {
 		return NULL;
 	}
 
