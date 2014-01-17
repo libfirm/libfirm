@@ -2620,13 +2620,19 @@ restart:
 			ir_mode *mb = get_irn_mode(op_b);
 
 			if (mode_is_reference(ma) && mode_is_reference(mb)) {
-				/* SubInt(ConvInt(aP), ConvInt(bP)) -> SubInt(aP,bP) */
-				a = op_a;
-				b = op_b;
-				set_Sub_left(n, a);
-				set_Sub_right(n, b);
+				unsigned mode_size = get_mode_size_bits(mode);
+				unsigned ma_size   = get_mode_size_bits(ma);
+				unsigned mb_size   = get_mode_size_bits(mb);
 
-				goto restart;
+				if (ma_size == mode_size && mb_size == mode_size) {
+					/* SubInt(ConvInt(aP), ConvInt(bP)) -> SubInt(aP,bP) */
+					a = op_a;
+					b = op_b;
+					set_Sub_left(n, a);
+					set_Sub_right(n, b);
+
+					goto restart;
+				}
 			}
 		}
 	}
