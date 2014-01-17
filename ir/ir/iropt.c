@@ -1924,13 +1924,13 @@ static ir_node *transform_bitwise_distributive(ir_node *n,
 }
 
 /**
- * normalisation: (x >> c1) & c2   to   (x & (c2<<c1)) >> c1
+ * normalization: (x >> c1) & c2   to   (x & (c2<<c1)) >> c1
  *  (we can use:
  *    - and, or, xor    instead of &
  *    - Shl, Shr, Shrs  instead of >>
  *    (with a special case for Or/Xor + Shrs)
  *
- * This normalisation is usually good for the backend since << C can often be
+ * This normalization is usually good for the backend since << C can often be
  * matched as address-mode.
  */
 static ir_node *transform_node_bitop_shift(ir_node *n)
@@ -2319,7 +2319,7 @@ static ir_node *transform_node_Add(ir_node *n)
 	ir_node *c;
 	HANDLE_BINOP_PHI((eval_func) tarval_add, a, b, c, mode);
 
-	/* these optimizations are imprecise for floatingpoint ops */
+	/* these optimizations are imprecise for floating-point ops */
 	if (mode_is_float(mode) && !ir_imprecise_float_transforms_allowed())
 		return n;
 
@@ -3180,7 +3180,7 @@ static ir_node *transform_node_Switch(ir_node *n)
  *    - Shl, Shr, Shrs, rotl  instead of >>
  *    (with a special case for Or/Xor + Shrs)
  *
- * This normalisation is good for things like x-(x&y) esp. in 186.crafty.
+ * This normalization is good for things like x-(x&y) esp. in 186.crafty.
  */
 static ir_node *transform_node_shift_bitop(ir_node *n)
 {
@@ -4829,7 +4829,7 @@ static ir_node *transform_node_shift(ir_node *n)
 }
 
 /**
- * normalisation:
+ * normalization:
  *    (x << c1) >> c2  <=>  x OP (c2-c1) & ((-1 << c1) >> c2)
  *    also:
  *    (x >> c1) << c2  <=>  x OP (c2-c1) & ((-1 >> c1) << c2)
@@ -4930,7 +4930,7 @@ typedef ir_node*(*new_shift_func)(dbg_info *dbgi, ir_node *block,
                                   ir_node *left, ir_node *right, ir_mode *mode);
 
 /**
- * Normalisation: if we have a shl/shr with modulo_shift behaviour
+ * Normalization: if we have a shl/shr with modulo_shift behavior
  * then we can use that to minimize the value of Add(x, const) or
  * Sub(Const, x). In particular this often avoids 1 instruction in some
  * backends for the Shift(x, Sub(Const, y)) case because it can be replaced
