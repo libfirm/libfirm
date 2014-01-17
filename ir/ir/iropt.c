@@ -68,6 +68,28 @@ static bool is_Or_Eor_Add(const ir_node *node)
 	return false;
 }
 
+static bool is_Eor_Add(const ir_node *node)
+{
+	if (is_Eor(node) || is_Add(node)) {
+		if (is_Or_Eor_Add(node))
+			return true;
+
+		const ir_node *right = get_binop_right(node);
+		const ir_mode *mode  = get_irn_mode(node);
+
+		if (is_Const(right) && get_mode_arithmetic(mode) == irma_twos_complement) {
+			const ir_tarval *tv  = get_Const_tarval(right);
+			ir_tarval       *min = get_mode_min(mode);
+			/* if all bits are set, then this has the same effect as a Not.
+			 * Note that the following == gives false for different modes which
+			 * is exactly what we want */
+			return tv == min;
+		}
+	}
+
+	return false;
+}
+
 /**
  * Returns the tarval of a Const node or tarval_bad for all other nodes.
  */
@@ -1942,7 +1964,7 @@ static ir_node *transform_node_bitop_shift(ir_node *n)
 
 	const ir_node *left  = get_binop_left(n);
 	const ir_node *right = get_binop_right(n);
-	assert(is_And(n) || is_Or(n) || is_Eor(n) || is_Or_Eor_Add(n));
+	assert(is_And(n) || is_Or(n) || is_Eor(n) || is_Or_Eor_Add(n) || is_Eor_Add(n));
 	if (!is_Const(right) || !is_shiftop(left))
 		return n;
 
@@ -2280,38 +2302,22 @@ static ir_node *transform_node_Add(ir_node *n)
 		}
 	}
 
-	if (is_Const(b)) {
-		if (is_Sub(a)) {
-			const ir_node *sub_l = get_Sub_left(a);
-			ir_tarval     *ts    = value_of(sub_l);
+	if (is_Const(b) && is_Sub(a)) {
+		const ir_node *sub_l = get_Sub_left(a);
+		ir_tarval     *ts    = value_of(sub_l);
 
-			if (ts != tarval_bad) {
-				ir_tarval *tb = get_Const_tarval(b);
-				ir_tarval *tv = tarval_add(ts, tb);
+		if (ts != tarval_bad) {
+			ir_tarval *tb = get_Const_tarval(b);
+			ir_tarval *tv = tarval_add(ts, tb);
 
-				if (tv != tarval_bad) {
-					/* (C1 - x) + C2 = (C1 + C2) - x */
-					dbg_info *dbgi  = get_irn_dbg_info(n);
-					ir_graph *irg   = get_irn_irg(n);
-					ir_node  *block = get_nodes_block(n);
-					ir_node  *cnst  = new_r_Const(irg, tv);
-					ir_node  *sub_r = get_Sub_right(a);
-					return new_rd_Sub(dbgi, block, cnst, sub_r, mode);
-				}
-			}
-		}
-		if (get_mode_arithmetic(mode) == irma_twos_complement) {
-			const ir_tarval *tv  = get_Const_tarval(b);
-			ir_tarval       *min = get_mode_min(mode);
-			/* if all bits are set, then this has the same effect as a Not.
-			 * Note that the following == gives false for different modes which
-			 * is exactly what we want */
-			if (tv == min) {
+			if (tv != tarval_bad) {
+				/* (C1 - x) + C2 = (C1 + C2) - x */
 				dbg_info *dbgi  = get_irn_dbg_info(n);
 				ir_graph *irg   = get_irn_irg(n);
 				ir_node  *block = get_nodes_block(n);
-				ir_node  *cnst  = new_r_Const(irg, min);
-				return new_rd_Eor(dbgi, block, a, cnst, mode);
+				ir_node  *cnst  = new_r_Const(irg, tv);
+				ir_node  *sub_r = get_Sub_right(a);
+				return new_rd_Sub(dbgi, block, cnst, sub_r, mode);
 			}
 		}
 	}
@@ -2383,10 +2389,13 @@ static ir_node *transform_node_Add(ir_node *n)
 		}
 	}
 
-	if (is_Or_Eor_Add(n)) {
-		n = transform_node_Or_(n);
-		if (n != oldn)
-			return n;
+	if (is_Eor_Add(n)) {
+		if (is_Or_Eor_Add(n)) {
+			n = transform_node_Or_(n);
+			if (n != oldn)
+				return n;
+		}
+
 		n = transform_node_Eor_(n);
 		if (n != oldn)
 			return n;
