@@ -131,6 +131,27 @@ static bool check_mode_same_input(const ir_node *n, int input,
 	return true;
 }
 
+static bool check_mode_same_size_input(const ir_node *n, int input,
+                                       const char *inputname)
+{
+	ir_mode  *mode         = get_irn_mode(n);
+	unsigned  mode_size    = get_mode_size_bits(mode);
+	ir_node  *in           = get_irn_n(n, input);
+	ir_mode  *in_mode      = get_irn_mode(in);
+	unsigned  in_mode_size = get_mode_size_bits(in_mode);
+	if (mode_size != in_mode_size) {
+		char num[16];
+		if (inputname == NULL) {
+			snprintf(num, sizeof(num), "input %d", input);
+			inputname = num;
+		}
+		warn(n, "mode size of input '%s' different from output mode size",
+		     inputname);
+		return false;
+	}
+	return true;
+}
+
 /**
  * Displays error message that a wrong proj number was found and returns false.
  */
@@ -627,6 +648,8 @@ static int verify_node_Sub(const ir_node *n)
 		if (mode_is_reference(mode_left)) {
 			fine &= check_input_func(n, n_Sub_left, "left", mode_is_reference, "reference");
 			fine &= check_input_func(n, n_Sub_right, "right", mode_is_reference, "reference");
+			fine &= check_mode_same_size_input(n, n_Sub_left, "left");
+			fine &= check_mode_same_size_input(n, n_Sub_right, "right");
 		} else {
 			fine &= check_mode_same_input(n, n_Sub_left, "left");
 			fine &= check_mode_same_input(n, n_Sub_right, "right");
