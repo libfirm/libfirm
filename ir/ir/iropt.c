@@ -2018,7 +2018,7 @@ static ir_node *transform_node_bitop_shift(ir_node *n)
 	} else if (is_Or(n) || is_Or_Eor_Add(n)) {
 		new_bitop = new_rd_Or(dbg_bitop, block, shift_left, new_const, mode);
 	} else {
-		assert(is_Eor(n));
+		assert(is_Eor(n) || is_Eor_Add(n));
 		new_bitop = new_rd_Eor(dbg_bitop, block, shift_left, new_const, mode);
 	}
 
