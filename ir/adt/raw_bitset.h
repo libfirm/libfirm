@@ -322,6 +322,55 @@ static inline size_t rbitset_next_max(const unsigned *bitset, size_t pos,
 }
 
 /**
+ * Returns the position of the previous bit starting from (but not including)
+ * a given position.
+ *
+ * @param bitset  a bitset
+ * @param pos     the position after the first bit to check
+ * @param set     if 0 search for unset bit, else for set bit
+ *
+ * @return The first position where a matched bit was found or -1 if
+ *         none found.
+ *
+ */
+static inline size_t rbitset_prev(const unsigned *bitset, size_t pos,
+                                  bool set)
+{
+	size_t elem_pos = pos / BITS_PER_ELEM;
+	size_t bit_pos  = pos % BITS_PER_ELEM;
+
+	unsigned elem = bitset[elem_pos];
+	unsigned mask = set ? 0 : ~0u;
+
+	/*
+	 * Mask out the bits larger than pos in the current unit.
+	 * We are only interested in bits set lower than pos.
+	 */
+	unsigned in_elem_mask = ~((1u << bit_pos) - 1u);
+
+	elem ^= mask;
+	unsigned p = nlz(elem & ~in_elem_mask);
+
+	/* If there is a bit set in the current elem, exit. */
+	if (p < BITS_PER_ELEM) {
+	  return (1+elem_pos) * BITS_PER_ELEM - p - 1;
+	}
+
+	/* Else search for set bits in the previous units. */
+	while (elem_pos > 0) {
+		elem_pos--;
+		elem = bitset[elem_pos] ^ mask;
+
+		p = nlz(elem);
+		if (p < BITS_PER_ELEM) {
+		  return (1+elem_pos) * BITS_PER_ELEM - p - 1;
+		}
+	}
+
+	return -1;
+}
+
+/**
  * Inplace Intersection of two sets.
  *
  * @param dst   the destination bitset and first operand

@@ -199,6 +199,38 @@ static inline size_t bitset_next_set(const bitset_t *bs, size_t pos)
 	for (size_t elm = 0; (elm = bitset_next_clear((bitset), elm)) != (size_t)-1; ++elm)
 
 /**
+ * Find the previous unset bit from a given bit.
+ * @param bs The bitset.
+ * @param pos The bit from which to search for the previous unset bit.
+ * @return The previous unset bit from pos on, or (size_t)-1, if no unset bit was
+ * found before pos.
+ */
+static inline size_t bitset_prev_clear(const bitset_t *bs, size_t pos)
+{
+	return rbitset_prev(bs->data, pos, false);
+}
+
+/**
+ * Find the previous set bit from a given bit.
+ * @param bs The bitset.
+ * @param pos The bit from which to search for the next set bit.
+ * @return The previous set bit from pos on, or (size_t)-1, if no set bit was
+ * found before pos.
+ */
+static inline size_t bitset_prev_set(const bitset_t *bs, size_t pos)
+{
+	return rbitset_prev(bs->data, pos, true);
+}
+
+
+#define bitset_foreach_rev(bitset, elm) \
+  for (size_t elm = bitset->size; (elm = rbitset_prev(bitset->data, elm, true)) != (size_t)-1;)
+
+
+#define bitset_foreach_clear_rev(bitset, elm) \
+  for (size_t elm = bitset->size; (elm = rbitset_prev(bitset->data, elm, false)) != (size_t)-1;)
+
+/**
  * Count the bits set.
  * This can also be seen as the cardinality of the set.
  * @param bs The bitset.

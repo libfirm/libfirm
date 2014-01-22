@@ -44,6 +44,15 @@ int main(void)
 	assert(rbitset_next_max(field1, 3, 66, false) == 4);
 	assert(rbitset_next_max(field1, 60, 66, true) == (size_t)-1);
 	assert(rbitset_next_max(field1, 3, 4, false) == (size_t)-1);
+	assert(rbitset_prev(field1, 0, true) == (size_t)-1);
+	assert(rbitset_prev(field1, 3, true) == (size_t)-1);
+	assert(rbitset_prev(field1, 4, true) == 3);
+	assert(rbitset_prev(field1, 59, true) == 3);
+	assert(rbitset_prev(field1, 60, true) == 59);
+	assert(rbitset_prev(field1, 34, true) == 3);
+	assert(rbitset_prev(field1, 0, false) == (size_t)-1);
+	assert(rbitset_prev(field1, 3, false) == 2);
+	assert(rbitset_prev(field1, 1, false) == 0);
 
 	unsigned *null = (unsigned*)0;
 	rbitset_flip_all(null, 0);
