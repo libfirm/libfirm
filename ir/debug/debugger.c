@@ -1236,16 +1236,6 @@ void firm_finish_debugger(void)
 	del_set(bp_idents);
 }
 
-/**
- * A gdb helper function to print firm objects.
- */
-const char *gdb_node_helper(void *firm_object)
-{
-	static char buf[1024];
-	ir_snprintf(buf, sizeof(buf), "%+F", firm_object);
-	return buf;
-}
-
 const char *gdb_tarval_helper(void *tv_object)
 {
 	static char buf[1024];
