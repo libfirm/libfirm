@@ -587,24 +587,20 @@ void *get_irg_loc_description(ir_graph *irg, int n)
 	return irg->loc_descriptions ? irg->loc_descriptions[n] : NULL;
 }
 
-#ifndef NDEBUG
-void ir_reserve_resources(ir_graph *irg, ir_resources_t resources)
+void (ir_reserve_resources)(ir_graph *irg, ir_resources_t resources)
 {
-	assert((irg->reserved_resources & resources) == 0);
-	irg->reserved_resources |= resources;
+	return ir_reserve_resources_(irg, resources);
 }
 
-void ir_free_resources(ir_graph *irg, ir_resources_t resources)
+void (ir_free_resources)(ir_graph *irg, ir_resources_t resources)
 {
-	assert((irg->reserved_resources & resources) == resources);
-	irg->reserved_resources &= ~resources;
+	ir_free_resources_(irg, resources);
 }
 
-ir_resources_t ir_resources_reserved(const ir_graph *irg)
+ir_resources_t (ir_resources_reserved)(const ir_graph *irg)
 {
-	return irg->reserved_resources;
+	return ir_resources_reserved_(irg);
 }
-#endif
 
 unsigned get_irg_last_idx(const ir_graph *irg)
 {

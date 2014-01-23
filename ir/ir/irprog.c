@@ -315,21 +315,17 @@ ident *get_irp_asm(size_t pos)
 	return irp->global_asms[pos];
 }
 
-#ifndef NDEBUG
-void irp_reserve_resources(ir_prog *irp, irp_resources_t resources)
+void (irp_reserve_resources)(ir_prog *irp, irp_resources_t resources)
 {
-	assert((irp->reserved_resources & resources) == 0);
-	irp->reserved_resources |= resources;
+	irp_reserve_resources_(irp, resources);
 }
 
-void irp_free_resources(ir_prog *irp, irp_resources_t resources)
+void (irp_free_resources)(ir_prog *irp, irp_resources_t resources)
 {
-	assert((irp->reserved_resources & resources) == resources);
-	irp->reserved_resources &= ~resources;
+	irp_free_resources_(irp, resources);
 }
 
-irp_resources_t irp_resources_reserved(const ir_prog *irp)
+irp_resources_t (irp_resources_reserved)(const ir_prog *irp)
 {
-	return irp->reserved_resources;
+	return irp_resources_reserved_(irp);
 }
-#endif

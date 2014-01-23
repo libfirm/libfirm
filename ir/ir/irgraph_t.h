@@ -63,6 +63,9 @@
 #define add_irg_properties(irg, props)        add_irg_properties_(irg, props)
 #define clear_irg_properties(irg, props)      clear_irg_properties_(irg, props)
 #define irg_has_properties(irg, props)        irg_has_properties_(irg, props)
+#define ir_reserve_resources(irg,resources)   ir_reserve_resources_(irg,resources)
+#define ir_free_resources(irg,resources)      ir_free_resources_(irg,resources)
+#define ir_resources_reserved(irg)            ir_resources_reserved_(irg)
 
 /**
  * Initializes the graph construction module.
@@ -326,6 +329,43 @@ static inline int irg_has_properties_(const ir_graph *irg,
 {
 	return (irg->properties & props) == props;
 }
+
+#ifndef NDEBUG
+static inline void ir_reserve_resources_(ir_graph *irg,
+                                         ir_resources_t resources)
+{
+	assert((irg->reserved_resources & resources) == 0);
+	irg->reserved_resources |= resources;
+}
+
+static inline void ir_free_resources_(ir_graph *irg, ir_resources_t resources)
+{
+	assert((irg->reserved_resources & resources) == resources);
+	irg->reserved_resources &= ~resources;
+}
+static inline ir_resources_t ir_resources_reserved_(const ir_graph *irg)
+{
+	return irg->reserved_resources;
+}
+#else
+static inline void ir_reserve_resources_(ir_graph *irg,
+                                         ir_resources_t resources)
+{
+	(void)irg;
+	(void)resources;
+}
+
+static inline void ir_free_resources_(ir_graph *irg, ir_resources_t resources)
+{
+	(void)irg;
+	(void)resources;
+}
+static inline ir_resources_t ir_resources_reserved_(const ir_graph *irg)
+{
+	(void)irg;
+	return IR_RESOURCE_NONE;
+}
+#endif
 
 /**
  * Allocates a new idx in the irg for the node and adds the irn to the idx -> irn map.

@@ -88,7 +88,6 @@ typedef enum irp_resources_t {
 } irp_resources_t;
 ENUM_BITSET(irp_resources_t)
 
-#ifndef NDEBUG
 /**
  * Reserve resources available for a whole program.
  *
@@ -97,15 +96,10 @@ ENUM_BITSET(irp_resources_t)
  * detected.
  */
 FIRM_API void irp_reserve_resources(ir_prog *irp, irp_resources_t resources);
-/** Frees resources availabel for a whole program. */
+/** Frees resources available for a whole program. */
 FIRM_API void irp_free_resources(ir_prog *irp, irp_resources_t resources);
 /** Returns currently reserved whole program resources. */
 FIRM_API irp_resources_t irp_resources_reserved(const ir_prog *irp);
-#else
-#define irp_reserve_resources(irp, resources) (void)0
-#define irp_free_resources(irp, resources)    (void)0
-#define irp_resources_reserved(irp)           0
-#endif
 
 /**
  * Returns the current irp from where everything in the current module

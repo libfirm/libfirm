@@ -22,15 +22,18 @@
 #include "array.h"
 
 /* Inline functions. */
-#define get_irp_n_irgs()                 get_irp_n_irgs_()
-#define get_irp_irg(pos)                 get_irp_irg_(pos)
-#define get_irp_n_types()                get_irp_n_types_()
-#define get_irp_type(pos)                get_irp_type_(pos)
-#define get_const_code_irg()             get_const_code_irg_()
-#define get_segment_type(s)              get_segment_type_(s)
-#define get_glob_type()                  get_glob_type_()
-#define get_tls_type()                   get_tls_type_()
-#define get_irp_next_label_nr()          get_irp_next_label_nr_()
+#define get_irp_n_irgs()                      get_irp_n_irgs_()
+#define get_irp_irg(pos)                      get_irp_irg_(pos)
+#define get_irp_n_types()                     get_irp_n_types_()
+#define get_irp_type(pos)                     get_irp_type_(pos)
+#define get_const_code_irg()                  get_const_code_irg_()
+#define get_segment_type(s)                   get_segment_type_(s)
+#define get_glob_type()                       get_glob_type_()
+#define get_tls_type()                        get_tls_type_()
+#define get_irp_next_label_nr()               get_irp_next_label_nr_()
+#define irp_reserve_resources(irp, resources) irp_reserve_resources_(irp, resources)
+#define irp_free_resources(irp, resources)    irp_free_resources_(irp, resources)
+#define irp_resources_reserved(irp)           irp_resources_reserved_(irp)
 
 /* inline functions */
 static inline ir_type *get_segment_type_(ir_segment_t segment)
@@ -93,6 +96,45 @@ static inline ir_label_t get_irp_next_label_nr_(void)
 {
 	return ++irp->last_label_nr;
 }
+
+#ifndef NDEBUG
+static inline void irp_reserve_resources(ir_prog *irp,
+                                         irp_resources_t resources)
+{
+	assert((irp->reserved_resources & resources) == 0);
+	irp->reserved_resources |= resources;
+}
+
+static inline void irp_free_resources(ir_prog *irp, irp_resources_t resources)
+{
+	assert((irp->reserved_resources & resources) == resources);
+	irp->reserved_resources &= ~resources;
+}
+
+static inline irp_resources_t irp_resources_reserved(const ir_prog *irp)
+{
+	return irp->reserved_resources;
+}
+#else
+static inline void irp_reserve_resources(ir_prog *irp,
+                                         irp_resources_t resources)
+{
+	(void)irp;
+	(void)resources;
+}
+
+static inline void irp_free_resources(ir_prog *irp, irp_resources_t resources)
+{
+	(void)irp;
+	(void)resources;
+}
+
+static inline irp_resources_t irp_resources_reserved(const ir_prog *irp)
+{
+	(void)irp;
+	return IRP_RESOURCE_NONE;
+}
+#endif
 
 void      set_irp_ip_outedges(ir_node ** ip_outedges);
 ir_node** get_irp_ip_outedges(void);
