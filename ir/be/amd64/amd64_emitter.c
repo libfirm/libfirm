@@ -632,10 +632,10 @@ static void emit_amd64_Mov(const ir_node *node)
 {
 	const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
 	switch (attr->insn_mode) {
-	case INSN_MODE_8:  amd64_emitf(node, "movzbq %A, %^D0"); break;
-	case INSN_MODE_16: amd64_emitf(node, "movzwq %A, %^D0"); break;
-	case INSN_MODE_32: amd64_emitf(node, "movl %A, %3D0");   break;
-	case INSN_MODE_64: amd64_emitf(node, "movq %A, %^D0");   break;
+	case INSN_MODE_8:  amd64_emitf(node, "movzbq %AM, %^D0"); break;
+	case INSN_MODE_16: amd64_emitf(node, "movzwq %AM, %^D0"); break;
+	case INSN_MODE_32: amd64_emitf(node, "movl %AM, %3D0");   break;
+	case INSN_MODE_64: amd64_emitf(node, "movq %AM, %^D0");   break;
 	default:
 		panic("invalid insn mode");
 	}

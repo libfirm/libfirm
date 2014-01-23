@@ -293,6 +293,7 @@ Xor0 => {
 
 MovImm => {
 	op_flags  => [ "constlike" ],
+	irn_flags => [ "rematerializable" ],
 	reg_req   => { out => [ "gp" ] },
 	attr_type => "amd64_movimm_attr_t",
 	attr      => "amd64_insn_mode_t insn_mode, int64_t offset, ir_entity *entity",
