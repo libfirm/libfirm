@@ -572,9 +572,18 @@ static ir_alias_relation _get_alias_relation(
 
 	/* same base address -> compare Sel entities */
 	if (base1 == base2 && ent1 != NULL && ent2 != NULL) {
-		if (ent1 != ent2)
-			return ir_no_alias;
-		else if (have_const_offsets)
+		if (ent1 != ent2) {
+			long offset1 = get_entity_offset(ent1);
+			long offset2 = get_entity_offset(ent2);
+			long size1   = get_type_size_bytes(type1);
+			long size2   = get_type_size_bytes(type2);
+
+			if (offset1 + size1 <= offset2 || offset2 + size2 <= offset1) {
+				return ir_no_alias;
+			}
+
+			return ir_may_alias;
+		} else if (have_const_offsets)
 			return different_sel_offsets(adr1, adr2);
 	}
 
