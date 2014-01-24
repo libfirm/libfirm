@@ -236,15 +236,12 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 
 			/* Do not fiddle with polymorphism. */
 			if (is_Class_type(tp) &&
-				((get_entity_n_overwrites(ent)    != 0) ||
-				(get_entity_n_overwrittenby(ent) != 0)   ) )
+				(get_entity_n_overwrites(ent) != 0 || get_entity_n_overwrittenby(ent) != 0))
 				return NULL;
 
 			if (is_Array_type(tp)) {
 				/* check bounds */
-				int i, n;
-
-				for (i = 0, n = get_Sel_n_indexs(ptr); i < n; ++i) {
+				for (int i = 0, n = get_Sel_n_indexs(ptr); i < n; ++i) {
 					ir_node   *index = get_Sel_index(ptr, i);
 					ir_tarval *tv    = computed_value(index);
 
@@ -252,10 +249,10 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 					if (tv == tarval_bad)
 						return NULL;
 
-					ir_node   *bound  = get_array_lower_bound(tp, i);
-					ir_tarval *tlower = computed_value(bound);
-					bound = get_array_upper_bound(tp, i);
-					ir_tarval *tupper = computed_value(bound);
+					ir_node   *lower  = get_array_lower_bound(tp, i);
+					ir_tarval *tlower = computed_value(lower);
+					ir_node   *upper  = get_array_upper_bound(tp, i);
+					ir_tarval *tupper = computed_value(upper);
 
 					if (tlower == tarval_bad || tupper == tarval_bad)
 						return NULL;
@@ -455,13 +452,10 @@ static ir_node *get_base_and_offset(ir_node *ptr, long *pOffset)
 			ir_type   *tp  = get_entity_owner(ent);
 
 			if (is_Array_type(tp)) {
-				int     size;
-				ir_node *index;
-
 				/* only one dimensional arrays yet */
 				if (get_Sel_n_indexs(ptr) != 1)
 					break;
-				index = get_Sel_index(ptr, 0);
+				ir_node *index = get_Sel_index(ptr, 0);
 				if (! is_Const(index))
 					break;
 
@@ -469,7 +463,7 @@ static ir_node *get_base_and_offset(ir_node *ptr, long *pOffset)
 				if (get_type_state(tp) != layout_fixed)
 					break;
 
-				size    = get_type_size_bytes(tp);
+				int size = get_type_size_bytes(tp);
 				offset += size * get_tarval_long(get_Const_tarval(index));
 			} else {
 				if (get_type_state(tp) != layout_fixed)
@@ -502,6 +496,7 @@ static int try_load_after_store(ir_node *load,
 	long     delta          = load_offset - store_offset;
 	ir_node *store_value    = get_Store_value(store);
 
+	/* Ensure that Load is completely contained in Store. */
 	if (delta < 0 || delta+load_mode_len > store_mode_len)
 		return 0;
 
