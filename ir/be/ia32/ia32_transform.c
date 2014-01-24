@@ -3113,6 +3113,11 @@ static void find_const_transform(x86_condition_code_t cc,
 
 	res->num_steps = 0;
 
+	/* Expand to GP register width, so no carry bit gets lost when calculating new
+	 * constants. */
+	t = tarval_convert_to(t, ia32_mode_gp);
+	f = tarval_convert_to(f, ia32_mode_gp);
+
 	if (tarval_is_null(t)) {
 		ir_tarval *tmp = t;
 		t = f;
@@ -3446,11 +3451,6 @@ static ir_node *gen_Mux(ir_node *node)
 				default:
 					panic("unknown setcc transform");
 				}
-			}
-			if (get_mode_size_bits(mode) != 32) {
-				new_node = create_Conv_I2I(dbgi, new_block, noreg_GP, noreg_GP, nomem, new_node, mode);
-				set_ia32_ls_mode(new_node, mode);
-				SET_IA32_ORIG_NODE(new_node, node);
 			}
 		} else {
 			new_node = create_CMov(node, sel, flags, cc);
