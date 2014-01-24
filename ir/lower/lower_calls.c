@@ -657,7 +657,6 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 	size_t     n_ress      = get_method_n_ress(mtp);
 	size_t     n_params    = get_method_n_params(mtp);
 	size_t     n_param_com = 0;
-	wlk_env    env;
 
 	/* calculate the number of compound returns */
 	size_t n_ret_com = 0;
@@ -675,27 +674,28 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 	if (n_ret_com > 0)
 		fix_parameter_entities(irg, n_ret_com);
 
+	int arg_shift;
 	if (n_ret_com) {
 		/* much easier if we have only one return */
 		normalize_one_return(irg);
 
 		/* hidden arguments are added first */
-		env.arg_shift = n_ret_com;
+		arg_shift = n_ret_com;
 	} else {
 		/* we must only search for calls */
-		env.arg_shift = 0;
+		arg_shift = 0;
 	}
 
 	ir_type *lowered_mtp = lower_mtp(flags, mtp);
 	set_entity_type(ent, lowered_mtp);
 
+	wlk_env env;
+	memset(&env, 0, sizeof(env));
 	obstack_init(&env.obst);
-	env.cl_list        = NULL;
+	env.arg_shift      = arg_shift;
 	env.flags          = flags;
 	env.lowered_mtp    = lowered_mtp;
-	env.heights        = NULL;
 	env.only_local_mem = true;
-	env.changed        = false;
 
 	/* scan the code, fix argument numbers and collect calls. */
 	irg_walk_graph(irg, firm_clear_link, NULL, &env);
@@ -803,6 +803,8 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 		}
 	}
 
+	if (env.heights != NULL)
+		heights_free(env.heights);
 	obstack_free(&env.obst, NULL);
 }
 
