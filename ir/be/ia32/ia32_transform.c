@@ -3231,18 +3231,17 @@ static void find_const_transform(x86_condition_code_t cc,
  */
 static ir_node *gen_Mux(ir_node *node)
 {
-	dbg_info             *dbgi      = get_irn_dbg_info(node);
-	ir_node              *block     = get_nodes_block(node);
-	ir_node              *new_block = be_transform_node(block);
-	ir_node              *mux_true  = get_Mux_true(node);
-	ir_node              *mux_false = get_Mux_false(node);
-	ir_node              *sel       = get_Mux_sel(node);
-	ir_mode              *mode      = get_irn_mode(node);
-	int                   is_abs;
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	ir_node  *mux_true  = get_Mux_true(node);
+	ir_node  *mux_false = get_Mux_false(node);
+	ir_node  *sel       = get_Mux_sel(node);
+	ir_mode  *mode      = get_irn_mode(node);
 
 	assert(get_irn_mode(sel) == mode_b);
 
-	is_abs = ir_mux_is_abs(sel, mux_false, mux_true);
+	int is_abs = ir_mux_is_abs(sel, mux_false, mux_true);
 	if (is_abs != 0) {
 		if (ia32_mode_needs_gp_reg(mode)) {
 			ir_fprintf(stderr, "Optimisation warning: Integer abs %+F not transformed\n",
@@ -3384,7 +3383,7 @@ static ir_node *gen_Mux(ir_node *node)
 
 			find_const_transform(cc, tv_true, tv_false, &res);
 			new_node = node;
-			for (int step = (int)res.num_steps - 1; step >= 0; --step) {
+			for (unsigned step = res.num_steps; step-- != 0;) {
 				ir_node *imm;
 
 				switch (res.steps[step].transform) {
