@@ -3119,7 +3119,7 @@ static void find_const_transform(x86_condition_code_t cc,
 		f = tmp;
 		cc = x86_negate_condition_code(cc);
 	} else if (tarval_cmp(t, f) == ir_relation_less) {
-		// now, t is the bigger one
+		// Ensure that t is the bigger one
 		ir_tarval *tmp = t;
 		t = f;
 		f = tmp;
@@ -3127,6 +3127,7 @@ static void find_const_transform(x86_condition_code_t cc,
 	}
 	res->cc = cc;
 
+	/* Normalize f to zero. */
 	if (!tarval_is_null(f)) {
 		ir_tarval *t_sub = tarval_sub(t, f, NULL);
 
