@@ -81,7 +81,7 @@ typedef enum bp_reasons_t {
 typedef struct breakpoint {
 	bp_kind      kind;        /**< the kind of this break point */
 	unsigned     bpnr;        /**< break point number */
-	int          active;      /**< non-zero, if this break point is active */
+	bool         active;      /**< true, if this break point is active */
 	bp_reasons_t reason;      /**< reason for the breakpoint */
 	struct breakpoint *next; /**< link to the next one */
 } breakpoint;
@@ -114,10 +114,10 @@ static set *bp_idents;
 static breakpoint *bp_list;
 
 /** number of the current break point */
-static unsigned bp_num = 0;
+static unsigned bp_num;
 
 /** set if break on init command was issued. */
-static int break_on_init = 0;
+static bool break_on_init;
 
 /** the hook entries for the Firm debugger module. */
 static hook_entry_t debugger_hooks[hook_last];
@@ -134,12 +134,12 @@ static char firm_dbg_msg_buf[2048];
  * If set, the debug extension writes all output to the
  * firm_dbg_msg_buf buffer
  */
-static int redir_output = 0;
+static bool redir_output;
 
 /**
  * Is set to one, if the debug extension is active
  */
-static int is_active = 0;
+static bool is_active;
 
 /** hook the hook h with function fkt. */
 #define HOOK(h, fkt) \
@@ -157,19 +157,6 @@ do {                                        \
 
 /** returns non-zero if a entry hook h is used */
 #define IS_HOOKED(h) (debugger_hooks[h].hook._##h != NULL)
-
-/* some macros needed to create the info string */
-#define _DBG_VERSION(major, minor)  #major "." #minor
-#define DBG_VERSION(major, minor)   _DBG_VERSION(major, minor)
-#define API_VERSION(major, minor)   "API:" DBG_VERSION(major, minor)
-
-/* the API version: change if needed */
-#define FIRM_DBG_MAJOR  1
-#define FIRM_DBG_MINOR  0
-
-/** for automatic detection of the debug extension */
-static const char __attribute__((used)) firm_debug_info_string[] =
-	API_VERSION(FIRM_DBG_MAJOR, FIRM_DBG_MINOR);
 
 int firm_debug_active(void)
 {
@@ -220,14 +207,15 @@ static void dbg_printf(const char *fmt, ...)
  */
 static void dbg_new_node(void *ctx, ir_graph *irg, ir_node *node)
 {
-	bp_nr_t key, *elem;
 	(void) ctx;
 	(void) irg;
 
+	bp_nr_t key;
 	key.nr        = get_irn_node_nr(node);
 	key.bp.reason = BP_ON_NEW_THING;
 
-	elem = set_find(bp_nr_t, bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
+	bp_nr_t *elem
+		= set_find(bp_nr_t, bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
 	if (elem && elem->bp.active) {
 		dbg_printf("Firm BP %u reached, %+F created\n", elem->bp.bpnr, node);
 		firm_debug_break();
@@ -243,15 +231,17 @@ static void dbg_new_node(void *ctx, ir_graph *irg, ir_node *node)
  */
 static void dbg_replace(void *ctx, ir_node *old, ir_node *nw)
 {
-	bp_nr_t key, *elem;
 	(void) ctx;
 
+	bp_nr_t key;
 	key.nr        = get_irn_node_nr(old);
 	key.bp.reason = BP_ON_REPLACE;
 
-	elem = set_find(bp_nr_t, bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
+	bp_nr_t *elem
+		= set_find(bp_nr_t, bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
 	if (elem && elem->bp.active) {
-		dbg_printf("Firm BP %u reached, %+F will be replaced by %+F\n", elem->bp.bpnr, old, nw);
+		dbg_printf("Firm BP %u reached, %+F will be replaced by %+F\n",
+		           elem->bp.bpnr, old, nw);
 		firm_debug_break();
 	}
 }
@@ -264,15 +254,17 @@ static void dbg_replace(void *ctx, ir_node *old, ir_node *nw)
  */
 static void dbg_lower(void *ctx, ir_node *node)
 {
-	bp_nr_t key, *elem;
 	(void) ctx;
 
+	bp_nr_t key;
 	key.nr        = get_irn_node_nr(node);
 	key.bp.reason = BP_ON_LOWER;
 
-	elem = set_find(bp_nr_t, bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
+	bp_nr_t *elem
+		= set_find(bp_nr_t, bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
 	if (elem && elem->bp.active) {
-		dbg_printf("Firm BP %u reached, %+F will be lowered\n", elem->bp.bpnr, node);
+		dbg_printf("Firm BP %u reached, %+F will be lowered\n", elem->bp.bpnr,
+		           node);
 		firm_debug_break();
 	}
 }
@@ -286,32 +278,33 @@ static void dbg_lower(void *ctx, ir_node *node)
 static void dbg_free_graph(void *ctx, ir_graph *irg)
 {
 	(void) ctx;
-	{
-		bp_nr_t key, *elem;
-		key.nr        = get_irg_graph_nr(irg);
-		key.bp.reason = BP_ON_REMIRG;
 
-		elem = set_find(bp_nr_t, bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
-		if (elem && elem->bp.active) {
-			ir_printf("Firm BP %u reached, %+F will be deleted\n", elem->bp.bpnr, irg);
-			firm_debug_break();
-		}
+	bp_nr_t key;
+	key.nr        = get_irg_graph_nr(irg);
+	key.bp.reason = BP_ON_REMIRG;
+
+	bp_nr_t *elem
+		= set_find(bp_nr_t, bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
+	if (elem && elem->bp.active) {
+		ir_printf("Firm BP %u reached, %+F will be deleted\n", elem->bp.bpnr,
+		          irg);
+		firm_debug_break();
 	}
-	{
-		bp_ident_t key, *elem;
-		ir_entity *ent = get_irg_entity(irg);
 
-		if (! ent)
-			return;
+	ir_entity *ent = get_irg_entity(irg);
+	if (ent == NULL)
+		return;
 
-		key.id        = get_entity_ident(ent);
-		key.bp.reason = BP_ON_REMIRG;
+	bp_ident_t ikey;
+	ikey.id        = get_entity_ident(ent);
+	ikey.bp.reason = BP_ON_REMIRG;
 
-		elem = set_find(bp_ident_t, bp_idents, &key, sizeof(key), HASH_IDENT_BP(key));
-		if (elem && elem->bp.active) {
-			dbg_printf("Firm BP %u reached, %+F will be deleted\n", elem->bp.bpnr, ent);
-			firm_debug_break();
-		}
+	bp_ident_t *ielem = set_find(bp_ident_t, bp_idents, &ikey, sizeof(ikey),
+	                             HASH_IDENT_BP(ikey));
+	if (ielem && ielem->bp.active) {
+		dbg_printf("Firm BP %u reached, %+F will be deleted\n", ielem->bp.bpnr,
+		           ent);
+		firm_debug_break();
 	}
 }
 
@@ -324,29 +317,25 @@ static void dbg_free_graph(void *ctx, ir_graph *irg)
 static void dbg_new_entity(void *ctx, ir_entity *ent)
 {
 	(void) ctx;
-	{
-		bp_ident_t key, *elem;
-
-		key.id        = get_entity_ident(ent);
-		key.bp.reason = BP_ON_NEW_ENT;
-
-		elem = set_find(bp_ident_t, bp_idents, &key, sizeof(key), HASH_IDENT_BP(key));
-		if (elem && elem->bp.active) {
-			ir_printf("Firm BP %u reached, %+F was created\n", elem->bp.bpnr, ent);
-			firm_debug_break();
-		}
+	bp_ident_t ikey;
+	ikey.id        = get_entity_ident(ent);
+	ikey.bp.reason = BP_ON_NEW_ENT;
+	bp_ident_t *ielem = set_find(bp_ident_t, bp_idents, &ikey, sizeof(ikey),
+	                             HASH_IDENT_BP(ikey));
+	if (ielem && ielem->bp.active) {
+		ir_printf("Firm BP %u reached, %+F was created\n", ielem->bp.bpnr, ent);
+		firm_debug_break();
 	}
-	{
-		bp_nr_t key, *elem;
 
-		key.nr        = get_entity_nr(ent);
-		key.bp.reason = BP_ON_NEW_THING;
+	bp_nr_t key;
+	key.nr        = get_entity_nr(ent);
+	key.bp.reason = BP_ON_NEW_THING;
 
-		elem = set_find(bp_nr_t, bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
-		if (elem && elem->bp.active) {
-			dbg_printf("Firm BP %u reached, %+F was created\n", elem->bp.bpnr, ent);
-			firm_debug_break();
-		}
+	bp_nr_t *elem = set_find(bp_nr_t, bp_numbers, &key, sizeof(key),
+	                         HASH_NR_BP(key));
+	if (elem && elem->bp.active) {
+		dbg_printf("Firm BP %u reached, %+F was created\n", elem->bp.bpnr, ent);
+		firm_debug_break();
 	}
 }
 
@@ -359,17 +348,15 @@ static void dbg_new_entity(void *ctx, ir_entity *ent)
 static void dbg_new_type(void *ctx, ir_type *tp)
 {
 	(void) ctx;
-	{
-		bp_nr_t key, *elem;
+	bp_nr_t key;
+	key.nr        = get_type_nr(tp);
+	key.bp.reason = BP_ON_NEW_THING;
 
-		key.nr        = get_type_nr(tp);
-		key.bp.reason = BP_ON_NEW_THING;
-
-		elem = set_find(bp_nr_t, bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
-		if (elem && elem->bp.active) {
-			ir_printf("Firm BP %u reached, %+F was created\n", elem->bp.bpnr, tp);
-			firm_debug_break();
-		}
+	bp_nr_t *elem = set_find(bp_nr_t, bp_numbers, &key, sizeof(key),
+	                         HASH_NR_BP(key));
+	if (elem && elem->bp.active) {
+		ir_printf("Firm BP %u reached, %+F was created\n", elem->bp.bpnr, tp);
+		firm_debug_break();
 	}
 }
 
@@ -394,10 +381,9 @@ static const char *reason_str(bp_reasons_t reason)
  */
 static int cmp_nr_bp(const void *elt, const void *key, size_t size)
 {
+	(void) size;
 	const bp_nr_t *e1 = (const bp_nr_t*)elt;
 	const bp_nr_t *e2 = (const bp_nr_t*)key;
-	(void) size;
-
 	return (e1->nr - e2->nr) | (e1->bp.reason - e2->bp.reason);
 }
 
@@ -406,10 +392,9 @@ static int cmp_nr_bp(const void *elt, const void *key, size_t size)
  */
 static int cmp_ident_bp(const void *elt, const void *key, size_t size)
 {
+	(void) size;
 	const bp_ident_t *e1 = (const bp_ident_t*)elt;
 	const bp_ident_t *e2 = (const bp_ident_t*)key;
-	(void) size;
-
 	return (e1->id != e2->id) | (e1->bp.reason - e2->bp.reason);
 }
 
@@ -473,15 +458,15 @@ static void update_hooks(breakpoint *bp)
  */
 static void break_on_nr(long nr, bp_reasons_t reason)
 {
-	bp_nr_t key, *elem;
-
+	bp_nr_t key;
 	key.bp.kind   = BP_NR;
 	key.bp.bpnr   = 0;
 	key.bp.active = 1;
 	key.bp.reason = reason;
 	key.nr        = nr;
 
-	elem = set_insert(bp_nr_t, bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
+	bp_nr_t *elem = set_insert(bp_nr_t, bp_numbers, &key, sizeof(key),
+	                           HASH_NR_BP(key));
 
 	if (elem->bp.bpnr == 0) {
 		/* new break point */
@@ -489,7 +474,8 @@ static void break_on_nr(long nr, bp_reasons_t reason)
 		elem->bp.next = bp_list;
 		bp_list = &elem->bp;
 
-		dbg_printf("Firm BP %u: %s of Nr %ld\n", elem->bp.bpnr, reason_str(reason), nr);
+		dbg_printf("Firm BP %u: %s of Nr %ld\n", elem->bp.bpnr,
+		           reason_str(reason), nr);
 
 		update_hooks(&elem->bp);
 	}
@@ -500,15 +486,15 @@ static void break_on_nr(long nr, bp_reasons_t reason)
  */
 static void break_on_ident(const char *name, bp_reasons_t reason)
 {
-	bp_ident_t key, *elem;
-
+	bp_ident_t key;
 	key.bp.kind   = BP_IDENT;
 	key.bp.bpnr   = 0;
 	key.bp.active = 1;
 	key.bp.reason = reason;
 	key.id        = new_id_from_str(name);
 
-	elem = set_insert(bp_ident_t, bp_idents, &key, sizeof(key), HASH_IDENT_BP(key));
+	bp_ident_t *elem = set_insert(bp_ident_t, bp_idents, &key, sizeof(key),
+	                              HASH_IDENT_BP(key));
 
 	if (elem->bp.bpnr == 0) {
 		/* new break point */
@@ -516,7 +502,8 @@ static void break_on_ident(const char *name, bp_reasons_t reason)
 		elem->bp.next = bp_list;
 		bp_list = &elem->bp;
 
-		dbg_printf("Firm BP %u: %s of ident \"%s\"\n", elem->bp.bpnr, reason_str(reason), name);
+		dbg_printf("Firm BP %u: %s of ident \"%s\"\n", elem->bp.bpnr,
+		           reason_str(reason), name);
 
 		update_hooks(&elem->bp);
 	}
@@ -525,18 +512,17 @@ static void break_on_ident(const char *name, bp_reasons_t reason)
 /**
  * Sets/resets the active flag of breakpoint bp.
  */
-static void bp_activate(unsigned bp, int active)
+static void bp_activate(unsigned bp, bool active)
 {
-	breakpoint *p;
-
-	for (p = bp_list; p; p = p->next) {
+	for (breakpoint *p = bp_list; p != NULL; p = p->next) {
 		if (p->bpnr == bp) {
 			if (p->active != active) {
 				p->active = active;
 				update_hooks(p);
 			}
 
-			dbg_printf("Firm BP %u is now %s\n", bp, active ? "enabled" : "disabled");
+			dbg_printf("Firm BP %u is now %s\n", bp,
+			           active ? "enabled" : "disabled");
 			return;
 		}
 	}
@@ -550,25 +536,25 @@ static void bp_activate(unsigned bp, int active)
 static void show_commands(void)
 {
 	dbg_printf("Internal Firm debugger extension commands:\n"
-		"init                  break after initialization\n"
-		"create nr             break if node nr was created\n"
-		"replace nr            break if node nr is replaced by another node\n"
-		"lower nr              break before node nr is lowered\n"
-		"remirg nr|name        break if the irg of nr or entity name is deleted\n"
-		"newent nr|name        break if the entity nr or name was created\n"
-		"newtype nr|name       break if the type nr or name was created\n"
 		"bp                    show all breakpoints\n"
-		"enable nr             enable breakpoint nr\n"
+		"create nr             break if node nr was created\n"
 		"disable nr            disable breakpoint nr\n"
-		"showtype nr|name      show content of the type nr or name\n"
-		"showent nr|name       show content of the entity nr or name\n"
-		"setmask name msk      sets the debug module name to mask msk\n"
-		"setlvl  name lvl      sets the debug module name to level lvl\n"
-		"setoutfile name file  redirects debug output of module name to file\n"
-		"irgname name          prints address and graph number of a method given by its name\n"
-		"irgldname ldname      prints address and graph number of a method given by its ldname\n"
-		"initialnodenr n|rand  set initial node number to n or random number\n"
+		"dumpfilter string     only dump graphs whose name contains string\n"
+		"enable nr             enable breakpoint nr\n"
 		"help                  list all commands\n"
+		"init                  break after initialization\n"
+		"initialnodenr n|rand  set initial node number to n or random number\n"
+		"irgldname ldname      prints address and graph number of a method given by its ldname\n"
+		"irgname name          prints address and graph number of a method given by its name\n"
+		"lower nr              break before node nr is lowered\n"
+		"newent nr|name        break if the entity nr or name was created\n"
+		"remirg nr|name        break if the irg of nr or entity name is deleted\n"
+		"replace nr            break if node nr is replaced by another node\n"
+		"setlvl  name lvl      sets the debug module name to level lvl\n"
+		"setmask name msk      sets the debug module name to mask msk\n"
+		"setoutfile name file  redirects debug output of module name to file\n"
+		"showent nr|name       show content of the entity nr or name\n"
+		"showtype nr|name      show content of the type nr or name\n"
 		);
 }
 
@@ -577,26 +563,24 @@ static void show_commands(void)
  */
 static void show_bp(void)
 {
-	breakpoint *p;
-	bp_nr_t  *node_p;
-	bp_ident_t *ident_p;
-	int have_one = 0;
-
 	dbg_printf("Firm Breakpoints:");
-	for (p = bp_list; p; p = p->next) {
-		have_one = 1;
+	bool have_one = false;
+	for (breakpoint *p = bp_list; p != NULL; p = p->next) {
+		have_one = true;
 		dbg_printf("+\n  BP %u: ", p->bpnr);
 
 		switch (p->kind) {
-		case BP_NR:
-			node_p = (bp_nr_t *)p;
+		case BP_NR: {
+			bp_nr_t *node_p = (bp_nr_t *)p;
 			dbg_printf("%s of Nr %ld ", reason_str(p->reason), node_p->nr);
 			break;
+		}
 
-		case BP_IDENT:
-			ident_p = (bp_ident_t *)p;
+		case BP_IDENT: {
+			bp_ident_t *ident_p = (bp_ident_t *)p;
 			dbg_printf("+%s of ident \"%s\" ", reason_str(p->reason), get_id_str(ident_p->id));
 			break;
+		}
 		}
 
 		dbg_printf(p->active ? "+enabled" : "+disabled");
@@ -611,7 +595,6 @@ static void show_bp(void)
 static firm_dbg_module_t *dbg_register(const char *name)
 {
 	ident *id = new_id_from_str(name);
-
 	return firm_dbg_register(get_id_str(id));
 }
 
@@ -621,7 +604,6 @@ static firm_dbg_module_t *dbg_register(const char *name)
 static void set_dbg_level(const char *name, unsigned lvl)
 {
 	firm_dbg_module_t *module = dbg_register(name);
-
 	if (firm_dbg_get_mask(module) != lvl) {
 		firm_dbg_set_mask(module, lvl);
 
@@ -636,14 +618,14 @@ static void set_dbg_outfile(const char *name, const char *fname)
 {
 	firm_dbg_module_t *module = dbg_register(name);
 	FILE *f = fopen(fname, "w");
-
-	if (! f) {
+	if (f == NULL) {
 		perror(fname);
 		return;
 	}
 
 	firm_dbg_set_file(module, f);
-	dbg_printf("Redirecting debug output of module %s to file %s\n", name, fname);
+	dbg_printf("Redirecting debug output of module %s to file %s\n", name,
+	           fname);
 }
 
 /**
@@ -651,17 +633,11 @@ static void set_dbg_outfile(const char *name, const char *fname)
  */
 static ir_type *find_type_nr(long nr)
 {
-	int i, n = get_irp_n_types();
-	ir_type *tp;
-
-	for (i = 0; i < n; ++i) {
-		tp = get_irp_type(i);
+	for (int i = 0, n = get_irp_n_types(); i < n; ++i) {
+		ir_type *tp = get_irp_type(i);
 		if (get_type_nr(tp) == nr)
 			return tp;
 	}
-	tp = get_glob_type();
-	if (get_type_nr(tp) == nr)
-		return tp;
 	return NULL;
 }
 
@@ -670,20 +646,14 @@ static ir_type *find_type_nr(long nr)
  */
 static ir_type *find_type_name(const char *name)
 {
-	int i, n = get_irp_n_types();
-	ir_type *tp;
-
-	for (i = 0; i < n; ++i) {
-		tp = get_irp_type(i);
+	for (int i = 0, n = get_irp_n_types(); i < n; ++i) {
+		ir_type *tp = get_irp_type(i);
 		if (!is_compound_type(tp))
 			continue;
 
 		if (strcmp(get_compound_name(tp), name) == 0)
 			return tp;
 	}
-	tp = get_glob_type();
-	if (strcmp(get_compound_name(tp), name) == 0)
-		return tp;
 	return NULL;
 }
 
@@ -702,11 +672,8 @@ typedef struct find_env {
 static void check_ent_nr(type_or_ent tore, void *ctx)
 {
 	find_env_t *env = (find_env_t*)ctx;
-
-	if (is_entity(tore.ent)) {
-		if (get_entity_nr(tore.ent) == env->u.nr) {
-			env->res = tore.ent;
-		}
+	if (is_entity(tore.ent) && get_entity_nr(tore.ent) == env->u.nr) {
+		env->res = tore.ent;
 	}
 }
 
@@ -716,11 +683,10 @@ static void check_ent_nr(type_or_ent tore, void *ctx)
 static void check_ent_name(type_or_ent tore, void *ctx)
 {
 	find_env_t *env = (find_env_t*)ctx;
-
-	if (is_entity(tore.ent))
-		if (strcmp(get_entity_name(tore.ent), env->u.name) == 0) {
-			env->res = tore.ent;
-		}
+	if (is_entity(tore.ent)
+	    && strcmp(get_entity_name(tore.ent), env->u.name) == 0) {
+		env->res = tore.ent;
+	}
 }
 
 /**
@@ -729,7 +695,6 @@ static void check_ent_name(type_or_ent tore, void *ctx)
 static ir_entity *find_entity_nr(long nr)
 {
 	find_env_t env;
-
 	env.u.nr = nr;
 	env.res  = NULL;
 	type_walk(check_ent_nr, NULL, &env);
@@ -742,7 +707,6 @@ static ir_entity *find_entity_nr(long nr)
 static ir_entity *find_entity_name(const char *name)
 {
 	find_env_t env;
-
 	env.u.name = name;
 	env.res    = NULL;
 	type_walk(check_ent_name, NULL, &env);
@@ -759,21 +723,19 @@ static void show_by_name(type_or_ent tore, void *env)
 	if (is_entity(tore.ent)) {
 		ir_entity *ent = tore.ent;
 
-		if (is_method_entity(ent)) {
-			if (get_entity_ident(ent) == id) {
-				ir_type *owner = get_entity_owner(ent);
-				ir_graph *irg = get_entity_irg(ent);
+		if (is_method_entity(ent) && get_entity_ident(ent) == id) {
+			ir_type   *owner = get_entity_owner(ent);
+			ir_graph *irg    = get_entity_irg(ent);
 
-				if (owner != get_glob_type()) {
-					printf("%s::%s", get_compound_name(owner), get_id_str(id));
-				} else {
-					printf("%s", get_id_str(id));
-				}
-				if (irg)
-					printf("[%ld] (%p)\n", get_irg_graph_nr(irg), (void*)irg);
-				else
-					printf(" NULL\n");
+			if (owner != get_glob_type()) {
+				printf("%s::%s", get_compound_name(owner), get_id_str(id));
+			} else {
+				printf("%s", get_id_str(id));
 			}
+			if (irg)
+				printf("[%ld] (%p)\n", get_irg_graph_nr(irg), (void*)irg);
+			else
+				printf(" NULL\n");
 		}
 	}
 }
@@ -788,21 +750,19 @@ static void show_by_ldname(type_or_ent tore, void *env)
 	if (is_entity(tore.ent)) {
 		ir_entity *ent = tore.ent;
 
-		if (is_method_entity(ent)) {
-			if (get_entity_ld_ident(ent) == id) {
-				ir_type *owner = get_entity_owner(ent);
-				ir_graph *irg = get_entity_irg(ent);
+		if (is_method_entity(ent) && get_entity_ld_ident(ent) == id) {
+			ir_type  *owner = get_entity_owner(ent);
+			ir_graph *irg   = get_entity_irg(ent);
 
-				if (owner != get_glob_type()) {
-					printf("%s::%s", get_compound_name(owner), get_id_str(id));
-				} else {
-					printf("%s", get_id_str(id));
-				}
-				if (irg)
-					printf("[%ld] (%p)\n", get_irg_graph_nr(irg), (void*)irg);
-				else
-					printf(" NULL\n");
+			if (owner != get_glob_type()) {
+				printf("%s::%s", get_compound_name(owner), get_id_str(id));
+			} else {
+				printf("%s", get_id_str(id));
 			}
+			if (irg)
+				printf("[%ld] (%p)\n", get_irg_graph_nr(irg), (void*)irg);
+			else
+				printf(" NULL\n");
 		}
 	}
 }
@@ -813,7 +773,6 @@ static void show_by_ldname(type_or_ent tore, void *env)
 static void irg_name(const char *name)
 {
 	ident *id = new_id_from_str(name);
-
 	type_walk(show_by_name, NULL, (void *)id);
 }
 
@@ -823,19 +782,22 @@ static void irg_name(const char *name)
 static void irg_ld_name(const char *name)
 {
 	ident *id = new_id_from_str(name);
-
 	type_walk(show_by_ldname, NULL, (void *)id);
 }
 
 enum tokens {
 	first_token = 256,
+
+	/* keywords, make sure this has the same entries as the reserved[] array */
 	tok_bp = first_token,
 	tok_create,
 	tok_disable,
 	tok_dumpfilter,
 	tok_enable,
 	tok_help,
+	tok_identifier,
 	tok_init,
+	tok_initialnodenr,
 	tok_irgldname,
 	tok_irgname,
 	tok_lower,
@@ -847,11 +809,10 @@ enum tokens {
 	tok_setoutfile,
 	tok_showent,
 	tok_showtype,
-	tok_initialnodenr,
-	tok_identifier,
-	tok_number,
+
 	tok_eof,
-	tok_error
+	tok_error,
+	tok_number,
 };
 
 static const char *reserved[] = {
@@ -862,6 +823,7 @@ static const char *reserved[] = {
 	"enable",
 	"help",
 	"init",
+	"initialnodenr",
 	"irgldname",
 	"irgname",
 	"lower",
@@ -873,18 +835,16 @@ static const char *reserved[] = {
 	"setoutfile",
 	"showent",
 	"showtype",
-	"initialnodenr",
 };
 
 /**
  * The Lexer data.
  */
 static struct lexer {
-	int has_token;        /**< set if a token is cached. */
-	unsigned cur_token;   /**< current token. */
-	unsigned number;      /**< current token attribute. */
-	const char *s;        /**< current token attribute. */
-	size_t len;           /**< current token attribute. */
+	unsigned    cur_token; /**< current token. */
+	unsigned    number;    /**< current token attribute. */
+	const char *s;         /**< current token attribute. */
+	size_t      len;       /**< current token attribute. */
 
 	const char *curr_pos;
 	const char *end_pos;
@@ -896,9 +856,8 @@ static struct lexer {
  */
 static void init_lexer(const char *input)
 {
-	lexer.has_token = 0;
-	lexer.curr_pos  = input;
-	lexer.end_pos   = input + strlen(input);
+	lexer.curr_pos = input;
+	lexer.end_pos  = input + strlen(input);
 }
 
 
@@ -912,17 +871,19 @@ static char next_char(void)
 	return *lexer.curr_pos++;
 }
 
-#define unput()    if (lexer.curr_pos < lexer.end_pos) --lexer.curr_pos
+static void unput(void)
+{
+	if (lexer.curr_pos < lexer.end_pos)
+		--lexer.curr_pos;
+}
 
 /**
  * The lexer.
  */
 static unsigned get_token(void)
 {
-	char c;
-	size_t i;
-
 	/* skip white space */
+	char c;
 	do {
 		c = next_char();
 	} while (c != '\0' && isspace((unsigned char)c));
@@ -944,8 +905,9 @@ static unsigned get_token(void)
 			++tok_start;
 			--len;
 		}
-		for (i = ARRAY_SIZE(reserved); i-- != 0;) {
-			if (strncasecmp(tok_start, reserved[i], len) == 0 && reserved[i][len] == '\0')
+		for (size_t i = ARRAY_SIZE(reserved); i-- != 0;) {
+			if (strncasecmp(tok_start, reserved[i], len) == 0
+			    && reserved[i][len] == '\0')
 				return first_token + i;
 		}
 
@@ -991,9 +953,9 @@ static unsigned get_token(void)
 		unput();
 		lexer.number = sign ? 0 - number : number;
 		return tok_number;
-	}
-	else if (c == '\0')
+	} else if (c == '\0') {
 		return tok_eof;
+	}
 	return c;
 }
 
@@ -1006,14 +968,13 @@ static void get_token_text(char *const buf, size_t const size)
 
 void firm_debug(const char *cmd)
 {
-	char name[1024], fname[1024];
+	char name[1024];
+	char fname[1024];
 
 	init_lexer(cmd);
 
 	for (;;) {
-		unsigned token;
-
-		token = get_token();
+		unsigned token = get_token();
 
 		switch (token) {
 		case tok_eof:
@@ -1095,7 +1056,7 @@ void firm_debug(const char *cmd)
 		}
 
 		case tok_init:
-			break_on_init = 1;
+			break_on_init = true;
 			break;
 
 		case tok_bp:
@@ -1106,14 +1067,14 @@ void firm_debug(const char *cmd)
 			token = get_token();
 			if (token != tok_number)
 				goto error;
-			bp_activate(lexer.number, 1);
+			bp_activate(lexer.number, true);
 			break;
 
 		case tok_disable:
 			token = get_token();
 			if (token != tok_number)
 				goto error;
-			bp_activate(lexer.number, 0);
+			bp_activate(lexer.number, false);
 			break;
 
 		case tok_setmask:
@@ -1214,16 +1175,12 @@ leave:
 
 void firm_init_debugger(void)
 {
-	char *env;
-
 	bp_numbers = new_set(cmp_nr_bp, 8);
 	bp_idents  = new_set(cmp_ident_bp, 8);
+	is_active  = true;
 
-	env = getenv("FIRMDBG");
-
-	is_active = 1;
-
-	if (env)
+	char *env = getenv("FIRMDBG");
+	if (env != NULL)
 		firm_debug(env);
 
 	if (break_on_init)
@@ -1246,14 +1203,13 @@ const char *gdb_tarval_helper(void *tv_object)
 const char *gdb_out_edge_helper(const ir_node *node)
 {
 	static char buf[4*1024];
-	char *b = buf;
-	size_t l;
+	char  *b   = buf;
 	size_t len = sizeof(buf);
 	foreach_out_edge(node, edge) {
 		ir_node *n = get_edge_src_irn(edge);
 
 		ir_snprintf(b, len, "%+F  ", n);
-		l = strlen(b);
+		size_t l = strlen(b);
 		len -= l;
 		b += l;
 	}
@@ -1278,8 +1234,6 @@ static int __attribute__((unused)) _firm_only_that_you_can_compile_with_NDEBUG_d
  *
  * @section sec_cmd Supported commands
  *
- * Historically all debugger commands start with a dot.  This isn't needed in newer
- * versions, but still supported, ie the commands ".init" and "init" are equal.
  * The following commands are currently supported:
  *
  * @b init
@@ -1288,7 +1242,7 @@ static int __attribute__((unused)) _firm_only_that_you_can_compile_with_NDEBUG_d
  * Typically this command is used in the environment to stop the execution
  * of a Firm compiler right after the initialization, like this:
  *
- * $export FIRMDBG=".init"
+ * $export FIRMDBG="init"
  *
  * @b create nr
  *
@@ -1318,14 +1272,6 @@ static int __attribute__((unused)) _firm_only_that_you_can_compile_with_NDEBUG_d
  * @b newent name
  *
  * Break if the entity name was created.
- *
- * @b newtype nr
- *
- * Break if the type with number nr was created.
- *
- * @b newtype name
- *
- * Break if the type name was created.
  *
  * @b bp
  *
