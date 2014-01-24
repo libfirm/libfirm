@@ -3390,33 +3390,43 @@ static ir_node *gen_Mux(ir_node *node)
 				case SETCC_TR_ADD:
 					new_node = new_bd_ia32_Lea(dbgi, new_block, new_node, noreg_GP);
 					add_ia32_am_offs_int(new_node, res.steps[step].val);
+					SET_IA32_ORIG_NODE(new_node, node);
 					break;
 				case SETCC_TR_ADDxx:
 					new_node = new_bd_ia32_Lea(dbgi, new_block, new_node, new_node);
+					SET_IA32_ORIG_NODE(new_node, node);
 					break;
 				case SETCC_TR_LEA:
 					new_node = new_bd_ia32_Lea(dbgi, new_block, noreg_GP, new_node);
 					set_ia32_am_scale(new_node, res.steps[step].scale);
 					set_ia32_am_offs_int(new_node, res.steps[step].val);
+					SET_IA32_ORIG_NODE(new_node, node);
 					break;
 				case SETCC_TR_LEAxx:
 					new_node = new_bd_ia32_Lea(dbgi, new_block, new_node, new_node);
 					set_ia32_am_scale(new_node, res.steps[step].scale);
 					set_ia32_am_offs_int(new_node, res.steps[step].val);
+					SET_IA32_ORIG_NODE(new_node, node);
 					break;
 				case SETCC_TR_SHL:
 					imm = ia32_immediate_from_long(res.steps[step].scale);
+					SET_IA32_ORIG_NODE(imm, node);
 					new_node = new_bd_ia32_Shl(dbgi, new_block, new_node, imm);
+					SET_IA32_ORIG_NODE(new_node, node);
 					break;
 				case SETCC_TR_NEG:
 					new_node = new_bd_ia32_Neg(dbgi, new_block, new_node);
+					SET_IA32_ORIG_NODE(new_node, node);
 					break;
 				case SETCC_TR_NOT:
 					new_node = new_bd_ia32_Not(dbgi, new_block, new_node);
+					SET_IA32_ORIG_NODE(new_node, node);
 					break;
 				case SETCC_TR_AND:
 					imm = ia32_immediate_from_long(res.steps[step].val);
+					SET_IA32_ORIG_NODE(imm, node);
 					new_node = new_bd_ia32_And(dbgi, new_block, noreg_GP, noreg_GP, nomem, new_node, imm);
+					SET_IA32_ORIG_NODE(new_node, node);
 					break;
 				case SETCC_TR_SET:
 					new_node = create_set_32bit(dbgi, new_block, flags, res.cc, node);
