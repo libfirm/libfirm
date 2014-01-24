@@ -3111,8 +3111,6 @@ static void find_const_transform(x86_condition_code_t cc,
 {
 	unsigned step = 0;
 
-	res->num_steps = 0;
-
 	/* Expand to GP register width, so no carry bit gets lost when calculating new
 	 * constants. */
 	t = tarval_convert_to(t, ia32_mode_gp);
