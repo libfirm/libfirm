@@ -207,7 +207,7 @@ typedef struct wlk_env {
 	ir_heights_t         *heights;         /**< Heights for reachability check. */
 	bool                  only_local_mem:1;/**< Set if only local memory access was found. */
 	bool                  changed:1;       /**< Set if the current graph was changed. */
-	ir_node             **arg_projs;
+	ir_node             **param_sels;
 } wlk_env;
 
 /**
@@ -320,8 +320,11 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx)
 	case iro_Proj: {
 		ir_node  *pred = get_Proj_pred(n);
 		ir_graph *irg  = get_irn_irg(n);
-		if (pred == get_irg_args(irg))
-			ARR_APP1(ir_node*, env->arg_projs, n);
+		if (pred == get_irg_args(irg)) {
+			long pn = get_Proj_proj(n);
+			set_Proj_proj(n, pn + env->arg_shift);
+			env->changed = true;
+		}
 		break;
 	}
 	case iro_Call: {
@@ -383,21 +386,12 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx)
 	}
 	case iro_Sel: {
 		ir_entity *entity = get_Sel_entity(n);
-		ir_type   *type   = get_entity_type(entity);
-
-		if (is_parameter_entity(entity) && is_aggregate_type(type)) {
-			if (! (env->flags & LF_DONT_LOWER_ARGUMENTS)) {
-				/* note that the walker will hit the Proj later on and apply arg
-				 * shift although the entity parameter number is already
-				 * shifted, so we subtract arg_shift here to adjust for that. */
-				size_t num
-					= get_entity_parameter_number(entity) - env->arg_shift;
-				ir_graph *irg  = get_irn_irg(n);
-				ir_node  *args = get_irg_args(irg);
-				ir_node  *ptr  = new_r_Proj(args, mode_P, num);
-				exchange(n, ptr);
-			}
-
+		if (!is_parameter_entity(entity))
+			break;
+		ir_type *type = get_entity_type(entity);
+		if (is_aggregate_type(type)) {
+			if (! (env->flags & LF_DONT_LOWER_ARGUMENTS))
+				ARR_APP1(ir_node*, env->param_sels, n);
 			/* we need to copy compound parameters */
 			env->only_local_mem = false;
 		}
@@ -690,23 +684,23 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 	env.arg_shift      = arg_shift;
 	env.flags          = flags;
 	env.lowered_mtp    = lowered_mtp;
-	env.arg_projs      = NEW_ARR_F(ir_node*, 0);
+	env.param_sels     = NEW_ARR_F(ir_node*, 0);
 	env.only_local_mem = true;
 
 	/* scan the code, fix argument numbers and collect calls. */
 	irg_walk_graph(irg, firm_clear_link, NULL, &env);
 	irg_walk_graph(irg, fix_args_and_collect_calls, NULL, &env);
 
-	/* fix argument proj numbers */
-	if (arg_shift > 0) {
-		for (size_t i = 0, n = ARR_LEN(env.arg_projs); i < n; ++i) {
-			ir_node *proj = env.arg_projs[i];
-			long pn = get_Proj_proj(proj);
-			set_Proj_proj(proj, pn + arg_shift);
-			env.changed = true;
-		}
+	/* fix parameter sels */
+	ir_node *args = get_irg_args(irg);
+	for (size_t i = 0, n = ARR_LEN(env.param_sels); i < n; ++i) {
+		ir_node   *sel    = env.param_sels[i];
+		ir_entity *entity = get_Sel_entity(sel);
+		size_t     num    = get_entity_parameter_number(entity);
+		ir_node   *ptr    = new_r_Proj(args, mode_P, num);
+		exchange(sel, ptr);
 	}
-	DEL_ARR_F(env.arg_projs);
+	DEL_ARR_F(env.param_sels);
 
 	if (n_param_com > 0 && !(flags & LF_DONT_LOWER_ARGUMENTS))
 		remove_compound_param_entities(irg);
