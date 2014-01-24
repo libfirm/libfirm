@@ -877,6 +877,27 @@ static void unput(void)
 		--lexer.curr_pos;
 }
 
+static void get_text(void)
+{
+	/* skip white space */
+	char c;
+	do {
+		c = next_char();
+	} while (c != '\0' && isspace((unsigned char)c));
+
+	size_t      len   = 0;
+	const char *begin = lexer.curr_pos - 1;
+	while (c != '\0' && c != ' ' && c != ';') {
+		++len;
+		c = next_char();
+	}
+	if (c != '\0')
+		unput();
+
+	lexer.s   = begin;
+	lexer.len = len;
+}
+
 /**
  * The lexer.
  */
@@ -1143,13 +1164,14 @@ void firm_debug(const char *cmd)
 			irg_ld_name(name);
 			break;
 
-		case tok_dumpfilter:
-			token = get_token();
-			if (token != tok_identifier)
-				goto error;
-			get_token_text(name, sizeof(name));
-			ir_set_dump_filter(name);
+		case tok_dumpfilter: {
+			get_text();
+			char *buf = ALLOCAN(char, lexer.len+1);
+			memcpy(buf, lexer.s, lexer.len);
+			buf[lexer.len] = '\0';
+			ir_set_dump_filter(buf);
 			break;
+		}
 
 		case tok_help:
 			show_commands();
