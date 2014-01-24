@@ -1593,16 +1593,14 @@ static void dump_entity_initializer(FILE *F, const ir_entity *ent)
 /**
  * type-walker: Dumps a type or entity and its edges.
  */
-static void dump_type_info(type_or_ent tore, void *env)
+static void dump_type_info(ir_type *const tp, ir_entity *const ent, void *const env)
 {
 	FILE *F = (FILE*)env;
 	size_t i = 0;  /* to shutup gcc */
 
 	/* dump this type or entity */
 
-	switch (get_kind(tore.ent)) {
-	case k_entity: {
-		ir_entity *ent = tore.ent;
+	if (ent) {
 		/* The node */
 		dump_entity_node(F, ent);
 		/* The Edges */
@@ -1621,10 +1619,7 @@ static void dump_type_info(type_or_ent tore, void *env)
 				dump_entity_initializer(F, ent);
 			}
 		}
-		break;
-	}
-	case k_type: {
-		ir_type *tp = tore.typ;
+	} else  {
 		dump_type_node(F, tp);
 		/* and now the edges */
 		switch (get_type_tpop_code(tp)) {
@@ -1684,28 +1679,23 @@ static void dump_type_info(type_or_ent tore, void *env)
 		case tpo_primitive:
 			break;
 		}
-		break; /* case k_type */
-	}
-	default:
-		printf(" *** irdump,  dump_type_info(l.%i), faulty type.\n", __LINE__);
 	}
 }
 
 /** For dumping class hierarchies.
  * Dumps a class type node and a superclass edge.
  */
-static void dump_class_hierarchy_node(type_or_ent tore, void *ctx)
+static void dump_class_hierarchy_node(ir_type *const tp, ir_entity *const ent, void *const ctx)
 {
 	FILE *F = (FILE*)ctx;
 	size_t i = 0;  /* to shutup gcc */
 
 	/* dump this type or entity */
-	switch (get_kind(tore.ent)) {
-	case k_entity: {
-		ir_entity *ent = tore.ent;
-		if (get_entity_owner(ent) == get_glob_type()) break;
+	if (ent) {
+		if (get_entity_owner(ent) == get_glob_type())
+			return;
 		if (!is_Method_type(get_entity_type(ent)))
-			break;  /* GL */
+			return;  /* GL */
 		if (flags & ir_dump_flag_entities_in_hierarchy
 				&& is_Class_type(get_entity_owner(ent))) {
 			/* The node */
@@ -1717,12 +1707,9 @@ static void dump_class_hierarchy_node(type_or_ent tore, void *ctx)
 				print_ent_ent_edge(F, get_entity_overwrites(ent, i), ent, 0, ird_color_none, ENT_OVERWRITES_EDGE_ATTR);
 			}
 		}
-		break;
-	}
-	case k_type: {
-		ir_type *tp = tore.typ;
+	} else {
 		if (tp == get_glob_type())
-			break;
+			return;
 		switch (get_type_tpop_code(tp)) {
 		case tpo_class:
 			dump_type_node(F, tp);
@@ -1734,10 +1721,6 @@ static void dump_class_hierarchy_node(type_or_ent tore, void *ctx)
 			break;
 		default: break;
 		}
-		break; /* case k_type */
-	}
-	default:
-		printf(" *** irdump,  dump_class_hierarchy_node(l.%i), faulty type.\n", __LINE__);
 	}
 }
 

@@ -669,23 +669,26 @@ typedef struct find_env {
 /**
  * Type-walker: Find an entity with given number.
  */
-static void check_ent_nr(type_or_ent tore, void *ctx)
+static void check_ent_nr(ir_type *const type, ir_entity *const entity, void *const ctx)
 {
+	(void)type;
+
 	find_env_t *env = (find_env_t*)ctx;
-	if (is_entity(tore.ent) && get_entity_nr(tore.ent) == env->u.nr) {
-		env->res = tore.ent;
+	if (entity && get_entity_nr(entity) == env->u.nr) {
+		env->res = entity;
 	}
 }
 
 /**
  * Type-walker: Find an entity with given name.
  */
-static void check_ent_name(type_or_ent tore, void *ctx)
+static void check_ent_name(ir_type *const type, ir_entity *const entity, void *const ctx)
 {
+	(void)type;
+
 	find_env_t *env = (find_env_t*)ctx;
-	if (is_entity(tore.ent)
-	    && strcmp(get_entity_name(tore.ent), env->u.name) == 0) {
-		env->res = tore.ent;
+	if (entity && strcmp(get_entity_name(entity), env->u.name) == 0) {
+		env->res = entity;
 	}
 }
 
@@ -716,13 +719,13 @@ static ir_entity *find_entity_name(const char *name)
 /**
  * Search methods for a name.
  */
-static void show_by_name(type_or_ent tore, void *env)
+static void show_by_name(ir_type *const type, ir_entity *const ent, void *const env)
 {
+	(void)type;
+
 	ident *id = (ident *)env;
 
-	if (is_entity(tore.ent)) {
-		ir_entity *ent = tore.ent;
-
+	if (ent) {
 		if (is_method_entity(ent) && get_entity_ident(ent) == id) {
 			ir_type   *owner = get_entity_owner(ent);
 			ir_graph *irg    = get_entity_irg(ent);
@@ -743,13 +746,13 @@ static void show_by_name(type_or_ent tore, void *env)
 /**
  * Search methods for a ldname.
  */
-static void show_by_ldname(type_or_ent tore, void *env)
+static void show_by_ldname(ir_type *const type, ir_entity *const ent, void *const env)
 {
+	(void)type;
+
 	ident *id = (ident *)env;
 
-	if (is_entity(tore.ent)) {
-		ir_entity *ent = tore.ent;
-
+	if (ent) {
 		if (is_method_entity(ent) && get_entity_ld_ident(ent) == id) {
 			ir_type  *owner = get_entity_owner(ent);
 			ir_graph *irg   = get_entity_irg(ent);

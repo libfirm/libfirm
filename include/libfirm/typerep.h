@@ -1986,18 +1986,13 @@ FIRM_API ir_entity *frame_alloc_area(ir_type *frame_type, int size,
  */
 typedef int (compare_types_func_t)(const void *tp1, const void *tp2);
 
-/** A data type to treat types and entities as the same. */
-typedef union {
-	ir_type   *typ;   /**< points to a type */
-	ir_entity *ent;   /**< points to an entity */
-} type_or_ent;
-
 /** Type of argument functions for type walkers.
  *
- * @param tore    points to the visited type or entity
+ * @param type    points to the visited type, either this or entity is non-null
+ * @param entity  points to the visited entity, either this or type is non-null
  * @param env     free environment pointer
  */
-typedef void type_walk_func(type_or_ent tore, void *env);
+typedef void type_walk_func(ir_type *type, ir_entity *entity, void *env);
 
 /**  The class walk function
  *

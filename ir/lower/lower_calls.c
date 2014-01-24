@@ -809,25 +809,22 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 	obstack_free(&env.obst, NULL);
 }
 
-static void lower_method_types(type_or_ent tore, void *env)
+static void lower_method_types(ir_type *const type, ir_entity *const entity, void *const env)
 {
 	const compound_call_lowering_flags *flags
 		= (const compound_call_lowering_flags*)env;
 
 	/* fix method entities */
-	if (is_entity(tore.ent)) {
-		ir_entity *ent     = tore.ent;
-		ir_type   *tp      = get_entity_type(ent);
-		ir_type   *lowered = lower_mtp(*flags, tp);
-		set_entity_type(ent, lowered);
+	if (entity) {
+		ir_type *tp      = get_entity_type(entity);
+		ir_type *lowered = lower_mtp(*flags, tp);
+		set_entity_type(entity, lowered);
 	} else {
-		ir_type *tp = tore.typ;
-
 		/* fix pointer to methods */
-		if (is_Pointer_type(tp)) {
-			ir_type *points_to         = get_pointer_points_to_type(tp);
+		if (is_Pointer_type(type)) {
+			ir_type *points_to         = get_pointer_points_to_type(type);
 			ir_type *lowered_points_to = lower_mtp(*flags, points_to);
-			set_pointer_points_to_type(tp, lowered_points_to);
+			set_pointer_points_to_type(type, lowered_points_to);
 		}
 	}
 }

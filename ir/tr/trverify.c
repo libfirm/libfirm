@@ -350,15 +350,14 @@ int check_entity(const ir_entity *entity)
 	return fine;
 }
 
-static void check_tore(type_or_ent tore, void *env)
+static void check_tore(ir_type *const type, ir_entity *const entity, void *const env)
 {
 	bool *fine = (bool*)env;
 
-	if (is_type(tore.typ)) {
-		*fine &= check_type(tore.typ);
+	if (type) {
+		*fine &= check_type(type);
 	} else {
-		assert(is_entity(tore.ent));
-		*fine &= check_entity(tore.ent);
+		*fine &= check_entity(entity);
 	}
 }
 
