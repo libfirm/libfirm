@@ -3224,6 +3224,18 @@ static void find_const_transform(x86_condition_code_t cc,
 	panic("tarval is not long");
 }
 
+static ir_node *create_Conv_I2I(dbg_info *dbgi, ir_node *block, ir_node *base,
+                                ir_node *index, ir_node *mem, ir_node *val,
+                                ir_mode *mode)
+{
+	ir_node *(*func)(dbg_info*, ir_node*, ir_node*, ir_node*, ir_node*,
+	                 ir_node*, ir_mode*);
+
+	func = get_mode_size_bits(mode) == 8 ?
+		new_bd_ia32_Conv_I2I_8bit : new_bd_ia32_Conv_I2I;
+	return func(dbgi, block, base, index, mem, val, mode);
+}
+
 /**
  * Transforms a Mux node into some code sequence.
  *
@@ -3435,6 +3447,11 @@ static ir_node *gen_Mux(ir_node *node)
 					panic("unknown setcc transform");
 				}
 			}
+			if (get_mode_size_bits(mode) != 32) {
+				new_node = create_Conv_I2I(dbgi, new_block, noreg_GP, noreg_GP, nomem, new_node, mode);
+				set_ia32_ls_mode(new_node, mode);
+				SET_IA32_ORIG_NODE(new_node, node);
+			}
 		} else {
 			new_node = create_CMov(node, sel, flags, cc);
 		}
@@ -3520,18 +3537,6 @@ static ir_node *gen_x87_conv(ir_mode *tgt_mode, ir_node *node)
 
 	ir_node *new_node = new_r_Proj(load, ia32_mode_E, pn_ia32_fld_res);
 	return new_node;
-}
-
-static ir_node *create_Conv_I2I(dbg_info *dbgi, ir_node *block, ir_node *base,
-                                ir_node *index, ir_node *mem, ir_node *val,
-                                ir_mode *mode)
-{
-	ir_node *(*func)(dbg_info*, ir_node*, ir_node*, ir_node*, ir_node*,
-	                 ir_node*, ir_mode*);
-
-	func = get_mode_size_bits(mode) == 8 ?
-		new_bd_ia32_Conv_I2I_8bit : new_bd_ia32_Conv_I2I;
-	return func(dbgi, block, base, index, mem, val, mode);
 }
 
 /**
