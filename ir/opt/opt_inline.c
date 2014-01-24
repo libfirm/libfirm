@@ -164,8 +164,8 @@ static void find_addr(ir_node *node, void *env)
  */
 static bool can_inline(ir_node *call, ir_graph *called_graph)
 {
-	ir_entity                *called = get_irg_entity(called_graph);
-	mtp_additional_properties props  = get_entity_additional_properties(called);
+	ir_entity                 *called = get_irg_entity(called_graph);
+	mtp_additional_properties  props  = get_entity_additional_properties(called);
 	if (props & mtp_property_noinline)
 		return false;
 
@@ -291,8 +291,8 @@ static void copy_parameter_entities(ir_node *call, ir_graph *called_graph)
 
 		ir_type   *old_type    = get_entity_type(old_entity);
 		dbg_info  *entity_dbgi = get_entity_dbg_info(old_entity);
-		ident     *name        = get_entity_ident(old_entity);
-		name = id_mangle3("", name, "$inlined");
+		ident     *old_name    = get_entity_ident(old_entity);
+		ident     *name        = id_mangle3("", old_name, "$inlined");
 		ir_entity *new_ent     = new_entity(frame_type, name, old_type);
 		set_entity_dbg_info(new_ent, entity_dbgi);
 		set_entity_link(old_entity, new_ent);
@@ -529,7 +529,7 @@ static bool inline_method(ir_node *const call, ir_graph *called_graph)
 		set_irn_link(post_bl, call_mem);
 	}
 	/* Now the real results */
-	ir_type *ctp = get_Call_type(call);
+	ir_type *ctp      = get_Call_type(call);
 	ir_node *call_res;
 	if (n_res > 0) {
 		for (int j = 0; j < n_res; j++) {
@@ -884,9 +884,9 @@ static unsigned get_method_local_adress_weight(ir_graph *callee, size_t pos)
  */
 static int calc_inline_benefice(call_entry *entry, ir_graph *callee)
 {
-	ir_node                  *call  = entry->call;
-	ir_entity                *ent   = get_irg_entity(callee);
-	mtp_additional_properties props = get_entity_additional_properties(ent);
+	ir_node                   *call  = entry->call;
+	ir_entity                 *ent   = get_irg_entity(callee);
+	mtp_additional_properties  props = get_entity_additional_properties(ent);
 	if (props & mtp_property_noinline) {
 		DB((dbg, LEVEL_2, "In %+F Call to %+F: inlining forbidden\n",
 		    call, callee));
@@ -900,10 +900,10 @@ static int calc_inline_benefice(call_entry *entry, ir_graph *callee)
 	}
 
 	/* costs for every passed parameter */
-	size_t   n_params = get_Call_n_params(call);
-	ir_type *mtp      = get_entity_type(ent);
-	unsigned cc       = get_method_calling_convention(mtp);
-	int64_t  weight   = 0;
+	size_t    n_params = get_Call_n_params(call);
+	ir_type  *mtp      = get_entity_type(ent);
+	unsigned  cc       = get_method_calling_convention(mtp);
+	int64_t   weight   = 0;
 	if (cc & cc_reg_param) {
 		/* register parameter, smaller costs for register parameters */
 		size_t max_regs = cc & ~cc_bits;
@@ -983,7 +983,7 @@ static int calc_inline_benefice(call_entry *entry, ir_graph *callee)
 
 typedef struct walk_env_t {
 	ir_graph **irgs;
-	size_t   last_irg;
+	size_t     last_irg;
 } walk_env_t;
 
 /**
@@ -1108,7 +1108,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 		if (!(props & mtp_property_always_inline)
 		    && env->n_nodes + callee_env->n_nodes > maxsize) {
 			DB((dbg, LEVEL_2, "%+F: too big (%d) + %+F (%d)\n", irg,
-						env->n_nodes, callee, callee_env->n_nodes));
+			    env->n_nodes, callee, callee_env->n_nodes));
 			continue;
 		}
 
@@ -1138,7 +1138,6 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 			 * the graph first.
 			 */
 			int benefice = curr_call->benefice;
-			ir_graph *copy;
 
 			/*
 			 * Reduce the weight for recursive function IFF not all arguments
@@ -1156,7 +1155,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 			 * Note that recursive methods are never leafs, so it is
 			 * sufficient to test this condition here.
 			 */
-			copy = create_irg_copy(callee);
+			ir_graph *copy = create_irg_copy(callee);
 
 			/* create_irg_copy() destroys the Proj links, recompute them */
 			phiproj_computed = false;
@@ -1168,10 +1167,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 			set_irg_link(copy, callee_env);
 
 			assure_irg_properties(copy, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
-			wenv_t wenv;
-			memset(&wenv, 0, sizeof(wenv));
-			wenv.x              = callee_env;
-			wenv.ignore_callers = true;
+			wenv_t wenv = { .x = callee_env, .ignore_callers = true };
 			irg_walk_graph(copy, NULL, collect_calls2, &wenv);
 
 			/*
