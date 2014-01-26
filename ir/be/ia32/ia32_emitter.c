@@ -209,13 +209,11 @@ static void emit_ia32_Immediate_no_prefix(const ir_node *node)
 	ir_entity *const entity = attr->entity;
 	if (entity != NULL) {
 		ia32_emit_entity(entity, attr->no_pic_adjust);
-	}
-	if (entity == NULL || attr->offset != 0) {
-		if (entity != NULL) {
+		if (attr->offset != 0) {
 			be_emit_irprintf("%+d", attr->offset);
-		} else {
-			be_emit_irprintf("0x%X", attr->offset);
 		}
+	} else {
+		be_emit_irprintf("0x%lX", attr->offset);
 	}
 }
 

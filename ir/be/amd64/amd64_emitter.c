@@ -187,13 +187,10 @@ static void amd64_emit_immediate(const amd64_movimm_attr_t *const imm)
 	ir_entity *entity = imm->entity;
 	if (entity != NULL) {
 		be_gas_emit_entity(entity);
-	}
-	if (entity == NULL || imm->offset != 0) {
-		if (entity != NULL) {
+		if (imm->offset != 0)
 			be_emit_irprintf("%+ld", imm->offset);
-		} else {
-			be_emit_irprintf("0x%lX", imm->offset);
-		}
+	} else {
+		be_emit_irprintf("0x%lX", imm->offset);
 	}
 }
 
