@@ -674,7 +674,7 @@ restart:
 			/* the optimizations expected the true case to jump */
 			if (get_Proj_proj(lower_cf) == pn_Cond_false) {
 				ir_node *block = get_nodes_block(replacement);
-				replacement    = new_rd_Not(NULL, block, replacement, mode_b);
+				replacement    = new_r_Not(block, replacement, mode_b);
 			}
 			set_Cond_selector(cond, replacement);
 

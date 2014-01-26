@@ -1428,7 +1428,7 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 
 	/* fourth step: create the Store */
 	store = new_rd_Store(db, block, phiM, ptr, phiD, cons_none);
-	projM = new_rd_Proj(NULL, store, mode_M, pn_Store_M);
+	projM = new_r_Proj(store, mode_M, pn_Store_M);
 
 	/* rewire memory and kill the old nodes */
 	for (int i = n - 1; i >= 0; --i) {
@@ -1444,7 +1444,7 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 
 	/* fifths step: repair exception flow */
 	if (exc) {
-		ir_node *projX = new_rd_Proj(NULL, store, mode_X, pn_Store_X_except);
+		ir_node *projX = new_r_Proj(store, mode_X, pn_Store_X_except);
 
 		info->projs[pn_Store_X_except] = projX;
 		info->exc_block                = exc;

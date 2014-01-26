@@ -668,7 +668,7 @@ static ir_node *gen_Call(ir_node *node)
 	} else if (sync_arity == 1) {
 		in[mem_pos] = sync_ins[0];
 	} else {
-		in[mem_pos] = new_rd_Sync(NULL, new_block, sync_arity, sync_ins);
+		in[mem_pos] = new_r_Sync(new_block, sync_arity, sync_ins);
 	}
 
 	in[in_arity]     = be_transform_node(callee);

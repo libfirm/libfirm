@@ -893,7 +893,7 @@ static ir_node *fix_mem_proj(ir_node *node, ia32_address_mode_t *am)
 
 	if (mode != mode_T) {
 		set_irn_mode(node, mode_T);
-		return new_rd_Proj(NULL, node, mode, pn_ia32_res);
+		return new_r_Proj(node, mode, pn_ia32_res);
 	} else {
 		return node;
 	}
@@ -3000,10 +3000,10 @@ static ir_node *create_doz(ir_node *psi, ir_node *a, ir_node *b)
 	} else {
 		sub = new_node;
 		set_irn_mode(sub, mode_T);
-		new_node = new_rd_Proj(NULL, sub, mode, pn_ia32_res);
+		new_node = new_r_Proj(sub, mode, pn_ia32_res);
 	}
 	assert(is_ia32_Sub(sub));
-	ir_node  *eflags = new_rd_Proj(NULL, sub, ia32_mode_gp, pn_ia32_Sub_flags);
+	ir_node  *eflags = new_r_Proj(sub, ia32_mode_gp, pn_ia32_Sub_flags);
 
 	dbg_info *dbgi   = get_irn_dbg_info(psi);
 	ir_node  *block  = get_nodes_block(new_node);
@@ -3352,7 +3352,7 @@ static ir_node *gen_Mux(ir_node *node)
 			}
 			set_am_attributes(load, &am);
 
-			return new_rd_Proj(NULL, load, mode_fp, pn_ia32_res);
+			return new_r_Proj(load, mode_fp, pn_ia32_res);
 		}
 		panic("cannot transform floating point Mux");
 
@@ -4130,7 +4130,7 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 		set_am_attributes(fadd, &am);
 
 		set_irn_mode(fadd, mode_T);
-		res = new_rd_Proj(NULL, fadd, mode_fp, pn_ia32_res);
+		res = new_r_Proj(fadd, mode_fp, pn_ia32_res);
 	}
 	return res;
 }

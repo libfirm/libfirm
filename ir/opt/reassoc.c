@@ -362,8 +362,8 @@ static int reassoc_Mul(ir_node **node)
 		/* we can only multiplication rules on integer arithmetic */
 		if (mode_is_int(get_irn_mode(t1)) && mode_is_int(get_irn_mode(t2))) {
 			ir_graph *irg = get_irn_irg(t1);
-			in[0] = new_rd_Mul(NULL, block, c, t1, mode);
-			in[1] = new_rd_Mul(NULL, block, c, t2, mode);
+			in[0] = new_r_Mul(block, c, t1, mode);
+			in[1] = new_r_Mul(block, c, t2, mode);
 
 			irn   = optimize_node(new_ir_node(NULL, irg, block, op, mode, 2, in));
 

@@ -140,7 +140,7 @@ static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 
 	if (get_irn_mode(copy) == mode_T) {
 		ir_mode *mode = flag_class->mode;
-		value = new_rd_Proj(NULL, copy, mode, pn);
+		value = new_r_Proj(copy, mode, pn);
 		be_add_missing_keeps_node(copy);
 	} else {
 		value = copy;
