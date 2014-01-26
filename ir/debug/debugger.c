@@ -894,8 +894,7 @@ static void get_text(void)
 		++len;
 		c = next_char();
 	}
-	if (c != '\0')
-		unput();
+	unput();
 
 	lexer.s   = begin;
 	lexer.len = len;
