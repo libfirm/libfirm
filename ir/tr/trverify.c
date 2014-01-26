@@ -319,7 +319,7 @@ int check_entity(const ir_entity *entity)
 			}
 		}
 		if (get_entity_peculiarity(entity) == peculiarity_existent) {
-			ir_entity *impl = get_SymConst_entity(get_atomic_ent_value(entity));
+			ir_entity *impl = get_EntConst_entity(get_atomic_ent_value(entity));
 			if (impl == NULL) {
 				report_error("inherited method entity %+F must have constant pointing to existent entity.", entity);
 				fine = false;

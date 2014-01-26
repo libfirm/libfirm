@@ -486,9 +486,7 @@ static ir_node *get_intrinsic_address(ir_type *method, ir_op *op,
 		assert(ent && "Intrinsic creator must return an entity");
 		entry->ent = ent;
 	}
-	symconst_symbol sym;
-	sym.entity_p = ent;
-	return new_r_SymConst(env->irg, mode_P_code, sym, symconst_addr_ent);
+	return new_r_EntConst(env->irg, mode_P_code, ent, entconst_addr);
 }
 
 /**

@@ -243,18 +243,37 @@ static void get_loop_info(ir_node *node, void *env)
 
 	/* collect some loop information */
 	if (node_in_loop) {
-		if (is_Phi(node) && opt_params.count_phi)
-			++loop_info.nodes;
-		else if (is_Proj(node) && opt_params.count_proj)
-			++loop_info.nodes;
-		else if (!is_Confirm(node) && !is_Const(node) && !is_SymConst(node))
-			++loop_info.nodes;
-
-		if (is_Load(node) || is_Store(node))
-			++loop_info.ld_st;
-
-		if (is_Call(node))
+		switch (get_irn_opcode(node)) {
+		case iro_Call:
 			++loop_info.calls;
+			goto count;
+
+		case iro_Load:
+		case iro_Store:
+			++loop_info.ld_st;
+			goto count;
+
+		case iro_Phi:
+			if (opt_params.count_phi)
+				goto count;
+				break;
+
+		case iro_Proj:
+			if (opt_params.count_proj)
+				goto count;
+				break;
+
+		case iro_Confirm:
+		case iro_Const:
+		case iro_EntConst:
+		case iro_TypeConst:
+			break;
+
+		default:
+count:
+			++loop_info.nodes;
+			break;
+		}
 	}
 
 	arity = get_irn_arity(node);
@@ -1751,7 +1770,6 @@ static unsigned is_loop_invariant_def(ir_node *node)
 
 	if (! is_in_loop(node)) {
 		DB((dbg, LEVEL_4, "Not in loop %N\n", node));
-		/* || is_Const(node) || is_SymConst(node)) {*/
 		return 1;
 	}
 
@@ -1816,6 +1834,18 @@ static unsigned get_invariant_pred(ir_node *node, ir_node **invar_pred, ir_node 
 	}
 }
 
+static bool is_const(ir_node *const node)
+{
+	switch (get_irn_opcode(node)) {
+	case iro_Const:
+	case iro_EntConst:
+	case iro_TypeConst:
+		return true;
+	default:
+		return false;
+	}
+}
+
 /* Starts from a phi that may belong to an iv.
  * If an add forms a loop with iteration_phi,
  * and add uses a constant, 1 is returned
@@ -1841,7 +1871,7 @@ static unsigned get_start_and_add(ir_node *iteration_phi, unrolling_kind_flag ro
 			if (loop_info.start_val && found_start_val != loop_info.start_val)
 				return 0;
 
-			if ((role == constant) && !(is_SymConst(found_start_val) || is_Const(found_start_val)))
+			if ((role == constant) && !is_const(found_start_val))
 					return 0;
 			else if((role == constant) && !(is_loop_invariant_def(found_start_val)))
 					return 0;
@@ -1883,13 +1913,13 @@ static unsigned get_const_pred(ir_node *node, ir_node **const_pred, ir_node **ot
 	*other = NULL;
 
 	/*DB((dbg, LEVEL_4, "is %N const\n", pred0));*/
-	if (is_Const(pred0) || is_SymConst(pred0)) {
+	if (is_const(pred0)) {
 		*const_pred = pred0;
 		*other = pred1;
 	}
 
 	/*DB((dbg, LEVEL_4, "is %N const\n", pred1));*/
-	if (is_Const(pred1) || is_SymConst(pred1)) {
+	if (is_const(pred1)) {
 		if (*const_pred != NULL) {
 			/* RETURN. We do not want both preds to be constant. */
 			return 0;

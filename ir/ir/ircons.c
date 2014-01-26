@@ -75,56 +75,11 @@ ir_node *new_rd_simpleSel(dbg_info *db, ir_node *block, ir_node *store,
 	return new_rd_Sel(db, block, store, objptr, 0, NULL, ent);
 }
 
-ir_node *new_rd_SymConst(dbg_info *db, ir_graph *irg, ir_mode *mode,
-                         symconst_symbol value, symconst_kind symkind)
-{
-	ir_node *block = get_irg_start_block(irg);
-	ir_node *res   = new_ir_node(db, irg, block, op_SymConst, mode, 0, NULL);
-	res->attr.symc.kind = symkind;
-	res->attr.symc.sym  = value;
-
-	verify_new_node(irg, res);
-	res = optimize_node(res);
-	return res;
-}
-
-ir_node *new_rd_SymConst_addr_ent(dbg_info *db, ir_graph *irg, ir_mode *mode, ir_entity *symbol)
-{
-	symconst_symbol sym;
-	sym.entity_p = symbol;
-	return new_rd_SymConst(db, irg, mode, sym, symconst_addr_ent);
-}
-
-ir_node *new_rd_SymConst_ofs_ent(dbg_info *db, ir_graph *irg, ir_mode *mode, ir_entity *symbol)
-{
-	symconst_symbol sym;
-	sym.entity_p = symbol;
-	return new_rd_SymConst(db, irg, mode, sym, symconst_ofs_ent);
-}
-
-ir_node *new_rd_SymConst_size(dbg_info *db, ir_graph *irg, ir_mode *mode, ir_type *symbol)
-{
-	symconst_symbol sym;
-	sym.type_p = symbol;
-	return new_rd_SymConst(db, irg, mode, sym, symconst_type_size);
-}
-
-ir_node *new_rd_SymConst_align(dbg_info *db, ir_graph *irg, ir_mode *mode, ir_type *symbol)
-{
-	symconst_symbol sym;
-	sym.type_p = symbol;
-	return new_rd_SymConst(db, irg, mode, sym, symconst_type_align);
-}
-
 ir_node *new_r_Const_long(ir_graph *irg, ir_mode *mode, long value)
 {
 	return new_rd_Const_long(NULL, irg, mode, value);
 }
-ir_node *new_r_SymConst(ir_graph *irg, ir_mode *mode, symconst_symbol value,
-                        symconst_kind symkind)
-{
-	return new_rd_SymConst(NULL, irg, mode, value, symkind);
-}
+
 ir_node *new_r_simpleSel(ir_node *block, ir_node *store, ir_node *objptr,
                          ir_entity *ent)
 {
@@ -350,13 +305,6 @@ ir_node *new_d_simpleSel(dbg_info *db, ir_node *store, ir_node *objptr,
 	assert(irg_is_constrained(current_ir_graph, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
 	return new_rd_Sel(db, current_ir_graph->current_block,
 	                  store, objptr, 0, NULL, ent);
-}
-
-ir_node *new_d_SymConst(dbg_info *db, ir_mode *mode, symconst_symbol value,
-                        symconst_kind kind)
-{
-	assert(irg_is_constrained(current_ir_graph, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
-	return new_rd_SymConst(db, current_ir_graph, mode, value, kind);
 }
 
 ir_node *new_d_ASM(dbg_info *db, ir_node *mem, int arity, ir_node *in[],
@@ -651,10 +599,6 @@ ir_node *new_Const_long(ir_mode *mode, long value)
 	return new_d_Const_long(NULL, mode, value);
 }
 
-ir_node *new_SymConst(ir_mode *mode, symconst_symbol value, symconst_kind kind)
-{
-	return new_d_SymConst(NULL, mode, value, kind);
-}
 ir_node *new_simpleSel(ir_node *store, ir_node *objptr, ir_entity *ent)
 {
 	return new_d_simpleSel(NULL, store, objptr, ent);

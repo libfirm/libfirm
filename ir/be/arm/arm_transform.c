@@ -1026,10 +1026,10 @@ static ir_node *gen_Const(ir_node *node)
 	return create_const_graph(node, block);
 }
 
-static ir_node *gen_SymConst(ir_node *node)
+static ir_node *gen_EntConst(ir_node *node)
 {
 	ir_node   *block  = be_transform_node(get_nodes_block(node));
-	ir_entity *entity = get_SymConst_entity(node);
+	ir_entity *entity = get_EntConst_entity(node);
 	dbg_info  *dbgi   = get_irn_dbg_info(node);
 	ir_node   *new_node;
 
@@ -1726,8 +1726,8 @@ static ir_node *gen_Call(ir_node *node)
 	}
 
 	/* TODO: use a generic address matcher here */
-	if (is_SymConst(callee)) {
-		entity = get_SymConst_entity(callee);
+	if (is_EntConst(callee)) {
+		entity = get_EntConst_entity(callee);
 	} else {
 		/* TODO: finish load matcher here */
 		in[in_arity]     = be_transform_node(callee);
@@ -1848,7 +1848,7 @@ static void arm_register_transformers(void)
 	be_set_transform_function(op_Store,    gen_Store);
 	be_set_transform_function(op_Sub,      gen_Sub);
 	be_set_transform_function(op_Switch,   gen_Switch);
-	be_set_transform_function(op_SymConst, gen_SymConst);
+	be_set_transform_function(op_EntConst, gen_EntConst);
 	be_set_transform_function(op_Unknown,  gen_Unknown);
 	be_set_transform_function(op_Builtin,  gen_Builtin);
 

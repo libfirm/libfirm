@@ -510,31 +510,37 @@ static ir_node *earliest_block(ir_node *a, ir_node *b, ir_node *curr_blk)
 	return res;
 }
 
+static bool is_const(ir_node *const node)
+{
+	switch (get_irn_opcode(node)) {
+	case iro_Const:
+	case iro_EntConst:
+	case iro_TypeConst:
+		return true;
+	default:
+		return false;
+	}
+}
+
 /**
  * Checks whether a node is a Constant expression.
  * The following trees are constant expressions:
  *
- * Const, SymConst, Const + SymConst
+ * Const, EntConsts, TypeConst, Const + EntConsts/TypeConst
  *
- * Handling SymConsts as const might be not a good idea for all
+ * Handling EntConsts/TypeConsts as const might be not a good idea for all
  * architectures ...
  */
 static int is_constant_expr(ir_node *irn)
 {
 	switch (get_irn_opcode(irn)) {
 	case iro_Const:
-	case iro_SymConst:
+	case iro_EntConst:
+	case iro_TypeConst:
 		return 1;
 
-	case iro_Add: {
-		ir_node *const l = get_Add_left(irn);
-		if (!is_Const(l) && !is_SymConst(l))
-			return 0;
-		ir_node *const r = get_Add_right(irn);
-		if (!is_Const(r) && !is_SymConst(r))
-			return 0;
-		return 1;
-	}
+	case iro_Add:
+		return is_const(get_Add_left(irn)) && is_const(get_Add_right(irn));
 
 	default:
 		return 0;
@@ -690,7 +696,8 @@ static int move_consts_up(ir_node **node)
 	return 0;
 
 transform:
-	/* In some cases a and b might be both of different integer mode, and c a SymConst.
+	/* In some cases a and b might be both of different integer mode, and c a
+	 * EntConst/TypeConst.
 	 * in that case we could either
 	 * 1.) cast into unsigned mode
 	 * 2.) ignore

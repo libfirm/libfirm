@@ -120,28 +120,40 @@ static ir_tarval *computed_value_Const(const ir_node *n)
 }
 
 /**
- * Return the value of a 'sizeof', 'alignof' or 'offsetof' SymConst.
+ * Return the value of a 'offsetof' EntConst.
  */
-static ir_tarval *computed_value_SymConst(const ir_node *n)
+static ir_tarval *computed_value_EntConst(const ir_node *n)
 {
-	switch (get_SymConst_kind(n)) {
-	case symconst_type_size: {
-		const ir_type *type = get_SymConst_type(n);
+	switch (get_EntConst_kind(n)) {
+	case entconst_ofs: {
+		const ir_entity *ent  = get_EntConst_entity(n);
+		const ir_type   *type = get_entity_owner(ent);
+		if (get_type_state(type) == layout_fixed)
+			return new_tarval_from_long(get_entity_offset(ent), get_irn_mode(n));
+		break;
+	}
+	default:
+		break;
+	}
+	return tarval_bad;
+}
+
+/**
+ * Return the value of a 'sizeof' or 'alignof' TypeConst.
+ */
+static ir_tarval *computed_value_TypeConst(const ir_node *n)
+{
+	switch (get_TypeConst_kind(n)) {
+	case typeconst_size: {
+		const ir_type *type = get_TypeConst_type(n);
 		if (get_type_state(type) == layout_fixed)
 			return new_tarval_from_long(get_type_size_bytes(type), get_irn_mode(n));
 		break;
 	}
-	case symconst_type_align: {
-		ir_type *type = get_SymConst_type(n);
+	case typeconst_align: {
+		ir_type *type = get_TypeConst_type(n);
 		if (get_type_state(type) == layout_fixed)
 			return new_tarval_from_long(get_type_alignment_bytes(type), get_irn_mode(n));
-		break;
-	}
-	case symconst_ofs_ent: {
-		const ir_entity *ent  = get_SymConst_entity(n);
-		const ir_type   *type = get_entity_owner(ent);
-		if (get_type_state(type) == layout_fixed)
-			return new_tarval_from_long(get_entity_offset(ent), get_irn_mode(n));
 		break;
 	}
 	default:
@@ -6188,8 +6200,8 @@ static ir_node *predict_load(ir_node *ptr, ir_mode *mode)
 		offset = get_tarval_long(tv);
 		ptr    = get_Add_left(ptr);
 	}
-	if (is_SymConst_addr_ent(ptr)) {
-		ir_entity *entity = get_SymConst_entity(ptr);
+	if (is_EntConst_addr(ptr)) {
+		ir_entity *entity = get_EntConst_entity(ptr);
 		if (! (get_entity_linkage(entity) & IR_LINKAGE_CONSTANT))
 			return NULL;
 		const ir_type *type = get_entity_type(entity);
@@ -6447,6 +6459,7 @@ void ir_register_opt_node_ops(void)
 	register_computed_value_func(op_Confirm,  computed_value_Confirm);
 	register_computed_value_func(op_Const,    computed_value_Const);
 	register_computed_value_func(op_Conv,     computed_value_Conv);
+	register_computed_value_func(op_EntConst, computed_value_EntConst);
 	register_computed_value_func(op_Eor,      computed_value_Eor);
 	register_computed_value_func(op_Minus,    computed_value_Minus);
 	register_computed_value_func(op_Mul,      computed_value_Mul);
@@ -6458,7 +6471,7 @@ void ir_register_opt_node_ops(void)
 	register_computed_value_func(op_Shr,      computed_value_Shr);
 	register_computed_value_func(op_Shrs,     computed_value_Shrs);
 	register_computed_value_func(op_Sub,      computed_value_Sub);
-	register_computed_value_func(op_SymConst, computed_value_SymConst);
+	register_computed_value_func(op_TypeConst,computed_value_TypeConst);
 	register_computed_value_func_proj(op_Div, computed_value_Proj_Div);
 	register_computed_value_func_proj(op_Mod, computed_value_Proj_Mod);
 

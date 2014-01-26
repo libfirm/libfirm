@@ -17,10 +17,9 @@
 
 void instrument_initcall(ir_graph *irg, ir_entity *ent)
 {
-	ir_node        *initial_exec;
-	ir_node        *first_block = NULL;
-	int             i, idx, need_new_block;
-	symconst_symbol sym;
+	ir_node *initial_exec;
+	ir_node *first_block = NULL;
+	int      i, idx, need_new_block;
 
 	assure_edges(irg);
 
@@ -61,8 +60,7 @@ void instrument_initcall(ir_graph *irg, ir_entity *ent)
 	}
 
 	/* place the call */
-	sym.entity_p = ent;
-	ir_node *const adr         = new_r_SymConst(irg, mode_P_code, sym, symconst_addr_ent);
+	ir_node *const adr         = new_r_EntConst(irg, mode_P_code, ent, entconst_addr);
 	ir_node *const initial_mem = get_irg_initial_mem(irg);
 	ir_node *const call        = new_r_Call(first_block, initial_mem, adr, 0, NULL, get_entity_type(ent));
 	ir_node *const new_mem     = new_r_Proj(call, mode_M, pn_Call_M);

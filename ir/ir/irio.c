@@ -911,16 +911,16 @@ static void write_Anchor(write_env_t *env, const ir_node *node)
 	write_pred_refs(env, node, 0);
 }
 
-static void write_SymConst(write_env_t *env, const ir_node *node)
+static void write_EntConst(write_env_t *env, const ir_node *node)
 {
-	/* TODO: only symconst_addr_ent implemented yet */
-	if (get_SymConst_kind(node) != symconst_addr_ent)
-		panic("Can't export %+F (only symconst_addr_ent supported)", node);
+	/* TODO: only entconst_addr implemented yet */
+	if (get_EntConst_kind(node) != entconst_addr)
+		panic("Can't export %+F (only entconst_addr supported)", node);
 
-	write_symbol(env, "SymConst");
+	write_symbol(env, "EntConst");
 	write_node_nr(env, node);
 	write_mode_ref(env, get_irn_mode(node));
-	write_entity_ref(env, get_SymConst_entity(node));
+	write_entity_ref(env, get_EntConst_entity(node));
 }
 
 typedef void write_node_func(write_env_t *env, ir_node const *node);
@@ -937,7 +937,7 @@ static void writers_init(void)
 	register_node_writer(op_ASM,      write_ASM);
 	register_node_writer(op_Block,    write_Block);
 	register_node_writer(op_Phi,      write_Phi);
-	register_node_writer(op_SymConst, write_SymConst);
+	register_node_writer(op_EntConst, write_EntConst);
 	register_generated_node_writers();
 }
 
@@ -2126,15 +2126,11 @@ static ir_node *read_labeled_Block(read_env_t *env)
 	return res;
 }
 
-static ir_node *read_SymConst(read_env_t *env)
+static ir_node *read_EntConst(read_env_t *env)
 {
 	ir_mode   *mode   = read_mode_ref(env);
 	ir_entity *entity = read_entity_ref(env);
-	ir_node   *res;
-	symconst_symbol sym;
-
-	sym.entity_p = entity;
-	res = new_r_SymConst(env->irg, mode, sym, symconst_addr_ent);
+	ir_node   *res    = new_r_EntConst(env->irg, mode, entity, entconst_addr);
 	return res;
 }
 
@@ -2179,7 +2175,7 @@ static void readers_init(void)
 	register_node_reader(new_id_from_str("Block"),    read_Block);
 	register_node_reader(new_id_from_str("BlockL"),   read_labeled_Block);
 	register_node_reader(new_id_from_str("Phi"),      read_Phi);
-	register_node_reader(new_id_from_str("SymConst"), read_SymConst);
+	register_node_reader(new_id_from_str("EntConst"), read_EntConst);
 	register_generated_node_readers();
 }
 

@@ -39,7 +39,7 @@
 #define get_irn_link(node)                    get_irn_link_(node)
 #define get_irn_pinned(node)                  get_irn_pinned_(node)
 #define is_binop(node)                        is_binop_(node)
-#define is_SymConst_addr_ent(node)            is_SymConst_addr_ent_(node)
+#define is_EntConst_addr(node)                is_EntConst_addr_(node)
 #define get_Block_n_cfgpreds(node)            get_Block_n_cfgpreds_(node)
 #define get_Block_cfgpred(node, pos)          get_Block_cfgpred_(node, pos)
 #define get_Block_cfgpred_block(node, pos)    get_Block_cfgpred_block_(node, pos)
@@ -336,9 +336,9 @@ static inline int is_binop_(const ir_node *node)
 	return (node->op->opar == oparity_binary);
 }
 
-static inline int is_SymConst_addr_ent_(const ir_node *node)
+static inline int is_EntConst_addr_(const ir_node *node)
 {
-	return is_SymConst(node) && get_SymConst_kind(node) == symconst_addr_ent;
+	return is_EntConst(node) && get_EntConst_kind(node) == entconst_addr;
 }
 
 /**

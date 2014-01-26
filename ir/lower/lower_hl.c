@@ -180,62 +180,57 @@ static void lower_sel(ir_node *sel)
 	exchange(sel, newn);
 }
 
-/**
- * Lower a all possible SymConst nodes.
- */
-static void lower_symconst(ir_node *symc)
+static void replace_by_Const(ir_node *const node, long const value)
 {
-	ir_node   *newn;
-	ir_type   *tp;
-	ir_entity *ent;
-	ir_mode   *mode;
-	ir_graph  *irg;
+	ir_graph *const irg  = get_irn_irg(node);
+	ir_mode  *const mode = get_irn_mode(node);
+	ir_node  *const newn = new_r_Const_long(irg, mode, value);
+	/* run the hooks */
+	hook_lower(node);
+	exchange(node, newn);
+}
 
-	switch (get_SymConst_kind(symc)) {
-	case symconst_type_size:
-		/* rewrite the SymConst node by a Const node */
-		irg  = get_irn_irg(symc);
-		tp   = get_SymConst_type(symc);
-		assert(get_type_state(tp) == layout_fixed);
-		mode = get_irn_mode(symc);
-		newn = new_r_Const_long(irg, mode, get_type_size_bytes(tp));
-		assert(newn);
-		/* run the hooks */
-		hook_lower(symc);
-		exchange(symc, newn);
-		return;
-
-	case symconst_type_align:
-		/* rewrite the SymConst node by a Const node */
-		irg  = get_irn_irg(symc);
-		tp   = get_SymConst_type(symc);
-		assert(get_type_state(tp) == layout_fixed);
-		mode = get_irn_mode(symc);
-		newn = new_r_Const_long(irg, mode, get_type_alignment_bytes(tp));
-		assert(newn);
-		/* run the hooks */
-		hook_lower(symc);
-		exchange(symc, newn);
-		return;
-
-	case symconst_addr_ent:
+/**
+ * Lower a EntConst node.
+ */
+static void lower_entconst(ir_node *const entc)
+{
+	switch (get_EntConst_kind(entc)) {
+	case entconst_addr:
 		/* leave */
 		return;
 
-	case symconst_ofs_ent:
-		/* rewrite the SymConst node by a Const node */
-		irg  = get_irn_irg(symc);
-		ent  = get_SymConst_entity(symc);
+	case entconst_ofs: {
+		/* rewrite the EntConst node by a Const node */
+		ir_entity *const ent = get_EntConst_entity(entc);
 		assert(get_type_state(get_entity_type(ent)) == layout_fixed);
-		mode = get_irn_mode(symc);
-		newn = new_r_Const_long(irg, mode, get_entity_offset(ent));
-		assert(newn);
-		/* run the hooks */
-		hook_lower(symc);
-		exchange(symc, newn);
+		replace_by_Const(entc, get_entity_offset(ent));
 		return;
 	}
-	panic("invalid SymConst kind");
+	}
+	panic("invalid EntConst kind");
+}
+
+/**
+ * Lower a TypeConst node.
+ */
+static void lower_typeconst(ir_node *const typec)
+{
+	ir_type *const tp = get_TypeConst_type(typec);
+	assert(get_type_state(tp) == layout_fixed);
+
+	switch (get_TypeConst_kind(typec)) {
+	case typeconst_size:
+		/* rewrite the TypeConst node by a Const node */
+		replace_by_Const(typec, get_type_size_bytes(tp));
+		return;
+
+	case typeconst_align:
+		/* rewrite the TypeConst node by a Const node */
+		replace_by_Const(typec, get_type_alignment_bytes(tp));
+		return;
+	}
+	panic("invalid TypeConst kind");
 }
 
 /**
@@ -245,25 +240,16 @@ static void lower_irnode(ir_node *irn, void *env)
 {
 	(void) env;
 	switch (get_irn_opcode(irn)) {
-	case iro_Sel:
-		lower_sel(irn);
-		break;
-	case iro_SymConst:
-		lower_symconst(irn);
-		break;
-	default:
-		break;
+	case iro_Sel:       lower_sel(irn);       break;
+	case iro_EntConst:  lower_entconst(irn);  break;
+	case iro_TypeConst: lower_typeconst(irn); break;
+	default:            break;
 	}
 }
 
-/*
- * Replaces SymConsts by a real constant if possible.
- * Replace Sel nodes by address computation.  Also resolves array access.
- * Handle Bitfields by added And/Or calculations.
- */
 void lower_highlevel_graph(ir_graph *irg)
 {
-	/* Finally: lower SymConst-Size and Sel nodes, unaligned Load/Stores. */
+	/* Finally: lower EntConst/TypeConst-Size and Sel nodes, unaligned Load/Stores. */
 	irg_walk_graph(irg, NULL, lower_irnode, NULL);
 
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW);
@@ -277,11 +263,6 @@ void lower_const_code(void)
 	walk_const_code(NULL, lower_irnode, NULL);
 }
 
-/*
- * Replaces SymConsts by a real constant if possible.
- * Replace Sel nodes by address computation.  Also resolves array access.
- * Handle Bitfields by added And/Or calculations.
- */
 void lower_highlevel()
 {
 	size_t i, n;

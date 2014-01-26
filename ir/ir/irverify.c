@@ -531,26 +531,35 @@ static int verify_node_Const(const ir_node *n)
 	return fine;
 }
 
-static int verify_node_SymConst(const ir_node *n)
+static int verify_node_EntConst(const ir_node *n)
 {
-	switch (get_SymConst_kind(n)) {
-	case symconst_type_size:
-	case symconst_type_align:
-	case symconst_ofs_ent:
+	switch (get_EntConst_kind(n)) {
+	case entconst_ofs:
 		return check_mode_func(n, mode_is_int, "int");
-	case symconst_addr_ent: {
+	case entconst_addr: {
 		bool       fine = check_mode_func(n, mode_is_reference, "reference");
-		ir_entity *ent  = get_SymConst_entity(n);
+		ir_entity *ent  = get_EntConst_entity(n);
 		if (!(get_entity_owner(ent)->flags & tf_segment)
 		    && !is_method_entity(ent)) {
-			warn(n, "symconst_addr_ent entity %+F is not in a segment type but %+F",
+			warn(n, "entconst_addr entity %+F is not in a segment type but %+F",
 			     ent, get_entity_owner(ent));
 			fine = false;
 		}
 		return fine;
 	}
 	}
-	warn(n, "invalid SymConst kind");
+	warn(n, "invalid EntConst kind");
+	return false;
+}
+
+static int verify_node_TypeConst(const ir_node *n)
+{
+	switch (get_TypeConst_kind(n)) {
+	case typeconst_size:
+	case typeconst_align:
+		return check_mode_func(n, mode_is_int, "int");
+	}
+	warn(n, "invalid TypeConst kind");
 	return false;
 }
 
@@ -1266,6 +1275,7 @@ void ir_register_verify_node_ops(void)
 	register_verify_node_func(op_CopyB,    verify_node_CopyB);
 	register_verify_node_func(op_Deleted,  verify_node_Deleted);
 	register_verify_node_func(op_Div,      verify_node_Div);
+	register_verify_node_func(op_EntConst, verify_node_EntConst);
 	register_verify_node_func(op_Eor,      verify_node_Eor);
 	register_verify_node_func(op_Free,     verify_node_Free);
 	register_verify_node_func(op_IJmp,     verify_node_IJmp);
@@ -1290,8 +1300,8 @@ void ir_register_verify_node_ops(void)
 	register_verify_node_func(op_Store,    verify_node_Store);
 	register_verify_node_func(op_Sub,      verify_node_Sub);
 	register_verify_node_func(op_Switch,   verify_node_Switch);
-	register_verify_node_func(op_SymConst, verify_node_SymConst);
 	register_verify_node_func(op_Sync,     verify_node_Sync);
+	register_verify_node_func(op_TypeConst,verify_node_TypeConst);
 
 	register_verify_node_func_proj(op_Alloc,  verify_node_Proj_Alloc);
 	register_verify_node_func_proj(op_Call,   verify_node_Proj_Call);

@@ -138,7 +138,7 @@ int value_not_zero(const ir_node *n, const ir_node **confirm)
 		n = get_Confirm_value(n);
 	}
 	/* global entities are never NULL */
-	if (is_SymConst_addr_ent(n))
+	if (is_EntConst_addr(n))
 		return true;
 
 	tv = value_of(n);
@@ -157,7 +157,7 @@ int value_not_zero(const ir_node *n, const ir_node **confirm)
  * Check, if the value of a node cannot represent a NULL pointer.
  *
  * - Sels are skipped
- * - A SymConst(entity) is NEVER a NULL pointer
+ * - A EntConst(entity) is NEVER a NULL pointer
  * - Confirms are evaluated
  */
 int value_not_null(const ir_node *n, const ir_node **confirm)
@@ -180,7 +180,7 @@ int value_not_null(const ir_node *n, const ir_node **confirm)
 		break;
 	}
 
-	if (is_SymConst_addr_ent(n)) {
+	if (is_EntConst_addr(n)) {
 		/* global references are never NULL */
 		return 1;
 	} else if (n == get_irg_frame(get_irn_irg(n))) {

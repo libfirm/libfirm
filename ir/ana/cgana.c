@@ -169,7 +169,7 @@ static void sel_methods_walker(ir_node *node, void *env)
 		return;
 	/* we may have a vtable entry and need this redirection to get the actually
 	 * called method */
-	ir_entity *const called = get_SymConst_entity(get_atomic_ent_value(entity));
+	ir_entity *const called = get_EntConst_entity(get_atomic_ent_value(entity));
 	if (!pset_find_ptr(entities, called)) {
 		/* Entity not yet handled. Find all (internal or external)
 		 * implemented methods that overwrites this entity.
@@ -186,7 +186,7 @@ static void sel_methods_walker(ir_node *node, void *env)
  * an implementation. The set is stored in the entity's link field.
  *
  * Further replaces Sel nodes where this set contains exactly one
- * method by SymConst nodes.
+ * method by EntConst nodes.
  */
 static void sel_methods_init(void)
 {
@@ -303,9 +303,9 @@ static void free_mark(ir_node *node, pset *set)
 		}
 		break;
 	}
-	case iro_SymConst:
-		if (get_SymConst_kind(node) == symconst_addr_ent) {
-			const ir_entity *ent = get_SymConst_entity(node);
+	case iro_EntConst:
+		if (get_EntConst_kind(node) == entconst_addr) {
+			const ir_entity *ent = get_EntConst_entity(node);
 			if (is_method_entity(ent)) {
 				pset_insert_ptr(set, ent);
 			}
@@ -340,12 +340,13 @@ static void free_ana_walker(ir_node *node, void *env)
 	switch (get_irn_opcode(node)) {
 		/* special nodes */
 	case iro_Sel:
-	case iro_SymConst:
+	case iro_EntConst:
 	case iro_Const:
 	case iro_Phi:
 	case iro_Id:
 	case iro_Proj:
 	case iro_Tuple:
+	case iro_TypeConst:
 		/* nothing */
 		break;
 	case iro_Call:
@@ -393,8 +394,8 @@ static void add_method_address_inititializer(ir_initializer_t *initializer,
 		ir_node *n = initializer->consti.value;
 
 		/* let's check if it's the address of a function */
-		if (is_SymConst_addr_ent(n)) {
-			ir_entity *ent = get_SymConst_entity(n);
+		if (is_EntConst_addr(n)) {
+			ir_entity *ent = get_EntConst_entity(n);
 
 			if (is_Method_type(get_entity_type(ent)))
 				pset_insert_ptr(set, ent);
@@ -560,10 +561,10 @@ static void callee_ana_node(ir_node *node, pset *methods)
 		pset_insert_ptr(methods, get_unknown_entity()); /* free method -> unknown */
 		break;
 
-	case iro_SymConst: {
-		if (!is_SymConst_addr_ent(node))
+	case iro_EntConst: {
+		if (!is_EntConst_addr(node))
 			break;
-		ir_entity *ent = get_SymConst_entity(node);
+		ir_entity *ent = get_EntConst_entity(node);
 		if (is_method_entity(ent))
 			pset_insert_ptr(methods, ent);
 		break;
@@ -688,7 +689,7 @@ static void destruct_walker(ir_node *node, void *env)
 
 size_t cgana(ir_entity ***free_methods)
 {
-	/* Optimize Sel/SymConst nodes and compute all methods that implement an entity. */
+	/* Optimize Sel/EntConst nodes and compute all methods that implement an entity. */
 	sel_methods_init();
 	size_t length = get_free_methods(free_methods);
 	callee_ana();
@@ -715,7 +716,7 @@ void opt_call_addrs(void)
 	 *
 	 * This optimization performs the following transformations for
 	 * all ir graphs:
-	 * - All SymConst operations that refer to intern methods are replaced
+	 * - All EntConst operations that refer to intern methods are replaced
 	 *   by Const operations referring to the corresponding entity.
 	 * - Sel nodes, that select entities that are not overwritten are
 	 *   replaced by Const nodes referring to the selected entity.

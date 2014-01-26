@@ -210,7 +210,7 @@ typedef struct block_attr {
 	ir_dom_info dom;            /**< Datastructure that holds information about dominators. */
 	ir_dom_info pdom;           /**< Datastructure that holds information about post-dominators. */
 	bitset_t *backedge;         /**< Bitfield n set to true if pred n is backedge.*/
-	ir_entity *entity;          /**< entitiy representing this block */
+	ir_entity *entity;          /**< entity representing this block */
 	ir_node  *phis;             /**< The list of Phi nodes in this block. */
 	double    execfreq;         /**< block execution frequency */
 } block_attr;
@@ -225,11 +225,17 @@ typedef struct const_attr {
 	ir_tarval *tarval;  /**< the target value */
 } const_attr;
 
-/** SymConst attributes. */
-typedef struct symconst_attr {
-	symconst_symbol sym;  // old tori
-	symconst_kind   kind;
-} symconst_attr;
+/** EntConst attributes. */
+typedef struct entconst_attr {
+	ir_entity     *entity;
+	entconst_kind  kind;
+} entconst_attr;
+
+/** EntConst attributes. */
+typedef struct typeconst_attr {
+	ir_type        *type;
+	typeconst_kind  kind;
+} typeconst_attr;
 
 /** Sel attributes. */
 typedef struct sel_attr {
@@ -351,7 +357,8 @@ typedef union ir_attr {
 	cmp_attr       cmp;           /**< For Cmp. */
 	cond_attr      cond;          /**< For Cond. */
 	const_attr     con;           /**< For Const: contains the value of the constant and a type */
-	symconst_attr  symc;          /**< For SymConst. */
+	entconst_attr  entc;          /**< For EntConst */
+	typeconst_attr typec;         /**< For TypeConst */
 	sel_attr       sel;           /**< For Sel. */
 	call_attr      call;          /**< For Call. */
 	builtin_attr   builtin;       /**< For Builtin. */

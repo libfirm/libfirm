@@ -77,10 +77,8 @@ static void replace_with_call(ir_node *node)
 	ir_node        *call_ress;
 	ir_node        *call_res;
 	ir_entity      *entity;
-	ir_node        *symconst;
 	ir_node        *call;
 	ident          *id;
-	union symconst_symbol sym;
 
 	char buf[64];
 	snprintf(buf, sizeof(buf), "__%s%s2", name, gcc_machmode);
@@ -92,9 +90,8 @@ static void replace_with_call(ir_node *node)
 		pmap_insert(entities, id, entity);
 	}
 
-	sym.entity_p = entity;
-	symconst  = new_r_SymConst(irg, mode_P, sym, symconst_addr_ent);
-	call      = new_rd_Call(dbgi, block, mem, symconst, n_params, params, mtp);
+	ir_node *const callee = new_r_EntConst(irg, mode_P, entity, entconst_addr);
+	call      = new_rd_Call(dbgi, block, mem, callee, n_params, params, mtp);
 	call_mem  = new_r_Proj(call, mode_M, pn_Call_M);
 	call_ress = new_r_Proj(call, mode_T, pn_Call_T_result);
 	call_res  = new_r_Proj(call_ress, res_mode, 0);

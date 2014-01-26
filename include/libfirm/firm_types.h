@@ -264,34 +264,27 @@ typedef enum mtp_additional_properties {
 ENUM_BITSET(mtp_additional_properties)
 
 /**
- * @ingroup SymConst
+ * @ingroup EntConst
  * This enum names the different kinds of symbolic Constants represented by
- * SymConst.  The content of the attribute symconst_symbol depends on this tag.
- * Use the proper access routine after testing this flag.
+ * EntConst.
  */
-typedef enum symconst_kind {
-	symconst_type_size,  /**< The SymConst is the size of the given type.
-	                          symconst_symbol is type *. */
-	symconst_type_align, /**< The SymConst is the alignment of the given type.
-	                          symconst_symbol is type *. */
-	symconst_addr_ent,   /**< The SymConst is a symbolic pointer to be filled in
+typedef enum entconst_kind {
+	entconst_addr,   /**< The EntConst is a symbolic pointer to be filled in
 	                          by the linker.  The pointer is represented by an
-	                          entity. symconst_symbol is entity *. */
-	symconst_ofs_ent,    /**< The SymConst is the offset of its entity in the
+	                          entity. */
+	entconst_ofs,    /**< The EntConst is the offset of its entity in the
 	                          entities owner type. */
-} symconst_kind;
+} entconst_kind;
 
 /**
- * @ingroup SymConst
- * SymConst attribute.
- *
- *  This union contains the symbolic information represented by the node.
- *  @ingroup SymConst
+ * @ingroup TypeConst
+ * This enum names the different kinds of symbolic Constants represented by
+ * TypeConst.
  */
-typedef union symconst_symbol {
-	ir_type       *type_p;    /**< The type of a SymConst. */
-	ir_entity     *entity_p;  /**< The entity of a SymConst. */
-} symconst_symbol;
+typedef enum typeconst_kind {
+	typeconst_size,  /**< The TypeConst is the size of the given type. */
+	typeconst_align, /**< The TypeConst is the alignment of the given type. */
+} typeconst_kind;
 
 /** A input/output constraint attribute.
  * @ingroup ASM

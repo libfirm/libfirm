@@ -238,15 +238,15 @@ static ir_entity *get_Sel_accessed_entity(const ir_node *sel)
 	return get_Sel_entity(sel);
 }
 
-/** An addr node is a SymConst or a Sel. */
+/** An addr node is a EntConst or a Sel. */
 static int get_addr_n_entities(const ir_node *addr)
 {
 	switch (get_irn_opcode(addr)) {
 	case iro_Sel:
 		/* Treat jack array sels? */
 		return get_Sel_n_accessed_entities(addr);
-	case iro_SymConst:
-		if (get_SymConst_kind(addr) == symconst_addr_ent)
+	case iro_EntConst:
+		if (get_EntConst_kind(addr) == entconst_addr)
 			return 1;
 		return 0;
 	default:
@@ -254,7 +254,7 @@ static int get_addr_n_entities(const ir_node *addr)
 	}
 }
 
-/** An addr node is a SymConst or a Sel.
+/** An addr node is a EntConst or a Sel.
     If Sel follow to outermost of compound. */
 static ir_entity *get_addr_entity(const ir_node *addr, int pos)
 {
@@ -270,10 +270,10 @@ static ir_entity *get_addr_entity(const ir_node *addr, int pos)
 		assert(0 <= pos && pos < get_Sel_n_accessed_entities(addr));
 		return get_Sel_accessed_entity(addr);
 	}
-	case iro_SymConst:
-		if (get_SymConst_kind(addr) == symconst_addr_ent) {
+	case iro_EntConst:
+		if (get_EntConst_kind(addr) == entconst_addr) {
 			assert(pos == 0);
-			return get_SymConst_entity(addr);
+			return get_EntConst_entity(addr);
 		}
 		return NULL;
 	default:
@@ -288,8 +288,8 @@ static void chain_accesses(ir_node *n, void *env)
 	if (is_Sel(n)) {
 		add_entity_reference(get_Sel_entity(n), n);
 		return;
-	} else if (is_SymConst_addr_ent(n)) {
-		add_entity_reference(get_SymConst_entity(n), n);
+	} else if (is_EntConst_addr(n)) {
+		add_entity_reference(get_EntConst_entity(n), n);
 		return;
 	} else if (is_Store(n)) {
 		addr = get_Store_ptr(n);

@@ -112,7 +112,7 @@ typedef struct listmap_t {
  */
 typedef union {
 	ir_tarval      *tv;
-	symconst_symbol sym;
+	ir_entity      *ent;
 } lattice_elem_t;
 
 /**
@@ -1332,7 +1332,7 @@ static int type_is_neither_top_nor_const(const lattice_elem_t type)
 		if (tarval_is_constant(type.tv))
 			return 0;
 	} else {
-		/* is a symconst */
+		/* is an entity */
 		return 0;
 	}
 	return 1;
@@ -1722,7 +1722,7 @@ static int is_con(const lattice_elem_t type)
 	/* be conservative */
 	if (is_tarval(type.tv))
 		return tarval_is_constant(type.tv);
-	return is_entity(type.sym.entity_p);
+	return is_entity(type.ent);
 }
 
 /**
@@ -1950,11 +1950,11 @@ static void compute_Call(node_t *node)
 }
 
 /**
- * (Re-)compute the type for a SymConst node.
+ * (Re-)compute the type for an EntConst node.
  *
  * @param node  the node
  */
-static void compute_SymConst(node_t *node)
+static void compute_EntConst(node_t *node)
 {
 	ir_node *irn   = node->node;
 	node_t  *block = get_irn_node(get_nodes_block(irn));
@@ -1963,13 +1963,30 @@ static void compute_SymConst(node_t *node)
 		node->type.tv = tarval_top;
 		return;
 	}
-	switch (get_SymConst_kind(irn)) {
-	case symconst_addr_ent:
-		node->type.sym = get_SymConst_symbol(irn);
+	switch (get_EntConst_kind(irn)) {
+	case entconst_addr:
+		node->type.ent = get_EntConst_entity(irn);
 		break;
 	default:
 		node->type.tv = computed_value(irn);
 	}
+}
+
+/**
+ * (Re-)compute the type for a TypeConst node.
+ *
+ * @param node  the node
+ */
+static void compute_TypeConst(node_t *node)
+{
+	ir_node *irn   = node->node;
+	node_t  *block = get_irn_node(get_nodes_block(irn));
+
+	if (block->type.tv == tarval_unreachable) {
+		node->type.tv = tarval_top;
+		return;
+	}
+	node->type.tv = computed_value(irn);
 }
 
 /**
@@ -3264,16 +3281,16 @@ static void apply_result(ir_node *irn, void *ctx)
 				exchange_leader(irn, c);
 				env->modified = 1;
 			}
-		} else if (is_entity(node->type.sym.entity_p)) {
-			if (! is_SymConst(irn)) {
-				/* can be replaced by a SymConst */
-				ir_node *symc = new_r_SymConst(current_ir_graph, get_irn_mode(irn), node->type.sym, symconst_addr_ent);
-				set_irn_node(symc, node);
-				node->node = symc;
+		} else if (is_entity(node->type.ent)) {
+			if (!is_EntConst(irn)) {
+				/* can be replaced by a EntConst */
+				ir_node *entc = new_r_EntConst(current_ir_graph, get_irn_mode(irn), node->type.ent, entconst_addr);
+				set_irn_node(entc, node);
+				node->node = entc;
 
-				DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, symc));
-				DBG_OPT_COMBO(irn, symc, FS_OPT_COMBO_CONST);
-				exchange_leader(irn, symc);
+				DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, entc));
+				DBG_OPT_COMBO(irn, entc, FS_OPT_COMBO_CONST);
+				exchange_leader(irn, entc);
 				env->modified = 1;
 			}
 		} else if (is_Confirm(irn)) {
@@ -3372,7 +3389,8 @@ static void set_compute_functions(void)
 	SET(Add);
 	SET(Sub);
 	SET(Eor);
-	SET(SymConst);
+	SET(EntConst);
+	SET(TypeConst);
 	SET(Cmp);
 	SET(Proj);
 	SET(Confirm);

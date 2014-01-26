@@ -333,44 +333,14 @@ FIRM_API int is_Const_all_one(const ir_node *node);
 /** @} */
 
 /**
- * @addtogroup SymConst
+ * @addtogroup EntConst
  * @{
  */
 
 /**
- * Returns true if node is a SymConst node with kind symconst_addr_ent.
+ * Returns true if node is a EntConst node with kind entconst_addr.
  */
-FIRM_API int is_SymConst_addr_ent(const ir_node *node);
-
-/** Returns non-zero if s symconst kind has a type attribute */
-#define SYMCONST_HAS_TYPE(kind) ((kind) <= symconst_type_align)
-
-/** Returns non-zero if s symconst kind has an entity attribute */
-#define SYMCONST_HAS_ENT(kind) ((kind) == symconst_addr_ent || (kind) == symconst_ofs_ent)
-
-/** Returns the kind of the SymConst. */
-FIRM_API symconst_kind get_SymConst_kind(const ir_node *node);
-/** Sets the kind of the SymConst. */
-FIRM_API void set_SymConst_kind(ir_node *node, symconst_kind num);
-
-/** Returns the type attribute of SymConst node @p node.
- * @note Only to access SymConst of kind type_siz, else assertion.
- */
-FIRM_API ir_type *get_SymConst_type(const ir_node *node);
-/** Sets the type attribute of SymConst node @p node. */
-FIRM_API void set_SymConst_type(ir_node *node, ir_type *tp);
-
-/** Returns the entity attribute of SymConst node @p node.
- * @note Only to access SymConst of kind addr_ent, else assertion.
- */
-FIRM_API ir_entity *get_SymConst_entity(const ir_node *node);
-/** Sets the entity attribute of Symconst node @p node. */
-FIRM_API void set_SymConst_entity(ir_node *node, ir_entity *ent);
-
-/** Returns the symbol attribute of SymConst node @p node. */
-FIRM_API union symconst_symbol get_SymConst_symbol(const ir_node *node);
-/** Sets the symbol attribute of SymConst node @p node. */
-FIRM_API void set_SymConst_symbol(ir_node *node, union symconst_symbol sym);
+FIRM_API int is_EntConst_addr(const ir_node *node);
 
 /** @} */
 
@@ -382,7 +352,7 @@ FIRM_API void set_SymConst_symbol(ir_node *node, union symconst_symbol sym);
 /**
  * Convenience function: Return method that will be called by a call.
  *
- * This matches for an address of entity SymConst at the Call ptr input, return
+ * This matches for an address at the Call ptr input, return
  * the referenced entity if it has a method type.
  */
 FIRM_API ir_entity *get_Call_callee(const ir_node *call);
@@ -540,11 +510,11 @@ FIRM_API int is_irn_forking(const ir_node *node);
  */
 FIRM_API void copy_node_attr(ir_graph *irg, const ir_node *old_node, ir_node *new_node);
 
-/** Returns the type attribute of a node n (SymConst, Call, Alloc, Free)
+/** Returns the type attribute of a node n (TypeConst, Call, Alloc, Free)
  *  or NULL.*/
 FIRM_API ir_type *get_irn_type_attr(ir_node *n);
 
-/** Returns the entity attribute of a node n (SymConst, Sel) or NULL. */
+/** Returns the entity attribute of a node n (EntConst, Sel) or NULL. */
 FIRM_API ir_entity *get_irn_entity_attr(ir_node *n);
 
 /** Returns non-zero for constant-like nodes. */

@@ -418,13 +418,10 @@ static ir_entity *clone_method(const quadruple_t *q)
 static ir_node *new_cl_Call(ir_node *call, ir_entity *new_entity, size_t pos)
 {
 	size_t i, n_params, new_params = 0;
-	ir_node *callee;
-	symconst_symbol sym;
 	ir_graph *irg = get_irn_irg(call);
 	ir_node *bl = get_nodes_block(call);
 
-	sym.entity_p = new_entity;
-	callee = new_r_SymConst(irg, mode_P_code, sym, symconst_addr_ent);
+	ir_node *const callee = new_r_EntConst(irg, mode_P_code, new_entity, entconst_addr);
 
 	n_params = get_Call_n_params(call);
 	ir_node **in = ALLOCAN(ir_node*, n_params-1);
@@ -497,7 +494,7 @@ restart:
 		/* might be exchanged, so skip Id nodes here. */
 		call = skip_Id(call);
 
-		/* we know, that a SymConst is here */
+		/* we know, that an EntConst is here */
 		ir_entity *const callee = get_Call_callee(call);
 		if (callee != entry->q.ent) {
 			/*

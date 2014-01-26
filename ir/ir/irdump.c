@@ -686,22 +686,31 @@ void dump_node_opcode(FILE *F, const ir_node *n)
 
 	/* implementation for default nodes */
 	switch (get_irn_opcode(n)) {
-	case iro_SymConst:
-		switch (get_SymConst_kind(n)) {
-		case symconst_addr_ent:
-			fprintf(F, "SymC &%s", get_entity_name(get_SymConst_entity(n)));
+	case iro_EntConst: {
+		char const *const name = get_entity_name(get_EntConst_entity(n));
+		switch (get_EntConst_kind(n)) {
+		case entconst_addr:
+			fprintf(F, "EntC &%s", name);
 			break;
-		case symconst_ofs_ent:
-			fprintf(F, "SymC %s offset", get_entity_name(get_SymConst_entity(n)));
-			break;
-		case symconst_type_size:
-			ir_fprintf(F, "SymC %+F size", get_SymConst_type(n));
-			break;
-		case symconst_type_align:
-			ir_fprintf(F, "SymC %+F align", get_SymConst_type(n));
+		case entconst_ofs:
+			fprintf(F, "EntC %s offset", name);
 			break;
 		}
 		break;
+	}
+
+	case iro_TypeConst: {
+		ir_type *const type = get_TypeConst_type(n);
+		switch (get_EntConst_kind(n)) {
+		case typeconst_size:
+			ir_fprintf(F, "TypeC %+F size", type);
+			break;
+		case typeconst_align:
+			ir_fprintf(F, "TypeC %+F align", type);
+			break;
+		}
+		break;
+	}
 
 	case iro_Load:
 		if (get_Load_unaligned(n) == align_non_aligned)
@@ -758,7 +767,7 @@ static void dump_node_mode(FILE *F, const ir_node *n)
 	/* default implementation */
 	iro = get_irn_opcode(n);
 	switch (iro) {
-	case iro_SymConst:
+	case iro_EntConst:
 	case iro_Sel:
 	case iro_End:
 	case iro_Return:
@@ -766,6 +775,7 @@ static void dump_node_mode(FILE *F, const ir_node *n)
 	case iro_Sync:
 	case iro_Jmp:
 	case iro_NoMem:
+	case iro_TypeConst:
 		break;
 	default:
 		mode = get_irn_mode(n);
@@ -934,8 +944,9 @@ static void dump_node_vcgattr(FILE *F, const ir_node *node, const ir_node *local
 	case iro_Pin:
 		print_vcg_color(F, ird_color_memory);
 		break;
-	case iro_SymConst:
 	case iro_Const:
+	case iro_EntConst:
+	case iro_TypeConst:
 		print_vcg_color(F, ird_color_const);
 		break;
 	case iro_Proj:
@@ -1504,9 +1515,8 @@ static void dump_node2type_edges(ir_node *n, void *env)
 	case iro_Const :
 		/* @@@ some consts have an entity */
 		break;
-	case iro_SymConst:
-		if (SYMCONST_HAS_TYPE(get_SymConst_kind(n)))
-			print_node_type_edge(F,n,get_SymConst_type(n),NODE2TYPE_EDGE_ATTR);
+	case iro_TypeConst:
+		print_node_type_edge(F, n, get_TypeConst_type(n), NODE2TYPE_EDGE_ATTR);
 		break;
 	case iro_Sel:
 		print_node_ent_edge(F,n,get_Sel_entity(n),NODE2TYPE_EDGE_ATTR);

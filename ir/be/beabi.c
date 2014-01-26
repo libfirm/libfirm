@@ -504,13 +504,13 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 	/* ins collected, build the call */
 	ir_node *low_call;
-	if (env->call->flags.call_has_imm && is_SymConst(call_ptr)) {
+	if (env->call->flags.call_has_imm && is_EntConst(call_ptr)) {
 		/* direct call */
 		low_call = be_new_Call(dbgi, bl, curr_mem, sp->single_req, curr_sp,
 		                       sp->single_req, curr_sp,
 		                       n_reg_results + pn_be_Call_first_res + ARR_LEN(destroyed_regs),
 		                       n_ins, in, get_Call_type(irn));
-		be_Call_set_entity(low_call, get_SymConst_entity(call_ptr));
+		be_Call_set_entity(low_call, get_EntConst_entity(call_ptr));
 	} else {
 		/* indirect call */
 		low_call = be_new_Call(dbgi, bl, curr_mem, sp->single_req, curr_sp,

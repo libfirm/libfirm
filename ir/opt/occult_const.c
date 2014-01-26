@@ -39,7 +39,7 @@ typedef struct env_t {
 static void occult_const_opt_walker(ir_node *node, void *data)
 {
 	/* Ignore already const nodes */
-	if (is_Const(node) || is_SymConst(node)) return;
+	if (is_Const(node) || is_EntConst(node) || is_TypeConst(node)) return;
 
 	/* Ignore mode_BB, mode_X, etc */
 	if (!mode_is_data(get_irn_mode(node))) return;

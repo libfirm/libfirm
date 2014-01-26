@@ -257,7 +257,7 @@ static void handle_if(ir_node *block, ir_node *cmp, ir_relation rel, env_t *env)
 		return;
 
 	/* try to place the constant on the right side for a Confirm */
-	if (is_Const(left) || is_SymConst(left)) {
+	if (is_Const(left) || is_EntConst(left) || is_TypeConst(left)) {
 		ir_node *t = left;
 		left  = right;
 		right = t;
@@ -441,11 +441,11 @@ static bool is_non_null_Confirm(const ir_node *ptr)
 		ptr = get_Confirm_value(ptr);
 	}
 	/*
-	 * While a SymConst is not a Confirm, it is non-null
+	 * While an EntConst is not a Confirm, it is non-null
 	 * anyway. This helps to reduce the number of
 	 * constructed Confirms.
 	 */
-	if (is_SymConst_addr_ent(ptr))
+	if (is_EntConst_addr(ptr))
 		return true;
 	return false;
 }

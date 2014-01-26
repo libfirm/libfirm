@@ -876,37 +876,58 @@ class Sub(Binop):
 	flags = []
 
 @op
-class SymConst:
+class EntConst:
 	"""A symbolic constant.
 
-	 - *symconst_type_size* The symbolic constant represents the size of a type.
-	                        The type of which the constant represents the size
-	                        is given explicitly.
-	 - *symconst_type_align* The symbolic constant represents the alignment of a
-	                        type.  The type of which the constant represents the
-	                        size is given explicitly.
-	 - *symconst_addr_ent*  The symbolic constant represents the address of an
-	                        entity (variable or method).  The variable is given
-	                        explicitly by a firm entity.
-	 - *symconst_ofs_ent*   The symbolic constant represents the offset of an
-	                        entity in its owner type."""
-	mode       = "mode_P"
+	 - *entconst_addr*  The symbolic constant represents the address of an
+	                    entity (variable or method).
+	 - *entconst_ofs*   The symbolic constant represents the offset of an
+	                    entity in its owner type."""
 	flags      = [ "constlike", "start_block" ]
+	block      = "get_irg_start_block(irg)"
 	knownBlock = True
 	pinned     = "no"
 	attrs      = [
 		dict(
 			type    = "ir_entity*",
 			name    = "entity",
-			noprop  = True,
-			comment = "entity whose address is returned",
+			comment = "entity to operate on",
+		),
+		dict(
+			type    = "entconst_kind",
+			name    = "kind",
+			comment = "aspect of the entity",
 		)
 	]
-	attr_struct = "symconst_attr"
+	attr_struct = "entconst_attr"
+	attrs_name  = "entc"
 	customSerializer = True
-	# constructor is written manually at the moment, because of the strange
-	# union argument
-	noconstructor = True
+
+@op
+class TypeConst:
+	"""A symbolic constant.
+
+	 - *typeconst_size* The symbolic constant represents the size of a type.
+	 - *typeconst_align* The symbolic constant represents the alignment of a type."""
+	flags      = [ "constlike", "start_block" ]
+	block      = "get_irg_start_block(irg)"
+	knownBlock = True
+	pinned     = "no"
+	attrs      = [
+		dict(
+			type    = "ir_type*",
+			name    = "type",
+			comment = "type to operate on",
+		),
+		dict(
+			type    = "typeconst_kind",
+			name    = "kind",
+			comment = "aspect of the type",
+		)
+	]
+	attr_struct = "typeconst_attr"
+	attrs_name  = "typec"
+	customSerializer = True
 
 @op
 class Sync:

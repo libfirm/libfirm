@@ -345,13 +345,13 @@ static ir_alias_relation different_types(const ir_node *adr1,
 	ir_entity *ent1 = NULL;
 	ir_entity *ent2 = NULL;
 
-	if (is_SymConst_addr_ent(adr1))
-		ent1 = get_SymConst_entity(adr1);
+	if (is_EntConst_addr(adr1))
+		ent1 = get_EntConst_entity(adr1);
 	else if (is_Sel(adr1))
 		ent1 = get_Sel_entity(adr1);
 
-	if (is_SymConst_addr_ent(adr2))
-		ent2 = get_SymConst_entity(adr2);
+	if (is_EntConst_addr(adr2))
+		ent2 = get_EntConst_entity(adr2);
 	else if (is_Sel(adr2))
 		ent2 = get_Sel_entity(adr2);
 
@@ -408,8 +408,8 @@ ir_storage_class_class_t classify_pointer(const ir_node *irn,
 {
 	ir_graph                *irg = get_irn_irg(irn);
 	ir_storage_class_class_t res = ir_sc_pointer;
-	if (is_SymConst_addr_ent(irn)) {
-		ir_entity *entity = get_SymConst_entity(irn);
+	if (is_EntConst_addr(irn)) {
+		ir_entity *entity = get_EntConst_entity(irn);
 		ir_type   *owner  = get_entity_owner(entity);
 		res = owner == get_tls_type() ? ir_sc_tls : ir_sc_globalvar;
 		if (!(get_entity_usage(entity) & ir_usage_address_taken))
@@ -631,12 +631,12 @@ static ir_alias_relation _get_alias_relation(
 	} else {
 		/* both classes are equal */
 		if (class1 == ir_sc_globalvar) {
-			ir_entity *entity1 = get_SymConst_entity(base1);
-			ir_entity *entity2 = get_SymConst_entity(base2);
+			ir_entity *entity1 = get_EntConst_entity(base1);
+			ir_entity *entity2 = get_EntConst_entity(base2);
 			if (entity1 != entity2)
 				return ir_no_alias;
 
-			/* for some reason CSE didn't happen yet for the 2 SymConsts... */
+			/* for some reason CSE didn't happen yet for the 2 EntConsts... */
 			return ir_may_alias;
 		} else if (class1 == ir_sc_globaladdr) {
 			ir_tarval *tv = get_Const_tarval(base1);
@@ -1059,8 +1059,8 @@ static void check_initializer_value(ir_node *value)
 		return;
 
 	/* let's check if it's an address */
-	if (is_SymConst_addr_ent(value)) {
-		ir_entity *ent = get_SymConst_entity(value);
+	if (is_EntConst_addr(value)) {
+		ir_entity *ent = get_EntConst_entity(value);
 		set_entity_usage(ent, ir_usage_unknown);
 	}
 
@@ -1172,10 +1172,10 @@ static void print_entity_usage_flags(const ir_type *tp)
 static void check_global_address(ir_node *irn, void *data)
 {
 	(void) data;
-	if (!is_SymConst_addr_ent(irn))
+	if (!is_EntConst_addr(irn))
 		return;
 
-	ir_entity *entity = get_SymConst_entity(irn);
+	ir_entity *entity = get_EntConst_entity(irn);
 	unsigned   flags  = get_entity_usage(entity);
 	flags |= determine_entity_usage(irn, entity);
 	set_entity_usage(entity, (ir_entity_usage) flags);
@@ -1339,8 +1339,8 @@ void mark_private_methods(void)
 static ir_entity *find_entity(ir_node *ptr)
 {
 	switch (get_irn_opcode(ptr)) {
-	case iro_SymConst:
-		return get_SymConst_entity(ptr);
+	case iro_EntConst:
+		return get_EntConst_entity(ptr);
 	case iro_Sel:
 		return get_Sel_entity(ptr);
 	case iro_Sub:

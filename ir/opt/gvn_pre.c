@@ -1266,7 +1266,7 @@ static unsigned is_hoisting_greedy(ir_node *irn, ir_node *block)
 			trans_val = identify(trans);
 			DB((dbg, LEVEL_3, "value %+F\n", trans_val));
 
-			if (is_Const(trans_val) || is_SymConst(trans_val)) {
+			if (is_Const(trans_val) || is_EntConst(trans_val) || is_TypeConst(trans_val)) {
 				/* existing constant */
 				if (get_irn_idx(trans_val) < environ->last_idx) {
 					continue;

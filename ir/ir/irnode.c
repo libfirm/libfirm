@@ -658,59 +658,6 @@ int (is_Const_all_one)(const ir_node *node)
 
 
 
-symconst_kind get_SymConst_kind(const ir_node *node)
-{
-	assert(is_SymConst(node));
-	return node->attr.symc.kind;
-}
-
-void set_SymConst_kind(ir_node *node, symconst_kind kind)
-{
-	assert(is_SymConst(node));
-	node->attr.symc.kind = kind;
-}
-
-ir_type *get_SymConst_type(const ir_node *node)
-{
-	/* the cast here is annoying, but we have to compensate for
-	   the skip_tip() */
-	ir_node *irn = (ir_node *)node;
-	assert(is_SymConst(node) &&
-	       (SYMCONST_HAS_TYPE(get_SymConst_kind(node))));
-	return irn->attr.symc.sym.type_p;
-}
-
-void set_SymConst_type(ir_node *node, ir_type *tp)
-{
-	assert(is_SymConst(node) &&
-	       (SYMCONST_HAS_TYPE(get_SymConst_kind(node))));
-	node->attr.symc.sym.type_p = tp;
-}
-
-ir_entity *get_SymConst_entity(const ir_node *node)
-{
-	assert(is_SymConst(node) && SYMCONST_HAS_ENT(get_SymConst_kind(node)));
-	return node->attr.symc.sym.entity_p;
-}
-
-void set_SymConst_entity(ir_node *node, ir_entity *ent)
-{
-	assert(is_SymConst(node) && SYMCONST_HAS_ENT(get_SymConst_kind(node)));
-	node->attr.symc.sym.entity_p  = ent;
-}
-
-union symconst_symbol get_SymConst_symbol(const ir_node *node)
-{
-	assert(is_SymConst(node));
-	return node->attr.symc.sym;
-}
-
-void set_SymConst_symbol(ir_node *node, union symconst_symbol sym)
-{
-	assert(is_SymConst(node));
-	node->attr.symc.sym = sym;
-}
-
 const char *get_builtin_kind_name(ir_builtin_kind kind)
 {
 #define X(a)    case a: return #a
@@ -739,9 +686,9 @@ const char *get_builtin_kind_name(ir_builtin_kind kind)
 ir_entity *get_Call_callee(const ir_node *node)
 {
 	ir_node *ptr = get_Call_ptr(node);
-	if (!is_SymConst_addr_ent(ptr))
+	if (!is_EntConst_addr(ptr))
 		return NULL;
-	ir_entity *entity = get_SymConst_entity(ptr);
+	ir_entity *entity = get_EntConst_entity(ptr);
 	/* some (corner case/pointless) graphs can have non-method entities as
 	 * call pointers */
 	if (!is_method_entity(entity) && !is_alias_entity(entity))
@@ -981,9 +928,9 @@ ir_node *skip_Id(ir_node *node)
 	}
 }
 
-int (is_SymConst_addr_ent)(const ir_node *node)
+int (is_EntConst_addr)(const ir_node *node)
 {
-	return is_SymConst_addr_ent_(node);
+	return is_EntConst_addr_(node);
 }
 
 int is_cfop(const ir_node *node)
@@ -1056,24 +1003,6 @@ const char *get_cond_jmp_predicate_name(cond_jmp_predicate pred)
 #undef X
 }
 
-/** Return the attribute type of a SymConst node if exists */
-static ir_type *get_SymConst_attr_type(const ir_node *self)
-{
-	symconst_kind kind = get_SymConst_kind(self);
-	if (SYMCONST_HAS_TYPE(kind))
-		return get_SymConst_type(self);
-	return NULL;
-}
-
-/** Return the attribute entity of a SymConst node if exists */
-static ir_entity *get_SymConst_attr_entity(const ir_node *self)
-{
-	symconst_kind kind = get_SymConst_kind(self);
-	if (SYMCONST_HAS_ENT(kind))
-		return get_SymConst_entity(self);
-	return NULL;
-}
-
 static void register_get_type_func(ir_op *op, get_type_attr_func func)
 {
 	op->ops.get_type_attr = func;
@@ -1086,12 +1015,12 @@ static void register_get_entity_func(ir_op *op, get_entity_attr_func func)
 
 void ir_register_getter_ops(void)
 {
-	register_get_type_func(op_Builtin,  get_Builtin_type);
-	register_get_type_func(op_Call,     get_Call_type);
-	register_get_type_func(op_CopyB,    get_CopyB_type);
-	register_get_type_func(op_SymConst, get_SymConst_attr_type);
+	register_get_type_func(op_Builtin,   get_Builtin_type);
+	register_get_type_func(op_Call,      get_Call_type);
+	register_get_type_func(op_CopyB,     get_CopyB_type);
+	register_get_type_func(op_TypeConst, get_TypeConst_type);
 
-	register_get_entity_func(op_SymConst, get_SymConst_attr_entity);
+	register_get_entity_func(op_EntConst, get_EntConst_entity);
 	register_get_entity_func(op_Sel,      get_Sel_entity);
 	register_get_entity_func(op_Block,    get_Block_entity);
 }

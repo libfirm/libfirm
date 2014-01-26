@@ -220,12 +220,20 @@ static unsigned hash_Const(const ir_node *node)
 }
 
 /**
- * Calculate a hash value of a SymConst node.
+ * Calculate a hash value of a EntConst node.
  */
-static unsigned hash_SymConst(const ir_node *node)
+static unsigned hash_EntConst(const ir_node *node)
 {
-	/* all others are pointers */
-	unsigned hash = hash_ptr(node->attr.symc.sym.type_p);
+	unsigned hash = hash_ptr(node->attr.entc.entity);
+	return hash;
+}
+
+/**
+ * Calculate a hash value of a TypeConst node.
+ */
+static unsigned hash_TypeConst(const ir_node *node)
+{
+	unsigned hash = hash_ptr(node->attr.typec.type);
 	return hash;
 }
 
@@ -257,13 +265,20 @@ static int node_cmp_attr_Alloc(const ir_node *a, const ir_node *b)
 	return pa->alignment != pb->alignment;
 }
 
-/** Compares the attributes of two SymConst nodes. */
-static int node_cmp_attr_SymConst(const ir_node *a, const ir_node *b)
+/** Compares the attributes of two EntConst nodes. */
+static int node_cmp_attr_EntConst(const ir_node *a, const ir_node *b)
 {
-	const symconst_attr *pa = &a->attr.symc;
-	const symconst_attr *pb = &b->attr.symc;
-	return (pa->kind       != pb->kind)
-	    || (pa->sym.type_p != pb->sym.type_p);
+	const entconst_attr *pa = &a->attr.entc;
+	const entconst_attr *pb = &b->attr.entc;
+	return (pa->kind != pb->kind) || (pa->entity != pb->entity);
+}
+
+/** Compares the attributes of two TypeConst nodes. */
+static int node_cmp_attr_TypeConst(const ir_node *a, const ir_node *b)
+{
+	const typeconst_attr *pa = &a->attr.typec;
+	const typeconst_attr *pb = &b->attr.typec;
+	return (pa->kind != pb->kind) || (pa->type != pb->type);
 }
 
 /** Compares the attributes of two Call nodes. */
@@ -594,16 +609,18 @@ void firm_init_op(void)
 	set_op_cmp_attr(op_CopyB,    node_cmp_attr_CopyB);
 	set_op_cmp_attr(op_Div,      node_cmp_attr_Div);
 	set_op_cmp_attr(op_Dummy,    node_cmp_attr_Dummy);
+	set_op_cmp_attr(op_EntConst, node_cmp_attr_EntConst);
 	set_op_cmp_attr(op_Load,     node_cmp_attr_Load);
 	set_op_cmp_attr(op_Mod,      node_cmp_attr_Mod);
 	set_op_cmp_attr(op_Phi,      node_cmp_attr_Phi);
 	set_op_cmp_attr(op_Proj,     node_cmp_attr_Proj);
 	set_op_cmp_attr(op_Sel,      node_cmp_attr_Sel);
 	set_op_cmp_attr(op_Store,    node_cmp_attr_Store);
-	set_op_cmp_attr(op_SymConst, node_cmp_attr_SymConst);
+	set_op_cmp_attr(op_TypeConst,node_cmp_attr_TypeConst);
 
-	set_op_hash(op_Const,    hash_Const);
-	set_op_hash(op_SymConst, hash_SymConst);
+	set_op_hash(op_Const,     hash_Const);
+	set_op_hash(op_EntConst,  hash_EntConst);
+	set_op_hash(op_TypeConst, hash_TypeConst);
 
 	set_op_copy_attr(op_Call,   call_copy_attr);
 	set_op_copy_attr(op_Block,  block_copy_attr);

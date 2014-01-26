@@ -802,20 +802,20 @@ ir_node *ia32_try_create_Immediate(ir_node *node, char immediate_constraint_type
 	if (is_Const(node)) {
 		cnst   = node;
 		entity = NULL;
-	} else if (is_SymConst_addr_ent(node)) {
+	} else if (is_EntConst_addr(node)) {
 		cnst   = NULL;
-		entity = get_SymConst_entity(node);
+		entity = get_EntConst_entity(node);
 		if (is_tls_entity(entity))
 			return NULL;
 	} else if (is_Add(node)) {
 		ir_node *left  = get_Add_left(node);
 		ir_node *right = get_Add_right(node);
-		if (is_Const(left) && is_SymConst_addr_ent(right)) {
+		if (is_Const(left) && is_EntConst_addr(right)) {
 			cnst   = left;
-			entity = get_SymConst_entity(right);
-		} else if (is_SymConst_addr_ent(left) && is_Const(right)) {
+			entity = get_EntConst_entity(right);
+		} else if (is_EntConst_addr(left) && is_Const(right)) {
 			cnst   = right;
-			entity = get_SymConst_entity(left);
+			entity = get_EntConst_entity(left);
 		} else {
 			return NULL;
 		}

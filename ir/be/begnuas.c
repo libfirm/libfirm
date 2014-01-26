@@ -642,29 +642,33 @@ static void emit_init_expression(be_gas_decl_env_t *env, ir_node *init)
 		return;
 	}
 
-	case iro_SymConst:
-		switch (get_SymConst_kind(init)) {
-		case symconst_addr_ent: {
-			ir_entity *ent = get_SymConst_entity(init);
+	case iro_EntConst: {
+		ir_entity *const ent = get_EntConst_entity(init);
+		switch (get_EntConst_kind(init)) {
+		case entconst_addr:
 			be_gas_emit_entity(ent);
 			return;
-		}
 
-		case symconst_ofs_ent: {
-			ir_entity *ent = get_SymConst_entity(init);
+		case entconst_ofs:
 			be_emit_irprintf("%d", get_entity_offset(ent));
 			return;
 		}
+		panic("invalid EntConst kind");
+	}
 
-		case symconst_type_size:
-			be_emit_irprintf("%u", get_type_size_bytes(get_SymConst_type(init)));
+	case iro_TypeConst: {
+		ir_type *const type = get_TypeConst_type(init);
+		switch (get_TypeConst_kind(init)) {
+		case typeconst_size:
+			be_emit_irprintf("%u", get_type_size_bytes(type));
 			return;
 
-		case symconst_type_align:
-			be_emit_irprintf("%u", get_type_alignment_bytes(get_SymConst_type(init)));
+		case typeconst_align:
+			be_emit_irprintf("%u", get_type_alignment_bytes(type));
 			return;
 		}
-		panic("invalid SymConst kind");
+		panic("invalid TypeConst kind");
+	}
 
 	case iro_Add:
 		if (!mode_is_int(mode) && !mode_is_reference(mode)) {

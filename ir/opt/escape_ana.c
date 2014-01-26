@@ -303,9 +303,9 @@ static void find_allocation_calls(ir_node *call, void *ctx)
 	if (! is_Call(call))
 		return;
 	adr = get_Call_ptr(call);
-	if (! is_SymConst_addr_ent(adr))
+	if (!is_EntConst_addr(adr))
 		return;
-	ent = get_SymConst_entity(adr);
+	ent = get_EntConst_entity(adr);
 	if (! env->callback(ent))
 		return;
 
@@ -385,7 +385,7 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
 		unsigned alignment = get_Alloc_alignment(alloc);
 
 		tp = NULL;
-		if (is_SymConst(size) && get_SymConst_kind(size) == symconst_type_size)  {
+		if (is_TypeConst(size) && get_TypeConst_kind(size) == typeconst_size)  {
 			/* if the size is a type size and the types matched */
 			tp = atp;
 		} else if (is_Const(size)) {

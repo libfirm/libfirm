@@ -83,10 +83,10 @@ static void call_mapper(ir_node *node, void *data)
 
 	if (op == op_Call) {
 		ir_node *const callee = get_Call_ptr(node);
-		if (!is_SymConst_addr_ent(callee))
+		if (!is_EntConst_addr(callee))
 			return;
 
-		ir_entity     *ent = get_SymConst_entity(callee);
+		ir_entity     *ent = get_EntConst_entity(callee);
 		i_mapper_func *f   = pmap_get(i_mapper_func, map->c_map, ent);
 
 		if (f != NULL && f(node))
@@ -529,8 +529,8 @@ int i_mapper_tanh(ir_node *call)
  */
 static ir_entity *get_const_entity(ir_node *ptr)
 {
-	if (is_SymConst_addr_ent(ptr)) {
-		ir_entity *ent = get_SymConst_entity(ptr);
+	if (is_EntConst_addr(ptr)) {
+		ir_entity *ent = get_EntConst_entity(ptr);
 
 		if (get_entity_linkage(ent) & IR_LINKAGE_CONSTANT) {
 			/* a constant entity */
@@ -876,7 +876,7 @@ int i_mapper_strncmp(ir_node *call)
 		ir_graph  *irg     = get_irn_irg(call);
 		ir_node   *mem     = get_Call_mem(call);
 		ir_node   *adr     = get_Call_ptr(call);
-		ir_entity *ent     = get_SymConst_entity(adr);
+		ir_entity *ent     = get_EntConst_entity(adr);
 		ir_type   *call_tp = get_entity_type(ent);
 		ir_type   *res_tp  = get_method_res_type(call_tp, 0);
 		ir_mode   *mode    = get_type_mode(res_tp);
@@ -993,7 +993,7 @@ int i_mapper_memcmp(ir_node *call)
 		ir_graph  *irg     = get_irn_irg(call);
 		ir_node   *mem     = get_Call_mem(call);
 		ir_node   *adr     = get_Call_ptr(call);
-		ir_entity *ent     = get_SymConst_entity(adr);
+		ir_entity *ent     = get_EntConst_entity(adr);
 		ir_type   *call_tp = get_entity_type(ent);
 		ir_type   *res_tp  = get_method_res_type(call_tp, 0);
 		ir_mode   *mode    = get_type_mode(res_tp);

@@ -272,31 +272,40 @@ void dump_irnode_to_file(FILE *const F, const ir_node *const n)
 		}
 		break;
 	}
-	case iro_SymConst: {
-		switch (get_SymConst_kind(n)) {
-		case symconst_addr_ent:
+
+	case iro_EntConst: {
+		ir_entity *const ent = get_EntConst_entity(n);
+		switch (get_EntConst_kind(n)) {
+		case entconst_addr:
 			fprintf(F, "  kind:   addr_ent\n");
 			fprintf(F, "  entity: ");
-			dump_entity_to_file(F, get_SymConst_entity(n));
+			dump_entity_to_file(F, ent);
 			break;
-		case symconst_ofs_ent:
+		case entconst_ofs:
 			fprintf(F, "  kind:   offset\n");
 			fprintf(F, "  entity: ");
-			dump_entity_to_file(F, get_SymConst_entity(n));
+			dump_entity_to_file(F, ent);
 			break;
-		case symconst_type_size:
+		}
+	}
+
+	case iro_TypeConst: {
+		ir_type *const type = get_TypeConst_type(n);
+		switch (get_TypeConst_kind(n)) {
+		case typeconst_size:
 			fprintf(F, "  kind: size\n");
 			fprintf(F, "  type: ");
-			dump_type_to_file(F, get_SymConst_type(n));
+			dump_type_to_file(F, type);
 			break;
-		case symconst_type_align:
+		case typeconst_align:
 			fprintf(F, "  kind: alignment\n");
 			fprintf(F, "  type: ");
-			dump_type_to_file(F, get_SymConst_type(n));
+			dump_type_to_file(F, type);
 			break;
 		}
 		break;
 	}
+
 	case iro_Load:
 		fprintf(F, "  mode of loaded value: %s\n", get_mode_name(get_Load_mode(n)));
 		fprintf(F, "  volatility: %s\n", get_volatility_name(get_Load_volatility(n)));

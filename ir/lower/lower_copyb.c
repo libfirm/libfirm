@@ -116,10 +116,8 @@ static ir_node *get_memcpy_address(ir_graph *irg)
 	ident     *id  = new_id_from_str("memcpy");
 	ir_type   *mt  = get_memcpy_methodtype();
 	ir_entity *ent = create_compilerlib_entity(id, mt);
-	symconst_symbol sym;
 
-	sym.entity_p = ent;
-	return new_r_SymConst(irg, mode_P_code, sym, symconst_addr_ent);
+	return new_r_EntConst(irg, mode_P_code, ent, entconst_addr);
 }
 
 /**

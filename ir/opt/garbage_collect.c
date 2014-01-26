@@ -26,10 +26,8 @@ static void visit_node(ir_node *node, void *env)
 	ir_entity *entity;
 	(void) env;
 
-	if (is_SymConst(node)) {
-		if (!SYMCONST_HAS_ENT(get_SymConst_kind(node)))
-			return;
-		entity = get_SymConst_entity(node);
+	if (is_EntConst(node)) {
+		entity = get_EntConst_entity(node);
 	} else if (is_Sel(node)) {
 		entity = get_Sel_entity(node);
 	} else {

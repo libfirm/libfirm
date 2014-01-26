@@ -504,10 +504,10 @@ static ir_node *gen_ASM(ir_node *node)
 				continue;
 			}
 		} else if (imm_type == 'A') {
-			/* TODO: match Add(SymConst,Const), ... */
-			if (is_SymConst(pred)) {
+			/* TODO: match Add(EntConst,Const), ... */
+			if (is_EntConst(pred)) {
 				operand->kind = ASM_OPERAND_IMMEDIATE;
-				operand->immediate_value_entity = get_SymConst_entity(pred);
+				operand->immediate_value_entity = get_EntConst_entity(pred);
 				continue;
 			} else if (is_Const(pred)) {
 				operand->kind = ASM_OPERAND_IMMEDIATE;
@@ -798,8 +798,8 @@ static void match_address(ir_node *ptr, address_t *address, bool use_ptr2)
 	 * just different offsets */
 	ir_node   *ptr2   = NULL;
 	ir_entity *entity = NULL;
-	if (is_SymConst(base) && get_irn_n_edges(base) == 1) {
-		ir_entity *sc_entity = get_SymConst_entity(base);
+	if (is_EntConst(base) && get_irn_n_edges(base) == 1) {
+		ir_entity *sc_entity = get_EntConst_entity(base);
 		dbg_info  *dbgi      = get_irn_dbg_info(ptr);
 		ir_node   *block     = get_nodes_block(ptr);
 		ir_node   *new_block = be_transform_node(block);
@@ -873,7 +873,7 @@ static ir_node *gen_Add(ir_node *node)
 		ir_node   *left = get_Add_left(node);
 		/* is this simple address arithmetic? then we can let the linker do
 		 * the calculation. */
-		if (is_SymConst(left) && get_irn_n_edges(left) == 1) {
+		if (is_EntConst(left) && get_irn_n_edges(left) == 1) {
 			dbg_info *dbgi  = get_irn_dbg_info(node);
 			ir_node  *block = be_transform_node(get_nodes_block(node));
 
@@ -1587,11 +1587,11 @@ static ir_node *gen_Cmp(ir_node *node)
 }
 
 /**
- * Transforms a SymConst node.
+ * Transforms a EntConst node.
  */
-static ir_node *gen_SymConst(ir_node *node)
+static ir_node *gen_EntConst(ir_node *node)
 {
-	ir_entity *entity    = get_SymConst_entity(node);
+	ir_entity *entity    = get_EntConst_entity(node);
 	dbg_info  *dbgi      = get_irn_dbg_info(node);
 	ir_node   *block     = get_nodes_block(node);
 	ir_node   *new_block = be_transform_node(block);
@@ -2152,8 +2152,8 @@ static ir_node *gen_Call(ir_node *node)
 		in[mem_pos] = new_r_Sync(new_block, sync_arity, sync_ins);
 	}
 
-	if (is_SymConst(callee)) {
-		entity = get_SymConst_entity(callee);
+	if (is_EntConst(callee)) {
+		entity = get_EntConst_entity(callee);
 	} else {
 		in[in_arity]     = be_transform_node(callee);
 		in_req[in_arity] = sparc_reg_classes[CLASS_sparc_gp].class_req;
@@ -2770,7 +2770,7 @@ static void sparc_register_transformers(void)
 	be_set_transform_function(op_Store,        gen_Store);
 	be_set_transform_function(op_Sub,          gen_Sub);
 	be_set_transform_function(op_Switch,       gen_Switch);
-	be_set_transform_function(op_SymConst,     gen_SymConst);
+	be_set_transform_function(op_EntConst,     gen_EntConst);
 	be_set_transform_function(op_Unknown,      gen_Unknown);
 
 	be_set_transform_function(op_sparc_AddX_t, gen_AddX_t);

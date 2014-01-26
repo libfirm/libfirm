@@ -25,7 +25,7 @@
  * Each type gets a list of all Alloc nodes allocating it.
  * Each entity gets two lists:
  *   - one containing all accesses (Load, (Call), Store),
- *   - and one containing all uses to get a reference (Sel, SymConst).
+ *   - and one containing all uses to get a reference (Sel, EntConst).
  * @{
  */
 
@@ -34,11 +34,11 @@ FIRM_API size_t get_entity_n_accesses(const ir_entity *entity);
 /** Returns Load/Store node number @p pos that possibly accesses entity @p entity. */
 FIRM_API ir_node *get_entity_access(const ir_entity *entity, size_t pos);
 
-/** Returns number of references to entity @p entity, in form of SymConst/Sel,
+/** Returns number of references to entity @p entity, in form of EntConst/Sel,
  * including references from constant entities and the like. */
 FIRM_API size_t get_entity_n_references(const ir_entity *entity);
 /** Returns reference number @p pos of references to an entity, in form of
- * SymConst/Sel, including references from constants. */
+ * EntConst/Sel, including references from constants. */
 FIRM_API ir_node *get_entity_reference(const ir_entity *entity, size_t pos);
 
 /** Returns number of Alloc nodes that create an instance of type @p type. */
@@ -66,8 +66,8 @@ FIRM_API ir_type *get_type_arraytype_of(const ir_type *type, size_t pos);
  *    Alloc    --> get_Alloc_type()
  *    Cast     --> get_Cast_type()
  *    Sel      --> get_Sel_entity()
- *    SymConst --> get_SymConst_entity()
- *    Load(addr)  --> get_addr_entity() \  ent von SymConst, oder falls Sel: ent von
+ *    EntConst --> get_EntConst_entity()
+ *    Load(addr)  --> get_addr_entity() \  ent von EntConst, oder falls Sel: ent von
  *    Store(addr) --> get_addr_entity() /  outermost im compound.  Ansonsten: nirgends.
  *                                         d.h. wir bekommen die array Elementzugriffe
  *                                         an die jack array Klasse annotiert.

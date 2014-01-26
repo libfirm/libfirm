@@ -263,9 +263,10 @@ ir_node *duplicate_subgraph(dbg_info *dbg, ir_node *n, ir_node *block)
 	switch (get_irn_opcode(n)) {
 	case iro_Const:
 		return new_rd_Const(dbg, irg, get_Const_tarval(n));
-	case iro_SymConst:
-		return new_rd_SymConst(dbg, irg, mode,
-		                       get_SymConst_symbol(n), get_SymConst_kind(n));
+	case iro_EntConst:
+		return new_rd_EntConst(dbg, irg, mode, get_EntConst_entity(n), get_EntConst_kind(n));
+	case iro_TypeConst:
+		return new_rd_TypeConst(dbg, irg, mode, get_TypeConst_type(n), get_TypeConst_kind(n));
 	case iro_Add:
 		return new_rd_Add(dbg, block,
 		                  duplicate_subgraph(dbg, get_Add_left(n), block),

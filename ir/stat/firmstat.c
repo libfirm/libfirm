@@ -713,10 +713,10 @@ static void stat_update_call(ir_node *call, graph_entry_t *graph)
 	/* found a call, this function is not a leaf */
 	graph->is_leaf = 0;
 
-	if (is_SymConst(ptr)) {
-		if (get_SymConst_kind(ptr) == symconst_addr_ent) {
+	if (is_EntConst(ptr)) {
+		if (get_EntConst_kind(ptr) == entconst_addr) {
 			/* ok, we seems to know the entity */
-			ent = get_SymConst_entity(ptr);
+			ent = get_EntConst_entity(ptr);
 			callee = get_entity_irg(ent);
 
 			/* it is recursive, if it calls at least once */
@@ -781,10 +781,10 @@ static void stat_update_call_2(ir_node *call, graph_entry_t *graph)
 	if (is_Bad(block))
 		return;
 
-	if (is_SymConst(ptr)) {
-		if (get_SymConst_kind(ptr) == symconst_addr_ent) {
+	if (is_EntConst(ptr)) {
+		if (get_EntConst_kind(ptr) == entconst_addr) {
 			/* ok, we seems to know the entity */
-			ent = get_SymConst_entity(ptr);
+			ent = get_EntConst_entity(ptr);
 			callee = get_entity_irg(ent);
 		}
 	}
@@ -829,7 +829,7 @@ static void stat_update_address(ir_node *node, graph_entry_t *graph)
 	ir_graph *irg;
 
 	switch (opc) {
-	case iro_SymConst:
+	case iro_EntConst:
 		/* a global address */
 		cnt_inc(&graph->cnt[gcnt_global_adr]);
 		break;
@@ -1595,6 +1595,18 @@ static void stat_irg_block_walk(void *ctx, ir_graph *irg, ir_node *node, generic
 	STAT_LEAVE;
 }
 
+static bool is_const(ir_node *const node)
+{
+	switch (get_irn_opcode(node)) {
+	case iro_Const:
+	case iro_EntConst:
+	case iro_TypeConst:
+		return true;
+	default:
+		return false;
+	}
+}
+
 /**
  * Called for every node that is removed due to an optimization.
  *
@@ -1608,7 +1620,7 @@ static void removed_due_opt(ir_node *n, hmap_opt_entry_t *hmap, hook_opt_kind ki
 	ir_op *op = stat_get_irn_op(n);
 
 	/* ignore CSE for Constants */
-	if (kind == HOOK_OPT_CSE && (is_Const(n) || is_SymConst(n)))
+	if (kind == HOOK_OPT_CSE && is_const(n))
 		return;
 
 	/* increase global value */
@@ -1653,7 +1665,7 @@ static void stat_merge_nodes(
 				/* sometimes we did not detect, that it is replaced by a Const */
 				if (opt == HOOK_OPT_CONFIRM && new_num_entries == 1) {
 					ir_node *const irn = new_node_array[0];
-					if (is_Const(irn) || is_SymConst(irn))
+					if (is_const(irn))
 						xopt = HOOK_OPT_CONFIRM_C;
 				}
 

@@ -676,7 +676,7 @@ FIRM_API void add_entity_additional_properties(ir_entity *ent,
  * - owner         = unknown_type
  * - type          = unknown_type
  * - offset        = -1
- * - value         = SymConst(unknown_entity)
+ * - value         = EntConst(unknown_entity)
  * - values        = NULL
  * - val_paths     = NULL
  * - volatility    = volatility_non_volatile

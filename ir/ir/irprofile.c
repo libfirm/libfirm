@@ -27,8 +27,8 @@
 
 /* Instrument blocks walker. */
 typedef struct block_id_walker_data_t {
-	unsigned int id;   /**< current block id number */
-	ir_node *symconst; /**< the SymConst representing the counter array */
+	unsigned int  id;       /**< current block id number */
+	ir_node      *counters; /**< the node representing the counter array */
 } block_id_walker_data_t;
 
 /* Associate counters with blocks. */
@@ -143,7 +143,7 @@ static void add_constructor(ir_entity *method)
 	ident     *ide = id_unique("constructor_ptr.%u");
     ir_entity *ptr = new_entity(constructors, ide, ptr_type);
     ir_graph  *irg = get_const_code_irg();
-    ir_node   *val = new_rd_SymConst_addr_ent(NULL, irg, mode_P_code, method);
+    ir_node   *val = new_rd_EntConst(NULL, irg, mode_P_code, method, entconst_addr);
 
 	set_entity_ld_ident(ptr, new_id_from_chars("", 0));
     set_entity_compiler_generated(ptr, 1);
@@ -190,9 +190,8 @@ static ir_graph *gen_initializer_irg(ir_entity *ent_filename,
 {
 	ir_graph *irg;
 	ir_node  *ins[3];
-	ir_node  *bb, *ret, *call, *symconst;
+	ir_node  *bb, *ret, *call;
 	ir_type  *empty_frame_type;
-	symconst_symbol sym;
 
 	ir_entity *init_ent = get_init_firmprof_ref();
 
@@ -210,16 +209,13 @@ static ir_graph *gen_initializer_irg(ir_entity *ent_filename,
 
 	bb = get_r_cur_block(irg);
 
-	sym.entity_p = init_ent;
-	symconst     = new_r_SymConst(irg, mode_P_data, sym, symconst_addr_ent);
+	ir_node *const callee = new_r_EntConst(irg, mode_P_data, init_ent, entconst_addr);
 
-	sym.entity_p = ent_filename;
-	ins[0] = new_r_SymConst(irg, mode_P_data, sym, symconst_addr_ent);
-	sym.entity_p = bblock_counts;
-	ins[1] = new_r_SymConst(irg, mode_P_data, sym, symconst_addr_ent);
+	ins[0] = new_r_EntConst(irg, mode_P_data, ent_filename,  entconst_addr);
+	ins[1] = new_r_EntConst(irg, mode_P_data, bblock_counts, entconst_addr);
 	ins[2] = new_r_Const_long(irg, mode_Iu, n_blocks);
 
-	call = new_r_Call(bb, get_irg_initial_mem(irg), symconst, 3, ins,
+	call = new_r_Call(bb, get_irg_initial_mem(irg), callee, 3, ins,
 	        get_entity_type(init_ent));
 	ret  = new_r_Return(bb, new_r_Proj(call, mode_M, pn_Call_M), 0, NULL);
 	mature_immBlock(bb);
@@ -317,7 +313,7 @@ static void fix_ssa(ir_node *bb, void *data)
 static void block_instrument_walker(ir_node *bb, void *data)
 {
 	block_id_walker_data_t *wd = (block_id_walker_data_t*)data;
-	instrument_block(bb, wd->symconst, wd->id);
+	instrument_block(bb, wd->counters, wd->id);
 	++wd->id;
 }
 
@@ -344,10 +340,8 @@ static void instrument_irg(ir_graph *irg, ir_entity *counters,
 	ir_node *endbb = get_irg_end_block(irg);
 	int i;
 
-	/* generate a symbolic constant pointing to the count array */
-	symconst_symbol sym;
-	sym.entity_p = counters;
-	wd->symconst = new_r_SymConst(irg, mode_P_data, sym, symconst_addr_ent);
+	/* generate a node pointing to the count array */
+	wd->counters = new_r_EntConst(irg, mode_P_data, counters, entconst_addr);
 
 	/* instrument each block in the current irg */
 	irg_block_walk_graph(irg, block_instrument_walker, NULL, wd);

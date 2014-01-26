@@ -48,8 +48,8 @@
  *  and Craig Chambers.
  *
  *  Performs some optimizations possible by the analysed information:
- *  - Replace (Sel-method(Alloc)) by SymConst-entity.
- *  - Replaces Sel-method by SymConst-entity if the method is never overwritten.
+ *  - Replace (Sel-method(Alloc)) by EntConst-entity.
+ *  - Replaces Sel-method by EntConst-entity if the method is never overwritten.
  */
 FIRM_API size_t cgana(ir_entity ***free_methods);
 

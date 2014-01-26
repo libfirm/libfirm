@@ -64,12 +64,9 @@ ir_entity *new_entity(ir_type *owner, ident *name, ir_type *type)
 	ir_entity *res;
 	if (is_Method_type(type)) {
 		ir_graph *irg = get_const_code_irg();
-		symconst_symbol sym;
-		res          = intern_new_entity(owner, IR_ENTITY_METHOD, name, type);
-		sym.entity_p = res;
-		ir_node *symconst
-			= new_r_SymConst(irg, mode_P_code, sym, symconst_addr_ent);
-		set_atomic_ent_value(res, symconst);
+		res                = intern_new_entity(owner, IR_ENTITY_METHOD, name, type);
+		ir_node *const val = new_r_EntConst(irg, mode_P_code, res, entconst_addr);
+		set_atomic_ent_value(res, val);
 		res->linkage                   = IR_LINKAGE_CONSTANT;
 		res->attr.mtd_attr.properties  = get_method_additional_properties(type);
 		res->attr.mtd_attr.vtable_number = IR_VTABLE_NUM_NOT_SET;
@@ -594,7 +591,7 @@ static void check_entity_initializer(ir_entity *entity)
 		assert(is_aggregate_type(entity_tp));
 		break;
 	case IR_INITIALIZER_CONST:
-		/* methods are initialized by a SymConst */
+		/* methods are initialized by an EntConst */
 		assert(is_atomic_type(entity_tp) || is_Method_type(entity_tp));
 		break;
 	case IR_INITIALIZER_TARVAL:

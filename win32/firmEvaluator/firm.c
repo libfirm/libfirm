@@ -481,30 +481,39 @@ static HRESULT format_node(DEBUGHELPER *pHelper, int nBase, const void *addr, ch
       _tcsncat(pResult, ">", max);
     }
     break;
-  case iro_SymConst:
+
+  case iro_EntConst:
     _tcsncat(pResult, "<", max);
-    switch (n.attr.symc.kind) {
-    case symconst_type_size:
-      _tcsncat(pResult, "SIZE:", max);
-      if (format_type(pHelper, nBase, n.attr.symc.sym.type_p, name, sizeof(name), 0) != S_OK)
-        return E_FAIL;
-      _tcsncat(pResult, name, max);
-      break;
-    case symconst_type_align:
-      _tcsncat(pResult, "ALGN:", max);
-      if (format_type(pHelper, nBase, n.attr.symc.sym.type_p, name, sizeof(name), 0) != S_OK)
-        return E_FAIL;
-      _tcsncat(pResult, name, max);
-      break;
-    case symconst_addr_ent:
+    switch (n.attr.entc.kind) {
+    case entconst_addr:
       _tcsncat(pResult, "ENT:", max);
-      if (format_entity(pHelper, nBase, n.attr.symc.sym.entity_p, name, sizeof(name), 0) != S_OK)
+      if (format_entity(pHelper, nBase, n.attr.entc.entity, name, sizeof(name), 0) != S_OK)
         return E_FAIL;
       _tcsncat(pResult, name, max);
       break;
     }
     _tcsncat(pResult, ">", max);
     break;
+
+  case iro_TypeConst:
+    _tcsncat(pResult, "<", max);
+    switch (n.attr.typec.kind) {
+    case typeconst_size:
+      _tcsncat(pResult, "SIZE:", max);
+      if (format_type(pHelper, nBase, n.attr.typec.type, name, sizeof(name), 0) != S_OK)
+        return E_FAIL;
+      _tcsncat(pResult, name, max);
+      break;
+    case typeconst_align:
+      _tcsncat(pResult, "ALGN:", max);
+      if (format_type(pHelper, nBase, n.attr.typec.type, name, sizeof(name), 0) != S_OK)
+        return E_FAIL;
+      _tcsncat(pResult, name, max);
+      break;
+    }
+    _tcsncat(pResult, ">", max);
+    break;
+
   case iro_Sel:
     _tcsncat(pResult, "<", max);
     if (format_entity(pHelper, nBase, n.attr.sel.entity, name, sizeof(name), 0) != S_OK)
