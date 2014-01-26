@@ -148,7 +148,6 @@ static ir_entity **get_impl_methods(ir_entity *method)
  *    calls.
  *
  *  @param node  The node to analyze
- *  @param env   A map that maps names of entities to the entities.
  */
 static void sel_methods_walker(ir_node *node, void *env)
 {
@@ -188,8 +187,6 @@ static void sel_methods_walker(ir_node *node, void *env)
  *
  * Further replaces Sel nodes where this set contains exactly one
  * method by SymConst nodes.
- * Finally asserts if there is a SymConst(name) if there could be a
- * SymConst(ent).
  */
 static void sel_methods_init(void)
 {

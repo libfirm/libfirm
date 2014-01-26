@@ -48,7 +48,6 @@
  *  and Craig Chambers.
  *
  *  Performs some optimizations possible by the analysed information:
- *  - Replace SymConst-name nodes by SymConst-entity nodes if possible.
  *  - Replace (Sel-method(Alloc)) by SymConst-entity.
  *  - Replaces Sel-method by SymConst-entity if the method is never overwritten.
  */
