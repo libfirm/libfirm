@@ -168,13 +168,13 @@ static ir_node *gen_SymConst(ir_node *node)
 	am.base_input  = RIP_INPUT;
 	am.index_input = NO_INPUT;
 	if (mode == REFERENCE_IP_RELATIVE) {
-		am.symconst = entity;
+		am.entity = entity;
 		ir_node *lea
 			= new_bd_amd64_Lea(dbgi, block, 0, NULL, INSN_MODE_64, am);
 		return lea;
 	} else {
 		assert(mode == REFERENCE_GOT);
-		am.symconst = new_got_entry_entity(entity);
+		am.entity = new_got_entry_entity(entity);
 		ir_graph *irg  = get_irn_irg(node);
 		ir_node  *in[] = { get_irg_no_mem(irg) };
 		ir_node *load
@@ -342,7 +342,7 @@ static ir_node *gen_Sel(ir_node *const node)
 	memset(&am, 0, sizeof(am));
 	am.base_input  = 0;
 	am.index_input = NO_INPUT;
-	am.symconst    = get_Sel_entity(node);
+	am.entity      = get_Sel_entity(node);
 	ir_node *in[] = { base };
 	ir_node *res = new_bd_amd64_Lea(dbgi, new_block, ARRAY_SIZE(in), in,
 	                                INSN_MODE_64, am);
@@ -795,7 +795,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 		memset(&am, 0, sizeof(am));
 		am.base_input  = 0;
 		am.index_input = NO_INPUT;
-		am.symconst    = param->entity;
+		am.entity      = param->entity;
 		ir_node *in[]  = { base, mem };
 		ir_node *load;
 		ir_node *value;

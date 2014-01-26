@@ -113,7 +113,7 @@ static ir_node *create_fldcw_ent(ir_node *block, ir_entity *entity)
 	reload = new_bd_ia32_FldCW(NULL, block, noreg, noreg, nomem);
 	set_ia32_op_type(reload, ia32_AddrModeS);
 	set_ia32_ls_mode(reload, ia32_reg_classes[CLASS_ia32_fp_cw].mode);
-	set_ia32_am_sc(reload, entity);
+	set_ia32_am_ent(reload, entity);
 	set_ia32_use_frame(reload);
 	arch_set_irn_register(reload, &ia32_registers[REG_FPCW]);
 

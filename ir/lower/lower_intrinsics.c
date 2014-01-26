@@ -82,11 +82,11 @@ static void call_mapper(ir_node *node, void *data)
 	ir_op *op = get_irn_op(node);
 
 	if (op == op_Call) {
-		ir_node *symconst = get_Call_ptr(node);
-		if (!is_SymConst_addr_ent(symconst))
+		ir_node *const callee = get_Call_ptr(node);
+		if (!is_SymConst_addr_ent(callee))
 			return;
 
-		ir_entity     *ent = get_SymConst_entity(symconst);
+		ir_entity     *ent = get_SymConst_entity(callee);
 		i_mapper_func *f   = pmap_get(i_mapper_func, map->c_map, ent);
 
 		if (f != NULL && f(node))

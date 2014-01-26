@@ -59,11 +59,11 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 					= get_ia32_immediate_attr_const(n);
 
 				fputc(' ', F);
-				if (attr->symconst) {
-					fputs(get_entity_name(attr->symconst), F);
+				if (attr->entity) {
+					fputs(get_entity_name(attr->entity), F);
 				}
-				if (attr->offset != 0 || attr->symconst == NULL) {
-					if (attr->offset > 0 && attr->symconst != NULL) {
+				if (attr->offset != 0 || attr->entity == NULL) {
+					if (attr->offset > 0 && attr->entity != NULL) {
 						fputc('+', F);
 					}
 					fprintf(F, "%ld", attr->offset);
@@ -75,24 +75,24 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 			else {
 				const ia32_attr_t *attr = get_ia32_attr_const(n);
 
-				if (attr->am_sc != NULL || attr->am_offs != 0)
+				if (attr->am_ent != NULL || attr->am_offs != 0) {
 					fputs(" [", F);
 
-				if (attr->am_sc != NULL) {
-					fputs(get_entity_name(attr->am_sc), F);
-					if (attr->data.am_sc_no_pic_adjust) {
-						fputs("(no_pic_adjust)", F);
+					if (attr->am_ent != NULL) {
+						fputs(get_entity_name(attr->am_ent), F);
+						if (attr->data.am_sc_no_pic_adjust) {
+							fputs("(no_pic_adjust)", F);
+						}
 					}
-				}
-				if (attr->am_offs != 0) {
-					if (attr->am_offs > 0 && attr->am_sc != NULL) {
-						fputc('+', F);
+					if (attr->am_offs != 0) {
+						if (attr->am_offs > 0 && attr->am_ent != NULL) {
+							fputc('+', F);
+						}
+						fprintf(F, "%d", attr->am_offs);
 					}
-					fprintf(F, "%d", attr->am_offs);
-				}
 
-				if (attr->am_sc != NULL || attr->am_offs != 0)
 					fputc(']', F);
+				}
 			}
 			break;
 
@@ -150,11 +150,11 @@ static void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 				fprintf(F, "AM offset = %d\n", get_ia32_am_offs_int(n));
 			}
 
-			/* dump AM symconst */
-			if (get_ia32_am_sc(n) != NULL) {
-				ir_entity *ent = get_ia32_am_sc(n);
+			/* dump AM entity */
+			ir_entity *ent = get_ia32_am_ent(n);
+			if (ent != NULL) {
 				ident *id = get_entity_ld_ident(ent);
-				fprintf(F, "AM symconst = %s\n", get_id_str(id));
+				fprintf(F, "AM entity = %s\n", get_id_str(id));
 			}
 
 			/* dump AM scale */
@@ -393,22 +393,16 @@ void add_ia32_am_offs_int(ir_node *node, int offset)
 	attr->am_offs += offset;
 }
 
-/**
- * Returns the symconst entity associated to address mode.
- */
-ir_entity *get_ia32_am_sc(const ir_node *node)
+ir_entity *get_ia32_am_ent(const ir_node *node)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->am_sc;
+	return attr->am_ent;
 }
 
-/**
- * Sets the symconst entity associated to address mode.
- */
-void set_ia32_am_sc(ir_node *node, ir_entity *entity)
+void set_ia32_am_ent(ir_node *node, ir_entity *entity)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->am_sc       = entity;
+	attr->am_ent      = entity;
 }
 
 void set_ia32_am_tls_segment(ir_node *node, bool value)
@@ -446,7 +440,7 @@ void ia32_copy_am_attrs(ir_node *to, const ir_node *from)
 {
 	set_ia32_ls_mode(to, get_ia32_ls_mode(from));
 	set_ia32_am_scale(to, get_ia32_am_scale(from));
-	set_ia32_am_sc(to, get_ia32_am_sc(from));
+	set_ia32_am_ent(to, get_ia32_am_ent(from));
 	add_ia32_am_offs_int(to, get_ia32_am_offs_int(from));
 	set_ia32_frame_ent(to, get_ia32_frame_ent(from));
 	if (is_ia32_use_frame(from))
@@ -763,7 +757,7 @@ static void init_ia32_asm_attributes(ir_node *res)
 	ia32_request_x87_sim(irg); /* asm might have fp operands. */
 }
 
-static void init_ia32_immediate_attributes(ir_node *res, ir_entity *symconst,
+static void init_ia32_immediate_attributes(ir_node *res, ir_entity *entity,
                                            int no_pic_adjust, long offset)
 {
 	ia32_immediate_attr_t *attr = (ia32_immediate_attr_t*)get_irn_generic_attr(res);
@@ -771,7 +765,7 @@ static void init_ia32_immediate_attributes(ir_node *res, ir_entity *symconst,
 #ifndef NDEBUG
 	attr->attr.attr_type  |= IA32_ATTR_ia32_immediate_attr_t;
 #endif
-	attr->symconst      = symconst;
+	attr->entity        = entity;
 	attr->no_pic_adjust = no_pic_adjust;
 	attr->offset        = offset;
 }
@@ -841,7 +835,7 @@ static int ia32_compare_attr(const ia32_attr_t *a, const ia32_attr_t *b)
 
 	if (a->data.am_scale != b->data.am_scale
 	    || a->am_offs != b->am_offs
-	    || a->am_sc != b->am_sc
+	    || a->am_ent != b->am_ent
 		|| a->data.am_sc_no_pic_adjust != b->data.am_sc_no_pic_adjust
 	    || a->ls_mode != b->ls_mode)
 		return 1;
@@ -958,7 +952,7 @@ static unsigned ia32_hash_Immediate(const ir_node *irn)
 {
 	const ia32_immediate_attr_t *a = get_ia32_immediate_attr_const(irn);
 
-	return hash_ptr(a->symconst) + a->offset;
+	return hash_ptr(a->entity) + a->offset;
 }
 
 /** Compare node attributes for Immediates. */
@@ -967,7 +961,7 @@ static int ia32_compare_immediate_attr(const ir_node *a, const ir_node *b)
 	const ia32_immediate_attr_t *attr_a = get_ia32_immediate_attr_const(a);
 	const ia32_immediate_attr_t *attr_b = get_ia32_immediate_attr_const(b);
 
-	if (attr_a->symconst != attr_b->symconst
+	if (attr_a->entity != attr_b->entity
 		|| attr_a->no_pic_adjust != attr_b->no_pic_adjust
 		|| attr_a->offset != attr_b->offset) {
 		return 1;

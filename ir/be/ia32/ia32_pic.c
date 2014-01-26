@@ -85,7 +85,7 @@ static int can_address_relative(ir_entity *entity)
 }
 
 /** patches SymConsts to work in position independent code */
-static void fix_pic_symconsts(ir_node *node, void *data)
+static void fix_pic_addresses(ir_node *node, void *data)
 {
 	(void) data;
 	ir_graph      *irg = get_irn_irg(node);
@@ -130,10 +130,9 @@ static void fix_pic_symconsts(ir_node *node, void *data)
 		}
 
 		/* get entry from pic symbol segment */
-		ir_entity *const pic_symbol = get_pic_symbol(be, entity);
-		ir_node   *const pic_symconst
-			= new_rd_SymConst_addr_ent(dbgi, irg, mode_P_code, pic_symbol);
-		ir_node   *const add = new_r_Add(block, pic_base, pic_symconst, mode);
+		ir_entity *const pic_symbol  = get_pic_symbol(be, entity);
+		ir_node   *const pic_address = new_rd_SymConst_addr_ent(dbgi, irg, mode_P_code, pic_symbol);
+		ir_node   *const add = new_r_Add(block, pic_base, pic_address, mode);
 		mark_irn_visited(add);
 
 		/* we need an extra indirection for global data outside our current
@@ -149,5 +148,5 @@ static void fix_pic_symconsts(ir_node *node, void *data)
 
 void ia32_adjust_pic(ir_graph *irg)
 {
-	irg_walk_graph(irg, fix_pic_symconsts, NULL, NULL);
+	irg_walk_graph(irg, fix_pic_addresses, NULL, NULL);
 }

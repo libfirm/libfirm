@@ -55,7 +55,7 @@ $default_copy_attr = "amd64_copy_attr";
 		. "\tinit_amd64_cc_attributes(res, cc);",
 	amd64_movimm_attr_t =>
 		"\tinit_amd64_attributes(res, irn_flags_, in_reqs, n_res);"
-		. "\tinit_amd64_movimm_attributes(res, symconst, offset);",
+		. "\tinit_amd64_movimm_attributes(res, entity, offset);",
 );
 
 %compare_attr = (
@@ -271,7 +271,7 @@ Xor0 => {
 
 Const => {
 	op_flags  => [ "constlike" ],
-	attr      => "amd64_insn_mode_t insn_mode, int64_t offset, ir_entity *symconst",
+	attr      => "amd64_insn_mode_t insn_mode, int64_t offset, ir_entity *entity",
 	init_attr => "attr->base.data.insn_mode = insn_mode;\n",
 	attr_type => "amd64_movimm_attr_t",
 	reg_req   => { out => [ "gp" ] },

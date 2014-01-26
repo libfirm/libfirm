@@ -45,7 +45,7 @@ enum {
 
 typedef struct amd64_am_info_t {
 	int64_t    offset;
-	ir_entity *symconst;
+	ir_entity *entity;
 	uint8_t    base_input;
 	uint8_t    index_input;
 	unsigned   log_scale : 2; /* 0, 1, 2, 3  (giving scale 1, 2, 4, 8) */
@@ -68,7 +68,7 @@ struct amd64_movimm_attr_t
 {
 	amd64_attr_t base;
 	int64_t      offset;
-	ir_entity   *symconst;
+	ir_entity   *entity;
 };
 
 struct amd64_cc_attr_t

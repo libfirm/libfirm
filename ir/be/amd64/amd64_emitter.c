@@ -184,11 +184,12 @@ ENUM_BITSET(amd64_emit_mod_t)
 
 static void amd64_emit_immediate(const amd64_movimm_attr_t *const imm)
 {
-	if (imm->symconst != NULL) {
-		be_gas_emit_entity(imm->symconst);
+	ir_entity *entity = imm->entity;
+	if (entity != NULL) {
+		be_gas_emit_entity(entity);
 	}
-	if (imm->symconst == NULL || imm->offset != 0) {
-		if (imm->symconst != NULL) {
+	if (entity == NULL || imm->offset != 0) {
+		if (entity != NULL) {
 			be_emit_irprintf("%+ld", imm->offset);
 		} else {
 			be_emit_irprintf("0x%lX", imm->offset);
@@ -199,7 +200,7 @@ static void amd64_emit_immediate(const amd64_movimm_attr_t *const imm)
 static void amd64_emit_am(const ir_node *const node,
                           const amd64_am_info_t *const am)
 {
-	ir_entity *entity = am->symconst;
+	ir_entity *entity = am->entity;
 	if (entity != NULL) {
 		ir_type *owner = get_entity_owner(entity);
 		if (is_frame_type(owner)) {

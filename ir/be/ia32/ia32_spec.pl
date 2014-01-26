@@ -121,7 +121,7 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 		"\tinit_ia32_copyb_attributes(res, size);",
 	ia32_immediate_attr_t =>
 		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, n_res);\n".
-		"\tinit_ia32_immediate_attributes(res, symconst, no_pic_adjust, offset);",
+		"\tinit_ia32_immediate_attributes(res, entity, no_pic_adjust, offset);",
 	ia32_x87_attr_t =>
 		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, n_res);\n".
 		"\tinit_ia32_x87_attributes(res);",
@@ -170,7 +170,7 @@ Immediate => {
 	op_flags  => [ "constlike" ],
 	irn_flags => [ "not_scheduled" ],
 	reg_req   => { out => [ "gp_NOREG:I" ] },
-	attr      => "ir_entity *symconst, int no_pic_adjust, long offset",
+	attr      => "ir_entity *entity, int no_pic_adjust, long offset",
 	attr_type => "ia32_immediate_attr_t",
 	hash_func => "ia32_hash_Immediate",
 	latency   => 0,
@@ -882,7 +882,7 @@ Const => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { out => [ "gp" ] },
 	emit      => "movl %I, %D0",
-	attr      => "ir_entity *symconst, int no_pic_adjust, long offset",
+	attr      => "ir_entity *entity, int no_pic_adjust, long offset",
 	attr_type => "ia32_immediate_attr_t",
 	latency   => 1,
 	mode      => $mode_gp,

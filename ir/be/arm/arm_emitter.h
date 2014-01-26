@@ -30,9 +30,9 @@
  * %Sx  <node>                  source register x
  * %Dx  <node>                  destination register x
  * %O   <node>                  shifter operand
- * %I   <node>                  symconst immediate
+ * %I   <node>                  address immediate
  * %o   <node>                  load/store offset
- * %C   const sym_or_tv_t*      constant
+ * %C   const ent_or_tv_t*      constant
  * %t   const ir_node*          controlflow target
  * %m   ir_mode*                fpa mode postfix
  * %s   const char*             string

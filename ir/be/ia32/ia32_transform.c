@@ -181,7 +181,7 @@ ir_node *ia32_get_pic_base(ir_graph *irg)
  * return NoREG or pic_base in case of PIC.
  * This is necessary as base address for newly created symbols
  */
-static ir_node *get_symconst_base(void)
+static ir_node *get_global_base(void)
 {
 	ir_graph *irg = current_ir_graph;
 
@@ -269,11 +269,11 @@ static ir_node *gen_Const(ir_node *node)
 				ir_entity *floatent
 					= ia32_create_float_const_entity(isa, tv, NULL);
 
-				ir_node *base = get_symconst_base();
+				ir_node *base = get_global_base();
 				load = new_bd_ia32_xLoad(dbgi, block, base, noreg_GP, nomem,
 				                         mode);
 				set_ia32_op_type(load, ia32_AddrModeS);
-				set_ia32_am_sc(load, floatent);
+				set_ia32_am_ent(load, floatent);
 				arch_add_irn_flags(load, arch_irn_flag_rematerializable);
 				res = new_r_Proj(load, mode_xmm, pn_ia32_xLoad_res);
 			}
@@ -290,11 +290,11 @@ static ir_node *gen_Const(ir_node *node)
 				/* create_float_const_ent is smart and sometimes creates
 				   smaller entities */
 				ir_mode *ls_mode  = get_type_mode(get_entity_type(floatent));
-				ir_node *base     = get_symconst_base();
+				ir_node *base     = get_global_base();
 				load = new_bd_ia32_fld(dbgi, block, base, noreg_GP, nomem,
 				                       ls_mode);
 				set_ia32_op_type(load, ia32_AddrModeS);
-				set_ia32_am_sc(load, floatent);
+				set_ia32_am_ent(load, floatent);
 				arch_add_irn_flags(load, arch_irn_flag_rematerializable);
 				res = new_r_Proj(load, mode_fp, pn_ia32_fld_res);
 			}
@@ -340,7 +340,7 @@ static ir_node *gen_SymConst(ir_node *node)
 	if (is_tls_entity(entity)) {
 		ir_node *tls_base = new_bd_ia32_LdTls(NULL, block);
 		ir_node *lea      = new_bd_ia32_Lea(dbgi, block, tls_base, noreg_GP);
-		set_ia32_am_sc(lea, entity);
+		set_ia32_am_ent(lea, entity);
 		cnst = lea;
 	} else {
 		cnst = new_bd_ia32_Const(dbgi, block, entity, 0, 0);
@@ -552,15 +552,15 @@ static void build_address(ia32_address_mode_t *am, ir_node *node,
 		const arch_env_t *arch_env = be_get_irg_arch_env(irg);
 		ia32_isa_t       *isa      = (ia32_isa_t*) arch_env;
 		ir_tarval        *tv       = get_Const_tarval(node);
-		ir_entity *entity  = ia32_create_float_const_entity(isa, tv, NULL);
-		addr->base         = get_symconst_base();
-		addr->index        = noreg_GP;
-		addr->mem          = nomem;
-		addr->symconst_ent = entity;
-		addr->tls_segment  = false;
-		addr->use_frame    = 1;
-		am->ls_mode        = get_type_mode(get_entity_type(entity));
-		am->pinned         = op_pin_state_floats;
+		ir_entity *entity = ia32_create_float_const_entity(isa, tv, NULL);
+		addr->base        = get_global_base();
+		addr->index       = noreg_GP;
+		addr->mem         = nomem;
+		addr->entity      = entity;
+		addr->tls_segment = false;
+		addr->use_frame   = 1;
+		am->ls_mode       = get_type_mode(get_entity_type(entity));
+		am->pinned        = op_pin_state_floats;
 		return;
 	}
 
@@ -584,7 +584,7 @@ static void build_address(ia32_address_mode_t *am, ir_node *node,
 static void set_address(ir_node *node, const ia32_address_t *addr)
 {
 	set_ia32_am_scale(node, addr->scale);
-	set_ia32_am_sc(node, addr->symconst_ent);
+	set_ia32_am_ent(node, addr->entity);
 	set_ia32_am_offs_int(node, addr->offset);
 	set_ia32_am_tls_segment(node, addr->tls_segment);
 	if (addr->use_frame)
@@ -1192,7 +1192,7 @@ static ir_node *create_lea_from_address(dbg_info *dbgi, ir_node *block,
 	 * around... */
 	if (addr->tls_segment) {
 		ir_node *tls_base = new_bd_ia32_LdTls(NULL, block);
-		assert(addr->symconst_ent != NULL);
+		assert(addr->entity != NULL);
 		if (base == noreg_GP)
 			base = tls_base;
 		else
@@ -1212,7 +1212,7 @@ static ir_node *create_lea_from_address(dbg_info *dbgi, ir_node *block,
  */
 static bool am_has_immediates(const ia32_address_t *addr)
 {
-	return addr->offset != 0 || addr->symconst_ent != NULL
+	return addr->offset != 0 || addr->entity != NULL
 		|| addr->frame_entity || addr->use_frame;
 }
 
@@ -1386,8 +1386,7 @@ static ir_node *gen_Add(ir_node *node)
 
 	/* a constant? */
 	if (addr.base == NULL && addr.index == NULL) {
-		new_node = new_bd_ia32_Const(dbgi, new_block, addr.symconst_ent,
-		                             0, addr.offset);
+		new_node = new_bd_ia32_Const(dbgi, new_block, addr.entity, 0, addr.offset);
 		SET_IA32_ORIG_NODE(new_node, node);
 		return new_node;
 	}
@@ -1877,14 +1876,14 @@ static ir_node *gen_Minus(ir_node *node)
 			 * several AM nodes... */
 			ir_node *noreg_xmm = ia32_new_NoReg_xmm(current_ir_graph);
 
-			new_node = new_bd_ia32_xXor(dbgi, block, get_symconst_base(),
+			new_node = new_bd_ia32_xXor(dbgi, block, get_global_base(),
 			                            noreg_GP, nomem, new_op, noreg_xmm);
 
 			int        size = get_mode_size_bits(mode);
 			ir_entity *ent  = ia32_gen_fp_known_const(
 				size == 32 ? ia32_SSIGN : ia32_DSIGN);
 
-			set_ia32_am_sc(new_node, ent);
+			set_ia32_am_ent(new_node, ent);
 			set_ia32_op_type(new_node, ia32_AddrModeS);
 			set_ia32_ls_mode(new_node, mode);
 		} else {
@@ -1924,14 +1923,14 @@ static ir_node *create_float_abs(dbg_info *dbgi, ir_node *block, ir_node *op,
 	ir_node *new_node;
 	if (ia32_cg_config.use_sse2) {
 		ir_node *noreg_fp = ia32_new_NoReg_xmm(current_ir_graph);
-		new_node = new_bd_ia32_xAnd(dbgi, new_block, get_symconst_base(),
+		new_node = new_bd_ia32_xAnd(dbgi, new_block, get_global_base(),
 									noreg_GP, nomem, new_op, noreg_fp);
 
 		int        size = get_mode_size_bits(mode);
 		ir_entity *ent  = ia32_gen_fp_known_const(
 			size == 32 ? ia32_SABS : ia32_DABS);
 
-		set_ia32_am_sc(new_node, ent);
+		set_ia32_am_ent(new_node, ent);
 
 		SET_IA32_ORIG_NODE(new_node, node);
 
@@ -2757,7 +2756,7 @@ static ir_node *gen_Switch(ir_node *node)
 	ir_node  *new_node = new_bd_ia32_SwitchJmp(dbgi, block, noreg_GP, new_sel,
 	                                           n_outs, table);
 	set_ia32_am_scale(new_node, 2);
-	set_ia32_am_sc(new_node, entity);
+	set_ia32_am_ent(new_node, entity);
 	set_ia32_op_type(new_node, ia32_AddrModeS);
 	set_ia32_ls_mode(new_node, ia32_mode_gp);
 	SET_IA32_ORIG_NODE(new_node, node);
@@ -3311,7 +3310,7 @@ static ir_node *gen_Mux(ir_node *node)
 			}
 
 			ia32_address_mode_t am;
-			am.addr.symconst_ent = ia32_create_const_array(mux_false, mux_true, &new_mode);
+			am.addr.entity = ia32_create_const_array(mux_false, mux_true, &new_mode);
 
 			unsigned scale;
 			if (new_mode == ia32_mode_float32) {
@@ -3327,7 +3326,7 @@ static ir_node *gen_Mux(ir_node *node)
 			}
 
 			am.ls_mode            = new_mode;
-			am.addr.base          = get_symconst_base();
+			am.addr.base          = get_global_base();
 			am.addr.index         = new_node;
 			am.addr.mem           = nomem;
 			am.addr.offset        = 0;
@@ -4107,23 +4106,23 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 		ir_node *count = ia32_create_Immediate(irg, NULL, 31);
 
 		ia32_address_mode_t am;
-		am.addr.base          = get_symconst_base();
-		am.addr.index         = new_bd_ia32_Shr(dbgi, block, new_val_high, count);
-		am.addr.mem           = nomem;
-		am.addr.offset        = 0;
-		am.addr.scale         = 2;
-		am.addr.symconst_ent  = ia32_gen_fp_known_const(ia32_ULLBIAS);
-		am.addr.tls_segment   = false;
-		am.addr.use_frame     = 0;
-		am.addr.frame_entity  = NULL;
-		am.ls_mode            = ia32_mode_float32;
-		am.mem_proj           = nomem;
-		am.op_type            = ia32_AddrModeS;
-		am.new_op1            = res;
-		am.new_op2            = ia32_new_NoReg_fp(irg);
-		am.pinned             = op_pin_state_floats;
-		am.commutative        = 1;
-		am.ins_permuted       = false;
+		am.addr.base         = get_global_base();
+		am.addr.index        = new_bd_ia32_Shr(dbgi, block, new_val_high, count);
+		am.addr.mem          = nomem;
+		am.addr.offset       = 0;
+		am.addr.scale        = 2;
+		am.addr.entity       = ia32_gen_fp_known_const(ia32_ULLBIAS);
+		am.addr.tls_segment  = false;
+		am.addr.use_frame    = 0;
+		am.addr.frame_entity = NULL;
+		am.ls_mode           = ia32_mode_float32;
+		am.mem_proj          = nomem;
+		am.op_type           = ia32_AddrModeS;
+		am.new_op1           = res;
+		am.new_op2           = ia32_new_NoReg_fp(irg);
+		am.pinned            = op_pin_state_floats;
+		am.commutative       = 1;
+		am.ins_permuted      = false;
 
 		ir_node *fadd = new_bd_ia32_fadd(dbgi, block, am.addr.base,
 		                                 am.addr.index, am.addr.mem,

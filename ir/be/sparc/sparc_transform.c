@@ -793,7 +793,7 @@ static void match_address(ir_node *ptr, address_t *address, bool use_ptr2)
 	/* Note that we don't match sub(x, Const) or chains of adds/subs
 	 * because this should all be normalized by now */
 
-	/* we only use the symconst if we're the only user otherwise we probably
+	/* we only use the entity if we're the only user otherwise we probably
 	 * won't save anything but produce multiple sethi+or combinations with
 	 * just different offsets */
 	ir_node   *ptr2   = NULL;

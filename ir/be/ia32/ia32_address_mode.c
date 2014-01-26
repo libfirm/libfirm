@@ -32,13 +32,13 @@ static bitset_t *non_address_mode_nodes;
  * Recursive worker for checking if a DAG with root node can be represented as
  * a simple immediate.
  *
- * @param node       the node
- * @param symconsts  number of symconsts found so far
- * @param negate     if set, the immediate must be negated
+ * @param node      the node
+ * @param entities  number of entities found so far
+ * @param negate    if set, the immediate must be negated
  *
  * @return non-zero if the DAG represents an immediate, 0 else
  */
-static bool do_is_immediate(const ir_node *node, int *symconsts, bool negate)
+static bool do_is_immediate(const ir_node *node, int *entities, bool negate)
 {
 	switch (get_irn_opcode(node)) {
 	case iro_Const:
@@ -54,12 +54,12 @@ static bool do_is_immediate(const ir_node *node, int *symconsts, bool negate)
 		return true;
 	case iro_SymConst:
 		/* the first SymConst of a DAG can be fold into an immediate */
-		/* unfortunately the assembler/linker doesn't support -symconst */
+		/* unfortunately the assembler/linker doesn't support -entity */
 		if (negate)
 			return false;
 		if (get_SymConst_kind(node) != symconst_addr_ent)
 			return false;
-		if (++*symconsts > 1)
+		if (++*entities > 1)
 			return false;
 
 		return true;
@@ -74,10 +74,10 @@ static bool do_is_immediate(const ir_node *node, int *symconsts, bool negate)
 			return false;
 
 		ir_node *left = get_binop_left(node);
-		if (!do_is_immediate(left, symconsts, negate))
+		if (!do_is_immediate(left, entities, negate))
 			return false;
 		ir_node *right = get_binop_right(node);
-		if (!do_is_immediate(right, symconsts, is_Sub(node) ? !negate : negate))
+		if (!do_is_immediate(right, entities, is_Sub(node) ? !negate : negate))
 			return false;
 
 		return true;
@@ -97,8 +97,8 @@ static bool do_is_immediate(const ir_node *node, int *symconsts, bool negate)
  */
 static int is_immediate(ia32_address_t *addr, const ir_node *node, bool negate)
 {
-	int symconsts = (addr->symconst_ent != NULL);
-	return do_is_immediate(node, &symconsts, negate);
+	int entities = addr->entity != NULL;
+	return do_is_immediate(node, &entities, negate);
 }
 
 /**
@@ -123,12 +123,12 @@ static void eat_immediate(ia32_address_t *addr, ir_node *node, bool negate)
 		break;
 	}
 	case iro_SymConst:
-		/* place the entity into the symconst */
-		if (addr->symconst_ent != NULL) {
-			panic("Internal error: more than 1 symconst in address calculation");
+		/* place the entity into the immediate */
+		if (addr->entity != NULL) {
+			panic("Internal error: more than 1 entity in address calculation");
 		}
-		addr->symconst_ent = get_SymConst_entity(node);
-		if (is_tls_entity(addr->symconst_ent))
+		addr->entity = get_SymConst_entity(node);
+		if (is_tls_entity(addr->entity))
 			addr->tls_segment = true;
 		assert(!negate);
 		break;
@@ -405,8 +405,8 @@ static bool value_last_used_here(be_lv_t *lv, ir_node *here, ir_node *value)
 
 static bool simple_is_immediate(const ir_node *node)
 {
-	int symconsts = 0;
-	return do_is_immediate(node, &symconsts, false);
+	int entities = 0;
+	return do_is_immediate(node, &entities, false);
 }
 
 /**

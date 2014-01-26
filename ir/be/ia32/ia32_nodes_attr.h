@@ -88,7 +88,7 @@ struct ia32_attr_t {
 		unsigned am_arity:2;            /**< Indicates the address mode type supported by this node. */
 		unsigned am_scale:2;            /**< The address mode scale for index register. */
 
-		unsigned am_sc_no_pic_adjust : 1;/**< AM symconst can be relative to EIP */
+		unsigned am_sc_no_pic_adjust : 1;/**< AM entity can be relative to EIP */
 		unsigned am_tls_segment:1;       /**< addresses are relative to TLS */
 		unsigned use_frame:1;           /**< Indicates whether the operation uses the frame pointer or not. */
 		unsigned has_except_label:1;        /**< Set if this node needs a label because of possible exception. */
@@ -106,7 +106,7 @@ struct ia32_attr_t {
 	} data;
 
 	int        am_offs;       /**< offsets for AddrMode */
-	ir_entity *am_sc;         /**< SymConst for AddrMode */
+	ir_entity *am_ent;        /**< entity for AddrMode */
 
 	ir_mode   *ls_mode;       /**< Load/Store mode: This is the mode of the
 	                               value that is manipulated by this node. */
@@ -165,7 +165,7 @@ struct ia32_copyb_attr_t {
 typedef struct ia32_immediate_attr_t ia32_immediate_attr_t;
 struct ia32_immediate_attr_t {
 	ia32_attr_t  attr;              /**< generic attribute */
-	ir_entity   *symconst;          /**< An entity if any. */
+	ir_entity   *entity;            /**< An entity if any. */
 	long         offset;            /**< An offset if any. */
 	unsigned     no_pic_adjust : 1; /**< constant can be relative to EIP */
 };

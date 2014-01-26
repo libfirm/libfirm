@@ -102,11 +102,11 @@ ir_entity *ia32_create_float_const_entity(ia32_isa_t *isa, ir_tarval *tv,
 	return res;
 }
 
-ir_node *ia32_create_Immediate(ir_graph *const irg, ir_entity *const symconst,
+ir_node *ia32_create_Immediate(ir_graph *const irg, ir_entity *const entity,
                                long const val)
 {
 	ir_node  *start_block = get_irg_start_block(irg);
-	ir_node  *immediate   = new_bd_ia32_Immediate(NULL, start_block, symconst,
+	ir_node  *immediate   = new_bd_ia32_Immediate(NULL, start_block, entity,
 	                                              ia32_no_pic_adjust, val);
 	arch_set_irn_register(immediate, &ia32_registers[REG_GP_NOREG]);
 
@@ -797,23 +797,25 @@ ir_node *ia32_try_create_Immediate(ir_node *node, char immediate_constraint_type
 	if (!mode_is_int(mode) && !mode_is_reference(mode))
 		return NULL;
 
-	ir_node *cnst;
-	ir_node *symconst;
+	ir_node   *cnst;
+	ir_entity *entity;
 	if (is_Const(node)) {
-		cnst     = node;
-		symconst = NULL;
-	} else if (is_SymConst_addr_ent(node) && !is_tls_entity(get_SymConst_entity(node))) {
-		cnst     = NULL;
-		symconst = node;
+		cnst   = node;
+		entity = NULL;
+	} else if (is_SymConst_addr_ent(node)) {
+		cnst   = NULL;
+		entity = get_SymConst_entity(node);
+		if (is_tls_entity(entity))
+			return NULL;
 	} else if (is_Add(node)) {
 		ir_node *left  = get_Add_left(node);
 		ir_node *right = get_Add_right(node);
 		if (is_Const(left) && is_SymConst_addr_ent(right)) {
-			cnst     = left;
-			symconst = right;
+			cnst   = left;
+			entity = get_SymConst_entity(right);
 		} else if (is_SymConst_addr_ent(left) && is_Const(right)) {
-			cnst     = right;
-			symconst = left;
+			cnst   = right;
+			entity = get_SymConst_entity(left);
 		} else {
 			return NULL;
 		}
@@ -834,15 +836,12 @@ ir_node *ia32_try_create_Immediate(ir_node *node, char immediate_constraint_type
 			return NULL;
 	}
 
-	ir_entity *symconst_ent = NULL;
-	if (symconst != NULL) {
-		/* we need full 32bits for symconsts */
+	if (entity != NULL) {
+		/* we need full 32bits for entities */
 		if (immediate_constraint_type != 'i')
 			return NULL;
-
-		symconst_ent = get_SymConst_entity(symconst);
 	}
 
 	ir_graph *const irg = get_irn_irg(node);
-	return ia32_create_Immediate(irg, symconst_ent, val);
+	return ia32_create_Immediate(irg, entity, val);
 }

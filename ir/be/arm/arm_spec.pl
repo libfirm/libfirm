@@ -53,9 +53,9 @@ $default_copy_attr = "arm_copy_attr";
 
 %init_attr = (
 	arm_attr_t           => "\tinit_arm_attributes(res, irn_flags_, in_reqs, n_res);",
-	arm_SymConst_attr_t  =>
+	arm_Address_attr_t  =>
 		"\tinit_arm_attributes(res, irn_flags_, in_reqs, n_res);\n".
-		"\tinit_arm_SymConst_attributes(res, entity, symconst_offset);",
+		"\tinit_arm_Address_attributes(res, entity, offset);",
 	arm_CondJmp_attr_t   => "\tinit_arm_attributes(res, irn_flags_, in_reqs, n_res);",
 	arm_SwitchJmp_attr_t => "\tinit_arm_attributes(res, irn_flags_, in_reqs, n_res);",
 	arm_fConst_attr_t    => "\tinit_arm_attributes(res, irn_flags_, in_reqs, n_res);",
@@ -76,7 +76,7 @@ $default_copy_attr = "arm_copy_attr";
 
 %compare_attr = (
 	arm_attr_t            => "cmp_attr_arm",
-	arm_SymConst_attr_t   => "cmp_attr_arm_SymConst",
+	arm_Address_attr_t    => "cmp_attr_arm_Address",
 	arm_CondJmp_attr_t    => "cmp_attr_arm_CondJmp",
 	arm_SwitchJmp_attr_t  => "cmp_attr_arm_SwitchJmp",
 	arm_fConst_attr_t     => "cmp_attr_arm_fConst",
@@ -313,8 +313,8 @@ Bl => {
 	irn_flags  => [ "modify_flags" ],
 	arity      => "variable",
 	out_arity  => "variable",
-	attr_type  => "arm_SymConst_attr_t",
-	attr       => "ir_entity *entity, int symconst_offset",
+	attr_type  => "arm_Address_attr_t",
+	attr       => "ir_entity *entity, int offset",
 	emit       => 'bl %I',
 },
 
@@ -340,19 +340,19 @@ CopyB => {
 FrameAddr => {
 	op_flags  => [ "constlike" ],
 	irn_flags => [ "rematerializable" ],
-	attr      => "ir_entity *entity, int symconst_offset",
+	attr      => "ir_entity *entity, int offset",
 	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
 	ins       => [ "base" ],
-	attr_type => "arm_SymConst_attr_t",
+	attr_type => "arm_Address_attr_t",
 	mode      => $mode_gp,
 },
 
-SymConst => {
+Address => {
 	op_flags  => [ "constlike" ],
 	irn_flags => [ "rematerializable" ],
-	attr      => "ir_entity *entity, int symconst_offset",
+	attr      => "ir_entity *entity, int offset",
 	reg_req   => { out => [ "gp" ] },
-	attr_type => "arm_SymConst_attr_t",
+	attr_type => "arm_Address_attr_t",
 	mode      => $mode_gp,
 },
 

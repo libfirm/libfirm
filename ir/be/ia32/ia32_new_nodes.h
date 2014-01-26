@@ -110,14 +110,14 @@ void set_ia32_am_offs_int(ir_node *node, int offset);
 void add_ia32_am_offs_int(ir_node *node, int offset);
 
 /**
- * Returns the symconst entity associated to addrmode.
+ * Returns the entity associated to addrmode.
  */
-ir_entity *get_ia32_am_sc(const ir_node *node);
+ir_entity *get_ia32_am_ent(const ir_node *node);
 
 /**
- * Sets the symconst entity associated to addrmode.
+ * Sets the entity associated to addrmode.
  */
-void set_ia32_am_sc(ir_node *node, ir_entity *sc);
+void set_ia32_am_ent(ir_node *node, ir_entity *sc);
 
 void set_ia32_am_tls_segment(ir_node *node, bool value);
 

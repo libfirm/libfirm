@@ -103,7 +103,7 @@ check_shift_amount:
 				return produces_no_flag;
 
 			const ia32_immediate_attr_t *imm_attr = get_ia32_immediate_attr_const(count);
-			if (imm_attr->symconst != NULL)
+			if (imm_attr->entity != NULL)
 				return produces_no_flag;
 			if ((imm_attr->offset & 0x1f) == 0)
 				return produces_no_flag;
@@ -133,7 +133,7 @@ static void peephole_ia32_Cmp(ir_node *const node)
 		return;
 
 	ia32_immediate_attr_t const *const imm = get_ia32_immediate_attr_const(right);
-	if (imm->symconst != NULL || imm->offset != 0)
+	if (imm->entity != NULL || imm->offset != 0)
 		return;
 
 	dbg_info *const dbgi         = get_irn_dbg_info(node);
@@ -264,8 +264,8 @@ static void peephole_ia32_Test(ir_node *node)
 	} else if (is_ia32_Immediate(right)) {
 		ia32_immediate_attr_t const *const imm = get_ia32_immediate_attr_const(right);
 
-		/* A test with a symconst is rather strange, but better safe than sorry */
-		if (imm->symconst != NULL)
+		/* A test with an entity is rather strange, but better safe than sorry */
+		if (imm->entity != NULL)
 			return;
 
 		/*
@@ -745,7 +745,7 @@ static void peephole_ia32_Const(ir_node *node)
 	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(node);
 
 	/* try to transform a mov 0, reg to xor reg reg */
-	if (attr->offset != 0 || attr->symconst != NULL)
+	if (attr->offset != 0 || attr->entity != NULL)
 		return;
 	if (ia32_cg_config.use_mov_0)
 		return;
@@ -790,7 +790,7 @@ static ir_node *create_immediate_from_am(const ir_node *node)
 	int                offset           = get_ia32_am_offs_int(node);
 	const ia32_attr_t *attr             = get_ia32_attr_const(node);
 	int                sc_no_pic_adjust = attr->data.am_sc_no_pic_adjust;
-	ir_entity         *entity           = get_ia32_am_sc(node);
+	ir_entity         *entity           = get_ia32_am_ent(node);
 
 	ir_node *res = new_bd_ia32_Immediate(NULL, block, entity, sc_no_pic_adjust, offset);
 	arch_set_irn_register(res, &ia32_registers[REG_GP_NOREG]);
@@ -800,7 +800,7 @@ static ir_node *create_immediate_from_am(const ir_node *node)
 static int is_am_one(const ir_node *node)
 {
 	int        offset  = get_ia32_am_offs_int(node);
-	ir_entity *entity  = get_ia32_am_sc(node);
+	ir_entity *entity  = get_ia32_am_ent(node);
 
 	return offset == 1 && entity == NULL;
 }
@@ -808,7 +808,7 @@ static int is_am_one(const ir_node *node)
 static int is_am_minus_one(const ir_node *node)
 {
 	int        offset  = get_ia32_am_offs_int(node);
-	ir_entity *entity  = get_ia32_am_sc(node);
+	ir_entity *entity  = get_ia32_am_ent(node);
 
 	return offset == -1 && entity == NULL;
 }
@@ -858,7 +858,7 @@ static void peephole_ia32_Lea(ir_node *node)
 	assert(!is_ia32_need_stackent(node) || get_ia32_frame_ent(node) != NULL);
 	/* check if we have immediates values (frame entities should already be
 	 * expressed in the offsets) */
-	if (get_ia32_am_offs_int(node) != 0 || get_ia32_am_sc(node) != NULL) {
+	if (get_ia32_am_offs_int(node) != 0 || get_ia32_am_ent(node) != NULL) {
 		has_immediates = 1;
 	} else {
 		has_immediates = 0;

@@ -111,7 +111,7 @@ static ir_type *get_memcpy_methodtype(void)
 	return tp;
 }
 
-static ir_node *get_memcpy_symconst(ir_graph *irg)
+static ir_node *get_memcpy_address(ir_graph *irg)
 {
 	ident     *id  = new_id_from_str("memcpy");
 	ir_type   *mt  = get_memcpy_methodtype();
@@ -136,13 +136,12 @@ static void lower_large_copyb_node(ir_node *irn)
 	ir_type  *copyb_tp = get_CopyB_type(irn);
 	unsigned  size     = get_type_size_bytes(copyb_tp);
 
-	ir_node  *symconst    = get_memcpy_symconst(irg);
+	ir_node  *callee      = get_memcpy_address(irg);
 	ir_type  *call_tp     = get_memcpy_methodtype();
 	ir_mode  *mode_size_t = get_ir_mode(native_mode_bytes);
 	ir_node  *size_cnst   = new_r_Const_long(irg, mode_size_t, size);
 	ir_node  *in[]        = { addr_dst, addr_src, size_cnst };
-	ir_node  *call        = new_rd_Call(dbgi, block, mem, symconst,
-	                                    ARRAY_SIZE(in), in, call_tp);
+	ir_node  *call        = new_rd_Call(dbgi, block, mem, callee, ARRAY_SIZE(in), in, call_tp);
 	ir_node  *call_mem    = new_r_Proj(call, mode_M, pn_Call_M);
 
 	exchange(irn, call_mem);

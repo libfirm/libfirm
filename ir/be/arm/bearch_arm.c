@@ -53,7 +53,7 @@ static ir_entity *arm_get_frame_entity(const ir_node *irn)
 	const arm_attr_t *attr = get_arm_attr_const(irn);
 
 	if (is_arm_FrameAddr(irn)) {
-		const arm_SymConst_attr_t *frame_attr = get_arm_SymConst_attr_const(irn);
+		const arm_Address_attr_t *frame_attr = get_arm_Address_attr_const(irn);
 		return frame_attr->entity;
 	}
 	if (attr->is_load_store) {
@@ -73,7 +73,7 @@ static ir_entity *arm_get_frame_entity(const ir_node *irn)
 static void arm_set_stack_bias(ir_node *irn, int bias)
 {
 	if (is_arm_FrameAddr(irn)) {
-		arm_SymConst_attr_t *attr = get_arm_SymConst_attr(irn);
+		arm_Address_attr_t *attr = get_arm_Address_attr(irn);
 		attr->fp_offset += bias;
 	} else {
 		arm_load_store_attr_t *attr = get_arm_load_store_attr(irn);

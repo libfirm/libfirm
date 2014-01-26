@@ -82,12 +82,12 @@ typedef struct arm_load_store_attr_t {
 	bool        entity_sign     : 1;
 } arm_load_store_attr_t;
 
-/** Attributes for a SymConst */
-typedef struct arm_SymConst_attr_t {
+/** Attributes for an Address */
+typedef struct arm_Address_attr_t {
 	arm_attr_t  base;
 	ir_entity  *entity;
 	int         fp_offset;
-} arm_SymConst_attr_t;
+} arm_Address_attr_t;
 
 /** Attributes for a CondJmp */
 typedef struct arm_CondJmp_attr_t {

@@ -31,9 +31,9 @@
 
 #include "beabi.h"
 
-static bool arm_has_symconst_attr(const ir_node *node)
+static bool arm_has_address_attr(const ir_node *node)
 {
-	return is_arm_SymConst(node) || is_arm_FrameAddr(node) || is_arm_Bl(node);
+	return is_arm_Address(node) || is_arm_FrameAddr(node) || is_arm_Bl(node);
 }
 
 static bool has_load_store_attr(const ir_node *node)
@@ -73,8 +73,8 @@ static void arm_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 	case dump_node_opcode_txt:
 		fprintf(F, "%s", get_irn_opname(n));
 
-		if (arm_has_symconst_attr(n)) {
-			const arm_SymConst_attr_t *attr = get_arm_SymConst_attr_const(n);
+		if (arm_has_address_attr(n)) {
+			const arm_Address_attr_t *attr = get_arm_Address_attr_const(n);
 			if (attr->entity != NULL) {
 				fputc(' ', F);
 				fputs(get_entity_name(attr->entity), F);
@@ -158,8 +158,8 @@ static void arm_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 			}
 			fputc('\n', F);
 		}
-		if (arm_has_symconst_attr(n)) {
-			const arm_SymConst_attr_t *attr = get_arm_SymConst_attr_const(n);
+		if (arm_has_address_attr(n)) {
+			const arm_Address_attr_t *attr = get_arm_Address_attr_const(n);
 
 			fprintf(F, "entity = ");
 			if (attr->entity != NULL) {
@@ -190,23 +190,16 @@ const arm_attr_t *get_arm_attr_const(const ir_node *node)
 	return (const arm_attr_t*)get_irn_generic_attr_const(node);
 }
 
-#ifndef NDEBUG
-static bool has_symconst_attr(const ir_node *node)
+arm_Address_attr_t *get_arm_Address_attr(ir_node *node)
 {
-	return is_arm_SymConst(node) || is_arm_FrameAddr(node) || is_arm_Bl(node);
-}
-#endif
-
-arm_SymConst_attr_t *get_arm_SymConst_attr(ir_node *node)
-{
-	assert(has_symconst_attr(node));
-	return (arm_SymConst_attr_t*)get_irn_generic_attr(node);
+	assert(arm_has_address_attr(node));
+	return (arm_Address_attr_t*)get_irn_generic_attr(node);
 }
 
-const arm_SymConst_attr_t *get_arm_SymConst_attr_const(const ir_node *node)
+const arm_Address_attr_t *get_arm_Address_attr_const(const ir_node *node)
 {
-	assert(has_symconst_attr(node));
-	return (const arm_SymConst_attr_t*)get_irn_generic_attr_const(node);
+	assert(arm_has_address_attr(node));
+	return (const arm_Address_attr_t*)get_irn_generic_attr_const(node);
 }
 
 static const arm_fConst_attr_t *get_arm_fConst_attr_const(const ir_node *node)
@@ -342,12 +335,11 @@ static void init_arm_cmp_attr(ir_node *res, bool ins_permuted, bool is_unsigned)
 	attr->is_unsigned  = is_unsigned;
 }
 
-static void init_arm_SymConst_attributes(ir_node *res, ir_entity *entity,
-                                         int symconst_offset)
+static void init_arm_Address_attributes(ir_node *res, ir_entity *entity, int offset)
 {
-	arm_SymConst_attr_t *attr = get_arm_SymConst_attr(res);
+	arm_Address_attr_t *attr = get_arm_Address_attr(res);
 	attr->entity    = entity;
-	attr->fp_offset = symconst_offset;
+	attr->fp_offset = offset;
 }
 
 static void init_arm_farith_attributes(ir_node *res, ir_mode *mode)
@@ -380,16 +372,16 @@ static int cmp_attr_arm(const ir_node *a, const ir_node *b)
 	return 0;
 }
 
-static int cmp_attr_arm_SymConst(const ir_node *a, const ir_node *b)
+static int cmp_attr_arm_Address(const ir_node *a, const ir_node *b)
 {
-	const arm_SymConst_attr_t *attr_a;
-	const arm_SymConst_attr_t *attr_b;
+	const arm_Address_attr_t *attr_a;
+	const arm_Address_attr_t *attr_b;
 
 	if (cmp_attr_arm(a, b))
 		return 1;
 
-	attr_a = get_arm_SymConst_attr_const(a);
-	attr_b = get_arm_SymConst_attr_const(b);
+	attr_a = get_arm_Address_attr_const(a);
+	attr_b = get_arm_Address_attr_const(b);
 	return attr_a->entity != attr_b->entity
 		|| attr_a->fp_offset != attr_b->fp_offset;
 }

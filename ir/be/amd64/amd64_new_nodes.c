@@ -161,18 +161,18 @@ static void init_amd64_cc_attributes(ir_node *node, x86_condition_code_t cc)
 	attr->cc = cc;
 }
 
-static void init_amd64_movimm_attributes(ir_node *node, ir_entity *symconst,
+static void init_amd64_movimm_attributes(ir_node *node, ir_entity *entity,
                                          int64_t offset)
 {
 	amd64_movimm_attr_t *attr = get_amd64_movimm_attr(node);
-	attr->symconst = symconst;
-	attr->offset   = offset;
+	attr->entity = entity;
+	attr->offset = offset;
 }
 
 static int cmp_am(const amd64_am_info_t *const am0,
                   const amd64_am_info_t *const am1)
 {
-	return am0->offset != am1->offset || am0->symconst != am1->symconst
+	return am0->offset != am1->offset || am0->entity != am1->entity
 	    || am0->base_input != am1->base_input
 	    || am0->index_input != am1->index_input
 	    || am0->log_scale != am1->log_scale
@@ -197,7 +197,7 @@ static int cmp_amd64_movimm_attr(const ir_node *const a,
 		return true;
 	const amd64_movimm_attr_t *const attr_a = get_amd64_movimm_attr_const(a);
 	const amd64_movimm_attr_t *const attr_b = get_amd64_movimm_attr_const(b);
-	return attr_a->symconst != attr_b->symconst
+	return attr_a->entity != attr_b->entity
 	    || attr_a->offset != attr_b->offset;
 }
 

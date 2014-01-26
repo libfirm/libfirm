@@ -51,7 +51,7 @@ static ir_entity *amd64_get_frame_entity(const ir_node *node)
 	const amd64_attr_t *attr = get_amd64_attr_const(node);
 	if (!attr->data.has_am_info)
 		return NULL;
-	ir_entity *entity = attr->am.symconst;
+	ir_entity *entity = attr->am.entity;
 	if (entity == NULL)
 		return NULL;
 	ir_type *parent = get_entity_owner(entity);
@@ -167,7 +167,7 @@ static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
 	memset(&am, 0, sizeof(am));
 	am.base_input  = 0;
 	am.index_input = NO_INPUT;
-	am.symconst    = ent;
+	am.entity      = ent;
 	ir_node *in[] = { sp, frame, mem };
 	ir_node *push = new_bd_amd64_PushAM(dbgi, block, ARRAY_SIZE(in), in,
 	                                    INSN_MODE_64, am);
@@ -187,7 +187,7 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp, ir_e
 	memset(&am, 0, sizeof(am));
 	am.base_input  = 0;
 	am.index_input = NO_INPUT;
-	am.symconst    = ent;
+	am.entity      = ent;
 	ir_node *in[] = { sp, frame, get_irg_no_mem(irg) };
 
 	ir_node *pop = new_bd_amd64_PopAM(dbgi, block, ARRAY_SIZE(in), in,
@@ -298,7 +298,7 @@ static void amd64_set_frame_entity(ir_node *node, ir_entity *entity)
 	assert(is_amd64_Store(node) || is_amd64_LoadZ(node)
 	    || is_amd64_LoadS(node));
 	amd64_attr_t *attr = get_amd64_attr(node);
-	attr->am.symconst = entity;
+	attr->am.entity = entity;
 }
 
 /**

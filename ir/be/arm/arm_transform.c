@@ -1033,7 +1033,7 @@ static ir_node *gen_SymConst(ir_node *node)
 	dbg_info  *dbgi   = get_irn_dbg_info(node);
 	ir_node   *new_node;
 
-	new_node = new_bd_arm_SymConst(dbgi, block, entity, 0);
+	new_node = new_bd_arm_Address(dbgi, block, entity, 0);
 	return new_node;
 }
 
@@ -1725,7 +1725,7 @@ static ir_node *gen_Call(ir_node *node)
 		in[mem_pos] = new_rd_Sync(NULL, new_block, sync_arity, sync_ins);
 	}
 
-	/* TODO: use a generic symconst matcher here */
+	/* TODO: use a generic address matcher here */
 	if (is_SymConst(callee)) {
 		entity = get_SymConst_entity(callee);
 	} else {
@@ -1742,7 +1742,7 @@ static ir_node *gen_Call(ir_node *node)
 	out_arity = 1 + n_caller_saves;
 
 	if (entity != NULL) {
-		/* TODO: use a generic symconst matcher here
+		/* TODO: use a generic address matcher here
 		 * so we can also handle entity+offset, etc. */
 		res = new_bd_arm_Bl(dbgi, new_block, in_arity, in, out_arity,entity, 0);
 	} else {

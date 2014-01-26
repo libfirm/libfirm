@@ -171,11 +171,11 @@ static ir_node *gen_ptr_sub(ir_node *node, ir_node *frame, arm_vals *v)
 /** fix frame addresses which are too big */
 static void peephole_arm_FrameAddr(ir_node *node)
 {
-	arm_SymConst_attr_t *attr   = get_arm_SymConst_attr(node);
-	int                  offset = attr->fp_offset;
-	arm_vals             v;
-	ir_node             *base;
-	ir_node             *ptr;
+	arm_Address_attr_t *attr   = get_arm_Address_attr(node);
+	int                 offset = attr->fp_offset;
+	arm_vals            v;
+	ir_node            *base;
+	ir_node            *ptr;
 
 	if (allowed_arm_immediate(offset, &v))
 		return;

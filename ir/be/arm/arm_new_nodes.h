@@ -20,10 +20,10 @@ arm_attr_t *get_arm_attr(ir_node *node);
 const arm_attr_t *get_arm_attr_const(const ir_node *node);
 
 /**
- * Returns the attributes of an ARM SymConst node.
+ * Returns the attributes of an ARM Address node.
  */
-arm_SymConst_attr_t *get_arm_SymConst_attr(ir_node *node);
-const arm_SymConst_attr_t *get_arm_SymConst_attr_const(const ir_node *node);
+arm_Address_attr_t *get_arm_Address_attr(ir_node *node);
+const arm_Address_attr_t *get_arm_Address_attr_const(const ir_node *node);
 
 /**
  * Returns the attributes of an ARM CondJmp node.

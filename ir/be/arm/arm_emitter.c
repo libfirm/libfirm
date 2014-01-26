@@ -41,7 +41,7 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static set       *sym_or_tv;
+static set       *ent_or_tv;
 static arm_isa_t *isa;
 
 static void arm_emit_register(const arch_register_t *reg)
@@ -96,10 +96,10 @@ static void arm_emit_float_arithmetic_mode(const ir_node *node)
 	arm_emit_fpa_postfix(attr->mode);
 }
 
-static void arm_emit_symconst(const ir_node *node)
+static void arm_emit_address(const ir_node *node)
 {
-	const arm_SymConst_attr_t *symconst = get_arm_SymConst_attr_const(node);
-	ir_entity                 *entity   = symconst->entity;
+	const arm_Address_attr_t *address = get_arm_Address_attr_const(node);
+	ir_entity                *entity  = address->entity;
 
 	be_gas_emit_entity(entity);
 
@@ -207,8 +207,8 @@ static void arm_emit_shifter_operand(const ir_node *node)
 	panic("Invalid shift_modifier while emitting %+F", node);
 }
 
-/** An entry in the sym_or_tv set. */
-typedef struct sym_or_tv_t {
+/** An entry in the ent_or_tv set. */
+typedef struct ent_or_tv_t {
 	union {
 		ir_entity  *entity;  /**< An entity. */
 		ir_tarval  *tv;      /**< A tarval. */
@@ -216,7 +216,7 @@ typedef struct sym_or_tv_t {
 	} u;
 	unsigned label;      /**< the associated label. */
 	bool     is_entity;  /**< true if an entity is stored. */
-} sym_or_tv_t;
+} ent_or_tv_t;
 
 /**
  * Returns a unique label. This number will not be used a second time.
@@ -227,7 +227,7 @@ static unsigned get_unique_label(void)
 	return ++id;
 }
 
-static void emit_constant_name(const sym_or_tv_t *entry)
+static void emit_constant_name(const ent_or_tv_t *entry)
 {
 	be_emit_irprintf("%sC%u", be_gas_get_private_prefix(), entry->label);
 }
@@ -296,7 +296,7 @@ void arm_emitf(const ir_node *node, const char *format, ...)
 		}
 
 		case 'I':
-			arm_emit_symconst(node);
+			arm_emit_address(node);
 			break;
 
 		case 'o':
@@ -308,7 +308,7 @@ void arm_emitf(const ir_node *node, const char *format, ...)
 			break;
 
 		case 'C': {
-			const sym_or_tv_t *name = va_arg(ap, const sym_or_tv_t*);
+			const ent_or_tv_t *name = va_arg(ap, const ent_or_tv_t*);
 			emit_constant_name(name);
 			break;
 		}
@@ -377,17 +377,17 @@ unknown:
 }
 
 /**
- * Emit a SymConst.
+ * Emit an Address.
  */
-static void emit_arm_SymConst(const ir_node *irn)
+static void emit_arm_Address(const ir_node *irn)
 {
-	const arm_SymConst_attr_t *attr = get_arm_SymConst_attr_const(irn);
-	sym_or_tv_t key, *entry;
+	const arm_Address_attr_t *attr = get_arm_Address_attr_const(irn);
+	ent_or_tv_t key, *entry;
 
 	key.u.entity  = attr->entity;
 	key.is_entity = true;
 	key.label     = 0;
-	entry = set_insert(sym_or_tv_t, sym_or_tv, &key, sizeof(key), hash_ptr(key.u.generic));
+	entry = set_insert(ent_or_tv_t, ent_or_tv, &key, sizeof(key), hash_ptr(key.u.generic));
 	if (entry->label == 0) {
 		/* allocate a label */
 		entry->label = get_unique_label();
@@ -399,7 +399,7 @@ static void emit_arm_SymConst(const ir_node *irn)
 
 static void emit_arm_FrameAddr(const ir_node *irn)
 {
-	const arm_SymConst_attr_t *attr = get_arm_SymConst_attr_const(irn);
+	const arm_Address_attr_t *attr = get_arm_Address_attr_const(irn);
 	arm_emitf(irn, "add %D0, %S0, #0x%X", attr->fp_offset);
 }
 
@@ -408,12 +408,12 @@ static void emit_arm_FrameAddr(const ir_node *irn)
  */
 static void emit_arm_fConst(const ir_node *irn)
 {
-	sym_or_tv_t key;
+	ent_or_tv_t key;
 
 	key.u.tv      = get_fConst_value(irn);
 	key.is_entity = false;
 	key.label     = 0;
-	sym_or_tv_t *entry = set_insert(sym_or_tv_t, sym_or_tv, &key, sizeof(key), hash_ptr(key.u.generic));
+	ent_or_tv_t *entry = set_insert(ent_or_tv_t, ent_or_tv, &key, sizeof(key), hash_ptr(key.u.generic));
 	if (entry->label == 0) {
 		/* allocate a label */
 		entry->label = get_unique_label();
@@ -719,7 +719,7 @@ static void arm_register_emitters(void)
 	be_set_emitter(op_arm_FrameAddr, emit_arm_FrameAddr);
 	be_set_emitter(op_arm_Jmp,       emit_arm_Jmp);
 	be_set_emitter(op_arm_SwitchJmp, emit_arm_SwitchJmp);
-	be_set_emitter(op_arm_SymConst,  emit_arm_SymConst);
+	be_set_emitter(op_arm_Address,   emit_arm_Address);
 	be_set_emitter(op_arm_fConst,    emit_arm_fConst);
 	be_set_emitter(op_be_Copy,       emit_be_Copy);
 	be_set_emitter(op_be_CopyKeep,   emit_be_Copy);
@@ -789,12 +789,12 @@ static void arm_gen_labels(ir_node *block, void *env)
 }
 
 /**
- * Compare two entries of the symbol or tarval set.
+ * Compare two entries of the entity or tarval set.
  */
-static int cmp_sym_or_tv(const void *elt, const void *key, size_t size)
+static int cmp_ent_or_tv(const void *elt, const void *key, size_t size)
 {
-	const sym_or_tv_t *p1 = (const sym_or_tv_t*)elt;
-	const sym_or_tv_t *p2 = (const sym_or_tv_t*)key;
+	const ent_or_tv_t *p1 = (const ent_or_tv_t*)elt;
+	const ent_or_tv_t *p2 = (const ent_or_tv_t*)key;
 	(void) size;
 
 	/* as an identifier NEVER can point to a tarval, it's enough
@@ -811,7 +811,7 @@ void arm_emit_function(ir_graph *irg)
 	size_t           i, n;
 
 	isa = (arm_isa_t*) arch_env;
-	sym_or_tv = new_set(cmp_sym_or_tv, 8);
+	ent_or_tv = new_set(cmp_ent_or_tv, 8);
 
 	be_gas_elf_type_char = '%';
 
@@ -838,11 +838,11 @@ void arm_emit_function(ir_graph *irg)
 		last_block = block;
 	}
 
-	/* emit SymConst values */
-	if (set_count(sym_or_tv) > 0) {
+	/* emit entity and tarval values */
+	if (set_count(ent_or_tv) > 0) {
 		be_emit_cstring("\t.align 2\n");
 
-		foreach_set(sym_or_tv, sym_or_tv_t, entry) {
+		foreach_set(ent_or_tv, ent_or_tv_t, entry) {
 			emit_constant_name(entry);
 			be_emit_cstring(":\n");
 			be_emit_write_line();
@@ -873,7 +873,7 @@ void arm_emit_function(ir_graph *irg)
 		be_emit_char('\n');
 		be_emit_write_line();
 	}
-	del_set(sym_or_tv);
+	del_set(ent_or_tv);
 
 	be_gas_emit_function_epilog(entity);
 }
