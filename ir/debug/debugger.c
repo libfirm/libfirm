@@ -880,14 +880,18 @@ static void unput(void)
 		--lexer.curr_pos;
 }
 
-static void get_text(void)
+static char skip_whitespace(void)
 {
-	/* skip white space */
 	char c;
 	do {
 		c = next_char();
 	} while (c != '\0' && isspace((unsigned char)c));
+	return c;
+}
 
+static void get_text(void)
+{
+	char        c     = skip_whitespace();
 	size_t      len   = 0;
 	const char *begin = lexer.curr_pos - 1;
 	while (c != '\0' && c != ' ' && c != ';') {
@@ -905,11 +909,7 @@ static void get_text(void)
  */
 static unsigned get_token(void)
 {
-	/* skip white space */
-	char c;
-	do {
-		c = next_char();
-	} while (c != '\0' && isspace((unsigned char)c));
+	char c = skip_whitespace();
 
 	lexer.tok_start = lexer.curr_pos - 1;
 	if (c == '.' || isalpha((unsigned char)c)) {
