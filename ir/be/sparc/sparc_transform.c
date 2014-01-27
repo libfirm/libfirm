@@ -160,8 +160,10 @@ typedef enum {
 	MATCH_MODE_NEUTRAL  = 1U << 1, /**< the higher bits of the inputs don't
 	                                    influence the significant lower bit at
 	                                    all (for cases where mode < 32bit) */
-	MATCH_SIGN_EXT_LEFT = 1U << 7, /**< we need to sign_extend the left operand
+	MATCH_SIGN_EXT_LEFT = 1U << 2, /**< we need to sign-extend the left operand
 	                                    (for cases when mode < 32bit) */
+	MATCH_ZERO_EXT_LEFT = 1U << 3, /**< we need to zero-extend the left operand
+                                            (for cases when mode < 32bit) */
 } match_flags_t;
 ENUM_BITSET(match_flags_t)
 
@@ -611,6 +613,9 @@ static ir_node *gen_helper_binop_args(ir_node *node,
 			if (flags & MATCH_SIGN_EXT_LEFT) {
 				int bits = get_mode_size_bits(mode1);
 				new_op1 = gen_sign_extension(dbgi, block, new_op1, bits);
+			} else if (flags & MATCH_ZERO_EXT_LEFT) {
+				int bits = get_mode_size_bits(mode1);
+				new_op1 = gen_zero_extension(dbgi, block, new_op1, bits);
 			} else {
 				new_op1 = gen_extension(dbgi, block, new_op1, mode1);
 			}
@@ -632,6 +637,9 @@ static ir_node *gen_helper_binop_args(ir_node *node,
 		if (flags & MATCH_SIGN_EXT_LEFT) {
 			int bits = get_mode_size_bits(mode1);
 			new_op1 = gen_sign_extension(dbgi, block, new_op1, bits);
+		} else if (flags & MATCH_ZERO_EXT_LEFT) {
+			int bits = get_mode_size_bits(mode1);
+			new_op1 = gen_zero_extension(dbgi, block, new_op1, bits);
 		} else {
 			new_op1 = gen_extension(dbgi, block, new_op1, mode1);
 		}
@@ -1319,7 +1327,7 @@ static ir_node *gen_Shr(ir_node *node)
 	ir_mode *mode = get_irn_mode(node);
 	if (get_mode_modulo_shift(mode) != 32)
 		panic("modulo_shift!=32 not supported");
-	return gen_helper_binop(node, MATCH_NONE, new_bd_sparc_Srl_reg, new_bd_sparc_Srl_imm);
+	return gen_helper_binop(node, MATCH_ZERO_EXT_LEFT, new_bd_sparc_Srl_reg, new_bd_sparc_Srl_imm);
 }
 
 static ir_node *gen_Shrs(ir_node *node)
