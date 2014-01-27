@@ -1404,11 +1404,11 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 		ir_node *value;
 		if (get_mode_size_bits(mode) < 64 && mode_is_signed(mode)) {
 			load  = new_bd_amd64_Movs(NULL, new_block, ARRAY_SIZE(in),
-			                          in, AMD64_OP_ADDR, insn_mode, addr);
+			                          in, insn_mode, AMD64_OP_ADDR, addr);
 			value = new_r_Proj(load, mode_gp, pn_amd64_Movs_res);
 		} else {
 			load  = new_bd_amd64_Mov(NULL, new_block, ARRAY_SIZE(in),
-			                         in, AMD64_OP_ADDR, insn_mode, addr);
+			                         in, insn_mode, AMD64_OP_ADDR, addr);
 			value = new_r_Proj(load, mode_gp, pn_amd64_Mov_res);
 		}
 		arch_set_irn_register_reqs_in(load, reg_mem_reqs);
