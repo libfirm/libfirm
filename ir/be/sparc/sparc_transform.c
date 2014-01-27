@@ -1499,9 +1499,10 @@ static ir_node *gen_Cond(ir_node *node)
  */
 static ir_node *gen_Cmp(ir_node *node)
 {
-	ir_node *op1      = get_Cmp_left(node);
-	ir_node *op2      = get_Cmp_right(node);
-	ir_mode *cmp_mode = get_irn_mode(op1);
+	ir_node  *op1      = get_Cmp_left(node);
+	ir_node  *op2      = get_Cmp_right(node);
+	ir_mode  *cmp_mode = get_irn_mode(op1);
+	unsigned  bits     = get_mode_size_bits(cmp_mode);
 	assert(get_irn_mode(op2) == cmp_mode);
 
 	if (mode_is_float(cmp_mode)) {
@@ -1509,7 +1510,6 @@ static ir_node *gen_Cmp(ir_node *node)
 		dbg_info *dbgi    = get_irn_dbg_info(node);
 		ir_node  *new_op1 = be_transform_node(op1);
 		ir_node  *new_op2 = be_transform_node(op2);
-		unsigned  bits    = get_mode_size_bits(cmp_mode);
 		if (bits == 32) {
 			return new_bd_sparc_fcmp_s(dbgi, block, new_op1, new_op2, cmp_mode);
 		} else if (bits == 64) {
@@ -1524,7 +1524,7 @@ static ir_node *gen_Cmp(ir_node *node)
 	 * the bitopcc variant.
 	 * Currently we only do this when we're the only user of the node...
 	 */
-	if (is_Const(op2) && is_Const_null(op2) && get_irn_n_edges(op1) == 1) {
+	if (bits == 32 && is_Const(op2) && is_Const_null(op2) && get_irn_n_edges(op1) == 1) {
 		if (is_And(op1)) {
 			ir_node *new_node = gen_helper_bitop(op1,
 			                        new_bd_sparc_AndCCZero_reg,
