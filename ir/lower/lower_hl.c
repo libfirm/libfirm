@@ -202,25 +202,25 @@ static void lower_offset(ir_node *const entc)
 }
 
 /**
- * Lower a TypeConst node.
+ * Lower an Align node.
  */
-static void lower_typeconst(ir_node *const typec)
+static void lower_align(ir_node *const align)
 {
-	ir_type *const tp = get_TypeConst_type(typec);
+	ir_type *const tp = get_Align_type(align);
 	assert(get_type_state(tp) == layout_fixed);
+	/* rewrite the Align node by a Const node */
+	replace_by_Const(align, get_type_alignment_bytes(tp));
+}
 
-	switch (get_TypeConst_kind(typec)) {
-	case typeconst_size:
-		/* rewrite the TypeConst node by a Const node */
-		replace_by_Const(typec, get_type_size_bytes(tp));
-		return;
-
-	case typeconst_align:
-		/* rewrite the TypeConst node by a Const node */
-		replace_by_Const(typec, get_type_alignment_bytes(tp));
-		return;
-	}
-	panic("invalid TypeConst kind");
+/**
+ * Lower a Size node.
+ */
+static void lower_size(ir_node *const size)
+{
+	ir_type *const tp = get_Size_type(size);
+	assert(get_type_state(tp) == layout_fixed);
+	/* rewrite the Size node by a Const node */
+	replace_by_Const(size, get_type_size_bytes(tp));
 }
 
 /**
@@ -230,10 +230,11 @@ static void lower_irnode(ir_node *irn, void *env)
 {
 	(void) env;
 	switch (get_irn_opcode(irn)) {
-	case iro_Sel:       lower_sel(irn);       break;
-	case iro_Offset:    lower_offset(irn);    break;
-	case iro_TypeConst: lower_typeconst(irn); break;
-	default:            break;
+	case iro_Align:  lower_align(irn);  break;
+	case iro_Offset: lower_offset(irn); break;
+	case iro_Sel:    lower_sel(irn);    break;
+	case iro_Size:   lower_size(irn);   break;
+	default:         break;
 	}
 }
 

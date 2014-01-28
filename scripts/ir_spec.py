@@ -40,6 +40,25 @@ class EntConst(object):
 	attr_struct = "entconst_attr"
 	attrs_name  = "entc"
 
+@abstract
+@op
+class TypeConst:
+	"""A symbolic constant that represents an aspect of a type"""
+	name       = "typeconst"
+	flags      = [ "constlike", "start_block" ]
+	block      = "get_irg_start_block(irg)"
+	knownBlock = True
+	pinned     = "no"
+	attrs      = [
+		dict(
+			type    = "ir_type*",
+			name    = "type",
+			comment = "type to operate on",
+		),
+	]
+	attr_struct = "typeconst_attr"
+	attrs_name  = "typec"
+
 @op
 class Add(Binop):
 	"""returns the sum of its operands"""
@@ -49,6 +68,10 @@ class Add(Binop):
 class Address(EntConst):
 	"""Symbolic constant that represents the address of an entity (variable or method)"""
 	mode = "get_type_pointer_mode(get_entity_type(entity))"
+
+@op
+class Align(TypeConst):
+	"""A symbolic constant that represents the alignment of a type"""
 
 @op
 class Alloc:
@@ -904,30 +927,8 @@ class Sub(Binop):
 	flags = []
 
 @op
-class TypeConst:
-	"""A symbolic constant.
-
-	 - *typeconst_size* The symbolic constant represents the size of a type.
-	 - *typeconst_align* The symbolic constant represents the alignment of a type."""
-	flags      = [ "constlike", "start_block" ]
-	block      = "get_irg_start_block(irg)"
-	knownBlock = True
-	pinned     = "no"
-	attrs      = [
-		dict(
-			type    = "ir_type*",
-			name    = "type",
-			comment = "type to operate on",
-		),
-		dict(
-			type    = "typeconst_kind",
-			name    = "kind",
-			comment = "aspect of the type",
-		)
-	]
-	attr_struct = "typeconst_attr"
-	attrs_name  = "typec"
-	customSerializer = True
+class Size(TypeConst):
+	"""A symbolic constant that represents the size of a type"""
 
 @op
 class Sync:

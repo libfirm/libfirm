@@ -576,7 +576,7 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 				return NULL;
 
 			/* for now, we support only one addition, reassoc should fold all others */
-			if (!is_Address(ptr) && !is_Offset(ptr) && !is_Sel(ptr) && !is_TypeConst(ptr))
+			if (!is_Address(ptr) && !is_Align(ptr) && !is_Offset(ptr) && !is_Sel(ptr) && !is_Size(ptr))
 				return NULL;
 		} else if (is_Sub(ptr)) {
 			ir_node *l = get_Sub_left(ptr);
@@ -587,7 +587,7 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 			else
 				return NULL;
 			/* for now, we support only one subtraction, reassoc should fold all others */
-			if (!is_Address(ptr) && !is_Offset(ptr) && !is_Sel(ptr) && !is_TypeConst(ptr))
+			if (!is_Address(ptr) && !is_Align(ptr) && !is_Offset(ptr) && !is_Sel(ptr) && !is_Size(ptr))
 				return NULL;
 		} else
 			return NULL;

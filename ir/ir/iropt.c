@@ -132,26 +132,24 @@ static ir_tarval *computed_value_Offset(const ir_node *n)
 }
 
 /**
- * Return the value of a 'sizeof' or 'alignof' TypeConst.
+ * Return the value of an Align.
  */
-static ir_tarval *computed_value_TypeConst(const ir_node *n)
+static ir_tarval *computed_value_Align(const ir_node *n)
 {
-	switch (get_TypeConst_kind(n)) {
-	case typeconst_size: {
-		const ir_type *type = get_TypeConst_type(n);
-		if (get_type_state(type) == layout_fixed)
-			return new_tarval_from_long(get_type_size_bytes(type), get_irn_mode(n));
-		break;
-	}
-	case typeconst_align: {
-		ir_type *type = get_TypeConst_type(n);
-		if (get_type_state(type) == layout_fixed)
-			return new_tarval_from_long(get_type_alignment_bytes(type), get_irn_mode(n));
-		break;
-	}
-	default:
-		break;
-	}
+	ir_type *const type = get_Align_type(n);
+	if (get_type_state(type) == layout_fixed)
+		return new_tarval_from_long(get_type_alignment_bytes(type), get_irn_mode(n));
+	return tarval_bad;
+}
+
+/**
+ * Return the value of a Size.
+ */
+static ir_tarval *computed_value_Size(const ir_node *n)
+{
+	ir_type *const type = get_Size_type(n);
+	if (get_type_state(type) == layout_fixed)
+		return new_tarval_from_long(get_type_size_bytes(type), get_irn_mode(n));
 	return tarval_bad;
 }
 
@@ -6447,6 +6445,7 @@ static void register_transform_node_func_proj(ir_op *op,
 void ir_register_opt_node_ops(void)
 {
 	register_computed_value_func(op_Add,      computed_value_Add);
+	register_computed_value_func(op_Align,    computed_value_Align);
 	register_computed_value_func(op_And,      computed_value_And);
 	register_computed_value_func(op_Cmp,      computed_value_Cmp);
 	register_computed_value_func(op_Confirm,  computed_value_Confirm);
@@ -6463,8 +6462,8 @@ void ir_register_opt_node_ops(void)
 	register_computed_value_func(op_Shl,      computed_value_Shl);
 	register_computed_value_func(op_Shr,      computed_value_Shr);
 	register_computed_value_func(op_Shrs,     computed_value_Shrs);
+	register_computed_value_func(op_Size,     computed_value_Size);
 	register_computed_value_func(op_Sub,      computed_value_Sub);
-	register_computed_value_func(op_TypeConst,computed_value_TypeConst);
 	register_computed_value_func_proj(op_Div, computed_value_Proj_Div);
 	register_computed_value_func_proj(op_Mod, computed_value_Proj_Mod);
 

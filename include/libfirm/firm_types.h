@@ -263,16 +263,6 @@ typedef enum mtp_additional_properties {
 } mtp_additional_properties;
 ENUM_BITSET(mtp_additional_properties)
 
-/**
- * @ingroup TypeConst
- * This enum names the different kinds of symbolic Constants represented by
- * TypeConst.
- */
-typedef enum typeconst_kind {
-	typeconst_size,  /**< The TypeConst is the size of the given type. */
-	typeconst_align, /**< The TypeConst is the alignment of the given type. */
-} typeconst_kind;
-
 /** A input/output constraint attribute.
  * @ingroup ASM
  */

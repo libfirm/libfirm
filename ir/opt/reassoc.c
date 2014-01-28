@@ -514,9 +514,10 @@ static bool is_const(ir_node *const node)
 {
 	switch (get_irn_opcode(node)) {
 	case iro_Address:
+	case iro_Align:
 	case iro_Const:
 	case iro_Offset:
-	case iro_TypeConst:
+	case iro_Size:
 		return true;
 	default:
 		return false;
@@ -536,9 +537,10 @@ static int is_constant_expr(ir_node *irn)
 {
 	switch (get_irn_opcode(irn)) {
 	case iro_Address:
+	case iro_Align:
 	case iro_Const:
 	case iro_Offset:
-	case iro_TypeConst:
+	case iro_Size:
 		return 1;
 
 	case iro_Add:

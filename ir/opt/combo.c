@@ -1970,20 +1970,23 @@ static void compute_Offset(node_t *node)
 }
 
 /**
- * (Re-)compute the type for a TypeConst node.
+ * (Re-)compute the type for an Align node.
  *
  * @param node  the node
  */
-static void compute_TypeConst(node_t *node)
+static void compute_Align(node_t *node)
 {
-	ir_node *irn   = node->node;
-	node_t  *block = get_irn_node(get_nodes_block(irn));
+	node->type.tv = computed_value(node->node);
+}
 
-	if (block->type.tv == tarval_unreachable) {
-		node->type.tv = tarval_top;
-		return;
-	}
-	node->type.tv = computed_value(irn);
+/**
+ * (Re-)compute the type for a Size node.
+ *
+ * @param node  the node
+ */
+static void compute_Size(node_t *node)
+{
+	node->type.tv = computed_value(node->node);
 }
 
 /**
@@ -3379,6 +3382,7 @@ static void set_compute_functions(void)
 
 	/* set specific functions */
 	SET(Address);
+	SET(Align);
 	SET(Block);
 	SET(Unknown);
 	SET(Bad);
@@ -3388,13 +3392,13 @@ static void set_compute_functions(void)
 	SET(Sub);
 	SET(Eor);
 	SET(Offset);
-	SET(TypeConst);
 	SET(Cmp);
 	SET(Proj);
 	SET(Confirm);
 	SET(Return);
 	SET(End);
 	SET(Call);
+	SET(Size);
 }
 
 /**

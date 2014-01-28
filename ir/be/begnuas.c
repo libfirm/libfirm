@@ -650,19 +650,13 @@ static void emit_init_expression(be_gas_decl_env_t *env, ir_node *init)
 		be_emit_irprintf("%d", get_entity_offset(get_Offset_entity(init)));
 		return;
 
-	case iro_TypeConst: {
-		ir_type *const type = get_TypeConst_type(init);
-		switch (get_TypeConst_kind(init)) {
-		case typeconst_size:
-			be_emit_irprintf("%u", get_type_size_bytes(type));
-			return;
+	case iro_Align:
+		be_emit_irprintf("%u", get_type_alignment_bytes(get_Align_type(init)));
+		return;
 
-		case typeconst_align:
-			be_emit_irprintf("%u", get_type_alignment_bytes(type));
-			return;
-		}
-		panic("invalid TypeConst kind");
-	}
+	case iro_Size:
+		be_emit_irprintf("%u", get_type_size_bytes(get_Size_type(init)));
+		return;
 
 	case iro_Add:
 		if (!mode_is_int(mode) && !mode_is_reference(mode)) {

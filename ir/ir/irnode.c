@@ -1010,10 +1010,11 @@ static void register_get_entity_func(ir_op *op, get_entity_attr_func func)
 
 void ir_register_getter_ops(void)
 {
+	register_get_type_func(op_Align,     get_Align_type);
 	register_get_type_func(op_Builtin,   get_Builtin_type);
 	register_get_type_func(op_Call,      get_Call_type);
 	register_get_type_func(op_CopyB,     get_CopyB_type);
-	register_get_type_func(op_TypeConst, get_TypeConst_type);
+	register_get_type_func(op_Size,      get_Size_type);
 
 	register_get_entity_func(op_Address, get_Address_entity);
 	register_get_entity_func(op_Offset,  get_Offset_entity);

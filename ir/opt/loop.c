@@ -264,10 +264,11 @@ static void get_loop_info(ir_node *node, void *env)
 				break;
 
 		case iro_Address:
+		case iro_Align:
 		case iro_Confirm:
 		case iro_Const:
 		case iro_Offset:
-		case iro_TypeConst:
+		case iro_Size:
 			break;
 
 		default:
@@ -1839,9 +1840,10 @@ static bool is_const(ir_node *const node)
 {
 	switch (get_irn_opcode(node)) {
 	case iro_Address:
+	case iro_Align:
 	case iro_Const:
 	case iro_Offset:
-	case iro_TypeConst:
+	case iro_Size:
 		return true;
 	default:
 		return false;

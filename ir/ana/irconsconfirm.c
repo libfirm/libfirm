@@ -259,9 +259,10 @@ static void handle_if(ir_node *block, ir_node *cmp, ir_relation rel, env_t *env)
 	/* try to place the constant on the right side for a Confirm */
 	switch (get_irn_opcode(left)) {
 	case iro_Address:
+	case iro_Align:
 	case iro_Const:
 	case iro_Offset:
-	case iro_TypeConst: {
+	case iro_Size: {
 		ir_node *t = left;
 		left  = right;
 		right = t;

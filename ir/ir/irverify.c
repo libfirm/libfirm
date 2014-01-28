@@ -543,20 +543,9 @@ static int verify_node_Const(const ir_node *n)
 	return fine;
 }
 
-static int verify_node_Offset(const ir_node *n)
+static int verify_node_int(const ir_node *n)
 {
 	return check_mode_func(n, mode_is_int, "int");
-}
-
-static int verify_node_TypeConst(const ir_node *n)
-{
-	switch (get_TypeConst_kind(n)) {
-	case typeconst_size:
-	case typeconst_align:
-		return check_mode_func(n, mode_is_int, "int");
-	}
-	warn(n, "invalid TypeConst kind");
-	return false;
 }
 
 static int verify_node_Sel(const ir_node *n)
@@ -1260,6 +1249,7 @@ void ir_register_verify_node_ops(void)
 {
 	register_verify_node_func(op_Add,      verify_node_Add);
 	register_verify_node_func(op_Address,  verify_node_Address);
+	register_verify_node_func(op_Align,    verify_node_int);
 	register_verify_node_func(op_Alloc,    verify_node_Alloc);
 	register_verify_node_func(op_And,      verify_node_And);
 	register_verify_node_func(op_Block,    verify_node_Block);
@@ -1283,7 +1273,7 @@ void ir_register_verify_node_ops(void)
 	register_verify_node_func(op_Mulh,     verify_node_Mulh);
 	register_verify_node_func(op_Mux,      verify_node_Mux);
 	register_verify_node_func(op_Not,      verify_node_Not);
-	register_verify_node_func(op_Offset,   verify_node_Offset);
+	register_verify_node_func(op_Offset,   verify_node_int);
 	register_verify_node_func(op_Or,       verify_node_Or);
 	register_verify_node_func(op_Phi,      verify_node_Phi);
 	register_verify_node_func(op_Proj,     verify_node_Proj);
@@ -1293,12 +1283,12 @@ void ir_register_verify_node_ops(void)
 	register_verify_node_func(op_Shl,      verify_node_Shl);
 	register_verify_node_func(op_Shr,      verify_node_Shr);
 	register_verify_node_func(op_Shrs,     verify_node_Shrs);
+	register_verify_node_func(op_Size,     verify_node_int);
 	register_verify_node_func(op_Start,    verify_node_Start);
 	register_verify_node_func(op_Store,    verify_node_Store);
 	register_verify_node_func(op_Sub,      verify_node_Sub);
 	register_verify_node_func(op_Switch,   verify_node_Switch);
 	register_verify_node_func(op_Sync,     verify_node_Sync);
-	register_verify_node_func(op_TypeConst,verify_node_TypeConst);
 
 	register_verify_node_func_proj(op_Alloc,  verify_node_Proj_Alloc);
 	register_verify_node_func_proj(op_Call,   verify_node_Proj_Call);

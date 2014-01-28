@@ -229,9 +229,9 @@ static unsigned hash_entconst(const ir_node *node)
 }
 
 /**
- * Calculate a hash value of a TypeConst node.
+ * Calculate a hash value of an Align/Size node.
  */
-static unsigned hash_TypeConst(const ir_node *node)
+static unsigned hash_typeconst(const ir_node *node)
 {
 	unsigned hash = hash_ptr(node->attr.typec.type);
 	return hash;
@@ -273,12 +273,12 @@ static int node_cmp_attr_entconst(const ir_node *a, const ir_node *b)
 	return pa->entity != pb->entity;
 }
 
-/** Compares the attributes of two TypeConst nodes. */
-static int node_cmp_attr_TypeConst(const ir_node *a, const ir_node *b)
+/** Compares the attributes of two Align/Size nodes. */
+static int node_cmp_attr_typeconst(const ir_node *a, const ir_node *b)
 {
 	const typeconst_attr *pa = &a->attr.typec;
 	const typeconst_attr *pb = &b->attr.typec;
-	return (pa->kind != pb->kind) || (pa->type != pb->type);
+	return pa->type != pb->type;
 }
 
 /** Compares the attributes of two Call nodes. */
@@ -599,30 +599,32 @@ void firm_init_op(void)
 	ir_init_opcodes();
 	be_init_op();
 
-	set_op_cmp_attr(op_Address,  node_cmp_attr_entconst);
-	set_op_cmp_attr(op_ASM,      node_cmp_attr_ASM);
-	set_op_cmp_attr(op_Alloc,    node_cmp_attr_Alloc);
-	set_op_cmp_attr(op_Builtin,  node_cmp_attr_Builtin);
-	set_op_cmp_attr(op_Call,     node_cmp_attr_Call);
-	set_op_cmp_attr(op_Cmp,      node_cmp_attr_Cmp);
-	set_op_cmp_attr(op_Confirm,  node_cmp_attr_Confirm);
-	set_op_cmp_attr(op_Const,    node_cmp_attr_Const);
-	set_op_cmp_attr(op_CopyB,    node_cmp_attr_CopyB);
-	set_op_cmp_attr(op_Div,      node_cmp_attr_Div);
-	set_op_cmp_attr(op_Dummy,    node_cmp_attr_Dummy);
-	set_op_cmp_attr(op_Load,     node_cmp_attr_Load);
-	set_op_cmp_attr(op_Mod,      node_cmp_attr_Mod);
-	set_op_cmp_attr(op_Offset,   node_cmp_attr_entconst);
-	set_op_cmp_attr(op_Phi,      node_cmp_attr_Phi);
-	set_op_cmp_attr(op_Proj,     node_cmp_attr_Proj);
-	set_op_cmp_attr(op_Sel,      node_cmp_attr_Sel);
-	set_op_cmp_attr(op_Store,    node_cmp_attr_Store);
-	set_op_cmp_attr(op_TypeConst,node_cmp_attr_TypeConst);
+	set_op_cmp_attr(op_Address, node_cmp_attr_entconst);
+	set_op_cmp_attr(op_Align,   node_cmp_attr_typeconst);
+	set_op_cmp_attr(op_ASM,     node_cmp_attr_ASM);
+	set_op_cmp_attr(op_Alloc,   node_cmp_attr_Alloc);
+	set_op_cmp_attr(op_Builtin, node_cmp_attr_Builtin);
+	set_op_cmp_attr(op_Call,    node_cmp_attr_Call);
+	set_op_cmp_attr(op_Cmp,     node_cmp_attr_Cmp);
+	set_op_cmp_attr(op_Confirm, node_cmp_attr_Confirm);
+	set_op_cmp_attr(op_Const,   node_cmp_attr_Const);
+	set_op_cmp_attr(op_CopyB,   node_cmp_attr_CopyB);
+	set_op_cmp_attr(op_Div,     node_cmp_attr_Div);
+	set_op_cmp_attr(op_Dummy,   node_cmp_attr_Dummy);
+	set_op_cmp_attr(op_Load,    node_cmp_attr_Load);
+	set_op_cmp_attr(op_Mod,     node_cmp_attr_Mod);
+	set_op_cmp_attr(op_Offset,  node_cmp_attr_entconst);
+	set_op_cmp_attr(op_Phi,     node_cmp_attr_Phi);
+	set_op_cmp_attr(op_Proj,    node_cmp_attr_Proj);
+	set_op_cmp_attr(op_Sel,     node_cmp_attr_Sel);
+	set_op_cmp_attr(op_Size,    node_cmp_attr_typeconst);
+	set_op_cmp_attr(op_Store,   node_cmp_attr_Store);
 
-	set_op_hash(op_Address,   hash_entconst);
-	set_op_hash(op_Const,     hash_Const);
-	set_op_hash(op_Offset,    hash_entconst);
-	set_op_hash(op_TypeConst, hash_TypeConst);
+	set_op_hash(op_Address, hash_entconst);
+	set_op_hash(op_Align,   hash_typeconst);
+	set_op_hash(op_Const,   hash_Const);
+	set_op_hash(op_Offset,  hash_entconst);
+	set_op_hash(op_Size,    hash_typeconst);
 
 	set_op_copy_attr(op_Call,   call_copy_attr);
 	set_op_copy_attr(op_Block,  block_copy_attr);

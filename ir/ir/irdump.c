@@ -694,18 +694,13 @@ void dump_node_opcode(FILE *F, const ir_node *n)
 		fprintf(F, "Offset %s", get_entity_name(get_Offset_entity(n)));
 		break;
 
-	case iro_TypeConst: {
-		ir_type *const type = get_TypeConst_type(n);
-		switch (get_TypeConst_kind(n)) {
-		case typeconst_size:
-			ir_fprintf(F, "TypeC %+F size", type);
-			break;
-		case typeconst_align:
-			ir_fprintf(F, "TypeC %+F align", type);
-			break;
-		}
+	case iro_Align:
+		ir_fprintf(F, "Align %+F", get_Align_type(n));
 		break;
-	}
+
+	case iro_Size:
+		ir_fprintf(F, "Size %+F", get_Size_type(n));
+		break;
 
 	case iro_Load:
 		if (get_Load_unaligned(n) == align_non_aligned)
@@ -763,6 +758,7 @@ static void dump_node_mode(FILE *F, const ir_node *n)
 	iro = get_irn_opcode(n);
 	switch (iro) {
 	case iro_Address:
+	case iro_Align:
 	case iro_Sel:
 	case iro_End:
 	case iro_Return:
@@ -771,7 +767,7 @@ static void dump_node_mode(FILE *F, const ir_node *n)
 	case iro_Jmp:
 	case iro_NoMem:
 	case iro_Offset:
-	case iro_TypeConst:
+	case iro_Size:
 		break;
 	default:
 		mode = get_irn_mode(n);
@@ -941,9 +937,10 @@ static void dump_node_vcgattr(FILE *F, const ir_node *node, const ir_node *local
 		print_vcg_color(F, ird_color_memory);
 		break;
 	case iro_Address:
+	case iro_Align:
 	case iro_Const:
 	case iro_Offset:
-	case iro_TypeConst:
+	case iro_Size:
 		print_vcg_color(F, ird_color_const);
 		break;
 	case iro_Proj:
@@ -1509,17 +1506,18 @@ static void dump_node2type_edges(ir_node *n, void *env)
 	assert(n);
 
 	switch (get_irn_opcode(n)) {
-	case iro_Const :
-		/* @@@ some consts have an entity */
+	{
+		ir_type *type;
+	case iro_Align: type = get_Align_type(n); goto type;
+	case iro_Call:  type = get_Call_type(n);  goto type;
+	case iro_Size:  type = get_Size_type(n);  goto type;
+type:
+		print_node_type_edge(F, n, type, NODE2TYPE_EDGE_ATTR);
 		break;
-	case iro_TypeConst:
-		print_node_type_edge(F, n, get_TypeConst_type(n), NODE2TYPE_EDGE_ATTR);
-		break;
+	}
+
 	case iro_Sel:
 		print_node_ent_edge(F,n,get_Sel_entity(n),NODE2TYPE_EDGE_ATTR);
-		break;
-	case iro_Call:
-		print_node_type_edge(F,n,get_Call_type(n),NODE2TYPE_EDGE_ATTR);
 		break;
 	default:
 		break;

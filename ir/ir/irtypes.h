@@ -232,8 +232,7 @@ typedef struct entconst_attr {
 
 /** TypeConst attributes. */
 typedef struct typeconst_attr {
-	ir_type        *type;
-	typeconst_kind  kind;
+	ir_type *type;
 } typeconst_attr;
 
 /** Sel attributes. */

@@ -340,14 +340,15 @@ static void free_ana_walker(ir_node *node, void *env)
 	switch (get_irn_opcode(node)) {
 		/* special nodes */
 	case iro_Address:
+	case iro_Align:
 	case iro_Sel:
 	case iro_Const:
 	case iro_Offset:
 	case iro_Phi:
 	case iro_Id:
 	case iro_Proj:
+	case iro_Size:
 	case iro_Tuple:
-	case iro_TypeConst:
 		/* nothing */
 		break;
 	case iro_Call:

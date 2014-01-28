@@ -395,6 +395,9 @@ static opcode_key_t *opcode(const node_t *node, environment_t *env)
 	case iro_Address:
 		key.u.ent = get_Address_entity(irn);
 		break;
+	case iro_Align:
+		key.u.type = get_Align_type(irn);
+		break;
 	case iro_Offset:
 		key.u.ent = get_Offset_entity(irn);
 		break;
@@ -416,8 +419,8 @@ static opcode_key_t *opcode(const node_t *node, environment_t *env)
 	case iro_Builtin:
 		key.u.intVal = get_Builtin_kind(irn);
 		break;
-	case iro_TypeConst:
-		key.u.type = get_TypeConst_type(irn);
+	case iro_Size:
+		key.u.type = get_Size_type(irn);
 		break;
 	default:
 		break;

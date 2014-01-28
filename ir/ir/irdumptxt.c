@@ -283,22 +283,15 @@ void dump_irnode_to_file(FILE *const F, const ir_node *const n)
 		dump_entity_to_file(F, get_Offset_entity(n));
 		break;
 
-	case iro_TypeConst: {
-		ir_type *const type = get_TypeConst_type(n);
-		switch (get_TypeConst_kind(n)) {
-		case typeconst_size:
-			fprintf(F, "  kind: size\n");
-			fprintf(F, "  type: ");
-			dump_type_to_file(F, type);
-			break;
-		case typeconst_align:
-			fprintf(F, "  kind: alignment\n");
-			fprintf(F, "  type: ");
-			dump_type_to_file(F, type);
-			break;
-		}
+	case iro_Align:
+		fprintf(F, "  type: ");
+		dump_type_to_file(F, get_Align_type(n));
 		break;
-	}
+
+	case iro_Size:
+		fprintf(F, "  type: ");
+		dump_type_to_file(F, get_Size_type(n));
+		break;
 
 	case iro_Load:
 		fprintf(F, "  mode of loaded value: %s\n", get_mode_name(get_Load_mode(n)));
