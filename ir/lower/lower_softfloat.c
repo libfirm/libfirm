@@ -279,7 +279,7 @@ static ir_node *create_softfloat_address(const ir_node *n, const char *name)
 	ir_graph  *const irg = get_irn_irg(n);
 	ident     *const id  = new_id_from_str(buf);
 	ir_entity *const ent = create_compilerlib_entity(id, method);
-	return new_r_Address(irg, mode_P_code, ent);
+	return new_r_Address(irg, ent);
 }
 
 static ir_node *make_softfloat_call(ir_node *const n, char const *const name, size_t const arity, ir_node *const *const in)

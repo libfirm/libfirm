@@ -1259,14 +1259,8 @@ void set_array_size(ir_type *tp, unsigned size)
 
 ir_type *new_type_pointer(ir_type *points_to)
 {
-	ir_mode *mode;
-	if (is_Method_type(points_to) || is_code_type(points_to)) {
-		mode = mode_P_code;
-	} else {
-		mode = mode_P_data;
-	}
-
-	ir_type *res = new_type(type_pointer, mode);
+	ir_mode *const mode = get_type_pointer_mode(points_to);
+	ir_type *const res  = new_type(type_pointer, mode);
 	res->attr.pa.points_to = points_to;
 	res->size = get_mode_size_bytes(res->mode);
 	res->flags |= tf_layout_fixed;

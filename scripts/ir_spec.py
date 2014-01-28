@@ -48,6 +48,7 @@ class Add(Binop):
 @op
 class Address(EntConst):
 	"""Symbolic constant that represents the address of an entity (variable or method)"""
+	mode = "get_type_pointer_mode(get_entity_type(entity))"
 
 @op
 class Alloc:

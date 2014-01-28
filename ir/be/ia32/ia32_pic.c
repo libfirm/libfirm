@@ -106,7 +106,7 @@ static void fix_pic_addresses(ir_node *node, void *data)
 				continue;
 
 			ir_entity *const trampoline       = get_trampoline(be, entity);
-			ir_node   *const trampoline_const = new_rd_Address(dbgi, irg, mode_P_code, trampoline);
+			ir_node   *const trampoline_const = new_rd_Address(dbgi, irg, trampoline);
 			set_irn_n(node, i, trampoline_const);
 			continue;
 		} else if (get_entity_type(entity) == get_code_type()) {
@@ -130,7 +130,7 @@ static void fix_pic_addresses(ir_node *node, void *data)
 
 		/* get entry from pic symbol segment */
 		ir_entity *const pic_symbol  = get_pic_symbol(be, entity);
-		ir_node   *const pic_address = new_rd_Address(dbgi, irg, mode_P_code, pic_symbol);
+		ir_node   *const pic_address = new_rd_Address(dbgi, irg, pic_symbol);
 		ir_node   *const add         = new_r_Add(block, pic_base, pic_address, mode);
 		mark_irn_visited(add);
 

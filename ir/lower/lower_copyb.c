@@ -117,7 +117,7 @@ static ir_node *get_memcpy_address(ir_graph *irg)
 	ir_type   *mt  = get_memcpy_methodtype();
 	ir_entity *ent = create_compilerlib_entity(id, mt);
 
-	return new_r_Address(irg, mode_P_code, ent);
+	return new_r_Address(irg, ent);
 }
 
 /**

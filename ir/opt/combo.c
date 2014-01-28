@@ -3281,7 +3281,7 @@ static void apply_result(ir_node *irn, void *ctx)
 		} else if (is_entity(node->type.ent)) {
 			if (!is_Address(irn)) {
 				/* can be replaced by an Address */
-				ir_node *entc = new_r_Address(current_ir_graph, get_irn_mode(irn), node->type.ent);
+				ir_node *entc = new_r_Address(current_ir_graph, node->type.ent);
 				set_irn_node(entc, node);
 				node->node = entc;
 

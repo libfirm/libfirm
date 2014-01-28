@@ -60,7 +60,7 @@ void instrument_initcall(ir_graph *irg, ir_entity *ent)
 	}
 
 	/* place the call */
-	ir_node *const adr         = new_r_Address(irg, mode_P_code, ent);
+	ir_node *const adr         = new_r_Address(irg, ent);
 	ir_node *const initial_mem = get_irg_initial_mem(irg);
 	ir_node *const call        = new_r_Call(first_block, initial_mem, adr, 0, NULL, get_entity_type(ent));
 	ir_node *const new_mem     = new_r_Proj(call, mode_M, pn_Call_M);

@@ -486,7 +486,7 @@ static ir_node *get_intrinsic_address(ir_type *method, ir_op *op,
 		assert(ent && "Intrinsic creator must return an entity");
 		entry->ent = ent;
 	}
-	return new_r_Address(env->irg, mode_P_code, ent);
+	return new_r_Address(env->irg, ent);
 }
 
 /**

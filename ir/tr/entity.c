@@ -65,7 +65,7 @@ ir_entity *new_entity(ir_type *owner, ident *name, ir_type *type)
 	if (is_Method_type(type)) {
 		ir_graph *irg = get_const_code_irg();
 		res                = intern_new_entity(owner, IR_ENTITY_METHOD, name, type);
-		ir_node *const val = new_r_Address(irg, mode_P_code, res);
+		ir_node *const val = new_r_Address(irg, res);
 		set_atomic_ent_value(res, val);
 		res->linkage                   = IR_LINKAGE_CONSTANT;
 		res->attr.mtd_attr.properties  = get_method_additional_properties(type);
