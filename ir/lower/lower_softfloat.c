@@ -766,8 +766,8 @@ static void ir_prepare_softfloat_lowering(void)
 	make_unop_type(&unop_tp_d_f,  type_D,  type_F);
 	make_unop_type(&unop_tp_d_is, type_D,  type_Is);
 	make_unop_type(&unop_tp_d_iu, type_D,  type_Iu);
-	make_unop_type(&unop_tp_d_ls, type_D,  type_Is);
-	make_unop_type(&unop_tp_d_lu, type_D,  type_Iu);
+	make_unop_type(&unop_tp_d_ls, type_D,  type_Ls);
+	make_unop_type(&unop_tp_d_lu, type_D,  type_Lu);
 	make_unop_type(&unop_tp_f_d,  type_F,  type_D);
 	make_unop_type(&unop_tp_f_is, type_F,  type_Is);
 	make_unop_type(&unop_tp_f_iu, type_F,  type_Iu);
