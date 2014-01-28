@@ -599,7 +599,7 @@ static void lower_Div(ir_node *const n)
 	ir_node *const right  = get_Div_right(n);
 	ir_node *const in[]   = { left, right };
 	ir_node *const result = make_softfloat_call(n, "div", ARRAY_SIZE(in), in);
-	ir_node *const call   = skip_Proj(result);
+	ir_node *const call   = skip_Proj(skip_Proj(result));
 
 	set_irn_pinned(call, get_irn_pinned(n));
 
