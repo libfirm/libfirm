@@ -927,7 +927,7 @@ static int calc_inline_benefice(call_entry *entry, ir_graph *callee)
 			weight += get_method_param_weight(ent, i);
 		} else {
 			all_const = false;
-			if (is_EntConst(param) || is_TypeConst(param))
+			if (is_Address(param) || is_Offset(param) || is_TypeConst(param))
 				weight += get_method_param_weight(ent, i);
 			else if (is_Sel(param) && get_Sel_ptr(param) == frame_ptr
 			         && i < get_method_n_params(mtp)) {

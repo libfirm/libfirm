@@ -92,7 +92,7 @@ FIRM_API void lower_switch(ir_graph *irg, unsigned small_switch,
                            unsigned spare_size, ir_mode *selector_mode);
 
 /**
- * Replaces EntConsts and TypeConsts by a real constant if possible.
+ * Replaces Offsets and TypeConsts by a real constant if possible.
  * Replaces Sel nodes by address computation.  Also resolves array access.
  * Handle bit fields by added And/Or calculations.
  *
@@ -104,7 +104,7 @@ FIRM_API void lower_switch(ir_graph *irg, unsigned small_switch,
 FIRM_API void lower_highlevel_graph(ir_graph *irg);
 
 /**
- * Replaces EntConsts and TypeConsts by a real constant if possible.
+ * Replaces Offsets and TypeConsts by a real constant if possible.
  * Replaces Sel nodes by address computation.  Also resolves array access.
  * Handle bit fields by added And/Or calculations.
  * Lowers all graphs.

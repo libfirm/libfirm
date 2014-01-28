@@ -571,7 +571,7 @@ FIRM_API int value_not_zero(const ir_node *n, const ir_node **confirm);
  *
  * - If option sel_based_null_check_elim is enabled, all
  *   Sel nodes can be skipped.
- * - A EntConst is NEVER a NULL pointer
+ * - A Address is NEVER a NULL pointer
  * - A Const != NULL is NEVER a NULL pointer
  * - Confirms are evaluated
  *

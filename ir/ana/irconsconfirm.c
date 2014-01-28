@@ -257,12 +257,21 @@ static void handle_if(ir_node *block, ir_node *cmp, ir_relation rel, env_t *env)
 		return;
 
 	/* try to place the constant on the right side for a Confirm */
-	if (is_Const(left) || is_EntConst(left) || is_TypeConst(left)) {
+	switch (get_irn_opcode(left)) {
+	case iro_Address:
+	case iro_Const:
+	case iro_Offset:
+	case iro_TypeConst: {
 		ir_node *t = left;
 		left  = right;
 		right = t;
 
 		rel = get_inversed_relation(rel);
+		break;
+	}
+
+	default:
+		break;
 	}
 
 	/*
@@ -441,11 +450,11 @@ static bool is_non_null_Confirm(const ir_node *ptr)
 		ptr = get_Confirm_value(ptr);
 	}
 	/*
-	 * While an EntConst is not a Confirm, it is non-null
+	 * While an Address is not a Confirm, it is non-null
 	 * anyway. This helps to reduce the number of
 	 * constructed Confirms.
 	 */
-	if (is_EntConst_addr(ptr))
+	if (is_Address(ptr))
 		return true;
 	return false;
 }

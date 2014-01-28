@@ -151,11 +151,11 @@ static reference_mode_t need_relative_addressing(const ir_entity *entity)
 	    ? REFERENCE_IP_RELATIVE : REFERENCE_GOT;
 }
 
-static ir_node *gen_EntConst(ir_node *node)
+static ir_node *gen_Address(ir_node *node)
 {
 	ir_node   *block  = be_transform_node(get_nodes_block(node));
 	dbg_info  *dbgi   = get_irn_dbg_info(node);
-	ir_entity *entity = get_EntConst_entity(node);
+	ir_entity *entity = get_Address_entity(node);
 
 	/* do we need RIP-relative addressing because of PIC? */
 	reference_mode_t mode = need_relative_addressing(entity);
@@ -1112,6 +1112,7 @@ static void amd64_register_transformers(void)
 	be_start_transform_setup();
 
 	be_set_transform_function(op_Add,      gen_Add);
+	be_set_transform_function(op_Address,  gen_Address);
 	be_set_transform_function(op_And,      gen_And);
 	be_set_transform_function(op_Cmp,      gen_Cmp);
 	be_set_transform_function(op_Call,     gen_Call);
@@ -1137,7 +1138,6 @@ static void amd64_register_transformers(void)
 	be_set_transform_function(op_Store,    gen_Store);
 	be_set_transform_function(op_Sub,      gen_Sub);
 	be_set_transform_function(op_Switch,   gen_Switch);
-	be_set_transform_function(op_EntConst, gen_EntConst);
 
 	be_set_transform_proj_function(op_Call,   gen_Proj_Call);
 	be_set_transform_proj_function(op_Cond,   be_duplicate_node);

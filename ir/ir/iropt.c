@@ -120,21 +120,14 @@ static ir_tarval *computed_value_Const(const ir_node *n)
 }
 
 /**
- * Return the value of a 'offsetof' EntConst.
+ * Return the value of an Offset.
  */
-static ir_tarval *computed_value_EntConst(const ir_node *n)
+static ir_tarval *computed_value_Offset(const ir_node *n)
 {
-	switch (get_EntConst_kind(n)) {
-	case entconst_ofs: {
-		const ir_entity *ent  = get_EntConst_entity(n);
-		const ir_type   *type = get_entity_owner(ent);
-		if (get_type_state(type) == layout_fixed)
-			return new_tarval_from_long(get_entity_offset(ent), get_irn_mode(n));
-		break;
-	}
-	default:
-		break;
-	}
+	const ir_entity *ent  = get_Offset_entity(n);
+	const ir_type   *type = get_entity_owner(ent);
+	if (get_type_state(type) == layout_fixed)
+		return new_tarval_from_long(get_entity_offset(ent), get_irn_mode(n));
 	return tarval_bad;
 }
 
@@ -6200,8 +6193,8 @@ static ir_node *predict_load(ir_node *ptr, ir_mode *mode)
 		offset = get_tarval_long(tv);
 		ptr    = get_Add_left(ptr);
 	}
-	if (is_EntConst_addr(ptr)) {
-		ir_entity *entity = get_EntConst_entity(ptr);
+	if (is_Address(ptr)) {
+		ir_entity *entity = get_Address_entity(ptr);
 		if (! (get_entity_linkage(entity) & IR_LINKAGE_CONSTANT))
 			return NULL;
 		const ir_type *type = get_entity_type(entity);
@@ -6459,7 +6452,7 @@ void ir_register_opt_node_ops(void)
 	register_computed_value_func(op_Confirm,  computed_value_Confirm);
 	register_computed_value_func(op_Const,    computed_value_Const);
 	register_computed_value_func(op_Conv,     computed_value_Conv);
-	register_computed_value_func(op_EntConst, computed_value_EntConst);
+	register_computed_value_func(op_Offset,   computed_value_Offset);
 	register_computed_value_func(op_Eor,      computed_value_Eor);
 	register_computed_value_func(op_Minus,    computed_value_Minus);
 	register_computed_value_func(op_Mul,      computed_value_Mul);

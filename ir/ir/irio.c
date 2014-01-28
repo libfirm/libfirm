@@ -911,18 +911,6 @@ static void write_Anchor(write_env_t *env, const ir_node *node)
 	write_pred_refs(env, node, 0);
 }
 
-static void write_EntConst(write_env_t *env, const ir_node *node)
-{
-	/* TODO: only entconst_addr implemented yet */
-	if (get_EntConst_kind(node) != entconst_addr)
-		panic("Can't export %+F (only entconst_addr supported)", node);
-
-	write_symbol(env, "EntConst");
-	write_node_nr(env, node);
-	write_mode_ref(env, get_irn_mode(node));
-	write_entity_ref(env, get_EntConst_entity(node));
-}
-
 typedef void write_node_func(write_env_t *env, ir_node const *node);
 
 static void register_node_writer(ir_op *op, write_node_func *func)
@@ -933,11 +921,10 @@ static void register_node_writer(ir_op *op, write_node_func *func)
 static void writers_init(void)
 {
 	ir_clear_opcodes_generic_func();
-	register_node_writer(op_Anchor,   write_Anchor);
-	register_node_writer(op_ASM,      write_ASM);
-	register_node_writer(op_Block,    write_Block);
-	register_node_writer(op_Phi,      write_Phi);
-	register_node_writer(op_EntConst, write_EntConst);
+	register_node_writer(op_Anchor, write_Anchor);
+	register_node_writer(op_ASM,    write_ASM);
+	register_node_writer(op_Block,  write_Block);
+	register_node_writer(op_Phi,    write_Phi);
 	register_generated_node_writers();
 }
 
@@ -2126,14 +2113,6 @@ static ir_node *read_labeled_Block(read_env_t *env)
 	return res;
 }
 
-static ir_node *read_EntConst(read_env_t *env)
-{
-	ir_mode   *mode   = read_mode_ref(env);
-	ir_entity *entity = read_entity_ref(env);
-	ir_node   *res    = new_r_EntConst(env->irg, mode, entity, entconst_addr);
-	return res;
-}
-
 static ir_node *read_Anchor(read_env_t *env)
 {
 	ir_node *res = new_r_Anchor(env->irg);
@@ -2170,12 +2149,11 @@ static void readers_init(void)
 {
 	assert(node_readers == NULL);
 	node_readers = pmap_create();
-	register_node_reader(new_id_from_str("Anchor"),   read_Anchor);
-	register_node_reader(new_id_from_str("ASM"),      read_ASM);
-	register_node_reader(new_id_from_str("Block"),    read_Block);
-	register_node_reader(new_id_from_str("BlockL"),   read_labeled_Block);
-	register_node_reader(new_id_from_str("Phi"),      read_Phi);
-	register_node_reader(new_id_from_str("EntConst"), read_EntConst);
+	register_node_reader(new_id_from_str("Anchor"), read_Anchor);
+	register_node_reader(new_id_from_str("ASM"),    read_ASM);
+	register_node_reader(new_id_from_str("Block"),  read_Block);
+	register_node_reader(new_id_from_str("BlockL"), read_labeled_Block);
+	register_node_reader(new_id_from_str("Phi"),    read_Phi);
 	register_generated_node_readers();
 }
 

@@ -168,9 +168,9 @@ static int firm_emit(lc_appendable_t *app, const lc_arg_occ_t *occ,
 					strncpy(tv_buf, "(NULL)", sizeof(tv_buf));
 				snprintf(buf, sizeof(buf), "%s%s %s<%s>", A("irn"), get_irn_opname(node),
 					get_mode_name(get_irn_mode(node)), tv_buf);
-			} else if (is_EntConst_addr(node)) {
+			} else if (is_Address(node)) {
 				snprintf(buf, sizeof(buf), "%s%s %s[%s]", A("irn"), get_irn_opname(node),
-				get_mode_name(get_irn_mode(node)), get_entity_name(get_EntConst_entity(node)));
+				get_mode_name(get_irn_mode(node)), get_entity_name(get_Address_entity(node)));
 			} else if (is_Sel(node)) {
 				ir_entity *entity = get_Sel_entity(node);
 				const char *entity_name = "(null)";

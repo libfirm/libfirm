@@ -321,21 +321,19 @@ end:
 }
 
 /**
- * Transforms a EntConst.
+ * Transforms an Address.
  */
-static ir_node *gen_EntConst(ir_node *node)
+static ir_node *gen_Address(ir_node *node)
 {
 	ir_node  *old_block = get_nodes_block(node);
 	ir_node  *block     = be_transform_node(old_block);
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_mode  *mode      = get_irn_mode(node);
 
-	if (get_EntConst_kind(node) != entconst_addr)
-		panic("backend only support entconst_addr (at %+F)", node);
 	if (!ia32_mode_needs_gp_reg(mode))
-		panic("unexpected mode for EntConst");
+		panic("unexpected mode for Address");
 
-	ir_entity *entity = get_EntConst_entity(node);
+	ir_entity *entity = get_Address_entity(node);
 	ir_node   *cnst;
 	if (is_tls_entity(entity)) {
 		ir_node *tls_base = new_bd_ia32_LdTls(NULL, block);
@@ -1371,7 +1369,7 @@ static ir_node *gen_Add(ir_node *node)
 
 	/**
 	 * Rules for an Add:
-	 *   0. Immediate Trees (example Add(EntConst, Const) -> Const)
+	 *   0. Immediate Trees (example Add(Address, Const) -> Const)
 	 *   1. Add with immediate -> Lea
 	 *   2. Add with possible source address mode -> Add
 	 *   3. Otherwise -> Lea
@@ -5067,8 +5065,8 @@ static ir_node *gen_inner_trampoline(ir_node *node)
 
 	/* the callee is typically an immediate */
 	ir_node *rel;
-	if (is_EntConst(callee)) {
-		rel = new_bd_ia32_Const(dbgi, new_block, get_EntConst_entity(callee), 0, -10);
+	if (is_Address(callee)) {
+		rel = new_bd_ia32_Const(dbgi, new_block, get_Address_entity(callee), 0, -10);
 	} else {
 		rel = new_bd_ia32_Lea(dbgi, new_block, be_transform_node(callee), noreg_GP);
 		add_ia32_am_offs_int(rel, -10);
@@ -5310,6 +5308,7 @@ static void register_transformers(void)
 	}
 
 	be_set_transform_function(op_Add,              gen_Add);
+	be_set_transform_function(op_Address,          gen_Address);
 	be_set_transform_function(op_And,              gen_And);
 	be_set_transform_function(op_ASM,              ia32_gen_ASM);
 	be_set_transform_function(op_be_AddSP,         gen_be_AddSP);
@@ -5359,7 +5358,6 @@ static void register_transformers(void)
 	be_set_transform_function(op_Store,            gen_Store);
 	be_set_transform_function(op_Sub,              gen_Sub);
 	be_set_transform_function(op_Switch,           gen_Switch);
-	be_set_transform_function(op_EntConst,         gen_EntConst);
 	be_set_transform_function(op_Unknown,          ia32_gen_Unknown);
 	be_set_transform_proj_function(op_ASM,              gen_Proj_ASM);
 	be_set_transform_proj_function(op_be_AddSP,         gen_Proj_be_AddSP);

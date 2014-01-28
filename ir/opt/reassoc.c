@@ -513,8 +513,9 @@ static ir_node *earliest_block(ir_node *a, ir_node *b, ir_node *curr_blk)
 static bool is_const(ir_node *const node)
 {
 	switch (get_irn_opcode(node)) {
+	case iro_Address:
 	case iro_Const:
-	case iro_EntConst:
+	case iro_Offset:
 	case iro_TypeConst:
 		return true;
 	default:
@@ -526,16 +527,17 @@ static bool is_const(ir_node *const node)
  * Checks whether a node is a Constant expression.
  * The following trees are constant expressions:
  *
- * Const, EntConsts, TypeConst, Const + EntConsts/TypeConst
+ * Address, Const, Offset, TypeConst, Const + Address/Offset/TypeConst
  *
- * Handling EntConsts/TypeConsts as const might be not a good idea for all
+ * Handling Address/Offset/TypeConsts as const might be not a good idea for all
  * architectures ...
  */
 static int is_constant_expr(ir_node *irn)
 {
 	switch (get_irn_opcode(irn)) {
+	case iro_Address:
 	case iro_Const:
-	case iro_EntConst:
+	case iro_Offset:
 	case iro_TypeConst:
 		return 1;
 
@@ -697,7 +699,7 @@ static int move_consts_up(ir_node **node)
 
 transform:
 	/* In some cases a and b might be both of different integer mode, and c a
-	 * EntConst/TypeConst.
+	 * Address/Offset/TypeConst.
 	 * in that case we could either
 	 * 1.) cast into unsigned mode
 	 * 2.) ignore

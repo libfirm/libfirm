@@ -84,7 +84,7 @@ static int can_address_relative(ir_entity *entity)
 	return entity_has_definition(entity) && !(get_entity_linkage(entity) & IR_LINKAGE_MERGE);
 }
 
-/** patches EntConsts to work in position independent code */
+/** patches Addresses to work in position independent code */
 static void fix_pic_addresses(ir_node *node, void *data)
 {
 	(void) data;
@@ -93,21 +93,20 @@ static void fix_pic_addresses(ir_node *node, void *data)
 
 	for (int i = 0, arity = get_irn_arity(node); i < arity; ++i) {
 		ir_node *pred = get_irn_n(node, i);
-		if (!is_EntConst(pred))
+		if (!is_Address(pred))
 			continue;
 
 		/* calls can jump to relative addresses, so we can directly jump to
 		   the (relatively) known call address or the trampoline */
-		ir_entity *const entity = get_EntConst_entity(pred);
+		ir_entity *const entity = get_Address_entity(pred);
 		ir_node   *const block  = get_nodes_block(pred);
 		dbg_info  *const dbgi   = get_irn_dbg_info(pred);
 		if (i == 1 && is_Call(node)) {
 			if (can_address_relative(entity))
 				continue;
 
-			ir_entity *const trampoline = get_trampoline(be, entity);
-			ir_node   *const trampoline_const
-				= new_rd_EntConst(dbgi, irg, mode_P_code, trampoline, entconst_addr);
+			ir_entity *const trampoline       = get_trampoline(be, entity);
+			ir_node   *const trampoline_const = new_rd_Address(dbgi, irg, mode_P_code, trampoline);
 			set_irn_n(node, i, trampoline_const);
 			continue;
 		} else if (get_entity_type(entity) == get_code_type()) {
@@ -131,7 +130,7 @@ static void fix_pic_addresses(ir_node *node, void *data)
 
 		/* get entry from pic symbol segment */
 		ir_entity *const pic_symbol  = get_pic_symbol(be, entity);
-		ir_node   *const pic_address = new_rd_EntConst(dbgi, irg, mode_P_code, pic_symbol, entconst_addr);
+		ir_node   *const pic_address = new_rd_Address(dbgi, irg, mode_P_code, pic_symbol);
 		ir_node   *const add         = new_r_Add(block, pic_base, pic_address, mode);
 		mark_irn_visited(add);
 

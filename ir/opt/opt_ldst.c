@@ -516,8 +516,8 @@ static unsigned get_Call_memory_properties(ir_node *call)
 static ir_entity *find_constant_entity(ir_node *ptr)
 {
 	for (;;) {
-		if (is_EntConst(ptr) && get_EntConst_kind(ptr) == entconst_addr) {
-			return get_EntConst_entity(ptr);
+		if (is_Address(ptr)) {
+			return get_Address_entity(ptr);
 		} else if (is_Sel(ptr)) {
 			ir_entity *ent = get_Sel_entity(ptr);
 			ir_type   *tp  = get_entity_owner(ent);
@@ -576,7 +576,7 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 				return NULL;
 
 			/* for now, we support only one addition, reassoc should fold all others */
-			if (!is_EntConst(ptr) && !is_Sel(ptr) && !is_TypeConst(ptr))
+			if (!is_Address(ptr) && !is_Offset(ptr) && !is_Sel(ptr) && !is_TypeConst(ptr))
 				return NULL;
 		} else if (is_Sub(ptr)) {
 			ir_node *l = get_Sub_left(ptr);
@@ -587,7 +587,7 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 			else
 				return NULL;
 			/* for now, we support only one subtraction, reassoc should fold all others */
-			if (!is_EntConst(ptr) && !is_Sel(ptr) && !is_TypeConst(ptr))
+			if (!is_Address(ptr) && !is_Offset(ptr) && !is_Sel(ptr) && !is_TypeConst(ptr))
 				return NULL;
 		} else
 			return NULL;

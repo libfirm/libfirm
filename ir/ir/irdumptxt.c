@@ -273,21 +273,15 @@ void dump_irnode_to_file(FILE *const F, const ir_node *const n)
 		break;
 	}
 
-	case iro_EntConst: {
-		ir_entity *const ent = get_EntConst_entity(n);
-		switch (get_EntConst_kind(n)) {
-		case entconst_addr:
-			fprintf(F, "  kind:   addr_ent\n");
-			fprintf(F, "  entity: ");
-			dump_entity_to_file(F, ent);
-			break;
-		case entconst_ofs:
-			fprintf(F, "  kind:   offset\n");
-			fprintf(F, "  entity: ");
-			dump_entity_to_file(F, ent);
-			break;
-		}
-	}
+	case iro_Address:
+		fprintf(F, "  entity: ");
+		dump_entity_to_file(F, get_Address_entity(n));
+		break;
+
+	case iro_Offset:
+		fprintf(F, "  entity: ");
+		dump_entity_to_file(F, get_Offset_entity(n));
+		break;
 
 	case iro_TypeConst: {
 		ir_type *const type = get_TypeConst_type(n);

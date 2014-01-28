@@ -627,7 +627,7 @@ void be_map_exc_node_to_runtime_call(ir_node *node, ir_mode *res_mode,
 
 	ir_graph *irg   = get_irn_irg(node);
 	dbg_info *dbgi  = get_irn_dbg_info(node);
-	ir_node  *addr  = new_r_EntConst(irg, mode_P_code, runtime_entity, entconst_addr);
+	ir_node  *addr  = new_r_Address(irg, mode_P_code, runtime_entity);
 	ir_node  *block = get_nodes_block(node);
 	ir_node  *mem   = get_memop_mem(node);
 	ir_node  *call  = new_rd_Call(dbgi, block, mem, addr, n_in, in, mtp);

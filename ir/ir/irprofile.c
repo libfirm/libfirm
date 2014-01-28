@@ -143,7 +143,7 @@ static void add_constructor(ir_entity *method)
 	ident     *ide = id_unique("constructor_ptr.%u");
     ir_entity *ptr = new_entity(constructors, ide, ptr_type);
     ir_graph  *irg = get_const_code_irg();
-    ir_node   *val = new_rd_EntConst(NULL, irg, mode_P_code, method, entconst_addr);
+    ir_node   *val = new_r_Address(irg, mode_P_code, method);
 
 	set_entity_ld_ident(ptr, new_id_from_chars("", 0));
     set_entity_compiler_generated(ptr, 1);
@@ -209,10 +209,10 @@ static ir_graph *gen_initializer_irg(ir_entity *ent_filename,
 
 	bb = get_r_cur_block(irg);
 
-	ir_node *const callee = new_r_EntConst(irg, mode_P_data, init_ent, entconst_addr);
+	ir_node *const callee = new_r_Address(irg, mode_P_data, init_ent);
 
-	ins[0] = new_r_EntConst(irg, mode_P_data, ent_filename,  entconst_addr);
-	ins[1] = new_r_EntConst(irg, mode_P_data, bblock_counts, entconst_addr);
+	ins[0] = new_r_Address(irg, mode_P_data, ent_filename);
+	ins[1] = new_r_Address(irg, mode_P_data, bblock_counts);
 	ins[2] = new_r_Const_long(irg, mode_Iu, n_blocks);
 
 	call = new_r_Call(bb, get_irg_initial_mem(irg), callee, 3, ins,
@@ -341,7 +341,7 @@ static void instrument_irg(ir_graph *irg, ir_entity *counters,
 	int i;
 
 	/* generate a node pointing to the count array */
-	wd->counters = new_r_EntConst(irg, mode_P_data, counters, entconst_addr);
+	wd->counters = new_r_Address(irg, mode_P_data, counters);
 
 	/* instrument each block in the current irg */
 	irg_block_walk_graph(irg, block_instrument_walker, NULL, wd);

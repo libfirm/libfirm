@@ -45,7 +45,7 @@ struct opcode_key_t {
 	int         arity;  /**< The arity of this opcode (needed for Phi etc. */
 	union {
 		long            proj;   /**< For Proj nodes, its proj number */
-		ir_entity       *ent;   /**< For EntConst/Sel nodes, its entity */
+		ir_entity       *ent;   /**< For Address/Offset/Sel nodes, its entity */
 		ir_tarval       *tv;    /**< For Const nodes, its tarval */
 		ir_type         *type;  /**< For TypeConst nodes, its type. */
 		void            *addr;  /**< Alias all addresses. */
@@ -392,8 +392,11 @@ static opcode_key_t *opcode(const node_t *node, environment_t *env)
 	key.u.addr = NULL;
 
 	switch (key.code) {
-	case iro_EntConst:
-		key.u.ent = get_EntConst_entity(irn);
+	case iro_Address:
+		key.u.ent = get_Address_entity(irn);
+		break;
+	case iro_Offset:
+		key.u.ent = get_Offset_entity(irn);
 		break;
 	case iro_Proj:
 		key.u.proj = get_Proj_proj(irn);
@@ -472,7 +475,7 @@ static int is_input_node(ir_node *pred, ir_node *irn, int index)
 	/* for now, do NOT turn direct calls into indirect one */
 	if (index != 1)
 		return 1;
-	if (!is_EntConst_addr(pred))
+	if (!is_Address(pred))
 		return 1;
 	if (! is_Call(irn))
 		return 1;

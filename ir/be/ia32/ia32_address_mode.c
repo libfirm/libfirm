@@ -52,17 +52,15 @@ static bool do_is_immediate(const ir_node *node, int *entities, bool negate)
 			return false;
 		}
 		return true;
-	case iro_EntConst:
-		/* the first EntConst of a DAG can be folded into an immediate */
+	case iro_Address:
+		/* the first Address of a DAG can be folded into an immediate */
 		/* unfortunately the assembler/linker doesn't support -entity */
 		if (negate)
 			return false;
-		if (get_EntConst_kind(node) != entconst_addr)
-			return false;
 		if (++*entities > 1)
 			return false;
-
 		return true;
+
 	case iro_Unknown:
 		/* we can use '0' for Unknowns */
 		return true;
@@ -122,12 +120,12 @@ static void eat_immediate(ia32_address_t *addr, ir_node *node, bool negate)
 		}
 		break;
 	}
-	case iro_EntConst:
+	case iro_Address:
 		/* place the entity into the immediate */
 		if (addr->entity != NULL) {
 			panic("Internal error: more than 1 entity in address calculation");
 		}
-		addr->entity = get_EntConst_entity(node);
+		addr->entity = get_Address_entity(node);
 		if (is_tls_entity(addr->entity))
 			addr->tls_segment = true;
 		assert(!negate);

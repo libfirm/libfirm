@@ -21,10 +21,33 @@ class Binop(object):
 	pinned         = "no"
 	arity_override = "oparity_binary"
 
+@abstract
+@op
+class EntConst(object):
+	"""Symbolic constant that represents an aspect of an entity"""
+	name       = "entconst"
+	flags      = [ "constlike", "start_block" ]
+	block      = "get_irg_start_block(irg)"
+	knownBlock = True
+	pinned     = "no"
+	attrs      = [
+		dict(
+			type    = "ir_entity*",
+			name    = "entity",
+			comment = "entity to operate on",
+		),
+	]
+	attr_struct = "entconst_attr"
+	attrs_name  = "entc"
+
 @op
 class Add(Binop):
 	"""returns the sum of its operands"""
 	flags = [ "commutative" ]
+
+@op
+class Address(EntConst):
+	"""Symbolic constant that represents the address of an entity (variable or method)"""
 
 @op
 class Alloc:
@@ -679,6 +702,10 @@ class Not:
 	]
 
 @op
+class Offset(EntConst):
+	"""Symbolic constant that represents the offset of an entity in its owner type."""
+
+@op
 class Or(Binop):
 	"""returns the result of a bitwise or operation of its operands"""
 	flags = [ "commutative" ]
@@ -874,34 +901,6 @@ class Store:
 class Sub(Binop):
 	"""returns the difference of its operands"""
 	flags = []
-
-@op
-class EntConst:
-	"""A symbolic constant.
-
-	 - *entconst_addr*  The symbolic constant represents the address of an
-	                    entity (variable or method).
-	 - *entconst_ofs*   The symbolic constant represents the offset of an
-	                    entity in its owner type."""
-	flags      = [ "constlike", "start_block" ]
-	block      = "get_irg_start_block(irg)"
-	knownBlock = True
-	pinned     = "no"
-	attrs      = [
-		dict(
-			type    = "ir_entity*",
-			name    = "entity",
-			comment = "entity to operate on",
-		),
-		dict(
-			type    = "entconst_kind",
-			name    = "kind",
-			comment = "aspect of the entity",
-		)
-	]
-	attr_struct = "entconst_attr"
-	attrs_name  = "entc"
-	customSerializer = True
 
 @op
 class TypeConst:

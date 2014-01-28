@@ -220,9 +220,9 @@ static unsigned hash_Const(const ir_node *node)
 }
 
 /**
- * Calculate a hash value of a EntConst node.
+ * Calculate a hash value of an Address/Offset node.
  */
-static unsigned hash_EntConst(const ir_node *node)
+static unsigned hash_entconst(const ir_node *node)
 {
 	unsigned hash = hash_ptr(node->attr.entc.entity);
 	return hash;
@@ -265,12 +265,12 @@ static int node_cmp_attr_Alloc(const ir_node *a, const ir_node *b)
 	return pa->alignment != pb->alignment;
 }
 
-/** Compares the attributes of two EntConst nodes. */
-static int node_cmp_attr_EntConst(const ir_node *a, const ir_node *b)
+/** Compares the attributes of two Address/Offset nodes. */
+static int node_cmp_attr_entconst(const ir_node *a, const ir_node *b)
 {
 	const entconst_attr *pa = &a->attr.entc;
 	const entconst_attr *pb = &b->attr.entc;
-	return (pa->kind != pb->kind) || (pa->entity != pb->entity);
+	return pa->entity != pb->entity;
 }
 
 /** Compares the attributes of two TypeConst nodes. */
@@ -599,6 +599,7 @@ void firm_init_op(void)
 	ir_init_opcodes();
 	be_init_op();
 
+	set_op_cmp_attr(op_Address,  node_cmp_attr_entconst);
 	set_op_cmp_attr(op_ASM,      node_cmp_attr_ASM);
 	set_op_cmp_attr(op_Alloc,    node_cmp_attr_Alloc);
 	set_op_cmp_attr(op_Builtin,  node_cmp_attr_Builtin);
@@ -609,17 +610,18 @@ void firm_init_op(void)
 	set_op_cmp_attr(op_CopyB,    node_cmp_attr_CopyB);
 	set_op_cmp_attr(op_Div,      node_cmp_attr_Div);
 	set_op_cmp_attr(op_Dummy,    node_cmp_attr_Dummy);
-	set_op_cmp_attr(op_EntConst, node_cmp_attr_EntConst);
 	set_op_cmp_attr(op_Load,     node_cmp_attr_Load);
 	set_op_cmp_attr(op_Mod,      node_cmp_attr_Mod);
+	set_op_cmp_attr(op_Offset,   node_cmp_attr_entconst);
 	set_op_cmp_attr(op_Phi,      node_cmp_attr_Phi);
 	set_op_cmp_attr(op_Proj,     node_cmp_attr_Proj);
 	set_op_cmp_attr(op_Sel,      node_cmp_attr_Sel);
 	set_op_cmp_attr(op_Store,    node_cmp_attr_Store);
 	set_op_cmp_attr(op_TypeConst,node_cmp_attr_TypeConst);
 
+	set_op_hash(op_Address,   hash_entconst);
 	set_op_hash(op_Const,     hash_Const);
-	set_op_hash(op_EntConst,  hash_EntConst);
+	set_op_hash(op_Offset,    hash_entconst);
 	set_op_hash(op_TypeConst, hash_TypeConst);
 
 	set_op_copy_attr(op_Call,   call_copy_attr);

@@ -264,19 +264,6 @@ typedef enum mtp_additional_properties {
 ENUM_BITSET(mtp_additional_properties)
 
 /**
- * @ingroup EntConst
- * This enum names the different kinds of symbolic Constants represented by
- * EntConst.
- */
-typedef enum entconst_kind {
-	entconst_addr,   /**< The EntConst is a symbolic pointer to be filled in
-	                          by the linker.  The pointer is represented by an
-	                          entity. */
-	entconst_ofs,    /**< The EntConst is the offset of its entity in the
-	                          entities owner type. */
-} entconst_kind;
-
-/**
  * @ingroup TypeConst
  * This enum names the different kinds of symbolic Constants represented by
  * TypeConst.

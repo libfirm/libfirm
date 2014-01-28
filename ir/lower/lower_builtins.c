@@ -90,7 +90,7 @@ static void replace_with_call(ir_node *node)
 		pmap_insert(entities, id, entity);
 	}
 
-	ir_node *const callee = new_r_EntConst(irg, mode_P, entity, entconst_addr);
+	ir_node *const callee = new_r_Address(irg, mode_P, entity);
 	call      = new_rd_Call(dbgi, block, mem, callee, n_params, params, mtp);
 	call_mem  = new_r_Proj(call, mode_M, pn_Call_M);
 	call_ress = new_r_Proj(call, mode_T, pn_Call_T_result);

@@ -26,8 +26,10 @@ static void visit_node(ir_node *node, void *env)
 	ir_entity *entity;
 	(void) env;
 
-	if (is_EntConst(node)) {
-		entity = get_EntConst_entity(node);
+	if (is_Address(node)) {
+		entity = get_Address_entity(node);
+	} else if (is_Offset(node)) {
+		entity = get_Offset_entity(node);
 	} else if (is_Sel(node)) {
 		entity = get_Sel_entity(node);
 	} else {

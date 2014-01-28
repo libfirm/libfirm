@@ -333,18 +333,6 @@ FIRM_API int is_Const_all_one(const ir_node *node);
 /** @} */
 
 /**
- * @addtogroup EntConst
- * @{
- */
-
-/**
- * Returns true if node is a EntConst node with kind entconst_addr.
- */
-FIRM_API int is_EntConst_addr(const ir_node *node);
-
-/** @} */
-
-/**
  * @addtogroup Call
  * @{
  */
@@ -514,7 +502,7 @@ FIRM_API void copy_node_attr(ir_graph *irg, const ir_node *old_node, ir_node *ne
  *  or NULL.*/
 FIRM_API ir_type *get_irn_type_attr(ir_node *n);
 
-/** Returns the entity attribute of a node n (EntConst, Sel) or NULL. */
+/** Returns the entity attribute of a node n (Address, Offset, Sel) or NULL. */
 FIRM_API ir_entity *get_irn_entity_attr(ir_node *n);
 
 /** Returns non-zero for constant-like nodes. */

@@ -518,6 +518,17 @@ static int mode_is_datab(const ir_mode *mode)
 	return mode_is_data(mode) || mode == mode_b;
 }
 
+static int verify_node_Address(const ir_node *n)
+{
+	bool       fine = check_mode_func(n, mode_is_reference, "reference");
+	ir_entity *ent  = get_Address_entity(n);
+	if (!(get_entity_owner(ent)->flags & tf_segment) && !is_method_entity(ent)) {
+		warn(n, "entity of %+F is not in a segment type but %+F", ent, get_entity_owner(ent));
+		fine = false;
+	}
+	return fine;
+}
+
 static int verify_node_Const(const ir_node *n)
 {
 	bool     fine    = check_mode_func(n, mode_is_datab, "data or b");
@@ -531,25 +542,9 @@ static int verify_node_Const(const ir_node *n)
 	return fine;
 }
 
-static int verify_node_EntConst(const ir_node *n)
+static int verify_node_Offset(const ir_node *n)
 {
-	switch (get_EntConst_kind(n)) {
-	case entconst_ofs:
-		return check_mode_func(n, mode_is_int, "int");
-	case entconst_addr: {
-		bool       fine = check_mode_func(n, mode_is_reference, "reference");
-		ir_entity *ent  = get_EntConst_entity(n);
-		if (!(get_entity_owner(ent)->flags & tf_segment)
-		    && !is_method_entity(ent)) {
-			warn(n, "entconst_addr entity %+F is not in a segment type but %+F",
-			     ent, get_entity_owner(ent));
-			fine = false;
-		}
-		return fine;
-	}
-	}
-	warn(n, "invalid EntConst kind");
-	return false;
+	return check_mode_func(n, mode_is_int, "int");
 }
 
 static int verify_node_TypeConst(const ir_node *n)
@@ -1263,6 +1258,7 @@ static void register_verify_node_func_proj(ir_op *op, verify_node_func func)
 void ir_register_verify_node_ops(void)
 {
 	register_verify_node_func(op_Add,      verify_node_Add);
+	register_verify_node_func(op_Address,  verify_node_Address);
 	register_verify_node_func(op_Alloc,    verify_node_Alloc);
 	register_verify_node_func(op_And,      verify_node_And);
 	register_verify_node_func(op_Block,    verify_node_Block);
@@ -1275,7 +1271,6 @@ void ir_register_verify_node_ops(void)
 	register_verify_node_func(op_CopyB,    verify_node_CopyB);
 	register_verify_node_func(op_Deleted,  verify_node_Deleted);
 	register_verify_node_func(op_Div,      verify_node_Div);
-	register_verify_node_func(op_EntConst, verify_node_EntConst);
 	register_verify_node_func(op_Eor,      verify_node_Eor);
 	register_verify_node_func(op_Free,     verify_node_Free);
 	register_verify_node_func(op_IJmp,     verify_node_IJmp);
@@ -1287,6 +1282,7 @@ void ir_register_verify_node_ops(void)
 	register_verify_node_func(op_Mulh,     verify_node_Mulh);
 	register_verify_node_func(op_Mux,      verify_node_Mux);
 	register_verify_node_func(op_Not,      verify_node_Not);
+	register_verify_node_func(op_Offset,   verify_node_Offset);
 	register_verify_node_func(op_Or,       verify_node_Or);
 	register_verify_node_func(op_Phi,      verify_node_Phi);
 	register_verify_node_func(op_Proj,     verify_node_Proj);

@@ -261,10 +261,12 @@ ir_node *duplicate_subgraph(dbg_info *dbg, ir_node *n, ir_node *block)
 	ir_graph *irg  = get_irn_irg(block);
 	ir_mode  *mode = get_irn_mode(n);
 	switch (get_irn_opcode(n)) {
+	case iro_Address:
+		return new_rd_Address(dbg, irg, mode, get_Address_entity(n));
 	case iro_Const:
 		return new_rd_Const(dbg, irg, get_Const_tarval(n));
-	case iro_EntConst:
-		return new_rd_EntConst(dbg, irg, mode, get_EntConst_entity(n), get_EntConst_kind(n));
+	case iro_Offset:
+		return new_rd_Offset(dbg, irg, mode, get_Offset_entity(n));
 	case iro_TypeConst:
 		return new_rd_TypeConst(dbg, irg, mode, get_TypeConst_type(n), get_TypeConst_kind(n));
 	case iro_Add:

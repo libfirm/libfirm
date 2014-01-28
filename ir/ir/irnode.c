@@ -686,9 +686,9 @@ const char *get_builtin_kind_name(ir_builtin_kind kind)
 ir_entity *get_Call_callee(const ir_node *node)
 {
 	ir_node *ptr = get_Call_ptr(node);
-	if (!is_EntConst_addr(ptr))
+	if (!is_Address(ptr))
 		return NULL;
-	ir_entity *entity = get_EntConst_entity(ptr);
+	ir_entity *entity = get_Address_entity(ptr);
 	/* some (corner case/pointless) graphs can have non-method entities as
 	 * call pointers */
 	if (!is_method_entity(entity) && !is_alias_entity(entity))
@@ -928,11 +928,6 @@ ir_node *skip_Id(ir_node *node)
 	}
 }
 
-int (is_EntConst_addr)(const ir_node *node)
-{
-	return is_EntConst_addr_(node);
-}
-
 int is_cfop(const ir_node *node)
 {
 	if (is_fragile_op(node) && ir_throws_exception(node))
@@ -1020,9 +1015,10 @@ void ir_register_getter_ops(void)
 	register_get_type_func(op_CopyB,     get_CopyB_type);
 	register_get_type_func(op_TypeConst, get_TypeConst_type);
 
-	register_get_entity_func(op_EntConst, get_EntConst_entity);
-	register_get_entity_func(op_Sel,      get_Sel_entity);
-	register_get_entity_func(op_Block,    get_Block_entity);
+	register_get_entity_func(op_Address, get_Address_entity);
+	register_get_entity_func(op_Offset,  get_Offset_entity);
+	register_get_entity_func(op_Sel,     get_Sel_entity);
+	register_get_entity_func(op_Block,   get_Block_entity);
 }
 
 void (set_irn_dbg_info)(ir_node *n, dbg_info *db)

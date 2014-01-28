@@ -225,13 +225,12 @@ typedef struct const_attr {
 	ir_tarval *tarval;  /**< the target value */
 } const_attr;
 
-/** EntConst attributes. */
+/** Address and Offset attributes. */
 typedef struct entconst_attr {
-	ir_entity     *entity;
-	entconst_kind  kind;
+	ir_entity *entity;
 } entconst_attr;
 
-/** EntConst attributes. */
+/** TypeConst attributes. */
 typedef struct typeconst_attr {
 	ir_type        *type;
 	typeconst_kind  kind;
@@ -357,7 +356,7 @@ typedef union ir_attr {
 	cmp_attr       cmp;           /**< For Cmp. */
 	cond_attr      cond;          /**< For Cond. */
 	const_attr     con;           /**< For Const: contains the value of the constant and a type */
-	entconst_attr  entc;          /**< For EntConst */
+	entconst_attr  entc;          /**< For Address/Offset */
 	typeconst_attr typec;         /**< For TypeConst */
 	sel_attr       sel;           /**< For Sel. */
 	call_attr      call;          /**< For Call. */

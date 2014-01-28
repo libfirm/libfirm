@@ -421,7 +421,7 @@ static ir_node *new_cl_Call(ir_node *call, ir_entity *new_entity, size_t pos)
 	ir_graph *irg = get_irn_irg(call);
 	ir_node *bl = get_nodes_block(call);
 
-	ir_node *const callee = new_r_EntConst(irg, mode_P_code, new_entity, entconst_addr);
+	ir_node *const callee = new_r_Address(irg, mode_P_code, new_entity);
 
 	n_params = get_Call_n_params(call);
 	ir_node **in = ALLOCAN(ir_node*, n_params-1);
@@ -494,7 +494,7 @@ restart:
 		/* might be exchanged, so skip Id nodes here. */
 		call = skip_Id(call);
 
-		/* we know, that an EntConst is here */
+		/* we know, that an Address is here */
 		ir_entity *const callee = get_Call_callee(call);
 		if (callee != entry->q.ent) {
 			/*

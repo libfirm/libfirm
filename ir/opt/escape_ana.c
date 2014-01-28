@@ -298,14 +298,13 @@ static void find_allocation_calls(ir_node *call, void *ctx)
 	walk_env_t *env = (walk_env_t*)ctx;
 	int        i;
 	ir_node    *adr;
-	ir_entity  *ent;
 
 	if (! is_Call(call))
 		return;
 	adr = get_Call_ptr(call);
-	if (!is_EntConst_addr(adr))
+	if (!is_Address(adr))
 		return;
-	ent = get_EntConst_entity(adr);
+	ir_entity *const ent = get_Address_entity(adr);
 	if (! env->callback(ent))
 		return;
 

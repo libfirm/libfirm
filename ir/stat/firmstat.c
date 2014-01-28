@@ -697,7 +697,6 @@ static void stat_update_call(ir_node *call, graph_entry_t *graph)
 {
 	ir_node   *block = get_nodes_block(call);
 	ir_node   *ptr = get_Call_ptr(call);
-	ir_entity *ent = NULL;
 	ir_graph  *callee = NULL;
 
 	/*
@@ -713,18 +712,16 @@ static void stat_update_call(ir_node *call, graph_entry_t *graph)
 	/* found a call, this function is not a leaf */
 	graph->is_leaf = 0;
 
-	if (is_EntConst(ptr)) {
-		if (get_EntConst_kind(ptr) == entconst_addr) {
-			/* ok, we seems to know the entity */
-			ent = get_EntConst_entity(ptr);
-			callee = get_entity_irg(ent);
+	if (is_Address(ptr)) {
+		/* ok, we seems to know the entity */
+		ir_entity *const ent = get_Address_entity(ptr);
+		callee = get_entity_irg(ent);
 
-			/* it is recursive, if it calls at least once */
-			if (callee == graph->irg)
-				graph->is_recursive = 1;
-			if (callee == NULL)
-				cnt_inc(&graph->cnt[gcnt_external_calls]);
-		}
+		/* it is recursive, if it calls at least once */
+		if (callee == graph->irg)
+			graph->is_recursive = 1;
+		if (callee == NULL)
+			cnt_inc(&graph->cnt[gcnt_external_calls]);
 	} else {
 		/* indirect call, be could not predict */
 		cnt_inc(&graph->cnt[gcnt_indirect_calls]);
@@ -770,7 +767,6 @@ static void stat_update_call_2(ir_node *call, graph_entry_t *graph)
 {
 	ir_node   *block = get_nodes_block(call);
 	ir_node   *ptr = get_Call_ptr(call);
-	ir_entity *ent = NULL;
 	ir_graph  *callee = NULL;
 
 	/*
@@ -781,12 +777,10 @@ static void stat_update_call_2(ir_node *call, graph_entry_t *graph)
 	if (is_Bad(block))
 		return;
 
-	if (is_EntConst(ptr)) {
-		if (get_EntConst_kind(ptr) == entconst_addr) {
-			/* ok, we seems to know the entity */
-			ent = get_EntConst_entity(ptr);
-			callee = get_entity_irg(ent);
-		}
+	if (is_Address(ptr)) {
+		/* ok, we seems to know the entity */
+		ir_entity *const ent = get_Address_entity(ptr);
+		callee = get_entity_irg(ent);
 	}
 
 	/* check, if the callee is a leaf */
@@ -829,7 +823,7 @@ static void stat_update_address(ir_node *node, graph_entry_t *graph)
 	ir_graph *irg;
 
 	switch (opc) {
-	case iro_EntConst:
+	case iro_Address:
 		/* a global address */
 		cnt_inc(&graph->cnt[gcnt_global_adr]);
 		break;
@@ -1598,8 +1592,9 @@ static void stat_irg_block_walk(void *ctx, ir_graph *irg, ir_node *node, generic
 static bool is_const(ir_node *const node)
 {
 	switch (get_irn_opcode(node)) {
+	case iro_Address:
 	case iro_Const:
-	case iro_EntConst:
+	case iro_Offset:
 	case iro_TypeConst:
 		return true;
 	default:

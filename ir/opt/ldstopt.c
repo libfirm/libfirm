@@ -228,8 +228,8 @@ static void collect_nodes(ir_node *node, void *env)
 static ir_entity *find_constant_entity(ir_node *ptr)
 {
 	for (;;) {
-		if (is_EntConst(ptr) && get_EntConst_kind(ptr) == entconst_addr) {
-			return get_EntConst_entity(ptr);
+		if (is_Address(ptr)) {
+			return get_Address_entity(ptr);
 		} else if (is_Sel(ptr)) {
 			ir_entity *ent = get_Sel_entity(ptr);
 			ir_type   *tp  = get_entity_owner(ent);
@@ -283,7 +283,7 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 				return NULL;
 
 			/* for now, we support only one addition, reassoc should fold all others */
-			if (!is_EntConst(ptr) && !is_Sel(ptr) && !is_TypeConst(ptr))
+			if (!is_Address(ptr) && !is_Offset(ptr) && !is_Sel(ptr) && !is_TypeConst(ptr))
 				return NULL;
 		} else if (is_Sub(ptr)) {
 			ir_node *l = get_Sub_left(ptr);
@@ -294,7 +294,7 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 			else
 				return NULL;
 			/* for now, we support only one substraction, reassoc should fold all others */
-			if (!is_EntConst(ptr) && !is_Sel(ptr) && !is_TypeConst(ptr))
+			if (!is_Address(ptr) && !is_Offset(ptr) && !is_Sel(ptr) && !is_TypeConst(ptr))
 				return NULL;
 		} else
 			return NULL;
@@ -1056,8 +1056,11 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr, bool h
 static ir_entity *find_entity(ir_node *ptr)
 {
 	switch (get_irn_opcode(ptr)) {
-	case iro_EntConst:
-		return get_EntConst_entity(ptr);
+	case iro_Address:
+		return get_Address_entity(ptr);
+
+	case iro_Offset:
+		return get_Offset_entity(ptr);
 
 	case iro_Sel: {
 		ir_node *pred = get_Sel_ptr(ptr);
@@ -1787,7 +1790,7 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 				continue;
 
 			/* for now, we can only move Load(Global) */
-			if (!is_EntConst_addr(ptr))
+			if (!is_Address(ptr))
 				continue;
 			ir_mode *load_mode = get_Load_mode(load);
 			ir_node *other;

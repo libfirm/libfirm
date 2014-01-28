@@ -1950,26 +1950,23 @@ static void compute_Call(node_t *node)
 }
 
 /**
- * (Re-)compute the type for an EntConst node.
+ * (Re-)compute the type for an Address node.
  *
  * @param node  the node
  */
-static void compute_EntConst(node_t *node)
+static void compute_Address(node_t *node)
 {
-	ir_node *irn   = node->node;
-	node_t  *block = get_irn_node(get_nodes_block(irn));
+	node->type.ent = get_Address_entity(node->node);
+}
 
-	if (block->type.tv == tarval_unreachable) {
-		node->type.tv = tarval_top;
-		return;
-	}
-	switch (get_EntConst_kind(irn)) {
-	case entconst_addr:
-		node->type.ent = get_EntConst_entity(irn);
-		break;
-	default:
-		node->type.tv = computed_value(irn);
-	}
+/**
+ * (Re-)compute the type for an Offset node.
+ *
+ * @param node  the node
+ */
+static void compute_Offset(node_t *node)
+{
+	node->type.tv = computed_value(node->node);
 }
 
 /**
@@ -3282,9 +3279,9 @@ static void apply_result(ir_node *irn, void *ctx)
 				env->modified = 1;
 			}
 		} else if (is_entity(node->type.ent)) {
-			if (!is_EntConst(irn)) {
-				/* can be replaced by a EntConst */
-				ir_node *entc = new_r_EntConst(current_ir_graph, get_irn_mode(irn), node->type.ent, entconst_addr);
+			if (!is_Address(irn)) {
+				/* can be replaced by an Address */
+				ir_node *entc = new_r_Address(current_ir_graph, get_irn_mode(irn), node->type.ent);
 				set_irn_node(entc, node);
 				node->node = entc;
 
@@ -3381,6 +3378,7 @@ static void set_compute_functions(void)
 	}
 
 	/* set specific functions */
+	SET(Address);
 	SET(Block);
 	SET(Unknown);
 	SET(Bad);
@@ -3389,7 +3387,7 @@ static void set_compute_functions(void)
 	SET(Add);
 	SET(Sub);
 	SET(Eor);
-	SET(EntConst);
+	SET(Offset);
 	SET(TypeConst);
 	SET(Cmp);
 	SET(Proj);

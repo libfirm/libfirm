@@ -642,19 +642,13 @@ static void emit_init_expression(be_gas_decl_env_t *env, ir_node *init)
 		return;
 	}
 
-	case iro_EntConst: {
-		ir_entity *const ent = get_EntConst_entity(init);
-		switch (get_EntConst_kind(init)) {
-		case entconst_addr:
-			be_gas_emit_entity(ent);
-			return;
+	case iro_Address:
+		be_gas_emit_entity(get_Address_entity(init));
+		return;
 
-		case entconst_ofs:
-			be_emit_irprintf("%d", get_entity_offset(ent));
-			return;
-		}
-		panic("invalid EntConst kind");
-	}
+	case iro_Offset:
+		be_emit_irprintf("%d", get_entity_offset(get_Offset_entity(init)));
+		return;
 
 	case iro_TypeConst: {
 		ir_type *const type = get_TypeConst_type(init);

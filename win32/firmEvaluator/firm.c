@@ -482,18 +482,13 @@ static HRESULT format_node(DEBUGHELPER *pHelper, int nBase, const void *addr, ch
     }
     break;
 
-  case iro_EntConst:
-    _tcsncat(pResult, "<", max);
-    switch (n.attr.entc.kind) {
-    case entconst_addr:
-      _tcsncat(pResult, "ENT:", max);
-      if (format_entity(pHelper, nBase, n.attr.entc.entity, name, sizeof(name), 0) != S_OK)
-        return E_FAIL;
-      _tcsncat(pResult, name, max);
-      break;
-    }
-    _tcsncat(pResult, ">", max);
-    break;
+	case iro_Address:
+		_tcsncat(pResult, "<ENT:", max);
+		if (format_entity(pHelper, nBase, n.attr.entc.entity, name, sizeof(name), 0) != S_OK)
+			return E_FAIL;
+		_tcsncat(pResult, name, max);
+		_tcsncat(pResult, ">", max);
+		break;
 
   case iro_TypeConst:
     _tcsncat(pResult, "<", max);

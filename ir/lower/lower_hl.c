@@ -191,24 +191,14 @@ static void replace_by_Const(ir_node *const node, long const value)
 }
 
 /**
- * Lower a EntConst node.
+ * Lower an Offset node.
  */
-static void lower_entconst(ir_node *const entc)
+static void lower_offset(ir_node *const entc)
 {
-	switch (get_EntConst_kind(entc)) {
-	case entconst_addr:
-		/* leave */
-		return;
-
-	case entconst_ofs: {
-		/* rewrite the EntConst node by a Const node */
-		ir_entity *const ent = get_EntConst_entity(entc);
-		assert(get_type_state(get_entity_type(ent)) == layout_fixed);
-		replace_by_Const(entc, get_entity_offset(ent));
-		return;
-	}
-	}
-	panic("invalid EntConst kind");
+	/* rewrite the Offset node by a Const node */
+	ir_entity *const ent = get_Offset_entity(entc);
+	assert(get_type_state(get_entity_type(ent)) == layout_fixed);
+	replace_by_Const(entc, get_entity_offset(ent));
 }
 
 /**
@@ -241,7 +231,7 @@ static void lower_irnode(ir_node *irn, void *env)
 	(void) env;
 	switch (get_irn_opcode(irn)) {
 	case iro_Sel:       lower_sel(irn);       break;
-	case iro_EntConst:  lower_entconst(irn);  break;
+	case iro_Offset:    lower_offset(irn);    break;
 	case iro_TypeConst: lower_typeconst(irn); break;
 	default:            break;
 	}
@@ -249,7 +239,7 @@ static void lower_irnode(ir_node *irn, void *env)
 
 void lower_highlevel_graph(ir_graph *irg)
 {
-	/* Finally: lower EntConst/TypeConst-Size and Sel nodes, unaligned Load/Stores. */
+	/* Finally: lower Offset/TypeConst-size and Sel nodes, unaligned Load/Stores. */
 	irg_walk_graph(irg, NULL, lower_irnode, NULL);
 
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW);
