@@ -29,9 +29,6 @@
 #include "type_t.h"
 #include "tv_t.h"
 
-/** The debug handle */
-DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
-
 typedef void (*lower_softfloat_func)(ir_node *node);
 
 static ir_type *binop_tp_d;
@@ -744,8 +741,6 @@ static void make_unop_type(ir_type **const memoized, ir_type *const op, ir_type 
  */
 static void ir_prepare_softfloat_lowering(void)
 {
-	FIRM_DBG_REGISTER(dbg, "firm.lower.softfloat");
-
 	if (!lowered_type)
 		lowered_type = pmap_create();
 
@@ -793,8 +788,6 @@ static int lower_mux_cb(ir_node *mux)
 
 void lower_floating_point(void)
 {
-	FIRM_DBG_REGISTER(dbg, "firm.lower.softfloat");
-
 	ir_prepare_softfloat_lowering();
 
 	ir_clear_opcodes_generic_func();
