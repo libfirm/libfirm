@@ -414,7 +414,7 @@ static void write_mode_ref(write_env_t *env, ir_mode *mode)
 	write_string(env, get_mode_name(mode));
 }
 
-static void write_tarval(write_env_t *env, ir_tarval *tv)
+static void write_tarval_ref(write_env_t *env, ir_tarval *tv)
 {
 	ir_mode *mode = get_tarval_mode(tv);
 	write_mode_ref(env, mode);
@@ -430,15 +430,15 @@ static void write_align(write_env_t *env, ir_align align)
 	fputc(' ', env->file);
 }
 
-static void write_builtin_kind(write_env_t *env, const ir_node *node)
+static void write_builtin_kind(write_env_t *env, ir_builtin_kind kind)
 {
-	fputs(get_builtin_kind_name(get_Builtin_kind(node)), env->file);
+	fputs(get_builtin_kind_name(kind), env->file);
 	fputc(' ', env->file);
 }
 
-static void write_cond_jmp_predicate(write_env_t *env, const ir_node *node)
+static void write_cond_jmp_predicate(write_env_t *env, cond_jmp_predicate pred)
 {
-	fputs(get_cond_jmp_predicate_name(get_Cond_jmp_pred(node)), env->file);
+	fputs(get_cond_jmp_predicate_name(pred), env->file);
 	fputc(' ', env->file);
 }
 
@@ -491,7 +491,7 @@ static void write_initializer(write_env_t *env, ir_initializer_t *ini)
 		return;
 
 	case IR_INITIALIZER_TARVAL:
-		write_tarval(env, get_initializer_tarval_value(ini));
+		write_tarval_ref(env, get_initializer_tarval_value(ini));
 		return;
 
 	case IR_INITIALIZER_NULL:
@@ -803,7 +803,8 @@ static void write_entity(write_env_t *env, ir_entity *ent)
 	fputc('\n', env->file);
 }
 
-static void write_switch_table(write_env_t *env, const ir_switch_table *table)
+static void write_switch_table_ref(write_env_t *env,
+                                   const ir_switch_table *table)
 {
 	size_t n_entries = ir_switch_table_get_n_entries(table);
 	size_t i;
@@ -814,8 +815,8 @@ static void write_switch_table(write_env_t *env, const ir_switch_table *table)
 		ir_tarval *min = ir_switch_table_get_min(table, i);
 		ir_tarval *max = ir_switch_table_get_max(table, i);
 		write_long(env, pn);
-		write_tarval(env, min);
-		write_tarval(env, max);
+		write_tarval_ref(env, min);
+		write_tarval_ref(env, max);
 	}
 }
 
@@ -1606,7 +1607,7 @@ static ir_relation read_relation(read_env_t *env)
 	return (ir_relation)read_long(env);
 }
 
-static ir_tarval *read_tarval(read_env_t *env)
+static ir_tarval *read_tarval_ref(read_env_t *env)
 {
 	ir_mode   *tvmode = read_mode_ref(env);
 	char      *str    = read_word(env);
@@ -1616,7 +1617,7 @@ static ir_tarval *read_tarval(read_env_t *env)
 	return tv;
 }
 
-static ir_switch_table *read_switch_table(read_env_t *env)
+static ir_switch_table *read_switch_table_ref(read_env_t *env)
 {
 	size_t           n_entries = read_size_t(env);
 	ir_switch_table *table     = ir_new_switch_table(env->irg, n_entries);
@@ -1624,8 +1625,8 @@ static ir_switch_table *read_switch_table(read_env_t *env)
 
 	for (i = 0; i < n_entries; ++i) {
 		long       pn  = read_long(env);
-		ir_tarval *min = read_tarval(env);
-		ir_tarval *max = read_tarval(env);
+		ir_tarval *min = read_tarval_ref(env);
+		ir_tarval *max = read_tarval_ref(env);
 		ir_switch_table_set(table, i, min, max, pn);
 	}
 	return table;
@@ -1650,7 +1651,7 @@ static ir_initializer_t *read_initializer(read_env_t *env)
 	}
 
 	case IR_INITIALIZER_TARVAL:
-		return create_initializer_tarval(read_tarval(env));
+		return create_initializer_tarval(read_tarval_ref(env));
 
 	case IR_INITIALIZER_NULL:
 		return get_initializer_null();

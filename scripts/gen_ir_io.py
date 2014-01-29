@@ -26,77 +26,23 @@ def format_block(node):
 	else:
 		return "block"
 
+def format_simplify_type(string):
+	"""Returns a simplified version of a C type for use in a function name.
+	Stars are replaced with _ref, spaces removed and the ir_ firm namespace
+	prefix stripped."""
+	res = string.replace("*", "_ref").replace(" ", "")
+	if res.startswith("ir_"):
+		res = res[3:]
+	return res
+
 env = Environment(loader=FileSystemLoader([".", "/"]), keep_trailing_newline=True)
-env.filters['args']      = format_args
-env.filters['block']     = format_block
-env.filters['arguments'] = format_arguments
-env.filters['isnot']     = filter_isnot
-env.filters['notset']    = filter_notset
-env.filters['hasnot']    = filter_hasnot
-
-def get_io_type(type, attrname, node):
-	if type == "ir_tarval*":
-		importcmd = "read_tarval(env)"
-		exportcmd = "write_tarval(env, %(val)s);"
-	elif type == "ir_mode*":
-		importcmd = "read_mode_ref(env)"
-		exportcmd = "write_mode_ref(env, %(val)s);"
-	elif type == "ir_entity*":
-		importcmd = "read_entity_ref(env)"
-		exportcmd = "write_entity_ref(env, %(val)s);"
-	elif type == "ir_type*":
-		importcmd = "read_type_ref(env)"
-		exportcmd = "write_type_ref(env, %(val)s);"
-	elif type == "long":
-		importcmd = "read_long(env)"
-		exportcmd = "write_long(env, %(val)s);"
-	elif type == "ir_relation":
-		importcmd = "read_relation(env)"
-		exportcmd = "write_relation(env, %(val)s);"
-	elif type == "ir_align":
-		importcmd = "read_align(env)"
-		exportcmd = "write_align(env, %(val)s);"
-	elif type == "ir_volatility":
-		importcmd = "read_volatility(env)"
-		exportcmd = "write_volatility(env, %(val)s);"
-	elif type == "ir_cons_flags":
-		importcmd = "cons_none"
-		exportcmd = "" # can't really export cons_flags
-	elif type == "op_pin_state":
-		importcmd = "read_pin_state(env)"
-		exportcmd = "write_pin_state(env, node);"
-	elif type == "ir_builtin_kind":
-		importcmd = "read_builtin_kind(env)"
-		exportcmd = "write_builtin_kind(env, node);"
-	elif type == "cond_kind":
-		importcmd = "read_cond_kind(env)"
-		exportcmd = "write_cond_kind(env, node);"
-	elif type == "cond_jmp_predicate":
-		importcmd = "read_cond_jmp_predicate(env)"
-		exportcmd = "write_cond_jmp_predicate(env, node);"
-	elif type == "int":
-		importcmd = "read_int(env)"
-		exportcmd = "write_int(env, %(val)s);"
-	elif type == "unsigned":
-		importcmd = "read_unsigned(env)"
-		exportcmd = "write_unsigned(env, %(val)s);"
-	elif type == "long":
-		importcmd = "read_long(env)"
-		exportcmd = "write_long(env, %(val)s);"
-	elif type == "ir_switch_table*":
-		importcmd = "read_switch_table(env)"
-		exportcmd = "write_switch_table(env, %(val)s);"
-	else:
-		warning("cannot generate import/export for node %s: unsupported attribute type: %s" % (node.name, type))
-		importcmd = "/* BAD: %s %s */ (%s)0" % (type, attrname, type)
-		exportcmd = "// BAD: %s" % type
-	return (importcmd, exportcmd)
-
-def prepare_attr(node, attr):
-	(importcmd,exportcmd) = get_io_type(attr["type"], attr["name"], node)
-	attr["importcmd"] = importcmd
-	attr["exportcmd"] = exportcmd % {"val": "get_%s_%s(node)" % (node.name, attr["name"])}
-
+env.filters['args']          = format_args
+env.filters['block']         = format_block
+env.filters['arguments']     = format_arguments
+env.filters['simplify_type'] = format_simplify_type
+env.filters['isnot']         = filter_isnot
+env.filters['notset']        = filter_notset
+env.filters['hasnot']        = filter_hasnot
 
 def preprocess_node(node):
 	if node.customSerializer:
@@ -116,7 +62,6 @@ def preprocess_node(node):
 		arguments.append("mode")
 
 	for attr in node.attrs:
-		prepare_attr(node, attr)
 		if "to_flags" in attr:
 			node.constructorFlags = True
 			attr['to_flags'] = attr['to_flags'] % (attr["name"])

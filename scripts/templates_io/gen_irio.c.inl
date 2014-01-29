@@ -12,7 +12,7 @@ static ir_node *read_{{node.name}}(read_env_t *env)
 	ir_mode *mode = read_mode_ref(env);
 	{%- endif %}
 	{%- for attr in node.attrs %}
-	{{attr.type}} {{attr.name}} = {{attr.importcmd}};
+	{{attr.type}} {{attr.name}} = read_{{attr.type|simplify_type}}(env);
 	{%- endfor %}
 	{%- if node.dynamic_pinned %}
 	op_pin_state pin_state = read_pin_state(env);
@@ -83,7 +83,7 @@ static void write_{{node.name}}(write_env_t *env, const ir_node *node)
 	write_mode_ref(env, get_irn_mode(node));
 	{%- endif %}
 	{%- for attr in node.attrs %}
-	{{attr.exportcmd}}
+	write_{{attr.type|simplify_type}}(env, get_{{node.name}}_{{attr.name}}(node));
 	{%- endfor %}
 	{%- if node.dynamic_pinned %}
 	write_pin_state(env, get_irn_pinned(node));
