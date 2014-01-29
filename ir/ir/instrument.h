@@ -10,6 +10,8 @@
 #ifndef FIRM_IR_INSTRUMENT_H
 #define FIRM_IR_INSTRUMENT_H
 
+#include "firm_types.h"
+
 /**
  * Adds a Call at the beginning of the given irg.
  *
