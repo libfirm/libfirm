@@ -130,16 +130,9 @@ $(gendir)/include/libfirm/% : scripts/templates/% $(IR_SPEC_GENERATOR_DEPS) $(IR
 	@echo GEN $@
 	$(Q)$(IR_SPEC_GENERATOR) $(IR_SPEC) "$<" > "$@"
 
-IR_IO_GENERATOR := $(srcdir)/scripts/gen_ir_io.py
-IR_IO_GENERATOR_DEPS := $(IR_IO_GENERATOR) $(srcdir)/scripts/spec_util.py $(srcdir)/scripts/filters.py
 libfirm_GEN_DIRS += ir/ir include/libfirm
 
 ir/ir/irio.c : $(gendir)/ir/ir/gen_irio.c.inl
-
-
-$(gendir)/ir/ir/% : scripts/templates_io/% $(IR_IO_GENERATOR_DEPS) $(IR_SPEC)
-	@echo GEN $@
-	$(Q)$(IR_IO_GENERATOR) $(IR_SPEC) "$<" > "$@"
 
 $(libfirm_a): $(libfirm_OBJECTS)
 	@echo AR $@

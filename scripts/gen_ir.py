@@ -5,7 +5,7 @@
 import sys
 from jinja2 import Environment, Template, FileSystemLoader
 from spec_util import is_dynamic_pinned, isAbstract, setdefault, load_spec
-from filters import format_arguments, filter_isnot, filter_hasnot, filter_notset
+from filters import format_arguments, filter_isnot, filter_has, filter_hasnot, filter_notset
 
 def format_parameterlist(parameterlist):
 	return "\n".join(parameterlist)
@@ -133,6 +133,9 @@ def format_flags(node):
 		flags = [ "irop_flag_none" ]
 	return " | ".join(flags)
 
+def format_stringformat(string, *args):
+	return string % args
+
 def format_attr_size(node):
 	if not hasattr(node, "attr_struct"):
 		return "0"
@@ -152,29 +155,56 @@ def format_escape_keywords(word):
 def format_parameters(string):
 	return format_arguments(string, voidwhenempty = True)
 
+def format_args(arglist):
+	argument_names = [ a['name'] for a in arglist ]
+	return "\n".join(argument_names)
+
+def format_block(node):
+	if hasattr(node, "knownBlock"):
+		if hasattr(node, "knownGraph"):
+			return ""
+		return "env->irg"
+	else:
+		return "block"
+
+def format_simplify_type(string):
+	"""Returns a simplified version of a C type for use in a function name.
+	Stars are replaced with _ref, spaces removed and the ir_ firm namespace
+	prefix stripped."""
+	res = string.replace("*", "_ref").replace(" ", "")
+	if res.startswith("ir_"):
+		res = res[3:]
+	return res
+
 env = Environment(loader=FileSystemLoader([".", "/"]), keep_trailing_newline=True)
-env.filters['a_an']            = format_a_an
-env.filters['parameterlist']   = format_parameterlist
-env.filters['nodearguments']   = format_nodearguments
-env.filters['nodeparameters']  = format_nodeparameters
-env.filters['nodeparametershelp'] = format_nodeparametershelp
-env.filters['blockparameter']  = format_blockparameter
+env.filters['a_an']               = format_a_an
+env.filters['args']               = format_args
+env.filters['arguments']          = format_arguments
+env.filters['arity_and_ins']      = format_arity_and_ins
+env.filters['arity']              = format_arity
+env.filters['attr_size']          = format_attr_size
+env.filters['blockargument']      = format_blockargument
+env.filters['block']              = format_block
+env.filters['blockparameter']     = format_blockparameter
 env.filters['blockparameterhelp'] = format_blockparameterhelp
-env.filters['blockargument']   = format_blockargument
-env.filters['irgassign']       = format_irgassign
-env.filters['curblock']        = format_curblock
-env.filters['insdecl']         = format_insdecl
-env.filters['arity_and_ins']   = format_arity_and_ins
-env.filters['arity']           = format_arity
-env.filters['pinned']          = format_pinned
-env.filters['flags']           = format_flags
-env.filters['attr_size']       = format_attr_size
-env.filters['opindex']         = format_opindex
-env.filters['isnot']           = filter_isnot
-env.filters['hasnot']          = filter_hasnot
-env.filters['arguments']       = format_arguments
-env.filters['parameters']      = format_parameters
-env.filters['escape_keywords'] = format_escape_keywords
+env.filters['curblock']           = format_curblock
+env.filters['escape_keywords']    = format_escape_keywords
+env.filters['flags']              = format_flags
+env.filters['has']                = filter_has
+env.filters['hasnot']             = filter_hasnot
+env.filters['insdecl']            = format_insdecl
+env.filters['irgassign']          = format_irgassign
+env.filters['isnot']              = filter_isnot
+env.filters['nodearguments']      = format_nodearguments
+env.filters['nodeparameters']     = format_nodeparameters
+env.filters['nodeparametershelp'] = format_nodeparametershelp
+env.filters['notset']             = filter_notset
+env.filters['opindex']            = format_opindex
+env.filters['parameterlist']      = format_parameterlist
+env.filters['parameters']         = format_parameters
+env.filters['pinned']             = format_pinned
+env.filters['simplify_type']      = format_simplify_type
+env.filters['stringformat']       = format_stringformat
 
 def prepare_attr(attr):
 	if "init" in attr:
@@ -217,7 +247,6 @@ def preprocess_node(node):
 				type    = "ir_mode *",
 				name    = "mode",
 				comment = "mode of the operations result"))
-		node.mode = "mode"
 
 	for attr in node.attrs:
 		attr["fqname"] = attr["name"]
@@ -283,6 +312,8 @@ def main(argv):
 	env.globals['nodes']   = real_nodes
 	env.globals['spec']    = spec
 	env.globals['len']     = len
+	env.globals['hasattr'] = hasattr
+	env.globals['is_dynamic_pinned'] = is_dynamic_pinned
 	env.globals['warning'] = "/* Warning: automatically generated file */"
 
 	template = env.get_template(templatefile)

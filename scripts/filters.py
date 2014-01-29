@@ -18,5 +18,8 @@ def filter_isnot(list, flag):
 def filter_hasnot(list, flag):
 	return filter(lambda x: flag not in x, list)
 
+def filter_has(list, flag):
+	return filter(lambda x: flag in x, list)
+
 def filter_notset(list, flag):
 	return filter(lambda x: not getattr(x,flag), list)

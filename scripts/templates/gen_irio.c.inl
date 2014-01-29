@@ -6,7 +6,7 @@ static ir_node *read_{{node.name}}(read_env_t *env)
 	ir_node *block = read_node_ref(env);
 	{%- endif %}
 	{%- for input in node.ins %}
-	ir_node *in_{{input[0]}} = read_node_ref(env);
+	ir_node *irn_{{input[0]}} = read_node_ref(env);
 	{%- endfor %}
 	{%- if not hasattr(node, "mode") %}
 	ir_mode *mode = read_mode_ref(env);
@@ -14,50 +14,45 @@ static ir_node *read_{{node.name}}(read_env_t *env)
 	{%- for attr in node.attrs %}
 	{{attr.type}} {{attr.name}} = read_{{attr.type|simplify_type}}(env);
 	{%- endfor %}
-	{%- if node.dynamic_pinned %}
+	{%- if is_dynamic_pinned(node) %}
 	op_pin_state pin_state = read_pin_state(env);
 	{%- endif %}
 	{%- if "fragile" in node.flags %}
 	bool throws = read_throws(env);
 	{%- endif %}
 	{%- if node.arity == "dynamic" or node.arity == "variable" %}
-	int       n_preds = read_preds(env);
-	ir_node **preds   = (ir_node**)obstack_finish(&env->preds_obst);
+	int arity = read_preds(env);
+	ir_node **in = (ir_node**)obstack_finish(&env->preds_obst);
 	{%- endif %}
-	{%- if node.constructorFlags %}
-	ir_cons_flags flags = cons_none;
-	{%- endif %}
-	ir_node *res;
-	{%- if node.constructorFlags %}
+	{%- if node.attrs|has('to_flags') %}
+	ir_cons_flags flags = cons_none
 		{%- for attr in node.attrs %}
 			{%- if "to_flags" in attr %}
-	flags |= {{attr.to_flags}};
+		| ({{attr.to_flags|stringformat(attr.name)}})
 			{%- endif %}
 		{%- endfor %}
-		{%- if node.dynamic_pinned %}
-	flags |= pin_state == op_pin_state_floats ? cons_floats : cons_none;
+		{%- if is_dynamic_pinned(node) %}
+		| (pin_state == op_pin_state_floats ? cons_floats : cons_none)
 		{%- endif %}
 		{%- if "fragile" in node.flags %}
-	flags |= throws ? cons_throws_exception : cons_none;
-		{%- endif %}
+		| (throws ? cons_throws_exception : cons_none)
+		{%- endif -%}
+		;
 	{%- endif %}
-	res = new_r_{{node.name}}(
+	ir_node *res = new_r_{{node.name}}(
 		{%- filter arguments %}
-{{node|block}}
-{{node.arguments|args}}
-		{%- if node.dynamic_pinned and not hasattr(node, "pinned_init") %}
-pin_state
-		{%- endif %}
-{% endfilter %});
+			{{node|block}}
+			{{node.arguments|args}}
+		{%- endfilter %});
 
 	{%- if node.arity == "dynamic" or node.arity == "variable" %}
-	obstack_free(&env->preds_obst, preds);
+	obstack_free(&env->preds_obst, in);
 	{%- endif %}
-	{%- for attr in node.extraattrs %}
+	{%- for attr in node.attrs|has('init') %}
 	set_{{node.name}}_{{attr.name}}(res, {{attr.name}});
 	{%- endfor %}
 	{%- if not node.constructorFlags %}
-		{%- if node.dynamic_pinned and hasattr(node, "pinned_init") %}
+		{%- if is_dynamic_pinned(node) and hasattr(node, "pinned_init") %}
 	set_irn_pinned(res, pin_state);
 		{%- endif %}
 		{%- if "fragile" in node.flags and hasattr(node, "throws_init") %}
@@ -85,7 +80,7 @@ static void write_{{node.name}}(write_env_t *env, const ir_node *node)
 	{%- for attr in node.attrs %}
 	write_{{attr.type|simplify_type}}(env, get_{{node.name}}_{{attr.name}}(node));
 	{%- endfor %}
-	{%- if node.dynamic_pinned %}
+	{%- if is_dynamic_pinned(node) %}
 	write_pin_state(env, get_irn_pinned(node));
 	{%- endif %}
 	{%- if "fragile" in node.flags %}

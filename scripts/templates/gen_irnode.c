@@ -57,7 +57,11 @@ ir_node *new_rd_{{node.name}}(
 			irg
 			{{node.block}}
 			op_{{node.name}}
-			{{node.mode}}
+			{% if hasattr(node, 'mode') -%}
+				{{node.mode}}
+			{%- else -%}
+				mode
+			{%- endif %}
 			{{node|arity_and_ins}}
 		{% endfilter %});
 	{%- if node.arity == "dynamic" %}
