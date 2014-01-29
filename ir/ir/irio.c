@@ -2123,9 +2123,10 @@ static ir_node *read_Anchor(read_env_t *env)
 typedef ir_node* read_node_func(read_env_t *env);
 static pmap *node_readers;
 
-static void register_node_reader(ident *ident, read_node_func* func)
+static void register_node_reader(char const *const name, read_node_func *const func)
 {
-	pmap_insert(node_readers, ident, (void*)func);
+	ident *const id = new_id_from_str(name);
+	pmap_insert(node_readers, id, (void*)func);
 }
 
 static ir_node *read_node(read_env_t *env)
@@ -2149,11 +2150,11 @@ static void readers_init(void)
 {
 	assert(node_readers == NULL);
 	node_readers = pmap_create();
-	register_node_reader(new_id_from_str("Anchor"), read_Anchor);
-	register_node_reader(new_id_from_str("ASM"),    read_ASM);
-	register_node_reader(new_id_from_str("Block"),  read_Block);
-	register_node_reader(new_id_from_str("BlockL"), read_labeled_Block);
-	register_node_reader(new_id_from_str("Phi"),    read_Phi);
+	register_node_reader("Anchor", read_Anchor);
+	register_node_reader("ASM",    read_ASM);
+	register_node_reader("Block",  read_Block);
+	register_node_reader("BlockL", read_labeled_Block);
+	register_node_reader("Phi",    read_Phi);
 	register_generated_node_readers();
 }
 

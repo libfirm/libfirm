@@ -100,7 +100,7 @@ static void write_{{node.name}}(write_env_t *env, const ir_node *node)
 static void register_generated_node_readers(void)
 {
 	{%- for node in nodes|notset('customSerializer') %}
-	register_node_reader(new_id_from_str("{{node.name}}"), read_{{node.name}});
+	register_node_reader("{{node.name}}", read_{{node.name}});
 	{%- endfor %}
 }
 
