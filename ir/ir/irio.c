@@ -129,31 +129,29 @@ static set *symtbl;
  */
 static int symbol_cmp(const void *elt, const void *key, size_t size)
 {
-	int res;
+	(void) size;
 	const symbol_t *entry = (const symbol_t *) elt;
 	const symbol_t *keyentry = (const symbol_t *) key;
-	(void) size;
-	res = entry->typetag - keyentry->typetag;
-	if (res) return res;
+	int res = entry->typetag - keyentry->typetag;
+	if (res != 0)
+		return res;
 	return strcmp(entry->str, keyentry->str);
 }
 
 static int id_cmp(const void *elt, const void *key, size_t size)
 {
+	(void) size;
 	const id_entry *entry = (const id_entry *) elt;
 	const id_entry *keyentry = (const id_entry *) key;
-	(void) size;
 	return entry->id - keyentry->id;
 }
 
 static void __attribute__((format(printf, 2, 3)))
 parse_error(read_env_t *env, const char *fmt, ...)
 {
-	va_list  ap;
-	unsigned line = env->line;
-
 	/* workaround read_c "feature" that a '\n' triggers the line++
 	 * instead of the character after the '\n' */
+	unsigned line = env->line;
 	if (env->c == '\n') {
 		line--;
 	}
@@ -161,6 +159,7 @@ parse_error(read_env_t *env, const char *fmt, ...)
 	fprintf(stderr, "%s:%u: error ", env->inputname, line);
 	env->read_errors = true;
 
+	va_list ap;
 	va_start(ap, fmt);
 	vfprintf(stderr, fmt, ap);
 	va_end(ap);
@@ -169,14 +168,13 @@ parse_error(read_env_t *env, const char *fmt, ...)
 /** Initializes the symbol table. May be called more than once without problems. */
 static void symtbl_init(void)
 {
-	symbol_t key;
-
 	/* Only initialize once */
 	if (symtbl != NULL)
 		return;
 
 	symtbl = new_set(symbol_cmp, 256);
 
+	symbol_t key;
 #define INSERT(tt, s, cod)                                       \
 	key.str = (s);                                               \
 	key.typetag = (tt);                                          \
@@ -317,12 +315,12 @@ static const char *get_mode_arithmetic_name(ir_mode_arithmetic arithmetic)
 /** Returns the according symbol value for the given string and tag, or SYMERROR if none was found. */
 static unsigned symbol(const char *str, typetag_t typetag)
 {
-	symbol_t key, *entry;
-
-	key.str = str;
+	symbol_t key;
+	key.str     = str;
 	key.typetag = typetag;
 
-	entry = set_find(symbol_t, symtbl, &key, sizeof(key), hash_str(str) + typetag * 17);
+	symbol_t *entry = set_find(symbol_t, symtbl, &key, sizeof(key),
+	                           hash_str(str) + typetag * 17);
 	return entry ? entry->code : SYMERROR;
 }
 
@@ -374,9 +372,8 @@ static void write_type_ref(write_env_t *env, ir_type *type)
 
 static void write_string(write_env_t *env, const char *string)
 {
-	const char *c;
 	fputc('"', env->file);
-	for (c = string; *c != '\0'; ++c) {
+	for (const char *c = string; *c != '\0'; ++c) {
 		switch (*c) {
 		case '\n':
 			fputc('\\', env->file);
@@ -498,9 +495,9 @@ static void write_initializer(write_env_t *env, ir_initializer_t *ini)
 		return;
 
 	case IR_INITIALIZER_COMPOUND: {
-		size_t i, n = get_initializer_compound_n_entries(ini);
+		size_t n = get_initializer_compound_n_entries(ini);
 		write_size_t(env, n);
-		for (i = 0; i < n; ++i)
+		for (size_t i = 0; i < n; ++i)
 			write_initializer(env, get_initializer_compound_value(ini, i));
 		return;
 	}
@@ -579,11 +576,9 @@ static void write_type_primitive(write_env_t *env, ir_type *tp)
 
 static void write_type_compound(write_env_t *env, ir_type *tp)
 {
-	size_t n_members = get_compound_n_members(tp);
-	size_t i;
-
 	if (is_Class_type(tp)) {
-		if (get_class_n_subtypes(tp) > 0 || get_class_n_supertypes(tp) > 0 || get_class_vtable_size(tp) > 0) {
+		if (get_class_n_subtypes(tp) > 0 || get_class_n_supertypes(tp) > 0
+		    || get_class_vtable_size(tp) > 0) {
 			/* sub/superclass export not implemented yet, it's unclear whether
 			 * class types will stay in libfirm anyway */
 			panic("can't export class types yet");
@@ -593,7 +588,7 @@ static void write_type_compound(write_env_t *env, ir_type *tp)
 	write_ident_null(env, get_compound_ident(tp));
 	fputc('\n', env->file);
 
-	for (i = 0; i < n_members; ++i) {
+	for (size_t i = 0, n = get_compound_n_members(tp); i < n; ++i) {
 		ir_entity *member = get_compound_member(tp, i);
 		pdeq_putr(env->entity_queue, member);
 	}
@@ -601,17 +596,14 @@ static void write_type_compound(write_env_t *env, ir_type *tp)
 
 static void write_type_array(write_env_t *env, ir_type *tp)
 {
-	size_t     n_dimensions   = get_array_n_dimensions(tp);
-	ir_type   *element_type   = get_array_element_type(tp);
-	ir_entity *element_entity = get_array_element_entity(tp);
-	size_t   i;
-
+	ir_type *element_type = get_array_element_type(tp);
 	write_type(env, element_type);
 
 	write_type_common(env, tp);
+	size_t n_dimensions = get_array_n_dimensions(tp);
 	write_size_t(env, n_dimensions);
-	write_type_ref(env, get_array_element_type(tp));
-	for (i = 0; i < n_dimensions; i++) {
+	write_type_ref(env, element_type);
+	for (size_t i = 0; i < n_dimensions; i++) {
 		ir_node *lower = get_array_lower_bound(tp, i);
 		ir_node *upper = get_array_upper_bound(tp, i);
 
@@ -629,6 +621,7 @@ static void write_type_array(write_env_t *env, ir_type *tp)
 	}
 	/* note that we just write a reference to the element entity
 	 * but never the entity itself */
+	ir_entity *element_entity = get_array_element_entity(tp);
 	write_entity_ref(env, element_entity);
 	fputc('\n', env->file);
 }
@@ -636,12 +629,10 @@ static void write_type_array(write_env_t *env, ir_type *tp)
 static void write_type_method(write_env_t *env, ir_type *tp)
 {
 	size_t nparams  = get_method_n_params(tp);
-	size_t nresults = get_method_n_ress(tp);
-	size_t i;
-
-	for (i = 0; i < nparams; i++)
+	for (size_t i = 0; i < nparams; i++)
 		write_type(env, get_method_param_type(tp, i));
-	for (i = 0; i < nresults; i++)
+	size_t nresults = get_method_n_ress(tp);
+	for (size_t i = 0; i < nresults; i++)
 		write_type(env, get_method_res_type(tp, i));
 
 	write_type_common(env, tp);
@@ -649,9 +640,9 @@ static void write_type_method(write_env_t *env, ir_type *tp)
 	write_unsigned(env, get_method_additional_properties(tp));
 	write_size_t(env, nparams);
 	write_size_t(env, nresults);
-	for (i = 0; i < nparams; i++)
+	for (size_t i = 0; i < nparams; i++)
 		write_type_ref(env, get_method_param_type(tp, i));
-	for (i = 0; i < nresults; i++)
+	for (size_t i = 0; i < nresults; i++)
 		write_type_ref(env, get_method_res_type(tp, i));
 	write_unsigned(env, get_method_variadicity(tp));
 	fputc('\n', env->file);
@@ -731,7 +722,7 @@ static void write_entity(write_env_t *env, ir_entity *ent)
 	write_long(env, get_entity_nr(ent));
 
 	if (ent->entity_kind != IR_ENTITY_LABEL
-	    && ent->entity_kind != IR_ENTITY_PARAMETER) {
+	 && ent->entity_kind != IR_ENTITY_PARAMETER) {
 		write_ident_null(env, get_entity_ident(ent));
 		if (!entity_has_ld_ident(ent)) {
 			write_ident_null(env, NULL);
@@ -807,10 +798,8 @@ static void write_switch_table_ref(write_env_t *env,
                                    const ir_switch_table *table)
 {
 	size_t n_entries = ir_switch_table_get_n_entries(table);
-	size_t i;
-
 	write_size_t(env, n_entries);
-	for (i = 0; i < n_entries; ++i) {
+	for (size_t i = 0; i < n_entries; ++i) {
 		long       pn  = ir_switch_table_get_pn(table, i);
 		ir_tarval *min = ir_switch_table_get_min(table, i);
 		ir_tarval *max = ir_switch_table_get_max(table, i);
@@ -822,11 +811,10 @@ static void write_switch_table_ref(write_env_t *env,
 
 static void write_pred_refs(write_env_t *env, const ir_node *node, int from)
 {
-	int arity = get_irn_arity(node);
-	int i;
 	write_list_begin(env);
+	int arity = get_irn_arity(node);
 	assert(from <= arity);
-	for (i = from; i < arity; ++i) {
+	for (int i = from; i < arity; ++i) {
 		ir_node *pred = get_irn_n(node, i);
 		write_node_ref(env, pred);
 	}
@@ -945,9 +933,7 @@ static void write_node_recursive(ir_node *node, write_env_t *env);
 
 static void write_preds(ir_node *node, write_env_t *env)
 {
-	int arity = get_irn_arity(node);
-	int i;
-	for (i = 0; i < arity; ++i) {
+	for (int i = 0, arity = get_irn_arity(node); i < arity; ++i) {
 		ir_node *pred = get_irn_n(node, i);
 		write_node_recursive(pred, env);
 	}
@@ -972,9 +958,7 @@ static void write_node_recursive(ir_node *node, write_env_t *env)
 	if (!is_Phi(node) && !is_Block(node) && !is_Anchor(node)) {
 		write_preds(node, env);
 	} else {
-		int arity = get_irn_arity(node);
-		int i;
-		for (i = 0; i < arity; ++i) {
+		for (int i = 0, arity = get_irn_arity(node); i < arity; ++i) {
 			ir_node *pred = get_irn_n(node, i);
 			pdeq_putr(env->write_queue, pred);
 		}
@@ -1015,13 +999,10 @@ static void write_mode(write_env_t *env, ir_mode *mode)
 
 static void write_modes(write_env_t *env)
 {
-	size_t n_modes = ir_get_n_modes();
-	size_t i;
-
 	write_symbol(env, "modes");
 	fputs("{\n", env->file);
 
-	for (i = 0; i < n_modes; i++) {
+	for (size_t i = 0, n_modes = ir_get_n_modes(); i < n_modes; i++) {
 		ir_mode *mode = ir_get_mode(i);
 		if (is_internal_mode(mode))
 			continue;
@@ -1035,10 +1016,6 @@ static void write_modes(write_env_t *env)
 
 static void write_program(write_env_t *env)
 {
-	ir_segment_t s;
-	size_t n_asms = get_irp_n_asms();
-	size_t i;
-
 	write_symbol(env, "program");
 	write_scope_begin(env);
 	if (irp_prog_name_is_set()) {
@@ -1048,7 +1025,7 @@ static void write_program(write_env_t *env)
 		fputc('\n', env->file);
 	}
 
-	for (s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
+	for (ir_segment_t s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
 		ir_type *segment_type = get_segment_type(s);
 		fputc('\t', env->file);
 		write_symbol(env, "segment_type");
@@ -1061,7 +1038,7 @@ static void write_program(write_env_t *env)
 		fputc('\n', env->file);
 	}
 
-	for (i = 0; i < n_asms; ++i) {
+	for (size_t i = 0, n_asms = get_irp_n_asms(); i < n_asms; ++i) {
 		ident *asm_text = get_irp_asm(i);
 		fputc('\t', env->file);
 		write_symbol(env, "asm");
@@ -1094,14 +1071,11 @@ static void write_node_cb(ir_node *node, void *ctx)
 
 static void write_typegraph(write_env_t *env)
 {
-	size_t n_types = get_irp_n_types();
-	size_t i;
-
 	write_symbol(env, "typegraph");
 	write_scope_begin(env);
 	irp_reserve_resources(irp, IRP_RESOURCE_TYPE_VISITED);
 	inc_master_type_visited();
-	for (i = 0; i < n_types; ++i) {
+	for (size_t i = 0, n_types = get_irp_n_types(); i < n_types; ++i) {
 		ir_type *type = get_irp_type(i);
 		write_type(env, type);
 	}
@@ -1138,7 +1112,6 @@ void ir_export_file(FILE *file)
 {
 	write_env_t my_env;
 	write_env_t *env = &my_env;
-	size_t i, n_irgs = get_irp_n_irgs();
 
 	memset(env, 0, sizeof(*env));
 	env->file         = file;
@@ -1150,7 +1123,7 @@ void ir_export_file(FILE *file)
 
 	write_typegraph(env);
 
-	for (i = 0; i < n_irgs; i++) {
+	for (size_t i = 0, n_irgs = get_irp_n_irgs(); i < n_irgs; i++) {
 		ir_graph *irg = get_irp_irg(i);
 		write_irg(env, irg);
 	}
@@ -1322,21 +1295,17 @@ static char *read_string_null(read_env_t *env)
 
 static ident *read_ident_null(read_env_t *env)
 {
-	ident *res;
-	char  *str = read_string_null(env);
+	char *str = read_string_null(env);
 	if (str == NULL)
 		return NULL;
 
-	res = new_id_from_str(str);
+	ident *res = new_id_from_str(str);
 	obstack_free(&env->obst, str);
 	return res;
 }
 
 static long read_long(read_env_t *env)
 {
-	long  result;
-	char *str;
-
 	skip_ws(env);
 	if (!isdigit(env->c) && env->c != '-') {
 		parse_error(env, "Expected number, got '%c'\n", env->c);
@@ -1350,8 +1319,8 @@ static long read_long(read_env_t *env)
 	} while (isdigit(env->c));
 	obstack_1grow(&env->obst, 0);
 
-	str = (char*)obstack_finish(&env->obst);
-	result = atol(str);
+	char *str    = (char*)obstack_finish(&env->obst);
+	long  result = atol(str);
 	obstack_free(&env->obst, str);
 
 	return result;
@@ -1400,17 +1369,18 @@ static bool list_has_next(read_env_t *env)
 
 static void *get_id(read_env_t *env, long id)
 {
-	id_entry key, *entry;
+	id_entry key;
 	key.id = id;
 
-	entry = set_find(id_entry, env->idset, &key, sizeof(key), (unsigned) id);
+	id_entry *entry = set_find(id_entry, env->idset, &key, sizeof(key),
+	                           (unsigned) id);
 	return entry ? entry->elem : NULL;
 }
 
 static void set_id(read_env_t *env, long id, void *elem)
 {
 	id_entry key;
-	key.id = id;
+	key.id   = id;
 	key.elem = elem;
 	(void)set_insert(id_entry, env->idset, &key, sizeof(key), (unsigned) id);
 }
@@ -1488,11 +1458,8 @@ static ir_entity *read_entity_ref(read_env_t *env)
 
 static ir_mode *read_mode_ref(read_env_t *env)
 {
-	char  *str = read_string(env);
-	size_t n   = ir_get_n_modes();
-	size_t i;
-
-	for (i = 0; i < n; i++) {
+	char *str = read_string(env);
+	for (size_t i = 0, n = ir_get_n_modes(); i < n; i++) {
 		ir_mode *mode = ir_get_mode(i);
 		if (strcmp(str, get_mode_name(mode)) == 0) {
 			obstack_free(&env->obst, str);
@@ -1530,8 +1497,8 @@ static const char *get_typetag_name(typetag_t typetag)
  */
 static unsigned read_enum(read_env_t *env, typetag_t typetag)
 {
-	char     *str  = read_word(env);
-	unsigned  code = symbol(str, typetag);
+	char    *str  = read_word(env);
+	unsigned code = symbol(str, typetag);
 
 	if (code != SYMERROR) {
 		obstack_free(&env->obst, str);
@@ -1621,9 +1588,8 @@ static ir_switch_table *read_switch_table_ref(read_env_t *env)
 {
 	size_t           n_entries = read_size_t(env);
 	ir_switch_table *table     = ir_new_switch_table(env->irg, n_entries);
-	size_t           i;
 
-	for (i = 0; i < n_entries; ++i) {
+	for (size_t i = 0; i < n_entries; ++i) {
 		long       pn  = read_long(env);
 		ir_tarval *min = read_tarval_ref(env);
 		ir_tarval *max = read_tarval_ref(env);
@@ -1657,9 +1623,9 @@ static ir_initializer_t *read_initializer(read_env_t *env)
 		return get_initializer_null();
 
 	case IR_INITIALIZER_COMPOUND: {
-		size_t i, n = read_size_t(env);
+		size_t n = read_size_t(env);
 		ir_initializer_t *ini = create_initializer_compound(n);
-		for (i = 0; i < n; i++) {
+		for (size_t i = 0; i < n; i++) {
 			ir_initializer_t *curini = read_initializer(env);
 			set_initializer_compound_value(ini, i, curini);
 		}
@@ -1683,14 +1649,11 @@ static void read_type(read_env_t *env)
 
 	switch (tpop) {
 	case tpo_array: {
-		size_t     n_dimensions = read_size_t(env);
-		ir_type   *elemtype     = read_type_ref(env);
-		size_t     i;
-		ir_entity *element_entity;
-		long       element_entity_nr;
+		size_t   n_dimensions = read_size_t(env);
+		ir_type *elemtype     = read_type_ref(env);
 
 		type = new_type_array(n_dimensions, elemtype);
-		for (i = 0; i < n_dimensions; i++) {
+		for (size_t i = 0; i < n_dimensions; i++) {
 			char *str = read_word(env);
 			if (strcmp(str, "unknown") != 0) {
 				long lowerbound = atol(str);
@@ -1706,8 +1669,8 @@ static void read_type(read_env_t *env)
 			obstack_free(&env->obst, str);
 		}
 
-		element_entity_nr = read_long(env);
-		element_entity = get_array_element_entity(type);
+		long       element_entity_nr = read_long(env);
+		ir_entity *element_entity    = get_array_element_entity(type);
 		set_id(env, element_entity_nr, element_entity);
 
 		set_type_size_bytes(type, size);
@@ -1731,25 +1694,23 @@ static void read_type(read_env_t *env)
 			= (mtp_additional_properties) read_long(env);
 		size_t nparams  = read_size_t(env);
 		size_t nresults = read_size_t(env);
-		size_t i;
-		ir_variadicity variadicity;
 
 		type = new_type_method(nparams, nresults);
 
-		for (i = 0; i < nparams; i++) {
+		for (size_t i = 0; i < nparams; i++) {
 			long ptypenr = read_long(env);
 			ir_type *paramtype = get_type(env, ptypenr);
 
 			set_method_param_type(type, i, paramtype);
 		}
-		for (i = 0; i < nresults; i++) {
+		for (size_t i = 0; i < nresults; i++) {
 			long ptypenr = read_long(env);
 			ir_type *restype = get_type(env, ptypenr);
 
 			set_method_res_type(type, i, restype);
 		}
 
-		variadicity = (ir_variadicity) read_long(env);
+		ir_variadicity variadicity = (ir_variadicity) read_long(env);
 		set_method_variadicity(type, variadicity);
 
 		set_method_calling_convention(type, callingconv);
@@ -1823,10 +1784,6 @@ static void read_entity(read_env_t *env, ir_entity_kind kind)
 	ir_linkage     linkage    = IR_LINKAGE_DEFAULT;
 	ir_type       *owner      = NULL;
 	ir_entity     *entity     = NULL;
-	int            compiler_generated;
-	ir_volatility  volatility;
-	const char    *str;
-	ir_type       *type;
 
 	if (kind != IR_ENTITY_LABEL && kind != IR_ENTITY_PARAMETER) {
 		name    = read_ident(env);
@@ -1839,12 +1796,12 @@ static void read_entity(read_env_t *env, ir_entity_kind kind)
 		linkage |= read_linkage(env);
 	}
 
-	type = read_type_ref(env);
+	ir_type *type = read_type_ref(env);
 	if (kind != IR_ENTITY_LABEL)
 		owner = read_type_ref(env);
 
-	compiler_generated = read_long(env) != 0;
-	volatility         = read_volatility(env);
+	bool          compiler_generated = read_long(env) != 0;
+	ir_volatility volatility         = read_volatility(env);
 
 	switch (kind) {
 	case IR_ENTITY_ALIAS: {
@@ -1861,7 +1818,7 @@ static void read_entity(read_env_t *env, ir_entity_kind kind)
 		entity = new_entity(owner, name, type);
 		if (ld_name != NULL)
 			set_entity_ld_ident(entity, ld_name);
-		str = read_word(env);
+		const char *str = read_word(env);
 		if (strcmp(str, "initializer") == 0) {
 			ir_initializer_t *initializer = read_initializer(env);
 			if (initializer != NULL)
@@ -2011,18 +1968,16 @@ static int read_preds(read_env_t *env)
 
 static void read_preds_delayed(read_env_t *env, ir_node *node)
 {
-	int             n_preds = 0;
-	delayed_pred_t *d;
-
 	expect_list_begin(env);
 	assert(obstack_object_size(&env->preds_obst) == 0);
 	obstack_blank(&env->preds_obst, sizeof(delayed_pred_t));
+	int n_preds = 0;
 	while (list_has_next(env)) {
 		long pred_nr = read_long(env);
 		obstack_grow(&env->preds_obst, &pred_nr, sizeof(pred_nr));
 		++n_preds;
 	}
-	d          = (delayed_pred_t*) obstack_finish(&env->preds_obst);
+	delayed_pred_t *d = (delayed_pred_t*) obstack_finish(&env->preds_obst);
 	d->node    = node;
 	d->n_preds = n_preds;
 
@@ -2031,19 +1986,12 @@ static void read_preds_delayed(read_env_t *env, ir_node *node)
 
 static ir_node *read_ASM(read_env_t *env)
 {
-	int                n_in;
-	ir_node          **in;
-	ir_node           *newnode;
-	ir_asm_constraint *input_constraints  = NEW_ARR_F(ir_asm_constraint, 0);
-	ir_asm_constraint *output_constraints = NEW_ARR_F(ir_asm_constraint, 0);
-	ident            **clobbers           = NEW_ARR_F(ident*, 0);
-	ir_node           *block              = read_node_ref(env);
-	ir_node           *mem                = read_node_ref(env);
-	op_pin_state       pin_state;
-
-	ident *asm_text = read_ident(env);
+	ir_node *block    = read_node_ref(env);
+	ir_node *mem      = read_node_ref(env);
+	ident   *asm_text = read_ident(env);
 
 	expect_list_begin(env);
+	ir_asm_constraint *input_constraints = NEW_ARR_F(ir_asm_constraint, 0);
 	while (list_has_next(env)) {
 		ir_asm_constraint constraint;
 		constraint.pos        = read_unsigned(env);
@@ -2053,6 +2001,7 @@ static ir_node *read_ASM(read_env_t *env)
 	}
 
 	expect_list_begin(env);
+	ir_asm_constraint *output_constraints = NEW_ARR_F(ir_asm_constraint, 0);
 	while (list_has_next(env)) {
 		ir_asm_constraint constraint;
 		constraint.pos        = read_unsigned(env);
@@ -2062,25 +2011,26 @@ static ir_node *read_ASM(read_env_t *env)
 	}
 
 	expect_list_begin(env);
+	ident **clobbers = NEW_ARR_F(ident*, 0);
 	while (list_has_next(env)) {
 		ident *clobber = read_ident(env);
 		ARR_APP1(ident*, clobbers, clobber);
 	}
 
-	pin_state = read_pin_state(env);
+	op_pin_state pin_state = read_pin_state(env);
 
-	n_in = read_preds(env);
-	in   = (ir_node**)obstack_finish(&env->preds_obst);
+	int       n_in = read_preds(env);
+	ir_node **in   = (ir_node**)obstack_finish(&env->preds_obst);
 
 	if (ARR_LEN(input_constraints) != (size_t)n_in) {
 		parse_error(env, "input_constraints != n_in in ir file");
 		return new_r_Bad(env->irg, mode_T);
 	}
 
-	newnode = new_r_ASM(block, mem, n_in, in,
-		input_constraints, ARR_LEN(output_constraints),
-		output_constraints, ARR_LEN(clobbers),
-		clobbers, asm_text);
+	ir_node *newnode = new_r_ASM(block, mem, n_in, in,
+	                             input_constraints, ARR_LEN(output_constraints),
+	                             output_constraints, ARR_LEN(clobbers),
+	                             clobbers, asm_text);
 	set_irn_pinned(newnode, pin_state);
 	obstack_free(&env->preds_obst, in);
 	DEL_ARR_F(clobbers);
@@ -2161,10 +2111,7 @@ static void readers_init(void)
 
 static void read_graph(read_env_t *env, ir_graph *irg)
 {
-	size_t n_delayed_preds;
-	size_t i;
-	env->irg = irg;
-
+	env->irg           = irg;
 	env->delayed_preds = NEW_ARR_F(const delayed_pred_t*, 0);
 
 	EXPECT('{');
@@ -2179,12 +2126,10 @@ static void read_graph(read_env_t *env, ir_graph *irg)
 	}
 
 	/* resolve delayed preds */
-	n_delayed_preds = ARR_LEN(env->delayed_preds);
-	for (i = 0; i < n_delayed_preds; ++i) {
+	for (size_t i = 0, n = ARR_LEN(env->delayed_preds); i < n; ++i) {
 		const delayed_pred_t *dp  = env->delayed_preds[i];
 		ir_node             **ins = ALLOCAN(ir_node*, dp->n_preds);
-		int                   i;
-		for (i = 0; i < dp->n_preds; ++i) {
+		for (int i = 0; i < dp->n_preds; ++i) {
 			long     pred_nr = dp->preds[i];
 			ir_node *pred    = get_node_or_null(env, pred_nr);
 			if (pred == NULL) {
@@ -2196,8 +2141,7 @@ static void read_graph(read_env_t *env, ir_graph *irg)
 		}
 		set_irn_in(dp->node, dp->n_preds, ins);
 		if (is_Anchor(dp->node)) {
-			irg_anchors a;
-			for (a = anchor_first; a <= anchor_last; ++a) {
+			for (irg_anchors a = anchor_first; a <= anchor_last; ++a) {
 				ir_node *old_anchor = get_irg_anchor(irg, a);
 				ir_node *new_anchor = ins[a];
 				exchange(old_anchor, new_anchor);
@@ -2283,15 +2227,13 @@ static void read_program(read_env_t *env)
 	EXPECT('{');
 
 	while (true) {
-		keyword_t kwkind;
-
 		skip_ws(env);
 		if (env->c == '}') {
 			read_c(env);
 			break;
 		}
 
-		kwkind = read_keyword(env);
+		keyword_t kwkind = read_keyword(env);
 		switch (kwkind) {
 		case kw_segment_type: {
 			ir_segment_t  segment = (ir_segment_t) read_enum(env, tt_segment);
@@ -2314,15 +2256,13 @@ static void read_program(read_env_t *env)
 int ir_import(const char *filename)
 {
 	FILE *file = fopen(filename, "rt");
-	int   res;
 	if (file == NULL) {
 		perror(filename);
 		return 1;
 	}
 
-	res = ir_import_file(file, filename);
+	int res = ir_import_file(file, filename);
 	fclose(file);
-
 	return res;
 }
 
@@ -2331,9 +2271,6 @@ int ir_import_file(FILE *input, const char *inputname)
 	read_env_t          myenv;
 	int                 oldoptimize = get_optimize();
 	read_env_t         *env         = &myenv;
-	size_t              i;
-	size_t              n;
-	size_t              n_delayed_initializers;
 
 	readers_init();
 	symtbl_init();
@@ -2397,15 +2334,13 @@ int ir_import_file(FILE *input, const char *inputname)
 		}
 	}
 
-	n = ARR_LEN(env->fixedtypes);
-	for (i = 0; i < n; i++)
+	for (size_t i = 0, n = ARR_LEN(env->fixedtypes); i < n; i++)
 		set_type_state(env->fixedtypes[i], layout_fixed);
 
 	DEL_ARR_F(env->fixedtypes);
 
 	/* resolve delayed initializers */
-	n_delayed_initializers = ARR_LEN(env->delayed_initializers);
-	for (i = 0; i < n_delayed_initializers; ++i) {
+	for (size_t i = 0, n = ARR_LEN(env->delayed_initializers); i < n; ++i) {
 		const delayed_initializer_t *di   = &env->delayed_initializers[i];
 		ir_node                     *node = get_node_or_null(env, di->node_nr);
 		if (node == NULL) {
