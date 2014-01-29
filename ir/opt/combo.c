@@ -3284,13 +3284,13 @@ static void apply_result(ir_node *irn, void *ctx)
 		} else if (is_entity(node->type.ent)) {
 			if (!is_Address(irn)) {
 				/* can be replaced by an Address */
-				ir_node *entc = new_r_Address(current_ir_graph, node->type.ent);
-				set_irn_node(entc, node);
-				node->node = entc;
+				ir_node *addr = new_r_Address(current_ir_graph, node->type.ent);
+				set_irn_node(addr, node);
+				node->node = addr;
 
-				DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, entc));
-				DBG_OPT_COMBO(irn, entc, FS_OPT_COMBO_CONST);
-				exchange_leader(irn, entc);
+				DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, addr));
+				DBG_OPT_COMBO(irn, addr, FS_OPT_COMBO_CONST);
+				exchange_leader(irn, addr);
 				env->modified = 1;
 			}
 		} else if (is_Confirm(irn)) {

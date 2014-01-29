@@ -193,12 +193,12 @@ static void replace_by_Const(ir_node *const node, long const value)
 /**
  * Lower an Offset node.
  */
-static void lower_offset(ir_node *const entc)
+static void lower_offset(ir_node *const offset)
 {
 	/* rewrite the Offset node by a Const node */
-	ir_entity *const ent = get_Offset_entity(entc);
+	ir_entity *const ent = get_Offset_entity(offset);
 	assert(get_type_state(get_entity_type(ent)) == layout_fixed);
-	replace_by_Const(entc, get_entity_offset(ent));
+	replace_by_Const(offset, get_entity_offset(ent));
 }
 
 /**
