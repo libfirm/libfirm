@@ -14,7 +14,6 @@
 #include "ircons_t.h"
 #include "irgraph_t.h"
 #include "irprog_t.h"
-#include "irgraph_t.h"
 #include "irnode_t.h"
 #include "iropt_t.h"
 #include "irflag_t.h"
