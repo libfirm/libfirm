@@ -1490,17 +1490,20 @@ void default_layout_compound_type(ir_type *type)
 		unsigned const align = get_type_alignment_bytes(entity_type);
 		align_all = MAX(align, align_all);
 
-		set_entity_offset(entity, size);
+		unsigned offset;
 		if (is_Union_type(type)) {
-			size = MAX(size, entity_size);
+			offset = 0;
+			size   = MAX(size, entity_size);
 		} else {
 			if (align != 0) {
 				unsigned const misalign = size % align;
 				if (misalign != 0)
 					size += align - misalign;
 			}
-			size += entity_size;
+			offset = size;
+			size  += entity_size;
 		}
+		set_entity_offset(entity, offset);
 	}
 
 	if (align_all > 0 && size % align_all) {
