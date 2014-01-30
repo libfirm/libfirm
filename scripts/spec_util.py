@@ -16,6 +16,18 @@ def op(cls):
 def isOp(nodetype):
 	return hasattr(nodetype, "__is_firm_op")
 
+class Attribute(object):
+	def __init__(self, name, type, comment="", init=None, to_flags=None, noprop=False, fqname=None):
+		self.type     = type
+		self.name     = name
+		self.comment  = comment
+		self.init     = init
+		self.to_flags = to_flags
+		self.noprop   = noprop
+		if fqname is None:
+			fqname = name
+		self.fqname = fqname
+
 def is_dynamic_pinned(node):
 	return node.pinned == "exception"
 

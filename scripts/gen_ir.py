@@ -4,24 +4,24 @@
 # Copyright (C) 2012 Karlsruhe Institute of Technology.
 import sys
 from jinja2 import Environment, Template, FileSystemLoader
-from spec_util import is_dynamic_pinned, isAbstract, setdefault, load_spec
-from filters import format_arguments, filter_isnot, filter_has, filter_hasnot, filter_notset
+from spec_util import is_dynamic_pinned, isAbstract, setdefault, load_spec, Attribute
+from filters import format_arguments, filter_has, filter_hasnot
 
 def format_parameterlist(parameterlist):
 	return "\n".join(parameterlist)
 
 def format_nodearguments(node):
-	arguments = map(lambda arg: arg["name"], node.arguments)
+	arguments = [arg.name for arg in node.arguments]
 	return format_parameterlist(arguments)
 
 def format_nodeparameters(node):
-	parameters = map(lambda arg: arg["type"] + " " + arg["name"], node.arguments)
+	parameters = ["%s %s" % (arg.type, arg.name) for arg in node.arguments]
 	return format_parameterlist(parameters)
 
 def format_nodeparametershelp(node):
 	res = ""
 	for param in node.arguments:
-		res += " * @param %-9s %s\n" % (param["name"], param["comment"])
+		res += " * @param %-9s %s\n" % (param.name, param.comment)
 	return res
 
 def format_a_an(text):
@@ -156,7 +156,7 @@ def format_parameters(string):
 	return format_arguments(string, voidwhenempty = True)
 
 def format_args(arglist):
-	argument_names = [ a['name'] for a in arglist ]
+	argument_names = [ arg.name for arg in arglist ]
 	return "\n".join(argument_names)
 
 def format_block(node):
@@ -194,30 +194,15 @@ env.filters['has']                = filter_has
 env.filters['hasnot']             = filter_hasnot
 env.filters['insdecl']            = format_insdecl
 env.filters['irgassign']          = format_irgassign
-env.filters['isnot']              = filter_isnot
 env.filters['nodearguments']      = format_nodearguments
 env.filters['nodeparameters']     = format_nodeparameters
 env.filters['nodeparametershelp'] = format_nodeparametershelp
-env.filters['notset']             = filter_notset
 env.filters['opindex']            = format_opindex
 env.filters['parameterlist']      = format_parameterlist
 env.filters['parameters']         = format_parameters
 env.filters['pinned']             = format_pinned
 env.filters['simplify_type']      = format_simplify_type
 env.filters['stringformat']       = format_stringformat
-
-def prepare_attr(attr):
-	if "init" in attr:
-		return dict(
-			type = attr["type"],
-			name = attr["name"],
-			init = attr["init"],
-			comment = attr["comment"])
-	else:
-		return dict(
-			type = attr["type"],
-			name = attr["name"],
-			comment = attr["comment"])
 
 def preprocess_node(node):
 	setdefault(node, "attrs_name", node.name.lower())
@@ -227,60 +212,48 @@ def preprocess_node(node):
 	arguments = [ ]
 	initattrs = [ ]
 	for input in node.ins:
-		arguments.append(dict(
-				type    = "ir_node *",
-				name    = "irn_" + input[0],
-				comment = input[1]))
+		arguments.append(
+			Attribute("irn_" + input[0], type="ir_node *",
+			          comment=input[1]))
 
 	if node.arity == "variable" or node.arity == "dynamic":
-		arguments.append(dict(
-				type    = "int",
-				name    = "arity",
-				comment = "size of additional inputs array"))
-		arguments.append(dict(
-				type    = "ir_node *const *",
-				name    = "in",
-				comment = "additional inputs"))
+		arguments.append(
+			Attribute("arity", type="int",
+			          comment="size of additional inputs array"))
+		arguments.append(
+			Attribute("in", type="ir_node *const *",
+			          comment="additional inputs"))
 
 	if not hasattr(node, "mode"):
-		arguments.append(dict(
-				type    = "ir_mode *",
-				name    = "mode",
-				comment = "mode of the operations result"))
+		arguments.append(
+			Attribute("mode", type="ir_mode *",
+			          comment = "mode of the operations result"))
 
 	for attr in node.attrs:
-		attr["fqname"] = attr["name"]
-		if "init" in attr:
+		if attr.init is not None:
 			continue
 		arguments.append(attr)
 
 	# dynamic pin state means more constructor arguments
 	if is_dynamic_pinned(node):
 		if hasattr(node, "pinned_init"):
-			initattrs.append(dict(
-				fqname = "exc.pin_state",
-				init   = node.pinned_init
-			))
+			initattrs.append(
+				Attribute("pin_state", fqname="exc.pin_state",
+				          type="op_pin_state", init=node.pinned_init))
 		else:
 			node.constructor_args.append(
-				dict(
-					name    = "pin_state",
-					type    = "op_pin_state",
-					comment = "pinned state",
-				)
-			)
-			initattrs.append(dict(
-				fqname = "exc.pin_state",
-				init   = "pin_state"
-			))
+				Attribute("pin_state", type="op_pin_state",
+				          comment = "pinned state"))
+			initattrs.append(
+				Attribute("pin_state", fqname="exc.pin_state",
+				          type="op_pin_state", init="pin_state"))
 	if hasattr(node, "throws_init"):
-		initattrs.append(dict(
-			fqname = "exc.throws_exception",
-			init   = node.throws_init
-		))
+		initattrs.append(
+			Attribute("throws_exception", fqname="exc.throws_exception",
+			          type="unsigned", init=node.throws_init))
 
 	for arg in node.constructor_args:
-		arguments.append(prepare_attr(arg))
+		arguments.append(arg)
 
 	node.arguments = arguments
 	node.initattrs = initattrs

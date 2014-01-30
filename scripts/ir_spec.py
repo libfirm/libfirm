@@ -4,7 +4,7 @@
 # Firm node specifications
 # The comments are in (standard python) restructured text format and are used
 # to generate documentation.
-from spec_util import abstract, op
+from spec_util import abstract, op, Attribute
 
 name = "ir"
 
@@ -31,11 +31,7 @@ class EntConst(object):
 	knownBlock = True
 	pinned     = "no"
 	attrs      = [
-		dict(
-			type    = "ir_entity*",
-			name    = "entity",
-			comment = "entity to operate on",
-		),
+		Attribute("entity", type="ir_entity*", comment="entity to operate on"),
 	]
 	attr_struct = "entconst_attr"
 	attrs_name  = "entc"
@@ -50,11 +46,7 @@ class TypeConst:
 	knownBlock = True
 	pinned     = "no"
 	attrs      = [
-		dict(
-			type    = "ir_type*",
-			name    = "type",
-			comment = "type to operate on",
-		),
+		Attribute("type", type="ir_type*", comment="type to operate on"),
 	]
 	attr_struct = "typeconst_attr"
 	attrs_name  = "typec"
@@ -85,11 +77,8 @@ class Alloc:
 		("res", "pointer to newly allocated memory"),
 	]
 	attrs = [
-		dict(
-			name    = "alignment",
-			type    = "unsigned",
-			comment = "alignment of the memory block (must be a power of 2)",
-		),
+		Attribute("alignment", type="unsigned",
+		          comment="alignment of the memory block (must be a power of 2)"),
 	]
 	flags       = [ "uses_memory" ]
 	pinned      = "yes"
@@ -160,38 +149,17 @@ class ASM:
 		("mem",    "memory dependency"),
 	]
 	attrs = [
-		dict(
-			name    = "input_constraints",
-			type    = "ir_asm_constraint*",
-			comment = "input constraints",
-		),
-		dict(
-			name    = "n_output_constraints",
-			type    = "size_t",
-			noprop  = True,
-			comment = "number of output constraints",
-		),
-		dict(
-			name    = "output_constraints",
-			type    = "ir_asm_constraint*",
-			comment = "output constraints",
-		),
-		dict(
-			name    = "n_clobbers",
-			type    = "size_t",
-			noprop  = True,
-			comment = "number of clobbered registers/memory",
-		),
-		dict(
-			name    = "clobbers",
-			type    = "ident**",
-			comment = "list of clobbered registers/memory",
-		),
-		dict(
-			name    = "text",
-			type    = "ident*",
-			comment = "assembler text",
-		),
+		Attribute("input_constraints", type="ir_asm_constraint*",
+		          comment="input constraints"),
+		Attribute("n_output_constraints", type="size_t", noprop=True,
+		          comment="number of output constraints"),
+		Attribute("output_constraints", type="ir_asm_constraint*",
+		          comment="output constraints"),
+		Attribute("n_clobbers", type="size_t", noprop=True,
+		          comment="number of clobbered registers/memory"),
+		Attribute("clobbers", type="ident**",
+		          comment="list of clobbered registers/memory"),
+		Attribute("text", type="ident*", comment="assembler text"),
 	]
 	# constructor is written manually at the moment, because of the clobbers+
 	# constraints arrays needing special handling (2 arguments for 1 attribute)
@@ -247,12 +215,8 @@ class Block:
 	flags            = []
 	attr_struct      = "block_attr"
 	attrs            = [
-		dict(
-			name    = "entity",
-			type    = "ir_entity*",
-			comment = "entity representing this block",
-			init    = "NULL",
-		),
+		Attribute("entity", type="ir_entity*", init="NULL",
+		          comment="entity representing this block"),
 	]
 	customSerializer = True
 
@@ -281,16 +245,9 @@ class Builtin:
 	]
 	flags       = [ "uses_memory" ]
 	attrs       = [
-		dict(
-			type    = "ir_builtin_kind",
-			name    = "kind",
-			comment = "kind of builtin",
-		),
-		dict(
-			type    = "ir_type*",
-			name    = "type",
-			comment = "method type for the builtin call",
-		)
+		Attribute("kind", type="ir_builtin_kind", comment="kind of builtin"),
+		Attribute("type", type="ir_type*",
+		          comment="method type for the builtin call"),
 	]
 	pinned      = "exception"
 	pinned_init = "op_pin_state_pinned"
@@ -319,11 +276,8 @@ class Call:
 	]
 	flags       = [ "fragile", "uses_memory" ]
 	attrs       = [
-		dict(
-			type    = "ir_type*",
-			name    = "type",
-			comment = "type of the call (usually type of the called procedure)",
-		),
+		Attribute("type", type="ir_type*",
+		          comment="type of the call (usually type of the called procedure)"),
 	]
 	attr_struct = "call_attr"
 	pinned      = "exception"
@@ -340,11 +294,8 @@ class Cmp(Binop):
 	flags = []
 	mode  = "mode_b"
 	attrs = [
-		dict(
-			type    = "ir_relation",
-			name    = "relation",
-			comment = "Comparison relation"
-		)
+		Attribute("relation", type="ir_relation",
+		          comment="Comparison relation"),
 	]
 	attr_struct = "cmp_attr"
 
@@ -361,12 +312,9 @@ class Cond:
 	flags    = [ "cfopcode", "forking" ]
 	pinned   = "yes"
 	attrs    = [
-		dict(
-			name    = "jmp_pred",
-			type    = "cond_jmp_predicate",
-			init    = "COND_JMP_PRED_NONE",
-			comment = "can indicate the most likely jump",
-		),
+		Attribute("jmp_pred", type="cond_jmp_predicate",
+		          init="COND_JMP_PRED_NONE",
+		          comment = "can indicate the most likely jump"),
 	]
 	attr_struct = "cond_attr"
 
@@ -384,16 +332,10 @@ class Switch:
 	flags  = [ "cfopcode", "forking" ]
 	pinned = "yes"
 	attrs  = [
-		dict(
-			name    = "n_outs",
-			type    = "unsigned",
-			comment = "number of outputs (including pn_Switch_default)",
-		),
-		dict(
-			name    = "table",
-			type    = "ir_switch_table*",
-			comment = "table describing mapping from input values to Proj numbers",
-		),
+		Attribute("n_outs", type="unsigned",
+		          comment="number of outputs (including pn_Switch_default)"),
+		Attribute("table", type="ir_switch_table*",
+		          comment="table describing mapping from input values to Proj numbers"),
 	]
 	attr_struct = "switch_attr"
 	attrs_name  = "switcha"
@@ -417,11 +359,8 @@ class Confirm:
 	flags    = [ "highlevel" ]
 	pinned   = "yes"
 	attrs    = [
-		dict(
-			name    = "relation",
-			type    = "ir_relation",
-			comment = "relation of value to bound",
-		),
+		Attribute("relation", type="ir_relation",
+		          comment="relation of value to bound"),
 	]
 	attr_struct = "confirm_attr"
 
@@ -434,11 +373,8 @@ class Const:
 	knownBlock = True
 	pinned     = "no"
 	attrs      = [
-		dict(
-			type    = "ir_tarval*",
-			name    = "tarval",
-			comment = "constant value (a tarval object)",
-		)
+		Attribute("tarval", type="ir_tarval*",
+		          comment="constant value (a tarval object)"),
 	]
 	attr_struct = "const_attr"
 	attrs_name  = "con"
@@ -463,26 +399,16 @@ class CopyB:
 	mode  = "mode_M"
 	flags = [ "uses_memory" ]
 	attrs = [
-		dict(
-			name    = "type",
-			type    = "ir_type*",
-			comment = "type of copied data",
-		),
-		dict(
-			type      = "ir_volatility",
-			name      = "volatility",
-			comment   = "volatile CopyB nodes have a visible side-effect and may not be optimized",
-			init      = "flags & cons_volatile ? volatility_is_volatile : volatility_non_volatile",
-			to_flags  = "%s == volatility_is_volatile ? cons_volatile : cons_none"
-		)
+		Attribute("type", type="ir_type*", comment="type of copied data"),
+		Attribute("volatility", type="ir_volatility",
+		          init="flags & cons_volatile ? volatility_is_volatile : volatility_non_volatile",
+		          to_flags="%s == volatility_is_volatile ? cons_volatile : cons_none",
+		          comment="volatile CopyB nodes have a visible side-effect and may not be optimized"),
 	]
 	attr_struct = "copyb_attr"
 	constructor_args = [
-		dict(
-			type    = "ir_cons_flags",
-			name    = "flags",
-			comment = "specifies volatility",
-		),
+		Attribute("flags", type="ir_cons_flags",
+		          comment="specifies volatility"),
 	]
 	pinned      = "no"
 
@@ -502,16 +428,9 @@ class Div:
 	]
 	flags = [ "fragile", "uses_memory" ]
 	attrs = [
-		dict(
-			type    = "ir_mode*",
-			name    = "resmode",
-			comment = "mode of the result value",
-		),
-		dict(
-			name = "no_remainder",
-			type = "int",
-			init = "0",
-		)
+		Attribute("resmode", type="ir_mode*",
+		          comment="mode of the result value"),
+		Attribute("no_remainder", type="int", init="0"),
 	]
 	attr_struct = "div_attr"
 	pinned      = "exception"
@@ -609,33 +528,21 @@ class Load:
 	flags    = [ "fragile", "uses_memory" ]
 	pinned   = "exception"
 	attrs    = [
-		dict(
-			type      = "ir_mode*",
-			name      = "mode",
-			comment   = "mode of the value to be loaded",
-		),
-		dict(
-			type      = "ir_volatility",
-			name      = "volatility",
-			comment   = "volatile loads are a visible side-effect and may not be optimized",
-			init      = "flags & cons_volatile ? volatility_is_volatile : volatility_non_volatile",
-			to_flags  = "%s == volatility_is_volatile ? cons_volatile : cons_none"
-		),
-		dict(
-			type      = "ir_align",
-			name      = "unaligned",
-			comment   = "pointers to unaligned loads don't need to respect the load-mode/type alignments",
-			init      = "flags & cons_unaligned ? align_non_aligned : align_is_aligned",
-			to_flags  = "%s == align_non_aligned ? cons_unaligned : cons_none"
-		),
+		Attribute("mode", type="ir_mode*",
+		          comment="mode of the value to be loaded"),
+		Attribute("volatility", type="ir_volatility",
+		          init="flags & cons_volatile ? volatility_is_volatile : volatility_non_volatile",
+		          to_flags="%s == volatility_is_volatile ? cons_volatile : cons_none",
+		          comment="volatile loads are a visible side-effect and may not be optimized"),
+		Attribute("unaligned", type="ir_align",
+		          init="flags & cons_unaligned ? align_non_aligned : align_is_aligned",
+		          to_flags="%s == align_non_aligned ? cons_unaligned : cons_none",
+		          comment="pointers to unaligned loads don't need to respect the load-mode/type alignments"),
 	]
 	attr_struct = "load_attr"
 	constructor_args = [
-		dict(
-			type    = "ir_cons_flags",
-			name    = "flags",
-			comment = "specifies alignment, volatility and pin state",
-		),
+		Attribute("flags", type="ir_cons_flags",
+		          comment="specifies alignment, volatility and pin state"),
 	]
 	pinned_init = "flags & cons_floats ? op_pin_state_floats : op_pin_state_pinned"
 	throws_init = "(flags & cons_throws_exception) != 0"
@@ -673,11 +580,7 @@ class Mod:
 	]
 	flags = [ "fragile", "uses_memory" ]
 	attrs = [
-		dict(
-			type    = "ir_mode*",
-			name    = "resmode",
-			comment = "mode of the result",
-		),
+		Attribute("resmode", type="ir_mode*", comment="mode of the result"),
 	]
 	attr_struct = "mod_attr"
 	pinned      = "exception"
@@ -763,21 +666,18 @@ class Pin:
 @op
 class Proj:
 	"""returns an entry of a tuple value"""
-	ins              = [
+	ins        = [
 		("pred", "the tuple value from which a part is extracted"),
 	]
-	flags            = []
-	pinned           = "no"
-	knownBlock       = True
-	knownGraph       = True
-	block            = "get_nodes_block(irn_pred)"
-	graph            = "get_irn_irg(irn_pred)"
+	flags      = []
+	pinned     = "no"
+	knownBlock = True
+	knownGraph = True
+	block      = "get_nodes_block(irn_pred)"
+	graph      = "get_irn_irg(irn_pred)"
 	attrs      = [
-		dict(
-			type    = "long",
-			name    = "proj",
-			comment = "number of tuple component to be extracted",
-		),
+		Attribute("proj", type="long",
+		          comment="number of tuple component to be extracted"),
 	]
 	attr_struct = "proj_attr"
 
@@ -827,11 +727,8 @@ class Sel:
 	mode        = "is_Method_type(get_entity_type(entity)) ? mode_P_code : mode_P_data"
 	pinned      = "no"
 	attrs       = [
-		dict(
-			type    = "ir_entity*",
-			name    = "entity",
-			comment = "entity which is selected",
-		)
+		Attribute("entity", type="ir_entity*",
+		          comment="entity which is selected"),
 	]
 	attr_struct = "sel_attr"
 
@@ -898,27 +795,18 @@ class Store:
 	pinned_init = "flags & cons_floats ? op_pin_state_floats : op_pin_state_pinned"
 	throws_init = "(flags & cons_throws_exception) != 0"
 	attrs = [
-		dict(
-			type      = "ir_volatility",
-			name      = "volatility",
-			comment   = "volatile stores are a visible side-effect and may not be optimized",
-			init      = "flags & cons_volatile ? volatility_is_volatile : volatility_non_volatile",
-			to_flags  = "%s == volatility_is_volatile ? cons_volatile : cons_none"
-		),
-		dict(
-			type      = "ir_align",
-			name      = "unaligned",
-			comment   = "pointers to unaligned stores don't need to respect the load-mode/type alignments",
-			init      = "flags & cons_unaligned ? align_non_aligned : align_is_aligned",
-			to_flags  = "%s == align_non_aligned ? cons_unaligned : cons_none"
-		),
+		Attribute("volatility", type="ir_volatility",
+		          init="flags & cons_volatile ? volatility_is_volatile : volatility_non_volatile",
+		          to_flags="%s == volatility_is_volatile ? cons_volatile : cons_none",
+		          comment="volatile stores are a visible side-effect and may not be optimized"),
+		Attribute("unaligned", type="ir_align",
+		          init="flags & cons_unaligned ? align_non_aligned : align_is_aligned",
+		          to_flags="%s == align_non_aligned ? cons_unaligned : cons_none",
+		          comment="pointers to unaligned stores don't need to respect the load-mode/type alignments"),
 	]
 	constructor_args = [
-		dict(
-			type    = "ir_cons_flags",
-			name    = "flags",
-			comment = "specifies alignment, volatility and pin state",
-		),
+		Attribute("flags", type="ir_cons_flags",
+		          comment="specifies alignment, volatility and pin state"),
 	]
 
 @op

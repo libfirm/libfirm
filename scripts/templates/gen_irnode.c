@@ -76,13 +76,13 @@ ir_node *new_rd_{{node.name}}(
 	{{node.attr_struct}} *attr = &res->attr.{{node.attrs_name}};
 	{%- endif %}
 	{%- for attr in node.attrs %}
-	attr->{{attr["fqname"]}} =
-		{%- if "init" in attr %} {{ attr["init"] -}};
-		{%- else              %} {{ attr["name"] -}};
+	attr->{{attr.fqname}} =
+		{%- if attr.init %} {{ attr.init -}};
+		{%- else         %} {{ attr.name -}};
 		{%- endif %}
 	{%- endfor %}
 	{%- for attr in node.initattrs %}
-	attr->{{attr["fqname"]}} = {{ attr["init"] -}};
+	attr->{{attr.fqname}} = {{ attr.init -}};
 	{%- endfor %}
 	{%- endif %}
 	{{- node.init }}
