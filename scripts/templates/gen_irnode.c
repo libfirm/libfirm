@@ -135,21 +135,6 @@ ir_node *new_{{node.name}}(
 }
 {% endif %}
 
-int (is_{{node.name}})(const ir_node *node)
-{
-	return is_{{node.name}}_(node);
-}
-{%  for attr in node.attrs|hasnot("noprop") %}
-{{attr.type}} (get_{{node.name}}_{{attr.name}})(const ir_node *node)
-{
-	return get_{{node.name}}_{{attr.name}}_(node);
-}
-
-void (set_{{node.name}}_{{attr.name}})(ir_node *node, {{attr.type}} {{attr.name}})
-{
-	set_{{node.name}}_{{attr.name}}_(node, {{attr.name}});
-}
-{% endfor -%}
 {%- for input in node.ins %}
 ir_node *(get_{{node.name}}_{{input[0]}})(const ir_node *node)
 {
@@ -189,6 +174,26 @@ ir_op *get_op_{{node.name}}(void)
 {
 	return op_{{node.name}};
 }
+{% endfor %}
+
+{%- for node in nodes+abstract_nodes %}
+
+int (is_{{node.name}})(const ir_node *node)
+{
+	return is_{{node.name}}_(node);
+}
+{%- for attr in node.attrs|hasnot("noprop") %}
+
+{{attr.type}} (get_{{node.name}}_{{attr.name}})(const ir_node *node)
+{
+	return get_{{node.name}}_{{attr.name}}_(node);
+}
+
+void (set_{{node.name}}_{{attr.name}})(ir_node *node, {{attr.type}} {{attr.name}})
+{
+	set_{{node.name}}_{{attr.name}}_(node, {{attr.name}});
+}
+{%- endfor -%}
 {% endfor %}
 
 void {{spec.name}}_init_opcodes(void)

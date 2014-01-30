@@ -38,7 +38,7 @@ class EntConst(object):
 
 @abstract
 @op
-class TypeConst:
+class TypeConst(object):
 	"""A symbolic constant that represents an aspect of a type"""
 	name       = "typeconst"
 	flags      = [ "constlike", "start_block" ]

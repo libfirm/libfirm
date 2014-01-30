@@ -5,7 +5,7 @@
 import sys
 from jinja2 import Environment, Template, FileSystemLoader
 from spec_util import is_dynamic_pinned, isAbstract, setdefault, load_spec, Attribute
-from filters import format_arguments, filter_has, filter_hasnot
+from filters import format_arguments, format_filtjoin, filter_has, filter_hasnot
 
 def format_parameterlist(parameterlist):
 	return "\n".join(parameterlist)
@@ -190,6 +190,7 @@ env.filters['blockparameterhelp'] = format_blockparameterhelp
 env.filters['curblock']           = format_curblock
 env.filters['escape_keywords']    = format_escape_keywords
 env.filters['flags']              = format_flags
+env.filters['filtjoin']           = format_filtjoin
 env.filters['has']                = filter_has
 env.filters['hasnot']             = filter_hasnot
 env.filters['insdecl']            = format_insdecl
@@ -260,29 +261,31 @@ def preprocess_node(node):
 
 def prepare_nodes(nodes):
 	real_nodes = []
+	abstract_nodes = []
 	for node in nodes:
 		if isAbstract(node):
-			continue
-		real_nodes.append(node)
+			abstract_nodes.append(node)
+		else:
+			real_nodes.append(node)
 
 	for node in real_nodes:
 		preprocess_node(node)
 
-	return real_nodes
+	return (real_nodes, abstract_nodes)
 
 def main(argv):
 	if len(argv) < 3:
 		print("usage: %s specfile templatefile" % argv[0])
 		sys.exit(1)
 
-	specfile   = argv[1]
-	spec       = load_spec(specfile)
-	nodes      = spec.nodes
-	real_nodes = prepare_nodes(nodes)
+	specfile = argv[1]
+	spec     = load_spec(specfile)
+	(nodes, abstract_nodes) = prepare_nodes(spec.nodes)
 
 	templatefile = argv[2]
 
-	env.globals['nodes']   = real_nodes
+	env.globals['nodes']          = nodes
+	env.globals['abstract_nodes'] = abstract_nodes
 	env.globals['spec']    = spec
 	env.globals['len']     = len
 	env.globals['hasattr'] = hasattr

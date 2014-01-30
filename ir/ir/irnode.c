@@ -696,32 +696,27 @@ ir_entity *get_Call_callee(const ir_node *node)
 	return entity;
 }
 
-int (is_binop)(const ir_node *node)
-{
-	return is_binop_(node);
-}
-
 ir_node *get_binop_left(const ir_node *node)
 {
-	assert(node->op->opar == oparity_binary);
+	assert(is_binop(node));
 	return get_irn_n(node, node->op->op_index);
 }
 
 void set_binop_left(ir_node *node, ir_node *left)
 {
-	assert(node->op->opar == oparity_binary);
+	assert(is_binop(node));
 	set_irn_n(node, node->op->op_index, left);
 }
 
 ir_node *get_binop_right(const ir_node *node)
 {
-	assert(node->op->opar == oparity_binary);
+	assert(is_binop(node));
 	return get_irn_n(node, node->op->op_index + 1);
 }
 
 void set_binop_right(ir_node *node, ir_node *right)
 {
-	assert(node->op->opar == oparity_binary);
+	assert(is_binop(node));
 	set_irn_n(node, node->op->op_index + 1, right);
 }
 

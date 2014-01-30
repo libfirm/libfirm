@@ -351,10 +351,6 @@ FIRM_API ir_entity *get_Call_callee(const ir_node *call);
 /** Returns a human readable string for the ir_builtin_kind. */
 FIRM_API const char *get_builtin_kind_name(ir_builtin_kind kind);
 
-/** Tests whether node is a binary operation (opcode arity is #oparity_binary)
- * @returns 1 if @p node is an binary operation, 0 otherwise
- */
-FIRM_API int is_binop(const ir_node *node);
 /** Returns left operand of binary operation @p node. */
 FIRM_API ir_node *get_binop_left(const ir_node *node);
 /** Sets left operand of binary operation @p node. */

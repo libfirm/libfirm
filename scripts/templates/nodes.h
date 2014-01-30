@@ -150,6 +150,22 @@ ir_node **get_{{node.name}}_{{node.input_name}}_arr(ir_node *node);
 
 {% endfor -%}
 
+{% for node in abstract_nodes -%}
+/**
+ * Test if node is a {{node.name}}
+ * @returns 1 if the node is a {{node.name}} node, 0 otherwise
+ */
+{{FIRM_API}} int is_{{node.name}}(const ir_node *node);
+
+{%- for attr in node.attrs|hasnot("noprop") %}
+/** Returns {{attr.name}} attribute of {{node.name|a_an}} node. */
+{{FIRM_API}} {{attr.type}} get_{{node.name}}_{{attr.name}}(const ir_node *node);
+/** Sets {{attr.name}} attribute of {{node.name|a_an}} node. */
+{{FIRM_API}} void set_{{node.name}}_{{attr.name}}(ir_node *node, {{attr.type}} {{attr.name}});
+{% endfor -%}
+
+{% endfor %}
+
 /** @} */
 
 #endif
