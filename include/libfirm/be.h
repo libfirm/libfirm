@@ -159,7 +159,10 @@ typedef struct backend_params {
 } backend_params;
 
 /**
- * Parse one backend argument.
+ * Parse one backend argument. This is intended to provide commandline options
+ * to various backend parameters that might be changing.
+ * Returns -1 if 'help' was found, 0 if the argument could not be parsed,
+ * 1 if the option could be set.
  */
 FIRM_API int be_parse_arg(const char *arg);
 
