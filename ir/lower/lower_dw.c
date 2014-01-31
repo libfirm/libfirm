@@ -2509,6 +2509,7 @@ static void lower_Builtin(ir_node *builtin, ir_mode *mode)
 	case ir_bk_inner_trampoline:
 	case ir_bk_saturating_increment:
 	case ir_bk_compare_swap:
+	case ir_bk_may_alias:
 		/* Nothing to do/impossible to lower in a generic way */
 		return;
 	case ir_bk_bswap:

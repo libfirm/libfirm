@@ -42,6 +42,7 @@ static const char *get_builtin_name(ir_builtin_kind kind)
 	case ir_bk_inner_trampoline:
 	case ir_bk_saturating_increment:
 	case ir_bk_compare_swap:
+	case ir_bk_may_alias:
 		break;
 	}
 	abort();
@@ -103,6 +104,33 @@ static void replace_with_call(ir_node *node)
 	turn_into_tuple(node, ARRAY_SIZE(in), in);
 }
 
+static void replace_may_alias(ir_node *node)
+{
+	ir_node *in0   = get_Builtin_param(node, 0);
+	ir_node *in1   = get_Builtin_param(node, 1);
+	ir_type *type  = get_Builtin_type(node);
+	ir_type *type0 = get_pointer_points_to_type(get_method_param_type(type, 0));
+	ir_type *type1 = get_pointer_points_to_type(get_method_param_type(type, 1));
+	if (is_unknown_type(type0))
+		type0 = get_type_for_mode(mode_P);
+	if (is_unknown_type(type1))
+		type1 = get_type_for_mode(mode_P);
+	ir_type *rtype = get_method_res_type(type, 0);
+	ir_mode *rmode = get_type_mode(rtype);
+
+	ir_alias_relation alias = get_alias_relation(in0, type0, in1, type1);
+
+	ir_graph  *irg    = get_irn_irg(node);
+	ir_tarval *resval = alias == ir_no_alias
+	                  ? get_mode_null(rmode) : get_mode_one(rmode);
+	ir_node   *result = new_r_Const(irg, resval);
+	ir_node *const in[] = {
+		[pn_Builtin_M]     = get_Builtin_mem(node),
+		[pn_Builtin_max+1] = result,
+	};
+	turn_into_tuple(node, ARRAY_SIZE(in), in);
+}
+
 static void lower_builtin(ir_node *node, void *env)
 {
 	ir_builtin_kind kind;
@@ -131,6 +159,10 @@ static void lower_builtin(ir_node *node, void *env)
 	case ir_bk_bswap:
 		/* replace with a call */
 		replace_with_call(node);
+		return;
+
+	case ir_bk_may_alias:
+		replace_may_alias(node);
 		return;
 
 	case ir_bk_trap:

@@ -2426,6 +2426,8 @@ static ir_node *gen_Builtin(ir_node *node)
 		return gen_compare_swap(node);
 	case ir_bk_saturating_increment:
 		return gen_saturating_increment(node);
+	case ir_bk_may_alias:
+		break;
 	}
 	panic("Builtin %s not implemented", get_builtin_kind_name(kind));
 }
@@ -2467,6 +2469,8 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 			assert(pn == pn_Builtin_max+1);
 			return new_r_Proj(new_pred, mode_gp, pn_sparc_Cas_res);
 		}
+	case ir_bk_may_alias:
+		break;
 	}
 	panic("Builtin %s not implemented", get_builtin_kind_name(kind));
 }

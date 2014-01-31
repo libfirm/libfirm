@@ -276,23 +276,28 @@ typedef struct ir_asm_constraint {
  * @ingroup Builtin
  */
 typedef enum ir_builtin_kind {
-	ir_bk_trap,                   /**< GCC __builtin_trap(): insert trap */
-	ir_bk_debugbreak,             /**< MS __debugbreak(): insert debug break */
-	ir_bk_return_address,         /**< GCC __builtin_return_address() */
-	ir_bk_frame_address,          /**< GCC __builtin_frame_address() */
-	ir_bk_prefetch,               /**< GCC __builtin_prefetch() */
-	ir_bk_ffs,                    /**< GCC __builtin_ffs(): find first (least) significant 1 bit */
-	ir_bk_clz,                    /**< GCC __builtin_clz(): count leading zero */
-	ir_bk_ctz,                    /**< GCC __builtin_ctz(): count trailing zero */
-	ir_bk_popcount,               /**< GCC __builtin_popcount(): population count */
-	ir_bk_parity,                 /**< GCC __builtin_parity(): parity */
-	ir_bk_bswap,                  /**< byte swap */
-	ir_bk_inport,                 /**< in port */
-	ir_bk_outport,                /**< out port */
-	ir_bk_inner_trampoline,       /**< address of a trampoline for GCC inner functions */
-	ir_bk_saturating_increment,   /**< saturating increment */
-	ir_bk_compare_swap,           /**< compare exchange (aka. compare and swap) */
-	ir_bk_last = ir_bk_compare_swap,
+	ir_bk_trap,                 /**< GCC __builtin_trap(): insert trap */
+	ir_bk_debugbreak,           /**< MS __debugbreak(): insert debug break */
+	ir_bk_return_address,       /**< GCC __builtin_return_address() */
+	ir_bk_frame_address,        /**< GCC __builtin_frame_address() */
+	ir_bk_prefetch,             /**< GCC __builtin_prefetch() */
+	ir_bk_ffs,                  /**< GCC __builtin_ffs(): find first (least)
+	                                 significant 1 bit */
+	ir_bk_clz,                  /**< GCC __builtin_clz(): count leading zero */
+	ir_bk_ctz,                  /**< GCC __builtin_ctz(): count trailing zero */
+	ir_bk_popcount,             /**< GCC __builtin_popcount(): population
+	                                 count */
+	ir_bk_parity,               /**< GCC __builtin_parity(): parity */
+	ir_bk_bswap,                /**< byte swap */
+	ir_bk_inport,               /**< in port */
+	ir_bk_outport,              /**< out port */
+	ir_bk_inner_trampoline,     /**< address of a trampoline for GCC inner
+	                                 functions */
+	ir_bk_saturating_increment, /**< saturating increment */
+	ir_bk_compare_swap,         /**< compare exchange (aka. compare and swap) */
+	ir_bk_may_alias,            /**< replaced by 0 if args cannot alias,
+	                                 1 otherwise */
+	ir_bk_last = ir_bk_may_alias,
 } ir_builtin_kind;
 
 /**

@@ -5124,6 +5124,8 @@ static ir_node *gen_Builtin(ir_node *node)
 		return gen_saturating_increment(node);
 	case ir_bk_compare_swap:
 		return gen_compare_swap(node);
+	case ir_bk_may_alias:
+		break;
 	}
 	panic("Builtin %s not implemented", get_builtin_kind_name(kind));
 }
@@ -5177,6 +5179,8 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 			assert(get_Proj_proj(proj) == pn_Builtin_max+1);
 			return new_r_Proj(new_node, ia32_mode_gp, pn_ia32_CmpXChgMem_res);
 		}
+	case ir_bk_may_alias:
+		break;
 	}
 	panic("Builtin %s not implemented", get_builtin_kind_name(kind));
 }
