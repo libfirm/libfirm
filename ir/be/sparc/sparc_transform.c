@@ -581,6 +581,40 @@ static ir_node *gen_ASM(ir_node *node)
 	return new_node;
 }
 
+/* Transforms the left operand of a binary operation.
+ *
+ * Performs sign/zero extension if necessary.
+ */
+static ir_node *gen_helper_binop_left(ir_node *left, dbg_info *dbgi,
+                                      ir_node *block, match_flags_t flags)
+{
+	ir_mode *mode     = get_irn_mode(left);
+	ir_node *new_left = be_transform_node(left);
+
+	if (flags & MATCH_MODE_NEUTRAL)
+		return new_left;
+
+	int bits    = get_mode_size_bits(mode);
+	int gp_bits = get_mode_size_bits(mode_gp);
+
+	if (bits >= gp_bits)
+		return new_left;
+
+	if (flags & MATCH_SIGN_EXT_LEFT) {
+		if (!mode_is_signed(mode) || needs_extension(left)) {
+			return gen_sign_extension(dbgi, block, new_left, bits);
+		}
+	} else if (flags & MATCH_ZERO_EXT_LEFT) {
+		if (mode_is_signed(mode) || needs_extension(left)) {
+			return gen_zero_extension(dbgi, block, new_left, bits);
+		}
+	} else if (needs_extension(left)) {
+		return gen_extension(dbgi, block, new_left, mode);
+	}
+
+	return new_left;
+}
+
 /**
  * helper function for binop operations
  *
@@ -600,26 +634,14 @@ static ir_node *gen_helper_binop_args(ir_node *node,
 		op1 = skip_downconv(op1);
 		op2 = skip_downconv(op2);
 	}
-	ir_mode *mode1 = get_irn_mode(op1);
 	ir_mode *mode2 = get_irn_mode(op2);
-	/* we shouldn't see 64bit code */
-	assert(get_mode_size_bits(mode1) <= 32);
+	/* we should not see 64bit code */
+	assert(get_mode_size_bits(get_irn_mode(op1)) <= 32);
 	assert(get_mode_size_bits(mode2) <= 32);
 
 	if (is_imm_encodeable(op2)) {
 		int32_t  immediate = get_tarval_long(get_Const_tarval(op2));
-		ir_node *new_op1 = be_transform_node(op1);
-		if (! (flags & MATCH_MODE_NEUTRAL) && needs_extension(op1)) {
-			if (flags & MATCH_SIGN_EXT_LEFT) {
-				int bits = get_mode_size_bits(mode1);
-				new_op1 = gen_sign_extension(dbgi, block, new_op1, bits);
-			} else if (flags & MATCH_ZERO_EXT_LEFT) {
-				int bits = get_mode_size_bits(mode1);
-				new_op1 = gen_zero_extension(dbgi, block, new_op1, bits);
-			} else {
-				new_op1 = gen_extension(dbgi, block, new_op1, mode1);
-			}
-		}
+		ir_node *new_op1   = gen_helper_binop_left(op1, dbgi, block, flags);
 		return new_imm(dbgi, block, new_op1, NULL, immediate);
 	}
 	ir_node *new_op2 = be_transform_node(op2);
@@ -632,18 +654,7 @@ static ir_node *gen_helper_binop_args(ir_node *node,
 		return new_imm(dbgi, block, new_op2, NULL, immediate);
 	}
 
-	ir_node *new_op1 = be_transform_node(op1);
-	if (! (flags & MATCH_MODE_NEUTRAL) && needs_extension(op1)) {
-		if (flags & MATCH_SIGN_EXT_LEFT) {
-			int bits = get_mode_size_bits(mode1);
-			new_op1 = gen_sign_extension(dbgi, block, new_op1, bits);
-		} else if (flags & MATCH_ZERO_EXT_LEFT) {
-			int bits = get_mode_size_bits(mode1);
-			new_op1 = gen_zero_extension(dbgi, block, new_op1, bits);
-		} else {
-			new_op1 = gen_extension(dbgi, block, new_op1, mode1);
-		}
-	}
+	ir_node *new_op1 = gen_helper_binop_left(op1, dbgi, block, flags);
 	return new_reg(dbgi, block, new_op1, new_op2);
 }
 
