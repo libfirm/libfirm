@@ -1746,95 +1746,96 @@ static bool is_cmp_equality_zero(const ir_node *node, ir_relation relation)
 }
 
 /**
- * Optimize a Or(And(Or(And(v,c4),c3),c2),c1) pattern if possible.
- * Such pattern may arise in bitfield stores.
+ * Optimizes a chain of bitwise operations with constants.
  *
- * value  c4                  value      c4 & c2
- *    AND     c3                    AND           c1 | c3
- *        OR     c2      ===>               OR
- *           AND    c1
- *               OR
- *
- *
- * value  c2                 value  c1
- *     AND   c1    ===>           OR     if (c1 | c2) == 0x111..11
- *        OR
+ * In general, we can reduce each chain down to two operations.
+ * For instance, we transform OR(XOR(AND(x, c1), c2), c3)
+ * into XOR(AND(x, c4), c5) with some magic constants c4 and c5.
  */
-static ir_node *transform_node_Or_bf_store(ir_node *irn_or)
+static ir_node *transform_bitop_chain(ir_node *irn)
 {
-	ir_mode *mode = get_irn_mode(irn_or);
+	ir_mode   *mode       = get_irn_mode(irn);
+	ir_tarval *tv_null    = get_mode_null(mode);
+	unsigned   operations = 0;
+	ir_node   *current    = irn;
 
-	for (;;) {
-		const ir_node *irn_and = get_binop_left(irn_or);
-		ir_node       *c1      = get_binop_right(irn_or);
-		if (!is_Const(c1) || !is_And(irn_and))
-			return irn_or;
+	/* These tarvals have a bit set iff the corresponding action takes place. */
+	ir_tarval *cleared    = tv_null;
+	ir_tarval *flipped    = tv_null;
+	ir_tarval *set        = tv_null;
+	ir_tarval *unmodified = get_mode_all_one(mode);
 
-		ir_node       *or_l = get_binop_left(irn_and);
-		const ir_node *c2   = get_binop_right(irn_and);
-		if (!is_Const(c2))
-			return irn_or;
+	/* Walk the chain and adapt the tarvals.
+	 * Note that the current operation is performed *before* the old ones. */
+	for (;;++operations) {
+		if (is_Not(current)) {
+			ir_tarval *old_flipped = flipped;
+			flipped    = unmodified;
+			unmodified = old_flipped;
+			current    = get_Not_op(current);
+		} else if (is_binop(current)) {
+			ir_node *right = get_binop_right(current);
+			if (!is_Const(right))
+				break;
 
-		ir_tarval       *tv1 = get_Const_tarval(c1);
-		ir_tarval       *tv2 = get_Const_tarval(c2);
-		const ir_tarval *tv  = tarval_or(tv1, tv2);
-		if (tarval_is_all_one(tv)) {
-			/* the AND does NOT clear a bit with isn't set by the OR */
-			set_binop_left(irn_or, or_l);
-			set_binop_right(irn_or, c1);
+			ir_node   *left = get_binop_left(current);
+			ir_tarval *tv   = get_Const_tarval(right);
 
-			/* check for more */
-			continue;
+			switch (get_irn_opcode(current)) {
+			case iro_And: {
+				cleared    = tarval_or(cleared, tarval_andnot(unmodified, tv));
+				set        = tarval_or(set, tarval_andnot(flipped, tv));
+				flipped    = tarval_and(flipped, tv);
+				unmodified = tarval_and(unmodified, tv);
+				current    = left;
+				continue;
+			}
+
+			case iro_Eor: {
+				ir_tarval *old_flipped = flipped;
+				flipped    = tarval_or(tarval_andnot(flipped, tv), tarval_and(unmodified, tv));
+				unmodified = tarval_or(tarval_andnot(unmodified, tv), tarval_and(old_flipped, tv));
+				current    = left;
+				continue;
+			}
+
+			case iro_Or: {
+				cleared    = tarval_or(cleared, tarval_and(flipped, tv));
+				set        = tarval_or(set, tarval_and(unmodified, tv));
+				flipped    = tarval_andnot(flipped, tv);
+				unmodified = tarval_andnot(unmodified, tv);
+				current    = left;
+				continue;
+			}
+
+			default:
+				break;
+			}
 		}
-
-		if (!is_Or(or_l) && !is_Or_Eor_Add(or_l))
-			return irn_or;
-
-		const ir_node *and_l = get_binop_left(or_l);
-		const ir_node *c3    = get_binop_right(or_l);
-		if (!is_Const(c3) || !is_And(and_l))
-			return irn_or;
-
-		ir_node       *value = get_binop_left(and_l);
-		const ir_node *c4    = get_binop_right(and_l);
-		if (!is_Const(c4))
-			return irn_or;
-
-		/* ok, found the pattern, check for conditions */
-		assert(mode == get_irn_mode(irn_and));
-		assert(mode == get_irn_mode(or_l));
-		assert(mode == get_irn_mode(and_l));
-
-		ir_tarval *tv3 = get_Const_tarval(c3);
-		ir_tarval *tv4 = get_Const_tarval(c4);
-
-		tv = tarval_or(tv4, tv2);
-		if (!tarval_is_all_one(tv)) {
-			/* have at least one 0 at the same bit position */
-			return irn_or;
-		}
-
-		if (tv3 != tarval_andnot(tv3, tv4)) {
-			/* bit in the or_mask is outside the and_mask */
-			return irn_or;
-		}
-
-		if (tv1 != tarval_andnot(tv1, tv2)) {
-			/* bit in the or_mask is outside the and_mask */
-			return irn_or;
-		}
-
-		/* ok, all conditions met */
-		ir_node  *block     = get_nodes_block(irn_or);
-		ir_graph *irg       = get_irn_irg(block);
-		ir_node  *new_and   = new_r_And(block, value, new_r_Const(irg, tarval_and(tv4, tv2)), mode);
-		ir_node  *new_const = new_r_Const(irg, tarval_or(tv3, tv1));
-
-		set_binop_left(irn_or, new_and);
-		set_binop_right(irn_or, new_const);
-
-		/* check for more */
+		break;
 	}
+
+	unsigned nedded_operations = 3 - tarval_is_null(cleared)
+	                               - tarval_is_null(flipped)
+	                               - tarval_is_null(set);
+	nedded_operations -= nedded_operations == 3;
+
+	/* We can generate a shorter sequence. */
+	if (nedded_operations < operations) {
+		ir_graph  *irg     = get_irn_irg(irn);
+		ir_tarval *tv_mask = tarval_not(tarval_or(cleared, set));
+		ir_tarval *tv_flip = tarval_or(flipped, set);
+		ir_node   *mask    = new_r_Const(irg, tv_mask);
+		ir_node   *flip    = new_r_Const(irg, tv_flip);
+		dbg_info  *dbgi    = get_irn_dbg_info(irn);
+		ir_node   *block   = get_nodes_block(irn);
+		ir_node   *and     = new_rd_And(dbgi, block, current, mask, mode);
+		ir_node   *eor     = new_rd_Eor(dbgi, block, and, flip, mode);
+
+		return eor;
+	}
+
+	return irn;
 }
 
 /**
@@ -2164,7 +2165,7 @@ static ir_node *transform_node_Or_(ir_node *n)
 	ir_node *c;
 	HANDLE_BINOP_PHI((eval_func) tarval_or, a, b, c, mode);
 
-	n = transform_node_Or_bf_store(n);
+	n = transform_bitop_chain(n);
 	if (n != oldn)
 		return n;
 
@@ -2249,6 +2250,10 @@ static ir_node *transform_node_Eor_(ir_node *n)
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
 		return n;
 	}
+
+	n = transform_bitop_chain(n);
+	if (n != oldn)
+		return n;
 
 	n = transform_bitwise_distributive(n, transform_node_Eor_);
 	if (n != oldn)
@@ -3500,6 +3505,10 @@ static ir_node *transform_node_And(ir_node *n)
 		}
 	}
 
+	n = transform_bitop_chain(n);
+	if (n != oldn)
+		return n;
+
 	n = transform_bitwise_distributive(n, transform_node_And);
 	if (is_And(n))
 		n = transform_node_bitop_shift(n);
@@ -3589,6 +3598,8 @@ static ir_node *transform_node_Not(ir_node *n)
 			}
 		}
 	}
+
+	n = transform_bitop_chain(n);
 	return n;
 }
 
