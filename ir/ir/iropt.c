@@ -2389,6 +2389,33 @@ static ir_node *transform_node_Add(ir_node *n)
 					return n;
 				}
 			}
+			if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_ARCH_DEP)) {
+				if (is_Mul(a)) {
+					ir_node *a_right = get_Mul_right(a);
+					ir_node *a_left  = get_Mul_left(a);
+					if (a_left == b && is_Const(a_right)) {
+						ir_tarval *c     = get_Const_tarval(a_right);
+						ir_tarval *one   = get_mode_one(mode);
+						ir_tarval *cadd1 = tarval_add(c, one);
+						ir_node   *newc  = new_r_Const(irg, cadd1);
+						dbg_info  *dbgi  = get_irn_dbg_info(a);
+						ir_node   *block = get_nodes_block(n);
+						return new_rd_Mul(dbgi, block, a_left, newc, mode);
+					}
+				} else if (is_Mul(b)) {
+					ir_node *b_right = get_Mul_right(b);
+					ir_node *b_left  = get_Mul_left(b);
+					if (b_left == a && is_Const(b_right)) {
+						ir_tarval *c     = get_Const_tarval(b_right);
+						ir_tarval *one   = get_mode_one(mode);
+						ir_tarval *cadd1 = tarval_add(c, one);
+						ir_node   *newc  = new_r_Const(irg, cadd1);
+						dbg_info  *dbgi  = get_irn_dbg_info(a);
+						ir_node   *block = get_nodes_block(n);
+						return new_rd_Mul(dbgi, block, b_left, newc, mode);
+					}
+				}
+			}
 		}
 	}
 
