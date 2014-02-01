@@ -1745,6 +1745,14 @@ static bool is_cmp_equality_zero(const ir_node *node, ir_relation relation)
 		    && relation == ir_relation_greater);
 }
 
+static bool is_binop_const(ir_node *const irn, ir_node *const left, ir_tarval *const val)
+{
+	if (!irn || get_binop_left(irn) != left)
+		return false;
+	ir_node *const r = get_binop_right(irn);
+	return is_Const(r) && get_Const_tarval(r) == val;
+}
+
 /**
  * Optimizes a chain of bitwise operations with constants.
  *
@@ -1762,12 +1770,17 @@ static ir_node *transform_bitop_chain(ir_node *const irn)
 
 	/* Walk the chain and adapt the tarvals.
 	 * Note that the current operation is performed *before* the old ones. */
-	ir_node *current    = irn;
-	unsigned operations = 0;
-	for (;; ++operations) {
+	ir_node *current = irn;
+	/* Remember the highest node of these kinds. They may be reused later on. */
+	ir_node *top_and = NULL;
+	ir_node *top_eor = NULL;
+	ir_node *top_not = NULL;
+	ir_node *top_or  = NULL;
+	for (;;) {
 		if (is_Not(current)) {
 			/* ~x & keep ^ flip -> x & keep ^ (flip ^ keep) */
 			flip    = tarval_eor(flip, keep);
+			top_not = current;
 			current = get_Not_op(current);
 		} else if (is_binop(current)) {
 			ir_node *const right = get_binop_right(current);
@@ -1778,18 +1791,21 @@ static ir_node *transform_bitop_chain(ir_node *const irn)
 			switch (get_irn_opcode(current)) {
 			case iro_And:
 				/* (x & c) & keep ^ flip -> x & (keep & c) ^ flip */
-				keep = tarval_and(keep, c);
+				keep    = tarval_and(keep, c);
+				top_and = current;
 				break;
 
 			case iro_Eor:
 				/* (x ^ c) & keep ^ flip -> x & keep ^ (flip ^ (keep & c)) */
-				flip = tarval_eor(flip, tarval_and(keep, c));
+				flip    = tarval_eor(flip, tarval_and(keep, c));
+				top_eor = current;
 				break;
 
 			case iro_Or:
 				/* (x | c) & keep ^ flip -> x & (keep & ~c) ^ (flip ^ (keep & c)) */
-				flip = tarval_eor(flip, tarval_and(keep, c));
-				keep = tarval_andnot(keep, c);
+				flip   = tarval_eor(flip, tarval_and(keep, c));
+				keep   = tarval_andnot(keep, c);
+				top_or = current;
 				break;
 
 			default:
@@ -1802,22 +1818,50 @@ static ir_node *transform_bitop_chain(ir_node *const irn)
 	}
 chain_end:;
 
-	unsigned nedded_operations = !tarval_is_all_one(keep) + !tarval_is_null(flip);
-
-	/* We can generate a shorter sequence. */
-	if (nedded_operations < operations) {
-		ir_graph  *irg   = get_irn_irg(irn);
-		ir_node   *keepc = new_r_Const(irg, keep);
-		ir_node   *flipc = new_r_Const(irg, flip);
-		dbg_info  *dbgi  = get_irn_dbg_info(irn);
-		ir_node   *block = get_nodes_block(irn);
-		ir_node   *and   = new_rd_And(dbgi, block, current, keepc, mode);
-		ir_node   *eor   = new_rd_Eor(dbgi, block, and,     flipc, mode);
-
-		return eor;
+	ir_node        *res   = current;
+	dbg_info *const dbgi  = get_irn_dbg_info(irn);
+	ir_node  *const block = get_nodes_block(irn);
+	ir_graph *const irg   = get_Block_irg(block);
+	if (!tarval_is_all_one(keep)) {
+		if (tarval_is_all_one(tarval_eor(keep, flip))) {
+			/* Chain is an Or. */
+			if (is_binop_const(top_or, res, flip)) {
+				res = top_or;
+			} else {
+				ir_node *const orc = new_r_Const(irg, flip);
+				res = new_rd_Or(dbgi, block, res, orc, mode);
+			}
+		} else {
+			/* Chain starts with an And. */
+			if (is_binop_const(top_and, res, keep)) {
+				res = top_and;
+			} else {
+				ir_node *const andc = new_r_Const(irg, keep);
+				res = new_rd_And(dbgi, block, res, andc, mode);
+			}
+			goto flip;
+		}
+	} else if (tarval_is_all_one(flip)) {
+		/* Chain is a Not. */
+		if (top_not && get_Not_op(top_not) == res) {
+			res = top_not;
+		} else {
+			res = new_rd_Not(dbgi, block, res, mode);
+		}
+	} else {
+flip:
+		if (!tarval_is_null(flip)) {
+			/* Chain ends with an Eor. */
+			if (is_binop_const(top_eor, res, flip)) {
+				res = top_eor;
+			} else {
+				ir_node *const eorc = new_r_Const(irg, flip);
+				res = new_rd_Eor(dbgi, block, res, eorc, mode);
+			}
+		}
 	}
 
-	return irn;
+	return res;
 }
 
 /**
