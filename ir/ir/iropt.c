@@ -1752,85 +1752,67 @@ static bool is_cmp_equality_zero(const ir_node *node, ir_relation relation)
  * For instance, we transform OR(XOR(AND(x, c1), c2), c3)
  * into XOR(AND(x, c4), c5) with some magic constants c4 and c5.
  */
-static ir_node *transform_bitop_chain(ir_node *irn)
+static ir_node *transform_bitop_chain(ir_node *const irn)
 {
-	ir_mode   *mode       = get_irn_mode(irn);
-	ir_tarval *tv_null    = get_mode_null(mode);
-	unsigned   operations = 0;
-	ir_node   *current    = irn;
+	ir_mode *const mode = get_irn_mode(irn);
 
 	/* These tarvals have a bit set iff the corresponding action takes place. */
-	ir_tarval *cleared    = tv_null;
-	ir_tarval *flipped    = tv_null;
-	ir_tarval *set        = tv_null;
-	ir_tarval *unmodified = get_mode_all_one(mode);
+	ir_tarval *keep = get_mode_all_one(mode); /* And mask. */
+	ir_tarval *flip = get_mode_null(mode);    /* Eor mask. */
 
 	/* Walk the chain and adapt the tarvals.
 	 * Note that the current operation is performed *before* the old ones. */
-	for (;;++operations) {
+	ir_node *current    = irn;
+	unsigned operations = 0;
+	for (;; ++operations) {
 		if (is_Not(current)) {
-			ir_tarval *old_flipped = flipped;
-			flipped    = unmodified;
-			unmodified = old_flipped;
-			current    = get_Not_op(current);
+			/* ~x & keep ^ flip -> x & keep ^ (flip ^ keep) */
+			flip    = tarval_eor(flip, keep);
+			current = get_Not_op(current);
 		} else if (is_binop(current)) {
-			ir_node *right = get_binop_right(current);
+			ir_node *const right = get_binop_right(current);
 			if (!is_Const(right))
+				goto chain_end;
+
+			ir_tarval *const c = get_Const_tarval(right);
+			switch (get_irn_opcode(current)) {
+			case iro_And:
+				/* (x & c) & keep ^ flip -> x & (keep & c) ^ flip */
+				keep = tarval_and(keep, c);
 				break;
 
-			ir_node   *left = get_binop_left(current);
-			ir_tarval *tv   = get_Const_tarval(right);
+			case iro_Eor:
+				/* (x ^ c) & keep ^ flip -> x & keep ^ (flip ^ (keep & c)) */
+				flip = tarval_eor(flip, tarval_and(keep, c));
+				break;
 
-			switch (get_irn_opcode(current)) {
-			case iro_And: {
-				cleared    = tarval_or(cleared, tarval_andnot(unmodified, tv));
-				set        = tarval_or(set, tarval_andnot(flipped, tv));
-				flipped    = tarval_and(flipped, tv);
-				unmodified = tarval_and(unmodified, tv);
-				current    = left;
-				continue;
-			}
-
-			case iro_Eor: {
-				ir_tarval *old_flipped = flipped;
-				flipped    = tarval_or(tarval_andnot(flipped, tv), tarval_and(unmodified, tv));
-				unmodified = tarval_or(tarval_andnot(unmodified, tv), tarval_and(old_flipped, tv));
-				current    = left;
-				continue;
-			}
-
-			case iro_Or: {
-				cleared    = tarval_or(cleared, tarval_and(flipped, tv));
-				set        = tarval_or(set, tarval_and(unmodified, tv));
-				flipped    = tarval_andnot(flipped, tv);
-				unmodified = tarval_andnot(unmodified, tv);
-				current    = left;
-				continue;
-			}
+			case iro_Or:
+				/* (x | c) & keep ^ flip -> x & (keep & ~c) ^ (flip ^ (keep & c)) */
+				flip = tarval_eor(flip, tarval_and(keep, c));
+				keep = tarval_andnot(keep, c);
+				break;
 
 			default:
-				break;
+				goto chain_end;
 			}
+			current = get_binop_left(current);
+		} else {
+			goto chain_end;
 		}
-		break;
 	}
+chain_end:;
 
-	unsigned nedded_operations = 3 - tarval_is_null(cleared)
-	                               - tarval_is_null(flipped)
-	                               - tarval_is_null(set);
-	nedded_operations -= nedded_operations == 3;
+	unsigned nedded_operations = !tarval_is_all_one(keep) + !tarval_is_null(flip);
 
 	/* We can generate a shorter sequence. */
 	if (nedded_operations < operations) {
-		ir_graph  *irg     = get_irn_irg(irn);
-		ir_tarval *tv_mask = tarval_not(tarval_or(cleared, set));
-		ir_tarval *tv_flip = tarval_or(flipped, set);
-		ir_node   *mask    = new_r_Const(irg, tv_mask);
-		ir_node   *flip    = new_r_Const(irg, tv_flip);
-		dbg_info  *dbgi    = get_irn_dbg_info(irn);
-		ir_node   *block   = get_nodes_block(irn);
-		ir_node   *and     = new_rd_And(dbgi, block, current, mask, mode);
-		ir_node   *eor     = new_rd_Eor(dbgi, block, and, flip, mode);
+		ir_graph  *irg   = get_irn_irg(irn);
+		ir_node   *keepc = new_r_Const(irg, keep);
+		ir_node   *flipc = new_r_Const(irg, flip);
+		dbg_info  *dbgi  = get_irn_dbg_info(irn);
+		ir_node   *block = get_nodes_block(irn);
+		ir_node   *and   = new_rd_And(dbgi, block, current, keepc, mode);
+		ir_node   *eor   = new_rd_Eor(dbgi, block, and,     flipc, mode);
 
 		return eor;
 	}
