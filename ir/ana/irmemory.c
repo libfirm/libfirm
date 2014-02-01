@@ -82,7 +82,7 @@ ir_storage_class_class_t get_base_sc(ir_storage_class_class_t x)
  *
  * @return the base address.
  */
-static const ir_node *find_base_adr(const ir_node *node, ir_entity **pEnt)
+static const ir_node *find_base_addr(const ir_node *node, ir_entity **pEnt)
 {
 	const ir_node *member = NULL;
 	for (;;) {
@@ -99,244 +99,6 @@ static const ir_node *find_base_adr(const ir_node *node, ir_entity **pEnt)
 	if (member != NULL)
 		*pEnt = get_Member_entity(member);
 	return node;
-}
-
-/**
- * Check if a given Const node is greater or equal a given size.
- *
- * @param cns   a Const node
- * @param size  a integer size
- *
- * @return ir_no_alias if the Const is greater, ir_may_alias else
- */
-static ir_alias_relation check_const(const ir_node *cns, int size)
-{
-	ir_tarval *tv = get_Const_tarval(cns);
-
-	if (size == 0)
-		return tarval_is_null(tv) ? ir_may_alias : ir_no_alias;
-	ir_tarval *tv_size = new_tarval_from_long(size, get_tarval_mode(tv));
-	return tarval_cmp(tv_size, tv) & (ir_relation_less_equal) ? ir_no_alias : ir_may_alias;
-}
-
-/**
- * Treat idx1 and idx2 as integer indexes and check if they differ always more than size.
- *
- * @param idx1  a node representing the first index
- * @param idx2  a node representing the second index
- * @param size  an integer size
- *
- * @return ir_sure_alias iff idx1 == idx2
- *         ir_no_alias iff they ALWAYS differ more than size
- *         ir_may_alias else
- */
-static ir_alias_relation different_index(const ir_node *idx1,
-                                         const ir_node *idx2, int size)
-{
-	if (idx1 == idx2)
-		return ir_sure_alias;
-	if (is_Const(idx1) && is_Const(idx2)) {
-		/* both are const, we can compare them */
-		ir_tarval *tv1 = get_Const_tarval(idx1);
-		ir_tarval *tv2 = get_Const_tarval(idx2);
-		if (size == 0)
-			return tv1 == tv2 ? ir_sure_alias : ir_no_alias;
-
-		/* arg, modes may be different */
-		ir_mode *m1 = get_tarval_mode(tv1);
-		ir_mode *m2 = get_tarval_mode(tv2);
-		if (m1 != m2) {
-			int size = get_mode_size_bits(m1) - get_mode_size_bits(m2);
-
-			if (size < 0) {
-				/* m1 is a small mode, cast up */
-				m1 = mode_is_signed(m1) ? find_signed_mode(m2) : find_unsigned_mode(m2);
-				if (m1 == NULL) {
-					/* should NOT happen, but if it does we give up here */
-					return ir_may_alias;
-				}
-				tv1 = tarval_convert_to(tv1, m1);
-			} else if (size > 0) {
-				/* m2 is a small mode, cast up */
-				m2 = mode_is_signed(m2) ? find_signed_mode(m1) : find_unsigned_mode(m1);
-				if (m2 == NULL) {
-					/* should NOT happen, but if it does we give up here */
-					return ir_may_alias;
-				}
-				tv2 = tarval_convert_to(tv2, m2);
-			}
-			/* here the size should be identical, check for signed */
-			if (get_mode_sign(m1) != get_mode_sign(m2)) {
-				/* find the signed */
-				if (mode_is_signed(m2)) {
-					ir_tarval *t = tv1;
-					tv1 = tv2;
-					tv2 = t;
-					ir_mode *tm = m1;
-					m1 = m2;
-					m2 = tm;
-				}
-
-				/* m1 is now the signed one */
-				if (!tarval_is_negative(tv1)) {
-					/* tv1 is signed, but >= 0, simply cast into unsigned */
-					tv1 = tarval_convert_to(tv1, m2);
-				} else {
-					ir_tarval *tv_size = new_tarval_from_long(size, m2);
-					if (tarval_cmp(tv2, tv_size) & (ir_relation_greater_equal)) {
-						/* tv1 is negative and tv2 >= tv_size, so the difference is bigger than size */
-						return ir_no_alias;
-					}
-					/* tv_size > tv2, so we can subtract without overflow */
-					tv2 = tarval_sub(tv_size, tv2, NULL);
-
-					/* tv1 is < 0, so we can negate it */
-					tv1 = tarval_neg(tv1);
-
-					/* cast it into unsigned. for two-complement it does the right thing for MIN_INT */
-					tv1 = tarval_convert_to(tv1, m2);
-
-					/* now we can compare without overflow */
-					return tarval_cmp(tv1, tv2) & (ir_relation_greater_equal) ? ir_no_alias : ir_may_alias;
-				}
-			}
-		}
-		if (tarval_cmp(tv1, tv2) == ir_relation_greater) {
-			ir_tarval *t = tv1;
-			tv1 = tv2;
-			tv2 = t;
-		}
-		/* tv1 is now the "smaller" one */
-		ir_tarval *tv      = tarval_sub(tv2, tv1, NULL);
-		ir_tarval *tv_size = new_tarval_from_long(size, get_tarval_mode(tv));
-		return tarval_cmp(tv_size, tv) & (ir_relation_less_equal) ? ir_no_alias : ir_may_alias;
-	}
-
-	/* Note: we rely here on the fact that normalization puts constants on the RIGHT side */
-	if (is_Add(idx1)) {
-		ir_node *l1 = get_Add_left(idx1);
-		ir_node *r1 = get_Add_right(idx1);
-
-		if (l1 == idx2) {
-			/* x + c == y */
-			if (is_Const(r1))
-				return check_const(r1, size);
-		}
-		if (is_Add(idx2)) {
-			/* both are Adds, check if they are of x + a == x + b kind */
-			ir_node *l2 = get_Add_left(idx2);
-			ir_node *r2 = get_Add_right(idx2);
-
-			if (l1 == l2)
-				return different_index(r1, r2, size);
-			else if (l1 == r2)
-				return different_index(r1, l2, size);
-			else if (r1 == r2)
-				return different_index(l1, l2, size);
-			else if (r1 == l2)
-				return different_index(l1, r2, size);
-		}
-	}
-	if (is_Add(idx2)) {
-		ir_node *l2 = get_Add_left(idx2);
-		ir_node *r2 = get_Add_right(idx2);
-
-		if (l2 == idx1) {
-			/* x + c == y */
-			if (is_Const(r2))
-				return check_const(r2, size);
-		}
-	}
-
-	if (is_Sub(idx1)) {
-		ir_node *l1 = get_Sub_left(idx1);
-		ir_node *r1 = get_Sub_right(idx1);
-
-		if (l1 == idx2) {
-			/* x - c == y */
-			if (is_Const(r1))
-				return check_const(r1, size);
-		}
-
-		if (is_Sub(idx2)) {
-			/* both are Subs, check if they are of x - a == x - b kind */
-			ir_node *l2 = get_Sub_left(idx2);
-
-			if (l1 == l2) {
-				ir_node *r2 = get_Sub_right(idx2);
-				return different_index(r1, r2, size);
-			}
-		}
-	}
-	if (is_Sub(idx2)) {
-		ir_node *l2 = get_Sub_left(idx2);
-		ir_node *r2 = get_Sub_right(idx2);
-
-		if (l2 == idx1) {
-			/* x - c == y */
-			if (is_Const(r2))
-				return check_const(r2, size);
-		}
-
-	}
-	return ir_may_alias;
-}
-
-/**
- * Two Sel addresses have the same base address, check if their offsets are
- * different.
- *
- * @param addr1  The first address.
- * @param addr2  The second address.
- */
-static ir_alias_relation different_sel_offsets(const ir_node *sel1,
-                                               const ir_node *sel2)
-{
-	/* TODO: fix */
-	(void) sel1;
-	(void) sel2;
-#if 0
-	ir_entity *ent1 = get_Sel_entity(sel1);
-	ir_entity *ent2 = get_Sel_entity(sel2);
-	int i, check_arr = 0;
-
-	if (ent1 == ent2) {
-		check_arr = 1;
-	} else {
-		ir_type *tp1 = get_entity_type(ent1);
-		ir_type *tp2 = get_entity_type(ent2);
-
-		if (tp1 == tp2)
-			check_arr = 1;
-		else if (get_type_state(tp1) == layout_fixed && get_type_state(tp2) == layout_fixed &&
-		         get_type_size_bytes(tp1) == get_type_size_bytes(tp2))
-			check_arr = 1;
-	}
-	if (check_arr) {
-		/* we select an entity of same size, check for indexes */
-		int n = get_Sel_n_indexs(sel1);
-		int have_no = 0;
-
-		if (n > 0 && n == get_Sel_n_indexs(sel2)) {
-			/* same non-zero number of indexes, an array access, check */
-			for (i = 0; i < n; ++i) {
-				ir_node *idx1 = get_Sel_index(sel1, i);
-				ir_node *idx2 = get_Sel_index(sel2, i);
-				ir_alias_relation res = different_index(idx1, idx2, 0); /* we can safely IGNORE the size here if it's at least >0 */
-
-				if (res == may_alias)
-					return may_alias;
-				else if (res == no_alias)
-					have_no = 1;
-			}
-			/* if we have at least one no_alias, there is no alias relation, else we have sure */
-			return have_no > 0 ? no_alias : sure_alias;
-		}
-	}
-#else
-	(void) different_index;
-#endif
-	return ir_may_alias;
 }
 
 /**
@@ -552,7 +314,8 @@ follow_ptr2:
 	 * FIXME: type long is not sufficient for this task ...
 	 */
 	if (addr1 == addr2 && sym_offset1 == sym_offset2 && have_const_offsets) {
-		unsigned long first_offset, last_offset;
+		unsigned long first_offset;
+		unsigned long last_offset;
 		unsigned first_type_size;
 
 		if (offset1 <= offset2) {
@@ -565,33 +328,40 @@ follow_ptr2:
 			first_type_size = get_type_size_bytes(type2);
 		}
 
-		if (first_offset + first_type_size <= last_offset)
-			return ir_no_alias;
-		else
-			return ir_sure_alias;
+		return first_offset + first_type_size <= last_offset
+		     ? ir_no_alias : ir_sure_alias;
 	}
 
 	/* skip Sels/Members */
 	ir_entity     *ent1  = NULL;
 	ir_entity     *ent2  = NULL;
-	const ir_node *base1 = find_base_adr(addr1, &ent1);
-	const ir_node *base2 = find_base_adr(addr2, &ent2);
+	const ir_node *base1 = find_base_addr(addr1, &ent1);
+	const ir_node *base2 = find_base_addr(addr2, &ent2);
 
 	/* same base address -> compare entities */
-	if (base1 == base2 && ent1 != NULL && ent2 != NULL) {
-		if (ent1 != ent2) {
-			long offset1 = get_entity_offset(ent1);
-			long offset2 = get_entity_offset(ent2);
-			long size1   = get_type_size_bytes(type1);
-			long size2   = get_type_size_bytes(type2);
-
-			if (offset1 + size1 <= offset2 || offset2 + size2 <= offset1) {
-				return ir_no_alias;
-			}
-
+	if (ent1 != NULL && ent2 != NULL) {
+		if (ent1 == ent2)
+			return base1 == base2 ? ir_sure_alias : ir_may_alias;
+		ir_type *owner1 = get_entity_owner(ent1);
+		ir_type *owner2 = get_entity_owner(ent2);
+		if (owner1 != owner2) {
+			/* TODO: usually selecting different entities from different owners
+			 * leads to no alias, but in C we may have a union type where
+			 * the first element towards owner1+owner2 and the fields inside
+			 * owner1+owner2 are compatible, then they may alias too.
+			 * We should detect this case reliably and say no_alias in all
+			 * other cases. */
 			return ir_may_alias;
-		} else if (have_const_offsets)
-			return different_sel_offsets(addr1, addr2);
+		}
+		/* same owner, different entities? They may only alias if we have a
+		 * union or if we have two bitfield members where the base units
+		 * overlap. */
+		/* TODO: can we test if the base units actually overlap in the bitfield
+		 * case? */
+		return is_Union_type(owner1) ||
+		    (get_entity_bitfield_size(ent1) > 0
+		     || get_entity_bitfield_size(ent2) > 0)
+		    ? ir_may_alias : ir_no_alias;
 	}
 
 	ir_storage_class_class_t mod1   = classify_pointer(base1, ent1);
@@ -600,12 +370,14 @@ follow_ptr2:
 	ir_storage_class_class_t class2 = get_base_sc(mod2);
 
 	/* struct-access cannot alias with variables */
-	if (ent1 == NULL && ent2 != NULL && is_compound_type(get_entity_owner(ent2))
-		&& (class1 == ir_sc_globalvar || class1 == ir_sc_localvar || class1 == ir_sc_tls || class1 == ir_sc_globaladdr)) {
+	if (ent1 == NULL && ent2 != NULL
+	    && (class1 == ir_sc_globalvar || class1 == ir_sc_localvar
+	        || class1 == ir_sc_tls || class1 == ir_sc_globaladdr)) {
 		return ir_no_alias;
 	}
-	if (ent2 == NULL && ent1 != NULL && is_compound_type(get_entity_owner(ent1))
-		&& (class2 == ir_sc_globalvar || class2 == ir_sc_localvar || class2 == ir_sc_tls || class2 == ir_sc_globaladdr)) {
+	if (ent2 == NULL && ent1 != NULL
+	    && (class2 == ir_sc_globalvar || class2 == ir_sc_localvar
+	        || class2 == ir_sc_tls || class2 == ir_sc_globaladdr)) {
 		return ir_no_alias;
 	}
 
@@ -655,6 +427,8 @@ follow_ptr2:
 				return ir_no_alias;
 			else
 				return ir_sure_alias;
+		} else if (class1 == ir_sc_malloced) {
+			return base1 == base2 ? ir_sure_alias : ir_no_alias;
 		}
 	}
 
@@ -702,7 +476,6 @@ leave_type_based_alias:;
 			return rel;
 	}
 
-	/* access points-to information here */
 	return ir_may_alias;
 }
 
