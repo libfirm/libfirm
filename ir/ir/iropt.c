@@ -2399,6 +2399,7 @@ static ir_node *transform_node_Add(ir_node *n)
 					ir_node *a_right = get_Mul_right(a);
 					ir_node *a_left  = get_Mul_left(a);
 					if (a_left == b && is_Const(a_right)) {
+						/* (x * c) + x -> x * (c + 1) */
 						ir_tarval *c     = get_Const_tarval(a_right);
 						ir_tarval *one   = get_mode_one(mode);
 						ir_tarval *cadd1 = tarval_add(c, one);
@@ -2411,6 +2412,7 @@ static ir_node *transform_node_Add(ir_node *n)
 					ir_node *b_right = get_Mul_right(b);
 					ir_node *b_left  = get_Mul_left(b);
 					if (b_left == a && is_Const(b_right)) {
+						/* x + (x * c) -> x * (c + 1) */
 						ir_tarval *c     = get_Const_tarval(b_right);
 						ir_tarval *one   = get_mode_one(mode);
 						ir_tarval *cadd1 = tarval_add(c, one);
