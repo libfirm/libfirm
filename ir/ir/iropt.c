@@ -2421,7 +2421,8 @@ static ir_node *transform_node_Add(ir_node *n)
 					y = get_commutative_other_op(a, x);
 					if (y) /* (x * y) + x -> x * (y + 1) */
 						goto mul_y_plus_1;
-				} else if (is_Mul(b)) {
+				}
+				if (is_Mul(b)) {
 					x = a;
 					y = get_commutative_other_op(b, x);
 					if (y) {
