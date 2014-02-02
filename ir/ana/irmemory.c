@@ -634,6 +634,16 @@ static ir_entity_usage determine_entity_usage(const ir_node *irn,
 			break;
 		}
 
+		case iro_Builtin: {
+			ir_builtin_kind kind = get_Builtin_kind(succ);
+			/* the parameters of the may_alias builtin do not lead to
+			 * read/write or address taken. */
+			if (kind == ir_bk_may_alias)
+				break;
+			res |= ir_usage_unknown;
+			break;
+		}
+
 		default:
 			/* another op, we don't know anything (we could do more advanced
 			 * things like a dataflow analysis here) */
