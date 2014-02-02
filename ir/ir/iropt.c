@@ -2414,31 +2414,24 @@ static ir_node *transform_node_Add(ir_node *n)
 				}
 			}
 			if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_ARCH_DEP)) {
+				ir_node *x;
+				ir_node *y;
 				if (is_Mul(a)) {
-					ir_node *a_right = get_Mul_right(a);
-					ir_node *a_left  = get_Mul_left(a);
-					if (a_left == b && is_Const(a_right)) {
-						/* (x * c) + x -> x * (c + 1) */
-						ir_tarval *c     = get_Const_tarval(a_right);
-						ir_tarval *one   = get_mode_one(mode);
-						ir_tarval *cadd1 = tarval_add(c, one);
-						ir_node   *newc  = new_r_Const(irg, cadd1);
-						dbg_info  *dbgi  = get_irn_dbg_info(a);
-						ir_node   *block = get_nodes_block(n);
-						return new_rd_Mul(dbgi, block, a_left, newc, mode);
-					}
+					x = b;
+					y = get_commutative_other_op(a, x);
+					if (y) /* (x * y) + x -> x * (y + 1) */
+						goto mul_y_plus_1;
 				} else if (is_Mul(b)) {
-					ir_node *b_right = get_Mul_right(b);
-					ir_node *b_left  = get_Mul_left(b);
-					if (b_left == a && is_Const(b_right)) {
-						/* x + (x * c) -> x * (c + 1) */
-						ir_tarval *c     = get_Const_tarval(b_right);
-						ir_tarval *one   = get_mode_one(mode);
-						ir_tarval *cadd1 = tarval_add(c, one);
-						ir_node   *newc  = new_r_Const(irg, cadd1);
-						dbg_info  *dbgi  = get_irn_dbg_info(a);
-						ir_node   *block = get_nodes_block(n);
-						return new_rd_Mul(dbgi, block, b_left, newc, mode);
+					x = a;
+					y = get_commutative_other_op(b, x);
+					if (y) {
+						/* x + (x * y) -> x * (y + 1) */
+mul_y_plus_1:;
+						ir_node  *const z     = new_r_Const(irg, get_mode_one(mode));
+						dbg_info *const dbgi  = get_irn_dbg_info(n);
+						ir_node  *const block = get_nodes_block(n);
+						ir_node  *const sum   = new_rd_Add(dbgi, block, y, z, mode);
+						return new_rd_Mul(dbgi, block, x, sum, mode);
 					}
 				}
 			}
