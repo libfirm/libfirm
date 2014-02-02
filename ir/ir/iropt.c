@@ -5163,6 +5163,20 @@ static ir_node *transform_node_Shl(ir_node *n)
 	ir_mode *mode = get_irn_mode(n);
 	ir_node *c;
 
+	ir_graph *const irg = get_irn_irg(n);
+	if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_ARCH_DEP)) {
+		if (is_Const(b)) {
+			/* Normalisation: x << c -> x * (1 << c) */
+			dbg_info  *const dbgi  = get_irn_dbg_info(n);
+			ir_node   *const block = get_nodes_block(n);
+			ir_mode   *const mode  = get_irn_mode(n);
+			ir_tarval *const one   = get_mode_one(mode);
+			ir_tarval *const val   = tarval_shl(one, get_Const_tarval(b));
+			ir_node   *const cnst  = new_r_Const(irg, val);
+			return new_rd_Mul(dbgi, block, a, cnst, mode);
+		}
+	}
+
 	HANDLE_BINOP_PHI((eval_func) tarval_shl, a, b, c, mode);
 	n = transform_node_shift(n);
 

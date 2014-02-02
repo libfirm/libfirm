@@ -390,43 +390,6 @@ static int reassoc_Mul(ir_node **node)
 }
 
 /**
- * Reassociate Shl. We transform Shl(x, const) into Mul's if possible.
- */
-static int reassoc_Shl(ir_node **node)
-{
-	ir_node   *n = *node;
-	ir_node   *c = get_Shl_right(n);
-	ir_node   *x, *blk, *irn;
-	ir_graph  *irg;
-	ir_mode   *mode;
-	ir_tarval *tv;
-
-	if (! is_Const(c))
-		return 0;
-
-	x = get_Shl_left(n);
-	mode = get_irn_mode(x);
-
-	tv = get_mode_one(mode);
-	tv = tarval_shl(tv, get_Const_tarval(c));
-
-	if (tv == tarval_bad)
-		return 0;
-
-	blk = get_nodes_block(n);
-	irg = get_irn_irg(blk);
-	c   = new_r_Const(irg, tv);
-	irn = new_rd_Mul(get_irn_dbg_info(n), blk, x, c, mode);
-
-	if (irn != n) {
-		exchange(n, irn);
-		*node = irn;
-		return 1;
-	}
-	return 0;
-}
-
-/**
  * The walker for the reassociation.
  */
 static void wq_walker(ir_node *n, void *env)
@@ -811,7 +774,6 @@ void ir_register_reassoc_node_ops(void)
 	register_node_reassoc_func(op_Mul, reassoc_Mul);
 	register_node_reassoc_func(op_Or,  reassoc_commutative);
 	register_node_reassoc_func(op_Sub, reassoc_Sub);
-	register_node_reassoc_func(op_Shl, reassoc_Shl);
 }
 
 /* initialize the reassociation by adding operations to some opcodes */
