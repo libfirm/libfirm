@@ -2416,11 +2416,26 @@ static ir_node *transform_node_Add(ir_node *n)
 			if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_ARCH_DEP)) {
 				ir_node *x;
 				ir_node *y;
+				ir_node *z;
 				if (is_Mul(a)) {
 					x = b;
 					y = get_commutative_other_op(a, x);
 					if (y) /* (x * y) + x -> x * (y + 1) */
 						goto mul_y_plus_1;
+					if (is_Mul(b)) {
+						ir_node *const al = get_Mul_left(a);
+						ir_node *const ar = get_Mul_right(a);
+						x = al;
+						y = ar;
+						z = get_commutative_other_op(b, x);
+						if (z) /* (x * y) + (x * z) -> x * (y + z) */
+							goto mul_y_plus_z;
+						x = ar;
+						y = al;
+						z = get_commutative_other_op(b, y);
+						if (z) /* (y * x) + (x * z) -> x * (y + z) */
+							goto mul_y_plus_z;
+					}
 				}
 				if (is_Mul(b)) {
 					x = a;
@@ -2428,7 +2443,8 @@ static ir_node *transform_node_Add(ir_node *n)
 					if (y) {
 						/* x + (x * y) -> x * (y + 1) */
 mul_y_plus_1:;
-						ir_node  *const z     = new_r_Const(irg, get_mode_one(mode));
+						z = new_r_Const(irg, get_mode_one(mode));
+mul_y_plus_z:;
 						dbg_info *const dbgi  = get_irn_dbg_info(n);
 						ir_node  *const block = get_nodes_block(n);
 						ir_node  *const sum   = new_rd_Add(dbgi, block, y, z, mode);
