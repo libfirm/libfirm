@@ -1202,17 +1202,19 @@ static ir_node *gen_Div(ir_node *node)
 		                          new_bd_sparc_fdiv_d, new_bd_sparc_fdiv_q);
 	}
 
+	ir_node *mem     = get_Div_mem(node);
+	ir_node *new_mem = be_transform_node(mem);
 	ir_node *res;
 	if (mode_is_signed(mode)) {
 		ir_node *left_high = gen_sign_extension_value(left);
 
 		if (is_imm_encodeable(right)) {
 			int32_t immediate = get_tarval_long(get_Const_tarval(right));
-			res = new_bd_sparc_SDiv_imm(dbgi, new_block, left_high, left_low,
+			res = new_bd_sparc_SDiv_imm(dbgi, new_block, new_mem, left_high, left_low,
 			                            NULL, immediate);
 		} else {
 			ir_node *new_right = be_transform_node(right);
-			res = new_bd_sparc_SDiv_reg(dbgi, new_block, left_high, left_low,
+			res = new_bd_sparc_SDiv_reg(dbgi, new_block, new_mem, left_high, left_low,
 			                            new_right);
 		}
 	} else {
@@ -1220,11 +1222,11 @@ static ir_node *gen_Div(ir_node *node)
 		ir_node  *left_high = get_g0(irg);
 		if (is_imm_encodeable(right)) {
 			int32_t immediate = get_tarval_long(get_Const_tarval(right));
-			res = new_bd_sparc_UDiv_imm(dbgi, new_block, left_high, left_low,
+			res = new_bd_sparc_UDiv_imm(dbgi, new_block, new_mem, left_high, left_low,
 			                            NULL, immediate);
 		} else {
 			ir_node *new_right = be_transform_node(right);
-			res = new_bd_sparc_UDiv_reg(dbgi, new_block, left_high, left_low,
+			res = new_bd_sparc_UDiv_reg(dbgi, new_block, new_mem, left_high, left_low,
 			                            new_right);
 		}
 	}

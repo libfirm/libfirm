@@ -816,7 +816,7 @@ static void fill_delay_slot(const ir_node *node)
 
 static void emit_sparc_Div(const ir_node *node, char const *const insn)
 {
-	sparc_emitf(node, "wr %S0, 0, %%y");
+	sparc_emitf(node, "wr %S1, 0, %%y");
 
 	/* TODO: we should specify number of delayslots in an architecture
 	 * specification */
@@ -831,7 +831,7 @@ static void emit_sparc_Div(const ir_node *node, char const *const insn)
 		}
 	}
 
-	sparc_emitf(node, "%s %S1, %SI2, %D0", insn);
+	sparc_emitf(node, "%s %S2, %SI3, %D0", insn);
 }
 
 static void emit_sparc_SDiv(const ir_node *node)

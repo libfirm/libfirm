@@ -205,10 +205,10 @@ my %div_operand_constructors = (
 	imm => {
 		attr       => "ir_entity *immediate_entity, int32_t immediate_value",
 		custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
-		reg_req    => { in => [ "gp", "gp" ], out => [ "gp" ] },
+		reg_req    => { in => [ "none", "gp", "gp" ], out => [ "gp", "none" ] },
 	},
 	reg => {
-		reg_req    => { in => [ "gp", "gp", "gp" ], out => [ "gp" ] },
+		reg_req    => { in => [ "none", "gp", "gp", "gp" ], out => [ "gp", "none" ] },
 	},
 );
 
@@ -716,16 +716,18 @@ UMulh => {
 
 SDiv => {
 	irn_flags    => [ "rematerializable", "has_delay_slot" ],
+	op_flags     => [ "uses_memory" ],
 	state        => "exc_pinned",
-	ins          => [ "dividend_high", "dividend_low", "divisor" ],
+	ins          => [ "mem", "dividend_high", "dividend_low", "divisor" ],
 	outs         => [ "res", "M" ],
 	constructors => \%div_operand_constructors,
 },
 
 UDiv => {
 	irn_flags    => [ "rematerializable", "has_delay_slot" ],
+	op_flags     => [ "uses_memory" ],
 	state        => "exc_pinned",
-	ins          => [ "dividend_high", "dividend_low", "divisor" ],
+	ins          => [ "mem", "dividend_high", "dividend_low", "divisor" ],
 	outs         => [ "res", "M" ],
 	constructors => \%div_operand_constructors,
 },
