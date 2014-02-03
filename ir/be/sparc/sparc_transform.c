@@ -1571,12 +1571,6 @@ static ir_node *gen_Cmp(ir_node *node)
 			                        MATCH_NONE);
 			arch_set_irn_register(new_node, &sparc_registers[REG_FLAGS]);
 			return new_node;
-		} else if (is_Add(op1)) {
-			ir_node *new_node = gen_helper_binop(op1, MATCH_COMMUTATIVE,
-			                        new_bd_sparc_AddCCZero_reg,
-			                        new_bd_sparc_AddCCZero_imm);
-			arch_set_irn_register(new_node, &sparc_registers[REG_FLAGS]);
-			return new_node;
 		} else if (is_Mul(op1)) {
 			ir_node *new_node = gen_helper_binop(op1, MATCH_COMMUTATIVE,
 			                        new_bd_sparc_MulCCZero_reg,
