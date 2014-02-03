@@ -1199,7 +1199,7 @@ static ir_node *gen_Div(ir_node *node)
 
 	if (mode_is_float(mode)) {
 		return gen_helper_binfpop(node, mode, new_bd_sparc_fdiv_s,
-								  new_bd_sparc_fdiv_d, new_bd_sparc_fdiv_q);
+		                          new_bd_sparc_fdiv_d, new_bd_sparc_fdiv_q);
 	}
 
 	ir_node *res;
