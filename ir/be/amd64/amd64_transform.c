@@ -1926,6 +1926,7 @@ void amd64_transform_graph(ir_graph *irg)
 	ir_type   *mtp    = get_entity_type(entity);
 	current_cconv = amd64_decide_calling_convention(mtp, irg);
 	amd64_create_stacklayout(irg, current_cconv);
+	be_add_parameter_entity_stores(irg);
 
 	heights = heights_new(irg);
 	x86_calculate_non_address_mode_nodes(irg);
