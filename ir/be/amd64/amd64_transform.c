@@ -902,21 +902,25 @@ static ir_node *gen_Not(ir_node *const node)
 
 static ir_node *gen_Sel(ir_node *const node)
 {
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
-	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *ptr       = get_Sel_ptr(node);
-	ir_graph *irg       = get_irn_irg(node);
-	ir_node  *base      = get_frame_base(irg);
+	ir_node   *block     = get_nodes_block(node);
+	ir_node   *new_block = be_transform_node(block);
+	dbg_info  *dbgi      = get_irn_dbg_info(node);
+	ir_node   *ptr       = get_Sel_ptr(node);
+	ir_graph  *irg       = get_irn_irg(node);
+	ir_node   *base      = get_frame_base(irg);
+	ir_entity *entity    = get_Sel_entity(node);
 	if (!is_Proj(ptr) || !is_Start(get_Proj_pred(ptr)))
 		panic("Sel not lowered");
 	if (get_Sel_n_indexs(node) > 0)
 		panic("array Sel not lowered %+F", node);
+	if (is_parameter_entity(entity) &&
+	    get_entity_parameter_number(entity) == IR_VA_START_PARAMETER_NUMBER)
+	    panic("va_start NIY");
 	amd64_addr_t addr;
 	memset(&addr, 0, sizeof(addr));
 	addr.base_input  = 0;
 	addr.index_input = NO_INPUT;
-	addr.immediate.entity = get_Sel_entity(node);
+	addr.immediate.entity = entity;
 	ir_node *in[] = { base };
 	ir_node *res = new_bd_amd64_Lea(dbgi, new_block, ARRAY_SIZE(in), in,
 	                                INSN_MODE_64, addr);
