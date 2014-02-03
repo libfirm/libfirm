@@ -247,20 +247,19 @@ static void transform_MemPerm(ir_node *node)
 	}
 
 	/* create pops */
-	for (i = arity - 1; i >= 0; --i) {
+	for (i = arity; i-- > 0; ) {
 		ir_entity *inent = be_get_MemPerm_in_entity(node, i);
 		ir_entity *outent = be_get_MemPerm_out_entity(node, i);
 		ir_type *enttype = get_entity_type(outent);
 		unsigned entsize = get_type_size_bytes(enttype);
 		unsigned entsize2 = get_type_size_bytes(get_entity_type(inent));
-		ir_node *pop;
 
 		/* work around cases where entities have different sizes */
 		if (entsize2 < entsize)
 			entsize = entsize2;
 		assert(entsize == 8);
 
-		pop = create_pop(node, node, sp, outent);
+		ir_node *pop = create_pop(node, node, sp, outent);
 		sp = create_spproj(pop, pn_amd64_PopAM_stack);
 		pops[i] = pop;
 	}
