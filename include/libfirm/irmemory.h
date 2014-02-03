@@ -39,11 +39,9 @@ typedef enum ir_entity_usage_computed_state {
 
 /** Possible options for the memory disambiguator. */
 typedef enum ir_disambuigator_options {
-	aa_opt_no_opt               = 0,  /**< no options: most conservative */
+	aa_opt_no_opt               = 0,  /**< no options: always assume aliasing */
 	aa_opt_type_based           = 1,  /**< use type based alias analysis: strict typed source language */
 	aa_opt_byte_type_may_alias  = 2,  /**< if type based analysis is enabled: bytes types may alias other types */
-	aa_opt_no_alias_args        = 4,  /**< arguments do not alias each other but may alias global storage */
-	aa_opt_no_alias_args_global = 8,  /**< arguments do not alias global storage */
 	aa_opt_no_alias             = 16, /**< two addresses NEVER alias, use with CAUTION (gcc -fno-alias) */
 	aa_opt_inherited            = 128 /**< only for implementation: options from a graph are inherited from global */
 } ir_disambuigator_options;
@@ -58,14 +56,17 @@ ENUM_BITSET(ir_disambuigator_options)
 typedef enum ir_storage_class_class_t {
 	ir_sc_pointer           = 0x0,  /**< generic pointer, may be anything */
 	ir_sc_globalvar         = 0x1,  /**< an address of a global variable */
-	ir_sc_localvar          = 0x2,  /**< an address of a local variable or method argument */
-	ir_sc_tls               = 0x3,  /**< an address of a thread local storage variable */
+	ir_sc_localvar          = 0x2,  /**< an address of a local variable */
+	ir_sc_argument          = 0x3,  /**< an address of a function argument */
+	ir_sc_tls               = 0x3,  /**< an address of a thread local storage
+	                                     variable */
 	ir_sc_malloced          = 0x4,  /**< an allocated heap address */
 	ir_sc_globaladdr        = 0x5,  /**< a constant address of something */
+	ir_sc_null              = 0x6,  /**< null pointer */
 
-	ir_sc_modifier_nottaken = 0x80, /**< if set, the address of the variable was not taken */
-	ir_sc_modifier_argument = 0x40, /**< if set pointer was a function argument */
-	ir_sc_modifiers         = ir_sc_modifier_nottaken | ir_sc_modifier_argument
+	ir_sc_modifier_nottaken = 0x80, /**< if set, the address of the variable
+	                                     was not taken */
+	ir_sc_modifiers         = ir_sc_modifier_nottaken
 } ir_storage_class_class_t;
 ENUM_BITSET(ir_storage_class_class_t)
 

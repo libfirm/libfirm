@@ -182,14 +182,23 @@ ir_storage_class_class_t classify_pointer(const ir_node *irn,
 			res |= ir_sc_modifier_nottaken;
 	} else if (irn == get_irg_frame(irg)) {
 		res = ir_sc_localvar;
-		if (ent != NULL && !(get_entity_usage(ent) & ir_usage_address_taken))
-			res |= ir_sc_modifier_nottaken;
-	} else if (is_Proj(irn) && is_malloc_Result(irn)) {
-		return ir_sc_malloced;
+		if (ent != NULL) {
+			if (is_parameter_entity(ent))
+				res = ir_sc_argument;
+			if (!(get_entity_usage(ent) & ir_usage_address_taken))
+				res |= ir_sc_modifier_nottaken;
+		}
+	} else if (is_Proj(irn)) {
+		if (is_malloc_Result(irn))
+			return ir_sc_malloced;
+		else if (is_arg_Proj(irn))
+			return ir_sc_argument;
 	} else if (is_Const(irn)) {
-		return ir_sc_globaladdr;
-	} else if (is_arg_Proj(irn)) {
-		res |= ir_sc_modifier_argument;
+		ir_tarval *tv = get_Const_tarval(irn);
+		if (tarval_is_null(tv))
+			return ir_sc_null;
+		else
+			return ir_sc_globaladdr;
 	}
 
 	return res;
@@ -338,48 +347,40 @@ follow_ptr2:
 	const ir_node *base1 = find_base_addr(addr1, &ent1);
 	const ir_node *base2 = find_base_addr(addr2, &ent2);
 
-	/* same base address -> compare entities */
+	/* two struct accesses -> compare entities */
 	if (ent1 != NULL && ent2 != NULL) {
-		if (ent1 == ent2)
-			return base1 == base2 ? ir_sure_alias : ir_may_alias;
+		if (ent1 == ent2) {
+			if (base1 == base2)
+				return ir_sure_alias;
+			goto check_classes;
+		}
 		ir_type *owner1 = get_entity_owner(ent1);
 		ir_type *owner2 = get_entity_owner(ent2);
 		if (owner1 != owner2) {
-			/* TODO: usually selecting different entities from different owners
-			 * leads to no alias, but in C we may have a union type where
-			 * the first element towards owner1+owner2 and the fields inside
-			 * owner1+owner2 are compatible, then they may alias too.
-			 * We should detect this case reliably and say no_alias in all
-			 * other cases. */
-			return ir_may_alias;
+			/* TODO: We have to differentiate 3 cases:
+			 * - owner1 or owner2 is a type used in a the type subtree
+			 *   in the other.
+			 * - If there exists a union type where the first elements towards
+			 *   owner1+owner2 and the fields inside owner1+owner2 are
+			 *   compatible, then they may alias.
+			 * - All other cases cannot alias.
+			 */
+			goto check_classes;
 		}
 		/* same owner, different entities? They may only alias if we have a
-		 * union or if we have two bitfield members where the base units
-		 * overlap. */
+		 * union or if one of them is a bitfield members. */
 		/* TODO: can we test if the base units actually overlap in the bitfield
 		 * case? */
-		return is_Union_type(owner1) ||
-		    (get_entity_bitfield_size(ent1) > 0
-		     || get_entity_bitfield_size(ent2) > 0)
-		    ? ir_may_alias : ir_no_alias;
+		if (!is_Union_type(owner1) && get_entity_bitfield_size(ent1) == 0
+		    && get_entity_bitfield_size(ent2) == 0)
+		    return ir_no_alias;
 	}
 
+check_classes:;
 	ir_storage_class_class_t mod1   = classify_pointer(base1, ent1);
 	ir_storage_class_class_t mod2   = classify_pointer(base2, ent2);
-	ir_storage_class_class_t class1 = get_base_sc(mod1);
-	ir_storage_class_class_t class2 = get_base_sc(mod2);
-
-	/* struct-access cannot alias with variables */
-	if (ent1 == NULL && ent2 != NULL
-	    && (class1 == ir_sc_globalvar || class1 == ir_sc_localvar
-	        || class1 == ir_sc_tls || class1 == ir_sc_globaladdr)) {
-		return ir_no_alias;
-	}
-	if (ent2 == NULL && ent1 != NULL
-	    && (class2 == ir_sc_globalvar || class2 == ir_sc_localvar
-	        || class2 == ir_sc_tls || class2 == ir_sc_globaladdr)) {
-		return ir_no_alias;
-	}
+	ir_storage_class_class_t class1 = mod1 & ~ir_sc_modifiers;
+	ir_storage_class_class_t class2 = mod2 & ~ir_sc_modifiers;
 
 	if (class1 == ir_sc_pointer || class2 == ir_sc_pointer) {
 		/* swap pointer class to class1 */
@@ -387,25 +388,20 @@ follow_ptr2:
 			ir_storage_class_class_t temp = mod1;
 			mod1 = mod2;
 			mod2 = temp;
-			class1 = get_base_sc(mod1);
-			class2 = get_base_sc(mod2);
+
+			temp = class1;
+			class1 = class2;
+			class2 = temp;
 		}
 		/* a pointer and an object whose address was never taken */
 		if (mod2 & ir_sc_modifier_nottaken) {
 			return ir_no_alias;
 		}
-		if (mod1 & ir_sc_modifier_argument) {
-			if ( (options & aa_opt_no_alias_args)
-					&& (mod2 & ir_sc_modifier_argument))
-				return ir_no_alias;
-			if ( (options & aa_opt_no_alias_args_global)
-					&& (class2 == ir_sc_globalvar
-						|| class2 == ir_sc_tls
-						|| class2 == ir_sc_globaladdr))
-				return ir_no_alias;
-		}
+		/* the null pointer aliases nothing */
+		if (class2 == ir_sc_null)
+			return ir_no_alias;
 	} else if (class1 != class2) {
-		/* two objects from different memory spaces */
+		/* objects from different memory spaces cannot alias */
 		return ir_no_alias;
 	} else {
 		/* both classes are equal */
@@ -536,7 +532,10 @@ static ir_entity_usage determine_entity_usage(const ir_node *irn,
                                               const ir_entity *entity)
 {
 	unsigned res = 0;
-	foreach_irn_out_r(irn, i, succ) {
+	for (int i = get_irn_n_outs(irn); i-- > 0; ) {
+		int            succ_pos;
+		const ir_node *succ  = get_irn_out_ex(irn, i, &succ_pos);
+
 		switch (get_irn_opcode(succ)) {
 		case iro_Load:
 			/* beware: irn might be a Id node here, so irn might be not
@@ -552,10 +551,9 @@ static ir_entity_usage determine_entity_usage(const ir_node *irn,
 
 		case iro_Store:
 			/* check that the node is not the Store's value */
-			if (irn == get_Store_value(succ)) {
+			if (succ_pos == n_Store_value) {
 				res |= ir_usage_unknown;
-			}
-			if (irn == get_Store_ptr(succ)) {
+			} else if (succ_pos == n_Store_ptr) {
 				res |= ir_usage_write;
 
 				/* check if this Store is not a hidden conversion */
@@ -575,10 +573,10 @@ static ir_entity_usage determine_entity_usage(const ir_node *irn,
 				/* bad, different types, might be a hidden conversion */
 				res |= ir_usage_reinterpret_cast;
 			}
-			if (irn == get_CopyB_dst(succ)) {
+			if (succ_pos == n_CopyB_dst) {
 				res |= ir_usage_write;
 			} else {
-				assert(irn == get_CopyB_src(succ));
+				assert(succ_pos == n_CopyB_src);
 				res |= ir_usage_read;
 			}
 			break;
@@ -594,45 +592,39 @@ static ir_entity_usage determine_entity_usage(const ir_node *irn,
 
 		case iro_Member: {
 			ir_entity *member_entity = get_Member_entity(succ);
-			/* this analysis can't handle unions correctly */
-			if (is_Union_type(get_entity_owner(member_entity))) {
-				res |= ir_usage_unknown;
-				break;
-			}
 			/* Check the successor of irn. */
 			res |= determine_entity_usage(succ, member_entity);
 			break;
 		}
 
 		case iro_Call:
-			if (irn == get_Call_ptr(succ)) {
+			if (succ_pos == n_Call_ptr) {
 				/* TODO: we could check for reinterpret casts here...
 				 * But I doubt anyone is interested in that bit for
 				 * function entities and I'm too lazy to write the code now.
 				 */
 				res |= ir_usage_read;
 			} else {
-				assert(irn != get_Call_mem(succ));
-				res |= ir_usage_unknown;
+				assert(succ_pos != n_Call_mem);
+				int arg_nr = succ_pos - n_Call_max - 1;
+				ir_type *type     = get_Call_type(succ);
+				ir_type *arg_type = get_method_param_type(type, arg_nr);
+				if (is_aggregate_type(arg_type))
+					res |= ir_usage_read;
+				else
+					res |= ir_usage_unknown;
 			}
 			break;
 
 		/* skip tuples */
-		case iro_Tuple: {
-			for (int input_nr = get_Tuple_n_preds(succ); input_nr-- > 0; ) {
-				const ir_node *pred = get_Tuple_pred(succ, input_nr);
-				if (pred == irn) {
-					/* we found one input */
-					foreach_irn_out_r(succ, k, proj) {
-						if (is_Proj(proj) && get_Proj_proj(proj) == input_nr) {
-							res |= determine_entity_usage(proj, entity);
-							break;
-						}
-					}
+		case iro_Tuple:
+			foreach_irn_out_r(succ, k, proj) {
+				if (is_Proj(proj) && get_Proj_proj(proj) == succ_pos) {
+					res |= determine_entity_usage(proj, entity);
+					break;
 				}
 			}
 			break;
-		}
 
 		case iro_Builtin: {
 			ir_builtin_kind kind = get_Builtin_kind(succ);
