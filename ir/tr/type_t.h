@@ -88,21 +88,15 @@ typedef struct {
 	ir_entity **members; /**< Fields of this struct. No method entities allowed. */
 } stc_attr;
 
-/** A (type, ir_entity) pair. */
-typedef struct {
-	ir_type   *tp;      /**< A type. */
-	ir_entity *ent;     /**< An ir_entity. */
-} tp_ent_pair;
-
 /** Method type attributes. */
 typedef struct {
-	size_t       n_params;          /**< Number of parameters. */
-	tp_ent_pair *params;            /**< Array of parameter type/value entities pairs. */
-	size_t       n_res;             /**< Number of results. */
-	tp_ent_pair *res_type;          /**< Array of result type/value ir_entity pairs. */
-	ir_variadicity variadicity;     /**< The variadicity of the method. */
-	mtp_additional_properties properties; /**< Set of additional method properties. */
-	unsigned irg_calling_conv;      /**< A set of calling convention flags. */
+	size_t                    n_params;         /**< Number of parameters. */
+	ir_type                 **params;           /**< Array of parameter types. */
+	size_t                    n_res;            /**< Number of results. */
+	ir_type                 **res_type;         /**< Array of result types. */
+	ir_variadicity            variadicity;      /**< The variadicity of the method. */
+	mtp_additional_properties properties;       /**< Set of additional method properties. */
+	unsigned                  irg_calling_conv; /**< A set of calling convention flags. */
 } mtd_attr;
 
 /** Union type attributes. */

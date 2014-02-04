@@ -778,9 +778,9 @@ ir_type *new_type_method(size_t n_param, size_t n_res)
 	res->flags               |= tf_layout_fixed;
 	res->size                 = get_mode_size_bytes(mode_P_code);
 	res->attr.ma.n_params     = n_param;
-	res->attr.ma.params       = XMALLOCNZ(tp_ent_pair, n_param);
+	res->attr.ma.params       = XMALLOCNZ(ir_type*, n_param);
 	res->attr.ma.n_res        = n_res;
-	res->attr.ma.res_type     = XMALLOCNZ(tp_ent_pair, n_res);
+	res->attr.ma.res_type     = XMALLOCNZ(ir_type*, n_res);
 	res->attr.ma.variadicity  = variadicity_non_variadic;
 	res->attr.ma.properties   = mtp_no_property;
 	hook_new_type(res);
@@ -801,10 +801,10 @@ ir_type *clone_type_method(ir_type *tp)
 	res->higher_type              = tp->higher_type;
 	res->size                     = tp->size;
 	res->attr.ma.n_params         = n_params;
-	res->attr.ma.params           = XMALLOCN(tp_ent_pair, n_params);
+	res->attr.ma.params           = XMALLOCN(ir_type*, n_params);
 	memcpy(res->attr.ma.params, tp->attr.ma.params, n_params * sizeof(res->attr.ma.params[0]));
 	res->attr.ma.n_res            = n_res;
-	res->attr.ma.res_type         = XMALLOCN(tp_ent_pair, n_res);
+	res->attr.ma.res_type         = XMALLOCN(ir_type*, n_res);
 	memcpy(res->attr.ma.res_type, tp->attr.ma.res_type, n_res * sizeof(res->attr.ma.res_type[0]));
 	res->attr.ma.variadicity      = tp->attr.ma.variadicity;
 	res->attr.ma.properties       = tp->attr.ma.properties;
@@ -835,7 +835,7 @@ ir_type *get_method_param_type(const ir_type *method, size_t pos)
 {
 	assert(method->type_op == type_method);
 	assert(pos < get_method_n_params(method));
-	ir_type *res = method->attr.ma.params[pos].tp;
+	ir_type *res = method->attr.ma.params[pos];
 	return res;
 }
 
@@ -843,7 +843,7 @@ void set_method_param_type(ir_type *method, size_t pos, ir_type *tp)
 {
 	assert(method->type_op == type_method);
 	assert(pos < get_method_n_params(method));
-	method->attr.ma.params[pos].tp = tp;
+	method->attr.ma.params[pos] = tp;
 }
 
 size_t (get_method_n_ress)(const ir_type *method)
@@ -855,7 +855,7 @@ ir_type *get_method_res_type(const ir_type *method, size_t pos)
 {
 	assert(method->type_op == type_method);
 	assert(pos < get_method_n_ress(method));
-	ir_type *res = method->attr.ma.res_type[pos].tp;
+	ir_type *res = method->attr.ma.res_type[pos];
 	return res;
 }
 
@@ -863,7 +863,7 @@ void set_method_res_type(ir_type *method, size_t pos, ir_type *tp)
 {
 	assert(method->type_op == type_method);
 	assert(pos < get_method_n_ress(method));
-	method->attr.ma.res_type[pos].tp = tp;
+	method->attr.ma.res_type[pos] = tp;
 }
 
 const char *get_variadicity_name(ir_variadicity vari)
