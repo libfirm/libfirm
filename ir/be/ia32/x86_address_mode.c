@@ -172,7 +172,7 @@ static ir_node *eat_immediates(x86_address_t *addr, ir_node *node,
 	if (is_Add(node)) {
 		ir_node *left  = get_Add_left(node);
 		ir_node *right = get_Add_right(node);
-		bool entity_ok = addr->entity != NULL &&
+		bool entity_ok = (addr->entity == NULL) &&
 			((flags & x86_create_am_entities_ip_relative) == 0
 			 || (addr->base == NULL));
 
@@ -187,7 +187,7 @@ static ir_node *eat_immediates(x86_address_t *addr, ir_node *node,
 	} else if (is_Sub(node)) {
 		ir_node *left  = get_Sub_left(node);
 		ir_node *right = get_Sub_right(node);
-		bool entity_ok = addr->entity != NULL &&
+		bool entity_ok = (addr->entity == NULL) &&
 			((flags & x86_create_am_entities_ip_relative) == 0
 			 || (addr->base == NULL));
 
