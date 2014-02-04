@@ -123,7 +123,7 @@ FIRM_API char *xstrdup(const char *str);
 
 /**
  * Allocate an object with n elements of a flexible array member on the given
- * obstck
+ * obstack.
  */
 #define OALLOCF(obst, type, member, n) ((type*)obstack_alloc((obst), offsetof(type, member) + sizeof(*((type*)0)->member) * (n)))
 
