@@ -48,49 +48,6 @@ typedef enum ir_disambuigator_options {
 ENUM_BITSET(ir_disambuigator_options)
 
 /**
- * Classify storage locations.
- * Except ir_sc_pointer they are all disjoint.
- * ir_sc_pointer potentially aliases all classes which don't have a
- * NOTTAKEN modifier.
- */
-typedef enum ir_storage_class_class_t {
-	ir_sc_pointer           = 0x0,  /**< generic pointer, may be anything */
-	ir_sc_globalvar         = 0x1,  /**< an address of a global variable */
-	ir_sc_localvar          = 0x2,  /**< an address of a local variable */
-	ir_sc_argument          = 0x3,  /**< an address of a function argument */
-	ir_sc_tls               = 0x3,  /**< an address of a thread local storage
-	                                     variable */
-	ir_sc_malloced          = 0x4,  /**< an allocated heap address */
-	ir_sc_globaladdr        = 0x5,  /**< a constant address of something */
-	ir_sc_null              = 0x6,  /**< null pointer */
-
-	ir_sc_modifier_nottaken = 0x80, /**< if set, the address of the variable
-	                                     was not taken */
-	ir_sc_modifiers         = ir_sc_modifier_nottaken
-} ir_storage_class_class_t;
-ENUM_BITSET(ir_storage_class_class_t)
-
-/** Returns the base storage class (ignore modifier) */
-FIRM_API ir_storage_class_class_t get_base_sc(ir_storage_class_class_t x);
-
-/**
- * A source language specific memory disambiguator function.
- * Called by get_alias_relation().
- */
-typedef ir_alias_relation (*DISAMBIGUATOR_FUNC)(
-	const ir_node *addr1, const ir_type *type1,
-	const ir_node *addr2, const ir_type *type2);
-
-/**
- * Classify a base pointer.
- *
- * @param irn  the node representing the base address
- * @param ent  the base entity of the base address iff any
- */
-FIRM_API ir_storage_class_class_t classify_pointer(const ir_node *irn,
-                                                   const ir_entity *ent);
-
-/**
  * Returns a human readable name for an alias relation.
  */
 FIRM_API const char *get_ir_alias_relation_name(ir_alias_relation rel);
@@ -131,13 +88,6 @@ FIRM_API const char *get_ir_alias_relation_name(ir_alias_relation rel);
 FIRM_API ir_alias_relation get_alias_relation(
 	const ir_node *addr1, const ir_type *type1,
 	const ir_node *addr2, const ir_type *type2);
-
-/**
- * Sets a source language specific memory disambiguator function.
- *
- * @param func  The callback.
- */
-FIRM_API void set_language_memory_disambiguator(DISAMBIGUATOR_FUNC func);
 
 /**
  * Assure that the entity usage flags have been computed for the given graph.

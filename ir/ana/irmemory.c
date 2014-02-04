@@ -33,9 +33,6 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 DEBUG_ONLY(static firm_dbg_module_t *dbgcall = NULL;)
 
-/** The source language specific language disambiguator function. */
-static DISAMBIGUATOR_FUNC language_disambuigator = NULL;
-
 /** The global memory disambiguator options. */
 static unsigned global_mem_disamgig_opt = aa_opt_no_opt;
 
@@ -358,12 +355,12 @@ follow_ptr2:
 		ir_type *owner2 = get_entity_owner(ent2);
 		if (owner1 != owner2) {
 			/* TODO: We have to differentiate 3 cases:
-			 * - owner1 or owner2 is a type used in a the type subtree
-			 *   in the other.
+			 * - owner1 or owner2 is a type used in a subtree of the other.
 			 * - If there exists a union type where the first elements towards
 			 *   owner1+owner2 and the fields inside owner1+owner2 are
 			 *   compatible, then they may alias.
 			 * - All other cases cannot alias.
+			 * => for now we assume may alias
 			 */
 			goto check_classes;
 		}
@@ -394,9 +391,8 @@ check_classes:;
 			class2 = temp;
 		}
 		/* a pointer and an object whose address was never taken */
-		if (mod2 & ir_sc_modifier_nottaken) {
+		if (mod2 & ir_sc_modifier_nottaken)
 			return ir_no_alias;
-		}
 		/* the null pointer aliases nothing */
 		if (class2 == ir_sc_null)
 			return ir_no_alias;
@@ -412,7 +408,7 @@ check_classes:;
 				return ir_no_alias;
 
 			/* for some reason CSE didn't happen yet for the 2 Addresses... */
-			return ir_may_alias;
+			return ir_sure_alias;
 		} else if (class1 == ir_sc_globaladdr) {
 			ir_tarval *tv = get_Const_tarval(base1);
 			offset1      += get_tarval_long(tv);
@@ -464,14 +460,6 @@ check_classes:;
 leave_type_based_alias:;
 	}
 
-	/* do we have a language specific memory disambiguator? */
-	if (language_disambuigator != NULL) {
-		ir_alias_relation rel
-			= language_disambuigator(orig_addr1, type1, orig_addr2, type2);
-		if (rel != ir_may_alias)
-			return rel;
-	}
-
 	return ir_may_alias;
 }
 
@@ -483,11 +471,6 @@ ir_alias_relation get_alias_relation(
 	DB((dbg, LEVEL_1, "alias(%+F, %+F) = %s\n", addr1, addr2,
 	    get_ir_alias_relation_name(rel)));
 	return rel;
-}
-
-void set_language_memory_disambiguator(DISAMBIGUATOR_FUNC func)
-{
-	language_disambuigator = func;
 }
 
 /**
