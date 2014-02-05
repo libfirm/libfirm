@@ -153,6 +153,19 @@ static ir_tarval *computed_value_Size(const ir_node *n)
 	return tarval_bad;
 }
 
+static bool complement_values(const ir_node *a, const ir_node *b)
+{
+	if ((is_Not(a) && get_Not_op(a) == b) ||
+	    (is_Not(b) && get_Not_op(b) == a))
+		return true;
+	if (is_Const(a) && is_Const(b)) {
+		ir_tarval *const tv_a = get_Const_tarval(a);
+		ir_tarval *const tv_b = get_Const_tarval(b);
+		return tarval_is_all_one(tarval_eor(tv_a, tv_b));
+	}
+	return false;
+}
+
 /**
  * Return the value of an Add.
  */
@@ -167,10 +180,8 @@ static ir_tarval *computed_value_Add(const ir_node *n)
 		return tarval_add(ta, tb);
 
 	/* x+~x => -1 */
-	if ((is_Not(a) && get_Not_op(a) == b)
-	    || (is_Not(b) && get_Not_op(b) == a)) {
+	if (complement_values(a, b))
 		return get_mode_all_one(get_irn_mode(n));
-	}
 
 	return tarval_bad;
 }
@@ -266,10 +277,8 @@ static ir_tarval *computed_value_And(const ir_node *n)
 	if (tarval_is_null(tb)) return tb;
 
 	/* x&~x => 0 */
-	if ((is_Not(a) && get_Not_op(a) == b)
-	    || (is_Not(b) && get_Not_op(b) == a)) {
+	if (complement_values(a, b))
 		return get_mode_null(get_irn_mode(n));
-	}
 
 	return tarval_bad;
 }
@@ -293,10 +302,9 @@ static ir_tarval *computed_value_Or(const ir_node *n)
 	if (tarval_is_all_one(tb)) return tb;
 
 	/* x|~x => -1 */
-	if ((is_Not(a) && get_Not_op(a) == b)
-	    || (is_Not(b) && get_Not_op(b) == a)) {
+	if (complement_values(a, b))
 		return get_mode_all_one(get_irn_mode(n));
-	}
+
 	return tarval_bad;
 }
 
@@ -311,10 +319,8 @@ static ir_tarval *computed_value_Eor(const ir_node *n)
 	if (a == b)
 		return get_mode_null(get_irn_mode(n));
 	/* x^~x => -1 */
-	if ((is_Not(a) && get_Not_op(a) == b)
-	    || (is_Not(b) && get_Not_op(b) == a)) {
+	if (complement_values(a, b))
 		return get_mode_all_one(get_irn_mode(n));
-	}
 
 	ir_tarval *ta = value_of(a);
 	ir_tarval *tb = value_of(b);
@@ -2060,20 +2066,6 @@ static ir_node *transform_node_bitop_shift(ir_node *n)
 	}
 
 	return new_shift;
-}
-
-static bool complement_values(const ir_node *a, const ir_node *b)
-{
-	if (is_Not(a) && get_Not_op(a) == b)
-		return true;
-	if (is_Not(b) && get_Not_op(b) == a)
-		return true;
-	if (is_Const(a) && is_Const(b)) {
-		ir_tarval       *tv_a = get_Const_tarval(a);
-		const ir_tarval *tv_b = get_Const_tarval(b);
-		return tarval_not(tv_a) == tv_b;
-	}
-	return false;
 }
 
 typedef ir_tarval *(tv_fold_binop_func)(ir_tarval *a, ir_tarval *b);
