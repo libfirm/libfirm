@@ -4072,32 +4072,34 @@ static ir_node *transform_node_Cmp(ir_node *n)
 					changed = true;
 					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
 					break;
+
 				case iro_Add:
-					ll = get_Add_left(left);
-					lr = get_Add_right(left);
-					rl = get_Add_left(right);
-					rr = get_Add_right(right);
+				case iro_Eor:
+					ll = get_binop_left(left);
+					lr = get_binop_right(left);
+					rl = get_binop_left(right);
+					rr = get_binop_right(right);
 
 					if (ll == rl) {
-						/* X + a CMP X + b ==> a CMP b */
+						/* X op a CMP X op b ==> a CMP b */
 						left  = lr;
 						right = rr;
 						changed = true;
 						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
 					} else if (ll == rr) {
-						/* X + a CMP b + X ==> a CMP b */
+						/* X op a CMP b op X ==> a CMP b */
 						left  = lr;
 						right = rl;
 						changed = true;
 						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
 					} else if (lr == rl) {
-						/* a + X CMP X + b ==> a CMP b */
+						/* a op X CMP X op b ==> a CMP b */
 						left  = ll;
 						right = rr;
 						changed = true;
 						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
 					} else if (lr == rr) {
-						/* a + X CMP b + X ==> a CMP b */
+						/* a op X CMP b op X ==> a CMP b */
 						left  = ll;
 						right = rl;
 						changed = true;
