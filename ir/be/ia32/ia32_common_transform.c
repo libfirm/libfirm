@@ -827,7 +827,7 @@ ir_node *ia32_try_create_Immediate(ir_node *node, char immediate_constraint_type
 	if (cnst != NULL) {
 		ir_tarval *offset = get_Const_tarval(cnst);
 		if (!tarval_is_long(offset)) {
-			ir_fprintf(stderr, "Optimisation Warning: tarval of %+F is not a long?\n", cnst);
+			ir_fprintf(stderr, "Optimization warning: tarval of %+F is not a long?\n", cnst);
 			return NULL;
 		}
 

@@ -173,16 +173,16 @@ class Bad:
 	The typical use case for the Bad node is removing unreachable code.
 	Frontends should set the current_block to Bad when it is clear that
 	following code must be unreachable (ie. after a goto or return statement).
-	Optimisations also set block predecessors to Bad when it becomes clear,
+	Optimizations also set block predecessors to Bad when it becomes clear,
 	that a control flow edge can never be executed.
 
-	The gigo optimisations ensures that nodes with Bad as their block, get
+	The gigo optimizations ensures that nodes with Bad as their block, get
 	replaced by Bad themselves. Nodes with at least 1 Bad input get exchanged
 	with Bad too. Exception to this rule are Block, Phi, Tuple and End node;
 	This is because removing inputs from a Block is hairy operation (requiring,
 	Phis to be shortened too for example). So instead of removing block inputs
 	they are set to Bad, and the actual removal is left to the control flow
-	optimisation phase. Block, Phi, Tuple with only Bad inputs however are
+	optimization phase. Block, Phi, Tuple with only Bad inputs however are
 	replaced by Bad right away."""
 	flags         = [ "start_block", "dump_noblock" ]
 	pinned        = "yes"
@@ -715,7 +715,7 @@ class Sel:
 	"""Computes the address of a entity of a compound type given the base
 	address of an instance of the compound type.
 
-	Optimisations assume that a Sel node can only produce a NULL pointer if the
+	Optimizations assume that a Sel node can only produce a NULL pointer if the
 	ptr input was NULL."""
 	ins         = [
 		("mem", "memory dependency"),
@@ -850,7 +850,7 @@ class Tuple:
 @op
 class Unknown:
 	"""Returns an unknown (at compile- and runtime) value. It is a valid
-	optimisation to replace an Unknown by any other constant value."""
+	optimization to replace an Unknown by any other constant value."""
 	knownBlock = True
 	pinned     = "yes"
 	block      = "get_irg_start_block(irg)"

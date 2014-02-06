@@ -1399,7 +1399,7 @@ static ir_node *gen_Add(ir_node *node)
 	if (add_immediate_op != NULL) {
 		if (!am_has_immediates(&addr)) {
 #ifdef DEBUG_libfirm
-			ir_fprintf(stderr, "Optimisation warning Add x,0 (%+F) found\n",
+			ir_fprintf(stderr, "Optimization warning: Add x,0 (%+F) found\n",
 					   node);
 #endif
 			return be_transform_node(add_immediate_op);
@@ -1582,7 +1582,7 @@ static ir_node *gen_Sub(ir_node *node)
 	}
 
 	if (is_Const(op2)) {
-		ir_fprintf(stderr, "Optimisation warning: found sub with const (%+F)\n",
+		ir_fprintf(stderr, "Optimization warning: found sub with const (%+F)\n",
 		           node);
 	}
 
@@ -2418,7 +2418,7 @@ static ir_node *try_create_dest_am(ir_node *node)
 		ir_node *op1 = get_Sub_left(val);
 		ir_node *op2 = get_Sub_right(val);
 		if (is_Const(op2)) {
-			ir_fprintf(stderr, "Optimisation warning: not-normalized sub ,C found\n");
+			ir_fprintf(stderr, "Optimization warning: not-normalized sub ,C found\n");
 		}
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
 		                         new_bd_ia32_SubMem, new_bd_ia32_SubMem_8bit,
@@ -3256,7 +3256,7 @@ static ir_node *gen_Mux(ir_node *node)
 	int is_abs = ir_mux_is_abs(sel, mux_false, mux_true);
 	if (is_abs != 0) {
 		if (ia32_mode_needs_gp_reg(mode)) {
-			ir_fprintf(stderr, "Optimisation warning: Integer abs %+F not transformed\n",
+			ir_fprintf(stderr, "Optimization warning: Integer abs %+F not transformed\n",
 			           node);
 		} else {
 			ir_node *op = ir_get_abs_op(sel, mux_false, mux_true);
@@ -3643,7 +3643,7 @@ static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
 
 #ifdef DEBUG_libfirm
 	if (is_Const(op)) {
-		ir_fprintf(stderr, "Optimisation warning: conv after constant %+F\n",
+		ir_fprintf(stderr, "Optimization warning: conv after constant %+F\n",
 		           op);
 	}
 #endif

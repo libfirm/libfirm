@@ -229,7 +229,7 @@ static bool eat_shl(x86_address_t *addr, ir_node *node)
 			return false;
 		if (val == 0)
 			ir_fprintf(stderr,
-			           "Optimisation warning: unoptimized Shl(,0) found\n");
+			           "Optimization warning: unoptimized Shl(,0) found\n");
 
 		shifted_val = get_Shl_left(node);
 	} else if (is_Add(node)) {

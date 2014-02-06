@@ -108,7 +108,7 @@ typedef enum ir_linkage {
 	IR_LINKAGE_DEFAULT         = 0,
 	/**
 	 * A symbol whose definition won't change in a program.
-	 * Optimisation might replace loads from this entity with constants.
+	 * Optimization might replace loads from this entity with constants.
 	 * Also most linkers put such data in a constant segment which is shared
 	 * between multiple running instances of the same application.
 	 */

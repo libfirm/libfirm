@@ -845,7 +845,7 @@ static void peephole_ia32_Lea(ir_node *node)
 	if (base == NULL && index == NULL) {
 		/* we shouldn't construct these in the first place... */
 #ifdef DEBUG_libfirm
-		ir_fprintf(stderr, "Optimisation warning: found immediate only lea\n");
+		ir_fprintf(stderr, "Optimization warning: found immediate only lea\n");
 #endif
 		return;
 	}
@@ -870,7 +870,7 @@ static void peephole_ia32_Lea(ir_node *node)
 		if (index == NULL) {
 #ifdef DEBUG_libfirm
 			if (!has_immediates) {
-				ir_fprintf(stderr, "Optimisation warning: found lea which is "
+				ir_fprintf(stderr, "Optimization warning: found lea which is "
 				           "just a copy\n");
 			}
 #endif
@@ -895,7 +895,7 @@ static void peephole_ia32_Lea(ir_node *node)
 				goto make_shl;
 			} else if (!has_immediates) {
 #ifdef DEBUG_libfirm
-				ir_fprintf(stderr, "Optimisation warning: found lea which is "
+				ir_fprintf(stderr, "Optimization warning: found lea which is "
 				           "just a copy\n");
 #endif
 			}
@@ -1077,7 +1077,7 @@ static void optimize_conv_store(ir_node *node)
 	if (get_mode_size_bits(conv_mode) < get_mode_size_bits(store_mode))
 		return;
 
-	ir_fprintf(stderr, "Optimisation warning: unoptimized ia32 Store(Conv) (%+F, %+F)\n", node, pred);
+	ir_fprintf(stderr, "Optimization warning: unoptimized ia32 Store(Conv) (%+F, %+F)\n", node, pred);
 	set_irn_n(node, n_ia32_Store_val, get_irn_n(pred, n_ia32_Conv_I2I_val));
 	if (get_irn_n_edges(pred_proj) == 0) {
 		kill_node(pred_proj);
@@ -1124,7 +1124,7 @@ static void optimize_load_conv(ir_node *node)
 	}
 
 	/* kill the conv */
-	ir_fprintf(stderr, "Optimisation warning: unoptimized ia32 Conv(Load) (%+F, %+F)\n", node, predpred);
+	ir_fprintf(stderr, "Optimization warning: unoptimized ia32 Conv(Load) (%+F, %+F)\n", node, predpred);
 	exchange(node, pred);
 }
 
@@ -1197,7 +1197,7 @@ static void optimize_conv_conv(ir_node *node)
 		}
 	}
 
-	ir_fprintf(stderr, "Optimisation warning: unoptimized ia32 Conv(Conv) (%+F, %+F)\n", node, pred);
+	ir_fprintf(stderr, "Optimization warning: unoptimized ia32 Conv(Conv) (%+F, %+F)\n", node, pred);
 	/* Some user (like Phis) won't be happy if we change the mode. */
 	set_irn_mode(result_conv, get_irn_mode(node));
 

@@ -2,7 +2,7 @@ libFirm 1.21.0 (2012-11-16)
 ---------------------------
 * Improvements of x86 backend (esp. x87 floatingpoint code)
 * Improvements to sparc backend (better use of delay slots)
-* Improved local optimisation rules (esp. conversions)
+* Improved local optimization rules (esp. conversions)
 * Make compiler more deterministic
 * Bugfixes
 
@@ -56,12 +56,12 @@ libFirm 1.17.0 (2009-05-15)
 ---------------------------
 
 * bugfixes
-* advanced load/store optimisation which hoists loads out of loops
+* advanced load/store optimization which hoists loads out of loops
 * Internal restruturing: Alot of node structures are automatically generated
    from a specification file now.
 * Add support for multiple calling conventions
 * New experimental support for reading and writing programgraphs to disk
-* Support and optimisations for trampolines
+* Support and optimizations for trampolines
 * fix PIC support
 
 libFirm 1.16.0 (2009-01-28)
@@ -77,7 +77,7 @@ libFirm 1.15.0 (2008-12-01)
 libFirm 1.14.0 (2008-11-22)
 ---------------------------
 
-* Implementation of Clicks Combined Analysis/Optimisations
+* Implementation of Clicks Combined Analysis/Optimizations
 * New switch lowering code
 * support for global asm statements
 * improved asm support
@@ -86,7 +86,7 @@ libFirm 1.14.0 (2008-11-22)
 * Improvements to spill algorithm
 * fix endless loop problems
 * further improve inlining heuristics
-* improve peephole optimisations for x86
+* improve peephole optimizations for x86
 * bugfixes
 
 libFirm 1.13.0 (2008-07-31)
@@ -124,7 +124,7 @@ libFirm 1.12.0 (2008-02-14)
 * bugfixes
 * improved support for exceptions
 * speed improvements
-* optimisation of known libc functions
+* optimization of known libc functions
 
 libFirm 1.11.0 (2008-11-05)
 ---------------------------
@@ -134,8 +134,8 @@ libFirm 1.11.0 (2008-11-05)
 * Completely improved and rewritten handling of x86 address mode
 * Optimized Mul -> Lea,Shift,Add transformation
 * 64bit operations fixed and improved
-* More local optimisations
-* New backend peephole optimisations
+* More local optimizations
+* New backend peephole optimizations
 * Explicit status flag modeling (only for x86 for now)
-* Improvements of Load/Store optimisation and alias analysis
+* Improvements of Load/Store optimization and alias analysis
 * All C benchmarks from Spec CINT2000 work now (with our edg frontend)

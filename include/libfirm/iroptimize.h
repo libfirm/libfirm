@@ -5,7 +5,7 @@
 
 /**
  * @file
- * @brief   Available Optimisations of libFirm.
+ * @brief   Available Optimizations of libFirm.
  */
 #ifndef FIRM_IROPTIMIZE_H
 #define FIRM_IROPTIMIZE_H
@@ -14,7 +14,7 @@
 #include "begin.h"
 
 /**
- * @defgroup iroptimize  Transformations and Optimisations
+ * @defgroup iroptimize  Transformations and Optimizations
  * @{
  */
 
