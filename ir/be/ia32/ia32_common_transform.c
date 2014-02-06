@@ -658,8 +658,7 @@ ir_node *ia32_gen_CopyB(ir_node *node)
 		projm = new_r_Proj(copyb, mode_M, pn_ia32_CopyB_M);
 	} else {
 		if (size == 0) {
-			ir_fprintf(stderr, "Optimization warning copyb %+F with size <4\n",
-			           node);
+			ir_fprintf(stderr, "Optimization warning: %+F with size <4\n", node);
 		}
 		ir_node *copyb = new_bd_ia32_CopyB_i(dbgi, block, new_dst, new_src,
 		                                     new_mem, size);
