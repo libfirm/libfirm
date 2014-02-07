@@ -4129,12 +4129,12 @@ static ir_node *transform_node_Cmp(ir_node *n)
 				}
 			}
 
-			/* X+A == A, A+X == A, A-X == A -> X == 0 */
-			if (is_Add(left) || is_Sub(left) || is_Or_Eor_Add(left)) {
+			/* X+A == A, A+X == A, X^A == A, A^X == A, A-X == A -> X == 0 */
+			if (is_Add(left) || is_Eor(left) || is_Sub(left) || is_Or_Eor_Add(left)) {
 				ir_node *ll = get_binop_left(left);
 				ir_node *lr = get_binop_right(left);
 
-				if (lr == right && (is_Add(left) || is_Or_Eor_Add(left))) {
+				if (lr == right && (is_Add(left) || is_Eor(left) || is_Or_Eor_Add(left))) {
 					ir_node *tmp = ll;
 					ll = lr;
 					lr = tmp;
@@ -4147,11 +4147,11 @@ static ir_node *transform_node_Cmp(ir_node *n)
 					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
 				}
 			}
-			if (is_Add(right) || is_Sub(right) || is_Or_Eor_Add(right)) {
+			if (is_Add(right) || is_Eor(right) || is_Sub(right) || is_Or_Eor_Add(right)) {
 				ir_node *rl = get_binop_left(right);
 				ir_node *rr = get_binop_right(right);
 
-				if (rr == left && (is_Add(right) || is_Or_Eor_Add(right))) {
+				if (rr == left && (is_Add(right) || is_Eor(left) || is_Or_Eor_Add(right))) {
 					ir_node *tmp = rl;
 					rl = rr;
 					rr = tmp;
