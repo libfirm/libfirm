@@ -4199,15 +4199,19 @@ static ir_node *transform_node_Cmp(ir_node *n)
 					}
 				}
 			}
-			/* Cmp(Eor(x, y), 0) <=> Cmp(x, y) at least for the ==0,!=0
-			 * cases */
-			if (is_Const(right) && is_Const_null(right) &&
-			    (is_Eor(left) || is_Or_Eor_Add(left))) {
-				right = get_Eor_right(left);
-				left  = get_Eor_left(left);
-				changed = true;
-			}
 		}
+	}
+
+	/* Cmp(Eor(x, y), 0) <=> Cmp(Sub(x, y), 0) <=> Cmp(x, y)
+	 * at least for the ==0, !=0 cases */
+	if (mode_is_int(mode) && is_cmp_equality_zero(n, relation) &&
+	    (is_Eor(left) || is_Sub(left) || is_Or_Eor_Add(left))) {
+		right    = get_binop_right(left);
+		left     = get_binop_left(left);
+		if (relation != ir_relation_equal) {
+			relation = ir_relation_less_greater;
+		}
+		changed  = true;
 	}
 
 	if (mode_is_int(mode) && is_And(left)) {
