@@ -741,6 +741,18 @@ static ir_node *equivalent_node_neutral_zero(ir_node *n)
 	return n;
 }
 
+static ir_node *get_commutative_other_op(ir_node *const node, ir_node *const op)
+{
+	assert(is_op_commutative(get_irn_op(node)));
+	ir_node *const l = get_binop_left(node);
+	ir_node *const r = get_binop_right(node);
+	if (l == op)
+		return r;
+	if (r == op)
+		return l;
+	return NULL;
+}
+
 /**
  * Eor is commutative and has neutral 0.
  */
@@ -754,34 +766,21 @@ static ir_node *equivalent_node_Eor(ir_node *n)
 	ir_node *a = get_Eor_left(n);
 	ir_node *b = get_Eor_right(n);
 
+	ir_node *x;
+	ir_node *z;
 	if (is_Eor(a) || is_Or_Eor_Add(a)) {
-		ir_node *aa = get_binop_left(a);
-		ir_node *ab = get_binop_right(a);
-
-		if (aa == b) {
-			/* (a ^ b) ^ a -> b */
-			n = ab;
-			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_EOR_A_B_A);
-			return n;
-		} else if (ab == b) {
-			/* (a ^ b) ^ b -> a */
-			n = aa;
-			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_EOR_A_B_A);
-			return n;
-		}
+		x = b;
+		z = a;
+		goto inverse;
 	}
 	if (is_Eor(b) || is_Or_Eor_Add(b)) {
-		ir_node *ba = get_binop_left(b);
-		ir_node *bb = get_binop_right(b);
-
-		if (ba == a) {
-			/* a ^ (a ^ b) -> b */
-			n = bb;
-			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_EOR_A_B_A);
-			return n;
-		} else if (bb == a) {
-			/* a ^ (b ^ a) -> b */
-			n = ba;
+		x = a;
+		z = b;
+inverse:;
+		ir_node *const y = get_commutative_other_op(z, x);
+		if (y) {
+			/* x ^ (x ^ y) -> y */
+			n = y;
 			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_EOR_A_B_A);
 			return n;
 		}
@@ -1026,15 +1025,13 @@ static ir_node *equivalent_node_And(ir_node *n)
 		return n;
 	}
 	/* (a|X) & a => a*/
-	if ((is_Or(a) || is_Or_Eor_Add(a))
-	    && (b == get_binop_left(a) || b == get_binop_right(a))) {
+	if ((is_Or(a) || is_Or_Eor_Add(a)) && get_commutative_other_op(a, b)) {
 		n = b;
 		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_AND);
 		return n;
 	}
 	/* a & (a|X) => a*/
-	if ((is_Or(b) || is_Or_Eor_Add(b))
-	    && (a == get_binop_left(b) || a == get_binop_right(b))) {
+	if ((is_Or(b) || is_Or_Eor_Add(b)) && get_commutative_other_op(b, a)) {
 		n = a;
 		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_AND);
 		return n;
@@ -2697,41 +2694,16 @@ restart:
 	}
 	/* do NOT execute this code if reassociation is enabled, it does the inverse! */
 	if (!is_reassoc_running() && is_Mul(a)) {
-		ir_node *ma = get_Mul_left(a);
-		ir_node *mb = get_Mul_right(a);
-
-		if (ma == b) {
-			ir_node  *blk = get_nodes_block(n);
-			ir_graph *irg = get_irn_irg(n);
-			n = new_rd_Mul(
-					get_irn_dbg_info(n),
-					blk,
-					ma,
-					new_rd_Sub(
-						get_irn_dbg_info(n),
-						blk,
-						mb,
-						new_r_Const(irg, get_mode_one(mode)),
-						mode),
-					mode);
-			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_MUL_A_X_A);
-			return n;
-		}
-
-		if (mb == b) {
-			ir_node  *blk = get_nodes_block(n);
-			ir_graph *irg = get_irn_irg(n);
-			n = new_rd_Mul(
-					get_irn_dbg_info(n),
-					blk,
-					mb,
-					new_rd_Sub(
-						get_irn_dbg_info(n),
-						blk,
-						ma,
-						new_r_Const(irg, get_mode_one(mode)),
-						mode),
-					mode);
+		ir_node *const x = b;
+		ir_node *const y = get_commutative_other_op(a, x);
+		if (y) {
+			/* (x * y) - x -> x * (y - 1) */
+			dbg_info *const dbg = get_irn_dbg_info(n);
+			ir_node  *const blk = get_nodes_block(n);
+			ir_graph *const irg = get_irn_irg(n);
+			ir_node  *const one = new_r_Const(irg, get_mode_one(mode));
+			ir_node  *const sub = new_rd_Sub(dbg, blk, y, one, mode);
+			n = new_rd_Mul(dbg, blk, x, sub, mode);
 			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_MUL_A_X_A);
 			return n;
 		}
@@ -3450,52 +3422,24 @@ static ir_node *transform_node_And(ir_node *n)
 			}
 		}
 	}
+	ir_node *x;
+	ir_node *y;
 	if (is_Eor(a) || is_Or_Eor_Add(a)) {
-		ir_node *al = get_binop_left(a);
-		ir_node *ar = get_binop_right(a);
-
-		if (al == b) {
-			/* (b ^ a) & b -> ~a & b */
-			dbg_info *dbg  = get_irn_dbg_info(n);
-			ir_node *block = get_nodes_block(n);
-
-			ar = new_rd_Not(dbg, block, ar, mode);
-			n  = new_rd_And(dbg, block, ar, b, mode);
-			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
-			return n;
-		}
-		if (ar == b) {
-			/* (a ^ b) & b -> ~a & b */
-			dbg_info *dbg  = get_irn_dbg_info(n);
-			ir_node *block = get_nodes_block(n);
-
-			al = new_rd_Not(dbg, block, al, mode);
-			n  = new_rd_And(dbg, block, al, b, mode);
-			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
-			return n;
-		}
+		x = b;
+		y = get_commutative_other_op(a, x);
+		if (y) /* (x ^ y) & x -> ~y & x */
+			goto absorb;
 	}
 	if (is_Eor(b) || is_Or_Eor_Add(b)) {
-		ir_node *bl = get_binop_left(b);
-		ir_node *br = get_binop_right(b);
-
-		if (bl == a) {
-			/* a & (a ^ b) -> a & ~b */
-			dbg_info *dbg  = get_irn_dbg_info(n);
-			ir_node *block = get_nodes_block(n);
-
-			br = new_rd_Not(dbg, block, br, mode);
-			n  = new_rd_And(dbg, block, br, a, mode);
-			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
-			return n;
-		}
-		if (br == a) {
-			/* a & (b ^ a) -> a & ~b */
-			dbg_info *dbg  = get_irn_dbg_info(n);
-			ir_node *block = get_nodes_block(n);
-
-			bl = new_rd_Not(dbg, block, bl, mode);
-			n  = new_rd_And(dbg, block, bl, a, mode);
+		x = a;
+		y = get_commutative_other_op(b, x);
+		if (y) {
+			/* x & (x ^ y) -> ~y & x */
+absorb:;
+			dbg_info *const dbg   = get_irn_dbg_info(n);
+			ir_node  *const block = get_nodes_block(n);
+			ir_node  *const noty  = new_rd_Not(dbg, block, y, mode);
+			n = new_rd_And(dbg, block, noty, x, mode);
 			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
 			return n;
 		}
@@ -4128,35 +4072,25 @@ static ir_node *transform_node_Cmp(ir_node *n)
 			}
 
 			/* X+A == A, A+X == A, X^A == A, A^X == A, A-X == A -> X == 0 */
+			ir_node *x;
 			if (is_Add(left) || is_Eor(left) || is_Sub(left) || is_Or_Eor_Add(left)) {
-				ir_node *ll = get_binop_left(left);
-				ir_node *lr = get_binop_right(left);
-
-				if (lr == right && (is_Add(left) || is_Eor(left) || is_Or_Eor_Add(left))) {
-					ir_node *tmp = ll;
-					ll = lr;
-					lr = tmp;
+				if (is_Sub(left)) {
+					x = get_Sub_right(left) == right ? get_Sub_left(left) : NULL;
+				} else {
+					x = get_commutative_other_op(left, right);
 				}
-				if (ll == right) {
-					ir_graph *irg = get_irn_irg(n);
-					left     = lr;
-					right   = create_zero_const(irg, mode);
-					changed = true;
-					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
-				}
+				goto cmp_x_eq_0;
 			}
 			if (is_Add(right) || is_Eor(right) || is_Sub(right) || is_Or_Eor_Add(right)) {
-				ir_node *rl = get_binop_left(right);
-				ir_node *rr = get_binop_right(right);
-
-				if (rr == left && (is_Add(right) || is_Eor(left) || is_Or_Eor_Add(right))) {
-					ir_node *tmp = rl;
-					rl = rr;
-					rr = tmp;
+				if (is_Sub(right)) {
+					x = get_Sub_right(right) == left ? get_Sub_left(right) : NULL;
+				} else {
+					x = get_commutative_other_op(right, left);
 				}
-				if (rl == left) {
+cmp_x_eq_0:
+				if (x) {
 					ir_graph *irg = get_irn_irg(n);
-					left     = rr;
+					left    = x;
 					right   = create_zero_const(irg, mode);
 					changed = true;
 					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
