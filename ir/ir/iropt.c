@@ -2361,42 +2361,34 @@ static ir_node *transform_node_Add(ir_node *n)
 		/* the following code leads to endless recursion when Mul are replaced
 		 * by a simple instruction chain */
 		if (a == b) {
+			dbg_info *const dbgi  = get_irn_dbg_info(n);
+			ir_node  *const block = get_nodes_block(n);
 			if (!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_ARCH_DEP)) {
-				ir_node *block = get_nodes_block(n);
-
-				n = new_rd_Mul(
-					get_irn_dbg_info(n),
-					block,
-					a,
-					new_r_Const_long(irg, mode, 2),
-					mode);
+				/* a + a -> a * 2 */
+				ir_node *const two = new_r_Const_long(irg, mode, 2);
+				n = new_rd_Mul(dbgi, block, a, two, mode);
 				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_A_A);
 				return n;
 			} else {
-				dbg_info *dbgi  = get_irn_dbg_info(n);
-				ir_node  *block = get_nodes_block(n);
-				ir_node  *one   = new_r_Const(irg, get_mode_one(mode_Iu));
+				/* a + a -> a << 1 */
+				ir_node *const one = new_r_Const(irg, get_mode_one(mode_Iu));
 				n = new_rd_Shl(dbgi, block, a, one, mode);
 				return n;
 			}
 		}
 		if (is_Minus(a)) {
-			n = new_rd_Sub(
-					get_irn_dbg_info(n),
-					get_nodes_block(n),
-					b,
-					get_Minus_op(a),
-					mode);
+			/* -a + b -> b - a */
+			dbg_info *const dbgi  = get_irn_dbg_info(n);
+			ir_node  *const block = get_nodes_block(n);
+			n = new_rd_Sub(dbgi, block, b, get_Minus_op(a), mode);
 			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_A_MINUS_B);
 			return n;
 		}
 		if (is_Minus(b)) {
-			n = new_rd_Sub(
-					get_irn_dbg_info(n),
-					get_nodes_block(n),
-					a,
-					get_Minus_op(b),
-					mode);
+			/* a + -b -> a - b */
+			dbg_info *const dbgi  = get_irn_dbg_info(n);
+			ir_node  *const block = get_nodes_block(n);
+			n = new_rd_Sub(dbgi, block, a, get_Minus_op(b), mode);
 			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_A_MINUS_B);
 			return n;
 		}
@@ -3245,7 +3237,7 @@ static ir_node *transform_node_shift_bitop(ir_node *n)
 	if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_NORMALISATION2))
 		return n;
 
-	assert(is_Shrs(n) || is_Shr(n) || is_Shl(n));
+	assert(is_shiftop(n));
 
 	ir_node *right = get_binop_right(n);
 	if (!is_Const(right))
@@ -3901,8 +3893,7 @@ static ir_node *flips_bit(const ir_node *node, ir_tarval *tv)
 		ir_node *right = get_Eor_right(node);
 		if (is_Const(right)) {
 			ir_tarval *right_tv = get_Const_tarval(right);
-			ir_mode   *mode     = get_irn_mode(node);
-			if (tarval_and(right_tv, tv) != get_mode_null(mode))
+			if (!tarval_is_null(tarval_and(right_tv, tv)))
 				return get_Eor_left(node);
 		}
 	}
@@ -4867,7 +4858,7 @@ static ir_node *transform_node_shift(ir_node *n)
  */
 static ir_node *transform_node_shl_shr(ir_node *n)
 {
-	assert(is_Shl(n) || is_Shr(n) || is_Shrs(n));
+	assert(is_shiftop(n));
 
 	ir_node *right = get_binop_right(n);
 	if (!is_Const(right))
