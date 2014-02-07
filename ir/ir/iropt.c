@@ -1864,6 +1864,8 @@ flip:
 			/* Chain ends with an Eor. */
 			if (is_binop_const(top_eor, res, flip)) {
 				res = top_eor;
+			} else if (tarval_is_all_one(flip)) {
+				res = new_rd_Not(dbgi, block, res, mode);
 			} else {
 				ir_node *const eorc = new_r_Const(irg, flip);
 				res = new_rd_Eor(dbgi, block, res, eorc, mode);
