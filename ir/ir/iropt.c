@@ -1851,21 +1851,19 @@ chain_end:;
 			}
 			goto flip;
 		}
-	} else if (tarval_is_all_one(flip)) {
-		/* Chain is a Not. */
-		if (top_not && get_Not_op(top_not) == res) {
-			res = top_not;
-		} else {
-			res = new_rd_Not(dbgi, block, res, mode);
-		}
 	} else {
 flip:
-		if (!tarval_is_null(flip)) {
+		if (tarval_is_all_one(flip)) {
+			/* Chain ends with a Not. */
+			if (top_not && get_Not_op(top_not) == res) {
+				res = top_not;
+			} else {
+				res = new_rd_Not(dbgi, block, res, mode);
+			}
+		} else if (!tarval_is_null(flip)) {
 			/* Chain ends with an Eor. */
 			if (is_binop_const(top_eor, res, flip)) {
 				res = top_eor;
-			} else if (tarval_is_all_one(flip)) {
-				res = new_rd_Not(dbgi, block, res, mode);
 			} else {
 				ir_node *const eorc = new_r_Const(irg, flip);
 				res = new_rd_Eor(dbgi, block, res, eorc, mode);
