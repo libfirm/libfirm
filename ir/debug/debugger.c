@@ -798,7 +798,6 @@ enum tokens {
 	tok_dumpfilter,
 	tok_enable,
 	tok_help,
-	tok_identifier,
 	tok_init,
 	tok_initialnodenr,
 	tok_irgldname,
@@ -815,6 +814,7 @@ enum tokens {
 
 	tok_eof,
 	tok_error,
+	tok_identifier,
 	tok_number,
 };
 
