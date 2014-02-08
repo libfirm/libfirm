@@ -38,11 +38,6 @@ void firm_finish_debugger(void);
  */
 
 /**
- * Returns non-zero, if the debug extension is active
- */
-int firm_debug_active(void);
-
-/**
  * Return the content of the debug text buffer.
  *
  * To be called from the debugger.

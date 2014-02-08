@@ -130,11 +130,6 @@ static char firm_dbg_msg_buf[2048];
  */
 static bool redir_output;
 
-/**
- * Is set to one, if the debug extension is active
- */
-static bool is_active;
-
 /** hook the hook h with function fkt. */
 #define HOOK(h, fkt) \
 do {                                      \
@@ -151,11 +146,6 @@ do {                                        \
 
 /** returns non-zero if a entry hook h is used */
 #define IS_HOOKED(h) (debugger_hooks[h].hook._##h != NULL)
-
-int firm_debug_active(void)
-{
-	return is_active;
-}
 
 /**
  * Reset the debug text buffer.
@@ -1195,7 +1185,6 @@ void firm_init_debugger(void)
 {
 	bp_numbers = new_set(cmp_nr_bp, 8);
 	bp_idents  = new_set(cmp_ident_bp, 8);
-	is_active  = true;
 
 	char *env = getenv("FIRMDBG");
 	if (env != NULL)
