@@ -3459,14 +3459,6 @@ absorb:;
 		return n;
 	}
 
-	if (is_Const(a)) {
-		vrp_attr  *b_vrp = vrp_get_info(b);
-		ir_tarval *a_val = get_Const_tarval(a);
-		if (b_vrp != NULL && tarval_or(a_val, b_vrp->bits_not_set) == a_val) {
-			return b;
-		}
-	}
-
 	if (is_Const(b)) {
 		vrp_attr  *a_vrp = vrp_get_info(a);
 		ir_tarval *b_val = get_Const_tarval(b);
@@ -4389,24 +4381,11 @@ is_bittest: {
 						}
 						/* a+c1 == c2  ==>  a == c2-c1,  a+c1 != c2  ==>  a != c2-c1 */
 						else if (is_Add(left) || is_Or_Eor_Add(left)) {
-							ir_node *a_l = get_binop_left(left);
-							ir_node *a_r = get_binop_right(left);
-							ir_node *a;
-							ir_tarval *tv2;
-
-							if (is_Const(a_l)) {
-								a = a_r;
-								tv2 = value_of(a_l);
-							} else {
-								a = a_l;
-								tv2 = value_of(a_r);
-							}
-
+							ir_tarval *tv2 = value_of(get_binop_right(left));
 							if (tv2 != tarval_bad) {
 								tv2 = tarval_sub(tv, tv2, NULL);
-
 								if (tv2 != tarval_bad) {
-									left    = a;
+									left    = get_binop_left(left);
 									tv      = tv2;
 									changedc = true;
 									DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_C);
