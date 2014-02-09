@@ -523,8 +523,8 @@ ir_relation ir_get_possible_cmp_relations(const ir_node *left,
 	const ir_tarval *tv_l     = value_of(left);
 	const ir_tarval *tv_r     = value_of(right);
 	const ir_mode   *mode     = get_irn_mode(left);
-	const ir_tarval *min      = mode == mode_b ? tarval_b_false : get_mode_min(mode);
-	const ir_tarval *max      = mode == mode_b ? tarval_b_true : get_mode_max(mode);
+	const ir_tarval *min      = get_mode_min(mode);
+	const ir_tarval *max      = get_mode_max(mode);
 
 	/* both values known - evaluate them */
 	if ((tv_l != tarval_bad) && (tv_r != tarval_bad)) {
