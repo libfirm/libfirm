@@ -253,9 +253,9 @@ static ir_tarval *computed_value_Mul(const ir_node *n)
 		/* a * 0 != 0 if a == NaN or a == Inf */
 		if (!mode_is_float(mode)) {
 			/* a*0 = 0 or 0*b = 0 */
-			if (ta == get_mode_null(mode))
+			if (tarval_is_null(ta))
 				return ta;
-			if (tb == get_mode_null(mode))
+			if (tarval_is_null(tb))
 				return tb;
 		}
 	}
@@ -2510,7 +2510,7 @@ static ir_node *transform_node_Sub(ir_node *n)
 		if (mode == lmode                                     &&
 		    get_mode_arithmetic(mode) == irma_twos_complement &&
 		    is_Const(a)                                       &&
-		    get_Const_tarval(a) == get_mode_minus_one(mode)) {
+		    tarval_is_minus_one(get_Const_tarval(a))) {
 			/* -1 - x -> ~x */
 			dbg_info *dbg = get_irn_dbg_info(n);
 			n = new_rd_Not(dbg, get_nodes_block(n), b, mode);
@@ -2791,14 +2791,14 @@ static ir_node *transform_node_Mul2n(ir_node *n, ir_mode *mode)
 	ir_tarval *ta    = value_of(a);
 	ir_mode   *smode = get_irn_mode(a);
 
-	if (ta == get_mode_one(smode)) {
+	if (tarval_is_one(ta)) {
 		/* (L)1 * (L)b = (L)b */
 		ir_node *blk = get_nodes_block(n);
 		n = new_rd_Conv(get_irn_dbg_info(n), blk, b, mode);
 		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_1);
 		return n;
 	}
-	if (ta == get_mode_minus_one(smode)) {
+	if (tarval_is_minus_one(ta)) {
 		/* (L)-1 * (L)b = (L)b */
 		ir_node *blk = get_nodes_block(n);
 		n = new_rd_Minus(get_irn_dbg_info(n), blk, b, smode);
@@ -2808,14 +2808,14 @@ static ir_node *transform_node_Mul2n(ir_node *n, ir_mode *mode)
 	}
 
 	ir_tarval *tb = value_of(b);
-	if (tb == get_mode_one(smode)) {
+	if (tarval_is_one(tb)) {
 		/* (L)a * (L)1 = (L)a */
 		ir_node *blk = get_nodes_block(a);
 		n = new_rd_Conv(get_irn_dbg_info(n), blk, a, mode);
 		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_1);
 		return n;
 	}
-	if (tb == get_mode_minus_one(smode)) {
+	if (tarval_is_minus_one(tb)) {
 		/* (L)a * (L)-1 = (L)-a */
 		ir_node *blk = get_nodes_block(n);
 		n = new_rd_Minus(get_irn_dbg_info(n), blk, a, smode);
@@ -2852,9 +2852,9 @@ static ir_node *transform_node_Mul(ir_node *n)
 	if (mode_is_signed(mode)) {
 		ir_node *r = NULL;
 
-		if (value_of(a) == get_mode_minus_one(mode))
+		if (tarval_is_minus_one(value_of(a)))
 			r = b;
-		else if (value_of(b) == get_mode_minus_one(mode))
+		else if (tarval_is_minus_one(value_of(b)))
 			r = a;
 		if (r) {
 			n = new_rd_Minus(get_irn_dbg_info(n), get_nodes_block(n), r, mode);
@@ -2993,7 +2993,7 @@ static ir_node *transform_node_Div(ir_node *n)
 			if (mode_is_signed(mode) && is_Const(b)) {
 				ir_tarval *tv = get_Const_tarval(b);
 
-				if (tv == get_mode_minus_one(mode)) {
+				if (tarval_is_minus_one(tv)) {
 					/* a / -1 */
 					value = new_rd_Minus(get_irn_dbg_info(n), get_nodes_block(n), a, mode);
 					DBG_OPT_CSTEVAL(n, value);
@@ -3105,7 +3105,7 @@ static ir_node *transform_node_Mod(ir_node *n)
 			if (mode_is_signed(mode) && is_Const(b)) {
 				ir_tarval *tv = get_Const_tarval(b);
 
-				if (tv == get_mode_minus_one(mode)) {
+				if (tarval_is_minus_one(tv)) {
 					/* a % -1 = 0 */
 					value = create_zero_const(irg, mode);
 					DBG_OPT_CSTEVAL(n, value);
