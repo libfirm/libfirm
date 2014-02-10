@@ -136,6 +136,10 @@ ir_node *irn_copy_into_irg(const ir_node *node, ir_graph *irg)
 	/* copy the attributes */
 	copy_node_attr(irg, node, res);
 
+	/* fix irg attribute */
+	if (ir_has_irg_ref(res))
+		res->attr.irg.irg = irg;
+
 	/* duplicate dependency edges */
 	for (int i = 0, n_deps = get_irn_n_deps(node); i < n_deps; ++i) {
 		ir_node *dep = get_irn_dep(node, i);
