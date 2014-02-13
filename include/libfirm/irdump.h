@@ -112,9 +112,6 @@ FIRM_API void ir_set_dump_filter(const char *name);
 /** Returns the prefix filter set with #ir_set_dump_filter */
 FIRM_API const char *ir_get_dump_filter(void);
 
-/** Returns true if dump file filter is not set, or if it is a prefix of name */
-FIRM_API int ir_should_dump(const char *name);
-
 /*@}*/
 
 /**

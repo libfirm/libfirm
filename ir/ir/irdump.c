@@ -257,7 +257,8 @@ const char *ir_get_dump_filter(void)
 	return dump_filter;
 }
 
-int ir_should_dump(const char *name)
+/** Returns true if dump file filter is not set, or if it is a prefix of name. */
+static int ir_should_dump(const char *name)
 {
 	const char *f, *n;
 
