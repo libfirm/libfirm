@@ -88,7 +88,7 @@ static void apply_result(ir_node* const irn, void* ctx)
 		} else {
 			return;
 		}
-		set_irn_link(n, b);
+		set_bitinfo(n, z, o);
 exchange_only:
 		exchange(irn, n);
 		env->modified = 1;
