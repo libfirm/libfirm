@@ -260,7 +260,7 @@ const char *ir_get_dump_filter(void)
 /** Returns true if dump file filter is not set, or if it is a prefix of name. */
 static int ir_should_dump(const char *name)
 {
-	if (dump_filter == NULL || dump_filter[0] == '\0')
+	if (!dump_filter)
 		return 1;
 
 	for (char const *n = name, *f = dump_filter; *f != '\0'; ++n, ++f) {
