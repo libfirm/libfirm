@@ -613,8 +613,7 @@ FIRM_API ir_tarval *tarval_shrs_unsigned(ir_tarval *a, unsigned b);
  *   as size.
  *
  * @note
- *   The string is allocated using malloc() and is free()ed on the next call
- *   of this function.
+ *   The string is allocated using malloc() and must be freed by the caller.
  *   The string consists of the ASCII characters '0' and '1' and is
  *   null terminated
  *
