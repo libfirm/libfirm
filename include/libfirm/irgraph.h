@@ -277,7 +277,8 @@ FIRM_API void set_max_irg_visited(int val);
 FIRM_API ir_visited_t inc_max_irg_visited(void);
 
 /** Increments block visited counter by one.
- *  @see @ref visited_counters, Block_block_visited(), mark_Block_block_visited() */
+ *  @see @ref visited_counters, Block_block_visited(), mark_Block_block_visited()
+ */
 FIRM_API void inc_irg_block_visited(ir_graph *irg);
 /** Returns block visited counter.
  * @see @ref visited_counters */
