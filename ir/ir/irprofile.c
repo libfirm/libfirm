@@ -44,7 +44,7 @@ typedef struct block_assoc_t {
 static set *profile = NULL;
 
 /* Hook for vcg output. */
-static void *hook;
+static hook_entry_t *hook;
 
 /* The debug module handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)

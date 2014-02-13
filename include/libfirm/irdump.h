@@ -369,7 +369,7 @@ typedef void (dump_node_info_cb_t)(void *data, FILE *out, const ir_node *n);
  *
  * @note This functionality is only available, if Firm hooks are enabled.
  */
-FIRM_API void *dump_add_node_info_callback(dump_node_info_cb_t *cb, void *data);
+FIRM_API hook_entry_t *dump_add_node_info_callback(dump_node_info_cb_t *cb, void *data);
 
 /**
  * Remove a previously added info dumper callback.
@@ -377,7 +377,7 @@ FIRM_API void *dump_add_node_info_callback(dump_node_info_cb_t *cb, void *data);
  * @param handle  the callback handle returned from
  *                dump_add_node_info_callback()
  */
-FIRM_API void dump_remove_node_info_callback(void *handle);
+FIRM_API void dump_remove_node_info_callback(hook_entry_t *handle);
 
 /*@}*/
 

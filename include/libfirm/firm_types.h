@@ -316,6 +316,8 @@ typedef enum {
 	align_non_aligned,    /**< The entity is not aligned. */
 } ir_align;
 
+typedef struct hook_entry hook_entry_t;
+
 #include "end.h"
 
 #endif

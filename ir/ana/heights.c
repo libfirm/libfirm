@@ -25,7 +25,7 @@
 struct ir_heights_t {
 	ir_nodemap      data;
 	unsigned        visited;
-	void           *dump_handle;
+	hook_entry_t   *dump_handle;
 	struct obstack  obst;
 };
 

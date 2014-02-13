@@ -953,7 +953,7 @@ static void dump_node_vcgattr(FILE *F, const ir_node *node, const ir_node *local
 	}
 }
 
-void *dump_add_node_info_callback(dump_node_info_cb_t *cb, void *data)
+hook_entry_t *dump_add_node_info_callback(dump_node_info_cb_t *cb, void *data)
 {
 	hook_entry_t *info = XMALLOCZ(hook_entry_t);
 
@@ -964,7 +964,7 @@ void *dump_add_node_info_callback(dump_node_info_cb_t *cb, void *data)
 	return info;
 }
 
-void dump_remove_node_info_callback(void *handle)
+void dump_remove_node_info_callback(hook_entry_t *handle)
 {
 	hook_entry_t *info = (hook_entry_t*)handle;
 	unregister_hook(hook_node_info, info);

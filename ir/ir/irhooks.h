@@ -68,7 +68,7 @@ typedef void (generic_func)(void);
 /**
  * a hook entry
  */
-typedef struct hook_entry {
+struct hook_entry {
 	/** A union of all possible hook types. */
 	union {
 		/** This hook is called, after a new ir_op was created. */
@@ -161,7 +161,7 @@ typedef struct hook_entry {
 
 	/** needed for chaining */
 	struct hook_entry *next;
-} hook_entry_t;
+};
 
 /**
  * possible hooks
