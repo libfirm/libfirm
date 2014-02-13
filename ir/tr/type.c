@@ -452,7 +452,7 @@ ir_entity *(get_class_member)(const ir_type *clss, size_t pos)
 
 ir_entity *get_class_member_by_name(ir_type *clss, ident *name)
 {
-	assert(clss->type_op == type_class);
+	assert(is_Class_type(clss));
 	for (size_t i = 0, n_mem = get_class_n_members(clss); i < n_mem; ++i) {
 		ir_entity *mem = get_class_member(clss, i);
 		if (get_entity_ident(mem) == name)
@@ -463,7 +463,7 @@ ir_entity *get_class_member_by_name(ir_type *clss, ident *name)
 
 static void remove_class_member(ir_type *clss, ir_entity *member)
 {
-	assert(clss && (clss->type_op == type_class));
+	assert(is_Class_type(clss));
 	for (size_t i = 0; i < ARR_LEN(clss->attr.ca.members); ++i) {
 		if (clss->attr.ca.members[i] == member) {
 			for (; i < ARR_LEN(clss->attr.ca.members) - 1; ++i)
@@ -476,7 +476,7 @@ static void remove_class_member(ir_type *clss, ir_entity *member)
 
 void add_class_subtype(ir_type *clss, ir_type *subtype)
 {
-	assert(clss->type_op == type_class);
+	assert(is_Class_type(clss));
 	ARR_APP1(ir_type *, clss->attr.ca.subtypes, subtype);
 	for (size_t i = 0, n_supertypes = get_class_n_supertypes(subtype);
 	     i < n_supertypes; i++) {
@@ -489,20 +489,20 @@ void add_class_subtype(ir_type *clss, ir_type *subtype)
 
 size_t get_class_n_subtypes(const ir_type *clss)
 {
-	assert(clss->type_op == type_class);
+	assert(is_Class_type(clss));
 	return ARR_LEN(clss->attr.ca.subtypes);
 }
 
 ir_type *get_class_subtype(const ir_type *clss, size_t pos)
 {
-	assert(clss->type_op == type_class);
+	assert(is_Class_type(clss));
 	assert(pos < get_class_n_subtypes(clss));
 	return clss->attr.ca.subtypes[pos];
 }
 
 size_t get_class_subtype_index(const ir_type *clss, const ir_type *subclass)
 {
-	assert(is_Class_type(subclass));
+	assert(is_Class_type(clss) && is_Class_type(subclass));
 	for (size_t i = 0, n_subtypes = get_class_n_subtypes(clss);
 	     i < n_subtypes; ++i) {
 		if (get_class_subtype(clss, i) == subclass)
@@ -513,14 +513,14 @@ size_t get_class_subtype_index(const ir_type *clss, const ir_type *subclass)
 
 void set_class_subtype(ir_type *clss, ir_type *subtype, size_t pos)
 {
-	assert(clss->type_op == type_class);
+	assert(is_Class_type(clss));
 	assert(pos < get_class_n_subtypes(clss));
 	clss->attr.ca.subtypes[pos] = subtype;
 }
 
 void remove_class_subtype(ir_type *clss, ir_type *subtype)
 {
-	assert(clss && (clss->type_op == type_class));
+	assert(is_Class_type(clss));
 	for (size_t i = 0; i < ARR_LEN(clss->attr.ca.subtypes); ++i) {
 		if (clss->attr.ca.subtypes[i] == subtype) {
 			for (; i < ARR_LEN(clss->attr.ca.subtypes) - 1; ++i)
@@ -533,7 +533,7 @@ void remove_class_subtype(ir_type *clss, ir_type *subtype)
 
 void add_class_supertype(ir_type *clss, ir_type *supertype)
 {
-	assert(clss->type_op == type_class);
+	assert(is_Class_type(clss));
 	assert(supertype->type_op == type_class);
 	ARR_APP1(ir_type *, clss->attr.ca.supertypes, supertype);
 	for (size_t i = 0, n = get_class_n_subtypes(supertype); i < n; ++i) {
@@ -546,13 +546,13 @@ void add_class_supertype(ir_type *clss, ir_type *supertype)
 
 size_t get_class_n_supertypes(const ir_type *clss)
 {
-	assert(clss->type_op == type_class);
+	assert(is_Class_type(clss));
 	return ARR_LEN(clss->attr.ca.supertypes);
 }
 
 size_t get_class_supertype_index(const ir_type *clss, const ir_type *super_clss)
 {
-	assert(super_clss->type_op == type_class);
+	assert(is_Class_type(clss) && is_Class_type(super_clss));
 	for (size_t i = 0, n_supertypes = get_class_n_supertypes(clss);
 	     i < n_supertypes; i++) {
 		if (get_class_supertype(clss, i) == super_clss)
@@ -563,21 +563,21 @@ size_t get_class_supertype_index(const ir_type *clss, const ir_type *super_clss)
 
 ir_type *get_class_supertype(const ir_type *clss, size_t pos)
 {
-	assert(clss->type_op == type_class);
+	assert(is_Class_type(clss));
 	assert(pos < get_class_n_supertypes(clss));
 	return clss->attr.ca.supertypes[pos];
 }
 
 void set_class_supertype(ir_type *clss, ir_type *supertype, size_t pos)
 {
-	assert(clss->type_op == type_class);
+	assert(is_Class_type(clss));
 	assert(pos < get_class_n_supertypes(clss));
 	clss->attr.ca.supertypes[pos] = supertype;
 }
 
 void remove_class_supertype(ir_type *clss, ir_type *supertype)
 {
-	assert(clss->type_op == type_class);
+	assert(is_Class_type(clss));
 	for (size_t i = 0; i < ARR_LEN(clss->attr.ca.supertypes); ++i) {
 		if (clss->attr.ca.supertypes[i] == supertype) {
 			for (; i < ARR_LEN(clss->attr.ca.supertypes) - 1; ++i)
@@ -590,13 +590,13 @@ void remove_class_supertype(ir_type *clss, ir_type *supertype)
 
 ir_peculiarity get_class_peculiarity(const ir_type *clss)
 {
-	assert(clss->type_op == type_class);
+	assert(is_Class_type(clss));
 	return clss->attr.ca.peculiarity;
 }
 
 void set_class_peculiarity(ir_type *clss, ir_peculiarity pec)
 {
-	assert(clss->type_op == type_class);
+	assert(is_Class_type(clss));
 	assert(pec != peculiarity_inherited);  /* There is no inheritance of types in libFirm. */
 	clss->attr.ca.peculiarity = pec;
 }
