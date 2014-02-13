@@ -64,6 +64,11 @@
 #define get_method_calling_convention(method)           _get_method_calling_convention(method)
 #define set_method_calling_convention(method, cc_mask)  _set_method_calling_convention(method, cc_mask)
 
+/** Compound type attributes. */
+typedef struct {
+	ir_entity **members;
+} compound_attr;
+
 /** Class flags. */
 enum class_flags {
 	cf_none            = 0,  /**< No flags. */
@@ -74,7 +79,7 @@ enum class_flags {
 
 /** Class type attributes. */
 typedef struct {
-	ir_entity  **members;           /**< Array containing the fields and methods of this class. */
+	compound_attr  base;
 	ir_type **subtypes;          /**< Array containing the direct subtypes. */
 	ir_type **supertypes;        /**< Array containing the direct supertypes */
 	ir_peculiarity peculiarity;  /**< The peculiarity of this class. */
@@ -82,11 +87,6 @@ typedef struct {
 	unsigned vtable_size;        /**< The size of the vtable for this class. */
 	unsigned clss_flags;         /**< Additional class flags. */
 } cls_attr;
-
-/** Struct type attributes. */
-typedef struct {
-	ir_entity **members; /**< Fields of this struct. No method entities allowed. */
-} stc_attr;
 
 /** Method type attributes. */
 typedef struct {
@@ -98,11 +98,6 @@ typedef struct {
 	mtp_additional_properties properties;       /**< Set of additional method properties. */
 	unsigned                  irg_calling_conv; /**< A set of calling convention flags. */
 } mtd_attr;
-
-/** Union type attributes. */
-typedef struct {
-	ir_entity **members;    /**< Fields of this union. No method entities allowed. */
-} uni_attr;
 
 /** Array type attributes. */
 typedef struct {
@@ -122,12 +117,11 @@ typedef struct {
 
 /** General type attributes. */
 typedef union {
-	cls_attr ca;      /**< Attributes of a class type */
-	stc_attr sa;      /**< Attributes of a struct type */
-	mtd_attr ma;      /**< Attributes of a method type */
-	uni_attr ua;      /**< Attributes of an union type */
-	arr_attr aa;      /**< Attributes of an array type */
-	ptr_attr pa;      /**< Attributes of a pointer type */
+	compound_attr ca; /**< Attributes of a compount type */
+	cls_attr      cla;
+	mtd_attr      ma; /**< Attributes of a method type */
+	arr_attr      aa; /**< Attributes of an array type */
+	ptr_attr      pa; /**< Attributes of a pointer type */
 } tp_attr;
 
 /** Additional type flags. */
@@ -385,58 +379,58 @@ static inline ir_entity *_get_class_member(const ir_type *clss, size_t pos)
 static inline unsigned _get_class_vtable_size(const ir_type *clss)
 {
 	assert(clss->type_op == type_class);
-	return clss->attr.ca.vtable_size;
+	return clss->attr.cla.vtable_size;
 }
 
 static inline void _set_class_vtable_size(ir_type *clss, unsigned vtable_size)
 {
 	assert(clss->type_op == type_class);
-	clss->attr.ca.vtable_size = vtable_size;
+	clss->attr.cla.vtable_size = vtable_size;
 }
 
 static inline int _is_class_final(const ir_type *clss)
 {
 	assert(clss->type_op == type_class);
-	return clss->attr.ca.clss_flags & cf_final_class;
+	return clss->attr.cla.clss_flags & cf_final_class;
 }
 
 static inline void _set_class_final(ir_type *clss, int final)
 {
 	assert(clss->type_op == type_class);
 	if (final)
-		clss->attr.ca.clss_flags |= cf_final_class;
+		clss->attr.cla.clss_flags |= cf_final_class;
 	else
-		clss->attr.ca.clss_flags &= ~cf_final_class;
+		clss->attr.cla.clss_flags &= ~cf_final_class;
 }
 
 static inline int _is_class_interface(const ir_type *clss)
 {
 	assert(clss->type_op == type_class);
-	return clss->attr.ca.clss_flags & cf_interface_class;
+	return clss->attr.cla.clss_flags & cf_interface_class;
 }
 
 static inline void _set_class_interface(ir_type *clss, int final)
 {
 	assert(clss->type_op == type_class);
 	if (final)
-		clss->attr.ca.clss_flags |= cf_interface_class;
+		clss->attr.cla.clss_flags |= cf_interface_class;
 	else
-		clss->attr.ca.clss_flags &= ~cf_interface_class;
+		clss->attr.cla.clss_flags &= ~cf_interface_class;
 }
 
 static inline int _is_class_abstract(const ir_type *clss)
 {
 	assert(clss->type_op == type_class);
-	return clss->attr.ca.clss_flags & cf_absctract_class;
+	return clss->attr.cla.clss_flags & cf_absctract_class;
 }
 
 static inline void _set_class_abstract(ir_type *clss, int final)
 {
 	assert(clss->type_op == type_class);
 	if (final)
-		clss->attr.ca.clss_flags |= cf_absctract_class;
+		clss->attr.cla.clss_flags |= cf_absctract_class;
 	else
-		clss->attr.ca.clss_flags &= ~cf_absctract_class;
+		clss->attr.cla.clss_flags &= ~cf_absctract_class;
 }
 
 static inline int _is_struct_type(const ir_type *strct)

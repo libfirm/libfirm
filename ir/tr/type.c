@@ -376,42 +376,94 @@ int (is_type)(const void *thing)
 	return _is_type(thing);
 }
 
+static void compound_init(ir_type *type)
+{
+	type->attr.ca.members = NEW_ARR_F(ir_entity*, 0);
+}
+
+static void compound_free_attrs(ir_type *type)
+{
+	DEL_ARR_F(type->attr.ca.members);
+}
+
+static size_t compound_get_n_members(const ir_type *type)
+{
+	return ARR_LEN(type->attr.ca.members);
+}
+
+static ir_entity *compound_get_member(const ir_type *type, size_t index)
+{
+	assert(index < ARR_LEN(type->attr.ca.members));
+	return type->attr.ca.members[index];
+}
+
+static void compound_add_member(ir_type *type, ir_entity *entity)
+{
+	/* try to detect double-add */
+	assert(get_entity_type(entity) != type);
+	ARR_APP1(ir_entity *, type->attr.ca.members, entity);
+}
+
+static void compound_free_entities(ir_type *type)
+{
+	for (size_t i = compound_get_n_members(type); i-- > 0; )
+		free_entity(compound_get_member(type, i));
+}
+
+static size_t compound_get_member_index(const ir_type *type,
+                                        const ir_entity *entity)
+{
+	for (size_t i = 0, n = compound_get_n_members(type); i < n; ++i) {
+		if (compound_get_member(type, i) == entity)
+			return i;
+	}
+	return INVALID_MEMBER_INDEX;
+}
+
+static void compound_remove_member(ir_type *type, const ir_entity *member)
+{
+	for (size_t i = 0, n = ARR_LEN(type->attr.ca.members); i < n; ++i) {
+		if (compound_get_member(type, i) == member) {
+			for (; i < n - 1; ++i)
+				type->attr.ca.members[i] = type->attr.ca.members[i+1];
+			ARR_SETLEN(ir_entity*, type->attr.ca.members, n-1);
+			break;
+		}
+	}
+}
+
 ir_type *new_type_class(ident *name)
 {
 	ir_type *res = new_type(type_class, NULL);
 	res->name = name;
-
-	res->attr.ca.members     = NEW_ARR_F (ir_entity *, 0);
-	res->attr.ca.subtypes    = NEW_ARR_F (ir_type *, 0);
-	res->attr.ca.supertypes  = NEW_ARR_F (ir_type *, 0);
-	res->attr.ca.peculiarity = peculiarity_existent;
-	res->attr.ca.vtable_size = 0;
-	res->attr.ca.clss_flags  = cf_none;
-	res->attr.ca.dfn         = 0;
+	res->attr.cla.subtypes    = NEW_ARR_F (ir_type *, 0);
+	res->attr.cla.supertypes  = NEW_ARR_F (ir_type *, 0);
+	res->attr.cla.peculiarity = peculiarity_existent;
+	res->attr.cla.vtable_size = 0;
+	res->attr.cla.clss_flags  = cf_none;
+	res->attr.cla.dfn         = 0;
+	compound_init(res);
 	hook_new_type(res);
 	return res;
 }
 
 void free_class_entities(ir_type *clss)
 {
-	assert(clss && clss->type_op == type_class);
-	/* we must iterate backward here */
-	for (size_t i = get_class_n_members(clss); i-- > 0;) {
-		free_entity(get_class_member(clss, i));
-	}
+	assert(is_Class_type(clss));
+	compound_free_entities(clss);
 }
 
 void free_class_attrs(ir_type *clss)
 {
-	assert(clss && (clss->type_op == type_class));
-	DEL_ARR_F(clss->attr.ca.members);
-	DEL_ARR_F(clss->attr.ca.subtypes);
-	DEL_ARR_F(clss->attr.ca.supertypes);
+	assert(is_Class_type(clss));
+	compound_free_attrs(clss);
+	DEL_ARR_F(clss->attr.cla.subtypes);
+	DEL_ARR_F(clss->attr.cla.supertypes);
 }
 
 ident *get_class_ident(const ir_type *clss)
 {
-	assert(clss->type_op == type_class);
+	assert(is_Class_type(clss));
 	return clss->name;
 }
 
@@ -424,9 +476,8 @@ const char *get_class_name(const ir_type *clss)
 
 static void add_class_member(ir_type *clss, ir_entity *member)
 {
-	assert(clss->type_op == type_class);
-	assert(clss != get_entity_type(member));
-	ARR_APP1(ir_entity *, clss->attr.ca.members, member);
+	assert(is_Class_type(clss));
+	compound_add_member(clss, member);
 }
 
 size_t (get_class_n_members)(const ir_type *clss)
@@ -436,12 +487,8 @@ size_t (get_class_n_members)(const ir_type *clss)
 
 size_t get_class_member_index(const ir_type *clss, ir_entity *mem)
 {
-	assert(clss->type_op == type_class);
-	for (size_t i = 0, n = get_class_n_members(clss); i < n; ++i) {
-		if (get_class_member(clss, i) == mem)
-			return i;
-	}
-	return INVALID_MEMBER_INDEX;
+	assert(is_Class_type(clss));
+	return compound_get_member_index(clss, mem);
 }
 
 ir_entity *(get_class_member)(const ir_type *clss, size_t pos)
@@ -449,54 +496,36 @@ ir_entity *(get_class_member)(const ir_type *clss, size_t pos)
 	return _get_class_member(clss, pos);
 }
 
-ir_entity *get_class_member_by_name(ir_type *clss, ident *name)
-{
-	assert(is_Class_type(clss));
-	for (size_t i = 0, n_mem = get_class_n_members(clss); i < n_mem; ++i) {
-		ir_entity *mem = get_class_member(clss, i);
-		if (get_entity_ident(mem) == name)
-			return mem;
-	}
-	return NULL;
-}
-
 static void remove_class_member(ir_type *clss, ir_entity *member)
 {
 	assert(is_Class_type(clss));
-	for (size_t i = 0; i < ARR_LEN(clss->attr.ca.members); ++i) {
-		if (clss->attr.ca.members[i] == member) {
-			for (; i < ARR_LEN(clss->attr.ca.members) - 1; ++i)
-				clss->attr.ca.members[i] = clss->attr.ca.members[i + 1];
-			ARR_SETLEN(ir_entity*, clss->attr.ca.members, ARR_LEN(clss->attr.ca.members) - 1);
-			break;
-		}
-	}
+	compound_remove_member(clss, member);
 }
 
 void add_class_subtype(ir_type *clss, ir_type *subtype)
 {
 	assert(is_Class_type(clss));
-	ARR_APP1(ir_type *, clss->attr.ca.subtypes, subtype);
+	ARR_APP1(ir_type *, clss->attr.cla.subtypes, subtype);
 	for (size_t i = 0, n_supertypes = get_class_n_supertypes(subtype);
 	     i < n_supertypes; i++) {
 		if (get_class_supertype(subtype, i) == clss)
 			/* Class already registered */
 			return;
 	}
-	ARR_APP1(ir_type *, subtype->attr.ca.supertypes, clss);
+	ARR_APP1(ir_type *, subtype->attr.cla.supertypes, clss);
 }
 
 size_t get_class_n_subtypes(const ir_type *clss)
 {
 	assert(is_Class_type(clss));
-	return ARR_LEN(clss->attr.ca.subtypes);
+	return ARR_LEN(clss->attr.cla.subtypes);
 }
 
 ir_type *get_class_subtype(const ir_type *clss, size_t pos)
 {
 	assert(is_Class_type(clss));
 	assert(pos < get_class_n_subtypes(clss));
-	return clss->attr.ca.subtypes[pos];
+	return clss->attr.cla.subtypes[pos];
 }
 
 size_t get_class_subtype_index(const ir_type *clss, const ir_type *subclass)
@@ -514,17 +543,17 @@ void set_class_subtype(ir_type *clss, ir_type *subtype, size_t pos)
 {
 	assert(is_Class_type(clss));
 	assert(pos < get_class_n_subtypes(clss));
-	clss->attr.ca.subtypes[pos] = subtype;
+	clss->attr.cla.subtypes[pos] = subtype;
 }
 
 void remove_class_subtype(ir_type *clss, ir_type *subtype)
 {
 	assert(is_Class_type(clss));
-	for (size_t i = 0; i < ARR_LEN(clss->attr.ca.subtypes); ++i) {
-		if (clss->attr.ca.subtypes[i] == subtype) {
-			for (; i < ARR_LEN(clss->attr.ca.subtypes) - 1; ++i)
-				clss->attr.ca.subtypes[i] = clss->attr.ca.subtypes[i+1];
-			ARR_SETLEN(ir_type*, clss->attr.ca.subtypes, ARR_LEN(clss->attr.ca.subtypes) - 1);
+	for (size_t i = 0; i < ARR_LEN(clss->attr.cla.subtypes); ++i) {
+		if (clss->attr.cla.subtypes[i] == subtype) {
+			for (; i < ARR_LEN(clss->attr.cla.subtypes) - 1; ++i)
+				clss->attr.cla.subtypes[i] = clss->attr.cla.subtypes[i+1];
+			ARR_SETLEN(ir_type*, clss->attr.cla.subtypes, ARR_LEN(clss->attr.cla.subtypes) - 1);
 			break;
 		}
 	}
@@ -534,19 +563,19 @@ void add_class_supertype(ir_type *clss, ir_type *supertype)
 {
 	assert(is_Class_type(clss));
 	assert(supertype->type_op == type_class);
-	ARR_APP1(ir_type *, clss->attr.ca.supertypes, supertype);
+	ARR_APP1(ir_type *, clss->attr.cla.supertypes, supertype);
 	for (size_t i = 0, n = get_class_n_subtypes(supertype); i < n; ++i) {
 		if (get_class_subtype(supertype, i) == clss)
 			/* Class already registered */
 			return;
 	}
-	ARR_APP1(ir_type *, supertype->attr.ca.subtypes, clss);
+	ARR_APP1(ir_type *, supertype->attr.cla.subtypes, clss);
 }
 
 size_t get_class_n_supertypes(const ir_type *clss)
 {
 	assert(is_Class_type(clss));
-	return ARR_LEN(clss->attr.ca.supertypes);
+	return ARR_LEN(clss->attr.cla.supertypes);
 }
 
 size_t get_class_supertype_index(const ir_type *clss, const ir_type *super_clss)
@@ -564,24 +593,24 @@ ir_type *get_class_supertype(const ir_type *clss, size_t pos)
 {
 	assert(is_Class_type(clss));
 	assert(pos < get_class_n_supertypes(clss));
-	return clss->attr.ca.supertypes[pos];
+	return clss->attr.cla.supertypes[pos];
 }
 
 void set_class_supertype(ir_type *clss, ir_type *supertype, size_t pos)
 {
 	assert(is_Class_type(clss));
 	assert(pos < get_class_n_supertypes(clss));
-	clss->attr.ca.supertypes[pos] = supertype;
+	clss->attr.cla.supertypes[pos] = supertype;
 }
 
 void remove_class_supertype(ir_type *clss, ir_type *supertype)
 {
 	assert(is_Class_type(clss));
-	for (size_t i = 0; i < ARR_LEN(clss->attr.ca.supertypes); ++i) {
-		if (clss->attr.ca.supertypes[i] == supertype) {
-			for (; i < ARR_LEN(clss->attr.ca.supertypes) - 1; ++i)
-				clss->attr.ca.supertypes[i] = clss->attr.ca.supertypes[i+1];
-			ARR_SETLEN(ir_type*, clss->attr.ca.supertypes, ARR_LEN(clss->attr.ca.supertypes) - 1);
+	for (size_t i = 0; i < ARR_LEN(clss->attr.cla.supertypes); ++i) {
+		if (clss->attr.cla.supertypes[i] == supertype) {
+			for (; i < ARR_LEN(clss->attr.cla.supertypes) - 1; ++i)
+				clss->attr.cla.supertypes[i] = clss->attr.cla.supertypes[i+1];
+			ARR_SETLEN(ir_type*, clss->attr.cla.supertypes, ARR_LEN(clss->attr.cla.supertypes) - 1);
 			break;
 		}
 	}
@@ -590,14 +619,14 @@ void remove_class_supertype(ir_type *clss, ir_type *supertype)
 ir_peculiarity get_class_peculiarity(const ir_type *clss)
 {
 	assert(is_Class_type(clss));
-	return clss->attr.ca.peculiarity;
+	return clss->attr.cla.peculiarity;
 }
 
 void set_class_peculiarity(ir_type *clss, ir_peculiarity pec)
 {
 	assert(is_Class_type(clss));
 	assert(pec != peculiarity_inherited);  /* There is no inheritance of types in libFirm. */
-	clss->attr.ca.peculiarity = pec;
+	clss->attr.cla.peculiarity = pec;
 }
 
 unsigned (get_class_vtable_size)(const ir_type *clss)
@@ -642,12 +671,12 @@ void (set_class_abstract)(ir_type *clss, int final)
 
 void set_class_dfn(ir_type *clss, int dfn)
 {
-	clss->attr.ca.dfn = dfn;
+	clss->attr.cla.dfn = dfn;
 }
 
 int get_class_dfn(const ir_type *clss)
 {
-	return (clss->attr.ca.dfn);
+	return (clss->attr.cla.dfn);
 }
 
 int (is_Class_type)(const ir_type *clss)
@@ -669,29 +698,26 @@ ir_type *new_type_struct(ident *name)
 {
 	ir_type *res = new_type(type_struct, NULL);
 	res->name = name;
-
-	res->attr.sa.members = NEW_ARR_F(ir_entity *, 0);
+	compound_init(res);
 	hook_new_type(res);
 	return res;
 }
 
 void free_struct_entities(ir_type *strct)
 {
-	assert(strct->type_op == type_struct);
-	/* we must iterate backward here */
-	for (size_t i = get_struct_n_members(strct); i > 0;)
-		free_entity(get_struct_member(strct, --i));
+	assert(is_Struct_type(strct));
+	compound_free_entities(strct);
 }
 
 void free_struct_attrs(ir_type *strct)
 {
-	assert(strct->type_op == type_struct);
-	DEL_ARR_F(strct->attr.sa.members);
+	assert(is_Struct_type(strct));
+	compound_free_attrs(strct);
 }
 
 ident *get_struct_ident(const ir_type *strct)
 {
-	assert(strct->type_op == type_struct);
+	assert(is_Struct_type(strct));
 	return strct->name;
 }
 
@@ -705,46 +731,33 @@ const char *get_struct_name(const ir_type *strct)
 
 size_t get_struct_n_members(const ir_type *strct)
 {
-	assert(strct->type_op == type_struct);
-	return ARR_LEN(strct->attr.sa.members);
+	assert(is_Struct_type(strct));
+	return compound_get_n_members(strct);
 }
 
 static void add_struct_member(ir_type *strct, ir_entity *member)
 {
-	assert(strct->type_op == type_struct);
+	assert(is_Struct_type(strct));
 	assert(get_type_tpop(get_entity_type(member)) != type_method);
-	assert(strct != get_entity_type(member));
-	ARR_APP1(ir_entity *, strct->attr.sa.members, member);
+	compound_add_member(strct, member);
 }
 
 ir_entity *get_struct_member(const ir_type *strct, size_t pos)
 {
-	assert(strct->type_op == type_struct);
-	assert(pos < get_struct_n_members(strct));
-	return strct->attr.sa.members[pos];
+	assert(is_Struct_type(strct));
+	return compound_get_member(strct, pos);
 }
 
 size_t get_struct_member_index(const ir_type *strct, ir_entity *mem)
 {
-	assert(strct->type_op == type_struct);
-	for (size_t i = 0, n = get_struct_n_members(strct); i < n; ++i) {
-		if (get_struct_member(strct, i) == mem)
-			return i;
-	}
-	return (size_t)-1;
+	assert(is_Struct_type(strct));
+	return compound_get_member_index(strct, mem);
 }
 
 static void remove_struct_member(ir_type *strct, ir_entity *member)
 {
-	assert(strct->type_op == type_struct);
-	for (size_t i = 0; i < ARR_LEN(strct->attr.sa.members); ++i) {
-		if (strct->attr.sa.members[i] == member) {
-			for (; i < ARR_LEN(strct->attr.sa.members) - 1; ++i)
-				strct->attr.sa.members[i] = strct->attr.sa.members[i+1];
-			ARR_SETLEN(ir_entity*, strct->attr.sa.members, ARR_LEN(strct->attr.sa.members) - 1);
-			break;
-		}
-	}
+	assert(is_Struct_type(strct));
+	return compound_remove_member(strct, member);
 }
 
 int (is_Struct_type)(const ir_type *strct)
@@ -926,34 +939,30 @@ int (is_Method_type)(const ir_type *method)
 	return _is_method_type(method);
 }
 
-
 ir_type *new_type_union(ident *name)
 {
 	ir_type *res = new_type(type_union, NULL);
 	res->name = name;
-
-	res->attr.ua.members = NEW_ARR_F(ir_entity *, 0);
+	compound_init(res);
 	hook_new_type(res);
 	return res;
 }
 
 void free_union_entities(ir_type *uni)
 {
-	assert(uni->type_op == type_union);
-	/* we must iterate backward here */
-	for (size_t i = get_union_n_members(uni); i > 0;)
-		free_entity(get_union_member(uni, --i));
+	assert(is_Union_type(uni));
+	compound_free_entities(uni);
 }
 
 void free_union_attrs(ir_type *uni)
 {
-	assert(uni->type_op == type_union);
-	DEL_ARR_F(uni->attr.ua.members);
+	assert(is_Union_type(uni));
+	compound_free_attrs(uni);
 }
 
 ident *get_union_ident(const ir_type *uni)
 {
-	assert(uni->type_op == type_union);
+	assert(is_Union_type(uni));
 	return uni->name;
 }
 
@@ -967,45 +976,32 @@ const char *get_union_name(const ir_type *uni)
 
 size_t get_union_n_members(const ir_type *uni)
 {
-	assert(uni->type_op == type_union);
-	return ARR_LEN(uni->attr.ua.members);
+	assert(is_Union_type(uni));
+	return compound_get_n_members(uni);
 }
 
 static void add_union_member(ir_type *uni, ir_entity *member)
 {
-	assert(uni->type_op == type_union);
-	assert(uni != get_entity_type(member));
-	ARR_APP1(ir_entity *, uni->attr.ua.members, member);
+	assert(is_Union_type(uni));
+	compound_add_member(uni, member);
 }
 
 ir_entity *get_union_member(const ir_type *uni, size_t pos)
 {
-	assert(uni->type_op == type_union);
-	assert(pos < get_union_n_members(uni));
-	return uni->attr.ua.members[pos];
+	assert(is_Union_type(uni));
+	return compound_get_member(uni, pos);
 }
 
 size_t get_union_member_index(const ir_type *uni, ir_entity *mem)
 {
-	assert(uni->type_op == type_union);
-	for (size_t i = 0, n = get_union_n_members(uni); i < n; ++i) {
-		if (get_union_member(uni, i) == mem)
-			return i;
-	}
-	return (size_t)-1;
+	assert(is_Union_type(uni));
+	return compound_get_member_index(uni, mem);
 }
 
 static void remove_union_member(ir_type *uni, ir_entity *member)
 {
-	assert(uni->type_op == type_union);
-	for (size_t i = 0; i < ARR_LEN(uni->attr.ua.members); ++i) {
-		if (uni->attr.ua.members[i] == member) {
-			for (; i < ARR_LEN(uni->attr.ua.members) - 1; i++)
-				uni->attr.ua.members[i] = uni->attr.ua.members[i+1];
-			ARR_SETLEN(ir_entity*, uni->attr.ua.members, ARR_LEN(uni->attr.ua.members) - 1);
-			break;
-		}
-	}
+	assert(is_Union_type(uni));
+	compound_remove_member(uni, member);
 }
 
 int (is_Union_type)(const ir_type *uni)
