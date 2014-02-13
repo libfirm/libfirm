@@ -212,10 +212,6 @@ void set_struct_mode(ir_type *tp, ir_mode *mode);
 void set_pointer_mode(ir_type *tp, ir_mode *mode);
 void set_primitive_mode(ir_type *tp, ir_mode *mode);
 
-void set_class_size(ir_type *tp, unsigned bytes);
-void set_struct_size(ir_type *tp, unsigned bytes);
-void set_union_size(ir_type *tp, unsigned bytes);
-void set_array_size(ir_type *tp, unsigned bytes);
 void set_default_size(ir_type *tp, unsigned bytes);
 
 /** Set and get a class' dfn --

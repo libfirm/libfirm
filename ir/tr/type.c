@@ -66,7 +66,6 @@ void ir_init_type(ir_prog *irp)
 	set_type_state(irp->code_type, layout_fixed);
 
 	irp->unknown_type = new_type(tpop_unknown, mode_ANY);
-	set_type_size_bytes(irp->unknown_type, 0);
 	set_type_state (irp->unknown_type, layout_fixed);
 }
 
@@ -665,11 +664,6 @@ void set_class_mode(ir_type *tp, ir_mode *mode)
 	tp->mode = mode;
 }
 
-void set_class_size(ir_type *tp, unsigned size)
-{
-	tp->size = size;
-}
-
 
 ir_type *new_type_struct(ident *name)
 {
@@ -765,11 +759,6 @@ void set_struct_mode(ir_type *tp, ir_mode *mode)
 	assert(get_type_state(tp) == layout_fixed &&
 	       tp->size == get_mode_size_bytes(mode));
 	tp->mode = mode;
-}
-
-void set_struct_size(ir_type *tp, unsigned size)
-{
-	tp->size = size;
 }
 
 ir_type *new_type_method(size_t n_param, size_t n_res)
@@ -1024,11 +1013,6 @@ int (is_Union_type)(const ir_type *uni)
 	return _is_union_type(uni);
 }
 
-void set_union_size(ir_type *tp, unsigned size)
-{
-	tp->size = size;
-}
-
 ir_type *new_type_segment(ident *const name, type_flags const flags)
 {
 	ir_type *const seg = new_type_class(name);
@@ -1248,12 +1232,6 @@ void set_array_variable_size(ir_type *array, int flag)
 int (is_Array_type)(const ir_type *array)
 {
 	return _is_array_type(array);
-}
-
-void set_array_size(ir_type *tp, unsigned size)
-{
-	/* FIXME: Here we should make some checks with the element type size */
-	tp->size = size;
 }
 
 

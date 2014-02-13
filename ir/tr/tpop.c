@@ -52,7 +52,7 @@ static const tp_op_ops
 		free_class_entities,
 		NULL,
 		set_class_mode,
-		set_class_size,
+		set_default_size,
 		get_class_n_members,
 		get_class_member,
 		get_class_member_index
@@ -63,7 +63,7 @@ static const tp_op_ops
 		free_struct_entities,
 		NULL,
 		set_struct_mode,
-		set_struct_size,
+		set_default_size,
 		get_struct_n_members,
 		get_struct_member,
 		get_struct_member_index
@@ -78,14 +78,14 @@ static const tp_op_ops
 		NULL,
 		NULL,
 		NULL
-		},
+	},
 	/** tpop operations for union types */
 	union_ops = {
 		free_union_attrs,
 		free_union_entities,
 		NULL,
 		NULL,
-		set_union_size,
+		set_default_size,
 		get_union_n_members,
 		get_union_member,
 		get_union_member_index
@@ -96,7 +96,7 @@ static const tp_op_ops
 		free_array_entities,
 		free_array_automatic_entities,
 		NULL,
-		set_array_size,
+		set_default_size,
 		NULL,
 		NULL,
 		NULL
@@ -112,8 +112,7 @@ static const tp_op_ops
 		NULL,
 		NULL
 	},
-	/** tpop operations for pseudo types */
-	pseudo_ops = {
+	primitive_ops = {
 		NULL,
 		NULL,
 		NULL,
@@ -129,7 +128,7 @@ static const tp_op_ops
 		NULL,
 		NULL,
 		NULL,
-		set_default_size,
+		NULL,
 		NULL,
 		NULL,
 		NULL
@@ -145,9 +144,9 @@ void init_tpop(void)
 	type_union       = new_tpop(tpo_union      , ID("union"),       TP_OP_FLAG_COMPOUND, sizeof(uni_attr), &union_ops);
 	type_array       = new_tpop(tpo_array      , ID("array"),       0,                   sizeof(arr_attr), &array_ops);
 	type_pointer     = new_tpop(tpo_pointer    , ID("pointer"),     0,                   sizeof(ptr_attr), &pointer_ops);
-	type_primitive   = new_tpop(tpo_primitive  , ID("primitive"),   0,                   0,                &null_ops);
+	type_primitive   = new_tpop(tpo_primitive  , ID("primitive"),   0,                   0,                &primitive_ops);
 	tpop_code        = new_tpop(tpo_code       , ID("code"),        0,                   0,                &null_ops);
-	tpop_unknown     = new_tpop(tpo_unknown    , ID("Unknown"),     0,                   0,                &pseudo_ops);
+	tpop_unknown     = new_tpop(tpo_unknown    , ID("Unknown"),     0,                   0,                &null_ops);
 #undef ID
 }
 
