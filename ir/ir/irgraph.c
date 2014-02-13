@@ -103,7 +103,7 @@ void irg_set_nloc(ir_graph *res, int n_loc)
 	}
 }
 
-ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
+static ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 {
 	ir_graph *res;
 	ir_node  *first_block;
