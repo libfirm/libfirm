@@ -4837,7 +4837,7 @@ static ir_node *transform_node_shift(ir_node *n)
  */
 static ir_node *transform_node_shl_shr(ir_node *n)
 {
-	assert(is_shiftop(n));
+	assert(is_Shl(n) || is_Shr(n));
 
 	ir_node *right = get_binop_right(n);
 	if (!is_Const(right))
