@@ -885,15 +885,10 @@ void dump_node_label(FILE *F, const ir_node *n)
  * Dumps the attributes of a node n into the file F.
  * Currently this is only the color of a node.
  */
-static void dump_node_vcgattr(FILE *F, const ir_node *node, const ir_node *local, bool bad)
+static void dump_node_vcgattr(FILE *F, const ir_node *node, const ir_node *local)
 {
 	ir_mode *mode;
 	const ir_node *n;
-
-	if (bad) {
-		print_vcg_color(F, ird_color_error);
-		return;
-	}
 
 	if (dump_node_vcgattr_hook != NULL) {
 		if (dump_node_vcgattr_hook(F, node, local) != 0)
@@ -1039,7 +1034,7 @@ static void dump_const_node_local(FILE *F, const ir_node *n)
 			dump_node_label(F, con);
 			fprintf(F, "\" ");
 			dump_node_info(F, con);
-			dump_node_vcgattr(F, n, con, 0);
+			dump_node_vcgattr(F, n, con);
 			fprintf(F, "}\n");
 		}
 	}
@@ -1062,7 +1057,7 @@ static void dump_const_block_local(FILE *F, const ir_node *n)
 		dump_node_label(F, blk);
 		fprintf(F, "\" ");
 		dump_node_info(F, blk);
-		dump_node_vcgattr(F, n, blk, 0);
+		dump_node_vcgattr(F, n, blk);
 		fprintf(F, "}\n");
 
 		fprintf(F, "edge: { sourcename: ");
@@ -1119,7 +1114,7 @@ void dump_node(FILE *F, const ir_node *n)
 
 	dump_node_info(F, n);
 	print_dbg_info(F, get_irn_dbg_info(n));
-	dump_node_vcgattr(F, n, NULL, 0);
+	dump_node_vcgattr(F, n, NULL);
 	fputs("}\n", F);
 	dump_const_node_local(F, n);
 
