@@ -344,8 +344,6 @@ static be_main_env_t *be_init_env(be_main_env_t *const env,
 	env->cup_name             = compilation_unit_name;
 	env->arch_env             = isa_if->begin_codegeneration();
 
-	set_class_final(env->pic_trampolines_type, 1);
-
 	memset(asm_constraint_flags, 0, sizeof(asm_constraint_flags));
 
 	return env;

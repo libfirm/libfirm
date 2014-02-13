@@ -768,7 +768,6 @@ ir_graph *(get_entity_linktime_irg)(const ir_entity *ent)
 void set_entity_irg(ir_entity *ent, ir_graph *irg)
 {
 	assert(is_method_entity(ent));
-	assert(get_entity_peculiarity(ent) == peculiarity_existent);
 	ent->attr.mtd_attr.irg = irg;
 }
 
@@ -944,34 +943,4 @@ void ir_init_entity(ir_prog *irp)
 void ir_finish_entity(ir_prog *irp)
 {
 	free_entity(irp->unknown_entity);
-}
-
-ir_allocation get_entity_allocation(const ir_entity *entity)
-{
-	return (ir_allocation)entity->allocation;
-}
-
-void set_entity_allocation(ir_entity *entity, ir_allocation allocation)
-{
-	entity->allocation = allocation;
-}
-
-ir_peculiarity get_entity_peculiarity(const ir_entity *entity)
-{
-	return (ir_peculiarity)entity->peculiarity;
-}
-
-void set_entity_peculiarity(ir_entity *entity, ir_peculiarity peculiarity)
-{
-	entity->peculiarity = peculiarity;
-}
-
-void set_entity_final(ir_entity *entity, int final)
-{
-	entity->final = final;
-}
-
-int is_entity_final(const ir_entity *entity)
-{
-	return entity->final;
 }

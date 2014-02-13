@@ -695,39 +695,6 @@ FIRM_API ir_entity *get_unknown_entity(void);
  * @returns 1 if it is the unknown entity, 0 otherwise */
 FIRM_API int is_unknown_entity(const ir_entity *entity);
 
-/** @deprecated */
-typedef enum {
-	allocation_automatic,
-	allocation_parameter,
-	allocation_dynamic,
-	allocation_static
-} ir_allocation;
-/** @deprecated */
-FIRM_API ir_allocation get_entity_allocation(const ir_entity *ent);
-/** @deprecated */
-FIRM_API void set_entity_allocation(ir_entity *ent, ir_allocation al);
-
-/** @deprecated */
-typedef enum {
-	peculiarity_existent,
-	peculiarity_description,
-	peculiarity_inherited
-} ir_peculiarity;
-/** @deprecated */
-FIRM_API ir_peculiarity get_entity_peculiarity(const ir_entity *ent);
-/** @deprecated */
-FIRM_API void set_entity_peculiarity(ir_entity *ent, ir_peculiarity pec);
-
-/** @deprecated */
-FIRM_API int is_entity_final(const ir_entity *ent);
-/** @deprecated */
-FIRM_API void set_entity_final(ir_entity *ent, int final);
-
-/** @deprecated */
-FIRM_API ir_peculiarity get_class_peculiarity(const ir_type *clss);
-/** @deprecated */
-FIRM_API void set_class_peculiarity(ir_type *clss, ir_peculiarity pec);
-
 /** @} */
 
 /** Encodes how a pointer parameter is accessed. */
@@ -867,40 +834,6 @@ FIRM_API int is_overwritten_by(ir_entity *high, ir_entity *low);
  *  Searches downwards in overwritten tree. */
 FIRM_API ir_entity *resolve_ent_polymorphy(ir_type *dynamic_class,
                                            ir_entity* static_ent);
-
-/** Default name mangling for inherited entities.
- *
- *  Returns an ident that consists of the name of type followed by an
- *  underscore and the name (not ld_name) of the entity. */
-FIRM_API ident *default_mangle_inherited_name(const ir_entity *ent,
-                                              const ir_type *clss);
-
-/** Type of argument functions for inheritance resolver.
- *
- * @param ent     The entity in the super type that will be overwritten
- *                by the newly generated entity, for which this name is
- *                used.
- * @param clss    The class type in which the new entity will be placed.
- */
-typedef ident *mangle_inherited_name_func(const ir_entity *ent,
-                                          const ir_type *clss);
-
-/** Resolve implicit inheritance.
- *
- *  Resolves the implicit inheritance supplied by firm.  Firm defines,
- *  that each entity that is not overwritten in a subclass is
- *  inherited to this subclass without change implicitly.  This
- *  function generates entities that explicitly represent this
- *  inheritance.  It generates for each entity overwriting entities in
- *  all subclasses of the owner of the entity, if the entity is not
- *  overwritten in that subclass.
- *
- *  The name of the new entity is generated with the function passed.
- *  If the function is NULL, the default_mangle_inherited_name() is
- *  used.
- */
-FIRM_API void resolve_inheritance(mangle_inherited_name_func *mfunc);
-
 
 /* ----------------------------------------------------------------------- */
 /* The transitive closure of the subclass/superclass and                   */
@@ -1191,9 +1124,6 @@ FIRM_API int is_segment_type(const ir_type *tp);
  *
  *  - supertypes:  A list of direct superclasses.
  *
- *  - vtable_size: The size of this class virtual function table.
- *                 Default:  0
- *
  *  - final:       A final class is always a leaf in the class hierarchy.  Final
  *                 classes cannot be super classes of other ones.  As this information
  *                 can only be computed in whole world compilations, we allow to
@@ -1235,10 +1165,6 @@ FIRM_API ir_entity *get_class_member(const ir_type *clss, size_t pos);
 
 /** Returns index of mem in clss, INVALID_MEMBER_INDEX if not contained. */
 FIRM_API size_t get_class_member_index(const ir_type *clss, ir_entity *mem);
-
-/** Finds the member with name 'name'. If several members with the same
- *  name returns one of them.  Returns NULL if no member found. */
-FIRM_API ir_entity *get_class_member_by_name(ir_type *clss, ident *name);
 
 /** Adds subtype as subtype to clss.
  *
@@ -1295,30 +1221,6 @@ FIRM_API void set_class_supertype(ir_type *clss, ir_type *supertype, size_t pos)
 
 /** Finds supertype in the list of supertypes and removes it */
 FIRM_API void remove_class_supertype(ir_type *clss, ir_type *supertype);
-
-/** Returns the size of the virtual function table. */
-FIRM_API unsigned get_class_vtable_size(const ir_type *clss);
-
-/** Sets a new size of the virtual function table. */
-FIRM_API void set_class_vtable_size(ir_type *clss, unsigned size);
-
-/** Returns non-zero if a class is final. */
-FIRM_API int is_class_final(const ir_type *clss);
-
-/** Sets the class final flag. */
-FIRM_API void set_class_final(ir_type *clss, int flag);
-
-/** Returns non-zero if a class is an interface */
-FIRM_API int is_class_interface(const ir_type *clss);
-
-/** Sets the class interface flag. */
-FIRM_API void set_class_interface(ir_type *clss, int flag);
-
-/** Returns non-zero if a class is an abstract class. */
-FIRM_API int is_class_abstract(const ir_type *clss);
-
-/** Sets the class abstract flag. */
-FIRM_API void set_class_abstract(ir_type *clss, int flag);
 
 /** Returns true if a type is a class type. */
 FIRM_API int is_Class_type(const ir_type *clss);
@@ -2068,14 +1970,6 @@ typedef void entity_walk_func(ir_entity *ent, void *env);
  */
 FIRM_API void walk_types_entities(ir_type *tp, entity_walk_func *doit,
                                   void *env);
-
-/**
- * If we have the closed world assumption, we can calculate the
- * finalization of classes and entities by inspecting the class hierarchy.
- * After this is done, all classes and entities that are not overridden
- * anymore have the final property set.
- */
-FIRM_API void types_calc_finalization(void);
 
 /** @deprecated */
 FIRM_API ir_visibility get_type_visibility(const ir_type *tp);

@@ -318,13 +318,6 @@ int check_entity(const ir_entity *entity)
 				fine = false;
 			}
 		}
-		if (get_entity_peculiarity(entity) == peculiarity_existent) {
-			ir_entity *impl = get_Address_entity(get_atomic_ent_value(entity));
-			if (impl == NULL) {
-				report_error("inherited method entity %+F must have constant pointing to existent entity.", entity);
-				fine = false;
-			}
-		}
 		break;
 	case IR_ENTITY_PARAMETER:
 		if (!is_frame_type(owner)) {

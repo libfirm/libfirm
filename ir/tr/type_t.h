@@ -41,14 +41,6 @@
 #define is_Class_type(clss)               _is_class_type(clss)
 #define get_class_n_members(clss)         _get_class_n_members(clss)
 #define get_class_member(clss, pos)       _get_class_member(clss, pos)
-#define get_class_vtable_size(clss)       _get_class_vtable_size(clss)
-#define set_class_vtable_size(clss, size) _set_class_vtable_size(clss, size)
-#define is_class_final(clss)              _is_class_final(clss)
-#define set_class_final(clss, flag)       _set_class_final(clss, flag)
-#define is_class_interface(clss)          _is_class_interface(clss)
-#define set_class_interface(clss, flag)   _set_class_interface(clss, flag)
-#define is_class_abstract(clss)           _is_class_abstract(clss)
-#define set_class_abstract(clss, flag)    _set_class_abstract(clss, flag)
 #define is_Struct_type(strct)             _is_struct_type(strct)
 #define is_Method_type(method)            _is_method_type(method)
 #define is_Union_type(uni)                _is_union_type(uni)
@@ -69,23 +61,11 @@ typedef struct {
 	ir_entity **members;
 } compound_attr;
 
-/** Class flags. */
-enum class_flags {
-	cf_none            = 0,  /**< No flags. */
-	cf_final_class     = 1,  /**< Set if a class is an final class */
-	cf_interface_class = 2,  /**< Set if a class is an "interface" */
-	cf_absctract_class = 4,  /**< Set if a class is "abstract" */
-};
-
 /** Class type attributes. */
 typedef struct {
-	compound_attr  base;
-	ir_type **subtypes;          /**< Array containing the direct subtypes. */
-	ir_type **supertypes;        /**< Array containing the direct supertypes */
-	ir_peculiarity peculiarity;  /**< The peculiarity of this class. */
-	int      dfn;                /**< A number that can be used for 'instanceof' operator. */
-	unsigned vtable_size;        /**< The size of the vtable for this class. */
-	unsigned clss_flags;         /**< Additional class flags. */
+	compound_attr base;
+	ir_type     **subtypes;   /**< Array containing the direct subtypes. */
+	ir_type     **supertypes; /**< Array containing the direct supertypes */
 } cls_attr;
 
 /** Method type attributes. */
@@ -374,63 +354,6 @@ static inline ir_entity *_get_class_member(const ir_type *clss, size_t pos)
 	assert(clss->type_op == type_class);
 	assert(pos < _get_class_n_members(clss));
 	return clss->attr.ca.members[pos];
-}
-
-static inline unsigned _get_class_vtable_size(const ir_type *clss)
-{
-	assert(clss->type_op == type_class);
-	return clss->attr.cla.vtable_size;
-}
-
-static inline void _set_class_vtable_size(ir_type *clss, unsigned vtable_size)
-{
-	assert(clss->type_op == type_class);
-	clss->attr.cla.vtable_size = vtable_size;
-}
-
-static inline int _is_class_final(const ir_type *clss)
-{
-	assert(clss->type_op == type_class);
-	return clss->attr.cla.clss_flags & cf_final_class;
-}
-
-static inline void _set_class_final(ir_type *clss, int final)
-{
-	assert(clss->type_op == type_class);
-	if (final)
-		clss->attr.cla.clss_flags |= cf_final_class;
-	else
-		clss->attr.cla.clss_flags &= ~cf_final_class;
-}
-
-static inline int _is_class_interface(const ir_type *clss)
-{
-	assert(clss->type_op == type_class);
-	return clss->attr.cla.clss_flags & cf_interface_class;
-}
-
-static inline void _set_class_interface(ir_type *clss, int final)
-{
-	assert(clss->type_op == type_class);
-	if (final)
-		clss->attr.cla.clss_flags |= cf_interface_class;
-	else
-		clss->attr.cla.clss_flags &= ~cf_interface_class;
-}
-
-static inline int _is_class_abstract(const ir_type *clss)
-{
-	assert(clss->type_op == type_class);
-	return clss->attr.cla.clss_flags & cf_absctract_class;
-}
-
-static inline void _set_class_abstract(ir_type *clss, int final)
-{
-	assert(clss->type_op == type_class);
-	if (final)
-		clss->attr.cla.clss_flags |= cf_absctract_class;
-	else
-		clss->attr.cla.clss_flags &= ~cf_absctract_class;
 }
 
 static inline int _is_struct_type(const ir_type *strct)

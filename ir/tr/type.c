@@ -436,13 +436,9 @@ ir_type *new_type_class(ident *name)
 {
 	ir_type *res = new_type(type_class, NULL);
 	res->name = name;
-	res->attr.cla.subtypes    = NEW_ARR_F (ir_type *, 0);
-	res->attr.cla.supertypes  = NEW_ARR_F (ir_type *, 0);
-	res->attr.cla.peculiarity = peculiarity_existent;
-	res->attr.cla.vtable_size = 0;
-	res->attr.cla.clss_flags  = cf_none;
-	res->attr.cla.dfn         = 0;
 	compound_init(res);
+	res->attr.cla.subtypes   = NEW_ARR_F(ir_type*, 0);
+	res->attr.cla.supertypes = NEW_ARR_F(ir_type*, 0);
 	hook_new_type(res);
 	return res;
 }
@@ -614,69 +610,6 @@ void remove_class_supertype(ir_type *clss, ir_type *supertype)
 			break;
 		}
 	}
-}
-
-ir_peculiarity get_class_peculiarity(const ir_type *clss)
-{
-	assert(is_Class_type(clss));
-	return clss->attr.cla.peculiarity;
-}
-
-void set_class_peculiarity(ir_type *clss, ir_peculiarity pec)
-{
-	assert(is_Class_type(clss));
-	assert(pec != peculiarity_inherited);  /* There is no inheritance of types in libFirm. */
-	clss->attr.cla.peculiarity = pec;
-}
-
-unsigned (get_class_vtable_size)(const ir_type *clss)
-{
-	return _get_class_vtable_size(clss);
-}
-
-void (set_class_vtable_size)(ir_type *clss, unsigned size)
-{
-	_set_class_vtable_size(clss, size);
-}
-
-int (is_class_final)(const ir_type *clss)
-{
-	return _is_class_final(clss);
-}
-
-void (set_class_final)(ir_type *clss, int flag)
-{
-	_set_class_final(clss, flag);
-}
-
-int (is_class_interface)(const ir_type *clss)
-{
-	return _is_class_interface(clss);
-}
-
-void (set_class_interface)(ir_type *clss, int flag)
-{
-	_set_class_interface(clss, flag);
-}
-
-int (is_class_abstract)(const ir_type *clss)
-{
-	 return _is_class_abstract(clss);
-}
-
-void (set_class_abstract)(ir_type *clss, int final)
-{
-	_set_class_abstract(clss, final);
-}
-
-void set_class_dfn(ir_type *clss, int dfn)
-{
-	clss->attr.cla.dfn = dfn;
-}
-
-int get_class_dfn(const ir_type *clss)
-{
-	return (clss->attr.cla.dfn);
 }
 
 int (is_Class_type)(const ir_type *clss)
@@ -1013,7 +946,6 @@ ir_type *new_type_segment(ident *const name, type_flags const flags)
 {
 	ir_type *const seg = new_type_class(name);
 	seg->flags |= tf_segment | flags;
-	set_class_final(seg, true);
 	return seg;
 }
 
@@ -1412,7 +1344,6 @@ ir_type *new_type_frame(void)
 {
 	ir_type *res = new_type_class(new_id_from_str("<frame_type>"));
 	res->flags |= tf_frame_type;
-	set_class_final(res, 1);
 
 	return res;
 }

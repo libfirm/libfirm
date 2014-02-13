@@ -18,63 +18,6 @@
 #include "irflag.h"
 
 /* ----------------------------------------------------------------------- */
-/* Resolve implicit inheritance.                                           */
-/* ----------------------------------------------------------------------- */
-
-ident *default_mangle_inherited_name(const ir_entity *super, const ir_type *clss)
-{
-	return id_mangle_u(new_id_from_str("inh"), id_mangle_u(get_class_ident(clss), get_entity_ident(super)));
-}
-
-/** Replicates all entities in all super classes that are not overwritten
-    by an entity of this class. */
-static void copy_entities_from_superclass(ir_type *clss, void *env)
-{
-	mangle_inherited_name_func *mfunc = *(mangle_inherited_name_func **)env;
-
-	for (size_t i = 0; i < get_class_n_supertypes(clss); i++) {
-		ir_type *super = get_class_supertype(clss, i);
-		for (size_t j = 0; j < get_class_n_members(super); j++) {
-			ir_entity *inhent = get_class_member(super, j);
-			/* check whether inhent is already overwritten */
-			bool overwritten = false;
-			for (size_t k = 0; (k < get_class_n_members(clss)) && (overwritten == 0); k++) {
-				ir_entity *thisent = get_class_member(clss, k);
-				for (size_t l = 0; l < get_entity_n_overwrites(thisent); l++) {
-					if (inhent == get_entity_overwrites(thisent, l)) {
-						/* overwritten - do not copy */
-						overwritten = true;
-						break;
-					}
-				}
-			}
-			/* Inherit entity */
-			if (!overwritten) {
-				ir_entity *thisent = copy_entity_own(inhent, clss);
-				add_entity_overwrites(thisent, inhent);
-				if (get_entity_peculiarity(inhent) == peculiarity_existent)
-					set_entity_peculiarity(thisent, peculiarity_inherited);
-				set_entity_ld_ident(thisent, mfunc(inhent, clss));
-				if (get_entity_linkage(inhent) & IR_LINKAGE_CONSTANT) {
-					assert(is_atomic_entity(inhent) &&  /* @@@ */
-						"Inheritance of constant, compound entities not implemented");
-					add_entity_linkage(thisent, IR_LINKAGE_CONSTANT);
-					set_atomic_ent_value(thisent, get_atomic_ent_value(inhent));
-				}
-			}
-		}
-	}
-}
-
-void resolve_inheritance(mangle_inherited_name_func *mfunc)
-{
-	if (!mfunc)
-		mfunc = default_mangle_inherited_name;
-	class_walk_super2sub(copy_entities_from_superclass, NULL, (void *)&mfunc);
-}
-
-
-/* ----------------------------------------------------------------------- */
 /* The transitive closure of the subclass/superclass and                   */
 /* overwrites/overwrittenby relation.                                      */
 /*                                                                         */

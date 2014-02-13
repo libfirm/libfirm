@@ -661,15 +661,6 @@ void dump_type_to_file(FILE *const F, const ir_type *const tp)
 					ir_fprintf(F, "\n    %+F", stp);
 				}
 			}
-
-			fprintf(F, "\n  flags:       ");
-			if (is_class_final(tp))
-				fprintf(F, "final, ");
-			if (is_class_interface(tp))
-				fprintf(F, "interface, ");
-			if (is_class_abstract(tp))
-				fprintf(F, "abstract, ");
-			fprintf(F, "\n");
 		}
 		break;
 
