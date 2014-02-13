@@ -105,6 +105,7 @@ void occult_consts(ir_graph *irg)
 	ir_nodemap_destroy(&env.dca);
 	ir_nodemap_destroy(&env.vrp);
 
+	constbits_clear(irg);
 	obstack_free(&env.obst, NULL);
 	confirm_irg_properties(irg,
 			env.changed ? IR_GRAPH_PROPERTIES_NONE : IR_GRAPH_PROPERTIES_ALL);

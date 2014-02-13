@@ -311,6 +311,7 @@ void fixpoint_vrp(ir_graph* const irg)
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 
+	constbits_clear(irg);
 	obstack_free(&private_obst, NULL);
 
 	confirm_irg_properties(irg,

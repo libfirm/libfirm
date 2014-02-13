@@ -20,4 +20,10 @@ int set_bitinfo(ir_node* const irn, ir_tarval* const z, ir_tarval* const o);
  * The result is available via links to bitinfo*, allocated on client_obst. */
 void constbits_analyze(ir_graph* const irg, struct obstack *client_obst);
 
+/* Clears the bit information for the given graph.
+ *
+ * This does not affect the obstack passed to constbits_analyze.
+ */
+void constbits_clear(ir_graph* const irg);
+
 #endif

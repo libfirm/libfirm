@@ -472,6 +472,11 @@ typedef struct cg_callee_entry {
 	size_t     max_depth;  /**< Maximum depth of all Call nodes to irg. */
 } cg_callee_entry;
 
+typedef struct ir_bitinfo {
+	struct ir_nodemap map;
+	struct obstack    obst;
+} ir_bitinfo;
+
 typedef struct ir_vrp_info {
 	struct ir_nodemap infos;
 	struct obstack    obst;
@@ -524,6 +529,7 @@ struct ir_graph {
 	pset               *value_table;
 	struct obstack      out_obst;    /**< Space for the Def-Use arrays. */
 	bool                out_obst_allocated;
+	ir_bitinfo          bitinfo;     /**< bit info */
 	ir_vrp_info         vrp;         /**< vrp info */
 	ir_loop            *loop;        /**< The outermost loop for this graph. */
 	ir_dom_front_info_t domfront;    /**< dominance frontier analysis data */

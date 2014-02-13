@@ -22,6 +22,7 @@
 #include "irgraph_t.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
+#include "irnodemap.h"
 #include "iroptimize.h"
 #include "tv.h"
 #include "irmemory.h"
@@ -111,17 +112,24 @@ static bool is_undefined(bitinfo const* const b)
 	return tarval_is_null(b->z) && tarval_is_all_one(b->o);
 }
 
-inline bitinfo* get_bitinfo(ir_node const* const irn)
+bitinfo* get_bitinfo(ir_node const* const irn)
 {
-	return (bitinfo*)get_irn_link(irn);
+	ir_graph   *const irg = get_irn_irg(irn);
+	ir_nodemap *const map = &irg->bitinfo.map;
+	if (map->data == NULL)
+		return NULL;
+
+	return ir_nodemap_get(bitinfo, map, irn);
 }
 
 int set_bitinfo(ir_node* const irn, ir_tarval* const z, ir_tarval* const o)
 {
 	bitinfo* b = get_bitinfo(irn);
 	if (b == NULL) {
+		ir_graph   *const irg = get_irn_irg(irn);
+		ir_nodemap *const map = &irg->bitinfo.map;
 		b = OALLOCZ(obst, bitinfo);
-		set_irn_link(irn, b);
+		ir_nodemap_insert(map, irn, b);
 	} else if (z == b->z && o == b->o) {
 		return 0;
 	} else {
@@ -613,10 +621,9 @@ static void queue_users(pdeq* const q, ir_node* const n)
 	}
 }
 
-static void clear_links(ir_node *irn, void *env)
+static void clear_phi_lists(ir_node *irn, void *env)
 {
 	(void) env;
-	set_irn_link(irn, NULL);
 	if (is_Block(irn))
 		set_Block_phis(irn, NULL);
 }
@@ -631,12 +638,11 @@ static void build_phi_lists(ir_node *irn, void *env)
 void constbits_analyze(ir_graph* const irg, struct obstack *client_obst)
 {
 	obst = client_obst;
+	ir_nodemap_init(&irg->bitinfo.map, irg);
 
 	FIRM_DBG_REGISTER(dbg, "firm.ana.fp-vrp");
 	DB((dbg, LEVEL_1, "===> Performing constant propagation on %+F (analysis)\n", irg));
 
-	assert(((ir_resources_reserved(irg) & IR_RESOURCE_IRN_LINK) != 0) &&
-			"user of fp-vrp analysis must reserve links");
 	assert(((ir_resources_reserved(irg) & IR_RESOURCE_PHI_LIST) != 0) &&
 			"user of fp-vrp analysis must reserve phi list");
 
@@ -645,7 +651,7 @@ void constbits_analyze(ir_graph* const irg, struct obstack *client_obst)
 
 		/* We need this extra step because the dom tree does not contain
 		 * unreachable blocks in Firm. Moreover build phi list. */
-		irg_walk_anchors(irg, clear_links, build_phi_lists, NULL);
+		irg_walk_anchors(irg, clear_phi_lists, build_phi_lists, NULL);
 
 		{
 			ir_tarval* const f = get_tarval_b_false();
@@ -665,4 +671,9 @@ void constbits_analyze(ir_graph* const irg, struct obstack *client_obst)
 
 		del_pdeq(q);
 	}
+}
+
+void constbits_clear(ir_graph* const irg)
+{
+	ir_nodemap_destroy(&irg->bitinfo.map);
 }
