@@ -147,8 +147,7 @@ ir_node *pre_process_constraints(be_chordal_env_t *env, be_insn_t **the_insn)
 
 	/* Copy the input constraints of the irn to the Perm as output
 	 * constraints. Succeeding phases (coalescing) will need that. */
-	for (int i = 0, n = get_irn_arity(irn); i != n; ++i) {
-		ir_node *const proj = get_irn_n(irn, i);
+	foreach_irn_in(irn, i, proj) {
 		/* Note that the predecessor is not necessarily a Proj of the Perm,
 		 * since ignore-nodes are not Perm'ed. */
 		if (!is_Proj(proj) || get_Proj_pred(proj) != perm)

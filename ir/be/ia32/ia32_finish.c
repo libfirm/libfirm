@@ -233,8 +233,7 @@ static void assure_should_be_same_requirements(ir_node *node)
 		/* check if any other input operands uses the out register */
 		ir_node *uses_out_reg     = NULL;
 		int      uses_out_reg_pos = -1;
-		for (int i2 = 0, arity = get_irn_arity(node); i2 < arity; ++i2) {
-			ir_node *in = get_irn_n(node, i2);
+		foreach_irn_in(node, i2, in) {
 			if (!mode_is_data(get_irn_mode(in)))
 				continue;
 

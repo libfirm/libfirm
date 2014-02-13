@@ -144,8 +144,7 @@ static arch_register_t const *get_free_register(ir_node *const perm, lower_env_t
 			set_reg_free(free_regs, node, reg_is_free);
 		}
 
-		for (int i = 0, max = get_irn_arity(node); i < max; ++i) {
-			ir_node *const in = get_irn_n(node, i);
+		foreach_irn_in(node, i, in) {
 			set_reg_free(free_regs, in, false);
 		}
 

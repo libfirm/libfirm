@@ -22,11 +22,9 @@
  */
 static int count_non_bads(ir_node *node)
 {
-	int arity = get_Block_n_cfgpreds(node);
 	int count = 0;
-	int i;
-	for (i = 0; i < arity; ++i) {
-		if (!is_Bad(get_irn_n(node, i)))
+	foreach_irn_in(node, i, pred) {
+		if (!is_Bad(pred))
 			++count;
 	}
 	return count;
@@ -80,10 +78,10 @@ static void block_remove_bads(ir_node *block)
 		next = get_Phi_next(phi);
 		assert(get_irn_arity(phi) == max);
 
-		for (i = j = 0; i < max; ++i) {
+		j = 0;
+		foreach_irn_in(phi, i, pred) {
 			ir_node *const block_pred = get_Block_cfgpred(block, i);
 			if (!is_Bad(block_pred)) {
-				ir_node *pred = get_irn_n(phi, i);
 				new_in[j++] = pred;
 			}
 		}

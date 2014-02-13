@@ -156,11 +156,8 @@ void normalize_one_return(ir_graph *irg)
 static bool can_move_ret(ir_node *ret)
 {
 	ir_node *retbl = get_nodes_block(ret);
-	int i, n = get_irn_arity(ret);
 
-	for (i = 0; i < n; ++i) {
-		ir_node *pred = get_irn_n(ret, i);
-
+	foreach_irn_in(ret, i, pred) {
 		if (! is_Phi(pred) && retbl == get_nodes_block(pred)) {
 			/* first condition failed, found a non-Phi predecessor
 			 * then is in the Return block */
@@ -169,11 +166,11 @@ static bool can_move_ret(ir_node *ret)
 	}
 
 	/* check, that predecessors are Jmps */
-	n = get_Block_n_cfgpreds(retbl);
+	int n = get_Block_n_cfgpreds(retbl);
 	/* we cannot move above a labeled block, as this might kill the block */
 	if (n <= 1 || get_Block_entity(retbl) != NULL)
 		return false;
-	for (i = 0; i < n; ++i) {
+	for (int i = 0; i < n; ++i) {
 		ir_node *pred = get_Block_cfgpred(retbl, i);
 
 		pred = skip_Tuple(pred);

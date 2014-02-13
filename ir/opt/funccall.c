@@ -333,8 +333,8 @@ static mtp_additional_properties follow_mem_(ir_node *node)
 		case iro_Phi:
 		case iro_Sync:
 			/* do a dfs search */
-			for (int i = get_irn_arity(node); i-- > 0;) {
-				mtp_additional_properties m = follow_mem_(get_irn_n(node, i));
+			foreach_irn_in_r(node, i, pred) {
+				mtp_additional_properties const m = follow_mem_(pred);
 				mode = max_property(mode, m);
 				if (mode == mtp_no_property)
 					return mtp_no_property;

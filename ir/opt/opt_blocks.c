@@ -522,12 +522,10 @@ static void propagate_blocks(partition_t *part, environment_t *env)
 		/* put all not-visited predecessors to the wait queue */
 		if (! node->is_input) {
 			ir_node *irn = node->node;
-			int     i;
 
 			DB((dbg, LEVEL_3, "  propagate %+F\n", irn));
 			ir_normalize_node(node->node);
-			for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
-				ir_node *pred  = get_irn_n(irn, i);
+			foreach_irn_in_r(irn, i, pred) {
 				ir_node *block = get_nodes_block(skip_Proj(pred));
 
 				if (block != bl->block) {
@@ -1015,7 +1013,6 @@ static void find_liveouts(ir_node *irn, void *ctx)
 	environment_t *env        = (environment_t*)ctx;
 	ir_node       **live_outs = env->live_outs;
 	ir_node       *this_block;
-	int           i;
 
 	if (is_Block(irn))
 		return;
@@ -1031,17 +1028,14 @@ static void find_liveouts(ir_node *irn, void *ctx)
 		add_Block_phi(this_block, irn);
 	}
 
-	for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
-		ir_node *pred_block;
-		ir_node *pred = get_irn_n(irn, i);
-		int     idx   = get_irn_idx(pred);
-
+	foreach_irn_in_r(irn, i, pred) {
+		int const idx = get_irn_idx(pred);
 		if (live_outs[idx] != NULL) {
 			/* already marked as live-out */
 			return;
 		}
 
-		pred_block = get_nodes_block(pred);
+		ir_node *const pred_block = get_nodes_block(pred);
 		/* Phi nodes always refer to live-outs */
 		if (is_Phi(irn) || this_block != pred_block) {
 			/* pred is a live-out */

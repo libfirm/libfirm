@@ -148,12 +148,8 @@ static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 
 	n = flag_consumers;
 	do {
-		int i;
-		int arity = get_irn_arity(n);
-		for (i = 0; i < arity; ++i) {
-			ir_node *in = get_irn_n(n, i);
-			in = skip_Proj(in);
-			if (in == flags_needed) {
+		foreach_irn_in(n, i, in) {
+			if (skip_Proj(in) == flags_needed) {
 				set_irn_n(n, i, value);
 				break;
 			}
@@ -167,11 +163,9 @@ static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 			get_nodes_block(node) != get_nodes_block(flags_needed)) {
 		ir_graph *irg = get_irn_irg(node);
 		be_lv_t  *lv  = be_get_irg_liveness(irg);
-		int       i;
-
 		if (lv != NULL) {
-			for (i = get_irn_arity(copy) - 1; i >= 0; --i) {
-				be_liveness_update(lv, get_irn_n(copy, i));
+			foreach_irn_in_r(copy, i, pred) {
+				be_liveness_update(lv, pred);
 			}
 		}
 	}
@@ -193,7 +187,6 @@ static void fix_flags_walker(ir_node *block, void *env)
 
 	ir_node *place = block;
 	sched_foreach_reverse(block, node) {
-		int i, arity;
 		ir_node *new_flags_needed = NULL;
 		ir_node *test;
 
@@ -221,13 +214,11 @@ static void fix_flags_walker(ir_node *block, void *env)
 		}
 
 		/* test whether the current node needs flags */
-		arity = get_irn_arity(node);
-		for (i = 0; i < arity; ++i) {
-			const arch_register_req_t *req
-				= arch_get_irn_register_req_in(node, i);
+		foreach_irn_in(node, i, pred) {
+			const arch_register_req_t *req = arch_get_irn_register_req_in(node, i);
 			if (req->cls == flag_class) {
 				assert(new_flags_needed == NULL);
-				new_flags_needed = get_irn_n(node, i);
+				new_flags_needed = pred;
 			}
 		}
 

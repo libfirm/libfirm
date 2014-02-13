@@ -31,26 +31,21 @@ typedef struct cf_env {
  */
 static void walk_critical_cf_edges(ir_node *n, void *env)
 {
-	int arity, i;
-	ir_node *pre, *block, *jmp;
+	ir_node *block, *jmp;
 	cf_env *cenv = (cf_env*)env;
 	ir_graph *irg = get_irn_irg(n);
 
 	/* Block has multiple predecessors */
-	arity = get_irn_arity(n);
-	if (arity > 1) {
+	if (get_irn_arity(n) > 1) {
 		if (n == get_irg_end_block(irg))
 			return;  /*  No use to add a block here.      */
 
-		for (i = 0; i < arity; ++i) {
-			const ir_op *cfop;
-
-			pre = get_irn_n(n, i);
+		foreach_irn_in(n, i, pre) {
 			/* don't count Bad's */
 			if (is_Bad(pre))
 				continue;
 
-			cfop = get_irn_op(skip_Proj(pre));
+			const ir_op *const cfop = get_irn_op(skip_Proj(pre));
 			if (is_op_fragile(cfop)) {
 				if (cenv->ignore_exc_edges && is_x_except_Proj(pre))
 					continue;

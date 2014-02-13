@@ -199,8 +199,8 @@ static void add_block_cf_input_nr(ir_node *block, int nr, ir_node *cf)
 		if (!is_Phi(phi))
 			continue;
 
-		for (int i = 0; i < n_cfgpreds; ++i)
-			in[i] = get_irn_n(phi, i);
+		foreach_irn_in(phi, i, pred)
+			in[i] = pred;
 		in[n_cfgpreds] = in[nr];
 		set_irn_in(phi, n_cfgpreds+1, in);
 	}
@@ -705,8 +705,7 @@ static void move(ir_node *node, ir_node *from_bl, ir_node *to_bl)
 		return;
 
 	/* recursion ... */
-	for (int i = 0, arity = get_irn_arity(node); i < arity; i++) {
-		ir_node *pred      = get_irn_n(node, i);
+	foreach_irn_in(node, i, pred) {
 		ir_mode *pred_mode = get_irn_mode(pred);
 		if (get_nodes_block(pred) == from_bl)
 			move(pred, from_bl, to_bl);
@@ -2039,8 +2038,7 @@ static void lower_ASM(ir_node *asmn, ir_mode *mode)
 
 	(void)mode;
 
-	for (int i = get_irn_arity(asmn) - 1; i >= 0; --i) {
-		ir_node *op      = get_irn_n(asmn, i);
+	foreach_irn_in_r(asmn, i, op) {
 		ir_mode *op_mode = get_irn_mode(op);
 		if (op_mode == high_signed || op_mode == high_unsigned) {
 			panic("lowering ASM 64bit input unimplemented");
@@ -2648,8 +2646,7 @@ static void setup_modes(void)
 
 static void enqueue_preds(ir_node *node)
 {
-	for (int i = 0, arity = get_irn_arity(node); i < arity; ++i) {
-		ir_node *pred = get_irn_n(node, i);
+	foreach_irn_in(node, i, pred) {
 		pdeq_putr(env->waitq, pred);
 	}
 }
@@ -2676,8 +2673,7 @@ static void lower_node(ir_node *node)
 	}
 
 	if (!is_Cond(node)) {
-		for (int i = 0, arity = get_irn_arity(node); i < arity; ++i) {
-			ir_node *pred = get_irn_n(node, i);
+		foreach_irn_in(node, i, pred) {
 			lower_node(pred);
 		}
 	}

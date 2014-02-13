@@ -249,11 +249,9 @@ static void check_defs(ir_nodeset_t const *const live_nodes, float const weight,
 		int                arity = get_irn_arity(insn);
 
 		float factor = 1.0f / rbitset_popcount(&req->other_same, arity);
-		for (int i = 0; i < arity; ++i) {
+		foreach_irn_in(insn, i, op) {
 			if (!rbitset_is_set(&req->other_same, i))
 				continue;
-
-			ir_node *op = get_irn_n(insn, i);
 
 			/* if we the value at the should_be_same input doesn't die at the
 			 * node, then it is no use to propagate the constraints (since a
@@ -290,20 +288,17 @@ static void analyze_block(ir_node *block, void *data)
 			check_defs(&live_nodes, weight, value, req);
 		);
 
-		/* mark last uses */
-		int arity = get_irn_arity(node);
-
 		/* the allocation info node currently only uses 1 unsigned value
 		   to mark last used inputs. So we will fail for a node with more than
 		   32 inputs. */
 		allocation_info_t *info = get_allocation_info(node);
-		if (arity >= (int) sizeof(info->last_uses) * 8) {
+		if (get_irn_arity(node) >= (int)sizeof(info->last_uses) * 8) {
 			panic("Node with more than %d inputs not supported yet",
 					(int) sizeof(info->last_uses) * 8);
 		}
 
-		for (int i = 0; i < arity; ++i) {
-			ir_node                   *op  = get_irn_n(node, i);
+		/* mark last uses */
+		foreach_irn_in(node, i, op) {
 			const arch_register_req_t *req = arch_get_irn_register_req(op);
 			if (req->cls != cls)
 				continue;
@@ -333,16 +328,14 @@ static void congruence_def(ir_nodeset_t *const live_nodes, ir_node const *const 
 	/* should be same constraint? */
 	if (arch_register_req_is(req, should_be_same)) {
 		const ir_node *insn     = skip_Proj_const(node);
-		int            arity    = get_irn_arity(insn);
 		unsigned       node_idx = get_irn_idx(node);
 		node_idx = uf_find(congruence_classes, node_idx);
 
-		for (int i = 0; i < arity; ++i) {
+		foreach_irn_in(insn, i, op) {
 			if (!rbitset_is_set(&req->other_same, i))
 				continue;
 
-			ir_node *op     = get_irn_n(insn, i);
-			int      op_idx = get_irn_idx(op);
+			int op_idx = get_irn_idx(op);
 			op_idx = uf_find(congruence_classes, op_idx);
 
 			/* do we interfere with the value */
@@ -666,14 +659,12 @@ static void assign_reg(ir_node const *const block, ir_node *const node, arch_reg
 	ir_node           *in_node = skip_Proj(node);
 	if (arch_register_req_is(req, should_be_same)) {
 		float weight = (float)get_block_execfreq(block);
-		int   arity  = get_irn_arity(in_node);
 
-		assert(arity <= (int) sizeof(req->other_same) * 8);
-		for (int i = 0; i < arity; ++i) {
+		assert(get_irn_arity(in_node) <= (int)sizeof(req->other_same) * 8);
+		foreach_irn_in(in_node, i, in) {
 			if (!rbitset_is_set(&req->other_same, i))
 				continue;
 
-			ir_node               *in        = get_irn_n(in_node, i);
 			const arch_register_t *reg       = arch_get_irn_register(in);
 			unsigned               reg_index = reg->index;
 
@@ -922,14 +913,12 @@ static void free_last_uses(ir_nodeset_t *live_nodes, ir_node *node)
 {
 	allocation_info_t *info      = get_allocation_info(node);
 	const unsigned    *last_uses = info->last_uses;
-	int                arity     = get_irn_arity(node);
 
-	for (int i = 0; i < arity; ++i) {
+	foreach_irn_in(node, i, op) {
 		/* check if one operand is the last use */
 		if (!rbitset_is_set(last_uses, i))
 			continue;
 
-		ir_node *op = get_irn_n(node, i);
 		free_reg_of_value(op);
 		ir_nodeset_remove(live_nodes, op);
 	}
@@ -940,9 +929,7 @@ static void free_last_uses(ir_nodeset_t *live_nodes, ir_node *node)
  */
 static void rewire_inputs(ir_node *node)
 {
-	int arity = get_irn_arity(node);
-	for (int i = 0; i < arity; ++i) {
-		ir_node           *op = get_irn_n(node, i);
+	foreach_irn_in(node, i, op) {
 		allocation_info_t *info = try_get_allocation_info(op);
 
 		if (info == NULL)
@@ -974,12 +961,10 @@ static void determine_live_through_regs(unsigned *bitset, ir_node *node)
 	}
 
 	/* remove registers of value dying at the instruction */
-	int arity = get_irn_arity(node);
-	for (int i = 0; i < arity; ++i) {
+	foreach_irn_in(node, i, op) {
 		if (!rbitset_is_set(info->last_uses, i))
 			continue;
 
-		ir_node               *op  = get_irn_n(node, i);
 		const arch_register_t *reg = arch_get_irn_register(op);
 		rbitset_clear(bitset, reg->index);
 	}
@@ -1341,9 +1326,7 @@ static void adapt_phi_prefs(ir_node *phi)
 	ir_node           *block = get_nodes_block(phi);
 	allocation_info_t *info  = get_allocation_info(phi);
 
-	int arity = get_irn_arity(phi);
-	for (int i = 0; i < arity; ++i) {
-		ir_node               *op  = get_irn_n(phi, i);
+	foreach_irn_in(phi, i, op) {
 		const arch_register_t *reg = arch_get_irn_register(op);
 
 		if (reg == NULL)

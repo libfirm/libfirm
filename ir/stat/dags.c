@@ -119,7 +119,6 @@ static dag_entry_t *new_dag_entry(dag_env_t *dag_env, ir_node *node)
 static void find_dag_roots(ir_node *node, void *env)
 {
 	dag_env_t   *dag_env = (dag_env_t*)env;
-	int         i, arity;
 	dag_entry_t *entry;
 	ir_node     *block;
 
@@ -136,9 +135,7 @@ static void find_dag_roots(ir_node *node, void *env)
 	/* Phi nodes always references nodes from "other" block */
 	if (is_Phi(node)) {
 		if (get_irn_mode(node) != mode_M) {
-			for (i = 0, arity = get_irn_arity(node); i < arity; ++i) {
-				ir_node *prev = get_irn_n(node, i);
-
+			foreach_irn_in(node, i, prev) {
 				if (is_Phi(prev))
 					continue;
 
@@ -157,9 +154,7 @@ static void find_dag_roots(ir_node *node, void *env)
 			}
 		}
 	} else {
-
-		for (i = 0, arity = get_irn_arity(node); i < arity; ++i) {
-				ir_node *prev = get_irn_n(node, i);
+		foreach_irn_in(node, i, prev) {
 				ir_mode *mode = get_irn_mode(prev);
 
 				if (mode == mode_X || mode == mode_M)
@@ -193,7 +188,6 @@ static void find_dag_roots(ir_node *node, void *env)
 static void connect_dags(ir_node *node, void *env)
 {
 	dag_env_t   *dag_env = (dag_env_t*)env;
-	int         i, arity;
 	ir_node     *block;
 	dag_entry_t *entry;
 	ir_mode     *mode;
@@ -236,8 +230,7 @@ static void connect_dags(ir_node *node, void *env)
 	}
 
 	/* put the predecessors into the same DAG as the current */
-	for (i = 0, arity = get_irn_arity(node); i < arity; ++i) {
-		ir_node *prev = get_irn_n(node, i);
+	foreach_irn_in(node, i, prev) {
 		ir_mode *mode = get_irn_mode(prev);
 
 		if (is_Phi(prev))

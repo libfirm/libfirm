@@ -367,7 +367,6 @@ static ir_node *reduce(ir_node *orig, ir_node *iv, ir_node *rc, iv_env *env)
 	/* check if we have already done this operation on the iv */
 	if (result == NULL) {
 		node_entry *e, *iv_e;
-		int i;
 		ir_mode *mode = get_irn_mode(orig);
 
 		result = exact_copy(iv);
@@ -395,9 +394,8 @@ static ir_node *reduce(ir_node *orig, ir_node *iv, ir_node *rc, iv_env *env)
 		/* create the LFTR edge */
 		LFTR_add(iv, result, code, rc, env);
 
-		for (i = get_irn_arity(result) - 1; i >= 0; --i) {
-			ir_node *o = get_irn_n(result, i);
-
+		foreach_irn_in_r(result, i, pred) {
+			ir_node *o = pred;
 			e = get_irn_ne(o, env);
 			if (e->header == iv_e->header)
 				o = reduce(orig, o, rc, env);
@@ -427,16 +425,14 @@ static void update_scc(ir_node *iv, node_entry *e, iv_env *env)
 	do {
 		ir_node    *irn = (ir_node*)waitq_get(wq);
 		node_entry *ne  = get_irn_ne(irn, env);
-		int        i;
 
 		ne->pscc   = pscc;
 		ne->next   = pscc->head;
 		pscc->head = irn;
 		DB((dbg, LEVEL_2, " %+F,", irn));
 
-		for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
-			ir_node    *pred = get_irn_n(irn, i);
-			node_entry *pe   = get_irn_ne(pred, env);
+		foreach_irn_in_r(irn, i, pred) {
+			node_entry *const pe = get_irn_ne(pred, env);
 
 			if (pe->header == header && pe->pscc == NULL) {
 				/* set the pscc here to ensure that the node is NOT enqueued another time */
@@ -677,7 +673,7 @@ static void classify_iv(scc *pscc, iv_env *env)
 {
 	ir_node *irn, *next, *header = NULL;
 	node_entry *b, *h = NULL;
-	int j, only_phi, num_outside;
+	int only_phi, num_outside;
 	ir_node *out_rc;
 
 	/* find the header block for this scc */
@@ -732,8 +728,7 @@ static void classify_iv(scc *pscc, iv_env *env)
 			only_phi = 0;
 			/* fall through */
 		case iro_Phi:
-			for (j = get_irn_arity(irn) - 1; j >= 0; --j) {
-				ir_node *pred  = get_irn_n(irn, j);
+			foreach_irn_in_r(irn, i, pred) {
 				node_entry *pe = get_irn_ne(pred, env);
 
 				if (pe->pscc != e->pscc) {
@@ -835,7 +830,6 @@ static void process_scc(scc *pscc, iv_env *env)
 static void remove_phi_cycle(scc *pscc, iv_env *env)
 {
 	ir_node *irn, *next;
-	int j;
 	ir_node *out_rc;
 
 	/* check if this scc contains only Phi nodes */
@@ -847,8 +841,7 @@ static void remove_phi_cycle(scc *pscc, iv_env *env)
 		if (! is_Phi(irn))
 			return;
 
-		for (j = get_irn_arity(irn) - 1; j >= 0; --j) {
-			ir_node *pred  = get_irn_n(irn, j);
+		foreach_irn_in_r(irn, i, pred) {
 			node_entry *pe = get_irn_ne(pred, env);
 
 			if (pe->pscc != e->pscc) {
@@ -948,17 +941,13 @@ static ir_node *pop(iv_env *env)
  */
 static void dfs(ir_node *irn, iv_env *env)
 {
-	int i, n;
 	node_entry *node = get_irn_ne(irn, env);
 
 	mark_irn_visited(irn);
 
 	/* do not put blocks into the scc */
 	if (is_Block(irn)) {
-		n = get_irn_arity(irn);
-		for (i = 0; i < n; ++i) {
-			ir_node *pred = get_irn_n(irn, i);
-
+		foreach_irn_in(irn, i, pred) {
 			if (!irn_visited(pred))
 				dfs(pred, env);
 		}
@@ -973,9 +962,7 @@ static void dfs(ir_node *irn, iv_env *env)
 		if (!irn_visited(block))
 			dfs(block, env);
 
-		n = get_irn_arity(irn);
-		for (i = 0; i < n; ++i) {
-			ir_node *pred = get_irn_n(irn, i);
+		foreach_irn_in(irn, i, pred) {
 			node_entry *o = get_irn_ne(pred, env);
 
 			if (!irn_visited(pred)) {

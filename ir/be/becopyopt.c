@@ -389,18 +389,15 @@ static void co_collect_units(ir_node *irn, void *env)
 	be_lv_t *const lv = be_get_irg_liveness(co->irg);
 	/* Phi with some/all of its arguments */
 	if (is_Phi(irn)) {
-		int i, arity;
-
 		/* init */
-		arity = get_irn_arity(irn);
+		int const arity = get_irn_arity(irn);
 		unit->nodes = XMALLOCN(ir_node*, arity + 1);
 		unit->costs = XMALLOCN(int,      arity + 1);
 		unit->nodes[0] = irn;
 
 		/* fill */
-		for (i=0; i<arity; ++i) {
+		foreach_irn_in(irn, i, arg) {
 			int o, arg_pos;
-			ir_node *arg = get_irn_n(irn, i);
 
 			assert(arch_get_irn_reg_class(arg) == co->cls && "Argument not in same register class.");
 			if (arg == irn)
@@ -762,7 +759,6 @@ static void build_graph_walker(ir_node *irn, void *env)
 {
 	const arch_register_req_t *req;
 	copy_opt_t                *co  = (copy_opt_t*)env;
-	int pos, max;
 
 	if (get_irn_mode(irn) == mode_T)
 		return;
@@ -771,8 +767,7 @@ static void build_graph_walker(ir_node *irn, void *env)
 		return;
 
 	if (is_Phi(irn)) { /* Phis */
-		for (pos=0, max=get_irn_arity(irn); pos<max; ++pos) {
-			ir_node *arg = get_irn_n(irn, pos);
+		foreach_irn_in(irn, pos, arg) {
 			add_edges(co, irn, arg, co->get_costs(irn, pos));
 		}
 	} else if (is_Perm_Proj(irn)) { /* Perms */

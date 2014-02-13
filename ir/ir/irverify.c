@@ -929,8 +929,7 @@ static bool check_dominance_for_node(const ir_node *use)
 		return true;
 
 	ir_node *bl = get_nodes_block(use);
-	for (int i = get_irn_arity(use); i-- > 0; ) {
-		ir_node *def    = get_irn_n(use, i);
+	foreach_irn_in_r(use, i, def) {
 		ir_node *def_bl = get_nodes_block(def);
 		/* we have no dominance relation for unreachable blocks, so we can't
 		 * check the dominance property there */
@@ -1189,9 +1188,7 @@ static int check_cfg(ir_graph *irg)
 	irg_walk_graph(irg, check_cfg_walk_func, NULL, &env);
 
 	ir_nodeset_init(&env.kept_nodes);
-	ir_node *end = get_irg_end(irg);
-	for (int i = 0, arity = get_irn_arity(end); i < arity; ++i) {
-		ir_node *n = get_irn_n(end, i);
+	foreach_irn_in(get_irg_end(irg), i, n) {
 		ir_nodeset_insert(&env.kept_nodes, n);
 	}
 	irg_walk_graph(irg, assert_branch, NULL, &env);

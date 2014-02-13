@@ -890,11 +890,7 @@ need_stackent:
 static int determine_ebp_input(ir_node *ret)
 {
 	const arch_register_t *bp = &ia32_registers[REG_EBP];
-	int   arity               = get_irn_arity(ret);
-	int   i;
-
-	for (i = 0; i < arity; ++i) {
-		ir_node *input = get_irn_n(ret, i);
+	foreach_irn_in(ret, i, input) {
 		if (arch_get_irn_register(input) == bp)
 			return i;
 	}
@@ -1012,16 +1008,9 @@ static void introduce_prolog_epilog(ir_graph *irg)
 	}
 
 	/* introduce epilog for every return node */
-	{
-		ir_node *end_block = get_irg_end_block(irg);
-		int      arity     = get_irn_arity(end_block);
-		int      i;
-
-		for (i = 0; i < arity; ++i) {
-			ir_node *ret = get_irn_n(end_block, i);
-			assert(be_is_Return(ret));
-			introduce_epilog(ret);
-		}
+	foreach_irn_in(get_irg_end_block(irg), i, ret) {
+		assert(be_is_Return(ret));
+		introduce_epilog(ret);
 	}
 }
 

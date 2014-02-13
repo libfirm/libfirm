@@ -51,13 +51,11 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 	 * (typical example: stack pointer as input to copyb)
 	 * TODO: This really just checks precolored registers at the moment and
 	 *       ignores the general case of not matching in/out constraints */
-	int const arity = get_irn_arity(node);
-	for (int i = 0; i < arity; ++i) {
+	foreach_irn_in(node, i, op) {
 		const arch_register_req_t *req = arch_get_irn_register_req_in(node, i);
 		if (req->cls != cls)
 			continue;
 
-		ir_node               *op  = get_irn_n(node, i);
 		const arch_register_t *reg = arch_get_irn_register(op);
 		if (reg == NULL)
 			continue;
@@ -81,6 +79,7 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 	}
 
 	/* insert copies for nodes that occur constrained more than once. */
+	int const arity = get_irn_arity(node);
 	be_foreach_use(node, cls, req, in, in_req_,
 		if (!arch_register_req_is(req, limited))
 			continue;

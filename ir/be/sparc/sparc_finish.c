@@ -80,8 +80,7 @@ static void assure_should_be_same_requirements(ir_node *node)
 		/* check if any other input operands uses the out register */
 		ir_node *uses_out_reg     = NULL;
 		int      uses_out_reg_pos = -1;
-		for (int i2 = 0, arity = get_irn_arity(node); i2 < arity; ++i2) {
-			ir_node *in = get_irn_n(node, i2);
+		foreach_irn_in(node, i2, in) {
 			if (!mode_is_data(get_irn_mode(in)))
 				continue;
 
@@ -181,9 +180,7 @@ void sparc_introduce_prolog_epilog(ir_graph *irg)
 	unsigned               frame_size = get_type_size_bytes(frame_type);
 
 	/* introduce epilog for every return node */
-	ir_node *end_block = get_irg_end_block(irg);
-	for (int i = 0, arity = get_irn_arity(end_block); i < arity; ++i) {
-		ir_node *ret = get_irn_n(end_block, i);
+	foreach_irn_in(get_irg_end_block(irg), i, ret) {
 		assert(is_sparc_Return(ret));
 		introduce_epilog(ret);
 	}

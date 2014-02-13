@@ -119,7 +119,6 @@ static int normal_tree_cost(ir_node* irn, instance_t *inst)
 	int            n_res;
 	int            cost;
 	int            n_op_res = 0;
-	int            i;
 
 	if (be_is_Keep(irn))
 		return 0;
@@ -139,9 +138,7 @@ static int normal_tree_cost(ir_node* irn, instance_t *inst)
 		fc->no_root = 0;
 		costs = fc->costs;
 
-		for (i = 0; i < arity; ++i) {
-			ir_node* pred = get_irn_n(irn, i);
-
+		foreach_irn_in(irn, i, pred) {
 			if (is_Phi(irn) || get_irn_mode(pred) == mode_M) {
 				cost = 0;
 			} else if (get_nodes_block(pred) != block) {
@@ -171,7 +168,7 @@ static int normal_tree_cost(ir_node* irn, instance_t *inst)
 
 	cost = 0;
 	last = 0;
-	for (i = 0; i < arity; ++i) {
+	for (int i = 0; i < arity; ++i) {
 		ir_node* op = fc->costs[i].irn;
 		ir_mode* mode;
 		if (op == last)

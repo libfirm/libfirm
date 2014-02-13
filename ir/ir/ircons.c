@@ -109,13 +109,10 @@ static ir_node *get_r_value_internal(ir_node *block, int pos, ir_mode *mode);
 static void try_remove_unnecessary_phi(ir_node *phi)
 {
 	ir_node *phi_value = NULL;
-	int      arity     = get_irn_arity(phi);
-	int      i;
 
 	/* see if all inputs are either pointing to a single value or
 	 * are self references */
-	for (i = 0; i < arity; ++i) {
-		ir_node *in = get_irn_n(phi, i);
+	foreach_irn_in(phi, i, in) {
 		if (in == phi)
 			continue;
 		if (in == phi_value)

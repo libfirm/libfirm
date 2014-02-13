@@ -120,10 +120,8 @@ static ir_node *lower_node(ir_node *node)
 		 * would be replaced twice. */
 		set_irn_link(node, new_phi);
 
-		for (int i = 0; i < arity; ++i) {
-			ir_node *in         = get_irn_n(node, i);
+		foreach_irn_in(node, i, in) {
 			ir_node *lowered_in = lower_node(in);
-
 			set_irn_n(new_phi, i, lowered_in);
 		}
 
@@ -229,9 +227,7 @@ static void collect_needs_lowering(ir_node *node, void *env)
 		return;
 	}
 
-	int arity = get_irn_arity(node);
-	for (int i = 0; i < arity; ++i) {
-		ir_node *in = get_irn_n(node, i);
+	foreach_irn_in(node, i, in) {
 		if (get_irn_mode(in) != mode_b)
 			continue;
 		if (is_Cmp(in) && needs_mode_b_input(node, i))

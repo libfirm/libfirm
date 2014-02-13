@@ -216,19 +216,17 @@ static void arch_dump_register_req(FILE *const F, arch_register_req_t const *con
 
 void arch_dump_reqs_and_registers(FILE *F, const ir_node *node)
 {
-	backend_info_t *const info  = be_get_info(node);
-	int             const n_ins = get_irn_arity(node);
+	backend_info_t *const info = be_get_info(node);
 	/* don't fail on invalid graphs */
-	if (!info || (!info->in_reqs && n_ins != 0) || !info->out_infos) {
+	if (!info || (!info->in_reqs && get_irn_arity(node) != 0) || !info->out_infos) {
 		fprintf(F, "invalid register requirements!!!\n");
 		return;
 	}
 
-	for (int i = 0; i < n_ins; ++i) {
+	foreach_irn_in(node, i, op) {
 		const arch_register_req_t *req = arch_get_irn_register_req_in(node, i);
 		fprintf(F, "inreq #%d = ", i);
 		arch_dump_register_req(F, req);
-		ir_node               *const op  = get_irn_n(node, i);
 		arch_register_t const *const reg = be_get_info(skip_Proj_const(op))->out_infos ? arch_get_irn_register(op) : NULL;
 		fprintf(F, " [%s]\n", reg ? reg->name : "n/a");
 	}

@@ -1064,10 +1064,7 @@ static void check_initializer_value(ir_node *value)
 		set_entity_usage(ent, ir_usage_unknown);
 	}
 
-	int arity = get_irn_arity(value);
-
-	for (int i = 0; i < arity; i++) {
-		ir_node *op = get_irn_n(value, i);
+	foreach_irn_in(value, i, op) {
 		check_initializer_value(op);
 	}
 }

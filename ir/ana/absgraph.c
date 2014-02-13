@@ -56,11 +56,9 @@ static void *irg_cfg_pred_get_end(void *self)
 
 static void irg_cfg_pred_grow_succs(void *self, void *node, struct obstack *obst)
 {
-	int i, n;
-
 	(void) self;
-	for (i = 0, n = get_irn_arity((ir_node*) node); i < n; ++i) {
-		obstack_ptr_grow(obst, get_irn_n((ir_node*) node, i));
+	foreach_irn_in((ir_node*)node, i, pred) {
+		obstack_ptr_grow(obst, pred);
 	}
 }
 

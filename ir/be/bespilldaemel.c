@@ -188,9 +188,7 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 
 		/* make sure the node is not an argument of the instruction */
 		bool is_use = false;
-		int arity = get_irn_arity(node);
-		for (int i = 0; i < arity; ++i) {
-			ir_node *in = get_irn_n(node, i);
+		foreach_irn_in(node, i, in) {
 			if (in == cand_node) {
 				is_use = true;
 				break;
@@ -220,10 +218,7 @@ static void remove_defs(ir_node *node, ir_nodeset_t *nodeset)
 
 static void add_uses(ir_node *node, ir_nodeset_t *nodeset)
 {
-	int arity = get_irn_arity(node);
-	for (int i = 0; i < arity; ++i) {
-		ir_node *op = get_irn_n(node, i);
-
+	foreach_irn_in(node, i, op) {
 		if (arch_irn_consider_in_reg_alloc(cls, op) &&
 				!bitset_is_set(spilled_nodes, get_irn_idx(op))) {
 			ir_nodeset_insert(nodeset, op);

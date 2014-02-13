@@ -31,7 +31,6 @@
  */
 static void irg_walk_2_pre(ir_node *node, irg_walk_func *pre, void *env)
 {
-	int i;
 	ir_graph *irg = get_irn_irg(node);
 
 	set_irn_visited(node, irg->visited);
@@ -43,8 +42,7 @@ static void irg_walk_2_pre(ir_node *node, irg_walk_func *pre, void *env)
 		if (pred->visited < irg->visited)
 			irg_walk_2_pre(pred, pre, env);
 	}
-	for (i = get_irn_arity(node) - 1; i >= 0; --i) {
-		ir_node *pred = get_irn_n(node, i);
+	foreach_irn_in_r(node, i, pred) {
 		if (pred->visited < irg->visited)
 			irg_walk_2_pre(pred, pre, env);
 	}
@@ -55,7 +53,6 @@ static void irg_walk_2_pre(ir_node *node, irg_walk_func *pre, void *env)
  */
 static void irg_walk_2_post(ir_node *node, irg_walk_func *post, void *env)
 {
-	int i;
 	ir_graph *irg = get_irn_irg(node);
 
 	set_irn_visited(node, irg->visited);
@@ -65,8 +62,7 @@ static void irg_walk_2_post(ir_node *node, irg_walk_func *post, void *env)
 		if (pred->visited < irg->visited)
 			irg_walk_2_post(pred, post, env);
 	}
-	for (i = get_irn_arity(node) - 1; i >= 0; --i) {
-		ir_node *pred = get_irn_n(node, i);
+	foreach_irn_in_r(node, i, pred) {
 		if (pred->visited < irg->visited)
 			irg_walk_2_post(pred, post, env);
 	}
@@ -80,7 +76,6 @@ static void irg_walk_2_post(ir_node *node, irg_walk_func *post, void *env)
 static void irg_walk_2_both(ir_node *node, irg_walk_func *pre,
                                 irg_walk_func *post, void *env)
 {
-	int i;
 	ir_graph *irg = get_irn_irg(node);
 
 	set_irn_visited(node, irg->visited);
@@ -92,8 +87,7 @@ static void irg_walk_2_both(ir_node *node, irg_walk_func *pre,
 		if (pred->visited < irg->visited)
 			irg_walk_2_both(pred, pre, post, env);
 	}
-	for (i = get_irn_arity(node) - 1; i >= 0; --i) {
-		ir_node *pred = get_irn_n(node, i);
+	foreach_irn_in_r(node, i, pred) {
 		if (pred->visited < irg->visited)
 			irg_walk_2_both(pred, pre, post, env);
 	}
@@ -313,10 +307,7 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
 
 	/* Some blocks might be only reachable through keep-alive edges */
 	if (is_End(node)) {
-		int arity = get_irn_arity(node);
-		int i;
-		for (i = 0; i < arity; i++) {
-			ir_node *pred = get_irn_n(node, i);
+		foreach_irn_in(node, i, pred) {
 			if (!is_Block(pred))
 				continue;
 			irg_block_walk_2(pred, pre, post, env);

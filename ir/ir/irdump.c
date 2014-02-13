@@ -984,20 +984,17 @@ static void print_constblkid(FILE *F, const ir_node *node, const ir_node *block)
 static void dump_const_node_local(FILE *F, const ir_node *n)
 {
 	ir_graph *irg = get_irn_irg(n);
-	int i;
 	if (!get_opt_dump_const_local()) return;
 
 	/* Use visited flag to avoid outputting nodes twice.
 	initialize it first. */
-	for (i = 0; i < get_irn_arity(n); i++) {
-		ir_node *con = get_irn_n(n, i);
+	foreach_irn_in(n, i, con) {
 		if (is_constlike_node(con)) {
 			set_irn_visited(con, get_irg_visited(irg) - 1);
 		}
 	}
 
-	for (i = 0; i < get_irn_arity(n); i++) {
-		ir_node *con = get_irn_n(n, i);
+	foreach_irn_in(n, i, con) {
 		if (is_constlike_node(con) && !irn_visited_else_mark(con)) {
 			/* Generate a new name for the node by appending the names of
 			n and const. */
@@ -1219,11 +1216,7 @@ static void dump_ir_data_edges(FILE *F, const ir_node *n)
 		}
 	}
 
-	num = get_irn_arity(n);
-	for (i = 0; i < num; i++) {
-		ir_node *pred = get_irn_n(n, i);
-		assert(pred);
-
+	foreach_irn_in(n, i, pred) {
 		if ((flags & ir_dump_flag_back_edges) && is_backedge(n, i)) {
 			fprintf(F, "backedge: {sourcename: ");
 		} else {

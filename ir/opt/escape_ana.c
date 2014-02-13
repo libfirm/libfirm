@@ -206,17 +206,20 @@ static int can_escape(ir_node *n)
 
 		case iro_Tuple: {
 			ir_node *proj;
-			int j, k;
 
 			/* Bad: trace the tuple backwards */
-			for (j = get_irn_arity(succ) - 1; j >= 0; --j)
-				if (get_irn_n(succ, j) == n)
+			int j = -1;
+			foreach_irn_in_r(succ, jj, pred) {
+				if (pred == n) {
+					j = jj;
 					break;
+				}
+			}
 
 			assert(j >= 0);
 
 
-			for (k = get_irn_n_outs(succ); k >= 0; --k) {
+			for (int k = get_irn_n_outs(succ); k >= 0; --k) {
 				proj = get_irn_out(succ, k);
 
 				if (get_Proj_proj(proj) == j) {

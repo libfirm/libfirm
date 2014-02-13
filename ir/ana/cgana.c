@@ -367,8 +367,7 @@ static void free_ana_walker(ir_node *node, void *env)
 		/* other nodes: Alle anderen Knoten nehmen wir als Verr�ter an, bis
 		 * jemand das Gegenteil implementiert. */
 		set_irn_link(node, MARK);
-		for (int i = get_irn_arity(node) - 1; i >= 0; --i) {
-			ir_node *pred = get_irn_n(node, i);
+		foreach_irn_in_r(node, i, pred) {
 			if (mode_is_reference(get_irn_mode(pred))) {
 				free_mark(pred, set);
 			}

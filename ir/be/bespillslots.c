@@ -100,11 +100,7 @@ static spill_t *get_spill(be_fec_env_t *env, ir_node *node)
 
 static inline ir_node *get_memory_edge(const ir_node *node)
 {
-	int i, arity;
-
-	arity = get_irn_arity(node);
-	for (i = arity - 1; i >= 0; --i) {
-		ir_node *arg = get_irn_n(node, i);
+	foreach_irn_in_r(node, i, arg) {
 		if (get_irn_mode(arg) == mode_M)
 			return arg;
 	}
@@ -138,11 +134,8 @@ static spill_t *collect_spill(be_fec_env_t *env, ir_node *node,
 	DB((dbg, DBG_COALESCING, "Slot %d: %+F\n", spill->spillslot, node));
 
 	if (is_Phi(node)) {
-		int                 arity     = get_irn_arity(node);
-		int                 i;
-		for (i = 0; i < arity; ++i) {
+		foreach_irn_in(node, i, arg) {
 			affinity_edge_t *affinty_edge;
-			ir_node         *arg       = get_irn_n(node, i);
 			spill_t         *arg_spill = collect_spill(env, arg, mode, align);
 			ir_node         *block     = get_nodes_block(arg);
 
@@ -255,17 +248,13 @@ static bool my_values_interfere2(ir_graph *const irg, ir_node const *a, ir_node 
 static int my_values_interfere(ir_graph *irg, ir_node *a, ir_node *b)
 {
 	if (is_Sync(a)) {
-		int i, arity = get_irn_arity(a);
-		for (i = 0; i < arity; ++i) {
-			ir_node *in = get_irn_n(a, i);
+		foreach_irn_in(a, i, in) {
 			if (my_values_interfere(irg, in, b))
 				return 1;
 		}
 		return 0;
 	} else if (is_Sync(b)) {
-		int i, arity = get_irn_arity(b);
-		for (i = 0; i < arity; ++i) {
-			ir_node *in = get_irn_n(b, i);
+		foreach_irn_in(b, i, in) {
 			/* a is not a sync, so no need for my_values_interfere */
 			if (my_values_interfere2(irg, a, in))
 				return 1;
@@ -477,13 +466,8 @@ static void assign_spill_entity(be_fec_env_t *env,
 	if (is_NoMem(node))
 		return;
 	if (is_Sync(node)) {
-		int i, arity;
-
-		arity = get_irn_arity(node);
-		for (i = 0; i < arity; ++i) {
-			ir_node *in = get_irn_n(node, i);
+		foreach_irn_in(node, i, in) {
 			assert(!is_Phi(in));
-
 			assign_spill_entity(env, in, entity);
 		}
 		return;
@@ -535,15 +519,12 @@ static void assign_spillslots(be_fec_env_t *env)
 		}
 
 		if (is_Phi(node)) {
-			int arity = get_irn_arity(node);
-			int i;
 			ir_node *block = get_nodes_block(node);
 
 			/* should be a PhiM */
 			assert(get_irn_mode(node) == mode_M);
 
-			for (i = 0; i < arity; ++i) {
-				ir_node *arg       = get_irn_n(node, i);
+			foreach_irn_in(node, i, arg) {
 				ir_node *predblock = get_Block_cfgpred_block(block, i);
 				spill_t *argspill  = get_spill(env, arg);
 				int      argslotid = argspill->spillslot;

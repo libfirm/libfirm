@@ -238,7 +238,6 @@ static bool is_own_backedge(const ir_node *n, int pos)
 static void get_loop_info(ir_node *node, void *env)
 {
 	bool node_in_loop = is_in_loop(node);
-	int i, arity;
 	(void)env;
 
 	/* collect some loop information */
@@ -278,10 +277,8 @@ count:
 		}
 	}
 
-	arity = get_irn_arity(node);
-	for (i = 0; i < arity; i++) {
-		ir_node *pred         = get_irn_n(node, i);
-		bool     pred_in_loop = is_in_loop(pred);
+	foreach_irn_in_r(node, i, pred) {
+		bool pred_in_loop = is_in_loop(pred);
 
 		if (is_Block(node) && !node_in_loop && pred_in_loop) {
 			entry_edge entry;
@@ -329,13 +326,9 @@ count:
 static void get_loop_entries(ir_node *node, void *env)
 {
 	unsigned node_in_loop, pred_in_loop;
-	int i, arity;
 	(void) env;
 
-	arity = get_irn_arity(node);
-	for (i = 0; i < arity; ++i) {
-		ir_node *pred = get_irn_n(node, i);
-
+	foreach_irn_in(node, i, pred) {
 		pred_in_loop = is_in_loop(pred);
 		node_in_loop = is_in_loop(node);
 
@@ -669,7 +662,6 @@ static ir_node *copy_node(ir_node *node)
 static void copy_walk(ir_node *node, walker_condition *walk_condition,
                       ir_loop *set_loop)
 {
-	int i;
 	ir_node *cp;
 
 	/**
@@ -700,9 +692,7 @@ static void copy_walk(ir_node *node, walker_condition *walk_condition,
 	int       arity = get_irn_arity(node);
 	ir_node **cpin  = ALLOCAN(ir_node*, arity);
 
-	for (i = 0; i < arity; ++i) {
-		ir_node *pred = get_irn_n(node, i);
-
+	foreach_irn_in(node, i, pred) {
 		if (walk_condition(pred)) {
 			DB((dbg, LEVEL_5, "walk node %N\n", pred));
 			copy_walk(pred, walk_condition, set_loop);
@@ -748,7 +738,6 @@ static void copy_walk(ir_node *node, walker_condition *walk_condition,
 static void copy_walk_n(ir_node *node, walker_condition *walk_condition,
                         int copy_index)
 {
-	int i;
 	ir_node *cp;
 
 	/**
@@ -779,9 +768,7 @@ static void copy_walk_n(ir_node *node, walker_condition *walk_condition,
 	int       arity = get_irn_arity(node);
 	ir_node **cpin  = ALLOCAN(ir_node*, arity);
 
-	for (i = 0; i < arity; ++i) {
-		ir_node *pred = get_irn_n(node, i);
-
+	foreach_irn_in(node, i, pred) {
 		if (walk_condition(pred)) {
 			DB((dbg, LEVEL_5, "walk node %N\n", pred));
 			copy_walk_n(pred, walk_condition, copy_index);
@@ -871,38 +858,32 @@ static void unmark_cc_blocks(void)
  */
 static void get_head_outs(ir_node *node, void *env)
 {
-	int i;
-	int arity = get_irn_arity(node);
 	(void) env;
 
-	for (i = 0; i < arity; ++i) {
-		if (!is_nodes_block_marked(node) && is_nodes_block_marked(get_irn_n(node, i))) {
+	foreach_irn_in(node, i, pred) {
+		if (!is_nodes_block_marked(node) && is_nodes_block_marked(pred)) {
 			entry_edge entry;
 			entry.node = node;
-			entry.pos = i;
+			entry.pos  = i;
 			/* Saving also predecessor seems redundant, but becomes
 			 * necessary when changing position of it, before
 			 * dereferencing it.*/
-			entry.pred = get_irn_n(node, i);
+			entry.pred = pred;
 			ARR_APP1(entry_edge, cur_head_outs, entry);
 		}
 	}
 
-	arity = get_irn_arity(loop_head);
-
 	/* Find df loops inside the cc */
 	if (is_Phi(node) && get_nodes_block(node) == loop_head) {
-		for (i = 0; i < arity; ++i) {
-			if (is_own_backedge(loop_head, i)) {
-				if (is_nodes_block_marked(get_irn_n(node, i))) {
-					entry_edge entry;
-					entry.node = node;
-					entry.pos = i;
-					entry.pred = get_irn_n(node, i);
-					ARR_APP1(entry_edge, head_df_loop, entry);
-					DB((dbg, LEVEL_5, "Found incc assignment node %N @%d is pred %N, graph %N %N\n",
-							node, i, entry.pred, current_ir_graph, get_irg_start_block(current_ir_graph)));
-				}
+		foreach_irn_in(loop_head, i, pred) {
+			if (is_own_backedge(loop_head, i) && is_nodes_block_marked(pred)) {
+				entry_edge entry;
+				entry.node = node;
+				entry.pos  = i;
+				entry.pred = pred;
+				ARR_APP1(entry_edge, head_df_loop, entry);
+				DB((dbg, LEVEL_5, "Found incc assignment node %N @%d is pred %N, graph %N %N\n",
+						node, i, entry.pred, current_ir_graph, get_irg_start_block(current_ir_graph)));
 			}
 		}
 	}
@@ -1018,13 +999,12 @@ static void fix_copy_inversion(void)
 	int new_arity    = arity - backedges;
 	ir_node **ins    = ALLOCAN(ir_node*, new_arity);
 	int pos;
-	int i;
 
 	pos = 0;
 	/* Remove block backedges */
-	for(i = 0; i < arity; ++i) {
+	foreach_irn_in(head_cp, i, pred) {
 		if (!is_backedge(head_cp, i))
-			ins[pos++] = get_irn_n(head_cp, i);
+			ins[pos++] = pred;
 	}
 
 	new_head = new_r_Block(irg, new_arity, ins);
@@ -1034,9 +1014,9 @@ static void fix_copy_inversion(void)
 	for_each_phi_safe(get_Block_phis(head_cp), phi, next) {
 		ir_node *new_phi;
 		pos = 0;
-		for(i = 0; i < arity; ++i) {
+		foreach_irn_in(phi, i, pred) {
 			if (!is_backedge(head_cp, i))
-				ins[pos++] = get_irn_n(phi, i);
+				ins[pos++] = pred;
 		}
 		new_phi = new_rd_Phi(get_irn_dbg_info(phi),
 				new_head, new_arity, ins,
@@ -1065,18 +1045,16 @@ static void fix_head_inversion(void)
 	ir_node *phi, *next;
 	ir_node **phis;
 	ir_graph *irg = get_irn_irg(loop_head);
-	int arity     = get_irn_arity(loop_head);
 	int backedges = get_backedge_n(loop_head, false);
 	int new_arity = backedges;
 	ir_node **ins = ALLOCAN(ir_node*, new_arity);
 	int pos;
-	int i;
 
 	pos = 0;
 	/* Keep only backedges */
-	for(i = 0; i < arity; ++i) {
+	foreach_irn_in(loop_head, i, pred) {
 		if (is_own_backedge(loop_head, i))
-			ins[pos++] = get_irn_n(loop_head, i);
+			ins[pos++] = pred;
 	}
 
 	new_head = new_r_Block(irg, new_arity, ins);
@@ -1088,9 +1066,7 @@ static void fix_head_inversion(void)
 		DB((dbg, LEVEL_5, "Fixing phi %N of loop head\n", phi));
 
 		pos = 0;
-		for (i = 0; i < arity; ++i) {
-			ir_node *pred = get_irn_n(phi, i);
-
+		foreach_irn_in(phi, i, pred) {
 			if (is_own_backedge(loop_head, i)) {
 				/* If assignment is in the condition chain,
 				 * we need to create a phi in the new loop head.
@@ -1545,17 +1521,16 @@ static void copy_loop(entry_edge *cur_loop_outs, int copies)
 static ir_node *clone_phis_sans_bes(ir_node *phi, ir_node *be_block, ir_node *dest_block)
 {
 	ir_node **ins;
-	int i, c = 0;
+	int c = 0;
 	ir_node *newphi;
 
 	int const arity = get_Phi_n_preds(phi);
 	assert(arity == get_Block_n_cfgpreds(be_block));
 
 	ins = NEW_ARR_F(ir_node *, arity);
-	for (i = 0; i < arity; ++i) {
+	foreach_irn_in(phi, i, pred) {
 		if (! is_own_backedge(be_block, i)) {
-			ins[c] = get_irn_n(phi, i);
-			++c;
+			ins[c++] = pred;
 		}
 	}
 
@@ -1571,17 +1546,15 @@ static ir_node *clone_phis_sans_bes(ir_node *phi, ir_node *be_block, ir_node *de
  * using be_block as supplier of backedge informations. */
 static ir_node *clone_block_sans_bes(ir_node *node, ir_node *be_block)
 {
-	int i, c = 0;
+	int c = 0;
 
 	int const arity = get_Block_n_cfgpreds(node);
 	assert(arity == get_irn_arity(be_block));
 
 	ir_node **ins = ALLOCAN(ir_node*, arity);
-	for (i = 0; i < arity; ++i) {
-		if (! is_own_backedge(be_block, i)) {
-			ins[c] = get_irn_n(node, i);
-			++c;
-		}
+	foreach_irn_in(node, i, pred) {
+		if (!is_own_backedge(be_block, i))
+			ins[c++] = pred;
 	}
 
 	return new_Block(c, ins);
@@ -1768,8 +1741,6 @@ static void create_duffs_block(void)
  */
 static unsigned is_loop_invariant_def(ir_node *node)
 {
-	int i;
-
 	if (! is_in_loop(node)) {
 		DB((dbg, LEVEL_4, "Not in loop %N\n", node));
 		return 1;
@@ -1786,9 +1757,9 @@ static unsigned is_loop_invariant_def(ir_node *node)
 			return 0;
 		}
 
-		for (i = 0; i < get_irn_arity(node); ++i) {
+		foreach_irn_in(node, i, pred) {
 			/* Check if all bes are just loopbacks. */
-			if (is_own_backedge(block, i) && get_irn_n(node, i) != node)
+			if (is_own_backedge(block, i) && pred != node)
 				return 0;
 		}
 		DB((dbg, LEVEL_4, "invar %N\n", node));
@@ -1996,7 +1967,6 @@ static unsigned simulate_next(ir_tarval **count_tar,
  * Returns Projection of cmp node or NULL; */
 static ir_node *is_simple_loop(void)
 {
-	int arity, i;
 	ir_node *loop_block, *exit_block, *projx, *cond, *cmp;
 
 	/* Maximum of one condition, and no endless loops. */
@@ -2015,12 +1985,10 @@ static ir_node *is_simple_loop(void)
 	DB((dbg, LEVEL_4, "maximum unroll factor %u, to not exceed node limit \n",
 	        opt_params.max_unrolled_loop_size));
 
-	arity = get_irn_arity(loop_head);
 	/* RETURN if we have more than 1 be. */
 	/* Get my backedges without alien bes. */
 	loop_block = NULL;
-	for (i = 0; i < arity; ++i) {
-		ir_node *pred = get_irn_n(loop_head, i);
+	foreach_irn_in(loop_head, i, pred) {
 		if (is_own_backedge(loop_head, i)) {
 			if (loop_block)
 				/* Our simple loops may have only one backedge. */

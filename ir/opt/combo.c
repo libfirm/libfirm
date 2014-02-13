@@ -835,8 +835,8 @@ static void update_worklist(partition_t *Z, partition_t *Z_prime, environment_t 
 static void move_edges_to_leader(node_t *x)
 {
 	ir_node *irn = x->node;
-	for (int i = get_irn_arity(irn); i-- > 0; ) {
-		node_t  *pred = get_irn_node(get_irn_n(irn, i));
+	foreach_irn_in_r(irn, i, pred_irn) {
+		node_t  *pred = get_irn_node(pred_irn);
 		ir_node *p    = pred->node;
 		unsigned n    = get_irn_n_outs(p);
 		for (unsigned j = 0; j < pred->n_followers; ++j) {
@@ -1796,10 +1796,8 @@ static void default_compute(node_t *node)
 	/* if any of the data inputs have type top, the result is type top */
 	ir_node *op  = skip_Proj(irn);
 	if (!is_memop(op) || is_Mod(op) || is_Div(op)) {
-		for (int i = get_irn_arity(irn); i-- > 0; ) {
-			ir_node *pred = get_irn_n(irn, i);
-			node_t  *p    = get_irn_node(pred);
-
+		foreach_irn_in_r(irn, i, pred) {
+			node_t *const p = get_irn_node(pred);
 			if (p->type.tv == tarval_top) {
 				node->type.tv = tarval_top;
 				return;
@@ -2657,10 +2655,9 @@ static void segregate_def_use_chain_1(const ir_node *follower, node_t *leader)
  */
 static void segregate_def_use_chain(const ir_node *follower)
 {
-	for (int i = get_irn_arity(follower); i-- > 0; ) {
-		node_t *pred = get_irn_node(get_irn_n(follower, i));
-
-		segregate_def_use_chain_1(follower, pred);
+	foreach_irn_in_r(follower, i, pred) {
+		node_t *const node = get_irn_node(pred);
+		segregate_def_use_chain_1(follower, node);
 	}
 }
 

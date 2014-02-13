@@ -18,7 +18,7 @@
 #include "irgopt.h"
 #include "irgwalk.h"
 #include "irmemory.h"
-#include "irnode.h"
+#include "irnode_t.h"
 #include "irnodeset.h"
 #include "obst.h"
 #include "irdump.h"
@@ -348,11 +348,8 @@ static void dfs_step(ir_node *irn, dfs_env_t *env) {
 	if (is_Proj(irn)) {
 		dfs_step(get_Proj_pred(irn), env);
 	} else {
-		int arity = get_irn_arity(irn);
-		for (int i = 0; i < arity; i++) {
-			ir_node *pred = get_irn_n(irn, i);
-			if (get_irn_mode(pred) == mode_M &&
-			    !is_Phi(pred)) {
+		foreach_irn_in(irn, i, pred) {
+			if (get_irn_mode(pred) == mode_M && !is_Phi(pred)) {
 				dfs_step(pred, env);
 			}
 		}

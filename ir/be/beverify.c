@@ -199,9 +199,7 @@ static void verify_schedule_walker(ir_node *block, void *data)
 		/* Check that all uses come before their definitions */
 		if (!is_Phi(node)) {
 			sched_timestep_t nodetime = sched_get_time_step(node);
-			int              arity    = get_irn_arity(node);
-			for (int i = 0; i < arity; ++i) {
-				ir_node *arg = get_irn_n(node, i);
+			foreach_irn_in(node, i, arg) {
 				if (get_nodes_block(arg) != block || !sched_is_scheduled(arg))
 					continue;
 
@@ -227,13 +225,10 @@ static void verify_schedule_walker(ir_node *block, void *data)
 			while (be_is_Keep(prev) || be_is_CopyKeep(prev))
 				prev = sched_prev(prev);
 
-			int  arity = get_irn_arity(node);
 			bool found = false;
 			while (true) {
-				for (int i = 0; i < arity; ++i) {
-					ir_node *in = get_irn_n(node, i);
-					in = skip_Proj(in);
-					if (in == prev)
+				foreach_irn_in(node, i, in) {
+					if (skip_Proj(in) == prev)
 						found = true;
 				}
 				if (found)
@@ -326,9 +321,7 @@ static spill_t *get_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_ent
 static ir_node *get_memory_edge(const ir_node *node)
 {
 	ir_node *result = NULL;
-	int      arity  = get_irn_arity(node);
-	for (int i = arity - 1; i >= 0; --i) {
-		ir_node *arg = get_irn_n(node, i);
+	foreach_irn_in_r(node, i, arg) {
 		if (get_irn_mode(arg) == mode_M) {
 			assert(result == NULL);
 			result = arg;
@@ -410,9 +403,7 @@ static void collect_memphi(be_verify_spillslots_env_t *env, ir_node *node, ir_no
 	(void)set_insert(spill_t, env->spills, &spill, sizeof(spill), hash);
 
 	/* is 1 of the arguments a spill? */
-	int arity = get_irn_arity(node);
-	for (int i = 0; i < arity; ++i) {
-		ir_node* arg = get_irn_n(node, i);
+	foreach_irn_in(node, i, arg) {
 		collect(env, arg, reload, ent);
 	}
 }
@@ -614,9 +605,7 @@ static void check_output_constraints(const ir_node *node)
 static void check_input_constraints(ir_node *node)
 {
 	/* verify input register */
-	int arity = get_irn_arity(node);
-	for (int i = 0; i < arity; ++i) {
-		ir_node *pred = get_irn_n(node, i);
+	foreach_irn_in(node, i, pred) {
 		if (is_Bad(pred)) {
 			ir_fprintf(stderr, "Verify warning: %+F in block %+F(%s) has Bad as input %d\n",
 				node, get_nodes_block(node), get_irg_name(irg), i);
@@ -652,10 +641,7 @@ static void check_input_constraints(ir_node *node)
 	 * must be the same as the output reg */
 	if (is_Phi(node)) {
 		const arch_register_t *reg = arch_get_irn_register(node);
-
-		int arity = get_irn_arity(node);
-		for (int i = 0; i < arity; ++i) {
-			ir_node               *pred     = get_Phi_pred(node, i);
+		foreach_irn_in(node, i, pred) {
 			const arch_register_t *pred_reg = arch_get_irn_register(pred);
 
 			if (reg != pred_reg && !(pred_reg->type & arch_register_type_virtual)) {
@@ -742,9 +728,7 @@ static void verify_block_register_allocation(ir_node *block, void *data)
 
 		/* process uses. (Phi inputs are no real uses) */
 		if (!is_Phi(node)) {
-			int arity = get_irn_arity(node);
-			for (int in = 0; in < arity; ++in) {
-				ir_node *use = get_irn_n(node, in);
+			foreach_irn_in(node, i, use) {
 				value_used(block, use);
 			}
 		}

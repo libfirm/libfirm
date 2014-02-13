@@ -168,8 +168,7 @@ static void spill_phi(minibelady_env_t *env, ir_node *phi)
 	}
 
 	/* create spills for the phi values */
-	for (int i = 0; i < arity; ++i) {
-		ir_node *in = get_irn_n(phi, i);
+	foreach_irn_in(phi, i, in) {
 		spill_info_t *pred_spill = create_spill(env, in, true);
 		set_irn_n(spill_info->spill, i, pred_spill->spill);
 	}
@@ -345,8 +344,7 @@ static void belady(minibelady_env_t *env, ir_node *block)
 
 		/* check which state is desired for the node */
 		ir_node *need_val = NULL;
-		for (int i = 0, arity = get_irn_arity(node); i < arity; ++i) {
-			ir_node               *in  = get_irn_n(node, i);
+		foreach_irn_in(node, i, in) {
 			const arch_register_t *reg = arch_get_irn_register(in);
 			if (reg == env->reg) {
 				assert(need_val == NULL);

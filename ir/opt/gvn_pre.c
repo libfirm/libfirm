@@ -322,13 +322,11 @@ static ir_node *identify(ir_node *irn)
 static ir_node *remember(ir_node *irn)
 {
 	int       arity   = get_irn_arity(irn);
-	int       i;
 	int       changed = 0;
 	ir_node **in      = XMALLOCN(ir_node *, arity);
 	ir_node  *value;
 
-	for (i = 0; i < arity; ++i) {
-		ir_node *pred       = get_irn_n(irn, i);
+	foreach_irn_in(irn, i, pred) {
 		/* value and leader at the same time */
 		ir_node *pred_value = identify(pred);
 
@@ -662,8 +660,6 @@ static unsigned is_nice_value(ir_node *n)
  */
 static unsigned is_clean_in_block(ir_node *n, ir_node *block, ir_valueset_t *valueset)
 {
-	int         i, arity;
-
 	if (is_Phi(n))
 		return 1;
 
@@ -692,11 +688,7 @@ static unsigned is_clean_in_block(ir_node *n, ir_node *block, ir_valueset_t *val
 		return 0;
 #endif
 
-	arity = get_irn_arity(n);
-	for (i = 0; i < arity; ++i) {
-		ir_node *pred   = get_irn_n(n, i);
-		ir_node *value;
-
+	foreach_irn_in(n, i, pred) {
 		if (is_Phi(pred))
 			continue;
 
@@ -707,10 +699,9 @@ static unsigned is_clean_in_block(ir_node *n, ir_node *block, ir_valueset_t *val
 		if (! is_nice_value(pred))
 			return 0;
 
-		value = identify(pred);
+		ir_node *const value = identify(pred);
 		if (! ir_valueset_lookup(valueset, value))
 			return 0;
-
 	}
 	return 1;
 }
@@ -812,7 +803,6 @@ static void set_translated(ir_nodehashmap_t *map, ir_node *node, ir_node *trans)
  */
 static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, ir_valueset_t *leaderset)
 {
-	int       i;
 	int       arity;
 	ir_node **in;
 	ir_node  *pred_block = get_Block_cfgpred_block(block, pos);
@@ -834,8 +824,7 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, ir_valuese
 	   the main representative. If we access a node as representative of a
 	   value we always use the anti leader. The anti leader can be found by
 	   antic_in(identify(node)). */
-	for (i = 0; i < arity; ++i) {
-		ir_node *pred   = get_irn_n(node, i);
+	foreach_irn_in(node, i, pred) {
 		ir_node *value  = identify(pred);
 		/* get leader for pred to lookup its translated value */
 		ir_node *leader = ir_valueset_lookup(leaderset, value);
@@ -1225,8 +1214,7 @@ static void update_new_set(ir_node *block, ir_node *idom)
 static unsigned is_hoisting_greedy(ir_node *irn, ir_node *block)
 {
 	int block_arity = get_irn_arity(block);
-	int arity = get_irn_arity(irn);
-	int pos, i;
+	int pos;
 	block_info *info = get_block_info(block);
 
 	/* As long as the predecessor values are available in all predecessor blocks,
@@ -1235,8 +1223,7 @@ static unsigned is_hoisting_greedy(ir_node *irn, ir_node *block)
 		ir_node    *pred_block = get_Block_cfgpred_block(block, pos);
 		block_info *pred_info  = get_block_info(pred_block);
 
-		for (i = 0; i < arity; ++i) {
-			ir_node *pred     = get_irn_n(irn, i);
+		foreach_irn_in(irn, i, pred) {
 			ir_node *value;
 			ir_node *leader;
 			ir_node *trans;
@@ -1425,15 +1412,13 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 			pred_info = get_block_info(pred_block);
 
 			if (! pred_info->found) {
-				int i;
 				int node_arity = get_irn_arity(expr);
 				ir_node **in = XMALLOCNZ(ir_node *, node_arity);
 				ir_node *trans;
 				ir_node *new_value, *new_value2;
 				ir_node *target_block = pred_block;
 
-				for (i = 0; i < node_arity; ++i) {
-					ir_node *pred     = get_irn_n(expr, i);
+				foreach_irn_in(expr, i, pred) {
 					const ir_node *value    = identify(pred);
 					ir_node *leader;
 					ir_node *trans;
@@ -1602,8 +1587,6 @@ static void hoist_high(ir_node *block, void *ctx)
 			ir_node    *trans_expr;
 			ir_node    *trans_value;
 			ir_node    *dom;
-			int         avail_arity;
-			int         i;
 			unsigned    nest_depth;
 			block_info *dom_info;
 
@@ -1618,7 +1601,6 @@ static void hoist_high(ir_node *block, void *ctx)
 			if (avail == NULL)
 				continue;
 
-			avail_arity = get_irn_arity(avail);
 			value = identify(avail);
 
 			/* anticipation border */
@@ -1665,9 +1647,8 @@ static void hoist_high(ir_node *block, void *ctx)
 				/* check if operands die */
 
 				/* check for uses on current path */
-				for (i = 0; i < avail_arity; i++) {
-					ir_node   *pred       = get_irn_n(avail, i);
-					ir_node   *pred_value = identify(pred);
+				foreach_irn_in(avail, i, pred) {
+					ir_node *const pred_value = identify(pred);
 
 					if (dom == NULL)
 						break;
@@ -1714,13 +1695,11 @@ static void hoist_high(ir_node *block, void *ctx)
 				int         nn_arity    = get_irn_arity(avail);
 				ir_node   **in          = XMALLOCN(ir_node *, nn_arity);
 				ir_node    *nn;
-				int         i;
 
 				DB((dbg, LEVEL_2, "Hoisting %+F into %+F\n", avail, new_target));
 				DEBUG_ONLY(inc_stats(gvnpre_stats->hoist_high);)
 
-				for (i = 0; i < nn_arity; ++i) {
-					ir_node *pred       = get_irn_n(avail, i);
+				foreach_irn_in(avail, i, pred) {
 					ir_node *avail_pred = ir_valueset_lookup(target_info->avail_out, identify(pred));
 					assert(avail_pred);
 					in[i] = avail_pred;
@@ -1811,12 +1790,8 @@ static void eliminate_nodes(elim_pair *pairs, ir_nodeset_t *keeps)
 		/* PRE tends to create Phi(self, self, ... , x, self, self, ...)
 		 * which we can optimize here */
 		if (is_Phi(p->new_node)) {
-			int      i;
 			ir_node *res = NULL;
-
-			for (i = get_irn_arity(p->new_node) - 1; i >= 0; --i) {
-				ir_node *pred = get_irn_n(p->new_node, i);
-
+			foreach_irn_in(p->new_node, i, pred) {
 				if (pred != p->old_node) {
 					if (res) {
 						res = NULL;

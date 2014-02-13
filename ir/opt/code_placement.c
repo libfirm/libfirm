@@ -60,9 +60,7 @@ static void place_floats_early(ir_node *n, waitq *worklist)
 	 */
 	if (get_irn_pinned(n) != op_pin_state_floats || only_used_by_keepalive(n)) {
 		/* we cannot move pinned nodes */
-		int arity = get_irn_arity(n);
-		for (int i = 0; i < arity; ++i) {
-			ir_node *pred = get_irn_n(n, i);
+		foreach_irn_in(n, i, pred) {
 			pdeq_putr(worklist, pred);
 		}
 		if (!is_Block(n))
@@ -73,18 +71,15 @@ static void place_floats_early(ir_node *n, waitq *worklist)
 	ir_node *block = get_nodes_block(n);
 
 	/* first move predecessors up */
-	int arity = get_irn_arity(n);
 	place_floats_early(block, worklist);
-	for (int i = 0; i < arity; ++i) {
-		ir_node *pred = get_irn_n(n, i);
+	foreach_irn_in(n, i, pred) {
 		place_floats_early(pred, worklist);
 	}
 
 	/* determine earliest point */
 	ir_node *new_block = NULL;
 	int      new_depth = 0;
-	for (int i = 0; i < arity; ++i) {
-		ir_node *pred       = get_irn_n(n, i);
+	foreach_irn_in(n, i, pred) {
 		ir_node *pred_block = get_nodes_block(pred);
 		int      pred_depth = get_Block_dom_depth(pred_block);
 		if (pred_depth > new_depth) {

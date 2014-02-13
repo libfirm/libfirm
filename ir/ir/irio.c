@@ -932,8 +932,7 @@ static void write_node_recursive(ir_node *node, write_env_t *env);
 
 static void write_preds(ir_node *node, write_env_t *env)
 {
-	for (int i = 0, arity = get_irn_arity(node); i < arity; ++i) {
-		ir_node *pred = get_irn_n(node, i);
+	foreach_irn_in(node, i, pred) {
 		write_node_recursive(pred, env);
 	}
 }
@@ -957,8 +956,7 @@ static void write_node_recursive(ir_node *node, write_env_t *env)
 	if (!is_Phi(node) && !is_Block(node) && !is_Anchor(node)) {
 		write_preds(node, env);
 	} else {
-		for (int i = 0, arity = get_irn_arity(node); i < arity; ++i) {
-			ir_node *pred = get_irn_n(node, i);
+		foreach_irn_in(node, i, pred) {
 			pdeq_putr(env->write_queue, pred);
 		}
 	}

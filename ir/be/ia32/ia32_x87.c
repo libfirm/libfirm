@@ -1184,18 +1184,14 @@ static int sim_Fucom(x87_state *state, ir_node *n)
  */
 static int sim_Keep(x87_state *state, ir_node *node)
 {
-	const ir_node         *op;
 	const arch_register_t *op_reg;
 	int                    reg_id;
 	int                    op_stack_idx;
 	unsigned               live;
-	int                    i, arity;
 
 	DB((dbg, LEVEL_1, ">>> %+F\n", node));
 
-	arity = get_irn_arity(node);
-	for (i = 0; i < arity; ++i) {
-		op      = get_irn_n(node, i);
+	foreach_irn_in(node, i, op) {
 		op_reg  = arch_get_irn_register(op);
 		if (op_reg->reg_class != &ia32_reg_classes[CLASS_ia32_fp])
 			continue;
@@ -1455,7 +1451,6 @@ static int sim_Return(x87_state *state, ir_node *n)
  */
 static int sim_Perm(x87_state *state, ir_node *irn)
 {
-	int      i, n;
 	ir_node *pred = get_irn_n(irn, 0);
 
 	/* handle only floating point Perms */
@@ -1468,12 +1463,12 @@ static int sim_Perm(x87_state *state, ir_node *irn)
 	   All inputs must be on the FPU stack and are pairwise
 	   different from each other.
 	   So, all we need to do is to permutate the stack state. */
-	n = get_irn_arity(irn);
+	int const n = get_irn_arity(irn);
 	int *stack_pos = ALLOCAN(int, n);
 
 	/* collect old stack positions */
-	for (i = 0; i < n; ++i) {
-		const arch_register_t *inreg = x87_get_irn_register(get_irn_n(irn, i));
+	foreach_irn_in(irn, i, pred) {
+		const arch_register_t *inreg = x87_get_irn_register(pred);
 		int idx = x87_on_stack(state, inreg->index);
 
 		assert(idx >= 0 && "Perm argument not on x87 stack");

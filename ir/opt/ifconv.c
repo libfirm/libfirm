@@ -59,9 +59,7 @@ static ir_node *walk_to_projx(ir_node *start, const ir_node *dependency)
 	 * therefore not moved */
 	if (!can_empty_block(start)) return NULL;
 
-	int arity = get_irn_arity(start);
-	for (int i = 0; i < arity; ++i) {
-		ir_node *pred       = get_irn_n(start, i);
+	foreach_irn_in(start, i, pred) {
 		ir_node *pred_block = get_nodes_block(skip_Proj(pred));
 
 		if (pred_block == dependency) {
@@ -124,9 +122,10 @@ static ir_node *copy_to(ir_node *node, ir_node *src_block, int i)
 		node, dst_block, copy));
 
 	/* move recursively all predecessors */
-	for (int j = get_irn_arity(node) - 1; j >= 0; --j) {
-		set_irn_n(copy, j, copy_to(get_irn_n(node, j), src_block, i));
-		DB((dbg, LEVEL_2, "-- pred %d is %+F\n", j, get_irn_n(copy, j)));
+	foreach_irn_in_r(node, j, pred) {
+		ir_node *const copy_pred = copy_to(pred, src_block, i);
+		set_irn_n(copy, j, copy_pred);
+		DB((dbg, LEVEL_2, "-- pred %d is %+F\n", j, copy_pred));
 	}
 	return copy;
 }

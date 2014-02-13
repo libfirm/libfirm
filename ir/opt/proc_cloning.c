@@ -256,8 +256,7 @@ static void set_preds(ir_node *irn, void *env)
 			for (i = 0; i < get_End_n_keepalives(irn); ++i)
 				add_End_keepalive(irn_copy, (ir_node*)get_irn_link(get_End_keepalive(irn, i)));
 		} else {
-			for (i = get_irn_arity(irn) - 1; i >= 0; i--) {
-				pred = get_irn_n(irn, i);
+			foreach_irn_in_r(irn, i, pred) {
 				set_irn_n(irn_copy, i, (ir_node*)get_irn_link(pred));
 			}
 		}

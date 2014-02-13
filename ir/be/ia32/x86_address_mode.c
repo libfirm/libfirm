@@ -496,8 +496,7 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 	}
 
 	default:
-		for (int i = 0, arity = get_irn_arity(node); i < arity; ++i) {
-			ir_node *in = get_irn_n(node, i);
+		foreach_irn_in(node, i, in) {
 			x86_mark_non_am(in);
 		}
 		break;

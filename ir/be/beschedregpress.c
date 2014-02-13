@@ -173,12 +173,9 @@ static int get_result_hops_sum(reg_pressure_selector_env_t *env, ir_node *irn)
 
 static inline int reg_pr_costs(reg_pressure_selector_env_t *env, ir_node *irn)
 {
-	int i, n;
 	int sum = 0;
 
-	for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
-		ir_node *op = get_irn_n(irn, i);
-
+	foreach_irn_in(irn, i, op) {
 		if (is_Proj(op)
 		    || (arch_get_irn_flags(op) & arch_irn_flag_not_scheduled))
 			continue;

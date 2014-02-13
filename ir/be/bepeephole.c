@@ -83,12 +83,8 @@ static void clear_defs(ir_node *node)
 
 static void set_uses(ir_node *node)
 {
-	int i, arity;
-
 	/* set values used */
-	arity = get_irn_arity(node);
-	for (i = 0; i < arity; ++i) {
-		ir_node *in = get_irn_n(node, i);
+	foreach_irn_in(node, i, in) {
 		set_reg_value(in);
 	}
 }
@@ -233,7 +229,6 @@ bool be_can_move_down(ir_heights_t *heights, const ir_node *node,
 	assert(get_nodes_block(node) == get_nodes_block(before));
 	assert(sched_get_time_step(node) < sched_get_time_step(before));
 
-	int      node_arity = get_irn_arity(node);
 	ir_node *schedpoint = sched_next(node);
 
 	while (schedpoint != before) {
@@ -242,9 +237,8 @@ bool be_can_move_down(ir_heights_t *heights, const ir_node *node,
 			return false;
 
 		/* schedpoint must not overwrite registers of our inputs */
-		for (int i = 0; i < node_arity; ++i) {
-			ir_node                   *in  = get_irn_n(node, i);
-			const arch_register_t     *reg = arch_get_irn_register(in);
+		foreach_irn_in(node, i, in) {
+			const arch_register_t *reg = arch_get_irn_register(in);
 			if (reg == NULL)
 				continue;
 			const arch_register_req_t *in_req

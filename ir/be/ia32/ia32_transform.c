@@ -3860,8 +3860,7 @@ static ir_node *gen_be_Return(ir_node *node)
 	int       arity = get_irn_arity(node);
 	ir_node **in    = ALLOCAN(ir_node*, arity);
 	unsigned  pop   = be_Return_get_pop(node);
-	for (int i = 0; i < arity; ++i) {
-		ir_node *op = get_irn_n(node, i);
+	foreach_irn_in(node, i, op) {
 		if (op == ret_val) {
 			in[i] = fld;
 		} else if (op == ret_mem) {

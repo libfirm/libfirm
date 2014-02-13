@@ -1481,8 +1481,8 @@ static int is_const_Phi(ir_node *n)
 {
 	if (! is_Phi(n) || get_irn_arity(n) == 0)
 		return 0;
-	for (int i = get_irn_arity(n) - 1; i >= 0; --i) {
-		if (! is_Const(get_irn_n(n, i)))
+	foreach_irn_in_r(n, i, pred) {
+		if (!is_Const(pred))
 			return 0;
 	}
 	return 1;
@@ -1529,9 +1529,8 @@ static ir_node *apply_binop_on_phi(ir_node *phi, ir_tarval *other, eval_func eva
 	int         n   = get_irn_arity(phi);
 	ir_tarval **tvs = ALLOCAN(ir_tarval*, n);
 	if (left) {
-		for (int i = 0; i < n; ++i) {
-			const ir_node *pred = get_irn_n(phi, i);
-			ir_tarval     *tv   = get_Const_tarval(pred);
+		foreach_irn_in(phi, i, pred) {
+			ir_tarval *tv = get_Const_tarval(pred);
 			tv = do_eval(eval, other, tv, mode);
 
 			if (tv == tarval_bad) {
@@ -1541,9 +1540,8 @@ static ir_node *apply_binop_on_phi(ir_node *phi, ir_tarval *other, eval_func eva
 			tvs[i] = tv;
 		}
 	} else {
-		for (int i = 0; i < n; ++i) {
-			const ir_node *pred = get_irn_n(phi, i);
-			ir_tarval     *tv   = get_Const_tarval(pred);
+		foreach_irn_in(phi, i, pred) {
+			ir_tarval *tv = get_Const_tarval(pred);
 			tv = do_eval(eval, tv, other, mode);
 
 			if (tv == tarval_bad) {
@@ -1613,9 +1611,8 @@ static ir_node *apply_unop_on_phi(ir_node *phi, ir_tarval *(*eval)(ir_tarval *))
 {
 	int         n   = get_irn_arity(phi);
 	ir_tarval **tvs = ALLOCAN(ir_tarval*, n);
-	for (int i = 0; i < n; ++i) {
-		const ir_node *pred = get_irn_n(phi, i);
-		ir_tarval     *tv   = get_Const_tarval(pred);
+	foreach_irn_in(phi, i, pred) {
+		ir_tarval *tv = get_Const_tarval(pred);
 		tv = eval(tv);
 
 		if (tv == tarval_bad) {
@@ -1645,9 +1642,8 @@ static ir_node *apply_conv_on_phi(ir_node *phi, ir_mode *mode)
 {
 	int         n   = get_irn_arity(phi);
 	ir_tarval **tvs = ALLOCAN(ir_tarval*, n);
-	for (int i = 0; i < n; ++i) {
-		const ir_node *pred = get_irn_n(phi, i);
-		ir_tarval     *tv   = get_Const_tarval(pred);
+	foreach_irn_in(phi, i, pred) {
+		ir_tarval *tv = get_Const_tarval(pred);
 		tv = tarval_convert_to(tv, mode);
 
 		if (tv == tarval_bad) {
@@ -4727,9 +4723,7 @@ static ir_node *transform_node_Phi(ir_node *phi)
 			bool      has_pin = false;
 			ir_node **in      = ALLOCAN(ir_node*, n);
 
-			for (int i = 0; i < n; ++i) {
-				ir_node *pred = get_irn_n(phi, i);
-
+			foreach_irn_in(phi, i, pred) {
 				if (is_Pin(pred)) {
 					in[i]   = get_Pin_op(pred);
 					has_pin = true;

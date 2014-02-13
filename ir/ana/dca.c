@@ -20,6 +20,7 @@
  * be useful when revising this code.
  */
 #include "debug.h"
+#include "irnode_t.h"
 #include "tv.h"
 #include "irtypes.h"
 #include "pdeq.h"
@@ -98,8 +99,9 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 			return;
 		case iro_Jmp:
 		default:
-			for (int i = 0; i < get_irn_arity(irn); i++)
-				care_for(get_irn_n(irn, i), 0, q);
+			foreach_irn_in(irn, i, pred) {
+				care_for(pred, 0, q);
+			}
 
 			care_for(get_nodes_block(irn), 0, q);
 			return;
@@ -259,14 +261,16 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 	}
 
 	if (mode == mode_M || mode == mode_T) {
-		for (int i = 0; i < get_irn_arity(irn); i++)
-			care_for(get_irn_n(irn, i), care, q);
+		foreach_irn_in(irn, i, pred) {
+			care_for(pred, care, q);
+		}
 		return;
 	}
 
 	/* Assume worst case on other nodes */
-	for (int i = 0; i < get_irn_arity(irn); i++)
-		care_for(get_irn_n(irn, i), 0, q);
+	foreach_irn_in(irn, i, pred) {
+		care_for(pred, 0, q);
+	}
 }
 
 static void dca_init_node(ir_node *n, void *data)
@@ -318,8 +322,7 @@ void dca_add_fuzz(ir_node *node, void *data)
 
 	if (is_Eor(node)) return;
 
-	for (int i = 0; i < get_irn_arity(node); i++) {
-		ir_node *pred = get_irn_n(node, i);
+	foreach_irn_in(node, i, pred) {
 		ir_mode *pred_mode = get_irn_mode(pred);
 		ir_tarval *dc = get_irn_link(pred);
 

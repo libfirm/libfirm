@@ -408,7 +408,7 @@ static void wq_walker(ir_node *n, void *env)
  */
 static void do_reassociation(waitq *const wq)
 {
-	int i, res, changed;
+	int res, changed;
 	ir_node *n;
 
 	while (! waitq_empty(wq)) {
@@ -438,9 +438,7 @@ static void do_reassociation(waitq *const wq)
 		hook_reassociate(0);
 
 		if (changed) {
-			for (i = get_irn_arity(n) - 1; i >= 0; --i) {
-				ir_node *pred = get_irn_n(n, i);
-
+			foreach_irn_in_r(n, i, pred) {
 				if (get_irn_link(pred) != wq) {
 					waitq_put(wq, pred);
 					set_irn_link(pred, wq);

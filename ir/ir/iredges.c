@@ -730,10 +730,7 @@ static void verify_edge_counter(ir_node *irn, void *env)
 	int       ref_cnt = 0;
 	bitset_foreach(bs, idx) {
 		ir_node *src = get_idx_irn(irg, idx);
-
-		int arity = get_irn_arity(src);
-		for (int i = 0; i < arity; ++i) {
-			ir_node *in = get_irn_n(src, i);
+		foreach_irn_in(src, i, in) {
 			if (in == irn)
 				++ref_cnt;
 		}

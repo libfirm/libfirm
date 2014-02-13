@@ -616,8 +616,8 @@ static bool inline_method(ir_node *const call, ir_graph *called_graph)
 		int       main_end_bl_arity = get_irn_arity(main_end_bl);
 		ir_node **end_preds         = XMALLOCN(ir_node*, n_exc+main_end_bl_arity);
 
-		for (int i = 0; i < main_end_bl_arity; ++i)
-			end_preds[i] = get_irn_n(main_end_bl, i);
+		foreach_irn_in(main_end_bl, i, pred)
+			end_preds[i] = pred;
 		for (int i = 0; i < n_exc; ++i)
 			end_preds[main_end_bl_arity + i] = cf_pred[i];
 		set_irn_in(main_end_bl, n_exc + main_end_bl_arity, end_preds);

@@ -151,9 +151,7 @@ static ir_node *transform_end(ir_node *node)
 
 	/* do not transform predecessors yet to keep the pre-transform
 	 * phase from visiting all the graph */
-	int arity = get_irn_arity(node);
-	for (int i = 0; i < arity; ++i) {
-		ir_node *in = get_irn_n(node, i);
+	foreach_irn_in(node, i, in) {
 		add_End_keepalive(new_end, in);
 	}
 	be_enqueue_preds(node);
@@ -181,18 +179,15 @@ ir_node *be_duplicate_node(ir_node *node)
 	ir_op    *op    = get_irn_op(node);
 
 	ir_node *new_node;
-	int      arity = get_irn_arity(node);
 	if (op->opar == oparity_dynamic) {
 		new_node = new_ir_node(dbgi, irg, block, op, mode, -1, NULL);
-		for (int i = 0; i < arity; ++i) {
-			ir_node *in = get_irn_n(node, i);
-			in = be_transform_node(in);
-			add_irn_n(new_node, in);
+		foreach_irn_in(node, i, in) {
+			add_irn_n(new_node, be_transform_node(in));
 		}
 	} else {
-		ir_node **ins = ALLOCAN(ir_node*, arity);
-		for (int i = 0; i < arity; ++i) {
-			ir_node *in = get_irn_n(node, i);
+		int       arity = get_irn_arity(node);
+		ir_node **ins   = ALLOCAN(ir_node*, arity);
+		foreach_irn_in(node, i, in) {
 			ins[i] = be_transform_node(in);
 		}
 
@@ -227,9 +222,7 @@ ir_node *be_transform_node(ir_node *node)
 void be_enqueue_preds(ir_node *node)
 {
 	/* put the preds in the worklist */
-	int arity = get_irn_arity(node);
-	for (int i = 0; i < arity; ++i) {
-		ir_node *pred = get_irn_n(node, i);
+	foreach_irn_in(node, i, pred) {
 		pdeq_putr(env.worklist, pred);
 	}
 }
@@ -258,9 +251,8 @@ static void fix_loops(ir_node *node)
 		fix_loops(block);
 	}
 
-	int arity = get_irn_arity(node);
-	for (int i = 0; i < arity; ++i) {
-		ir_node *in = get_irn_n(node, i);
+	foreach_irn_in(node, i, pred) {
+		ir_node *in = pred;
 		ir_node *nw = (ir_node*)get_irn_link(in);
 
 		if (nw != NULL && nw != in) {
@@ -277,8 +269,7 @@ static void fix_loops(ir_node *node)
 		changed = true;
 	}
 
-	arity = get_irn_n_deps(node);
-	for (int i = 0; i < arity; ++i) {
+	for (int i = 0, arity = get_irn_n_deps(node); i < arity; ++i) {
 		ir_node *in = get_irn_dep(node, i);
 		ir_node *nw = (ir_node*)get_irn_link(in);
 
@@ -617,8 +608,7 @@ void be_map_exc_node_to_runtime_call(ir_node *node, ir_mode *res_mode,
 
 	assert(get_method_n_params(mtp) == n_in);
 	size_t p = 0;
-	for (int i = 0, arity = get_irn_arity(node); i < arity; ++i) {
-		ir_node *n = get_irn_n(node, i);
+	foreach_irn_in(node, i, n) {
 		if (get_irn_mode(n) == mode_M)
 			continue;
 		in[p++] = n;

@@ -41,8 +41,8 @@ static void add_pred(ir_node* node, ir_node* x)
 {
 	int const  n   = get_Block_n_cfgpreds(node);
 	ir_node  **ins = ALLOCAN(ir_node*, n+1);
-	for (int i = 0; i < n; i++)
-		ins[i] = get_irn_n(node, i);
+	foreach_irn_in(node, i, pred)
+		ins[i] = pred;
 	ins[n] = x;
 	set_irn_in(node, n + 1, ins);
 }
@@ -209,8 +209,7 @@ static ir_node *copy_and_fix_node(const jumpthreading_env_t *env,
 		set_nodes_block(copy, copy_block);
 		assert(get_irn_mode(copy) != mode_X);
 
-		for (int i = 0, arity = get_irn_arity(copy); i < arity; ++i) {
-			ir_node *pred = get_irn_n(copy, i);
+		foreach_irn_in(copy, i, pred) {
 			if (get_nodes_block(pred) != block)
 				continue;
 

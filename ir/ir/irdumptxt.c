@@ -121,10 +121,10 @@ void dump_irnode_to_file(FILE *const F, const ir_node *const n)
 		fprintf(F, " %ld\n", get_irn_node_nr(block));
 	}
 
-	for (int i = 0, arity = get_irn_arity(n); i < arity; ++i) {
+	foreach_irn_in(n, i, pred) {
 		fprintf(F, "     %d: %s ", i, is_backedge(n, i) ? "be" : "  ");
-		dump_node_opcode(F, get_irn_n(n, i));
-		fprintf(F, " %ld\n", get_irn_node_nr(get_irn_n(n, i)));
+		dump_node_opcode(F, pred);
+		fprintf(F, " %ld\n", get_irn_node_nr(pred));
 	}
 
 	fprintf(F, "  Private Attributes:\n");

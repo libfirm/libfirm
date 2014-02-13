@@ -1753,9 +1753,8 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 
 		assert(get_irn_mode(phi) == mode_M && "DFS return non-memory Phi");
 
-		for (int j = get_irn_arity(phi) - 1; j >= 0; --j) {
-			ir_node    *pred = get_irn_n(phi, j);
-			node_entry *pe   = get_irn_ne(pred, env);
+		foreach_irn_in_r(phi, j, pred) {
+			node_entry *const pe = get_irn_ne(pred, env);
 
 			if (pe->pscc != ne->pscc) {
 				/* not in the same SCC, is region const */
@@ -1931,8 +1930,7 @@ static void process_loop(scc *pscc, loop_env *env)
 			only_phi = 0;
 			break;
 		case iro_Phi:
-			for (int j = get_irn_arity(irn) - 1; j >= 0; --j) {
-				ir_node *pred  = get_irn_n(irn, j);
+			foreach_irn_in_r(irn, i, pred) {
 				node_entry *pe = get_irn_ne(pred, env);
 
 				if (pe->pscc != e->pscc) {
@@ -2037,9 +2035,7 @@ static void dfs(ir_node *irn, loop_env *env)
 
 	/* handle preds */
 	if (is_Phi(irn) || is_Sync(irn)) {
-		int n = get_irn_arity(irn);
-		for (int i = 0; i < n; ++i) {
-			ir_node *pred = get_irn_n(irn, i);
+		foreach_irn_in(irn, i, pred) {
 			node_entry *o = get_irn_ne(pred, env);
 
 			if (!irn_visited(pred)) {

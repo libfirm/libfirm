@@ -267,12 +267,8 @@ undefined:
 				}
 			}
 		} else {
-			int const arity = get_irn_arity(irn);
-			int       i;
-
 			/* Undefined if any input is undefined. */
-			for (i = 0; i != arity; ++i) {
-				ir_node* const pred   = get_irn_n(irn, i);
+			foreach_irn_in(irn, i, pred) {
 				bitinfo* const pred_b = get_bitinfo(pred);
 				if (pred_b != NULL && is_undefined(pred_b))
 					goto undefined;

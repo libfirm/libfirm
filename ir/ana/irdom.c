@@ -438,10 +438,7 @@ static void init_tmp_pdom_info(ir_node *block, tmp_dom_info *parent,
 	   are really edges to endless loops. */
 	const ir_graph *irg = get_irn_irg(block);
 	if (block == get_irg_end_block(irg)) {
-		const ir_node *end = get_irg_end(irg);
-		for (int i = get_irn_arity(end) - 1; i >= 0; --i) {
-			ir_node *pred = get_irn_n(end, i);
-
+		foreach_irn_in_r(get_irg_end(irg), i, pred) {
 			if (is_Block(pred))
 				init_tmp_pdom_info(pred, tdi, tdi_list, used, n_blocks);
 		}
@@ -537,9 +534,7 @@ void compute_doms(ir_graph *irg)
 
 		/* handle keep-alives if we are at the end block */
 		if (block == get_irg_end_block(irg)) {
-			const ir_node *end = get_irg_end(irg);
-			for (int j = 0, arity = get_irn_arity(end); j < arity; j++) {
-				const ir_node *pred = get_irn_n(end, j);
+			foreach_irn_in(get_irg_end(irg), j, pred) {
 				if (!is_Block(pred) || get_Block_dom_pre_num(pred) == -1)
 					continue;   /* unreachable */
 

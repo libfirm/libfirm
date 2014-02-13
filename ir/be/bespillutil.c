@@ -217,11 +217,8 @@ void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before, const a
 	info = get_spillinfo(env, to_spill);
 
 	if (is_Phi(to_spill)) {
-		int i, arity;
-
 		/* create spillinfos for the phi arguments */
-		for (i = 0, arity = get_irn_arity(to_spill); i < arity; ++i) {
-			ir_node *arg = get_irn_n(to_spill, i);
+		foreach_irn_in(to_spill, i, arg) {
 			get_spillinfo(env, arg);
 		}
 	}
@@ -307,7 +304,6 @@ void be_add_reload_on_edge(spill_env_t *env, ir_node *to_spill, ir_node *block,
 void be_spill_phi(spill_env_t *env, ir_node *node)
 {
 	ir_node *block;
-	int i, arity;
 	spill_info_t *info;
 
 	assert(is_Phi(node));
@@ -318,8 +314,7 @@ void be_spill_phi(spill_env_t *env, ir_node *node)
 
 	/* create spills for the phi arguments */
 	block = get_nodes_block(node);
-	for (i = 0, arity = get_irn_arity(node); i < arity; ++i) {
-		ir_node *arg = get_irn_n(node, i);
+	foreach_irn_in(node, i, arg) {
 		ir_node *insert;
 
 		/* some backends have virtual noreg/unknown nodes that are not scheduled
@@ -406,7 +401,6 @@ static void spill_phi(spill_env_t *env, spill_info_t *spillinfo)
 	ir_node  *phi   = spillinfo->to_spill;
 	ir_node  *block = get_nodes_block(phi);
 	spill_t  *spill;
-	int       i;
 
 	assert(!get_opt_cse());
 	DBG((dbg, LEVEL_1, "spilling Phi %+F:\n", phi));
@@ -415,7 +409,7 @@ static void spill_phi(spill_env_t *env, spill_info_t *spillinfo)
 	int       const arity   = get_Phi_n_preds(phi);
 	ir_node **const ins     = ALLOCAN(ir_node*, arity);
 	ir_node  *const unknown = new_r_Unknown(irg, mode_M);
-	for (i = 0; i < arity; ++i) {
+	for (int i = 0; i < arity; ++i) {
 		ins[i] = unknown;
 	}
 
@@ -429,8 +423,7 @@ static void spill_phi(spill_env_t *env, spill_info_t *spillinfo)
 	spillinfo->spills = spill;
 	env->spilled_phi_count++;
 
-	for (i = 0; i < arity; ++i) {
-		ir_node      *arg      = get_irn_n(phi, i);
+	foreach_irn_in(phi, i, arg) {
 		spill_info_t *arg_info = get_spillinfo(env, arg);
 
 		determine_spill_costs(env, arg_info);
@@ -514,7 +507,6 @@ static int is_value_available(spill_env_t *env, const ir_node *arg,
 static int check_remat_conditions_costs(spill_env_t *env,
 		const ir_node *spilled, const ir_node *reloader, int parentcosts)
 {
-	int i, arity;
 	int argremats;
 	int costs = 0;
 	const ir_node *insn = skip_Proj_const(spilled);
@@ -540,9 +532,7 @@ static int check_remat_conditions_costs(spill_env_t *env,
 	}
 
 	argremats = 0;
-	for (i = 0, arity = get_irn_arity(insn); i < arity; ++i) {
-		ir_node *arg = get_irn_n(insn, i);
-
+	foreach_irn_in(insn, i, arg) {
 		if (is_value_available(env, arg, reloader))
 			continue;
 
@@ -572,14 +562,11 @@ static int check_remat_conditions_costs(spill_env_t *env,
  */
 static ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader)
 {
-	int i, arity;
 	ir_node *res;
 	ir_node **ins;
 
 	ins = ALLOCAN(ir_node*, get_irn_arity(spilled));
-	for (i = 0, arity = get_irn_arity(spilled); i < arity; ++i) {
-		ir_node *arg = get_irn_n(spilled, i);
-
+	foreach_irn_in(spilled, i, arg) {
 		if (is_value_available(env, arg, reloader)) {
 			ins[i] = arg;
 		} else {

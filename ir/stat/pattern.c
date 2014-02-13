@@ -400,7 +400,6 @@ static int _encode_node(ir_node *node, int max_depth, codec_env_t *env)
 {
 	addr_entry_t entry, *r_entry;
 	set_entry *s_entry;
-	int i, preds;
 	int res, depth;
 
 	unsigned code = get_irn_opcode(node);
@@ -456,7 +455,7 @@ static int _encode_node(ir_node *node, int max_depth, codec_env_t *env)
 		return max_depth;
 	}
 
-	preds = get_irn_arity(node);
+	int const preds = get_irn_arity(node);
 	put_code(env->buf, preds);
 
 	res = INT_MAX;
@@ -482,9 +481,7 @@ static int _encode_node(ir_node *node, int max_depth, codec_env_t *env)
 		if (depth < res)
 			res = depth;
 	} else {
-		for (i = 0; i < preds; ++i) {
-			ir_node *n = get_irn_n(node, i);
-
+		foreach_irn_in(node, i, n) {
 			depth = _encode_node(n, max_depth, env);
 			if (depth < res)
 				res = depth;

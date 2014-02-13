@@ -51,22 +51,16 @@ static void unreachable_to_bad(ir_node *node, void *env)
 		}
 	} else if (is_Phi(node)) {
 		ir_node  *block = get_nodes_block(node);
-		int       arity;
-		int       i;
-		ir_graph *irg;
 		/* optimization: we do not have to do anything inside the unreachable
 		 * code */
 		if (is_block_unreachable(block))
 			return;
 
-		irg   = get_irn_irg(node);
-		arity = get_irn_arity(node);
-		for (i = 0; i < arity; ++i) {
-			ir_node *block_pred;
-			ir_node *phi_pred = get_irn_n(node, i);
+		ir_graph *const irg = get_irn_irg(node);
+		foreach_irn_in(node, i, phi_pred) {
 			if (is_Bad(phi_pred))
 				continue;
-			block_pred = get_Block_cfgpred(block, i);
+			ir_node *const block_pred = get_Block_cfgpred(block, i);
 			if (!is_Bad(block_pred) && !is_block_unreachable(get_nodes_block(block_pred)))
 				continue;
 

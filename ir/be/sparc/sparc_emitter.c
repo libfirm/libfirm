@@ -359,9 +359,7 @@ static bool can_move_down_into_delayslot(const ir_node *node, const ir_node *to)
 		return true;
 	} else {
 		/* the node must not use our computed values */
-		int arity = get_irn_arity(to);
-		for (int i = 0; i < arity; ++i) {
-			ir_node *in = get_irn_n(to, i);
+		foreach_irn_in(to, i, in) {
 			if (skip_Proj(in) == node)
 				return false;
 		}
@@ -375,8 +373,7 @@ static bool can_move_up_into_delayslot(const ir_node *node, const ir_node *to)
 		return false;
 
 	/* node must not use any results of 'to' */
-	for (int i = 0, arity = get_irn_arity(node); i < arity; ++i) {
-		ir_node *in      = get_irn_n(node, i);
+	foreach_irn_in(node, i, in) {
 		ir_node *skipped = skip_Proj(in);
 		if (skipped == to)
 			return false;

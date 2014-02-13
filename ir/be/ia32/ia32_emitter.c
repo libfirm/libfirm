@@ -737,12 +737,8 @@ static ir_node *find_original_value(ir_node *node)
 			return node;
 		}
 	} else if (is_Phi(node)) {
-		int i, arity;
-		arity = get_irn_arity(node);
-		for (i = 0; i < arity; ++i) {
-			ir_node *in  = get_irn_n(node, i);
+		foreach_irn_in(node, i, in) {
 			ir_node *res = find_original_value(in);
-
 			if (res != NULL)
 				return res;
 		}

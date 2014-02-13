@@ -229,18 +229,12 @@ check_preds:
 /* removes basic blocks that just contain a jump instruction */
 int be_remove_empty_blocks(ir_graph *irg)
 {
-	ir_node *end;
-	int      i, arity;
-
 	blocks_removed = 0;
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 	inc_irg_visited(irg);
 	remove_empty_block(get_irg_end_block(irg));
-	end   = get_irg_end(irg);
-	arity = get_irn_arity(end);
-	for (i = 0; i < arity; ++i) {
-		ir_node *pred = get_irn_n(end, i);
+	foreach_irn_in(get_irg_end(irg), i, pred) {
 		if (!is_Block(pred))
 			continue;
 		remove_empty_block(pred);

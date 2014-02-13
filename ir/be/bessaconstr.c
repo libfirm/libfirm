@@ -259,10 +259,7 @@ static ir_node *get_def_from_preds(be_ssa_construction_env_t *const env, ir_node
  */
 static void set_operands(be_ssa_construction_env_t *env, ir_node *use, ir_node *def, constr_info *const use_info)
 {
-	int arity = get_irn_arity(use);
-	for (int i = 0; i < arity; ++i) {
-		ir_node *op = get_irn_n(use, i);
-
+	foreach_irn_in(use, i, op) {
 		if (is_definition(env, op)) {
 			DBG((dbg, LEVEL_1, "\t...%+F(%d) -> %+F\n", use, i, def));
 			set_irn_n(use, i, def);
@@ -488,14 +485,10 @@ ir_node **be_ssa_construction_get_new_phis(be_ssa_construction_env_t *env)
  */
 static void fix_phi_arguments(be_ssa_construction_env_t *const env, ir_node *const phi, constr_info *const info)
 {
-	ir_node *block   = get_nodes_block(phi);
-	int      n_preds = get_Block_n_cfgpreds(block);
-
 	DBG((dbg, LEVEL_3, "\tfixing phi arguments  %+F\n", phi));
 
-	for (int i = 0; i < n_preds; ++i) {
-		ir_node *op = get_irn_n(phi, i);
-
+	ir_node *const block = get_nodes_block(phi);
+	foreach_irn_in(phi, i, op) {
 		if (is_definition(env, op) || is_Dummy(op)) {
 			ir_node *pred_block = get_Block_cfgpred_block(block, i);
 			ir_node *pred_def   = search_def_end_of_block(env, pred_block);

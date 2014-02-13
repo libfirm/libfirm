@@ -123,8 +123,7 @@ ir_node *irn_copy_into_irg(const ir_node *node, ir_graph *irg)
 	ir_node  *res;
 	if (op->opar == oparity_dynamic) {
 		res = new_ir_node(dbgi, irg, block, op, mode, -1, NULL);
-		for (int i = 0, arity = get_irn_arity(node); i < arity; ++i) {
-			ir_node *in = get_irn_n(node, i);
+		foreach_irn_in(node, i, in) {
 			add_irn_n(res, in);
 		}
 	} else {
@@ -168,8 +167,7 @@ void irn_rewire_inputs(ir_node *node)
 		set_nodes_block(new_node, new_block);
 	}
 
-	for (int i = 0, arity = get_irn_arity(new_node); i < arity; ++i) {
-		ir_node *in     = get_irn_n(node, i);
+	foreach_irn_in(node, i, in) {
 		ir_node *new_in = get_new_node(in);
 		set_irn_n(new_node, i, new_in);
 	}

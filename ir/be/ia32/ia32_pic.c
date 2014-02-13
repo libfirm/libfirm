@@ -91,8 +91,7 @@ static void fix_pic_addresses(ir_node *node, void *data)
 	ir_graph      *irg = get_irn_irg(node);
 	be_main_env_t *be  = be_get_irg_main_env(irg);
 
-	for (int i = 0, arity = get_irn_arity(node); i < arity; ++i) {
-		ir_node *pred = get_irn_n(node, i);
+	foreach_irn_in(node, i, pred) {
 		if (!is_Address(pred))
 			continue;
 

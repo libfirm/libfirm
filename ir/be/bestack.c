@@ -270,7 +270,7 @@ void be_abi_fix_stack_nodes(ir_graph *irg)
 	be_irg_t                  *birg     = be_birg_from_irg(irg);
 	const arch_register_t     *sp       = arch_env->sp;
 	be_ssa_construction_env_t  senv;
-	int i, len;
+	int len;
 	ir_node **phis;
 	fix_stack_walker_env_t walker_env;
 
@@ -306,7 +306,7 @@ void be_abi_fix_stack_nodes(ir_graph *irg)
 
 	if (lv != NULL) {
 		len = ARR_LEN(walker_env.sp_nodes);
-		for (i = 0; i < len; ++i) {
+		for (int i = 0; i < len; ++i) {
 			be_liveness_update(lv, walker_env.sp_nodes[i]);
 		}
 		be_ssa_construction_update_liveness_phis(&senv, lv);
@@ -316,7 +316,7 @@ void be_abi_fix_stack_nodes(ir_graph *irg)
 
 	/* set register requirements for stack phis */
 	len = ARR_LEN(phis);
-	for (i = 0; i < len; ++i) {
+	for (int i = 0; i < len; ++i) {
 		ir_node *phi = phis[i];
 		be_set_phi_reg_req(phi, sp_req);
 		arch_set_irn_register(phi, arch_env->sp);
@@ -329,21 +329,16 @@ void be_abi_fix_stack_nodes(ir_graph *irg)
 	 * when leaving the function. Though the last incsp is often kept (because
 	 * you often don't know which incsp is the last one and fixstack should find
 	 * them all). Remove unnecessary keeps and IncSP nodes */
-	{
-		ir_node  *end    = get_irg_end(irg);
-		int       arity  = get_irn_arity(end);
-		int       i;
-		for (i = arity-1; i >= 0; --i) {
-			ir_node *in = get_irn_n(end, i);
-			if (!be_is_IncSP(in)) {
-				continue;
-			}
+	ir_node *end = get_irg_end(irg);
+	foreach_irn_in_r(end, i, in) {
+		if (!be_is_IncSP(in)) {
+			continue;
+		}
 
-			remove_End_keepalive(end, in);
-			if (get_irn_n_edges(in) == 0) {
-				sched_remove(in);
-				kill_node(in);
-			}
+		remove_End_keepalive(end, in);
+		if (get_irn_n_edges(in) == 0) {
+			sched_remove(in);
+			kill_node(in);
 		}
 	}
 }

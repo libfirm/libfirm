@@ -548,4 +548,16 @@ void ir_register_getter_ops(void);
  */
 bool only_used_by_keepalive(const ir_node *node);
 
+#define foreach_irn_in(irn, idx, pred) \
+	for (bool pred##__b = true; pred##__b;) \
+		for (ir_node const *const pred##__irn = (irn); pred##__b; pred##__b = false) \
+			for (int idx = 0, pred##__n = get_irn_arity(pred##__irn); pred##__b && idx != pred##__n; ++idx) \
+				for (ir_node *const pred = (pred##__b = false, get_irn_n(pred##__irn, idx)); !pred##__b; pred##__b = true)
+
+#define foreach_irn_in_r(irn, idx, pred) \
+	for (bool pred##__b = true; pred##__b;) \
+		for (ir_node const *const pred##__irn = (irn); pred##__b; pred##__b = false) \
+			for (int idx = get_irn_arity(pred##__irn); pred##__b && idx-- != 0;) \
+				for (ir_node *const pred = (pred##__b = false, get_irn_n(pred##__irn, idx)); !pred##__b; pred##__b = true)
+
 #endif

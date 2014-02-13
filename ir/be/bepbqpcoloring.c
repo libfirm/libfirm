@@ -238,13 +238,9 @@ static void create_affinity_edges(ir_node *irn, void *env)
 	be_pbqp_alloc_env_t         *pbqp_alloc_env = (be_pbqp_alloc_env_t*)env;
 	const arch_register_class_t *cls            = pbqp_alloc_env->cls;
 	const arch_register_req_t   *req            = arch_get_irn_register_req(irn);
-	unsigned                     pos;
-	unsigned                     max;
 
 	if (is_Phi(irn)) { /* Phis */
-		for (pos = 0, max = get_irn_arity(irn); pos < max; ++pos) {
-			ir_node *arg = get_irn_n(irn, pos);
-
+		foreach_irn_in(irn, pos, arg) {
 			if (!arch_irn_consider_in_reg_alloc(cls, arg))
 				continue;
 

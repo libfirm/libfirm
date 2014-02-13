@@ -268,7 +268,6 @@ static int get_reg_difference(trace_env_t *env, ir_node *irn)
 {
 	int num_out = 0;
 	int num_in  = 0;
-	int i;
 	ir_node *block = get_nodes_block(irn);
 
 	if (be_is_Call(irn)) {
@@ -288,9 +287,7 @@ static int get_reg_difference(trace_env_t *env, ir_node *irn)
 		num_out = 1;
 
 	/* num in regs: number of ins with mode data and not ignore */
-	for (i = get_irn_arity(irn) - 1; i >= 0; i--) {
-		ir_node *in = get_irn_n(irn, i);
-
+	foreach_irn_in_r(irn, i, in) {
 		if (!mode_is_data(get_irn_mode(in)))
 			continue;
 
@@ -311,8 +308,6 @@ static int get_reg_difference(trace_env_t *env, ir_node *irn)
  */
 static void descent(ir_node *root, ir_node *block, ir_node **list, trace_env_t *env, unsigned path_len)
 {
-	int i;
-
 	if (! is_Phi(root)) {
 		path_len += exectime(env, root);
 		if (get_irn_critical_path_len(env, root) < path_len) {
@@ -325,9 +320,7 @@ static void descent(ir_node *root, ir_node *block, ir_node **list, trace_env_t *
 		set_irn_reg_diff(env, root, get_reg_difference(env, root));
 
 		/* Phi nodes always leave the block */
-		for (i = get_irn_arity(root) - 1; i >= 0; --i) {
-			ir_node *pred = get_irn_n(root, i);
-
+		foreach_irn_in_r(root, i, pred) {
 			DBG((env->dbg, LEVEL_3, "   node %+F\n", pred));
 
 			/* Blocks may happen as predecessors of End nodes */

@@ -592,11 +592,9 @@ static void undate_block_info(ir_node *node, graph_entry_t *graph)
 {
 	ir_node *block;
 	block_entry_t *b_entry;
-	int i, arity;
 
 	/* check for block */
 	if (is_Block(node)) {
-		arity = get_irn_arity(node);
 		b_entry = block_get_entry(&graph->recalc_cnts, get_irn_node_nr(node), graph->block_hash);
 		/* mark start end block to allow to filter them out */
 		if (node == get_irg_start_block(graph->irg))
@@ -605,8 +603,7 @@ static void undate_block_info(ir_node *node, graph_entry_t *graph)
 			b_entry->is_end = 1;
 
 		/* count all incoming edges */
-		for (i = 0; i < arity; ++i) {
-			ir_node *pred = get_irn_n(node, i);
+		foreach_irn_in(node, i, pred) {
 			ir_node *other_block = get_nodes_block(pred);
 			block_entry_t *b_entry_other = block_get_entry(&graph->recalc_cnts, get_irn_node_nr(other_block), graph->block_hash);
 
@@ -631,14 +628,8 @@ static void undate_block_info(ir_node *node, graph_entry_t *graph)
 	if (is_End(node))
 		return;
 
-	arity = get_irn_arity(node);
-
-	for (i = 0; i < arity; ++i) {
-		ir_node *pred = get_irn_n(node, i);
-		ir_node *other_block;
-
-		other_block = get_nodes_block(pred);
-
+	foreach_irn_in(node, i, pred) {
+		ir_node *const other_block = get_nodes_block(pred);
 		if (other_block == block)
 			cnt_inc(&b_entry->cnt[bcnt_edges]); /* a in block edge */
 		else {
@@ -872,7 +863,7 @@ static void update_node_stat(ir_node *node, void *env)
 	node_entry_t *entry;
 
 	ir_op *op = stat_get_irn_op(node);
-	int i, arity = get_irn_arity(node);
+	int arity = get_irn_arity(node);
 
 	entry = opcode_get_entry(op, graph->opcode_hash);
 
@@ -899,7 +890,7 @@ static void update_node_stat(ir_node *node, void *env)
 		break;
 	case iro_Phi:
 		/* check for non-strict Phi nodes */
-		for (i = arity - 1; i >= 0; --i) {
+		for (int i = arity - 1; i >= 0; --i) {
 			ir_node *pred = get_Phi_pred(node, i);
 			if (is_Unknown(pred)) {
 				/* found an Unknown predecessor, graph is not strict */
@@ -913,11 +904,7 @@ static void update_node_stat(ir_node *node, void *env)
 
 	/* we want to count the constant IN nodes, not the CSE'ed constant's itself */
 	if (status->stat_options & FIRMSTAT_COUNT_CONSTS) {
-		int i;
-
-		for (i = get_irn_arity(node) - 1; i >= 0; --i) {
-			ir_node *pred = get_irn_n(node, i);
-
+		foreach_irn_in_r(node, i, pred) {
 			if (is_Const(pred)) {
 				/* check properties of constants */
 				stat_update_const(status, pred, graph);
@@ -1019,7 +1006,6 @@ static void mark_address_calc(ir_node *node, void *env)
 {
 	graph_entry_t *graph = (graph_entry_t*)env;
 	ir_mode *mode = get_irn_op_mode(node);
-	int i, n;
 	unsigned mark_preds = MARK_REF_NON_ADR;
 
 	if (! mode_is_data(mode))
@@ -1043,9 +1029,7 @@ static void mark_address_calc(ir_node *node, void *env)
 	}
 
 	/* mark all predecessors */
-	for (i = 0, n = get_irn_arity(node); i < n; ++i) {
-		ir_node *pred = get_irn_n(node, i);
-
+	foreach_irn_in(node, i, pred) {
 		mode = get_irn_op_mode(pred);
 		if (! mode_is_data(mode))
 			continue;

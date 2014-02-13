@@ -117,8 +117,6 @@ void collect_phiprojs(ir_graph *irg)
  */
 static void move(ir_node *node, ir_node *from_bl, ir_node *to_bl)
 {
-	int i, arity;
-
 	/* move this node */
 	set_nodes_block(node, to_bl);
 
@@ -136,9 +134,7 @@ static void move(ir_node *node, ir_node *from_bl, ir_node *to_bl)
 		return;
 
 	/* recursion ... */
-	arity = get_irn_arity(node);
-	for (i = 0; i < arity; i++) {
-		ir_node *pred = get_irn_n(node, i);
+	foreach_irn_in(node, i, pred) {
 		if (get_nodes_block(pred) == from_bl)
 			move(pred, from_bl, to_bl);
 	}
@@ -164,8 +160,6 @@ static void move_projs(const ir_node *node, ir_node *to_bl)
  */
 static void move_edges(ir_node *node, ir_node *from_bl, ir_node *to_bl)
 {
-	int i, arity;
-
 	/* move this node */
 	set_nodes_block(node, to_bl);
 
@@ -180,9 +174,7 @@ static void move_edges(ir_node *node, ir_node *from_bl, ir_node *to_bl)
 		return;
 
 	/* recursion ... */
-	arity = get_irn_arity(node);
-	for (i = 0; i < arity; i++) {
-		ir_node *pred = get_irn_n(node, i);
+	foreach_irn_in(node, i, pred) {
 		if (get_nodes_block(pred) == from_bl)
 			move_edges(pred, from_bl, to_bl);
 	}
