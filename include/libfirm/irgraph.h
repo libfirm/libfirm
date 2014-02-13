@@ -413,7 +413,10 @@ typedef enum ir_graph_properties_t {
 	IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE        = 1U << 11,
 	/** graph contains as many returns as possible */
 	IR_GRAPH_PROPERTY_MANY_RETURNS                   = 1U << 12,
+} ir_graph_properties_t;
+ENUM_BITSET(ir_graph_properties_t)
 
+enum {
 	/**
 	 * List of all graph properties that are only affected by control flow
 	 * changes.
@@ -439,8 +442,7 @@ typedef enum ir_graph_properties_t {
 		| IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE
 		| IR_GRAPH_PROPERTY_MANY_RETURNS,
 
-} ir_graph_properties_t;
-ENUM_BITSET(ir_graph_properties_t)
+};
 
 /** sets some state properties on the graph */
 FIRM_API void add_irg_properties(ir_graph *irg, ir_graph_properties_t props);
