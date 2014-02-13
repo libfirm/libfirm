@@ -465,17 +465,8 @@ int ia32_evaluate_insn(insn_kind kind, const ir_mode *mode, ir_tarval *tv)
 	switch (kind) {
 	case MUL:
 		cost = arch_costs->cost_mul_start;
-		if (arch_costs->cost_mul_bit > 0) {
-			char *bitstr = get_tarval_bitpattern(tv);
-			int i;
-
-			for (i = 0; bitstr[i] != '\0'; ++i) {
-				if (bitstr[i] == '1') {
-					cost += arch_costs->cost_mul_bit;
-				}
-			}
-			free(bitstr);
-		}
+		if (arch_costs->cost_mul_bit > 0)
+			cost += get_tarval_popcount(tv) * arch_costs->cost_mul_bit;
 		if (get_mode_size_bits(mode) <= 32)
 			return cost;
 		/* 64bit mul supported, approx 4times of a 32bit mul*/
