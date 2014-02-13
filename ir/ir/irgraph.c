@@ -126,7 +126,8 @@ static ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 
 	/*-- Type information for the procedure of the graph --*/
 	res->ent = ent;
-	set_entity_irg(ent, res);
+	if (ent)
+		set_entity_irg(ent, res);
 
 	/*--  a class type so that it can contain "inner" methods as in Pascal. --*/
 	res->frame_type = new_type_frame();
@@ -178,51 +179,14 @@ ir_graph *new_ir_graph(ir_entity *ent, int n_loc)
 
 ir_graph *new_const_code_irg(void)
 {
-	ir_graph *res = alloc_graph();
-	ir_node  *body_block;
-	ir_node  *end;
-	ir_node  *end_block;
-	ir_node  *no_mem;
-	ir_node  *projX;
-	ir_node  *start_block;
-	ir_node  *start;
-
-	/* inform statistics here, as blocks will be already build on this graph */
-	hook_new_graph(res, NULL);
-
-	res->n_loc            = 1; /* Only the memory. */
-	res->irg_pinned_state = op_pin_state_pinned;
-
-	add_irg_constraints(res, IR_GRAPH_CONSTRAINT_CONSTRUCTION);
-
-	/* the Anchor node must be created first */
-	res->anchor = new_r_Anchor(res);
-
-	/* -- The end block -- */
-	end_block = new_r_Block_noopt(res, 0, NULL);
-	set_irg_end_block(res, end_block);
-	end = new_r_End(res, 0, NULL);
-	set_irg_end(res, end);
-
-	/* -- The start block -- */
-	start_block = new_r_Block_noopt(res, 0, NULL);
-	set_irg_start_block(res, start_block);
-	no_mem = new_r_NoMem(res);
-	set_irg_no_mem(res, no_mem);
-	start = new_r_Start(res);
-	set_irg_start(res, start);
-
-	/* Proj results of start node */
-	set_irg_initial_mem(res, new_r_Proj(start, mode_M, pn_Start_M));
-	projX = new_r_Proj(start, mode_X, pn_Start_X_initial_exec);
-
-	body_block = new_r_Block(res, 1, &projX);
-
-	set_r_cur_block(res, body_block);
+	ir_graph *const res = new_r_ir_graph(NULL, 0);
+	mature_immBlock(get_irg_end_block(res));
 
 	/* Set the visited flag high enough that the blocks will never be visited. */
+	ir_node *const body_block = get_r_cur_block(res);
 	set_irn_visited(body_block, -1);
 	set_Block_block_visited(body_block, -1);
+	ir_node *const start_block = get_irg_start_block(res);
 	set_Block_block_visited(start_block, -1);
 	set_irn_visited(start_block, -1);
 
