@@ -781,10 +781,9 @@ static void dump_node_mode(FILE *F, const ir_node *n)
 /**
  * Dump the type of a node n to a file F if it's known.
  */
-static int dump_node_typeinfo(FILE *F, const ir_node *n)
+static void dump_node_typeinfo(FILE *F, const ir_node *n)
 {
 	ir_graph *irg = get_irn_irg(n);
-	int bad = 0;
 
 	if (ir_get_dump_flags() & ir_dump_flag_analysed_types) {
 		if (get_irg_typeinfo_state(irg) == ir_typeinfo_consistent  ||
@@ -793,7 +792,6 @@ static int dump_node_typeinfo(FILE *F, const ir_node *n)
 			ir_fprintf(F, "[%+F]", tp);
 		}
 	}
-	return bad;
 }
 
 /**
