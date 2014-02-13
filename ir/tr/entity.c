@@ -877,7 +877,7 @@ void set_entity_additional_properties(ir_entity *ent,
                                       mtp_additional_properties property_mask)
 {
 	assert(entity_has_additional_properties(ent));
-	/* you mustn't set less properties than the entities type */
+	/* you mustn't set fewer properties than the entities type */
 	assert((get_method_additional_properties(get_entity_type(ent)) & ~property_mask) == 0);
 
 	/* do not allow to set the mtp_property_inherited flag or

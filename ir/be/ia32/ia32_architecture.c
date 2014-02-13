@@ -475,7 +475,7 @@ int ia32_evaluate_insn(insn_kind kind, const ir_mode *mode, ir_tarval *tv)
 		/* lea is only supported for 32 bit */
 		if (get_mode_size_bits(mode) <= 32)
 			return arch_costs->lea_cost;
-		/* in 64bit mode, the Lea cost are at wort 2 shifts and one add */
+		/* in 64bit mode, the Lea cost are at worst 2 shifts and one add */
 		return 2 * arch_costs->add_cost + 2 * (2 * arch_costs->const_shf_cost);
 	case ADD:
 	case SUB:

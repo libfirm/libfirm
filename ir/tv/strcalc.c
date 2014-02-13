@@ -569,7 +569,7 @@ unsigned char sc_sub_bits(const sc_word *value, unsigned len, unsigned byte_ofs)
 	if (len > (nibble_ofs + 1) * SC_BITS)
 		res |= value[nibble_ofs + 1] << SC_BITS;
 
-	/* kick bits outsize */
+	/* kick bits outside */
 	if (len - 8 * byte_ofs < 8) {
 		res &= (1 << (len - 8 * byte_ofs)) - 1;
 	}

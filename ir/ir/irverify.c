@@ -458,9 +458,7 @@ static bool verify_switch_table(const ir_node *n)
 				 e);
 			fine = false;
 		} else if (tarval_cmp(entry->min, entry->max) == ir_relation_greater) {
-			warn(n,
-			     "switch table entry %zu min is not lesser or equal than max",
-			     e);
+			warn(n, "switch table entry %zu min is not less or equal than max", e);
 			fine = false;
 		}
 		if (entry->pn < 0 || entry->pn >= (long)n_outs) {
@@ -582,7 +580,7 @@ static int verify_node_Call(const ir_node *n)
 	}
 
 	if ((size_t)get_Call_n_params(n) < get_method_n_params(mt)) {
-		warn(n, "call has less arguments than method type");
+		warn(n, "call has fewer arguments than method type");
 		return false;
 	} else if ((size_t)get_Call_n_params(n) > get_method_n_params(mt) &&
 	    get_method_variadicity(mt) != variadicity_variadic) {
@@ -1059,8 +1057,7 @@ static int check_block_cfg(const ir_node *block, check_cfg_env_t *env)
 {
 	bool fine = true;
 	if (!ir_nodeset_contains(&env->reachable_blocks, block)) {
-		warn(block,
-		     "not reachable by blockwalker (endless loop with no kept block?)");
+		warn(block, "not reachable by blockwalker (endless loop with no kept block?)");
 		fine = false;
 	}
 

@@ -195,7 +195,7 @@ static bool needs_extension(ir_node *op)
 
 /**
  * Check, if a given node is a Down-Conv, i.e. a integer Conv
- * from a mode with a mode with more bits to a mode with lesser bits.
+ * from a mode with a mode with more bits to a mode with fewer bits.
  * Moreover, we return only true if the node has not more than 1 user.
  *
  * @param node   the node

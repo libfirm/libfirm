@@ -1733,7 +1733,7 @@ static void update_liveness_walker(ir_node *block, void *data)
  */
 void ia32_x87_simulate_graph(ir_graph *irg)
 {
-	/* TODO improve code quality (less executed fxch) by using execfreqs */
+	/* TODO improve code quality (fewer executed fxch) by using execfreqs */
 
 	ir_node       *block, *start_block;
 	blk_state     *bl_state;

@@ -626,7 +626,7 @@ FIRM_API char *get_tarval_bitpattern(const ir_tarval *tv);
 /**
  * Returns the bitpattern of the bytes_ofs byte.
  *
- * This function succeeds even if the mode of the tarval uses lesser bits
+ * This function succeeds even if the mode of the tarval uses fewer bits
  * than requested, in that case the bitpattern is filled with zero bits.
  *
  * To query a 32bit value the following code can be used:
