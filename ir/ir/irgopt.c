@@ -173,9 +173,14 @@ int optimize_graph_df(ir_graph *irg)
 	if (get_opt_global_cse())
 		set_irg_pinned(irg, op_pin_state_floats);
 
-	/* enable unreachable code elimination */
-	assert(!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_OPTIMIZE_UNREACHABLE_CODE));
-	add_irg_constraints(irg, IR_GRAPH_CONSTRAINT_OPTIMIZE_UNREACHABLE_CODE);
+	/* enable unreachable code elimination,
+	 * not that currently disabling algebraic simplifications disables all
+	 * transform_node_XXX() functions and therefore unreachable code
+	 * elimination. */
+	if (get_opt_algebraic_simplification()) {
+		assert(!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_OPTIMIZE_UNREACHABLE_CODE));
+		add_irg_constraints(irg, IR_GRAPH_CONSTRAINT_OPTIMIZE_UNREACHABLE_CODE);
+	}
 
 	new_identities(irg);
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
@@ -202,8 +207,10 @@ int optimize_graph_df(ir_graph *irg)
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	/* disable unreachable code elimination */
-	clear_irg_constraints(irg, IR_GRAPH_CONSTRAINT_OPTIMIZE_UNREACHABLE_CODE);
-	add_irg_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE);
+	if (get_opt_algebraic_simplification()) {
+		clear_irg_constraints(irg, IR_GRAPH_CONSTRAINT_OPTIMIZE_UNREACHABLE_CODE);
+		add_irg_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE);
+	}
 
 	/* invalidate infos */
 	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
