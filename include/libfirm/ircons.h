@@ -49,29 +49,27 @@
  *    Implementation of the FIRM operations: ir_node
  *    ----------------------------------------------
  *
- *      Ir_nodes represent operations on the data of the program and control flow
- *      operations.  Examples of ir_nodes:  Add, Jmp, Cmp
+ *      Ir_nodes represent operations on the data of the program and control
+ *      flow operations.  Examples of ir_nodes:  Add, Jmp, Cmp
  *
- *      FIRM is a dataflow graph.  A dataflow graph is a directed graph,
- *      so that every node has incoming and outgoing edges.  A node is
- *      executable if every input at its incoming edges is available.
- *      Execution of the dataflow graph is started at the Start node which
- *      has no incoming edges and ends when the End node executes, even if
- *      there are still executable or not executed nodes.  (Is this true,
- *      or must all executable nodes be executed?)  (There are exceptions
- *      to the dataflow paradigma that all inputs have to be available
- *      before a node can execute: Phi, Block.  See UKA Techreport
- *      1999-14.)
+ *      FIRM is a dataflow graph.  A dataflow graph is a directed graph, so that
+ *      every node has incoming and outgoing edges.  A node is executable if
+ *      every input at its incoming edges is available.  Execution of the
+ *      dataflow graph is started at the Start node which has no incoming edges
+ *      and ends when the End node executes, even if there are still executable
+ *      or not executed nodes.  (Is this true, or must all executable nodes be
+ *      executed?)  (There are exceptions to the dataflow paradigma that all
+ *      inputs have to be available before a node can execute: Phi, Block.  See
+ *      UKA Techreport 1999-14.)
  *
- *      The implementation of FIRM differs from the view as a dataflow
- *      graph.  To allow fast traversion of the graph edges are
- *      implemented as C-pointers.  Inputs to nodes are not ambiguous, the
- *      results can be used by several other nodes.  Each input can be
- *      implemented as a single pointer to a predecessor node, outputs
- *      need to be lists of pointers to successors.  Therefore a node
- *      contains pointers to its predecessors so that the implementation is a
- *      dataflow graph with reversed edges.  It has to be traversed bottom
- *      up.
+ *      The implementation of FIRM differs from the view as a dataflow graph.
+ *      To allow fast traversion of the graph edges are implemented as
+ *      C-pointers.  Inputs to nodes are not ambiguous, the results can be used
+ *      by several other nodes.  Each input can be implemented as a single
+ *      pointer to a predecessor node, outputs need to be lists of pointers to
+ *      successors.  Therefore a node contains pointers to its predecessors so
+ *      that the implementation is a dataflow graph with reversed edges.  It has
+ *      to be traversed bottom up.
  *
  *      All nodes of the IR have the same basic structure.  They are
  *      distinguished by a field containing the opcode.
@@ -147,28 +145,28 @@
  *      for each new node.
  *    - An even less comfortable interface where the block needs to be specified
  *      explicitly.  This is called the "raw" interface. (new_r_<Node>
- *      constructors).  These nodes are not optimized.
+ *      constructors).
  *
- *    To use the functionality of the comfortable interface correctly the Front
- *    End needs to follow certain protocols.  This is explained in the following.
- *    To build a correct IR with the other interfaces study the semantics of
- *    the firm node (See tech-reprot UKA 1999-14).  For the construction of
- *    types and entities see the documentation in those modules.
+ *    To use the functionality of the comfortable interface correctly the front
+ *    end needs to follow certain protocols.  This is explained in the
+ *    following.  To build a correct IR with the other interfaces study the
+ *    semantics of the firm node (See tech-reprot UKA 1999-14).  For the
+ *    construction of types and entities see the documentation in these modules.
  *
- *    First the Frontend needs to decide which variables and values used in
- *    a procedure can be represented by dataflow edges.  These are variables
- *    that need not be saved to memory as they cause no side effects visible
- *    out of the procedure.  Often these are all compiler generated
- *    variables and simple local variables of the procedure as integers,
- *    reals and pointers.  The frontend has to count and number these variables.
+ *    First the front end needs to decide which variables and values used in a
+ *    procedure can be represented by dataflow edges.  These are variables that
+ *    need not be saved to memory as they cause no side effects visible out of
+ *    the procedure.  Often these are all compiler generated variables and
+ *    simple local variables of the procedure as integers, reals and pointers.
+ *    The front end has to count and number these variables.
  *
  *    First an ir_graph needs to be constructed with new_ir_graph.  The
  *    constructor gets the number of local variables.  The graph is held in the
  *    global variable irg.
  *
  *    Now the construction of the procedure can start.  Several basic blocks can
- *    be constructed in parallel, but the code within each block needs to
- *    be constructed (almost) in program order.
+ *    be constructed in parallel, but the code within each block needs to be
+ *    constructed (almost) in program order.
  *
  *    A global variable holds the current basic block.  All (non block) nodes
  *    generated are added to this block.  The current block can be set with
@@ -176,26 +174,27 @@
  *    switches need to be performed constantly.
  *
  *    To generate a Block node (with the comfortable interface), its predecessor
- *    control flow nodes need not be known.  In case of cyclic control flow these
- *    can not be known when the block is constructed.  With add_immBlock_pred(block,
- *    cfnode) predecessors can be added to the block.  If all predecessors are
- *    added to the block mature_immBlock(b) needs to be called.  Calling mature_immBlock
- *    early improves the efficiency of the Phi node construction algorithm.
- *    But if several  blocks are constructed at once, mature_immBlock must only
- *    be called after performing all set_values and set_stores in the block!
- *    (See documentation of new_immBlock constructor.)
+ *    control flow nodes need not be known.  In case of cyclic control flow
+ *    these can not be known when the block is constructed.  With
+ *    add_immBlock_pred(block, cfnode) predecessors can be added to the block.
+ *    If all predecessors are added to the block mature_immBlock(b) needs to be
+ *    called.  Calling mature_immBlock early improves the efficiency of the Phi
+ *    node construction algorithm.  But if several  blocks are constructed at
+ *    once, mature_immBlock must only be called after performing all set_values
+ *    and set_stores in the block!  (See documentation of new_immBlock
+ *    constructor.)
  *
- *    The constructors of arithmetic nodes require that their predecessors
- *    are mentioned.  Sometimes these are available in the Frontend as the
- *    predecessors have just been generated by the frontend.  If they are local
+ *    The constructors of arithmetic nodes require that their predecessors are
+ *    mentioned.  Sometimes these are available in the Frontend as the
+ *    predecessors have just been generated by the front end.  If they are local
  *    values, the predecessors can be obtained from the library with a call to
- *    get_value(local_val_nr).  (local_val_nr needs to be administered by
- *    the Frontend.)  A call to get_value triggers the generation of Phi nodes.
- *    If an arithmetic operation produces a local value, this value needs to be
+ *    get_value(local_val_nr).  (local_val_nr needs to be administered by the
+ *    Frontend.)  A call to get_value triggers the generation of Phi nodes.  If
+ *    an arithmetic operation produces a local value, this value needs to be
  *    passed to the library by set_value(node, local_val_nr).
  *    In straight line code these two operations just remember and return the
- *    pointer to nodes producing the value.  If the value passes block boundaries
- *    Phi nodes can be inserted.
+ *    pointer to nodes producing the value.  If the value passes block
+ *    boundaries Phi nodes can be inserted.
  *    Similar routines exist to manage the Memory operands: set_store and
  *    get_store.
  *
@@ -204,43 +203,46 @@
  *    extracted by proj nodes.
  *
  *    The following example illustrates the construction of a simple basic block
- *    with two predecessors stored in variables cf_pred1 and cf_pred2, containing
- *    the code
+ *    with two predecessors stored in variables cf_pred1 and cf_pred2,
+ *    containing the code
  *      a = a div a;
  *    and finally jumping to an other block.  The variable a got the local_val_nr
- *    42 by the frontend.
+ *    42 by the front end.
  *
- *    ir_node *this_block, *cf_pred1, *cf_pred2, *a_val, *mem, *div, *res, *cf_op;
- *
- *    this_block = new_immBlock();
- *    add_immBlock_pred(this_block, cf_pred1);
- *    add_immBlock_pred(this_block, cf_pred2);
- *    mature_immBlock(this_block);
- *    a_val = get_value(42, mode_Iu);
- *    mem = get_store();
- *    div = new_Div(mem, a_val, a_val, mode_Iu);
- *    mem = new_Proj(div, mode_M, pn_Div_M);   * for the numbers for Proj see docu *
- *    res = new_Proj(div, mode_Iu, pn_Div_res);
- *    set_store(mem);
- *    set_value(res, 42);
- *    cf_op = new_Jmp();
+ *    ir_node *example(ir_node *cf_pred1, ir_node *cf_pred2)
+ *    {
+ *      ir_node *this_block = new_immBlock();
+ *      add_immBlock_pred(this_block, cf_pred1);
+ *      add_immBlock_pred(this_block, cf_pred2);
+ *      mature_immBlock(this_block);
+ *      set_cur_block(this_block);
+ *      ir_node *a_val = get_value(42, mode_Iu);
+ *      ir_node *div   = new_Div(get_store(), a_val, a_val, mode_Iu);
+ *      ir_node *mem   = new_Proj(div, mode_M, pn_Div_M);
+ *      ir_node *res   = new_Proj(div, mode_Iu, pn_Div_res);
+ *      set_store(mem);
+ *      set_value(res, 42);
+ *      ir_node *cf_op = new_Jmp();
+ *      return cf_op;
+ *    }
  *
  *    For further information look at the documentation of the nodes and
- *    constructors and at the paragraph COPING WITH DATA OBJECTS at the
- *    end of this documentation.
+ *    constructors and at the paragraph COPING WITH DATA OBJECTS at the end of
+ *    this documentation.
  *
  *    IR_NODES AND CONSTRUCTORS FOR IR_NODES
  *    =======================================
  *
- *    All ir_nodes are defined by a common data structure.  They are distinguished
- *    by their opcode and differ in the number of their attributes.
+ *    All ir_nodes are defined by a common data structure.  They are
+ *    distinguished by their opcode and differ in the number of their
+ *    attributes.
  *
- *    Const nodes are always added to the start block.
- *    All other constructors add the created node to the current_block.
- *    swich_block(block) allows to set the current block to block.
+ *    Const nodes are always added to the start block.  All other constructors
+ *    add the created node to the current_block.  set_cur_block(block) allows to
+ *    set the current block to block.
  *
- *    Watch for my inconsistent use of input and predecessor (dataflow view)
- *    and `the node points to' (implementation view).
+ *    Watch for my inconsistent use of input and predecessor (dataflow view) and
+ *    `the node points to' (implementation view).
  *
  *    The following description of the nodes lists four properties them if these
  *    are of interest:
@@ -254,41 +256,38 @@
  *    COPING WITH DATA OBJECTS
  *    ========================
  *
- *    Two kinds of data objects have to be distinguished for generating
- *    FIRM.  First there are local variables other than arrays that are
- *    known to be alias free.  Second there are all other data objects.
- *    For the first a common SSA representation is built, the second
- *    are modeled by saving them to memory.  The memory is treated as
- *    a single local variable, the alias problem is hidden in the
- *    content of this variable.
+ *    Two kinds of data objects have to be distinguished for generating FIRM.
+ *    First there are local variables other than arrays that are known to be
+ *    alias free.  Second there are all other data objects.  For the first a
+ *    common SSA representation is built, the second are modeled by saving them
+ *    to memory.  The memory is treated as a single local variable, the alias
+ *    problem is hidden in the content of this variable.
  *
- *    All values known in a Block are listed in the block's attribute,
- *    block.**graph_arr which is used to automatically insert Phi nodes.
- *    The following two functions can be used to add a newly computed value
- *    to the array, or to get the producer of a value, i.e., the current
- *    live value.
+ *    All values known in a Block are listed in the block's attribute
+ *    block.graph_arr which is used to automatically insert Phi nodes.  The
+ *    following two functions can be used to add a newly computed value to the
+ *    array, or to get the producer of a value, i.e., the current live value.
  *
- *    inline void set_value (int pos, ir_node *value)
+ *    void set_value(int pos, ir_node *value)
  *    -----------------------------------------------
  *
- *    Has to be called for every assignment to a local variable.  It
- *    adds the value to the array of used values at position pos.  Pos
- *    has to be a unique identifier for an entry in the procedure's
- *    definition table.  It can be used to access the value again.
- *    Requires current_block to be set correctly.
+ *    Has to be called for every assignment to a local variable.  It adds the
+ *    value to the array of used values at position pos.  Pos has to be a unique
+ *    identifier for an entry in the procedure's definition table.  It can be
+ *    used to access the value again.  Requires current_block to be set
+ *    correctly.
  *
- *    ir_node *get_value (int pos, ir_mode *mode)
+ *    ir_node *get_value(int pos, ir_mode *mode)
  *    -------------------------------------------
  *
- *    Returns the node defining the value referred to by pos. If the
- *    value is not defined in this block a Phi node is generated and
- *    all definitions reaching this Phi node are collected.  It can
- *    happen that the algorithm allocates an unnecessary Phi node,
- *    e.g. if there is only one definition of this value, but this
- *    definition reaches the currend block on several different
- *    paths.  This Phi node will be eliminated if optimizations are
- *    turned on right after its creation.
- *    Requires current_block to be set correctly.
+ *    Returns the node defining the value referred to by pos. If the value is
+ *    not defined in this block a Phi node is generated and all definitions
+ *    reaching this Phi node are collected.  It can happen that the algorithm
+ *    allocates an unnecessary Phi node, e.g. if there is only one definition of
+ *    this value, but this definition reaches the currend block on several
+ *    different paths.  This Phi node will be eliminated if optimizations are
+ *    turned on right after its creation.  Requires current_block to be set
+ *    correctly.
  *
  *    There are two special routines for the global store:
  */
