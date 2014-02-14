@@ -223,7 +223,7 @@ FIRM_API void plist_clear(plist_t *list);
  * Convenience macro to iterate over a plist.
  */
 #define foreach_plist(list, el) \
-	for (el = plist_first(list); el; el = plist_element_get_next(el))
+	for (plist_element_t *el = plist_first(list); el; el = plist_element_get_next(el))
 
 /** @} */
 

@@ -291,7 +291,6 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 	plist_t                     *rpeo               = pbqp_alloc_env->rpeo;
 	pbqp_t                      *pbqp_inst          = pbqp_alloc_env->pbqp_inst;
 	plist_t                     *temp_list          = plist_new();
-	plist_element_t             *el;
 	ir_nodeset_t                 live_nodes;
 #if USE_BIPARTIT_MATCHING
 	int                         *assignment         = ALLOCAN(int, cls->n_regs);
@@ -379,7 +378,6 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 			}
 
 			if(clique_size > 0) {
-				plist_element_t *listElement;
 				foreach_plist(temp_list, listElement) {
 					pbqp_node *clique_candidate  = listElement->data;
 					unsigned   idx               = 0;
@@ -548,7 +546,6 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 	ir_graph                    *irg            = env->irg;
 	const arch_register_class_t *cls            = env->cls;
 	be_lv_t                     *lv             = NULL;
-	plist_element_t             *element        = NULL;
 	unsigned                     colors_n       = arch_register_class_n_regs(cls);
 	be_pbqp_alloc_env_t          pbqp_alloc_env;
 	unsigned                     col;
@@ -649,14 +646,11 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 
 	/* print out reverse perfect elimination order */
 #if PRINT_RPEO
-	{
-		plist_element_t *elements;
-		foreach_plist(pbqp_alloc_env.rpeo, elements) {
-			pbqp_node_t *node = elements->data;
-			printf(" %d(%ld);", node->index, get_idx_irn(irg, node->index)->node_nr);
-		}
-		printf("\n");
+	foreach_plist(pbqp_alloc_env.rpeo, elements) {
+		pbqp_node_t *node = elements->data;
+		printf(" %d(%ld);", node->index, get_idx_irn(irg, node->index)->node_nr);
 	}
+	printf("\n");
 #endif
 
 	/* solve pbqp instance */
