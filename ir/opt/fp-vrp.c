@@ -179,6 +179,9 @@ exchange_only:
 				ir_node  *cmp  = new_rd_Cmp(dbgi, block, l, r, new_relation);
 				mark_irn_visited(cmp);
 				DB((dbg, LEVEL_2, "Simplified relation of %+F(%+F, %+F)\n", irn, l, r));
+				if (is_Const(cmp)) {
+					z = o = get_Const_tarval(cmp);
+				}
 				set_bitinfo(cmp, z, o);
 				exchange(irn, cmp);
 				env->modified = 1;
