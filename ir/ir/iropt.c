@@ -2288,7 +2288,8 @@ static ir_node *transform_node_Eor_(ir_node *n)
 
 static ir_node *transform_node_Eor(ir_node *n)
 {
-	if (is_Or_Eor_Add(n)) {
+	/* normalize */
+	if (is_Or_Eor_Add(n) || is_Eor_Add(n)) {
 		dbg_info *dbgi  = get_irn_dbg_info(n);
 		ir_node  *block = get_nodes_block(n);
 		ir_node  *left  = get_Eor_left(n);
