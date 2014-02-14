@@ -52,6 +52,8 @@ int ir_imprecise_float_transforms_allowed(void)
 	return imprecise_float_transforms_allowed;
 }
 
+/** Returns true if using an Add, Eor or Or instead of @p node would produce
+ * the same result. */
 static bool is_Or_Eor_Add(const ir_node *node)
 {
 	if (is_Or(node) || is_Eor(node) || is_Add(node)) {
@@ -68,26 +70,25 @@ static bool is_Or_Eor_Add(const ir_node *node)
 	return false;
 }
 
+/** Returns true if using an Add or Eor instead of @p node would produce the
+ * same result. */
 static bool is_Eor_Add(const ir_node *node)
 {
-	if (is_Eor(node) || is_Add(node)) {
-		if (is_Or_Eor_Add(node))
-			return true;
+	if (!is_Eor(node) && !is_Add(node))
+		return false;
+	if (is_Or_Eor_Add(node))
+		return true;
 
-		const ir_node *right = get_binop_right(node);
-		const ir_mode *mode  = get_irn_mode(node);
+	const ir_node *right = get_binop_right(node);
+	if (!is_Const(right))
+		return false;
 
-		if (is_Const(right) && get_mode_arithmetic(mode) == irma_twos_complement) {
-			const ir_tarval *tv  = get_Const_tarval(right);
-			ir_tarval       *min = get_mode_min(mode);
-			/* if all bits are set, then this has the same effect as a Not.
-			 * Note that the following == gives false for different modes which
-			 * is exactly what we want */
-			return tv == min;
-		}
-	}
+	const ir_mode *mode = get_irn_mode(node);
+	if (get_mode_arithmetic(mode) != irma_twos_complement)
+		return false;
 
-	return false;
+	ir_tarval *tv = get_Const_tarval(right);
+	return get_tarval_lowest_bit(tv) == (int)get_mode_size_bits(mode)-1;
 }
 
 /**
@@ -2447,13 +2448,12 @@ mul_y_plus_z:;
 		}
 	}
 
+	if (is_Or_Eor_Add(n)) {
+		n = transform_node_Or_(n);
+		if (n != oldn)
+			return n;
+	}
 	if (is_Eor_Add(n)) {
-		if (is_Or_Eor_Add(n)) {
-			n = transform_node_Or_(n);
-			if (n != oldn)
-				return n;
-		}
-
 		n = transform_node_Eor_(n);
 		if (n != oldn)
 			return n;
