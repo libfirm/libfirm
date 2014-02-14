@@ -220,7 +220,7 @@ FIRM_API void *pset_next(pset *pset);
 FIRM_API void pset_break(pset *pset);
 
 /**
- * Iterates oven an pset.
+ * Iterates over a pset.
  *
  * @param pset   the pset
  * @param type   type of iterator variable
