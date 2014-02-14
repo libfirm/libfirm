@@ -1294,7 +1294,6 @@ void inline_functions(unsigned maxsize, int inline_threshold,
 	}
 
 	/* kill the copied graphs: we don't need them anymore */
-	pmap_entry *pm_entry;
 	foreach_pmap(copied_graphs, pm_entry) {
 		ir_graph *copy = (ir_graph*)pm_entry->value;
 

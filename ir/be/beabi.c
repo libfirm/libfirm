@@ -1055,8 +1055,7 @@ static int cmp_regs(const void *a, const void *b)
 static void reg_map_to_arr(arch_register_t const **const res,
                            pmap *const reg_map)
 {
-	size_t      i = 0;
-	pmap_entry *ent;
+	size_t i = 0;
 	foreach_pmap(reg_map, ent) {
 		res[i++] = (arch_register_t const*)ent->key;
 	}
@@ -1102,7 +1101,6 @@ static ir_node *create_be_return(be_abi_irg_t *const env, ir_node *const irn)
 	}
 
 	/* Add uses of the callee save registers. */
-	pmap_entry *ent;
 	foreach_pmap(env->regs, ent) {
 		const arch_register_t *reg = (const arch_register_t*)ent->key;
 		if (arch_register_is_callee_save(arch_env, reg))

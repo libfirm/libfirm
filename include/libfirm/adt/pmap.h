@@ -83,7 +83,7 @@ FIRM_API pmap_entry *pmap_next(pmap *);
  * Iterate over all elements in the map setting curr to the current element.
  */
 #define foreach_pmap(pmap, curr) \
-	for (curr = pmap_first(pmap); curr; curr = pmap_next(pmap))
+	for (pmap_entry *curr = pmap_first(pmap); curr; curr = pmap_next(pmap))
 
 /** Breaks an iteration.
  *  Must be called, if a iteration ends before p_map_next() returns NULL.
