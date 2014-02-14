@@ -920,7 +920,7 @@ static void dump_node_vcgattr(FILE *F, const ir_node *node, const ir_node *local
 		print_vcg_color(F, ird_color_proj);
 		break;
 	default: {
-		ir_op *op = get_irn_op(node);
+		ir_op *op = get_irn_op(n);
 
 		if (is_op_constlike(op)) {
 			print_vcg_color(F, ird_color_const);
