@@ -239,7 +239,7 @@ static inline ir_node *workset_get_val(const workset_t *workset, unsigned idx)
  * @p i  An integer for internal use
  */
 #define workset_foreach(ws, v, i) \
-	for (unsigned i=0; v=(i < ws->len) ? ws->vals[i].node : NULL, i < ws->len; ++i)
+	for (unsigned i = 0; i < ws->len ? v = ws->vals[i].node, 1 : 0; ++i)
 
 typedef struct block_info_t {
 	workset_t *start_workset;
