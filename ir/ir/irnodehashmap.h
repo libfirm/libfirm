@@ -128,9 +128,7 @@ ir_nodehashmap_entry_t ir_nodehashmap_iterator_next(
 void ir_nodehashmap_remove_iterator(ir_nodehashmap_t *nodehashmap,
                                     const ir_nodehashmap_iterator_t *iterator);
 
-#define foreach_ir_nodehashmap(nodehashmap, entry, iter)                  \
-	for (ir_nodehashmap_iterator_init(&iter, nodehashmap),                \
-		entry = ir_nodehashmap_iterator_next(&iter);                      \
-		entry.node != NULL; entry = ir_nodehashmap_iterator_next(&iter))
+#define foreach_ir_nodehashmap(nodehashmap, entry, iter) \
+	for (ir_nodehashmap_iterator_init(&iter, nodehashmap); (entry = ir_nodehashmap_iterator_next(&iter)).node;)
 
 #endif
