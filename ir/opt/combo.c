@@ -1790,22 +1790,24 @@ static void split_by(partition_t *X, environment_t *env)
 static void default_compute(node_t *node)
 {
 	ir_node *irn = node->node;
+	if (get_irn_mode(irn) == mode_X)
+		node->type.tv = tarval_reachable;
 
 	/* if any of the data inputs have type top, the result is type top */
-	for (int i = get_irn_arity(irn); i-- > 0; ) {
-		ir_node *pred = get_irn_n(irn, i);
-		node_t  *p    = get_irn_node(pred);
+	ir_node *op  = skip_Proj(irn);
+	if (!is_memop(op) || is_Mod(op) || is_Div(op)) {
+		for (int i = get_irn_arity(irn); i-- > 0; ) {
+			ir_node *pred = get_irn_n(irn, i);
+			node_t  *p    = get_irn_node(pred);
 
-		if (p->type.tv == tarval_top) {
-			node->type.tv = tarval_top;
-			return;
+			if (p->type.tv == tarval_top) {
+				node->type.tv = tarval_top;
+				return;
+			}
 		}
 	}
 
-	if (get_irn_mode(node->node) == mode_X)
-		node->type.tv = tarval_reachable;
-	else
-		node->type.tv = computed_value(irn);
+	node->type.tv = computed_value(irn);
 }
 
 /**
@@ -1900,20 +1902,6 @@ static void compute_End(node_t *node)
 {
 	/* the End node is NOT dead of course */
 	node->type.tv = tarval_reachable;
-}
-
-/**
- * (Re-)compute the type for a Call.
- *
- * @param node  the node
- */
-static void compute_Call(node_t *node)
-{
-	/*
-	 * A Call computes always bottom, even if it has Unknown
-	 * predecessors.
-	 */
-	node->type.tv = tarval_bottom;
 }
 
 /**
@@ -3356,7 +3344,6 @@ static void set_compute_functions(void)
 	set_compute_func(op_Align,   compute_Align);
 	set_compute_func(op_Bad,     compute_Bad);
 	set_compute_func(op_Block,   compute_Block);
-	set_compute_func(op_Call,    compute_Call);
 	set_compute_func(op_Cmp,     compute_Cmp);
 	set_compute_func(op_Confirm, compute_Confirm);
 	set_compute_func(op_End,     compute_End);
