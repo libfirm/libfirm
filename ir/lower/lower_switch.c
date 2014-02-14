@@ -21,8 +21,8 @@
 #include "error.h"
 #include "irnodeset.h"
 
-#define foreach_out_irn(irn, i, outirn) for (i = get_irn_n_outs(irn) - 1;\
-	i >= 0 && (outirn = get_irn_out(irn, i)); --i)
+#define foreach_out_irn(irn, i, outirn) \
+	for (unsigned i = get_irn_n_outs(irn); i-- != 0 ? outirn = get_irn_out(irn, i), 1 : 0;)
 
 typedef struct walk_env_t {
 	ir_nodeset_t  processed;
@@ -110,7 +110,6 @@ static void analyse_switch1(switch_info_t *info)
 	case_data_t           *cases     = XMALLOCN(case_data_t, num_cases);
 	unsigned               c         = 0;
 	size_t                 e;
-	int                    i;
 	ir_node               *proj;
 
 	foreach_out_irn(switchn, i, proj) {
@@ -193,7 +192,6 @@ static void create_out_of_bounds_check(switch_info_t *info)
 	ir_node    *oob_cond;
 	ir_node    *in[1];
 	ir_node    *new_block;
-	int         i;
 	ir_node    *proj;
 	size_t      n_default_preds;
 
