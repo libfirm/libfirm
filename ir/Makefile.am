@@ -58,7 +58,6 @@ libfirm_la_SOURCES = \
 	ana/irmemory.c \
 	ana/irouts.c \
 	ana/irscc.c \
-	ana/irtypeinfo.c \
 	ana/trouts.c \
 	ana/vrp.c \
 	be/beabi.c \

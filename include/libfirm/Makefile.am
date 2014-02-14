@@ -40,7 +40,6 @@ libfirminclude_HEADERS = \
 	irouts.h \
 	irprintf.h \
 	irprog.h \
-	irtypeinfo.h \
 	irverify.h \
 	lowering.h \
 	nodeops.h \

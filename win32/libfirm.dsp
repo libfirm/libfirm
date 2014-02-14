@@ -291,10 +291,6 @@ SOURCE=..\ir\ana\irsimpletype.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\ir\ana\irtypeinfo.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\ir\ana\phiclass.c
 # End Source File
 # Begin Source File
@@ -2813,10 +2809,6 @@ SOURCE=..\include\libfirm\irprog.h
 # Begin Source File
 
 SOURCE=..\include\libfirm\irsimpletype.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\include\libfirm\irtypeinfo.h
 # End Source File
 # Begin Source File
 

@@ -97,8 +97,6 @@ void dump_irnode_to_file(FILE *const F, const ir_node *const n)
 	fprintf(F, " %ld\n", get_irn_node_nr(n));
 
 	fprintf(F, "  index: %u\n", get_irn_idx(n));
-	if (ir_get_dump_flags() & ir_dump_flag_analysed_types)
-		fprintf (F, "  addr:    %p\n", (void *)n);
 	fprintf(F, "  mode:    %s\n", get_mode_name(get_irn_mode(n)));
 	fprintf(F, "  visited: %lu\n", get_irn_visited(n));
 	ir_graph *irg = get_irn_irg(n);
@@ -333,11 +331,6 @@ void dump_irnode_to_file(FILE *const F, const ir_node *const n)
 
 	default:
 		break;
-	}
-
-	if (get_irg_typeinfo_state(get_irn_irg(n)) == ir_typeinfo_consistent  ||
-		get_irg_typeinfo_state(get_irn_irg(n)) == ir_typeinfo_inconsistent) {
-		ir_fprintf (F, "  Analysed type: %s\n", get_irn_typeinfo_type(n));
 	}
 }
 

@@ -168,7 +168,6 @@ static ir_dump_flags_t flags =
 	ir_dump_flag_ld_names |
 	ir_dump_flag_back_edges |
 	ir_dump_flag_consts_local |
-	ir_dump_flag_analysed_types |
 	ir_dump_flag_entities_in_hierarchy |
 	ir_dump_flag_number_label;
 
@@ -777,22 +776,6 @@ static void dump_node_mode(FILE *F, const ir_node *n)
 }
 
 /**
- * Dump the type of a node n to a file F if it's known.
- */
-static void dump_node_typeinfo(FILE *F, const ir_node *n)
-{
-	ir_graph *irg = get_irn_irg(n);
-
-	if (ir_get_dump_flags() & ir_dump_flag_analysed_types) {
-		if (get_irg_typeinfo_state(irg) == ir_typeinfo_consistent  ||
-			get_irg_typeinfo_state(irg) == ir_typeinfo_inconsistent) {
-			ir_type *tp = get_irn_typeinfo_type(n);
-			ir_fprintf(F, "[%+F]", tp);
-		}
-	}
-}
-
-/**
  * Dump additional node attributes of some nodes to a file F.
  */
 static void dump_node_nodeattr(FILE *F, const ir_node *n)
@@ -869,7 +852,6 @@ void dump_node_label(FILE *F, const ir_node *n)
 	fputs(" ", F);
 	dump_node_mode(F, n);
 	fprintf(F, " ");
-	dump_node_typeinfo(F, n);
 	dump_node_nodeattr(F, n);
 	if (flags & ir_dump_flag_number_label) {
 		fprintf(F, "%ld", get_irn_node_nr(n));

@@ -19,7 +19,6 @@
 #include "irnode.h"
 #include "iredgekinds.h"
 #include "irop.h"
-#include "irtypeinfo.h"
 #include "irmemory.h"
 #include "callgraph.h"
 #include "irprog.h"
@@ -496,7 +495,6 @@ struct ir_graph {
 	ir_graph_properties_t  properties;
 	ir_graph_constraints_t constraints;
 	op_pin_state           irg_pinned_state;  /**< Flag for status of nodes. */
-	ir_typeinfo_state      typeinfo_state;    /**< Validity of typeinfo. */
 	irg_callee_info_state  callee_info_state; /**< Validity of callee information. */
 
 	/* -- Helpers for walking/analysis of the graph -- */
@@ -589,7 +587,6 @@ struct ir_prog {
 
 	irg_callee_info_state callee_info_state; /**< Validity of callee information.
 	                                              Contains the lowest value or all irgs.  */
-	ir_typeinfo_state typeinfo_state;    /**< Validity of type information. */
 	inh_transitive_closure_state inh_trans_closure_state;  /**< State of transitive closure
 	                                                            of inheritance relations. */
 

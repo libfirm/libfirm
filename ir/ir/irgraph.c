@@ -119,8 +119,6 @@ static ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 	irg_set_nloc(res, n_loc);
 
 	res->irg_pinned_state    = op_pin_state_pinned;
-	res->typeinfo_state      = ir_typeinfo_none;
-	set_irp_typeinfo_inconsistent();           /* there is a new graph with typeinfo_none. */
 	res->callee_info_state   = irg_callee_info_none;
 	res->mem_disambig_opt    = aa_opt_inherited;
 

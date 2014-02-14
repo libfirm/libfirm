@@ -7012,37 +7012,6 @@
 					</FileConfiguration>
 				</File>
 				<File
-					RelativePath="..\ir\ana\irtypeinfo.c"
-					>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="DebugJTEST|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-				</File>
-				<File
 					RelativePath="..\ir\ana\Makefile.in"
 					>
 				</File>
@@ -7366,10 +7335,6 @@
 			</File>
 			<File
 				RelativePath="..\include\libfirm\irsimpletype.h"
-				>
-			</File>
-			<File
-				RelativePath="..\include\libfirm\irtypeinfo.h"
 				>
 			</File>
 			<File

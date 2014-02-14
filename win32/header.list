@@ -59,7 +59,6 @@ ir\ana\irdom.h
 ir\ana\cgana.h
 ir\ana\compute_loop_info.h
 ir\ana\irloop.h
-ir\ana\irtypeinfo.h
 ir\ana\irsimpletype.h
 ir\ana\callgraph.h
 ir\ana\rta.h

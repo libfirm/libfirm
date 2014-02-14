@@ -213,9 +213,6 @@
     <ClCompile Include="$(FirmRoot)\ir\ana\irsimpletype.c">
       <Filter>ir\ana</Filter>
     </ClCompile>
-    <ClCompile Include="$(FirmRoot)\ir\ana\irtypeinfo.c">
-      <Filter>ir\ana</Filter>
-    </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\rta.c">
       <Filter>ir\ana</Filter>
     </ClCompile>
@@ -1305,9 +1302,6 @@
     <ClInclude Include="$(FirmRoot)\include\libfirm\irsimpletype.h">
       <Filter>include\libfirm</Filter>
     </ClInclude>
-    <ClInclude Include="$(FirmRoot)\include\libfirm\irtypeinfo.h">
-      <Filter>include\libfirm</Filter>
-    </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\irvrfy.h">
       <Filter>include\libfirm</Filter>
     </ClInclude>
@@ -2040,9 +2034,6 @@
     <ClCompile Include="$(FirmRoot)\ir\ana\vrp.c">
       <Filter>ir\ana</Filter>
     </ClCompile>
-    <ClCompile Include="$(FirmRoot)\ir\ana\irtypeinfo.c">
-      <Filter>ir\ana</Filter>
-    </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\structure.c">
       <Filter>ir\ana</Filter>
     </ClCompile>
@@ -3094,9 +3085,6 @@
       <Filter>include\libfirm</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\nodeops.h">
-      <Filter>include\libfirm</Filter>
-    </ClInclude>
-    <ClInclude Include="$(FirmRoot)\include\libfirm\irtypeinfo.h">
       <Filter>include\libfirm</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\irverify.h">
@@ -3711,9 +3699,6 @@
     <ClCompile Include="$(FirmRoot)\ir\ana\vrp.c">
       <Filter>ir\ana</Filter>
     </ClCompile>
-    <ClCompile Include="$(FirmRoot)\ir\ana\irtypeinfo.c">
-      <Filter>ir\ana</Filter>
-    </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\structure.c">
       <Filter>ir\ana</Filter>
     </ClCompile>
@@ -4767,9 +4752,6 @@
     <ClInclude Include="$(FirmRoot)\include\libfirm\nodeops.h">
       <Filter>include\libfirm</Filter>
     </ClInclude>
-    <ClInclude Include="$(FirmRoot)\include\libfirm\irtypeinfo.h">
-      <Filter>include\libfirm</Filter>
-    </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\irverify.h">
       <Filter>include\libfirm</Filter>
     </ClInclude>
@@ -5374,9 +5356,6 @@
       <Filter>ir\ana</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\vrp.c">
-      <Filter>ir\ana</Filter>
-    </ClCompile>
-    <ClCompile Include="$(FirmRoot)\ir\ana\irtypeinfo.c">
       <Filter>ir\ana</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\structure.c">
@@ -6427,9 +6406,6 @@
       <Filter>include\libfirm</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\nodeops.h">
-      <Filter>include\libfirm</Filter>
-    </ClInclude>
-    <ClInclude Include="$(FirmRoot)\include\libfirm\irtypeinfo.h">
       <Filter>include\libfirm</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\irverify.h">

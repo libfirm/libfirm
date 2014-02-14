@@ -159,7 +159,6 @@
     <ClCompile Include="$(FirmRoot)\ir\ana\irmemory.c"/>
     <ClCompile Include="$(FirmRoot)\ir\ana\rta.c"/>
     <ClCompile Include="$(FirmRoot)\ir\ana\vrp.c"/>
-    <ClCompile Include="$(FirmRoot)\ir\ana\irtypeinfo.c"/>
     <ClCompile Include="$(FirmRoot)\ir\ana\structure.c"/>
     <ClCompile Include="$(FirmRoot)\ir\ana\trouts.c"/>
     <ClInclude Include="$(FirmRoot)\ir\ana\absgraph.h"/>
@@ -510,7 +509,6 @@
     <ClInclude Include="$(FirmRoot)\include\libfirm\irprintf.h"/>
     <ClInclude Include="$(FirmRoot)\include\libfirm\timing.h"/>
     <ClInclude Include="$(FirmRoot)\include\libfirm\nodeops.h"/>
-    <ClInclude Include="$(FirmRoot)\include\libfirm\irtypeinfo.h"/>
     <ClInclude Include="$(FirmRoot)\include\libfirm\irverify.h"/>
     <ClInclude Include="$(FirmRoot)\include\libfirm\lowering.h"/>
     <ClInclude Include="$(FirmRoot)\include\libfirm\typerep.h"/>

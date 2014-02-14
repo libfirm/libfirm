@@ -273,8 +273,6 @@ typedef enum {
 	ir_dump_flag_loops                 = 1U << 10,
 	/** if set (and backedge info is computed) dump backedges */
 	ir_dump_flag_back_edges            = 1U << 11,
-	/** dump type info from ana/irtypeinfo.h in the node labels */
-	ir_dump_flag_analysed_types        = 1U << 12,
 	/** dump backedges from iredges.h */
 	ir_dump_flag_iredges               = 1U << 13,
 	/** write node addresses into the vcg info */

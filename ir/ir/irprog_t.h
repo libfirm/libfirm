@@ -14,7 +14,6 @@
 
 #include "irprog.h"
 #include "irtypes.h"
-#include "irtypeinfo.h"
 #include "irmemory.h"
 
 #include "callgraph.h"
