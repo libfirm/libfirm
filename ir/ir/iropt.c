@@ -1803,6 +1803,10 @@ static ir_node *transform_bitop_chain(ir_node *const irn)
 				top_and = current;
 				break;
 
+			case iro_Add:
+				if (!is_Eor_Add(current))
+					goto chain_end;
+				/* FALLTHROUGH */
 			case iro_Eor:
 				/* (x ^ c) & keep ^ flip -> x & keep ^ (flip ^ (keep & c)) */
 				flip    = tarval_eor(flip, tarval_and(keep, c));
