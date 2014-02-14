@@ -693,11 +693,12 @@ static void process_block(ir_node *block)
 	DB((dbg, DBG_DECIDE, "Decide for %+F\n", block));
 
 	DB((dbg, DBG_WSETS, "Start workset for %+F:\n", block));
+#ifdef DEBUG_libfirm
 	ir_node *irn;
 	workset_foreach(ws, irn, iter) {
-		(void)irn;
 		DB((dbg, DBG_WSETS, "  %+F (%u)\n", irn, workset_get_time(ws, iter)));
 	}
+#endif
 
 	block_info_t *block_info = new_block_info(block);
 	block_info->start_workset = workset_clone(ws);
@@ -734,10 +735,11 @@ static void process_block(ir_node *block)
 	/* Remember end-workset for this block */
 	block_info->end_workset = workset_clone(ws);
 	DB((dbg, DBG_WSETS, "End workset for %+F:\n", block));
+#ifdef DEBUG_libfirm
 	workset_foreach(ws, irn, iter) {
-		(void)irn;
 		DB((dbg, DBG_WSETS, "  %+F (%u)\n", irn, workset_get_time(ws, iter)));
 	}
+#endif
 }
 
 /**
