@@ -133,7 +133,7 @@ int set_bitinfo(ir_node* const irn, ir_tarval* const z, ir_tarval* const o)
 	} else if (z == b->z && o == b->o) {
 		return 0;
 	} else {
-		/* Assert monotonicity. */
+		/* Assert ascending chain. */
 		assert(tarval_is_null(tarval_andnot(b->z, z)));
 		assert(tarval_is_null(tarval_andnot(o, b->o)));
 	}
