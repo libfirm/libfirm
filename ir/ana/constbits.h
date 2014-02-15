@@ -11,19 +11,19 @@ typedef struct bitinfo
 } bitinfo;
 
 /* Get analysis information for node irn */
-bitinfo* get_bitinfo(ir_node const* const irn);
+bitinfo* get_bitinfo(ir_node const* irn);
 
 /* Set analysis information for node irn */
-int set_bitinfo(ir_node* const irn, ir_tarval* const z, ir_tarval* const o);
+int set_bitinfo(ir_node* irn, ir_tarval* z, ir_tarval* o);
 
 /* Compute value range fixpoint aka which bits of value are constant zero/one.
  * The result is available via links to bitinfo*, allocated on client_obst. */
-void constbits_analyze(ir_graph* const irg, struct obstack *client_obst);
+void constbits_analyze(ir_graph* irg, struct obstack *client_obst);
 
 /* Clears the bit information for the given graph.
  *
  * This does not affect the obstack passed to constbits_analyze.
  */
-void constbits_clear(ir_graph* const irg);
+void constbits_clear(ir_graph* irg);
 
 #endif
