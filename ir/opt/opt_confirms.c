@@ -72,140 +72,6 @@ static tarval *compare_iv_dbg(const interval_t *l_iv, const interval_t *r_iv, ir
 
 #endif /* DEBUG_CONFIRM */
 
-/*
- * Check, if the value of a node is != 0.
- *
- * This is a often needed case, so we handle here Confirm
- * nodes too.
- */
-int value_not_zero(const ir_node *n, const ir_node **confirm)
-{
-#define RET_ON(x)  if (x) { *confirm = n; return 1; } break
-
-	ir_tarval *tv;
-	ir_mode *mode = get_irn_mode(n);
-	ir_relation relation;
-
-	*confirm = NULL;
-
-	/* there might be several Confirms one after other that form an interval */
-	for (;;) {
-		if (is_Minus(n)) {
-			/* we can safely skip Minus when checking for != 0 */
-			n = get_Minus_op(n);
-			continue;
-		}
-		if (! is_Confirm(n))
-			break;
-
-		/*
-		 * Note: A Confirm is never after a Const. So,
-		 * we simply can check the bound for being a Const
-		 * without the fear that is might be hidden by a further Confirm.
-		 */
-		tv = value_of(get_Confirm_bound(n));
-		if (tv == tarval_bad) {
-			n = get_Confirm_value(n);
-			continue;
-		}
-
-		relation = tarval_cmp(tv, get_mode_null(mode));
-
-		/*
-		 * Beware: C might by a NaN. It is not clear, what we should do
-		 * than. Of course a NaN is != 0, but we might use this function
-		 * to remove up Exceptions, and NaN's might generate Exception.
-		 * So, we do NOT handle NaNs here for safety.
-		 *
-		 * Note that only the C != 0 case need additional checking.
-		 */
-		switch (get_Confirm_relation(n)) {
-		case ir_relation_equal: /* n == C /\ C != 0 ==> n != 0 */
-			RET_ON(relation != ir_relation_equal && relation != ir_relation_unordered);
-		case ir_relation_less_greater: /* n != C /\ C == 0 ==> n != 0 */
-			RET_ON(relation == ir_relation_equal);
-		case ir_relation_less: /* n <  C /\ C <= 0 ==> n != 0 */
-			RET_ON(relation == ir_relation_less || relation == ir_relation_equal);
-		case ir_relation_less_equal: /* n <= C /\ C <  0 ==> n != 0 */
-			RET_ON(relation == ir_relation_less);
-		case ir_relation_greater_equal: /* n >= C /\ C >  0 ==> n != 0 */
-			RET_ON(relation == ir_relation_greater);
-		case ir_relation_greater: /* n >  C /\ C >= 0 ==> n != 0 */
-			RET_ON(relation == ir_relation_greater || relation == ir_relation_equal);
-		default:
-			break;
-		}
-		n = get_Confirm_value(n);
-	}
-	/* global entities are never NULL */
-	if (is_Address(n))
-		return true;
-
-	tv = value_of(n);
-	if (tv == tarval_bad)
-		return false;
-
-	relation = tarval_cmp(tv, get_mode_null(mode));
-
-	/* again, need check for NaN */
-	return (relation != ir_relation_equal) && (relation != ir_relation_unordered);
-
-#undef RET_ON
-}
-
-/*
- * Check, if the value of a node cannot represent a NULL pointer.
- *
- * - Sels are skipped
- * - An Address is NEVER a NULL pointer
- * - Confirms are evaluated
- */
-int value_not_null(const ir_node *n, const ir_node **confirm)
-{
-	ir_tarval *tv;
-
-	*confirm = NULL;
-
-	tv = value_of(n);
-	if (tarval_is_constant(tv) && ! tarval_is_null(tv))
-		return 1;
-
-	assert(mode_is_reference(get_irn_mode(n)));
-	/* skip all Sel nodes */
-	while (is_Sel(n)) {
-		n = get_Sel_ptr(n);
-	}
-	while (1) {
-		if (is_Proj(n)) { n = get_Proj_pred(n); continue; }
-		break;
-	}
-
-	if (is_Address(n)) {
-		/* global references are never NULL */
-		return 1;
-	} else if (n == get_irg_frame(get_irn_irg(n))) {
-		/* local references are never NULL */
-		return 1;
-	} else if (is_Alloc(n)) {
-		/* alloc never returns NULL (it throws an exception instead) */
-		return 1;
-	} else {
-		/* check for more Confirms */
-		for (; is_Confirm(n); n = get_Confirm_value(n)) {
-			if (get_Confirm_relation(n) == ir_relation_less_greater) {
-				ir_node   *bound = get_Confirm_bound(n);
-				ir_tarval *tv    = value_of(bound);
-
-				if (tarval_is_null(tv)) {
-					*confirm = n;
-					return 1;
-				}
-			}
-		}
-	}
-	return 0;
-}
-
 /**
  * construct an interval from a value
  *
@@ -659,7 +525,7 @@ check_null_case:
 					tv = relation == ir_relation_equal ? tarval_b_false : tarval_b_true;
 				}
 			} else {
-				if (value_not_zero(left, &dummy)) {
+				if (value_not_null(left, &dummy)) {
 					tv = relation == ir_relation_equal ? tarval_b_false : tarval_b_true;
 				}
 			}

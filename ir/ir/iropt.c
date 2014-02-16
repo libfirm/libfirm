@@ -112,6 +112,96 @@ void set_value_of_func(value_of_func func)
 		value_of_ptr = default_value_of;
 }
 
+int value_not_null(const ir_node *n, const ir_node **confirm)
+{
+	*confirm = NULL;
+
+	/* walk confirm sequence and look for matching confirms */
+	for (;;) {
+		/* -x != 0  =>  x != 0 */
+		if (is_Minus(n)) {
+			n = get_Minus_op(n);
+			continue;
+		}
+		/* we can ignore Sels: either the base pointer points to null or
+		 * if it doesn't then members addresses cannot be at NULL or we have
+		 * undefined behaviour because we are obviously not pointing to an
+		 * object. */
+		if (is_Sel(n)) {
+			n = get_Sel_ptr(n);
+			continue;
+		}
+
+		if (!is_Confirm(n))
+			break;
+
+		ir_node *bound = get_Confirm_bound(n);
+		if (!is_Const(bound)) {
+			n = get_Confirm_value(n);
+			continue;
+		}
+		ir_tarval  *tv       = get_Const_tarval(bound);
+		ir_mode    *mode     = get_irn_mode(n);
+		ir_tarval  *null     = get_mode_null(mode);
+		ir_relation relation = tarval_cmp(tv, null);
+
+		switch (get_Confirm_relation(n)) {
+		case ir_relation_equal: /* n == C && C != 0 ==> n != 0 */
+			if (relation != ir_relation_equal)
+				goto confirmed;
+			break;
+		case ir_relation_less_greater: /* n != C /\ C == 0 ==> n != 0 */
+			if (relation == ir_relation_equal)
+				goto confirmed;
+			break;
+		case ir_relation_less: /* n <  C /\ C <= 0 ==> n != 0 */
+			if (relation == ir_relation_less || relation == ir_relation_equal)
+				goto confirmed;
+			break;
+		case ir_relation_less_equal: /* n <= C /\ C <  0 ==> n != 0 */
+			if (relation == ir_relation_less)
+				goto confirmed;
+			break;
+		case ir_relation_greater_equal: /* n >= C /\ C >  0 ==> n != 0 */
+			if (relation == ir_relation_greater)
+				goto confirmed;
+			break;
+		case ir_relation_greater: /* n >  C /\ C >= 0 ==> n != 0 */
+			if (relation == ir_relation_greater
+			    || relation == ir_relation_equal) {
+confirmed:
+				*confirm = n;
+				return true;
+			}
+			break;
+		default:
+			break;
+		}
+		n = get_Confirm_value(n);
+	}
+
+	if (is_Const(n)) {
+		ir_tarval *tv = get_Const_tarval(n);
+		return !tarval_is_null(tv);
+	}
+
+	/* global entities are never NULL */
+	if (is_Address(n))
+		return true;
+
+	/* the frame pointer is never NULL */
+	if (is_Proj(n) && is_Start(get_Proj_pred(n))
+	    && get_Proj_proj(n) == pn_Start_P_frame_base)
+	    return true;
+
+	/* alloc never returns NULL (but throws an exception in the error case) */
+	if (is_Alloc(n))
+		return true;
+
+	/* for all we know the value may be null */
+	return false;
+}
+
 /**
  * Return the value of a Constant.
  */
@@ -624,7 +714,7 @@ static ir_tarval *do_computed_value_Div(const ir_node *div)
 
 	/* cannot optimize 0 / b = 0 because of NaN */
 	if (!mode_is_float(mode)) {
-		if (tarval_is_null(ta) && value_not_zero(b, &dummy))
+		if (tarval_is_null(ta) && value_not_null(b, &dummy))
 			return ta;  /* 0 / b == 0 if b != 0 */
 	}
 	ir_tarval *tb = value_of(b);
@@ -3011,7 +3101,7 @@ static ir_node *transform_node_Div(ir_node *n)
 		}
 
 		const ir_node *dummy;
-		if (a == b && value_not_zero(a, &dummy)) {
+		if (a == b && value_not_null(a, &dummy)) {
 			ir_graph *irg = get_irn_irg(n);
 			/* BEWARE: we can optimize a/a to 1 only if this cannot cause a exception */
 			value = new_r_Const(irg, get_mode_one(mode));
@@ -3124,7 +3214,7 @@ static ir_node *transform_node_Mod(ir_node *n)
 		ir_node       *b = get_Mod_right(n);
 		const ir_node *dummy;
 
-		if (a == b && value_not_zero(a, &dummy)) {
+		if (a == b && value_not_null(a, &dummy)) {
 			/* BEWARE: we can optimize a%a to 0 only if this cannot cause a exception */
 			value = create_zero_const(irg, mode);
 			DBG_OPT_CSTEVAL(n, value);
@@ -3686,7 +3776,7 @@ static ir_node *transform_node_Proj_Div(ir_node *proj)
 	const ir_node *b       = get_Div_right(div);
 	const ir_node *confirm;
 
-	if (value_not_zero(b, &confirm)) {
+	if (value_not_null(b, &confirm)) {
 		/* div(x, y) && y != 0 */
 		if (confirm == NULL) {
 			/* we are sure we have a Const != 0 */
@@ -3737,7 +3827,7 @@ static ir_node *transform_node_Proj_Mod(ir_node *proj)
 	ir_node       *b       = get_Mod_right(mod);
 	const ir_node *confirm;
 
-	if (value_not_zero(b, &confirm)) {
+	if (value_not_null(b, &confirm)) {
 		/* mod(x, y) && y != 0 */
 
 		if (confirm == NULL) {
@@ -6165,7 +6255,7 @@ static ir_node *transform_node_Load(ir_node *n)
 	}
 
 	const ir_node *confirm;
-	if (value_not_zero(ptr, &confirm) && confirm == NULL) {
+	if (value_not_null(ptr, &confirm) && confirm == NULL) {
 		set_irn_pinned(n, op_pin_state_floats);
 	}
 
@@ -6211,7 +6301,7 @@ static ir_node *transform_node_Store(ir_node *n)
 
 	ir_node       *ptr     = get_Store_ptr(n);
 	const ir_node *confirm;
-	if (value_not_zero(ptr, &confirm) && confirm == NULL) {
+	if (value_not_null(ptr, &confirm) && confirm == NULL) {
 		set_irn_pinned(n, op_pin_state_floats);
 	}
 	return n;

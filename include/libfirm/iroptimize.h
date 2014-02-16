@@ -555,28 +555,10 @@ FIRM_API void fixpoint_vrp(ir_graph*);
 FIRM_API void occult_consts(ir_graph*);
 
 /**
- * Checks if the value of a node is != 0.
- *
- * This is a often needed case, so we handle here Confirm
- * nodes too.
+ * Returns true if the value @p n is known not be zero/null.
  *
  * @param n        a node representing the value
  * @param confirm  if n is confirmed to be != 0, returns
- *                 the the Confirm-node, else NULL
- */
-FIRM_API int value_not_zero(const ir_node *n, const ir_node **confirm);
-
-/**
- * Checks if the value of a node cannot represent a NULL pointer.
- *
- * - If option sel_based_null_check_elim is enabled, all
- *   Sel nodes can be skipped.
- * - A Address is NEVER a NULL pointer
- * - A Const != NULL is NEVER a NULL pointer
- * - Confirms are evaluated
- *
- * @param n        a node representing the value
- * @param confirm  if n is confirmed to be != NULL, returns
  *                 the the Confirm-node, else NULL
  */
 FIRM_API int value_not_null(const ir_node *n, const ir_node **confirm);
