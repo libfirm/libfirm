@@ -2477,7 +2477,7 @@ static ir_node *transform_node_Add(ir_node *n)
 				n = new_rd_Mul(dbgi, block, a, two, mode);
 				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_A_A);
 				return n;
-			} else {
+			} else if (get_mode_arithmetic(mode) == irma_twos_complement) {
 				/* a + a -> a << 1 */
 				ir_node *const one = new_r_Const(irg, get_mode_one(mode_Iu));
 				n = new_rd_Shl(dbgi, block, a, one, mode);
