@@ -2876,8 +2876,10 @@ static ir_node *transform_node_Mul(ir_node *n)
 			return n;
 		}
 	}
-	if (get_mode_arithmetic(mode) == irma_ieee754
-	    || get_mode_arithmetic(mode) == irma_x86_extended_float) {
+	ir_graph *irg = get_irn_irg(n);
+	if ((get_mode_arithmetic(mode) == irma_ieee754
+	    || get_mode_arithmetic(mode) == irma_x86_extended_float)
+	    && irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_ARCH_DEP)) {
 		if (is_Const(a)) {
 			const ir_tarval *tv = get_Const_tarval(a);
 			if (tarval_get_exponent(tv) == 1 && tarval_zero_mantissa(tv)
