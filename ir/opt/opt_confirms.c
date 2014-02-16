@@ -364,13 +364,10 @@ static int is_transitive(ir_relation relation)
  * @param right    the right operand of the Cmp
  * @param relation the compare relation
  */
-ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left, ir_node *right, ir_relation relation)
+ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left,
+                                      ir_node *right, ir_relation relation)
 {
-	ir_node    *l_bound;
-	ir_relation l_relation, res_relation, neg_relation;
-	interval_t  l_iv, r_iv;
-	ir_tarval  *tv;
-
+	ir_tarval *tv;
 	if (is_Confirm(right)) {
 		/* we want the Confirm on the left side */
 		ir_node *t = right;
@@ -378,15 +375,14 @@ ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left, ir_node
 		left  = t;
 
 		relation = get_inversed_relation(relation);
-	} else if (! is_Confirm(left)) {
-		/* nothing more found */
-		tv = tarval_bad;
-		goto check_null_case;
-	}
+	} else if (!is_Confirm(left))
+		return tarval_bad;
 
 	/* ok, here at least left is a Confirm, right might be */
-	l_bound    = get_Confirm_bound(left);
-	l_relation = get_Confirm_relation(left);
+	ir_node    *l_bound    = get_Confirm_bound(left);
+	ir_relation l_relation = get_Confirm_relation(left);
+	interval_t  l_iv;
+	interval_t  r_iv;
 
 	if (is_Confirm(right)) {
 		/*
@@ -410,7 +406,7 @@ ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left, ir_node
 				 * We handle correctly cases with some <=/>= here
 				 */
 				if ((l_relation & ~ir_relation_equal) == (r_inc_relation & ~ir_relation_equal)) {
-					res_relation = (l_relation & ~ir_relation_equal) | (l_relation & r_inc_relation & ir_relation_equal);
+					ir_relation res_relation = (l_relation & ~ir_relation_equal) | (l_relation & r_inc_relation & ir_relation_equal);
 
 					if ((relation == res_relation) || ((relation & ~ir_relation_equal) == res_relation)) {
 						DBG_OUT_TR(l_relation, l_bound, r_relation, r_bound, relation, "true");
@@ -450,7 +446,7 @@ ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left, ir_node
 			 * We know that a CMP b and check for a ~CMP b
 			 */
 			else {
-				neg_relation = get_negated_relation(relation);
+				ir_relation neg_relation = get_negated_relation(relation);
 
 				if ((r_relation == neg_relation) || (r_relation == (neg_relation & ~ir_relation_equal))) {
 					DBG_OUT_R(r_relation, r_bound, left, relation, right, "false");
@@ -494,7 +490,7 @@ ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left, ir_node
 		 * We know that a CMP b and check for a ~CMP b
 		 */
 		else {
-			neg_relation = get_negated_relation(relation);
+			ir_relation neg_relation = get_negated_relation(relation);
 
 			if ((l_relation == neg_relation) || (l_relation == (neg_relation & ~ir_relation_equal))) {
 				DBG_OUT_L(l_relation, l_bound, left, relation, right, "false");
@@ -512,24 +508,6 @@ ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left, ir_node
 			get_interval(&l_iv, l_bound, l_relation),
 			get_interval_from_tv(&r_iv, tv),
 			relation);
-	} else {
-check_null_case:
-		/* check some other cases */
-		if ((relation == ir_relation_equal || relation == ir_relation_less_greater) &&
-			is_Const(right) && is_Const_null(right)) {
-			/* for == 0 or != 0 we have some special tools */
-			ir_mode       *mode = get_irn_mode(left);
-			const ir_node *dummy;
-			if (mode_is_reference(mode)) {
-				if (value_not_null(left, &dummy)) {
-					tv = relation == ir_relation_equal ? tarval_b_false : tarval_b_true;
-				}
-			} else {
-				if (value_not_null(left, &dummy)) {
-					tv = relation == ir_relation_equal ? tarval_b_false : tarval_b_true;
-				}
-			}
-		}
 	}
 
 	if (tv != tarval_bad)

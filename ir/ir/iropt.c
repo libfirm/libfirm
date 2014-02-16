@@ -671,6 +671,18 @@ static ir_tarval *compute_cmp(const ir_node *cmp)
 	if ((possible & ~relation) == ir_relation_false)
 		return tarval_b_true;
 
+	/* we have some special rules for == 0 and != 0 */
+	if ((relation == ir_relation_equal
+		 || relation == ir_relation_less_greater
+		 || (relation == ir_relation_greater && !mode_is_signed(get_irn_mode(left)))) &&
+		is_Const(right) && is_Const_null(right)) {
+		const ir_node *dummy;
+		if (value_not_null(left, &dummy)) {
+			return relation == ir_relation_equal
+			     ? tarval_b_false : tarval_b_true;
+		}
+	}
+
 	return computed_value_Cmp_Confirm(cmp, left, right, relation);
 }
 
