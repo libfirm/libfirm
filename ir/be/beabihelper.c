@@ -703,8 +703,10 @@ static void create_stores_for_type(ir_graph *irg, ir_type *type)
 		}
 	}
 
-	if (mem != initial_mem)
+	if (mem != initial_mem) {
 		edges_reroute_except(initial_mem, mem, first_store);
+		set_irg_initial_mem(irg, initial_mem);
+	}
 }
 
 void be_add_parameter_entity_stores(ir_graph *irg)
