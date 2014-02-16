@@ -2785,53 +2785,6 @@ restart:
 }
 
 /**
- * Several transformation done on n*n=2n bits mul.
- * These transformations must be done here because new nodes may be produced.
- */
-static ir_node *transform_node_Mul2n(ir_node *n, ir_mode *mode)
-{
-	ir_node   *oldn  = n;
-	ir_node   *a     = get_Mul_left(n);
-	ir_node   *b     = get_Mul_right(n);
-	ir_tarval *ta    = value_of(a);
-	ir_mode   *smode = get_irn_mode(a);
-
-	if (tarval_is_one(ta)) {
-		/* (L)1 * (L)b = (L)b */
-		ir_node *blk = get_nodes_block(n);
-		n = new_rd_Conv(get_irn_dbg_info(n), blk, b, mode);
-		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_1);
-		return n;
-	}
-	if (tarval_is_minus_one(ta)) {
-		/* (L)-1 * (L)b = (L)b */
-		ir_node *blk = get_nodes_block(n);
-		n = new_rd_Minus(get_irn_dbg_info(n), blk, b, smode);
-		n = new_rd_Conv(get_irn_dbg_info(n), blk, n, mode);
-		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_MUL_MINUS_1);
-		return n;
-	}
-
-	ir_tarval *tb = value_of(b);
-	if (tarval_is_one(tb)) {
-		/* (L)a * (L)1 = (L)a */
-		ir_node *blk = get_nodes_block(a);
-		n = new_rd_Conv(get_irn_dbg_info(n), blk, a, mode);
-		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_1);
-		return n;
-	}
-	if (tarval_is_minus_one(tb)) {
-		/* (L)a * (L)-1 = (L)-a */
-		ir_node *blk = get_nodes_block(n);
-		n = new_rd_Minus(get_irn_dbg_info(n), blk, a, smode);
-		n = new_rd_Conv(get_irn_dbg_info(n), blk, n, mode);
-		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_MUL_MINUS_1);
-		return n;
-	}
-	return n;
-}
-
-/**
  * Transform Mul(a,-1) into -a.
  * Do constant evaluation of Phi nodes.
  * Do architecture dependent optimizations on Mul nodes
@@ -2846,11 +2799,7 @@ static ir_node *transform_node_Mul(ir_node *n)
 
 	ir_mode *mode = get_irn_mode(n);
 	ir_node *a    = get_Mul_left(n);
-
-	if (mode != get_irn_mode(a))
-		return transform_node_Mul2n(n, mode);
-
-	ir_node *b = get_Mul_right(n);
+	ir_node *b    = get_Mul_right(n);
 	ir_node *c;
 	HANDLE_BINOP_PHI((eval_func) tarval_mul, a, b, c, mode);
 
