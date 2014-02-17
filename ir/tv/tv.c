@@ -637,8 +637,10 @@ ir_tarval *get_tarval_minus_one(ir_mode *mode)
 {
 	switch (get_mode_sort(mode)) {
 	case irms_reference:
-	case irms_internal_boolean:
 		return tarval_bad;
+
+	case irms_internal_boolean:
+		return tarval_b_true;
 
 	case irms_float_number:
 		return mode_is_signed(mode) ? new_tarval_from_double(-1.0, mode) : tarval_bad;

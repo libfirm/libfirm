@@ -63,6 +63,7 @@ static ir_mode *find_mode(const ir_mode *m)
 static void set_mode_values(ir_mode* mode)
 {
 	switch (get_mode_sort(mode)) {
+	case irms_internal_boolean:
 	case irms_reference:
 	case irms_int_number:
 	case irms_float_number:
@@ -76,15 +77,6 @@ static void set_mode_values(ir_mode* mode)
 		} else {
 			mode->all_one = tarval_bad;
 		}
-		break;
-
-	case irms_internal_boolean:
-		mode->min  = tarval_b_false;
-		mode->max  = tarval_b_true;
-		mode->null = tarval_b_false;
-		mode->one  = tarval_b_true;
-		mode->minus_one = tarval_bad;
-		mode->all_one = tarval_b_true;
 		break;
 
 	case irms_auxiliary:
