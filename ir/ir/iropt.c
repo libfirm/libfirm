@@ -1360,19 +1360,6 @@ static ir_node *equivalent_node_Mux(ir_node *n)
 	ir_node *n_t = get_Mux_true(n);
 	ir_node *n_f = get_Mux_false(n);
 
-	/* Mux(v, x, T) == x */
-	if (is_Unknown(n_f)) {
-		n = n_t;
-		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_EQ);
-		return n;
-	}
-	/* Mux(v, T, x) == x */
-	if (is_Unknown(n_t)) {
-		n = n_f;
-		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_EQ);
-		return n;
-	}
-
 	/* Mux(v, x, x) == x */
 	if (n_t == n_f) {
 		n = n_t;
@@ -5235,11 +5222,6 @@ static ir_node *transform_node_Conv(ir_node *n)
 			DBG_OPT_ALGSIM0(oldn, c, FS_OPT_CONST_PHI);
 			return c;
 		}
-	}
-
-	if (is_Unknown(a)) { /* Conv_A(Unknown_B) -> Unknown_A */
-		ir_graph *irg = get_irn_irg(n);
-		return new_r_Unknown(irg, mode);
 	}
 
 	if (mode_is_reference(mode) &&
