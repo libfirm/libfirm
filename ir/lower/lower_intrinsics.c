@@ -560,7 +560,7 @@ static ir_tarval *get_initializer_value(ir_initializer_t *const init, ir_mode *c
 		break;
 	}
 
-	return get_tarval_undefined();
+	return get_tarval_unknown();
 }
 
 static bool initializer_val_is_null(ir_initializer_t *init)

@@ -279,7 +279,7 @@ static ir_tarval *get_initializer_tarval(const ir_initializer_t *initializer)
 			return get_Const_tarval(node);
 		}
 	}
-	return get_tarval_undefined();
+	return get_tarval_unknown();
 }
 
 static bool initializer_is_string_const(const ir_initializer_t *initializer,

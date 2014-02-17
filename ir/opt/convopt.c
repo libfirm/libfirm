@@ -102,7 +102,9 @@ static int get_conv_costs(const ir_node *node, ir_mode *dest_mode)
 		return 0;
 
 	if (is_Const(node)) {
-		return conv_const_tv(node, dest_mode) == tarval_bad ? 1 : 0;
+		ir_tarval *conved = conv_const_tv(node, dest_mode);
+		return (conved != tarval_bad && conved != tarval_unknown)
+			? 0 : 1;
 	}
 
 	if (is_Conv(node) &&
@@ -179,7 +181,7 @@ static ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 
 	if (is_Const(node)) {
 		ir_tarval *tv = conv_const_tv(node, dest_mode);
-		if (tv == tarval_bad) {
+		if (tv == tarval_bad || tv == tarval_unknown) {
 			return place_conv(node, dest_mode);
 		} else {
 			return new_r_Const(irg, tv);

@@ -22,7 +22,7 @@
 
 /** If the expression referenced can be evaluated statically
  *  computed_value returns a tarval representing the result.
- *  Else returns tarval_bad. */
+ *  Else returns tarval_unknown. */
 FIRM_API ir_tarval *computed_value(const ir_node *n);
 
 /** Applies all optimizations to n that are expressible as a pattern

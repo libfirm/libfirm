@@ -154,7 +154,7 @@ typedef enum flt2int_result_t {
 	FLT2INT_OK,
 	FLT2INT_POSITIVE_OVERFLOW,
 	FLT2INT_NEGATIVE_OVERFLOW,
-	FLT2INT_UNKNOWN
+	FLT2INT_BAD
 } flt2int_result_t;
 
 /**

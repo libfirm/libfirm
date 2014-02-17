@@ -22,11 +22,9 @@
 
 #define get_tarval_mode(tv)      _get_tarval_mode(tv)
 #define get_tarval_bad()         _get_tarval_bad()
-#define get_tarval_undefined()   _get_tarval_undefined()
+#define get_tarval_unknown()     _get_tarval_unknown()
 #define get_tarval_b_false()     _get_tarval_b_false()
 #define get_tarval_b_true()      _get_tarval_b_true()
-#define get_tarval_unreachable() _get_tarval_unreachable()
-#define get_tarval_reachable()   _get_tarval_reachable()
 #define is_tarval(thing)         _is_tarval(thing)
 
 #define SC_BITS 4
@@ -89,9 +87,9 @@ static inline ir_tarval *_get_tarval_bad(void)
 	return tarval_bad;
 }
 
-static inline ir_tarval *_get_tarval_undefined(void)
+static inline ir_tarval *_get_tarval_unknown(void)
 {
-	return tarval_undefined;
+	return tarval_unknown;
 }
 
 static inline ir_tarval *_get_tarval_b_false(void)
@@ -102,16 +100,6 @@ static inline ir_tarval *_get_tarval_b_false(void)
 static inline ir_tarval *_get_tarval_b_true(void)
 {
 	return tarval_b_true;
-}
-
-static inline ir_tarval *_get_tarval_reachable(void)
-{
-	return tarval_reachable;
-}
-
-static inline ir_tarval *_get_tarval_unreachable(void)
-{
-	return tarval_unreachable;
 }
 
 static inline int _is_tarval(const void *thing)

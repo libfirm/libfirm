@@ -183,7 +183,10 @@ class Bad:
 	Phis to be shortened too for example). So instead of removing block inputs
 	they are set to Bad, and the actual removal is left to the control flow
 	optimization phase. Block, Phi, Tuple with only Bad inputs however are
-	replaced by Bad right away."""
+	replaced by Bad right away.
+
+	In the future we may use the Bad node to model poison values that arise
+	from undefined behaviour like reading uninitialized local variables in C."""
 	flags         = [ "start_block", "dump_noblock" ]
 	pinned        = "yes"
 	knownBlock    = True

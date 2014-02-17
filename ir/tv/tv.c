@@ -196,15 +196,15 @@ static ir_tarval *get_tarval_overflow(const void *value, size_t length,
 	return get_tarval(value, length, mode);
 }
 
-static ir_tarval reserved_tv[2];
-static ir_tarval nonconst_tvs[4];
+static ir_tarval tarval_b_false_obj;
+static ir_tarval tarval_b_true_obj;
+static ir_tarval tarval_bad_obj;
+static ir_tarval tarval_unknown_obj;
 
-ir_tarval *tarval_b_false     = &reserved_tv[0];
-ir_tarval *tarval_b_true      = &reserved_tv[1];
-ir_tarval *tarval_bad         = &nonconst_tvs[0];
-ir_tarval *tarval_undefined   = &nonconst_tvs[1];
-ir_tarval *tarval_reachable   = &nonconst_tvs[2];
-ir_tarval *tarval_unreachable = &nonconst_tvs[3];
+ir_tarval *const tarval_b_false = &tarval_b_false_obj;
+ir_tarval *const tarval_b_true  = &tarval_b_true_obj;
+ir_tarval *const tarval_bad     = &tarval_bad_obj;
+ir_tarval *const tarval_unknown = &tarval_unknown_obj;
 
 /**
  * get the float descriptor for given mode.
@@ -470,9 +470,9 @@ ir_tarval *(get_tarval_bad)(void)
 	return _get_tarval_bad();
 }
 
-ir_tarval *(get_tarval_undefined)(void)
+ir_tarval *(get_tarval_unknown)(void)
 {
-	return _get_tarval_undefined();
+	return _get_tarval_unknown();
 }
 
 ir_tarval *(get_tarval_b_false)(void)
@@ -483,16 +483,6 @@ ir_tarval *(get_tarval_b_false)(void)
 ir_tarval *(get_tarval_b_true)(void)
 {
 	return _get_tarval_b_true();
-}
-
-ir_tarval *(get_tarval_reachable)(void)
-{
-	return _get_tarval_reachable();
-}
-
-ir_tarval *(get_tarval_unreachable)(void)
-{
-	return _get_tarval_unreachable();
 }
 
 ir_tarval *get_tarval_max(ir_mode *mode)
@@ -629,8 +619,7 @@ ir_tarval *get_tarval_all_one(ir_mode *mode)
 
 int tarval_is_constant(const ir_tarval *tv)
 {
-	size_t const num_res = ARRAY_SIZE(nonconst_tvs);
-	return tv < &nonconst_tvs[0] || &nonconst_tvs[num_res] <= tv;
+	return tv != tarval_bad && tv != tarval_unknown;
 }
 
 ir_tarval *get_tarval_minus_one(ir_mode *mode)
@@ -708,36 +697,35 @@ int tarval_is_negative(const ir_tarval *a)
 	panic("invalid mode sort");
 }
 
-int tarval_is_null(const ir_tarval *a)
+int tarval_is_null(const ir_tarval *tv)
 {
-	return a != tarval_bad && a == get_mode_null(get_tarval_mode(a));
+	return tv != tarval_unknown && tv != tarval_bad
+	    && tv == get_mode_null(get_tarval_mode(tv));
 }
 
-int tarval_is_one(const ir_tarval *a)
+int tarval_is_one(const ir_tarval *tv)
 {
-	return a != tarval_bad && a == get_mode_one(get_tarval_mode(a));
+	return tv != tarval_unknown && tv != tarval_bad
+	    && tv == get_mode_one(get_tarval_mode(tv));
 }
 
 int tarval_is_all_one(const ir_tarval *tv)
 {
-	return tv != tarval_bad && tv == get_mode_all_one(get_tarval_mode(tv));
+	return tv != tarval_unknown && tv != tarval_bad
+	    && tv == get_mode_all_one(get_tarval_mode(tv));
 }
 
-int tarval_is_minus_one(const ir_tarval *a)
+int tarval_is_minus_one(const ir_tarval *tv)
 {
-	return a != tarval_bad && a == get_mode_minus_one(get_tarval_mode(a));
+	return tv != tarval_unknown && tv != tarval_bad
+	    && tv == get_mode_minus_one(get_tarval_mode(tv));
 }
 
 ir_relation tarval_cmp(const ir_tarval *a, const ir_tarval *b)
 {
-	if (a == tarval_bad || b == tarval_bad) {
-		panic("Comparison with tarval_bad");
-	}
-
-	if (a == tarval_undefined || b == tarval_undefined)
-		return ir_relation_false;
-
-	if (a->mode != b->mode)
+	if (a == tarval_unknown || b == tarval_unknown)
+		return ir_relation_true;
+	if (a == tarval_bad || b == tarval_bad || a->mode != b->mode)
 		return ir_relation_false;
 
 	/* Here the two tarvals are unequal and of the same mode */
@@ -797,7 +785,7 @@ ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *dst_mode)
 				break;
 			case FLT2INT_NEGATIVE_OVERFLOW:
 				return get_mode_min(dst_mode);
-			case FLT2INT_UNKNOWN:
+			case FLT2INT_BAD:
 				return tarval_bad;
 			case FLT2INT_OK:
 				return get_tarval(buffer, sc_value_length, dst_mode);
@@ -1332,12 +1320,8 @@ int tarval_snprintf(char *buf, size_t len, ir_tarval *tv)
 	default:
 		if (tv == tarval_bad)
 			return snprintf(buf, len, "<TV_BAD>");
-		else if (tv == tarval_undefined)
-			return snprintf(buf, len, "<TV_UNDEFINED>");
-		else if (tv == tarval_reachable)
-			return snprintf(buf, len, "<TV_REACHABLE>");
-		else if (tv == tarval_unreachable)
-			return snprintf(buf, len, "<TV_UNREACHABLE>");
+		else if (tv == tarval_unknown)
+			return snprintf(buf, len, "<TV_UNKNOWN>");
 		else
 			return snprintf(buf, len, "<TV_??""?>");
 	}
@@ -1382,12 +1366,8 @@ const char *ir_tarval_to_ascii(char *buf, size_t len, ir_tarval *tv)
 	case irms_auxiliary:
 		if (tv == tarval_bad)
 			return "bad";
-		else if (tv == tarval_undefined)
-			return "undefined";
-		else if (tv == tarval_reachable)
-			return "reachable";
-		else if (tv == tarval_unreachable)
-			return "unreachable";
+		else if (tv == tarval_unknown)
+			return "unknown";
 		break;
 	}
 	panic("invalid tarval");
@@ -1415,12 +1395,8 @@ ir_tarval *ir_tarval_from_ascii(const char *buf, ir_mode *mode)
 	case irms_auxiliary:
 		if (strcmp(buf, "bad") == 0)
 			return tarval_bad;
-		else if (strcmp(buf, "undefined") == 0)
-			return tarval_undefined;
-		else if (strcmp(buf, "reachable") == 0)
-			return tarval_reachable;
-		else if (strcmp(buf, "unreachable") == 0)
-			return tarval_unreachable;
+		else if (strcmp(buf, "unknown") == 0)
+			return tarval_unknown;
 		break;
 	}
 	panic("invalid mode for tarval_from_ascii");
@@ -1574,25 +1550,19 @@ void init_tarval_1(int support_quad_precision)
 
 void init_tarval_2(void)
 {
-	tarval_bad->kind          = k_tarval;
-	tarval_bad->mode          = mode_BAD;
+	tarval_bad->kind      = k_tarval;
+	tarval_bad->mode      = mode_BAD;
 
-	tarval_undefined->kind    = k_tarval;
-	tarval_undefined->mode    = mode_ANY;
+	tarval_unknown->kind  = k_tarval;
+	tarval_unknown->mode  = mode_ANY;
 
-	tarval_b_true->kind       = k_tarval;
-	tarval_b_true->mode       = mode_b;
-	tarval_b_true->value      = "\1";
+	tarval_b_true->kind   = k_tarval;
+	tarval_b_true->mode   = mode_b;
+	tarval_b_true->value  = "\1";
 
-	tarval_b_false->kind      = k_tarval;
-	tarval_b_false->mode      = mode_b;
-	tarval_b_false->value     = "\0";
-
-	tarval_unreachable->kind  = k_tarval;
-	tarval_unreachable->mode  = mode_X;
-
-	tarval_reachable->kind    = k_tarval;
-	tarval_reachable->mode    = mode_X;
+	tarval_b_false->kind  = k_tarval;
+	tarval_b_false->mode  = mode_b;
+	tarval_b_false->value = "\0";
 }
 
 void finish_tarval(void)

@@ -1195,7 +1195,7 @@ flt2int_result_t fc_flt2int(const fp_value *a, sc_word *result,
 	case FC_NORMAL:
 		if (a->sign && !result_signed) {
 			/* FIXME: for now we cannot convert this */
-			return FLT2INT_UNKNOWN;
+			return FLT2INT_BAD;
 		}
 
 		unsigned tgt_bits = result_bits - result_signed;
@@ -1233,7 +1233,7 @@ flt2int_result_t fc_flt2int(const fp_value *a, sc_word *result,
 	case FC_NAN:
 		break;
 	}
-	return FLT2INT_UNKNOWN;
+	return FLT2INT_BAD;
 }
 
 bool fc_is_exact(void)

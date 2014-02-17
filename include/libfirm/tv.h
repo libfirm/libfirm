@@ -271,45 +271,27 @@ FIRM_API int tarval_is_all_one(const ir_tarval *tv);
  */
 FIRM_API int tarval_is_constant(const ir_tarval *tv);
 
-/** The 'bad' tarval. */
-FIRM_API ir_tarval *tarval_bad;
+/** The 'bad' tarval. Representing "no value", do not confuse this with
+ * tarval_unknown. */
+FIRM_API ir_tarval *const tarval_bad;
 /** Returns the 'bad' tarval. */
 FIRM_API ir_tarval *get_tarval_bad(void);
 
-/** The 'undefined' tarval. */
-FIRM_API ir_tarval *tarval_undefined;
-/** Returns the 'undefined' tarval. */
-FIRM_API ir_tarval *get_tarval_undefined(void);
+/** The 'unknown' tarval. Representing an unknown (but legal) value, do
+ * not confuse this with tarval_bad. */
+FIRM_API ir_tarval *const tarval_unknown;
+/** Returns the 'unknown' tarval. */
+FIRM_API ir_tarval *get_tarval_unknown(void);
 
 /** The mode_b tarval 'false'. */
-FIRM_API ir_tarval *tarval_b_false;
+FIRM_API ir_tarval *const tarval_b_false;
 /** Returns the mode_b tarval 'false'. */
 FIRM_API ir_tarval *get_tarval_b_false(void);
 
 /** The mode_b tarval 'true'. */
-FIRM_API ir_tarval *tarval_b_true;
+FIRM_API ir_tarval *const tarval_b_true;
 /** Returns the mode_b tarval 'true'. */
 FIRM_API ir_tarval *get_tarval_b_true(void);
-
-/** The mode_X tarval 'unreachable'. */
-FIRM_API ir_tarval *tarval_unreachable;
-/** Returns the mode_X tarval 'unreachable'. */
-FIRM_API ir_tarval *get_tarval_unreachable(void);
-
-/** The mode_X tarval 'reachable'. */
-FIRM_API ir_tarval *tarval_reachable;
-/** Returns the mode_X tarval 'reachable'. */
-FIRM_API ir_tarval *get_tarval_reachable(void);
-
-/** The 'top' tarval. This is just another name for the 'undefined' tarval. */
-#define tarval_top          tarval_undefined
-/** Returns the 'top' tarval. */
-#define get_tarval_top()    get_tarval_undefined()
-
-/** The 'bottom' tarval. This is just another name for the 'bad' tarval. */
-#define tarval_bottom       tarval_bad
-/** Returns the 'bottom' tarval. */
-#define get_tarval_bottom() get_tarval_bad()
 
 /** Returns the maximum value of a given mode. */
 FIRM_API ir_tarval *get_tarval_max(ir_mode *mode);
@@ -343,8 +325,8 @@ FIRM_API ir_tarval *get_tarval_minus_inf(ir_mode *mode);
 
 /** Modes for handling integer overflows. */
 typedef enum tarval_int_overflow_mode_t {
-	TV_OVERFLOW_BAD,      /**< tarval module will return tarval_bad if a overflow occurs */
-	TV_OVERFLOW_WRAP,     /**< tarval module will overflow will be ignored, wrap around occurs */
+	TV_OVERFLOW_BAD,      /**< tarval module will return tarval_bad if an overflow occurs */
+	TV_OVERFLOW_WRAP,     /**< overflow will be ignored, wrap around occurs */
 	TV_OVERFLOW_SATURATE  /**< tarval module will saturate the overflow */
 } tarval_int_overflow_mode_t;
 

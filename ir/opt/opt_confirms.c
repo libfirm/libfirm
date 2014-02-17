@@ -82,11 +82,11 @@ static interval_t *get_interval_from_tv(interval_t *iv, ir_tarval *tv)
 {
 	ir_mode *mode = get_tarval_mode(tv);
 
-	if (tv == tarval_bad) {
+	if (tv == tarval_unknown) {
 		if (mode_is_float(mode)) {
 			/* NaN could be included which we cannot handle */
-			iv->min   = tarval_bad;
-			iv->max   = tarval_bad;
+			iv->min   = tarval_unknown;
+			iv->max   = tarval_unknown;
 			iv->flags = MIN_EXCLUDED | MAX_EXCLUDED;
 			return NULL;
 		} else {
@@ -100,8 +100,8 @@ static interval_t *get_interval_from_tv(interval_t *iv, ir_tarval *tv)
 
 	if (mode_is_float(mode) && tarval_is_nan(tv)) {
 		/* arg, we cannot handle NaN's. */
-		iv->min   = tarval_bad;
-		iv->max   = tarval_bad;
+		iv->min   = tarval_unknown;
+		iv->max   = tarval_unknown;
 		iv->flags = MIN_EXCLUDED | MAX_EXCLUDED;
 		return NULL;
 	}
@@ -129,22 +129,22 @@ static interval_t *get_interval(interval_t *iv, ir_node *bound, ir_relation rela
 	ir_mode   *mode = get_irn_mode(bound);
 	ir_tarval *tv   = value_of(bound);
 
-	if (tv == tarval_bad) {
+	if (tv == tarval_unknown) {
 		/* There is nothing we could do here. For integer
 		 * modes we could return [-oo, +oo], but there is
 		 * nothing we could deduct from such an interval.
 		 * So, speed things up and return unknown.
 		 */
-		iv->min   = tarval_bad;
-		iv->max   = tarval_bad;
+		iv->min   = tarval_unknown;
+		iv->max   = tarval_unknown;
 		iv->flags = MIN_EXCLUDED | MAX_EXCLUDED;
 		return NULL;
 	}
 
 	if (mode_is_float(mode) && tarval_is_nan(tv)) {
 		/* arg, we cannot handle NaN's. */
-		iv->min   = tarval_bad;
-		iv->max   = tarval_bad;
+		iv->min   = tarval_unknown;
+		iv->max   = tarval_unknown;
 		iv->flags = MIN_EXCLUDED | MAX_EXCLUDED;
 
 		return NULL;
@@ -203,13 +203,13 @@ static interval_t *get_interval(interval_t *iv, ir_node *bound, ir_relation rela
 		 * We do not handle UNORDERED, as a NaN
 		 * could be included in the interval.
 		 */
-		iv->min   = tarval_bad;
-		iv->max   = tarval_bad;
+		iv->min   = tarval_unknown;
+		iv->max   = tarval_unknown;
 		iv->flags = MIN_EXCLUDED | MAX_EXCLUDED;
 		return NULL;
 	}
 
-	if (iv->min != tarval_bad && iv->max != tarval_bad)
+	if (iv->min != tarval_unknown && iv->max != tarval_unknown)
 		return iv;
 	return NULL;
 }
@@ -223,7 +223,7 @@ static interval_t *get_interval(interval_t *iv, ir_node *bound, ir_relation rela
  *
  * @return
  *   tarval_b_true or tarval_b_false it it can be evaluated,
- *   tarval_bad else
+ *   tarval_unknown else
  */
 static ir_tarval *(compare_iv)(const interval_t *l_iv, const interval_t *r_iv, ir_relation relation)
 {
@@ -233,7 +233,7 @@ static ir_tarval *(compare_iv)(const interval_t *l_iv, const interval_t *r_iv, i
 
 	/* if one interval contains NaNs, we cannot evaluate anything */
 	if (! l_iv || ! r_iv)
-		return tarval_bad;
+		return tarval_unknown;
 
 	/* we can only check ordered relations */
 	if (relation & ir_relation_unordered) {
@@ -342,9 +342,9 @@ static ir_tarval *(compare_iv)(const interval_t *l_iv, const interval_t *r_iv, i
 		return tv_true;
 
 	default:
-		return tarval_bad;
+		return tarval_unknown;
 	}
-	return tarval_bad;
+	return tarval_unknown;
 }
 
 /**
@@ -376,7 +376,7 @@ ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left,
 
 		relation = get_inversed_relation(relation);
 	} else if (!is_Confirm(left))
-		return tarval_bad;
+		return tarval_unknown;
 
 	/* ok, here at least left is a Confirm, right might be */
 	ir_node    *l_bound    = get_Confirm_bound(left);
@@ -462,7 +462,7 @@ ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left,
 			get_interval(&r_iv, r_bound, r_relation),
 			relation);
 
-		if (tv != tarval_bad) {
+		if (tv != tarval_unknown) {
 			DBG_EVAL_CONFIRM(cmp);
 			return tv;
 		}
@@ -503,14 +503,14 @@ ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left,
 	/* now, only right == Const can help */
 	tv = value_of(right);
 
-	if (tv != tarval_bad) {
+	if (tv != tarval_unknown) {
 		tv = compare_iv(
 			get_interval(&l_iv, l_bound, l_relation),
 			get_interval_from_tv(&r_iv, tv),
 			relation);
 	}
 
-	if (tv != tarval_bad)
+	if (tv != tarval_unknown)
 		DBG_EVAL_CONFIRM(cmp);
 
 	return tv;
@@ -573,8 +573,8 @@ static tarval *compare_iv_dbg(const interval_t *l_iv, const interval_t *r_iv, ir
 {
 	tarval *tv = (compare_iv)(l_iv, r_iv, relation);
 
-	if (tv == tarval_bad)
-	return tv;
+	if (tv == tarval_unknown)
+		return tv;
 
 	ir_printf("In %e:\n", get_irg_entity(current_ir_graph));
 	print_iv_cmp(l_iv, r_iv, relation);

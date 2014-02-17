@@ -307,7 +307,7 @@ end:
 	} else { /* non-float mode */
 		tv = tarval_convert_to(tv, ia32_mode_gp);
 
-		if (tv == get_tarval_bad() || tv == get_tarval_undefined() ||
+		if (tv == get_tarval_bad() || tv == get_tarval_unknown() ||
 		    tv == NULL) {
 			panic("couldn't convert constant tarval (%+F)", node);
 		}

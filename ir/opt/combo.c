@@ -15,33 +15,13 @@
  * - supports Confirm nodes (handle them like Copies but do NOT remove them)
  * - let Cmp nodes calculate Top like all other data nodes: this would let
  *   Mux nodes to calculate Unknown instead of taking the true result
- * - let Cond(Top) always select FALSE/default: This is tricky. Nodes are only reevaluated
- *   IFF the predecessor changed its type. Because nodes are initialized with Top
- *   this never happens, let all Proj(Cond) be unreachable.
- *   We avoid this condition by the same way we work around Phi: whenever a Block
- *   node is placed on the list, place its Cond nodes (and because they are Tuple
- *   all its Proj-nodes either on the cprop list)
- *   Especially, this changes the meaning of Click's example:
- *
- *   int main() {
- *     int x;
- *
- *     if (x == 2)
- *       printf("x == 2\n");
- *     if (x == 3)
- *       printf("x == 3\n");
- *   }
- *
- *   Would print:
- *   x == 2
- *   x == 3
- *
- *   using Click's version while is silent with our.
+ * - Unknown nodes are represented as Bottom
  * - support for global congruences is implemented but not tested yet
  *
- * Note further that we use the terminology from Click's work here, which is different
- * in some cases from Firm terminology.  Especially, Click's type is a
- * Firm tarval/entity, nevertheless we call it type here for "maximum compatibility".
+ * Note further that we use the terminology from Click's work here, which is
+ * different in some cases from Firm terminology.  Especially, Click's type is a
+ * Firm tarval/entity, nevertheless we call it type here for "maximum
+ * compatibility".
  */
 #include <assert.h>
 
@@ -143,7 +123,6 @@ struct partition_t {
 	list_head    leader;          /**< The head of partition leader node list. */
 	list_head    follower;        /**< The head of partition follower node list. */
 	list_head    cprop;           /**< The head of partition.cprop list. */
-	list_head    cprop_X;         /**< The head of partition.cprop (Cond nodes and its Projs) list. */
 	partition_t *wl_next;         /**< Next entry in the work list if any. */
 	partition_t *touched_next;    /**< Points to the next partition in the touched set. */
 	partition_t *cprop_next;      /**< Points to the next partition in the cprop list. */
@@ -176,7 +155,6 @@ typedef struct environment_t {
 	bool            unopt_cf:1;    /**< If set, control flow is not optimized due to Unknown. */
 	/* options driving the optimizaion */
 	bool            commutative:1; /**< Set, if commutation nodes should be handled specially. */
-	bool            opt_unknown:1; /**< Set, if non-strict programs should be optimized. */
 #ifdef DEBUG_libfirm
 	partition_t    *dbg_list;      /**< List of all partitions. */
 #endif
@@ -195,9 +173,15 @@ static void set_irn_node(ir_node *irn, node_t *node)
 	set_irn_link(irn, node);
 }
 
-/* we do NOT use tarval_unreachable here, instead we use Top for this purpose */
-#undef tarval_unreachable
-#define tarval_unreachable tarval_top
+/* we use dataflow like names here */
+#define tarval_top    tarval_bad
+#define tarval_bottom tarval_unknown
+
+static inline bool is_reachable(const node_t *node)
+{
+	assert(is_Block(node->node));
+	return node->type.tv == tarval_bottom;
+}
 
 /** The debug module handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
@@ -207,9 +191,6 @@ DEBUG_ONLY(static const char *what_reason;)
 
 /** Next partition number. */
 DEBUG_ONLY(static unsigned part_nr = 0;)
-
-/** The tarval returned by Unknown nodes: set to either tarval_bad OR tarval_top. */
-static ir_tarval *tarval_UNKNOWN;
 
 /* forward */
 static node_t *identity(node_t *node);
@@ -465,7 +446,7 @@ static void verify_type(const lattice_elem_t old_type, node_t *node)
 		/* from Top down-to is always allowed */
 		return;
 	}
-	if (node->type.tv == tarval_bottom || node->type.tv == tarval_reachable) {
+	if (node->type.tv == tarval_bottom) {
 		/* bottom reached */
 		return;
 	}
@@ -641,7 +622,6 @@ static inline partition_t *new_partition(environment_t *env)
 	INIT_LIST_HEAD(&part->leader);
 	INIT_LIST_HEAD(&part->follower);
 	INIT_LIST_HEAD(&part->cprop);
-	INIT_LIST_HEAD(&part->cprop_X);
 #ifdef DEBUG_libfirm
 	part->dbg_next = env->dbg_list;
 	env->dbg_list  = part;
@@ -770,15 +750,8 @@ static void add_to_cprop(node_t *y, environment_t *env)
 {
 	/* Add y to y.partition.cprop. */
 	if (!y->on_cprop) {
-		partition_t *Y       = y->part;
-		ir_node     *irn     = y->node;
-		ir_node     *skipped = skip_Proj(irn);
-
-		/* place Conds and all its Projs on the cprop_X list */
-		if (is_Cond(skipped) || is_Switch(skipped))
-			list_add_tail(&y->cprop_list, &Y->cprop_X);
-		else
-			list_add_tail(&y->cprop_list, &Y->cprop);
+		partition_t *Y = y->part;
+		list_add_tail(&y->cprop_list, &Y->cprop);
 		y->on_cprop = true;
 
 		DB((dbg, LEVEL_3, "Add %+F to part%u.cprop\n", y->node, Y->nr));
@@ -970,7 +943,7 @@ static bool is_real_follower(const ir_node *irn, int input)
 		ir_node *block = get_nodes_block(irn);
 		node_t  *pred  = get_irn_node(get_Block_cfgpred(block, input));
 
-		if (pred->type.tv == tarval_unreachable)
+		if (pred->type.tv == tarval_top)
 			return false;
 		break;
 	}
@@ -1273,11 +1246,10 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env)
 static bool is_live_input(ir_node *phi, int i)
 {
 	if (i >= 0) {
-		ir_node        *block = get_nodes_block(phi);
-		ir_node        *pred  = get_Block_cfgpred(block, i);
-		lattice_elem_t  type  = get_node_type(pred);
-
-		return type.tv != tarval_unreachable;
+		const ir_node *block     = get_nodes_block(phi);
+		const ir_node *pred      = get_Block_cfgpred(block, i);
+		const node_t  *pred_node = get_irn_node(pred);
+		return pred_node->type.tv == tarval_bottom;
 	}
 	/* else it's the control input, always live */
 	return true;
@@ -1791,7 +1763,7 @@ static void default_compute(node_t *node)
 {
 	ir_node *irn = node->node;
 	if (get_irn_mode(irn) == mode_X)
-		node->type.tv = tarval_reachable;
+		node->type.tv = tarval_bottom; /* reachable */
 
 	/* if any of the data inputs have type top, the result is type top */
 	ir_node *op = skip_Proj(irn);
@@ -1820,20 +1792,20 @@ static void compute_Block(node_t *node)
 
 	if (block == get_irg_start_block(irg) || get_Block_entity(block) != NULL) {
 		/* start block and labelled blocks are always reachable */
-		node->type.tv = tarval_reachable;
+		node->type.tv = tarval_bottom; /* reachable */
 		return;
 	}
 
 	for (int i = get_Block_n_cfgpreds(block); i-- > 0; ) {
 		node_t *pred = get_irn_node(get_Block_cfgpred(block, i));
 
-		if (pred->type.tv == tarval_reachable) {
-			/* A block is reachable, if at least of predecessor is reachable. */
-			node->type.tv = tarval_reachable;
+		/* A block is reachable, if at least one predecessor is reachable. */
+		if (pred->type.tv == tarval_bottom) {
+			node->type.tv = tarval_bottom; /* reachable */
 			return;
 		}
 	}
-	node->type.tv = tarval_top;
+	node->type.tv = tarval_top; /* unreachable */
 }
 
 /**
@@ -1854,17 +1826,7 @@ static void compute_Bad(node_t *node)
  */
 static void compute_Unknown(node_t *node)
 {
-	/* While Unknown nodes should compute Top this is dangerous:
-	 * a Top input to a Cond would lead to BOTH control flows unreachable.
-	 * While this is correct in the given semantics, it would destroy the Firm
-	 * graph.
-	 *
-	 * It would be safe to compute Top IF it can be assured, that only Cmp
-	 * nodes are inputs to Conds. We check that first.
-	 * This is the way Frontends typically build Firm, but some optimizations
-	 * (jump threading for instance) might replace them by Phib's...
-	 */
-	node->type.tv = tarval_UNKNOWN;
+	node->type.tv = tarval_bottom;
 }
 
 /**
@@ -1896,28 +1858,23 @@ static void compute_Mux(node_t *node)
 	ir_tarval *f_tv   = f->type.tv;
 	ir_tarval *t_tv   = t->type.tv;
 
-	if (sel_tv == tarval_b_false) {
+	if (sel_tv == tarval_top) {
+		node->type.tv = tarval_top;
+	} else if (sel_tv == tarval_b_false) {
 		node->type.tv = f_tv;
-	} else if (sel_tv == tarval_b_true && tarval_UNKNOWN != tarval_top) {
+	} else if (sel_tv == tarval_b_true) {
 		node->type.tv = t_tv;
-	} else if (sel_tv == tarval_b_true || sel_tv == tarval_bottom) {
+	} else {
+		assert(sel_tv == tarval_bottom);
 		/* Meet of false and true operands. */
-		if (f_tv == tarval_top) {
+		if (f_tv == t_tv) {
+			node->type.tv = f_tv;
+		} else if (f_tv == tarval_top) {
 			node->type.tv = t_tv;
 		} else if (t_tv == tarval_top) {
 			node->type.tv = f_tv;
-		} else if (f_tv == t_tv) {
-			node->type.tv = f_tv;
 		} else {
 			node->type.tv = tarval_bottom;
-		}
-	} else {
-		assert(sel_tv == tarval_top);
-		if (tarval_UNKNOWN == tarval_top) {
-			/* any condition based on Top is "!=" */
-			node->type.tv = f_tv;
-		} else {
-			node->type.tv = tarval_top;
 		}
 	}
 }
@@ -1932,7 +1889,7 @@ static void compute_Return(node_t *node)
 	/* The Return node is NOT dead if it is in a reachable block.
 	 * This is already checked in compute(). so we can return
 	 * Reachable here. */
-	node->type.tv = tarval_reachable;
+	node->type.tv = tarval_bottom; /* reachable */
 }
 
 /**
@@ -1943,7 +1900,7 @@ static void compute_Return(node_t *node)
 static void compute_End(node_t *node)
 {
 	/* the End node is NOT dead of course */
-	node->type.tv = tarval_reachable;
+	node->type.tv = tarval_bottom; /* reachable */
 }
 
 /**
@@ -1997,7 +1954,7 @@ static void compute_Phi(node_t *node)
 	node_t  *block = get_irn_node(get_nodes_block(phi));
 
 	/* if a Phi is in a unreachable block, its type is TOP */
-	if (block->type.tv == tarval_unreachable) {
+	if (!is_reachable(block)) {
 		node->type.tv = tarval_top;
 		return;
 	}
@@ -2012,7 +1969,7 @@ static void compute_Phi(node_t *node)
 
 		node_t *pred_X = get_irn_node(get_Block_cfgpred(block->node, i));
 		/* also ignore values coming from unreachable control flow */
-		if (pred_X->type.tv == tarval_unreachable)
+		if (pred_X->type.tv == tarval_top)
 			continue;
 
 		if (pred->type.tv == tarval_bottom) {
@@ -2173,9 +2130,9 @@ static void compute_Cmp(node_t *node)
 	lattice_elem_t  b   = r->type;
 
 	if (a.tv == tarval_top || b.tv == tarval_top) {
-		node->type.tv = tarval_undefined;
+		node->type.tv = tarval_top;
 	} else if (is_con(a) && is_con(b)) {
-		default_compute(node);
+		node->type.tv = computed_value(cmp);
 
 	/*
 	 * BEWARE: a == a is NOT always True for floating Point values, as
@@ -2209,121 +2166,42 @@ static void compute_Cmp(node_t *node)
  */
 static void compute_Proj_Cond(node_t *node, ir_node *cond)
 {
-	/*
-	 * Note: it is crucial for the monotony that the Proj(Cond)
-	 * are evaluates after all predecessors of the Cond selector are
-	 * processed.
-	 * Example
-	 *
-	 * if (x != 0)
-	 *
-	 * Due to the fact that 0 is a const, the Cmp gets immediately
-	 * on the cprop list. It will be evaluated before x is evaluated,
-	 * might leaving x as Top. When later x is evaluated, the Cmp
-	 * might change its value.
-	 * BUT if the Cond is evaluated before this happens, Proj(Cond, FALSE)
-	 * gets R, and later changed to F if Cmp is evaluated to True!
-	 *
-	 * We prevent this by putting Conds in an extra cprop_X queue, which
-	 * gets evaluated after the cprop queue is empty.
-	 *
-	 * Note that this even happens with Click's original algorithm, if
-	 * Cmp(x, 0) is evaluated to True first and later changed to False
-	 * if x was Top first and later changed to a Const ...
-	 * It is unclear how Click solved that problem ...
-	 *
-	 * However, in rare cases even this does not help, if a Top reaches
-	 * a compare  through a Phi, than Proj(Cond) is evaluated changing
-	 * the type of the Phi to something other.
-	 * So, we take the last resort and bind the type to R once
-	 * it is calculated.
-	 *
-	 * (This might be even the way Click works around the whole problem).
-	 *
-	 * Finally, we may miss some optimization possibilities due to this:
-	 *
-	 * x = phi(Top, y)
-	 * if (x == 0)
-	 *
-	 * If Top reaches the if first, than we decide for != here.
-	 * If y later is evaluated to 0, we cannot revert this decision
-	 * and must live with both outputs enabled. If this happens,
-	 * we get an unresolved if (true) in the code ...
-	 *
-	 * In Click's version where this decision is done at the Cmp,
-	 * the Cmp is NOT optimized away than (if y evaluated to 1
-	 * for instance) and we get a if (1 == 0) here ...
-	 *
-	 * Both solutions are suboptimal.
-	 * At least, we could easily detect this problem and run
-	 * cf_opt() (or even combo) again :-(
-	 */
-	if (node->type.tv == tarval_reachable)
-		return;
-
-	ir_node *proj     = node->node;
-	long     pnc      = get_Proj_proj(proj);
 	ir_node *sel      = get_Cond_selector(cond);
 	node_t  *selector = get_irn_node(sel);
+	if (selector->type.tv == tarval_top) {
+		node->type.tv = tarval_top;
+		return;
+	}
 
+	ir_node *proj = node->node;
+	long     pnc  = get_Proj_proj(proj);
 	if (pnc == pn_Cond_true) {
 		if (selector->type.tv == tarval_b_false) {
-			node->type.tv = tarval_unreachable;
-		} else if (selector->type.tv == tarval_b_true) {
-			node->type.tv = tarval_reachable;
-		} else if (selector->type.tv == tarval_bottom) {
-			node->type.tv = tarval_reachable;
+			node->type.tv = tarval_top; /* unreachable */
 		} else {
-			assert(selector->type.tv == tarval_top);
-			if (tarval_UNKNOWN == tarval_top) {
-				/* any condition based on Top is "!=" */
-				node->type.tv = tarval_unreachable;
-			} else {
-				node->type.tv = tarval_unreachable;
-			}
+			node->type.tv = tarval_bottom; /* reachable */
 		}
 	} else {
 		assert(pnc == pn_Cond_false);
-
-		if (selector->type.tv == tarval_b_false) {
-			node->type.tv = tarval_reachable;
-		} else if (selector->type.tv == tarval_b_true) {
-			node->type.tv = tarval_unreachable;
-		} else if (selector->type.tv == tarval_bottom) {
-			node->type.tv = tarval_reachable;
+		if (selector->type.tv == tarval_b_true) {
+			node->type.tv = tarval_top; /* unreachable */
 		} else {
-			assert(selector->type.tv == tarval_top);
-			if (tarval_UNKNOWN == tarval_top) {
-				/* any condition based on Top is "!=" */
-				node->type.tv = tarval_reachable;
-			} else {
-				node->type.tv = tarval_unreachable;
-			}
+			node->type.tv = tarval_bottom; /* reachable */
 		}
 	}
 }
 
 static void compute_Proj_Switch(node_t *node, ir_node *switchn)
 {
-	/* see long comment in compute_Proj_Cond */
-	if (node->type.tv == tarval_reachable)
-		return;
-
-	ir_node *proj     = node->node;
-	long     pnc      = get_Proj_proj(proj);
 	ir_node *sel      = get_Switch_selector(switchn);
 	node_t  *selector = get_irn_node(sel);
-
-	if (selector->type.tv == tarval_bottom) {
-		node->type.tv = tarval_reachable;
-	} else if (selector->type.tv == tarval_top) {
-		if (tarval_UNKNOWN == tarval_top && pnc == pn_Switch_default) {
-			/* a switch based of Top is always "default" */
-			node->type.tv = tarval_reachable;
-		} else {
-			node->type.tv = tarval_unreachable;
-		}
+	if (selector->type.tv == tarval_top) {
+		node->type.tv = tarval_top; /* unreachable */
+	} else if (selector->type.tv == tarval_bottom) {
+		node->type.tv = tarval_bottom; /* reachable */
 	} else {
+		ir_node               *proj      = node->node;
+		long                   pnc       = get_Proj_proj(proj);
 		long                   value     = get_tarval_long(selector->type.tv);
 		const ir_switch_table *table     = get_Switch_table(switchn);
 		size_t                 n_entries = ir_switch_table_get_n_entries(table);
@@ -2336,7 +2214,7 @@ static void compute_Proj_Switch(node_t *node, ir_node *switchn)
 			if (min == max) {
 				if (selector->type.tv == min) {
 					node->type.tv = entry->pn == pnc
-						? tarval_reachable : tarval_unreachable;
+						? tarval_bottom : tarval_top;
 					return;
 				}
 			} else {
@@ -2344,7 +2222,7 @@ static void compute_Proj_Switch(node_t *node, ir_node *switchn)
 				long maxval = get_tarval_long(max);
 				if (minval <= value && value <= maxval) {
 					node->type.tv = entry->pn == pnc
-						? tarval_reachable : tarval_unreachable;
+						? tarval_bottom : tarval_top;
 					return;
 				}
 			}
@@ -2352,7 +2230,7 @@ static void compute_Proj_Switch(node_t *node, ir_node *switchn)
 
 		/* no entry matched: default */
 		node->type.tv
-			= pnc == pn_Switch_default ? tarval_reachable : tarval_unreachable;
+			= pnc == pn_Switch_default ? tarval_bottom : tarval_top;
 	}
 }
 
@@ -2366,7 +2244,7 @@ static void compute_Proj(node_t *node)
 	ir_node *proj  = node->node;
 	node_t  *block = get_irn_node(get_nodes_block(proj));
 
-	if (block->type.tv == tarval_unreachable) {
+	if (!is_reachable(block)) {
 		/* a Proj in an unreachable Block stays Top */
 		node->type.tv = tarval_top;
 		return;
@@ -2386,7 +2264,7 @@ static void compute_Proj(node_t *node)
 		case iro_Start:
 			/* the Proj_X from the Start is always reachable.
 			   However this is already handled at the top. */
-			node->type.tv = tarval_reachable;
+			node->type.tv = tarval_bottom;
 			return;
 		case iro_Cond:
 			compute_Proj_Cond(node, pred);
@@ -2454,7 +2332,7 @@ static void compute(node_t *node)
 	if (!is_Block(irn) && get_irn_pinned(skip_Proj(irn)) == op_pin_state_pinned) {
 		node_t *block = get_irn_node(get_nodes_block(irn));
 
-		if (block->type.tv == tarval_unreachable) {
+		if (!is_reachable(block)) {
 			node->type.tv = tarval_top;
 			return;
 		}
@@ -2484,16 +2362,15 @@ static node_t *identity_Phi(node_t *node)
 
 	for (int i = get_Phi_n_preds(phi); i-- > 0; ) {
 		node_t *pred_X = get_irn_node(get_Block_cfgpred(block, i));
+		if (pred_X->type.tv == tarval_top)
+			continue;
 
-		if (pred_X->type.tv == tarval_reachable) {
-			node_t *pred = get_irn_node(get_Phi_pred(phi, i));
-
-			if (n_part == NULL)
-				n_part = pred;
-			else if (n_part->part != pred->part) {
-				/* incongruent inputs, not a follower */
-				return node;
-			}
+		node_t *pred = get_irn_node(get_Phi_pred(phi, i));
+		if (n_part == NULL)
+			n_part = pred;
+		else if (n_part->part != pred->part) {
+			/* incongruent inputs, not a follower */
+			return node;
 		}
 	}
 	/* if n_part is NULL here, all inputs path are dead, the Phi computes
@@ -2726,26 +2603,11 @@ static void propagate(environment_t *env)
 		node_t   *fallen   = NULL;
 		unsigned  n_fallen = 0;
 		for (;;) {
-			int cprop_empty   = list_empty(&X->cprop);
-			int cprop_X_empty = list_empty(&X->cprop_X);
-
-			if (cprop_empty && cprop_X_empty) {
-				/* both cprop lists are empty */
+			if (list_empty(&X->cprop))
 				break;
-			}
 
 			/* remove the first Node x from X.cprop */
-			node_t *x;
-			if (cprop_empty) {
-				/* Get a node from the cprop_X list only if
-				 * all data nodes are processed.
-				 * This ensures, that all inputs of the Cond
-				 * predecessor are processed if its type is still Top.
-				 */
-				x = list_entry(X->cprop_X.next, node_t, cprop_list);
-			} else {
-				x = list_entry(X->cprop.next, node_t, cprop_list);
-			}
+			node_t *x = list_entry(X->cprop.next, node_t, cprop_list);
 
 			//assert(x->part == X);
 			list_del(&x->cprop_list);
@@ -2893,8 +2755,8 @@ static bool only_one_reachable_proj(ir_node *n)
 		if (get_irn_mode(proj) != mode_X)
 			continue;
 
-		node_t *node = get_irn_node(proj);
-		if (node->type.tv == tarval_reachable) {
+		const node_t *node = get_irn_node(proj);
+		if (node->type.tv == tarval_bottom) {
 			if (++k > 1)
 				return false;
 		}
@@ -2938,7 +2800,7 @@ static void apply_cf(ir_node *block, void *ctx)
 	node_t        *node = get_irn_node(block);
 	int            n    = get_Block_n_cfgpreds(block);
 
-	if (node->type.tv == tarval_unreachable) {
+	if (!is_reachable(node)) {
 		env->modified = true;
 
 		for (int i = n; i-- > 0; ) {
@@ -2952,7 +2814,7 @@ static void apply_cf(ir_node *block, void *ctx)
 					if (pred_bl->flagged == 0) {
 						pred_bl->flagged = 3;
 
-						if (pred_bl->type.tv == tarval_reachable) {
+						if (is_reachable(pred_bl)) {
 							/*
 							 * We will remove an edge from block to its pred.
 							 * This might leave the pred block as an endless loop
@@ -2995,7 +2857,7 @@ static void apply_cf(ir_node *block, void *ctx)
 		ir_node *pred = get_Block_cfgpred(block, i);
 		node_t  *node = get_irn_node(pred);
 
-		if (node->type.tv == tarval_reachable) {
+		if (node->type.tv == tarval_bottom) {
 			in_X[k++] = pred;
 		} else {
 			DB((dbg, LEVEL_1, "Removing dead input %d from %+F (%+F)\n", i, block, pred));
@@ -3007,7 +2869,7 @@ static void apply_cf(ir_node *block, void *ctx)
 					if (!is_Bad(pred_bl->node) && pred_bl->flagged == 0) {
 						pred_bl->flagged = 3;
 
-						if (pred_bl->type.tv == tarval_reachable) {
+						if (is_reachable(pred_bl)) {
 							/*
 							 * We will remove an edge from block to its pred.
 							 * This might leave the pred block as an endless loop
@@ -3046,7 +2908,7 @@ static void apply_cf(ir_node *block, void *ctx)
 			for (int i = 0; i < n; ++i) {
 				node_t *pred = get_irn_node(get_Block_cfgpred(block, i));
 
-				if (pred->type.tv == tarval_reachable) {
+				if (pred->type.tv == tarval_bottom) {
 					ins[j++] = get_Phi_pred(phi, i);
 				}
 			}
@@ -3132,7 +2994,7 @@ static bool all_users_are_dead(const ir_node *irn)
 		const ir_node *succ  = get_irn_out(irn, i);
 		const node_t  *block = get_irn_node(get_nodes_block(succ));
 
-		if (block->type.tv == tarval_unreachable) {
+		if (!is_reachable(block)) {
 			/* block is unreachable */
 			continue;
 		}
@@ -3156,7 +3018,7 @@ static void find_kept_memory(ir_node *irn, void *ctx)
 		return;
 
 	node_t *block = get_irn_node(get_nodes_block(irn));
-	if (block->type.tv == tarval_unreachable)
+	if (!is_reachable(block))
 		return;
 
 	node_t *node = get_irn_node(irn);
@@ -3183,7 +3045,7 @@ static void apply_result(ir_node *irn, void *ctx)
 		node_t        *node  = get_irn_node(irn);
 		node_t        *block = get_irn_node(get_nodes_block(irn));
 
-		if (block->type.tv == tarval_unreachable) {
+		if (!is_reachable(block)) {
 			ir_graph *irg  = get_irn_irg(irn);
 			ir_mode  *mode = get_irn_mode(node->node);
 			ir_node  *bad  = new_r_Bad(irg, mode);
@@ -3354,7 +3216,7 @@ static void apply_end(ir_node *end, environment_t *env)
 		}
 
 		node_t *node = get_irn_node(block);
-		if (node->type.tv != tarval_unreachable)
+		if (is_reachable(node))
 			in[j++] = ka;
 	}
 	if (j != n) {
@@ -3451,7 +3313,6 @@ void combo(ir_graph *irg)
 	env.unopt_cf       = false;
 	/* options driving the optimization */
 	env.commutative    = true;
-	env.opt_unknown    = true;
 
 	/* we have our own value_of function */
 	set_value_of_func(get_node_tarval);
@@ -3460,11 +3321,6 @@ void combo(ir_graph *irg)
 	DEBUG_ONLY(part_nr = 0;)
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
-
-	if (env.opt_unknown)
-		tarval_UNKNOWN = tarval_top;
-	else
-		tarval_UNKNOWN = tarval_bad;
 
 	/* create the initial partition and place it on the work list */
 	env.initial = new_partition(&env);

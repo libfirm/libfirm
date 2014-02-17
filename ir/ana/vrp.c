@@ -43,8 +43,8 @@ static vrp_attr *vrp_get_or_set_info(ir_vrp_info *info, const ir_node *node)
 		attr->range_type   = VRP_UNDEFINED;
 		attr->bits_set     = get_mode_null(mode);
 		attr->bits_not_set = get_mode_all_one(mode);
-		attr->range_bottom = get_tarval_top();
-		attr->range_top    = get_tarval_top();
+		attr->range_bottom = tarval_bad;
+		attr->range_top    = tarval_bad;
 
 		ir_nodemap_insert(&info->infos, node, attr);
 	}
