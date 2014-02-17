@@ -81,6 +81,7 @@ init_rest:
 
 	case irms_auxiliary:
 	case irms_data:
+		mode->all_one   = tarval_bad;
 		mode->min       = tarval_bad;
 		mode->max       = tarval_bad;
 		mode->null      = tarval_bad;
