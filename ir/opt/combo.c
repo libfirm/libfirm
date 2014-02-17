@@ -1794,7 +1794,7 @@ static void default_compute(node_t *node)
 		node->type.tv = tarval_reachable;
 
 	/* if any of the data inputs have type top, the result is type top */
-	ir_node *op  = skip_Proj(irn);
+	ir_node *op = skip_Proj(irn);
 	if (!is_memop(op) || is_Mod(op) || is_Div(op)) {
 		foreach_irn_in_r(irn, i, pred) {
 			node_t *const p = get_irn_node(pred);
@@ -2005,16 +2005,16 @@ static void compute_Phi(node_t *node)
 	/* Phi implements the Meet operation */
 	lattice_elem_t type = { .tv = tarval_top };
 	for (int i = get_Phi_n_preds(phi); i-- > 0; ) {
-		node_t *pred   = get_irn_node(get_Phi_pred(phi, i));
-		node_t *pred_X = get_irn_node(get_Block_cfgpred(block->node, i));
-
-		if (pred_X->type.tv == tarval_unreachable || pred->type.tv == tarval_top) {
-			/* ignore TOP inputs: We must check here for unreachable blocks,
-			   because Firm constants live in the Start Block are NEVER Top.
-			   Else, a Phi (1,2) will produce Bottom, even if the 2 for instance
-			   comes from a unreachable input. */
+		node_t *pred = get_irn_node(get_Phi_pred(phi, i));
+		/* ignore TOP inputs */
+		if (pred->type.tv == tarval_top)
 			continue;
-		}
+
+		node_t *pred_X = get_irn_node(get_Block_cfgpred(block->node, i));
+		/* also ignore values coming from unreachable control flow */
+		if (pred_X->type.tv == tarval_unreachable)
+			continue;
+
 		if (pred->type.tv == tarval_bottom) {
 			node->type.tv = tarval_bottom;
 			return;
@@ -2038,11 +2038,11 @@ static void compute_Phi(node_t *node)
  */
 static void compute_Add(node_t *node)
 {
-	ir_node        *add  = node->node;
-	node_t         *l    = get_irn_node(get_Add_left(add));
-	node_t         *r    = get_irn_node(get_Add_right(add));
-	lattice_elem_t  a    = l->type;
-	lattice_elem_t  b    = r->type;
+	ir_node        *add = node->node;
+	node_t         *l   = get_irn_node(get_Add_left(add));
+	node_t         *r   = get_irn_node(get_Add_right(add));
+	lattice_elem_t  a   = l->type;
+	lattice_elem_t  b   = r->type;
 
 	if (a.tv == tarval_top || b.tv == tarval_top) {
 		node->type.tv = tarval_top;
@@ -2101,7 +2101,7 @@ static void compute_Sub(node_t *node)
 	           (!mode_is_float(get_irn_mode(l->node)))) {
 		/*
 		 * BEWARE: a - a is NOT always 0 for floating Point values, as
-		 * NaN op NaN = NaN, so we must check this here.
+		 * NaN - NaN = NaN, so we must check this here.
 		 */
 		ir_mode   *mode = get_irn_mode(sub);
 		ir_tarval *tv   = get_mode_null(mode);
