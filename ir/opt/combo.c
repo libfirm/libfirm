@@ -1879,6 +1879,50 @@ static void compute_Jmp(node_t *node)
 }
 
 /**
+ * (Re-)compute the type for a Mux.
+ *
+ * This should match the value computed for the Phi
+ * that was if-converted to the Mux.
+ *
+ * @param node  the node
+ */
+static void compute_Mux(node_t *node)
+{
+	ir_node   *mux    = node->node;
+	node_t    *sel    = get_irn_node(get_Mux_sel(mux));
+	node_t    *f      = get_irn_node(get_Mux_false(mux));
+	node_t    *t      = get_irn_node(get_Mux_true(mux));
+	ir_tarval *sel_tv = sel->type.tv;
+	ir_tarval *f_tv   = f->type.tv;
+	ir_tarval *t_tv   = t->type.tv;
+
+	if (sel_tv == tarval_b_false) {
+		node->type.tv = f_tv;
+	} else if (sel_tv == tarval_b_true && tarval_UNKNOWN != tarval_top) {
+		node->type.tv = t_tv;
+	} else if (sel_tv == tarval_b_true || sel_tv == tarval_bottom) {
+		/* Meet of false and true operands. */
+		if (f_tv == tarval_top) {
+			node->type.tv = t_tv;
+		} else if (t_tv == tarval_top) {
+			node->type.tv = f_tv;
+		} else if (f_tv == t_tv) {
+			node->type.tv = f_tv;
+		} else {
+			node->type.tv = tarval_bottom;
+		}
+	} else {
+		assert(sel_tv == tarval_top);
+		if (tarval_UNKNOWN == tarval_top) {
+			/* any condition based on Top is "!=" */
+			node->type.tv = f_tv;
+		} else {
+			node->type.tv = tarval_top;
+		}
+	}
+}
+
+/**
  * (Re-)compute the type for the Return node.
  *
  * @param node  the node
@@ -3346,6 +3390,7 @@ static void set_compute_functions(void)
 	set_compute_func(op_End,     compute_End);
 	set_compute_func(op_Eor,     compute_Eor);
 	set_compute_func(op_Jmp,     compute_Jmp);
+	set_compute_func(op_Mux,     compute_Mux);
 	set_compute_func(op_Offset,  compute_Offset);
 	set_compute_func(op_Phi,     compute_Phi);
 	set_compute_func(op_Proj,    compute_Proj);
