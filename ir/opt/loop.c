@@ -1520,14 +1520,13 @@ static void copy_loop(entry_edge *cur_loop_outs, int copies)
  * using be_block as supplier of backedge informations. */
 static ir_node *clone_phis_sans_bes(ir_node *phi, ir_node *be_block, ir_node *dest_block)
 {
-	ir_node **ins;
 	int c = 0;
 	ir_node *newphi;
 
 	int const arity = get_Phi_n_preds(phi);
 	assert(arity == get_Block_n_cfgpreds(be_block));
 
-	ins = NEW_ARR_F(ir_node *, arity);
+	ir_node **const ins = ALLOCAN(ir_node*, arity);
 	foreach_irn_in(phi, i, pred) {
 		if (! is_own_backedge(be_block, i)) {
 			ins[c++] = pred;
