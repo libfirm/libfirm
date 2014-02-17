@@ -909,13 +909,6 @@ static void dump_node_vcgattr(FILE *F, const ir_node *node, const ir_node *local
 	case iro_Pin:
 		print_vcg_color(F, ird_color_memory);
 		break;
-	case iro_Address:
-	case iro_Align:
-	case iro_Const:
-	case iro_Offset:
-	case iro_Size:
-		print_vcg_color(F, ird_color_const);
-		break;
 	case iro_Proj:
 		print_vcg_color(F, ird_color_proj);
 		break;
