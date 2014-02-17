@@ -437,12 +437,11 @@ static int node_cmp_attr_ASM(const ir_node *a, const ir_node *b)
 	return node_cmp_exception(a, b);
 }
 
-/** Compares the inexistent attributes of two Dummy nodes. */
-static int node_cmp_attr_Dummy(const ir_node *a, const ir_node *b)
+/** Use this for nodes that should not CSE. */
+static int node_cmp_attr_unequal(const ir_node *a, const ir_node *b)
 {
 	(void) a;
 	(void) b;
-	/* Dummy nodes never equal by definition */
 	return 1;
 }
 
@@ -599,9 +598,9 @@ void firm_init_op(void)
 	ir_init_opcodes();
 	be_init_op();
 
+	set_op_cmp_attr(op_ASM,     node_cmp_attr_ASM);
 	set_op_cmp_attr(op_Address, node_cmp_attr_entconst);
 	set_op_cmp_attr(op_Align,   node_cmp_attr_typeconst);
-	set_op_cmp_attr(op_ASM,     node_cmp_attr_ASM);
 	set_op_cmp_attr(op_Alloc,   node_cmp_attr_Alloc);
 	set_op_cmp_attr(op_Builtin, node_cmp_attr_Builtin);
 	set_op_cmp_attr(op_Call,    node_cmp_attr_Call);
@@ -610,7 +609,7 @@ void firm_init_op(void)
 	set_op_cmp_attr(op_Const,   node_cmp_attr_Const);
 	set_op_cmp_attr(op_CopyB,   node_cmp_attr_CopyB);
 	set_op_cmp_attr(op_Div,     node_cmp_attr_Div);
-	set_op_cmp_attr(op_Dummy,   node_cmp_attr_Dummy);
+	set_op_cmp_attr(op_Dummy,   node_cmp_attr_unequal);
 	set_op_cmp_attr(op_Load,    node_cmp_attr_Load);
 	set_op_cmp_attr(op_Mod,     node_cmp_attr_Mod);
 	set_op_cmp_attr(op_Offset,  node_cmp_attr_entconst);
@@ -619,6 +618,7 @@ void firm_init_op(void)
 	set_op_cmp_attr(op_Sel,     node_cmp_attr_Sel);
 	set_op_cmp_attr(op_Size,    node_cmp_attr_typeconst);
 	set_op_cmp_attr(op_Store,   node_cmp_attr_Store);
+	set_op_cmp_attr(op_Unknown, node_cmp_attr_unequal);
 
 	set_op_hash(op_Address, hash_entconst);
 	set_op_hash(op_Align,   hash_typeconst);

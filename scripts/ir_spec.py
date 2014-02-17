@@ -850,7 +850,11 @@ class Tuple:
 @op
 class Unknown:
 	"""Returns an unknown (at compile- and runtime) value. It is a valid
-	optimization to replace an Unknown by any other constant value."""
+	optimization to replace an Unknown by any other constant value.
+
+	Be carefull when optimising Unknown values, you cannot simply replace
+	Unknown+x or Unknown<x with a new Unknown node if there are multiple
+	users of the original unknown node!"""
 	knownBlock = True
 	pinned     = "yes"
 	block      = "get_irg_start_block(irg)"
