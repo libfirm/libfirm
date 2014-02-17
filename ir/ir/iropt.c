@@ -11,6 +11,7 @@
 #include <string.h>
 #include <stdbool.h>
 
+#include "constbits.h"
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "iredges_t.h"
@@ -57,14 +58,15 @@ int ir_imprecise_float_transforms_allowed(void)
 static bool is_Or_Eor_Add(const ir_node *node)
 {
 	if (is_Or(node) || is_Eor(node) || is_Add(node)) {
-		const ir_node  *left      = get_binop_left(node);
-		const ir_node  *right     = get_binop_right(node);
-		const vrp_attr *vrp_left  = vrp_get_info(left);
-		const vrp_attr *vrp_right = vrp_get_info(right);
-		if (vrp_left != NULL && vrp_right != NULL) {
-			ir_tarval *vrp_val
-				= tarval_and(vrp_left->bits_not_set, vrp_right->bits_not_set);
-			return tarval_is_null(vrp_val);
+		const ir_node *const left  = get_binop_left(node);
+		const ir_node *const right = get_binop_right(node);
+		const bitinfo *const bl    = get_bitinfo(left);
+		const bitinfo *const br    = get_bitinfo(right);
+		/* if each bit is guaranteed to be zero on either the left or right
+		 * then an Add will have the same effect as the Eor/Or.
+		 */
+		if (bl && br && tarval_is_null(tarval_and(bl->z, br->z))) {
+			return true;
 		}
 	}
 	return false;
@@ -633,9 +635,6 @@ ir_relation ir_get_possible_cmp_relations(const ir_node *left,
 	ir_relation      possible = ir_relation_true;
 	const ir_tarval *tv_l     = value_of(left);
 	const ir_tarval *tv_r     = value_of(right);
-	const ir_mode   *mode     = get_irn_mode(left);
-	const ir_tarval *min      = get_mode_min(mode);
-	const ir_tarval *max      = get_mode_max(mode);
 
 	/* both values known - evaluate them */
 	if ((tv_l != tarval_unknown) && (tv_r != tarval_unknown)) {
@@ -643,14 +642,18 @@ ir_relation ir_get_possible_cmp_relations(const ir_node *left,
 		/* we can return now, won't get any better */
 		return possible;
 	}
+
 	/* a == a is never less or greater (but might be equal or unordered) */
 	if (left == right)
 		possible &= ~ir_relation_less_greater;
 	/* unordered results only happen for float compares */
+	const ir_mode *mode = get_irn_mode(left);
 	if (!mode_is_float(mode))
 		possible &= ~ir_relation_unordered;
 	/* values can never be less than the least representable number or
 	 * greater than the greatest representable number */
+	ir_tarval       *min = get_mode_min(mode);
+	const ir_tarval *max = get_mode_max(mode);
 	if (tv_l == min)
 		possible &= ~ir_relation_greater;
 	if (tv_l == max)
@@ -659,6 +662,36 @@ ir_relation ir_get_possible_cmp_relations(const ir_node *left,
 		possible &= ~ir_relation_greater;
 	if (tv_r == min)
 		possible &= ~ir_relation_less;
+
+	/* Try to use bit information. */
+	const bitinfo *const bl = get_bitinfo(left);
+	const bitinfo *const br = get_bitinfo(right);
+	if (bl != NULL && br != NULL) {
+		ir_tarval *const l_o   = bl->o;
+		ir_tarval *const l_z   = bl->z;
+		ir_tarval *const r_o   = br->o;
+		ir_tarval *const r_z   = br->z;
+		if (get_mode_arithmetic(mode) == irma_twos_complement) {
+			/* Compute min/max values of operands. */
+			ir_tarval *l_max = tarval_andnot(l_z, tarval_andnot(min, l_o));
+			ir_tarval *l_min = tarval_or(l_o, tarval_and(l_z, min));
+			ir_tarval *r_max = tarval_andnot(r_z, tarval_andnot(min, r_o));
+			ir_tarval *r_min = tarval_or(r_o, tarval_and(r_z, min));
+
+			if (!(tarval_cmp(l_max, r_min) & ir_relation_greater)) {
+				possible &= ~ir_relation_greater;
+			}
+			if (!(tarval_cmp(l_min, r_max) & ir_relation_less)) {
+				possible &= ~ir_relation_less;
+			}
+		}
+
+		if (!tarval_is_null(tarval_andnot(l_o, r_z))
+		    || !tarval_is_null(tarval_andnot(r_o, l_z))) {
+			possible &= ~ir_relation_equal;
+		}
+	}
+
 	/* maybe vrp can tell us more */
 	possible &= vrp_cmp(left, right);
 	/* Alloc nodes never return null (but throw an exception) */
@@ -1032,7 +1065,29 @@ static ir_node *equivalent_node_involution(ir_node *n, int input)
 
 static ir_node *equivalent_node_Minus(ir_node *n)
 {
-	return equivalent_node_involution(n, n_Minus_op);
+	ir_node *oldn = n;
+	n = equivalent_node_involution(n, n_Minus_op);
+	if (n != oldn)
+		return n;
+
+	/* If all bits except the highest bit are zero the Minus is superfluous. */
+	ir_mode *const mode = get_irn_mode(n);
+	if (get_mode_arithmetic(mode) == irma_twos_complement) {
+		ir_node       *const op = get_Minus_op(n);
+		const bitinfo *const b  = get_bitinfo(op);
+
+		if (b) {
+			ir_tarval *const min = get_mode_min(mode);
+			ir_tarval *const z   = b->z;
+
+			if (z == min) {
+				n = op;
+				set_bitinfo(n, z, b->o);
+			}
+		}
+	}
+
+	return n;
 }
 
 static ir_node *equivalent_node_Not(ir_node *n)
@@ -1084,6 +1139,22 @@ static ir_node *equivalent_node_Or(ir_node *n)
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_OR);
 		return n;
 	}
+
+	const bitinfo *const ba = get_bitinfo(a);
+	const bitinfo *const bb = get_bitinfo(b);
+	if (ba != NULL && bb != NULL) {
+		if (tarval_is_null(tarval_andnot(ba->z, bb->o))) {
+			n = b;
+			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_OR);
+			return n;
+		}
+		if (tarval_is_null(tarval_andnot(bb->z, ba->o))) {
+			n = a;
+			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_OR);
+			return n;
+		}
+	}
+
 	/* constants are normalized to right, check this side first */
 	const ir_tarval *tb = value_of(b);
 	if (tarval_is_null(tb)) {
@@ -1107,8 +1178,22 @@ static ir_node *equivalent_node_Or(ir_node *n)
 static ir_node *equivalent_node_And(ir_node *n)
 {
 	ir_node *oldn = n;
-	ir_node *a    = get_And_left(n);
-	ir_node *b    = get_And_right(n);
+	ir_node*       const a  = get_And_left(n);
+	ir_node*       const b  = get_And_right(n);
+	bitinfo const* const ba = get_bitinfo(a);
+	bitinfo const* const bb = get_bitinfo(b);
+	if (ba != NULL && bb != NULL) {
+		if (tarval_is_null(tarval_andnot(bb->z, ba->o))) {
+			n = b;
+			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_AND);
+			return n;
+		}
+		if (tarval_is_null(tarval_andnot(ba->z, bb->o))) {
+			n = a;
+			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_AND);
+			return n;
+		}
+	}
 
 	if (a == b) {
 		n = a;    /* idempotence */
@@ -5099,14 +5184,17 @@ static ir_node *transform_node_Shrs(ir_node *n)
 		return n;
 
 	/* Normalization: use Shr when sign bit is guaranteed to be cleared */
-	vrp_attr *attr = vrp_get_info(a);
-	if (attr != NULL) {
-		unsigned   bits = get_mode_size_bits(mode);
-		ir_tarval *sign = tarval_shl_unsigned(get_mode_one(mode), bits-1);
-		if (tarval_is_null(tarval_and(attr->bits_not_set, sign))) {
-			dbg_info *dbgi  = get_irn_dbg_info(n);
-			ir_node  *block = get_nodes_block(n);
-			return new_rd_Shr(dbgi, block, a, b, mode);
+	const bitinfo *const bn = get_bitinfo(n);
+	if (bn != NULL && get_mode_arithmetic(mode) == irma_twos_complement) {
+		ir_tarval *z           = bn->z;
+		unsigned   mode_bits   = get_mode_size_bits(mode);
+		unsigned   highest_bit = get_tarval_highest_bit(z);
+		if (highest_bit + 1U != mode_bits) {
+			dbg_info *const dbgi  = get_irn_dbg_info(n);
+			ir_node  *const block = get_nodes_block(n);
+			n = new_rd_Shr(dbgi, block, a, b, mode);
+			set_bitinfo(n, z, bn->o);
+			return n;
 		}
 	}
 
@@ -6394,16 +6482,33 @@ restart:;
 	if (get_opt_constant_folding()) {
 		/* neither constants nor Tuple values can be evaluated */
 		if (iro != iro_Const && get_irn_mode(n) != mode_T) {
-			/* try to evaluate */
-			ir_tarval *tv = computed_value(n);
-			if (tv != tarval_unknown) {
-				/* evaluation was successful -- replace the node. */
-				ir_graph *irg = get_irn_irg(n);
+			bitinfo *const b = get_bitinfo(n);
+			if (b) {
+				ir_tarval *z = b->z;
+				ir_tarval *o = b->o;
 
-				n = new_r_Const(irg, tv);
+				/* Replace node with constant value by Const. */
+				if (z == o) {
+					ir_mode *const m = get_irn_mode(n);
+					if (mode_is_int(m) || m == mode_b) {
+						ir_graph *const irg = get_irn_irg(n);
+						n = new_r_Const(irg, z);
+						set_bitinfo(n, z, o);
+						return n;
+					}
+				}
+			} else {
+				/* try to evaluate */
+				ir_tarval *tv = computed_value(n);
+				if (tv != tarval_unknown) {
+					/* evaluation was successful -- replace the node. */
+					ir_graph *const irg = get_irn_irg(n);
 
-				DBG_OPT_CSTEVAL(old_n, n);
-				return n;
+					n = new_r_Const(irg, tv);
+
+					DBG_OPT_CSTEVAL(old_n, n);
+					return n;
+				}
 			}
 		}
 	}

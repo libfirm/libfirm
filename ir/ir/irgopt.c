@@ -14,6 +14,7 @@
 #include "irnode_t.h"
 #include "irgraph_t.h"
 
+#include "constbits.h"
 #include "iroptimize.h"
 #include "iropt_t.h"
 #include "irgopt.h"
@@ -164,9 +165,8 @@ static void opt_walker(ir_node *n, void *env)
 
 int optimize_graph_df(ir_graph *irg)
 {
-	pdeq     *waitq = new_pdeq();
-	ir_graph *rem = current_ir_graph;
-	ir_node  *end;
+	pdeq           *waitq = new_pdeq();
+	ir_graph       *rem   = current_ir_graph;
 
 	current_ir_graph = irg;
 
@@ -186,7 +186,12 @@ int optimize_graph_df(ir_graph *irg)
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
 	                         | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
-	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
+
+	struct obstack  obst;
+	obstack_init(&obst);
+	constbits_analyze(irg, &obst);
+
 	irg_walk_graph(irg, NULL, opt_walker, waitq);
 
 	/* any optimized nodes are stored in the wait queue,
@@ -204,7 +209,10 @@ int optimize_graph_df(ir_graph *irg)
 		irg_block_walk_graph(irg, NULL, find_unreachable_blocks, waitq);
 	}
 	del_pdeq(waitq);
-	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
+
+	constbits_clear(irg);
+	obstack_free(&obst, NULL);
 
 	/* disable unreachable code elimination */
 	if (get_opt_algebraic_simplification()) {
@@ -219,7 +227,7 @@ int optimize_graph_df(ir_graph *irg)
 
 	/* Finally kill BAD and doublets from the keep alives.
 	 * Doing this AFTER edges where deactivated saves cycles */
-	end = get_irg_end(irg);
+	ir_node *end = get_irg_end(irg);
 	remove_End_Bads_and_doublets(end);
 
 	current_ir_graph = rem;

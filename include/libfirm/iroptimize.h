@@ -542,13 +542,6 @@ FIRM_API void dead_node_elimination(ir_graph *irg);
 FIRM_API void place_code(ir_graph *irg);
 
 /**
- * Determines information about the values of nodes and perform simplifications
- * using this information.  This optimization performs a data-flow analysis to
- * find the minimal fixpoint.
- */
-FIRM_API void fixpoint_vrp(ir_graph*);
-
-/**
  * This optimization finds values where the bits are either constant or irrelevant
  * and exchanges them for a corresponding constant.
  */
