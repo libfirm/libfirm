@@ -2038,9 +2038,9 @@ static void compute_Phi(node_t *node)
  */
 static void compute_Add(node_t *node)
 {
-	ir_node        *sub  = node->node;
-	node_t         *l    = get_irn_node(get_Add_left(sub));
-	node_t         *r    = get_irn_node(get_Add_right(sub));
+	ir_node        *add  = node->node;
+	node_t         *l    = get_irn_node(get_Add_left(add));
+	node_t         *r    = get_irn_node(get_Add_right(add));
 	lattice_elem_t  a    = l->type;
 	lattice_elem_t  b    = r->type;
 
