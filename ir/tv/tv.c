@@ -612,7 +612,7 @@ ir_tarval *get_tarval_all_one(ir_mode *mode)
 	switch (get_mode_sort(mode)) {
 	case irms_int_number:
 	case irms_reference:
-		return tarval_not(get_mode_null(mode));
+		return tarval_not(new_tarval_from_long(0, mode));
 
 	case irms_internal_boolean:
 		return tarval_b_true;
