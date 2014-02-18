@@ -16,7 +16,7 @@ Correctness:
 
 Improve Quality:
 - Immediate32 matching could be better and match SymConst, Add(SymConst, Const)
-  combinations where possible. Be carefull with PIC code this may usually not
+  combinations where possible. Be careful with PIC code this may usually not
   be legal!
 - Match Immediate + Address mode for Cmp
 - Support swapping of cmp arguments (see ins_permuted in ia32 backend)
