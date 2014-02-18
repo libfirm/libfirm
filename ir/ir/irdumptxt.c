@@ -13,6 +13,7 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
+#include "constbits.h"
 #include "irdump_t.h"
 #include "irgraph_t.h"
 #include "irnode_t.h"
@@ -331,6 +332,16 @@ void dump_irnode_to_file(FILE *const F, const ir_node *const n)
 
 	default:
 		break;
+	}
+
+	bitinfo const *const b = get_bitinfo(n);
+	if (b) {
+		fprintf(F, "\n  bitinfo: ");
+		ir_tarval const* const z = b->z;
+		ir_tarval const* const o = b->o;
+		for (unsigned i = get_mode_size_bits(get_irn_mode(n)); i-- != 0;) {
+			fputc("0_?1"[get_tarval_bit(z, i) << 1 | get_tarval_bit(o, i)], F);
+		}
 	}
 }
 
