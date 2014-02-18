@@ -65,8 +65,6 @@ int main(void)
 	test_mode(mode_E);
 
 	test_tv(tarval_bad);
-	test_tv(tarval_undefined);
-	test_tv(tarval_reachable);
-	test_tv(tarval_unreachable);
+	test_tv(tarval_unknown);
 	return 0;
 }
