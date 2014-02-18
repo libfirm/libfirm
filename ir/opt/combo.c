@@ -13,9 +13,7 @@
  * - supports all Firm direct (by a data edge) identities except Mux
  *   (Mux can be a 2-input or 1-input identity, only 2-input is implemented yet)
  * - supports Confirm nodes (handle them like Copies but do NOT remove them)
- * - let Cmp nodes calculate Top like all other data nodes: this would let
- *   Mux nodes to calculate Unknown instead of taking the true result
- * - Unknown nodes are represented as Bottom
+ * - Unknown nodes are represented as Top
  * - support for global congruences is implemented but not tested yet
  *
  * Note further that we use the terminology from Click's work here, which is
@@ -134,7 +132,7 @@ struct partition_t {
 	bool         on_worklist:1;   /**< Set, if this partition is in the work list. */
 	bool         on_touched:1;    /**< Set, if this partition is on the touched set. */
 	bool         on_cprop:1;      /**< Set, if this partition is on the cprop list. */
-	bool         type_is_T_or_C:1;/**< Set, if all nodes in this partition have type Top or Constant. */
+	bool         type_is_B_or_C:1;/**< Set, if all nodes in this partition have type Bottom or Constant. */
 #ifdef DEBUG_libfirm
 	partition_t *dbg_next;       /**< Link all partitions for debugging */
 	unsigned     nr;             /**< A unique number for (what-)mapping, >0. */
@@ -174,13 +172,13 @@ static void set_irn_node(ir_node *irn, node_t *node)
 }
 
 /* we use dataflow like names here */
-#define tarval_top    tarval_bad
-#define tarval_bottom tarval_unknown
+#define tarval_top    tarval_unknown
+#define tarval_bottom tarval_bad
 
 static inline bool is_reachable(const node_t *node)
 {
 	assert(is_Block(node->node));
-	return node->type.tv == tarval_bottom;
+	return node->type.tv == tarval_top;
 }
 
 /** The debug module handle. */
@@ -278,7 +276,7 @@ static void check_all_partitions(environment_t *env)
 #ifdef DEBUG_libfirm
 	for (partition_t *P = env->dbg_list; P != NULL; P = P->dbg_next) {
 		check_partition(P);
-		if (!P->type_is_T_or_C)
+		if (!P->type_is_B_or_C)
 			check_opcode(P);
 		list_for_each_entry(node_t, node, &P->follower, node_list) {
 			node_t *leader = identity(node);
@@ -336,7 +334,7 @@ static void dump_partition(const char *msg, const partition_t *part)
 	lattice_elem_t type  = get_partition_type(part);
 
 	DB((dbg, LEVEL_2, "%s part%u%s (%u, %+F) {\n  ",
-		msg, part->nr, part->type_is_T_or_C ? "*" : "",
+		msg, part->nr, part->type_is_B_or_C ? "*" : "",
 		part->n_leaders, type));
 	list_for_each_entry(node_t, node, &part->leader, node_list) {
 		DB((dbg, LEVEL_2, "%s%+F", first ? "" : ", ", node->node));
@@ -442,12 +440,12 @@ static void verify_type(const lattice_elem_t old_type, node_t *node)
 		/* no change */
 		return;
 	}
-	if (old_type.tv == tarval_top) {
-		/* from Top down-to is always allowed */
+	if (old_type.tv == tarval_bottom) {
+		/* from Bottom up-to is always allowed */
 		return;
 	}
-	if (node->type.tv == tarval_bottom) {
-		/* bottom reached */
+	if (node->type.tv == tarval_top) {
+		/* top reached */
 		return;
 	}
 	panic("wrong translation from %+F to %+F on node %+F", old_type,
@@ -593,7 +591,7 @@ static inline lattice_elem_t get_node_type(const ir_node *irn)
 static inline ir_tarval *get_node_tarval(const ir_node *irn)
 {
 	lattice_elem_t type = get_node_type(irn);
-	return is_tarval(type.tv) ? type.tv : tarval_bottom;
+	return is_tarval(type.tv) ? type.tv : tarval_top;
 }
 
 /**
@@ -673,7 +671,7 @@ static node_t *create_partition_node(ir_node *irn, partition_t *part,
 	INIT_LIST_HEAD(&node->cprop_list);
 	node->node    = irn;
 	node->part    = part;
-	node->type.tv = tarval_top;
+	node->type.tv = tarval_bottom;
 	set_irn_node(irn, node);
 
 	list_add_tail(&node->node_list, &part->leader);
@@ -683,8 +681,8 @@ static node_t *create_partition_node(ir_node *irn, partition_t *part,
 }
 
 /**
- * Pre-Walker, initialize all Nodes' type to U or top and place
- * all nodes into the TOP partition.
+ * Pre-Walker, initialize all Nodes' type to U or bottom and place
+ * all nodes into the Bottom partition.
  */
 static void create_initial_partitions(ir_node *irn, void *ctx)
 {
@@ -765,7 +763,7 @@ static void add_to_cprop(node_t *y, environment_t *env)
 	}
 	ir_node *irn = y->node;
 	if (get_irn_mode(irn) == mode_T) {
-		/* mode_T nodes always produce tarval_bottom, so we must explicitly
+		/* mode_T nodes always produce tarval_top, so we must explicitly
 		 * add its Projs to get constant evaluation to work */
 		for (unsigned i = get_irn_n_outs(irn); i-- > 0; ) {
 			node_t *proj = get_irn_node(get_irn_out(irn, i));
@@ -879,7 +877,7 @@ static partition_t *split_no_followers(partition_t *Z, node_t *g, environment_t 
 	check_partition(Z_prime);
 
 	/* for now, copy the type info tag, it will be adjusted in split_by(). */
-	Z_prime->type_is_T_or_C = Z->type_is_T_or_C;
+	Z_prime->type_is_B_or_C = Z->type_is_B_or_C;
 
 	dump_partition("Now ", Z);
 	dump_partition("Created new ", Z_prime);
@@ -943,7 +941,7 @@ static bool is_real_follower(const ir_node *irn, int input)
 		ir_node *block = get_nodes_block(irn);
 		node_t  *pred  = get_irn_node(get_Block_cfgpred(block, input));
 
-		if (pred->type.tv == tarval_top)
+		if (pred->type.tv == tarval_bottom)
 			return false;
 		break;
 	}
@@ -1187,7 +1185,7 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env)
 	X->n_leaders            -= X_prime->n_leaders;
 
 	/* for now, copy the type info tag, it will be adjusted in split_by(). */
-	X_prime->type_is_T_or_C = X->type_is_T_or_C;
+	X_prime->type_is_B_or_C = X->type_is_B_or_C;
 
 	/*
 	 * Even if a follower was not checked by both sides, it might have
@@ -1249,7 +1247,7 @@ static bool is_live_input(ir_node *phi, int i)
 		const ir_node *block     = get_nodes_block(phi);
 		const ir_node *pred      = get_Block_cfgpred(block, i);
 		const node_t  *pred_node = get_irn_node(pred);
-		return pred_node->type.tv == tarval_bottom;
+		return pred_node->type.tv == tarval_top;
 	}
 	/* else it's the control input, always live */
 	return true;
@@ -1260,19 +1258,19 @@ static bool is_live_input(ir_node *phi, int i)
  */
 static bool is_constant_type(lattice_elem_t type)
 {
-	return type.tv != tarval_bottom && type.tv != tarval_top;
+	return type.tv != tarval_top && type.tv != tarval_bottom;
 }
 
 /**
- * Check whether a type is neither Top or a constant.
- * Note: U is handled like Top here, R is a constant.
+ * Check whether a type is neither Bottom or a constant.
+ * Note: U is handled like Bottom here, R is a constant.
  *
  * @param type  the type to check
  */
-static bool type_is_neither_top_nor_const(const lattice_elem_t type)
+static bool type_is_neither_bottom_nor_const(const lattice_elem_t type)
 {
 	if (is_tarval(type.tv)) {
-		if (type.tv == tarval_top)
+		if (type.tv == tarval_bottom)
 			return false;
 		if (tarval_is_constant(type.tv))
 			return false;
@@ -1338,7 +1336,7 @@ static void collect_touched(list_head *list, int idx, environment_t *env)
 
 			/* Partitions of constants should not be split simply because their Nodes have unequal
 			   functions or incongruent inputs. */
-			if (type_is_neither_top_nor_const(y->type) &&
+			if (type_is_neither_bottom_nor_const(y->type) &&
 				(!is_Phi(y->node) || is_live_input(y->node, idx))) {
 					add_to_touched(y, env);
 			}
@@ -1387,7 +1385,7 @@ static void collect_commutative_touched(list_head *list, environment_t *env)
 
 			/* Partitions of constants should not be split simply because their Nodes have unequal
 			   functions or incongruent inputs. */
-			if (type_is_neither_top_nor_const(y->type)) {
+			if (type_is_neither_bottom_nor_const(y->type)) {
 				add_to_touched(y, env);
 			}
 		}
@@ -1678,7 +1676,7 @@ static void split_by(partition_t *X, environment_t *env)
 	if (X->n_leaders == 1) {
 		/* we have only one leader, no need to split, just check its type */
 		node_t *x = get_first_node(X);
-		X->type_is_T_or_C = x->type.tv == tarval_top || is_con(x->type);
+		X->type_is_B_or_C = x->type.tv == tarval_bottom || is_con(x->type);
 		return;
 	}
 
@@ -1690,7 +1688,7 @@ static void split_by(partition_t *X, environment_t *env)
 	/* adjust the type tags, we have split partitions by type */
 	for (partition_t *I = P; I != NULL; I = I->split_next) {
 		node_t *x = get_first_node(I);
-		I->type_is_T_or_C = x->type.tv == tarval_top || is_con(x->type);
+		I->type_is_B_or_C = x->type.tv == tarval_bottom || is_con(x->type);
 	}
 
 	do {
@@ -1698,8 +1696,8 @@ static void split_by(partition_t *X, environment_t *env)
 
 		P = P->split_next;
 		if (Y->n_leaders > 1) {
-			/* we do not want split the TOP or constant partitions */
-			if (!Y->type_is_T_or_C) {
+			/* we do not want split the Bottom or constant partitions */
+			if (!Y->type_is_B_or_C) {
 				partition_t *Q = NULL;
 
 				DEBUG_ONLY(what_reason = "lambda n.(n.opcode)";)
@@ -1763,15 +1761,15 @@ static void default_compute(node_t *node)
 {
 	ir_node *irn = node->node;
 	if (get_irn_mode(irn) == mode_X)
-		node->type.tv = tarval_bottom; /* reachable */
+		node->type.tv = tarval_top; /* reachable */
 
-	/* if any of the data inputs have type top, the result is type top */
+	/* if any of the data inputs have type bottom, the result is type bottom */
 	ir_node *op = skip_Proj(irn);
 	if (!is_memop(op) || is_Mod(op) || is_Div(op)) {
 		foreach_irn_in_r(irn, i, pred) {
 			node_t *const p = get_irn_node(pred);
-			if (p->type.tv == tarval_top) {
-				node->type.tv = tarval_top;
+			if (p->type.tv == tarval_bottom) {
+				node->type.tv = tarval_bottom;
 				return;
 			}
 		}
@@ -1792,7 +1790,7 @@ static void compute_Block(node_t *node)
 
 	if (block == get_irg_start_block(irg) || get_Block_entity(block) != NULL) {
 		/* start block and labelled blocks are always reachable */
-		node->type.tv = tarval_bottom; /* reachable */
+		node->type.tv = tarval_top; /* reachable */
 		return;
 	}
 
@@ -1800,12 +1798,12 @@ static void compute_Block(node_t *node)
 		node_t *pred = get_irn_node(get_Block_cfgpred(block, i));
 
 		/* A block is reachable, if at least one predecessor is reachable. */
-		if (pred->type.tv == tarval_bottom) {
-			node->type.tv = tarval_bottom; /* reachable */
+		if (pred->type.tv == tarval_top) {
+			node->type.tv = tarval_top; /* reachable */
 			return;
 		}
 	}
-	node->type.tv = tarval_top; /* unreachable */
+	node->type.tv = tarval_bottom; /* unreachable */
 }
 
 /**
@@ -1815,8 +1813,8 @@ static void compute_Block(node_t *node)
  */
 static void compute_Bad(node_t *node)
 {
-	/* Bad nodes ALWAYS compute Top */
-	node->type.tv = tarval_top;
+	/* Bad nodes ALWAYS compute Bottom */
+	node->type.tv = tarval_bottom;
 }
 
 /**
@@ -1826,7 +1824,7 @@ static void compute_Bad(node_t *node)
  */
 static void compute_Unknown(node_t *node)
 {
-	node->type.tv = tarval_bottom;
+	node->type.tv = tarval_top;
 }
 
 /**
@@ -1858,23 +1856,23 @@ static void compute_Mux(node_t *node)
 	ir_tarval *f_tv   = f->type.tv;
 	ir_tarval *t_tv   = t->type.tv;
 
-	if (sel_tv == tarval_top) {
-		node->type.tv = tarval_top;
+	if (sel_tv == tarval_bottom) {
+		node->type.tv = tarval_bottom;
 	} else if (sel_tv == tarval_b_false) {
 		node->type.tv = f_tv;
 	} else if (sel_tv == tarval_b_true) {
 		node->type.tv = t_tv;
 	} else {
-		assert(sel_tv == tarval_bottom);
-		/* Meet of false and true operands. */
+		assert(sel_tv == tarval_top);
+		/* Join of false and true operands. */
 		if (f_tv == t_tv) {
 			node->type.tv = f_tv;
-		} else if (f_tv == tarval_top) {
+		} else if (f_tv == tarval_bottom) {
 			node->type.tv = t_tv;
-		} else if (t_tv == tarval_top) {
+		} else if (t_tv == tarval_bottom) {
 			node->type.tv = f_tv;
 		} else {
-			node->type.tv = tarval_bottom;
+			node->type.tv = tarval_top;
 		}
 	}
 }
@@ -1889,7 +1887,7 @@ static void compute_Return(node_t *node)
 	/* The Return node is NOT dead if it is in a reachable block.
 	 * This is already checked in compute(). so we can return
 	 * Reachable here. */
-	node->type.tv = tarval_bottom; /* reachable */
+	node->type.tv = tarval_top; /* reachable */
 }
 
 /**
@@ -1900,7 +1898,7 @@ static void compute_Return(node_t *node)
 static void compute_End(node_t *node)
 {
 	/* the End node is NOT dead of course */
-	node->type.tv = tarval_bottom; /* reachable */
+	node->type.tv = tarval_top; /* reachable */
 }
 
 /**
@@ -1953,34 +1951,34 @@ static void compute_Phi(node_t *node)
 	ir_node *phi   = node->node;
 	node_t  *block = get_irn_node(get_nodes_block(phi));
 
-	/* if a Phi is in a unreachable block, its type is TOP */
+	/* if a Phi is in a unreachable block, its type is Bottom */
 	if (!is_reachable(block)) {
-		node->type.tv = tarval_top;
+		node->type.tv = tarval_bottom;
 		return;
 	}
 
-	/* Phi implements the Meet operation */
-	lattice_elem_t type = { .tv = tarval_top };
+	/* Phi implements the Join operation */
+	lattice_elem_t type = { .tv = tarval_bottom };
 	for (int i = get_Phi_n_preds(phi); i-- > 0; ) {
 		node_t *pred = get_irn_node(get_Phi_pred(phi, i));
-		/* ignore TOP inputs */
-		if (pred->type.tv == tarval_top)
+		/* ignore Bottom inputs */
+		if (pred->type.tv == tarval_bottom)
 			continue;
 
 		node_t *pred_X = get_irn_node(get_Block_cfgpred(block->node, i));
 		/* also ignore values coming from unreachable control flow */
-		if (pred_X->type.tv == tarval_top)
+		if (pred_X->type.tv == tarval_bottom)
 			continue;
 
-		if (pred->type.tv == tarval_bottom) {
-			node->type.tv = tarval_bottom;
+		if (pred->type.tv == tarval_top) {
+			node->type.tv = tarval_top;
 			return;
-		} else if (type.tv == tarval_top) {
+		} else if (type.tv == tarval_bottom) {
 			/* first constant found */
 			type = pred->type;
 		} else if (type.tv != pred->type.tv) {
-			/* different constants or tarval_bottom */
-			node->type.tv = tarval_bottom;
+			/* different constants or tarval_top */
+			node->type.tv = tarval_top;
 			return;
 		}
 		/* else nothing, constants are the same */
@@ -2001,10 +1999,10 @@ static void compute_Add(node_t *node)
 	lattice_elem_t  a   = l->type;
 	lattice_elem_t  b   = r->type;
 
-	if (a.tv == tarval_top || b.tv == tarval_top) {
-		node->type.tv = tarval_top;
-	} else if (a.tv == tarval_bottom || b.tv == tarval_bottom) {
+	if (a.tv == tarval_bottom || b.tv == tarval_bottom) {
 		node->type.tv = tarval_bottom;
+	} else if (a.tv == tarval_top || b.tv == tarval_top) {
+		node->type.tv = tarval_top;
 	} else {
 		/* x + 0 = 0 + x = x, but beware of floating point +0 + -0, so we
 		   must call tarval_add() first to handle this case! */
@@ -2025,7 +2023,7 @@ static void compute_Add(node_t *node)
 				return;
 			}
 		}
-		node->type.tv = tarval_bottom;
+		node->type.tv = tarval_top;
 	}
 }
 
@@ -2042,8 +2040,8 @@ static void compute_Sub(node_t *node)
 	lattice_elem_t  a   = l->type;
 	lattice_elem_t  b   = r->type;
 
-	if (a.tv == tarval_top || b.tv == tarval_top) {
-		node->type.tv = tarval_top;
+	if (a.tv == tarval_bottom || b.tv == tarval_bottom) {
+		node->type.tv = tarval_bottom;
 	} else if (is_con(a) && is_con(b)) {
 		if (is_tarval(a.tv) && is_tarval(b.tv)) {
 			node->type.tv = tarval_sub(a.tv, b.tv, get_irn_mode(sub));
@@ -2052,7 +2050,7 @@ static void compute_Sub(node_t *node)
 		} else if (is_tarval(b.tv) && tarval_is_null(b.tv)) {
 			node->type = a;
 		} else {
-			node->type.tv = tarval_bottom;
+			node->type.tv = tarval_top;
 		}
 	} else if (r->part == l->part &&
 	           (!mode_is_float(get_irn_mode(l->node)))) {
@@ -2068,10 +2066,10 @@ static void compute_Sub(node_t *node)
 		   result, switch to bottom.
 		   This happens because initially all nodes are in the same partition ... */
 		if (node->type.tv != tv)
-			tv = tarval_bottom;
+			tv = tarval_top;
 		node->type.tv = tv;
 	} else {
-		node->type.tv = tarval_bottom;
+		node->type.tv = tarval_top;
 	}
 }
 
@@ -2088,8 +2086,8 @@ static void compute_Eor(node_t *node)
 	lattice_elem_t  a   = l->type;
 	lattice_elem_t  b   = r->type;
 
-	if (a.tv == tarval_top || b.tv == tarval_top) {
-		node->type.tv = tarval_top;
+	if (a.tv == tarval_bottom || b.tv == tarval_bottom) {
+		node->type.tv = tarval_bottom;
 	} else if (is_con(a) && is_con(b)) {
 		if (is_tarval(a.tv) && is_tarval(b.tv)) {
 			node->type.tv = tarval_eor(a.tv, b.tv);
@@ -2098,7 +2096,7 @@ static void compute_Eor(node_t *node)
 		} else if (is_tarval(b.tv) && tarval_is_null(b.tv)) {
 			node->type = a;
 		} else {
-			node->type.tv = tarval_bottom;
+			node->type.tv = tarval_top;
 		}
 	} else if (r->part == l->part) {
 		ir_mode   *mode = get_irn_mode(eor);
@@ -2106,13 +2104,13 @@ static void compute_Eor(node_t *node)
 
 		/* if the node was ONCE evaluated by all constants, but now
 		   this breaks AND we get from the argument partitions a different
-		   result, switch to bottom.
+		   result, switch to top.
 		   This happens because initially all nodes are in the same partition ... */
 		if (node->type.tv != tv)
-			tv = tarval_bottom;
+			tv = tarval_top;
 		node->type.tv = tv;
 	} else {
-		node->type.tv = tarval_bottom;
+		node->type.tv = tarval_top;
 	}
 }
 
@@ -2129,8 +2127,8 @@ static void compute_Cmp(node_t *node)
 	lattice_elem_t  a   = l->type;
 	lattice_elem_t  b   = r->type;
 
-	if (a.tv == tarval_top || b.tv == tarval_top) {
-		node->type.tv = tarval_top;
+	if (a.tv == tarval_bottom || b.tv == tarval_bottom) {
+		node->type.tv = tarval_bottom;
 	} else if (is_con(a) && is_con(b)) {
 		node->type.tv = computed_value(cmp);
 
@@ -2146,15 +2144,15 @@ static void compute_Cmp(node_t *node)
 
 		/* if the node was ONCE evaluated to a constant, but now
 		   this breaks AND we get from the argument partitions a different
-		   result, ensure monotony by fall to bottom.
+		   result, ensure monotony by switching to top.
 		   This happens because initially all nodes are in the same partition ... */
-		if (node->type.tv == tarval_bottom)
-			tv = tarval_bottom;
+		if (node->type.tv == tarval_top)
+			tv = tarval_top;
 		else if (node->type.tv != tv && is_constant_type(node->type))
-			tv = tarval_bottom;
+			tv = tarval_top;
 		node->type.tv = tv;
 	} else {
-		node->type.tv = tarval_bottom;
+		node->type.tv = tarval_top;
 	}
 }
 
@@ -2168,8 +2166,8 @@ static void compute_Proj_Cond(node_t *node, ir_node *cond)
 {
 	ir_node *sel      = get_Cond_selector(cond);
 	node_t  *selector = get_irn_node(sel);
-	if (selector->type.tv == tarval_top) {
-		node->type.tv = tarval_top;
+	if (selector->type.tv == tarval_bottom) {
+		node->type.tv = tarval_bottom;
 		return;
 	}
 
@@ -2177,16 +2175,16 @@ static void compute_Proj_Cond(node_t *node, ir_node *cond)
 	long     pnc  = get_Proj_proj(proj);
 	if (pnc == pn_Cond_true) {
 		if (selector->type.tv == tarval_b_false) {
-			node->type.tv = tarval_top; /* unreachable */
+			node->type.tv = tarval_bottom; /* unreachable */
 		} else {
-			node->type.tv = tarval_bottom; /* reachable */
+			node->type.tv = tarval_top; /* reachable */
 		}
 	} else {
 		assert(pnc == pn_Cond_false);
 		if (selector->type.tv == tarval_b_true) {
-			node->type.tv = tarval_top; /* unreachable */
+			node->type.tv = tarval_bottom; /* unreachable */
 		} else {
-			node->type.tv = tarval_bottom; /* reachable */
+			node->type.tv = tarval_top; /* reachable */
 		}
 	}
 }
@@ -2195,10 +2193,10 @@ static void compute_Proj_Switch(node_t *node, ir_node *switchn)
 {
 	ir_node *sel      = get_Switch_selector(switchn);
 	node_t  *selector = get_irn_node(sel);
-	if (selector->type.tv == tarval_top) {
-		node->type.tv = tarval_top; /* unreachable */
-	} else if (selector->type.tv == tarval_bottom) {
-		node->type.tv = tarval_bottom; /* reachable */
+	if (selector->type.tv == tarval_bottom) {
+		node->type.tv = tarval_bottom; /* unreachable */
+	} else if (selector->type.tv == tarval_top) {
+		node->type.tv = tarval_top; /* reachable */
 	} else {
 		ir_node               *proj      = node->node;
 		long                   pnc       = get_Proj_proj(proj);
@@ -2214,7 +2212,7 @@ static void compute_Proj_Switch(node_t *node, ir_node *switchn)
 			if (min == max) {
 				if (selector->type.tv == min) {
 					node->type.tv = entry->pn == pnc
-						? tarval_bottom : tarval_top;
+						? tarval_top : tarval_bottom;
 					return;
 				}
 			} else {
@@ -2222,7 +2220,7 @@ static void compute_Proj_Switch(node_t *node, ir_node *switchn)
 				long maxval = get_tarval_long(max);
 				if (minval <= value && value <= maxval) {
 					node->type.tv = entry->pn == pnc
-						? tarval_bottom : tarval_top;
+						? tarval_top : tarval_bottom;
 					return;
 				}
 			}
@@ -2230,7 +2228,7 @@ static void compute_Proj_Switch(node_t *node, ir_node *switchn)
 
 		/* no entry matched: default */
 		node->type.tv
-			= pnc == pn_Switch_default ? tarval_bottom : tarval_top;
+			= pnc == pn_Switch_default ? tarval_top : tarval_bottom;
 	}
 }
 
@@ -2245,15 +2243,15 @@ static void compute_Proj(node_t *node)
 	node_t  *block = get_irn_node(get_nodes_block(proj));
 
 	if (!is_reachable(block)) {
-		/* a Proj in an unreachable Block stays Top */
-		node->type.tv = tarval_top;
+		/* a Proj in an unreachable Block stays Bottom */
+		node->type.tv = tarval_bottom;
 		return;
 	}
 
 	ir_mode *mode = get_irn_mode(proj);
 	if (mode == mode_M) {
 		/* mode M is always bottom */
-		node->type.tv = tarval_bottom;
+		node->type.tv = tarval_top;
 		return;
 	}
 
@@ -2264,7 +2262,7 @@ static void compute_Proj(node_t *node)
 		case iro_Start:
 			/* the Proj_X from the Start is always reachable.
 			   However this is already handled at the top. */
-			node->type.tv = tarval_bottom;
+			node->type.tv = tarval_top;
 			return;
 		case iro_Cond:
 			compute_Proj_Cond(node, pred);
@@ -2277,9 +2275,9 @@ static void compute_Proj(node_t *node)
 		}
 	}
 
-	if (get_irn_node(pred)->type.tv == tarval_top) {
-		/* if the predecessor is Top, its Proj follow */
-		node->type.tv = tarval_top;
+	if (get_irn_node(pred)->type.tv == tarval_bottom) {
+		/* if the predecessor is Bottom, its Proj follow */
+		node->type.tv = tarval_bottom;
 		return;
 	}
 
@@ -2318,12 +2316,12 @@ static void compute(node_t *node)
 {
 #ifndef VERIFY_MONOTONE
 	/*
-	 * Once a node reaches bottom, the type cannot fall further
+	 * Once a node reaches top, the type cannot rise further
 	 * in the lattice and we can stop computation.
 	 * Do not take this exit if the monotony verifier is
 	 * enabled to catch errors.
 	 */
-	if (node->type.tv == tarval_bottom)
+	if (node->type.tv == tarval_top)
 		return;
 #endif
 
@@ -2333,7 +2331,7 @@ static void compute(node_t *node)
 		node_t *block = get_irn_node(get_nodes_block(irn));
 
 		if (!is_reachable(block)) {
-			node->type.tv = tarval_top;
+			node->type.tv = tarval_bottom;
 			return;
 		}
 	}
@@ -2362,7 +2360,7 @@ static node_t *identity_Phi(node_t *node)
 
 	for (int i = get_Phi_n_preds(phi); i-- > 0; ) {
 		node_t *pred_X = get_irn_node(get_Block_cfgpred(block, i));
-		if (pred_X->type.tv == tarval_top)
+		if (pred_X->type.tv == tarval_bottom)
 			continue;
 
 		node_t *pred = get_irn_node(get_Phi_pred(phi, i));
@@ -2374,7 +2372,7 @@ static node_t *identity_Phi(node_t *node)
 		}
 	}
 	/* if n_part is NULL here, all inputs path are dead, the Phi computes
-	 * tarval_top, is in the TOP partition and should NOT being split! */
+	 * tarval_bottom, is in the Bottom partition and should NOT being split! */
 	assert(n_part != NULL);
 	return n_part;
 }
@@ -2391,8 +2389,8 @@ static node_t *identity_comm_zero_binop(node_t *node)
 	if (mode_is_float(mode) && !ir_imprecise_float_transforms_allowed())
 		return node;
 
-	/* node: no input should be tarval_top, else the binop would be also
-	 * Top and not being split. */
+	/* node: no input should be tarval_bottom, else the binop would be also
+	 * Bottom and not being split. */
 	node_t    *a    = get_irn_node(get_binop_left(op));
 	node_t    *b    = get_irn_node(get_binop_right(op));
 	ir_tarval *zero = get_mode_null(mode);
@@ -2413,8 +2411,8 @@ static node_t *identity_shift(node_t *node)
 	ir_mode   *mode = get_irn_mode(b->node);
 	ir_tarval *zero = get_mode_null(mode);
 
-	/* node: no input should be tarval_top, else the binop would be also
-	 * Top and not being split. */
+	/* node: no input should be tarval_bottom, else the binop would be also
+	 * Bottom and not being split. */
 	if (b->type.tv == zero)
 		return get_irn_node(get_binop_left(op));
 	return node;
@@ -2432,8 +2430,8 @@ static node_t *identity_Mul(node_t *node)
 	if (mode_is_float(mode) && !ir_imprecise_float_transforms_allowed())
 		return node;
 
-	/* node: no input should be tarval_top, else the binop would be also
-	 * Top and not being split. */
+	/* node: no input should be tarval_bottom, else the binop would be also
+	 * Bottom and not being split. */
 	node_t    *a   = get_irn_node(get_Mul_left(op));
 	node_t    *b   = get_irn_node(get_Mul_right(op));
 	ir_tarval *one = get_mode_one(mode);
@@ -2456,8 +2454,8 @@ static node_t *identity_Sub(node_t *node)
 	if (mode_is_float(mode) && !ir_imprecise_float_transforms_allowed())
 		return node;
 
-	/* node: no input should be tarval_top, else the binop would be also
-	 * Top and not being split. */
+	/* node: no input should be tarval_bottom, else the binop would be also
+	 * Bottom and not being split. */
 	node_t *b = get_irn_node(get_Sub_right(sub));
 	if (b->type.tv == get_mode_null(mode))
 		return get_irn_node(get_Sub_left(sub));
@@ -2474,8 +2472,8 @@ static node_t *identity_And(node_t *node)
 	node_t    *b       = get_irn_node(get_And_right(andnode));
 	ir_tarval *neutral = get_mode_all_one(get_irn_mode(andnode));
 
-	/* node: no input should be tarval_top, else the And would be also
-	 * Top and not being split. */
+	/* node: no input should be tarval_bottom, else the And would be also
+	 * Bottom and not being split. */
 	if (a->type.tv == neutral)
 		return b;
 	if (b->type.tv == neutral)
@@ -2597,7 +2595,7 @@ static void propagate(environment_t *env)
 		X->on_cprop = false;
 		env->cprop  = X->cprop_next;
 
-		bool old_type_was_T_or_C = X->type_is_T_or_C;
+		bool old_type_was_B_or_C = X->type_is_B_or_C;
 
 		DB((dbg, LEVEL_2, "Propagate type on part%d\n", X->nr));
 		node_t   *fallen   = NULL;
@@ -2679,7 +2677,7 @@ static void propagate(environment_t *env)
 			 * We have split out fallen node. The type of the result
 			 * partition is NOT set yet.
 			 */
-			Y->type_is_T_or_C = false;
+			Y->type_is_B_or_C = false;
 		} else {
 			Y = X;
 		}
@@ -2687,10 +2685,10 @@ static void propagate(environment_t *env)
 		for (node_t *x = fallen; x != NULL; x = x->next)
 			x->on_fallen = false;
 
-		if (old_type_was_T_or_C) {
+		if (old_type_was_B_or_C) {
 			/* check if some nodes will make the leader -> follower transition */
 			list_for_each_entry_safe(node_t, y, tmp, &Y->leader, node_list) {
-				if (y->type.tv != tarval_top && !is_con(y->type)) {
+				if (y->type.tv != tarval_bottom && !is_con(y->type)) {
 					node_t *eq_node = identity(y);
 
 					if (eq_node != y && eq_node->part == y->part) {
@@ -2756,7 +2754,7 @@ static bool only_one_reachable_proj(ir_node *n)
 			continue;
 
 		const node_t *node = get_irn_node(proj);
-		if (node->type.tv == tarval_bottom) {
+		if (node->type.tv == tarval_top) {
 			if (++k > 1)
 				return false;
 		}
@@ -2857,7 +2855,7 @@ static void apply_cf(ir_node *block, void *ctx)
 		ir_node *pred = get_Block_cfgpred(block, i);
 		node_t  *node = get_irn_node(pred);
 
-		if (node->type.tv == tarval_bottom) {
+		if (node->type.tv == tarval_top) {
 			in_X[k++] = pred;
 		} else {
 			DB((dbg, LEVEL_1, "Removing dead input %d from %+F (%+F)\n", i, block, pred));
@@ -2908,7 +2906,7 @@ static void apply_cf(ir_node *block, void *ctx)
 			for (int i = 0; i < n; ++i) {
 				node_t *pred = get_irn_node(get_Block_cfgpred(block, i));
 
-				if (pred->type.tv == tarval_bottom) {
+				if (pred->type.tv == tarval_top) {
 					ins[j++] = get_Phi_pred(phi, i);
 				}
 			}
@@ -2999,7 +2997,7 @@ static bool all_users_are_dead(const ir_node *irn)
 			continue;
 		}
 		const node_t *node = get_irn_node(succ);
-		if (node->type.tv != tarval_top) {
+		if (node->type.tv != tarval_bottom) {
 			/* found a reachable user */
 			return false;
 		}
@@ -3022,7 +3020,7 @@ static void find_kept_memory(ir_node *irn, void *ctx)
 		return;
 
 	node_t *node = get_irn_node(irn);
-	if (node->type.tv == tarval_top)
+	if (node->type.tv == tarval_bottom)
 		return;
 
 	/* ok, we found a live memory node. */
@@ -3057,7 +3055,7 @@ static void apply_result(ir_node *irn, void *ctx)
 			DB((dbg, LEVEL_1, "%+F is unreachable\n", irn));
 			exchange(irn, bad);
 			env->modified = true;
-		} else if (node->type.tv == tarval_top) {
+		} else if (node->type.tv == tarval_bottom) {
 			ir_mode *mode = get_irn_mode(irn);
 
 			if (mode == mode_M) {
@@ -3066,11 +3064,11 @@ static void apply_result(ir_node *irn, void *ctx)
 					ir_node *pred  = get_Proj_pred(irn);
 					node_t  *pnode = get_irn_node(pred);
 
-					if (pnode->type.tv == tarval_top) {
+					if (pnode->type.tv == tarval_bottom) {
 						/* skip the predecessor */
 						ir_node *mem = get_memop_mem(pred);
 						node->node = mem;
-						DB((dbg, LEVEL_1, "%+F computes Top, replaced by %+F\n", irn, mem));
+						DB((dbg, LEVEL_1, "%+F computes Bottom, replaced by %+F\n", irn, mem));
 						exchange(irn, mem);
 						env->modified = true;
 					}
@@ -3089,7 +3087,7 @@ static void apply_result(ir_node *irn, void *ctx)
 				/* see comment above */
 				set_irn_node(unk, node);
 				node->node = unk;
-				DB((dbg, LEVEL_1, "%+F computes Top\n", irn));
+				DB((dbg, LEVEL_1, "%+F computes Bottom\n", irn));
 				exchange(irn, unk);
 				env->modified = true;
 			}
@@ -3330,8 +3328,8 @@ void combo(ir_graph *irg)
 	/* set the hook: from now, every node has a partition and a type */
 	DEBUG_ONLY(set_dump_node_vcgattr_hook(dump_partition_hook);)
 
-	/* all nodes on the initial partition have type Top */
-	env.initial->type_is_T_or_C = true;
+	/* all nodes on the initial partition have type Bottom */
+	env.initial->type_is_B_or_C = true;
 
 	/* Place the START Node's partition on cprop.
 	   Place the START Node on its local worklist. */
