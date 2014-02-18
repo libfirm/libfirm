@@ -13,6 +13,7 @@
 #ifndef FIRM_TV_TV_T_H
 #define FIRM_TV_TV_T_H
 
+#include <assert.h>
 #include "firm_common.h"
 #include "irmode.h"
 #include "tv.h"
@@ -27,6 +28,8 @@
 #define get_tarval_unreachable() _get_tarval_unreachable()
 #define get_tarval_reachable()   _get_tarval_reachable()
 #define is_tarval(thing)         _is_tarval(thing)
+
+#define SC_BITS 4
 
 /**
  * Initialization of the tarval module.
@@ -137,5 +140,14 @@ bool tarval_is_uint64(const ir_tarval *tv);
 ir_tarval *get_tarval_small(ir_mode *mode);
 
 ir_tarval *get_tarval_epsilon(ir_mode *mode);
+
+/**
+ * Get the @p idx'th bit of the internal representation of the given tarval @p tv.
+ */
+static inline unsigned get_tarval_bit(ir_tarval const *const tv, unsigned const idx)
+{
+	assert(idx < get_mode_size_bits(get_tarval_mode(tv)));
+	return ((unsigned char const*)tv->value)[idx / SC_BITS] >> (idx % SC_BITS) & 1;
+}
 
 #endif

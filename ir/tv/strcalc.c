@@ -18,8 +18,8 @@
 #include "xmalloc.h"
 #include "error.h"
 #include "bitfiddle.h"
+#include "tv_t.h"
 
-#define SC_BITS      4
 #define SC_MASK      ((sc_word)0xF)
 #define SC_RESULT(x) ((x) & ((1U << SC_BITS) - 1U))
 #define SC_CARRY(x)  ((unsigned)(x) >> SC_BITS)
