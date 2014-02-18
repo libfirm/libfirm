@@ -731,13 +731,22 @@ static ir_node *gen_Mul(ir_node *const node)
 
 static ir_node *gen_Mulh(ir_node *const node)
 {
-	ir_node *op1      = get_Mulh_left(node);
-	ir_node *op2      = get_Mulh_right(node);
-	ir_node *new_node = gen_binop_rax(node, op1, op2, new_bd_amd64_Mul,
+	ir_node *op1  = get_Mulh_left(node);
+	ir_node *op2  = get_Mulh_right(node);
+	ir_mode *mode = get_irn_mode(op1);
+	ir_node *new_node;
+
+	if(mode_is_signed(mode)) {
+		new_node = gen_binop_rax(node, op1, op2, new_bd_amd64_IMul1Op,
+                        /* match_am TODO */
+                        match_mode_neutral | match_commutative);
+        return new_r_Proj(new_node, mode_gp, pn_amd64_IMul1Op_res_high);
+	} else {
+		new_node = gen_binop_rax(node, op1, op2, new_bd_amd64_Mul,
                          /* match_am TODO */
                          match_mode_neutral | match_commutative);
-
-    return new_r_Proj(new_node, mode_gp, pn_amd64_Mul_res_high);
+		return new_r_Proj(new_node, mode_gp, pn_amd64_Mul_res_high);
+	}
 }
 
 static ir_node *gen_Shl(ir_node *const node)
