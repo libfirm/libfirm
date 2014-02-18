@@ -1582,9 +1582,11 @@ void init_tarval_2(void)
 
 	tarval_b_true->kind       = k_tarval;
 	tarval_b_true->mode       = mode_b;
+	tarval_b_true->value      = "\1";
 
 	tarval_b_false->kind      = k_tarval;
 	tarval_b_false->mode      = mode_b;
+	tarval_b_false->value     = "\0";
 
 	tarval_unreachable->kind  = k_tarval;
 	tarval_unreachable->mode  = mode_X;

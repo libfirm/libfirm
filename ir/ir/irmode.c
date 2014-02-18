@@ -546,7 +546,7 @@ void init_mode(void)
 	mode_T   = new_non_data_mode("T");
 	mode_ANY = new_non_data_mode("ANY");
 	mode_BAD = new_non_data_mode("BAD");
-	mode_b   = alloc_mode("b", irms_internal_boolean, irma_none, 0, 0, 0);
+	mode_b   = alloc_mode("b", irms_internal_boolean, irma_none, 1, 0, 0);
 	mode_b   = register_mode(mode_b);
 
 	mode_F   = new_float_mode("F", irma_ieee754,  8, 23, ir_overflow_min_max);
