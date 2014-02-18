@@ -1227,9 +1227,10 @@ static ir_node *gen_Call(ir_node *node)
 		/* we need a store if we're here */
 		amd64_binop_addr_attr_t attr;
 		memset(&attr, 0, sizeof(attr));
-		attr.base.addr.base_input  = 1;
-		attr.base.addr.index_input = NO_INPUT;
-		attr.base.insn_mode        = INSN_MODE_64;
+		attr.base.addr.immediate.offset = param->offset;
+		attr.base.addr.base_input       = 1;
+		attr.base.addr.index_input      = NO_INPUT;
+		attr.base.insn_mode             = INSN_MODE_64;
 		ir_node *in[] = { new_value, incsp, new_mem };
 		ir_node *store = new_bd_amd64_Store(dbgi, new_block, ARRAY_SIZE(in), in,
 		                                    &attr);
