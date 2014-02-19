@@ -74,10 +74,10 @@ static bool is_Or_Eor_Add(const ir_node *node)
  * same result. */
 static bool is_Eor_Add(const ir_node *node)
 {
-	if (!is_Eor(node) && !is_Add(node))
-		return false;
 	if (is_Or_Eor_Add(node))
 		return true;
+	if (!is_Eor(node) && !is_Add(node))
+		return false;
 
 	const ir_node *right = get_binop_right(node);
 	if (!is_Const(right))
