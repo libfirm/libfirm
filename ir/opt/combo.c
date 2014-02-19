@@ -1838,6 +1838,19 @@ static void compute_Jmp(node_t *node)
 	node->type = block->type;
 }
 
+static void join(lattice_elem_t* const res, lattice_elem_t const* const a, lattice_elem_t const* const b)
+{
+	if (a->tv == b->tv) {
+		*res = *a;
+	} else if (a->tv == tarval_bottom) {
+		*res = *b;
+	} else if (b->tv == tarval_bottom) {
+		*res = *a;
+	} else {
+		res->tv = tarval_top;
+	}
+}
+
 /**
  * (Re-)compute the type for a Mux.
  *
@@ -1853,27 +1866,17 @@ static void compute_Mux(node_t *node)
 	node_t    *f      = get_irn_node(get_Mux_false(mux));
 	node_t    *t      = get_irn_node(get_Mux_true(mux));
 	ir_tarval *sel_tv = sel->type.tv;
-	ir_tarval *f_tv   = f->type.tv;
-	ir_tarval *t_tv   = t->type.tv;
 
 	if (sel_tv == tarval_bottom) {
 		node->type.tv = tarval_bottom;
 	} else if (sel_tv == tarval_b_false) {
-		node->type.tv = f_tv;
+		node->type.tv = f->type.tv;
 	} else if (sel_tv == tarval_b_true) {
-		node->type.tv = t_tv;
+		node->type.tv = t->type.tv;
 	} else {
 		assert(sel_tv == tarval_top);
 		/* Join of false and true operands. */
-		if (f_tv == t_tv) {
-			node->type.tv = f_tv;
-		} else if (f_tv == tarval_bottom) {
-			node->type.tv = t_tv;
-		} else if (t_tv == tarval_bottom) {
-			node->type.tv = f_tv;
-		} else {
-			node->type.tv = tarval_top;
-		}
+		join(&node->type, &f->type, &t->type);
 	}
 }
 
@@ -1954,28 +1957,15 @@ static void compute_Phi(node_t *node)
 	/* Phi implements the Join operation */
 	lattice_elem_t type = { .tv = tarval_bottom };
 	for (int i = get_Phi_n_preds(phi); i-- > 0; ) {
-		node_t *pred = get_irn_node(get_Phi_pred(phi, i));
-		/* ignore Bottom inputs */
-		if (pred->type.tv == tarval_bottom)
-			continue;
-
+		/* Ignore values coming from unreachable control flow. */
 		node_t *pred_X = get_irn_node(get_Block_cfgpred(block->node, i));
-		/* also ignore values coming from unreachable control flow */
 		if (pred_X->type.tv == tarval_bottom)
 			continue;
 
-		if (pred->type.tv == tarval_top) {
-			node->type.tv = tarval_top;
-			return;
-		} else if (type.tv == tarval_bottom) {
-			/* first constant found */
-			type = pred->type;
-		} else if (type.tv != pred->type.tv) {
-			/* different constants or tarval_top */
-			node->type.tv = tarval_top;
-			return;
-		}
-		/* else nothing, constants are the same */
+		node_t *const pred = get_irn_node(get_Phi_pred(phi, i));
+		join(&type, &type, &pred->type);
+		if (type.tv == tarval_top) /* Early out. */
+			break;
 	}
 	node->type = type;
 }
