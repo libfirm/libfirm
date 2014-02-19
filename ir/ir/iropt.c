@@ -92,6 +92,31 @@ static bool is_Eor_Add(const ir_node *node)
 }
 
 /**
+ * If node produces a left shift with a constant value return that value.
+ * This matches for x << c and x * C2 with C2 being a power of 2.
+ */
+static ir_tarval *is_shl_const_like(const ir_node *node)
+{
+	if (is_Shl(node)) {
+		ir_node *right = get_Shl_right(node);
+		if (is_Const(right))
+			return get_Const_tarval(right);
+	} else if (is_Mul(node)) {
+		ir_node *right = get_Mul_right(node);
+		if (is_Const(right)) {
+			ir_tarval *tv       = get_Const_tarval(right);
+			int        low_bit  = get_tarval_lowest_bit(tv);
+			int        high_bit = get_tarval_highest_bit(tv);
+			/* is value a power of 2? */
+			if (low_bit == high_bit && low_bit != -1) {
+				return new_tarval_from_long(low_bit, get_tarval_mode(tv));
+			}
+		}
+	}
+	return NULL;
+}
+
+/**
  * Returns the tarval of a Const node or tarval_unknown for all other nodes.
  */
 static ir_tarval *default_value_of(const ir_node *n)
@@ -522,18 +547,13 @@ bool ir_zero_when_converted(const ir_node *node, ir_mode *dest_mode)
 	    || get_mode_arithmetic(dest_mode) != irma_twos_complement)
 	    return false;
 
-	if (is_Shl(node)) {
-		const ir_node *count = get_Shl_right(node);
-		if (is_Const(count)) {
-			const ir_tarval *tv = get_Const_tarval(count);
-			if (tarval_is_long(tv)) {
-				long shiftval = get_tarval_long(tv);
-				long destbits = get_mode_size_bits(dest_mode);
-				if (shiftval >= destbits
-				    && shiftval < (long)get_mode_modulo_shift(mode))
-					return true;
-			}
-		}
+	ir_tarval *tv = is_shl_const_like(node);
+	if (tv != NULL && tarval_is_long(tv)) {
+		long shiftval = get_tarval_long(tv);
+		long destbits = get_mode_size_bits(dest_mode);
+		if (shiftval >= destbits
+			&& shiftval < (long)get_mode_modulo_shift(mode))
+			return true;
 	}
 	if (is_And(node)) {
 		ir_node *right = get_And_right(node);
@@ -2969,6 +2989,8 @@ static ir_node *can_negate_cheaply(ir_node *node)
 	return NULL;
 }
 
+static ir_node *transform_node_shl_shr(ir_node *n);
+
 static ir_node *transform_node_Mul(ir_node *n)
 {
 	ir_node *oldn = n;
@@ -2992,6 +3014,11 @@ static ir_node *transform_node_Mul(ir_node *n)
 			dbg_info *dbgi  = get_irn_dbg_info(n);
 			ir_node  *block = get_nodes_block(n);
 			return new_rd_Minus(dbgi, block, a, mode);
+		} else if (get_tarval_popcount(tv) == 1) {
+			/* multiplication behaves Shl-like */
+			n = transform_node_shl_shr(n);
+			if (n != oldn)
+				return n;
 		}
 	}
 	/* distribute minus:
@@ -3383,7 +3410,9 @@ static ir_node *transform_node_shift_bitop(ir_node *n)
 
 	ir_node   *new_shift;
 	ir_tarval *tv_shift;
-	if (is_Shl(n)) {
+	ir_tarval *shl_like = is_shl_const_like(n);
+	if (shl_like != NULL) {
+		tv2       = shl_like;
 		new_shift = new_rd_Shl(dbgi, block, bitop_left, right, mode);
 		tv_shift  = tarval_shl(tv1, tv2);
 	} else if (is_Shr(n)) {
@@ -4859,8 +4888,6 @@ static ir_node *transform_node_shift(ir_node *n)
  */
 static ir_node *transform_node_shl_shr(ir_node *n)
 {
-	assert(is_Shl(n) || is_Shr(n));
-
 	ir_node *right = get_binop_right(n);
 	if (!is_Const(right))
 		return n;
@@ -4868,20 +4895,17 @@ static ir_node *transform_node_shl_shr(ir_node *n)
 	ir_node   *left      = get_binop_left(n);
 	ir_node   *x;
 	ir_mode   *mode      = get_irn_mode(n);
-	ir_tarval *tv_shl;
 	ir_tarval *tv_shr;
 	ir_tarval *tv_mask;
-	int        need_shrs = 0;
-
-	if (is_Shl(n) && (is_Shr(left) || is_Shrs(left))) {
+	bool       need_shrs = false;
+	ir_tarval *tv_shl    = is_shl_const_like(n);
+	if (tv_shl != NULL && (is_Shr(left) || is_Shrs(left))) {
 		ir_node *shr_right = get_binop_right(left);
-
 		if (!is_Const(shr_right))
 			return n;
 
 		x      = get_binop_left(left);
 		tv_shr = get_Const_tarval(shr_right);
-		tv_shl = get_Const_tarval(right);
 
 		if (is_Shrs(left)) {
 			/* shrs variant only allowed if c1 >= c2 */
@@ -4889,20 +4913,17 @@ static ir_node *transform_node_shl_shr(ir_node *n)
 				return n;
 
 			tv_mask = tarval_shrs(get_mode_all_one(mode), tv_shr);
-			need_shrs = 1;
+			need_shrs = true;
 		} else {
 			tv_mask = tarval_shr(get_mode_all_one(mode), tv_shr);
 		}
 		tv_mask = tarval_shl(tv_mask, tv_shl);
-	} else if (is_Shr(n) && is_Shl(left)) {
-		ir_node *shl_right = get_Shl_right(left);
-
-		if (!is_Const(shl_right))
+	} else if (is_Shr(n)) {
+		tv_shl = is_shl_const_like(left);
+		if (tv_shl == NULL)
 			return n;
-
-		x      = get_Shl_left(left);
+		x      = get_binop_left(left);
 		tv_shr = get_Const_tarval(right);
-		tv_shl = get_Const_tarval(shl_right);
 
 		tv_mask = tarval_shl(get_mode_all_one(mode), tv_shl);
 		tv_mask = tarval_shr(tv_mask, tv_shr);
