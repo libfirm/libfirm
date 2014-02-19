@@ -1788,8 +1788,8 @@ static void compute_Block(node_t *node)
 	ir_node  *const block = node->node;
 	ir_graph *const irg   = get_Block_irg(block);
 
-	if (block == get_irg_start_block(irg) || get_Block_entity(block) != NULL) {
-		/* start block and labelled blocks are always reachable */
+	if (block == get_irg_start_block(irg)) {
+		/* The start block is always reachable. */
 		node->type.tv = tarval_top; /* reachable */
 		return;
 	}
