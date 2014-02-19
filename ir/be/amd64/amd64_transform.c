@@ -277,7 +277,7 @@ static ir_node *gen_Address(ir_node *node)
 
 	amd64_addr_t addr;
 	memset(&addr, 0, sizeof(addr));
-	addr.base_input  = RIP_INPUT;
+	addr.base_input  = NO_INPUT;
 	addr.index_input = NO_INPUT;
 	addr.mem_input   = NO_INPUT;
 
@@ -418,7 +418,7 @@ static void perform_address_matching(const ir_node *load, int *arity,
 	x86_address_t maddr;
 	memset(&maddr, 0, sizeof(maddr));
 
-	x86_create_address_mode(&maddr, ptr, x86_create_am_entities_ip_relative);
+	x86_create_address_mode(&maddr, ptr, x86_create_am_normal);
 	assert(maddr.frame_entity == NULL);
 	*reqs = reg_mem_reqs;
 
@@ -427,8 +427,6 @@ static void perform_address_matching(const ir_node *load, int *arity,
 		addr->base_input = base_input;
 		in[base_input]   = be_transform_node(maddr.base);
 		*reqs             = reg_reg_mem_reqs;
-	} else if(maddr.entity != NULL) {
-		addr->base_input = RIP_INPUT;
 	} else {
 		addr->base_input = NO_INPUT;
 	}
@@ -1588,7 +1586,7 @@ static ir_node *gen_Store(ir_node *node)
 	ir_node *ptr = get_Store_ptr(node);
 	x86_address_t maddr;
 	memset(&maddr, 0, sizeof(maddr));
-	x86_create_address_mode(&maddr, ptr, x86_create_am_entities_ip_relative);
+	x86_create_address_mode(&maddr, ptr, x86_create_am_normal);
 	assert(maddr.frame_entity == NULL);
 
 	amd64_binop_addr_attr_t attr;
@@ -1609,8 +1607,6 @@ static ir_node *gen_Store(ir_node *node)
 		int base_input   = arity++;
 		addr->base_input = base_input;
 		in[base_input]   = be_transform_node(maddr.base);
-	} else if (maddr.entity != NULL) {
-		addr->base_input = RIP_INPUT;
 	} else {
 		addr->base_input = NO_INPUT;
 	}
@@ -1702,7 +1698,7 @@ static ir_node *gen_Load(ir_node *node)
 	ir_node *ptr = get_Load_ptr(node);
 	x86_address_t maddr;
 	memset(&maddr, 0, sizeof(maddr));
-	x86_create_address_mode(&maddr, ptr, x86_create_am_entities_ip_relative);
+	x86_create_address_mode(&maddr, ptr, x86_create_am_normal);
 	assert(maddr.frame_entity == NULL);
 
 	amd64_addr_t addr;
@@ -1718,8 +1714,6 @@ static ir_node *gen_Load(ir_node *node)
 		addr.base_input = base_input;
 		in[base_input]  = be_transform_node(maddr.base);
 		reqs = reg_mem_reqs;
-	} else if (maddr.entity != NULL) {
-		addr.base_input = RIP_INPUT;
 	} else {
 		addr.base_input = NO_INPUT;
 	}
