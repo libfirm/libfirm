@@ -1951,12 +1951,6 @@ static void compute_Phi(node_t *node)
 	ir_node *phi   = node->node;
 	node_t  *block = get_irn_node(get_nodes_block(phi));
 
-	/* if a Phi is in a unreachable block, its type is Bottom */
-	if (!is_reachable(block)) {
-		node->type.tv = tarval_bottom;
-		return;
-	}
-
 	/* Phi implements the Join operation */
 	lattice_elem_t type = { .tv = tarval_bottom };
 	for (int i = get_Phi_n_preds(phi); i-- > 0; ) {
