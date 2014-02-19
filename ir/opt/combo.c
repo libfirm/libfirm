@@ -2063,7 +2063,7 @@ static void compute_Sub(node_t *node)
 
 		/* if the node was ONCE evaluated by all constants, but now
 		   this breaks AND we get from the argument partitions a different
-		   result, switch to bottom.
+		   result, switch to top.
 		   This happens because initially all nodes are in the same partition ... */
 		if (node->type.tv != tv)
 			tv = tarval_top;
