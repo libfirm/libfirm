@@ -5,8 +5,9 @@
 import sys
 import docutils.core
 import docutils.writers.html4css1
+import os.path
 from datetime import datetime
-from jinja2 import Environment, Template
+from jinja2 import Environment, Template, FileSystemLoader
 from spec_util import isAbstract, load_spec
 
 tags = None
@@ -34,7 +35,7 @@ def format_doxylink(string, link=None):
 		link = string
 	if tags == None:
 		return string
-	e = tags.xpath("//member[name/text()='%s']" % link)
+	e = tags.xpath("//tagfile/compound[name/text()='%s']" % link)
 	if len(e) == 0:
 		return string
 	e = e[0]
@@ -50,91 +51,6 @@ def format_docutils(string):
 	document = docutils.core.publish_parts(string, writer=writer)['body']
 	return document
 
-env = Environment()
-env.filters['docutils'] = format_docutils
-env.filters['doxylink'] = format_doxylink
-env.filters['doxygrouplink'] = format_doxygrouplink
-
-docu_template = env.from_string(
-'''<html>
-	<head>
-		<title>libFirm node specifications</title>
-		<link rel='stylesheet' type='text/css' href='style.css'/>
-	</head>
-	<body>
-		<div class="document">
-		<div class="documentwrapper">
-			<div class="bodywrapper"><div class="body">
-				<h1>Firm Node Types</h1>
-				{% for node in nodes %}
-				<div class="section" id="{{node.name}}">
-					<h3>{{node.name}}</h3>
-					{{node.doc|docutils}}
-					<h5>Inputs</h5>
-					<dl>
-					{% for input in node.ins %}
-						<dt>{{input[0]}}</dt><dd>{{input[1]}}</dd>
-					{% endfor %}
-					{% if node.arity == "variable" %}
-						<dt>...</dt><dd>additional inputs (oparity_variable)</dd>
-					{% elif node.arity == "dynamic" %}
-						<dt>...</dt><dd>inputs dynamically mananged (oparity_dynamic)</dd>
-					{% endif %}
-					</dl>
-					{% if node.outs %}
-					<h5>Outputs</h5>
-					<dl>
-					{% for output in node.outs %}
-						<dt>{{output[0]}}</dt><dd>{{output[1]}}</dd>
-					{% endfor %}
-					</dl>
-					{% endif %}
-					{% if node.attrs %}
-					<h5>Attributes</h5>
-					<dl>
-					{% for attr in node.attrs %}
-						<dt>{{attr.name}}</dt><dd>{{attr.comment}} ({{attr.type}})</dd>
-					{% endfor %}
-					{% endif %}
-					</dl>
-					{% set comma = joiner(", ") %}
-					<h5>Flags</h5>
-					{% if node.flags.__len__() > 0 %}
-					{% for flag in node.flags -%}
-						{{comma()}}{{flag|doxylink("irop_flag_" + flag)}}
-					{%- endfor %}
-					{% else %}
-					None
-					{% endif %}
-					<h5>{{"API"|doxygrouplink(node.name)}}</h5>
-					<hr/>
-				</div>
-				{% endfor %}
-			</div></div>
-		</div>
-		<div class="sidebar">
-			<div class="sidebarwrapper">
-				<h3>Table Of Contents</h3>
-				<ul>
-					<li><a href="#">Firm Node Types</a>
-					<ul>
-						{% for node in nodes %}
-						<li><a href="#{{node.name}}">{{node.name}}</a></li>
-						{% endfor %}
-					</ul>
-					</li>
-			</div>
-		</div>
-		</div>
-		<div class="footer">
-			Generated {{time}}
-		</div>
-	</body>
-</html>
-''')
-
-#############################
-
 def prepare_nodes(nodes):
 	real_nodes = []
 	for node in nodes:
@@ -144,29 +60,45 @@ def prepare_nodes(nodes):
 
 	return real_nodes
 
-def main(argv):
+def parse_tagfile(filename):
 	global tags
+	tagfile = open(filename)
+	try:
+		from lxml import etree
+		tags = etree.parse(tagfile)
+	except:
+		tags = None
+
+def main(argv):
 	output = sys.stdout
+	if len(argv) < 3:
+		sys.stderr.write("usage: %s specfile templatefile [linkbase doxygen-tag-file]\n" % argv[0])
+		sys.exit(1)
 	specfile = argv[1]
-	if len(argv) > 2:
-		output = open(argv[-1], "w")
-	if len(argv) > 4:
-		tagfile = open(argv[-3], "r")
+	templatefile = argv[2]
+	if len(argv) == 5:
+		sys.stderr.write("loading tagfile\n")
+		parse_tagfile(argv[3])
 		global linkbase
-		linkbase = argv[-2]
+		linkbase = argv[4]
 		if linkbase != "":
 			linkbase += "/"
-		try:
-			from lxml import etree
-			tags = etree.parse(tagfile)
-		except:
-			tags = None
 
 	spec = load_spec(specfile)
-	real_nodes = prepare_nodes(spec.nodes)
-	time = datetime.now().replace(microsecond=0).isoformat(' ')
-	output.write(docu_template.render(nodes=real_nodes, time=time))
-	if output != sys.stdout:
-		output.close()
+	prepared_nodes = prepare_nodes(spec.nodes)
+
+	basedir = os.path.dirname(templatefile)
+	if basedir == "":
+		basedir = "."
+	loader = FileSystemLoader(basedir)
+	env = Environment(loader=loader)
+	env.filters['docutils'] = format_docutils
+	env.filters['doxylink'] = format_doxylink
+	env.filters['doxygrouplink'] = format_doxygrouplink
+	env.globals['nodes'] = prepared_nodes
+	env.globals['time'] = datetime.now().replace(microsecond=0).isoformat(' ')
+	template = env.get_template(os.path.basename(templatefile))
+
+	output.write(template.render())
 
 main(sys.argv)
