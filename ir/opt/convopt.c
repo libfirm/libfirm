@@ -105,6 +105,8 @@ static int get_conv_costs(const ir_node *node, ir_mode *dest_mode)
 		ir_tarval *conved = conv_const_tv(node, dest_mode);
 		return (conved != tarval_bad && conved != tarval_unknown)
 			? 0 : 1;
+	} else if (is_Unknown(node)) {
+		return 0;
 	}
 
 	if (is_Conv(node) &&
@@ -186,6 +188,8 @@ static ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 		} else {
 			return new_r_Const(irg, tv);
 		}
+	} else if (is_Unknown(node)) {
+		return new_r_Unknown(irg, dest_mode);
 	}
 
 	if (is_Conv(node) &&
