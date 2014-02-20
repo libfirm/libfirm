@@ -1078,12 +1078,8 @@ static ir_node *equivalent_node_Minus(ir_node *n)
 
 		if (b) {
 			ir_tarval *const min = get_mode_min(mode);
-			ir_tarval *const z   = b->z;
-
-			if (z == min) {
+			if (b->z == min)
 				n = op;
-				set_bitinfo(n, z, b->o);
-			}
 		}
 	}
 
