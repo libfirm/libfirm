@@ -2232,7 +2232,7 @@ static void compute_Proj(node_t *node)
 
 	ir_mode *mode = get_irn_mode(proj);
 	if (mode == mode_M) {
-		/* mode M is always bottom */
+		/* mode M is always top */
 		node->type.tv = tarval_top;
 		return;
 	}
