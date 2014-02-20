@@ -248,15 +248,17 @@ exchange_only:
 			 * then an Add will have the same effect as the Or. Change it for
 			 * normalization */
 			if (tarval_is_null(tarval_and(bl->z, br->z))) {
-				dbg_info *dbgi     = get_irn_dbg_info(irn);
-				ir_node  *block    = get_nodes_block(irn);
-				ir_mode  *mode     = get_irn_mode(irn);
-				ir_node  *new_node = new_rd_Add(dbgi, block, l, r, mode);
-				mark_irn_visited(new_node);
-				DB((dbg, LEVEL_2, "%+F(%+F, %+F) normalized to Add\n", irn, l, r));
-				set_bitinfo(new_node, z, o);
-				exchange(irn, new_node);
-				env->modified = 1;
+				ir_mode *mode = get_irn_mode(irn);
+				if (get_mode_arithmetic(mode) == irma_twos_complement) {
+					dbg_info *dbgi     = get_irn_dbg_info(irn);
+					ir_node  *block    = get_nodes_block(irn);
+					ir_node  *new_node = new_rd_Add(dbgi, block, l, r, mode);
+					mark_irn_visited(new_node);
+					DB((dbg, LEVEL_2, "%+F(%+F, %+F) normalized to Add\n", irn, l, r));
+					set_bitinfo(new_node, z, o);
+					exchange(irn, new_node);
+					env->modified = 1;
+				}
 			}
 
 			break;
