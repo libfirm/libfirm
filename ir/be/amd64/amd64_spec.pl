@@ -334,6 +334,18 @@ Mov => {
 	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
 },
 
+IJmp => {
+	state     => "pinned",
+	op_flags  => [ "cfopcode", "unknown_jump" ],
+	reg_req   => { in => [ "gp" ], out => [ "none" ] },
+	arity     => "variable",
+	attr_type => "amd64_addr_attr_t",
+	attr      => "amd64_insn_mode_t insn_mode, amd64_addr_t addr",
+	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_CALL_ADDR;\n",
+	mode      => "mode_X",
+	emit      => "jmp %AM",
+},
+
 Jmp => {
 	state    => "pinned",
 	op_flags => [ "cfopcode" ],

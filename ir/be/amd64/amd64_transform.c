@@ -410,23 +410,19 @@ static bool use_address_matching(match_flags_t flags, ir_node *block,
 	return false;
 }
 
-static void perform_address_matching(const ir_node *load, int *arity,
-                                     ir_node **in, amd64_addr_t *addr,
-                                     const arch_register_req_t ***reqs)
+static void perform_address_matching(ir_node *ptr, int *arity,
+                                     ir_node **in, amd64_addr_t *addr)
 {
-	ir_node *ptr = get_Load_ptr(load);
 	x86_address_t maddr;
 	memset(&maddr, 0, sizeof(maddr));
 
 	x86_create_address_mode(&maddr, ptr, x86_create_am_normal);
 	assert(maddr.frame_entity == NULL);
-	*reqs = reg_mem_reqs;
 
 	if (maddr.base != NULL) {
 		int base_input   = (*arity)++;
 		addr->base_input = base_input;
 		in[base_input]   = be_transform_node(maddr.base);
-		*reqs             = reg_reg_mem_reqs;
 	} else {
 		addr->base_input = NO_INPUT;
 	}
@@ -434,17 +430,9 @@ static void perform_address_matching(const ir_node *load, int *arity,
 		int index_input = (*arity)++;
 		addr->index_input = index_input;
 		in[index_input]  = be_transform_node(maddr.index);
-		*reqs              = maddr.base != NULL
-			                           ? reg_reg_reg_mem_reqs
-			                           : reg_reg_mem_reqs;
 	} else {
 		addr->index_input = NO_INPUT;
 	}
-	ir_node *mem           = get_Load_mem(load);
-	ir_node *new_mem       = be_transform_node(mem);
-	int      mem_input     = (*arity)++;
-	in[mem_input]          = new_mem;
-	addr->mem_input        = mem_input;
 	addr->immediate.entity = maddr.entity;
 	addr->immediate.offset = maddr.offset;
 	addr->log_scale        = maddr.scale;
@@ -492,8 +480,19 @@ static void match_binop(amd64_args_t *args, ir_node *block,
 		args->in[reg_input]    = new_op;
 		amd64_addr_t *addr     = &args->attr.base.addr;
 
-		perform_address_matching(load, &(args->arity), args->in, addr,
-				                 &(args->reqs));
+		ir_node *ptr = get_Load_ptr(load);
+		perform_address_matching(ptr, &(args->arity), args->in, addr);
+
+		args->reqs = reg_mem_reqs;
+		if (addr->base_input != NO_INPUT && addr->index_input != NO_INPUT) {
+			args->reqs = reg_reg_reg_mem_reqs;
+		} else if(addr->base_input != NO_INPUT || addr->index_input != NO_INPUT) {
+			args->reqs = reg_reg_mem_reqs;
+		}
+		ir_node *new_mem    = be_transform_node(get_Load_mem(load));
+		int mem_input       = args->arity++;
+		args->in[mem_input] = new_mem;
+		addr->mem_input     = mem_input;
 
 		args->mem_proj               = be_get_Proj_for_pn(load, pn_Load_M);
 		args->attr.base.base.op_mode = AMD64_OP_ADDR_REG;
@@ -581,7 +580,20 @@ static ir_node *gen_binop_rax(ir_node *node, ir_node *op1, ir_node *op2,
 		int      reg_input = arity++;
 		in[reg_input]      = new_op;
 
-		perform_address_matching(load, &arity, in, &addr, &reqs);
+		ir_node *ptr = get_Load_ptr(load);
+		perform_address_matching(ptr, &arity, in, &addr);
+
+		reqs = reg_mem_reqs;
+		if (addr.base_input != NO_INPUT && addr.index_input != NO_INPUT) {
+			reqs = reg_reg_reg_mem_reqs;
+		} else if(addr.base_input != NO_INPUT || addr.index_input != NO_INPUT) {
+			reqs = reg_reg_mem_reqs;
+		}
+
+		ir_node *new_mem = be_transform_node(get_Load_mem(load));
+		int mem_input    = arity++;
+		in[mem_input]    = new_mem;
+		addr.mem_input   = mem_input;
 
 		mem_proj                = be_get_Proj_for_pn(load, pn_Load_M);
 		op_mode                 = AMD64_OP_RAX_ADDR;
@@ -590,6 +602,7 @@ static ir_node *gen_binop_rax(ir_node *node, ir_node *op1, ir_node *op2,
 		gen_binop_rax_reg(op1, op2, in, &arity, &op_mode, &reqs);
 	}
 
+	assert((size_t)arity <= ARRAY_SIZE(in));
 	(void)mem_proj;
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *new_block = be_transform_node(block);
@@ -933,6 +946,35 @@ static ir_node *gen_Sel(ir_node *const node)
 	                                INSN_MODE_64, addr);
 	arch_set_irn_register_reqs_in(res, reg_reqs);
 	return res;
+}
+
+static ir_node *gen_IJmp(ir_node *node)
+{
+	dbg_info *dbgi = get_irn_dbg_info(node);
+	ir_node *new_block = be_transform_node(get_nodes_block(node));
+	ir_node *op    = get_IJmp_target(node);
+	ir_mode *mode  = get_irn_mode(op);
+	assert(mode == mode_P);
+
+	int arity = 0;
+	ir_node *in[2];
+	amd64_addr_t addr;
+	memset(&addr, 0, sizeof(addr));
+
+	perform_address_matching(op, &arity, in, &addr);
+
+	const arch_register_req_t **reqs = mem_reqs;
+	if (addr.base_input != NO_INPUT && addr.index_input != NO_INPUT) {
+		reqs = reg_reg_mem_reqs;
+	} else if(addr.base_input != NO_INPUT || addr.index_input != NO_INPUT) {
+		reqs = reg_mem_reqs;
+	}
+
+	ir_node *jmp = new_bd_amd64_IJmp(dbgi, new_block, arity, in,
+                                         INSN_MODE_64, addr);
+
+	arch_set_irn_register_reqs_in(jmp, reqs);
+	return jmp;
 }
 
 static ir_node *gen_Jmp(ir_node *node)
@@ -1583,40 +1625,20 @@ static ir_node *gen_Store(ir_node *node)
 		panic("amd64: float store NIY");
 	assert(mode_needs_gp_reg(mode));
 
-	ir_node *ptr = get_Store_ptr(node);
-	x86_address_t maddr;
-	memset(&maddr, 0, sizeof(maddr));
-	x86_create_address_mode(&maddr, ptr, x86_create_am_normal);
-	assert(maddr.frame_entity == NULL);
-
 	amd64_binop_addr_attr_t attr;
 	memset(&attr, 0, sizeof(attr));
 	amd64_addr_t *addr = &attr.base.addr;
-	addr->immediate.entity = maddr.entity;
-	addr->immediate.offset = maddr.offset;
-	addr->log_scale        = maddr.scale;
 
 	ir_node *in[4];
 	int      arity = 0;
 
-	int reg_input = arity++;
+	int reg_input    = arity++;
 	in[reg_input]    = be_transform_node(val);
 	attr.u.reg_input = reg_input;
 
-	if (maddr.base != NULL) {
-		int base_input   = arity++;
-		addr->base_input = base_input;
-		in[base_input]   = be_transform_node(maddr.base);
-	} else {
-		addr->base_input = NO_INPUT;
-	}
-	if (maddr.index != NULL) {
-		int index_input = arity++;
-		addr->index_input = index_input;
-		in[index_input]   = be_transform_node(maddr.index);
-	} else {
-		addr->index_input = NO_INPUT;
-	}
+	ir_node *ptr = get_Store_ptr(node);
+	perform_address_matching(ptr, &arity, in, addr);
+
 	ir_node *mem     = get_Store_mem(node);
 	ir_node *new_mem = be_transform_node(mem);
 	in[arity++] = new_mem;
@@ -1696,35 +1718,21 @@ static ir_node *gen_Load(ir_node *node)
 	}
 
 	ir_node *ptr = get_Load_ptr(node);
-	x86_address_t maddr;
-	memset(&maddr, 0, sizeof(maddr));
-	x86_create_address_mode(&maddr, ptr, x86_create_am_normal);
-	assert(maddr.frame_entity == NULL);
 
+	int arity = 0;
+	ir_node *in[3];
 	amd64_addr_t addr;
 	memset(&addr, 0, sizeof(addr));
-	addr.immediate.entity = maddr.entity;
-	addr.immediate.offset = maddr.offset;
-	addr.log_scale        = maddr.scale;
-	ir_node *in[3];
-	int      arity = 0;
+
+	perform_address_matching(ptr, &arity, in, &addr);
+
 	const arch_register_req_t **reqs = mem_reqs;
-	if (maddr.base != NULL) {
-		int base_input  = arity++;
-		addr.base_input = base_input;
-		in[base_input]  = be_transform_node(maddr.base);
+	if (addr.base_input != NO_INPUT && addr.index_input != NO_INPUT) {
+		reqs = reg_reg_mem_reqs;
+	} else if(addr.base_input != NO_INPUT || addr.index_input != NO_INPUT) {
 		reqs = reg_mem_reqs;
-	} else {
-		addr.base_input = NO_INPUT;
 	}
-	if (maddr.index != NULL) {
-		int index_input  = arity++;
-		addr.index_input = index_input;
-		in[index_input]  = be_transform_node(maddr.index);
-		reqs = maddr.base != NULL ? reg_reg_mem_reqs : reg_mem_reqs;
-	} else {
-		addr.index_input = NO_INPUT;
-	}
+
 	ir_node *mem     = get_Load_mem(node);
 	ir_node *new_mem = be_transform_node(mem);
 	in[arity++] = new_mem;
@@ -1828,6 +1836,7 @@ static void amd64_register_transformers(void)
 	be_set_transform_function(op_Conv,     gen_Conv);
 	be_set_transform_function(op_Div,      gen_Div);
 	be_set_transform_function(op_Eor,      gen_Eor);
+	be_set_transform_function(op_IJmp,     gen_IJmp);
 	be_set_transform_function(op_Jmp,      gen_Jmp);
 	be_set_transform_function(op_Load,     gen_Load);
 	be_set_transform_function(op_Minus,    gen_Minus);
