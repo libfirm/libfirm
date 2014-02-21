@@ -5146,6 +5146,11 @@ static ir_node *transform_node_Shr(ir_node *n)
 	return n;
 }
 
+static bool bitinfo_is_undefined(bitinfo const* const b)
+{
+	return tarval_is_null(b->z) && tarval_is_all_one(b->o);
+}
+
 /**
  * Transform a Shrs.
  */
@@ -5181,7 +5186,8 @@ static ir_node *transform_node_Shrs(ir_node *n)
 
 	/* Normalization: use Shr when sign bit is guaranteed to be cleared */
 	const bitinfo *const bn = get_bitinfo(n);
-	if (bn != NULL && get_mode_arithmetic(mode) == irma_twos_complement) {
+	if (bn != NULL && !bitinfo_is_undefined(bn) &&
+	    get_mode_arithmetic(mode) == irma_twos_complement) {
 		ir_tarval *z           = bn->z;
 		unsigned   mode_bits   = get_mode_size_bits(mode);
 		unsigned   highest_bit = get_tarval_highest_bit(z);
