@@ -259,15 +259,9 @@ result_unknown_X:
 			o = t;
 		}
 	} else if (mode_is_intb(m)) {
-		bitinfo *const b = get_bitinfo(get_nodes_block(irn));
-
 		DB((dbg, LEVEL_3, "transfer %+F\n", irn));
 
-		if (b == NULL || b->z == f) {
-undefined:
-			z = get_mode_null(m);
-			o = get_mode_all_one(m);
-		} else if (is_Phi(irn)) {
+		if (is_Phi(irn)) {
 			ir_node *const block = get_nodes_block(irn);
 
 			z = get_mode_null(m);
@@ -300,7 +294,10 @@ undefined:
 
 			switch (get_irn_opcode(irn)) {
 				case iro_Bad:
-					goto undefined;
+undefined:
+					z = get_mode_null(m);
+					o = get_mode_all_one(m);
+					break;
 
 				case iro_Const: {
 					z = o = get_Const_tarval(irn);
