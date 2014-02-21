@@ -156,8 +156,6 @@ static int transfer(ir_node* const irn)
 	ir_tarval*       z;
 	ir_tarval*       o;
 
-	if (is_Bad(irn)) return 0;
-
 	if (m == mode_X) {
 		bitinfo* const b = get_bitinfo(get_nodes_block(irn));
 
@@ -169,6 +167,9 @@ unreachable_X:
 			z = f;
 			o = t;
 		} else switch (get_irn_opcode(irn)) {
+			case iro_Bad:
+				goto unreachable_X;
+
 			case iro_Proj: {
 				ir_node* const pred = get_Proj_pred(irn);
 				if (is_Start(pred)) {
@@ -275,6 +276,9 @@ undefined:
 			}
 
 			switch (get_irn_opcode(irn)) {
+				case iro_Bad:
+					goto undefined;
+
 				case iro_Const: {
 					z = o = get_Const_tarval(irn);
 					break;
