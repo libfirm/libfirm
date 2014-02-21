@@ -970,8 +970,15 @@ static ir_node *gen_IJmp(ir_node *node)
 		reqs = reg_mem_reqs;
 	}
 
+	amd64_op_mode_t op_mode;
+	if (addr.immediate.entity == NULL) {
+		op_mode = AMD64_OP_CALL_ADDR;
+	} else {
+		op_mode = AMD64_OP_ADDR;
+	}
+
 	ir_node *jmp = new_bd_amd64_IJmp(dbgi, new_block, arity, in,
-                                         INSN_MODE_64, addr);
+                                         INSN_MODE_64, op_mode, addr);
 
 	arch_set_irn_register_reqs_in(jmp, reqs);
 	return jmp;
