@@ -99,6 +99,9 @@ static int get_conv_costs(const ir_node *const node, ir_mode *const dest_mode)
 		return 0;
 
 	switch (get_irn_opcode(node)) {
+	case iro_Bad:
+		return 0;
+
 	case iro_Const: {
 		ir_tarval *conved = conv_const_tv(node, dest_mode);
 		return (conved != tarval_bad && conved != tarval_unknown) ? 0 : 1;
@@ -169,6 +172,9 @@ static ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 
 	ir_graph *const irg  = get_irn_irg(node);
 	switch (get_irn_opcode(node)) {
+	case iro_Bad:
+		return new_r_Bad(irg, dest_mode);
+
 	case iro_Const: {
 		ir_tarval *tv = conv_const_tv(node, dest_mode);
 		if (tv == tarval_bad || tv == tarval_unknown) {
