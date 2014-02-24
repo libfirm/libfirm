@@ -359,12 +359,6 @@ static ir_tarval *computed_value_Mul(const ir_node *n)
 	ir_tarval     *tb   = value_of(b);
 	ir_mode       *mode = get_irn_mode(n);
 
-	if (mode != get_irn_mode(a)) {
-		/* n * n = 2n bit multiplication */
-		ta = tarval_convert_to(ta, mode);
-		tb = tarval_convert_to(tb, mode);
-	}
-
 	if (ta != tarval_unknown && tb != tarval_unknown) {
 		return tarval_mul(ta, tb);
 	} else {
