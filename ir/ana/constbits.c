@@ -24,6 +24,7 @@
 #include "irnode_t.h"
 #include "irnodemap.h"
 #include "iroptimize.h"
+#include "iropt.h"
 #include "tv.h"
 #include "irmemory.h"
 #include "constbits.h"
@@ -293,6 +294,13 @@ undefined:
 				bitinfo* const pred_b = get_bitinfo(pred);
 				if (pred_b != NULL && is_undefined(pred_b))
 					goto undefined;
+			}
+
+			/* leverage compute_value_node_XXX knowledge */
+			ir_tarval *computed = computed_value(irn);
+			if (computed != tarval_unknown) {
+				z = o = computed;
+				goto set_info;
 			}
 
 			switch (get_irn_opcode(irn)) {
@@ -596,6 +604,7 @@ result_unknown:
 		return 0;
 	}
 
+set_info:
 	return set_bitinfo(irn, z, o);
 }
 
