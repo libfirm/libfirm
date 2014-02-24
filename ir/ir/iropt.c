@@ -298,7 +298,7 @@ static ir_tarval *computed_value_Add(const ir_node *n)
 	ir_tarval     *ta = value_of(a);
 	ir_tarval     *tb = value_of(b);
 
-	if ((ta != tarval_unknown) && (tb != tarval_unknown))
+	if (ta != tarval_unknown && tb != tarval_unknown)
 		return tarval_add(ta, tb);
 
 	/* x+~x => -1 */
@@ -318,17 +318,13 @@ static ir_tarval *computed_value_Sub(const ir_node *n)
 	const ir_node *a    = get_Sub_left(n);
 	const ir_node *b    = get_Sub_right(n);
 
-	/* NaN - NaN != 0 */
-	if (! mode_is_float(mode)) {
-		/* a - a = 0 */
-		if (a == b)
-			return get_mode_null(mode);
-	}
+	/* a - a == 0 (not possible for float because NaN - NaN == NaN */
+	if (a == b && get_mode_arithmetic(mode) == irma_twos_complement)
+		return get_mode_null(mode);
 
 	ir_tarval *ta = value_of(a);
 	ir_tarval *tb = value_of(b);
-
-	if ((ta != tarval_unknown) && (tb != tarval_unknown))
+	if (ta != tarval_unknown && tb != tarval_unknown)
 		return tarval_sub(ta, tb, mode);
 
 	return tarval_unknown;
@@ -385,9 +381,8 @@ static ir_tarval *computed_value_And(const ir_node *n)
 	ir_tarval     *ta = value_of(a);
 	ir_tarval     *tb = value_of(b);
 
-	if ((ta != tarval_unknown) && (tb != tarval_unknown)) {
+	if (ta != tarval_unknown && tb != tarval_unknown)
 		return tarval_and(ta, tb);
-	}
 
 	if (tarval_is_null(ta)) return ta;
 	if (tarval_is_null(tb)) return tb;
@@ -410,14 +405,13 @@ static ir_tarval *computed_value_Or(const ir_node *n)
 	ir_tarval     *ta = value_of(a);
 	ir_tarval     *tb = value_of(b);
 
-	if ((ta != tarval_unknown) && (tb != tarval_unknown)) {
+	if (ta != tarval_unknown && tb != tarval_unknown)
 		return tarval_or (ta, tb);
-	}
 
 	if (tarval_is_all_one(ta)) return ta;
 	if (tarval_is_all_one(tb)) return tb;
 
-	/* x|~x => -1 */
+	/* x|~x => ~0 */
 	if (complement_values(a, b))
 		return get_mode_all_one(get_irn_mode(n));
 
@@ -434,16 +428,15 @@ static ir_tarval *computed_value_Eor(const ir_node *n)
 
 	if (a == b)
 		return get_mode_null(get_irn_mode(n));
-	/* x^~x => -1 */
+	/* x^~x => ~0 */
 	if (complement_values(a, b))
 		return get_mode_all_one(get_irn_mode(n));
 
 	ir_tarval *ta = value_of(a);
 	ir_tarval *tb = value_of(b);
 
-	if ((ta != tarval_unknown) && (tb != tarval_unknown)) {
+	if (ta != tarval_unknown && tb != tarval_unknown)
 		return tarval_eor(ta, tb);
-	}
 	return tarval_unknown;
 }
 
@@ -491,10 +484,8 @@ static ir_tarval *computed_value_Shl(const ir_node *n)
 	ir_tarval     *ta = value_of(a);
 	ir_tarval     *tb = value_of(b);
 
-	if ((ta != tarval_unknown) && (tb != tarval_unknown)) {
+	if (ta != tarval_unknown && tb != tarval_unknown)
 		return tarval_shl(ta, tb);
-	}
-
 	if (is_oversize_shift(n))
 		return get_mode_null(get_irn_mode(n));
 
@@ -511,12 +502,10 @@ static ir_tarval *computed_value_Shr(const ir_node *n)
 	ir_tarval     *ta = value_of(a);
 	ir_tarval     *tb = value_of(b);
 
-	if ((ta != tarval_unknown) && (tb != tarval_unknown)) {
+	if (ta != tarval_unknown && tb != tarval_unknown)
 		return tarval_shr(ta, tb);
-	}
 	if (is_oversize_shift(n))
 		return get_mode_null(get_irn_mode(n));
-
 	return tarval_unknown;
 }
 
@@ -530,9 +519,8 @@ static ir_tarval *computed_value_Shrs(const ir_node *n)
 	ir_tarval     *ta = value_of(a);
 	ir_tarval     *tb = value_of(b);
 
-	if ((ta != tarval_unknown) && (tb != tarval_unknown)) {
+	if (ta != tarval_unknown && tb != tarval_unknown)
 		return tarval_shrs(ta, tb);
-	}
 	return tarval_unknown;
 }
 
@@ -573,7 +561,6 @@ static ir_tarval *computed_value_Conv(const ir_node *n)
 
 	if (ta != tarval_unknown)
 		return tarval_convert_to(ta, mode);
-
 	if (ir_zero_when_converted(a, mode))
 		return get_mode_null(mode);
 
@@ -592,8 +579,7 @@ static ir_tarval *computed_value_Mux(const ir_node *n)
 	if (ts == get_tarval_b_true()) {
 		ir_node *v = get_Mux_true(n);
 		return value_of(v);
-	}
-	else if (ts == get_tarval_b_false()) {
+	} else if (ts == get_tarval_b_false()) {
 		ir_node *v = get_Mux_false(n);
 		return value_of(v);
 	}
@@ -631,7 +617,7 @@ ir_relation ir_get_possible_cmp_relations(const ir_node *left,
 	const ir_tarval *tv_r     = value_of(right);
 
 	/* both values known - evaluate them */
-	if ((tv_l != tarval_unknown) && (tv_r != tarval_unknown)) {
+	if (tv_l != tarval_unknown && tv_r != tarval_unknown) {
 		possible = tarval_cmp(tv_l, tv_r);
 		/* we can return now, won't get any better */
 		return possible;
@@ -777,9 +763,8 @@ static ir_tarval *do_computed_value_Div(const ir_node *div)
 			return ta;  /* 0 / b == 0 if b != 0 */
 	}
 	ir_tarval *tb = value_of(b);
-	if (ta != tarval_unknown && tb != tarval_unknown && !tarval_is_null(tb)) {
+	if (ta != tarval_unknown && tb != tarval_unknown && !tarval_is_null(tb))
 		return tarval_div(ta, tb);
-	}
 	return tarval_unknown;
 }
 
@@ -3281,16 +3266,14 @@ static ir_node *transform_node_Mod(ir_node *n)
 			DBG_OPT_ALGSIM0(n, value, FS_OPT_CONST_PHI);
 			goto make_tuple;
 		}
-	}
-	else if (is_Const(a) && is_const_Phi(b)) {
+	} else if (is_Const(a) && is_const_Phi(b)) {
 		/* check for Div(Const, Phi) */
 		value = apply_binop_on_phi(b, get_Const_tarval(a), (eval_func) tarval_mod, mode, 1);
 		if (value) {
 			DBG_OPT_ALGSIM0(n, value, FS_OPT_CONST_PHI);
 			goto make_tuple;
 		}
-	}
-	else if (is_const_Phi(a) && is_const_Phi(b)) {
+	} else if (is_const_Phi(a) && is_const_Phi(b)) {
 		/* check for Div(Phi, Phi) */
 		value = apply_binop_on_2_phis(a, b, (eval_func) tarval_mod, mode);
 		if (value) {
