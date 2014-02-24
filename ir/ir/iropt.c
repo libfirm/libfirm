@@ -225,6 +225,10 @@ confirmed:
 	if (is_Alloc(n))
 		return true;
 
+	const bitinfo *bi = get_bitinfo(n);
+	if (bi != NULL && !tarval_is_null(bi->o))
+		return true;
+
 	/* for all we know the value may be null */
 	return false;
 }
