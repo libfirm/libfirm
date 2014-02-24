@@ -304,6 +304,12 @@ static ir_tarval *computed_value_Add(const ir_node *n)
 	/* x+~x => -1 */
 	if (complement_values(a, b))
 		return get_mode_all_one(get_irn_mode(n));
+	/* x + -x => 0 */
+	if (ir_is_negated_value(a, b)) {
+		ir_mode *mode = get_irn_mode(n);
+		if (get_mode_arithmetic(mode) == irma_twos_complement)
+			return get_mode_null(mode);
+	}
 
 	return tarval_unknown;
 }
