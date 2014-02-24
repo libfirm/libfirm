@@ -472,7 +472,7 @@ static bool is_oversize_shift(const ir_node *n)
 	const ir_node   *count = get_binop_right(n);
 	const ir_mode   *mode  = get_irn_mode(n);
 	const ir_tarval *tv    = value_of(count);
-	if (tv == tarval_unknown)
+	if (!tarval_is_constant(tv))
 		return false;
 	if (!tarval_is_long(tv))
 		return false;
@@ -609,7 +609,7 @@ static ir_tarval *computed_value_Confirm(const ir_node *n)
 
 	if ((possible & relation) == ir_relation_equal) {
 		ir_tarval *tv = value_of(bound);
-		if (tv != tarval_unknown)
+		if (tarval_is_constant(tv))
 			return tv;
 	}
 	return value_of(value);
@@ -779,7 +779,7 @@ static ir_tarval *do_computed_value_Div(const ir_node *a, const ir_node *b)
 			return get_mode_one(mode);
 	}
 	ir_tarval *tb = value_of(b);
-	if (ta != tarval_unknown && tb != tarval_unknown && !tarval_is_null(tb))
+	if (ta != tarval_unknown && tb != tarval_unknown)
 		return tarval_div(ta, tb);
 	return tarval_unknown;
 }
@@ -803,7 +803,7 @@ static ir_tarval *do_computed_value_Mod(const ir_node *a, const ir_node *b)
 		if (value_not_null(b, &dummy))
 			return ta;
 	}
-	if (ta != tarval_unknown && tb != tarval_unknown && !tarval_is_null(tb))
+	if (ta != tarval_unknown && tb != tarval_unknown)
 		return tarval_mod(ta, tb);
 	return tarval_unknown;
 }
@@ -880,9 +880,9 @@ static ir_node *equivalent_node_neutral_zero(ir_node *n)
 
 	/* After running compute_node there is only one constant predecessor.
 	   Find this predecessors value and remember the other node: */
-	if ((tv = value_of(a)) != tarval_unknown) {
+	if (tarval_is_constant( (tv = value_of(a)) )) {
 		on = b;
-	} else if ((tv = value_of(b)) != tarval_unknown) {
+	} else if (tarval_is_constant( (tv = value_of(b)) )) {
 		on = a;
 	} else
 		return n;
@@ -1203,12 +1203,13 @@ static ir_node *equivalent_node_And(ir_node *n)
 	}
 	/* constants are normalized to right, check this side first */
 	ir_tarval *tb = value_of(b);
-	if (tarval_is_all_one(tb)) {
-		n = a;
-		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_AND);
-		return n;
-	}
-	if (tb != get_tarval_unknown()) {
+	if (tarval_is_constant(tb)) {
+		if (tarval_is_all_one(tb)) {
+			n = a;
+			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_AND);
+			return n;
+		}
+
 		ir_mode *mode = get_irn_mode(n);
 		if (!mode_is_signed(mode) && is_Conv(a)) {
 			const ir_node *convop     = get_Conv_op(a);
@@ -1446,7 +1447,7 @@ static ir_node *equivalent_node_Mux(ir_node *n)
 	const ir_node   *sel  = get_Mux_sel(n);
 	const ir_tarval *ts   = value_of(sel);
 
-	if (ts == tarval_unknown && is_Cmp(sel)) {
+	if (!tarval_is_constant(ts) && is_Cmp(sel)) {
 		/* try again with a direct call to compute_cmp, as we don't care
 		 * about the MODEB_LOWERED flag here */
 		ts = compute_cmp_ext(sel);
@@ -1624,25 +1625,25 @@ static ir_node *apply_binop_on_phi(ir_node *phi, ir_tarval *other, eval_func eva
 	ir_tarval **tvs = ALLOCAN(ir_tarval*, n);
 	if (left) {
 		foreach_irn_in(phi, i, pred) {
-			ir_tarval *tv = get_Const_tarval(pred);
-			tv = do_eval(eval, other, tv, mode);
+			ir_tarval *tv        = get_Const_tarval(pred);
+			ir_tarval *evaluated = do_eval(eval, other, tv, mode);
 
-			if (tv == tarval_unknown || tv == tarval_bad) {
-				/* folding failed, bad */
+			if (!tarval_is_constant(evaluated)) {
+				/* folding failed, abort */
 				return NULL;
 			}
-			tvs[i] = tv;
+			tvs[i] = evaluated;
 		}
 	} else {
 		foreach_irn_in(phi, i, pred) {
-			ir_tarval *tv = get_Const_tarval(pred);
-			tv = do_eval(eval, tv, other, mode);
+			ir_tarval *tv        = get_Const_tarval(pred);
+			ir_tarval *evaluated = do_eval(eval, tv, other, mode);
 
-			if (tv == tarval_unknown || tv == tarval_bad) {
-				/* folding failed, bad */
+			if (!tarval_is_constant(evaluated)) {
+				/* folding failed, abort */
 				return 0;
 			}
-			tvs[i] = tv;
+			tvs[i] = evaluated;
 		}
 	}
 	ir_graph  *irg = get_irn_irg(phi);
@@ -1678,7 +1679,7 @@ static ir_node *apply_binop_on_2_phis(ir_node *a, ir_node *b, eval_func eval, ir
 		ir_tarval     *tv_r   = get_Const_tarval(pred_b);
 		ir_tarval     *tv     = do_eval(eval, tv_l, tv_r, mode);
 
-		if (tv == tarval_unknown) {
+		if (!tarval_is_constant(tv)) {
 			/* folding failed, bad */
 			return NULL;
 		}
@@ -1709,9 +1710,9 @@ static ir_node *apply_unop_on_phi(ir_node *phi, ir_tarval *(*eval)(ir_tarval *))
 		ir_tarval *tv = get_Const_tarval(pred);
 		tv = eval(tv);
 
-		if (tv == tarval_unknown) {
-			/* folding failed, bad */
-			return 0;
+		if (!tarval_is_constant(tv)) {
+			/* folding failed, abort */
+			return NULL;
 		}
 		tvs[i] = tv;
 	}
@@ -1740,9 +1741,9 @@ static ir_node *apply_conv_on_phi(ir_node *phi, ir_mode *mode)
 		ir_tarval *tv = get_Const_tarval(pred);
 		tv = tarval_convert_to(tv, mode);
 
-		if (tv == tarval_unknown) {
-			/* folding failed, bad */
-			return 0;
+		if (!tarval_is_constant(tv)) {
+			/* folding failed, abort */
+			return NULL;
 		}
 		tvs[i] = tv;
 	}
@@ -2296,7 +2297,7 @@ static ir_node *fold_constant_associativity(ir_node *node,
 	if (get_tarval_mode(c0) != get_tarval_mode(c1))
 		return node;
 	ir_tarval *new_c = fold(c0, c1);
-	if (new_c == tarval_unknown)
+	if (!tarval_is_constant(new_c))
 		return node;
 	ir_node *new_const = new_r_Const(irg, new_c);
 	ir_node *new_node  = exact_copy(node);
@@ -2531,11 +2532,11 @@ static ir_node *transform_node_Add(ir_node *n)
 		const ir_node *sub_l = get_Sub_left(a);
 		ir_tarval     *ts    = value_of(sub_l);
 
-		if (ts != tarval_unknown) {
+		if (tarval_is_constant(ts)) {
 			ir_tarval *tb = get_Const_tarval(b);
 			ir_tarval *tv = tarval_add(ts, tb);
 
-			if (tv != tarval_unknown) {
+			if (tarval_is_constant(tv)) {
 				/* (C1 - x) + C2 = (C1 + C2) - x */
 				dbg_info *dbgi  = get_irn_dbg_info(n);
 				ir_graph *irg   = get_irn_irg(n);
@@ -2665,7 +2666,7 @@ mul_y_plus_z:;
 static ir_node *const_negate(ir_node *cnst)
 {
 	ir_tarval *tv = tarval_neg(get_Const_tarval(cnst));
-	if (tv == tarval_unknown)
+	if (!tarval_is_constant(tv))
 		return NULL;
 
 	dbg_info *dbgi = get_irn_dbg_info(cnst);
@@ -2741,11 +2742,11 @@ restart:
 		const ir_node *add_r = get_Add_right(b);
 		ir_tarval     *tr    = value_of(add_r);
 
-		if (tr != tarval_unknown) {
+		if (tarval_is_constant(tr)) {
 			ir_tarval *ta = get_Const_tarval(a);
 			ir_tarval *tv = tarval_sub(ta, tr, NULL);
 
-			if (tv != tarval_unknown) {
+			if (tarval_is_constant(tv)) {
 				/* C1 - (x + C2) = (C1 - C2) - x*/
 				dbg_info *dbgi  = get_irn_dbg_info(n);
 				ir_graph *irg   = get_irn_irg(n);
@@ -2945,7 +2946,7 @@ restart:
 			ir_tarval *tv = get_Const_tarval(a);
 
 			tv = tarval_add(tv, get_mode_one(mode));
-			if (tv != tarval_unknown) {
+			if (tarval_is_constant(tv)) {
 				ir_node  *blk = get_nodes_block(n);
 				ir_graph *irg = get_irn_irg(n);
 				ir_node  *c   = new_r_Const(irg, tv);
@@ -3236,14 +3237,14 @@ static ir_node *transform_node_Div(ir_node *n)
 		/* Optimize x/c to x*(1/c) */
 		ir_tarval *tv = value_of(b);
 
-		if (tv != tarval_unknown) {
+		if (tarval_is_constant(tv)) {
 			tv = tarval_div(get_mode_one(mode), tv);
 
 			/* Do the transformation if the result is either exact or we are
 			   not using strict rules. */
-			if (tv != tarval_unknown &&
-				(tarval_ieee754_get_exact()
-				 || ir_imprecise_float_transforms_allowed())) {
+			if (tarval_is_constant(tv)
+			    && (tarval_ieee754_get_exact()
+				    || ir_imprecise_float_transforms_allowed())) {
 				ir_node  *block = get_nodes_block(n);
 				ir_graph *irg   = get_irn_irg(block);
 				ir_node  *c     = new_r_Const(irg, tv);
@@ -3311,7 +3312,7 @@ static ir_node *transform_node_Mod(ir_node *n)
 	value = n;
 	ir_tarval *tv  = do_computed_value_Mod(a, b);
 	ir_graph  *irg = get_irn_irg(n);
-	if (tv != tarval_unknown) {
+	if (tarval_is_constant(tv)) {
 		value = new_r_Const(irg, tv);
 
 		DBG_OPT_CSTEVAL(n, value);
@@ -3378,13 +3379,13 @@ static ir_node *transform_node_Cond(ir_node *n)
 
 	ir_node   *a  = get_Cond_selector(n);
 	ir_tarval *ta = value_of(a);
-	if (ta == tarval_unknown && is_Cmp(a)) {
+	if (!tarval_is_constant(ta) && is_Cmp(a)) {
 		/* try again with a direct call to compute_cmp, as we don't care
 		 * about the MODEB_LOWERED flag here */
 		ta = compute_cmp_ext(a);
 	}
 
-	if (ta != tarval_unknown) {
+	if (tarval_is_constant(ta)) {
 		/* It's branching on a boolean constant.
 		   Replace it by a tuple (Bad, Jmp) or (Jmp, Bad) */
 		ir_node *const blk  = get_nodes_block(n);
@@ -3408,7 +3409,7 @@ static ir_node *transform_node_Switch(ir_node *n)
 {
 	ir_node         *op  = get_Switch_selector(n);
 	const ir_tarval *val = value_of(op);
-	if (val != tarval_unknown) {
+	if (tarval_is_constant(val)) {
 		const ir_switch_table *table     = get_Switch_table(n);
 		size_t                 n_entries = ir_switch_table_get_n_entries(table);
 		long                   jmp_pn    = 0;
@@ -3753,10 +3754,10 @@ static ir_node *transform_node_Not(ir_node *n)
 			ir_node   *add_r = get_binop_right(a);
 			ir_tarval *tr    = value_of(add_r);
 
-			if (tr != tarval_unknown) {
+			if (tarval_is_constant(tr)) {
 				ir_tarval *tv = tarval_not(tr);
 
-				if (tv != tarval_unknown) {
+				if (tarval_is_constant(tv)) {
 					/* ~(x + C) = (~C) - x */
 					ir_graph *irg   = get_irn_irg(n);
 					ir_node  *cnst  = new_r_Const(irg, tv);
@@ -3771,10 +3772,10 @@ static ir_node *transform_node_Not(ir_node *n)
 			ir_node   *sub_l = get_Sub_left(a);
 			ir_tarval *tr    = value_of(sub_l);
 
-			if (tr != tarval_unknown) {
+			if (tarval_is_constant(tr)) {
 				ir_tarval *tv = tarval_not(tr);
 
-				if (tv != tarval_unknown) {
+				if (tarval_is_constant(tv)) {
 					/* ~(C - x) = x + (~C) */
 					ir_graph *irg   = get_irn_irg(n);
 					ir_node  *cnst  = new_r_Const(irg, tv);
@@ -4093,7 +4094,7 @@ static ir_node *transform_node_Cmp(ir_node *n)
 				tarval_set_integer_overflow_mode(TV_OVERFLOW_BAD);
 				new_tv = tarval_convert_to(tv, mode_left);
 				tarval_set_integer_overflow_mode(last_mode);
-				if (new_tv != tarval_bad && new_tv != tarval_unknown) {
+				if (tarval_is_constant(new_tv)) {
 					ir_graph *irg = get_irn_irg(n);
 					left    = op_left;
 					right   = new_r_Const(irg, new_tv);
@@ -4379,7 +4380,7 @@ is_bittest: {
 	 * Of course this is only possible for integer values.
 	 */
 	tv = value_of(right);
-	if (tv != tarval_unknown) {
+	if (tarval_is_constant(tv)) {
 		ir_mode *mode = get_irn_mode(right);
 
 		/* cmp(mux(x, cf, ct), c2) can be eliminated:
@@ -4441,7 +4442,7 @@ is_bittest: {
 			}
 		}
 
-		if (tv != tarval_unknown) {
+		if (tarval_is_constant(tv)) {
 			/* the following optimization is possible on modes without Overflow
 			 * on Unary Minus or on == and !=:
 			 * -a CMP c  ==>  a swap(CMP) -c
@@ -4455,7 +4456,7 @@ is_bittest: {
 				(mode_is_int(mode) && (relation == ir_relation_equal || relation == ir_relation_less_greater)))) {
 				tv = tarval_neg(tv);
 
-				if (tv != tarval_unknown) {
+				if (tarval_is_constant(tv)) {
 					left = get_Minus_op(left);
 					relation = get_inversed_relation(relation);
 					changedc = true;
@@ -4465,7 +4466,7 @@ is_bittest: {
 				/* Not(a) ==/!= c  ==>  a ==/!= Not(c) */
 				tv = tarval_not(tv);
 
-				if (tv != tarval_unknown) {
+				if (tarval_is_constant(tv)) {
 					left = get_Not_op(left);
 					changedc = true;
 					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_C);
@@ -4479,7 +4480,7 @@ is_bittest: {
 					tarval_cmp(tv, get_mode_null(mode)) == ir_relation_greater) {
 					tv = tarval_sub(tv, get_mode_one(mode), NULL);
 
-					if (tv != tarval_unknown) {
+					if (tarval_is_constant(tv)) {
 						relation ^= ir_relation_equal;
 						changedc = true;
 						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CNST_MAGN);
@@ -4490,7 +4491,7 @@ is_bittest: {
 					tarval_cmp(tv, get_mode_null(mode)) == ir_relation_less) {
 					tv = tarval_add(tv, get_mode_one(mode));
 
-					if (tv != tarval_unknown) {
+					if (tarval_is_constant(tv)) {
 						relation ^= ir_relation_equal;
 						changedc = true;
 						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CNST_MAGN);
@@ -4499,16 +4500,16 @@ is_bittest: {
 
 				/* the following reassociations work only for == and != */
 				if (relation == ir_relation_equal || relation == ir_relation_less_greater) {
-					if (tv != tarval_unknown) {
+					if (tarval_is_constant(tv)) {
 						/* a-c1 == c2  ==>  a == c2+c1,  a-c1 != c2  ==>  a != c2+c1 */
 						if (is_Sub(left)) {
 							ir_node *c1 = get_Sub_right(left);
 							ir_tarval *tv2 = value_of(c1);
 
-							if (tv2 != tarval_unknown) {
+							if (tarval_is_constant(tv2)) {
 								tv2 = tarval_add(tv, value_of(c1));
 
-								if (tv2 != tarval_unknown) {
+								if (tarval_is_constant(tv2)) {
 									left    = get_Sub_left(left);
 									tv      = tv2;
 									changedc = true;
@@ -4519,9 +4520,9 @@ is_bittest: {
 						/* a+c1 == c2  ==>  a == c2-c1,  a+c1 != c2  ==>  a != c2-c1 */
 						else if (is_Add(left) || is_Or_Eor_Add(left)) {
 							ir_tarval *tv2 = value_of(get_binop_right(left));
-							if (tv2 != tarval_unknown) {
+							if (tarval_is_constant(tv2)) {
 								tv2 = tarval_sub(tv, tv2, NULL);
-								if (tv2 != tarval_unknown) {
+								if (tarval_is_constant(tv2)) {
 									left    = get_binop_left(left);
 									tv      = tv2;
 									changedc = true;
@@ -4533,7 +4534,7 @@ is_bittest: {
 						else if (is_Minus(left)) {
 							ir_tarval *tv2 = tarval_sub(get_mode_null(mode), tv, NULL);
 
-							if (tv2 != tarval_unknown) {
+							if (tarval_is_constant(tv2)) {
 								left    = get_Minus_op(left);
 								tv      = tv2;
 								changedc = true;
@@ -4900,11 +4901,11 @@ static ir_node *transform_node_shift(ir_node *n)
 
 	ir_node   *right = get_binop_right(n);
 	ir_tarval *tv1   = value_of(right);
-	if (tv1 == tarval_unknown)
+	if (!tarval_is_constant(tv1))
 		return n;
 
 	ir_tarval *tv2 = value_of(get_binop_right(left));
-	if (tv2 == tarval_unknown)
+	if (!tarval_is_constant(tv2))
 		return n;
 
 	ir_mode *count_mode = get_tarval_mode(tv1);
@@ -5017,7 +5018,7 @@ static ir_node *transform_node_shl_shr(ir_node *n)
 
 	tv_shl = tarval_convert_to(tv_shl, get_tarval_mode(tv_shr));
 
-	assert(tv_mask != tarval_unknown);
+	assert(tarval_is_constant(tv_mask));
 	assert(get_tarval_mode(tv_mask) == mode);
 
 	ir_node     *block     = get_nodes_block(n);
@@ -6500,7 +6501,7 @@ restart:;
 			} else {
 				/* try to evaluate */
 				ir_tarval *tv = computed_value(n);
-				if (tv != tarval_unknown) {
+				if (tarval_is_constant(tv)) {
 					/* evaluation was successful -- replace the node. */
 					ir_graph *const irg = get_irn_irg(n);
 
@@ -6877,7 +6878,7 @@ ir_node *optimize_node(ir_node *n)
 		if (iro != iro_Const && (get_irn_mode(n) != mode_T)) {
 			/* try to evaluate */
 			ir_tarval *tv = computed_value(n);
-			if (tv != tarval_unknown) {
+			if (tarval_is_constant(tv)) {
 				/*
 				 * we MUST copy the node here temporarily, because it's still
 				 * needed for DBG_OPT_CSTEVAL

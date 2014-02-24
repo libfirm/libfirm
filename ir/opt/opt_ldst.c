@@ -539,7 +539,7 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 					ir_tarval *tv     = computed_value(index);
 
 					/* check if the index is constant */
-					if (tv == tarval_bad)
+					if (!tarval_is_constant(tv))
 						return NULL;
 
 					bound  = get_array_lower_bound(tp, i);
@@ -547,7 +547,8 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 					bound  = get_array_upper_bound(tp, i);
 					tupper = computed_value(bound);
 
-					if (tlower == tarval_bad || tupper == tarval_bad)
+					if (!tarval_is_constant(tlower)
+					    || !tarval_is_constant(tupper))
 						return NULL;
 
 					if (tarval_cmp(tv, tlower) == ir_relation_less)

@@ -118,8 +118,10 @@ typedef unsigned (*hash_func)(const ir_node *self);
 
 /**
  * The compute value operation.
- * This operation evaluates an IR node into a tarval if possible,
- * returning tarval_bad otherwise.
+ * If a node is known to always produce a specific value, this value is
+ * returned, if it is known to always throw an exception or produce undefined
+ * behaviour (like division by zero) tarval_bad is returned, otherwise
+ * tarval_unknown is returned.
  */
 typedef ir_tarval *(*computed_value_func)(const ir_node *self);
 
