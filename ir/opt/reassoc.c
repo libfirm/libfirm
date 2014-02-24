@@ -105,68 +105,6 @@ static void get_comm_Binop_ops(ir_node *binop, ir_node **a, ir_node **c)
 	}
 }
 
-/**
- * reassociate a Sub: x - c = x + (-c)
- */
-static int reassoc_Sub(ir_node **in)
-{
-	ir_node *n = *in;
-	ir_node *right = get_Sub_right(n);
-	ir_mode *rmode = get_irn_mode(right);
-	ir_node *block;
-
-	/* cannot handle SubIs(P, P) */
-	if (mode_is_reference(rmode))
-		return 0;
-
-	block = get_nodes_block(n);
-
-	/* handles rule R6:
-	 * convert x - c => x + (-c)
-	 */
-	if (get_const_class(right, block) == REAL_CONSTANT) {
-		ir_node *left  = get_Sub_left(n);
-		ir_mode *mode;
-		dbg_info *dbi;
-		ir_node *irn;
-
-		switch (get_const_class(left, block)) {
-		case REAL_CONSTANT:
-			irn = optimize_in_place(n);
-			if (irn != n) {
-				exchange(n, irn);
-				*in = irn;
-				return 1;
-			}
-			return 0;
-		case NO_CONSTANT:
-			break;
-		default:
-			/* already constant, nothing to do */
-			return 0;
-		}
-
-		mode = get_irn_mode(n);
-		dbi  = get_irn_dbg_info(n);
-
-		/* Beware of SubP(P, Is) */
-		irn = new_rd_Minus(dbi, block, right, rmode);
-		irn = new_rd_Add(dbi, block, left, irn, mode);
-
-		DBG((dbg, LEVEL_5, "Applied: %n - %n => %n + (-%n)\n",
-			get_Sub_left(n), right, get_Sub_left(n), right));
-
-		if (n == irn)
-			return 0;
-
-		exchange(n, irn);
-		*in = irn;
-
-		return 1;
-	}
-	return 0;
-}
-
 /** Retrieve a mode from the operands. We need this, because
  * Add and Sub are allowed to operate on (P, Is)
  */
@@ -771,7 +709,6 @@ void ir_register_reassoc_node_ops(void)
 	register_node_reassoc_func(op_Eor, reassoc_commutative);
 	register_node_reassoc_func(op_Mul, reassoc_Mul);
 	register_node_reassoc_func(op_Or,  reassoc_commutative);
-	register_node_reassoc_func(op_Sub, reassoc_Sub);
 }
 
 /* initialize the reassociation by adding operations to some opcodes */
