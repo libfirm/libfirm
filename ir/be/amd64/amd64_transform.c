@@ -287,8 +287,8 @@ static ir_node *gen_Address(ir_node *node)
 	} else {
 		assert(mode == REFERENCE_GOT);
 		addr.immediate.entity = new_got_entry_entity(entity);
-		ir_node *load = new_bd_amd64_Mov(dbgi, block, 0, NULL, AMD64_OP_ADDR,
-		                                 INSN_MODE_64, addr);
+		ir_node *load = new_bd_amd64_Mov(dbgi, block, 0, NULL, INSN_MODE_64,
+										 AMD64_OP_ADDR, addr);
 		return new_r_Proj(load, mode_gp, pn_amd64_Mov_res);
 	}
 }

@@ -121,7 +121,7 @@ static ir_node *amd64_turn_back_am(ir_node *node)
 	load_in[load_arity++] = get_irn_n(node, attr->addr.mem_input);
 
 	ir_node *load = new_bd_amd64_Mov(dbgi, block, load_arity, load_in,
-	                                 AMD64_OP_ADDR, attr->insn_mode, new_addr);
+	                                 attr->insn_mode, AMD64_OP_ADDR, new_addr);
 	ir_node *load_res = new_r_Proj(load, mode_Lu, pn_amd64_Mov_res);
 
 	/* change operation */
