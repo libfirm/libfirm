@@ -29,6 +29,40 @@
 #include "amd64_new_nodes.h"
 #include "gen_amd64_regalloc_if.h"
 
+static const char *get_op_mode_string(amd64_op_mode_t mode)
+{
+	switch (mode) {
+	case AMD64_OP_NONE:       return "none";
+	case AMD64_OP_ADDR:       return "addr";
+	case AMD64_OP_REG:        return "reg";
+	case AMD64_OP_REG_REG:    return "reg+reg";
+	case AMD64_OP_REG_IMM:    return "reg+imm";
+	case AMD64_OP_IMM32:      return "imm32";
+	case AMD64_OP_IMM64:      return "imm64";
+	case AMD64_OP_ADDR_REG:   return "addr+reg";
+	case AMD64_OP_ADDR_IMM:   return "addr+imm";
+	case AMD64_OP_UNOP_REG:   return "unop_reg";
+	case AMD64_OP_SHIFT_REG:  return "shift_reg";
+	case AMD64_OP_SHIFT_IMM:  return "shift_imm";
+	case AMD64_OP_CALL_ADDR:  return "call_addr";
+	case AMD64_OP_CALL_IMM32: return "call_imm32";
+	case AMD64_OP_RAX_REG:    return "rax_reg";
+	case AMD64_OP_RAX_ADDR:   return "rax_addr";
+	}
+	panic("invalid op_mode");
+}
+
+static const char *get_insn_mode_string(amd64_insn_mode_t mode)
+{
+	switch (mode) {
+	case INSN_MODE_8:  return "8";
+	case INSN_MODE_16: return "16";
+	case INSN_MODE_32: return "32";
+	case INSN_MODE_64: return "64";
+	}
+	panic("invalid insn_mode");
+}
+
 /**
  * Dumper interface for dumping amd64 nodes in vcg.
  * @param F        the output file
@@ -60,34 +94,22 @@ static void amd64_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 	case dump_node_info_txt:
 		arch_dump_reqs_and_registers(F, n);
 		const amd64_attr_t *attr = get_amd64_attr_const(n);
-		fputs("mode = ", F);
-		switch (attr->op_mode) {
-		case AMD64_OP_REG_REG:  fputs("reg+reg\n", F);  break;
-		case AMD64_OP_REG_IMM:  fputs("reg+imm\n", F);  break;
-		case AMD64_OP_ADDR_REG: fputs("load+reg\n", F); break;
-		case AMD64_OP_ADDR:     fputs("load\n", F);     break;
-		case AMD64_OP_REG:      fputs("reg\n", F);      break;
-		}
-		if (attr->op_mode != AMD64_OP_NONE) {
-			const amd64_addr_attr_t *addr_attr
-				= (const amd64_addr_attr_t*)attr;
-			fputs("size = ", F);
-			switch (addr_attr->insn_mode) {
-			case INSN_MODE_8:  fputs("8\n", F); break;
-			case INSN_MODE_16: fputs("16\n", F); break;
-			case INSN_MODE_32: fputs("32\n", F); break;
-			case INSN_MODE_64: fputs("64\n", F); break;
-			}
-		}
-		if (attr->op_mode == AMD64_OP_ADDR_REG) {
+		fprintf(F, "mode = %s\n", get_op_mode_string(attr->op_mode));
+		if (attr->op_mode == AMD64_OP_UNOP_REG) {
+			const amd64_unop_attr_t *unop_attr = get_amd64_unop_attr_const(n);
+			fprintf(F, "size = %s\n",
+			        get_insn_mode_string(unop_attr->insn_mode));
+		} else if (attr->op_mode == AMD64_OP_ADDR_REG) {
 			const amd64_binop_addr_attr_t *binop_attr
-				= (const amd64_binop_addr_attr_t*)attr;
+				= get_amd64_binop_addr_attr_const(n);
 			fprintf(F, "reg input: %d\n", binop_attr->u.reg_input);
 		}
 		if (attr->op_mode == AMD64_OP_ADDR_REG
-		 || attr->op_mode == AMD64_OP_ADDR) {
+		    || attr->op_mode == AMD64_OP_ADDR) {
 			const amd64_addr_attr_t *addr_attr
-				= (const amd64_addr_attr_t*)attr;
+				= get_amd64_addr_attr_const(n);
+			fprintf(F, "size = %s\n",
+			        get_insn_mode_string(addr_attr->insn_mode));
 			fprintf(F, "base input: %d\n", addr_attr->addr.base_input);
 			fprintf(F, "index input: %d\n", addr_attr->addr.index_input);
 			ir_fprintf(F, "am imm: %+F%+" PRId32 "\n",
