@@ -25,6 +25,7 @@
 #define get_tarval_unknown()     get_tarval_unknown_()
 #define get_tarval_b_false()     get_tarval_b_false_()
 #define get_tarval_b_true()      get_tarval_b_true_()
+#define tarval_is_constant(tv)   tarval_is_constant_(tv)
 #define is_tarval(thing)         is_tarval_(thing)
 
 #define SC_BITS 4
@@ -100,6 +101,11 @@ static inline ir_tarval *get_tarval_b_false_(void)
 static inline ir_tarval *get_tarval_b_true_(void)
 {
 	return tarval_b_true;
+}
+
+static inline int tarval_is_constant_(const ir_tarval *tv)
+{
+	return tv != tarval_bad && tv != tarval_unknown;
 }
 
 static inline int is_tarval_(const void *thing)

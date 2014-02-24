@@ -617,9 +617,9 @@ ir_tarval *get_tarval_all_one(ir_mode *mode)
 	panic("invalid mode sort");
 }
 
-int tarval_is_constant(const ir_tarval *tv)
+int (tarval_is_constant)(const ir_tarval *tv)
 {
-	return tv != tarval_bad && tv != tarval_unknown;
+	return tarval_is_constant_(tv);
 }
 
 ir_tarval *get_tarval_minus_one(ir_mode *mode)
