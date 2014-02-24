@@ -24,8 +24,6 @@
 #define get_mode_sign(mode)            get_mode_sign_(mode)
 #define get_mode_arithmetic(mode)      get_mode_arithmetic_(mode)
 #define get_mode_modulo_shift(mode)    get_mode_modulo_shift_(mode)
-#define get_mode_link(mode)            get_mode_link_(mode)
-#define set_mode_link(mode, l)         set_mode_link_(mode, l)
 #define mode_is_signed(mode)           mode_is_signed_(mode)
 #define mode_is_float(mode)            mode_is_float_(mode)
 #define mode_is_int(mode)              mode_is_int_(mode)
@@ -58,10 +56,6 @@ static inline int get_mode_sign_(const ir_mode *mode) { return mode->sign; }
 static inline ir_mode_arithmetic get_mode_arithmetic_(const ir_mode *mode) { return mode->arithmetic; }
 
 static inline unsigned int get_mode_modulo_shift_(const ir_mode *mode) { return mode->modulo_shift; }
-
-static inline void *get_mode_link_(const ir_mode *mode) { return mode->link; }
-
-static inline void set_mode_link_(ir_mode *mode, void *l) { mode->link = l; }
 
 /* Functions to check, whether a mode is signed, float, int, num, data.
    For more exact definitions read the corresponding pages

@@ -165,7 +165,6 @@ struct ir_mode {
 	ir_tarval         *all_one;     /**< the value ~0 */
 	ir_mode           *eq_signed;   /**< For pointer modes, the equivalent signed integer one. */
 	ir_mode           *eq_unsigned; /**< For pointer modes, the equivalent unsigned integer one. */
-	void              *link;        /**< To store some intermediate information */
 };
 
 /* note: we use "long" here because that is the type used for Proj-Numbers */

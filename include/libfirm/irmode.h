@@ -152,12 +152,6 @@ FIRM_API ir_mode_arithmetic get_mode_arithmetic(const ir_mode *mode);
  */
 FIRM_API unsigned int get_mode_modulo_shift(const ir_mode *mode);
 
-/** Returns the stored intermediate information. */
-FIRM_API void *get_mode_link(const ir_mode *mode);
-
-/** Stores new intermediate information. */
-FIRM_API void set_mode_link(ir_mode *mode, void *l);
-
 /**
  * Returns the smallest representable value of a given mode.
  *

@@ -174,7 +174,6 @@ static ir_mode *alloc_mode(const char *name, ir_mode_sort sort,
 	mode_tmpl->sign         = sign ? 1 : 0;
 	mode_tmpl->modulo_shift = modulo_shift;
 	mode_tmpl->arithmetic   = arithmetic;
-	mode_tmpl->link         = NULL;
 	return mode_tmpl;
 }
 
@@ -294,16 +293,6 @@ ir_mode_arithmetic (get_mode_arithmetic)(const ir_mode *mode)
 unsigned int (get_mode_modulo_shift)(const ir_mode *mode)
 {
 	return get_mode_modulo_shift_(mode);
-}
-
-void *(get_mode_link)(const ir_mode *mode)
-{
-	return get_mode_link_(mode);
-}
-
-void (set_mode_link)(ir_mode *mode, void *l)
-{
-	set_mode_link_(mode, l);
 }
 
 ir_tarval *get_mode_min(const ir_mode *mode)
