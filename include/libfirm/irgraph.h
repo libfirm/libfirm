@@ -341,7 +341,7 @@ typedef enum ir_graph_constraints_t {
 	/**
 	 * Allows localopts to remove edges to unreachable code.
 	 * Warning: It is only safe to enable this when you are sure that you
-	 * apply all localopts to the fixpunkt. (=in optimize_graph_df)
+	 * apply all localopts to the fixpoint. (=in optimize_graph_df)
 	 */
 	IR_GRAPH_CONSTRAINT_OPTIMIZE_UNREACHABLE_CODE = 1U << 3,
 	/**
