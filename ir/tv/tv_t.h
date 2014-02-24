@@ -20,12 +20,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define get_tarval_mode(tv)      _get_tarval_mode(tv)
-#define get_tarval_bad()         _get_tarval_bad()
-#define get_tarval_unknown()     _get_tarval_unknown()
-#define get_tarval_b_false()     _get_tarval_b_false()
-#define get_tarval_b_true()      _get_tarval_b_true()
-#define is_tarval(thing)         _is_tarval(thing)
+#define get_tarval_mode(tv)      get_tarval_mode_(tv)
+#define get_tarval_bad()         get_tarval_bad_()
+#define get_tarval_unknown()     get_tarval_unknown_()
+#define get_tarval_b_false()     get_tarval_b_false_()
+#define get_tarval_b_true()      get_tarval_b_true_()
+#define is_tarval(thing)         is_tarval_(thing)
 
 #define SC_BITS 4
 
@@ -77,32 +77,32 @@ struct ir_tarval {
 /*
  * Access routines for tarval fields ========================================
  */
-static inline ir_mode *_get_tarval_mode(const ir_tarval *tv)
+static inline ir_mode *get_tarval_mode_(const ir_tarval *tv)
 {
 	return tv->mode;
 }
 
-static inline ir_tarval *_get_tarval_bad(void)
+static inline ir_tarval *get_tarval_bad_(void)
 {
 	return tarval_bad;
 }
 
-static inline ir_tarval *_get_tarval_unknown(void)
+static inline ir_tarval *get_tarval_unknown_(void)
 {
 	return tarval_unknown;
 }
 
-static inline ir_tarval *_get_tarval_b_false(void)
+static inline ir_tarval *get_tarval_b_false_(void)
 {
 	return tarval_b_false;
 }
 
-static inline ir_tarval *_get_tarval_b_true(void)
+static inline ir_tarval *get_tarval_b_true_(void)
 {
 	return tarval_b_true;
 }
 
-static inline int _is_tarval(const void *thing)
+static inline int is_tarval_(const void *thing)
 {
 	return get_kind(thing) == k_tarval;
 }

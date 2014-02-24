@@ -452,7 +452,7 @@ double get_tarval_double(const ir_tarval *tv)
 
 ir_mode *(get_tarval_mode)(const ir_tarval *tv)
 {
-	return _get_tarval_mode(tv);
+	return get_tarval_mode_(tv);
 }
 
 /*
@@ -467,22 +467,22 @@ ir_mode *(get_tarval_mode)(const ir_tarval *tv)
 
 ir_tarval *(get_tarval_bad)(void)
 {
-	return _get_tarval_bad();
+	return get_tarval_bad_();
 }
 
 ir_tarval *(get_tarval_unknown)(void)
 {
-	return _get_tarval_unknown();
+	return get_tarval_unknown_();
 }
 
 ir_tarval *(get_tarval_b_false)(void)
 {
-	return _get_tarval_b_false();
+	return get_tarval_b_false_();
 }
 
 ir_tarval *(get_tarval_b_true)(void)
 {
-	return _get_tarval_b_true();
+	return get_tarval_b_true_();
 }
 
 ir_tarval *get_tarval_max(ir_mode *mode)
@@ -1575,5 +1575,5 @@ void finish_tarval(void)
 
 int (is_tarval)(const void *thing)
 {
-	return _is_tarval(thing);
+	return is_tarval_(thing);
 }
