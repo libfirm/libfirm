@@ -342,6 +342,8 @@ static void emit_shiftop(const ir_node *const node)
 		emit_register_insn_mode(reg0, attr->insn_mode);
 		return;
 	}
+	default:
+		break;
 	}
 	panic("invalid op_mode for shiftop");
 }
