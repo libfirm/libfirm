@@ -13,7 +13,10 @@ typedef struct bitinfo
 /* Get analysis information for node irn */
 bitinfo* get_bitinfo(ir_node const* irn);
 
-/* Set analysis information for node irn */
+/* Joins the existing information with the given one. */
+int join_bitinfo(ir_node* irn, ir_tarval* z, ir_tarval* o);
+
+/* Set analysis information for node irn. */
 int set_bitinfo(ir_node* irn, ir_tarval* z, ir_tarval* o);
 
 /* Compute value range fixpoint aka which bits of value are constant zero/one.

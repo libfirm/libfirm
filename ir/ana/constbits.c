@@ -122,6 +122,26 @@ bitinfo* get_bitinfo(ir_node const* const irn)
 	return ir_nodemap_get(bitinfo, map, irn);
 }
 
+int join_bitinfo(ir_node* const irn, ir_tarval* const z, ir_tarval* const o)
+{
+	bitinfo* b = get_bitinfo(irn);
+	if (b == NULL) {
+		ir_graph   *const irg = get_irn_irg(irn);
+		ir_nodemap *const map = &irg->bitinfo.map;
+		b = OALLOCZ(obst, bitinfo);
+		ir_nodemap_insert(map, irn, b);
+		b->z = z;
+		b->o = o;
+	} else if (z == b->z && o == b->o) {
+		return 0;
+	} else {
+		b->z = tarval_and(b->z, z);
+		b->o = tarval_or(b->o, o);
+	}
+	DB((dbg, LEVEL_3, "Join %+F: 0:%T 1:%T\n", irn, b->z, b->o));
+	return 1;
+}
+
 int set_bitinfo(ir_node* const irn, ir_tarval* const z, ir_tarval* const o)
 {
 	bitinfo* b = get_bitinfo(irn);
@@ -139,7 +159,7 @@ int set_bitinfo(ir_node* const irn, ir_tarval* const z, ir_tarval* const o)
 	}
 	b->z = z;
 	b->o = o;
-	DB((dbg, LEVEL_3, "%+F: 0:%T 1:%T\n", irn, z, o));
+	DB((dbg, LEVEL_3, "Set %+F: 0:%T 1:%T\n", irn, z, o));
 	return 1;
 }
 
