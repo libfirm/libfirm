@@ -176,7 +176,7 @@ FIRM_API ir_tarval *get_mode_max(const ir_mode *mode);
  * op_pin_state_floats and ints, and references (NULL-Pointer)
  * else returns tarval_bad.
  */
-FIRM_API ir_tarval *get_mode_null(ir_mode *mode);
+FIRM_API ir_tarval *get_mode_null(const ir_mode *mode);
 
 /**
  * Returns the value One, represented in this mode.
@@ -185,7 +185,7 @@ FIRM_API ir_tarval *get_mode_null(ir_mode *mode);
  * is defined only for modes allowing multiplication,
  * i.e. ints and floats.
  */
-FIRM_API ir_tarval *get_mode_one(ir_mode *mode);
+FIRM_API ir_tarval *get_mode_one(const ir_mode *mode);
 
 /**
  * Returns the value Minus One, represented in this mode.
@@ -193,7 +193,7 @@ FIRM_API ir_tarval *get_mode_one(ir_mode *mode);
  * Minus One is defined only for modes allowing
  * multiplication with signed values, i.e. signed ints and floats.
  */
-FIRM_API ir_tarval *get_mode_minus_one(ir_mode *mode);
+FIRM_API ir_tarval *get_mode_minus_one(const ir_mode *mode);
 
 /**
  * Returns the value where all bits are One, represented in this mode.
@@ -209,7 +209,7 @@ FIRM_API ir_tarval *get_mode_all_one(const ir_mode *mode);
  * There are typically multiple possible representations of infinity, don't
  * compare with this value but use tarval_is_plus_inf() instead.
  */
-FIRM_API ir_tarval *get_mode_infinite(ir_mode *mode);
+FIRM_API ir_tarval *get_mode_infinite(const ir_mode *mode);
 
 /**
  * Returns a NAN value of a given mode.
@@ -218,7 +218,7 @@ FIRM_API ir_tarval *get_mode_infinite(ir_mode *mode);
  * There are typically multiple possible representations of NaN, don't compare
  * with this value but use tarval_is_NaN() instead.
  */
-FIRM_API ir_tarval *get_mode_NAN(ir_mode *mode);
+FIRM_API ir_tarval *get_mode_NAN(const ir_mode *mode);
 
 FIRM_API ir_mode *mode_M; /**< memory */
 
@@ -392,7 +392,7 @@ FIRM_API int mode_wrap_around(const ir_mode *mode);
 /**
  * Returns the signed integer equivalent mode for an reference mode.
  */
-FIRM_API ir_mode *get_reference_mode_signed_eq(ir_mode *mode);
+FIRM_API ir_mode *get_reference_mode_signed_eq(const ir_mode *mode);
 
 /**
  * Sets the signed integer equivalent mode for an reference mode.

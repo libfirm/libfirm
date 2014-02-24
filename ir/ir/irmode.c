@@ -64,13 +64,17 @@ static void set_mode_values(ir_mode* mode)
 {
 	switch (get_mode_sort(mode)) {
 	case irms_float_number:
-		mode->all_one = tarval_bad;
+		mode->all_one  = tarval_bad;
+		mode->infinity = get_tarval_plus_inf(mode);
+		mode->nan      = get_tarval_nan(mode);
 		goto init_rest;
 
 	case irms_internal_boolean:
 	case irms_reference:
 	case irms_int_number:
 		mode->all_one   = get_tarval_all_one(mode);
+		mode->infinity  = tarval_bad;
+		mode->nan       = tarval_bad;
 init_rest:
 		mode->min       = get_tarval_min(mode);
 		mode->max       = get_tarval_max(mode);
@@ -87,6 +91,8 @@ init_rest:
 		mode->null      = tarval_bad;
 		mode->one       = tarval_bad;
 		mode->minus_one = tarval_bad;
+		mode->infinity  = tarval_bad;
+		mode->nan       = tarval_bad;
 		break;
 	}
 }
@@ -309,21 +315,21 @@ ir_tarval *get_mode_max(const ir_mode *mode)
 	return mode->max;
 }
 
-ir_tarval *get_mode_null(ir_mode *mode)
+ir_tarval *get_mode_null(const ir_mode *mode)
 {
 	assert(mode_is_data(mode) || mode == mode_b);
 
 	return mode->null;
 }
 
-ir_tarval *get_mode_one(ir_mode *mode)
+ir_tarval *get_mode_one(const ir_mode *mode)
 {
 	assert(mode_is_data(mode) || mode == mode_b);
 
 	return mode->one;
 }
 
-ir_tarval *get_mode_minus_one(ir_mode *mode)
+ir_tarval *get_mode_minus_one(const ir_mode *mode)
 {
 	assert(mode_is_data(mode));
 
@@ -336,18 +342,16 @@ ir_tarval *get_mode_all_one(const ir_mode *mode)
 	return mode->all_one;
 }
 
-ir_tarval *get_mode_infinite(ir_mode *mode)
+ir_tarval *get_mode_infinite(const ir_mode *mode)
 {
 	assert(mode_is_float(mode));
-
-	return get_tarval_plus_inf(mode);
+	return mode->infinity;
 }
 
-ir_tarval *get_mode_NAN(ir_mode *mode)
+ir_tarval *get_mode_NAN(const ir_mode *mode)
 {
 	assert(mode_is_float(mode));
-
-	return get_tarval_nan(mode);
+	return mode->nan;
 }
 
 int is_mode(const void *thing)
@@ -497,7 +501,7 @@ int values_in_mode(const ir_mode *sm, const ir_mode *lm)
 	return false;
 }
 
-ir_mode *get_reference_mode_signed_eq(ir_mode *mode)
+ir_mode *get_reference_mode_signed_eq(const ir_mode *mode)
 {
 	assert(mode_is_reference(mode));
 	return mode->eq_signed;
