@@ -781,11 +781,18 @@ static ir_tarval *do_computed_value_Div(const ir_node *div)
 static ir_tarval *do_computed_value_Mod(const ir_node *a, const ir_node *b)
 {
 	ir_tarval *tb = value_of(b);
-
 	/* Compute a % 1 or c1 % c2 */
 	if (tarval_is_one(tb))
 		return get_mode_null(get_irn_mode(a));
+
 	ir_tarval *ta = value_of(a);
+	/* 0 % b == 0 if b != 0 */
+	if (tarval_is_null(ta)) {
+		assert(get_mode_arithmetic(get_irn_mode(a)) == irma_twos_complement);
+		const ir_node *dummy;
+		if (value_not_null(b, &dummy))
+			return ta;
+	}
 	if (ta != tarval_unknown && tb != tarval_unknown && !tarval_is_null(tb))
 		return tarval_mod(ta, tb);
 	return tarval_unknown;
