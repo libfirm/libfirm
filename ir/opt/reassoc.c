@@ -30,10 +30,9 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 typedef enum {
-	NO_CONSTANT   = 0,    /**< node is not constant */
-	REAL_CONSTANT = 1,    /**< node is a Const that is suitable for constant folding */
-	REGION_CONST  = 4     /**< node is a constant expression in the current context,
-	                           use 4 here to simplify implementation of get_comm_Binop_ops() */
+	NO_CONSTANT,   /**< node is not constant */
+	REAL_CONSTANT, /**< a Const that is suitable for constant folding */
+	REGION_CONST   /**< a constant expression in the current context */
 } const_class_t;
 
 /**
@@ -56,7 +55,7 @@ static const_class_t get_const_class(const ir_node *n, const ir_node *block)
 	 * Beware: Bad nodes are always loop-invariant, but
 	 * cannot handled in later code, so filter them here.
 	 */
-	if (! is_Bad(n) && is_loop_invariant(n, block))
+	if (!is_Bad(n) && is_loop_invariant(n, block))
 		return REGION_CONST;
 
 	return NO_CONSTANT;
@@ -71,19 +70,16 @@ static const_class_t get_const_class(const ir_node *n, const ir_node *block)
  */
 static void get_comm_Binop_ops(ir_node *binop, ir_node **a, ir_node **c)
 {
+	assert(is_op_commutative(get_irn_op(binop)));
 	ir_node *op_a = get_binop_left(binop);
 	ir_node *op_b = get_binop_right(binop);
 	ir_node *block = get_nodes_block(binop);
 	int class_a = get_const_class(op_a, block);
 	int class_b = get_const_class(op_b, block);
 
-	assert(is_op_commutative(get_irn_op(binop)));
-
-	switch (class_a + 2*class_b) {
-	case REAL_CONSTANT + 2*REAL_CONSTANT:
+	if (class_a == REAL_CONSTANT && class_b == REAL_CONSTANT) {
 		/* if both are constants, one might be a
-		 * pointer constant like NULL, return the other
-		 */
+		 * pointer constant like NULL, return the other */
 		if (mode_is_reference(get_irn_mode(op_a))) {
 			*a = op_a;
 			*c = op_b;
@@ -91,38 +87,42 @@ static void get_comm_Binop_ops(ir_node *binop, ir_node **a, ir_node **c)
 			*a = op_b;
 			*c = op_a;
 		}
-		break;
-	case REAL_CONSTANT + 2*NO_CONSTANT:
-	case REAL_CONSTANT + 2*REGION_CONST:
-	case REGION_CONST  + 2*NO_CONSTANT:
+	} else if ((class_a == REAL_CONSTANT
+				 && (class_b == NO_CONSTANT || class_b == REGION_CONST))
+	           || (class_a == REGION_CONST && class_b == NO_CONSTANT)) {
 		*a = op_b;
 		*c = op_a;
-		break;
-	default:
+	} else {
 		*a = op_a;
 		*c = op_b;
-		break;
 	}
 }
 
-/** Retrieve a mode from the operands. We need this, because
+/**
+ * Retrieve a mode from the operands. We need this, because
  * Add and Sub are allowed to operate on (P, Is)
  */
 static ir_mode *get_mode_from_ops(ir_node *op1, ir_node *op2)
 {
-	ir_mode *m1, *m2;
-
-	m1 = get_irn_mode(op1);
+	ir_mode *m1 = get_irn_mode(op1);
 	if (mode_is_reference(m1))
 		return m1;
 
-	m2 = get_irn_mode(op2);
+	ir_mode *m2 = get_irn_mode(op2);
 	if (mode_is_reference(m2))
 		return m2;
 
 	assert(m1 == m2);
-
 	return m1;
+}
+
+static ir_node *create_node(dbg_info *dbgi, ir_node *block, ir_op *op,
+                            ir_mode *mode, int n_in, ir_node **in)
+{
+	ir_graph *irg = get_irn_irg(block);
+	ir_node  *new = new_ir_node(dbgi, irg, block, op, mode, n_in, in);
+	verify_new_node(irg, new);
+	return optimize_node(new);
 }
 
 /**
@@ -137,26 +137,26 @@ static int reassoc_commutative(ir_node **node)
 	ir_node *n     = *node;
 	ir_op   *op    = get_irn_op(n);
 	ir_node *block = get_nodes_block(n);
-	ir_node *t1, *c1;
+	ir_node *t1;
+	ir_node *c1;
 
 	get_comm_Binop_ops(n, &t1, &c1);
 
 	if (get_irn_op(t1) == op) {
-		ir_node *t2, *c2;
-		const_class_t c_c1, c_c2, c_t2;
-
+		ir_node *t2;
+		ir_node *c2;
 		get_comm_Binop_ops(t1, &t2, &c2);
 
 		/* do not optimize Bad nodes, will fail later */
 		if (is_Bad(t2))
 			return 0;
 
-		c_c1 = get_const_class(c1, block);
-		c_c2 = get_const_class(c2, block);
-		c_t2 = get_const_class(t2, block);
-
-		if ( ((c_c1 > NO_CONSTANT) & (c_t2 > NO_CONSTANT)) &&
-		     ((((c_c1 ^ c_c2 ^ c_t2) & REGION_CONST) == 0) || ((c_c1 & c_c2 & c_t2) == REGION_CONST)) ) {
+		const_class_t c_c1 = get_const_class(c1, block);
+		const_class_t c_c2 = get_const_class(c2, block);
+		const_class_t c_t2 = get_const_class(t2, block);
+		if ( (c_c1 != NO_CONSTANT && c_t2 >= NO_CONSTANT) &&
+		     ((((c_c1 ^ c_c2 ^ c_t2) & REGION_CONST) == 0)
+		         || ((c_c1 & c_c2 & c_t2) == REGION_CONST)) ) {
 			/* All three are constant and either all are constant expressions
 			 * or two of them are:
 			 * then applying this rule would lead into a cycle
@@ -166,13 +166,12 @@ static int reassoc_commutative(ir_node **node)
 			return 0;
 		}
 
-		if ((c_c1 != NO_CONSTANT) /* & (c_c2 != NO_CONSTANT) */) {
+		if (c_c1 != NO_CONSTANT /* && c_c2 != NO_CONSTANT */) {
 			/* handles rules R7, R8, R9, R10:
 			 * convert c1 .OP. (c2 .OP. x) => x .OP. (c1 .OP. c2)
 			 */
-			ir_node *irn, *in[2];
-			ir_mode *mode, *mode_c1 = get_irn_mode(c1), *mode_c2 = get_irn_mode(c2);
-			ir_graph *irg = get_irn_irg(c1);
+			ir_mode  *mode_c1 = get_irn_mode(c1);
+			ir_mode  *mode_c2 = get_irn_mode(c2);
 
 			/* It might happen, that c1 and c2 have different modes, for
 			 * instance Is and Iu.
@@ -195,15 +194,15 @@ static int reassoc_commutative(ir_node **node)
 				}
 			}
 
-			in[0] = c1;
-			in[1] = c2;
+			ir_node *in0[] = { c1, c2};
+			ir_mode *mode0 = get_mode_from_ops(c1, c2);
+			ir_node *irn0  = create_node(NULL, block, op, mode0,
+			                             ARRAY_SIZE(in0), in0);
 
-			mode  = get_mode_from_ops(in[0], in[1]);
-			in[1] = optimize_node(new_ir_node(NULL, irg, block, op, mode, 2, in));
-			in[0] = t2;
-
-			mode = get_mode_from_ops(in[0], in[1]);
-			irn   = optimize_node(new_ir_node(NULL, irg, block, op, mode, 2, in));
+			ir_node *in1[] = { t2, irn0 };
+			ir_mode *mode1 = get_mode_from_ops(t2, irn0);
+			ir_node *irn1  = create_node(NULL, block, op, mode1,
+			                             ARRAY_SIZE(in1), in1);
 
 			DBG((dbg, LEVEL_5, "Applied: %n .%s. (%n .%s. %n) => %n .%s. (%n .%s. %n)\n",
 			     c1, get_irn_opname(n), c2, get_irn_opname(n), t2,
@@ -213,9 +212,9 @@ static int reassoc_commutative(ir_node **node)
 			 * node back. This might be happen in dead loops, were the Phi
 			 * nodes are already gone away. So check this.
 			 */
-			if (n != irn) {
-				exchange(n, irn);
-				*node = irn;
+			if (n != irn1) {
+				exchange(n, irn1);
+				*node = irn1;
 				return 1;
 			}
 		}
@@ -228,14 +227,13 @@ static int reassoc_commutative(ir_node **node)
 	if (get_irn_op(t1) == op) {
 		ir_node *l = get_binop_left(t1);
 		ir_node *r = get_binop_right(t1);
-		const_class_t c_r;
-
 		if (r == c1) {
 			ir_node *t = r;
 			r = l;
 			l = t;
 		}
-		c_r = get_const_class(r, block);
+
+		const_class_t c_r = get_const_class(r, block);
 		if (c_r != NO_CONSTANT) {
 			/*
 			 * Beware: don't do the following op if a constant was
@@ -248,24 +246,21 @@ static int reassoc_commutative(ir_node **node)
 			/* convert x .OP. (x .OP. y) => y .OP. (x .OP. x) */
 			ir_mode *mode_res = get_irn_mode(n);
 			ir_mode *mode_c1  = get_irn_mode(c1);
-			ir_graph *irg     = get_irn_irg(c1);
-			ir_node *irn, *in[2];
+			ir_node *in[]     = { c1, c1 };
+			ir_node *irn0     = create_node(NULL, block, op, mode_c1,
+			                                ARRAY_SIZE(in), in);
 
-			in[0] = c1;
-			in[1] = c1;
-
-			in[1] = optimize_node(new_ir_node(NULL, irg, block, op, mode_c1, 2, in));
-			in[0] = r;
-
-			irn   = optimize_node(new_ir_node(NULL, irg, block, op, mode_res, 2, in));
+			ir_node *in1[] = { r, irn0 };
+			ir_node *irn1  = create_node(NULL, block, op, mode_res,
+			                             ARRAY_SIZE(in1), in1);
 
 			DBG((dbg, LEVEL_5, "Applied: %n .%s. (%n .%s. %n) => %n .%s. (%n .%s. %n)\n",
 				c1, get_irn_opname(n), l, get_irn_opname(n), r,
 				r, get_irn_opname(n), c1, get_irn_opname(n), c1));
 
-			if (n != irn) {
-				exchange(n, irn);
-				*node = irn;
+			if (n != irn1) {
+				exchange(n, irn1);
+				*node = irn1;
 				return 1;
 			}
 		}
@@ -274,44 +269,42 @@ static int reassoc_commutative(ir_node **node)
 }
 
 /**
- * Reassociate using commutative law for Mul and distributive law for Mul and Add/Sub:
+ * Reassociate using commutative law for Mul and distributive law for Mul and
+ * Add/Sub:
  */
 static int reassoc_Mul(ir_node **node)
 {
 	ir_node *n = *node;
-	ir_node *add_sub, *c;
-	ir_op *op;
-
 	if (reassoc_commutative(&n))
 		return 1;
 
+	ir_node *add_sub, *c;
 	get_comm_Binop_ops(n, &add_sub, &c);
-	op = get_irn_op(add_sub);
+	ir_op *op = get_irn_op(add_sub);
 
 	/* handles rules R11, R12, R13, R14, R15, R16, R17, R18, R19, R20 */
 	if (op == op_Add || op == op_Sub) {
-		ir_mode *mode = get_irn_mode(n);
-		ir_node *irn, *block, *t1, *t2, *in[2];
-
-		block = get_nodes_block(n);
-		t1 = get_binop_left(add_sub);
-		t2 = get_binop_right(add_sub);
+		ir_mode *mode  = get_irn_mode(n);
+		ir_node *block = get_nodes_block(n);
+		ir_node *t1    = get_binop_left(add_sub);
+		ir_node *t2    = get_binop_right(add_sub);
 
 		/* we can only multiplication rules on integer arithmetic */
 		if (mode_is_int(get_irn_mode(t1)) && mode_is_int(get_irn_mode(t2))) {
-			ir_graph *irg = get_irn_irg(t1);
-			in[0] = new_r_Mul(block, c, t1, mode);
-			in[1] = new_r_Mul(block, c, t2, mode);
+			ir_node *in[] = {
+				new_r_Mul(block, c, t1, mode),
+				new_r_Mul(block, c, t2, mode)
+			};
+			ir_node *irn = create_node(NULL, block, op, mode,
+			                           ARRAY_SIZE(in), in);
 
-			irn   = optimize_node(new_ir_node(NULL, irg, block, op, mode, 2, in));
-
-			/* In some cases it might happen that the new irn is equal the old one, for
-			 * instance in:
+			/* In some cases it might happen that the new irn is equal the old
+			 * one, for instance in:
 			 * (x - 1) * y == x * y - y
 			 * will be transformed back by simpler optimization
-			 * We could switch simple optimizations off, but this only happens iff y
-			 * is a loop-invariant expression and that it is not clear if the new form
-			 * is better.
+			 * We could switch simple optimizations off, but this only happens
+			 * iff y is a loop-invariant expression and that it is not clear if
+			 * the new form is better.
 			 * So, we let the old one.
 			 */
 			if (irn != n) {
@@ -346,22 +339,19 @@ static void wq_walker(ir_node *n, void *env)
  */
 static void do_reassociation(waitq *const wq)
 {
-	int res, changed;
-	ir_node *n;
-
-	while (! waitq_empty(wq)) {
-		n = (ir_node*)waitq_get(wq);
+	while (!waitq_empty(wq)) {
+		ir_node *n = (ir_node*)waitq_get(wq);
 		set_irn_link(n, NULL);
 
 		hook_reassociate(1);
 
 		/* reassociation must run until a fixpoint is reached. */
-		changed = 0;
+		bool changed = false;
+		bool res;
 		do {
+			res = false;
 			ir_op    *op   = get_irn_op(n);
 			ir_mode  *mode = get_irn_mode(n);
-
-			res = 0;
 
 			/* reassociating floatingpoint ops is imprecise */
 			if (mode_is_float(mode) && !ir_imprecise_float_transforms_allowed())
@@ -372,7 +362,7 @@ static void do_reassociation(waitq *const wq)
 
 				changed |= res;
 			}
-		} while (res == 1);
+		} while (res);
 		hook_reassociate(0);
 
 		if (changed) {
@@ -395,15 +385,10 @@ static void do_reassociation(waitq *const wq)
  */
 static ir_node *earliest_block(ir_node *a, ir_node *b, ir_node *curr_blk)
 {
+	/* if blk_a != blk_b, one must dominate the other */
 	ir_node *blk_a = get_nodes_block(a);
 	ir_node *blk_b = get_nodes_block(b);
-	ir_node *res;
-
-	/* if blk_a != blk_b, one must dominate the other */
-	if (block_dominates(blk_a, blk_b))
-		res = blk_b;
-	else
-		res = blk_a;
+	ir_node *res   = block_dominates(blk_a, blk_b) ? blk_b : blk_a;
 	if (res == get_irg_start_block(get_irn_irg(curr_blk)))
 		return curr_blk;
 	return res;
@@ -455,19 +440,16 @@ static int is_constant_expr(ir_node *irn)
  */
 static int reverse_rule_distributive(ir_node **node)
 {
-	ir_node *n = *node;
+	ir_node *n     = *node;
 	ir_node *left  = get_binop_left(n);
 	ir_node *right = get_binop_right(n);
-	ir_node *x, *blk, *curr_blk;
-	ir_node *a, *b, *irn;
-	ir_op *op;
-	ir_mode *mode;
-	dbg_info *dbg;
-
-	op = get_irn_op(left);
+	ir_op   *op    = get_irn_op(left);
 	if (op != get_irn_op(right))
 		return 0;
 
+	ir_node *x;
+	ir_node *a;
+	ir_node *b;
 	if (op == op_Shl) {
 		x = get_Shl_right(left);
 
@@ -508,21 +490,19 @@ static int reverse_rule_distributive(ir_node **node)
 	}
 	return 0;
 
-transform:
-	curr_blk = get_nodes_block(n);
+transform:;
+	ir_node  *curr_blk = get_nodes_block(n);
+	ir_node  *blk      = earliest_block(a, b, curr_blk);
+	dbg_info *dbg      = get_irn_dbg_info(n);
+	ir_mode  *mode     = get_irn_mode(n);
 
-	blk = earliest_block(a, b, curr_blk);
-
-	dbg  = get_irn_dbg_info(n);
-	mode = get_irn_mode(n);
-
+	ir_node *irn;
 	if (is_Add(n))
 		irn = new_rd_Add(dbg, blk, a, b, mode);
 	else
 		irn = new_rd_Sub(dbg, blk, a, b, mode);
 
 	blk  = earliest_block(irn, x, curr_blk);
-
 	if (op == op_Mul)
 		irn = new_rd_Mul(dbg, blk, irn, x, mode);
 	else
@@ -539,21 +519,19 @@ transform:
 static int move_consts_up(ir_node **node)
 {
 	ir_node *n = *node;
-	ir_op *op;
-	ir_node *l, *r, *a, *b, *c, *blk, *irn, *in[2];
-	ir_mode *mode, *ma, *mb;
-	dbg_info *dbg;
-	ir_graph *irg;
-
-	l = get_binop_left(n);
-	r = get_binop_right(n);
+	ir_node *l = get_binop_left(n);
+	ir_node *r = get_binop_right(n);
 
 	/* check if one is already a constant expression */
 	if (is_constant_expr(l) || is_constant_expr(r))
 		return 0;
 
-	dbg = get_irn_dbg_info(n);
-	op = get_irn_op(n);
+	dbg_info *dbg = get_irn_dbg_info(n);
+	ir_op    *op  = get_irn_op(n);
+	ir_node  *blk;
+	ir_node  *a;
+	ir_node  *b;
+	ir_node  *c;
 	if (get_irn_op(l) == op) {
 		/* (a .op. b) .op. r */
 		a = get_binop_left(l);
@@ -598,7 +576,7 @@ static int move_consts_up(ir_node **node)
 	}
 	return 0;
 
-transform:
+transform:;
 	/* In some cases a and b might be both of different integer mode, and c a
 	 * Address/Offset/TypeConst.
 	 * in that case we could either
@@ -606,35 +584,33 @@ transform:
 	 * 2.) ignore
 	 * we implement the second here
 	 */
-	ma = get_irn_mode(a);
-	mb = get_irn_mode(b);
+	ir_mode *ma = get_irn_mode(a);
+	ir_mode *mb = get_irn_mode(b);
 	if (ma != mb && mode_is_int(ma) && mode_is_int(mb))
 		return 0;
 
-	/* check if (a .op. b) can be calculated in the same block is the old instruction */
+	/* check if (a .op. b) can be calculated in the same block is the old
+	 * instruction */
 	if (! block_dominates(get_nodes_block(a), blk))
 		return 0;
 	if (! block_dominates(get_nodes_block(b), blk))
 		return 0;
 	/* ok */
-	in[0] = a;
-	in[1] = b;
-
-	mode = get_mode_from_ops(a, b);
-	irg  = get_irn_irg(blk);
-	in[0] = irn = optimize_node(new_ir_node(dbg, irg, blk, op, mode, 2, in));
+	ir_mode  *mode  = get_mode_from_ops(a, b);
+	ir_node  *in0[] = { a, b };
+	ir_node  *irn   = create_node(dbg, blk, op, mode, ARRAY_SIZE(in0), in0);
 
 	/* beware: optimize_node might have changed the opcode, check again */
 	if (is_Add(irn) || is_Sub(irn)) {
-		reverse_rule_distributive(&in[0]);
+		reverse_rule_distributive(&irn);
 	}
-	in[1] = c;
 
-	mode = get_mode_from_ops(in[0], in[1]);
-	irn = optimize_node(new_ir_node(dbg, irg, blk, op, mode, 2, in));
+	ir_node *in1[] = { irn, c };
+	ir_mode *mode1 = get_mode_from_ops(irn, c);
+	ir_node *irn1  = create_node(dbg, blk, op, mode1, ARRAY_SIZE(in1), in1);
 
-	exchange(n, irn);
-	*node = irn;
+	exchange(n, irn1);
+	*node = irn1;
 	return 1;
 }
 
@@ -644,18 +620,16 @@ transform:
 static void reverse_rules(ir_node *node, void *env)
 {
 	(void)env;
-
-	ir_mode  *mode = get_irn_mode(node);
-	int res;
-
 	/* reassociating floatingpoint ops is imprecise */
+	ir_mode *mode = get_irn_mode(node);
 	if (mode_is_float(mode) && !ir_imprecise_float_transforms_allowed())
 		return;
 
+	bool res;
 	do {
-		ir_op *op = get_irn_op(node);
+		res = false;
 
-		res = 0;
+		ir_op *op = get_irn_op(node);
 		if (is_op_commutative(op)) {
 			res = move_consts_up(&node);
 		}
@@ -680,16 +654,17 @@ void optimize_reassociation(ir_graph *irg)
 
 	waitq *const wq = new_waitq();
 
-	/* disable some optimizations while reassoc is running to prevent endless loops */
+	/* disable some optimizations while reassoc is running to prevent endless
+	 * loops */
 	set_reassoc_running(1);
-	{
-		/* now we have collected enough information, optimize */
-		irg_walk_graph(irg, NULL, wq_walker, wq);
-		do_reassociation(wq);
 
-		/* reverse those rules that do not result in collapsed constants */
-		irg_walk_graph(irg, NULL, reverse_rules, NULL);
-	}
+	/* now we have collected enough information, optimize */
+	irg_walk_graph(irg, NULL, wq_walker, wq);
+	do_reassociation(wq);
+
+	/* reverse those rules that do not result in collapsed constants */
+	irg_walk_graph(irg, NULL, reverse_rules, NULL);
+
 	set_reassoc_running(0);
 
 	del_waitq(wq);
