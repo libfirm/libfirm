@@ -759,18 +759,24 @@ static ir_tarval *computed_value_Cmp(const ir_node *cmp)
  * Calculate the value of an integer Div.
  * Special case: 0 / b
  */
-static ir_tarval *do_computed_value_Div(const ir_node *div)
+static ir_tarval *do_computed_value_Div(const ir_node *a, const ir_node *b)
 {
-	const ir_node *a    = get_Div_left(div);
-	const ir_node *b    = get_Div_right(div);
-	const ir_mode *mode = get_Div_resmode(div);
-	ir_tarval     *ta   = value_of(a);
-	const ir_node *dummy;
+	ir_tarval *ta = value_of(a);
 
 	/* cannot optimize 0 / b = 0 because of NaN */
-	if (!mode_is_float(mode)) {
-		if (tarval_is_null(ta) && value_not_null(b, &dummy))
+	if (tarval_is_null(ta)) {
+		ir_mode *mode = get_irn_mode(a);
+		const ir_node *dummy;
+		if (get_mode_arithmetic(mode) == irma_twos_complement
+		    && value_not_null(b, &dummy)) {
 			return ta;  /* 0 / b == 0 if b != 0 */
+		}
+	}
+	if (a == b) {
+		ir_mode *mode = get_irn_mode(a);
+		/* a/a => 1 */
+		if (get_mode_arithmetic(mode) == irma_twos_complement)
+			return get_mode_one(mode);
 	}
 	ir_tarval *tb = value_of(b);
 	if (ta != tarval_unknown && tb != tarval_unknown && !tarval_is_null(tb))
@@ -811,7 +817,10 @@ static ir_tarval *computed_value_Proj_Div(const ir_node *n)
 	if (proj_nr != pn_Div_res)
 		return tarval_unknown;
 
-	return do_computed_value_Div(get_Proj_pred(n));
+	const ir_node *div   = get_Proj_pred(n);
+	const ir_node *left  = get_Div_left(div);
+	const ir_node *right = get_Div_right(div);
+	return do_computed_value_Div(left, right);
 }
 
 /**
@@ -3200,11 +3209,11 @@ static ir_node *transform_node_Div(ir_node *n)
 			}
 		}
 
-		const ir_node *dummy;
-		if (a == b && value_not_null(a, &dummy)) {
+		ir_tarval *tv = do_computed_value_Div(a, b);
+		/* constant folding possible -> create tuple */
+		if (tarval_is_constant(tv)) {
 			ir_graph *irg = get_irn_irg(n);
-			/* BEWARE: we can optimize a/a to 1 only if this cannot cause a exception */
-			value = new_r_Const(irg, get_mode_one(mode));
+			value = new_r_Const(irg, tv);
 			DBG_OPT_CSTEVAL(n, value);
 			goto make_tuple;
 		} else {
@@ -3300,7 +3309,7 @@ static ir_node *transform_node_Mod(ir_node *n)
 	}
 
 	value = n;
-	ir_tarval *tv  = value_of(n);
+	ir_tarval *tv  = do_computed_value_Mod(a, b);
 	ir_graph  *irg = get_irn_irg(n);
 	if (tv != tarval_unknown) {
 		value = new_r_Const(irg, tv);
