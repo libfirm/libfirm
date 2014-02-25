@@ -32,7 +32,6 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 typedef struct env_t {
 	bool changed;
 	ir_nodemap dca;
-	ir_nodemap vrp;
 	struct obstack obst;
 } env_t;
 
@@ -44,8 +43,8 @@ static void occult_const_opt_walker(ir_node *node, void *data)
 	/* Ignore mode_BB, mode_X, etc */
 	if (!mode_is_data(get_irn_mode(node))) return;
 
-	env_t       *env = (env_t *)data;
-	bitinfo *vrp = ir_nodemap_get(bitinfo, &env->vrp, node);
+	env_t   *env = (env_t *)data;
+	bitinfo *vrp = get_bitinfo(node);
 
 	if (vrp == NULL) {
 		DB((dbg, LEVEL_4, "No VRP info: %+F\n", node));
@@ -89,8 +88,6 @@ void occult_consts(ir_graph *irg)
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 
 	constbits_analyze(irg, &env.obst);
-	ir_nodemap_init(&env.vrp, irg);
-	irg_walk_graph(irg, fill_nodemap, 0, &env.vrp);
 
 	ir_free_resources(irg, IR_RESOURCE_PHI_LIST);
 
@@ -103,7 +100,6 @@ void occult_consts(ir_graph *irg)
 	irg_walk_graph(irg, occult_const_opt_walker, 0, &env);
 
 	ir_nodemap_destroy(&env.dca);
-	ir_nodemap_destroy(&env.vrp);
 
 	constbits_clear(irg);
 	obstack_free(&env.obst, NULL);
