@@ -5493,6 +5493,26 @@ static bool ir_is_optimizable_mux_set(const ir_node *cond, ir_relation relation,
 	relation &= ~ir_relation_unordered;
 
 	if (relation == ir_relation_equal || relation == ir_relation_less_greater) {
+		if (relation == ir_relation_less_greater) {
+			bitinfo *bl = get_bitinfo(left);
+			bitinfo *br = get_bitinfo(right);
+
+			if (bl != NULL && br != NULL) {
+				ir_tarval *left_zeros     = bl->z;
+				int        left_low_bit   = get_tarval_lowest_bit(left_zeros);
+				int        left_high_bit  = get_tarval_highest_bit(left_zeros);
+				ir_tarval *right_zeros    = br->z;
+				int        right_low_bit  = get_tarval_lowest_bit(right_zeros);
+				int        right_high_bit = get_tarval_highest_bit(right_zeros);
+
+				/* Check that there is only one position where the operands may have a bit set. */
+				if (left_low_bit == left_high_bit && right_low_bit == right_high_bit &&
+				    (left_low_bit == -1 || right_low_bit == -1 || left_low_bit == right_low_bit)) {
+					/* (a & (1 << c)) != (b & (1 << c)) <=> (a ^ b) >> c */
+					return true;
+				}
+			}
+		}
 		if (is_Const(right) && is_Const_null(right) && is_And(left)) {
 			ir_node *and_right = get_And_right(left);
 			if (is_Const(and_right)) {
@@ -5653,6 +5673,44 @@ static ir_node *transform_Mux_set(ir_node *n, ir_relation relation)
 	relation &= ~ir_relation_unordered;
 
 	if (relation == ir_relation_equal || relation == ir_relation_less_greater) {
+		if (relation == ir_relation_less_greater) {
+			bitinfo *bl = get_bitinfo(left);
+			bitinfo *br = get_bitinfo(right);
+
+			if (bl != NULL && br != NULL) {
+				ir_tarval *left_zeros     = bl->z;
+				int        left_low_bit   = get_tarval_lowest_bit(left_zeros);
+				int        left_high_bit  = get_tarval_highest_bit(left_zeros);
+				ir_tarval *right_zeros    = br->z;
+				int        right_low_bit  = get_tarval_lowest_bit(right_zeros);
+				int        right_high_bit = get_tarval_highest_bit(right_zeros);
+
+				/* Check that there is only one position where the operands may have a bit set. */
+				if (left_low_bit == left_high_bit && right_low_bit == right_high_bit &&
+				    (left_low_bit == -1 || right_low_bit == -1 || left_low_bit == right_low_bit)) {
+					/* (a & (1 << c)) != (b & (1 << c)) <=> (a ^ b) >> c */
+					dbg_info *dbgi      = get_irn_dbg_info(n);
+					ir_node  *block     = get_nodes_block(n);
+					ir_mode  *calc_mode = mode;
+					if (get_mode_size_bits(mode) < get_mode_size_bits(dest_mode)) {
+						left      = new_rd_Conv(dbgi, block, left, dest_mode);
+						right     = new_rd_Conv(dbgi, block, right, dest_mode);
+						calc_mode = dest_mode;
+					}
+					ir_graph *irg          = get_irn_irg(block);
+					ir_node  *eor          = new_rd_Eor(dbgi, block, left, right, calc_mode);
+					unsigned  shift_amount = left_low_bit > right_low_bit ? left_low_bit : right_low_bit;
+					ir_node  *shift_cnt    = new_rd_Const_long(dbgi, irg, mode_Iu, shift_amount);
+					ir_node  *shift        = new_rd_Shr(dbgi, block, eor, shift_cnt, calc_mode);
+					if (calc_mode != dest_mode) {
+						shift = new_rd_Conv(dbgi, block, shift, dest_mode);
+					}
+
+					return shift;
+				}
+			}
+		}
+
 		if (is_Const(right) && is_Const_null(right) && is_And(left)) {
 			ir_node *and_right = get_And_right(left);
 			if (is_Const(and_right)) {
