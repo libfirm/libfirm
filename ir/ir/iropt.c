@@ -106,11 +106,10 @@ static ir_tarval *is_shl_const_like(const ir_node *node)
 	} else if (is_Mul(node)) {
 		ir_node *right = get_Mul_right(node);
 		if (is_Const(right)) {
-			ir_tarval *tv       = get_Const_tarval(right);
-			int        low_bit  = get_tarval_lowest_bit(tv);
-			int        high_bit = get_tarval_highest_bit(tv);
+			const ir_tarval *tv = get_Const_tarval(right);
 			/* is value a power of 2? */
-			if (low_bit == high_bit && low_bit != -1) {
+			if (get_tarval_popcount(tv) == 1) {
+				int low_bit = get_tarval_lowest_bit(tv);
 				return new_tarval_from_long(low_bit, get_tarval_mode(tv));
 			}
 		}
