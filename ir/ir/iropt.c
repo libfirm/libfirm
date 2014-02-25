@@ -4008,12 +4008,6 @@ static bool is_single_bit(const ir_node *node)
 		ir_tarval *tv = get_Const_tarval(node);
 		return get_tarval_popcount(tv) == 1;
 	}
-
-	bitinfo *bn = get_bitinfo(node);
-	if (bn != NULL && get_tarval_popcount(bn->z) == 1) {
-		return true;
-	}
-
 	return false;
 }
 
