@@ -172,10 +172,10 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 			ir_node *right = get_binop_right(irn);
 
 			if (is_Const(left)) {
-				care_for(right, tarval_and(care, tarval_not(get_Const_tarval(left))), q);
+				care_for(right, tarval_andnot(care, get_Const_tarval(left)), q);
 				care_for(left, care, q);
 			} else if (is_Const(right)) {
-				care_for(left, tarval_and(care, tarval_not(get_Const_tarval(right))), q);
+				care_for(left, tarval_andnot(care, get_Const_tarval(right)), q);
 				care_for(right, care, q);
 			} else {
 				care_for(left, care, q);
