@@ -140,7 +140,8 @@ void set_value_of_func(value_of_func func)
 
 int value_not_null(const ir_node *n, const ir_node **confirm)
 {
-	*confirm = NULL;
+	if (confirm)
+		*confirm = NULL;
 
 	/* walk confirm sequence and look for matching confirms */
 	for (;;) {
@@ -196,7 +197,8 @@ int value_not_null(const ir_node *n, const ir_node **confirm)
 			if (relation == ir_relation_greater
 			    || relation == ir_relation_equal) {
 confirmed:
-				*confirm = n;
+				if (confirm)
+					*confirm = n;
 				return true;
 			}
 			break;
@@ -718,8 +720,7 @@ static ir_tarval *compute_cmp(const ir_node *cmp)
 		 || relation == ir_relation_less_greater
 		 || (relation == ir_relation_greater && !mode_is_signed(get_irn_mode(left)))) &&
 		is_Const(right) && is_Const_null(right)) {
-		const ir_node *dummy;
-		if (value_not_null(left, &dummy)) {
+		if (value_not_null(left, NULL)) {
 			return relation == ir_relation_equal
 			     ? tarval_b_false : tarval_b_true;
 		}
@@ -765,9 +766,8 @@ static ir_tarval *do_computed_value_Div(const ir_node *a, const ir_node *b)
 	/* cannot optimize 0 / b = 0 because of NaN */
 	if (tarval_is_null(ta)) {
 		ir_mode *mode = get_irn_mode(a);
-		const ir_node *dummy;
 		if (get_mode_arithmetic(mode) == irma_twos_complement
-		    && value_not_null(b, &dummy)) {
+		    && value_not_null(b, NULL)) {
 			return ta;  /* 0 / b == 0 if b != 0 */
 		}
 	}
@@ -798,8 +798,7 @@ static ir_tarval *do_computed_value_Mod(const ir_node *a, const ir_node *b)
 	/* 0 % b == 0 if b != 0 */
 	if (tarval_is_null(ta)) {
 		assert(get_mode_arithmetic(get_irn_mode(a)) == irma_twos_complement);
-		const ir_node *dummy;
-		if (value_not_null(b, &dummy))
+		if (value_not_null(b, NULL))
 			return ta;
 	}
 	if (ta != tarval_unknown && tb != tarval_unknown)
@@ -3317,11 +3316,9 @@ static ir_node *transform_node_Mod(ir_node *n)
 		DBG_OPT_CSTEVAL(n, value);
 		goto make_tuple;
 	} else {
-		ir_node       *a = get_Mod_left(n);
-		ir_node       *b = get_Mod_right(n);
-		const ir_node *dummy;
-
-		if (a == b && value_not_null(a, &dummy)) {
+		ir_node *a = get_Mod_left(n);
+		ir_node *b = get_Mod_right(n);
+		if (a == b && value_not_null(a, NULL)) {
 			/* BEWARE: we can optimize a%a to 0 only if this cannot cause a exception */
 			value = create_zero_const(irg, mode);
 			DBG_OPT_CSTEVAL(n, value);
