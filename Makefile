@@ -145,11 +145,11 @@ $(libfirm_dll): $(libfirm_OBJECTS)
 # Determine if we can use cparser-beta for quickcheck
 QUICKCHECK_DEFAULT := $(shell which cparser-beta || echo true) -fsyntax-only
 QUICKCHECK ?= $(QUICKCHECK_DEFAULT)
-QUICKCHECK_FLAGS ?= -Wno-shadow -Wno-shadow-local
+QUICKCHECK_FLAGS ?= -m32 -Wno-compat-option -Wno-shadow -Wno-shadow-local
 
 $(builddir)/%.o: %.c $(IR_SPEC_GENERATED_INCLUDES)
 	@echo CC $@
-	$(Q)$(QUICKCHECK) $(CFLAGS) $(CPPFLAGS) $(libfirm_CPPFLAGS) $(QUICKCHECK_FLAGS) $<
+	$(Q)$(QUICKCHECK) $(QUICKCHECK_FLAGS) $(CFLAGS) $(CPPFLAGS) $(libfirm_CPPFLAGS) $(QUICKCHECK_FLAGS) $<
 	$(Q)$(CC) $(CFLAGS) $(CPPFLAGS) $(libfirm_CPPFLAGS) -MP -MMD -c -o $@ $<
 
 $(docdir)/libfirm.tag: doc/Doxyfile doc/logo.png $(IR_SPEC_GENERATED_INCLUDES) $(wildcard include/libfirm/*.h) $(wildcard include/libfirm/adt/*.h)
