@@ -150,8 +150,8 @@ int value_not_null(const ir_node *n, const ir_node **confirm)
 			continue;
 		}
 		/* we can ignore Sels: either the base pointer points to null or
-		 * if it doesn't then members addresses cannot be at NULL or we have
-		 * undefined behaviour because we are obviously not pointing to an
+		 * if it does not then members addresses cannot be at NULL or we have
+		 * undefined behavior because we are obviously not pointing to an
 		 * object. */
 		if (is_Sel(n)) {
 			n = get_Sel_ptr(n);
@@ -415,7 +415,7 @@ static ir_tarval *computed_value_Or(const ir_node *n)
 	ir_tarval     *tb = value_of(b);
 
 	if (ta != tarval_unknown && tb != tarval_unknown)
-		return tarval_or (ta, tb);
+		return tarval_or(ta, tb);
 
 	if (tarval_is_all_one(ta)) return ta;
 	if (tarval_is_all_one(tb)) return tb;
