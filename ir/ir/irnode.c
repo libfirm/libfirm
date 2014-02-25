@@ -442,17 +442,6 @@ void set_nodes_block(ir_node *node, ir_node *block)
 	set_irn_n(node, -1, block);
 }
 
-ir_type *is_frame_pointer(const ir_node *n)
-{
-	if (is_Proj(n) && (get_Proj_proj(n) == pn_Start_P_frame_base)) {
-		ir_node *start = get_Proj_pred(n);
-		if (is_Start(start)) {
-			return get_irg_frame_type(get_irn_irg(start));
-		}
-	}
-	return NULL;
-}
-
 int get_Block_cfgpred_pos(const ir_node *block, const ir_node *pred)
 {
 	int i;

@@ -280,12 +280,6 @@ FIRM_API void set_Block_mark(ir_node *block, unsigned mark);
 
 /** @} */
 
-/** Tests whether arbitrary node is frame pointer.
- *
- * Tests whether arbitrary node is frame pointer, i.e. Proj(pn_Start_P_frame_base)
- * from Start.  If so returns frame type, else Null. */
-FIRM_API ir_type *is_frame_pointer(const ir_node *n);
-
 /** @addtogroup End
  * @{
  */
