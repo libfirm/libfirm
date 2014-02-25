@@ -71,21 +71,13 @@ static const char *get_insn_mode_string(amd64_insn_mode_t mode)
  */
 static void amd64_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 {
-	ir_mode *mode = NULL;
-
 	switch (reason) {
 	case dump_node_opcode_txt:
 		fprintf(F, "%s", get_irn_opname(n));
 		break;
 
 	case dump_node_mode_txt:
-		mode = get_irn_mode(n);
-
-		if (mode) {
-			fprintf(F, "[%s]", get_mode_name(mode));
-		} else {
-			fprintf(F, "[?NOMODE?]");
-		}
+		fprintf(F, "[%s]", get_mode_name(get_irn_mode(n)));
 		break;
 
 	case dump_node_nodeattr_txt:
