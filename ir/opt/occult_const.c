@@ -51,16 +51,16 @@ static void occult_const_opt_walker(ir_node *node, void *data)
 		return;
 	}
 
-	ir_tarval *dc                       = ir_nodemap_get(ir_tarval, &env->dca, node);
-	ir_tarval *not_const_bits           = tarval_eor(vrp->o, vrp->z);
-	ir_tarval *relevant_not_const_bits  = tarval_and(dc, not_const_bits);
+	ir_tarval *dc                      = ir_nodemap_get(ir_tarval, &env->dca, node);
+	ir_tarval *not_const_bits          = tarval_eor(vrp->o, vrp->z);
+	ir_tarval *relevant_not_const_bits = tarval_and(dc, not_const_bits);
 	if (!tarval_is_null(relevant_not_const_bits)) {
 		DB((dbg, LEVEL_4, "Not occult: %+F dc=%T, z=%T, o=%T\n", node, dc, vrp->z, vrp->o));
 		return;
 	}
 
-	ir_graph  *irg  = get_irn_irg(node);
-	ir_node   *cnst = new_r_Const(irg, vrp->z);
+	ir_graph *irg  = get_irn_irg(node);
+	ir_node  *cnst = new_r_Const(irg, vrp->z);
 	DB((dbg, LEVEL_2, "Occult Const found: %+F -> %+F dc=%T, z=%T, o=%T\n", node, cnst, dc, vrp->z, vrp->o));
 	exchange(node, cnst);
 	env->changed = true;
