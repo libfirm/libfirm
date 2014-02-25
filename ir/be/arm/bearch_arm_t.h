@@ -27,7 +27,7 @@ enum arm_cpu_extensions {
 	ARM_EXT_V4    = 0x00000020,  /**< Allow half word loads. */
 	ARM_EXT_V4T   = 0x00000040,  /**< Thumb v1. */
 	ARM_EXT_V5    = 0x00000080,  /**< Allow CLZ, etc. */
-	ARM_EXT_V5T   = 0x00000100,  /**< Thumb v2.´*/
+	ARM_EXT_V5T   = 0x00000100,  /**< Thumb v2. */
 	ARM_EXT_V5ExP = 0x00000200,  /**< DSP core set. */
 	ARM_EXT_V5E   = 0x00000400,  /**< DSP Double transfers. */
 	ARM_EXT_V5J   = 0x00000800,  /**< Jazelle extension.   */
