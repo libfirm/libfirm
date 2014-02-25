@@ -59,8 +59,9 @@ static void occult_const_opt_walker(ir_node *node, void *data)
 		return;
 	}
 
-	ir_graph *irg  = get_irn_irg(node);
-	ir_node  *cnst = new_r_Const(irg, vrp->z);
+	ir_graph  *irg  = get_irn_irg(node);
+	ir_tarval *tv   = tarval_and(vrp->z, dc);
+	ir_node   *cnst = new_r_Const(irg, tv);
 	DB((dbg, LEVEL_2, "Occult Const found: %+F -> %+F dc=%T, z=%T, o=%T\n", node, cnst, dc, vrp->z, vrp->o));
 	exchange(node, cnst);
 	env->changed = true;
