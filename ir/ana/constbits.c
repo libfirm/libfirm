@@ -106,8 +106,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
-static struct obstack *obst;
-
 static bool is_undefined(bitinfo const* const b)
 {
 	return tarval_is_null(b->z) && tarval_is_all_one(b->o);
@@ -127,8 +125,9 @@ int join_bitinfo(ir_node* const irn, ir_tarval* const z, ir_tarval* const o)
 {
 	bitinfo* b = get_bitinfo(irn);
 	if (b == NULL) {
-		ir_graph   *const irg = get_irn_irg(irn);
-		ir_nodemap *const map = &irg->bitinfo.map;
+		ir_graph       *const irg  = get_irn_irg(irn);
+		ir_nodemap     *const map  = &irg->bitinfo.map;
+		struct obstack *const obst = &irg->bitinfo.obst;
 		b = OALLOCZ(obst, bitinfo);
 		ir_nodemap_insert(map, irn, b);
 		b->z = z;
@@ -147,8 +146,9 @@ int set_bitinfo(ir_node* const irn, ir_tarval* const z, ir_tarval* const o)
 {
 	bitinfo* b = get_bitinfo(irn);
 	if (b == NULL) {
-		ir_graph   *const irg = get_irn_irg(irn);
-		ir_nodemap *const map = &irg->bitinfo.map;
+		ir_graph       *const irg  = get_irn_irg(irn);
+		ir_nodemap     *const map  = &irg->bitinfo.map;
+		struct obstack *const obst = &irg->bitinfo.obst;
 		b = OALLOCZ(obst, bitinfo);
 		ir_nodemap_insert(map, irn, b);
 	} else if (z == b->z && o == b->o) {
@@ -664,19 +664,18 @@ static void build_phi_lists(ir_node *irn, void *env)
 		add_Block_phi(get_nodes_block(irn), irn);
 }
 
-void constbits_analyze(ir_graph* const irg, struct obstack *client_obst)
+void constbits_analyze(ir_graph* const irg)
 {
-	obst = client_obst;
+	obstack_init(&irg->bitinfo.obst);
 	ir_nodemap_init(&irg->bitinfo.map, irg);
 
 	FIRM_DBG_REGISTER(dbg, "firm.ana.fp-vrp");
 	DB((dbg, LEVEL_1, "===> Performing constant propagation on %+F (analysis)\n", irg));
 
-	assert(((ir_resources_reserved(irg) & IR_RESOURCE_PHI_LIST) != 0) &&
-			"user of fp-vrp analysis must reserve phi list");
-
 	{
 		pdeq* const q = new_pdeq();
+
+		ir_reserve_resources(irg, IR_RESOURCE_PHI_LIST);
 
 		/* We need this extra step because the dom tree does not contain
 		 * unreachable blocks in Firm. Moreover build phi list. */
@@ -698,6 +697,8 @@ void constbits_analyze(ir_graph* const irg, struct obstack *client_obst)
 				queue_users(q, n);
 		}
 
+		ir_free_resources(irg, IR_RESOURCE_PHI_LIST);
+
 		del_pdeq(q);
 	}
 }
@@ -705,4 +706,5 @@ void constbits_analyze(ir_graph* const irg, struct obstack *client_obst)
 void constbits_clear(ir_graph* const irg)
 {
 	ir_nodemap_destroy(&irg->bitinfo.map);
+	obstack_free(&irg->bitinfo.obst, NULL);
 }

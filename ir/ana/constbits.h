@@ -21,7 +21,7 @@ int set_bitinfo(ir_node* irn, ir_tarval* z, ir_tarval* o);
 
 /* Compute value range fixpoint aka which bits of value are constant zero/one.
  * The result is available via links to bitinfo*, allocated on client_obst. */
-void constbits_analyze(ir_graph* irg, struct obstack *client_obst);
+void constbits_analyze(ir_graph* irg);
 
 /* Clears the bit information for the given graph.
  *

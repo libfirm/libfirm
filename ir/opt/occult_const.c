@@ -85,11 +85,9 @@ void occult_consts(ir_graph *irg)
 	env.changed = false;
 	obstack_init(&env.obst);
 
-	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
+	constbits_analyze(irg);
 
-	constbits_analyze(irg, &env.obst);
-
-	ir_free_resources(irg, IR_RESOURCE_PHI_LIST);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	dca_analyze(irg);
 	ir_nodemap_init(&env.dca, irg);

@@ -186,11 +186,9 @@ int optimize_graph_df(ir_graph *irg)
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
 	                         | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
-	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
-	struct obstack  obst;
-	obstack_init(&obst);
-	constbits_analyze(irg, &obst);
+	constbits_analyze(irg);
 
 	irg_walk_graph(irg, NULL, opt_walker, waitq);
 
@@ -209,10 +207,9 @@ int optimize_graph_df(ir_graph *irg)
 		irg_block_walk_graph(irg, NULL, find_unreachable_blocks, waitq);
 	}
 	del_pdeq(waitq);
-	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	constbits_clear(irg);
-	obstack_free(&obst, NULL);
 
 	/* disable unreachable code elimination */
 	if (get_opt_algebraic_simplification()) {
