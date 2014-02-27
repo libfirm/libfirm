@@ -690,7 +690,7 @@ size_t get_struct_member_index(const ir_type *strct, ir_entity *mem)
 static void remove_struct_member(ir_type *strct, ir_entity *member)
 {
 	assert(is_Struct_type(strct));
-	return compound_remove_member(strct, member);
+	compound_remove_member(strct, member);
 }
 
 int (is_Struct_type)(const ir_type *strct)
