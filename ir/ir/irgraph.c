@@ -550,7 +550,7 @@ void *get_irg_loc_description(ir_graph *irg, int n)
 
 void (ir_reserve_resources)(ir_graph *irg, ir_resources_t resources)
 {
-	return ir_reserve_resources_(irg, resources);
+	ir_reserve_resources_(irg, resources);
 }
 
 void (ir_free_resources)(ir_graph *irg, ir_resources_t resources)
