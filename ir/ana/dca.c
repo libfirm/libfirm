@@ -157,16 +157,8 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 				care_for(left, tarval_and(care, get_Const_tarval(right)), q);
 				care_for(right, care, q);
 			} else {
-				bitinfo *bl = get_bitinfo(left);
-				bitinfo *br = get_bitinfo(right);
-
-				if (bl != NULL && br != NULL) {
-					care_for(left, tarval_and(care, br->z), q);
-					care_for(right, tarval_and(care, bl->z), q);
-				} else {
-					care_for(left, care, q);
-					care_for(right, care, q);
-				}
+				care_for(left, care, q);
+				care_for(right, care, q);
 			}
 			return;
 		}
@@ -187,16 +179,8 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 				care_for(left, tarval_andnot(care, get_Const_tarval(right)), q);
 				care_for(right, care, q);
 			} else {
-				bitinfo *bl = get_bitinfo(left);
-				bitinfo *br = get_bitinfo(right);
-
-				if (bl != NULL && br != NULL) {
-					care_for(left, tarval_andnot(care, br->o), q);
-					care_for(right, tarval_andnot(care, bl->o), q);
-				} else {
-					care_for(left, care, q);
-					care_for(right, care, q);
-				}
+				care_for(left, care, q);
+				care_for(right, care, q);
 			}
 			return;
 		}
@@ -212,8 +196,8 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 			bitinfo *br    = get_bitinfo(right);
 
 			if (bl != NULL && br != NULL && tarval_is_null(tarval_and(bl->z, br->z))) {
-				care_for(left, tarval_andnot(care, br->o), q);
-				care_for(right, tarval_andnot(care, bl->o), q);
+				care_for(left, care, q);
+				care_for(right, care, q);
 			} else {
 				ir_tarval *care_mask = create_msb_mask(care);
 				care_for(right, care_mask, q);
