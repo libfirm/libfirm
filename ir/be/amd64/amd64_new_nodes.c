@@ -32,22 +32,22 @@
 static const char *get_op_mode_string(amd64_op_mode_t mode)
 {
 	switch (mode) {
-	case AMD64_OP_NONE:       return "none";
+	case AMD64_OP_ADDR_IMM:   return "addr+imm";
+	case AMD64_OP_ADDR_REG:   return "addr+reg";
 	case AMD64_OP_ADDR:       return "addr";
-	case AMD64_OP_REG:        return "reg";
-	case AMD64_OP_REG_REG:    return "reg+reg";
-	case AMD64_OP_REG_IMM:    return "reg+imm";
 	case AMD64_OP_IMM32:      return "imm32";
 	case AMD64_OP_IMM64:      return "imm64";
-	case AMD64_OP_ADDR_REG:   return "addr+reg";
-	case AMD64_OP_ADDR_IMM:   return "addr+imm";
-	case AMD64_OP_UNOP_REG:   return "unop_reg";
-	case AMD64_OP_SHIFT_REG:  return "shift_reg";
-	case AMD64_OP_SHIFT_IMM:  return "shift_imm";
-	case AMD64_OP_CALL_ADDR:  return "call_addr";
-	case AMD64_OP_CALL_IMM32: return "call_imm32";
-	case AMD64_OP_RAX_REG:    return "rax_reg";
+	case AMD64_OP_NONE:       return "none";
 	case AMD64_OP_RAX_ADDR:   return "rax_addr";
+	case AMD64_OP_RAX_REG:    return "rax_reg";
+	case AMD64_OP_REG_IMM:    return "reg+imm";
+	case AMD64_OP_REG_REG:    return "reg+reg";
+	case AMD64_OP_REG:        return "reg";
+	case AMD64_OP_SHIFT_IMM:  return "shift_imm";
+	case AMD64_OP_SHIFT_REG:  return "shift_reg";
+	case AMD64_OP_UNOP_ADDR:  return "unop_addr";
+	case AMD64_OP_UNOP_IMM32: return "unop_imm32";
+	case AMD64_OP_UNOP_REG:   return "unop_reg";
 	}
 	panic("invalid op_mode");
 }
@@ -87,18 +87,11 @@ static void amd64_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 		arch_dump_reqs_and_registers(F, n);
 		const amd64_attr_t *attr = get_amd64_attr_const(n);
 		fprintf(F, "mode = %s\n", get_op_mode_string(attr->op_mode));
-		switch (attr->op_mode) {
-		case AMD64_OP_UNOP_REG: {
-			const amd64_unop_attr_t *unop_attr = get_amd64_unop_attr_const(n);
-			fprintf(F, "size = %s\n", get_insn_mode_string(unop_attr->insn_mode));
-			break;
-		}
-
-		case AMD64_OP_ADDR_REG: {
+		if (attr->op_mode == AMD64_OP_ADDR_REG) {
 			const amd64_binop_addr_attr_t *binop_attr = get_amd64_binop_addr_attr_const(n);
 			fprintf(F, "reg input: %d\n", binop_attr->u.reg_input);
-		} /* FALLTHROUGH */
-		case AMD64_OP_ADDR: {
+		}
+		if (amd64_has_addr_attr(n)) {
 			const amd64_addr_attr_t *addr_attr = get_amd64_addr_attr_const(n);
 			fprintf(F, "size = %s\n", get_insn_mode_string(addr_attr->insn_mode));
 			fprintf(F, "base input: %d\n", addr_attr->addr.base_input);
@@ -106,8 +99,6 @@ static void amd64_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 			ir_fprintf(F, "am imm: %+F%+" PRId32 "\n", addr_attr->addr.immediate.entity, addr_attr->addr.immediate.offset);
 			break;
 		}
-		}
-		break;
 	}
 }
 
@@ -198,14 +189,6 @@ static int cmp_amd64_addr_attr(const ir_node *a, const ir_node *b)
 	    || cmp_addr(&attr_a->addr, &attr_b->addr)
 	    || attr_a->insn_mode != attr_b->insn_mode
 	    || attr_a->needs_frame_ent != attr_b->needs_frame_ent;
-}
-
-static int cmp_amd64_unop_attr(const ir_node *a, const ir_node *b)
-{
-	const amd64_unop_attr_t *attr_a = get_amd64_unop_attr_const(a);
-	const amd64_unop_attr_t *attr_b = get_amd64_unop_attr_const(b);
-	return cmp_amd64_attr(a, b)
-	    || attr_a->insn_mode != attr_b->insn_mode;
 }
 
 static int cmp_amd64_binop_addr_attr(const ir_node *a,

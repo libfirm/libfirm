@@ -278,15 +278,16 @@ static void amd64_emit_am(const ir_node *const node)
 	case AMD64_OP_ADDR:
 		amd64_emit_addr(node, &attr->addr);
 		return;
+	case AMD64_OP_UNOP_REG:
 	case AMD64_OP_REG: {
 		const arch_register_t *reg = arch_get_irn_register_in(node, 0);
 		emit_register_insn_mode(reg, attr->insn_mode);
 		return;
 	}
-	case AMD64_OP_CALL_IMM32:
+	case AMD64_OP_UNOP_IMM32:
 		amd64_emit_immediate32(&attr->addr.immediate);
 		return;
-	case AMD64_OP_CALL_ADDR:
+	case AMD64_OP_UNOP_ADDR:
 		be_emit_char('*');
 		amd64_emit_addr(node, &attr->addr);
 		return;
@@ -303,7 +304,6 @@ static void amd64_emit_am(const ir_node *const node)
 	case AMD64_OP_IMM32:
 	case AMD64_OP_IMM64:
 	case AMD64_OP_NONE:
-	case AMD64_OP_UNOP_REG:
 	case AMD64_OP_SHIFT_REG:
 	case AMD64_OP_SHIFT_IMM:
 		break;
@@ -480,19 +480,6 @@ emit_R:
 				break;
 			}
 
-			case 'U':
-				if (*fmt == 'O') {
-					++fmt;
-					const amd64_unop_attr_t *attr
-						= get_amd64_unop_attr_const(node);
-					const arch_register_t *reg
-						= arch_get_irn_register_in(node, 0);
-					emit_register_insn_mode(reg, attr->insn_mode);
-				} else {
-					panic("invalid emit spec 'U'");
-				}
-				break;
-
 			case 'M': {
 				amd64_insn_mode_t insn_mode;
 				if (*fmt == 'S') {
@@ -504,11 +491,6 @@ emit_R:
 					++fmt;
 					const amd64_movimm_attr_t *attr
 						= get_amd64_movimm_attr_const(node);
-					insn_mode = attr->insn_mode;
-				} else if (*fmt == 'U') {
-					++fmt;
-					const amd64_unop_attr_t *attr
-						= get_amd64_unop_attr_const(node);
 					insn_mode = attr->insn_mode;
 				} else {
 					amd64_addr_attr_t const *const attr

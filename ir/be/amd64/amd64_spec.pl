@@ -54,9 +54,6 @@ $default_copy_attr = "amd64_copy_attr";
 	amd64_binop_addr_attr_t =>
 		"init_be_info(res, irn_flags_, in_reqs, n_res);\n"
 		."\t*attr = *attr_init;",
-	amd64_unop_attr_t =>
-		"init_amd64_attributes(res, irn_flags_, in_reqs, n_res, op_mode);"
-		."\tattr->insn_mode = insn_mode;",
 	amd64_switch_jmp_attr_t =>
 		"init_amd64_attributes(res, irn_flags_, in_reqs, n_res, op_mode);\n"
 		."\tinit_amd64_switch_attributes(res, table, table_entity);",
@@ -79,7 +76,6 @@ $default_copy_attr = "amd64_copy_attr";
 	amd64_movimm_attr_t     => "cmp_amd64_movimm_attr",
 	amd64_shift_attr_t      => "cmp_amd64_shift_attr",
 	amd64_switch_jmp_attr_t => "cmp_amd64_switch_jmp_attr",
-	amd64_unop_attr_t       => "cmp_amd64_unop_attr",
 );
 
 %nodes = (
@@ -259,10 +255,11 @@ Neg => {
 	reg_req   => { in => [ "gp" ], out => [ "in_r1" ] },
 	ins       => [ "val" ],
 	outs      => [ "res" ],
-	attr_type => "amd64_unop_attr_t",
+	attr_type => "amd64_addr_attr_t",
 	attr      => "amd64_insn_mode_t insn_mode",
-	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_REG;\n",
-	emit      => "neg%MU %UO",
+	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_UNOP_REG;\n"
+	            ."amd64_addr_t addr = { { NULL, 0 }, NO_INPUT, NO_INPUT, NO_INPUT, 0, AMD64_SEGMENT_DEFAULT };",
+	emit      => "neg%M %AM",
 	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
@@ -274,9 +271,10 @@ Not => {
 	reg_req   => { in => [ "gp" ], out => [ "in_r1" ] },
 	ins       => [ "val" ],
 	outs      => [ "res" ],
-	attr_type => "amd64_unop_attr_t",
-	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_REG;\n",
-	emit      => "not%MU %UO",
+	attr_type => "amd64_addr_attr_t",
+	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_UNOP_REG;\n"
+	            ."amd64_addr_t addr = { { NULL, 0 }, NO_INPUT, NO_INPUT, NO_INPUT, 0, AMD64_SEGMENT_DEFAULT };",
+	emit      => "not%M %AM",
 	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
@@ -337,11 +335,11 @@ Mov => {
 IJmp => {
 	state     => "pinned",
 	op_flags  => [ "cfopcode", "unknown_jump" ],
-	reg_req   => { in => [ "gp" ], out => [ "none" ] },
+	reg_req   => { in => [ "gp" ], out => [ "none", "none", "none" ] },
+	outs      => [ "X", "unused", "M" ],
 	arity     => "variable",
 	attr_type => "amd64_addr_attr_t",
 	attr      => "amd64_insn_mode_t insn_mode, amd64_op_mode_t op_mode, amd64_addr_t addr",
-	mode      => "mode_X",
 	emit      => "jmp %AM",
 },
 

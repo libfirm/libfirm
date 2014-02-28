@@ -144,6 +144,9 @@ static const arch_register_req_t *reg_rcx_reqs[] = {
 	&amd64_requirement_rcx,
 };
 
+static const arch_register_req_t *no_reqs[] = {
+};
+
 static inline bool mode_needs_gp_reg(ir_mode *mode)
 {
 	return get_mode_arithmetic(mode) == irma_twos_complement;
@@ -950,38 +953,67 @@ static ir_node *gen_Sel(ir_node *const node)
 
 static ir_node *gen_IJmp(ir_node *node)
 {
-	dbg_info *dbgi = get_irn_dbg_info(node);
-	ir_node *new_block = be_transform_node(get_nodes_block(node));
-	ir_node *op    = get_IJmp_target(node);
-	ir_mode *mode  = get_irn_mode(op);
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	ir_node  *op        = get_IJmp_target(node);
+	ir_mode  *mode      = get_irn_mode(op);
 	assert(mode == mode_P);
 
 	int arity = 0;
-	ir_node *in[2];
+	ir_node *in[3];
 	amd64_addr_t addr;
 	memset(&addr, 0, sizeof(addr));
 
-	perform_address_matching(op, &arity, in, &addr);
+	const arch_register_req_t **reqs;
+	amd64_op_mode_t             op_mode;
+	ir_node                    *mem_proj = NULL;
+	if (match_immediate_32(&addr.immediate, op, true, false)) {
+		// TODO: do we need a must_match_ip_relative in match_immediate_32
+		op_mode = AMD64_OP_UNOP_IMM32;
+		arity   = 0;
+		reqs    = no_reqs;
+	} else if (source_am_possible(block, op, NULL)) {
+		ir_node *load     = get_Proj_pred(op);
+		ir_node *load_ptr = get_Load_ptr(load);
+		mem_proj          = be_get_Proj_for_pn(load, pn_Load_M);
 
-	const arch_register_req_t **reqs = mem_reqs;
-	if (addr.base_input != NO_INPUT && addr.index_input != NO_INPUT) {
-		reqs = reg_reg_mem_reqs;
-	} else if(addr.base_input != NO_INPUT || addr.index_input != NO_INPUT) {
-		reqs = reg_mem_reqs;
-	}
+		perform_address_matching(load_ptr, &arity, in, &addr);
+		assert((size_t)arity < ARRAY_SIZE(in));
 
-	amd64_op_mode_t op_mode;
-	if (addr.immediate.entity == NULL) {
-		op_mode = AMD64_OP_CALL_ADDR;
+		reqs = mem_reqs;
+		if (addr.base_input != NO_INPUT && addr.index_input != NO_INPUT) {
+			reqs = reg_reg_mem_reqs;
+		} else if(addr.base_input != NO_INPUT || addr.index_input != NO_INPUT) {
+			reqs = reg_mem_reqs;
+		}
+		ir_node *load_mem = get_Load_mem(load);
+		ir_node *new_mem  = be_transform_node(load_mem);
+		int mem_input = arity++;
+		in[mem_input] = new_mem;
+		addr.mem_input = mem_input;
+
+		op_mode = AMD64_OP_UNOP_ADDR;
 	} else {
-		op_mode = AMD64_OP_ADDR;
+		op_mode          = AMD64_OP_UNOP_REG;
+		arity            = 1;
+		in[0]            = be_transform_node(op);
+		addr.base_input  = NO_INPUT;
+		addr.index_input = NO_INPUT;
+		reqs             = reg_reqs;
 	}
 
 	ir_node *jmp = new_bd_amd64_IJmp(dbgi, new_block, arity, in,
-                                         INSN_MODE_64, op_mode, addr);
+	                                 INSN_MODE_64, op_mode, addr);
 
 	arch_set_irn_register_reqs_in(jmp, reqs);
-	return jmp;
+	if (mem_proj != NULL) {
+		ir_node *load = get_Proj_pred(mem_proj);
+		be_set_transformed_node(load, jmp);
+	}
+
+	ir_node *proj_X = new_r_Proj(jmp, mode_X, pn_amd64_IJmp_X);
+	return proj_X;
 }
 
 static ir_node *gen_Jmp(ir_node *node)
@@ -1301,7 +1333,7 @@ static ir_node *gen_Call(ir_node *node)
 	addr.mem_input = NO_INPUT;
 	amd64_op_mode_t op_mode;
 	if (match_immediate_32(&addr.immediate, callee, true, true)) {
-		op_mode = AMD64_OP_CALL_IMM32;
+		op_mode = AMD64_OP_UNOP_IMM32;
 	} else if (source_am_possible(block, callee, NULL)) {
 		/* TODO: check condition, can't other call inputs be dependent
 		 * on the load which would make this invalid? */
@@ -1328,14 +1360,14 @@ static ir_node *gen_Call(ir_node *node)
 		} else {
 			addr.index_input = NO_INPUT;
 		}
-		op_mode = AMD64_OP_CALL_ADDR;
+		op_mode = AMD64_OP_UNOP_ADDR;
 	} else {
 		int base_input     = in_arity++;
 		in[base_input]     = be_transform_node(callee);
 		in_req[base_input] = &amd64_requirement_gp;
 		addr.base_input    = base_input;
 		addr.index_input   = NO_INPUT;
-		op_mode = AMD64_OP_CALL_ADDR;
+		op_mode = AMD64_OP_UNOP_REG;
 	}
 
 	assert(in_arity <= (int)max_inputs);

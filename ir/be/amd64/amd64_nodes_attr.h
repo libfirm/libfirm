@@ -44,10 +44,10 @@ typedef enum {
 	AMD64_OP_ADDR_REG,
 	AMD64_OP_ADDR_IMM,
 	AMD64_OP_UNOP_REG,
+	AMD64_OP_UNOP_IMM32,
+	AMD64_OP_UNOP_ADDR,
 	AMD64_OP_SHIFT_REG,
 	AMD64_OP_SHIFT_IMM,
-	AMD64_OP_CALL_ADDR,
-	AMD64_OP_CALL_IMM32,
 	/** A binary operation with 1 operand being RAX (which is usually not
 	 * explicitely given in the assembly */
 	AMD64_OP_RAX_REG,
@@ -82,11 +82,6 @@ typedef struct {
 	except_attr exc; /**< the exception attribute. MUST be the first one. */
 	ENUMBF(amd64_op_mode_t) op_mode : 4;
 } amd64_attr_t;
-
-typedef struct {
-	amd64_attr_t base;
-	ENUMBF(amd64_insn_mode_t) insn_mode : 2;
-} amd64_unop_attr_t;
 
 typedef struct {
 	amd64_attr_t base;

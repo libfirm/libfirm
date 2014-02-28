@@ -307,7 +307,7 @@ static void amd64_set_frame_entity(ir_node *node, ir_entity *entity)
  */
 static void amd64_collect_frame_entity_nodes(ir_node *node, void *data)
 {
-	if (!is_amd64_Mov(node) && !is_amd64_Movs(node))
+	if (!is_amd64_irn(node) || !amd64_has_addr_attr(node))
 		return;
 
 	const amd64_addr_attr_t *attr = get_amd64_addr_attr_const(node);
