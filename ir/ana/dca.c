@@ -19,7 +19,6 @@
  * There is a commented-out walker at the end of this file that might
  * be useful when revising this code.
  */
-#include "constbits.h"
 #include "debug.h"
 #include "irnode_t.h"
 #include "tv.h"
@@ -189,22 +188,7 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 			care_for(get_irn_n(irn, 0), care, q);
 			care_for(get_irn_n(irn, 1), care, q);
 			return;
-		case iro_Add: {
-			ir_node *left  = get_Add_left(irn);
-			ir_node *right = get_Add_right(irn);
-			bitinfo *bl    = get_bitinfo(left);
-			bitinfo *br    = get_bitinfo(right);
-
-			if (bl != NULL && br != NULL && tarval_is_null(tarval_and(bl->z, br->z))) {
-				care_for(left, care, q);
-				care_for(right, care, q);
-			} else {
-				ir_tarval *care_mask = create_msb_mask(care);
-				care_for(right, care_mask, q);
-				care_for(left, care_mask, q);
-			}
-			return;
-		}
+		case iro_Add:
 		case iro_Sub: {
 			ir_node   *left      = get_binop_left(irn);
 			ir_node   *right     = get_binop_right(irn);
