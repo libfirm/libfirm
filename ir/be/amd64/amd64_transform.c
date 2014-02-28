@@ -553,8 +553,6 @@ static ir_node *gen_binop_rax(ir_node *node, ir_node *op1, ir_node *op2,
 	ir_mode *mode = get_irn_mode(op1);
 
 	unsigned mode_bits = get_mode_size_bits(mode);
-	if (mode_bits == 8 || mode_bits == 16)
-		use_am = false;
 	amd64_insn_mode_t insn_mode = get_insn_mode_from_mode(mode);
 
 	/* TODO: legalize phase */
@@ -578,6 +576,9 @@ static ir_node *gen_binop_rax(ir_node *node, ir_node *op1, ir_node *op2,
 	memset(&addr, 0, sizeof(addr));
 
 	use_am = use_address_matching(flags, block, op1, op2, &load, &op);
+	if (mode_bits == 8 || mode_bits == 16)
+		use_am = false;
+
 	if (use_am) {
 		ir_node *new_op    = be_transform_node(op);
 		int      reg_input = arity++;
@@ -736,11 +737,22 @@ static ir_node *gen_Or(ir_node *const node)
 
 static ir_node *gen_Mul(ir_node *const node)
 {
-	ir_node *op1 = get_Mul_left(node);
-	ir_node *op2 = get_Mul_right(node);
-	return gen_binop_am(node, op1, op2, new_bd_amd64_IMul,
-	                    match_immediate | match_am | match_mode_neutral
-	                    | match_commutative);
+	ir_node *op1  = get_Mul_left(node);
+	ir_node *op2  = get_Mul_right(node);
+	ir_mode *mode = get_irn_mode(node);
+
+	if (get_mode_size_bits(mode) < 16) {
+		/* imulb only supports rax - reg form */
+		ir_node *new_node =
+                           gen_binop_rax(node, op1, op2, new_bd_amd64_IMul1Op,
+                                         match_mode_neutral
+                                       | match_commutative);
+		return new_r_Proj(new_node, mode_gp, pn_amd64_IMul1Op_res_low);
+	} else {
+		return gen_binop_am(node, op1, op2, new_bd_amd64_IMul,
+                                         match_immediate | match_am | match_mode_neutral
+                                         | match_commutative);
+	}
 }
 
 static ir_node *gen_Mulh(ir_node *const node)
