@@ -150,10 +150,7 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 			ir_node *left  = get_And_left(irn);
 			ir_node *right = get_And_right(irn);
 
-			if (is_Const(left)) {
-				care_for(right, tarval_and(care, get_Const_tarval(left)), q);
-				care_for(left, care, q);
-			} else if (is_Const(right)) {
+			if (is_Const(right)) {
 				care_for(left, tarval_and(care, get_Const_tarval(right)), q);
 				care_for(right, care, q);
 			} else {
@@ -180,10 +177,7 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 			ir_node *left  = get_binop_left(irn);
 			ir_node *right = get_binop_right(irn);
 
-			if (is_Const(left)) {
-				care_for(right, tarval_andnot(care, get_Const_tarval(left)), q);
-				care_for(left, care, q);
-			} else if (is_Const(right)) {
+			if (is_Const(right)) {
 				care_for(left, tarval_andnot(care, get_Const_tarval(right)), q);
 				care_for(right, care, q);
 			} else {
