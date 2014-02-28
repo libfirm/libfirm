@@ -123,6 +123,17 @@ bitinfo* get_bitinfo(ir_node const* const irn)
 
 int join_bitinfo(ir_node* const irn, ir_tarval* const z, ir_tarval* const o)
 {
+	if (tarval_is_null(z) && tarval_is_all_one(o)) {
+		/*
+		 * Reject undefined bit information.
+		 *
+		 * This occurs if we optimize within unreachable code.
+		 * Due to CSE, the node might also be used within reachable code,
+		 * so we cannot set undefined bit information in this case.
+		 */
+		return 0;
+	}
+
 	bitinfo* b = get_bitinfo(irn);
 	if (b == NULL) {
 		ir_graph       *const irg  = get_irn_irg(irn);
