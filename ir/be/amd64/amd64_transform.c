@@ -1318,6 +1318,7 @@ static ir_node *gen_Call(ir_node *node)
 		/* we need a store if we're here */
 		amd64_binop_addr_attr_t attr;
 		memset(&attr, 0, sizeof(attr));
+		attr.base.base.op_mode          = AMD64_OP_ADDR_REG;
 		attr.base.addr.immediate.offset = param->offset;
 		attr.base.addr.base_input       = 1;
 		attr.base.addr.index_input      = NO_INPUT;
@@ -1679,6 +1680,8 @@ static ir_node *gen_Store(ir_node *node)
 	amd64_binop_addr_attr_t attr;
 	memset(&attr, 0, sizeof(attr));
 	amd64_addr_t *addr = &attr.base.addr;
+
+	attr.base.base.op_mode = AMD64_OP_ADDR_REG;
 
 	ir_node *in[4];
 	int      arity = 0;
