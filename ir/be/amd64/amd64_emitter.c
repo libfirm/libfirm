@@ -560,7 +560,7 @@ static void emit_amd64_SwitchJmp(const ir_node *node)
 {
 	const amd64_switch_jmp_attr_t *attr = get_amd64_switch_jmp_attr_const(node);
 
-	amd64_emitf(node, "jmp *%E(,%S0,8)", attr->table_entity);
+	amd64_emitf(node, "jmp *%E(,%^S0,8)", attr->table_entity);
 	be_emit_jump_table(node, attr->table, attr->table_entity, get_cfop_target_block);
 }
 
