@@ -773,12 +773,10 @@ static inline int is_noreg(const ir_node *node)
 	return is_ia32_NoReg_GP(node);
 }
 
-ir_node *ia32_immediate_from_long(long val)
+ir_node *ia32_immediate_from_long(ir_graph *const irg, long const val)
 {
-	ir_graph *irg         = current_ir_graph;
-	ir_node  *start_block = get_irg_start_block(irg);
-	ir_node  *immediate
-		= new_bd_ia32_Immediate(NULL, start_block, NULL, 0, val);
+	ir_node *start_block = get_irg_start_block(irg);
+	ir_node *immediate   = new_bd_ia32_Immediate(NULL, start_block, NULL, 0, val);
 	arch_set_irn_register(immediate, &ia32_registers[REG_GP_NOREG]);
 
 	return immediate;
@@ -890,8 +888,9 @@ static void peephole_ia32_Lea(ir_node *node)
 				op1 = index;
 				goto make_add_immediate;
 			} else if (!has_immediates && scale > 0) {
+				ir_graph *const irg = get_irn_irg(node);
 				op1 = index;
-				op2 = ia32_immediate_from_long(scale);
+				op2 = ia32_immediate_from_long(irg, scale);
 				goto make_shl;
 			} else if (!has_immediates) {
 #ifdef DEBUG_libfirm

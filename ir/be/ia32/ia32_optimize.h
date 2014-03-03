@@ -38,6 +38,6 @@ void ia32_init_optimize(void);
 /**
  * Creates an immediate node.
  */
-ir_node *ia32_immediate_from_long(long val);
+ir_node *ia32_immediate_from_long(ir_graph *irg, long val);
 
 #endif /* FIRM_BE_IA32_IA32_OPTIMIZE_H */
