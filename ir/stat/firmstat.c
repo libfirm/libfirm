@@ -1351,13 +1351,11 @@ static void stat_free_ir_op(void *ctx, ir_op *op)
  * Hook: A new node is created.
  *
  * @param ctx   the hook context
- * @param irg   the IR graph on which the node is created
  * @param node  the new IR node that was created
  */
-static void stat_new_node(void *ctx, ir_graph *irg, ir_node *node)
+static void stat_new_node(void *ctx, ir_node *node)
 {
 	(void) ctx;
-	(void) irg;
 	if (! status->stat_options)
 		return;
 

@@ -186,13 +186,11 @@ static void dbg_printf(const char *fmt, ...)
  * A new node is created.
  *
  * @param ctx   the hook context
- * @param irg   the IR graph on which the node is created
  * @param node  the new IR node that was created
  */
-static void dbg_new_node(void *ctx, ir_graph *irg, ir_node *node)
+static void dbg_new_node(void *ctx, ir_node *node)
 {
 	(void) ctx;
-	(void) irg;
 
 	bp_nr_t key;
 	key.nr        = get_irn_node_nr(node);

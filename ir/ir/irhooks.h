@@ -78,7 +78,7 @@ struct hook_entry {
 		void (*_hook_free_ir_op)(void *context, ir_op *op);
 
 		/** This hook is called, after a new IR-node was created and before it is optimized. */
-		void (*_hook_new_node)(void *context, ir_graph *graph, ir_node *node);
+		void (*_hook_new_node)(void *context, ir_node *node);
 
 		/** This hook is called, before a node input was changed. */
 		void (*_hook_set_irn_n)(void *context, ir_node *src,
@@ -235,7 +235,7 @@ extern hook_entry_t *hooks[hook_last];
 /** Called when a node opcode has been freed */
 #define hook_free_ir_op(op)               hook_exec(hook_free_ir_op, (hook_ctx_, op))
 /** Called after a new node has been created */
-#define hook_new_node(graph, node)        hook_exec(hook_new_node, (hook_ctx_, graph, node))
+#define hook_new_node(node)               hook_exec(hook_new_node, (hook_ctx_, node))
 /** Called when a nodes input is changed */
 #define hook_set_irn_n(src, pos, tgt, old_tgt) \
   hook_exec(hook_set_irn_n, (hook_ctx_, src, pos, tgt, old_tgt))
