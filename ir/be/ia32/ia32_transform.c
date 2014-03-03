@@ -181,10 +181,8 @@ ir_node *ia32_get_pic_base(ir_graph *irg)
  * return NoREG or pic_base in case of PIC.
  * This is necessary as base address for newly created symbols
  */
-static ir_node *get_global_base(void)
+static ir_node *get_global_base(ir_graph *const irg)
 {
-	ir_graph *irg = current_ir_graph;
-
 	if (be_options.pic) {
 		return ia32_get_pic_base(irg);
 	}
@@ -269,7 +267,7 @@ static ir_node *gen_Const(ir_node *node)
 				ir_entity *floatent
 					= ia32_create_float_const_entity(isa, tv, NULL);
 
-				ir_node *base = get_global_base();
+				ir_node *base = get_global_base(irg);
 				load = new_bd_ia32_xLoad(dbgi, block, base, noreg_GP, nomem,
 				                         mode);
 				set_ia32_op_type(load, ia32_AddrModeS);
@@ -290,7 +288,7 @@ static ir_node *gen_Const(ir_node *node)
 				/* create_float_const_ent is smart and sometimes creates
 				   smaller entities */
 				ir_mode *ls_mode  = get_type_mode(get_entity_type(floatent));
-				ir_node *base     = get_global_base();
+				ir_node *base     = get_global_base(irg);
 				load = new_bd_ia32_fld(dbgi, block, base, noreg_GP, nomem,
 				                       ls_mode);
 				set_ia32_op_type(load, ia32_AddrModeS);
@@ -551,7 +549,7 @@ static void build_address(ia32_address_mode_t *am, ir_node *node,
 		ia32_isa_t       *isa      = (ia32_isa_t*) arch_env;
 		ir_tarval        *tv       = get_Const_tarval(node);
 		ir_entity *entity = ia32_create_float_const_entity(isa, tv, NULL);
-		addr->base        = get_global_base();
+		addr->base        = get_global_base(irg);
 		addr->index       = noreg_GP;
 		addr->mem         = nomem;
 		addr->entity      = entity;
@@ -1874,9 +1872,8 @@ static ir_node *gen_Minus(ir_node *node)
 			 * several AM nodes... */
 			ir_graph *const irg       = get_Block_irg(block);
 			ir_node  *const noreg_xmm = ia32_new_NoReg_xmm(irg);
-
-			new_node = new_bd_ia32_xXor(dbgi, block, get_global_base(),
-			                            noreg_GP, nomem, new_op, noreg_xmm);
+			ir_node  *const base      = get_global_base(irg);
+			new_node = new_bd_ia32_xXor(dbgi, block, base, noreg_GP, nomem, new_op, noreg_xmm);
 
 			int        size = get_mode_size_bits(mode);
 			ir_entity *ent  = ia32_gen_fp_known_const(
@@ -1923,8 +1920,8 @@ static ir_node *create_float_abs(dbg_info *dbgi, ir_node *block, ir_node *op,
 	if (ia32_cg_config.use_sse2) {
 		ir_graph *const irg      = get_Block_irg(new_block);
 		ir_node  *const noreg_fp = ia32_new_NoReg_xmm(irg);
-		new_node = new_bd_ia32_xAnd(dbgi, new_block, get_global_base(),
-									noreg_GP, nomem, new_op, noreg_fp);
+		ir_node  *const base     = get_global_base(irg);
+		new_node = new_bd_ia32_xAnd(dbgi, new_block, base, noreg_GP, nomem, new_op, noreg_fp);
 
 		int        size = get_mode_size_bits(mode);
 		ir_entity *ent  = ia32_gen_fp_known_const(
@@ -3326,8 +3323,9 @@ static ir_node *gen_Mux(ir_node *node)
 				panic("Unsupported constant size");
 			}
 
+			ir_graph *const irg = get_Block_irg(new_block);
 			am.ls_mode            = new_mode;
-			am.addr.base          = get_global_base();
+			am.addr.base          = get_global_base(irg);
 			am.addr.index         = new_node;
 			am.addr.mem           = nomem;
 			am.addr.offset        = 0;
@@ -4114,7 +4112,7 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 		ir_node *count = ia32_create_Immediate(irg, NULL, 31);
 
 		ia32_address_mode_t am;
-		am.addr.base         = get_global_base();
+		am.addr.base         = get_global_base(irg);
 		am.addr.index        = new_bd_ia32_Shr(dbgi, block, new_val_high, count);
 		am.addr.mem          = nomem;
 		am.addr.offset       = 0;
