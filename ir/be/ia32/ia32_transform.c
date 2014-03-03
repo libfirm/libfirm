@@ -3496,7 +3496,7 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node)
 	SET_IA32_ORIG_NODE(fist, node);
 
 	/* do a Load */
-	ir_node *load = new_bd_ia32_Load(dbgi, block, get_irg_frame(irg), noreg_GP, mem);
+	ir_node *load = new_bd_ia32_Load(dbgi, block, frame, noreg_GP, mem);
 
 	set_irn_pinned(load, op_pin_state_floats);
 	set_ia32_use_frame(load);
