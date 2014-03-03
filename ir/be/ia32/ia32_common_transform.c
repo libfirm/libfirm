@@ -678,8 +678,8 @@ ir_node *ia32_gen_Proj_tls(ir_node *node)
 ir_node *ia32_gen_Unknown(ir_node *node)
 {
 	ir_mode  *mode  = get_irn_mode(node);
-	ir_graph *irg   = current_ir_graph;
 	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_graph *irg   = get_irn_irg(node);
 	ir_node  *block = get_irg_start_block(irg);
 	ir_node  *res   = NULL;
 
