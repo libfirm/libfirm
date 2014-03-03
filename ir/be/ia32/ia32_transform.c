@@ -1872,7 +1872,8 @@ static ir_node *gen_Minus(ir_node *node)
 			/* TODO: non-optimal... if we have many xXors, then we should
 			 * rather create a load for the const and use that instead of
 			 * several AM nodes... */
-			ir_node *noreg_xmm = ia32_new_NoReg_xmm(current_ir_graph);
+			ir_graph *const irg       = get_Block_irg(block);
+			ir_node  *const noreg_xmm = ia32_new_NoReg_xmm(irg);
 
 			new_node = new_bd_ia32_xXor(dbgi, block, get_global_base(),
 			                            noreg_GP, nomem, new_op, noreg_xmm);
@@ -1920,7 +1921,8 @@ static ir_node *create_float_abs(dbg_info *dbgi, ir_node *block, ir_node *op,
 
 	ir_node *new_node;
 	if (ia32_cg_config.use_sse2) {
-		ir_node *noreg_fp = ia32_new_NoReg_xmm(current_ir_graph);
+		ir_graph *const irg      = get_Block_irg(new_block);
+		ir_node  *const noreg_fp = ia32_new_NoReg_xmm(irg);
 		new_node = new_bd_ia32_xAnd(dbgi, new_block, get_global_base(),
 									noreg_GP, nomem, new_op, noreg_fp);
 
@@ -2628,7 +2630,8 @@ static ir_node *gen_fist(dbg_info *dbgi, ir_node *block, ir_node *base,
 		 * value is copied if other users exists */
 		return new_bd_ia32_fisttp(dbgi, block, base, index, mem, val);
 	} else {
-		ir_node *trunc_mode = ia32_new_Fpu_truncate(current_ir_graph);
+		ir_graph *const irg        = get_Block_irg(block);
+		ir_node  *const trunc_mode = ia32_new_Fpu_truncate(irg);
 
 		/* do a fist */
 		return new_bd_ia32_fist(dbgi, block, base, index, mem, val, trunc_mode);
@@ -3470,8 +3473,8 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node)
 	ir_node  *block  = be_transform_node(get_nodes_block(node));
 	ir_node  *op     = get_Conv_op(node);
 	ir_node  *new_op = be_transform_node(op);
-	ir_graph *irg    = current_ir_graph;
 	dbg_info *dbgi   = get_irn_dbg_info(node);
+	ir_graph *irg    = get_Block_irg(block);
 	ir_node  *frame  = get_irg_frame(irg);
 
 	ir_node *fist = gen_fist(dbgi, block, frame, noreg_GP, nomem, new_op);
@@ -5470,10 +5473,11 @@ static void postprocess_fp_call_results(void)
 				}
 
 				if (new_res == NULL) {
-					ir_node *block    = get_nodes_block(call);
-					ir_node *frame    = get_irg_frame(current_ir_graph);
-					ir_node *old_mem  = be_get_Proj_for_pn(call, pn_ia32_Call_M);
-					ir_node *call_mem = new_r_Proj(call, mode_M, pn_ia32_Call_M);
+					ir_node  *const block    = get_nodes_block(call);
+					ir_graph *const irg      = get_Block_irg(block);
+					ir_node  *const frame    = get_irg_frame(irg);
+					ir_node  *const old_mem  = be_get_Proj_for_pn(call, pn_ia32_Call_M);
+					ir_node  *const call_mem = new_r_Proj(call, mode_M, pn_ia32_Call_M);
 
 					/* store st(0) on stack */
 					dbg_info *db   = get_irn_dbg_info(call);
