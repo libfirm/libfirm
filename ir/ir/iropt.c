@@ -2067,19 +2067,23 @@ flip:
 	return res;
 }
 
-/**
- * Prototype of a recursive transform function
- * for bitwise distributive transformations.
- */
-typedef ir_node* (*recursive_transform)(ir_node *n);
+static ir_node *new_binop(ir_node *const old, ir_node *const block, ir_node *const l, ir_node *const r)
+{
+	dbg_info *const dbgi = get_irn_dbg_info(old);
+	ir_graph *const irg  = get_Block_irg(block);
+	ir_op    *const op   = get_irn_op(old);
+	ir_mode  *const mode = get_irn_mode(l /* sic */);
+	ir_node  *const in[] = { l, r };
+	ir_node  *const n    = new_ir_node(dbgi, irg, block, op, mode, ARRAY_SIZE(in), in);
+	return optimize_node(n);
+}
 
 /**
  * makes use of distributive laws for and, or, eor
  *     and(a OP c, b OP c) -> and(a, b) OP c
  * note, might return a different op than n
  */
-static ir_node *transform_bitwise_distributive(ir_node *n,
-                                               recursive_transform trans_func)
+static ir_node *transform_bitwise_distributive(ir_node *n)
 {
 	ir_node     *oldn    = n;
 	ir_node     *a       = get_binop_left(n);
@@ -2098,12 +2102,7 @@ static ir_node *transform_bitwise_distributive(ir_node *n,
 		const ir_mode *b_mode = get_irn_mode(b_op);
 		if (a_mode == b_mode && (mode_is_int(a_mode) || a_mode == mode_b)) {
 			ir_node *blk = get_nodes_block(n);
-
-			n = exact_copy(n);
-			set_binop_left(n, a_op);
-			set_binop_right(n, b_op);
-			set_irn_mode(n, a_mode);
-			n = trans_func(n);
+			n = new_binop(n, blk, a_op, b_op);
 			n = new_r_Conv(blk, n, get_irn_mode(oldn));
 
 			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
@@ -2149,12 +2148,8 @@ static ir_node *transform_bitwise_distributive(ir_node *n,
 
 		if (c != NULL) {
 			/* (a sop c) & (b sop c) => (a & b) sop c */
-			ir_node *blk = get_nodes_block(n);
-
-			ir_node *new_n = exact_copy(n);
-			set_binop_left(new_n, op1);
-			set_binop_right(new_n, op2);
-			new_n = trans_func(new_n);
+			ir_node *const blk   = get_nodes_block(n);
+			ir_node *const new_n = new_binop(n, blk, op1, op2);
 
 			if (op_root == op_Eor && op == op_Or) {
 				dbg_info  *dbgi = get_irn_dbg_info(n);
@@ -2163,10 +2158,7 @@ static ir_node *transform_bitwise_distributive(ir_node *n,
 				c = new_rd_Not(dbgi, blk, c, mode);
 				n = new_rd_And(dbgi, blk, new_n, c, mode);
 			} else {
-				n = exact_copy(a);
-				set_nodes_block(n, blk);
-				set_binop_left(n, new_n);
-				set_binop_right(n, c);
+				n = new_binop(a, blk, new_n, c);
 				add_identities(n);
 			}
 
@@ -2298,9 +2290,8 @@ static ir_node *fold_constant_associativity(ir_node *node,
 	if (!tarval_is_constant(new_c))
 		return node;
 	ir_node *new_const = new_r_Const(irg, new_c);
-	ir_node *new_node  = exact_copy(node);
-	set_binop_left(new_node, left_left);
-	set_binop_right(new_node, new_const);
+	ir_node *block     = get_nodes_block(node);
+	ir_node *new_node  = new_binop(node, block, left_left, new_const);
 	return new_node;
 }
 
@@ -2384,7 +2375,7 @@ static ir_node *transform_node_Or_(ir_node *n)
 	if (n != oldn)
 		return n;
 
-	n = transform_bitwise_distributive(n, transform_node_Or_);
+	n = transform_bitwise_distributive(n);
 	if (n != oldn)
 		return n;
 	n = transform_node_bitop_shift(n);
@@ -2470,7 +2461,7 @@ static ir_node *transform_node_Eor_(ir_node *n)
 	if (n != oldn)
 		return n;
 
-	n = transform_bitwise_distributive(n, transform_node_Eor_);
+	n = transform_bitwise_distributive(n);
 	if (n != oldn)
 		return n;
 
@@ -3695,7 +3686,7 @@ absorb:;
 	if (n != oldn)
 		return n;
 
-	n = transform_bitwise_distributive(n, transform_node_And);
+	n = transform_bitwise_distributive(n);
 	if (is_And(n))
 		n = transform_node_bitop_shift(n);
 
