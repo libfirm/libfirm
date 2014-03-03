@@ -664,9 +664,9 @@ ir_relation ir_get_possible_cmp_relations(const ir_node *left,
 		ir_tarval *const r_z   = br->z;
 		if (get_mode_arithmetic(mode) == irma_twos_complement) {
 			/* Compute min/max values of operands. */
-			ir_tarval *l_max = tarval_andnot(l_z, tarval_andnot(min, l_o));
+			ir_tarval *l_max = tarval_and(l_z, tarval_ornot(l_o, min));
 			ir_tarval *l_min = tarval_or(l_o, tarval_and(l_z, min));
-			ir_tarval *r_max = tarval_andnot(r_z, tarval_andnot(min, r_o));
+			ir_tarval *r_max = tarval_and(r_z, tarval_ornot(r_o, min));
 			ir_tarval *r_min = tarval_or(r_o, tarval_and(r_z, min));
 
 			if (!(tarval_cmp(l_max, r_min) & ir_relation_greater)) {

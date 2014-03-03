@@ -63,6 +63,12 @@ void sc_or(const sc_word *val1, const sc_word *val2, sc_word *buffer)
 		buffer[counter] = val1[counter] | val2[counter];
 }
 
+void sc_ornot(const sc_word *val1, const sc_word *val2, sc_word *buffer)
+{
+	for (unsigned counter = 0; counter < calc_buffer_size; ++counter)
+		buffer[counter] = val1[counter] | (SC_MASK ^ val2[counter]);
+}
+
 void sc_xor(const sc_word *val1, const sc_word *val2, sc_word *buffer)
 {
 	for (unsigned counter = 0; counter<calc_buffer_size; counter++)

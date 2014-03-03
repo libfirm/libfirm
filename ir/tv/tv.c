@@ -1172,6 +1172,29 @@ ir_tarval *tarval_or(ir_tarval *a, ir_tarval *b)
 	panic("invalid mode sort");
 }
 
+ir_tarval *tarval_ornot(ir_tarval *a, ir_tarval *b)
+{
+	assert(a->mode == b->mode);
+
+	switch (get_mode_sort(a->mode)) {
+	case irms_internal_boolean:
+		return a == tarval_b_true || b == tarval_b_false ? tarval_b_true : tarval_b_false;
+
+	case irms_reference:
+	case irms_int_number: {
+		sc_word *buffer = ALLOCAN(sc_word, sc_value_length);
+		sc_ornot(a->value, b->value, buffer);
+		return get_tarval(buffer, sc_value_length, a->mode);
+	}
+
+	case irms_auxiliary:
+	case irms_data:
+	case irms_float_number:
+		panic("operation not defined on mode");
+	}
+	panic("invalid mode sort");
+}
+
 ir_tarval *tarval_eor(ir_tarval *a, ir_tarval *b)
 {
 	assert((a->mode == b->mode));

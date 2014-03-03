@@ -524,6 +524,16 @@ FIRM_API ir_tarval *tarval_andnot(ir_tarval *a, ir_tarval *b);
 FIRM_API ir_tarval *tarval_or(ir_tarval *a, ir_tarval *b);
 
 /**
+ * Bitwise or not of two integer tarvals.
+ *
+ * @param a  the first tarval
+ * @param b  the second tarval
+ *
+ * @return a | ~b or tarval_bad
+ */
+FIRM_API ir_tarval *tarval_ornot(ir_tarval *a, ir_tarval *b);
+
+/**
  * Bitwise exclusive or of two integer tarvals.
  *
  * @param a  the first tarval

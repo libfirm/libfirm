@@ -65,6 +65,11 @@ void sc_andnot(const sc_word *value1, const sc_word *value2, sc_word *buffer);
 void sc_or(const sc_word *value1, const sc_word *value2, sc_word *buffer);
 
 /**
+ * buffer = value1 | ~value2
+ */
+void sc_ornot(const sc_word *value1, const sc_word *value2, sc_word *buffer);
+
+/**
  * buffer = value1 ^ value2
  */
 void sc_xor(const sc_word *value1, const sc_word *value2, sc_word *buffer);
