@@ -699,7 +699,7 @@ void free_loop_information(ir_graph *irg)
 {
 	irg_walk_graph(irg, loop_reset_node, NULL, NULL);
 	set_irg_loop(irg, NULL);
-	clear_irg_properties(current_ir_graph, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 	/* We cannot free the loop nodes, they are on the obstack. */
 }
 
