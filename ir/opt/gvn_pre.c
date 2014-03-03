@@ -346,15 +346,7 @@ static ir_node *remember(ir_node *irn)
 
 	if (changed && !is_memop(irn) && get_irn_mode(irn) != mode_X) {
 		/* create representative for */
-		ir_node *nn = new_ir_node(
-			get_irn_dbg_info(irn),
-			get_irn_irg(irn),
-			get_nodes_block(irn),
-			get_irn_op(irn),
-			get_irn_mode(irn),
-			get_irn_arity(irn),
-			in);
-		copy_node_attr(environ->graph, irn, nn);
+		ir_node *nn = new_similar_node(irn, get_nodes_block(irn), in);
 
 #if OPTIMIZE_NODES
 		/* TODO optimize_node() uses the valuetable and thus the custom
@@ -806,7 +798,6 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, ir_valuese
 	int       arity;
 	ir_node **in;
 	ir_node  *pred_block = get_Block_cfgpred_block(block, pos);
-	ir_node  *nn;
 	unsigned  needed;
 
 	if (is_Phi(node)) {
@@ -897,17 +888,7 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, ir_valuese
 	   so we use the newly created nodes as value representatives only.
 	   Their block is not important, because we create new ones during
 	   the insert node phase. */
-	nn = new_ir_node(
-		get_irn_dbg_info(node),
-		environ->graph,
-		pred_block,
-		get_irn_op(node),
-		get_irn_mode(node),
-		arity,
-		in);
-	/* We need the attribute copy here, because the Hash value of a
-	   node might depend on it. */
-	copy_node_attr(environ->graph, node, nn);
+	ir_node *const nn = new_similar_node(node, pred_block, in);
 	/* Optimizing nn here is tempting but might be against the GVN-PRE algorithm
 	   because it already uses availability. */
 
@@ -1473,18 +1454,8 @@ static void insert_nodes_walker(ir_node *block, void *ctx)
 				   We use translated nodes as value representatives only.
 				   They have anti leaders as predecessors, not leaders!
 				   So we have to create a new node using leaders. */
-				trans = new_ir_node(
-					get_irn_dbg_info(expr),
-					environ->graph,
-					target_block,
-					get_irn_op(expr),
-					get_irn_mode(expr),
-					get_irn_arity(expr),
-					in);
+				trans = new_similar_node(expr, target_block, in);
 				free(in);
-				/* We need the attribute copy here, because the Hash value of a
-				   node might depend on it. */
-				copy_node_attr(environ->graph, expr, trans);
 
 				/* value is now available in target block through trans
 				   insert (not replace) because it has not been available */
@@ -1694,7 +1665,6 @@ static void hoist_high(ir_node *block, void *ctx)
 				block_info *target_info = get_block_info(new_target);
 				int         nn_arity    = get_irn_arity(avail);
 				ir_node   **in          = XMALLOCN(ir_node *, nn_arity);
-				ir_node    *nn;
 
 				DB((dbg, LEVEL_2, "Hoisting %+F into %+F\n", avail, new_target));
 				DEBUG_ONLY(inc_stats(gvnpre_stats->hoist_high);)
@@ -1704,14 +1674,7 @@ static void hoist_high(ir_node *block, void *ctx)
 					assert(avail_pred);
 					in[i] = avail_pred;
 				}
-				nn = new_ir_node(
-					get_irn_dbg_info(avail),
-					environ->graph,
-					new_target,
-					get_irn_op(avail),
-					get_irn_mode(avail),
-					nn_arity,
-					in);
+				ir_node *const nn = new_similar_node(avail, new_target, in);
 				free(in);
 
 				identify_or_remember(nn);

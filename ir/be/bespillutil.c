@@ -562,7 +562,6 @@ static int check_remat_conditions_costs(spill_env_t *env,
  */
 static ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader)
 {
-	ir_node *res;
 	ir_node **ins;
 
 	ins = ALLOCAN(ir_node*, get_irn_arity(spilled));
@@ -577,11 +576,8 @@ static ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader)
 	}
 
 	/* create a copy of the node */
-	ir_node *const bl = get_nodes_block(reloader);
-	res = new_ir_node(get_irn_dbg_info(spilled), env->irg, bl,
-	                  get_irn_op(spilled), get_irn_mode(spilled),
-	                  get_irn_arity(spilled), ins);
-	copy_node_attr(env->irg, spilled, res);
+	ir_node *const bl  = get_nodes_block(reloader);
+	ir_node *const res = new_similar_node(spilled, bl, ins);
 	arch_env_mark_remat(env->arch_env, res);
 
 	DBG((dbg, LEVEL_1, "Insert remat %+F of %+F before reloader %+F\n", res, spilled, reloader));

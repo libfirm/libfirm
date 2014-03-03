@@ -128,6 +128,18 @@ ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
 	return res;
 }
 
+ir_node *new_similar_node(ir_node *const old, ir_node *const block, ir_node **const in)
+{
+	dbg_info *const dbgi  = get_irn_dbg_info(old);
+	ir_graph *const irg   = get_Block_irg(block);
+	ir_op    *const op    = get_irn_op(old);
+	ir_mode  *const mode  = get_irn_mode(old);
+	int       const arity = get_irn_arity(old);
+	ir_node  *const n     = new_ir_node(dbgi, irg, block, op, mode, arity, in);
+	copy_node_attr(irg, old, n);
+	return n;
+}
+
 int (is_ir_node)(const void *thing)
 {
 	return is_ir_node_(thing);

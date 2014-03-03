@@ -548,6 +548,12 @@ void ir_register_getter_ops(void);
  */
 bool only_used_by_keepalive(const ir_node *node);
 
+/**
+ * Create a node similar to @p old.  Except for @p block and @p in all aspects
+ * are copied from @p old.
+ */
+ir_node *new_similar_node(ir_node *old, ir_node *block, ir_node **in);
+
 #define foreach_irn_in(irn, idx, pred) \
 	for (bool pred##__b = true; pred##__b;) \
 		for (ir_node const *const pred##__irn = (irn); pred##__b; pred##__b = false) \
