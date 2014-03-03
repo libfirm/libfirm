@@ -969,8 +969,7 @@ static ir_node *gen_IJmp(ir_node *node)
 	ir_node  *block     = get_nodes_block(node);
 	ir_node  *new_block = be_transform_node(block);
 	ir_node  *op        = get_IJmp_target(node);
-	ir_mode  *mode      = get_irn_mode(op);
-	assert(mode == mode_P);
+	assert(get_irn_mode(op) == mode_P);
 
 	int arity = 0;
 	ir_node *in[3];
@@ -1300,11 +1299,9 @@ static ir_node *gen_Call(ir_node *node)
 
 	/* parameters */
 	for (size_t p = 0; p < n_params; ++p) {
-		ir_node                  *value      = get_Call_param(node, p);
-		const reg_or_stackslot_t *param      = &cconv->parameters[p];
-		ir_type                  *param_type = get_method_param_type(type, p);
-		ir_mode                  *mode       = get_type_mode(param_type);
-		assert(mode_needs_gp_reg(mode));
+		ir_node                  *value = get_Call_param(node, p);
+		const reg_or_stackslot_t *param = &cconv->parameters[p];
+		assert(mode_needs_gp_reg(get_type_mode(get_method_param_type(type, p))));
 
 		ir_node *new_value = be_transform_node(value);
 
