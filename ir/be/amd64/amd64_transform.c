@@ -1342,34 +1342,31 @@ static ir_node *gen_Call(ir_node *node)
 	memset(&addr, 0, sizeof(addr));
 	addr.mem_input = NO_INPUT;
 	amd64_op_mode_t op_mode;
+
+	ir_node *mem_proj = NULL;
+
 	if (match_immediate_32(&addr.immediate, callee, true, true)) {
 		op_mode = AMD64_OP_UNOP_IMM32;
 	} else if (source_am_possible(block, callee, NULL)) {
-		/* TODO: check condition, can't other call inputs be dependent
-		 * on the load which would make this invalid? */
-		x86_address_t maddr;
-		memset(&maddr, 0, sizeof(maddr));
-		x86_create_address_mode(&maddr, callee, x86_create_am_normal);
+		ir_node *load     = get_Proj_pred(callee);
+		ir_node *load_ptr = get_Load_ptr(load);
+		mem_proj = be_get_Proj_for_pn(load, pn_Load_M);
 
-		addr.immediate.entity = maddr.entity;
-		addr.immediate.offset = maddr.offset;
-		if (maddr.base != NULL) {
-			int base_input     = in_arity++;
-			in[base_input]     = be_transform_node(maddr.base);
-			in_req[base_input] = &amd64_requirement_gp;
-			addr.base_input    = base_input;
-		} else {
-			addr.base_input = NO_INPUT;
+		perform_address_matching(load_ptr, &in_arity, in, &addr);
+
+		if (addr.base_input != NO_INPUT) {
+			in_req[addr.base_input] = &amd64_requirement_gp;
 		}
-		if (maddr.index != NULL) {
-			int index_input     = in_arity++;
-			in[index_input]     = be_transform_node(maddr.index);
-			in_req[index_input] = &amd64_requirement_gp;
-			addr.index_input    = index_input;
-			addr.log_scale      = maddr.scale;
-		} else {
-			addr.index_input = NO_INPUT;
+
+		if (addr.index_input != NO_INPUT) {
+			in_req[addr.index_input] = &amd64_requirement_gp;
 		}
+
+		ir_node *load_mem = get_Load_mem(load);
+		ir_node *new_mem  = be_transform_node(load_mem);
+		in[mem_pos]       = new_mem;
+		addr.mem_input    = mem_pos;
+
 		op_mode = AMD64_OP_UNOP_ADDR;
 	} else {
 		int base_input     = in_arity++;
@@ -1377,7 +1374,7 @@ static ir_node *gen_Call(ir_node *node)
 		in_req[base_input] = &amd64_requirement_gp;
 		addr.base_input    = base_input;
 		addr.index_input   = NO_INPUT;
-		op_mode = AMD64_OP_UNOP_REG;
+		op_mode            = AMD64_OP_UNOP_REG;
 	}
 
 	assert(in_arity <= (int)max_inputs);
@@ -1395,6 +1392,11 @@ static ir_node *gen_Call(ir_node *node)
 	ir_node *call = new_bd_amd64_Call(dbgi, new_block, in_arity, in, out_arity,
 	                                  op_mode, addr);
 	arch_set_irn_register_reqs_in(call, in_req);
+
+	if(mem_proj != NULL) {
+		ir_node *load = get_Proj_pred(mem_proj);
+		be_set_transformed_node(load, call);
+	}
 
 	/* create output register reqs */
 	int o = 0;
