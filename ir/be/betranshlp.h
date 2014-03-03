@@ -18,7 +18,7 @@
 /**
  * A callback to pre-transform some nodes before the transformation starts.
  */
-typedef void (arch_pretrans_nodes)(void);
+typedef void (arch_pretrans_nodes)(ir_graph*);
 
 /**
  * The type of a transform function.

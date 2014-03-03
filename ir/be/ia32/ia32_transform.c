@@ -5398,9 +5398,8 @@ static void register_transformers(void)
 /**
  * Pre-transform all unknown and noreg nodes.
  */
-static void ia32_pretransform_node(void)
+static void ia32_pretransform_node(ir_graph *const irg)
 {
-	ir_graph        *irg      = current_ir_graph;
 	ia32_irg_data_t *irg_data = ia32_get_irg_data(irg);
 
 	irg_data->noreg_gp       = be_pre_transform_node(irg_data->noreg_gp);

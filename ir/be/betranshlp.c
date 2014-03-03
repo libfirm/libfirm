@@ -339,7 +339,7 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 	pre_transform_anchor(irg, anchor_frame);
 
 	if (pre_transform)
-		pre_transform();
+		pre_transform(irg);
 
 	/* process worklist (this should transform all nodes in the graph) */
 	while (! waitq_empty(env.worklist)) {
