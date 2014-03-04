@@ -662,7 +662,7 @@ static void analyse_params_of_Call(graph_entry_t *graph, ir_node *call)
 				base = get_Sel_ptr(base);
 			} while (is_Sel(base));
 
-			if (base == get_irg_frame(current_ir_graph))
+			if (base == get_irg_frame(graph->irg))
 				++num_local_adr;
 		}
 
@@ -811,16 +811,16 @@ static void stat_update_address(ir_node *node, graph_entry_t *graph)
 {
 	unsigned opc = get_irn_opcode(node);
 	ir_node *base;
-	ir_graph *irg;
 
 	switch (opc) {
 	case iro_Address:
 		/* a global address */
 		cnt_inc(&graph->cnt[gcnt_global_adr]);
 		break;
-	case iro_Sel:
+
+	case iro_Sel: {
 		base = find_base_adr(node);
-		irg = current_ir_graph;
+		ir_graph *const irg = graph->irg;
 		if (base == get_irg_frame(irg)) {
 			/* a local Variable. */
 			cnt_inc(&graph->cnt[gcnt_local_adr]);
@@ -849,6 +849,8 @@ end_parameter: ;
 				cnt_inc(&graph->cnt[gcnt_other_adr]);
 			}
 		}
+	}
+
 	default:
 		break;
 	}
@@ -1375,7 +1377,8 @@ static void stat_new_node(void *ctx, ir_node *node)
 		cnt_inc(&entry->new_node);
 
 		/* increase local value */
-		graph = graph_get_entry(current_ir_graph, status->irg_hash);
+		ir_graph *const irg = get_irn_irg(node);
+		graph = graph_get_entry(irg, status->irg_hash);
 		entry = opcode_get_entry(op, graph->opcode_hash);
 		cnt_inc(&entry->new_node);
 	}
@@ -1406,7 +1409,8 @@ static void stat_turn_into_id(void *ctx, ir_node *node)
 		cnt_inc(&entry->into_Id);
 
 		/* increase local value */
-		graph = graph_get_entry(current_ir_graph, status->irg_hash);
+		ir_graph *const irg = get_irn_irg(node);
+		graph = graph_get_entry(irg, status->irg_hash);
 		entry = opcode_get_entry(op, graph->opcode_hash);
 		cnt_inc(&entry->into_Id);
 	}
@@ -1437,7 +1441,8 @@ static void stat_normalize(void *ctx, ir_node *node)
 		cnt_inc(&entry->normalized);
 
 		/* increase local value */
-		graph = graph_get_entry(current_ir_graph, status->irg_hash);
+		ir_graph *const irg = get_irn_irg(node);
+		graph = graph_get_entry(irg, status->irg_hash);
 		entry = opcode_get_entry(op, graph->opcode_hash);
 		cnt_inc(&entry->normalized);
 	}
@@ -1624,7 +1629,9 @@ static void stat_merge_nodes(
 	STAT_ENTER;
 	{
 		int i, j;
-		graph_entry_t *graph = graph_get_entry(current_ir_graph, status->irg_hash);
+		assert(old_num_entries > 0);
+		ir_graph      *const irg   = get_irn_irg(old_node_array[0]);
+		graph_entry_t *const graph = graph_get_entry(irg, status->irg_hash);
 
 		cnt_inc(&status->num_opts[opt]);
 		if (status->reassoc_run)
@@ -1687,7 +1694,8 @@ static void stat_lower(void *ctx, ir_node *node)
 
 	STAT_ENTER;
 	{
-		graph_entry_t *graph = graph_get_entry(current_ir_graph, status->irg_hash);
+		ir_graph      *const irg   = get_irn_irg(node);
+		graph_entry_t *const graph = graph_get_entry(irg, status->irg_hash);
 
 		removed_due_opt(node, graph->opt_hash[HOOK_LOWERED], HOOK_LOWERED);
 	}
@@ -1830,7 +1838,8 @@ static void stat_arch_dep_replace_mul_with_shifts(void *ctx, ir_node *mul)
 
 	STAT_ENTER;
 	{
-		graph_entry_t *graph = graph_get_entry(current_ir_graph, status->irg_hash);
+		ir_graph      *const irg   = get_irn_irg(mul);
+		graph_entry_t *const graph = graph_get_entry(irg, status->irg_hash);
 		removed_due_opt(mul, graph->opt_hash[HOOK_OPT_ARCH_DEP], HOOK_OPT_ARCH_DEP);
 	}
 	STAT_LEAVE;
@@ -1850,7 +1859,8 @@ static void stat_arch_dep_replace_division_by_const(void *ctx, ir_node *node)
 
 	STAT_ENTER;
 	{
-		graph_entry_t *graph = graph_get_entry(current_ir_graph, status->irg_hash);
+		ir_graph      *const irg   = get_irn_irg(node);
+		graph_entry_t *const graph = graph_get_entry(irg, status->irg_hash);
 		removed_due_opt(node, graph->opt_hash[HOOK_OPT_ARCH_DEP], HOOK_OPT_ARCH_DEP);
 	}
 	STAT_LEAVE;
