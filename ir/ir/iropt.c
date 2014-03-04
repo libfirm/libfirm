@@ -4197,7 +4197,8 @@ static ir_node *transform_node_Cmp(ir_node *n)
 				} else {
 					x = get_commutative_other_op(left, right);
 				}
-				goto cmp_x_eq_0;
+				if (x)
+					goto cmp_x_eq_0;
 			}
 			if (is_Add(right) || is_Eor(right) || is_Sub(right) || is_Or_Eor_Add(right)) {
 				if (is_Sub(right)) {
@@ -4205,8 +4206,8 @@ static ir_node *transform_node_Cmp(ir_node *n)
 				} else {
 					x = get_commutative_other_op(right, left);
 				}
-cmp_x_eq_0:
 				if (x) {
+cmp_x_eq_0:;
 					ir_graph *irg = get_irn_irg(n);
 					left    = x;
 					right   = create_zero_const(irg, mode);
