@@ -883,7 +883,7 @@ static void get_head_outs(ir_node *node, void *env)
 				entry.pred = pred;
 				ARR_APP1(entry_edge, head_df_loop, entry);
 				DB((dbg, LEVEL_5, "Found incc assignment node %N @%d is pred %N, graph %N %N\n",
-						node, i, entry.pred, current_ir_graph, get_irg_start_block(current_ir_graph)));
+						node, i, entry.pred, get_irn_irg(node), get_irg_start_block(get_irn_irg(node))));
 			}
 		}
 	}
@@ -1492,16 +1492,16 @@ static void place_copies(int copies)
 }
 
 /* Copies the cur_loop several times. */
-static void copy_loop(entry_edge *cur_loop_outs, int copies)
+static void copy_loop(ir_graph *const irg, entry_edge *const cur_loop_outs, int const copies)
 {
 	int c;
 
-	ir_reserve_resources(current_ir_graph, IR_RESOURCE_IRN_VISITED);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 
 	for (c = 0; c < copies; ++c) {
 		size_t i;
 
-		inc_irg_visited(current_ir_graph);
+		inc_irg_visited(irg);
 
 		DB((dbg, LEVEL_5, "         ### Copy_loop  copy nr: %d ###\n", c));
 		for (i = 0; i < ARR_LEN(cur_loop_outs); ++i) {
@@ -1512,7 +1512,7 @@ static void copy_loop(entry_edge *cur_loop_outs, int copies)
 		}
 	}
 
-	ir_free_resources(current_ir_graph, IR_RESOURCE_IRN_VISITED);
+	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
 }
 
 
@@ -2454,7 +2454,7 @@ static unsigned get_unroll_decision_constant(void)
 /**
  * Loop unrolling
  */
-static void unroll_loop(void)
+static void unroll_loop(ir_graph *const irg)
 {
 
 	if (! (loop_info.nodes > 0))
@@ -2500,7 +2500,7 @@ static void unroll_loop(void)
 		loop_entries = NEW_ARR_F(entry_edge, 0);
 
 		/* Get loop outs */
-		irg_walk_graph(current_ir_graph, get_loop_entries, NULL, NULL);
+		irg_walk_graph(irg, get_loop_entries, NULL, NULL);
 
 		if (loop_info.unroll_kind == constant) {
 			if ((int)get_tarval_long(loop_info.count_tar) == unroll_nr)
@@ -2512,11 +2512,11 @@ static void unroll_loop(void)
 		}
 
 		/* Use phase to keep copy of nodes from the condition chain. */
-		ir_nodemap_init(&map, current_ir_graph);
+		ir_nodemap_init(&map, irg);
 		obstack_init(&obst);
 
 		/* Copies the loop */
-		copy_loop(loop_entries, unroll_nr - 1);
+		copy_loop(irg, loop_entries, unroll_nr - 1);
 
 		/* Line up the floating copies. */
 		place_copies(unroll_nr - 1);
@@ -2525,14 +2525,14 @@ static void unroll_loop(void)
 		 * If there were no nested phis, this would not be necessary.
 		 * Avoiding the creation in the first place
 		 * leads to complex special cases. */
-		irg_walk_graph(current_ir_graph, correct_phis, NULL, NULL);
+		irg_walk_graph(irg, correct_phis, NULL, NULL);
 
 		if (loop_info.unroll_kind == constant)
 			++stats.constant_unroll;
 		else
 			++stats.invariant_unroll;
 
-		clear_irg_properties(current_ir_graph, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
+		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
 		DEL_ARR_F(loop_entries);
 		obstack_free(&obst, NULL);
@@ -2580,7 +2580,7 @@ static void init_analyze(ir_graph *irg, ir_loop *loop)
 			break;
 
 		case loop_op_unrolling:
-			unroll_loop();
+			unroll_loop(irg);
 			break;
 
 		default:
