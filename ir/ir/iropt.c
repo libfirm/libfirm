@@ -4193,7 +4193,7 @@ static ir_node *transform_node_Cmp(ir_node *n)
 			ir_node *x;
 			if (is_Add(left) || is_Eor(left) || is_Sub(left) || is_Or_Eor_Add(left)) {
 				if (is_Sub(left)) {
-					x = get_Sub_right(left) == right ? get_Sub_left(left) : NULL;
+					x = get_Sub_left(left) == right ? get_Sub_right(left) : NULL;
 				} else {
 					x = get_commutative_other_op(left, right);
 				}
@@ -4201,7 +4201,7 @@ static ir_node *transform_node_Cmp(ir_node *n)
 			}
 			if (is_Add(right) || is_Eor(right) || is_Sub(right) || is_Or_Eor_Add(right)) {
 				if (is_Sub(right)) {
-					x = get_Sub_right(right) == left ? get_Sub_left(right) : NULL;
+					x = get_Sub_left(right) == left ? get_Sub_right(right) : NULL;
 				} else {
 					x = get_commutative_other_op(right, left);
 				}
