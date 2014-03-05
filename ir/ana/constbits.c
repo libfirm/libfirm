@@ -121,7 +121,7 @@ bitinfo* get_bitinfo(ir_node const* const irn)
 	return ir_nodemap_get(bitinfo, map, irn);
 }
 
-int join_bitinfo(ir_node* const irn, ir_tarval* const z, ir_tarval* const o)
+bool join_bitinfo(ir_node* const irn, ir_tarval* const z, ir_tarval* const o)
 {
 	if (tarval_is_null(z) && tarval_is_all_one(o)) {
 		/*
@@ -131,7 +131,7 @@ int join_bitinfo(ir_node* const irn, ir_tarval* const z, ir_tarval* const o)
 		 * Due to CSE, the node might also be used within reachable code,
 		 * so we cannot set undefined bit information in this case.
 		 */
-		return 0;
+		return false;
 	}
 
 	bitinfo* b = get_bitinfo(irn);
@@ -144,16 +144,16 @@ int join_bitinfo(ir_node* const irn, ir_tarval* const z, ir_tarval* const o)
 		b->z = z;
 		b->o = o;
 	} else if (z == b->z && o == b->o) {
-		return 0;
+		return false;
 	} else {
 		b->z = tarval_and(b->z, z);
 		b->o = tarval_or(b->o, o);
 	}
 	DB((dbg, LEVEL_3, "Join %+F: 0:%T 1:%T\n", irn, b->z, b->o));
-	return 1;
+	return true;
 }
 
-int set_bitinfo(ir_node* const irn, ir_tarval* const z, ir_tarval* const o)
+bool set_bitinfo(ir_node* const irn, ir_tarval* const z, ir_tarval* const o)
 {
 	bitinfo* b = get_bitinfo(irn);
 	if (b == NULL) {
@@ -163,7 +163,7 @@ int set_bitinfo(ir_node* const irn, ir_tarval* const z, ir_tarval* const o)
 		b = OALLOCZ(obst, bitinfo);
 		ir_nodemap_insert(map, irn, b);
 	} else if (z == b->z && o == b->o) {
-		return 0;
+		return false;
 	} else {
 		/* Assert ascending chain. */
 		assert(tarval_is_null(tarval_andnot(b->z, z)));
@@ -172,15 +172,15 @@ int set_bitinfo(ir_node* const irn, ir_tarval* const z, ir_tarval* const o)
 	b->z = z;
 	b->o = o;
 	DB((dbg, LEVEL_3, "Set %+F: 0:%T 1:%T\n", irn, z, o));
-	return 1;
+	return true;
 }
 
-static int mode_is_intb(ir_mode const* const m)
+static bool mode_is_intb(ir_mode const* const m)
 {
 	return mode_is_int(m) || m == mode_b;
 }
 
-static int transfer(ir_node* const irn)
+static bool transfer(ir_node* const irn)
 {
 	ir_tarval* const f = get_tarval_b_false();
 	ir_tarval* const t = get_tarval_b_true();
@@ -245,15 +245,12 @@ result_unknown_X:
 				break;
 		}
 	} else if (is_Block(irn)) {
-		int       reachable = 0;
-		int const arity     = get_Block_n_cfgpreds(irn);
-		int       i;
-
 		DB((dbg, LEVEL_3, "transfer %+F\n", irn));
-		for (i = 0; i != arity; ++i) {
-			bitinfo* const b = get_bitinfo(get_Block_cfgpred(irn, i));
+		bool reachable = false;
+		foreach_irn_in(irn, i, pred_block) {
+			bitinfo* const b = get_bitinfo(pred_block);
 			if (b != NULL && b->z == t) {
-				reachable = 1;
+				reachable = true;
 				break;
 			}
 		}
@@ -283,13 +280,11 @@ undefined:
 			o = get_tarval_all_one(m);
 		} else if (is_Phi(irn)) {
 			ir_node* const block = get_nodes_block(irn);
-			int      const arity = get_Phi_n_preds(irn);
-			int            i;
 
 			z = get_tarval_null(m);
 			o = get_tarval_all_one(m);
-			for (i = 0; i != arity; ++i) {
-				bitinfo* const b_cfg = get_bitinfo(get_Block_cfgpred(block, i));
+			foreach_irn_in(block, i, pred_block) {
+				bitinfo* const b_cfg = get_bitinfo(pred_block);
 				if (b_cfg != NULL && b_cfg->z != f) {
 					bitinfo* const b = get_bitinfo(get_Phi_pred(irn, i));
 					/* Only use input if it's not undefined. */
@@ -404,22 +399,22 @@ undefined:
 				case iro_Sub: {
 					bitinfo* const l = get_bitinfo(get_Sub_left(irn));
 					bitinfo* const r = get_bitinfo(get_Sub_right(irn));
-					if (l != NULL && r != NULL) { // Sub might subtract pointers.
-						ir_tarval* const lz = l->z;
-						ir_tarval* const lo = l->o;
-						ir_tarval* const rz = r->z;
-						ir_tarval* const ro = r->o;
-						if (lz == lo && rz == ro) {
-							z = o = tarval_sub(lz, rz, NULL);
-						} else if (tarval_is_null(tarval_andnot(rz, lo))) {
-							/* Every possible one of the subtrahend is backed by a safe one of the
-							 * minuend, i.e. there are no borrows. */
-							// TODO extend no-borrow like carry for Add above
-							z = tarval_andnot(lz, ro);
-							o = tarval_andnot(lo, rz);
-						} else {
-							goto cannot_analyse;
-						}
+					// might subtract pointers
+					if (l == NULL || r == NULL)
+						goto cannot_analyse;
+
+					ir_tarval* const lz = l->z;
+					ir_tarval* const lo = l->o;
+					ir_tarval* const rz = r->z;
+					ir_tarval* const ro = r->o;
+					if (lz == lo && rz == ro) {
+						z = o = tarval_sub(lz, rz, NULL);
+					} else if (tarval_is_null(tarval_andnot(rz, lo))) {
+						/* Every possible one of the subtrahend is backed by a safe one of the
+						 * minuend, i.e. there are no borrows. */
+						// TODO extend no-borrow like carry for Add above
+						z = tarval_andnot(lz, ro);
+						o = tarval_andnot(lo, rz);
 					} else {
 						goto cannot_analyse;
 					}
@@ -525,78 +520,76 @@ undefined:
 				case iro_Cmp: {
 					bitinfo* const l = get_bitinfo(get_Cmp_left(irn));
 					bitinfo* const r = get_bitinfo(get_Cmp_right(irn));
-					if (l == NULL || r == NULL) {
+					if (l == NULL || r == NULL)
 						goto result_unknown; // Cmp compares something we cannot evaluate.
-					} else {
-						ir_tarval*  const lz       = l->z;
-						ir_tarval*  const lo       = l->o;
-						ir_tarval*  const rz       = r->z;
-						ir_tarval*  const ro       = r->o;
-						ir_relation const relation = get_Cmp_relation(irn);
-						switch (relation) {
-							case ir_relation_less_greater:
-								if (!tarval_is_null(tarval_andnot(ro, lz)) ||
-										!tarval_is_null(tarval_andnot(lo, rz))) {
-									// At least one bit differs.
-									z = o = t;
-								} else if (lz == lo && rz == ro && lz == rz) {
-									z = o = f;
-								} else {
-									goto result_unknown;
-								}
-								break;
+					ir_tarval*  const lz       = l->z;
+					ir_tarval*  const lo       = l->o;
+					ir_tarval*  const rz       = r->z;
+					ir_tarval*  const ro       = r->o;
+					ir_relation const relation = get_Cmp_relation(irn);
+					switch (relation) {
+						case ir_relation_less_greater:
+							if (!tarval_is_null(tarval_andnot(ro, lz)) ||
+									!tarval_is_null(tarval_andnot(lo, rz))) {
+								// At least one bit differs.
+								z = o = t;
+							} else if (lz == lo && rz == ro && lz == rz) {
+								z = o = f;
+							} else {
+								goto result_unknown;
+							}
+							break;
 
-							case ir_relation_equal:
-								if (!tarval_is_null(tarval_andnot(ro, lz)) ||
-										!tarval_is_null(tarval_andnot(lo, rz))) {
-									// At least one bit differs.
-									z = o = f;
-								} else if (lz == lo && rz == ro && lz == rz) {
-									z = o = t;
-								} else {
-									goto result_unknown;
-								}
-								break;
+						case ir_relation_equal:
+							if (!tarval_is_null(tarval_andnot(ro, lz)) ||
+									!tarval_is_null(tarval_andnot(lo, rz))) {
+								// At least one bit differs.
+								z = o = f;
+							} else if (lz == lo && rz == ro && lz == rz) {
+								z = o = t;
+							} else {
+								goto result_unknown;
+							}
+							break;
 
-							case ir_relation_less_equal:
-							case ir_relation_less:
-								/* TODO handle negative values */
-								if (tarval_is_negative(lz) || tarval_is_negative(lo) ||
-										tarval_is_negative(rz) || tarval_is_negative(ro))
-									goto result_unknown;
+						case ir_relation_less_equal:
+						case ir_relation_less:
+							/* TODO handle negative values */
+							if (tarval_is_negative(lz) || tarval_is_negative(lo) ||
+									tarval_is_negative(rz) || tarval_is_negative(ro))
+								goto result_unknown;
 
-								if (tarval_cmp(lz, ro) & relation) {
-									/* Left upper bound is smaller(/equal) than right lower bound. */
-									z = o = t;
-								} else if (!(tarval_cmp(lo, rz) & relation)) {
-									/* Left lower bound is not smaller(/equal) than right upper bound. */
-									z = o = f;
-								} else {
-									goto result_unknown;
-								}
-								break;
+							if (tarval_cmp(lz, ro) & relation) {
+								/* Left upper bound is smaller(/equal) than right lower bound. */
+								z = o = t;
+							} else if (!(tarval_cmp(lo, rz) & relation)) {
+								/* Left lower bound is not smaller(/equal) than right upper bound. */
+								z = o = f;
+							} else {
+								goto result_unknown;
+							}
+							break;
 
-							case ir_relation_greater_equal:
-							case ir_relation_greater:
-								/* TODO handle negative values */
-								if (tarval_is_negative(lz) || tarval_is_negative(lo) ||
-										tarval_is_negative(rz) || tarval_is_negative(ro))
-									goto result_unknown;
+						case ir_relation_greater_equal:
+						case ir_relation_greater:
+							/* TODO handle negative values */
+							if (tarval_is_negative(lz) || tarval_is_negative(lo) ||
+									tarval_is_negative(rz) || tarval_is_negative(ro))
+								goto result_unknown;
 
-								if (!(tarval_cmp(lz, ro) & relation)) {
-									/* Left upper bound is not greater(/equal) than right lower bound. */
-									z = o = f;
-								} else if (tarval_cmp(lo, rz) & relation) {
-									/* Left lower bound is greater(/equal) than right upper bound. */
-									z = o = t;
-								} else {
-									goto result_unknown;
-								}
-								break;
+							if (!(tarval_cmp(lz, ro) & relation)) {
+								/* Left upper bound is not greater(/equal) than right lower bound. */
+								z = o = f;
+							} else if (tarval_cmp(lo, rz) & relation) {
+								/* Left lower bound is greater(/equal) than right upper bound. */
+								z = o = t;
+							} else {
+								goto result_unknown;
+							}
+							break;
 
-							default:
-								goto cannot_analyse;
-						}
+						default:
+							goto cannot_analyse;
 					}
 					break;
 				}
@@ -612,7 +605,7 @@ result_unknown:
 			}
 		}
 	} else {
-		return 0;
+		return false;
 	}
 
 set_info:
@@ -621,7 +614,7 @@ set_info:
 
 static void first_round(ir_node* const irn, void* const env)
 {
-	pdeq* const q = (pdeq*)env;
+	pdeq* const worklist = (pdeq*)env;
 
 	transfer(irn);
 	if (is_Phi(irn) || is_Block(irn)) {
@@ -629,33 +622,33 @@ static void first_round(ir_node* const irn, void* const env)
 		 * information about all their inputs in the first round, i.e. in loops. */
 		/* TODO inserts all Phis, should only insert Phis, which did no have all
 		 * predecessors available */
-		pdeq_putr(q, irn);
+		pdeq_putr(worklist, irn);
 	}
 }
 
-static void queue_users(pdeq* const q, ir_node* const n)
+static void queue_users(pdeq* const worklist, ir_node* const n)
 {
 	if (get_irn_mode(n) == mode_X) {
 		/* When the state of a control flow node changes, not only queue its
 		 * successor blocks, but also the Phis in these blocks, because the Phis
 		 * must reconsider this input path. */
 		foreach_out_edge(n, e) {
-			ir_node*  const  src = get_edge_src_irn(e);
-			pdeq_putr(q, src);
+			ir_node* const src = get_edge_src_irn(e);
+			pdeq_putr(worklist, src);
 			/* should always be a block */
 			if (is_Block(src)) {
 				ir_node *phi;
 				for (phi = get_Block_phis(src); phi; phi = get_Phi_next(phi))
-					pdeq_putr(q, phi);
+					pdeq_putr(worklist, phi);
 			}
 		}
 	} else {
 		foreach_out_edge(n, e) {
 			ir_node* const src = get_edge_src_irn(e);
 			if (get_irn_mode(src) == mode_T) {
-				queue_users(q, src);
+				queue_users(worklist, src);
 			} else {
-				pdeq_putr(q, src);
+				pdeq_putr(worklist, src);
 			}
 		}
 	}
@@ -663,55 +656,51 @@ static void queue_users(pdeq* const q, ir_node* const n)
 
 static void clear_phi_lists(ir_node *irn, void *env)
 {
-	(void) env;
+	(void)env;
 	if (is_Block(irn))
 		set_Block_phis(irn, NULL);
 }
 
 static void build_phi_lists(ir_node *irn, void *env)
 {
-	(void) env;
+	(void)env;
 	if (is_Phi(irn))
 		add_Block_phi(get_nodes_block(irn), irn);
 }
 
 void constbits_analyze(ir_graph* const irg)
 {
+	FIRM_DBG_REGISTER(dbg, "firm.ana.fp-vrp");
+	DB((dbg, LEVEL_1,
+	    "===> Performing constant propagation on %+F (analysis)\n", irg));
+
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
+	ir_reserve_resources(irg, IR_RESOURCE_PHI_LIST);
+
 	obstack_init(&irg->bitinfo.obst);
 	ir_nodemap_init(&irg->bitinfo.map, irg);
 
-	FIRM_DBG_REGISTER(dbg, "firm.ana.fp-vrp");
-	DB((dbg, LEVEL_1, "===> Performing constant propagation on %+F (analysis)\n", irg));
+	/* We need this extra step because the dom tree does not contain
+	 * unreachable blocks in Firm. Moreover build phi list. */
+	irg_walk_anchors(irg, clear_phi_lists, build_phi_lists, NULL);
 
-	{
-		pdeq* const q = new_pdeq();
+	ir_tarval* const f = get_tarval_b_false();
+	ir_tarval* const t = get_tarval_b_true();
+	set_bitinfo(get_irg_end_block(irg), t, f); /* Reachable. */
 
-		ir_reserve_resources(irg, IR_RESOURCE_PHI_LIST);
+	/* TODO Improve iteration order. Best is reverse postorder in data flow
+	 * direction and respecting loop nesting for fastest convergence. */
+	pdeq* const worklist = new_pdeq();
+	irg_walk_blkwise_dom_top_down(irg, NULL, first_round, worklist);
 
-		/* We need this extra step because the dom tree does not contain
-		 * unreachable blocks in Firm. Moreover build phi list. */
-		irg_walk_anchors(irg, clear_phi_lists, build_phi_lists, NULL);
-
-		{
-			ir_tarval* const f = get_tarval_b_false();
-			ir_tarval* const t = get_tarval_b_true();
-			set_bitinfo(get_irg_end_block(irg), t, f); /* Reachable. */
-		}
-
-		/* TODO Improve iteration order. Best is reverse postorder in data flow
-		 * direction and respecting loop nesting for fastest convergence. */
-		irg_walk_blkwise_dom_top_down(irg, NULL, first_round, q);
-
-		while (!pdeq_empty(q)) {
-			ir_node* const n = (ir_node*)pdeq_getl(q);
-			if (transfer(n))
-				queue_users(q, n);
-		}
-
-		ir_free_resources(irg, IR_RESOURCE_PHI_LIST);
-
-		del_pdeq(q);
+	while (!pdeq_empty(worklist)) {
+		ir_node* const n = (ir_node*)pdeq_getl(worklist);
+		if (transfer(n))
+			queue_users(worklist, n);
 	}
+	del_pdeq(worklist);
+
+	ir_free_resources(irg, IR_RESOURCE_PHI_LIST);
 }
 
 void constbits_clear(ir_graph* const irg)
