@@ -103,6 +103,16 @@ static const arch_register_req_t amd64_requirement_rax = {
 	1
 };
 
+static const unsigned amd64_limited_gp_rdx [] = { BIT(REG_GP_RDX) };
+static const arch_register_req_t amd64_requirement_rdx = {
+	arch_register_req_type_limited,
+	&amd64_reg_classes[CLASS_amd64_gp],
+	amd64_limited_gp_rdx,
+	0,
+	0,
+	1
+};
+
 static const arch_register_req_t *mem_reqs[] = {
 	&arch_no_requirement,
 };
@@ -133,6 +143,12 @@ static const arch_register_req_t *reg_reg_reqs[] = {
 static const arch_register_req_t *rax_reg_reqs[] = {
 	&amd64_requirement_rax,
 	&amd64_requirement_gp,
+};
+
+static const arch_register_req_t *rax_reg_rdx_reqs[] = {
+	&amd64_requirement_rax,
+	&amd64_requirement_gp,
+	&amd64_requirement_rdx,
 };
 
 static const arch_register_req_t *reg_reqs[] = {
@@ -799,6 +815,27 @@ static ir_node *gen_Shrs(ir_node *const node)
 	                       match_immediate);
 }
 
+/**
+ * Creates a signed extension.
+ */
+static ir_node *create_sext(ir_node *const node, amd64_insn_mode_t insn_mode)
+{
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node  *const block = get_nodes_block(node);
+	ir_node  *sext;
+
+	if (insn_mode == INSN_MODE_32) {
+		sext = new_bd_amd64_CDQ(dbgi, block, node);
+	} else if (insn_mode == INSN_MODE_64) {
+		sext = new_bd_amd64_CQO(dbgi, block, node);
+	} else {
+		panic("Sign extension only implemented for 32 and 64 bit");
+	}
+
+	arch_set_irn_register_reqs_in(sext, reg_reqs);
+	return sext;
+}
+
 static ir_node *create_div(ir_node *const node, ir_mode *const mode,
                            ir_node *const op1, ir_node *const op2)
 {
@@ -814,33 +851,24 @@ static ir_node *create_div(ir_node *const node, ir_mode *const mode,
 	amd64_op_mode_t op_mode;
 
 	if (mode_is_signed(mode)) {
-		ir_node  *const new_op1 = be_transform_node(op1);
+		ir_node *sext = create_sext(be_transform_node(op1), insn_mode);
 
-		amd64_shift_attr_t attr;
-		memset(&attr, 0, sizeof(attr));
-		attr.base.op_mode = AMD64_OP_SHIFT_IMM;
-		attr.insn_mode    = insn_mode;
-		attr.immediate    = get_mode_size_bits(mode)-1;
-		ir_node *sar_in[1] = { new_op1 };
-		ir_node *const upper
-			= new_bd_amd64_Sar(dbgi, block, ARRAY_SIZE(sar_in), sar_in, &attr);
-		arch_set_irn_register_reqs_in(upper, reg_reqs);
-
-		in[arity++] = upper;
 		gen_binop_rax_reg(op1, op2, in, &arity, &op_mode, &reqs);
+		reqs = rax_reg_rdx_reqs;
+		in[arity++] = sext;
 
 		amd64_addr_t addr;
 		memset(&addr, 0, sizeof(addr));
 		res = new_bd_amd64_IDiv(dbgi, block, arity, in, insn_mode,
                                 op_mode, addr);
 	} else {
-		const arch_register_req_t **zero_reqs;
-		zero_reqs           = reg_reqs;
+		/* Zero register RDX */
 		ir_node *const zero = new_bd_amd64_Xor0(dbgi, block);
-		in[arity++]         = zero;
-		arch_set_irn_register_reqs_in(zero, zero_reqs);
+		arch_set_irn_register_reqs_in(zero, reg_reqs);
 
 		gen_binop_rax_reg(op1, op2, in, &arity, &op_mode, &reqs);
+		reqs        = rax_reg_rdx_reqs;
+		in[arity++] = zero;
 
 		amd64_addr_t addr;
 		memset(&addr, 0, sizeof(addr));

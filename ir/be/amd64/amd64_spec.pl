@@ -128,8 +128,23 @@ And => {
 
 },
 
+# Convert doubleword
+CDQ => {
+	reg_req   => { in => [ "rax" ], out => [ "rdx" ] },
+	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_NONE;",
+	emit      => "cdq",
+	mode      => $mode_gp,
+},
+
+# Convert quadword
+CQO => {
+	reg_req   => { in => [ "rax" ], out => [ "rdx" ] },
+	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_NONE;",
+	emit      => "cqo",
+	mode      => $mode_gp,
+},
+
 Div => {
-	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { out => [ "rax", "flags", "none", "rdx" ] },
 	arity     => "variable",
@@ -141,7 +156,6 @@ Div => {
 },
 
 IDiv => {
-	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { out => [ "rax", "flags", "none", "rdx" ] },
 	arity     => "variable",
