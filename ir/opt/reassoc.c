@@ -269,58 +269,6 @@ static int reassoc_commutative(ir_node **node)
 }
 
 /**
- * Reassociate using commutative law for Mul and distributive law for Mul and
- * Add/Sub:
- */
-static int reassoc_Mul(ir_node **node)
-{
-	ir_node *n = *node;
-	if (reassoc_commutative(&n))
-		return 1;
-
-	ir_node *add_sub, *c;
-	get_comm_Binop_ops(n, &add_sub, &c);
-	ir_op *op = get_irn_op(add_sub);
-
-	/* handles rules R11, R12, R13, R14, R15, R16, R17, R18, R19, R20 */
-	if (op == op_Add || op == op_Sub) {
-		ir_mode *mode  = get_irn_mode(n);
-		ir_node *block = get_nodes_block(n);
-		ir_node *t1    = get_binop_left(add_sub);
-		ir_node *t2    = get_binop_right(add_sub);
-
-		/* we can only multiplication rules on integer arithmetic */
-		if (mode_is_int(get_irn_mode(t1)) && mode_is_int(get_irn_mode(t2))) {
-			ir_node *in[] = {
-				new_r_Mul(block, c, t1, mode),
-				new_r_Mul(block, c, t2, mode)
-			};
-			ir_node *irn = create_node(NULL, block, op, mode,
-			                           ARRAY_SIZE(in), in);
-
-			/* In some cases it might happen that the new irn is equal the old
-			 * one, for instance in:
-			 * (x - 1) * y == x * y - y
-			 * will be transformed back by simpler optimization
-			 * We could switch simple optimizations off, but this only happens
-			 * iff y is a loop-invariant expression and that it is not clear if
-			 * the new form is better.
-			 * So, we let the old one.
-			 */
-			if (irn != n) {
-				DBG((dbg, LEVEL_5, "Applied: (%n .%s. %n) %n %n => (%n %n %n) .%s. (%n %n %n)\n",
-					t1, get_op_name(op), t2, n, c, t1, n, c, get_op_name(op), t2, n, c));
-				exchange(n, irn);
-				*node = irn;
-
-				return 1;
-			}
-		}
-	}
-	return 0;
-}
-
-/**
  * The walker for the reassociation.
  */
 static void wq_walker(ir_node *n, void *env)
@@ -682,7 +630,7 @@ void ir_register_reassoc_node_ops(void)
 	register_node_reassoc_func(op_Add, reassoc_commutative);
 	register_node_reassoc_func(op_And, reassoc_commutative);
 	register_node_reassoc_func(op_Eor, reassoc_commutative);
-	register_node_reassoc_func(op_Mul, reassoc_Mul);
+	register_node_reassoc_func(op_Mul, reassoc_commutative);
 	register_node_reassoc_func(op_Or,  reassoc_commutative);
 }
 
