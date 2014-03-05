@@ -30,16 +30,19 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg);
 
-/* Set cared for bits in irn, possibly putting it on the worklist.
-   care == 0 is short for unqualified caring. */
-static void care_for(ir_node *irn, ir_tarval *care, pdeq *q)
-{
-	ir_mode *mode = get_tarval_mode(get_irn_link(irn));
+static pdeq *worklist;
 
+/**
+ * Set cared for bits in irn, possibly putting it on the worklist.
+ * care == 0 is short for unqualified caring.
+ */
+static void care_for(ir_node *irn, ir_tarval *care)
+{
 	if (!care)
 		care = tarval_b_true;
 
 	/* Assume worst case if modes don't match and care has bits set. */
+	ir_mode *mode = get_tarval_mode(get_irn_link(irn));
 	if (mode != get_tarval_mode(care))
 		care = tarval_is_null(care) ?
 			get_tarval_null(mode) : get_tarval_all_one(mode);
@@ -52,19 +55,19 @@ static void care_for(ir_node *irn, ir_tarval *care, pdeq *q)
 		DBG((dbg, LEVEL_3, "queueing %+F: %T->%T\n", irn, get_irn_link(irn), care));
 		assert(get_irn_link(irn) != tarval_b_true || care == tarval_b_true);
 		set_irn_link(irn, (void *)care);
-		pdeq_putr(q, irn);
+		pdeq_putr(worklist, irn);
 	} else {
 		DBG((dbg, LEVEL_3, "no change on %+F: %T\n", irn, get_irn_link(irn), care));
 	}
 }
 
-/* Creates a bit mask that have the lsb and all more significant bits set. */
+/** Creates a bit mask that have the lsb and all more significant bits set. */
 static ir_tarval *create_lsb_mask(ir_tarval *tv)
 {
 	return tarval_or(tv, tarval_neg(tv));
 }
 
-/* Creates a bit mask that have the msb and all less significant bits set. */
+/** Creates a bit mask that have the msb and all less significant bits set. */
 static ir_tarval *create_msb_mask(ir_tarval *tv)
 {
 	unsigned shift_amount = 1;
@@ -76,35 +79,34 @@ static ir_tarval *create_msb_mask(ir_tarval *tv)
 	return tv;
 }
 
-/* Compute cared for bits in predecessors of irn. */
-static void dca_transfer(ir_node *irn, pdeq *q)
+/** Compute cared for bits in predecessors of irn. */
+static void dca_transfer(ir_node *irn)
 {
-	ir_mode *mode = get_irn_mode(irn);
-	ir_tarval *care = get_irn_link(irn);
-
 	DBG((dbg, LEVEL_2, "analysing %+F\n", irn));
 
+	ir_tarval *care = get_irn_link(irn);
 	if (is_Block(irn)) {
 		for (int i = 0; i < get_Block_n_cfgpreds(irn); i++)
-			care_for(get_Block_cfgpred(irn, i), care, q);
+			care_for(get_Block_cfgpred(irn, i), care);
 		return;
 	}
 
+	ir_mode *mode = get_irn_mode(irn);
 	if (mode == mode_X) {
-		care_for(get_nodes_block(irn), 0, q);
+		care_for(get_nodes_block(irn), NULL);
 		switch (get_irn_opcode(irn)) {
 		case iro_Return:
 			for (int i = 0; i < get_Return_n_ress(irn); i++)
-				care_for(get_Return_res(irn, i), care, q);
-			care_for(get_Return_mem(irn), care, q);
+				care_for(get_Return_res(irn, i), care);
+			care_for(get_Return_mem(irn), care);
 			return;
 		case iro_Jmp:
 		default:
 			foreach_irn_in(irn, i, pred) {
-				care_for(pred, 0, q);
+				care_for(pred, NULL);
 			}
 
-			care_for(get_nodes_block(irn), 0, q);
+			care_for(get_nodes_block(irn), NULL);
 			return;
 		}
 	}
@@ -112,9 +114,9 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 	if (is_Phi(irn)) {
 		int npreds = get_Phi_n_preds(irn);
 		for (int i = 0; i < npreds; i++)
-			care_for(get_Phi_pred(irn, i), care, q);
+			care_for(get_Phi_pred(irn, i), care);
 
-		care_for(get_nodes_block(irn), 0, q);
+		care_for(get_nodes_block(irn), NULL);
 
 		return;
 	}
@@ -143,7 +145,7 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 			}
 
 			care = tarval_convert_to(care, pred_mode);
-			care_for(pred, care, q);
+			care_for(pred, care);
 			return;
 		}
 		case iro_And: {
@@ -151,26 +153,26 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 			ir_node *right = get_And_right(irn);
 
 			if (is_Const(right)) {
-				care_for(left, tarval_and(care, get_Const_tarval(right)), q);
-				care_for(right, care, q);
+				care_for(left, tarval_and(care, get_Const_tarval(right)));
+				care_for(right, care);
 			} else {
 				bitinfo *bl = get_bitinfo(left);
 				bitinfo *br = get_bitinfo(right);
 
 				if (bl != NULL && br != NULL) {
-					care_for(left, tarval_and(care, tarval_ornot(br->z, bl->z)), q);
-					care_for(right, tarval_and(care, tarval_ornot(bl->z, br->z)), q);
+					care_for(left, tarval_and(care, tarval_ornot(br->z, bl->z)));
+					care_for(right, tarval_and(care, tarval_ornot(bl->z, br->z)));
 				} else {
-					care_for(left, care, q);
-					care_for(right, care, q);
+					care_for(left, care);
+					care_for(right, care);
 				}
 			}
 			return;
 		}
 		case iro_Mux: {
-			care_for(get_Mux_true(irn), care, q);
-			care_for(get_Mux_false(irn), care, q);
-			care_for(get_Mux_sel(irn), 0, q);
+			care_for(get_Mux_true(irn), care);
+			care_for(get_Mux_false(irn), care);
+			care_for(get_Mux_sel(irn), NULL);
 			return;
 		}
 		case iro_Or: {
@@ -178,26 +180,26 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 			ir_node *right = get_binop_right(irn);
 
 			if (is_Const(right)) {
-				care_for(left, tarval_andnot(care, get_Const_tarval(right)), q);
-				care_for(right, care, q);
+				care_for(left, tarval_andnot(care, get_Const_tarval(right)));
+				care_for(right, care);
 			} else {
 				bitinfo *bl = get_bitinfo(left);
 				bitinfo *br = get_bitinfo(right);
 
 				if (bl != NULL && br != NULL) {
-					care_for(left, tarval_and(care, tarval_ornot(bl->o, br->o)), q);
-					care_for(right, tarval_and(care, tarval_ornot(br->o, bl->o)), q);
+					care_for(left, tarval_and(care, tarval_ornot(bl->o, br->o)));
+					care_for(right, tarval_and(care, tarval_ornot(br->o, bl->o)));
 				} else {
-					care_for(left, care, q);
-					care_for(right, care, q);
+					care_for(left, care);
+					care_for(right, care);
 				}
 			}
 			return;
 		}
 		case iro_Eor:
 		case iro_Confirm:
-			care_for(get_irn_n(irn, 0), care, q);
-			care_for(get_irn_n(irn, 1), care, q);
+			care_for(get_irn_n(irn, 0), care);
+			care_for(get_irn_n(irn, 1), care);
 			return;
 		case iro_Add: {
 			ir_node   *left      = get_Add_left(irn);
@@ -208,12 +210,12 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 
 			if (bl != NULL && br != NULL && tarval_is_null(tarval_and(care_mask, tarval_and(bl->z, br->z)))) {
 				care_for(left, tarval_or(tarval_andnot(care_mask, bl->z),
-				                         tarval_and(care, tarval_ornot(bl->o, br->o))), q);
+				                         tarval_and(care, tarval_ornot(bl->o, br->o))));
 				care_for(right, tarval_or(tarval_andnot(care_mask, br->z),
-				                          tarval_and(care, tarval_ornot(br->o, bl->o))), q);
+				                          tarval_and(care, tarval_ornot(br->o, bl->o))));
 			} else {
-				care_for(right, care_mask, q);
-				care_for(left, care_mask, q);
+				care_for(right, care_mask);
+				care_for(left, care_mask);
 			}
 			return;
 		}
@@ -221,16 +223,15 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 			ir_node   *left      = get_binop_left(irn);
 			ir_node   *right     = get_binop_right(irn);
 			ir_tarval *care_mask = create_msb_mask(care);
-			care_for(right, care_mask, q);
-			care_for(left, care_mask, q);
-
+			care_for(right, care_mask);
+			care_for(left, care_mask);
 			return;
 		}
 		case iro_Minus:
-			care_for(get_Minus_op(irn), create_msb_mask(care), q);
+			care_for(get_Minus_op(irn), create_msb_mask(care));
 			return;
 		case iro_Not:
-			care_for(get_Not_op(irn), care, q);
+			care_for(get_Not_op(irn), care);
 			return;
 		case iro_Shrs:
 		case iro_Shr: {
@@ -239,18 +240,18 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 
 			if (is_Const(right)) {
 				ir_tarval *right_tv = get_Const_tarval(right);
-				care_for(left, tarval_shl(care, right_tv), q);
+				care_for(left, tarval_shl(care, right_tv));
 				if (iro_Shrs == get_irn_opcode(irn)
 					&& !tarval_is_null(tarval_and(tarval_shrs(get_tarval_min(mode), right_tv),
 					                              tarval_convert_to(care, mode))))
 					/* Care bits that disappeared still care about the sign bit. */
-					care_for(left, get_tarval_min(mode), q);
+					care_for(left, get_tarval_min(mode));
 			}
 			else
-				care_for(left, create_lsb_mask(care), q);
+				care_for(left, create_lsb_mask(care));
 
 			// TODO Consider modulo shift
-			care_for(right, 0, q);
+			care_for(right, NULL);
 
 			return;
 		}
@@ -259,12 +260,12 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 			ir_node *right = get_Shl_right(irn);
 
 			if (is_Const(right))
-				care_for(left, tarval_shr(care, get_Const_tarval(right)), q);
+				care_for(left, tarval_shr(care, get_Const_tarval(right)));
 			else
-				care_for(left, create_msb_mask(care), q);
+				care_for(left, create_msb_mask(care));
 
 			// TODO Consider modulo shift
-			care_for(right, 0, q);
+			care_for(right, NULL);
 
 			return;
 		}
@@ -278,11 +279,11 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 					left,
 					tarval_shr_unsigned(care_mask,
 					                    get_tarval_lowest_bit(
-					                       get_Const_tarval(right))), q);
+					                       get_Const_tarval(right))));
 			else
-				care_for(left, care_mask, q);
+				care_for(left, care_mask);
 
-			care_for(right, care_mask, q);
+			care_for(right, care_mask);
 			return;
 		}
 		}
@@ -290,28 +291,26 @@ static void dca_transfer(ir_node *irn, pdeq *q)
 
 	if (mode == mode_M || mode == mode_T) {
 		foreach_irn_in(irn, i, pred) {
-			care_for(pred, care, q);
+			care_for(pred, care);
 		}
 		return;
 	}
 
 	/* Assume worst case on other nodes */
 	foreach_irn_in(irn, i, pred) {
-		care_for(pred, 0, q);
+		care_for(pred, NULL);
 	}
 }
 
 static void dca_init_node(ir_node *n, void *data)
 {
-	ir_mode *m = get_irn_mode(n);
-	(void) data;
+	(void)data;
 
+	ir_mode *m = get_irn_mode(n);
 	set_irn_link(n, (void *) (mode_is_int(m) ?
 				  get_tarval_null(m) : get_tarval_b_false()));
 }
 
-/* Compute don't care bits.
-   The result is available via links to tarvals. */
 void dca_analyze(ir_graph *irg)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.ana.dca");
@@ -325,49 +324,13 @@ void dca_analyze(ir_graph *irg)
 
 	irg_walk_graph(irg, dca_init_node, NULL, 0);
 
-	{
-		pdeq *q = new_pdeq();
+	worklist = new_pdeq();
 
-		care_for(get_irg_end(irg), 0, q);
+	care_for(get_irg_end(irg), 0);
 
-		while (!pdeq_empty(q)) {
-			ir_node *n = (ir_node*)pdeq_getl(q);
-			dca_transfer(n, q);
-		}
-		del_pdeq(q);
+	while (!pdeq_empty(worklist)) {
+		ir_node *n = (ir_node*)pdeq_getl(worklist);
+		dca_transfer(n);
 	}
-
-	return;
+	del_pdeq(worklist);
 }
-
-#if 0
-/* Walker to "test" the fixpoint.
- Insert Eor nodes that toggle don't care bits. */
-void dca_add_fuzz(ir_node *node, void *data)
-{
-	(void) data;
-	ir_graph *irg = get_irn_irg(node);
-
-	if (is_Eor(node)) return;
-
-	foreach_irn_in(node, i, pred) {
-		ir_mode *pred_mode = get_irn_mode(pred);
-		ir_tarval *dc = get_irn_link(pred);
-
-		if (is_Eor(pred)) continue;
-
-		if (mode_is_int(pred_mode)
-			&& dc
-			&& ! tarval_is_all_one(dc))
-		{
-			ir_node *block = get_nodes_block(pred);
-			ir_node *eor, *constnode;
-
-			constnode = new_r_Const(irg, tarval_not(dc));
-			eor = new_r_Eor(block, constnode, pred, pred_mode);
-
-			set_irn_n(node, i, eor);
-		}
-	}
-}
-#endif
