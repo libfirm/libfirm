@@ -191,7 +191,6 @@ libfirm_la_SOURCES = \
 	opt/convopt.c \
 	opt/critical_edges.c \
 	opt/dead_code_elimination.c \
-	opt/escape_ana.c \
 	opt/fp-vrp.c \
 	opt/funccall.c \
 	opt/garbage_collect.c \

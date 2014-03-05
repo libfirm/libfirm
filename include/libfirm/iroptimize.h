@@ -60,41 +60,6 @@ FIRM_API void conv_opt(ir_graph *irg);
 typedef int (*check_alloc_entity_func)(ir_entity *ent);
 
 /**
- * Performs simple and fast escape analysis for one graph.
- *
- * @param irg       the graph
- * @param callback  a callback function to check whether a
- *                  given entity is a allocation call
- */
-FIRM_API void escape_enalysis_irg(ir_graph *irg,
-                                  check_alloc_entity_func callback);
-
-/**
- * Performs simple and fast escape analysis for all graphs.
- *
- * This optimization implements a simple and fast but inexact
- * escape analysis. Some addresses might be marked as 'escaped' even
- * if they are not.
- * The advantage is a low memory footprint and fast speed.
- *
- * @param run_scalar_replace  if this flag in non-zero, scalar
- *                            replacement optimization is run on graphs with removed
- *                            allocation
- * @param callback            a callback function to check whether a
- *                            given entity is a allocation call
- *
- * This optimization removes allocation which are not used (rare) and replace
- * allocation that can be proved dead at the end of the graph which stack variables.
- *
- * The creation of stack variable allows scalar replacement to be run only
- * on those graphs that have been changed.
- *
- * This is most effective on Java where no other stack variables exists.
- */
-FIRM_API void escape_analysis(int run_scalar_replace,
-                              check_alloc_entity_func callback);
-
-/**
  * Optimize function calls by handling const functions.
  *
  * This optimization first detects all "const functions", i.e.,
