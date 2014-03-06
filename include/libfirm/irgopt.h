@@ -51,20 +51,13 @@ FIRM_API void local_optimize_graph(ir_graph *irg);
  * This version uses fixpoint iteration.
  *
  * @param irg  The graph to be optimized.
- *
- * @return non-zero if the optimization could be applied, 0 else
  */
-FIRM_API void local_opts(ir_graph *irg);
+FIRM_API void optimize_graph_df(ir_graph *irg);
 
 /**
  * Perform local optimizations on nodes on const code irg
  */
 FIRM_API void local_opts_const_code(void);
-
-/** Same functionality as local_opts above, but without framework wrapper
- * @deprecated
- */
-FIRM_API void optimize_graph_df(ir_graph *irg);
 
 /**
  * Eliminates (obviously) unreachable code

@@ -199,7 +199,6 @@ libfirm_la_SOURCES = \
 	opt/ircgopt.c \
 	opt/jumpthreading.c \
 	opt/ldstopt.c \
-	opt/local.c \
 	opt/loop.c \
 	opt/opt_blocks.c \
 	opt/opt_confirms.c \
