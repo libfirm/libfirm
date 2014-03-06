@@ -585,6 +585,8 @@ static void check_entity_initializer(ir_entity *entity)
 {
 #ifndef NDEBUG
 	ir_initializer_t *initializer = entity->initializer;
+	if (initializer == NULL)
+		return;
 	ir_type          *entity_tp   = get_entity_type(entity);
 	switch (initializer->kind) {
 	case IR_INITIALIZER_COMPOUND:
