@@ -136,16 +136,17 @@ ir_node *get_Block_cfg_out_ka(const ir_node *bl, unsigned pos)
 static void irg_out_walk_2(ir_node *node, irg_walk_func *pre,
                            irg_walk_func *post, void *env)
 {
-	assert(get_irn_visited(node) < get_irg_visited(current_ir_graph));
+	ir_graph *const irg = get_irn_irg(node);
+	assert(get_irn_visited(node) < get_irg_visited(irg));
 
-	set_irn_visited(node, get_irg_visited(current_ir_graph));
+	set_irn_visited(node, get_irg_visited(irg));
 
 	if (pre != NULL)
 		pre(node, env);
 
 	for (int i = 0, n = get_irn_n_outs(node); i < n; ++i) {
 		ir_node *succ = get_irn_out(node, i);
-		if (get_irn_visited(succ) < get_irg_visited(current_ir_graph))
+		if (get_irn_visited(succ) < get_irg_visited(irg))
 			irg_out_walk_2(succ, pre, post, env);
 	}
 
