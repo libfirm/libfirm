@@ -163,7 +163,7 @@ static void opt_walker(ir_node *n, void *env)
 	}
 }
 
-int optimize_graph_df(ir_graph *irg)
+void optimize_graph_df(ir_graph *irg)
 {
 	pdeq           *waitq = new_pdeq();
 	ir_graph       *rem   = current_ir_graph;
@@ -228,11 +228,6 @@ int optimize_graph_df(ir_graph *irg)
 	remove_End_Bads_and_doublets(end);
 
 	current_ir_graph = rem;
-
-	/* Note we do not have a reliable way to detect changes, since some
-	 * localopt rules change the inputs of a node and do not return a new
-	 * node, so we conservatively say true here */
-	return true;
 }
 
 void local_opts_const_code(void)

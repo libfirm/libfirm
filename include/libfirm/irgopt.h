@@ -64,7 +64,7 @@ FIRM_API void local_opts_const_code(void);
 /** Same functionality as local_opts above, but without framework wrapper
  * @deprecated
  */
-FIRM_API int optimize_graph_df(ir_graph *irg);
+FIRM_API void optimize_graph_df(ir_graph *irg);
 
 /**
  * Eliminates (obviously) unreachable code
