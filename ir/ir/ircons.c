@@ -386,7 +386,7 @@ ir_node *new_d_immBlock(dbg_info *dbgi)
 
 ir_node *new_immBlock(void)
 {
-	return new_rd_immBlock(NULL, current_ir_graph);
+	return new_d_immBlock(NULL);
 }
 
 void add_immBlock_pred(ir_node *block, ir_node *jmp)
