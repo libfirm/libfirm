@@ -392,7 +392,7 @@ static ir_type *ia32_create_float_array(ir_type *tp)
 }
 
 /* Generates an entity for a known FP const (used for FP Neg + Abs) */
-ir_entity *ia32_gen_fp_known_const(ia32_known_const_t kct)
+ir_entity *ia32_gen_fp_known_const(ir_graph *const irg, ia32_known_const_t kct)
 {
 	static const struct {
 		const char *name;
@@ -410,7 +410,6 @@ ir_entity *ia32_gen_fp_known_const(ia32_known_const_t kct)
 	ir_entity *ent = ent_cache[kct];
 
 	if (ent == NULL) {
-		ir_graph         *irg      = current_ir_graph;
 		const arch_env_t *arch_env = be_get_irg_arch_env(irg);
 		ia32_isa_t       *isa      = (ia32_isa_t*) arch_env;
 		const char       *cnst_str = names[kct].cnst_str;
@@ -1876,8 +1875,7 @@ static ir_node *gen_Minus(ir_node *node)
 			new_node = new_bd_ia32_xXor(dbgi, block, base, noreg_GP, nomem, new_op, noreg_xmm);
 
 			int        size = get_mode_size_bits(mode);
-			ir_entity *ent  = ia32_gen_fp_known_const(
-				size == 32 ? ia32_SSIGN : ia32_DSIGN);
+			ir_entity *ent  = ia32_gen_fp_known_const(irg, size == 32 ? ia32_SSIGN : ia32_DSIGN);
 
 			set_ia32_am_ent(new_node, ent);
 			set_ia32_op_type(new_node, ia32_AddrModeS);
@@ -1924,8 +1922,7 @@ static ir_node *create_float_abs(dbg_info *dbgi, ir_node *block, ir_node *op,
 		new_node = new_bd_ia32_xAnd(dbgi, new_block, base, noreg_GP, nomem, new_op, noreg_fp);
 
 		int        size = get_mode_size_bits(mode);
-		ir_entity *ent  = ia32_gen_fp_known_const(
-			size == 32 ? ia32_SABS : ia32_DABS);
+		ir_entity *ent  = ia32_gen_fp_known_const(irg, size == 32 ? ia32_SABS : ia32_DABS);
 
 		set_ia32_am_ent(new_node, ent);
 
@@ -4117,7 +4114,7 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 		am.addr.mem          = nomem;
 		am.addr.offset       = 0;
 		am.addr.scale        = 2;
-		am.addr.entity       = ia32_gen_fp_known_const(ia32_ULLBIAS);
+		am.addr.entity       = ia32_gen_fp_known_const(irg, ia32_ULLBIAS);
 		am.addr.tls_segment  = false;
 		am.addr.use_frame    = 0;
 		am.addr.frame_entity = NULL;
