@@ -24,6 +24,7 @@ typedef enum {
 	GAS_SECTION_BSS,             /**< bss section - zero initialized data */
 	GAS_SECTION_CONSTRUCTORS,    /**< ctors section */
 	GAS_SECTION_DESTRUCTORS,     /**< dtors section */
+	GAS_SECTION_JCR,             /**< java class registry */
 	GAS_SECTION_CSTRING,         /**< section for constant strings */
 	GAS_SECTION_PIC_TRAMPOLINES, /**< trampolines for pic codes */
 	GAS_SECTION_PIC_SYMBOLS,     /**< contains resolved pic symbols */

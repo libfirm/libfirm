@@ -114,8 +114,7 @@ typedef enum type_flags {
 	tf_segment          = 1U << 3, /**< type represents a linker segment */
 	tf_global_type      = 1U << 4, /**< Set only for the global type */
 	tf_tls_type         = 1U << 5, /**< Set only for the tls type */
-	tf_constructors     = 1U << 6, /**< Set only for the constructors segment type */
-	tf_destructors      = 1U << 7, /**< Set only for the destructors segment type */
+	tf_info             = 1U << 6, /**< infos (for example constructor, destructor pointers) */
 	tf_variable_size    = 1U << 8, /**< compound or array type may have variable size last element */
 } type_flags;
 ENUM_BITSET(type_flags)

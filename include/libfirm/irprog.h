@@ -57,8 +57,10 @@ typedef enum ir_segment_t {
 	IR_SEGMENT_CONSTRUCTORS,
 	/** like constructors, but functions are executed on module exit */
 	IR_SEGMENT_DESTRUCTORS,
+	/** java class registry */
+	IR_SEGMENT_JCR,
 
-	IR_SEGMENT_LAST = IR_SEGMENT_DESTRUCTORS
+	IR_SEGMENT_LAST = IR_SEGMENT_JCR
 } ir_segment_t;
 ENUM_COUNTABLE(ir_segment_t)
 

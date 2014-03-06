@@ -110,6 +110,7 @@ static void emit_section_sparc(be_gas_section_t section,
 		"bss",
 		"ctors",
 		"dtors",
+		"jcr",
 		NULL, /* cstring */
 		NULL, /* pic trampolines */
 		NULL, /* pic symbols */
@@ -177,6 +178,7 @@ static void emit_section(be_gas_section_t section, const ir_entity *entity)
 		{ "bss",            "nobits",   "aw" },
 		{ "ctors",          "progbits", "aw" },
 		{ "dtors",          "progbits", "aw" },
+		{ "jcr",            "progbits", "aw" },
 		{ NULL,             NULL,       NULL }, /* cstring */
 		{ NULL,             NULL,       NULL }, /* pic trampolines */
 		{ NULL,             NULL,       NULL }, /* pic symbols */
@@ -429,6 +431,8 @@ static be_gas_section_t determine_section(be_gas_decl_env_t *env,
 		return GAS_SECTION_CONSTRUCTORS;
 	} else if (owner == get_segment_type(IR_SEGMENT_DESTRUCTORS)) {
 		return GAS_SECTION_DESTRUCTORS;
+	} else if (owner == get_segment_type(IR_SEGMENT_JCR)) {
+		return GAS_SECTION_JCR;
 	} else if (owner == get_segment_type(IR_SEGMENT_THREAD_LOCAL)) {
 		be_gas_section_t section = determine_basic_section(entity);
 		if (is_comdat(entity))
@@ -1471,6 +1475,7 @@ static void emit_global_decls(const be_main_env_t *main_env)
 	be_gas_emit_globals(get_tls_type(), &env);
 	be_gas_emit_globals(get_segment_type(IR_SEGMENT_CONSTRUCTORS), &env);
 	be_gas_emit_globals(get_segment_type(IR_SEGMENT_DESTRUCTORS), &env);
+	be_gas_emit_globals(get_segment_type(IR_SEGMENT_JCR), &env);
 	be_gas_emit_globals(main_env->pic_symbols_type, &env);
 	be_gas_emit_globals(main_env->pic_trampolines_type, &env);
 

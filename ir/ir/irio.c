@@ -197,6 +197,7 @@ static void symtbl_init(void)
 	INSERT(tt_segment, "thread_local", IR_SEGMENT_THREAD_LOCAL);
 	INSERT(tt_segment, "constructors", IR_SEGMENT_CONSTRUCTORS);
 	INSERT(tt_segment, "destructors", IR_SEGMENT_DESTRUCTORS);
+	INSERT(tt_segment, "jcr", IR_SEGMENT_JCR);
 
 	INSERT(tt_linkage, "constant", IR_LINKAGE_CONSTANT);
 	INSERT(tt_linkage, "weak", IR_LINKAGE_WEAK);
@@ -287,6 +288,7 @@ static const char *get_segment_name(ir_segment_t segment)
 	case IR_SEGMENT_THREAD_LOCAL: return "thread_local";
 	case IR_SEGMENT_CONSTRUCTORS: return "constructors";
 	case IR_SEGMENT_DESTRUCTORS:  return "destructors";
+	case IR_SEGMENT_JCR:          return "jcr";
 	}
 	panic("INVALID_SEGMENT");
 }
