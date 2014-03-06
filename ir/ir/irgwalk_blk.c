@@ -190,8 +190,9 @@ static void traverse_both(blk_collect_data_t *blks, irg_walk_func *pre, irg_walk
 /**
  * Do the traversal.
  */
-static void traverse_blocks(blk_collect_data_t *blks, irg_walk_func *pre, irg_walk_func *post, void *env)
+static void traverse_blocks(ir_graph *irg, blk_collect_data_t *blks, irg_walk_func *pre, irg_walk_func *post, void *env)
 {
+	(void)irg;
 	if      (!post) traverse_pre (blks, pre, env);
 	else if (!pre)  traverse_post(blks, post, env);
 	else            traverse_both(blks, pre, post, env);
@@ -241,7 +242,7 @@ static void dom_block_visit_both(ir_node *block, void *env)
 /**
  * Do the traversal in the dominator tree in top-down order.
  */
-static void traverse_dom_blocks_top_down(blk_collect_data_t* blks, irg_walk_func *pre, irg_walk_func *post, void *env)
+static void traverse_dom_blocks_top_down(ir_graph *irg, blk_collect_data_t* blks, irg_walk_func *pre, irg_walk_func *post, void *env)
 {
 	dom_traversal_t ctx;
 
@@ -251,11 +252,11 @@ static void traverse_dom_blocks_top_down(blk_collect_data_t* blks, irg_walk_func
 	ctx.env  = env;
 
 	if (pre != NULL && post != NULL)
-		dom_tree_walk_irg(current_ir_graph, dom_block_visit_both, NULL, &ctx);
+		dom_tree_walk_irg(irg, dom_block_visit_both, NULL, &ctx);
 	else if (pre != NULL)
-		dom_tree_walk_irg(current_ir_graph, dom_block_visit_pre, NULL, &ctx);
+		dom_tree_walk_irg(irg, dom_block_visit_pre, NULL, &ctx);
 	else if (post != NULL)
-		dom_tree_walk_irg(current_ir_graph, dom_block_visit_post, NULL, &ctx);
+		dom_tree_walk_irg(irg, dom_block_visit_post, NULL, &ctx);
 }
 
 /**
@@ -285,7 +286,7 @@ static void collect_walk(ir_node *node, blk_collect_data_t *env)
 		}
 
 		/* it's a block, put it into the block list */
-		if (node == get_irg_end_block(current_ir_graph)) {
+		if (node == get_irg_end_block(get_Block_irg(node))) {
 			/* Put the end block always last. If we don't do it here,
 			 * it might be placed elsewhere if the graph contains
 			 * endless loops.
@@ -398,7 +399,7 @@ static void collect_lists(ir_graph *const irg, blk_collect_data_t *const env)
  */
 static void do_irg_walk_blk(ir_graph *irg, irg_walk_func *pre,
 	irg_walk_func *post, void *env, unsigned follow_deps,
-	void (*traverse)(blk_collect_data_t* blks, irg_walk_func *pre, irg_walk_func *post, void *env))
+	void (*traverse)(ir_graph *irg, blk_collect_data_t* blks, irg_walk_func *pre, irg_walk_func *post, void *env))
 {
 	ir_node            *end_node = get_irg_end(irg);
 	ir_node            *end_blk = get_irg_end_block(irg);
@@ -425,7 +426,7 @@ static void do_irg_walk_blk(ir_graph *irg, irg_walk_func *pre,
 	collect_lists(irg, &blks);
 
 	/* second step: traverse the list */
-	traverse(&blks, pre, post, env);
+	traverse(irg, &blks, pre, post, env);
 
 	DEL_ARR_F(blks.blk_list);
 	del_pset(blks.blk_map);
