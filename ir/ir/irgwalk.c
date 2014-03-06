@@ -239,10 +239,11 @@ void irg_walk_in_or_dep(ir_node *node, irg_walk_func *pre, irg_walk_func *post, 
 {
 	assert(is_ir_node(node));
 
-	ir_reserve_resources(current_ir_graph, IR_RESOURCE_IRN_VISITED);
-	inc_irg_visited(current_ir_graph);
+	ir_graph *const irg = get_irn_irg(node);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
+	inc_irg_visited(irg);
 	irg_walk_in_or_dep_2(node, pre, post, env);
-	ir_free_resources(current_ir_graph, IR_RESOURCE_IRN_VISITED);
+	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
 }
 
 void irg_walk_in_or_dep_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env)
