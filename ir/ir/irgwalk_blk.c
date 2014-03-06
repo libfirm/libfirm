@@ -371,13 +371,13 @@ static void collect_blks_lists(ir_node *node, ir_node *block,
 /**
  * walk over the graph and collect all lists
  */
-static void collect_lists(blk_collect_data_t *env)
+static void collect_lists(ir_graph *const irg, blk_collect_data_t *const env)
 {
 	size_t          i, j;
 	ir_node         *block, *node;
 	block_entry_t   *entry;
 
-	inc_irg_visited(current_ir_graph);
+	inc_irg_visited(irg);
 
 	for (i = ARR_LEN(env->blk_list); i > 0;) {
 		block = env->blk_list[--i];
@@ -387,7 +387,7 @@ static void collect_lists(blk_collect_data_t *env)
 			node = entry->entry_list[--j];
 
 			/* a entry might already be visited due to Phi loops */
-			if (node->visited < current_ir_graph->visited)
+			if (node->visited < irg->visited)
 				collect_blks_lists(node, block, entry, env);
 		}
 	}
@@ -422,7 +422,7 @@ static void do_irg_walk_blk(ir_graph *irg, irg_walk_func *pre,
 	entry = block_find_entry(end_blk, &blks);
 	ARR_APP1(ir_node *, entry->entry_list, end_node);
 
-	collect_lists(&blks);
+	collect_lists(irg, &blks);
 
 	/* second step: traverse the list */
 	traverse(&blks, pre, post, env);
