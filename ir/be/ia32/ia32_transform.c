@@ -730,14 +730,14 @@ static ir_node *transform_upconv(ir_node *node, ir_node *orig_node)
 	}
 }
 
-static ir_node *get_noreg(ir_mode *const mode)
+static ir_node *get_noreg(ir_graph *const irg, ir_mode *const mode)
 {
 	if (!mode_is_float(mode)) {
 		return noreg_GP;
 	} else if (ia32_cg_config.use_sse2) {
-		return ia32_new_NoReg_xmm(current_ir_graph);
+		return ia32_new_NoReg_xmm(irg);
 	} else {
-		return ia32_new_NoReg_fp(current_ir_graph);
+		return ia32_new_NoReg_fp(irg);
 	}
 }
 
@@ -802,14 +802,16 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 	    use_am && ia32_use_source_address_mode(block, op2, op1, other_op, flags)) {
 		build_address(am, op2, x86_create_am_normal);
 		new_op1     = (op1 == NULL ? NULL : be_transform_node(op1));
-		new_op2     = get_noreg(mode);
+		ir_graph *const irg = get_Block_irg(block);
+		new_op2     = get_noreg(irg, mode);
 		am->op_type = ia32_AddrModeS;
 	} else if (commutative && (new_op2 == NULL || use_am_and_immediates) &&
 		       use_am &&
 		       ia32_use_source_address_mode(block, op1, op2, other_op, flags)) {
 		build_address(am, op1, x86_create_am_normal);
 
-		ir_node *const noreg = get_noreg(mode);
+		ir_graph *const irg   = get_Block_irg(block);
+		ir_node  *const noreg = get_noreg(irg, mode);
 		if (new_op2 != NULL) {
 			new_op1 = noreg;
 		} else {
