@@ -576,7 +576,6 @@ static tarval *compare_iv_dbg(const interval_t *l_iv, const interval_t *r_iv, ir
 	if (tv == tarval_unknown)
 		return tv;
 
-	ir_printf("In %e:\n", get_irg_entity(current_ir_graph));
 	print_iv_cmp(l_iv, r_iv, relation);
 	ir_printf(" = %T\n", tv);
 	return tv;

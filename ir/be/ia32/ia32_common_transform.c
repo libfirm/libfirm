@@ -307,10 +307,10 @@ static void parse_asm_constraints(constraint_t *const constraint, ident *const c
 		case 'y': /* we don't support mmx registers yet */
 		case 'Z': /* not available in 32 bit mode */
 		case 'e': /* not available in 32 bit mode */
-			panic("unsupported asm constraint '%c' found in (%+F)", *c, current_ir_graph);
+			panic("unsupported asm constraint '%c'", *c);
 
 		default:
-			panic("unknown asm constraint '%c' found in (%+F)", *c, current_ir_graph);
+			panic("unknown asm constraint '%c'", *c);
 		}
 
 		if (new_cls) {

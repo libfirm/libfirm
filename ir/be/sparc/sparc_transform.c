@@ -307,7 +307,7 @@ static void parse_asm_constraints(constraint_t *const constraint,
 		}
 
 		default:
-			panic("unknown asm constraint '%c' found in (%+F)", *c, current_ir_graph);
+			panic("unknown asm constraint '%c'", *c);
 		}
 
 		if (new_cls) {
