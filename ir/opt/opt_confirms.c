@@ -49,19 +49,19 @@ static tarval *compare_iv_dbg(const interval_t *l_iv, const interval_t *r_iv, ir
 /* triangle */
 #define DBG_OUT_TR(l_relation, l_bound, r_relation, r_bound, relation, v) \
   ir_printf("In %e:\na %= %n && b %= %n  ==>  a %= b == %s\n", \
-    get_irg_entity(current_ir_graph), \
+    get_irg_entity(get_irn_irg(l_bound)), \
     l_relation, l_bound, r_relation, r_bound, relation, v)
 
 /* right side */
 #define DBG_OUT_R(r_relation, r_bound, left, relation, right, v) \
   ir_printf("In %e:\na %= %n ==>  %n %= %n == %s\n", \
-    get_irg_entity(current_ir_graph), \
+    get_irg_entity(get_irn_irg(r_bound)), \
     r_relation, r_bound, left, relation, right, v)
 
 /* left side */
 #define DBG_OUT_L(l_relation, l_bound, left, relation, right, v) \
   ir_printf("In %e:\na %= %n ==>  %n %= %n == %s\n", \
-    get_irg_entity(current_ir_graph), \
+    get_irg_entity(get_irn_irg(l_bound)), \
     l_relation, l_bound, left, relation, right, v)
 
 #else
