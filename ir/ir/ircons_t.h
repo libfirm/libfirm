@@ -18,14 +18,15 @@
 #include "irverify_t.h"
 #include "compiler.h"
 
-#define get_cur_block()       _get_cur_block()
+#define verify_new_node(irg, node) verify_new_node_((irg), (node))
+#define get_cur_block()            _get_cur_block()
 
 static inline ir_node *_get_cur_block(void)
 {
 	return current_ir_graph->current_block;
 }
 
-static inline void verify_new_node(ir_graph *irg, ir_node *node)
+static inline void verify_new_node_(ir_graph *irg, ir_node *node)
 {
 #ifdef DEBUG_libfirm
 	if (UNLIKELY(!irn_verify_irg(node, irg)))

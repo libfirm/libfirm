@@ -642,3 +642,8 @@ ir_node *new_r_Block_noopt(ir_graph *irg, int arity, ir_node *in[])
 	verify_new_node(irg, res);
 	return res;
 }
+
+void (verify_new_node)(ir_graph *irg, ir_node *node)
+{
+	verify_new_node_(irg, node);
+}

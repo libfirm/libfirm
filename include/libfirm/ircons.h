@@ -731,6 +731,13 @@ FIRM_API void irg_finalize_cons(ir_graph *irg);
 FIRM_API void irp_finalize_cons(void);
 
 /**
+ * If firm is built in debug mode, verify that a newly created node is fine.
+ * The normal node constructors already call this function, you only need to
+ * call this yourself if you create new node constructors on your own.
+ */
+FIRM_API void verify_new_node(ir_graph *irg, ir_node *node);
+
+/**
  * Register a new callback for the case that the value of an uninitialized
  * variable is requested.
  */
