@@ -71,7 +71,7 @@ static const tp_op_ops
 	/** tpop operations for method types */
 	method_ops = {
 		free_method_attrs,
-		free_method_entities,
+		NULL,
 		NULL,
 		NULL,
 		NULL,
@@ -93,7 +93,7 @@ static const tp_op_ops
 	/** tpop operations for array types */
 	array_ops = {
 		NULL,
-		free_array_entities,
+		NULL,
 		free_array_automatic_entities,
 		NULL,
 		set_default_size,
@@ -103,8 +103,8 @@ static const tp_op_ops
 	},
 	/** tpop operations for pointer types */
 	pointer_ops = {
-		free_pointer_attrs,
-		free_pointer_entities,
+		NULL,
+		NULL,
 		NULL,
 		set_pointer_mode,
 		NULL,

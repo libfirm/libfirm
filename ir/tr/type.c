@@ -748,12 +748,6 @@ ir_type *clone_type_method(ir_type *tp)
 	return res;
 }
 
-void free_method_entities(ir_type *method)
-{
-	(void) method;
-	assert(method->type_op == type_method);
-}
-
 void free_method_attrs(ir_type *method)
 {
 	assert(method->type_op == type_method);
@@ -975,12 +969,6 @@ void free_array_automatic_entities(ir_type *array)
 	free_entity(get_array_element_entity(array));
 }
 
-void free_array_entities(ir_type *array)
-{
-	(void) array;
-	assert(array->type_op == type_array);
-}
-
 void set_array_size(ir_type *array, ir_node *size)
 {
   assert(array->type_op == type_array);
@@ -1068,18 +1056,6 @@ ir_type *new_type_pointer(ir_type *points_to)
 	res->flags |= tf_layout_fixed;
 	hook_new_type(res);
 	return res;
-}
-
-void free_pointer_entities(ir_type *pointer)
-{
-	(void) pointer;
-	assert(pointer->type_op == type_pointer);
-}
-
-void free_pointer_attrs(ir_type *pointer)
-{
-	(void) pointer;
-	assert(pointer->type_op == type_pointer);
 }
 
 void set_pointer_points_to_type(ir_type *pointer, ir_type *tp)
