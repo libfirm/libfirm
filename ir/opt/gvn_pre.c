@@ -530,7 +530,7 @@ static void infinite_loop_walker(ir_node *block, void *env)
 		/* reachable block: mark all cf predecessors */
 		for (i = 0; i < arity; ++i) {
 			ir_node *pred = get_Block_cfgpred_block(block, i);
-			if (is_Bad(pred))
+			if (pred == NULL)
 				continue;
 			set_Block_mark(pred, 1);
 		}
@@ -549,8 +549,7 @@ static void infinite_loop_walker(ir_node *block, void *env)
 		/* passing information to the cf predecessors */
 		for (i = 0; i < arity; ++i) {
 			ir_node *pred = get_Block_cfgpred_block(block, i);
-
-			if (is_Bad(pred))
+			if (pred == NULL)
 				continue;
 
 			/* If our cf predecessor is in the same endless loop,

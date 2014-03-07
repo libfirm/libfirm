@@ -332,6 +332,8 @@ unsigned lv_chk_bl_xxx(lv_chk_t *lv, const ir_node *bl, const ir_node *var)
 			if (is_Phi(user)) {
 				int pos = get_edge_src_pos(edge);
 				use_bl  = get_Block_cfgpred_block(use_bl, pos);
+				if (use_bl == NULL)
+					continue;
 				mask   |= lv_chk_state_end;
 			}
 

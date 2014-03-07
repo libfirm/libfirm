@@ -340,16 +340,13 @@ static inline int is_binop_(const ir_node *node)
  *
  * Returns the block corresponding to the predecessor pos.
  *
- * If we encounter the Bad node, this function does not return the Start block,
- * but the Bad node.
+ * If we encounter the Bad node, this function returns NULL.
  */
 static inline ir_node *get_Block_cfgpred_block_(const ir_node *node, int pos)
 {
 	ir_node *res = get_Block_cfgpred(node, pos);
 	if (is_Bad(res)) {
-		/* must return a Bad with mode_BB! */
-		ir_graph *irg = get_irn_irg(node);
-		return new_r_Bad(irg, mode_BB);
+		return NULL;
 	} else {
 		return get_nodes_block(res);
 	}

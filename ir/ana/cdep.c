@@ -90,7 +90,7 @@ static void cdep_pre(ir_node *node, void *ctx)
 	(void)ctx;
 	for (int i = get_Block_n_cfgpreds(node); i-- > 0; ) {
 		ir_node *pred = get_Block_cfgpred_block(node, i);
-		if (is_Bad(pred))
+		if (pred == NULL)
 			continue;
 
 		ir_node *pdom = get_Block_ipostdom(pred);

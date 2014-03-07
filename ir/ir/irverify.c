@@ -936,9 +936,12 @@ static bool check_dominance_for_node(const ir_node *use)
 			continue;
 
 		ir_node *use_bl = bl;
-		if (is_Phi(use))
+		if (is_Phi(use)) {
 			use_bl = get_Block_cfgpred_block(bl, i);
-		if (!is_Block(use_bl) || get_Block_dom_depth(use_bl) == -1)
+			if (use_bl == NULL)
+				continue;
+		}
+		if (get_Block_dom_depth(use_bl) == -1)
 			continue;
 
 		if (!block_dominates(def_bl, use_bl)) {

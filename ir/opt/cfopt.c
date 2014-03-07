@@ -415,7 +415,7 @@ static void optimize_blocks(ir_node *b, void *ctx)
 					for (int i = k+1; i < get_Block_n_cfgpreds(b); i++) {
 						ir_node *phi_pred = get_Block_cfgpred_block(b, i);
 
-						if (is_Bad(phi_pred)) {
+						if (phi_pred == NULL) {
 							ir_graph *irg  = get_irn_irg(b);
 							ir_mode  *mode = get_irn_mode(phi);
 							in[q_preds++] = new_r_Bad(irg, mode);

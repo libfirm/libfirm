@@ -300,7 +300,7 @@ static int is_head(ir_node *n, ir_node *root)
 	for (int i = 0, arity = get_Block_n_cfgpreds(n); i < arity; i++) {
 		ir_node *pred = get_Block_cfgpred_block(n, i);
 		/* ignore Bad control flow: it cannot happen */
-		if (is_Bad(pred))
+		if (pred == NULL)
 			continue;
 		if (is_backedge(n, i))
 			continue;
@@ -333,7 +333,7 @@ static int is_endless_head(ir_node *n, ir_node *root)
 	for (int i = 0, arity = get_Block_n_cfgpreds(n); i < arity; i++) {
 		ir_node *pred = get_Block_cfgpred_block(n, i);
 		/* ignore Bad control flow: it cannot happen */
-		if (is_Bad(pred))
+		if (pred == NULL)
 			continue;
 		if (is_backedge(n, i))
 			continue;
@@ -358,7 +358,7 @@ static int smallest_dfn_pred(ir_node *n, int limit)
 	for (int i = 0, arity = get_Block_n_cfgpreds(n); i < arity; i++) {
 		ir_node *pred = get_Block_cfgpred_block(n, i);
 		/* ignore Bad control flow: it cannot happen */
-		if (is_Bad(pred))
+		if (pred == NULL)
 			continue;
 		if (is_backedge(n, i) || !irn_is_in_stack(pred))
 			continue;
@@ -380,7 +380,7 @@ static int largest_dfn_pred(ir_node *n)
 	for (int i = 0, arity = get_Block_n_cfgpreds(n); i < arity; i++) {
 		ir_node *pred = get_Block_cfgpred_block(n, i);
 		/* ignore Bad control flow: it cannot happen */
-		if (is_Bad(pred))
+		if (pred == NULL)
 			continue;
 		if (is_backedge(n, i) || !irn_is_in_stack(pred))
 			continue;
@@ -488,7 +488,7 @@ static void cfscc(ir_node *n)
 			continue;
 		ir_node *m = get_Block_cfgpred_block(n, i);
 		/* ignore Bad control flow: it cannot happen */
-		if (is_Bad(m))
+		if (m == NULL)
 			continue;
 
 		cfscc(m);

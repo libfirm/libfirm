@@ -159,7 +159,7 @@ static ir_node *set_phi_arguments(ir_node *phi, int pos)
 	for (i = 0; i < arity; ++i) {
 		ir_node *cfgpred = get_Block_cfgpred_block(block, i);
 		ir_node *value;
-		if (is_Bad(cfgpred)) {
+		if (cfgpred == NULL) {
 			value = new_r_Bad(irg, mode);
 		} else {
 			value = get_r_value_internal(cfgpred, pos, mode);
@@ -461,7 +461,9 @@ static ir_mode *guess_recursively(ir_node *block, int pos)
 	n_preds = get_irn_arity(block);
 	for (i = 0; i < n_preds; ++i) {
 		ir_node *pred_block = get_Block_cfgpred_block(block, i);
-		ir_mode *mode       = guess_recursively(pred_block, pos);
+		if (pred_block == NULL)
+			continue;
+		ir_mode *mode = guess_recursively(pred_block, pos);
 		if (mode != NULL)
 			return mode;
 	}

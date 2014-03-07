@@ -427,7 +427,7 @@ static void init_tmp_pdom_info(ir_node *block, tmp_dom_info *parent,
 	/* Iterate */
 	for (int i = get_Block_n_cfgpreds(block) - 1; i >= 0; --i) {
 		ir_node *pred = get_Block_cfgpred_block(block, i);
-		if (is_Bad(pred))
+		if (pred == NULL)
 			continue;
 		init_tmp_pdom_info(pred, tdi, tdi_list, used, n_blocks);
 	}

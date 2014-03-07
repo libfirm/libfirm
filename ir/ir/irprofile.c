@@ -283,7 +283,7 @@ static void fix_ssa(ir_node *bb, void *data)
 		mem = get_irg_initial_mem(irg);
 	} else if (arity == 1) {
 		ir_node *pred = get_Block_cfgpred_block(bb, 0);
-		if (!is_Bad(pred))
+		if (pred != NULL)
 			mem = (ir_node*) get_irn_link(pred);
 		else
 			mem = new_r_NoMem(irg);
@@ -291,7 +291,7 @@ static void fix_ssa(ir_node *bb, void *data)
 		ir_node **ins = ALLOCAN(ir_node*, arity);
 		for (n = arity - 1; n >= 0; --n) {
 			ir_node *pred = get_Block_cfgpred_block(bb, n);
-			if (!is_Bad(pred))
+			if (pred != NULL)
 				ins[n] = (ir_node*) get_irn_link(pred);
 			else
 				ins[n] = new_r_NoMem(irg);
@@ -351,6 +351,8 @@ static void instrument_irg(ir_graph *irg, ir_entity *counters,
 	for (i = get_Block_n_cfgpreds(endbb) - 1; i >= 0; --i) {
 		ir_node *node = skip_Proj(get_Block_cfgpred(endbb, i));
 		ir_node *bb   = get_Block_cfgpred_block(endbb, i);
+		if (bb == NULL)
+			continue;
 		ir_node *mem;
 
 		switch (get_irn_opcode(node)) {

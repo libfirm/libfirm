@@ -180,7 +180,7 @@ static ir_node *consumer_dom_dca(ir_node *dca, ir_node *consumer,
 		for (int i = 0;  i < arity; i++) {
 			if (get_Phi_pred(consumer, i) == producer) {
 				ir_node *new_block = get_Block_cfgpred_block(phi_block, i);
-				if (is_Bad(new_block))
+				if (new_block == NULL)
 					continue;
 
 				assert(is_block_reachable(new_block));

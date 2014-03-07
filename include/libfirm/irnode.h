@@ -242,8 +242,7 @@ FIRM_API int get_Block_cfgpred_pos(const ir_node *block, const ir_node *pred);
  *
  * Returns the block corresponding to the predecessor pos of block.
  *
- * If we encounter the Bad node, this function does not return Start block, but
- * the Bad node.
+ * If we encounter the Bad node as controlflow predecessor NULL is returned.
  */
 FIRM_API ir_node *get_Block_cfgpred_block(const ir_node *node, int pos);
 

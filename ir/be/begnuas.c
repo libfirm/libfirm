@@ -1340,6 +1340,8 @@ void be_gas_begin_block(const ir_node *block, bool needs_label)
 		} else {
 			for (int i = 0; i < arity; ++i) {
 				ir_node *predblock = get_Block_cfgpred_block(block, i);
+				if (predblock == NULL)
+					continue;
 				be_emit_char(' ');
 				be_gas_emit_block_name(predblock);
 			}

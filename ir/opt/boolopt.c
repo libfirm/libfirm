@@ -584,6 +584,8 @@ restart:
 
 		ir_node *const cond_selector = get_Cond_selector(cond);
 		ir_node *const lower_pred    = get_Block_cfgpred_block(lower_block, 0);
+		if (lower_pred == NULL)
+			continue;
 		for (up_idx = 0; up_idx < n_cfgpreds; ++up_idx) {
 			ir_node   *upper_block;
 			ir_node   *upper_cf;

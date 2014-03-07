@@ -160,7 +160,7 @@ static double get_cf_probability(const ir_node *bb, int pos,
                                  double inv_loop_weight)
 {
 	const ir_node *pred = get_Block_cfgpred_block(bb, pos);
-	if (is_Bad(pred))
+	if (pred == NULL)
 		return 0;
 
 	const ir_loop *loop       = get_irn_loop(bb);

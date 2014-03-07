@@ -53,11 +53,7 @@ static ir_node *ssa_second_def_block;
 static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
                                            bool first)
 {
-	/* In case of a bad input to a block we need to return the bad value */
-	if (is_Bad(block)) {
-		ir_graph *irg = get_irn_irg(block);
-		return new_r_Bad(irg, mode);
-	}
+	assert(is_Block(block));
 
 	/* the other defs can't be marked for cases where a user of the original
 	 * value is in the same block as the alternative definition.
@@ -81,8 +77,13 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
 	int n_cfgpreds = get_Block_n_cfgpreds(block);
 	if (n_cfgpreds == 1) {
 		ir_node *pred_block = get_Block_cfgpred_block(block, 0);
-		ir_node *value      = search_def_and_create_phis(pred_block, mode,
-		                                                 false);
+		ir_node *value;
+		if (pred_block == NULL) {
+			ir_graph *irg = get_irn_irg(block);
+			value = new_r_Bad(irg, mode);
+		} else {
+			value = search_def_and_create_phis(pred_block, mode, false);
+		}
 		set_irn_link(block, value);
 		mark_irn_visited(block);
 		return value;
@@ -101,8 +102,13 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
 	/* set Phi predecessors */
 	for (int i = 0; i < n_cfgpreds; ++i) {
 		ir_node *pred_block = get_Block_cfgpred_block(block, i);
-		ir_node *pred_val   = search_def_and_create_phis(pred_block, mode,
-		                                                 false);
+		ir_node *pred_val;
+		if (pred_block == NULL) {
+			ir_graph *irg = get_irn_irg(block);
+			pred_val = new_r_Bad(irg, mode);
+		} else {
+			pred_val = search_def_and_create_phis(pred_block, mode, false);
+		}
 		set_irn_n(phi, i, pred_val);
 	}
 
@@ -146,7 +152,12 @@ static void construct_ssa(ir_node *orig_block, ir_node *orig_val,
 		ir_node *newval;
 		if (is_Phi(user)) {
 			ir_node *pred_block = get_Block_cfgpred_block(user_block, j);
-			newval = search_def_and_create_phis(pred_block, mode, true);
+			if (pred_block == NULL) {
+				ir_graph *irg = get_irn_irg(user_block);
+				newval = new_r_Bad(irg, mode);
+			} else {
+				newval = search_def_and_create_phis(pred_block, mode, true);
+			}
 		} else {
 			newval = search_def_and_create_phis(user_block, mode, true);
 		}
