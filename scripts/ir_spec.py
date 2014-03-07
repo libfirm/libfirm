@@ -721,7 +721,6 @@ class Sel:
 	Optimizations assume that a Sel node can only produce a NULL pointer if the
 	ptr input was NULL."""
 	ins         = [
-		("mem", "memory dependency"),
 		("ptr", "pointer to object to select from"),
 	]
 	arity       = "variable"

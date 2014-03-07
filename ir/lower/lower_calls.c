@@ -471,7 +471,7 @@ static ir_node *get_dummy_sel(ir_graph *irg, ir_node *block, ir_type *tp)
 
 	ident     *dummy_id = id_unique("dummy.%u");
 	ir_entity *ent      = new_entity(ft, dummy_id, tp);
-	return new_r_simpleSel(block, get_irg_no_mem(irg), get_irg_frame(irg), ent);
+	return new_r_simpleSel(block, get_irg_frame(irg), ent);
 }
 
 /**
@@ -594,7 +594,6 @@ static void fix_compound_params(cl_entry *entry, ir_type *ctp)
 	dbg_info *dbgi     = get_irn_dbg_info(call);
 	ir_node  *mem      = get_Call_mem(call);
 	ir_graph *irg      = get_irn_irg(call);
-	ir_node  *nomem    = new_r_NoMem(irg);
 	ir_node  *frame    = get_irg_frame(irg);
 	size_t    n_params = get_method_n_params(ctp);
 
@@ -606,7 +605,7 @@ static void fix_compound_params(cl_entry *entry, ir_type *ctp)
 		ir_node   *arg         = get_Call_param(call, i);
 		ir_entity *arg_entity  = create_compound_arg_entity(irg, type);
 		ir_node   *block       = get_nodes_block(call);
-		ir_node   *sel         = new_rd_simpleSel(dbgi, block, nomem, frame, arg_entity);
+		ir_node   *sel         = new_rd_simpleSel(dbgi, block, frame, arg_entity);
 		bool       is_volatile = is_partly_volatile(arg);
 		mem = new_rd_CopyB(dbgi, block, mem, sel, arg, type, is_volatile ? cons_volatile : cons_none);
 		set_Call_param(call, i, sel);

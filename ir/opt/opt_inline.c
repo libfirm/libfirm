@@ -299,8 +299,7 @@ static void copy_parameter_entities(ir_node *call, ir_graph *called_graph)
 
 		size_t   n_param_pos = get_entity_parameter_number(old_entity);
 		ir_node *param       = get_Call_param(call, n_param_pos);
-		ir_node *nomem       = get_irg_no_mem(irg);
-		ir_node *sel         = new_rd_simpleSel(dbgi, block, nomem, frame, new_ent);
+		ir_node *sel         = new_rd_simpleSel(dbgi, block, frame, new_ent);
 		ir_node *new_mem;
 		if (is_aggregate_type(old_type)) {
 			/* Copy the compound parameter */

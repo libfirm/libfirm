@@ -75,21 +75,6 @@ static void lower_sel(ir_node *sel)
 				idx_mode),
 				mode);
 		}
-	} else if (is_Method_type(get_entity_type(ent)) && is_Class_type(owner)) {
-		/* We need an additional load when accessing methods from a dispatch
-		 * table.
-		 * Matze TODO: Is this really still used? At least liboo does its own
-		 * lowering of Method-Sels...
-		 */
-		ir_mode   *ent_mode = get_type_mode(get_entity_type(ent));
-		int        offset   = get_entity_offset(ent);
-		ir_mode   *mode_Int = get_reference_mode_signed_eq(mode);
-		ir_tarval *tv       = new_tarval_from_long(offset, mode_Int);
-		ir_node   *cnst     = new_rd_Const(dbg, irg, tv);
-		ir_node   *add      = new_rd_Add(dbg, bl, get_Sel_ptr(sel), cnst, mode);
-		ir_node   *mem      = get_Sel_mem(sel);
-		newn = new_rd_Load(dbg, bl, mem, add, ent_mode, cons_none);
-		newn = new_r_Proj(newn, ent_mode, pn_Load_res);
 	} else {
 		int offset = get_entity_offset(ent);
 

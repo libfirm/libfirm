@@ -69,10 +69,10 @@ ir_node *new_rd_ASM(dbg_info *db, ir_node *block, ir_node *mem,
 	return res;
 }
 
-ir_node *new_rd_simpleSel(dbg_info *db, ir_node *block, ir_node *store,
-                          ir_node *objptr, ir_entity *ent)
+ir_node *new_rd_simpleSel(dbg_info *db, ir_node *block, ir_node *objptr,
+                          ir_entity *ent)
 {
-	return new_rd_Sel(db, block, store, objptr, 0, NULL, ent);
+	return new_rd_Sel(db, block, objptr, 0, NULL, ent);
 }
 
 ir_node *new_r_Const_long(ir_graph *irg, ir_mode *mode, long value)
@@ -80,10 +80,9 @@ ir_node *new_r_Const_long(ir_graph *irg, ir_mode *mode, long value)
 	return new_rd_Const_long(NULL, irg, mode, value);
 }
 
-ir_node *new_r_simpleSel(ir_node *block, ir_node *store, ir_node *objptr,
-                         ir_entity *ent)
+ir_node *new_r_simpleSel(ir_node *block, ir_node *objptr, ir_entity *ent)
 {
-	return new_rd_Sel(NULL, block, store, objptr, 0, NULL, ent);
+	return new_rd_Sel(NULL, block, objptr, 0, NULL, ent);
 }
 ir_node *new_r_ASM(ir_node *block, ir_node *mem,
                    int arity, ir_node *in[], ir_asm_constraint *inputs,
@@ -296,12 +295,11 @@ ir_node *new_d_Const_long(dbg_info *db, ir_mode *mode, long value)
 	return new_rd_Const_long(db, current_ir_graph, mode, value);
 }
 
-ir_node *new_d_simpleSel(dbg_info *db, ir_node *store, ir_node *objptr,
-                         ir_entity *ent)
+ir_node *new_d_simpleSel(dbg_info *db, ir_node *objptr, ir_entity *entity)
 {
 	assert(irg_is_constrained(current_ir_graph, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
-	return new_rd_Sel(db, current_ir_graph->current_block,
-	                  store, objptr, 0, NULL, ent);
+	return new_rd_Sel(db, current_ir_graph->current_block, objptr, 0, NULL,
+	                  entity);
 }
 
 ir_node *new_d_ASM(dbg_info *db, ir_node *mem, int arity, ir_node *in[],
@@ -596,10 +594,11 @@ ir_node *new_Const_long(ir_mode *mode, long value)
 	return new_d_Const_long(NULL, mode, value);
 }
 
-ir_node *new_simpleSel(ir_node *store, ir_node *objptr, ir_entity *ent)
+ir_node *new_simpleSel(ir_node *objptr, ir_entity *ent)
 {
-	return new_d_simpleSel(NULL, store, objptr, ent);
+	return new_d_simpleSel(NULL, objptr, ent);
 }
+
 ir_node *new_ASM(ir_node *mem, int arity, ir_node *in[],
                  ir_asm_constraint *inputs, size_t n_outs,
                  ir_asm_constraint *outputs, size_t n_clobber,

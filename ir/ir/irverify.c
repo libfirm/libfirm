@@ -550,7 +550,6 @@ static int verify_node_Sel(const ir_node *n)
 {
 	bool fine = check_mode_func(n, mode_is_reference, "reference");
 	fine &= check_input_func(n, n_Sel_ptr, "ptr", mode_is_reference, "reference");
-	fine &= check_input_mode(n, n_Sel_mem, "mem", mode_M);
 
 	for (int i = 0, n_indexs = get_Sel_n_indexs(n); i < n_indexs; ++i) {
 		fine &= check_input_func(n, n_Sel_max+i+1, NULL, mode_is_int, "int");
