@@ -41,7 +41,6 @@ static void lower_sel(ir_node *sel)
 		/* an Array access */
 		ir_type *basetyp = get_entity_type(ent);
 		ir_mode *basemode;
-		ir_node *index;
 		if (is_Primitive_type(basetyp))
 			basemode = get_type_mode(basetyp);
 		else
@@ -49,92 +48,22 @@ static void lower_sel(ir_node *sel)
 
 		assert(basemode && "no mode for lowering Sel");
 		assert((get_mode_size_bits(basemode) % 8 == 0) && "can not deal with unorthodox modes");
-		index = get_Sel_index(sel, 0);
+		ir_node *index = get_Sel_index(sel, 0);
 
 		if (is_Array_type(owner)) {
-			ir_type *arr_ty = owner;
-			size_t   dims   = get_array_n_dimensions(arr_ty);
-			size_t  *map    = ALLOCAN(size_t, dims);
-			ir_mode *mode_Int = get_reference_mode_signed_eq(mode);
-			ir_tarval *tv;
-			ir_node *last_size;
-			size_t   i;
-
-			assert(dims == (size_t)get_Sel_n_indexs(sel)
+			ir_mode *mode_int = get_reference_mode_unsigned_eq(mode);
+			assert(get_Sel_n_indexs(sel) == 1
 				&& "array dimension must match number of indices of Sel node");
 
-			for (i = 0; i < dims; i++) {
-				size_t order = get_array_order(arr_ty, i);
-
-				assert(order < dims &&
-					"order of a dimension must be smaller than the arrays dim");
-				map[order] = i;
-			}
-			newn = get_Sel_ptr(sel);
-
 			/* Size of the array element */
-			tv = new_tarval_from_long(get_type_size_bytes(basetyp), mode_Int);
-			last_size = new_rd_Const(dbg, irg, tv);
+			unsigned   size    = get_type_size_bytes(basetyp);
+			ir_tarval *tv      = new_tarval_from_long(size, mode_int);
+			ir_node   *el_size = new_rd_Const(dbg, irg, tv);
+			ir_node   *ind     = new_rd_Conv(dbg, bl, index, mode_int);
+			ir_node   *mul     = new_rd_Mul(dbg, bl, ind, el_size, mode_int);
 
-			/*
-			 * We compute the offset part of dimension d_i recursively
-			 * with the the offset part of dimension d_{i-1}
-			 *
-			 *     off_0 = sizeof(array_element_type);
-			 *     off_i = (u_i - l_i) * off_{i-1}  ; i >= 1
-			 *
-			 * whereas u_i is the upper bound of the current dimension
-			 * and l_i the lower bound of the current dimension.
-			 */
-			for (i = dims; i > 0;) {
-				size_t dim = map[--i];
-				ir_node *lb, *ub, *elms, *n, *ind;
-
-				elms = NULL;
-				lb = get_array_lower_bound(arr_ty, dim);
-				ub = get_array_upper_bound(arr_ty, dim);
-
-				if (! is_Unknown(lb))
-					lb = new_rd_Conv(dbg, bl, duplicate_subgraph(get_irn_dbg_info(sel), lb, bl), mode_Int);
-				else
-					lb = NULL;
-
-				if (! is_Unknown(ub))
-					ub = new_rd_Conv(dbg, bl, duplicate_subgraph(get_irn_dbg_info(sel), ub, bl), mode_Int);
-				else
-					ub = NULL;
-
-				/*
-				 * If the array has more than one dimension, lower and upper
-				 * bounds have to be set in the non-last dimension.
-				 */
-				if (i > 0) {
-					assert(lb != NULL && "lower bound has to be set in multi-dim array");
-					assert(ub != NULL && "upper bound has to be set in multi-dim array");
-
-					/* Elements in one Dimension */
-					elms = new_rd_Sub(dbg, bl, ub, lb, mode_Int);
-				}
-
-				ind = new_rd_Conv(dbg, bl, get_Sel_index(sel, dim), mode_Int);
-
-				/*
-				 * Normalize index, id lower bound is set, also assume
-				 * lower bound == 0
-			 */
-				if (lb != NULL)
-					ind = new_rd_Sub(dbg, bl, ind, lb, mode_Int);
-
-				n = new_rd_Mul(dbg, bl, ind, last_size, mode_Int);
-
-				/*
-				 * see comment above.
-				 */
-				if (i > 0)
-					last_size = new_rd_Mul(dbg, bl, last_size, elms, mode_Int);
-
-				newn = new_rd_Add(dbg, bl, newn, n, mode);
-			}
+			ir_node   *ptr     = get_Sel_ptr(sel);
+			newn = new_rd_Add(dbg, bl, ptr, mul, mode);
 		} else {
 			/* no array type */
 			ir_mode   *idx_mode = get_irn_mode(index);

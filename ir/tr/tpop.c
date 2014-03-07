@@ -92,7 +92,7 @@ static const tp_op_ops
 	},
 	/** tpop operations for array types */
 	array_ops = {
-		free_array_attrs,
+		NULL,
 		free_array_entities,
 		free_array_automatic_entities,
 		NULL,

@@ -401,13 +401,9 @@ void walk_const_code(irg_walk_func *pre, irg_walk_func *post, void *env)
 	for (i = 0; i < n_types; i++) {
 		ir_type *tp = get_irp_type(i);
 		if (is_Array_type(tp)) {
-			size_t j, n_dim = get_array_n_dimensions(tp);
-			for (j = 0; j < n_dim; j++) {
-				ir_node *n = get_array_lower_bound(tp, j);
-				if (n) irg_walk(n, pre, post, env);
-				n = get_array_upper_bound(tp, j);
-				if (n) irg_walk(n, pre, post, env);
-			}
+			ir_node *size = get_array_size(tp);
+			if (size != NULL)
+				irg_walk(size, pre, post, env);
 		}
 	}
 

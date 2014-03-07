@@ -607,9 +607,6 @@ static void emit_array_type_abbrev(void)
 
 static void emit_array_type(const ir_type *type)
 {
-	if (get_array_n_dimensions(type) != 1)
-		panic("multidimensional arrays no supported yet");
-
 	ir_type *element_type = get_array_element_type(type);
 	emit_type(element_type);
 
@@ -617,8 +614,8 @@ static void emit_array_type(const ir_type *type)
 	emit_uleb128(abbrev_array_type);
 	emit_type_address(element_type);
 
-	if (has_array_upper_bound(type, 0)) {
-		int bound = get_array_upper_bound_int(type, 0);
+	if (has_array_size(type)) {
+		unsigned bound = get_array_size_int(type);
 		emit_uleb128(abbrev_subrange_type);
 		emit_uleb128(bound);
 	}

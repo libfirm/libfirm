@@ -692,32 +692,15 @@ void dump_type_to_file(FILE *const F, const ir_type *const tp)
 			fprintf(F, "\n  array ");
 
 			const ir_type *elem_tp = get_array_element_type(tp);
-			size_t         n_dim   = get_array_n_dimensions(tp);
-			for (size_t i = 0; i < n_dim; ++i) {
-				fprintf(F, "[");
-
-				const ir_node *lower = get_array_lower_bound(tp, i);
-				if (is_Const(lower)) {
-					fprintf(F, "%ld .. ", get_tarval_long(get_Const_tarval(lower)));
-				} else {
-					dump_node_opcode(F, lower);
-					fprintf(F, " %ld .. ", get_irn_node_nr(lower));
-				}
-
-				const ir_node *upper = get_array_upper_bound(tp, i);
-				if (is_Const(upper)) {
-					fprintf(F, "%ld]", get_tarval_long(get_Const_tarval(lower)));
-				} else {
-					dump_node_opcode(F, upper);
-					fprintf(F, " %ld]", get_irn_node_nr(upper));
-				}
+			fprintf(F, "[");
+			const ir_node *size = get_array_size(tp);
+			if (is_Const(size)) {
+				fprintf(F, "%ld", get_tarval_long(get_Const_tarval(size)));
+			} else {
+				dump_node_opcode(F, size);
+				fprintf(F, " %ld", get_irn_node_nr(size));
 			}
-			ir_fprintf(F, " of <%+F>", elem_tp);
-
-			fprintf(F, "\n  order: ");
-			for (size_t i = 0; i < n_dim; ++i)
-				fprintf(F, "<%zu>", get_array_order(tp, i));
-
+			ir_fprintf(F, "] of <%+F>", elem_tp);
 			fprintf(F, "\n");
 
 			if (verbosity & dump_verbosity_fields) {

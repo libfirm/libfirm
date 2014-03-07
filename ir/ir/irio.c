@@ -601,25 +601,14 @@ static void write_type_array(write_env_t *env, ir_type *tp)
 	write_type(env, element_type);
 
 	write_type_common(env, tp);
-	size_t n_dimensions = get_array_n_dimensions(tp);
-	write_size_t(env, n_dimensions);
 	write_type_ref(env, element_type);
-	for (size_t i = 0; i < n_dimensions; i++) {
-		ir_node *lower = get_array_lower_bound(tp, i);
-		ir_node *upper = get_array_upper_bound(tp, i);
-
-		if (is_Const(lower))
-			write_long(env, get_tarval_long(get_Const_tarval(lower)));
-		else
-			panic("Lower array bound is not constant");
-
-		if (is_Const(upper))
-			write_long(env, get_tarval_long(get_Const_tarval(upper)));
-		else if (is_Unknown(upper))
-			write_symbol(env, "unknown");
-		else
-			panic("Upper array bound is not constant");
-	}
+	ir_node *size = get_array_size(tp);
+	if (is_Const(size))
+		write_long(env, get_tarval_long(get_Const_tarval(size)));
+	else if (is_Unknown(size))
+		write_symbol(env, "unknown");
+	else
+		panic("Upper array bound is not constant");
 	/* note that we just write a reference to the element entity
 	 * but never the entity itself */
 	ir_entity *element_entity = get_array_element_entity(tp);
@@ -1648,25 +1637,14 @@ static void read_type(read_env_t *env)
 
 	switch (tpop) {
 	case tpo_array: {
-		size_t   n_dimensions = read_size_t(env);
-		ir_type *elemtype     = read_type_ref(env);
-
-		type = new_type_array(n_dimensions, elemtype);
-		for (size_t i = 0; i < n_dimensions; i++) {
-			char *str = read_word(env);
-			if (strcmp(str, "unknown") != 0) {
-				long lowerbound = atol(str);
-				set_array_lower_bound_int(type, i, lowerbound);
-			}
-			obstack_free(&env->obst, str);
-
-			str = read_word(env);
-			if (strcmp(str, "unknown") != 0) {
-				long upperbound = atol(str);
-				set_array_upper_bound_int(type, i, upperbound);
-			}
-			obstack_free(&env->obst, str);
+		ir_type *elemtype = read_type_ref(env);
+		type = new_type_array(elemtype);
+		char *str = read_word(env);
+		if (strcmp(str, "unknown") != 0) {
+			long size = atol(str);
+			set_array_size_int(type, size);
 		}
+		obstack_free(&env->obst, str);
 
 		long       element_entity_nr = read_long(env);
 		ir_entity *element_entity    = get_array_element_entity(type);

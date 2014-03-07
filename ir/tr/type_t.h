@@ -81,13 +81,10 @@ typedef struct {
 
 /** Array type attributes. */
 typedef struct {
-	size_t  n_dimensions;   /**< Number of array dimensions.  */
-	ir_node **lower_bound;  /**< Lower bounds of dimensions.  Usually all 0. */
-	ir_node **upper_bound;  /**< Upper bounds or dimensions. */
-	size_t  *order;         /**< Ordering of dimensions. */
-	ir_type *element_type;  /**< The type of the array elements. */
-	ir_entity *element_ent; /**< entity for the array elements, to be used for
-	                             element selection with a Sel node. */
+	ir_node   *size;         /**< number of elements in the array. */
+	ir_type   *element_type; /**< The type of the array elements. */
+	ir_entity *element_ent;  /**< entity for the array elements, to be used for
+	                              element selection with a Sel node. */
 } arr_attr;
 
 /** Pointer type attributes. */
@@ -177,7 +174,6 @@ void free_class_attrs      (ir_type *clss);
 void free_struct_attrs     (ir_type *strct);
 void free_method_attrs     (ir_type *method);
 void free_union_attrs      (ir_type *uni);
-void free_array_attrs      (ir_type *array);
 void free_pointer_attrs    (ir_type *pointer);
 
 void set_class_mode(ir_type *tp, ir_mode *mode);

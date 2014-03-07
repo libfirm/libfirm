@@ -349,9 +349,9 @@ static ir_type *make_array_type(ir_type *tp)
 {
 	unsigned alignment = get_type_alignment_bytes(tp);
 	unsigned size      = get_type_size_bytes(tp);
-	ir_type *res       = new_type_array(1, tp);
+	ir_type *res       = new_type_array(tp);
 	set_type_alignment_bytes(res, alignment);
-	set_array_bounds_int(res, 0, 0, 2);
+	set_array_size_int(res, 2);
 	if (alignment > size)
 		size = alignment;
 	set_type_size_bytes(res, 2 * size);

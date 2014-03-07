@@ -1519,82 +1519,28 @@ FIRM_API const tp_op *get_tpop_method(void);
 /**
  * @defgroup array_type  Array
  *
- * The array type represents rectangular multi dimensional arrays.
- * The constants representing the bounds must be allocated to
- * get_const_code_irg().
+ * The array type represents linear arrangement of objects of the same type.
  *
- * - n_dimensions:    Number of array dimensions.
- * - *lower_bound:    Lower bounds of dimensions.  Usually all 0.
- * - *upper_bound:    Upper bounds or dimensions.
+ * - *size:           number of elements in the array.
  * - *element_type:   The type of the array elements.
- * - *element_ent:    An entity for the array elements to be used for
- *                      element selection with Sel.
  * @{
  */
 
-/** Create a new type array.
- *
- * Sets n_dimension to dimension and all dimension entries to NULL.
- * Initializes order to the order of the dimensions.
- * The entity for array elements is built automatically.
- * Sets dimension sizes after call to constructor with set_* routines.
- */
-FIRM_API ir_type *new_type_array(size_t n_dims, ir_type *element_type);
+/** Create a new type array. */
+FIRM_API ir_type *new_type_array(ir_type *element_type);
 
-/** Returns the number of array dimensions of this type. */
-FIRM_API size_t get_array_n_dimensions(const ir_type *array);
+/** Sets the size (number of elements) of the array, i.e. [0,size[ */
+FIRM_API void set_array_size(ir_type *array, ir_node *size);
 
-/**
- * Allocates Const nodes of mode_Is for one array dimension.
- * Upper bound in Firm is the element next to the last, i.e. [lower,upper[
- */
-FIRM_API void set_array_bounds_int(ir_type *array, size_t dimension,
-                                   int lower_bound, int upper_bound);
-/**
- * Sets the bounds for one array dimension.
- * Upper bound in Firm is the element next to the last, i.e. [lower,upper[
- */
-FIRM_API void set_array_bounds(ir_type *array, size_t dimension,
-                               ir_node *lower_bound, ir_node *upper_bound);
-/** Sets the lower bound for one array dimension, i.e. [lower,upper[ */
-FIRM_API void set_array_lower_bound(ir_type *array, size_t dimension,
-                                    ir_node *lower_bound);
+/** Sets array size of @p array to @p size elements. */
+FIRM_API void set_array_size_int(ir_type *array, unsigned size);
 
-/** Allocates Const nodes of mode_Is for the lower bound of an array
-    dimension, i.e. [lower,upper[ */
-FIRM_API void set_array_lower_bound_int(ir_type *array, size_t dimension,
-                                        int lower_bound);
-
-/** Sets the upper bound for one array dimension, i.e. [lower,upper[ */
-FIRM_API void set_array_upper_bound(ir_type *array, size_t dimension,
-                                    ir_node *upper_bound);
-
-/** Allocates Const nodes of mode_Is for the upper bound of an array
-    dimension, i.e. [lower,upper[. */
-FIRM_API void set_array_upper_bound_int(ir_type *array, size_t dimension,
-                                        int upper_bound);
-
-/** Returns true if lower bound != Unknown. */
-FIRM_API int has_array_lower_bound(const ir_type *array, size_t dimension);
-/** Returns the lower bound of an array. */
-FIRM_API ir_node *get_array_lower_bound(const ir_type *array, size_t dimension);
+/** returns true if lower size != Unknown */
+FIRM_API int has_array_size(const ir_type *array);
+/** Returns the size (number of elements) of an array. */
+FIRM_API ir_node *get_array_size(const ir_type *array);
 /** Works only if bound is Const node with tarval that can be converted to long. */
-FIRM_API long get_array_lower_bound_int(const ir_type *array, size_t dimension);
-/** returns true if lower bound != Unknown */
-FIRM_API int has_array_upper_bound(const ir_type *array, size_t dimension);
-/** Returns the upper bound of an array. */
-FIRM_API ir_node *get_array_upper_bound(const ir_type *array, size_t dimension);
-/** Works only if bound is Const node with tarval that can be converted to long. */
-FIRM_API long get_array_upper_bound_int(const ir_type *array, size_t dimension);
-
-/** Sets an array dimension to a specific order. */
-FIRM_API void set_array_order(ir_type *array, size_t dimension, size_t order);
-
-/** Returns the order of an array dimension. */
-FIRM_API size_t get_array_order(const ir_type *array, size_t dimension);
-
-/** Find the array dimension that is placed at order order. */
-FIRM_API size_t find_array_dimension(const ir_type *array, size_t order);
+FIRM_API unsigned get_array_size_int(const ir_type *array);
 
 /** Sets the array element type. */
 FIRM_API void set_array_element_type(ir_type *array, ir_type *tp);

@@ -396,8 +396,8 @@ static ir_entity *new_array_entity(ident *name, int size)
 	uint_type = new_type_primitive(mode_Iu);
 	set_type_alignment_bytes(uint_type, get_type_size_bytes(uint_type));
 
-	array_type = new_type_array(1, uint_type);
-	set_array_bounds_int(array_type, 0, 0, size);
+	array_type = new_type_array(uint_type);
+	set_array_size_int(array_type, size);
 	set_type_size_bytes(array_type, size * get_mode_size_bytes(mode_Iu));
 	set_type_alignment_bytes(array_type, get_mode_size_bytes(mode_Iu));
 	set_type_state(array_type, layout_fixed);
@@ -418,14 +418,14 @@ static ir_entity *new_static_string_entity(ident *name, const char *string)
 	ir_entity *result;
 
 	ir_type *char_type   = new_type_primitive(mode_Bs);
-	ir_type *string_type = new_type_array(1, char_type);
+	ir_type *string_type = new_type_array(char_type);
 
 	ir_initializer_t *contents;
 
 	size_t i, length = strlen(string)+1;
 
 	/* Create the type for a fixed-length string */
-	set_array_bounds_int(string_type, 0, 0, length);
+	set_array_size_int(string_type, length);
 	set_type_size_bytes(string_type, length);
 	set_type_alignment_bytes(string_type, 1);
 	set_type_state(string_type, layout_fixed);

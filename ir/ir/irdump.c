@@ -1622,17 +1622,9 @@ static void dump_type_info(ir_type *const tp, ir_entity *const ent, void *const 
 		case tpo_array:
 			print_type_type_edge(F, tp, get_array_element_type(tp), ARR_ELT_TYPE_EDGE_ATTR);
 			print_type_ent_edge(F, tp, get_array_element_entity(tp), ARR_ENT_EDGE_ATTR);
-			for (i = get_array_n_dimensions(tp); i > 0;) {
-				ir_node *upper, *lower;
-
-				 --i;
-				upper = get_array_upper_bound(tp, i);
-				lower = get_array_lower_bound(tp, i);
-				print_node_type_edge(F, upper, tp, "label: \"upper %zu\"", get_array_order(tp, i));
-				print_node_type_edge(F, lower, tp, "label: \"lower %zu\"", get_array_order(tp, i));
-				dump_const_expression(F, upper);
-				dump_const_expression(F, lower);
-			}
+			ir_node *size = get_array_size(tp);
+			print_node_type_edge(F, size, tp, "label: \"size\"");
+			dump_const_expression(F, size);
 			break;
 		case tpo_pointer:
 			print_type_type_edge(F, tp, get_pointer_points_to_type(tp), PTR_PTS_TO_EDGE_ATTR);

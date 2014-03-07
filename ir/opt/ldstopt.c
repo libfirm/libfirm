@@ -241,30 +241,22 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 
 			if (is_Array_type(tp)) {
 				/* check bounds */
-				for (int i = 0, n = get_Sel_n_indexs(ptr); i < n; ++i) {
-					ir_node   *index = get_Sel_index(ptr, i);
-					ir_tarval *tv    = computed_value(index);
+				ir_node   *index = get_Sel_index(ptr, 0);
+				ir_tarval *tv    = computed_value(index);
 
-					/* check if the index is constant */
-					if (!tarval_is_constant(tv))
-						return NULL;
+				/* check if the index is constant */
+				if (!tarval_is_constant(tv))
+					return NULL;
 
-					ir_node   *lower  = get_array_lower_bound(tp, i);
-					ir_tarval *tlower = computed_value(lower);
-					ir_node   *upper  = get_array_upper_bound(tp, i);
-					ir_tarval *tupper = computed_value(upper);
+				ir_node   *size  = get_array_size(tp);
+				ir_tarval *tsize = computed_value(size);
 
-					if (!tarval_is_constant(tlower)
-					    || !tarval_is_constant(tupper))
-						return NULL;
+				if (!tarval_is_constant(tsize))
+					return NULL;
 
-					if (tarval_cmp(tv, tlower) == ir_relation_less)
-						return NULL;
-					if (tarval_cmp(tupper, tv) == ir_relation_less)
-						return NULL;
-
-					/* ok, bounds check finished */
-				}
+				if (tarval_cmp(tv, tsize) != ir_relation_less)
+					return NULL;
+				/* ok, bounds check finished */
 			}
 
 			if (get_entity_linkage(ent) & IR_LINKAGE_CONSTANT)

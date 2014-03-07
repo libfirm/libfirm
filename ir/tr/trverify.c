@@ -60,20 +60,6 @@ static bool check_compound_type(const ir_type *tp)
 	return fine;
 }
 
-static bool check_array_type(const ir_type *tp)
-{
-	bool   fine  = true;
-	size_t n_dim = get_array_n_dimensions(tp);
-
-	for (size_t i = 0; i < n_dim; ++i) {
-		if (!has_array_lower_bound(tp, i) && !has_array_upper_bound(tp, i)) {
-			report_error("missing array bound in %+F in dimension %zu", tp, i);
-			fine = false;
-		}
-	}
-	return fine;
-}
-
 static bool check_type_mode(const ir_type *tp)
 {
 	bool fine = true;
@@ -100,9 +86,9 @@ int check_type(const ir_type *tp)
 	case tpo_union:
 	case tpo_struct:
 	case tpo_class:     return check_compound_type(tp);
-	case tpo_array:     return check_array_type(tp);
 	case tpo_primitive: return check_primitive_type(tp);
 	case tpo_pointer:   return check_pointer_type(tp);
+	case tpo_array:
 	case tpo_method:
 	case tpo_uninitialized:
 	case tpo_unknown:
