@@ -1,12 +1,13 @@
 {{warning}}
-#ifndef FIRM_GEN_NODES_H
-#define FIRM_GEN_NODES_H
+#ifndef FIRM_{{spec.name|upper}}_NODES_H
+#define FIRM_{{spec.name|upper}}_NODES_H
 
-{% if spec.external -%}
+{% if spec.external %}
 {% set FIRM_API="" %}
-{%- else -%}
-{%- set FIRM_API="FIRM_API "-%}
-{%- endif -%}
+#include <libfirm/firm_types.h>
+{% else %}
+{% set FIRM_API="FIRM_API "-%}
+{% endif %}
 
 /** The opcodes of the libFirm predefined operations.
  * @ingroup ir_op
