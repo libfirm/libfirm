@@ -181,7 +181,7 @@ ident *(get_type_tpop_nameid)(const ir_type *tp)
 
 const char* get_type_tpop_name(const ir_type *tp)
 {
-	assert(tp && tp->kind == k_type);
+	assert(is_type(tp));
 	return get_id_str(tp->type_op->name);
 }
 
@@ -207,7 +207,7 @@ void set_type_mode(ir_type *tp, ir_mode *mode)
 
 long get_type_nr(const ir_type *tp)
 {
-	assert(tp);
+	assert(is_type(tp));
 #ifdef DEBUG_libfirm
 	return tp->nr;
 #else
@@ -271,7 +271,7 @@ unsigned get_type_alignment_bytes(ir_type *tp)
 
 void set_type_alignment_bytes(ir_type *tp, unsigned align)
 {
-	assert(tp->kind == k_type);
+	assert(is_type(tp));
 	/* Methods don't have an alignment. */
 	if (tp->type_op != type_method) {
 		tp->align = align;
@@ -296,7 +296,7 @@ ir_type_state (get_type_state)(const ir_type *tp)
 
 void set_type_state(ir_type *tp, ir_type_state state)
 {
-	assert(tp && tp->kind == k_type);
+	assert(is_type(tp));
 
 	if (tp->type_op == type_pointer || tp->type_op == type_primitive
 	    || tp->type_op == type_method)
@@ -750,7 +750,7 @@ ir_type *clone_type_method(ir_type *tp)
 
 void free_method_attrs(ir_type *method)
 {
-	assert(method->type_op == type_method);
+	assert(is_Method_type(method));
 	free(method->attr.ma.params);
 	free(method->attr.ma.res_type);
 }
@@ -762,7 +762,7 @@ size_t (get_method_n_params)(const ir_type *method)
 
 ir_type *get_method_param_type(const ir_type *method, size_t pos)
 {
-	assert(method->type_op == type_method);
+	assert(is_Method_type(method));
 	assert(pos < get_method_n_params(method));
 	ir_type *res = method->attr.ma.params[pos];
 	return res;
@@ -770,7 +770,7 @@ ir_type *get_method_param_type(const ir_type *method, size_t pos)
 
 void set_method_param_type(ir_type *method, size_t pos, ir_type *tp)
 {
-	assert(method->type_op == type_method);
+	assert(is_Method_type(method));
 	assert(pos < get_method_n_params(method));
 	method->attr.ma.params[pos] = tp;
 }
@@ -782,7 +782,7 @@ size_t (get_method_n_ress)(const ir_type *method)
 
 ir_type *get_method_res_type(const ir_type *method, size_t pos)
 {
-	assert(method->type_op == type_method);
+	assert(is_Method_type(method));
 	assert(pos < get_method_n_ress(method));
 	ir_type *res = method->attr.ma.res_type[pos];
 	return res;
@@ -790,7 +790,7 @@ ir_type *get_method_res_type(const ir_type *method, size_t pos)
 
 void set_method_res_type(ir_type *method, size_t pos, ir_type *tp)
 {
-	assert(method->type_op == type_method);
+	assert(is_Method_type(method));
 	assert(pos < get_method_n_ress(method));
 	method->attr.ma.res_type[pos] = tp;
 }
@@ -809,13 +809,13 @@ const char *get_variadicity_name(ir_variadicity vari)
 
 ir_variadicity get_method_variadicity(const ir_type *method)
 {
-	assert(method->type_op == type_method);
+	assert(is_Method_type(method));
 	return method->attr.ma.variadicity;
 }
 
 void set_method_variadicity(ir_type *method, ir_variadicity vari)
 {
-	assert(method->type_op == type_method);
+	assert(is_Method_type(method));
 	method->attr.ma.variadicity = vari;
 }
 
@@ -965,15 +965,15 @@ ir_type *new_type_array(ir_type *element_type)
 
 void free_array_automatic_entities(ir_type *array)
 {
-	assert(array->type_op == type_array);
+	assert(is_Array_type(array));
 	free_entity(get_array_element_entity(array));
 }
 
 void set_array_size(ir_type *array, ir_node *size)
 {
-  assert(array->type_op == type_array);
-  assert(size != NULL);
-  array->attr.aa.size = size;
+	assert(is_Array_type(array));
+	assert(size != NULL);
+	array->attr.aa.size = size;
 }
 
 void set_array_size_int(ir_type *array, unsigned size)
@@ -984,39 +984,39 @@ void set_array_size_int(ir_type *array, unsigned size)
 
 int has_array_size(const ir_type *array)
 {
-	assert(array->type_op == type_array);
+	assert(is_Array_type(array));
 	return !is_Unknown(array->attr.aa.size);
 }
 
 ir_node *get_array_size(const ir_type *array)
 {
-	assert(array->type_op == type_array);
+	assert(is_Array_type(array));
 	return array->attr.aa.size;
 }
 
 unsigned get_array_size_int(const ir_type *array)
 {
-	assert(array->type_op == type_array);
+	assert(is_Array_type(array));
 	ir_node *node = array->attr.aa.size;
 	return get_tarval_long(get_Const_tarval(node));
 }
 
 void set_array_element_type(ir_type *array, ir_type *tp)
 {
-	assert(array->type_op == type_array);
+	assert(is_Array_type(array));
 	assert(!is_Method_type(tp));
 	array->attr.aa.element_type = tp;
 }
 
 ir_type *get_array_element_type(const ir_type *array)
 {
-	assert(array->type_op == type_array);
+	assert(is_Array_type(array));
 	return array->attr.aa.element_type;
 }
 
 void set_array_element_entity(ir_type *array, ir_entity *ent)
 {
-	assert(array->type_op == type_array);
+	assert(is_Array_type(array));
 	assert((get_entity_type(ent)->type_op != type_method));
 	array->attr.aa.element_ent = ent;
 	array->attr.aa.element_type = get_entity_type(ent);
@@ -1024,19 +1024,19 @@ void set_array_element_entity(ir_type *array, ir_entity *ent)
 
 ir_entity *get_array_element_entity(const ir_type *array)
 {
-	assert(array->type_op == type_array);
+	assert(is_Array_type(array));
 	return array->attr.aa.element_ent;
 }
 
 int is_array_variable_size(const ir_type *array)
 {
-	assert(array->type_op == type_array);
+	assert(is_Array_type(array));
 	return (array->flags & tf_variable_size) != 0;
 }
 
 void set_array_variable_size(ir_type *array, int flag)
 {
-	assert(array->type_op == type_array);
+	assert(is_Array_type(array));
 	array->flags = (array->flags & ~tf_variable_size)
 	               | (flag != 0 ? tf_variable_size : 0);
 }
@@ -1060,13 +1060,13 @@ ir_type *new_type_pointer(ir_type *points_to)
 
 void set_pointer_points_to_type(ir_type *pointer, ir_type *tp)
 {
-	assert(pointer->type_op == type_pointer);
+	assert(is_Pointer_type(pointer));
 	pointer->attr.pa.points_to = tp;
 }
 
 ir_type *get_pointer_points_to_type(const ir_type *pointer)
 {
-	assert(pointer->type_op == type_pointer);
+	assert(is_Pointer_type(pointer));
 	return pointer->attr.pa.points_to;
 }
 
@@ -1077,6 +1077,7 @@ int (is_Pointer_type)(const ir_type *pointer)
 
 void set_pointer_mode(ir_type *tp, ir_mode *mode)
 {
+	assert(is_Pointer_type(tp));
 	assert(mode_is_reference(mode));
 	tp->size = get_mode_size_bytes(mode);
 	tp->mode = mode;
@@ -1197,13 +1198,13 @@ void add_compound_member(ir_type *compound, ir_entity *entity)
 
 int is_code_type(const ir_type *tp)
 {
-	assert(tp->kind == k_type);
+	assert(is_type(tp));
 	return tp->type_op == tpop_code;
 }
 
 int is_unknown_type(const ir_type *tp)
 {
-	assert(tp->kind == k_type);
+	assert(is_type(tp));
 	return tp->type_op == tpop_unknown;
 }
 
