@@ -70,8 +70,7 @@ static void collect_data(ir_node *node, void *env)
 		break;
 	}
 	case iro_Block: {
-		int n_pred = get_Block_n_cfgpreds(node);
-		for (int i = 0; i < n_pred; ++i) {
+		for (int i = 0, n_pred = get_Block_n_cfgpreds(node); i < n_pred; ++i) {
 			if (get_Block_cfgpred(node, i) == data->proj_X) {
 				data->block   = node;
 				data->blk_idx = i;
@@ -88,16 +87,18 @@ static void collect_data(ir_node *node, void *env)
 typedef enum tail_rec_variants {
 	TR_DIRECT,  /**< direct return value, i.e. return func(). */
 	TR_ADD,     /**< additive return value, i.e. return x +/- func() */
-	TR_MUL,     /**< multiplicative return value, i.e. return x * func() or return -func() */
+	TR_MUL,     /**< multiplicative return value, i.e. return x * func()
+	                 or return -func() */
 	TR_BAD,     /**< any other transformation */
 	TR_UNKNOWN  /**< during construction */
 } tail_rec_variants;
 
 typedef struct tr_env {
-	int               n_tail_calls;  /**< number of tail calls found */
-	int               n_ress;        /**< number of return values */
-	tail_rec_variants *variants;     /**< return value variants */
-	ir_node           *rets;         /**< list of returns that can be transformed */
+	int               n_tail_calls; /**< number of tail calls found */
+	size_t             n_ress;       /**< number of return values */
+	tail_rec_variants *variants;    /**< return value variants */
+	ir_node           *rets;        /**< list of returns that can be
+	                                     transformed */
 } tr_env;
 
 
@@ -109,13 +110,7 @@ typedef struct tr_env {
  */
 static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 {
-	const ir_entity *ent       = get_irg_entity(irg);
-	const ir_type   *method_tp = get_entity_type(ent);
-
 	assert(env->n_tail_calls > 0);
-
-	/* we add new blocks and change the control flow */
-	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
 	/* we must build some new nodes WITHOUT CSE */
 	int rem = get_optimize();
@@ -131,8 +126,8 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 
 	/* check number of arguments */
 	const ir_node *end_block = get_irg_end_block(irg);
-	ir_node       *call      = (ir_node *)get_irn_link(end_block);
-	int            n_params  = get_Call_n_params(call);
+	ir_node       *calls     = (ir_node *)get_irn_link(end_block);
+	int            n_params  = get_Call_n_params(calls);
 
 	assert(data.proj_X && "Could not find initial exec from Start");
 	assert(data.block  && "Could not find first block");
@@ -147,13 +142,11 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 	in[i++] = data.proj_X;
 
 	/* turn Return's into Jmp's */
-	for (ir_node *n, *p = env->rets; p; p = n) {
+	for (ir_node *next, *p = env->rets; p; p = next) {
+		next = (ir_node*)get_irn_link(p);
+
 		ir_node *block = get_nodes_block(p);
-
-		n = (ir_node *)get_irn_link(p);
 		in[i++] = new_r_Jmp(block);
-
-		// exchange(p, new_r_Bad(irg));
 
 		/* we might generate an endless loop, so add
 		 * the block to the keep-alive list */
@@ -177,35 +170,38 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 	set_irg_initial_mem(irg, in[i]);
 	++i;
 
-	for (ir_node *calls = call; calls != NULL; calls = (ir_node *)get_irn_link(calls)) {
-		in[i++] = get_Call_mem(calls);
+	for (ir_node *call = calls; call != NULL;
+	     call = (ir_node*)get_irn_link(call)) {
+		in[i++] = get_Call_mem(call);
 	}
 	assert(i == env->n_tail_calls + 1);
 
 	phis[0] = new_r_Phi(block, env->n_tail_calls + 1, in, mode_M);
 
 	/* build the data Phi's */
+	const ir_entity *ent       = get_irg_entity(irg);
+	const ir_type   *method_tp = get_entity_type(ent);
 	if (n_params > 0) {
-		ir_node   *calls;
 		ir_node ***call_params = ALLOCAN(ir_node**, env->n_tail_calls);
 
 		/* collect all parameters */
 		int i = 0;
-		for (calls = call; calls != NULL; calls = (ir_node *)get_irn_link(calls)) {
-			call_params[i++] = get_Call_param_arr(calls);
+		for (ir_node *call = calls; call != NULL;
+		     call = (ir_node*)get_irn_link(call)) {
+			call_params[i++] = get_Call_param_arr(call);
 		}
 
 		/* build new Proj's and Phi's */
 		ir_node *args         = get_irg_args(irg);
 		int      n_tail_calls = env->n_tail_calls;
-		for (int i = 0; i < n_params; ++i) {
-			ir_mode *mode = get_type_mode(get_method_param_type(method_tp, i));
+		for (int p = 0; p < n_params; ++p) {
+			ir_mode *mode = get_type_mode(get_method_param_type(method_tp, p));
 
-			in[0] = new_r_Proj(args, mode, i);
+			in[0] = new_r_Proj(args, mode, p);
 			for (int j = 0; j < n_tail_calls; ++j)
-				in[j + 1] = call_params[j][i];
+				in[j + 1] = call_params[j][p];
 
-			phis[i + 1] = new_r_Phi(block, n_tail_calls + 1, in, mode);
+			phis[p + 1] = new_r_Phi(block, n_tail_calls + 1, in, mode);
 		}
 	}
 
@@ -214,24 +210,19 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 	 * now exchange all Projs into links to Phi
 	 */
 	exchange(data.proj_m, phis[0]);
-	for (ir_node *n, *p = data.proj_data; p; p = n) {
-		long proj = get_Proj_proj(p);
+	for (ir_node *next, *p = data.proj_data; p; p = next) {
+		next = (ir_node *)get_irn_link(p);
 
+		long proj = get_Proj_proj(p);
 		assert(0 <= proj && proj < n_params);
-		n = (ir_node *)get_irn_link(p);
 		exchange(p, phis[proj + 1]);
 	}
-
-	/* tail recursion was done, all info is invalid */
-	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
-	                   | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
-	set_irg_callee_info_state(irg, irg_callee_info_inconsistent);
 
 	set_optimize(rem);
 
 	/* check if we need new values */
-	int n_locs = 0;
-	for (int i = 0; i < env->n_ress; ++i) {
+	unsigned n_locs = 0;
+	for (size_t i = 0, n = env->n_ress; i < n; ++i) {
 		if (env->variants[i] != TR_DIRECT) {
 			++n_locs;
 			break;
@@ -248,7 +239,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 		set_r_cur_block(irg, start_block);
 
 		/* set the neutral elements for the iteration start */
-		for (int i = 0; i < env->n_ress; ++i) {
+		for (size_t i = 0; i < env->n_ress; ++i) {
 			ir_type *tp = get_method_res_type(method_tp, i);
 			ir_mode *mode = get_type_mode(tp);
 
@@ -262,21 +253,19 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 		mature_immBlock(start_block);
 
 		/* no: we can kill all returns */
-		for (ir_node *n, *p = env->rets; p; p = n) {
-			ir_node *block = get_nodes_block(p);
+		for (ir_node *next, *p = env->rets; p; p = next) {
+			next = (ir_node*)get_irn_link(p);
 
+			ir_node *block = get_nodes_block(p);
 			set_r_cur_block(irg, block);
-			n = (ir_node *)get_irn_link(p);
 
 			ir_node *const call = skip_Proj(get_Return_mem(p));
 			ir_node *const mem  = get_Call_mem(call);
 
-			/* create a new jump, free of CSE */
-			set_optimize(0);
+			/* create a new jump */
 			ir_node *jmp = new_r_Jmp(block);
-			set_optimize(rem);
 
-			for (int i = 0; i < env->n_ress; ++i) {
+			for (size_t i = 0; i < env->n_ress; ++i) {
 				ir_mode *mode = modes[i];
 				if (env->variants[i] != TR_DIRECT) {
 					in[i] = get_r_value(irg, i, mode);
@@ -295,7 +284,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 			};
 			turn_into_tuple(call, ARRAY_SIZE(in), in);
 
-			for (int i = 0; i < env->n_ress; ++i) {
+			for (size_t i = 0; i < env->n_ress; ++i) {
 				ir_node *res = get_Return_res(p, i);
 				if (env->variants[i] != TR_DIRECT) {
 					set_r_value(irg, i, res);
@@ -307,16 +296,16 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 
 		/* finally fix all other returns */
 		end_block = get_irg_end_block(irg);
-		for (int i = get_Block_n_cfgpreds(end_block) - 1; i >= 0; --i) {
+		for (int i = get_Block_n_cfgpreds(end_block); i-- > 0; ) {
 			ir_node *ret = get_Block_cfgpred(end_block, i);
 
 			/* search all Returns of a block */
-			if (! is_Return(ret))
+			if (!is_Return(ret))
 				continue;
 
 			ir_node *block = get_nodes_block(ret);
 			set_r_cur_block(irg, block);
-			for (int j = 0; j < env->n_ress; ++j) {
+			for (size_t j = 0; j < env->n_ress; ++j) {
 				ir_node *pred = get_Return_res(ret, j);
 
 				switch (env->variants[j]) {
@@ -347,11 +336,15 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 		ir_node *bad = new_r_Bad(irg, mode_X);
 
 		/* no: we can kill all returns */
-		for (ir_node *n, *p = env->rets; p; p = n) {
-			n = (ir_node *)get_irn_link(p);
+		for (ir_node *next, *p = env->rets; p; p = next) {
+			next = (ir_node*)get_irn_link(p);
 			exchange(p, bad);
 		}
 	}
+
+	/* tail recursion was done, all info is invalid */
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
+	set_irg_callee_info_state(irg, irg_callee_info_inconsistent);
 }
 
 /**
@@ -363,25 +356,25 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
  *
  * @return non-zero if it's ok to do tail recursion
  */
-static int check_lifetime_of_locals(ir_graph *irg)
+static bool check_lifetime_of_locals(ir_graph *irg)
 {
 	ir_type *frame_tp  = get_irg_frame_type(irg);
 	ir_node *irg_frame = get_irg_frame(irg);
 
-	for (unsigned i = get_irn_n_outs(irg_frame); i-- != 0;) {
+	for (unsigned i = get_irn_n_outs(irg_frame); i-- > 0;) {
 		ir_node *succ = get_irn_out(irg_frame, i);
 
 		if (is_Sel(succ)) {
 			/* Check if we have compound arguments.
 			   For now, we cannot handle them. */
 			if (get_entity_owner(get_Sel_entity(succ)) != frame_tp)
-				return 0;
+				return false;
 
 			if (is_address_taken(succ))
-				return 0;
+				return false;
 		}
 	}
-	return 1;
+	return true;
 }
 
 /**
@@ -515,20 +508,19 @@ void opt_tail_rec_irg(ir_graph *irg)
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.tailrec");
 
-	if (! check_lifetime_of_locals(irg)) {
+	if (!check_lifetime_of_locals(irg)) {
 		confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_ALL);
 		return;
 	}
 
 	ir_entity *ent      = get_irg_entity(irg);
 	ir_type   *mtd_type = get_entity_type(ent);
-	int        n_ress   = get_method_n_ress(mtd_type);
+	size_t     n_ress   = get_method_n_ress(mtd_type);
 	tr_env     env      = { .variants = NULL, .n_ress = n_ress };
 
 	if (n_ress > 0) {
 		env.variants = ALLOCAN(tail_rec_variants, n_ress);
-
-		for (int i = 0; i < n_ress; ++i)
+		for (size_t i = 0; i < n_ress; ++i)
 			env.variants[i] = TR_DIRECT;
 	}
 
@@ -539,16 +531,16 @@ void opt_tail_rec_irg(ir_graph *irg)
 	ir_node *rets         = NULL;
 	set_irn_link(end_block, NULL);
 
-	for (int i = get_Block_n_cfgpreds(end_block) - 1; i >= 0; --i) {
+	for (int i = get_Block_n_cfgpreds(end_block); i-- > 0; ) {
 		ir_node *ret = get_Block_cfgpred(end_block, i);
 
 		/* search all Returns of a block */
-		if (! is_Return(ret))
+		if (!is_Return(ret))
 			continue;
 
 		/* check, if it's a Return self() */
 		ir_node *call = skip_Proj(get_Return_mem(ret));
-		if (! is_Call(call))
+		if (!is_Call(call))
 			continue;
 
 		/* the call must be in the same block as the return */
@@ -579,7 +571,7 @@ void opt_tail_rec_irg(ir_graph *irg)
 		/* ok, mem is routed to a recursive call, check return args */
 		ir_node **ress = get_Return_res_arr(ret);
 		int       j;
-		for (j = get_Return_n_ress(ret) - 1; j >= 0; --j) {
+		for (j = get_Return_n_ress(ret); j-- > 0; ) {
 			tail_rec_variants var = find_variant(ress[j], call);
 
 			if (var >= TR_BAD) {
@@ -612,7 +604,8 @@ void opt_tail_rec_irg(ir_graph *irg)
 
 	/* now, end_block->link contains the list of all tail calls */
 	if (n_tail_calls > 0) {
-		DB((dbg, LEVEL_2, "  Performing tail recursion for graph %s and %d Calls\n",
+		DB((dbg, LEVEL_2,
+		    "  Performing tail recursion for graph %s and %d Calls\n",
 		    get_entity_ld_name(get_irg_entity(irg)), n_tail_calls));
 
 		hook_tail_rec(irg, n_tail_calls);
