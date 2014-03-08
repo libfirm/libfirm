@@ -41,44 +41,45 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 #define MAX_PROJ MAX(MAX((long)pn_Load_max, (long)pn_Store_max), (long)pn_Call_max)
 
-enum changes_t {
+typedef enum changes_t {
+	NO_CHANGES = 0,
 	DF_CHANGED = 1,       /**< data flow changed */
 	CF_CHANGED = 2,       /**< control flow changed */
-};
+} changes_t;
 
 /**
  * walker environment
  */
 typedef struct walk_env_t {
-	struct obstack obst;          /**< list of all stores */
-	unsigned changes;             /**< a bitmask of graph changes */
+	struct obstack obst;    /**< list of all stores */
+	changes_t      changes; /**< a bitmask of graph changes */
 } walk_env_t;
 
 /** A Load/Store info. */
 typedef struct ldst_info_t {
-	ir_node  *projs[MAX_PROJ+1];  /**< list of Proj's of this node */
-	ir_node  *exc_block;          /**< the exception block if available */
-	int      exc_idx;             /**< predecessor index in the exception block */
-	unsigned visited;             /**< visited counter for breaking loops */
+	ir_node  *projs[MAX_PROJ+1]; /**< list of Proj's of this node */
+	ir_node  *exc_block;         /**< the exception block if available */
+	int      exc_idx;            /**< predecessor index in exception block */
+	unsigned visited;            /**< visited counter for breaking loops */
 } ldst_info_t;
 
 /**
  * flags for control flow.
  */
 enum block_flags_t {
-	BLOCK_HAS_COND = 1,      /**< Block has conditional control flow */
-	BLOCK_HAS_EXC  = 2       /**< Block has exceptional control flow */
+	BLOCK_HAS_COND = 1, /**< Block has conditional control flow */
+	BLOCK_HAS_EXC  = 2  /**< Block has exceptional control flow */
 };
 
 /**
  * a Block info.
  */
 typedef struct block_info_t {
-	unsigned flags;               /**< flags for the block */
+	unsigned flags;  /**< flags for the block */
 } block_info_t;
 
 /** the master visited flag for loop detection. */
-static unsigned master_visited = 0;
+static unsigned master_visited;
 
 #define INC_MASTER()       ++master_visited
 #define MARK_NODE(info)    (info)->visited = master_visited
@@ -90,8 +91,7 @@ static unsigned master_visited = 0;
 static ldst_info_t *get_ldst_info(ir_node *node, struct obstack *obst)
 {
 	ldst_info_t *info = (ldst_info_t*)get_irn_link(node);
-
-	if (! info) {
+	if (info == NULL) {
 		info = OALLOCZ(obst, ldst_info_t);
 		set_irn_link(node, info);
 	}
@@ -104,8 +104,7 @@ static ldst_info_t *get_ldst_info(ir_node *node, struct obstack *obst)
 static block_info_t *get_block_info(ir_node *node, struct obstack *obst)
 {
 	block_info_t *info = (block_info_t*)get_irn_link(node);
-
-	if (! info) {
+	if (info == NULL) {
 		info = OALLOCZ(obst, block_info_t);
 		set_irn_link(node, info);
 	}
@@ -115,7 +114,7 @@ static block_info_t *get_block_info(ir_node *node, struct obstack *obst)
 /**
  * update the projection info for a Load/Store
  */
-static unsigned update_projs(ldst_info_t *info, ir_node *proj)
+static changes_t update_projs(ldst_info_t *info, ir_node *proj)
 {
 	long nr = get_Proj_proj(proj);
 
@@ -125,10 +124,9 @@ static unsigned update_projs(ldst_info_t *info, ir_node *proj)
 		/* there is already one, do CSE */
 		exchange(proj, info->projs[nr]);
 		return DF_CHANGED;
-	}
-	else {
+	} else {
 		info->projs[nr] = proj;
-		return 0;
+		return NO_CHANGES;
 	}
 }
 
@@ -139,13 +137,11 @@ static unsigned update_projs(ldst_info_t *info, ir_node *proj)
  * @param block  the exception handler block for this load/store
  * @param pos    the control flow input of the block
  */
-static unsigned update_exc(ldst_info_t *info, ir_node *block, int pos)
+static void update_exc(ldst_info_t *info, ir_node *block, int pos)
 {
 	assert(info->exc_block == NULL && "more than one exception block found");
-
 	info->exc_block = block;
 	info->exc_idx   = pos;
-	return 0;
 }
 
 /**
@@ -155,11 +151,11 @@ static unsigned update_exc(ldst_info_t *info, ir_node *block, int pos)
  */
 static void collect_nodes(ir_node *node, void *env)
 {
-	walk_env_t  *wenv   = (walk_env_t *)env;
-	unsigned     opcode = get_irn_opcode(node);
+	walk_env_t *wenv   = (walk_env_t *)env;
+	unsigned    opcode = get_irn_opcode(node);
 
 	if (opcode == iro_Proj) {
-		ir_node *pred   = get_Proj_pred(node);
+		ir_node *pred = get_Proj_pred(node);
 		opcode = get_irn_opcode(pred);
 
 		if (opcode == iro_Load || opcode == iro_Store || opcode == iro_Call) {
@@ -181,22 +177,19 @@ static void collect_nodes(ir_node *node, void *env)
 			}
 		}
 	} else if (opcode == iro_Block) {
-		int i;
-
-		for (i = get_Block_n_cfgpreds(node) - 1; i >= 0; --i) {
-			int      is_exc = 0;
+		for (int i = get_Block_n_cfgpreds(node); i-- > 0; ) {
+			bool     is_exc = false;
 			ir_node *proj   = get_Block_cfgpred(node, i);
 			ir_node *pred   = proj;
-
-			if (is_Proj(proj)) {
-				pred   = get_Proj_pred(proj);
-				is_exc = is_x_except_Proj(proj);
-			}
 
 			/* ignore Bad predecessors, they will be removed later */
 			if (is_Bad(pred))
 				continue;
 
+			if (is_Proj(proj)) {
+				pred   = get_Proj_pred(proj);
+				is_exc = is_x_except_Proj(proj);
+			}
 			ir_node      *pred_block = get_nodes_block(pred);
 			block_info_t *bl_info    = get_block_info(pred_block, &wenv->obst);
 
@@ -206,10 +199,11 @@ static void collect_nodes(ir_node *node, void *env)
 				bl_info->flags |= BLOCK_HAS_COND;
 
 			opcode = get_irn_opcode(pred);
-			if (is_exc && (opcode == iro_Load || opcode == iro_Store || opcode == iro_Call)) {
+			if (is_exc && (opcode == iro_Load || opcode == iro_Store
+			               || opcode == iro_Call)) {
 				ldst_info_t *ldst_info = get_ldst_info(pred, &wenv->obst);
 
-				wenv->changes |= update_exc(ldst_info, node, i);
+				update_exc(ldst_info, node, i);
 			}
 		}
 	} else if (opcode == iro_CopyB) {
@@ -236,7 +230,8 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 
 			/* Do not fiddle with polymorphism. */
 			if (is_Class_type(tp) &&
-				(get_entity_n_overwrites(ent) != 0 || get_entity_n_overwrittenby(ent) != 0))
+				(get_entity_n_overwrites(ent) > 0
+			     || get_entity_n_overwrittenby(ent) > 0))
 				return NULL;
 
 			if (is_Array_type(tp)) {
@@ -275,8 +270,9 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 			else
 				return NULL;
 
-			/* for now, we support only one addition, reassoc should fold all others */
-			if (!is_Address(ptr) && !is_Align(ptr) && !is_Offset(ptr) && !is_Sel(ptr) && !is_Size(ptr))
+			/* we support only one addition, reassoc should fold all others */
+			if (!is_Address(ptr) && !is_Align(ptr) && !is_Offset(ptr)
+			    && !is_Sel(ptr) && !is_Size(ptr))
 				return NULL;
 		} else if (is_Sub(ptr)) {
 			ir_node *l = get_Sub_left(ptr);
@@ -286,11 +282,13 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 				ptr = l;
 			else
 				return NULL;
-			/* for now, we support only one substraction, reassoc should fold all others */
-			if (!is_Address(ptr) && !is_Align(ptr) && !is_Offset(ptr) && !is_Sel(ptr) && !is_Size(ptr))
+			/* we support only one subtraction, reassoc should fold all others */
+			if (!is_Address(ptr) && !is_Align(ptr) && !is_Offset(ptr)
+			    && !is_Sel(ptr) && !is_Size(ptr))
 				return NULL;
-		} else
+		} else {
 			return NULL;
+		}
 	}
 }
 
@@ -302,20 +300,21 @@ static void reduce_node_usage(ir_node *ptr);
  */
 static void handle_load_update(ir_node *load)
 {
-	ldst_info_t *info = (ldst_info_t*)get_irn_link(load);
-
 	/* do NOT touch volatile loads for now */
 	if (get_Load_volatility(load) == volatility_is_volatile)
 		return;
 
-	if (! info->projs[pn_Load_res] && ! info->projs[pn_Load_X_except]) {
+	ldst_info_t *info = (ldst_info_t*)get_irn_link(load);
+	if (!info->projs[pn_Load_res] && !info->projs[pn_Load_X_except]) {
 		ir_node *ptr = get_Load_ptr(load);
 		ir_node *mem = get_Load_mem(load);
 
 		/* a Load whose value is neither used nor exception checked, remove it */
 		exchange(info->projs[pn_Load_M], mem);
-		if (info->projs[pn_Load_X_regular])
-			exchange(info->projs[pn_Load_X_regular], new_r_Jmp(get_nodes_block(load)));
+		if (info->projs[pn_Load_X_regular]) {
+			ir_node *jmp = new_r_Jmp(get_nodes_block(load));
+			exchange(info->projs[pn_Load_X_regular], jmp);
+		}
 		kill_node(load);
 		reduce_node_usage(ptr);
 	}
@@ -327,14 +326,13 @@ static void handle_load_update(ir_node *load)
  */
 static void reduce_node_usage(ir_node *ptr)
 {
-	ir_node *pred;
 	if (!is_Proj(ptr))
 		return;
 	if (get_irn_n_edges(ptr) > 0)
 		return;
 
 	/* this Proj is dead now */
-	pred = get_Proj_pred(ptr);
+	ir_node *pred = get_Proj_pred(ptr);
 	if (is_Load(pred)) {
 		ldst_info_t *info = (ldst_info_t*)get_irn_link(pred);
 		info->projs[get_Proj_proj(ptr)] = NULL;
@@ -348,13 +346,14 @@ static void reduce_node_usage(ir_node *ptr)
  * Kill a Load or Store and all other nodes which are not needed after
  * it has been killed.
  */
-static void kill_and_reduce_usage(ir_node *node) {
+static void kill_and_reduce_usage(ir_node *node)
+{
 	ir_node *ptr;
-	ir_node *value = NULL;
-
+	ir_node *value;
 	switch(get_irn_opcode(node)) {
 	case iro_Load:
-		ptr = get_Load_ptr(node);
+		ptr   = get_Load_ptr(node);
+		value = NULL;
 		break;
 	case iro_Store:
 		ptr   = get_Store_ptr(node);
@@ -375,7 +374,7 @@ static void kill_and_reduce_usage(ir_node *node) {
  * Check, if an already existing value of mode old_mode can be converted
  * into the needed one new_mode without loss.
  */
-static int can_use_stored_value(ir_mode *old_mode, ir_mode *new_mode)
+static bool can_use_stored_value(ir_mode *old_mode, ir_mode *new_mode)
 {
 	if (old_mode == new_mode)
 		return true;
@@ -399,10 +398,10 @@ static int can_use_stored_value(ir_mode *old_mode, ir_mode *new_mode)
 /**
  * Check whether a Call is at least pure, i.e. does only read memory.
  */
-static unsigned is_Call_pure(ir_node *call)
+static bool is_Call_pure(ir_node *call)
 {
 	ir_type *call_tp = get_Call_type(call);
-	unsigned prop = get_method_additional_properties(call_tp);
+	unsigned prop    = get_method_additional_properties(call_tp);
 
 	/* check first the call type */
 	if ((prop & (mtp_property_const|mtp_property_pure)) == 0) {
@@ -412,7 +411,7 @@ static unsigned is_Call_pure(ir_node *call)
 			prop = get_entity_additional_properties(callee);
 		}
 	}
-	return (prop & (mtp_property_const|mtp_property_pure)) != 0;
+	return prop & (mtp_property_const|mtp_property_pure);
 }
 
 static ir_node *get_base_and_offset(ir_node *ptr, long *pOffset)
@@ -445,18 +444,16 @@ static ir_node *get_base_and_offset(ir_node *ptr, long *pOffset)
 			ir_type   *tp  = get_entity_owner(ent);
 
 			if (is_Array_type(tp)) {
-				/* only one dimensional arrays yet */
-				if (get_Sel_n_indexs(ptr) != 1)
-					break;
+				assert(get_Sel_n_indexs(ptr) == 1);
 				ir_node *index = get_Sel_index(ptr, 0);
-				if (! is_Const(index))
+				if (!is_Const(index))
 					break;
 
-				tp = get_entity_type(ent);
-				if (get_type_state(tp) != layout_fixed)
+				ir_type *element_type = get_entity_type(ent);
+				if (get_type_state(element_type) != layout_fixed)
 					break;
 
-				int size = get_type_size_bytes(tp);
+				int size = get_type_size_bytes(element_type);
 				offset += size * get_tarval_long(get_Const_tarval(index));
 			} else {
 				if (get_type_state(tp) != layout_fixed)
@@ -472,15 +469,15 @@ static ir_node *get_base_and_offset(ir_node *ptr, long *pOffset)
 	return ptr;
 }
 
-static int try_load_after_store(ir_node *load,
-		ir_node *load_base_ptr, long load_offset, ir_node *store)
+static changes_t try_load_after_store(ir_node *load, ir_node *load_base_ptr,
+                                      long load_offset, ir_node *store)
 {
 	ir_node *store_ptr      = get_Store_ptr(store);
 	long     store_offset;
 	ir_node *store_base_ptr = get_base_and_offset(store_ptr, &store_offset);
 
 	if (load_base_ptr != store_base_ptr)
-		return 0;
+		return NO_CHANGES;
 
 	ir_mode *load_mode      = get_Load_mode(load);
 	long     load_mode_len  = get_mode_size_bytes(load_mode);
@@ -491,7 +488,7 @@ static int try_load_after_store(ir_node *load,
 
 	/* Ensure that Load is completely contained in Store. */
 	if (delta < 0 || delta+load_mode_len > store_mode_len)
-		return 0;
+		return NO_CHANGES;
 
 	if (store_mode != load_mode) {
 		if (get_mode_arithmetic(store_mode) == irma_twos_complement &&
@@ -511,7 +508,7 @@ static int try_load_after_store(ir_node *load,
 			store_value = new_r_Conv(get_nodes_block(load), store_value, load_mode);
 		} else {
 			/* we would need some kind of bitcast node here */
-			return 0;
+			return NO_CHANGES;
 		}
 	}
 
@@ -521,15 +518,17 @@ static int try_load_after_store(ir_node *load,
 	if (info->projs[pn_Load_M])
 		exchange(info->projs[pn_Load_M], get_Load_mem(load));
 
-	int res = 0;
+	changes_t res = NO_CHANGES;
 	/* no exception */
 	if (info->projs[pn_Load_X_except]) {
 		ir_graph *irg = get_irn_irg(load);
-		exchange( info->projs[pn_Load_X_except], new_r_Bad(irg, mode_X));
+		ir_node  *bad = new_r_Bad(irg, mode_X);
+		exchange(info->projs[pn_Load_X_except], bad);
 		res |= CF_CHANGED;
 	}
 	if (info->projs[pn_Load_X_regular]) {
-		exchange( info->projs[pn_Load_X_regular], new_r_Jmp(get_nodes_block(load)));
+		ir_node *jmp = new_r_Jmp(get_nodes_block(load));
+		exchange(info->projs[pn_Load_X_regular], jmp);
 		res |= CF_CHANGED;
 	}
 
@@ -572,8 +571,7 @@ static ir_node *try_update_ptr_CopyB(ir_node *load, ir_node *load_base_ptr,
 	ir_mode *load_mode       = get_Load_mode(load);
 	long     load_size       = get_mode_size_bytes(load_mode);
 
-	if (load_src_offset + load_size > n_copy
-		|| load_src_offset < src_offset) {
+	if (load_src_offset + load_size > n_copy || load_src_offset < src_offset) {
 		return NULL;
 	}
 
@@ -585,11 +583,8 @@ static ir_node *try_update_ptr_CopyB(ir_node *load, ir_node *load_base_ptr,
 	 */
 	ir_graph *irg          = get_irn_irg(load);
 	ir_node  *block        = get_nodes_block(load);
-	ir_node  *new_load_ptr = new_r_Add(block,
-	                                   src_base_ptr,
-	                                   new_r_Const_long(irg, mode_Is, load_src_offset),
-	                                   mode_P);
-
+	ir_node  *cnst         = new_r_Const_long(irg, mode_Is, load_src_offset);
+	ir_node  *new_load_ptr = new_r_Add(block, src_base_ptr, cnst, mode_P);
 	return new_load_ptr;
 }
 
@@ -603,16 +598,16 @@ static ir_node *try_update_ptr_CopyB(ir_node *load, ir_node *load_base_ptr,
  *
  * INC_MASTER() must be called before dive into
  */
-static unsigned follow_Mem_chain(ir_node *load, ir_node *curr)
+static changes_t follow_Mem_chain(ir_node *load, ir_node *curr)
 {
-	unsigned    res = 0;
+	changes_t    res  = NO_CHANGES;
 	ldst_info_t *info = (ldst_info_t*)get_irn_link(load);
-	ir_node     *pred;
 	ir_node     *ptr       = get_Load_ptr(load);
 	ir_node     *mem       = get_Load_mem(load);
 	ir_mode     *load_mode = get_Load_mode(load);
 
-	for (pred = curr; load != pred; ) {
+	ir_node *pred = curr;
+	while (load != pred) {
 		ldst_info_t *pred_info = (ldst_info_t*)get_irn_link(pred);
 
 		/*
@@ -632,13 +627,12 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr)
 				&& info->projs[pn_Load_X_except] == NULL)
 				|| get_nodes_block(load) == get_nodes_block(pred)))
 		{
-			long    load_offset;
-			ir_node *base_ptr = get_base_and_offset(ptr, &load_offset);
-			int     changes   = try_load_after_store(load, base_ptr, load_offset, pred);
+			long      load_offset;
+			ir_node  *base_ptr = get_base_and_offset(ptr, &load_offset);
+			changes_t changes  = try_load_after_store(load, base_ptr, load_offset, pred);
 
-			if (changes != 0)
+			if (changes != NO_CHANGES)
 				return res | changes;
-
 		} else if (is_Load(pred) && get_Load_ptr(pred) == ptr &&
 		           can_use_stored_value(get_Load_mode(pred), load_mode)) {
 			/*
@@ -751,7 +745,6 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr)
 			}
 
 			pred = skip_Proj(get_CopyB_mem(pred));
-
 		} else {
 			/* follow only Load chains */
 			break;
@@ -764,10 +757,8 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr)
 	}
 
 	if (is_Sync(pred)) {
-		int i;
-
 		/* handle all Sync predecessors */
-		for (i = get_Sync_n_preds(pred) - 1; i >= 0; --i) {
+		for (int i = get_Sync_n_preds(pred); i-- > 0; ) {
 			res |= follow_Mem_chain(load, skip_Proj(get_Sync_pred(pred, i)));
 			if (res)
 				return res;
@@ -802,14 +793,14 @@ ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c)
  *
  * @param load  the Load node
  */
-static unsigned optimize_load(ir_node *load)
+static changes_t optimize_load(ir_node *load)
 {
 	ldst_info_t *info = (ldst_info_t*)get_irn_link(load);
-	unsigned    res = 0;
+	changes_t    res  = NO_CHANGES;
 
 	/* do NOT touch volatile loads for now */
 	if (get_Load_volatility(load) == volatility_is_volatile)
-		return 0;
+		return NO_CHANGES;
 
 	/* the address of the load to be optimized */
 	ir_node *ptr = get_Load_ptr(load);
@@ -896,22 +887,23 @@ static int is_partially_same(ir_node *small, ir_node *large)
 }
 
 /**
- * follow the memory chain as long as there are only Loads and alias free Stores.
- *
+ * follow the memory chain as long as there are only Loads and alias free
+ * Stores.
  * INC_MASTER() must be called before dive into
  */
-static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr, bool had_split)
+static changes_t follow_Mem_chain_for_Store(ir_node *store, ir_node *curr,
+                                            bool had_split)
 {
-	unsigned res = 0;
-	ldst_info_t *info = (ldst_info_t*)get_irn_link(store);
-	ir_node *pred;
-	ir_node *ptr = get_Store_ptr(store);
-	ir_node *mem = get_Store_mem(store);
-	ir_node *value = get_Store_value(store);
-	ir_mode *mode  = get_irn_mode(value);
-	ir_node *block = get_nodes_block(store);
+	changes_t    res   = NO_CHANGES;
+	ldst_info_t *info  = (ldst_info_t*)get_irn_link(store);
+	ir_node     *ptr   = get_Store_ptr(store);
+	ir_node     *mem   = get_Store_mem(store);
+	ir_node     *value = get_Store_value(store);
+	ir_mode     *mode  = get_irn_mode(value);
+	ir_node     *block = get_nodes_block(store);
 
-	for (pred = curr; pred != store;) {
+	ir_node *pred = curr;
+	while (pred != store) {
 		ldst_info_t *pred_info = (ldst_info_t*)get_irn_link(pred);
 
 		/*
@@ -977,7 +969,7 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr, bool h
 			 * We may remove the Store, if it does not have an exception
 			 * handler.
 			 */
-			if (! info->projs[pn_Store_X_except]) {
+			if (!info->projs[pn_Store_X_except]) {
 				DBG_OPT_WAR(store, pred);
 				DB((dbg, LEVEL_1, "  killing store %+F (read %+F from same address)\n", store, pred));
 				exchange(info->projs[pn_Store_M], mem);
@@ -1034,10 +1026,8 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr, bool h
 	}
 
 	if (is_Sync(pred)) {
-		int i;
-
 		/* handle all Sync predecessors */
-		for (i = get_Sync_n_preds(pred) - 1; i >= 0; --i) {
+		for (int i = get_Sync_n_preds(pred); i-- > 0; ) {
 			res |= follow_Mem_chain_for_Store(store, skip_Proj(get_Sync_pred(pred, i)), true);
 			if (res)
 				break;
@@ -1065,10 +1055,9 @@ static ir_entity *find_entity(ir_node *ptr)
 	case iro_Sub:
 	case iro_Add: {
 		ir_node *left = get_binop_left(ptr);
-		ir_node *right;
 		if (mode_is_reference(get_irn_mode(left)))
 			return find_entity(left);
-		right = get_binop_right(ptr);
+		ir_node *right = get_binop_right(ptr);
 		if (mode_is_reference(get_irn_mode(right)))
 			return find_entity(right);
 		return NULL;
@@ -1083,17 +1072,16 @@ static ir_entity *find_entity(ir_node *ptr)
  *
  * @param store  the Store node
  */
-static unsigned optimize_store(ir_node *store)
+static changes_t optimize_store(ir_node *store)
 {
 	if (get_Store_volatility(store) == volatility_is_volatile)
-		return 0;
-
-	ir_node *ptr = get_Store_ptr(store);
+		return NO_CHANGES;
 
 	/* Check, if the address of this Store is used more than once.
 	 * If not, this Store cannot be removed in any case. */
+	ir_node *ptr = get_Store_ptr(store);
 	if (get_irn_n_edges(ptr) <= 1)
-		return 0;
+		return NO_CHANGES;
 
 	ir_node *mem = get_Store_mem(store);
 
@@ -1107,7 +1095,8 @@ static unsigned optimize_store(ir_node *store)
  * Checks whether @c ptr of type @c ptr_type lies completely within an
  * object of type @c struct_type starting at @c struct_ptr;
  */
-static bool ptr_is_in_struct(ir_node *ptr, ir_type *ptr_type, ir_node *struct_ptr, ir_type *struct_type)
+static bool ptr_is_in_struct(ir_node *ptr, ir_type *ptr_type,
+                             ir_node *struct_ptr, ir_type *struct_type)
 {
 	long      ptr_offset;
 	ir_node  *ptr_base      = get_base_and_offset(ptr, &ptr_offset);
@@ -1130,17 +1119,18 @@ static bool ptr_is_in_struct(ir_node *ptr, ir_type *ptr_type, ir_node *struct_pt
  *   read from the previous CopyB's source if possible. Cases where
  *   the CopyB nodes are offset against each other are not handled.
  */
-static unsigned follow_Mem_chain_for_CopyB(ir_node *copyB, ir_node *curr, bool had_split)
+static changes_t follow_Mem_chain_for_CopyB(ir_node *copyB, ir_node *curr,
+                                            bool had_split)
 {
-	unsigned  res       = 0;
+	changes_t res       = NO_CHANGES;
 	ir_node  *src       = get_CopyB_src(copyB);
 	ir_node  *dst       = get_CopyB_dst(copyB);
 	ir_type  *type      = get_CopyB_type(copyB);
 	unsigned  type_size = get_type_size_bytes(type);
 	ir_node  *block     = get_nodes_block(copyB);
-	ir_node  *pred;
 
-	for (pred = curr; pred != copyB;) {
+	ir_node *pred = curr;
+	while (pred != copyB) {
 		ldst_info_t *pred_info = (ldst_info_t*)get_irn_link(pred);
 
 		if (is_Store(pred) &&
@@ -1246,7 +1236,7 @@ static unsigned follow_Mem_chain_for_CopyB(ir_node *copyB, ir_node *curr, bool h
 
 	if (is_Sync(pred)) {
 		/* handle all Sync predecessors */
-		for (int i = get_Sync_n_preds(pred) - 1; i >= 0; --i) {
+		for (int i = get_Sync_n_preds(pred); i-- > 0; ) {
 			res |= follow_Mem_chain_for_CopyB(copyB, skip_Proj(get_Sync_pred(pred, i)), true);
 			if (res)
 				break;
@@ -1260,11 +1250,10 @@ static unsigned follow_Mem_chain_for_CopyB(ir_node *copyB, ir_node *curr, bool h
  *
  * @param copyB  the CopyB node
  */
-static unsigned optimize_copyB(ir_node *copyB)
+static changes_t optimize_copyB(ir_node *copyB)
 {
-	if (get_CopyB_volatility(copyB) == volatility_is_volatile) {
-		return 0;
-	}
+	if (get_CopyB_volatility(copyB) == volatility_is_volatile)
+		return NO_CHANGES;
 
 	ir_node *mem = get_CopyB_mem(copyB);
 
@@ -1308,39 +1297,35 @@ static bool has_multiple_users(const ir_node *node)
  *
  * This is only possible if the predecessor blocks have only one successor.
  */
-static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
+static changes_t optimize_phi(ir_node *phi, walk_env_t *wenv)
 {
-	dbg_info *db = NULL;
-	unsigned res = 0;
-
 	/* Must be a memory Phi */
 	if (get_irn_mode(phi) != mode_M)
-		return 0;
+		return NO_CHANGES;
 
 	int n = get_Phi_n_preds(phi);
 	if (n <= 0)
-		return 0;
+		return NO_CHANGES;
 
 	/* must be only one user */
 	ir_node *projM = get_Phi_pred(phi, 0);
 	if (has_multiple_users(projM))
-		return 0;
+		return NO_CHANGES;
 
 	ir_node *store = skip_Proj(projM);
 	if (!is_Store(store))
-		return 0;
-
-	ir_node *block = get_nodes_block(store);
+		return NO_CHANGES;
 
 	/* check if the block is post dominated by Phi-block
 	   and has no exception exit */
+	ir_node      *block   = get_nodes_block(store);
 	block_info_t *bl_info = (block_info_t*)get_irn_link(block);
 	if (bl_info->flags & BLOCK_HAS_EXC)
-		return 0;
+		return NO_CHANGES;
 
 	ir_node *phi_block = get_nodes_block(phi);
-	if (! block_strictly_postdominates(phi_block, block))
-		return 0;
+	if (!block_strictly_postdominates(phi_block, block))
+		return NO_CHANGES;
 
 	/* this is the address of the store */
 	ir_node     *ptr  = get_Store_ptr(store);
@@ -1350,34 +1335,33 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 
 	for (int i = 1; i < n; ++i) {
 		ir_node *pred = get_Phi_pred(phi, i);
-
 		if (has_multiple_users(pred))
-			return 0;
+			return NO_CHANGES;
 
 		pred = skip_Proj(pred);
 		if (!is_Store(pred))
-			return 0;
+			return NO_CHANGES;
 
-		if (ptr != get_Store_ptr(pred) || mode != get_irn_mode(get_Store_value(pred)))
-			return 0;
-
-		info = (ldst_info_t*)get_irn_link(pred);
+		if (ptr != get_Store_ptr(pred)
+		    || mode != get_irn_mode(get_Store_value(pred)))
+			return NO_CHANGES;
 
 		/* check, if all stores have the same exception flow */
+		info = (ldst_info_t*)get_irn_link(pred);
 		if (exc != info->exc_block)
-			return 0;
+			return NO_CHANGES;
 
-		block = get_nodes_block(pred);
 
 		/* check if the block is post dominated by Phi-block
 		   and has no exception exit. Note that block must be different from
 		   Phi-block, else we would move a Store from end End of a block to its
 		   Start... */
-		bl_info = (block_info_t*)get_irn_link(block);
+		ir_node      *block   = get_nodes_block(pred);
+		block_info_t *bl_info = (block_info_t*)get_irn_link(block);
 		if (bl_info->flags & BLOCK_HAS_EXC)
-			return 0;
-		if (block == phi_block || ! block_postdominates(phi_block, block))
-			return 0;
+			return NO_CHANGES;
+		if (block == phi_block || !block_postdominates(phi_block, block))
+			return NO_CHANGES;
 	}
 
 	/*
@@ -1415,20 +1399,19 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 		inD[i] = get_Store_value(store);
 		idx[i] = info->exc_idx;
 	}
-	block = get_nodes_block(phi);
 
 	/* second step: create a new memory Phi */
-	ir_node *phiM = new_rd_Phi(get_irn_dbg_info(phi), block, n, inM, mode_M);
+	ir_node *phiM = new_r_Phi(phi_block, n, inM, mode_M);
 
 	/* third step: create a new data Phi */
-	ir_node *phiD = new_rd_Phi(get_irn_dbg_info(phi), block, n, inD, mode);
+	ir_node *phiD = new_r_Phi(phi_block, n, inD, mode);
 
 	/* fourth step: create the Store */
-	store = new_rd_Store(db, block, phiM, ptr, phiD, cons_none);
+	store = new_r_Store(phi_block, phiM, ptr, phiD, cons_none);
 	projM = new_r_Proj(store, mode_M, pn_Store_M);
 
 	/* rewire memory and kill the old nodes */
-	for (int i = n - 1; i >= 0; --i) {
+	for (int i = n; i-- > 0; ) {
 		ir_node *proj = projMs[i];
 		assert(is_Proj(proj));
 		ir_node *store = get_Proj_pred(proj);
@@ -1440,6 +1423,7 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 	info->projs[pn_Store_M] = projM;
 
 	/* fifths step: repair exception flow */
+	changes_t res = NO_CHANGES;
 	if (exc) {
 		ir_node *projX = new_r_Proj(store, mode_X, pn_Store_X_except);
 
@@ -1452,7 +1436,8 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 		}
 
 		if (n > 1) {
-			/* the exception block should be optimized as some inputs are identical now */
+			/* the exception block should be optimized as some inputs are
+			 * identical now */
 		}
 
 		res |= CF_CHANGED;
@@ -1464,17 +1449,17 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 	return res | DF_CHANGED;
 }
 
-static int optimize_conv_load(ir_node *conv)
+static changes_t optimize_conv_load(ir_node *conv)
 {
 	ir_node *op = get_Conv_op(conv);
 	if (!is_Proj(op))
-		return 0;
+		return NO_CHANGES;
 	if (has_multiple_users(op))
-		return 0;
+		return NO_CHANGES;
 	/* shrink mode of load if possible. */
 	ir_node *load = get_Proj_pred(op);
 	if (!is_Load(load))
-		return 0;
+		return NO_CHANGES;
 
 	/* only do it if we are the only user (otherwise the risk is too
 	 * great that we end up with 2 loads instead of one). */
@@ -1483,11 +1468,11 @@ static int optimize_conv_load(ir_node *conv)
 	int      bits_diff
 		= get_mode_size_bits(load_mode) - get_mode_size_bits(mode);
 	if (mode_is_float(load_mode) || mode_is_float(mode) || bits_diff < 0)
-	    return 0;
+	    return NO_CHANGES;
 
 	if (be_get_backend_param()->byte_order_big_endian) {
 		if (bits_diff % 8 != 0)
-			return 0;
+			return NO_CHANGES;
 		ir_graph *irg   = get_irn_irg(conv);
 		ir_node  *ptr   = get_Load_ptr(load);
 		ir_mode  *mode  = get_irn_mode(ptr);
@@ -1508,29 +1493,12 @@ static int optimize_conv_load(ir_node *conv)
 static void do_load_store_optimize(ir_node *n, void *env)
 {
 	walk_env_t *wenv = (walk_env_t*)env;
-
 	switch (get_irn_opcode(n)) {
-
-	case iro_Load:
-		wenv->changes |= optimize_load(n);
-		break;
-
-	case iro_Store:
-		wenv->changes |= optimize_store(n);
-		break;
-
-	case iro_CopyB:
-		wenv->changes |= optimize_copyB(n);
-		break;
-
-	case iro_Phi:
-		wenv->changes |= optimize_phi(n, wenv);
-		break;
-
-	case iro_Conv:
-		wenv->changes |= optimize_conv_load(n);
-		break;
-
+	case iro_Load:  wenv->changes |= optimize_load(n);      break;
+	case iro_Store: wenv->changes |= optimize_store(n);     break;
+	case iro_CopyB: wenv->changes |= optimize_copyB(n);     break;
+	case iro_Phi:   wenv->changes |= optimize_phi(n, wenv); break;
+	case iro_Conv:  wenv->changes |= optimize_conv_load(n); break;
 	default:
 		break;
 	}
@@ -1541,10 +1509,10 @@ static void do_load_store_optimize(ir_node *n, void *env)
  *
  * @param store  the Store node
  */
-static unsigned eliminate_dead_store(ir_node *store)
+static changes_t eliminate_dead_store(ir_node *store)
 {
 	if (get_Store_volatility(store) == volatility_is_volatile)
-		return 0;
+		return NO_CHANGES;
 
 	ir_node   *ptr    = get_Store_ptr(store);
 	ir_entity *entity = find_entity(ptr);
@@ -1561,27 +1529,27 @@ static unsigned eliminate_dead_store(ir_node *store)
 		}
 	}
 
-	return 0; /* Nothing changed */
+	return NO_CHANGES;
 }
 
-static unsigned eliminate_dead_copyB(ir_node *copyB)
+static changes_t eliminate_dead_copyB(ir_node *copyB)
 {
 	if (get_CopyB_volatility(copyB) == volatility_is_volatile)
-		return 0;
-
-	ir_node   *ptr    = get_CopyB_dst(copyB);
-	ir_entity *entity = find_entity(ptr);
+		return NO_CHANGES;
 
 	/* a CopyB whose destination is never read is unnecessary */
+	ir_node   *ptr    = get_CopyB_dst(copyB);
+	ir_entity *entity = find_entity(ptr);
 	if (entity != NULL && !(get_entity_usage(entity) & ir_usage_read)) {
-		DB((dbg, LEVEL_1, "  Killing useless %+F to never read entity %+F\n", copyB, entity));
+		DB((dbg, LEVEL_1, "  Killing useless %+F to never read entity %+F\n",
+		    copyB, entity));
 		reduce_node_usage(get_CopyB_dst(copyB));
 		reduce_node_usage(get_CopyB_src(copyB));
 		exchange(copyB, get_CopyB_mem(copyB));
 		return DF_CHANGED;
 	}
 
-	return 0; /* Nothing changed */
+	return NO_CHANGES;
 }
 
 /**
@@ -1590,7 +1558,6 @@ static unsigned eliminate_dead_copyB(ir_node *copyB)
 static void do_eliminate_dead_stores(ir_node *n, void *env) {
 
 	walk_env_t *wenv = (walk_env_t*)env;
-
 	if (is_Store(n)) {
 		wenv->changes |= eliminate_dead_store(n);
 	} else if (is_CopyB(n)) {
@@ -1608,8 +1575,8 @@ typedef struct node_entry {
 	unsigned DFSnum;    /**< the DFS number of this node */
 	unsigned low;       /**< the low number of this node */
 	int      in_stack;  /**< flag, set if the node is on the stack */
-	ir_node  *next;     /**< link to the next node the the same scc */
-	scc      *pscc;     /**< the scc of this node */
+	ir_node *next;      /**< link to the next node the the same scc */
+	scc     *pscc;      /**< the scc of this node */
 	unsigned POnum;     /**< the post order number for blocks */
 } node_entry;
 
@@ -1617,7 +1584,7 @@ typedef struct node_entry {
 typedef struct loop_env {
 	ir_nodehashmap_t map;
 	struct obstack   obst;
-	ir_node          **stack;      /**< the node stack */
+	ir_node        **stack;        /**< the node stack */
 	size_t           tos;          /**< tos index */
 	unsigned         nextDFSnum;   /**< the current DFS number */
 	unsigned         POnum;        /**< current post order number */
@@ -1690,7 +1657,7 @@ static int is_rc(ir_node *irn, ir_node *header_block)
 typedef struct phi_entry phi_entry;
 struct phi_entry {
 	ir_node   *phi;    /**< A phi with a region const memory. */
-	int       pos;     /**< The position of the region const memory */
+	int        pos;    /**< The position of the region const memory */
 	ir_node   *load;   /**< the newly created load for this phi */
 	phi_entry *next;
 };
@@ -1709,10 +1676,9 @@ typedef struct avail_entry_t {
  */
 static int cmp_avail_entry(const void *elt, const void *key, size_t size)
 {
+	(void) size;
 	const avail_entry_t *a = (const avail_entry_t*)elt;
 	const avail_entry_t *b = (const avail_entry_t*)key;
-	(void) size;
-
 	return a->ptr != b->ptr || a->mode != b->mode;
 }
 
@@ -1732,16 +1698,14 @@ static unsigned hash_cache_entry(const avail_entry_t *entry)
  */
 static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 {
-	ir_node   *next, *next_other;
-	phi_entry *phi_list = NULL;
-
 	/* collect all outer memories */
-	for (ir_node *phi = pscc->head; phi != NULL; phi = next) {
+	phi_entry *phi_list = NULL;
+	for (ir_node *phi = pscc->head, *next; phi != NULL; phi = next) {
 		node_entry *ne = get_irn_ne(phi, env);
 		next = ne->next;
 
 		/* check all memory Phi's */
-		if (! is_Phi(phi))
+		if (!is_Phi(phi))
 			continue;
 
 		assert(get_irn_mode(phi) == mode_M && "DFS return non-memory Phi");
@@ -1769,7 +1733,7 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 
 	set *avail = new_set(cmp_avail_entry, 8);
 
-	for (ir_node *load = pscc->head; load; load = next) {
+	for (ir_node *load = pscc->head, *next; load != NULL; load = next) {
 		node_entry *ne = get_irn_ne(load, env);
 		next = ne->next;
 
@@ -1786,6 +1750,7 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 				continue;
 			ir_mode *load_mode = get_Load_mode(load);
 			ir_node *other;
+			ir_node *next_other;
 			for (other = pscc->head; other != NULL; other = next_other) {
 				node_entry *ne = get_irn_ne(other, env);
 				next_other = ne->next;
@@ -1808,7 +1773,7 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 				/* yep, no aliasing Store found, Load can be moved */
 				DB((dbg, LEVEL_1, "  Found a Load that could be moved: %+F\n", load));
 
-				dbg_info *db   = get_irn_dbg_info(load);
+				dbg_info *db = get_irn_dbg_info(load);
 				for (phi_entry *pe = phi_list; pe != NULL; pe = pe->next) {
 					int     pos   = pe->pos;
 					ir_node *phi  = pe->phi;
@@ -1861,17 +1826,15 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
  */
 static void process_loop(scc *pscc, loop_env *env)
 {
-	ir_node *next, *header = NULL;
-	node_entry *h = NULL;
-
 	/* find the header block for this scc */
-	for (ir_node *irn = pscc->head; irn; irn = next) {
+	ir_node    *header = NULL;
+	node_entry *h      = NULL;
+	for (ir_node *irn = pscc->head, *next; irn != NULL; irn = next) {
 		node_entry *e = get_irn_ne(irn, env);
-		ir_node *block = get_nodes_block(irn);
-
 		next = e->next;
-		node_entry *b = get_irn_ne(block, env);
 
+		ir_node    *block = get_nodes_block(irn);
+		node_entry *b     = get_irn_ne(block, env);
 		if (header != NULL) {
 			if (h->POnum < b->POnum) {
 				header = block;
@@ -1884,19 +1847,19 @@ static void process_loop(scc *pscc, loop_env *env)
 	}
 
 	/* check if this scc contains only Phi, Loads or Stores nodes */
-	int      only_phi    = 1;
-	int      num_outside = 0;
-	int      process     = 0;
+	bool     only_phi    = true;
+	unsigned num_outside = 0;
+	bool     process     = false;
 	ir_node *out_rc      = NULL;
-	for (ir_node *irn = pscc->head; irn; irn = next) {
+	for (ir_node *irn = pscc->head, *next; irn != NULL; irn = next) {
 		node_entry *e = get_irn_ne(irn, env);
-
 		next = e->next;
+
 		switch (get_irn_opcode(irn)) {
 		case iro_Call:
 			if (is_Call_pure(irn)) {
 				/* pure calls can be treated like loads */
-				only_phi = 0;
+				only_phi = false;
 				break;
 			}
 			/* non-pure calls must be handle like may-alias Stores */
@@ -1905,22 +1868,22 @@ static void process_loop(scc *pscc, loop_env *env)
 			/* cannot handle CopyB yet */
 			goto fail;
 		case iro_Load:
-			process = 1;
+			process = true;
 			if (get_Load_volatility(irn) == volatility_is_volatile) {
 				/* cannot handle loops with volatile Loads */
 				goto fail;
 			}
-			only_phi = 0;
+			only_phi = false;
 			break;
 		case iro_Store:
 			if (get_Store_volatility(irn) == volatility_is_volatile) {
 				/* cannot handle loops with volatile Stores */
 				goto fail;
 			}
-			only_phi = 0;
+			only_phi = false;
 			break;
 		default:
-			only_phi = 0;
+			only_phi = false;
 			break;
 		case iro_Phi:
 			foreach_irn_in_r(irn, i, pred) {
@@ -1928,7 +1891,7 @@ static void process_loop(scc *pscc, loop_env *env)
 
 				if (pe->pscc != e->pscc) {
 					/* not in the same SCC, must be a region const */
-					if (! is_rc(pred, header)) {
+					if (!is_rc(pred, header)) {
 						/* not a memory loop */
 						goto fail;
 					}
@@ -1945,7 +1908,7 @@ static void process_loop(scc *pscc, loop_env *env)
 			break;
 		}
 	}
-	if (! process)
+	if (!process)
 		goto fail;
 
 	/* found a memory loop */
@@ -1954,7 +1917,7 @@ static void process_loop(scc *pscc, loop_env *env)
 		/* a phi cycle with only one real predecessor can be collapsed */
 		DB((dbg, LEVEL_2, "  Found an USELESS Phi cycle:\n  "));
 
-		for (ir_node *irn = pscc->head; irn; irn = next) {
+		for (ir_node *irn = pscc->head, *next; irn != NULL; irn = next) {
 			node_entry *e = get_irn_ne(irn, env);
 			next = e->next;
 			exchange(irn, out_rc);
@@ -1964,7 +1927,7 @@ static void process_loop(scc *pscc, loop_env *env)
 	}
 
 #ifdef DEBUG_libfirm
-	for (ir_node *irn = pscc->head; irn; irn = next) {
+	for (ir_node *irn = pscc->head, *next; irn != NULL; irn = next) {
 		node_entry *e = get_irn_ne(irn, env);
 		next = e->next;
 		DB((dbg, LEVEL_2, " %+F,", irn));
@@ -1985,23 +1948,18 @@ fail:
  */
 static void process_scc(scc *pscc, loop_env *env)
 {
-	ir_node *head = pscc->head;
-	node_entry *e = get_irn_ne(head, env);
+	ir_node    *head = pscc->head;
+	node_entry *e    = get_irn_ne(head, env);
 
 #ifdef DEBUG_libfirm
-	{
-		ir_node *next;
+	DB((dbg, LEVEL_4, " SCC at %p:\n ", pscc));
+	for (ir_node *irn = pscc->head, *next; irn != NULL; irn = next) {
+		node_entry *e = get_irn_ne(irn, env);
+		next = e->next;
 
-		DB((dbg, LEVEL_4, " SCC at %p:\n ", pscc));
-		for (ir_node *irn = pscc->head; irn; irn = next) {
-			node_entry *e = get_irn_ne(irn, env);
-
-			next = e->next;
-
-			DB((dbg, LEVEL_4, " %+F,", irn));
-		}
-		DB((dbg, LEVEL_4, "\n"));
+		DB((dbg, LEVEL_4, " %+F,", irn));
 	}
+	DB((dbg, LEVEL_4, "\n"));
 #endif
 
 	if (e->next != NULL) {
@@ -2058,16 +2016,14 @@ static void dfs(ir_node *irn, loop_env *env)
 		}
 		if (o->DFSnum < node->DFSnum && o->in_stack)
 			node->low = MIN(o->DFSnum, node->low);
-	}
-	else {
+	} else {
 		 /* IGNORE predecessors */
 	}
 
 	if (node->low == node->DFSnum) {
 		scc *pscc = OALLOC(&env->obst, scc);
-		ir_node *x;
-
 		pscc->head = NULL;
+		ir_node *x;
 		do {
 			node_entry *e;
 
@@ -2094,7 +2050,7 @@ static void do_dfs(ir_graph *irg, loop_env *env)
 
 	/* visit all memory nodes */
 	ir_node *endblk = get_irg_end_block(irg);
-	for (int i = get_Block_n_cfgpreds(endblk) - 1; i >= 0; --i) {
+	for (int i = get_Block_n_cfgpreds(endblk); i-- > 0; ) {
 		ir_node *pred = get_Block_cfgpred(endblk, i);
 
 		pred = skip_Proj(pred);
@@ -2113,7 +2069,7 @@ static void do_dfs(ir_graph *irg, loop_env *env)
 
 	/* visit the keep-alives */
 	ir_node *end = get_irg_end(irg);
-	for (int i = get_End_n_keepalives(end) - 1; i >= 0; --i) {
+	for (int i = get_End_n_keepalives(end); i-- > 0; ) {
 		ir_node *ka = get_End_keepalive(end, i);
 
 		if (is_Phi(ka) && !irn_visited(ka))
@@ -2126,15 +2082,14 @@ static void do_dfs(ir_graph *irg, loop_env *env)
  *
  * @param irg  the graph
  */
-static int optimize_loops(ir_graph *irg)
+static changes_t optimize_loops(ir_graph *irg)
 {
 	loop_env env;
-
 	env.stack         = NEW_ARR_F(ir_node *, 128);
 	env.tos           = 0;
 	env.nextDFSnum    = 0;
 	env.POnum         = 0;
-	env.changes       = 0;
+	env.changes       = NO_CHANGES;
 	ir_nodehashmap_init(&env.map);
 	obstack_init(&env.obst);
 
@@ -2163,13 +2118,12 @@ void optimize_load_store(ir_graph *irg)
 	assert(get_irg_pinned(irg) != op_pin_state_floats &&
 		"LoadStore optimization needs pinned graph");
 
-	if (get_opt_alias_analysis()) {
+	if (get_opt_alias_analysis())
 		assure_irp_globals_entity_usage_computed();
-	}
 
 	walk_env_t env;
 	obstack_init(&env.obst);
-	env.changes = 0;
+	env.changes = NO_CHANGES;
 
 	/* init the links, then collect Loads/Stores/Proj's in lists */
 	master_visited = 0;
