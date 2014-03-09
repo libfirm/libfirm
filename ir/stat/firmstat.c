@@ -1614,8 +1614,8 @@ static void removed_due_opt(ir_node *n, hmap_opt_entry_t *hmap, hook_opt_kind ki
  */
 static void stat_merge_nodes(
     void *ctx,
-    ir_node **new_node_array, int new_num_entries,
-    ir_node **old_node_array, int old_num_entries,
+    ir_node *const *new_node_array, int new_num_entries,
+    ir_node *const *old_node_array, int old_num_entries,
     hook_opt_kind opt)
 {
 	(void) ctx;

@@ -110,8 +110,10 @@ struct hook_entry {
 		void (*_hook_irg_block_walk)(void *context, ir_graph *irg, ir_node *node, generic_func *pre, generic_func *post);
 
 		/** This hook is called, when debug info must be merged. */
-		void (*_hook_merge_nodes)(void *context, ir_node **new_node_array, int new_num_entries,
-		                          ir_node **old_node_array, int old_num_entries, hook_opt_kind opt);
+		void (*_hook_merge_nodes)(void *context, ir_node *const *new_node_array,
+		                          int new_num_entries,
+		                          ir_node *const *old_node_array,
+		                          int old_num_entries, hook_opt_kind opt);
 
 		/** This hook is called, when reassociation is started/stopped. */
 		void (*_hook_reassociate)(void *context, int start);

@@ -34,15 +34,15 @@ void default_dbg_info_merge_pair(ir_node *nw, ir_node *old, dbg_action info);
  * copies the debug info from the old node to all new ones (if they do not have
  * one), else does nothing.
  *
- * @param new_nodes     An array of new Firm nodes.
- * @param n_new_nodes   The length of the new_nodes array.
- * @param old_nodes     An array of old (replaced) Firm nodes.
- * @param n_old_nodes   The length of the old_nodes array.
- * @param info          The action that cause old node to be replaced by new one.
+ * @param new_nodes    An array of new Firm nodes.
+ * @param n_new_nodes  The length of the new_nodes array.
+ * @param old_nodes    An array of old (replaced) Firm nodes.
+ * @param n_old_nodes  The length of the old_nodes array.
+ * @param info         The action that cause old node to be replaced by new one.
  */
-void default_dbg_info_merge_sets(ir_node **new_nodes, int n_new_nodes,
-                            ir_node **old_nodes, int n_old_nodes,
-                            dbg_action info);
+void default_dbg_info_merge_sets(ir_node *const *new_nodes, int n_new_nodes,
+                                 ir_node *const *old_nodes, int n_old_nodes,
+                                 dbg_action info);
 
 /**
  * The current merge_pair_func(), access only from inside firm.

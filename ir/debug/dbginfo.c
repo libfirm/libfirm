@@ -69,8 +69,8 @@ void default_dbg_info_merge_pair(ir_node *nw, ir_node *old, dbg_action info)
 		set_irn_dbg_info(nw, get_irn_dbg_info(old));
 }
 
-void default_dbg_info_merge_sets(ir_node **new_nodes, int n_new_nodes,
-                                 ir_node **old_nodes, int n_old_nodes,
+void default_dbg_info_merge_sets(ir_node *const *new_nodes, int n_new_nodes,
+                                 ir_node *const *old_nodes, int n_old_nodes,
                                  dbg_action info)
 {
 	(void) info;
