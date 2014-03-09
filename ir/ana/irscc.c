@@ -650,10 +650,8 @@ static void scc(ir_node *n)
 
 void construct_backedges(ir_graph *irg)
 {
-	ir_graph *rem = current_ir_graph;
 	struct obstack temp;
 
-	current_ir_graph   = irg;
 	outermost_ir_graph = irg;
 
 	obstack_init(&temp);
@@ -678,7 +676,6 @@ void construct_backedges(ir_graph *irg)
 	set_irg_loop(irg, current_loop);
 	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 	assert(get_irg_loop(irg)->kind == k_ir_loop);
-	current_ir_graph = rem;
 }
 
 static void reset_backedges(ir_node *n)

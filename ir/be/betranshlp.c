@@ -367,9 +367,6 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 
 void be_transform_graph(ir_graph *irg, arch_pretrans_nodes *func)
 {
-	ir_graph *old_current_ir_graph = current_ir_graph;
-	current_ir_graph = irg;
-
 	/* create a new obstack */
 	struct obstack old_obst = irg->obst;
 	obstack_init(&irg->obst);
@@ -385,9 +382,6 @@ void be_transform_graph(ir_graph *irg, arch_pretrans_nodes *func)
 
 	/* free the old obstack */
 	obstack_free(&old_obst, 0);
-
-	/* restore state */
-	current_ir_graph = old_current_ir_graph;
 
 	/* most analysis info is wrong after transformation */
 	be_invalidate_live_chk(irg);

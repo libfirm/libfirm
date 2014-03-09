@@ -192,9 +192,6 @@ void irg_out_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
 	ir_graph *irg = get_irn_irg(node);
 	assert(is_Block(node) || (get_irn_mode(node) == mode_X));
 
-	ir_graph *rem = current_ir_graph;
-	current_ir_graph = irg;
-
 	inc_irg_block_visited(irg);
 
 	if (get_irn_mode(node) == mode_X) {
@@ -205,8 +202,6 @@ void irg_out_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
 	} else {
 		irg_out_block_walk2(node, pre, post, env);
 	}
-
-	current_ir_graph = rem;
 }
 
 /*--------------------------------------------------------------------*/

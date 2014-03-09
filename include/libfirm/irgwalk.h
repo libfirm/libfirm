@@ -30,8 +30,7 @@
  * Walks over the ir graph, starting at the node given as first argument.
  * Executes pre before visiting the predecessor of a node, post after.
  * irg_walk uses the visited flag in irg and the nodes to determine visited
- * nodes.  It executes inc_irg_visited(current_ir_graph) to generate a new
- * flag.  Therefore current_ir_graph must be set before calling the walker.
+ * nodes.  It executes inc_irg_visited() to generate a new flag.
  * It marks the node as visited before executing pre.
  * The void* env can be used to pass status information between the
  * pre and post functions.  Does not use the link fields.
@@ -46,8 +45,7 @@ FIRM_API void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
                        void *env);
 
 /**
- * core walker function. Does NOT touch current_ir_graph and does not call
- * inc_irg_visited before walking
+ * core walker function. Does NOT call inc_irg_visited before walking.
  */
 FIRM_API void irg_walk_core(ir_node *node, irg_walk_func *pre,
                             irg_walk_func *post, void *env);
@@ -61,8 +59,7 @@ FIRM_API void irg_walk_core(ir_node *node, irg_walk_func *pre,
  * @param env   environment, passed to pre and post
  *
  * Like irg_walk(), but walks over all reachable nodes in the ir
- * graph, starting at the end operation. During the walk current_ir_graph
- * is set to irg.  Does not use the link field.
+ * graph, starting at the end operation.  Does not use the link field.
  */
 FIRM_API void irg_walk_graph(ir_graph *irg, irg_walk_func *pre,
                              irg_walk_func *post, void *env);
@@ -73,8 +70,7 @@ FIRM_API void irg_walk_graph(ir_graph *irg, irg_walk_func *pre,
  * Walks over the ir graph, starting at the node given as first argument.
  * Executes pre before visiting the predecessor of a node, post after.
  * irg_walk uses the visited flag in irg and the nodes to determine visited
- * nodes.  It executes inc_irg_visited(current_ir_graph) to generate a new
- * flag.  Therefore current_ir_graph must be set before calling the walker.
+ * nodes.  It executes inc_irg_visited() to generate a new flag.
  * It marks the node as visited before executing pre.
  * The void* env can be used to pass status information between the
  * pre and post functions.  Does not use the link fields.
@@ -98,8 +94,7 @@ FIRM_API void irg_walk_in_or_dep(ir_node *node, irg_walk_func *pre,
  * @param env   environment, passed to pre and post
  *
  * Like irg_walk(), but walks over all reachable nodes in the ir
- * graph, starting at the end operation. During the walk current_ir_graph
- * is set to irg.  Does not use the link field.
+ * graph, starting at the end operation.  Does not use the link field.
  * This walker also follows additional dependency egdes.
  */
 FIRM_API void irg_walk_in_or_dep_graph(ir_graph *irg, irg_walk_func *pre,
@@ -113,8 +108,7 @@ FIRM_API void irg_walk_in_or_dep_graph(ir_graph *irg, irg_walk_func *pre,
  * @param env   environment, passed to pre and post
  *
  * This function executes irg_walk(end, pre, post, env) for all irgraphs in irprog.
- * Sets current_ir_graph properly for each walk.  Conserves current
- * current_ir_graph. Does not use the link field.
+ * Does not use the link field.
  */
 FIRM_API void all_irg_walk(irg_walk_func *pre, irg_walk_func *post, void *env);
 
@@ -166,8 +160,8 @@ FIRM_API void walk_const_code(irg_walk_func *pre, irg_walk_func *post,
  * Executes pre before visiting the predecessor of a node, post after.
  * irg_walk_blkwise_graph() uses the visited flag in irg and the nodes to
  * determine visited nodes.
- * It executes inc_irg_visited(current_ir_graph) to generate a new
- * flag. It marks the node as visited before executing pre.
+ * It executes inc_irg_visited() to generate a new flag. It marks the node as
+ * visited before executing pre.
  * The void *env can be used to pass status information between the
  * pre and post functions.  Does not use the link fields.
  *
@@ -185,8 +179,8 @@ FIRM_API void irg_walk_blkwise_graph(ir_graph *irg, irg_walk_func *pre,
  * Executes pre before visiting the predecessor of a node, post after.
  * irg_walk_blkwise_graph() uses the visited flag in irg and the nodes to
  * determine visited nodes.
- * It executes inc_irg_visited(current_ir_graph) to generate a new
- * flag. It marks the node as visited before executing pre.
+ * It executes inc_irg_visited() to generate a new flag. It marks the node as
+ * visited before executing pre.
  * The void *env can be used to pass status information between the
  * pre and post functions.  Does not use the link fields.
  * This walker also follows dependency edges.
@@ -207,8 +201,8 @@ FIRM_API void irg_walk_in_or_dep_blkwise_graph(ir_graph *irg,
  * Executes pre before visiting the predecessor of a node, post after.
  * irg_walk_blkwise_graph() uses the visited flag in irg and the nodes to
  * determine visited nodes.
- * It executes inc_irg_visited(current_ir_graph) to generate a new
- * flag. It marks the node as visited before executing pre.
+ * It executes inc_irg_visited() to generate a new flag. It marks the node as
+ * visited before executing pre.
  * The void *env can be used to pass status information between the
  * pre and post functions.  Does not use the link fields.
  *

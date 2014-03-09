@@ -2717,7 +2717,6 @@ static void lower_irg(ir_graph *irg)
 
 	/* just here for debugging */
 	obstack_init(&env->obst);
-	current_ir_graph = irg;
 
 	unsigned n_idx = get_irg_last_idx(irg);
 	n_idx = n_idx + (n_idx >> 2);  /* add 25% */

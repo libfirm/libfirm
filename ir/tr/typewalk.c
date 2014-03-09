@@ -227,9 +227,6 @@ void type_walk_irg(ir_graph *irg,
 	type_env.post = post;
 	type_env.env  = env;
 
-	ir_graph *rem = current_ir_graph;
-	current_ir_graph = irg;
-
 	/* We walk over the irg to find all IR-nodes that contain an attribute
 	   with type information.  If we find one we call a type walker to
 	   touch the reachable type information.
@@ -247,8 +244,6 @@ void type_walk_irg(ir_graph *irg,
 
 	do_type_walk(get_irg_frame_type(irg), NULL, pre, post, env);
 	irp_free_resources(irp, IRP_RESOURCE_TYPE_VISITED);
-
-	current_ir_graph = rem;
 }
 
 static void type_walk_s2s_2(ir_type *const tp,

@@ -520,9 +520,6 @@ void opt_tail_rec_irg(ir_graph *irg)
 		return;
 	}
 
-	ir_graph *rem = current_ir_graph;
-	current_ir_graph = irg;
-
 	ir_entity *ent      = get_irg_entity(irg);
 	ir_type   *mtd_type = get_entity_type(ent);
 	int        n_ress   = get_method_n_ress(mtd_type);
@@ -628,7 +625,6 @@ void opt_tail_rec_irg(ir_graph *irg)
 		confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_ALL);
 	}
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
-	current_ir_graph = rem;
 }
 
 /*

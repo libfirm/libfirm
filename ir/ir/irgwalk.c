@@ -117,24 +117,17 @@ void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
               void *env)
 {
 	ir_graph *irg = get_irn_irg(node);
-	ir_graph *rem = current_ir_graph;
 
-	current_ir_graph = irg;
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 	inc_irg_visited(irg);
 	irg_walk_core(node, pre, post, env);
 	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
-	current_ir_graph = rem;
 }
 
 void irg_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env)
 {
-	ir_graph * rem = current_ir_graph;
-
 	hook_irg_walk(irg, (generic_func *)pre, (generic_func *)post);
-	current_ir_graph = irg;
 	irg_walk(get_irg_end(irg), pre, post, env);
-	current_ir_graph = rem;
 }
 
 void all_irg_walk(irg_walk_func *pre, irg_walk_func *post, void *env)
@@ -248,12 +241,8 @@ void irg_walk_in_or_dep(ir_node *node, irg_walk_func *pre, irg_walk_func *post, 
 
 void irg_walk_in_or_dep_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env)
 {
-	ir_graph * rem = current_ir_graph;
-
 	hook_irg_walk(irg, (generic_func *)pre, (generic_func *)post);
-	current_ir_graph = irg;
 	irg_walk_in_or_dep(get_irg_end(irg), pre, post, env);
-	current_ir_graph = rem;
 }
 
 /* Walks back from n until it finds a real cf op. */
@@ -321,10 +310,7 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
 void irg_block_walk_graph(ir_graph *irg, irg_walk_func *pre,
                           irg_walk_func *post, void *env)
 {
-	ir_graph * rem = current_ir_graph;
-	current_ir_graph = irg;
 	irg_block_walk(get_irg_end(irg), pre, post, env);
-	current_ir_graph = rem;
 }
 
 void irg_walk_anchors(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env)
@@ -380,9 +366,8 @@ void walk_const_code(irg_walk_func *pre, irg_walk_func *post, void *env)
 	size_t i;
 	size_t n_types;
 
-	ir_graph *rem = current_ir_graph;
-	current_ir_graph = get_const_code_irg();
-	inc_irg_visited(current_ir_graph);
+	ir_graph *const irg = get_const_code_irg();
+	inc_irg_visited(irg);
 
 	my_env.pre = pre;
 	my_env.post = post;
@@ -406,6 +391,4 @@ void walk_const_code(irg_walk_func *pre, irg_walk_func *post, void *env)
 				irg_walk(size, pre, post, env);
 		}
 	}
-
-	current_ir_graph = rem;
 }

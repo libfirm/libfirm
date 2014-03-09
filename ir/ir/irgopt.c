@@ -41,15 +41,7 @@ static void optimize_in_place_wrapper(ir_node *n, void *env)
 	}
 }
 
-/**
- * Do local optimizations for a node.
- *
- * @param n  the IR-node where to start. Typically the End node
- *           of a graph
- *
- * @note current_ir_graph must be set
- */
-static inline void do_local_optimize(ir_node *n)
+void local_optimize_node(ir_node *n)
 {
 	ir_graph *irg = get_irn_irg(n);
 
@@ -62,16 +54,6 @@ static inline void do_local_optimize(ir_node *n)
 
 	/* walk over the graph */
 	irg_walk(n, firm_clear_link, optimize_in_place_wrapper, NULL);
-}
-
-void local_optimize_node(ir_node *n)
-{
-	ir_graph *rem = current_ir_graph;
-	current_ir_graph = get_irn_irg(n);
-
-	do_local_optimize(n);
-
-	current_ir_graph = rem;
 }
 
 static void enqueue_node(ir_node *node, pdeq *waitq)
@@ -136,12 +118,7 @@ static void find_unreachable_blocks(ir_node *block, void *env)
 
 void local_optimize_graph(ir_graph *irg)
 {
-	ir_graph *rem = current_ir_graph;
-	current_ir_graph = irg;
-
-	do_local_optimize(get_irg_end(irg));
-
-	current_ir_graph = rem;
+	local_optimize_node(get_irg_end(irg));
 }
 
 /**
@@ -165,10 +142,7 @@ static void opt_walker(ir_node *n, void *env)
 
 void optimize_graph_df(ir_graph *irg)
 {
-	pdeq           *waitq = new_pdeq();
-	ir_graph       *rem   = current_ir_graph;
-
-	current_ir_graph = irg;
+	pdeq *waitq = new_pdeq();
 
 	if (get_opt_global_cse())
 		set_irg_pinned(irg, op_pin_state_floats);
@@ -226,8 +200,6 @@ void optimize_graph_df(ir_graph *irg)
 	 * Doing this AFTER edges where deactivated saves cycles */
 	ir_node *end = get_irg_end(irg);
 	remove_End_Bads_and_doublets(end);
-
-	current_ir_graph = rem;
 }
 
 void local_opts_const_code(void)

@@ -1108,14 +1108,10 @@ static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
 
 	/* count the number of address calculation */
 	if (graph->irg != get_const_code_irg()) {
-		ir_graph *rem = current_ir_graph;
-
 		assure_irg_outs(graph->irg);
 
 		/* Must be done an the outs graph */
-		current_ir_graph = graph->irg;
 		irg_out_walk(get_irg_start(graph->irg), NULL, mark_address_calc, graph);
-		current_ir_graph = rem;
 
 #ifdef DUMP_ADR_MODE
 		/* register the vcg hook and dump the graph for test */
