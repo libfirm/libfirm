@@ -822,28 +822,6 @@ static changes_t optimize_load(ir_node *load)
 		return res | DF_CHANGED;
 	}
 
-	/* check if we can determine the entity that will be loaded */
-	ir_entity *ent = find_constant_entity(ptr);
-	if (ent != NULL
-			&& get_entity_visibility(ent) != ir_visibility_external) {
-		/* a static allocation that is not external: there should be NO
-		 * exception when loading even if we cannot replace the load itself.
-		 */
-
-		/* no exception, clear the info field as it might be checked later again */
-		if (info->projs[pn_Load_X_except]) {
-			ir_graph *irg = get_irn_irg(load);
-			exchange(info->projs[pn_Load_X_except], new_r_Bad(irg, mode_X));
-			info->projs[pn_Load_X_except] = NULL;
-			res |= CF_CHANGED;
-		}
-		if (info->projs[pn_Load_X_regular]) {
-			exchange(info->projs[pn_Load_X_regular], new_r_Jmp(get_nodes_block(load)));
-			info->projs[pn_Load_X_regular] = NULL;
-			res |= CF_CHANGED;
-		}
-	}
-
 	/* Check, if the address of this load is used more than once.
 	 * If not, more load cannot be removed in any case. */
 	long dummy;
