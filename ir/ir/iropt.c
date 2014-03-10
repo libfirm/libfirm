@@ -1323,6 +1323,35 @@ static ir_node *equivalent_node_Phi(ir_node *n)
 }
 
 /**
+ * Optimizes Sync nodes that have only one operand.
+ */
+static ir_node *equivalent_node_Sync(ir_node *n)
+{
+	int arity = get_Sync_n_preds(n);
+	assert(arity > 0);
+
+	ir_node *op = get_Sync_pred(n, 0);
+
+	for (int i = 1; i < arity; i++) {
+		ir_node *pred = get_Sync_pred(n, i);
+
+		if (pred == op) {
+			continue;
+		}
+
+		/* We can ignore Bad predecessors */
+		if (is_Bad(op)) {
+			op = pred;
+			continue;
+		}
+
+		return n;
+	}
+
+	return op;
+}
+
+/**
  * Optimize Proj(Tuple).
  */
 static ir_node *equivalent_node_Proj_Tuple(ir_node *proj)
@@ -6057,14 +6086,6 @@ static ir_node *transform_node_Sync(ir_node *n)
 		}
 	}
 
-	if (arity == 0) {
-		ir_graph *irg = get_irn_irg(n);
-		return new_r_Bad(irg, mode_M);
-	}
-	if (arity == 1) {
-		return get_Sync_pred(n, 0);
-	}
-
 	/* rehash the sync node */
 	add_identities(n);
 	return n;
@@ -6671,6 +6692,7 @@ void ir_register_opt_node_ops(void)
 	register_equivalent_node_func(op_Shr,     equivalent_node_left_zero);
 	register_equivalent_node_func(op_Shrs,    equivalent_node_left_zero);
 	register_equivalent_node_func(op_Sub,     equivalent_node_Sub);
+	register_equivalent_node_func(op_Sync,    equivalent_node_Sync);
 	register_equivalent_node_func_proj(op_Div,   equivalent_node_Proj_Div);
 	register_equivalent_node_func_proj(op_Tuple, equivalent_node_Proj_Tuple);
 	register_equivalent_node_func_proj(op_Store, equivalent_node_Proj_Store);
