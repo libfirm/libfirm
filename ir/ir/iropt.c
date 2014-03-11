@@ -2973,6 +2973,15 @@ restart:
 				return n;
 			}
 		}
+		/* ~x - y = ~(x + y) */
+		if (is_Not(a)) {
+			dbg_info *dbgi  = get_irn_dbg_info(n);
+			ir_node  *block = get_nodes_block(n);
+			ir_mode  *mode  = get_irn_mode(n);
+			ir_node  *add   = new_rd_Add(dbgi, block, get_Not_op(a), b, mode);
+			ir_node  *not   = new_rd_Not(dbgi, block, add, mode);
+			return not;
+		}
 		/* x-(x&y) = x & ~y */
 		if (is_And(b)) {
 			ir_node *and_left  = get_And_left(b);
