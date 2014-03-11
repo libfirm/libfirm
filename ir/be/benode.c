@@ -1119,17 +1119,13 @@ void be_dump_phi_reg_reqs(FILE *F, const ir_node *node, dump_reason_t reason)
 		break;
 	case dump_node_nodeattr_txt:
 		break;
-	case dump_node_info_txt:
-	{
+	case dump_node_info_txt: {
 		ir_graph *irg = get_irn_irg(node);
 		if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_BACKEND)) {
 			arch_dump_reqs_and_registers(F, node);
 		}
 		break;
 	}
-
-	default:
-		break;
 	}
 }
 

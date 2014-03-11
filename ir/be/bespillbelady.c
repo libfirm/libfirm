@@ -302,7 +302,7 @@ static void displace(workset_t *const new_vals, bool const is_usage,
 
 	/* 1. Identify the number of needed slots and the values to reload */
 	unsigned  demand = 0;
-	ir_node  *val;
+	ir_node  *val    = NULL;
 	workset_foreach(new_vals, val, iter) {
 		bool reloaded = false;
 
@@ -694,7 +694,7 @@ static void process_block(ir_node *block)
 
 	DB((dbg, DBG_WSETS, "Start workset for %+F:\n", block));
 #ifdef DEBUG_libfirm
-	ir_node *irn;
+	ir_node *irn = NULL;
 	workset_foreach(ws, irn, iter) {
 		DB((dbg, DBG_WSETS, "  %+F (%u)\n", irn, workset_get_time(ws, iter)));
 	}
@@ -763,9 +763,9 @@ static void fix_block_borders(ir_node *block, void *data)
 		DB((dbg, DBG_FIX, "  Pred %+F\n", pred));
 
 		/* spill all values not used anymore */
-		ir_node *node;
+		ir_node *node = NULL;
 		workset_foreach(pred_end_workset, node, iter) {
-			ir_node *n2;
+			ir_node *n2    = NULL;
 			bool     found = false;
 			workset_foreach(start_workset, n2, iter2) {
 				if (n2 == node) {

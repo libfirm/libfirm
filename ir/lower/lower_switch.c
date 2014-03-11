@@ -110,8 +110,8 @@ static void analyse_switch1(switch_info_t *info)
 	case_data_t           *cases     = XMALLOCN(case_data_t, num_cases);
 	unsigned               c         = 0;
 	size_t                 e;
-	ir_node               *proj;
 
+	ir_node *proj = NULL;
 	foreach_out_irn(switchn, i, proj) {
 		long     pn     = get_Proj_proj(proj);
 		ir_node *target = get_irn_out(proj, 0);
@@ -192,7 +192,6 @@ static void create_out_of_bounds_check(switch_info_t *info)
 	ir_node    *oob_cond;
 	ir_node    *in[1];
 	ir_node    *new_block;
-	ir_node    *proj;
 	size_t      n_default_preds;
 
 	assert(tarval_is_null(info->switch_min));
@@ -212,6 +211,7 @@ static void create_out_of_bounds_check(switch_info_t *info)
 	set_nodes_block(switchn, new_block);
 
 	/* adjust projs */
+	ir_node *proj = NULL;
 	foreach_out_irn(switchn, i, proj) {
 		long pn = get_Proj_proj(proj);
 		if (pn == pn_Switch_default) {
