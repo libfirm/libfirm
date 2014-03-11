@@ -582,7 +582,6 @@ static ir_node *gen_binop_rax(ir_node *node, ir_node *op1, ir_node *op2,
 
 	ir_node *load;
 	ir_node *op;
-	ir_node *mem_proj;
 	ir_node *block = get_nodes_block(node);
 	ir_node *in[4];
 	int      arity = 0;
@@ -595,6 +594,7 @@ static ir_node *gen_binop_rax(ir_node *node, ir_node *op1, ir_node *op2,
 	if (mode_bits == 8 || mode_bits == 16)
 		use_am = false;
 
+	ir_node *mem_proj = NULL;
 	if (use_am) {
 		ir_node *new_op    = be_transform_node(op);
 		int      reg_input = arity++;
@@ -623,12 +623,14 @@ static ir_node *gen_binop_rax(ir_node *node, ir_node *op1, ir_node *op2,
 	}
 
 	assert((size_t)arity <= ARRAY_SIZE(in));
-	(void)mem_proj;
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *new_block = be_transform_node(block);
 	ir_node  *new_node  = make_node(dbgi, new_block, arity, in, insn_mode,
 	                                op_mode, addr);
 	arch_set_irn_register_reqs_in(new_node, reqs);
+	if (mem_proj != NULL) {
+		be_set_transformed_node(load, new_node);
+	}
 	return new_node;
 }
 
