@@ -1327,27 +1327,22 @@ static ir_node *equivalent_node_Phi(ir_node *n)
  */
 static ir_node *equivalent_node_Sync(ir_node *n)
 {
-	int arity = get_Sync_n_preds(n);
-	assert(arity > 0);
-
-	ir_node *op = get_Sync_pred(n, 0);
-
-	for (int i = 1; i < arity; i++) {
-		ir_node *pred = get_Sync_pred(n, i);
-
+	ir_node *op = NULL;
+	foreach_irn_in(n, i, pred) {
 		if (pred == op) {
 			continue;
-		}
-
-		/* We can ignore Bad predecessors */
-		if (is_Bad(op)) {
+		} else if (!op) {
 			op = pred;
+		} else if (is_NoMem(pred)) {
 			continue;
+		} else if (is_NoMem(op)) {
+			op = pred;
+		} else {
+			return n;
 		}
-
-		return n;
 	}
 
+	assert(op);
 	return op;
 }
 
