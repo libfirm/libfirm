@@ -4931,17 +4931,17 @@ static ir_node *transform_node_shift(ir_node *n)
 		return n;
 	}
 
-	ir_mode * mode       = get_irn_mode(n);
-	int       modulo_shf = get_mode_modulo_shift(mode);
+	ir_mode  *mode       = get_irn_mode(n);
+	unsigned  modulo_shf = get_mode_modulo_shift(mode);
 
 	if (modulo_shf > 0) {
-		ir_tarval *modulo_mask = new_tarval_from_long(modulo_shf-1, count_mode);
+		ir_tarval *modulo_mask = new_tarval_from_long(modulo_shf - 1U, count_mode);
 
 		/* I'm not so sure what happens in one complement... */
 		assert(get_mode_arithmetic(count_mode) == irma_twos_complement);
 		/* modulo shifts should always be a power of 2 (otherwise modulo_mask
 		 * above will be invalid) */
-		assert(modulo_shf<=0 || is_po2(modulo_shf));
+		assert(is_po2(modulo_shf));
 
 		tv1 = tarval_and(tv1, modulo_mask);
 		tv2 = tarval_and(tv2, modulo_mask);
@@ -4967,7 +4967,7 @@ static ir_node *transform_node_shift(ir_node *n)
 	}
 
 	/* ok, we can replace it */
-	assert(modulo_shf >= (int) get_mode_size_bits(mode));
+	assert(modulo_shf >= get_mode_size_bits(mode));
 	ir_node *block = get_nodes_block(n);
 
 	ir_node *in[2];
@@ -5879,7 +5879,7 @@ static ir_node *transform_node_Mux(ir_node *n)
 			dbg_info *dbgi       = get_irn_dbg_info(n);
 			ir_node  *block      = get_nodes_block(n);
 			ir_node  *op         = ir_get_abs_op(sel, f, t);
-			int       bits       = get_mode_size_bits(mode);
+			unsigned  bits       = get_mode_size_bits(mode);
 			ir_node  *shiftconst = new_r_Const_long(irg, mode_Iu, bits-1);
 			ir_node  *sext       = new_rd_Shrs(dbgi, block, op, shiftconst, mode);
 			ir_node  *xorn       = new_rd_Eor(dbgi, block, op, sext, mode);
@@ -6268,7 +6268,7 @@ static ir_node *extract_from_initializer(const ir_type *type,
 {
 	if (offset < 0)
 		return NULL;
-	int size = get_type_size_bytes(type);
+	unsigned size = get_type_size_bytes(type);
 	if (offset >= size)
 		return NULL;
 
