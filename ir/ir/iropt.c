@@ -6359,12 +6359,9 @@ handle_tv:;
 				    == IR_INITIALIZER_NULL)
 				    continue;
 				long new_offset = offset - member_offs;
-				ir_node *res
-					= extract_from_initializer(member_type, sub_initializer,
-				                               new_offset, mode, dbgi, irg);
-				if (res != NULL)
-					return res;
-				return NULL;
+
+				return extract_from_initializer(member_type, sub_initializer,
+				                                new_offset, mode, dbgi, irg);
 			}
 			return create_zero_const(irg, mode);
 		}
