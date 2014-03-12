@@ -6278,7 +6278,7 @@ static ir_node *extract_from_initializer(const ir_type *type,
 	if (offset < 0)
 		return NULL;
 	unsigned size = get_type_size_bytes(type);
-	if (offset >= size)
+	if ((unsigned long)offset >= size)
 		return NULL;
 
 	ir_tarval *tv;
