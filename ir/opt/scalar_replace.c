@@ -531,10 +531,10 @@ static void walker(ir_node *node, void *ctx)
 		DB((dbg, SET_LEVEL_3, "replacing by value %u\n", vnum));
 
 		ir_node *block = get_nodes_block(node);
-		set_cur_block(block);
+		set_r_cur_block(irg, block);
 
 		/* check, if we can replace this Load */
-		ir_node *val = get_value(vnum, env->modes[vnum]);
+		ir_node *val = get_r_value(irg, vnum, env->modes[vnum]);
 
 		/* Beware: A Load can contain a hidden conversion in Firm.
 		This happens for instance in the following code:
@@ -577,14 +577,14 @@ static void walker(ir_node *node, void *ctx)
 		DB((dbg, SET_LEVEL_3, "replacing by value %u\n", vnum));
 
 		ir_node *block = get_nodes_block(node);
-		set_cur_block(block);
+		set_r_cur_block(irg, block);
 
 		/* Beware: A Store can contain a hidden conversion in Firm. */
 		ir_node *val = get_Store_value(node);
 		if (get_irn_mode(val) != env->modes[vnum])
 			val = new_rd_Conv(get_irn_dbg_info(node), block, val, env->modes[vnum]);
 
-		set_value(vnum, val);
+		set_r_value(irg, vnum, val);
 
 		ir_node *mem = get_Store_mem(node);
 		ir_node *const in[] = {
