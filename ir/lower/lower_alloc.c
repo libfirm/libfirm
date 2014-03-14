@@ -47,15 +47,15 @@ static ir_node *adjust_alloc_size(dbg_info *dbgi, ir_node *size, ir_node *block)
 	return size;
 }
 
-static void transform_Proj_Alloc(ir_node *node)
+static bool transform_Proj_Alloc(ir_node *node)
 {
 	/* we might need a result adjustment */
 	if (addr_delta == 0)
-		return;
+		return false;
 	if (get_Proj_proj(node) != pn_Alloc_res)
-		return;
+		return false;
 	if (ir_nodeset_contains(&transformed, node))
-		return;
+		return false;
 
 	ir_node  *const alloc = get_Proj_pred(node);
 	dbg_info *const dbgi  = get_irn_dbg_info(alloc);
@@ -69,6 +69,7 @@ static void transform_Proj_Alloc(ir_node *node)
 	ir_node *const new_proj = new_r_Proj(alloc, mode_P, pn_Alloc_res);
 	set_Add_left(add, new_proj);
 	ir_nodeset_insert(&transformed, new_proj);
+	return true;
 }
 
 /**
@@ -76,12 +77,13 @@ static void transform_Proj_Alloc(ir_node *node)
  */
 static void lower_alloca_free(ir_node *node, void *data)
 {
+	bool *changed = (bool*)data;
 	(void) data;
 	if (is_Alloc(node)) {
 	} else if (is_Proj(node)) {
 		ir_node *proj_pred = get_Proj_pred(node);
 		if (is_Alloc(proj_pred)) {
-			transform_Proj_Alloc(node);
+			*changed |= transform_Proj_Alloc(node);
 		}
 		return;
 	} else {
@@ -104,6 +106,7 @@ static void lower_alloca_free(ir_node *node, void *data)
 
 	if (new_node != node)
 		exchange(node, new_node);
+	*changed = true;
 }
 
 void lower_alloc(ir_graph *irg, unsigned new_stack_alignment, bool lower_consts,
@@ -114,7 +117,11 @@ void lower_alloc(ir_graph *irg, unsigned new_stack_alignment, bool lower_consts,
 	addr_delta           = new_addr_delta;
 	stack_alignment      = new_stack_alignment;
 	lower_constant_sizes = lower_consts;
+	bool changed = false;
 	ir_nodeset_init(&transformed);
-	irg_walk_graph(irg, lower_alloca_free, NULL, NULL);
+	irg_walk_graph(irg, lower_alloca_free, NULL, &changed);
 	ir_nodeset_destroy(&transformed);
+
+	confirm_irg_properties(irg, changed ? IR_GRAPH_PROPERTIES_CONTROL_FLOW
+	                                    : IR_GRAPH_PROPERTIES_ALL);
 }
