@@ -930,12 +930,7 @@ FIRM_API int check_type(const ir_type *tp);
 /**
  * Walks the type information and performs a set of sanity checks.
  *
- * Currently, the following checks are executed:
- * - values of initialized entities must be allocated on the constant IRG
- * - class types: doesn't have NULL members
- * - class types: all overwrites are existent in the super type
- *
- * @return 0 if no error encountered
+ * @return 0 in case of an error
  */
 FIRM_API int tr_verify(void);
 
