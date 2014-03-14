@@ -1203,6 +1203,8 @@ static int check_cfg(ir_graph *irg)
 	return env.fine;
 }
 
+static bool check_graph_properties(ir_graph *irg);
+
 int irg_verify(ir_graph *irg)
 {
 	bool fine   = true;
@@ -1218,6 +1220,9 @@ int irg_verify(ir_graph *irg)
 		pinned && irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE) ? verify_wrap_ssa : verify_wrap,
 		NULL, &fine
 	);
+
+	if (fine)
+		fine = check_graph_properties(irg);
 
 	return fine;
 }
@@ -1298,4 +1303,112 @@ void ir_register_verify_node_ops(void)
 	register_verify_node_func_proj(op_Store,  verify_node_Proj_Store);
 	register_verify_node_func_proj(op_Switch, verify_node_Proj_Switch);
 	register_verify_node_func_proj(op_Tuple,  verify_node_Proj_Tuple);
+}
+
+static bool has_multiple_X_succs(const ir_node *node)
+{
+	return is_Cond(node) || is_Switch(node)
+	    || (is_fragile_op(node) && ir_throws_exception(node));
+}
+
+static unsigned n_returns;
+static bool     properties_fine;
+
+static void check_simple_properties(ir_node *node, void *env)
+{
+	ir_graph *irg = (ir_graph*)env;
+	if (is_Bad(node)) {
+		if (irg_has_properties(irg, IR_GRAPH_PROPERTY_NO_BADS)) {
+			warn(node, "IR_GRAPH_PROPERTY_NO_BADS is set, but Bad exists");
+			properties_fine = false;
+		}
+	}
+	if (is_Tuple(node)) {
+		if (irg_has_properties(irg, IR_GRAPH_PROPERTY_NO_TUPLES)) {
+			warn(node, "IR_GRAPH_PROPERTY_NO_TUPLES is set, but Tuple exists");
+			properties_fine = false;
+		}
+	}
+	if (is_Block(node)) {
+		if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+		                          | IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE)
+		    && get_Block_dom_depth(node) == -1) {
+			warn(node, "IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE + IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE is set, but block has depth -1");
+			properties_fine = false;
+		}
+		if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE
+		                          | IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE)
+		    && get_Block_postdom_depth(node) == -1) {
+			warn(node, "IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE + IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE is set, but block has depth -1");
+			properties_fine = false;
+		}
+
+		if (get_irn_arity(node) > 1
+		    && irg_has_properties(irg, IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES)) {
+			foreach_irn_in(node, p, pred) {
+				ir_node *skipped = skip_Proj(skip_Tuple(pred));
+				if (has_multiple_X_succs(skipped)) {
+					warn(node, "IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES set, but edge %+F->%+F is critical", node, skipped);
+					properties_fine = false;
+				}
+			}
+		}
+	}
+	if (is_Return(node)) {
+		++n_returns;
+		if (n_returns > 1
+		    && irg_has_properties(irg, IR_GRAPH_PROPERTY_ONE_RETURN)) {
+			warn(node, "IR_GRAPH_PROPERTY_ONE_RETURN set, but multiple return nodes found");
+			properties_fine = false;
+		}
+	}
+}
+
+static void insert_node(ir_node *node, void *env)
+{
+	ir_nodeset_t *nodes = (ir_nodeset_t*)env;
+	ir_nodeset_insert(nodes, node);
+}
+
+static void assure_in_set(ir_node *node, void *env)
+{
+	ir_nodeset_t *nodes = (ir_nodeset_t*)env;
+	if (!ir_nodeset_contains(nodes, node)) {
+		warn(node, "IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES set, but node cannot be found with normal edges");
+		properties_fine = false;
+	}
+	ir_nodeset_remove(nodes, node);
+}
+
+static void check_consistent_out_edges(ir_graph *irg)
+{
+	if (!irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES))
+		return;
+
+	if (!edges_verify(irg))
+		properties_fine = false;
+
+	ir_nodeset_t nodes;
+	ir_nodeset_init(&nodes);
+	irg_walk_anchors(irg, insert_node, NULL, &nodes);
+
+	irg_walk_edges(get_irg_start_block(irg), assure_in_set, NULL, &nodes);
+	ir_node *end_block = get_irg_end_block(irg);
+	if (!irn_visited(end_block)) {
+		assure_in_set(end_block, &nodes);
+	}
+
+	foreach_ir_nodeset(&nodes, node, i) {
+		warn(node, "IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES set, but node cannot be found with out edges");
+		properties_fine = false;
+	}
+}
+
+static bool check_graph_properties(ir_graph *irg)
+{
+	properties_fine = true;
+	n_returns = 0;
+	irg_walk_graph(irg, check_simple_properties, NULL, irg);
+	check_consistent_out_edges(irg);
+	return properties_fine;
 }
