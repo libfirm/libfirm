@@ -806,6 +806,8 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 	if (env.heights != NULL)
 		heights_free(env.heights);
 	obstack_free(&env.obst, NULL);
+	confirm_irg_properties(irg, env.changed
+			? IR_GRAPH_PROPERTIES_CONTROL_FLOW : IR_GRAPH_PROPERTIES_ALL);
 }
 
 static void lower_method_types(ir_type *const type, ir_entity *const entity, void *const env)
