@@ -667,19 +667,12 @@ int edges_verify_kind(ir_graph *irg, ir_edge_kind_t kind)
 #endif
 }
 
-#define IGNORE_NODE(irn) (is_Bad((irn)) || is_Block((irn)))
-
 /**
  * Clear link field of all nodes.
  */
 static void clear_links(ir_node *irn, void *env)
 {
 	(void)env;
-
-	if (IGNORE_NODE(irn)) {
-		set_irn_link(irn, NULL);
-		return;
-	}
 
 	ir_graph *irg = get_irn_irg(irn);
 	bitset_t *bs  = bitset_malloc(get_irg_last_idx(irg));
@@ -694,7 +687,7 @@ static void count_user(ir_node *irn, void *env)
 	(void)env;
 
 	int first = is_Block(irn) ? 0 : -1;
-	for (int i = get_irn_arity(irn) - 1; i >= first; --i) {
+	for (int i = get_irn_arity(irn); i-- > first; ) {
 		ir_node  *op = get_irn_n(irn, i);
 		bitset_t *bs = (bitset_t*)get_irn_link(op);
 
@@ -704,13 +697,12 @@ static void count_user(ir_node *irn, void *env)
 }
 
 /**
- * Verifies if collected count, number of edges in list and stored edge count are in sync.
+ * Verifies if collected count, number of edges in list and stored edge count
+ * are in sync.
  */
 static void verify_edge_counter(ir_node *irn, void *env)
 {
 	build_walker *w = (build_walker*)env;
-	if (IGNORE_NODE(irn))
-		return;
 
 	bitset_t *bs       = (bitset_t*)get_irn_link(irn);
 	int       list_cnt = 0;
@@ -731,6 +723,11 @@ static void verify_edge_counter(ir_node *irn, void *env)
 	bitset_foreach(bs, idx) {
 		ir_node *src = get_idx_irn(irg, idx);
 		foreach_irn_in(src, i, in) {
+			if (in == irn)
+				++ref_cnt;
+		}
+		if (!is_Block(src)) {
+			ir_node *in = get_irn_n(src, -1);
 			if (in == irn)
 				++ref_cnt;
 		}
