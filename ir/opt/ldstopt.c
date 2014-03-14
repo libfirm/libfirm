@@ -43,8 +43,11 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 typedef enum changes_t {
 	NO_CHANGES = 0,
-	DF_CHANGED = 1,       /**< data flow changed */
-	CF_CHANGED = 2,       /**< control flow changed */
+	DF_CHANGED = (1 << 0), /**< data flow changed */
+	CF_CHANGED = (1 << 1), /**< control flow changed */
+	/** nodes have been created but are not reachable. This is a bad hack
+	 * try hard to avoid it! */
+	NODES_CREATED = (1 << 2),
 } changes_t;
 
 /**
@@ -724,6 +727,7 @@ static changes_t follow_Mem_chain(ir_node *load, ir_node *curr)
 			ir_node *new_ptr  = try_update_ptr_CopyB(load, base_ptr, load_offset, pred);
 
 			if (new_ptr) {
+				res |= NODES_CREATED;
 				ptr = new_ptr;
 				/*
 				 * Special case: If new_ptr points to
@@ -759,8 +763,8 @@ static changes_t follow_Mem_chain(ir_node *load, ir_node *curr)
 	if (is_Sync(pred)) {
 		/* handle all Sync predecessors */
 		for (int i = get_Sync_n_preds(pred); i-- > 0; ) {
-			res |= follow_Mem_chain(load, skip_Proj(get_Sync_pred(pred, i)));
-			if (res)
+			res |=  follow_Mem_chain(load, skip_Proj(get_Sync_pred(pred, i)));
+			if (res & ~NODES_CREATED)
 				return res;
 		}
 	}
@@ -2121,9 +2125,11 @@ void optimize_load_store(ir_graph *irg)
 	obstack_free(&env.obst, NULL);
 
 	confirm_irg_properties(irg,
-		env.changes
-		? env.changes & CF_CHANGED
-			? IR_GRAPH_PROPERTIES_NONE
-			: IR_GRAPH_PROPERTIES_CONTROL_FLOW
-		: IR_GRAPH_PROPERTIES_ALL);
+		env.changes == NO_CHANGES ? IR_GRAPH_PROPERTIES_ALL :
+		(env.changes & CF_CHANGED) != 0 ? IR_GRAPH_PROPERTIES_NONE :
+		(env.changes & DF_CHANGED) != 0 ? IR_GRAPH_PROPERTIES_CONTROL_FLOW :
+		/*NODES_CREATED*/ IR_GRAPH_PROPERTIES_CONTROL_FLOW
+		| IR_GRAPH_PROPERTY_NO_BADS | IR_GRAPH_PROPERTY_NO_TUPLES
+		| IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE
+		| IR_GRAPH_PROPERTY_MANY_RETURNS);
 }
