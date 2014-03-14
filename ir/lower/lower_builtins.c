@@ -133,8 +133,8 @@ static void replace_may_alias(ir_node *node)
 
 static void lower_builtin(ir_node *node, void *env)
 {
+	bool *changed = (bool*)env;
 	ir_builtin_kind kind;
-	(void) env;
 	if (!is_Builtin(node))
 		return;
 
@@ -148,7 +148,8 @@ static void lower_builtin(ir_node *node, void *env)
 		ir_node *mem = get_Builtin_mem(node);
 		ir_node *const in[] = { mem };
 		turn_into_tuple(node, ARRAY_SIZE(in), in);
-		break;
+		*changed = true;
+		return;
 	}
 
 	case ir_bk_ffs:
@@ -159,10 +160,12 @@ static void lower_builtin(ir_node *node, void *env)
 	case ir_bk_bswap:
 		/* replace with a call */
 		replace_with_call(node);
+		*changed = true;
 		return;
 
 	case ir_bk_may_alias:
 		replace_may_alias(node);
+		*changed = true;
 		return;
 
 	case ir_bk_trap:
@@ -177,6 +180,7 @@ static void lower_builtin(ir_node *node, void *env)
 		/* can't do anything about these, backend will probably fail now */
 		panic("Can't lower Builtin node of kind %+F", node);
 	}
+	panic("unexpected builtin %+F", node);
 }
 
 void lower_builtins(size_t n_exceptions, ir_builtin_kind *exceptions)
@@ -193,7 +197,10 @@ void lower_builtins(size_t n_exceptions, ir_builtin_kind *exceptions)
 	n_irgs = get_irp_n_irgs();
 	for (i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
-		irg_walk_graph(irg, NULL, lower_builtin, NULL);
+		bool changed = false;
+		irg_walk_graph(irg, NULL, lower_builtin, &changed);
+		confirm_irg_properties(irg, changed ? IR_GRAPH_PROPERTIES_CONTROL_FLOW
+		                                    : IR_GRAPH_PROPERTIES_ALL);
 	}
 
 	pmap_destroy(entities);
