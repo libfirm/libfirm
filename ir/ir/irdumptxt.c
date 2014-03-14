@@ -449,20 +449,29 @@ static void dump_ir_initializers_to_file(FILE *const F,
 				}
 			}
 		} else {
-			assert(is_compound_type(type));
-			for (size_t i = 0, n = get_compound_n_members(type); i < n; ++i) {
-				const ir_entity *member  = get_compound_member(type, i);
-				const ir_type   *subtype = get_entity_type(member);
-				assert(i < get_initializer_compound_n_entries(initializer));
-				const ir_initializer_t *sub_initializer
-					= get_initializer_compound_value(initializer, i);
+			if (!is_compound_type(type)) {
+				fprintf(F, "\n%s BAD Initializer", prefix);
+			} else {
+				for (size_t i = 0,
+				     n = get_initializer_compound_n_entries(initializer);
+				     i < n; ++i) {
+					if (i >= get_compound_n_members(type)) {
+						fprintf(F, "\n%s BAD initializer", prefix);
+						continue;
+					}
+					const ir_entity *member  = get_compound_member(type, i);
+					const ir_type   *subtype = get_entity_type(member);
+					assert(i < get_initializer_compound_n_entries(initializer));
+					const ir_initializer_t *sub_initializer
+						= get_initializer_compound_value(initializer, i);
 
-				if (need_nl) {
-					fprintf(F, "\n%s    ", prefix);
-					need_nl = false;
+					if (need_nl) {
+						fprintf(F, "\n%s    ", prefix);
+						need_nl = false;
+					}
+					ir_fprintf(F, ".%F", member);
+					dump_ir_initializers_to_file(F, prefix, sub_initializer, subtype);
 				}
-				ir_fprintf(F, ".%F", member);
-				dump_ir_initializers_to_file(F, prefix, sub_initializer, subtype);
 			}
 		}
 		break;
