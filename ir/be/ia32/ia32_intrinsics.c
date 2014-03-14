@@ -211,6 +211,7 @@ static void ia32_lower_conv64(ir_node *node, ir_mode *mode)
 
 			ir_node *lower_blk = part_block_dw(node);
 			ir_node *upper_blk = get_nodes_block(node);
+			set_dw_control_flow_changed();
 
 			ir_node *opc  = new_rd_Conv(dbg, upper_blk, op, ia32_mode_E);
 			ir_node *cmp  = new_rd_Cmp(dbg, upper_blk, opc, flt_corr,

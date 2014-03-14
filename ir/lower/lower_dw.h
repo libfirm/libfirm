@@ -101,6 +101,12 @@ void ir_default_lower_dw_Conv(ir_node *node, ir_mode *mode);
 ir_node *part_block_dw(ir_node *node);
 
 /**
+ * (External) lowering callbacks must call this to announce that they changed
+ * the control flow.
+ */
+void set_dw_control_flow_changed(void);
+
+/**
  * Return the unsigned variant of the lowered mode
  * Note: you must only call this during a dw_lowering (= in a lowering callback)
  */

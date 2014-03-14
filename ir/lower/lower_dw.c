@@ -744,6 +744,11 @@ ir_node *part_block_dw(ir_node *node)
 	return old_block;
 }
 
+void set_dw_control_flow_changed(void)
+{
+	env->flags |= CF_CHANGED;
+}
+
 typedef ir_node* (*new_rd_shr_func)(dbg_info *dbgi, ir_node *block,
                                     ir_node *left, ir_node *right,
                                     ir_mode *mode);
