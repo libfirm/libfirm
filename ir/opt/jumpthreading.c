@@ -584,6 +584,7 @@ static void thread_jumps(ir_node* block, void* data)
 			[pn_Cond_true]  = is_true ? jmp : bad,
 		};
 		turn_into_tuple(cond, ARRAY_SIZE(in), in);
+		*changed = true;
 		return;
 	}
 	inc_irg_visited(irg);
