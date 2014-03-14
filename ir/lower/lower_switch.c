@@ -246,7 +246,7 @@ static void create_out_of_bounds_check(switch_info_t *info)
 /**
  * normalize switch to work on an unsigned input with the first case at 0
  */
-static void normalize_switch(switch_info_t *info, ir_mode *selector_mode)
+static bool normalize_switch(switch_info_t *info, ir_mode *selector_mode)
 {
 	ir_node   *switchn         = info->switchn;
 	ir_graph  *irg             = get_irn_irg(switchn);
@@ -295,10 +295,12 @@ static void normalize_switch(switch_info_t *info, ir_mode *selector_mode)
 		needs_normalize = true;
 	}
 
-	if (needs_normalize) {
-		set_Switch_selector(switchn, selector);
-		normalize_table(switchn, mode, delta);
-	}
+	if (!needs_normalize)
+		return false;
+
+	set_Switch_selector(switchn, selector);
+	normalize_table(switchn, mode, delta);
+	return true;
 }
 
 /**
@@ -439,7 +441,7 @@ static void find_switch_nodes(ir_node *block, void *ctx)
 	if (!lower_switch) {
 		/* we won't decompose the switch. But we must add an out-of-bounds
 		 * check */
-		normalize_switch(&info, env->selector_mode);
+		env->changed |= normalize_switch(&info, env->selector_mode);
 		return;
 	}
 
@@ -479,5 +481,6 @@ void lower_switch(ir_graph *irg, unsigned small_switch, unsigned spare_size,
 	irg_block_walk_graph(irg, find_switch_nodes, NULL, &env);
 	ir_nodeset_destroy(&env.processed);
 
-	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
+	confirm_irg_properties(irg, env.changed ? IR_GRAPH_PROPERTIES_NONE
+	                                        : IR_GRAPH_PROPERTIES_ALL);
 }
