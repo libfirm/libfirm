@@ -270,5 +270,6 @@ void ir_lower_mode_b(ir_graph *const irg, ir_mode *const nlowered_mode)
 
 	DEL_ARR_F(needs_lowering);
 
-	confirm_irg_properties(irg, n > 0 ? IR_GRAPH_PROPERTIES_NONE : IR_GRAPH_PROPERTIES_ALL);
+	confirm_irg_properties(irg, n > 0 ? IR_GRAPH_PROPERTIES_NONE
+	                                  : IR_GRAPH_PROPERTIES_ALL);
 }
