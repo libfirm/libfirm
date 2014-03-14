@@ -2358,6 +2358,25 @@ static ir_node *transform_node_Or_(ir_node *n)
 		return n;
 	}
 
+	if (is_Eor(a) || is_Eor_Add(a)) {
+		ir_node *const o = get_commutative_other_op(a, b);
+		if (o) {
+			/* (x ^ y) | y => x | y */
+			dbg_info *dbgi  = get_irn_dbg_info(n);
+			ir_node  *block = get_nodes_block(n);
+			return new_rd_Or(dbgi, block, o, b, mode);
+		}
+	}
+	if (is_Eor(b) || is_Eor_Add(b)) {
+		ir_node *const o = get_commutative_other_op(b, a);
+		if (o) {
+			/* x | (x ^ y) => x | y */
+			dbg_info *dbgi  = get_irn_dbg_info(n);
+			ir_node  *block = get_nodes_block(n);
+			return new_rd_Or(dbgi, block, a, o, mode);
+		}
+	}
+
 	/* we can combine the relations of two compares with the same operands */
 	if (is_Cmp(a) && is_Cmp(b)) {
 		ir_node *a_left  = get_Cmp_left(a);
