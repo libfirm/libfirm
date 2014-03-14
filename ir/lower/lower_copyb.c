@@ -201,9 +201,13 @@ void lower_CopyB(ir_graph *irg, unsigned max_small_sz, unsigned min_large_sz,
 	INIT_LIST_HEAD(&env.list);
 	irg_walk_graph(irg, NULL, find_copyb_nodes, &env);
 
+	bool changed = false;
 	list_for_each_entry(entry_t, entry, &env.list, list) {
 		lower_copyb_node(entry->copyb);
+		changed = true;
 	}
+	confirm_irg_properties(irg, changed ? IR_GRAPH_PROPERTIES_CONTROL_FLOW
+	                                    : IR_GRAPH_PROPERTIES_ALL);
 
 	obstack_free(&env.obst, NULL);
 }
