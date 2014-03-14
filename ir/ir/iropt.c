@@ -1168,6 +1168,19 @@ static ir_node *equivalent_node_Or(ir_node *n)
 		return n;
 	}
 
+	/* (a & X) | a => a */
+	if (is_And(a) && get_commutative_other_op(a, b)) {
+		n = b;
+		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_OR);
+		return n;
+	}
+	/* a | (a & X) => a */
+	if (is_And(b) && get_commutative_other_op(b, a)) {
+		n = a;
+		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_OR);
+		return n;
+	}
+
 	return n;
 }
 
