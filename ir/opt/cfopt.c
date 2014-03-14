@@ -831,6 +831,7 @@ void optimize_cf(ir_graph *irg)
 	if (new_end != end) {
 		set_irg_end(irg, new_end);
 		end = new_end;
+		env.changed = true;
 	}
 	remove_End_Bads_and_doublets(end);
 
