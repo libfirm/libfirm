@@ -2761,21 +2761,17 @@ static void lower_irg(ir_graph *irg)
 		}
 		DEL_ARR_F(env->lowered_phis);
 		ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
-
-		if (env->flags & CF_CHANGED) {
-			/* control flow changed, dominance info is invalid */
-			confirm_irg_properties(irg,
-				IR_GRAPH_PROPERTY_ONE_RETURN
-				| IR_GRAPH_PROPERTY_MANY_RETURNS);
-		} else {
-			confirm_irg_properties(irg,IR_GRAPH_PROPERTIES_CONTROL_FLOW);
-		}
 	}
 
 	ir_free_resources(irg, IR_RESOURCE_PHI_LIST | IR_RESOURCE_IRN_LINK);
 
 	DEL_ARR_F(env->entries);
 	obstack_free(&env->obst, NULL);
+
+	confirm_irg_properties(irg,
+		!(env->flags & MUST_BE_LOWERED) ? IR_GRAPH_PROPERTIES_ALL :
+		env->flags & CF_CHANGED ? IR_GRAPH_PROPERTIES_NONE
+		                        : IR_GRAPH_PROPERTIES_CONTROL_FLOW);
 }
 
 static const lwrdw_param_t *param;
