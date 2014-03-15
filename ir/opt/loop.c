@@ -1964,7 +1964,7 @@ static unsigned simulate_next(ir_tarval **count_tar,
  * - tail-controlled
  * - exactly one be
  * - cmp
- * Returns Projection of cmp node or NULL; */
+ * Returns cmp node or NULL; */
 static ir_node *is_simple_loop(void)
 {
 	ir_node *loop_block, *exit_block, *projx, *cond, *cmp;
@@ -2055,23 +2055,21 @@ static unsigned are_mode_I(ir_node *n1, ir_node* n2, ir_node *n3)
 static unsigned get_unroll_decision_invariant(void)
 {
 
-	ir_node   *projres, *loop_condition, *iteration_path;
+	ir_node   *iteration_path;
 	unsigned   success;
 	ir_tarval *step_tar;
 	ir_mode   *mode;
 
 
 	/* RETURN if loop is not 'simple' */
-	projres = is_simple_loop();
-	if (projres == NULL)
+	ir_node *const loop_condition = is_simple_loop();
+	if (loop_condition == NULL)
 		return 0;
 
 	/* Use a minimal size for the invariant unrolled loop,
      * as duffs device produces overhead */
 	if (loop_info.nodes < opt_params.invar_unrolling_min_size)
 		return 0;
-
-	loop_condition = get_irn_n(projres, 0);
 
 	success = get_invariant_pred(loop_condition, &loop_info.end_val, &iteration_path);
 	DB((dbg, LEVEL_4, "pred invar %d\n", success));
