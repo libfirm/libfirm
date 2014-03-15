@@ -14,7 +14,7 @@
 #include "dbginfo_t.h"
 #include "debug.h"
 #include "error.h"
-#include "ircons.h"
+#include "ircons_t.h"
 #include "iredges.h"
 #include "irgmod.h"
 #include "irnodeset.h"
@@ -415,7 +415,7 @@ static bool lower_Cmp(ir_node *const n)
 
 	dbg_info *const dbgi = get_irn_dbg_info(n);
 	ir_graph *const irg  = get_irn_irg(n);
-	ir_node  *const zero = new_rd_Const(dbgi, irg, get_mode_null(mode_Is));
+	ir_node  *const zero = new_rd_Const_null(dbgi, irg, mode_Is);
 
 	char const  *name     = NULL;
 	char const  *name2    = NULL;

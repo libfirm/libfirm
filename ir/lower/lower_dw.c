@@ -29,7 +29,7 @@
 #include "irflag_t.h"
 #include "firmstat.h"
 #include "irgwalk.h"
-#include "ircons.h"
+#include "ircons_t.h"
 #include "irflag.h"
 #include "iroptimize.h"
 #include "debug.h"
@@ -801,7 +801,7 @@ static void lower_shr_helper(ir_node *node, ir_mode *mode,
 	 * than half the word width */
 	ir_node *cnst  = new_r_Const_long(irg, low_unsigned, modulo_shift2);
 	ir_node *andn  = new_r_And(block, right, cnst, low_unsigned);
-	ir_node *cnst2 = new_r_Const(irg, get_mode_null(low_unsigned));
+	ir_node *cnst2 = new_r_Const_null(irg, low_unsigned);
 	ir_node *cmp   = new_rd_Cmp(dbgi, block, andn, cnst2, ir_relation_equal);
 	ir_node *cond       = new_rd_Cond(dbgi, block, cmp);
 	ir_node *proj_true  = new_r_Proj(cond, mode_X, pn_Cond_true);
@@ -844,7 +844,7 @@ static void lower_shr_helper(ir_node *node, ir_mode *mode,
 	if (new_rd_shrs == new_rd_Shrs) {
 		fres_high = new_rd_shrs(dbgi, block_false, left_high, cnst3, mode);
 	} else {
-		fres_high = new_r_Const(irg, get_mode_null(mode));
+		fres_high = new_r_Const_null(irg, mode);
 	}
 
 	/* patch lower block */
@@ -915,7 +915,7 @@ static void lower_Shl(ir_node *node, ir_mode *mode)
 	 * than half the word width */
 	ir_node *cnst       = new_r_Const_long(irg, low_unsigned, modulo_shift2);
 	ir_node *andn       = new_r_And(block, right, cnst, low_unsigned);
-	ir_node *cnst2      = new_r_Const(irg, get_mode_null(low_unsigned));
+	ir_node *cnst2      = new_r_Const_null(irg, low_unsigned);
 	ir_node *cmp        = new_rd_Cmp(dbgi, block, andn, cnst2,
 	                                 ir_relation_equal);
 	ir_node *cond       = new_rd_Cond(dbgi, block, cmp);
@@ -943,7 +943,7 @@ static void lower_Shl(ir_node *node, ir_mode *mode)
 	/* false block => shift_width > 1word */
 	ir_node *fin[1]      = { proj_false };
 	ir_node *block_false = new_r_Block(irg, ARRAY_SIZE(fin), fin);
-	ir_node *fres_low    = new_r_Const(irg, get_mode_null(low_unsigned));
+	ir_node *fres_low    = new_r_Const_null(irg, low_unsigned);
 	ir_node *fconv       = create_conv(block_false, left_low, mode);
 	ir_node *fres_high   = new_rd_Shl(dbgi, block_false, fconv, right, mode);
 
@@ -1170,8 +1170,9 @@ static void lower_Cond(ir_node *node, ir_mode *high_mode)
 		ir_node *high_right = new_rd_Conv(dbg, block, rentry->high_word, mode);
 		ir_node *xor_low    = new_rd_Eor(dbg, block, low_left, low_right, mode);
 		ir_node *xor_high   = new_rd_Eor(dbg, block, high_left, high_right, mode);
-		ir_node *ornode = new_rd_Or(dbg, block, xor_low, xor_high, mode);
-		ir_node *cmp    = new_rd_Cmp(dbg, block, ornode, new_r_Const(irg, get_mode_null(mode)), relation);
+		ir_node *ornode     = new_rd_Or(dbg, block, xor_low, xor_high, mode);
+		ir_node *null       = new_r_Const_null(irg, mode);
+		ir_node *cmp        = new_rd_Cmp(dbg, block, ornode, null, relation);
 		set_Cond_selector(node, cmp);
 		return;
 	}
@@ -1334,12 +1335,12 @@ static void lower_Conv_to_Ll(ir_node *node)
 					op = new_rd_Conv(dbg, block, op, low_signed);
 				res_high = new_rd_Shrs(dbg, block, op, cnst, low_signed);
 			} else {
-				res_high = new_r_Const(irg, get_mode_null(low_signed));
+				res_high = new_r_Const_null(irg, low_signed);
 			}
 		}
 	} else if (imode == mode_b) {
 		res_low  = new_rd_Conv(dbg, block, op, low_unsigned);
-		res_high = new_r_Const(irg, get_mode_null(low_signed));
+		res_high = new_r_Const_null(irg, low_signed);
 	} else {
 		ir_node *irn, *call;
 		ir_type *mtp = get_conv_type(imode, omode);
@@ -1439,7 +1440,8 @@ static void lower_Cmp(ir_node *cmp, ir_mode *m)
 		ir_node  *xor_low    = new_rd_Eor(dbg, block, low_left, low_right, mode);
 		ir_node  *xor_high   = new_rd_Eor(dbg, block, high_left, high_right, mode);
 		ir_node  *ornode     = new_rd_Or(dbg, block, xor_low, xor_high, mode);
-		ir_node  *new_cmp    = new_rd_Cmp(dbg, block, ornode, new_r_Const(irg, get_mode_null(mode)), relation);
+		ir_node  *null       = new_r_Const_null(irg, mode);
+		ir_node  *new_cmp    = new_rd_Cmp(dbg, block, ornode, null, relation);
 		exchange(cmp, new_cmp);
 		return;
 	}
@@ -2353,9 +2355,9 @@ static void lower_reduce_builtin(ir_node *builtin, ir_mode *mode)
 	switch (kind) {
 	case ir_bk_ffs: {
 		ir_node               *number_of_bits = new_r_Const_long(irg, result_mode, get_mode_size_bits(env->low_unsigned));
-		ir_node               *zero_high      = new_rd_Const(dbgi, irg, get_mode_null(high_mode));
-		ir_node               *zero_unsigned  = new_rd_Const(dbgi, irg, get_mode_null(env->low_unsigned));
-		ir_node               *zero_result    = new_rd_Const(dbgi, irg, get_mode_null(result_mode));
+		ir_node               *zero_high      = new_rd_Const_null(dbgi, irg, high_mode);
+		ir_node               *zero_unsigned  = new_rd_Const_null(dbgi, irg, env->low_unsigned);
+		ir_node               *zero_result    = new_rd_Const_null(dbgi, irg, result_mode);
 		ir_node               *cmp_low        = new_rd_Cmp(dbgi, block, entry->low_word, zero_unsigned, ir_relation_equal);
 		ir_node               *cmp_high       = new_rd_Cmp(dbgi, block, entry->high_word, zero_high, ir_relation_equal);
 		ir_node               *ffs_high       = new_rd_Builtin(dbgi, block, mem, 1, in_high, kind, lowered_type_high);
@@ -2375,7 +2377,7 @@ static void lower_reduce_builtin(ir_node *builtin, ir_mode *mode)
 		break;
 	}
 	case ir_bk_clz: {
-		ir_node               *zero           = new_rd_Const(dbgi, irg, get_mode_null(high_mode));
+		ir_node               *zero           = new_rd_Const_null(dbgi, irg, high_mode);
 		ir_node               *cmp_high       = new_rd_Cmp(dbgi, block, entry->high_word, zero, ir_relation_equal);
 		ir_node               *clz_high       = new_rd_Builtin(dbgi, block, mem, 1, in_high, kind, lowered_type_high);
 		ir_node               *high           = new_r_Proj(clz_high, result_mode, pn_Builtin_max+1);
@@ -2391,7 +2393,7 @@ static void lower_reduce_builtin(ir_node *builtin, ir_mode *mode)
 		break;
 	}
 	case ir_bk_ctz: {
-		ir_node               *zero_unsigned  = new_rd_Const(dbgi, irg, get_mode_null(env->low_unsigned));
+		ir_node               *zero_unsigned  = new_rd_Const_null(dbgi, irg, env->low_unsigned);
 		ir_node               *cmp_low        = new_rd_Cmp(dbgi, block, entry->low_word, zero_unsigned, ir_relation_equal);
 		ir_node               *ffs_high       = new_rd_Builtin(dbgi, block, mem, 1, in_high, kind, lowered_type_high);
 		ir_node               *high_proj      = new_r_Proj(ffs_high, result_mode, pn_Builtin_max+1);

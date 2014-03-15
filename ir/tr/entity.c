@@ -17,7 +17,7 @@
 #include "util.h"
 #include "irhooks.h"
 #include "irprog_t.h"
-#include "ircons.h"
+#include "ircons_t.h"
 #include "tv_t.h"
 #include "irdump.h"
 #include "irgraph_t.h"
@@ -453,7 +453,7 @@ ir_node *get_atomic_ent_value(const ir_entity *entity)
 	case IR_INITIALIZER_NULL: {
 		ir_type *type = get_entity_type(entity);
 		ir_mode *mode = get_type_mode(type);
-		return new_r_Const(get_const_code_irg(), get_mode_null(mode));
+		return new_r_Const_null(get_const_code_irg(), mode);
 	}
 	case IR_INITIALIZER_TARVAL: {
 		ir_tarval *tv = get_initializer_tarval_value(initializer);

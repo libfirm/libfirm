@@ -1902,17 +1902,6 @@ static ir_node *transform_node_AddSub(ir_node *n)
   }                                               \
   } while(0)
 
-/**
- * Create a 0 constant of given mode.
- */
-static ir_node *create_zero_const(ir_graph *irg, ir_mode *mode)
-{
-	ir_tarval *tv   = get_mode_null(mode);
-	ir_node   *cnst = new_r_Const(irg, tv);
-
-	return cnst;
-}
-
 static ir_node *create_bool_const(ir_graph *const irg, bool const val)
 {
 	ir_tarval *const tv = val ? get_tarval_b_true() : get_tarval_b_false();
@@ -2405,7 +2394,7 @@ static ir_node *transform_node_Or_(ir_node *n)
 				ir_node  *xorb   = new_rd_Eor(dbgi, block, b_left, b_right, b_mode);
 				ir_node  *conv   = new_rd_Conv(dbgi, block, xora, b_mode);
 				ir_node  *orn    = new_rd_Or(dbgi, block, conv, xorb, b_mode);
-				ir_node  *zero   = create_zero_const(irg, b_mode);
+				ir_node  *zero   = new_r_Const_null(irg, b_mode);
 				return new_rd_Cmp(dbgi, block, orn, zero, ir_relation_less_greater);
 			}
 			if (values_in_mode(get_irn_mode(b_left), get_irn_mode(a_left))) {
@@ -2418,7 +2407,7 @@ static ir_node *transform_node_Or_(ir_node *n)
 				ir_node  *xorb   = new_rd_Eor(dbgi, block, b_left, b_right, b_mode);
 				ir_node  *conv   = new_rd_Conv(dbgi, block, xorb, a_mode);
 				ir_node  *orn    = new_rd_Or(dbgi, block, xora, conv, a_mode);
-				ir_node  *zero   = create_zero_const(irg, a_mode);
+				ir_node  *zero   = new_r_Const_null(irg, a_mode);
 				return new_rd_Cmp(dbgi, block, orn, zero, ir_relation_less_greater);
 			}
 		}
@@ -3376,7 +3365,7 @@ static ir_node *transform_node_Mod(ir_node *n)
 		ir_node *b = get_Mod_right(n);
 		if (a == b && value_not_null(a, NULL)) {
 			/* BEWARE: we can optimize a%a to 0 only if this cannot cause a exception */
-			value = create_zero_const(irg, mode);
+			value = new_r_Const_null(irg, mode);
 			DBG_OPT_CSTEVAL(n, value);
 			goto make_tuple;
 		} else {
@@ -3385,7 +3374,7 @@ static ir_node *transform_node_Mod(ir_node *n)
 
 				if (tarval_is_minus_one(tv)) {
 					/* a % -1 = 0 */
-					value = create_zero_const(irg, mode);
+					value = new_r_Const_null(irg, mode);
 					DBG_OPT_CSTEVAL(n, value);
 					goto make_tuple;
 				}
@@ -3619,7 +3608,7 @@ static ir_node *transform_node_And(ir_node *n)
 				ir_node  *conv   = new_rd_Conv(dbgi, block, xora, b_mode);
 				ir_node  *orn    = new_rd_Or(dbgi, block, conv, xorb, b_mode);
 				ir_graph *irg    = get_irn_irg(n);
-				ir_node  *zero   = create_zero_const(irg, b_mode);
+				ir_node  *zero   = new_r_Const_null(irg, b_mode);
 				return new_rd_Cmp(dbgi, block, orn, zero, ir_relation_equal);
 			}
 			if (values_in_mode(get_irn_mode(b_left), get_irn_mode(a_left))) {
@@ -3632,7 +3621,7 @@ static ir_node *transform_node_And(ir_node *n)
 				ir_node  *conv   = new_rd_Conv(dbgi, block, xorb, a_mode);
 				ir_node  *orn    = new_rd_Or(dbgi, block, xora, conv, a_mode);
 				ir_graph *irg    = get_irn_irg(n);
-				ir_node  *zero   = create_zero_const(irg, a_mode);
+				ir_node  *zero   = new_r_Const_null(irg, a_mode);
 				return new_rd_Cmp(dbgi, block, orn, zero, ir_relation_equal);
 			}
 		}
@@ -4031,7 +4020,7 @@ static ir_node *transform_node_Proj_Mod(ir_node *proj)
 				/* a % a = 0 if a != 0 */
 				ir_graph *irg  = get_irn_irg(proj);
 				ir_mode  *mode = get_irn_mode(proj);
-				ir_node  *res  = create_zero_const(irg, mode);
+				ir_node  *res  = new_r_Const_null(irg, mode);
 
 				DBG_OPT_CSTEVAL(mod, res);
 				return res;
@@ -4275,7 +4264,7 @@ static ir_node *transform_node_Cmp(ir_node *n)
 cmp_x_eq_0:;
 					ir_graph *irg = get_irn_irg(n);
 					left    = x;
-					right   = create_zero_const(irg, mode);
+					right   = new_r_Const_null(irg, mode);
 					changed = true;
 					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
 				}
@@ -4344,7 +4333,7 @@ cmp_x_eq_0:;
 				relation =
 					relation == ir_relation_equal ? ir_relation_less_greater
 					                              : ir_relation_equal;
-				right = create_zero_const(irg, mode);
+				right = new_r_Const_null(irg, mode);
 				changed |= 1;
 				goto is_bittest;
 			}
@@ -4999,7 +4988,7 @@ static ir_node *transform_node_shift(ir_node *n)
 			return new_rd_Shrs(dbgi, block, get_binop_left(left), cnst, mode);
 		}
 
-		return create_zero_const(irg, mode);
+		return new_r_Const_null(irg, mode);
 	}
 
 	/* ok, we can replace it */
@@ -6310,10 +6299,9 @@ static ir_node *extract_from_initializer(const ir_type *type,
 
 	ir_tarval *tv;
 	switch (get_initializer_kind(initializer)) {
-	case IR_INITIALIZER_NULL: {
-		ir_tarval *tv = get_mode_null(mode);
-		return new_r_Const(irg, tv);
-	}
+	case IR_INITIALIZER_NULL:
+		return new_r_Const_null(irg, mode);
+
 	case IR_INITIALIZER_TARVAL: {
 		tv = get_initializer_tarval_value(initializer);
 handle_tv:;
@@ -6390,7 +6378,7 @@ handle_tv:;
 				return extract_from_initializer(member_type, sub_initializer,
 				                                new_offset, mode, dbgi, irg);
 			}
-			return create_zero_const(irg, mode);
+			return new_r_Const_null(irg, mode);
 		}
 	}
 	}

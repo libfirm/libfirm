@@ -49,12 +49,10 @@ static ir_node *create_not(dbg_info *dbgi, ir_node *node)
 
 static ir_node *convert_to_modeb(ir_node *node)
 {
-	ir_node   *block   = get_nodes_block(node);
-	ir_graph  *irg     = get_irn_irg(node);
-	ir_mode   *mode    = lowered_mode;
-	ir_tarval *tv_zero = get_mode_null(mode);
-	ir_node   *zero    = new_r_Const(irg, tv_zero);
-	ir_node   *cmp     = new_r_Cmp(block, node, zero, ir_relation_less_greater);
+	ir_node  *block = get_nodes_block(node);
+	ir_graph *irg   = get_irn_irg(node);
+	ir_node  *zero  = new_r_Const_null(irg, lowered_mode);
+	ir_node  *cmp   = new_r_Cmp(block, node, zero, ir_relation_less_greater);
 	return cmp;
 }
 
@@ -78,7 +76,7 @@ static ir_node *create_cond_set(ir_node *cond_value, ir_mode *dest_mode)
 	ir_node  *false_jmp   = new_r_Jmp(false_block);
 	ir_node  *lower_in[2] = { true_jmp, false_jmp };
 	ir_node  *one         = new_r_Const(irg, get_mode_one(dest_mode));
-	ir_node  *zero        = new_r_Const(irg, get_mode_null(dest_mode));
+	ir_node  *zero        = new_r_Const_null(irg, dest_mode);
 	ir_node  *phi_in[2]   = { one, zero };
 	ir_node  *phi;
 
@@ -180,8 +178,7 @@ static ir_node *lower_node(ir_node *node)
 			ir_tarval *tv_one = get_mode_one(mode);
 			res               = new_rd_Const(dbgi, irg, tv_one);
 		} else if (tv == get_tarval_b_false()) {
-			ir_tarval *tv_zero = get_mode_null(mode);
-			res                = new_rd_Const(dbgi, irg, tv_zero);
+			res = new_rd_Const_null(dbgi, irg, mode);
 		} else {
 			panic("invalid boolean const %+F", node);
 		}

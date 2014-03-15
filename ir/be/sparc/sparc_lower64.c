@@ -62,8 +62,8 @@ static void lower64_minus(ir_node *node, ir_mode *mode)
 	ir_node  *right_low    = get_lowered_low(op);
 	ir_node  *right_high   = get_lowered_high(op);
 	ir_mode  *low_unsigned = get_irn_mode(right_low);
-	ir_node  *left_low     = new_r_Const(irg, get_mode_null(low_unsigned));
-	ir_node  *left_high    = new_r_Const(irg, get_mode_null(mode));
+	ir_node  *left_low     = new_r_Const_null(irg, low_unsigned);
+	ir_node  *left_high    = new_r_Const_null(irg, mode);
 	ir_node  *subcc        = new_bd_sparc_SubCC_t(dbgi, block, left_low,
 	                                              right_low);
 	ir_node  *res_low      = new_r_Proj(subcc, mode_Iu, pn_sparc_SubCC_t_res);

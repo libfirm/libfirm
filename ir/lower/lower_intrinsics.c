@@ -16,7 +16,7 @@
 #include "irnode_t.h"
 #include "irprog_t.h"
 #include "irgwalk.h"
-#include "ircons.h"
+#include "ircons_t.h"
 #include "irgmod.h"
 #include "irgopt.h"
 #include "trouts.h"
@@ -172,7 +172,7 @@ int i_mapper_abs(ir_node *call)
 	if (mode_has_signed_zero(mode))
 		return 0;
 
-	ir_node  *zero     = new_r_Const(irg, get_mode_null(mode));
+	ir_node  *zero     = new_r_Const_null(irg, mode);
 	ir_node  *cmp      = new_rd_Cmp(dbg, block, op, zero, ir_relation_less);
 	ir_node  *minus_op = new_rd_Minus(dbg, block, op, mode);
 	ir_node  *mux;
@@ -395,7 +395,7 @@ static int i_mapper_one_to_zero(ir_node *call, int reason)
 		/* acos(1.0) = 0.0 */
 		ir_graph *irg = get_irn_irg(val);
 		ir_mode *mode = get_irn_mode(val);
-		ir_node *irn  = new_r_Const(irg, get_mode_null(mode));
+		ir_node *irn  = new_r_Const_null(irg, mode);
 		ir_node *mem  = get_Call_mem(call);
 		DBG_OPT_ALGSIM0(call, irn, reason);
 		replace_call(irn, call, mem, NULL, NULL);
@@ -725,10 +725,8 @@ static ir_node *eval_strcmp(ir_graph *irg, ir_entity *left, ir_entity *right,
 			return new_r_Const(irg, tv);
 		}
 
-		if (tarval_is_null(tv_l)) {
-			ir_tarval *const tv = get_mode_null(get_type_mode(res_tp));
-			return new_r_Const(irg, tv);
-		}
+		if (tarval_is_null(tv_l))
+			return new_r_Const_null(irg, get_type_mode(res_tp));
 	}
 
 	return NULL;
@@ -799,7 +797,7 @@ int i_mapper_strcmp(ir_node *call)
 		ir_graph *irg = get_irn_irg(call);
 		ir_mode *mode = get_type_mode(res_tp);
 
-		irn = new_r_Const(irg, get_mode_null(mode));
+		irn = new_r_Const_null(irg, mode);
 		DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_STRCMP);
 		replace_call(irn, call, mem, NULL, NULL);
 		return 1;
@@ -881,7 +879,7 @@ int i_mapper_strncmp(ir_node *call)
 		ir_type   *res_tp  = get_method_res_type(call_tp, 0);
 		ir_mode   *mode    = get_type_mode(res_tp);
 
-		irn = new_r_Const(irg, get_mode_null(mode));
+		irn = new_r_Const_null(irg, mode);
 		DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_STRNCMP);
 		replace_call(irn, call, mem, NULL, NULL);
 		return 1;
@@ -998,7 +996,7 @@ int i_mapper_memcmp(ir_node *call)
 		ir_type   *res_tp  = get_method_res_type(call_tp, 0);
 		ir_mode   *mode    = get_type_mode(res_tp);
 
-		irn = new_r_Const(irg, get_mode_null(mode));
+		irn = new_r_Const_null(irg, mode);
 		DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_STRNCMP);
 		replace_call(irn, call, mem, NULL, NULL);
 		return 1;

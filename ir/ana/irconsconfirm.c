@@ -489,7 +489,7 @@ static void insert_non_null(ir_node *ptr, ir_node *block, env_t *env)
 			if (c == NULL) {
 				ir_mode  *mode = get_irn_mode(ptr);
 				ir_graph *irg  = get_irn_irg(block);
-				c = new_r_Const(irg, get_mode_null(mode));
+				c = new_r_Const_null(irg, mode);
 				c = new_r_Confirm(block, ptr, c, ir_relation_less_greater);
 			}
 

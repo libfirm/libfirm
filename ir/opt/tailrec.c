@@ -245,7 +245,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 
 			modes[i] = mode;
 			if (env->variants[i] == TR_ADD) {
-				set_r_value(irg, i, new_r_Const(irg, get_mode_null(mode)));
+				set_r_value(irg, i, new_r_Const_null(irg, mode));
 			} else if (env->variants[i] == TR_MUL) {
 				set_r_value(irg, i, new_r_Const(irg, get_mode_one(mode)));
 			}

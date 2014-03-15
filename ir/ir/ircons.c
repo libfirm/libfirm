@@ -648,3 +648,13 @@ void (verify_new_node)(ir_graph *irg, ir_node *node)
 {
 	verify_new_node_(irg, node);
 }
+
+ir_node *new_rd_Const_null(dbg_info *const dbgi, ir_graph *const irg, ir_mode *const mode)
+{
+	return new_rd_Const(dbgi, irg, get_mode_null(mode));
+}
+
+ir_node *new_r_Const_null(ir_graph *const irg, ir_mode *const mode)
+{
+	return new_r_Const(irg, get_mode_null(mode));
+}

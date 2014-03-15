@@ -81,4 +81,8 @@ void ssa_cons_start(ir_graph *irg, int n_loc);
  */
 void ssa_cons_finish(ir_graph *irg);
 
+ir_node *new_rd_Const_null(dbg_info *dbgi, ir_graph *irg, ir_mode *mode);
+
+ir_node *new_r_Const_null(ir_graph *irg, ir_mode *mode);
+
 #endif

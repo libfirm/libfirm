@@ -18,7 +18,7 @@
 #include "debug.h"
 #include "error.h"
 
-#include "ircons.h"
+#include "ircons_t.h"
 #include "irgopt.h"
 #include "irgmod.h"
 #include "irgwalk.h"
@@ -1566,7 +1566,7 @@ static ir_node *new_Abs(ir_node *op, ir_mode *mode)
 {
   ir_graph *irg      = get_irn_irg(op);
   ir_node  *block    = get_nodes_block(op);
-  ir_node  *zero     = new_r_Const(irg, get_mode_null(mode));
+  ir_node  *zero     = new_r_Const_null(irg, mode);
   ir_node  *cmp      = new_r_Cmp(block, op, zero, ir_relation_less);
   ir_node  *minus_op = new_r_Minus(block, op, mode);
   ir_node  *mux      = new_r_Mux(block, cmp, op, minus_op, mode);

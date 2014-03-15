@@ -438,7 +438,7 @@ static ir_node *build_graph(mul_env *env, instruction *inst)
 		r = build_graph(env, inst->in[1]);
 		return inst->irn = new_rd_Add(env->dbg, env->blk, l, r, env->mode);
 	case ZERO:
-		return inst->irn = new_r_Const(irg, get_mode_null(env->mode));
+		return inst->irn = new_r_Const_null(irg, env->mode);
 	default:
 		panic("Unsupported instruction kind");
 	}
@@ -1006,7 +1006,7 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn)
 			res    = new_rd_Shrs(dbg, block, curr, k_node, mode);
 
 			if (n_flag) { /* negate the result */
-				k_node = new_r_Const(irg, get_mode_null(mode));
+				k_node = new_r_Const_null(irg, mode);
 				res = new_rd_Sub(dbg, block, k_node, res, mode);
 			}
 		} else {      /* unsigned case */
@@ -1080,7 +1080,7 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn)
 		if (k == 0) {
 			ir_graph *irg = get_irn_irg(irn);
 
-			res = new_r_Const(irg, get_mode_null(mode));
+			res = new_r_Const_null(irg, mode);
 		}
 		else if (k > 0) {
 			ir_graph *irg = get_irn_irg(irn);

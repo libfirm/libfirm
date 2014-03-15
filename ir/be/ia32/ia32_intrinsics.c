@@ -13,7 +13,7 @@
 #include "irgmod.h"
 #include "irop.h"
 #include "irnode_t.h"
-#include "ircons.h"
+#include "ircons_t.h"
 #include "irprog_t.h"
 #include "iroptimize.h"
 #include "lower_dw.h"
@@ -228,7 +228,7 @@ static void ia32_lower_conv64(ir_node *node, ir_mode *mode)
 
 			/* create to Phis */
 			ir_node *phi_in[] = {
-				new_r_Const(irg, get_mode_null(mode)),
+				new_r_Const_null(irg, mode),
 				new_r_Const_long(irg, mode, 0x80000000)
 			};
 			ir_node *int_phi

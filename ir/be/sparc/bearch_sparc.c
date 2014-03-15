@@ -13,7 +13,7 @@
 
 #include "irgwalk.h"
 #include "irprog.h"
-#include "ircons.h"
+#include "ircons_t.h"
 #include "irgmod.h"
 #include "irgopt.h"
 #include "iroptimize.h"
@@ -256,7 +256,7 @@ static void rewrite_unsigned_float_Conv(ir_node *node)
 	ir_mode   *mode_d      = mode_D;
 	ir_node   *signed_x    = new_rd_Conv(dbgi, block, unsigned_x, mode_s);
 	ir_node   *res         = new_rd_Conv(dbgi, block, signed_x, mode_d);
-	ir_node   *zero        = new_r_Const(irg, get_mode_null(mode_s));
+	ir_node   *zero        = new_r_Const_null(irg, mode_s);
 	ir_node   *cmp         = new_rd_Cmp(dbgi, block, signed_x, zero,
 	                                    ir_relation_less);
 	ir_node   *cond        = new_rd_Cond(dbgi, block, cmp);
