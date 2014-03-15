@@ -50,31 +50,28 @@ static void lower_sel(ir_node *sel)
 		assert((get_mode_size_bits(basemode) % 8 == 0) && "can not deal with unorthodox modes");
 		ir_node *index = get_Sel_index(sel, 0);
 
+		ir_mode *idx_mode;
+		unsigned size;
+		ir_node *ind;
 		if (is_Array_type(owner)) {
-			ir_mode *mode_int = get_reference_mode_unsigned_eq(mode);
 			assert(get_Sel_n_indexs(sel) == 1
 				&& "array dimension must match number of indices of Sel node");
 
 			/* Size of the array element */
-			unsigned   size    = get_type_size_bytes(basetyp);
-			ir_tarval *tv      = new_tarval_from_long(size, mode_int);
-			ir_node   *el_size = new_rd_Const(dbg, irg, tv);
-			ir_node   *ind     = new_rd_Conv(dbg, bl, index, mode_int);
-			ir_node   *mul     = new_rd_Mul(dbg, bl, ind, el_size, mode_int);
-
-			ir_node   *ptr     = get_Sel_ptr(sel);
-			newn = new_rd_Add(dbg, bl, ptr, mul, mode);
+			idx_mode = get_reference_mode_unsigned_eq(mode);
+			size     = get_type_size_bytes(basetyp);
+			ind      = new_rd_Conv(dbg, bl, index, idx_mode);
 		} else {
 			/* no array type */
-			ir_mode   *idx_mode = get_irn_mode(index);
-			ir_tarval *tv       = new_tarval_from_long(get_mode_size_bytes(basemode), idx_mode);
-
-			newn = new_rd_Add(dbg, bl, get_Sel_ptr(sel),
-				new_rd_Mul(dbg, bl, index,
-				new_r_Const(irg, tv),
-				idx_mode),
-				mode);
+			idx_mode = get_irn_mode(index);
+			size     = get_mode_size_bytes(basemode);
+			ind      = index;
 		}
+
+		ir_node *const el_size = new_rd_Const_long(dbg, irg, idx_mode, size);
+		ir_node *const mul     = new_rd_Mul(dbg, bl, ind, el_size, idx_mode);
+		ir_node *const ptr     = get_Sel_ptr(sel);
+		newn = new_rd_Add(dbg, bl, ptr, mul, mode);
 	} else {
 		int offset = get_entity_offset(ent);
 
