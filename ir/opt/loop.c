@@ -1618,10 +1618,6 @@ static void create_duffs_block(void)
 	        get_irn_mode(loop_info.end_val));
 		DB((dbg, LEVEL_4, "BLOCK1 sub %N\n", ems));
 
-
-	ems = new_Sub(loop_info.end_val, loop_info.start_val,
-		get_irn_mode(loop_info.end_val));
-
 	DB((dbg, LEVEL_4, "mod ins %N %N\n", ems, loop_info.step));
 	ems_mod = new_r_Mod(block1,
 		new_NoMem(),
