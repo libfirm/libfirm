@@ -1824,8 +1824,9 @@ static bool is_const(ir_node *const node)
  * If an add forms a loop with iteration_phi,
  * and add uses a constant, 1 is returned
  * and 'start' as well as 'add' are sane. */
-static unsigned get_start_and_add(ir_node *iteration_phi, unrolling_kind_flag role)
+static unsigned get_start_and_add(unrolling_kind_flag role)
 {
+	ir_node *const iteration_phi = loop_info.iteration_phi;
 	int i;
 	ir_node *found_add = loop_info.add;
 	int arity = get_irn_arity(iteration_phi);
@@ -1836,8 +1837,8 @@ static unsigned get_start_and_add(ir_node *iteration_phi, unrolling_kind_flag ro
 
 		/* Find start_val which needs to be pred of the iteration_phi.
 		 * If start_val already known, sanity check. */
-		if (!is_backedge(get_nodes_block(loop_info.iteration_phi), i)) {
-			ir_node *found_start_val = get_irn_n(loop_info.iteration_phi, i);
+		if (!is_backedge(get_nodes_block(iteration_phi), i)) {
+			ir_node *found_start_val = get_irn_n(iteration_phi, i);
 
 			DB((dbg, LEVEL_4, "found_start_val %N\n", found_start_val));
 
@@ -1856,8 +1857,8 @@ static unsigned get_start_and_add(ir_node *iteration_phi, unrolling_kind_flag ro
 		/* The phi has to be in the loop head.
 		 * Follow all own backedges. Every value supplied from these preds of the phi
 		 * needs to origin from the same add. */
-		if (is_own_backedge(get_nodes_block(loop_info.iteration_phi), i)) {
-			ir_node *new_found = get_irn_n(loop_info.iteration_phi,i);
+		if (is_own_backedge(get_nodes_block(iteration_phi), i)) {
+			ir_node *new_found = get_irn_n(iteration_phi,i);
 
 			DB((dbg, LEVEL_4, "is add? %N\n", new_found));
 
@@ -2101,7 +2102,7 @@ static unsigned get_unroll_decision_invariant(void)
 
 		/* Find start_val.
 		 * Does necessary sanity check of add, if it is already set.  */
-		success = get_start_and_add(loop_info.iteration_phi, invariant);
+		success = get_start_and_add(invariant);
 		if (! success)
 			return 0;
 
@@ -2115,7 +2116,7 @@ static unsigned get_unroll_decision_invariant(void)
 
 		/* Find start_val and add-node.
 		 * Does necessary sanity check of add, if it is already set.  */
-		success = get_start_and_add(loop_info.iteration_phi, invariant);
+		success = get_start_and_add(invariant);
 		if (! success)
 			return 0;
 
@@ -2312,7 +2313,7 @@ static unsigned get_unroll_decision_constant(void)
 
 		/* Find start_val.
 		 * Does necessary sanity check of add, if it is already set.  */
-		success = get_start_and_add(loop_info.iteration_phi, constant);
+		success = get_start_and_add(constant);
 		if (! success)
 			return 0;
 
@@ -2329,7 +2330,7 @@ static unsigned get_unroll_decision_constant(void)
 
 		/* Find start_val and add-node.
 		 * Does necessary sanity check of add, if it is already set.  */
-		success = get_start_and_add(loop_info.iteration_phi, constant);
+		success = get_start_and_add(constant);
 		if (! success)
 			return 0;
 
